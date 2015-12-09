@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="animca" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release Win32">
+				<Option output="animca" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../../gamebin_linux/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-DLINUX" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add option="-D_TOOLS" />
+					<Add directory="../../Engine/Imaging" />
+					<Add directory="../../FileSystem" />
+					<Add directory="../../core" />
+					<Add directory="../../public" />
+					<Add directory="../../public/core" />
+					<Add directory="../../public/platform" />
+					<Add directory="../../Engine" />
+					<Add directory="../../src_dependency/sdl2/include" />
+				</Compiler>
+			</Target>
+			<Target title="Debug Win32">
+				<Option output="anim_compiler" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add option="-D_TOOLS" />
+					<Add directory="../../Engine/Imaging" />
+					<Add directory="../../FileSystem" />
+					<Add directory="../../core" />
+					<Add directory="../../public" />
+					<Add directory="../../public/core" />
+					<Add directory="../../public/Platform" />
+					<Add directory="../../Engine" />
+					<Add directory="../../src_dependency/sdl2/include" />
+				</Compiler>
+				<Linker>
+					<Add library="odbc32.lib" />
+					<Add library="odbccp32.lib" />
+					<Add library="advapi32.lib" />
+					<Add library="user32.lib" />
+					<Add library="kernel32.lib" />
+					<Add library="gdi32.lib" />
+					<Add library="shell32.lib" />
+					<Add library="winmm.lib" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-m32" />
+		</Compiler>
+		<Linker>
+			<Add option="-lstdc++ -pthread -l:libeqCore.so `pkg-config gtk+-2.0 --libs`" />
+			<Add library="../../libs/libcoreLib.a" />
+			<Add library="../../libs/libPrevLib.a" />
+			<Add library="z" />
+			<Add library="jpeg" />
+		</Linker>
+		<Unit filename="../../public/animationfile.h" />
+		<Unit filename="../../public/dsm_esm_loader.cpp" />
+		<Unit filename="../../public/dsm_loader.cpp" />
+		<Unit filename="../../public/dsm_obj_loader.cpp" />
+		<Unit filename="AnimCa_main.cpp" />
+		<Unit filename="AnimScriptCompiler.cpp" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

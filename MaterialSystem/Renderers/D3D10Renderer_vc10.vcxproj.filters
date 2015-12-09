@@ -1,0 +1,198 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Libs">
+      <UniqueIdentifier>{d30b8b67-c538-4fe9-967c-36fdf0b2eea6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\D3D10">
+      <UniqueIdentifier>{ae81ee2c-44a4-4da6-99f8-ed4e35f6fe4e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Interfaces">
+      <UniqueIdentifier>{67d43cba-92d6-45f8-920a-84115b03ea39}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="D3D10\D3D10MeshBuilder.cpp">
+      <Filter>Source Files\D3D10</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D10\D3D10ShaderProgram.cpp">
+      <Filter>Source Files\D3D10</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D10\D3DLibrary.cpp">
+      <Filter>Source Files\D3D10</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D10\IndexBufferD3DX10.cpp">
+      <Filter>Source Files\D3D10</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D10\ShaderAPID3DX10.cpp">
+      <Filter>Source Files\D3D10</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D10\VertexBufferD3DX10.cpp">
+      <Filter>Source Files\D3D10</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D10\VertexFormatD3DX10.cpp">
+      <Filter>Source Files\D3D10</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderAPI_Base.cpp">
+      <Filter>Source Files\Interfaces</Filter>
+    </ClCompile>
+    <ClCompile Include="CTexture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D10\D3D10Texture.cpp">
+      <Filter>Source Files\D3D10</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D10\D3D10SwapChain.cpp">
+      <Filter>Source Files\D3D10</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderAPIMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D3D10\D3D10MeshBuilder.h">
+      <Filter>Source Files\D3D10</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D10\D3D10ShaderProgram.h">
+      <Filter>Source Files\D3D10</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D10\D3DX10_def.h">
+      <Filter>Source Files\D3D10</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D10\IndexBufferD3DX10.h">
+      <Filter>Source Files\D3D10</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D10\ShaderAPID3DX10.h">
+      <Filter>Source Files\D3D10</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D10\VertexBufferD3DX10.h">
+      <Filter>Source Files\D3D10</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D10\VertexFormatD3DX10.h">
+      <Filter>Source Files\D3D10</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Renderer\IShaderAPI.h">
+      <Filter>Source Files\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Renderer\IShaderProgram.h">
+      <Filter>Source Files\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderAPI_Base.h">
+      <Filter>Source Files\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\Align.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\CharSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ConCommand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ConCommandBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\consolenode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ConVar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\core_base_header.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\DebugInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ICmdLineParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IConCommandFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IDkCore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\FileSystem\ifilesystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\InterfaceManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Platform\Platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\Queue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\String.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\strtools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D10\D3D10RenderStates.h">
+      <Filter>Source Files\D3D10</Filter>
+    </ClInclude>
+    <ClInclude Include="IRenderLibrary.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CTexture.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IMeshBuilder.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Renderer\IEqSwapChain.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D10\D3D10Texture.h">
+      <Filter>Source Files\D3D10</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D10\D3D10SwapChain.h">
+      <Filter>Source Files\D3D10</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resources.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuildStep Include="D3D10\D3DLibrary.h">
+      <Filter>Source Files\D3D10</Filter>
+    </CustomBuildStep>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\libs\DkCore.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\libs\zlib.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\libs\CoreLib.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\libs\FrameworkLib.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\libs\jpeg.lib">
+      <Filter>Libs</Filter>
+    </Library>
+  </ItemGroup>
+</Project>

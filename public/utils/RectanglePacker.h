@@ -1,0 +1,92 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2015
+//////////////////////////////////////////////////////////////////////////////////
+// Description: Rectangle packer, for atlases
+//////////////////////////////////////////////////////////////////////////////////
+
+#ifndef RECTANGLEPACKER_H
+#define RECTANGLEPACKER_H
+
+#include "dktypes.h"
+#include "utils/DkList.h"
+
+struct PackerRectangle
+{
+	float x, y;
+	float width, height;
+
+	void* userdata;
+};
+
+//-------------------------------------------------------------------------------------------------
+
+inline int OriginalAreaComp(PackerRectangle *const &elem0, PackerRectangle *const &elem1)
+{
+	return elem1->width * elem1->height - elem0->width * elem0->height;
+}
+
+inline int AreaComp(PackerRectangle *const &elem0, PackerRectangle *const &elem1)
+{
+	int diff = elem1->width * elem1->height - elem0->width * elem0->height;
+
+	if (diff)
+		return diff;
+
+	diff = elem1->width - elem0->width;
+
+	if (diff)
+		return diff;
+
+	return elem1->height - elem0->height;
+}
+
+inline int WidthComp(PackerRectangle *const &elem0, PackerRectangle *const &elem1)
+{
+	int diff = elem1->width - elem0->width;
+
+	if (diff)
+		return diff;
+
+	return elem1->height - elem0->height;
+}
+
+inline int HeightComp(PackerRectangle *const &elem0, PackerRectangle *const &elem1)
+{
+	int diff = elem1->height - elem0->height;
+
+	if (diff)
+		return diff;
+
+	return elem1->width - elem0->width;
+}
+
+typedef int (*COMPRECTFUNC)(PackerRectangle *const &elem0, PackerRectangle *const &elem1);
+
+//-------------------------------------------------------------------------------------------------
+
+class CRectanglePacker
+{
+public:
+								CRectanglePacker();
+						virtual ~CRectanglePacker();
+
+	// adds new rectangle
+	int							AddRectangle(float width, float height, void* pUserData = NULL);
+
+	// assigns coordinates
+	bool						AssignCoords(float& width, float& height, COMPRECTFUNC compRectFunc = OriginalAreaComp);
+
+	// returns rectangle
+	PackerRectangle*			GetRectangle(uint index) const { return m_pRectangles[index]; }
+	int							GetRectangleCount() const {return m_pRectangles.numElem();}
+
+	void						SetPackPadding(float padding) { m_padding = padding; }
+
+protected:
+	DkList<PackerRectangle *>	m_pRectangles;
+
+	float						m_padding;
+};
+
+#endif // RECTANGLEPACKER_H

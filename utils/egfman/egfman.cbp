@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="DkCore" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release Win32">
+				<Option output="egfman" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_USRDLL" />
+					<Add option="-DENGINE_EXPORT" />
+					<Add option="-DPHYSICS_EXPORT" />
+					<Add option="-DNO_GAME" />
+					<Add directory="../../FileSystem" />
+					<Add directory="../../Engine" />
+					<Add directory="../../public" />
+					<Add directory="../../public/core" />
+					<Add directory="../../shared_engine" />
+					<Add directory="../../public/platform" />
+					<Add directory="../../src_dependency/wx/include" />
+					<Add directory="../../src_dependency/wx/include/msvc" />
+					<Add directory="../../src_dependency/wx/include/msw" />
+					<Add directory="../../src_dependency/bullet/src" />
+					<Add directory="../../src_dependency/bullet/src/BulletSoftBody" />
+					<Add directory="../eq_physgen" />
+					<Add directory="../../src_dependency/sdl2/include" />
+				</Compiler>
+				<Linker>
+					<Add directory="../../src_dependency/wx/lib/vc_lib/" />
+				</Linker>
+			</Target>
+			<Target title="Debug Win32">
+				<Option output="egfman" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_USRDLL" />
+					<Add option="-DENGINE_EXPORT" />
+					<Add option="-DPHYSICS_EXPORT" />
+					<Add option="-DNO_GAME" />
+					<Add directory="../../FileSystem" />
+					<Add directory="../../Engine" />
+					<Add directory="../../public" />
+					<Add directory="../../public/core" />
+					<Add directory="../../public/platform" />
+					<Add directory="../../src_dependency/wx/include" />
+					<Add directory="../../src_dependency/wx/include/msvc" />
+					<Add directory="../../src_dependency/wx/include/msw" />
+					<Add directory="../../src_dependency/bullet/src" />
+					<Add directory="../../src_dependency/bullet/src/BulletSoftBody" />
+					<Add directory="../eq_physgen" />
+					<Add directory="../../src_dependency/sdl2/include" />
+				</Compiler>
+				<Linker>
+					<Add library="user32.lib" />
+					<Add library="comctl32.lib" />
+					<Add library="winmm.lib" />
+					<Add directory="../wx/lib/vc_lib/" />
+				</Linker>
+			</Target>
+		</Build>
+		<Unit filename="../../Engine/DebugOverlay.cpp" />
+		<Unit filename="../../Engine/DebugOverlay.h" />
+		<Unit filename="../../Engine/EngineModelLoader.h" />
+		<Unit filename="../../Engine/Physics/Convert.h" />
+		<Unit filename="../../Engine/Physics/DkBulletObject.cpp" />
+		<Unit filename="../../Engine/Physics/DkBulletObject.h" />
+		<Unit filename="../../Engine/Physics/DkBulletPhysics.h" />
+		<Unit filename="../../Engine/Physics/DkPhysicsJoint.cpp" />
+		<Unit filename="../../Engine/Physics/DkPhysicsJoint.h" />
+		<Unit filename="../../Engine/Physics/DkPhysicsRope.cpp" />
+		<Unit filename="../../Engine/Physics/DkPhysicsRope.h" />
+		<Unit filename="../../Engine/Physics/dkbulletphysics.cpp" />
+		<Unit filename="../../Engine/modelloader_shared.cpp" />
+		<Unit filename="../../Engine/modelloader_shared.h" />
+		<Unit filename="../../Engine/studio_egf.cpp" />
+		<Unit filename="../../Engine/studio_egf.h" />
+		<Unit filename="../../FileSystem/fs_module.h" />
+		<Unit filename="../../public/BaseRenderableObject.cpp" />
+		<Unit filename="../../public/BaseRenderableObject.h" />
+		<Unit filename="../../public/BoneSetup.cpp" />
+		<Unit filename="../../public/BoneSetup.h" />
+		<Unit filename="../../public/CPU.h" />
+		<Unit filename="../../public/CharSet.h" />
+		<Unit filename="../../public/ConCommand.h" />
+		<Unit filename="../../public/ConCommandBase.h" />
+		<Unit filename="../../public/ConVar.h" />
+		<Unit filename="../../public/DebugInterface.h" />
+		<Unit filename="../../public/Font.cpp" />
+		<Unit filename="../../public/Font.h" />
+		<Unit filename="../../public/ICmdLineParser.h" />
+		<Unit filename="../../public/ICommandAccessor.h" />
+		<Unit filename="../../public/IConCommandFactory.h" />
+		<Unit filename="../../public/IDkCore.h" />
+		<Unit filename="../../public/IFileSystem.h" />
+		<Unit filename="../../public/IIniFile.h" />
+		<Unit filename="../../public/IMaterial.h" />
+		<Unit filename="../../public/IMaterialSystem.h" />
+		<Unit filename="../../public/IMeshBuilder.h" />
+		<Unit filename="../../public/IRenderer.h" />
+		<Unit filename="../../public/IShader.h" />
+		<Unit filename="../../public/InterfaceManager.h" />
+		<Unit filename="../../public/KeyValues.h" />
+		<Unit filename="../../public/Math/DkMath.h" />
+		<Unit filename="../../public/Math/MathTools.h" />
+		<Unit filename="../../public/Math/Matrix.h" />
+		<Unit filename="../../public/Math/Quaternion.h" />
+		<Unit filename="../../public/Math/Random.h" />
+		<Unit filename="../../public/Math/Vector.h" />
+		<Unit filename="../../public/Math/Volume.h" />
+		<Unit filename="../../public/Math/math_util.cpp" />
+		<Unit filename="../../public/Math/math_util.h" />
+		<Unit filename="../../public/Platform/Platform.h" />
+		<Unit filename="../../public/RenderList.cpp" />
+		<Unit filename="../../public/RenderList.h" />
+		<Unit filename="../../public/Utils/Align.h" />
+		<Unit filename="../../public/Utils/DkLinkedList.h" />
+		<Unit filename="../../public/Utils/DkList.h" />
+		<Unit filename="../../public/Utils/DkStr.h" />
+		<Unit filename="../../public/Utils/GeomTools.cpp" />
+		<Unit filename="../../public/Utils/GeomTools.h" />
+		<Unit filename="../../public/Utils/Queue.h" />
+		<Unit filename="../../public/Utils/String.h" />
+		<Unit filename="../../public/Utils/Thread.h" />
+		<Unit filename="../../public/Utils/TimeMeasure.h" />
+		<Unit filename="../../public/Utils/strtools.h" />
+		<Unit filename="../../public/ViewParams.cpp" />
+		<Unit filename="../../public/ViewParams.h" />
+		<Unit filename="../../public/anim_activity.cpp" />
+		<Unit filename="../../public/anim_activity.h" />
+		<Unit filename="../../public/anim_defs.h" />
+		<Unit filename="../../public/anim_events.cpp" />
+		<Unit filename="../../public/anim_events.h" />
+		<Unit filename="../../public/animation_shared.h" />
+		<Unit filename="../../public/consolenode.h" />
+		<Unit filename="../../public/core_base_header.h" />
+		<Unit filename="../../public/dsm_loader.h" />
+		<Unit filename="../../public/ragdoll.cpp" />
+		<Unit filename="../../public/ragdoll.h" />
+		<Unit filename="../../shared_engine/physics/BulletConvert.h" />
+		<Unit filename="../../shared_engine/physics/BulletShapeCache.cpp" />
+		<Unit filename="../../shared_engine/physics/BulletShapeCache.h" />
+		<Unit filename="../../utils/eq_physgen/physgen_process.h" />
+		<Unit filename="../../utils/eq_physgen/scriptcompile.h" />
+		<Unit filename="CAnimatedModel.cpp" />
+		<Unit filename="CAnimatedModel.h" />
+		<Unit filename="CommandAccessor.h" />
+		<Unit filename="ConCommandFactory.h" />
+		<Unit filename="DkCore.h" />
+		<Unit filename="EditorHeader.h" />
+		<Unit filename="EgfMan.cpp" />
+		<Unit filename="ExceptionHandler.h" />
+		<Unit filename="Notes.txt" />
+		<Unit filename="Sys_Radiant.h" />
+		<Unit filename="windows/Resources.rc" />
+		<Unit filename="windows/mainicon.ico" />
+		<Unit filename="windows/resource.h" />
+		<Unit filename="windows/splashscreen.bmp" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

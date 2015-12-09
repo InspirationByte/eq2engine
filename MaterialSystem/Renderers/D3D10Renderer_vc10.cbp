@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="DkCore" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release EX Win32">
+				<Option output="D3D10Renderer_vc10" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_USRDLL" />
+					<Add option="-DCORE_EXPORT" />
+					<Add option="-DDLL_EXPORT" />
+					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add option="-DSUPRESS_DEVMESSAGES" />
+					<Add option="-DUSECRTMEMDEBUG" />
+					<Add option="-DRENDER_EXPORT" />
+					<Add option="-DUSE_D3DEX" />
+					<Add directory="../FileSystem" />
+					<Add directory="../Engine" />
+					<Add directory="../public" />
+					<Add directory="../public/platform" />
+					<Add directory="../renderers/" />
+					<Add directory="../renderers/D3D10" />
+				</Compiler>
+				<Linker>
+					<Add library="D3D10.lib" />
+					<Add library="D3DX10.lib" />
+					<Add library="user32.lib" />
+					<Add library="gdi32.lib" />
+				</Linker>
+			</Target>
+			<Target title="Release Win32">
+				<Option output="D3D10Renderer_vc10" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_USRDLL" />
+					<Add option="-DCORE_EXPORT" />
+					<Add option="-DDLL_EXPORT" />
+					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add option="-DRENDER_EXPORT" />
+					<Add directory="../../FileSystem" />
+					<Add directory="../../Engine" />
+					<Add directory="../../public" />
+					<Add directory="../../public/core" />
+					<Add directory="../../public/platform" />
+					<Add directory="../../public/materialsystem/renderers" />
+					<Add directory="../../src_dependency/sdl2/include" />
+				</Compiler>
+				<Linker>
+					<Add library="dxgi.lib" />
+					<Add library="D3D10.lib" />
+					<Add library="D3DX10.lib" />
+				</Linker>
+			</Target>
+			<Target title="Debug Win32">
+				<Option output="D3D10Renderer_vc10" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-D_DEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_USRDLL" />
+					<Add option="-DCORE_EXPORT" />
+					<Add option="-DDLL_EXPORT" />
+					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add option="-DRENDER_EXPORT" />
+					<Add directory="../../FileSystem" />
+					<Add directory="../../Engine" />
+					<Add directory="../../public" />
+					<Add directory="../../public/core" />
+					<Add directory="../../public/platform" />
+					<Add directory="../../public/materialsystem/renderers" />
+					<Add directory="../../src_dependency/sdl2/include" />
+				</Compiler>
+				<Linker>
+					<Add library="dxgi.lib" />
+					<Add library="D3D10.lib" />
+					<Add library="D3DX10.lib" />
+					<Add library="user32.lib" />
+					<Add library="gdi32.lib" />
+				</Linker>
+			</Target>
+		</Build>
+		<Unit filename="../../public/Renderer/IEqSwapChain.h" />
+		<Unit filename="../Engine/Renderer.h" />
+		<Unit filename="../FileSystem/ifilesystem.h" />
+		<Unit filename="../public/CharSet.h" />
+		<Unit filename="../public/ConCommand.h" />
+		<Unit filename="../public/ConCommandBase.h" />
+		<Unit filename="../public/ConVar.h" />
+		<Unit filename="../public/DebugInterface.h" />
+		<Unit filename="../public/ICmdLineParser.h" />
+		<Unit filename="../public/IConCommandFactory.h" />
+		<Unit filename="../public/IDkCore.h" />
+		<Unit filename="../public/IMeshBuilder.h" />
+		<Unit filename="../public/InterfaceManager.h" />
+		<Unit filename="../public/Platform/Platform.h" />
+		<Unit filename="../public/Renderer/IShaderAPI.h" />
+		<Unit filename="../public/Renderer/IShaderProgram.h" />
+		<Unit filename="../public/Utils/Align.h" />
+		<Unit filename="../public/Utils/Queue.h" />
+		<Unit filename="../public/Utils/String.h" />
+		<Unit filename="../public/Utils/strtools.h" />
+		<Unit filename="../public/consolenode.h" />
+		<Unit filename="../public/core_base_header.h" />
+		<Unit filename="CTexture.cpp" />
+		<Unit filename="CTexture.h" />
+		<Unit filename="D3D10/D3D10MeshBuilder.cpp" />
+		<Unit filename="D3D10/D3D10MeshBuilder.h" />
+		<Unit filename="D3D10/D3D10RenderStates.h" />
+		<Unit filename="D3D10/D3D10ShaderProgram.cpp" />
+		<Unit filename="D3D10/D3D10ShaderProgram.h" />
+		<Unit filename="D3D10/D3D10SwapChain.cpp" />
+		<Unit filename="D3D10/D3D10SwapChain.h" />
+		<Unit filename="D3D10/D3D10Texture.cpp" />
+		<Unit filename="D3D10/D3D10Texture.h" />
+		<Unit filename="D3D10/D3DLibrary.cpp" />
+		<Unit filename="D3D10/D3DLibrary.h" />
+		<Unit filename="D3D10/D3DX10_def.h" />
+		<Unit filename="D3D10/IndexBufferD3DX10.cpp" />
+		<Unit filename="D3D10/IndexBufferD3DX10.h" />
+		<Unit filename="D3D10/ShaderAPID3DX10.cpp" />
+		<Unit filename="D3D10/ShaderAPID3DX10.h" />
+		<Unit filename="D3D10/VertexBufferD3DX10.cpp" />
+		<Unit filename="D3D10/VertexBufferD3DX10.h" />
+		<Unit filename="D3D10/VertexFormatD3DX10.cpp" />
+		<Unit filename="D3D10/VertexFormatD3DX10.h" />
+		<Unit filename="D3D10/asdf/D3D10App.h" />
+		<Unit filename="D3D10/asdf/Direct3D10Renderer.h" />
+		<Unit filename="IRenderLibrary.h" />
+		<Unit filename="Resources.rc" />
+		<Unit filename="ShaderAPI_Base.cpp" />
+		<Unit filename="ShaderAPI_Base.h" />
+		<Unit filename="resource.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

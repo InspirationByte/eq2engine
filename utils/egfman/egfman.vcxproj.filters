@@ -1,0 +1,359 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{053e1c37-205f-4d72-bfd5-ca8e6b2e9635}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\System">
+      <UniqueIdentifier>{b8ed20da-6812-4a1a-9ed5-e0ebfe37c301}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Libs">
+      <UniqueIdentifier>{fcf14460-b900-4ff1-a096-c27755a9fd56}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{ee696f9a-4ba6-46f7-8078-04d0b789d2aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib">
+      <UniqueIdentifier>{cd7b04c9-cb67-4f39-83ca-9341ceab3a6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Physics">
+      <UniqueIdentifier>{5f0dd7ee-ed7b-404f-9b3d-ae52fbf39d32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Renderer">
+      <UniqueIdentifier>{05ac3ee4-9a2b-4c39-8f58-97ce76bbc3b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Renderer\Scene">
+      <UniqueIdentifier>{7903be6b-fa6f-4447-807f-c720ce6f5533}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Renderer\Debug">
+      <UniqueIdentifier>{d6ae589e-d53b-451e-b664-b5a10bbb28ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Models">
+      <UniqueIdentifier>{506ebe6a-f085-4b35-8b2d-ad950ee30850}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CommandAccessor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ConCommandFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DkCore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExceptionHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="windows\resource.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EditorHeader.h">
+      <Filter>Source Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\dsm_loader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Font.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\RenderList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Utils\Align.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\CharSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Utils\GeomTools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\utils\eq_physgen\physgen_process.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\utils\eq_physgen\scriptcompile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\ConCommand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\ConCommandBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\consolenode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\ConVar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\core_base_header.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\CPU.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\DebugInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\ICmdLineParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\ICommandAccessor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\IConCommandFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\IDkCore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\IFileSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\IIniFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\IMaterial.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\IMaterialSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\IMeshBuilder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\InterfaceManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\IRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\IShader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Platform\Platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Utils\Queue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Utils\String.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Utils\strtools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Utils\DkStr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\ViewParams.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\BaseRenderableObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\DebugOverlay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Utils\DkLinkedList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Utils\DkList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\FileSystem\fs_module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\KeyValues.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Utils\Thread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Utils\TimeMeasure.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Math\DkMath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Math\math_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Math\MathTools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Math\Matrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Math\Quaternion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Math\Random.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Math\Vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Math\Volume.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\animation_shared.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\EngineModelLoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\modelloader_shared.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CAnimatedModel.h">
+      <Filter>Source Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\anim_activity.h">
+      <Filter>Source Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\anim_defs.h">
+      <Filter>Source Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\anim_events.h">
+      <Filter>Source Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\BoneSetup.h">
+      <Filter>Source Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Physics\Convert.h">
+      <Filter>Source Files\EngineLib\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Physics\DkBulletObject.h">
+      <Filter>Source Files\EngineLib\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Physics\DkBulletPhysics.h">
+      <Filter>Source Files\EngineLib\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Physics\DkPhysicsJoint.h">
+      <Filter>Source Files\EngineLib\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Physics\DkPhysicsRope.h">
+      <Filter>Source Files\EngineLib\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\ragdoll.h">
+      <Filter>Source Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shared_engine\physics\BulletConvert.h">
+      <Filter>Source Files\EngineLib\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shared_engine\physics\BulletShapeCache.h">
+      <Filter>Source Files\EngineLib\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Sys_Radiant.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shared_engine\studio_egf.h">
+      <Filter>Source Files\EngineLib\Models</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="windows\mainicon.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="windows\splashscreen.bmp">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Notes.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="windows\Resources.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\public\BaseRenderableObject.cpp">
+      <Filter>Source Files\EngineLib\Renderer\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\RenderList.cpp">
+      <Filter>Source Files\EngineLib\Renderer\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\ViewParams.cpp">
+      <Filter>Source Files\EngineLib\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\Math\math_util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CAnimatedModel.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\anim_activity.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\anim_events.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\BoneSetup.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Physics\DkBulletObject.cpp">
+      <Filter>Source Files\EngineLib\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Physics\dkbulletphysics.cpp">
+      <Filter>Source Files\EngineLib\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Physics\DkPhysicsJoint.cpp">
+      <Filter>Source Files\EngineLib\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Physics\DkPhysicsRope.cpp">
+      <Filter>Source Files\EngineLib\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\Utils\GeomTools.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\ragdoll.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\physics\BulletShapeCache.cpp">
+      <Filter>Source Files\EngineLib\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="EgfMan.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\modelloader_shared.cpp">
+      <Filter>Source Files\EngineLib\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\studio_egf.cpp">
+      <Filter>Source Files\EngineLib\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\Font.cpp">
+      <Filter>Source Files\EngineLib\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\DebugOverlay.cpp">
+      <Filter>Source Files\EngineLib\Renderer\Debug</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\Libs\DkCore.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\libs\CoreLib.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\libs\FrameworkLib.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\src_dependency\bullet\lib\Release\BulletCollision.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\src_dependency\bullet\lib\Release\BulletDynamics.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\src_dependency\bullet\lib\Release\LinearMath.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\src_dependency\bullet\lib\Release\BulletSoftBody.lib">
+      <Filter>Libs</Filter>
+    </Library>
+  </ItemGroup>
+</Project>

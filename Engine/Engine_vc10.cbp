@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="DkCore" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release Win32">
+				<Option output="Engine_vc10" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_USRDLL" />
+					<Add option="-DENGINE_EXPORT" />
+					<Add option="-DPHYSICS_EXPORT" />
+					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add option="-DUSE_SIMD" />
+					<Add option="-DEQ_USE_SDL" />
+					<Add directory="../FileSystem" />
+					<Add directory="../Engine" />
+					<Add directory="../public" />
+					<Add directory="../public/core" />
+					<Add directory="../shared_engine" />
+					<Add directory="../public/platform" />
+					<Add directory="../src_dependency/sdl2/include" />
+					<Add directory="../src_dependency/bullet/src" />
+					<Add directory="../src_dependency/bullet/Extras/Serialization/BulletWorldImporter" />
+					<Add directory="../src_dependency/bullet/src/BulletSoftBody" />
+				</Compiler>
+				<Linker>
+					<Add library="wsock32.lib" />
+					<Add library="winmm.lib" />
+				</Linker>
+			</Target>
+			<Target title="Debug Win32">
+				<Option output="Engine_vc10" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-D_DEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_USRDLL" />
+					<Add option="-DENGINE_EXPORT" />
+					<Add option="-DPHYSICS_EXPORT" />
+					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add option="-DUSE_SIMD" />
+					<Add directory="../FileSystem" />
+					<Add directory="../Engine" />
+					<Add directory="../public" />
+					<Add directory="../public/core" />
+					<Add directory="../public/platform" />
+					<Add directory="../public/materialsystem/renderers" />
+					<Add directory="../src_dependency/bullet/src/BulletSoftBody" />
+					<Add directory="../src_dependency/bullet/Extras/Serialization/BulletWorldImporter" />
+					<Add directory="../src_dependency/bullet/src" />
+					<Add directory="../src_dependency/sdl2/include" />
+				</Compiler>
+				<Linker>
+					<Add library="wsock32.lib" />
+					<Add library="winmm.lib" />
+				</Linker>
+			</Target>
+		</Build>
+		<Unit filename="../FileSystem/cfgloader.cpp" />
+		<Unit filename="../FileSystem/cfgloader.h" />
+		<Unit filename="../FileSystem/ifilesystem.h" />
+		<Unit filename="../public/BaseRenderableObject.cpp" />
+		<Unit filename="../public/BaseRenderableObject.h" />
+		<Unit filename="../public/CharSet.h" />
+		<Unit filename="../public/ConCommand.h" />
+		<Unit filename="../public/ConCommandBase.h" />
+		<Unit filename="../public/ConVar.h" />
+		<Unit filename="../public/DebugInterface.h" />
+		<Unit filename="../public/Decals.cpp" />
+		<Unit filename="../public/Decals.h" />
+		<Unit filename="../public/Font.cpp" />
+		<Unit filename="../public/Font.h" />
+		<Unit filename="../public/GlobalVarsBase.cpp" />
+		<Unit filename="../public/GlobalVarsBase.h" />
+		<Unit filename="../public/ICmdLineParser.h" />
+		<Unit filename="../public/IConCommandFactory.h" />
+		<Unit filename="../public/IDebugOverlay.h" />
+		<Unit filename="../public/IDkCore.h" />
+		<Unit filename="../public/IDkPhysics.h" />
+		<Unit filename="../public/IEngineGame.h" />
+		<Unit filename="../public/IEngineHost.h" />
+		<Unit filename="../public/IEngineWorld.h" />
+		<Unit filename="../public/IEntityFactory.h" />
+		<Unit filename="../public/IEqModel.h" />
+		<Unit filename="../public/IFont.h" />
+		<Unit filename="../public/IPhysicsJoint.h" />
+		<Unit filename="../public/IPhysicsObject.h" />
+		<Unit filename="../public/IPhysicsRope.h" />
+		<Unit filename="../public/IPhysicsVehicle.h" />
+		<Unit filename="../public/ISoundSystem.h" />
+		<Unit filename="../public/IViewRenderer.h" />
+		<Unit filename="../public/InterfaceManager.h" />
+		<Unit filename="../public/Math/DkMath.h" />
+		<Unit filename="../public/Math/math_common.h" />
+		<Unit filename="../public/Math/math_util.cpp" />
+		<Unit filename="../public/Math/math_util.h" />
+		<Unit filename="../public/PhysicsCollisionGroup.h" />
+		<Unit filename="../public/Platform/Platform.h" />
+		<Unit filename="../public/Renderable.h" />
+		<Unit filename="../public/Utils/Align.h" />
+		<Unit filename="../public/Utils/DkLinkedList.h" />
+		<Unit filename="../public/Utils/DkList.h" />
+		<Unit filename="../public/Utils/GeomTools.cpp" />
+		<Unit filename="../public/Utils/GeomTools.h" />
+		<Unit filename="../public/ViewParams.cpp" />
+		<Unit filename="../public/ViewParams.h" />
+		<Unit filename="../public/consolenode.h" />
+		<Unit filename="../public/coord.h" />
+		<Unit filename="../public/core_base_header.h" />
+		<Unit filename="../public/eqmodel.h" />
+		<Unit filename="../public/in_keys_ident.h" />
+		<Unit filename="../public/model.h" />
+		<Unit filename="../public/mtriangle_framework.cpp" />
+		<Unit filename="../public/mtriangle_framework.h" />
+		<Unit filename="../public/scene_def.h" />
+		<Unit filename="../shared_engine/physics/BulletConvert.h" />
+		<Unit filename="../shared_engine/physics/BulletShapeCache.cpp" />
+		<Unit filename="../shared_engine/physics/BulletShapeCache.h" />
+		<Unit filename="Audio/EqSoundSystemA.cpp" />
+		<Unit filename="Audio/EqSoundSystemA.h" />
+		<Unit filename="Audio/IEqSoundEmitter.h" />
+		<Unit filename="Audio/IEqSoundSample.h" />
+		<Unit filename="Audio/IEqSoundSystem.h" />
+		<Unit filename="Audio/alsnd_ambient.cpp" />
+		<Unit filename="Audio/alsnd_ambient.h" />
+		<Unit filename="Audio/alsnd_emitter.cpp" />
+		<Unit filename="Audio/alsnd_emitter.h" />
+		<Unit filename="Audio/alsnd_sample.cpp" />
+		<Unit filename="Audio/alsnd_sample.h" />
+		<Unit filename="Audio/alsound_local.cpp" />
+		<Unit filename="Audio/alsound_local.h" />
+		<Unit filename="Audio/soundzero.cpp" />
+		<Unit filename="Audio/soundzero.h" />
+		<Unit filename="BaseViewRenderer.cpp" />
+		<Unit filename="BaseViewRenderer.h" />
+		<Unit filename="CEngineGame.cpp" />
+		<Unit filename="CmdLineParser.h" />
+		<Unit filename="CoreVersion.h" />
+		<Unit filename="DebugOverlay.cpp" />
+		<Unit filename="DebugOverlay.h" />
+		<Unit filename="EngineSpew.cpp" />
+		<Unit filename="EngineSpew.h" />
+		<Unit filename="EngineVersion.cpp" />
+		<Unit filename="EngineVersion.h" />
+		<Unit filename="EntityFactory.cpp" />
+		<Unit filename="EntityFactory.h" />
+		<Unit filename="EqGameLevel.cpp" />
+		<Unit filename="EqGameLevel.h" />
+		<Unit filename="GUI/Button.h" />
+		<Unit filename="GUI/CheckBox.h" />
+		<Unit filename="GUI/Dialog.h" />
+		<Unit filename="GUI/DropDownList.h" />
+		<Unit filename="GUI/Label.h" />
+		<Unit filename="GUI/Panel.h" />
+		<Unit filename="GUI/Slider.h" />
+		<Unit filename="IPhysicsController.h" />
+		<Unit filename="KeyBinding/Keys.cpp" />
+		<Unit filename="KeyBinding/Keys.h" />
+		<Unit filename="MaterialSystem.h" />
+		<Unit filename="Modules.cpp" />
+		<Unit filename="Modules.h" />
+		<Unit filename="Network/NETThread.cpp" />
+		<Unit filename="Network/NETThread.h" />
+		<Unit filename="Notes.txt" />
+		<Unit filename="Physics/BulletConvert.h" />
+		<Unit filename="Physics/DkBulletObject.cpp" />
+		<Unit filename="Physics/DkBulletObject.h" />
+		<Unit filename="Physics/DkBulletPhysics.cpp" />
+		<Unit filename="Physics/DkBulletPhysics.h" />
+		<Unit filename="Physics/DkPhysicsJoint.cpp" />
+		<Unit filename="Physics/DkPhysicsJoint.h" />
+		<Unit filename="Physics/DkPhysicsRope.cpp" />
+		<Unit filename="Physics/DkPhysicsRope.h" />
+		<Unit filename="UFont.cpp" />
+		<Unit filename="UFont.h" />
+		<Unit filename="ViewRenderer.cpp" />
+		<Unit filename="ViewRenderer.h" />
+		<Unit filename="material.h" />
+		<Unit filename="materialvar.h" />
+		<Unit filename="modelloader_shared.cpp" />
+		<Unit filename="modelloader_shared.h" />
+		<Unit filename="studio_egf.cpp" />
+		<Unit filename="studio_egf.h" />
+		<Unit filename="sys_console.cpp" />
+		<Unit filename="sys_console.h" />
+		<Unit filename="sys_enginehost.cpp" />
+		<Unit filename="sys_enginehost.h" />
+		<Unit filename="sys_main.cpp" />
+		<Unit filename="sys_mainwind.cpp" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

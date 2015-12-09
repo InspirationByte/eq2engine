@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Libs">
+      <UniqueIdentifier>{6fbb42e8-4374-4f58-b93b-c2f8d6fe7fad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EngineLib">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>
+      </Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="eqwc_main.cpp" />
+    <ClCompile Include="eqwc_process.cpp" />
+    <ClCompile Include="surfaceproc.cpp" />
+    <ClCompile Include="sectors.cpp" />
+    <ClCompile Include="writeworld.cpp" />
+    <ClCompile Include="physics.cpp" />
+    <ClCompile Include="lightmap_uv.cpp" />
+    <ClCompile Include="brush_csg.cpp" />
+    <ClCompile Include="threadedprocess.cpp">
+      <Filter>EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="Decals.cpp" />
+    <ClCompile Include="lightmap_uv_cl.cpp" />
+    <ClCompile Include="..\..\public\mtriangle_framework.cpp" />
+    <ClCompile Include="water.cpp" />
+    <ClCompile Include="chart_uv_poly.cpp" />
+    <ClCompile Include="..\..\public\Utils\GeomTools.cpp">
+      <Filter>EngineLib</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="eqwc.h" />
+    <ClInclude Include="threadedprocess.h" />
+    <ClInclude Include="lightmap_uv_cl.h" />
+    <ClInclude Include="..\..\public\mtriangle_framework.h" />
+    <ClInclude Include="CompilerBaseObject.h" />
+    <ClInclude Include="chart_uv_poly.h" />
+    <ClInclude Include="..\..\public\utils\rasterizer.h">
+      <Filter>EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Utils\GeomTools.h">
+      <Filter>EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\utils\GeomTools_inline.h">
+      <Filter>EngineLib</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\libs\DkCore.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\libs\CoreLib.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\libs\FrameworkLib.lib">
+      <Filter>Libs</Filter>
+    </Library>
+  </ItemGroup>
+</Project>

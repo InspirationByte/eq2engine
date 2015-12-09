@@ -1,0 +1,133 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{053e1c37-205f-4d72-bfd5-ca8e6b2e9635}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Libs">
+      <UniqueIdentifier>{fcf14460-b900-4ff1-a096-c27755a9fd56}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{ee696f9a-4ba6-46f7-8078-04d0b789d2aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib">
+      <UniqueIdentifier>{cd7b04c9-cb67-4f39-83ca-9341ceab3a6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Renderer">
+      <UniqueIdentifier>{05ac3ee4-9a2b-4c39-8f58-97ce76bbc3b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Renderer\Debug">
+      <UniqueIdentifier>{d6ae589e-d53b-451e-b664-b5a10bbb28ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Models">
+      <UniqueIdentifier>{506ebe6a-f085-4b35-8b2d-ad950ee30850}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Audio">
+      <UniqueIdentifier>{1560a466-e8d8-41c7-8169-01e2531e7d89}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Editor">
+      <UniqueIdentifier>{59f3da8e-4d79-412d-9b8c-0c0918a5fc2f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Common">
+      <UniqueIdentifier>{2122ab27-ea5b-496b-8fe9-541f4b8a89f2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="windows\resource.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="wxui_header.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MainWindow.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\TextureAtlas.h">
+      <Filter>Source Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\driversgame\BillboardList.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shared_engine\modelloader_shared.h">
+      <Filter>Source Files\EngineLib\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shared_engine\studio_egf.h">
+      <Filter>Source Files\EngineLib\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shared_engine\EffectRender.h">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shared_engine\EqParticles.h">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shared_engine\eqParallelJobs.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="windows\mainicon.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\public\ViewParams.cpp">
+      <Filter>Source Files\EngineLib\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="MainWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\TextureAtlas.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\Math\math_util.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\Utils\GeomTools.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\driversgame\BillboardList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\modelloader_shared.cpp">
+      <Filter>Source Files\EngineLib\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\studio_egf.cpp">
+      <Filter>Source Files\EngineLib\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\DebugOverlay.cpp">
+      <Filter>Source Files\EngineLib\Renderer\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\Font.cpp">
+      <Filter>Source Files\EngineLib\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\EffectRender.cpp">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\EqParticles_Render.cpp">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\eqParallelJobs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\Libs\DkCore.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\libs\CoreLib.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\libs\FrameworkLib.lib">
+      <Filter>Libs</Filter>
+    </Library>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="windows\Resources.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="FrameworkLib" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release Win32">
+				<Option output="libs/PrevLib" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add option="-DCROSSLINK_LIB" />
+					<Add option="-DLINUX" />
+					<Add directory="public" />
+					<Add directory="public/core" />
+					<Add directory="public/platform" />
+					<Add directory="src_dependency/sdl2/include" />
+				</Compiler>
+			</Target>
+			<Target title="Debug Win32">
+				<Option output="PrevLib" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add option="-D_DEBUG" />
+					<Add directory="public" />
+					<Add directory="public/core" />
+					<Add directory="public/platform" />
+					<Add directory="src_dependency/sdl2/include" />
+				</Compiler>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-m32 `pkg-config gtk+-2.0 --cflags`" />
+			<Add option="-DUSE_GTK" />
+		</Compiler>
+		<Unit filename="public/VirtualStream.cpp" />
+		<Unit filename="public/VirtualStream.h" />
+		<Unit filename="public/dktypes.h" />
+		<Unit filename="public/imaging/ImageLoader.cpp" />
+		<Unit filename="public/imaging/ImageLoader.h" />
+		<Unit filename="public/imaging/PixWriter.h" />
+		<Unit filename="public/imaging/jconfig.h" />
+		<Unit filename="public/imaging/jmorecfg.h" />
+		<Unit filename="public/imaging/jpeglib.h" />
+		<Unit filename="public/imaging/png.h" />
+		<Unit filename="public/imaging/pngconf.h" />
+		<Unit filename="public/imaging/zconf.h" />
+		<Unit filename="public/imaging/zlib.h" />
+		<Unit filename="public/math/BoundingBox.h" />
+		<Unit filename="public/math/DkMath.h" />
+		<Unit filename="public/math/FVector.cpp" />
+		<Unit filename="public/math/FVector.h" />
+		<Unit filename="public/math/FixedMath.cpp" />
+		<Unit filename="public/math/FixedMath.h" />
+		<Unit filename="public/math/Matrix.cpp" />
+		<Unit filename="public/math/Matrix.h" />
+		<Unit filename="public/math/Matrix_Inline.h" />
+		<Unit filename="public/math/QuadTree.cpp" />
+		<Unit filename="public/math/QuadTree.h" />
+		<Unit filename="public/math/Quaternion.cpp" />
+		<Unit filename="public/math/Quaternion.h" />
+		<Unit filename="public/math/Random.cpp" />
+		<Unit filename="public/math/Random.h" />
+		<Unit filename="public/math/Rectangle.h" />
+		<Unit filename="public/math/SIMD.h" />
+		<Unit filename="public/math/Vector.cpp" />
+		<Unit filename="public/math/Vector.h" />
+		<Unit filename="public/math/Vector_Inline.h" />
+		<Unit filename="public/math/Volume.cpp" />
+		<Unit filename="public/math/Volume.h" />
+		<Unit filename="public/math/math_common.h" />
+		<Unit filename="public/math/math_util.cpp" />
+		<Unit filename="public/math/math_util.h" />
+		<Unit filename="public/network/NetEvent.h" />
+		<Unit filename="public/network/NetInterfaces.cpp" />
+		<Unit filename="public/network/NetInterfaces.h" />
+		<Unit filename="public/network/NetMessageBuffer.cpp" />
+		<Unit filename="public/network/NetMessageBuffer.h" />
+		<Unit filename="public/network/base64_inline.h" />
+		<Unit filename="public/network/c_udp.cpp" />
+		<Unit filename="public/network/c_udp.h" />
+		<Unit filename="public/network/net_defs.cpp" />
+		<Unit filename="public/network/net_defs.h" />
+		<Unit filename="public/platform/Platform.cpp" />
+		<Unit filename="public/platform/Platform.h" />
+		<Unit filename="public/ppmem.h" />
+		<Unit filename="public/utils/CRC32.cpp" />
+		<Unit filename="public/utils/CRC32.h" />
+		<Unit filename="public/utils/DkLinkedList.h" />
+		<Unit filename="public/utils/DkList.h" />
+		<Unit filename="public/utils/KeyValues.cpp" />
+		<Unit filename="public/utils/KeyValues.h" />
+		<Unit filename="public/utils/Tokenizer.cpp" />
+		<Unit filename="public/utils/Tokenizer.h" />
+		<Unit filename="public/utils/eqjobs.h" />
+		<Unit filename="public/utils/eqstring.cpp" />
+		<Unit filename="public/utils/eqstring.h" />
+		<Unit filename="public/utils/eqthread.cpp" />
+		<Unit filename="public/utils/eqthread.h" />
+		<Unit filename="public/utils/eqtimer.cpp" />
+		<Unit filename="public/utils/eqtimer.h" />
+		<Unit filename="public/utils/eqwstring.h" />
+		<Unit filename="public/utils/strtools.cpp" />
+		<Unit filename="public/utils/strtools.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

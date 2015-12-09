@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="atlasgen" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release Win32">
+				<Option output="../../../gamebin_linux/atlasgen" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-DLINUX" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add directory="../../Engine/Imaging" />
+					<Add directory="../../FileSystem" />
+					<Add directory="../../core" />
+					<Add directory="../../public" />
+					<Add directory="../../public/core" />
+					<Add directory="../../public/platform" />
+					<Add directory="../../Engine" />
+					<Add directory="../../src_dependency/sdl2/include" />
+				</Compiler>
+			</Target>
+			<Target title="Debug Win32">
+				<Option output="atlasgen" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add directory="../../Engine/Imaging" />
+					<Add directory="../../FileSystem" />
+					<Add directory="../../core" />
+					<Add directory="../../public" />
+					<Add directory="../../public/core" />
+					<Add directory="../../public/Platform" />
+					<Add directory="../../Engine" />
+					<Add directory="../../src_dependency/sdl2/include" />
+				</Compiler>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-m32" />
+		</Compiler>
+		<Linker>
+			<Add option="-lstdc++ -m32 -pthread -leqCore `pkg-config gtk+-2.0 --libs`" />
+			<Add library="../../libs/libcoreLib.a" />
+			<Add library="../../libs/libPrevLib.a" />
+			<Add library="jpeg" />
+			<Add library="libz" />
+			<Add library="dl" />
+			<Add directory="." />
+		</Linker>
+		<Unit filename="../../public/utils/RectanglePacker.cpp" />
+		<Unit filename="../../public/utils/RectanglePacker.h" />
+		<Unit filename="AtlasImagePacker.cpp" />
+		<Unit filename="ReadMe.txt" />
+		<Unit filename="atlasgen.cpp" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

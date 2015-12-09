@@ -1,0 +1,20 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2015
+//////////////////////////////////////////////////////////////////////////////////
+// Description: Grid tools
+//////////////////////////////////////////////////////////////////////////////////
+
+#ifndef GRID_H
+#define GRID_H
+
+#include "Math/Vector.h"
+#include "coord.h"
+
+void DrawGrid(int size, ColorRGBA &color, bool for2D = false);
+void DrawWorldCenter();
+
+float SnapFloat(int grid_spacing, float val);
+Vector3D SnapVector(int grid_spacing, Vector3D &vec);
+
+#endif // GRID_H

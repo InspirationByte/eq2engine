@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_workspace_file>
+	<Workspace title="Workspace">
+		<Project filename="Core/DkCore_vc10.cbp">
+			<Depends filename="PrevLib.cbp" />
+			<Depends filename="coreLib.cbp" />
+		</Project>
+		<Project filename="PrevLib.cbp" />
+		<Project filename="coreLib.cbp" />
+		<Project filename="MaterialSystem/MatSystem.cbp" />
+		<Project filename="utils/atlasgen/atlasgen.cbp" />
+		<Project filename="MaterialSystem/Renderers/EmptyRenderer.cbp" />
+		<Project filename="utils/dk_animationcomp/anim_compiler.cbp" />
+		<Project filename="utils/matsys_wxapp_template/matsys_wxapp_template.cbp" />
+		<Project filename="DriversGame/DriversGame.cbp" />
+	</Workspace>
+</CodeBlocks_workspace_file>

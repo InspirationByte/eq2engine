@@ -1,0 +1,348 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>DriversEditor</ProjectName>
+    <ProjectGuid>{8D5F18DA-AE80-4A0A-BE88-5B07BCF8897B}</ProjectGuid>
+    <RootNamespace>DkCore</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <TargetPlatformVersion>8.1</TargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</IgnoreImportLibrary>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</IgnoreImportLibrary>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkIncremental>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\src_dependency\wx\lib\vc_lib;$(LibraryPath)</LibraryPath>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">LevelEditor</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Editor</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(SolutionDir)src_dependency\zlib;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(SolutionDir)src_dependency\zlib;$(IncludePath)</IncludePath>
+    <LibraryPath>..\src_dependency\wx\lib\vc_lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\public\materialsystem;..\src_dependency\wx\include;..\src_dependency\wx\include\msvc;..\src_dependency\wx\include\msw;..\DriversGame;..\src_dependency\bullet\src;..\Game;..\src_dependency\sdl2\include;..\src_dependency\lua\src;..\src_dependency\oolua\include;..\src_dependency\shiny\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;GAME_DRIVERS;PHYSICS_EXPORT;NO_GAME;NO_ENGINE;NOENGINE;EDITOR;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;NO_LUA;SHINY_PROFILER=FALSE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <StringPooling>true</StringPooling>
+      <MinimalRebuild>true</MinimalRebuild>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\DriversGame\$(TargetName).exe</OutputFile>
+      <IgnoreSpecificDefaultLibraries>libc;libcmt;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>
+      </OptimizeReferences>
+      <EnableCOMDATFolding>
+      </EnableCOMDATFolding>
+      <EntryPointSymbol>
+      </EntryPointSymbol>
+      <ImportLibrary>
+      </ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
+      <AdditionalLibraryDirectories>..\src_dependency\wx\lib\vc_lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions> /ignore:4099 %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\src_dependency\wx\include;..\src_dependency\wx\include\msvc;..\src_dependency\wx\include\msw;..\DriversGame;..\src_dependency\bullet\src;..\Game;..\src_dependency\sdl2\include;..\src_dependency\lua\src;..\src_dependency\oolua\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;GAME_DRIVERS;PHYSICS_EXPORT;NO_GAME;NO_ENGINE;NOENGINE;EDITOR;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;NO_LUA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>user32.lib;comctl32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\DriversGame\$(TargetName).exe</OutputFile>
+      <IgnoreSpecificDefaultLibraries>LIBCMT.lib;libc.lib</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>
+      </OptimizeReferences>
+      <EnableCOMDATFolding>
+      </EnableCOMDATFolding>
+      <EntryPointSymbol>
+      </EntryPointSymbol>
+      <ImportLibrary>
+      </ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <ProgramDatabaseFile>..\..\DriversGame\$(TargetName).pdb</ProgramDatabaseFile>
+      <AdditionalLibraryDirectories>..\utils\wx\lib\vc_lib\</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>
+      </IgnoreAllDefaultLibraries>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\DriversGame\BillboardList.h" />
+    <ClInclude Include="..\DriversGame\CameraAnimator.h" />
+    <ClInclude Include="..\DriversGame\car.h" />
+    <ClInclude Include="..\DriversGame\eqPhysics\eqBulletIndexedMesh.h" />
+    <ClInclude Include="..\DriversGame\eqPhysics\eqCollision_Object.h" />
+    <ClInclude Include="..\DriversGame\eqPhysics\eqCollision_ObjectGrid.h" />
+    <ClInclude Include="..\DriversGame\eqPhysics\eqPhysics.h" />
+    <ClInclude Include="..\DriversGame\eqPhysics\eqPhysics_Body.h" />
+    <ClInclude Include="..\DriversGame\GameObject.h" />
+    <ClInclude Include="..\DriversGame\heightfield.h" />
+    <ClInclude Include="..\DriversGame\Level.h" />
+    <ClInclude Include="..\DriversGame\occluderSet.h" />
+    <ClInclude Include="..\DriversGame\physics.h" />
+    <ClInclude Include="..\DriversGame\Rain.h" />
+    <ClInclude Include="..\DriversGame\world.h" />
+    <ClInclude Include="..\public\materialsystem\BaseShader.h" />
+    <ClInclude Include="..\shared_engine\Audio\alsnd_stream.h" />
+    <ClInclude Include="..\shared_engine\Audio\alsnd_emitter.h" />
+    <ClInclude Include="..\shared_engine\Audio\alsnd_sample.h" />
+    <ClInclude Include="..\shared_engine\Audio\alsound_local.h" />
+    <ClInclude Include="..\shared_engine\Audio\soundzero.h" />
+    <ClInclude Include="..\shared_engine\eqParallelJobs.h" />
+    <ClInclude Include="..\shared_engine\studio_egf.h" />
+    <ClInclude Include="..\shared_engine\EffectRender.h" />
+    <ClInclude Include="..\shared_engine\EqParticles.h" />
+    <ClInclude Include="..\public\dsm_esm_loader.h" />
+    <ClInclude Include="..\public\dsm_loader.h" />
+    <ClInclude Include="..\public\dsm_obj_loader.h" />
+    <ClInclude Include="..\public\Font.h" />
+    <ClInclude Include="..\shared_game\GameSoundEmitterSystem.h" />
+    <ClInclude Include="..\public\RenderList.h" />
+    <ClInclude Include="..\public\TextureAtlas.h" />
+    <ClInclude Include="..\public\Utils\Align.h" />
+    <ClInclude Include="..\public\CharSet.h" />
+    <ClInclude Include="..\public\Utils\GeomTools.h" />
+    <ClInclude Include="..\shared_engine\physics\BulletConvert.h" />
+    <ClInclude Include="..\shared_engine\physics\BulletShapeCache.h" />
+    <ClInclude Include="..\utils\eq_physgen\physgen_process.h" />
+    <ClInclude Include="..\utils\eq_physgen\scriptcompile.h" />
+    <ClInclude Include="BaseTilebasedEditor.h" />
+    <ClInclude Include="CommandAccessor.h" />
+    <ClInclude Include="..\public\ConCommand.h" />
+    <ClInclude Include="..\public\ConCommandBase.h" />
+    <ClInclude Include="ConCommandFactory.h" />
+    <ClInclude Include="..\public\consolenode.h" />
+    <ClInclude Include="..\public\ConVar.h" />
+    <ClInclude Include="..\public\core_base_header.h" />
+    <ClInclude Include="..\public\CPU.h" />
+    <ClInclude Include="..\public\DebugInterface.h" />
+    <ClInclude Include="DkCore.h" />
+    <ClInclude Include="editaxis.h" />
+    <ClInclude Include="IEditorTool.h" />
+    <ClInclude Include="EditorMain.h" />
+    <ClInclude Include="ExceptionHandler.h" />
+    <ClInclude Include="..\public\ICmdLineParser.h" />
+    <ClInclude Include="..\public\ICommandAccessor.h" />
+    <ClInclude Include="..\public\IConCommandFactory.h" />
+    <ClInclude Include="..\public\IDkCore.h" />
+    <ClInclude Include="..\public\IFileSystem.h" />
+    <ClInclude Include="..\public\IIniFile.h" />
+    <ClInclude Include="..\public\IMaterial.h" />
+    <ClInclude Include="..\public\IMaterialSystem.h" />
+    <ClInclude Include="..\public\IMeshBuilder.h" />
+    <ClInclude Include="..\public\InterfaceManager.h" />
+    <ClInclude Include="..\public\IRenderer.h" />
+    <ClInclude Include="..\public\IShader.h" />
+    <ClInclude Include="..\public\Platform\Platform.h" />
+    <ClInclude Include="..\public\Utils\Queue.h" />
+    <ClInclude Include="..\public\Utils\String.h" />
+    <ClInclude Include="..\public\Utils\strtools.h" />
+    <ClInclude Include="..\public\Utils\DkStr.h" />
+    <ClInclude Include="EditorHeader.h" />
+    <ClInclude Include="..\public\ViewParams.h" />
+    <ClInclude Include="..\public\BaseRenderableObject.h" />
+    <ClInclude Include="..\Engine\DebugOverlay.h" />
+    <ClInclude Include="..\public\Utils\DkLinkedList.h" />
+    <ClInclude Include="..\public\Utils\DkList.h" />
+    <ClInclude Include="..\FileSystem\fs_module.h" />
+    <ClInclude Include="..\public\KeyValues.h" />
+    <ClInclude Include="..\public\Utils\Thread.h" />
+    <ClInclude Include="..\public\Utils\TimeMeasure.h" />
+    <ClInclude Include="..\public\Math\DkMath.h" />
+    <ClInclude Include="..\public\Math\math_util.h" />
+    <ClInclude Include="..\public\Math\MathTools.h" />
+    <ClInclude Include="..\public\Math\Matrix.h" />
+    <ClInclude Include="..\public\Math\Quaternion.h" />
+    <ClInclude Include="..\public\Math\Random.h" />
+    <ClInclude Include="..\public\Math\Vector.h" />
+    <ClInclude Include="..\public\Math\Volume.h" />
+    <ClInclude Include="..\public\animation_shared.h" />
+    <ClInclude Include="..\Engine\EngineModelLoader.h" />
+    <ClInclude Include="..\Engine\modelloader_shared.h" />
+    <ClInclude Include="level_generator.h" />
+    <ClInclude Include="LoadLevDialog.h" />
+    <ClInclude Include="NewLevelDialog.h" />
+    <ClInclude Include="RegionEditFrame.h" />
+    <ClInclude Include="TextureView.h" />
+    <ClInclude Include="UI_HeightEdit.h" />
+    <ClInclude Include="UI_LevelModels.h" />
+    <ClInclude Include="UI_OccluderEditor.h" />
+    <ClInclude Include="UI_RoadEditor.h" />
+    <ClInclude Include="EditorActionHistory.h" />
+    <ClInclude Include="windows\resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Notes.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\DriversGame\BillboardList.cpp" />
+    <ClCompile Include="..\DriversGame\CameraAnimator.cpp" />
+    <ClCompile Include="..\DriversGame\car.cpp" />
+    <ClCompile Include="..\DriversGame\eqPhysics\eqBulletIndexedMesh.cpp" />
+    <ClCompile Include="..\DriversGame\eqPhysics\eqCollision_Object.cpp" />
+    <ClCompile Include="..\DriversGame\eqPhysics\eqCollision_ObjectGrid.cpp" />
+    <ClCompile Include="..\DriversGame\eqPhysics\eqPhysics.cpp" />
+    <ClCompile Include="..\DriversGame\eqPhysics\eqPhysics_Body.cpp" />
+    <ClCompile Include="..\DriversGame\GameObject.cpp" />
+    <ClCompile Include="..\DriversGame\heightfield.cpp" />
+    <ClCompile Include="..\DriversGame\level.cpp" />
+    <ClCompile Include="..\DriversGame\occluderSet.cpp" />
+    <ClCompile Include="..\DriversGame\physics.cpp" />
+    <ClCompile Include="..\DriversGame\Rain.cpp" />
+    <ClCompile Include="..\DriversGame\ShaderOverrides.cpp" />
+    <ClCompile Include="..\DriversGame\Shader_StaticObjs.cpp" />
+    <ClCompile Include="..\DriversGame\Shader_VehicleBody.cpp" />
+    <ClCompile Include="..\DriversGame\Shader_Water.cpp" />
+    <ClCompile Include="..\DriversGame\world.cpp" />
+    <ClCompile Include="..\public\materialsystem\BaseShader.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\alsnd_stream.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\alsnd_emitter.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\alsnd_sample.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\alsound_local.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\soundzero.cpp" />
+    <ClCompile Include="..\shared_engine\eqParallelJobs.cpp" />
+    <ClCompile Include="..\shared_engine\studio_egf.cpp" />
+    <ClCompile Include="..\shared_engine\EffectRender.cpp" />
+    <ClCompile Include="..\shared_engine\EqParticles_Render.cpp" />
+    <ClCompile Include="..\public\dsm_esm_loader.cpp" />
+    <ClCompile Include="..\public\dsm_loader.cpp" />
+    <ClCompile Include="..\public\dsm_obj_loader.cpp" />
+    <ClCompile Include="..\shared_engine\Font.cpp" />
+    <ClCompile Include="..\shared_game\GameSoundEmitterSystem.cpp" />
+    <ClCompile Include="..\public\Math\math_util.cpp" />
+    <ClCompile Include="..\public\TextureAtlas.cpp" />
+    <ClCompile Include="..\public\Utils\GeomTools.cpp" />
+    <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp" />
+    <ClCompile Include="BaseTilebasedEditor.cpp" />
+    <ClCompile Include="EditorActionHistory.cpp" />
+    <ClCompile Include="EditorMain.cpp" />
+    <ClCompile Include="..\public\ViewParams.cpp" />
+    <ClCompile Include="..\shared_engine\DebugOverlay.cpp" />
+    <ClCompile Include="..\shared_engine\modelloader_shared.cpp" />
+    <ClCompile Include="level_generator.cpp" />
+    <ClCompile Include="LoadLevDialog.cpp" />
+    <ClCompile Include="NewLevelDialog.cpp" />
+    <ClCompile Include="RegionEditFrame.cpp" />
+    <ClCompile Include="TextureView.cpp" />
+    <ClCompile Include="UI_HeightEdit.cpp" />
+    <ClCompile Include="UI_LevelModels.cpp" />
+    <ClCompile Include="UI_OccluderEditor.cpp" />
+    <ClCompile Include="UI_RoadEditor.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\libs\CoreLib.lib" />
+    <Library Include="..\Libs\DkCore.lib" />
+    <Library Include="..\libs\FrameworkLib.lib" />
+    <Library Include="..\libs\libogg_static.lib" />
+    <Library Include="..\libs\OpenAL32.lib" />
+    <Library Include="..\libs\libvorbisfile_static.lib" />
+    <Library Include="..\libs\libvorbis_static.lib" />
+    <Library Include="..\src_dependency\bullet\lib\Debug\BulletCollision_Debug.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\src_dependency\bullet\lib\Debug\LinearMath_Debug.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\src_dependency\bullet\lib\Release\BulletCollision.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\src_dependency\bullet\lib\Release\LinearMath.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\src_dependency\lua\LuaLib.lib" />
+    <Library Include="..\src_dependency\oolua\bin\Release\oolua.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="windows\Resources.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

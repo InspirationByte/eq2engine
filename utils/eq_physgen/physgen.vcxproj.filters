@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Libs">
+      <UniqueIdentifier>{54b96b2f-ae9c-4b2b-a658-830aa6b004a4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="actc">
+      <UniqueIdentifier>{759b4e8b-f12d-4773-8970-91b2e9a7241f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>
+      </Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="physgen_main.cpp" />
+    <ClCompile Include="physgen_process.cpp" />
+    <ClCompile Include="egfca_main.cpp" />
+    <ClCompile Include="scriptcompile.cpp" />
+    <ClCompile Include="write.cpp" />
+    <ClCompile Include="..\..\public\dsm_loader.cpp" />
+    <ClCompile Include="..\..\public\dsm_obj_loader.cpp" />
+    <ClCompile Include="..\..\public\mtriangle_framework.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\dsm_esm_loader.cpp" />
+    <ClCompile Include="..\actc\tc.c">
+      <Filter>actc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\Utils\GeomTools.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\math\math_util.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="physgen_process.h" />
+    <ClInclude Include="..\..\public\physmodel.h" />
+    <ClInclude Include="scriptcompile.h" />
+    <ClInclude Include="..\..\public\eqmodel.h" />
+    <ClInclude Include="..\..\public\model.h" />
+    <ClInclude Include="..\..\public\dsm_loader.h" />
+    <ClInclude Include="..\..\public\dsm_obj_loader.h" />
+    <ClInclude Include="..\..\public\dsm_esm_loader.h" />
+    <ClInclude Include="..\actc\tc.h">
+      <Filter>actc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\Utils\GeomTools.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\libs\DkCore.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\nvtristrip\lib\Release\NvTriStrip.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\libs\CoreLib.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\libs\FrameworkLib.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\src_dependency\bullet\lib\Release\LinearMath.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\src_dependency\bullet\lib\Release\BulletCollision.lib" />
+  </ItemGroup>
+</Project>

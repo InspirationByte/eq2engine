@@ -1,0 +1,584 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{053e1c37-205f-4d72-bfd5-ca8e6b2e9635}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Libs">
+      <UniqueIdentifier>{fcf14460-b900-4ff1-a096-c27755a9fd56}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{ee696f9a-4ba6-46f7-8078-04d0b789d2aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib">
+      <UniqueIdentifier>{cd7b04c9-cb67-4f39-83ca-9341ceab3a6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Renderer">
+      <UniqueIdentifier>{05ac3ee4-9a2b-4c39-8f58-97ce76bbc3b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Renderer\Debug">
+      <UniqueIdentifier>{d6ae589e-d53b-451e-b664-b5a10bbb28ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Models">
+      <UniqueIdentifier>{506ebe6a-f085-4b35-8b2d-ad950ee30850}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game">
+      <UniqueIdentifier>{f041024a-0a52-4952-a74a-75e0fa6cd681}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\Sound">
+      <UniqueIdentifier>{cba06a7f-9955-4e2d-92f4-94ca24e0465f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Audio">
+      <UniqueIdentifier>{1560a466-e8d8-41c7-8169-01e2531e7d89}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\Physics">
+      <UniqueIdentifier>{1f6f7fab-bd5c-4a57-b79b-705640694e1b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Editor">
+      <UniqueIdentifier>{59f3da8e-4d79-412d-9b8c-0c0918a5fc2f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\Effects">
+      <UniqueIdentifier>{28a26194-cf05-4cea-a971-74710b12053f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\World">
+      <UniqueIdentifier>{78fdd358-a674-4390-9069-c295012ef104}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\objects">
+      <UniqueIdentifier>{4997a7ac-9502-459c-948e-7c1ac0654b06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Libs\lua">
+      <UniqueIdentifier>{b7738937-e632-46e9-9b82-576e89fb6d69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Libs\bullet">
+      <UniqueIdentifier>{2a988474-3aee-4191-afef-d0fda9cd9b80}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Shaders">
+      <UniqueIdentifier>{289d2682-a92a-4189-a59f-caa9b5c470c5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CommandAccessor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ConCommandFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DkCore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExceptionHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\dsm_loader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Font.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\RenderList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\Align.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\CharSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\GeomTools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\eq_physgen\physgen_process.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\eq_physgen\scriptcompile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ConCommand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ConCommandBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\consolenode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ConVar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\core_base_header.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\CPU.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\DebugInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ICmdLineParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ICommandAccessor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IConCommandFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IDkCore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IFileSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IIniFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IMaterial.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IMaterialSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IMeshBuilder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\InterfaceManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IShader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Platform\Platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\Queue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\String.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\strtools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\DkStr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ViewParams.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BaseRenderableObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\DebugOverlay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\DkLinkedList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\DkList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\FileSystem\fs_module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\KeyValues.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\Thread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\TimeMeasure.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Math\DkMath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Math\math_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Math\MathTools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Math\Matrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Math\Quaternion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Math\Random.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Math\Vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Math\Volume.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\animation_shared.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\EngineModelLoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\modelloader_shared.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="windows\resource.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\heightfield.h">
+      <Filter>Source Files\World</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\physics.h">
+      <Filter>Source Files\Game\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TextureAtlas.h">
+      <Filter>Source Files\Game\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\world.h">
+      <Filter>Source Files\World</Filter>
+    </ClInclude>
+    <ClInclude Include="EditorMain.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="EditorHeader.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\Level.h">
+      <Filter>Source Files\World</Filter>
+    </ClInclude>
+    <ClInclude Include="UI_HeightEdit.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="IEditorTool.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="UI_LevelModels.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="editaxis.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\eqPhysics\eqCollision_Object.h">
+      <Filter>Source Files\Game\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\eqPhysics\eqPhysics.h">
+      <Filter>Source Files\Game\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\eqPhysics\eqPhysics_Body.h">
+      <Filter>Source Files\Game\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseTilebasedEditor.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\dsm_esm_loader.h">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\dsm_obj_loader.h">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadLevDialog.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\physics\BulletConvert.h">
+      <Filter>Source Files\Game\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\physics\BulletShapeCache.h">
+      <Filter>Source Files\Game\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\eqPhysics\eqBulletIndexedMesh.h">
+      <Filter>Source Files\Game\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\eqPhysics\eqCollision_ObjectGrid.h">
+      <Filter>Source Files\Game\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\car.h">
+      <Filter>Source Files\Game\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\GameObject.h">
+      <Filter>Source Files\Game\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="UI_RoadEditor.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureView.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\CameraAnimator.h">
+      <Filter>Source Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\Rain.h">
+      <Filter>Source Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\BillboardList.h">
+      <Filter>Source Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="NewLevelDialog.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\alsnd_emitter.h">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\alsnd_sample.h">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\alsound_local.h">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\studio_egf.h">
+      <Filter>Source Files\EngineLib\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EffectRender.h">
+      <Filter>Source Files\Game\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EqParticles.h">
+      <Filter>Source Files\Game\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\GameSoundEmitterSystem.h">
+      <Filter>Source Files\Game\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\soundzero.h">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\eqParallelJobs.h">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\materialsystem\BaseShader.h">
+      <Filter>Source Files\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\alsnd_stream.h">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="UI_OccluderEditor.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\occluderSet.h">
+      <Filter>Source Files\World</Filter>
+    </ClInclude>
+    <ClInclude Include="level_generator.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="RegionEditFrame.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="EditorActionHistory.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Notes.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\public\ViewParams.cpp">
+      <Filter>Source Files\EngineLib\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\Math\math_util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\Utils\GeomTools.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\heightfield.cpp">
+      <Filter>Source Files\World</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\physics.cpp">
+      <Filter>Source Files\Game\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\TextureAtlas.cpp">
+      <Filter>Source Files\Game\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\world.cpp">
+      <Filter>Source Files\World</Filter>
+    </ClCompile>
+    <ClCompile Include="EditorMain.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\level.cpp">
+      <Filter>Source Files\World</Filter>
+    </ClCompile>
+    <ClCompile Include="UI_HeightEdit.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\eqPhysics\eqCollision_Object.cpp">
+      <Filter>Source Files\Game\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\eqPhysics\eqPhysics.cpp">
+      <Filter>Source Files\Game\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\eqPhysics\eqPhysics_Body.cpp">
+      <Filter>Source Files\Game\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="UI_LevelModels.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseTilebasedEditor.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\dsm_esm_loader.cpp">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\dsm_loader.cpp">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\dsm_obj_loader.cpp">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadLevDialog.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp">
+      <Filter>Source Files\Game\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\eqPhysics\eqBulletIndexedMesh.cpp">
+      <Filter>Source Files\Game\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\eqPhysics\eqCollision_ObjectGrid.cpp">
+      <Filter>Source Files\Game\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\car.cpp">
+      <Filter>Source Files\Game\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\GameObject.cpp">
+      <Filter>Source Files\Game\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="UI_RoadEditor.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureView.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\CameraAnimator.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\Rain.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\BillboardList.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="NewLevelDialog.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\alsnd_emitter.cpp">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\alsnd_sample.cpp">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\alsound_local.cpp">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\modelloader_shared.cpp">
+      <Filter>Source Files\EngineLib\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\studio_egf.cpp">
+      <Filter>Source Files\EngineLib\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Font.cpp">
+      <Filter>Source Files\EngineLib\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\DebugOverlay.cpp">
+      <Filter>Source Files\EngineLib\Renderer\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EffectRender.cpp">
+      <Filter>Source Files\Game\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EqParticles_Render.cpp">
+      <Filter>Source Files\Game\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\GameSoundEmitterSystem.cpp">
+      <Filter>Source Files\Game\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\soundzero.cpp">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\eqParallelJobs.cpp">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\Shader_StaticObjs.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\ShaderOverrides.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\materialsystem\BaseShader.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\alsnd_stream.cpp">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="UI_OccluderEditor.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\occluderSet.cpp">
+      <Filter>Source Files\World</Filter>
+    </ClCompile>
+    <ClCompile Include="level_generator.cpp">
+      <Filter>Source Files\World</Filter>
+    </ClCompile>
+    <ClCompile Include="RegionEditFrame.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="EditorActionHistory.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\Shader_VehicleBody.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\Shader_Water.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\Libs\DkCore.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\libs\CoreLib.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\libs\FrameworkLib.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\libs\OpenAL32.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\lua\LuaLib.lib">
+      <Filter>Libs\lua</Filter>
+    </Library>
+    <Library Include="..\src_dependency\oolua\bin\Release\oolua.lib">
+      <Filter>Libs\lua</Filter>
+    </Library>
+    <Library Include="..\src_dependency\bullet\lib\Release\BulletCollision.lib">
+      <Filter>Libs\bullet</Filter>
+    </Library>
+    <Library Include="..\src_dependency\bullet\lib\Release\LinearMath.lib">
+      <Filter>Libs\bullet</Filter>
+    </Library>
+    <Library Include="..\libs\libvorbisfile_static.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\libs\libvorbis_static.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\libs\libogg_static.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\bullet\lib\Debug\BulletCollision_Debug.lib">
+      <Filter>Libs\bullet</Filter>
+    </Library>
+    <Library Include="..\src_dependency\bullet\lib\Debug\LinearMath_Debug.lib">
+      <Filter>Libs\bullet</Filter>
+    </Library>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="windows\Resources.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

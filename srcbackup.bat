@@ -1,0 +1,2 @@
+
+pkzip25 -add -max -dir=full -rec %1 pkzip25.exe incrementbuild.exe *.bat *.txt *.bmp *.mak *.cpp *.h *.c *.h *.dsp *.vcproj *.vcxproj *.filters *.resx *.sln *.rc *.rc2 *.bat *.ico *.def *.doc *.s *.inl *.lib

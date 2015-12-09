@@ -1,0 +1,324 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{45869401-A830-49BA-AF72-96815D8BFEBE}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>DriversGame</RootNamespace>
+    <TargetPlatformVersion>8.1</TargetPlatformVersion>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <OutDir>$(Configuration)\</OutDir>
+    <TargetName>Game</TargetName>
+    <IncludePath>$(SolutionDir)src_dependency\zlib;$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <OutDir>$(Configuration)\</OutDir>
+    <TargetName>Game</TargetName>
+    <IncludePath>$(SolutionDir)src_dependency\zlib;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;NO_ENGINE;NOENGINE;GAME_DRIVERS;EQ_USE_SDL;PLAT_PC;BIG_REPLAYS;SHINY_PROFILER=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\public\materialsystem;..\public\materialsystem\renderers;..\Physics\bullet\src;..\Physics\bullet\src\BulletSoftBody;..\utils\eq_physgen;..\utils\wx\include;..\utils\wx\include\msvc;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\oolua\include;..\src_dependency\lua\src;..\src_dependency\jpeg;..\src_dependency\shiny\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <StringPooling>true</StringPooling>
+      <MinimalRebuild>true</MinimalRebuild>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <FloatingPointModel>Fast</FloatingPointModel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <OutputFile>..\..\DriversGame\$(TargetName).exe</OutputFile>
+      <AdditionalDependencies>wsock32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>
+      </IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>libc.lib</IgnoreSpecificDefaultLibraries>
+      <Profile>true</Profile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>Disabled</Optimization>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;NO_ENGINE;NOENGINE;GAME_DRIVERS;EQ_USE_SDL;BIG_REPLAYS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\public\materialsystem;..\public\materialsystem\renderers;..\Physics\bullet\src;..\Physics\bullet\src\BulletSoftBody;..\utils\eq_physgen;..\utils\wx\include;..\utils\wx\include\msvc;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\oolua\include;..\src_dependency\lua\src;..\src_dependency\jpeg;..\src_dependency\shiny\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <OutputFile>..\..\DriversGame\$(TargetName).exe</OutputFile>
+      <AdditionalDependencies>wsock32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>
+      </IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>libc.lib</IgnoreSpecificDefaultLibraries>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\shared_engine\Audio\alsnd_stream.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\alsnd_emitter.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\alsnd_sample.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\alsound_local.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\soundzero.cpp" />
+    <ClCompile Include="..\shared_engine\DebugOverlay.cpp" />
+    <ClCompile Include="..\shared_engine\EGFInstancer.cpp" />
+    <ClCompile Include="..\shared_engine\EGUI\EQUI_Manager.cpp" />
+    <ClCompile Include="..\shared_engine\EGUI\EqUI_Panel.cpp" />
+    <ClCompile Include="..\shared_engine\EngineSpew.cpp" />
+    <ClCompile Include="..\shared_engine\EngineVersion.cpp" />
+    <ClCompile Include="..\shared_engine\eqParallelJobs.cpp" />
+    <ClCompile Include="..\shared_engine\FontCache.cpp" />
+    <ClCompile Include="..\shared_engine\KeyBinding\Keys.cpp" />
+    <ClCompile Include="..\shared_engine\materialsystem\MaterialProxy.cpp" />
+    <ClCompile Include="..\shared_engine\modelloader_shared.cpp" />
+    <ClCompile Include="..\shared_engine\Network\NETThread.cpp" />
+    <ClCompile Include="..\shared_engine\studio_egf.cpp" />
+    <ClCompile Include="..\shared_engine\sys_console.cpp" />
+    <ClCompile Include="..\shared_engine\cfgloader.cpp" />
+    <ClCompile Include="..\shared_engine\EffectRender.cpp" />
+    <ClCompile Include="..\shared_engine\EqParticles_Render.cpp" />
+    <ClCompile Include="..\public\materialsystem\BaseShader.cpp" />
+    <ClCompile Include="..\shared_engine\Font.cpp" />
+    <ClCompile Include="..\shared_game\GameSoundEmitterSystem.cpp" />
+    <ClCompile Include="..\public\imaging\ImageLoader.cpp" />
+    <ClCompile Include="..\public\luabinding\LuaBinding.cpp" />
+    <ClCompile Include="..\public\luabinding\LuaBinding_Engine.cpp" />
+    <ClCompile Include="..\public\Math\math_util.cpp" />
+    <ClCompile Include="..\public\TextureAtlas.cpp" />
+    <ClCompile Include="..\public\Utils\GeomTools.cpp" />
+    <ClCompile Include="..\public\ViewParams.cpp" />
+    <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp" />
+    <ClCompile Include="AICarManager.cpp" />
+    <ClCompile Include="AIPursuerCarController.cpp" />
+    <ClCompile Include="AITrafficCarController.cpp" />
+    <ClCompile Include="BillboardList.cpp" />
+    <ClCompile Include="CameraAnimator.cpp" />
+    <ClCompile Include="car.cpp" />
+    <ClCompile Include="DrvSynHUD.cpp" />
+    <ClCompile Include="occluderSet.cpp" />
+    <ClCompile Include="state_mainmenu.cpp" />
+    <ClCompile Include="game_singleplayer.cpp" />
+    <ClCompile Include="LuaBinding_Drivers.cpp" />
+    <ClCompile Include="object_debris.cpp" />
+    <ClCompile Include="eqphysics\eqBulletIndexedMesh.cpp" />
+    <ClCompile Include="eqphysics\eqCollision_Object.cpp" />
+    <ClCompile Include="eqphysics\eqCollision_ObjectGrid.cpp" />
+    <ClCompile Include="eqPhysics\eqPhysics.cpp" />
+    <ClCompile Include="eqPhysics\eqPhysics_Body.cpp" />
+    <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="game_multiplayer.cpp" />
+    <ClCompile Include="NetPlayer.cpp" />
+    <ClCompile Include="object_physics.cpp" />
+    <ClCompile Include="object_sheets.cpp" />
+    <ClCompile Include="object_static.cpp" />
+    <ClCompile Include="object_trafficlight.cpp" />
+    <ClCompile Include="object_tree.cpp" />
+    <ClCompile Include="Rain.cpp" />
+    <ClCompile Include="session_stuff.cpp" />
+    <ClCompile Include="ShaderOverrides.cpp" />
+    <ClCompile Include="Shader_StaticObjs.cpp" />
+    <ClCompile Include="state_game.cpp" />
+    <ClCompile Include="heightfield.cpp" />
+    <ClCompile Include="input.cpp" />
+    <ClCompile Include="level.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="physics.cpp" />
+    <ClCompile Include="replay.cpp" />
+    <ClCompile Include="StateManager.cpp" />
+    <ClCompile Include="state_title.cpp" />
+    <ClCompile Include="system.cpp" />
+    <ClCompile Include="ui_luaMenu.cpp" />
+    <ClCompile Include="Shader_VehicleBody.cpp" />
+    <ClCompile Include="Shader_Water.cpp" />
+    <ClCompile Include="window.cpp" />
+    <ClCompile Include="world.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\libs\CoreLib.lib" />
+    <Library Include="..\libs\DkCore.lib" />
+    <Library Include="..\libs\FrameworkLib.lib" />
+    <Library Include="..\libs\jpeg.lib" />
+    <Library Include="..\libs\libpng.lib" />
+    <Library Include="..\libs\libogg_static.lib" />
+    <Library Include="..\libs\OpenAL32.lib" />
+    <Library Include="..\libs\libvorbisfile_static.lib" />
+    <Library Include="..\libs\libvorbis_static.lib" />
+    <Library Include="..\libs\zlib.lib" />
+    <Library Include="..\src_dependency\bullet\lib\Debug\BulletCollision_Debug.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\src_dependency\bullet\lib\Debug\LinearMath_Debug.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\src_dependency\bullet\lib\Release\BulletCollision.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\src_dependency\bullet\lib\Release\LinearMath.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\src_dependency\lua\LuaLib.lib" />
+    <Library Include="..\src_dependency\oolua\bin\Debug\oolua_d.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\src_dependency\oolua\bin\Release\oolua.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\src_dependency\SDL2\lib\SDL2.lib" />
+    <Library Include="..\src_dependency\Shiny\lib\Shiny.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\src_dependency\Shiny\lib\ShinyDebug.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </Library>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\public\luabinding\LuaBinding_Math.h" />
+    <ClInclude Include="..\shared_engine\Audio\alsnd_stream.h" />
+    <ClInclude Include="..\shared_engine\Audio\alsnd_emitter.h" />
+    <ClInclude Include="..\shared_engine\Audio\alsnd_sample.h" />
+    <ClInclude Include="..\shared_engine\Audio\alsound_local.h" />
+    <ClInclude Include="..\shared_engine\Audio\soundzero.h" />
+    <ClInclude Include="..\shared_engine\DebugOverlay.h" />
+    <ClInclude Include="..\shared_engine\EGFInstancer.h" />
+    <ClInclude Include="..\shared_engine\EGUI\EQUI_Manager.h" />
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Panel.h" />
+    <ClInclude Include="..\shared_engine\FontCache.h" />
+    <ClInclude Include="..\shared_engine\KeyBinding\Keys.h" />
+    <ClInclude Include="..\Engine\modelloader_shared.h" />
+    <ClInclude Include="..\shared_engine\materialsystem\MaterialProxy.h" />
+    <ClInclude Include="..\shared_engine\Network\NETThread.h" />
+    <ClInclude Include="..\shared_engine\eqParallelJobs.h" />
+    <ClInclude Include="..\shared_engine\studio_egf.h" />
+    <ClInclude Include="..\shared_engine\sys_console.h" />
+    <ClInclude Include="..\shared_engine\cfgloader.h" />
+    <ClInclude Include="..\shared_engine\EffectRender.h" />
+    <ClInclude Include="..\shared_engine\EqParticles.h" />
+    <ClInclude Include="..\public\materialsystem\BaseShader.h" />
+    <ClInclude Include="..\shared_engine\Font.h" />
+    <ClInclude Include="..\shared_game\GameSoundEmitterSystem.h" />
+    <ClInclude Include="..\public\imaging\ImageLoader.h" />
+    <ClInclude Include="..\public\luabinding\LuaBinding.h" />
+    <ClInclude Include="..\public\luabinding\LuaBinding_Engine.h" />
+    <ClInclude Include="..\public\Math\math_util.h" />
+    <ClInclude Include="..\public\network\netpropvar.h" />
+    <ClInclude Include="..\public\physics\IStudioShapeCache.h" />
+    <ClInclude Include="..\public\TextureAtlas.h" />
+    <ClInclude Include="..\public\Utils\GeomTools.h" />
+    <ClInclude Include="..\public\ViewParams.h" />
+    <ClInclude Include="..\shared_engine\physics\BulletShapeCache.h" />
+    <ClInclude Include="AICarManager.h" />
+    <ClInclude Include="AIPursuerCarController.h" />
+    <ClInclude Include="AITrafficCarController.h" />
+    <ClInclude Include="BillboardList.h" />
+    <ClInclude Include="CameraAnimator.h" />
+    <ClInclude Include="eqPhysics\eqPhysics_Constraints.h" />
+    <ClInclude Include="eqPhysics\eqPhysics_Joint.h" />
+    <ClInclude Include="FSM_base.h" />
+    <ClInclude Include="DrvSynHUD.h" />
+    <ClInclude Include="game_singleplayer.h" />
+    <ClInclude Include="LuaBinding_Drivers.h" />
+    <ClInclude Include="object_debris.h" />
+    <ClInclude Include="GameObject.h" />
+    <ClInclude Include="car.h" />
+    <ClInclude Include="drivers_coord.h" />
+    <ClInclude Include="eqphysics\eqBulletIndexedMesh.h" />
+    <ClInclude Include="eqPhysics\eqCollision_Object.h" />
+    <ClInclude Include="eqPhysics\eqPhysics.h" />
+    <ClInclude Include="eqPhysics\eqPhysics_Body.h" />
+    <ClInclude Include="eqphysics\eqCollision_ObjectGrid.h" />
+    <ClInclude Include="game_multiplayer.h" />
+    <ClInclude Include="levfile.h" />
+    <ClInclude Include="NetPlayer.h" />
+    <ClInclude Include="object_physics.h" />
+    <ClInclude Include="object_sheets.h" />
+    <ClInclude Include="object_static.h" />
+    <ClInclude Include="object_trafficlight.h" />
+    <ClInclude Include="object_tree.h" />
+    <ClInclude Include="occluderSet.h" />
+    <ClInclude Include="predictablerandom.h" />
+    <ClInclude Include="Rain.h" />
+    <ClInclude Include="Resources\resource.h" />
+    <ClInclude Include="session_stuff.h" />
+    <ClInclude Include="state_game.h" />
+    <ClInclude Include="heightfield.h" />
+    <ClInclude Include="input.h" />
+    <ClInclude Include="level.h" />
+    <ClInclude Include="physics.h" />
+    <ClInclude Include="replay.h" />
+    <ClInclude Include="StateManager.h" />
+    <ClInclude Include="state_mainmenu.h" />
+    <ClInclude Include="state_title.h" />
+    <ClInclude Include="system.h" />
+    <ClInclude Include="ui_luaMenu.h" />
+    <ClInclude Include="world.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\launcher_logo.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resources\Resources.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

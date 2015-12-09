@@ -1,0 +1,1220 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2015
+//////////////////////////////////////////////////////////////////////////////////
+// Description: DarkTech Middle-Level rendering API (ShaderAPI)
+//				For high level look for the material system (Engine)
+//				Contains FFP functions and Shader (FFP overriding programs)
+//
+//				The renderer may do anti-wallhacking functions
+//////////////////////////////////////////////////////////////////////////////////
+
+#include "DebugInterface.h"
+#include "Platform.h"
+
+#pragma TODO("Add ShaderAPI capabilities")
+
+#include "ShaderAPI_Base.h"
+#include "CTexture.h"
+#include "imaging/PixWriter.h"
+#include "imaging/ImageLoader.h"
+
+#include "utils/strtools.h"
+#include "utils/Tokenizer.h"
+#include "utils/CRC32.h"
+
+static ConVar rs_echo_texture_loading("r_echo_texture_loading","0","Echo textrue loading");
+
+ShaderAPI_Base::ShaderAPI_Base()
+{
+	m_nViewportWidth			= 800;
+	m_nViewportHeight			= 600;
+
+	m_pCurrentShader			= NULL;
+	m_pSelectedShader			= NULL;
+
+	m_pCurrentBlendstate		= NULL;
+	m_pCurrentDepthState		= NULL;
+	m_pCurrentRasterizerState	= NULL;
+
+	m_pSelectedBlendstate		= NULL;
+	m_pSelectedDepthState		= NULL;
+	m_pSelectedRasterizerState	= NULL;
+
+	m_pErrorTexture				= NULL;
+
+	// VF selectoin
+	m_pSelectedVertexFormat		= NULL;
+	m_pCurrentVertexFormat		= NULL;
+
+	// Index buffer
+	m_pSelectedIndexBuffer		= NULL;
+	m_pCurrentIndexBuffer		= NULL;
+
+	// Vertex buffer
+	memset(m_pSelectedVertexBuffers, 0, sizeof(m_pSelectedVertexBuffers));
+	memset(m_pCurrentVertexBuffers, 0, sizeof(m_pCurrentVertexBuffers));
+
+	memset(m_pActiveVertexFormat, 0, sizeof(m_pActiveVertexFormat));
+
+	memset(m_nCurrentOffsets, 0, sizeof(m_nCurrentOffsets));
+	memset(m_nSelectedOffsets, 0, sizeof(m_nSelectedOffsets));
+
+	// Index buffer
+	m_pSelectedIndexBuffer		= NULL;
+	m_pCurrentIndexBuffer		= NULL;
+
+	memset(m_pSelectedTextures,0,sizeof(m_pSelectedTextures));
+	memset(m_pCurrentTextures,0,sizeof(m_pCurrentTextures));
+
+	memset(m_pSelectedVertexTextures,0,sizeof(m_pSelectedVertexTextures));
+	memset(m_pCurrentVertexTextures,0,sizeof(m_pCurrentVertexTextures));
+
+	memset(m_pCurrentColorRenderTargets,0,sizeof(m_pCurrentColorRenderTargets));
+	memset(m_nCurrentCRTSlice,0,sizeof(m_nCurrentCRTSlice));
+
+	m_pCurrentDepthRenderTarget = NULL;
+
+	m_nDrawCalls				= 0;
+	m_nTrianglesCount			= 0;
+}
+
+// Init + Shurdown
+void ShaderAPI_Base::Init(const shaderapiinitparams_t &params)
+{
+	m_params = params;
+
+	m_nScreenFormat = params.nScreenFormat;
+
+	// Do master reset for all things
+	Reset();
+
+	m_pErrorTexture = GenerateErrorTexture();
+}
+
+void ShaderAPI_Base::ThreadLock()
+{
+	m_Mutex.Lock();
+}
+
+void ShaderAPI_Base::ThreadUnlock()
+{
+	m_Mutex.Unlock();
+}
+
+ETextureFormat ShaderAPI_Base::GetScreenFormat()
+{
+	return m_nScreenFormat;
+}
+
+void ShaderAPI_Base::Shutdown()
+{
+	Reset();
+	Apply();
+
+	for(int i = 0; i < m_TextureList.numElem();i++)
+	{
+		FreeTexture(m_TextureList[i]);
+		i--;
+	}
+
+	for(int i = 0; i < m_ShaderList.numElem();i++)
+	{
+		DestroyShaderProgram(m_ShaderList[i]);
+		i--;
+	}
+
+	for(int i = 0; i < m_VFList.numElem();i++)
+	{
+		DestroyVertexFormat(m_VFList[i]);
+		i--;
+	}
+
+	for(int i = 0; i < m_VBList.numElem();i++)
+	{
+		DestroyVertexBuffer(m_VBList[i]);
+		i--;
+	}
+
+	for(int i = 0; i < m_IBList.numElem();i++)
+	{
+		DestroyIndexBuffer(m_IBList[i]);
+		i--;
+	}
+
+	for(int i = 0; i < m_SamplerStates.numElem();i++)
+	{
+		DestroyRenderState(m_SamplerStates[i]);
+		i--;
+	}
+
+	m_SamplerStates.clear();
+
+	for(int i = 0; i < m_BlendStates.numElem();i++)
+	{
+		DestroyRenderState(m_BlendStates[i]);
+		i--;
+	}
+
+	m_BlendStates.clear();
+
+	for(int i = 0; i < m_DepthStates.numElem();i++)
+	{
+		DestroyRenderState(m_DepthStates[i]);
+		i--;
+	}
+
+	m_DepthStates.clear();
+
+	for(int i = 0; i < m_RasterizerStates.numElem();i++)
+	{
+		DestroyRenderState(m_RasterizerStates[i]);
+		i--;
+	}
+
+	m_RasterizerStates.clear();
+}
+
+//-------------------------------------------------------------
+// Renderer information
+//-------------------------------------------------------------
+
+// Draw call counter
+int ShaderAPI_Base::GetDrawCallsCount() const
+{
+	return m_nDrawCalls;
+}
+
+// Draw call counter
+int ShaderAPI_Base::GetDrawIndexedPrimitiveCallsCount() const
+{
+	return m_nDrawIndexedPrimitiveCalls;
+}
+
+// triangles per scene drawing
+int ShaderAPI_Base::GetTrianglesCount() const
+{
+	return m_nTrianglesCount;
+}
+
+// Resetting the counters
+void ShaderAPI_Base::ResetCounters()
+{
+	m_nDrawCalls					= 0;
+	m_nTrianglesCount				= 0;
+	m_nDrawIndexedPrimitiveCalls	= 0;
+}
+
+void ShaderAPI_Base::Reset(int nResetTypeFlags)
+{
+	if (nResetTypeFlags & STATE_RESET_SHADER)
+		m_pSelectedShader = NULL;
+
+	if (nResetTypeFlags & STATE_RESET_BS)
+		m_pSelectedBlendstate = NULL;
+
+	if (nResetTypeFlags & STATE_RESET_DS)
+		m_pSelectedDepthState = NULL;
+
+	if (nResetTypeFlags & STATE_RESET_RS)
+		m_pSelectedRasterizerState = NULL;
+
+	if (nResetTypeFlags & STATE_RESET_VF)
+		m_pSelectedVertexFormat = NULL;
+
+	if (nResetTypeFlags & STATE_RESET_IB)
+		m_pSelectedIndexBuffer = NULL;
+
+	if (nResetTypeFlags & STATE_RESET_VB)
+	{
+		// i think is faster
+		memset(m_pSelectedVertexBuffers,0,sizeof(m_pSelectedVertexBuffers));
+		memset(m_nSelectedOffsets,0,sizeof(m_nSelectedOffsets));
+	}
+
+	// i think is faster
+	if (nResetTypeFlags & STATE_RESET_TEX)
+	{
+		memset(m_pSelectedTextures,0,sizeof(m_pSelectedTextures));
+		memset(m_pSelectedVertexTextures,0,sizeof(m_pSelectedVertexTextures));
+	}
+}
+
+void ShaderAPI_Base::Apply()
+{
+	// Apply shaders
+	ApplyShaderProgram();
+
+	// Apply shader constants
+	ApplyConstants();
+
+	// Apply the textures
+	ApplyTextures();
+
+	// Apply the sampling
+	ApplySamplerState();
+
+	// Apply the index,vertex buffers
+	ApplyBuffers();
+
+	// Apply the depth state
+	ApplyDepthState();
+
+	// Apply the blending
+	ApplyBlendState();
+
+	// Apply the rasterizer state
+	ApplyRasterizerState();
+}
+
+void ShaderAPI_Base::ApplyBuffers()
+{
+	// First change the vertex format
+	ChangeVertexFormat( m_pSelectedVertexFormat );
+
+	for (int i = 0; i < MAX_VERTEXSTREAM; i++)
+		ChangeVertexBuffer(m_pSelectedVertexBuffers[i], i,m_nSelectedOffsets[i]);
+
+	ChangeIndexBuffer( m_pSelectedIndexBuffer );
+}
+
+// default error texture pointer
+ITexture* ShaderAPI_Base::GetErrorTexture()
+{
+	return m_pErrorTexture;
+}
+
+void ShaderAPI_Base::SetViewport(int x, int y, int w, int h)
+{
+	m_nViewportWidth = w;
+	m_nViewportHeight = h;
+}
+
+void ShaderAPI_Base::GetViewport(int &x, int &y, int &w, int &h)
+{
+	w = m_nViewportWidth;
+	h = m_nViewportHeight;
+}
+
+// Find texture
+ITexture* ShaderAPI_Base::FindTexture(const char* pszName)
+{
+	EqString searchStr(pszName);
+	searchStr.Path_FixSlashes();
+
+	CScopedMutex m(m_Mutex);
+	for(int i = 0; i < m_TextureList.numElem();i++)
+	{
+		if(!searchStr.CompareCaseIns( m_TextureList[i]->GetName() ))
+			return m_TextureList[i];
+	}
+
+	return NULL;
+}
+
+
+SamplerStateParam_t ShaderAPI_Base::MakeSamplerState(Filter_e textureFilterType,AddressMode_e addressS, AddressMode_e addressT, AddressMode_e addressR)
+{
+	HOOK_TO_CVAR(r_textureanisotrophy);
+
+	/*
+	for(int i = 0; i < m_SamplerStates.numElem();i++)
+	{
+		if( m_SamplerStates[i]->wrapS == addressS &&
+			m_SamplerStates[i]->wrapT == addressT &&
+			m_SamplerStates[i]->wrapR == addressR &&
+			m_SamplerStates[i]->minFilter == textureFilterType)
+			return m_SamplerStates[i];
+	}
+	*/
+
+	// If nothing found, create new one
+	SamplerStateParam_t newParam;
+
+	// Setup filtering mode
+	newParam.minFilter = textureFilterType;
+	newParam.magFilter = (textureFilterType == TEXFILTER_NEAREST)? TEXFILTER_NEAREST : TEXFILTER_LINEAR;
+
+	// Setup clamping
+	newParam.wrapS = addressS;
+	newParam.wrapT = addressT;
+	newParam.wrapR = addressR;
+	newParam.nComparison = COMP_LESS;
+
+	newParam.lod = 0.0f;
+
+	newParam.aniso = (int)clamp(m_caps.maxTextureAnisotropicLevel,0,r_textureanisotrophy->GetInt());
+
+	return newParam;
+}
+
+// Find Rasterizer State with adding new one (if not exist)
+RasterizerStateParams_t ShaderAPI_Base::MakeRasterizerState(CullMode_e nCullMode, FillMode_e nFillMode, bool bMultiSample, bool bScissor)
+{
+	/*
+	for(int i = 0; i < m_RasterizerStates.numElem();i++)
+	{
+		if( m_RasterizerStates[i]->cullMode == nCullMode &&
+			m_RasterizerStates[i]->fillMode == nFillMode &&
+			m_RasterizerStates[i]->multiSample == bMultiSample &&
+			m_RasterizerStates[i]->scissor == bScissor)
+			return m_RasterizerStates[i];
+	}
+	*/
+
+	// If nothing found, create new one
+	RasterizerStateParams_t newParam;
+	newParam.cullMode = nCullMode;
+	newParam.fillMode = nFillMode;
+	newParam.multiSample = bMultiSample;
+	newParam.scissor = bScissor;
+	newParam.depthBias = 1.0f;
+	newParam.slopeDepthBias = 0.0f;
+
+	return newParam;
+}
+
+// Find Depth State with adding new one (if not exist)
+DepthStencilStateParams_t ShaderAPI_Base::MakeDepthState(bool bDoDepthTest, bool bDoDepthWrite, CompareFunc_e depthCompFunc)
+{
+	/*
+	for(int i = 0; i < m_DepthStates.numElem();i++)
+	{
+		if( m_DepthStates[i]->depthFunc == depthCompFunc &&
+			m_DepthStates[i]->depthTest == bDoDepthTest &&
+			m_DepthStates[i]->depthWrite == bDoDepthWrite)
+			return m_DepthStates[i];
+	}
+	*/
+
+	// If nothing found, create new one
+	DepthStencilStateParams_t newParam;
+	newParam.depthFunc = depthCompFunc;
+	newParam.depthTest = bDoDepthTest;
+	newParam.depthWrite = bDoDepthWrite;
+
+	return newParam;
+}
+
+
+//-------------------------------------------------------------
+// Textures
+//-------------------------------------------------------------
+
+// Load texture from file (DDS or TGA only)
+ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, Filter_e textureFilterType, AddressMode_e textureAddress/* = ADDRESSMODE_WRAP*/, int nFlags/* = 0*/ )
+{
+	// first search for existing texture
+	ITexture* pFoundTexture = FindTexture(pszFileName);
+
+	EqString texturePath;
+
+	if(!(nFlags & TEXFLAG_REALFILEPATH))
+		texturePath = EqString(m_params.textures_path) + pszFileName;
+	else
+		texturePath = pszFileName;
+
+	texturePath.Path_FixSlashes();
+
+	// build valid texture paths
+	EqString texturePathExt = texturePath + EqString(TEXTURE_DEFAULT_EXTENSION);
+	EqString textureAnimPathExt = texturePath + EqString(TEXTURE_ANIMATED_EXTENSION);
+
+	texturePathExt.Path_FixSlashes();
+	textureAnimPathExt.Path_FixSlashes();
+
+	if(!pFoundTexture)
+		pFoundTexture = FindTexture(texturePathExt.GetData());
+
+	if(!pFoundTexture)
+		pFoundTexture = FindTexture(textureAnimPathExt.GetData());
+
+	// found?
+	if(pFoundTexture != NULL)
+		return pFoundTexture;
+
+	// Don't load textures starting with special symbols
+	if(pszFileName[0] == '$')
+		return NULL;
+
+	// create sampler state
+	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
+
+	// try reading animation buffer
+	char* animScriptBuffer = GetFileSystem()->GetFileBuffer(textureAnimPathExt.GetData());
+
+	DkList<CImage*> pImages;
+
+	if(animScriptBuffer)
+	{
+		if(rs_echo_texture_loading.GetBool())
+			Msg("Loading animated textures from %s\n", textureAnimPathExt.GetData());
+
+		DkList<EqString> cmds;
+		xstrsplit(animScriptBuffer, "\n", cmds);
+
+		bool success = true;
+
+		EqString texturePathA;
+		EqString texturePathExtA;
+
+		// generate file names
+		// and load image files for further uploading to GPU
+		for(int i = 0; i < cmds.numElem(); i++)
+		{
+			cmds[i] = cmds[i].Left(cmds[i].GetLength()-1);
+
+			if(!(nFlags & TEXFLAG_REALFILEPATH))
+				texturePathA = EqString(m_params.textures_path) + cmds[i];
+			else
+				texturePathA = cmds[i];
+
+			texturePathExtA = texturePathA + EqString(TEXTURE_DEFAULT_EXTENSION);
+
+			texturePathExtA.Path_FixSlashes();
+
+			CImage* pImg = new CImage();
+
+			success = pImg->LoadDDS(texturePathExtA.GetData(), 0);
+
+			if(success)
+			{
+				if(rs_echo_texture_loading.GetBool())
+					MsgInfo("Animated Texture loaded: '%s'\n", cmds[i].GetData());
+			}
+
+			pImg->SetName( textureAnimPathExt.GetData() );
+
+			if(!success)
+			{
+				delete pImg;
+
+				MsgError("Can't load texture '%s' for animations\n", cmds[i].GetData());
+				break;
+			}
+
+			// add image
+			pImages.append(pImg);
+		}
+
+		// failt
+		if(!success)
+		{
+			for(int i = 0; i < pImages.numElem();i++)
+				delete pImages[i];
+
+			PPFree(animScriptBuffer);
+
+			return GenerateErrorTexture(nFlags);
+		}
+
+		PPFree(animScriptBuffer);
+	}
+	else
+	{
+		CImage *pImage = new CImage();
+
+		bool stateLoad = pImage->LoadDDS(texturePathExt.GetData(),0);
+
+		if(!stateLoad)
+		{
+			texturePathExt = texturePath + EqString(TEXTURE_SECONDARY_EXTENSION);
+			texturePathExt.Path_FixSlashes();
+			stateLoad = pImage->LoadTGA(texturePathExt.GetData());
+			pImage->SetName((texturePath + EqString(TEXTURE_DEFAULT_EXTENSION)).GetData());
+		}
+
+		if(stateLoad)
+		{
+			pImages.append(pImage);
+
+			if(rs_echo_texture_loading.GetBool())
+				MsgInfo("Texture loaded: %s\n",pszFileName);
+		}
+		else
+			MsgError("Can't open texture \"%s\"\n",pszFileName);
+	}
+
+	// Now create the texture
+	pFoundTexture = CreateTexture(pImages, texSamplerParams, nFlags);
+
+	for(int i = 0;i < pImages.numElem();i++)
+		delete pImages[i];
+
+	CScopedMutex m(m_Mutex);
+
+	// Generate the error
+	if(!pFoundTexture)
+		pFoundTexture = GenerateErrorTexture(nFlags);
+
+	if(!pFoundTexture)
+		return NULL;
+
+	return pFoundTexture;
+}
+
+ITexture* ShaderAPI_Base::CreateTexture(const DkList<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags)
+{
+	if(!pImages.numElem())
+		return NULL;
+
+	// create texture
+	ITexture* pTexture = NULL;
+	CreateTextureInternal(&pTexture, pImages, sampler, nFlags);
+
+	// the created texture is automatically added to list
+
+	return pTexture;
+}
+
+// creates procedural (lockable) texture
+ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
+													ETextureFormat nFormat,
+													int width, int height,
+													int depth,
+													int arraySize,
+													Filter_e texFilter,
+													AddressMode_e textureAddress,
+													int nFlags,
+													int nDataSize, const unsigned char* pData)
+{
+	CImage genTex;
+	genTex.SetName(pszName);
+	// make texture
+	ubyte* newData = genTex.Create(nFormat, width, height, depth, 1, arraySize);
+
+	if(newData)
+	{
+		int nTexDataSize = width*height*depth*arraySize*GetBytesPerPixel(nFormat);
+
+		memset(newData, 0, nTexDataSize);
+
+		// copy data if available
+		if(pData && nDataSize)
+		{
+			ASSERT(nDataSize <= nTexDataSize);
+
+			memcpy(newData, pData, nDataSize);
+		}
+	}
+	else
+	{
+		MsgError("ERROR -  Cannot create procedural texture '%s', probably bad format\n", pszName);
+		return NULL;	// don't generate error
+	}
+
+	DkList<CImage*> imgs;
+	imgs.append(&genTex);
+
+	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(texFilter,textureAddress,textureAddress,textureAddress);
+	return g_pShaderAPI->CreateTexture(imgs, sampler, nFlags);
+}
+
+bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
+{
+	char* animScriptBuffer = GetFileSystem()->GetFileBuffer(pTexture->GetName());
+
+	DkList<CImage*> pImages;
+
+	if(animScriptBuffer)
+	{
+		if(rs_echo_texture_loading.GetBool())
+			Msg("Loading animated textures from %s\n", pTexture->GetName());
+
+		DkList<EqString> cmds;
+		xstrsplit(animScriptBuffer, "\n", cmds);
+
+		bool success = true;
+
+		EqString texturePathA;
+		EqString texturePathExtA;
+
+		for(int i = 0; i < cmds.numElem(); i++)
+		{
+			cmds[i] = cmds[i].Left(cmds[i].GetLength()-1);
+
+			texturePathA = EqString(m_params.textures_path) + cmds[i];
+			texturePathExtA = texturePathA + EqString(TEXTURE_DEFAULT_EXTENSION);
+
+			CImage* pImage = new CImage();
+
+			success = pImages[i]->LoadDDS(texturePathExtA.GetData(), 0);
+
+			if(success)
+			{
+				if(rs_echo_texture_loading.GetBool())
+					MsgInfo("Animated Texture loaded: %s\n", cmds[i].GetData());
+			}
+
+			pImages[i]->SetName(pTexture->GetName());
+
+			if(!success)
+			{
+				delete pImage;
+
+				MsgError("Can't load texture %s for animations\n", cmds[i].GetData());
+				break;
+			}
+
+			pImages.append(pImage);
+		}
+
+		// failt
+		if(!success)
+		{
+			for(int i = 0; i < pImages.numElem();i++)
+				delete pImages[i];
+
+			PPFree(animScriptBuffer);
+
+			return false;
+		}
+
+		PPFree(animScriptBuffer);
+	}
+
+	CImage* pImage = new CImage();
+
+	bool stateLoad = pImage->LoadImage(pTexture->GetName(),0);
+
+	if(stateLoad)
+	{
+		if(rs_echo_texture_loading.GetBool())
+			MsgInfo("Texture loaded: %s\n", pTexture->GetName());
+
+		pImages.append(pImage);
+	}
+	else
+		MsgError("Can't open texture \"%s\"\n", pTexture->GetName());
+
+	CreateTextureInternal(&pTexture, pImages, pTexture->GetSamplerState(),pTexture->GetFlags());
+
+	for(int i = 0;i < pImages.numElem();i++)
+		delete pImages[i];
+
+	// Generate the error
+	if(!pTexture)
+		return false;
+
+	return true;
+}
+
+// Error texture generator
+ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
+{
+	SamplerStateParam_t texSamplerParams = MakeSamplerState(TEXFILTER_TRILINEAR_ANISO,ADDRESSMODE_WRAP,ADDRESSMODE_WRAP,ADDRESSMODE_WRAP);
+
+	Vector4D color;
+	Vector4D color2;
+
+	color.x = color.y = color.z = 0; color.w = 128;
+	color2.x = 128;
+	color2.y = 128;
+	color2.z = 255;
+	color2.w = 0;
+
+	int m_nCheckerSize = 4;
+
+	CImage* image = new CImage();
+	ubyte *dest = image->Create(FORMAT_RGBA8,32,32,1,1);
+
+	image->SetName("error");
+
+	PixelWriter pixelWriter;
+	pixelWriter.SetPixelMemory(FORMAT_RGBA8,dest,0);
+
+	int nWidth = image->GetWidth();
+	int nHeight = image->GetHeight();
+
+	for (int y = 0; y < nHeight; ++y)
+	{
+		pixelWriter.Seek( 0, y );
+		for (int x = 0; x < nWidth; ++x)
+		{
+			if ((x & m_nCheckerSize) ^ (y & m_nCheckerSize))
+			{
+				pixelWriter.WritePixel( color.x, color.y, color.z, color.w );
+			}
+			else
+			{
+				pixelWriter.WritePixel( color2.x, color2.y, color2.z, color2.w );
+			}
+		}
+	}
+
+	//if(nFlags & TEXTURE_FLAG_NORMALMAP)
+	//	pImage->toNormalMap(FORMAT_RGBA8);
+
+	image->CreateMipMaps();
+
+	DkList<CImage*> images;
+	images.append(image);
+
+	ITexture* pOutTexture = CreateTexture(images, texSamplerParams, nFlags);
+
+	delete image;
+
+	return pOutTexture;
+}
+
+//-------------------------------------------------------------
+// Texture operations
+//-------------------------------------------------------------
+
+// Changes render target (single RT)
+void ShaderAPI_Base::ChangeRenderTarget(ITexture* pRenderTarget, int nCubemapFace, ITexture* pDepthTarget, int nDepthSlice )
+{
+	ChangeRenderTargets(&pRenderTarget, pRenderTarget ? 1 : 0, &nCubemapFace, pDepthTarget, nDepthSlice);
+}
+
+//-------------------------------------------------------------
+// Various setup functions for drawing
+//-------------------------------------------------------------
+
+// Sets the reserved blending state (from pre-defined preset)
+void ShaderAPI_Base::SetBlendingState( IRenderState* pBlending )
+{
+	if(pBlending)
+	{
+		if(pBlending->GetType() == RENDERSTATE_BLENDING)
+			m_pSelectedBlendstate = pBlending;
+		else
+		{
+			MsgError("RenderState setup invalid: not a RENDERSTATE_BLENDING, got %d\n", pBlending->GetType());
+			ASSERT(!"RenderState setup invalid");
+		}
+	}
+	else
+	{
+		m_pSelectedBlendstate = NULL;
+	}
+}
+
+// Set depth and stencil state
+void ShaderAPI_Base::SetDepthStencilState( IRenderState *pDepthStencilState )
+{
+	if(pDepthStencilState)
+	{
+		if(pDepthStencilState->GetType() == RENDERSTATE_DEPTHSTENCIL)
+			m_pSelectedDepthState = pDepthStencilState;
+		else
+		{
+			MsgError("RenderState setup invalid: not a RENDERSTATE_DEPTHSTENCIL, got %d\n", pDepthStencilState->GetType());
+			ASSERT(!"RenderState setup invalid");
+		}
+	}
+	else
+	{
+		m_pSelectedDepthState = NULL;
+	}
+}
+
+// sets reserved rasterizer mode
+void ShaderAPI_Base::SetRasterizerState( IRenderState* pState )
+{
+	if(pState)
+	{
+		if(pState->GetType() == RENDERSTATE_RASTERIZER)
+		{
+			m_pSelectedRasterizerState = pState;
+		}
+		else
+		{
+			MsgError("RenderState setup invalid: not a RENDERSTATE_RASTERIZER, got %d\n", pState->GetType());
+			ASSERT(!"RenderState setup invalid");
+		}
+	}
+	else
+	{
+		m_pSelectedRasterizerState = NULL;
+	}
+}
+
+// Set Texture for Fixed-Function Pipeline
+void ShaderAPI_Base::SetTextureOnIndex(ITexture* pTexture,int level /* = 0*/)
+{
+	// Setup for FFP
+	if(m_caps.maxTextureUnits <= 1 && level > 0)
+		return; // If multitexturing is not supported
+
+	if(level < 0)
+	{
+		int vLevel = level+(MAX_VERTEXTEXTURES+1);
+
+		//Msg("tex index: %d\n", level);
+		//Msg("out index: %d\n---\n", vLevel);
+
+		m_pSelectedVertexTextures[vLevel] = pTexture;
+	}
+	else
+		m_pSelectedTextures[level] = pTexture;
+}
+
+// VBO
+
+// Sets the vertex format
+void ShaderAPI_Base::SetVertexFormat(IVertexFormat* pVertexFormat)
+{
+	m_pSelectedVertexFormat = pVertexFormat;
+}
+
+// Sets the vertex buffer
+void ShaderAPI_Base::SetVertexBuffer(IVertexBuffer* pVertexBuffer,int nStream, const intptr offset)
+{
+	m_pSelectedVertexBuffers[nStream] = pVertexBuffer;
+	m_nSelectedOffsets[nStream] = offset;
+}
+
+// Sets the vertex buffer
+void ShaderAPI_Base::SetVertexBuffer(int nStream, const void* base)
+{
+	m_pSelectedVertexBuffers[nStream] = NULL;
+	m_nSelectedOffsets[nStream] = (intptr) base;
+}
+
+// Changes the index buffer
+void ShaderAPI_Base::SetIndexBuffer(IIndexBuffer *pIndexBuffer)
+{
+	m_pSelectedIndexBuffer = pIndexBuffer;
+}
+
+bool isShaderInc(const char ch)
+{
+	return ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_' || ch == '/' || ch == '\\' || ch == '.');
+}
+
+bool isShaderIncDef(const char ch)
+{
+	return ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_' || ch == '$' || ch == '/' || ch == '\\' || ch == '.');
+}
+
+//-------------------------------------------------------------
+// Shaders and it's operations
+//-------------------------------------------------------------
+void ProcessShaderText(char** buffer, DkList<EqString> &include_buffers, const char* pszFileName, bool bStart = false)
+{
+	if(!(*buffer))
+		return;
+
+	//DkList<char*> includes;
+
+	Tokenizer tok;
+	tok.setString(*buffer);
+
+	char *str;
+	while((str = tok.next(isShaderIncDef)) != NULL)
+	{
+		if(!strcmp("//", str))
+		{
+			str = tok.next(isShaderIncDef);
+			if(strcmp("$INCLUDE", str))
+				continue;
+
+			char *inc_text = tok.next(isShaderInc);
+
+			EqString inc_filename(EqString(SHADERS_DEFAULT_PATH) + g_pShaderAPI->GetRendererName() + "/" + EqString(inc_text));
+
+			char* psBuffer = GetFileSystem()->GetFileBuffer(inc_filename.GetData());
+
+			ProcessShaderText(&psBuffer, include_buffers, inc_filename.GetData());
+
+			if(!psBuffer)
+				MsgWarning("Cannot open file '%s' for include!\n", inc_filename.GetData());
+			else
+				include_buffers.append(psBuffer);
+
+			PPFree( psBuffer );
+
+			continue;
+		}
+
+		tok.goToNextLine();
+	}
+
+	/*
+	for(int i = includes.numElem()-1; i >= 0; i--)
+	{
+		include_buffers.append(includes[i]);
+		PPFree(includes[i]);
+		//delete [] includes[i];
+	}*/
+
+	if(bStart && include_buffers.numElem())
+	{
+		EqString shader_text(*buffer);
+
+		for(int i = 0; i < include_buffers.numElem(); i++)
+		{
+			shader_text = include_buffers[i]+EqString("\r\n")+varargs("\r\n#line 1 \"%s\"\r\n", pszFileName)+shader_text;
+		}
+
+		*buffer = (char*)PPReAlloc(*buffer, shader_text.GetLength()+1);
+		strcpy(*buffer, shader_text.GetData());
+	}
+
+	//includes.clear();
+}
+
+//-------------------------------------------------------------
+// Shaders and it's operations
+//-------------------------------------------------------------
+void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, bool bStart = false)
+{
+	if(!(*buffer))
+		return;
+
+	int nLine = 0;
+
+	Tokenizer tok;
+	tok.setString(*buffer);
+
+	Tokenizer lineParser;
+
+	// set main source filename
+	EqString newSrc;
+	
+#ifdef IS_OPENGL
+	newSrc = "\r\n#line 1\r\n";		// I hate, hate and hate GLSL for not supporting source file names, only file numbers. So this is fucked.
+#else
+	newSrc = "\r\n#line 1 \"" + _Es(pszFileName) + "\"\r\n";
+#endif // IS_OPENGL
+
+	bool afterSkipLine = false;
+
+	char* str;
+	while((str = tok.nextLine()) != NULL)
+	{
+		lineParser.setString(str);
+
+		bool skipLine = false;
+
+		char* str2;
+		while((str2 = lineParser.next(isShaderIncDef)) != NULL)
+		{
+			nLine++;
+
+			if(!strcmp("//", str2))
+			{
+				str2 = lineParser.next(isShaderIncDef);
+
+				if(!str2 || strcmp("$INCLUDE", str2))
+					break;
+
+				char* inc_text = lineParser.next(isShaderInc);
+
+				EqString inc_filename(EqString(SHADERS_DEFAULT_PATH) + g_pShaderAPI->GetRendererName() + "/" + EqString(inc_text));
+
+				char* psBuffer = GetFileSystem()->GetFileBuffer(inc_filename.GetData());
+
+				ProcessShaderFileIncludes(&psBuffer, inc_filename.GetData());
+
+				if(psBuffer)
+				{
+					newSrc = newSrc + _Es("\r\n") + psBuffer + _Es("\r\n");
+					PPFree( psBuffer );
+				}
+				else
+					MsgError("'%s': cannot open file '%s' for include!\n", pszFileName, inc_filename.GetData());
+
+				skipLine = true;
+
+				break;
+			}
+		}
+
+		if(skipLine)
+		{
+			afterSkipLine = true;
+			continue;
+		}
+
+		// restore line counter
+		if(afterSkipLine)
+		{
+#ifdef IS_OPENGL
+			newSrc = newSrc + varargs("#line %d\r\n", nLine);
+#else
+			newSrc = newSrc + varargs("#line %d \"", nLine) + _Es(pszFileName) + "\"\r\n";
+#endif // IS_OPENGL
+			afterSkipLine = false;
+		}
+
+		newSrc = newSrc + str;
+	}
+
+	*buffer = (char*)PPReAlloc(*buffer, newSrc.GetLength()+1);
+	strcpy(*buffer, newSrc.GetData());
+}
+
+// Loads and compiles shaders from files
+bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const char* pszFilePrefix, const char *extra, const char **attributeNames, int nAttributes)
+{
+	if(pShaderOutput == NULL)
+		return false;
+
+	bool bResult = false;
+
+	CScopedMutex m(m_Mutex);
+
+	// finish previous operations
+	Finish();
+
+	EqString fileNameVS(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(pszFilePrefix) + ".vs");
+	EqString fileNamePS(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(pszFilePrefix) + ".ps");
+	EqString fileNameGS(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(pszFilePrefix) + ".gs");
+
+	bool vsRequiried = true;
+	bool psRequiried = false;
+	bool gsRequiried = false;
+
+	shaderprogram_params_t params;
+	memset(&params, 0, sizeof(params));
+
+	params.attributeNames = attributeNames;
+	params.nAttributes = nAttributes;
+
+	// Load KeyValues
+	KeyValues pKv;
+
+	if( pKv.LoadFromFile((EqString(SHADERS_DEFAULT_PATH) + pszFilePrefix + ".txt").GetData()) )
+	{
+		kvkeybase_t* sec = pKv.GetRootSection();
+
+		kvkeybase_t* pixelProgramName = sec->FindKeyBase("PixelShaderProgram");
+		kvkeybase_t* vertexProgramName = sec->FindKeyBase("VertexShaderProgram");
+		kvkeybase_t* geometryProgramName = sec->FindKeyBase("GeometryShaderProgram");
+
+		params.bDisableCache = KV_GetValueBool(sec->FindKeyBase("DisableCache"));
+
+		if(pixelProgramName)
+			psRequiried = true;
+
+		if(geometryProgramName)
+			gsRequiried = true;
+
+		fileNameVS = EqString(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(KV_GetValueString(vertexProgramName)) + ".vs");
+		fileNamePS = EqString(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(KV_GetValueString(pixelProgramName)) + ".ps");
+		fileNameGS = EqString(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(KV_GetValueString(geometryProgramName)) + ".gs");
+
+		// API section
+		for(int i = 0; i < sec->keys.numElem(); i++)
+		{
+			if(!stricmp(sec->keys[i]->name, "api") && !stricmp(KV_GetValueString(sec->keys[i]), GetRendererName()))
+			{
+				params.pAPIPrefs = sec->keys[i];
+				break;
+			}
+		}
+	}
+
+	params.pszPSText = GetFileSystem()->GetFileBuffer(fileNamePS.GetData());
+	params.pszVSText = GetFileSystem()->GetFileBuffer(fileNameVS.GetData());
+	params.pszGSText = GetFileSystem()->GetFileBuffer(fileNameGS.GetData());
+	params.pszHSText = NULL;
+	params.pszDSText = NULL;
+
+	if(!params.pszPSText && psRequiried)
+		MsgError("Can't open pixel shader file '%s'!\n",fileNamePS.GetData());
+
+	if(!params.pszVSText && vsRequiried)
+		MsgError("Can't open vertex shader file '%s'!\n",fileNameVS.GetData());
+
+	if(!params.pszGSText && gsRequiried)
+		MsgError("Can't open geometry shader file '%s'!\n",fileNameVS.GetData());
+
+	ProcessShaderFileIncludes(&params.pszPSText, fileNamePS.GetData(), true);
+	ProcessShaderFileIncludes(&params.pszVSText, fileNameVS.GetData(), true);
+	ProcessShaderFileIncludes(&params.pszGSText, fileNameGS.GetData(), true);
+
+	params.psChecksum = -1;
+	params.vsChecksum = -1;
+	params.gsChecksum = -1;
+	params.hsChecksum = -1;
+	params.dsChecksum = -1;
+
+	// checksum please
+	if(params.pszPSText)
+		params.psChecksum = CRC32_BlockChecksum(params.pszPSText, strlen(params.pszPSText));
+
+	if(params.pszVSText)
+		params.vsChecksum = CRC32_BlockChecksum(params.pszVSText, strlen(params.pszVSText));
+
+	if(params.pszGSText)
+		params.gsChecksum = CRC32_BlockChecksum(params.pszGSText, strlen(params.pszGSText));
+
+	if(params.pszHSText)
+		params.hsChecksum = CRC32_BlockChecksum(params.pszHSText, strlen(params.pszHSText));
+
+	if(params.pszDSText)
+		params.dsChecksum = CRC32_BlockChecksum(params.pszDSText, strlen(params.pszDSText));
+
+	// Don't worry about geometry shader.
+	bResult = CompileShadersFromStream( pShaderOutput, params, extra );
+
+	if(params.pszPSText)
+		PPFree(params.pszPSText);
+
+	if(params.pszVSText)
+		PPFree(params.pszVSText);
+
+	if(params.pszGSText)
+		PPFree(params.pszGSText);
+
+	return bResult;
+}
+
+// Shader constants setup
+int ShaderAPI_Base::SetShaderConstantInt(const char *pszName, const int constant, int const_id)
+{
+	return SetShaderConstantRaw(pszName, &constant, sizeof(constant), const_id);
+}
+
+int ShaderAPI_Base::SetShaderConstantFloat(const char *pszName, const float constant, int const_id)
+{
+	return SetShaderConstantRaw(pszName, &constant, sizeof(constant), const_id);
+}
+
+int ShaderAPI_Base::SetShaderConstantVector2D(const char *pszName, const Vector2D &constant, int const_id)
+{
+	return SetShaderConstantRaw(pszName, &constant, sizeof(constant), const_id);
+}
+
+int ShaderAPI_Base::SetShaderConstantVector3D(const char *pszName, const Vector3D &constant, int const_id)
+{
+	return SetShaderConstantRaw(pszName, &constant, sizeof(constant), const_id);
+}
+
+int ShaderAPI_Base::SetShaderConstantVector4D(const char *pszName, const Vector4D &constant, int const_id)
+{
+	return SetShaderConstantRaw(pszName, &constant, sizeof(constant), const_id);
+}
+
+int ShaderAPI_Base::SetShaderConstantMatrix4(const char *pszName, const Matrix4x4 &constant, int const_id)
+{
+	return SetShaderConstantRaw(pszName, &constant, sizeof(constant), const_id);
+}
+
+int ShaderAPI_Base::SetShaderConstantArrayFloat(const char *pszName, const float *constant, int count, int const_id)
+{
+	return SetShaderConstantRaw(pszName, constant, count * sizeof(float), const_id);
+}
+
+int ShaderAPI_Base::SetShaderConstantArrayVector2D(const char *pszName, const Vector2D *constant, int count, int const_id)
+{
+	return SetShaderConstantRaw(pszName, constant, count * sizeof(Vector2D), const_id);
+}
+
+int ShaderAPI_Base::SetShaderConstantArrayVector3D(const char *pszName, const Vector3D *constant, int count, int const_id)
+{
+	return SetShaderConstantRaw(pszName, constant, count * sizeof(Vector3D), const_id);
+}
+
+int ShaderAPI_Base::SetShaderConstantArrayVector4D(const char *pszName, const Vector4D *constant, int count, int const_id)
+{
+	return SetShaderConstantRaw(pszName, constant, count * sizeof(Vector4D), const_id);
+}
+
+int ShaderAPI_Base::SetShaderConstantArrayMatrix4(const char *pszName, const Matrix4x4 *constant, int count, int const_id)
+{
+	return SetShaderConstantRaw(pszName, constant, count * sizeof(Matrix4x4), const_id);
+}

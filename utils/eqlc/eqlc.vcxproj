@@ -1,0 +1,186 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{7726CBF3-222A-4EDA-A608-FD88A0F04E49}</ProjectGuid>
+    <RootNamespace>texconv</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <TargetPlatformVersion>8.1</TargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkIncremental>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>..\..\FileSystem;..\..\core;..\..\public;..\..\public\core;..\..\public\Platform;..\..\Engine;..\..\src_dependency\bullet\src;..\..\src_dependency\bullet\src\BulletSoftBody;..\..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_TOOLS;EQLC;NOENGINE;USE_SINGLE_CUBEMAPRENDER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;advapi32.lib;user32.lib;kernel32.lib;gdi32.lib;shell32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>
+      </OptimizeReferences>
+      <EnableCOMDATFolding>
+      </EnableCOMDATFolding>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
+      <TargetMachine>MachineX86</TargetMachine>
+      <OutputFile>..\..\..\Engine\Bin32\eqlc.exe</OutputFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>..\..\FileSystem;..\..\core;..\..\public;..\..\public\core;..\..\public\Platform;..\..\Engine;..\..\src_dependency\bullet\src;..\..\src_dependency\bullet\src\BulletSoftBody;..\..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_TOOLS;EQLC;NOENGINE;USE_SINGLE_CUBEMAPRENDER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;advapi32.lib;user32.lib;kernel32.lib;gdi32.lib;shell32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>
+      </OptimizeReferences>
+      <EnableCOMDATFolding>
+      </EnableCOMDATFolding>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
+      <TargetMachine>MachineX86</TargetMachine>
+      <OutputFile>..\..\..\Engine\Bin32\eqlc.exe</OutputFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Engine\EqGameLevel.cpp" />
+    <ClCompile Include="..\..\Engine\modelloader_shared.cpp" />
+    <ClCompile Include="..\..\Engine\Physics\DkBulletObject.cpp" />
+    <ClCompile Include="..\..\Engine\Physics\dkbulletphysics.cpp" />
+    <ClCompile Include="..\..\Engine\Physics\DkPhysicsJoint.cpp" />
+    <ClCompile Include="..\..\Engine\Physics\DkPhysicsRope.cpp" />
+    <ClCompile Include="..\..\Engine\studio_egf.cpp" />
+    <ClCompile Include="..\..\Engine\ViewRenderer.cpp" />
+    <ClCompile Include="..\..\public\BaseRenderableObject.cpp" />
+    <ClCompile Include="..\..\public\BaseShader.cpp" />
+    <ClCompile Include="..\..\public\Math\math_util.cpp" />
+    <ClCompile Include="..\..\public\RenderList.cpp" />
+    <ClCompile Include="..\..\public\Utils\GeomTools.cpp" />
+    <ClCompile Include="..\..\public\ViewParams.cpp" />
+    <ClCompile Include="EQLCDepthWrite.cpp" />
+    <ClCompile Include="EQLCLightmapFilter.cpp" />
+    <ClCompile Include="EQLCPointLight.cpp" />
+    <ClCompile Include="EQLCSpotLight.cpp" />
+    <ClCompile Include="eqlc_main.cpp" />
+    <ClCompile Include="lighting.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Engine\EqGameLevel.h" />
+    <ClInclude Include="..\..\Engine\modelloader_shared.h" />
+    <ClInclude Include="..\..\Engine\Physics\Convert.h" />
+    <ClInclude Include="..\..\Engine\Physics\DkBulletObject.h" />
+    <ClInclude Include="..\..\Engine\Physics\DkBulletPhysics.h" />
+    <ClInclude Include="..\..\Engine\Physics\DkPhysicsJoint.h" />
+    <ClInclude Include="..\..\Engine\Physics\DkPhysicsRope.h" />
+    <ClInclude Include="..\..\Engine\studio_egf.h" />
+    <ClInclude Include="..\..\Engine\ViewRenderer.h" />
+    <ClInclude Include="..\..\public\BaseRenderableObject.h" />
+    <ClInclude Include="..\..\public\BaseShader.h" />
+    <ClInclude Include="..\..\public\Math\math_util.h" />
+    <ClInclude Include="..\..\public\RenderList.h" />
+    <ClInclude Include="..\..\public\Utils\GeomTools.h" />
+    <ClInclude Include="..\..\public\ViewParams.h" />
+    <ClInclude Include="eqlc.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\libs\CoreLib.lib" />
+    <Library Include="..\..\libs\DkCore.lib" />
+    <Library Include="..\..\libs\FrameworkLib.lib" />
+    <Library Include="..\..\libs\libjpeg.lib" />
+    <Library Include="..\..\libs\libpng.lib" />
+    <Library Include="..\..\libs\zlib.lib" />
+    <Library Include="..\..\src_dependency\bullet\lib\BulletCollision_vs2010.lib" />
+    <Library Include="..\..\src_dependency\bullet\lib\BulletDynamics_vs2010.lib" />
+    <Library Include="..\..\src_dependency\bullet\lib\BulletSoftBody_vs2010.lib" />
+    <Library Include="..\..\src_dependency\bullet\lib\LinearMath_vs2010.lib" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

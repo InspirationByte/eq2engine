@@ -1,0 +1,441 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2015
+//////////////////////////////////////////////////////////////////////////////////
+// Description: Equilibrium Engine string base
+//
+//				Some things was lovely hardcoded (like m_nLength)//////////////////////////////////////////////////////////////////////////////////
+
+#include "eqwstring.h"
+
+#include <stdio.h>
+#include <malloc.h>
+#include "platform/Platform.h"
+#include "utils/strtools.h"
+
+#ifdef LINUX
+#include <string.h>
+#endif
+
+#define BASE_BUFFER		32	// 32 characters initial buffer
+#define EXTEND_CHARS	32	// 32 characters for extending
+
+EqWString::EqWString()
+{
+	m_nLength = 0;
+	m_nAllocated = 0;
+	m_pszString = NULL;
+
+	Resize( BASE_BUFFER );
+}
+
+EqWString::~EqWString()
+{
+	Clear();
+}
+
+EqWString::EqWString(const wchar_t c)
+{
+	m_nLength = 0;
+	m_nAllocated = 0;
+	m_pszString = NULL;
+
+	Assign( &c, 1 );
+}
+
+EqWString::EqWString(const wchar_t* pszString, int len)
+{
+	m_nLength = 0;
+	m_nAllocated = 0;
+	m_pszString = NULL;
+
+	Assign( pszString, len );
+}
+
+EqWString::EqWString(const EqWString &str, int nStart, int len)
+{
+	m_nLength = 0;
+	m_nAllocated = 0;
+	m_pszString = 0;
+
+	Assign( str, nStart, len );
+}
+
+// data for printing
+const wchar_t* EqWString::GetData() const
+{
+	if(!m_pszString)
+		return L"";
+
+	return m_pszString;
+}
+
+// length of it
+int EqWString::GetLength() const
+{
+	return m_nLength;
+}
+
+// string allocated size in bytes
+int EqWString::GetSize() const
+{
+	return m_nAllocated;
+}
+
+// erases and deallocates data
+void EqWString::Clear()
+{
+	if(m_pszString)
+	{
+		delete [] m_pszString;
+		m_pszString = NULL;
+		m_nLength = 0;
+		m_nAllocated = 0;
+	}
+}
+
+// empty the string, but do not deallocate
+void EqWString::Empty()
+{
+	Resize(BASE_BUFFER, false);
+}
+
+// an internal operation of allocation/extend
+bool EqWString::ExtendAlloc(int nSize)
+{
+	if(nSize+1 > m_nAllocated)
+	{
+		if(!Resize( nSize + EXTEND_CHARS ))
+			return false;
+	}
+
+	return true;
+}
+
+// just a resize
+bool EqWString::Resize(int nSize, bool bCopy)
+{
+	int newSize = nSize+1;
+
+	// make new and copy
+	wchar_t* pszNewBuffer = new wchar_t[ newSize ];
+
+	// allocation error!
+	if(!pszNewBuffer)
+		return false;
+
+	pszNewBuffer[0] = 0;
+
+	// copy and remove old if available
+	if( m_pszString )
+	{
+		// if we have to copy
+		if(bCopy && m_nLength)
+		{
+			// if string length if bigger, that the new alloc, cut off
+			// for safety
+			if(m_nLength > newSize)
+				m_pszString[newSize] = 0;
+
+			wcscpy( pszNewBuffer, m_pszString );
+		}
+
+		// now it's not needed
+		delete [] m_pszString;
+
+		m_pszString = NULL;
+	}
+
+	// assign
+	m_pszString = pszNewBuffer;
+	m_nAllocated = newSize;
+
+	// update length
+	m_nLength = wcslen( m_pszString );
+
+	return true;
+}
+
+// string assignment (or setvalue)
+void EqWString::Assign(const wchar_t* pszStr, int len)
+{
+	if(pszStr == NULL)
+		return;
+
+	int nLen = wcslen( pszStr );
+
+	ASSERT(len <= nLen);
+
+	if(len != -1)
+		nLen = len;
+
+	if( ExtendAlloc( nLen ) )
+	{
+		wcsncpy( m_pszString, pszStr, nLen );
+		m_pszString[nLen] = 0;
+		m_nLength = nLen;
+	}
+}
+
+void EqWString::Assign(const EqWString &str, int nStart, int len)
+{
+	int nLen = str.GetLength();
+
+	ASSERT(len <= nLen);
+
+	if(len != -1)
+		nLen = len;
+
+	if( ExtendAlloc( nLen ) )
+	{
+		wcscpy( m_pszString+nStart, str.GetData() );
+		m_pszString[nLen] = 0;
+		m_nLength = nLen;
+	}
+}
+
+void EqWString::Append(const wchar_t c)
+{
+	int nNewLen = m_nLength + 1;
+
+	if( ExtendAlloc( nNewLen ) )
+	{
+		m_pszString[nNewLen-1] = c;
+		m_pszString[nNewLen] = 0;
+		m_nLength = nNewLen;
+	}
+}
+
+// appends another string
+void EqWString::Append(const wchar_t* pszStr, int nCount)
+{
+	if(pszStr == NULL)
+		return;
+
+	int nLen = wcslen( pszStr );
+
+	ASSERT(nCount <= nLen);
+
+	if(nCount != -1)
+		nLen = nCount;
+
+	int nNewLen = m_nLength + nLen;
+
+	if( ExtendAlloc( nNewLen ) )
+	{
+		wcsncpy( (m_pszString + m_nLength), pszStr, nLen);
+		m_pszString[nNewLen] = 0;
+		m_nLength = nNewLen;
+	}
+}
+
+void EqWString::Append(const EqWString &str)
+{
+	int nNewLen = m_nLength + str.GetLength();
+
+	if( ExtendAlloc( nNewLen ) )
+	{
+		wcscpy( (m_pszString + m_nLength), str.GetData() );
+		m_pszString[nNewLen] = 0;
+		m_nLength = nNewLen;
+	}
+}
+
+// inserts another string at position
+void EqWString::Insert(const wchar_t* pszStr, int nInsertPos)
+{
+	if(pszStr == NULL)
+		return;
+
+	int nInsertCount = wcslen( pszStr );
+
+	int nNewLen = m_nLength + nInsertCount;
+
+	if( ExtendAlloc( nNewLen ) )
+	{
+		wchar_t* tmp = (wchar_t*)stackalloc(m_nLength - nInsertPos);
+		wcscpy(tmp, &m_pszString[nInsertPos]);
+
+		// copy the part to the far
+		wcsncpy(&m_pszString[nInsertPos + nInsertCount], tmp, m_nLength - nInsertPos);
+
+		// copy insertable
+		wcsncpy(m_pszString + nInsertPos, pszStr, nInsertCount);
+
+		m_pszString[nNewLen] = 0;
+		m_nLength = nNewLen;
+	}
+}
+
+void EqWString::Insert(const EqWString &str, int nInsertPos)
+{
+	int nNewLen = m_nLength + str.GetLength();
+
+	if( ExtendAlloc( nNewLen ) )
+	{
+		wchar_t* tmp = (wchar_t*)stackalloc(m_nLength - nInsertPos);
+		wcscpy(tmp, &m_pszString[nInsertPos]);
+
+		// copy the part to the far
+		wcsncpy(&m_pszString[nInsertPos + str.GetLength()], tmp, m_nLength - nInsertPos);
+
+		// copy insertable
+		wcsncpy(m_pszString + nInsertPos, str.GetData(), str.GetLength());
+
+		m_pszString[nNewLen] = 0;
+		m_nLength = nNewLen;
+	}
+}
+
+// removes characters
+void EqWString::Remove(int nStart, int nCount)
+{
+	wchar_t* temp = (wchar_t*)stackalloc( m_nAllocated*sizeof(wchar_t) );
+	wcscpy(temp, m_pszString);
+
+	wchar_t* pStr = m_pszString;
+
+	for(int i = 0; i < m_nLength; i++)
+	{
+		if(i >= nStart && i < nStart+nCount)
+			continue;
+
+		*pStr++ = temp[i];
+	}
+	*pStr = 0;
+
+	int newLen = m_nLength-nCount;
+
+	Resize( newLen );
+}
+
+// string extractors
+EqWString EqWString::Left(int nCount)
+{
+	return Mid(0, nCount);
+}
+
+EqWString EqWString::Right(int nCount)
+{
+	if ( nCount >= m_nLength )
+		return (*this);
+
+	return Mid( m_nLength - nCount, nCount );
+}
+
+EqWString EqWString::Mid(int nStart, int nCount)
+{
+	int n;
+	EqWString result;
+
+	n = m_nLength;
+	if( n == 0 || nCount <= 0 || nStart >= n )
+		return result;
+
+	if( nStart + nCount >= m_nLength )
+		nCount = n-nStart;
+
+	result.Append( &m_pszString[nStart], nCount );
+
+	return result;
+}
+
+// convert to lower case
+EqWString EqWString::LowerCase()
+{
+	EqWString str(*this);
+	wcslwr(str.m_pszString);
+
+	return str;
+}
+
+// convert to upper case
+EqWString EqWString::UpperCase()
+{
+	EqWString str(*this);
+	wcsupr(str.m_pszString);
+
+	return str;
+}
+
+// search, returns char index
+int	EqWString::Find(const wchar_t* pszSub, bool bCaseSensetive, int nStart)
+{
+	int nFound = -1;
+
+	wchar_t* st = NULL;
+
+	if(bCaseSensetive)
+		st = wcsstr(m_pszString, pszSub);
+	else
+		st = xwcsistr(m_pszString, pszSub);
+
+	if(st)
+		nFound = st-m_pszString;
+
+	return nFound;
+}
+
+/*
+EqWString EqWString::StripFileExtension()
+{
+	for ( int i = m_nLength-1; i >= 0; i-- )
+	{
+		if ( m_pszString[i] == '.' )
+		{
+			EqWString str;
+			str.Append( m_pszString, i );
+
+			return str;
+		}
+	}
+
+	return (*this);
+}
+
+EqWString EqWString::StripFileName()
+{
+	ASSERT(!"EqWString::StripFileName() not impletented");
+	EqWString result(*this);
+	//stripFileName(result.m_pszString);
+	//result.m_nLength = strlen(result.m_pszString);
+
+	return result;
+}
+
+EqWString EqWString::ExtractFileExtension()
+{
+	for ( int i = m_nLength-1; i >= 0; i-- )
+	{
+		if ( m_pszString[i] == '.' )
+		{
+			EqWString str;
+			str.Append( &m_pszString[i+1] );
+
+			return str;
+		}
+	}
+
+	return EqWString();
+}*/
+
+// comparators
+int	EqWString::Compare(const wchar_t* pszStr)
+{
+	return xwcscmp(m_pszString, pszStr);
+}
+
+int	EqWString::Compare(const EqWString &str)
+{
+	return xwcscmp(m_pszString, str.GetData());
+}
+
+int	EqWString::CompareCaseIns(const wchar_t* pszStr)
+{
+	return xwcsicmp(m_pszString, pszStr);
+}
+
+int	EqWString::CompareCaseIns(const EqWString &str)
+{
+	return xwcsicmp(m_pszString, str.GetData());
+}

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="CoreLib" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release Win32">
+				<Option output="libs/coreLib" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add option="-DCROSSLINK_LIB" />
+					<Add option="-DLINUX" />
+					<Add directory="public" />
+					<Add directory="public/platform" />
+					<Add directory="src_dependency/sdl2/include" />
+				</Compiler>
+			</Target>
+			<Target title="Debug Win32">
+				<Option output="coreLib" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add option="-D_DEBUG" />
+					<Add directory="public" />
+					<Add directory="public/platform" />
+					<Add directory="src_dependency/sdl2/include" />
+				</Compiler>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-m32" />
+			<Add directory="public/" />
+			<Add directory="public/core/" />
+		</Compiler>
+		<Unit filename="public/core/ConCommand.cpp" />
+		<Unit filename="public/core/ConCommand.h" />
+		<Unit filename="public/core/ConCommandBase.cpp" />
+		<Unit filename="public/core/ConCommandBase.h" />
+		<Unit filename="public/core/ConVar.cpp" />
+		<Unit filename="public/core/ConVar.h" />
+		<Unit filename="public/core/cmd_pacifier.cpp" />
+		<Unit filename="public/core/cmd_pacifier.h" />
+		<Unit filename="public/core/cmdlib.cpp" />
+		<Unit filename="public/core/cmdlib.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

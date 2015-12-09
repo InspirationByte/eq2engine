@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="eqMatSystem" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release Win32">
+				<Option output="../../gamebin_linux/eqMatSystem" imp_lib="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).a" def_file="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).def" prefix_auto="1" extension_auto="1" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-DLINUX" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_USRDLL" />
+					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add directory="../FileSystem" />
+					<Add directory="../Engine" />
+					<Add directory="../public" />
+					<Add directory="../public/core" />
+					<Add directory="../public/platform" />
+					<Add directory="../public/materialsystem/" />
+					<Add directory="../public/materialsystem/renderers" />
+					<Add directory="../src_dependency/sdl2/include" />
+				</Compiler>
+			</Target>
+			<Target title="Debug Win32">
+				<Option output="MatSystem_vc10" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-D_DEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_USRDLL" />
+					<Add option="-DUSE_SIMD" />
+					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add directory="../FileSystem" />
+					<Add directory="../Engine" />
+					<Add directory="../public" />
+					<Add directory="../public/core" />
+					<Add directory="../public/platform" />
+					<Add directory="../public/materialsystem/" />
+					<Add directory="../public/materialsystem/renderers" />
+					<Add directory="../src_dependency/sdl2/include" />
+				</Compiler>
+				<Linker>
+					<Add library="odbc32.lib" />
+					<Add library="odbccp32.lib" />
+					<Add library="advapi32.lib" />
+					<Add library="user32.lib" />
+					<Add library="kernel32.lib" />
+					<Add library="gdi32.lib" />
+					<Add library="shell32.lib" />
+					<Add library="winmm.lib" />
+					<Add library="comctl32.lib" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-m32" />
+		</Compiler>
+		<Linker>
+			<Add option="-shared -lstdc++ -m32 -l:libeqCore.so `pkg-config gtk+-2.0 --libs`" />
+			<Add library="../libs/libcoreLib.a" />
+			<Add library="../libs/libPrevLib.a" />
+			<Add library="z" />
+			<Add library="jpeg" />
+		</Linker>
+		<Unit filename="../public/CharSet.h" />
+		<Unit filename="../public/ConCommand.h" />
+		<Unit filename="../public/ConCommandBase.h" />
+		<Unit filename="../public/ConVar.h" />
+		<Unit filename="../public/DebugInterface.h" />
+		<Unit filename="../public/ICmdLineParser.h" />
+		<Unit filename="../public/IConCommandFactory.h" />
+		<Unit filename="../public/IDebugOverlay.h" />
+		<Unit filename="../public/IDkCore.h" />
+		<Unit filename="../public/InterfaceManager.h" />
+		<Unit filename="../public/Math/math_util.h" />
+		<Unit filename="../public/Platform/Platform.h" />
+		<Unit filename="../public/Renderable.h" />
+		<Unit filename="../public/Utils/Align.h" />
+		<Unit filename="../public/ViewParams.h" />
+		<Unit filename="../public/consolenode.h" />
+		<Unit filename="../public/core_base_header.h" />
+		<Unit filename="../public/materialsystem/IMaterialSystem.h" />
+		<Unit filename="CMatProxyFactory.cpp" />
+		<Unit filename="MaterialSystem.cpp" />
+		<Unit filename="MaterialSystem.h" />
+		<Unit filename="material.cpp" />
+		<Unit filename="material.h" />
+		<Unit filename="materialvar.cpp" />
+		<Unit filename="materialvar.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

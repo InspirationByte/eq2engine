@@ -1,0 +1,200 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>EqShaderAPIGL</ProjectName>
+    <ProjectGuid>{23249CCD-E8E0-49E1-ABD2-97B4611AC18E}</ProjectGuid>
+    <RootNamespace>DkCore</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <TargetPlatformVersion>8.1</TargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)_gl\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)_gl\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)_gl\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)_gl\</IntDir>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</IgnoreImportLibrary>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</IgnoreImportLibrary>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkIncremental>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">eqGLRHI</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">eqGLRHI</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>..\..\FileSystem;..\..\Engine;..\..\public;..\..\public\core;..\..\public\platform;..\..\public\materialsystem\renderers;..\..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;CORE_EXPORT;DLL_EXPORT;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;RENDER_EXPORT;IS_OPENGL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <StringPooling>true</StringPooling>
+      <MinimalRebuild>true</MinimalRebuild>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>OpenGL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\..\gamebin\$(TargetName).dll</OutputFile>
+      <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>
+      </OptimizeReferences>
+      <EnableCOMDATFolding>
+      </EnableCOMDATFolding>
+      <BaseAddress>
+      </BaseAddress>
+      <ImportLibrary>..\libs\DkGL.lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <FixedBaseAddress>false</FixedBaseAddress>
+      <ProgramDatabaseFile>..\..\..\gamebin\$(TargetName).pdb</ProgramDatabaseFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>..\..\FileSystem;..\..\Engine;..\..\public;..\..\public\core;..\..\public\platform;..\..\public\materialsystem\renderers;..\..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;CORE_EXPORT;DLL_EXPORT;_CRT_SECURE_NO_DEPRECATE;SUPRESS_DEVMESSAGES;USECRTMEMDEBUG;RENDER_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>OpenGL32.lib;user32.lib;gdi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\..\gamebin\$(TargetName).dll</OutputFile>
+      <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>
+      </OptimizeReferences>
+      <EnableCOMDATFolding>
+      </EnableCOMDATFolding>
+      <BaseAddress>0x2A000000</BaseAddress>
+      <ImportLibrary>
+      </ImportLibrary>
+      <TargetMachine>NotSet</TargetMachine>
+      <FixedBaseAddress>
+      </FixedBaseAddress>
+      <ProgramDatabaseFile>..\..\..\gamebin\$(TargetName).pdb</ProgramDatabaseFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\Engine\Renderer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="CTexture.cpp" />
+    <ClCompile Include="GL\eqGLCaps.cpp" />
+    <ClCompile Include="GL\GLMeshBuilder.cpp" />
+    <ClCompile Include="GL\GLOcclusionQuery.cpp" />
+    <ClCompile Include="GL\GLShaderProgram.cpp" />
+    <ClCompile Include="ShaderAPIMain.cpp" />
+    <ClCompile Include="ShaderAPI_Base.cpp" />
+    <ClCompile Include="GL\CGLRenderLib.cpp" />
+    <ClCompile Include="GL\CGLTexture.cpp" />
+    <ClCompile Include="GL\IndexBufferGL.cpp" />
+    <ClCompile Include="GL\ShaderAPIGL.cpp" />
+    <ClCompile Include="GL\VertexBufferGL.cpp" />
+    <ClCompile Include="GL\VertexFormatGL.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CTexture.h" />
+    <ClInclude Include="GL\eqGLCaps.h" />
+    <ClInclude Include="GL\GLMeshBuilder.h" />
+    <ClInclude Include="GL\GLOcclusionQuery.h" />
+    <ClInclude Include="GL\GLRenderState.h" />
+    <ClInclude Include="GL\GLShaderProgram.h" />
+    <ClInclude Include="IRenderLibrary.h" />
+    <CustomBuildStep Include="..\Engine\Renderer.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </CustomBuildStep>
+    <ClInclude Include="..\public\Renderer\IIndexBuffer.h" />
+    <ClInclude Include="..\public\Renderer\IShaderAPI.h" />
+    <ClInclude Include="..\public\Renderer\IShaderProgram.h" />
+    <ClInclude Include="..\public\Renderer\IVertexBuffer.h" />
+    <ClInclude Include="..\public\Renderer\IVertexFormat.h" />
+    <ClInclude Include="..\public\Renderer\renderer_def.h" />
+    <ClInclude Include="ShaderAPI_Base.h" />
+    <CustomBuildStep Include="GL\CGLRenderLib.h" />
+    <CustomBuildStep Include="GL\CGLTexture.h" />
+    <ClInclude Include="GL\IndexBufferGL.h" />
+    <CustomBuildStep Include="OpenGL3Extensions.h" />
+    <ClInclude Include="GL\ShaderAPIGL.h" />
+    <ClInclude Include="GL\shaderapigl_def.h" />
+    <ClInclude Include="GL\VertexBufferGL.h" />
+    <ClInclude Include="GL\VertexFormatGL.h" />
+    <ClInclude Include="..\Engine\Imaging\jconfig.h" />
+    <ClInclude Include="..\Engine\Imaging\jmorecfg.h" />
+    <ClInclude Include="..\Engine\Imaging\jpeglib.h" />
+    <ClInclude Include="..\Engine\Imaging\PixWriter.h" />
+    <ClInclude Include="..\Engine\Imaging\zconf.h" />
+    <ClInclude Include="..\Engine\Imaging\zlib.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\libs\CoreLib.lib" />
+    <Library Include="..\..\libs\DkCore.lib" />
+    <Library Include="..\..\libs\FrameworkLib.lib" />
+    <Library Include="..\..\libs\jpeg.lib" />
+    <Library Include="..\..\libs\libpng.lib" />
+    <Library Include="..\..\libs\zlib.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resources.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

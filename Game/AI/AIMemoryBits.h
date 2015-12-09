@@ -1,0 +1,24 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2015
+//////////////////////////////////////////////////////////////////////////////////
+// Description: Memory bits and utils, defined by game and AI programmer
+//////////////////////////////////////////////////////////////////////////////////
+
+#ifndef AIMEMORYBITS_H
+#define AIMEMORYBITS_H
+
+enum AIMemBits_e
+{
+	MEMBIT_HAS_ENEMY = 0,
+	MEMBIT_HAS_TARGET,
+	MEMBIT_HAS_WEAPON,
+	MEMBIT_CAN_RUN,
+	MEMBIT_CAN_STAND,
+	MEMBIT_IN_COVER,
+	MEMBIT_NEEDS_WEAPON_RELOAD,
+
+	MEMBITS_COUNT,
+};
+
+#endif // AIMEMORYBITS_H

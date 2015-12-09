@@ -1,0 +1,64 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2015
+//////////////////////////////////////////////////////////////////////////////////
+// Description: D3D Rendering library interface
+//				VEERY OLD (MUSCLE ENGINE TIMES) INTERFACE
+//////////////////////////////////////////////////////////////////////////////////
+
+#ifndef CGLRENDERLIB_H
+#define CGLRENDERLIB_H
+
+#include "ishaderapi.h"
+#include "../IRenderLibrary.h"
+
+class CEmptyRenderLib : public IRenderLibrary
+{
+public:
+	CEmptyRenderLib();
+	~CEmptyRenderLib();
+
+	bool			InitCaps();
+
+	bool			InitAPI(const shaderapiinitparams_t &params);
+	void			ExitAPI();
+	void			ReleaseSwapChains() {}
+
+	// frame begin/end
+	void			BeginFrame();
+	void			EndFrame(IEqSwapChain* swapChain = NULL);
+
+	// renderer interface
+	IShaderAPI*		GetRenderer() {return m_Renderer;}
+
+	// sets backbuffer size for default swap chain
+	void			SetBackbufferSize(int w, int h);
+
+	// captures screenshot, outputs image to 'img'
+	bool			CaptureScreenshot(CImage &img);
+
+	// creates swap chain
+	IEqSwapChain*	CreateSwapChain(void* window, bool windowed = true) {return NULL;}
+
+	// destroys a swapchain
+	void			DestroySwapChain(IEqSwapChain* swapChain) {}
+
+	// returns default swap chain
+	IEqSwapChain*	GetDefaultSwapchain() {return NULL;}
+
+protected:
+
+	IShaderAPI*				m_Renderer;
+
+	EQWNDHANDLE				hwnd;
+
+	int						width, height;
+	bool					bHasWireframeRendering;
+	bool					m_bActive;
+
+	bool					m_bResized;
+
+	shaderapiinitparams_t	savedParams;
+
+};
+#endif //CGLRENDERLIB_H

@@ -1,0 +1,944 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2015
+//////////////////////////////////////////////////////////////////////////////////
+// Description: Replay data
+//////////////////////////////////////////////////////////////////////////////////
+
+#include "replay.h"
+#include "StateManager.h"
+#include "session_stuff.h"
+#include "IDebugOverlay.h"
+
+#define CONTROL_DETAILS_STEP (0.0025f)
+
+CReplayData::CReplayData()
+{
+	m_state = REPL_NONE;
+	m_filename = "";
+	m_currentEvent = 0;
+	m_numFrames = 0;
+	m_currentCamera = 0;
+}
+
+CReplayData::~CReplayData() {}
+
+int CReplayData::Record(CCar* pCar, bool onlyCollisions)
+{
+	if(!pCar)
+		return -1;
+
+	// try re-record
+	for(int i = 0; i < m_vehicles.numElem(); i++)
+	{
+		if(m_vehicles[i].obj_car == pCar)
+		{
+			m_vehicles.fastRemoveIndex(i);
+			break;
+		}
+	}
+
+	vehiclereplay_t veh;
+
+	veh.obj_car = pCar;
+	veh.recordOnlyCollisions = onlyCollisions;
+
+	veh.car_initial_pos = pCar->GetPhysicsBody()->GetPosition();
+	veh.car_initial_rot = pCar->GetPhysicsBody()->GetOrientation();
+	veh.car_initial_vel = pCar->GetPhysicsBody()->GetLinearVelocity();
+	veh.car_initial_angvel = pCar->GetPhysicsBody()->GetAngularVelocity();
+
+	veh.scriptObjectId = pCar->GetScriptID();
+
+	veh.name = pCar->m_conf->carName.c_str();
+
+	//Msg("start pos: %g %g %g\n", veh.car_initial_pos.x, veh.car_initial_pos.y, veh.car_initial_pos.z);
+
+	veh.curr_frame = 0;
+	veh.check = false;
+	veh.done = false;
+
+	veh.skipFrames = 0;
+	veh.skeptFrames = 0;
+
+	return m_vehicles.append(veh);
+}
+
+void CReplayData::Clear()
+{
+	m_currentEvent = 0;
+	m_numFrames = 0;
+
+	m_events.clear();	// TODO: full remove
+	m_vehicles.clear();
+	m_cameras.clear();
+	m_activeVehicles.clear();
+}
+
+
+void CReplayData::StartRecording()
+{
+	//SetupObjects();
+
+	m_tick = 0;
+	m_currentEvent = 0;
+	m_state = REPL_RECORDING;
+}
+
+/*
+void CReplayData::SetupObjects()
+{
+	// reset frame index
+	for(int i = 0; i < m_vehicles.numElem(); i++)
+	{
+		vehiclereplay_t& rep = m_vehicles[i];
+
+		if(!rep.done)
+			continue;
+
+		SetupReplayCar(rep);
+	}
+}*/
+
+void CReplayData::StartPlay()
+{
+	m_tick = 0;
+	m_currentEvent = 0;
+	m_currentCamera = 0;
+
+	m_activeVehicles.clear();
+
+	RaiseTickEvents();
+
+	m_state = REPL_PLAYING;
+}
+
+void CReplayData::Stop()
+{
+	if(m_state == REPL_RECORDING)
+		PushEvent( REPLAY_EVENT_STOP, NULL );
+
+	for(int i = 0; i < m_vehicles.numElem(); i++)
+	{
+		m_vehicles[i].done = true;
+
+		if(m_state == REPL_PLAYING)
+		{
+			m_vehicles[i].obj_car = NULL;	// release
+			m_vehicles[i].curr_frame = 0;
+			m_vehicles[i].skeptFrames = 0;
+			m_vehicles[i].skipFrames = 0;
+		}
+	}
+
+	m_currentEvent = 0;
+	m_tick = 0;
+	m_currentCamera = 0;
+	m_state = REPL_NONE;
+}
+
+void CReplayData::UpdatePlayback( float fDt )
+{
+	if(m_state == REPL_NONE)
+	{
+		return;
+	}
+	else if(m_state == REPL_PLAYING || m_state == REPL_RECORDING)
+	{
+		RaiseTickEvents();
+
+		/*
+		for(int i = 0; i < m_activeVehicles.numElem(); i++)
+		{
+			vehiclereplay_t* rep = &m_vehicles[ m_activeVehicles[i] ];
+
+			PlayVehicleFrame( rep );
+		}*/
+
+		if(m_state == REPL_PLAYING)
+		{
+			for(int i = m_currentCamera+1; i < m_cameras.numElem(); i++)
+			{
+				if(m_tick >= m_cameras[i].startTick)
+				{
+					Msg("Replay switches camera to %d\n", i);
+					m_currentCamera = i;
+					break;
+				}
+			}
+		}
+
+		m_tick++;
+	}
+}
+
+replaycamera_t* CReplayData::GetCurrentCamera()
+{
+	if(m_cameras.numElem() == 0)
+		return NULL;
+
+	return &m_cameras[m_currentCamera];
+}
+
+int CReplayData::AddCamera(const replaycamera_t& camera)
+{
+	// do not add the camera, just set
+	for(int i = 0; i < m_cameras.numElem(); i++)
+	{
+		if(m_cameras[i].startTick == camera.startTick)
+		{
+			m_cameras[i] = camera;
+			return i;
+		}
+		else if(camera.startTick > m_cameras[i].startTick)
+		{
+			if(i+1 < m_cameras.numElem() &&
+				camera.startTick < m_cameras[i+1].startTick)
+			{
+				return m_cameras.insert(camera, i+1);
+			}
+		}
+	}
+
+	return m_cameras.append(camera);
+}
+
+void CReplayData::RemoveCamera(int frameIndex)
+{
+	for(int i = 0; i < m_cameras.numElem(); i++)
+	{
+		if(frameIndex >= m_cameras[i].startTick)
+		{
+			m_cameras.removeIndex(i);
+			return;
+		}
+	}
+}
+
+CCar* CReplayData::GetCarByReplayIndex(int index)
+{
+	if(index >= 0 && index < m_vehicles.numElem())
+		return m_vehicles[index].obj_car;
+
+	return NULL;
+}
+
+
+void CReplayData::UpdateReplayObject( int replayId )
+{
+	if(m_state == REPL_NONE)
+		return;
+
+	if(replayId == REPLAY_NOT_TRACKED)
+		return;
+
+	vehiclereplay_t* rep = &m_vehicles[ replayId ];
+
+	if(m_state == REPL_RECORDING)
+		RecordVehicleFrame( rep );
+
+	PlayVehicleFrame( rep );
+}
+
+
+// returns status the current car playing or not
+bool CReplayData::IsCarPlaying( CCar* pCar )
+{
+	if(!(m_state == REPL_PLAYING || m_state == REPL_RECORDING))
+		return false;
+
+	// FIXME: might be slow
+	for(int i = 0; i < m_vehicles.numElem(); i++)
+	{
+		if(m_vehicles[i].obj_car == pCar)
+		{
+			if(!m_vehicles[i].done)
+				return false;
+
+			int lastFrameIdx = m_vehicles[i].replayArray.numElem()-1;
+
+			replaycontrol_t& frame = m_vehicles[i].replayArray[lastFrameIdx];
+
+			// wait for our tick
+			return (m_tick < frame.tick);
+		}
+	}
+
+	return false;
+}
+
+ConVar replay_framecorrect("replay_framecorrect", "1", "Correct replay frames", CV_CHEAT);
+
+void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
+{
+	if(!rep->done)
+		return;
+
+	if(rep->curr_frame >= rep->replayArray.numElem())
+		return;
+
+	replaycontrol_t& frame = rep->replayArray[rep->curr_frame];
+
+	// wait for our tick
+	if(m_tick < frame.tick)
+		return;
+
+	if(rep->obj_car == NULL)
+		return;
+
+	if(rep->obj_car->IsLocked())
+		return;
+
+	// advance frame
+	rep->curr_frame++;
+	rep->check = true;
+
+	if(rep->check)
+	{
+		rep->check = false;
+
+		// correct whole framw
+		rep->obj_car->GetPhysicsBody()->SetPosition(frame.car_origin);
+		rep->obj_car->GetPhysicsBody()->SetOrientation(Quaternion(frame.car_rot.w, frame.car_rot.x, frame.car_rot.y, frame.car_rot.z));
+		rep->obj_car->GetPhysicsBody()->SetLinearVelocity(frame.car_vel);
+		rep->obj_car->GetPhysicsBody()->SetAngularVelocity(frame.car_angvel);
+	}
+
+	// unpack
+	short accelControl = (frame.control_vars & 0x3FF);
+	short brakeControl = ((frame.control_vars >> 10) & 0x3FF);
+	short steerControl = ((frame.control_vars >> 20) & 0x3FF);	// steering sign bit
+	short steerSign = (frame.control_vars >> 30) ? -1 : 1;	// steering sign bit
+
+	int control_flags = frame.button_flags;
+
+	if(control_flags & IN_ANALOGSTEER)
+		rep->obj_car->m_steerRatio = steerControl * steerSign;
+	else
+		rep->obj_car->m_steerRatio = 1023;
+
+	rep->obj_car->m_accelRatio = accelControl;
+	rep->obj_car->m_brakeRatio = brakeControl;
+	
+	rep->obj_car->SetControlButtons(control_flags);
+
+	if(m_state == REPL_RECORDING)		// overwrite the vehicle damage (in case of mission that has pre-recorded vehicle frames)
+		frame.car_damage = rep->obj_car->GetDamage();
+	else if(m_state == REPL_PLAYING)	// replay the damage
+		rep->obj_car->SetDamage(frame.car_damage);
+}
+
+// records vehicle frame
+void CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
+{
+	int nFrame = rep->replayArray.numElem();
+
+	if(rep->done)
+		return;
+
+	bool addControls = false;
+	float prevTime = 0.0f;
+
+	short accelControl = rep->obj_car->m_accelRatio;
+	short brakeControl = rep->obj_car->m_brakeRatio;
+	short steerControl = rep->obj_car->m_steerRatio;
+
+	uint control_flags = rep->obj_car->GetControlButtons();
+	control_flags &= ~IN_MISC; // kill misc buttons, left only needed
+
+	if(nFrame == 0)
+	{
+		addControls = true;
+	}
+	else // add only when old buttons has changed
+	{
+		replaycontrol_t& prevControl = rep->replayArray[nFrame-1];
+
+		// unpack
+		short prevAccelControl = (prevControl.control_vars & 0x3FF);
+		short prevbrakeControl = ((prevControl.control_vars >> 10) & 0x3FF);
+		short prevsteerControl = ((prevControl.control_vars >> 20) & 0x3FF);
+
+		short prevSteerSign = (prevControl.control_vars >> 30) ? -1 : 1;	// steering sign bit
+
+		short prevSteerRatio = 1023;
+
+		if( control_flags & IN_ANALOGSTEER )
+			prevSteerRatio = prevsteerControl * prevSteerSign;
+
+		addControls = (prevControl.button_flags != control_flags) || (accelControl != prevAccelControl) || (brakeControl != prevbrakeControl) || (steerControl != prevsteerControl);
+	}
+
+	if (rep->skeptFrames < rep->skipFrames)
+	{
+		rep->skeptFrames++;
+		return;
+	}
+	else
+		rep->skeptFrames = 0;
+
+	if (rep->recordOnlyCollisions)
+		addControls = false;
+
+	// TODO: add replay frame if car has collision with objects
+	if( addControls || rep->obj_car->GetPhysicsBody()->m_collisionList.numElem() > 0 )
+	{
+		replaycontrol_t con;
+		con.button_flags = control_flags;
+
+		Quaternion orient = rep->obj_car->GetPhysicsBody()->GetOrientation();
+
+		con.car_origin = rep->obj_car->GetPhysicsBody()->GetPosition();
+		con.car_rot = TVec4D<half>(orient.x, orient.y, orient.z, orient.w);
+		con.car_vel = rep->obj_car->GetPhysicsBody()->GetLinearVelocity();
+		con.car_angvel = rep->obj_car->GetPhysicsBody()->GetAngularVelocity();
+		con.car_damage = rep->obj_car->GetDamage();
+
+		int steerBit = 0;
+
+		if(steerControl < 0)
+			steerBit = 1;
+
+		if( !(control_flags & IN_ANALOGSTEER) )
+		{
+			steerControl = 1023;
+			steerBit = 0;
+		}
+
+		con.control_vars = (steerBit << 30) | (abs(steerControl) << 20) | (brakeControl << 10) | accelControl;
+
+		con.tick = m_tick;
+
+		rep->replayArray.append(con);
+	}
+}
+
+extern EqString g_scriptName;
+
+void CReplayData::SaveToFile( const char* filename )
+{
+	m_filename = filename;
+
+	if(m_filename.Path_Extract_Ext().GetLength() == 0)
+		m_filename = m_filename + ".rdat";
+
+	IFile* pFile = GetFileSystem()->Open(m_filename.c_str(), "wb", SP_MOD);
+
+	if(pFile)
+	{
+		replayhdr_t hdr;
+		hdr.version = VEHICLEREPLAY_VERSION;
+		strcpy(hdr.levelname, g_pGameWorld->GetLevelName());
+		strcpy(hdr.envname, g_pGameWorld->GetEnvironmentName());
+		strcpy(hdr.missionscript, g_scriptName.c_str());
+
+		hdr.startRegX = -1;
+		hdr.startRegY = -1;	// detect.
+
+		pFile->Write(&hdr, 1, sizeof(replayhdr_t));
+
+		int count = m_vehicles.numElem();
+		pFile->Write(&count, 1, sizeof(int));
+		
+		// write vehicle names
+		for(int i = 0; i < m_vehicles.numElem(); i++)
+		{
+			vehiclereplay_file_t data(m_vehicles[i]);
+
+			pFile->Write(&data, 1, sizeof(vehiclereplay_file_t));
+
+			for(int j = 0; j < m_vehicles[i].replayArray.numElem(); j++)
+			{
+				replaycontrol_t& control = m_vehicles[i].replayArray[j];
+				pFile->Write(&control, 1, sizeof(replaycontrol_t));
+			}
+		}
+
+		int numEvents = m_events.numElem();
+		pFile->Write(&numEvents, 1, sizeof(int));
+
+		// write events
+		for(int i = 0; i < numEvents; i++)
+		{
+			replayevent_file_t fevent(m_events[i]);
+
+			// TODO: make replay event data
+
+			pFile->Write(&fevent, 1, sizeof(replayevent_file_t));
+		}
+
+		GetFileSystem()->Close(pFile);
+
+		Msg("Replay '%s' saved\n", filename);
+	}
+
+	if(m_cameras.numElem() > 0)
+	{
+		EqString camsFilename = m_filename.Path_Strip_Ext() + ".rcam";
+		IFile* pFile = GetFileSystem()->Open(camsFilename.c_str(), "wb", SP_MOD);
+
+		if(pFile)
+		{
+			replaycamerahdr_t camhdr;
+			camhdr.version = CAMERAREPLAY_VERSION;
+			camhdr.numCameras = m_cameras.numElem();
+
+			pFile->Write(&camhdr, 1, sizeof(replaycamerahdr_t));
+
+			for(int i = 0; i < m_cameras.numElem(); i++)
+			{
+				pFile->Write(&m_cameras[i], 1, sizeof(replaycamera_t));
+			}
+
+			GetFileSystem()->Close(pFile);
+
+			Msg("Replay cameras '%s' saved\n", filename);
+		}
+	}
+}
+
+bool CReplayData::SaveVehicleReplay( CCar* target, const char* filename )
+{
+	vehiclereplay_t* rep = NULL;
+
+	for(int i = 0; i < m_vehicles.numElem(); i++)
+	{
+		if(m_vehicles[i].obj_car == target)
+			rep = &m_vehicles[i];
+	}
+
+	if(!rep)
+	{
+		Msg("Vehicle is not recorded");
+		return false;
+	}
+
+	IFile* pFile = GetFileSystem()->Open((_Es(filename) + ".vr").c_str(), "wb", SP_MOD);
+
+	if(pFile)
+	{
+		vehiclereplay_file_t data(*rep);
+
+		pFile->Write(&data, 1, sizeof(vehiclereplay_file_t));
+
+		for(int j = 0; j < rep->replayArray.numElem(); j++)
+		{
+			replaycontrol_t& control = rep->replayArray[j];
+			pFile->Write(&control, 1, sizeof(replaycontrol_t));
+		}
+
+		GetFileSystem()->Close(pFile);
+
+		Msg("Car replay '%s' saved\n", filename);
+		return true;
+	}
+
+	return false;
+}
+
+bool CReplayData::LoadVehicleReplay( CCar* target, const char* filename )
+{
+	IFile* pFile = GetFileSystem()->Open((_Es(filename) + ".vr").c_str(), "rb", SP_MOD);
+
+	if(pFile)
+	{
+		// try to inject frames
+		int repIdx = FindVehicleReplayByCar(target);
+
+		if(repIdx == REPLAY_NOT_TRACKED)
+		{
+			vehiclereplay_t newRep;
+			repIdx = m_vehicles.append(newRep);
+		}
+
+		vehiclereplay_t& veh = m_vehicles[repIdx];
+
+		// event will spawn this car
+		veh.obj_car = target;
+
+		vehiclereplay_file_t data;
+		pFile->Read(&data, 1, sizeof(vehiclereplay_file_t));
+
+		veh.car_initial_pos = data.car_initial_pos;
+		veh.car_initial_rot = Quaternion(data.car_initial_rot.w, data.car_initial_rot.x, data.car_initial_rot.y, data.car_initial_rot.z);
+		veh.car_initial_vel = data.car_initial_vel;
+		veh.car_initial_angvel = data.car_initial_angvel;
+		veh.scriptObjectId = data.scriptObjectId;
+
+		veh.name = data.name;
+
+		veh.curr_frame = 0;
+		veh.check = false;
+		veh.done = true;
+
+		for(int j = 0; j < data.numFrames; j++)
+		{
+			replaycontrol_t control;
+			pFile->Read(&control, 1, sizeof(replaycontrol_t));
+
+			veh.replayArray.append(control);
+		}
+
+		veh.obj_car->m_replayID = repIdx;
+		m_activeVehicles.append(repIdx);
+
+		// this target must be added
+		//PushEvent(REPLAY_EVENT_SPAWN, veh.obj_car);
+
+		GetFileSystem()->Close(pFile);
+
+		Msg("Car replay '%s' loaded\n", filename);
+		return true;
+	}
+
+	return false;
+}
+
+void CReplayData::LoadFromFile(const char* filename)
+{
+	m_filename = filename;
+
+	if(m_filename.Path_Extract_Ext().GetLength() == 0)
+		m_filename = m_filename + ".rdat";
+
+	IFile* pFile = GetFileSystem()->Open(m_filename.c_str(), "rb", SP_MOD);
+
+	if(pFile)
+	{
+		replayhdr_t hdr;
+		pFile->Read(&hdr, 1, sizeof(replayhdr_t));
+
+		if(hdr.version != VEHICLEREPLAY_VERSION)
+		{
+			MsgError("Invalid replay file version!\n");
+			GetFileSystem()->Close(pFile);
+			return;
+		}
+
+		MsgInfo("Replay info:\n");
+
+		MsgInfo("	level: '%s'\n", hdr.levelname);
+		MsgInfo("	env: '%s'\n", hdr.envname);
+		MsgInfo("	mission: '%s'\n", hdr.missionscript);
+
+		Clear();
+
+		int veh_count = 0;
+		pFile->Read(&veh_count, 1, sizeof(int));
+
+		// read vehicle names
+		for(int i = 0; i < veh_count; i++)
+		{
+			vehiclereplay_file_t data;
+
+			pFile->Read(&data, 1, sizeof(vehiclereplay_file_t));
+
+			vehiclereplay_t veh;
+
+			// event will spawn this car
+			veh.obj_car = NULL;
+
+			veh.car_initial_pos = data.car_initial_pos;
+			veh.car_initial_rot = Quaternion(data.car_initial_rot.w, data.car_initial_rot.x, data.car_initial_rot.y, data.car_initial_rot.z);
+			veh.car_initial_vel = data.car_initial_vel;
+			veh.car_initial_angvel = data.car_initial_angvel;
+			veh.scriptObjectId = data.scriptObjectId;
+
+			veh.name = data.name;
+
+			veh.curr_frame = 0;
+			veh.check = false;
+			veh.done = true;
+
+			for(int j = 0; j < data.numFrames; j++)
+			{
+				replaycontrol_t control;
+				pFile->Read(&control, 1, sizeof(replaycontrol_t));
+
+				veh.replayArray.append(control);
+			}
+
+			m_vehicles.append(veh);
+		}
+
+		// read events
+		int numEvents = 0;
+		pFile->Read(&numEvents, 1, sizeof(int));
+
+		for(int i = 0; i < numEvents; i++)
+		{
+			replayevent_file_t fevent;
+			pFile->Read(&fevent, 1, sizeof(replayevent_file_t));
+
+			replayevent_t evt;
+
+			evt.frameIndex = fevent.frameIndex;
+			evt.replayIndex = fevent.replayIndex;
+			evt.eventType = fevent.eventType;
+			evt.eventFlags = fevent.eventFlags;
+			evt.eventData = NULL;
+
+			// TODO: make replay event data
+
+			if(evt.eventType == REPLAY_EVENT_STOP)
+				m_numFrames = evt.frameIndex;
+
+			m_events.append( evt );
+		}
+
+		Msg("Replay %s loaded\n", filename);
+
+		GetFileSystem()->Close(pFile);
+
+		// try loading camera file
+		EqString camsFilename = m_filename.Path_Strip_Ext() + ".rcam";
+		pFile = GetFileSystem()->Open(camsFilename.c_str(), "rb", SP_MOD);
+		if(pFile)
+		{
+			replaycamerahdr_t camhdr;
+			pFile->Read( &camhdr,1,sizeof(replaycamerahdr_t) );
+
+			if(camhdr.version == CAMERAREPLAY_VERSION)
+			{
+				m_currentCamera = 0;
+
+				replaycamera_t cam;
+
+				for(int i = 0; i < camhdr.numCameras; i++)
+				{
+					pFile->Read( &cam,1,sizeof(replaycamera_t) );
+
+					m_cameras.append(cam);
+				}
+			}
+			else
+			{
+				MsgError("Unsupported camera replay file version!\n");
+			}
+
+			GetFileSystem()->Close(pFile);
+		}
+
+		// load mission, level, set environment
+		m_state = REPL_INITIALIZE;
+
+		if(!LoadMissionScript( hdr.missionscript ))
+		{
+			g_pGameWorld->SetLevelName(hdr.levelname);
+		}
+
+		g_pGameWorld->SetEnvironmentName(hdr.envname);
+	}
+}
+
+void CReplayData::PushEvent( EReplayEventType type, CGameObject* object )
+{
+	if( m_state != REPL_RECORDING )
+	{
+		return;
+	}
+
+	replayevent_t evt;
+	evt.eventType = type;
+	evt.frameIndex = m_tick;
+	evt.replayIndex = REPLAY_NOT_TRACKED;
+	evt.eventData = NULL;
+	evt.eventFlags = 0;
+	//evt.eventDataSize = 0;
+
+	// assign replay index
+	if( type == REPLAY_EVENT_SPAWN )
+	{
+		if(object->ObjType() == GO_CAR)
+		{
+			evt.replayIndex = Record( (CCar*)object );
+			object->m_replayID = evt.replayIndex;
+
+			// TODO: additional information
+		}
+		else if (object->ObjType() == GO_CAR_AI)
+		{
+			CAITrafficCar* pCar = (CAITrafficCar*)object;
+
+			evt.replayIndex = Record(pCar, false);
+			m_vehicles[evt.replayIndex].skipFrames = 64;	// skip frames
+			m_vehicles[evt.replayIndex].skeptFrames = 0;
+			//m_vehicles[evt.replayIndex].done = true;	// ... and stop recording
+
+			if (pCar->IsPursuer())
+			{
+				evt.eventFlags = REPLAY_FLAG_CAR_COP_AI;
+			}
+			else
+				evt.eventFlags = REPLAY_FLAG_CAR_AI;
+
+			object->m_replayID = evt.replayIndex;
+		}
+
+		m_activeVehicles.append( evt.replayIndex );
+	}
+	else if( type == REPLAY_EVENT_REMOVE )
+	{
+		if ( IsCar(object) )
+		{
+			// find recording car
+			evt.replayIndex = FindVehicleReplayByCar( (CCar*)object );
+
+			if(evt.replayIndex != REPLAY_NOT_TRACKED)
+			{
+				// make replay done, and invalidate realtime data
+				m_vehicles[evt.replayIndex].done = true;
+				m_vehicles[evt.replayIndex].obj_car = NULL;
+			}
+
+			// no additional information needed
+
+			m_activeVehicles.fastRemove( evt.replayIndex );
+		}
+	}
+
+	m_events.append( evt );
+}
+
+int	CReplayData::FindVehicleReplayByCar( CCar* pCar )
+{
+	if(pCar->m_replayID != REPLAY_NOT_TRACKED)
+		return pCar->m_replayID;
+
+	for(int i = 0; i < m_vehicles.numElem(); i++)
+	{
+		if(m_vehicles[i].obj_car == pCar)
+			return i;
+	}
+
+	return -1;
+}
+
+void CReplayData::RaiseTickEvents()
+{
+	if(m_state == REPL_RECORDING)
+		return;
+
+	for(int i = m_currentEvent; i < m_events.numElem(); i++)
+	{
+		replayevent_t& evt = m_events[i];
+
+		if(evt.frameIndex != m_tick)
+			break;
+
+		RaiseReplayEvent( evt );
+
+		m_currentEvent++;
+	}
+}
+
+void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
+{
+	// assign replay index
+	if( evt.eventType == REPLAY_EVENT_SPAWN )
+	{
+		// spawn car
+		if(evt.replayIndex != REPLAY_NOT_TRACKED)
+		{
+			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+
+			m_activeVehicles.append( evt.replayIndex );
+
+			// spawn replay car if not scripted
+			if( rep.scriptObjectId == SCRIPT_ID_NOTSCRIPTED )
+			{
+				int type = CAR_TYPE_NORMAL;
+
+				if (evt.eventFlags == REPLAY_FLAG_CAR_AI)
+				{
+					// generate random number just for correctness
+					g_pGameWorld->m_random.Regenerate();
+					g_pGameWorld->m_random.Regenerate();
+
+					type = CAR_TYPE_TRAFFIC_AI;
+				}
+				else if (evt.eventFlags == REPLAY_FLAG_CAR_COP_AI)
+				{
+					// pursuer cars aren't random for now
+					type = CAR_TYPE_PURSUER_COP_AI;
+				}
+				else if (evt.eventFlags == REPLAY_FLAG_CAR_GANG_AI)
+				{
+					type = CAR_TYPE_PURSUER_GANG_AI;
+				}
+
+				
+				// create car and spawn
+				rep.obj_car = g_pGameSession->CreateCar(rep.name.c_str(), type);
+
+				// assign the replay index so it can play self
+				rep.obj_car->m_replayID = evt.replayIndex;
+			
+				ASSERTMSG(rep.obj_car, varargs("ERROR! Cannot find car '%s'", rep.name.c_str()));
+			
+				// temp
+				if(g_pGameSession->GetPlayerCar() == NULL)
+				{
+					g_pGameSession->SetPlayerCar(rep.obj_car);
+					g_pGameWorld->m_level.QueryNearestRegions(rep.car_initial_pos, true);
+				}
+
+				rep.obj_car->Spawn();
+				g_pGameWorld->AddObject( rep.obj_car );
+			}
+			else
+			{
+				CGameObject* obj = g_pGameSession->FindScriptObjectById( rep.scriptObjectId );
+
+				if( obj && IsCar(obj) )
+				{
+					rep.obj_car = (CCar*)obj;
+					rep.obj_car->m_replayID = evt.replayIndex;
+				}
+			}
+
+			SetupReplayCar( &rep );
+		}
+	}
+	else if( evt.eventType == REPLAY_EVENT_REMOVE )
+	{
+		// remove car
+		if( evt.replayIndex != REPLAY_NOT_TRACKED )
+		{
+			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+
+			m_activeVehicles.fastRemove( evt.replayIndex );
+
+			if( rep.scriptObjectId == SCRIPT_ID_NOTSCRIPTED )
+			{
+				if(g_pGameSession->GetPlayerCar() == rep.obj_car)
+					g_pGameSession->SetPlayerCar(NULL);
+
+				g_pGameWorld->RemoveObject(rep.obj_car);
+				rep.obj_car = NULL;
+			}
+		}
+	}
+	else if( evt.eventType == REPLAY_EVENT_STOP )
+	{
+		g_pGameSession->SignalMissionStatus(MIS_STATUS_SUCCESS, 0.0f);
+		Stop();
+	}
+}
+
+void CReplayData::SetupReplayCar( vehiclereplay_t* rep )
+{
+	rep->curr_frame = 0;
+	CCar* pCar = rep->obj_car;
+
+	if(!pCar)
+		return;
+
+	if(rep->replayArray.numElem() == 0)
+		MsgWarning("Warning: no replay frames for '%s' (rid=%d)\n", rep->name.c_str(), rep->obj_car->m_replayID);
+			
+	pCar->GetPhysicsBody()->SetPosition(rep->car_initial_pos);
+	pCar->GetPhysicsBody()->SetOrientation(rep->car_initial_rot);
+	pCar->GetPhysicsBody()->SetLinearVelocity(rep->car_initial_vel);
+	pCar->GetPhysicsBody()->SetAngularVelocity(rep->car_initial_angvel);
+}

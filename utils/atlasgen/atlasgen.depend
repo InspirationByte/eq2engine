@@ -1,0 +1,452 @@
+# depslib dependency file v1.0
+1416744336 source:/home/soap/Projects/utils/atlasgen/atlasgen.cpp
+	"core_base_header.h"
+	"DebugInterface.h"
+	"IVirtualStream.h"
+	"cmdlib.h"
+
+1416768198 /home/soap/Projects/public/core/core_base_header.h
+	"../platform/Platform.h"
+	"../utils/strtools.h"
+	"../utils/eqtimer.h"
+	"../utils/KeyValues.h"
+	"IConCommandFactory.h"
+	"ICommandAccessor.h"
+	"InterfaceManager.h"
+	"IDkCore.h"
+	"CPU.h"
+	"ILocalize.h"
+	"ppmem.h"
+	"ICmdLineParser.h"
+	"IFileSystem.h"
+	"DebugInterface.h"
+
+1416838181 /home/soap/Projects/public/platform/Platform.h
+	"dktypes.h"
+	"SDL.h"
+	"SDL_syswm.h"
+	<windows.h>
+	<stdio.h>
+	<X11/keysym.h>
+	<float.h>
+
+1416855744 /home/soap/Projects/public/dktypes.h
+	<stddef.h>
+	<string.h>
+
+1416839711 /home/soap/Projects/public/utils/strtools.h
+	"utils/DkLinkedList.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+	<ctype.h>
+	<string.h>
+
+1416854570 /home/soap/Projects/public/utils/DkLinkedList.h
+
+1416768214 /home/soap/Projects/public/utils/DkList.h
+	"platform/Platform.h"
+
+1413108777 /home/soap/Projects/public/utils/eqstring.h
+	<stdlib.h>
+	<string.h>
+
+1416768260 /home/soap/Projects/public/utils/eqtimer.h
+	<stdio.h>
+	<stdlib.h>
+	"platform/Platform.h"
+	<sys/time.h>
+
+1416768276 /home/soap/Projects/public/utils/KeyValues.h
+	"Platform.h"
+	"utils/DkList.h"
+	"math/DkMath.h"
+
+1411235494 /home/soap/Projects/public/math/DkMath.h
+	"Vector.h"
+	"Matrix.h"
+	"Random.h"
+	"Quaternion.h"
+	"BoundingBox.h"
+	"SIMD.h"
+	"Volume.h"
+	"FVector.h"
+
+1414684485 /home/soap/Projects/public/math/Vector.h
+	<limits.h>
+	<float.h>
+	"dktypes.h"
+	"math_common.h"
+	"Vector_Inline.h"
+
+1416773062 /home/soap/Projects/public/math/math_common.h
+	<math.h>
+	<float.h>
+
+1416769097 /home/soap/Projects/public/math/Vector_Inline.h
+	"Vector.h"
+
+1416769232 /home/soap/Projects/public/math/Matrix.h
+	"Vector.h"
+	"Matrix_Inline.h"
+
+1416769328 /home/soap/Projects/public/math/Matrix_Inline.h
+	"Matrix.h"
+	"Vector.h"
+	"Quaternion.h"
+
+1416769029 /home/soap/Projects/public/math/Quaternion.h
+	"Matrix.h"
+
+1411235494 /home/soap/Projects/public/math/Random.h
+
+1416769363 /home/soap/Projects/public/math/BoundingBox.h
+	"Vector.h"
+	"FixedMath.h"
+
+1411235494 /home/soap/Projects/public/math/FixedMath.h
+	"dktypes.h"
+	<limits.h>
+	<float.h>
+	<math.h>
+	"math/math_common.h"
+
+1411235494 /home/soap/Projects/public/math/SIMD.h
+	"Vector.h"
+	<xmmintrin.h>
+	"../CPU.h"
+
+1416768297 /home/soap/Projects/public/CPU.h
+	"platform/Platform.h"
+	"InterfaceManager.h"
+	<intrin.h>
+	<mmintrin.h>
+	<emmintrin.h>
+	<mm3dnow.h>
+
+1416769097 /home/soap/Projects/public/InterfaceManager.h
+	<stdio.h>
+	"utils/singleton.h"
+
+1416769650 /home/soap/Projects/public/utils/singleton.h
+
+1416773689 /home/soap/Projects/public/math/Volume.h
+	"Matrix.h"
+	"Vector.h"
+
+1411235494 /home/soap/Projects/public/math/FVector.h
+	"FixedMath.h"
+	"Matrix.h"
+	"Volume.h"
+
+1416768283 /home/soap/Projects/public/core/IConCommandFactory.h
+	<stdio.h>
+	<stdlib.h>
+	"utils/DkList.h"
+	"ConVar.h"
+	"ConCommand.h"
+	"ConCommandBase.h"
+	"InterfaceManager.h"
+
+1416497500 /home/soap/Projects/public/core/ConVar.h
+	<stdio.h>
+	<stdlib.h>
+	"ConCommandBase.h"
+	"InterfaceManager.h"
+	"utils\DkStr.h"
+
+1411235494 /home/soap/Projects/public/core/ConCommandBase.h
+	<stdio.h>
+	<stdlib.h>
+
+1416837396 /home/soap/Projects/public/core/ConCommand.h
+	<stdio.h>
+	<stdlib.h>
+	"ConCommandBase.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+	"InterfaceManager.h"
+
+1411235494 /home/soap/Projects/public/core/ICommandAccessor.h
+	<stdio.h>
+	<stdlib.h>
+
+1416742748 /home/soap/Projects/public/core/IDkCore.h
+	"ICmdLineParser.h"
+	"core_base_header.h"
+
+1416767975 /home/soap/Projects/public/core/ICmdLineParser.h
+	<stdio.h>
+	"core_base_header.h"
+
+1416769097 /home/soap/Projects/public/core/ILocalize.h
+	"IDkCore.h"
+
+1416740353 /home/soap/Projects/public/core/ppmem.h
+	<string.h>
+	"Platform.h"
+	"InterfaceManager.h"
+
+1411235494 /home/soap/Projects/public/core/IFileSystem.h
+	"core_base_header.h"
+	"IVirtualStream.h"
+	<sys/types.h>
+	<sys/stat.h>
+
+1411235494 /home/soap/Projects/public/IVirtualStream.h
+	"ppmem.h"
+
+1416738798 /home/soap/Projects/public/core/DebugInterface.h
+	"InterfaceManager.h"
+
+1411235494 /home/soap/Projects/public/core/cmdlib.h
+
+1411235494 source:/home/soap/Projects/utils/atlasgen/AtlasImagePacker.cpp
+	"DebugInterface.h"
+	"imaging/ImageLoader.h"
+	"imaging/PixWriter.h"
+	"utils/RectanglePacker.h"
+
+1416773482 /home/soap/Projects/public/imaging/ImageLoader.h
+	<stdio.h>
+	"Platform.h"
+	"utils/eqstring.h"
+	"textureformats.h"
+	"IFileSystem.h"
+
+1411235494 /home/soap/Projects/public/textureformats.h
+
+1416855624 /home/soap/Projects/public/imaging/PixWriter.h
+	"textureformats.h"
+	"DebugInterface.h"
+
+1416856575 /home/soap/Projects/public/utils/RectanglePacker.h
+	"dktypes.h"
+	"utils/DkList.h"
+
+1411235494 source:/home/soap/Projects/public/utils/RectanglePacker.cpp
+	"RectanglePacker.h"
+
+1411235494 source:/home/soap/Projects/eqengine/eq_src/public/utils/RectanglePacker.cpp
+	"RectanglePacker.h"
+
+1416856575 /home/soap/Projects/eqengine/eq_src/public/utils/RectanglePacker.h
+	"dktypes.h"
+	"utils/DkList.h"
+
+1416855744 /home/soap/Projects/eqengine/eq_src/public/dktypes.h
+	<stddef.h>
+	<string.h>
+
+1416768214 /home/soap/Projects/eqengine/eq_src/public/utils/DkList.h
+	"platform/Platform.h"
+
+1417104357 /home/soap/Projects/eqengine/eq_src/public/platform/Platform.h
+	"dktypes.h"
+	"SDL.h"
+	"SDL_syswm.h"
+	<windows.h>
+	<stdio.h>
+	<X11/keysym.h>
+	<float.h>
+
+1416939838 source:/home/soap/Projects/eqengine/eq_src/utils/atlasgen/atlasgen.cpp
+	"core_base_header.h"
+	"DebugInterface.h"
+	"IVirtualStream.h"
+	"cmdlib.h"
+
+1416768198 /home/soap/Projects/eqengine/eq_src/public/core/core_base_header.h
+	"../platform/Platform.h"
+	"../utils/strtools.h"
+	"../utils/eqtimer.h"
+	"../utils/KeyValues.h"
+	"IConCommandFactory.h"
+	"ICommandAccessor.h"
+	"InterfaceManager.h"
+	"IDkCore.h"
+	"CPU.h"
+	"ILocalize.h"
+	"ppmem.h"
+	"ICmdLineParser.h"
+	"IFileSystem.h"
+	"DebugInterface.h"
+
+1417009344 /home/soap/Projects/eqengine/eq_src/public/utils/strtools.h
+	"utils/DkLinkedList.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+	<ctype.h>
+	<string.h>
+
+1416854570 /home/soap/Projects/eqengine/eq_src/public/utils/DkLinkedList.h
+
+1413108777 /home/soap/Projects/eqengine/eq_src/public/utils/eqstring.h
+	<stdlib.h>
+	<string.h>
+
+1416768260 /home/soap/Projects/eqengine/eq_src/public/utils/eqtimer.h
+	<stdio.h>
+	<stdlib.h>
+	"platform/Platform.h"
+	<sys/time.h>
+
+1416768276 /home/soap/Projects/eqengine/eq_src/public/utils/KeyValues.h
+	"Platform.h"
+	"utils/DkList.h"
+	"math/DkMath.h"
+
+1417110083 /home/soap/Projects/eqengine/eq_src/public/math/DkMath.h
+	"Vector.h"
+	"Matrix.h"
+	"Random.h"
+	"BoundingBox.h"
+	"SIMD.h"
+	"Volume.h"
+	"FVector.h"
+
+1414684485 /home/soap/Projects/eqengine/eq_src/public/math/Vector.h
+	<limits.h>
+	<float.h>
+	"dktypes.h"
+	"math_common.h"
+	"Vector_Inline.h"
+
+1416773062 /home/soap/Projects/eqengine/eq_src/public/math/math_common.h
+	<math.h>
+	<float.h>
+
+1416769097 /home/soap/Projects/eqengine/eq_src/public/math/Vector_Inline.h
+	"Vector.h"
+
+1417109823 /home/soap/Projects/eqengine/eq_src/public/math/Matrix.h
+	"Vector.h"
+	"Quaternion.h"
+	"Matrix_Inline.h"
+
+1417109730 /home/soap/Projects/eqengine/eq_src/public/math/Matrix_Inline.h
+
+1417110471 /home/soap/Projects/eqengine/eq_src/public/math/Quaternion.h
+	"Matrix.h"
+
+1411235494 /home/soap/Projects/eqengine/eq_src/public/math/Random.h
+
+1416769363 /home/soap/Projects/eqengine/eq_src/public/math/BoundingBox.h
+	"Vector.h"
+	"FixedMath.h"
+
+1417105825 /home/soap/Projects/eqengine/eq_src/public/math/FixedMath.h
+	"dktypes.h"
+	<limits.h>
+	<float.h>
+	<math.h>
+	"math/math_common.h"
+
+1411235494 /home/soap/Projects/eqengine/eq_src/public/math/SIMD.h
+	"Vector.h"
+	<xmmintrin.h>
+	"../CPU.h"
+
+1416768297 /home/soap/Projects/eqengine/eq_src/public/CPU.h
+	"platform/Platform.h"
+	"InterfaceManager.h"
+	<intrin.h>
+	<mmintrin.h>
+	<emmintrin.h>
+	<mm3dnow.h>
+
+1416769097 /home/soap/Projects/eqengine/eq_src/public/InterfaceManager.h
+	<stdio.h>
+	"utils/singleton.h"
+
+1416769650 /home/soap/Projects/eqengine/eq_src/public/utils/singleton.h
+
+1417106221 /home/soap/Projects/eqengine/eq_src/public/math/Volume.h
+	"Matrix.h"
+	"Vector.h"
+
+1411235494 /home/soap/Projects/eqengine/eq_src/public/math/FVector.h
+	"FixedMath.h"
+	"Matrix.h"
+	"Volume.h"
+
+1416768283 /home/soap/Projects/eqengine/eq_src/public/core/IConCommandFactory.h
+	<stdio.h>
+	<stdlib.h>
+	"utils/DkList.h"
+	"ConVar.h"
+	"ConCommand.h"
+	"ConCommandBase.h"
+	"InterfaceManager.h"
+
+1416497500 /home/soap/Projects/eqengine/eq_src/public/core/ConVar.h
+	<stdio.h>
+	<stdlib.h>
+	"ConCommandBase.h"
+	"InterfaceManager.h"
+	"utils\DkStr.h"
+
+1411235494 /home/soap/Projects/eqengine/eq_src/public/core/ConCommandBase.h
+	<stdio.h>
+	<stdlib.h>
+
+1416837396 /home/soap/Projects/eqengine/eq_src/public/core/ConCommand.h
+	<stdio.h>
+	<stdlib.h>
+	"ConCommandBase.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+	"InterfaceManager.h"
+
+1411235494 /home/soap/Projects/eqengine/eq_src/public/core/ICommandAccessor.h
+	<stdio.h>
+	<stdlib.h>
+
+1417022984 /home/soap/Projects/eqengine/eq_src/public/core/IDkCore.h
+	"ICmdLineParser.h"
+	"core_base_header.h"
+
+1417023029 /home/soap/Projects/eqengine/eq_src/public/core/ICmdLineParser.h
+	<stdio.h>
+	"core_base_header.h"
+
+1416769097 /home/soap/Projects/eqengine/eq_src/public/core/ILocalize.h
+	"IDkCore.h"
+
+1417008845 /home/soap/Projects/eqengine/eq_src/public/core/ppmem.h
+	<string.h>
+	"Platform.h"
+	"InterfaceManager.h"
+
+1411235494 /home/soap/Projects/eqengine/eq_src/public/core/IFileSystem.h
+	"core_base_header.h"
+	"IVirtualStream.h"
+	<sys/types.h>
+	<sys/stat.h>
+
+1411235494 /home/soap/Projects/eqengine/eq_src/public/IVirtualStream.h
+	"ppmem.h"
+
+1416738798 /home/soap/Projects/eqengine/eq_src/public/core/DebugInterface.h
+	"InterfaceManager.h"
+
+1411235494 /home/soap/Projects/eqengine/eq_src/public/core/cmdlib.h
+
+1411235494 source:/home/soap/Projects/eqengine/eq_src/utils/atlasgen/AtlasImagePacker.cpp
+	"DebugInterface.h"
+	"imaging/ImageLoader.h"
+	"imaging/PixWriter.h"
+	"utils/RectanglePacker.h"
+
+1417009007 /home/soap/Projects/eqengine/eq_src/public/imaging/ImageLoader.h
+	<stdio.h>
+	"Platform.h"
+	"utils/eqstring.h"
+	"textureformats.h"
+	"IFileSystem.h"
+
+1411235494 /home/soap/Projects/eqengine/eq_src/public/textureformats.h
+
+1417009498 /home/soap/Projects/eqengine/eq_src/public/imaging/PixWriter.h
+	"textureformats.h"
+	"DebugInterface.h"
+

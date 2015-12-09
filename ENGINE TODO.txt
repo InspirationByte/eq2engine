@@ -1,0 +1,145 @@
+------------------------------------------------------------------------
+---- Equilibrium Engine
+---- TODO lists
+------------------------------------------------------------------------
+
+ЛЕГЕНДА:
+
+	ПОМЕТКИ:
+		^ : главная/основная задача
+		+ : дополнительная задача
+
+		{BUG} - баг
+		{ДОРАБОТКА} - как дополнительная задача, но, по всей видимости, менее требуемая
+
+	ПОМЕТКИ ВЫПОЛНЕНИЯ:
+		[СДЕЛАНО] : задача выполнена и не нуждается в доработках
+		[СДЕЛАНО/ЧАСТИЧНО] : имеются незавершённые задачи, не особо мешающие работе
+
+PROJECT:
+
+	{BUG} <FILESYSTEM> - не создаются папки
+	[СДЕЛАНО] {BUG} - неправильно восстанавливался размер динамических буферов после сброса девайса
+
+	!!! only further work !!!
+
+	1. [СДЕЛАНО] Add coreLib, move several components from prevLib Console, pacifier
+	2. [СДЕЛАНО] Rename prevLib to eqFWLib (eq framework lib)
+	3. sort parts of public\ directory to shared_engine\, shared_game\, and:
+		^ [СДЕЛАНО] public\core,
+		^ public\soundsystem,
+		^ public\physics (public\eqphysics)
+		^ [СДЕЛАНО] move renderer\ to matsystem\shaderapi\
+
+	4. Linux port (+ android):
+		^ [СДЕЛАНО] CoreLib
+		^ [СДЕЛАНО] FrameworkLib
+		^ [СДЕЛАНО/ЧАСТИЧНО] DkCore
+			+ linux user name log
+			+ exception handler
+			+ minidumps ?
+			+ [СДЕЛАНО] message boxes from GTK2
+			+ MultibyteToWideChar
+
+		^ [СДЕЛАНО] EqMatSystem
+		^ [СДЕЛАНО] EqShaderAPINull
+		^ EqShaderAPIGL
+			^ создать полностью совместимую библиотеку с GL ES RHI
+		^ EqBaseShaders
+
+		^ EqEngine (только компоненты)
+			^ EqSoundSystem (нет, не корректировать ISoundSystem )
+			^ [СДЕЛАНО] Studio models
+			^ Visual console
+			^ [СДЕЛАНО] EqPhysics
+
+		^ [СДЕЛАНО] DriversGame
+		^ DriversEditor
+
+		+ [СДЕЛАНО] atlasgen
+		+ [СДЕЛАНО] animca
+		+ egfca
+		+ egfman
+
+
+EQENGINE:
+	ЗВУК:
+		1. Дописать новую звуковую систему EqSoundSystemA
+
+	ФИЗИКА: 
+		1. Internal_TraceShape - трейсинг шейпом объекта
+		2. EqPhysicsObject::GetShape(), GetShapeCount()
+		3. DkPhysics::CreateShape(), GetDefaultShape()
+		4. [СДЕЛАНО] Кеширование физической модели PhysicsObjectData (POD) в Bullet shape
+
+	РЕНДЕР:
+		1. Внести декали для BaseEntity, сделать шейдер скиннинга для декалей
+		2. [СДЕЛАНО] Атласы текстур декалей и партиклов - очень полезно для сортировки.
+		3. Небольшая переработка рендерера мира: сделать объёмы комнат древоориентированными
+			(потому-что и компилятор хочет этого, и оптимизировать надо)
+		4. DOF
+		5. Оптимизация освещения (Clip planes, PSSM, VSM)
+		6. Light volumes, для скорости и света партиклов в лайтмапах
+		7. Добавить антипорталы
+		8. Добавить Occlusion Query
+		9. {BUG} Вылеты на партиклах - ДО СИХ ПОР НЕ РЕШЕНО
+
+	EqEngine:
+		1. убрать Entity Registrator из EqEngine и перенести в Game
+		2. немного переработать формат локаций
+
+	EqEdit:
+		1. EqWorldEdit (EqEdit2) - инструмент для сборки локаций из моделей
+			(аля сталкер, но со SceneGraph, более гибкий и позволяющий скриптовать ЛЮБОЙ объект как в Glacier)
+
+	ОБЩЕЕ
+		1. ^ Скрипты, привязка через OOLua
+		2. [СДЕЛАНО] Сделать сетевой движок
+		3. Linux port
+		4. Android port
+		5. [СДЕЛАНО] SDL2 support
+		
+
+RENDERERS:
+
+	1. Occlusion Query Objects
+	2. [СДЕЛАНО] Вычистить код RenderLibrary
+	3. IMeshBuilder полностью переработать, сделать CMeshBuilder, публичным, и работать по заданному формату в VBO
+	4. Render API capabilities (caps). g_pShaderAPI->GetCaps()
+	5. Переработать загрузку текстур (ImageProvider) Работа в сегодняшнем варианте с ними просто отвратительная.
+	6. Рефакторить уродливый код создания State-объектов, особенно для текстур
+	7. Работа с Direct3D10 и Direct3D11, Direct3D12 (и забросить Direct3D9)
+	8. ShaderAPI_AMD - Mantle API (когда SDK выйдет)
+	9. ShaderAPI_OGL - OpenGL 4.x
+
+MATSYSTEM:
+
+	1. Отдать шейдерам создание State-объектов, чтобы не выбирать их в системе материалов
+	2. Упразднить все Draw*FFP и пересадить на новый IMeshBuilder
+
+EQEDIT:
+
+	1. Фильтрация материалов по тегам
+	2. Сортировка по дате (это возможно, но через изменения в matsystem, добавить в материал параметр "date")
+	3. Переделать систему объектов, чтобы можно было указать на статике Solid class Entity
+	4. Переработка интерфейса редактора, и внесение поправок в код
+	5. Сделать библиотеку объектов, материалов
+		. Что-то по типу сборщика промежуточных, так и EGF-моделей.
+		. Сделать бинарную альтернативу ESM - EBM (Equilibrium Binary shared Model)
+		. EDITABLE_ENTITY переименовать в EDITABLE_POINTENTITY
+	6. Статические объекты в редакторе отныне должны пополниться типом EDITABLE_MODEL
+		(EDITABLE_TERRAINPATCH вообще надо упразднить)
+	7. Сделать назначение комнат через группирование моделей, а не их деление при помощи брашей
+	8. Areaportal'ы должны быть по дефолту доступны в редакторе, и рендериться всё по ним
+	9. {BUG} Исправить чёртово вращение в редакторе
+
+EQWC:
+
+	1. Объекты, на которых имеется модель из мира должна быть конвертирована в EGF (Legacy EGF)
+		(так же сделать поддержку физики)
+	2. + Компиляция в дерево (room - nodes - (sub)nodes...)
+	3. + Сделать более-менее нормальную сборку координат лайтмап, а то и медленно и коряво (shape tracing in 2D)
+
+OTHER:
+
+	1. ^ Сделать генератор шрифтов (FreeType, etc.)

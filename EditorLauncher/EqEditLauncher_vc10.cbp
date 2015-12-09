@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="MuscleEngine" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="PigeonGame Release Win32">
+				<Option output="EqEditLauncher_vc10" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add option="-D_DKLAUNCHER_" />
+					<Add option="-DGAME_DEMO" />
+					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="-DPIGEONGAME" />
+					<Add directory="../FileSystem" />
+					<Add directory="../Engine" />
+					<Add directory="../public" />
+					<Add directory="../public/platform" />
+				</Compiler>
+			</Target>
+			<Target title="Release Win32">
+				<Option output="EqEditLauncher_vc10" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add option="-D_DKLAUNCHER_" />
+					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
+					<Add directory="../FileSystem" />
+					<Add directory="../Engine" />
+					<Add directory="../public" />
+					<Add directory="../public/core" />
+					<Add directory="../public/platform" />
+					<Add directory="../src_dependency/sdl2/include" />
+				</Compiler>
+			</Target>
+			<Target title="Long Win32">
+				<Option output="EqEditLauncher_vc10" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-DUSE_OCC_QUERY_WORKAROUND" />
+					<Add option="-DGENERAL_ENGINE_LIBRARY" />
+					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add option="-D_DKLAUNCHER_" />
+					<Add option="-DLONG_LAUNCH" />
+					<Add directory="FileSystem" />
+					<Add directory="Engine" />
+					<Add directory="public" />
+					<Add directory="public/platform" />
+				</Compiler>
+				<Linker>
+					<Add library="odbc32.lib" />
+					<Add library="odbccp32.lib" />
+					<Add library="advapi32.lib" />
+					<Add library="user32.lib" />
+					<Add library="kernel32.lib" />
+					<Add library="gdi32.lib" />
+					<Add library="shell32.lib" />
+					<Add library="winmm.lib" />
+					<Add library="opengl32.lib" />
+				</Linker>
+			</Target>
+			<Target title="Debug Win32">
+				<Option output="EqEditLauncher_vc10" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-D_DEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add option="-D_DKLAUNCHER_" />
+					<Add option="-DGAME_DEMO" />
+					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
+					<Add option="-DNDEBUG" />
+					<Add directory="../FileSystem" />
+					<Add directory="../Engine" />
+					<Add directory="../public" />
+					<Add directory="../public/core" />
+					<Add directory="../public/platform" />
+					<Add directory="../src_dependency/sdl2/include" />
+				</Compiler>
+			</Target>
+		</Build>
+		<Unit filename="../public/Platform/Platform.cpp" />
+		<Unit filename="Resources.rc" />
+		<Unit filename="editorlauncher_win.cpp" />
+		<Unit filename="mainicon.ico" />
+		<Unit filename="resource.h" />
+		<Unit filename="splashscreen.bmp" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
