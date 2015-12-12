@@ -225,6 +225,8 @@ protected:
 
 	lensFlareTable_t				m_lensTable[LENSFLARE_TABLE_SIZE];
 	float							m_lensIntensityTiming;
+	IOcclusionQuery*				m_sunGlowOccQuery;	// sun glow
+	IMaterial*						m_depthTestMat;
 
 	ITexture*						m_lightsTex;		// vertex texture fetch lights
 	ITexture*						m_reflectionTex;	// reflection texture

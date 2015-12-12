@@ -165,16 +165,7 @@ private:
 	///< dispatches fragmented message to the queue
 	void						DispatchFragmentedMessage( netfragmsg_t* pMsg );
 
-#ifdef LUA_INTEGRATE
-public:
-	OOLUA::Script&				GetLuaState() {return m_luaState;}
-
 protected:
-	OOLUA::Script				m_luaState;
-
-#else
-protected:
-#endif // LUA_INTEGRATE
 
 	DkList<rcvdmessage_t*>		m_lagMessages;
 

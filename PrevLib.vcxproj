@@ -72,10 +72,10 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <OutDir>$(ProjectName)\$(Configuration)\</OutDir>
+    <OutDir>$(Configuration)\$(ProjectName)\</OutDir>
     <IncludePath>$(SolutionDir)src_dependency\jpeg;$(SolutionDir)src_dependency\libpng;$(SolutionDir)src_dependency\zlib;$(IncludePath)</IncludePath>
     <LibraryPath>$(LibraryPath)</LibraryPath>
-    <IntDir>$(ProjectName)\$(Configuration)\</IntDir>
+    <IntDir>$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android'">
     <IncludePath>$(SolutionDir)src_dependency\jpeg;$(SolutionDir)src_dependency\libpng;$(SolutionDir)src_dependency\zlib;$(IncludePath)</IncludePath>

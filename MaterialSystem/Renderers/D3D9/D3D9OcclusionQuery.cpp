@@ -14,18 +14,38 @@ CD3D9OcclusionQuery::CD3D9OcclusionQuery( LPDIRECT3DDEVICE9 dev )
 	m_pixelsVisible = 0;
 	m_query = NULL;
 
-	dev->CreateQuery( D3DQUERYTYPE_OCCLUSION, &m_query );
+	m_dev = dev;
+	m_dev->AddRef();
+
+	Init();
 }
 
 CD3D9OcclusionQuery::~CD3D9OcclusionQuery()
 {
+	Destroy();
+	m_dev->Release();
+}
+
+void CD3D9OcclusionQuery::Init()
+{
+	if(!m_query)
+		m_dev->CreateQuery( D3DQUERYTYPE_OCCLUSION, &m_query );
+}
+
+void CD3D9OcclusionQuery::Destroy()
+{
 	if(m_query)
 		m_query->Release();
+
+	m_query = NULL;
 }
 
 // begins the occlusion query issue
 void CD3D9OcclusionQuery::Begin()
 {
+	if(!m_query)
+		return;
+
 	m_query->Issue( D3DISSUE_BEGIN );
 	m_ready = false;
 }
@@ -33,6 +53,9 @@ void CD3D9OcclusionQuery::Begin()
 // ends the occlusion query issue
 void CD3D9OcclusionQuery::End()
 {
+	if(!m_query)
+		return;
+
 	m_query->Issue( D3DISSUE_END );
 }
 
@@ -40,6 +63,9 @@ void CD3D9OcclusionQuery::End()
 bool CD3D9OcclusionQuery::IsReady()
 {
 	if(m_ready)
+		return true;
+
+	if(!m_query)
 		return true;
 
 	m_pixelsVisible = 0;

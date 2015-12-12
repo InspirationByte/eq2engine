@@ -17,6 +17,9 @@ public:
 						CD3D9OcclusionQuery( LPDIRECT3DDEVICE9 dev );
 						~CD3D9OcclusionQuery();
 
+	void				Init();
+	void				Destroy();
+
 	// begins the occlusion query issue
 	void				Begin();
 
@@ -34,6 +37,7 @@ protected:
 	LPDIRECT3DQUERY9		m_query;
 	DWORD					m_pixelsVisible;
 	bool					m_ready;
+	LPDIRECT3DDEVICE9		m_dev;
 };
 
 #endif // D3D9OCCLUSIONQUERY_H

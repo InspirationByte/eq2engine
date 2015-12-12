@@ -171,6 +171,12 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		pIB->ReleaseForRestoration();
 	}
 
+	for(int i = 0; i < m_OcclusionQueryList.numElem(); i++)
+	{
+		CD3D9OcclusionQuery* query = (CD3D9OcclusionQuery*)m_OcclusionQueryList[i];
+		query->Destroy();
+	}
+
 	// relesase texture surfaces
 	for(int i = 0; i < m_TextureList.numElem(); i++)
 	{
@@ -297,6 +303,13 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		CIndexBufferD3DX9* pIB = (CIndexBufferD3DX9*)m_IBList[i];
 
 		pIB->Restore();
+	}
+
+	DevMsg(3, "Restoring query...\n");
+	for(int i = 0; i < m_OcclusionQueryList.numElem(); i++)
+	{
+		CD3D9OcclusionQuery* query = (CD3D9OcclusionQuery*)m_OcclusionQueryList[i];
+		query->Init();
 	}
 
 	DevMsg(3, "Restoring RTs...\n");

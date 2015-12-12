@@ -31,7 +31,7 @@ CPFXAtlasGroup* g_treeAtlas = NULL;
 
 //-----------------------------------------------------------------------------------
 
-ConVar r_zfar("r_zfar", "250", "Z depth far on main scene", CV_CHEAT);
+ConVar r_zfar("r_zfar", "350", "Z depth far on main scene", CV_CHEAT);
 
 ConVar fog_override("fog_override","0","Fog parameters override", CV_CHEAT);
 ConVar fog_enable("fog_enable","0","Enables fog",CV_ARCHIVE);
@@ -459,8 +459,16 @@ void CGameWorld::Init()
 		if(m_lightsTex)
 			m_lightsTex->Ref_Grab();
 	}
-	
 
+	if(!m_sunGlowOccQuery)
+		m_sunGlowOccQuery = g_pShaderAPI->CreateOcclusionQuery();
+
+	if(!m_depthTestMat)
+	{
+		m_depthTestMat = materials->FindMaterial("engine/pointquery", true);
+		m_depthTestMat->Ref_Grab();
+	}
+	
 	InitEnvironment();
 }
 
@@ -594,6 +602,12 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 		g_pShaderAPI->DestroyVertexBuffer(m_objectInstVertexBuffer);
 		m_objectInstVertexBuffer = NULL;
+
+		g_pShaderAPI->DestroyOcclusionQuery(m_sunGlowOccQuery);
+		m_sunGlowOccQuery = NULL;
+
+		materials->FreeMaterial(m_depthTestMat);
+		m_depthTestMat = NULL;
 	}
 }
 
@@ -789,7 +803,7 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 	}
 }
 
-ConVar r_lightDistanceScale("r_lightDistanceScale", "0.5", "Light distance scale for rendering", CV_ARCHIVE);
+ConVar r_lightDistanceScale("r_lightDistanceScale", "0.3", "Light distance scale for rendering", CV_ARCHIVE);
 
 #define LIGHT_FADE_DIST (25.0f)
 
@@ -1209,6 +1223,7 @@ ConVar r_drawObjects("r_drawObjects", "1", "Draw objects", CV_CHEAT);
 ConVar r_drawFakeReflections("r_drawFakeReflections", "1", "Draw fake reflections", CV_ARCHIVE);
 
 ConVar r_nightBrightness("r_nightBrightness", "1.0f", "Night ambient brightness", CV_ARCHIVE);
+ConVar r_drawLensFlare("r_drawLensFlare", "2", "Draw lens flare, 1-query by physics, 2-query by occlusion", CV_ARCHIVE);
 
 void CGameWorld::UpdateOccludingFrustum()
 {
@@ -1487,23 +1502,30 @@ void CGameWorld::Draw( int nRenderFlags )
 	// draw sky
 #ifndef EDITOR
 	Vector2D screenSize(g_pHost->m_nWidth, g_pHost->m_nHeight);
-
-	Matrix4x4 skyProj = perspectiveMatrixY(DEG2RAD(m_CameraParams.GetFOV()), screenSize.x, screenSize.y, 1.0f, 10000.0f);
-	materials->SetMatrix(MATRIXMODE_PROJECTION, skyProj);
 #else
 	Vector2D screenSize(512, 512);
 #endif // EDITOR
 
+	//
+	// Draw sky
+	//
+#ifndef EDITOR
+	Matrix4x4 skyProj = perspectiveMatrixY(DEG2RAD(m_CameraParams.GetFOV()), screenSize.x, screenSize.y, 1.0f, 10000.0f);
+	materials->SetMatrix(MATRIXMODE_PROJECTION, skyProj);
+#endif // EDITOR
+	materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
 	materials->SetMatrix(MATRIXMODE_WORLD, translate(m_CameraParams.GetOrigin()));
 
 	materials->SetAmbientColor(fSkyBrightness);
 	DrawSkyBox(m_skyMaterial, nRenderFlags);
 
+	//
+	// Draw particles
+	//
 	materials->SetAmbientColor(ColorRGBA(1, 1, 1, 1.0f));
 
 	// restore projection and draw the particles
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
-
 
 	// draw particle effects
 	g_pPFXRenderer->Render( nRenderFlags );
@@ -1512,50 +1534,98 @@ void CGameWorld::Draw( int nRenderFlags )
 	materials->SetMaterialRenderParamCallback( NULL );
 
 #ifndef EDITOR
+
+	Vector3D virtualSunPos = m_CameraParams.GetOrigin() + m_envConfig.sunLensDirection*1000.0f;
+
+	Vector2D lensScreenPos;
+	PointToScreen(virtualSunPos, lensScreenPos, m_viewprojection, screenSize);
+
 	// lens flare rendering on screen by using particle engine
-	if(m_envConfig.lensIntensity > 0.0f)
+	if(m_envConfig.lensIntensity > 0.0f && r_drawLensFlare.GetBool())
 	{
 		float fIntensity = dot(m_envConfig.sunLensDirection, m_matrices[MATRIXMODE_VIEW].rows[2].xyz());
 
-		if(fIntensity > 0)
+		// Occlusion query begin
+		if(r_drawLensFlare.GetInt() == 2)
 		{
-			Vector3D virtualSunPos = m_CameraParams.GetOrigin() + m_envConfig.sunLensDirection*1000.0f;
+			// get previous result
 
+			g_pShaderAPI->Reset( STATE_RESET_VBO );
+			materials->Setup2D(screenSize.x, screenSize.y);
+
+			const int LENS_PIXELS_HALFSIZE = 8;
+			const int LENS_TOTAL_PIXELS = LENS_PIXELS_HALFSIZE*LENS_PIXELS_HALFSIZE * 4;
+
+			const float LENS_PIXEL_TO_INTENSITY = 1.0f / (float)LENS_TOTAL_PIXELS;
+
+			uint32 pixels = LENS_TOTAL_PIXELS;
+
+			if(m_sunGlowOccQuery->IsReady())
+				pixels = m_sunGlowOccQuery->GetVisiblePixels();
+
+			m_lensIntensityTiming = (float)pixels * LENS_PIXEL_TO_INTENSITY * fIntensity;
+
+			m_sunGlowOccQuery->Begin();
+			{
+				materials->BindMaterial(m_depthTestMat);
+				Vector2D screenQuad[] = {MAKEQUAD(
+											lensScreenPos.x, 
+											lensScreenPos.y, 
+											lensScreenPos.x, 
+											lensScreenPos.y, -LENS_PIXELS_HALFSIZE)};
+
+				IMeshBuilder* pMeshBuilder = g_pShaderAPI->CreateMeshBuilder();
+
+				pMeshBuilder->Begin(PRIM_TRIANGLE_STRIP);
+					for(int i = 0; i < 4; i++)
+					{
+						pMeshBuilder->Position3fv(Vector3D(screenQuad[i],1.0f));
+						pMeshBuilder->AdvanceVertex();
+					}
+				pMeshBuilder->End();
+
+				g_pShaderAPI->DestroyMeshBuilder(pMeshBuilder);
+			}
+			m_sunGlowOccQuery->End();
+		}
+		else
+		{
 			CollisionData_t coll;
 			int collMask = OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_SOLID_GROUND;
 			if( g_pPhysics->TestLine(m_CameraParams.GetOrigin(), virtualSunPos, coll, collMask))
 			{
 				m_lensIntensityTiming -= g_pHost->m_fGameFrameTime*10.0f;
-				m_lensIntensityTiming = max(0.0f, m_lensIntensityTiming);
+				m_lensIntensityTiming = max(0.0f, m_lensIntensityTiming*fIntensity);
 			}
 			else
 			{
 				m_lensIntensityTiming += g_pHost->m_fGameFrameTime*10.0f;
-				m_lensIntensityTiming = min(1.0f, m_lensIntensityTiming);
+				m_lensIntensityTiming = min(1.0f, m_lensIntensityTiming*fIntensity);
 			}
+		}	
+	}
+#endif // EDITOR
 
-			if(m_lensIntensityTiming > 0)
-			{
-				Vector2D lensScreenPos;
-				PointToScreen(virtualSunPos, lensScreenPos, m_viewprojection, screenSize);
 
-				FogInfo_t fogDisabled;
-				fogDisabled.enableFog = false;
-				materials->SetFogInfo(fogDisabled);
+#ifndef EDITOR
+	// Draw lensflare
+	if(m_lensIntensityTiming > 0 && r_drawLensFlare.GetBool())
+	{
+		FogInfo_t fogDisabled;
+		fogDisabled.enableFog = false;
+		materials->SetFogInfo(fogDisabled);
 
-				DrawLensFlare(screenSize, lensScreenPos, fIntensity*m_envConfig.lensIntensity*m_lensIntensityTiming );
+		DrawLensFlare(screenSize, lensScreenPos, m_envConfig.lensIntensity*m_lensIntensityTiming );
 
-				materials->SetMatrix(MATRIXMODE_VIEW, identity4());
-				materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+		materials->SetMatrix(MATRIXMODE_VIEW, identity4());
+		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-				g_additPartcles->SetCustomProjectionMatrix( projection2DScreen(screenSize.x,screenSize.y) );
-				g_additPartcles->Render( nRenderFlags );
+		g_additPartcles->SetCustomProjectionMatrix( projection2DScreen(screenSize.x,screenSize.y) );
+		g_additPartcles->Render( nRenderFlags );
 
-				// restore matrix
-				materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
-				materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
-			}
-		}
+		// restore matrix
+		materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
+		materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
 	}
 #endif // EDITOR
 

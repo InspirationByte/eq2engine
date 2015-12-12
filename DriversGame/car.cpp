@@ -2126,23 +2126,6 @@ void CCar::OnPhysicsFrame( float fDt )
 		// we went underwater
 		if( coll.bodyB->GetContents() & OBJECTCONTENTS_WATER )
 		{
-			isInWater = true;
-
-			if(!m_inWater)
-			{
-				EmitSound_t ep;
-				ep.name = "generic.waterHit";
-				ep.fPitch = RandomFloat(0.92f, 1.08f);
-				ep.fVolume = 1.0f;
-				ep.origin = GetOrigin();
-				ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
-
-				Msg("PLAY FUCKING SOUND!\n");
-
-				EmitSoundWithParams(&ep);
-				m_inWater = isInWater;
-			}
-
 			if(coll.position.y > GetOrigin().y+0.25f)
 				SetDamage( GetDamage() + DAMAGE_WATERDAMAGE_RATE * fDt );
 
@@ -2164,14 +2147,32 @@ void CCar::OnPhysicsFrame( float fDt )
 			{
 				m_enabled = false;
 				m_locked = true;
+				m_sirenEnabled = false;
 			}
-
 
 			// make particles
 			Vector3D collVelocity = carBody->GetVelocityAtWorldPoint(coll.position);
 
+			isInWater = true;
+
+			if(!m_inWater)
+			{
+				if(length(collVelocity) > 5.5f)
+				{
+					EmitSound_t ep;
+					ep.name = "generic.waterHit";
+					ep.fPitch = RandomFloat(0.92f, 1.08f);
+					ep.fVolume = 1.0f;
+					ep.origin = GetOrigin();
+					ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
+
+					EmitSoundWithParams(&ep);
+				}
+				m_inWater = isInWater;
+			}
+
 			// spawn smoke
-			if(length(collVelocity) > 2.5f)
+			if(length(collVelocity) > 2.5f && m_effectTime == 0.0f)
 			{
 				Vector3D waterPos = coll.position;
 
@@ -2261,7 +2262,8 @@ void CCar::OnPhysicsFrame( float fDt )
 		numHitTimes++;
 	}
 
-	m_inWater = isInWater;
+	if(IsAlive() || isInWater)	// if car goes underwater and dies here, we need to keep underwater state
+		m_inWater = isInWater;
 
 	m_effectTime -= fDt;
 
@@ -2371,7 +2373,11 @@ void CCar::Simulate( float fDt )
 
 	float frontDamageSum = m_bodyParts[CB_FRONT_LEFT].damage+m_bodyParts[CB_FRONT_RIGHT].damage;
 
-	if(frontDamageSum > 0.55f && m_engineSmokeTime > 0.1f && GetSpeed() < 80.0f && bDraw)
+	if(	bDraw && 
+		(!m_inWater || IsAlive()) && 
+		frontDamageSum > 0.55f && 
+		m_engineSmokeTime > 0.1f && 
+		GetSpeed() < 80.0f)
 	{
 		ColorRGB smokeCol(0.9,0.9,0.9);
 

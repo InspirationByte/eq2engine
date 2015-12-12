@@ -186,16 +186,6 @@ void CAIPursuerCar::OnPrePhysicsFrame( float fDt )
 
 	m_nextCheckImpactTime -= fDt;
 
-	// dead?
-	if(!IsAlive())
-	{
-		EndPursuit(true);
-
-		FSM_SetNextState( &CAIPursuerCar::DeadState );
-		m_deathTime = AI_COP_DEATHTIME;
-		m_refreshTime = 0.0f;
-	}
-
 	CCar* playerCar = g_pGameSession->GetPlayerCar();
 	if(	IsAlive()&&
 		!m_enabled && 
@@ -211,6 +201,13 @@ void CAIPursuerCar::OnPrePhysicsFrame( float fDt )
 void CAIPursuerCar::OnPhysicsFrame( float fDt )
 {
 	BaseClass::OnPhysicsFrame(fDt);
+
+	// death by water?
+	if(!IsAlive() && m_inWater)
+	{
+		EndPursuit(true);
+		FSM_SetNextState( &CAIPursuerCar::DeadState );
+	}
 
 	m_isColliding = GetPhysicsBody()->m_collisionList.numElem() > 0;
 
@@ -510,6 +507,17 @@ Vector3D CAIPursuerCar::GetAdvancedPointByDist(int& startSeg, float distFromSegm
 
 int	CAIPursuerCar::PursueTarget( float fDt )
 {
+	// dead?
+	if(!IsAlive())
+	{
+		EndPursuit(true);
+
+		FSM_SetNextState( &CAIPursuerCar::DeadState );
+		m_deathTime = AI_COP_DEATHTIME;
+		m_refreshTime = 0.0f;
+		return 0;
+	}
+
 	if (!m_pursuitTarget)
 		return 0;
 
@@ -550,19 +558,23 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 						newFelony += AI_COP_COLLISION_FELONY_VEHICLE;
 
 						Speak("cop.hitvehicle");
+						break;
 					}
 					case INFRACTION_HIT:
 					{
 						newFelony += AI_COP_COLLISION_FELONY;
+						break;
 					}
 					case INFRACTION_HIT_MINOR:
 					{
 						newFelony += AI_COP_COLLISION_FELONY_DEBRIS;
+						break;
 					}
 					case INFRACTION_RED_LIGHT:
 					{
 						newFelony += AI_COP_COLLISION_FELONY_REDLIGHT;
 						Speak("cop.redlight");
+						break;
 					}
 				}
 

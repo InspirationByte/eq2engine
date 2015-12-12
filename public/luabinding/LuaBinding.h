@@ -77,9 +77,6 @@ void	LuaBinding_Initialize(lua_State* state);
 bool	LuaBinding_LoadAndDoFile(lua_State* state, const char* filename, const char* pszFuncName);
 bool	LuaBinding_DoBuffer(lua_State* state, const char* data, int size, const char* filename);
 
-bool	EqLua_CompileBuffer(lua_State* state, const char* pszBuffer, IVirtualStream* pStream);
-bool	EqLua_CompileFile(lua_State* state, const char* filename, IVirtualStream* pStream);
-
 //------------------------------------------
 
 // this is a slow, but effective callbacks on userdata
