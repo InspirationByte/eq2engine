@@ -1222,7 +1222,7 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 
 					FreeDSM(&model);
 
-					EqString path(paths[i].c_str());
+					EqString path(paths[i].wchar_str());
 
 					objectcont_t* container = new objectcont_t;
 					container->m_model = pLevModel;
@@ -1264,7 +1264,7 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 
 				FreeDSM(&model);
 
-				EqString path(file->GetPath());
+				EqString path(file->GetPath().wchar_str());
 				cont->m_name = path.Path_Extract_Name().Path_Strip_Ext().c_str();
 
 				m_modelPicker->RebuildPreviewShots();

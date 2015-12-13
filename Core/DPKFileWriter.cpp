@@ -159,7 +159,7 @@ bool CDPKFileWriter::AddFile( const char* fileName )
 
 		//Msg("Add file '%s'\n", fillMountedFilename);
 
-		newInfo->pkinfo.filenameHash = GetDPKHashString( fillMountedFilename );
+		newInfo->pkinfo.filenameHash = StringToHash( fillMountedFilename );
 	}
 
 	m_files.append(newInfo);

@@ -20,6 +20,12 @@
 #define BASE_BUFFER		32	// 32 characters initial buffer
 #define EXTEND_CHARS	32	// 32 characters for extending
 
+#ifdef _WIN32
+#define xstricmp stricmp
+#else
+#define xstricmp strcasecmp
+#endif // LINUX
+
 EqString::EqString()
 {
 	m_nLength = 0;
@@ -61,6 +67,24 @@ EqString::EqString(const EqString &str, int nStart, int len)
 	Assign( str, nStart, len );
 }
 
+EqString::EqString(const wchar_t* pszString, int len)
+{
+	m_nLength = 0;
+	m_nAllocated = 0;
+	m_pszString = NULL;
+
+	Assign( pszString, len );
+}
+
+EqString::EqString(const EqWString &str, int nStart, int len)
+{
+	m_nLength = 0;
+	m_nAllocated = 0;
+	m_pszString = 0;
+
+	Assign( str, nStart, len );
+}
+
 // data for printing
 const char* EqString::GetData() const
 {
@@ -71,7 +95,7 @@ const char* EqString::GetData() const
 }
 
 // length of it
-int EqString::GetLength() const
+uint EqString::GetLength() const
 {
 	return m_nLength;
 }
@@ -83,7 +107,7 @@ bool EqString::IsValid() const
 }
 
 // string allocated size in bytes
-int EqString::GetSize() const
+uint EqString::GetSize() const
 {
 	return m_nAllocated;
 }
@@ -107,7 +131,7 @@ void EqString::Empty()
 }
 
 // an internal operation of allocation/extend
-bool EqString::ExtendAlloc(int nSize)
+bool EqString::ExtendAlloc(uint nSize)
 {
 	if(nSize+1 > m_nAllocated)
 	{
@@ -119,9 +143,9 @@ bool EqString::ExtendAlloc(int nSize)
 }
 
 // just a resize
-bool EqString::Resize(int nSize, bool bCopy)
+bool EqString::Resize(uint nSize, bool bCopy)
 {
-	int newSize = nSize+1;
+	uint newSize = nSize+1;
 
 	// make new and copy
 	char* pszNewBuffer = new char[ newSize ];
@@ -183,6 +207,8 @@ void EqString::Assign(const char* pszStr, int len)
 
 void EqString::Assign(const EqString &str, int nStart, int len)
 {
+	ASSERT(nStart >= 0);
+
 	int nLen = str.GetLength();
 
 	ASSERT(len <= nLen);
@@ -196,6 +222,21 @@ void EqString::Assign(const EqString &str, int nStart, int len)
 		m_pszString[nLen] = 0;
 		m_nLength = nLen;
 	}
+}
+
+// string assignment (or setvalue)
+void EqString::Assign(const wchar_t* pszStr, int len)
+{
+	EqStringConv::wchar_to_utf8 conv( pszStr );
+
+	Assign(conv, 0, len);
+}
+
+void EqString::Assign(const EqWString &str, int nStart, int len)
+{
+	EqStringConv::wchar_to_utf8 conv( str.c_str() );
+
+	Assign(conv, nStart, len);
 }
 
 void EqString::Append(const char c)
@@ -292,16 +333,18 @@ void EqString::Insert(const EqString &str, int nInsertPos)
 }
 
 // removes characters
-void EqString::Remove(int nStart, int nCount)
+void EqString::Remove(uint nStart, uint nCount)
 {
 	char* temp = (char*)stackalloc( m_nAllocated );
 	strcpy(temp, m_pszString);
 
 	char* pStr = m_pszString;
 
-	for(int i = 0; i < m_nLength; i++)
+	uint realEnd = nStart+nCount;
+
+	for(uint i = 0; i < m_nLength; i++)
 	{
-		if(i >= nStart && i < nStart+nCount)
+		if(i >= nStart && i < realEnd)
 			continue;
 
 		*pStr++ = temp[i];
@@ -321,7 +364,7 @@ EqString EqString::Left(int nCount) const
 
 EqString EqString::Right(int nCount) const
 {
-	if ( nCount >= m_nLength )
+	if ( (uint)nCount >= m_nLength )
 		return (*this);
 
 	return Mid( m_nLength - nCount, nCount );
@@ -329,14 +372,14 @@ EqString EqString::Right(int nCount) const
 
 EqString EqString::Mid(int nStart, int nCount) const
 {
-	int n;
+	uint n;
 	EqString result;
 
 	n = m_nLength;
-	if( n == 0 || nCount <= 0 || nStart >= n )
+	if( n == 0 || nCount <= 0 || (uint)nStart >= n )
 		return result;
 
-	if( nStart + nCount >= m_nLength )
+	if( uint(nStart+nCount) >= m_nLength )
 		nCount = n-nStart;
 
 	result.Append( &m_pszString[nStart], nCount );
@@ -445,6 +488,21 @@ EqString EqString::Path_Extract_Name() const
 EqString EqString::Path_Extract_Path() const
 {
 	return Path_Strip_Name();
+}
+
+EqString EqString::EatWhiteSpaces() const
+{
+	EqString out;
+
+	char* cc = m_pszString;
+
+	while(cc)
+	{
+		if( xisspace(*cc) )
+			out.Append(*cc++);
+	}
+
+	return out;
 }
 
 void EqString::Path_FixSlashes() const

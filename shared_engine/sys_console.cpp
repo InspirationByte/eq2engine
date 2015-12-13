@@ -255,7 +255,7 @@ void CEqSysConsole::AddAutoCompletionNode(AutoCompletionNode_s *pNode)
 
 void CEqSysConsole::consoleRemTextInRange(int start,int len)
 {
-	if(start + len > con_Text.GetLength())
+	if(uint(start+len) > con_Text.GetLength())
 		return;
 
 	con_Text.Remove(start,len);
@@ -980,7 +980,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 							EmptyClipboard();
 							hgBuffer= GlobalAlloc(GMEM_DDESHARE, tmpString.GetLength()+1);
 							chBuffer= (char*)GlobalLock(hgBuffer);
-							xstrcpy(chBuffer, tmpString.GetData());
+							strcpy(chBuffer, tmpString.GetData());
 							GlobalUnlock(hgBuffer);
 							SetClipboardData(CF_TEXT,hgBuffer);
 							CloseClipboard();
@@ -1010,7 +1010,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 							EmptyClipboard();
 							hgBuffer= GlobalAlloc(GMEM_DDESHARE, tmpString.GetLength()+1);
 							chBuffer= (char*)GlobalLock(hgBuffer);
-							xstrcpy(chBuffer, tmpString.GetData());
+							strcpy(chBuffer, tmpString.GetData());
 							GlobalUnlock(hgBuffer);
 							SetClipboardData(CF_TEXT,hgBuffer);
 							CloseClipboard();

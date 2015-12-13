@@ -11,6 +11,7 @@
 
 EXPORTED_INTERFACE(ILocalize, CLocalize);
 
+/*
 int GetTokenHashString(const char *str)
 {
 	int hash = 0;
@@ -22,7 +23,7 @@ int GetTokenHashString(const char *str)
 	}
 
 	return hash;
-}
+}*/
 
 void xstr_loc_convert_special_symbols(char* str, bool doNewline)
 {
@@ -69,7 +70,15 @@ CLocToken::CLocToken(const char* tok, const wchar_t* text)
 	m_token = tok;
 	m_text = text;
 
-	m_tokHash = GetTokenHashString(tok);
+	m_tokHash = StringToHash(tok);
+}
+
+CLocToken::CLocToken(const char* tok, const char* text)
+{
+	m_token = tok;
+	m_text = text;
+
+	m_tokHash = StringToHash(tok);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -173,27 +182,18 @@ void CLocalize::AddToken(const char* token, const char* pszTokenString)
 
 	xstr_loc_convert_special_symbols( (char*)pszTokenString, true );
 
-	int actLen = strlen(pszTokenString)+1;
-	wchar_t* wideStr = new wchar_t[actLen];
-
-	// convert
-	ConvertBytesToUnicode(pszTokenString, wideStr, actLen*sizeof(wchar_t));
-
-	CLocToken* pToken = new CLocToken(token, wideStr);
-
-	delete [] wideStr;
+	CLocToken* pToken = new CLocToken(token, pszTokenString);
 
 	m_lTokens.append(pToken);
 }
 
 const wchar_t* CLocalize::GetTokenString(const char* pszToken,const wchar_t* pszDefaultToken)
 {
-	int tokHash = GetTokenHashString(pszToken);
+	int tokHash = StringToHash(pszToken);
 
 	for(int i = 0; i < m_lTokens.numElem();i++)
 	{
 		if(m_lTokens[i]->m_tokHash == tokHash)
-		//if(!m_lTokens[i]->m_token.CompareCaseIns(pszToken))
 			return m_lTokens[i]->GetText();
 	}
 
@@ -204,12 +204,11 @@ const wchar_t* CLocalize::GetTokenString(const char* pszToken,const wchar_t* psz
 
 ILocToken* CLocalize::GetToken( const char* pszToken )
 {
-	int tokHash = GetTokenHashString(pszToken);
+	int tokHash = StringToHash(pszToken);
 
 	for(int i = 0; i < m_lTokens.numElem();i++)
 	{
 		if(m_lTokens[i]->m_tokHash == tokHash)
-		//if(!m_lTokens[i]->m_token.CompareCaseIns(pszToken))
 			return m_lTokens[i];
 	}
 

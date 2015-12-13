@@ -697,7 +697,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 		if(file && file->ShowModal() == wxID_OK)
 		{
-			EqString fname(file->GetPath().c_str());
+			EqString fname(file->GetPath().wchar_str());
 
 			FlushCache();
 			g_pModel->SetModel( NULL );
@@ -735,7 +735,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 				KeyValues script;
 
-				EqString fname( paths[i].c_str() );
+				EqString fname( paths[i].wchar_str() );
 				EqString ext = fname.Path_Extract_Ext();
 
 				if(!stricmp(ext.GetData(), "asc"))

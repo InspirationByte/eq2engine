@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "dktypes.h"
 
 // TODO: implement safe copy-on-write
 
@@ -19,11 +20,18 @@ int xwcscmp ( const wchar_t *s1, const wchar_t *s2);
 
 class EqWString
 {
+	friend class EqString;
+
 public:
 	EqWString();
 	~EqWString();
 
 	EqWString(const wchar_t c);
+
+	// convert from UTF8 string
+	EqWString(const char* pszString, int len = -1);
+	EqWString(const EqString& string, int nStart = 0, int len = -1);
+
 	EqWString(const wchar_t* pszString, int len = -1);
 	EqWString(const EqWString &str, int nStart = 0, int len = -1);
 
@@ -34,10 +42,10 @@ public:
 	const wchar_t*	c_str() const {return GetData();}
 
 	// length of it
-	int				GetLength() const;
+	uint			GetLength() const;
 
 	// string allocated size in bytes
-	int				GetSize() const;
+	uint			GetSize() const;
 
 	// erases and deallocates data
 	void			Clear();
@@ -49,7 +57,11 @@ public:
 	bool			ExtendAlloc(int nSize);
 
 	// just a resize
-	bool			Resize(int nSize, bool bCopy = true);
+	bool			Resize(uint nSize, bool bCopy = true);
+
+	// string assignment with conversion (or setvalue)
+	void			Assign(const char* pszStr, int len = -1);
+	void			Assign(const EqString &str, int nStart = 0, int len = -1);
 
 	// string assignment (or setvalue)
 	void			Assign(const wchar_t* pszStr, int len = -1);
@@ -65,7 +77,7 @@ public:
 	void			Insert(const EqWString &str, int nInsertPos);
 
 	// removes characters
-	void			Remove(int nStart, int nCount);
+	void			Remove(uint nStart, uint nCount);
 
 	// rightmost\leftmost string extractors
 	EqWString		Left(int nCount);
@@ -157,8 +169,8 @@ public:
 protected:
 	wchar_t*	m_pszString;
 
-	int			m_nLength;			// length of string
-	int			m_nAllocated;		// allocation size
+	uint		m_nLength;			// length of string
+	uint		m_nAllocated;		// allocation size
 };
 
 #endif // EQWSTRING_H

@@ -12,7 +12,9 @@
 
 #include "utils/DkLinkedList.h"
 #include "utils/DkList.h"
+
 #include "utils/eqstring.h"
+#include "utils/eqwstring.h"
 
 #ifdef _WIN32
 
@@ -59,173 +61,43 @@ typedef va_list				__va_list;
 
 #endif // LINUX
 
-// Fixes slashes in the directory name
-static void FixSlashes( char* str )
-{
-    while ( *str )
-    {
-        if ( *str == INCORRECT_PATH_SEPARATOR )
-        {
-            *str = CORRECT_PATH_SEPARATOR;
-        }
-        str++;
-    }
-}
+// fixes slashes in the directory name
+void		FixSlashes( char* str );
 
-void stripFileName(char* path);
-
-void extractFileBase(const char* path, char* dest);
-
-int64 StringToHash(const char* str);
-
-#define HASHSTRING(str) \
-	static int64 s_##str##Hash = StringToHash(#str)
-
-#define STRINGHASH(str) s_##str##Hash
-
-// Splits string to queue
-//void SplitString( const char* pString, const char* pSeparator, DkLinkedList<String> &outStrings );
-
-// Finds string in another string and index of it
-bool strfind(const char* str,const char* sstr, int pos, int *index);
-
-bool strfind(const char* str,const char ch,int pos,int *index);
-
-bool strifind(const char* str,const char* sstr, int pos, int *index);
-
-// Removes some chars from string in range
-bool strrem(char* str ,const int pos, const int len);
-
-// Removes some chars from string in range
-char* xstrrem_s(char* str ,const int pos, const int len);
-
-// Eat white spaces and remarks loop
-char* xstreatwhite(char* str);
+// generates string hash
+int			StringToHash( const char *str );
 
 // Do formatted arguments for string
-char* varargs(const char* fmt,...);
+char*		varargs(const char* fmt,...);
 
-// Do formatted arguments for string
-wchar_t* varargs_w(const wchar_t *fmt,...);
+// Do formatted arguments for string (widechar)
+wchar_t*	varargs_w(const wchar_t *fmt,...);
 
 // Split string by multiple separators
-void xstrsplit2( const char* pString, const char* *pSeparators, int nSeparators, DkList<EqString> &outStrings );
+void		xstrsplit2( const char* pString, const char* *pSeparators, int nSeparators, DkList<EqString> &outStrings );
 
 // Split string by one separator
-void xstrsplit( const char* pString, const char* pSeparator, DkList<EqString> &outStrings );
+void		xstrsplit( const char* pString, const char* pSeparator, DkList<EqString> &outStrings );
 
-// Restrores splitted string
-//char* ConnectString(Array<char*> *args, int start = 0, int count = 0);
-
-// Restrores splitted string
-//char* ConnectString(int argc, char** argv, int start = 0, int count = 0);
-
-// Restrores splitted string (smart)
-//String XConnectString(Array<char*> *args, int start = 0, int count = 0);
-
-// Duplicates string
-char* xstrdup(const char*  s);
+char const* xstristr( char const* pStr, char const* pSearch );
+char*		xstristr( char* pStr, char const* pSearch );
 
 // Strips string for tabs and spaces
-char* xstrstrip(const char*  s);
+char*		xstreatwhite(char* str);
 
-// allocates memory for new string
-char* xstrallocate( const char* pStr, int nMaxChars );
+// Trims string from spaces, tabs, newlines
+char*		xstrtrim(const char*  s);
 
-// NOTE: More of these tools has NULL-termination.
+// fast duplicate c string
+char*		xstrdup(const char*  s);
 
-// Sets memory of specified pointer
-void xmemset ( void *dest, int fill, int count);
-
-// Copies memory to specified pointer
-void xmemcpy ( void *dest, const void *src, int count);
-
-// moves memory to specified pointer
-void xmemmove( void *dest, const void *src, int count);
-
-//Compares memory
-int xmemcmp ( void *m1, void *m2, int count);
-
-//Lenght of string
-int xstrlen (const char* str);
-
-// Makes copy of string
-void xstrcpy (char* dest, const char* src);
-
-// Finds a string in another string with a case insensitive test
-char* xstrrchr(const char* s, char c);
-
-// Compares string
-int xstrcmp ( const char* s1, const char* s2);
-
-// Removes match substr in str
-void xstrrem( char* str, char* substr );
-
-// Compares string (ignores case)
-int xstricmp(  const char* s1, const char* s2 );
-
-//Finds substring in another string
-char* xstrstr(  const char* s1, const char* search );
-
-// To upper conversion
-char* xstrupr ( char* start);
-
-// To lower conversion
-char* xstrlower ( char* start);
-
-// Concat strings
-void xstrcat (char* dest, const char* src);
-
-// Compares string with specified length
-int xstrncmp (const char* s1, const char* s2, int count);
-
-// Makes Lower case string with specified length
-char* xstrnlwr(char* s, size_t count);
-
-// String non-case compare
-int xstrncasecmp (const char* s1, const char* s2, int n);
-
-// String case compare
-int xstrcasecmp (const char* s1, const char* s2);
-
-// String ignore-case compare with spec. length
-int xstrnicmp (const char* s1, const char* s2, int n);
-
-// Finds a string in another string with a case insensitive test
-char const* xstristr( char const* pStr, char const* pSearch );
-
-// Finds a string in another string with a case insensitive test
-char* xstristr( char* pStr, char const* pSearch );
-
-// Copies string to another string with max length
-void xstrncpy( char* pDest, char const *pSrc, int maxLen );
-
-// Prints string to another
-int xsnprintf( char* pDest, int maxLen, char const *pFormat, ... );
-
-// Prints string from format
-int xvsnprintf( char* pDest, int maxLen, char const *pFormat, va_list params );
-
-// Concat string
-char* xstrncat(char* pDest, const char* pSrc, size_t maxLen);
-
-// searches string for another string
-int	xstrfind(char* str,char* search);
-
-// returns slash count from file path
-int UTIL_GetNumSlashes(const char* filepath);
-
-// returns directory name down to slashes
-const char* UTIL_GetDirectoryNameEx(const char* filepath, int hierarchy_down);
-
-// extracts file name from path
-const char* UTIL_GetFileName(const char* filepath);
+// is space?
+bool		xisspace(const uint32 c);
 
 // converts string to lower case
 #ifdef LINUX
 char* strupr(char* s1);
 char* strlwr(char* s1);
-
 #endif
 
 //------------------------------------------------------
@@ -238,13 +110,54 @@ int xwcscmp ( const wchar_t *s1, const wchar_t *s2);
 // compares two strings case-insensetive
 int xwcsicmp( const wchar_t* s1, const wchar_t* s2 );
 
-// copies src to dest
-void xwcscpy( wchar_t* dest, const wchar_t* src );
-
 // finds substring in string case insensetive
 wchar_t* xwcsistr( wchar_t* pStr, wchar_t const* pSearch );
 
 // finds substring in string case insensetive
 wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch );
+
+//------------------------------------------------------
+// string conversion
+//------------------------------------------------------
+
+namespace EqStringConv
+{
+	class utf8_to_wchar
+	{
+	public:
+		utf8_to_wchar(const char* val);
+		operator const EqWString&() const
+		{
+			return m_str;
+		}
+	private:
+		uint32 NextByte()
+		{
+			if (!(*m_utf8))
+				return 0;
+
+			return *m_utf8++;
+		}
+
+		int		GetLength();
+		uint32	GetChar();
+
+		ubyte* m_utf8;
+		EqWString m_str;
+	};
+
+	class wchar_to_utf8
+	{
+	public:
+		wchar_to_utf8(const wchar_t* val);
+		operator const EqString&() const
+		{
+			return m_str;
+		}
+	private:
+		EqString m_str;
+	};
+};
+
 
 #endif

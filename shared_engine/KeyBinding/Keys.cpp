@@ -236,8 +236,6 @@ DECLARE_CMD(bind,"Binds action to key",0)
 	{
 		if(args->numElem() > 1)
 		{
-			//char* agrstr = ConnectString(args,2);
-
 			EqString agrstr;
 
 			for(int i = 2; i < args->numElem(); i++)

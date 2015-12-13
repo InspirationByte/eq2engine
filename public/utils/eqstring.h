@@ -10,24 +10,28 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "dktypes.h"
 
 #define _Es EqString
 
 // TODO: implement safe copy-on-write
 
-int xstrcmp ( const char *s1, const char *s2);
-
 class EqString
 {
+	friend class EqWString;
 public:
+
 	EqString();
 	~EqString();
 
 	EqString(const char c);
-	EqString(const char* pszString, int len = -1);
 
-	// copy constructor
+	EqString(const char* pszString, int len = -1);
 	EqString(const EqString &str, int nStart = 0, int len = -1);
+
+	// conversion from wide char string
+	EqString(const wchar_t* pszString, int len = -1);
+	EqString(const EqWString &str, int nStart = 0, int len = -1);
 
 	// checks the data is non overflowing
 	bool		IsValid() const;
@@ -39,10 +43,10 @@ public:
 	const char*	c_str() const {return GetData();}
 
 	// length of it
-	int			GetLength() const;
+	uint		GetLength() const;
 
 	// string allocated size in bytes
-	int			GetSize() const;
+	uint		GetSize() const;
 
 	// erases and deallocates data
 	void		Clear();
@@ -51,14 +55,18 @@ public:
 	void		Empty();
 
 	// an internal operation of allocation/extend
-	bool		ExtendAlloc(int nSize);
+	bool		ExtendAlloc(uint nSize);
 
 	// just a resize
-	bool		Resize(int nSize, bool bCopy = true);
+	bool		Resize(uint nSize, bool bCopy = true);
 
 	// string assignment (or setvalue)
 	void		Assign(const char* pszStr, int len = -1);
 	void		Assign(const EqString &str, int nStart = 0, int len = -1);
+
+	// wide char string assignment (or setvalue)
+	void		Assign(const wchar_t* pszStr, int len = -1);
+	void		Assign(const EqWString &str, int nStart = 0, int len = -1);
 
 	// appends another string
 	void		Append(const char c);
@@ -70,7 +78,7 @@ public:
 	void		Insert(const EqString &str, int nInsertPos);
 
 	// removes characters
-	void		Remove(int nStart, int nCount);
+	void		Remove(uint nStart, uint nCount);
 
 	// converters
 	EqString	LowerCase() const;
@@ -99,6 +107,8 @@ public:
 	EqString	Path_Extract_Ext() const;
 	EqString	Path_Extract_Name() const;
 	EqString	Path_Extract_Path() const;
+
+	EqString	EatWhiteSpaces() const;
 
 	void		Path_FixSlashes() const;
 
@@ -152,17 +162,17 @@ public:
 	// case sensitive comparators
 	friend bool	operator==( const EqString &a, const EqString &b )
 	{
-		return !xstrcmp(a.GetData(), b.GetData());
+		return !strcmp(a.GetData(), b.GetData());
 	}
 
 	friend bool	operator==( const EqString &a, const char *b )
 	{
-		return !xstrcmp(a.GetData(), b);
+		return !strcmp(a.GetData(), b);
 	}
 
 	friend bool	operator==( const char *a, const EqString &b )
 	{
-		return !xstrcmp(a, b.GetData());
+		return !strcmp(a, b.GetData());
 	}
 
 	friend bool	operator!=( const EqString &a, const EqString &b )
@@ -184,8 +194,8 @@ public:
 protected:
 	char*		m_pszString;
 
-	int			m_nLength;			// length of string
-	int			m_nAllocated;		// allocation size
+	uint		m_nLength;			// length of string
+	uint		m_nAllocated;		// allocation size
 };
 
 #endif // EQSTRING_H

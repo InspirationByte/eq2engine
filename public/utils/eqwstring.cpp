@@ -43,6 +43,25 @@ EqWString::EqWString(const wchar_t c)
 	Assign( &c, 1 );
 }
 
+// convert from UTF8 string
+EqWString::EqWString(const char* pszString, int len)
+{
+	m_nLength = 0;
+	m_nAllocated = 0;
+	m_pszString = NULL;
+
+	Assign( pszString, len );
+}
+
+EqWString::EqWString(const EqString& str, int nStart, int len)
+{
+	m_nLength = 0;
+	m_nAllocated = 0;
+	m_pszString = NULL;
+
+	Assign( str, nStart, len );
+}
+
 EqWString::EqWString(const wchar_t* pszString, int len)
 {
 	m_nLength = 0;
@@ -71,13 +90,13 @@ const wchar_t* EqWString::GetData() const
 }
 
 // length of it
-int EqWString::GetLength() const
+uint EqWString::GetLength() const
 {
 	return m_nLength;
 }
 
 // string allocated size in bytes
-int EqWString::GetSize() const
+uint EqWString::GetSize() const
 {
 	return m_nAllocated;
 }
@@ -103,7 +122,7 @@ void EqWString::Empty()
 // an internal operation of allocation/extend
 bool EqWString::ExtendAlloc(int nSize)
 {
-	if(nSize+1 > m_nAllocated)
+	if((uint)nSize+1 > m_nAllocated)
 	{
 		if(!Resize( nSize + EXTEND_CHARS ))
 			return false;
@@ -113,9 +132,9 @@ bool EqWString::ExtendAlloc(int nSize)
 }
 
 // just a resize
-bool EqWString::Resize(int nSize, bool bCopy)
+bool EqWString::Resize(uint nSize, bool bCopy)
 {
-	int newSize = nSize+1;
+	uint newSize = nSize+1;
 
 	// make new and copy
 	wchar_t* pszNewBuffer = new wchar_t[ newSize ];
@@ -156,6 +175,19 @@ bool EqWString::Resize(int nSize, bool bCopy)
 	return true;
 }
 
+// string assignment with conversion (or setvalue)
+void EqWString::Assign(const char* pszStr, int len)
+{
+	EqStringConv::utf8_to_wchar conv( pszStr );
+	Assign( conv, 0, len );
+}
+
+void EqWString::Assign(const EqString &str, int nStart, int len)
+{
+	EqStringConv::utf8_to_wchar conv( str.c_str() );
+	Assign(conv, nStart, len);
+}
+
 // string assignment (or setvalue)
 void EqWString::Assign(const wchar_t* pszStr, int len)
 {
@@ -179,6 +211,8 @@ void EqWString::Assign(const wchar_t* pszStr, int len)
 
 void EqWString::Assign(const EqWString &str, int nStart, int len)
 {
+	ASSERT(nStart >= 0);
+
 	int nLen = str.GetLength();
 
 	ASSERT(len <= nLen);
@@ -288,16 +322,18 @@ void EqWString::Insert(const EqWString &str, int nInsertPos)
 }
 
 // removes characters
-void EqWString::Remove(int nStart, int nCount)
+void EqWString::Remove(uint nStart, uint nCount)
 {
 	wchar_t* temp = (wchar_t*)stackalloc( m_nAllocated*sizeof(wchar_t) );
 	wcscpy(temp, m_pszString);
 
 	wchar_t* pStr = m_pszString;
 
-	for(int i = 0; i < m_nLength; i++)
+	uint realEnd = nStart+nCount;
+
+	for(uint i = 0; i < m_nLength; i++)
 	{
-		if(i >= nStart && i < nStart+nCount)
+		if(i >= (uint)nStart && i < realEnd)
 			continue;
 
 		*pStr++ = temp[i];
@@ -317,7 +353,7 @@ EqWString EqWString::Left(int nCount)
 
 EqWString EqWString::Right(int nCount)
 {
-	if ( nCount >= m_nLength )
+	if ( (uint)nCount >= m_nLength )
 		return (*this);
 
 	return Mid( m_nLength - nCount, nCount );
@@ -332,7 +368,7 @@ EqWString EqWString::Mid(int nStart, int nCount)
 	if( n == 0 || nCount <= 0 || nStart >= n )
 		return result;
 
-	if( nStart + nCount >= m_nLength )
+	if( uint(nStart+nCount) >= m_nLength )
 		nCount = n-nStart;
 
 	result.Append( &m_pszString[nStart], nCount );

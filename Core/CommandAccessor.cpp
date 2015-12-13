@@ -131,7 +131,7 @@ void ConCommandAccessor::ParseFileToCommandBuffer(const char* pszFilename, const
 			tmpStr = tmpStr.Left(index);//,delStrLen - (index+1)); //Clear comments
 		}
 		else
-			tmpStr = xstrstrip(cmds[i].GetData());
+			tmpStr = xstrtrim(cmds[i].GetData());
 
 		if(tmpStr.GetLength() > 0)
 		{

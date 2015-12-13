@@ -106,8 +106,8 @@ private:
 	int								win_tall;
 	bool							fullscreen;
 
-	int								con_cursorPos;
-	int								con_cursorPos_locked;
+	uint							con_cursorPos;
+	uint							con_cursorPos_locked;
 
 	int								conLinePosition;
 

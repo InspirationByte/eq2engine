@@ -87,27 +87,6 @@ public:
     virtual long		GetFileSize(const char* filename, int searchFlags = -1) = 0;
 	virtual uint32		GetFileCRC32(const char* filename, int searchFlags = -1) = 0;
 
-    virtual int			Seek( DKFILE *fp, long pos, int seekType ) = 0;
-    virtual long		Tell( DKFILE *fp ) = 0;
-    virtual size_t		Read( void *dest, size_t count, size_t size, DKFILE *fp ) = 0;
-    virtual size_t		Write( const void *src, size_t count, size_t size, DKFILE *fp ) = 0;
-	virtual size_t		Printf( DKFILE *fp, const char *fmt, ... ) = 0;
-    virtual int			Error( DKFILE *fp ) = 0;
-    virtual int			Flush( DKFILE *fp ) = 0;
-    virtual char*		Gets( char *dest, int destSize, DKFILE *fp ) = 0;
-
-#ifdef _WIN32
-    virtual int			Stat( const char *path, struct _stat *buf, int searchFlags = -1 ) = 0;
-#else
-    virtual int			Stat( const char *path, struct stat *buf, int searchFlags = -1 ) = 0;
-#endif
-
-#ifdef _WIN32
-    virtual HANDLE		FindFirstFile(char *findname, WIN32_FIND_DATA *dat, int searchFlags = -1) = 0;
-    virtual bool		FindNextFile(HANDLE handle, WIN32_FIND_DATA *dat) = 0;
-    virtual bool		FindClose(HANDLE handle) = 0;
-#endif
-
     // Package tools
     virtual bool		AddPackage(const char* packageName,SearchPath_e type) = 0;
 

@@ -43,7 +43,7 @@
 #define KV_BREAK					';'
 
 #define IsKVArraySeparator(c)	(c == KV_ARRAY_SEPARATOR || c == KV_ARRAY_END)
-#define IsKVWhitespace(c)		(isspace(c) || c == '\0' || c == KV_STRING_NEWLINE)
+#define IsKVWhitespace(c)		(xisspace(c) || c == '\0' || c == KV_STRING_NEWLINE)
 
 //-----------------------------------------------------------------------------------------
 

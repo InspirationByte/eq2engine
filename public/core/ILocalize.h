@@ -51,20 +51,6 @@ INTERFACE_SINGLETON( ILocalize, CLocalize, LOCALIZER_INTERFACE_VERSION, g_locali
 
 #define DKLOC(tok, def) g_localizer->GetTokenString( tok, def )
 
-inline int ConvertBytesToUnicode(const char *pszData, wchar_t *pszUnicode, int nUnicodeBufferBytes)
-{
-#ifdef _WIN32
-	int chars = MultiByteToWideChar(CP_UTF8, 0, pszData, -1, pszUnicode, nUnicodeBufferBytes / sizeof(wchar_t));
-	pszUnicode[(nUnicodeBufferBytes / sizeof(wchar_t)) - 1] = 0;
-	return chars;
-#else
-	// USE ICONV
-
-	ASSERTMSG(false, "ConvertBytesToUnicode - not implemented on linux");
-	return 0;
-#endif
-}
-
 inline const wchar_t* LocalizedString( const char* pszString )
 {
 	static wchar_t defaultUnicodeString[4096];
@@ -73,12 +59,20 @@ inline const wchar_t* LocalizedString( const char* pszString )
 	if(!pszString || (pszString && pszString[0] == '\0'))
 		return defaultUnicodeString;
 
-	ConvertBytesToUnicode( pszString, defaultUnicodeString, 4095 );
-
 	if(pszString[0] == L'#')
+	{
 		return g_localizer->GetTokenString(pszString+1, defaultUnicodeString+1);
+	}
 	else
+	{
+		EqStringConv::utf8_to_wchar conv(pszString);
+		const EqWString& convStr = conv;
+
+		wcsncpy( defaultUnicodeString, convStr.c_str(), 4096 );
+
 		return defaultUnicodeString;
+	}
+	
 }
 
 

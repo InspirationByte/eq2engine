@@ -86,7 +86,7 @@ int	CDPKFileReader::FindFileIndex(const char* filename)
 	FixSlashes(pszNewString);
 	strlwr(pszNewString);
 
-	int strHash = GetDPKHashString(pszNewString);
+	int strHash = StringToHash(pszNewString);
 
 	//Msg("Requested file from package: %s\n",pszNewString);
 

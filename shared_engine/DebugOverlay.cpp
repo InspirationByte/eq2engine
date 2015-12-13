@@ -188,7 +188,7 @@ void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFade
 	static char	string[1024];
 
 	va_start (argptr,fmt);
-	xvsnprintf(string,sizeof(string), fmt,argptr);
+	vsnprintf(string,sizeof(string), fmt,argptr);
 	va_end (argptr);
 
 	textNode.pszText = string;
