@@ -755,6 +755,7 @@ IVector2D CLevelRegion::GetTileAndNeighbourRegion(int x, int y, CLevelRegion** r
 
 Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regobjectref_t* ref)
 {
+	// models are usually placed at heightfield 0
 	CHeightTileField& defField = *reg->m_heightfield[0];
 
 	Matrix4x4 m = rotateXYZ4(DEG2RAD(ref->rotation.x), DEG2RAD(ref->rotation.y), DEG2RAD(ref->rotation.z));
@@ -762,17 +763,32 @@ Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regobjectref_t* ref)
 	Vector3D addHeight(0.0f);
 
 	if(ref->container->m_info.type == LOBJ_TYPE_OBJECT_CFG)
-	{
 		addHeight.y = -ref->container->m_defModel->GetBBoxMins().y;
-	}
 
 	if(ref->tile_dependent)
 	{
-		hfieldtile_t* tile = defField.GetTile(ref->tile_x, ref->tile_y);
+		hfieldtile_t* tile = defField.GetTile( ref->tile_x, ref->tile_y );
 
-		Vector3D tile_position = defField.m_position + addHeight + Vector3D(ref->tile_x*HFIELD_POINT_SIZE, tile->height*HFIELD_HEIGHT_STEP, ref->tile_y*HFIELD_POINT_SIZE);
+		Vector3D tilePosition(ref->tile_x*HFIELD_POINT_SIZE, tile->height*HFIELD_HEIGHT_STEP, ref->tile_y*HFIELD_POINT_SIZE);
+		Vector3D modelPosition = defField.m_position + tilePosition + addHeight;
 
-		m = translate(tile_position)*m;
+		if( (ref->container->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
+			ref->container->m_info.type != LOBJ_TYPE_OBJECT_CFG )
+		{
+			Vector3D t,b,n;
+			defField.GetTileTBN( ref->tile_x, ref->tile_y, t,b,n );
+			
+			Matrix4x4 tileAngle(Vector4D(b, 0), Vector4D(n, 0), Vector4D(t, 0), Vector4D(0,0,0,1));
+
+			tileAngle = (!tileAngle)*m;
+			//Matrix4x4 tileShear(Vector4D(b, 0), Vector4D(0,1,0,0), Vector4D(t, 0), Vector4D(0,0,0,1));
+
+			//Matrix4x4 tilemat = shearY(cosf(atan2f(b.x, b.y)))*tileTBN;
+
+			m = translate(modelPosition)/* * tileShear*/ * tileAngle;
+		}
+		else
+			m = translate(modelPosition)*m;
 	}
 	else
 	{

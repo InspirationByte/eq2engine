@@ -164,6 +164,8 @@ public:
 
 	hfieldtile_t*				GetTileAndNeighbourField(int x, int y, CHeightTileField** field) const;	// returns tile for modifying
 
+	void						GetTileTBN(int x, int y, Vector3D& tang, Vector3D& binorm, Vector3D& norm) const; // returns tile normal
+
 	// returns face at position
 	bool						PointAtPos(const Vector3D& pos, int& x, int& y) const;
 

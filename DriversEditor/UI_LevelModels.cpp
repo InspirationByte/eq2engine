@@ -30,7 +30,7 @@ class CUI_ModelProps : public wxDialog
 {
 public:
 	CUI_ModelProps( wxWindow* parent, int modelFlags, int modPlace )
-	   : wxDialog( parent, wxID_ANY, wxT("Model properties"), wxDefaultPosition, wxSize( 218,221 ), wxDEFAULT_DIALOG_STYLE )
+	   : wxDialog( parent, wxID_ANY, wxT("Model properties"), wxDefaultPosition, wxSize( 272,203 ), wxDEFAULT_DIALOG_STYLE )
 	{
 		this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 	
@@ -50,6 +50,12 @@ public:
 	
 		m_noCollide = new wxCheckBox( this, wxID_ANY, wxT("no collision"), wxDefaultPosition, wxDefaultSize, 0 );
 		gSizer2->Add( m_noCollide, 0, wxALL, 5 );
+
+		m_alignToGround = new wxCheckBox( this, wxID_ANY, wxT("align to ground"), wxDefaultPosition, wxDefaultSize, 0 );
+		gSizer2->Add( m_alignToGround, 0, wxALL, 5 );
+	
+		m_nonUnique = new wxCheckBox( this, wxID_ANY, wxT("non unique"), wxDefaultPosition, wxDefaultSize, 0 );
+		gSizer2->Add( m_nonUnique, 0, wxALL, 5 );
 	
 	
 		bSizer13->Add( gSizer2, 0, wxEXPAND, 5 );
@@ -78,6 +84,12 @@ public:
 		if(modelFlags & LMODEL_FLAG_NOCOLLIDE)
 			m_noCollide->SetValue(true);
 
+		if(modelFlags & LMODEL_FLAG_ALIGNTOCELL)
+			m_alignToGround->SetValue(true);
+
+		if(modelFlags & LMODEL_FLAG_NONUNIQUE)
+			m_nonUnique->SetValue(true);
+
 		m_plcLevel->SetValue(modPlace);
 	}
 
@@ -92,6 +104,8 @@ public:
 
 		nFlags |= m_isGround->GetValue() ? LMODEL_FLAG_ISGROUND : 0;
 		nFlags |= m_noCollide->GetValue() ? LMODEL_FLAG_NOCOLLIDE : 0;
+		nFlags |= m_alignToGround->GetValue() ? LMODEL_FLAG_ALIGNTOCELL : 0;
+		nFlags |= m_nonUnique->GetValue() ? LMODEL_FLAG_NONUNIQUE : 0;
 
 		return nFlags;
 	}
@@ -104,6 +118,9 @@ public:
 protected:
 	wxCheckBox* m_isGround;
 	wxCheckBox* m_noCollide;
+	wxCheckBox* m_alignToGround;
+	wxCheckBox* m_nonUnique;
+
 	wxSpinCtrl* m_plcLevel;
 };
 

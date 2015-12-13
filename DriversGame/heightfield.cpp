@@ -290,6 +290,99 @@ hfieldtile_t* CHeightTileField::GetTileAndNeighbourField(int x, int y, CHeightTi
 	return &m_points[y*m_sizew + x];
 }
 
+void CHeightTileField::GetTileTBN(int x, int y, Vector3D& tang, Vector3D& binorm, Vector3D& norm) const
+{
+	int dx[] = NEIGHBOR_OFFS_XDX(x, 1);
+	int dy[] = NEIGHBOR_OFFS_YDY(y, 1);
+
+	hfieldtile_t* tile = GetTile(x,y);
+	Vector3D tilePosition(x*HFIELD_POINT_SIZE, (float)tile->height*HFIELD_HEIGHT_STEP, y*HFIELD_POINT_SIZE);
+
+	Vector3D t(0,1,1);
+	Vector3D b(1,1,0);
+
+	// tangent and binormal, positive and negative
+	Vector3D tp(0),tn(0);
+	Vector3D bp(0),bn(0);
+
+	int nIter = 0;
+
+	// get neighbour tiles
+	for(int i = 0; i < 8; i++)
+	{
+		//bool isDetached = (tile->flags & EHTILE_DETACHED) ? EHTILE_DETACHED : 0;
+
+		// get the tiles only with corresponding detaching
+		hfieldtile_t* ntile = GetTile(dx[i], dy[i]);
+
+		if(!ntile)
+			continue;
+
+		if(((ntile->flags & EHTILE_DETACHED) > 0) != ((tile->flags & EHTILE_DETACHED) > 0) &&
+			ntile->height < tile->height)
+			continue;
+
+		if(ntile->texture == -1)
+			continue;
+
+		Vector3D ntilePosition(dx[i]*HFIELD_POINT_SIZE, (float)ntile->height*HFIELD_HEIGHT_STEP, dy[i]*HFIELD_POINT_SIZE);
+
+		// make only y has sign
+		Vector3D tt = (ntilePosition-tilePosition)*t;
+		Vector3D bb = (ntilePosition-tilePosition)*b;
+		
+		float ttd = dot(vec3_forward, tt);
+		float bbd = dot(vec3_right, bb);
+
+		if(ttd > 0)
+			tp += Vector3D(0.0f, tt.y, ttd);
+		else
+			tn += Vector3D(0.0f, tt.y, ttd);
+
+		if(bbd > 0)
+			bp += Vector3D(bbd, bb.y, 0.0f);
+		else
+			bn += Vector3D(bbd, bb.y, 0.0f);
+
+		//tp.y += tt.y;
+		//bp.y += bb.y;
+
+		nIter++;
+	}
+
+	// single tile island?
+	if(nIter <= 2)
+	{
+		tang = Vector3D(0.0f, 0.0f, 1.0f);
+		binorm = Vector3D(1.0f, 0.0f, 0.0f);
+		norm = Vector3D(0.0f, 1.0f, 0.0f);
+
+		return;
+	}
+
+	tang = tp-tn;
+	binorm = bp-bn;
+
+	if(lengthSqr(tang) <= 0.01f)
+		tang = Vector3D(0.0f, 0.0f, 1.0f);
+
+	if(lengthSqr(binorm) <= 0.01f)
+		binorm = Vector3D(1.0f, 0.0f, 0.0f);
+
+	tang = fastNormalize(tang);
+	binorm = fastNormalize(binorm);
+	norm = cross(tang, binorm);
+
+	//if(dot(norm, vec3_up) < 0)
+	{
+		debugoverlay->Line3D(m_position+tilePosition, m_position+tilePosition+tang, ColorRGBA(1,0,0,1), ColorRGBA(1,0,0,1), 0.0f );
+		debugoverlay->Line3D(m_position+tilePosition, m_position+tilePosition+binorm, ColorRGBA(0,1,0,1), ColorRGBA(0,1,0,1), 0.0f );
+		debugoverlay->Line3D(m_position+tilePosition, m_position+tilePosition+norm, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1), 0.0f );
+	}
+
+	return;
+}
+
 hfieldtile_t* CHeightTileField::GetTile_CheckFlag(int x, int y, int flag, bool enabled) const
 {
 	hfieldtile_t* tile = GetTile(x,y);
@@ -341,8 +434,6 @@ void EdgeIndexToVertex(int edge, int& vi1, int& vi2)
 	vi2 = i2;
 }
 
-
-
 hfieldbatch_t* FindBatchInList(IMaterial* pMaterial, DkList<hfieldbatch_t*>& batches, bool useSplitCoords, int sx, int sy)
 {
 	for(int i = 0; i < batches.numElem(); i++)
@@ -387,11 +478,6 @@ bool hfieldVertexComparator(const hfielddrawvertex_t& a, const hfielddrawvertex_
 void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& batches )
 {
 	Vector3D hfield_offset = generate_render ? m_position : vec3_zero;//Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
-
-	//int decompx = m_sizew / 4;
-	//int decompy = m_sizeh / 4;
-
-	//hfieldTileSharedVerts_t* vertsOnTiles = new hfieldTileSharedVerts_t[m_sizew*m_sizeh]();
 
 	// generate polys
 	for(int x = 0; x < m_sizew; x++)
@@ -623,14 +709,21 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 
 				if(!isEmpty)
 				{
-					Vector3D norm1 = NormalOfTriangle(	batch->verts[vindxs[2]].position, 
-														batch->verts[vindxs[1]].position,
-														batch->verts[vindxs[0]].position);
 
-					batch->verts[vindxs[0]].normal = norm1;
-					batch->verts[vindxs[1]].normal = norm1;
-					batch->verts[vindxs[2]].normal = norm1;
-					batch->verts[vindxs[3]].normal = norm1;
+					//Vector3D norm1 = NormalOfTriangle(	batch->verts[vindxs[2]].position, 
+					//									batch->verts[vindxs[1]].position,
+					//									batch->verts[vindxs[0]].position);
+
+					if(generate_render)
+					{
+						Vector3D t,b,n;
+						GetTileTBN( x, y, t,b,n );
+
+						batch->verts[vindxs[0]].normal = n;
+						batch->verts[vindxs[1]].normal = n;
+						batch->verts[vindxs[2]].normal = n;
+						batch->verts[vindxs[3]].normal = n;
+					}
 
 					// add quad
 					batch->indices.append(vindxs[2]);

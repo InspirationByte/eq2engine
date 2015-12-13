@@ -117,6 +117,8 @@ private:
 
 	float							m_frametime;
 	float							m_oldtime;
+
+	Threading::CEqMutex				m_mutex;
 };
 
 #endif //DEBUG_TEXT

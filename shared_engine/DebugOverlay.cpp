@@ -206,6 +206,8 @@ void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFade
 
 void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const ColorRGBA &color, float fTime)
 {
+	Threading::CScopedMutex m(m_mutex);
+
 	if(!r_debugdrawboxes.GetBool())
 		return;
 
@@ -224,6 +226,8 @@ void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const Colo
 
 void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const ColorRGBA &color1, const ColorRGBA &color2, float fTime)
 {
+	Threading::CScopedMutex m(m_mutex);
+
 	if(!r_debugdrawlines.GetBool())
 		return;
 
@@ -242,6 +246,8 @@ void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const Col
 
 void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime)
 {
+	Threading::CScopedMutex m(m_mutex);
+
 	DebugPolyNode_t poly;
 	poly.v0 = v0;
 	poly.v1 = v1;
@@ -596,13 +602,17 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 	materials->SetMatrix(MATRIXMODE_VIEW, view);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	DrawBoxArray(&m_BoxList, m_frametime);
-	DrawBoxArray(&m_FastBoxList, m_frametime);
+	{
+		Threading::CScopedMutex m(m_mutex);
 
-	DrawLineArray(&m_LineList, m_frametime);
-	DrawLineArray(&m_FastLineList, m_frametime);
+		DrawBoxArray(&m_BoxList, m_frametime);
+		DrawBoxArray(&m_FastBoxList, m_frametime);
 
-	DrawPolygons(m_polygons.ptr(), m_polygons.numElem(), m_frametime);
+		DrawLineArray(&m_LineList, m_frametime);
+		DrawLineArray(&m_FastLineList, m_frametime);
+
+		DrawPolygons(m_polygons.ptr(), m_polygons.numElem(), m_frametime);
+	}
 
 	materials->Setup2D(winWide, winTall);
 
@@ -618,6 +628,8 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 
 	if(m_LeftTextFadeArray.goToFirst())
 	{
+		Threading::CScopedMutex m(m_mutex);
+
 		do
 		{
 			if(m_LeftTextFadeArray.getCurrent().color.w <= 0)
@@ -646,6 +658,8 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 
 	if(rs_stats.GetBool())
 	{
+		Threading::CScopedMutex m(m_mutex);
+
 		for (int i = 0;i < m_Text3DArray.numElem();i++)
 		{
 			Vector3D screen(0);
@@ -693,6 +707,8 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 
 	if(r_debugdrawgraphs.GetBool())
 	{
+		Threading::CScopedMutex m(m_mutex);
+
 		for(int i = 0; i < m_graphbuckets.numElem(); i++)
 		{
 			DrawGraph( m_graphbuckets[i], i, m_pDebugFont, m_frametime);
