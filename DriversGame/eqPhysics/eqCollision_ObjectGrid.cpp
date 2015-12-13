@@ -257,7 +257,7 @@ void CEqCollisionBroadphaseGrid::AddStaticObjectToGrid( CEqCollisionObject* coll
 		collisionObject->UpdateBoundingBoxTransform();
 
 		BoundingBox& bbox = collisionObject->m_aabb_transformed;
-		float boxSizeY = bbox.GetSize().y;
+		float boxSizeY = bbox.maxPoint.y;
 
 		IVector2D crMin, crMax;
 		FindBoxRange(bbox.minPoint, bbox.maxPoint, crMin, crMax, 0.0f );

@@ -1228,7 +1228,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	if(filterParams && (filterParams->flags & EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC))
 		objectTypeTesting &= ~0x2;
 
-	bool staticInBoundTest = /*(rayBox.maxPoint.y >= cell->cellBoundUsed) &&*/ (rayBox.minPoint.y <= cell->cellBoundUsed);
+	bool staticInBoundTest = (rayBox.minPoint.y <= cell->cellBoundUsed);
 
 	// static objects are not checked if line is not in Y bound
 	if(staticInBoundTest && (objectTypeTesting & 0x1))

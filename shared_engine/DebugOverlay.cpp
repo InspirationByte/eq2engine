@@ -19,12 +19,12 @@
 #endif
 
 #if !defined(EDITOR) &&  !defined(NO_GAME)
-static ConVar rs_stats("r_debugStats","0","Draws debug text",CV_ARCHIVE);
+static ConVar rs_stats("r_frameStats","0","Draws debug text",CV_ARCHIVE);
 static ConVar r_debugdrawgraphs("r_debugDrawGraphs","0","Draws debug graphs",CV_ARCHIVE);
 static ConVar r_debugdrawboxes("r_debugDrawBoxes","0","Draws debug boxes",CV_ARCHIVE);
 static ConVar r_debugdrawlines("r_debugDrawLines","0","Draws debug lines",CV_ARCHIVE);
 #else
-static ConVar rs_stats("r_debugStats","1","Debug stats text",CV_ARCHIVE);
+static ConVar rs_stats("r_frameStats","1","Debug stats text",CV_ARCHIVE);
 static ConVar r_debugdrawgraphs("r_debugDrawGraphs","1","Debug graphs",CV_ARCHIVE);
 static ConVar r_debugdrawboxes("r_debugDrawBoxes","1","Debug boxes",CV_ARCHIVE);
 static ConVar r_debugdrawlines("r_debugDrawLines","1","Debug lines",CV_ARCHIVE);
