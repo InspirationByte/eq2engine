@@ -33,14 +33,14 @@ void CKeyCommandBinder::WriteBindings(DKFILE *pCFGFile)
 	if(!pCFGFile)
 		return;
 
-	GetFileSystem()->Printf(pCFGFile, "unbindall\n" );
+	pCFGFile->Print("unbindall\n" );
 
 	for(int i = 0; i < m_pBindings.numElem();i++)
 	{
 		// resolve key name
 		EqString keyNameString = s_keynames[ m_pBindings[i]->key_index ].name;
 
-		GetFileSystem()->Printf( pCFGFile, "bind %s %s %s\n",	keyNameString.GetData(),
+		pCFGFile->Print("bind %s %s %s\n",	keyNameString.GetData(),
 																m_pBindings[i]->commandString.GetData(),
 																m_pBindings[i]->argumentString.GetData() );
 	}

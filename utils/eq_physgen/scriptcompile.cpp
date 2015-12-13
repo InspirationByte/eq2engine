@@ -1049,7 +1049,7 @@ bool CompileESCScript(const char* filename)
 {
 	// strip filename to set reference models path
 	strcpy(g_refspath, filename);
-	stripFileName(g_refspath);
+	StripFileName(g_refspath);
 
 	KeyValues g_script;
 

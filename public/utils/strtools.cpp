@@ -52,9 +52,7 @@ void FixSlashes( char* str )
     }
 }
 
-
-
-void stripFileName(char* path)
+void StripFileName(char* path)
 {
 	int	length;
 
@@ -65,7 +63,7 @@ void stripFileName(char* path)
 	path[length] = 0;
 }
 
-void extractFileBase(const char* path, char* dest)
+void ExtractFileBase(const char* path, char* dest)
 {
 	const char     *src;
 	src = path + strlen(path) - 1;

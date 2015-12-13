@@ -50,13 +50,11 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 		return NULL;
 	}
 
-	GetFileSystem()->Seek(file,0,SEEK_END);
-	len = GetFileSystem()->Tell(file);
-	GetFileSystem()->Seek(file,0,SEEK_SET);
+	len = file->GetSize();
 
 	char* _buffer = (char*)PPAlloc(len+32); // +32 bytes for conversion issues
 
-	GetFileSystem()->Read(_buffer, 1, len, file);
+	file->Read(_buffer, 1, len);
 	GetFileSystem()->Close(file);
 
 	basemodelheader_t* pBaseHdr = (basemodelheader_t*)_buffer;

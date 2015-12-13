@@ -1039,13 +1039,13 @@ void KV_WriteToFile_r(kvkeybase_t* pKeyBase, DKFILE* pFile, int nTabs, bool bOld
 		kvkeybase_t* pKey = pKeyBase->keys[i];
 
 		// add tabs
-		GetFileSystem()->Write(tabs, 1, nTabs, pFile);
+		pFile->Write(tabs, 1, nTabs);
 
 		WriteFileSelectQuotedString( pKey->name, pFile);
 
 		for(int j = 0; j < pKey->values.numElem(); j++)
 		{
-			GetFileSystem()->Printf(pFile, " ");
+			pFile->Print(" ");
 			WriteFileSelectQuotedString( pKey->values[j], pFile);
 		}
 
@@ -1053,20 +1053,20 @@ void KV_WriteToFile_r(kvkeybase_t* pKeyBase, DKFILE* pFile, int nTabs, bool bOld
 
 		if( pKey->keys.numElem() )
 		{
-			GetFileSystem()->Printf(pFile, "\n");
-			GetFileSystem()->Write(tabs, 1, nTabs, pFile);
-			GetFileSystem()->Printf(pFile, "{\n");
+			pFile->Print("\n");
+			pFile->Write(tabs, 1, nTabs);
+			pFile->Print("{\n");
 
 			KV_WriteToFile_r(pKey, pFile, nTabs + 1, bOldFormat);
 
-			GetFileSystem()->Write(tabs, 1, nTabs, pFile);
-			GetFileSystem()->Printf(pFile, "}");
+			pFile->Write(tabs, 1, nTabs);
+			pFile->Print("}");
 		}
 
 		if(bOldFormat)
-			GetFileSystem()->Printf(pFile, "\n");
+			pFile->Print("\n");
 		else
-			GetFileSystem()->Printf(pFile, ";\n");
+			pFile->Print(";\n");
 	}
 }
 

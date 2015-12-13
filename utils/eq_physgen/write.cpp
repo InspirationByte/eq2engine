@@ -859,7 +859,7 @@ bool WriteEGF(const char* filename)
 	if(file)
 	{
 		// write model
-		GetFileSystem()->Write(pStart,g_hdr->length,1,file);
+		file->Write(pStart,g_hdr->length,1);
 
 		GetFileSystem()->Close(file);
 

@@ -64,6 +64,11 @@ typedef va_list				__va_list;
 // fixes slashes in the directory name
 void		FixSlashes( char* str );
 
+// strips file name from path
+void		StripFileName(char* path);
+
+void		ExtractFileBase(const char* path, char* dest);
+
 // generates string hash
 int			StringToHash( const char *str );
 

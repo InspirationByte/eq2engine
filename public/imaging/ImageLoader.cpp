@@ -441,7 +441,7 @@ bool CImage::LoadDDSfromHandle(DKFILE *fileHandle, uint flags)
 	if(!file)
 		return false;
 
-	GetFileSystem()->Read(&header, sizeof(header), 1, file);
+	file->Read(&header, sizeof(header), 1);
 
 	if (header.dwMagic != MCHAR4('D','D','S',' '))
 	{
@@ -459,7 +459,7 @@ bool CImage::LoadDDSfromHandle(DKFILE *fileHandle, uint flags)
 	if (header.ddpfPixelFormat.dwFourCC == MCHAR4('D','X','1','0'))
 	{
 		DDSHeaderDX10 dx10Header;
-		GetFileSystem()->Read(&dx10Header, sizeof(dx10Header), 1, file);
+		file->Read(&dx10Header, sizeof(dx10Header), 1);
 
 		switch (dx10Header.dxgiFormat)
 		{
@@ -544,16 +544,16 @@ bool CImage::LoadDDSfromHandle(DKFILE *fileHandle, uint flags)
 				int faceSize = GetMipMappedSize(mipMapLevel, 1) / 6;
 				ubyte *src = GetPixels(mipMapLevel) + face * faceSize;
 
-				GetFileSystem()->Read(src, 1, faceSize, file);
+				file->Read(src, 1, faceSize);
 			}
 			if ((flags & DONT_LOAD_MIPMAPS) && header.dwMipMapCount > 1)
 			{
-				GetFileSystem()->Seek(file, GetMipMappedSize(1, header.dwMipMapCount - 1) / 6, SEEK_CUR);
+				file->Seek(GetMipMappedSize(1, header.dwMipMapCount - 1) / 6, VS_SEEK_CUR);
 			}
 		}
 	}
 	else
-		GetFileSystem()->Read(m_pPixels, 1, size, file);
+		file->Read(m_pPixels, 1, size);
 
 	if ((m_nFormat == FORMAT_RGB8 || m_nFormat == FORMAT_RGBA8) && header.ddpfPixelFormat.dwBBitMask == 0xFF)
 	{
@@ -638,12 +638,10 @@ bool CImage::LoadTGAfromHandle(DKFILE *fileHandle)
 
 
 	// Find file size
-	GetFileSystem()->Seek(file, 0, SEEK_END);
-	size = GetFileSystem()->Tell(file);
-	GetFileSystem()->Seek(file, 0, SEEK_SET);
+	size = file->GetSize();
 
 	// Read the header
-	GetFileSystem()->Read(&header, sizeof(header), 1, file);
+	file->Read(&header, sizeof(header), 1);
 
 	m_nWidth  = header.width;
 	m_nHeight = header.height;
@@ -654,11 +652,11 @@ bool CImage::LoadTGAfromHandle(DKFILE *fileHandle)
 	pixelSize = header.bpp / 8;
 
 	if ((palLength = header.descriptionlen + header.cmapentries * header.cmapbits / 8) > 0)
-		GetFileSystem()->Read(palette, sizeof(palette), 1, file);
+		file->Read(palette, sizeof(palette), 1);
 
 	// Read the file data
 	fBuffer = new ubyte[size - sizeof(header) - palLength];
-	GetFileSystem()->Read(fBuffer, size - sizeof(header) - palLength, 1, file);
+	file->Read(fBuffer, size - sizeof(header) - palLength, 1);
 	GetFileSystem()->Close(file);
 
 	size = m_nWidth * m_nHeight * pixelSize;

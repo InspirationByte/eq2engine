@@ -1503,7 +1503,7 @@ void WriteAnimationPackage()
 	}
 
 	int filesize = pData - pStart;
-	GetFileSystem()->Write(pStart, 1, filesize, file);
+	file->Write(pStart, 1, filesize);
 
 	Msg("Total written bytes: %d\n", filesize);
 	GetFileSystem()->Close(file);

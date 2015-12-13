@@ -762,7 +762,7 @@ void DkPhysics::Simulate(float dt, int substeps)
 			m_dynamicsWorld->serialize(serializer);
 
 			DKFILE* file = GetFileSystem()->Open("testFile.bullet", "wb", SP_ROOT);
-			GetFileSystem()->Write(serializer->getBufferPointer(),serializer->getCurrentBufferSize(),1,file);
+			file->Write(serializer->getBufferPointer(),serializer->getCurrentBufferSize(),1);
 			GetFileSystem()->Close(file);
 
 			delete serializer;

@@ -932,7 +932,7 @@ void WritePODFile(const char* filename)
 	if(pFile)
 	{
 		int filesize = pData - pStart;
-		GetFileSystem()->Write(pStart, 1, filesize, pFile);
+		pFile->Write(pStart, 1, filesize);
 
 		Msg("Total written bytes: %d\n", filesize);
 		GetFileSystem()->Close(pFile);

@@ -243,7 +243,7 @@ void DkSoundSampleLocal::LoadWav(const char *name, unsigned int buffer)
 	int fSize = file->GetSize();
 
 	ubyte* fileBuffer = (ubyte*)malloc( fSize );
-	GetFileSystem()->Read(fileBuffer, 1, fSize, file);
+	file->Read(fileBuffer, 1, fSize);
 	GetFileSystem()->Close(file);
 
 	LoadWavFromBufferEX( fileBuffer, &format, &data, &size, &freq, &loop );

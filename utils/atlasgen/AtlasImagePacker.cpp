@@ -206,7 +206,7 @@ bool CreateAtlasImage(const DkList<CImage*>& images_list,
 
 		// get file name only
 		char img_file_name_only[MAX_PATH];
-		extractFileBase(pImage->GetName(), img_file_name_only);
+		ExtractFileBase(pImage->GetName(), img_file_name_only);
 
 		// add info to keyvalues
 		kvkeybase_t* rect_kv = pAtlasGroup->AddKeyBase(img_file_name_only);

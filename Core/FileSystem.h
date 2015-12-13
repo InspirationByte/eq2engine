@@ -130,26 +130,6 @@ public:
     long						GetFileSize(const char* filename, int searchFlags = -1);
 	uint32						GetFileCRC32(const char* filename, int searchFlags = -1);
 
-    int							Seek( DKFILE *fp, long pos, int seekType );
-    long						Tell( DKFILE *fp );
-    size_t						Read( void *dest, size_t count, size_t size, DKFILE *fp );
-    size_t						Write( const void *src, size_t count, size_t size, DKFILE *fp );
-	size_t						Printf( DKFILE *fp, const char *fmt, ... );
-    int							Error( DKFILE *fp );
-    int							Flush( DKFILE *fp );
-    char*						Gets( char *dest, int destSize, DKFILE *fp);
-#ifdef PLAT_WIN
-    int							Stat( const char *path, struct _stat *buf, int searchFlags = -1 );
-#else
-    int							Stat( const char *path, struct stat *buf, int searchFlags = -1 );
-#endif
-
-#ifdef PLAT_WIN
-    HANDLE						FindFirstFile(char *findname, WIN32_FIND_DATA *dat, int searchFlags = -1);
-    bool						FindNextFile(HANDLE handle, WIN32_FIND_DATA *dat);
-    bool						FindClose(HANDLE handle);
-#endif
-
     // Package tools
     bool						AddPackage(const char* packageName,SearchPath_e type);
 
