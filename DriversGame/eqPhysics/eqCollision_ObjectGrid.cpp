@@ -78,7 +78,10 @@ void CEqCollisionBroadphaseGrid::Destroy()
 	m_gridSize = 0;
 }
 
-
+bool CEqCollisionBroadphaseGrid::IsInit() const
+{
+	return m_gridMap != NULL;
+}
 
 bool CEqCollisionBroadphaseGrid::GetPointAt(const Vector3D& origin, int& x, int& y) const
 {

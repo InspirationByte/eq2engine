@@ -245,7 +245,7 @@ void Game_OnPhysicsUpdate(float fDt, int iterNum)
 
 	// update traffic car spawn/remove from here
 	if( IsServer() && (iterNum == 0) && g_pGameSession->GetLeadCar())
-		g_pAIManager->UpdateCarRespawn(fDt, g_pGameSession->GetLeadCar()->GetOrigin());
+		g_pAIManager->UpdateCarRespawn(fDt, g_pGameSession->GetLeadCar()->GetOrigin(), g_pGameSession->GetLeadCar()->GetVelocity());
 
 	// update replay recording
 	if(g_replayData)

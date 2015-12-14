@@ -93,6 +93,8 @@ struct TMat3 // Matrix3x3
 
 	T* toRaw() {return (T *) rows;}
 
+	T& operator () (int row, int col) const { return rows[row][col]; }
+
 	operator const T *() const { return (const T *) rows; }
 };
 

@@ -49,14 +49,14 @@ public:
 	void						Init();
 	void						Shutdown();
 
-	void						UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin);
+	void						UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& leadVelocity);
 	void						UpdateCopStuff(float fDt);
 
 	// ----- TRAFFIC ------
 	void						SetMaxTrafficCars(int count);
 	int							GetMaxTrafficCars() const;		
 	
-	CCar*						SpawnRandomTrafficCar( const IVector2D& globalCell, int carType = CAR_TYPE_NORMAL, bool doChecks = true);
+	CCar*						SpawnRandomTrafficCar(const IVector2D& globalCell, int carType = CAR_TYPE_NORMAL, bool doChecks = true);
 
 	// ----- COPS ------
 	void						SetCopsEnabled(bool enable);									// switch to spawn
@@ -91,6 +91,9 @@ protected:
 	void						CircularSpawnTrafficCars( int x0, int y0, int radius );
 
 	DkList<carConfigEntry_t*>	m_civCarEntries;
+
+	Vector3D					m_leadPosition;
+	Vector3D					m_leadVelocity;
 
 	EqString					m_copCarName[COP_NUMTYPES];
 	bool						m_enableCops;

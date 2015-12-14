@@ -13,6 +13,9 @@ template<class T>
 struct TMat4;
 
 template<class T>
+struct TMat3;
+
+template<class T>
 struct TVec3D;
 
 template<class T>
@@ -35,7 +38,7 @@ struct Quaternion
 		y = iy;
 		z = iz;
 	}
-	Quaternion(const TMat4<float> &m);
+	Quaternion(const TMat3<float> &m);
 	Quaternion(const TVec4D<float> &v);
 	Quaternion(const float a, const TVec3D<float>& axis);
 

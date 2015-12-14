@@ -306,6 +306,8 @@ public:
 
 	virtual void			Spawn();
 
+	void					AlignToGround();	// align car to ground
+
 	//-----------------------------------
 
 	float					GetRPM();
@@ -530,6 +532,8 @@ protected:
 OOLUA_PROXY(CCar, CGameObject)
 
 	OOLUA_TAGS( Abstract )
+
+	OOLUA_MFUNC(AlignToGround)
 
 	OOLUA_MFUNC_CONST(IsAnyWheelOnGround)
 

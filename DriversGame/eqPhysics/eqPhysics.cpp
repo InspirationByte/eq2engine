@@ -1028,6 +1028,10 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair, float deltaTime)
 
 void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK preIntegrFunc)
 {
+	// don't let the physics simulate something is not init
+	if(!m_grid.IsInit())
+		return;
+
 	PROFILE_FUNC()
 
 	static DkList<ContactPair_t> contactPairs;

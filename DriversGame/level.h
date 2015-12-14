@@ -186,8 +186,10 @@ struct regobjectref_t
 	Vector3D		position;
 	Vector3D		rotation;
 
-	int				tile_x;
-	int				tile_y;
+	Matrix4x4		transform;
+
+	short			tile_x;
+	short			tile_y;
 	bool			tile_dependent;
 
 	int				level;

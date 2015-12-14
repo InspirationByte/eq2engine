@@ -1056,6 +1056,33 @@ void CCar::Spawn()
 	m_veh_shadow = g_vehicleEffects->FindEntry("carshad");
 }
 
+void CCar::AlignToGround()
+{
+	IVector2D hfieldCell;
+	CLevelRegion* reg = NULL;
+	if( !g_pGameWorld->m_level.GetRegionAndTile( m_vecOrigin, &reg, hfieldCell ) )
+		return;
+
+	Vector3D pos = reg->CellToPosition(hfieldCell.x, hfieldCell.y);
+
+	/*
+	Vector3D t,b,n;
+	reg->GetHField()->GetTileTBN(hfieldCell.x, hfieldCell.y, t,b,n);
+	Matrix3x3 cellAngle(b,n,t);
+	Matrix3x3 finalAngle = !cellAngle * Matrix3x3( GetOrientation() );
+	if(m_pPhysicsObject)
+		SetOrientation( Quaternion( transpose(finalAngle) ) );
+	*/
+
+	float suspLowPos = lerp(m_conf->m_wheels[0].suspensionTop.y, m_conf->m_wheels[0].suspensionBottom.y, 0.85f);
+	
+	
+
+	pos = Vector3D(m_vecOrigin.x, pos.y - suspLowPos, m_vecOrigin.z);
+
+	SetOrigin( pos );
+}
+
 void CCar::OnRemove()
 {
 	CGameObject::OnRemove();
@@ -2308,6 +2335,8 @@ void CCar::Simulate( float fDt )
 
 	if(!m_pPhysicsObject)
 		return;
+
+	m_vecOrigin = m_pPhysicsObject->m_object->GetPosition();
 
 	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
 
@@ -3712,7 +3741,8 @@ int CCar::GetPursuedCount() const
 
 #ifndef NO_LUA
 OOLUA_EXPORT_FUNCTIONS(
-	CCar, 
+	CCar,
+	AlignToGround,
 	SetColorScheme, 
 	SetMaxDamage, 
 	SetMaxSpeed,

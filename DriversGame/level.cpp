@@ -269,14 +269,13 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 
 void CLevelModel::CreateCollisionObjects( CLevelRegion* reg, regobjectref_t* ref )
 {
+	Matrix4x4 mat = GetModelRefRenderMatrix(reg, ref);
+	mat = transpose(mat);
 
 	for(int i = 0; i < m_batchMeshes.numElem(); i++)
 	{
 		CEqCollisionObject* collObj = new CEqCollisionObject();
 		collObj->Initialize(m_batchMeshes[i]);
-
-		Matrix4x4 mat = GetModelRefRenderMatrix(reg, ref);
-		mat = transpose(mat);
 
 		collObj->SetOrientation( Quaternion(mat.getRotationComponent()) );
 		collObj->SetPosition( mat.getTranslationComponent() );
@@ -2551,7 +2550,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<objectcont_t*>&
 		ref->position = cellObj.position;
 		ref->rotation = cellObj.rotation;
 
-		Matrix4x4 wmatrix = GetModelRefRenderMatrix( this, ref );
+		ref->transform = GetModelRefRenderMatrix( this, ref );
 		
 		if(ref->container->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
@@ -2570,7 +2569,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<objectcont_t*>&
 			BoundingBox tbbox;
 
 			for(int i = 0; i < 8; i++)
-				tbbox.AddVertex((wmatrix*Vector4D(model->m_bbox.GetVertex(i), 1.0f)).xyz());
+				tbbox.AddVertex((ref->transform*Vector4D(model->m_bbox.GetVertex(i), 1.0f)).xyz());
 
 			// set reference bbox for light testing
 			ref->bbox = tbbox;
@@ -2584,9 +2583,9 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<objectcont_t*>&
 
 			if(newObj)
 			{
-				Vector3D eulAngles = EulerMatrixXYZ(wmatrix.getRotationComponent());
+				Vector3D eulAngles = EulerMatrixXYZ(ref->transform.getRotationComponent());
 
-				newObj->SetOrigin( transpose(wmatrix).getTranslationComponent() );
+				newObj->SetOrigin( transpose(ref->transform).getTranslationComponent() );
 				newObj->SetAngles( VRAD2DEG(eulAngles) );
 				newObj->SetUserData( ref );
 
@@ -2641,16 +2640,16 @@ void CLevelRegion::RespawnObjects()
 
 		ref->object = NULL;
 
-		Matrix4x4 wmatrix = GetModelRefRenderMatrix( this, ref );
+		ref->transform = GetModelRefRenderMatrix( this, ref );
 
 		// create object, spawn in game cycle
 		CGameObject* newObj = g_pGameWorld->CreateGameObject( ref->container->m_defType.c_str(), &ref->container->m_defKeyvalues );
 
 		if(newObj)
 		{
-			Vector3D eulAngles = EulerMatrixXYZ(wmatrix.getRotationComponent());
+			Vector3D eulAngles = EulerMatrixXYZ(ref->transform.getRotationComponent());
 
-			newObj->SetOrigin( transpose(wmatrix).getTranslationComponent() );
+			newObj->SetOrigin( transpose(ref->transform).getTranslationComponent() );
 			newObj->SetAngles( VRAD2DEG(eulAngles) );
 			newObj->SetUserData( ref );
 
@@ -3708,7 +3707,7 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regobjectref_t* ref)
 
 	int navCellGridSize = m_cellsSize*AI_NAVIGATION_GRID_SCALE;
 
-	Matrix4x4 transform = GetModelRefRenderMatrix(reg, ref);
+	//Matrix4x4 transform = GetModelRefRenderMatrix(reg, ref);
 
 	if(ref->container->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 	{
@@ -3737,9 +3736,9 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regobjectref_t* ref)
 			p1 = model->m_verts[model->m_indices[i + 1]].position;
 			p2 = model->m_verts[model->m_indices[i + 2]].position;
 
-			v0 = (transform*Vector4D(p0, 1.0f)).xyz();
-			v1 = (transform*Vector4D(p1, 1.0f)).xyz();
-			v2 = (transform*Vector4D(p2, 1.0f)).xyz();
+			v0 = (ref->transform*Vector4D(p0, 1.0f)).xyz();
+			v1 = (ref->transform*Vector4D(p1, 1.0f)).xyz();
+			v2 = (ref->transform*Vector4D(p2, 1.0f)).xyz();
 
 			Vector3D normal;
 			ComputeTriangleNormal(v0, v1, v2, normal);
@@ -3806,9 +3805,9 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regobjectref_t* ref)
 			p1 = physData->vertices[physData->indices[i + 1]];
 			p2 = physData->vertices[physData->indices[i + 2]];
 
-			v0 = (transform*Vector4D(p0, 1.0f)).xyz();
-			v1 = (transform*Vector4D(p1, 1.0f)).xyz();
-			v2 = (transform*Vector4D(p2, 1.0f)).xyz();
+			v0 = (ref->transform*Vector4D(p0, 1.0f)).xyz();
+			v1 = (ref->transform*Vector4D(p1, 1.0f)).xyz();
+			v2 = (ref->transform*Vector4D(p2, 1.0f)).xyz();
 
 			Vector3D normal;
 			ComputeTriangleNormal(v0, v1, v2, normal);

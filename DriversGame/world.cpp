@@ -31,7 +31,7 @@ CPFXAtlasGroup* g_treeAtlas = NULL;
 
 //-----------------------------------------------------------------------------------
 
-ConVar r_zfar("r_zfar", "350", "Z depth far on main scene", CV_CHEAT);
+ConVar r_zfar("r_zfar", "350", "Z depth far on main scene", CV_ARCHIVE);
 
 ConVar fog_override("fog_override","0","Fog parameters override", CV_CHEAT);
 ConVar fog_enable("fog_enable","0","Enables fog",CV_ARCHIVE);

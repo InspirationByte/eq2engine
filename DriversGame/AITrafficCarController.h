@@ -120,6 +120,8 @@ public:
 
 protected:
 	float				m_speedModifier;
+	bool				m_hasDamage;
+	bool				m_frameSkip;
 
 	straight_t			m_straights[2];
 	IVector2D			m_currEnd;
@@ -128,7 +130,6 @@ protected:
 
 	float				m_prevFract;
 
-	bool				m_hasDamage;
 	bool				m_switchedLane;
 
 	float				m_refreshTime;

@@ -256,6 +256,7 @@ void CAIPursuerCar::BeginPursuit()
 	GetPhysicsBody()->Wake();
 
 	m_autohandbrake = true;
+	m_frameSkip = false;
 
 	if(m_type == PURSUER_TYPE_COP)
 	{
@@ -298,6 +299,7 @@ void CAIPursuerCar::EndPursuit(bool death)
 		m_sirenEnabled = false;
 
 	m_autohandbrake = false;
+	m_frameSkip = true;
 
 	if (GetCurrentStateType() != GAME_STATE_GAME)
 	{

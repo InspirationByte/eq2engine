@@ -46,107 +46,152 @@ Quaternion::Quaternion(const float Wx, const float Wy, const float Wz)
 	normalize();
 }
 
-Quaternion::Quaternion(const Matrix4x4 &matrix)
+#define TRACE_QZERO_TOLERANCE 0.1f
+
+Quaternion::Quaternion(const Matrix3x3 &matrix)
 {
-	float diag = matrix(0,0) + matrix(1,1) + matrix(2,2) + 1;
 
-	if( diag > 0.0f )
-	{
-		float fScale = sqrtf(diag) * 2.0f; // get scale from diagonal
+// METHOD 3
 
-		float s = 1.0f / fScale;
+	float trace, s;
 
-		x = ( matrix(2,1) - matrix(1,2)) * s;
-		y = ( matrix(0,2) - matrix(2,0)) * s;
-		z = ( matrix(1,0) - matrix(0,1)) * s;
-		w = 0.25f * fScale;
-	}
-	else
-	{
-		if ( matrix(0,0) > matrix(1,1) && matrix(0,0) > matrix(2,2))
-		{
-			// 1st element of diag is greatest value
-			// find scale according to 1st element, and double it
-			float fScale = sqrtf( 1.0f + matrix(0,0) - matrix(1,1) - matrix(2,2)) * 2.0f;
+    trace = matrix(0,0) + matrix(1,1) + matrix(2,2);
+    if (trace > 0.0f)
+    {
+        s = sqrtf(trace + 1.0f);
+        w = s * 0.5f;
+        s = 0.5f / s;
 
-			float s = 1.0f / fScale;
+        x = (matrix(2,1) - matrix(1,2)) * s;
+        y = (matrix(0,2) - matrix(2,0)) * s;
+        z = (matrix(1,0) - matrix(0,1)) * s;
+    }
+    else
+    {
+        int biggest;
+        enum { A, E, I };
+        if (matrix(0,0) > matrix(1,1))
+        {
+            if (matrix(2,2) > matrix(0,0))
+                biggest = I;
+            else
+                biggest = A;
+        }
+        else
+        {
+            if (matrix(2,2) > matrix(0,0))
+                biggest = I;
+            else
+                biggest = E;
+        }
 
-			x = 0.25f * fScale;
-			y = (matrix(0,1) + matrix(1,0)) * s;
-			z = (matrix(2,0) + matrix(0,2)) * s;
-			w = (matrix(2,1) - matrix(1,2)) * s;
-		}
-		else if ( matrix(1,1) > matrix(2,2))
-		{
-			// 2nd element of diag is greatest value
-			// find scale according to 2nd element, and double it
-			float fScale = sqrtf( 1.0f + matrix(1,1) - matrix(0,0) - matrix(2,2)) * 2.0f;
-
-			float s = 1.0f / fScale;
-
-			x = (matrix(0,1) + matrix(1,0) ) * s;
-			y = 0.25f * fScale;
-			z = (matrix(1,2) + matrix(2,1) ) * s;
-			w = (matrix(0,2) - matrix(2,0) ) * s;
-		}
-		else
-		{
-			// 3rd element of diag is greatest value
-			// find scale according to 3rd element, and double it
-			float fScale = sqrtf( 1.0f + matrix(2,2) - matrix(0,0) - matrix(1,1)) * 2.0f;
-
-			float s = 1.0f / fScale;
-
-			x = (matrix(0,2) + matrix(2,0)) * s;
-			y = (matrix(1,2) + matrix(2,1)) * s;
-			z = 0.25f * fScale;
-			w = (matrix(1,0) - matrix(0,1)) * s;
-		}
-	}
-
-	normalize();
-
-	/*
-	// From Jason Shankel, (C) 2000.
-	// this version is not compatible with my hardware skinning
-
-	double Tr = matrix.rows[0][0] + matrix(1,1) + matrix(2,2) + 1;
-	double fourD;
-	double q[4];
-
-	static int i,j,k;
-	if (Tr >= 1.0)
-	{
-		fourD = 2.0*sqrt(Tr);
-		q[3] = fourD/4.0;
-		q[0] = (matrix.rows[2][1] - matrix.rows[1][2]) / fourD;
-		q[1] = (matrix.rows[0][2] - matrix.rows[2][0]) / fourD;
-		q[2] = (matrix.rows[1][0] - matrix.rows[0][1]) / fourD;
-	}
-	else
-	{
-		if (matrix.rows[0][0] > matrix.rows[1][1])
-			i = 0;
-		else
-			i = 1;
-
-		if (matrix.rows[2][2] > matrix.rows[i][i])
-			i = 2;
-
-		j = (i+1)%3;
-		k = (j+1)%3;
-		fourD = 2.0*sqrt(matrix.rows[i][i] - matrix.rows[j][j] - matrix.rows[k][k] + 1.0);
-		q[i] = fourD / 4.0;
-		q[j] = (matrix.rows[j][i] + matrix.rows[i][j]) / fourD;
-		q[k] = (matrix.rows[k][i] + matrix.rows[i][k]) / fourD;
-		q[3] = (matrix.rows[j][k] - matrix.rows[k][j]) / fourD;
-	}
-
-	x = q[0];
-	y = q[1];
-	z = q[2];
-	w = q[3];
-	*/
+        // in the unusual case the original trace fails to produce a good sqrt, try others...
+        switch (biggest)
+        {
+        case A:
+            s = sqrtf(matrix(0,0) - (matrix(1,1) + matrix(2,2)) + 1.0f);
+            if (s > TRACE_QZERO_TOLERANCE)
+            {
+                x = s * 0.5f;
+                s = 0.5f / s;
+                w = (matrix(2,1) - matrix(1,2)) * s;
+                y = (matrix(0,1) + matrix(1,0)) * s;
+                z = (matrix(0,2) + matrix(2,0)) * s;
+                break;
+            }
+            // I
+            s = sqrtf(matrix(2,2) - (matrix(0,0) + matrix(1,1)) + 1.0f);
+            if (s > TRACE_QZERO_TOLERANCE)
+            {
+                z = s * 0.5f;
+                s = 0.5f / s;
+                w = (matrix(1,0) - matrix(0,1)) * s;
+                x = (matrix(2,0) + matrix(0,2)) * s;
+                y = (matrix(2,1) + matrix(1,2)) * s;
+                break;
+            }
+            // E
+            s = sqrtf(matrix(1,1) - (matrix(2,2) + matrix(0,0)) + 1.0f);
+            if (s > TRACE_QZERO_TOLERANCE)
+            {
+                y = s * 0.5f;
+                s = 0.5f / s;
+                w = (matrix(0,2) - matrix(2,0)) * s;
+                z = (matrix(1,2) + matrix(2,1)) * s;
+                x = (matrix(1,0) + matrix(0,1)) * s;
+                break;
+            }
+            break;
+        case E:
+            s = sqrtf(matrix(1,1) - (matrix(2,2) + matrix(0,0)) + 1.0f);
+            if (s > TRACE_QZERO_TOLERANCE)
+            {
+                y = s * 0.5f;
+                s = 0.5f / s;
+                w = (matrix(0,2) - matrix(2,0)) * s;
+                z = (matrix(1,2) + matrix(2,1)) * s;
+                x = (matrix(1,0) + matrix(0,1)) * s;
+                break;
+            }
+            // I
+            s = sqrtf(matrix(2,2) - (matrix(0,0) + matrix(1,1)) + 1.0f);
+            if (s > TRACE_QZERO_TOLERANCE)
+            {
+                z = s * 0.5f;
+                s = 0.5f / s;
+                w = (matrix(1,0) - matrix(0,1)) * s;
+                x = (matrix(2,0) + matrix(0,2)) * s;
+                y = (matrix(2,1) + matrix(1,2)) * s;
+                break;
+            }
+            // A
+            s = sqrtf(matrix(0,0) - (matrix(1,1) + matrix(2,2)) + 1.0f);
+            if (s > TRACE_QZERO_TOLERANCE)
+            {
+                x = s * 0.5f;
+                s = 0.5f / s;
+                w = (matrix(2,1) - matrix(1,2)) * s;
+                y = (matrix(0,1) + matrix(1,0)) * s;
+                z = (matrix(0,2) + matrix(2,0)) * s;
+                break;
+            }
+            break;
+        case I:
+            s = sqrtf(matrix(2,2) - (matrix(0,0) + matrix(1,1)) + 1.0f);
+            if (s > TRACE_QZERO_TOLERANCE)
+            {
+                z = s * 0.5f;
+                s = 0.5f / s;
+                w = (matrix(1,0) - matrix(0,1)) * s;
+                x = (matrix(2,0) + matrix(0,2)) * s;
+                y = (matrix(2,1) + matrix(1,2)) * s;
+                break;
+            }
+            // A
+            s = sqrtf(matrix(0,0) - (matrix(1,1) + matrix(2,2)) + 1.0f);
+            if (s > TRACE_QZERO_TOLERANCE)
+            {
+                x = s * 0.5f;
+                s = 0.5f / s;
+                w = (matrix(2,1) - matrix(1,2)) * s;
+                y = (matrix(0,1) + matrix(1,0)) * s;
+                z = (matrix(0,2) + matrix(2,0)) * s;
+                break;
+            }
+            // E
+            s = sqrtf(matrix(1,1) - (matrix(2,2) + matrix(0,0)) + 1.0f);
+            if (s > TRACE_QZERO_TOLERANCE)
+            {
+                y = s * 0.5f;
+                s = 0.5f / s;
+                w = (matrix(0,2) - matrix(2,0)) * s;
+                z = (matrix(1,2) + matrix(2,1)) * s;
+                x = (matrix(1,0) + matrix(0,1)) * s;
+                break;
+            }
+            break;
+        }
+    }
 }
 
 

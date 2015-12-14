@@ -175,7 +175,7 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 
 			// cast matrices to quaternions
 			// note that quaternions uses transposes matrix set.
-			bquats[i].quat = Quaternion(transpose(toAbsTransform)).asVector4D();
+			bquats[i].quat = Quaternion(transpose(toAbsTransform).getRotationComponent()).asVector4D();
 			bquats[i].origin = Vector4D(toAbsTransform.rows[3].xyz(), 1);
 		}
 

@@ -36,6 +36,8 @@ public:
 	void				Init(CEqPhysics* physics, int gridsize, const Vector3D& worldmins, const Vector3D& worldmaxs);
 	void				Destroy();
 
+	bool				IsInit() const;
+
 	collgridcell_t*		GetCellAtPos(const Vector3D& origin) const;
 	collgridcell_t*		GetCellAt(int x, int y) const;
 

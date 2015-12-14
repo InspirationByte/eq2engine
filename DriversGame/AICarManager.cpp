@@ -10,7 +10,9 @@
 
 //------------------------------------------------------------------------------------------
 
-ConVar g_trafficMaxCars("g_trafficMaxCars", "20", "Maximum traffic cars", CV_ARCHIVE);
+ConVar g_trafficMaxCars("g_trafficMaxCars", "48", "Maximum traffic cars", CV_ARCHIVE);
+ConVar g_traffic_mindist("g_traffic_mindist", "50", "Min traffic car distance to spawn", CV_CHEAT);
+ConVar g_traffic_maxdist("g_traffic_maxdist", "51", "Max traffic car distance, to disappear", CV_CHEAT);
 
 const float AI_COP_SPEECH_DELAY = 3.0f;		// delay before next speech
 const float AI_COP_TAUNT_DELAY = 11.0f;		// delay before next taunt
@@ -49,6 +51,9 @@ CAICarManager::CAICarManager()
 	m_copRespawnInterval = 20;	// spawn on every 20th traffic car
 	m_numMaxTrafficCars = 32;
 	m_copSpawnIntervalCounter = 0;
+
+	m_leadVelocity = vec3_zero;
+	m_leadPosition = vec3_zero;
 }
 
 CAICarManager::~CAICarManager()
@@ -129,6 +134,12 @@ CCar* CAICarManager::SpawnRandomTrafficCar(const IVector2D& globalCell, int carT
 		}
 
 		if (!canSpawn)
+			return NULL;
+
+		Vector3D newSpawnPos = g_pGameWorld->m_level.GlobalTilePointToPosition(globalCell);
+
+		// if velocity is negative to new spawn origin, cancel spawning
+		if( dot(newSpawnPos-m_leadPosition, m_leadVelocity) < 0 )
 			return NULL;
 	}
 
@@ -215,17 +226,16 @@ CCar* CAICarManager::SpawnRandomTrafficCar(const IVector2D& globalCell, int carT
 	if(!pNewCar)
 		return NULL;
 
-	pNewCar->InitAI(pReg, roadCell);
 	pNewCar->Spawn();
+
+	pNewCar->InitAI(pReg, roadCell);
+
 	g_pGameWorld->AddObject(pNewCar, true);
 
 	m_trafficCars.append(pNewCar);
 
 	return pNewCar;
 }
-
-ConVar g_traffic_mindist("g_traffic_mindist", "65", "Min traffic car distance to spawn");
-ConVar g_traffic_maxdist("g_traffic_maxdist", "75", "Max traffic car distance, to disappear");
 
 void CAICarManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
 {
@@ -234,12 +244,12 @@ void CAICarManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
 	int ddF_y = -2 * radius;
 	int x = 0;
 	int y = radius;
-
+	
 	SpawnRandomTrafficCar(IVector2D(x0, y0 + radius));
 	SpawnRandomTrafficCar(IVector2D(x0, y0 - radius));
 	SpawnRandomTrafficCar(IVector2D(x0 + radius, y0));
 	SpawnRandomTrafficCar(IVector2D(x0 - radius, y0));
-
+	
 	while (x < y)
 	{
 		if (f >= 0)
@@ -271,7 +281,7 @@ void CAICarManager::RemoveTrafficCar(CAITrafficCar* car)
 	g_pGameWorld->RemoveObject(car);
 }
 
-void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin)
+void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& leadVelocity)
 {
 #ifdef BIG_REPLAYS
 	if (g_replayData->m_state == REPL_PLAYING)
@@ -290,6 +300,9 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin)
 	IVector2D playerCarCell;
 	if (!g_pGameWorld->m_level.GetTileGlobal(spawnOrigin, playerCarCell))
 		return;
+
+	m_leadPosition = spawnOrigin;
+	m_leadVelocity = leadVelocity;
 
 	// Try to remove cars
 	for (int i = 0; i < m_trafficCars.numElem(); i++)
@@ -349,47 +362,6 @@ void CAICarManager::UpdateCopStuff(float fDt)
 
 		m_speechQueue.removeIndex(0);
 	}
-
-	/*
-	CCar* playerCar = g_pGameSession->GetPlayerCar();
-
-	if(playerCar)
-	{
-		if(playerCar->GetPursuedCount() == 0 && m_pursueState || m_initState)
-		{
-			EmitSound_t ep;
-			ep.name = "music.rio_amb";
-
-			ses->Emit2DSound(&ep);
-			m_pursueState = false;
-			m_initState = false;
-		}
-		else if(playerCar->GetPursuedCount() > 0 && !m_pursueState)
-		{
-			EmitSound_t ep;
-			ep.name = "music.rio_cop";
-
-			ses->Emit2DSound(&ep);
-			m_pursueState = true;
-		}
-
-		if( m_enableCops &&
-			playerCar->GetFelony() > FELONY_TO_PLACE_ROADBLOCK )
-		{
-			m_respawnRoadblockTimer -= fDt;
-
-			float targetAngle = VectorAngles(normalize(playerCar->GetVelocity())).y+45.0f;
-
-			if( playerCar->GetSpeed() > 45 && 
-				m_respawnRoadblockTimer < 0 && 
-				SpawnRoadBlockFor( playerCar, targetAngle ))
-			{
-				m_respawnRoadblockTimer = AI_ROADBLOCK_RESPAWN_TIME;
-				MakeCopSpeech("cop.roadblock", true);
-			}
-		}
-	}
-	*/
 }
 
 DECLARE_CMD(force_roadblock, "Forces spawn roadblock on cur car", CV_CHEAT)
@@ -430,7 +402,7 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 
 	int numLanes = g_pGameWorld->m_level.GetRoadWidthInLanesAtPoint(placementVec, 32);
 
-	Msg("Gonna spawn roadblock on %d cells wide road (start=%d)\n", numLanes, curLane);
+	//Msg("Gonna spawn roadblock on %d cells wide road (start=%d)\n", numLanes, curLane);
 
 	int nCars = 0;
 
@@ -478,8 +450,9 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 		copBlockCar->Enable(false);
 		copBlockCar->m_sirenEnabled = true;
 
-		copBlockCar->InitAI(pReg, roadCell);
 		copBlockCar->Spawn();
+		copBlockCar->InitAI(pReg, roadCell);
+
 		g_pGameWorld->AddObject(copBlockCar, true);
 
 		float angle = 120.0f - (i % 2)*60.0f;
@@ -492,7 +465,7 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 		nCars++;
 	}
 
-	Msg("Made %d cars on %d wide road\n", nCars, numLanes);
+	//Msg("Made %d cars on %d wide road\n", nCars, numLanes);
 
 	return m_roadBlockCars.numElem() > 0;
 }

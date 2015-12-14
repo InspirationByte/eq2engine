@@ -227,6 +227,7 @@ IVector2D GetPerpendicularDirVec(const IVector2D& vec)
 
 CAITrafficCar::CAITrafficCar( carConfigEntry_t* carConfig ) : CCar(carConfig), CFSM_Base()
 {
+	m_frameSkip = false;
 	m_hasDamage = false;
 	m_switchedLane = false;
 	m_autohandbrake = false;
@@ -250,10 +251,20 @@ void CAITrafficCar::InitAI(CLevelRegion* reg, levroadcell_t* cell)
 {
 	if (reg && cell)
 	{
+		Vector3D t,b,n;
+		reg->GetHField()->GetTileTBN(cell->posX, cell->posY, t,b,n);
 		Vector3D pos = reg->CellToPosition(cell->posX, cell->posY);
 
-		SetOrigin(pos + Vector3D(0.0f, 0.55f, 0.0f));
-		SetAngles(Vector3D(0.0f, cell->direction*-90.0f + 180.0f, 0.0f));
+		float roadCellAngle = cell->direction*-90.0f + 180.0f;
+
+		Matrix3x3 cellAngle(b,n,t);
+		Matrix3x3 finalAngle = !cellAngle*rotateY3(DEG2RAD(roadCellAngle) );
+
+		SetOrigin(pos - Vector3D(0.0f, m_conf->m_wheels[0].suspensionBottom.y, 0.0f));
+
+		Quaternion rotation( finalAngle );
+		renormalize(rotation);
+		m_pPhysicsObject->m_object->SetOrientation(rotation);
 	}
 
 	FSM_SetNextState( &CAITrafficCar::SearchForRoad );
@@ -325,22 +336,27 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 	if( g_pGameSession->GetLeadCar() && 
 		g_pGameSession->GetLeadCar() == g_pGameSession->GetPlayerCar() )
 	{
-		float dist = length(g_pGameSession->GetPlayerCar()->GetOrigin() - GetOrigin());
-		if(dist > 180.0f)
+		if( m_frameSkip )
 		{
-			// perform lazy collision checks
-			//m_refreshTime = AICAR_THINK_TIME*2.0f;
-			GetPhysicsBody()->SetMinFrameTime( 1.0f / 30.0f, false );
-		}
-		else if(dist > 80.0f)
-		{
-			//m_refreshTime = AICAR_THINK_TIME*1.5f;
-			GetPhysicsBody()->SetMinFrameTime( 1.0f / 30.0f );
+			float dist = length(g_pGameSession->GetPlayerCar()->GetOrigin() - GetOrigin());
+			if(dist > 180.0f)
+			{
+				// perform lazy collision checks
+				//m_refreshTime = AICAR_THINK_TIME*2.0f;
+				GetPhysicsBody()->SetMinFrameTime( 1.0f / 30.0f, false );
+			}
+			else if(dist > 80.0f)
+			{
+				//m_refreshTime = AICAR_THINK_TIME*1.5f;
+				GetPhysicsBody()->SetMinFrameTime( 1.0f / 30.0f );
+			}
+			else
+			{
+				GetPhysicsBody()->SetMinFrameTime( 0.0f, false);
+			}
 		}
 		else
-		{
 			GetPhysicsBody()->SetMinFrameTime( 0.0f, false);
-		}
 
 		if(IsAlive())
 			m_refreshTime = AICAR_THINK_TIME;
