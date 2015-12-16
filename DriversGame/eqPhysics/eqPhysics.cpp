@@ -248,6 +248,7 @@ void CEqPhysics::DestroyWorld()
 	}
 	
 	m_dynObjects.clear();
+	m_moveable.clear();
 
 	for(int i = 0; i < m_staticObjects.numElem(); i++)
 	{
@@ -308,12 +309,35 @@ eqPhysSurfParam_t* CEqPhysics::GetSurfaceParamByID(int id)
 	return m_physSurfaceParams[id];
 }
 
-void CEqPhysics::AddToWorld( CEqRigidBody* body )
+#ifdef DEBUG
+#define CHECK_ALREADY_IN_LIST(list, obj) ASSERTMSG(list.findIndex(obj) == -1, "Object already added")
+#else
+#define CHECK_ALREADY_IN_LIST(list, obj)
+#endif
+
+void CEqPhysics::AddToMoveableList( CEqRigidBody* body )
+{
+	if(!body)
+		return;
+
+	CHECK_ALREADY_IN_LIST(m_dynObjects, body);
+
+	m_moveable.append( body );
+}
+
+void CEqPhysics::AddToWorld( CEqRigidBody* body, bool moveable )
 {	
 	if(!body)
 		return;
 
+	CHECK_ALREADY_IN_LIST(m_dynObjects, body);
+
 	m_dynObjects.append(body);
+
+	if(moveable)
+		AddToMoveableList( body );
+	else
+		SetupBodyOnCell( body );
 }
 
 void CEqPhysics::RemoveFromWorld( CEqRigidBody* body )
@@ -322,6 +346,7 @@ void CEqPhysics::RemoveFromWorld( CEqRigidBody* body )
 		return;
 
 	m_dynObjects.fastRemove(body);
+	m_moveable.fastRemove(body);
 }
 
 void CEqPhysics::DestroyBody( CEqRigidBody* body )
@@ -335,6 +360,7 @@ void CEqPhysics::DestroyBody( CEqRigidBody* body )
 		cell->m_dynamicObjs.fastRemove(body);
 
 	m_dynObjects.fastRemove(body);
+	m_moveable.fastRemove(body);
 	delete body;
 }
 
@@ -353,6 +379,8 @@ void CEqPhysics::AddGhostObject( CEqCollisionObject* object )
 	{
 		m_grid.AddStaticObjectToGrid( object );
 	}
+	else
+		SetupBodyOnCell( object );
 #endif // EDITOR
 }
 
@@ -573,6 +601,8 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 	}
 }
 
+//ConVar ph_checkMethod("ph_checkMethod", "0", "0 - sphere vs sphere, 1 - sphere vs box, 3 - box vs box");
+
 void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& contactPairs)
 {
 	PROFILE_FUNC()
@@ -584,17 +614,35 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 		return;
 
 	// test radius between bodies
-	//float lenA = length(staticObj->m_aabb_transformed.GetSize());
 	float lenB = lengthSqr(bodyB->m_aabb.GetSize());
 
-	// IntersectsSphereSqr
-	if( !(staticObj->m_aabb_transformed.SquaredDistPointAABB(bodyB->GetPosition()) <= lenB))
+	/*
+	switch(ph_checkMethod.GetInt())
+	{
+		case 0: // sphere vs sphere
+		{
+			if( !(staticObj->m_aabb_transformed.SquaredDistPointAABB(bodyB->GetPosition()) <= lenB))
+				return;
+			break;
+		}
+		case 1: // shere vs box
+		{
+			if(!staticObj->m_aabb_transformed.IntersectsSphere(bodyB->GetPosition(), lenB))
+				return;
+			break;
+		}
+		case 2: // box vs box
+		{
+			if( !staticObj->m_aabb_transformed.Intersects(bodyB->m_aabb_transformed))
+				return;
+			break;
+		}
+	}*/
+
+	if( !staticObj->m_aabb_transformed.Intersects(bodyB->m_aabb_transformed))
 		return;
 
 	Vector3D center = (staticObj->GetPosition()-bodyB->GetPosition());
-
-	// trasform collision objects and test
-	
 
 	// prepare for testing...
 	btCollisionObject* objA = staticObj->m_collObject;
@@ -718,12 +766,12 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 
 void CEqPhysics::PrepareSimulateStep()
 {
+
+/*
 	// clear collision list of ghost objects and assign new cell if changed
 	for(int i = 0; i < m_ghostObjects.numElem(); i++)
 	{
 		CEqCollisionObject* obj = m_ghostObjects[i];
-
-		obj->m_collisionList.clear( false );
 
 		if(obj->GetMesh() != NULL)	// probably is a station
 			continue;
@@ -746,6 +794,29 @@ void CEqPhysics::PrepareSimulateStep()
 			obj->SetCell(newCell);
 		}
 	}
+	*/
+}
+
+void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
+{
+	// check body is in the world
+
+	collgridcell_t* oldCell = body->GetCell();
+
+	// get new cell
+	collgridcell_t* newCell = m_grid.GetPreallocatedCellAtPos( body->GetPosition() );
+
+	// move object in grid
+	if (newCell != oldCell)
+	{
+		if (oldCell)
+			oldCell->m_dynamicObjs.fastRemove(body);
+
+		if (newCell)
+			newCell->m_dynamicObjs.append(body);
+
+		body->SetCell(newCell);
+	}
 }
 
 #define NEIGHBORCELLS_OFFS_XDX(x, f)	{x-f, x, x+f, x, x-f, x+f, x+f, x-f}
@@ -760,13 +831,12 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body, float deltaTime)
 	// move object
 	body->Integrate(deltaTime);
 
-	if (body->IsCanIterate(true))
+	if(body->IsCanIterate(true))
 	{
 		// get new cell
-		collgridcell_t* newCell = m_grid.GetCellAtPos(body->GetPosition());
+		collgridcell_t* newCell = m_grid.GetCellAtPos( body->GetPosition() );
 
 		// move object in grid
-		// FIXME: test on performance
 		if (newCell != oldCell)
 		{
 			if (oldCell)
@@ -778,6 +848,7 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body, float deltaTime)
 			body->SetCell(newCell);
 		}
 	}
+
 }
 
 ConVar ph_test1("ph_test1", "0");
@@ -1034,9 +1105,9 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 
 	static DkList<ContactPair_t> contactPairs;
 
-	for (int i = 0; i < m_dynObjects.numElem(); i++)
+	for (int i = 0; i < m_moveable.numElem(); i++)
 	{
-		CEqRigidBody* body = m_dynObjects[i];
+		CEqRigidBody* body = m_moveable[i];
 
 		if(body->m_callbacks)
 			body->m_callbacks->PreSimulate( deltaTime );
@@ -1052,9 +1123,9 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	// dynamic object are just bruteforced, but against fast search in a grid
 
 	// calculate collisions
-	for (int i = 0; i < m_dynObjects.numElem(); i++)
+	for (int i = 0; i < m_moveable.numElem(); i++)
 	{
-		CEqRigidBody* body = m_dynObjects[i];
+		CEqRigidBody* body = m_moveable[i];
 
 		DetectCollisionsSingle(body, deltaTime, contactPairs);
 	}
@@ -1064,9 +1135,9 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 
 	contactPairs.clear(false);
 
-	for (int i = 0; i < m_dynObjects.numElem(); i++)
+	for (int i = 0; i < m_moveable.numElem(); i++)
 	{
-		CEqRigidBody* body = m_dynObjects[i];
+		CEqRigidBody* body = m_moveable[i];
 
 		if(body->m_callbacks)
 			body->m_callbacks->PostSimulate( deltaTime );

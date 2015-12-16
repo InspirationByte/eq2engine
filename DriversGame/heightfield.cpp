@@ -373,12 +373,12 @@ void CHeightTileField::GetTileTBN(int x, int y, Vector3D& tang, Vector3D& binorm
 	binorm = fastNormalize(binorm);
 	norm = cross(tang, binorm);
 
-	//if(dot(norm, vec3_up) < 0)
+	/*
 	{
 		debugoverlay->Line3D(m_position+tilePosition, m_position+tilePosition+tang, ColorRGBA(1,0,0,1), ColorRGBA(1,0,0,1), 0.0f );
 		debugoverlay->Line3D(m_position+tilePosition, m_position+tilePosition+binorm, ColorRGBA(0,1,0,1), ColorRGBA(0,1,0,1), 0.0f );
 		debugoverlay->Line3D(m_position+tilePosition, m_position+tilePosition+norm, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1), 0.0f );
-	}
+	}*/
 
 	return;
 }

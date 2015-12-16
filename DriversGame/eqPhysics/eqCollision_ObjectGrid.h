@@ -38,6 +38,8 @@ public:
 
 	bool				IsInit() const;
 
+	collgridcell_t*		GetPreallocatedCellAtPos(const Vector3D& origin);
+
 	collgridcell_t*		GetCellAtPos(const Vector3D& origin) const;
 	collgridcell_t*		GetCellAt(int x, int y) const;
 

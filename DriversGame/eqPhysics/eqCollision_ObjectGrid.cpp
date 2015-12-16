@@ -102,6 +102,22 @@ bool CEqCollisionBroadphaseGrid::GetPointAt(const Vector3D& origin, int& x, int&
 	return true;
 }
 
+collgridcell_t*	CEqCollisionBroadphaseGrid::GetPreallocatedCellAtPos(const Vector3D& origin)
+{
+	float halfGridNeg = m_gridSize*-0.5f;
+
+	Vector2D center(m_gridWide*halfGridNeg, m_gridTall*halfGridNeg);
+	IVector2D xz_pos((origin.xz() - center) * m_invGridSize);
+
+	if(xz_pos.x < 0 || xz_pos.x >= m_gridWide)
+		return NULL;
+
+	if(xz_pos.y < 0 || xz_pos.y >= m_gridTall)
+		return NULL;
+
+	return GetAllocCellAt( xz_pos.x, xz_pos.y );
+}
+
 collgridcell_t* CEqCollisionBroadphaseGrid::GetCellAtPos(const Vector3D& origin) const
 {
 	float halfGridNeg = m_gridSize*-0.5f;

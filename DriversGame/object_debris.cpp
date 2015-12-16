@@ -100,7 +100,8 @@ void CObject_Debris::Spawn()
 
 		m_physBody = body;
 
-		g_pPhysics->m_physics.AddToWorld( m_physBody );
+		// initially this object is not moveable
+		g_pPhysics->m_physics.AddToWorld( m_physBody, false );
 
 		m_bbox = body->m_aabb_transformed;
 	}
@@ -238,8 +239,6 @@ void CObject_Debris::Simulate(float fDt)
 			CEqRigidBody* body = (CEqRigidBody*)obj;
 			if(body->m_flags & BODY_ISCAR)
 			{
-				
-
 				CCar* pCar = (CCar*)body->GetUserData();
 
 				if( !g_debris_as_physics.GetBool() )
@@ -259,6 +258,7 @@ void CObject_Debris::Simulate(float fDt)
 					m_physBody->Wake();
 
 					m_collOccured = true;
+					g_pPhysics->m_physics.AddToMoveableList(m_physBody);
 					m_fTimeToRemove = 0;//DEBRIS_COLLISION_RELAY;
 
 					float fCarVel = length(body->GetLinearVelocity());

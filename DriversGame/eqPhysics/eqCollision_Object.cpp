@@ -18,6 +18,8 @@ using namespace EqBulletUtils;
 
 ConVar ph_margin("ph_margin", "0.0001", "no desc", CV_CHEAT);
 
+#define AABB_GROWVALUE	 (0.15f)
+
 CEqCollisionObject::CEqCollisionObject()
 {
 	m_collObject = NULL;
@@ -265,8 +267,12 @@ void CEqCollisionObject::UpdateBoundingBoxTransform()
 	ConstructRenderMatrix(mat);
 
 	m_aabb_transformed.Reset();
+
 	for(int i = 0; i < 8; i++)
 		m_aabb_transformed.AddVertex((mat*Vector4D(m_aabb.GetVertex(i), 1.0f)).xyz());
+
+	m_aabb_transformed.maxPoint += AABB_GROWVALUE;
+	m_aabb_transformed.minPoint -= AABB_GROWVALUE;
 }
 
 //------------------------------

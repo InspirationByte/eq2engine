@@ -120,6 +120,9 @@ void CObject_Sheets::Simulate( float fDt )
 			body = (CEqRigidBody*)obj;
 	}
 
+	// we have to deal with cleaning up collision list
+	m_ghostObject->m_collisionList.clear( false );
+
 	PFXVertex_t sheetQuad[4];
 	const float sheetScale = 0.2f;
 	ColorRGBA color = (g_pGameWorld->m_info.ambientColor+g_pGameWorld->m_info.sunColor);

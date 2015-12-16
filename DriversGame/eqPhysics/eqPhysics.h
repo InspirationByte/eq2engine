@@ -219,9 +219,14 @@ public:
 	eqPhysSurfParam_t*				FindSurfaceParam(const char* name);
 	eqPhysSurfParam_t*				GetSurfaceParamByID(int id);
 
-	void							AddToWorld( CEqRigidBody* body );					///< adds to processing
+	void							AddToMoveableList( CEqRigidBody* body );			///< adds object to moveable list
+
+	void							AddToWorld( CEqRigidBody* body, bool moveable = true );	///< adds to processing
 	void							RemoveFromWorld( CEqRigidBody* body );				///< removes body from world, not deleting
 	void							DestroyBody( CEqRigidBody* body );					///< destroys body
+
+	void							SetupBodyOnCell( CEqCollisionObject* body );		///< only rigid body and ghost objects
+
 	/*
 	bool							IsValidStaticObject( CEqCollisionObject* obj );		///< checks is valid static object or not
 	bool							IsValidBody( CEqRigidBody* obj );					///< checks is valid body object or not
@@ -327,6 +332,8 @@ protected:
 
 protected:
 	DkList<eqPhysSurfParam_t*>		m_physSurfaceParams;
+
+	DkList<CEqRigidBody*>			m_moveable;
 
 	DkList<CEqRigidBody*>			m_dynObjects;
 	DkList<CEqCollisionObject*>		m_staticObjects;
