@@ -155,6 +155,7 @@
     <ClCompile Include="CameraAnimator.cpp" />
     <ClCompile Include="car.cpp" />
     <ClCompile Include="DrvSynHUD.cpp" />
+    <ClCompile Include="EventFSM.cpp" />
     <ClCompile Include="LiteHTMLContainer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
@@ -270,13 +271,14 @@
     <ClInclude Include="..\public\ViewParams.h" />
     <ClInclude Include="..\shared_engine\physics\BulletShapeCache.h" />
     <ClInclude Include="AICarManager.h" />
+    <ClInclude Include="AIEventTypes.h" />
     <ClInclude Include="AIPursuerCarController.h" />
     <ClInclude Include="AITrafficCarController.h" />
     <ClInclude Include="BillboardList.h" />
     <ClInclude Include="CameraAnimator.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Constraints.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Joint.h" />
-    <ClInclude Include="FSM_base.h" />
+    <ClInclude Include="EventFSM.h" />
     <ClInclude Include="DrvSynHUD.h" />
     <ClInclude Include="game_singleplayer.h" />
     <ClInclude Include="LiteHTMLContainer.h" />

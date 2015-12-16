@@ -20,6 +20,51 @@ const float _oneBy1024 = 1.0f / 1023.0f;
 
 inline bool IsCar(CGameObject* obj) { return obj->ObjType() >= GO_CAR && obj->ObjType() <= GO_CAR_AI;}
 
+// body part ids
+enum ECarBodyPart
+{
+	CB_FRONT_LEFT,
+	CB_FRONT_RIGHT,
+
+	CB_SIDE_LEFT,
+	CB_SIDE_RIGHT,
+
+	CB_BACK_LEFT,
+	CB_BACK_RIGHT,
+
+	CB_PART_COUNT,
+};
+
+// window bodypart ids
+enum ECarWindowParts
+{
+	CB_WINDOW_FRONT = 6,
+	CB_WINDOW_BACK,
+
+	CB_WINDOW_LEFT,
+	CB_WINDOW_RIGHT,
+
+	CB_PART_WINDOW_PARTS = CB_PART_COUNT + 4
+};
+
+// light types
+enum ELightsType
+{
+	LIGHTS_SINGLE,
+	LIGHTS_DOUBLE,
+};
+
+// siren light types
+enum ESirenType
+{
+	SIREN_NONE = 0,
+	SIREN_SINGLE,
+	SIREN_DOUBLE,
+	SIREN_DOUBLE_SINGLECOLOR,
+	SIREN_DOUBLE_SINGLECOLOR_RED,
+};
+
+// wheel flags
 enum EWheelFlags
 {
 	WHEEL_FLAG_DRIVE		= (1 << 0),
@@ -27,6 +72,7 @@ enum EWheelFlags
 	WHEEL_FLAG_HANDBRAKE	= (1 << 2),
 };
 
+// wheel configuration
 struct carWheelConfig_t
 {
 	char				wheelName[16];
@@ -52,8 +98,11 @@ struct carWheelConfig_t
 	int					wheelBodyPart;	// damage effets on wheels like bad breakage, suspension effects
 };
 
+// color scheme
 struct carColorScheme_t
 {
+	char name[16];
+
 	carColorScheme_t() {}
 	carColorScheme_t(const ColorRGBA& col)
 	{
@@ -65,8 +114,6 @@ struct carColorScheme_t
 	TVec4D<half> col2;
 };
 
-
-
 struct carConfigEntry_t
 {
 	EqString					carName;
@@ -76,30 +123,26 @@ struct carConfigEntry_t
 	EqString					m_cleanModelName;
 	EqString					m_damModelName;
 
-	//kvkeybase_t				scriptKvs;	// script keyvalues
-
-	DkList<carWheelConfig_t>	m_wheels;
-
-	DkList<float>				m_gears;
+	carCameraConfig_t			m_cameraConf;
 
 	Vector3D					m_body_size;
 	Vector3D					m_body_center;
-
 	Vector3D					m_virtualMassCenter;
 
 	float						m_mass;
-
 	float						m_antiRoll;
 
 	float						m_differentialRatio;
 	float						m_torqueMult;
 	float						m_transmissionRate;
-
 	float						m_maxSpeed;
 
-	carCameraConfig_t			m_cameraConf;
+	DkList<carWheelConfig_t>	m_wheels;
+	DkList<float>				m_gears;
+
 
 	Vector4D					m_sirenPositionWidth;
+	int							m_sirenType;
 
 	int							m_headlightType;
 	Vector4D					m_headlightPosition;
@@ -111,14 +154,10 @@ struct carConfigEntry_t
 
 	Vector3D					m_enginePosition;
 
-	int							m_sirenType;
-
+	DkList<carColorScheme_t>	m_colors;
 	bool						m_useBodyColor;
 
-	DkList<carColorScheme_t>	m_colors;
-
 	//--------------------------------------------
-
 	EqString					m_sndEngineIdle;
 	EqString					m_sndEngineRPMLow;
 	EqString					m_sndEngineRPMHigh;
@@ -140,9 +179,9 @@ struct PFXVertexPair_t
 
 class CCarWheelModel;
 
-struct wheelinfo_t
+struct wheelData_t
 {
-	wheelinfo_t()
+	wheelData_t()
 	{
 		pWheelObject = NULL;
 		pitch = 0.0f;
@@ -161,10 +200,7 @@ struct wheelinfo_t
 
 	DkList<PFXVertexPair_t>	skidMarks;
 
-	// visual object
 	CCarWheelModel*			pWheelObject;
-
-	//carWheelConfig_t*		config;
 
 	eqPhysSurfParam_t*		surfparam;
 
@@ -177,7 +213,6 @@ struct wheelinfo_t
 	float					pitchVel;
 	bool					isBurningOut;
 
-	//char					surfWord;
 	bool					onGround;
 	bool					lastOnGround;
 
@@ -189,79 +224,10 @@ struct wheelinfo_t
 	int						bodyIndex;
 };
 
-enum ELightsType
+// bodypart
+struct carBodyPart_t
 {
-	LIGHTS_SINGLE,
-	LIGHTS_DOUBLE,
-};
-
-enum ESirenType
-{
-	SIREN_NONE = 0,
-	SIREN_SINGLE,
-	SIREN_DOUBLE,
-	SIREN_DOUBLE_SINGLECOLOR,
-	SIREN_DOUBLE_SINGLECOLOR_RED,
-};
-
-enum ECarBodyPart
-{
-	CB_FRONT_LEFT,
-	CB_FRONT_RIGHT,
-
-	CB_SIDE_LEFT,
-	CB_SIDE_RIGHT,
-
-	CB_BACK_LEFT,
-	CB_BACK_RIGHT,
-
-	CB_PART_COUNT,
-};
-
-enum ECarWindowParts
-{
-	CB_WINDOW_FRONT = 6,
-	CB_WINDOW_BACK,
-
-	CB_WINDOW_LEFT,
-	CB_WINDOW_RIGHT,
-
-	CB_PART_WINDOW_PARTS = CB_PART_COUNT + 4
-};
-
-static const char* s_pBodyPartsNames[] =
-{
-	"front.left",
-	"front.right",
-
-	"side.left",
-	"side.right",
-
-	"back.left",
-	"back.right",
-
-	"window.front",
-	"window.back",
-
-	"window.left",
-	"window.right"
-};
-
-static Vector3D s_BodyPartDirections[] =
-{
-	Vector3D(-1.0f,0,1),
-	Vector3D(1.0f,0,1),
-
-	Vector3D(-1.0f,0,0),
-	Vector3D(1.0f,0,0),
-
-	Vector3D(-1.0f,0,-1.0f),
-	Vector3D(1.0f,0,-1.0f),
-};
-
-struct carbodypart_t
-{
-	carbodypart_t()
+	carBodyPart_t()
 	{
 		boneIndex = -1;
 		damage = 0.0f;
@@ -276,6 +242,16 @@ struct carbodypart_t
 	float		radius;
 };
 
+// handling data
+struct carHandlingInput_t
+{
+	short	brake_accel;
+	short	steering;
+};
+
+//-----------------------------------------------------------------------
+// wheel model that does instancing
+//-----------------------------------------------------------------------
 class CCarWheelModel : public CGameObject
 {
 public:
@@ -285,6 +261,9 @@ public:
 	void			Draw( int nRenderFlags );
 };
 
+//-----------------------------------------------------------------------
+// The vehicle itself
+//-----------------------------------------------------------------------
 class CCar : public CGameObject
 {
 	friend class CAITrafficCar;
@@ -454,9 +433,9 @@ protected:
 	// realtime values
 	//
 
-	DkList<wheelinfo_t>		m_pWheels;
+	DkList<wheelData_t>		m_pWheels;
 
-	carbodypart_t			m_bodyParts[CB_PART_WINDOW_PARTS];
+	carBodyPart_t			m_bodyParts[CB_PART_WINDOW_PARTS];
 
 	float					m_fEngineRPM;
 	float					m_engineIdleFactor;

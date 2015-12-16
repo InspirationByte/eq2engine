@@ -321,6 +321,9 @@
     <ClCompile Include="LiteHTMLContainer.cpp">
       <Filter>Файлы исходного кода\Game\UI</Filter>
     </ClCompile>
+    <ClCompile Include="EventFSM.cpp">
+      <Filter>Файлы исходного кода\Game\AI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">
@@ -455,9 +458,6 @@
       <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClInclude>
     <ClInclude Include="AITrafficCarController.h">
-      <Filter>Файлы исходного кода\Game\AI</Filter>
-    </ClInclude>
-    <ClInclude Include="FSM_base.h">
       <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClInclude>
     <ClInclude Include="object_static.h">
@@ -624,6 +624,12 @@
     </ClInclude>
     <ClInclude Include="LiteHTMLContainer.h">
       <Filter>Файлы исходного кода\Game\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="EventFSM.h">
+      <Filter>Файлы исходного кода\Game\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="AIEventTypes.h">
+      <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

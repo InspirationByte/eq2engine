@@ -45,7 +45,7 @@ public:
 	virtual ~RefCountedObject() {}
 
 	void	Ref_Grab()			{m_numRefs++;}
-	void	Ref_Drop()			{m_numRefs--; Ref_CheckRemove();}
+	bool	Ref_Drop();
 
 	int		Ref_Count() const	{return m_numRefs;}
 
@@ -70,5 +70,125 @@ private:
 protected:
 	int		m_numRefs;
 };
+
+inline bool	RefCountedObject::Ref_Drop()
+{
+	m_numRefs--;
+
+	if(m_numRefs == 0)
+	{
+		Ref_DeleteObject();
+		return true;
+	}
+	else if(m_numRefs < 0)
+	{
+		//ASSERTMSG(false, varargs("Ref_Drop NOT VALID (RefCount=%d)!!!", m_numRefs));
+	}
+
+	return false;
+}
+
+//-----------------------------------------------------------------------------
+
+template< class PTRTYPE >
+class CRefPointer
+{
+public:
+						CRefPointer() : m_pTypedObject(nullptr) {}
+
+						CRefPointer( PTRTYPE pObject );
+						CRefPointer( const CRefPointer<PTRTYPE>& refptr );
+	virtual				~CRefPointer();
+
+	// frees object (before scope, if you econom-guy)
+	void				Free();
+	void				Assign( const PTRTYPE obj );
+	void				Unassign(bool deref = true);
+
+	PTRTYPE				p() const					{ return (PTRTYPE)m_pTypedObject; }
+	PTRTYPE				operator->() const			{ return (PTRTYPE)m_pTypedObject; }
+	void				operator=( const PTRTYPE obj );
+	void				operator=( const CRefPointer<PTRTYPE>& refptr );
+
+protected:
+	PTRTYPE				m_pTypedObject;
+};
+
+//------------------------------------------------------------
+
+template< class TYPE >
+inline CRefPointer<TYPE>::CRefPointer( TYPE pObject ) : m_pTypedObject(nullptr)
+{
+	Assign(pObject);
+}
+
+template< class TYPE >
+inline CRefPointer<TYPE>::CRefPointer( const CRefPointer<TYPE>& refptr ) : m_pTypedObject(nullptr)
+{
+	Assign(refptr->m_pTypedObject);
+}
+
+template< class TYPE >
+inline CRefPointer<TYPE>::~CRefPointer()
+{
+	Free();
+}
+
+// frees object (before scope, if you econom-guy)
+template< class TYPE >
+inline void CRefPointer<TYPE>::Free()
+{
+	if(m_pTypedObject == nullptr)
+		return;
+
+	RefCountedObject* thisObj = (RefCountedObject*)m_pTypedObject;
+
+	if(thisObj->Ref_Drop())
+		m_pTypedObject = nullptr;
+}
+
+template< class TYPE >
+inline void CRefPointer<TYPE>::Assign( const TYPE obj )
+{
+	if(m_pTypedObject == obj)
+		return;
+
+	// del old ref
+	RefCountedObject* oldObj = (RefCountedObject*)m_pTypedObject;
+	
+	m_pTypedObject = obj;
+	if(m_pTypedObject != nullptr)
+	{
+		RefCountedObject* thisObj = (RefCountedObject*)m_pTypedObject;
+		thisObj->Ref_Grab();
+	}
+
+	if(oldObj != nullptr)
+		oldObj->Ref_Drop();
+}
+
+template< class TYPE >
+inline void CRefPointer<TYPE>::Unassign(bool deref)
+{
+	// del old ref
+	RefCountedObject* oldObj = (RefCountedObject*)m_pTypedObject;
+	
+	m_pTypedObject = NULL;
+
+	if(oldObj != nullptr && deref)
+		oldObj->Ref_Drop();
+}
+
+template< class TYPE >
+inline void CRefPointer<TYPE>::operator=( const TYPE obj )
+{
+	Assign( obj );
+}
+
+template< class TYPE >
+inline void CRefPointer<TYPE>::operator=( const CRefPointer<TYPE>& refptr )
+{
+	Assign( refptr.m_pTypedObject );
+}
 
 #endif // REFCOUNTED_H

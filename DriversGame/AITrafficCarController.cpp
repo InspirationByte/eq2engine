@@ -267,7 +267,7 @@ void CAITrafficCar::InitAI(CLevelRegion* reg, levroadcell_t* cell)
 		m_pPhysicsObject->m_object->SetOrientation(rotation);
 	}
 
-	FSM_SetNextState( &CAITrafficCar::SearchForRoad );
+	AI_SetState( &CAITrafficCar::SearchForRoad );
 	m_speedModifier = g_pGameWorld->m_random.Get(0,10);
 }
 
@@ -323,7 +323,7 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 		}
 		else if(m_curState == &CAITrafficCar::TrafficDrive)
 		{
-			FSM_SetNextState( &CAITrafficCar::SearchForRoad );
+			AI_SetState( &CAITrafficCar::SearchForRoad );
 		}
 
 		m_hornTime.Update(fDt);
@@ -389,7 +389,7 @@ void CAITrafficCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 		{
 			m_hornTime.Set(0);
 
-			FSM_SetNextState( &CAITrafficCar::DeadState );
+			AI_SetState( &CAITrafficCar::DeadState );
 
 			int buttons = GetControlButtons();
 			buttons &= ~(IN_HORN | IN_ACCELERATE | IN_BRAKE);
@@ -399,7 +399,7 @@ void CAITrafficCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 	}
 }
 
-int	CAITrafficCar::SearchForRoad(float fDt)
+int	CAITrafficCar::SearchForRoad(float fDt, EStateTransition transition)
 {
 	Matrix4x4 carMatrix;
 	GetPhysicsBody()->ConstructRenderMatrix(carMatrix);
@@ -417,7 +417,7 @@ int	CAITrafficCar::SearchForRoad(float fDt)
 
 			ChangeRoad( road );
 
-			FSM_SetNextState( &CAITrafficCar::TrafficDrive );
+			AI_SetState( &CAITrafficCar::TrafficDrive );
 		}
 	}
 
@@ -595,7 +595,7 @@ void CAITrafficCar::SearchJunctionAndStraight()
 }
 
 
-int CAITrafficCar::TrafficDrive(float fDt)
+int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 {
 	// 1. Build a line (A-B) from cell grid to 3D positions
 	// 2. Make middle (or near) point (C), lerp(a,b,0.25f)

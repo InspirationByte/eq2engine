@@ -452,7 +452,7 @@ struct pathFindResult_t
 	IVector2D			start;
 	IVector2D			end;
 
-	DkList<IVector2D>	path;	// z is distance in cells
+	DkList<IVector2D>	points;	// z is distance in cells
 };
 
 typedef void (*RegionLoadUnloadCallbackFunc)(CLevelRegion* reg, int regionIdx);

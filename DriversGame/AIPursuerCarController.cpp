@@ -64,17 +64,15 @@ IVector2D GetDirectionVec(int dirIdx);
 
 CAIPursuerCar::CAIPursuerCar() : CAITrafficCar(NULL)
 {
-	m_targetLastInfraction = INFRACTION_NONE;
+	memset(&m_targInfo, 0, sizeof(m_targInfo));
 }
 
 CAIPursuerCar::CAIPursuerCar(carConfigEntry_t* carConfig, EPursuerAIType type) : CAITrafficCar(carConfig)
 {
-	m_pursuitTarget = NULL;
+	memset(&m_targInfo, 0, sizeof(m_targInfo));
+
 	m_taunts = NULL;
 	m_type = type;
-	m_notSeeingTime = 0.0f;
-	m_nextCheckImpactTime = 1.0f;
-	m_nextPathUpdateTime = 0.0f;
 	m_isColliding = false;
 }
 
@@ -149,7 +147,7 @@ void CAIPursuerCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 	
 		CCar* playerCar = g_pGameSession->GetPlayerCar();
 
-		if (m_pursuitTarget == NULL &&
+		if (m_targInfo.target == NULL &&
 			(pair.impactVelocity > 1.0f) && hitBy == playerCar)
 		{
 			SetPursuitTarget(playerCar);
@@ -184,7 +182,7 @@ void CAIPursuerCar::OnPrePhysicsFrame( float fDt )
 {
 	BaseClass::OnPrePhysicsFrame(fDt);
 
-	m_nextCheckImpactTime -= fDt;
+	m_targInfo.nextCheckImpactTime -= fDt;
 
 	CCar* playerCar = g_pGameSession->GetPlayerCar();
 	if(	IsAlive()&&
@@ -194,7 +192,7 @@ void CAIPursuerCar::OnPrePhysicsFrame( float fDt )
 		playerCar->GetPursuedCount() == 0)
 	{
 		SetPursuitTarget(playerCar);
-		m_pursuitTarget->IncrementPursue();
+		m_targInfo.target->IncrementPursue();
 	}
 }
 
@@ -206,7 +204,7 @@ void CAIPursuerCar::OnPhysicsFrame( float fDt )
 	if(!IsAlive() && m_inWater)
 	{
 		EndPursuit(true);
-		FSM_SetNextState( &CAIPursuerCar::DeadState );
+		AI_SetState( &CAIPursuerCar::DeadState );
 	}
 
 	m_isColliding = GetPhysicsBody()->m_collisionList.numElem() > 0;
@@ -216,21 +214,21 @@ void CAIPursuerCar::OnPhysicsFrame( float fDt )
 		m_lastCollidingPosition = GetPhysicsBody()->m_collisionList[0].position;
 	}
 
-	if(IsAlive() && m_pursuitTarget)
-		m_targetLastInfraction = CheckTrafficInfraction(m_pursuitTarget, false,false);
+	if(IsAlive() && m_targInfo.target)
+		m_targInfo.lastInfraction = CheckTrafficInfraction(m_targInfo.target, false,false);
 }
 
 extern void UI_ScreenMessage(const char* pszText, float fTime);
 
-int	CAIPursuerCar::TrafficDrive( float fDt )
+int	CAIPursuerCar::TrafficDrive( float fDt, EStateTransition transition )
 {
-	int res = BaseClass::TrafficDrive( fDt );
+	int res = BaseClass::TrafficDrive( fDt, transition );
 
-	// do frustum checks for player cars
 	CCar* playerCar = g_pGameSession->GetPlayerCar();
 
-	if (m_gameDamage < m_gameMaxDamage &&
-		m_pursuitTarget == NULL && 
+	// check infraction in visible range
+	if( m_targInfo.target == NULL &&
+		m_gameDamage < m_gameMaxDamage && 
 		CheckObjectVisibility(playerCar))
 	{
 		if (m_type == PURSUER_TYPE_COP && CheckTrafficInfraction(playerCar) == INFRACTION_NONE)
@@ -245,10 +243,10 @@ int	CAIPursuerCar::TrafficDrive( float fDt )
 
 void CAIPursuerCar::BeginPursuit()
 {
-	if (!m_pursuitTarget)
+	if (!m_targInfo.target)
 		return;
 
-	m_nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
+	m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
 
 	// restore collision
 	GetPhysicsBody()->SetCollideMask(COLLIDEMASK_VEHICLE);
@@ -263,36 +261,36 @@ void CAIPursuerCar::BeginPursuit()
 		if (m_conf->m_sirenType != SIREN_NONE)
 			m_sirenEnabled = true;
 
-		if (m_pursuitTarget->GetPursuedCount() == 0 && 
-			g_pGameSession->GetPlayerCar() == m_pursuitTarget)
+		if (m_targInfo.target->GetPursuedCount() == 0 && 
+			g_pGameSession->GetPlayerCar() == m_targInfo.target)
 		{
-			if (m_pursuitTarget->GetFelony() >= AI_COP_MINFELONY)
+			if (m_targInfo.target->GetFelony() >= AI_COP_MINFELONY)
 			{
 				Speak("cop.pursuit_continue", true);
 			}
 			else
 			{
-				m_pursuitTarget->SetFelony(AI_COP_MINFELONY);
+				m_targInfo.target->SetFelony(AI_COP_MINFELONY);
 
 				Speak("cop.pursuit", true);
 			}
 		}
 	}
 
-	m_pursuitTarget->IncrementPursue();
+	m_targInfo.target->IncrementPursue();
 
 	SetTorqueScale(g_pAIManager->GetCopAccelerationModifier());
 
 	m_enabled = true;
 
-	FSM_SetNextState(&CAIPursuerCar::PursueTarget);
+	AI_SetState(&CAIPursuerCar::PursueTarget);
 
 	Msg("BeginPursuit OK\n");
 }
 
 void CAIPursuerCar::EndPursuit(bool death)
 {
-	if (!m_pursuitTarget)
+	if (!m_targInfo.target)
 		return;
 
 	if (!death)
@@ -303,20 +301,20 @@ void CAIPursuerCar::EndPursuit(bool death)
 
 	if (GetCurrentStateType() != GAME_STATE_GAME)
 	{
-		m_pursuitTarget = NULL;
+		m_targInfo.target = NULL;
 		return;
 	}
 
-	if (m_pursuitTarget->GetPursuedCount() == 0)
+	if (m_targInfo.target->GetPursuedCount() == 0)
 	{
-		m_pursuitTarget = NULL;
+		m_targInfo.target = NULL;
 		return;
 	}
 
-	m_pursuitTarget->DecrementPursue();
+	m_targInfo.target->DecrementPursue();
 
-	if (m_pursuitTarget->GetPursuedCount() == 0 && 
-		g_pGameSession->GetPlayerCar() == m_pursuitTarget &&
+	if (m_targInfo.target->GetPursuedCount() == 0 && 
+		g_pGameSession->GetPlayerCar() == m_targInfo.target &&
 		g_State_Game->IsGameRunning())	// only play sound when in game, not unloading or restaring
 	{
 		Speak("cop.lost", true);
@@ -325,9 +323,9 @@ void CAIPursuerCar::EndPursuit(bool death)
 	if(m_taunts)
 		m_taunts->StopSound();
 
-	m_pursuitTarget = NULL;
+	m_targInfo.target = NULL;
 
-	FSM_SetNextState(&CAIPursuerCar::SearchForRoad);
+	AI_SetState(&CAIPursuerCar::SearchForRoad);
 
 	SetTorqueScale(1.0f);
 }
@@ -483,10 +481,10 @@ Vector3D CAIPursuerCar::GetAdvancedPointByDist(int& startSeg, float distFromSegm
 	Vector3D currPointPos;
 	Vector3D nextPointPos;
 
-	while (startSeg < m_path.path.numElem()-2)
+	while (startSeg < m_targInfo.path.points.numElem()-2)
 	{
-		currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.path[startSeg]);
-		nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.path[startSeg + 1]);
+		currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[startSeg]);
+		nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[startSeg + 1]);
 
 		float segLen = length(currPointPos - nextPointPos);
 
@@ -499,38 +497,42 @@ Vector3D CAIPursuerCar::GetAdvancedPointByDist(int& startSeg, float distFromSegm
 			break;
 	}
 
-	currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.path[startSeg]);
-	nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.path[startSeg + 1]);
+	currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[startSeg]);
+	nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[startSeg + 1]);
 
 	Vector3D dir = fastNormalize(nextPointPos - currPointPos);
 
 	return currPointPos + dir*distFromSegment;
 }
 
-int	CAIPursuerCar::PursueTarget( float fDt )
+int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 {
+	// do nothing
+	if(transition != STATE_TRANSITION_NONE)
+		return 0;
+
 	// dead?
 	if(!IsAlive())
 	{
 		EndPursuit(true);
 
-		FSM_SetNextState( &CAIPursuerCar::DeadState );
+		AI_SetState( &CAIPursuerCar::DeadState );
 		m_deathTime = AI_COP_DEATHTIME;
 		m_refreshTime = 0.0f;
 		return 0;
 	}
 
-	if (!m_pursuitTarget)
+	if (!m_targInfo.target)
 		return 0;
 
-	bool isVisible = CheckObjectVisibility( m_pursuitTarget );
+	bool isVisible = CheckObjectVisibility( m_targInfo.target );
 
 	// check the visibility
 	if ( !isVisible )
 	{
-		m_notSeeingTime += fDt;
+		m_targInfo.notSeeingTime += fDt;
 
-		if (m_notSeeingTime > AI_COP_TIME_TO_LOST_TARGET)
+		if (m_targInfo.notSeeingTime  > AI_COP_TIME_TO_LOST_TARGET)
 		{
 			EndPursuit(false);
 			return 0;
@@ -538,22 +540,22 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 	}
 	else
 	{
-		if (m_notSeeingTime > AI_COP_TIME_TO_LOST_TARGET*0.5f &&
-			g_pGameSession->GetPlayerCar() == m_pursuitTarget)
+		if (m_targInfo.notSeeingTime  > AI_COP_TIME_TO_LOST_TARGET*0.5f &&
+			g_pGameSession->GetPlayerCar() == m_targInfo.target)
 		{
 			Speak("cop.pursuit_continue");
 		}
 
 		if (m_type == PURSUER_TYPE_COP)
 		{
-			if(	m_targetLastInfraction > INFRACTION_HAS_FELONY && 
-				m_nextCheckImpactTime < 0 )
+			if(	m_targInfo.lastInfraction > INFRACTION_HAS_FELONY && 
+				m_targInfo.nextCheckImpactTime < 0 )
 			{
-				m_nextCheckImpactTime = AI_COP_COLLISION_CHECKTIME;
+				m_targInfo.nextCheckImpactTime = AI_COP_COLLISION_CHECKTIME;
 
-				float newFelony = m_pursuitTarget->GetFelony();
+				float newFelony = m_targInfo.target->GetFelony();
 
-				switch( m_targetLastInfraction )
+				switch( m_targInfo.lastInfraction )
 				{
 					case INFRACTION_HIT_VEHICLE:
 					{
@@ -583,7 +585,7 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 				if (newFelony > 1.0f)
 					newFelony = 1.0f;
 
-				m_pursuitTarget->SetFelony(newFelony);
+				m_targInfo.target->SetFelony(newFelony);
 			}
 
 			if (m_taunts)
@@ -594,9 +596,9 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 				TrySayTaunt();
 			}
 
-			if(m_pursuitTarget->GetSpeed() > 50.0f)
+			if(m_targInfo.target->GetSpeed() > 50.0f)
 			{
-				float targetAngle = VectorAngles(normalize(m_pursuitTarget->GetVelocity())).y + 45;
+				float targetAngle = VectorAngles(normalize(m_targInfo.target->GetVelocity())).y + 45;
 
 				#pragma todo("North direction as second argument")
 				targetAngle = NormalizeAngle360( -targetAngle /*g_pGameWorld->GetLevelNorthDirection()*/);
@@ -609,7 +611,7 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 				if (targetDir > 3)
 					targetDir -= 4;
 		
-				if( m_targetDirection != targetDir && targetDir < 4)
+				if( m_targInfo.direction != targetDir && targetDir < 4)
 				{
 					if(Speak("cop.heading"))
 					{
@@ -623,16 +625,16 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 							Speak("cop.heading_south", true);
 					}
 
-					m_targetDirection = targetDir;
+					m_targInfo.direction = targetDir;
 				}
 			}
 		}
 
-		m_notSeeingTime = 0.0f;
+		m_targInfo.notSeeingTime = 0.0f;
 	}
 
 	Vector3D	carPos		= GetOrigin() + GetForwardVector()*m_conf->m_body_size.z*0.5f;
-	Vector3D	targetPos	= m_pursuitTarget->GetOrigin() + m_pursuitTarget->GetVelocity()*0.5f;
+	Vector3D	targetPos	= m_targInfo.target->GetOrigin() + m_targInfo.target->GetVelocity()*0.5f;
 	Vector3D	carDir		= GetForwardVector();
 
 	float		fSpeed = GetSpeedWheels();
@@ -643,7 +645,7 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 	collFilter.type = EQPHYS_FILTER_TYPE_EXCLUDE;
 	collFilter.flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS | EQPHYS_FILTER_FLAG_FORCE_RAYCAST;
 	collFilter.AddObject( GetPhysicsBody() );
-	collFilter.AddObject( m_pursuitTarget->GetPhysicsBody() );
+	collFilter.AddObject( m_targInfo.target->GetPhysicsBody() );
 
 	// test for the straight path and visibility
 	{
@@ -663,24 +665,24 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 	//-------------------------------------------------------------------------------
 	// refresh the navigation path if we see the target
 
-	m_nextPathUpdateTime -= fDt;
+	m_targInfo.nextPathUpdateTime -= fDt;
 
-	if (m_nextPathUpdateTime < 0 && !doesHaveStraightPath)
+	if (m_targInfo.nextPathUpdateTime < 0 && !doesHaveStraightPath)
 	{
-		m_nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
+		m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
 
 		pathFindResult_t newPath;
 
-		if(g_pGameWorld->m_level.Nav_FindPath(targetPos, carPos, newPath, 1024, true) && newPath.path.numElem() > 1)
+		if(g_pGameWorld->m_level.Nav_FindPath(targetPos, carPos, newPath, 1024, true) && newPath.points.numElem() > 1)
 		{
-			m_path = newPath;
-			m_pathTargetIdx = 0;
+			m_targInfo.path = newPath;
+			m_targInfo.pathTargetIdx = 0;
 
-			Vector3D lastLinePos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.path[0]);
+			Vector3D lastLinePos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[0]);
 
-			for (int i = 1; i < m_path.path.numElem(); i++)
+			for (int i = 1; i < m_targInfo.path.points.numElem(); i++)
 			{
-				Vector3D pointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.path[i]);
+				Vector3D pointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[i]);
 
 				debugoverlay->Box3D(pointPos - 0.15f, pointPos + 0.15f, ColorRGBA(1, 1, 0, 1.0f), 1.0f);
 				debugoverlay->Line3D(lastLinePos, pointPos, ColorRGBA(1, 1, 0, 1), ColorRGBA(1, 1, 0, 1), 1.0f);
@@ -718,11 +720,12 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 	Vector3D steeringTargetPosB = carPos;
 
 	if( !doesHaveStraightPath &&
-		m_path.path.numElem() > 0 &&
-		m_pathTargetIdx != -1 && m_pathTargetIdx < m_path.path.numElem()-1)
+		m_targInfo.path.points.numElem() > 0 &&
+		m_targInfo.pathTargetIdx != -1 && 
+		m_targInfo.pathTargetIdx < m_targInfo.path.points.numElem()-1)
 	{
-		Vector3D currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.path[m_pathTargetIdx]);
-		Vector3D nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.path[m_pathTargetIdx + 1]);
+		Vector3D currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[m_targInfo.pathTargetIdx]);
+		Vector3D nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[m_targInfo.pathTargetIdx + 1]);
 
 		float currPosPerc = lineProjection(currPointPos, nextPointPos, carPos);
 
@@ -730,11 +733,11 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 
 		float speedModifier = RemapValClamp(60.0f - fSpeed, 0.0f, 60.0f, 4.0f, 8.0f);
 
-		int pathIdx = m_pathTargetIdx;
+		int pathIdx = m_targInfo.pathTargetIdx;
 
-		steeringTargetPos = GetAdvancedPointByDist(m_pathTargetIdx, currPosPerc*len+4.0f);
+		steeringTargetPos = GetAdvancedPointByDist(m_targInfo.pathTargetIdx, currPosPerc*len+4.0f);
 
-		pathIdx = m_pathTargetIdx;
+		pathIdx = m_targInfo.pathTargetIdx;
 		brakeTargetPos = GetAdvancedPointByDist(pathIdx, currPosPerc*len+15.0f);
 
 		//float speedFactor = RemapValClamp(fSpeed, 0.0f, 70.0f, 0.0f, 1.0f);
@@ -742,10 +745,10 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 
 		steeringTargetPos = lerp(steeringTargetPos, brakeTargetPos, speedFactor);
 
-		pathIdx = m_pathTargetIdx;
+		pathIdx = m_targInfo.pathTargetIdx;
 		Vector3D hardSteerPosStart = GetAdvancedPointByDist(pathIdx, currPosPerc*len + 25.0f*speedFactor);
 
-		pathIdx = m_pathTargetIdx;
+		pathIdx = m_targInfo.pathTargetIdx;
 		Vector3D hardSteerPosEnd = GetAdvancedPointByDist(pathIdx, currPosPerc*len + 55.0f*speedFactor);
 
 
@@ -769,6 +772,8 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 		}
 	}
 
+	GetPhysicsBody()->TryWake(false);
+
 	Matrix4x4 bodyMat;
 	GetPhysicsBody()->ConstructRenderMatrix( bodyMat );
 
@@ -787,7 +792,7 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 	FReal brake = 0.0f;
 
 	FReal distToTarget = length(steeringTargetPos - carPos);
-	FReal distToTargetReal = length(m_pursuitTarget->GetOrigin() - carPos);
+	FReal distToTargetReal = length(m_targInfo.target->GetOrigin() - carPos);
 
 	// apply acceleration modifier if i'm too far
 	if (distToTarget > 60.0f && fabs(fSteeringAngle) < 0.25f)
@@ -802,13 +807,13 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 
 	FReal distFromCollPoint = length(m_lastCollidingPosition-GetOrigin());
 
-	if (distToTargetReal < 7.0f || distFromCollPoint < 7.0f || m_isColliding)
+	if (distToTargetReal < 4.0f || distFromCollPoint < 4.0f || m_isColliding)
 	{
 		accelerator = 0.5f;
 
 		Plane pl(carDir, dot(carDir, GetOrigin()));
 
-		if (m_isColliding && carForwardSpeed < 10.0f)
+		if (m_isColliding && carForwardSpeed < 10.0f && m_blockingTime > 1.0f)
 			m_blockingTime -= fDt;
 
 		if ( (m_blockingTime < 0.0f || frontColl.fract < 1.0f) && pl.Distance(m_lastCollidingPosition) > 0 )
@@ -820,6 +825,26 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 	}
 	else
 		m_blockingTime = AI_COP_BLOCK_DELAY;
+
+	float pursuitTargetSpeed = m_targInfo.target->GetSpeed();
+
+	if(	!m_targInfo.isAngry && 
+		distToTargetReal < 14.0f)
+	{
+		float distFactor = float(distToTarget) / 14.0f;
+
+		if(pursuitTargetSpeed > 10.0f)
+		{
+			accelerator -= distFactor;
+			brake += (1.0f-distFactor)*0.5f;
+		}
+		else
+			accelerator *= 0.2f;
+
+		accelerator = max(0,accelerator);
+
+		controls |= IN_BRAKE;
+	}
 
 	if(frontColl.fract < 1.0f)
 	{
@@ -866,7 +891,7 @@ int	CAIPursuerCar::PursueTarget( float fDt )
 	return 0;
 }
 
-int	CAIPursuerCar::DeadState( float fDt )
+int	CAIPursuerCar::DeadState( float fDt, EStateTransition transition )
 {
 	if( m_deathTime > 0 && m_conf->m_sirenType != SIREN_NONE && m_pSirenSound )
 	{
@@ -888,7 +913,17 @@ int	CAIPursuerCar::DeadState( float fDt )
 
 void CAIPursuerCar::SetPursuitTarget(CCar* obj)
 {
-	m_pursuitTarget = obj;
+	m_targInfo.target = obj;
+	m_targInfo.direction = -1;
+
+	m_targInfo.lastInfraction = INFRACTION_HAS_FELONY;
+	m_targInfo.path.points.clear();
+	m_targInfo.pathTargetIdx = -1;
+	m_targInfo.nextCheckImpactTime = AI_COP_COLLISION_CHECKTIME;
+	m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
+
+	if(obj)
+		m_targInfo.isAngry = (obj->GetFelony() > 0.6f);
 }
 
 OOLUA_EXPORT_FUNCTIONS(

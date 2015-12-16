@@ -53,11 +53,6 @@ public:
 	virtual void		OnPrePhysicsFrame( float fDt );
 	virtual void		OnPhysicsFrame( float fDt );
 
-	int					TrafficDrive( float fDt );
-	int					DeadState( float fDt );
-
-	int					PursueTarget( float fDt );
-
 	bool				CheckObjectVisibility(CCar* obj);
 	void				SetPursuitTarget(CCar* obj);
 
@@ -73,31 +68,39 @@ public:
 
 	Vector3D			GetAdvancedPointByDist(int& startSeg, float distFromSegment);
 
+	// states
+	int					TrafficDrive( float fDt, EStateTransition transition );
+	int					DeadState( float fDt, EStateTransition transition );
+	int					PursueTarget( float fDt, EStateTransition transition );
+
 protected:
 
-	CCar*					m_pursuitTarget;
-	int						m_targetDirection;	// swne
+	EPursuerAIType			m_type;
+
+	struct pursuitTargetInfo_t
+	{
+		CCar*				target;
+		int					direction;	// swne
+		float				notSeeingTime;
+
+		pathFindResult_t	path;
+		int					pathTargetIdx;
+
+		float				nextPathUpdateTime;
+		float				nextCheckImpactTime;
+		int					lastInfraction;
+		bool				isAngry;
+	};
+
+	pursuitTargetInfo_t		m_targInfo;
 
 	float					m_deathTime;
-	FReal					m_blockingTime;
+	float					m_blockingTime;
 
 	bool					m_isColliding;
 	Vector3D				m_lastCollidingPosition;
 
-	EPursuerAIType			m_type;
-
-	float					m_notSeeingTime;
-
-	float					m_nextCheckImpactTime;
-
 	ISoundController*		m_taunts;
-
-	float					m_nextPathUpdateTime;
-
-	pathFindResult_t		m_path;
-	int						m_pathTargetIdx;
-
-	int						m_targetLastInfraction;
 };
 
 #ifndef NO_LUA

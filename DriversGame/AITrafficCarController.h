@@ -10,7 +10,7 @@
 
 #include "car.h"
 #include "level.h"
-#include "FSM_base.h"
+#include "EventFSM.h"
 
 #include "utils/DkList.h"
 
@@ -103,20 +103,19 @@ public:
 
 	virtual void		OnPrePhysicsFrame( float fDt );
 
-	// ---- states ----
-	int					SearchForRoad(float fDt);
-
 	void				SearchJunctionAndStraight();
 	void				SwitchLane();
-
-	virtual int			TrafficDrive( float fDt );
-	virtual int			DeadState( float fDt ) {return 0;}
 
 	void				ChangeRoad( const straight_t& road );
 
 	int					ObjType() const { return GO_CAR_AI; }
 
 	virtual bool		IsPursuer() const {return false;}
+
+	// states
+	int					SearchForRoad(float fDt, EStateTransition transition);
+	virtual int			TrafficDrive( float fDt, EStateTransition transition );
+	virtual int			DeadState( float fDt, EStateTransition transition ) {return 0;}
 
 protected:
 	float				m_speedModifier;

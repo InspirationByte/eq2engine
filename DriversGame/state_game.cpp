@@ -754,10 +754,10 @@ Vector3D GetAdvancedPointByDist(int& startSeg, float distFromSegment)
 	Vector3D currPointPos;
 	Vector3D nextPointPos;
 
-	while (startSeg < g_test_drive_path.path.numElem()-2)
+	while (startSeg < g_test_drive_path.points.numElem()-2)
 	{
-		currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.path[startSeg]);
-		nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.path[startSeg + 1]);
+		currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.points[startSeg]);
+		nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.points[startSeg + 1]);
 
 		float segLen = length(currPointPos - nextPointPos);
 
@@ -770,8 +770,8 @@ Vector3D GetAdvancedPointByDist(int& startSeg, float distFromSegment)
 			break;
 	}
 
-	currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.path[startSeg]);
-	nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.path[startSeg + 1]);
+	currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.points[startSeg]);
+	nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.points[startSeg + 1]);
 
 	Vector3D dir = fastNormalize(nextPointPos - currPointPos);
 
@@ -782,14 +782,14 @@ void TestDriveCar()
 {
 	CCar* viewedCar = g_pGameSession->GetViewCar();
 
-	if(g_test_drive_path.path.numElem() < 2)
+	if(g_test_drive_path.points.numElem() < 2)
 		return;
 
-	Vector3D lastLinePos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.path[0]);
+	Vector3D lastLinePos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.points[0]);
 
-	for (int i = 1; i < g_test_drive_path.path.numElem(); i++)
+	for (int i = 1; i < g_test_drive_path.points.numElem(); i++)
 	{
-		Vector3D pointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.path[i]);
+		Vector3D pointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.points[i]);
 
 		debugoverlay->Box3D(pointPos - 0.15f, pointPos + 0.15f, ColorRGBA(1, 1, 0, 1.0f), 0.0f);
 		debugoverlay->Line3D(lastLinePos, pointPos, ColorRGBA(1, 1, 0, 1), ColorRGBA(1, 1, 0, 1), 0.0f);
@@ -799,8 +799,8 @@ void TestDriveCar()
 
 	Vector3D carPos = viewedCar->GetOrigin() + viewedCar->GetForwardVector()*viewedCar->m_conf->m_body_size.z*0.5f;
 
-	Vector3D currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.path[pathPointIdx]);
-	Vector3D nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.path[pathPointIdx + 1]);
+	Vector3D currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.points[pathPointIdx]);
+	Vector3D nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(g_test_drive_path.points[pathPointIdx + 1]);
 
 	float currPosPerc = lineProjection(currPointPos, nextPointPos, carPos);
 

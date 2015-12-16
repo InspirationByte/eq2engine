@@ -84,6 +84,8 @@ public:
 	bool						SpawnRoadBlockFor( CCar* car, float directionAngle);
 	bool						IsRoadBlockSpawn() const;
 
+	void						PushGlobalEvent( Event_t* evt );
+
 protected:
 
 	void						RemoveTrafficCar(CAITrafficCar* car);

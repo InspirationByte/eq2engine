@@ -1046,6 +1046,7 @@ void CLevelRegion::Init()
 		m_heightfield[0] = new CHeightTileFieldRenderable();
 
 #ifdef EDITOR
+	// init all hfields
 	for(int i = 1; i < ENGINE_REGION_MAX_HFIELDS; i++)
 	{
 		m_heightfield[i] = new CHeightTileFieldRenderable();
@@ -1660,7 +1661,6 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 
 			for(int i = 0; i < m_regions[idx].GetNumHFields(); i++)
 			{
-
 				if(!m_regions[idx].m_heightfield[i])
 					continue;
 
@@ -2130,20 +2130,21 @@ void CGameLevel::ReadHeightfieldsLump(IVirtualStream* stream)
 		int numFields = 1;
 		stream->Read(&numFields, 1, sizeof(int));
 
-		for(int i = 0; i < numFields; i++)
+		for(int j = 0; j < numFields; j++)
 		{
-			if( !m_regions[idx].m_heightfield[i] )
+			// hfield 0 is init by default
+			if( !m_regions[idx].m_heightfield[j] )
 			{
-				m_regions[idx].m_heightfield[i] = new CHeightTileFieldRenderable();
-				m_regions[idx].m_heightfield[i]->m_fieldIdx = i;
+				m_regions[idx].m_heightfield[j] = new CHeightTileFieldRenderable();
+				m_regions[idx].m_heightfield[j]->m_fieldIdx = j;
 
-				m_regions[idx].m_heightfield[i]->m_posidx_x = m_regions[idx].m_heightfield[0]->m_posidx_x;
-				m_regions[idx].m_heightfield[i]->m_posidx_y = m_regions[idx].m_heightfield[0]->m_posidx_y;
-				m_regions[idx].m_heightfield[i]->m_position = m_regions[idx].m_heightfield[0]->m_position;
+				m_regions[idx].m_heightfield[j]->m_posidx_x = m_regions[idx].m_heightfield[0]->m_posidx_x;
+				m_regions[idx].m_heightfield[j]->m_posidx_y = m_regions[idx].m_heightfield[0]->m_posidx_y;
+				m_regions[idx].m_heightfield[j]->m_position = m_regions[idx].m_heightfield[0]->m_position;
 			}
 
-			m_regions[idx].m_heightfield[i]->Init(m_cellsSize, -1, -1);
-			m_regions[idx].m_heightfield[i]->ReadFromStream(stream);
+			m_regions[idx].m_heightfield[j]->Init(m_cellsSize, -1, -1);
+			m_regions[idx].m_heightfield[j]->ReadFromStream(stream);
 		}
 	}
 }
@@ -2174,8 +2175,13 @@ void CGameLevel::WriteHeightfieldsLump(IVirtualStream* stream)
 				// write region heightfield data
 				for(int i = 0; i < numFields; i++)
 				{
-					if(m_regions[idx].m_heightfield[i] && !m_regions[idx].m_heightfield[i]->IsEmpty())
+					
+
+					if(	m_regions[idx].m_heightfield[i] && 
+						!m_regions[idx].m_heightfield[i]->IsEmpty())
+					{
 						m_regions[idx].m_heightfield[i]->WriteToStream( &hfielddata );
+					}
 				}
 			}
 		}
@@ -4092,7 +4098,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 	if(start == end)
 		return false;
 
-	result.path.setNum(0,false);
+	result.points.setNum(0,false);
 
 	// directions
 	int dx[] = NEIGHBOR_OFFS_XDX(0, (1));
@@ -4204,7 +4210,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 		{
 			// apply simplification
 			if( lastDir != lastCell.pdir)
-				result.path.append(testPoint);
+				result.points.append(testPoint);
 		
 			if(testPoint == start)
 				break;
@@ -4219,5 +4225,5 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 		while(true);
 	}
 
-	return (result.path.numElem() > 0);
+	return (result.points.numElem() > 0);
 }

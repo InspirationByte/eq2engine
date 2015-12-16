@@ -15,6 +15,36 @@
 
 #include "Shiny.h"
 
+static const char* s_pBodyPartsNames[] =
+{
+	"front.left",
+	"front.right",
+
+	"side.left",
+	"side.right",
+
+	"back.left",
+	"back.right",
+
+	"window.front",
+	"window.back",
+
+	"window.left",
+	"window.right"
+};
+
+static Vector3D s_BodyPartDirections[] =
+{
+	Vector3D(-1.0f,0,1),
+	Vector3D(1.0f,0,1),
+
+	Vector3D(-1.0f,0,0),
+	Vector3D(1.0f,0,0),
+
+	Vector3D(-1.0f,0,-1.0f),
+	Vector3D(1.0f,0,-1.0f),
+};
+
 #define DEFAULT_CAMERA_FOV			(60.0f) // old: 52
 #define CAMERA_MIN_FOV				(50.0f)
 #define CAMERA_MAX_FOV				(90.0f)
@@ -860,7 +890,7 @@ void CCar::CreateCarPhysics()
 
 		CCarWheelModel* pWheelObject = new CCarWheelModel();
 
-		wheelinfo_t winfo;
+		wheelData_t winfo;
 
 		winfo.bodyIndex = Studio_FindBodyGroupId(wheelModel->GetHWData()->pStudioHdr, wconf.wheelName);
 
@@ -1467,7 +1497,7 @@ void CCar::UpdateCarPhysics(float delta)
 	// Raycast the wheels and do some simple calculations
 	for(int i = 0; i < GetWheelCount(); i++)
 	{
-		wheelinfo_t& wheel = m_pWheels[i];
+		wheelData_t& wheel = m_pWheels[i];
 		carWheelConfig_t& wheelConf = m_conf->m_wheels[i];
 
 		// Test rays of wheels
@@ -1733,7 +1763,7 @@ void CCar::UpdateCarPhysics(float delta)
 	// springs for wheels
 	for(int i = 0; i < GetWheelCount(); i++)
 	{
-		wheelinfo_t& wheel = m_pWheels[i];
+		wheelData_t& wheel = m_pWheels[i];
 		carWheelConfig_t& wheelConf = m_conf->m_wheels[i];
 
 		wheel.wheelOrient = identity3();
@@ -2697,7 +2727,7 @@ void CCar::Simulate( float fDt )
 	{
 		for(int i = 0; i < m_pWheels.numElem(); i++)
 		{
-			wheelinfo_t& wheel = m_pWheels[i];
+			wheelData_t& wheel = m_pWheels[i];
 			carWheelConfig_t& wheelConf = m_conf->m_wheels[i];
 
 			if(!wheel.doSkidmarks)
@@ -2772,7 +2802,7 @@ void CCar::Simulate( float fDt )
 
 		for(int i = 0; i < m_pWheels.numElem(); i++)
 		{
-			wheelinfo_t& wheel = m_pWheels[i];
+			wheelData_t& wheel = m_pWheels[i];
 
 			// add skidmark particle strip
 			int numSkidMarks = 0;
@@ -2834,7 +2864,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 {
 	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
 
-	wheelinfo_t& wheel = m_pWheels[nWheel];
+	wheelData_t& wheel = m_pWheels[nWheel];
 	carWheelConfig_t& wheelConf = m_conf->m_wheels[nWheel];
 
 	Matrix3x3 wheelMat = transpose(m_worldMatrix.getRotationComponent() * wheel.wheelOrient);
@@ -3524,7 +3554,7 @@ void CCar::Draw( int nRenderFlags )
 		for(int i = 0; i < m_pWheels.numElem(); i++)
 		{
 			//Matrix4x4 w = m;
-			wheelinfo_t& wheel = m_pWheels[i];
+			wheelData_t& wheel = m_pWheels[i];
 			carWheelConfig_t& wheelConf = m_conf->m_wheels[i];
 
 			Vector3D wheels_offs = vec3_zero;

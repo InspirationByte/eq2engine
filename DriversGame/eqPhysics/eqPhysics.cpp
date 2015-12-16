@@ -569,7 +569,7 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 			debugoverlay->Text3D(hitPos, 50.0f, ColorRGBA(1,1,0,1), "penetration depth: %f", hitDepth);
 		}
 
-		ProcessContactPair(newPair, fDt);
+		//ProcessContactPair(newPair, fDt);
 	}
 }
 
@@ -623,8 +623,6 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 		eqTransB_orig = transpose(eqTransB_orig);
 		eqTransB_orig.rows[3] += Vector4D(bodyB->GetPosition()+center, 1.0f);
 	}
-
-	
 
 	/*
 	{
@@ -714,7 +712,7 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 			debugoverlay->Text3D(hitPos, 50.0f, ColorRGBA(1,1,0,1), "penetration depth: %f", hitDepth);
 		}
 
-		ProcessContactPair(newPair, fDt);
+		//ProcessContactPair(newPair, fDt);
 	}
 }
 
@@ -1040,10 +1038,10 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	{
 		CEqRigidBody* body = m_dynObjects[i];
 
-		body->m_collisionList.clear( false );
-
 		if(body->m_callbacks)
 			body->m_callbacks->PreSimulate( deltaTime );
+
+		body->m_collisionList.clear( false );
 
 		IntegrateSingle(body, deltaTime);
 	}
@@ -1059,15 +1057,20 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 		CEqRigidBody* body = m_dynObjects[i];
 
 		DetectCollisionsSingle(body, deltaTime, contactPairs);
+	}
+
+	for (int i = 0; i < contactPairs.numElem(); i++)
+		ProcessContactPair(contactPairs[i], deltaTime);
+
+	contactPairs.clear(false);
+
+	for (int i = 0; i < m_dynObjects.numElem(); i++)
+	{
+		CEqRigidBody* body = m_dynObjects[i];
 
 		if(body->m_callbacks)
 			body->m_callbacks->PostSimulate( deltaTime );
 	}
-
-	//for (int i = 0; i < contactPairs.numElem(); i++)
-		//ProcessContactPair(contactPairs[i], deltaTime);
-
-	contactPairs.clear(false);
 
 	m_numRayQueries = 0;
 
