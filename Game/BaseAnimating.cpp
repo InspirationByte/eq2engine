@@ -1205,7 +1205,7 @@ void BaseAnimating::UpdateIK()
 			{
 				int bone_id = m_IkChains[i]->links[j].bone_index;
 
-				m_IkChains[i]->links[j].quat = Quaternion(m_AnimationBoneMatrixList[bone_id]);
+				m_IkChains[i]->links[j].quat = Quaternion(m_AnimationBoneMatrixList[bone_id].getRotationComponent());
 				m_IkChains[i]->links[j].position = m_pModel->GetHWData()->joints[bone_id].position;
 
 				m_IkChains[i]->links[j].localTrans = Matrix4x4(m_IkChains[i]->links[j].quat);

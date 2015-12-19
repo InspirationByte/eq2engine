@@ -118,7 +118,9 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect,elementsOf(tmprect), NULL, damageColor, &blending);
 	}
 
-	robotocon30b->RenderText(m_damageTok ? m_damageTok->GetText() : L"Undefined", damageRect.vleftTop.x+5, damageRect.vleftTop.y-15, 1, 40, fontParams);
+	Vector2D damageTextPos( damageRect.vleftTop.x+5, damageRect.vleftTop.y+15);
+
+	robotocon30b->RenderText(m_damageTok ? m_damageTok->GetText() : L"Undefined", damageTextPos, fontParams);
 
 	// Draw felony text
 	float felonyPercent = 0.0f;
@@ -147,7 +149,9 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		}
 	}
 
-	roboto30b->RenderText(varargs_w(m_felonyTok ? m_felonyTok->GetText() : L"Undefined", (int)felonyPercent), damageRect.vleftTop.x, damageRect.vrightBottom.y+25, 1, 30, fontParams);
+	Vector2D felonyTextPos(damageRect.vleftTop.x, damageRect.vrightBottom.y+25);
+
+	roboto30b->RenderText(varargs_w(m_felonyTok ? m_felonyTok->GetText() : L"Undefined", (int)felonyPercent), felonyTextPos, fontParams);
 
 	if( m_mainVehicle->GetPursuedCount() > 0 )
 	{
@@ -198,11 +202,13 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		m_screenMessageTime -= fDt;
 
 		eqFontStyleParam_t scrMsgParams;
-		scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW;
+		scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
 		scrMsgParams.align = TEXT_ALIGN_CENTER;
 		scrMsgParams.textColor = ColorRGBA(1,1,0.25f,1);
 
-		roboto30b->RenderText(m_screenMessageText.c_str(), screenSize.x / 2, screenSize.y / 3, 1, 30, scrMsgParams);
+		Vector2D screenMessagePos(screenSize.x / 2, screenSize.y / 3);
+
+		roboto30b->RenderText(m_screenMessageText.c_str(), screenMessagePos, scrMsgParams);
 	}
 
 	
@@ -210,9 +216,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 	{
 		static IEqFont* numbers50 = g_fontCache->GetFont("Roboto Condensed", 50);
 		static IEqFont* numbers20 = g_fontCache->GetFont("Roboto Condensed", 20);
-
-		numbers20->DrawSetColor(1,1,1,1);
-		numbers50->DrawSetColor(1,1,1,1);
 
 		int secs,mins, millisecs;
 
@@ -228,11 +231,13 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		numFontParams.align = TEXT_ALIGN_CENTER;
 		numFontParams.textColor = color4_white;
 
-		numbers50->RenderText(varargs_w(L"%.2i:%.2i", mins, secs), screenSize.x / 2, 15, 1, 50, numFontParams);
+		Vector2D timeDisplayTextPos(screenSize.x / 2, 15);
 
-		float size = numbers50->GetStringLength(varargs("%.2i:%.2i", mins, secs), -1);
+		numbers50->RenderText(varargs_w(L"%.2i:%.2i", mins, secs), timeDisplayTextPos, numFontParams);
 
-		numbers20->RenderText(varargs_w(L"'%02d", millisecs), screenSize.x / 2 + size*0.5f, 35, 1, 20, fontParams);
+		float size = numbers50->GetStringWidth(varargs("%.2i:%.2i", mins, secs), numFontParams.styleFlag);
+
+		numbers20->RenderText(varargs_w(L"'%02d", millisecs), timeDisplayTextPos, fontParams);
 	}
 	
 

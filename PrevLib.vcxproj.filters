@@ -66,9 +66,6 @@
     <ClInclude Include="public\Utils\eqthread.h">
       <Filter>Source Files\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="public\utils\eqjobs.h">
-      <Filter>Source Files\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="public\Math\BoundingBox.h">
       <Filter>Source Files\Math</Filter>
     </ClInclude>
@@ -183,9 +180,6 @@
       <Filter>Source Files\Math</Filter>
     </ClCompile>
     <ClCompile Include="public\Utils\eqthread.cpp">
-      <Filter>Source Files\Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="public\utils\eqjobs.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
     <ClCompile Include="public\math\QuadTree.cpp">

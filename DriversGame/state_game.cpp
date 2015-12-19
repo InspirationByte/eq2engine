@@ -694,8 +694,9 @@ void Game_DrawDirectorUI( float fDt )
 	params.styleFlag = TEXT_STYLE_SHADOW;
 	params.textColor = color4_white;
 
-	g_pHost->m_pDefaultFont->DrawSetColor(color4_white);
-	g_pHost->m_pDefaultFont->RenderText(str, 15, screenSize.y/3, 10, 30, params);
+	Vector2D directorTextPos(15, screenSize.y/3);
+
+	g_pHost->m_pDefaultFont->RenderText(str, directorTextPos, params);
 
 	replaycamera_t* cam = g_replayData->GetCurrentCamera();
 
@@ -703,7 +704,8 @@ void Game_DrawDirectorUI( float fDt )
 
 	params.align = TEXT_ALIGN_CENTER;
 
-	g_pHost->m_pDefaultFont->RenderText(framesStr, screenSize.x/2, screenSize.y - (screenSize.y/6), 10, 30, params);
+	Vector2D frameInfoTextPos(screenSize.x/2, screenSize.y - (screenSize.y/6));
+	g_pHost->m_pDefaultFont->RenderText(framesStr, frameInfoTextPos, params);
 
 	if(g_freecam.GetBool())
 	{
@@ -952,8 +954,9 @@ void Game_Frame(float fDt)
 
 		materials->Setup2D(screenSize.x,screenSize.y);
 
-		g_pSysConsole->con_font->DrawSetColor(color4_white);
-		g_pSysConsole->con_font->DrawTextEx(profilerStr.c_str(), 15, 15, 10, 12, TEXT_ORIENT_RIGHT, TEXT_STYLE_SHADOW, false);
+		eqFontStyleParam_t params;
+		params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+		g_pSysConsole->con_font->RenderText(profilerStr.c_str(), Vector2D(45), params);
 	}
 
 	g_nOldControlButtons = nClientButtons;
@@ -1208,7 +1211,7 @@ bool CState_Game::Update( float fDt )
 		eqFontStyleParam_t param;
 		param.styleFlag |= TEXT_STYLE_SHADOW;
 
-		font->RenderText(loadingStr,25,25, 1, 40, param);
+		font->RenderText(loadingStr, Vector2D(40,40), param);
 
 		if(g_pGameWorld->m_level.IsWorkDone() && materials->GetLoadingQueue() == 0)
 			m_isGameRunning = true;
@@ -1354,8 +1357,10 @@ bool CState_Game::Update( float fDt )
 
 			int menuPosY = halfScreen.y-300;
 
+			Vector2D mTextPos(halfScreen.x, menuPosY);
+
 			fontParam.textColor = ColorRGBA(0.7f,0.7f,0.7f,1.0f);
-			font->RenderText(m_menuTitleToken ? m_menuTitleToken->GetText() : L"Undefined token", halfScreen.x, menuPosY, 1, 40, fontParam);
+			font->RenderText(m_menuTitleToken ? m_menuTitleToken->GetText() : L"Undefined token", mTextPos, fontParam);
 			
 			oolua_ipairs(m_menuElems)
 				int idx = _i_index_-1;
@@ -1383,7 +1388,9 @@ bool CState_Game::Update( float fDt )
 				else
 					fontParam.textColor = ColorRGBA(1,1,1,1.0f);
 
-				font->RenderText(token ? token : L"No token", halfScreen.x, menuPosY+_i_index_*45, 1, 40, fontParam);
+				Vector2D eTextPos(halfScreen.x, menuPosY+_i_index_*45);
+
+				font->RenderText(token ? token : L"No token", eTextPos, fontParam);
 			oolua_ipairs_end()
 			
 		}

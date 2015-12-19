@@ -321,14 +321,17 @@ void CTextureListRenderPanel::Redraw()
 
 					Rectangle_t name_rect(x_offset, y_offset+fSize, x_offset + fSize,y_offset + fSize + 400);
 
-					m_pFont->DrawSetColor(color4_white);
-					m_pFont->DrawTextInRect(material_name.c_str(), name_rect, 8, 8, false);
+					eqFontStyleParam_t fontParam;
+					fontParam.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+					fontParam.textColor = ColorRGBA(1,1,1,1);
+
+					m_pFont->RenderText(material_name.c_str(), name_rect.vleftTop.y, fontParam);
 
 					if(m_filteredlist[i]->IsError())
-						m_pFont->DrawText("BAD MATERIAL", x_offset, y_offset, 8,8,false);
+						m_pFont->RenderText("BAD MATERIAL", Vector2D(x_offset, y_offset), fontParam);
 
 					if(!m_filteredlist[i]->GetBaseTexture())
-						m_pFont->DrawText("BAD SHADER\nEDIT IT FIRST", x_offset, y_offset+10, 8,8,false);
+						m_pFont->RenderText("BAD SHADER\nEDIT IT FIRST", Vector2D(x_offset, y_offset+10), fontParam);
 				}
 
 				nItem++;

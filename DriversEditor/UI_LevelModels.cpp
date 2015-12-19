@@ -727,8 +727,11 @@ void CModelListRenderPanel::Redraw()
 
 					Rectangle_t name_rect(x_offset, y_offset+fSize, x_offset + fSize,y_offset + fSize + 400);
 
-					m_pFont->DrawSetColor( color4_white );
-					m_pFont->DrawTextInRect( material_name.c_str(), name_rect, 8, 8, false );
+					eqFontStyleParam_t fontParam;
+					fontParam.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+					fontParam.textColor = ColorRGBA(1,1,1,1);
+
+					m_pFont->RenderText( material_name.c_str(), name_rect.vleftTop, fontParam);
 				}
 
 				nItem++;

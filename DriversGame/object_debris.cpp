@@ -265,13 +265,13 @@ void CObject_Debris::Simulate(float fDt)
 
 					float fImpUpVel = clamp(fCarVel*0.6f, 0.5f, 7.0f);
 
-					FVector3D randPos = pair.position + Vector3D(RandomFloat(-0.8,0.8),RandomFloat(-0.8,0.8), RandomFloat(-0.8,0.8));
+					FVector3D randPos = pair.position + Vector3D(RandomFloat(-0.18,0.18),RandomFloat(-0.18,0.18), RandomFloat(-0.18,0.18));
 
-					Vector3D impulse = body->GetLinearVelocity();//*objBody->GetMass();//*-0.25f;// + Vector3D(0,fImpUpVel*objBody->GetMass(),0);
+					Vector3D impulse = body->GetLinearVelocity();
 
 					m_physBody->ApplyWorldImpulse(pair.position, impulse * 1.5f);
 
-					pCar->EmitCollisionParticles(pair.position, body->GetLinearVelocity(), pair.normal, 6, pair.appliedImpulse);
+					pCar->EmitCollisionParticles(randPos, body->GetLinearVelocity(), pair.normal, 6, pair.appliedImpulse);
 				}
 				else
 				{

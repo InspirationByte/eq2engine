@@ -86,14 +86,6 @@ bool UpdateStates( float fDt )
 	{
 		Msg("--------------------------------------------\nNo current state set, exiting loop...\n--------------------------------------------\n");
 
-		/*
-		materials->Setup2D(g_pHost->m_nWidth, g_pHost->m_nHeight);
-		g_pShaderAPI->Clear( true,true, false );
-
-		IEqFont* font = g_fontCache->GetFont("default", 0, 0);
-
-		font->DrawTextEx("UpdateStates: No state set", 5,5,30,30, TEXT_ORIENT_RIGHT, 0, true);
-		*/
 		return false;
 	}
 

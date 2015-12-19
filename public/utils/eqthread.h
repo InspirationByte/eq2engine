@@ -18,6 +18,8 @@
 
 #endif // LINUX
 
+
+
 namespace Threading
 {
 
@@ -74,6 +76,7 @@ void				SetCurrentThreadName( const char *name );
 void				Yield();
 
 uintptr_t			GetCurrentThreadID();
+uintptr_t			ThreadGetID(uintptr_t handle);
 
 //
 // Signal creation/destroying and usage
@@ -272,6 +275,7 @@ public:
 
 	const char *	GetName()				const { return m_szName.GetData(); }
 	uintptr_t		GetThreadHandle()		const { return m_nThreadHandle; }
+	uintptr_t		GetThreadID()			const { return ThreadGetID(m_nThreadHandle); }
 	bool			IsRunning()				const { return m_bIsRunning; }
 	bool			IsTerminating()			const { return m_bIsTerminating; }
 

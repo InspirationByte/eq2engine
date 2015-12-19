@@ -10,12 +10,21 @@
 #define FONT_H
 
 #include "IFont.h"
+#include <map>
 
 struct eqfontchar_t
 {
+	eqfontchar_t()
+	{
+		x0 = y0 = x1 = y1 = ofsX = ofsY = advX = ratio = 0.0f;
+	}
+
 	// rectangle
     float x0, y0;
     float x1, y1;
+
+	float ofsX,ofsY;
+	float advX;
 
 	// width ratio
     float ratio;
@@ -37,54 +46,41 @@ public:
 
 	bool					LoadFont( const char* filenamePrefix );
 
-	float					GetStringLength(const char *string, int length, bool enableWidthRatio = true) const;
-	float					GetStringLength(const wchar_t *string, int length, bool enableWidthRatio = true) const;
+	// returns string width in pixels
+	float					GetStringWidth( const wchar_t* str, int fontStyleFlags, int charCount = -1, int breakOnChar = -1) const;
+	float					GetStringWidth( const char* str, int fontStyleFlags, int charCount = -1, int breakOnChar = -1) const;
 
-	// sets color of next rendered text
-	void					DrawSetColor(const ColorRGBA &color);
-	void					DrawSetColor(float r, float g, float b, float a);
+	float					GetLineHeight() const {return m_lineHeight;}
+	float					GetBaselineOffs() const {return m_baseline;}
 
-	void					DrawText(	const char* pszText,
-								int x, int y,
-								int cw, int ch,
-								bool enableWidthRatio = true);
-
-	void					DrawTextEx(	const char* pszText,
-								int x, int y,
-								int cw, int ch,
-								ETextOrientation textOrientation = TEXT_ORIENT_RIGHT,
-								int styleFlags = 0,
-								bool enableWidthRatio = true);
-
+	// renders text (wide char)
 	void					RenderText(	const wchar_t* pszText,
-								int x, int y,
-								int cw, int ch,
+								const Vector2D& start,
 								const eqFontStyleParam_t& params);
-
-	void					DrawTextInRect(	const char* pszText,
-									Rectangle_t &clipRect, int cw, int ch, bool enableWidthRatio = true, int *nLinesCount = NULL);
+	// renders text (ASCII)
+	void					RenderText(	const char* pszText,
+								const Vector2D& start,
+								const eqFontStyleParam_t& params);
 
 protected:
 
-	// ASCII chars
-	eqfontchar_t			m_FontChars[256];
-
-	EqString				m_name;
-
-	// extended character tables (wchar_t only)
-	eqfontchar_t*			m_extChars;
-	int						m_extCharsStart;
-	int						m_extCharsLength;
-
-	float					m_spacing;
-
-	ITexture*				m_fontTexture;
-	ColorRGBA				m_textColor;
-
-	int						GetTextQuadsCount(const char *str) const;
-	int						GetTextQuadsCount(const wchar_t *str) const;
-
 	const eqfontchar_t&		GetFontCharById( const int chrId ) const;
+
+	// builds vertex buffer for characters
+	template <typename CHAR_T>
+	int						BuildCharVertexBuffer(	Vertex2D_t* dest, 
+													const CHAR_T* str, 
+													const Vector2D& startPos, 
+													const eqFontStyleParam_t& params);
+
+	template <typename CHAR_T>
+	float					_GetStringWidth( const CHAR_T* str, int fontStyleFlags, int charCount = 0, int breakOnChar = -1) const;
+
+	template <typename CHAR_T>
+	int						GetTextQuadsCount(const CHAR_T *str, int fontStyleFlags) const;
+
+	///////////////////////////////////////////////////////////////
+	// OLD DEPRECATED FUNCTIONS BELOW
 
 	int						FillTextBuffer(	Vertex2D_t *dest, 
 											const char *str, 
@@ -95,12 +91,6 @@ protected:
 											int styleFlags = 0, 
 											float fOffset = 0.0f);
 
-	int						FillTextBufferW(Vertex2D_t *dest, 
-											const wchar_t *str, 
-											float x, float y, 
-											float charWidth, float charHeight, 
-											const eqFontStyleParam_t& params);
-
 	int						RectangularFillTextBuffer(	Vertex2D_t *dest, 
 														const char *str, 
 														float x, float y, 
@@ -110,8 +100,25 @@ protected:
 														bool enableWidthRatio = true,
 														float fOffset = 0.0f);
 
-	Vertex2D_t*				m_vertexBuffer;
-	int						m_numVerts;
+	//---------------------------------------------------------
+
+	// map of chars
+	std::map<int, eqfontchar_t>	m_charMap;
+
+	float						m_spacing;
+	float						m_baseline;
+	float						m_lineHeight;
+	Vector2D					m_scale;
+
+	EqString					m_name;
+
+	ITexture*					m_fontTexture;
+	Vector2D					m_invTexSize;
+
+	ColorRGBA					m_textColor;
+
+	Vertex2D_t*					m_vertexBuffer;
+	int							m_numVerts;
 };
 
 #endif //IFONT_H

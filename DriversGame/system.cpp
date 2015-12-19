@@ -266,7 +266,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	}
 
 	// make job threads
-	g_parallelJobs->CreateJobThreads( (int)ceil((float)g_cpuCaps->GetCPUCount() / 2.0f) );
+	g_parallelJobs->Init( (int)ceil((float)g_cpuCaps->GetCPUCount() / 2.0f) );
 
 	return true;
 }
@@ -637,14 +637,16 @@ void CGameHost::Frame()
 
 	if(r_showFPS.GetBool())
 	{
-		m_pDefaultFont->DrawSetColor(1,1,1,1);
+		eqFontStyleParam_t params;
+		params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+		params.textColor = ColorRGBA(1,1,1,1);
 
 		if(fps < 30)
-			m_pDefaultFont->DrawSetColor(1,0,0,1);
+			params.textColor = ColorRGBA(1,0,0,1);
 		else if(fps < 60)
-			m_pDefaultFont->DrawSetColor(1,0.8f,0,1);
+			params.textColor = ColorRGBA(1,0.8f,0,1);
 
-		m_pDefaultFont->DrawTextEx(varargs("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps), 15,15,10,19,TEXT_ORIENT_RIGHT, TEXT_STYLE_SHADOW, false);
+		m_pDefaultFont->RenderText(varargs("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps), Vector2D(15), params);
 	}
 
 	static IEqFont* pConsoleFont = g_fontCache->GetFont("console", 0);
@@ -781,7 +783,7 @@ void CGameHost::TrapJoyButton_Event( short button, bool down)
 		GetCurrentState()->HandleKeyPress( JOYSTICK_START_KEYS + button, down );
 }
 
-void CGameHost::ProcessKeyChar( ubyte chr )
+void CGameHost::ProcessKeyChar( int chr )
 {
 	if(g_pSysConsole->IsVisible())
 	{

@@ -31,8 +31,8 @@ ConVar con_autocompletion_enable("con_autocompletion_enable","1","Enable autocom
 static CEqSysConsole s_SysConsole;
 CEqSysConsole* g_pSysConsole = &s_SysConsole;
 
-#define FONT_WIDE 9
-#define FONT_TALL 14
+#define FONT_WIDE 10 //9
+#define FONT_TALL 18 //14
 
 #define FONT_DIMS FONT_WIDE, FONT_TALL
 
@@ -308,6 +308,10 @@ void CEqSysConsole::drawFastFind(float x, float y, float w, IEqFont* fontid)
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
+	eqFontStyleParam_t helpTextParams;
+	helpTextParams.textColor = s_conHelpTextColor;
+	helpTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
+
 	if(con_Text.GetLength() > 0 && con_fastfind.GetBool())
 	{
 		const DkList<ConCommandBase*> *base = GetCvars()->GetAllCommands();
@@ -371,16 +375,14 @@ void CEqSysConsole::drawFastFind(float x, float y, float w, IEqFont* fontid)
 			}
 
 			// draw as autocompletion
-			Rectangle_t rect(x,y,w,y+14*(numLines+1));
+			Rectangle_t rect(x,y,w,y+numLines*fontid->GetLineHeight()+2);
 			DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor);
 
-			fontid->DrawSetColor( s_conHelpTextColor );
-			fontid->DrawTextInRect(string_to_draw.GetData(), rect, FONT_DIMS, false);
+			fontid->RenderText(string_to_draw.GetData(), rect.GetLeftTop() + Vector2D(5,4), helpTextParams);
 
 			// draw autocompletion if available
-			commandinfo_size += DrawAutoCompletion(x, y+14*(numLines+1)+4, w, fontid);
+			commandinfo_size += DrawAutoCompletion(x, rect.vrightBottom.y, w, fontid);
 			commandinfo_size += numLines+1;
-			//return;
 
 			if(enumcount <= 1)
 				return;
@@ -392,21 +394,16 @@ void CEqSysConsole::drawFastFind(float x, float y, float w, IEqFont* fontid)
 		if(ff_numelems <= 0)
 			return;
 
-		y += 14*(commandinfo_size)+8;
+		y += fontid->GetLineHeight()*commandinfo_size;
 
-		Rectangle_t rect(x,y,w,y+14*(enumcount+1));
+		Rectangle_t rect(x,y,w,y+enumcount*fontid->GetLineHeight()+2);
 		DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor);
 
 		if(ff_numelems >= con_fastfind_count.GetInt()-1)
 		{
 			// Set color
-			fontid->DrawSetColor( s_conHelpTextColor );
-
-			float textYPos = y+8;
-
-			char *str = varargs("%d commands found (too many to show here)", ff_numelems);
-
-			fontid->DrawText(str, x+5,textYPos, FONT_DIMS, false);
+			char* str = varargs("%d commands found (too many to show here)", ff_numelems);
+			fontid->RenderText(str, rect.GetLeftTop() + Vector2D(5,4), helpTextParams);
 
 			return;
 		}
@@ -433,7 +430,7 @@ void CEqSysConsole::drawFastFind(float x, float y, float w, IEqFont* fontid)
 				if(base->ptr()[i]->GetFlags() & CV_INVISIBLE)
 					continue;
 
-				float textYPos = (y + 14*enumcount2) + 4;
+				float textYPos = (y + enumcount2 * fontid->GetLineHeight()) + 4;
 
 				enumcount2++;
 
@@ -464,42 +461,52 @@ void CEqSysConsole::drawFastFind(float x, float y, float w, IEqFont* fontid)
 
 				Vector4D selTextColor = bSelected ? Vector4D(0.1f,0.1f,0,1) : text_color;
 
-				// Set color
-				fontid->DrawSetColor(selTextColor);
+				eqFontStyleParam_t variantsTextParams;
+				variantsTextParams.textColor = selTextColor;
+				variantsTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
 
 				if(base->ptr()[i]->IsConVar())
 				{
 					ConVar *cv = (ConVar*)base->ptr()[i];
-					char str[256];
-
+					char* str = NULL;
 
 					if(bHasAutocompletion)
-						sprintf(str,"%s [%s] ->", cv->GetName(), cv->GetString());
+						str = varargs("%s [%s] ->", cv->GetName(), cv->GetString());
 					else
-						sprintf(str,"%s [%s]",cv->GetName(), cv->GetString());
+						str = varargs("%s [%s]",cv->GetName(), cv->GetString());
 
-					fontid->DrawText(str,x+5,textYPos,FONT_DIMS, false);
+					fontid->RenderText( str, Vector2D(x+5, textYPos),variantsTextParams);
 				}
 				else
 				{
 					if(!bHasAutocompletion)
 					{
-						fontid->DrawText(varargs("%s ()",base->ptr()[i]->GetName()),x+5,textYPos,FONT_DIMS, false);
+						char* str = varargs("%s ()",base->ptr()[i]->GetName());
+
+						fontid->RenderText( str, Vector2D(x+5, textYPos),variantsTextParams);
 					}
 					else
 					{
-						fontid->DrawText(varargs("%s ->",base->ptr()[i]->GetName()),x+5,textYPos,FONT_DIMS, false);
+						char* str = varargs("%s ()",base->ptr()[i]->GetName());
+
+						fontid->RenderText( str, Vector2D(x+5, textYPos),variantsTextParams);
 					}
 				}
 
-				const char *cstr = xstristr(base->ptr()[i]->GetName(), con_Text.GetData());
+				const char* cvarName = base->ptr()[i]->GetName();
+
+				const char* cstr = xstristr(cvarName, con_Text.GetData());
 
 				if(cstr)
 				{
 					int ofs = cstr - base->ptr()[i]->GetName();
 					int len = con_Text.GetLength();
 
-					Vertex2D_t rect[] = { MAKETEXQUAD(x+5+ofs*FONT_WIDE, textYPos, x+5+(ofs+len)*FONT_WIDE, textYPos+FONT_TALL, 0) };
+					float lookupStrStart = fontid->GetStringWidth(cvarName, variantsTextParams.styleFlag, ofs);
+					float lookupStrEnd = lookupStrStart + fontid->GetStringWidth(cvarName+ofs, variantsTextParams.styleFlag, len);
+
+					Vertex2D_t rect[] = { MAKETEXQUAD(x+5 + lookupStrStart, textYPos-2, x+5 + lookupStrEnd, textYPos+12, 0) };
+
 					// Cancel textures
 					g_pShaderAPI->Reset();
 
@@ -561,16 +568,18 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w, IEqFont* fontid
 		if(enumcount <= 0)
 			return 0;
 
+		eqFontStyleParam_t variantsTextParams;
+		variantsTextParams.textColor = s_conInputTextColor;
+		variantsTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
+
 		enumcount++;
 
 		// draw as autocompletion
-		Rectangle_t rect(x,y,x+max_string_length*FONT_WIDE,y+14*enumcount);
+		Rectangle_t rect(x,y,x+max_string_length*FONT_WIDE,y+enumcount*fontid->GetLineHeight());
 		DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor);
 
-		fontid->DrawSetColor(s_conInputTextColor);
-		fontid->DrawText("Possible variants: ",x+5,y,FONT_DIMS, false);
+		fontid->RenderText("Possible variants: ", Vector2D(x+5,y+2), variantsTextParams);
 
-		fontid->DrawSetColor(s_conHelpTextColor);
 		
 
 		for(int i = 0; i < base->numElem();i++)
@@ -590,26 +599,19 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w, IEqFont* fontid
 
 					for(int k = 0;k < m_hAutoCompletionNodes[j]->args.numElem();k++)
 					{
-						float textYPos = (y + 14*enumcount2);
+						float textYPos = (y + enumcount2*fontid->GetLineHeight());
 
 						enumcount2++;
 
 						bool bSelected = false;
 
-						if(IsInRectangle(mousePosition.x,mousePosition.y,x,textYPos+2,(max_string_length*FONT_WIDE)-x,12))
+						if(IsInRectangle(mousePosition.x,mousePosition.y,
+										x,textYPos,(max_string_length*FONT_WIDE)-x,12))
 						{
-							Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos,x+max_string_length*FONT_WIDE, textYPos + 14 , 1) };
+							Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos-4,x+max_string_length*FONT_WIDE, textYPos + 14 , 1) };
 
 							// Cancel textures
 							g_pShaderAPI->Reset(STATE_RESET_TEX);
-
-							// Set color
-							//g_pShaderAPI->DrawSetColor(1.0f, 1.0f, 1.0f, 0.8f);
-
-							// Set alpha,rasterizer and depth parameters
-							//g_pShaderAPI->ChangeBlendingEx(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD,false,0.9f);
-							//g_pShaderAPI->ChangeRasterStateEx(CULL_NONE,FILL_SOLID);
-							//g_pShaderAPI->ChangeDepthStateEx(false,false);
 
 							// Draw the rectangle
 							materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,selrect,elementsOf(selrect));
@@ -623,8 +625,8 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w, IEqFont* fontid
 
 						Vector4D selTextColor = bSelected ? s_conSelectedTextColor : s_conTextColor;
 
-						fontid->DrawSetColor( selTextColor );
-						fontid->DrawText(m_hAutoCompletionNodes[j]->args[k].GetData(),x+5,textYPos,FONT_DIMS, false);
+						variantsTextParams.textColor = selTextColor;
+						fontid->RenderText(m_hAutoCompletionNodes[j]->args[k].GetData(), Vector2D(x+5,textYPos), variantsTextParams);
 					}
 				}
 			}
@@ -655,20 +657,18 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, IEqFont* fon
 
 	int drawstart = conLinePosition;
 
-
-
 	if(conLinePosition > GetAllMessages()->numElem())
 		conLinePosition = GetAllMessages()->numElem();
 
 	if(!bShowConsole)
 		return;
 
-	drawcount = (int)(height / 16) -2;
+	drawcount = (int)(height / font->GetLineHeight()) -2;
 
 	if(drawcount < -4)
 		return;
 
-	int drawending = (-drawstart*16) + 16 * (drawcount+drawstart);
+	int drawending = (-drawstart*font->GetLineHeight()) + font->GetLineHeight() * (drawcount+drawstart);
 
 	int draws = 0;
 
@@ -683,9 +683,6 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, IEqFont* fon
 		// Cancel textures
 		g_pShaderAPI->Reset();
 
-		// Set color
-		//g_pShaderAPI->DrawSetColor(color);
-
 		// Set alpha,rasterizer and depth parameters
 		materials->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO);
 		materials->SetRasterizerStates(CULL_FRONT,FILL_SOLID);
@@ -697,11 +694,9 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, IEqFont* fon
 		// render slider
 	}
 
-	Rectangle_t frame_rect(64, 26, width-64,46);
+	Rectangle_t inputTextEntryRect(64, 26, width-64,46);
 
-	Rectangle_t con_outputRectangle(64,frame_rect.vrightBottom.y+26, width - 64, height-frame_rect.vleftTop.y);
-
-	DrawAlphaFilledRectangle(frame_rect, s_conInputBackColor, s_conBorderColor);
+	Rectangle_t con_outputRectangle(64,inputTextEntryRect.vrightBottom.y+26, width - 64, height-inputTextEntryRect.vleftTop.y);
 
 	if(con_full_enabled)
 	{
@@ -711,35 +706,39 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, IEqFont* fon
 
 		int numRenderLines = GetAllMessages()->numElem();
 
-		drawcount = (con_outputRectangle.GetSize().y / 16);
+		drawcount = (con_outputRectangle.GetSize().y / font->GetLineHeight())-1;
 
 		int numDrawn = 0;
 
+		eqFontStyleParam_t outputTextStyle;
+
+		con_outputRectangle.vleftTop.x += 5.0f;
+		con_outputRectangle.vleftTop.y += font->GetLineHeight();
+
 		for(int i = drawstart; i < numRenderLines; i++, numDrawn++)
 		{
-			font->DrawSetColor(GetAllMessages()->ptr()[i]->color);
-			font->DrawTextInRect((char *) (const char *)GetAllMessages()->ptr()[i]->text,con_outputRectangle,FONT_DIMS,false,&cnumLines);
+			outputTextStyle.textColor = GetAllMessages()->ptr()[i]->color;
 
-			con_outputRectangle.vleftTop.y += 16*cnumLines;
+			//font->DrawTextInRect((char *) (const char *)GetAllMessages()->ptr()[i]->text,con_outputRectangle,FONT_DIMS,false,&cnumLines);
+			font->RenderText(GetAllMessages()->ptr()[i]->text, con_outputRectangle.vleftTop, outputTextStyle);
+
+			con_outputRectangle.vleftTop.y += font->GetLineHeight();//cnumLines;
 
 			if(i-drawstart >= drawcount)
 			{
-				font->DrawSetColor(ColorRGBA(0.5f,0.5f,1.0f,1.0f));
+				outputTextStyle.textColor = ColorRGBA(0.5f,0.5f,1.0f,1.0f);
 
-				font->DrawText("^ ^ ^ ^ ^ ^", con_outputRectangle.vleftTop.x, con_outputRectangle.vrightBottom.y-16, FONT_DIMS, false);
+				font->RenderText("^ ^ ^ ^ ^ ^", Vector2D(con_outputRectangle.vleftTop.x, con_outputRectangle.vrightBottom.y), outputTextStyle);
 
 				break;
 			}
 		}
 	}
 
-	drawFastFind( 128,frame_rect.vleftTop.y+25, width-128,font );
+	drawFastFind( 128, inputTextEntryRect.vleftTop.y+25, width-128, font );
 
-	char* con_str = CONSOLE_INPUT_STARTSTR;
-	int con_str_len = strlen(con_str);
-
-	EqString conDraw(con_str);
-	conDraw.Append(con_Text);
+	EqString conInputStr(CONSOLE_INPUT_STARTSTR);
+	conInputStr.Append(con_Text);
 
 	static bool con_showcursor = false;
 
@@ -749,30 +748,41 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, IEqFont* fon
 		con_cursorTime = curTime + con_cursortime.GetFloat();
 	}
 
-	font->DrawSetColor( s_conInputTextColor );
-	g_pShaderAPI->Apply();
+	DrawAlphaFilledRectangle(inputTextEntryRect, s_conInputBackColor, s_conBorderColor);
 
-	font->DrawText(conDraw.GetData(),64,frame_rect.vleftTop.y+4,FONT_DIMS, false);
+	eqFontStyleParam_t inputTextStyle;
+	inputTextStyle.textColor = s_conInputTextColor;
 
-	float con_strl = font->GetStringLength((char*)con_Text.GetData(),con_cursorPos, false) * FONT_WIDE;
-	float con_specLen = font->GetStringLength(con_str,con_str_len, false) * FONT_WIDE;
+	Vector2D inputTextPos(inputTextEntryRect.vleftTop.x+4, inputTextEntryRect.vrightBottom.y-6);
 
+	// render input text
+	font->RenderText(conInputStr.c_str(), inputTextPos, inputTextStyle);
+
+	float inputGfxOfs = font->GetStringWidth(CONSOLE_INPUT_STARTSTR, inputTextStyle.styleFlag);
+	float cursorPosition = inputGfxOfs + font->GetStringWidth(con_Text.c_str(), inputTextStyle.styleFlag, con_cursorPos);
+	
+	// render selection
 	if(con_cursorPos_locked != -1)
 	{
-		float con_selpos = font->GetStringLength((char*)con_Text.GetData(),con_cursorPos_locked, false) * FONT_WIDE;
+		float selStartPosition = inputGfxOfs + font->GetStringWidth(con_Text.c_str(), inputTextStyle.styleFlag, con_cursorPos_locked);
 
-		Vertex2D_t rect[] = { MAKETEXQUAD(con_specLen + con_selpos + 64, frame_rect.vleftTop.y+4,con_strl + con_specLen + 64, frame_rect.vleftTop.y+17, 0) };
+		Vertex2D_t rect[] = { MAKETEXQUAD(	inputTextPos.x + selStartPosition, 
+											inputTextPos.y - 10, 
+											inputTextPos.x + cursorPosition, 
+											inputTextPos.y + 4, 0) };
 		// Cancel textures
 		g_pShaderAPI->Reset();
 
 		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), NULL, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
 	}
-
+	
+	// render cursor
 	if(con_showcursor)
 	{
-		float con_selpos = font->GetStringLength((char*)con_Text.GetData(),con_cursorPos, false) * FONT_WIDE;
-
-		Vertex2D_t rect[] = { MAKETEXQUAD(con_specLen + con_selpos + 64, frame_rect.vleftTop.y+4,con_specLen + con_selpos + 64 + 1, frame_rect.vleftTop.y+17, 0) };
+		Vertex2D_t rect[] = { MAKETEXQUAD(	inputTextPos.x + cursorPosition, 
+											inputTextPos.y - 10,
+											inputTextPos.x + cursorPosition + 1, 
+											inputTextPos.y + 4, 0) };
 
 		// Cancel textures
 		g_pShaderAPI->Reset();
@@ -780,10 +790,11 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, IEqFont* fon
 		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), NULL, ColorRGBA(1.0f), &blending);
 	}
 
-	font->DrawSetColor(ColorRGBA(1,1,1,0.5f));
+	eqFontStyleParam_t versionTextStl;
+	versionTextStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+	versionTextStl.textColor = ColorRGBA(1,1,1,0.5f);
 
-	font->DrawTextEx( CONSOLE_ENGINEVERSION_STR, 5, 5, FONT_WIDE, FONT_TALL, TEXT_ORIENT_RIGHT, TEXT_STYLE_SHADOW, false);
-
+	font->RenderText( CONSOLE_ENGINEVERSION_STR, Vector2D(5,5), versionTextStl);
 }
 
 void CEqSysConsole::MousePos(const Vector2D &pos)
@@ -791,7 +802,7 @@ void CEqSysConsole::MousePos(const Vector2D &pos)
 	mousePosition = pos;
 }
 
-void CEqSysConsole::KeyChar(ubyte ch)
+void CEqSysConsole::KeyChar(int ch)
 {
 	if(bShowConsole)
 	{
@@ -802,16 +813,19 @@ void CEqSysConsole::KeyChar(ubyte ch)
 		if(ch == '~')
 			return;
 
-		// THis is a weird thing
-		if((((CFont*)con_font)->m_FontChars[ch].ratio != 0.0f) && ch != '`')
-		{
-			con_cursorPos+=1;
+		CFont* cFont = (CFont*)con_font;
 
+		if(ch )
+
+		// THis is a weird thing
+		if(cFont->GetFontCharById(ch).advX > 0.0f && ch != '`')
+		{
 			char text[2];
 			text[0] = ch;
 			text[1] = 0;
 
-			con_Text.Insert( text, con_cursorPos-1);
+			con_Text.Insert( text, con_cursorPos);
+			con_cursorPos += 1;
 		}
 	}
 }

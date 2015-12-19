@@ -5,10 +5,8 @@
 // Description: Equilibrium Engine threads
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "Platform.h"
-#include "DebugInterface.h"
-
 #include "eqthread.h"
+#include "DebugInterface.h"
 
 namespace Threading
 {
@@ -102,6 +100,11 @@ uintptr_t ThreadCreate( threadfunc_t fnThread, void* pThreadParams, ThreadPriori
 uintptr_t GetCurrentThreadID()
 {
 	return GetCurrentThreadId();
+}
+
+uintptr_t ThreadGetID(uintptr_t handle)
+{
+	return (uintptr_t)GetThreadId((HANDLE)handle);
 }
 
 void ThreadDestroy( uintptr_t threadHandle )

@@ -38,12 +38,14 @@ enum ETextOrientation
 
 enum ETextStyleFlag
 {
-	TEXT_STYLE_SHADOW		= (1 << 0),
-	TEXT_STYLE_WIDTHRATIO	= (1 << 1),
+	TEXT_STYLE_SHADOW		= (1 << 0), // render a shadow
+	TEXT_STYLE_MONOSPACE	= (1 << 1), // act as monospace, don't use advX
+	TEXT_STYLE_FROM_CAP		= (1 << 2),	// offset from cap height instead of baseline
+	TEXT_STYLE_USE_TAGS		= (1 << 3),	// use additional styling tags defined in the translated text
 
-	TEXT_STYLE_CENTER		= (1 << 2),	// legacy flag
-
+	//
 	// font cache only flags
+	//
 	TEXT_STYLE_REGULAR		= 0,
 	TEXT_STYLE_BOLD			= (1 << 8),
 	TEXT_STYLE_ITALIC		= (1 << 9),
@@ -63,7 +65,7 @@ struct eqFontStyleParam_t
 	{
 		align = TEXT_ALIGN_LEFT;
 		orient = TEXT_ORIENT_RIGHT;
-		styleFlag = TEXT_STYLE_WIDTHRATIO;
+		styleFlag = 0;
 
 		textColor = ColorRGBA(1.0f);
 
@@ -88,44 +90,27 @@ class IEqFont
 public:
 	virtual ~IEqFont() {}
 
-	// sets color of next rendered text
-	virtual void		DrawSetColor(const ColorRGBA &color) = 0;
-	virtual void		DrawSetColor(float r, float g, float b, float a) = 0;
+	// returns string width in pixels
+	virtual float				GetStringWidth( const wchar_t* str, int styleFlags, int charCount = -1, int breakOnChar = -1) const = 0;
 
-	// Draw text
-	virtual void		DrawText(	const char* pszText,
-									int x, int y,
-									int lw, int lh,
-									bool enableWidthRatio = true) = 0;
+	// returns string width in pixels
+	virtual float				GetStringWidth( const char* str, int styleFlags, int charCount = -1, int breakOnChar = -1) const = 0;
 
-	// Draws text with orientatoin
-	virtual void		DrawTextEx(	const char* pszText,
-									int x, int y,
-									int lw, int lh,
-									ETextOrientation textOrientation = TEXT_ORIENT_RIGHT,
-									int styleFlags = 0,
-									bool enableWidthRatio = true) = 0;
+	// returns font line height in pixels
+	virtual float				GetLineHeight() const = 0;
 
-	// Renders text
-	virtual void		RenderText(	const wchar_t* pszText,
-									int x, int y,
-									int lw, int lh,
-									const eqFontStyleParam_t& params) = 0;
+	// returns font baseline offset in pixels
+	virtual float				GetBaselineOffs() const = 0;
 
-	// Draw text in rectange:
-	//Rectangle_t rect(512,512,512+100,512+25);
-	//DrawTextInRect("This is a long text that cannot be in rectangle",rect,17,17);
-	virtual void		DrawTextInRect(	const char* pszText,
-										Rectangle_t &clipRect,
-										int lw, int lh,
-										bool enableWidthRatio = true,
-										int *nLinesCount = NULL) = 0;
+	// renders text
+	virtual void				RenderText(	const wchar_t* pszText,
+											const Vector2D& start,
+											const eqFontStyleParam_t& params) = 0;
 
-	// Returns the string length by it's width ratio
-	virtual float		GetStringLength(const char *string, int length, bool enableWidthRatio = true) const = 0;
-
-	// Returns the string length by it's width ratio
-	virtual float		GetStringLength(const wchar_t *string, int length, bool enableWidthRatio = true) const = 0;
+	// renders text
+	virtual void				RenderText(	const char* pszText,
+											const Vector2D& start,
+											const eqFontStyleParam_t& params) = 0;
 };
 
 #endif //IFONT_H

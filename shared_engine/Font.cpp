@@ -25,11 +25,8 @@ TODO:
 #include <stdlib.h>
 
 #pragma todo("Rework font system - Add generator, better rotation support, effects, and text alignment/bounding")
-#pragma fixme("Use codepages instead of extended character range")
 
 #define FONT_DEFAULT_PATH "resources/fonts/"
-
-ConVar ui_debugfonts("ui_debugfonts", "0", "Enable font debug recangles drawing.", CV_CHEAT);
 
 enum ECharMode
 {
@@ -43,6 +40,14 @@ enum ETextTagType
 	TEXT_TAG_COLOR,
 };
 
+bool IsVisibleChar( int ch )
+{
+	return	(ch != '\n') && 
+			(ch != '\r');
+}
+
+//-----------------------------------------------------------------------------------------
+
 CFont::CFont()
 {
 	m_vertexBuffer = NULL;
@@ -52,16 +57,15 @@ CFont::CFont()
 	m_textColor = color4_white;
 	m_spacing = 0.0f;
 
-	memset(m_FontChars,0,sizeof(m_FontChars));
-	m_extChars = NULL;
+	m_baseline = 0.0f;
+	m_lineHeight = 0.0f;
+	m_scale = Vector2D(1.0f);
 }
 
 CFont::~CFont()
 {
 	if( m_vertexBuffer )
 		free( m_vertexBuffer );
-
-	delete [] m_extChars;
 }
 
 const char*	CFont::GetName() const
@@ -69,45 +73,38 @@ const char*	CFont::GetName() const
 	return m_name.c_str();
 }
 
-//
-// String length in screen units
-//
-float CFont::GetStringLength(const char *string, int length, bool enableWidthRatio) const
+float CFont::GetStringWidth( const char* str, int fontStyleFlags, int charCount, int breakOnChar) const
 {
-    if (length < 0)
-		length = strlen(string);
+    if (charCount < 0)
+		charCount = strlen(str);
 
-    float len = 0;
-
-    for (register int i = 0; i < length; i++)
-	{
-		if(enableWidthRatio)
-			len += m_FontChars[(ubyte)string[i]].ratio;
-		else
-			len += 1.0f;
-	}
-
-    return len;
+	return _GetStringWidth(str, fontStyleFlags, charCount, breakOnChar);
 }
 
-//
-// String length in screen units - wide char with tag support
-//
-float CFont::GetStringLength(const wchar_t *string, int length, bool enableWidthRatio) const
+float CFont::GetStringWidth( const wchar_t* str, int fontStyleFlags, int charCount, int breakOnChar) const
 {
-    if (length < 0)
-		length = wcslen(string);
+    if (charCount < 0)
+		charCount = wcslen(str);
 
-    float len = 0;
+	return _GetStringWidth(str, fontStyleFlags, charCount, breakOnChar);
+}
 
+template <typename CHAR_T>
+float CFont::_GetStringWidth( const CHAR_T* str, int styleFlags, int charCount, int breakOnChar) const
+{
+    float totalWidth = 0.0f;
+
+	// parse
 	int charMode = CHARMODE_NORMAL;
 
-    for (register int i = 0; i < length; i++)
+    for(int i = 0; i < charCount; i++)
 	{
-		int charIdx = string[i];
+		int charIdx = str[i];
 
 		// skip fasttags
-		if( charMode == CHARMODE_NORMAL && charIdx == '&')
+		if( (styleFlags & TEXT_STYLE_USE_TAGS) &&
+			charMode == CHARMODE_NORMAL &&
+			charIdx == '&')
 		{
 			charMode = CHARMODE_TAG;
 			continue;
@@ -121,27 +118,35 @@ float CFont::GetStringLength(const wchar_t *string, int length, bool enableWidth
 			continue;
 		}
 
-		if(enableWidthRatio)
-		{
-			const eqfontchar_t& chr = GetFontCharById( string[i] );
+		if(breakOnChar != -1 && charIdx == breakOnChar)
+			break;
 
-			len += chr.ratio;
-		}
+		if(!IsVisibleChar(charIdx))
+			continue;
+
+		const eqfontchar_t& chr = GetFontCharById( charIdx );
+
+		if( styleFlags & TEXT_STYLE_MONOSPACE)
+			totalWidth += chr.x1-chr.x0;
 		else
-			len += 1.0f;
+			totalWidth += chr.advX; // chr.x1-chr.x0;
 	}
 
-    return len;
+    return totalWidth;
 }
 
 //
 // Fills text buffer and processes tags
 //
-int CFont::FillTextBufferW(Vertex2D_t *dest, const wchar_t *str, float x, float y, float charWidth, float charHeight, const eqFontStyleParam_t& params)
+template <typename CHAR_T>
+int CFont::BuildCharVertexBuffer(Vertex2D_t *dest, const CHAR_T* str, const Vector2D& textPos, const eqFontStyleParam_t& params)
 {
 	int numVertsToDraw = 0;
 
-	float startx = x;
+	Vector2D startPos = textPos;
+
+	bool hasNewLine = true;
+	bool isFirst = true;
 
 	DkLinkedList<eqFontStyleParam_t> states;
 	states.addLast( params );	// push this param
@@ -156,12 +161,13 @@ int CFont::FillTextBufferW(Vertex2D_t *dest, const wchar_t *str, float x, float 
 		int charIdx = *str;
 
 		states.goToLast();
-		eqFontStyleParam_t stateParams = states.getCurrent();
+		const eqFontStyleParam_t& stateParams = states.getCurrent();
 
 		//
-		// fast tags support
+		// Preprocessing part - text color and mode
 		//
-		if( charMode == CHARMODE_NORMAL &&
+		if( (params.styleFlag & TEXT_STYLE_USE_TAGS) && 
+			charMode == CHARMODE_NORMAL &&
 			charIdx == '&')
 		{
 			charMode = CHARMODE_TAG;
@@ -225,71 +231,103 @@ int CFont::FillTextBufferW(Vertex2D_t *dest, const wchar_t *str, float x, float 
 		}
 
 		//
-		// Text filling
+		// reset startpos
 		//
-
-		const eqfontchar_t& chr = GetFontCharById(charIdx);
-
-		float cw = charWidth;
-		float ch = charHeight;
-
-		if(stateParams.styleFlag & TEXT_STYLE_WIDTHRATIO)
-			cw *= chr.ratio;
-
-		if (*str == L'\n')
+		if(hasNewLine)
 		{
-			switch(stateParams.orient)
+			if(!isFirst)
 			{
-				case TEXT_ORIENT_UP:
-				case TEXT_ORIENT_DOWN:
-				{
-					continue;
-				}
-				case TEXT_ORIENT_RIGHT:
-				default:
-				{
-					y += charHeight;
-					x = startx;
-				}
+				// TODO: handle text style newline
+				startPos.y += m_lineHeight;
 			}
 
+			startPos.x = textPos.x;
+
+			// calc start position for first time
+			if( params.align != TEXT_ALIGN_LEFT )
+			{
+				float strWidth = GetStringWidth(str, params.styleFlag, -1, L'\n');
+
+				if(params.align == TEXT_ALIGN_CENTER)
+					startPos.x -= strWidth * 0.5f;
+				else if(params.align == TEXT_ALIGN_RIGHT)
+					startPos.x -= strWidth;
+			}
+
+			hasNewLine = false;
+			isFirst = false;
+		}
+
+		if (charIdx == '\n')	// NEWLINE
+		{
+			hasNewLine = true;
+			str++;
+
+			continue;
+		}
+
+		if(!IsVisibleChar(charIdx))
+		{
 			str++;
 			continue;
 		}
 
+
+		//
+		// Render part - text filling
+		//
+		const eqfontchar_t& chr = GetFontCharById(charIdx);
+
+		float x,y;
+		float cw,ch;
+
+		x = startPos.x + chr.ofsX;
+		y = startPos.y - m_baseline + chr.ofsY;
+
+		cw = chr.x1-chr.x0;
+		ch = chr.y1-chr.y0;
+
+		if(stateParams.styleFlag & TEXT_STYLE_FROM_CAP)
+		{
+			y = startPos.y - (ch-m_baseline) + chr.ofsY;
+		}
+
 		dest[0].m_vPosition = Vector2D(x, y);
-		dest[0].m_vTexCoord = Vector2D(chr.x0, chr.y0);
+		dest[0].m_vTexCoord = Vector2D(chr.x0, chr.y0)*m_invTexSize;
 		dest[1].m_vPosition = Vector2D(x + cw, y);
-		dest[1].m_vTexCoord = Vector2D(chr.x1, chr.y0);
-		dest[2].m_vPosition = Vector2D(x, y + charHeight);
-		dest[2].m_vTexCoord = Vector2D(chr.x0, chr.y1);
+		dest[1].m_vTexCoord = Vector2D(chr.x1, chr.y0)*m_invTexSize;
+		dest[2].m_vPosition = Vector2D(x, y + ch);
+		dest[2].m_vTexCoord = Vector2D(chr.x0, chr.y1)*m_invTexSize;
 
-		dest[3].m_vPosition = Vector2D(x, y + charHeight);
-		dest[3].m_vTexCoord = Vector2D(chr.x0, chr.y1);
+		dest[3].m_vPosition = Vector2D(x, y + ch);
+		dest[3].m_vTexCoord = Vector2D(chr.x0, chr.y1)*m_invTexSize;
 		dest[4].m_vPosition = Vector2D(x + cw, y);
-		dest[4].m_vTexCoord = Vector2D(chr.x1, chr.y0);
-		dest[5].m_vPosition = Vector2D(x + cw, y + charHeight);
-		dest[5].m_vTexCoord = Vector2D(chr.x1, chr.y1);
+		dest[4].m_vTexCoord = Vector2D(chr.x1, chr.y0)*m_invTexSize;
+		dest[5].m_vPosition = Vector2D(x + cw, y + ch);
+		dest[5].m_vTexCoord = Vector2D(chr.x1, chr.y1)*m_invTexSize;
 
-		dest[0].m_vColor = m_textColor*stateParams.textColor;
-		dest[1].m_vColor = m_textColor*stateParams.textColor;
-		dest[2].m_vColor = m_textColor*stateParams.textColor;
-		dest[3].m_vColor = m_textColor*stateParams.textColor;
-		dest[4].m_vColor = m_textColor*stateParams.textColor;
-		dest[5].m_vColor = m_textColor*stateParams.textColor;
+		dest[0].m_vColor = stateParams.textColor;
+		dest[1].m_vColor = stateParams.textColor;
+		dest[2].m_vColor = stateParams.textColor;
+		dest[3].m_vColor = stateParams.textColor;
+		dest[4].m_vColor = stateParams.textColor;
+		dest[5].m_vColor = stateParams.textColor;
 
 		switch(stateParams.orient)
 		{
 			case TEXT_ORIENT_UP:
 			case TEXT_ORIENT_DOWN:
 			{
-				y += (stateParams.orient == TEXT_ORIENT_DOWN) ? (ch+m_spacing) : -(ch+m_spacing);
+				startPos.y += (stateParams.orient == TEXT_ORIENT_DOWN) ? (m_lineHeight+m_spacing) : -(m_lineHeight+m_spacing);
 				break;
 			}
 			case TEXT_ORIENT_RIGHT:
 			default:
 			{
-				x += cw+m_spacing;
+				if(stateParams.styleFlag & TEXT_STYLE_MONOSPACE)
+					startPos.x += cw+m_spacing;
+				else
+					startPos.x += chr.advX + m_spacing;
 			}
 		}
 
@@ -306,45 +344,82 @@ int CFont::FillTextBufferW(Vertex2D_t *dest, const wchar_t *str, float x, float 
 //
 // Renders new styled tagged text - wide chars only
 //
-void CFont::RenderText(const wchar_t* pszText,int x, int y, int cw, int ch, const eqFontStyleParam_t& params)
+void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFontStyleParam_t& params)
 {
-	int n = 6 * GetTextQuadsCount(pszText);
-	if (n == 0)
+	int vertCount = GetTextQuadsCount(pszText, params.styleFlag) * 6;
+	if (vertCount == 0)
 		return;
 
-	if (n > m_numVerts)
+	// realloc buffer if needed
+	if (vertCount > m_numVerts)
 	{
-		Vertex2D_t* newBuf = (Vertex2D_t *) realloc(m_vertexBuffer, n * sizeof(Vertex2D_t));
+		Vertex2D_t* newBuf = (Vertex2D_t *) realloc(m_vertexBuffer, vertCount * sizeof(Vertex2D_t));
 
 		if(newBuf)
 		{
 			m_vertexBuffer = newBuf;
-			m_numVerts = n;
+			m_numVerts = vertCount;
 		}
 	}
 
-	if( params.align != TEXT_ALIGN_LEFT )
-	{
-		float strWidth = GetStringLength(pszText, -1, (params.styleFlag & TEXT_STYLE_WIDTHRATIO));
-
-		if(params.align == TEXT_ALIGN_CENTER)
-		{
-			x -= strWidth * cw * 0.5f;
-		}
-		else if(params.align == TEXT_ALIGN_RIGHT)
-		{
-			x -= strWidth * cw;
-		}
-	}
-
-	int numVertsToDraw = FillTextBufferW(m_vertexBuffer, pszText, x, y, cw, ch,params);
+	// first we building vertex buffer
+	int numVertsToDraw = BuildCharVertexBuffer(m_vertexBuffer, pszText, start, params);
 
 	ASSERTMSG(numVertsToDraw <= m_numVerts, varargs("Font:RenderText error: numVertsToDraw > m_numVerts (%d > %d)", numVertsToDraw, m_numVerts));
 
+	//
+	// FFP render part
+	//
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 	
+	// draw shadow
+	if(params.styleFlag & TEXT_STYLE_SHADOW)
+	{
+		materials->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));
+		materials->DrawPrimitives2DFFP(PRIM_TRIANGLES, m_vertexBuffer, numVertsToDraw, m_fontTexture, ColorRGBA(0,0,0,params.shadowAlpha), &blending);
+	}
+
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+	materials->DrawPrimitives2DFFP(PRIM_TRIANGLES, m_vertexBuffer, numVertsToDraw, m_fontTexture, color4_white, &blending);
+}
+
+//
+// Renders new styled tagged text - wide chars only
+//
+void CFont::RenderText(const char* pszText, const Vector2D& start, const eqFontStyleParam_t& params)
+{
+	int vertCount = GetTextQuadsCount(pszText, params.styleFlag) * 6;
+	if (vertCount == 0)
+		return;
+
+	// realloc buffer if needed
+	if (vertCount > m_numVerts)
+	{
+		Vertex2D_t* newBuf = (Vertex2D_t *) realloc(m_vertexBuffer, vertCount * sizeof(Vertex2D_t));
+
+		if(newBuf)
+		{
+			m_vertexBuffer = newBuf;
+			m_numVerts = vertCount;
+		}
+	}
+
+	// first we building vertex buffer
+	int numVertsToDraw = BuildCharVertexBuffer(m_vertexBuffer, pszText, start, params);
+
+	ASSERTMSG(numVertsToDraw <= m_numVerts, varargs("Font:RenderText error: numVertsToDraw > m_numVerts (%d > %d)", numVertsToDraw, m_numVerts));
+
+	//
+	// FFP render part
+	//
+	BlendStateParam_t blending;
+	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
+	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+	
+	// draw shadow
 	if(params.styleFlag & TEXT_STYLE_SHADOW)
 	{
 		materials->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));
@@ -361,23 +436,20 @@ void CFont::RenderText(const wchar_t* pszText,int x, int y, int cw, int ch, cons
 //
 const eqfontchar_t& CFont::GetFontCharById( const int chrId ) const
 {
-	if(chrId > 255)
-	{
-		if(chrId >= m_extCharsStart && chrId <= m_extCharsStart+m_extCharsLength)
-		{
-			return m_extChars[chrId-m_extCharsStart];
-		}
-		else
-			return m_FontChars[' '];
-	}
-	else
-		return m_FontChars[chrId];
+	static eqfontchar_t null_default;
+
+	if(m_charMap.count(chrId) == 0)
+		return null_default;
+	
+	// Presonally, I hate exceptions bullshit
+	return m_charMap.at(chrId);
 }
 
 //
 // returns maximum of possible quads to be allocated
 //
-int CFont::GetTextQuadsCount(const wchar_t *str) const
+template <typename CHAR_T>
+int CFont::GetTextQuadsCount(const CHAR_T* str, int styleFlags) const
 {
 	int n = 0;
 
@@ -387,7 +459,9 @@ int CFont::GetTextQuadsCount(const wchar_t *str) const
 		int charIdx = *str;
 
 		// skip fasttags
-		if( charMode == CHARMODE_NORMAL && charIdx == '&')
+		if( (styleFlags & TEXT_STYLE_USE_TAGS) &&
+			charMode == CHARMODE_NORMAL &&
+			charIdx == '&')
 		{
 			charMode = CHARMODE_TAG;
 			str++;
@@ -404,7 +478,7 @@ int CFont::GetTextQuadsCount(const wchar_t *str) const
 			continue;
 		}
 
-		if (*str != L'\n')
+		if(IsVisibleChar(charIdx))
 			n++;
 
 		str++;
@@ -413,116 +487,8 @@ int CFont::GetTextQuadsCount(const wchar_t *str) const
 	return n;
 }
 
-//-------------------------------------------------------------------------------------------------------------------------------------
-
-//
-// LEGACY - render ASCII text
-//
-void CFont::DrawText(const char* pszText,int x, int y, int cw, int ch, bool enableWidthRatio )
-{
-	int n = 6 * GetTextQuadsCount(pszText);
-	if (n == 0)
-		return;
-
-	if (n > m_numVerts)
-	{
-		Vertex2D_t* newBuf = (Vertex2D_t *) realloc(m_vertexBuffer, n * sizeof(Vertex2D_t));
-
-		if(newBuf)
-		{
-			m_vertexBuffer = newBuf;
-			m_numVerts = n;
-		}
-
-	}
-
-	int numVertsToDraw = FillTextBuffer(m_vertexBuffer, pszText, x, y, cw, ch, TEXT_ORIENT_RIGHT, enableWidthRatio);
-
-	BlendStateParam_t blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLES, m_vertexBuffer, numVertsToDraw, m_fontTexture, color4_white, &blending);
-}
-
-//
-// LEGACY - render ASCII text with style
-//
-void CFont::DrawTextEx(const char* pszText,int x, int y, int cw, int ch, ETextOrientation textOrientation, int styleFlags, bool enableWidthRatio)
-{
-	int n = 6 * GetTextQuadsCount(pszText);
-	if (n == 0)
-		return;
-
-	if (n > m_numVerts)
-	{
-		Vertex2D_t* newBuf = (Vertex2D_t *) realloc(m_vertexBuffer, n * sizeof(Vertex2D_t));
-
-		if(newBuf)
-		{
-			m_vertexBuffer = newBuf;
-			m_numVerts = n;
-		}
-
-	}
-
-	if(styleFlags & TEXT_STYLE_CENTER)
-	{
-		float strHalfWidth = GetStringLength(pszText, -1, enableWidthRatio) * 0.5f;
-
-		x -= strHalfWidth*cw;
-	}
-
-	int numVertsToDraw = FillTextBuffer(m_vertexBuffer, pszText, x, y, cw, ch,textOrientation, enableWidthRatio, styleFlags);
-
-	BlendStateParam_t blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-	
-	if(styleFlags & TEXT_STYLE_SHADOW)
-	{
-		float shadowOffset = 1.0f;
-
-		if(enableWidthRatio)
-			shadowOffset = 2.0f;
-
-		materials->SetMatrix(MATRIXMODE_WORLD, translate(shadowOffset,shadowOffset,0.0f));
-		materials->DrawPrimitives2DFFP(PRIM_TRIANGLES, m_vertexBuffer, n, m_fontTexture, ColorRGBA(0,0,0,0.45f), &blending);
-	}
-
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
-
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLES, m_vertexBuffer, numVertsToDraw, m_fontTexture, color4_white, &blending);
-}
-
-//
-// LEGACY - render ASCII text in rectangle
-//
-void CFont::DrawTextInRect(const char* pszText,Rectangle_t &clipRect, int cw, int ch, bool enableWidthRatio, int *nLinesCount)
-{
-	int n = 6 * GetTextQuadsCount(pszText);
-	if (n == 0) return;
-
-	if (n > m_numVerts)
-	{
-		Vertex2D_t* newBuf = (Vertex2D_t *) realloc(m_vertexBuffer, n * sizeof(Vertex2D_t));
-
-		if(newBuf)
-		{
-			m_vertexBuffer = newBuf;
-			m_numVerts = n;
-		}
-	}
-
-	int numVertsToDraw = RectangularFillTextBuffer(m_vertexBuffer, pszText, clipRect.vleftTop.x+2, clipRect.vleftTop.y+2, cw, ch, clipRect,nLinesCount, enableWidthRatio);
-
-	BlendStateParam_t blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLES, m_vertexBuffer, numVertsToDraw, m_fontTexture, color4_white, &blending);
-}
-
+/*
+//------------------------------------------------------------------------------
 //
 // LEGACY - fills ASCII text within rectangle
 //
@@ -537,7 +503,7 @@ int CFont::RectangularFillTextBuffer(Vertex2D_t *dest, const char *str, float x,
 
     while (*str)
 	{
-		const eqfontchar_t& chr = m_FontChars[*(unsigned char*)str];
+		const eqfontchar_t& chr = GetFontCharById(*(unsigned char*)str);//m_FontChars[*(unsigned char*)str];
 		float cw = charWidth;
 
 		if(enableWidthRatio)
@@ -624,7 +590,7 @@ int CFont::FillTextBuffer(Vertex2D_t *dest, const char *str, float x, float y, f
 				}
 				else
 				{
-					const eqfontchar_t& chr = m_FontChars[*(ubyte*) str];
+					const eqfontchar_t& chr = GetFontCharById(*(ubyte*) str); //m_FontChars[*(ubyte*) str];
 
 					float cw = charWidth;
 
@@ -671,7 +637,7 @@ int CFont::FillTextBuffer(Vertex2D_t *dest, const char *str, float x, float y, f
 				}
 				else
 				{
-					const eqfontchar_t& chr = m_FontChars[*(ubyte*) str];
+					const eqfontchar_t& chr = GetFontCharById(*(ubyte*) str); //m_FontChars[*(ubyte*) str];
 
 					float cw = charWidth;
 					if(enableWidthRatio)
@@ -710,36 +676,7 @@ int CFont::FillTextBuffer(Vertex2D_t *dest, const char *str, float x, float y, f
     } //while
 
 	return numVertsToDraw;
-}
-
-// sets color of next rendered text
-void CFont::DrawSetColor(const ColorRGBA &color)
-{
-	m_textColor = color;
-}
-
-void CFont::DrawSetColor(float r, float g, float b, float a)
-{
-	m_textColor.x = r;
-	m_textColor.y = g;
-	m_textColor.z = b;
-	m_textColor.w = a;
-}
-
-int CFont::GetTextQuadsCount(const char *str) const
-{
-	int n = 0;
-
-	while (*str)
-	{
-		if (*str != '\n')
-			n++;
-
-		str++;
-	}
-
-	return n;
-}
+}*/
 
 bool CFont::LoadFont( const char* filenamePrefix )
 {
@@ -767,20 +704,24 @@ bool CFont::LoadFont( const char* filenamePrefix )
 			m_spacing = 0.0f;
 			m_fontTexture = g_pShaderAPI->LoadTexture(KV_GetValueString(fontSec->FindKeyBase("texture")), filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST,ADDRESSMODE_WRAP, TEXFLAG_NOQUALITYLOD);
 
-			Vector2D invTexSize(1.0f, 1.0f);
+			m_baseline = KV_GetValueFloat( fontSec->FindKeyBase("baseline") );
+			m_lineHeight = KV_GetValueFloat( fontSec->FindKeyBase("lineheight") );
+			m_scale = KV_GetVector2D( fontSec->FindKeyBase("scale") );
+
+			m_invTexSize = Vector2D(1.0f, 1.0f);
 			
 			if(m_fontTexture != NULL)
 			{
 				m_fontTexture->Ref_Grab();
 
-				invTexSize = Vector2D(1.0f/m_fontTexture->GetWidth(), 1.0f/m_fontTexture->GetHeight());
+				m_invTexSize = Vector2D(1.0f/m_fontTexture->GetWidth(), 1.0f/m_fontTexture->GetHeight());
 			}
 
-			m_extCharsStart = INT_MAX;
-			m_extCharsLength = 0;
+			//m_extCharsStart = INT_MAX;
+			//m_extCharsLength = 0;
 
-			DkList<eqfontchar_t>	extChars;
-			DkList<int>				extCharIds;
+			//DkList<eqfontchar_t>	extChars;
+			//DkList<int>				extCharIds;
 
 			for(int i = 0; i < fontSec->keys.numElem(); i++)
 			{
@@ -793,7 +734,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 				eqfontchar_t fontChar;
 
-				// x y w h sx sy advanceX
+				// x y w h ox oy advanceX
 				// 0 1 2 3 4  5  6
 
 				fontChar.x0 = KV_GetValueFloat(k, 0);
@@ -802,60 +743,22 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				fontChar.x1 = fontChar.x0 + KV_GetValueFloat(k, 2);
 				fontChar.y1 = fontChar.y0 + KV_GetValueFloat(k, 3);
 
-				fontChar.ratio = KV_GetValueFloat(k, 2);//*invTexSize.x;
+				fontChar.ofsX = KV_GetValueFloat(k, 4);
+				fontChar.ofsY = KV_GetValueFloat(k, 5);
+				fontChar.advX = KV_GetValueFloat(k, 6);
+
+				fontChar.ratio = KV_GetValueFloat(k, 2);
 				
-				if( g_pShaderAPI->GetShaderAPIClass() != SHADERAPI_DIRECT3D9 )
+				if( g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9 )
 				{
 					// fix half texel on DX9
-					fontChar.x0 += 0.5f;
-					fontChar.y0 += 0.5f;
-
-					fontChar.x1 += 0.5f;
-					fontChar.y1 += 0.5f;
+					fontChar.x0 -= 0.5f;
+					fontChar.y0 -= 0.5f;
+					fontChar.x1 -= 0.5f;
+					fontChar.y1 -= 0.5f;
 				}
 
-				fontChar.x0 *= invTexSize.x;
-				fontChar.y0 *= invTexSize.y;
-				fontChar.x1 *= invTexSize.x;
-				fontChar.y1 *= invTexSize.y;
-
-				if(charIdx >= 0 && charIdx < 256)
-				{
-					m_FontChars[charIdx] = fontChar;
-				}
-				else
-				{
-					// need to know what range of extra characters we have
-					if(charIdx < m_extCharsStart)
-						m_extCharsStart = charIdx;
-
-					if(charIdx > m_extCharsLength)
-						m_extCharsLength = charIdx;
-
-					extChars.append( fontChar );
-					extCharIds.append( charIdx );
-				}
-			}
-
-			// Map extended characters to range
-			if( m_extCharsLength > 0 && extChars.numElem() > 0)
-			{
-				//MsgInfo("Font '%s' uses extended character range [%d..%d]\n", filenamePrefix, m_extCharsStart, m_extCharsLength);
-
-				m_extCharsLength -= m_extCharsStart;
-
-				m_extChars = new eqfontchar_t[ m_extCharsLength+1 ];	// this is a fast map
-
-				// fill with empty chars first
-				for(int i = 0; i < m_extCharsLength; i++)
-					m_extChars[i] = m_FontChars[' '];
-
-				// put them right in range
-				for(int i = 0; i < extChars.numElem(); i++)
-				{
-					int charPos = extCharIds[i] - m_extCharsStart;
-					m_extChars[ charPos ] = extChars[i];
-				}
+				m_charMap[charIdx] = fontChar;
 			}
 		}
 		else
@@ -868,40 +771,6 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 			float fSpacing = KV_GetValueFloat( fontSec->FindKeyBase("spacing") );
 
-			kvkeybase_t* pKey = fontSec->FindKeyBase("FontDimsTable");
-
-			// Old font format used by humus
-			if(pKey)
-			{
-				EqString fontFile_name = _Es(TEXTURE_DEFAULT_PATH) + KV_GetValueString(pKey);
-
-				IFile* file = GetFileSystem()->Open( fontFile_name.GetData(), "rb" );
-
-				if(!file)
-				{
-					MsgError("ERROR: '%s' failed to load:\n",finalFileName.GetData());
-					MsgError("	Can't open file '%s'!\n", fontFile_name.c_str());
-					return false;
-				}
-
-				m_spacing = fSpacing;
-
-				isAutogeneratedFont = false;
-
-				uint version = 0;
-
-				file->Read(&version, 1, sizeof(int));
-				file->Read(m_FontChars, 1, sizeof(eqfontchar_t)*256);
-				GetFileSystem()->Close(file);
-
-				m_fontTexture = g_pShaderAPI->LoadTexture(texname.GetData(),filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST,ADDRESSMODE_WRAP, TEXFLAG_NOQUALITYLOD);
-
-				if(m_fontTexture != NULL)
-					m_fontTexture->Ref_Grab();
-
-				return true;
-			}
-
 			// the monospace fonts for debug overlays and other purposes
 			kvkeybase_t* pFontSizeSection = fontSec->FindKeyBase("FontSize", KV_FLAG_SECTION);
 			if(pFontSizeSection)
@@ -911,8 +780,10 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				m_spacing = fSpacing;
 
 				int wide = KV_GetValueInt(pFontSizeSection->FindKeyBase("width"), 0, 8);
-
 				int tall = KV_GetValueInt(pFontSizeSection->FindKeyBase("height"), 0, 8);
+
+				m_baseline = 8.0f;
+				m_lineHeight = 8.0f;
 
 				float ratio = 1;
 
@@ -929,6 +800,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				}
 
 				m_fontTexture->Ref_Grab();
+				m_invTexSize = Vector2D(1.0f/m_fontTexture->GetWidth(), 1.0f/m_fontTexture->GetHeight());
 
 				int line = 0;
 				int lChars = 0;
@@ -940,9 +812,11 @@ bool CFont::LoadFont( const char* filenamePrefix )
 						lChars = 0;
 					}
 
-					eqfontchar_t& chr = m_FontChars[i];
+					m_charMap[i] = eqfontchar_t();
 
-					m_FontChars[i].ratio = ratio;
+					eqfontchar_t& chr = m_charMap[i];
+
+					chr.ratio = ratio;
 
 					float CurCharPos_x = lChars * tall;
 					float CurCharPos_y = line * tall;
@@ -952,11 +826,9 @@ bool CFont::LoadFont( const char* filenamePrefix )
 					chr.y0 = CurCharPos_y + interval; // Line Count * height
 					chr.y1 = CurCharPos_y + interval + tall;
 
-					chr.x0 /= m_fontTexture->GetWidth();
-					chr.x1 /= m_fontTexture->GetWidth();
-
-					chr.y0 /= m_fontTexture->GetHeight();
-					chr.y1 /= m_fontTexture->GetHeight();
+					chr.advX = (chr.x1 - chr.x0) + fSpacing;
+					chr.ofsX = 0;
+					chr.ofsY = 0;
 
 					lChars++;
 				}

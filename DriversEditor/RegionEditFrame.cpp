@@ -393,9 +393,16 @@ void CRegionEditFrame::ReDraw()
 
 		materials->Setup2D(w,h);
 
-		debugoverlay->GetFont()->DrawText(varargs("ZOOM: %g", m_zoomLevel), 15, 15, 8,8,false);
-		debugoverlay->GetFont()->DrawText(varargs("displayed regions: %d", displayed), 15, 25, 8,8,false);
-		debugoverlay->GetFont()->DrawText(varargs("enabled regions: %d", enabled), 15, 35, 8,8,false);
+		eqFontStyleParam_t fontParam;
+		fontParam.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+		fontParam.textColor = ColorRGBA(1,1,1,1);
+
+		Vector2D baseTextPos(15);
+		float lineHeight = debugoverlay->GetFont()->GetLineHeight();
+
+		debugoverlay->GetFont()->RenderText(varargs("ZOOM: %g", m_zoomLevel), baseTextPos, fontParam);
+		debugoverlay->GetFont()->RenderText(varargs("displayed regions: %d", displayed), baseTextPos + Vector2D(0,lineHeight), fontParam);
+		debugoverlay->GetFont()->RenderText(varargs("enabled regions: %d", enabled), baseTextPos + Vector2D(0,lineHeight), fontParam);
 
 		materials->EndFrame(m_swapChain);
 	}

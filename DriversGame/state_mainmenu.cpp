@@ -307,7 +307,9 @@ bool CState_MainMenu::Update( float fDt )
 				}
 			}
 
-			font->RenderText(tok ? tok->GetText() : L"Undefined token", halfScreen.x-500, menuPosY+idx*45, 1, 40, fontParam);
+			Vector2D elemPos(halfScreen.x-500, menuPosY+idx*45);
+
+			font->RenderText(tok ? tok->GetText() : L"Undefined token", elemPos, fontParam);
 		oolua_ipairs_end()
 	}
 

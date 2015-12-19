@@ -123,7 +123,7 @@ bool CState_Title::Update( float fDt )
 
 	eqFontStyleParam_t fontParam;
 	fontParam.align = TEXT_ALIGN_CENTER;
-	fontParam.styleFlag |= TEXT_STYLE_SHADOW;
+	fontParam.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
 	fontParam.textColor = color4_white;
 
 	float textPos = pow(1.0f-m_fade, 4.0f)*(float)g_pHost->m_nWidth*-1.0f;
@@ -132,7 +132,7 @@ bool CState_Title::Update( float fDt )
 
 	fontParam.textColor.w = pow(m_fade, 2.0f);
 
-	copyrightFont->RenderText(L"Copyright © Inspiration Byte 2015", halfScreen.x, halfScreen.y+300, 1,20,fontParam);
+	copyrightFont->RenderText(L"Copyright © Inspiration Byte 2015", halfScreen + Vector2D(0.0f,300.0f), fontParam);
 
 	if( m_goesFromTitle )
 	{
@@ -160,8 +160,9 @@ bool CState_Title::Update( float fDt )
 
 	const wchar_t* str = LocalizedString("#MENU_TITLE_PRESS_ENTER");
 
-	font->RenderText(str, halfScreen.x + textPos, halfScreen.y+150 - textYOffs, 1, 40, fontParam);
+	Vector2D helloWorldPos(halfScreen.x + textPos, halfScreen.y+150 - textYOffs);
 
+	font->RenderText(str, helloWorldPos, fontParam);
 
 	return !(m_goesFromTitle && m_fade == 0.0f);
 }

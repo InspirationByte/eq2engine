@@ -51,7 +51,7 @@ public:
 
 	void		EndScene();
 
-	void		ProcessKeyChar( ubyte chr );
+	void		ProcessKeyChar( int chr );
 	void		TrapKey_Event( int key, bool down );
 	void		TrapMouse_Event( float x, float y, int buttons, bool down );
 	void		TrapMouseMove_Event( int x, int y, float deltaX, float deltaY );

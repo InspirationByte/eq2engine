@@ -47,7 +47,7 @@ ONLY_EXPORTS int CreateEngineFn(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR 
 	GetModuleFileName(hThisInst, filename, MAX_PATH);
 
 	char modNamefromExe[MAX_PATH];
-	extractFileBase(filename, modNamefromExe);
+	ExtractFileBase(filename, modNamefromExe);
 
 	bool shouldUseExeName = true;
 	

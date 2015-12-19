@@ -194,7 +194,7 @@ void CAINavigator::InitNavigationMesh()
 			navmesh_hdr_t hdr;
 
 			// write header
-			GetFileSystem()->Read(&hdr, 1, sizeof(navmesh_hdr_t), pFile);
+			pFile->Read(&hdr, 1, sizeof(navmesh_hdr_t));
 
 			if(hdr.ident == NAVMESH_IDENT && hdr.version == NAVMESH_VERSION)
 			{
@@ -202,7 +202,7 @@ void CAINavigator::InitNavigationMesh()
 				ubyte* navData = (ubyte*)dtAlloc(hdr.size, DT_ALLOC_PERM);
 
 				// read navigation data
-				GetFileSystem()->Read(navData, 1, hdr.size, pFile);
+				pFile->Read(navData, 1, hdr.size);
 
 				m_pNavMesh = dtAllocNavMesh();
 		
@@ -537,10 +537,10 @@ void CAINavigator::InitNavigationMesh()
 			hdr.size = navDataSize;
 
 			// write header
-			GetFileSystem()->Write(&hdr, 1, sizeof(navmesh_hdr_t), pFile);
+			pFile->Write(&hdr, 1, sizeof(navmesh_hdr_t));
 
 			// write navigation data
-			GetFileSystem()->Write(navData, 1, navDataSize, pFile);
+			pFile->Write(navData, 1, navDataSize);
 
 			GetFileSystem()->Close(pFile);
 		}

@@ -637,8 +637,8 @@ protected:
 
 #define ACCELERATION_CONST			(2.0f)
 #define	ACCELERATION_SOUND_CONST	(10.0f)
-#define STEERING_CONST				(2.0f)
-#define STEERING_HELP_CONST			(0.5f)
+#define STEERING_CONST				(1.5f)
+#define STEERING_HELP_CONST			(0.4f)
 
 float DBTorqueCurveFromRPM( float fRPM )
 {
@@ -1577,7 +1577,8 @@ void CCar::UpdateCarPhysics(float delta)
 		const FReal AUTOHANDBRAKE_MIN_SPEED		= 10.0f;
 		const FReal AUTOHANDBRAKE_MAX_SPEED		= 30.0f;
 		const FReal AUTOHANDBRAKE_MAX_FACTOR	= 5.0f;
-		const FReal AUTOHANDBRAKE_SCALE			= 6.7f;
+		const FReal AUTOHANDBRAKE_SCALE			= 4.0f;
+		const FReal AUTOHANDBRAKE_START_MIN		= 0.1f;
 
 		float handbrakeFactor = RemapVal((GetSpeed()-AUTOHANDBRAKE_MIN_SPEED), 0.0f, AUTOHANDBRAKE_MAX_SPEED, 0.0f, 1.0f);
 
@@ -1587,8 +1588,8 @@ void CCar::UpdateCarPhysics(float delta)
 		if( fLateralSign > 0 && (m_steeringHelper > fLateralSign)
 			|| fLateralSign < 0 && (m_steeringHelper < fLateralSign) || fabs(fLateral) < 5.0f)
 		{
-			if(FPmath::abs(m_steeringHelper) > 0.15f)
-				autoHandbrakeHelper = (FPmath::abs(m_steeringHelper)-0.15f)*AUTOHANDBRAKE_SCALE * handbrakeFactor;
+			if(FPmath::abs(m_steeringHelper) > AUTOHANDBRAKE_START_MIN)
+				autoHandbrakeHelper = (FPmath::abs(m_steeringHelper)-AUTOHANDBRAKE_START_MIN)*AUTOHANDBRAKE_SCALE * handbrakeFactor;
 		}
 
 		autoHandbrakeHelper = clamp(autoHandbrakeHelper,FReal(0),AUTOHANDBRAKE_MAX_FACTOR);
@@ -3790,6 +3791,7 @@ OOLUA_EXPORT_FUNCTIONS(
 OOLUA_EXPORT_FUNCTIONS_CONST(
 	CCar, 
 	IsAlive,
+	IsInWater,
 	IsAnyWheelOnGround,
 	GetMaxDamage,
 	GetMaxSpeed,

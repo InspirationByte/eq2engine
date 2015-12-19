@@ -66,7 +66,7 @@ public:
 	bool	KeyPress(int key, bool pressed);
 	void	MouseEvent(const Vector2D &pos, int Button,bool pressed);
 	void	MousePos(const Vector2D &pos);
-	void	KeyChar(ubyte ch);
+	void	KeyChar(int ch);
 	void	SetLastLine();
 	void	AddToLinePos(int num);
 

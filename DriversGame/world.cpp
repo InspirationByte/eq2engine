@@ -312,10 +312,10 @@ void CGameWorld::InitEnvironment()
 		m_envConfig.weatherType != WEATHER_TYPE_CLEAR) 
 		&& !m_reflectionTex)
 	{
-		m_reflectionTex = g_pShaderAPI->CreateNamedRenderTarget("_reflection", 512, 512, FORMAT_RGBA8, TEXFILTER_LINEAR, ADDRESSMODE_CLAMP);
+		m_reflectionTex = g_pShaderAPI->CreateNamedRenderTarget("_reflection", 512, 256, FORMAT_RGBA8, TEXFILTER_LINEAR, ADDRESSMODE_CLAMP);
 		m_reflectionTex->Ref_Grab();
 
-		m_tempReflTex = g_pShaderAPI->CreateNamedRenderTarget("_tempTexture", 512, 512, FORMAT_RGBA8, TEXFILTER_NEAREST, ADDRESSMODE_CLAMP);
+		m_tempReflTex = g_pShaderAPI->CreateNamedRenderTarget("_tempTexture", 512, 256, FORMAT_RGBA8, TEXFILTER_NEAREST, ADDRESSMODE_CLAMP);
 		m_reflectionTex->Ref_Grab();
 
 		m_blurYMaterial = materials->FindMaterial("engine/BlurY", true);
@@ -1546,7 +1546,8 @@ void CGameWorld::Draw( int nRenderFlags )
 		float fIntensity = dot(m_envConfig.sunLensDirection, m_matrices[MATRIXMODE_VIEW].rows[2].xyz());
 
 		// Occlusion query begin
-		if(r_drawLensFlare.GetInt() == 2)
+		if(m_sunGlowOccQuery &&
+			r_drawLensFlare.GetInt() == 2)
 		{
 			// get previous result
 

@@ -1120,13 +1120,10 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	if(preIntegrFunc)
 		preIntegrFunc(deltaTime, iteration);
 
-	// dynamic object are just bruteforced, but against fast search in a grid
-
 	// calculate collisions
 	for (int i = 0; i < m_moveable.numElem(); i++)
 	{
 		CEqRigidBody* body = m_moveable[i];
-
 		DetectCollisionsSingle(body, deltaTime, contactPairs);
 	}
 
@@ -1144,7 +1141,6 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	}
 
 	m_numRayQueries = 0;
-
 }
 
 //----------------------------------------------------------------------------------------------------

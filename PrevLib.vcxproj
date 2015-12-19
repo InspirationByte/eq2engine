@@ -198,7 +198,6 @@
     <ClInclude Include="public\Utils\CRC32.h" />
     <ClInclude Include="public\Utils\DkLinkedList.h" />
     <ClInclude Include="public\utils\DkList.h" />
-    <ClInclude Include="public\utils\eqjobs.h" />
     <ClInclude Include="public\Utils\eqthread.h" />
     <ClInclude Include="public\utils\eqwstring.h" />
     <ClInclude Include="public\utils\KeyValues.h" />
@@ -227,7 +226,6 @@
     <ClCompile Include="public\Network\net_defs.cpp" />
     <ClCompile Include="public\Platform\Platform.cpp" />
     <ClCompile Include="public\Utils\CRC32.cpp" />
-    <ClCompile Include="public\utils\eqjobs.cpp" />
     <ClCompile Include="public\Utils\eqthread.cpp" />
     <ClCompile Include="public\utils\eqwstring.cpp" />
     <ClCompile Include="public\utils\KeyValues.cpp" />

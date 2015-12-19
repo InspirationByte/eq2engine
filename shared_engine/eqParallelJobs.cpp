@@ -12,7 +12,6 @@ namespace Threading
 {
 	CEqJobThread::CEqJobThread()
 	{
-
 	}
 
 	int CEqJobThread::Run()
@@ -21,14 +20,28 @@ namespace Threading
 		{
 			do
 			{
-				eqparalleljob_t* job = m_jobList.getCurrent();
+				eqParallelJob_t* job = m_jobList.getCurrent();
 
-				(job->func)(job->arguments);
+				if(!job)
+					continue;
+
+				job->flags |= JOB_FLAG_CURRENT;
+
+				m_curJob = job;
+
+				// выполнение
+				(job->func)( job->arguments );
+
 				job->flags |= JOB_FLAG_EXECUTED;
+				job->flags &= ~JOB_FLAG_CURRENT;
+
+				m_curJob = NULL;
 
 				if (job->flags & JOB_FLAG_ALLOCATED)
+				{
+					m_jobList.setCurrent(NULL);
 					delete job;
-
+				}
 			} while (m_jobList.goToNext());
 		}
 
@@ -39,10 +52,12 @@ namespace Threading
 		return 0;
 	}
 
-	bool CEqJobThread::AddJobToQueue( eqparalleljob_t* job )
+	bool CEqJobThread::AddJobToQueue( eqParallelJob_t* job )
 	{
 		if (m_jobMutex.Lock())
 		{
+			job->threadId = GetThreadID();
+
 			m_jobList.addLast(job);
 			m_jobMutex.Unlock();
 
@@ -50,6 +65,11 @@ namespace Threading
 		}
 
 		return false;
+	}
+
+	const eqParallelJob_t* CEqJobThread::GetCurrentJob() const
+	{
+		return const_cast<eqParallelJob_t*>(m_curJob);
 	}
 
 	//-------------------------------------------------------------------------------------------
@@ -65,7 +85,7 @@ namespace Threading
 	}
 
 	// creates new job thread
-	bool CEqParallelJobThreads::CreateJobThreads(int numThreads)
+	bool CEqParallelJobThreads::Init( int numThreads )
 	{
 		if(numThreads == 0)
 			return false;
@@ -93,7 +113,7 @@ namespace Threading
 	// adds the job
 	void CEqParallelJobThreads::AddJob(jobFunction_t func, void* args)
 	{
-		eqparalleljob_t* job = new eqparalleljob_t;
+		eqParallelJob_t* job = new eqParallelJob_t;
 		job->flags = JOB_FLAG_ALLOCATED;
 		job->func = func;
 		job->arguments = args;
@@ -101,26 +121,44 @@ namespace Threading
 		AddJob( job );
 	}
 
-	void CEqParallelJobThreads::AddJob(eqparalleljob_t* job)
+	void CEqParallelJobThreads::AddJob(eqParallelJob_t* job)
 	{
-		// don't put to busy thread
-		while(!m_jobThreads[m_curThread]->AddJobToQueue(job))
-		{
-			m_curThread++;
-
-			if (m_curThread >= m_jobThreads.numElem())
-				m_curThread = 0; // start over
-		}
+		m_mutex.Lock();
+		m_unsubmittedQueue.addLast( job );
+		m_mutex.Unlock();
 	}
 
 	// this submits jobs to the CEqJobThreads
 	void CEqParallelJobThreads::Submit()
 	{
+		m_mutex.Lock();
+
+		if (m_unsubmittedQueue.goToFirst())
+		{
+			do
+			{
+				eqParallelJob_t* job = m_unsubmittedQueue.getCurrent();
+
+				// правязать работу к потоку
+				while(!m_jobThreads[m_curThread]->AddJobToQueue(job))
+				{
+					m_curThread++;
+
+					if (m_curThread >= m_jobThreads.numElem())
+						m_curThread = 0; // start over
+				}
+			} while (m_unsubmittedQueue.goToNext());
+		}
+
+		m_unsubmittedQueue.clear();
+
 		for (int i = 0; i < m_jobThreads.numElem(); i++)
 		{
 			if (m_jobThreads[i]->m_jobList.getCount() > 0)
 				m_jobThreads[i]->SignalWork();
 		}
+
+		m_mutex.Unlock();
 	}
 
 	// wait for completion

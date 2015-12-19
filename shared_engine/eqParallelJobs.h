@@ -36,20 +36,20 @@ namespace Threading
 	enum EJobFlags
 	{
 		JOB_FLAG_ALLOCATED	= (1 << 0),
-		JOB_FLAG_EXECUTED	= (1 << 1),
+		JOB_FLAG_CURRENT	= (1 << 1),
+		JOB_FLAG_EXECUTED	= (1 << 2),
 	};
 
-	struct eqparalleljob_t
+	struct eqParallelJob_t
 	{
-		eqparalleljob_t()
+		eqParallelJob_t() : flags(0), arguments(nullptr), threadId(0)
 		{
-			flags = 0;
-			arguments = nullptr;
 		}
 
 		jobFunction_t	func;
 		void*			arguments;
-		int				flags;		// EJobFlags
+		volatile int	flags;		// EJobFlags
+		uintptr_t		threadId;	// выбор потока
 	};
 
 	//
@@ -62,14 +62,18 @@ namespace Threading
 
 		CEqJobThread();
 
-		int				Run();
-		bool			AddJobToQueue(eqparalleljob_t* job);
+		int								Run();
+		bool							AddJobToQueue(eqParallelJob_t* job);
+
+		const eqParallelJob_t*			GetCurrentJob() const;
 
 	protected:
 
 		CEqMutex						m_jobMutex;
 
-		DkLinkedList<eqparalleljob_t*>	m_jobList;	// this thread job list
+		volatile eqParallelJob_t*		m_curJob;
+
+		DkLinkedList<eqParallelJob_t*>	m_jobList;	// this thread job list
 	};
 
 	//
@@ -82,12 +86,15 @@ namespace Threading
 		virtual ~CEqParallelJobThreads();
 
 		// creates new job thread
-		bool					CreateJobThreads( int numThreads );
+		bool					Init( int numThreads );
 		void					Shutdown();
+
+		CEqJobThread*			GetThreadById( uintptr_t threadId ) const;
+		void					GetThreadIds( DkList<uintptr_t>& list ) const;
 
 		// adds the job
 		void					AddJob( jobFunction_t func, void* args );	// and puts JOB_FLAG_ALLOCATED flag for this job
-		void					AddJob( eqparalleljob_t* job );
+		void					AddJob( eqParallelJob_t* job );
 
 		// this submits jobs to the CEqJobThreads
 		void					Submit();
@@ -101,10 +108,12 @@ namespace Threading
 
 	protected:
 
-		CEqMutex				m_mutex;
+		CEqMutex						m_mutex;
 
-		DkList<CEqJobThread*>	m_jobThreads;
-		int						m_curThread;
+		DkLinkedList<eqParallelJob_t*>	m_unsubmittedQueue;
+
+		DkList<CEqJobThread*>			m_jobThreads;
+		int								m_curThread;
 	};
 }
 

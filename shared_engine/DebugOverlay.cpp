@@ -438,16 +438,17 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 	};
 
 	/*
-	g_pShaderAPI->DrawSetColor(color4_white);
-
 	g_pShaderAPI->DrawLine2D(Vector2D(x_pos, y_pos), Vector2D(x_pos, y_pos - 100));
 	g_pShaderAPI->DrawLine2D(Vector2D(x_pos, y_pos), Vector2D(x_pos+400, y_pos));
 	*/
-	pFont->DrawSetColor(color4_white);
-	pFont->DrawTextEx(graph->pszName, x_pos + 5, y_pos - 100, 8, 8, TEXT_ORIENT_RIGHT, TEXT_STYLE_SHADOW, false);
 
-	pFont->DrawTextEx("0", x_pos + 5, y_pos, 8, 8, TEXT_ORIENT_RIGHT, TEXT_STYLE_SHADOW, false);
-	pFont->DrawTextEx(varargs("%.2f", graph->fMaxValue), x_pos + 5, y_pos - 90, 8, 8, TEXT_ORIENT_RIGHT, TEXT_STYLE_SHADOW, false);
+	eqFontStyleParam_t textStl;
+	textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+
+	pFont->RenderText(graph->pszName, Vector2D(x_pos + 5, y_pos - 100), textStl);
+
+	pFont->RenderText("0", Vector2D(x_pos + 5, y_pos), textStl);
+	pFont->RenderText(varargs("%.2f", graph->fMaxValue), Vector2D(x_pos + 5, y_pos - 90), textStl);
 
 	//g_pShaderAPI->DrawLine2D(Vector2D(x_pos, y_pos - 90*0.75f), Vector2D(x_pos+4, y_pos - 90*0.75f));
 	//g_pShaderAPI->DrawLine2D(Vector2D(x_pos, y_pos - 90*0.50f), Vector2D(x_pos+4, y_pos - 90*0.50f));
@@ -459,9 +460,9 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 
 	materials->DrawPrimitives2DFFP(PRIM_LINES,lines,elementsOf(lines), NULL, color4_white, &blending);
 
-	pFont->DrawTextEx(varargs("%.2f", (graph->fMaxValue*0.75f)), x_pos + 5, y_pos - 90*0.75f, 8, 8, TEXT_ORIENT_RIGHT, TEXT_STYLE_SHADOW, false);
-	pFont->DrawTextEx(varargs("%.2f", (graph->fMaxValue*0.50f)), x_pos + 5, y_pos - 90*0.5f, 8, 8, TEXT_ORIENT_RIGHT, TEXT_STYLE_SHADOW, false);
-	pFont->DrawTextEx(varargs("%.2f", (graph->fMaxValue*0.25f)), x_pos + 5, y_pos - 90*0.25f, 8, 8, TEXT_ORIENT_RIGHT, TEXT_STYLE_SHADOW, false);
+	pFont->RenderText(varargs("%.2f", (graph->fMaxValue*0.75f)), Vector2D(x_pos + 5, y_pos - 90*0.75f), textStl);
+	pFont->RenderText(varargs("%.2f", (graph->fMaxValue*0.50f)), Vector2D(x_pos + 5, y_pos - 90*0.5f), textStl);
+	pFont->RenderText(varargs("%.2f", (graph->fMaxValue*0.25f)), Vector2D(x_pos + 5, y_pos - 90*0.25f), textStl);
 
 	int value_id = 0;
 
@@ -645,8 +646,13 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 
 			color.w = clamp(color.w,0,1);
 
-			m_pDebugFont->DrawSetColor(color);
-			m_pDebugFont->DrawTextEx( current.pszText.GetData(), drawFadedTextBoxPosition.x, drawFadedTextBoxPosition.y+(idx*8), 8, 8, TEXT_ORIENT_RIGHT, TEXT_STYLE_SHADOW, false);
+			eqFontStyleParam_t textStl;
+			textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+			textStl.textColor = color;
+
+			Vector2D textPos = drawFadedTextBoxPosition + Vector2D( 0, (idx*8) );
+
+			m_pDebugFont->RenderText( current.pszText.GetData(), textPos, textStl);
 			current.color.w -= m_frametime * current.m_fFadeTime;
 
 			m_LeftTextFadeArray.setCurrent(current);
@@ -659,6 +665,10 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 	if(rs_stats.GetBool())
 	{
 		Threading::CScopedMutex m(m_mutex);
+
+		eqFontStyleParam_t textStl;
+		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+		
 
 		for (int i = 0;i < m_Text3DArray.numElem();i++)
 		{
@@ -673,8 +683,8 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 
 			if(!beh && visible)
 			{
-				m_pDebugFont->DrawSetColor(m_Text3DArray[i].color);
-				m_pDebugFont->DrawTextEx(m_Text3DArray[i].pszText.GetData(),screen.x,screen.y,8,8, TEXT_ORIENT_RIGHT, TEXT_STYLE_SHADOW, false);
+				textStl.textColor = m_Text3DArray[i].color;
+				m_pDebugFont->RenderText(m_Text3DArray[i].pszText.GetData(), screen.xy(), textStl);
 			}
 		}
 
@@ -684,23 +694,32 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 
 			for (int i = 0;i < m_TextArray.numElem();i++)
 			{
-				m_pDebugFont->DrawSetColor(m_TextArray[i].color);
-				m_pDebugFont->DrawTextEx(m_TextArray[i].pszText.GetData(),drawTextBoxPosition.x,drawTextBoxPosition.y+(i*8),8,8, TEXT_ORIENT_RIGHT, TEXT_STYLE_SHADOW, false);
+				textStl.textColor = m_TextArray[i].color;
+
+				Vector2D textPos(drawTextBoxPosition.x,drawTextBoxPosition.y+(i*8));
+
+				m_pDebugFont->RenderText(m_TextArray[i].pszText.GetData(), textPos, textStl);
 			}
 		}
+
+		eqFontStyleParam_t rTextFadeStyle;
+		rTextFadeStyle.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+		rTextFadeStyle.align = TEXT_ALIGN_RIGHT;
 
 		for (int i = 0;i < m_RightTextFadeArray.numElem();i++)
 		{
 			if(m_RightTextFadeArray[i].color.w <= 0)
 			{
 				m_RightTextFadeArray.fastRemoveIndex(i);
-
 			}
 
-			float textLen = m_pDebugFont->GetStringLength(m_RightTextFadeArray[i].pszText.GetData(),m_RightTextFadeArray[i].pszText.GetLength());
+			float textLen = m_pDebugFont->GetStringWidth( m_RightTextFadeArray[i].pszText.c_str(), textStl.styleFlag );
 
-			m_pDebugFont->DrawSetColor(m_RightTextFadeArray[i].color);
-			m_pDebugFont->DrawTextEx( m_RightTextFadeArray[i].pszText.GetData(), winWide - (textLen*8), 45+(i*8), 8, 8, TEXT_ORIENT_RIGHT, TEXT_STYLE_SHADOW, false);
+			rTextFadeStyle.textColor = m_RightTextFadeArray[i].color;
+			Vector2D textPos(winWide - (textLen*8), 45+(i*8));
+
+			m_pDebugFont->RenderText( m_RightTextFadeArray[i].pszText.GetData(), textPos, rTextFadeStyle);
+
 			m_RightTextFadeArray[i].color.w -= m_frametime * m_RightTextFadeArray[i].m_fFadeTime;
 		}
 	}

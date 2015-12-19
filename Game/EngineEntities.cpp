@@ -970,10 +970,12 @@ public:
 
 			Matrix4x4 toAbsTransform = (rotateXYZ4(DEG2RAD(90),0.0f,DEG2RAD(90))*rotateZXY4(radangle.x,radangle.y,radangle.z))*scale4(1.0f, 1.0f, 1.0f);
 
-			quats[i-1].quat = Quaternion(toAbsTransform).asVector4D();
+			Matrix3x3 rot(toAbsTransform.getRotationComponent());
+
+			quats[i-1].quat = Quaternion(rot).asVector4D();
 			quats[i-1].origin = Vector4D(rope_pos, 1);
 
-			quats[i].quat = Quaternion(toAbsTransform).asVector4D();
+			quats[i].quat = Quaternion(rot).asVector4D();
 			quats[i].origin = Vector4D(ropePoint, 1);
 
 			rope_pos = ropePoint;
