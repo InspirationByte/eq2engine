@@ -231,13 +231,18 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		numFontParams.align = TEXT_ALIGN_CENTER;
 		numFontParams.textColor = color4_white;
 
-		Vector2D timeDisplayTextPos(screenSize.x / 2, 15);
+		Vector2D timeDisplayTextPos(screenSize.x / 2, 80);
 
-		numbers50->RenderText(varargs_w(L"%.2i:%.2i", mins, secs), timeDisplayTextPos, numFontParams);
+		wchar_t* str = varargs_w(L"%.2i:%.2i", mins, secs);
+		
+		float minSecWidth = numbers50->GetStringWidth(str, numFontParams.styleFlag);
+		numbers50->RenderText(str, timeDisplayTextPos, numFontParams);
 
 		float size = numbers50->GetStringWidth(varargs("%.2i:%.2i", mins, secs), numFontParams.styleFlag);
 
-		numbers20->RenderText(varargs_w(L"'%02d", millisecs), timeDisplayTextPos, fontParams);
+		Vector2D millisDisplayTextPos = timeDisplayTextPos + Vector2D(minSecWidth*0.5f, 0.0f);
+
+		numbers20->RenderText(varargs_w(L"'%02d", millisecs), millisDisplayTextPos, fontParams);
 	}
 	
 

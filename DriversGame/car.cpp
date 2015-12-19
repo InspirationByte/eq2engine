@@ -172,6 +172,9 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 		conf->m_brakelightPosition = KV_GetVector4D(visuals->FindKeyBase("brakelights"), 1, vec4_zero);
 
 		conf->m_enginePosition = KV_GetVector3D(visuals->FindKeyBase("engine"), 0, vec3_zero);
+
+		conf->m_exhaustPosition = KV_GetVector3D(visuals->FindKeyBase("exhaust"), 0, vec3_zero);
+		conf->m_exhaustDir = KV_GetValueInt(visuals->FindKeyBase("exhaust"), 3, -1);
 	}
 
 
@@ -2435,28 +2438,67 @@ void CCar::Simulate( float fDt )
 
 	if(	bDraw && 
 		(!m_inWater || IsAlive()) && 
-		frontDamageSum > 0.55f && 
 		m_engineSmokeTime > 0.1f && 
 		GetSpeed() < 80.0f)
 	{
-		ColorRGB smokeCol(0.9,0.9,0.9);
+		if(frontDamageSum > 0.55f)
+		{
+			ColorRGB smokeCol(0.9,0.9,0.9);
 
-		if(frontDamageSum > 1.35f)
-			smokeCol = ColorRGB(0.0);
+			if(frontDamageSum > 1.35f)
+				smokeCol = ColorRGB(0.0);
 
-		float rand_size = RandomFloat(-m_conf->m_body_size.x*0.5f,m_conf->m_body_size.x*0.5f);
+			float rand_size = RandomFloat(-m_conf->m_body_size.x*0.5f,m_conf->m_body_size.x*0.5f);
 
-		float alphaModifier = 1.0f - RemapValClamp(GetSpeed(), 0.0f, 80.0f, 0.0f, 1.0f);
+			float alphaModifier = 1.0f - RemapValClamp(GetSpeed(), 0.0f, 80.0f, 0.0f, 1.0f);
 
-		Vector3D smokePos = (m_worldMatrix * Vector4D(m_conf->m_enginePosition + Vector3D(rand_size,0,0), 1.0f)).xyz();
+			Vector3D smokePos = (m_worldMatrix * Vector4D(m_conf->m_enginePosition + Vector3D(rand_size,0,0), 1.0f)).xyz();
 
-		CSmokeEffect* pSmoke = new CSmokeEffect(smokePos, Vector3D(0,1, 1),
-												RandomFloat(0.1, 0.3), RandomFloat(1.0, 1.8),
-												RandomFloat(1.2f),
-												/*g_translParticles->FindAtlasTexture("smoke")*/-1,
-												RandomFloat(25, 85), Vector3D(1,RandomFloat(-0.7, 0.2) , 1),
-												smokeCol, smokeCol, alphaModifier);
-		effectrenderer->RegisterEffectForRender(pSmoke);
+			CSmokeEffect* pSmoke = new CSmokeEffect(smokePos, Vector3D(0,1, 1),
+													RandomFloat(0.1, 0.3), RandomFloat(1.0, 1.8),
+													RandomFloat(1.2f),
+													/*g_translParticles->FindAtlasTexture("smoke")*/-1,
+													RandomFloat(25, 85), Vector3D(1,RandomFloat(-0.7, 0.2) , 1),
+													smokeCol, smokeCol, alphaModifier);
+			effectrenderer->RegisterEffectForRender(pSmoke);
+		}
+
+		// make exhaust light smoke
+		if(	m_isLocalCar &&
+			m_conf->m_exhaustDir != -1 && 
+			GetSpeed() < 15.0f)
+		{
+			Vector3D smokePos = (m_worldMatrix * Vector4D(m_conf->m_exhaustPosition, 1.0f)).xyz();
+			Vector3D smokeDir(0);
+
+			smokeDir[m_conf->m_exhaustDir] = 1.0f;
+
+			if(m_conf->m_exhaustDir == 1)
+				smokeDir[m_conf->m_exhaustDir] *= -1.0f;
+
+			smokeDir = m_worldMatrix.getRotationComponent() * smokeDir;
+
+			ColorRGB smokeCol(0.9,0.9,0.9);
+
+			float alphaModifier = 1.0f - RemapValClamp(GetSpeed(), 0.0f, 15.0f, 0.0f, 1.0f);
+
+			float alphaScale = 0.25f+m_fAccelEffect*0.45f;
+
+			if(frontDamageSum > 1.35f)
+			{
+				alphaScale *= 2.0f;
+				smokeCol = ColorRGB(0.0);
+			}
+
+			CSmokeEffect* pSmoke = new CSmokeEffect(smokePos, -smokeDir,
+													RandomFloat(0.08, 0.12), RandomFloat(0.3, 0.4),
+													RandomFloat(alphaModifier*alphaScale),
+													-1,
+													RandomFloat(25,45), Vector3D(0.1,RandomFloat(0.0, 0.2), 0.05),
+													smokeCol, smokeCol, alphaModifier*alphaScale);
+			effectrenderer->RegisterEffectForRender(pSmoke);
+		}
+		
 
 		m_engineSmokeTime = 0.0f;
 	}

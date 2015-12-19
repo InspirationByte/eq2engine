@@ -154,6 +154,9 @@ struct carConfigEntry_t
 
 	Vector3D					m_enginePosition;
 
+	Vector3D					m_exhaustPosition;
+	int							m_exhaustDir;		// 0 - back, 1 - left, 2 - up
+
 	DkList<carColorScheme_t>	m_colors;
 	bool						m_useBodyColor;
 

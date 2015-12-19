@@ -1204,14 +1204,14 @@ bool CState_Game::Update( float fDt )
 		materials->Setup2D(g_pHost->m_nWidth, g_pHost->m_nHeight);
 		g_pShaderAPI->Clear( true,true, false );
 
-		IEqFont* font = g_fontCache->GetFont("Roboto Condensed", 40, 0);
+		IEqFont* font = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD+TEXT_STYLE_ITALIC);
 
 		const wchar_t* loadingStr = LocalizedString("#GAME_IS_LOADING");
 
 		eqFontStyleParam_t param;
 		param.styleFlag |= TEXT_STYLE_SHADOW;
 
-		font->RenderText(loadingStr, Vector2D(40,40), param);
+		font->RenderText(loadingStr, Vector2D(100,g_pHost->m_nHeight - 100), param);
 
 		if(g_pGameWorld->m_level.IsWorkDone() && materials->GetLoadingQueue() == 0)
 			m_isGameRunning = true;
