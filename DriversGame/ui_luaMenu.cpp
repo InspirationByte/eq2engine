@@ -38,6 +38,9 @@ void CLuaMenu::SetMenuObject(OOLUA::Table& tabl)
 
 void CLuaMenu::SetMenuStackTop(OOLUA::Table& tabl)
 {
+	if(!tabl.safe_at(3, m_selection))
+		m_selection = 0;
+
 	lua_State* state = GetLuaState();
 
 	if( m_stackGetCurMenu.Push() && m_stackGetCurMenu.Call(0, 1) )
@@ -49,11 +52,11 @@ void CLuaMenu::SetMenuStackTop(OOLUA::Table& tabl)
 	}
 }
 
-void CLuaMenu::PushMenu(OOLUA::Table& tabl)
+void CLuaMenu::PushMenu(OOLUA::Table& tabl, int selection)
 {
 	lua_State* state = GetLuaState();
 
-	if( m_stackPush.Push() && OOLUA::push(state, tabl) && m_stackPush.Call(1, 1) )
+	if( m_stackPush.Push() && OOLUA::push(state, tabl) && OOLUA::push(state, selection) && m_stackPush.Call(2, 1) )
 	{
 		OOLUA::Table newStackTop;
 		OOLUA::pull( state, newStackTop );
@@ -171,7 +174,7 @@ void CLuaMenu::EnterSelection()
 	
 					OOLUA::Table nextMenu;
 					if( params.safe_at("nextMenu", nextMenu))
-						PushMenu( nextMenu );
+						PushMenu( nextMenu, m_selection );
 
 					std::string newTitleToken = "";
 					if(params.safe_at("titleToken", newTitleToken))
@@ -189,7 +192,6 @@ void CLuaMenu::SetMenuTable( OOLUA::Table& tabl )
 {
 	m_menuElems = tabl;
 
-	m_selection = 0;
 	m_numElems = 0;
 
 	EqLua::LuaStackGuard g(GetLuaState());

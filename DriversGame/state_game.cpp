@@ -956,7 +956,10 @@ void Game_Frame(float fDt)
 
 		eqFontStyleParam_t params;
 		params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-		g_pSysConsole->con_font->RenderText(profilerStr.c_str(), Vector2D(45), params);
+
+		static IEqFont* consoleFont = g_fontCache->GetFont("console", 16);
+
+		consoleFont->RenderText(profilerStr.c_str(), Vector2D(45), params);
 	}
 
 	g_nOldControlButtons = nClientButtons;
@@ -1336,67 +1339,78 @@ bool CState_Game::Update( float fDt )
 			soundsystem->SetVolumeScale( 1.0f );
 	}
 
-	if( m_showMenu )
-	{
-		materials->Setup2D(g_pHost->m_nWidth, g_pHost->m_nHeight);
-
-		IVector2D screen(g_pHost->m_nWidth, g_pHost->m_nHeight);
-		IVector2D halfScreen(g_pHost->m_nWidth/2, g_pHost->m_nHeight/2);
-
-		IEqFont* font = g_fontCache->GetFont("Roboto", 40, TEXT_STYLE_ITALIC);
-
-		eqFontStyleParam_t fontParam;
-		fontParam.align = TEXT_ALIGN_CENTER;
-		fontParam.styleFlag |= TEXT_STYLE_SHADOW;
-		fontParam.textColor = color4_white;
-
-		{
-			lua_State* state = GetLuaState();
-
-			EqLua::LuaStackGuard g(state);
-
-			int menuPosY = halfScreen.y-300;
-
-			Vector2D mTextPos(halfScreen.x, menuPosY);
-
-			fontParam.textColor = ColorRGBA(0.7f,0.7f,0.7f,1.0f);
-			font->RenderText(m_menuTitleToken ? m_menuTitleToken->GetText() : L"Undefined token", mTextPos, fontParam);
-			
-			oolua_ipairs(m_menuElems)
-				int idx = _i_index_-1;
-
-				OOLUA::Table elem;
-				m_menuElems.safe_at(_i_index_, elem);
-
-				wchar_t* token = NULL;
-
-				ILocToken* tok = NULL;
-				if(elem.safe_at("label", tok))
-					token = tok ? tok->GetText() : L"Undefined token";
-
-				EqLua::LuaTableFuncRef labelValue;
-				if(labelValue.Get(elem, "labelValue", true) && labelValue.Push() && labelValue.Call(0, 1))
-				{
-					int val = 0;
-					OOLUA::pull(state, val);
-
-					token = tok ? varargs_w(tok->GetText(), val) : L"Undefined token";
-				}
-
-				if(m_selection == idx)
-					fontParam.textColor = ColorRGBA(1,0.7f,0.0f,1.0f);
-				else
-					fontParam.textColor = ColorRGBA(1,1,1,1.0f);
-
-				Vector2D eTextPos(halfScreen.x, menuPosY+_i_index_*45);
-
-				font->RenderText(token ? token : L"No token", eTextPos, fontParam);
-			oolua_ipairs_end()
-			
-		}
-	}
+	DrawMenu(fDt);
 	
 	return true;
+}
+
+void CState_Game::DrawMenu( float fDt )
+{
+	if( !m_showMenu )
+		return;
+
+	materials->Setup2D(g_pHost->m_nWidth, g_pHost->m_nHeight);
+
+	IVector2D screen(g_pHost->m_nWidth, g_pHost->m_nHeight);
+	IVector2D halfScreen(g_pHost->m_nWidth/2, g_pHost->m_nHeight/2);
+
+	IEqFont* font = g_fontCache->GetFont("Roboto", 30);
+
+	eqFontStyleParam_t fontParam;
+	fontParam.align = TEXT_ALIGN_CENTER;
+	fontParam.styleFlag |= TEXT_STYLE_SHADOW;
+	fontParam.textColor = color4_white;
+
+	{
+		lua_State* state = GetLuaState();
+
+		EqLua::LuaStackGuard g(state);
+
+		int numElems = 0;
+
+		oolua_ipairs(m_menuElems)
+			numElems++;
+		oolua_ipairs_end()
+
+		int menuPosY = halfScreen.y - numElems*font->GetLineHeight()*0.5f;
+
+		Vector2D mTextPos(halfScreen.x, menuPosY);
+
+		fontParam.textColor = ColorRGBA(0.7f,0.7f,0.7f,1.0f);
+		font->RenderText(m_menuTitleToken ? m_menuTitleToken->GetText() : L"Undefined token", mTextPos, fontParam);
+	
+		oolua_ipairs(m_menuElems)
+			int idx = _i_index_-1;
+
+			OOLUA::Table elem;
+			m_menuElems.safe_at(_i_index_, elem);
+
+			wchar_t* token = NULL;
+
+			ILocToken* tok = NULL;
+			if(elem.safe_at("label", tok))
+				token = tok ? tok->GetText() : L"Undefined token";
+
+			EqLua::LuaTableFuncRef labelValue;
+			if(labelValue.Get(elem, "labelValue", true) && labelValue.Push() && labelValue.Call(0, 1))
+			{
+				int val = 0;
+				OOLUA::pull(state, val);
+
+				token = tok ? varargs_w(tok->GetText(), val) : L"Undefined token";
+			}
+
+			if(m_selection == idx)
+				fontParam.textColor = ColorRGBA(1,0.7f,0.0f,1.0f);
+			else
+				fontParam.textColor = ColorRGBA(1,1,1,1.0f);
+
+			Vector2D eTextPos(halfScreen.x, menuPosY+_i_index_*font->GetLineHeight());
+
+			font->RenderText(token ? token : L"No token", eTextPos, fontParam);
+		oolua_ipairs_end()
+			
+	}
 }
 
 void CState_Game::HandleKeyPress( int key, bool down )

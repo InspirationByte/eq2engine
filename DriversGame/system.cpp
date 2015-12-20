@@ -63,7 +63,7 @@ DECLARE_CMD(toggleconsole, "Toggles console", 0)
 {
 	if(g_pSysConsole->IsVisible() && g_pSysConsole->IsShiftPressed())
 	{
-		g_pSysConsole->con_full_enabled = !g_pSysConsole->con_full_enabled;
+		g_pSysConsole->SetLogVisible( !g_pSysConsole->IsLogVisible() );
 		return;
 	}
 
@@ -253,6 +253,9 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	if( !g_fontCache->Init() )
 		return false;
+
+	// init console
+	g_pSysConsole->Initialize();
 
 	m_pDefaultFont = g_fontCache->GetFont("default",0);
 
@@ -651,7 +654,7 @@ void CGameHost::Frame()
 
 	static IEqFont* pConsoleFont = g_fontCache->GetFont("console", 0);
 
-	g_pSysConsole->DrawSelf(true, m_nWidth, m_nHeight, pConsoleFont, m_fCurTime);
+	g_pSysConsole->DrawSelf(true, m_nWidth, m_nHeight, m_fCurTime);
 
 	// issue the rendering of anything
 	g_pShaderAPI->Flush();

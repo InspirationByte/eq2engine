@@ -258,7 +258,7 @@ bool CState_MainMenu::Update( float fDt )
 
 	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect,elementsOf(tmprect), m_titleTexture, ColorRGBA(fFade,fFade,fFade,1.0f), &blending);
 
-	IEqFont* font = g_fontCache->GetFont("Roboto", 40, TEXT_STYLE_ITALIC);
+	IEqFont* font = g_fontCache->GetFont("Roboto", 30, TEXT_STYLE_ITALIC);
 
 	eqFontStyleParam_t fontParam;
 	fontParam.align = TEXT_ALIGN_LEFT;
@@ -307,7 +307,7 @@ bool CState_MainMenu::Update( float fDt )
 				}
 			}
 
-			Vector2D elemPos(halfScreen.x-500, menuPosY+idx*45);
+			Vector2D elemPos(halfScreen.x-500, menuPosY+idx*font->GetLineHeight());
 
 			font->RenderText(tok ? tok->GetText() : L"Undefined token", elemPos, fontParam);
 		oolua_ipairs_end()

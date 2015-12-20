@@ -61,55 +61,62 @@ public:
 
 			CEqSysConsole();
 
-	void	DrawSelf(bool transparent,int width,int height, IEqFont* font, float curTime);
+	void	Initialize();
 
+	void	DrawSelf(bool transparent, int width, int height, float curTime);
+
+	void	SetLastLine();
+	void	AddToLinePos(int num);
+
+	void	SetVisible(bool bVisible)		{ m_visible = bVisible; }
+	bool	IsVisible() const				{return m_visible;}
+	
+	void	SetLogVisible( bool bVisible )	{ m_logVisible = bVisible; }
+	bool	IsLogVisible() const			{ return m_logVisible; }
+
+	void	SetText( const char* text )		{ con_Text = text; m_cursorPos = m_startCursorPos = con_Text.GetLength();}
+
+	bool	IsShiftPressed() const			{return m_shiftModifier;}
+	bool	IsCtrlPressed() const			{return m_ctrlModifier;}
+
+	// events
 	bool	KeyPress(int key, bool pressed);
 	void	MouseEvent(const Vector2D &pos, int Button,bool pressed);
 	void	MousePos(const Vector2D &pos);
 	void	KeyChar(int ch);
-	void	SetLastLine();
-	void	AddToLinePos(int num);
-
-	void	SetVisible(bool bVisible) { bShowConsole = bVisible; }
-	bool	IsVisible() {return bShowConsole;}
-	void	SetText( const char* text ) { con_Text = text; con_cursorPos = con_Text.GetLength();}
 
 	void	AddAutoCompletionNode(AutoCompletionNode_s *pNode);
 
-	bool	IsShiftPressed() {return m_bshiftHolder;}
-
-	bool	con_full_enabled;
-
-	EQWNDHANDLE		m_hwnd;
-
-	IEqFont*		con_font;
-
 protected:
-	void	drawFastFind(float x, float y, float w, IEqFont* fontid);
-	int		DrawAutoCompletion(float x, float y, float w, IEqFont* fontid);
+	void	DrawFastFind(float x, float y, float w);
+	int		DrawAutoCompletion(float x, float y, float w);
 
 	void	consoleInsText(char* text,int pos);
 	void	consoleRemTextInRange(int start,int len);
 
 private:
 
-	Vector2D						mousePosition;
-	bool							bShowConsole;
+	IEqFont*						m_font;
 
-	float							con_cursorTime;
-	int								drawcount;
+	Vector2D						m_mousePosition;
+	bool							m_visible;
+	bool							m_logVisible;
 
-	bool							m_bshiftHolder;
-	bool							m_bCtrlHolder;
+	bool							m_cursorVisible;
+	float							m_cursorTime;
+	int								m_maxLines;
 
-	int								win_wide;
-	int								win_tall;
+	bool							m_shiftModifier;
+	bool							m_ctrlModifier;
+
+	int								m_width;
+	int								m_height;
 	bool							fullscreen;
 
-	uint							con_cursorPos;
-	uint							con_cursorPos_locked;
+	uint							m_cursorPos;
+	uint							m_startCursorPos;
 
-	int								conLinePosition;
+	int								m_logScrollPosition;
 
 	int								con_histIndex;
 	int								con_valueindex;

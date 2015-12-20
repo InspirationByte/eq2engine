@@ -23,6 +23,8 @@ public:
 
 	bool		Update( float fDt );
 
+	void		DrawMenu( float fDt );
+
 	void		OnEnter( CBaseStateHandler* from );
 	void		OnLeave( CBaseStateHandler* to );
 

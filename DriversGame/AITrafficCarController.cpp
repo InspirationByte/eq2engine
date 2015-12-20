@@ -401,6 +401,9 @@ void CAITrafficCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 
 int	CAITrafficCar::SearchForRoad(float fDt, EStateTransition transition)
 {
+	if(transition != STATE_TRANSITION_NONE)
+		return 0;
+
 	Matrix4x4 carMatrix;
 	GetPhysicsBody()->ConstructRenderMatrix(carMatrix);
 

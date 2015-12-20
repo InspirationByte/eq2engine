@@ -118,8 +118,8 @@ bool CState_Title::Update( float fDt )
 
 	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect,elementsOf(tmprect), m_titleTexture, ColorRGBA(fFade,fFade,fFade,1.0f), &blending);
 
-	IEqFont* font = g_fontCache->GetFont("Roboto", 40, TEXT_STYLE_ITALIC);
-	IEqFont* copyrightFont = g_fontCache->GetFont("Roboto", 20);
+	IEqFont* font = g_fontCache->GetFont("Roboto", 30, TEXT_STYLE_ITALIC);
+	IEqFont* copyrightFont = g_fontCache->GetFont("Roboto", 10);
 
 	eqFontStyleParam_t fontParam;
 	fontParam.align = TEXT_ALIGN_CENTER;

@@ -222,7 +222,6 @@ void InitWindowAndRun()
 	SDL_GetWindowSize(mainWindow, &g_pHost->m_nWidth, &g_pHost->m_nHeight);
 
 	g_pHost->m_pWindow = mainWindow;
-	g_pSysConsole->m_hwnd = mainWindow;
 
 	if(!g_pHost->InitSystems( mainWindow, !r_fullscreen.GetBool() ))
 		exit(0);
