@@ -956,6 +956,7 @@ void CCar::InitCarSound()
 	skid_ep.fRadiusMultiplier = 0.55f;
 	skid_ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
 	skid_ep.origin = m_vecOrigin;
+	skid_ep.pObject = this;
 
 	m_pSkidSound = ses->CreateSoundController(&skid_ep);
 
@@ -966,6 +967,7 @@ void CCar::InitCarSound()
 	skid_ep.fRadiusMultiplier = 0.55f;
 	skid_ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
 	skid_ep.origin = m_vecOrigin;
+	skid_ep.pObject = this;
 
 	m_pSurfSound = ses->CreateSoundController(&skid_ep);
 
@@ -978,6 +980,7 @@ void CCar::InitCarSound()
 	ep.fRadiusMultiplier = 0.45f;
 	ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
 	ep.origin = m_vecOrigin;
+	ep.pObject = this;
 
 	m_pEngineSound = ses->CreateSoundController(&ep);
 
@@ -994,6 +997,7 @@ void CCar::InitCarSound()
 	idle_ep.fRadiusMultiplier = 0.45f;
 	idle_ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
 	idle_ep.origin = m_vecOrigin;
+	idle_ep.pObject = this;
 
 	m_pIdleSound = ses->CreateSoundController(&idle_ep);
 
@@ -1006,6 +1010,7 @@ void CCar::InitCarSound()
 	horn_ep.fRadiusMultiplier = 1.0f;
 	horn_ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
 	horn_ep.origin = m_vecOrigin;
+	horn_ep.pObject = this;
 
 	m_pHornSound = ses->CreateSoundController(&horn_ep);
 
@@ -1022,6 +1027,7 @@ void CCar::InitCarSound()
 		siren_ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
 		siren_ep.origin = m_vecOrigin;
 		siren_ep.sampleId = 0;
+		siren_ep.pObject = this;
 
 		m_pSirenSound = ses->CreateSoundController(&siren_ep);
 	}
@@ -1431,7 +1437,7 @@ void CCar::UpdateCarPhysics(float delta)
 	else
 		m_fAcceleration = fAccel;
 	
-	#define RPM_REFRESH_TIMES 10
+	#define RPM_REFRESH_TIMES 16
 
 	float fDeltaRpm = delta / RPM_REFRESH_TIMES;
 
@@ -3181,16 +3187,11 @@ void CCar::UpdateSounds( float fDt )
 
 	m_pIdleSound->SetPitch(1.0f + m_fEngineRPM / 4000.0f);
 
-	//if(m_pIdleSound->IsStopped())
-	//	m_pIdleSound->StartSound();
-
 	if(m_pEngineSound->IsStopped())
-	{
 		m_pEngineSound->StartSound();
 
-		if(m_isLocalCar)
-			m_pEngineSoundLow->StartSound();
-	}
+	if(m_isLocalCar && m_pEngineSoundLow->IsStopped())
+		m_pEngineSoundLow->StartSound();
 
 	float fAccelOrBrake = ((m_controlButtons & IN_ACCELERATE) || (m_controlButtons & IN_BRAKE)) && !(m_controlButtons & IN_HANDBRAKE);
 
@@ -3204,6 +3205,14 @@ void CCar::UpdateSounds( float fDt )
 
 	if(!m_isLocalCar)
 		fRPMDiff = 1.0f;
+
+	if(g_pCameraAnimator->GetMode() == CAM_MODE_INCAR && 
+		g_pGameSession->GetViewCar() == this)
+	{
+		SetSoundVolumeScale(0.5f);
+	}
+	else
+		SetSoundVolumeScale(1.0f);
 
 	m_pEngineSound->SetVolume(fEngineSoundVol * fRPMDiff);
 

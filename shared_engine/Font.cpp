@@ -48,6 +48,74 @@ bool IsVisibleChar( int ch )
 
 //-----------------------------------------------------------------------------------------
 
+class CPlainTextLayoutBuilder : public ITextLayoutBuilder
+{
+public:
+	// controls the newline. For different text orientations
+	void	OnNewLine(	const eqFontStyleParam_t& params, 
+						void* strCurPos, bool isWideChar,
+						int lineNumber,
+						const Vector2D& textStart,
+						Vector2D& curTextPos );
+
+	// for special layouts like rectangles
+	// if false then stops output, and don't render this char
+	bool	LayoutChar( const eqFontStyleParam_t& params,
+						void* strCurPos, bool isWideChar,
+						const eqFontChar_t& chr,
+						Vector2D& curTextPos,
+						Vector2D& cPos, Vector2D& cSize );
+};
+
+void CPlainTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params, 
+										void* strCurPos, bool isWideChar,
+										int lineNumber,
+										const Vector2D& textStart,
+										Vector2D& curTextPos )
+{
+	if(lineNumber > 0)
+		curTextPos.y += m_font->GetLineHeight();
+
+	curTextPos.x = textStart.x;
+
+	float newlineStringWidth;
+	
+	if(isWideChar)
+		newlineStringWidth = m_font->GetStringWidth( (wchar_t*)strCurPos, params.styleFlag, -1, '\n' );
+	else
+		newlineStringWidth = m_font->GetStringWidth( (char*)strCurPos, params.styleFlag, -1, '\n' );
+
+	// calc start position for first time
+	if( params.align != TEXT_ALIGN_LEFT )
+	{
+		if(params.align & TEXT_ALIGN_HCENTER)
+			curTextPos.x -= newlineStringWidth * 0.5f;
+		else if(params.align & TEXT_ALIGN_RIGHT)
+			curTextPos.x -= newlineStringWidth;
+
+		curTextPos.x = floor(curTextPos.x);
+	}
+}
+
+bool CPlainTextLayoutBuilder::LayoutChar(	const eqFontStyleParam_t& params,
+											void* strCurPos, bool isWideChar,
+											const eqFontChar_t& chr,
+											Vector2D& curTextPos,
+											Vector2D& cPos, Vector2D& cSize )
+{
+	CFont* font = (CFont*)m_font;
+
+	if(params.styleFlag & TEXT_STYLE_MONOSPACE)
+		curTextPos.x += cSize.x+font->m_spacing;
+	else
+		curTextPos.x += chr.advX + font->m_spacing;
+
+	return true;
+}
+
+static CPlainTextLayoutBuilder s_defaultTextLayout;
+
+//-----------------------------------------------------------------------------------------
 CFont::CFont()
 {
 	m_vertexBuffer = NULL;
@@ -124,7 +192,7 @@ float CFont::_GetStringWidth( const CHAR_T* str, int styleFlags, int charCount, 
 		if(!IsVisibleChar(charIdx))
 			continue;
 
-		const eqfontchar_t& chr = GetFontCharById( charIdx );
+		const eqFontChar_t& chr = GetFontCharById( charIdx );
 
 		if( styleFlags & TEXT_STYLE_MONOSPACE)
 			totalWidth += chr.x1-chr.x0;
@@ -135,18 +203,29 @@ float CFont::_GetStringWidth( const CHAR_T* str, int styleFlags, int charCount, 
     return totalWidth;
 }
 
+
+
 //
 // Fills text buffer and processes tags
 //
 template <typename CHAR_T>
 int CFont::BuildCharVertexBuffer(Vertex2D_t *dest, const CHAR_T* str, const Vector2D& textPos, const eqFontStyleParam_t& params)
 {
+	const bool isWideChar = std::is_same<CHAR_T,wchar_t>::value;
+
+	ITextLayoutBuilder* layoutBuilder = &s_defaultTextLayout;
+
+	if(params.layoutBuilder != NULL)
+		layoutBuilder = params.layoutBuilder;
+
+	layoutBuilder->Reset( this );
+
 	int numVertsToDraw = 0;
 
 	Vector2D startPos = textPos;
 
 	bool hasNewLine = true;
-	bool isFirst = true;
+	int lineNumber = 0;
 
 	DkLinkedList<eqFontStyleParam_t> states;
 	states.addLast( params );	// push this param
@@ -235,31 +314,14 @@ int CFont::BuildCharVertexBuffer(Vertex2D_t *dest, const CHAR_T* str, const Vect
 		//
 		if(hasNewLine)
 		{
-			if(!isFirst)
-			{
-				// TODO: handle text style newline
-				startPos.y += m_lineHeight;
-			}
-
-			startPos.x = textPos.x;
-
-			// calc start position for first time
-			if( params.align != TEXT_ALIGN_LEFT )
-			{
-				float strWidth = GetStringWidth(str, params.styleFlag, -1, L'\n');
-
-				if(params.align == TEXT_ALIGN_CENTER)
-					startPos.x -= strWidth * 0.5f;
-				else if(params.align == TEXT_ALIGN_RIGHT)
-					startPos.x -= strWidth;
-			}
+			layoutBuilder->OnNewLine(stateParams, (void*)str, isWideChar, lineNumber, textPos, startPos);
 
 			hasNewLine = false;
-			isFirst = false;
 		}
 
 		if (charIdx == '\n')	// NEWLINE
 		{
+			lineNumber++;
 			hasNewLine = true;
 			str++;
 
@@ -272,38 +334,41 @@ int CFont::BuildCharVertexBuffer(Vertex2D_t *dest, const CHAR_T* str, const Vect
 			continue;
 		}
 
-
 		//
 		// Render part - text filling
 		//
-		const eqfontchar_t& chr = GetFontCharById(charIdx);
+		const eqFontChar_t& chr = GetFontCharById(charIdx);
 
-		float x,y;
-		float cw,ch;
+		// build default character pos and size
+		Vector2D cPos(
+			startPos.x + chr.ofsX, 
+			startPos.y - m_baseline + chr.ofsY);
 
-		x = startPos.x + chr.ofsX;
-		y = startPos.y - m_baseline + chr.ofsY;
+		Vector2D cSize(
+			chr.x1-chr.x0,
+			chr.y1-chr.y0);
 
-		cw = chr.x1-chr.x0;
-		ch = chr.y1-chr.y0;
+		//if(stateParams.styleFlag & TEXT_STYLE_FROM_CAP)
+		//	cPos.y = startPos.y - (cSize.y-m_baseline) + chr.ofsY;
+
+		if(!layoutBuilder->LayoutChar(stateParams, (void*)str, isWideChar, chr, startPos, cPos, cSize))
+			break;
 
 		if(stateParams.styleFlag & TEXT_STYLE_FROM_CAP)
-		{
-			y = startPos.y - (ch-m_baseline) + chr.ofsY;
-		}
+			cPos.y = startPos.y - (cSize.y-m_baseline) + chr.ofsY;
 
-		dest[0].m_vPosition = Vector2D(x, y);
+		dest[0].m_vPosition = Vector2D(cPos.x, cPos.y);
 		dest[0].m_vTexCoord = Vector2D(chr.x0, chr.y0)*m_invTexSize;
-		dest[1].m_vPosition = Vector2D(x + cw, y);
+		dest[1].m_vPosition = Vector2D(cPos.x + cSize.x, cPos.y);
 		dest[1].m_vTexCoord = Vector2D(chr.x1, chr.y0)*m_invTexSize;
-		dest[2].m_vPosition = Vector2D(x, y + ch);
+		dest[2].m_vPosition = Vector2D(cPos.x, cPos.y + cSize.y);
 		dest[2].m_vTexCoord = Vector2D(chr.x0, chr.y1)*m_invTexSize;
 
-		dest[3].m_vPosition = Vector2D(x, y + ch);
+		dest[3].m_vPosition = Vector2D(cPos.x, cPos.y + cSize.y);
 		dest[3].m_vTexCoord = Vector2D(chr.x0, chr.y1)*m_invTexSize;
-		dest[4].m_vPosition = Vector2D(x + cw, y);
+		dest[4].m_vPosition = Vector2D(cPos.x + cSize.x, cPos.y);
 		dest[4].m_vTexCoord = Vector2D(chr.x1, chr.y0)*m_invTexSize;
-		dest[5].m_vPosition = Vector2D(x + cw, y + ch);
+		dest[5].m_vPosition = Vector2D(cPos.x + cSize.x, cPos.y + cSize.y);
 		dest[5].m_vTexCoord = Vector2D(chr.x1, chr.y1)*m_invTexSize;
 
 		dest[0].m_vColor = stateParams.textColor;
@@ -312,24 +377,6 @@ int CFont::BuildCharVertexBuffer(Vertex2D_t *dest, const CHAR_T* str, const Vect
 		dest[3].m_vColor = stateParams.textColor;
 		dest[4].m_vColor = stateParams.textColor;
 		dest[5].m_vColor = stateParams.textColor;
-
-		switch(stateParams.orient)
-		{
-			case TEXT_ORIENT_UP:
-			case TEXT_ORIENT_DOWN:
-			{
-				startPos.y += (stateParams.orient == TEXT_ORIENT_DOWN) ? (m_lineHeight+m_spacing) : -(m_lineHeight+m_spacing);
-				break;
-			}
-			case TEXT_ORIENT_RIGHT:
-			default:
-			{
-				if(stateParams.styleFlag & TEXT_STYLE_MONOSPACE)
-					startPos.x += cw+m_spacing;
-				else
-					startPos.x += chr.advX + m_spacing;
-			}
-		}
 
 		numVertsToDraw	+= 6;
 		dest			+= 6;
@@ -434,9 +481,9 @@ void CFont::RenderText(const char* pszText, const Vector2D& start, const eqFontS
 //
 // returns font character information
 //
-const eqfontchar_t& CFont::GetFontCharById( const int chrId ) const
+const eqFontChar_t& CFont::GetFontCharById( const int chrId ) const
 {
-	static eqfontchar_t null_default;
+	static eqFontChar_t null_default;
 
 	if(m_charMap.count(chrId) == 0)
 		return null_default;
@@ -503,7 +550,7 @@ int CFont::RectangularFillTextBuffer(Vertex2D_t *dest, const char *str, float x,
 
     while (*str)
 	{
-		const eqfontchar_t& chr = GetFontCharById(*(unsigned char*)str);//m_FontChars[*(unsigned char*)str];
+		const eqFontChar_t& chr = GetFontCharById(*(unsigned char*)str);//m_FontChars[*(unsigned char*)str];
 		float cw = charWidth;
 
 		if(enableWidthRatio)
@@ -590,7 +637,7 @@ int CFont::FillTextBuffer(Vertex2D_t *dest, const char *str, float x, float y, f
 				}
 				else
 				{
-					const eqfontchar_t& chr = GetFontCharById(*(ubyte*) str); //m_FontChars[*(ubyte*) str];
+					const eqFontChar_t& chr = GetFontCharById(*(ubyte*) str); //m_FontChars[*(ubyte*) str];
 
 					float cw = charWidth;
 
@@ -637,7 +684,7 @@ int CFont::FillTextBuffer(Vertex2D_t *dest, const char *str, float x, float y, f
 				}
 				else
 				{
-					const eqfontchar_t& chr = GetFontCharById(*(ubyte*) str); //m_FontChars[*(ubyte*) str];
+					const eqFontChar_t& chr = GetFontCharById(*(ubyte*) str); //m_FontChars[*(ubyte*) str];
 
 					float cw = charWidth;
 					if(enableWidthRatio)
@@ -717,12 +764,6 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				m_invTexSize = Vector2D(1.0f/m_fontTexture->GetWidth(), 1.0f/m_fontTexture->GetHeight());
 			}
 
-			//m_extCharsStart = INT_MAX;
-			//m_extCharsLength = 0;
-
-			//DkList<eqfontchar_t>	extChars;
-			//DkList<int>				extCharIds;
-
 			for(int i = 0; i < fontSec->keys.numElem(); i++)
 			{
 				kvkeybase_t* k = fontSec->keys[i];
@@ -732,7 +773,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 				int charIdx = atoi(k->name);
 
-				eqfontchar_t fontChar;
+				eqFontChar_t fontChar;
 
 				// x y w h ox oy advanceX
 				// 0 1 2 3 4  5  6
@@ -746,8 +787,6 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				fontChar.ofsX = KV_GetValueFloat(k, 4);
 				fontChar.ofsY = KV_GetValueFloat(k, 5);
 				fontChar.advX = KV_GetValueFloat(k, 6);
-
-				fontChar.ratio = KV_GetValueFloat(k, 2);
 				
 				if( g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9 )
 				{
@@ -785,8 +824,6 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				m_baseline = 8.0f;
 				m_lineHeight = 8.0f;
 
-				float ratio = 1;
-
 				int charsperline =  KV_GetValueInt(pFontSizeSection->FindKeyBase("charsperline"), 0, 16);
 
 				float interval = KV_GetValueFloat(pFontSizeSection->FindKeyBase("interval"), 0, 0.75);
@@ -812,11 +849,9 @@ bool CFont::LoadFont( const char* filenamePrefix )
 						lChars = 0;
 					}
 
-					m_charMap[i] = eqfontchar_t();
+					m_charMap[i] = eqFontChar_t();
 
-					eqfontchar_t& chr = m_charMap[i];
-
-					chr.ratio = ratio;
+					eqFontChar_t& chr = m_charMap[i];
 
 					float CurCharPos_x = lChars * tall;
 					float CurCharPos_y = line * tall;

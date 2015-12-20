@@ -122,7 +122,7 @@ bool CState_Title::Update( float fDt )
 	IEqFont* copyrightFont = g_fontCache->GetFont("Roboto", 10);
 
 	eqFontStyleParam_t fontParam;
-	fontParam.align = TEXT_ALIGN_CENTER;
+	fontParam.align = TEXT_ALIGN_HCENTER;
 	fontParam.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
 	fontParam.textColor = color4_white;
 

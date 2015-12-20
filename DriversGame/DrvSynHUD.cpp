@@ -205,7 +205,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 		eqFontStyleParam_t scrMsgParams;
 		scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
-		scrMsgParams.align = TEXT_ALIGN_CENTER;
+		scrMsgParams.align = TEXT_ALIGN_HCENTER;
 		scrMsgParams.textColor = ColorRGBA(1,1,0.25f,1);
 
 		Vector2D screenMessagePos(screenSize.x / 2, screenSize.y / 3);
@@ -230,7 +230,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 		eqFontStyleParam_t numFontParams;
 		numFontParams.styleFlag |= TEXT_STYLE_SHADOW;
-		numFontParams.align = TEXT_ALIGN_CENTER;
+		numFontParams.align = TEXT_ALIGN_HCENTER;
 		numFontParams.textColor = color4_white;
 
 		Vector2D timeDisplayTextPos(screenSize.x / 2, 80);
@@ -242,9 +242,11 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 		float size = numbers50->GetStringWidth(varargs("%.2i:%.2i", mins, secs), numFontParams.styleFlag);
 
+		numFontParams.align = 0;
+
 		Vector2D millisDisplayTextPos = timeDisplayTextPos + Vector2D(minSecWidth*0.5f, 0.0f);
 
-		numbers20->RenderText(varargs_w(L"'%02d", millisecs), millisDisplayTextPos, fontParams);
+		numbers20->RenderText(varargs_w(L"'%02d", millisecs), millisDisplayTextPos, numFontParams);
 	}
 	
 

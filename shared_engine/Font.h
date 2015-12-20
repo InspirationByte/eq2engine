@@ -12,24 +12,6 @@
 #include "IFont.h"
 #include <map>
 
-struct eqfontchar_t
-{
-	eqfontchar_t()
-	{
-		x0 = y0 = x1 = y1 = ofsX = ofsY = advX = ratio = 0.0f;
-	}
-
-	// rectangle
-    float x0, y0;
-    float x1, y1;
-
-	float ofsX,ofsY;
-	float advX;
-
-	// width ratio
-    float ratio;
-};
-
 // loads font
 IEqFont* InternalLoadFont(const char* pszFontName);
 
@@ -37,6 +19,7 @@ class CFont : public IEqFont
 {
 	friend class			CEngineHost;
 	friend class			CEqSysConsole;
+	friend class			CPlainTextLayoutBuilder;
 
 public:
 							CFont();
@@ -64,7 +47,7 @@ public:
 
 protected:
 
-	const eqfontchar_t&		GetFontCharById( const int chrId ) const;
+	const eqFontChar_t&		GetFontCharById( const int chrId ) const;
 
 	// builds vertex buffer for characters
 	template <typename CHAR_T>
@@ -81,7 +64,7 @@ protected:
 
 	///////////////////////////////////////////////////////////////
 	// OLD DEPRECATED FUNCTIONS BELOW
-
+	/*
 	int						FillTextBuffer(	Vertex2D_t *dest, 
 											const char *str, 
 											float x, float y, 
@@ -99,11 +82,11 @@ protected:
 														int *nLinesCount = NULL,
 														bool enableWidthRatio = true,
 														float fOffset = 0.0f);
-
+	*/
 	//---------------------------------------------------------
 
 	// map of chars
-	std::map<int, eqfontchar_t>	m_charMap;
+	std::map<int, eqFontChar_t>	m_charMap;
 
 	float						m_spacing;
 	float						m_baseline;

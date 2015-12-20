@@ -325,7 +325,7 @@ void CTextureListRenderPanel::Redraw()
 					fontParam.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 					fontParam.textColor = ColorRGBA(1,1,1,1);
 
-					m_pFont->RenderText(material_name.c_str(), name_rect.vleftTop.y, fontParam);
+					m_pFont->RenderText(material_name.c_str(), name_rect.vleftTop, fontParam);
 
 					if(m_filteredlist[i]->IsError())
 						m_pFont->RenderText("BAD MATERIAL", Vector2D(x_offset, y_offset), fontParam);

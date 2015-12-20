@@ -164,7 +164,10 @@ void CSoundController::SetVolume(float fVolume)
 	if(!m_emitData->pEmitter)
 		return;
 
-	float fSoundVolume = m_emitData->script->fVolume;
+	float fSoundVolume = m_emitData->origVolume;
+
+	if(m_emitData->pObject)
+		fSoundVolume *= m_emitData->pObject->GetSoundVolumeScale();
 
 	soundParams_t params;
 	m_emitData->pEmitter->GetParams(&params);
@@ -194,7 +197,7 @@ void CSoundController::SetVelocity(const Vector3D& velocity)
 
 //----------------------------------------------------------------------------
 
-CSoundChannelObject::CSoundChannelObject()
+CSoundChannelObject::CSoundChannelObject() : m_volumeScale(1.0f)
 {
 	memset(m_numChannelSounds, 0, sizeof(m_numChannelSounds));
 }
@@ -340,8 +343,6 @@ ISoundController* CSoundEmitterSystem::CreateSoundController(EmitSound_t *ep)
 	pController->m_soundName = ep->name; // copy sound name since the params can use non-permanent adresses
 	pController->m_emitParams = *ep;
 	pController->m_emitParams.name = (char*)pController->m_soundName.GetData();
-
-	pController->IsStopped();
 
 	return pController;
 }
@@ -715,6 +716,9 @@ bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &
 			params.volume = lerp(params.volume, fBestVolume, gpGlobals->frametime*2.0f);
 		}
 #else
+		if(emitter->pObject && !emitter->pController)
+			fBestVolume *= emitter->pObject->GetSoundVolumeScale();
+
 		params.volume = fBestVolume;
 #endif
 	}

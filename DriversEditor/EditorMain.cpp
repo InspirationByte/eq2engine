@@ -1179,7 +1179,7 @@ bool CEGFViewApp::OnInit()
 
 	SetTopWindow(g_pMainFrame);
 
-	g_parallelJobs->CreateJobThreads(1);
+	g_parallelJobs->Init(1);
 
     return true;
 }

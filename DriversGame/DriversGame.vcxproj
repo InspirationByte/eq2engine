@@ -128,6 +128,7 @@
     <ClCompile Include="..\shared_engine\EngineVersion.cpp" />
     <ClCompile Include="..\shared_engine\eqParallelJobs.cpp" />
     <ClCompile Include="..\shared_engine\FontCache.cpp" />
+    <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp" />
     <ClCompile Include="..\shared_engine\KeyBinding\Keys.cpp" />
     <ClCompile Include="..\shared_engine\materialsystem\MaterialProxy.cpp" />
     <ClCompile Include="..\shared_engine\modelloader_shared.cpp" />
@@ -247,6 +248,7 @@
     <ClInclude Include="..\shared_engine\EGUI\EQUI_Manager.h" />
     <ClInclude Include="..\shared_engine\EGUI\EqUI_Panel.h" />
     <ClInclude Include="..\shared_engine\FontCache.h" />
+    <ClInclude Include="..\shared_engine\FontLayoutBuilders.h" />
     <ClInclude Include="..\shared_engine\KeyBinding\Keys.h" />
     <ClInclude Include="..\Engine\modelloader_shared.h" />
     <ClInclude Include="..\shared_engine\materialsystem\MaterialProxy.h" />

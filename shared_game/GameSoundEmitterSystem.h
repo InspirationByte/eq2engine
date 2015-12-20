@@ -99,9 +99,14 @@ public:
 	int			GetChannelSoundCount(Channel_t chan);
 	void		DecrementChannelSoundCount(Channel_t chan);
 
+	void		SetSoundVolumeScale( float fScale ) {m_volumeScale = fScale;}
+	float		GetSoundVolumeScale() const { return m_volumeScale;}
+
 protected:
 	// sounds at channel counter
 	int			m_numChannelSounds[CHAN_COUNT];
+
+	float		m_volumeScale;
 };
 
 //---------------------------------------------------------------------------------

@@ -9,7 +9,7 @@
 
 #include <stdio.h>
 
-//#include "IEngineGame.h"
+#include "FontLayoutBuilders.h"
 
 #include "EngineSpew.h"
 #include "EngineVersion.h"
@@ -700,23 +700,28 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, float curTim
 
 		eqFontStyleParam_t outputTextStyle;
 
+		eqFontStyleParam_t hasLinesStyle;
+		hasLinesStyle.textColor = ColorRGBA(0.5f,0.5f,1.0f,1.0f);
+
 		con_outputRectangle.vleftTop.x += 5.0f;
 		con_outputRectangle.vleftTop.y += m_font->GetLineHeight();
+
+		static CRectangleTextLayoutBuilder rectLayout;
+		rectLayout.SetRectangle( con_outputRectangle );
+
+		outputTextStyle.layoutBuilder = &rectLayout;
 
 		for(int i = drawstart; i < numRenderLines; i++, numDrawn++)
 		{
 			outputTextStyle.textColor = GetAllMessages()->ptr()[i]->color;
 
-			//font->DrawTextInRect((char *) (const char *)GetAllMessages()->ptr()[i]->text,con_outputRectangle,FONT_DIMS,false,&cnumLines);
 			m_font->RenderText(GetAllMessages()->ptr()[i]->text, con_outputRectangle.vleftTop, outputTextStyle);
 
-			con_outputRectangle.vleftTop.y += m_font->GetLineHeight();//cnumLines;
+			con_outputRectangle.vleftTop.y += m_font->GetLineHeight()*rectLayout.GetProducedLines();//cnumLines;
 
-			if(i-drawstart >= m_maxLines)
+			if(rectLayout.HasNotDrawnLines() || i-drawstart >= m_maxLines)
 			{
-				outputTextStyle.textColor = ColorRGBA(0.5f,0.5f,1.0f,1.0f);
-
-				m_font->RenderText("^ ^ ^ ^ ^ ^", Vector2D(con_outputRectangle.vleftTop.x, con_outputRectangle.vrightBottom.y), outputTextStyle);
+				m_font->RenderText("^ ^ ^ ^ ^ ^", Vector2D(con_outputRectangle.vleftTop.x, con_outputRectangle.vrightBottom.y), hasLinesStyle);
 
 				break;
 			}

@@ -702,7 +702,7 @@ void Game_DrawDirectorUI( float fDt )
 
 	wchar_t* framesStr = varargs_w(L"FRAME: &#FFFF00;%d / %d&;\nCAMERA: &#FFFF00;%d&; (%d) / &#FFFF00;%d&;", g_replayData->m_tick, g_replayData->m_numFrames, g_replayData->m_currentCamera+1, cam ? cam->startTick : 0, g_replayData->m_cameras.numElem());
 
-	params.align = TEXT_ALIGN_CENTER;
+	params.align = TEXT_ALIGN_HCENTER;
 
 	Vector2D frameInfoTextPos(screenSize.x/2, screenSize.y - (screenSize.y/6));
 	g_pHost->m_pDefaultFont->RenderText(framesStr, frameInfoTextPos, params);
@@ -1357,7 +1357,7 @@ void CState_Game::DrawMenu( float fDt )
 	IEqFont* font = g_fontCache->GetFont("Roboto", 30);
 
 	eqFontStyleParam_t fontParam;
-	fontParam.align = TEXT_ALIGN_CENTER;
+	fontParam.align = TEXT_ALIGN_HCENTER;
 	fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParam.textColor = color4_white;
 

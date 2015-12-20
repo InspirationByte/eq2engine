@@ -935,10 +935,21 @@ void CReplayData::SetupReplayCar( vehiclereplay_t* rep )
 		return;
 
 	if(rep->replayArray.numElem() == 0)
+	{
 		MsgWarning("Warning: no replay frames for '%s' (rid=%d)\n", rep->name.c_str(), rep->obj_car->m_replayID);
-			
-	pCar->GetPhysicsBody()->SetPosition(rep->car_initial_pos);
-	pCar->GetPhysicsBody()->SetOrientation(rep->car_initial_rot);
-	pCar->GetPhysicsBody()->SetLinearVelocity(rep->car_initial_vel);
-	pCar->GetPhysicsBody()->SetAngularVelocity(rep->car_initial_angvel);
+
+		pCar->GetPhysicsBody()->SetPosition(rep->car_initial_pos);
+		pCar->GetPhysicsBody()->SetOrientation(rep->car_initial_rot);
+		pCar->GetPhysicsBody()->SetLinearVelocity(rep->car_initial_vel);
+		pCar->GetPhysicsBody()->SetAngularVelocity(rep->car_initial_angvel);
+	}
+	else
+	{
+		const replaycontrol_t& ctrl = rep->replayArray[0];
+
+		pCar->GetPhysicsBody()->SetPosition(ctrl.car_origin);
+		pCar->GetPhysicsBody()->SetOrientation(Quaternion(ctrl.car_rot));
+		pCar->GetPhysicsBody()->SetLinearVelocity(ctrl.car_vel);
+		pCar->GetPhysicsBody()->SetAngularVelocity(ctrl.car_angvel);
+	}
 }

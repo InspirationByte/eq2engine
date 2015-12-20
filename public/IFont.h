@@ -23,19 +23,7 @@
 #include "math/Rectangle.h"
 #include "materialsystem/IMaterialSystem.h"
 
-// undefine windows macro for Visual Studio
-#if defined(_WIN32)
-#undef DrawText
-#undef DrawTextEx
-#endif
-
-enum ETextOrientation
-{
-	TEXT_ORIENT_RIGHT = 0,
-	TEXT_ORIENT_UP,
-	TEXT_ORIENT_DOWN,
-};
-
+// text styles
 enum ETextStyleFlag
 {
 	TEXT_STYLE_SHADOW		= (1 << 0), // render a shadow
@@ -51,11 +39,63 @@ enum ETextStyleFlag
 	TEXT_STYLE_ITALIC		= (1 << 9),
 };
 
+// alignment types
 enum ETextAlignment
 {
-	TEXT_ALIGN_LEFT = 0,
-	TEXT_ALIGN_RIGHT,
-	TEXT_ALIGN_CENTER,
+	TEXT_ALIGN_LEFT		= 0, // default flag
+	TEXT_ALIGN_RIGHT	= (1 << 0), // has no right?
+	TEXT_ALIGN_HCENTER	= (1 << 1),
+
+	TEXT_ALIGN_TOP		= 0, // by default
+	TEXT_ALIGN_BOTTOM	= (1 << 3),
+	TEXT_ALIGN_VCENTER	= (1 << 4),
+};
+
+struct eqFontChar_t
+{
+	eqFontChar_t()
+	{
+		x0 = y0 = x1 = y1 = ofsX = ofsY = advX = 0.0f;
+	}
+
+	// rectangle
+    float x0, y0;
+    float x1, y1;
+
+	float ofsX,ofsY;
+	float advX;
+};
+
+class IEqFont;
+struct eqFontStyleParam_t;
+
+//-------------------------------------------------------------------------
+// Font layout interface
+//-------------------------------------------------------------------------
+class ITextLayoutBuilder
+{
+public:
+	virtual ~ITextLayoutBuilder() {}
+
+	virtual void	Reset( IEqFont* font ) { m_font = font; }
+
+	// controls the newline. For different text orientations
+	virtual void	OnNewLine(	const eqFontStyleParam_t& params, 
+								void* strCurPos, bool isWideChar,
+								int lineNumber,
+								const Vector2D& textStart,
+								Vector2D& curTextPos ) = 0;
+
+	// for special layouts like rectangles
+	// if false then stops output, and don't render this char
+	virtual bool	LayoutChar( const eqFontStyleParam_t& params, 
+								void* strCurPos, bool isWideChar,
+								const eqFontChar_t& chr,
+								Vector2D& curTextPos,
+								Vector2D& cPos, Vector2D& cSize ) = 0;
+
+protected:
+	IEqFont*		m_font;
 };
 
 // text
@@ -63,8 +103,7 @@ struct eqFontStyleParam_t
 {
 	eqFontStyleParam_t()
 	{
-		align = TEXT_ALIGN_LEFT;
-		orient = TEXT_ORIENT_RIGHT;
+		align = 0; // which is (TEXT_ALIGN_LEFT | TEXT_ALIGN_TOP)
 		styleFlag = 0;
 
 		textColor = ColorRGBA(1.0f);
@@ -72,19 +111,25 @@ struct eqFontStyleParam_t
 		shadowOffset = 1.0f;
 		shadowColor = ColorRGB(0.0f);
 		shadowAlpha = 0.7f;
+
+		layoutBuilder = NULL;
 	}
 
-	int			orient;			// ETextOrientation
-	int			align;			// ETextAlignment
-	int			styleFlag;		// ETextStyleFlag
-	float		shadowOffset;
+	int					align;			// ETextAlignment
+	int					styleFlag;		// ETextStyleFlag
+	float				shadowOffset;
 
-	ColorRGB	shadowColor;
-	float		shadowAlpha;
+	ITextLayoutBuilder*	layoutBuilder;
 
-	ColorRGBA	textColor;
+	ColorRGB			shadowColor;
+	float				shadowAlpha;
+
+	ColorRGBA			textColor;
 };
 
+//-------------------------------------------------------------------------
+// The font interface
+//-------------------------------------------------------------------------
 class IEqFont
 {
 public:

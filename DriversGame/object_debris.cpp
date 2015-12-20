@@ -236,6 +236,10 @@ void CObject_Debris::Simulate(float fDt)
 
 		if(obj->IsDynamic() && !m_collOccured)
 		{
+			m_collOccured = true;
+			g_pPhysics->m_physics.AddToMoveableList(m_physBody);
+			m_physBody->Wake();
+
 			CEqRigidBody* body = (CEqRigidBody*)obj;
 			if(body->m_flags & BODY_ISCAR)
 			{
@@ -252,13 +256,7 @@ void CObject_Debris::Simulate(float fDt)
 					ep.origin = pair.position;
 
 					EmitSoundWithParams( &ep );
-					
-					m_physBody->SetContents(0);
-					m_physBody->SetCollideMask(0);
-					m_physBody->Wake();
 
-					m_collOccured = true;
-					g_pPhysics->m_physics.AddToMoveableList(m_physBody);
 					m_fTimeToRemove = 0;//DEBRIS_COLLISION_RELAY;
 
 					float fCarVel = length(body->GetLinearVelocity());

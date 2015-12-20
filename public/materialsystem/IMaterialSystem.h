@@ -81,6 +81,14 @@ typedef struct Vertex2D
 		m_vTexCoord = t;
 		m_vColor = color;
 	}
+
+	void Set(const Vector2D& p, const Vector2D& t,const Vector4D& color)
+	{
+		m_vPosition = p;
+		m_vTexCoord = t;
+		m_vColor = color;
+	}
+
     Vector2D		m_vPosition;
     Vector2D		m_vTexCoord;
 	Vector4D		m_vColor;

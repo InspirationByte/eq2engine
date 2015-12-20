@@ -324,6 +324,9 @@
     <ClCompile Include="EventFSM.cpp">
       <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp">
+      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">
@@ -630,6 +633,9 @@
     </ClInclude>
     <ClInclude Include="AIEventTypes.h">
       <Filter>Файлы исходного кода\Game\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\FontLayoutBuilders.h">
+      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
