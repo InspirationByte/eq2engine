@@ -173,25 +173,21 @@ void CObject_Physics::SetVelocity(const Vector3D& vel)
 	m_physBody->SetLinearVelocity( vel  );
 }
 
-Vector3D CObject_Physics::GetOrigin()
+const Vector3D& CObject_Physics::GetOrigin()
 {
-	if(!m_physBody)
-		return m_vecOrigin;
-
-	return m_physBody->GetPosition();
+	m_vecOrigin = m_physBody->GetPosition();
+	return m_vecOrigin;
 }
 
-Vector3D CObject_Physics::GetAngles()
-{
-	if(!m_physBody)
-		return m_vecAngles;
+const Vector3D& CObject_Physics::GetAngles()
+{ 
+	m_vecAngles = eulers(m_physBody->GetOrientation());
+	m_vecAngles = VRAD2DEG(m_vecAngles);
 
-	Vector3D eangles = eulers(m_physBody->GetOrientation());
-
-	return VRAD2DEG(eangles);
+	return m_vecAngles;
 }
 
-Vector3D CObject_Physics::GetVelocity()
+const Vector3D& CObject_Physics::GetVelocity() const
 {
 	return m_physBody->GetLinearVelocity();
 }

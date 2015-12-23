@@ -6,7 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "car.h"
-//#include "math/math_common.h"
 
 #include "DebugOverlay.h"
 #include "session_stuff.h"
@@ -356,9 +355,9 @@ void PoliceSirenEffect(float fCurTime, const ColorRGB& color, const Vector3D& po
 class CFleckEffect : public IEffect
 {
 public:
-	CFleckEffect(const Vector3D &position, const Vector3D &velocity, const Vector3D &gravity, float StartSize, float lifetime, int nMaterial, float rotation, const ColorRGB& color, CPFXAtlasGroup* group, TexAtlasEntry_t* entry)
+	CFleckEffect(const Vector3D &position, const Vector3D &velocity, const Vector3D &gravity, float StartSize, float lifetime, float rotation, const ColorRGB& color, CPFXAtlasGroup* group, TexAtlasEntry_t* entry)
 	{
-		InternalInit(position, lifetime, nMaterial);
+		InternalInit(position, lifetime, group, entry);
 
 		fStartSize = StartSize;
 
@@ -448,9 +447,9 @@ protected:
 class CSmokeEffect : public IEffect
 {
 public:
-	CSmokeEffect(const Vector3D &position, const Vector3D &velocity, float StartSize, float EndSize, float lifetime, int nMaterial, float rotation, const Vector3D &gravity = vec3_zero, const Vector3D &color1 = color3_white, const Vector3D &color2 = color3_white, float alpha = 1.0f)
+	CSmokeEffect(const Vector3D &position, const Vector3D &velocity, float StartSize, float EndSize, float lifetime, CPFXAtlasGroup* group, TexAtlasEntry_t* entry, float rotation, const Vector3D &gravity = vec3_zero, const Vector3D &color1 = color3_white, const Vector3D &color2 = color3_white, float alpha = 1.0f)
 	{
-		InternalInit( position, lifetime, nMaterial );
+		InternalInit( position, lifetime, group, entry );
 
 		fCurSize = StartSize;
 		fStartSize = StartSize;
@@ -493,8 +492,8 @@ public:
 
 		effect.vOrigin = m_vOrigin;
 		effect.vColor = Vector4D(m_vCurrColor * col_lerp, lifeTimePerc*m_alpha*fStartAlpha);
-		effect.group = g_translParticles;
-		effect.tex = g_translParticles->FindEntry("smoke2");
+		effect.group = m_atlGroup;
+		effect.tex = m_atlEntry;
 		effect.nFlags = EFFECT_FLAG_NO_FRUSTUM_CHECK;
 		effect.fZAngle = lifeTimePerc*rotate;
 
@@ -535,7 +534,7 @@ class CSparkLine : public IEffect
 public:
 	CSparkLine(const Vector3D &position, const Vector3D &velocity, const Vector3D &gravity, float length, float StartSize, float EndSize, float lifetime, CPFXAtlasGroup* group, TexAtlasEntry_t* entry)
 	{
-		InternalInit(position, lifetime, -1);
+		InternalInit(position, lifetime, group, entry);
 
 		fCurSize = StartSize;
 		fStartSize = StartSize;
@@ -546,9 +545,6 @@ public:
 		fLength = length;
 
 		vGravity = gravity;
-
-		m_group = group;
-		m_entry = entry;
 	}
 
 	bool DrawEffect(float dTime)
@@ -559,7 +555,7 @@ public:
 			return false;
 
 		PFXVertex_t* verts;
-		if(m_group->AllocateGeom( 4, 4, &verts, NULL, true ) < 0)
+		if(m_atlGroup->AllocateGeom( 4, 4, &verts, NULL, true ) < 0)
 			return false;
 
 		m_vOrigin += m_vVelocity*dTime*2.0f;
@@ -584,25 +580,25 @@ public:
 		Vector4D color(Vector3D(1)*lifeTimePerc, 1);
 
 		verts[0].point = temp;
-		verts[0].texcoord = m_entry->rect.GetLeftTop();
+		verts[0].texcoord = m_atlEntry->rect.GetLeftTop();
 		verts[0].color = color;
 
 		VectorMA( vEnd, -scale, ccross, temp );
 
 		verts[1].point = temp;
-		verts[1].texcoord = m_entry->rect.GetLeftBottom();
+		verts[1].texcoord = m_atlEntry->rect.GetLeftBottom();
 		verts[1].color = color;
 
 		VectorMA( m_vOrigin, scale, ccross, temp );
 
 		verts[2].point = temp;
-		verts[2].texcoord = m_entry->rect.GetRightTop();
+		verts[2].texcoord = m_atlEntry->rect.GetRightTop();
 		verts[2].color = color;
 
 		VectorMA( m_vOrigin, -scale, ccross, temp );
 
 		verts[3].point = temp;
-		verts[3].texcoord = m_entry->rect.GetRightBottom();
+		verts[3].texcoord = m_atlEntry->rect.GetRightBottom();
 		verts[3].color = color;
 
 		CollisionData_t coll;
@@ -633,9 +629,6 @@ protected:
 	float		fStartSize;
 	float		fEndSize;
 	float		fLength;
-
-	CPFXAtlasGroup*		m_group;
-	TexAtlasEntry_t*	m_entry;
 };
 
 #define ACCELERATION_CONST			(2.0f)
@@ -1087,7 +1080,8 @@ void CCar::Spawn()
 	}
 
 	m_trans_grasspart = g_translParticles->FindEntry("grasspart");
-	//m_trans_smoke2 = g_translParticles->FindAtlasTexture("smoke2");
+	m_trans_smoke2 = g_translParticles->FindEntry("smoke2");
+	m_trans_raindrops = g_translParticles->FindEntry("rain_ripple");
 	m_trans_fleck = g_translParticles->FindEntry("fleck");
 	m_veh_skidmark_asphalt = g_vehicleEffects->FindEntry("skidmark_asphalt");
 
@@ -1196,24 +1190,26 @@ void CCar::SetAngularVelocity(const Vector3D& vel)
 	m_pPhysicsObject->m_object->SetAngularVelocity( vel );
 }
 
-Vector3D CCar::GetOrigin() const
+const Vector3D& CCar::GetOrigin()
 {
-	return m_pPhysicsObject->m_object->GetPosition();
+	m_vecOrigin = m_pPhysicsObject->m_object->GetPosition();
+	return m_vecOrigin;
 }
 
-Vector3D CCar::GetAngles() const
+const Vector3D& CCar::GetAngles()
 {
-	Vector3D eangles = eulers(m_pPhysicsObject->m_object->GetOrientation());
+	m_vecAngles = eulers(m_pPhysicsObject->m_object->GetOrientation());
+	m_vecAngles = VRAD2DEG(m_vecAngles);
 
-	return VRAD2DEG(eangles);
+	return m_vecAngles;
 }
 
-Quaternion CCar::GetOrientation() const
+const Quaternion& CCar::GetOrientation() const
 {
 	return m_pPhysicsObject->m_object->GetOrientation();
 }
 
-Vector3D CCar::GetForwardVector() const
+const Vector3D CCar::GetForwardVector() const
 {
 	Matrix4x4 m(m_pPhysicsObject->m_object->GetOrientation());
 
@@ -1222,7 +1218,7 @@ Vector3D CCar::GetForwardVector() const
 	return m.rows[2].xyz();
 }
 
-Vector3D CCar::GetUpVector() const
+const Vector3D CCar::GetUpVector() const
 {
 	Matrix4x4 m(m_pPhysicsObject->m_object->GetOrientation());
 
@@ -1231,7 +1227,7 @@ Vector3D CCar::GetUpVector() const
 	return m.rows[1].xyz();
 }
 
-Vector3D CCar::GetRightVector() const
+const Vector3D CCar::GetRightVector() const
 {
 	Matrix4x4 m(m_pPhysicsObject->m_object->GetOrientation());
 
@@ -1240,12 +1236,12 @@ Vector3D CCar::GetRightVector() const
 	return m.rows[0].xyz();
 }
 
-Vector3D CCar::GetVelocity() const
+const Vector3D& CCar::GetVelocity() const
 {
 	return m_pPhysicsObject->m_object->GetLinearVelocity();
 }
 
-Vector3D CCar::GetAngularVelocity() const
+const Vector3D& CCar::GetAngularVelocity() const
 {
 	return m_pPhysicsObject->m_object->GetAngularVelocity();
 }
@@ -1334,6 +1330,27 @@ void CCar::GetControlVars(float& fAccelRatio, float& fBrakeRatio, float& fSteeri
 	fAccelRatio = (double)m_accelRatio * _oneBy1024;
 	fBrakeRatio = (double)m_brakeRatio * _oneBy1024;
 	fSteering = (double)m_steerRatio * _oneBy1024;
+}
+
+void CCar::AnalogSetControls(float accel_brake, float steering, bool extendSteer, bool handbrake, bool burnout)
+{
+#define CONTROL_TOLERANCE	(0.05f)
+
+	int buttons = IN_ANALOGSTEER | (extendSteer ? IN_EXTENDTURN : 0) | (burnout ? IN_BURNOUT : 0) | (handbrake ? IN_HANDBRAKE : 0);
+
+	float accelRatio = accel_brake;
+	float brakeRatio = -accel_brake;
+
+	if(accelRatio < 0.0f) accelRatio = 0.0f;
+	if(brakeRatio < 0.0f) brakeRatio = 0.0f;
+
+	if(accelRatio > CONTROL_TOLERANCE)
+		buttons |= IN_ACCELERATE;
+
+	if(brakeRatio > CONTROL_TOLERANCE)
+		buttons |= IN_BRAKE;
+
+	SetControlVars(accelRatio, brakeRatio, steering);
 }
 
 #define BURNOUT_MAX_SPEED				(62.0f)
@@ -2142,7 +2159,7 @@ void CCar::EmitCollisionParticles(const Vector3D& position, const Vector3D& velo
 
 			CFleckEffect* fleck = new CFleckEffect(fleckPos, n*fleckPower + Vector3D(0.0f,2.0f,0.0f),
 													Vector3D(0,-16.0f,0),
-													RandomFloat(0.04, 0.07)*FLECK_SCALE, RandomFloat(0.4, 0.8),0, RandomFloat(120, 300),
+													RandomFloat(0.04, 0.07)*FLECK_SCALE, RandomFloat(0.4, 0.8), RandomFloat(120, 300),
 													randColor, feffgroup, fentry);
 
 			effectrenderer->RegisterEffectForRender(fleck);
@@ -2248,7 +2265,7 @@ void CCar::OnPhysicsFrame( float fDt )
 				CSmokeEffect* pSmoke = new CSmokeEffect(waterPos, vel,
 														RandomFloat(0.3, 0.44), RandomFloat(1.5, 1.9),
 														RandomFloat(0.15f),
-														-1,
+														g_translParticles, m_trans_raindrops,
 														RandomFloat(5, 35), Vector3D(1,RandomFloat(-3.9, -5.2) , 1),
 														ColorRGB(1), ColorRGB(1));
 
@@ -2463,7 +2480,7 @@ void CCar::Simulate( float fDt )
 			CSmokeEffect* pSmoke = new CSmokeEffect(smokePos, Vector3D(0,1, 1),
 													RandomFloat(0.1, 0.3), RandomFloat(1.0, 1.8),
 													RandomFloat(1.2f),
-													/*g_translParticles->FindAtlasTexture("smoke")*/-1,
+													g_translParticles, m_trans_smoke2,
 													RandomFloat(25, 85), Vector3D(1,RandomFloat(-0.7, 0.2) , 1),
 													smokeCol, smokeCol, alphaModifier);
 			effectrenderer->RegisterEffectForRender(pSmoke);
@@ -2499,7 +2516,7 @@ void CCar::Simulate( float fDt )
 			CSmokeEffect* pSmoke = new CSmokeEffect(smokePos, -smokeDir,
 													RandomFloat(0.08, 0.12), RandomFloat(0.3, 0.4),
 													RandomFloat(alphaModifier*alphaScale),
-													-1,
+													g_translParticles, m_trans_smoke2,
 													RandomFloat(25,45), Vector3D(0.1,RandomFloat(0.0, 0.2), 0.05),
 													smokeCol, smokeCol, alphaModifier*alphaScale);
 			effectrenderer->RegisterEffectForRender(pSmoke);
@@ -2967,7 +2984,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 					CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, wheel.velocityVec*0.25f+Vector3D(0,1, 1),
 															RandomFloat(0.1, 0.3)*efficency, RandomFloat(1.0, 1.8)*timeScale,
 															RandomFloat(1.2f)*timeScale,
-															/*g_translParticles->FindAtlasTexture("smoke")*/-1,
+															g_translParticles, m_trans_smoke2,
 															RandomFloat(25, 85), Vector3D(1,RandomFloat(-0.7, 0.2) , 1),
 															smokeCol, smokeCol);
 					effectrenderer->RegisterEffectForRender(pSmoke);
@@ -2993,7 +3010,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 					CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, vel,
 															RandomFloat(0.11, 0.14), RandomFloat(1.1, 1.5),
 															RandomFloat(0.15f),
-															-1,
+															g_translParticles, m_trans_smoke2,
 															RandomFloat(5, 35), Vector3D(1,RandomFloat(-3.9, -5.2) , 1),
 															ColorRGB(0.95f,0.757f,0.611f), ColorRGB(0.95f,0.757f,0.611f));
 
@@ -3022,7 +3039,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 					CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, vel,
 															RandomFloat(0.11, 0.14), RandomFloat(1.5, 1.7),
 															RandomFloat(0.35f),
-															-1,
+															g_translParticles, m_trans_smoke2,
 															RandomFloat(25, 85), Vector3D(1,RandomFloat(-3.9, -5.2) , 1),
 															ColorRGB(0.1f,0.08f,0.00f), ColorRGB(0.1f,0.08f,0.00f));
 
@@ -3287,7 +3304,7 @@ int	CCar::GetWheelCount()
 
 float CCar::GetWheelSpeed(int index)
 {
-	return m_pWheels[index].pitchVel/* * m_pWheels[index].radius*/ * SPEEDO_SCALE;
+	return m_pWheels[index].pitchVel * SPEEDO_SCALE;
 }
 
 float CCar::GetSpeed() const

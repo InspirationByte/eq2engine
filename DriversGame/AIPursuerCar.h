@@ -8,7 +8,7 @@
 #ifndef AIPURSUERCARCONTROLLER_H
 #define AIPURSUERCARCONTROLLER_H
 
-#include "AITrafficCarController.h"
+#include "AITrafficCar.h"
 
 enum EPursuerAIType
 {
@@ -22,6 +22,8 @@ enum EInfractionType
 	INFRACTION_NONE = 0,
 
 	INFRACTION_HAS_FELONY,		// this car has a felony
+
+	INFRACTION_MINOR,			// minor infraction ratio
 
 	INFRACTION_SPEEDING,		// speed over 65 mph
 	INFRACTION_RED_LIGHT,		// he crossed red light
@@ -50,18 +52,22 @@ public:
 
 	virtual void		OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy);
 
-	virtual void		OnPrePhysicsFrame( float fDt );
-	virtual void		OnPhysicsFrame( float fDt );
+	bool				IsPursuer() const { return true; }
 
-	bool				CheckObjectVisibility(CCar* obj);
 	void				SetPursuitTarget(CCar* obj);
-
-	EInfractionType		CheckTrafficInfraction( CCar* car, bool checkFelony = true, bool checkSpeeding = true );
-
 	void				BeginPursuit();
 	void				EndPursuit( bool death );
 
-	bool				IsPursuer() const { return true; }
+	bool				CheckObjectVisibility(CCar* obj);
+
+protected:
+
+	int					PassiveCopState( float fDt, EStateTransition transition );
+
+	virtual void		OnPrePhysicsFrame( float fDt );
+	virtual void		OnPhysicsFrame( float fDt );
+
+	EInfractionType		CheckTrafficInfraction( CCar* car, bool checkFelony = true, bool checkSpeeding = true );
 
 	bool				Speak( const char* soundName, bool force = false );
 	void				TrySayTaunt();
@@ -73,7 +79,7 @@ public:
 	int					DeadState( float fDt, EStateTransition transition );
 	int					PursueTarget( float fDt, EStateTransition transition );
 
-protected:
+	//-----------------------------------------------------------------------------------
 
 	EPursuerAIType			m_type;
 

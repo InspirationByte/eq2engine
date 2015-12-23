@@ -357,16 +357,6 @@ public:
 	int								GetNumHFields() const;
 	int								GetNumNomEmptyHFields() const;
 
-
-
-	/*
-	void							MakeAndWriteRoadJunctions(IVirtualStream* stream, juncroadregion_t* regs, int regWide);
-
-protected:
-	void							SearchJunctions( int px, int py, juncroadregion_t* regs, int regWide );
-public:
-*/
-
 	//----------------------------------------------------
 
 #ifdef EDITOR
@@ -545,21 +535,7 @@ public:
 	int								UpdateRegions( RegionLoadUnloadCallbackFunc func = NULL);
 	void							RespawnAllObjects();
 
-	//---------------------------------
-	// visibility
-	//---------------------------------
-
-	// updates visibility of map data and references
-	//void							UpdateVisibilityMap( const IVector2D& globalPoint );
-
-	// returns point visibility from latest visibility update
-	//bool							GetPointCurrentVisibility( const IVector2D& globalPoint );
-
-	//---------------------------------
-
-//#ifdef EDITOR
 	void							Nav_AddObstacle(CLevelRegion* reg, regobjectref_t* ref);
-//#endif // EDITOR
 
 	//
 	// conversions

@@ -13,6 +13,8 @@
 
 #include "math/DkMath.h"
 
+class CPFXAtlasGroup;
+
 class IEffect
 {
 public:
@@ -31,34 +33,33 @@ public:
 
 	float			GetLifetimePercent() const	{return m_fLifeTime / m_fStartLifeTime;}
 
-	Vector3D		GetOrigin() const			{return m_vOrigin;}
+	const Vector3D&	GetOrigin() const			{return m_vOrigin;}
 
 	float			GetDistanceToCamera() const	{return m_fDistanceToView;}
 
 protected:
 
-	void InternalInit(const Vector3D &origin, float lifetime, int material)
+	void InternalInit(const Vector3D &origin, float lifetime, CPFXAtlasGroup* group, TexAtlasEntry_t* entry)
 	{
 		m_vOrigin = origin;
 		SetSortOrigin(origin);
 
 		m_fStartLifeTime = lifetime;
 		m_fLifeTime = lifetime;
-		//m_fEmitTime = gpGlobals->curtime;
 
-		m_nMaterialGroup = material;
+		m_atlGroup = group;
+		m_atlEntry = entry;
 	}
 
-	Vector3D		m_vOrigin;
+	Vector3D			m_vOrigin;
 
-	//float			m_fEmitTime;		// to use for compare with gpGlobals
-	float			m_fStartLifeTime;
-	float			m_fLifeTime;
+	float				m_fStartLifeTime;
+	float				m_fLifeTime;
 
-	int				m_nMaterialGroup;
-	// int			m_nAtlasIndex;		// atlas index, -1 = no atlas
+	CPFXAtlasGroup*		m_atlGroup;
+	TexAtlasEntry_t*	m_atlEntry;
 
-	float			m_fDistanceToView;
+	float				m_fDistanceToView;
 };
 
 //-------------------------------------------------------------------------------------

@@ -64,13 +64,13 @@ public:
 	btCollisionShape*			GetBulletShape() const;												///< returns bullet physics shape
 	CEqBulletIndexedMesh*		GetMesh() const;													///< returns indexed shape
 
-	Vector3D					GetShapeCenter() const;
+	const Vector3D&				GetShapeCenter() const;
 
 	void						SetUserData(void* ptr);												///< sets user data (usually it's a pointer to game object)
 	void*						GetUserData() const;												///< returns user data
 
-	virtual FVector3D			GetPosition() const;												///< returns body position
-	virtual Quaternion			GetOrientation() const;												///< returns body Quaternion orientation
+	virtual const FVector3D&	GetPosition() const;												///< returns body position
+	virtual const Quaternion&	GetOrientation() const;												///< returns body Quaternion orientation
 
 	virtual void				SetPosition(const FVector3D& position);								///< sets new position
 	virtual void				SetOrientation(const Quaternion& orient);							///< sets new orientation and updates inertia tensor

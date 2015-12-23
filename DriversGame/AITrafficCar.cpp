@@ -5,7 +5,7 @@
 // Description: traffic car controller AI
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "AITrafficCarController.h"
+#include "AITrafficCar.h"
 #include "session_stuff.h"
 
 
@@ -61,7 +61,7 @@ const float AI_TARGET_EXTENDED_DIST = 30.0f;
 
 const float AI_LANE_SWITCH_DELAY = 12.0f;
 
-const float AI_EMERGENCY_ESCAPE_TIME = 2.5f;
+const float AI_EMERGENCY_ESCAPE_TIME = 1.3f;
 
 const float KILL_COLLISION_POWER = 18.0f;
 
@@ -296,7 +296,6 @@ ConVar g_disableTrafficCarThink("g_disableTrafficCarThink", "0", "Disables traff
 
 void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 {
-	
 	BaseClass::OnPrePhysicsFrame(fDt);
 
 	PROFILE_BEGIN(AITrafficCar_Think);
@@ -307,11 +306,9 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 
 		if(m_thinkTime <= 0.0f)
 		{
-			int res = RunState( m_refreshTime+fDt );
+			int res = DoStatesAndEvents( m_refreshTime+fDt );
 			m_thinkTime = m_refreshTime;
 		}
-
-		int res = RunState( fDt );
 
 		if(m_straights[STRAIGHT_CURRENT].direction != -1)
 		{
@@ -321,7 +318,7 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 			//debugoverlay->Box3D(start-1.5f, start+1.5f, ColorRGBA(1,0,1,0.25f));
 			//debugoverlay->Box3D(target-1.5f, target+1.5f, ColorRGBA(0,1,1,0.25f));
 		}
-		else if(m_curState == &CAITrafficCar::TrafficDrive)
+		else if(FSMGetCurrentState() == &CAITrafficCar::TrafficDrive)
 		{
 			AI_SetState( &CAITrafficCar::SearchForRoad );
 		}

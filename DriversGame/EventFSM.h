@@ -8,14 +8,7 @@
 #ifndef EVENTFSM_H
 #define EVENTFSM_H
 
-//
-// Events... used for... events!
-//
-struct Event_t
-{
-	int								type;
-	Event_t*						next;
-};
+#include <map>
 
 // intrenal state event
 enum EStateTransition
@@ -26,8 +19,28 @@ enum EStateTransition
 	STATE_TRANSITION_EPILOG,	// when state ends work
 };
 
+class CEvent;
 class CFSM_Base;
+class CGameObject;
 typedef int (CFSM_Base::*fnStateHandler)( float fDt, EStateTransition transition );
+typedef void (CFSM_Base::*fnEventHandler)( CEvent* );
+
+//
+// Events... used for... events!
+//
+class CEvent
+{
+	friend class CFSM_Base;
+public:
+	CEvent(CGameObject* sender) : m_sender(m_sender)
+	{}
+	virtual				~CEvent() {}
+	virtual int			GetType() = 0;
+
+protected:
+	CGameObject*		m_sender;
+	CEvent*				m_next;
+};
 
 //
 // The basis of FSM
@@ -35,26 +48,34 @@ typedef int (CFSM_Base::*fnStateHandler)( float fDt, EStateTransition transition
 class CFSM_Base
 {
 public:
-				CFSM_Base();
-	virtual		~CFSM_Base() {}
+						CFSM_Base();
+	virtual				~CFSM_Base() {}
 
-	int			DefaultNoState() { return 0; }
+	int					DefaultNoState() { return 0; }
 
-	int			RunState(float fDt);
+	int					DoStatesAndEvents( float fDt );
 
-	void		FSMSetState(fnStateHandler stateFn);
-	void		FSMSetNextState(fnStateHandler stateFn, float delay);
+	void				FSMSetState(fnStateHandler stateFn);
+	void				FSMSetNextState(fnStateHandler stateFn, float delay);
 
-	void		PushEvent( Event_t* evt );
-	void		ClearEvents();
+	void				DoEvents();
 
-protected:
-	fnStateHandler		m_curState;
+	fnStateHandler		FSMGetCurrentState() const {return m_curState;}
 
-	fnStateHandler		m_nextState;
-	float				m_nextDelay;
+	void				RaiseEvent( CEvent* evt );
+	void				SetEventHandler( int type, fnEventHandler fnHandler );
 
-	Event_t*			m_firstEvent;
+private:
+	void							PushEvent( CEvent* evt );
+
+	fnStateHandler					m_curState;
+
+	fnStateHandler					m_nextState;
+	float							m_nextDelay;
+
+	std::map<int, fnEventHandler>	m_handlers;
+
+	CEvent*							m_firstEvent;
 };
 
 #define AI_SetState( fn ) FSMSetState(static_cast<fnStateHandler>(fn))

@@ -117,23 +117,6 @@ void CObject_Static::SetVelocity(const Vector3D& vel)
 
 }
 
-Vector3D CObject_Static::GetOrigin()
-{
-	return m_pPhysicsObject->GetPosition();
-}
-
-Vector3D CObject_Static::GetAngles()
-{
-	Vector3D eangles = eulers(m_pPhysicsObject->GetOrientation());
-
-	return VRAD2DEG(eangles);
-}
-
-Vector3D CObject_Static::GetVelocity()
-{
-	return vec3_zero;
-}
-
 extern ConVar r_enableObjectsInstancing;
 
 void CObject_Static::Draw( int nRenderFlags )

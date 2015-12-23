@@ -9,9 +9,7 @@
 #define CAR_H
 
 #include "world.h"
-#include "GameSoundEmitterSystem.h"
 #include "CameraAnimator.h"
-
 #include "EqParticles.h"
 
 const float _oneBy1024 = 1.0f / 1023.0f;
@@ -288,6 +286,8 @@ public:
 
 	virtual void			Spawn();
 
+	void					Draw( int nRenderFlags );
+
 	void					AlignToGround();	// align car to ground
 
 	//-----------------------------------
@@ -315,6 +315,8 @@ public:
 	void					SetControlVars(float fAccelRatio, float fBrakeRatio, float fSteering);
 	void					GetControlVars(float& fAccelRatio, float& fBrakeRatio, float& fSteering);
 
+	void					AnalogSetControls(float accel_brake, float steering, bool extendSteer, bool handbrake, bool burnout);
+
 	void					SetOrigin(const Vector3D& origin);
 	void					SetAngles(const Vector3D& angles);
 	void					SetOrientation(const Quaternion& q);
@@ -322,16 +324,16 @@ public:
 	void					SetVelocity(const Vector3D& vel);
 	void					SetAngularVelocity(const Vector3D& vel);
 
-	Vector3D				GetOrigin() const;
-	Vector3D				GetAngles() const;
-	Quaternion				GetOrientation() const;
+	const Vector3D&			GetOrigin();
+	const Vector3D&			GetAngles();
+	const Quaternion&		GetOrientation() const;
 
-	Vector3D				GetForwardVector() const;
-	Vector3D				GetUpVector() const;
-	Vector3D				GetRightVector() const;
+	const Vector3D			GetForwardVector() const;
+	const Vector3D			GetUpVector() const;
+	const Vector3D			GetRightVector() const;
 
-	Vector3D				GetVelocity() const;
-	Vector3D				GetAngularVelocity() const;
+	const Vector3D&			GetVelocity() const;
+	const Vector3D&			GetAngularVelocity() const;
 
 	CEqRigidBody*			GetPhysicsBody() const;
 
@@ -418,12 +420,10 @@ protected:
 	virtual void			OnPrePhysicsFrame( float fDt );
 	virtual void			OnPhysicsFrame( float fDt );
 
-	void					Draw( int nRenderFlags );
 	void					DrawBody( int nRenderFlags );
 
 	void					UpdateSounds( float fDt );
 	void					UpdateWheelEffect(int nWheel, float fDt);
-
 	void					UpdateCarPhysics(float fDt);
 
 	CPhysicsHFObject*		m_pPhysicsObject;
@@ -504,6 +504,7 @@ protected:
 
 	TexAtlasEntry_t*		m_trans_grasspart;
 	TexAtlasEntry_t*		m_trans_smoke2;
+	TexAtlasEntry_t*		m_trans_raindrops;
 	TexAtlasEntry_t*		m_trans_fleck;
 	TexAtlasEntry_t*		m_veh_skidmark_asphalt;
 	TexAtlasEntry_t*		m_veh_shadow;

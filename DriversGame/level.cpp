@@ -19,8 +19,6 @@
 
 using namespace EqBulletUtils;
 
-#pragma todo("LEVEL - add visibility graph chunks")
-
 #define AI_NAVIGATION_ROAD_PRIORITY (1)
 
 ConVar r_enableLevelInstancing("r_enableLevelInstancing", "1", "Enable level models instancing if available", CV_ARCHIVE);

@@ -150,9 +150,6 @@
     <ClCompile Include="object_physics.cpp">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClCompile>
-    <ClCompile Include="AITrafficCarController.cpp">
-      <Filter>Файлы исходного кода\Game\AI</Filter>
-    </ClCompile>
     <ClCompile Include="object_static.cpp">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClCompile>
@@ -240,9 +237,6 @@
     <ClCompile Include="..\shared_engine\sys_console.cpp">
       <Filter>Файлы исходного кода\Console</Filter>
     </ClCompile>
-    <ClCompile Include="AIPursuerCarController.cpp">
-      <Filter>Файлы исходного кода\Game\AI</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared_engine\eqParallelJobs.cpp">
       <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClCompile>
@@ -326,6 +320,15 @@
     </ClCompile>
     <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp">
       <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="object_scripted.cpp">
+      <Filter>Файлы исходного кода\Game\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="AITrafficCar.cpp">
+      <Filter>Файлы исходного кода\Game\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="AIPursuerCar.cpp">
+      <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -460,9 +463,6 @@
     <ClInclude Include="object_debris.h">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClInclude>
-    <ClInclude Include="AITrafficCarController.h">
-      <Filter>Файлы исходного кода\Game\AI</Filter>
-    </ClInclude>
     <ClInclude Include="object_static.h">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClInclude>
@@ -553,9 +553,6 @@
     <ClInclude Include="..\shared_engine\sys_console.h">
       <Filter>Файлы исходного кода\Console</Filter>
     </ClInclude>
-    <ClInclude Include="AIPursuerCarController.h">
-      <Filter>Файлы исходного кода\Game\AI</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared_engine\eqParallelJobs.h">
       <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClInclude>
@@ -636,6 +633,15 @@
     </ClInclude>
     <ClInclude Include="..\shared_engine\FontLayoutBuilders.h">
       <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="object_scripted.h">
+      <Filter>Файлы исходного кода\Game\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="AITrafficCar.h">
+      <Filter>Файлы исходного кода\Game\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="AIPursuerCar.h">
+      <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

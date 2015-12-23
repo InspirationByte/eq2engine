@@ -100,86 +100,73 @@ public:
 class CEqRigidBody : public CEqCollisionObject
 {
 public:
-					CEqRigidBody();
+						CEqRigidBody();
 
-	bool			IsDynamic() const {return true;}
+	bool				IsDynamic() const {return true;}
 
-	void			ComputeInertia();
+	void				ComputeInertia();
 
-	void			SetMass(float mass);
-	float			GetMass() const;
-	float			GetInvMass() const;
+	void				SetMass(float mass);
+	float				GetMass() const;
+	float				GetInvMass() const;
 
-	void			UpdateInertiaTensor();		///< updates inertia tensor
+	void				UpdateInertiaTensor();		///< updates inertia tensor
 
-	void			ApplyImpulse(const FVector3D& rel_pos, const Vector3D& impulse);			///< apply impulse at relative position
-	void			ApplyForce(const FVector3D& rel_pos, const Vector3D& force);				///< apply force at relative position
+	void				ApplyImpulse(const FVector3D& rel_pos, const Vector3D& impulse);			///< apply impulse at relative position
+	void				ApplyForce(const FVector3D& rel_pos, const Vector3D& force);				///< apply force at relative position
 
-	void			ApplyAngularImpulse( const Vector3D& impulse );
-	void			ApplyAngularImpulseAt(const FVector3D& rel_pos, const Vector3D& impulse);
+	void				ApplyAngularImpulse( const Vector3D& impulse );
+	void				ApplyAngularImpulseAt(const FVector3D& rel_pos, const Vector3D& impulse);
 
-	void			ApplyAngularForce(const Vector3D& force);
-	void			ApplyAngularForceAt(const FVector3D& rel_pos, const Vector3D& force);
+	void				ApplyAngularForce(const Vector3D& force);
+	void				ApplyAngularForceAt(const FVector3D& rel_pos, const Vector3D& force);
 
-	void			ApplyLinearImpulse(const Vector3D& impulse);
-	void			ApplyLinearForce(const Vector3D& force);
+	void				ApplyLinearImpulse(const Vector3D& impulse);
+	void				ApplyLinearForce(const Vector3D& force);
 
-	void			ApplyWorldImpulse(const FVector3D& position, const Vector3D& impulse);		///< apply impulse at world position
-	void			ApplyWorldForce(const FVector3D& position, const Vector3D& force);			///< apply impulse at world position
+	void				ApplyWorldImpulse(const FVector3D& position, const Vector3D& impulse);		///< apply impulse at world position
+	void				ApplyWorldForce(const FVector3D& position, const Vector3D& force);			///< apply impulse at world position
 
-	void			SetOrientation(const Quaternion& orient);									///< sets new orientation and updates inertia tensor
+	void				SetOrientation(const Quaternion& orient);									///< sets new orientation and updates inertia tensor
 
-	void			SetCenterOfMass(const FVector3D& center);									///< sets new center of mass
-	FVector3D		GetCenterOfMass() const;													///< returns body center of mass
+	void				SetCenterOfMass(const FVector3D& center);									///< sets new center of mass
+	const FVector3D&	GetCenterOfMass() const;													///< returns body center of mass
 
-	Vector3D		GetVelocityAtLocalPoint(const FVector3D& point) const;						///< returns velocity at specified local point
-	Vector3D		GetVelocityAtWorldPoint(const FVector3D& point) const;						///< returns velocity at specified world point
+	Vector3D			GetVelocityAtLocalPoint(const FVector3D& point) const;						///< returns velocity at specified local point
+	Vector3D			GetVelocityAtWorldPoint(const FVector3D& point) const;						///< returns velocity at specified world point
 
-	Vector3D		GetLinearVelocity() const;													///< returns linear velocity
-	//FVector3D		GetLinearMomentum() const;													///< returns linear momentum of body
-	Vector3D		GetAngularVelocity() const;													///< returns angular velocity
+	const Vector3D&		GetLinearVelocity() const;													///< returns linear velocity											///< returns linear momentum of body
+	const Vector3D&		GetAngularVelocity() const;													///< returns angular velocity
 
-	//void			SetLinearMomentum(const FVector3D& momentum);								///< sets new linear momentum
-	void			SetLinearVelocity(const Vector3D& velocity);								///< sets new linear velocity (momentum / invMass)
-	void			SetAngularVelocity(const Vector3D& velocity);								///< sets new angular velocity
+	void				SetLinearVelocity(const Vector3D& velocity);								///< sets new linear velocity (momentum / invMass)
+	void				SetAngularVelocity(const Vector3D& velocity);								///< sets new angular velocity
 
-	void			SetLinearFactor(const Vector3D& fac);										///< sets new linear factor
-	void			SetAngularFactor(const Vector3D& fac);										///< sets new angular factor
+	void				SetLinearFactor(const Vector3D& fac);										///< sets new linear factor
+	void				SetAngularFactor(const Vector3D& fac);										///< sets new angular factor
 
-	//void			SetPosition(const FVector3D& position);										///< sets new position
-	//FVector3D		GetPosition() const;														///< returns body position
+	float				GetGravity() const;
+	void				SetGravity(float value);
 
-	float			GetGravity() const;
-	void			SetGravity(float value);
-	
+	float				ComputeImpulseDenominator(const FVector3D& pos, const Vector3D& normal) const;
 
-	/*
-	virtual void				ConstructRenderMatrix( Matrix4x4& outMatrix, const FVector3D& addPos = vec3_zero );								///< constructs render matrix
-#ifndef FLOAT_AS_FREAL
-	virtual void				ConstructRenderMatrix( FMatrix4x4& outMatrix, const FVector3D& addPos = vec3_zero );								///< constructs render matrix (fixed point)
-#endif // FLOAT_AS_FREAL
-*/
+	bool				IsCanIterate( bool checkIgnore = false);					
 
-	float			ComputeImpulseDenominator(const FVector3D& pos, const Vector3D& normal) const;
+	void				SetMinFrameTime( float time, bool ignoreMotion = true );	///< sets minimal frame time for collision detections
+	float				GetMinFrametime();
 
-	bool			IsCanIterate( bool checkIgnore = false);					
+	float				GetLastFrameTime();				///< returns last frame time (used if min frame time set)
 
-	void			SetMinFrameTime( float time, bool ignoreMotion = true );	///< sets minimal frame time for collision detections
-	float			GetMinFrametime();
+	virtual void		Integrate(float time);			///< called when physics takes timestep
+	virtual void		AccumulateForces(float time);	///< accumulates forces
 
-	float			GetLastFrameTime();				///< returns last frame time (used if min frame time set)
+	void				TryWake( bool velocityCheck = true );
+	void				Wake();
+	void				Freeze();
 
-	virtual void	Integrate(float time);			///< called when physics takes timestep
-	virtual void	AccumulateForces(float time);	///< accumulates forces
-
-	void			TryWake( bool velocityCheck = true );
-	void			Wake();
-	void			Freeze();
-
-	bool			IsFrozen();
+	bool				IsFrozen();
 
 protected:
-	//FVector3D			m_linearMomentum;
+
 	Vector3D			m_linearVelocity;	// linear velocity - IS READ ONLY! To set: linearMomentum * mass
 	Vector3D			m_angularVelocity;
 

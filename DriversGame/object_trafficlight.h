@@ -31,10 +31,6 @@ public:
 	void				SetAngles(const Vector3D& angles);
 	void				SetVelocity(const Vector3D& vel);
 
-	Vector3D			GetOrigin();
-	Vector3D			GetAngles();
-	Vector3D			GetVelocity();
-
 	void				Draw( int nRenderFlags );
 
 	void				Simulate(float fDt);

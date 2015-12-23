@@ -191,22 +191,22 @@ void CGameObject::SetAngles( const Vector3D& angles )
 
 void CGameObject::SetVelocity(const Vector3D& vel)
 {
-
 }
 
-Vector3D CGameObject::GetOrigin() const
+const Vector3D& CGameObject::GetOrigin() const
 {
 	return m_vecOrigin;
 }
 
-Vector3D CGameObject::GetAngles() const
+const Vector3D& CGameObject::GetAngles() const
 {
 	return m_vecAngles;
 }
 
-Vector3D CGameObject::GetVelocity() const
+const Vector3D& CGameObject::GetVelocity() const
 {
-	return vec3_zero;
+	static Vector3D s_vel_zero(0);
+	return s_vel_zero;
 }
 
 void CGameObject::SetModel(const char* pszModelName)

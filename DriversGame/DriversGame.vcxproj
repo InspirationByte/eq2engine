@@ -150,8 +150,8 @@
     <ClCompile Include="..\public\ViewParams.cpp" />
     <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp" />
     <ClCompile Include="AICarManager.cpp" />
-    <ClCompile Include="AIPursuerCarController.cpp" />
-    <ClCompile Include="AITrafficCarController.cpp" />
+    <ClCompile Include="AIPursuerCar.cpp" />
+    <ClCompile Include="AITrafficCar.cpp" />
     <ClCompile Include="BillboardList.cpp" />
     <ClCompile Include="CameraAnimator.cpp" />
     <ClCompile Include="car.cpp" />
@@ -160,6 +160,7 @@
     <ClCompile Include="LiteHTMLContainer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="object_scripted.cpp" />
     <ClCompile Include="occluderSet.cpp" />
     <ClCompile Include="state_mainmenu.cpp" />
     <ClCompile Include="game_singleplayer.cpp" />
@@ -274,8 +275,8 @@
     <ClInclude Include="..\shared_engine\physics\BulletShapeCache.h" />
     <ClInclude Include="AICarManager.h" />
     <ClInclude Include="AIEventTypes.h" />
-    <ClInclude Include="AIPursuerCarController.h" />
-    <ClInclude Include="AITrafficCarController.h" />
+    <ClInclude Include="AIPursuerCar.h" />
+    <ClInclude Include="AITrafficCar.h" />
     <ClInclude Include="BillboardList.h" />
     <ClInclude Include="CameraAnimator.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Constraints.h" />
@@ -298,6 +299,7 @@
     <ClInclude Include="levfile.h" />
     <ClInclude Include="NetPlayer.h" />
     <ClInclude Include="object_physics.h" />
+    <ClInclude Include="object_scripted.h" />
     <ClInclude Include="object_sheets.h" />
     <ClInclude Include="object_static.h" />
     <ClInclude Include="object_trafficlight.h" />

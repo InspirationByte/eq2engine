@@ -164,23 +164,6 @@ void CObject_TrafficLight::SetVelocity(const Vector3D& vel)
 
 }
 
-Vector3D CObject_TrafficLight::GetOrigin()
-{
-	return m_pPhysicsObject->GetPosition();
-}
-
-Vector3D CObject_TrafficLight::GetAngles()
-{
-	Vector3D eangles = eulers(m_pPhysicsObject->GetOrientation());
-
-	return VRAD2DEG(eangles);
-}
-
-Vector3D CObject_TrafficLight::GetVelocity()
-{
-	return vec3_zero;
-}
-
 extern ConVar r_enableObjectsInstancing;
 
 void CObject_TrafficLight::Draw( int nRenderFlags )

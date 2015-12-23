@@ -5,19 +5,19 @@
 // Description: pursuer car controller AI
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "AIPursuerCarController.h"
+#include "AIPursuerCar.h"
 #include "session_stuff.h"
 
 #include "AICarManager.h"
 
-const float AI_COPVIEW_FAR			= 50.0f;
-const float AI_COPVIEW_FOV			= 55.0f;
+const float AI_COPVIEW_FAR			= 30.0f;
+const float AI_COPVIEW_FOV			= 85.0f;
 
-const float AI_COPVIEW_FAR_WANTED	= 80.0f;
+const float AI_COPVIEW_FAR_WANTED	= 70.0f;
 const float AI_COPVIEW_FOV_WANTED	= 90.0f;
 
-const float AI_COPVIEW_RADIUS			= 30.0f;
-const float AI_COPVIEW_RADIUS_WANTED	= 60.0f;
+const float AI_COPVIEW_RADIUS			= 10.0f;
+const float AI_COPVIEW_RADIUS_WANTED	= 18.0f;
 
 const float AI_COPVIEW_RADIUS_PURSUIT	= 120.0f;
 
@@ -33,7 +33,7 @@ const float AI_COP_COLLISION_FELONY_VEHICLE	= 0.1f;
 const float AI_COP_COLLISION_FELONY_DEBRIS	= 0.02f;
 const float AI_COP_COLLISION_FELONY_REDLIGHT = 0.005f;
 
-const float AI_COP_COLLISION_CHECKTIME		= 0.1f;
+const float AI_COP_COLLISION_CHECKTIME		= 0.01f;
 
 const float AI_COP_TIME_FELONY = 0.001f;	// 0.1 percent per second
 
@@ -210,20 +210,29 @@ void CAIPursuerCar::OnPhysicsFrame( float fDt )
 	m_isColliding = GetPhysicsBody()->m_collisionList.numElem() > 0;
 
 	if(m_isColliding)
-	{
 		m_lastCollidingPosition = GetPhysicsBody()->m_collisionList[0].position;
-	}
 
 	if(IsAlive() && m_targInfo.target)
-		m_targInfo.lastInfraction = CheckTrafficInfraction(m_targInfo.target, false,false);
-}
+	{
+		int infraction = CheckTrafficInfraction(m_targInfo.target, false,false);
 
-extern void UI_ScreenMessage(const char* pszText, float fTime);
+		if(infraction > INFRACTION_HAS_FELONY)
+			m_targInfo.lastInfraction = infraction;
+	}
+
+}
 
 int	CAIPursuerCar::TrafficDrive( float fDt, EStateTransition transition )
 {
 	int res = BaseClass::TrafficDrive( fDt, transition );
 
+	PassiveCopState( fDt, transition );
+
+	return res;
+}
+
+int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
+{
 	CCar* playerCar = g_pGameSession->GetPlayerCar();
 
 	// check infraction in visible range
@@ -231,14 +240,22 @@ int	CAIPursuerCar::TrafficDrive( float fDt, EStateTransition transition )
 		m_gameDamage < m_gameMaxDamage && 
 		CheckObjectVisibility(playerCar))
 	{
-		if (m_type == PURSUER_TYPE_COP && CheckTrafficInfraction(playerCar) == INFRACTION_NONE)
-			return res;
+		int infraction = CheckTrafficInfraction(playerCar);
+
+		if (m_type == PURSUER_TYPE_COP && infraction == INFRACTION_NONE)
+			return 0;
+
+		if( infraction == INFRACTION_MINOR || infraction == INFRACTION_HIT_MINOR )
+		{
+			playerCar->SetFelony( playerCar->GetFelony() + AI_COP_COLLISION_FELONY_DEBRIS );
+			return 0;
+		}
 
 		SetPursuitTarget(playerCar);
 		BeginPursuit();
 	}
 
-	return res;
+	return 0;
 }
 
 void CAIPursuerCar::BeginPursuit()
@@ -439,8 +456,8 @@ bool CAIPursuerCar::CheckObjectVisibility(CCar* obj)
 
 	//debugoverlay->Box3D(GetOrigin() - visibilitySphere, GetOrigin() + visibilitySphere, ColorRGBA(1,1,0,1), 0.1f);
 
-	if(distToCar > visibilitySphere)
-		return false;
+	//if(distToCar > visibilitySphere)
+	//	return false;
 
 	Vector3D carAngle = VectorAngles(GetForwardVector());
 	carAngle = -VDEG2RAD(carAngle);
@@ -585,6 +602,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 				if (newFelony > 1.0f)
 					newFelony = 1.0f;
 
+				m_targInfo.lastInfraction = INFRACTION_HAS_FELONY;
 				m_targInfo.target->SetFelony(newFelony);
 			}
 

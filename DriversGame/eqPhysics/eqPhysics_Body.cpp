@@ -307,7 +307,7 @@ void CEqRigidBody::SetCenterOfMass(const FVector3D& center)
 	UpdateInertiaTensor();
 }
 
-FVector3D CEqRigidBody::GetCenterOfMass() const
+const FVector3D& CEqRigidBody::GetCenterOfMass() const
 {
 	return m_centerOfMass;
 }
@@ -391,17 +391,12 @@ void CEqRigidBody::SetOrientation(const Quaternion& orient)
 
 //--------------------
 
-Vector3D CEqRigidBody::GetLinearVelocity() const
+const Vector3D& CEqRigidBody::GetLinearVelocity() const
 {
 	return m_linearVelocity;
 }
-/*
-FVector3D CEqRigidBody::GetLinearMomentum() const
-{
-	return m_linearMomentum;
-}
-*/
-Vector3D CEqRigidBody::GetAngularVelocity() const
+
+const Vector3D& CEqRigidBody::GetAngularVelocity() const
 {
 	return m_angularVelocity;
 }
@@ -430,12 +425,7 @@ float CEqRigidBody::ComputeImpulseDenominator(const FVector3D& pos, const Vector
 }
 
 //--------------------
-/*
-void CEqRigidBody::SetLinearMomentum(const FVector3D& momentum)
-{
-	m_linearMomentum = momentum;
-}
-*/
+
 void CEqRigidBody::SetLinearVelocity(const Vector3D& velocity)
 {
 	// set linear momentum, BUT multiplied by it's mass

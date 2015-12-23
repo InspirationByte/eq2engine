@@ -216,7 +216,7 @@ CEqBulletIndexedMesh* CEqCollisionObject::GetMesh() const
 	return m_mesh;
 }
 
-Vector3D CEqCollisionObject::GetShapeCenter() const
+const Vector3D& CEqCollisionObject::GetShapeCenter() const
 {
 	return m_center;
 }
@@ -233,12 +233,12 @@ void* CEqCollisionObject::GetUserData() const
 
 //--------------------
 
-FVector3D CEqCollisionObject::GetPosition() const
+const FVector3D& CEqCollisionObject::GetPosition() const
 {
 	return m_position;
 }
 
-Quaternion CEqCollisionObject::GetOrientation() const
+const Quaternion& CEqCollisionObject::GetOrientation() const
 {
 	return m_orientation;
 }

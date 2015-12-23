@@ -139,19 +139,21 @@ void CObject_Debris::SetVelocity(const Vector3D& vel)
 		m_physBody->SetLinearVelocity( vel  );
 }
 
-Vector3D CObject_Debris::GetOrigin()
+const Vector3D& CObject_Debris::GetOrigin()
 {
-	return m_physBody->GetPosition();
+	m_vecOrigin = m_physBody->GetPosition();
+	return m_vecOrigin;
 }
 
-Vector3D CObject_Debris::GetAngles()
-{
-	Vector3D eangles = eulers(m_physBody->GetOrientation());
+const Vector3D& CObject_Debris::GetAngles()
+{ 
+	m_vecAngles = eulers(m_physBody->GetOrientation());
+	m_vecAngles = VRAD2DEG(m_vecAngles);
 
-	return VRAD2DEG(eangles);
+	return m_vecAngles;
 }
 
-Vector3D CObject_Debris::GetVelocity()
+const Vector3D& CObject_Debris::GetVelocity() const
 {
 	return m_physBody->GetLinearVelocity();
 }

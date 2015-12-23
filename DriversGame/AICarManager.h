@@ -10,7 +10,7 @@
 
 #include "utils/eqstring.h"
 
-#include "AIPursuerCarController.h"
+#include "AIPursuerCar.h"
 
 #include "oolua.h"
 
@@ -83,8 +83,6 @@ public:
 
 	bool						SpawnRoadBlockFor( CCar* car, float directionAngle);
 	bool						IsRoadBlockSpawn() const;
-
-	void						PushGlobalEvent( Event_t* evt );
 
 protected:
 

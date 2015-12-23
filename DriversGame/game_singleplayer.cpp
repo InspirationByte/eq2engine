@@ -460,6 +460,9 @@ void CGameSession::LoadCarData()
 						return;
 					}
 
+					PrecacheStudioModel( carent->m_cleanModelName.c_str() );
+					PrecacheStudioModel( carent->m_damModelName.c_str() );
+
 					Msg("added car '%s'\n", carent->carName.c_str());
 					m_carEntries.append(carent);
 				}

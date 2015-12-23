@@ -97,27 +97,33 @@ public:
 	virtual void		InitAI(CLevelRegion* reg, levroadcell_t* cell);
 
 	virtual void		Spawn();
-	//void				Simulate(float fDt);
-
 	virtual void		OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy);
-
-	virtual void		OnPrePhysicsFrame( float fDt );
-
-	void				SearchJunctionAndStraight();
-	void				SwitchLane();
-
-	void				ChangeRoad( const straight_t& road );
-
+	
 	int					ObjType() const { return GO_CAR_AI; }
-
 	virtual bool		IsPursuer() const {return false;}
 
-	// states
-	int					SearchForRoad(float fDt, EStateTransition transition);
-	virtual int			TrafficDrive( float fDt, EStateTransition transition );
-	virtual int			DeadState( float fDt, EStateTransition transition ) {return 0;}
-
 protected:
+	virtual void		OnPrePhysicsFrame( float fDt );
+
+	// task
+	void				SearchJunctionAndStraight();
+	void				SwitchLane();
+	void				ChangeRoad( const straight_t& road );
+
+	// states
+	int					SearchForRoad( float fDt, EStateTransition transition );
+	virtual int			TrafficDrive( float fDt, EStateTransition transition );
+
+	int					Event_TrafficLight( float fDt, EStateTransition transition );
+	int					Event_FrontObjHasMoved( float fDt, EStateTransition transition );
+
+	int					BrakeToTheLine( float fDt, EStateTransition transition );
+	int					BrakeToObject( float fDt, EStateTransition transition );
+
+	virtual int			DeadState( float fDt, EStateTransition transition )			{return 0;}
+
+	//------------------------------------------------
+
 	float				m_speedModifier;
 	bool				m_hasDamage;
 	bool				m_frameSkip;

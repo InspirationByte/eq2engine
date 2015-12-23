@@ -1727,6 +1727,7 @@ const char*	CGameWorld::GetLevelName() const
 #include "object_tree.h"
 #include "object_trafficlight.h"
 #include "object_sheets.h"
+#include "object_scripted.h"
 
 #endif // EDITOR
 
@@ -1758,6 +1759,10 @@ CGameObject* CGameWorld::CreateGameObject( const char* typeName, kvkeybase_t* kv
 	else if(!stricmp(typeName, "sheets"))
 	{
 		return new CObject_Sheets(kvdata);
+	}
+	else if(!stricmp(typeName, "scripted"))
+	{
+		return new CObject_Scripted(kvdata);
 	}
 
 	MsgError("CGameWorld::CreateGameObject error: Invalid object type '%s'\n", typeName);

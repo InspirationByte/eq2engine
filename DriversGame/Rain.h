@@ -38,25 +38,12 @@ class RainEmitter;
 
 class CRippleEffect : public IEffect
 {
-	friend class RainEmitter;
-
 public:
-	CRippleEffect(Vector3D &position, Vector3D &normal, float StartSize, float EndSize, float lifetime, int nMaterial, int nDropMaterial)
-	{
-		InternalInit(position, lifetime, nMaterial);
-
-		this->normal = normal;
-
-		fCurSize = StartSize;
-		fStartSize = StartSize;
-		fEndSize = EndSize;
-	}
+	CRippleEffect(Vector3D &position, Vector3D &normal, float StartSize, float EndSize, float lifetime);
 
 	bool DrawEffect(float dTime);
 
 protected:
-	RainEmitter*	emitter;
-
 	Vector3D		normal;
 
 	float			fCurSize;
@@ -83,8 +70,7 @@ public:
 class RainEmitter
 {
 	friend class RainParticle;
-	friend class CRippleEffect;
-	
+
 public:
 	void Init();
 	void Clear();

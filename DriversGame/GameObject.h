@@ -86,6 +86,8 @@ enum EGameObjectType
 	GO_STATIC,
 	GO_LIGHT_TRAFFIC,
 
+	GO_SCRIPTED,
+
 	GO_TYPES,
 };
 
@@ -99,6 +101,7 @@ static char* s_objectTypeNames[GO_TYPES] =
 	"GO_PHYSICS",
 	"GO_STATIC",
 	"GO_LIGHT_TRAFFIC",
+	"GO_SCRIPTED"
 };
 
 static bool s_networkedObjectTypes[GO_TYPES] = 
@@ -109,6 +112,7 @@ static bool s_networkedObjectTypes[GO_TYPES] =
 	false,
 	false,
 	true,
+	false,
 	false,
 	false,
 };
@@ -159,6 +163,7 @@ class CGameObject : public CBaseNetworkedObject, public CSoundChannelObject, pub
 	friend class CNetGameSession;
 	friend class CGameSession;
 	friend class CGameWorld;
+	friend class CPhysicsHFObject;
 	friend class CCar;
 
 public:
@@ -189,9 +194,9 @@ public:
 	virtual void				SetAngles(const Vector3D& angles);
 	virtual void				SetVelocity(const Vector3D& vel);
 
-	virtual Vector3D			GetOrigin() const;
-	virtual Vector3D			GetAngles() const;
-	virtual Vector3D			GetVelocity() const;
+	virtual const Vector3D&		GetOrigin() const;
+	virtual const Vector3D&		GetAngles() const;
+	virtual const Vector3D&		GetVelocity() const;
 
 	virtual	bool				CheckVisibility( const occludingFrustum_t& frustum ) const;
 	virtual void				Draw( int nRenderFlags );
@@ -199,8 +204,6 @@ public:
 	void						SetUserData(void* dataPtr);
 	void*						GetUserData() const;
 
-	virtual void				OnPhysicsFrame(float fDt);
-	virtual void				OnPrePhysicsFrame(float fDt) {}
 	virtual void				OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy);
 
 	virtual int					ObjType() const		{return GO_DEFAULT;}
@@ -239,6 +242,9 @@ public:
 	Matrix4x4					m_worldMatrix;
 
 protected:
+
+	virtual void				OnPhysicsFrame(float fDt);
+	virtual void				OnPrePhysicsFrame(float fDt) {}
 
 	EqString					m_name;
 

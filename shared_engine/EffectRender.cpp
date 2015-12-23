@@ -28,7 +28,8 @@ int _SortParticles(IEffect* const &elem0, IEffect* const &elem1)
 IEffect::IEffect() :	m_vOrigin(0.0f),
 						m_fStartLifeTime(0),
 						m_fLifeTime(0),
-						m_nMaterialGroup(-1),
+						m_atlEntry(NULL),
+						m_atlGroup(NULL),
 						m_fDistanceToView(0.0f)
 {
 }
