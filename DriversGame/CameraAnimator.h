@@ -53,7 +53,7 @@ public:
 										const Matrix4x4& targetRotation, 
 										const Vector3D& targetVelocity,
 										float fDt,
-										float addRot);
+										Vector3D& addRot);
 
 	CViewParams&			GetCamera();
 

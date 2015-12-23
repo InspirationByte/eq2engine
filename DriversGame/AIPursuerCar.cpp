@@ -212,6 +212,8 @@ void CAIPursuerCar::OnPhysicsFrame( float fDt )
 	if(m_isColliding)
 		m_lastCollidingPosition = GetPhysicsBody()->m_collisionList[0].position;
 
+	PassiveCopState( fDt, STATE_TRANSITION_NONE );
+
 	if(IsAlive() && m_targInfo.target)
 	{
 		int infraction = CheckTrafficInfraction(m_targInfo.target, false,false);
@@ -225,8 +227,6 @@ void CAIPursuerCar::OnPhysicsFrame( float fDt )
 int	CAIPursuerCar::TrafficDrive( float fDt, EStateTransition transition )
 {
 	int res = BaseClass::TrafficDrive( fDt, transition );
-
-	PassiveCopState( fDt, transition );
 
 	return res;
 }
@@ -245,7 +245,7 @@ int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 		if (m_type == PURSUER_TYPE_COP && infraction == INFRACTION_NONE)
 			return 0;
 
-		if( infraction == INFRACTION_MINOR || infraction == INFRACTION_HIT_MINOR )
+		if( infraction == INFRACTION_MINOR || infraction == INFRACTION_HIT_MINOR || infraction == INFRACTION_HIT )
 		{
 			playerCar->SetFelony( playerCar->GetFelony() + AI_COP_COLLISION_FELONY_DEBRIS );
 			return 0;
@@ -365,15 +365,15 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 		CollisionPairData_t& pair = car->GetPhysicsBody()->m_collisionList[i];
 
 		if(car->m_lastCollidingObject == pair.bodyB)
-			return INFRACTION_NONE;
+			continue;
 
 		if(pair.bodyB->m_flags & COLLOBJ_ISGHOST)
-			return INFRACTION_NONE;
+			continue;
 
 		car->m_lastCollidingObject = pair.bodyB;
 
 		if(pair.bodyB == GetPhysicsBody())
-			return INFRACTION_NONE;
+			continue;
 
 		if(pair.bodyB->GetContents() == OBJECTCONTENTS_SOLID_GROUND)
 			return INFRACTION_NONE;

@@ -60,7 +60,7 @@ Vector3D				g_camera_droppedangles = vec3_zero;
 Vector3D				g_camera_freepos = vec3_zero;
 Vector3D				g_camera_freeangles = vec3_zero;
 float					g_camera_fov = DIRECTOR_DEFAULT_CAMERA_FOV;
-float					g_camera_angleY = 0.0f;
+Vector3D				g_camera_angle(0);
 float					g_camera_angleRestoreTime = 0.0f;
 
 #define					CAMERA_ROTATE_HOLD_TIME (2.0f)		// on phones must be littler
@@ -272,7 +272,7 @@ void Game_InitializeSession()
 
 	g_pCameraAnimator->CalmDown();
 
-	g_camera_angleY = 0.0f;
+	g_camera_angle = vec3_zero;
 
 	nClientButtons = 0;
 }
@@ -342,14 +342,22 @@ void Game_HandleKeys(int key, bool down)
 	}
 }
 
+ConVar g_freelook("g_freelook", "0", "freelook camera", CV_ARCHIVE);
+
 void Game_MouseMove( int x, int y, float deltaX, float deltaY )
 {
-	g_pHost->SetCenterMouseEnable( g_freecam.GetBool() );
+	g_pHost->SetCenterMouseEnable( g_freecam.GetBool() || g_freelook.GetBool() );
 	g_pHost->SetCursorShow( g_pSysConsole->IsVisible() );
 	
-	//g_camera_angleY += deltaY * g_mouse_sens.GetFloat();
-	//g_camera_angleRestoreTime = CAMERA_ROTATE_HOLD_TIME;
-	//g_camera_angleY = ConstrainAngle180(g_camera_angleY);
+	if(g_freelook.GetBool())
+	{
+		g_camera_angle.y += deltaY * g_mouse_sens.GetFloat();
+		g_camera_angle.x += deltaX * g_mouse_sens.GetFloat();
+
+		g_camera_angleRestoreTime = CAMERA_ROTATE_HOLD_TIME;
+		g_camera_angle.y = ConstrainAngle180(g_camera_angle.y);
+		g_camera_angle.x = clamp(g_camera_angle.x, -25.0f, 50.0f);
+	}
 
 	if(g_freecam.GetBool() && !g_pSysConsole->IsVisible()) // && g_pHost->m_hasWindowFocus)
 	{
@@ -479,7 +487,7 @@ void GRJob_DrawEffects(void* data)
 void Game_UpdateCamera( float fDt )
 {
 	if((nClientButtons & IN_LOOKLEFT) || (nClientButtons & IN_LOOKRIGHT))
-		g_camera_angleY = 0.0f; //restore camera angles
+		g_camera_angle = 0.0f; //restore camera angles
 
 	int camMode = g_CurrCameraMode;
 
@@ -506,12 +514,16 @@ void Game_UpdateCamera( float fDt )
 	// Viewed car camera animation is always enabled
 	if( viewedCar )
 	{
+		float speedRatio = length(viewedCar->GetVelocity());
+		speedRatio = RemapValClamp(speedRatio, 0.0f, 40.0f, 0.0f, 1.0f);
+
 		if(g_camera_angleRestoreTime <= 0.0f)
 		{
-			g_camera_angleY = 0.0f;
+			g_camera_angle -= g_camera_angle*fDt*speedRatio*5.0f;
 		}
 		else
-			g_camera_angleRestoreTime -= fDt;
+			g_camera_angleRestoreTime -= fDt* (1.0f+speedRatio);
+
 
 		Vector3D carPos = viewedCar->GetOrigin();
 		Vector3D carAngles = viewedCar->GetAngles();
@@ -540,7 +552,7 @@ void Game_UpdateCamera( float fDt )
 									nClientButtons, 
 									carBody->GetPosition(), m, carBody->GetLinearVelocity(), 
 									fDt, 
-									g_camera_angleY);
+									g_camera_angle);
 	}
 
 	// take the previous camera

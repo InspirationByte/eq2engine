@@ -42,7 +42,7 @@ public:
 	bool		InitSystems( EQWNDHANDLE pWindow, bool bWindowed );
 	void		ShutdownSystems();
 
-	void		Frame();
+	bool		Frame();
 	bool		FilterTime( double fDt );
 
 	void		SetWindowSize(int width, int height);

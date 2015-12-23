@@ -509,8 +509,8 @@ bool CGameHost::FilterTime( double dTime )
 		//m_fGameFrameTime = (m_fGameCurTime - m_fGameOldTime) * (double)sys_timescale.GetFloat();
 	}
 
-	//m_fGameFrameTime = min( m_fGameFrameTime, MAX_FRAMETIME );
-	//m_fGameFrameTime = max( m_fGameFrameTime, MIN_FRAMETIME );
+	m_fGameFrameTime = min( m_fGameFrameTime, MAX_FRAMETIME );
+	m_fGameFrameTime = max( m_fGameFrameTime, MIN_FRAMETIME );
 
 	m_fGameOldTime = m_fGameCurTime;
 
@@ -553,7 +553,7 @@ extern bool s_bActive;
 
 ConVar r_showFPS("r_showFPS", "0", "Show the framerate", CV_ARCHIVE);
 
-void CGameHost::Frame()
+bool CGameHost::Frame()
 {
 	if(!g_pSysConsole->IsVisible() && m_bCenterMouse && s_bActive)
 	{
@@ -588,7 +588,7 @@ void CGameHost::Frame()
 	m_fOldTime		= m_fCurTime;
 
 	if( !FilterTime( m_fFrameTime ) )
-		return;
+		return false;
 
 	BeginScene();
 
@@ -602,7 +602,7 @@ void CGameHost::Frame()
 	if(!UpdateStates( m_fGameFrameTime ))
 	{
 		g_pHost->m_nQuitState = CGameHost::QUIT_TODESKTOP;
-		return;
+		return false;
 	}
 	PROFILE_END();
 
@@ -666,6 +666,8 @@ void CGameHost::Frame()
 
 	// Remember old time
 	m_fOldTime		= m_fCurTime;
+
+	return true;
 }
 
 void CGameHost::SetWindowSize(int width, int height)

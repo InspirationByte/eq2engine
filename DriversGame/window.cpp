@@ -142,6 +142,7 @@ EQWNDHANDLE CreateEngineWindow()
 }
 
 bool s_bActive = false;
+bool s_bProcessInput = true;
 
 static CGameHost s_Host;
 CGameHost* g_pHost = &s_Host;
@@ -199,7 +200,7 @@ void EQHandleSDLEvents(SDL_Event* event)
 		}
 		default:
 		{
-			if(s_bActive)
+			if(s_bActive && s_bProcessInput)
 			{
 				InputCommands_SDL(event);
 			}
@@ -239,19 +240,21 @@ void InitWindowAndRun()
 #endif
 
 	SDL_StartTextInput();
+
 	do
 	{
 		while(SDL_PollEvent(&event))
 			EQHandleSDLEvents( &event );
 
-		if (true/*s_bActive  || g_pEngineHost->IsInMultiplayerGame()*/)
+		if (s_bActive ) // || g_pEngineHost->IsInMultiplayerGame())
 		{
 			g_pHost->Frame();
 		}
-		else Platform_Sleep(100);
+		else
+			Threading::Yield();
 
 		// or yield
-        if(sys_sleep.GetInt())
+		if(sys_sleep.GetInt() > 0)
             Platform_Sleep( sys_sleep.GetInt() );
 	}
 	while(g_pHost->m_nQuitState != CGameHost::QUIT_TODESKTOP);

@@ -2263,10 +2263,10 @@ void CCar::OnPhysicsFrame( float fDt )
 				Vector3D vel = collVelocity*0.85f;
 
 				CSmokeEffect* pSmoke = new CSmokeEffect(waterPos, vel,
-														RandomFloat(0.3, 0.44), RandomFloat(1.5, 1.9),
+														RandomFloat(0.3, 0.44), RandomFloat(1.1, 1.2),
 														RandomFloat(0.15f),
 														g_translParticles, m_trans_raindrops,
-														RandomFloat(5, 35), Vector3D(1,RandomFloat(-3.9, -5.2) , 1),
+														RandomFloat(5, 35), Vector3D(0,RandomFloat(-3.9, -5.2) , 0),
 														ColorRGB(1), ColorRGB(1));
 
 				effectrenderer->RegisterEffectForRender(pSmoke);

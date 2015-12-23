@@ -80,7 +80,11 @@ void CCameraAnimator::CalmDown()
 	m_vecCameraSpringVel = vec3_zero;
 }
 
-void CCameraAnimator::Animate( ECameraMode mode, int nButtons, const Vector3D& targetOrigin, const Matrix4x4& targetRotation, const Vector3D& targetVelocity, float fDt, float addRot )
+void CCameraAnimator::Animate(	ECameraMode mode, 
+								int nButtons, 
+								const Vector3D& targetOrigin, const Matrix4x4& targetRotation, const Vector3D& targetVelocity, 
+								float fDt, 
+								Vector3D& addRot )
 {
 	m_mode = mode;
 
@@ -127,7 +131,7 @@ void CCameraAnimator::Animate( ECameraMode mode, int nButtons, const Vector3D& t
 
 	Vector3D cam_vec = cross(vec3_up, car_forward);
 
-	float Yangle = RAD2DEG(atan2f(cam_vec.z, cam_vec.x))+addRot;
+	float Yangle = RAD2DEG(atan2f(cam_vec.z, cam_vec.x));
 
 	if (Yangle < 0.0)
 		Yangle += 360.0f;
@@ -138,7 +142,7 @@ void CCameraAnimator::Animate( ECameraMode mode, int nButtons, const Vector3D& t
 
 	if(mode == CAM_MODE_OUTCAR)
 	{
-		Vector3D cam_angles = Vector3D(0, m_fTempCamAngle - m_fLookAngle, 0);
+		Vector3D cam_angles = Vector3D(0, m_fTempCamAngle - m_fLookAngle, 0) + addRot;
 
 		if( bLookBack )
 			cam_angles = Vector3D(0, Yangle+180, 0) + addRot;
