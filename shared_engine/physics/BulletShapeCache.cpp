@@ -12,7 +12,12 @@
 #include "btBulletCollisionCommon.h"
 
 #include "BulletConvert.h"
+
+
+#include "eqGlobalMutex.h"
 using namespace EqBulletUtils;
+using namespace Threading;
+
 
 ConVar ph_studioShapeMargin("ph_studioShapeMargin", "0.05", "Studio model shape marginal", CV_CHEAT);
 
@@ -68,9 +73,16 @@ btCollisionShape* InternalGenerateShape(int numVertices, Vector3D* vertices, int
 	return NULL;
 }
 
+CBulletStudioShapeCache::CBulletStudioShapeCache() : m_mutex(GetGlobalMutex(MUTEXPURPOSE_PHYSICS))
+{
+
+}
+
 // checks the shape is initialized for the cache
 bool CBulletStudioShapeCache::IsShapeCachePresent( physmodelshapecache_t* shapeInfo )
 {
+	Threading::CScopedMutex m( m_mutex );
+
 	for(int i = 0; i < m_collisionShapes.numElem(); i++)
 	{
 		if(shapeInfo->cachedata == m_collisionShapes[i])
@@ -100,7 +112,11 @@ void CBulletStudioShapeCache::InitStudioCache( physmodeldata_t* studioData )
 			// cast physics POD index to index in physics engine
 			studioData->objects[i].shapeCache[j] = shape;
 
+			m_mutex.Lock();
+
 			int shapeIdx = m_collisionShapes.append(shape);
+
+			m_mutex.Unlock();
 
 			studioData->shapes[nShape].physics_shape_index = shapeIdx;
 			studioData->shapes[nShape].cachedata = shape;
@@ -123,7 +139,9 @@ void CBulletStudioShapeCache::DestroyStudioCache( physmodeldata_t* studioData )
 
 		delete m_collisionShapes[nShape];
 
+		m_mutex.Lock();
 		m_collisionShapes.fastRemoveIndex( nShape );
+		m_mutex.Unlock();
 	}
 }
 
@@ -141,6 +159,8 @@ void CBulletStudioShapeCache::Cleanup_Invalidate()
 
 		delete m_collisionShapes[i];
 	}
+
+
 
 	m_collisionShapes.clear();
 }

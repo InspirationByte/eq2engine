@@ -197,6 +197,8 @@ void InitMatSystem(HWND window)
 	// initialize shader overrides after libraries are loaded
 	DrvSyn_RegisterShaderOverrides();
 
+	g_parallelJobs->Init( g_cpuCaps->GetCPUCount() );
+
 	g_pModelCache->PrecacheModel("models/error.egf");
 
 	// register all shaders

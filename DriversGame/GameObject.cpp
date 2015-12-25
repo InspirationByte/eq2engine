@@ -223,7 +223,7 @@ void CGameObject::SetModelPtr(IEqModel* modelPtr)
 	if(!m_pModel)
 		return;
 
-	studiohdr_t* pHdr = m_pModel->GetHWData()->pStudioHdr;
+	//studiohdr_t* pHdr = m_pModel->GetHWData()->pStudioHdr;
 
 	m_bodyGroupFlags = (1 << 0);
 }

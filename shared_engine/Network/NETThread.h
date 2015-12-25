@@ -175,7 +175,7 @@ protected:
 
 	DkList<netfragmsg_t*>		m_fragmented_messages;
 
-	Threading::CEqMutex			m_Mutex;
+	Threading::CEqMutex&		m_Mutex;
 	bool						m_bLockUpdateDispatch;
 	bool						m_bStopWork;
 

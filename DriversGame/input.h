@@ -34,16 +34,16 @@
 
 #define IN_MISC				(IN_LOOKLEFT | IN_LOOKRIGHT | IN_CHANGECAM | IN_FORWARD | IN_BACKWARD | IN_LEFT | IN_RIGHT)
 
-extern int nClientButtons;
+extern int g_nClientButtons;
 
 #define DECLARE_ACTION(localName, bitFlag)											\
 	DECLARE_CMD_STRING(act_##localName##_enable ,"+"#localName, "Control command", CV_CLIENTCONTROLS) \
 	{				\
-		nClientButtons |= bitFlag;											\
+		g_nClientButtons |= bitFlag;											\
 	}																				\
 	DECLARE_CMD_STRING(act_##localName##_disable ,"-"#localName, "Control command", CV_CLIENTCONTROLS) \
 	{																				\
-		nClientButtons &= ~bitFlag;											\
+		g_nClientButtons &= ~bitFlag;											\
 	}																				\
 
 #endif // INPUT_H

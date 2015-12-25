@@ -34,6 +34,10 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 {
 	ses->Init();
 
+	ses->PrecacheSound( "menu.back" );
+	ses->PrecacheSound( "menu.roll" );
+	ses->PrecacheSound( "menu.click" );
+
 	m_fade = 0.0f;
 	m_textFade = 0.0f;
 	m_changesMenu = 0;
@@ -345,7 +349,7 @@ void CState_MainMenu::HandleKeyPress( int key, bool down )
 
 	if(key == KEY_ENTER && down == true && m_fade == 1.0f)
 	{
-		EmitSound_t es("menu.click", EMITSOUND_FLAG_FORCE_CACHED);
+		EmitSound_t es("menu.click");
 		ses->EmitSound( &es );
 
 		m_changesMenu = MENU_ENTER;
@@ -358,7 +362,7 @@ void CState_MainMenu::HandleKeyPress( int key, bool down )
 	{
 		if(key == KEY_ESCAPE)
 		{
-			EmitSound_t es("menu.back", EMITSOUND_FLAG_FORCE_CACHED);
+			EmitSound_t es("menu.back");
 			ses->EmitSound( &es );
 
 			if(IsCanPopMenu())
@@ -391,7 +395,7 @@ void CState_MainMenu::HandleKeyPress( int key, bool down )
 			//if(pItem->type == MIT_SPACER)
 			//	goto redecrement;
 
-			EmitSound_t ep("menu.roll", EMITSOUND_FLAG_FORCE_CACHED);
+			EmitSound_t ep("menu.roll");
 			ses->EmitSound(&ep);
 		}
 		else if(key == KEY_DOWN)
@@ -405,7 +409,7 @@ void CState_MainMenu::HandleKeyPress( int key, bool down )
 			//if(pItem->type == MIT_SPACER)
 			//	goto reincrement;
 
-			EmitSound_t ep("menu.roll", EMITSOUND_FLAG_FORCE_CACHED);
+			EmitSound_t ep("menu.roll");
 			ses->EmitSound(&ep);
 		}
 	}

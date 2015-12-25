@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "eqParallelJobs.h"
+#include "eqGlobalMutex.h"
 #include "utils/strtools.h"
 
 namespace Threading
@@ -74,7 +75,7 @@ namespace Threading
 
 	//-------------------------------------------------------------------------------------------
 
-	CEqParallelJobThreads::CEqParallelJobThreads()
+	CEqParallelJobThreads::CEqParallelJobThreads() : m_mutex( GetGlobalMutex( MUTEXPURPOSE_JOBMANAGER ) )
 	{
 		m_curThread = 0;
 	}

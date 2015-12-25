@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "NETThread.h"
+#include "eqGlobalMutex.h"
 
 ConVar net_fakelatency("net_fakelatency", "0", "Simulate latency (value is in ms). Operating on recieved only\n", CV_CHEAT);
 ConVar net_fakelatency_randthresh("net_fakelatency_randthresh", "1.0f", "Fake latency randomization threshold\n", CV_CHEAT);
@@ -76,7 +77,7 @@ struct netfragmsg_t
 	DkList< netmsg_fragment_t > frags;
 };
 
-CNetworkThread::CNetworkThread( INetworkInterface* pInterface ) : Threading::CEqThread()
+CNetworkThread::CNetworkThread( INetworkInterface* pInterface ) : Threading::CEqThread(), m_Mutex(GetGlobalMutex(MUTEXPURPOSE_NET_THREAD))
 {
 	m_pFirstMessage = NULL;
 	m_pLastMessage = NULL;

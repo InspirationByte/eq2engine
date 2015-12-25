@@ -26,6 +26,13 @@ enum EngineModelType_e
 	ENGINEMODEL_WORLD_SURFACE,	// simply the list of surfaces
 };
 
+enum EModelLoadingState
+{
+	EQMODEL_LOAD_ERROR = -1,
+	EQMODEL_LOAD_IN_PROGRESS = 0,
+	EQMODEL_LOAD_OK,
+};
+
 // structure for world models
 struct worldhwdata_t // (as studiohwdata_t)
 {
@@ -77,17 +84,18 @@ public:
 //------------------------------------
 // shared model usage
 //------------------------------------
+
 	// destroys model - cache-use only if from cache.
 	virtual void				DestroyModel() = 0;
 
 	// returns name (real patch to model)
-	virtual const char*			GetName() = 0;
+	virtual const char*			GetName() const = 0;
 
 	// selects lod index
 	virtual int					SelectLod(float fDistance) = 0;
 
-	virtual Vector3D			GetBBoxMins() = 0;
-	virtual Vector3D			GetBBoxMaxs() = 0;
+	virtual const Vector3D&		GetBBoxMins() const = 0;
+	virtual const Vector3D&		GetBBoxMaxs() const = 0;
 
 	// makes dynamic temporary decal
 	virtual studiotempdecal_t*	MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices) = 0;
@@ -120,7 +128,10 @@ public:
 	virtual	void				LoadMaterials() = 0;
 
 	// studio model hardware data pointer for information
-	virtual studiohwdata_t*		GetHWData() = 0;
+	virtual studiohwdata_t*		GetHWData() const = 0;
+
+	// loading state
+	virtual int					GetLoadingState() const = 0;
 };
 
 

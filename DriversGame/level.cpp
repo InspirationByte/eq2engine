@@ -17,7 +17,10 @@
 #include "eqPhysics/eqBulletIndexedMesh.h"
 #include "../shared_engine/physics/BulletConvert.h"
 
+#include "eqGlobalMutex.h"
+
 using namespace EqBulletUtils;
+using namespace Threading;
 
 #define AI_NAVIGATION_ROAD_PRIORITY (1)
 
@@ -874,7 +877,7 @@ void CLevelRegion::Ed_Prerender()
 
 		Matrix4x4 mat = GetModelRefRenderMatrix(this, m_objects[i]);
 
-		DrawDefLightData(mat, m_objects[i]->container->m_lightData, 1.0f);
+		DrawDefLightData(mat, cont->m_lightData, 1.0f);
 	}
 }
 #endif // EDITOR
@@ -1340,7 +1343,8 @@ CGameLevel::CGameLevel() :
 	m_roadDataLumpOffset(0),
 	m_occluderDataLumpOffset(0),
 	m_levelName("Unnamed"),
-	m_instanceBuffer(NULL)
+	m_instanceBuffer(NULL),
+	m_mutex(GetGlobalMutex(MUTEXPURPOSE_LEVEL_LOADER))
 {
 
 }
@@ -3620,6 +3624,10 @@ int CGameLevel::UpdateRegionLoading()
 	float loadTime = Platform_GetCurrentTime()-startLoadTime;
 	if (numLoadedRegions)
 		DevMsg(2, "*** %d regions loaded for %g seconds\n", numLoadedRegions, loadTime);
+
+	// wait for matsystem
+	if(numLoadedRegions)
+		materials->Wait();
 
 	return numLoadedRegions;
 #else

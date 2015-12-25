@@ -21,74 +21,38 @@ using namespace Threading;
 
 class DkSoundSampleLocal : public ISoundSample
 {
+	friend class DkSoundAmbient;
+	friend class DkSoundEmitterLocal;
 public:
 					DkSoundSampleLocal();
 					~DkSoundSampleLocal();
 
-	void			Load(const char *name, bool streaming, bool looping, int nFlags = 0);
-	void			LoadWav(const char *name, unsigned int buffer);
-	void			LoadOgg(const char *name, unsigned int buffer);
+	static void		SampleLoaderJob( void* loadSampleData );
+
+	void			Init(const char *name, bool streaming, bool looping, int nFlags = 0);
+
+	bool			Load();
+	bool			LoadWav(const char *name, unsigned int buffer);
+	bool			LoadOgg(const char *name, unsigned int buffer);
 
 	// flags
 	int				GetFlags();
 
+	const char*		GetName() const {return m_szName.c_str();}
+
+	void			WaitForLoad();
+
+private:
 	int				m_nChannels;
 	bool			m_bStreaming;
 	bool			m_bLooping;
 	EqString		m_szName;
 	unsigned int	m_nALBuffer;
 	int				m_nFlags;
-	bool			m_bIsLoaded;
-};
 
+	volatile int	m_loadState;
+};
 
 //----------------------------------------------------------------------------------------------------------
-
-struct loadsample_t
-{
-	DkSoundSampleLocal*	sample;
-
-	EqString			filename;
-	bool				loop;
-	bool				stream;
-	int					flags;
-};
-
-class CEqSoundThreadedLoader : public CEqThread
-{
-public:
-	virtual int Run()
-	{
-		for(int i = 0; i < m_pSamples.numElem(); i++)
-		{
-			m_pSamples[i]->sample->Load( m_pSamples[i]->filename.GetData(),
-											m_pSamples[i]->stream,
-											m_pSamples[i]->loop,
-											m_pSamples[i]->flags);
-
-			delete m_pSamples[i];
-		}
-
-		m_Mutex.Lock();
-		m_pSamples.clear();
-		m_Mutex.Unlock();
-
-		return 0;
-	}
-
-	void AddSample(loadsample_t* pSample)
-	{
-		m_Mutex.Lock();
-		m_pSamples.append( pSample );
-		m_Mutex.Unlock();
-	}
-
-protected:
-
-	DkList<loadsample_t*>	m_pSamples;
-	CEqMutex				m_Mutex;
-};
-
-extern CEqSoundThreadedLoader* g_pThreadedSoundLoader;
 
 #endif // ALSND_SAMPLE_H

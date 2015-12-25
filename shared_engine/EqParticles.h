@@ -169,7 +169,7 @@ public:
 
 protected:
 
-	Threading::CEqMutex				m_mutex;
+	Threading::CEqMutex&			m_mutex;
 
 	DkList<CParticleRenderGroup*>	m_renderGroups;
 

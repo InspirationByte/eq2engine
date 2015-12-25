@@ -331,6 +331,8 @@ protected:
 	CEqCollisionBroadphaseGrid		m_grid;
 
 protected:
+	Threading::CEqMutex&			m_mutex;
+
 	DkList<eqPhysSurfParam_t*>		m_physSurfaceParams;
 
 	DkList<CEqRigidBody*>			m_moveable;

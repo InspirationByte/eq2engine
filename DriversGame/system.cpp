@@ -252,6 +252,9 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	// Set default cursor
 	SDL_SetCursor( staticDefaultCursor[dc_arrow] );
 
+	// make job threads
+	g_parallelJobs->Init( (int)ceil((float)g_cpuCaps->GetCPUCount() / 2.0f) );
+
 	if( !g_fontCache->Init() )
 		return false;
 
@@ -268,9 +271,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 		ErrorMsg("Lua base initialization error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
 		return false;
 	}
-
-	// make job threads
-	g_parallelJobs->Init( (int)ceil((float)g_cpuCaps->GetCPUCount() / 2.0f) );
 
 	return true;
 }

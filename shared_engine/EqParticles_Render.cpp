@@ -6,6 +6,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "EqParticles.h"
+#include "eqGlobalMutex.h"
+
+using namespace Threading;
 
 static CParticleLowLevelRenderer s_pfxRenderer;
 
@@ -390,7 +393,7 @@ void CPFXAtlasGroup::Shutdown()
 
 //----------------------------------------------------------------------------------------------------------
 
-CParticleLowLevelRenderer::CParticleLowLevelRenderer()
+CParticleLowLevelRenderer::CParticleLowLevelRenderer() : m_mutex(GetGlobalMutex(MUTEXPURPOSE_RENDERER))
 {
 	m_vertexBuffer = NULL;
 	m_indexBuffer = NULL;

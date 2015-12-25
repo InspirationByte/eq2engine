@@ -16,14 +16,15 @@
 
 #include "eqBulletIndexedMesh.h"
 
-#include "eqParallelJobs.h"
+//#include "eqParallelJobs.h"
+#include "eqGlobalMutex.h"
 
 #include "Shiny.h"
 
 #include "../shared_engine/physics/BulletConvert.h"
-using namespace EqBulletUtils;
 
-#pragma todo("convex sweep cast")
+using namespace EqBulletUtils;
+using namespace Threading;
 
 #define PHYSGRID_WORLD_SIZE 24	// compromised betwen memory usage and performance
 
@@ -31,7 +32,6 @@ ConVar ph_debugrender("ph_debugrender", "0", "no desc", CV_CHEAT);
 ConVar ph_showcontacts("ph_showcontacts", "0", "no desc", CV_CHEAT);
 ConVar ph_erp("ph_erp", "0.01", "Error correction", CV_CHEAT);
 ConVar ph_centerCollisionPos("ph_centerCollisionPos", "1", "no desc", CV_CHEAT);
-//ConVar ph_solverIterations("ph_solverIterations", "4", "physics solver iterations", CV_CHEAT);
 
 const int collisionList_Max = 16;
 
@@ -152,7 +152,7 @@ public:
 
 //------------------------------------------------------------------------------------------------------------
 
-CEqPhysics::CEqPhysics()
+CEqPhysics::CEqPhysics() : m_mutex(GetGlobalMutex(MUTEXPURPOSE_PHYSICS))
 {
 
 }
@@ -320,6 +320,8 @@ void CEqPhysics::AddToMoveableList( CEqRigidBody* body )
 	if(!body)
 		return;
 
+	Threading::CScopedMutex m(m_mutex);
+
 	CHECK_ALREADY_IN_LIST(m_dynObjects, body);
 
 	m_moveable.append( body );
@@ -329,6 +331,8 @@ void CEqPhysics::AddToWorld( CEqRigidBody* body, bool moveable )
 {	
 	if(!body)
 		return;
+
+	Threading::CScopedMutex m(m_mutex);
 
 	CHECK_ALREADY_IN_LIST(m_dynObjects, body);
 
@@ -345,6 +349,8 @@ void CEqPhysics::RemoveFromWorld( CEqRigidBody* body )
 	if(!body)
 		return;
 
+	Threading::CScopedMutex m(m_mutex);
+
 	m_dynObjects.fastRemove(body);
 	m_moveable.fastRemove(body);
 }
@@ -353,6 +359,8 @@ void CEqPhysics::DestroyBody( CEqRigidBody* body )
 {
 	if(!body)
 		return;
+
+	Threading::CScopedMutex m(m_mutex);
 
 	collgridcell_t* cell = body->GetCell();
 
@@ -368,6 +376,8 @@ void CEqPhysics::AddGhostObject( CEqCollisionObject* object )
 {
 	if(!object)
 		return;
+
+	Threading::CScopedMutex m(m_mutex);
 
 	// add extra flags to objects
 	object->m_flags = COLLOBJ_ISGHOST | COLLOBJ_COLLISIONLIST | COLLOBJ_DISABLE_RESPONSE | COLLOBJ_NO_RAYCAST;
@@ -388,6 +398,8 @@ void CEqPhysics::DestroyGhostObject( CEqCollisionObject* object )
 {
 	if(!object)
 		return;
+
+	Threading::CScopedMutex m(m_mutex);
 
 #ifndef EDITOR
 	if(object->GetMesh() != NULL)
@@ -411,6 +423,8 @@ void CEqPhysics::AddStaticObject( CEqCollisionObject* object )
 {
 	if(!object)
 		return;
+
+	Threading::CScopedMutex m(m_mutex);
 
 	m_staticObjects.append(object);
 
@@ -436,6 +450,8 @@ void CEqPhysics::DestroyStaticObject( CEqCollisionObject* object )
 {
 	if(!object)
 		return;
+
+	Threading::CScopedMutex m(m_mutex);
 
 #ifndef EDITOR
 	m_grid.RemoveStaticObjectFromGrid(object);
@@ -1284,7 +1300,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	void* args)
 {
 
-	Threading::CScopedMutex m(g_parallelJobs->GetMutex());
+	Threading::CScopedMutex m(m_mutex);
 
 	collgridcell_t* cell = m_grid.GetCellAt(x,y);
 	

@@ -330,6 +330,9 @@
     <ClCompile Include="AIPursuerCar.cpp">
       <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">
@@ -642,6 +645,9 @@
     </ClInclude>
     <ClInclude Include="AIPursuerCar.h">
       <Filter>Файлы исходного кода\Game\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\eqGlobalMutex.h">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

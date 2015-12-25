@@ -11,6 +11,7 @@
 #include "ISoundSystem.h"
 #include "core_base_header.h"
 #include "alsound_local.h"
+#include "eqParallelJobs.h"
 
 #include "IDebugOverlay.h"
 
@@ -582,8 +583,6 @@ void DkSoundSystemLocal::Shutdown()
 
 	Msg("SoundSystem shutdown...\n");
 
-	g_pThreadedSoundLoader->StopThread();
-
 	// deallocate channels
 	for(int i = 0; i < m_pChannels.numElem(); i++)
 	{
@@ -710,15 +709,14 @@ void DkSoundSystemLocal::ReleaseSample(ISoundSample *pSample)
 	}
 
 	// Remove sample
-	m_Mutex.Lock();
 	if(m_pSoundSamples.remove( pSample ))
 	{
 		// deallocate sample
 		DkSoundSampleLocal* pSamp = (DkSoundSampleLocal*)pSample;
+		pSamp->WaitForLoad();
+
 		delete pSamp;
 	}
-	m_Mutex.Unlock();
-
 }
 
 // frees the sound emitter
@@ -814,24 +812,12 @@ ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, bool streaming, b
 #endif
 
 	DkSoundSampleLocal* pNewSample = new DkSoundSampleLocal();
+	pNewSample->Init(name, streaming, looping, nFlags);
 
-	loadsample_t* smp = new loadsample_t;
-	smp->sample = pNewSample;
-	smp->filename = name;
-	smp->flags = nFlags;
-	smp->stream = streaming;
-	smp->loop = looping;
-
-	g_pThreadedSoundLoader->AddSample( smp );
+	g_parallelJobs->AddJob( DkSoundSampleLocal::SampleLoaderJob, pNewSample );
+	g_parallelJobs->Submit();
 
 	m_pSoundSamples.append( pNewSample );
-
-	if(!g_pThreadedSoundLoader->IsRunning())
-		g_pThreadedSoundLoader->StartWorkerThread( "EqSoundLoader" );
-
-	g_pThreadedSoundLoader->SignalWork();
-
-	//pNewSample->Load(name, streaming, looping, nFlags);
 
 	STA_CheckError();
 
@@ -844,13 +830,9 @@ ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, bool streaming, b
 
 ISoundSample* DkSoundSystemLocal::FindSampleByName(const char *name)
 {
-	g_pThreadedSoundLoader->WaitForThread();
-
-	CScopedMutex m(m_Mutex);
-
 	for(int i = 0; i < m_pSoundSamples.numElem();i++)
 	{
-		if( !stricmp(((DkSoundSampleLocal*)m_pSoundSamples[i])->m_szName.GetData(), name))
+		if( !stricmp(((DkSoundSampleLocal*)m_pSoundSamples[i])->GetName(), name))
 			return m_pSoundSamples[i];
 	}
 
@@ -859,8 +841,6 @@ ISoundSample* DkSoundSystemLocal::FindSampleByName(const char *name)
 
 ISoundPlayable* DkSoundSystemLocal::GetStaticStreamChannel( int channel )
 {
-	g_pThreadedSoundLoader->WaitForThread();
-
 	if(channel > -1 && channel < m_pAmbients.numElem())
 	{
 		return m_pAmbients[channel];

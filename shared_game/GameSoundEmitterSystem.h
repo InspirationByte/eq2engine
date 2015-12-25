@@ -164,6 +164,7 @@ typedef EmitSound_t EmitParams;
 struct scriptsounddata_t
 {
 	char*		pszName;
+	int			namehash;
 
 	DkList<ISoundSample*>	pSamples;
 	DkList<EqString>		soundFileNames;

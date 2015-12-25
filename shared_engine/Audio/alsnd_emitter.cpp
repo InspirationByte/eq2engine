@@ -68,8 +68,6 @@ ISoundSample* DkSoundEmitterLocal::GetSample() const
 
 void DkSoundEmitterLocal::Play()
 {
-	g_pThreadedSoundLoader->WaitForThread();
-
 	DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 
 	if(m_sample && (GetState() == SOUND_STATE_PAUSED))
@@ -77,6 +75,8 @@ void DkSoundEmitterLocal::Play()
 		// resume sound playing
 		if( m_nChannel != -1 )
 		{
+			m_sample->WaitForLoad();
+
 			sndChannel_t *chnl = pSoundSystem->m_pChannels[m_nChannel];
 			alSourcePlay(chnl->alSource);
 			chnl->alState = AL_PLAYING;
@@ -100,6 +100,7 @@ void DkSoundEmitterLocal::Play()
 		else
 			alSourcei(c->alSource,AL_LOOPING, AL_FALSE);
 
+		m_sample->WaitForLoad();
 
 		alSourcefv(c->alSource,AL_POSITION, vPosition);
 		alSourcei(c->alSource, AL_BUFFER, m_sample->m_nALBuffer);
@@ -211,8 +212,6 @@ void DkSoundEmitterLocal::Update()
 	{
 		if( (length(vPosition - soundsystem->GetListenerPosition())) > m_params.maxDistance)
 		{
-			DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
-
 			sndChannel_t* chnl = pSoundSystem->m_pChannels[m_nChannel];
 
 			// free channel and switch to virtual mode

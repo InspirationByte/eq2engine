@@ -32,6 +32,9 @@ void CState_Title::OnEnter( CBaseStateHandler* from )
 {
 	ses->Init();
 
+	ses->PrecacheSound( "menu.click" );
+	ses->PrecacheSound( "menu.thunder" );
+
 	memset(m_codeKeysEntered, 0, sizeof(m_codeKeysEntered));
 	m_codePos = 0;
 
@@ -198,7 +201,7 @@ void CState_Title::HandleKeyPress( int key, bool down )
 	{
 		if(CompareCheatCode(m_codeKeysEntered, g_KonamiCode))
 		{
-			EmitSound_t es("menu.thunder", EMITSOUND_FLAG_FORCE_CACHED);
+			EmitSound_t es("menu.thunder");
 			ses->EmitSound( &es );
 
 			memset(m_codeKeysEntered, 0, sizeof(m_codeKeysEntered));
@@ -212,7 +215,7 @@ void CState_Title::HandleKeyPress( int key, bool down )
 		m_goesFromTitle = true;
 		m_textEffect = 1.0f;
 
-		EmitSound_t es("menu.click", EMITSOUND_FLAG_FORCE_CACHED);
+		EmitSound_t es("menu.click");
 		ses->EmitSound( &es );
 
 		SetNextState(g_State_MainMenu);

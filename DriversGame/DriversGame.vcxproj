@@ -132,6 +132,7 @@
     <ClCompile Include="..\shared_engine\KeyBinding\Keys.cpp" />
     <ClCompile Include="..\shared_engine\materialsystem\MaterialProxy.cpp" />
     <ClCompile Include="..\shared_engine\modelloader_shared.cpp" />
+    <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp" />
     <ClCompile Include="..\shared_engine\Network\NETThread.cpp" />
     <ClCompile Include="..\shared_engine\studio_egf.cpp" />
     <ClCompile Include="..\shared_engine\sys_console.cpp" />
@@ -253,6 +254,7 @@
     <ClInclude Include="..\shared_engine\KeyBinding\Keys.h" />
     <ClInclude Include="..\Engine\modelloader_shared.h" />
     <ClInclude Include="..\shared_engine\materialsystem\MaterialProxy.h" />
+    <ClInclude Include="..\shared_engine\eqGlobalMutex.h" />
     <ClInclude Include="..\shared_engine\Network\NETThread.h" />
     <ClInclude Include="..\shared_engine\eqParallelJobs.h" />
     <ClInclude Include="..\shared_engine\studio_egf.h" />

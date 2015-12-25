@@ -19,8 +19,10 @@ public:
 						CEngineStudioEGF();
 						~CEngineStudioEGF();
 
-	bool				LoadModel(const char* pszPath);
-	const char*			GetPath();
+	static void ModelLoaderJob( void* data );
+
+	bool				LoadModel( const char* pszPath, bool useJob = true );
+	const char*			GetPath() const;
 
 //------------------------------------------------------------
 // base methods
@@ -28,15 +30,15 @@ public:
 	
 	void				DestroyModel();
 
-	const char*			GetName();
+	const char*			GetName() const;
 
-	studiohwdata_t*		GetHWData();
+	studiohwdata_t*		GetHWData() const;
 
 	// selects a lod. returns index
 	int					SelectLod(float dist_to_camera);
 
-	Vector3D			GetBBoxMins();
-	Vector3D			GetBBoxMaxs();
+	const Vector3D&		GetBBoxMins() const;
+	const Vector3D&		GetBBoxMaxs() const;
 
 	// makes dynamic temporary decal
 	studiotempdecal_t*	MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices);
@@ -44,6 +46,8 @@ public:
 	// instancing
 	void				SetInstancer( IEqModelInstancer* instancer );
 	IEqModelInstancer*	GetInstancer() const;
+
+	int					GetLoadingState() const {return m_readyState;}
 
 //------------------------------------
 // Rendering
@@ -56,8 +60,6 @@ public:
 
 	void				DrawDebug();
 
-	int8				FindBone(const char* pszName);
-
 	void				SetupBones();
 
 	bool				PrepareForSkinning(Matrix4x4* jointMatrices);
@@ -69,9 +71,15 @@ public:
 
 	Vector3D			GetModelInitialOrigin() {return Vector3D(0);}
 
-	void				LoadPOD(const char* path); // loads physics object data
-
 private:
+
+	bool				LoadFromFile();
+
+	void				LoadPhysicsData(); // loads physics object data
+	bool				LoadGenerateVertexBuffer();
+	void				LoadMotionPackages();
+
+	volatile int		m_readyState;
 
 	IEqModelInstancer*	m_instancer;
 

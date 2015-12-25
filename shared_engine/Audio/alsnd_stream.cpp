@@ -46,6 +46,8 @@ void DkSoundAmbient::Play()
 	if(!m_sample)
 		return;
 
+	m_sample->WaitForLoad();
+
 	alSourcei(m_alSource, AL_SOURCE_RELATIVE, AL_TRUE);
 
 	alSourcei(m_alSource, AL_LOOPING, m_sample->m_bLooping && !m_sample->m_bStreaming);

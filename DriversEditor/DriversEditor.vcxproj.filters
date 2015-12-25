@@ -298,9 +298,6 @@
     <ClInclude Include="..\DriversGame\eqPhysics\eqCollision_ObjectGrid.h">
       <Filter>Source Files\Game\Physics</Filter>
     </ClInclude>
-    <ClInclude Include="..\DriversGame\car.h">
-      <Filter>Source Files\Game\objects</Filter>
-    </ClInclude>
     <ClInclude Include="..\DriversGame\GameObject.h">
       <Filter>Source Files\Game\objects</Filter>
     </ClInclude>
@@ -369,6 +366,12 @@
     </ClInclude>
     <ClInclude Include="EditorActionHistory.h">
       <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\eqGlobalMutex.h">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\car.h">
+      <Filter>Source Files\Game\objects</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -440,9 +443,6 @@
     </ClCompile>
     <ClCompile Include="..\DriversGame\eqPhysics\eqCollision_ObjectGrid.cpp">
       <Filter>Source Files\Game\Physics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\DriversGame\car.cpp">
-      <Filter>Source Files\Game\objects</Filter>
     </ClCompile>
     <ClCompile Include="..\DriversGame\GameObject.cpp">
       <Filter>Source Files\Game\objects</Filter>
@@ -533,6 +533,12 @@
     </ClCompile>
     <ClCompile Include="..\DriversGame\Shader_Water.cpp">
       <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\car.cpp">
+      <Filter>Source Files\Game\objects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

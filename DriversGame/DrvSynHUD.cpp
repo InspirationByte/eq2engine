@@ -244,7 +244,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 		numFontParams.align = 0;
 
-		Vector2D millisDisplayTextPos = timeDisplayTextPos + Vector2D(minSecWidth*0.5f, 0.0f);
+		Vector2D millisDisplayTextPos = timeDisplayTextPos + Vector2D(floor(minSecWidth*0.5f), 0.0f);
 
 		numbers20->RenderText(varargs_w(L"'%02d", millisecs), millisDisplayTextPos, numFontParams);
 	}

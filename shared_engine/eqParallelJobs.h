@@ -108,7 +108,7 @@ namespace Threading
 
 	protected:
 
-		CEqMutex						m_mutex;
+		CEqMutex&						m_mutex;
 
 		DkLinkedList<eqParallelJob_t*>	m_unsubmittedQueue;
 

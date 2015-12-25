@@ -11,6 +11,7 @@
 #include "utils/SmartPtr.h"
 #include "utils/GeomTools.h"
 #include "physics/IStudioShapeCache.h"
+#include "eqParallelJobs.h"
 
 #if !defined(EDITOR) && !defined(NOENGINE) && !defined(NO_GAME)
 #include "IEngineGame.h"
@@ -34,6 +35,7 @@ ConVar r_notempdecals("r_notempdecals", "0", "Disables temp decals\n", CV_CHEAT)
 CEngineStudioEGF::CEngineStudioEGF()
 {
 	m_instancer = NULL;
+	m_readyState = EQMODEL_LOAD_ERROR;
 
 	m_bSoftwareSkinned = false;
 	m_bSoftwareSkinChanged = false;
@@ -229,9 +231,9 @@ void CEngineStudioEGF::DestroyModel()
 
 	// instancer is removed here if set
 	if(m_instancer != NULL)
-	{
 		delete m_instancer;
-	}
+
+	m_instancer = NULL;
 
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
 	g_pShaderAPI->ApplyBuffers();
@@ -240,9 +242,7 @@ void CEngineStudioEGF::DestroyModel()
 	g_pShaderAPI->DestroyIndexBuffer(m_pIB);
 
 	for(int i = 0; i < m_nNumMaterials;i++)
-	{
 		materials->FreeMaterial(m_pMaterials[i]);
-	}
 
 	memset(m_pMaterials, 0, sizeof(m_pMaterials));
 
@@ -271,25 +271,29 @@ void CEngineStudioEGF::DestroyModel()
 		PPFree(m_pHardwareData);
 	}
 
+	m_pHardwareData = NULL;
+
 	if( m_bSoftwareSkinned )
 	{
 		PPFree(m_pSWVertices);
 		m_pSWVertices = NULL;
 	}
+
+	m_nNumGroups = 0;
+	m_numIndices = 0;
+	m_numVertices = 0;
+	m_nNumMaterials = 0;
+
+	m_readyState = EQMODEL_LOAD_ERROR;
 }
 
-void CEngineStudioEGF::LoadPOD(const char* path)
+void CEngineStudioEGF::LoadPhysicsData()
 {
-	EqString podFileName(path);
-
-	podFileName = podFileName.Path_Strip_Ext();
-
+	EqString podFileName = m_szPath.Path_Strip_Ext();
 	podFileName.Append(".pod");
 
-	if(Studio_LoadPhysModel(podFileName.GetData(), &m_pHardwareData->m_physmodel))
-	{
+	if( Studio_LoadPhysModel(podFileName.GetData(), &m_pHardwareData->m_physmodel) )
 		g_pStudioShapeCache->InitStudioCache( &m_pHardwareData->m_physmodel );
-	}
 }
 
 extern ConVar r_detaillevel;
@@ -339,16 +343,83 @@ int CopyGroupIndexDataToHWList(DkList<uint16>& hwIdxList, DkList<uint32>& hwIdxL
 	return index_size;
 }
 
-bool CEngineStudioEGF::LoadModel(const char* pszPath)
+void CEngineStudioEGF::ModelLoaderJob( void* data )
 {
-	studiohdr_t* pHdr = Studio_LoadModel( pszPath );
+	CEngineStudioEGF* model = (CEngineStudioEGF*)data;
+
+	// single-thread version
+
+	if(!model->LoadFromFile())
+	{
+		model->m_readyState = EQMODEL_LOAD_ERROR;
+		model->DestroyModel();
+		return;
+	}
+
+	if( !model->LoadGenerateVertexBuffer())
+	{
+		model->m_readyState = EQMODEL_LOAD_ERROR;
+		model->DestroyModel();
+		return;
+	}
+
+	model->LoadMotionPackages();
+	model->LoadPhysicsData();
+	model->LoadMaterials();
+
+	materials->Wait();
+
+	model->m_readyState = EQMODEL_LOAD_OK;
+}
+
+bool CEngineStudioEGF::LoadModel( const char* pszPath, bool useJob )
+{
+	m_szPath = pszPath;
+	m_szPath.Path_FixSlashes();
+
+	// first we switch to loading
+	m_readyState = EQMODEL_LOAD_IN_PROGRESS;
+
+	if(useJob)
+	{
+		g_parallelJobs->AddJob( ModelLoaderJob, this );
+		g_parallelJobs->Submit();
+		return true;
+	}
+
+	// single-thread version
+
+	if(!LoadFromFile())
+	{
+		m_readyState = EQMODEL_LOAD_ERROR;
+		DestroyModel();
+		return false;
+	}
+
+	if( !LoadGenerateVertexBuffer())
+	{
+		m_readyState = EQMODEL_LOAD_ERROR;
+		DestroyModel();
+		return false;
+	}
+
+	LoadMotionPackages();
+	LoadPhysicsData();
+	LoadMaterials();
+
+	materials->Wait();
+
+	m_readyState = EQMODEL_LOAD_OK;
+
+	return true;
+}
+
+bool CEngineStudioEGF::LoadFromFile()
+{
+	studiohdr_t* pHdr = Studio_LoadModel( m_szPath.c_str() );
 
 	if(!pHdr)
 		return false; // get out, nothing to load
-
-	m_bSoftwareSkinned = r_force_softwareskinning.GetBool();
-
-	//float fTime = Platform_GetCurrentTime();
 
 	// allocate hardware data
 	m_pHardwareData = (studiohwdata_t*)PPAlloc(sizeof(studiohwdata_t));
@@ -356,122 +427,19 @@ bool CEngineStudioEGF::LoadModel(const char* pszPath)
 
 	m_pHardwareData->pStudioHdr = pHdr;
 
-	m_szPath = pszPath;
+	return true;
+}
 
-	FixSlashes((char*)m_szPath.GetData());
+bool CEngineStudioEGF::LoadGenerateVertexBuffer()
+{
+	m_bSoftwareSkinned = r_force_softwareskinning.GetBool();
+	m_nNumGroups = 0;
 
-	// load Physics Object Data file
-	LoadPOD( pszPath );
-
-	m_nNumGroups			= 0;
+	studiohdr_t* pHdr = m_pHardwareData->pStudioHdr;
 
 	m_pHardwareData->modelrefs = (hwmodelref_t*)PPAlloc(sizeof(hwmodelref_t)*pHdr->nummodels);
 	hwmodelref_t* pLodModels = m_pHardwareData->modelrefs;
 
-	bool needs_fastcache = true;
-
-	/*
-	// load optimized hardware data for models (they are optimized for caching only)
-	DKFILE *pFile = GetFileSystem()->Open((_Es(pszPath).StripFileExtension() + ".ehd").GetData(), "rb");
-	if(pFile)
-	{
-		egf_ohd_data_t hwdata;
-		GetFileSystem()->Read(&hwdata, 1, sizeof(hwdata), pFile);
-
-		if(hwdata.ident == MCHAR4('E','G','H','D') && !stricmp(hwdata.model_path, pszPath) && hwdata.numBones == pHdr->numbones)
-		{
-			m_numVertices = hwdata.numVertices;
-			m_numIndices = hwdata.numIndices;
-
-			// make some allocs
-			EGFHwVertex_t* pVerts = new EGFHwVertex_t[m_numVertices];
-			int* pIndices = new int[m_numIndices];
-
-			GetFileSystem()->Read(pVerts, 1, sizeof(EGFHwVertex_t) * m_numVertices, pFile);
-			GetFileSystem()->Read(pIndices, 1, sizeof(int) * m_numIndices, pFile);
-
-			// create hardware buffers
-			m_pVB = g_pShaderAPI->CreateVertexBuffer(BUFFER_STATIC, m_numVertices, sizeof(EGFHwVertex_t), pVerts);
-			m_pIB = g_pShaderAPI->CreateIndexBuffer(m_numIndices, 4, BUFFER_STATIC, pIndices);
-
-			delete [] pVerts;
-			delete [] pIndices;
-
-			m_vBBOX[0] = hwdata.mins;
-			m_vBBOX[1] = hwdata.maxs;
-
-			m_nNumGroups = hwdata.numGroups;
-
-			int nFirstIdx = 0;
-
-			for(int i = 0; i < pHdr->nummodels; i++)
-			{
-				studiomodeldesc_t* pModelDesc = pHdr->pModelDesc(i);
-
-				pLodModels[i].groupdescs = (hwgroup_desc_t*)CacheAllocName("EGFGroupDescs", sizeof(hwgroup_desc_t) * pModelDesc->numgroups);
-
-				for(int j = 0; j < pModelDesc->numgroups; j++)
-				{
-					// add vertices, add indices
-					modelgroupdesc_t* pGroup = pModelDesc->pGroup(j);
-
-					m_nNumGroups++;
-
-					// set lod index
-					int lod_first_index = nFirstIdx;
-					pLodModels[i].groupdescs[j].firstindex = lod_first_index;
-
-					// set index count for lod group
-					pLodModels[i].groupdescs[j].indexcount = pGroup->numindices;
-
-					nFirstIdx += pGroup->numindices;
-				}
-			}
-
-			// Initialize HW data joints
-			m_pHardwareData->joints = (joint_t*)CacheAllocName("EGFJoints", sizeof(joint_t)*pHdr->numbones);
-
-			// parse bones
-			for(int i = 0; i < pHdr->numbones; i++)
-			{
-				// copy all bone data
-				bonedesc_t* bone = pHdr->pBone(i);
-				m_pHardwareData->joints[i].position = bone->position;
-				m_pHardwareData->joints[i].rotation = bone->rotation;
-				m_pHardwareData->joints[i].parentbone = bone->parent;
-
-				// initialize array because we don't want bugs
-				m_pHardwareData->joints[i].childs = DkList<int>();
-				m_pHardwareData->joints[i].bone_id = i;
-				m_pHardwareData->joints[i].link_id = -1;
-				m_pHardwareData->joints[i].chain_id = -1;
-
-				// copy name
-				strcpy(m_pHardwareData->joints[i].name,bone->name);
-			}
-
-			// link joints
-			for(int i = 0; i < pHdr->numbones; i++)
-			{
-				int parent_index = m_pHardwareData->joints[i].parentbone;
-
-				if(parent_index != -1)
-					m_pHardwareData->joints[parent_index].childs.append(i);
-			}
-
-			// setup matrices for bones
-			SetupBones();
-
-			needs_fastcache = false;
-
-			Msg("EHD file loaded for %s\n", pszPath);
-
-			GetFileSystem()->Close(pFile);
-		}
-	}
-	*/
-
-	if(needs_fastcache)
 	{
 		// load all group vertices and indices
 		DkList<EGFHwVertex_t>	loadedvertices;
@@ -569,34 +537,6 @@ bool CEngineStudioEGF::LoadModel(const char* pszPath)
 
 			memcpy(m_pSWVertices, loadedvertices.ptr(), sizeof(EGFHwVertex_t)*m_numVertices);
 		}
-
-		// save fastcache
-		/*
-		DKFILE *pFile = GetFileSystem()->Open((_Es(pszPath).StripFileExtension() + ".ehd").GetData(), "wb");
-		if(pFile)
-		{
-			egf_ohd_data_t hwdata;
-
-			hwdata.ident = MCHAR4('E','G','H','D');
-			strcpy(hwdata.model_path, pszPath);
-			hwdata.mins = m_vBBOX[0];
-			hwdata.maxs = m_vBBOX[1];
-			hwdata.numBones = pHdr->numbones;
-			hwdata.numGroups = m_nNumGroups;
-			hwdata.numVertices = loadedvertices.numElem();
-			hwdata.numIndices = loadedindices.numElem();
-
-			GetFileSystem()->Write(&hwdata, 1, sizeof(hwdata), pFile);
-
-			// write all datas out
-			GetFileSystem()->Write(loadedvertices.ptr(), 1, sizeof(EGFHwVertex_t)*loadedvertices.numElem(), pFile);
-			GetFileSystem()->Write(loadedindices.ptr(), 1, sizeof(int)*loadedindices.numElem(), pFile);
-
-			GetFileSystem()->Close(pFile);
-
-			Msg("EHD file saved for %s\n", pszPath);
-		}
-		*/
 	}
 
 	// try to load materials
@@ -610,7 +550,9 @@ bool CEngineStudioEGF::LoadModel(const char* pszPath)
 	for(int i = 0; i < m_nNumMaterials; i++)
 	{
         EqString fpath(pHdr->pMaterial(i)->materialname);
-        if(fpath.c_str()[0] == '/')
+		fpath.Path_FixSlashes();
+
+        if(fpath.c_str()[0] == CORRECT_PATH_SEPARATOR)
             fpath = EqString(fpath.c_str(),fpath.GetLength()-1);
 
 		for(int j = 0; j < pHdr->numsearchpathdescs; j++)
@@ -618,20 +560,19 @@ bool CEngineStudioEGF::LoadModel(const char* pszPath)
 			if(!m_pMaterials[i])
 			{
                 EqString spath(pHdr->pMaterialSearchPath(j)->m_szSearchPathString);
-                if(spath.c_str()[spath.GetLength()-1] == '/')
+				spath.Path_FixSlashes();
+
+                if(spath.c_str()[spath.GetLength()-1] == CORRECT_PATH_SEPARATOR)
                     spath = spath.Left(spath.GetLength()-1);
 
-				EqString extend_path = spath + "/" + fpath;
+				EqString extend_path = spath + CORRECT_PATH_SEPARATOR + fpath;
 
 				if(materials->IsMaterialExist( extend_path.GetData() ))
 				{
 					m_pMaterials[i] = materials->FindMaterial(extend_path.GetData(), true);
 
-					//if(m_pMaterials[i]->GetShader())
-					//	m_pMaterials[i]->GetShader()->InitParams();
-
 					if(!m_pMaterials[i]->IsError() && !(m_pMaterials[i]->GetFlags() & MATERIAL_FLAG_SKINNED))
-						MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", m_pMaterials[i]->GetName(), m_pMaterials[i]->GetShaderName(), pszPath);
+						MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", m_pMaterials[i]->GetName(), m_pMaterials[i]->GetShaderName(), m_szPath.c_str());
 
 					m_pMaterials[i]->Ref_Grab();
 				}
@@ -646,7 +587,7 @@ bool CEngineStudioEGF::LoadModel(const char* pszPath)
 	{
 		if(!m_pMaterials[i])
 		{
-			MsgError( "Couldn't load model material '%s'\n", pHdr->pMaterial(i)->materialname, pszPath );
+			MsgError( "Couldn't load model material '%s'\n", pHdr->pMaterial(i)->materialname, m_szPath.c_str() );
 			bError = true;
 
 			m_pMaterials[i] = materials->FindMaterial("error");
@@ -663,13 +604,17 @@ bool CEngineStudioEGF::LoadModel(const char* pszPath)
 		}
 	}
 
-	DevMsg(2, "Loading animations for '%s'\n",pszPath);
+	return true;
+}
 
-	//float fFTime = Platform_GetCurrentTime() - fTime;
-	//MsgInfo("Model loading time: %g s\n", fFTime);
+void CEngineStudioEGF::LoadMotionPackages()
+{
+	studiohdr_t* pHdr = m_pHardwareData->pStudioHdr;
+
+	DevMsg(2, "Loading animations for '%s'\n", m_szPath.c_str());
 
 	// Try load default motion file
-	m_pHardwareData->motiondata[0] = Studio_LoadMotionData((EqString(pszPath).Path_Strip_Ext() + ".mop").GetData(), pHdr->numbones);
+	m_pHardwareData->motiondata[0] = Studio_LoadMotionData(( m_szPath.Path_Strip_Ext() + ".mop").GetData(), pHdr->numbones);
 
 	if(m_pHardwareData->motiondata[0])
 		m_pHardwareData->numMotionPackages++;
@@ -688,20 +633,13 @@ bool CEngineStudioEGF::LoadModel(const char* pszPath)
 		else
 			MsgError("Can't open motion package '%s'\n", pHdr->pPackage(i)->packagename);
 	}
-
-	//fFTime = Platform_GetCurrentTime() - fTime;
-	//MsgInfo("Model loading time (with MOP's): %g s\n", fFTime);
-
-	return true;
 }
 
 // loads materials for studio
 void CEngineStudioEGF::LoadMaterials()
 {
 	for(int i = 0; i < m_nNumMaterials; i++)
-	{
 		materials->PutMaterialToLoadingQueue( m_pMaterials[i] );
-	}
 }
 
 IMaterial* CEngineStudioEGF::GetMaterial(int nModel, int nTexGroup)
@@ -712,11 +650,6 @@ IMaterial* CEngineStudioEGF::GetMaterial(int nModel, int nTexGroup)
 		return m_pMaterials[material_index];
 
 	return NULL;
-}
-
-int8 CEngineStudioEGF::FindBone(const char* pszName)
-{
-	return Studio_FindBoneId(GetHWData()->pStudioHdr, pszName);
 }
 
 void CEngineStudioEGF::SetupBones()
@@ -827,28 +760,32 @@ void CEngineStudioEGF::DrawDebug()
 	*/
 }
 
-Vector3D CEngineStudioEGF::GetBBoxMins()
+const Vector3D& CEngineStudioEGF::GetBBoxMins() const
 {
 	return m_vBBOX[0];
 }
 
-Vector3D CEngineStudioEGF::GetBBoxMaxs()
+const Vector3D& CEngineStudioEGF::GetBBoxMaxs() const
 {
 	return m_vBBOX[1];
 }
 
-const char* CEngineStudioEGF::GetName()
+const char* CEngineStudioEGF::GetName() const
 {
 	return m_szPath.GetData();//m_pHardwareData->pStudioHdr->modelname;
 }
 
-const char* CEngineStudioEGF::GetPath()
+const char* CEngineStudioEGF::GetPath() const
 {
 	return m_szPath.GetData();
 }
 
-studiohwdata_t* CEngineStudioEGF::GetHWData()
+studiohwdata_t* CEngineStudioEGF::GetHWData() const
 {
+	// wait for loading end
+	while(m_readyState == EQMODEL_LOAD_IN_PROGRESS)
+		Platform_Sleep(1);
+
 	return m_pHardwareData;
 }
 
@@ -1163,7 +1100,7 @@ int CModelCache::PrecacheModel( const char* modelName )
 		IEqModel* pModel = engine->LoadModel(modelName, false);
 #else
 		CEngineStudioEGF* pModel = new CEngineStudioEGF;
-		if(!pModel->LoadModel(modelName))
+		if(!pModel->LoadModel( modelName ))
 		{
 			delete pModel;
 			pModel = NULL;
@@ -1173,8 +1110,6 @@ int CModelCache::PrecacheModel( const char* modelName )
 
 		if(!pModel)
 			return 0; // return error model index
-
-		pModel->LoadMaterials();
 
 #if !defined(EDITOR) && !defined(NOENGINE) && !defined(NO_GAME)
 		if(gpGlobals && gpGlobals->curtime > 0)
@@ -1199,10 +1134,17 @@ int	CModelCache::GetCachedModelCount() const
 
 IEqModel* CModelCache::GetModel(int index) const
 {
-	if(index == -1)
-		return m_pModels[0];
+	IEqModel* model = NULL;
 
-	return m_pModels[index];
+	if(index == -1)
+		model = m_pModels[0];
+
+	model = m_pModels[index];
+
+	if(model->GetLoadingState() != EQMODEL_LOAD_ERROR)
+		return model;
+	else
+		return NULL;
 }
 
 const char* CModelCache::GetModelFilename(IEqModel* pModel) const

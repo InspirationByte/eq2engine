@@ -17,6 +17,8 @@ class btCollisionShape;
 class CBulletStudioShapeCache : public IStudioShapeCache
 {
 public:
+								CBulletStudioShapeCache();
+
 	// checks the shape is initialized for the cache
 	bool						IsShapeCachePresent( physmodelshapecache_t* shapeInfo );
 
@@ -28,6 +30,8 @@ public:
 	void						Cleanup_Invalidate();
 
 protected:
+
+	Threading::CEqMutex&		m_mutex;
 
 	// cached shapes
 	DkList<btCollisionShape*>	m_collisionShapes;

@@ -212,8 +212,6 @@ ConVar sv_maxplayers("maxplayers", "1", fnMaxplayersTest, "Maximum players allow
 // Loads new game world
 //------------------------------------------------------------------------------
 
-ITexture* g_levelMap = NULL;
-
 bool Game_LoadWorld()
 {
 	Msg("-- LoadWorld --\n");
@@ -221,16 +219,12 @@ bool Game_LoadWorld()
 	g_pGameWorld->Init();
 	return g_pGameWorld->LoadLevel();
 }
-
 //------------------------------------------------------------------------------
 // Initilizes game session
 //------------------------------------------------------------------------------
 
 void Game_InitializeSession()
 {
-	g_nDirectorCameraType = 0;
-	g_CurrCameraMode = 0;
-
 	Msg("-- InitializeSession --\n");
 
 	if(!g_pGameSession)
@@ -257,33 +251,27 @@ void Game_InitializeSession()
 #endif // __INTELLISENSE__
 
 	if(g_replayData->m_state != REPL_INITIALIZE)
-	{
 		g_replayData->Clear();
-	}
 
 	g_pGameSession->Init();
 
-	g_levelMap = g_pShaderAPI->LoadTexture(varargs("hud_map/%s_map", g_pGameWorld->GetLevelName()), TEXFILTER_LINEAR, ADDRESSMODE_CLAMP);
-	if(!stricmp(g_levelMap->GetName(), "error"))
-	{
-		g_pShaderAPI->FreeTexture(g_levelMap);
-		g_levelMap = NULL;
-	}
+	//reset cameras
+	g_nDirectorCameraType = 0;
+
+	if(g_CurrCameraMode > CAM_MODE_INCAR)
+		g_CurrCameraMode = CAM_MODE_OUTCAR;
 
 	g_pCameraAnimator->CalmDown();
-
 	g_camera_angle = vec3_zero;
 
-	nClientButtons = 0;
+	// reset buttons
+	g_nClientButtons = 0;
 }
 
 void Game_ShutdownSession()
 {
 	Msg("-- ShutdownSession --\n");
 	g_parallelJobs->Wait();
-
-	g_pShaderAPI->FreeTexture(g_levelMap);
-	g_levelMap = NULL;
 
 	effectrenderer->RemoveAllEffects();
 
@@ -309,21 +297,21 @@ void Game_HandleKeys(int key, bool down)
 	{
 		CCar* playerCar = g_pGameSession->GetPlayerCar();
 
-		if((nClientButtons & IN_ACCELERATE) != (g_nOldControlButtons & IN_ACCELERATE))
+		if((g_nClientButtons & IN_ACCELERATE) != (g_nOldControlButtons & IN_ACCELERATE))
 		{
 			playerCar->m_accelRatio = 1023;
 			playerCar->m_brakeRatio = 1023;
 		}
-		else if((nClientButtons & IN_BRAKE) != (g_nOldControlButtons & IN_BRAKE))
+		else if((g_nClientButtons & IN_BRAKE) != (g_nOldControlButtons & IN_BRAKE))
 		{
 			playerCar->m_accelRatio = 1023;
 			playerCar->m_brakeRatio = 1023;
 		}
-		else if((nClientButtons & IN_TURNLEFT) != (g_nOldControlButtons & IN_TURNLEFT) || 
-				(nClientButtons & IN_TURNRIGHT) != (g_nOldControlButtons & IN_TURNRIGHT))
+		else if((g_nClientButtons & IN_TURNLEFT) != (g_nOldControlButtons & IN_TURNLEFT) || 
+				(g_nClientButtons & IN_TURNRIGHT) != (g_nOldControlButtons & IN_TURNRIGHT))
 		{
 			playerCar->m_steerRatio = 1024;
-			nClientButtons &= ~IN_ANALOGSTEER;
+			g_nClientButtons &= ~IN_ANALOGSTEER;
 		}
 	}
 
@@ -378,7 +366,7 @@ void Game_JoyAxis( short axis, short value )
 	{
 		CCar* playerCar = g_pGameSession->GetPlayerCar();
 
-		int buttons = nClientButtons;
+		int buttons = g_nClientButtons;
 
 		if( axis == 3 )
 		{
@@ -422,7 +410,7 @@ void Game_JoyAxis( short axis, short value )
 			//	buttons &= ~IN_ANALOGSTEER;
 		}
 
-		nClientButtons = buttons;
+		g_nClientButtons = buttons;
 	}
 }
 
@@ -433,14 +421,14 @@ void Game_UpdateFreeCamera(float fDt)
 
 	Vector3D camMoveVec(0.0f);
 
-	if(nClientButtons & IN_FORWARD)
+	if(g_nClientButtons & IN_FORWARD)
 		camMoveVec += f;
-	else if(nClientButtons & IN_BACKWARD)
+	else if(g_nClientButtons & IN_BACKWARD)
 		camMoveVec -= f;
 
-	if(nClientButtons & IN_LEFT)
+	if(g_nClientButtons & IN_LEFT)
 		camMoveVec -= r;
-	else if(nClientButtons & IN_RIGHT)
+	else if(g_nClientButtons & IN_RIGHT)
 		camMoveVec += r;
 
 	CollisionData_t coll;
@@ -487,7 +475,7 @@ void GRJob_DrawEffects(void* data)
 
 void Game_UpdateCamera( float fDt )
 {
-	if((nClientButtons & IN_LOOKLEFT) || (nClientButtons & IN_LOOKRIGHT))
+	if((g_nClientButtons & IN_LOOKLEFT) || (g_nClientButtons & IN_LOOKRIGHT))
 		g_camera_angle = 0.0f; //restore camera angles
 
 	int camMode = g_CurrCameraMode;
@@ -550,7 +538,7 @@ void Game_UpdateCamera( float fDt )
 		}
 
 		g_pCameraAnimator->Animate((ECameraMode)camMode,
-									nClientButtons, 
+									g_nClientButtons, 
 									carBody->GetPosition(), m, carBody->GetLinearVelocity(), 
 									fDt, 
 									g_camera_angle);
@@ -586,7 +574,7 @@ void Game_UpdateCamera( float fDt )
 		// Check camera switch buttons
 		//
 		if(	g_cameraAttached &&
-			(nClientButtons & IN_CHANGECAM) && !(g_nOldControlButtons & IN_CHANGECAM))
+			(g_nClientButtons & IN_CHANGECAM) && !(g_nOldControlButtons & IN_CHANGECAM))
 		{
 			g_CurrCameraMode += 1;
 
@@ -704,7 +692,7 @@ void Game_DrawDirectorUI( float fDt )
 		L"SEEK = &#FFFF00;fastseek <frame>&; (in console)\n", cameraTypeStrings[g_nDirectorCameraType], g_camera_fov);
 
 	eqFontStyleParam_t params;
-	params.styleFlag = TEXT_STYLE_SHADOW;
+	params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
 	params.textColor = color4_white;
 
 	Vector2D directorTextPos(15, screenSize.y/3);
@@ -883,7 +871,7 @@ void TestDriveCar()
 
 	FReal fSteeringAngle = clamp(fSteerTarget, -1.0f, 1.0f);
 
-	g_pGameSession->UpdateLocalControls(nClientButtons | IN_ANALOGSTEER);
+	g_pGameSession->UpdateLocalControls(g_nClientButtons | IN_ANALOGSTEER);
 
 	viewedCar->SetControlVars(1.0f, 1.0f, clamp(fSteeringAngle, -1.0f, 1.0f));
 }
@@ -895,7 +883,7 @@ void Game_Frame(float fDt)
 	PROFILE_FUNC()
 
 	// session update
-	g_pGameSession->UpdateLocalControls(nClientButtons);
+	g_pGameSession->UpdateLocalControls(g_nClientButtons);
 
 	g_pGameWorld->UpdateOccludingFrustum();
 
@@ -975,7 +963,7 @@ void Game_Frame(float fDt)
 		consoleFont->RenderText(profilerStr.c_str(), Vector2D(45), params);
 	}
 
-	g_nOldControlButtons = nClientButtons;
+	g_nOldControlButtons = g_nClientButtons;
 }
 
 //-------------------------------------------------------------------------------
@@ -1021,7 +1009,9 @@ void CState_Game::LoadGame()
 
 	ses->Init();
 
-	g_pModelCache->PrecacheModel( "models/error.egf" );
+	PrecacheStudioModel( "models/error.egf" );
+	PrecacheScriptSound( "menu.back" );
+	PrecacheScriptSound( "menu.roll" );
 
 	g_pPhysics->SceneInit();
 
@@ -1270,6 +1260,9 @@ bool CState_Game::Update( float fDt )
 
 	if( pauseState )
 	{
+		// reset buttons
+		g_nClientButtons = 0;
+
 		fGameFrameDt = 0.0f;
 
 		ISoundPlayable* musicChan = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
@@ -1447,7 +1440,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 	{
 		if(m_showMenu && IsCanPopMenu())
 		{
-			EmitSound_t es("menu.back", EMITSOUND_FLAG_FORCE_CACHED);
+			EmitSound_t es("menu.back");
 			ses->Emit2DSound( &es );
 
 			PopMenu();
@@ -1476,7 +1469,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 		{
 			if(ChangeSelection(key == KEY_LEFT ? -1 : 1))
 			{
-				EmitSound_t es("menu.roll", EMITSOUND_FLAG_FORCE_CACHED);
+				EmitSound_t es("menu.roll");
 				ses->Emit2DSound( &es );
 			}
 		}
@@ -1495,7 +1488,7 @@ redecrement:
 			//if(pItem->type == MIT_SPACER)
 			//	goto redecrement;
 
-			EmitSound_t ep("menu.roll", EMITSOUND_FLAG_FORCE_CACHED);
+			EmitSound_t ep("menu.roll");
 			ses->Emit2DSound(&ep);
 		}
 		else if(key == KEY_DOWN)
@@ -1509,7 +1502,7 @@ reincrement:
 			//if(pItem->type == MIT_SPACER)
 			//	goto reincrement;
 
-			EmitSound_t ep("menu.roll", EMITSOUND_FLAG_FORCE_CACHED);
+			EmitSound_t ep("menu.roll");
 			ses->Emit2DSound(&ep);
 		}
 	}

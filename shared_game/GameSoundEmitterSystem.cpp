@@ -394,11 +394,17 @@ void CSoundEmitterSystem::PrecacheSound(const char* pszName)
 
 scriptsounddata_t* CSoundEmitterSystem::FindSound(const char* soundName)
 {
+	EqString sname(soundName);
+	sname = sname.LowerCase();
+
+	int snameHash = StringToHash( sname.c_str() );
+
 	for(int i = 0; i < m_scriptsoundlist.numElem(); i++)
 	{
-		if(!stricmp(m_scriptsoundlist[i]->pszName, soundName))
+		if(m_scriptsoundlist[i]->namehash == snameHash)
 			return m_scriptsoundlist[i];
 	}
+
 	return NULL;
 }
 
@@ -435,7 +441,10 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 	if(pScriptSound)
 	{
 		if(pScriptSound->pSamples.numElem() == 0 && (emit->nFlags & EMITSOUND_FLAG_FORCE_CACHED))
+		{
+			MsgWarning("Warning! use of EMITSOUND_FLAG_FORCE_CACHED flag!\n");
 			PrecacheSound( emit->name );
+		}
 
 		if(pScriptSound->pSamples.numElem() == 0)
 		{
@@ -827,6 +836,11 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 		scriptsounddata_t* pSoundData = new scriptsounddata_t;
 
 		pSoundData->pszName = scrsoundName;
+
+		EqString sname(scrsoundName);
+		sname = sname.LowerCase();
+
+		pSoundData->namehash = StringToHash( sname.c_str() );
 
 		pSoundData->fVolume = KV_GetValueFloat( curSec->FindKeyBase("volume"), 0, 1.0f );
 		pSoundData->fAtten = KV_GetValueFloat( curSec->FindKeyBase("distance"), 0, 35.0f );

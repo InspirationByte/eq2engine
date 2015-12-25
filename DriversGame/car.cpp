@@ -14,6 +14,8 @@
 
 #include "Shiny.h"
 
+#pragma todo("optimize vehicle code")
+
 static const char* s_pBodyPartsNames[] =
 {
 	"front.left",
@@ -231,6 +233,12 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 
 		conf->m_sndHornSignal = KV_GetValueString(pSoundSec->FindKeyBase("horn"), 0, "generic.horn1");
 		conf->m_sndSiren = KV_GetValueString(pSoundSec->FindKeyBase("siren"), 0, "generic.copsiren1");
+
+		PrecacheScriptSound( conf->m_sndEngineIdle.c_str() );
+		PrecacheScriptSound( conf->m_sndEngineRPMLow.c_str() );
+		PrecacheScriptSound( conf->m_sndEngineRPMHigh.c_str() );
+		PrecacheScriptSound( conf->m_sndHornSignal.c_str() );
+		PrecacheScriptSound( conf->m_sndSiren.c_str() );
 	}
 
 	return true;
@@ -861,6 +869,7 @@ ConVar g_infinitemass("g_infinitemass", "0", "Infinite mass vehicle", CV_CHEAT);
 void CCar::Precache()
 {
 	PrecacheScriptSound("tarmac.skid");
+	PrecacheScriptSound("tarmac.wetnoise");
 	PrecacheScriptSound("defaultcar.engine");
 	PrecacheScriptSound("generic.horn1");
 	PrecacheScriptSound("generic.copsiren1");
@@ -947,7 +956,6 @@ void CCar::InitCarSound()
 	skid_ep.fPitch = 1.0f;
 	skid_ep.fVolume = 1.0f;
 	skid_ep.fRadiusMultiplier = 0.55f;
-	skid_ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
 	skid_ep.origin = m_vecOrigin;
 	skid_ep.pObject = this;
 
@@ -958,7 +966,6 @@ void CCar::InitCarSound()
 	skid_ep.fPitch = 1.0f;
 	skid_ep.fVolume = 1.0f;
 	skid_ep.fRadiusMultiplier = 0.55f;
-	skid_ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
 	skid_ep.origin = m_vecOrigin;
 	skid_ep.pObject = this;
 
@@ -971,7 +978,6 @@ void CCar::InitCarSound()
 	ep.fPitch = 1.0f;
 	ep.fVolume = 1.0f;
 	ep.fRadiusMultiplier = 0.45f;
-	ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
 	ep.origin = m_vecOrigin;
 	ep.pObject = this;
 
@@ -988,7 +994,6 @@ void CCar::InitCarSound()
 	idle_ep.fPitch = 1.0f;
 	idle_ep.fVolume = 1.0f;
 	idle_ep.fRadiusMultiplier = 0.45f;
-	idle_ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
 	idle_ep.origin = m_vecOrigin;
 	idle_ep.pObject = this;
 
@@ -1001,7 +1006,6 @@ void CCar::InitCarSound()
 	horn_ep.fPitch = 1.0f;
 	horn_ep.fVolume = 1.0f;
 	horn_ep.fRadiusMultiplier = 1.0f;
-	horn_ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
 	horn_ep.origin = m_vecOrigin;
 	horn_ep.pObject = this;
 
@@ -1017,7 +1021,6 @@ void CCar::InitCarSound()
 		siren_ep.fVolume = 1.0f;
 
 		siren_ep.fRadiusMultiplier = 1.0f;
-		siren_ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
 		siren_ep.origin = m_vecOrigin;
 		siren_ep.sampleId = 0;
 		siren_ep.pObject = this;
@@ -1192,14 +1195,19 @@ void CCar::SetAngularVelocity(const Vector3D& vel)
 
 const Vector3D& CCar::GetOrigin()
 {
-	m_vecOrigin = m_pPhysicsObject->m_object->GetPosition();
+	if(m_pPhysicsObject)
+		m_vecOrigin = m_pPhysicsObject->m_object->GetPosition();
+
 	return m_vecOrigin;
 }
 
 const Vector3D& CCar::GetAngles()
 {
-	m_vecAngles = eulers(m_pPhysicsObject->m_object->GetOrientation());
-	m_vecAngles = VRAD2DEG(m_vecAngles);
+	if(m_pPhysicsObject)
+	{
+		m_vecAngles = eulers(m_pPhysicsObject->m_object->GetOrientation());
+		m_vecAngles = VRAD2DEG(m_vecAngles);
+	}
 
 	return m_vecAngles;
 }
@@ -1640,7 +1648,6 @@ void CCar::UpdateCarPhysics(float delta)
 	FReal torque = DBTorqueCurve( m_radsPerSec ) * m_conf->m_torqueMult;
 
 	float gbxDecelRate = 1.0f - clamp(1.0f-m_fAcceleration, 0.0f, 0.0f);
-	float gbxAccelRate = 1.0f;
 
  	if(torque < 0)
 		torque = 0.0f;
@@ -2248,7 +2255,6 @@ void CCar::OnPhysicsFrame( float fDt )
 					ep.fPitch = RandomFloat(0.92f, 1.08f);
 					ep.fVolume = 1.0f;
 					ep.origin = GetOrigin();
-					ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
 
 					EmitSoundWithParams(&ep);
 				}
@@ -2376,7 +2382,6 @@ void CCar::OnPhysicsFrame( float fDt )
 				ep.fPitch = RandomFloat(0.92f, 1.08f);
 				ep.fVolume = clamp(fHitImpulse, 0.7f, 1.0f);
 				ep.origin = hitPos;
-				ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
 
 				EmitSoundWithParams(&ep);
 			}
@@ -2928,8 +2933,6 @@ void CCar::Simulate( float fDt )
 
 void CCar::UpdateWheelEffect(int nWheel, float fDt)
 {
-	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
-
 	wheelData_t& wheel = m_pWheels[nWheel];
 	carWheelConfig_t& wheelConf = m_conf->m_wheels[nWheel];
 
@@ -2958,8 +2961,6 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 				ep.name = "generic.wheelOnGround";
 
 				ep.origin = GetOrigin();
-				ep.nFlags = EMITSOUND_FLAG_FORCE_CACHED;
-
 				EmitSoundWithParams(&ep);
 			}
 
@@ -3223,6 +3224,7 @@ void CCar::UpdateSounds( float fDt )
 	if(!m_isLocalCar)
 		fRPMDiff = 1.0f;
 
+#ifndef EDITOR
 	if(g_pCameraAnimator->GetMode() == CAM_MODE_INCAR && 
 		g_pGameSession->GetViewCar() == this)
 	{
@@ -3230,6 +3232,7 @@ void CCar::UpdateSounds( float fDt )
 	}
 	else
 		SetSoundVolumeScale(1.0f);
+#endif // EDITOR
 
 	m_pEngineSound->SetVolume(fEngineSoundVol * fRPMDiff);
 

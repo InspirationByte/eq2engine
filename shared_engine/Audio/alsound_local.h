@@ -148,8 +148,6 @@ protected:
 	sndEffect_t*			m_pCurrentEffect;
 
 	float					m_fVolumeScale;
-
-	CEqMutex				m_Mutex;
 };
 
 #endif // ALSOUND_LOCAL_H

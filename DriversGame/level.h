@@ -571,7 +571,7 @@ public:
 
 	int								m_cellsSize;
 
-	CEqMutex						m_mutex;
+	CEqMutex&						m_mutex;
 
 protected:
 

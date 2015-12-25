@@ -7,7 +7,7 @@
 
 #include "input.h"
 
-int nClientButtons;
+int g_nClientButtons = 0;
 
 DECLARE_ACTION( accel, IN_ACCELERATE )
 DECLARE_ACTION( brake, IN_BRAKE )
@@ -16,24 +16,24 @@ DECLARE_ACTION( brake, IN_BRAKE )
 
 DECLARE_CMD_STRING(act_left_enable, "+left", "Control command", CV_CLIENTCONTROLS)
 {
-	nClientButtons |= IN_TURNLEFT;
-	nClientButtons &= ~IN_ANALOGSTEER;
+	g_nClientButtons |= IN_TURNLEFT;
+	g_nClientButtons &= ~IN_ANALOGSTEER;
 }
 DECLARE_CMD_STRING(act_left_disable ,"-left", "Control command", CV_CLIENTCONTROLS)
 {
-	nClientButtons &= ~IN_TURNLEFT;
-	nClientButtons &= ~IN_ANALOGSTEER;
+	g_nClientButtons &= ~IN_TURNLEFT;
+	g_nClientButtons &= ~IN_ANALOGSTEER;
 }
 
 DECLARE_CMD_STRING(act_right_enable, "+right", "Control command", CV_CLIENTCONTROLS)
 {
-	nClientButtons |= IN_TURNRIGHT;
-	nClientButtons &= ~IN_ANALOGSTEER;
+	g_nClientButtons |= IN_TURNRIGHT;
+	g_nClientButtons &= ~IN_ANALOGSTEER;
 }
 DECLARE_CMD_STRING(act_right_disable, "-right", "Control command", CV_CLIENTCONTROLS)
 {
-	nClientButtons &= ~IN_TURNRIGHT;
-	nClientButtons &= ~IN_ANALOGSTEER;
+	g_nClientButtons &= ~IN_TURNRIGHT;
+	g_nClientButtons &= ~IN_ANALOGSTEER;
 }
 
 

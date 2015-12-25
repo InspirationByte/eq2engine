@@ -15,10 +15,6 @@
 
 #include "al/alut.h"
 
-static CEqSoundThreadedLoader s_threadedSoundLoader;
-
-CEqSoundThreadedLoader* g_pThreadedSoundLoader = &s_threadedSoundLoader;
-
 // WAVE FILE LOADER
 
 typedef struct                                  /* WAV File-header */
@@ -180,12 +176,20 @@ void LoadWavFromBufferEX(ubyte *memory, ALenum *format, ALvoid **data,ALsizei *s
 	}
 }
 
+//-----------------------------------------------------------------------------------------------------
+
+enum ESAMPLE_LOAD_STATE
+{
+	SAMPLE_LOAD_ERROR = -1,
+	SAMPLE_LOAD_IN_PROGRESS = 0,
+	SAMPLE_LOAD_OK,
+};
 
 DkSoundSampleLocal::DkSoundSampleLocal()
 {
 	m_bLooping = false;
 	m_bStreaming = false;
-	m_bIsLoaded = false;
+	m_loadState = SAMPLE_LOAD_ERROR;
 	m_szName = "null.wav";
 	m_nChannels = 1;
 }
@@ -200,34 +204,45 @@ int DkSoundSampleLocal::GetFlags()
 	return m_nFlags;
 }
 
-void DkSoundSampleLocal::Load(const char *name, bool streaming, bool looping, int nFlags)
+void DkSoundSampleLocal::Init(const char *name, bool streaming, bool looping, int nFlags)
 {
-	//Copy all
 	m_szName = name;
 	m_bStreaming = streaming;
 	m_bLooping = looping;
 	m_nFlags = nFlags;
 
-	//create single buffer
-	alGenBuffers(1, &m_nALBuffer);
-
-	if(!streaming)
-	{
-		EqString ext = m_szName.Path_Extract_Ext();
-		
-		if(!stricmp(ext.GetData(),"wav"))
-			LoadWav( name, m_nALBuffer );
-		else if(!stricmp(ext.GetData(),"ogg"))
-			LoadOgg( name, m_nALBuffer );
-		else
-			MsgError("DkSoundSample::Load '%s' failed, extension not supported\n", name);
-	}
+	if(!m_bStreaming)
+		alGenBuffers(1, &m_nALBuffer);
 }
 
-void DkSoundSampleLocal::LoadWav(const char *name, unsigned int buffer)
+bool DkSoundSampleLocal::Load()
 {
-	//return;
+	if(m_bStreaming)
+		return true;
 
+	EqString ext = m_szName.Path_Extract_Ext();
+		
+	bool status = false;
+
+	if(!stricmp(ext.GetData(),"wav"))
+	{
+		status = LoadWav( m_szName.c_str(), m_nALBuffer );
+	}
+	else if(!stricmp(ext.GetData(),"ogg"))
+	{
+		status = LoadOgg( m_szName.c_str(), m_nALBuffer );
+	}
+	else
+	{
+		status = false;
+		MsgError("DkSoundSample::Load '%s' failed, extension not supported\n", m_szName.c_str());
+	}
+		
+	return status;
+}
+
+bool DkSoundSampleLocal::LoadWav(const char *name, unsigned int buffer)
+{
 	//Load a wav
 	ALenum format;
 	ALvoid *data;
@@ -238,7 +253,7 @@ void DkSoundSampleLocal::LoadWav(const char *name, unsigned int buffer)
 	DKFILE* file = GetFileSystem()->Open((_Es(SOUND_DEFAULT_PATH) + name).GetData(), "rb");
 
 	if(!file)
-		return;
+		return false;
 
 	int fSize = file->GetSize();
 
@@ -262,6 +277,8 @@ void DkSoundSampleLocal::LoadWav(const char *name, unsigned int buffer)
 
 	// free hunk
 	free( fileBuffer );
+
+	return true;
 }
 
 size_t eqogg_read(void *ptr, size_t size, size_t nmemb, void *datasource)
@@ -308,7 +325,7 @@ int eqogg_close(void *datasource)
 	return 1;
 }
 
-void DkSoundSampleLocal::LoadOgg(const char *name, unsigned int buffer)
+bool DkSoundSampleLocal::LoadOgg(const char *name, unsigned int buffer)
 {
 	ALenum format;
 	ALsizei freq;
@@ -316,7 +333,7 @@ void DkSoundSampleLocal::LoadOgg(const char *name, unsigned int buffer)
 	// Open for binary reading
 	DKFILE* pFile = GetFileSystem()->Open((_Es(SOUND_DEFAULT_PATH) + name).GetData(), "rb");
 	if(!pFile)
-		return;
+		return false;
 
 	vorbis_info *pInfo;
 	OggVorbis_File oggFile;
@@ -334,7 +351,7 @@ void DkSoundSampleLocal::LoadOgg(const char *name, unsigned int buffer)
 	{
 		GetFileSystem()->Close(pFile);
 		MsgError("Can't open sound '%s', is not an ogg file (%d)\n", name, ovResult);
-		return;
+		return false;
 	}
 
 	// Get some information about the OGG file
@@ -378,4 +395,25 @@ void DkSoundSampleLocal::LoadOgg(const char *name, unsigned int buffer)
 	GetFileSystem()->Close(pFile);
 
 	PPFree(soundbuffer);
+
+	return true;
+}
+
+void DkSoundSampleLocal::WaitForLoad()
+{
+	while( m_loadState == SAMPLE_LOAD_IN_PROGRESS ) {Threading::Yield();}
+}
+
+//-----------------------------------------------------------------------------------------------------------------
+
+void DkSoundSampleLocal::SampleLoaderJob(void* smp)
+{
+	DkSoundSampleLocal* sample = (DkSoundSampleLocal*)smp;
+
+	sample->m_loadState = SAMPLE_LOAD_IN_PROGRESS;
+
+	if(sample->Load())
+		sample->m_loadState = SAMPLE_LOAD_OK;
+	else
+		sample->m_loadState = SAMPLE_LOAD_ERROR;
 }
