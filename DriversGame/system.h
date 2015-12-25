@@ -22,10 +22,6 @@ EQWNDHANDLE CreateEngineWindow();
 
 void InitWindowAndRun();
 
-#ifdef _WIN32
-bool RegisterWindowClass(HINSTANCE hInst);
-#endif // _WIN32
-
 class CGameHost
 {
 public:
@@ -54,7 +50,7 @@ public:
 	void		ProcessKeyChar( int chr );
 	void		TrapKey_Event( int key, bool down );
 	void		TrapMouse_Event( float x, float y, int buttons, bool down );
-	void		TrapMouseMove_Event( int x, int y, float deltaX, float deltaY );
+	void		TrapMouseMove_Event( int x, int y );
 	void		TrapMouseWheel_Event(int x, int y, int scroll);
 
 	void		TrapJoyAxis_Event( short axis, short value );
@@ -77,7 +73,9 @@ public:
 	int			m_nWidth;
 	int			m_nHeight;
 
-	Vector2D	m_mousePos;
+	IVector2D	m_mousePos;
+	IVector2D	m_prevMousePos;
+	Vector2D	m_mouseDelta;
 
 	int			m_nQuitState;
 

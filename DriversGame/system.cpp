@@ -57,7 +57,8 @@ IProxyFactory*		proxyfactory	= NULL;
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay* debugoverlay = ( IDebugOverlay * )&g_DebugOverlays;
 
-ConVar con_enable("con_enable","1","Enable console",CV_ARCHIVE | CV_CHEAT);
+ConVar con_enable("con_enable","1","Enable console", CV_CHEAT);
+DECLARE_CVAR(m_invert,0,"Mouse inversion enabled?", CV_ARCHIVE);
 
 DECLARE_CMD(toggleconsole, "Toggles console", 0)
 {
@@ -311,7 +312,7 @@ void InputCommands_SDL(SDL_Event* event)
 			x = event->motion.x;
 			y = event->motion.y;
 
-			g_pHost->TrapMouseMove_Event(x, y, x - lastX, y - lastY);
+			g_pHost->TrapMouseMove_Event(x, y);
 
 			lastX = x;
 			lastY = y;
@@ -422,6 +423,8 @@ CGameHost::CGameHost()
 	m_nWidth = 0;
 	m_nHeight = 0;
 
+	m_prevMousePos = m_mousePos = IVector2D(0);
+
 	m_pWindow = NULL;
 
 	m_nQuitState = QUIT_NOTQUITTING;
@@ -525,9 +528,9 @@ void CGameHost::SetCursorPosition(int x, int y)
 
 	IVector2D realpos;
 
-	SDL_GetMouseState(&realpos.x, &realpos.y);
-
-	m_mousePos = Vector2D(realpos.x, realpos.y);
+	//SDL_GetMouseState(&realpos.x, &realpos.y);
+	//m_mousePos = realpos;
+	//m_prevMousePos = m_mousePos;
 }
 
 void CGameHost::SetCursorShow(bool bShow)
@@ -555,11 +558,6 @@ ConVar r_showFPS("r_showFPS", "0", "Show the framerate", CV_ARCHIVE);
 
 bool CGameHost::Frame()
 {
-	if(!g_pSysConsole->IsVisible() && m_bCenterMouse && s_bActive)
-	{
-		SetCursorPosition(m_nWidth/2,m_nHeight/2);
-	}
-
 	m_fCurTime		= m_timer.GetTime();
 
 	// Set frame time
@@ -586,6 +584,8 @@ bool CGameHost::Frame()
 	nFrames++;
 
 	m_fOldTime		= m_fCurTime;
+
+	m_prevMousePos = m_mousePos;
 
 	if( !FilterTime( m_fFrameTime ) )
 		return false;
@@ -745,22 +745,21 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 	GetKeyBindings()->OnMouseEvent(buttons, down);
 }
 
-DECLARE_CVAR(m_invert,0,"Mouse inversion enabled?",CV_ARCHIVE);
-
-void CGameHost::TrapMouseMove_Event( int x, int y, float deltaX, float deltaY )
+void CGameHost::TrapMouseMove_Event( int x, int y )
 {
-	g_pSysConsole->MousePos(Vector2D(x,y));
+	if(m_bCenterMouse && s_bActive && !g_pSysConsole->IsVisible())
+		SetCursorPosition(m_nWidth/2,m_nHeight/2);
 
-	m_mousePos = Vector2D(x,y);
+	m_mousePos = IVector2D(x,y);
+	Vector2D delta = (Vector2D)m_prevMousePos - (Vector2D)m_mousePos;
 
-	float xChange = (m_invert.GetBool() ? 1 : -1) * (m_nHeight / 2 - y);
-	float yChange = (m_nWidth / 2 - x);
-
-	xChange *= 0.07f;
-	yChange *= 0.07f;
+	delta.y *= (m_invert.GetBool() ? 1 : -1);
+	delta *= 0.05f;
 
 	if(GetCurrentState())
-		GetCurrentState()->HandleMouseMove(x, y, xChange, yChange);
+		GetCurrentState()->HandleMouseMove(x, y, delta.x, delta.y);
+
+	g_pSysConsole->MousePos( m_mousePos );
 }
 
 void CGameHost::TrapMouseWheel_Event(int x, int y, int scroll)

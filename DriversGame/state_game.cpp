@@ -351,18 +351,19 @@ void Game_MouseMove( int x, int y, float deltaX, float deltaY )
 	
 	if(g_freelook.GetBool())
 	{
-		g_camera_angle.y += deltaY * g_mouse_sens.GetFloat();
-		g_camera_angle.x += deltaX * g_mouse_sens.GetFloat();
+		g_camera_angle.x += deltaY * g_mouse_sens.GetFloat();
+		g_camera_angle.y += deltaX * g_mouse_sens.GetFloat();
 
 		g_camera_angleRestoreTime = CAMERA_ROTATE_HOLD_TIME;
+
 		g_camera_angle.y = ConstrainAngle180(g_camera_angle.y);
 		g_camera_angle.x = clamp(g_camera_angle.x, -25.0f, 50.0f);
 	}
 
 	if(g_freecam.GetBool() && !g_pSysConsole->IsVisible()) // && g_pHost->m_hasWindowFocus)
 	{
-		g_camera_freeangles.y += deltaY * g_mouse_sens.GetFloat();
-		g_camera_freeangles.x += deltaX * g_mouse_sens.GetFloat();
+		g_camera_freeangles.x += deltaY * g_mouse_sens.GetFloat();
+		g_camera_freeangles.y += deltaX * g_mouse_sens.GetFloat();
 	}
 }
 
