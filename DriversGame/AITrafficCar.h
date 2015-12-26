@@ -65,6 +65,11 @@ public:
 		return m_delay + m_time;
 	}
 
+	float GetRemainingTime()
+	{
+		return m_time;
+	}
+
 	void Update(float fDt)
 	{
 		if (m_delay <= 0.0f)
@@ -85,6 +90,8 @@ protected:
 
 //-----------------------------------------------------------------------------------------------
 
+struct signalSeq_t;
+
 class CAITrafficCar :	public CFSM_Base,
 						public CCar
 {
@@ -101,6 +108,9 @@ public:
 	
 	int					ObjType() const { return GO_CAR_AI; }
 	virtual bool		IsPursuer() const {return false;}
+
+	void				SignalRandomSequence( float delayBeforeStart );
+	void				SignalNoSequence( float time, float delayBeforeStart );
 
 protected:
 	virtual void		OnPrePhysicsFrame( float fDt );
@@ -148,6 +158,9 @@ protected:
 	bool				m_emergencyEscape;
 	float				m_emergencyEscapeTime;
 	float				m_emergencyEscapeSteer;
+
+	signalSeq_t*		m_signalSeq;
+	int					m_signalSeqFrame;
 };
 
 #endif // AITRAFFICCONTROLLER_H

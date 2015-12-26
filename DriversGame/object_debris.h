@@ -32,7 +32,9 @@ public:
 	void				OnPhysicsFrame(float fDt);
 	void				Simulate(float fDt);
 
-	int					ObjType() const		{return GO_DEBRIS;}
+	int					ObjType() const		{ return GO_DEBRIS; }
+
+	bool				IsSmashed() const { return m_collOccured; }
 
 	void				L_SetContents(int contents);
 	void				L_SetCollideMask(int contents);

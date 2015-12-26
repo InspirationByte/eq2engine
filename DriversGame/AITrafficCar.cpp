@@ -23,6 +23,69 @@ ConVar g_traffic_maxspeed("g_trafficMaxspeed", "36");
 
 ConVar g_disableTrafficLights("g_disableTrafficLights", "0", NULL, CV_CHEAT);
 
+// here's some signal sequences i've recorded
+
+struct signalVal_t
+{
+	float start;
+	float end;
+};
+
+signalVal_t g_sigSeq1[] = {
+	{0, 0.133333},
+	{0.183333, 0.266667},
+	{0.35, 0.433333},
+	{0.516667, 1.28333},
+};
+
+signalVal_t g_sigSeq2[] = {
+	{0, 0.0833333},
+	{0.166667, 0.283333},
+	{0.466667, 1.36667},
+};
+
+signalVal_t g_sigSeq3[] = {
+	{0, 0.216667},
+	{0.283333, 1.05},
+};
+
+signalVal_t g_sigSeq4[] = {
+	{0, 0.683333},
+	{0.766667, 1.55},
+	{1.65, 2.61666},
+};
+
+signalVal_t g_sigSeq5[] = {
+	{0, 0.316667},
+	{0.416667, 0.733333},
+	{0.883333, 1},
+	{1.1, 1.2},
+	{1.3, 1.66667},
+	{1.8, 1.9},
+	{2, 2.1},
+	{2.18333, 2.3},
+	{2.4, 2.76666},
+	{2.86666, 3},
+	{3.1, 3.73333},
+};
+
+struct signalSeq_t
+{
+	signalVal_t*	seq;
+	int				numVal;
+	float			length;
+};
+
+signalSeq_t g_signalSequences[] = {
+	//{g_sigSeq5, elementsOf(g_sigSeq5), g_sigSeq5[elementsOf(g_sigSeq5)-1].end },
+	{g_sigSeq1, elementsOf(g_sigSeq1), g_sigSeq1[elementsOf(g_sigSeq1)-1].end },
+	{g_sigSeq2, elementsOf(g_sigSeq2), g_sigSeq2[elementsOf(g_sigSeq2)-1].end },
+	{g_sigSeq3, elementsOf(g_sigSeq3), g_sigSeq3[elementsOf(g_sigSeq3)-1].end },
+	{g_sigSeq4, elementsOf(g_sigSeq4), g_sigSeq4[elementsOf(g_sigSeq4)-1].end },
+};
+
+const int SIGNAL_SEQUENCE_COUNT = elementsOf(g_signalSequences);
+
 // wheel friction modifier on diferrent weathers
 static float trafficSpeedModifier[WEATHER_COUNT] = 
 {
@@ -323,11 +386,37 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 			AI_SetState( &CAITrafficCar::SearchForRoad );
 		}
 
+		int controls = m_controlButtons;
+
+		// play signal sequence
+		if(m_hornTime.IsOn())
+		{
+			if(m_signalSeq && m_signalSeqFrame < m_signalSeq->numVal)
+			{
+				float curSeqTime = m_signalSeq->length - m_hornTime.GetRemainingTime();
+
+				if( curSeqTime >= m_signalSeq->seq[m_signalSeqFrame].start &&
+					curSeqTime <= m_signalSeq->seq[m_signalSeqFrame].end )
+					controls |= IN_HORN;
+				else
+					m_controlButtons &= ~IN_HORN;
+
+				if(curSeqTime > m_signalSeq->seq[m_signalSeqFrame].end)
+					m_signalSeqFrame++;
+			}
+			else if(!m_signalSeq) // simple signal
+				controls |= IN_HORN;
+			else
+				m_controlButtons &= ~IN_HORN;
+		}
+
+		m_controlButtons = controls;
+
 		m_hornTime.Update(fDt);
 	}
 	else
 	{
-		m_hornTime.Set(0,0);
+		SignalNoSequence(0,0);
 	}
 
 	if( g_pGameSession->GetLeadCar() && 
@@ -374,7 +463,7 @@ void CAITrafficCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 		GetPhysicsBody()->SetCollideMask(COLLIDEMASK_VEHICLE);
 		GetPhysicsBody()->SetMinFrameTime(0.0f);
 
-		m_hornTime.SetIfNot(0.7f, 0.5f);
+		SignalNoSequence(0.7f, 0.5f);
 
 		m_hasDamage = true;
 
@@ -927,7 +1016,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 						float velDiff = dot((GetVelocity() + GetForwardVector()) - pCar->GetVelocity(), GetForwardVector());
 
 						if( (velDiff > 15.0f || (1.0f-fromPrevPercentage) >= 0.45f) && carForwardSpeed > 0.25f )
-							m_hornTime.SetIfNot(1.0f, 0.3f);
+							SignalRandomSequence(0.3f); //m_hornTime.SetIfNot(1.0f, 0.3f);
 
 						// add the velocity difference
 						float velDiff2 = carForwardSpeed - dot(pCar->GetVelocity(), pCar->GetForwardVector());
@@ -998,7 +1087,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 						if( velDiff > 30.0f)
 						{
-							m_hornTime.SetIfNot(1.0f, 0.2f);
+							SignalNoSequence(1.0f, 0.2f);
 
 							if(!m_emergencyEscape && emergencyFract < 0.5f)
 							{
@@ -1036,9 +1125,6 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	else
 		m_emergencyEscape = false;
 
-	if (m_hornTime.IsOn())
-		controls |= IN_HORN;
-
 	if( accelerator > 0.1f )
 		GetPhysicsBody()->Wake();
 
@@ -1049,4 +1135,24 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	SetControlVars(accelerator, brake, clamp(fSteeringAngle, -1.0f, 1.0f));
 
 	return 0;
+}
+
+void CAITrafficCar::SignalRandomSequence( float delayBeforeStart )
+{
+	if(m_hornTime.IsOn())
+		return;
+
+	int seqId = RandomInt(0,SIGNAL_SEQUENCE_COUNT-1);
+
+	m_signalSeq = &g_signalSequences[seqId];
+	m_signalSeqFrame = 0;
+
+	m_hornTime.SetIfNot(m_signalSeq->length, delayBeforeStart);
+}
+
+void CAITrafficCar::SignalNoSequence( float time, float delayBeforeStart )
+{
+	m_signalSeq = NULL;
+
+	m_hornTime.SetIfNot(time, delayBeforeStart);
 }

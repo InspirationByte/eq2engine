@@ -1068,6 +1068,7 @@ void CModelCache::ReloadModels()
 	*/
 }
 
+ConVar job_modelLoader("job_modelLoader", "1", "Load models in parallel threads", CV_ARCHIVE);
 
 // caches model and returns it's index
 int CModelCache::PrecacheModel( const char* modelName )
@@ -1100,7 +1101,7 @@ int CModelCache::PrecacheModel( const char* modelName )
 		IEqModel* pModel = engine->LoadModel(modelName, false);
 #else
 		CEngineStudioEGF* pModel = new CEngineStudioEGF;
-		if(!pModel->LoadModel( modelName ))
+		if(!pModel->LoadModel( modelName, job_modelLoader.GetBool() ))
 		{
 			delete pModel;
 			pModel = NULL;

@@ -8,6 +8,8 @@
 #include "AIPursuerCar.h"
 #include "session_stuff.h"
 
+#include "object_debris.h"
+
 #include "AICarManager.h"
 
 const float AI_COPVIEW_FAR			= 30.0f;
@@ -378,9 +380,27 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 		if(pair.bodyB->GetContents() == OBJECTCONTENTS_SOLID_GROUND)
 			return INFRACTION_NONE;
 		else if(pair.bodyB->GetContents() == OBJECTCONTENTS_VEHICLE)
+		{
+			CGameObject* obj = (CGameObject*)pair.bodyB->GetUserData();
+
+			if(obj->ObjType() == GO_CAR_AI)
+			{
+				CAITrafficCar* tfc = (CAITrafficCar*)obj;
+				if(tfc->IsPursuer())
+					continue;
+			}
+
 			return INFRACTION_HIT_VEHICLE;
+		}
 		else if(pair.bodyB->GetContents() == OBJECTCONTENTS_DEBRIS)
+		{
+			CObject_Debris* obj = (CObject_Debris*)pair.bodyB->GetUserData();
+
+			if(obj && obj->IsSmashed())
+				continue;
+
 			return INFRACTION_HIT_MINOR;
+		}
 		else
 			return INFRACTION_HIT;
 	}

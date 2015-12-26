@@ -179,7 +179,6 @@ void CLuaMenu::EnterSelection()
 					std::string newTitleToken = "";
 					if(params.safe_at("titleToken", newTitleToken))
 					{
-						Msg("Title token set\n");
 						m_menuTitleToken = g_localizer->GetToken(newTitleToken.c_str());
 					}
 				}
