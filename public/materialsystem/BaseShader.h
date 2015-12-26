@@ -83,9 +83,13 @@
 	\
 	if(mv_##param) {\
 		variable = g_pShaderAPI->LoadTexture(mv_##param->GetString(),m_nTextureFilter,m_nAddressMode);	\
-		mv_##param->AssignTexture(variable);\
-		variable->Ref_Grab();	\
-		AddTextureToAutoremover(&variable);\
+		if(variable){\
+			mv_##param->AssignTexture(variable);\
+			variable->Ref_Grab();\
+			AddTextureToAutoremover(&variable);\
+		}else{\
+			variable = g_pShaderAPI->GetErrorTexture();\
+		}\
 	}\
 	else\
 		variable = g_pShaderAPI->GetErrorTexture();\
