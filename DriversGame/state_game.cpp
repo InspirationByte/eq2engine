@@ -1261,7 +1261,8 @@ bool CState_Game::Update( float fDt )
 	if( pauseState )
 	{
 		// reset buttons
-		g_nClientButtons = 0;
+		if(m_showMenu)
+			g_nClientButtons = 0;
 
 		fGameFrameDt = 0.0f;
 
