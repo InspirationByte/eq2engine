@@ -147,7 +147,7 @@ public:
 						CHeightTileField();
 				virtual ~CHeightTileField();
 
-	void						Init(int size = HFIELD_MIN_POINTS, int pos_x = -1, int pos_y = -1);
+	void						Init(int size = HFIELD_MIN_POINTS, IVector2D& regionPos = IVector2D(-1));
 	void						Destroy();
 
 
@@ -179,10 +179,8 @@ public:
 	Vector3D					m_position;		// translation of heightfield
 	int							m_rotation;		// rotation in degrees
 
-	int							m_posidx_x;		// position x in 2D array
-	int							m_posidx_y;		// position x in 2D array
-
-	int							m_fieldIdx;
+	IVector2D					m_regionPos;	// position in 2D array
+	int							m_fieldIdx;		// the hfield index in region's array
 
 	void*						m_userData;
 

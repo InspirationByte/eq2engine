@@ -17,13 +17,15 @@ const float AI_COPVIEW_FOV			= 85.0f;
 
 const float AI_COPVIEW_FAR_WANTED	= 70.0f;
 const float AI_COPVIEW_FOV_WANTED	= 90.0f;
+const float AI_COPVIEW_FAR_ROADBLOCK	= 10.0f;
+
 
 const float AI_COPVIEW_RADIUS			= 10.0f;
 const float AI_COPVIEW_RADIUS_WANTED	= 18.0f;
-
 const float AI_COPVIEW_RADIUS_PURSUIT	= 120.0f;
+const float AI_COPVIEW_RADIUS_ROADBLOCK = 15.0f;
 
-const float AI_COP_DEATHTIME	= 7.0f;
+const float AI_COP_DEATHTIME	= 3.5f;
 const float AI_COP_BLOCK_DELAY	= 2.0f;
 
 const float AI_COP_CHECK_MAXSPEED = 65.0f;
@@ -260,51 +262,12 @@ int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 	return 0;
 }
 
-void CAIPursuerCar::BeginPursuit()
+void CAIPursuerCar::BeginPursuit( float delay )
 {
 	if (!m_targInfo.target)
 		return;
 
-	m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
-
-	// restore collision
-	GetPhysicsBody()->SetCollideMask(COLLIDEMASK_VEHICLE);
-	GetPhysicsBody()->SetMinFrameTime(0.0f);
-	GetPhysicsBody()->Wake();
-
-	m_autohandbrake = true;
-	m_frameSkip = false;
-
-	if(m_type == PURSUER_TYPE_COP)
-	{
-		if (m_conf->m_sirenType != SIREN_NONE)
-			m_sirenEnabled = true;
-
-		if (m_targInfo.target->GetPursuedCount() == 0 && 
-			g_pGameSession->GetPlayerCar() == m_targInfo.target)
-		{
-			if (m_targInfo.target->GetFelony() >= AI_COP_MINFELONY)
-			{
-				Speak("cop.pursuit_continue", true);
-			}
-			else
-			{
-				m_targInfo.target->SetFelony(AI_COP_MINFELONY);
-
-				Speak("cop.pursuit", true);
-			}
-		}
-	}
-
-	m_targInfo.target->IncrementPursue();
-
-	SetTorqueScale(g_pAIManager->GetCopAccelerationModifier());
-
-	m_enabled = true;
-
-	AI_SetState(&CAIPursuerCar::PursueTarget);
-
-	Msg("BeginPursuit OK\n");
+	AI_SetNextState(&CAIPursuerCar::PursueTarget, delay);
 }
 
 void CAIPursuerCar::EndPursuit(bool death)
@@ -462,7 +425,7 @@ bool CAIPursuerCar::CheckObjectVisibility(CCar* obj)
 	float fov = AI_COPVIEW_FOV;
 	float visibilitySphere = AI_COPVIEW_RADIUS;
 
-	if (obj->GetFelony() >= AI_COP_MINFELONY)
+	if( obj->GetFelony() >= AI_COP_MINFELONY )
 	{
 		farPlane = AI_COPVIEW_FAR_WANTED;
 		fov = AI_COPVIEW_FOV_WANTED;
@@ -471,6 +434,12 @@ bool CAIPursuerCar::CheckObjectVisibility(CCar* obj)
 
 	if(obj->GetPursuedCount() > 0)
 		visibilitySphere = AI_COPVIEW_RADIUS_PURSUIT;
+
+	if(!m_enabled)
+	{
+		farPlane = AI_COPVIEW_FAR_ROADBLOCK;
+		visibilitySphere = AI_COPVIEW_RADIUS_ROADBLOCK;
+	}
 
 	float distToCar = length(obj->GetOrigin() - GetOrigin());
 
@@ -544,6 +513,47 @@ Vector3D CAIPursuerCar::GetAdvancedPointByDist(int& startSeg, float distFromSegm
 
 int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 {
+	if(transition == STATE_TRANSITION_PROLOG)
+	{
+		m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
+
+		// restore collision
+		GetPhysicsBody()->SetCollideMask(COLLIDEMASK_VEHICLE);
+		GetPhysicsBody()->SetMinFrameTime(0.0f);
+		GetPhysicsBody()->Wake();
+
+		m_frameSkip = false;
+
+		if(m_type == PURSUER_TYPE_COP)
+		{
+			if (m_conf->m_sirenType != SIREN_NONE)
+				m_sirenEnabled = true;
+
+			if (m_targInfo.target->GetPursuedCount() == 0 && 
+				g_pGameSession->GetPlayerCar() == m_targInfo.target)
+			{
+				if (m_targInfo.target->GetFelony() >= AI_COP_MINFELONY)
+				{
+					Speak("cop.pursuit_continue", true);
+				}
+				else
+				{
+					m_targInfo.target->SetFelony(AI_COP_MINFELONY);
+
+					Speak("cop.pursuit", true);
+				}
+			}
+		}
+
+		m_targInfo.target->IncrementPursue();
+
+		SetTorqueScale( g_pAIManager->GetCopAccelerationModifier() );
+
+		m_enabled = true;
+
+		return 0;
+	}
+
 	// do nothing
 	if(transition != STATE_TRANSITION_NONE)
 		return 0;
@@ -672,7 +682,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	}
 
 	Vector3D	carPos		= GetOrigin() + GetForwardVector()*m_conf->m_body_size.z*0.5f;
-	Vector3D	targetPos	= m_targInfo.target->GetOrigin() + m_targInfo.target->GetVelocity()*0.5f;
+	Vector3D	targetPos	= m_targInfo.target->GetOrigin() + m_targInfo.target->GetVelocity();//*0.5f;
 	Vector3D	carDir		= GetForwardVector();
 
 	float		fSpeed = GetSpeedWheels();
@@ -921,7 +931,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	if(GetSpeedWheels() < -1.0f)
 		fSteeringAngle *= -1.0f;
 
-	//m_autohandbrake = doesHardSteer;
+	m_autohandbrake = doesHardSteer;
 
 	SetControlButtons( controls );
 	SetControlVars(accelerator, brake, clamp(fSteeringAngle, -1.0f, 1.0f));

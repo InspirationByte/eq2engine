@@ -19,8 +19,7 @@ CHeightTileField::CHeightTileField()
 	m_sizew = 0;
 	m_sizeh = 0;
 
-	m_posidx_x = 0;
-	m_posidx_y = 0;
+	m_regionPos = 0;
 
 	m_fieldIdx = 0;
 
@@ -32,16 +31,12 @@ CHeightTileField::~CHeightTileField()
 	Destroy();
 }
 
-void CHeightTileField::Init(int size, int pos_x, int pos_y)
+void CHeightTileField::Init(int size, IVector2D& regionPos)
 {
 	m_sizew = size;
 	m_sizeh = size;
 
-	if(pos_x != -1)
-		m_posidx_x = pos_x;
-
-	if(pos_y != -1)
-		m_posidx_y = pos_y;
+	m_regionPos = regionPos;
 
 	m_points = new hfieldtile_t[m_sizew*m_sizeh];
 }
@@ -263,17 +258,15 @@ hfieldtile_t* CHeightTileField::GetTileAndNeighbourField(int x, int y, CHeightTi
 	if(	(x >= m_sizew || y >= m_sizeh) ||
 		(x < 0 || y < 0))
 	{
-		if(m_posidx_x < 0 || m_posidx_y < 0)
-		{
+		if(m_regionPos.x < 0)
 			return NULL;
-		}
 
 		// only -1/+1, no more
 		int ofs_x = (x < 0) ? -1 : ((x >= m_sizew) ? 1 : 0 );
 		int ofs_y = (y < 0) ? -1 : ((y >= m_sizeh) ? 1 : 0 );
 
 		// достать соседа
-		*field = g_pGameWorld->m_level.GetHeightFieldAt( IVector2D(m_posidx_x + ofs_x, m_posidx_y + ofs_y), m_fieldIdx );
+		*field = g_pGameWorld->m_level.GetHeightFieldAt( IVector2D(m_regionPos.x + ofs_x, m_regionPos.y + ofs_y), m_fieldIdx );
 
 		if(*field)
 		{

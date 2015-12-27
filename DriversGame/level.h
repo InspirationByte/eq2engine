@@ -316,6 +316,55 @@ struct navcell_t
 	ubyte		flag : 1;	// 1 = closed, 0 = open
 };
 
+struct navGrid_t
+{
+	navGrid_t()
+	{
+		staticObst = NULL;
+		cellStates = NULL;
+		wide = 0;
+		tall = 0;
+	}
+
+	~navGrid_t()
+	{
+		Cleanup();
+	}
+
+	void Init( int w, int h) 
+	{
+		if(staticObst || cellStates )
+			Cleanup();
+
+		wide = w;
+		tall = h;
+
+		staticObst = new ubyte[w*h];
+		memset(staticObst, 0x4, w*h);
+
+		cellStates = new navcell_t[w*h];
+		memset(cellStates, 0, w*h);
+	}
+
+	void Cleanup()
+	{
+		delete [] staticObst;
+		staticObst = NULL;
+
+		delete [] cellStates;
+		cellStates = NULL;
+
+		wide = 0;
+		tall = 0;
+	}
+
+	ubyte*		staticObst;		///< A* static navigation grid
+	navcell_t*	cellStates;		///< A* open/close state list
+
+	int			wide;
+	int			tall;
+};
+
 //----------------------------------------------------------------------
 
 class CLevelRegion
@@ -369,17 +418,7 @@ public:
 	CHeightTileFieldRenderable*		m_heightfield[ENGINE_REGION_MAX_HFIELDS];	///< heightfield used on region
 
 	levroadcell_t*					m_roads;			///< road data. Must correspond with heightfield
-
-	ubyte*							m_navGrid;			///< A* navigation grid
-	navcell_t*						m_navGridStateList;	///< A* open/close state list
-
-	bool							m_navAffected;
-
-	int								m_navWide;
-	int								m_navTall;
-
-	//levroadcell_t**					m_flatroads;	///< road pointers to m_roads
-	int								m_numRoadCells;
+	navGrid_t						m_navGrid;
 
 	DkList<regobjectref_t*>			m_objects;			///< complex and non-complex models
 	DkList<levOccluderLine_t>		m_occluders;		///< occluders

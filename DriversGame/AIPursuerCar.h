@@ -55,7 +55,7 @@ public:
 	bool				IsPursuer() const { return true; }
 
 	void				SetPursuitTarget(CCar* obj);
-	void				BeginPursuit();
+	void				BeginPursuit( float delay = 0.25f );
 	void				EndPursuit( bool death );
 
 	bool				CheckObjectVisibility(CCar* obj);

@@ -673,17 +673,12 @@ float CLevelModel::Ed_TraceRayDist(const Vector3D& start, const Vector3D& dir)
 CLevelRegion::CLevelRegion()
 {
 	m_level = NULL;
+	m_roads = NULL;
 
 	m_render = true;
 	m_isLoaded = false;
 	m_scriptEventCallbackCalled = true;
 	m_queryTimes.SetValue(0);
-
-	m_roads = NULL;
-	m_navGrid = NULL;
-	m_navGridStateList = NULL;
-
-	m_numRoadCells = 0;
 
 	memset(m_heightfield, 0, sizeof(m_heightfield));
 }
@@ -723,17 +718,15 @@ IVector2D CLevelRegion::GetTileAndNeighbourRegion(int x, int y, CLevelRegion** r
 	if(	(x >= defField.m_sizew || y >= defField.m_sizeh) ||
 		(x < 0 || y < 0))
 	{
-		if(defField.m_posidx_x < 0 || defField.m_posidx_y < 0)
-		{
+		if(defField.m_regionPos < 0)
 			return NULL;
-		}
 
 		// only -1/+1, no more
 		int ofs_x = (x < 0) ? -1 : ((x >= defField.m_sizew) ? 1 : 0 );
 		int ofs_y = (y < 0) ? -1 : ((y >= defField.m_sizeh) ? 1 : 0 );
 
 		// достать соседа
-		(*reg) = m_level->GetRegionAt(IVector2D(defField.m_posidx_x + ofs_x, defField.m_posidx_y + ofs_y));
+		(*reg) = m_level->GetRegionAt(IVector2D(defField.m_regionPos.x + ofs_x, defField.m_regionPos.y + ofs_y));
 
 		if(*reg)
 		{
@@ -1081,19 +1074,8 @@ void CLevelRegion::InitRoads()
 		}
 	}
 
-	if (!m_navGrid)
-	{
-		m_navWide = defField.m_sizew*AI_NAVIGATION_GRID_SCALE;
-		m_navTall = defField.m_sizeh*AI_NAVIGATION_GRID_SCALE;
-
-		int navGridSize = m_navWide*m_navTall;
-
-		m_navGrid = new ubyte[navGridSize];
-		memset(m_navGrid, 0x4, navGridSize);
-
-		m_navGridStateList = new navcell_t[navGridSize];
-		memset(m_navGridStateList, 0, navGridSize);
-	}
+	m_navGrid.Init( defField.m_sizew*AI_NAVIGATION_GRID_SCALE, 
+					defField.m_sizeh*AI_NAVIGATION_GRID_SCALE);
 }
 
 void FreeLevObjectRef(regobjectref_t* obj)
@@ -1142,22 +1124,10 @@ void CLevelRegion::Cleanup()
 	m_objects.clear();
 	m_occluders.clear();
 
-	if(m_roads)
-		delete [] m_roads;
-
+	delete [] m_roads;
 	m_roads = NULL;
 
-	if(m_navGrid)
-		delete [] m_navGrid;
-
-	m_navGrid = NULL;
-
-	if(m_navGridStateList)
-		delete [] m_navGridStateList;
-
-	m_navGridStateList = NULL;
-
-	m_numRoadCells = 0;
+	m_navGrid.Cleanup();
 
 	for(int i = 0; i < GetNumHFields(); i++)
 	{
@@ -1666,14 +1636,13 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 				if(!m_regions[idx].m_heightfield[i])
 					continue;
 
-				m_regions[idx].m_heightfield[i]->m_posidx_x = x;
-				m_regions[idx].m_heightfield[i]->m_posidx_y = y;
+				m_regions[idx].m_heightfield[i]->m_regionPos = IVector2D(x,y);
 				m_regions[idx].m_heightfield[i]->m_position = Vector3D(x*nStepSize, 0, y*nStepSize) - center;
 				m_regions[idx].m_regionIndex = idx;
 
 				// init other things like road data
 #ifdef EDITOR
-				m_regions[idx].m_heightfield[i]->Init(m_cellsSize, x, y);
+				m_regions[idx].m_heightfield[i]->Init(m_cellsSize, IVector2D(x, y));
 			}
 
 			m_regions[idx].InitRoads();
@@ -2122,7 +2091,7 @@ void CGameLevel::WriteObjectDefsLump(IVirtualStream* stream)
 	stream->Write(modelsLump.GetBasePointer(), 1, modelsLump.Tell());
 }
 
-void CGameLevel::ReadHeightfieldsLump(IVirtualStream* stream)
+void CGameLevel::ReadHeightfieldsLump( IVirtualStream* stream )
 {
 	for(int i = 0; i < m_numRegions; i++)
 	{
@@ -2132,6 +2101,10 @@ void CGameLevel::ReadHeightfieldsLump(IVirtualStream* stream)
 		int numFields = 1;
 		stream->Read(&numFields, 1, sizeof(int));
 
+		IVector2D regionPos;
+		regionPos.x = idx % m_tall;
+		regionPos.y = (idx - regionPos.x) / m_tall;
+
 		for(int j = 0; j < numFields; j++)
 		{
 			// hfield 0 is init by default
@@ -2139,13 +2112,10 @@ void CGameLevel::ReadHeightfieldsLump(IVirtualStream* stream)
 			{
 				m_regions[idx].m_heightfield[j] = new CHeightTileFieldRenderable();
 				m_regions[idx].m_heightfield[j]->m_fieldIdx = j;
-
-				m_regions[idx].m_heightfield[j]->m_posidx_x = m_regions[idx].m_heightfield[0]->m_posidx_x;
-				m_regions[idx].m_heightfield[j]->m_posidx_y = m_regions[idx].m_heightfield[0]->m_posidx_y;
 				m_regions[idx].m_heightfield[j]->m_position = m_regions[idx].m_heightfield[0]->m_position;
 			}
 
-			m_regions[idx].m_heightfield[j]->Init(m_cellsSize, -1, -1);
+			m_regions[idx].m_heightfield[j]->Init(m_cellsSize, regionPos);
 			m_regions[idx].m_heightfield[j]->ReadFromStream(stream);
 		}
 	}
@@ -2706,13 +2676,13 @@ void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 {
 	InitRoads();
 
-	stream->Read(&m_numRoadCells, 1, sizeof(int));
+	int numRoadCells = 0;
 
-	if(m_numRoadCells)
+	stream->Read(&numRoadCells, 1, sizeof(int));
+
+	if(numRoadCells)
 	{
-		//m_flatroads = new levroadcell_t*[m_numRoadCells];
-
-		for(int i = 0; i < m_numRoadCells; i++)
+		for(int i = 0; i < numRoadCells; i++)
 		{
 			levroadcell_t tmpCell;
 			stream->Read(&tmpCell, 1, sizeof(levroadcell_t));
@@ -2731,7 +2701,7 @@ void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 				int ofsY = tmpCell.posY*AI_NAVIGATION_GRID_SCALE + (j % NAVGRIDSCALE_HALF);
 
 				int navCellIdx = ofsY*m_heightfield[0]->m_sizew + ofsX;
-				m_navGrid[navCellIdx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
+				m_navGrid.staticObst[navCellIdx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
 			}
 		}
 
@@ -2918,8 +2888,7 @@ void CGameLevel::GlobalToLocalPoint( const IVector2D& point, IVector2D& outLocal
 
 void CGameLevel::LocalToGlobalPoint( const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const
 {
-	outGlobalPoint.x = pRegion->m_heightfield[0]->m_posidx_x * m_cellsSize + point.x;
-	outGlobalPoint.y = pRegion->m_heightfield[0]->m_posidx_y * m_cellsSize + point.y;
+	outGlobalPoint = pRegion->m_heightfield[0]->m_regionPos * m_cellsSize + point;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------
@@ -3936,15 +3905,9 @@ void CGameLevel::Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLo
 {
 	int navGridSize = m_cellsSize*AI_NAVIGATION_GRID_SCALE;
 
-	IVector2D regPos;
-	regPos.x = floor((float)point.x / (float)(navGridSize));
-	regPos.y = floor((float)point.y / (float)(navGridSize));
+	IVector2D regPos = point / navGridSize;
 
-	IVector2D globalStart;
-	globalStart.x = regPos.x * navGridSize;
-	globalStart.y = regPos.y * navGridSize;
-
-	outLocalPoint = point - globalStart;
+	outLocalPoint = point - (regPos * navGridSize);
 
 	(*pRegion) = GetRegionAt(regPos);
 }
@@ -3952,9 +3915,7 @@ void CGameLevel::Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLo
 void CGameLevel::Nav_LocalToGlobalPoint(const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const
 {
 	int navGridSize = m_cellsSize*AI_NAVIGATION_GRID_SCALE;
-
-	outGlobalPoint.x = pRegion->m_heightfield[0]->m_posidx_x * navGridSize + point.x;
-	outGlobalPoint.y = pRegion->m_heightfield[0]->m_posidx_y * navGridSize + point.y;
+	outGlobalPoint = pRegion->m_heightfield[0]->m_regionPos * navGridSize + point;
 }
 
 #define NAV_POINT_SIZE (HFIELD_POINT_SIZE/AI_NAVIGATION_GRID_SCALE)
@@ -4039,7 +4000,7 @@ navcell_t& CGameLevel::Nav_GetCellStateAtGlobalPoint(const IVector2D& point)
 
 	if (reg && reg->m_isLoaded)
 	{
-		return reg->m_navGridStateList[localPoint.y*navSize + localPoint.x];
+		return reg->m_navGrid.cellStates[localPoint.y*navSize + localPoint.x];
 	}
 
 	static navcell_t emptyCell;
@@ -4061,9 +4022,9 @@ ubyte& CGameLevel::Nav_GetTileAtGlobalPoint(const IVector2D& point)
 
 	CScopedMutex m(m_mutex);
 
-	if (reg && reg->m_navGrid)
+	if (reg && reg->m_navGrid.staticObst)
 	{
-		return reg->m_navGrid[localPoint.y*navSize + localPoint.x];
+		return reg->m_navGrid.staticObst[localPoint.y*navSize + localPoint.x];
 	}
 
 	static ubyte emptyTile = 255;
@@ -4083,8 +4044,8 @@ void CGameLevel::Nav_ClearCellStates()
 
 			m_mutex.Lock();
 
-			if(m_regions[idx].m_isLoaded)
-				memset(m_regions[idx].m_navGridStateList, 0, navSize*navSize);
+			if(m_regions[idx].m_isLoaded) // zero them
+				memset(m_regions[idx].m_navGrid.cellStates, 0, navSize*navSize);
 
 			m_mutex.Unlock();
 		}

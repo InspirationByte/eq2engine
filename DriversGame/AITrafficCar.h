@@ -130,7 +130,7 @@ protected:
 	int					BrakeToTheLine( float fDt, EStateTransition transition );
 	int					BrakeToObject( float fDt, EStateTransition transition );
 
-	virtual int			DeadState( float fDt, EStateTransition transition )			{return 0;}
+	virtual int			DeadState( float fDt, EStateTransition transition );
 
 	//------------------------------------------------
 

@@ -303,6 +303,9 @@ CAITrafficCar::CAITrafficCar( carConfigEntry_t* carConfig ) : CCar(carConfig), C
 	m_emergencyEscapeTime = 0.0f;
 	m_emergencyEscapeSteer = 1.0f;
 	m_prevFract = 1.0f;
+
+	m_signalSeq = NULL;
+	m_signalSeqFrame = 0;
 }
 
 CAITrafficCar::~CAITrafficCar()
@@ -355,6 +358,12 @@ void CAITrafficCar::Spawn()
 		m_carColor = color4_white;
 }
 
+int CAITrafficCar::DeadState( float fDt, EStateTransition transition )
+{
+	SignalNoSequence(0,0);
+	return 0;
+}
+
 ConVar g_disableTrafficCarThink("g_disableTrafficCarThink", "0", "Disables traffic car thinking", CV_CHEAT);
 
 void CAITrafficCar::OnPrePhysicsFrame( float fDt )
@@ -363,7 +372,7 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 
 	PROFILE_BEGIN(AITrafficCar_Think);
 
-	if( m_enabled && !g_disableTrafficCarThink.GetBool())
+	if( !g_disableTrafficCarThink.GetBool())
 	{
 		m_thinkTime -= fDt;
 
@@ -413,10 +422,6 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 		m_controlButtons = controls;
 
 		m_hornTime.Update(fDt);
-	}
-	else
-	{
-		SignalNoSequence(0,0);
 	}
 
 	if( g_pGameSession->GetLeadCar() && 
@@ -686,6 +691,9 @@ void CAITrafficCar::SearchJunctionAndStraight()
 
 int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 {
+	if(!m_enabled)
+		return 0;
+
 	// 1. Build a line (A-B) from cell grid to 3D positions
 	// 2. Make middle (or near) point (C), lerp(a,b,0.25f)
 	//		A---C------------B
