@@ -161,6 +161,8 @@ public:
 
 	CBillboardList*					FindBillboardList(const char* name) const;
 
+	void							QueryNearestRegions(const Vector3D& pos, bool waitLoad = false);
+
 	//-------------------------------------------------------------------------
 	// objects
 
@@ -295,6 +297,8 @@ OOLUA_PROXY(CGameWorld)
 	OOLUA_MFUNC(GetCameraParams)
 
 	OOLUA_MFUNC_CONST(FindObjectByName)
+
+	OOLUA_MFUNC(QueryNearestRegions)
 OOLUA_PROXY_END
 #endif // __INTELLISENSE__
 #endif // NO_LUA

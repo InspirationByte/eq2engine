@@ -160,8 +160,12 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	//OOLUA::set_global(state, "SetCurrentState", L_SetCurrentState);
 	//OOLUA::set_global(state, "GetCurrentState", L_GetCurrentState);
 
+	CCar* CCarNULLPointer = NULL;
+
 	// init object classes
 	OOLUA::register_class<CCar>(state);
+	OOLUA::register_class_static<CCar>(state, "nullptr", CCarNULLPointer );
+
 	OOLUA::register_class<CAIPursuerCar>(state);
 
 	OOLUA::set_global(state, "world", g_pGameWorld);

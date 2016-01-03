@@ -54,6 +54,9 @@ enum EReplayFlags
 	REPLAY_FLAG_CAR_AI		= (1 << 0),
 	REPLAY_FLAG_CAR_COP_AI	= (1 << 1),
 	REPLAY_FLAG_CAR_GANG_AI = (1 << 2),
+
+	// this is a marker
+	REPLAY_FLAG_IS_PUSHED	= (1 << 14)
 };
 
 enum EReplayEventType
@@ -166,6 +169,9 @@ struct replayevent_file_s
 		replayIndex = evt.replayIndex;
 		eventType = evt.eventType;
 		eventFlags = evt.eventFlags;
+
+		eventFlags &= ~REPLAY_FLAG_IS_PUSHED;
+		
 		eventDataSize = 0;
 	}
 
@@ -269,6 +275,13 @@ public:
 	int						m_currentCamera;
 
 protected:
+
+	void					ResetEvents();
+
+	void					WriteEvents( IVirtualStream* stream, int onlyEvent = -1 );
+	void					WriteVehicleAndFrames(vehiclereplay_t* rep, IVirtualStream* stream );
+
+	void					ReadEvent( replayevent_t& evt, IVirtualStream* stream );
 
 	void					PlayVehicleFrame(vehiclereplay_t* rep);
 

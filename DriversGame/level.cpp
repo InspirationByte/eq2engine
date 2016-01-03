@@ -1137,7 +1137,7 @@ void CLevelRegion::Cleanup()
 
 	m_isLoaded = false;
 	
-	m_queryTimes.SetValue(1);
+	m_queryTimes.SetValue(0);
 }
 
 bool CLevelRegion::IsRegionEmpty()

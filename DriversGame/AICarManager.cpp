@@ -281,7 +281,7 @@ void CAICarManager::RemoveTrafficCar(CAITrafficCar* car)
 	g_pGameWorld->RemoveObject(car);
 }
 
-void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& leadVelocity)
+void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity)
 {
 #ifdef BIG_REPLAYS
 	if (g_replayData->m_state == REPL_PLAYING)
@@ -297,11 +297,16 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 
 	//-------------------------------------------------
 
-	IVector2D playerCarCell;
-	if (!g_pGameWorld->m_level.GetTileGlobal(spawnOrigin, playerCarCell))
+	IVector2D spawnCenterCell;
+	if (!g_pGameWorld->m_level.GetTileGlobal(spawnOrigin, spawnCenterCell))
+		return;
+
+	IVector2D removeCenterCell;
+	if (!g_pGameWorld->m_level.GetTileGlobal(removeOrigin, removeCenterCell))
 		return;
 
 	m_leadPosition = spawnOrigin;
+	m_leadRemovePosition = removeOrigin;
 	m_leadVelocity = leadVelocity;
 
 	// Try to remove cars
@@ -319,14 +324,26 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 			continue;
 		}
 
+		// non-pursuer vehicles are removed by distance.
+		// pursuers are not, if in pursuit only.
+		if( m_trafficCars[i]->IsPursuer() )
+		{
+			CAIPursuerCar* pursuer = (CAIPursuerCar*)m_trafficCars[i];
+
+			if(pursuer->InPursuit())
+				continue;
+		}
+
 		IVector2D trafficCell;
 		reg->m_heightfield[0]->PointAtPos(carPos, trafficCell.x, trafficCell.y);
 
 		g_pGameWorld->m_level.LocalToGlobalPoint(trafficCell, reg, trafficCell);
 
-		int distToCell = length(trafficCell - playerCarCell);
+		int distToCell = length(trafficCell - removeCenterCell);
+		int distToCell2 = length(trafficCell - spawnCenterCell);
 
-		if (distToCell > g_traffic_maxdist.GetInt())
+		if (distToCell > g_traffic_maxdist.GetInt() && 
+			distToCell2 > g_traffic_maxdist.GetInt())
 		{
 			RemoveTrafficCar(m_trafficCars[i]);
 			m_trafficCars.fastRemoveIndex(i);
@@ -335,7 +352,7 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 		}
 	}
 
-	CircularSpawnTrafficCars(playerCarCell.x, playerCarCell.y, g_traffic_mindist.GetInt());
+	CircularSpawnTrafficCars(spawnCenterCell.x, spawnCenterCell.y, g_traffic_mindist.GetInt());
 }
 
 //-----------------------------------------------------------------------------------------
@@ -362,6 +379,16 @@ void CAICarManager::UpdateCopStuff(float fDt)
 
 		m_speechQueue.removeIndex(0);
 	}
+}
+
+void CAICarManager::RemoveAllCars()
+{
+	// Try to remove cars
+	for (int i = 0; i < m_trafficCars.numElem(); i++)
+	{
+		RemoveTrafficCar(m_trafficCars[i]);
+	}
+	m_trafficCars.clear();
 }
 
 DECLARE_CMD(force_roadblock, "Forces spawn roadblock on cur car", CV_CHEAT)
@@ -579,6 +606,7 @@ void CAICarManager::GotCopTaunt()
 OOLUA_EXPORT_FUNCTIONS(
 	CAICarManager,
 
+	RemoveAllCars,
 	SetMaxTrafficCars,
 	SetCopsEnabled,
 	SetCopCarConfig,

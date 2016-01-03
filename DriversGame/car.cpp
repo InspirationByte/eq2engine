@@ -2952,6 +2952,8 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 
 	if( wheel.onGround && wheel.surfparam != NULL )
 	{
+		Vector3D smoke_pos = wheel.collisionInfo.position + wheel.collisionInfo.normal * wheelConf.radius*0.5f;
+
 		if(wheel.surfparam->word == 'C')	// concrete/asphalt
 		{
 			if(!wheel.lastOnGround && m_isLocalCar)
@@ -2978,8 +2980,6 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 					float efficency = RemapValClamp(fSliding, 5.0f, 40.0f, 0.4f, 1.0f);
 					float timeScale = RemapValClamp(fSliding, 5.0f, 40.0f, 0.7f, 1.0f);
 
-					Vector3D smoke_pos = wheel.collisionInfo.position + wheel.collisionInfo.normal * wheelConf.radius*0.5f;
-
 					ColorRGB smokeCol(0.86f, 0.9f, 0.97f);
 
 					CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, wheel.velocityVec*0.25f+Vector3D(0,1, 1),
@@ -3002,8 +3002,6 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 				if(wheel.smokeTime <= 0.0)
 				{
 					wheel.smokeTime = 0.08f;
-
-					Vector3D smoke_pos = wheel.pWheelObject->GetOrigin();
 
 					Vector3D vel = -wheelMat.rows[2]*GetTractionSlidingAtWheel(nWheel) * 0.025f;
 					vel += wheelMat.rows[0]*GetLateralSlidingAtWheel(nWheel) * 0.025f;
@@ -3030,9 +3028,6 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 				if(wheel.smokeTime <= 0.0)
 				{
 					wheel.smokeTime = 0.08f;
-
-
-					Vector3D smoke_pos = wheel.collisionInfo.position + Vector3D(0,wheelConf.radius*0.5f,0);
 
 					Vector3D vel = -wheelMat.rows[2]*GetTractionSlidingAtWheel(nWheel) * 0.025f;
 					vel += wheelMat.rows[0]*GetLateralSlidingAtWheel(nWheel) * 0.025f;

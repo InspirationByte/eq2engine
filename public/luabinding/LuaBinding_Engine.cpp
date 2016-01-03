@@ -137,6 +137,18 @@ void AddLanguageFile( char* filenamePrefix )
 OOLUA_CFUNC(LocalizedToken, L_LocalizedToken)
 OOLUA_CFUNC(AddLanguageFile, L_AddLanguageFile)
 
+OOLUA_CFUNC(ConstrainAngle180,L_ConstrainAngle180)
+OOLUA_CFUNC(ConstrainAngle360,L_ConstrainAngle360)
+
+OOLUA_CFUNC(NormalizeAngles180,L_NormalizeAngles180)
+OOLUA_CFUNC(NormalizeAngles360,L_NormalizeAngles360)
+
+OOLUA_CFUNC(AngleDiff,L_AngleDiff)
+OOLUA_CFUNC(AnglesDiff,L_AnglesDiff)
+
+
+
+
 // FLOAT
 int L_fract( lua_State* vm )			{ OOLUA_C_FUNCTION(float,fract,float) }
 
@@ -300,6 +312,15 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 
 	OOLUA::set_global(state, "v3d_cross", L_v3d_cross);
 	OOLUA::set_global(state, "v3d_reflect", L_v3d_reflect);
+
+	OOLUA::set_global(state, "ConstrainAngle180", L_ConstrainAngle180);
+	OOLUA::set_global(state, "ConstrainAngle360", L_ConstrainAngle360);
+
+	OOLUA::set_global(state, "NormalizeAngles180", L_NormalizeAngles180);
+	OOLUA::set_global(state, "NormalizeAngles360", L_NormalizeAngles360);
+
+	OOLUA::set_global(state, "AngleDiff", L_AngleDiff);
+	OOLUA::set_global(state, "AnglesDiff", L_AnglesDiff);
 
 	OOLUA::set_global(state, "VectorAngles", L_VectorAngles);
 

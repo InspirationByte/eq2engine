@@ -67,6 +67,9 @@ public:
 	void						SignalMissionStatus(int missionStatus, float waitTime);
 	int							GetMissionStatus() const;
 
+	bool						IsReplay() const;
+	void						ResetReplay();
+
 	int							GenScriptID();
 	CGameObject*				FindScriptObjectById( int scriptID );
 
@@ -116,6 +119,9 @@ OOLUA_PROXY(CGameSession)
 	OOLUA_MFUNC_CONST(IsGameDone)
 	OOLUA_MFUNC(SignalMissionStatus)
 	OOLUA_MFUNC_CONST(GetMissionStatus)
+
+	OOLUA_MFUNC_CONST(IsReplay)
+	OOLUA_MFUNC(ResetReplay)
 OOLUA_PROXY_END
 #endif // __INTELLISENSE__
 #endif // NO_LUA

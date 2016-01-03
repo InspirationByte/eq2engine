@@ -213,6 +213,20 @@ int	CGameSession::GetMissionStatus() const
 	return m_missionStatus;
 }
 
+bool CGameSession::IsReplay() const
+{
+	return (g_replayData->m_state == REPL_PLAYING ||
+			g_replayData->m_state == REPL_INITIALIZE);
+}
+
+void CGameSession::ResetReplay()
+{
+	g_replayData->m_tick = 0;
+	g_pGameWorld->m_random.SetSeed(0);
+
+	// FIXME: remove objects?
+}
+
 int	CGameSession::GenScriptID()
 {
 	return m_scriptIDCounter++;
@@ -245,7 +259,18 @@ void Game_OnPhysicsUpdate(float fDt, int iterNum)
 
 	// update traffic car spawn/remove from here
 	if( IsServer() && (iterNum == 0) && g_pGameSession->GetLeadCar())
-		g_pAIManager->UpdateCarRespawn(fDt, g_pGameSession->GetLeadCar()->GetOrigin(), g_pGameSession->GetLeadCar()->GetVelocity());
+	{
+		Vector3D spawnPos = g_pGameSession->GetLeadCar()->GetOrigin();
+		Vector3D removePos = g_pGameSession->GetLeadCar()->GetOrigin();
+
+		if( g_pGameSession->GetPlayerCar() )
+			removePos = g_pGameSession->GetPlayerCar()->GetOrigin();
+
+		Vector3D leadVel = g_pGameSession->GetLeadCar()->GetVelocity();
+
+
+		g_pAIManager->UpdateCarRespawn(fDt, spawnPos, removePos, leadVel);
+	}
 
 	// update replay recording
 	if(g_replayData)
@@ -563,7 +588,8 @@ OOLUA_EXPORT_FUNCTIONS(
 	SetPlayerCar, 
 	SetLeadCar, 
 	LoadCarReplay,
-	SignalMissionStatus
+	SignalMissionStatus,
+	ResetReplay
 )
 OOLUA_EXPORT_FUNCTIONS_CONST(
 	CGameSession, 
@@ -574,5 +600,6 @@ OOLUA_EXPORT_FUNCTIONS_CONST(
 	GetLeadCar,
 	GetSessionType,
 	IsGameDone,
-	GetMissionStatus
+	GetMissionStatus,
+	IsReplay
 )

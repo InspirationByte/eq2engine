@@ -53,6 +53,7 @@ public:
 	virtual void		OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy);
 
 	bool				IsPursuer() const { return true; }
+	bool				InPursuit() const;
 
 	void				SetPursuitTarget(CCar* obj);
 	void				BeginPursuit( float delay = 0.25f );

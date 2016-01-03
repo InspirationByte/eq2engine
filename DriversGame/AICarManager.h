@@ -49,8 +49,10 @@ public:
 	void						Init();
 	void						Shutdown();
 
-	void						UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& leadVelocity);
+	void						UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity);
 	void						UpdateCopStuff(float fDt);
+
+	void						RemoveAllCars();
 
 	// ----- TRAFFIC ------
 	void						SetMaxTrafficCars(int count);
@@ -93,6 +95,7 @@ protected:
 	DkList<carConfigEntry_t*>	m_civCarEntries;
 
 	Vector3D					m_leadPosition;
+	Vector3D					m_leadRemovePosition;
 	Vector3D					m_leadVelocity;
 
 	EqString					m_copCarName[COP_NUMTYPES];
@@ -131,6 +134,8 @@ extern CAICarManager*			g_pAIManager;
 #ifndef __INTELLISENSE__
 OOLUA_PROXY(CAICarManager)
 	OOLUA_TAGS(Abstract)
+
+	OOLUA_MFUNC(RemoveAllCars)
 
 	OOLUA_MFUNC(SetMaxTrafficCars)
 	OOLUA_MFUNC_CONST(GetMaxTrafficCars)

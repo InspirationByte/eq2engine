@@ -437,8 +437,6 @@ void Game_UpdateFreeCamera(float fDt)
 	g_camera_freepos += camMoveVec*g_freecam_speed.GetFloat() * fDt;
 }
 
-static bool g_cameraAttached = true;
-
 void DrawGradientFilledRectangle(Rectangle_t &rect, ColorRGBA &color1, ColorRGBA &color2)
 {
 	Vertex2D_t tmprect[] = { MAKEQUADCOLORED(rect.vleftTop.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vrightBottom.y, 0, 1.0f, 0.5f,1.0f, 0.5f) };
@@ -545,10 +543,10 @@ void Game_UpdateCamera( float fDt )
 	}
 
 	// take the previous camera
-	CViewParams camera = *g_pGameWorld->GetCameraParams();
+	CViewParams& camera = *g_pGameWorld->GetCameraParams();
 
-	// refresh free camera here
-	if(g_freecam.GetBool())
+	// camera overriden here
+	if( g_freecam.GetBool() )
 	{
 		Game_UpdateFreeCamera( g_pHost->m_fGameFrameTime );
 
@@ -558,23 +556,28 @@ void Game_UpdateCamera( float fDt )
 
 		g_pCameraAnimator->SetDropPosition(g_camera_freepos);
 	}
+	else
+	{
+		// if has viewed car, set camera from it
+		if(viewedCar)
+			camera = g_pCameraAnimator->GetCamera();
+
+		// always 
+		g_camera_freepos = camera.GetOrigin();
+		g_camera_freeangles = camera.GetAngles();
+		g_camera_fov = DIRECTOR_DEFAULT_CAMERA_FOV;
+	}
+		
+
+
+
 
 	// refresh main camera modes here
 	{
-		if(!g_freecam.GetBool() && g_cameraAttached)
-		{
-			camera = g_pCameraAnimator->GetCamera();
-
-			g_camera_freepos = camera.GetOrigin();
-			g_camera_freeangles = camera.GetAngles();
-			g_camera_fov = DIRECTOR_DEFAULT_CAMERA_FOV;
-		}
-
 		//
 		// Check camera switch buttons
 		//
-		if(	g_cameraAttached &&
-			(g_nClientButtons & IN_CHANGECAM) && !(g_nOldControlButtons & IN_CHANGECAM))
+		if(	(g_nClientButtons & IN_CHANGECAM) && !(g_nOldControlButtons & IN_CHANGECAM))
 		{
 			g_CurrCameraMode += 1;
 
@@ -589,9 +592,6 @@ void Game_UpdateCamera( float fDt )
 				g_CurrCameraMode = CAM_MODE_OUTCAR;
 		}
 	}
-
-	// set renderer camera params
-	g_pGameWorld->SetCameraParams( camera );
 }
 
 static wchar_t* cameraTypeStrings[] = {
@@ -909,10 +909,18 @@ void Game_Frame(float fDt)
 	Vector3D cam_velocity = vec3_zero;
 
 	// animate the camera if car is present
-	if( viewedCar && g_CurrCameraMode <= CAM_MODE_INCAR && !g_freecam.GetBool() && g_cameraAttached )
+	if( viewedCar && g_CurrCameraMode <= CAM_MODE_INCAR && !g_freecam.GetBool() )
 		cam_velocity = viewedCar->GetVelocity();
 
 	CViewParams* curView = g_pGameWorld->GetCameraParams();
+
+	{
+		Vector3D viewpos = curView->GetOrigin();
+		Vector3D viewrot = curView->GetAngles();
+		debugoverlay->Text(ColorRGBA(1,1,0,1), "*** camera position: %g %g %g", viewpos.x,viewpos.y,viewpos.z);
+		debugoverlay->Text(ColorRGBA(1,1,0,1), "*** camera rotation: %g %g %g", viewrot.x,viewrot.y,viewrot.z);
+	}
+	
 
 	effectrenderer->SetViewSortPosition(curView->GetOrigin());
 
@@ -926,6 +934,7 @@ void Game_Frame(float fDt)
 	soundsystem->SetListener(curView->GetOrigin(), f, u, cam_velocity);
 	g_pRainEmitter->SetViewVelocity(cam_velocity);
 
+
 	float render_begin = MEASURE_TIME_BEGIN();
 
 	IVector2D screenSize(g_pHost->m_nWidth, g_pHost->m_nHeight);
@@ -934,6 +943,7 @@ void Game_Frame(float fDt)
 	// render
 	PROFILE_CODE(g_pGameWorld->Draw( 0 ));
 	debugoverlay->Text(ColorRGBA(1,1,0,1), "render time, ms: %g", abs(MEASURE_TIME_STATS(render_begin)));
+
 
 	// Test HUD
 	if( g_replayData->m_state != REPL_PLAYING )

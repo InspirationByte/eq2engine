@@ -543,9 +543,14 @@ void CGameWorld::Cleanup( bool unloadLevel )
 			m_nonSpawnedObjects[i]->OnRemove();
 			delete m_nonSpawnedObjects[i];
 		}
-	}
 
-	m_nonSpawnedObjects.clear();
+		m_nonSpawnedObjects.clear();
+	}
+	else
+	{
+		// regions must be unloaded
+		m_level.UpdateRegions();
+	}
 
 	if(unloadLevel)
 	{
@@ -1655,6 +1660,11 @@ CBillboardList* CGameWorld::FindBillboardList(const char* name) const
 	return NULL;
 }
 
+void CGameWorld::QueryNearestRegions(const Vector3D& pos, bool waitLoad )
+{
+	m_level.QueryNearestRegions(pos, waitLoad);
+}
+
 bool CGameWorld::LoadLevel()
 {
 	bool result = true;
@@ -1815,7 +1825,7 @@ CGameWorld*	g_pGameWorld = &s_GameWorld;
 
 #ifndef NO_LUA
 
-OOLUA_EXPORT_FUNCTIONS(CGameWorld, SetEnvironmentName, SetLevelName, GetCameraParams)
+OOLUA_EXPORT_FUNCTIONS(CGameWorld, SetEnvironmentName, SetLevelName, GetCameraParams, QueryNearestRegions)
 OOLUA_EXPORT_FUNCTIONS_CONST(CGameWorld, FindObjectByName, CreateObject, IsValidObject)
 
 OOLUA_EXPORT_FUNCTIONS(CViewParams, SetOrigin, SetAngles, SetFOV)

@@ -145,7 +145,7 @@ void CAIPursuerCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 		GetPhysicsBody()->SetCollideMask(COLLIDEMASK_VEHICLE);
 		GetPhysicsBody()->SetMinFrameTime(0.0f);
 
-		m_hornTime.Set(0.7f, 0.5f);
+		//m_hornTime.Set(0.7f, 0.5f);
 
 		m_hasDamage = true;
 	
@@ -310,6 +310,11 @@ void CAIPursuerCar::EndPursuit(bool death)
 	AI_SetState(&CAIPursuerCar::SearchForRoad);
 
 	SetTorqueScale(1.0f);
+}
+
+bool CAIPursuerCar::InPursuit() const
+{
+	return m_targInfo.target && FSMGetCurrentState() == &CAIPursuerCar::PursueTarget;
 }
 
 EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelony, bool checkSpeeding )
@@ -682,7 +687,11 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	}
 
 	Vector3D	carPos		= GetOrigin() + GetForwardVector()*m_conf->m_body_size.z*0.5f;
-	Vector3D	targetPos	= m_targInfo.target->GetOrigin() + m_targInfo.target->GetVelocity();//*0.5f;
+
+	float velocityDistOffsetFactor = clamp(length(GetOrigin() - m_targInfo.target->GetOrigin()), 0.0f, 20.0f) * 0.05f;
+	velocityDistOffsetFactor = 1.0f - pow(velocityDistOffsetFactor, 2.0f);
+
+	Vector3D	targetPos	= m_targInfo.target->GetOrigin() + m_targInfo.target->GetVelocity()*velocityDistOffsetFactor*1.5f;
 	Vector3D	carDir		= GetForwardVector();
 
 	float		fSpeed = GetSpeedWheels();
@@ -971,7 +980,7 @@ void CAIPursuerCar::SetPursuitTarget(CCar* obj)
 	m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
 
 	if(obj)
-		m_targInfo.isAngry = (obj->GetFelony() > 0.6f);
+		m_targInfo.isAngry = (obj->GetFelony() > 0.6f) || m_type == PURSUER_TYPE_GANG;
 }
 
 OOLUA_EXPORT_FUNCTIONS(
