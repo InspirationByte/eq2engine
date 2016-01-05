@@ -10,6 +10,19 @@
 #include "world.h"
 #include "imaging/ImageLoader.h"
 
+enum ERegionEditMenuCommands
+{
+	REdit_MenuBegin = 1000,
+
+	REdit_GenerateMap,
+
+	REdit_MenuEnd,
+};
+
+BEGIN_EVENT_TABLE(CRegionEditFrame, wxFrame)
+	EVT_MENU_RANGE(REdit_MenuBegin, REdit_MenuEnd, ProcessAllMenuCommands)
+END_EVENT_TABLE()
+
 CRegionEditFrame::CRegionEditFrame( wxWindow* parent ) : 
 	wxFrame( parent, wxID_ANY, "Region editor and level navigation", wxDefaultPosition, wxSize( 1090,653 ), wxDEFAULT_FRAME_STYLE|wxMAXIMIZE|wxTAB_TRAVERSAL|wxSTAY_ON_TOP )
 {
@@ -29,6 +42,16 @@ CRegionEditFrame::CRegionEditFrame( wxWindow* parent ) :
 	this->Layout();
 	
 	this->Centre( wxBOTH );
+
+	m_pMenu = new wxMenuBar( 0 );
+
+	wxMenu* menuFile = new wxMenu;
+	
+	menuFile->Append( REdit_GenerateMap, DKLOC("TOKEN_GENERATEMAP", L"Generate map image") );
+	
+	m_pMenu->Append( menuFile, DKLOC("TOKEN_FILE", L"File") );
+
+	this->SetMenuBar( m_pMenu );
 
 	// Connect Events
 	this->Connect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( CRegionEditFrame::OnClose ) );
@@ -68,6 +91,18 @@ CRegionEditFrame::~CRegionEditFrame()
 	m_pRenderPanel->Disconnect(wxEVT_LEFT_DOWN, wxMouseEventHandler(CRegionEditFrame::ProcessMouseEvents), NULL, this);
 	m_pRenderPanel->Disconnect(wxEVT_LEFT_UP, wxMouseEventHandler(CRegionEditFrame::ProcessMouseEvents), NULL, this);
 	m_pRenderPanel->Disconnect(wxEVT_MOTION, (wxObjectEventFunction)&CRegionEditFrame::ProcessMouseEvents, NULL, this);
+}
+
+void CRegionEditFrame::ProcessAllMenuCommands(wxCommandEvent& event)
+{
+	switch(event.GetId())
+	{
+		case REdit_GenerateMap:
+		{
+			BuildAndSaveMapFromRegionImages();
+			break;
+		}
+	}
 }
 
 extern Vector3D g_camera_target;
@@ -249,6 +284,67 @@ void CRegionEditFrame::RegenerateRegionImage(regionMap_t* regMap)
 		regMap->image->Unlock();
 	}
 
+}
+
+void CRegionEditFrame::BuildAndSaveMapFromRegionImages()
+{
+	int imgWide = m_regWide*m_regCells;
+	int imgTall = m_regTall*m_regCells;
+
+	CImage img;
+	TVec3D<ubyte>* imgData = (TVec3D<ubyte>*)img.Create(FORMAT_RGB8, m_regWide*m_regCells, m_regTall*m_regCells, 1, 1, 1);
+
+	int imgSize = m_regWide*m_regCells*m_regTall*m_regCells;
+
+	memset(imgData, 0xFFFFFFFF, GetBytesPerPixel(FORMAT_RGB8)*imgSize);
+
+	for(int ry = 0; ry < m_regTall; ry++)
+	{
+		for(int rx = 0; rx < m_regWide; rx++)
+		{
+			int regIdx = ry*m_regWide+rx;
+
+			if( !m_regionMap[regIdx].region->m_isLoaded )
+				continue;
+
+			if( !m_regionMap[regIdx].region->m_roads )
+				continue;
+
+			// make region image
+			for(int y = 0; y < m_regCells; y++)
+			{
+				for(int x = 0; x < m_regCells; x++)
+				{
+					int px = rx*m_regCells+x;
+					int py = ry*m_regCells+y;
+
+					int pixIdx = py*imgWide + (imgWide-px-1);
+
+					int regPixIdx = y*m_regCells+x;
+
+					regionMap_t* regMap = &m_regionMap[regIdx];
+
+					TVec3D<ubyte> color(255);
+					bool placeRoad = regMap->region->m_roads[regPixIdx].type > ROADTYPE_NOROAD;
+					color.x = placeRoad ? 255 : 255;
+					color.y = placeRoad ? 80 : 255;
+					color.z = placeRoad ? 80 : 255;
+
+					imgData[pixIdx] = color;
+				}
+			}
+		}
+	}
+
+	
+
+	EqString mapTexName(GetFileSystem()->GetCurrentGameDirectory() + _Es("/materials/levelmap/"));
+	mapTexName.Append( g_pGameWorld->GetLevelName() );
+	mapTexName.Append(".tga");
+
+	wxMessageBox(varargs("Level map saved to '%s'", mapTexName.c_str()));
+
+	img.SaveTGA( mapTexName.c_str() );
 }
 
 void CRegionEditFrame::OnEraseBG( wxEraseEvent& event )

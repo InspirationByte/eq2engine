@@ -126,7 +126,7 @@ struct lensFlareTable_t
 	ColorRGB	color;
 };
 
-#define LENSFLARE_TABLE_SIZE 8
+#define LENSFLARE_TABLE_SIZE 12
 
 class CGameWorld : public IMaterialRenderParamCallbacks, public CBaseNetworkedObject
 {

@@ -52,7 +52,22 @@ public:
 	void						ShowScreenMessage( const char* token, float time );
 	void						SetTimeDisplay(bool enabled, double time);
 
+	void						Enable(bool enable)		{m_enable = enable;}
+	bool						IsEnabled() const		{return m_enable;}
+
+	void						ShowMap(bool enable)	{m_showMap = enable;}
+	bool						IsMapShown() const		{return m_showMap;}
+
+	void						FadeIn( bool useCurtains = false );
+	void						FadeOut();
+
 protected:
+
+	bool						m_enable;
+	bool						m_showMap;
+
+
+	ITexture*					m_mapTexture;
 	
 	DkList<hudDisplayObject_t>	m_displayObjects;
 	int							m_handleCounter;
@@ -80,6 +95,15 @@ OOLUA_PROXY( CDrvSynHUDManager )
 	OOLUA_MFUNC( RemoveTrackingObject )
 	OOLUA_MFUNC( ShowScreenMessage )
 	OOLUA_MFUNC( SetTimeDisplay )
+
+	OOLUA_MFUNC( Enable )
+	OOLUA_MFUNC_CONST( IsEnabled )
+
+	OOLUA_MFUNC( ShowMap )
+	OOLUA_MFUNC_CONST( IsMapShown )
+
+	OOLUA_MFUNC( FadeIn )
+	OOLUA_MFUNC( FadeOut )
 
 OOLUA_PROXY_END
 #endif // __INTELLISENSE__

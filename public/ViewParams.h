@@ -19,8 +19,8 @@ public:
 					CViewParams(const Vector3D &origin,const Vector3D &angles,float fFov);
 
 public:
-	Vector3D		GetOrigin() const;
-	Vector3D		GetAngles() const;
+	const Vector3D&	GetOrigin() const;
+	const Vector3D&	GetAngles() const;
 	float			GetFOV() const;
 
 	void			SetOrigin( const Vector3D &origin );

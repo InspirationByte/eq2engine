@@ -1688,6 +1688,7 @@ void CGameLevel::LoadRegionAt(int regionIndex, IVirtualStream* stream)
 	if(m_regionOffsets[regionIndex] == -1)
 		return;
 
+
 	int loffset = stream->Tell();
 
 	// Read region data
@@ -2102,8 +2103,8 @@ void CGameLevel::ReadHeightfieldsLump( IVirtualStream* stream )
 		stream->Read(&numFields, 1, sizeof(int));
 
 		IVector2D regionPos;
-		regionPos.x = idx % m_tall;
-		regionPos.y = (idx - regionPos.x) / m_tall;
+		regionPos.x = idx % m_wide;
+		regionPos.y = (idx - regionPos.x) / m_wide;
 
 		for(int j = 0; j < numFields; j++)
 		{
@@ -2680,7 +2681,7 @@ void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 
 	stream->Read(&numRoadCells, 1, sizeof(int));
 
-	if(numRoadCells)
+	if( numRoadCells )
 	{
 		for(int i = 0; i < numRoadCells; i++)
 		{
@@ -2689,8 +2690,6 @@ void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 
 			int idx = tmpCell.posY*m_heightfield[0]->m_sizew + tmpCell.posX;
 			m_roads[idx] = tmpCell;
-
-			//m_flatroads[i] = &m_roads[idx];
 
 #define NAVGRIDSCALE_HALF	int(AI_NAVIGATION_GRID_SCALE/2)
 
@@ -2706,9 +2705,7 @@ void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 		}
 
 		for (int i = 0; i < m_objects.numElem(); i++)
-		{
 			m_level->Nav_AddObstacle(this, m_objects[i]);
-		}
 	}
 }
 
@@ -2760,7 +2757,11 @@ CLevelRegion* CGameLevel::GetRegionAt(const IVector2D& XYPos) const
 	if(XYPos.y < 0 || XYPos.y >= m_tall)
 		return NULL;
 
-	return &m_regions[XYPos.y*m_wide + XYPos.x];
+	CLevelRegion* reg = &m_regions[XYPos.y*m_wide + XYPos.x];
+
+	ASSERT(reg->m_regionIndex == XYPos.y*m_wide + XYPos.x);
+
+	return reg;
 }
 
 
@@ -2841,7 +2842,7 @@ bool CGameLevel::GetRegionAndTileAt(const IVector2D& point, CLevelRegion** pReg,
 
 	GlobalToLocalPoint(point, outLocalXYPos, &pRegion);
 
-	if(pRegion && pRegion->m_heightfield[0]->GetTile(outLocalXYPos.x, outLocalXYPos.y))
+	if(pRegion) // && pRegion->GetHField(0)->GetTile(outLocalXYPos.x, outLocalXYPos.y))
 	{
 		if(pReg)
 			(*pReg) = pRegion;
@@ -2878,8 +2879,7 @@ void CGameLevel::GlobalToLocalPoint( const IVector2D& point, IVector2D& outLocal
 	regPos.y = floor((float)point.y / (float)(m_cellsSize));
 
 	IVector2D globalStart;
-	globalStart.x = regPos.x * m_cellsSize;
-	globalStart.y = regPos.y * m_cellsSize;
+	globalStart = regPos * m_cellsSize;
 
 	outLocalPoint = point-globalStart;
 
@@ -2947,6 +2947,9 @@ straight_t CGameLevel::GetStraightAtPoint( const IVector2D& point, int numIterat
 
 			xyPos = pRegion->GetTileAndNeighbourRegion(xyPos.x, xyPos.y, &pNextRegion);
 			int nextTileIdx = xyPos.y * m_cellsSize + xyPos.x;
+
+			if(!pNextRegion)
+				continue;
 
 			if(!pNextRegion->m_roads)
 				continue;
@@ -3266,19 +3269,16 @@ levroadcell_t* CGameLevel::GetGlobalRoadTileAt(const IVector2D& point, CLevelReg
 
 	CLevelRegion* reg = NULL;
 
-	if(GetRegionAndTileAt(point, &reg, outXYPos))
+	if( GetRegionAndTileAt(point, &reg, outXYPos) )
 	{
-		if(!reg->GetHField())
-			return NULL;
-
-		if(!reg->m_roads)
-			return NULL;
-
-		int ridx = reg->GetHField()->m_sizew*outXYPos.y + outXYPos.x;
-		
 		if(pRegion)
 			*pRegion = reg;
 
+		if(!reg->m_roads)
+			return NULL;
+			
+		int ridx = outXYPos.y*m_cellsSize + outXYPos.x;
+		
 		return &reg->m_roads[ridx];
 	}
 

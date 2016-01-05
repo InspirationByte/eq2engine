@@ -43,12 +43,12 @@ void CViewParams::SetFOV(float fFov)
 	m_fFOV = fFov;
 }
 
-Vector3D CViewParams::GetOrigin() const
+const Vector3D& CViewParams::GetOrigin() const
 {
 	return m_vecOrigin;
 }
 
-Vector3D CViewParams::GetAngles() const
+const Vector3D& CViewParams::GetAngles() const
 {
 	return m_vecAngles;
 }

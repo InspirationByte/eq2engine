@@ -36,6 +36,8 @@ public:
 	CRegionEditFrame( wxWindow* parent );
 	~CRegionEditFrame();
 
+	void ProcessAllMenuCommands(wxCommandEvent& event);
+
 	void OnClose( wxCloseEvent& event );
 
 	void OnEraseBG( wxEraseEvent& event );
@@ -53,7 +55,13 @@ public:
 	void RefreshRegionMapImages();
 	void RegenerateRegionImage(regionMap_t* regMap);
 
+	void BuildAndSaveMapFromRegionImages();
+
+	DECLARE_EVENT_TABLE();
+
 protected:
+	wxMenuBar*		m_pMenu;
+
 	IEqSwapChain*	m_swapChain;
 
 	regionMap_t*	m_regionMap;

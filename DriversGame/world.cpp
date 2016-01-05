@@ -426,12 +426,19 @@ void CGameWorld::Init()
 		m_lensTable[0] = {1250.0f, lightId, ColorRGB(0.68f)};
 		m_lensTable[1] = {150.0f, lightId, ColorRGB(2.0f)};
 
-		m_lensTable[2] = {96.0f, lens4Id, ColorRGB(1.0f,0.65f,0.1f)};
-		m_lensTable[3] = {60.0f, lens3Id, ColorRGB(0.2f,0.3f,0.8f)};
-		m_lensTable[4] = {30.0f, lens2Id, ColorRGB(0.22f,0.9f,0.2f)};
-		m_lensTable[5] = {30.0f, lens1Id, ColorRGB(1,1,1)};
-		m_lensTable[6] = {60.0f, lens3Id, ColorRGB(1.0f,0.1f,0.05f)};
-		m_lensTable[7] = {120.0f, lens4Id, ColorRGB(1,1,1)};
+		m_lensTable[2] = {120.0f, lens4Id, ColorRGB(0.2f,0.3f,0.8f)};
+		m_lensTable[3] = {100.0f, lens2Id, ColorRGB(0.35f)};
+		m_lensTable[4] = {70.0f, lens2Id, ColorRGB(0.22f,0.9f,0.2f)};
+		m_lensTable[5] = {60.0f, lens1Id, ColorRGB(1,1,1)};
+
+		m_lensTable[6] = {50.0f, lens4Id, ColorRGB(0.65f)};
+		m_lensTable[7] = {50.0f, lens4Id, ColorRGB(0.65f)};
+
+		m_lensTable[8] = {60.0f, lens1Id, ColorRGB(1,1,1)};
+		m_lensTable[9] = {70.0f, lens2Id, ColorRGB(0.22f,0.9f,0.2f)};
+		m_lensTable[10] = {120.0f, lens2Id, ColorRGB(0.35f)};
+		m_lensTable[11] = {120.0f, lens4Id, ColorRGB(0.2f,0.3f,0.8f)};
+		
 	}
 
 	g_pPFXRenderer->PreloadMaterials();
@@ -1255,7 +1262,8 @@ void CGameWorld::DrawLensFlare( const Vector2D& screenSize, const Vector2D& scre
 
 	//Vertex2D_t verts[LENSFLARE_TABLE_SIZE*6];
 
-	float invTableSize = 1.0f / float(LENSFLARE_TABLE_SIZE);
+	float invTableSize = 1.0f / float(LENSFLARE_TABLE_SIZE-2);
+	const int halfTable = (LENSFLARE_TABLE_SIZE-2)/2;
 
 	for(int i = 0; i < LENSFLARE_TABLE_SIZE; i++)
 	{
@@ -1270,13 +1278,15 @@ void CGameWorld::DrawLensFlare( const Vector2D& screenSize, const Vector2D& scre
 		if(entry)
 			texCoords = entry->rect;
 
-		int cnt = i-1;
-
+		int cnt = i-2;
 		cnt = max(0,cnt);
 
-		Vector2D lensPos = screenPos + lensDir*(float(cnt)*invTableSize)*lensScale;
-
-		//debugoverlay->GetFont()->DrawText(varargs("LENS %d", i), lensPos.x, lensPos.y, 8, 8, false);
+		Vector2D lensPos;
+	
+		if(i < 2)
+			lensPos = screenPos + lensDir*(float(cnt)*invTableSize)*lensScale;
+		else
+			lensPos = halfScreen + lensDir*((0.5f+float(cnt-halfTable))*invTableSize)*lensScale;
 
 		float fScale = m_lensTable[i].scale;
 
