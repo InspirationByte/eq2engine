@@ -836,7 +836,7 @@ void CMainWindow::GetMouseScreenVectors(int x, int y, Vector3D& origin, Vector3D
 	dir = normalize(dir);
 }
 
-CLevelRegion* CMainWindow::GetRegionAtScreenPos(int mx, int my, Vector3D& pointPos)
+CLevelRegion* CMainWindow::GetRegionAtScreenPos(int mx, int my, float height, Vector3D& pointPos)
 {
 	int w, h;
 	m_pRenderPanel->GetSize(&w, &h);
@@ -848,7 +848,7 @@ CLevelRegion* CMainWindow::GetRegionAtScreenPos(int mx, int my, Vector3D& pointP
 	
 	// Trace many tiles from maximum height and testing the position
 
-	Plane pl(0,1,0,0);
+	Plane pl(0,1,0,-height);
 
 	float fNearest = MAX_COORD_UNITS;
 

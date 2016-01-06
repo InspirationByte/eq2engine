@@ -30,6 +30,7 @@ public:
 protected:
 	CLevelRegion*				m_selectedRegion;
 	IVector2D					m_mouseOverTile;
+	float						m_mouseOverTileHeight;
 
 	IVector2D					m_globalTile_lineStart;
 	IVector2D					m_globalTile_lineEnd;

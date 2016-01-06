@@ -267,7 +267,7 @@ void CUI_RoadEditor::OnRender()
 	{
 		CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
 
-		field->DebugRender(false);
+		field->DebugRender(false, m_mouseOverTileHeight);
 
 		DkList<Vertex3D_t> straight_verts(64);
 		straight_verts.resize(field->m_sizew*field->m_sizeh*6);

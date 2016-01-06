@@ -1422,7 +1422,30 @@ void CUI_HeightEdit::OnRender()
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	if(m_selectedRegion)
-		m_selectedRegion->GetHField(m_selectedHField)->DebugRender(m_drawHelpers->GetValue());
+	{
+		CHeightTileFieldRenderable* thisField = m_selectedRegion->GetHField(m_selectedHField);
+
+		/*
+		IVector2D hfieldPos = m_selectedRegion->GetHField(m_selectedHField)->m_regionPos;
+
+		int dx[8] = NEIGHBOR_OFFS_XDX(hfieldPos.x, 1);
+		int dy[8] = NEIGHBOR_OFFS_YDY(hfieldPos.y, 1);
+
+		// draw surrounding regions helpers
+		for(int i = 0; i < 8; i++)
+		{
+			CLevelRegion* nregion = g_pGameWorld->m_level.GetRegionAt(IVector2D(dx[i], dy[i]));
+
+			if(nregion && nregion->GetHField())
+			{
+				CHeightTileFieldRenderable* nField = nregion->GetHField();
+
+				nField->DebugRender(m_drawHelpers->GetValue(), m_mouseOverTileHeight);
+			}
+		}*/
+
+		thisField->DebugRender(m_drawHelpers->GetValue(), m_mouseOverTileHeight);
+	}
 
 	CBaseTilebasedEditor::OnRender();
 

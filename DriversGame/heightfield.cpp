@@ -886,13 +886,13 @@ void DrawGridH(int size, int count, const Vector3D& pos, const ColorRGBA &color,
 	materials->DrawPrimitivesFFP(PRIM_LINES, grid_vertices.ptr(), grid_vertices.numElem(), NULL, color, NULL, &depth, &raster);
 }
 
-void CHeightTileField::DebugRender(bool bDrawTiles)
+void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
 {
 	if(!m_sizew || !m_sizeh)
 		return;
 
 	Vector3D halfsize = Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
-	DrawGridH(HFIELD_POINT_SIZE, m_sizew*2, m_position + Vector3D(m_sizew*HFIELD_POINT_SIZE*0.5f, 0, m_sizew*HFIELD_POINT_SIZE*0.5f) - halfsize, ColorRGBA(1,1,1,0.1), false);
+	DrawGridH(HFIELD_POINT_SIZE, m_sizew*2, m_position + Vector3D(m_sizew*HFIELD_POINT_SIZE*0.5f, gridHeight, m_sizew*HFIELD_POINT_SIZE*0.5f) - halfsize, ColorRGBA(1,1,1,0.1), false);
 
 	if(!bDrawTiles)
 		return;
@@ -958,23 +958,6 @@ void CHeightTileField::DebugRender(bool bDrawTiles)
 	raster.scissor = false;
 
 	materials->DrawPrimitivesFFP(PRIM_TRIANGLES, tile_verts.ptr(), tile_verts.numElem(), NULL, color4_white, &blend, &depth, &raster);
-
-	/*
-	if(!m_verts || !m_indices)
-		Generate();
-
-	// draw debug polys
-
-	for(int i = 0; i < m_numIndices; i+=3)
-	{
-		int idx0 = m_indices[i];
-		int idx1 = m_indices[i+1];
-		int idx2 = m_indices[i+2];
-
-		debugoverlay->Polygon3D(m_verts[idx0].position, m_verts[idx1].position, m_verts[idx2].position,
-								ColorRGBA(0.25, 0.25, 0.25, 0.5f), 0.0f);
-	}
-	*/
 }
 
 //-----------------------------------------------------------------------------

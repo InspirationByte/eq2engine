@@ -15,6 +15,7 @@ CBaseTilebasedEditor::CBaseTilebasedEditor()
 	m_selectedRegion = NULL;
 	m_globalTile_pointSet = false;
 	m_selectedHField = 0;
+	m_mouseOverTileHeight = 0.0f;
 }
 
 void CBaseTilebasedEditor::ProcessMouseEvents( wxMouseEvent& event )
@@ -27,7 +28,7 @@ void CBaseTilebasedEditor::ProcessMouseEvents( wxMouseEvent& event )
 	g_pMainFrame->GetMouseScreenVectors(event.GetX(),event.GetY(), ray_start, ray_dir);
 
 	Vector3D point_pos;
-	m_selectedRegion = g_pMainFrame->GetRegionAtScreenPos(event.GetX(),event.GetY(), point_pos);
+	m_selectedRegion = g_pMainFrame->GetRegionAtScreenPos(event.GetX(),event.GetY(), m_mouseOverTileHeight, point_pos);
 
 	int x, y;
 	if( m_selectedRegion && m_selectedRegion->GetHField(m_selectedHField)->PointAtPos(point_pos, x, y) )
@@ -57,24 +58,15 @@ void CBaseTilebasedEditor::ProcessMouseEvents( wxMouseEvent& event )
 
 		if(tile)
 		{
-			/*
-			Vector3D zeroedPos = point_pos - m_selectedRegion->m_heightfield.m_position;
-
-			float p_size = (1.0f / HFIELD_POINT_SIZE);
-
-			Vector2D xz_pos = zeroedPos.xz() * p_size;
-
-			int box_x = xz_pos.x+0.5f;
-			int box_y = xz_pos.y+0.5f;
-
-			Vector3D box_pos(box_x*HFIELD_POINT_SIZE, tile->height*HFIELD_HEIGHT_STEP, box_y*HFIELD_POINT_SIZE);
-			Vector3D box_size(HFIELD_POINT_SIZE, 0.25, HFIELD_POINT_SIZE);
-
-			box_pos += m_selectedRegion->m_heightfield.m_position - Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
-
-			debugoverlay->Box3D(box_pos, box_pos+box_size, ColorRGBA(1,1,0,0.5f));
-			*/
 			m_mouseOverTile = IVector2D(x, y);
+
+			if(m_selectedRegion)
+				hfieldtile_t* tile = m_selectedRegion->GetHField(m_selectedHField)->GetTile(m_mouseOverTile.x, m_mouseOverTile.y);
+
+			if(tile)
+				m_mouseOverTileHeight = tile->height*HFIELD_HEIGHT_STEP;
+			else
+				m_mouseOverTileHeight = 0.0f;
 			
 			// process custom event
 			MouseEventOnTile(event, tile, x, y, point_pos);
@@ -114,4 +106,5 @@ void CBaseTilebasedEditor::OnRender()
 void CBaseTilebasedEditor::OnLevelUnload()
 {
 	m_selectedRegion = NULL;
+	m_mouseOverTileHeight = 0.0f;
 }

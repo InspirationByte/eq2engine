@@ -173,7 +173,7 @@ public:
 
 	bool						IsEmpty();
 
-	void						DebugRender(bool bDrawTiles);
+	void						DebugRender(bool bDrawTiles, float gridHeight);
 
 public:
 	Vector3D					m_position;		// translation of heightfield
