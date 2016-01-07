@@ -12,6 +12,9 @@
 #include "../shared_engine/physics/BulletConvert.h"
 using namespace EqBulletUtils;
 
+#include "ConVar.h"
+#include "DebugInterface.h"
+
 IEqPhysCallback::IEqPhysCallback( CEqRigidBody* object ) : m_object(object)
 {
 	ASSERT(m_object);
@@ -76,13 +79,13 @@ void CEqRigidBody::ComputeInertia()
 {
 	/*
 	FVector3D boxSize = m_mins-m_maxs;
-	
+
 	// compute inertia
 	FReal lx = boxSize.x*2.0f;
 	FReal ly = boxSize.y*2.0f;
 	FReal lz = boxSize.z*2.0f;
 
-	
+
 	m_inertia = FVector3D(	m_mass/FReal(12.0f) * (ly*ly + lz*lz),
 							m_mass/FReal(12.0f) * (lx*lx + lz*lz),
 							m_mass/FReal(12.0f) * (lx*lx + ly*ly));
@@ -238,7 +241,7 @@ void CEqRigidBody::Integrate(float delta)
 
 	if(ph_debug_body.GetBool())
 	{
-		debugoverlay->Text3D(m_position, 50.0f, ColorRGBA(1,1,1,1), 
+		debugoverlay->Text3D(m_position, 50.0f, ColorRGBA(1,1,1,1),
 			"Position: [%.2f %.2f %.2f]\n"
 			"Lin. vel: [%.2f %.2f %.2f] (%.2f)\n"
 			"Ang. vel: [%.2f %.2f %.2f]\n"
@@ -493,10 +496,10 @@ void CEqRigidBody::ConstructRenderMatrix( FMatrix4x4& outMatrix, const FVector3D
 //--------------------------------------------------------------------------------------------------------------------
 
 
-Vector3D ComputeFrictionVelocity(	const FVector3D& pos, 
-									const Vector3D& collNormal, 
-									const Vector3D& collPointVelocity, 
-									float normalImpulse, float denominator, 
+Vector3D ComputeFrictionVelocity(	const FVector3D& pos,
+									const Vector3D& collNormal,
+									const Vector3D& collPointVelocity,
+									float normalImpulse, float denominator,
 									float staticFriction, float dynamicFriction)
 {
 	Vector3D tangent_vel = collPointVelocity - dot(collPointVelocity, collNormal)  * collNormal;
@@ -528,10 +531,10 @@ Vector3D ComputeFrictionVelocity(	const FVector3D& pos,
 	return vec3_zero;
 }
 
-Vector3D ComputeFrictionVelocity2(	const FVector3D& pos, 
-									const Vector3D& collNormal, 
-									const Vector3D& collPointVelocityA, const Vector3D& collPointVelocityB, 
-									float normalImpulse, float denominator, 
+Vector3D ComputeFrictionVelocity2(	const FVector3D& pos,
+									const Vector3D& collNormal,
+									const Vector3D& collPointVelocityA, const Vector3D& collPointVelocityB,
+									float normalImpulse, float denominator,
 									float staticFriction, float dynamicFriction)
 {
 	Vector3D subVelocities = collPointVelocityA-collPointVelocityB;
@@ -568,7 +571,7 @@ Vector3D ComputeFrictionVelocity2(	const FVector3D& pos,
 ConVar ph_showcollisionresponses("ph_showcollisionresponses", "0");
 
 float ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& point, const Vector3D& normal, float posError, float restitutionA, float frictionA, float percentage)
-{	
+{
 	if(!body)
 		return 0.0f;
 
@@ -617,7 +620,7 @@ float ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& point, const V
 
 
 float ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* bodyB, const FVector3D& point, const Vector3D& normal, float posError)
-{	
+{
 	if(!bodyA || !bodyB)
 		return 0.0f;
 

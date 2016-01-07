@@ -39,7 +39,6 @@
 			<Add directory="public" />
 			<Add directory="public/core" />
 			<Add directory="public/platform" />
-			<Add directory="src_dependency/sdl2/include" />
 			<Add directory="src_dependency/oolua/include" />
 		</Compiler>
 		<Unit filename="public/VirtualStream.cpp" />

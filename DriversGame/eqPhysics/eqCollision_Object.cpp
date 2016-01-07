@@ -14,6 +14,10 @@
 
 #include "../shared_engine/physics/BulletConvert.h"
 
+#include "materialsystem/IMaterialSystem.h"
+
+#include "ConVar.h"
+
 using namespace EqBulletUtils;
 
 ConVar ph_margin("ph_margin", "0.0001", "no desc", CV_CHEAT);
@@ -326,7 +330,7 @@ bool CEqCollisionObject::CheckCanCollideWith( CEqCollisionObject* object )
 	{
 		return true;
 	}
-	
+
 	return false;
 }
 

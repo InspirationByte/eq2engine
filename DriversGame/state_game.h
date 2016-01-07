@@ -8,8 +8,8 @@
 #ifndef STATE_GAME_H
 #define STATE_GAME_H
 
-#include "StateManager.h"
 #include "ui_luaMenu.h"
+#include "StateManager.h"
 
 //--------------------------------------------------------------------------------------
 

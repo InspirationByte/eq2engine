@@ -4,7 +4,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium core bindings
 //
-//				
+//
 //
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -14,7 +14,7 @@
 
 #include "core_base_header.h"
 
-#include "network/NETThread.h"
+#include "Network/NETThread.h"
 
 void WMsg(const char* str)
 {
@@ -92,7 +92,7 @@ OOLUA_EXPORT_FUNCTIONS(Networking::CNetworkThread,	SendData, SendEvent, SendWait
 OOLUA_EXPORT_FUNCTIONS_CONST(Networking::CNetworkThread)
 
 
-OOLUA_EXPORT_FUNCTIONS(kvkeybase_t, 
+OOLUA_EXPORT_FUNCTIONS(kvkeybase_t,
 	Cleanup,
 	ClearValues,
 	SetName,
@@ -258,7 +258,7 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 
 	OOLUA::register_class<kvkeybase_t>(state);
 	OOLUA::register_class<KeyValues>(state);
-	
+
 	OOLUA::register_class<ISoundController>(state);
 	OOLUA::register_class<EmitParams>(state);
 	OOLUA::register_class<CSoundEmitterSystem>(state);

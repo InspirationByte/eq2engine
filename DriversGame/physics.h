@@ -19,8 +19,6 @@
 
 #include "drivers_coord.h"
 
-#include "LuaBinding_Drivers.h"
-
 class CHeightTileField;
 
 class CGameObject;

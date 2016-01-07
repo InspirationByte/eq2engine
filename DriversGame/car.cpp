@@ -208,7 +208,7 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 			else
 			{	// simple colors
 				ColorRGBA c1 = KV_GetVector4D(colKey, 0, color4_white);
-				
+
 				if( c1.w > 1.0f )
 					c1 /= 255.0f;
 
@@ -268,7 +268,7 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 #define SKIDMARK_MIN_INTERVAL		(0.25f)
 
 // wheel friction modifier on diferrent weathers
-static float weatherTireFrictionMod[WEATHER_COUNT] = 
+static float weatherTireFrictionMod[WEATHER_COUNT] =
 {
 	1.0f,
 	0.8f,
@@ -422,7 +422,7 @@ public:
 
 			effect.fZAngle = 0.0f;
 		}*/
-		
+
 		effect.fWide = fStartSize;
 		effect.fTall = fStartSize;
 
@@ -818,7 +818,7 @@ CCar::CCar( carConfigEntry_t* config ) :
 	m_engineSmokeTime(0.0f),
 	m_carColor(ColorRGBA(0.9,0.25,0.25,1.0)),
 	m_enablePhysics(true),
-	
+
 	m_accelRatio(1023),
 	m_brakeRatio(1023),
 	m_steerRatio(1023),
@@ -842,7 +842,7 @@ CCar::CCar( carConfigEntry_t* config ) :
 		SetColorScheme(0);
 		m_maxSpeed = m_conf->m_maxSpeed;
 	}
-		
+
 }
 
 void CCar::DebugReloadCar()
@@ -879,13 +879,13 @@ void CCar::Precache()
 	PrecacheScriptSound("generic.crash");
 	PrecacheScriptSound("generic.wheelOnGround");
 	PrecacheScriptSound("generic.waterHit");
-	
+
 }
 
 void CCar::CreateCarPhysics()
 {
 	CEqRigidBody* body = new CEqRigidBody();
-	
+
 	int wheelCacheId = g_pModelCache->PrecacheModel( "models/vehicles/wheel.egf" );
 	IEqModel* wheelModel = g_pModelCache->GetModel( wheelCacheId );
 
@@ -1111,8 +1111,8 @@ void CCar::AlignToGround()
 	*/
 
 	float suspLowPos = lerp(m_conf->m_wheels[0].suspensionTop.y, m_conf->m_wheels[0].suspensionBottom.y, 0.85f);
-	
-	
+
+
 
 	pos = Vector3D(m_vecOrigin.x, pos.y - suspLowPos, m_vecOrigin.z);
 
@@ -1461,7 +1461,7 @@ void CCar::UpdateCarPhysics(float delta)
 	}
 	else
 		m_fAcceleration = fAccel;
-	
+
 	#define RPM_REFRESH_TIMES 16
 
 	float fDeltaRpm = delta / RPM_REFRESH_TIMES;
@@ -1488,7 +1488,7 @@ void CCar::UpdateCarPhysics(float delta)
 		else
 			m_steering = fSteerAngle;
 	}
-	
+
 	if (FPmath::abs(fSteerAngle) > 0.5f)
 	{
 		FReal steerHelp_diff = fSteerAngle-m_steeringHelper;
@@ -1647,7 +1647,7 @@ void CCar::UpdateCarPhysics(float delta)
 	m_radsPerSec = (float)fabs(wheelsSpeed)*torqueConvert;
 	FReal torque = DBTorqueCurve( m_radsPerSec ) * m_conf->m_torqueMult;
 
-	float gbxDecelRate = 1.0f - clamp(1.0f-m_fAcceleration, 0.0f, 0.0f);
+	float gbxDecelRate = 1.0f - clamp(1.0f-(float)m_fAcceleration, 0.0f, 0.0f);
 
  	if(torque < 0)
 		torque = 0.0f;
@@ -1772,7 +1772,7 @@ void CCar::UpdateCarPhysics(float delta)
 		fAcceleration = 0;
 
 	m_fAccelEffect += ((fAcceleration-FPmath::abs(fBreakage))-m_fAccelEffect) * delta * ACCELERATION_SOUND_CONST * accel_scale;
-	m_fAccelEffect = clamp(m_fAccelEffect, -1.0f, 1.0f);
+	m_fAccelEffect = clamp(m_fAccelEffect, FReal(-1.0f), FReal(1.0f));
 
 	float fRpm = m_radsPerSec * ( 60.0f / ( 2.0f * PI_F ));
 
@@ -1788,7 +1788,7 @@ void CCar::UpdateCarPhysics(float delta)
 	}
 
 	float fAccelerator = float(fAcceleration * torque) * m_torqueScale;
-	float fBraker = fBreakage*pow(m_torqueScale, 0.5f);
+	float fBraker = (float)fBreakage*pow(m_torqueScale, 0.5f);
 
 	// Limit the speed
 	if(GetSpeed() > m_maxSpeed)
@@ -2002,7 +2002,7 @@ void CCar::UpdateCarPhysics(float delta)
 					wheelTractionForce += fabs(fBraker * wheelConf.brakeTorque) * wheelTractionFrictionScale * 4.0f * (1.0f+springPowerFac);
 				}
 			}
-			
+
 			if((wheelConf.flags & WHEEL_FLAG_HANDBRAKE) && fHandbrake > 0.0f)
 			{
 				const float HANDBRAKE_TORQUE = 8500.0f;
@@ -2039,7 +2039,7 @@ void CCar::UpdateCarPhysics(float delta)
 			float fVelDamp = sign(wheelPitchSpeed)*clamp(fabs(wheelPitchSpeed), 0.0f, 1.0f);
 
 			springForce -= wheelTractionForceDir * fVelDamp * (1.0f-dampingFactor) * WHELL_ROLL_RESISTANCE_CONST;
-			springForce -= wheelTractionForceDir * wheelPitchSpeed * (1.0f-dampingFactor)*(8.0f + (1.0f-clamp(fAccel+(float)fabs(fBrake), 0.0f, 1.0f))*WHELL_ROLL_RESISTANCE_CONST);
+			springForce -= wheelTractionForceDir * wheelPitchSpeed * (1.0f-dampingFactor)*(8.0f + (1.0f-clamp((float)fAccel+(float)fabs(fBrake), 0.0f, 1.0f))*WHELL_ROLL_RESISTANCE_CONST);
 
 			// spring force position in a couple with antiroll
 			Vector3D springForcePos = wheel.collisionInfo.position;
@@ -2070,8 +2070,8 @@ void CCar::UpdateCarPhysics(float delta)
 
 		if(wheel.isBurningOut)
 		{
-			if((wheelConf.flags & WHEEL_FLAG_DRIVE) 
-				&& wheel.pitchVel < 0 
+			if((wheelConf.flags & WHEEL_FLAG_DRIVE)
+				&& wheel.pitchVel < 0
 				&& bDoBurnout)
 				fPitchFac = 1.0f;
 
@@ -2229,7 +2229,7 @@ void CCar::OnPhysicsFrame( float fDt )
 				newVelocity.y = carBody->GetLinearVelocity().y;
 				carBody->SetLinearVelocity( newVelocity );
 			}
-			
+
 			carBody->TryWake();
 
 			velocitySet = true;
@@ -2406,8 +2406,8 @@ void CCar::Simulate( float fDt )
 		return;
 
 	bool bLightsOn = m_enabled && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS) || g_night.GetBool();
-	
-	if( bLightsOn && m_isLocalCar && 
+
+	if( bLightsOn && m_isLocalCar &&
 		(m_bodyParts[CB_FRONT_LEFT].damage < 1.0f || m_bodyParts[CB_FRONT_RIGHT].damage < 1.0f) )
 	{
 		float lightIntensity = 1.0f;
@@ -2441,7 +2441,7 @@ void CCar::Simulate( float fDt )
 		light.position = Vector4D(lerp(startLightPos, lightPos + Vector3D(0,2,0), light_coll.fract), 18.0f*(light_coll.fract+0.15f));
 
 		light.color = ColorRGBA(0.7, 0.6, 0.5, lightIntensity);
-			
+
 		g_pGameWorld->AddLight(light);
 	}
 
@@ -2457,16 +2457,16 @@ void CCar::Simulate( float fDt )
 
 #ifndef EDITOR
 	// don't render car
-	if(	g_CurrCameraMode == CAM_MODE_INCAR && 
+	if(	g_CurrCameraMode == CAM_MODE_INCAR &&
 		g_pGameSession->GetViewCar() == this)
 		bDraw = false;
 #endif // EDITOR
 
 	float frontDamageSum = m_bodyParts[CB_FRONT_LEFT].damage+m_bodyParts[CB_FRONT_RIGHT].damage;
 
-	if(	bDraw && 
-		(!m_inWater || IsAlive()) && 
-		m_engineSmokeTime > 0.1f && 
+	if(	bDraw &&
+		(!m_inWater || IsAlive()) &&
+		m_engineSmokeTime > 0.1f &&
 		GetSpeed() < 80.0f)
 	{
 		if(frontDamageSum > 0.55f)
@@ -2493,7 +2493,7 @@ void CCar::Simulate( float fDt )
 
 		// make exhaust light smoke
 		if(	m_isLocalCar &&
-			m_conf->m_exhaustDir != -1 && 
+			m_conf->m_exhaustDir != -1 &&
 			GetSpeed() < 15.0f)
 		{
 			Vector3D smokePos = (m_worldMatrix * Vector4D(m_conf->m_exhaustPosition, 1.0f)).xyz();
@@ -2526,7 +2526,7 @@ void CCar::Simulate( float fDt )
 													smokeCol, smokeCol, alphaModifier*alphaScale);
 			effectrenderer->RegisterEffectForRender(pSmoke);
 		}
-		
+
 
 		m_engineSmokeTime = 0.0f;
 	}
@@ -2549,7 +2549,7 @@ void CCar::Simulate( float fDt )
 
 				PoliceSirenEffect(m_curTime, col1, siren_position, rightVec, -m_conf->m_sirenPositionWidth.x, m_conf->m_sirenPositionWidth.w);
 				PoliceSirenEffect(-m_curTime, col2, siren_position, rightVec, m_conf->m_sirenPositionWidth.x, m_conf->m_sirenPositionWidth.w);
-				
+
 				float fSin = fabs(sinf(m_curTime*16.0f));
 				float fSinFactor = clamp(fSin, 0.5f, 1.0f);
 
@@ -2788,7 +2788,7 @@ void CCar::Simulate( float fDt )
 
 		}
 	}
-	
+
 	bool drawOnLocal = m_isLocalCar && (r_drawSkidMarks.GetInt() != 0);
 	bool drawOnOther = !m_isLocalCar && (r_drawSkidMarks.GetInt() == 2);
 
@@ -2827,7 +2827,7 @@ void CCar::Simulate( float fDt )
 				wheel.skidMarks.append(lastPair);
 			}
 
-			
+
 
 			float fSkid = (GetTractionSlidingAtWheel(i)+fabs(GetLateralSlidingAtWheel(i)))*0.15f;
 
@@ -2858,7 +2858,7 @@ void CCar::Simulate( float fDt )
 					{
 						wheel.skidMarks.append(skidmarkPair);
 					}
-					else if(wheel.skidMarks.numElem() > 2 && 
+					else if(wheel.skidMarks.numElem() > 2 &&
 							wheel.skidMarks[wheel.skidMarks.numElem()-1].v0.color.x >= 0.0f)
 					{
 						wheel.skidMarks[wheel.skidMarks.numElem()-1] = skidmarkPair;
@@ -2926,7 +2926,7 @@ void CCar::Simulate( float fDt )
 
 					vtxCounter = 0;
 				}
-			}		
+			}
 		}
 	}
 }
@@ -3020,7 +3020,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 		else if(wheel.surfparam->word == 'G' || wheel.surfparam->word == 'D')	// grass or dirt
 		{
 			wheel.smokeTime -= fDt;
-			
+
 
 			if(GetTractionSlidingAtWheel(nWheel) > 5.0f || fabs(GetLateralSlidingAtWheel(nWheel)) > 2.5f)
 			{
@@ -3210,17 +3210,17 @@ void CCar::UpdateSounds( float fDt )
 
 	float fIdleFac = (m_fEngineRPM > 1800) || fAccelOrBrake ? 0.0f : 1.0f;
 
-	m_engineIdleFactor = clamp(m_engineIdleFactor - sign(m_engineIdleFactor-fIdleFac)*fDt*(1.5f+m_fAcceleration), 0.0f, 1.0f);
+	m_engineIdleFactor = clamp(m_engineIdleFactor - sign(m_engineIdleFactor-fIdleFac)*fDt*(1.5f+(float)m_fAcceleration), 0.0f, 1.0f);
 
 	float fEngineSoundVol = clamp((1.0f - m_engineIdleFactor), 0.45f, 1.0f);
-	
-	float fRPMDiff = clamp( RemapVal(fabs(GetRPM() - m_fEngineRPM), 0, 50.0f, 0.0f, 1.0f) + m_fAccelEffect, 0.0f, 1.0f);
+
+	float fRPMDiff = clamp( RemapVal(fabs(GetRPM() - m_fEngineRPM), 0, 50.0f, 0.0f, 1.0f) + (float)m_fAccelEffect, 0.0f, 1.0f);
 
 	if(!m_isLocalCar)
 		fRPMDiff = 1.0f;
 
 #ifndef EDITOR
-	if(g_pCameraAnimator->GetMode() == CAM_MODE_INCAR && 
+	if(g_pCameraAnimator->GetMode() == CAM_MODE_INCAR &&
 		g_pGameSession->GetViewCar() == this)
 	{
 		SetSoundVolumeScale(0.5f);
@@ -3557,7 +3557,7 @@ void CCar::Draw( int nRenderFlags )
 
 #ifndef EDITOR
 	// don't render car
-	if(	g_pCameraAnimator->GetMode() == CAM_MODE_INCAR && 
+	if(	g_pCameraAnimator->GetMode() == CAM_MODE_INCAR &&
 		g_pGameSession->GetViewCar() == this)
 		bDraw = false;
 #endif // EDITOR
@@ -3840,22 +3840,22 @@ int CCar::GetPursuedCount() const
 OOLUA_EXPORT_FUNCTIONS(
 	CCar,
 	AlignToGround,
-	SetColorScheme, 
-	SetMaxDamage, 
+	SetColorScheme,
+	SetMaxDamage,
 	SetMaxSpeed,
 	SetTorqueScale,
-	SetDamage, 
-	Repair, 
+	SetDamage,
+	Repair,
 	SetFelony,
-	Lock, 
-	Enable, 
-	GetLateralSliding, 
-	GetTractionSliding, 
+	Lock,
+	Enable,
+	GetLateralSliding,
+	GetTractionSliding,
 	SetInfiniteMass
 )
 
 OOLUA_EXPORT_FUNCTIONS_CONST(
-	CCar, 
+	CCar,
 	IsAlive,
 	IsInWater,
 	IsAnyWheelOnGround,

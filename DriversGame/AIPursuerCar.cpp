@@ -46,14 +46,14 @@ const float AI_COP_TIME_TO_LOST_TARGET = 30.0f;
 const float AI_COP_TIME_TO_UPDATE_PATH = 2.0f;	// every 2 seconds
 
 // wheel friction modifier on diferrent weathers
-static float pursuerSpeedModifier[WEATHER_COUNT] = 
+static float pursuerSpeedModifier[WEATHER_COUNT] =
 {
 	1.0f,
 	0.86f,
 	0.8f
 };
 
-static float pursuerBrakeDistModifier[WEATHER_COUNT] = 
+static float pursuerBrakeDistModifier[WEATHER_COUNT] =
 {
 	1.0f,
 	1.2f,
@@ -148,7 +148,7 @@ void CAIPursuerCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 		//m_hornTime.Set(0.7f, 0.5f);
 
 		m_hasDamage = true;
-	
+
 		CCar* playerCar = g_pGameSession->GetPlayerCar();
 
 		if (m_targInfo.target == NULL &&
@@ -190,7 +190,7 @@ void CAIPursuerCar::OnPrePhysicsFrame( float fDt )
 
 	CCar* playerCar = g_pGameSession->GetPlayerCar();
 	if(	IsAlive()&&
-		!m_enabled && 
+		!m_enabled &&
 		CheckObjectVisibility(playerCar) &&
 		playerCar->GetFelony() > AI_COP_MINFELONY &&
 		playerCar->GetPursuedCount() == 0)
@@ -241,7 +241,7 @@ int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 
 	// check infraction in visible range
 	if( m_targInfo.target == NULL &&
-		m_gameDamage < m_gameMaxDamage && 
+		m_gameDamage < m_gameMaxDamage &&
 		CheckObjectVisibility(playerCar))
 	{
 		int infraction = CheckTrafficInfraction(playerCar);
@@ -295,7 +295,7 @@ void CAIPursuerCar::EndPursuit(bool death)
 
 	m_targInfo.target->DecrementPursue();
 
-	if (m_targInfo.target->GetPursuedCount() == 0 && 
+	if (m_targInfo.target->GetPursuedCount() == 0 &&
 		g_pGameSession->GetPlayerCar() == m_targInfo.target &&
 		g_State_Game->IsGameRunning())	// only play sound when in game, not unloading or restaring
 	{
@@ -534,7 +534,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 			if (m_conf->m_sirenType != SIREN_NONE)
 				m_sirenEnabled = true;
 
-			if (m_targInfo.target->GetPursuedCount() == 0 && 
+			if (m_targInfo.target->GetPursuedCount() == 0 &&
 				g_pGameSession->GetPlayerCar() == m_targInfo.target)
 			{
 				if (m_targInfo.target->GetFelony() >= AI_COP_MINFELONY)
@@ -600,7 +600,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 		if (m_type == PURSUER_TYPE_COP)
 		{
-			if(	m_targInfo.lastInfraction > INFRACTION_HAS_FELONY && 
+			if(	m_targInfo.lastInfraction > INFRACTION_HAS_FELONY &&
 				m_targInfo.nextCheckImpactTime < 0 )
 			{
 				m_targInfo.nextCheckImpactTime = AI_COP_COLLISION_CHECKTIME;
@@ -663,7 +663,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 				if (targetDir > 3)
 					targetDir -= 4;
-		
+
 				if( m_targInfo.direction != targetDir && targetDir < 4)
 				{
 					if(Speak("cop.heading"))
@@ -778,7 +778,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	if( !doesHaveStraightPath &&
 		m_targInfo.path.points.numElem() > 0 &&
-		m_targInfo.pathTargetIdx != -1 && 
+		m_targInfo.pathTargetIdx != -1 &&
 		m_targInfo.pathTargetIdx < m_targInfo.path.points.numElem()-1)
 	{
 		Vector3D currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[m_targInfo.pathTargetIdx]);
@@ -843,7 +843,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	FReal carForwardSpeed = dot(GetForwardVector(), GetVelocity());
 
-	FReal fSteeringAngle = clamp(fSteerTarget*0.5f, -1.0f, 1.0f);
+	FReal fSteeringAngle = clamp(fSteerTarget*0.5f, FReal(-1.0f), FReal(1.0f));
 
 	FReal accelerator = 1.0f;
 	FReal brake = 0.0f;
@@ -885,7 +885,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	float pursuitTargetSpeed = m_targInfo.target->GetSpeed();
 
-	if(	!m_targInfo.isAngry && 
+	if(	!m_targInfo.isAngry &&
 		distToTargetReal < 14.0f)
 	{
 		float distFactor = float(distToTarget) / 14.0f;
@@ -898,7 +898,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		else
 			accelerator *= 0.2f;
 
-		accelerator = max(0,accelerator);
+		accelerator = max(FReal(0),accelerator);
 
 		controls |= IN_BRAKE;
 	}
@@ -922,7 +922,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		}
 
 		brake += 1.0f-velocityColl.fract;
-		brake += fabs( GetLateralSlidingAtBody()*0.25f );
+		brake += (FReal)fabs( GetLateralSlidingAtBody()*0.25f );
 	}
 
 	if( fabs(fSteerTarget) >= 1.0f && carForwardSpeed > 10.0f )
@@ -934,7 +934,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	}
 	else if(fSpeed > 10.0f)
 	{
-		accelerator -= fabs(fSteeringAngle)*0.5f;
+		accelerator -= (FReal)fabs(fSteeringAngle)*0.5f;
 	}
 
 	if(GetSpeedWheels() < -1.0f)
@@ -943,7 +943,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	m_autohandbrake = doesHardSteer;
 
 	SetControlButtons( controls );
-	SetControlVars(accelerator, brake, clamp(fSteeringAngle, -1.0f, 1.0f));
+	SetControlVars(accelerator, brake, clamp(fSteeringAngle, FReal(-1.0f), FReal(1.0f)));
 
 	return 0;
 }
@@ -954,7 +954,7 @@ int	CAIPursuerCar::DeadState( float fDt, EStateTransition transition )
 	{
 		m_pSirenSound->SetPitch( m_deathTime / AI_COP_DEATHTIME );
 		m_deathTime -= fDt;
-	
+
 		if(m_deathTime <= 0.0f)
 			m_sirenEnabled = false;
 	}
@@ -984,7 +984,7 @@ void CAIPursuerCar::SetPursuitTarget(CCar* obj)
 }
 
 OOLUA_EXPORT_FUNCTIONS(
-	CAIPursuerCar, 
+	CAIPursuerCar,
 	SetPursuitTarget,
 	CheckObjectVisibility,
 	BeginPursuit,

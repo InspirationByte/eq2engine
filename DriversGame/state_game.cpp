@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 //
-// TODO: 
+// TODO:
 //		- General code refactoring from C-style to better C++ style
 //		- Move replay director to separate source files and as a state
 //		- Finally make CDrvSynHUDManager useful in native and Lua code
@@ -75,7 +75,7 @@ void Game_QuickRestart(bool demo)
 		return;
 
 	//SetCurrentState(NULL);
-	
+
 	if(!demo)
 	{
 		g_replayData->Stop();
@@ -247,7 +247,7 @@ void Game_InitializeSession()
 
 	OOLUA::set_global(GetLuaState(), "gameses", g_pGameSession);
 	OOLUA::set_global(GetLuaState(), "gameHUD", g_pGameHUD);
-	
+
 #endif // __INTELLISENSE__
 
 	if(g_replayData->m_state != REPL_INITIALIZE)
@@ -307,7 +307,7 @@ void Game_HandleKeys(int key, bool down)
 			playerCar->m_accelRatio = 1023;
 			playerCar->m_brakeRatio = 1023;
 		}
-		else if((g_nClientButtons & IN_TURNLEFT) != (g_nOldControlButtons & IN_TURNLEFT) || 
+		else if((g_nClientButtons & IN_TURNLEFT) != (g_nOldControlButtons & IN_TURNLEFT) ||
 				(g_nClientButtons & IN_TURNRIGHT) != (g_nOldControlButtons & IN_TURNRIGHT))
 		{
 			playerCar->m_steerRatio = 1024;
@@ -336,7 +336,7 @@ void Game_MouseMove( int x, int y, float deltaX, float deltaY )
 {
 	g_pHost->SetCenterMouseEnable( g_freecam.GetBool() || g_freelook.GetBool() );
 	g_pHost->SetCursorShow( g_pSysConsole->IsVisible() );
-	
+
 	if(g_freelook.GetBool())
 	{
 		g_camera_angle.x += deltaY * g_mouse_sens.GetFloat();
@@ -480,7 +480,7 @@ void Game_UpdateCamera( float fDt )
 
 	CCar* viewedCar = g_pGameSession->GetViewCar();
 
-	if(!g_freecam.GetBool() && 
+	if(!g_freecam.GetBool() &&
 		g_replayData->m_state == REPL_PLAYING &&
 		g_replayData->m_cameras.numElem() > 0)
 	{
@@ -536,9 +536,9 @@ void Game_UpdateCamera( float fDt )
 		}
 
 		g_pCameraAnimator->Animate((ECameraMode)camMode,
-									g_nClientButtons, 
-									carBody->GetPosition(), m, carBody->GetLinearVelocity(), 
-									fDt, 
+									g_nClientButtons,
+									carBody->GetPosition(), m, carBody->GetLinearVelocity(),
+									fDt,
 									g_camera_angle);
 	}
 
@@ -562,12 +562,12 @@ void Game_UpdateCamera( float fDt )
 		if(viewedCar)
 			camera = g_pCameraAnimator->GetCamera();
 
-		// always 
+		// always
 		g_camera_freepos = camera.GetOrigin();
 		g_camera_freeangles = camera.GetAngles();
 		g_camera_fov = DIRECTOR_DEFAULT_CAMERA_FOV;
 	}
-		
+
 
 
 
@@ -712,8 +712,8 @@ void Game_DrawDirectorUI( float fDt )
 	{
 		Vector2D halfScreen = screenSize / 2;
 
-		Vertex2D_t tmprect[] = 
-		{ 
+		Vertex2D_t tmprect[] =
+		{
 			Vertex2D_t(halfScreen+Vector2D(0,-3), vec2_zero),
 			Vertex2D_t(halfScreen+Vector2D(3,3), vec2_zero),
 			Vertex2D_t(halfScreen+Vector2D(-3,3), vec2_zero)
@@ -772,7 +772,7 @@ void Game_Frame(float fDt)
 		debugoverlay->Text(ColorRGBA(1,1,0,1), "*** camera position: %g %g %g", viewpos.x,viewpos.y,viewpos.z);
 		debugoverlay->Text(ColorRGBA(1,1,0,1), "*** camera rotation: %g %g %g", viewrot.x,viewrot.y,viewrot.z);
 	}
-	
+
 
 	effectrenderer->SetViewSortPosition(curView->GetOrigin());
 
@@ -927,7 +927,7 @@ void CState_Game::QuickRestart(bool replay)
 	g_pGameHUD->Init();
 
 	g_pGameWorld->Init();
-	
+
 	Game_InitializeSession();
 
 	//-------------------------
@@ -1066,7 +1066,7 @@ bool CState_Game::Update( float fDt )
 
 	if(!g_pGameSession)
 		return false;
-		 
+
 	if(!m_isGameRunning)
 	{
 		materials->Setup2D(g_pHost->m_nWidth, g_pHost->m_nHeight);
@@ -1117,7 +1117,7 @@ bool CState_Game::Update( float fDt )
 			SetupMenuStack("MissionEndMenuStack");
 		}
 	}
-	
+
 	bool pauseState = (g_pause.GetBool() || m_showMenu) && (g_pGameSession->GetSessionType() == SESSION_SINGLE) || g_pGameSession->IsGameDone();
 
 	if( pauseState )
@@ -1209,7 +1209,7 @@ bool CState_Game::Update( float fDt )
 	}
 
 	DrawMenu(fDt);
-	
+
 	return true;
 }
 
@@ -1247,14 +1247,14 @@ void CState_Game::DrawMenu( float fDt )
 
 		fontParam.textColor = ColorRGBA(0.7f,0.7f,0.7f,1.0f);
 		font->RenderText(m_menuTitleToken ? m_menuTitleToken->GetText() : L"Undefined token", mTextPos, fontParam);
-	
+
 		oolua_ipairs(m_menuElems)
 			int idx = _i_index_-1;
 
 			OOLUA::Table elem;
 			m_menuElems.safe_at(_i_index_, elem);
 
-			wchar_t* token = NULL;
+			const wchar_t* token = NULL;
 
 			ILocToken* tok = NULL;
 			if(elem.safe_at("label", tok))
@@ -1278,7 +1278,7 @@ void CState_Game::DrawMenu( float fDt )
 
 			font->RenderText(token ? token : L"No token", eTextPos, fontParam);
 		oolua_ipairs_end()
-			
+
 	}
 }
 
@@ -1322,7 +1322,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 	{
 		if(!down)
 			return;
-		
+
 		if(key == KEY_ENTER)
 		{
 			PreEnterSelection();

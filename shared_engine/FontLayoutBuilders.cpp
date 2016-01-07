@@ -7,7 +7,11 @@
 
 #include "FontLayoutBuilders.h"
 
-void CRectangleTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params, 
+#ifdef LINUX
+#include <wctype.h> // iswspace
+#endif
+
+void CRectangleTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params,
 										void* strCurPos, bool isWideChar,
 										int lineNumber,
 										const Vector2D& textStart,
@@ -19,7 +23,7 @@ void CRectangleTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params,
 	m_linesProduced++;
 
 	float newlineStringWidth;
-	
+
 	if(isWideChar)
 		newlineStringWidth = m_font->GetStringWidth( (wchar_t*)strCurPos, params.styleFlag, -1, '\n' );
 	else
@@ -63,7 +67,7 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 		float wordSize = cSize.x; // per-char wrapping
 
 		bool wordWrap = m_wordWrapMode && m_newWord;
-	
+
 		if( wordWrap ) // per-word wrapping
 		{
 			if(isWideChar)
@@ -78,7 +82,7 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 			m_wordWrapMode = false;
 			wordSize = cSize.x; // per-char wrapping
 		}
-			
+
 		// check character/word right bound is outside the rectangle right bound
 		if( curTextPos.x+wordSize > m_rectangle.vrightBottom.x )
 		{
@@ -88,7 +92,7 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 			if( params.align != TEXT_ALIGN_LEFT )
 			{
 				float newlineStringWidth;
-				
+
 				if(isWideChar) // TODO: must be calculated until next word wrap
 					newlineStringWidth = m_font->GetStringWidth( (wchar_t*)strCurPos, params.styleFlag, -1, '\n' );
 				else

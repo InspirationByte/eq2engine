@@ -6,12 +6,14 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 //
-// TODO: 
+// TODO:
 //		- General code refactoring from C-style to better C++ style
 //		- Remove junk and unused code
 //		- Better names instead of GAME_STATE_* names
 //		- Lua state
 //
+
+#include "LuaBinding_Drivers.h"
 
 #include "StateManager.h"
 #include "session_stuff.h"
@@ -108,7 +110,7 @@ void InitRegisterStates()
 	g_states[GAME_STATE_GAME] = g_State_Game;
 	g_states[GAME_STATE_TITLESCREEN] = g_State_Title;
 	g_states[GAME_STATE_MAINMENU] = g_State_MainMenu;
-	
+
 	// TODO: other states
 
 	// init the current state

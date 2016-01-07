@@ -4,7 +4,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Physics model cache for bullet physics
 //				Generates real shapes for Bullet Collision
-// 
+//
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "BulletShapeCache.h"
@@ -13,8 +13,11 @@
 
 #include "BulletConvert.h"
 
-
 #include "eqGlobalMutex.h"
+
+#include "ConVar.h"
+#include "DebugInterface.h"
+
 using namespace EqBulletUtils;
 using namespace Threading;
 
@@ -105,8 +108,8 @@ void CBulletStudioShapeCache::InitStudioCache( physmodeldata_t* studioData )
 			btCollisionShape* shape = InternalGenerateShape(
 									studioData->numVertices,
 									studioData->vertices,
-									studioData->indices + studioData->shapes[nShape].shape_info.startIndices, 
-									studioData->shapes[nShape].shape_info.numIndices, 
+									studioData->indices + studioData->shapes[nShape].shape_info.startIndices,
+									studioData->shapes[nShape].shape_info.numIndices,
 									(EPODShapeType)studioData->shapes[nShape].shape_info.type, ph_studioShapeMargin.GetFloat());
 
 			// cast physics POD index to index in physics engine

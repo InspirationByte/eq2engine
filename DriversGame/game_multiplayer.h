@@ -153,7 +153,7 @@ OOLUA_PROXY(CNetGameSession, CGameSession)
 	OOLUA_MFUNC_CONST(GetNumPlayers)
 OOLUA_PROXY_END
 #endif // __INTELLISENSE__
-#endif NO_LUA
+#endif // NO_LUA
 
 //---------------------------------------------------------------
 

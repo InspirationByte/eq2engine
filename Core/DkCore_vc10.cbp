@@ -52,7 +52,6 @@
 			<Add directory="../public" />
 			<Add directory="../public/core" />
 			<Add directory="../public/platform" />
-			<Add directory="../src_dependency/sdl2/include" />
 		</Compiler>
 		<Linker>
 			<Add option="`pkg-config gtk+-2.0 --libs`" />

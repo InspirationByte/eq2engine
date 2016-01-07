@@ -47,7 +47,6 @@
 			<Add directory="../../public/core" />
 			<Add directory="../../public/platform" />
 			<Add directory="../../public/materialsystem/renderers" />
-			<Add directory="../../src_dependency/sdl2/include" />
 		</Compiler>
 		<Linker>
 			<Add option="-lstdc++ -m32 -pthread -l:libeqCore.so `pkg-config gtk+-2.0 --libs`" />

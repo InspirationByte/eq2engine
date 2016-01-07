@@ -5,6 +5,8 @@
 // Description: Networking game state
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "luabinding/LuaBinding.h"
+
 #include "game_multiplayer.h"
 #include "NetPlayer.h"
 #include "StateManager.h"
@@ -49,7 +51,7 @@ DECLARE_CMD(connect, "connects to server/game/lobby", 0)
 	if( g_pClientInterface->Connect(net_address.GetString(), net_serverport.GetInt(), net_clientport.GetInt()))
 	{
 		CNetworkThread connectionThread(g_pClientInterface);
-	
+
 		connectionThread.RegisterEventList(NETEVENT_LIST(CLIENT_EVENTS), true);
 
 		connectionThread.StartThread("ClientConnectionThread");
@@ -95,7 +97,7 @@ DECLARE_CMD(connect, "connects to server/game/lobby", 0)
 
 					// TODO: set client info to new session
 					g_pGameWorld->SetLevelName( levName.c_str() );
-				
+
 					g_pGameWorld->SetEnvironmentName( envName.c_str() );
 
 					// load game
@@ -256,7 +258,7 @@ void CNetGameSession::InitLocalPlayer(netspawninfo_t* spawnInfo, int clientID, i
 void CNetGameSession::SetLocalPlayer(CNetPlayer* player)
 {
 	m_localPlayer = player;
-	
+
 	if(m_localPlayer)
 	{
 		SetPlayerCar( m_localPlayer->m_ownCar );
@@ -323,7 +325,7 @@ bool CNetGameSession::Create_Client()
 	m_maxPlayers = g_svclientInfo.maxPlayers;
 
 	m_players.setNum( m_maxPlayers );
-	 
+
 	for(int i = 0; i < m_players.numElem(); i++)
 		m_players[i] = NULL;
 
@@ -346,7 +348,7 @@ bool CNetGameSession::Create_Client()
 	}
 	else
 		return false;
-	
+
 	return true;
 }
 
@@ -510,7 +512,7 @@ void CNetGameSession::Shutdown()
 			// send to other clients
 			m_netThread.SendEvent( new CNetDisconnectEvent(m_players[i]->m_id, "server shutdown"), CMSG_DISCONNECT, NM_SENDTOALL, NSFLAG_GUARANTEED );
 		}
-		
+
 
 		m_netThread.StopWork();
 		INetworkInterface* pNetInterface =  m_netThread.GetNetworkInterface();
@@ -622,8 +624,8 @@ void CNetGameSession::Update(float fDt)
 		//obj->Simulate( fDt );
 
 		// send object
-		if(	IsServer() && 
-			obj->m_isNetworkStateChanged && 
+		if(	IsServer() &&
+			obj->m_isNetworkStateChanged &&
 			(m_curTimeNetwork-m_prevTimeNetwork > fRateMs))
 		{
 			Net_SendObjectData(obj, NM_SENDTOALL);
@@ -650,7 +652,7 @@ void CNetGameSession::Update(float fDt)
 				if( m_players[i]->m_isLocal )
 					localPlayerLatency = m_players[i]->m_packetLatency;
 			}
-			
+
 			// disconnect me if needed
 			if(m_players[i]->m_disconnect)
 			{
@@ -662,7 +664,7 @@ void CNetGameSession::Update(float fDt)
 	}
 
 	m_netThread.UpdateDispatchEvents();
-	
+
 	int numPlayers = GetNumPlayers();
 
 	debugoverlay->Text(ColorRGBA(1,1,0,1), "Num players: %d\n", numPlayers);
@@ -887,7 +889,7 @@ void CNetSpawnInfo::Unpack( CNetworkThread* pNetThread, CNetMessageBuffer* pStre
 		{
 			//Msg("Assign object ID %d on '%s' (%s)", m_objectId, m_object->GetName(), s_objectTypeNames[m_object->ObjType()]);
 			m_object->m_networkID = m_objectId;
-			
+
 			m_object->OnUnpackMessage( pStream );
 		}
 		else
@@ -936,7 +938,7 @@ CNetObjectFrame::CNetObjectFrame()
 void CNetObjectFrame::Process( CNetworkThread* pNetThread )
 {
 	// find object
-	
+
 
 	// read in states
 }

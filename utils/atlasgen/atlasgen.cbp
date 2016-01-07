@@ -15,14 +15,6 @@
 					<Add option="-DLINUX" />
 					<Add option="-DNDEBUG" />
 					<Add option="-D_CONSOLE" />
-					<Add directory="../../Engine/Imaging" />
-					<Add directory="../../FileSystem" />
-					<Add directory="../../core" />
-					<Add directory="../../public" />
-					<Add directory="../../public/core" />
-					<Add directory="../../public/platform" />
-					<Add directory="../../Engine" />
-					<Add directory="../../src_dependency/sdl2/include" />
 				</Compiler>
 			</Target>
 			<Target title="Debug Win32">
@@ -33,19 +25,18 @@
 					<Add option="-DWIN32" />
 					<Add option="-DNDEBUG" />
 					<Add option="-D_CONSOLE" />
-					<Add directory="../../Engine/Imaging" />
-					<Add directory="../../FileSystem" />
-					<Add directory="../../core" />
-					<Add directory="../../public" />
-					<Add directory="../../public/core" />
-					<Add directory="../../public/Platform" />
-					<Add directory="../../Engine" />
-					<Add directory="../../src_dependency/sdl2/include" />
 				</Compiler>
 			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-m32" />
+			<Add directory="../../Engine/Imaging" />
+			<Add directory="../../FileSystem" />
+			<Add directory="../../core" />
+			<Add directory="../../public" />
+			<Add directory="../../public/core" />
+			<Add directory="../../public/platform" />
+			<Add directory="../../Engine" />
 		</Compiler>
 		<Linker>
 			<Add option="-lstdc++ -m32 -pthread -leqCore `pkg-config gtk+-2.0 --libs`" />

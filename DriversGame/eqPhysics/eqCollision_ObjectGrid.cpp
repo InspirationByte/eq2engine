@@ -10,6 +10,7 @@
 #include "eqBulletIndexedMesh.h"
 
 #include "IDebugOverlay.h"
+#include "DebugInterface.h"
 
 CEqCollisionBroadphaseGrid::CEqCollisionBroadphaseGrid()
 {

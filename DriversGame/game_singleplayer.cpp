@@ -5,6 +5,8 @@
 // Description: Single player game session
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "luabinding/LuaBinding.h"
+
 #include "game_singleplayer.h"
 #include "replay.h"
 #include "eqParallelJobs.h"
@@ -72,7 +74,7 @@ CGameSession::CGameSession()
 	m_localControls = 0;
 	m_playerCar = NULL;
 	m_leadCar = NULL;
-	
+
 	m_scriptIDCounter = 0;
 }
 
@@ -364,8 +366,8 @@ void CGameSession::UpdateLocalControls( int nControls )
 
 	/*
 	// filter
-	if(	playerCar && 
-		(playerCar->m_conf->m_sirenType != SIREN_NONE && 
+	if(	playerCar &&
+		(playerCar->m_conf->m_sirenType != SIREN_NONE &&
 		playerCar->m_sirenEnabled &&
 		(nControls & IN_HORN)))
 	{
@@ -382,7 +384,7 @@ CCar* CGameSession::CreateCar(const char* name, int carType)
 		if(!m_carEntries[i]->carName.CompareCaseIns(name))
 		{
 			CCar* car = NULL;
-			
+
 			if (carType == CAR_TYPE_NORMAL)
 				car = new CCar(m_carEntries[i]);
 			else if (carType == CAR_TYPE_TRAFFIC_AI)
@@ -503,7 +505,7 @@ void CGameSession::LoadCarData()
 			for (int i = 0; i < civCars->keys.numElem(); i++)
 			{
 				carConfigEntry_t* conf = FindCarEntryByName(civCars->keys[i]->name );
-				
+
 				if(conf)
 					g_pAIManager->m_civCarEntries.append(conf);
 			}
@@ -581,22 +583,22 @@ void CGameSession::SetLeadCar(CCar* pCar)
 }
 
 OOLUA_EXPORT_FUNCTIONS(
-	CGameSession, 
+	CGameSession,
 
-	CreateCar, 
+	CreateCar,
 	CreatePursuerCar,
-	SetPlayerCar, 
-	SetLeadCar, 
+	SetPlayerCar,
+	SetLeadCar,
 	LoadCarReplay,
 	SignalMissionStatus,
 	ResetReplay
 )
 OOLUA_EXPORT_FUNCTIONS_CONST(
-	CGameSession, 
+	CGameSession,
 
-	IsClient, 
+	IsClient,
 	IsServer,
-	GetPlayerCar, 
+	GetPlayerCar,
 	GetLeadCar,
 	GetSessionType,
 	IsGameDone,

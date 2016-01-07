@@ -6,11 +6,12 @@
 //				You might consider it as some ugly code :(
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "world.h"
+
 #include "levfile.h"
 #include "level.h"
 #include "physics.h"
 #include "VirtualStream.h"
-#include "world.h"
 
 #include "utils/GeomTools.h"
 
@@ -239,7 +240,7 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 
 	CEqBulletIndexedMesh* mesh = new CEqBulletIndexedMesh(	((ubyte*)m_verts)+offsetOf(lmodeldrawvertex_t, position), sizeof(lmodeldrawvertex_t),
 															(ubyte*)m_indices, sizeof(uint32), m_numVerts, m_numIndices);
-	
+
 	m_batchMeshes.append(mesh);
 
 	for(int i = 0; i < m_numBatches; i++)
@@ -311,7 +312,7 @@ bool CLevelModel::GenereateRenderData()
 	if(!m_vertexBuffer || !m_indexBuffer || !m_format)
 	{
 		const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
-		
+
 #ifdef USE_INSTANCING
 		if(caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
 		{
@@ -458,7 +459,7 @@ bool CLevelModel::CreateFrom(dsmmodel_t* pModel)
 
 		m_batches[i].startVertex = vertexdata.numElem();
 		m_batches[i].startIndex = indexdata.numElem();
-			
+
 		vertexdata.resize(vertexdata.numElem() + nNumVerts);
 		indexdata.resize(indexdata.numElem() + nNumVerts);
 
@@ -494,7 +495,7 @@ bool CLevelModel::CreateFrom(dsmmodel_t* pModel)
 			m_bbox.AddVertex(vtx2.position);
 
 			int idx[3] = {-1,-1,-1};
-				
+
 			// find any vertex
 			for(int k = 0; k < vertexdata.numElem(); k++)
 			{
@@ -508,7 +509,7 @@ bool CLevelModel::CreateFrom(dsmmodel_t* pModel)
 				if(idx[0] != -1 && idx[1] != -1 && idx[2] != -1)
 					break;
 			}
-				
+
 			if(idx[0] == -1)
 				idx[0] = vertexdata.append(vtx0);
 
@@ -597,7 +598,7 @@ void CLevelModel::Load(IVirtualStream* stream)
 	stream->Read(m_indices, 1, sizeof(uint32)*m_numIndices);
 
 	GenereateRenderData();
-	
+
 }
 
 void CLevelModel::Save(IVirtualStream* stream) const
@@ -645,7 +646,7 @@ float CLevelModel::Ed_TraceRayDist(const Vector3D& start, const Vector3D& dir)
 		Vector3D v0,v1,v2;
 
 		if(	m_indices[i] >= m_numVerts ||
-			m_indices[i+1] >= m_numVerts || 
+			m_indices[i+1] >= m_numVerts ||
 			m_indices[i+2] >= m_numVerts)
 			continue;
 
@@ -744,7 +745,7 @@ IVector2D CLevelRegion::GetTileAndNeighbourRegion(int x, int y, CLevelRegion** r
 
 	return IVector2D(x,y);
 }
-	
+
 
 Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regobjectref_t* ref)
 {
@@ -770,7 +771,7 @@ Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regobjectref_t* ref)
 		{
 			Vector3D t,b,n;
 			defField.GetTileTBN( ref->tile_x, ref->tile_y, t,b,n );
-			
+
 			Matrix4x4 tileAngle(Vector4D(b, 0), Vector4D(n, 0), Vector4D(t, 0), Vector4D(0,0,0,1));
 
 			tileAngle = (!tileAngle)*m;
@@ -939,7 +940,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 
 	for(int i = 0; i < m_objects.numElem(); i++)
 	{
-		regobjectref_t* ref = m_objects[i];	
+		regobjectref_t* ref = m_objects[i];
 		objectcont_t* cont = ref->container;
 
 
@@ -1013,7 +1014,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 				{
 					ref->object->Draw( nRenderFlags );
 				}
-				else	
+				else
 				{*/
 					float fDist = length(cameraPosition - ref->position);
 					materials->SetMatrix(MATRIXMODE_WORLD, mat);
@@ -1074,7 +1075,7 @@ void CLevelRegion::InitRoads()
 		}
 	}
 
-	m_navGrid.Init( defField.m_sizew*AI_NAVIGATION_GRID_SCALE, 
+	m_navGrid.Init( defField.m_sizew*AI_NAVIGATION_GRID_SCALE,
 					defField.m_sizeh*AI_NAVIGATION_GRID_SCALE);
 }
 
@@ -1136,14 +1137,14 @@ void CLevelRegion::Cleanup()
 	}
 
 	m_isLoaded = false;
-	
+
 	m_queryTimes.SetValue(0);
 }
 
 bool CLevelRegion::IsRegionEmpty()
 {
-	if(m_objects.numElem() == 0 && 
-		(m_heightfield[0] ? m_heightfield[0]->IsEmpty() : true) && 
+	if(m_objects.numElem() == 0 &&
+		(m_heightfield[0] ? m_heightfield[0]->IsEmpty() : true) &&
 		(m_heightfield[1] ? m_heightfield[1]->IsEmpty() : true))
 		return true;
 
@@ -1300,7 +1301,7 @@ int CLevelRegion::Ed_ReplaceDefs(objectcont_t* whichReplace, objectcont_t* repla
 const int LEVEL_HEIGHTFIELD_SIZE		= 64;
 const int LEVEL_HEIGHTFIELD_STEP_SIZE	= (HFIELD_POINT_SIZE*LEVEL_HEIGHTFIELD_SIZE);
 
-CGameLevel::CGameLevel() : 
+CGameLevel::CGameLevel() :
 	m_regions(NULL),
 	m_wide(0),
 	m_tall(0),
@@ -1532,7 +1533,7 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 
 			// read road offsets
 			m_roadOffsets = new int[m_wide*m_tall];
-			pFile->Read(m_roadOffsets, m_wide*m_tall, sizeof(int)); 
+			pFile->Read(m_roadOffsets, m_wide*m_tall, sizeof(int));
 
 			m_roadDataLumpOffset = pFile->Tell();
 
@@ -1546,7 +1547,7 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 
 			// read road offsets
 			m_occluderOffsets = new int[m_wide*m_tall];
-			pFile->Read(m_occluderOffsets, m_wide*m_tall, sizeof(int)); 
+			pFile->Read(m_occluderOffsets, m_wide*m_tall, sizeof(int));
 
 			m_occluderDataLumpOffset = pFile->Tell();
 
@@ -1569,7 +1570,7 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 			float loadTime = Platform_GetCurrentTime()-startLumpTime;
 			DevMsg(2, " took %g seconds\n", loadTime);
 		}
-		
+
 		// TODO: other lumps
 
 	}while(true);
@@ -1670,7 +1671,7 @@ void CGameLevel::ReadRegionInfo(IVirtualStream* stream)
 	stream->Read(&hdr, 1, sizeof(levregionshdr_t));
 
 	m_numRegions = hdr.numRegions;
-	
+
 	DevMsg(2,"[FILE] map %d x %d regions (cell count = %d) regs = %d\n", hdr.numRegionsWide, hdr.numRegionsTall, hdr.cellsSize, m_numRegions);
 
 	int gridArraySize = hdr.numRegionsWide* hdr.numRegionsTall;
@@ -1753,7 +1754,7 @@ bool CGameLevel::Save(const char* levelname, bool final)
 
 	// write models first if available
 	WriteObjectDefsLump( pFile );
-	
+
 	// write region info
 	WriteLevelRegions( pFile, levelname, final );
 
@@ -1862,9 +1863,9 @@ bool DrawDefLightData( Matrix4x4& objDefMatrix, const wlightdata_t& data, float 
 
 				ColorRGBA extraGlowColor = lerp(glowColor*extraBrightness, Vector4D(extraBrightness), 0.25f);
 
-				DrawLightEffect(lightPos, 
-								glowColor * glowColor.w*brightness + extraBrightness, 
-								data.m_glows[i].position.w * extraSizeScale, 
+				DrawLightEffect(lightPos,
+								glowColor * glowColor.w*brightness + extraBrightness,
+								data.m_glows[i].position.w * extraSizeScale,
 								data.m_glows[i].type);
 			}
 		}
@@ -1982,7 +1983,7 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 			LoadDefLightData(container->m_lightData, foundDef);
 #endif // EDITOR
 		}
-		
+
 		m_objectDefs.append(container);
 
 		// valid?
@@ -2058,7 +2059,7 @@ void CGameLevel::WriteObjectDefsLump(IVirtualStream* stream)
 
 	modelsLump.Write(&modelNamesSize, 1, sizeof(int));
 	modelsLump.Write(modelNamesData.GetBasePointer(), 1, modelNamesSize);
-	
+
 	// write model data
 	for(int i = 0; i < m_objectDefs.numElem(); i++)
 	{
@@ -2148,9 +2149,9 @@ void CGameLevel::WriteHeightfieldsLump(IVirtualStream* stream)
 				// write region heightfield data
 				for(int i = 0; i < numFields; i++)
 				{
-					
 
-					if(	m_regions[idx].m_heightfield[i] && 
+
+					if(	m_regions[idx].m_heightfield[i] &&
 						!m_regions[idx].m_heightfield[i]->IsEmpty())
 					{
 						m_regions[idx].m_heightfield[i]->WriteToStream( &hfielddata );
@@ -2174,7 +2175,7 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 {
 	//long fpos = file->Tell();
 
-	// ---------- LEVLUMP_REGIONINFO ---------- 
+	// ---------- LEVLUMP_REGIONINFO ----------
 	levregionshdr_t regHdr;
 
 	regHdr.numRegionsWide = m_wide;
@@ -2315,7 +2316,7 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 		// write occluder offset array
 		file->Write(occludersLump.GetBasePointer(), 1, occludersLump.Tell());
 	}
-	
+
 	// LEVLUMP_REGIONS
 	{
 		levlump_t regDataLumpInfo;
@@ -2326,7 +2327,7 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 		file->Write(&regDataLumpInfo, 1, sizeof(levlump_t));
 		file->Write(regionDataStream.GetBasePointer(), 1, regionDataStream.Tell());
 	}
-	
+
 
 	delete [] regionOffsetArray;
 	delete [] roadOffsetArray;
@@ -2530,7 +2531,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<objectcont_t*>&
 		ref->rotation = cellObj.rotation;
 
 		ref->transform = GetModelRefRenderMatrix( this, ref );
-		
+
 		if(ref->container->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
 			// create collision objects and translate them
@@ -2577,10 +2578,10 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<objectcont_t*>&
 				g_pGameWorld->AddObject( newObj, false );
 				m_level->m_mutex.Unlock();
 			}
-			
+
 #endif
 		}
-		
+
 		m_level->m_mutex.Lock();
 		m_objects.append(ref);
 		m_level->m_mutex.Unlock();
@@ -2608,13 +2609,13 @@ void CLevelRegion::RespawnObjects()
 		if(ref->object)
 		{
 			//g_pGameWorld->RemoveObject(ref->object);
-			
+
 			if(g_pGameWorld->m_pGameObjects.remove(ref->object))
 			{
 				ref->object->OnRemove();
 				delete ref->object;
 			}
-			
+
 		}
 
 		ref->object = NULL;
@@ -2931,7 +2932,7 @@ straight_t CGameLevel::GetStraightAtPoint( const IVector2D& point, int numIterat
 		LocalToGlobalPoint(localPos, pRegion, straight.start);
 
 		int roadDir = pRegion->m_roads[tileIdx].direction;
-		
+
 		int checkRoadDir = roadDir;
 
 		IVector2D lastPos = localPos;
@@ -3027,7 +3028,7 @@ roadJunction_t CGameLevel::GetJunctionAtPoint( const IVector2D& point, int numIt
 		LocalToGlobalPoint(localPos, pRegion, junction.start);
 
 		int roadDir = pRegion->m_roads[tileIdx].direction;
-		
+
 		int checkRoadDir = roadDir;
 
 		IVector2D lastPos = localPos;
@@ -3276,9 +3277,9 @@ levroadcell_t* CGameLevel::GetGlobalRoadTileAt(const IVector2D& point, CLevelReg
 
 		if(!reg->m_roads)
 			return NULL;
-			
+
 		int ridx = outXYPos.y*m_cellsSize + outXYPos.x;
-		
+
 		return &reg->m_roads[ridx];
 	}
 
@@ -3533,7 +3534,7 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 			if( m_instanceBuffer->Lock(0, numInstances, (void**)&instData, false))
 			{
 				memcpy(instData, m_objectDefs[i]->m_instData->instances, sizeof(regObjectInstance_t)*numInstances);
-			
+
 				m_instanceBuffer->Unlock();
 			}
 
@@ -3577,8 +3578,8 @@ int CGameLevel::UpdateRegionLoading()
 			int idx = y*m_wide+x;
 
 			// try preloading region
-			if( !w_freeze.GetBool() && 
-				!m_regions[idx].m_isLoaded && 
+			if( !w_freeze.GetBool() &&
+				!m_regions[idx].m_isLoaded &&
 				(m_regions[idx].m_queryTimes.GetValue() > 0) &&
 				m_regionOffsets[idx] != -1 )
 			{
@@ -3683,7 +3684,7 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regobjectref_t* ref)
 				volume = getTileVolume
 				if( volume.checkIntersectionWithTriangle(triangle) )
 					tile.bit = 1
-				
+
 	*/
 
 	int navCellGridSize = m_cellsSize*AI_NAVIGATION_GRID_SCALE;
@@ -4094,7 +4095,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 	while (openSet.numElem() > 0)
 	{
 		int bestOpenSetIdx = openSet.numElem() == 1 ? 0 : -1;
-		
+
 		if(bestOpenSetIdx == -1)
 		{
 			float minCost = 10000.0f;
@@ -4120,7 +4121,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 				{
 					cost += val;
 				}
-				
+
 				if (cost < minCost)
 				{
 					minCost = cost;
@@ -4178,7 +4179,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 			// apply simplification
 			if( lastDir != lastCell.pdir)
 				result.points.append(testPoint);
-		
+
 			if(testPoint == start)
 				break;
 

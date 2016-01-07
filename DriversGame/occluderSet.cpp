@@ -8,6 +8,8 @@
 #include "occluderSet.h"
 #include "IDebugOverlay.h"
 
+#include "ConVar.h"
+
 ConVar r_debugOccluders("r_debugOccluders", "0", "Debug occlusion plane volumes", CV_CHEAT);
 ConVar r_noOcclusion("r_noOcclusion", "0", "Disables occlusion for debugging purposes", 0);
 
@@ -36,7 +38,7 @@ occludingVolume_t::occludingVolume_t(levOccluderLine_t* occl, const Vector3D& ca
 
 	Vector3D aDir = -cross(vec3_up, fastNormalize(cameraPos-a));
 	Vector3D bDir = cross(vec3_up, fastNormalize(cameraPos-b));
-		
+
 	Vector3D aTopPos = a + Vector3D(0, occl->height, 0);
 	Vector3D bTopPos = b + Vector3D(0, occl->height, 0);
 
@@ -59,7 +61,7 @@ occludingVolume_t::occludingVolume_t(levOccluderLine_t* occl, const Vector3D& ca
 		debugoverlay->Line3D(mr, mr+bDir, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1) );
 		debugoverlay->Line3D(mt, mt+topDir, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1) );
 		debugoverlay->Line3D(mid, mid+pl.normal, ColorRGBA(0,1,1,1), ColorRGBA(0,1,1,1) );
-		
+
 	}
 
 	planes[0] = pl;

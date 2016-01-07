@@ -5,6 +5,8 @@
 // Description: Drivers system and modules
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "LuaBinding_Drivers.h"
+
 #include "DebugOverlay.h"
 #include "system.h"
 
@@ -14,7 +16,6 @@
 #include "KeyBinding/Keys.h"
 #include "FontCache.h"
 
-#include "LuaBinding_Drivers.h"
 #include "network/net_defs.h"
 
 #include "sys_console.h"

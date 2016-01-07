@@ -38,7 +38,6 @@
 			<Add directory="public/" />
 			<Add directory="public/core/" />
 			<Add directory="public/platform" />
-			<Add directory="src_dependency/sdl2/include" />
 		</Compiler>
 		<Unit filename="public/core/ConCommand.cpp" />
 		<Unit filename="public/core/ConCommand.h" />
