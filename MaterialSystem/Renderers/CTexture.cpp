@@ -9,7 +9,7 @@
 #include "utils/strtools.h"
 #include "DebugInterface.h"
 
-#include "ishaderapi.h"
+#include "IShaderAPI.h"
 
 CTexture::CTexture()
 {

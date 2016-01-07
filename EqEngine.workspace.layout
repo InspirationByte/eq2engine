@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_workspace_layout_file>
-	<ActiveProject path="DriversGame/DriversGame.cbp" />
+	<ActiveProject path="utils/matsys_wxapp_template/matsys_wxapp_template.cbp" />
 	<PreferredTarget name="Release Win32" />
 </CodeBlocks_workspace_layout_file>

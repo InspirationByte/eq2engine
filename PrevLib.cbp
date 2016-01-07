@@ -111,6 +111,7 @@
 		<Unit filename="public/utils/eqthread.h" />
 		<Unit filename="public/utils/eqtimer.cpp" />
 		<Unit filename="public/utils/eqtimer.h" />
+		<Unit filename="public/utils/eqwstring.cpp" />
 		<Unit filename="public/utils/eqwstring.h" />
 		<Unit filename="public/utils/strtools.cpp" />
 		<Unit filename="public/utils/strtools.h" />

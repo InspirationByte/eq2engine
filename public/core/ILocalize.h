@@ -10,6 +10,10 @@
 
 #include "IDkCore.h"
 
+#ifdef LINUX
+#   include <wchar.h>
+#endif
+
 #define LOCALIZER_INTERFACE_VERSION		"CORE_Localizer_002"
 
 //--------------------------------------------------------------
@@ -72,7 +76,7 @@ inline const wchar_t* LocalizedString( const char* pszString )
 
 		return defaultUnicodeString;
 	}
-	
+
 }
 
 

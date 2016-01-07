@@ -6,15 +6,17 @@
 //
 // TODO:	rewrite some parts, add geometry rendering
 //			fix line rendering perfomance
-//			add geometry drawer//////////////////////////////////////////////////////////////////////////////////
+//			add geometry drawer
+//////////////////////////////////////////////////////////////////////////////////
 
 #ifndef IDEBUG_TEXT
 #define IDEBUG_TEXT
 
 #include "InterfaceManager.h"
-#include "materialsystem/IMaterialSystem.h"
 
-#include "IFont.h"
+#include "math/Vector.h"
+#include "math/Matrix.h"
+#include "utils/DkLinkedList.h"
 
 #define DBGOVERLAY_INTERFACE_VERSION "DebugOverlay_001"
 
@@ -23,6 +25,8 @@
 #else
 #	define ENGINE_EXPORTS		extern "C" __declspec(dllimport)
 #endif
+
+class IEqFont;
 
 struct debugGraphBucket_t
 {

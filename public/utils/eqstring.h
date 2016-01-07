@@ -12,6 +12,11 @@
 #include <string.h>
 #include "dktypes.h"
 
+#ifdef __GNUG__
+class EqWString;
+#include "eqwstring.h"
+#endif // __GNUG__
+
 #define _Es EqString
 
 // TODO: implement safe copy-on-write

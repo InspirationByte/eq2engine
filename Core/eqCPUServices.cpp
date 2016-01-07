@@ -183,15 +183,17 @@ void CEqCPUCaps::Init()
 	m_cpuCount = sysInfo.dwNumberOfProcessors;
 
 #elif defined(LINUX)
-	//cpuCount = sysconf(_SC_NPROCESSORS_CONF);
-	cpuCount = sysconf(_SC_NPROCESSORS_ONLN);
+	//m_cpuCount = sysconf(_SC_NPROCESSORS_CONF);
+	m_cpuCount = sysconf(_SC_NPROCESSORS_ONLN);
 
 #elif defined(__APPLE__)
 
 	// TODO: Fix ...
-	cpuCount = 1;	// sysconf(_SC_NPROCESSORS_ONLN);
+	m_cpuCount = 1;	// sysconf(_SC_NPROCESSORS_ONLN);
 
 #endif
+
+    MsgInfo("Number of cores: %d\n", m_cpuCount);
 
 	// Just in case ...
 	if (m_cpuCount < 1)
@@ -207,7 +209,7 @@ void CEqCPUCaps::Init()
 	if (maxi >= 1)
 	{
 		cpuid(1, a, b, c, d);
-	
+
 		//EDX
 		m_cpuCMOV		= (d & 0x00008000) != 0;
 		m_cpuMMX		= (d & 0x00800000) != 0;

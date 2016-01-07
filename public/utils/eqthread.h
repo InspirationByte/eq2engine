@@ -8,9 +8,6 @@
 #ifndef EQTHREAD_H
 #define EQTHREAD_H
 
-#include "Platform.h"
-#include "eqstring.h"
-
 #ifdef LINUX
 
 #include <stdint.h>
@@ -18,7 +15,8 @@
 
 #endif // LINUX
 
-
+#include "Platform.h"
+#include "eqstring.h"
 
 namespace Threading
 {

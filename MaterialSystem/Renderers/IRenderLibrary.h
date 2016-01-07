@@ -8,7 +8,7 @@
 #ifndef IRENDERLIB_H
 #define IRENDERLIB_H
 
-#include "ishaderapi.h"
+#include "IShaderAPI.h"
 #include "IEqSwapChain.h"
 #include "DebugInterface.h"
 

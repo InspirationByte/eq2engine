@@ -9,7 +9,7 @@
 #ifndef CGLRENDERLIB_H
 #define CGLRENDERLIB_H
 
-#include "ishaderapi.h"
+#include "IShaderAPI.h"
 #include "../IRenderLibrary.h"
 
 class CEmptyRenderLib : public IRenderLibrary

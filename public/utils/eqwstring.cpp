@@ -14,8 +14,8 @@
 #include "utils/strtools.h"
 
 #ifdef LINUX
-#include <string.h>
-#endif
+#include <wchar.h>
+#endif // LINUX
 
 #define BASE_BUFFER		32	// 32 characters initial buffer
 #define EXTEND_CHARS	32	// 32 characters for extending

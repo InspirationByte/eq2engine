@@ -20,7 +20,7 @@
 
 #include "DebugInterface.h"
 
-#include "renderers/ishaderapi.h"
+#include "renderers/IShaderAPI.h"
 #include "renderers/IEqSwapChain.h"
 
 #include "IMaterial.h"

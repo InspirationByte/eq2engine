@@ -85,6 +85,8 @@ inline bool LuaCallUserdataCallback(const T& object, const char* functionName, O
 {
 	// search part
 
+    extern OOLUA::Script& GetLuaState();
+
 	OOLUA::Script& state = GetLuaState();
 
 	EqLua::LuaStackGuard g(state);

@@ -209,7 +209,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_menu_file = new wxMenu();
 	m_pMenu->Append( m_menu_file, wxT("File") );
 
-	m_menu_file->Append( Event_File_Exit, DKLOC("TOKEN_EXIT", "Exit") );
+	m_menu_file->Append( Event_File_Exit, DKLOC("TOKEN_EXIT", L"Exit") );
 
 	m_menu_edit = new wxMenu();
 	m_pMenu->Append( m_menu_edit, wxT("Edit") );
@@ -687,7 +687,7 @@ bool CWXTemplateApplication::OnInit()
 #ifdef _WIN32
 	g_matsysmodule = GetFileSystem()->LoadModule("EqMatSystem.dll");
 #elif LINUX
-    g_matsysmodule = GetFileSystem()->LoadModule("libeqMatSystema.so");
+    g_matsysmodule = GetFileSystem()->LoadModule("libeqMatSystem.so");
 #endif
 
 	if(!g_matsysmodule)

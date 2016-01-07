@@ -41,6 +41,8 @@
 #define min(a,b)            (((a) < (b)) ? (a) : (b))
 #endif
 
+#define _vsnwprintf vswprintf
+
 #ifdef ANDROID
 
 typedef __builtin_va_list	va_list;
@@ -103,6 +105,9 @@ bool		xisspace(const uint32 c);
 #ifdef LINUX
 char* strupr(char* s1);
 char* strlwr(char* s1);
+
+wchar_t* wcslwr(wchar_t* str);
+wchar_t* wcsupr(wchar_t* str);
 #endif
 
 //------------------------------------------------------
