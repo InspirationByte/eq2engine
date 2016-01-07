@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="EqShaderAPINull" />
+		<Option title="eqNullRHI" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
@@ -20,13 +20,6 @@
 					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
 					<Add option="-DRENDER_EXPORT" />
-					<Add directory="../../FileSystem" />
-					<Add directory="../../Engine" />
-					<Add directory="../../public" />
-					<Add directory="../../public/core" />
-					<Add directory="../../public/platform" />
-					<Add directory="../../public/materialsystem/renderers" />
-					<Add directory="../../src_dependency/sdl2/include" />
 				</Compiler>
 			</Target>
 			<Target title="Debug Win32">
@@ -43,18 +36,18 @@
 					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
 					<Add option="-DRENDER_EXPORT" />
-					<Add directory="../../FileSystem" />
-					<Add directory="../../Engine" />
-					<Add directory="../../public" />
-					<Add directory="../../public/core" />
-					<Add directory="../../public/platform" />
-					<Add directory="../../public/materialsystem/renderers" />
-					<Add directory="../../src_dependency/sdl2/include" />
 				</Compiler>
 			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-m32" />
+			<Add directory="../../FileSystem" />
+			<Add directory="../../Engine" />
+			<Add directory="../../public" />
+			<Add directory="../../public/core" />
+			<Add directory="../../public/platform" />
+			<Add directory="../../public/materialsystem/renderers" />
+			<Add directory="../../src_dependency/sdl2/include" />
 		</Compiler>
 		<Linker>
 			<Add option="-lstdc++ -m32 -pthread -l:libeqCore.so `pkg-config gtk+-2.0 --libs`" />
@@ -94,9 +87,9 @@
 		<Unit filename="Empty/emptyLibrary.h" />
 		<Unit filename="Empty/emptylibrary.cpp" />
 		<Unit filename="IRenderLibrary.h" />
+		<Unit filename="ShaderAPI_Base.cpp" />
 		<Unit filename="ShaderAPI_Base.h" />
 		<Unit filename="resource.h" />
-		<Unit filename="shaderapi_base.cpp" />
 		<Extensions>
 			<code_completion />
 			<debugger />

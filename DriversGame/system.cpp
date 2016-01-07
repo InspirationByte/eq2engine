@@ -198,7 +198,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 #ifdef _WIN32
 	bool materialSystemStatus = false;
-	
+
 	if(useOpenGLRender)
 		materialSystemStatus = materials->Init("materials/", "eqGLRHI", materials_config);
 	else if(GetCmdLine()->FindArgument("-norender") != -1)
@@ -383,7 +383,7 @@ void InputCommands_SDL(SDL_Event* event)
 				Msg(" down\n");
 			if (event->jhat.value & SDL_HAT_LEFT)
 				Msg(" left\n");
-			
+
 			// g_pHost->TrapJoyHat_Event(event->jaxis.axis, event->jaxis.value);
 		}
         case SDL_JOYBALLMOTION:
@@ -410,7 +410,7 @@ void InputCommands_SDL(SDL_Event* event)
 					event->jbutton.which, event->jbutton.button, down ? "down" : "up");
 			}
 
-			
+
 
 			g_pHost->TrapJoyButton_Event(event->jbutton.button, down);
             break;
@@ -537,7 +537,7 @@ void CGameHost::SetCursorShow(bool bShow)
 {
 	if(m_cursorVisible == bShow)
 		return;
-		
+
 
 	if(bShow)
 		SDL_SetCursor(staticDefaultCursor[dc_arrow]);

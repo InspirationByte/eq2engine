@@ -469,7 +469,7 @@
 	"BaseShader.h"
 	"vars_generic.h"
 
-1452159729 /home/soap/Projects/eqengine/src_all/public/materialsystem/BaseShader.h
+1452187864 /home/soap/Projects/eqengine/src_all/public/materialsystem/BaseShader.h
 	"materialsystem/IMaterialSystem.h"
 
 1452161372 /home/soap/Projects/eqengine/src_all/public/materialsystem/IMaterialSystem.h
@@ -485,11 +485,11 @@
 1452159729 /home/soap/Projects/eqengine/src_all/public/core/DebugInterface.h
 	"InterfaceManager.h"
 
-1452159729 /home/soap/Projects/eqengine/src_all/public/InterfaceManager.h
+1452187596 /home/soap/Projects/eqengine/src_all/public/InterfaceManager.h
 	<stdio.h>
 	"utils/singleton.h"
 
-1452159729 /home/soap/Projects/eqengine/src_all/public/utils/singleton.h
+1452168172 /home/soap/Projects/eqengine/src_all/public/utils/singleton.h
 
 1452159729 /home/soap/Projects/eqengine/src_all/public/materialsystem/renderers/IShaderAPI.h
 	"Platform.h"
@@ -803,4 +803,7 @@
 1452159729 source:/home/soap/Projects/eqengine/src_all/MaterialSystem/EngineShaders/Water.cpp
 	"BaseShader.h"
 	"vars_generic.h"
+
+1452159729 source:/home/soap/Projects/eqengine/src_all/public/materialsystem/BaseShader.cpp
+	"BaseShader.h"
 

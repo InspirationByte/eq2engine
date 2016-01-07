@@ -93,7 +93,6 @@
 			void	Initialize()	\
 			{	\
 				if(!pInstance) pInstance = (abstractclass*)_GetDkCoreInterface(interfacename);	\
-				printf("init %s 0x%p\n", #abstractclass, pInstance);\
 			}	\
 			void	Destroy()	\
 			{	\

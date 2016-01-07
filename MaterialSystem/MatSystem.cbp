@@ -17,14 +17,6 @@
 					<Add option="-D_USRDLL" />
 					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
-					<Add directory="../FileSystem" />
-					<Add directory="../Engine" />
-					<Add directory="../public" />
-					<Add directory="../public/core" />
-					<Add directory="../public/platform" />
-					<Add directory="../public/materialsystem/" />
-					<Add directory="../public/materialsystem/renderers" />
-					<Add directory="../src_dependency/sdl2/include" />
 				</Compiler>
 			</Target>
 			<Target title="Debug Win32">
@@ -39,14 +31,6 @@
 					<Add option="-DUSE_SIMD" />
 					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
-					<Add directory="../FileSystem" />
-					<Add directory="../Engine" />
-					<Add directory="../public" />
-					<Add directory="../public/core" />
-					<Add directory="../public/platform" />
-					<Add directory="../public/materialsystem/" />
-					<Add directory="../public/materialsystem/renderers" />
-					<Add directory="../src_dependency/sdl2/include" />
 				</Compiler>
 				<Linker>
 					<Add library="odbc32.lib" />
@@ -63,6 +47,14 @@
 		</Build>
 		<Compiler>
 			<Add option="-m32" />
+			<Add directory="../FileSystem" />
+			<Add directory="../Engine" />
+			<Add directory="../public" />
+			<Add directory="../public/core" />
+			<Add directory="../public/platform" />
+			<Add directory="../public/materialsystem/" />
+			<Add directory="../public/materialsystem/renderers" />
+			<Add directory="../src_dependency/sdl2/include" />
 		</Compiler>
 		<Linker>
 			<Add option="-shared -lstdc++ -m32 -l:libeqCore.so `pkg-config gtk+-2.0 --libs`" />

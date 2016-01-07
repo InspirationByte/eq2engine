@@ -20,16 +20,6 @@
 					<Add option="-DNO_GAME" />
 					<Add option="-DNO_ENGINE" />
 					<Add option="-DNOENGINE" />
-					<Add directory="../FileSystem" />
-					<Add directory="../Engine" />
-					<Add directory="../public" />
-					<Add directory="../public/platform" />
-					<Add directory="../utils/wx/include" />
-					<Add directory="../utils/wx/include/msvc" />
-					<Add directory="../utils/wx/include/msw" />
-					<Add directory="../DriversGame" />
-					<Add directory="../DriversGame/TA" />
-					<Add directory="../Game" />
 				</Compiler>
 				<Linker>
 					<Add directory="../utils/wx/lib/vc_lib/" />
@@ -52,17 +42,18 @@
 					<Add option="-DNO_ENGINE" />
 					<Add option="-DNOENGINE" />
 					<Add option="-DEDITOR" />
-					<Add directory="../../FileSystem" />
-					<Add directory="../../Engine" />
-					<Add directory="../../public" />
-					<Add directory="../../public/platform" />
-					<Add directory="../../public/core" />
-					<Add directory="../../public/materialsystem" />
 				</Compiler>
 			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-m32 `wx-config --cflags`" />
+			<Add directory="../../FileSystem" />
+			<Add directory="../../Engine" />
+			<Add directory="../../public" />
+			<Add directory="../../public/platform" />
+			<Add directory="../../public/core" />
+			<Add directory="../../public/materialsystem" />
+			<Add directory="../../shared_engine" />
 		</Compiler>
 		<Linker>
 			<Add option="-m32  `wx-config --libs` -l:libeqCore.so" />
@@ -71,15 +62,17 @@
 			<Add library="z" />
 			<Add library="jpeg" />
 		</Linker>
-		<Unit filename="../../Engine/DebugOverlay.cpp" />
 		<Unit filename="../../Engine/DebugOverlay.h" />
-		<Unit filename="../../public/Font.cpp" />
 		<Unit filename="../../public/Font.h" />
 		<Unit filename="../../public/TextureAtlas.h" />
 		<Unit filename="../../public/ViewParams.cpp" />
 		<Unit filename="../../public/ViewParams.h" />
 		<Unit filename="../../public/math/math_util.cpp" />
 		<Unit filename="../../public/math/math_util.h" />
+		<Unit filename="../../shared_engine/DebugOverlay.cpp" />
+		<Unit filename="../../shared_engine/DebugOverlay.h" />
+		<Unit filename="../../shared_engine/Font.cpp" />
+		<Unit filename="../../shared_engine/Font.h" />
 		<Unit filename="MainWindow.cpp" />
 		<Unit filename="MainWindow.h" />
 		<Unit filename="windows/resource.h" />

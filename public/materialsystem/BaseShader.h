@@ -151,7 +151,7 @@
 	if(b)										\
 	{											\
 		defines.Append("#define " def "\n");		\
-		findQuery.Append("_"def);					\
+		findQuery.Append("_" def);					\
 	}
 
 #define SHADER_ADD_FLOAT_DEFINITION(def, num)		\

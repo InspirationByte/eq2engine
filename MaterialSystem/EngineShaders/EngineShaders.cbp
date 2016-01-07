@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="EqBaseShaders" />
+		<Option title="eqBaseShaders" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
@@ -16,13 +16,6 @@
 					<Add option="-DNDEBUG" />
 					<Add option="-D_USRDLL" />
 					<Add option="-DEQSHADER_LIBRARY" />
-					<Add directory="../../FileSystem" />
-					<Add directory="../../Engine" />
-					<Add directory="../../public" />
-					<Add directory="../../public/core" />
-					<Add directory="../../public/platform" />
-					<Add directory="../../src_dependency/sdl2/include" />
-					<Add directory="../../public/materialsystem/renderers" />
 				</Compiler>
 				<Linker>
 					<Add library="../../libs/libcoreLib.a" />
@@ -41,13 +34,6 @@
 					<Add option="-DUSE_SIMD" />
 					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
-					<Add directory="../../FileSystem" />
-					<Add directory="../../Engine" />
-					<Add directory="../../public" />
-					<Add directory="../../public/core" />
-					<Add directory="../../public/platform" />
-					<Add directory="../../src_dependency/sdl2/include" />
-					<Add directory="../../public/materialsystem/renderers" />
 				</Compiler>
 				<Linker>
 					<Add library="odbc32.lib" />
@@ -62,10 +48,20 @@
 				</Linker>
 			</Target>
 		</Build>
-		<Unit filename="../../public/BaseShader.cpp" />
+		<Compiler>
+			<Add directory="../../FileSystem" />
+			<Add directory="../../Engine" />
+			<Add directory="../../public" />
+			<Add directory="../../public/core" />
+			<Add directory="../../public/platform" />
+			<Add directory="../../src_dependency/sdl2/include" />
+			<Add directory="../../public/materialsystem/renderers" />
+		</Compiler>
 		<Unit filename="../../public/BaseShader.h" />
 		<Unit filename="../../public/ViewParams.cpp" />
 		<Unit filename="../../public/ViewParams.h" />
+		<Unit filename="../../public/materialsystem/BaseShader.cpp" />
+		<Unit filename="../../public/materialsystem/BaseShader.h" />
 		<Unit filename="../FileSystem/ifilesystem.h" />
 		<Unit filename="../public/ConCommand.h" />
 		<Unit filename="../public/ConCommandBase.h" />

@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="DkCore" />
+		<Option title="eqCore" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
@@ -12,6 +12,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-g" />
 					<Add option="-DLINUX" />
 					<Add option="-DNDEBUG" />
 					<Add option="-D_USRDLL" />
@@ -21,13 +22,6 @@
 					<Add option="-DUSECRTMEMDEBUG" />
 					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
-					<Add directory="../FileSystem" />
-					<Add directory="../Engine/Imaging" />
-					<Add directory="../Engine" />
-					<Add directory="../public" />
-					<Add directory="../public/core" />
-					<Add directory="../public/platform" />
-					<Add directory="../src_dependency/sdl2/include" />
 				</Compiler>
 			</Target>
 			<Target title="Debug Win32">
@@ -47,26 +41,18 @@
 					<Add option="-DUSECRTMEMDEBUG" />
 					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
-					<Add directory="../FileSystem" />
-					<Add directory="../Engine/Imaging" />
-					<Add directory="../Engine" />
-					<Add directory="../public" />
-					<Add directory="../public/core" />
-					<Add directory="../public/platform" />
-					<Add directory="../src_dependency/sdl2/include" />
 				</Compiler>
-				<Linker>
-					<Add library="user32.lib" />
-					<Add library="advapi32.lib" />
-					<Add library="dbghelp.lib" />
-				</Linker>
 			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-m32" />
-			<Add directory="../public/" />
-			<Add directory="/home/soap/Projects/public/" />
-			<Add directory="../" />
+			<Add directory="../FileSystem" />
+			<Add directory="../Engine/Imaging" />
+			<Add directory="../Engine" />
+			<Add directory="../public" />
+			<Add directory="../public/core" />
+			<Add directory="../public/platform" />
+			<Add directory="../src_dependency/sdl2/include" />
 		</Compiler>
 		<Linker>
 			<Add option="`pkg-config gtk+-2.0 --libs`" />
@@ -74,7 +60,6 @@
 			<Add library="../libs/libPrevLib.a" />
 			<Add library="z" />
 		</Linker>
-		<Unit filename="CPU.cpp" />
 		<Unit filename="CmdLineParser.cpp" />
 		<Unit filename="CommandAccessor.cpp" />
 		<Unit filename="ConCommandFactory.cpp" />
@@ -86,6 +71,8 @@
 		<Unit filename="FileSystem.cpp" />
 		<Unit filename="Localize.cpp" />
 		<Unit filename="debuginterface.cpp" />
+		<Unit filename="eqCPUServices.cpp" />
+		<Unit filename="eqCPUServices.h" />
 		<Unit filename="ppmem.cpp" />
 		<Extensions>
 			<code_completion />
