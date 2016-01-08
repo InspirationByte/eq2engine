@@ -7,7 +7,7 @@
 
 #include "Platform.h"
 #include "DebugInterface.h"
-#include "IShaderAPI.h"
+#include "renderers/IShaderAPI.h"
 #include "materialsystem/IMaterialSystem.h"
 
 IShaderAPI*			g_pShaderAPI	= (IShaderAPI*)GetCore()->GetInterface(MATSYSTEM_INTERFACE_VERSION);

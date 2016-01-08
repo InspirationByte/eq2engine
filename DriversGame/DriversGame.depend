@@ -1838,7 +1838,7 @@
 	"IFileSystem.h"
 	"DebugInterface.h"
 
-1452195145 /home/soap/Projects/eqengine/src_all/public/luabinding/LuaBinding.h
+1452272275 /home/soap/Projects/eqengine/src_all/public/luabinding/LuaBinding.h
 	<iostream>
 	"lua.h"
 	"lualib.h"
@@ -2206,7 +2206,7 @@
 	"IFileSystem.h"
 	"DebugInterface.h"
 
-1452159729 /home/soap/Projects/eqengine/src_all/public/platform/Platform.h
+1452263697 /home/soap/Projects/eqengine/src_all/public/platform/Platform.h
 	"dktypes.h"
 	"SDL.h"
 	"SDL_syswm.h"
@@ -2445,7 +2445,7 @@
 
 1452159729 /home/soap/Projects/eqengine/src_all/public/coord.h
 
-1452161372 /home/soap/Projects/eqengine/src_all/public/materialsystem/IMaterialSystem.h
+1452264018 /home/soap/Projects/eqengine/src_all/public/materialsystem/IMaterialSystem.h
 	"DebugInterface.h"
 	"renderers/IShaderAPI.h"
 	"renderers/IEqSwapChain.h"
@@ -2695,7 +2695,7 @@
 	"DebugInterface.h"
 	"alsound_local.h"
 
-1452159729 source:/home/soap/Projects/eqengine/src_all/shared_engine/Audio/alsound_local.cpp
+1452263831 source:/home/soap/Projects/eqengine/src_all/shared_engine/Audio/alsound_local.cpp
 	"ISoundSystem.h"
 	"core_base_header.h"
 	"alsound_local.h"
@@ -3769,7 +3769,7 @@
 1452159728 source:/home/soap/Projects/eqengine/src_all/DriversGame/input.cpp
 	"input.h"
 
-1452194477 source:/home/soap/Projects/eqengine/src_all/DriversGame/level.cpp
+1452263719 source:/home/soap/Projects/eqengine/src_all/DriversGame/level.cpp
 	"world.h"
 	"levfile.h"
 	"level.h"
@@ -3904,7 +3904,7 @@
 1452159728 source:/home/soap/Projects/eqengine/src_all/DriversGame/Shader_StaticObjs.cpp
 	"BaseShader.h"
 
-1452187864 /home/soap/Projects/eqengine/src_all/public/materialsystem/BaseShader.h
+1452264080 /home/soap/Projects/eqengine/src_all/public/materialsystem/BaseShader.h
 	"materialsystem/IMaterialSystem.h"
 
 1452159728 source:/home/soap/Projects/eqengine/src_all/DriversGame/Shader_VehicleBody.cpp
@@ -4006,4 +4006,7 @@
 	"object_trafficlight.h"
 	"object_sheets.h"
 	"object_scripted.h"
+
+1452264081 source:/home/soap/Projects/eqengine/src_all/public/materialsystem/BaseShader.cpp
+	"BaseShader.h"
 

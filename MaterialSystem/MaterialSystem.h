@@ -39,7 +39,7 @@ public:
 	friend class CMaterial;
 
 	bool							Init(	const char* materialsDirectory,
-											char* szShaderAPI,
+											const char* szShaderAPI,
 											matsystem_render_config_t &config
 									);			// Initializes material system
 

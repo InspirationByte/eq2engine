@@ -920,7 +920,7 @@
 	"InterfaceManager.h"
 	"utils/eqthread.h"
 
-1452159729 /home/soap/Projects/eqengine/src_all/public/platform/Platform.h
+1452263697 /home/soap/Projects/eqengine/src_all/public/platform/Platform.h
 	"dktypes.h"
 	"SDL.h"
 	"SDL_syswm.h"
@@ -1133,7 +1133,7 @@
 1452187864 /home/soap/Projects/eqengine/src_all/public/materialsystem//BaseShader.h
 	"materialsystem/IMaterialSystem.h"
 
-1452161372 /home/soap/Projects/eqengine/src_all/public/materialsystem/IMaterialSystem.h
+1452264018 /home/soap/Projects/eqengine/src_all/public/materialsystem/IMaterialSystem.h
 	"DebugInterface.h"
 	"renderers/IShaderAPI.h"
 	"renderers/IEqSwapChain.h"
@@ -1244,14 +1244,14 @@
 1452159729 /home/soap/Projects/eqengine/src_all/public/IVirtualStream.h
 	"ppmem.h"
 
-1452159729 source:/home/soap/Projects/eqengine/src_all/MaterialSystem/MaterialSystem.cpp
+1452264035 source:/home/soap/Projects/eqengine/src_all/MaterialSystem/MaterialSystem.cpp
 	"MaterialSystem.h"
 	"IDebugOverlay.h"
 	"Renderers/IRenderLibrary.h"
 	"imaging/ImageLoader.h"
 	"imaging/PixWriter.h"
 
-1452159729 /home/soap/Projects/eqengine/src_all/MaterialSystem/MaterialSystem.h
+1452264029 /home/soap/Projects/eqengine/src_all/MaterialSystem/MaterialSystem.h
 	"utils/DkList.h"
 	"Platform.h"
 	"materialsystem/IMaterialSystem.h"
@@ -1290,7 +1290,7 @@
 	"materialvar.h"
 	"IMaterialSystem.h"
 
-1452161372 /home/soap/Projects/eqengine/src_all/public/materialsystem//IMaterialSystem.h
+1452264018 /home/soap/Projects/eqengine/src_all/public/materialsystem//IMaterialSystem.h
 	"DebugInterface.h"
 	"renderers/IShaderAPI.h"
 	"renderers/IEqSwapChain.h"

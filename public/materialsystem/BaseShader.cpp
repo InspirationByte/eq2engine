@@ -111,7 +111,7 @@ void CBaseShader::InitParams()
 		m_depthwrite = (pDepthWrite->GetInt() > 0);
 
 		m_fogenabled = !(pNoFog->GetInt() > 0);
-		
+
 		// required
 		m_pBaseTextureTransformVar	= GetAssignedMaterial()->GetMaterialVar("BaseTextureTransform", "[0 0]");
 		m_pBaseTextureScaleVar		= GetAssignedMaterial()->GetMaterialVar("BaseTextureScale", "[1 1]");
@@ -123,7 +123,7 @@ void CBaseShader::InitParams()
 
 		if( pFilterType )
 			m_nTextureFilter = ResolveFilterType(pFilterType->GetString());
-		
+
 		// setup shadowing parameters
 		m_nFlags |= (RecShadowed->GetInt() > 0) ? MATERIAL_FLAG_RECEIVESHADOWS : 0;
 		m_nFlags |= (CastShadows->GetInt() > 0) ? MATERIAL_FLAG_CASTSHADOWS : 0;
@@ -158,7 +158,7 @@ void CBaseShader::InitParams()
 		// setup functors for transparency
 		//if(m_nFlags & MATERIAL_FLAG_ALPHATESTED)
 		//	SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Alphatest);
-		
+
 		if(m_nFlags & MATERIAL_FLAG_TRANSPARENT)
 			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Translucent);
 
@@ -167,7 +167,7 @@ void CBaseShader::InitParams()
 
 		if(m_nFlags & MATERIAL_FLAG_MODULATE)
 			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Modulate);
-		
+
 		// setup functors
 		SetParameterFunctor(SHADERPARAM_TRANSFORM, &CBaseShader::ParamSetup_Transform);
 		SetParameterFunctor(SHADERPARAM_ANIMFRAME, &CBaseShader::ParamSetup_TextureFrames);
@@ -270,7 +270,7 @@ void CBaseShader::ParamSetup_Transform()
 	g_pShaderAPI->SetShaderConstantMatrix4("WVP", wvp_matrix);
 	g_pShaderAPI->SetShaderConstantMatrix4("World", worldtransform);
 
-	// setup texture transform 
+	// setup texture transform
 	SetupVertexShaderTextureTransform(m_pBaseTextureTransformVar, m_pBaseTextureScaleVar, "BaseTextureTransform");
 }
 
@@ -303,7 +303,7 @@ Vector4D CBaseShader::GetTextureTransform(IMatVar* pTransformVar, IMatVar* pScal
 }
 
 // sends texture transformation to shader
-void CBaseShader::SetupVertexShaderTextureTransform(IMatVar* pTransformVar, IMatVar* pScaleVar, char* pszConstName)
+void CBaseShader::SetupVertexShaderTextureTransform(IMatVar* pTransformVar, IMatVar* pScaleVar, const char* pszConstName)
 {
 	Vector4D trans = GetTextureTransform(pTransformVar, pScaleVar);
 

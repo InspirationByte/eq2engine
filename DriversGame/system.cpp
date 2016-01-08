@@ -197,9 +197,9 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	materials_config.shaderapi_params.bEnableVerticalSync = r_vSync.GetBool();
 	materials_config.shaderapi_params.nMultisample = 0;
 
-#ifdef _WIN32
-	bool materialSystemStatus = false;
+    bool materialSystemStatus = false;
 
+#ifdef _WIN32
 	if(useOpenGLRender)
 		materialSystemStatus = materials->Init("materials/", "eqGLRHI", materials_config);
 	else if(GetCmdLine()->FindArgument("-norender") != -1)
@@ -207,7 +207,10 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	else
 		materialSystemStatus = materials->Init("materials/", "eqD3D9RHI", materials_config);
 #else
-	bool materialSystemStatus = materials->Init("materials/", "libeqGLRHI.so", materials_config);
+	if(GetCmdLine()->FindArgument("-norender") != -1)
+		materialSystemStatus = materials->Init("materials/", "libeqNullRHI", materials_config);
+    else
+        materialSystemStatus = materials->Init("materials/", "libeqGLRHI", materials_config);
 #endif // _WIN32
 
 #ifdef _WIN32

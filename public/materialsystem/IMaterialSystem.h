@@ -180,7 +180,7 @@ public:
 	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)
 	// config - material system configuration. Must be fully filled
 	virtual bool							Init(	const char* materialsDirectory,
-													char* szShaderAPI,
+													const char* szShaderAPI,
 													matsystem_render_config_t &config
 													) = 0;
 

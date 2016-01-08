@@ -55,24 +55,12 @@
 			<Add directory="../../public/core" />
 			<Add directory="../../public/platform" />
 			<Add directory="../../src_dependency/sdl2/include" />
-			<Add directory="../../public/materialsystem/renderers" />
+			<Add directory="../../public/materialsystem" />
 		</Compiler>
-		<Unit filename="../../public/BaseShader.h" />
 		<Unit filename="../../public/ViewParams.cpp" />
 		<Unit filename="../../public/ViewParams.h" />
 		<Unit filename="../../public/materialsystem/BaseShader.cpp" />
 		<Unit filename="../../public/materialsystem/BaseShader.h" />
-		<Unit filename="../FileSystem/ifilesystem.h" />
-		<Unit filename="../public/ConCommand.h" />
-		<Unit filename="../public/ConCommandBase.h" />
-		<Unit filename="../public/ConVar.h" />
-		<Unit filename="../public/DebugInterface.h" />
-		<Unit filename="../public/ICmdLineParser.h" />
-		<Unit filename="../public/IConCommandFactory.h" />
-		<Unit filename="../public/IDkCore.h" />
-		<Unit filename="../public/InterfaceManager.h" />
-		<Unit filename="../public/Platform/Platform.h" />
-		<Unit filename="../public/core_base_header.h" />
 		<Unit filename="BaseDecal.cpp" />
 		<Unit filename="BaseParticle.cpp" />
 		<Unit filename="BaseSingle.cpp" />
@@ -80,7 +68,6 @@
 		<Unit filename="BaseVertexTransition4.cpp" />
 		<Unit filename="BleachBypass.cpp" />
 		<Unit filename="Blur.cpp" />
-		<Unit filename="CmdLineParser.h" />
 		<Unit filename="DeferredPointlight.cpp" />
 		<Unit filename="DeferredSpotLight.cpp" />
 		<Unit filename="DeferredSunLight.cpp" />

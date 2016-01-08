@@ -23,6 +23,8 @@ extern "C"
 
 class IVirtualStream;
 
+extern OOLUA::Script& GetLuaState();
+
 namespace EqLua
 {
 
@@ -84,9 +86,6 @@ template<class T>
 inline bool LuaCallUserdataCallback(const T& object, const char* functionName, OOLUA::Table& argTable)
 {
 	// search part
-
-    extern OOLUA::Script& GetLuaState();
-
 	OOLUA::Script& state = GetLuaState();
 
 	EqLua::LuaStackGuard g(state);

@@ -40,6 +40,7 @@
 			<Add directory="public/core" />
 			<Add directory="public/platform" />
 			<Add directory="src_dependency/oolua/include" />
+			<Add directory="src_dependency/luajit/src" />
 		</Compiler>
 		<Unit filename="public/VirtualStream.cpp" />
 		<Unit filename="public/VirtualStream.h" />

@@ -720,7 +720,7 @@ IVector2D CLevelRegion::GetTileAndNeighbourRegion(int x, int y, CLevelRegion** r
 		(x < 0 || y < 0))
 	{
 		if(defField.m_regionPos < 0)
-			return NULL;
+			return IVector2D(0);
 
 		// only -1/+1, no more
 		int ofs_x = (x < 0) ? -1 : ((x >= defField.m_sizew) ? 1 : 0 );
@@ -738,7 +738,7 @@ IVector2D CLevelRegion::GetTileAndNeighbourRegion(int x, int y, CLevelRegion** r
 			return IVector2D(tofs_x, tofs_y);
 		}
 		else
-			return IVector2D(0,0);
+			return IVector2D(0);
 	}
 
 	(*reg) = (CLevelRegion*)this;

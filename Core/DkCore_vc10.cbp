@@ -54,10 +54,10 @@
 			<Add directory="../public/platform" />
 		</Compiler>
 		<Linker>
-			<Add option="`pkg-config gtk+-2.0 --libs`" />
 			<Add library="../libs/libcoreLib.a" />
 			<Add library="../libs/libPrevLib.a" />
 			<Add library="z" />
+			<Add library="dl" />
 		</Linker>
 		<Unit filename="CmdLineParser.cpp" />
 		<Unit filename="CommandAccessor.cpp" />

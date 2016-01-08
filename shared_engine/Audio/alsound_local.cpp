@@ -241,7 +241,7 @@ void DkSoundSystemLocal::Init()
 	char* devices = (char*)alcGetString(NULL, ALC_DEVICE_SPECIFIER);
 
 	// go through device list (each device terminated with a single NULL, list terminated with double NULL)
-	while (*devices != NULL)
+	while ((*devices) != '\0')
 	{
 		tempListChars.append(devices);
 
@@ -276,7 +276,7 @@ void DkSoundSystemLocal::Init()
 		ALC_MAX_AUXILIARY_SENDS, 32,
 		//ALC_SYNC, ALC_TRUE,
 		//ALC_REFRESH, 120,
-		NULL
+		0
 	};
 
 	m_ctx = alcCreateContext(m_dev, al_context_params);
@@ -845,7 +845,7 @@ ISoundPlayable* DkSoundSystemLocal::GetStaticStreamChannel( int channel )
 	{
 		return m_pAmbients[channel];
 	}
-	
+
 	return NULL;
 }
 

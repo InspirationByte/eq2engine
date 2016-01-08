@@ -2184,7 +2184,7 @@
 	"DebugOverlay.h"
 	"math/math_util.h"
 
-1452159729 /home/soap/Projects/eqengine/src_all/public/platform/Platform.h
+1452263697 /home/soap/Projects/eqengine/src_all/public/platform/Platform.h
 	"dktypes.h"
 	"SDL.h"
 	"SDL_syswm.h"
@@ -2339,7 +2339,7 @@
 	"ShaderAPI_defs.h"
 	"ppmem.h"
 
-1452161372 /home/soap/Projects/eqengine/src_all/public/materialsystem/IMaterialSystem.h
+1452264018 /home/soap/Projects/eqengine/src_all/public/materialsystem/IMaterialSystem.h
 	"DebugInterface.h"
 	"renderers/IShaderAPI.h"
 	"renderers/IEqSwapChain.h"
