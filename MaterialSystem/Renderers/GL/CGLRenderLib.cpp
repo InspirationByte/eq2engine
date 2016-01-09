@@ -164,7 +164,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 #endif // _WIN32
 
 #ifdef _WIN32
-	memset(&dm, 0, sizeof(dm));
+	ZeroMemory(&dm,sizeof(dm));
 	dm.dmSize = sizeof(dm);
 
 	// Figure display format to use
@@ -182,19 +182,21 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	}
 	else
 	{
-		dm.dmBitsPerPel = 32;
+		dm.dmBitsPerPel = 24;
 	}
 
 	dm.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;// | DM_DISPLAYFREQUENCY;
 	dm.dmPelsWidth = m_width;
 	dm.dmPelsHeight = m_height;
-	dm.dmDisplayFrequency = 60;
+	//dm.dmDisplayFrequency = 60;
 
 	if (!params.bIsWindowed)
 	{
-		if (ChangeDisplaySettingsEx(device.DeviceName, &dm, NULL, CDS_FULLSCREEN, NULL) != DISP_CHANGE_SUCCESSFUL)
+		int dispChangeStatus = ChangeDisplaySettings(&dm, CDS_FULLSCREEN);
+
+		if (dispChangeStatus != DISP_CHANGE_SUCCESSFUL)
 		{
-			//MsgError("ChangeDisplaySettingsEx - couldn't set fullscreen mode\n");
+			MsgError("ChangeDisplaySettingsEx - couldn't set fullscreen mode %dx%d on %s (%d)\n", m_width, m_height, device.DeviceName, dispChangeStatus);
 
 			DWORD lastErr = GetLastError();
 
@@ -272,23 +274,8 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 	SetPixelFormat(hdc, pixelFormats[bestFormat], &pfd);
 
-	int attribList[] =
-	{
-		WGL_CONTEXT_MAJOR_VERSION_ARB, 2,
-		WGL_CONTEXT_MINOR_VERSION_ARB, 1,
-
-#ifdef _DEBUG
-		WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
-#else
-		WGL_CONTEXT_FLAGS_ARB, 0,
-#endif // _DEBUG
-
-		WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-		0, 0
-	};
-
-	glContext = wglCreateContextAttribsARB(hdc,0,attribList);
-	glContext2 = wglCreateContextAttribsARB(hdc,glContext,attribList);
+	glContext = wglCreateContext(hdc);
+	glContext2 = wglCreateContext(hdc);
 
 	wglShareLists(glContext2, glContext);
 
