@@ -16,7 +16,7 @@ public:
 				CState_Title();
 				~CState_Title();
 
-	int			GetType() {return GAME_STATE_TITLESCREEN;}
+	int			GetType() const {return GAME_STATE_TITLESCREEN;}
 
 	void		OnEnter( CBaseStateHandler* from );
 	void		OnLeave( CBaseStateHandler* to );

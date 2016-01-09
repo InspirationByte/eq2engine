@@ -1589,7 +1589,9 @@ bool CEqPhysics::TestLineSingleObject(
 	btTransform startTrans(btident3, strt);
 	btTransform endTrans(btident3, endt);
 
-#if 0 // new bullet
+	
+
+#if BT_BULLET_VERSION >= 283 // new bullet
 	btCollisionObjectWrapper objWrap(NULL, object->m_shape, object->m_collObject, transIdent, 0, 0);
 #else
     btCollisionObjectWrapper objWrap(NULL, object->m_shape, object->m_collObject, transIdent);

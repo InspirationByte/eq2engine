@@ -18,7 +18,7 @@ public:
 				CState_MainMenu();
 				~CState_MainMenu();
 
-	int			GetType() {return GAME_STATE_MAINMENU;}
+	int			GetType() const {return GAME_STATE_MAINMENU;}
 
 	void		OnEnter( CBaseStateHandler* from );
 	void		OnLeave( CBaseStateHandler* to );

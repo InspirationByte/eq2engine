@@ -330,36 +330,6 @@ void Game_HandleKeys(int key, bool down)
 	}
 }
 
-ConVar g_freelook("g_freelook", "0", "freelook camera", CV_ARCHIVE);
-
-void Game_MouseMove( int x, int y, float deltaX, float deltaY )
-{
-	g_pHost->SetCenterMouseEnable( g_freecam.GetBool() || g_freelook.GetBool() );
-	g_pHost->SetCursorShow( g_pSysConsole->IsVisible() );
-
-	if(g_freelook.GetBool())
-	{
-		g_camera_angle.x += deltaY * g_mouse_sens.GetFloat();
-		g_camera_angle.y += deltaX * g_mouse_sens.GetFloat();
-
-		g_camera_angleRestoreTime = CAMERA_ROTATE_HOLD_TIME;
-
-		g_camera_angle.y = ConstrainAngle180(g_camera_angle.y);
-		g_camera_angle.x = clamp(g_camera_angle.x, -25.0f, 50.0f);
-	}
-
-	if(g_freecam.GetBool() && !g_pSysConsole->IsVisible()) // && g_pHost->m_hasWindowFocus)
-	{
-		g_camera_freeangles.x += deltaY * g_mouse_sens.GetFloat();
-		g_camera_freeangles.y += deltaX * g_mouse_sens.GetFloat();
-	}
-}
-
-void Game_MouseWheel(int x,int y,int scroll)
-{
-	g_camera_fov -= scroll;
-}
-
 void Game_JoyAxis( short axis, short value )
 {
 	if( g_pGameSession && g_pGameSession->GetPlayerCar() )
@@ -933,7 +903,7 @@ void CState_Game::QuickRestart(bool replay)
 	//-------------------------
 
 	if(!replay)
-		SetupMenuStack("GameMenuStack");
+		SetupMenuStack( m_gameMenuName.c_str() );
 }
 
 void CState_Game::OnEnterSelection( bool isFinal )
@@ -950,13 +920,9 @@ void CState_Game::SetupMenuStack( const char* name )
 {
 	OOLUA::Table mainMenuStack;
 	if(!OOLUA::get_global(GetLuaState(), name, mainMenuStack))
-	{
 		WarningMsg("Failed to get %s table (DrvSynMenus.lua ???)!\n", name);
-	}
 	else
-	{
 		SetMenuObject( mainMenuStack );
-	}
 }
 
 void CState_Game::OnMenuCommand( const char* command )
@@ -1026,15 +992,12 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 
 	m_menuTitleToken = g_localizer->GetToken("MENU_GAME_TITLE_PAUSE");
 
-	OOLUA::Table mainMenuStack;
-	if(!OOLUA::get_global(GetLuaState(), "GameMenuStack", mainMenuStack))
-	{
-		WarningMsg("Failed to get GameMenuStack table (DrvSynMenus.lua ???)!\n");
-	}
-	else
-	{
-		SetMenuObject( mainMenuStack );
-	}
+	if(g_pGameSession->GetSessionType() == SESSION_SINGLE)
+		m_gameMenuName = "GameMenuStack";
+	else if(g_pGameSession->GetSessionType() == SESSION_NETWORK)
+		m_gameMenuName = "MPGameMenuStack";
+
+	SetupMenuStack( m_gameMenuName.c_str() );
 }
 
 // when the state changes to something
@@ -1054,6 +1017,17 @@ void CState_Game::OnLeave( CBaseStateHandler* to )
 		g_pHost->SetCenterMouseEnable(false);
 		m_isGameRunning = false;
 	}
+}
+
+int CState_Game::GetPauseMode() const
+{
+	if(g_pGameSession->IsGameDone())
+		return g_pGameSession->GetMissionStatus() == MIS_STATUS_SUCCESS ? PAUSEMODE_COMPLETE : PAUSEMODE_GAMEOVER;
+
+	if((g_pause.GetBool() || m_showMenu) && g_pGameSession->GetSessionType() == SESSION_SINGLE)
+		return PAUSEMODE_PAUSE;
+
+	return PAUSEMODE_NONE;
 }
 
 //-------------------------------------------------------------------------------
@@ -1118,9 +1092,9 @@ bool CState_Game::Update( float fDt )
 		}
 	}
 
-	bool pauseState = (g_pause.GetBool() || m_showMenu) && (g_pGameSession->GetSessionType() == SESSION_SINGLE) || g_pGameSession->IsGameDone();
+	int pauseMode = GetPauseMode();
 
-	if( pauseState )
+	if( pauseMode > 0 )
 	{
 		// reset buttons
 		if(m_showMenu)
@@ -1138,7 +1112,7 @@ bool CState_Game::Update( float fDt )
 	}
 	else
 	{
-		if(m_pauseState != pauseState)
+		if(m_pauseState != (pauseMode > 0))
 		{
 			ISoundPlayable* musicChan = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
 			if(musicChan)
@@ -1150,8 +1124,8 @@ bool CState_Game::Update( float fDt )
 		}
 	}
 
-	soundsystem->SetPauseState(pauseState);
-	m_pauseState = pauseState;
+	soundsystem->SetPauseState( pauseMode > 0);
+	m_pauseState = (pauseMode > 0);
 
 	Game_Frame( fGameFrameDt );
 
@@ -1378,12 +1352,35 @@ reincrement:
 	}
 }
 
+ConVar g_freelook("g_freelook", "0", "freelook camera", CV_ARCHIVE);
+
 void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )
 {
 	if(!m_isGameRunning)
 		return;
 
-	Game_MouseMove(x,y,deltaX,deltaY);
+	g_pHost->SetCenterMouseEnable( g_freecam.GetBool() || g_freelook.GetBool() );
+	g_pHost->SetCursorShow( g_pSysConsole->IsVisible() );
+
+	if(m_pauseState || m_showMenu)
+		return;
+
+	if( g_freelook.GetBool() )
+	{
+		g_camera_angle.x += deltaY * g_mouse_sens.GetFloat();
+		g_camera_angle.y += deltaX * g_mouse_sens.GetFloat();
+
+		g_camera_angleRestoreTime = CAMERA_ROTATE_HOLD_TIME;
+
+		g_camera_angle.y = ConstrainAngle180(g_camera_angle.y);
+		g_camera_angle.x = clamp(g_camera_angle.x, -25.0f, 50.0f);
+	}
+
+	if(g_freecam.GetBool() && !g_pSysConsole->IsVisible()) // && g_pHost->m_hasWindowFocus)
+	{
+		g_camera_freeangles.x += deltaY * g_mouse_sens.GetFloat();
+		g_camera_freeangles.y += deltaX * g_mouse_sens.GetFloat();
+	}
 }
 
 void CState_Game::HandleMouseWheel(int x,int y,int scroll)
@@ -1391,7 +1388,7 @@ void CState_Game::HandleMouseWheel(int x,int y,int scroll)
 	if(!m_isGameRunning)
 		return;
 
-	Game_MouseWheel(x,y,scroll);
+	g_camera_fov -= scroll;
 }
 
 void CState_Game::HandleJoyAxis( short axis, short value )

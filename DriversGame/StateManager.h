@@ -35,7 +35,7 @@ public:
 						CBaseStateHandler() : m_nextState(NULL), m_forceNextState(false) {}
 				virtual ~CBaseStateHandler(){}
 
-	virtual int			GetType() = 0;
+	virtual int			GetType() const = 0;
 
 	// when changed to this state
 	// @from - used to transfer data

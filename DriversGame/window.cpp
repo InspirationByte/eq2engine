@@ -246,7 +246,7 @@ void InitWindowAndRun()
 		while(SDL_PollEvent(&event))
 			EQHandleSDLEvents( &event );
 
-		if (s_bActive ) // || g_pEngineHost->IsInMultiplayerGame())
+		if (s_bActive || g_pHost->IsInMultiplayerGame())
 		{
 			g_pHost->Frame();
 		}

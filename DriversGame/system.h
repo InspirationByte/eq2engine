@@ -41,6 +41,8 @@ public:
 	bool		Frame();
 	bool		FilterTime( double fDt );
 
+	bool		IsInMultiplayerGame() const;
+
 	void		SetWindowSize(int width, int height);
 
 	void		BeginScene();

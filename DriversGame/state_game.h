@@ -11,6 +11,14 @@
 #include "ui_luaMenu.h"
 #include "StateManager.h"
 
+enum EPauseMode
+{
+	PAUSEMODE_NONE = 0,
+	PAUSEMODE_PAUSE,
+	PAUSEMODE_GAMEOVER,
+	PAUSEMODE_COMPLETE,
+};
+
 //--------------------------------------------------------------------------------------
 
 class CState_Game : public CBaseStateHandler, public CLuaMenu
@@ -19,7 +27,7 @@ public:
 				CState_Game();
 				~CState_Game();
 
-	int			GetType() {return GAME_STATE_GAME;}
+	int			GetType() const {return GAME_STATE_GAME;}
 
 	bool		Update( float fDt );
 
@@ -33,6 +41,8 @@ public:
 	void		HandleMouseWheel(int x,int y,int scroll);
 
 	void		HandleJoyAxis( short axis, short value );
+
+	int			GetPauseMode() const;
 
 	//---------------------------------------------
 
@@ -68,6 +78,8 @@ protected:
 
 	bool		m_sheduledRestart;
 	bool		m_sheduledQuickReplay;
+
+	EqString	m_gameMenuName;
 };
 
 //--------------------------------------------------------------------------------------

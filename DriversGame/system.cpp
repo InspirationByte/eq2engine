@@ -676,6 +676,15 @@ bool CGameHost::Frame()
 	return true;
 }
 
+bool CGameHost::IsInMultiplayerGame() const
+{
+	extern ConVar sv_maxplayers;
+
+	// maxplayers set and ingame
+	return (GetCurrentStateType() == GAME_STATE_GAME) &&
+			sv_maxplayers.GetInt() > 0;
+}
+
 void CGameHost::SetWindowSize(int width, int height)
 {
 	m_nWidth = width;
