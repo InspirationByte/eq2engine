@@ -9,9 +9,9 @@
 
 #include "../ShaderAPI_Base.h"
 
-#ifdef LINUX
-#include <gl.h>
+#include "gl_caps.hpp"
 
+#ifdef LINUX
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xmd.h>
@@ -25,9 +25,6 @@ typedef XID GLXWindow;
 typedef XID GLXFBConfigID;
 typedef struct __GLXcontextRec *GLXContext;
 typedef struct __GLXFBConfigRec *GLXFBConfig;
-
-#else
-#include "gl/gl.h"
 #endif
 #include "VertexFormatGL.h"
 

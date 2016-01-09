@@ -7,7 +7,7 @@
 
 #include "GLOcclusionQuery.h"
 #include "ShaderAPIGL.h"
-#include "eqGLCaps.h"
+#include "gl_caps.hpp"
 
 CGLOcclusionQuery::CGLOcclusionQuery()
 {

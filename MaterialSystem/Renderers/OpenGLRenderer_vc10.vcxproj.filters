@@ -75,6 +75,12 @@
     <ClCompile Include="GL\GLOcclusionQuery.cpp">
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClCompile>
+    <ClCompile Include="GL\gl_caps.cpp">
+      <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="GL\wgl_caps.cpp">
+      <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IRenderLibrary.h">
@@ -153,6 +159,12 @@
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClInclude>
     <ClInclude Include="GL\GLOcclusionQuery.h">
+      <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="GL\gl_caps.hpp">
+      <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="GL\wgl_caps.hpp">
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClInclude>
   </ItemGroup>

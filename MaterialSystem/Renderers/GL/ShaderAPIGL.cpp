@@ -19,7 +19,6 @@
 #include "Platform.h"
 #include "DebugInterface.h"
 
-#include "eqGLCaps.h"
 #include "shaderapigl_def.h"
 
 #include "Imaging/ImageLoader.h"
@@ -62,21 +61,21 @@ ConstantType_e GetConstantType(GLenum type)
 {
 	switch (type)
 	{
-		case GL_FLOAT:      return CONSTANT_FLOAT;
-		case GL_FLOAT_VEC2: return CONSTANT_VECTOR2D;
-		case GL_FLOAT_VEC3: return CONSTANT_VECTOR3D;
-		case GL_FLOAT_VEC4: return CONSTANT_VECTOR4D;
-		case GL_INT:        return CONSTANT_INT;
-		case GL_INT_VEC2:   return CONSTANT_IVECTOR2D;
-		case GL_INT_VEC3:   return CONSTANT_IVECTOR3D;
-		case GL_INT_VEC4:   return CONSTANT_IVECTOR4D;
-		case GL_BOOL_ARB:   return CONSTANT_BOOL;
-		case GL_BOOL_VEC2:  return CONSTANT_BVECTOR2D;
-		case GL_BOOL_VEC3:  return CONSTANT_BVECTOR3D;
-		case GL_BOOL_VEC4:  return CONSTANT_BVECTOR4D;
-		case GL_FLOAT_MAT2: return CONSTANT_MATRIX2x2;
-		case GL_FLOAT_MAT3: return CONSTANT_MATRIX3x3;
-		case GL_FLOAT_MAT4: return CONSTANT_MATRIX4x4;
+		case gl::FLOAT:      return CONSTANT_FLOAT;
+		case gl::FLOAT_VEC2: return CONSTANT_VECTOR2D;
+		case gl::FLOAT_VEC3: return CONSTANT_VECTOR3D;
+		case gl::FLOAT_VEC4: return CONSTANT_VECTOR4D;
+		case gl::INT:        return CONSTANT_INT;
+		case gl::INT_VEC2:   return CONSTANT_IVECTOR2D;
+		case gl::INT_VEC3:   return CONSTANT_IVECTOR3D;
+		case gl::INT_VEC4:   return CONSTANT_IVECTOR4D;
+		case gl::BOOL:		return CONSTANT_BOOL;
+		case gl::BOOL_VEC2:  return CONSTANT_BVECTOR2D;
+		case gl::BOOL_VEC3:  return CONSTANT_BVECTOR3D;
+		case gl::BOOL_VEC4:  return CONSTANT_BVECTOR4D;
+		case gl::FLOAT_MAT2: return CONSTANT_MATRIX2x2;
+		case gl::FLOAT_MAT3: return CONSTANT_MATRIX3x3;
+		case gl::FLOAT_MAT4: return CONSTANT_MATRIX4x4;
 	}
 
 	MsgError("Invalid constant type (%d)\n", type);
@@ -160,23 +159,23 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 	m_busySignal.Raise();
 
 	// Set some of my preferred defaults
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
-	glFrontFace(GL_CW);
-	glPixelStorei(GL_PACK_ALIGNMENT,   1);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	gl::Enable(gl::DEPTH_TEST);
+	gl::DepthFunc(gl::LEQUAL);
+	gl::FrontFace(gl::CW);
+	gl::PixelStorei(gl::PACK_ALIGNMENT,   1);
+	gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1);
 
 	memset(&m_caps, 0, sizeof(m_caps));
 
 	m_caps.maxTextureAnisotropicLevel = 1;
 
-	if (GL_EXT_texture_filter_anisotropic_supported)
-		glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_caps.maxTextureAnisotropicLevel);
+	if (gl::exts::var_EXT_texture_filter_anisotropic)
+		gl::GetIntegerv(gl::MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_caps.maxTextureAnisotropicLevel);
 
 	m_caps.isHardwareOcclusionQuerySupported = true;
 	m_caps.isInstancingSupported = false;
 
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &m_caps.maxTextureSize);
+	gl::GetIntegerv(gl::MAX_TEXTURE_SIZE, &m_caps.maxTextureSize);
 
 	m_caps.maxRenderTargets = MAX_MRTS;
 
@@ -190,22 +189,22 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 
 	m_caps.maxTextureUnits = 1;
 
-	if (GL_ARB_fragment_shader_supported || GL_ARB_fragment_program_supported)
-		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &m_caps.maxTextureUnits);
+	if (gl::exts::var_ARB_fragment_shader)
+		gl::GetIntegerv(gl::MAX_TEXTURE_IMAGE_UNITS, &m_caps.maxTextureUnits);
 	else 
-		glGetIntegerv(GL_MAX_TEXTURE_UNITS, &m_caps.maxTextureUnits);
+		gl::GetIntegerv(gl::MAX_TEXTURE_UNITS, &m_caps.maxTextureUnits);
 
-	if (GL_ARB_draw_buffers_supported)
+	if (gl::exts::var_ARB_draw_buffers)
 	{
 		m_caps.maxRenderTargets = 1;
-		glGetIntegerv(GL_MAX_DRAW_BUFFERS_ARB, &m_caps.maxRenderTargets);
+		gl::GetIntegerv(gl::MAX_DRAW_BUFFERS_ARB, &m_caps.maxRenderTargets);
 	}
 
 	if (m_caps.maxRenderTargets > MAX_MRTS)
 		m_caps.maxRenderTargets = MAX_MRTS;
 
 	for (int i = 0; i < m_caps.maxRenderTargets; i++)
-		m_drawBuffers[i] = GL_COLOR_ATTACHMENT0_EXT + i;
+		m_drawBuffers[i] = gl::COLOR_ATTACHMENT0 + i;
 
 	// Init the base shader API
 	ShaderAPI_Base::Init(params);
@@ -222,21 +221,21 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 	attr = baseMeshBufferParams.AddKeyBase("attribute", "input_color");
 	attr->AppendValue("2");
 
-	s_uniformFuncs[CONSTANT_FLOAT]		= (void *) glUniform1fv;
-	s_uniformFuncs[CONSTANT_VECTOR2D]	= (void *) glUniform2fv;
-	s_uniformFuncs[CONSTANT_VECTOR3D]	= (void *) glUniform3fv;
-	s_uniformFuncs[CONSTANT_VECTOR4D]	= (void *) glUniform4fv;
-	s_uniformFuncs[CONSTANT_INT]		= (void *) glUniform1iv;
-	s_uniformFuncs[CONSTANT_IVECTOR2D]	= (void *) glUniform2iv;
-	s_uniformFuncs[CONSTANT_IVECTOR3D]	= (void *) glUniform3iv;
-	s_uniformFuncs[CONSTANT_IVECTOR4D]	= (void *) glUniform4iv;
-	s_uniformFuncs[CONSTANT_BOOL]		= (void *) glUniform1iv;
-	s_uniformFuncs[CONSTANT_BVECTOR2D]	= (void *) glUniform2iv;
-	s_uniformFuncs[CONSTANT_BVECTOR3D]	= (void *) glUniform3iv;
-	s_uniformFuncs[CONSTANT_BVECTOR4D]	= (void *) glUniform4iv;
-	s_uniformFuncs[CONSTANT_MATRIX2x2]	= (void *) glUniformMatrix2fv;
-	s_uniformFuncs[CONSTANT_MATRIX3x3]	= (void *) glUniformMatrix3fv;
-	s_uniformFuncs[CONSTANT_MATRIX4x4]	= (void *) glUniformMatrix4fv;
+	s_uniformFuncs[CONSTANT_FLOAT]		= (void *) gl::Uniform1fv;
+	s_uniformFuncs[CONSTANT_VECTOR2D]	= (void *) gl::Uniform2fv;
+	s_uniformFuncs[CONSTANT_VECTOR3D]	= (void *) gl::Uniform3fv;
+	s_uniformFuncs[CONSTANT_VECTOR4D]	= (void *) gl::Uniform4fv;
+	s_uniformFuncs[CONSTANT_INT]		= (void *) gl::Uniform1iv;
+	s_uniformFuncs[CONSTANT_IVECTOR2D]	= (void *) gl::Uniform2iv;
+	s_uniformFuncs[CONSTANT_IVECTOR3D]	= (void *) gl::Uniform3iv;
+	s_uniformFuncs[CONSTANT_IVECTOR4D]	= (void *) gl::Uniform4iv;
+	s_uniformFuncs[CONSTANT_BOOL]		= (void *) gl::Uniform1iv;
+	s_uniformFuncs[CONSTANT_BVECTOR2D]	= (void *) gl::Uniform2iv;
+	s_uniformFuncs[CONSTANT_BVECTOR3D]	= (void *) gl::Uniform3iv;
+	s_uniformFuncs[CONSTANT_BVECTOR4D]	= (void *) gl::Uniform4iv;
+	s_uniformFuncs[CONSTANT_MATRIX2x2]	= (void *) gl::UniformMatrix2fv;
+	s_uniformFuncs[CONSTANT_MATRIX3x3]	= (void *) gl::UniformMatrix3fv;
+	s_uniformFuncs[CONSTANT_MATRIX4x4]	= (void *) gl::UniformMatrix4fv;
 
 	if(m_pMeshBufferTexturedShader == NULL)
 	{
@@ -301,14 +300,14 @@ void ShaderAPIGL::ApplyTextures()
 		if(pSelectedTexture != pCurrentTexture)
 		{
 			// Set the active texture to modify
-			glActiveTexture(GL_TEXTURE0 + i);
+			gl::ActiveTexture(gl::TEXTURE0 + i);
 
 			if (pSelectedTexture == NULL)
 			{
 				if(pCurrentTexture != NULL)
 				{
-					glBindTexture(pCurrentTexture->glTarget, 0);
-					glDisable(pCurrentTexture->glTarget);
+					gl::BindTexture(pCurrentTexture->glTarget, 0);
+					gl::Disable(pCurrentTexture->glTarget);
 				}
 			} 
 			else 
@@ -316,29 +315,29 @@ void ShaderAPIGL::ApplyTextures()
 				if (pCurrentTexture == NULL)
 				{
 					// enable texture
-					glEnable( pSelectedTexture->glTarget );
+					gl::Enable( pSelectedTexture->glTarget );
 
-					glBindTexture(pSelectedTexture->glTarget, pSelectedTexture->GetCurrentTexture().glTexID);
+					gl::BindTexture(pSelectedTexture->glTarget, pSelectedTexture->GetCurrentTexture().glTexID);
 
-					glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, pSelectedTexture->m_flLod);
+					gl::TexEnvf(gl::TEXTURE_FILTER_CONTROL, gl::TEXTURE_LOD_BIAS, pSelectedTexture->m_flLod);
 				} 
 				else
 				{
 					if (pSelectedTexture->glTarget != pCurrentTexture->glTarget)
 					{
 						// disable previously chosen target
-						glDisable(pCurrentTexture->glTarget);
+						gl::Disable(pCurrentTexture->glTarget);
 
-						glEnable(pSelectedTexture->glTarget);
+						gl::Enable(pSelectedTexture->glTarget);
 					}
 
 					if (pSelectedTexture->m_flLod != pCurrentTexture->m_flLod)
 					{
-						glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, pSelectedTexture->m_flLod);
+						gl::TexEnvf(gl::TEXTURE_FILTER_CONTROL, gl::TEXTURE_LOD_BIAS, pSelectedTexture->m_flLod);
 					}
 
 					// bind our texture
-					glBindTexture(pSelectedTexture->glTarget, pSelectedTexture->GetCurrentTexture().glTexID);
+					gl::BindTexture(pSelectedTexture->glTarget, pSelectedTexture->GetCurrentTexture().glTexID);
 				}
 			}
 
@@ -366,7 +365,7 @@ void ShaderAPIGL::ApplyBlendState()
 		{
 			if (m_bCurrentBlendEnable)
 			{
-				glDisable(GL_BLEND);
+				gl::Disable(gl::BLEND);
  				m_bCurrentBlendEnable = false;
 			}
 		}
@@ -376,7 +375,7 @@ void ShaderAPIGL::ApplyBlendState()
 			{
 				if (!m_bCurrentBlendEnable)
 				{
-					glEnable(GL_BLEND);
+					gl::Enable(gl::BLEND);
 					m_bCurrentBlendEnable = true;
 				}
 
@@ -385,33 +384,33 @@ void ShaderAPIGL::ApplyBlendState()
 					m_nCurrentSrcFactor = pSelectedState->m_params.srcFactor;
 					m_nCurrentDstFactor = pSelectedState->m_params.dstFactor;
 
-					glBlendFunc(blendingConsts[m_nCurrentSrcFactor],blendingConsts[m_nCurrentDstFactor]);
+					gl::BlendFunc(blendingConsts[m_nCurrentSrcFactor],blendingConsts[m_nCurrentDstFactor]);
 				}
 
 				if (pSelectedState->m_params.blendFunc != m_nCurrentBlendFunc)
 				{
 					m_nCurrentBlendFunc = pSelectedState->m_params.blendFunc;
 
-					glBlendEquation(blendingModes[m_nCurrentBlendFunc]);
+					gl::BlendEquation(blendingModes[m_nCurrentBlendFunc]);
 				}
 			}
 			else
 			{
 				if (m_bCurrentBlendEnable)
 				{
-					glDisable(GL_BLEND);
+					gl::Disable(gl::BLEND);
  					m_bCurrentBlendEnable = false;
 				}
 			}
 
 			if(pSelectedState->m_params.alphaTest)
 			{
-				glEnable(GL_ALPHA_TEST);
-				glAlphaFunc(GL_GREATER,pSelectedState->m_params.alphaTestRef);
+				gl::Enable(gl::ALPHA_TEST);
+				gl::AlphaFunc(gl::GREATER,pSelectedState->m_params.alphaTestRef);
 			}
 			else
 			{
-				glDisable(GL_ALPHA_TEST);
+				gl::Disable(gl::ALPHA_TEST);
 			}
 		}
 
@@ -423,7 +422,7 @@ void ShaderAPIGL::ApplyBlendState()
 
 		if (mask != m_nCurrentMask)
 		{
-			glColorMask((mask & COLORMASK_RED) ? 1 : 0, ((mask & COLORMASK_GREEN) >> 1) ? 1 : 0, ((mask & COLORMASK_BLUE) >> 2) ? 1 : 0, ((mask & COLORMASK_ALPHA) >> 3)  ? 1 : 0);
+			gl::ColorMask((mask & COLORMASK_RED) ? 1 : 0, ((mask & COLORMASK_GREEN) >> 1) ? 1 : 0, ((mask & COLORMASK_BLUE) >> 2) ? 1 : 0, ((mask & COLORMASK_ALPHA) >> 3)  ? 1 : 0);
 
 			m_nCurrentMask = mask;
 		}
@@ -447,20 +446,20 @@ void ShaderAPIGL::ApplyDepthState()
 		{
 			if (!m_bCurrentDepthTestEnable)
 			{
-				glEnable(GL_DEPTH_TEST);
+				gl::Enable(gl::DEPTH_TEST);
 				m_bCurrentDepthTestEnable = true;
 			}
 
 			if (!m_bCurrentDepthWriteEnable)
 			{
-				glDepthMask(GL_TRUE);
+				gl::DepthMask(gl::TRUE_);
 				m_bCurrentDepthWriteEnable = true;
 			}
 
 			if (m_nCurrentDepthFunc != COMP_LEQUAL)
 			{
 				m_nCurrentDepthFunc = COMP_LEQUAL;
-				glDepthFunc(depthConst[m_nCurrentDepthFunc]);
+				gl::DepthFunc(depthConst[m_nCurrentDepthFunc]);
 			}
 		} 
 		else 
@@ -469,25 +468,25 @@ void ShaderAPIGL::ApplyDepthState()
 			{
 				if (!m_bCurrentDepthTestEnable)
 				{
-					glEnable(GL_DEPTH_TEST);
+					gl::Enable(gl::DEPTH_TEST);
 					m_bCurrentDepthTestEnable = true;
 				}
 				if (pSelectedState->m_params.depthWrite != m_bCurrentDepthWriteEnable)
 				{
 					m_bCurrentDepthWriteEnable = pSelectedState->m_params.depthWrite;
-					glDepthMask((m_bCurrentDepthWriteEnable)? GL_TRUE : GL_FALSE);
+					gl::DepthMask((m_bCurrentDepthWriteEnable)? gl::TRUE_ : gl::FALSE_);
 				}
 				if (pSelectedState->m_params.depthFunc != m_nCurrentDepthFunc)
 				{
 					m_nCurrentDepthFunc = pSelectedState->m_params.depthFunc;
-					glDepthFunc(depthConst[m_nCurrentDepthFunc]);
+					gl::DepthFunc(depthConst[m_nCurrentDepthFunc]);
 				}
 			} 
 			else 
 			{
 				if (m_bCurrentDepthTestEnable)
 				{
-					glDisable(GL_DEPTH_TEST);
+					gl::Disable(gl::DEPTH_TEST);
 					m_bCurrentDepthTestEnable = false;
 				}
 			}
@@ -515,25 +514,25 @@ void ShaderAPIGL::ApplyRasterizerState()
 			{
 				m_nCurrentCullMode = CULL_BACK;
 
-				glCullFace(cullConst[m_nCurrentCullMode]);
+				gl::CullFace(cullConst[m_nCurrentCullMode]);
 			}
 
 			if (FILL_SOLID != m_nCurrentFillMode)
 			{
 				m_nCurrentFillMode = FILL_SOLID;
-				glPolygonMode(GL_FRONT_AND_BACK, fillConst[m_nCurrentFillMode]);
+				gl::PolygonMode(gl::FRONT_AND_BACK, fillConst[m_nCurrentFillMode]);
 			}
 
 			if (false != m_bCurrentMultiSampleEnable)
 			{
-				glDisable(GL_MULTISAMPLE);
+				gl::Disable(gl::MULTISAMPLE);
 
 				m_bCurrentMultiSampleEnable = false;
 			}
 
 			if (false != m_bCurrentScissorEnable)
 			{
-				glDisable(GL_SCISSOR_TEST);
+				gl::Disable(gl::SCISSOR_TEST);
 
 				m_bCurrentScissorEnable = false;
 			}
@@ -546,14 +545,14 @@ void ShaderAPIGL::ApplyRasterizerState()
 			{
 				if (pSelectedState->m_params.cullMode == CULL_NONE)
 				{
-					glDisable(GL_CULL_FACE);
+					gl::Disable(gl::CULL_FACE);
 				} 
 				else 
 				{
 					if (m_nCurrentCullMode == CULL_NONE)
-						glEnable(GL_CULL_FACE);
+						gl::Enable(gl::CULL_FACE);
 				
-					glCullFace(cullConst[pSelectedState->m_params.cullMode]);
+					gl::CullFace(cullConst[pSelectedState->m_params.cullMode]);
 				}
 
 				m_nCurrentCullMode = pSelectedState->m_params.cullMode;
@@ -562,18 +561,18 @@ void ShaderAPIGL::ApplyRasterizerState()
 			if (pSelectedState->m_params.fillMode != m_nCurrentFillMode)
 			{
 				m_nCurrentFillMode = pSelectedState->m_params.fillMode;
-				glPolygonMode(GL_FRONT_AND_BACK, fillConst[m_nCurrentFillMode]);
+				gl::PolygonMode(gl::FRONT_AND_BACK, fillConst[m_nCurrentFillMode]);
 			}
 
 			if (pSelectedState->m_params.multiSample != m_bCurrentMultiSampleEnable)
 			{
 				if (pSelectedState->m_params.multiSample)
 				{
-					glEnable(GL_MULTISAMPLE);
+					gl::Enable(gl::MULTISAMPLE);
 				} 
 				else 
 				{
-					glDisable(GL_MULTISAMPLE);
+					gl::Disable(gl::MULTISAMPLE);
 				}
 				m_bCurrentMultiSampleEnable = pSelectedState->m_params.multiSample;
 			}
@@ -582,11 +581,11 @@ void ShaderAPIGL::ApplyRasterizerState()
 			{
 				if (pSelectedState->m_params.scissor)
 				{
-					glEnable(GL_SCISSOR_TEST);
+					gl::Enable(gl::SCISSOR_TEST);
 				}
 				else 
 				{
-					glDisable(GL_SCISSOR_TEST);
+					gl::Disable(gl::SCISSOR_TEST);
 				}
 				m_bCurrentScissorEnable = pSelectedState->m_params.scissor;
 			}
@@ -607,13 +606,13 @@ void ShaderAPIGL::ApplyShaderProgram()
 
 		if (m_pSelectedShader == NULL)
 		{
-			glUseProgram(0);
+			gl::UseProgram(0);
 		} 
 		else 
 		{
 			CGLShaderProgram* prog = (CGLShaderProgram*)m_pSelectedShader;
 
-			glUseProgram( prog->m_program );
+			gl::UseProgram( prog->m_program );
 		}
 
 		m_pCurrentShader = m_pSelectedShader;
@@ -637,7 +636,7 @@ void ShaderAPIGL::ApplyConstants()
 			if (uni->dirty)
 			{
 				if (uni->type >= CONSTANT_MATRIX2x2)
-					((UNIFORM_MAT_FUNC) s_uniformFuncs[uni->type])(uni->index, uni->nElements, GL_TRUE, (float *) uni->data);
+					((UNIFORM_MAT_FUNC) s_uniformFuncs[uni->type])(uni->index, uni->nElements, gl::TRUE_, (float *) uni->data);
 				else 
 					((UNIFORM_FUNC) s_uniformFuncs[uni->type])(uni->index, uni->nElements, (float *) uni->data);
 
@@ -663,28 +662,28 @@ void ShaderAPIGL::Clear(bool bClearColor,
 
 	if (bClearColor)
 	{
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		clearBits |= GL_COLOR_BUFFER_BIT;
-		glClearColor(fillColor.x, fillColor.y, fillColor.z, 1.0f);
+		gl::ColorMask(gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
+		clearBits |= gl::COLOR_BUFFER_BIT;
+		gl::ClearColor(fillColor.x, fillColor.y, fillColor.z, 1.0f);
 	}
 
 	if (bClearDepth)
 	{
-		glDepthMask(GL_TRUE);
-		clearBits |= GL_DEPTH_BUFFER_BIT;
-		glClearDepth(fDepth);
+		gl::DepthMask(gl::TRUE_);
+		clearBits |= gl::DEPTH_BUFFER_BIT;
+		gl::ClearDepth(fDepth);
 	}
 
 	if (bClearStencil)
 	{
-		glStencilMask(GL_TRUE);
-		clearBits |= GL_STENCIL_BUFFER_BIT;
-		glClearStencil(nStencil);
+		gl::StencilMask(gl::TRUE_);
+		clearBits |= gl::STENCIL_BUFFER_BIT;
+		gl::ClearStencil(nStencil);
 	}
 
 	if (clearBits)
 	{
-		glClear(clearBits);
+		gl::Clear(clearBits);
 	}
 
 	GL_END_CRITICAL();
@@ -696,7 +695,7 @@ void ShaderAPIGL::Clear(bool bClearColor,
 // Device vendor and version
 const char* ShaderAPIGL::GetDeviceNameString() const
 {
-	return (const char*)glGetString(GL_VENDOR);
+	return (const char*)gl::GetString(gl::VENDOR);
 }
 
 // Renderer string (ex: OpenGL, D3D9)
@@ -708,13 +707,13 @@ const char* ShaderAPIGL::GetRendererName() const
 // Pixel shader version
 bool ShaderAPIGL::IsSupportsPixelShaders() const
 {
-	return GL_ATI_fragment_shader_supported || GL_ARB_fragment_shader_supported || GL_ARB_fragment_program_supported;
+	return gl::exts::var_ARB_fragment_shader;
 }
 
 // Vertex shader version
 bool ShaderAPIGL::IsSupportsVertexShaders() const
 {
-	return GL_ARB_vertex_shader_supported || GL_ARB_vertex_program_supported;
+	return gl::exts::var_EXT_vertex_shader;
 }
 
 // Geometry shader version
@@ -739,19 +738,19 @@ bool ShaderAPIGL::IsSupportsHullShaders() const
 // Render targetting support
 bool ShaderAPIGL::IsSupportsRendertargetting() const
 {
-	return RenderTexture_supported || FloatRenderTexture_supported;
+	return gl::exts::var_ARB_draw_buffers || gl::exts::var_EXT_draw_buffers2;
 }
 
 // Render targetting support for Multiple RTs
 bool ShaderAPIGL::IsSupportsMRT() const
 {
-	return GL_ARB_draw_buffers_supported;
+	return gl::exts::var_ARB_draw_buffers;
 }
 
 // Supports multitexturing???
 bool ShaderAPIGL::IsSupportsMultitexturing() const
 {
-	return GL_ARB_multitexture_supported;
+	return true;//gl::exts::var_EXT_multitexture;
 }
 
 //-------------------------------------------------------------
@@ -761,12 +760,12 @@ bool ShaderAPIGL::IsSupportsMultitexturing() const
 // Synchronization
 void ShaderAPIGL::Flush()
 {
-	glFlush();
+	gl::Flush();
 }
 
 void ShaderAPIGL::Finish()
 {
-	glFinish();
+	gl::Finish();
 }
 
 //-------------------------------------------------------------
@@ -866,7 +865,7 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 	pTexture->mipMapped = false;
 	pTexture->SetName(pszName);
 
-	pTexture->glTarget = (tex_flags & TEXFLAG_CUBEMAP) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
+	pTexture->glTarget = (tex_flags & TEXFLAG_CUBEMAP) ? gl::TEXTURE_CUBE_MAP : gl::TEXTURE_2D;
 
 	CScopedMutex scoped(m_Mutex);
 
@@ -878,8 +877,8 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 
 	pTexture->textures.setNum(1);
 
-	glGenTextures(1, &pTexture->textures[0].glTexID);
-	glBindTexture(pTexture->glTarget, pTexture->textures[0].glTexID);
+	gl::GenTextures(1, &pTexture->textures[0].glTexID);
+	gl::BindTexture(pTexture->glTarget, pTexture->textures[0].glTexID);
 
 	InternalSetupSampler(pTexture->glTarget, texSamplerParams);
 
@@ -897,14 +896,14 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 
 	pTex->SetDimensions(newWide,newTall);
 
-	if (pTex->glTarget == GL_RENDERBUFFER_EXT)
+	if (pTex->glTarget == gl::RENDERBUFFER_EXT)
 	{
 		// Bind render buffer
-		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, pTex->glDepthID);
-		glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, internalFormats[format], newWide, newTall);
+		gl::BindRenderbufferEXT(gl::RENDERBUFFER_EXT, pTex->glDepthID);
+		gl::RenderbufferStorageEXT(gl::RENDERBUFFER_EXT, internalFormats[format], newWide, newTall);
 
 		// Restore renderbuffer
-		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
+		gl::BindRenderbufferEXT(gl::RENDERBUFFER_EXT, 0);
 	}
 	else 
 	{
@@ -915,28 +914,28 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 		if (IsDepthFormat(format))
 		{
 			if (IsStencilFormat(format))
-				srcFormat = GL_DEPTH_STENCIL_EXT;
+				srcFormat = gl::DEPTH_STENCIL_EXT;
 			else 
-				srcFormat = GL_DEPTH_COMPONENT;
+				srcFormat = gl::DEPTH_COMPONENT;
 		}
 
 		if (IsFloatFormat(format))
-			srcType = GL_FLOAT;
+			srcType = gl::FLOAT;
 
 		// Allocate all required surfaces.
-		glBindTexture(pTex->glTarget, pTex->textures[0].glTexID);
+		gl::BindTexture(pTex->glTarget, pTex->textures[0].glTexID);
 
 		if (pTex->GetFlags() & TEXFLAG_CUBEMAP)
 		{
-			for (int i = GL_TEXTURE_CUBE_MAP_POSITIVE_X; i <= GL_TEXTURE_CUBE_MAP_NEGATIVE_Z; i++)
-				glTexImage2D(i, 0, internalFormat, newWide, newTall, 0, srcFormat, srcType, NULL);
+			for (int i = gl::TEXTURE_CUBE_MAP_POSITIVE_X; i <= gl::TEXTURE_CUBE_MAP_NEGATIVE_Z; i++)
+				gl::TexImage2D(i, 0, internalFormat, newWide, newTall, 0, srcFormat, srcType, NULL);
 		} 
 		else
 		{
-			glTexImage2D(pTex->glTarget, 0, internalFormat, newWide, newTall, 0, srcFormat, srcType, NULL);
+			gl::TexImage2D(pTex->glTarget, 0, internalFormat, newWide, newTall, 0, srcFormat, srcType, NULL);
 		}
 
-		glBindTexture(pTex->glTarget, 0);
+		gl::BindTexture(pTex->glTarget, 0);
 	}
 }
 
@@ -983,11 +982,11 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 	ThreadingSharingRequest();
 
 	// Generate a texture
-	glGenTextures(1, &textureID);
+	gl::GenTextures(1, &textureID);
 
-	glEnable(gltarget);
+	gl::Enable(gltarget);
 
-	glBindTexture( gltarget, textureID );
+	gl::BindTexture( gltarget, textureID );
 
 
 	// Setup the sampler state
@@ -1012,7 +1011,7 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 			{
 				if (IsCompressedFormat(format))
 				{
-					glCompressedTexImage2D(	GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+					gl::CompressedTexImage2D(	gl::TEXTURE_CUBE_MAP_POSITIVE_X + i, 
 											lockBoxLevel, 
 											internalFormat,
 											pSrc->GetWidth(mipMapLevel), pSrc->GetHeight(mipMapLevel),
@@ -1022,7 +1021,7 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 				} 
 				else 
 				{
-					glTexImage2D(	GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+					gl::TexImage2D(	gl::TEXTURE_CUBE_MAP_POSITIVE_X + i,
 									lockBoxLevel,
 									internalFormat,
 									pSrc->GetWidth(mipMapLevel), pSrc->GetHeight(mipMapLevel),
@@ -1037,7 +1036,7 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 		{
 			if (IsCompressedFormat(format))
 			{
-				glCompressedTexImage3D(	gltarget,
+				gl::CompressedTexImage3D(	gltarget,
 										lockBoxLevel, 
 										internalFormat, 
 										pSrc->GetWidth(mipMapLevel), pSrc->GetHeight(mipMapLevel), pSrc->GetDepth(mipMapLevel),
@@ -1047,7 +1046,7 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 			} 
 			else 
 			{
-				glTexImage3D(	gltarget, 
+				gl::TexImage3D(	gltarget, 
 								mipMapLevel - nQuality, 
 								internalFormat, 
 								pSrc->GetWidth(mipMapLevel), pSrc->GetHeight(mipMapLevel), pSrc->GetDepth(mipMapLevel), 
@@ -1061,7 +1060,7 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 		{
 			if (IsCompressedFormat(format))
 			{
-				glCompressedTexImage2D(	gltarget, 
+				gl::CompressedTexImage2D(	gltarget, 
 										lockBoxLevel, 
 										internalFormat, 
 										pSrc->GetWidth(mipMapLevel), pSrc->GetHeight(mipMapLevel), 
@@ -1071,7 +1070,7 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 			} 
 			else 
 			{
-				glTexImage2D(	gltarget,
+				gl::TexImage2D(	gltarget,
 								lockBoxLevel,
 								internalFormat, 
 								pSrc->GetWidth(mipMapLevel), pSrc->GetHeight(mipMapLevel),
@@ -1083,7 +1082,7 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 		} 
 		else 
 		{
-			glTexImage1D(	gltarget,
+			gl::TexImage1D(	gltarget,
 							mipMapLevel - nQuality,
 							internalFormat,
 							pSrc->GetWidth(mipMapLevel),
@@ -1097,9 +1096,9 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 	}
 
 	if(pSrc->IsCube())
-		glDisable( GL_TEXTURE_CUBE_MAP );
+		gl::Disable( gl::TEXTURE_CUBE_MAP );
 
-	glBindTexture(gltarget, 0);
+	gl::BindTexture(gltarget, 0);
 
 	ThreadingSharingRelease();
 
@@ -1121,7 +1120,7 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& 
 
 	int wide = 0, tall = 0;
 
-	pTexture->glTarget = pImages[0]->IsCube()? GL_TEXTURE_CUBE_MAP : pImages[0]->Is3D()? GL_TEXTURE_3D : pImages[0]->Is2D()? GL_TEXTURE_2D : GL_TEXTURE_1D;
+	pTexture->glTarget = pImages[0]->IsCube()? gl::TEXTURE_CUBE_MAP : pImages[0]->Is3D()? gl::TEXTURE_3D : pImages[0]->Is2D()? gl::TEXTURE_2D : gl::TEXTURE_1D;
 
 	for(int i = 0; i < pImages.numElem(); i++)
 	{
@@ -1186,25 +1185,25 @@ void ShaderAPIGL::InternalSetupSampler(uint texTarget, const SamplerStateParam_t
 	//GL_CRITICAL();
 	
 	// Set requested wrapping modes
-	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, (sampler.wrapS == ADDRESSMODE_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	gl::TexParameteri(texTarget, gl::TEXTURE_WRAP_S, (sampler.wrapS == ADDRESSMODE_WRAP) ? gl::REPEAT : gl::CLAMP_TO_EDGE);
 
-	if (texTarget != GL_TEXTURE_1D)
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, (sampler.wrapT == ADDRESSMODE_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	if (texTarget != gl::TEXTURE_1D)
+		gl::TexParameteri(texTarget, gl::TEXTURE_WRAP_T, (sampler.wrapT == ADDRESSMODE_WRAP) ? gl::REPEAT : gl::CLAMP_TO_EDGE);
 
-	if (texTarget == GL_TEXTURE_3D)
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_R, (sampler.wrapR == ADDRESSMODE_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	if (texTarget == gl::TEXTURE_3D)
+		gl::TexParameteri(texTarget, gl::TEXTURE_WRAP_R, (sampler.wrapR == ADDRESSMODE_WRAP) ? gl::REPEAT : gl::CLAMP_TO_EDGE);
 
 	// Set requested filter modes
-	glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, minFilters[sampler.magFilter]);
-	glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, minFilters[sampler.minFilter]);
+	gl::TexParameteri(texTarget, gl::TEXTURE_MAG_FILTER, minFilters[sampler.magFilter]);
+	gl::TexParameteri(texTarget, gl::TEXTURE_MIN_FILTER, minFilters[sampler.minFilter]);
 
-	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_FUNC, depthConst[sampler.nComparison]);
+	gl::TexParameteri(texTarget, gl::TEXTURE_COMPARE_MODE, gl::COMPARE_R_TO_TEXTURE);
+	gl::TexParameteri(texTarget, gl::TEXTURE_COMPARE_FUNC, depthConst[sampler.nComparison]);
 
 	// Setup anisotropic filtering
-	if (sampler.aniso > 1 && GL_EXT_texture_filter_anisotropic_supported)
+	if (sampler.aniso > 1 && gl::exts::var_EXT_texture_filter_anisotropic)
 	{
-		glTexParameteri(texTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, sampler.aniso);
+		gl::TexParameteri(texTarget, gl::TEXTURE_MAX_ANISOTROPY_EXT, sampler.aniso);
 	}
 
 	//GL_END_CRITICAL();
@@ -1221,14 +1220,14 @@ void ShaderAPIGL::CopyFramebufferToTexture(ITexture* pTargetTexture)
 
 	ChangeRenderTarget(pTargetTexture);
 
-	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, 0);
-	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, m_frameBuffer);
+	gl::BindFramebufferEXT(gl::READ_FRAMEBUFFER, 0);
+	gl::BindFramebufferEXT(gl::DRAW_FRAMEBUFFER, m_frameBuffer);
 
-	glBlitFramebufferEXT(0, 0,m_nViewportWidth, m_nViewportHeight,0,pTargetTexture->GetHeight(),pTargetTexture->GetWidth(), 0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+	gl::BlitFramebuffer(0, 0,m_nViewportWidth, m_nViewportHeight,0,pTargetTexture->GetHeight(),pTargetTexture->GetWidth(), 0, gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT, gl::NEAREST);
 	//if(textures[rt].)
 
-	glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, 0);
-	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, 0);
+	gl::BindFramebufferEXT(gl::READ_FRAMEBUFFER, 0);
+	gl::BindFramebufferEXT(gl::DRAW_FRAMEBUFFER, 0);
 
 	ChangeRenderTargetToBackBuffer();
 
@@ -1249,9 +1248,9 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 	GL_CRITICAL();
 
 	if (m_frameBuffer == 0)
-		glGenFramebuffersEXT(1, &m_frameBuffer);
+		gl::GenFramebuffersEXT(1, &m_frameBuffer);
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, m_frameBuffer);
+	gl::BindFramebufferEXT(gl::FRAMEBUFFER_EXT, m_frameBuffer);
 
 	for (int i = 0; i < nNumRTs; i++)
 	{
@@ -1263,8 +1262,8 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		{
 			if (colorRT != m_pCurrentColorRenderTargets[i] || m_pCurrentRenderTargetsSlices[i] != nCubeFace)
 			{
-				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, 
-						GL_COLOR_ATTACHMENT0_EXT + i, GL_TEXTURE_CUBE_MAP_POSITIVE_X + nCubeFace, colorRT->textures[0].glTexID, 0);
+				gl::FramebufferTexture2DEXT(gl::FRAMEBUFFER_EXT, 
+						gl::COLOR_ATTACHMENT0_EXT + i, gl::TEXTURE_CUBE_MAP_POSITIVE_X + nCubeFace, colorRT->textures[0].glTexID, 0);
 
 				m_pCurrentRenderTargetsSlices[i] = nCubeFace;
 			}
@@ -1273,7 +1272,7 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		{
 			if (colorRT != m_pCurrentColorRenderTargets[i])
 			{
-				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT + i, GL_TEXTURE_2D, colorRT->textures[0].glTexID, 0);
+				gl::FramebufferTexture2DEXT(gl::FRAMEBUFFER_EXT, gl::COLOR_ATTACHMENT0_EXT + i, gl::TEXTURE_2D, colorRT->textures[0].glTexID, 0);
 			}
 		}
 
@@ -1288,20 +1287,20 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 
 		for (int i = nNumRTs; i < m_nCurrentRenderTargets; i++)
 		{
-			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT + i, GL_TEXTURE_2D, 0, 0);
+			gl::FramebufferTexture2DEXT(gl::FRAMEBUFFER_EXT, gl::COLOR_ATTACHMENT0_EXT + i, gl::TEXTURE_2D, 0, 0);
 			m_pCurrentRenderTargetsSlices[i] = NULL;
 			m_pCurrentRenderTargetsSlices[i] = -1;
 		}
 		
 		if (nNumRTs == 0)
 		{
-			glDrawBuffer(GL_NONE);
-			glReadBuffer(GL_NONE);
+			gl::DrawBuffer(gl::NONE);
+			gl::ReadBuffer(gl::NONE);
 		} 
 		else 
 		{
-			glDrawBuffers(nNumRTs, m_drawBuffers);
-			glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
+			gl::DrawBuffers(nNumRTs, m_drawBuffers);
+			gl::ReadBuffer(gl::COLOR_ATTACHMENT0_EXT);
 		}
 
 		m_nCurrentRenderTargets = nNumRTs;
@@ -1316,29 +1315,29 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		GL_CRITICAL();
 
 		if (pDepth != NULL && 
-			pDepth->glTarget != GL_RENDERBUFFER_EXT)
+			pDepth->glTarget != gl::RENDERBUFFER_EXT)
 		{
-			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, pDepth->textures[0].glTexID, 0);
+			gl::FramebufferTexture2DEXT(gl::FRAMEBUFFER_EXT, gl::DEPTH_ATTACHMENT_EXT, gl::TEXTURE_2D, pDepth->textures[0].glTexID, 0);
 			if (IsStencilFormat(pDepth->GetFormat()))
 			{
-				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_TEXTURE_2D, pDepth->textures[0].glTexID, 0);
+				gl::FramebufferTexture2DEXT(gl::FRAMEBUFFER_EXT, gl::STENCIL_ATTACHMENT_EXT, gl::TEXTURE_2D, pDepth->textures[0].glTexID, 0);
 			}
 			else 
 			{
-				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_TEXTURE_2D, 0, 0);
+				gl::FramebufferTexture2DEXT(gl::FRAMEBUFFER_EXT, gl::STENCIL_ATTACHMENT_EXT, gl::TEXTURE_2D, 0, 0);
 			}
 		} 
 		else 
 		{
-			glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, (pDepth == NULL) ? 0 : pDepth->textures[0].glTexID);
+			gl::FramebufferRenderbufferEXT(gl::FRAMEBUFFER_EXT, gl::DEPTH_ATTACHMENT_EXT, gl::RENDERBUFFER_EXT, (pDepth == NULL) ? 0 : pDepth->textures[0].glTexID);
 			if (pDepth != NULL &&
 				IsStencilFormat(pDepth->GetFormat()))
 			{
-				glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, pDepth->textures[0].glTexID);
+				gl::FramebufferRenderbufferEXT(gl::FRAMEBUFFER_EXT, gl::STENCIL_ATTACHMENT_EXT, gl::RENDERBUFFER_EXT, pDepth->textures[0].glTexID);
 			}
 			else 
 			{
-				glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, 0);
+				gl::FramebufferRenderbufferEXT(gl::FRAMEBUFFER_EXT, gl::STENCIL_ATTACHMENT_EXT, gl::RENDERBUFFER_EXT, 0);
 			}
 		}
 
@@ -1355,11 +1354,11 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 
 		// I still don't know why GL decided to be like that... damn
 		if (m_pCurrentColorRenderTargets[0]->GetFlags() & TEXFLAG_CUBEMAP)
-			InternalChangeFrontFace(GL_CCW);
+			InternalChangeFrontFace(gl::CCW);
 		else 
-			InternalChangeFrontFace(GL_CW);
+			InternalChangeFrontFace(gl::CW);
 
-		glViewport(0, 0, m_pCurrentColorRenderTargets[0]->GetWidth(), m_pCurrentColorRenderTargets[0]->GetHeight());
+		gl::Viewport(0, 0, m_pCurrentColorRenderTargets[0]->GetWidth(), m_pCurrentColorRenderTargets[0]->GetHeight());
 
 		GL_END_CRITICAL();
 	}
@@ -1367,8 +1366,8 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 	{
 		GL_CRITICAL();
 
-		InternalChangeFrontFace(GL_CW);
-		glViewport(0, 0, m_pCurrentDepthRenderTarget->GetWidth(), m_pCurrentDepthRenderTarget->GetHeight());
+		InternalChangeFrontFace(gl::CW);
+		gl::Viewport(0, 0, m_pCurrentDepthRenderTarget->GetWidth(), m_pCurrentDepthRenderTarget->GetHeight());
 
 		GL_END_CRITICAL();
 	}
@@ -1405,7 +1404,7 @@ void ShaderAPIGL::InternalChangeFrontFace(int nCullFaceMode)
 {
 	if (nCullFaceMode != m_nCurrentFrontFace)
 	{
-		glFrontFace(m_nCurrentFrontFace = nCullFaceMode);
+		gl::FrontFace(m_nCurrentFrontFace = nCullFaceMode);
 	}
 }
 
@@ -1417,8 +1416,8 @@ void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 
 	GL_CRITICAL();
 	
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,0);
-	glViewport(0, 0, m_nViewportWidth, m_nViewportHeight);
+	gl::BindFramebufferEXT(gl::FRAMEBUFFER_EXT,0);
+	gl::Viewport(0, 0, m_nViewportWidth, m_nViewportHeight);
 
 	if (m_pCurrentColorRenderTargets[0] != NULL)
 	{
@@ -1450,7 +1449,7 @@ void ShaderAPIGL::SetMatrixMode(MatrixMode_e nMatrixMode)
 {
 	GL_CRITICAL();
 
-	glMatrixMode( matrixModeConst[nMatrixMode] );
+	gl::MatrixMode( matrixModeConst[nMatrixMode] );
 	m_nCurrentMatrixMode = nMatrixMode;
 
 	GL_END_CRITICAL();
@@ -1475,7 +1474,7 @@ void ShaderAPIGL::LoadIdentityMatrix()
 {
 	GL_CRITICAL();
 
-	glLoadIdentity();
+	gl::LoadIdentity();
 	m_matrices[m_nCurrentMatrixMode] = identity4();
 
 	GL_END_CRITICAL();
@@ -1488,11 +1487,11 @@ void ShaderAPIGL::LoadMatrix(const Matrix4x4 &matrix)
 
 	if(m_nCurrentMatrixMode == MATRIXMODE_WORLD)
 	{
-		glMatrixMode( GL_MODELVIEW );
-		glLoadMatrixf( transpose(m_matrices[MATRIXMODE_VIEW] * matrix) );
+		gl::MatrixMode( gl::MODELVIEW );
+		gl::LoadMatrixf( transpose(m_matrices[MATRIXMODE_VIEW] * matrix) );
 	}
 	else
-		glLoadMatrixf( transpose(matrix) );
+		gl::LoadMatrixf( transpose(matrix) );
 	
 	m_matrices[m_nCurrentMatrixMode] = matrix;
 	//glPopMatrix();
@@ -1507,7 +1506,7 @@ void ShaderAPIGL::LoadMatrix(const Matrix4x4 &matrix)
 // Set Depth range for next primitives
 void ShaderAPIGL::SetDepthRange(float fZNear,float fZFar)
 {
-	glDepthRange(fZNear,fZFar);
+	gl::DepthRange(fZNear,fZFar);
 }
 
 // Changes the vertex format
@@ -1533,45 +1532,45 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 
 		// Change array enables as needed
 		if ( pSelectedFormat->m_hVertex.m_nSize && !pCurrentFormat->m_hVertex.m_nSize)
-			glEnableClientState (GL_VERTEX_ARRAY);
+			gl::EnableClientState (gl::VERTEX_ARRAY);
 
 		if (!pSelectedFormat->m_hVertex.m_nSize &&  pCurrentFormat->m_hVertex.m_nSize)
-			glDisableClientState(GL_VERTEX_ARRAY);
+			gl::DisableClientState(gl::VERTEX_ARRAY);
 
 		if ( pSelectedFormat->m_hNormal.m_nSize && !pCurrentFormat->m_hNormal.m_nSize)
-			glEnableClientState (GL_NORMAL_ARRAY);
+			gl::EnableClientState (gl::NORMAL_ARRAY);
 
 		if (!pSelectedFormat->m_hNormal.m_nSize &&  pCurrentFormat->m_hNormal.m_nSize)
-			glDisableClientState(GL_NORMAL_ARRAY);
+			gl::DisableClientState(gl::NORMAL_ARRAY);
 
 		if ( pSelectedFormat->m_hColor.m_nSize && !pCurrentFormat->m_hColor.m_nSize)
-			glEnableClientState (GL_COLOR_ARRAY);
+			gl::EnableClientState (gl::COLOR_ARRAY);
 
 		if (!pSelectedFormat->m_hColor.m_nSize &&  pCurrentFormat->m_hColor.m_nSize)
-			glDisableClientState(GL_COLOR_ARRAY);
+			gl::DisableClientState(gl::COLOR_ARRAY);
 
 		for (int i = 0; i < MAX_GL_GENERIC_ATTRIB; i++)
 		{
 			if ( pSelectedFormat->m_hGeneric[i].m_nSize && !pCurrentFormat->m_hGeneric[i].m_nSize)
-				glEnableVertexAttribArray(i);
+				gl::EnableVertexAttribArray(i);
 
 			if (!pSelectedFormat->m_hGeneric[i].m_nSize &&  pCurrentFormat->m_hGeneric[i].m_nSize)
-				glDisableVertexAttribArray(i);
+				gl::DisableVertexAttribArray(i);
 		}
 
 		for (int i = 0; i < MAX_TEXCOORD_ATTRIB; i++)
 		{
 			if ((pSelectedFormat->m_hTexCoord[i].m_nSize > 0) ^ (pCurrentFormat->m_hTexCoord[i].m_nSize > 0))
 			{
-				glClientActiveTexture(GL_TEXTURE0 + i);
+				gl::ClientActiveTexture(gl::TEXTURE0 + i);
 
 				if (pSelectedFormat->m_hTexCoord[i].m_nSize > 0)
 				{
-					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+					gl::EnableClientState(gl::TEXTURE_COORD_ARRAY);
 				} 
 				else 
 				{
-		            glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		            gl::DisableClientState(gl::TEXTURE_COORD_ARRAY);
 				}
 			}
 		}
@@ -1588,9 +1587,9 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 	CVertexBufferGL* pSelectedBuffer = (CVertexBufferGL*)pVertexBuffer;
 
 	const GLsizei glTypes[] = {
-		GL_FLOAT,
-		GL_HALF_FLOAT,
-		GL_UNSIGNED_BYTE,
+		gl::FLOAT,
+		gl::HALF_FLOAT_ARB,
+		gl::UNSIGNED_BYTE,
 	};
 
 	GLuint vbo = 0;
@@ -1605,7 +1604,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 		GL_CRITICAL();
 
 		m_nCurrentVBO = vbo;
-		glBindBuffer(GL_ARRAY_BUFFER, m_nCurrentVBO);
+		gl::BindBuffer(gl::ARRAY_BUFFER, m_nCurrentVBO);
 
 		GL_END_CRITICAL();
 	}
@@ -1626,19 +1625,19 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 			if (cvf->m_hVertex.m_nStream == nStream && cvf->m_hVertex.m_nSize)
 			{
-				glVertexPointer(cvf->m_hVertex.m_nSize, glTypes[cvf->m_hVertex.m_nFormat], vertexSize, base + cvf->m_hVertex.m_nOffset);
+				gl::VertexPointer(cvf->m_hVertex.m_nSize, glTypes[cvf->m_hVertex.m_nFormat], vertexSize, base + cvf->m_hVertex.m_nOffset);
 			}
 
 			if (cvf->m_hNormal.m_nStream == nStream && cvf->m_hNormal.m_nSize)
 			{
-				glNormalPointer(glTypes[cvf->m_hNormal.m_nFormat], vertexSize, base + cvf->m_hNormal.m_nOffset);
+				gl::NormalPointer(glTypes[cvf->m_hNormal.m_nFormat], vertexSize, base + cvf->m_hNormal.m_nOffset);
 			}
 
 			for (int i = 0; i < MAX_GL_GENERIC_ATTRIB; i++)
 			{
 				if (cvf->m_hGeneric[i].m_nStream == nStream && cvf->m_hGeneric[i].m_nSize)
 				{
-					glVertexAttribPointer(i, cvf->m_hGeneric[i].m_nSize, glTypes[cvf->m_hGeneric[i].m_nFormat], GL_TRUE, vertexSize, base + cvf->m_hGeneric[i].m_nOffset);
+					gl::VertexAttribPointer(i, cvf->m_hGeneric[i].m_nSize, glTypes[cvf->m_hGeneric[i].m_nFormat], gl::TRUE_, vertexSize, base + cvf->m_hGeneric[i].m_nOffset);
 				}
 			}
 
@@ -1646,15 +1645,15 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 			{
 				if (cvf->m_hTexCoord[i].m_nStream == nStream && cvf->m_hTexCoord[i].m_nSize)
 				{
-					glClientActiveTexture(GL_TEXTURE0 + i);
-					glTexCoordPointer(cvf->m_hTexCoord[i].m_nSize, glTypes[cvf->m_hTexCoord[i].m_nFormat], vertexSize, base + cvf->m_hTexCoord[i].m_nOffset);
+					gl::ClientActiveTexture(gl::TEXTURE0 + i);
+					gl::TexCoordPointer(cvf->m_hTexCoord[i].m_nSize, glTypes[cvf->m_hTexCoord[i].m_nFormat], vertexSize, base + cvf->m_hTexCoord[i].m_nOffset);
 				}
 			}
 
 		
 			if (cvf->m_hColor.m_nStream == nStream && cvf->m_hColor.m_nSize)
 			{
-				glColorPointer(cvf->m_hColor.m_nSize, glTypes[cvf->m_hColor.m_nFormat], vertexSize, base + cvf->m_hColor.m_nOffset);
+				gl::ColorPointer(cvf->m_hColor.m_nSize, glTypes[cvf->m_hColor.m_nFormat], vertexSize, base + cvf->m_hColor.m_nOffset);
 			}
 		
 			GL_END_CRITICAL();
@@ -1689,12 +1688,12 @@ void ShaderAPIGL::ChangeIndexBuffer(IIndexBuffer *pIndexBuffer)
 
 		if (pIndexBuffer == NULL)
 		{
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
 		}
 		else 
 		{
 			CIndexBufferGL* pSelectedIndexBffer = (CIndexBufferGL*)pIndexBuffer;
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pSelectedIndexBffer->m_nGL_IB_Index);
+			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, pSelectedIndexBffer->m_nGL_IB_Index);
 		}
 
 		m_pCurrentIndexBuffer = pIndexBuffer;
@@ -1804,7 +1803,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	if(!pShaderOutput)
 		return false;
 
-	if (!GLSL_supported || (params.pszVSText == NULL && params.pszPSText == NULL))
+	if (!gl::exts::var_ARB_fragment_shader || !gl::exts::var_EXT_vertex_shader || (params.pszVSText == NULL && params.pszPSText == NULL))
 		return false;
 
 	ThreadingSharingRequest();
@@ -1816,7 +1815,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	if(params.pszVSText)
 	{
 		// create GL program
-		prog->m_program = glCreateProgram();
+		prog->m_program = gl::CreateProgram();
 
 		EqString shaderString;
 
@@ -1833,22 +1832,22 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		const char* sStr = shaderString.c_str();
 
-		prog->m_vertexShader = glCreateShader(GL_VERTEX_SHADER);
+		prog->m_vertexShader = gl::CreateShader(gl::VERTEX_SHADER);
 
-		glShaderSource(prog->m_vertexShader, 1, &sStr, NULL);
-		glCompileShader(prog->m_vertexShader);
-		glGetObjectParameterivARB(prog->m_vertexShader, GL_OBJECT_COMPILE_STATUS, &vsResult);
+		gl::ShaderSource(prog->m_vertexShader, 1, &sStr, NULL);
+		gl::CompileShader(prog->m_vertexShader);
+		gl::GetShaderiv(prog->m_vertexShader, gl::OBJECT_COMPILE_STATUS_ARB, &vsResult);
 
 		if (vsResult)
 		{
-			glAttachShader(prog->m_program, prog->m_vertexShader);
+			gl::AttachShader(prog->m_program, prog->m_vertexShader);
 		} 
 		else 
 		{
 			char infoLog[2048];
 			GLint len;
 
-			glGetInfoLogARB(prog->m_vertexShader, sizeof(infoLog), &len, infoLog);
+			gl::GetShaderInfoLog(prog->m_vertexShader, sizeof(infoLog), &len, infoLog);
 			MsgError("Vertex shader '%s' error: %s\n", prog->GetName(), infoLog);
 		}
 	}
@@ -1860,9 +1859,9 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	{
 		EqString shaderString;
 
-#ifndef USE_OPENGL_ES
+#ifndef USE_OPENgl::ES
 		shaderString.Append("#version 120\r\n");
-#endif // USE_OPENGL_ES
+#endif // USE_OPENgl::ES
 
 		if (extra  != NULL)
 			shaderString.Append(extra);
@@ -1873,27 +1872,27 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		const char* sStr = shaderString.c_str();
 
-		prog->m_fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+		prog->m_fragmentShader = gl::CreateShader(gl::FRAGMENT_SHADER);
 
-		glShaderSource(prog->m_fragmentShader, 1, &sStr, NULL);
-		glCompileShader(prog->m_fragmentShader);
-		glGetObjectParameterivARB(prog->m_fragmentShader, GL_OBJECT_COMPILE_STATUS, &fsResult);
+		gl::ShaderSource(prog->m_fragmentShader, 1, &sStr, NULL);
+		gl::CompileShader(prog->m_fragmentShader);
+		gl::GetShaderiv(prog->m_fragmentShader, gl::OBJECT_COMPILE_STATUS_ARB, &fsResult);
 
 		if (vsResult)
 		{
-			glAttachShader(prog->m_program, prog->m_fragmentShader);
+			gl::AttachShader(prog->m_program, prog->m_fragmentShader);
 		} 
 		else 
 		{
 			char infoLog[2048];
 			GLint len;
 
-			glGetInfoLogARB(prog->m_vertexShader, sizeof(infoLog), &len, infoLog);
+			gl::GetShaderInfoLog(prog->m_vertexShader, sizeof(infoLog), &len, infoLog);
 			MsgError("Pixel (fragment) shader '%s' error: %s\n", prog->GetName(), infoLog);
 		}
 	}
 	else
-		fsResult = GL_TRUE;
+		fsResult = gl::TRUE_;
 
 	if(fsResult && vsResult)
 	{
@@ -1923,20 +1922,20 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				//Msg("Vertex attribute '%s' at %s\n", nameStr, locationStr);
 				
 				// bind attribute
-				glBindAttribLocation(prog->m_program, attribIndex, nameStr);
+				gl::BindAttribLocation(prog->m_program, attribIndex, nameStr);
 			}
 		}
 
 		// link program and go
-		glLinkProgram(prog->m_program);
-		glGetObjectParameterivARB(prog->m_program, GL_OBJECT_LINK_STATUS, &linkResult);
+		gl::LinkProgram(prog->m_program);
+		gl::GetProgramiv(prog->m_program, gl::OBJECT_LINK_STATUS_ARB, &linkResult);
 
 		if(!linkResult)
 		{
 			char infoLog[2048];
 			GLint len;
 
-			glGetInfoLogARB(prog->m_program, sizeof(infoLog), &len, infoLog);
+			gl::GetProgramInfoLog(prog->m_program, sizeof(infoLog), &len, infoLog);
 			MsgError("Shader '%s' link error: %s\n", prog->GetName(), infoLog);
 			return false;
 		}
@@ -1945,11 +1944,11 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		GLuint currProgram = (m_pCurrentShader == NULL)? 0 : ((CGLShaderProgram*)m_pCurrentShader)->m_program;
 
 		// use freshly generated program to retirieve constants (uniforms) and samplers
-		glUseProgram(prog->m_program);
+		gl::UseProgram(prog->m_program);
 
 		GLint uniformCount, maxLength;
-		glGetObjectParameterivARB(prog->m_program, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &uniformCount);
-		glGetObjectParameterivARB(prog->m_program, GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &maxLength);
+		gl::GetProgramiv(prog->m_program, gl::OBJECT_ACTIVE_UNIFORMS_ARB, &uniformCount);
+		gl::GetProgramiv(prog->m_program, gl::OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &maxLength);
 
 		GLShaderSampler_t  *samplers = (GLShaderSampler_t  *) malloc(uniformCount * sizeof(GLShaderSampler_t));
 		GLShaderConstant_t *uniforms = (GLShaderConstant_t *) malloc(uniformCount * sizeof(GLShaderConstant_t));
@@ -1965,16 +1964,16 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		{
 			GLenum type;
 			GLint length, size;
-			glGetActiveUniform(prog->m_program, i, maxLength, &length, &size, &type, tmpName);
+			gl::GetActiveUniform(prog->m_program, i, maxLength, &length, &size, &type, tmpName);
 
-			if (type >= GL_SAMPLER_1D && type <= GL_SAMPLER_2D_RECT_SHADOW_ARB)
+			if (type >= gl::SAMPLER_1D && type <= gl::SAMPLER_2D_RECT_SHADOW_ARB)
 			{
 				GLShaderSampler_t* sp = &samplers[nSamplers];
 				ASSERTMSG(sp, "WHAT?");
 
 				// Assign samplers to image units
-				GLint location = glGetUniformLocation(prog->m_program, tmpName);
-				glUniform1i(location, nSamplers);
+				GLint location = gl::GetUniformLocation(prog->m_program, tmpName);
+				gl::Uniform1i(location, nSamplers);
 
 				//Msg("[SHADER] retrieving sampler '%s' at %d (location = %d)\n", tmpName, nSamplers, location);
 
@@ -1998,7 +1997,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 							length = (GLint) (bracket - tmpName);
 						}
 
-						uniforms[nUniforms].index = glGetUniformLocation(prog->m_program, tmpName);
+						uniforms[nUniforms].index = gl::GetUniformLocation(prog->m_program, tmpName);
 						uniforms[nUniforms].type = GetConstantType(type);
 						uniforms[nUniforms].nElements = size;
 						strcpy(uniforms[nUniforms].name, tmpName);
@@ -2026,7 +2025,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		delete [] tmpName;
 
 		// restore current program we previously stored
-		glUseProgram(currProgram);
+		gl::UseProgram(currProgram);
 
 		// Shorten arrays to actual count
 		samplers = (GLShaderSampler_t  *) realloc(samplers, nSamplers * sizeof(GLShaderSampler_t));
@@ -2212,10 +2211,10 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(BufferAccessType_e nBufAccess, in
 	DevMsg(3,"Creatting VBO with size %i KB\n", pGLVertexBuffer->GetSizeInBytes() / 1024);
 
 	ThreadingSharingRequest();
-	glGenBuffers(1, &pGLVertexBuffer->m_nGL_VB_Index);
-	glBindBuffer(GL_ARRAY_BUFFER, pGLVertexBuffer->m_nGL_VB_Index);
-	glBufferData(GL_ARRAY_BUFFER, pGLVertexBuffer->GetSizeInBytes(), pData, glBufferUsages[nBufAccess]);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	gl::GenBuffers(1, &pGLVertexBuffer->m_nGL_VB_Index);
+	gl::BindBuffer(gl::ARRAY_BUFFER, pGLVertexBuffer->m_nGL_VB_Index);
+	gl::BufferData(gl::ARRAY_BUFFER, pGLVertexBuffer->GetSizeInBytes(), pData, glBufferUsages[nBufAccess]);
+	gl::BindBuffer(gl::ARRAY_BUFFER, 0);
 	ThreadingSharingRelease();
 
 	m_VBList.append( pGLVertexBuffer );
@@ -2236,10 +2235,10 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, Buffe
 	int size = nIndices * nIndexSize;
 
 	ThreadingSharingRequest();
-	glGenBuffers(1, &pGLIndexBuffer->m_nGL_IB_Index);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pGLIndexBuffer->m_nGL_IB_Index);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, pData, glBufferUsages[nBufAccess]);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	gl::GenBuffers(1, &pGLIndexBuffer->m_nGL_IB_Index);
+	gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, pGLIndexBuffer->m_nGL_IB_Index);
+	gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, size, pData, glBufferUsages[nBufAccess]);
+	gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
 	ThreadingSharingRelease();
 
 	m_IBList.append( pGLIndexBuffer );
@@ -2283,7 +2282,7 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 	ThreadingSharingRequest();
 
-	glDeleteBuffers(1, &pVB->m_nGL_VB_Index);
+	gl::DeleteBuffers(1, &pVB->m_nGL_VB_Index);
 
 	ThreadingSharingRelease();
 
@@ -2307,7 +2306,7 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 	ThreadingSharingRequest();
 
-	glDeleteBuffers(1, &pIB->m_nGL_IB_Index);
+	gl::DeleteBuffers(1, &pIB->m_nGL_IB_Index);
 
 	ThreadingSharingRelease();
 
@@ -2358,7 +2357,7 @@ void ShaderAPIGL::DrawIndexedPrimitives(PrimitiveType_e nType, int nFirstIndex, 
 	uint indexSize = m_pCurrentIndexBuffer->GetIndexSize();
 
 	GL_CRITICAL();
-	glDrawElements(glPrimitiveType[nType], nIndices, indexSize == 2? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
+	gl::DrawElements(glPrimitiveType[nType], nIndices, indexSize == 2? gl::UNSIGNED_SHORT : gl::UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
 	GL_END_CRITICAL();
 
 	m_nDrawIndexedPrimitiveCalls++;
@@ -2375,7 +2374,7 @@ void ShaderAPIGL::DrawNonIndexedPrimitives(PrimitiveType_e nType, int nFirstVert
 	int nTris = g_pGLPrimCounterCallbacks[nType](nVertices);
 
 	GL_CRITICAL();
-	glDrawArrays(glPrimitiveType[nType], nFirstVertex, nVertices);
+	gl::DrawArrays(glPrimitiveType[nType], nFirstVertex, nVertices);
 	GL_END_CRITICAL();
 
 	m_nDrawIndexedPrimitiveCalls++;
@@ -2604,7 +2603,7 @@ void ShaderAPIGL::SetViewport(int x, int y, int w, int h)
 	m_nViewportHeight = h;
 
 	// TODO: set glviewport flipped by y
-	glViewport(x,y,w,h);
+	gl::Viewport(x,y,w,h);
 }
 
 // returns viewport
@@ -2627,7 +2626,7 @@ void ShaderAPIGL::GetViewportDimensions(int &wide, int &tall)
 // sets scissor rectangle
 void ShaderAPIGL::SetScissorRectangle( const IRectangle &rect )
 {
-	//GL_SCISSOR_TEST
+	//gl::SCISSOR_TEST
 	//glScissor(
 }
 
@@ -2771,7 +2770,7 @@ void ShaderAPIGL::ThreadingSharingRelease()
 	m_isSharing = false;
 
 	// make sure it's fully done
-	glFinish();
+	gl::Finish();
 
 #ifdef _WIN32
 	wglMakeCurrent(NULL, NULL);

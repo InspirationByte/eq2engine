@@ -448,7 +448,6 @@ typedef struct RasterizerStateParams_s
 
 
 //---------------------------------------
-#define NONE 0
 
 // shader constant setup flags to set to shader :P
 enum EShaderConstantSetup

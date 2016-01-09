@@ -11,7 +11,7 @@
 #include "IShaderProgram.h"
 #include "utils/EqString.h"
 #include "shaderapi_defs.h"
-#include "eqGLCaps.h"
+#include "gl_caps.hpp"
 
 #define MAX_CONSTANT_NAMELEN 64
 

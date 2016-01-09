@@ -135,10 +135,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="CTexture.cpp" />
-    <ClCompile Include="GL\eqGLCaps.cpp" />
+    <ClCompile Include="GL\eqGLCaps.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="GL\GLMeshBuilder.cpp" />
     <ClCompile Include="GL\GLOcclusionQuery.cpp" />
     <ClCompile Include="GL\GLShaderProgram.cpp" />
+    <ClCompile Include="GL\gl_caps.cpp" />
+    <ClCompile Include="GL\wgl_caps.cpp" />
     <ClCompile Include="ShaderAPIMain.cpp" />
     <ClCompile Include="ShaderAPI_Base.cpp" />
     <ClCompile Include="GL\CGLRenderLib.cpp" />
@@ -150,11 +154,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CTexture.h" />
-    <ClInclude Include="GL\eqGLCaps.h" />
+    <ClInclude Include="GL\eqGLCaps.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="GL\GLMeshBuilder.h" />
     <ClInclude Include="GL\GLOcclusionQuery.h" />
     <ClInclude Include="GL\GLRenderState.h" />
     <ClInclude Include="GL\GLShaderProgram.h" />
+    <ClInclude Include="GL\gl_caps.hpp" />
+    <ClInclude Include="GL\wgl_caps.hpp" />
     <ClInclude Include="IRenderLibrary.h" />
     <CustomBuildStep Include="..\Engine\Renderer.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

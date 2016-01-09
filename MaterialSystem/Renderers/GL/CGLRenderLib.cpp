@@ -6,7 +6,8 @@
 
 #include "Platform.h"
 #include "CGLRenderLib.h"
-#include "eqGLCaps.h"
+#include "gl_caps.hpp"
+#include "wgl_caps.hpp"
 
 #include "imaging/ImageLoader.h"
 
@@ -39,7 +40,9 @@ void InitGLEntryPoints(HWND hwnd, const PIXELFORMATDESCRIPTOR &pfd)
 	HGLRC hglrc = wglCreateContext(hdc);
 	wglMakeCurrent(hdc, hglrc);
 
-	InitializeGLExtCaps(hdc);
+	gl::exts::LoadTest didLoad = gl::sys::LoadFunctions();
+	if(!didLoad)
+		MsgError("OpenGL: %i\n", didLoad.GetNumMissing());
 
 	wglMakeCurrent(NULL, NULL);
 	wglDeleteContext(hglrc);
@@ -120,9 +123,9 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 
 DECLARE_CMD(gl_extensions,"Print supported OpenGL extensions",0)
 {
-	const char *ver = (const char *) glGetString(GL_VERSION);
+	const char *ver = (const char *) gl::GetString(gl::VERSION);
 	Msg("OpenGL version: %s\n \n",ver);
-	const char *exts = (const char *) glGetString(GL_EXTENSIONS);
+	const char *exts = (const char *) gl::GetString(gl::EXTENSIONS);
 
 	DkList<EqString> splExts;
 	xstrsplit(exts," ",splExts);
@@ -234,15 +237,15 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	hdc = GetDC(hwnd);
 
 	int iAttribs[] = {
-		WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
-		WGL_ACCELERATION_ARB,   WGL_FULL_ACCELERATION_ARB,
-		WGL_DOUBLE_BUFFER_ARB,  GL_TRUE,
-		WGL_RED_BITS_ARB,       8,
-		WGL_GREEN_BITS_ARB,     8,
-		WGL_BLUE_BITS_ARB,      8,
-		WGL_ALPHA_BITS_ARB,     (dm.dmBitsPerPel > 24)? 8 : 0,
-		WGL_DEPTH_BITS_ARB,     24,
-		WGL_STENCIL_BITS_ARB,   0,
+		wgl::DRAW_TO_WINDOW_ARB, gl::TRUE_,
+		wgl::ACCELERATION_ARB,  wgl::FULL_ACCELERATION_ARB,
+		wgl::DOUBLE_BUFFER_ARB,  gl::TRUE_,
+		wgl::RED_BITS_ARB,       8,
+		wgl::GREEN_BITS_ARB,     8,
+		wgl::BLUE_BITS_ARB,      8,
+		wgl::ALPHA_BITS_ARB,     (dm.dmBitsPerPel > 24)? 8 : 0,
+		wgl::DEPTH_BITS_ARB,     24,
+		wgl::STENCIL_BITS_ARB,   0,
 		0
 	};
 
@@ -251,16 +254,16 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	int bestSamples = 0;
 	uint nPFormats;
 
-	if (WGL_ARB_pixel_format_supported && wglChoosePixelFormatARB(hdc, iAttribs, NULL, elementsOf(pixelFormats), pixelFormats, &nPFormats) && nPFormats > 0)
+	if (wgl::exts::var_ARB_pixel_format && wgl::ChoosePixelFormatARB(hdc, iAttribs, NULL, elementsOf(pixelFormats), pixelFormats, &nPFormats) && nPFormats > 0)
 	{
 		int minDiff = 0x7FFFFFFF;
-		int attrib = WGL_SAMPLES_ARB;
+		int attrib = wgl::SAMPLES_ARB;
 		int samples;
 
 		// Find a multisample format as close as possible to the requested
 		for (uint i = 0; i < nPFormats; i++)
 		{
-			wglGetPixelFormatAttribivARB(hdc, pixelFormats[i], 0, 1, &attrib, &samples);
+			wgl::GetPixelFormatAttribivARB(hdc, pixelFormats[i], 0, 1, &attrib, &samples);
 			int diff = abs(params.nMultisample - samples);
 			if (diff < minDiff)
 			{
@@ -286,29 +289,18 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	wglMakeCurrent(hdc, glContext);
 
 	{
-		const char *rend = (const char *) glGetString(GL_RENDERER);
-		const char *vendor = (const char *) glGetString(GL_VENDOR);
+		const char *rend = (const char *) gl::GetString(gl::RENDERER);
+		const char *vendor = (const char *) gl::GetString(gl::VENDOR);
 		Msg("*Detected video adapter: %s by %s\n",rend,vendor);
 
-		const char *version = (const char *) glGetString(GL_VERSION);
+		const char *version = (const char *) gl::GetString(gl::VERSION);
 		Msg("*OpenGL version is: %s\n",version);
 	}
 
-	InitializeGLExtCaps(hdc);
-
-	if(GLMajorVersion < 2)
+	if(gl::sys::GetMajorVersion() < 2)
 	{
 		WarningMsg("Cannot initialize OpenGL due driver is only supports version 1.x.x\n\nPlease update your video drivers!");
 		exit(-5);
-	}
-
-	if(GLMajorVersion == 2 && GLMinorVersion < 1)
-	{
-		MsgWarning("%s\n","Warning: You running on OpenGL 2.0! Be sure that the some extensions is not supported and engine may crash!");
-		//MsgWarning("%s\n","The ConVar 'mat_forceffp' was forced to 1");
-		//GetCommandAccessor()->SetCommandBuffer("mat_forceffp 1");
-		//GetCommandAccessor()->ExecuteCommandBuffer();
-		//GetCommandAccessor()->ClearCommandBuffer();
 	}
 #else
 
@@ -331,9 +323,9 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	m_Renderer->Clear(true,true,true,ColorRGBA(0.5,0.5,0.5, 0.0f));
 	EndFrame();
 
-	if (GL_ARB_multisample_supported && params.nMultisample > 0)
+	if (gl::exts::var_ARB_multisample && params.nMultisample > 0)
 	{
-		glEnable(GL_MULTISAMPLE_ARB);
+		gl::Enable(gl::MULTISAMPLE_ARB);
 	}
 
 	return true;
@@ -404,9 +396,9 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 	m_Renderer->GL_CRITICAL();
 
 #ifdef _WIN32
-	if (WGL_EXT_swap_control_supported)
+	if (wgl::exts::var_EXT_swap_control)
 	{
-		wglSwapIntervalEXT(savedParams.bEnableVerticalSync ? 1 : 0);
+		wgl::SwapIntervalEXT(savedParams.bEnableVerticalSync ? 1 : 0);
 	}
 
 	m_Renderer->GL_END_CRITICAL();
@@ -473,7 +465,7 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 	if (glContext != NULL)
 	{
 		m_Renderer->GL_CRITICAL();
-		glViewport(0, 0, w, h);
+		gl::Viewport(0, 0, w, h);
 		m_Renderer->GL_END_CRITICAL();
 	}
 }
@@ -485,7 +477,7 @@ bool CGLRenderLib::CaptureScreenshot(CImage &img)
 	ubyte *pixels = img.Create(FORMAT_RGB8, m_width, m_height, 1, 1);
 	ubyte *flipped = new ubyte[m_width * m_height * 3];
 
-	glReadPixels(0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, flipped);
+	gl::ReadPixels(0, 0, m_width, m_height, gl::RGB, gl::UNSIGNED_BYTE, flipped);
 	for (int y = 0; y < m_height; y++)
 		memcpy(pixels + y * m_width * 3, flipped + (m_height - y - 1) * m_width * 3, m_width * 3);
 

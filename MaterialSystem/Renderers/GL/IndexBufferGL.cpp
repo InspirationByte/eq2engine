@@ -10,7 +10,7 @@
 #include "IndexBufferGL.h"
 #include "ShaderAPIGL.h"
 #include "DebugInterface.h"
-#include "eqGLCaps.h"
+#include "gl_caps.hpp"
 
 CIndexBufferGL::CIndexBufferGL()
 {
@@ -34,7 +34,7 @@ int CIndexBufferGL::GetIndicesCount()
 // locks index buffer and gives to programmer buffer data
 bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
 {
-	bool dynamic = (m_usage == GL_DYNAMIC_DRAW);
+	bool dynamic = (m_usage == gl::DYNAMIC_DRAW);
 
 	if(m_bIsLocked)
 	{
@@ -78,15 +78,15 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 
 		pGLRHI->ThreadingSharingRequest();
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
 
 		// lock whole buffer
-		glGetBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, m_nIndices*m_nIndexSize, m_lockPtr);
+		gl::GetBufferSubData(gl::ELEMENT_ARRAY_BUFFER, 0, m_nIndices*m_nIndexSize, m_lockPtr);
 
 		// give user buffer with offset
 		(*outdata) = m_lockPtr + m_lockOffs*m_nIndexSize;
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
 
 		pGLRHI->ThreadingSharingRelease();
 	}
@@ -110,11 +110,11 @@ void CIndexBufferGL::Unlock()
 
 			pGLRHI->ThreadingSharingRequest();
 
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
 
-			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, m_lockSize*m_nIndexSize, m_lockPtr);
+			gl::BufferSubData(gl::ELEMENT_ARRAY_BUFFER, 0, m_lockSize*m_nIndexSize, m_lockPtr);
 
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
 
 			pGLRHI->ThreadingSharingRelease();
 		}

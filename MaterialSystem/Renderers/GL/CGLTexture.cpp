@@ -7,7 +7,7 @@
 #include "CGLTexture.h"
 #include "DebugInterface.h"
 
-#include "eqGLCaps.h"
+#include "gl_caps.hpp"
 
 #include "shaderapigl_def.h"
 
