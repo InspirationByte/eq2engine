@@ -5,8 +5,8 @@
 // Description: Title screen
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "state_title.h"
 #include "state_mainmenu.h"
+#include "state_title.h"
 #include "state_game.h"
 
 #include "in_keys_ident.h"
@@ -103,11 +103,11 @@ bool CState_Title::Update( float fDt )
 	float halfWidth = m_titleTexture->GetWidth()*0.5f;
 	float halfHeight = m_titleTexture->GetHeight()*0.5f;
 
-	Vertex2D_t tmprect[] = { 
-		MAKETEXQUAD((halfScreen.x-halfWidth*texSizeFactor), 
-					(halfScreen.y-halfHeight*texSizeFactor), 
-					(halfScreen.x+halfWidth*texSizeFactor), 
-					(halfScreen.y+halfHeight*texSizeFactor), 0.0f) 
+	Vertex2D_t tmprect[] = {
+		MAKETEXQUAD((halfScreen.x-halfWidth*texSizeFactor),
+					(halfScreen.y-halfHeight*texSizeFactor),
+					(halfScreen.x+halfWidth*texSizeFactor),
+					(halfScreen.y+halfHeight*texSizeFactor), 0.0f)
 		};
 
 	// Cancel textures
@@ -135,7 +135,7 @@ bool CState_Title::Update( float fDt )
 
 	fontParam.textColor.w = pow(m_fade, 2.0f);
 
-	copyrightFont->RenderText(L"Copyright © Inspiration Byte 2015", halfScreen + Vector2D(0.0f,300.0f), fontParam);
+	copyrightFont->RenderText(L"Copyright Inspiration Byte 2015", halfScreen + Vector2D(0.0f,300.0f), fontParam);
 
 	if( m_goesFromTitle )
 	{

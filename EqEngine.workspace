@@ -13,5 +13,7 @@
 		<Project filename="utils/dk_animationcomp/anim_compiler.cbp" />
 		<Project filename="utils/matsys_wxapp_template/matsys_wxapp_template.cbp" />
 		<Project filename="DriversGame/DriversGame.cbp" />
+		<Project filename="MaterialSystem/EngineShaders/EngineShaders.cbp" />
+		<Project filename="MaterialSystem/Renderers/EqShaderAPIGL.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>

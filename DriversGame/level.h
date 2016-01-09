@@ -271,12 +271,12 @@ struct objectcont_t
 
 	//-----------------------------
 
-	
+
 	IEqModel*				m_defModel;
 
 	EqString				m_defType;
 	kvkeybase_t				m_defKeyvalues;
-	
+
 	levmodelinfo_t			m_info;
 
 #ifdef EDITOR
@@ -331,7 +331,7 @@ struct navGrid_t
 		Cleanup();
 	}
 
-	void Init( int w, int h) 
+	void Init( int w, int h)
 	{
 		if(staticObst || cellStates )
 			Cleanup();
@@ -367,6 +367,8 @@ struct navGrid_t
 
 //----------------------------------------------------------------------
 
+class CGameLevel;
+
 class CLevelRegion
 {
 	friend class CGameLevel;
@@ -378,7 +380,7 @@ public:
 	void							InitRoads();
 	void							Cleanup();
 
-	bool							IsRegionEmpty();	///< returns true if no models or placed tiles of heightfield found here 
+	bool							IsRegionEmpty();	///< returns true if no models or placed tiles of heightfield found here
 
 #ifdef EDITOR
 	void							Ed_Prerender();
@@ -386,7 +388,7 @@ public:
 
 	void							CollectVisibleOccluders(occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition);
 	void							Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& frustumOccluders, int nRenderFlags);
-	
+
 
 	Vector3D						CellToPosition(int x, int y) const;
 	IVector2D						GetTileAndNeighbourRegion(int x, int y, CLevelRegion** reg) const;

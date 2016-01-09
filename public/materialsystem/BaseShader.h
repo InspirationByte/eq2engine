@@ -151,7 +151,7 @@
 	if(b)										\
 	{											\
 		defines.Append("#define " def "\n");		\
-		findQuery.Append("_"def);					\
+		findQuery.Append("_" def);					\
 	}
 
 #define SHADER_ADD_FLOAT_DEFINITION(def, num)		\
@@ -211,7 +211,7 @@ public:
 
 	Vector4D					GetTextureTransform(IMatVar* pTransformVar, IMatVar* pScaleVar);	// get texture transformation from vars
 
-	void						SetupVertexShaderTextureTransform(IMatVar* pTransformVar, IMatVar* pScaleVar, char* pszConstName);	// sends texture transformation to shader
+	void						SetupVertexShaderTextureTransform(IMatVar* pTransformVar, IMatVar* pScaleVar, const char* pszConstName);	// sends texture transformation to shader
 
 
 	int							GetBaseTextureStageCount()	{return 1;}

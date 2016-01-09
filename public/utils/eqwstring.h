@@ -12,6 +12,11 @@
 #include <string.h>
 #include "dktypes.h"
 
+#ifdef __GNUG__
+class EqString;
+#include "eqstring.h"
+#endif // __GNUG__
+
 // TODO: implement safe copy-on-write
 
 #define _EWs EqWString
@@ -30,7 +35,7 @@ public:
 
 	// convert from UTF8 string
 	EqWString(const char* pszString, int len = -1);
-	EqWString(const EqString& string, int nStart = 0, int len = -1);
+	EqWString(const EqString& str, int nStart = 0, int len = -1);
 
 	EqWString(const wchar_t* pszString, int len = -1);
 	EqWString(const EqWString &str, int nStart = 0, int len = -1);

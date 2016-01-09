@@ -237,7 +237,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	{
 		Msg("Setting working directory to %s\n", GetCmdLine()->GetArgumentsOf(nWorkdirIndex));
 #ifdef _WIN32
-	
+
 		SetCurrentDirectory( GetCmdLine()->GetArgumentsOf(nWorkdirIndex) );
 #else
 
@@ -249,7 +249,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
 	bLoggingInitialized = true;
 
-	if(!m_coreConfiguration.LoadFromFile("eq.config"))
+	if(!m_coreConfiguration.LoadFromFile("EQ.CONFIG"))
 	{
 		//Msg("skip: can't open 'eq.config'\n");
 
@@ -310,6 +310,14 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
     //atexit(DkCore_onExit);
 
+	// register core interfaces
+	RegisterInterface( CMDACCESSOR_INTERFACE_VERSION, GetCommandAccessor());
+	RegisterInterface( CMDLINE_INTERFACE_VERSION, GetCmdLine());
+	RegisterInterface( CMDFACTORY_INTERFACE_VERSION, GetCvars());
+	RegisterInterface( FILESYSTEM_INTERFACE_VERSION, GetFileSystem());
+	RegisterInterface( LOCALIZER_INTERFACE_VERSION , GetCLocalize());
+	RegisterInterface( CPUSERVICES_INTERFACE_VERSION , GetCEqCPUCaps());
+
     // Reset counter of same commands
     GetCommandAccessor()->ResetCounter();
 
@@ -317,7 +325,8 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
     CoreMessage();
 
     // Инициализировать CPU
-    ((CEqCPUCaps*)g_cpuCaps.GetInstancePtr())->Init();
+    CEqCPUCaps* cpuCaps = (CEqCPUCaps*)g_cpuCaps.GetInstancePtr();
+    cpuCaps->Init();
 
     // Initialize time and query perfomance
     Platform_InitTime();
@@ -345,14 +354,6 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		MsgAccept("\nCore: Logging console output to file is enabled.\n");
 	else
 		MsgError("\nCore: Logging console output to file is disabled.\n");
-
-	// register core interfaces
-	RegisterInterface( CMDACCESSOR_INTERFACE_VERSION, GetCommandAccessor());
-	RegisterInterface( CMDLINE_INTERFACE_VERSION, GetCmdLine());
-	RegisterInterface( CMDFACTORY_INTERFACE_VERSION, GetCvars());
-	RegisterInterface( FILESYSTEM_INTERFACE_VERSION, GetFileSystem());
-	RegisterInterface( LOCALIZER_INTERFACE_VERSION , GetCLocalize());
-	RegisterInterface( CPUSERVICES_INTERFACE_VERSION , GetCEqCPUCaps());
 
     // Установка статуса
     m_bInitialized = true;

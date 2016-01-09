@@ -5,8 +5,9 @@
 // Description: Heightfield
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "heightfield.h"
 #include "world.h"
+
+#include "heightfield.h"
 #include "VirtualStream.h"
 #include "IDebugOverlay.h"
 #include "math/math_util.h"
@@ -31,7 +32,7 @@ CHeightTileField::~CHeightTileField()
 	Destroy();
 }
 
-void CHeightTileField::Init(int size, IVector2D& regionPos)
+void CHeightTileField::Init(int size, const IVector2D& regionPos)
 {
 	m_sizew = size;
 	m_sizeh = size;
@@ -323,7 +324,7 @@ void CHeightTileField::GetTileTBN(int x, int y, Vector3D& tang, Vector3D& binorm
 		// make only y has sign
 		Vector3D tt = (ntilePosition-tilePosition)*t;
 		Vector3D bb = (ntilePosition-tilePosition)*b;
-		
+
 		float ttd = dot(vec3_forward, tt);
 		float bbd = dot(vec3_right, bb);
 
@@ -693,7 +694,7 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 					Vector2D texCoord = Vector2D(tc_x,tc_y);
 
 					hfielddrawvertex_t vert(point_position + hfield_offset, Vector3D(0.0f, 1.0f, 0.0f), texCoord);
-					
+
 					if (verts_stripped[i])
 						vert.border = 0.0f;
 
@@ -703,7 +704,7 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 				if(!isEmpty)
 				{
 
-					//Vector3D norm1 = NormalOfTriangle(	batch->verts[vindxs[2]].position, 
+					//Vector3D norm1 = NormalOfTriangle(	batch->verts[vindxs[2]].position,
 					//									batch->verts[vindxs[1]].position,
 					//									batch->verts[vindxs[0]].position);
 
@@ -799,8 +800,8 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 																	batch->verts[eindxs[0]].position);
 						// invert normal to make it good
 						if( fCheckDegenerareArea1 > 0.001f )
-							norm1 = NormalOfTriangle(	batch->verts[eindxs[2]].position, 
-														batch->verts[eindxs[1]].position, 
+							norm1 = NormalOfTriangle(	batch->verts[eindxs[2]].position,
+														batch->verts[eindxs[1]].position,
 														batch->verts[eindxs[0]].position);
 						else
 							norm1 = NormalOfTriangle(	batch->verts[eindxs[3]].position,

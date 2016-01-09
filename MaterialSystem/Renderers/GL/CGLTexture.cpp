@@ -6,10 +6,12 @@
 
 #include "CGLTexture.h"
 #include "DebugInterface.h"
+
 #include "eqGLCaps.h"
 
-#include "ShaderAPIGL.h"
 #include "shaderapigl_def.h"
+
+extern PFNGLDELETERENDERBUFFERSEXTPROC        glDeleteRenderbuffersEXT;
 
 CGLTexture::CGLTexture()
 {
@@ -43,7 +45,7 @@ void CGLTexture::ReleaseTextures()
 	{
 		glDeleteRenderbuffersEXT(1, &glDepthID);
 	}
-	else 
+	else
 	{
 		for(int i = 0; i < textures.numElem(); i++)
 			glDeleteTextures(1, &textures[i].glTexID);
@@ -130,7 +132,7 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
 
 	pGLRHI->ThreadingSharingRelease();
 }
-	
+
 // unlocks texture for modifications, etc
 void CGLTexture::Unlock()
 {

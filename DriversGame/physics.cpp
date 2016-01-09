@@ -5,14 +5,16 @@
 // Description: Physics layer
 //////////////////////////////////////////////////////////////////////////////////
 
+
+#include "GameObject.h"
+#include "eqGlobalMutex.h"
+
 #include "physics.h"
 
 #include "heightfield.h"
 #include "IDebugOverlay.h"
 
 #include "utils/GeomTools.h"
-
-#include "world.h"
 
 #include "../shared_engine/physics/BulletConvert.h"
 
@@ -66,7 +68,7 @@ void CPhysicsHFObject::PostSimulate( float fDt )
 		float lastdt = m_object->GetLastFrameTime();
 		m_owner->OnPhysicsFrame(fDt);
 	}
-		
+
 }
 
 //-------------------------------------------------------------------------------------
@@ -227,6 +229,8 @@ void CPhysicsEngine::AddHeightField( CHeightTileField* pField )
 
 	// TODO: array of static objects and transformation info since it's a fixed point physics...
 
+    Threading::CEqMutex& mutex = Threading::GetGlobalMutex(Threading::MUTEXPURPOSE_LEVEL_LOADER);
+
 	for(int i = 0; i < fieldInfo->m_batches.numElem(); i++)
 	{
 		hfieldbatch_t* batch = fieldInfo->m_batches[i];
@@ -258,13 +262,13 @@ void CPhysicsEngine::AddHeightField( CHeightTileField* pField )
 
 		fieldInfo->m_collisionObjects.append( staticObject );
 		fieldInfo->m_meshes.append(mesh);
-		
+
 		staticObject->SetCollideMask(0); // since it's not a dynamic object
 		staticObject->SetRestitution(0.0f);
 		staticObject->SetFriction(1.0f);
 
-		g_pGameWorld->m_level.m_mutex.Lock();
-		
+		mutex.Lock();
+
 		if(param->word == 'W')	// water?
 		{
 			// add it as ghost object
@@ -281,15 +285,15 @@ void CPhysicsEngine::AddHeightField( CHeightTileField* pField )
 			m_physics.AddStaticObject( staticObject );
 		}
 
-		g_pGameWorld->m_level.m_mutex.Unlock();
+		mutex.Unlock();
 	}
 
 	// set user data and add
 	pField->m_userData = fieldInfo;
 
-	g_pGameWorld->m_level.m_mutex.Lock();
+	mutex.Lock();
 	m_heightFields.append(pField);
-	g_pGameWorld->m_level.m_mutex.Unlock();
+	mutex.Unlock();
 }
 
 void CPhysicsEngine::RemoveObject( CPhysicsHFObject* pPhysObject )
@@ -307,11 +311,13 @@ void CPhysicsEngine::RemoveObject( CPhysicsHFObject* pPhysObject )
 
 void CPhysicsEngine::RemoveHeightField( CHeightTileField* pPhysObject )
 {
+    Threading::CEqMutex& mutex = Threading::GetGlobalMutex(Threading::MUTEXPURPOSE_LEVEL_LOADER);
+
 	if( pPhysObject->m_userData )
 	{
 		physicshfield_t* fieldInfo = (physicshfield_t*)pPhysObject->m_userData;
 
-		g_pGameWorld->m_level.m_mutex.Lock();
+		mutex.Lock();
 
 		for(int i = 0; i < fieldInfo->m_collisionObjects.numElem(); i++)
 		{
@@ -324,7 +330,7 @@ void CPhysicsEngine::RemoveHeightField( CHeightTileField* pPhysObject )
 				m_physics.DestroyStaticObject( obj );
 		}
 
-		g_pGameWorld->m_level.m_mutex.Unlock();
+		mutex.Unlock();
 
 		for(int i = 0; i < fieldInfo->m_meshes.numElem(); i++)
 			delete fieldInfo->m_meshes[i];

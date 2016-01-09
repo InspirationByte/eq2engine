@@ -16,7 +16,7 @@ public:
 					CSingletonAbstract()							{ pInstance = NULL; }
 					CSingletonAbstract(CSingletonAbstract const&)	{}
 
-	virtual			~CSingletonAbstract()							{ Destroy(); }
+	virtual			~CSingletonAbstract()							{}
 	void operator	=(CSingletonAbstract const&)					{}
 
 	//----------------
@@ -32,10 +32,10 @@ public:
 
 protected:
 	// initialization function. Can be overrided
-	virtual void	Initialize()									{};
+	virtual void	Initialize() = 0;
 
 	// deletion function. Can be overrided
-	virtual void	Destroy()										{};
+	virtual void	Destroy() = 0;
 
 	static T*		pInstance;
 };

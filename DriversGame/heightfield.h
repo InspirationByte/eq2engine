@@ -147,7 +147,7 @@ public:
 						CHeightTileField();
 				virtual ~CHeightTileField();
 
-	void						Init(int size = HFIELD_MIN_POINTS, IVector2D& regionPos = IVector2D(-1));
+	void						Init(int size = HFIELD_MIN_POINTS, const IVector2D& regionPos = IVector2D(-1));
 	void						Destroy();
 
 

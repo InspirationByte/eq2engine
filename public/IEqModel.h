@@ -11,11 +11,11 @@
 #include "model.h"
 #include "ppmem.h"
 #include "Decals.h"
-#include "EGFInstancer.h"
 
 class IMaterial;
 class IMaterialSystem;
 class IVertexFormat;
+class IEqModelInstancer;
 
 enum EngineModelType_e
 {

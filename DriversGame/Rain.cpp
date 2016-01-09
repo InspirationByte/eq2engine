@@ -5,8 +5,8 @@
 // Description: Rain emitter
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "Rain.h"
 #include "world.h"
+#include "Rain.h"
 
 extern CPFXAtlasGroup* g_translParticles;
 
@@ -15,7 +15,7 @@ RainEmitter* g_pRainEmitter = &s_RainEmitter;
 
 //---------------------------------------------------------------------------------------------------------
 
-CRippleEffect::CRippleEffect(Vector3D &position, Vector3D &normal, float StartSize, float EndSize, float lifetime)
+CRippleEffect::CRippleEffect(const Vector3D &position, const Vector3D &normal, float StartSize, float EndSize, float lifetime)
 {
 	InternalInit(position, lifetime, g_translParticles, g_pRainEmitter->m_rippleEntry);
 
@@ -55,7 +55,7 @@ bool CRippleEffect::DrawEffect(float dTime)
 
 	Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, &g_pGameWorld->m_frustum);
 	*/
-	
+
 	PFXBillboard_t effect2;
 
 	effect2.vOrigin = m_vOrigin+Vector3D(0,(1.0f - lifeTimePerc)*0.1f,0);
@@ -69,7 +69,7 @@ bool CRippleEffect::DrawEffect(float dTime)
 	effect2.fTall = lerp(fStartSize, fEndSize*4.0f, 1.0f-lifeTimePerc);
 
 	Effects_DrawBillboard(&effect2, g_pGameWorld->m_matrices[MATRIXMODE_VIEW], &g_pGameWorld->m_frustum);
-	
+
 	SetSortOrigin(m_vOrigin);
 
 	return true;
@@ -90,7 +90,7 @@ DECLARE_CVAR(rain_advancedeffects,0,"Rain advanced effects (slow)",CV_ARCHIVE);
 
 //---------------------------------------------------------------------------------------------------------
 
-void FX_DrawRainTracer(Vector3D &origin, Vector3D &line_dir, float width, float length, ColorRGBA &color, TexAtlasEntry_t* atlEntry)
+void FX_DrawRainTracer(const Vector3D &origin, Vector3D &line_dir, float width, float length, const ColorRGBA &color, TexAtlasEntry_t* atlEntry)
 {
 	PFXVertex_t* verts;
 	if( g_translParticles->AllocateGeom( 4, 4, &verts, NULL, true ) < 0 )
@@ -137,7 +137,7 @@ void RainParticle::Update(float dt)
 
 	//TexAtlasEntry_t* rain = g_translParticles->FindAtlasTexture();
 
-	FX_DrawRainTracer(origin, velocity, rain_width.GetFloat(), rain_length.GetFloat(), Vector4D(lighting,1), g_pRainEmitter->m_rainEntry);
+	FX_DrawRainTracer(origin, velocity, rain_width.GetFloat(), rain_length.GetFloat(), ColorRGBA(lighting,1), g_pRainEmitter->m_rainEntry);
 
 	origin += velocity * dt;
 }
@@ -175,7 +175,7 @@ void RainEmitter::Update_Draw(float dt, float emit_rate, float rain_speed)
 	AngleVectors(g_pGameWorld->m_CameraParams.GetAngles(),&viewDir);
 
 	float startH = rain_start_h.GetFloat()+viewOrigin.y;
-	
+
 	EmitParticles(dt, emit_rate, rain_speed);
 
 	eqPhysCollisionFilter collFilter;
@@ -195,14 +195,14 @@ void RainEmitter::Update_Draw(float dt, float emit_rate, float rain_speed)
 		{
 			g_pPhysics->TestLine(trace_start,trace_start - Vector3D(0,height,0), rain_trace, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS, &collFilter);
 		}
-		
+
 		if(dt > 0.0f && (pParticle->origin.y < (viewOrigin.y - 10.0f) || rain_trace.fract < 1.0f))
 		{
 			float fSpeed = length(rParticles[i]->velocity)*0.001f;
-			
+
 			if(rain_advancedeffects.GetBool() && rain_trace.fract < 1.0f)
 			{
-				CRippleEffect* pEffect = new CRippleEffect(	Vector3D(rain_trace.position), 
+				CRippleEffect* pEffect = new CRippleEffect(	Vector3D(rain_trace.position),
 															rain_trace.normal,
 															0.04f+RandomFloat(-0.07f, 0.07f)*fSpeed, 0.04f+RandomFloat(-0.07f, 0.07f)*fSpeed, 0.08f);
 
@@ -218,7 +218,7 @@ void RainEmitter::Update_Draw(float dt, float emit_rate, float rain_speed)
 			rParticles[i]->Update(dt);
 		}
 	}
-	
+
 	m_curTime += dt;
 }
 

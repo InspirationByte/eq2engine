@@ -9,7 +9,7 @@
 
 #include "IMaterial.h"
 #include "math/DkMath.h"
-#include "renderers/ishaderapi.h"
+#include "renderers/IShaderAPI.h"
 
 class IMaterial;
 

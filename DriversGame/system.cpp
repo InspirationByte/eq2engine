@@ -5,6 +5,8 @@
 // Description: Drivers system and modules
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "LuaBinding_Drivers.h"
+
 #include "DebugOverlay.h"
 #include "system.h"
 
@@ -14,7 +16,6 @@
 #include "KeyBinding/Keys.h"
 #include "FontCache.h"
 
-#include "LuaBinding_Drivers.h"
 #include "network/net_defs.h"
 
 #include "sys_console.h"
@@ -189,16 +190,18 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 #ifdef _WIN32
 	materials_config.shaderapi_params.hWindow = winfo.info.win.window;
 #elif LINUX
-	// TODO: LINUX VERSION
+	materials_config.shaderapi_params.hWindow = (void*)winfo.info.x11.window;
+#elif APPLE
+	materials_config.shaderapi_params.hWindow = (void*)winfo.info.cocoa.window;
 #endif
 
 	materials_config.shaderapi_params.nScreenFormat = format;
 	materials_config.shaderapi_params.bEnableVerticalSync = r_vSync.GetBool();
 	materials_config.shaderapi_params.nMultisample = 0;
 
+    bool materialSystemStatus = false;
+
 #ifdef _WIN32
-	bool materialSystemStatus = false;
-	
 	if(useOpenGLRender)
 		materialSystemStatus = materials->Init("materials/", "eqGLRHI", materials_config);
 	else if(GetCmdLine()->FindArgument("-norender") != -1)
@@ -206,7 +209,10 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	else
 		materialSystemStatus = materials->Init("materials/", "eqD3D9RHI", materials_config);
 #else
-	bool materialSystemStatus = materials->Init("materials/", "libeqGLRHI.so", materials_config);
+	if(GetCmdLine()->FindArgument("-norender") != -1)
+		materialSystemStatus = materials->Init("materials/", "libeqNullRHI", materials_config);
+    else
+        materialSystemStatus = materials->Init("materials/", "libeqGLRHI", materials_config);
 #endif // _WIN32
 
 #ifdef _WIN32
@@ -383,7 +389,7 @@ void InputCommands_SDL(SDL_Event* event)
 				Msg(" down\n");
 			if (event->jhat.value & SDL_HAT_LEFT)
 				Msg(" left\n");
-			
+
 			// g_pHost->TrapJoyHat_Event(event->jaxis.axis, event->jaxis.value);
 		}
         case SDL_JOYBALLMOTION:
@@ -410,7 +416,7 @@ void InputCommands_SDL(SDL_Event* event)
 					event->jbutton.which, event->jbutton.button, down ? "down" : "up");
 			}
 
-			
+
 
 			g_pHost->TrapJoyButton_Event(event->jbutton.button, down);
             break;
@@ -537,7 +543,7 @@ void CGameHost::SetCursorShow(bool bShow)
 {
 	if(m_cursorVisible == bShow)
 		return;
-		
+
 
 	if(bShow)
 		SDL_SetCursor(staticDefaultCursor[dc_arrow]);

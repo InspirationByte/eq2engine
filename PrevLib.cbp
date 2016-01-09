@@ -18,10 +18,6 @@
 					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
 					<Add option="-DCROSSLINK_LIB" />
 					<Add option="-DLINUX" />
-					<Add directory="public" />
-					<Add directory="public/core" />
-					<Add directory="public/platform" />
-					<Add directory="src_dependency/sdl2/include" />
 				</Compiler>
 			</Target>
 			<Target title="Debug Win32">
@@ -34,16 +30,17 @@
 					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
 					<Add option="-D_DEBUG" />
-					<Add directory="public" />
-					<Add directory="public/core" />
-					<Add directory="public/platform" />
-					<Add directory="src_dependency/sdl2/include" />
 				</Compiler>
 			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-m32 `pkg-config gtk+-2.0 --cflags`" />
 			<Add option="-DUSE_GTK" />
+			<Add directory="public" />
+			<Add directory="public/core" />
+			<Add directory="public/platform" />
+			<Add directory="src_dependency/oolua/include" />
+			<Add directory="src_dependency/luajit/src" />
 		</Compiler>
 		<Unit filename="public/VirtualStream.cpp" />
 		<Unit filename="public/VirtualStream.h" />
@@ -95,7 +92,6 @@
 		<Unit filename="public/network/net_defs.h" />
 		<Unit filename="public/platform/Platform.cpp" />
 		<Unit filename="public/platform/Platform.h" />
-		<Unit filename="public/ppmem.h" />
 		<Unit filename="public/utils/CRC32.cpp" />
 		<Unit filename="public/utils/CRC32.h" />
 		<Unit filename="public/utils/DkLinkedList.h" />
@@ -111,6 +107,7 @@
 		<Unit filename="public/utils/eqthread.h" />
 		<Unit filename="public/utils/eqtimer.cpp" />
 		<Unit filename="public/utils/eqtimer.h" />
+		<Unit filename="public/utils/eqwstring.cpp" />
 		<Unit filename="public/utils/eqwstring.h" />
 		<Unit filename="public/utils/strtools.cpp" />
 		<Unit filename="public/utils/strtools.h" />

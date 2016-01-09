@@ -8,6 +8,8 @@
 #ifndef WORLD_H
 #define WORLD_H
 
+#include "luabinding/LuaBinding.h"
+
 #include "materialsystem/IMaterialSystem.h"
 #include "input.h"
 #include "level.h"
@@ -15,7 +17,6 @@
 
 #include "predictablerandom.h"
 
-#include "luabinding/LuaBinding.h"
 class CBillboardList;
 
 enum ERenderFlags
@@ -23,27 +24,6 @@ enum ERenderFlags
 	RFLAG_FLIP_VIEWPORT_X	= (1 << 25),
 	RFLAG_INSTANCE			= (1 << 26),
 };
-
-// COLLISION_MASK_ALL defined in eqCollision_Object.h
-
-// here we assembly the custom collision mask to use
-enum EPhysCollisionContents
-{
-	OBJECTCONTENTS_SOLID_GROUND		= (1 << 0),	// ground objects
-	OBJECTCONTENTS_SOLID_OBJECTS	= (1 << 1),	// other world objects
-
-	OBJECTCONTENTS_WATER			= (1 << 2), // water surface
-
-	OBJECTCONTENTS_DEBRIS			= (1 << 3),
-	OBJECTCONTENTS_OBJECT			= (1 << 4),
-	OBJECTCONTENTS_VEHICLE			= (1 << 5),
-
-	OBJECTCONTENTS_CUSTOM_START		= (1 << 8),
-};
-
-#define COLLIDEMASK_VEHICLE (OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_DEBRIS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE | OBJECTCONTENTS_WATER)
-#define COLLIDEMASK_DEBRIS (OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE)
-#define COLLIDEMASK_OBJECT (OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT)
 
 // 2 regs, 52 lights, 128 regs (PS/VS), can be reduced to 48
 #define MAX_LIGHTS			16
@@ -241,7 +221,7 @@ protected:
 	DkList<CGameObject*>			m_nonSpawnedObjects;
 
 	DkLinkedList<CGameObject*>		m_renderingObjects;
-	
+
 	EqString						m_levelname;
 
 	IMaterial*						m_skyMaterial;

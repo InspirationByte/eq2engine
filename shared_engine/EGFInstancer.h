@@ -42,7 +42,7 @@ protected:
 
 	IVertexFormat*		m_vertFormat;
 	IVertexBuffer*		m_instanceBuf;
-	
+
 	IT*					m_instances[MAX_INSTANCE_BODYGROUPS][MAX_INSTANCE_LODS];
 	ushort				m_numInstances[MAX_INSTANCE_BODYGROUPS][MAX_INSTANCE_LODS];
 
@@ -53,7 +53,7 @@ protected:
 //-------------------------------------------------------
 
 template <class IT>
-inline CEGFInstancer<IT>::CEGFInstancer() : 
+inline CEGFInstancer<IT>::CEGFInstancer() :
 	m_vertFormat(NULL),
 	m_instanceBuf(NULL),
 	m_preallocatedHWBuffer(false)
@@ -241,7 +241,7 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 
 				model->SetupVBOStream( 0 );
 				g_pShaderAPI->SetVertexBuffer(m_instanceBuf, 2);
-			
+
 				model->DrawGroup( nModDescId, j, false );
 
 				//materials->SetSkinningEnabled(false);

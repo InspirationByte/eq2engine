@@ -132,7 +132,7 @@ CMaterialSystem::~CMaterialSystem()
 }
 
 // Initializes material system
-bool CMaterialSystem::Init(const char* materialsDirectory, char* szShaderAPI, matsystem_render_config_t &config)
+bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderAPI, matsystem_render_config_t &config)
 {
 	Msg(" \n--------- InitMaterialSystem --------- \n");
 

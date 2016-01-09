@@ -144,7 +144,7 @@ void CObject_Sheets::Simulate( float fDt )
 				vel -= SHEET_MIN_VELOCITY;
 
 				appliedForce = true;
-				float distToBodyFac = clamp(length(body->GetPosition()-sheet.origin)/3.5f, 0.0f, 1.0f);
+				float distToBodyFac = clamp((float)length(body->GetPosition()-sheet.origin)/3.5f, 0.0f, 1.0f);
 
 				distToBodyFac *= distToBodyFac;
 				distToBodyFac = 1.0f-distToBodyFac;
@@ -157,7 +157,7 @@ void CObject_Sheets::Simulate( float fDt )
 
 			featherAngle *= clamp(fabs(sheet.velocity)*0.5f, 0.0f, 1.0f);
 		}
-		
+
 		if(!appliedForce && sheet.velocity != 0.0f)
 		{
 			CollisionData_t coll;

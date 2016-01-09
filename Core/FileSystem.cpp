@@ -525,7 +525,7 @@ void CFileSystem::MakeDir(const char* dirname, SearchPath_e search )
 	else
 		searchPath = dirname;
 
-	if(	!(searchPath.c_str()[searchPath.GetLength()-1] == CORRECT_PATH_SEPARATOR  || 
+	if(	!(searchPath.c_str()[searchPath.GetLength()-1] == CORRECT_PATH_SEPARATOR  ||
 		searchPath.c_str()[searchPath.GetLength()-1] == INCORRECT_PATH_SEPARATOR))
 		searchPath.Append( CORRECT_PATH_SEPARATOR );
 
@@ -831,6 +831,7 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 	HMODULE mod = dlopen( moduleFileName.c_str(), RTLD_LAZY | RTLD_LOCAL );
 
 	char* err = dlerror();
+	int lastErr = 0;
 #endif // _WIN32 && MEMDLL
 
 	MsgInfo("Loading module '%s'\n", moduleFileName.c_str());

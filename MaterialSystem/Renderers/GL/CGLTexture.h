@@ -10,7 +10,7 @@
 #include "../CTexture.h"
 #include "utils/DkList.h"
 
-#include <gl/gl.h>
+#include "ShaderAPIGL.h"
 
 struct eqGlTex
 {
@@ -33,7 +33,7 @@ public:
 
 	// locks texture for modifications, etc
 	void					Lock(texlockdata_t* pLockData, Rectangle_t* pRect = NULL, bool bDiscard = false, bool bReadOnly = false, int nLevel = 0, int nCubeFaceId = 0);
-	
+
 	// unlocks texture for modifications, etc
 	void					Unlock();
 

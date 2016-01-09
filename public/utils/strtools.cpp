@@ -15,6 +15,7 @@
 
 #include <wchar.h>
 #include <wctype.h>
+#include <stdarg.h>
 
 char* strupr(char* s1)
 {
@@ -36,6 +37,24 @@ char* strlwr(char* s1)
        p++;
    }
    return s1;
+}
+
+wchar_t* wcslwr(wchar_t* str)
+{
+    wchar_t* it = str;
+
+    while (*it != 0) { *it = towlower(*it); ++it; }
+
+    return str;
+}
+
+wchar_t* wcsupr(wchar_t* str)
+{
+    wchar_t* it = str;
+
+    while (*it != 0) { *it = towupper(*it); ++it; }
+
+    return str;
 }
 
 #endif
@@ -247,7 +266,7 @@ wchar_t* varargs_w(const wchar_t *fmt,...)
 
 	static int index = 0;
 	static wchar_t	string[4][4096];
-	
+
 	wchar_t* buf = string[index];
 	index = (index + 1) & 3;
 

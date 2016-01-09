@@ -8,9 +8,9 @@
 #ifndef STATE_MAINMENU_H
 #define STATE_MAINMENU_H
 
-#include "StateManager.h"
 #include "ui_luaMenu.h"
-#include "LuaBinding_Drivers.h"
+
+#include "StateManager.h"
 
 class CState_MainMenu : public CBaseStateHandler, public CLuaMenu
 {
@@ -38,7 +38,7 @@ public:
 
 	void		SetMenuStackTop(OOLUA::Table& tabl);
 	void		SetMenuTable(OOLUA::Table& tabl);
-	
+
 	void		PushMenu(OOLUA::Table& tabl);
 	void		PopMenu();
 	bool		IsCanPopMenu();
@@ -48,7 +48,7 @@ public:
 	void		PreEnterSelection();
 	*/
 	void		OnEnterSelection( bool isFinal );
-	
+
 protected:
 
 	float					m_fade;

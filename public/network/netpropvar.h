@@ -24,14 +24,14 @@ public:
 			OnNetworkStateChanged();
 			m_value = val;
 		}
-		
+
 		return m_value;
 	}
 
 	const TYPE&	Change(const TYPE& val)
 	{
 		m_value = val;
-		
+
 		return m_value;
 	}
 
@@ -39,7 +39,7 @@ public:
 
 	TYPE& GetForModify()
 	{
-		NetworkStateChanged();
+		OnNetworkStateChanged();
 		return m_value;
 	}
 
@@ -48,7 +48,7 @@ public:
 	operator const			TYPE&() const				{return m_value;}
 	operator				TYPE&()						{return m_value;}
 
-	const TYPE*				operator->() const			{return &m_Value; }
+	const TYPE*				operator->() const			{return &m_value; }
 
 	const TYPE& operator++()
 	{
@@ -59,7 +59,7 @@ public:
 	{
 		return (*this -= 1);
 	}
-	
+
 	TYPE operator++( int ) // postfix version..
 	{
 		TYPE val = m_value;
@@ -75,45 +75,45 @@ public:
 	}
 
 	template< class C >
-	const TYPE& operator+=( const C &val ) 
+	const TYPE& operator+=( const C &val )
 	{
-		return Set( m_value + ( const TYPE )val ); 
+		return Set( m_value + ( const TYPE )val );
 	}
 
 	template< class C >
-	const TYPE& operator-=( const C &val ) 
+	const TYPE& operator-=( const C &val )
 	{
-		return Set( m_value - ( const TYPE )val ); 
-	}
-	
-	template< class C >
-	const TYPE& operator/=( const C &val ) 
-	{
-		return Set( m_Value / ( const TYPE )val ); 
-	}
-	
-	template< class C >
-	const TYPE& operator*=( const C &val ) 
-	{
-		return Set( m_value * ( const TYPE )val ); 
-	}
-	
-	template< class C >
-	const TYPE& operator^=( const C &val ) 
-	{
-		return Set( m_value ^ ( const TYPE )val ); 
+		return Set( m_value - ( const TYPE )val );
 	}
 
 	template< class C >
-	const TYPE& operator|=( const C &val ) 
+	const TYPE& operator/=( const C &val )
 	{
-		return Set( m_value | ( const TYPE )val ); 
+		return Set( m_value / ( const TYPE )val );
 	}
 
 	template< class C >
-	const TYPE& operator&=( const C &val ) 
-	{	
-		return Set( m_value & ( const TYPE )val ); 
+	const TYPE& operator*=( const C &val )
+	{
+		return Set( m_value * ( const TYPE )val );
+	}
+
+	template< class C >
+	const TYPE& operator^=( const C &val )
+	{
+		return Set( m_value ^ ( const TYPE )val );
+	}
+
+	template< class C >
+	const TYPE& operator|=( const C &val )
+	{
+		return Set( m_value | ( const TYPE )val );
+	}
+
+	template< class C >
+	const TYPE& operator&=( const C &val )
+	{
+		return Set( m_value & ( const TYPE )val );
 	}
 
 	TYPE			m_value;
@@ -217,7 +217,7 @@ struct netvariablemap_t
 		\
 		if ( sizeof( netTableDesc ) > sizeof( netTableDesc[0] ) ) \
 		{ \
-			classNameTypedef::m_NetworkVariableMap.m_numProps = ARRAYSIZE( netTableDesc ) - 1; \
+			classNameTypedef::m_NetworkVariableMap.m_numProps = elementsOf( netTableDesc ) - 1; \
 			classNameTypedef::m_NetworkVariableMap.m_props = &netTableDesc[1]; \
 		} \
 		else \

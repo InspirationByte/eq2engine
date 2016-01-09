@@ -6,12 +6,11 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DebugOverlay.h"
-#include "Platform.h"
+#include "Font.h"
+
 #include "DebugInterface.h"
 #include "math/math_util.h"
-#include "IEngineHost.h"
-#include "utils/eqstring.h"
-#include "Font.h"
+
 #include "materialsystem/IMaterialSystem.h"
 
 #ifndef _WIN32
@@ -82,7 +81,7 @@ void GUIDrawWindow(const Rectangle_t &rect, const ColorRGBA &color)
 }
 
 
-CDebugOverlay::CDebugOverlay() : 
+CDebugOverlay::CDebugOverlay() :
 	m_TextArray(64),
 	m_Text3DArray(32),
 	m_RightTextFadeArray(32),
@@ -668,7 +667,7 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 
 		eqFontStyleParam_t textStl;
 		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-		
+
 
 		for (int i = 0;i < m_Text3DArray.numElem();i++)
 		{
@@ -752,7 +751,7 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 			w *= fac;
 			h *= fac;
 		}
-	
+
 		Vertex2D_t light_depth[] = { MAKETEXQUAD(0, 0, w, h, 0) };
 		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, light_depth, elementsOf(light_depth),g_pDebugTexture);
 	}

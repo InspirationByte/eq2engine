@@ -56,7 +56,7 @@
 #include "wx/textdlg.h"
 #include "wx/statline.h"
 
-#include "renderers/ishaderapi.h"
+#include "renderers/IShaderAPI.h"
 #include "materialsystem/IMaterialSystem.h"
 
 #endif // EDITORHDR_H

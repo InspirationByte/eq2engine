@@ -11,7 +11,7 @@
 #ifndef SHADERAPI_BASE_H
 #define SHADERAPI_BASE_H
 
-#include "ishaderapi.h"
+#include "IShaderAPI.h"
 #include "utils/DkList.h"
 #include "utils/eqthread.h"
 

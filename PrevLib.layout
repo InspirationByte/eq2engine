@@ -1,114 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_layout_file>
 	<ActiveTarget name="Release Win32" />
-	<File name="public/platform/Platform.cpp" open="0" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="8113" topLine="371" />
-		</Cursor>
-	</File>
-	<File name="public/utils/KeyValues.h" open="0" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="785" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="public/utils/eqjobs.h" open="0" top="0" tabpos="26" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="746" topLine="2" />
-		</Cursor>
-	</File>
-	<File name="public/utils/strtools.h" open="0" top="0" tabpos="31" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1710" topLine="49" />
-		</Cursor>
-	</File>
-	<File name="public/network/NetInterfaces.cpp" open="0" top="0" tabpos="28" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="14287" topLine="599" />
-		</Cursor>
-	</File>
-	<File name="public/utils/eqstring.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="6636" topLine="288" />
-		</Cursor>
-	</File>
-	<File name="public/network/net_defs.cpp" open="0" top="0" tabpos="20" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="3279" topLine="72" />
-		</Cursor>
-	</File>
-	<File name="public/utils/eqstring.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="852" topLine="6" />
-		</Cursor>
-	</File>
-	<File name="public/math/FixedMath.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2109" topLine="56" />
-		</Cursor>
-	</File>
-	<File name="public/utils/eqthread.h" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="467" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="public/math/DkMath.h" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="446" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="public/math/math_util.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="700" topLine="3" />
-		</Cursor>
-	</File>
-	<File name="public/math/Quaternion.h" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2266" topLine="56" />
-		</Cursor>
-	</File>
 	<File name="public/network/NetMessageBuffer.cpp" open="0" top="0" tabpos="29" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="2152" topLine="79" />
 		</Cursor>
 	</File>
-	<File name="public/network/NetInterfaces.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="public/math/Quaternion.h" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="505" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="public/utils/strtools.cpp" open="0" top="0" tabpos="30" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2698" topLine="112" />
-		</Cursor>
-	</File>
-	<File name="public/network/net_defs.h" open="0" top="0" tabpos="21" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1281" topLine="4" />
-		</Cursor>
-	</File>
-	<File name="public/math/Rectangle.h" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="3319" topLine="86" />
-		</Cursor>
-	</File>
-	<File name="public/math/Matrix_Inline.h" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2288" topLine="56" />
-		</Cursor>
-	</File>
-	<File name="public/math/Matrix.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="12513" topLine="412" />
-		</Cursor>
-	</File>
-	<File name="public/math/Matrix.cpp" open="0" top="0" tabpos="32" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="354" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="public/utils/eqtimer.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1494" topLine="12" />
+			<Cursor1 position="2266" topLine="56" />
 		</Cursor>
 	</File>
 	<File name="public/utils/eqtimer.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -116,19 +16,99 @@
 			<Cursor1 position="837" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="public/math/math_util.cpp" open="0" top="0" tabpos="31" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="public/utils/eqtimer.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="423" topLine="0" />
+			<Cursor1 position="1494" topLine="12" />
 		</Cursor>
 	</File>
-	<File name="public/math/Quaternion.cpp" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="public/network/net_defs.h" open="0" top="0" tabpos="21" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1281" topLine="4" />
+		</Cursor>
+	</File>
+	<File name="public/network/net_defs.cpp" open="0" top="0" tabpos="20" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="3279" topLine="72" />
+		</Cursor>
+	</File>
+	<File name="public/network/c_udp.h" open="0" top="0" tabpos="38" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="4136" topLine="143" />
+		</Cursor>
+	</File>
+	<File name="public/network/NetInterfaces.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="505" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="public/network/NetInterfaces.cpp" open="0" top="0" tabpos="28" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="14287" topLine="599" />
+		</Cursor>
+	</File>
+	<File name="public/math/Vector.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="9903" topLine="388" />
+		</Cursor>
+	</File>
+	<File name="public/utils/eqjobs.h" open="0" top="0" tabpos="26" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="746" topLine="2" />
+		</Cursor>
+	</File>
+	<File name="public/math/math_common.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2558" topLine="104" />
+		</Cursor>
+	</File>
+	<File name="public/utils/eqwstring.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="514" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="public/utils/eqthread.cpp" open="0" top="0" tabpos="21" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="7121" topLine="237" />
+		</Cursor>
+	</File>
+	<File name="public/platform/Platform.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="3454" topLine="102" />
+		</Cursor>
+	</File>
+	<File name="public/math/Matrix_Inline.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2288" topLine="56" />
+		</Cursor>
+	</File>
+	<File name="public/math/FixedMath.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2109" topLine="56" />
+		</Cursor>
+	</File>
+	<File name="public/math/Matrix.cpp" open="0" top="0" tabpos="32" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="354" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="public/math/FVector.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="349" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="public/math/Quaternion.cpp" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="600" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="public/platform/Platform.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="public/dktypes.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="5695" topLine="175" />
+			<Cursor1 position="2842" topLine="62" />
+		</Cursor>
+	</File>
+	<File name="public/math/DkMath.h" open="0" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="446" topLine="0" />
 		</Cursor>
 	</File>
 	<File name="public/network/c_udp.cpp" open="0" top="0" tabpos="27" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -136,14 +116,59 @@
 			<Cursor1 position="4805" topLine="190" />
 		</Cursor>
 	</File>
-	<File name="public/math/Vector.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="public/imaging/ImageLoader.h" open="0" top="0" tabpos="26" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="9903" topLine="388" />
+			<Cursor1 position="729" topLine="11" />
 		</Cursor>
 	</File>
-	<File name="public/dktypes.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="public/platform/Platform.cpp" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="650" topLine="0" />
+			<Cursor1 position="943" topLine="19" />
+		</Cursor>
+	</File>
+	<File name="public/utils/strtools.cpp" open="0" top="0" tabpos="30" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="9636" topLine="525" />
+		</Cursor>
+	</File>
+	<File name="public/utils/strtools.h" open="0" top="0" tabpos="31" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1710" topLine="49" />
+		</Cursor>
+	</File>
+	<File name="public/math/SIMD.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="5047" topLine="233" />
+		</Cursor>
+	</File>
+	<File name="public/utils/eqthread.h" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1832" topLine="57" />
+		</Cursor>
+	</File>
+	<File name="public/utils/eqwstring.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="522" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="public/imaging/ImageLoader.cpp" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="25513" topLine="1040" />
+		</Cursor>
+	</File>
+	<File name="public/utils/Tokenizer.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1739" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="public/utils/eqstring.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="6636" topLine="288" />
+		</Cursor>
+	</File>
+	<File name="public/utils/DkLinkedList.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="687" topLine="0" />
 		</Cursor>
 	</File>
 	<File name="public/network/NetMessageBuffer.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -156,24 +181,9 @@
 			<Cursor1 position="748" topLine="18" />
 		</Cursor>
 	</File>
-	<File name="public/utils/DkLinkedList.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="public/math/math_util.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="687" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="public/network/c_udp.h" open="0" top="0" tabpos="38" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="4136" topLine="143" />
-		</Cursor>
-	</File>
-	<File name="public/utils/KeyValues.cpp" open="0" top="0" tabpos="32" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="19194" topLine="849" />
-		</Cursor>
-	</File>
-	<File name="public/math/FVector.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="349" topLine="0" />
+			<Cursor1 position="700" topLine="3" />
 		</Cursor>
 	</File>
 	<File name="public/imaging/PixWriter.h" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -181,24 +191,39 @@
 			<Cursor1 position="1111" topLine="1" />
 		</Cursor>
 	</File>
-	<File name="public/imaging/ImageLoader.h" open="0" top="0" tabpos="26" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="public/VirtualStream.cpp" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="729" topLine="11" />
+			<Cursor1 position="446" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="public/imaging/ImageLoader.cpp" open="0" top="0" tabpos="25" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="public/utils/eqstring.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="2922" topLine="137" />
+			<Cursor1 position="444" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="public/VirtualStream.cpp" open="0" top="0" tabpos="28" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="public/utils/KeyValues.h" open="0" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1045" topLine="25" />
+			<Cursor1 position="785" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="public/utils/eqthread.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="public/utils/KeyValues.cpp" open="0" top="0" tabpos="32" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="15673" topLine="622" />
+			<Cursor1 position="19194" topLine="849" />
+		</Cursor>
+	</File>
+	<File name="public/math/math_util.cpp" open="0" top="0" tabpos="31" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="423" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="public/math/Matrix.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="12249" topLine="412" />
+		</Cursor>
+	</File>
+	<File name="public/math/Rectangle.h" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="3319" topLine="86" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>

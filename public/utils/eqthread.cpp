@@ -258,6 +258,11 @@ uintptr_t GetCurrentThreadID()
 	return ( uintptr_t )pthread_self();
 }
 
+uintptr_t ThreadGetID(uintptr_t threadHandle)
+{
+    return threadHandle;
+}
+
 void ThreadDestroy( uintptr_t threadHandle )
 {
 	if( threadHandle == 0 )

@@ -27,7 +27,7 @@ struct PFXVertex_t
 	{
 	}
 
-	PFXVertex_t(Vector3D &p, Vector2D &t, ColorRGBA &c)
+	PFXVertex_t(const Vector3D &p, const Vector2D &t, const ColorRGBA &c)
 	{
 		point = p;
 		texcoord = t;
@@ -44,7 +44,7 @@ struct PFXVertex_t
 
 //
 // Particle renderer
-// 
+//
 // It's represented as renderable object
 //
 // You can derive it

@@ -5,14 +5,16 @@
 // Description: Billboard list file and renderer
 //////////////////////////////////////////////////////////////////////////////////
 
+#ifdef GAME_DRIVERS
+#include "world.h"
+#endif // GAME_DRIVERS
+
 #include "BillboardList.h"
+
 #include "utils/Tokenizer.h"
 #include "IDebugOverlay.h"
 #include "IEqModel.h"
 
-#ifdef GAME_DRIVERS
-#include "world.h"
-#endif // GAME_DRIVERS
 
 #ifdef TREEGEN
 
@@ -205,7 +207,7 @@ void CBillboardList::SaveBlb( const char* filename )
 	kvs.SaveToFile(filename);
 #endif // TREEGEN
 }
-		
+
 #define BILLBOARD_POINTS_DISTFACTOR (0.4f)
 
 void CBillboardList::Generate( Vector3D* pointList, int numPoints, float minSize, float maxSize )

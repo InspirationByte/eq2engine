@@ -8,8 +8,6 @@
 #ifndef LUABINDING_H
 #define LUABINDING_H
 
-#include "Platform.h"
-
 #include <iostream>
 
 extern "C"
@@ -21,7 +19,11 @@ extern "C"
 
 #include "oolua.h"
 
+#include "DebugInterface.h"
+
 class IVirtualStream;
+
+extern OOLUA::Script& GetLuaState();
 
 namespace EqLua
 {
@@ -84,7 +86,6 @@ template<class T>
 inline bool LuaCallUserdataCallback(const T& object, const char* functionName, OOLUA::Table& argTable)
 {
 	// search part
-
 	OOLUA::Script& state = GetLuaState();
 
 	EqLua::LuaStackGuard g(state);
@@ -127,7 +128,7 @@ inline bool LuaCallUserdataCallback(const T& object, const char* functionName, O
 		nArgs++;
 	}
 	else
-		MsgError("LuaCallUserdataCallback can't push table on stack - invalid\n");
+		::MsgError("LuaCallUserdataCallback can't push table on stack - invalid\n");
 
 	int res = lua_pcall(state, nArgs, 0, 0);
 

@@ -6,7 +6,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "IDebugOverlay.h"
-#include "ConCommand.h"
+#include "ConVar.h"
+#include "DebugInterface.h"
+#include "utils/KeyValues.h"
 
 #include "eqPhysics.h"
 #include "eqPhysics_Body.h"
@@ -58,12 +60,12 @@ void AdjustSingleSidedContact(btManifoldPoint& cp, const btCollisionObjectWrappe
 		return;
 
 	btBvhTriangleMeshShape* trimesh = 0;
-	
+
 	if( colObj0Wrap->getCollisionObject()->getCollisionShape()->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE )
 	   trimesh = ((btScaledBvhTriangleMeshShape*)colObj0Wrap->getCollisionObject()->getCollisionShape())->getChildShape();
-	else	   
+	else
 	   trimesh = (btBvhTriangleMeshShape*)colObj0Wrap->getCollisionObject()->getCollisionShape();
-	   
+
 	btTriangleInfoMap* triangleInfoMapPtr = (btTriangleInfoMap*) trimesh->getTriangleInfoMap();
 	if (!triangleInfoMapPtr)
 		return;
@@ -246,7 +248,7 @@ void CEqPhysics::DestroyWorld()
 	{
 		delete m_dynObjects[i];
 	}
-	
+
 	m_dynObjects.clear();
 	m_moveable.clear();
 
@@ -254,7 +256,7 @@ void CEqPhysics::DestroyWorld()
 	{
 		delete m_staticObjects[i];
 	}
-	
+
 	m_staticObjects.clear();
 
 	for(int i = 0; i < m_ghostObjects.numElem(); i++)
@@ -328,7 +330,7 @@ void CEqPhysics::AddToMoveableList( CEqRigidBody* body )
 }
 
 void CEqPhysics::AddToWorld( CEqRigidBody* body, bool moveable )
-{	
+{
 	if(!body)
 		return;
 
@@ -482,12 +484,12 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 
 	if(!bodyA->CheckCanCollideWith(bodyB))
 		return;
-	
+
 	// don't waste my time
 	if(	(bodyA->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK) &&
 		!(bodyB->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK))
 		return;
-	
+
 	{
 		// don't process collisions again
 		for (int i = 0; i < pairs.numElem(); i++)
@@ -574,7 +576,7 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 
 	EqPhysContactResultCallback cbResult;
 	cbResult.m_center = center;
-	
+
 	PROFILE_BEGIN(contactPairTest)
 	m_collisionWorld->contactPairTest(objA, objB, cbResult);
 	PROFILE_END();
@@ -663,7 +665,7 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 	// prepare for testing...
 	btCollisionObject* objA = staticObj->m_collObject;
 	btCollisionObject* objB = bodyB->m_collObject;
-	
+
 	PROFILE_BEGIN(matrixOperations)
 
 	// body a
@@ -703,7 +705,7 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 	btTransform transA = ConvertMatrix4ToBullet(eqTransA);
 	btTransform transB = ConvertMatrix4ToBullet(eqTransB_orig);
 	//btTransform transB_vel = ConvertMatrix4ToBullet(eqTransB_vel);
-	
+
 	objA->setWorldTransform(transA);
 	objB->setWorldTransform(transB);
 
@@ -715,7 +717,7 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 	PROFILE_BEGIN(contactPairTest)
 	m_collisionWorld->contactPairTest(objA, objB, cbResult);
 	PROFILE_END();
-	
+
 	int numCollResults = cbResult.m_collisions.numElem();
 
 	float iter_delta = 1.0f / numCollResults;
@@ -919,7 +921,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body, float deltaTime, DkL
 			}
 		}
 	}
-	
+
 	/*else
 	{
 		collgridcell_t* cell = body->GetCell();
@@ -931,7 +933,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body, float deltaTime, DkL
 		for (int j = 0; j < cell->m_gridObjects.numElem(); j++)
 			SolveStaticVsBodyCollision(cell->m_gridObjects[j], body, body->GetLastFrameTime(), pairs);
 
-	
+
 		// check for dynamic objects in cell
 		for (int j = 0; j < cell->m_dynamicObjs.numElem(); j++)
 		{
@@ -949,7 +951,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body, float deltaTime, DkL
 				SolveStaticVsBodyCollision(cell->m_dynamicObjs[j], body, body->GetLastFrameTime(), pairs);
 			}
 		}
-	
+
 		int dx[8] = NEIGHBORCELLS_OFFS_XDX(cell->x, 1);
 		int dy[8] = NEIGHBORCELLS_OFFS_YDY(cell->y, 1);
 
@@ -1055,7 +1057,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair, float deltaTime)
 		pairsA.numElem() < collisionList_Max
 		/*!(bodyB->m_flags & BODY_DISABLE_RESPONSE)*/)
 	{
-		
+
 
 		int oldNum = pairsA.numElem();
 		pairsA.setNum(oldNum+1);
@@ -1101,7 +1103,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair, float deltaTime)
 			collData.flags |= COLLPAIRFLAG_OBJECTB_NO_RESPONSE;
 
 		//bodyB->m_collisionList.append(collData);
-		
+
 	}
 }
 
@@ -1165,126 +1167,126 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 //
 //----------------------------------------------------------------------------------------------------
 template <typename F>
-void CEqPhysics::InternalTestLineCollisionCells(int y1, int x1, int y2, int x2, 
+void CEqPhysics::InternalTestLineCollisionCells(int y1, int x1, int y2, int x2,
 	const FVector3D& start,
 	const FVector3D& end,
 	const BoundingBox& rayBox,
 	CollisionData_t& coll,
-	int rayMask, 
+	int rayMask,
 	eqPhysCollisionFilter* filterParams,
-	F func, 
+	F func,
 	void* args)
-{ 
-	int i;               // loop counter 
-	int ystep, xstep;    // the step on y and x axis 
-	int error;           // the error accumulated during the increment 
-	int errorprev;       // *vision the previous value of the error variable 
-	int y = y1, x = x1;  // the line points 
-	int ddy, ddx;        // compulsory variables: the double values of dy and dx 
+{
+	int i;               // loop counter
+	int ystep, xstep;    // the step on y and x axis
+	int error;           // the error accumulated during the increment
+	int errorprev;       // *vision the previous value of the error variable
+	int y = y1, x = x1;  // the line points
+	int ddy, ddx;        // compulsory variables: the double values of dy and dx
 	int dx = x2 - x1;
 	int dy = y2 - y1;
 
 	if( TestLineCollisionOnCell(y1, x1, start, end, rayBox, coll, rayMask, filterParams, func, args) )
 		return;
 
-	// NB the last point can't be here, because of its previous point (which has to be verified) 
+	// NB the last point can't be here, because of its previous point (which has to be verified)
 	if (dy < 0)
-	{ 
-		ystep = -1; 
-		dy = -dy; 
+	{
+		ystep = -1;
+		dy = -dy;
 	}
-	else 
+	else
 		ystep = 1;
 
 	if (dx < 0)
-	{ 
-		xstep = -1; 
-		dx = -dx; 
+	{
+		xstep = -1;
+		dx = -dx;
 	}
-	else 
+	else
 		xstep = 1;
 
-	ddy = 2 * dy;  // work with double values for full precision 
+	ddy = 2 * dy;  // work with double values for full precision
 	ddx = 2 * dx;
 
 	if (ddx >= ddy)
 	{
-		// first octant (0 <= slope <= 1) 
-		// compulsory initialization (even for errorprev, needed when dx==dy) 
-		errorprev = error = dx;  // start in the middle of the square 
+		// first octant (0 <= slope <= 1)
+		// compulsory initialization (even for errorprev, needed when dx==dy)
+		errorprev = error = dx;  // start in the middle of the square
 		for (i=0 ; i < dx ; i++)
-		{ 
-			// do not use the first point (already done) 
-			x += xstep; 
-			error += ddy; 
+		{
+			// do not use the first point (already done)
+			x += xstep;
+			error += ddy;
 			if (error > ddx)
 			{
-				// increment y if AFTER the middle ( > ) 
-				y += ystep; 
-				error -= ddx; 
-				// three cases (octant == right->right-top for directions below): 
-				if (error + errorprev < ddx)  // bottom square also 
+				// increment y if AFTER the middle ( > )
+				y += ystep;
+				error -= ddx;
+				// three cases (octant == right->right-top for directions below):
+				if (error + errorprev < ddx)  // bottom square also
 				{
 					if(TestLineCollisionOnCell(y - ystep, x, start, end, rayBox, coll, rayMask, filterParams, func, args))
 						return;
 				}
-				else if (error + errorprev > ddx)  // left square also 
+				else if (error + errorprev > ddx)  // left square also
 				{
 					TestLineCollisionOnCell(y, x - xstep, start, end, rayBox, coll, rayMask, filterParams, func, args);
 					return;
 				}
 				else
-				{  // corner: bottom and left squares also 
+				{  // corner: bottom and left squares also
 					if(TestLineCollisionOnCell(y - ystep, x, start, end, rayBox, coll, rayMask, filterParams, func, args))
 						return;
 
 					if(TestLineCollisionOnCell(y, x - xstep, start, end, rayBox, coll, rayMask, filterParams, func, args))
 						return;
-				} 
-			} 
+				}
+			}
 			if( TestLineCollisionOnCell(y, x, start, end, rayBox, coll, rayMask, filterParams, func, args))
 				return;
-			errorprev = error; 
-		} 
+			errorprev = error;
+		}
 	}
 	else
 	{
-		// the same as above 
-		errorprev = error = dy; 
+		// the same as above
+		errorprev = error = dy;
 		for (i=0 ; i < dy ; i++)
-		{ 
-			y += ystep; 
-			error += ddx; 
+		{
+			y += ystep;
+			error += ddx;
 			if (error > ddy)
-			{ 
-				x += xstep; 
-				error -= ddy; 
-				if (error + errorprev < ddy) 
+			{
+				x += xstep;
+				error -= ddy;
+				if (error + errorprev < ddy)
 				{
 					if(TestLineCollisionOnCell(y, x - xstep, start, end, rayBox, coll, rayMask, filterParams, func, args))
 						return;
 				}
-				else if (error + errorprev > ddy) 
+				else if (error + errorprev > ddy)
 				{
 					if(TestLineCollisionOnCell(y - ystep, x, start, end, rayBox, coll, rayMask, filterParams, func, args))
 						return;
 				}
 				else
-				{ 
+				{
 					if(TestLineCollisionOnCell(y, x - xstep, start, end, rayBox, coll, rayMask, filterParams, func, args))
 						return;
 					if(TestLineCollisionOnCell(y - ystep, x, start, end, rayBox, coll, rayMask, filterParams, func, args))
 						return;
-				} 
-			} 
+				}
+			}
 
 			if(TestLineCollisionOnCell(y, x, start, end, rayBox, coll, rayMask, filterParams, func, args))
 				return;
 
-			errorprev = error; 
+			errorprev = error;
 		}
 	}
-	// assert ((y == y2) && (x == x2));  // the last point (y2,x2) has to be the same with the last point of the algorithm 
+	// assert ((y == y2) && (x == x2));  // the last point (y2,x2) has to be the same with the last point of the algorithm
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------
@@ -1296,14 +1298,14 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	const BoundingBox& rayBox,
 	CollisionData_t& coll,
 	int rayMask, eqPhysCollisionFilter* filterParams,
-	F func, 
+	F func,
 	void* args)
 {
 
 	Threading::CScopedMutex m(m_mutex);
 
 	collgridcell_t* cell = m_grid.GetCellAt(x,y);
-	
+
 	if (!cell)
 		return false;
 
@@ -1311,7 +1313,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	float fMaxDist = coll.fract;
 
 	int objectTypeTesting = 0x3;
-	
+
 	if(filterParams && (filterParams->flags & EQPHYS_FILTER_FLAG_DISALLOW_STATIC))
 		objectTypeTesting &= ~0x1;
 
@@ -1327,7 +1329,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 		{
 			CollisionData_t tempColl;
 
-			if ((this->*func)(cell->m_gridObjects[i], start, end, rayBox, tempColl, rayMask, filterParams, args) && 
+			if ((this->*func)(cell->m_gridObjects[i], start, end, rayBox, tempColl, rayMask, filterParams, args) &&
 				(tempColl.fract < fMaxDist))
 			{
 				fMaxDist = tempColl.fract;
@@ -1365,9 +1367,9 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 //		- Casts line in the physics world
 //
 //----------------------------------------------------------------------------------------------------
-bool CEqPhysics::TestLineCollision(	const FVector3D& start, 
-									const FVector3D& end, 
-									CollisionData_t& coll, 
+bool CEqPhysics::TestLineCollision(	const FVector3D& start,
+									const FVector3D& end,
+									CollisionData_t& coll,
 									int rayMask, eqPhysCollisionFilter* filterParams)
 {
 	//PROFILE_FUNC();
@@ -1383,13 +1385,13 @@ bool CEqPhysics::TestLineCollision(	const FVector3D& start,
 	rayBox.AddVertex(start);
 	rayBox.AddVertex(end);
 
-	InternalTestLineCollisionCells(	startCell.y, startCell.x, 
-									endCell.y, endCell.x, 
+	InternalTestLineCollisionCells(	startCell.y, startCell.x,
+									endCell.y, endCell.x,
 									start, end,
 									rayBox,
-									coll, 
+									coll,
 									rayMask,
-									filterParams, 
+									filterParams,
 									static_cast<fnSingleObjectLineCollisionCheck>(&CEqPhysics::TestLineSingleObject), NULL);
 
 	if (coll.fract > 1.0f)
@@ -1443,13 +1445,13 @@ bool CEqPhysics::TestConvexSweepCollision(	btCollisionShape* shape,
 	m_grid.GetPointAt(start - sBoxSize*lineDir, startCell.x, startCell.y);
 	m_grid.GetPointAt(end + sBoxSize*lineDir, endCell.x, endCell.y);
 
-	InternalTestLineCollisionCells(	startCell.y, startCell.x, 
-									endCell.y, endCell.x, 
-									start, end, 
+	InternalTestLineCollisionCells(	startCell.y, startCell.x,
+									endCell.y, endCell.x,
+									start, end,
 									rayBox,
-									coll, 
+									coll,
 									rayMask,
-									filterParams, 
+									filterParams,
 									static_cast<fnSingleObjectLineCollisionCheck>(&CEqPhysics::TestConvexSweepSingleObject), &params);
 
 	if (coll.fract > 1.0f)
@@ -1528,8 +1530,8 @@ bool CEqPhysics::CheckAllowContactTest(eqPhysCollisionFilter* filterParams, CEqC
 
 
 bool CEqPhysics::TestLineSingleObject(
-	CEqCollisionObject* object, 
-	const FVector3D& start, 
+	CEqCollisionObject* object,
+	const FVector3D& start,
 	const FVector3D& end,
 	const BoundingBox& rayBox,
 	CollisionData_t& coll,
@@ -1565,7 +1567,7 @@ bool CEqPhysics::TestLineSingleObject(
 
 	// NEW
 	btTransform transIdent = ConvertMatrix4ToBullet(transpose(obj_mat));
-	
+
 	btVector3 strt = ConvertPositionToBullet(start);
 	btVector3 endt = ConvertPositionToBullet(end);
 
@@ -1575,11 +1577,11 @@ bool CEqPhysics::TestLineSingleObject(
 	btTransform transIdent;
 	transIdent.setIdentity();
 	Matrix4x4 inv_obj_mat = !(obj_mat);
-		
+
 	// transform ray over object
 	Vector3D ray_start = (inv_obj_mat*Vector4D(start, 1.0f)).xyz();
 	Vector3D ray_end = (inv_obj_mat*Vector4D(end, 1.0f)).xyz();
-		
+
 	btVector3 strt = ConvertPositionToBullet(ray_start);
 	btVector3 endt = ConvertPositionToBullet(ray_end);
 	*/
@@ -1587,8 +1589,12 @@ bool CEqPhysics::TestLineSingleObject(
 	btTransform startTrans(btident3, strt);
 	btTransform endTrans(btident3, endt);
 
+#if 0 // new bullet
 	btCollisionObjectWrapper objWrap(NULL, object->m_shape, object->m_collObject, transIdent, 0, 0);
-		
+#else
+    btCollisionObjectWrapper objWrap(NULL, object->m_shape, object->m_collObject, transIdent);
+#endif
+
 	CEqRayTestCallback rayCallback(ConvertDKToBulletVectors(start), ConvertDKToBulletVectors(end));
 	m_collisionWorld->rayTestSingleInternal( startTrans, endTrans, &objWrap, rayCallback);
 
@@ -1652,7 +1658,7 @@ public:
 
 //-------------------------------------------------------------------------------------------------
 
-bool CEqPhysics::TestConvexSweepSingleObject(	CEqCollisionObject* object, 
+bool CEqPhysics::TestConvexSweepSingleObject(	CEqCollisionObject* object,
 												const FVector3D& start,
 												const FVector3D& end,
 												const BoundingBox& raybox,
@@ -1688,7 +1694,7 @@ bool CEqPhysics::TestConvexSweepSingleObject(	CEqCollisionObject* object,
 
 	// NEW
 	btTransform transIdent = ConvertMatrix4ToBullet(transpose(obj_mat));
-	
+
 	btVector3 strt = ConvertPositionToBullet(start);
 	btVector3 endt = ConvertPositionToBullet(end);
 
@@ -1702,24 +1708,24 @@ bool CEqPhysics::TestConvexSweepSingleObject(	CEqCollisionObject* object,
 
 	Matrix4x4 shapeTransform(params->rotation);
 	shapeTransform = inv_obj_mat * shapeTransform;
-	
+
 	// transform ray over object
 	Vector3D ray_start = (inv_obj_mat*Vector4D(start, 1.0f)).xyz();
 	Vector3D ray_end = (inv_obj_mat*Vector4D(end, 1.0f)).xyz();
-		
+
 	btVector3 strt = ConvertPositionToBullet(ray_start);
 	btVector3 endt = ConvertPositionToBullet(ray_end);
 	*/
 	//btTransform startTrans(btident3, strt);
 	//btTransform endTrans(btident3, endt);
 
-	
+
 	// define start and end trasformations
 	btTransform startTrans = ConvertMatrix4ToBullet(shapeTransform);
 	startTrans.setOrigin(strt);
 
 	btTransform endTrans(startTrans.getBasis(), endt);
-	
+
 
 	CEqConvexTestCallback convexCallback(strt,endt);
 
@@ -1727,7 +1733,7 @@ bool CEqPhysics::TestConvexSweepSingleObject(	CEqCollisionObject* object,
 
 	int shapeType = params->shape->getShapeType();
 
-	if(	shapeType > CONCAVE_SHAPES_START_HERE 
+	if(	shapeType > CONCAVE_SHAPES_START_HERE
 		&& shapeType < CONCAVE_SHAPES_END_HERE)
 	{
 		ASSERTMSG(false, "Only compound shapes are supported as concave shapes!");

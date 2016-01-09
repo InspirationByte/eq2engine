@@ -8,10 +8,37 @@
 #define SHADERAPIGL_H
 
 #include "../ShaderAPI_Base.h"
+
+#ifdef LINUX
+#include <gl.h>
+
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/Xmd.h>
+#include <X11/extensions/xf86vmode.h>
+
+typedef XID GLXContextID;
+typedef XID GLXPixmap;
+typedef XID GLXDrawable;
+typedef XID GLXPbuffer;
+typedef XID GLXWindow;
+typedef XID GLXFBConfigID;
+typedef struct __GLXcontextRec *GLXContext;
+typedef struct __GLXFBConfigRec *GLXFBConfig;
+
+#else
 #include "gl/gl.h"
+#endif
 #include "VertexFormatGL.h"
 
 //#define USE_OPENGL_ES
+
+class 		CVertexFormatGL;
+class 		CVertexBufferGL;
+class 		CIndexBufferGL;
+class		CGLTexture;
+class		CGLRenderLib;
+class		CGLShaderProgram;
 
 class ShaderAPIGL : public ShaderAPI_Base
 {
@@ -100,12 +127,12 @@ public:
 	void				Finish();
 
 //-------------------------------------------------------------
-// State manipulation 
+// State manipulation
 //-------------------------------------------------------------
 
 	// creates blending state
 	IRenderState*		CreateBlendingState( const BlendStateParam_t &blendDesc );
-	
+
 	// creates depth/stencil state
 	IRenderState*		CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc );
 
@@ -131,25 +158,25 @@ public:
 
 	// Unload the texture and free the memory
 	void				FreeTexture(ITexture* pTexture);
-	
+
 	// Create procedural texture such as error texture, etc.
 	ITexture*			CreateProceduralTexture(const char* pszName,
-												int width, int height, 
-												const unsigned char* data, int nDataSize, 
-												ETextureFormat nFormat, 
-												AddressMode_e textureAddress = ADDRESSMODE_WRAP, 
+												int width, int height,
+												const unsigned char* data, int nDataSize,
+												ETextureFormat nFormat,
+												AddressMode_e textureAddress = ADDRESSMODE_WRAP,
 												int nFlags = 0);
 
 	// It will add new rendertarget
 	ITexture*			CreateRenderTarget(	int width, int height,
 											ETextureFormat nRTFormat,
-											Filter_e textureFilterType = TEXFILTER_LINEAR, 
-											AddressMode_e textureAddress = ADDRESSMODE_WRAP, 
-											CompareFunc_e comparison = COMP_NEVER, 
+											Filter_e textureFilterType = TEXFILTER_LINEAR,
+											AddressMode_e textureAddress = ADDRESSMODE_WRAP,
+											CompareFunc_e comparison = COMP_NEVER,
 											int nFlags = 0);
 	// It will add new rendertarget
 	ITexture*			CreateNamedRenderTarget(const char* pszName,
-												int width, int height, 
+												int width, int height,
 												ETextureFormat nRTFormat, Filter_e textureFilterType = TEXFILTER_LINEAR,
 												AddressMode_e textureAddress = ADDRESSMODE_WRAP,
 												CompareFunc_e comparison = COMP_NEVER,
@@ -365,8 +392,10 @@ private:
 	HGLRC				m_glContext2;
 #elif defined(LINUX)
 	GLXContext			m_glContext;
+	GLXContext			m_glContext2;
 #elif defined(__APPLE__)
 	AGLContext			m_glContext;
+	GLXContext			m_glContext2;
 #endif // _WIN32
 
 	uintptr_t			m_mainThreadId;

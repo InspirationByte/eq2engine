@@ -21,7 +21,7 @@ public:
 
 							CGLRenderLib();
 							~CGLRenderLib();
-	
+
 	bool					InitCaps();
 
 	bool					InitAPI(const shaderapiinitparams_t &params);
@@ -49,7 +49,7 @@ public:
 
 	// returns default swap chain
 	IEqSwapChain*			GetDefaultSwapchain();
-	
+
 protected:
 
 	ShaderAPIGL*			m_Renderer;
@@ -59,7 +59,7 @@ protected:
 #ifdef _WIN32
 	HINSTANCE				m_renderInstance;
 	DISPLAY_DEVICE			device;
-	
+
 
 	DEVMODE					dm;
 
@@ -69,9 +69,11 @@ protected:
 	HWND					hwnd;
 #elif defined(LINUX)
 	GLXContext				glContext;
+	GLXContext				glContext2;
     XF86VidModeModeInfo**	dmodes;
 #elif defined(__APPLE__)
 	AGLContext				glContext;
+	AGLContext				glContext2;
 	CFArrayRef				dmodes;
 	CFDictionaryRef			initialMode;
 #endif // _WIN32

@@ -8,12 +8,12 @@
 #ifndef GAMEOBJECT_H
 #define GAMEOBJECT_H
 
+#include "LuaBinding_Drivers.h"
+
 #include "occluderSet.h"
 #include "IEqModel.h"
 #include "GameSoundEmitterSystem.h"
 #include "physics.h"
-
-#include "LuaBinding_Drivers.h"
 
 #include "EGFInstancer.h"
 
@@ -57,6 +57,27 @@ protected:
 	void				UnpackNetworkVariables(const netvariablemap_t* map, CNetMessageBuffer* buffer);
 };
 
+// COLLISION_MASK_ALL defined in eqCollision_Object.h
+
+// here we assembly the custom collision mask to use
+enum EPhysCollisionContents
+{
+	OBJECTCONTENTS_SOLID_GROUND		= (1 << 0),	// ground objects
+	OBJECTCONTENTS_SOLID_OBJECTS	= (1 << 1),	// other world objects
+
+	OBJECTCONTENTS_WATER			= (1 << 2), // water surface
+
+	OBJECTCONTENTS_DEBRIS			= (1 << 3),
+	OBJECTCONTENTS_OBJECT			= (1 << 4),
+	OBJECTCONTENTS_VEHICLE			= (1 << 5),
+
+	OBJECTCONTENTS_CUSTOM_START		= (1 << 8),
+};
+
+#define COLLIDEMASK_VEHICLE (OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_DEBRIS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE | OBJECTCONTENTS_WATER)
+#define COLLIDEMASK_DEBRIS (OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE)
+#define COLLIDEMASK_OBJECT (OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT)
+
 #define NETWORK_ID_OFFLINE		-1
 #define SCRIPT_ID_NOTSCRIPTED	-1
 
@@ -91,7 +112,7 @@ enum EGameObjectType
 	GO_TYPES,
 };
 
-static char* s_objectTypeNames[GO_TYPES] =
+static const char* s_objectTypeNames[GO_TYPES] =
 {
 	"GO_DEFAULT",
 	"GO_CAR",
@@ -104,7 +125,7 @@ static char* s_objectTypeNames[GO_TYPES] =
 	"GO_SCRIPTED"
 };
 
-static bool s_networkedObjectTypes[GO_TYPES] = 
+static bool s_networkedObjectTypes[GO_TYPES] =
 {
 	false,
 	true,
@@ -153,7 +174,7 @@ static VertexFormatDesc_t s_gameObjectInstanceFmtDesc[] = {
 	{ 2, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT },
 	{ 2, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT },
 	{ 2, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT },
-			
+
 };
 
 //-------------------------------------------------------------------------------------------
@@ -318,6 +339,6 @@ OOLUA_PROXY_END
 	{	className* pCacheObj = new className;					\
 			pCacheObj->Precache();								\
 			delete pCacheObj;									\
-	}				
+	}
 
 #endif // GAMEOBJECT_H

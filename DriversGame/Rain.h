@@ -8,7 +8,7 @@
 #ifndef RAIN_H
 #define RAIN_H
 
-#include "math\DkMath.h"
+#include "math/DkMath.h"
 #include "DebugInterface.h"
 #include "EqParticles.h"
 
@@ -39,7 +39,7 @@ class RainEmitter;
 class CRippleEffect : public IEffect
 {
 public:
-	CRippleEffect(Vector3D &position, Vector3D &normal, float StartSize, float EndSize, float lifetime);
+	CRippleEffect(const Vector3D &position, const Vector3D &normal, float StartSize, float EndSize, float lifetime);
 
 	bool DrawEffect(float dTime);
 

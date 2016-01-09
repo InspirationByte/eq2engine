@@ -4,7 +4,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium core bindings
 //
-//				
+//
 //
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -15,6 +15,7 @@
 #include "LuaBinding.h"
 
 #include "LuaBinding_Math.h"
+
 #include "IDebugOverlay.h"
 #include "GameSoundEmitterSystem.h"
 #include "utils/KeyValues.h"
@@ -69,12 +70,12 @@ OOLUA_PROXY(kvkeybase_t)
 	OOLUA_MFUNC(Cleanup)
 	OOLUA_MFUNC(ClearValues)
 	OOLUA_MFUNC(SetName)
-	
-	
+
+
 	OOLUA_MFUNC(AddKeyBase)
 	OOLUA_MFUNC(SetKey)
 	OOLUA_MFUNC(RemoveKeyBase)
-	
+
 	OOLUA_MFUNC(SetValue)
 	OOLUA_MFUNC(SetValueByIndex)
 	OOLUA_MFUNC(AppendValue)

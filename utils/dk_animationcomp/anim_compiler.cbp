@@ -17,14 +17,6 @@
 					<Add option="-DNDEBUG" />
 					<Add option="-D_CONSOLE" />
 					<Add option="-D_TOOLS" />
-					<Add directory="../../Engine/Imaging" />
-					<Add directory="../../FileSystem" />
-					<Add directory="../../core" />
-					<Add directory="../../public" />
-					<Add directory="../../public/core" />
-					<Add directory="../../public/platform" />
-					<Add directory="../../Engine" />
-					<Add directory="../../src_dependency/sdl2/include" />
 				</Compiler>
 			</Target>
 			<Target title="Debug Win32">
@@ -36,14 +28,6 @@
 					<Add option="-DNDEBUG" />
 					<Add option="-D_CONSOLE" />
 					<Add option="-D_TOOLS" />
-					<Add directory="../../Engine/Imaging" />
-					<Add directory="../../FileSystem" />
-					<Add directory="../../core" />
-					<Add directory="../../public" />
-					<Add directory="../../public/core" />
-					<Add directory="../../public/Platform" />
-					<Add directory="../../Engine" />
-					<Add directory="../../src_dependency/sdl2/include" />
 				</Compiler>
 				<Linker>
 					<Add library="odbc32.lib" />
@@ -59,6 +43,13 @@
 		</Build>
 		<Compiler>
 			<Add option="-m32" />
+			<Add directory="../../Engine/Imaging" />
+			<Add directory="../../FileSystem" />
+			<Add directory="../../core" />
+			<Add directory="../../public" />
+			<Add directory="../../public/core" />
+			<Add directory="../../public/platform" />
+			<Add directory="../../Engine" />
 		</Compiler>
 		<Linker>
 			<Add option="-lstdc++ -pthread -l:libeqCore.so `pkg-config gtk+-2.0 --libs`" />

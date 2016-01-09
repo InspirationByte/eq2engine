@@ -67,6 +67,8 @@
 		IEXPORTS abstractclass*		Get##classname();	\
 		class _##classname##Singleton : public CSingletonAbstract<abstractclass>	\
 		{	\
+		public:\
+            virtual	~_##classname##Singleton()  { Destroy(); }  \
 		protected:	\
 			void	Initialize()	\
 			{	\
@@ -74,7 +76,7 @@
 			}	\
 			void	Destroy()	\
 			{	\
-				if(pInstance) pInstance = NULL;	\
+				pInstance = NULL;	\
 			}	\
 		};	\
 		static _##classname##Singleton localname;
@@ -85,6 +87,8 @@
 		IEXPORTS void*		_GetDkCoreInterface(const char* pszName);\
 		class _##classname##Singleton : public CSingletonAbstract<abstractclass>	\
 		{	\
+		public:\
+            virtual	~_##classname##Singleton()  { Destroy(); }  \
 		protected:	\
 			void	Initialize()	\
 			{	\
@@ -92,7 +96,7 @@
 			}	\
 			void	Destroy()	\
 			{	\
-				if(pInstance) pInstance = NULL;	\
+				pInstance = NULL;	\
 			}	\
 		};	\
 		static _##classname##Singleton localname;

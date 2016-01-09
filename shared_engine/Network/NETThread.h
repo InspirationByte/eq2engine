@@ -9,6 +9,10 @@
 #ifndef NETTHREAD_H
 #define NETTHREAD_H
 
+#ifndef NO_LUA
+#include "luabinding/LuaBinding.h"
+#endif // NO_LUA
+
 #include "utils/eqthread.h"
 #include "utils/DkList.h"
 #include "utils/eqtimer.h"
@@ -17,10 +21,6 @@
 #include "network/NetInterfaces.h"
 #include "network/NetMessageBuffer.h"
 #include "network/NetEvent.h"
-
-#ifndef NO_LUA
-#include "luabinding/LuaBinding.h"
-#endif // NO_LUA
 
 namespace Networking
 {

@@ -11,9 +11,8 @@
 #include "IDebugOverlay.h"
 
 #include "utils/DkList.h"
-#include "utils/DkLinkedList.h"
 #include "utils/eqstring.h"
-#include "IFont.h"
+#include "utils/eqthread.h"
 #include "math/Vector.h"
 
 struct DebugTextNode_t
@@ -36,7 +35,7 @@ struct DebugText3DNode_t
 	Vector3D	origin;
 	float		dist;
 	ColorRGBA	color;
-	
+
 	EqString	pszText;
 };
 
