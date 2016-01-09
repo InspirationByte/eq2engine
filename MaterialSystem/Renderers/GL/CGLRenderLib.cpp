@@ -8,7 +8,7 @@
 #include "CGLRenderLib.h"
 #include "eqGLCaps.h"
 
-#include "Imaging/ImageLoader.h"
+#include "imaging/ImageLoader.h"
 
 HOOK_TO_CVAR(r_screen);
 
@@ -27,6 +27,7 @@ CGLRenderLib::~CGLRenderLib()
 	GetCore()->UnregisterInterface(RENDERER_INTERFACE_VERSION);
 }
 
+#ifdef _WIN32
 void InitGLEntryPoints(HWND hwnd, const PIXELFORMATDESCRIPTOR &pfd)
 {
 	HDC hdc = GetDC(hwnd);
@@ -49,6 +50,7 @@ LRESULT CALLBACK PFWinProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
 {
 	return DefWindowProc(hwnd, message, wParam, lParam);
 };
+#endif // _WIN32
 
 bool CGLRenderLib::InitCaps()
 {
@@ -101,6 +103,7 @@ bool CGLRenderLib::InitCaps()
 	return true;
 }
 
+#ifdef _WIN32
 MONITORINFO monInfo;
 
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData){
@@ -113,6 +116,7 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 
 	return TRUE;
 }
+#endif // _WIN32
 
 DECLARE_CMD(gl_extensions,"Print supported OpenGL extensions",0)
 {
@@ -168,15 +172,15 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	dm.dmSize = sizeof(dm);
 
 	// Figure display format to use
-	if(params.nScreenFormat == FORMAT_RGBA8) 
+	if(params.nScreenFormat == FORMAT_RGBA8)
 	{
 		dm.dmBitsPerPel = 32;
 	}
-	else if(params.nScreenFormat == FORMAT_RGB8) 
+	else if(params.nScreenFormat == FORMAT_RGB8)
 	{
 		dm.dmBitsPerPel = 24;
 	}
-	else if(params.nScreenFormat == FORMAT_RGB565) 
+	else if(params.nScreenFormat == FORMAT_RGB565)
 	{
 		dm.dmBitsPerPel = 16;
 	}
@@ -212,7 +216,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 				MsgError("Couldn't set fullscreen mode:\n\n%s (0x%p)", err, lastErr);
 			}
-			
+
 		}
 	}
 
@@ -263,8 +267,8 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 				bestSamples = samples;
 			}
 		}
-	} 
-	else 
+	}
+	else
 	{
 		pixelFormats[0] = ChoosePixelFormat(hdc, &pfd);
 	}
@@ -326,7 +330,9 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	m_Renderer = new ShaderAPIGL();
 	g_pShaderAPI = m_Renderer;
 
+#ifdef _WIN32
 	m_Renderer->m_hdc = this->hdc;
+#endif //_WIN32
 	m_Renderer->m_glContext = this->glContext;
 	m_Renderer->m_glContext2 = this->glContext2;
 
@@ -338,7 +344,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	m_Renderer->Clear(true,true,true,ColorRGBA(0.5,0.5,0.5, 0.0f));
 	EndFrame();
 
-	if (WGL_ARB_multisample_supported && GL_ARB_multisample_supported && params.nMultisample > 0)
+	if (GL_ARB_multisample_supported && params.nMultisample > 0)
 	{
 		glEnable(GL_MULTISAMPLE_ARB);
 	}
@@ -394,7 +400,7 @@ void CGLRenderLib::SetActive(bool bActive)
 		ChangeDisplaySettingsEx((const char *) device.DeviceName, NULL, NULL, 0, NULL);
 	}
 
-	
+
 
 }*/
 

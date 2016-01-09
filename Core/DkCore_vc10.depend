@@ -1081,7 +1081,7 @@
 
 1452159728 /home/soap/Projects/eqengine/src_all/Core/resource.h
 
-1452187314 source:/home/soap/Projects/eqengine/src_all/Core/DkCore.cpp
+1452277129 source:/home/soap/Projects/eqengine/src_all/Core/DkCore.cpp
 	<ctime>
 	<direct.h>
 	<locale.h>
@@ -1173,7 +1173,7 @@
 1452159729 /home/soap/Projects/eqengine/src_all/public//utils/CRC32.h
 	"Platform.h"
 
-1452159728 source:/home/soap/Projects/eqengine/src_all/Core/Localize.cpp
+1452277097 source:/home/soap/Projects/eqengine/src_all/Core/Localize.cpp
 	"Localize.h"
 	"DebugInterface.h"
 	"utils/strtools.h"

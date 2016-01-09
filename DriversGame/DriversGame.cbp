@@ -38,6 +38,7 @@
 			</Target>
 		</Build>
 		<Compiler>
+			<Add option="-g" />
 			<Add option="-m32 -Wno-invalid-offsetof `pkg-config sdl2 --cflags` `pkg-config libogg-dev --cflags` `pkg-config libvorbis-dev --cflags`" />
 			<Add directory="../shared_engine" />
 			<Add directory="../FileSystem" />

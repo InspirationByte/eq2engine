@@ -190,7 +190,9 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 #ifdef _WIN32
 	materials_config.shaderapi_params.hWindow = winfo.info.win.window;
 #elif LINUX
-	// TODO: LINUX VERSION
+	materials_config.shaderapi_params.hWindow = (void*)winfo.info.x11.window;
+#elif APPLE
+	materials_config.shaderapi_params.hWindow = (void*)winfo.info.cocoa.window;
 #endif
 
 	materials_config.shaderapi_params.nScreenFormat = format;

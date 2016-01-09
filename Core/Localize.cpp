@@ -30,7 +30,7 @@ void xstr_loc_convert_special_symbols(char* str, bool doNewline)
 	char c = *str;
 	char nextchar = *(str+1);
 
-	while(nextchar != NULL)
+	while(nextchar != '\0')
 	{
 		c = *str;
 		nextchar = *(str + 1);
@@ -104,6 +104,8 @@ void CLocalize::Init()
 	}
 
     m_szLanguageName = KV_GetValueString(pRegional->FindKeyBase("DefaultLanguage"), 0, "English" );
+
+    Msg("Language '%s' set\n", m_szLanguageName.c_str());
 
 	int langArg = GetCmdLine()->FindArgument("-language");
 

@@ -42,7 +42,7 @@
 #	define PLAT_ANDROID 1
 #endif // __APPLE__
 
-// TODO: android and ios
+// TODO: ios
 #endif // _WIN32
 
 #if _MSC_VER >= 1400

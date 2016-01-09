@@ -14,7 +14,7 @@
 	"textureformats.h"
 	"IFileSystem.h"
 
-1452263697 /home/soap/Projects/eqengine/src_all/public/platform/Platform.h
+1452331548 /home/soap/Projects/eqengine/src_all/public/platform/Platform.h
 	"dktypes.h"
 	"SDL.h"
 	"SDL_syswm.h"
@@ -3161,6 +3161,13 @@
 	"platform/Platform.h"
 	"utils/strtools.h"
 	<string.h>
+
+1452272783 source:/home/soap/Projects/eqengine/src_all/public/utils/eqthread.cpp
+	"eqthread.h"
+	"DebugInterface.h"
+	<sched.h>
+	<pthread.h>
+	<errno.h>
 
 1452159729 source:/home/soap/Projects/eqengine/src_all/public/utils/eqtimer.cpp
 	"eqtimer.h"

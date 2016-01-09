@@ -249,7 +249,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
 	bLoggingInitialized = true;
 
-	if(!m_coreConfiguration.LoadFromFile("eq.config"))
+	if(!m_coreConfiguration.LoadFromFile("EQ.CONFIG"))
 	{
 		//Msg("skip: can't open 'eq.config'\n");
 

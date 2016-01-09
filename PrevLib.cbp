@@ -92,7 +92,6 @@
 		<Unit filename="public/network/net_defs.h" />
 		<Unit filename="public/platform/Platform.cpp" />
 		<Unit filename="public/platform/Platform.h" />
-		<Unit filename="public/ppmem.h" />
 		<Unit filename="public/utils/CRC32.cpp" />
 		<Unit filename="public/utils/CRC32.h" />
 		<Unit filename="public/utils/DkLinkedList.h" />

@@ -131,6 +131,9 @@ extern bool WGL_EXT_swap_control_supported;
 #define RenderTexture_supported WGL_ARB_render_texture_supported
 #define FloatRenderTexture_supported (RenderTexture_supported && WGL_ATI_pixel_format_float_supported)
 
+typedef HGLRC (APIENTRY * PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareContext, const int *attribList);
+extern PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
+
 #elif defined(LINUX)
 
 extern bool GLX_ATI_pixel_format_float_supported;
@@ -259,9 +262,6 @@ extern int GLReleaseVersion;
 // NEW! OpenGL 3.xx support
 #ifndef WGL_ARB_create_context
 #define WGL_ARB_create_context
-
-typedef HGLRC (APIENTRY * PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareContext, const int *attribList);
-extern PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
 
 #define ERROR_INVALID_VERSION_ARB               0x2095
 #define WGL_CONTEXT_DEBUG_BIT_ARB               0x0001
