@@ -992,6 +992,9 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 
 	m_menuTitleToken = g_localizer->GetToken("MENU_GAME_TITLE_PAUSE");
 
+    if(!g_pGameSession)
+        return;
+
 	if(g_pGameSession->GetSessionType() == SESSION_SINGLE)
 		m_gameMenuName = "GameMenuStack";
 	else if(g_pGameSession->GetSessionType() == SESSION_NETWORK)
