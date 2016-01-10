@@ -56,9 +56,9 @@
 			<Add directory="../src_dependency/Shiny/include" />
 		</Compiler>
 		<Linker>
-			<Add option="-lstdc++ -m32 -pthread -l:libopenal.so -l:libeqCore.so `pkg-config sdl2 --libs` `pkg-config gtk+-2.0 --libs` `pkg-config vorbisfile --libs`" />
-			<Add library="../libs/libPrevLib.a" />
-			<Add library="../libs/libcoreLib.a" />
+			<Add option="-pthread -leqCore `pkg-config sdl2 --libs` `pkg-config gtk+-2.0 --libs` `pkg-config vorbisfile --libs`" />
+			<Add library="libPrevLib" />
+			<Add library="libcoreLib" />
 			<Add library="../src_dependency/bullet/lib/libBulletCollision.a" />
 			<Add library="../src_dependency/bullet/lib/libLinearMath.a" />
 			<Add library="z" />
@@ -67,6 +67,8 @@
 			<Add library="../src_dependency/luajit/src/libluajit.a" />
 			<Add library="dl" />
 			<Add library="vorbis" />
+			<Add library="openal" />
+			<Add directory="../libs" />
 		</Linker>
 		<Unit filename="../public/TextureAtlas.cpp" />
 		<Unit filename="../public/TextureAtlas.h" />

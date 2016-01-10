@@ -39,13 +39,13 @@
 			<Add directory="../../Engine" />
 		</Compiler>
 		<Linker>
-			<Add option="-lstdc++ -m32 -pthread -leqCore `pkg-config gtk+-2.0 --libs`" />
-			<Add library="../../libs/libcoreLib.a" />
-			<Add library="../../libs/libPrevLib.a" />
+			<Add option="-leqCore `pkg-config gtk+-2.0 --libs`" />
+			<Add library="libcoreLib.a" />
+			<Add library="libPrevLib.a" />
 			<Add library="jpeg" />
 			<Add library="libz" />
 			<Add library="dl" />
-			<Add directory="." />
+			<Add directory="../../libs" />
 		</Linker>
 		<Unit filename="../../public/utils/RectanglePacker.cpp" />
 		<Unit filename="../../public/utils/RectanglePacker.h" />

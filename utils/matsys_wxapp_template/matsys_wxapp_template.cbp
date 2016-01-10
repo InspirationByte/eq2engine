@@ -56,11 +56,12 @@
 			<Add directory="../../shared_engine" />
 		</Compiler>
 		<Linker>
-			<Add option="-m32  `wx-config --libs` -l:libeqCore.so" />
-			<Add library="../../libs/libcoreLib.a" />
-			<Add library="../../libs/libPrevLib.a" />
+			<Add option="`wx-config --libs` -leqCore" />
+			<Add library="libcoreLib" />
+			<Add library="libPrevLib" />
 			<Add library="z" />
 			<Add library="jpeg" />
+			<Add directory="../../libs" />
 		</Linker>
 		<Unit filename="../../Engine/DebugOverlay.h" />
 		<Unit filename="../../public/Font.h" />

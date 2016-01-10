@@ -634,7 +634,7 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channel)
 bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &params, bool bForceNoInterp )
 {
 	ASSERT(soundsystem->IsValidEmitter( emitter->pEmitter ));
-	
+
 	Vector3D emitPos = emitter->origin;
 
 #ifndef NO_ENGINE

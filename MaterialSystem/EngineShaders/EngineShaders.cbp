@@ -17,10 +17,6 @@
 					<Add option="-D_USRDLL" />
 					<Add option="-DEQSHADER_LIBRARY" />
 				</Compiler>
-				<Linker>
-					<Add library="../../libs/libcoreLib.a" />
-					<Add library="../../libs/libPrevLib.a" />
-				</Linker>
 			</Target>
 			<Target title="Debug Win32">
 				<Option output="EngineShaders_vc10" prefix_auto="1" extension_auto="1" />
@@ -35,17 +31,6 @@
 					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
 					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
 				</Compiler>
-				<Linker>
-					<Add library="odbc32.lib" />
-					<Add library="odbccp32.lib" />
-					<Add library="advapi32.lib" />
-					<Add library="user32.lib" />
-					<Add library="kernel32.lib" />
-					<Add library="gdi32.lib" />
-					<Add library="shell32.lib" />
-					<Add library="winmm.lib" />
-					<Add library="comctl32.lib" />
-				</Linker>
 			</Target>
 		</Build>
 		<Compiler>
@@ -57,6 +42,12 @@
 			<Add directory="../../src_dependency/sdl2/include" />
 			<Add directory="../../public/materialsystem" />
 		</Compiler>
+		<Linker>
+			<Add library="coreLib" />
+			<Add library="PrevLib" />
+			<Add library="eqCore" />
+			<Add directory="../../libs" />
+		</Linker>
 		<Unit filename="../../public/ViewParams.cpp" />
 		<Unit filename="../../public/ViewParams.h" />
 		<Unit filename="../../public/materialsystem/BaseShader.cpp" />

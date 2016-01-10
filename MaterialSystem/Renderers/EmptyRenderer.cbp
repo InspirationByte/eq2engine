@@ -49,11 +49,13 @@
 			<Add directory="../../public/materialsystem/renderers" />
 		</Compiler>
 		<Linker>
-			<Add option="-lstdc++ -m32 -pthread -l:libeqCore.so `pkg-config gtk+-2.0 --libs`" />
-			<Add library="../../libs/libcoreLib.a" />
-			<Add library="../../libs/libPrevLib.a" />
+			<Add option="`pkg-config gtk+-2.0 --libs`" />
+			<Add library="libcoreLib" />
+			<Add library="libPrevLib" />
 			<Add library="z" />
 			<Add library="jpeg" />
+			<Add library="eqCore" />
+			<Add directory="../../libs" />
 		</Linker>
 		<Unit filename="../Engine/Renderer.h" />
 		<Unit filename="../FileSystem/ifilesystem.h" />

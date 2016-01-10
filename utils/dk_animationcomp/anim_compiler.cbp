@@ -52,11 +52,12 @@
 			<Add directory="../../Engine" />
 		</Compiler>
 		<Linker>
-			<Add option="-lstdc++ -pthread -l:libeqCore.so `pkg-config gtk+-2.0 --libs`" />
-			<Add library="../../libs/libcoreLib.a" />
-			<Add library="../../libs/libPrevLib.a" />
+			<Add option="-leqCore `pkg-config gtk+-2.0 --libs`" />
+			<Add library="libcoreLib" />
+			<Add library="libPrevLib" />
 			<Add library="z" />
 			<Add library="jpeg" />
+			<Add directory="../../libs/" />
 		</Linker>
 		<Unit filename="../../public/animationfile.h" />
 		<Unit filename="../../public/dsm_esm_loader.cpp" />
