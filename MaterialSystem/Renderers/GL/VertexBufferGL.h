@@ -1,9 +1,9 @@
-//**************Copyright (C) Two Dark Interactive Software 2009**************
-//
-// Description: DarkTech Middle-Level rendering API (ShaderAPI)
-//				Vertex Buffer OpenGL declaration
-//
-//****************************************************************************
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2016
+//////////////////////////////////////////////////////////////////////////////////
+// Description: DarkTech OpenGL ShaderAPI
+//////////////////////////////////////////////////////////////////////////////////
 
 #ifndef VERTEXBUFFERGL_H
 #define VERTEXBUFFERGL_H

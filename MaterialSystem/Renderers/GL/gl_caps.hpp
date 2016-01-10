@@ -187,6 +187,8 @@ namespace gl
 		extern LoadTest var_ARB_depth_buffer_float;
 		extern LoadTest var_EXT_packed_depth_stencil;
 		extern LoadTest var_ARB_texture_rectangle;
+		extern LoadTest var_ATI_texture_float;
+		extern LoadTest var_ARB_occlusion_query;
 		extern LoadTest var_EXT_texture_compression_s3tc;
 		extern LoadTest var_EXT_texture_sRGB;
 		extern LoadTest var_EXT_texture_filter_anisotropic;
@@ -523,6 +525,25 @@ namespace gl
 		PROXY_TEXTURE_RECTANGLE_ARB      = 0x84F7,
 		TEXTURE_BINDING_RECTANGLE_ARB    = 0x84F6,
 		TEXTURE_RECTANGLE_ARB            = 0x84F5,
+		
+		ALPHA_FLOAT16_ATI                = 0x881C,
+		ALPHA_FLOAT32_ATI                = 0x8816,
+		INTENSITY_FLOAT16_ATI            = 0x881D,
+		INTENSITY_FLOAT32_ATI            = 0x8817,
+		LUMINANCE_ALPHA_FLOAT16_ATI      = 0x881F,
+		LUMINANCE_ALPHA_FLOAT32_ATI      = 0x8819,
+		LUMINANCE_FLOAT16_ATI            = 0x881E,
+		LUMINANCE_FLOAT32_ATI            = 0x8818,
+		RGBA_FLOAT16_ATI                 = 0x881A,
+		RGBA_FLOAT32_ATI                 = 0x8814,
+		RGB_FLOAT16_ATI                  = 0x881B,
+		RGB_FLOAT32_ATI                  = 0x8815,
+		
+		CURRENT_QUERY_ARB                = 0x8865,
+		QUERY_COUNTER_BITS_ARB           = 0x8864,
+		QUERY_RESULT_ARB                 = 0x8866,
+		QUERY_RESULT_AVAILABLE_ARB       = 0x8867,
+		SAMPLES_PASSED_ARB               = 0x8914,
 		
 		COMPRESSED_RGBA_S3TC_DXT1_EXT    = 0x83F1,
 		COMPRESSED_RGBA_S3TC_DXT3_EXT    = 0x83F2,
@@ -1573,6 +1594,16 @@ namespace gl
 		
 		
 		
+		extern void (CODEGEN_FUNCPTR *BeginQueryARB)(GLenum target, GLuint id);
+		extern void (CODEGEN_FUNCPTR *DeleteQueriesARB)(GLsizei n, const GLuint * ids);
+		extern void (CODEGEN_FUNCPTR *EndQueryARB)(GLenum target);
+		extern void (CODEGEN_FUNCPTR *GenQueriesARB)(GLsizei n, GLuint * ids);
+		extern void (CODEGEN_FUNCPTR *GetQueryObjectivARB)(GLuint id, GLenum pname, GLint * params);
+		extern void (CODEGEN_FUNCPTR *GetQueryObjectuivARB)(GLuint id, GLenum pname, GLuint * params);
+		extern void (CODEGEN_FUNCPTR *GetQueryivARB)(GLenum target, GLenum pname, GLint * params);
+		extern GLboolean (CODEGEN_FUNCPTR *IsQueryARB)(GLuint id);
+		
+		
 		
 		
 		extern void (CODEGEN_FUNCPTR *Accum)(GLenum op, GLfloat value);
@@ -2276,6 +2307,16 @@ namespace gl
 	
 	
 	
+	
+	
+	inline void BeginQueryARB(GLenum target, GLuint id){_detail::BeginQueryARB(target, id);}
+	inline void DeleteQueriesARB(GLsizei n, const GLuint * ids){_detail::DeleteQueriesARB(n, ids);}
+	inline void EndQueryARB(GLenum target){_detail::EndQueryARB(target);}
+	inline void GenQueriesARB(GLsizei n, GLuint * ids){_detail::GenQueriesARB(n, ids);}
+	inline void GetQueryObjectivARB(GLuint id, GLenum pname, GLint * params){_detail::GetQueryObjectivARB(id, pname, params);}
+	inline void GetQueryObjectuivARB(GLuint id, GLenum pname, GLuint * params){_detail::GetQueryObjectuivARB(id, pname, params);}
+	inline void GetQueryivARB(GLenum target, GLenum pname, GLint * params){_detail::GetQueryivARB(target, pname, params);}
+	inline GLboolean IsQueryARB(GLuint id){return _detail::IsQueryARB(id);}
 	
 	
 	

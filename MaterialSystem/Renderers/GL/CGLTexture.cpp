@@ -1,8 +1,9 @@
-//***********Copyright (C) Two Dark Interactive Software 2007-2009************
-//
-// Description: Base OpenGL texture class
-//
-//****************************************************************************
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2016
+//////////////////////////////////////////////////////////////////////////////////
+// Description: DarkTech OpenGL ShaderAPI
+//////////////////////////////////////////////////////////////////////////////////
 
 #include "CGLTexture.h"
 #include "DebugInterface.h"
@@ -10,8 +11,6 @@
 #include "gl_caps.hpp"
 
 #include "shaderapigl_def.h"
-
-extern PFNGLDELETERENDERBUFFERSEXTPROC        glDeleteRenderbuffersEXT;
 
 CGLTexture::CGLTexture()
 {
@@ -41,14 +40,14 @@ void CGLTexture::Release()
 
 void CGLTexture::ReleaseTextures()
 {
-	if (glTarget == GL_RENDERBUFFER_EXT)
+	if (glTarget == gl::RENDERBUFFER_EXT)
 	{
-		glDeleteRenderbuffersEXT(1, &glDepthID);
+		gl::DeleteRenderbuffersEXT(1, &glDepthID);
 	}
 	else
 	{
 		for(int i = 0; i < textures.numElem(); i++)
-			glDeleteTextures(1, &textures[i].glTexID);
+			gl::DeleteTextures(1, &textures[i].glTexID);
 	}
 }
 
@@ -118,17 +117,17 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
 	pGLRHI->ThreadingSharingRequest();
 
 	// NVIDIA TODO: May be I have problems here
-	glBindTexture(glTarget, textures[0].glTexID);
+	gl::BindTexture(glTarget, textures[0].glTexID);
 
 	GLenum srcFormat = srcFormats[GetChannelCount(m_iFormat)];
 	GLenum srcType = srcTypes[m_iFormat];
 
 	if (IsFloatFormat(m_iFormat))
-		srcType = GL_FLOAT;
+		srcType = gl::FLOAT;
 
-	glGetTexImage(glTarget,m_nLockLevel, srcFormat, srcType, m_lockPtr);
+	gl::GetTexImage(glTarget,m_nLockLevel, srcFormat, srcType, m_lockPtr);
 
-	glBindTexture(glTarget, 0);
+	gl::BindTexture(glTarget, 0);
 
 	pGLRHI->ThreadingSharingRelease();
 }
@@ -148,11 +147,11 @@ void CGLTexture::Unlock()
 			GLenum srcType = srcTypes[m_iFormat];
 
 			if (IsFloatFormat(m_iFormat))
-				srcType = GL_FLOAT;
+				srcType = gl::FLOAT;
 
-			glBindTexture(glTarget, textures[0].glTexID);
-			glTexSubImage2D(glTarget, 0, 0, 0, m_iWidth, m_iHeight, srcFormat, srcType, m_lockPtr);
-			glBindTexture(glTarget, 0);
+			gl::BindTexture(glTarget, textures[0].glTexID);
+			gl::TexSubImage2D(glTarget, 0, 0, 0, m_iWidth, m_iHeight, srcFormat, srcType, m_lockPtr);
+			gl::BindTexture(glTarget, 0);
 
 			pGLRHI->ThreadingSharingRelease();
 		}

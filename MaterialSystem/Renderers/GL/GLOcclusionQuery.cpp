@@ -13,28 +13,28 @@ CGLOcclusionQuery::CGLOcclusionQuery()
 {
 	m_ready = false;
 	m_pixelsVisible = 0;
-	m_query = GL_NONE;
+	m_query = gl::NONE;
 
-	glGenQueries(1, &m_query);
+	gl::GenQueries(1, &m_query);
 }
 
 CGLOcclusionQuery::~CGLOcclusionQuery()
 {
-	glDeleteQueries(1, &m_query);
+	gl::DeleteQueries(1, &m_query);
 }
 
 // begins the occlusion query issue
 void CGLOcclusionQuery::Begin()
 {
-	glBeginQuery(GL_SAMPLES_PASSED, m_query);
+	gl::BeginQuery(gl::SAMPLES_PASSED, m_query);
 	m_ready = false;
 }
 
 // ends the occlusion query issue
 void CGLOcclusionQuery::End()
 {
-	glEndQuery(GL_SAMPLES_PASSED);
-	glFlush();
+	gl::EndQuery(gl::SAMPLES_PASSED);
+	gl::Flush();
 }
 
 // returns status
@@ -46,13 +46,13 @@ bool CGLOcclusionQuery::IsReady()
 	m_pixelsVisible = 0;
 
 	GLint available;
-	glGetQueryObjectiv(m_query, GL_QUERY_RESULT_AVAILABLE, &available);
+	gl::GetQueryObjectiv(m_query, gl::QUERY_RESULT_AVAILABLE, &available);
 
 	m_ready = (available > 0);
 
 	if(m_ready)
 	{
-		glGetQueryObjectuivARB(m_query, GL_QUERY_RESULT, &m_pixelsVisible);
+		gl::GetQueryObjectuiv(m_query, gl::QUERY_RESULT, &m_pixelsVisible);
 	}
 
 	return m_ready;

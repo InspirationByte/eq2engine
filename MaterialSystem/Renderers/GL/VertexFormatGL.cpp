@@ -1,9 +1,9 @@
-//**************Copyright (C) Two Dark Interactive Software 2009**************
-//
-// Description: DarkTech Middle-Level rendering API (ShaderAPI)
-//				Vertex Format OpenGL declaration
-//
-//****************************************************************************
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2016
+//////////////////////////////////////////////////////////////////////////////////
+// Description: DarkTech OpenGL ShaderAPI
+//////////////////////////////////////////////////////////////////////////////////
 
 #include "VertexFormatGL.h"
 

@@ -1,13 +1,37 @@
-//***********Copyright (C) Two Dark Interactive Software 2007-2009************
-//
-// Description: OpenGL Rendering library interface
-//
-//****************************************************************************
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2016
+//////////////////////////////////////////////////////////////////////////////////
+// Description: DarkTech OpenGL ShaderAPI
+//////////////////////////////////////////////////////////////////////////////////
 
 #include "Platform.h"
 #include "CGLRenderLib.h"
 #include "gl_caps.hpp"
 #include "wgl_caps.hpp"
+
+/*
+
+OpenGL extensions for generate
+
+EXT_texture_compression_s3tc
+EXT_texture_sRGB
+EXT_texture_filter_anisotropic
+EXT_multisample
+ARB_instanced_arrays
+ARB_fragment_shader
+ARB_shader_objects
+EXT_vertex_shader
+ARB_framebuffer_object
+ARB_draw_buffers
+EXT_draw_buffers2
+ARB_half_float_pixel
+ARB_depth_buffer_float
+EXT_packed_depth_stencil
+ARB_texture_rectangle
+ATI_texture_float
+
+*/
 
 #include "imaging/ImageLoader.h"
 
@@ -42,7 +66,7 @@ void InitGLEntryPoints(HWND hwnd, const PIXELFORMATDESCRIPTOR &pfd)
 
 	gl::exts::LoadTest didLoad = gl::sys::LoadFunctions();
 	if(!didLoad)
-		MsgError("OpenGL: %i\n", didLoad.GetNumMissing());
+		MsgError("OpenGL load errors: %i\n", didLoad.GetNumMissing());
 
 	wglMakeCurrent(NULL, NULL);
 	wglDeleteContext(hglrc);
@@ -156,8 +180,6 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 	device.cb = sizeof(device);
 	EnumDisplayDevices(NULL, r_screen->GetInt(), &device, 0);
-
-
 
 	// get window parameters
 
@@ -323,9 +345,9 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	m_Renderer->Clear(true,true,true,ColorRGBA(0.5,0.5,0.5, 0.0f));
 	EndFrame();
 
-	if (gl::exts::var_ARB_multisample && params.nMultisample > 0)
+	if (gl::exts::var_EXT_multisample && params.nMultisample > 0)
 	{
-		gl::Enable(gl::MULTISAMPLE_ARB);
+		gl::Enable(gl::MULTISAMPLE_EXT);
 	}
 
 	return true;
@@ -353,36 +375,6 @@ void CGLRenderLib::ExitAPI()
 
 #endif // _WIN32
 }
-	/*
-void CGLRenderLib::SetActive(bool bActive)
-{
-	m_bActive = bActive;
-
-
-
-	if(m_bActive)
-	{
-		if (rs_fullscreen->GetBool())
-		{
-			glViewport(0, 0, dm.dmPelsWidth, dm.dmPelsHeight);
-
-			if (ChangeDisplaySettingsEx((const char *) device.DeviceName, &dm, NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_FAILED)
-			{
-				MsgError("Couldn't set fullscreen mode\n");
-				ErrorMsg("Couldn't set fullscreen mode");
-				rs_fullscreen->SetValue("0");
-			}
-		}
-	}
-	else
-	{
-		ChangeDisplaySettingsEx((const char *) device.DeviceName, NULL, NULL, 0, NULL);
-	}
-
-
-
-}*/
-
 
 void CGLRenderLib::BeginFrame()
 {
@@ -413,35 +405,6 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 #endif // _WIN32
 }
 
-/*
-bool CGLRenderLib::CheckForErrors()
-{
-	int error = glGetError();
-	if (error != GL_NO_ERROR)
-	{
-		if (error == GL_INVALID_ENUM)
-			Msg("OpenGL Renderer error: GL_INVALID_ENUM");
-		else if (error == GL_INVALID_VALUE)
-			Msg("OpenGL Renderer error: GL_INVALID_VALUE");
-		else if (error == GL_INVALID_OPERATION)
-			Msg("OpenGL Renderer error: GL_INVALID_OPERATION");
-		else if (error == GL_STACK_OVERFLOW)
-			Msg("OpenGL Renderer error: GL_STACK_OVERFLOW");
-		else if (error == GL_STACK_UNDERFLOW)
-			Msg("OpenGL Renderer error: GL_STACK_UNDERFLOW");
-		else if (error == GL_OUT_OF_MEMORY)
-			Msg("OpenGL Renderer error: GL_OUT_OF_MEMORY");
-		else if (error == GL_INVALID_FRAMEBUFFER_OPERATION_EXT)
-			Msg("OpenGL Renderer error: GL_INVALID_FRAMEBUFFER_OPERATION_EXT");
-		else
-			Msg("OpenGL Renderer error: Unrecognized OpenGL error");
-
-		return true;
-	}
-
-	return false;
-}*/
-
 void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 {
 	m_width = w;
@@ -465,7 +428,7 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 	if (glContext != NULL)
 	{
 		m_Renderer->GL_CRITICAL();
-		gl::Viewport(0, 0, w, h);
+		gl::Viewport(0, 0, m_width, m_height);
 		m_Renderer->GL_END_CRITICAL();
 	}
 }

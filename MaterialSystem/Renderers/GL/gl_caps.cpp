@@ -103,6 +103,8 @@ namespace gl
 		LoadTest var_ARB_depth_buffer_float;
 		LoadTest var_EXT_packed_depth_stencil;
 		LoadTest var_ARB_texture_rectangle;
+		LoadTest var_ATI_texture_float;
+		LoadTest var_ARB_occlusion_query;
 		LoadTest var_EXT_texture_compression_s3tc;
 		LoadTest var_EXT_texture_sRGB;
 		LoadTest var_EXT_texture_filter_anisotropic;
@@ -676,6 +678,45 @@ namespace gl
 			if(!GetIntegerIndexedvEXT) ++numFailed;
 			IsEnabledIndexedEXT = reinterpret_cast<PFNISENABLEDINDEXEDEXT>(IntGetProcAddress("glIsEnabledIndexedEXT"));
 			if(!IsEnabledIndexedEXT) ++numFailed;
+			return numFailed;
+		}
+		
+		typedef void (CODEGEN_FUNCPTR *PFNBEGINQUERYARB)(GLenum, GLuint);
+		PFNBEGINQUERYARB BeginQueryARB = 0;
+		typedef void (CODEGEN_FUNCPTR *PFNDELETEQUERIESARB)(GLsizei, const GLuint *);
+		PFNDELETEQUERIESARB DeleteQueriesARB = 0;
+		typedef void (CODEGEN_FUNCPTR *PFNENDQUERYARB)(GLenum);
+		PFNENDQUERYARB EndQueryARB = 0;
+		typedef void (CODEGEN_FUNCPTR *PFNGENQUERIESARB)(GLsizei, GLuint *);
+		PFNGENQUERIESARB GenQueriesARB = 0;
+		typedef void (CODEGEN_FUNCPTR *PFNGETQUERYOBJECTIVARB)(GLuint, GLenum, GLint *);
+		PFNGETQUERYOBJECTIVARB GetQueryObjectivARB = 0;
+		typedef void (CODEGEN_FUNCPTR *PFNGETQUERYOBJECTUIVARB)(GLuint, GLenum, GLuint *);
+		PFNGETQUERYOBJECTUIVARB GetQueryObjectuivARB = 0;
+		typedef void (CODEGEN_FUNCPTR *PFNGETQUERYIVARB)(GLenum, GLenum, GLint *);
+		PFNGETQUERYIVARB GetQueryivARB = 0;
+		typedef GLboolean (CODEGEN_FUNCPTR *PFNISQUERYARB)(GLuint);
+		PFNISQUERYARB IsQueryARB = 0;
+		
+		static int Load_ARB_occlusion_query()
+		{
+			int numFailed = 0;
+			BeginQueryARB = reinterpret_cast<PFNBEGINQUERYARB>(IntGetProcAddress("glBeginQueryARB"));
+			if(!BeginQueryARB) ++numFailed;
+			DeleteQueriesARB = reinterpret_cast<PFNDELETEQUERIESARB>(IntGetProcAddress("glDeleteQueriesARB"));
+			if(!DeleteQueriesARB) ++numFailed;
+			EndQueryARB = reinterpret_cast<PFNENDQUERYARB>(IntGetProcAddress("glEndQueryARB"));
+			if(!EndQueryARB) ++numFailed;
+			GenQueriesARB = reinterpret_cast<PFNGENQUERIESARB>(IntGetProcAddress("glGenQueriesARB"));
+			if(!GenQueriesARB) ++numFailed;
+			GetQueryObjectivARB = reinterpret_cast<PFNGETQUERYOBJECTIVARB>(IntGetProcAddress("glGetQueryObjectivARB"));
+			if(!GetQueryObjectivARB) ++numFailed;
+			GetQueryObjectuivARB = reinterpret_cast<PFNGETQUERYOBJECTUIVARB>(IntGetProcAddress("glGetQueryObjectuivARB"));
+			if(!GetQueryObjectuivARB) ++numFailed;
+			GetQueryivARB = reinterpret_cast<PFNGETQUERYIVARB>(IntGetProcAddress("glGetQueryivARB"));
+			if(!GetQueryivARB) ++numFailed;
+			IsQueryARB = reinterpret_cast<PFNISQUERYARB>(IntGetProcAddress("glIsQueryARB"));
+			if(!IsQueryARB) ++numFailed;
 			return numFailed;
 		}
 		
@@ -2932,7 +2973,7 @@ namespace gl
 			
 			void InitializeMappingTable(std::vector<MapEntry> &table)
 			{
-				table.reserve(16);
+				table.reserve(18);
 				table.push_back(MapEntry("GL_ARB_instanced_arrays", &exts::var_ARB_instanced_arrays, _detail::Load_ARB_instanced_arrays));
 				table.push_back(MapEntry("GL_EXT_multisample", &exts::var_EXT_multisample, _detail::Load_EXT_multisample));
 				table.push_back(MapEntry("GL_ARB_fragment_shader", &exts::var_ARB_fragment_shader));
@@ -2946,6 +2987,8 @@ namespace gl
 				table.push_back(MapEntry("GL_ARB_depth_buffer_float", &exts::var_ARB_depth_buffer_float));
 				table.push_back(MapEntry("GL_EXT_packed_depth_stencil", &exts::var_EXT_packed_depth_stencil));
 				table.push_back(MapEntry("GL_ARB_texture_rectangle", &exts::var_ARB_texture_rectangle));
+				table.push_back(MapEntry("GL_ATI_texture_float", &exts::var_ATI_texture_float));
+				table.push_back(MapEntry("GL_ARB_occlusion_query", &exts::var_ARB_occlusion_query, _detail::Load_ARB_occlusion_query));
 				table.push_back(MapEntry("GL_EXT_texture_compression_s3tc", &exts::var_EXT_texture_compression_s3tc));
 				table.push_back(MapEntry("GL_EXT_texture_sRGB", &exts::var_EXT_texture_sRGB));
 				table.push_back(MapEntry("GL_EXT_texture_filter_anisotropic", &exts::var_EXT_texture_filter_anisotropic));
@@ -2966,6 +3009,8 @@ namespace gl
 				exts::var_ARB_depth_buffer_float = exts::LoadTest();
 				exts::var_EXT_packed_depth_stencil = exts::LoadTest();
 				exts::var_ARB_texture_rectangle = exts::LoadTest();
+				exts::var_ATI_texture_float = exts::LoadTest();
+				exts::var_ARB_occlusion_query = exts::LoadTest();
 				exts::var_EXT_texture_compression_s3tc = exts::LoadTest();
 				exts::var_EXT_texture_sRGB = exts::LoadTest();
 				exts::var_EXT_texture_filter_anisotropic = exts::LoadTest();

@@ -1,9 +1,9 @@
-//**************Copyright (C) Two Dark Interactive Software 2009**************
-//
-// Description: DarkTech Middle-Level rendering API (ShaderAPI)
-//				Vertex Buffer OpenGL declaration
-//
-//****************************************************************************
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2016
+//////////////////////////////////////////////////////////////////////////////////
+// Description: DarkTech OpenGL ShaderAPI
+//////////////////////////////////////////////////////////////////////////////////
 
 #include <malloc.h>
 
@@ -91,7 +91,7 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 	{
 		pGLRHI->ThreadingSharingRequest();
 
-		gl::BindBuffer(g::ARRAY_BUFFER, m_nGL_VB_Index);
+		gl::BindBuffer(gl::ARRAY_BUFFER, m_nGL_VB_Index);
 
 		// lock whole buffer
 		gl::GetBufferSubData(gl::ARRAY_BUFFER, 0, m_numVerts*m_strideSize, m_lockPtr);

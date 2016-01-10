@@ -61,21 +61,21 @@ ConstantType_e GetConstantType(GLenum type)
 {
 	switch (type)
 	{
-		case gl::FLOAT:      return CONSTANT_FLOAT;
-		case gl::FLOAT_VEC2: return CONSTANT_VECTOR2D;
-		case gl::FLOAT_VEC3: return CONSTANT_VECTOR3D;
-		case gl::FLOAT_VEC4: return CONSTANT_VECTOR4D;
-		case gl::INT:        return CONSTANT_INT;
-		case gl::INT_VEC2:   return CONSTANT_IVECTOR2D;
-		case gl::INT_VEC3:   return CONSTANT_IVECTOR3D;
-		case gl::INT_VEC4:   return CONSTANT_IVECTOR4D;
-		case gl::BOOL:		return CONSTANT_BOOL;
-		case gl::BOOL_VEC2:  return CONSTANT_BVECTOR2D;
-		case gl::BOOL_VEC3:  return CONSTANT_BVECTOR3D;
-		case gl::BOOL_VEC4:  return CONSTANT_BVECTOR4D;
-		case gl::FLOAT_MAT2: return CONSTANT_MATRIX2x2;
-		case gl::FLOAT_MAT3: return CONSTANT_MATRIX3x3;
-		case gl::FLOAT_MAT4: return CONSTANT_MATRIX4x4;
+		case gl::FLOAT:			return CONSTANT_FLOAT;
+		case gl::FLOAT_VEC2:	return CONSTANT_VECTOR2D;
+		case gl::FLOAT_VEC3:	return CONSTANT_VECTOR3D;
+		case gl::FLOAT_VEC4:	return CONSTANT_VECTOR4D;
+		case gl::INT:			return CONSTANT_INT;
+		case gl::INT_VEC2:		return CONSTANT_IVECTOR2D;
+		case gl::INT_VEC3:		return CONSTANT_IVECTOR3D;
+		case gl::INT_VEC4:		return CONSTANT_IVECTOR4D;
+		case gl::BOOL:			return CONSTANT_BOOL;
+		case gl::BOOL_VEC2:		return CONSTANT_BVECTOR2D;
+		case gl::BOOL_VEC3:		return CONSTANT_BVECTOR3D;
+		case gl::BOOL_VEC4:		return CONSTANT_BVECTOR4D;
+		case gl::FLOAT_MAT2:	return CONSTANT_MATRIX2x2;
+		case gl::FLOAT_MAT3:	return CONSTANT_MATRIX3x3;
+		case gl::FLOAT_MAT4:	return CONSTANT_MATRIX4x4;
 	}
 
 	MsgError("Invalid constant type (%d)\n", type);
@@ -93,15 +93,6 @@ ShaderAPIGL::~ShaderAPIGL()
 ShaderAPIGL::ShaderAPIGL() : ShaderAPI_Base()
 {
 	Msg("Initializing OpenGL Shader API...\n");
-
-	/*
-	m_bDoStencilTest = false;
-	m_nStencilMask = 0xFF;
-	m_nStencilFunc = COMP_ALWAYS,
-	m_nStencilFail = STENCILFUNC_KEEP;
-	m_nDepthFail = STENCILFUNC_KEEP;
-	m_nStencilPass = STENCILFUNC_KEEP;
-	*/
 
 	m_nCurrentRenderTargets = 0;
 
@@ -172,8 +163,8 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 	if (gl::exts::var_EXT_texture_filter_anisotropic)
 		gl::GetIntegerv(gl::MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_caps.maxTextureAnisotropicLevel);
 
-	m_caps.isHardwareOcclusionQuerySupported = true;
-	m_caps.isInstancingSupported = false;
+	m_caps.isHardwareOcclusionQuerySupported = gl::exts::var_ARB_occlusion_query;
+	m_caps.isInstancingSupported = gl::exts::var_ARB_instanced_arrays;
 
 	gl::GetIntegerv(gl::MAX_TEXTURE_SIZE, &m_caps.maxTextureSize);
 
@@ -182,7 +173,8 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 	m_caps.maxVertexGenericAttributes = MAX_GENERIC_ATTRIB;
 	m_caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
 
-	m_caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED;
+	m_caps.shadersSupportedFlags = ((gl::exts::var_EXT_vertex_shader || gl::exts::var_ARB_shader_objects) ? SHADER_CAPS_VERTEX_SUPPORTED : 0)
+								 | ((gl::exts::var_ARB_fragment_shader || gl::exts::var_ARB_shader_objects) ? SHADER_CAPS_PIXEL_SUPPORTED : 0);
 	m_caps.maxTextureUnits = MAX_TEXTUREUNIT;
 	m_caps.maxVertexStreams = MAX_VERTEXSTREAM;
 	m_caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
@@ -221,21 +213,27 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 	attr = baseMeshBufferParams.AddKeyBase("attribute", "input_color");
 	attr->AppendValue("2");
 
-	s_uniformFuncs[CONSTANT_FLOAT]		= (void *) gl::Uniform1fv;
-	s_uniformFuncs[CONSTANT_VECTOR2D]	= (void *) gl::Uniform2fv;
-	s_uniformFuncs[CONSTANT_VECTOR3D]	= (void *) gl::Uniform3fv;
-	s_uniformFuncs[CONSTANT_VECTOR4D]	= (void *) gl::Uniform4fv;
-	s_uniformFuncs[CONSTANT_INT]		= (void *) gl::Uniform1iv;
-	s_uniformFuncs[CONSTANT_IVECTOR2D]	= (void *) gl::Uniform2iv;
-	s_uniformFuncs[CONSTANT_IVECTOR3D]	= (void *) gl::Uniform3iv;
-	s_uniformFuncs[CONSTANT_IVECTOR4D]	= (void *) gl::Uniform4iv;
-	s_uniformFuncs[CONSTANT_BOOL]		= (void *) gl::Uniform1iv;
-	s_uniformFuncs[CONSTANT_BVECTOR2D]	= (void *) gl::Uniform2iv;
-	s_uniformFuncs[CONSTANT_BVECTOR3D]	= (void *) gl::Uniform3iv;
-	s_uniformFuncs[CONSTANT_BVECTOR4D]	= (void *) gl::Uniform4iv;
-	s_uniformFuncs[CONSTANT_MATRIX2x2]	= (void *) gl::UniformMatrix2fv;
-	s_uniformFuncs[CONSTANT_MATRIX3x3]	= (void *) gl::UniformMatrix3fv;
-	s_uniformFuncs[CONSTANT_MATRIX4x4]	= (void *) gl::UniformMatrix4fv;
+	s_uniformFuncs[CONSTANT_FLOAT]		= (void *) gl::_detail::Uniform1fv;
+	s_uniformFuncs[CONSTANT_VECTOR2D]	= (void *) gl::_detail::Uniform2fv;
+	s_uniformFuncs[CONSTANT_VECTOR3D]	= (void *) gl::_detail::Uniform3fv;
+	s_uniformFuncs[CONSTANT_VECTOR4D]	= (void *) gl::_detail::Uniform4fv;
+	s_uniformFuncs[CONSTANT_INT]		= (void *) gl::_detail::Uniform1iv;
+	s_uniformFuncs[CONSTANT_IVECTOR2D]	= (void *) gl::_detail::Uniform2iv;
+	s_uniformFuncs[CONSTANT_IVECTOR3D]	= (void *) gl::_detail::Uniform3iv;
+	s_uniformFuncs[CONSTANT_IVECTOR4D]	= (void *) gl::_detail::Uniform4iv;
+	s_uniformFuncs[CONSTANT_BOOL]		= (void *) gl::_detail::Uniform1iv;
+	s_uniformFuncs[CONSTANT_BVECTOR2D]	= (void *) gl::_detail::Uniform2iv;
+	s_uniformFuncs[CONSTANT_BVECTOR3D]	= (void *) gl::_detail::Uniform3iv;
+	s_uniformFuncs[CONSTANT_BVECTOR4D]	= (void *) gl::_detail::Uniform4iv;
+	s_uniformFuncs[CONSTANT_MATRIX2x2]	= (void *) gl::_detail::UniformMatrix2fv;
+	s_uniformFuncs[CONSTANT_MATRIX3x3]	= (void *) gl::_detail::UniformMatrix3fv;
+	s_uniformFuncs[CONSTANT_MATRIX4x4]	= (void *) gl::_detail::UniformMatrix4fv;
+
+	for(int i = 0; i < CONSTANT_TYPE_COUNT; i++)
+	{
+		if(s_uniformFuncs[i] == NULL)
+			ASSERTMSG(false, varargs("Uniform function for '%d' is not ok, pls check extensions\n", i));
+	}
 
 	if(m_pMeshBufferTexturedShader == NULL)
 	{
@@ -1795,15 +1793,19 @@ int samplerComparator(const void *sampler0, const void *sampler1)
 	return strcmp(((GLShaderSampler_t *) sampler0)->name, ((GLShaderSampler_t *) sampler1)->name);
 }
 
-
-
 // Load any shader from stream
 bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const shaderprogram_params_t& params,const char* extra)
 {
 	if(!pShaderOutput)
 		return false;
 
-	if (!gl::exts::var_ARB_fragment_shader || !gl::exts::var_EXT_vertex_shader || (params.pszVSText == NULL && params.pszPSText == NULL))
+	if (!m_caps.shadersSupportedFlags)
+	{
+		MsgError("CompileShadersFromStream - shaders unsupported\n");
+		return false;
+	}
+
+	if (params.pszVSText == NULL && params.pszPSText == NULL)
 		return false;
 
 	ThreadingSharingRequest();
@@ -1820,7 +1822,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		EqString shaderString;
 
 #ifndef USE_OPENGL_ES
-		shaderString.Append("#version 120\r\n");
+		//shaderString.Append("#version 120\r\n");
 #endif // USE_OPENGL_ES
 
 		if (extra  != NULL)
@@ -1859,9 +1861,9 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	{
 		EqString shaderString;
 
-#ifndef USE_OPENgl::ES
-		shaderString.Append("#version 120\r\n");
-#endif // USE_OPENgl::ES
+#ifndef USE_OPENGL_ES
+		//shaderString.Append("#version 120\r\n");
+#endif // USE_OPENGL_ES
 
 		if (extra  != NULL)
 			shaderString.Append(extra);
@@ -1930,7 +1932,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		gl::LinkProgram(prog->m_program);
 		gl::GetProgramiv(prog->m_program, gl::OBJECT_LINK_STATUS_ARB, &linkResult);
 
-		if(!linkResult)
+		if( !linkResult )
 		{
 			char infoLog[2048];
 			GLint len;
@@ -1953,7 +1955,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		GLShaderSampler_t  *samplers = (GLShaderSampler_t  *) malloc(uniformCount * sizeof(GLShaderSampler_t));
 		GLShaderConstant_t *uniforms = (GLShaderConstant_t *) malloc(uniformCount * sizeof(GLShaderConstant_t));
 
-		Msg("[SHADER] allocated %d samplers and uniforms\n", uniformCount);
+		//Msg("[SHADER] allocated %d samplers and uniforms\n", uniformCount);
 
 		int nSamplers = 0;
 		int nUniforms = 0;
