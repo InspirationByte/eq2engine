@@ -1068,7 +1068,7 @@ void CModelCache::ReloadModels()
 	*/
 }
 
-ConVar job_modelLoader("job_modelLoader", "1", "Load models in parallel threads", CV_ARCHIVE);
+ConVar job_modelLoader("job_modelLoader", "0", "Load models in parallel threads", CV_ARCHIVE);
 
 // caches model and returns it's index
 int CModelCache::PrecacheModel( const char* modelName )

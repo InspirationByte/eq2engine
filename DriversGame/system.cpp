@@ -24,9 +24,6 @@
 
 #include "Shiny.h"
 
-static CEqParallelJobThreads s_parallelJobs;
-CEqParallelJobThreads* g_parallelJobs = &s_parallelJobs;
-
 static EQCURSOR staticDefaultCursor[20];
 
 // TODO: Move this to GUI

@@ -174,3 +174,6 @@ namespace Threading
 		return m_jobThreads[nThread]->m_jobList.getCount();
 	}
 }
+
+static Threading::CEqParallelJobThreads s_parallelJobs;
+Threading::CEqParallelJobThreads* g_parallelJobs = &s_parallelJobs;

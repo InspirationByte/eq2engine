@@ -472,7 +472,7 @@ extern IMaterialSystem* materials;
 	DkList<shaderfactory_t>& _InternalShaderList() { if(!s_internalShaderReg) s_internalShaderReg = new DkList<shaderfactory_t>(); return *s_internalShaderReg; }
 
 #define REGISTER_INTERNAL_SHADERS()								\
-	for(int i = 0; i < s_internalShaderReg->numElem(); i++)		\
+	for(int i = 0; i < _InternalShaderList().numElem(); i++)	\
 		materials->RegisterShader( _InternalShaderList()[i].shader_name, _InternalShaderList()[i].dispatcher );
 
 #ifdef EQSHADER_LIBRARY

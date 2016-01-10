@@ -140,6 +140,8 @@
     <ClInclude Include="..\..\Engine\Physics\DkBulletPhysics.h" />
     <ClInclude Include="..\..\Engine\Physics\DkPhysicsJoint.h" />
     <ClInclude Include="..\..\Engine\Physics\DkPhysicsRope.h" />
+    <ClInclude Include="..\..\shared_engine\eqGlobalMutex.h" />
+    <ClInclude Include="..\..\shared_engine\eqParallelJobs.h" />
     <ClInclude Include="..\..\shared_engine\studio_egf.h" />
     <ClInclude Include="..\..\public\anim_activity.h" />
     <ClInclude Include="..\..\public\anim_defs.h" />
@@ -222,6 +224,8 @@
     <ClCompile Include="..\..\Engine\Physics\dkbulletphysics.cpp" />
     <ClCompile Include="..\..\Engine\Physics\DkPhysicsJoint.cpp" />
     <ClCompile Include="..\..\Engine\Physics\DkPhysicsRope.cpp" />
+    <ClCompile Include="..\..\shared_engine\eqGlobalMutex.cpp" />
+    <ClCompile Include="..\..\shared_engine\eqParallelJobs.cpp" />
     <ClCompile Include="..\..\shared_engine\studio_egf.cpp" />
     <ClCompile Include="..\..\public\anim_activity.cpp" />
     <ClCompile Include="..\..\public\anim_events.cpp" />

@@ -256,6 +256,12 @@
     <ClInclude Include="..\..\shared_engine\studio_egf.h">
       <Filter>Source Files\EngineLib\Models</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\shared_engine\eqGlobalMutex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shared_engine\eqParallelJobs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="windows\mainicon.ico">
@@ -332,6 +338,8 @@
     <ClCompile Include="..\..\shared_engine\DebugOverlay.cpp">
       <Filter>Source Files\EngineLib\Renderer\Debug</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\shared_engine\eqGlobalMutex.cpp" />
+    <ClCompile Include="..\..\shared_engine\eqParallelJobs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\Libs\DkCore.lib">
