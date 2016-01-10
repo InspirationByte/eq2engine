@@ -155,7 +155,11 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 		format = FORMAT_RGB565;
 	}
 
+#ifdef _WIN32
 	bool useOpenGLRender = GetCmdLine()->FindArgument("-ogl") != -1;
+#else
+    bool useOpenGLRender = true; // I don't see that other APIs could appear widely soon
+#endif // _WIN32
 
 	matsystem_render_config_t materials_config;
 
@@ -223,11 +227,11 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 		return false;
 #endif // _WIN32
 
-	// initialize shader overrides after libraries are loaded
-	DrvSyn_RegisterShaderOverrides();
-
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();
+
+	// initialize shader overrides after libraries are loaded
+	DrvSyn_RegisterShaderOverrides();
 
 	g_pShaderAPI = materials->GetShaderAPI();
 

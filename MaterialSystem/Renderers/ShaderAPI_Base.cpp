@@ -945,7 +945,11 @@ void ProcessShaderText(char** buffer, DkList<EqString> &include_buffers, const c
 
 		for(int i = 0; i < include_buffers.numElem(); i++)
 		{
-			shader_text = include_buffers[i]+EqString("\r\n")+varargs("\r\n#line 1 \"%s\"\r\n", pszFileName)+shader_text;
+#ifdef IS_OPENGL
+            shader_text = include_buffers[i]+EqString("\r\n")+"\r\n#line 1\r\n"+shader_text;
+#else
+            shader_text = include_buffers[i]+EqString("\r\n")+varargs("\r\n#line 1 \"%s\"\r\n", pszFileName)+shader_text;
+#endif // IS_OPENGL
 		}
 
 		*buffer = (char*)PPReAlloc(*buffer, shader_text.GetLength()+1);
@@ -972,7 +976,7 @@ void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, bool bSta
 
 	// set main source filename
 	EqString newSrc;
-	
+
 #ifdef IS_OPENGL
 	newSrc = "\r\n#line 1\r\n";		// I hate, hate and hate GLSL for not supporting source file names, only file numbers. So this is fucked.
 #else

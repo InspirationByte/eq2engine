@@ -467,12 +467,13 @@ public:
 
 extern IMaterialSystem* materials;
 
-#define DECLARE_INTERNAL_SHADERS() \
-	DkList<shaderfactory_t> g_internalShaderReg
+#define DECLARE_INTERNAL_SHADERS()       \
+	DkList<shaderfactory_t>* s_internalShaderReg = NULL;                            \
+	DkList<shaderfactory_t>& _InternalShaderList() { if(!s_internalShaderReg) s_internalShaderReg = new DkList<shaderfactory_t>(); return *s_internalShaderReg; }
 
 #define REGISTER_INTERNAL_SHADERS()								\
-	for(int i = 0; i < g_internalShaderReg.numElem(); i++)		\
-		materials->RegisterShader( g_internalShaderReg[i].shader_name, g_internalShaderReg[i].dispatcher );
+	for(int i = 0; i < s_internalShaderReg->numElem(); i++)		\
+		materials->RegisterShader( _InternalShaderList()[i].shader_name, _InternalShaderList()[i].dispatcher );
 
 #ifdef EQSHADER_LIBRARY
 
@@ -505,11 +506,12 @@ extern IMaterialSystem* materials;
 	public:																			\
 		C_Shader##localName##Foo( void )											\
 		{																			\
-			extern DkList<shaderfactory_t> g_internalShaderReg;						\
+			extern DkList<shaderfactory_t>& _InternalShaderList();					\
 			shaderfactory_t factory;												\
 			factory.dispatcher = &C##className##Factory;							\
 			factory.shader_name = #localName;										\
-			g_internalShaderReg.append(factory);									\
+			int idx = _InternalShaderList().append(factory);						\
+			printf("Register shader '%s' at %d\n", #localName, idx);                \
 		}																			\
 	};																				\
 	static C_Shader##localName##Foo g_CShader##localName##Foo;

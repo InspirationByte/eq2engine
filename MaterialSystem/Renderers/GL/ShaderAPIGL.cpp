@@ -1997,7 +1997,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				// Store all non-gl uniforms
 				if (strncmp(tmpName, "gl_", 3) != 0)
 				{
-					Msg("[SHADER] retrieving uniform '%s' at %d\n", tmpName, nSamplers);
+					//Msg("[SHADER] retrieving uniform '%s' at %d\n", tmpName, nUniforms);
 
 					char *bracket = strchr(tmpName, '[');
 					if (bracket == NULL || (bracket[1] == '0' && bracket[2] == ']'))

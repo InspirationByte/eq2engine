@@ -596,6 +596,8 @@ bool CGLRenderLib::CaptureScreenshot(CImage &img)
 {
 	m_Renderer->GL_CRITICAL();
 
+	gl::Finish();
+
 	ubyte *pixels = img.Create(FORMAT_RGB8, m_width, m_height, 1, 1);
 	ubyte *flipped = new ubyte[m_width * m_height * 3];
 

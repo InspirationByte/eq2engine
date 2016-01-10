@@ -574,9 +574,7 @@ void CMaterialSystem::RegisterShader(const char* pszShaderName, DISPATCH_CREATE_
 		}
 	}
 
-#ifdef _DEBUG
-	Msg("Registering shader '%s'\n", pszShaderName);
-#endif // _DEBUG
+	DevMsg(2, "Registering shader '%s'\n", pszShaderName);
 
 	shaderfactory_t newShader;
 
