@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright � Inspiration Byte
+// Copyright © Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Description: DarkTech OpenGL ShaderAPI
@@ -21,11 +21,15 @@
 
 #include "shaderapigl_def.h"
 
-#include "Imaging/ImageLoader.h"
+#include "imaging/ImageLoader.h"
+
+#ifdef PLAT_LINUX
+#include "glx_caps.hpp"ĵ
+#endif // PLAT_LINUX
 
 #pragma todo("Rewrite with OpenGL ES 2.0 specification support")
 
-static char s_FFPMeshBuilder_VertexProgram[] = 
+static char s_FFPMeshBuilder_VertexProgram[] =
 "attribute vec4 input_vPos;									\
 attribute vec2 input_texCoord;								\
 attribute vec4 input_color;									\
@@ -38,14 +42,14 @@ void main()													\
 	texCoord = input_texCoord;								\
 }";
 
-static char s_FFPMeshBuilder_NoTexture_PixelProgram[] = 
+static char s_FFPMeshBuilder_NoTexture_PixelProgram[] =
 "varying vec4 color;									\
 void main()												\
 {														\
 	gl_FragColor = color;		\
 }";
 
-static char s_FFPMeshBuilder_Textured_PixelProgram[] = 
+static char s_FFPMeshBuilder_Textured_PixelProgram[] =
 "varying vec2 texCoord;									\
 varying vec4 color;										\
 uniform sampler2D Base;									\
@@ -183,7 +187,7 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 
 	if (gl::exts::var_ARB_fragment_shader)
 		gl::GetIntegerv(gl::MAX_TEXTURE_IMAGE_UNITS, &m_caps.maxTextureUnits);
-	else 
+	else
 		gl::GetIntegerv(gl::MAX_TEXTURE_UNITS, &m_caps.maxTextureUnits);
 
 	if (gl::exts::var_ARB_draw_buffers)
@@ -294,7 +298,7 @@ void ShaderAPIGL::ApplyTextures()
 	{
 		CGLTexture* pCurrentTexture = (CGLTexture*)m_pCurrentTextures[i];
 		CGLTexture* pSelectedTexture = (CGLTexture*)m_pSelectedTextures[i];
-		
+
 		if(pSelectedTexture != pCurrentTexture)
 		{
 			// Set the active texture to modify
@@ -307,8 +311,8 @@ void ShaderAPIGL::ApplyTextures()
 					gl::BindTexture(pCurrentTexture->glTarget, 0);
 					gl::Disable(pCurrentTexture->glTarget);
 				}
-			} 
-			else 
+			}
+			else
 			{
 				if (pCurrentTexture == NULL)
 				{
@@ -318,7 +322,7 @@ void ShaderAPIGL::ApplyTextures()
 					gl::BindTexture(pSelectedTexture->glTarget, pSelectedTexture->GetCurrentTexture().glTexID);
 
 					gl::TexEnvf(gl::TEXTURE_FILTER_CONTROL, gl::TEXTURE_LOD_BIAS, pSelectedTexture->m_flLod);
-				} 
+				}
 				else
 				{
 					if (pSelectedTexture->glTarget != pCurrentTexture->glTarget)
@@ -459,8 +463,8 @@ void ShaderAPIGL::ApplyDepthState()
 				m_nCurrentDepthFunc = COMP_LEQUAL;
 				gl::DepthFunc(depthConst[m_nCurrentDepthFunc]);
 			}
-		} 
-		else 
+		}
+		else
 		{
 			if (pSelectedState->m_params.depthTest)
 			{
@@ -479,8 +483,8 @@ void ShaderAPIGL::ApplyDepthState()
 					m_nCurrentDepthFunc = pSelectedState->m_params.depthFunc;
 					gl::DepthFunc(depthConst[m_nCurrentDepthFunc]);
 				}
-			} 
-			else 
+			}
+			else
 			{
 				if (m_bCurrentDepthTestEnable)
 				{
@@ -544,12 +548,12 @@ void ShaderAPIGL::ApplyRasterizerState()
 				if (pSelectedState->m_params.cullMode == CULL_NONE)
 				{
 					gl::Disable(gl::CULL_FACE);
-				} 
-				else 
+				}
+				else
 				{
 					if (m_nCurrentCullMode == CULL_NONE)
 						gl::Enable(gl::CULL_FACE);
-				
+
 					gl::CullFace(cullConst[pSelectedState->m_params.cullMode]);
 				}
 
@@ -567,8 +571,8 @@ void ShaderAPIGL::ApplyRasterizerState()
 				if (pSelectedState->m_params.multiSample)
 				{
 					gl::Enable(gl::MULTISAMPLE);
-				} 
-				else 
+				}
+				else
 				{
 					gl::Disable(gl::MULTISAMPLE);
 				}
@@ -581,7 +585,7 @@ void ShaderAPIGL::ApplyRasterizerState()
 				{
 					gl::Enable(gl::SCISSOR_TEST);
 				}
-				else 
+				else
 				{
 					gl::Disable(gl::SCISSOR_TEST);
 				}
@@ -605,8 +609,8 @@ void ShaderAPIGL::ApplyShaderProgram()
 		if (m_pSelectedShader == NULL)
 		{
 			gl::UseProgram(0);
-		} 
-		else 
+		}
+		else
 		{
 			CGLShaderProgram* prog = (CGLShaderProgram*)m_pSelectedShader;
 
@@ -635,7 +639,7 @@ void ShaderAPIGL::ApplyConstants()
 			{
 				if (uni->type >= CONSTANT_MATRIX2x2)
 					((UNIFORM_MAT_FUNC) s_uniformFuncs[uni->type])(uni->index, uni->nElements, gl::TRUE_, (float *) uni->data);
-				else 
+				else
 					((UNIFORM_FUNC) s_uniformFuncs[uni->type])(uni->index, uni->nElements, (float *) uni->data);
 
 				uni->dirty = false;
@@ -834,9 +838,9 @@ void ShaderAPIGL::FreeTexture(ITexture* pTexture)
 // It will add new rendertarget
 ITexture* ShaderAPIGL::CreateRenderTarget(	int width, int height,
 											ETextureFormat nRTFormat,
-											Filter_e textureFilterType, 
-											AddressMode_e textureAddress, 
-											CompareFunc_e comparison, 
+											Filter_e textureFilterType,
+											AddressMode_e textureAddress,
+											CompareFunc_e comparison,
 											int nFlags)
 {
 	return CreateNamedRenderTarget("__rt_001", width, height, nRTFormat, textureFilterType,textureAddress,comparison,nFlags);
@@ -844,7 +848,7 @@ ITexture* ShaderAPIGL::CreateRenderTarget(	int width, int height,
 
 // It will add new rendertarget
 ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
-												int width, int height, 
+												int width, int height,
 												ETextureFormat nRTFormat, Filter_e textureFilterType,
 												AddressMode_e textureAddress,
 												CompareFunc_e comparison,
@@ -903,7 +907,7 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 		// Restore renderbuffer
 		gl::BindRenderbufferEXT(gl::RENDERBUFFER_EXT, 0);
 	}
-	else 
+	else
 	{
 		GLint internalFormat = internalFormats[format];
 		GLenum srcFormat = srcFormats[GetChannelCount(format)];
@@ -913,7 +917,7 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 		{
 			if (IsStencilFormat(format))
 				srcFormat = gl::DEPTH_STENCIL_EXT;
-			else 
+			else
 				srcFormat = gl::DEPTH_COMPONENT;
 		}
 
@@ -927,7 +931,7 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 		{
 			for (int i = gl::TEXTURE_CUBE_MAP_POSITIVE_X; i <= gl::TEXTURE_CUBE_MAP_NEGATIVE_Z; i++)
 				gl::TexImage2D(i, 0, internalFormat, newWide, newTall, 0, srcFormat, srcType, NULL);
-		} 
+		}
 		else
 		{
 			gl::TexImage2D(pTex->glTarget, 0, internalFormat, newWide, newTall, 0, srcFormat, srcType, NULL);
@@ -1009,21 +1013,21 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 			{
 				if (IsCompressedFormat(format))
 				{
-					gl::CompressedTexImage2D(	gl::TEXTURE_CUBE_MAP_POSITIVE_X + i, 
-											lockBoxLevel, 
+					gl::CompressedTexImage2D(	gl::TEXTURE_CUBE_MAP_POSITIVE_X + i,
+											lockBoxLevel,
 											internalFormat,
 											pSrc->GetWidth(mipMapLevel), pSrc->GetHeight(mipMapLevel),
 											0,
 											size,
 											src + i * size);
-				} 
-				else 
+				}
+				else
 				{
 					gl::TexImage2D(	gl::TEXTURE_CUBE_MAP_POSITIVE_X + i,
 									lockBoxLevel,
 									internalFormat,
 									pSrc->GetWidth(mipMapLevel), pSrc->GetHeight(mipMapLevel),
-									0, 
+									0,
 									srcFormat,
 									srcType,
 									src + i * size);
@@ -1035,50 +1039,50 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 			if (IsCompressedFormat(format))
 			{
 				gl::CompressedTexImage3D(	gltarget,
-										lockBoxLevel, 
-										internalFormat, 
+										lockBoxLevel,
+										internalFormat,
 										pSrc->GetWidth(mipMapLevel), pSrc->GetHeight(mipMapLevel), pSrc->GetDepth(mipMapLevel),
-										0, 
-										pSrc->GetMipMappedSize(mipMapLevel, 1), 
+										0,
+										pSrc->GetMipMappedSize(mipMapLevel, 1),
 										src);
-			} 
-			else 
+			}
+			else
 			{
-				gl::TexImage3D(	gltarget, 
-								mipMapLevel - nQuality, 
-								internalFormat, 
-								pSrc->GetWidth(mipMapLevel), pSrc->GetHeight(mipMapLevel), pSrc->GetDepth(mipMapLevel), 
-								0, 
-								srcFormat, 
-								srcType, 
+				gl::TexImage3D(	gltarget,
+								mipMapLevel - nQuality,
+								internalFormat,
+								pSrc->GetWidth(mipMapLevel), pSrc->GetHeight(mipMapLevel), pSrc->GetDepth(mipMapLevel),
+								0,
+								srcFormat,
+								srcType,
 								src);
 			}
-		} 
+		}
 		else if (pSrc->Is2D())
 		{
 			if (IsCompressedFormat(format))
 			{
-				gl::CompressedTexImage2D(	gltarget, 
-										lockBoxLevel, 
-										internalFormat, 
-										pSrc->GetWidth(mipMapLevel), pSrc->GetHeight(mipMapLevel), 
+				gl::CompressedTexImage2D(	gltarget,
+										lockBoxLevel,
+										internalFormat,
+										pSrc->GetWidth(mipMapLevel), pSrc->GetHeight(mipMapLevel),
 										0,
-										size, 
+										size,
 										src);
-			} 
-			else 
+			}
+			else
 			{
 				gl::TexImage2D(	gltarget,
 								lockBoxLevel,
-								internalFormat, 
+								internalFormat,
 								pSrc->GetWidth(mipMapLevel), pSrc->GetHeight(mipMapLevel),
 								0,
 								srcFormat,
 								srcType,
 								src);
 			}
-		} 
-		else 
+		}
+		else
 		{
 			gl::TexImage1D(	gltarget,
 							mipMapLevel - nQuality,
@@ -1165,7 +1169,7 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& 
 	pTexture->SetName( pImages[0]->GetName() );
 
 	pTexture->m_flLod = sampler.lod;
-	
+
 	// if this is a new texture, add
 	if(!(*pTex))
 	{
@@ -1181,7 +1185,7 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& 
 void ShaderAPIGL::InternalSetupSampler(uint texTarget, const SamplerStateParam_t& sampler)
 {
 	//GL_CRITICAL();
-	
+
 	// Set requested wrapping modes
 	gl::TexParameteri(texTarget, gl::TEXTURE_WRAP_S, (sampler.wrapS == ADDRESSMODE_WRAP) ? gl::REPEAT : gl::CLAMP_TO_EDGE);
 
@@ -1260,13 +1264,13 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		{
 			if (colorRT != m_pCurrentColorRenderTargets[i] || m_pCurrentRenderTargetsSlices[i] != nCubeFace)
 			{
-				gl::FramebufferTexture2DEXT(gl::FRAMEBUFFER_EXT, 
+				gl::FramebufferTexture2DEXT(gl::FRAMEBUFFER_EXT,
 						gl::COLOR_ATTACHMENT0_EXT + i, gl::TEXTURE_CUBE_MAP_POSITIVE_X + nCubeFace, colorRT->textures[0].glTexID, 0);
 
 				m_pCurrentRenderTargetsSlices[i] = nCubeFace;
 			}
 		}
-		else 
+		else
 		{
 			if (colorRT != m_pCurrentColorRenderTargets[i])
 			{
@@ -1278,7 +1282,7 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 	}
 
 	GL_END_CRITICAL();
-	
+
 	if (nNumRTs != m_nCurrentRenderTargets)
 	{
 		GL_CRITICAL();
@@ -1289,13 +1293,13 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 			m_pCurrentRenderTargetsSlices[i] = NULL;
 			m_pCurrentRenderTargetsSlices[i] = -1;
 		}
-		
+
 		if (nNumRTs == 0)
 		{
 			gl::DrawBuffer(gl::NONE);
 			gl::ReadBuffer(gl::NONE);
-		} 
-		else 
+		}
+		else
 		{
 			gl::DrawBuffers(nNumRTs, m_drawBuffers);
 			gl::ReadBuffer(gl::COLOR_ATTACHMENT0_EXT);
@@ -1312,7 +1316,7 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 	{
 		GL_CRITICAL();
 
-		if (pDepth != NULL && 
+		if (pDepth != NULL &&
 			pDepth->glTarget != gl::RENDERBUFFER_EXT)
 		{
 			gl::FramebufferTexture2DEXT(gl::FRAMEBUFFER_EXT, gl::DEPTH_ATTACHMENT_EXT, gl::TEXTURE_2D, pDepth->textures[0].glTexID, 0);
@@ -1320,12 +1324,12 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 			{
 				gl::FramebufferTexture2DEXT(gl::FRAMEBUFFER_EXT, gl::STENCIL_ATTACHMENT_EXT, gl::TEXTURE_2D, pDepth->textures[0].glTexID, 0);
 			}
-			else 
+			else
 			{
 				gl::FramebufferTexture2DEXT(gl::FRAMEBUFFER_EXT, gl::STENCIL_ATTACHMENT_EXT, gl::TEXTURE_2D, 0, 0);
 			}
-		} 
-		else 
+		}
+		else
 		{
 			gl::FramebufferRenderbufferEXT(gl::FRAMEBUFFER_EXT, gl::DEPTH_ATTACHMENT_EXT, gl::RENDERBUFFER_EXT, (pDepth == NULL) ? 0 : pDepth->textures[0].glTexID);
 			if (pDepth != NULL &&
@@ -1333,7 +1337,7 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 			{
 				gl::FramebufferRenderbufferEXT(gl::FRAMEBUFFER_EXT, gl::STENCIL_ATTACHMENT_EXT, gl::RENDERBUFFER_EXT, pDepth->textures[0].glTexID);
 			}
-			else 
+			else
 			{
 				gl::FramebufferRenderbufferEXT(gl::FRAMEBUFFER_EXT, gl::STENCIL_ATTACHMENT_EXT, gl::RENDERBUFFER_EXT, 0);
 			}
@@ -1344,8 +1348,8 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		GL_END_CRITICAL();
 	}
 
-	
-	if (m_nCurrentRenderTargets > 0 && 
+
+	if (m_nCurrentRenderTargets > 0 &&
 		m_pCurrentColorRenderTargets[0] != NULL)
 	{
 		GL_CRITICAL();
@@ -1353,7 +1357,7 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		// I still don't know why GL decided to be like that... damn
 		if (m_pCurrentColorRenderTargets[0]->GetFlags() & TEXFLAG_CUBEMAP)
 			InternalChangeFrontFace(gl::CCW);
-		else 
+		else
 			InternalChangeFrontFace(gl::CW);
 
 		gl::Viewport(0, 0, m_pCurrentColorRenderTargets[0]->GetWidth(), m_pCurrentColorRenderTargets[0]->GetHeight());
@@ -1413,7 +1417,7 @@ void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 		return;
 
 	GL_CRITICAL();
-	
+
 	gl::BindFramebufferEXT(gl::FRAMEBUFFER_EXT,0);
 	gl::Viewport(0, 0, m_nViewportWidth, m_nViewportHeight);
 
@@ -1490,7 +1494,7 @@ void ShaderAPIGL::LoadMatrix(const Matrix4x4 &matrix)
 	}
 	else
 		gl::LoadMatrixf( transpose(matrix) );
-	
+
 	m_matrices[m_nCurrentMatrixMode] = matrix;
 	//glPopMatrix();
 
@@ -1565,8 +1569,8 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 				if (pSelectedFormat->m_hTexCoord[i].m_nSize > 0)
 				{
 					gl::EnableClientState(gl::TEXTURE_COORD_ARRAY);
-				} 
-				else 
+				}
+				else
 				{
 		            gl::DisableClientState(gl::TEXTURE_COORD_ARRAY);
 				}
@@ -1648,16 +1652,16 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 				}
 			}
 
-		
+
 			if (cvf->m_hColor.m_nStream == nStream && cvf->m_hColor.m_nSize)
 			{
 				gl::ColorPointer(cvf->m_hColor.m_nSize, glTypes[cvf->m_hColor.m_nFormat], vertexSize, base + cvf->m_hColor.m_nOffset);
 			}
-		
+
 			GL_END_CRITICAL();
 		}
 
-		
+
 	}
 
 	if(pVertexBuffer)
@@ -1688,7 +1692,7 @@ void ShaderAPIGL::ChangeIndexBuffer(IIndexBuffer *pIndexBuffer)
 		{
 			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
 		}
-		else 
+		else
 		{
 			CIndexBufferGL* pSelectedIndexBffer = (CIndexBufferGL*)pIndexBuffer;
 			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, pSelectedIndexBffer->m_nGL_IB_Index);
@@ -1793,6 +1797,8 @@ int samplerComparator(const void *sampler0, const void *sampler1)
 	return strcmp(((GLShaderSampler_t *) sampler0)->name, ((GLShaderSampler_t *) sampler1)->name);
 }
 
+ConVar gl_disable_shaders("gl_disable_shaders", "0", "Disable OpenGL shader compilation", CV_CHEAT);
+
 // Load any shader from stream
 bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const shaderprogram_params_t& params,const char* extra)
 {
@@ -1808,6 +1814,9 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	if (params.pszVSText == NULL && params.pszPSText == NULL)
 		return false;
 
+    if(gl_disable_shaders.GetBool())
+        return false;
+
 	ThreadingSharingRequest();
 
 	CGLShaderProgram* prog = (CGLShaderProgram*)pShaderOutput;
@@ -1822,7 +1831,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		EqString shaderString;
 
 #ifndef USE_OPENGL_ES
-		//shaderString.Append("#version 120\r\n");
+		shaderString.Append("#version 120\r\n");
 #endif // USE_OPENGL_ES
 
 		if (extra  != NULL)
@@ -1843,8 +1852,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		if (vsResult)
 		{
 			gl::AttachShader(prog->m_program, prog->m_vertexShader);
-		} 
-		else 
+		}
+		else
 		{
 			char infoLog[2048];
 			GLint len;
@@ -1862,7 +1871,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		EqString shaderString;
 
 #ifndef USE_OPENGL_ES
-		//shaderString.Append("#version 120\r\n");
+		shaderString.Append("#version 120\r\n");
 #endif // USE_OPENGL_ES
 
 		if (extra  != NULL)
@@ -1883,8 +1892,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		if (vsResult)
 		{
 			gl::AttachShader(prog->m_program, prog->m_fragmentShader);
-		} 
-		else 
+		}
+		else
 		{
 			char infoLog[2048];
 			GLint len;
@@ -1922,7 +1931,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				}
 
 				//Msg("Vertex attribute '%s' at %s\n", nameStr, locationStr);
-				
+
 				// bind attribute
 				gl::BindAttribLocation(prog->m_program, attribIndex, nameStr);
 			}
@@ -1960,7 +1969,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		int nSamplers = 0;
 		int nUniforms = 0;
 
-		char* tmpName = new char[maxLength];
+		char* tmpName = new char[MAX_CONSTANT_NAMELEN];
 
 		for (int i = 0; i < uniformCount; i++)
 		{
@@ -1982,13 +1991,13 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				sp->index = nSamplers;
 				strcpy(sp->name, tmpName);
 				nSamplers++;
-			} 
-			else 
+			}
+			else
 			{
 				// Store all non-gl uniforms
 				if (strncmp(tmpName, "gl_", 3) != 0)
 				{
-					//Msg("[SHADER] retrieving uniform '%s' at %d\n", tmpName, nSamplers);
+					Msg("[SHADER] retrieving uniform '%s' at %d\n", tmpName, nSamplers);
 
 					char *bracket = strchr(tmpName, '[');
 					if (bracket == NULL || (bracket[1] == '0' && bracket[2] == ']'))
@@ -2004,7 +2013,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 						uniforms[nUniforms].nElements = size;
 						strcpy(uniforms[nUniforms].name, tmpName);
 						nUniforms++;
-					} 
+					}
 					else if (bracket != NULL && bracket[1] > '0')
 					{
 						*bracket = '\0';
@@ -2096,7 +2105,7 @@ int ShaderAPIGL::SetShaderConstantRaw(const char *pszName, const void *data, int
 		}
 		else if (res > 0)
 			minUniform = currUniform + 1;
-		else 
+		else
 			maxUniform = currUniform - 1;
 	}
 
@@ -2188,7 +2197,7 @@ IVertexFormat* ShaderAPIGL::CreateVertexFormat(VertexFormatDesc_s *formatDesc, i
 				break;
 #endif // GL_NO_DEPRECATED_ATTRIBUTES
 		}
-		
+
 		pVertexFormat->m_nVertexSize[stream] += formatDesc[i].m_nSize * formatSize[formatDesc[i].m_nFormat];
 	}
 
@@ -2202,7 +2211,7 @@ IVertexFormat* ShaderAPIGL::CreateVertexFormat(VertexFormatDesc_s *formatDesc, i
 
 IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(BufferAccessType_e nBufAccess, int nNumVerts, int strideSize, void *pData )
 {
-	
+
 
 	CVertexBufferGL* pGLVertexBuffer = new CVertexBufferGL();
 
@@ -2293,7 +2302,7 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 // Destroy index buffer
 void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
-{	
+{
 	CIndexBufferGL* pIB = (CIndexBufferGL*)(pIndexBuffer);
 
 	if (!pIB)
@@ -2334,7 +2343,7 @@ void ShaderAPIGL::DestroyMeshBuilder(IMeshBuilder* pBuilder)
 	//delete pBuilder;
 }
 
-PRIMCOUNTER g_pGLPrimCounterCallbacks[] = 
+PRIMCOUNTER g_pGLPrimCounterCallbacks[] =
 {
 	PrimCount_TriangleList,
 	PrimCount_TriangleFanStrip,
@@ -2432,7 +2441,7 @@ void ShaderAPIGL::SaveRenderTarget(ITexture* pTargetTexture, const char* pFileNa
 }
 
 //-------------------------------------------------------------
-// State manipulation 
+// State manipulation
 //-------------------------------------------------------------
 
 // creates blending state
@@ -2487,12 +2496,12 @@ IRenderState* ShaderAPIGL::CreateBlendingState( const BlendStateParam_t &blendDe
 
 	return pState;
 }
-	
+
 // creates depth/stencil state
 IRenderState* ShaderAPIGL::CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc )
 {
 	CGLDepthStencilState* pState = NULL;
-	
+
 	for(int i = 0; i < m_DepthStates.numElem(); i++)
 	{
 		pState = (CGLDepthStencilState*)m_DepthStates[i];
@@ -2505,12 +2514,12 @@ IRenderState* ShaderAPIGL::CreateDepthStencilState( const DepthStencilStateParam
 			// if we searching for stencil test
 			if(depthDesc.doStencilTest)
 			{
-				if(	depthDesc.nDepthFail == pState->m_params.nDepthFail && 
-					depthDesc.nStencilFail == pState->m_params.nStencilFail && 
-					depthDesc.nStencilFunc == pState->m_params.nStencilFunc && 
-					depthDesc.nStencilMask == pState->m_params.nStencilMask && 
-					depthDesc.nStencilMask == pState->m_params.nStencilWriteMask && 
-					depthDesc.nStencilMask == pState->m_params.nStencilRef && 
+				if(	depthDesc.nDepthFail == pState->m_params.nDepthFail &&
+					depthDesc.nStencilFail == pState->m_params.nStencilFail &&
+					depthDesc.nStencilFunc == pState->m_params.nStencilFunc &&
+					depthDesc.nStencilMask == pState->m_params.nStencilMask &&
+					depthDesc.nStencilMask == pState->m_params.nStencilWriteMask &&
+					depthDesc.nStencilMask == pState->m_params.nStencilRef &&
 					depthDesc.nStencilPass == pState->m_params.nStencilPass)
 				{
 					pState->AddReference();
@@ -2524,7 +2533,7 @@ IRenderState* ShaderAPIGL::CreateDepthStencilState( const DepthStencilStateParam
 			}
 		}
 	}
-	
+
 	pState = new CGLDepthStencilState;
 	pState->m_params = depthDesc;
 
@@ -2579,7 +2588,7 @@ void ShaderAPIGL::DestroyRenderState( IRenderState* pState, bool removeAllRefs )
 	{
 		return;
 	}
-	
+
 	switch(pState->GetType())
 	{
 		case RENDERSTATE_BLENDING:
@@ -2649,12 +2658,12 @@ int ShaderAPIGL::GetSamplerUnit(CGLShaderProgram* prog, const char* samplerName)
 		if (res == 0)
 		{
 			return samplers[currSampler].index;
-		} 
+		}
 		else if(res > 0)
 		{
             minSampler = currSampler + 1;
 		}
-		else 
+		else
 		{
             maxSampler = currSampler - 1;
 		}
@@ -2702,7 +2711,7 @@ void ShaderAPIGL::ThreadingSharingRequest()
 #ifdef _WIN32
 	wglMakeCurrent(m_hdc, m_glContext2);
 #elif LINUX
-
+    glXMakeCurrent(m_display, (Window)m_params.hWindow, m_glContext2);
 #elif __APPLE__
 
 #endif
@@ -2725,13 +2734,13 @@ bool ShaderAPIGL::GL_CRITICAL()
 		//wglMakeCurrent(NULL, NULL);	// drop device here
 		m_busySignal.Wait();
 	}
-		
+
 	m_currThreadId = currThread;
 
 #ifdef _WIN32
 	wglMakeCurrent(m_hdc, m_glContext);
 #elif LINUX
-
+    glXMakeCurrent(m_display, (Window)m_params.hWindow, m_glContext);
 #elif __APPLE__
 
 #endif
@@ -2777,7 +2786,7 @@ void ShaderAPIGL::ThreadingSharingRelease()
 #ifdef _WIN32
 	wglMakeCurrent(NULL, NULL);
 #elif LINUX
-
+    glXMakeCurrent(m_display, None, NULL);
 #elif __APPLE__
 
 #endif

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright Â© Inspiration Byte
 // 2009-2016
 //////////////////////////////////////////////////////////////////////////////////
 // Description: DarkTech OpenGL ShaderAPI
@@ -8,7 +8,12 @@
 #include "Platform.h"
 #include "CGLRenderLib.h"
 #include "gl_caps.hpp"
+
+#ifdef PLAT_WIN
 #include "wgl_caps.hpp"
+#else
+#include "glx_caps.hpp"
+#endif // PLAT_WIN
 
 /*
 
@@ -52,7 +57,20 @@ CGLRenderLib::~CGLRenderLib()
 	GetCore()->UnregisterInterface(RENDERER_INTERFACE_VERSION);
 }
 
-#ifdef _WIN32
+#ifdef PLAT_WIN
+MONITORINFO monInfo;
+
+BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData){
+	if (*(int *) dwData == 0){
+		monInfo.cbSize = sizeof(monInfo);
+		GetMonitorInfo(hMonitor, &monInfo);
+		return FALSE;
+	}
+	(*(int *) dwData)--;
+
+	return TRUE;
+}
+
 void InitGLEntryPoints(HWND hwnd, const PIXELFORMATDESCRIPTOR &pfd)
 {
 	HDC hdc = GetDC(hwnd);
@@ -77,11 +95,11 @@ LRESULT CALLBACK PFWinProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
 {
 	return DefWindowProc(hwnd, message, wParam, lParam);
 };
-#endif // _WIN32
+#endif // PLAT_WIN
 
 bool CGLRenderLib::InitCaps()
 {
-#ifdef _WIN32
+#ifdef PLAT_WIN
 
 	m_renderInstance = GetModuleHandle(NULL);
 
@@ -126,24 +144,9 @@ bool CGLRenderLib::InitCaps()
 		MsgError("Renderer fault!!!\n");
 		return false;
 	}
-#endif // _WIN32
+#endif // PLAT_WIN
 	return true;
 }
-
-#ifdef _WIN32
-MONITORINFO monInfo;
-
-BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData){
-	if (*(int *) dwData == 0){
-		monInfo.cbSize = sizeof(monInfo);
-		GetMonitorInfo(hMonitor, &monInfo);
-		return FALSE;
-	}
-	(*(int *) dwData)--;
-
-	return TRUE;
-}
-#endif // _WIN32
 
 DECLARE_CMD(gl_extensions,"Print supported OpenGL extensions",0)
 {
@@ -163,13 +166,29 @@ DECLARE_CMD(gl_extensions,"Print supported OpenGL extensions",0)
 	MsgWarning("Total extensions supported: %i\n",i);
 }
 
+#ifdef PLAT_LINUX
+
+struct DispRes {
+	int w, h, index;
+};
+
+struct DispRes newRes(const int w, const int h, const int i){
+	DispRes dr = { w, h, i };
+	return dr;
+}
+int dComp(const DispRes &d0, const DispRes &d1){
+	if (d0.w != d1.w) return (d0.w - d1.w); else return (d0.h - d1.h);
+}
+
+#endif // PLAT_LINUX
+
 bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 {
 	savedParams = params;
 
 	g_localizer->AddTokensFile("api_gl");
 
-#ifdef _WIN32
+#ifdef PLAT_WIN
 	if (r_screen->GetInt() >= GetSystemMetrics(SM_CMONITORS))
 		r_screen->SetValue("0");
 
@@ -189,10 +208,46 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	m_width = windowRect.right;
 	m_height = windowRect.bottom;
 #else
-	// TODO: SDL window handle or X11
-#endif // _WIN32
 
-#ifdef _WIN32
+#ifdef PLAT_LINUX
+
+    display = XOpenDisplay(0);
+
+	m_screen = DefaultScreen( display );
+
+	int nModes;
+    XF86VidModeGetAllModeLines(display, m_screen, &nModes, &dmodes);
+
+	DkList<DispRes> modes;
+
+	char str[64];
+	int foundMode = -1;
+	for (int i = 0; i < nModes; i++)
+	{
+		if (dmodes[i]->hdisplay >= 640 && dmodes[i]->vdisplay >= 480)
+		{
+			modes.append(newRes(dmodes[i]->hdisplay, dmodes[i]->vdisplay, i));
+
+			if (dmodes[i]->hdisplay == m_width && dmodes[i]->vdisplay == m_width)
+				foundMode = i;
+		}
+	}
+
+    Window xwin = (Window)savedParams.hWindow;
+
+    XWindowAttributes winAttrib;
+    XGetWindowAttributes(display,xwin,&winAttrib);
+
+	m_width = winAttrib.width;
+	m_height = winAttrib.height;
+
+	Msg("X window size: %d %d\n", m_width, m_height);
+
+#endif // PLAT_LINUX
+
+#endif // PLAT_WIN
+
+#ifdef PLAT_WIN
 	ZeroMemory(&dm,sizeof(dm));
 	dm.dmSize = sizeof(dm);
 
@@ -309,6 +364,92 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	wglShareLists(glContext2, glContext);
 
 	wglMakeCurrent(hdc, glContext);
+#else
+
+#ifdef PLAT_LINUX
+
+    int colorBits = 16;
+    int depthBits = 24;
+    int stencilBits = 0;
+
+	// Figure display format to use
+	if(params.nScreenFormat == FORMAT_RGBA8)
+	{
+		colorBits = 32;
+	}
+	else if(params.nScreenFormat == FORMAT_RGB8)
+	{
+		colorBits = 24;
+	}
+	else if(params.nScreenFormat == FORMAT_RGB565)
+	{
+		colorBits = 16;
+	}
+	else
+	{
+		colorBits = 24;
+	}
+
+	XVisualInfo *vi;
+	while (true)
+	{
+		int attribs[] = {
+			GLX_RGBA,
+			GLX_DOUBLEBUFFER,
+			GLX_RED_SIZE,      8,
+			GLX_GREEN_SIZE,    8,
+			GLX_BLUE_SIZE,     8,
+			GLX_ALPHA_SIZE,    (colorBits > 24)? 8 : 0,
+			GLX_DEPTH_SIZE,    depthBits,
+			GLX_STENCIL_SIZE,  stencilBits,
+			GLX_SAMPLE_BUFFERS, (savedParams.nMultisample > 0),
+			GLX_SAMPLES,         savedParams.nMultisample,
+			None,
+		};
+
+		vi = glXChooseVisual(display, m_screen, attribs);
+		if (vi != NULL) break;
+
+		savedParams.nMultisample -= 2;
+		if (savedParams.nMultisample < 0){
+			char str[256];
+			sprintf(str, "No Visual matching colorBits=%d, depthBits=%d and stencilBits=%d", colorBits, depthBits, stencilBits);
+			ErrorMsg(str);
+			return false;
+		}
+	}
+
+    if (!savedParams.bIsWindowed)
+    {
+		if (foundMode >= 0 && XF86VidModeSwitchToMode(display, m_screen, dmodes[foundMode]))
+		{
+			XF86VidModeSetViewPort(display, m_screen, 0, 0);
+		}
+		else
+		{
+			MsgError("Couldn't set fullscreen at %dx%d.", m_width, m_height);
+			savedParams.bIsWindowed = true;
+		}
+	}
+/*
+	// Create a blank cursor for cursor hiding
+	XColor dummy;
+	char data = 0;
+	Pixmap blank = XCreateBitmapFromData(display, (Drawable)savedParams.hWindow, &data, 1, 1);
+	blankCursor = XCreatePixmapCursor(display, blank, blank, &dummy, &dummy, 0, 0);
+	XFreePixmap(display, blank);
+*/
+	glContext = glXCreateContext(display, vi, None, True);
+	glContext2 = glXCreateContext(display, vi, glContext, True);
+
+	glXMakeCurrent(display, (GLXDrawable)savedParams.hWindow, glContext);
+
+	gl::exts::LoadTest didLoad = gl::sys::LoadFunctions();
+	if(!didLoad)
+		MsgError("OpenGL load errors: %i\n", didLoad.GetNumMissing());
+#endif // PLAT_LINUX
+
+#endif //PLAT_WIN
 
 	{
 		const char *rend = (const char *) gl::GetString(gl::RENDERER);
@@ -324,16 +465,15 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 		WarningMsg("Cannot initialize OpenGL due driver is only supports version 1.x.x\n\nPlease update your video drivers!");
 		exit(-5);
 	}
-#else
-
-#endif //_WIN32
 
 	m_Renderer = new ShaderAPIGL();
 	g_pShaderAPI = m_Renderer;
 
-#ifdef _WIN32
+#ifdef PLAT_WIN
 	m_Renderer->m_hdc = this->hdc;
-#endif //_WIN32
+#else if defined(PLAT_LINUX)
+    m_Renderer->m_display = this->display;
+#endif //PLAT_WIN
 	m_Renderer->m_glContext = this->glContext;
 	m_Renderer->m_glContext2 = this->glContext2;
 
@@ -359,8 +499,7 @@ void CGLRenderLib::ExitAPI()
 
 	delete m_Renderer;
 
-#ifdef _WIN32
-
+#ifdef PLAT_WIN
 	wglMakeCurrent(NULL, NULL);
 	wglDeleteContext(glContext);
 	wglDeleteContext(glContext2);
@@ -373,7 +512,26 @@ void CGLRenderLib::ExitAPI()
 	}
 #else
 
-#endif // _WIN32
+#ifdef PLAT_LINUX
+
+    glXMakeCurrent(display, None, NULL);
+    glXDestroyContext(display, glContext);
+
+	if(!savedParams.bIsWindowed)
+	{
+		if (XF86VidModeSwitchToMode(display, m_screen, dmodes[0]))
+			XF86VidModeSetViewPort(display, m_screen, 0, 0);
+	}
+
+    XFree(dmodes);
+	//XFreeCursor(display, blankCursor);
+
+	XSync(display, False);
+
+    XCloseDisplay(display);
+#endif // PLAT_LIUX
+
+#endif // PLAT_WIN
 }
 
 void CGLRenderLib::BeginFrame()
@@ -387,22 +545,23 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 {
 	m_Renderer->GL_CRITICAL();
 
-#ifdef _WIN32
+#ifdef PLAT_WIN
 	if (wgl::exts::var_EXT_swap_control)
 	{
 		wgl::SwapIntervalEXT(savedParams.bEnableVerticalSync ? 1 : 0);
 	}
-
-	m_Renderer->GL_END_CRITICAL();
 
 	SwapBuffers(hdc);
 
 #ifdef DEBUG
 	CheckForErrors();
 #endif
-#else
+#else if defined(PLAT_LINUX)
+	glXSwapBuffers(display, (Window)savedParams.hWindow);
+	gl::Finish();
+#endif // PLAT_WIN
 
-#endif // _WIN32
+    m_Renderer->GL_END_CRITICAL();
 }
 
 void CGLRenderLib::SetBackbufferSize(const int w, const int h)
@@ -412,7 +571,7 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 
 	if(!savedParams.bIsWindowed)
 	{
-#ifdef _WIN32
+#ifdef PLAT_WIN
 		dm.dmPelsWidth = m_width;
 		dm.dmPelsHeight = m_height;
 
@@ -421,7 +580,7 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 			MsgError("Couldn't set fullscreen mode\n");
 			WarningMsg("Couldn't set fullscreen mode");
 		}
-#endif // _WIN32
+#endif // PLAT_WIN
 	}
 
 	//Msg("Resize to: %i,%i\n",w,h);

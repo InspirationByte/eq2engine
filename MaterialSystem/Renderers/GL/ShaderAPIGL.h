@@ -391,6 +391,7 @@ private:
 #elif defined(LINUX)
 	GLXContext			m_glContext;
 	GLXContext			m_glContext2;
+	Display*            m_display;
 #elif defined(__APPLE__)
 	AGLContext			m_glContext;
 	GLXContext			m_glContext2;

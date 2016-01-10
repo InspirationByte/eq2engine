@@ -72,6 +72,8 @@ protected:
 	GLXContext				glContext;
 	GLXContext				glContext2;
     XF86VidModeModeInfo**	dmodes;
+    Display*                display;
+    int                     m_screen;
 #elif defined(__APPLE__)
 	AGLContext				glContext;
 	AGLContext				glContext2;

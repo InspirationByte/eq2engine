@@ -40,7 +40,8 @@
 			</Target>
 		</Build>
 		<Compiler>
-			<Add option="-m32 `pkg-config glew --cflags`" />
+			<Add option="-g" />
+			<Add option="-m32 `pkg-config mesagl --cflags`" />
 			<Add directory="../../FileSystem" />
 			<Add directory="../../Engine" />
 			<Add directory="../../public" />
@@ -54,6 +55,8 @@
 			<Add library="../../libs/libPrevLib.a" />
 			<Add library="z" />
 			<Add library="jpeg" />
+			<Add library="GL" />
+			<Add library="X11" />
 		</Linker>
 		<Unit filename="../Engine/Renderer.h" />
 		<Unit filename="../FileSystem/ifilesystem.h" />
@@ -103,9 +106,13 @@
 		<Unit filename="GL/VertexBufferGL.h" />
 		<Unit filename="GL/VertexFormatGL.cpp" />
 		<Unit filename="GL/VertexFormatGL.h" />
-		<Unit filename="GL/eqGLCaps.cpp" />
 		<Unit filename="GL/eqGLCaps.h" />
+		<Unit filename="GL/gl_caps.cpp" />
+		<Unit filename="GL/gl_caps.hpp" />
+		<Unit filename="GL/glx_caps.cpp" />
+		<Unit filename="GL/glx_caps.hpp" />
 		<Unit filename="GL/shaderapigl_def.h" />
+		<Unit filename="GL/wgl_caps.hpp" />
 		<Unit filename="IRenderLibrary.h" />
 		<Unit filename="ShaderAPI_Base.cpp" />
 		<Unit filename="ShaderAPI_Base.h" />

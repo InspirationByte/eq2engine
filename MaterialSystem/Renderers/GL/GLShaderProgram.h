@@ -9,8 +9,8 @@
 #define GLSHADERPROGRAM_H
 
 #include "IShaderProgram.h"
-#include "utils/EqString.h"
-#include "shaderapi_defs.h"
+#include "utils/eqstring.h"
+#include "ShaderAPI_defs.h"
 #include "gl_caps.hpp"
 
 #define MAX_CONSTANT_NAMELEN 64

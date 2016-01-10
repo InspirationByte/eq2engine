@@ -46,6 +46,7 @@
 			</Target>
 		</Build>
 		<Compiler>
+			<Add option="-g" />
 			<Add option="-m32" />
 			<Add directory="../FileSystem" />
 			<Add directory="../Engine" />

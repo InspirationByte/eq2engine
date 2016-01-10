@@ -88,6 +88,12 @@ void DkSoundEmitterLocal::Play()
 	// stop playing first
 	Stop();
 
+	if(!m_sample)
+	{
+        MsgWarning("ISoundEmitter::Play - no sample!!!\n");
+        return;
+	}
+
 	if(m_nChannel < 0)
 		m_nChannel = pSoundSystem->RequestChannel( this );
 
@@ -169,7 +175,7 @@ bool DkSoundEmitterLocal::IsStopped() const
 	// only looping samples couldn't be get stopped in virtual mode...
 	bool virtualLooped = m_virtual && m_sample->m_bLooping && (m_virtualState == AL_STOPPED);
 
-	return(m_nChannel < 0) && !virtualLooped;	
+	return(m_nChannel < 0) && !virtualLooped;
 }
 
 ESoundState DkSoundEmitterLocal::GetState() const
@@ -276,7 +282,7 @@ void DkSoundEmitterLocal::SetParams(soundParams_t *param)
 	alSourcef(c->alSource,AL_REFERENCE_DISTANCE, m_params.referenceDistance);
 	alSourcef(c->alSource,AL_MAX_DISTANCE, m_params.maxDistance);
 	alSourcef(c->alSource,AL_ROLLOFF_FACTOR, m_params.rolloff);
-	
+
 	alSourcef(c->alSource, AL_AIR_ABSORPTION_FACTOR, m_params.airAbsorption);
 
 	alSourcef(c->alSource,AL_GAIN, m_params.volume);

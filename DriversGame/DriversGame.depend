@@ -1838,7 +1838,7 @@
 	"IFileSystem.h"
 	"DebugInterface.h"
 
-1452272275 /home/soap/Projects/eqengine/src_all/public/luabinding/LuaBinding.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/luabinding/LuaBinding.h
 	<iostream>
 	"lua.h"
 	"lualib.h"
@@ -2206,7 +2206,7 @@
 	"IFileSystem.h"
 	"DebugInterface.h"
 
-1452263697 /home/soap/Projects/eqengine/src_all/public/platform/Platform.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/platform/Platform.h
 	"dktypes.h"
 	"SDL.h"
 	"SDL_syswm.h"
@@ -2219,7 +2219,7 @@
 	<stddef.h>
 	<string.h>
 
-1452163467 /home/soap/Projects/eqengine/src_all/public/utils/strtools.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/utils/strtools.h
 	"utils/DkLinkedList.h"
 	"utils/DkList.h"
 	"utils/eqstring.h"
@@ -2232,13 +2232,13 @@
 1452159729 /home/soap/Projects/eqengine/src_all/public/utils/DkList.h
 	"platform/Platform.h"
 
-1452160924 /home/soap/Projects/eqengine/src_all/public/utils/eqstring.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/utils/eqstring.h
 	<stdlib.h>
 	<string.h>
 	"dktypes.h"
 	"eqwstring.h"
 
-1452160933 /home/soap/Projects/eqengine/src_all/public/utils/eqwstring.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/utils/eqwstring.h
 	<stdlib.h>
 	<string.h>
 	"dktypes.h"
@@ -2341,11 +2341,11 @@
 	<stdio.h>
 	<stdlib.h>
 
-1452187596 /home/soap/Projects/eqengine/src_all/public/InterfaceManager.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/InterfaceManager.h
 	<stdio.h>
 	"utils/singleton.h"
 
-1452168172 /home/soap/Projects/eqengine/src_all/public/utils/singleton.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/utils/singleton.h
 
 1452159729 /home/soap/Projects/eqengine/src_all/public/core/ConCommand.h
 	<stdio.h>
@@ -2372,7 +2372,7 @@
 	"dktypes.h"
 	"cpuInstrDefs.h"
 
-1452160721 /home/soap/Projects/eqengine/src_all/public/core/ILocalize.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/core/ILocalize.h
 	"IDkCore.h"
 	<wchar.h>
 
@@ -2382,7 +2382,7 @@
 	"InterfaceManager.h"
 	"utils/eqthread.h"
 
-1452164993 /home/soap/Projects/eqengine/src_all/public/utils/eqthread.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/utils/eqthread.h
 	<stdint.h>
 	"Platform.h"
 	"eqstring.h"
@@ -2393,12 +2393,12 @@
 1452159729 /home/soap/Projects/eqengine/src_all/public/IVirtualStream.h
 	"ppmem.h"
 
-1452190326 source:/home/soap/Projects/eqengine/src_all/public/luabinding/LuaBinding_Engine.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/public/luabinding/LuaBinding_Engine.cpp
 	"LuaBinding_Engine.h"
 	"core_base_header.h"
 	"Network/NETThread.h"
 
-1452191543 /home/soap/Projects/eqengine/src_all/public/luabinding/LuaBinding_Engine.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/luabinding/LuaBinding_Engine.h
 	"LuaBinding.h"
 	"LuaBinding_Math.h"
 	"IDebugOverlay.h"
@@ -2411,7 +2411,7 @@
 	"LuaBinding.h"
 	"math/DkMath.h"
 
-1452164728 /home/soap/Projects/eqengine/src_all/public/IDebugOverlay.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/IDebugOverlay.h
 	"InterfaceManager.h"
 	"math/Vector.h"
 	"math/Matrix.h"
@@ -2445,7 +2445,7 @@
 
 1452159729 /home/soap/Projects/eqengine/src_all/public/coord.h
 
-1452264018 /home/soap/Projects/eqengine/src_all/public/materialsystem/IMaterialSystem.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/materialsystem/IMaterialSystem.h
 	"DebugInterface.h"
 	"renderers/IShaderAPI.h"
 	"renderers/IEqSwapChain.h"
@@ -2474,7 +2474,7 @@
 
 1452159729 /home/soap/Projects/eqengine/src_all/public/textureformats.h
 
-1452159729 /home/soap/Projects/eqengine/src_all/public/materialsystem/renderers/ShaderAPI_defs.h
+1452411639 /home/soap/Projects/eqengine/src_all/public/materialsystem/renderers/ShaderAPI_defs.h
 	"math/Vector.h"
 	"math/Matrix.h"
 	"math/Rectangle.h"
@@ -2528,7 +2528,7 @@
 	"IMaterialVar.h"
 	"IMaterialProxy.h"
 
-1452161156 /home/soap/Projects/eqengine/src_all/public/materialsystem/IMatSysShader.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/materialsystem/IMatSysShader.h
 	"IMaterial.h"
 	"math/DkMath.h"
 	"renderers/IShaderAPI.h"
@@ -2581,7 +2581,7 @@
 	"IFileSystem.h"
 	"DebugInterface.h"
 
-1452191845 /home/soap/Projects/eqengine/src_all/shared_engine/Network/NETThread.h
+1452332103 /home/soap/Projects/eqengine/src_all/shared_engine/Network/NETThread.h
 	"luabinding/LuaBinding.h"
 	"utils/eqthread.h"
 	"utils/DkList.h"
@@ -2612,7 +2612,7 @@
 1452159729 source:/home/soap/Projects/eqengine/src_all/public/ViewParams.cpp
 	"ViewParams.h"
 
-1452159729 source:/home/soap/Projects/eqengine/src_all/shared_engine/Audio/alsnd_emitter.cpp
+1452414245 source:/home/soap/Projects/eqengine/src_all/shared_engine/Audio/alsnd_emitter.cpp
 	<sys/stat.h>
 	<stdlib.h>
 	"DebugInterface.h"
@@ -2695,7 +2695,7 @@
 	"DebugInterface.h"
 	"alsound_local.h"
 
-1452263831 source:/home/soap/Projects/eqengine/src_all/shared_engine/Audio/alsound_local.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/shared_engine/Audio/alsound_local.cpp
 	"ISoundSystem.h"
 	"core_base_header.h"
 	"alsound_local.h"
@@ -2719,7 +2719,7 @@
 1452159729 /home/soap/Projects/eqengine/src_all/public/in_keys_ident.h
 	"Platform.h"
 
-1452192235 /home/soap/Projects/eqengine/src_all/public/IEqModel.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/IEqModel.h
 	"model.h"
 	"ppmem.h"
 	"Decals.h"
@@ -2752,7 +2752,7 @@
 	"coord.h"
 	"math/DkMath.h"
 
-1452192174 /home/soap/Projects/eqengine/src_all/shared_engine/EGFInstancer.h
+1452332103 /home/soap/Projects/eqengine/src_all/shared_engine/EGFInstancer.h
 	"IEqModel.h"
 	"materialsystem/IMaterialSystem.h"
 
@@ -2782,7 +2782,7 @@
 	"in_keys_ident.h"
 	"IFileSystem.h"
 
-1452166602 source:/home/soap/Projects/eqengine/src_all/shared_engine/DebugOverlay.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/shared_engine/DebugOverlay.cpp
 	"DebugOverlay.h"
 	"Font.h"
 	"DebugInterface.h"
@@ -2791,7 +2791,7 @@
 	<stdarg.h>
 	"math/Rectangle.h"
 
-1452164722 /home/soap/Projects/eqengine/src_all/shared_engine/DebugOverlay.h
+1452332103 /home/soap/Projects/eqengine/src_all/shared_engine/DebugOverlay.h
 	"IDebugOverlay.h"
 	"utils/DkList.h"
 	"utils/eqstring.h"
@@ -2850,7 +2850,7 @@
 	"EqParticles.h"
 	"eqGlobalMutex.h"
 
-1452193200 /home/soap/Projects/eqengine/src_all/shared_engine/EqParticles.h
+1452332103 /home/soap/Projects/eqengine/src_all/shared_engine/EqParticles.h
 	"materialsystem/IMaterialSystem.h"
 	"BaseRenderableObject.h"
 	"EffectRender.h"
@@ -2872,7 +2872,7 @@
 	"FontCache.h"
 	"Font.h"
 
-1452191776 source:/home/soap/Projects/eqengine/src_all/shared_engine/FontLayoutBuilders.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/shared_engine/FontLayoutBuilders.cpp
 	"FontLayoutBuilders.h"
 	<wctype.h>
 
@@ -2917,7 +2917,7 @@
 	"NETThread.h"
 	"eqGlobalMutex.h"
 
-1452192037 source:/home/soap/Projects/eqengine/src_all/shared_engine/physics/BulletShapeCache.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/shared_engine/physics/BulletShapeCache.cpp
 	"BulletShapeCache.h"
 	"btBulletCollisionCommon.h"
 	"BulletConvert.h"
@@ -3457,7 +3457,7 @@
 	"CameraAnimator.h"
 	"EqParticles.h"
 
-1452194530 /home/soap/Projects/eqengine/src_all/DriversGame/world.h
+1452332103 /home/soap/Projects/eqengine/src_all/DriversGame/world.h
 	"luabinding/LuaBinding.h"
 	"materialsystem/IMaterialSystem.h"
 	"input.h"
@@ -3468,7 +3468,7 @@
 1452159728 /home/soap/Projects/eqengine/src_all/DriversGame/input.h
 	"core_base_header.h"
 
-1452192451 /home/soap/Projects/eqengine/src_all/DriversGame/level.h
+1452332103 /home/soap/Projects/eqengine/src_all/DriversGame/level.h
 	"utils/eqthread.h"
 	"eqPhysics/eqPhysics.h"
 	"heightfield.h"
@@ -3490,7 +3490,7 @@
 	"utils/DkList.h"
 	"ppmem.h"
 
-1452194132 /home/soap/Projects/eqengine/src_all/DriversGame/heightfield.h
+1452332103 /home/soap/Projects/eqengine/src_all/DriversGame/heightfield.h
 	"materialsystem/IMaterialSystem.h"
 	"IVirtualStream.h"
 	"occluderSet.h"
@@ -3528,7 +3528,7 @@
 	"utils/eqstring.h"
 	"heightfield.h"
 
-1452194529 /home/soap/Projects/eqengine/src_all/DriversGame/GameObject.h
+1452332103 /home/soap/Projects/eqengine/src_all/DriversGame/GameObject.h
 	"LuaBinding_Drivers.h"
 	"occluderSet.h"
 	"IEqModel.h"
@@ -3537,7 +3537,7 @@
 	"EGFInstancer.h"
 	"network/netpropvar.h"
 
-1452193937 /home/soap/Projects/eqengine/src_all/DriversGame/physics.h
+1452332103 /home/soap/Projects/eqengine/src_all/DriversGame/physics.h
 	"Platform.h"
 	"utils/DkList.h"
 	"math/DkMath.h"
@@ -3566,7 +3566,7 @@
 	"luabinding/LuaBinding.h"
 	"luabinding/LuaBinding_Engine.h"
 
-1452193095 /home/soap/Projects/eqengine/src_all/public/network/netpropvar.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/network/netpropvar.h
 	"NetMessageBuffer.h"
 
 1452159728 /home/soap/Projects/eqengine/src_all/DriversGame/predictablerandom.h
@@ -3585,11 +3585,11 @@
 	"game_multiplayer.h"
 	"replay.h"
 
-1452193785 /home/soap/Projects/eqengine/src_all/DriversGame/state_game.h
+1452411639 /home/soap/Projects/eqengine/src_all/DriversGame/state_game.h
 	"ui_luaMenu.h"
 	"StateManager.h"
 
-1452159728 /home/soap/Projects/eqengine/src_all/DriversGame/StateManager.h
+1452411639 /home/soap/Projects/eqengine/src_all/DriversGame/StateManager.h
 	"Font.h"
 	"utils/KeyValues.h"
 	"materialsystem/IMaterialSystem.h"
@@ -3602,7 +3602,7 @@
 	"AICarManager.h"
 	"LuaBinding_Drivers.h"
 
-1452192335 /home/soap/Projects/eqengine/src_all/DriversGame/game_multiplayer.h
+1452332103 /home/soap/Projects/eqengine/src_all/DriversGame/game_multiplayer.h
 	"session_stuff.h"
 	"Network/NETThread.h"
 
@@ -3610,7 +3610,7 @@
 	"car.h"
 	"in_keys_ident.h"
 
-1452192844 source:/home/soap/Projects/eqengine/src_all/DriversGame/AIPursuerCar.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/AIPursuerCar.cpp
 	"AIPursuerCar.h"
 	"session_stuff.h"
 	"object_debris.h"
@@ -3627,7 +3627,7 @@
 	"math/Volume.h"
 	"Shiny.h"
 
-1452193022 source:/home/soap/Projects/eqengine/src_all/DriversGame/BillboardList.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/BillboardList.cpp
 	"world.h"
 	"BillboardList.h"
 	"utils/Tokenizer.h"
@@ -3649,7 +3649,7 @@
 	"world.h"
 	"input.h"
 
-1452193318 source:/home/soap/Projects/eqengine/src_all/DriversGame/car.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/car.cpp
 	"car.h"
 	"DebugOverlay.h"
 	"session_stuff.h"
@@ -3675,7 +3675,7 @@
 	"BulletCollision/CollisionShapes/btStridingMeshInterface.h"
 	"math/DkMath.h"
 
-1452193448 source:/home/soap/Projects/eqengine/src_all/DriversGame/eqPhysics/eqCollision_Object.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/eqPhysics/eqCollision_Object.cpp
 	"eqCollision_Object.h"
 	"BulletCollision/CollisionDispatch/btInternalEdgeUtility.h"
 	"eqBulletIndexedMesh.h"
@@ -3688,14 +3688,14 @@
 	"LinearMath/btVector3.h"
 	"BulletCollision/CollisionShapes/btTriangleInfoMap.h"
 
-1452193467 source:/home/soap/Projects/eqengine/src_all/DriversGame/eqPhysics/eqCollision_ObjectGrid.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/eqPhysics/eqCollision_ObjectGrid.cpp
 	"eqCollision_ObjectGrid.h"
 	"eqCollision_Object.h"
 	"eqBulletIndexedMesh.h"
 	"IDebugOverlay.h"
 	"DebugInterface.h"
 
-1452193701 source:/home/soap/Projects/eqengine/src_all/DriversGame/eqPhysics/eqPhysics.cpp
+1452411639 source:/home/soap/Projects/eqengine/src_all/DriversGame/eqPhysics/eqPhysics.cpp
 	"IDebugOverlay.h"
 	"ConVar.h"
 	"DebugInterface.h"
@@ -3713,7 +3713,7 @@
 	"btConvexShape.h"
 	"btBoxShape.h"
 
-1452193719 source:/home/soap/Projects/eqengine/src_all/DriversGame/eqPhysics/eqPhysics_Body.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/eqPhysics/eqPhysics_Body.cpp
 	"eqPhysics_Body.h"
 	"IDebugOverlay.h"
 	"../shared_engine/physics/BulletConvert.h"
@@ -3723,7 +3723,7 @@
 1452159728 source:/home/soap/Projects/eqengine/src_all/DriversGame/EventFSM.cpp
 	"EventFSM.h"
 
-1452193874 source:/home/soap/Projects/eqengine/src_all/DriversGame/game_multiplayer.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/game_multiplayer.cpp
 	"luabinding/LuaBinding.h"
 	"game_multiplayer.h"
 	"NetPlayer.h"
@@ -3737,7 +3737,7 @@
 	"utils/eqstring.h"
 	"Network/NETThread.h"
 
-1452159728 /home/soap/Projects/eqengine/src_all/DriversGame/system.h
+1452411639 /home/soap/Projects/eqengine/src_all/DriversGame/system.h
 	"materialsystem/IMaterialSystem.h"
 	"GameSoundEmitterSystem.h"
 	"in_keys_ident.h"
@@ -3745,7 +3745,7 @@
 	"eqParallelJobs.h"
 	"utils/eqtimer.h"
 
-1452193899 source:/home/soap/Projects/eqengine/src_all/DriversGame/game_singleplayer.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/game_singleplayer.cpp
 	"luabinding/LuaBinding.h"
 	"game_singleplayer.h"
 	"replay.h"
@@ -3759,7 +3759,7 @@
 	"game_multiplayer.h"
 	"replay.h"
 
-1452194159 source:/home/soap/Projects/eqengine/src_all/DriversGame/heightfield.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/heightfield.cpp
 	"world.h"
 	"heightfield.h"
 	"VirtualStream.h"
@@ -3769,7 +3769,7 @@
 1452159728 source:/home/soap/Projects/eqengine/src_all/DriversGame/input.cpp
 	"input.h"
 
-1452263719 source:/home/soap/Projects/eqengine/src_all/DriversGame/level.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/level.cpp
 	"world.h"
 	"levfile.h"
 	"level.h"
@@ -3828,7 +3828,7 @@
 	"GameObject.h"
 	"world.h"
 
-1452194278 source:/home/soap/Projects/eqengine/src_all/DriversGame/object_sheets.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/object_sheets.cpp
 	"object_sheets.h"
 	"world.h"
 	"EqParticles.h"
@@ -3867,12 +3867,12 @@
 	"world.h"
 	"BillboardList.h"
 
-1452194301 source:/home/soap/Projects/eqengine/src_all/DriversGame/occluderSet.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/occluderSet.cpp
 	"occluderSet.h"
 	"IDebugOverlay.h"
 	"ConVar.h"
 
-1452194580 source:/home/soap/Projects/eqengine/src_all/DriversGame/physics.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/physics.cpp
 	"GameObject.h"
 	"eqGlobalMutex.h"
 	"physics.h"
@@ -3883,11 +3883,11 @@
 	"Shiny.h"
 	"eqPhysics/eqBulletIndexedMesh.h"
 
-1452194727 source:/home/soap/Projects/eqengine/src_all/DriversGame/Rain.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/Rain.cpp
 	"world.h"
 	"Rain.h"
 
-1452194702 /home/soap/Projects/eqengine/src_all/DriversGame/Rain.h
+1452332103 /home/soap/Projects/eqengine/src_all/DriversGame/Rain.h
 	"math/DkMath.h"
 	"DebugInterface.h"
 	"EqParticles.h"
@@ -3904,7 +3904,7 @@
 1452159728 source:/home/soap/Projects/eqengine/src_all/DriversGame/Shader_StaticObjs.cpp
 	"BaseShader.h"
 
-1452264080 /home/soap/Projects/eqengine/src_all/public/materialsystem/BaseShader.h
+1452332103 /home/soap/Projects/eqengine/src_all/public/materialsystem/BaseShader.h
 	"materialsystem/IMaterialSystem.h"
 
 1452159728 source:/home/soap/Projects/eqengine/src_all/DriversGame/Shader_VehicleBody.cpp
@@ -3916,7 +3916,7 @@
 1452159728 source:/home/soap/Projects/eqengine/src_all/DriversGame/ShaderOverrides.cpp
 	"IMaterialSystem.h"
 
-1452194754 source:/home/soap/Projects/eqengine/src_all/DriversGame/state_game.cpp
+1452411639 source:/home/soap/Projects/eqengine/src_all/DriversGame/state_game.cpp
 	"state_game.h"
 	"CameraAnimator.h"
 	"session_stuff.h"
@@ -3936,11 +3936,11 @@
 	"FontCache.h"
 	"KeyBinding/Keys.h"
 
-1452194797 /home/soap/Projects/eqengine/src_all/DriversGame/state_mainmenu.h
+1452411639 /home/soap/Projects/eqengine/src_all/DriversGame/state_mainmenu.h
 	"ui_luaMenu.h"
 	"StateManager.h"
 
-1452194867 source:/home/soap/Projects/eqengine/src_all/DriversGame/state_title.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/state_title.cpp
 	"state_mainmenu.h"
 	"state_title.h"
 	"state_game.h"
@@ -3950,10 +3950,10 @@
 	"replay.h"
 	"KeyBinding/Keys.h"
 
-1452159728 /home/soap/Projects/eqengine/src_all/DriversGame/state_title.h
+1452411639 /home/soap/Projects/eqengine/src_all/DriversGame/state_title.h
 	"StateManager.h"
 
-1452194925 source:/home/soap/Projects/eqengine/src_all/DriversGame/StateManager.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/StateManager.cpp
 	"LuaBinding_Drivers.h"
 	"StateManager.h"
 	"session_stuff.h"
@@ -3964,7 +3964,7 @@
 	"KeyBinding/Keys.h"
 	"IDebugOverlay.h"
 
-1452331426 source:/home/soap/Projects/eqengine/src_all/DriversGame/system.cpp
+1452411639 source:/home/soap/Projects/eqengine/src_all/DriversGame/system.cpp
 	"LuaBinding_Drivers.h"
 	"DebugOverlay.h"
 	"system.h"
@@ -3980,7 +3980,7 @@
 1452159728 source:/home/soap/Projects/eqengine/src_all/DriversGame/ui_luaMenu.cpp
 	"ui_luaMenu.h"
 
-1452159728 source:/home/soap/Projects/eqengine/src_all/DriversGame/window.cpp
+1452411639 source:/home/soap/Projects/eqengine/src_all/DriversGame/window.cpp
 	"Platform.h"
 	"DebugInterface.h"
 	"system.h"
@@ -4007,6 +4007,6 @@
 	"object_sheets.h"
 	"object_scripted.h"
 
-1452264081 source:/home/soap/Projects/eqengine/src_all/public/materialsystem/BaseShader.cpp
+1452332103 source:/home/soap/Projects/eqengine/src_all/public/materialsystem/BaseShader.cpp
 	"BaseShader.h"
 

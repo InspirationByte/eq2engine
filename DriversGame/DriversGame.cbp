@@ -11,6 +11,7 @@
 				<Option working_dir="../../gamebin_linux/" />
 				<Option type="0" />
 				<Option compiler="gcc" />
+				<Option parameters=" +r_disableLightUpdates 1 +job_modelLoader 0 +r_enableLevelInstancing 0 +r_enableObjectsInstancing 0" />
 				<Compiler>
 					<Add option="-DLINUX" />
 					<Add option="-DNDEBUG" />
