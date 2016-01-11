@@ -100,7 +100,6 @@ LRESULT CALLBACK PFWinProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
 bool CGLRenderLib::InitCaps()
 {
 #ifdef PLAT_WIN
-
 	m_renderInstance = GetModuleHandle(NULL);
 
 	//Unregister PFrmt if
@@ -148,7 +147,7 @@ bool CGLRenderLib::InitCaps()
 	return true;
 }
 
-DECLARE_CMD(gl_extensions,"Print supported OpenGL extensions",0)
+void PrintGLExtensions()
 {
 	const char *ver = (const char *) gl::GetString(gl::VERSION);
 	Msg("OpenGL version: %s\n \n",ver);
@@ -164,6 +163,11 @@ DECLARE_CMD(gl_extensions,"Print supported OpenGL extensions",0)
 		MsgInfo("%s\n",splExts[i].c_str());
 	}
 	MsgWarning("Total extensions supported: %i\n",i);
+}
+
+DECLARE_CMD(gl_extensions,"Print supported OpenGL extensions",0)
+{
+	PrintGLExtensions();
 }
 
 #ifdef PLAT_LINUX
@@ -451,6 +455,9 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 #endif //PLAT_WIN
 
+	if(GetCmdLine()->FindArgument("-glext") != -1)
+		PrintGLExtensions();
+
 	{
 		const char *rend = (const char *) gl::GetString(gl::RENDERER);
 		const char *vendor = (const char *) gl::GetString(gl::VENDOR);
@@ -485,9 +492,9 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	m_Renderer->Clear(true,true,true,ColorRGBA(0.5,0.5,0.5, 0.0f));
 	EndFrame();
 
-	if (gl::exts::var_EXT_multisample && params.nMultisample > 0)
+	if (gl::exts::var_ARB_multisample && params.nMultisample > 0)
 	{
-		gl::Enable(gl::MULTISAMPLE_EXT);
+		gl::Enable(gl::MULTISAMPLE_ARB);
 	}
 
 	return true;

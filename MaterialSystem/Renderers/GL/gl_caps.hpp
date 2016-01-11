@@ -175,10 +175,10 @@ namespace gl
 		};
 		
 		extern LoadTest var_ARB_instanced_arrays;
-		extern LoadTest var_EXT_multisample;
+		extern LoadTest var_ARB_multisample;
 		extern LoadTest var_ARB_fragment_shader;
 		extern LoadTest var_ARB_shader_objects;
-		extern LoadTest var_EXT_vertex_shader;
+		extern LoadTest var_ARB_vertex_shader;
 		extern LoadTest var_ARB_framebuffer_object;
 		extern LoadTest var_EXT_framebuffer_object;
 		extern LoadTest var_ARB_draw_buffers;
@@ -187,7 +187,7 @@ namespace gl
 		extern LoadTest var_ARB_depth_buffer_float;
 		extern LoadTest var_EXT_packed_depth_stencil;
 		extern LoadTest var_ARB_texture_rectangle;
-		extern LoadTest var_ATI_texture_float;
+		extern LoadTest var_ARB_texture_float;
 		extern LoadTest var_ARB_occlusion_query;
 		extern LoadTest var_EXT_texture_compression_s3tc;
 		extern LoadTest var_EXT_texture_sRGB;
@@ -198,23 +198,15 @@ namespace gl
 	{
 		VERTEX_ATTRIB_ARRAY_DIVISOR_ARB  = 0x88FE,
 		
-		_1PASS_EXT                       = 0x80A1,
-		_2PASS_0_EXT                     = 0x80A2,
-		_2PASS_1_EXT                     = 0x80A3,
-		_4PASS_0_EXT                     = 0x80A4,
-		_4PASS_1_EXT                     = 0x80A5,
-		_4PASS_2_EXT                     = 0x80A6,
-		_4PASS_3_EXT                     = 0x80A7,
-		MULTISAMPLE_BIT_EXT              = 0x20000000,
-		MULTISAMPLE_EXT                  = 0x809D,
-		SAMPLES_EXT                      = 0x80A9,
-		SAMPLE_ALPHA_TO_MASK_EXT         = 0x809E,
-		SAMPLE_ALPHA_TO_ONE_EXT          = 0x809F,
-		SAMPLE_BUFFERS_EXT               = 0x80A8,
-		SAMPLE_MASK_EXT                  = 0x80A0,
-		SAMPLE_MASK_INVERT_EXT           = 0x80AB,
-		SAMPLE_MASK_VALUE_EXT            = 0x80AA,
-		SAMPLE_PATTERN_EXT               = 0x80AC,
+		MULTISAMPLE_ARB                  = 0x809D,
+		MULTISAMPLE_BIT_ARB              = 0x20000000,
+		SAMPLES_ARB                      = 0x80A9,
+		SAMPLE_ALPHA_TO_COVERAGE_ARB     = 0x809E,
+		SAMPLE_ALPHA_TO_ONE_ARB          = 0x809F,
+		SAMPLE_BUFFERS_ARB               = 0x80A8,
+		SAMPLE_COVERAGE_ARB              = 0x80A0,
+		SAMPLE_COVERAGE_INVERT_ARB       = 0x80AB,
+		SAMPLE_COVERAGE_VALUE_ARB        = 0x80AA,
 		
 		FRAGMENT_SHADER_ARB              = 0x8B30,
 		FRAGMENT_SHADER_DERIVATIVE_HINT_ARB = 0x8B8B,
@@ -255,116 +247,32 @@ namespace gl
 		SAMPLER_CUBE_ARB                 = 0x8B60,
 		SHADER_OBJECT_ARB                = 0x8B48,
 		
-		CURRENT_VERTEX_EXT               = 0x87E2,
-		FULL_RANGE_EXT                   = 0x87E1,
-		INVARIANT_DATATYPE_EXT           = 0x87EB,
-		INVARIANT_EXT                    = 0x87C2,
-		INVARIANT_VALUE_EXT              = 0x87EA,
-		LOCAL_CONSTANT_DATATYPE_EXT      = 0x87ED,
-		LOCAL_CONSTANT_EXT               = 0x87C3,
-		LOCAL_CONSTANT_VALUE_EXT         = 0x87EC,
-		LOCAL_EXT                        = 0x87C4,
-		MATRIX_EXT                       = 0x87C0,
-		MAX_OPTIMIZED_VERTEX_SHADER_INSTRUCTIONS_EXT = 0x87CA,
-		MAX_OPTIMIZED_VERTEX_SHADER_INVARIANTS_EXT = 0x87CD,
-		MAX_OPTIMIZED_VERTEX_SHADER_LOCALS_EXT = 0x87CE,
-		MAX_OPTIMIZED_VERTEX_SHADER_LOCAL_CONSTANTS_EXT = 0x87CC,
-		MAX_OPTIMIZED_VERTEX_SHADER_VARIANTS_EXT = 0x87CB,
-		MAX_VERTEX_SHADER_INSTRUCTIONS_EXT = 0x87C5,
-		MAX_VERTEX_SHADER_INVARIANTS_EXT = 0x87C7,
-		MAX_VERTEX_SHADER_LOCALS_EXT     = 0x87C9,
-		MAX_VERTEX_SHADER_LOCAL_CONSTANTS_EXT = 0x87C8,
-		MAX_VERTEX_SHADER_VARIANTS_EXT   = 0x87C6,
-		MVP_MATRIX_EXT                   = 0x87E3,
-		NEGATIVE_ONE_EXT                 = 0x87DF,
-		NEGATIVE_W_EXT                   = 0x87DC,
-		NEGATIVE_X_EXT                   = 0x87D9,
-		NEGATIVE_Y_EXT                   = 0x87DA,
-		NEGATIVE_Z_EXT                   = 0x87DB,
-		NORMALIZED_RANGE_EXT             = 0x87E0,
-		ONE_EXT                          = 0x87DE,
-		OP_ADD_EXT                       = 0x8787,
-		OP_CLAMP_EXT                     = 0x878E,
-		OP_CROSS_PRODUCT_EXT             = 0x8797,
-		OP_DOT3_EXT                      = 0x8784,
-		OP_DOT4_EXT                      = 0x8785,
-		OP_EXP_BASE_2_EXT                = 0x8791,
-		OP_FLOOR_EXT                     = 0x878F,
-		OP_FRAC_EXT                      = 0x8789,
-		OP_INDEX_EXT                     = 0x8782,
-		OP_LOG_BASE_2_EXT                = 0x8792,
-		OP_MADD_EXT                      = 0x8788,
-		OP_MAX_EXT                       = 0x878A,
-		OP_MIN_EXT                       = 0x878B,
-		OP_MOV_EXT                       = 0x8799,
-		OP_MULTIPLY_MATRIX_EXT           = 0x8798,
-		OP_MUL_EXT                       = 0x8786,
-		OP_NEGATE_EXT                    = 0x8783,
-		OP_POWER_EXT                     = 0x8793,
-		OP_RECIP_EXT                     = 0x8794,
-		OP_RECIP_SQRT_EXT                = 0x8795,
-		OP_ROUND_EXT                     = 0x8790,
-		OP_SET_GE_EXT                    = 0x878C,
-		OP_SET_LT_EXT                    = 0x878D,
-		OP_SUB_EXT                       = 0x8796,
-		OUTPUT_COLOR0_EXT                = 0x879B,
-		OUTPUT_COLOR1_EXT                = 0x879C,
-		OUTPUT_FOG_EXT                   = 0x87BD,
-		OUTPUT_TEXTURE_COORD0_EXT        = 0x879D,
-		OUTPUT_TEXTURE_COORD10_EXT       = 0x87A7,
-		OUTPUT_TEXTURE_COORD11_EXT       = 0x87A8,
-		OUTPUT_TEXTURE_COORD12_EXT       = 0x87A9,
-		OUTPUT_TEXTURE_COORD13_EXT       = 0x87AA,
-		OUTPUT_TEXTURE_COORD14_EXT       = 0x87AB,
-		OUTPUT_TEXTURE_COORD15_EXT       = 0x87AC,
-		OUTPUT_TEXTURE_COORD16_EXT       = 0x87AD,
-		OUTPUT_TEXTURE_COORD17_EXT       = 0x87AE,
-		OUTPUT_TEXTURE_COORD18_EXT       = 0x87AF,
-		OUTPUT_TEXTURE_COORD19_EXT       = 0x87B0,
-		OUTPUT_TEXTURE_COORD1_EXT        = 0x879E,
-		OUTPUT_TEXTURE_COORD20_EXT       = 0x87B1,
-		OUTPUT_TEXTURE_COORD21_EXT       = 0x87B2,
-		OUTPUT_TEXTURE_COORD22_EXT       = 0x87B3,
-		OUTPUT_TEXTURE_COORD23_EXT       = 0x87B4,
-		OUTPUT_TEXTURE_COORD24_EXT       = 0x87B5,
-		OUTPUT_TEXTURE_COORD25_EXT       = 0x87B6,
-		OUTPUT_TEXTURE_COORD26_EXT       = 0x87B7,
-		OUTPUT_TEXTURE_COORD27_EXT       = 0x87B8,
-		OUTPUT_TEXTURE_COORD28_EXT       = 0x87B9,
-		OUTPUT_TEXTURE_COORD29_EXT       = 0x87BA,
-		OUTPUT_TEXTURE_COORD2_EXT        = 0x879F,
-		OUTPUT_TEXTURE_COORD30_EXT       = 0x87BB,
-		OUTPUT_TEXTURE_COORD31_EXT       = 0x87BC,
-		OUTPUT_TEXTURE_COORD3_EXT        = 0x87A0,
-		OUTPUT_TEXTURE_COORD4_EXT        = 0x87A1,
-		OUTPUT_TEXTURE_COORD5_EXT        = 0x87A2,
-		OUTPUT_TEXTURE_COORD6_EXT        = 0x87A3,
-		OUTPUT_TEXTURE_COORD7_EXT        = 0x87A4,
-		OUTPUT_TEXTURE_COORD8_EXT        = 0x87A5,
-		OUTPUT_TEXTURE_COORD9_EXT        = 0x87A6,
-		OUTPUT_VERTEX_EXT                = 0x879A,
-		SCALAR_EXT                       = 0x87BE,
-		VARIANT_ARRAY_EXT                = 0x87E8,
-		VARIANT_ARRAY_POINTER_EXT        = 0x87E9,
-		VARIANT_ARRAY_STRIDE_EXT         = 0x87E6,
-		VARIANT_ARRAY_TYPE_EXT           = 0x87E7,
-		VARIANT_DATATYPE_EXT             = 0x87E5,
-		VARIANT_EXT                      = 0x87C1,
-		VARIANT_VALUE_EXT                = 0x87E4,
-		VECTOR_EXT                       = 0x87BF,
-		VERTEX_SHADER_BINDING_EXT        = 0x8781,
-		VERTEX_SHADER_EXT                = 0x8780,
-		VERTEX_SHADER_INSTRUCTIONS_EXT   = 0x87CF,
-		VERTEX_SHADER_INVARIANTS_EXT     = 0x87D1,
-		VERTEX_SHADER_LOCALS_EXT         = 0x87D3,
-		VERTEX_SHADER_LOCAL_CONSTANTS_EXT = 0x87D2,
-		VERTEX_SHADER_OPTIMIZED_EXT      = 0x87D4,
-		VERTEX_SHADER_VARIANTS_EXT       = 0x87D0,
-		W_EXT                            = 0x87D8,
-		X_EXT                            = 0x87D5,
-		Y_EXT                            = 0x87D6,
-		ZERO_EXT                         = 0x87DD,
-		Z_EXT                            = 0x87D7,
+		CURRENT_VERTEX_ATTRIB_ARB        = 0x8626,
+		FLOAT                            = 0x1406,
+		//FLOAT_MAT2_ARB taken from ext: ARB_shader_objects
+		//FLOAT_MAT3_ARB taken from ext: ARB_shader_objects
+		//FLOAT_MAT4_ARB taken from ext: ARB_shader_objects
+		//FLOAT_VEC2_ARB taken from ext: ARB_shader_objects
+		//FLOAT_VEC3_ARB taken from ext: ARB_shader_objects
+		//FLOAT_VEC4_ARB taken from ext: ARB_shader_objects
+		MAX_COMBINED_TEXTURE_IMAGE_UNITS_ARB = 0x8B4D,
+		MAX_TEXTURE_COORDS_ARB           = 0x8871,
+		MAX_TEXTURE_IMAGE_UNITS_ARB      = 0x8872,
+		MAX_VARYING_FLOATS_ARB           = 0x8B4B,
+		MAX_VERTEX_ATTRIBS_ARB           = 0x8869,
+		MAX_VERTEX_TEXTURE_IMAGE_UNITS_ARB = 0x8B4C,
+		MAX_VERTEX_UNIFORM_COMPONENTS_ARB = 0x8B4A,
+		OBJECT_ACTIVE_ATTRIBUTES_ARB     = 0x8B89,
+		OBJECT_ACTIVE_ATTRIBUTE_MAX_LENGTH_ARB = 0x8B8A,
+		VERTEX_ATTRIB_ARRAY_ENABLED_ARB  = 0x8622,
+		VERTEX_ATTRIB_ARRAY_NORMALIZED_ARB = 0x886A,
+		VERTEX_ATTRIB_ARRAY_POINTER_ARB  = 0x8645,
+		VERTEX_ATTRIB_ARRAY_SIZE_ARB     = 0x8623,
+		VERTEX_ATTRIB_ARRAY_STRIDE_ARB   = 0x8624,
+		VERTEX_ATTRIB_ARRAY_TYPE_ARB     = 0x8625,
+		VERTEX_PROGRAM_POINT_SIZE_ARB    = 0x8642,
+		VERTEX_PROGRAM_TWO_SIDE_ARB      = 0x8643,
+		VERTEX_SHADER_ARB                = 0x8B31,
 		
 		COLOR_ATTACHMENT0                = 0x8CE0,
 		COLOR_ATTACHMENT1                = 0x8CE1,
@@ -526,18 +434,26 @@ namespace gl
 		TEXTURE_BINDING_RECTANGLE_ARB    = 0x84F6,
 		TEXTURE_RECTANGLE_ARB            = 0x84F5,
 		
-		ALPHA_FLOAT16_ATI                = 0x881C,
-		ALPHA_FLOAT32_ATI                = 0x8816,
-		INTENSITY_FLOAT16_ATI            = 0x881D,
-		INTENSITY_FLOAT32_ATI            = 0x8817,
-		LUMINANCE_ALPHA_FLOAT16_ATI      = 0x881F,
-		LUMINANCE_ALPHA_FLOAT32_ATI      = 0x8819,
-		LUMINANCE_FLOAT16_ATI            = 0x881E,
-		LUMINANCE_FLOAT32_ATI            = 0x8818,
-		RGBA_FLOAT16_ATI                 = 0x881A,
-		RGBA_FLOAT32_ATI                 = 0x8814,
-		RGB_FLOAT16_ATI                  = 0x881B,
-		RGB_FLOAT32_ATI                  = 0x8815,
+		ALPHA16F_ARB                     = 0x881C,
+		ALPHA32F_ARB                     = 0x8816,
+		INTENSITY16F_ARB                 = 0x881D,
+		INTENSITY32F_ARB                 = 0x8817,
+		LUMINANCE16F_ARB                 = 0x881E,
+		LUMINANCE32F_ARB                 = 0x8818,
+		LUMINANCE_ALPHA16F_ARB           = 0x881F,
+		LUMINANCE_ALPHA32F_ARB           = 0x8819,
+		RGB16F_ARB                       = 0x881B,
+		RGB32F_ARB                       = 0x8815,
+		RGBA16F_ARB                      = 0x881A,
+		RGBA32F_ARB                      = 0x8814,
+		TEXTURE_ALPHA_TYPE_ARB           = 0x8C13,
+		TEXTURE_BLUE_TYPE_ARB            = 0x8C12,
+		TEXTURE_DEPTH_TYPE_ARB           = 0x8C16,
+		TEXTURE_GREEN_TYPE_ARB           = 0x8C11,
+		TEXTURE_INTENSITY_TYPE_ARB       = 0x8C15,
+		TEXTURE_LUMINANCE_TYPE_ARB       = 0x8C14,
+		TEXTURE_RED_TYPE_ARB             = 0x8C10,
+		UNSIGNED_NORMALIZED_ARB          = 0x8C17,
 		
 		CURRENT_QUERY_ARB                = 0x8865,
 		QUERY_COUNTER_BITS_ARB           = 0x8864,
@@ -722,7 +638,7 @@ namespace gl
 		FEEDBACK_BUFFER_TYPE             = 0x0DF2,
 		FILL                             = 0x1B02,
 		FLAT                             = 0x1D00,
-		FLOAT                            = 0x1406,
+		//FLOAT taken from ext: ARB_vertex_shader
 		FOG                              = 0x0B60,
 		FOG_BIT                          = 0x00000080,
 		FOG_COLOR                        = 0x0B66,
@@ -1454,8 +1370,7 @@ namespace gl
 	{
 		extern void (CODEGEN_FUNCPTR *VertexAttribDivisorARB)(GLuint index, GLuint divisor);
 		
-		extern void (CODEGEN_FUNCPTR *SampleMaskEXT)(GLclampf value, GLboolean invert);
-		extern void (CODEGEN_FUNCPTR *SamplePatternEXT)(GLenum pattern);
+		extern void (CODEGEN_FUNCPTR *SampleCoverageARB)(GLfloat value, GLboolean invert);
 		
 		
 		extern void (CODEGEN_FUNCPTR *AttachObjectARB)(GLhandleARB containerObj, GLhandleARB obj);
@@ -1498,48 +1413,52 @@ namespace gl
 		extern void (CODEGEN_FUNCPTR *UseProgramObjectARB)(GLhandleARB programObj);
 		extern void (CODEGEN_FUNCPTR *ValidateProgramARB)(GLhandleARB programObj);
 		
-		extern void (CODEGEN_FUNCPTR *BeginVertexShaderEXT)(void);
-		extern GLuint (CODEGEN_FUNCPTR *BindLightParameterEXT)(GLenum light, GLenum value);
-		extern GLuint (CODEGEN_FUNCPTR *BindMaterialParameterEXT)(GLenum face, GLenum value);
-		extern GLuint (CODEGEN_FUNCPTR *BindParameterEXT)(GLenum value);
-		extern GLuint (CODEGEN_FUNCPTR *BindTexGenParameterEXT)(GLenum unit, GLenum coord, GLenum value);
-		extern GLuint (CODEGEN_FUNCPTR *BindTextureUnitParameterEXT)(GLenum unit, GLenum value);
-		extern void (CODEGEN_FUNCPTR *BindVertexShaderEXT)(GLuint id);
-		extern void (CODEGEN_FUNCPTR *DeleteVertexShaderEXT)(GLuint id);
-		extern void (CODEGEN_FUNCPTR *DisableVariantClientStateEXT)(GLuint id);
-		extern void (CODEGEN_FUNCPTR *EnableVariantClientStateEXT)(GLuint id);
-		extern void (CODEGEN_FUNCPTR *EndVertexShaderEXT)(void);
-		extern void (CODEGEN_FUNCPTR *ExtractComponentEXT)(GLuint res, GLuint src, GLuint num);
-		extern GLuint (CODEGEN_FUNCPTR *GenSymbolsEXT)(GLenum datatype, GLenum storagetype, GLenum range, GLuint components);
-		extern GLuint (CODEGEN_FUNCPTR *GenVertexShadersEXT)(GLuint range);
-		extern void (CODEGEN_FUNCPTR *GetInvariantBooleanvEXT)(GLuint id, GLenum value, GLboolean * data);
-		extern void (CODEGEN_FUNCPTR *GetInvariantFloatvEXT)(GLuint id, GLenum value, GLfloat * data);
-		extern void (CODEGEN_FUNCPTR *GetInvariantIntegervEXT)(GLuint id, GLenum value, GLint * data);
-		extern void (CODEGEN_FUNCPTR *GetLocalConstantBooleanvEXT)(GLuint id, GLenum value, GLboolean * data);
-		extern void (CODEGEN_FUNCPTR *GetLocalConstantFloatvEXT)(GLuint id, GLenum value, GLfloat * data);
-		extern void (CODEGEN_FUNCPTR *GetLocalConstantIntegervEXT)(GLuint id, GLenum value, GLint * data);
-		extern void (CODEGEN_FUNCPTR *GetVariantBooleanvEXT)(GLuint id, GLenum value, GLboolean * data);
-		extern void (CODEGEN_FUNCPTR *GetVariantFloatvEXT)(GLuint id, GLenum value, GLfloat * data);
-		extern void (CODEGEN_FUNCPTR *GetVariantIntegervEXT)(GLuint id, GLenum value, GLint * data);
-		extern void (CODEGEN_FUNCPTR *GetVariantPointervEXT)(GLuint id, GLenum value, void ** data);
-		extern void (CODEGEN_FUNCPTR *InsertComponentEXT)(GLuint res, GLuint src, GLuint num);
-		extern GLboolean (CODEGEN_FUNCPTR *IsVariantEnabledEXT)(GLuint id, GLenum cap);
-		extern void (CODEGEN_FUNCPTR *SetInvariantEXT)(GLuint id, GLenum type, const void * addr);
-		extern void (CODEGEN_FUNCPTR *SetLocalConstantEXT)(GLuint id, GLenum type, const void * addr);
-		extern void (CODEGEN_FUNCPTR *ShaderOp1EXT)(GLenum op, GLuint res, GLuint arg1);
-		extern void (CODEGEN_FUNCPTR *ShaderOp2EXT)(GLenum op, GLuint res, GLuint arg1, GLuint arg2);
-		extern void (CODEGEN_FUNCPTR *ShaderOp3EXT)(GLenum op, GLuint res, GLuint arg1, GLuint arg2, GLuint arg3);
-		extern void (CODEGEN_FUNCPTR *SwizzleEXT)(GLuint res, GLuint in, GLenum outX, GLenum outY, GLenum outZ, GLenum outW);
-		extern void (CODEGEN_FUNCPTR *VariantPointerEXT)(GLuint id, GLenum type, GLuint stride, const void * addr);
-		extern void (CODEGEN_FUNCPTR *VariantbvEXT)(GLuint id, const GLbyte * addr);
-		extern void (CODEGEN_FUNCPTR *VariantdvEXT)(GLuint id, const GLdouble * addr);
-		extern void (CODEGEN_FUNCPTR *VariantfvEXT)(GLuint id, const GLfloat * addr);
-		extern void (CODEGEN_FUNCPTR *VariantivEXT)(GLuint id, const GLint * addr);
-		extern void (CODEGEN_FUNCPTR *VariantsvEXT)(GLuint id, const GLshort * addr);
-		extern void (CODEGEN_FUNCPTR *VariantubvEXT)(GLuint id, const GLubyte * addr);
-		extern void (CODEGEN_FUNCPTR *VariantuivEXT)(GLuint id, const GLuint * addr);
-		extern void (CODEGEN_FUNCPTR *VariantusvEXT)(GLuint id, const GLushort * addr);
-		extern void (CODEGEN_FUNCPTR *WriteMaskEXT)(GLuint res, GLuint in, GLenum outX, GLenum outY, GLenum outZ, GLenum outW);
+		extern void (CODEGEN_FUNCPTR *BindAttribLocationARB)(GLhandleARB programObj, GLuint index, const GLcharARB * name);
+		extern void (CODEGEN_FUNCPTR *DisableVertexAttribArrayARB)(GLuint index);
+		extern void (CODEGEN_FUNCPTR *EnableVertexAttribArrayARB)(GLuint index);
+		extern void (CODEGEN_FUNCPTR *GetActiveAttribARB)(GLhandleARB programObj, GLuint index, GLsizei maxLength, GLsizei * length, GLint * size, GLenum * type, GLcharARB * name);
+		extern GLint (CODEGEN_FUNCPTR *GetAttribLocationARB)(GLhandleARB programObj, const GLcharARB * name);
+		extern void (CODEGEN_FUNCPTR *GetVertexAttribPointervARB)(GLuint index, GLenum pname, void ** pointer);
+		extern void (CODEGEN_FUNCPTR *GetVertexAttribdvARB)(GLuint index, GLenum pname, GLdouble * params);
+		extern void (CODEGEN_FUNCPTR *GetVertexAttribfvARB)(GLuint index, GLenum pname, GLfloat * params);
+		extern void (CODEGEN_FUNCPTR *GetVertexAttribivARB)(GLuint index, GLenum pname, GLint * params);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib1dARB)(GLuint index, GLdouble x);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib1dvARB)(GLuint index, const GLdouble * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib1fARB)(GLuint index, GLfloat x);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib1fvARB)(GLuint index, const GLfloat * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib1sARB)(GLuint index, GLshort x);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib1svARB)(GLuint index, const GLshort * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib2dARB)(GLuint index, GLdouble x, GLdouble y);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib2dvARB)(GLuint index, const GLdouble * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib2fARB)(GLuint index, GLfloat x, GLfloat y);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib2fvARB)(GLuint index, const GLfloat * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib2sARB)(GLuint index, GLshort x, GLshort y);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib2svARB)(GLuint index, const GLshort * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib3dARB)(GLuint index, GLdouble x, GLdouble y, GLdouble z);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib3dvARB)(GLuint index, const GLdouble * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib3fARB)(GLuint index, GLfloat x, GLfloat y, GLfloat z);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib3fvARB)(GLuint index, const GLfloat * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib3sARB)(GLuint index, GLshort x, GLshort y, GLshort z);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib3svARB)(GLuint index, const GLshort * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4NbvARB)(GLuint index, const GLbyte * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4NivARB)(GLuint index, const GLint * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4NsvARB)(GLuint index, const GLshort * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4NubARB)(GLuint index, GLubyte x, GLubyte y, GLubyte z, GLubyte w);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4NubvARB)(GLuint index, const GLubyte * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4NuivARB)(GLuint index, const GLuint * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4NusvARB)(GLuint index, const GLushort * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4bvARB)(GLuint index, const GLbyte * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4dARB)(GLuint index, GLdouble x, GLdouble y, GLdouble z, GLdouble w);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4dvARB)(GLuint index, const GLdouble * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4fARB)(GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4fvARB)(GLuint index, const GLfloat * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4ivARB)(GLuint index, const GLint * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4sARB)(GLuint index, GLshort x, GLshort y, GLshort z, GLshort w);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4svARB)(GLuint index, const GLshort * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4ubvARB)(GLuint index, const GLubyte * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4uivARB)(GLuint index, const GLuint * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttrib4usvARB)(GLuint index, const GLushort * v);
+		extern void (CODEGEN_FUNCPTR *VertexAttribPointerARB)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void * pointer);
 		
 		extern void (CODEGEN_FUNCPTR *BindFramebuffer)(GLenum target, GLuint framebuffer);
 		extern void (CODEGEN_FUNCPTR *BindRenderbuffer)(GLenum target, GLuint renderbuffer);
@@ -2169,8 +2088,7 @@ namespace gl
 	
 	inline void VertexAttribDivisorARB(GLuint index, GLuint divisor){_detail::VertexAttribDivisorARB(index, divisor);}
 	
-	inline void SampleMaskEXT(GLclampf value, GLboolean invert){_detail::SampleMaskEXT(value, invert);}
-	inline void SamplePatternEXT(GLenum pattern){_detail::SamplePatternEXT(pattern);}
+	inline void SampleCoverageARB(GLfloat value, GLboolean invert){_detail::SampleCoverageARB(value, invert);}
 	
 	
 	inline void AttachObjectARB(GLhandleARB containerObj, GLhandleARB obj){_detail::AttachObjectARB(containerObj, obj);}
@@ -2213,48 +2131,52 @@ namespace gl
 	inline void UseProgramObjectARB(GLhandleARB programObj){_detail::UseProgramObjectARB(programObj);}
 	inline void ValidateProgramARB(GLhandleARB programObj){_detail::ValidateProgramARB(programObj);}
 	
-	inline void BeginVertexShaderEXT(void){_detail::BeginVertexShaderEXT();}
-	inline GLuint BindLightParameterEXT(GLenum light, GLenum value){return _detail::BindLightParameterEXT(light, value);}
-	inline GLuint BindMaterialParameterEXT(GLenum face, GLenum value){return _detail::BindMaterialParameterEXT(face, value);}
-	inline GLuint BindParameterEXT(GLenum value){return _detail::BindParameterEXT(value);}
-	inline GLuint BindTexGenParameterEXT(GLenum unit, GLenum coord, GLenum value){return _detail::BindTexGenParameterEXT(unit, coord, value);}
-	inline GLuint BindTextureUnitParameterEXT(GLenum unit, GLenum value){return _detail::BindTextureUnitParameterEXT(unit, value);}
-	inline void BindVertexShaderEXT(GLuint id){_detail::BindVertexShaderEXT(id);}
-	inline void DeleteVertexShaderEXT(GLuint id){_detail::DeleteVertexShaderEXT(id);}
-	inline void DisableVariantClientStateEXT(GLuint id){_detail::DisableVariantClientStateEXT(id);}
-	inline void EnableVariantClientStateEXT(GLuint id){_detail::EnableVariantClientStateEXT(id);}
-	inline void EndVertexShaderEXT(void){_detail::EndVertexShaderEXT();}
-	inline void ExtractComponentEXT(GLuint res, GLuint src, GLuint num){_detail::ExtractComponentEXT(res, src, num);}
-	inline GLuint GenSymbolsEXT(GLenum datatype, GLenum storagetype, GLenum range, GLuint components){return _detail::GenSymbolsEXT(datatype, storagetype, range, components);}
-	inline GLuint GenVertexShadersEXT(GLuint range){return _detail::GenVertexShadersEXT(range);}
-	inline void GetInvariantBooleanvEXT(GLuint id, GLenum value, GLboolean * data){_detail::GetInvariantBooleanvEXT(id, value, data);}
-	inline void GetInvariantFloatvEXT(GLuint id, GLenum value, GLfloat * data){_detail::GetInvariantFloatvEXT(id, value, data);}
-	inline void GetInvariantIntegervEXT(GLuint id, GLenum value, GLint * data){_detail::GetInvariantIntegervEXT(id, value, data);}
-	inline void GetLocalConstantBooleanvEXT(GLuint id, GLenum value, GLboolean * data){_detail::GetLocalConstantBooleanvEXT(id, value, data);}
-	inline void GetLocalConstantFloatvEXT(GLuint id, GLenum value, GLfloat * data){_detail::GetLocalConstantFloatvEXT(id, value, data);}
-	inline void GetLocalConstantIntegervEXT(GLuint id, GLenum value, GLint * data){_detail::GetLocalConstantIntegervEXT(id, value, data);}
-	inline void GetVariantBooleanvEXT(GLuint id, GLenum value, GLboolean * data){_detail::GetVariantBooleanvEXT(id, value, data);}
-	inline void GetVariantFloatvEXT(GLuint id, GLenum value, GLfloat * data){_detail::GetVariantFloatvEXT(id, value, data);}
-	inline void GetVariantIntegervEXT(GLuint id, GLenum value, GLint * data){_detail::GetVariantIntegervEXT(id, value, data);}
-	inline void GetVariantPointervEXT(GLuint id, GLenum value, void ** data){_detail::GetVariantPointervEXT(id, value, data);}
-	inline void InsertComponentEXT(GLuint res, GLuint src, GLuint num){_detail::InsertComponentEXT(res, src, num);}
-	inline GLboolean IsVariantEnabledEXT(GLuint id, GLenum cap){return _detail::IsVariantEnabledEXT(id, cap);}
-	inline void SetInvariantEXT(GLuint id, GLenum type, const void * addr){_detail::SetInvariantEXT(id, type, addr);}
-	inline void SetLocalConstantEXT(GLuint id, GLenum type, const void * addr){_detail::SetLocalConstantEXT(id, type, addr);}
-	inline void ShaderOp1EXT(GLenum op, GLuint res, GLuint arg1){_detail::ShaderOp1EXT(op, res, arg1);}
-	inline void ShaderOp2EXT(GLenum op, GLuint res, GLuint arg1, GLuint arg2){_detail::ShaderOp2EXT(op, res, arg1, arg2);}
-	inline void ShaderOp3EXT(GLenum op, GLuint res, GLuint arg1, GLuint arg2, GLuint arg3){_detail::ShaderOp3EXT(op, res, arg1, arg2, arg3);}
-	inline void SwizzleEXT(GLuint res, GLuint in, GLenum outX, GLenum outY, GLenum outZ, GLenum outW){_detail::SwizzleEXT(res, in, outX, outY, outZ, outW);}
-	inline void VariantPointerEXT(GLuint id, GLenum type, GLuint stride, const void * addr){_detail::VariantPointerEXT(id, type, stride, addr);}
-	inline void VariantbvEXT(GLuint id, const GLbyte * addr){_detail::VariantbvEXT(id, addr);}
-	inline void VariantdvEXT(GLuint id, const GLdouble * addr){_detail::VariantdvEXT(id, addr);}
-	inline void VariantfvEXT(GLuint id, const GLfloat * addr){_detail::VariantfvEXT(id, addr);}
-	inline void VariantivEXT(GLuint id, const GLint * addr){_detail::VariantivEXT(id, addr);}
-	inline void VariantsvEXT(GLuint id, const GLshort * addr){_detail::VariantsvEXT(id, addr);}
-	inline void VariantubvEXT(GLuint id, const GLubyte * addr){_detail::VariantubvEXT(id, addr);}
-	inline void VariantuivEXT(GLuint id, const GLuint * addr){_detail::VariantuivEXT(id, addr);}
-	inline void VariantusvEXT(GLuint id, const GLushort * addr){_detail::VariantusvEXT(id, addr);}
-	inline void WriteMaskEXT(GLuint res, GLuint in, GLenum outX, GLenum outY, GLenum outZ, GLenum outW){_detail::WriteMaskEXT(res, in, outX, outY, outZ, outW);}
+	inline void BindAttribLocationARB(GLhandleARB programObj, GLuint index, const GLcharARB * name){_detail::BindAttribLocationARB(programObj, index, name);}
+	inline void DisableVertexAttribArrayARB(GLuint index){_detail::DisableVertexAttribArrayARB(index);}
+	inline void EnableVertexAttribArrayARB(GLuint index){_detail::EnableVertexAttribArrayARB(index);}
+	inline void GetActiveAttribARB(GLhandleARB programObj, GLuint index, GLsizei maxLength, GLsizei * length, GLint * size, GLenum * type, GLcharARB * name){_detail::GetActiveAttribARB(programObj, index, maxLength, length, size, type, name);}
+	inline GLint GetAttribLocationARB(GLhandleARB programObj, const GLcharARB * name){return _detail::GetAttribLocationARB(programObj, name);}
+	inline void GetVertexAttribPointervARB(GLuint index, GLenum pname, void ** pointer){_detail::GetVertexAttribPointervARB(index, pname, pointer);}
+	inline void GetVertexAttribdvARB(GLuint index, GLenum pname, GLdouble * params){_detail::GetVertexAttribdvARB(index, pname, params);}
+	inline void GetVertexAttribfvARB(GLuint index, GLenum pname, GLfloat * params){_detail::GetVertexAttribfvARB(index, pname, params);}
+	inline void GetVertexAttribivARB(GLuint index, GLenum pname, GLint * params){_detail::GetVertexAttribivARB(index, pname, params);}
+	inline void VertexAttrib1dARB(GLuint index, GLdouble x){_detail::VertexAttrib1dARB(index, x);}
+	inline void VertexAttrib1dvARB(GLuint index, const GLdouble * v){_detail::VertexAttrib1dvARB(index, v);}
+	inline void VertexAttrib1fARB(GLuint index, GLfloat x){_detail::VertexAttrib1fARB(index, x);}
+	inline void VertexAttrib1fvARB(GLuint index, const GLfloat * v){_detail::VertexAttrib1fvARB(index, v);}
+	inline void VertexAttrib1sARB(GLuint index, GLshort x){_detail::VertexAttrib1sARB(index, x);}
+	inline void VertexAttrib1svARB(GLuint index, const GLshort * v){_detail::VertexAttrib1svARB(index, v);}
+	inline void VertexAttrib2dARB(GLuint index, GLdouble x, GLdouble y){_detail::VertexAttrib2dARB(index, x, y);}
+	inline void VertexAttrib2dvARB(GLuint index, const GLdouble * v){_detail::VertexAttrib2dvARB(index, v);}
+	inline void VertexAttrib2fARB(GLuint index, GLfloat x, GLfloat y){_detail::VertexAttrib2fARB(index, x, y);}
+	inline void VertexAttrib2fvARB(GLuint index, const GLfloat * v){_detail::VertexAttrib2fvARB(index, v);}
+	inline void VertexAttrib2sARB(GLuint index, GLshort x, GLshort y){_detail::VertexAttrib2sARB(index, x, y);}
+	inline void VertexAttrib2svARB(GLuint index, const GLshort * v){_detail::VertexAttrib2svARB(index, v);}
+	inline void VertexAttrib3dARB(GLuint index, GLdouble x, GLdouble y, GLdouble z){_detail::VertexAttrib3dARB(index, x, y, z);}
+	inline void VertexAttrib3dvARB(GLuint index, const GLdouble * v){_detail::VertexAttrib3dvARB(index, v);}
+	inline void VertexAttrib3fARB(GLuint index, GLfloat x, GLfloat y, GLfloat z){_detail::VertexAttrib3fARB(index, x, y, z);}
+	inline void VertexAttrib3fvARB(GLuint index, const GLfloat * v){_detail::VertexAttrib3fvARB(index, v);}
+	inline void VertexAttrib3sARB(GLuint index, GLshort x, GLshort y, GLshort z){_detail::VertexAttrib3sARB(index, x, y, z);}
+	inline void VertexAttrib3svARB(GLuint index, const GLshort * v){_detail::VertexAttrib3svARB(index, v);}
+	inline void VertexAttrib4NbvARB(GLuint index, const GLbyte * v){_detail::VertexAttrib4NbvARB(index, v);}
+	inline void VertexAttrib4NivARB(GLuint index, const GLint * v){_detail::VertexAttrib4NivARB(index, v);}
+	inline void VertexAttrib4NsvARB(GLuint index, const GLshort * v){_detail::VertexAttrib4NsvARB(index, v);}
+	inline void VertexAttrib4NubARB(GLuint index, GLubyte x, GLubyte y, GLubyte z, GLubyte w){_detail::VertexAttrib4NubARB(index, x, y, z, w);}
+	inline void VertexAttrib4NubvARB(GLuint index, const GLubyte * v){_detail::VertexAttrib4NubvARB(index, v);}
+	inline void VertexAttrib4NuivARB(GLuint index, const GLuint * v){_detail::VertexAttrib4NuivARB(index, v);}
+	inline void VertexAttrib4NusvARB(GLuint index, const GLushort * v){_detail::VertexAttrib4NusvARB(index, v);}
+	inline void VertexAttrib4bvARB(GLuint index, const GLbyte * v){_detail::VertexAttrib4bvARB(index, v);}
+	inline void VertexAttrib4dARB(GLuint index, GLdouble x, GLdouble y, GLdouble z, GLdouble w){_detail::VertexAttrib4dARB(index, x, y, z, w);}
+	inline void VertexAttrib4dvARB(GLuint index, const GLdouble * v){_detail::VertexAttrib4dvARB(index, v);}
+	inline void VertexAttrib4fARB(GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w){_detail::VertexAttrib4fARB(index, x, y, z, w);}
+	inline void VertexAttrib4fvARB(GLuint index, const GLfloat * v){_detail::VertexAttrib4fvARB(index, v);}
+	inline void VertexAttrib4ivARB(GLuint index, const GLint * v){_detail::VertexAttrib4ivARB(index, v);}
+	inline void VertexAttrib4sARB(GLuint index, GLshort x, GLshort y, GLshort z, GLshort w){_detail::VertexAttrib4sARB(index, x, y, z, w);}
+	inline void VertexAttrib4svARB(GLuint index, const GLshort * v){_detail::VertexAttrib4svARB(index, v);}
+	inline void VertexAttrib4ubvARB(GLuint index, const GLubyte * v){_detail::VertexAttrib4ubvARB(index, v);}
+	inline void VertexAttrib4uivARB(GLuint index, const GLuint * v){_detail::VertexAttrib4uivARB(index, v);}
+	inline void VertexAttrib4usvARB(GLuint index, const GLushort * v){_detail::VertexAttrib4usvARB(index, v);}
+	inline void VertexAttribPointerARB(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void * pointer){_detail::VertexAttribPointerARB(index, size, type, normalized, stride, pointer);}
 	
 	inline void BindFramebuffer(GLenum target, GLuint framebuffer){_detail::BindFramebuffer(target, framebuffer);}
 	inline void BindRenderbuffer(GLenum target, GLuint renderbuffer){_detail::BindRenderbuffer(target, renderbuffer);}

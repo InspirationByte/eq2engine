@@ -177,7 +177,7 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 	m_caps.maxVertexGenericAttributes = MAX_GENERIC_ATTRIB;
 	m_caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
 
-	m_caps.shadersSupportedFlags = ((gl::exts::var_EXT_vertex_shader || gl::exts::var_ARB_shader_objects) ? SHADER_CAPS_VERTEX_SUPPORTED : 0)
+	m_caps.shadersSupportedFlags = ((gl::exts::var_ARB_vertex_shader || gl::exts::var_ARB_shader_objects) ? SHADER_CAPS_VERTEX_SUPPORTED : 0)
 								 | ((gl::exts::var_ARB_fragment_shader || gl::exts::var_ARB_shader_objects) ? SHADER_CAPS_PIXEL_SUPPORTED : 0);
 	m_caps.maxTextureUnits = MAX_TEXTUREUNIT;
 	m_caps.maxVertexStreams = MAX_VERTEXSTREAM;
@@ -715,7 +715,7 @@ bool ShaderAPIGL::IsSupportsPixelShaders() const
 // Vertex shader version
 bool ShaderAPIGL::IsSupportsVertexShaders() const
 {
-	return gl::exts::var_EXT_vertex_shader;
+	return gl::exts::var_ARB_vertex_shader;
 }
 
 // Geometry shader version
