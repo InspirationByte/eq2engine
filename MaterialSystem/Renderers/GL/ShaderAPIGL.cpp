@@ -910,8 +910,8 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 	else
 	{
 		GLint internalFormat = internalFormats[format];
-		GLenum srcFormat = srcFormats[GetChannelCount(format)];
-		GLenum srcType = srcTypes[format];
+		GLenum srcFormat = chanCountTypes[GetChannelCount(format)];
+		GLenum srcType = chanTypePerFormat[format];
 
 		if (IsDepthFormat(format))
 		{
@@ -969,8 +969,8 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 	// If the target hardware doesn't support the compressed texture format, just decompress it to a compatible format
 	ETextureFormat format = pSrc->GetFormat();
 
-	GLenum srcFormat = srcFormats[GetChannelCount(format)];
-    GLenum srcType = srcTypes[format];
+	GLenum srcFormat = chanCountTypes[GetChannelCount(format)];
+    GLenum srcType = chanTypePerFormat[format];
 	GLint internalFormat = internalFormats[format];
 
 	if(format >= FORMAT_I32F && format <= FORMAT_RGBA32F)

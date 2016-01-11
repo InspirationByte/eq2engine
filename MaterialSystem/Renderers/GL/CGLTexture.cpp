@@ -120,8 +120,8 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
 
         gl::BindTexture(glTarget, textures[0].glTexID);
 
-        GLenum srcFormat = srcFormats[GetChannelCount(m_iFormat)];
-        GLenum srcType = srcTypes[m_iFormat];
+        GLenum srcFormat = chanCountTypes[GetChannelCount(m_iFormat)];
+        GLenum srcType = chanTypePerFormat[m_iFormat];
 
         gl::GetTexImage(glTarget,m_nLockLevel, srcFormat, srcType, m_lockPtr);
         gl::BindTexture(glTarget, 0);
@@ -139,8 +139,8 @@ void CGLTexture::Unlock()
 		{
 			ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
 
-			GLenum srcFormat = srcFormats[GetChannelCount(m_iFormat)];
-			GLenum srcType = srcTypes[m_iFormat];
+			GLenum srcFormat = chanCountTypes[GetChannelCount(m_iFormat)];
+			GLenum srcType = chanTypePerFormat[m_iFormat];
 
             pGLRHI->GL_CRITICAL();
 

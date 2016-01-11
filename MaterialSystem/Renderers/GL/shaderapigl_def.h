@@ -87,9 +87,9 @@ static const int internalFormats[] = {
 	gl::COMPRESSED_LUMINANCE_ALPHA,			//COMPRESSED_LUMINANCE_ALPHA_3DC_ATI,
 };
 
-static const int srcFormats[] = { 0, gl::LUMINANCE, gl::LUMINANCE_ALPHA, gl::RGB, gl::RGBA };
+static const int chanCountTypes[] = { 0, gl::LUMINANCE, gl::LUMINANCE_ALPHA, gl::RGB, gl::RGBA };
 
-static const int srcTypes[] = {
+static const int chanTypePerFormat[] = {
 	0,
 
 	// Unsigned formats
