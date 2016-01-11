@@ -60,42 +60,42 @@ struct TRectangle
 		AddVertex(rb);
 	}
 
-	TVec2D<T> GetLeftTop()
+    const TVec2D<T>& GetLeftTop() const
 	{
 		return vleftTop;
 	}
 
-	TVec2D<T> GetLeftBottom()
+	TVec2D<T> GetLeftBottom() const
 	{
 		return Vector2D(vleftTop.x, vrightBottom.y);
 	}
 
-	TVec2D<T> GetRightTop()
+	TVec2D<T> GetRightTop() const
 	{
 		return Vector2D(vrightBottom.x, vleftTop.y);
 	}
 
-	TVec2D<T> GetRightBottom()
+    const TVec2D<T>& GetRightBottom() const
 	{
 		return vrightBottom;
 	}
 
-	TVec2D<T> GetCenter()
+    TVec2D<T> GetCenter() const
 	{
 		return (vleftTop + vrightBottom)*0.5f;
 	}
 
-	bool IsInRectangle(const TVec2D<T> &point)
+	bool IsInRectangle(const TVec2D<T> &point) const
 	{
 		return ((point.x >= vleftTop.x) && (point.x <= vrightBottom.x) && (point.y >= vleftTop.y) && (point.y <= vrightBottom.y));
 	}
 
-	TVec2D<T> ClampPointInRectangle(const Vector2D &point)
+	TVec2D<T> ClampPointInRectangle(const Vector2D &point) const
 	{
 		return clamp(point, vleftTop, vrightBottom);
 	}
 
-	TRectangle<T, TMAX> GetRectangleIntersectionDiff(const TRectangle<T, TMAX> &anotherRect)
+	TRectangle<T, TMAX> GetRectangleIntersectionDiff(const TRectangle<T, TMAX> &anotherRect) const
 	{
 		Vector2D tempLT = ClampPointInRectangle(Vector2D(anotherRect.vleftTop.x,anotherRect.vleftTop.y));
 		Vector2D tempRB = ClampPointInRectangle(Vector2D(anotherRect.vrightBottom.x,anotherRect.vrightBottom.y));
@@ -105,7 +105,7 @@ struct TRectangle
 		return pRect;
 	}
 
-	bool IsIntersectsRectangle(const TRectangle<T, TMAX> &anotherRect)
+	bool IsIntersectsRectangle(const TRectangle<T, TMAX> &anotherRect) const
 	{
 		if(( vrightBottom.x < anotherRect.vleftTop.x) || (vleftTop.x > anotherRect.vrightBottom.x ) )
 			return false;
@@ -116,7 +116,7 @@ struct TRectangle
 		return true;
 	}
 
-	bool IsFullyInside(const TRectangle<T, TMAX> &anotherRect)
+	bool IsFullyInside(const TRectangle<T, TMAX> &anotherRect) const
 	{
 		if(	anotherRect.vleftTop >= vleftTop && anotherRect.vleftTop <= vrightBottom &&
 			anotherRect.vrightBottom <= vrightBottom && anotherRect.vrightBottom >= vleftTop)
@@ -125,13 +125,13 @@ struct TRectangle
 		return false;
 	}
 
-	TVec2D<T> GetVertex(int index)
+	TVec2D<T> GetVertex(int index) const
 	{
 		return TVec2D<T>(	index & 1 ? vrightBottom.x : vleftTop.x,
 							index & 2 ? vrightBottom.y : vleftTop.y);
 	}
 
-	TVec2D<T> GetSize()
+	TVec2D<T> GetSize() const
 	{
 		return vrightBottom - vleftTop;
 	}

@@ -2610,6 +2610,7 @@ void ShaderAPIGL::SetViewport(int x, int y, int w, int h)
 	m_nViewportWidth = w;
 	m_nViewportHeight = h;
 
+    // TODO: d3d to gl coord system
 	gl::Viewport(x,y,w,h);
 }
 
@@ -2633,8 +2634,9 @@ void ShaderAPIGL::GetViewportDimensions(int &wide, int &tall)
 // sets scissor rectangle
 void ShaderAPIGL::SetScissorRectangle( const IRectangle &rect )
 {
-	//gl::SCISSOR_TEST
-	//glScissor(
+    // TODO: d3d to gl coord system
+    IVector2D size = rect.GetSize();
+	gl::Scissor( rect.vleftTop.x, rect.vleftTop.y, size.x, size.y);
 }
 
 int ShaderAPIGL::GetSamplerUnit(CGLShaderProgram* prog, const char* samplerName)
