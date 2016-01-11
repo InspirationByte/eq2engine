@@ -67,6 +67,10 @@ struct cdp_message_t
 	{
 		bytestream = NULL;
 		flags = 0;
+		sendTimes.SetValue(0);
+		sentTimeout.SetValue(0);
+		removeTimeout.SetValue(0);
+		sendTime = 0;
 	}
 
 	CEqInterlockedInteger	sendTimes;		// send times

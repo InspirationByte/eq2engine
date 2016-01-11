@@ -45,7 +45,7 @@ namespace Networking
 #define CDP_DATA_PACKETSTATE				0x51a1
 
 // default settings: tweak this if you have bandwith issues in cdp_config.cfg
-#define CDP_SEND_TIMEOUT_MS					100			// 40 ms delay to send
+#define CDP_SEND_TIMEOUT_MS					10			// 40 ms delay to send
 #define CDP_SEND_REMOVE_TIMEOUT_MS			1000		// Guaranteed messages only - 5 sec delay to send unacknowledged messages
 #define CDP_RECV_TIMEOUT_MS					1500		// Guaranteed messages only - 5 sec delay to receive message and then remove it from received list
 
@@ -492,7 +492,7 @@ int CUDPSocket::Recv( char* data, int size, sockaddr_in* from, short flags/* = 0
 		fclose(pFile);
 	}
 	*/
-	
+
 
 	FreeMessage( m_ReceivedMessageQueue[0].data );
 	m_ReceivedMessageQueue.fastRemoveIndex( 0 );
@@ -581,8 +581,11 @@ void CUDPSocket::UpdateRecv( int timeMs )
 		if( HasAnyMessageWithId( hdr->message_id, fromaddr ) )
 		{
 			// send status
-			if((hdr->flags & CDPSEND_GUARANTEED))
-				SendMessageStatus( &fromaddr, hdr->message_id, true );
+			if(hdr->flags & CDPSEND_GUARANTEED)
+			{
+                SendMessageStatus( &fromaddr, hdr->message_id, true );
+			}
+
 
 			continue;
 		}
@@ -643,8 +646,8 @@ void CUDPSocket::UpdateRecv( int timeMs )
 			{
 				//Threading::CScopedMutex m( m_Mutex );
 
-				// if message was unguaranteed
-				if((hdr->flags & CDPSEND_GUARANTEED))
+				// if message was guaranteed
+				if(hdr->flags & CDPSEND_GUARANTEED)
 					SendMessageStatus( &fromaddr, hdr->message_id, true );
 
 				// get message size
@@ -667,20 +670,22 @@ void CUDPSocket::UpdateRecv( int timeMs )
 				if( m_nRecvCallback != NULL )
 					shouldAdd = (m_nRecvCallback)( info );
 
-				m_Mutex.Lock();
-
 				if(shouldAdd)
 				{
+                    m_Mutex.Lock();
+
 					// put ordered or in recieve order
 					if( hdr->flags & CDPSEND_PRESERVE_ORDER )
 						PutMessageOrdered( info );
 					else
 						m_ReceivedMessageQueue.append( info );
+
+                    m_Mutex.Unlock();
 				}
 				else
 					FreeMessage(message);
 
-				m_Mutex.Unlock();
+
 				/*
 				// DEBUG
 
@@ -805,13 +810,13 @@ void CUDPSocket::UpdateSend( int timeMs )
 
 			// FAKE LAG
 			if(net_fakelag.GetInt() && RandomInt(0, net_fakelag.GetInt()) == 0)
-			{
 				bSend = false;
-			}
 
 			if(bSend)
 			{
 				int s_size = sendto( m_sock, (char*)buffer->bytestream->GetBasePointer(), buffer->bytestream->Tell(), 0, (sockaddr*)&buffer->addr, sizeof(sockaddr_in) );
+
+                udp_cdp_hdr_t* hdr = (udp_cdp_hdr_t*)buffer->bytestream->GetBasePointer();
 
 				if( s_size < 0 )
 				{
@@ -828,6 +833,7 @@ void CUDPSocket::UpdateSend( int timeMs )
 					}
 				}
 			}
+
 
 			// if this message is unguaranteed, remove now
 			if( !(buffer->flags & CDPSEND_GUARANTEED) )
@@ -848,7 +854,6 @@ void CUDPSocket::UpdateSend( int timeMs )
 			}
 
 			buffer->sentTimeout.SetValue(0);
-
 
 			// DEBUG
 			/*

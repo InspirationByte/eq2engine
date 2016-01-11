@@ -336,7 +336,7 @@ void CNetPlayer::Update(float fDt)
 				InterpolateSnapshots(predSnap, interpSnap, fPosLerp*fPosLerp, finSnap);
 				*/
 			}
-			
+
 			if(angDiffAngle < 1.0)
 			{
 				// position difference - provide nearest is not so interpolated
@@ -365,12 +365,12 @@ void CNetPlayer::Update(float fDt)
 			m_ownCar->SetVelocity(finSnap.car_vel);
 		}
 
-		
+
 		if(angDiffAngle < fMaxAngDiff)
 		{
 			m_ownCar->GetPhysicsBody()->SetOrientation(finSnap.car_rot);
 		}
-		
+
 
 		if(!m_isLocal)
 			SetControls(finSnap.controls);
@@ -625,31 +625,36 @@ void CNetClientPlayerInfo::Process( CNetworkThread* pNetThread )
 	// add player to list and send back message
 	CNetGameSession* netSes = (CNetGameSession*)g_pGameSession;
 
+	Msg("client info recieved...\n");
+
 	if(netSes == NULL)
 		return;
 
 	CNetPlayer* player = netSes->GetPlayerByClientID(m_clientID);
 
 	if(!player)
+	{
+        MsgError("CNetClientPlayerInfo: failed to get player by clientId=%d!!!\n", m_clientID);
 		return;
+	}
 
 	player->m_carName = m_carName;
 
 	// add player to list and send back message
 
 	// don't make him ready unless recieved controls
-	//player->m_ready = true;
-
 	player->NETSpawn();
-	
+
 	if(netSes->IsServer())
-		netSes->SendPlayerInfoList( m_clientID );
+	{
+        MsgInfo("[SYNC] Sending player info...\n");
+        netSes->SendPlayerInfoList( m_clientID );
+	}
 
 	kvkeybase_t kvs;
-	CNetMessageBuffer buffer;
-
 	kvs.SetKey("status", "ok");
 
+	CNetMessageBuffer buffer;
 	buffer.WriteKeyValues(&kvs);
 
 	pNetThread->SendData(&buffer, m_nEventID, m_clientID, NSFLAG_GUARANTEED);
@@ -730,7 +735,7 @@ void CNetServerPlayerInfo::Process( CNetworkThread* pNetThread )
 		if(player)
 		{
 			player->m_carName = m_carName;
-			
+
 			player->m_fCurTime = m_sync_time;	// set sync time
 			player->NETSpawn();
 			player->m_ready = true;

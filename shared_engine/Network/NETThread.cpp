@@ -43,6 +43,10 @@ struct rcvdmessage_t
 		pNext = NULL;
 		pPrev = NULL;
 		recvTime = 0.0;
+		clientid = -1;
+		messageid = -1;
+		flags = 0;
+		recvTime = 0.0;
 	}
 
 	short				clientid;
@@ -212,8 +216,6 @@ int CNetworkThread::Run()
 
 				if( m_pNetInterface->Receive( pRcvdMsg, msg_size, &from ) )
 				{
-					
-
 					if( pRcvdMsg->nfragments > 1 )
 					{
 						// add fragment to waiter
@@ -594,7 +596,7 @@ EEventMessageStatus CNetworkThread::DispatchEvent( int nIndex, DkList<msg_status
 			// if interface fails, run down immediately!
 			if( !eventdata.pStream->Send( eventdata.message_id, eventdata.flags) )
 			{
-				//MsgError("DispatchEvent error: can't send eventtype=%d to client=%d\n", m_pSentEvents[nIndex].event_type, m_pSentEvents[nIndex].client_id);
+				MsgError("DispatchEvent error: can't send eventtype=%d to client=%d\n", m_pSentEvents[nIndex].event_type, m_pSentEvents[nIndex].client_id);
 				return EVTMSGSTATUS_ERROR;
 			}
 
@@ -616,9 +618,7 @@ bool CNetworkThread::ProcessMessage( rcvdmessage_t* pMsg, CNetMessageBuffer* pOu
 {
 	// already processed message? (NEVER HAPPENS)
 	if( pMsg->flags & MSGFLAG_PROCESSED )
-	{
 		return true;
-	}
 
 	CNetMessageBuffer* pMessage = pMsg->pMessage;
 
@@ -868,9 +868,9 @@ bool CNetworkThread::SendWaitDataEvent(CNetEvent* pEvent, int nEventType, CNetMe
 		{
 			rcvdmessage_t* procMsg = pMsg;
 
-			bool result = ProcessMessage( procMsg, pOutputData, nEventID );
+            pMsg = pMsg->pNext;
 
-			pMsg = pMsg->pNext;
+			bool result = ProcessMessage( procMsg, pOutputData, nEventID );
 
 			if( result )
 			{
@@ -1254,7 +1254,7 @@ int CNetworkThread::SendLuaEvent(OOLUA::Table& luaevent, int nEventType, int cli
 bool CNetworkThread::SendLuaWaitDataEvent(OOLUA::Table& luaevent, int nEventType, CNetMessageBuffer* pOutputData, int client_id)
 {
 	CLuaNetEvent* pEvent = new CLuaNetEvent(luaevent.state(), luaevent);
-	
+
 	return SendWaitDataEvent(pEvent, NETTHREAD_EVENTS_LUA_START + nEventType, pOutputData, client_id);
 }
 

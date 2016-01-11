@@ -59,6 +59,8 @@ DECLARE_CMD(connect, "connects to server/game/lobby", 0)
 		CNetMessageBuffer outBuf;
 		if( connectionThread.SendWaitDataEvent( new CNetConnectQueryEvent(net_name.GetString()), CMSG_CONNECT, &outBuf, -1) )
 		{
+            MsgInfo("Got response from server '%s' on connect\n", net_name.GetString());
+
 			kvkeybase_t kvs;
 			outBuf.ReadKeyValues( &kvs );
 
@@ -85,10 +87,19 @@ DECLARE_CMD(connect, "connects to server/game/lobby", 0)
 				int tickInterval = KV_GetValueInt(kvs.FindKeyBase("tickInterval"), 0, -1);
 				EqString envName = KV_GetValueString(kvs.FindKeyBase("environment"), 0, "day_clear");
 
+				MsgInfo("---- Server game info ----\n");
+				MsgInfo("max players: %d\n", maxPlayers);
+				MsgInfo("num players: %d\n", numPlayers);
+				MsgInfo("tick intrvl: %d\n", tickInterval);
+				MsgInfo("level: %s\n", levName.c_str());
+				MsgInfo("env: %s\n", envName.c_str());
+
 				sv_maxplayers.SetInt(maxPlayers);
 
 				if( numPlayers <= maxPlayers )
 				{
+                    MsgInfo("Loading game\n");
+
 					g_pClientInterface->SetClientID(clientID);
 					g_svclientInfo.clientID = clientID;
 					g_svclientInfo.playerID = playerID;
@@ -329,10 +340,11 @@ bool CNetGameSession::Create_Client()
 	for(int i = 0; i < m_players.numElem(); i++)
 		m_players[i] = NULL;
 
-	Msg("server maxplayers is %d\n", m_maxPlayers);
-	Msg("MY playerID is %d\n", g_svclientInfo.playerID);
+	Msg("DEBUGINFO: playerid is %d\n", g_svclientInfo.playerID);
 
 	CNetMessageBuffer buffer;
+
+    MsgInfo("Retrieving client info...\n");
 
 	// send connection ready
 	if( m_netThread.SendWaitDataEvent( new CNetClientPlayerInfo(g_car.GetString()), CMSG_CLIENTPLAYER_INFO, &buffer, -1 ) )
@@ -347,7 +359,11 @@ bool CNetGameSession::Create_Client()
 		m_netThread.SendEvent( new CNetSyncronizePlayerEvent(), CMSG_PLAYER_SYNC, NM_SERVER, NSFLAG_GUARANTEED );
 	}
 	else
-		return false;
+	{
+        MsgError(" - Server has no response!\n");
+        return false;
+	}
+
 
 	return true;
 }
@@ -733,7 +749,7 @@ CNetPlayer* CNetGameSession::CreatePlayer(netspawninfo_t* spawnInfo, int clientI
 		}
 	}
 
-	Msg("player id = %d\n", playerID);
+	Msg("Created player slot (%d)\n", playerID);
 
 	if(playerID == -1)
 		return NULL;
