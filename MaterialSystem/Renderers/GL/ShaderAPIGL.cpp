@@ -24,7 +24,7 @@
 #include "imaging/ImageLoader.h"
 
 #ifdef PLAT_LINUX
-#include "glx_caps.hpp"ĵ
+#include "glx_caps.hpp"
 #endif // PLAT_LINUX
 
 #pragma todo("Rewrite with OpenGL ES 2.0 specification support")
@@ -921,9 +921,6 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 				srcFormat = gl::DEPTH_COMPONENT;
 		}
 
-		if (IsFloatFormat(format))
-			srcType = gl::FLOAT;
-
 		// Allocate all required surfaces.
 		gl::BindTexture(pTex->glTarget, pTex->textures[0].glTexID);
 
@@ -1290,7 +1287,7 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		for (int i = nNumRTs; i < m_nCurrentRenderTargets; i++)
 		{
 			gl::FramebufferTexture2DEXT(gl::FRAMEBUFFER_EXT, gl::COLOR_ATTACHMENT0_EXT + i, gl::TEXTURE_2D, 0, 0);
-			m_pCurrentRenderTargetsSlices[i] = NULL;
+			m_pCurrentColorRenderTargets[i] = NULL;
 			m_pCurrentRenderTargetsSlices[i] = -1;
 		}
 
@@ -2613,7 +2610,6 @@ void ShaderAPIGL::SetViewport(int x, int y, int w, int h)
 	m_nViewportWidth = w;
 	m_nViewportHeight = h;
 
-	// TODO: set glviewport flipped by y
 	gl::Viewport(x,y,w,h);
 }
 

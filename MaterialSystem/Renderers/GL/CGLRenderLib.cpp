@@ -478,7 +478,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 #ifdef PLAT_WIN
 	m_Renderer->m_hdc = this->hdc;
-#else if defined(PLAT_LINUX)
+#elif defined(PLAT_LINUX)
     m_Renderer->m_display = this->display;
 #endif //PLAT_WIN
 	m_Renderer->m_glContext = this->glContext;
@@ -560,12 +560,16 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 
 	SwapBuffers(hdc);
 
-#ifdef DEBUG
-	CheckForErrors();
-#endif
-#else if defined(PLAT_LINUX)
+#elif defined(PLAT_LINUX)
+
+	if (glX::exts::var_EXT_swap_control)
+	{
+		glX::SwapIntervalEXT(display, (Window)savedParams.hWindow, savedParams.bEnableVerticalSync ? 1 : 0);
+	}
+
 	glXSwapBuffers(display, (Window)savedParams.hWindow);
 	gl::Finish();
+
 #endif // PLAT_WIN
 
     m_Renderer->GL_END_CRITICAL();
@@ -590,7 +594,6 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 #endif // PLAT_WIN
 	}
 
-	//Msg("Resize to: %i,%i\n",w,h);
 	if (glContext != NULL)
 	{
 		m_Renderer->GL_CRITICAL();

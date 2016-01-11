@@ -72,7 +72,7 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
 	m_nLockLevel = nLevel;
 	m_bIsLocked = true;
 
-	if(IsCompressedFormat(m_iFormat))
+	if( IsCompressedFormat(m_iFormat) )
 	{
 		pLockData->pData = NULL;
 		pLockData->nPitch = 0;
@@ -112,24 +112,22 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
 	m_lockOffs = lockOffset;
 	m_lockReadOnly = bReadOnly;
 
-	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
+    if(!bDiscard)
+    {
+    	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
 
-	pGLRHI->ThreadingSharingRequest();
+        pGLRHI->GL_CRITICAL();
 
-	// NVIDIA TODO: May be I have problems here
-	gl::BindTexture(glTarget, textures[0].glTexID);
+        gl::BindTexture(glTarget, textures[0].glTexID);
 
-	GLenum srcFormat = srcFormats[GetChannelCount(m_iFormat)];
-	GLenum srcType = srcTypes[m_iFormat];
+        GLenum srcFormat = srcFormats[GetChannelCount(m_iFormat)];
+        GLenum srcType = srcTypes[m_iFormat];
 
-	if (IsFloatFormat(m_iFormat))
-		srcType = gl::FLOAT;
+        gl::GetTexImage(glTarget,m_nLockLevel, srcFormat, srcType, m_lockPtr);
+        gl::BindTexture(glTarget, 0);
 
-	gl::GetTexImage(glTarget,m_nLockLevel, srcFormat, srcType, m_lockPtr);
-
-	gl::BindTexture(glTarget, 0);
-
-	pGLRHI->ThreadingSharingRelease();
+        pGLRHI->GL_END_CRITICAL();
+    }
 }
 
 // unlocks texture for modifications, etc
@@ -141,19 +139,16 @@ void CGLTexture::Unlock()
 		{
 			ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
 
-			pGLRHI->ThreadingSharingRequest();
-
 			GLenum srcFormat = srcFormats[GetChannelCount(m_iFormat)];
 			GLenum srcType = srcTypes[m_iFormat];
 
-			if (IsFloatFormat(m_iFormat))
-				srcType = gl::FLOAT;
+            pGLRHI->GL_CRITICAL();
 
 			gl::BindTexture(glTarget, textures[0].glTexID);
 			gl::TexSubImage2D(glTarget, 0, 0, 0, m_iWidth, m_iHeight, srcFormat, srcType, m_lockPtr);
 			gl::BindTexture(glTarget, 0);
 
-			pGLRHI->ThreadingSharingRelease();
+			pGLRHI->GL_END_CRITICAL();
 		}
 
 		free(m_lockPtr);

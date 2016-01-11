@@ -662,12 +662,15 @@ kvkeybase_t* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, kvkeyba
 		return NULL;
 	}
 
-	wchar_t byteordermark = *((wchar_t*)_buffer);
+	ushort byteordermark = *((ushort*)_buffer);
+
+	bool isUTF8 = false;
 
 	if(byteordermark == 0xbbef)
 	{
 		// skip this three byte bom
 		_buffer += 3;
+		isUTF8 = true;
 	}
 	else if(byteordermark == 0xfeff)
 	{
@@ -683,9 +686,7 @@ kvkeybase_t* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, kvkeyba
 	if(pBase)
 	{
 		strcpy(pBase->name, pszFileName);
-
-		if(byteordermark == 0xbbef)
-			pBase->unicode = true;
+        pBase->unicode = isUTF8;
 	}
 
 	// required to clean memory after reading

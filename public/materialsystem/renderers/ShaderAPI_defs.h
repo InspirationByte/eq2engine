@@ -430,8 +430,8 @@ typedef struct RasterizerStateParams_s
 	{
 		cullMode = CULL_NONE;
 		fillMode = FILL_SOLID;
-		multiSample = true;
-		scissor = true;
+		multiSample = false;
+		scissor = false;
 		useDepthBias = false;
 		depthBias = 0.0f;
 		slopeDepthBias = 0.0f;

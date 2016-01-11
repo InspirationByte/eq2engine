@@ -1051,7 +1051,7 @@
 
 1452159729 /home/soap/Projects/eqengine/src_all/public/textureformats.h
 
-1452411639 /home/soap/Projects/eqengine/src_all/public/materialsystem/renderers/ShaderAPI_defs.h
+1452528566 /home/soap/Projects/eqengine/src_all/public/materialsystem/renderers/ShaderAPI_defs.h
 	"math/Vector.h"
 	"math/Matrix.h"
 	"math/Rectangle.h"
@@ -1133,7 +1133,7 @@
 1452332103 /home/soap/Projects/eqengine/src_all/public/materialsystem//BaseShader.h
 	"materialsystem/IMaterialSystem.h"
 
-1452439450 /home/soap/Projects/eqengine/src_all/public/materialsystem/IMaterialSystem.h
+1452519510 /home/soap/Projects/eqengine/src_all/public/materialsystem/IMaterialSystem.h
 	"DebugInterface.h"
 	"renderers/IShaderAPI.h"
 	"renderers/IEqSwapChain.h"
@@ -1290,7 +1290,7 @@
 	"materialvar.h"
 	"IMaterialSystem.h"
 
-1452439450 /home/soap/Projects/eqengine/src_all/public/materialsystem//IMaterialSystem.h
+1452519510 /home/soap/Projects/eqengine/src_all/public/materialsystem//IMaterialSystem.h
 	"DebugInterface.h"
 	"renderers/IShaderAPI.h"
 	"renderers/IEqSwapChain.h"
@@ -1317,7 +1317,7 @@
 	"textureformats.h"
 	"ShaderAPI_defs.h"
 
-1452411639 /home/soap/Projects/eqengine/src_all/public/materialsystem//renderers/ShaderAPI_defs.h
+1452528566 /home/soap/Projects/eqengine/src_all/public/materialsystem//renderers/ShaderAPI_defs.h
 	"math/Vector.h"
 	"math/Matrix.h"
 	"math/Rectangle.h"
