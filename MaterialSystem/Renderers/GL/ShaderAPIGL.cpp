@@ -1953,6 +1953,10 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		// use freshly generated program to retirieve constants (uniforms) and samplers
 		gl::UseProgram(prog->m_program);
+		
+		// intel buggygl fix
+		gl::UseProgram(0);
+		gl::UseProgram(prog->m_program);
 
 		GLint uniformCount, maxLength;
 		gl::GetProgramiv(prog->m_program, gl::OBJECT_ACTIVE_UNIFORMS_ARB, &uniformCount);
