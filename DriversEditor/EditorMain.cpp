@@ -22,9 +22,6 @@
 
 #include "EditorActionHistory.h"
 
-static CEqParallelJobThreads s_parallelJobs;
-CEqParallelJobThreads* g_parallelJobs = &s_parallelJobs;
-
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay *debugoverlay = ( IDebugOverlay * )&g_DebugOverlays;
 

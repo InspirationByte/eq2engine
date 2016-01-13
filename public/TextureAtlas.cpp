@@ -116,6 +116,17 @@ TexAtlasEntry_t* CTextureAtlas::GetEntry(int idx)
 	return &m_entries[idx];
 }
 
+int CTextureAtlas::GetEntryIndex(TexAtlasEntry_t* entry) const
+{
+	for(int i = 0; i < m_num; i++)
+	{
+		if(&m_entries[i] == entry)
+			return i;
+	}
+
+	return -1;
+}
+
 TexAtlasEntry_t* CTextureAtlas::FindEntry(const char* pszName) const
 {
 	if(!m_entries)

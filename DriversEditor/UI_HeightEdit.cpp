@@ -16,19 +16,19 @@
 
 #include "world.h"
 
-BEGIN_EVENT_TABLE(CTextureListRenderPanel, wxPanel)
-    EVT_ERASE_BACKGROUND(CTextureListRenderPanel::OnEraseBackground)
-    EVT_IDLE(CTextureListRenderPanel::OnIdle)
-	EVT_SCROLLWIN(CTextureListRenderPanel::OnScrollbarChange)
-	EVT_MOTION(CTextureListRenderPanel::OnMouseMotion)
-	EVT_MOUSEWHEEL(CTextureListRenderPanel::OnMouseScroll)
-	EVT_LEFT_DOWN(CTextureListRenderPanel::OnMouseClick)
-	EVT_SIZE(CTextureListRenderPanel::OnSizeEvent)
+BEGIN_EVENT_TABLE(CMaterialAtlasList, wxPanel)
+    EVT_ERASE_BACKGROUND(CMaterialAtlasList::OnEraseBackground)
+    EVT_IDLE(CMaterialAtlasList::OnIdle)
+	EVT_SCROLLWIN(CMaterialAtlasList::OnScrollbarChange)
+	EVT_MOTION(CMaterialAtlasList::OnMouseMotion)
+	EVT_MOUSEWHEEL(CMaterialAtlasList::OnMouseScroll)
+	EVT_LEFT_DOWN(CMaterialAtlasList::OnMouseClick)
+	EVT_SIZE(CMaterialAtlasList::OnSizeEvent)
 END_EVENT_TABLE()
 
 bool g_bTexturesInit = false;
 
-CTextureListRenderPanel::CTextureListRenderPanel(CUI_HeightEdit* parent) : wxPanel( parent, 0,0,640,480 )
+CMaterialAtlasList::CMaterialAtlasList(CUI_HeightEdit* parent) : wxPanel( parent, 0,0,640,480 )
 {
 	m_pFont = NULL;
 	m_swapChain = NULL;
@@ -43,7 +43,7 @@ CTextureListRenderPanel::CTextureListRenderPanel(CUI_HeightEdit* parent) : wxPan
 	m_heightEdit = parent;
 }
 
-void CTextureListRenderPanel::OnMouseMotion(wxMouseEvent& event)
+void CMaterialAtlasList::OnMouseMotion(wxMouseEvent& event)
 {
 	pointer_position.x = event.GetX();
 	pointer_position.y = event.GetY();
@@ -51,7 +51,7 @@ void CTextureListRenderPanel::OnMouseMotion(wxMouseEvent& event)
 	Redraw();
 }
 
-void CTextureListRenderPanel::OnSizeEvent(wxSizeEvent &event)
+void CMaterialAtlasList::OnSizeEvent(wxSizeEvent &event)
 {
 	if(!IsShown() || !g_bTexturesInit)
 		return;
@@ -70,14 +70,14 @@ void CTextureListRenderPanel::OnSizeEvent(wxSizeEvent &event)
 	}
 }
 
-void CTextureListRenderPanel::OnMouseScroll(wxMouseEvent& event)
+void CMaterialAtlasList::OnMouseScroll(wxMouseEvent& event)
 {
 	int scroll_pos =  GetScrollPos(wxVERTICAL);
 
 	SetScrollPos(wxVERTICAL, scroll_pos - event.GetWheelRotation()/100, true);
 }
 
-void CTextureListRenderPanel::OnScrollbarChange(wxScrollWinEvent& event)
+void CMaterialAtlasList::OnScrollbarChange(wxScrollWinEvent& event)
 {
 	if(event.GetEventType() == wxEVT_SCROLLWIN_LINEUP)
 	{
@@ -109,15 +109,13 @@ void CTextureListRenderPanel::OnScrollbarChange(wxScrollWinEvent& event)
 	Redraw();
 }
 
-void CTextureListRenderPanel::OnMouseClick(wxMouseEvent& event)
+void CMaterialAtlasList::OnMouseClick(wxMouseEvent& event)
 {
 	// set selection to mouse over
 	selection_id = mouseover_id;
 
 	if(selection_id == -1)
 		return;
-
-	m_heightEdit->RefreshAtlas( m_filteredlist[selection_id] );
 
 	/*
 	for(int i = 0; i < g_pLevel->GetEditableCount(); i++)
@@ -144,17 +142,17 @@ void CTextureListRenderPanel::OnMouseClick(wxMouseEvent& event)
 	*/
 }
 
-void CTextureListRenderPanel::OnIdle(wxIdleEvent &event)
+void CMaterialAtlasList::OnIdle(wxIdleEvent &event)
 {
 
 }
 
-void CTextureListRenderPanel::OnEraseBackground(wxEraseEvent& event)
+void CMaterialAtlasList::OnEraseBackground(wxEraseEvent& event)
 {
 	//Redraw();
 }
 
-void CTextureListRenderPanel::Redraw()
+void CMaterialAtlasList::Redraw()
 {
 	if(!materials)
 		return;
@@ -225,6 +223,8 @@ void CTextureListRenderPanel::Redraw()
 
 			for(int i = 0; i < m_filteredlist.numElem(); i++)
 			{
+				matAtlasElem_t& elem = m_filteredlist[i];
+
 				if(nItem >= numItems)
 				{
 					nItem = 0;
@@ -248,17 +248,17 @@ void CTextureListRenderPanel::Redraw()
 
 					float texture_aspect = 1.0f;
 
-					if(!m_filteredlist[i]->IsError())
+					if(!elem.material->IsError())
 					{
 						// preload
-						materials->PutMaterialToLoadingQueue( m_filteredlist[i] );
+						materials->PutMaterialToLoadingQueue( elem.material );
 
-						if(m_filteredlist[i]->GetState() == MATERIAL_LOAD_OK && m_filteredlist[i]->GetBaseTexture())
-							pTex = m_filteredlist[i]->GetBaseTexture();
+						if(elem.material->GetState() == MATERIAL_LOAD_OK && elem.material->GetBaseTexture())
+							pTex = elem.material->GetBaseTexture();
 						else
 							pTex = g_pShaderAPI->GetErrorTexture();
 
-						if(pTex)
+						if(pTex) // TODO: atlas aspect, size, etc
 							texture_aspect = pTex->GetWidth() / pTex->GetHeight();
 					}
 
@@ -273,6 +273,17 @@ void CTextureListRenderPanel::Redraw()
 					Vertex2D_t verts[] = {MAKETEXQUAD(x_offset, y_offset, x_offset + fSize*x_scale,y_offset + fSize*y_scale, 0)};
 					Vertex2D_t name_line[] = {MAKETEXQUAD(x_offset, y_offset+fSize, x_offset + fSize,y_offset + fSize + 25, 0)};
 				
+					EqString material_name = elem.material->GetName();
+
+					if(elem.entry)
+					{
+						verts[0].m_vTexCoord = elem.entry->rect.GetLeftTop(); //Vector2D(0, 0)),
+						verts[1].m_vTexCoord = elem.entry->rect.GetLeftBottom(); //Vector2D(0, 1)),
+						verts[2].m_vTexCoord = elem.entry->rect.GetRightTop(); //Vector2D(1, 0)),
+						verts[3].m_vTexCoord = elem.entry->rect.GetRightBottom(); //Vector2D(1, 1))
+					}
+
+
 					BlendStateParam_t params;
 					params.alphaTest = false;
 					params.alphaTestRef = 1.0f;
@@ -290,9 +301,9 @@ void CTextureListRenderPanel::Redraw()
 
 						materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, verts,4, pTex, ColorRGBA(1,0.5f,0.5f,1), &params);
 
-						Vertex2D verts[] = {MAKETEXRECT(x_offset, y_offset, x_offset + fSize,y_offset + fSize, 0)};
-						materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, verts, elementsOf(verts), NULL, ColorRGBA(1,0,0,1));
+						Vertex2D rectVerts[] = {MAKETEXRECT(x_offset, y_offset, x_offset + fSize,y_offset + fSize, 0)};
 
+						materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, rectVerts, elementsOf(rectVerts), NULL, ColorRGBA(1,0,0,1));
 						materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, ColorRGBA(0.25,0.1,0.25,1), &params);
 					}
 					else
@@ -300,15 +311,12 @@ void CTextureListRenderPanel::Redraw()
 
 					if(selection_id == i)
 					{
-						//materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, verts,4, pTex, ColorRGBA(0.5f,1.0f,0.5f,1), &params);
+						Vertex2D rectVerts[] = {MAKETEXRECT(x_offset, y_offset, x_offset + fSize,y_offset + fSize, 0)};
 
-						Vertex2D verts[] = {MAKETEXRECT(x_offset, y_offset, x_offset + fSize,y_offset + fSize, 0)};
-						materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, verts, elementsOf(verts), NULL, ColorRGBA(0,1,0,1));
-
+						materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, rectVerts, elementsOf(rectVerts), NULL, ColorRGBA(0,1,0,1));
 						materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, ColorRGBA(1,0.25,0.25,1), &params);
 					}
 
-					EqString material_name = m_filteredlist[i]->GetName();
 					char* name_str = (char*)material_name.c_str();
 
 					while(*name_str)
@@ -327,11 +335,17 @@ void CTextureListRenderPanel::Redraw()
 
 					m_pFont->RenderText(material_name.c_str(), name_rect.vleftTop, fontParam);
 
-					if(m_filteredlist[i]->IsError())
+					if(elem.material->IsError())
 						m_pFont->RenderText("BAD MATERIAL", Vector2D(x_offset, y_offset), fontParam);
 
-					if(!m_filteredlist[i]->GetBaseTexture())
-						m_pFont->RenderText("BAD SHADER\nEDIT IT FIRST", Vector2D(x_offset, y_offset+10), fontParam);
+					if(!elem.material->GetBaseTexture())
+						m_pFont->RenderText("no texture", Vector2D(x_offset, y_offset+10), fontParam);
+
+					if(elem.entry)
+					{
+						fontParam.textColor.w *= 0.5f;
+						m_pFont->RenderText(elem.entry->name, Vector2D(x_offset, y_offset), fontParam);
+					}
 				}
 
 				nItem++;
@@ -342,8 +356,9 @@ void CTextureListRenderPanel::Redraw()
 	}
 }
 
-void CTextureListRenderPanel::ReloadMaterialList()
+void CMaterialAtlasList::ReloadMaterialList()
 {
+	// reset
 	selection_id = -1;
 
 	bool no_materails = (m_materialslist.numElem() == 0);
@@ -351,8 +366,16 @@ void CTextureListRenderPanel::ReloadMaterialList()
 	for(int i = 0; i < m_materialslist.numElem(); i++)
 	{
 		// if this material is removed before reload, remove it
-		if(!materials->IsMaterialExist( m_materialslist[i]->GetName() ))
-			materials->FreeMaterial( m_materialslist[i] );
+		if(!materials->IsMaterialExist( m_materialslist[i].material->GetName() ))
+		{
+			m_materialslist[i].Free();
+			m_materialslist.fastRemoveIndex(i);
+			i--;
+			continue;
+		}
+
+		delete m_materialslist[i].atlas;
+		m_materialslist[i].atlas = NULL;
 	}
 
 	// reload materials
@@ -388,26 +411,101 @@ void CTextureListRenderPanel::ReloadMaterialList()
 
 	CheckDirForMaterials( base_path.GetData() );
 
-	m_filteredlist.append(m_materialslist);
+	UpdateAndFilterList();
 
 	RefreshScrollbar();
 }
 
-IMaterial* CTextureListRenderPanel::GetSelectedMaterial()
+void CMaterialAtlasList::UpdateAndFilterList()
+{
+	selection_id = -1;
+
+	m_filteredlist.clear();
+
+	for(int i = 0; i < m_materialslist.numElem(); i++)
+	{
+		// has atlas?
+		if( m_materialslist[i].atlas )
+		{
+			CTextureAtlas* atl = m_materialslist[i].atlas;
+
+			// enumerate all atlas entries and add them
+			for(int j = 0; j < atl->GetEntryCount(); j++)
+			{
+				TexAtlasEntry_t* entry = atl->GetEntry(j);
+
+				// try filter atlas entries along with material path
+				if( m_filter.Length() > 0 )
+				{
+					EqString matName(m_materialslist[i].material->GetName());
+					EqString entryName(entry->name);
+
+					int foundIndex = matName.Find(m_filter.c_str());
+					int foundEntry = entryName.Find(m_filter.c_str());
+
+					if(foundIndex == -1 && foundEntry == -1)
+						continue;
+				}
+
+				// add material with atlas entry
+				m_filteredlist.append( matAtlasElem_t(entry, j, m_materialslist[i].material) );
+			}
+				
+		}
+		else // just add material
+		{
+			// filter material path
+			if( m_filter.Length() > 0 )
+			{
+				EqString matName(m_materialslist[i].material->GetName());
+
+				int foundIndex = matName.Find(m_filter.c_str());
+
+				if(foundIndex == -1)
+					continue;
+			}
+
+			// add just material
+			m_filteredlist.append( matAtlasElem_t(NULL, 0, m_materialslist[i].material) );
+		}
+	}
+
+	RefreshScrollbar();
+	Redraw();
+}
+
+int CMaterialAtlasList::GetSelectedAtlas() const
+{
+	if(selection_id == 0)
+		return NULL;
+
+	return m_filteredlist[selection_id].entryIdx;
+}
+
+IMaterial* CMaterialAtlasList::GetSelectedMaterial() const
 {
 	if(selection_id == -1)
 		return NULL;
 
-	return m_filteredlist[selection_id];
+	return m_filteredlist[selection_id].material;
 }
 
-void CTextureListRenderPanel::SelectMaterial(IMaterial* pMaterial)
+void CMaterialAtlasList::SelectMaterial(IMaterial* pMaterial, int atlasIdx)
 {
-	selection_id = m_filteredlist.findIndex( pMaterial );
-	m_heightEdit->RefreshAtlas( pMaterial );
+	if(pMaterial == NULL)
+	{
+		selection_id = -1;
+		return;
+	}
+
+	matAtlasElem_t tmp;
+	tmp.material = pMaterial;
+	tmp.entryIdx = atlasIdx;
+
+	selection_id = m_filteredlist.findIndex( tmp, matAtlasElem_t::CompareByMaterialWithAtlasIdx );
 }
 
-bool CTextureListRenderPanel::CheckDirForMaterials(const char* filename_to_add)
+bool CMaterialAtlasList::CheckDirForMaterials(const char* filename_to_add)
 {
 	EqString dir_name = filename_to_add;
 	EqString dirname = dir_name + CORRECT_PATH_SEPARATOR + EqString("*.*");
@@ -459,18 +557,21 @@ bool CTextureListRenderPanel::CheckDirForMaterials(const char* filename_to_add)
 							continue;
 					}
 
-					m_materialslist.append(pMaterial);
+					EqString atlFileName((materials->GetMaterialPath() + filename + ".atlas"));
+
+					CTextureAtlas* atlas = new CTextureAtlas(); // try load new atlas
+
+					// try load atlas
+					if( !atlas->Load( atlFileName.c_str(), atlFileName.c_str() ) )
+					{
+						delete atlas;
+						atlas = nullptr;
+					}
+
+					// finally
+					m_materialslist.append( matAtlas_t(atlas, pMaterial) );
 
 					pMaterial->Ref_Grab();
-
-					selection_id = -1;
-
-					/*
-					if(!stricmp(g_editorCfg->default_material.GetData(), filename.GetData()))
-					{
-						selection_id = id;
-					}
-					*/
 				}
 			}
 		}
@@ -478,10 +579,12 @@ bool CTextureListRenderPanel::CheckDirForMaterials(const char* filename_to_add)
 		FindClose(hFile);
 	}
 
+	selection_id = -1;
+
 	return true;
 }
 
-void CTextureListRenderPanel::SetPreviewParams(int preview_size, bool bAspectFix)
+void CMaterialAtlasList::SetPreviewParams(int preview_size, bool bAspectFix)
 {
 	if(m_nPreviewSize != preview_size)
 		RefreshScrollbar();
@@ -490,7 +593,7 @@ void CTextureListRenderPanel::SetPreviewParams(int preview_size, bool bAspectFix
 	m_bAspectFix = bAspectFix;
 }
 
-void CTextureListRenderPanel::RefreshScrollbar()
+void CMaterialAtlasList::RefreshScrollbar()
 {
 	int w, h;
 	GetSize(&w, &h);
@@ -526,7 +629,7 @@ void CTextureListRenderPanel::RefreshScrollbar()
 	}
 }
 
-void CTextureListRenderPanel::ChangeFilter(const wxString& filter, const wxString& tags, bool bOnlyUsedMaterials, bool bSortByDate)
+void CMaterialAtlasList::ChangeFilter(const wxString& filter, const wxString& tags, bool bOnlyUsedMaterials, bool bSortByDate)
 {
 	if(!IsShown() || !g_bTexturesInit)
 		return;
@@ -538,61 +641,12 @@ void CTextureListRenderPanel::ChangeFilter(const wxString& filter, const wxStrin
 	m_filter = filter;
 	m_filterTags = tags;
 
-	selection_id = -1;
-
-	m_filteredlist.clear();
-
-	DkList<IMaterial*> show_materials;
-
-	if(bOnlyUsedMaterials)
-	{
-		/*
-		for(int i = 0; i < g_pLevel->GetEditableCount(); i++)
-		{
-			for(int j = 0; j < g_pLevel->GetEditable(i)->GetSurfaceTextureCount(); j++)
-			{
-				if(g_pLevel->GetEditable(i)->GetSurfaceTexture(j)->pMaterial != NULL && !g_pLevel->GetEditable(i)->GetSurfaceTexture(j)->pMaterial->IsError())
-					show_materials.addUnique(g_pLevel->GetEditable(i)->GetSurfaceTexture(j)->pMaterial);
-			}
-		}
-		*/
-	}
-	else
-	{
-		show_materials.resize(m_materialslist.numElem());
-		show_materials.append(m_materialslist);
-	}
-
-	if(filter.Length() == 0)
-	{
-		m_filteredlist.append(show_materials);
-
-		RefreshScrollbar();
-
-		return;
-	}
-
-	if(filter.length() > 0)
-	{
-		for(int i = 0; i < show_materials.numElem(); i++)
-		{
-			EqString str(show_materials[i]->GetName());
-
-			int foundIndex = str.Find(filter.c_str());
-
-			if(foundIndex != -1)
-				m_filteredlist.append(show_materials[i]);
-		}
-	}
-
-	RefreshScrollbar();
-
-	Redraw();
+	UpdateAndFilterList();
 }
 
 
 //-----------------------------------------------------------------------------------------------------------------------
-// CTextureListRenderPanel holder
+// CMaterialAtlasList holder
 //-----------------------------------------------------------------------------------------------------------------------
 
 BEGIN_EVENT_TABLE(CUI_HeightEdit, wxPanel)
@@ -681,11 +735,6 @@ CUI_HeightEdit::CUI_HeightEdit(wxWindow* parent) : wxPanel( parent, -1, wxDefaul
 	fgSizer7->Add( m_layer, 0, wxBOTTOM|wxRIGHT|wxLEFT, 5 );
 	
 	fgSizer7->Add( new wxStaticText( this, wxID_ANY, wxT("Atlas Tex."), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
-	
-	wxArrayString m_atlasTexChoices;
-	m_atlasTex = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxSize( 100,-1 ), m_atlasTexChoices, wxCB_SORT );
-	m_atlasTex->SetSelection( 0 );
-	fgSizer7->Add( m_atlasTex, 0, wxBOTTOM|wxRIGHT|wxLEFT, 5 );
 
 	bSizer3->Add( fgSizer7, 0, 0, 5 );
 	
@@ -698,7 +747,7 @@ CUI_HeightEdit::CUI_HeightEdit(wxWindow* parent) : wxPanel( parent, -1, wxDefaul
 	wxBoxSizer* bSizer9;
 	bSizer9 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_texPanel = new CTextureListRenderPanel(this);
+	m_texPanel = new CMaterialAtlasList(this);
 	
 	bSizer9->Add( m_texPanel, 1, wxEXPAND|wxALL, 5 );
 	
@@ -834,24 +883,9 @@ IMaterial* CUI_HeightEdit::GetSelectedMaterial()
 	return m_texPanel->GetSelectedMaterial();
 }
 
-void CUI_HeightEdit::RefreshAtlas(IMaterial* material)
+int CUI_HeightEdit::GetSelectedAtlasIndex() const
 {
-	m_atlasTex->Clear();
-	m_atlas.Cleanup();
-
-	if(!material)
-		return;
-
-	m_atlas.Load(("materials/"+_Es(material->GetName())+".atlas").c_str(), material->GetName());
-
-	int numEntries = m_atlas.GetEntryCount();
-	for(int i = 0; i < numEntries; i++)
-	{
-		TexAtlasEntry_t* entry = m_atlas.GetEntry(i);
-
-		int itm = m_atlasTex->Append( entry->name );
-		m_atlasTex->SetClientData(itm, (void*)i);
-	}
+	return m_texPanel->GetSelectedAtlas();
 }
 
 void CUI_HeightEdit::ReloadMaterialList()
@@ -859,7 +893,7 @@ void CUI_HeightEdit::ReloadMaterialList()
 	m_texPanel->ReloadMaterialList();
 }
 
-CTextureListRenderPanel*	CUI_HeightEdit::GetTexturePanel()
+CMaterialAtlasList*	CUI_HeightEdit::GetTexturePanel()
 {
 	return m_texPanel;
 }
@@ -912,25 +946,6 @@ void CUI_HeightEdit::SetRadius(int radius)
 void CUI_HeightEdit::SetHeight(int height)
 {
 	m_height->SetValue(height);
-}
-
-int CUI_HeightEdit::GetSelectedAtlasIndex() const
-{
-	int selIdx = m_atlasTex->GetSelection();
-	if(selIdx == -1)
-		return 0;
-
-	return (int)m_atlasTex->GetClientData(selIdx);
-}
-
-void CUI_HeightEdit::SetSelectedAtlasIndex(int idx)
-{
-	for(uint i = 0; i < m_atlasTex->GetCount(); i++)
-	{
-		int cld = (int)m_atlasTex->GetClientData(i);
-		if(cld == idx)
-			m_atlasTex->SetSelection(i);
-	}
 }
 
 EEditMode CUI_HeightEdit::GetEditMode()
@@ -1337,11 +1352,10 @@ void CUI_HeightEdit::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, 
 				{
 					IMaterial* mat = m_selectedRegion->GetHField(m_selectedHField)->m_materials[tile->texture]->material;
 
-					m_texPanel->SelectMaterial( mat );
-					SetSelectedAtlasIndex(tile->atlasIdx);
+					m_texPanel->SelectMaterial( mat, tile->atlasIdx );
 				}
 				else
-					m_texPanel->SelectMaterial(NULL);
+					m_texPanel->SelectMaterial(NULL, 0);
 
 				m_texPanel->Redraw();
 			}
@@ -1394,18 +1408,6 @@ void CUI_HeightEdit::OnKey(wxKeyEvent& event, bool bDown)
 		else if(event.GetRawKeyCode() == 'R')
 		{
 			m_noCollide->SetValue(!m_noCollide->GetValue());
-		}
-		else if(event.GetRawKeyCode() == 'T')
-		{
-			if(m_atlasTex->GetCount() > 0)
-			{
-				int sel = m_atlasTex->GetSelection()+1;
-
-				if(sel >= m_atlasTex->GetCount())
-					sel = 0;
-			
-				m_atlasTex->SetSelection(sel);
-			}
 		}
 		if(event.m_keyCode == WXK_SPACE)
 		{
@@ -1471,7 +1473,7 @@ void CUI_HeightEdit::InitTool()
 
 void CUI_HeightEdit::OnLevelUnload()
 {
-	m_texPanel->SelectMaterial(NULL);
+	m_texPanel->SelectMaterial(NULL,0);
 	CBaseTilebasedEditor::OnLevelUnload();
 }
 

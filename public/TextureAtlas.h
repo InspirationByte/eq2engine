@@ -35,8 +35,11 @@ public:
 	bool					Load( const char* pszFileName, const char* pszMyName );
 
 	TexAtlasEntry_t*		GetEntry(int idx);
+	int						GetEntryIndex(TexAtlasEntry_t* entry) const;
+
 	TexAtlasEntry_t*		FindEntry(const char* pszName) const;
 	int						FindEntryIndex(const char* pszName) const;
+
 	int						GetEntryCount() const		{return m_num;}
 
 	const char*				GetMaterialName() const		{return m_material.c_str();}

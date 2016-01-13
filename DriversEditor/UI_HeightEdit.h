@@ -14,56 +14,112 @@
 
 class CUI_HeightEdit;
 
+struct matAtlas_t
+{
+	matAtlas_t() :
+		atlas(nullptr),material(nullptr)
+	{
+	}
+
+	matAtlas_t(CTextureAtlas* atl, IMaterial* mat) :
+		atlas(atl),material(mat)
+	{
+	}
+
+	void Free()
+	{
+		materials->FreeMaterial(material);
+		delete atlas;
+	}
+
+	CTextureAtlas*	atlas;
+	IMaterial*		material;
+};
+
+struct matAtlasElem_t
+{
+	matAtlasElem_t() :
+		entry(nullptr), entryIdx(0), material(nullptr)
+	{
+	}
+
+	matAtlasElem_t(TexAtlasEntry_t* ent, int idx, IMaterial* mat) :
+		entry(ent), entryIdx(idx), material(mat)
+	{
+	}
+
+	TexAtlasEntry_t*	entry;
+	int					entryIdx;
+	IMaterial*			material;
+
+	static bool CompareByMaterial(const matAtlasElem_t& a, const matAtlasElem_t& b)
+	{
+		return a.material == b.material;
+	}
+
+	static bool CompareByMaterialWithAtlasIdx(const matAtlasElem_t& a, const matAtlasElem_t& b)
+	{
+		if(a.entry != NULL)
+			return a.material == b.material && a.entryIdx == b.entryIdx;
+		else
+			return a.material == b.material;
+	}
+};
+
 // texture list panel
-class CTextureListRenderPanel : public wxPanel
+class CMaterialAtlasList : public wxPanel
 {
 public:
-    CTextureListRenderPanel(CUI_HeightEdit* parent);
+    CMaterialAtlasList(CUI_HeightEdit* parent);
 
-	void				OnSizeEvent(wxSizeEvent &event);
-	void				OnIdle(wxIdleEvent &event);
-	void				OnEraseBackground(wxEraseEvent& event);
-	void				OnScrollbarChange(wxScrollWinEvent& event);
+	void					OnSizeEvent(wxSizeEvent &event);
+	void					OnIdle(wxIdleEvent &event);
+	void					OnEraseBackground(wxEraseEvent& event);
+	void					OnScrollbarChange(wxScrollWinEvent& event);
 		
-	void				OnMouseMotion(wxMouseEvent& event);
-	void				OnMouseScroll(wxMouseEvent& event);
-	void				OnMouseClick(wxMouseEvent& event);
+	void					OnMouseMotion(wxMouseEvent& event);
+	void					OnMouseScroll(wxMouseEvent& event);
+	void					OnMouseClick(wxMouseEvent& event);
 
-	void				ReloadMaterialList();
+	void					ReloadMaterialList();
 
-	IMaterial*			GetSelectedMaterial();
-	void				SelectMaterial(IMaterial* pMaterial);
+	int						GetSelectedAtlas() const;
+	IMaterial*				GetSelectedMaterial() const;
 
-	void				Redraw();
+	void					SelectMaterial(IMaterial* pMaterial, int atlasIdx);
 
-	void				ChangeFilter(const wxString& filter, const wxString& tags, bool bOnlyUsedMaterials, bool bSortByDate);
-	void				SetPreviewParams(int preview_size, bool bAspectFix);
+	void					Redraw();
 
-	void				RefreshScrollbar();
+	void					ChangeFilter(const wxString& filter, const wxString& tags, bool bOnlyUsedMaterials, bool bSortByDate);
+	void					UpdateAndFilterList();
+	void					SetPreviewParams(int preview_size, bool bAspectFix);
+
+	void					RefreshScrollbar();
 
 	DECLARE_EVENT_TABLE()
 protected:
 
-	bool				CheckDirForMaterials(const char* filename_to_add);
+	bool					CheckDirForMaterials(const char* filename_to_add);
 
-	DkList<IMaterial*>	m_materialslist;
-	DkList<IMaterial*>	m_filteredlist;
-	DkList<EqString>	m_loadfilter;
+	DkList<matAtlas_t>		m_materialslist;
+	DkList<matAtlasElem_t>	m_filteredlist;
 
-	IEqFont*			m_pFont;
+	DkList<EqString>		m_loadfilter;
 
-	Vector2D			pointer_position;
-	int					selection_id;
-	int					mouseover_id;
+	IEqFont*				m_pFont;
 
-	wxString			m_filter;
-	wxString			m_filterTags;
+	Vector2D				pointer_position;
+	int						selection_id;
+	int						mouseover_id;
 
-	bool				m_bAspectFix;
-	int					m_nPreviewSize;
+	wxString				m_filter;
+	wxString				m_filterTags;
 
-	IEqSwapChain*		m_swapChain;
-	CUI_HeightEdit*		m_heightEdit;
+	bool					m_bAspectFix;
+	int						m_nPreviewSize;
+
+	IEqSwapChain*			m_swapChain;
+	CUI_HeightEdit*			m_heightEdit;
 };
 
 class CUI_HeightEdit;
@@ -90,7 +146,7 @@ enum EEditMode
 //---------------------------------------------------------------
 class CUI_HeightEdit : public wxPanel, public CBaseTilebasedEditor
 {
-	friend class CTextureListRenderPanel;
+	friend class CMaterialAtlasList;
 
 public:
 	CUI_HeightEdit(wxWindow* parent);
@@ -104,11 +160,10 @@ public:
 	void						OnLayerSpinChanged(wxCommandEvent& event);
 
 	IMaterial*					GetSelectedMaterial();
-	void						RefreshAtlas(IMaterial* material);
 
 	void						ReloadMaterialList();
 
-	CTextureListRenderPanel*	GetTexturePanel();
+	CMaterialAtlasList*			GetTexturePanel();
 
 	int							GetRotation();
 	void						SetRotation(int rot);
@@ -126,7 +181,6 @@ public:
 	int							GetEditorPaintFlags();
 
 	int							GetSelectedAtlasIndex() const;
-	void						SetSelectedAtlasIndex(int idx);
 
 	// IEditorTool stuff
 
@@ -159,7 +213,7 @@ protected:
 		SETROT_180
 	};
 
-	CTextureListRenderPanel*	m_texPanel;
+	CMaterialAtlasList*			m_texPanel;
 
 	wxCheckBox*					m_paintMaterial;
 	wxCheckBox*					m_paintRotation;
@@ -177,12 +231,9 @@ protected:
 	wxSpinCtrl*					m_height;
 	wxSpinCtrl*					m_radius;
 	wxSpinCtrl*					m_layer;
-	wxChoice*					m_atlasTex;
 	wxPanel*					m_pSettingsPanel;
 	wxTextCtrl*					m_filtertext;
 	wxTextCtrl*					m_pTags;
-
-	CTextureAtlas				m_atlas;
 
 	wxCheckBox*					m_onlyusedmaterials;
 	wxCheckBox*					m_pSortByDate;
