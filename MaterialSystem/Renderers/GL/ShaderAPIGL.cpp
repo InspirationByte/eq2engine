@@ -1970,7 +1970,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		int nSamplers = 0;
 		int nUniforms = 0;
 
-		char* tmpName = new char[MAX_CONSTANT_NAMELEN];
+		char* tmpName = new char[maxLength];
 
 		for (int i = 0; i < uniformCount; i++)
 		{
@@ -1987,7 +1987,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				GLint location = gl::GetUniformLocation(prog->m_program, tmpName);
 				gl::Uniform1i(location, nSamplers);
 
-				//Msg("[SHADER] retrieving sampler '%s' at %d (location = %d)\n", tmpName, nSamplers, location);
+				Msg("[SHADER] retrieving sampler '%s' at %d (location = %d)\n", tmpName, nSamplers, location);
 
 				sp->index = nSamplers;
 				strcpy(sp->name, tmpName);
@@ -1998,7 +1998,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				// Store all non-gl uniforms
 				if (strncmp(tmpName, "gl_", 3) != 0)
 				{
-					//Msg("[SHADER] retrieving uniform '%s' at %d\n", tmpName, nUniforms);
+					Msg("[SHADER] retrieving uniform '%s' at %d\n", tmpName, nUniforms);
 
 					char *bracket = strchr(tmpName, '[');
 					if (bracket == NULL || (bracket[1] == '0' && bracket[2] == ']'))
