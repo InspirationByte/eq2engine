@@ -12,7 +12,7 @@
 
 namespace Threading
 {
-	CEqJobThread::CEqJobThread( CEqParallelJobThreads* owner ) : m_owner(owner)
+	CEqJobThread::CEqJobThread( CEqParallelJobThreads* owner ) : m_owner(owner), m_curJob(nullptr)
 	{
 	}
 
@@ -41,6 +41,9 @@ namespace Threading
 	bool CEqJobThread::AssignJob( eqParallelJob_t* job )
 	{
 		if( m_curJob )
+			return false;
+
+		if(job->threadId != 0)
 			return false;
 
 		// применить работу к потоку
@@ -119,11 +122,13 @@ namespace Threading
 
 		if( m_workQueue.getCount() )
 		{
+			m_mutex.Unlock();
+
 			for (int i = 0; i < m_jobThreads.numElem(); i++)
 				m_jobThreads[i]->SignalWork();
 		}
-
-		m_mutex.Unlock();
+		else
+			m_mutex.Unlock();
 	}
 
 	// wait for completion
@@ -142,7 +147,7 @@ namespace Threading
 	// called by job thread
 	bool CEqParallelJobThreads::AssignFreeJob( CEqJobThread* requestBy )
 	{
-		CScopedMutex m(m_mutex);
+		m_mutex.Lock();
 
 		if( m_workQueue.goToFirst() )
 		{
@@ -157,11 +162,14 @@ namespace Threading
 				if( requestBy->AssignJob( job ) )
 				{
 					m_workQueue.removeCurrent();
+					m_mutex.Unlock();
 					return true;
 				}
 
 			} while (m_workQueue.goToNext());
 		}
+
+		m_mutex.Unlock();
 
 		return false;
 	}
