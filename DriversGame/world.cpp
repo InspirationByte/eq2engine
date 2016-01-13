@@ -8,6 +8,8 @@
 #include "world.h"
 #include "IDebugOverlay.h"
 
+#include "eqGlobalMutex.h"
+
 #include "EqParticles.h"
 
 #include "Rain.h"
@@ -807,11 +809,7 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 
 		// sorted insert into render list
 		if( obj->CheckVisibility( frustum ) )
-		{
-			g_parallelJobs->GetMutex().Lock();
 			m_renderingObjects.insertSorted( obj, SortGameObjectsByDistance );
-			g_parallelJobs->GetMutex().Unlock();
-		}
 	}
 }
 

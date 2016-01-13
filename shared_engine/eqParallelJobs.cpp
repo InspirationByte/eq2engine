@@ -7,65 +7,47 @@
 
 #include "eqParallelJobs.h"
 #include "eqGlobalMutex.h"
+#include "DebugInterface.h"
 #include "utils/strtools.h"
 
 namespace Threading
 {
-	CEqJobThread::CEqJobThread()
+	CEqJobThread::CEqJobThread( CEqParallelJobThreads* owner ) : m_owner(owner)
 	{
 	}
 
 	int CEqJobThread::Run()
 	{
-		if (m_jobList.goToFirst())
+		// thread will find job by himself
+		while( m_owner->AssignFreeJob( this ) )
 		{
-			do
-			{
-				eqParallelJob_t* job = m_jobList.getCurrent();
+			m_curJob->flags |= JOB_FLAG_CURRENT;
 
-				if(!job)
-					continue;
+			// execute
+			(m_curJob->func)( m_curJob->arguments );
 
-				job->flags |= JOB_FLAG_CURRENT;
+			m_curJob->flags |= JOB_FLAG_EXECUTED;
+			m_curJob->flags &= ~JOB_FLAG_CURRENT;
 
-				m_curJob = job;
+			if( m_curJob->flags & JOB_FLAG_ALLOCATED )
+				delete m_curJob;
 
-				// выполнение
-				(job->func)( job->arguments );
-
-				job->flags |= JOB_FLAG_EXECUTED;
-				job->flags &= ~JOB_FLAG_CURRENT;
-
-				m_curJob = NULL;
-
-				if (job->flags & JOB_FLAG_ALLOCATED)
-				{
-					m_jobList.setCurrent(NULL);
-					delete job;
-				}
-			} while (m_jobList.goToNext());
+			m_curJob = nullptr;
 		}
-
-		m_jobMutex.Lock();
-		m_jobList.clear();
-		m_jobMutex.Unlock();
 
 		return 0;
 	}
 
-	bool CEqJobThread::AddJobToQueue( eqParallelJob_t* job )
+	bool CEqJobThread::AssignJob( eqParallelJob_t* job )
 	{
-		if (m_jobMutex.Lock())
-		{
-			job->threadId = GetThreadID();
+		if( m_curJob )
+			return false;
 
-			m_jobList.addLast(job);
-			m_jobMutex.Unlock();
+		// применить работу к потоку
+		job->threadId = GetThreadID();
+		m_curJob = job;
 
-			return true;
-		}
-
-		return false;
+		return true;
 	}
 
 	const eqParallelJob_t* CEqJobThread::GetCurrentJob() const
@@ -77,7 +59,6 @@ namespace Threading
 
 	CEqParallelJobThreads::CEqParallelJobThreads() : m_mutex( GetGlobalMutex( MUTEXPURPOSE_JOBMANAGER ) )
 	{
-		m_curThread = 0;
 	}
 
 	CEqParallelJobThreads::~CEqParallelJobThreads()
@@ -89,11 +70,13 @@ namespace Threading
 	bool CEqParallelJobThreads::Init( int numThreads )
 	{
 		if(numThreads == 0)
-			return false;
+			numThreads = 1;
+
+		MsgInfo("Parallel jobs thread count: %d\n", numThreads);
 
 		for (int i = 0; i < numThreads; i++)
 		{
-			m_jobThreads.append( new CEqJobThread );
+			m_jobThreads.append( new CEqJobThread(this) );
 			m_jobThreads[i]->StartWorkerThread( varargs("jobThread_%d", i) );
 		}
 
@@ -125,7 +108,7 @@ namespace Threading
 	void CEqParallelJobThreads::AddJob(eqParallelJob_t* job)
 	{
 		m_mutex.Lock();
-		m_unsubmittedQueue.addLast( job );
+		m_workQueue.addLast( job );
 		m_mutex.Unlock();
 	}
 
@@ -134,28 +117,9 @@ namespace Threading
 	{
 		m_mutex.Lock();
 
-		if (m_unsubmittedQueue.goToFirst())
+		if( m_workQueue.getCount() )
 		{
-			do
-			{
-				eqParallelJob_t* job = m_unsubmittedQueue.getCurrent();
-
-				// правязать работу к потоку
-				while(!m_jobThreads[m_curThread]->AddJobToQueue(job))
-				{
-					m_curThread++;
-
-					if (m_curThread >= m_jobThreads.numElem())
-						m_curThread = 0; // start over
-				}
-			} while (m_unsubmittedQueue.goToNext());
-		}
-
-		m_unsubmittedQueue.clear();
-
-		for (int i = 0; i < m_jobThreads.numElem(); i++)
-		{
-			if (m_jobThreads[i]->m_jobList.getCount() > 0)
+			for (int i = 0; i < m_jobThreads.numElem(); i++)
 				m_jobThreads[i]->SignalWork();
 		}
 
@@ -169,9 +133,37 @@ namespace Threading
 			m_jobThreads[i]->WaitForThread();
 	}
 
-	int	CEqParallelJobThreads::GetNumJobs(int nThread)
+	// wait for specific job
+	void CEqParallelJobThreads::WaitForJob(eqParallelJob_t* job)
 	{
-		return m_jobThreads[nThread]->m_jobList.getCount();
+		// TODO: make right code?
+	}
+
+	// called by job thread
+	bool CEqParallelJobThreads::AssignFreeJob( CEqJobThread* requestBy )
+	{
+		CScopedMutex m(m_mutex);
+
+		if( m_workQueue.goToFirst() )
+		{
+			do
+			{
+				eqParallelJob_t* job = m_workQueue.getCurrent();
+
+				if(!job)
+					continue;
+
+				// привязать работу
+				if( requestBy->AssignJob( job ) )
+				{
+					m_workQueue.removeCurrent();
+					return true;
+				}
+
+			} while (m_workQueue.goToNext());
+		}
+
+		return false;
 	}
 }
 

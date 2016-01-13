@@ -9,10 +9,13 @@
 #include "core_base_header.h"
 #include "IDebugOverlay.h"
 #include "eqParallelJobs.h"
+#include "eqGlobalMutex.h"
 
 #pragma todo("non-indexed material group - use CPFXRenderGroup")
 
 ConVar r_sorteffects("r_sorteffects", "1", "Sorts effects. If you disable it, effects will not be sorted.", CV_ARCHIVE);
+
+
 
 int _SortParticles(IEffect* const &elem0, IEffect* const &elem1)
 {
@@ -49,7 +52,9 @@ CEffectRenderer::CEffectRenderer()
 
 void CEffectRenderer::RegisterEffectForRender(IEffect* pEffect)
 {
-	Threading::CScopedMutex m(g_parallelJobs->GetMutex());
+	Threading::CEqMutex& mutex = Threading::GetGlobalMutex(Threading::MUTEXPURPOSE_RENDERER);
+
+	Threading::CScopedMutex m(mutex);
 
 	ASSERTMSG(pEffect != NULL, "RegisterEffectForRender - inserting NULL effect");
 

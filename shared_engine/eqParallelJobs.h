@@ -40,6 +40,8 @@ namespace Threading
 		JOB_FLAG_EXECUTED	= (1 << 2),
 	};
 
+	const uintptr_t JOB_THREAD_ANY = 0;
+
 	struct eqParallelJob_t
 	{
 		eqParallelJob_t() : flags(0), arguments(nullptr), threadId(0)
@@ -60,20 +62,17 @@ namespace Threading
 		friend class CEqParallelJobThreads;
 	public:
 
-		CEqJobThread();
+		CEqJobThread( CEqParallelJobThreads* owner );
 
-		int								Run();
-		bool							AddJobToQueue(eqParallelJob_t* job);
+		int							Run();
+		bool						AssignJob(eqParallelJob_t* job);
 
-		const eqParallelJob_t*			GetCurrentJob() const;
+		const eqParallelJob_t*		GetCurrentJob() const;
 
 	protected:
 
-		CEqMutex						m_jobMutex;
-
-		volatile eqParallelJob_t*		m_curJob;
-
-		DkLinkedList<eqParallelJob_t*>	m_jobList;	// this thread job list
+		volatile eqParallelJob_t*	m_curJob;
+		CEqParallelJobThreads*		m_owner;
 	};
 
 	//
@@ -81,39 +80,40 @@ namespace Threading
 	//
 	class CEqParallelJobThreads // TODO: interface
 	{
+		friend class CEqJobThread;
 	public:
 		CEqParallelJobThreads();
 		virtual ~CEqParallelJobThreads();
 
 		// creates new job thread
-		bool					Init( int numThreads );
-		void					Shutdown();
+		bool							Init( int numThreads );
+		void							Shutdown();
 
-		CEqJobThread*			GetThreadById( uintptr_t threadId ) const;
-		void					GetThreadIds( DkList<uintptr_t>& list ) const;
+		CEqJobThread*					GetThreadById( uintptr_t threadId ) const;
+		void							GetThreadIds( DkList<uintptr_t>& list ) const;
 
 		// adds the job
-		void					AddJob( jobFunction_t func, void* args );	// and puts JOB_FLAG_ALLOCATED flag for this job
-		void					AddJob( eqParallelJob_t* job );
+		void							AddJob( jobFunction_t func, void* args );	// and puts JOB_FLAG_ALLOCATED flag for this job
+		void							AddJob( eqParallelJob_t* job );
 
 		// this submits jobs to the CEqJobThreads
-		void					Submit();
+		void							Submit();
 
 		// wait for completion
-		void					Wait();
-		int						GetNumJobs(int nThread);
+		void							Wait();
 
-		CEqMutex&				GetMutex() { return m_mutex; }
-
+		// wait for specific job
+		void							WaitForJob(eqParallelJob_t* job);
 
 	protected:
 
+		// called from worker thread
+		bool							AssignFreeJob( CEqJobThread* requestBy );
+
 		CEqMutex&						m_mutex;
-
-		DkLinkedList<eqParallelJob_t*>	m_unsubmittedQueue;
-
 		DkList<CEqJobThread*>			m_jobThreads;
-		int								m_curThread;
+
+		DkLinkedList<eqParallelJob_t*>	m_workQueue;
 	};
 }
 
