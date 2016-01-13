@@ -53,7 +53,6 @@ CEffectRenderer::CEffectRenderer()
 void CEffectRenderer::RegisterEffectForRender(IEffect* pEffect)
 {
 	Threading::CEqMutex& mutex = Threading::GetGlobalMutex(Threading::MUTEXPURPOSE_RENDERER);
-
 	Threading::CScopedMutex m(mutex);
 
 	ASSERTMSG(pEffect != NULL, "RegisterEffectForRender - inserting NULL effect");
@@ -74,6 +73,9 @@ void CEffectRenderer::RegisterEffectForRender(IEffect* pEffect)
 
 void CEffectRenderer::DrawEffects(float dt)
 {
+	Threading::CEqMutex& mutex = Threading::GetGlobalMutex(Threading::MUTEXPURPOSE_RENDERER);
+	Threading::CScopedMutex m(mutex);
+
 	// sort particles
 	if(r_sorteffects.GetBool())
 		shellSort<IEffect*>(m_pEffectList, m_numEffects.GetValue(), _SortParticles);
