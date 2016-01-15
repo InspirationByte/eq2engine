@@ -2600,11 +2600,11 @@
 
 1452159729 /home/soap/Projects/eqengine/src_all/public/network/NetEvent.h
 
-1452159729 source:/home/soap/Projects/eqengine/src_all/public/TextureAtlas.cpp
+1452878744 source:/home/soap/Projects/eqengine/src_all/public/TextureAtlas.cpp
 	"TextureAtlas.h"
 	"core_base_header.h"
 
-1452159729 /home/soap/Projects/eqengine/src_all/public/TextureAtlas.h
+1452878744 /home/soap/Projects/eqengine/src_all/public/TextureAtlas.h
 	"math/DkMath.h"
 	"math/Rectangle.h"
 	"utils/eqstring.h"
@@ -2705,7 +2705,7 @@
 	"IEngineHost.h"
 	"coord.h"
 
-1452159729 /home/soap/Projects/eqengine/src_all/shared_engine/eqParallelJobs.h
+1452878805 /home/soap/Projects/eqengine/src_all/shared_engine/eqParallelJobs.h
 	"utils/eqthread.h"
 	"utils/DkList.h"
 	"utils/DkLinkedList.h"
@@ -2802,11 +2802,12 @@
 	"IFont.h"
 	<map>
 
-1452159729 source:/home/soap/Projects/eqengine/src_all/shared_engine/EffectRender.cpp
+1452880188 source:/home/soap/Projects/eqengine/src_all/shared_engine/EffectRender.cpp
 	"EffectRender.h"
 	"core_base_header.h"
 	"IDebugOverlay.h"
 	"eqParallelJobs.h"
+	"eqGlobalMutex.h"
 
 1452159729 /home/soap/Projects/eqengine/src_all/shared_engine/EffectRender.h
 	"TextureAtlas.h"
@@ -2841,9 +2842,10 @@
 1452159729 /home/soap/Projects/eqengine/src_all/shared_engine/eqGlobalMutex.h
 	"utils/eqthread.h"
 
-1452519510 source:/home/soap/Projects/eqengine/src_all/shared_engine/eqParallelJobs.cpp
+1452878744 source:/home/soap/Projects/eqengine/src_all/shared_engine/eqParallelJobs.cpp
 	"eqParallelJobs.h"
 	"eqGlobalMutex.h"
+	"DebugInterface.h"
 	"utils/strtools.h"
 
 1452159729 source:/home/soap/Projects/eqengine/src_all/shared_engine/EqParticles_Render.cpp
@@ -2913,7 +2915,7 @@
 	"model.h"
 	"ppmem.h"
 
-1452532856 source:/home/soap/Projects/eqengine/src_all/shared_engine/Network/NETThread.cpp
+1452534402 source:/home/soap/Projects/eqengine/src_all/shared_engine/Network/NETThread.cpp
 	"NETThread.h"
 	"eqGlobalMutex.h"
 
@@ -3980,7 +3982,7 @@
 1452159728 source:/home/soap/Projects/eqengine/src_all/DriversGame/ui_luaMenu.cpp
 	"ui_luaMenu.h"
 
-1452411639 source:/home/soap/Projects/eqengine/src_all/DriversGame/window.cpp
+1452878873 source:/home/soap/Projects/eqengine/src_all/DriversGame/window.cpp
 	"Platform.h"
 	"DebugInterface.h"
 	"system.h"
@@ -3989,9 +3991,10 @@
 	"EngineVersion.h"
 	"Mmsystem.h"
 
-1452159728 source:/home/soap/Projects/eqengine/src_all/DriversGame/world.cpp
+1452878744 source:/home/soap/Projects/eqengine/src_all/DriversGame/world.cpp
 	"world.h"
 	"IDebugOverlay.h"
+	"eqGlobalMutex.h"
 	"EqParticles.h"
 	"Rain.h"
 	"BillboardList.h"

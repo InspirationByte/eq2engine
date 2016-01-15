@@ -191,6 +191,11 @@ bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderA
 
 		// init new created shader api with this parameters
 		m_pShaderAPI->Init( m_config.shaderapi_params );
+
+        // test to be sure that it was initialized correctly
+		m_pRenderLib->BeginFrame();
+		m_pShaderAPI->Clear(true, true, false);
+		m_pRenderLib->EndFrame();
 	}
 	else
 		return false;

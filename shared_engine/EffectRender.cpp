@@ -82,23 +82,26 @@ void CEffectRenderer::DrawEffects(float dt)
 
 	for(int i = 0; i < m_numEffects.GetValue(); i++)
 	{
-		if(m_pEffectList[i] && !m_pEffectList[i]->DrawEffect(dt))
-		{
+        if(!m_pEffectList[i])
+        {
 			RemoveEffect(i);
 			i--;
-		}
-		else if(!m_pEffectList[i])
-		{
-			RemoveEffect(i);
-			i--;
+			continue;
+        }
 
-			ASSERTMSG(false, "DrawEffects - NULL effect");
+		if(!m_pEffectList[i]->DrawEffect(dt))
+		{
+			RemoveEffect(i);
+			i--;
 		}
 	}
 }
 
 void CEffectRenderer::RemoveAllEffects()
 {
+	Threading::CEqMutex& mutex = Threading::GetGlobalMutex(Threading::MUTEXPURPOSE_RENDERER);
+	Threading::CScopedMutex m(mutex);
+
 	for(int i = 0; i < m_numEffects.GetValue(); i++)
 	{
 		m_pEffectList[i]->DestroyEffect();
@@ -113,6 +116,9 @@ void CEffectRenderer::RemoveEffect(int index)
 {
 	if ( index >= m_numEffects.GetValue() || index < 0 )
 		return;
+
+    Threading::CEqMutex& mutex = Threading::GetGlobalMutex(Threading::MUTEXPURPOSE_RENDERER);
+	Threading::CScopedMutex m(mutex);
 
 	IEffect* effect = m_pEffectList[index];
 

@@ -54,6 +54,8 @@ namespace Threading
 		uintptr_t		threadId;	// выбор потока
 	};
 
+	class CEqParallelJobThreads;
+
 	//
 	// The job execution thread
 	//

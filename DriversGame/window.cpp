@@ -37,7 +37,7 @@ void CC_Screenshot_f(DkList<EqString> *args)
 		FILE *file = NULL;
 
 		int i = 0;
-		do 
+		do
 		{
 			GetFileSystem()->MakeDir("screenshots", SP_ROOT);
 			EqString path = _Es(varargs("screenshots/screenshot_%04d.jpg", i));
@@ -45,8 +45,8 @@ void CC_Screenshot_f(DkList<EqString> *args)
 			if ((file = fopen(path.GetData(), "r")) != NULL)
 			{
 				fclose(file);
-			} 
-			else 
+			}
+			else
 			{
 				CImage img;
 				if (materials->CaptureScreenshot(img))
@@ -58,7 +58,7 @@ void CC_Screenshot_f(DkList<EqString> *args)
 				return;
 			}
 			i++;
-		} 
+		}
 		while (i < 9999);
 
 		return;
@@ -101,7 +101,7 @@ EQWNDHANDLE CreateEngineWindow()
 	if( SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK) < 0)
 	{
 		MsgError( "Failed to init SDL system!\n" );
-		return false;
+		return NULL;
 	}
 
 	//SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);

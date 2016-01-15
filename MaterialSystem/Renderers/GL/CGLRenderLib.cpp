@@ -264,15 +264,15 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 	// choose the best format
 	PIXELFORMATDESCRIPTOR pfd;
-	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR); 
-    pfd.nVersion = 1; 
-    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER; 
-    pfd.dwLayerMask = PFD_MAIN_PLANE; 
-    pfd.iPixelType = PFD_TYPE_RGBA; 
-    pfd.cColorBits = dm.dmBitsPerPel; 
-    pfd.cDepthBits = 24; 
-    pfd.cAccumBits = 0; 
-    pfd.cStencilBits = 0; 
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+    pfd.nVersion = 1;
+    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.dwLayerMask = PFD_MAIN_PLANE;
+    pfd.iPixelType = PFD_TYPE_RGBA;
+    pfd.cColorBits = dm.dmBitsPerPel;
+    pfd.cDepthBits = 24;
+    pfd.cAccumBits = 0;
+    pfd.cStencilBits = 0;
 
 	hdc = GetDC(hwnd);
 
@@ -470,10 +470,6 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 	m_Renderer->m_glContext = this->glContext;
 	m_Renderer->m_glContext2 = this->glContext2;
-
-	BeginFrame();
-	m_Renderer->Clear(true,true,true,ColorRGBA(0.1,0.1,0.1, 0.0f));
-	EndFrame();
 
 	if (gl::exts::var_ARB_multisample && params.nMultisample > 0)
 	{
