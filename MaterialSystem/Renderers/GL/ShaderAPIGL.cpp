@@ -1976,9 +1976,6 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		gl::GetProgramiv(prog->m_program, gl::OBJECT_ACTIVE_UNIFORMS_ARB, &uniformCount);
 		gl::GetProgramiv(prog->m_program, gl::OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &maxLength);
 
-		GLShaderSampler_t*	samplers = (GLShaderSampler_t  *)malloc(uniformCount * sizeof(GLShaderSampler_t));
-		GLShaderConstant_t*	uniforms = (GLShaderConstant_t *)malloc(uniformCount * sizeof(GLShaderConstant_t));
-
 		DevMsg(3, "[DEBUG] shader '%s' has %d samplers and uniforms (namelen=%d)\n", pShaderOutput->GetName(), uniformCount, maxLength);
 
 		if(maxLength == 0 && uniformCount > 0)
@@ -1990,6 +1987,9 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 			uniformCount = 0;
 		}
+
+		GLShaderSampler_t*	samplers = (GLShaderSampler_t  *)malloc(uniformCount * sizeof(GLShaderSampler_t));
+		GLShaderConstant_t*	uniforms = (GLShaderConstant_t *)malloc(uniformCount * sizeof(GLShaderConstant_t));
 		
 		int nSamplers = 0;
 		int nUniforms = 0;
