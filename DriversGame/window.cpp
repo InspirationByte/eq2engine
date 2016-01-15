@@ -87,7 +87,7 @@ EQWNDHANDLE CreateEngineWindow()
 
 #ifdef PLAT_SDL
 
-	int sdlFlags = SDL_WINDOW_SHOWN; // SDL_WINDOW_ALLOW_HIGHDPI
+	int sdlFlags = SDL_WINDOW_SHOWN/* | SDL_WINDOW_OPENGL*/; // SDL_WINDOW_ALLOW_HIGHDPI
 
 	if(isWindowed)
 	{
@@ -98,7 +98,13 @@ EQWNDHANDLE CreateEngineWindow()
 		sdlFlags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS;
 	}
 
-	SDL_Init(SDL_INIT_EVENTS | SDL_INIT_JOYSTICK);
+	if( SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK) < 0)
+	{
+		MsgError( "Failed to init SDL system!\n" );
+		return false;
+	}
+
+	//SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
 	handle = SDL_CreateWindow("Engine Window", nAdjustedPosX, nAdjustedPosY, nAdjustedWide, nAdjustedTall, sdlFlags);
 

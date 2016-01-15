@@ -60,9 +60,6 @@
     <ClCompile Include="CTexture.cpp">
       <Filter>Source Files\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="GL\eqGLCaps.cpp">
-      <Filter>Source Files\Renderer\OpenGL</Filter>
-    </ClCompile>
     <ClCompile Include="GL\GLMeshBuilder.cpp">
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClCompile>
@@ -145,9 +142,6 @@
     </ClInclude>
     <ClInclude Include="CTexture.h">
       <Filter>Source Files\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="GL\eqGLCaps.h">
-      <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClInclude>
     <ClInclude Include="GL\GLRenderState.h">
       <Filter>Source Files\Renderer\OpenGL</Filter>

@@ -31,6 +31,14 @@ typedef struct __GLXFBConfigRec *GLXFBConfig;
 
 //#define USE_OPENGL_ES
 
+enum EGraphicsVendor
+{
+	VENDOR_ATI,
+	VENDOR_NV,
+	VENDOR_INTEL,
+	VENDOR_OTHER,
+};
+
 class 		CVertexFormatGL;
 class 		CVertexBufferGL;
 class 		CIndexBufferGL;
@@ -403,6 +411,8 @@ private:
 	bool				m_isMainAtCritical;
 
 	CEqSignal			m_busySignal;
+
+	EGraphicsVendor		m_vendor;
 };
 
 #endif // SHADERAPIGL_H

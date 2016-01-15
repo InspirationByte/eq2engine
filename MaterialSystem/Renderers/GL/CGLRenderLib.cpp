@@ -17,7 +17,7 @@
 
 /*
 
-OpenGL extensions for generate
+OpenGL extensions to generate using glLoadGen
 
 EXT_texture_compression_s3tc
 EXT_texture_sRGB
@@ -71,39 +71,20 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 	return TRUE;
 }
 
-void InitGLEntryPoints(HWND hwnd, const PIXELFORMATDESCRIPTOR &pfd)
-{
-	HDC hdc = GetDC(hwnd);
-
-	// Application Verifier will break here, this is AMD OpenGL driver issue and still not fixed over years.
-	int nPixelFormat = ChoosePixelFormat(hdc, &pfd);
-	SetPixelFormat(hdc, nPixelFormat, &pfd);
-
-	HGLRC hglrc = wglCreateContext(hdc);
-	wglMakeCurrent(hdc, hglrc);
-
-	gl::exts::LoadTest didLoad = gl::sys::LoadFunctions();
-	if(!didLoad)
-		MsgError("OpenGL load errors: %i\n", didLoad.GetNumMissing());
-
-	wglMakeCurrent(NULL, NULL);
-	wglDeleteContext(hglrc);
-	ReleaseDC(hwnd, hdc);
-}
-
 LRESULT CALLBACK PFWinProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	return DefWindowProc(hwnd, message, wParam, lParam);
 };
+
 #endif // PLAT_WIN
 
 bool CGLRenderLib::InitCaps()
 {
-#ifdef PLAT_WIN
-	m_renderInstance = GetModuleHandle(NULL);
+#if 0
+	HINSTANCE modHandle = GetModuleHandle(NULL);
 
 	//Unregister PFrmt if
-	UnregisterClass("PFrmt", m_renderInstance);
+	UnregisterClass("PFrmt", modHandle);
 
 	int depthBits = 24;
 	int stencilBits = 0;
@@ -118,7 +99,7 @@ bool CGLRenderLib::InitCaps()
     };
 
 	WNDCLASS wincl;
-	wincl.hInstance = m_renderInstance;
+	wincl.hInstance = modHandle;
 	wincl.lpszClassName = "PFrmt";
 	wincl.lpfnWndProc = PFWinProc;
 	wincl.style = 0;
@@ -131,10 +112,25 @@ bool CGLRenderLib::InitCaps()
 
 	RegisterClass(&wincl);
 
-	HWND hPFwnd = CreateWindow("PFrmt", "PFormat", WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 8, 8, HWND_DESKTOP, NULL, m_renderInstance, NULL);
+	HWND hPFwnd = CreateWindow("PFrmt", "PFormat", WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 8, 8, HWND_DESKTOP, NULL, modHandle, NULL);
 	if(hPFwnd)
 	{
-		InitGLEntryPoints(hPFwnd, pfd);
+		HDC hdc = GetDC(hwnd);
+
+		// Application Verifier will break here, this is AMD OpenGL driver issue and still not fixed over years.
+		int nPixelFormat = ChoosePixelFormat(hdc, &pfd);
+		SetPixelFormat(hdc, nPixelFormat, &pfd);
+
+		HGLRC hglrc = wglCreateContext(hdc);
+		wglMakeCurrent(hdc, hglrc);
+
+		gl::exts::LoadTest didLoad = gl::sys::LoadFunctions();
+		if(!didLoad)
+			MsgError("OpenGL load errors: %i\n", didLoad.GetNumMissing());
+
+		wglMakeCurrent(NULL, NULL);
+		wglDeleteContext(hglrc);
+		ReleaseDC(hwnd, hdc);
 
 		SendMessage(hPFwnd, WM_CLOSE, 0, 0);
 	}
@@ -190,14 +186,13 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 {
 	savedParams = params;
 
-	g_localizer->AddTokensFile("api_gl");
-
 #ifdef PLAT_WIN
 	if (r_screen->GetInt() >= GetSystemMetrics(SM_CMONITORS))
 		r_screen->SetValue("0");
 
 	hwnd = (HWND)params.hWindow;
 
+	// Enumerate display devices
 	int monitorCounter = r_screen->GetInt();
 	EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, (LPARAM) &monitorCounter);
 
@@ -211,9 +206,129 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 	m_width = windowRect.right;
 	m_height = windowRect.bottom;
-#else
 
-#ifdef PLAT_LINUX
+	ZeroMemory(&dm,sizeof(dm));
+	dm.dmSize = sizeof(dm);
+
+	// Figure display format to use
+	if(params.nScreenFormat == FORMAT_RGBA8)
+	{
+		dm.dmBitsPerPel = 32;
+	}
+	else if(params.nScreenFormat == FORMAT_RGB8)
+	{
+		dm.dmBitsPerPel = 24;
+	}
+	else if(params.nScreenFormat == FORMAT_RGB565)
+	{
+		dm.dmBitsPerPel = 16;
+	}
+	else
+	{
+		dm.dmBitsPerPel = 24;
+	}
+
+	dm.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;// | DM_DISPLAYFREQUENCY;
+	dm.dmPelsWidth = m_width;
+	dm.dmPelsHeight = m_height;
+	//dm.dmDisplayFrequency = 60;
+
+	// change display settings
+	if (!params.bIsWindowed)
+	{
+		int dispChangeStatus = ChangeDisplaySettings(&dm, CDS_FULLSCREEN);
+
+		if (dispChangeStatus != DISP_CHANGE_SUCCESSFUL)
+		{
+			MsgError("ChangeDisplaySettingsEx - couldn't set fullscreen mode %dx%d on %s (%d)\n", m_width, m_height, device.DeviceName, dispChangeStatus);
+
+			DWORD lastErr = GetLastError();
+
+			char err[256] = {'\0'};
+
+			if(lastErr != 0)
+			{
+				FormatMessage(	FORMAT_MESSAGE_FROM_SYSTEM,
+								NULL,
+								lastErr,
+								MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT),
+								err,
+								255,
+								NULL);
+
+				MsgError("Couldn't set fullscreen mode:\n\n%s (0x%p)", err, lastErr);
+			}
+
+		}
+	}
+
+	// choose the best format
+	PIXELFORMATDESCRIPTOR pfd;
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR); 
+    pfd.nVersion = 1; 
+    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER; 
+    pfd.dwLayerMask = PFD_MAIN_PLANE; 
+    pfd.iPixelType = PFD_TYPE_RGBA; 
+    pfd.cColorBits = dm.dmBitsPerPel; 
+    pfd.cDepthBits = 24; 
+    pfd.cAccumBits = 0; 
+    pfd.cStencilBits = 0; 
+
+	hdc = GetDC(hwnd);
+
+	int iAttribs[] = {
+		wgl::DRAW_TO_WINDOW_ARB,	gl::TRUE_,
+		wgl::ACCELERATION_ARB,		wgl::FULL_ACCELERATION_ARB,
+		wgl::DOUBLE_BUFFER_ARB,		gl::TRUE_,
+		wgl::RED_BITS_ARB,			8,
+		wgl::GREEN_BITS_ARB,		8,
+		wgl::BLUE_BITS_ARB,			8,
+		wgl::ALPHA_BITS_ARB,		(dm.dmBitsPerPel > 24) ? 8 : 0,
+		wgl::DEPTH_BITS_ARB,		24,
+		wgl::STENCIL_BITS_ARB,		0,
+		0
+	};
+
+	int pixelFormats[256];
+	int bestFormat = 0;
+	int bestSamples = 0;
+	uint nPFormats;
+
+	if (wgl::exts::var_ARB_pixel_format && wgl::ChoosePixelFormatARB(hdc, iAttribs, NULL, elementsOf(pixelFormats), pixelFormats, &nPFormats) && nPFormats > 0)
+	{
+		int minDiff = 0x7FFFFFFF;
+		int attrib = wgl::SAMPLES_ARB;
+		int samples;
+
+		// Find a multisample format as close as possible to the requested
+		for (uint i = 0; i < nPFormats; i++)
+		{
+			wgl::GetPixelFormatAttribivARB(hdc, pixelFormats[i], 0, 1, &attrib, &samples);
+			int diff = abs(params.nMultisample - samples);
+			if (diff < minDiff)
+			{
+				minDiff = diff;
+				bestFormat = i;
+				bestSamples = samples;
+			}
+		}
+
+		savedParams.nMultisample = bestSamples;
+	}
+	else
+	{
+		pixelFormats[0] = ChoosePixelFormat(hdc, &pfd);
+	}
+
+	SetPixelFormat(hdc, pixelFormats[bestFormat], &pfd);
+
+	glContext = wglCreateContext(hdc);
+	glContext2 = wglCreateContext(hdc);
+
+	wglShareLists(glContext2, glContext);
+
+	wglMakeCurrent(hdc, glContext);
+#elif PLAT_LINUX
 
     display = XOpenDisplay(0);
 
@@ -244,133 +359,6 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 	m_width = winAttrib.width;
 	m_height = winAttrib.height;
-
-	Msg("X window size: %d %d\n", m_width, m_height);
-
-#endif // PLAT_LINUX
-
-#endif // PLAT_WIN
-
-#ifdef PLAT_WIN
-	ZeroMemory(&dm,sizeof(dm));
-	dm.dmSize = sizeof(dm);
-
-	// Figure display format to use
-	if(params.nScreenFormat == FORMAT_RGBA8)
-	{
-		dm.dmBitsPerPel = 32;
-	}
-	else if(params.nScreenFormat == FORMAT_RGB8)
-	{
-		dm.dmBitsPerPel = 24;
-	}
-	else if(params.nScreenFormat == FORMAT_RGB565)
-	{
-		dm.dmBitsPerPel = 16;
-	}
-	else
-	{
-		dm.dmBitsPerPel = 24;
-	}
-
-	dm.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;// | DM_DISPLAYFREQUENCY;
-	dm.dmPelsWidth = m_width;
-	dm.dmPelsHeight = m_height;
-	//dm.dmDisplayFrequency = 60;
-
-	if (!params.bIsWindowed)
-	{
-		int dispChangeStatus = ChangeDisplaySettings(&dm, CDS_FULLSCREEN);
-
-		if (dispChangeStatus != DISP_CHANGE_SUCCESSFUL)
-		{
-			MsgError("ChangeDisplaySettingsEx - couldn't set fullscreen mode %dx%d on %s (%d)\n", m_width, m_height, device.DeviceName, dispChangeStatus);
-
-			DWORD lastErr = GetLastError();
-
-			char err[256] = {'\0'};
-
-			if(lastErr != 0)
-			{
-				FormatMessage(	FORMAT_MESSAGE_FROM_SYSTEM,
-								NULL,
-								lastErr,
-								MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT),
-								err,
-								255,
-								NULL);
-
-				MsgError("Couldn't set fullscreen mode:\n\n%s (0x%p)", err, lastErr);
-			}
-
-		}
-	}
-
-	PIXELFORMATDESCRIPTOR pfd = {
-        sizeof (PIXELFORMATDESCRIPTOR), 1,
-		PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-		PFD_TYPE_RGBA, dm.dmBitsPerPel,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		24, 0,
-		0, PFD_MAIN_PLANE, 0, 0, 0, 0
-    };
-
-	hdc = GetDC(hwnd);
-
-	int iAttribs[] = {
-		wgl::DRAW_TO_WINDOW_ARB, gl::TRUE_,
-		wgl::ACCELERATION_ARB,  wgl::FULL_ACCELERATION_ARB,
-		wgl::DOUBLE_BUFFER_ARB,  gl::TRUE_,
-		wgl::RED_BITS_ARB,       8,
-		wgl::GREEN_BITS_ARB,     8,
-		wgl::BLUE_BITS_ARB,      8,
-		wgl::ALPHA_BITS_ARB,     (dm.dmBitsPerPel > 24)? 8 : 0,
-		wgl::DEPTH_BITS_ARB,     24,
-		wgl::STENCIL_BITS_ARB,   0,
-		0
-	};
-
-	int pixelFormats[256];
-	int bestFormat = 0;
-	int bestSamples = 0;
-	uint nPFormats;
-
-	if (wgl::exts::var_ARB_pixel_format && wgl::ChoosePixelFormatARB(hdc, iAttribs, NULL, elementsOf(pixelFormats), pixelFormats, &nPFormats) && nPFormats > 0)
-	{
-		int minDiff = 0x7FFFFFFF;
-		int attrib = wgl::SAMPLES_ARB;
-		int samples;
-
-		// Find a multisample format as close as possible to the requested
-		for (uint i = 0; i < nPFormats; i++)
-		{
-			wgl::GetPixelFormatAttribivARB(hdc, pixelFormats[i], 0, 1, &attrib, &samples);
-			int diff = abs(params.nMultisample - samples);
-			if (diff < minDiff)
-			{
-				minDiff = diff;
-				bestFormat = i;
-				bestSamples = samples;
-			}
-		}
-	}
-	else
-	{
-		pixelFormats[0] = ChoosePixelFormat(hdc, &pfd);
-	}
-	savedParams.nMultisample = bestSamples;
-
-	SetPixelFormat(hdc, pixelFormats[bestFormat], &pfd);
-
-	glContext = wglCreateContext(hdc);
-	glContext2 = wglCreateContext(hdc);
-
-	wglShareLists(glContext2, glContext);
-
-	wglMakeCurrent(hdc, glContext);
-#else
-
-#ifdef PLAT_LINUX
 
     int colorBits = 16;
     int depthBits = 24;
@@ -447,13 +435,11 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	glContext2 = glXCreateContext(display, vi, glContext, True);
 
 	glXMakeCurrent(display, (GLXDrawable)savedParams.hWindow, glContext);
+#endif //PLAT_WIN
 
 	gl::exts::LoadTest didLoad = gl::sys::LoadFunctions();
 	if(!didLoad)
 		MsgError("OpenGL load errors: %i\n", didLoad.GetNumMissing());
-#endif // PLAT_LINUX
-
-#endif //PLAT_WIN
 
 	if(GetCmdLine()->FindArgument("-glext") != -1)
 		PrintGLExtensions();
@@ -481,15 +467,12 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 #elif defined(PLAT_LINUX)
     m_Renderer->m_display = this->display;
 #endif //PLAT_WIN
+
 	m_Renderer->m_glContext = this->glContext;
 	m_Renderer->m_glContext2 = this->glContext2;
 
-	m_Renderer->Init(savedParams);
-
-	m_Renderer->SetViewport(0, 0, m_width, m_height);
-
 	BeginFrame();
-	m_Renderer->Clear(true,true,true,ColorRGBA(0.5,0.5,0.5, 0.0f));
+	m_Renderer->Clear(true,true,true,ColorRGBA(0.1,0.1,0.1, 0.0f));
 	EndFrame();
 
 	if (gl::exts::var_ARB_multisample && params.nMultisample > 0)
@@ -502,7 +485,8 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 void CGLRenderLib::ExitAPI()
 {
-	//m_Renderer->GL_CRITICAL();
+	m_Renderer->GL_CRITICAL();
+	m_Renderer->GL_END_CRITICAL();
 
 	delete m_Renderer;
 
@@ -543,9 +527,9 @@ void CGLRenderLib::ExitAPI()
 
 void CGLRenderLib::BeginFrame()
 {
-	//glColor3f(1, 1, 1);
-
+	m_Renderer->GL_CRITICAL();
 	m_Renderer->SetViewport(0, 0, m_width, m_height);
+	m_Renderer->GL_END_CRITICAL();
 }
 
 void CGLRenderLib::EndFrame(IEqSwapChain* schain)

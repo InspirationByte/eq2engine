@@ -30,33 +30,33 @@
 #pragma todo("Rewrite with OpenGL ES 2.0 specification support")
 
 static char s_FFPMeshBuilder_VertexProgram[] =
-"attribute vec4 input_vPos;									\
-attribute vec2 input_texCoord;								\
-attribute vec4 input_color;									\
-varying vec2 texCoord;										\
-varying vec4 color;											\
-void main()													\
-{															\
-	gl_Position = gl_ModelViewProjectionMatrix * input_vPos;\
-	color = input_color;									\
-	texCoord = input_texCoord;								\
-}";
+"attribute vec4 input_vPos;\n"
+"attribute vec2 input_texCoord;\n"
+"attribute vec4 input_color;\n"
+"varying vec2 texCoord;\n"
+"varying vec4 vColor;\n"
+"void main()\n"
+"{\n"
+"	gl_Position = gl_ModelViewProjectionMatrix * input_vPos;\n"
+"	vColor = input_color;\n"
+"	texCoord = input_texCoord;\n"
+"}";
 
 static char s_FFPMeshBuilder_NoTexture_PixelProgram[] =
-"varying vec4 color;									\
-void main()												\
-{														\
-	gl_FragColor = color;		\
-}";
+"varying vec4 vColor;\n"
+"void main()\n"
+"{\n"
+"	gl_FragColor = vColor;\n"
+"}";
 
 static char s_FFPMeshBuilder_Textured_PixelProgram[] =
-"varying vec2 texCoord;									\
-varying vec4 color;										\
-uniform sampler2D Base;									\
-void main()												\
-{														\
-	gl_FragColor = texture2D(Base, texCoord)*color;		\
-}";
+"uniform sampler2D Base;\n"
+"varying vec2 texCoord;\n"
+"varying vec4 vColor;\n"
+"void main()\n"
+"{\n"
+"	gl_FragColor = texture2D(Base, texCoord)*vColor;\n"
+"}";
 
 typedef GLvoid (APIENTRY *UNIFORM_FUNC)(GLint location, GLsizei count, const void *value);
 typedef GLvoid (APIENTRY *UNIFORM_MAT_FUNC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
@@ -147,6 +147,19 @@ void ShaderAPIGL::PrintAPIInfo()
 // Init + Shurdown
 void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 {
+	const char* vendorStr = (const char *) gl::GetString(gl::VENDOR);
+
+	if(xstristr(vendorStr, "nvidia"))
+		m_vendor = VENDOR_NV;
+	else if(xstristr(vendorStr, "ati") || xstristr(vendorStr, "amd") || xstristr(vendorStr, "radeon"))
+		m_vendor = VENDOR_ATI;
+	else if(xstristr(vendorStr, "intel"))
+		m_vendor = VENDOR_INTEL;
+	else
+		m_vendor = VENDOR_OTHER;
+
+	Msg("[DEBUG] ShaderAPIGL vendor: %d\n", m_vendor);
+
 	m_mainThreadId = Threading::GetCurrentThreadID();
 	m_currThreadId = m_mainThreadId;
 	m_isSharing = false;
@@ -1927,8 +1940,6 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 					// TEXCOORD0 - 7
 				}
 
-				//Msg("Vertex attribute '%s' at %s\n", nameStr, locationStr);
-
 				// bind attribute
 				gl::BindAttribLocation(prog->m_program, attribIndex, nameStr);
 			}
@@ -1955,18 +1966,31 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		gl::UseProgram(prog->m_program);
 		
 		// intel buggygl fix
-		gl::UseProgram(0);
-		gl::UseProgram(prog->m_program);
+		if( m_vendor == VENDOR_INTEL )
+		{
+			gl::UseProgram(0);
+			gl::UseProgram(prog->m_program);
+		}
 
 		GLint uniformCount, maxLength;
 		gl::GetProgramiv(prog->m_program, gl::OBJECT_ACTIVE_UNIFORMS_ARB, &uniformCount);
 		gl::GetProgramiv(prog->m_program, gl::OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &maxLength);
 
-		GLShaderSampler_t  *samplers = (GLShaderSampler_t  *) malloc(uniformCount * sizeof(GLShaderSampler_t));
-		GLShaderConstant_t *uniforms = (GLShaderConstant_t *) malloc(uniformCount * sizeof(GLShaderConstant_t));
+		GLShaderSampler_t*	samplers = (GLShaderSampler_t  *)malloc(uniformCount * sizeof(GLShaderSampler_t));
+		GLShaderConstant_t*	uniforms = (GLShaderConstant_t *)malloc(uniformCount * sizeof(GLShaderConstant_t));
 
-		//Msg("[SHADER] allocated %d samplers and uniforms\n", uniformCount);
+		DevMsg(3, "[DEBUG] shader '%s' has %d samplers and uniforms (namelen=%d)\n", pShaderOutput->GetName(), uniformCount, maxLength);
 
+		if(maxLength == 0 && uniformCount > 0)
+		{
+			if(m_vendor == VENDOR_INTEL)
+				DevMsg(3, "Guess who? It's Intel! uniformCount to be zeroed\n");
+			else
+				DevMsg(3, "I... didn't... expect... that! uniformCount to be zeroed\n");
+
+			uniformCount = 0;
+		}
+		
 		int nSamplers = 0;
 		int nUniforms = 0;
 
@@ -1987,7 +2011,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				GLint location = gl::GetUniformLocation(prog->m_program, tmpName);
 				gl::Uniform1i(location, nSamplers);
 
-				Msg("[SHADER] retrieving sampler '%s' at %d (location = %d)\n", tmpName, nSamplers, location);
+				DevMsg(3, "[DEBUG] retrieving sampler '%s' at %d (location = %d)\n", tmpName, nSamplers, location);
 
 				sp->index = nSamplers;
 				strcpy(sp->name, tmpName);
@@ -1998,7 +2022,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				// Store all non-gl uniforms
 				if (strncmp(tmpName, "gl_", 3) != 0)
 				{
-					Msg("[SHADER] retrieving uniform '%s' at %d\n", tmpName, nUniforms);
+					DevMsg(3, "[DEBUG] retrieving uniform '%s' at %d\n", tmpName, nUniforms);
 
 					char *bracket = strchr(tmpName, '[');
 					if (bracket == NULL || (bracket[1] == '0' && bracket[2] == ']'))

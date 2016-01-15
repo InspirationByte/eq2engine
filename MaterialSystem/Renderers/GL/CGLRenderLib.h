@@ -8,7 +8,6 @@
 #ifndef CGLRENDERLIB_H
 #define CGLRENDERLIB_H
 
-//#include "IRenderer.h"
 #include "../IRenderLibrary.h"
 #include "ShaderAPIGL.h"
 
@@ -58,10 +57,7 @@ protected:
 	DkList<IEqSwapChain*>	m_swapChains;
 
 #ifdef _WIN32
-	HINSTANCE				m_renderInstance;
 	DISPLAY_DEVICE			device;
-
-
 	DEVMODE					dm;
 
 	HDC						hdc;

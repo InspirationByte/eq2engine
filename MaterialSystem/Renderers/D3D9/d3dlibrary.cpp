@@ -229,8 +229,8 @@ bool CD3DRenderLib::InitAPI(const shaderapiinitparams_t &params)
 
 	g_pShaderAPI = m_Renderer;
 
-	m_Renderer->Clear(true,true,true,ColorRGBA(0.1,0.1,0.1,0.0f));
 	BeginFrame();
+	m_Renderer->Clear(true,true,true,ColorRGBA(0.1,0.1,0.1,0.0f));
 	EndFrame();
 
 	UpdateWindow(hwnd);
