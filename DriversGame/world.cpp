@@ -1313,6 +1313,8 @@ void CGameWorld::DrawLensFlare( const Vector2D& screenSize, const Vector2D& scre
 
 void CGameWorld::DrawFakeReflections()
 {
+#ifndef EDITOR
+
 	bool draw = r_drawFakeReflections.GetBool() && (m_envConfig.lightsType != 0 || m_envConfig.weatherType != WEATHER_TYPE_CLEAR);
 	if (!draw)
 		return;
@@ -1392,11 +1394,16 @@ void CGameWorld::DrawFakeReflections()
 	}
 
 	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
+#endif // EDITOR
 }
 
 void CGameWorld::Draw( int nRenderFlags )
 {
 	g_parallelJobs->Wait();
+
+#ifdef EDITOR
+	m_level.Ed_Prerender(m_CameraParams.GetOrigin());
+#endif // EDITOR
 
 	// below operations started asynchronously
 	UpdateLightTexture();
@@ -1472,10 +1479,6 @@ void CGameWorld::Draw( int nRenderFlags )
 
 	// set global pre-apply callback
 	materials->SetMaterialRenderParamCallback(this);
-
-#ifdef EDITOR
-	m_level.Ed_Prerender(m_CameraParams.GetOrigin());
-#endif // EDITOR
 
 	if(m_skyMaterial)	// setup the $env_cubemap texture
 		materials->SetEnvironmentMapTexture( m_skyMaterial->GetBaseTexture() );

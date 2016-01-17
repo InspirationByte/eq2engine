@@ -19,7 +19,6 @@
 #include "physics.h"
 #include "level.h"
 
-class CUI_HeightEdit;
 class IEditorTool;
 class CLoadLevelDialog;
 class CNewLevelDialog;

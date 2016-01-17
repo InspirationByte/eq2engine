@@ -59,6 +59,9 @@
     <Filter Include="Source Files\Shaders">
       <UniqueIdentifier>{289d2682-a92a-4189-a59f-caa9b5c470c5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Editor\Modes">
+      <UniqueIdentifier>{13bffbe4-3c2d-4a20-b6be-29acc1ba2c40}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandAccessor.h">
@@ -253,13 +256,7 @@
     <ClInclude Include="..\DriversGame\Level.h">
       <Filter>Source Files\World</Filter>
     </ClInclude>
-    <ClInclude Include="UI_HeightEdit.h">
-      <Filter>Source Files\Editor</Filter>
-    </ClInclude>
     <ClInclude Include="IEditorTool.h">
-      <Filter>Source Files\Editor</Filter>
-    </ClInclude>
-    <ClInclude Include="UI_LevelModels.h">
       <Filter>Source Files\Editor</Filter>
     </ClInclude>
     <ClInclude Include="editaxis.h">
@@ -300,9 +297,6 @@
     </ClInclude>
     <ClInclude Include="..\DriversGame\GameObject.h">
       <Filter>Source Files\Game\objects</Filter>
-    </ClInclude>
-    <ClInclude Include="UI_RoadEditor.h">
-      <Filter>Source Files\Editor</Filter>
     </ClInclude>
     <ClInclude Include="TextureView.h">
       <Filter>Source Files\Editor</Filter>
@@ -352,9 +346,6 @@
     <ClInclude Include="..\shared_engine\Audio\alsnd_stream.h">
       <Filter>Source Files\EngineLib\Audio</Filter>
     </ClInclude>
-    <ClInclude Include="UI_OccluderEditor.h">
-      <Filter>Source Files\Editor</Filter>
-    </ClInclude>
     <ClInclude Include="..\DriversGame\occluderSet.h">
       <Filter>Source Files\World</Filter>
     </ClInclude>
@@ -372,6 +363,21 @@
     </ClInclude>
     <ClInclude Include="..\DriversGame\car.h">
       <Filter>Source Files\Game\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="UI_BuildingConstruct.h">
+      <Filter>Source Files\Editor\Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="UI_HeightEdit.h">
+      <Filter>Source Files\Editor\Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="UI_LevelModels.h">
+      <Filter>Source Files\Editor\Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="UI_OccluderEditor.h">
+      <Filter>Source Files\Editor\Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="UI_RoadEditor.h">
+      <Filter>Source Files\Editor\Modes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -405,9 +411,6 @@
     <ClCompile Include="..\DriversGame\level.cpp">
       <Filter>Source Files\World</Filter>
     </ClCompile>
-    <ClCompile Include="UI_HeightEdit.cpp">
-      <Filter>Source Files\Editor</Filter>
-    </ClCompile>
     <ClCompile Include="..\DriversGame\eqPhysics\eqCollision_Object.cpp">
       <Filter>Source Files\Game\Physics</Filter>
     </ClCompile>
@@ -416,9 +419,6 @@
     </ClCompile>
     <ClCompile Include="..\DriversGame\eqPhysics\eqPhysics_Body.cpp">
       <Filter>Source Files\Game\Physics</Filter>
-    </ClCompile>
-    <ClCompile Include="UI_LevelModels.cpp">
-      <Filter>Source Files\Editor</Filter>
     </ClCompile>
     <ClCompile Include="BaseTilebasedEditor.cpp">
       <Filter>Source Files\Editor</Filter>
@@ -446,9 +446,6 @@
     </ClCompile>
     <ClCompile Include="..\DriversGame\GameObject.cpp">
       <Filter>Source Files\Game\objects</Filter>
-    </ClCompile>
-    <ClCompile Include="UI_RoadEditor.cpp">
-      <Filter>Source Files\Editor</Filter>
     </ClCompile>
     <ClCompile Include="TextureView.cpp">
       <Filter>Source Files\Editor</Filter>
@@ -513,9 +510,6 @@
     <ClCompile Include="..\shared_engine\Audio\alsnd_stream.cpp">
       <Filter>Source Files\EngineLib\Audio</Filter>
     </ClCompile>
-    <ClCompile Include="UI_OccluderEditor.cpp">
-      <Filter>Source Files\Editor</Filter>
-    </ClCompile>
     <ClCompile Include="..\DriversGame\occluderSet.cpp">
       <Filter>Source Files\World</Filter>
     </ClCompile>
@@ -539,6 +533,21 @@
     </ClCompile>
     <ClCompile Include="..\DriversGame\car.cpp">
       <Filter>Source Files\Game\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="UI_BuildingConstruct.cpp">
+      <Filter>Source Files\Editor\Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="UI_HeightEdit.cpp">
+      <Filter>Source Files\Editor\Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="UI_LevelModels.cpp">
+      <Filter>Source Files\Editor\Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="UI_OccluderEditor.cpp">
+      <Filter>Source Files\Editor\Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="UI_RoadEditor.cpp">
+      <Filter>Source Files\Editor\Modes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

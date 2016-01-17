@@ -250,6 +250,7 @@
     <ClInclude Include="NewLevelDialog.h" />
     <ClInclude Include="RegionEditFrame.h" />
     <ClInclude Include="TextureView.h" />
+    <ClInclude Include="UI_BuildingConstruct.h" />
     <ClInclude Include="UI_HeightEdit.h" />
     <ClInclude Include="UI_LevelModels.h" />
     <ClInclude Include="UI_OccluderEditor.h" />
@@ -311,6 +312,7 @@
     <ClCompile Include="NewLevelDialog.cpp" />
     <ClCompile Include="RegionEditFrame.cpp" />
     <ClCompile Include="TextureView.cpp" />
+    <ClCompile Include="UI_BuildingConstruct.cpp" />
     <ClCompile Include="UI_HeightEdit.cpp" />
     <ClCompile Include="UI_LevelModels.cpp" />
     <ClCompile Include="UI_OccluderEditor.cpp" />

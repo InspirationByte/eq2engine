@@ -11,7 +11,7 @@
 #include "UI_LevelModels.h"
 #include "UI_RoadEditor.h"
 #include "UI_OccluderEditor.h"
-
+#include "UI_BuildingConstruct.h"
 
 #include "NewLevelDialog.h"
 #include "LoadLevDialog.h"
@@ -227,6 +227,10 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	InitMatSystem(m_pRenderPanel->GetHWND());
 
+	GetCommandAccessor()->ClearCommandBuffer();
+	GetCommandAccessor()->ParseFileToCommandBuffer("editor.cfg");
+	GetCommandAccessor()->ExecuteCommandBuffer();
+
 	soundsystem->Init();
 	ses->Init();
 	
@@ -244,6 +248,11 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_notebook1->AddPage( (CUI_LevelModels*)m_modelsedit, wxT("Level objects"), false );
 
 	m_tools.append(m_modelsedit);
+
+	m_roadedit = new CUI_BuildingConstruct( m_notebook1 );
+	m_notebook1->AddPage( (CUI_BuildingConstruct*)m_roadedit, wxT("Building constructor"), false );
+
+	m_tools.append(m_roadedit);
 
 	m_occluderEditor = new CUI_OccluderEditor( m_notebook1 );
 	m_notebook1->AddPage( (CUI_OccluderEditor*)m_occluderEditor, wxT("Occluder editor"), false );

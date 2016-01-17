@@ -13,8 +13,116 @@
 #include "math/rectangle.h"
 #include "math/boundingbox.h"
 #include "math/math_util.h"
+#include "TextureView.h"
 
 #include "world.h"
+
+class CMaterialReplaceDialog : public wxDialog 
+{
+public:
+		
+	~CMaterialReplaceDialog()
+	{
+		// Disconnect Events
+		m_selBtn1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CMaterialReplaceDialog::OnSelect1 ), NULL, this );
+		m_selBtn2->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CMaterialReplaceDialog::OnSelect2 ), NULL, this );
+		m_replaceBtn->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CMaterialReplaceDialog::OnReplaceClick ), NULL, this );
+	}
+
+	CMaterialReplaceDialog( wxWindow* parent ) : 
+		wxDialog( parent, wxID_ANY, wxT("Replace heightmap material"), wxDefaultPosition, wxSize( 791,256 ), wxDEFAULT_DIALOG_STYLE  )
+	{
+		this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+	
+		wxBoxSizer* bSizer13;
+		bSizer13 = new wxBoxSizer( wxHORIZONTAL );
+	
+		wxStaticBoxSizer* sbSizer7;
+		sbSizer7 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Which to replace") ), wxVERTICAL );
+	
+		m_preview1 = new CTextureView( this, wxDefaultPosition, wxSize( 128,128 ) );
+		m_preview1->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ) );
+	
+		sbSizer7->Add( m_preview1, 0, wxALL, 5 );
+	
+		m_name1 = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+		sbSizer7->Add( m_name1, 0, wxRIGHT|wxLEFT|wxEXPAND, 5 );
+	
+		m_selBtn1 = new wxButton( this, wxID_ANY, wxT("From selection"), wxDefaultPosition, wxDefaultSize, 0 );
+		sbSizer7->Add( m_selBtn1, 0, wxALL, 5 );
+	
+	
+		bSizer13->Add( sbSizer7, 1, wxEXPAND|wxRIGHT, 5 );
+	
+		wxStaticBoxSizer* sbSizer71;
+		sbSizer71 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Replace to") ), wxVERTICAL );
+	
+		m_preview2 = new CTextureView( this, wxDefaultPosition, wxSize( 128,128 ) );
+		m_preview2->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ) );
+	
+		sbSizer71->Add( m_preview2, 0, wxALL, 5 );
+	
+		m_name2 = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
+		sbSizer71->Add( m_name2, 0, wxEXPAND|wxRIGHT|wxLEFT, 5 );
+	
+		m_selBtn2 = new wxButton( this, wxID_ANY, wxT("From selection"), wxDefaultPosition, wxDefaultSize, 0 );
+		sbSizer71->Add( m_selBtn2, 0, wxALL, 5 );
+	
+	
+		bSizer13->Add( sbSizer71, 1, wxEXPAND, 5 );
+	
+		wxBoxSizer* bSizer14;
+		bSizer14 = new wxBoxSizer( wxVERTICAL );
+	
+		m_replaceBtn = new wxButton( this, wxID_ANY, wxT("Replace All"), wxDefaultPosition, wxDefaultSize, 0 );
+		bSizer14->Add( m_replaceBtn, 0, wxALL|wxALIGN_BOTTOM, 5 );
+	
+
+		bSizer13->Add( bSizer14, 0, wxEXPAND, 5 );
+	
+	
+		this->SetSizer( bSizer13 );
+		this->Layout();
+	
+		this->Centre( wxBOTH );
+	
+		// Connect Events
+		m_selBtn1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CMaterialReplaceDialog::OnSelect1 ), NULL, this );
+		m_selBtn2->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CMaterialReplaceDialog::OnSelect2 ), NULL, this );
+		m_replaceBtn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CMaterialReplaceDialog::OnReplaceClick ), NULL, this );
+		m_replaceAllBtn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CMaterialReplaceDialog::OnReplaceClick ), NULL, this );
+	}
+
+
+protected:
+
+	void OnSelect1( wxCommandEvent& event )
+	{
+
+	}
+
+	void OnSelect2( wxCommandEvent& event )
+	{
+
+	}
+
+	void OnReplaceClick( wxCommandEvent& event )
+	{
+
+	}
+		
+	CTextureView* m_preview1;
+	wxTextCtrl* m_name1;
+	wxButton* m_selBtn1;
+	CTextureView* m_preview2;
+	wxTextCtrl* m_name2;
+	wxButton* m_selBtn2;
+	wxButton* m_replaceBtn;
+	wxButton* m_replaceAllBtn;
+
+	matAtlasElem_t m_selection1;
+	matAtlasElem_t m_selection2;
+};
 
 BEGIN_EVENT_TABLE(CMaterialAtlasList, wxPanel)
     EVT_ERASE_BACKGROUND(CMaterialAtlasList::OnEraseBackground)
@@ -116,30 +224,6 @@ void CMaterialAtlasList::OnMouseClick(wxMouseEvent& event)
 
 	if(selection_id == -1)
 		return;
-
-	/*
-	for(int i = 0; i < g_pLevel->GetEditableCount(); i++)
-	{
-		CBaseEditableObject* pObject = (CBaseEditableObject*)g_pLevel->GetEditable(i);
-
-		bool changed = false;
-
-		for(int j = 0; j < pObject->GetSurfaceTextureCount(); j++)
-		{
-			if(!(pObject->GetSurfaceTexture(j)->nFlags & STFL_SELECTED))
-				continue;
-
-			 pObject->GetSurfaceTexture(j)->pMaterial = GetSelectedMaterial();
-			 changed = true;
-		}
-
-		if(changed)
-			pObject->UpdateSurfaceTextures();
-	}
-	
-
-	g_editormainframe->UpdateAllWindows();
-	*/
 }
 
 void CMaterialAtlasList::OnIdle(wxIdleEvent &event)
@@ -867,11 +951,6 @@ void CUI_HeightEdit::OnFilterTextChanged(wxCommandEvent& event)
 	m_texPanel->ChangeFilter(m_filtertext->GetValue(), m_pTags->GetValue(), m_onlyusedmaterials->GetValue(), m_pSortByDate->GetValue());
 	m_texPanel->Redraw();
 }
-/*
-void CTextureListPanel::OnSize(wxSizeEvent &event)
-{
-	Layout();
-}*/
 
 void CUI_HeightEdit::OnClose(wxCloseEvent& event)
 {
