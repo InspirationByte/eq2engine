@@ -9,11 +9,15 @@
 #include "CGLRenderLib.h"
 #include "gl_caps.hpp"
 
-#ifdef PLAT_WIN
+#ifdef USE_GLES2
+
+#elif PLAT_WIN
 #include "wgl_caps.hpp"
-#else
+#elif PLAT_LINUX
 #include "glx_caps.hpp"
-#endif // PLAT_WIN
+#else
+#include "agl_caps.hpp"
+#endif // USE_GLES2
 
 /*
 
@@ -182,6 +186,18 @@ int dComp(const DispRes &d0, const DispRes &d1){
 
 #endif // PLAT_LINUX
 
+#if defined(USE_GLES2) && defined(PLAT_WIN)
+bool OpenNativeDisplay(EGLNativeDisplayType* nativedisp_out)
+{
+    *nativedisp_out = (EGLNativeDisplayType) NULL;
+    return true;
+}
+
+void CloseNativeDisplay(EGLNativeDisplayType nativedisp)
+{
+}
+#endif // USE_GLES2 && PLAT_WIN
+
 bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 {
 	savedParams = params;
@@ -276,6 +292,112 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 	hdc = GetDC(hwnd);
 
+#ifdef USE_GLES2
+    EGLBoolean bsuccess;
+
+    // create native window
+    EGLNativeDisplayType nativeDisplay;
+    if(!OpenNativeDisplay(&nativeDisplay))
+    {
+        MsgError("Could not get open native display\n");
+        return false;
+    }
+
+    // get egl display handle
+    eglDisplay = eglGetDisplay(nativeDisplay);
+    if(eglDisplay == EGL_NO_DISPLAY)
+    {
+        MsgError("Could not get EGL display\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    // Initialize the display
+    EGLint major = 0;
+    EGLint minor = 0;
+    bsuccess = eglInitialize(eglDisplay, &major, &minor);
+    if (!bsuccess)
+    {
+        MsgError("Could not initialize EGL display\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+    if (major < 1 || minor < 4)
+    {
+        // Does not support EGL 1.4
+        MsgError("System does not support at least EGL 1.4\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    // Obtain the first configuration with a depth buffer
+    // Obtain the first configuration with a depth buffer
+    EGLint attrs[] = { 
+		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+
+		EGL_DEPTH_SIZE, 16,
+
+		EGL_RED_SIZE, 8,
+		EGL_GREEN_SIZE, 8,
+		EGL_BLUE_SIZE, 8,
+
+		EGL_NONE 
+	};
+
+    EGLint numConfig =0;
+    EGLConfig eglConfig = 0;
+    bsuccess = eglChooseConfig(eglDisplay, attrs, &eglConfig, 1, &numConfig);
+    if (!bsuccess)
+    {
+        MsgError("Could not find valid EGL config\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    // Get the native visual id
+    int nativeVid;
+    if (!eglGetConfigAttrib(eglDisplay, eglConfig, EGL_NATIVE_VISUAL_ID, &nativeVid))
+    {
+        MsgError("Could not get native visual id\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    // Create a surface for the main window
+    eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, hwnd, NULL);
+    if (eglSurface == EGL_NO_SURFACE)
+    {
+        MsgError("Could not create EGL surface\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+	// context attribute list
+    EGLint contextAttr[] = { 
+		EGL_CONTEXT_CLIENT_VERSION, 2,
+		EGL_NONE 
+	};
+
+    // Create two OpenGL ES contexts
+    glContext = eglCreateContext(eglDisplay, eglConfig, EGL_NO_CONTEXT, contextAttr);
+    if (glContext == EGL_NO_CONTEXT)
+    {
+        MsgError("Could not create EGL context\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    glContext2 = eglCreateContext(eglDisplay, eglConfig, glContext, contextAttr);
+    if (glContext == EGL_NO_CONTEXT)
+    {
+        MsgError("Could not create EGL context\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+	eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext);
+#else
 	int iAttribs[] = {
 		wgl::DRAW_TO_WINDOW_ARB,	gl::TRUE_,
 		wgl::ACCELERATION_ARB,		wgl::FULL_ACCELERATION_ARB,
@@ -328,6 +450,8 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	wglShareLists(glContext2, glContext);
 
 	wglMakeCurrent(hdc, glContext);
+#endif // #ifdef USE_GLES2
+
 #elif PLAT_LINUX
 
     display = XOpenDisplay(0);
@@ -453,18 +577,16 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 		Msg("*OpenGL version is: %s\n",version);
 	}
 
-	if(gl::sys::GetMajorVersion() < 2)
-	{
-		WarningMsg("Cannot initialize OpenGL due driver is only supports version 1.x.x\n\nPlease update your video drivers!");
-		exit(-5);
-	}
-
 	m_Renderer = new ShaderAPIGL();
 	g_pShaderAPI = m_Renderer;
 
-#ifdef PLAT_WIN
+#ifdef USE_GLES2
+	m_Renderer->m_display = this->eglDisplay;
+	m_Renderer->m_eglSurface = this->eglSurface;
 	m_Renderer->m_hdc = this->hdc;
-#elif defined(PLAT_LINUX)
+#elif PLAT_WIN
+	m_Renderer->m_hdc = this->hdc;
+#elif PLAT_LINUX
     m_Renderer->m_display = this->display;
 #endif //PLAT_WIN
 
@@ -487,9 +609,19 @@ void CGLRenderLib::ExitAPI()
 	delete m_Renderer;
 
 #ifdef PLAT_WIN
+
+#ifdef USE_GLES2
+	eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	eglDestroyContext(eglDisplay, glContext);
+	eglDestroyContext(eglDisplay, glContext2);
+	eglDestroySurface(eglDisplay, eglSurface);
+	eglTerminate(eglDisplay);
+#else
 	wglMakeCurrent(NULL, NULL);
 	wglDeleteContext(glContext);
 	wglDeleteContext(glContext2);
+#endif // USE_GLES2
+
 	ReleaseDC(hwnd, hdc);
 
 	if (!savedParams.bIsWindowed)
@@ -532,7 +664,10 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 {
 	m_Renderer->GL_CRITICAL();
 
-#ifdef PLAT_WIN
+#ifdef USE_GLES2
+	eglSwapBuffers(eglDisplay, eglSurface);
+	gl::Finish();
+#elif PLAT_WIN
 	if (wgl::exts::var_EXT_swap_control)
 	{
 		wgl::SwapIntervalEXT(savedParams.bEnableVerticalSync ? 1 : 0);

@@ -11,6 +11,10 @@
 #include "../IRenderLibrary.h"
 #include "ShaderAPIGL.h"
 
+#ifdef USE_GLES2
+#include "EGL/egl.h"
+#endif // USE_GLES2
+
 class ShaderAPIGL;
 
 class CGLRenderLib : public IRenderLibrary
@@ -56,14 +60,25 @@ protected:
 
 	DkList<IEqSwapChain*>	m_swapChains;
 
+
 #ifdef _WIN32
 	DISPLAY_DEVICE			device;
 	DEVMODE					dm;
 
+#ifdef USE_GLES2
+    EGLNativeDisplayType	hdc;
+    EGLNativeWindowType		hwnd;
+    EGLDisplay				eglDisplay;
+    EGLSurface				eglSurface;
+    EGLContext				glContext;
+	EGLContext				glContext2;
+#else
 	HDC						hdc;
 	HGLRC					glContext;
 	HGLRC					glContext2;
 	HWND					hwnd;
+#endif // USE_GLES2
+
 #elif defined(LINUX)
 	GLXContext				glContext;
 	GLXContext				glContext2;

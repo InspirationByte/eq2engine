@@ -8706,7 +8706,7 @@
                                             <property name="font"></property>
                                             <property name="gripper">0</property>
                                             <property name="hidden">0</property>
-                                            <property name="id">ELM_IMPORT</property>
+                                            <property name="id">wxID_ANY</property>
                                             <property name="label">Create...</property>
                                             <property name="max_size"></property>
                                             <property name="maximize_button">0</property>
@@ -8794,7 +8794,7 @@
                                             <property name="font"></property>
                                             <property name="gripper">0</property>
                                             <property name="hidden">0</property>
-                                            <property name="id">ELM_IMPORTOVER</property>
+                                            <property name="id">wxID_ANY</property>
                                             <property name="label">Edit...</property>
                                             <property name="max_size"></property>
                                             <property name="maximize_button">0</property>
@@ -8882,7 +8882,7 @@
                                             <property name="font"></property>
                                             <property name="gripper">0</property>
                                             <property name="hidden">0</property>
-                                            <property name="id">ELM_REPLACE_REFS</property>
+                                            <property name="id">wxID_ANY</property>
                                             <property name="label">Delete</property>
                                             <property name="max_size"></property>
                                             <property name="maximize_button">0</property>

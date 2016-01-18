@@ -27,7 +27,9 @@
 #include "glx_caps.hpp"
 #endif // PLAT_LINUX
 
-#pragma todo("Rewrite with OpenGL ES 2.0 specification support")
+#define GL_NO_DEPRECATED_ATTRIBUTES
+
+#ifdef USE_GLES2
 
 static char s_FFPMeshBuilder_VertexProgram[] =
 "attribute vec4 input_vPos;\n"
@@ -35,9 +37,44 @@ static char s_FFPMeshBuilder_VertexProgram[] =
 "attribute vec4 input_color;\n"
 "varying vec2 texCoord;\n"
 "varying vec4 vColor;\n"
+"uniform mat4 WVP;\n"
 "void main()\n"
 "{\n"
-"	gl_Position = gl_ModelViewProjectionMatrix * input_vPos;\n"
+"	gl_Position = WVP * input_vPos;\n"
+"	vColor = input_color;\n"
+"	texCoord = input_texCoord;\n"
+"}";
+
+static char s_FFPMeshBuilder_NoTexture_PixelProgram[] =
+"precision mediump float;\n"
+"varying vec4 vColor;\n"
+"void main()\n"
+"{\n"
+"	gl_FragColor = vColor;\n"
+"}";
+
+static char s_FFPMeshBuilder_Textured_PixelProgram[] =
+"precision mediump float;\n"
+"uniform sampler2D Base;\n"
+"varying vec2 texCoord;\n"
+"varying vec4 vColor;\n"
+"void main()\n"
+"{\n"
+"	gl_FragColor = texture2D(Base, texCoord)*vColor;\n"
+"}";
+
+#else
+
+static char s_FFPMeshBuilder_VertexProgram[] =
+"attribute vec4 input_vPos;\n"
+"attribute vec2 input_texCoord;\n"
+"attribute vec4 input_color;\n"
+"varying vec2 texCoord;\n"
+"varying vec4 vColor;\n"
+"uniform mat4 WVP;\n"
+"void main()\n"
+"{\n"
+"	gl_Position = WVP * input_vPos;\n"
 "	vColor = input_color;\n"
 "	texCoord = input_texCoord;\n"
 "}";
@@ -57,6 +94,8 @@ static char s_FFPMeshBuilder_Textured_PixelProgram[] =
 "{\n"
 "	gl_FragColor = texture2D(Base, texCoord)*vColor;\n"
 "}";
+
+#endif // USE_GLES2
 
 typedef GLvoid (APIENTRY *UNIFORM_FUNC)(GLint location, GLsizei count, const void *value);
 typedef GLvoid (APIENTRY *UNIFORM_MAT_FUNC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
@@ -180,7 +219,11 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 	if (gl::exts::var_EXT_texture_filter_anisotropic)
 		gl::GetIntegerv(gl::MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_caps.maxTextureAnisotropicLevel);
 
+#ifdef USE_GLES2
+	m_caps.isHardwareOcclusionQuerySupported = false;
+#else
 	m_caps.isHardwareOcclusionQuerySupported = gl::exts::var_ARB_occlusion_query;
+#endif // USE_GLES2
 	m_caps.isInstancingSupported = gl::exts::var_ARB_instanced_arrays;
 
 	gl::GetIntegerv(gl::MAX_TEXTURE_SIZE, &m_caps.maxTextureSize);
@@ -190,8 +233,13 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 	m_caps.maxVertexGenericAttributes = MAX_GENERIC_ATTRIB;
 	m_caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
 
+#ifdef USE_GLES2
+	// ES 2.0 supports shaders
+	m_caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED;
+#else
 	m_caps.shadersSupportedFlags = ((gl::exts::var_ARB_vertex_shader || gl::exts::var_ARB_shader_objects) ? SHADER_CAPS_VERTEX_SUPPORTED : 0)
 								 | ((gl::exts::var_ARB_fragment_shader || gl::exts::var_ARB_shader_objects) ? SHADER_CAPS_PIXEL_SUPPORTED : 0);
+#endif // USE_GLES2
 	m_caps.maxTextureUnits = MAX_TEXTUREUNIT;
 	m_caps.maxVertexStreams = MAX_VERTEXSTREAM;
 	m_caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
@@ -334,7 +382,9 @@ void ShaderAPIGL::ApplyTextures()
 
 					gl::BindTexture(pSelectedTexture->glTarget, pSelectedTexture->GetCurrentTexture().glTexID);
 
+#ifndef USE_GLES2
 					gl::TexEnvf(gl::TEXTURE_FILTER_CONTROL, gl::TEXTURE_LOD_BIAS, pSelectedTexture->m_flLod);
+#endif // USE_GLES2
 				}
 				else
 				{
@@ -346,10 +396,12 @@ void ShaderAPIGL::ApplyTextures()
 						gl::Enable(pSelectedTexture->glTarget);
 					}
 
+#ifndef USE_GLES2
 					if (pSelectedTexture->m_flLod != pCurrentTexture->m_flLod)
 					{
 						gl::TexEnvf(gl::TEXTURE_FILTER_CONTROL, gl::TEXTURE_LOD_BIAS, pSelectedTexture->m_flLod);
 					}
+#endif // USE_GLES2
 
 					// bind our texture
 					gl::BindTexture(pSelectedTexture->glTarget, pSelectedTexture->GetCurrentTexture().glTexID);
@@ -682,12 +734,17 @@ void ShaderAPIGL::Clear(bool bClearColor,
 		gl::ClearColor(fillColor.x, fillColor.y, fillColor.z, 1.0f);
 	}
 
+
 	if (bClearDepth)
 	{
 		gl::DepthMask(gl::TRUE_);
 		clearBits |= gl::DEPTH_BUFFER_BIT;
+
+#ifndef USE_GLES2
 		gl::ClearDepth(fDepth);
+#endif // USE_GLES2
 	}
+
 
 	if (bClearStencil)
 	{
@@ -716,7 +773,11 @@ const char* ShaderAPIGL::GetDeviceNameString() const
 // Renderer string (ex: OpenGL, D3D9)
 const char* ShaderAPIGL::GetRendererName() const
 {
+#ifdef USE_GLES2
+	return "OpenGL_ES";
+#else
 	return "OpenGL";
+#endif // USE_GLES2
 }
 
 // Pixel shader version
@@ -790,6 +851,9 @@ void ShaderAPIGL::Finish()
 // creates occlusion query object
 IOcclusionQuery* ShaderAPIGL::CreateOcclusionQuery()
 {
+	if(!m_caps.isHardwareOcclusionQuerySupported)
+		return NULL;
+
 	ThreadingSharingRequest();
 
 	CGLOcclusionQuery* occQuery = new CGLOcclusionQuery();
@@ -1459,12 +1523,16 @@ void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 // Matrix mode
 void ShaderAPIGL::SetMatrixMode(MatrixMode_e nMatrixMode)
 {
+#ifndef USE_GLES2
 	GL_CRITICAL();
 
 	gl::MatrixMode( matrixModeConst[nMatrixMode] );
-	m_nCurrentMatrixMode = nMatrixMode;
+
 
 	GL_END_CRITICAL();
+#endif // USE_GLES2
+
+	m_nCurrentMatrixMode = nMatrixMode;
 }
 
 // Will save matrix
@@ -1484,17 +1552,22 @@ void ShaderAPIGL::PopMatrix()
 // Load identity matrix
 void ShaderAPIGL::LoadIdentityMatrix()
 {
+#ifndef USE_GLES2
 	GL_CRITICAL();
 
 	gl::LoadIdentity();
 	m_matrices[m_nCurrentMatrixMode] = identity4();
 
 	GL_END_CRITICAL();
+#else
+	m_matrices[m_nCurrentMatrixMode] = identity4();
+#endif // USE_GLES2
 }
 
 // Load custom matrix
 void ShaderAPIGL::LoadMatrix(const Matrix4x4 &matrix)
 {
+#ifndef USE_GLES2
 	GL_CRITICAL();
 
 	if(m_nCurrentMatrixMode == MATRIXMODE_WORLD)
@@ -1505,10 +1578,11 @@ void ShaderAPIGL::LoadMatrix(const Matrix4x4 &matrix)
 	else
 		gl::LoadMatrixf( transpose(matrix) );
 
-	m_matrices[m_nCurrentMatrixMode] = matrix;
-	//glPopMatrix();
-
 	GL_END_CRITICAL();
+
+#endif // USE_GLES2
+
+	m_matrices[m_nCurrentMatrixMode] = matrix;
 }
 
 //-------------------------------------------------------------
@@ -1542,6 +1616,7 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 		if (pVertexFormat != NULL)
 			pSelectedFormat = (CVertexFormatGL*)pVertexFormat;
 
+#ifndef GL_NO_DEPRECATED_ATTRIBUTES
 		// Change array enables as needed
 		if ( pSelectedFormat->m_hVertex.m_nSize && !pCurrentFormat->m_hVertex.m_nSize)
 			gl::EnableClientState (gl::VERTEX_ARRAY);
@@ -1560,6 +1635,7 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 
 		if (!pSelectedFormat->m_hColor.m_nSize &&  pCurrentFormat->m_hColor.m_nSize)
 			gl::DisableClientState(gl::COLOR_ARRAY);
+#endif // GL_NO_DEPRECATED_ATTRIBUTES
 
 		for (int i = 0; i < MAX_GL_GENERIC_ATTRIB; i++)
 		{
@@ -1570,6 +1646,7 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 				gl::DisableVertexAttribArray(i);
 		}
 
+#ifndef GL_NO_DEPRECATED_ATTRIBUTES
 		for (int i = 0; i < MAX_TEXCOORD_ATTRIB; i++)
 		{
 			if ((pSelectedFormat->m_hTexCoord[i].m_nSize > 0) ^ (pCurrentFormat->m_hTexCoord[i].m_nSize > 0))
@@ -1586,6 +1663,7 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 				}
 			}
 		}
+#endif // GL_NO_DEPRECATED_ATTRIBUTES
 
 		m_pCurrentVertexFormat = pVertexFormat;
 
@@ -1635,6 +1713,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 			int vertexSize = cvf->m_nVertexSize[nStream];
 
+#ifndef GL_NO_DEPRECATED_ATTRIBUTES
 			if (cvf->m_hVertex.m_nStream == nStream && cvf->m_hVertex.m_nSize)
 			{
 				gl::VertexPointer(cvf->m_hVertex.m_nSize, glTypes[cvf->m_hVertex.m_nFormat], vertexSize, base + cvf->m_hVertex.m_nOffset);
@@ -1644,6 +1723,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 			{
 				gl::NormalPointer(glTypes[cvf->m_hNormal.m_nFormat], vertexSize, base + cvf->m_hNormal.m_nOffset);
 			}
+#endif // GL_NO_DEPRECATED_ATTRIBUTES
 
 			for (int i = 0; i < MAX_GL_GENERIC_ATTRIB; i++)
 			{
@@ -1653,6 +1733,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 				}
 			}
 
+#ifndef GL_NO_DEPRECATED_ATTRIBUTES
 			for (int i = 0; i < MAX_TEXCOORD_ATTRIB; i++)
 			{
 				if (cvf->m_hTexCoord[i].m_nStream == nStream && cvf->m_hTexCoord[i].m_nSize)
@@ -1662,11 +1743,11 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 				}
 			}
 
-
 			if (cvf->m_hColor.m_nStream == nStream && cvf->m_hColor.m_nSize)
 			{
 				gl::ColorPointer(cvf->m_hColor.m_nSize, glTypes[cvf->m_hColor.m_nFormat], vertexSize, base + cvf->m_hColor.m_nOffset);
 			}
+#endif // GL_NO_DEPRECATED_ATTRIBUTES
 
 			GL_END_CRITICAL();
 		}
@@ -1840,9 +1921,9 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		EqString shaderString;
 
-#ifndef USE_OPENGL_ES
+#ifndef USE_GLES2
 		shaderString.Append("#version 120\r\n");
-#endif // USE_OPENGL_ES
+#endif // USE_GLES2
 
 		if (extra  != NULL)
 			shaderString.Append(extra);
@@ -1880,9 +1961,9 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	{
 		EqString shaderString;
 
-#ifndef USE_OPENGL_ES
+#ifndef USE_GLES2
 		shaderString.Append("#version 120\r\n");
-#endif // USE_OPENGL_ES
+#endif // USE_GLES2
 
 		if (extra  != NULL)
 			shaderString.Append(extra);
@@ -1899,7 +1980,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		gl::CompileShader(prog->m_fragmentShader);
 		gl::GetShaderiv(prog->m_fragmentShader, gl::OBJECT_COMPILE_STATUS_ARB, &fsResult);
 
-		if (vsResult)
+		if (fsResult)
 		{
 			gl::AttachShader(prog->m_program, prog->m_fragmentShader);
 		}
@@ -1978,7 +2059,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		DevMsg(3, "[DEBUG] shader '%s' has %d samplers and uniforms (namelen=%d)\n", pShaderOutput->GetName(), uniformCount, maxLength);
 
-		if(maxLength == 0 && uniformCount > 0)
+		if(maxLength == 0 && uniformCount > 0 || uniformCount > 256)
 		{
 			if(m_vendor == VENDOR_INTEL)
 				DevMsg(3, "Guess who? It's Intel! uniformCount to be zeroed\n");
@@ -1994,7 +2075,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		int nSamplers = 0;
 		int nUniforms = 0;
 
-		char* tmpName = new char[maxLength];
+		char* tmpName = new char[maxLength+1];
 
 		for (int i = 0; i < uniformCount; i++)
 		{
@@ -2142,8 +2223,6 @@ int ShaderAPIGL::SetShaderConstantRaw(const char *pszName, const void *data, int
 //-------------------------------------------------------------
 // Vertex buffer objects
 //-------------------------------------------------------------
-
-#define GL_NO_DEPRECATED_ATTRIBUTES
 
 IVertexFormat* ShaderAPIGL::CreateVertexFormat(VertexFormatDesc_s *formatDesc, int nAttribs)
 {
@@ -2734,7 +2813,9 @@ void ShaderAPIGL::ThreadingSharingRequest()
 
 	m_isSharing = true;
 
-#ifdef _WIN32
+#ifdef USE_GLES2
+	eglMakeCurrent(m_display, m_eglSurface, m_eglSurface, m_glContext2);
+#elif _WIN32
 	wglMakeCurrent(m_hdc, m_glContext2);
 #elif LINUX
     glXMakeCurrent(m_display, (Window)m_params.hWindow, m_glContext2);
@@ -2763,7 +2844,9 @@ bool ShaderAPIGL::GL_CRITICAL()
 
 	m_currThreadId = currThread;
 
-#ifdef _WIN32
+#ifdef USE_GLES2
+	eglMakeCurrent(m_display, m_eglSurface, m_eglSurface, m_glContext);
+#elif _WIN32
 	wglMakeCurrent(m_hdc, m_glContext);
 #elif LINUX
     glXMakeCurrent(m_display, (Window)m_params.hWindow, m_glContext);
@@ -2809,7 +2892,9 @@ void ShaderAPIGL::ThreadingSharingRelease()
 	// make sure it's fully done
 	gl::Finish();
 
-#ifdef _WIN32
+#ifdef USE_GLES2
+	eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+#elif _WIN32
 	wglMakeCurrent(NULL, NULL);
 #elif LINUX
     glXMakeCurrent(m_display, None, NULL);

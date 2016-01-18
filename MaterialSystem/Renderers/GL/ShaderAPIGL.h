@@ -12,6 +12,10 @@
 
 #include "gl_caps.hpp"
 
+#ifdef USE_GLES2
+#include "EGL/egl.h"
+#endif // USE_GLES2
+
 #ifdef LINUX
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -392,7 +396,13 @@ private:
 	IShaderProgram*		m_pMeshBufferNoTextureShader;
 	IShaderProgram*		m_pMeshBufferTexturedShader;
 
-#ifdef _WIN32
+#ifdef USE_GLES2
+    EGLNativeDisplayType	m_hdc;
+    EGLDisplay				m_display;
+    EGLSurface				m_eglSurface;
+    EGLContext				m_glContext;
+	EGLContext				m_glContext2;
+#elif _WIN32
 	HDC					m_hdc;
 	HGLRC				m_glContext;
 	HGLRC				m_glContext2;

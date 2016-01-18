@@ -198,4 +198,7 @@
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </CustomBuildStep>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
 </Project>
