@@ -5,8 +5,8 @@
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Release GLES2|Win32">
-      <Configuration>Release GLES2</Configuration>
+    <ProjectConfiguration Include="Release EGL|Win32">
+      <Configuration>Release EGL</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
@@ -28,7 +28,7 @@
     <WholeProgramOptimization>false</WholeProgramOptimization>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>false</WholeProgramOptimization>
@@ -46,7 +46,7 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'" Label="PropertySheets">
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
@@ -56,31 +56,31 @@
   <PropertyGroup>
     <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)_gl\</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'">$(Configuration)_gl\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">$(Configuration)_gl\</OutDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)_gl\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)_gl\</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'">$(Configuration)_gl\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">$(Configuration)_gl\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)_gl\</IntDir>
     <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</IgnoreImportLibrary>
-    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'">true</IgnoreImportLibrary>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">true</IgnoreImportLibrary>
     <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</IgnoreImportLibrary>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">false</LinkIncremental>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkIncremental>
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
-    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'" />
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'" />
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
-    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">eqGLRHI</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'">eqGLRHI</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">eqGLRHI</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">eqGLRHI</TargetName>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">
     <LibraryPath>..\..\packages\ANGLE.WindowsStore.2.1.6\bin\Windows\Win32;$(LibraryPath)</LibraryPath>
     <IncludePath>H:\Projects\Equilibrium\SHARED_FOR_EQ\eq_src\packages\ANGLE.WindowsStore.2.1.6\Include;$(IncludePath)</IncludePath>
   </PropertyGroup>
@@ -120,7 +120,7 @@
       <ProgramDatabaseFile>..\..\..\gamebin\$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
@@ -193,7 +193,7 @@
   <ItemGroup>
     <ClCompile Include="..\Engine\Renderer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="CTexture.cpp" />
@@ -202,7 +202,7 @@
     <ClCompile Include="GL\GLShaderProgram.cpp" />
     <ClCompile Include="GL\gl_caps.cpp" />
     <ClCompile Include="GL\wgl_caps.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="ShaderAPIMain.cpp" />
     <ClCompile Include="ShaderAPI_Base.cpp" />
@@ -221,12 +221,12 @@
     <ClInclude Include="GL\GLShaderProgram.h" />
     <ClInclude Include="GL\gl_caps.hpp" />
     <ClInclude Include="GL\wgl_caps.hpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="IRenderLibrary.h" />
     <CustomBuildStep Include="..\Engine\Renderer.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release GLES2|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </CustomBuildStep>
     <ClInclude Include="..\public\Renderer\IIndexBuffer.h" />
