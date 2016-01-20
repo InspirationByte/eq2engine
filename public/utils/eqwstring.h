@@ -84,6 +84,9 @@ public:
 	// removes characters
 	void			Remove(uint nStart, uint nCount);
 
+	// replaces characters
+	void			Replace( wchar_t whichChar, wchar_t to );
+
 	// rightmost\leftmost string extractors
 	EqWString		Left(int nCount);
 	EqWString		Right(int nCount);

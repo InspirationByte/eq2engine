@@ -197,7 +197,7 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 	else
 		m_vendor = VENDOR_OTHER;
 
-	Msg("[DEBUG] ShaderAPIGL vendor: %d\n", m_vendor);
+	DevMsg(3, "[DEBUG] ShaderAPIGL vendor: %d\n", m_vendor);
 
 	m_mainThreadId = Threading::GetCurrentThreadID();
 	m_currThreadId = m_mainThreadId;
@@ -246,7 +246,7 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 
 	m_caps.maxTextureUnits = 1;
 
-	if (gl::exts::var_ARB_fragment_shader)
+	if (m_caps.shadersSupportedFlags & SHADER_CAPS_PIXEL_SUPPORTED)
 		gl::GetIntegerv(gl::MAX_TEXTURE_IMAGE_UNITS, &m_caps.maxTextureUnits);
 	else
 		gl::GetIntegerv(gl::MAX_TEXTURE_UNITS, &m_caps.maxTextureUnits);
@@ -1554,14 +1554,11 @@ void ShaderAPIGL::LoadIdentityMatrix()
 {
 #ifndef USE_GLES2
 	GL_CRITICAL();
-
 	gl::LoadIdentity();
-	m_matrices[m_nCurrentMatrixMode] = identity4();
-
 	GL_END_CRITICAL();
-#else
-	m_matrices[m_nCurrentMatrixMode] = identity4();
 #endif // USE_GLES2
+
+	m_matrices[m_nCurrentMatrixMode] = identity4();
 }
 
 // Load custom matrix

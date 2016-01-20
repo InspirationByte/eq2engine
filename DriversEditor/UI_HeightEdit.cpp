@@ -228,12 +228,10 @@ void CMaterialAtlasList::OnMouseClick(wxMouseEvent& event)
 
 void CMaterialAtlasList::OnIdle(wxIdleEvent &event)
 {
-
 }
 
 void CMaterialAtlasList::OnEraseBackground(wxEraseEvent& event)
 {
-	//Redraw();
 }
 
 void CMaterialAtlasList::Redraw()
@@ -258,8 +256,20 @@ void CMaterialAtlasList::Redraw()
 	g_pShaderAPI->SetViewport(0, 0, w, h);
 
 	materials->GetConfiguration().wireframeMode = false;
-
 	materials->SetAmbientColor( color4_white );
+
+	BlendStateParam_t blendParams;
+	blendParams.alphaTest = false;
+	blendParams.alphaTestRef = 1.0f;
+	blendParams.blendEnable = false;
+	blendParams.srcFactor = BLENDFACTOR_ONE;
+	blendParams.dstFactor = BLENDFACTOR_ZERO;
+	blendParams.mask = COLORMASK_ALL;
+	blendParams.blendFunc = BLENDFUNC_ADD;
+
+	eqFontStyleParam_t fontParam;
+	fontParam.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+	fontParam.textColor = ColorRGBA(1,1,1,1);
 
 	if( materials->BeginFrame() )
 	{
@@ -279,7 +289,7 @@ void CMaterialAtlasList::Redraw()
 		Rectangle_t screenRect(0,0, w,h);
 		screenRect.Fix();
 
-		float scrollbarpercent = GetScrollPos(wxVERTICAL);///100.0f;
+		float scrollbarpercent = GetScrollPos(wxVERTICAL);
 
 		int numItems = 0;
 
@@ -301,8 +311,6 @@ void CMaterialAtlasList::Redraw()
 
 		if(numItems > 0)
 		{
-			//int estimated_lines = m_filteredlist.numElem() / numItems;
-
 			nItem = 0;
 
 			for(int i = 0; i < m_filteredlist.numElem(); i++)
@@ -326,110 +334,91 @@ void CMaterialAtlasList::Redraw()
 				if( check_rect.vleftTop.y > screenRect.vrightBottom.y )
 					break;
 
-				if( screenRect.IsIntersectsRectangle(check_rect) )
+				if( !screenRect.IsIntersectsRectangle(check_rect) )
 				{
-					ITexture* pTex = g_pShaderAPI->GetErrorTexture();
+					nItem++;
+					continue;
+				}
 
-					float texture_aspect = 1.0f;
+				float texture_aspect = 1.0f;
+				float x_scale = 1.0f;
+				float y_scale = 1.0f;
 
-					if(!elem.material->IsError())
-					{
-						// preload
-						materials->PutMaterialToLoadingQueue( elem.material );
+				ITexture* pTex = g_pShaderAPI->GetErrorTexture();
+				if(!elem.material->IsError())
+				{
+					// preload
+					materials->PutMaterialToLoadingQueue( elem.material );
 
-						if(elem.material->GetState() == MATERIAL_LOAD_OK && elem.material->GetBaseTexture())
-							pTex = elem.material->GetBaseTexture();
-						else
-							pTex = g_pShaderAPI->GetErrorTexture();
-
-						if(pTex) // TODO: atlas aspect, size, etc
-							texture_aspect = pTex->GetWidth() / pTex->GetHeight();
-					}
-
-					float x_scale = 1.0f;
-					float y_scale = 1.0f;
-
-					if(m_bAspectFix && (pTex->GetWidth() > pTex->GetHeight()))
-					{
-						y_scale /= texture_aspect;
-					}
-
-					Vertex2D_t verts[] = {MAKETEXQUAD(x_offset, y_offset, x_offset + fSize*x_scale,y_offset + fSize*y_scale, 0)};
-					Vertex2D_t name_line[] = {MAKETEXQUAD(x_offset, y_offset+fSize, x_offset + fSize,y_offset + fSize + 25, 0)};
-				
-					EqString material_name = elem.material->GetName();
-
-					if(elem.entry)
-					{
-						verts[0].m_vTexCoord = elem.entry->rect.GetLeftTop(); //Vector2D(0, 0)),
-						verts[1].m_vTexCoord = elem.entry->rect.GetLeftBottom(); //Vector2D(0, 1)),
-						verts[2].m_vTexCoord = elem.entry->rect.GetRightTop(); //Vector2D(1, 0)),
-						verts[3].m_vTexCoord = elem.entry->rect.GetRightBottom(); //Vector2D(1, 1))
-					}
-
-
-					BlendStateParam_t params;
-					params.alphaTest = false;
-					params.alphaTestRef = 1.0f;
-					params.blendEnable = false;
-					params.srcFactor = BLENDFACTOR_ONE;
-					params.dstFactor = BLENDFACTOR_ZERO;
-					params.mask = COLORMASK_ALL;
-					params.blendFunc = BLENDFUNC_ADD;
-
-					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, ColorRGBA(0.25,0.25,1,1), &params);
-
-					if( check_rect.IsInRectangle( pointer_position ) )
-					{
-						mouseover_id = i;
-
-						materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, verts,4, pTex, ColorRGBA(1,0.5f,0.5f,1), &params);
-
-						Vertex2D rectVerts[] = {MAKETEXRECT(x_offset, y_offset, x_offset + fSize,y_offset + fSize, 0)};
-
-						materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, rectVerts, elementsOf(rectVerts), NULL, ColorRGBA(1,0,0,1));
-						materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, ColorRGBA(0.25,0.1,0.25,1), &params);
-					}
+					if(elem.material->GetState() == MATERIAL_LOAD_OK && elem.material->GetBaseTexture())
+						pTex = elem.material->GetBaseTexture();
 					else
-						materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, verts,4, pTex, color4_white, &params);
+						pTex = g_pShaderAPI->GetErrorTexture();
 
-					if(selection_id == i)
-					{
-						Vertex2D rectVerts[] = {MAKETEXRECT(x_offset, y_offset, x_offset + fSize,y_offset + fSize, 0)};
+					if(pTex) // TODO: atlas aspect, size, etc
+						texture_aspect = pTex->GetWidth() / pTex->GetHeight();
+				}
 
-						materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, rectVerts, elementsOf(rectVerts), NULL, ColorRGBA(0,1,0,1));
-						materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, ColorRGBA(1,0.25,0.25,1), &params);
-					}
+				if(m_bAspectFix && (pTex->GetWidth() > pTex->GetHeight()))
+					y_scale /= texture_aspect;
 
-					char* name_str = (char*)material_name.c_str();
+				Rectangle_t name_rect(x_offset, y_offset+fSize, x_offset + fSize,y_offset + fSize + 400);
 
-					while(*name_str)
-					{
-						if(*name_str == '\\' || *name_str == '/')
-							*name_str = '\n';
+				Vertex2D_t verts[] = {MAKETEXQUAD(x_offset, y_offset, x_offset + fSize*x_scale,y_offset + fSize*y_scale, 0)};
+				Vertex2D_t name_line[] = {MAKETEXQUAD(x_offset, y_offset+fSize, x_offset + fSize,y_offset + fSize + 25, 0)};
+				
+				EqString material_name = elem.material->GetName();
+				material_name.Replace( CORRECT_PATH_SEPARATOR, '\n' );
 
-						name_str++;
-					}
+				if(elem.entry)
+				{
+					verts[0].m_vTexCoord = elem.entry->rect.GetLeftTop();
+					verts[1].m_vTexCoord = elem.entry->rect.GetLeftBottom();
+					verts[2].m_vTexCoord = elem.entry->rect.GetRightTop();
+					verts[3].m_vTexCoord = elem.entry->rect.GetRightBottom();
+				}
 
-					Rectangle_t name_rect(x_offset, y_offset+fSize, x_offset + fSize,y_offset + fSize + 400);
+				// draw name panel
+				materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, ColorRGBA(0.25,0.25,1,1), &blendParams);
 
-					eqFontStyleParam_t fontParam;
-					fontParam.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-					fontParam.textColor = ColorRGBA(1,1,1,1);
+				// mouseover rectangle
+				if( check_rect.IsInRectangle( pointer_position ) )
+				{
+					mouseover_id = i;
 
-					m_pFont->RenderText(material_name.c_str(), name_rect.vleftTop, fontParam);
+					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, verts,4, pTex, ColorRGBA(1,0.5f,0.5f,1), &blendParams);
 
-					if(elem.material->IsError())
-						m_pFont->RenderText("BAD MATERIAL", Vector2D(x_offset, y_offset), fontParam);
+					Vertex2D rectVerts[] = {MAKETEXRECT(x_offset, y_offset, x_offset + fSize,y_offset + fSize, 0)};
 
-					if(!elem.material->GetBaseTexture())
-						m_pFont->RenderText("no texture", Vector2D(x_offset, y_offset+10), fontParam);
+					materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, rectVerts, elementsOf(rectVerts), NULL, ColorRGBA(1,0,0,1));
+					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, ColorRGBA(0.25,0.1,0.25,1), &blendParams);
+				}
+				else
+					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, verts,4, pTex, color4_white, &blendParams);
 
-					if(elem.entry)
-					{
-						fontParam.textColor.w *= 0.5f;
-						m_pFont->RenderText(elem.entry->name, Vector2D(x_offset, y_offset), fontParam);
-					}
+				// draw selection rectangle
+				if(selection_id == i)
+				{
+					Vertex2D rectVerts[] = {MAKETEXRECT(x_offset, y_offset, x_offset + fSize,y_offset + fSize, 0)};
+
+					materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, rectVerts, elementsOf(rectVerts), NULL, ColorRGBA(0,1,0,1));
+					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, ColorRGBA(1,0.25,0.25,1), &blendParams);
+				}
+
+				// render text
+				m_pFont->RenderText(material_name.c_str(), name_rect.vleftTop, fontParam);
+
+				if(elem.material->IsError())
+					m_pFont->RenderText("BAD MATERIAL", Vector2D(x_offset, y_offset), fontParam);
+				else if(!elem.material->GetBaseTexture())
+					m_pFont->RenderText("no texture", Vector2D(x_offset, y_offset+10), fontParam);
+
+				// show atlas entry name
+				if(elem.entry)
+				{
+					fontParam.textColor.w *= 0.5f;
+					m_pFont->RenderText(elem.entry->name, Vector2D(x_offset, y_offset), fontParam);
+					fontParam.textColor.w = 1.0f;
 				}
 
 				nItem++;

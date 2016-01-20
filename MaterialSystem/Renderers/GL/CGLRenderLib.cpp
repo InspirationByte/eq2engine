@@ -373,6 +373,8 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
         return false;
     }
 
+	eglBindAPI(EGL_OPENGL_ES_API);
+
 	// context attribute list
     EGLint contextAttr[] = { 
 		EGL_CONTEXT_CLIENT_VERSION, 2,
@@ -395,6 +397,8 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
         CloseNativeDisplay(nativeDisplay);
         return false;
     }
+
+	
 
 	eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext);
 #else
@@ -665,8 +669,10 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 	m_Renderer->GL_CRITICAL();
 
 #ifdef USE_GLES2
+
 	eglSwapBuffers(eglDisplay, eglSurface);
 	gl::Finish();
+	
 #elif PLAT_WIN
 	if (wgl::exts::var_EXT_swap_control)
 	{

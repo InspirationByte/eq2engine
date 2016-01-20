@@ -356,6 +356,23 @@ void EqString::Remove(uint nStart, uint nCount)
 	Resize( newLen );
 }
 
+// replaces characters
+void EqString::Replace( char whichChar, char to )
+{
+	char* pStr = m_pszString;
+
+	for(uint i = 0; i < m_nLength; i++)
+	{
+		if(*pStr == NULL)
+			break;
+
+		if(*pStr == whichChar)
+			*pStr = to;
+
+		pStr++;
+	}
+}
+
 // string extractors
 EqString EqString::Left(int nCount) const
 {

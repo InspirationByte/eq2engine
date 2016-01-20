@@ -345,6 +345,23 @@ void EqWString::Remove(uint nStart, uint nCount)
 	Resize( newLen );
 }
 
+// replaces characters
+void EqWString::Replace( wchar_t whichChar, wchar_t to )
+{
+	wchar_t* pStr = m_pszString;
+
+	for(uint i = 0; i < m_nLength; i++)
+	{
+		if(*pStr == NULL)
+			break;
+
+		if(*pStr == whichChar)
+			*pStr = to;
+
+		pStr++;
+	}
+}
+
 // string extractors
 EqWString EqWString::Left(int nCount)
 {

@@ -85,6 +85,9 @@ public:
 	// removes characters
 	void		Remove(uint nStart, uint nCount);
 
+	// replaces characters
+	void		Replace( char whichChar, char to );
+
 	// converters
 	EqString	LowerCase() const;
 	EqString	UpperCase() const;
