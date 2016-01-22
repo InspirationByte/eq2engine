@@ -6,46 +6,23 @@
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
-			<Target title="Release Win32">
-				<Option output="../../gamebin_linux/eqCore" imp_lib="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).a" def_file="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).def" prefix_auto="1" extension_auto="1" />
+			<Target title="Release">
+				<Option output="../../gamebin_linux/libeqCore" imp_lib="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).a" def_file="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).def" prefix_auto="0" extension_auto="1" />
 				<Option type="3" />
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
 					<Add option="-g" />
-					<Add option="-DLINUX" />
 					<Add option="-DNDEBUG" />
-					<Add option="-D_USRDLL" />
-					<Add option="-DCORE_EXPORT" />
-					<Add option="-DDLL_EXPORT" />
-					<Add option="-DSUPRESS_DEVMESSAGES" />
-					<Add option="-DUSECRTMEMDEBUG" />
-					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
-					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
-				</Compiler>
-			</Target>
-			<Target title="Debug Win32">
-				<Option output="eqCore" imp_lib="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).a" def_file="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).def" prefix_auto="1" extension_auto="1" />
-				<Option type="3" />
-				<Option compiler="gcc" />
-				<Option createStaticLib="1" />
-				<Compiler>
-					<Add option="-m32" />
-					<Add option="-DWIN32" />
-					<Add option="-D_DEBUG" />
-					<Add option="-D_WINDOWS" />
-					<Add option="-D_USRDLL" />
-					<Add option="-DCORE_EXPORT" />
-					<Add option="-DDLL_EXPORT" />
-					<Add option="-DSUPRESS_DEVMESSAGES" />
-					<Add option="-DUSECRTMEMDEBUG" />
-					<Add option="-D_CRT_SECURE_NO_WARNINGS" />
-					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
 				</Compiler>
 			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-m32" />
+			<Add option="-DLINUX" />
+			<Add option="-DCORE_EXPORT" />
+			<Add option="-DDLL_EXPORT" />
+			<Add option="-DSUPRESS_DEVMESSAGES" />
 			<Add directory="../FileSystem" />
 			<Add directory="../Engine/Imaging" />
 			<Add directory="../Engine" />
@@ -55,8 +32,8 @@
 		</Compiler>
 		<Linker>
 			<Add option="-Wl,-soname=libeqCore.so `pkg-config gtk+-2.0 --libs`" />
-			<Add library="libcoreLib" />
-			<Add library="libPrevLib" />
+			<Add library="coreLib" />
+			<Add library="PrevLib" />
 			<Add library="z" />
 			<Add library="dl" />
 			<Add directory="../libs" />

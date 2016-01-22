@@ -9,6 +9,10 @@
 #include "CGLRenderLib.h"
 #include "gl_caps.hpp"
 
+#if !defined(IS_OPENGL)
+#error "IS_OPENGL'' Should in your project!!!"
+#endif // PLAT_LINUX && !IS_OPENGL
+
 #ifdef USE_GLES2
 
 #elif PLAT_WIN
@@ -332,7 +336,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
     // Obtain the first configuration with a depth buffer
     // Obtain the first configuration with a depth buffer
-    EGLint attrs[] = { 
+    EGLint attrs[] = {
 		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
 
@@ -342,7 +346,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 		EGL_GREEN_SIZE, 8,
 		EGL_BLUE_SIZE, 8,
 
-		EGL_NONE 
+		EGL_NONE
 	};
 
     EGLint numConfig =0;
@@ -376,9 +380,9 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	eglBindAPI(EGL_OPENGL_ES_API);
 
 	// context attribute list
-    EGLint contextAttr[] = { 
+    EGLint contextAttr[] = {
 		EGL_CONTEXT_CLIENT_VERSION, 2,
-		EGL_NONE 
+		EGL_NONE
 	};
 
     // Create two OpenGL ES contexts
@@ -398,7 +402,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
         return false;
     }
 
-	
+
 
 	eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext);
 #else
@@ -672,7 +676,7 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 
 	eglSwapBuffers(eglDisplay, eglSurface);
 	gl::Finish();
-	
+
 #elif PLAT_WIN
 	if (wgl::exts::var_EXT_swap_control)
 	{

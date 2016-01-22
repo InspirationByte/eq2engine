@@ -74,7 +74,7 @@ static char s_FFPMeshBuilder_VertexProgram[] =
 "uniform mat4 WVP;\n"
 "void main()\n"
 "{\n"
-"	gl_Position = WVP * input_vPos;\n"
+"	gl_Position = gl_ModelViewProjectionMatrix * input_vPos;\n"
 "	vColor = input_color;\n"
 "	texCoord = input_texCoord;\n"
 "}";
@@ -1948,6 +1948,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 			gl::GetShaderInfoLog(prog->m_vertexShader, sizeof(infoLog), &len, infoLog);
 			MsgError("Vertex shader '%s' error: %s\n", prog->GetName(), infoLog);
+
+			Msg("Full shader dump:\n\n%s", shaderString.c_str());
 		}
 	}
 	else
@@ -2042,7 +2044,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		// use freshly generated program to retirieve constants (uniforms) and samplers
 		gl::UseProgram(prog->m_program);
-		
+
 		// intel buggygl fix
 		if( m_vendor == VENDOR_INTEL )
 		{
@@ -2068,7 +2070,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		GLShaderSampler_t*	samplers = (GLShaderSampler_t  *)malloc(uniformCount * sizeof(GLShaderSampler_t));
 		GLShaderConstant_t*	uniforms = (GLShaderConstant_t *)malloc(uniformCount * sizeof(GLShaderConstant_t));
-		
+
 		int nSamplers = 0;
 		int nUniforms = 0;
 

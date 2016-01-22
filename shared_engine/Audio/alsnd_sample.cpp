@@ -26,7 +26,7 @@ typedef struct                                  /* WAV File-header */
 
 typedef struct                                  /* WAV Fmt-header */
 {
-	ALushort Format;                              
+	ALushort Format;
 	ALushort Channels;
 	ALuint   SamplesPerSec;
 	ALuint   BytesPerSec;
@@ -44,9 +44,9 @@ typedef struct                                  /* WAV Smpl-header */
 {
 	ALuint   Manufacturer;
 	ALuint   Product;
-	ALuint   SamplePeriod;                          
-	ALuint   Note;                                  
-	ALuint   FineTune;                              
+	ALuint   SamplePeriod;
+	ALuint   Note;
+	ALuint   FineTune;
 	ALuint   SMPTEFormat;
 	ALuint   SMPTEOffest;
 	ALuint   Loops;
@@ -70,13 +70,13 @@ typedef struct                                  /* WAV Chunk-header */
 	ALuint Size;
 } wavchunkhdr_t;
 
-typedef struct 
+typedef struct
 {
-	ALuint Name; 
+	ALuint Name;
 	ALuint Position;
 	ALuint fccChunk;
 	ALuint ChunkStart;
-	ALuint BlockStart; 
+	ALuint BlockStart;
 	ALuint SampleOffset;
 } wavcuehdr_t;
 
@@ -94,7 +94,7 @@ void LoadWavFromBufferEX(ubyte *memory, ALenum *format, ALvoid **data,ALsizei *s
 	wavfmthdr_t FmtHdr;
 
 	ubyte *Stream;
-	
+
 	*format = AL_FORMAT_MONO16;
 	*data = NULL;
 	*size = 0;
@@ -102,7 +102,7 @@ void LoadWavFromBufferEX(ubyte *memory, ALenum *format, ALvoid **data,ALsizei *s
 	*loop = AL_FALSE;
 
 	if (memory)
-	{		
+	{
 		Stream = memory;
 		if (Stream)
 		{
@@ -113,7 +113,7 @@ void LoadWavFromBufferEX(ubyte *memory, ALenum *format, ALvoid **data,ALsizei *s
 			while ((FileHdr.Size!=0) && (memcpy(&ChunkHdr, Stream, sizeof(wavchunkhdr_t))))
 			{
 				Stream += sizeof(wavchunkhdr_t);
-			    
+
 				if (ChunkHdr.Id == WAV_FMT_ID)
 				{
 					memcpy(&FmtHdr,Stream,sizeof(wavfmthdr_t));
@@ -126,7 +126,7 @@ void LoadWavFromBufferEX(ubyte *memory, ALenum *format, ALvoid **data,ALsizei *s
 
 						*freq = FmtHdr.SamplesPerSec;
 						Stream += ChunkHdr.Size;
-					} 
+					}
 					else
 					{
 						memcpy(&FmtExHdr,Stream,sizeof(wavexhdr_t));
@@ -140,7 +140,7 @@ void LoadWavFromBufferEX(ubyte *memory, ALenum *format, ALvoid **data,ALsizei *s
 						*size = ChunkHdr.Size;
 						*data = malloc(ChunkHdr.Size + 31);
 
-						if (*data) 
+						if (*data)
 						{
 							memcpy(*data,Stream,ChunkHdr.Size);
 						    memset(((char *)*data)+ChunkHdr.Size,0,31);
@@ -221,7 +221,7 @@ bool DkSoundSampleLocal::Load()
 		return true;
 
 	EqString ext = m_szName.Path_Extract_Ext();
-		
+
 	bool status = false;
 
 	if(!stricmp(ext.GetData(),"wav"))
@@ -237,7 +237,7 @@ bool DkSoundSampleLocal::Load()
 		status = false;
 		MsgError("DkSoundSample::Load '%s' failed, extension not supported\n", m_szName.c_str());
 	}
-		
+
 	return status;
 }
 

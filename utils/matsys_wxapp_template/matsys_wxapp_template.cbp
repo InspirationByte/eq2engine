@@ -6,26 +6,7 @@
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
-			<Target title="Debug Win32">
-				<Option output="../../../gamebin_linux/matsys_wxapp_template" prefix_auto="1" extension_auto="1" />
-				<Option type="0" />
-				<Option compiler="gcc" />
-				<Compiler>
-					<Add option="-DWIN32" />
-					<Add option="-D_DEBUG" />
-					<Add option="-D_WINDOWS" />
-					<Add option="-D_USRDLL" />
-					<Add option="-DENGINE_EXPORT" />
-					<Add option="-DPHYSICS_EXPORT" />
-					<Add option="-DNO_GAME" />
-					<Add option="-DNO_ENGINE" />
-					<Add option="-DNOENGINE" />
-				</Compiler>
-				<Linker>
-					<Add directory="../utils/wx/lib/vc_lib/" />
-				</Linker>
-			</Target>
-			<Target title="Release Win32">
+			<Target title="Release">
 				<Option output="../../../gamebin_linux/matsys_wxapp_template" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="../../../gamebin_linux/" />
 				<Option type="0" />
@@ -33,20 +14,19 @@
 				<Compiler>
 					<Add option="-O2" />
 					<Add option="-g" />
-					<Add option="-DLINUX" />
 					<Add option="-DNDEBUG" />
-					<Add option="-D_USRDLL" />
-					<Add option="-DENGINE_EXPORT" />
-					<Add option="-DPHYSICS_EXPORT" />
-					<Add option="-DNO_GAME" />
-					<Add option="-DNO_ENGINE" />
-					<Add option="-DNOENGINE" />
-					<Add option="-DEDITOR" />
 				</Compiler>
 			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-m32 `wx-config --cflags`" />
+			<Add option="-DLINUX" />
+			<Add option="-DENGINE_EXPORT" />
+			<Add option="-DPHYSICS_EXPORT" />
+			<Add option="-DNO_GAME" />
+			<Add option="-DNO_ENGINE" />
+			<Add option="-DNOENGINE" />
+			<Add option="-DEDITOR" />
 			<Add directory="../../FileSystem" />
 			<Add directory="../../Engine" />
 			<Add directory="../../public" />

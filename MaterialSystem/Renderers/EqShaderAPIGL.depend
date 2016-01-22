@@ -88,13 +88,13 @@
 	"Platform.h"
 	"eqstring.h"
 
-1452332103 /home/soap/Projects/eqengine/src_all/public/utils/eqstring.h
+1453301689 /home/soap/Projects/eqengine/src_all/public/utils/eqstring.h
 	<stdlib.h>
 	<string.h>
 	"dktypes.h"
 	"eqwstring.h"
 
-1452332103 /home/soap/Projects/eqengine/src_all/public/utils/eqwstring.h
+1453301689 /home/soap/Projects/eqengine/src_all/public/utils/eqwstring.h
 	<stdlib.h>
 	<string.h>
 	"dktypes.h"
@@ -324,17 +324,19 @@
 1452159729 /home/soap/Projects/eqengine/src_all/public/utils/CRC32.h
 	"Platform.h"
 
-1452879720 source:/home/soap/Projects/eqengine/src_all/MaterialSystem/Renderers/GL/CGLRenderLib.cpp
+1453301689 source:/home/soap/Projects/eqengine/src_all/MaterialSystem/Renderers/GL/CGLRenderLib.cpp
 	"Platform.h"
 	"CGLRenderLib.h"
 	"gl_caps.hpp"
 	"wgl_caps.hpp"
 	"glx_caps.hpp"
+	"agl_caps.hpp"
 	"imaging/ImageLoader.h"
 
-1452878744 /home/soap/Projects/eqengine/src_all/MaterialSystem/Renderers/GL/CGLRenderLib.h
+1453301689 /home/soap/Projects/eqengine/src_all/MaterialSystem/Renderers/GL/CGLRenderLib.h
 	"../IRenderLibrary.h"
 	"ShaderAPIGL.h"
+	"EGL/egl.h"
 
 1452332103 /home/soap/Projects/eqengine/src_all/MaterialSystem/Renderers/IRenderLibrary.h
 	"IShaderAPI.h"
@@ -346,9 +348,10 @@
 	"Platform.h"
 	"ITexture.h"
 
-1452878744 /home/soap/Projects/eqengine/src_all/MaterialSystem/Renderers/GL/ShaderAPIGL.h
+1453301689 /home/soap/Projects/eqengine/src_all/MaterialSystem/Renderers/GL/ShaderAPIGL.h
 	"../ShaderAPI_Base.h"
 	"gl_caps.hpp"
+	"EGL/egl.h"
 	<X11/Xlib.h>
 	<X11/Xutil.h>
 	<X11/Xmd.h>
@@ -372,7 +375,7 @@
 	<GL/glxext.h>
 	<AGL/agl.h>
 
-1452519510 source:/home/soap/Projects/eqengine/src_all/MaterialSystem/Renderers/GL/gl_caps.cpp
+1453301689 source:/home/soap/Projects/eqengine/src_all/MaterialSystem/Renderers/GL/gl_caps.cpp
 	<algorithm>
 	<vector>
 	<string.h>
@@ -381,6 +384,7 @@
 	<dlfcn.h>
 	<dlfcn.h>
 	<stdio.h>
+	"EGL/egl.h"
 	<GL/glx.h>
 
 1452519510 /home/soap/Projects/eqengine/src_all/MaterialSystem/Renderers/GL/gl_caps.hpp
@@ -410,7 +414,7 @@
 1452411639 /home/soap/Projects/eqengine/src_all/MaterialSystem/Renderers/GL/wgl_caps.hpp
 	<windows.h>
 
-1452878744 source:/home/soap/Projects/eqengine/src_all/MaterialSystem/Renderers/GL/ShaderAPIGL.cpp
+1453302445 source:/home/soap/Projects/eqengine/src_all/MaterialSystem/Renderers/GL/ShaderAPIGL.cpp
 	"ShaderAPIGL.h"
 	"CGLTexture.h"
 	"VertexFormatGL.h"

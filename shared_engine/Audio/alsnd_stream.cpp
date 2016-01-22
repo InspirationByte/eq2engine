@@ -227,11 +227,11 @@ void DkSoundAmbient::UpdateStreaming()
 			break;
     }
 
-	
+
 	//Make sure music isn't stopped
 	ALenum state;
 	alGetSourcei(m_alSource, AL_SOURCE_STATE, &state);
-	
+
 	if(state == AL_STOPPED)
 	{
 		//Make sure music is looping
@@ -242,7 +242,7 @@ void DkSoundAmbient::UpdateStreaming()
 
 		alSourcePlay(m_alSource);
 	}
-	
+
 }
 
 void DkSoundAmbient::ResetStream()
