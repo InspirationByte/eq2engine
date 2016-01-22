@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include "ICmdLineParser.h"
 #include "utils/DkList.h"
+#include "utils/eqstring.h"
 
 class CommandLineParse : public ICommandLineParse
 {

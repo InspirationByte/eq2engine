@@ -43,6 +43,8 @@
 
 #define _vsnwprintf vswprintf
 
+#endif // LINUX
+
 #ifdef ANDROID
 
 typedef __builtin_va_list	va_list;
@@ -59,9 +61,9 @@ typedef __builtin_va_list	__gnuc_va_list;
 typedef __gnuc_va_list		va_list;
 typedef va_list				__va_list;
 
-#endif // ANDROID
+wchar_t* wcsncpy(wchar_t * __restrict dst, const wchar_t * __restrict src, size_t n);
 
-#endif // LINUX
+#endif // ANDROID
 
 // fixes slashes in the directory name
 void		FixSlashes( char* str );

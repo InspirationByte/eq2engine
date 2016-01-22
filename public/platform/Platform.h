@@ -68,9 +68,7 @@
 #  endif
 #  include <windows.h>
 
-#elif defined(LINUX)
-
-
+#elif defined(LINUX) || defined(ANDROID)
 #  include <stdio.h>
 
 #elif defined(__APPLE__)
@@ -117,7 +115,7 @@
 #define offsetOf(structure,member)		(size_t)&(((structure *)0)->member)
 #define elementSizeOf(structure,member)	sizeof(((structure *)0)->member)
 
-#ifdef PLAT_WIN // maybe GCC?
+#ifdef _MSC_VER // maybe GCC?
 
 #define forceinline __forceinline
 #define _ALIGNED(x) __declspec(align(x))
@@ -188,7 +186,7 @@ void	Platform_Sleep(uint32 nMilliseconds);
 
 #define stricmp(a, b) strcasecmp(a, b)
 
-#endif // LINUX
+#endif // PLAT_WIN
 
 //------------------------------------------------------------------------------------------------
 
@@ -217,7 +215,7 @@ void			AssertValidReadWritePtr( void* ptr, int count = 1 );
 #define snprintf _snprintf
 #endif // vsnprintf
 
-#elif LINUX
+#elif PLAT_POSIX
 // Alloca defined for this platform
 #define  stackalloc( _size ) alloca( _size )
 #define  stackfree( _p )   0

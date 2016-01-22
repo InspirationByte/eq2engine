@@ -808,14 +808,15 @@
 	"DebugInterface.h"
 	<ctype.h>
 
-1452159728 /home/soap/Projects/eqengine/src_all/Core/CmdLineParser.h
+1453487617 /home/soap/Projects/eqengine/src_all/Core/CmdLineParser.h
 	<stdio.h>
 	"ICmdLineParser.h"
 	"utils/DkList.h"
+	"utils/eqstring.h"
 
-1452159729 /home/soap/Projects/eqengine/src_all/public/core/ICmdLineParser.h
+1453486917 /home/soap/Projects/eqengine/src_all/public/core/ICmdLineParser.h
 	<stdio.h>
-	"core_base_header.h"
+	"InterfaceManager.h"
 
 1452159729 /home/soap/Projects/eqengine/src_all/public/core/core_base_header.h
 	"platform/Platform.h"
@@ -882,7 +883,7 @@
 	"utils/DkList.h"
 	"math/DkMath.h"
 
-1452332103 /home/soap/Projects/eqengine/src_all/public/platform/Platform.h
+1453486313 /home/soap/Projects/eqengine/src_all/public/platform/Platform.h
 	"dktypes.h"
 	"SDL.h"
 	"SDL_syswm.h"
@@ -1208,7 +1209,7 @@
 	<stddef.h>
 	<string.h>
 
-1452332103 /home/soap/Projects/eqengine/src_all/public/utils/strtools.h
+1453486198 /home/soap/Projects/eqengine/src_all/public/utils/strtools.h
 	"utils/DkLinkedList.h"
 	"utils/DkList.h"
 	"utils/eqstring.h"
@@ -1311,9 +1312,9 @@
 
 1452332103 /home/soap/Projects/eqengine/src_all/public/utils/singleton.h
 
-1452332103 /home/soap/Projects/eqengine/src_all/public/utils/eqthread.h
-	<stdint.h>
+1453486584 /home/soap/Projects/eqengine/src_all/public/utils/eqthread.h
 	"Platform.h"
+	<stdint.h>
 	"eqstring.h"
 
 1452159729 /home/soap/Projects/eqengine/src_all/public/IVirtualStream.h

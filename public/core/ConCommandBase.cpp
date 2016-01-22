@@ -7,7 +7,7 @@
 
 #include "ConCommandBase.h"
 #include "IConCommandFactory.h"
-#include "core_base_header.h"
+//#include "core_base_header.h"
 
 // Default constructor
 ConCommandBase::ConCommandBase()

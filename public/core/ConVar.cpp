@@ -6,10 +6,12 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "ConVar.h"
-#include "core_base_header.h"
+#include "IConCommandFactory.h"
+#include "ICmdLineParser.h"
 #include "DebugInterface.h"
 
 #include "utils/DkList.h"
+#include "utils/strtools.h"
 
 
 #if defined(_DEBUG) && defined(_WIN32)

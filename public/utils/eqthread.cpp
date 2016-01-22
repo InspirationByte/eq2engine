@@ -219,7 +219,7 @@ InterlockedInt_t CompareExchangeInterlocked( InterlockedInt_t& value, Interlocke
 
 #else
 
-#ifdef LINUX
+#ifdef PLAT_POSIX
 #include <sched.h>
 #include <pthread.h>
 #include <errno.h>

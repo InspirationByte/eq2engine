@@ -8,14 +8,15 @@
 #ifndef EQTHREAD_H
 #define EQTHREAD_H
 
-#ifdef LINUX
+#include "Platform.h"
+
+#ifdef PLAT_POSIX
 
 #include <stdint.h>
 #define INFINITE 0xFFFFFFFF
 
-#endif // LINUX
+#endif // PLAT_POSIX
 
-#include "Platform.h"
 #include "eqstring.h"
 
 namespace Threading

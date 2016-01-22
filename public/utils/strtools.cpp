@@ -59,6 +59,26 @@ wchar_t* wcsupr(wchar_t* str)
 
 #endif
 
+#ifdef ANDROID
+wchar_t* wcsncpy(wchar_t * __restrict dst, const wchar_t * __restrict src, size_t n)
+{
+	if (n != 0) {
+		wchar_t *d = dst;
+		const wchar_t *s = src;
+
+		do {
+			if ((*d++ = *s++) == L'\0') {
+				/* NUL pad the remaining n-1 bytes */
+				while (--n != 0)
+					*d++ = L'\0';
+				break;
+			}
+		} while (--n != 0);
+	}
+	return (dst);
+}
+#endif // PLAT_DROID
+
 void FixSlashes( char* str )
 {
     while ( *str )

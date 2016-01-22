@@ -10,7 +10,7 @@
 
 #include <stdio.h>
 
-#include "core_base_header.h"
+#include "InterfaceManager.h"
 
 #define CMDLINE_INTERFACE_VERSION		"CORE_CommandLine_001"
 

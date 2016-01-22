@@ -6,7 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "ConCommand.h"
-#include "core_base_header.h"
+#include "ConVar.h"
+#include "IConCommandFactory.h"
 #include "DebugInterface.h"
 
 ConCommand::ConCommand(char const *name,CON_COMMAND_CALLBACK callback,char const *desc, int flags /*= 0*/) : ConCommandBase()
