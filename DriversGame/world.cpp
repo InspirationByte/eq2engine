@@ -361,7 +361,7 @@ void CGameWorld::Init()
 	// Create vertex format for vehicle EGF models (EGF + EGF)
 	//
 	VertexFormatDesc_t pFormat[] = {
-		// model at stream 1
+		// model at stream 0
 		{ 0, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position 0
 		{ 0, 2, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 0
 
@@ -372,7 +372,7 @@ void CGameWorld::Init()
 		{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Bone indices (hw skinning), (TC2)
 		{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF },  // Bone weights (hw skinning), (TC3)
 
-		// model at stream 2
+		// model at stream 1
 		{ 1, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position 0
 		{ 1, 2, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 4
 		

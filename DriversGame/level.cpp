@@ -3509,7 +3509,7 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 		// force disable vertex buffer
-		g_pShaderAPI->SetVertexBuffer( NULL, 1 );
+		g_pShaderAPI->SetVertexBuffer( NULL, 2 );
 
 		for(int i = 0; i < m_objectDefs.numElem(); i++)
 		{

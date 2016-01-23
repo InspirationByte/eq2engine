@@ -166,6 +166,8 @@ ShaderAPIGL::ShaderAPIGL() : ShaderAPI_Base()
 
 	m_pMeshBufferTexturedShader = NULL;
 	m_pMeshBufferNoTextureShader = NULL;
+
+	m_boundInstanceStream = -1;
 }
 
 void ShaderAPIGL::PrintAPIInfo()
@@ -1630,18 +1632,7 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 
 		if (!pSelectedFormat->m_hColor.m_nSize &&  pCurrentFormat->m_hColor.m_nSize)
 			gl::DisableClientState(gl::COLOR_ARRAY);
-#endif // GL_NO_DEPRECATED_ATTRIBUTES
 
-		for (int i = 0; i < MAX_GL_GENERIC_ATTRIB; i++)
-		{
-			if ( pSelectedFormat->m_hGeneric[i].m_nSize && !pCurrentFormat->m_hGeneric[i].m_nSize)
-				gl::EnableVertexAttribArray(i);
-
-			if (!pSelectedFormat->m_hGeneric[i].m_nSize &&  pCurrentFormat->m_hGeneric[i].m_nSize)
-				gl::DisableVertexAttribArray(i);
-		}
-
-#ifndef GL_NO_DEPRECATED_ATTRIBUTES
 		for (int i = 0; i < MAX_TEXCOORD_ATTRIB; i++)
 		{
 			if ((pSelectedFormat->m_hTexCoord[i].m_nSize > 0) ^ (pCurrentFormat->m_hTexCoord[i].m_nSize > 0))
@@ -1659,6 +1650,15 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 			}
 		}
 #endif // GL_NO_DEPRECATED_ATTRIBUTES
+
+		for (int i = 0; i < MAX_GL_GENERIC_ATTRIB; i++)
+		{
+			if ( pSelectedFormat->m_hGeneric[i].m_nSize && !pCurrentFormat->m_hGeneric[i].m_nSize)
+				gl::EnableVertexAttribArray(i);
+
+			if (!pSelectedFormat->m_hGeneric[i].m_nSize &&  pCurrentFormat->m_hGeneric[i].m_nSize)
+				gl::DisableVertexAttribArray(i);
+		}
 
 		m_pCurrentVertexFormat = pVertexFormat;
 
@@ -1680,19 +1680,19 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 	GLuint vbo = 0;
 
 	if (pSelectedBuffer != NULL)
-	{
 		vbo = pSelectedBuffer->m_nGL_VB_Index;
-	}
 
 	if( m_pCurrentVertexBuffers[nStream] != pVertexBuffer )
 	{
 		GL_CRITICAL();
 
+		gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
 		m_nCurrentVBO = vbo;
-		gl::BindBuffer(gl::ARRAY_BUFFER, m_nCurrentVBO);
 
 		GL_END_CRITICAL();
 	}
+
+	bool instanceBuffer = (nStream > 0) && pSelectedBuffer && (pSelectedBuffer->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
 
 	if (pSelectedBuffer != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream] || m_pCurrentVertexFormat != m_pActiveVertexFormat[nStream])
 	{
@@ -1704,31 +1704,15 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 			CVertexFormatGL* cvf = (CVertexFormatGL*)m_pCurrentVertexFormat;
 
-			//int vertexSize = pSelectedBuffer ? pSelectedBuffer->GetStrideSize() : cvf->GetVertexSizePerStream(nStream);
-
 			int vertexSize = cvf->m_nVertexSize[nStream];
 
 #ifndef GL_NO_DEPRECATED_ATTRIBUTES
 			if (cvf->m_hVertex.m_nStream == nStream && cvf->m_hVertex.m_nSize)
-			{
 				gl::VertexPointer(cvf->m_hVertex.m_nSize, glTypes[cvf->m_hVertex.m_nFormat], vertexSize, base + cvf->m_hVertex.m_nOffset);
-			}
 
 			if (cvf->m_hNormal.m_nStream == nStream && cvf->m_hNormal.m_nSize)
-			{
 				gl::NormalPointer(glTypes[cvf->m_hNormal.m_nFormat], vertexSize, base + cvf->m_hNormal.m_nOffset);
-			}
-#endif // GL_NO_DEPRECATED_ATTRIBUTES
 
-			for (int i = 0; i < MAX_GL_GENERIC_ATTRIB; i++)
-			{
-				if (cvf->m_hGeneric[i].m_nStream == nStream && cvf->m_hGeneric[i].m_nSize)
-				{
-					gl::VertexAttribPointer(i, cvf->m_hGeneric[i].m_nSize, glTypes[cvf->m_hGeneric[i].m_nFormat], gl::TRUE_, vertexSize, base + cvf->m_hGeneric[i].m_nOffset);
-				}
-			}
-
-#ifndef GL_NO_DEPRECATED_ATTRIBUTES
 			for (int i = 0; i < MAX_TEXCOORD_ATTRIB; i++)
 			{
 				if (cvf->m_hTexCoord[i].m_nStream == nStream && cvf->m_hTexCoord[i].m_nSize)
@@ -1739,10 +1723,21 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 			}
 
 			if (cvf->m_hColor.m_nStream == nStream && cvf->m_hColor.m_nSize)
-			{
 				gl::ColorPointer(cvf->m_hColor.m_nSize, glTypes[cvf->m_hColor.m_nFormat], vertexSize, base + cvf->m_hColor.m_nOffset);
-			}
 #endif // GL_NO_DEPRECATED_ATTRIBUTES
+
+			for (int i = 0; i < MAX_GL_GENERIC_ATTRIB; i++)
+			{
+				if (cvf->m_hGeneric[i].m_nStream == nStream)
+				{
+					if(cvf->m_hGeneric[i].m_nSize)
+						gl::VertexAttribPointer(i, cvf->m_hGeneric[i].m_nSize, glTypes[cvf->m_hGeneric[i].m_nFormat], gl::TRUE_, vertexSize, base + cvf->m_hGeneric[i].m_nOffset);
+
+					// instance vertex attrib divisor
+					int selStreamParam = instanceBuffer ? 1 : 0;
+					gl::VertexAttribDivisorARB(i, selStreamParam);
+				}
+			}
 
 			GL_END_CRITICAL();
 		}
@@ -1750,6 +1745,15 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 	if(pVertexBuffer)
 	{
+		if(!instanceBuffer && m_boundInstanceStream != -1)
+			m_boundInstanceStream = -1;
+		else if(instanceBuffer && m_boundInstanceStream == -1)
+			m_boundInstanceStream = nStream;
+		else if(instanceBuffer && m_boundInstanceStream != -1)
+		{
+			ASSERTMSG(false, "Already bound instancing stream at %d!!!");
+		}
+
 		// set bound stream
 		((CVertexBufferGL*)pVertexBuffer)->m_boundStream = nStream;
 
@@ -2473,7 +2477,16 @@ void ShaderAPIGL::DrawIndexedPrimitives(PrimitiveType_e nType, int nFirstIndex, 
 	uint indexSize = m_pCurrentIndexBuffer->GetIndexSize();
 
 	GL_CRITICAL();
-	gl::DrawElements(glPrimitiveType[nType], nIndices, indexSize == 2? gl::UNSIGNED_SHORT : gl::UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
+
+	int numInstances = 0;
+
+	if(m_boundInstanceStream != -1 && m_pCurrentVertexBuffers[m_boundInstanceStream])
+		numInstances = m_pCurrentVertexBuffers[m_boundInstanceStream]->GetVertexCount();
+
+	if(numInstances)
+		gl::DrawElementsInstancedEXT(glPrimitiveType[nType], nIndices, indexSize == 2? gl::UNSIGNED_SHORT : gl::UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex), numInstances);
+	else
+		gl::DrawElements(glPrimitiveType[nType], nIndices, indexSize == 2? gl::UNSIGNED_SHORT : gl::UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
 	GL_END_CRITICAL();
 
 	m_nDrawIndexedPrimitiveCalls++;
@@ -2490,7 +2503,16 @@ void ShaderAPIGL::DrawNonIndexedPrimitives(PrimitiveType_e nType, int nFirstVert
 	int nTris = g_pGLPrimCounterCallbacks[nType](nVertices);
 
 	GL_CRITICAL();
-	gl::DrawArrays(glPrimitiveType[nType], nFirstVertex, nVertices);
+
+	int numInstances = 0;
+
+	if(m_boundInstanceStream != -1 && m_pCurrentVertexBuffers[m_boundInstanceStream])
+		numInstances = m_pCurrentVertexBuffers[m_boundInstanceStream]->GetVertexCount();
+
+	if(numInstances)
+		gl::DrawArraysInstancedEXT(glPrimitiveType[nType], nFirstVertex, nVertices, numInstances);
+	else
+		gl::DrawArrays(glPrimitiveType[nType], nFirstVertex, nVertices);
 	GL_END_CRITICAL();
 
 	m_nDrawIndexedPrimitiveCalls++;
@@ -2875,9 +2897,6 @@ void ShaderAPIGL::ThreadingSharingRelease()
 		return;
 
 	m_isSharing = false;
-
-	// make sure it's fully done
-	gl::Finish();
 
 #ifdef USE_GLES2
 	eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);

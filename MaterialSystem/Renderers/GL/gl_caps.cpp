@@ -40,10 +40,7 @@ static void* SunGetProcAddress (const GLubyte* name)
 }
 #endif /* __sgi || __sun */
 
-#if defined(USE_GLES2)
-#include "EGL/egl.h"
-#define IntGetProcAddress(name) eglGetProcAddress(name)
-#elif defined(_WIN32)
+#if defined(_WIN32)
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4055)
@@ -93,6 +90,7 @@ namespace gl
 {
 	namespace exts
 	{
+		LoadTest var_EXT_draw_instanced;
 		LoadTest var_ARB_instanced_arrays;
 		LoadTest var_ARB_multisample;
 		LoadTest var_ARB_fragment_shader;
@@ -116,6 +114,21 @@ namespace gl
 	
 	namespace _detail
 	{
+		typedef void (CODEGEN_FUNCPTR *PFNDRAWARRAYSINSTANCEDEXT)(GLenum, GLint, GLsizei, GLsizei);
+		PFNDRAWARRAYSINSTANCEDEXT DrawArraysInstancedEXT = 0;
+		typedef void (CODEGEN_FUNCPTR *PFNDRAWELEMENTSINSTANCEDEXT)(GLenum, GLsizei, GLenum, const void *, GLsizei);
+		PFNDRAWELEMENTSINSTANCEDEXT DrawElementsInstancedEXT = 0;
+		
+		static int Load_EXT_draw_instanced()
+		{
+			int numFailed = 0;
+			DrawArraysInstancedEXT = reinterpret_cast<PFNDRAWARRAYSINSTANCEDEXT>(IntGetProcAddress("glDrawArraysInstancedEXT"));
+			if(!DrawArraysInstancedEXT) ++numFailed;
+			DrawElementsInstancedEXT = reinterpret_cast<PFNDRAWELEMENTSINSTANCEDEXT>(IntGetProcAddress("glDrawElementsInstancedEXT"));
+			if(!DrawElementsInstancedEXT) ++numFailed;
+			return numFailed;
+		}
+		
 		typedef void (CODEGEN_FUNCPTR *PFNVERTEXATTRIBDIVISORARB)(GLuint, GLuint);
 		PFNVERTEXATTRIBDIVISORARB VertexAttribDivisorARB = 0;
 		
@@ -2988,7 +3001,8 @@ namespace gl
 			
 			void InitializeMappingTable(std::vector<MapEntry> &table)
 			{
-				table.reserve(18);
+				table.reserve(19);
+				table.push_back(MapEntry("GL_EXT_draw_instanced", &exts::var_EXT_draw_instanced, _detail::Load_EXT_draw_instanced));
 				table.push_back(MapEntry("GL_ARB_instanced_arrays", &exts::var_ARB_instanced_arrays, _detail::Load_ARB_instanced_arrays));
 				table.push_back(MapEntry("GL_ARB_multisample", &exts::var_ARB_multisample, _detail::Load_ARB_multisample));
 				table.push_back(MapEntry("GL_ARB_fragment_shader", &exts::var_ARB_fragment_shader));
@@ -3011,6 +3025,7 @@ namespace gl
 			
 			void ClearExtensionVars()
 			{
+				exts::var_EXT_draw_instanced = exts::LoadTest();
 				exts::var_ARB_instanced_arrays = exts::LoadTest();
 				exts::var_ARB_multisample = exts::LoadTest();
 				exts::var_ARB_fragment_shader = exts::LoadTest();

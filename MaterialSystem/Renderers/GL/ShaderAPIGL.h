@@ -358,8 +358,9 @@ private:
 
 	GLenum				m_drawBuffers[MAX_MRTS];
 
-	int					m_nCurrentRenderTargets;
+	int					m_boundInstanceStream;
 
+	int					m_nCurrentRenderTargets;
 
 	int					m_nCurrentFrontFace;
 

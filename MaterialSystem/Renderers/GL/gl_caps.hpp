@@ -174,6 +174,7 @@ namespace gl
 			int m_numMissing;
 		};
 		
+		extern LoadTest var_EXT_draw_instanced;
 		extern LoadTest var_ARB_instanced_arrays;
 		extern LoadTest var_ARB_multisample;
 		extern LoadTest var_ARB_fragment_shader;
@@ -1368,6 +1369,9 @@ namespace gl
 	
 	namespace _detail
 	{
+		extern void (CODEGEN_FUNCPTR *DrawArraysInstancedEXT)(GLenum mode, GLint start, GLsizei count, GLsizei primcount);
+		extern void (CODEGEN_FUNCPTR *DrawElementsInstancedEXT)(GLenum mode, GLsizei count, GLenum type, const void * indices, GLsizei primcount);
+		
 		extern void (CODEGEN_FUNCPTR *VertexAttribDivisorARB)(GLuint index, GLuint divisor);
 		
 		extern void (CODEGEN_FUNCPTR *SampleCoverageARB)(GLfloat value, GLboolean invert);
@@ -2085,6 +2089,9 @@ namespace gl
 		extern void (CODEGEN_FUNCPTR *UniformMatrix4x3fv)(GLint location, GLsizei count, GLboolean transpose, const GLfloat * value);
 		
 	} //namespace _detail
+	
+	inline void DrawArraysInstancedEXT(GLenum mode, GLint start, GLsizei count, GLsizei primcount){_detail::DrawArraysInstancedEXT(mode, start, count, primcount);}
+	inline void DrawElementsInstancedEXT(GLenum mode, GLsizei count, GLenum type, const void * indices, GLsizei primcount){_detail::DrawElementsInstancedEXT(mode, count, type, indices, primcount);}
 	
 	inline void VertexAttribDivisorARB(GLuint index, GLuint divisor){_detail::VertexAttribDivisorARB(index, divisor);}
 	
