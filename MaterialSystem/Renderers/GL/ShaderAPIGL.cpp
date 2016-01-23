@@ -1746,8 +1746,6 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 			GL_END_CRITICAL();
 		}
-
-
 	}
 
 	if(pVertexBuffer)
@@ -1838,10 +1836,12 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	if(!pShader)
 		return;
 
-	CScopedMutex m(m_Mutex);
+	CScopedMutex scoped(m_Mutex);
+
+	pShader->Ref_Drop(); // decrease references to this shader
 
 	// remove it if reference is zero
-	if(pShader->Ref_Count() == 0)
+	if(pShader->Ref_Count() <= 0)
 	{
 		// Cancel shader and destroy
 		if(m_pCurrentShader == pShaderProgram)
@@ -1856,8 +1856,6 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 		delete pShader;
 		ThreadingSharingRelease();
 	}
-	else
-		pShader->Ref_Drop(); // decrease references to this shader
 }
 
 #define SHADER_HELPERS_STRING \

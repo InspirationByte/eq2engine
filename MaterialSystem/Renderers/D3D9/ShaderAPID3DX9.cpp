@@ -2026,8 +2026,10 @@ void ShaderAPID3DX9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 
 	CScopedMutex m(m_Mutex);
 
+	pShader->Ref_Drop(); // decrease references to this shader
+
 	// remove it if reference is zero
-	if(pShader->Ref_Count() == 0)
+	if(pShader->Ref_Count() <= 0)
 	{
 		// Cancel shader and destroy
 		if(m_pCurrentShader == pShaderProgram)
@@ -2039,9 +2041,7 @@ void ShaderAPID3DX9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 		m_ShaderList.remove(pShader);
 
 		delete pShader;
-	}
-	else
-		pShader->Ref_Drop(); // decrease references to this shader
+	}	
 }
 
 int SamplerComp(const void *s0, const void *s1)

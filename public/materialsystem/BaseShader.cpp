@@ -88,7 +88,7 @@ CBaseShader::CBaseShader()
 void CBaseShader::InitParams()
 {
 	// The basic setup of the shader parameters
-	if(	!m_bInitialized && !m_bIsError)
+	if(	!m_bInitialized && !m_bIsError )
 	{
 		IMatVar *RecShadowed			= m_pAssignedMaterial->GetMaterialVar("ReceiveShadows", "1");
 		IMatVar *CastShadows			= m_pAssignedMaterial->GetMaterialVar("CastShadows", "1");
@@ -197,6 +197,44 @@ void CBaseShader::InitParams()
 			m_bIsError = true;
 	}
 }
+
+
+// Unload shaders, textures
+void CBaseShader::Unload(bool bUnloadShaders, bool bUnloadTextures)
+{
+	if(bUnloadShaders)
+	{
+		for(int i = 0; i < m_UsedPrograms.numElem(); i++)
+		{
+			g_pShaderAPI->DestroyShaderProgram(*m_UsedPrograms[i]);
+			*m_UsedPrograms[i] = NULL;
+		}
+		m_UsedPrograms.clear();
+
+		for(int i = 0; i < m_UsedRenderStates.numElem(); i++)
+		{
+			g_pShaderAPI->DestroyRenderState(*m_UsedRenderStates[i]);
+			*m_UsedRenderStates[i] = NULL;
+		}
+
+		m_UsedRenderStates.clear();
+	}
+
+	if(bUnloadTextures)
+	{
+		for(int i = 0; i < m_UsedTextures.numElem(); i++)
+		{
+			g_pShaderAPI->FreeTexture(*m_UsedTextures[i]);
+ 			*m_UsedTextures[i] = NULL;
+		}
+
+		m_UsedTextures.clear();
+	}
+
+	m_bInitialized = false;
+	m_bIsError = false;
+}
+
 
 void CBaseShader::SetupDefaultParameter(ShaderDefaultParams_e paramtype)
 {
@@ -348,43 +386,4 @@ void CBaseShader::AddTextureToAutoremover(ITexture** pShader)
 {
 	if(*pShader)
 		m_UsedTextures.append(pShader);
-}
-
-// Unload shaders, textures
-void CBaseShader::Unload(bool bUnloadShaders, bool bUnloadTextures)
-{
-	if(!m_bInitialized || m_bIsError)
-		return;
-
-	if(bUnloadShaders)
-	{
-		for(int i = 0; i < m_UsedPrograms.numElem(); i++)
-		{
-			g_pShaderAPI->DestroyShaderProgram(*m_UsedPrograms[i]);
-			*m_UsedPrograms[i] = NULL;
-		}
-
-		for(int i = 0; i < m_UsedRenderStates.numElem(); i++)
-		{
-			g_pShaderAPI->DestroyRenderState(*m_UsedRenderStates[i]);
-			*m_UsedRenderStates[i] = NULL;
-		}
-
-		m_UsedRenderStates.clear();
-
-		m_UsedPrograms.clear();
-	}
-	if(bUnloadTextures)
-	{
-		for(int i = 0; i < m_UsedTextures.numElem(); i++)
-		{
-			g_pShaderAPI->FreeTexture(*m_UsedTextures[i]);
- 			*m_UsedTextures[i] = NULL;
-		}
-
-		m_UsedTextures.clear();
-	}
-
-	m_bInitialized = false;
-	m_bIsError = false;
 }

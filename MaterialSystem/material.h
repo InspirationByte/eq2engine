@@ -30,8 +30,6 @@ public:
 	bool					IsError() const {return (m_state == MATERIAL_LOAD_ERROR);}
 	int						GetFlags() const;
 
-	
-
 // init + shutdown
 	void					Init(const char* szFileName_noExt, bool flushMatVarsOnly = false);
 	void					Cleanup(bool bUnloadShaders = true, bool bUnloadTextures = true, bool keepMaterialVars = false);
@@ -50,7 +48,6 @@ public:
 
 // render-time operations
 	void					UpdateProxy(float fDt);					
-	//IMaterialSystemShader*	GetShader() const {return m_pShader;}
 	ITexture*				GetBaseTexture(int stage = 0);
 
 	void					Setup();

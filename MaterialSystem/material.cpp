@@ -351,6 +351,18 @@ void CMaterial::Ref_DeleteObject()
 
 void CMaterial::Cleanup(bool bUnloadShaders, bool bUnloadTextures, bool keepMaterialVars)
 {
+	// first unload shader
+	if(m_pShader)
+	{
+		m_pShader->Unload( bUnloadShaders, bUnloadTextures );
+
+		if(bUnloadShaders && bUnloadTextures)
+		{
+			delete m_pShader;
+			m_pShader = NULL;
+		}
+	}
+
 	if(!keepMaterialVars)
 	{
 		for(int i = 0; i < m_hMatVars.numElem();i++)
@@ -359,23 +371,12 @@ void CMaterial::Cleanup(bool bUnloadShaders, bool bUnloadTextures, bool keepMate
 			m_hMatVars.removeIndex(i);
 			i--;
 		}
-	}
 
-	// proxy will be reinitialized
-	for(int i = 0; i < m_hMatProxies.numElem();i++)
-	{
-		delete m_hMatProxies[i];
-		m_hMatProxies.removeIndex(i);
-		i--;
-	}
-
-	if(m_pShader)
-	{
-		m_pShader->Unload(bUnloadShaders,bUnloadTextures);
-		if(bUnloadShaders && bUnloadTextures)
+		for(int i = 0; i < m_hMatProxies.numElem();i++)
 		{
-			delete m_pShader;
-			m_pShader = NULL;
+			delete m_hMatProxies[i];
+			m_hMatProxies.removeIndex(i);
+			i--;
 		}
 	}
 

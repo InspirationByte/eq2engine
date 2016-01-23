@@ -500,27 +500,24 @@ void CMaterialSystem::FreeAllTextures()
 void CMaterialSystem::ReloadAllMaterials(bool bTouchTextures,bool bTouchShaders, bool wait)
 {
 	if(m_pLoadedMaterials.numElem() == 0)
-	{
 		return;
-	}
 
 	g_pLoadBeginCallback();
 
 	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
 	{
-		if(m_pLoadedMaterials[i] != NULL)
-		{
-			EqString old_name(m_pLoadedMaterials[i]->GetName());
+		EqString old_name(m_pLoadedMaterials[i]->GetName());
 
-			// Flush material system
-			((CMaterial*)m_pLoadedMaterials[i])->Cleanup(bTouchShaders, bTouchTextures, false);
-			((CMaterial*)m_pLoadedMaterials[i])->Init(old_name.GetData(), false);
-		}
+		CMaterial* mat = (CMaterial*)m_pLoadedMaterials[i];
+
+		// Flush materials
+		mat->Cleanup(bTouchShaders, bTouchTextures, false);
+		mat->Init( old_name.GetData(), false );
 	}
 
 	PreloadNewMaterials();
 
-	if(wait)
+	if( wait )
 		Wait();
 
 	g_pLoadEndCallback();
@@ -1289,18 +1286,6 @@ DECLARE_CMD(r_reloadallmaterials,"Reloads all materials",0)
 	MsgInfo("*** Reloading materials...\n \n");
 	materials->ReloadAllMaterials();
 }
-/*
-DECLARE_CMD(r_reloadalltextures,"Reloads all textures",0)
-{
-	MsgInfo("*** Reloading textures...\n \n");
-	materials->ReloadAllMaterials(true,false);
-}
-
-DECLARE_CMD(r_reloadshaders,"Reloads all shaders",0)
-{
-	MsgInfo("*** Reloading shaders...\n \n");
-	materials->ReloadAllMaterials(false,true);
-}*/
 
 DECLARE_CMD(r_unloadalltextures,"Frees all textures",0)
 {

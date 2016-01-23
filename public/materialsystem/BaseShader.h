@@ -172,11 +172,13 @@
 	{																									\
 		m_pShader##shader = g_pShaderAPI->CreateNewShaderProgram(sname, findQuery.GetData());			\
 		bool status	= g_pShaderAPI->LoadShadersFromFile(m_pShader##shader, sname, defines.GetData());	\
-		if(!status) return false;														\
-	}																					\
-	else																				\
-		m_pShader##shader->Ref_Grab();													\
-	AddShaderToAutoremover(&m_pShader##shader);											\
+		if(!status){																					\
+			g_pShaderAPI->DestroyShaderProgram(m_pShader##shader);										\
+			return false;																				\
+		}																								\
+	}																									\
+	m_pShader##shader->Ref_Grab();																		\
+	AddShaderToAutoremover(&m_pShader##shader);															\
 	}
 
 class CBaseShader;
