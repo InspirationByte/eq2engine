@@ -136,7 +136,7 @@ public:
 //-------------------------------------------------------------
 
 	// Loads and compiles shaders from files
-	bool								LoadShadersFromFile(IShaderProgram* pShaderOutput, const char* pszFilePrefix, const char *extra = NULL, const char **attributeNames = NULL, int nAttributes = 0);
+	bool								LoadShadersFromFile(IShaderProgram* pShaderOutput, const char* pszFilePrefix, const char *extra = NULL);
 
 	// Shader constants setup
 	int									SetShaderConstantInt(const char *pszName, const int constant, int const_id = -1);

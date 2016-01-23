@@ -13,6 +13,8 @@
 #include "math/Rectangle.h"
 #include "Platform.h"
 #include "textureformats.h"
+#include "utils/DkList.h"
+#include "utils/eqstring.h"
 #include "ppmem.h"
 
 //---------------------------------------
@@ -494,33 +496,32 @@ typedef struct Sampler_s
 
 struct kvkeybase_t;
 
-struct shaderprogram_params_t
+struct shaderProgramText_t
 {
-	char*			pszPSText;
-	char*			pszVSText;
-	char*			pszGSText;
-	char*			pszHSText;
-	char*			pszDSText;
+	shaderProgramText_t() : text(nullptr), checksum(-1)
+	{}
 
-	int				psLine;
-	int				vsLine;
-	int				gsLine;
-	int				hsLine;
-	int				dsLine;
+	char*				text;
+	long				checksum;
+	DkList<EqString>	includes;
+};
 
-	// full checksums along with includes
-	long			psChecksum;
-	long			vsChecksum;
-	long			gsChecksum;
-	long			hsChecksum;
-	long			dsChecksum;
+struct shaderProgramCompileInfo_t
+{
+	shaderProgramCompileInfo_t() : disableCache(false), apiPrefs(nullptr)
+	{}
 
-	bool			bDisableCache;
+	shaderProgramText_t	vs;
+	shaderProgramText_t	ps;
+	shaderProgramText_t	gs;
+	shaderProgramText_t	hs;
+	shaderProgramText_t	ds;
 
-	kvkeybase_t*	pAPIPrefs;
+	// disables caching, always recompiled
+	bool				disableCache;
 
-	const char**	attributeNames;
-	int				nAttributes;
+	// apiprefs now contains all needed attributes
+	kvkeybase_t*		apiPrefs;
 };
 
 // shader API class for shader developers.

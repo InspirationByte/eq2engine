@@ -240,7 +240,7 @@ public:
 
 	// Load any shader from stream
 	bool						CompileShadersFromStream(	IShaderProgram* pShaderOutput,
-															const shaderprogram_params_t& params,
+															const shaderProgramCompileInfo_t& info,
 															const char* extra = NULL);
 
 	// Set current shader for rendering
@@ -328,14 +328,6 @@ public:
 	void						DrawMeshBufferPrimitives(PrimitiveType_e nType, int nVertices, int nIndices);
 
 //-------------------------------------------------------------
-// Fogging
-//-------------------------------------------------------------
-
-	void						SetupFog(FogInfo_t* fogparams);
-	void						SetFogEnabled(bool bEnable);
-	bool						IsFogEnabled();
-
-//-------------------------------------------------------------
 // Internal
 //-------------------------------------------------------------
 
@@ -411,8 +403,6 @@ private:
 
 	int							m_nCurrentSampleMask;
 	int							m_nSelectedSampleMask;
-
-	bool						m_bFogEnabled;
 
 	MatrixMode_e				m_nCurrentMatrixMode;
 	Matrix4x4					m_matrices[4];

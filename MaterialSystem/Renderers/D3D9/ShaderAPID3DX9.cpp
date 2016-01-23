@@ -91,8 +91,6 @@ ShaderAPID3DX9::ShaderAPID3DX9() : ShaderAPI_Base()
 
 	m_pCustomSamplerState = new SamplerStateParam_t;
 
-	m_bFogEnabled = false;
-
 //	m_pBackBuffer = NULL;
 //	m_pDepthBuffer = NULL;
 
@@ -2076,7 +2074,7 @@ struct shaderCacheHdr_t
 
 // Load any shader from stream
 bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
-												const shaderprogram_params_t& params,
+												const shaderProgramCompileInfo_t& info,
 												const char* extra)
 {
 	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(pShaderOutput);
@@ -2094,7 +2092,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	bool needsCompile = true;
 
-	if(!(params.bDisableCache || r_skipShaderCache.GetBool()))
+	if(!(info.disableCache || r_skipShaderCache.GetBool()))
 	{
 		pStream = GetFileSystem()->Open(cache_file_name.GetData(), "rb", -1);
 
@@ -2105,8 +2103,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 			pStream->Read(&scHdr, 1, sizeof(shaderCacheHdr_t));
 
 			if(	scHdr.ident == SHADERCACHE_IDENT &&
-				scHdr.psChecksum == params.psChecksum &&
-				scHdr.vsChecksum == params.vsChecksum)
+				scHdr.psChecksum == info.ps.checksum &&
+				scHdr.vsChecksum == info.vs.checksum)
 			{
 				// read pixel shader
 				ubyte* pShaderMem = (ubyte*)malloc(scHdr.psSize);
@@ -2168,7 +2166,65 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	LPD3DXBUFFER	shaderBuf = NULL;
 	LPD3DXBUFFER	errorsBuf = NULL;
 
-	if (params.pszPSText != NULL)
+	if (info.vs.text != NULL)
+	{
+		EqString shaderString;
+
+		if (extra  != NULL)
+			shaderString.Append(extra);
+
+		int maxVSVersion = D3DSHADER_VERSION_MAJOR(m_hCaps.VertexShaderVersion);
+		EqString profile(D3DXGetVertexShaderProfile(m_pD3DDevice));
+		EqString entry("vs_main");
+
+		int vsVersion = maxVSVersion;
+
+		if(info.apiPrefs)
+		{
+			profile = KV_GetValueString(info.apiPrefs->FindKeyBase("vs_profile"), 0, profile.GetData());
+			entry = KV_GetValueString(info.apiPrefs->FindKeyBase("EntryPoint"), 0, entry.GetData());
+
+			char minor = '0';
+
+			int cnt = sscanf(profile.GetData(), "vs_%d_%c", &vsVersion, &minor);
+
+			if(vsVersion > maxVSVersion)
+			{
+				MsgWarning("%s: vs version %s not supported\n", pShaderOutput->GetName(), profile.GetData());
+				vsVersion = maxVSVersion;
+			}
+		}
+		// else default to maximum
+
+		shaderString.Append(varargs("#define COMPILE_VS_%d_0\n", vsVersion));
+
+		//shaderString.Append(varargs("#line %d\n", params.vsLine + 1));
+		shaderString.Append(info.vs.text);
+
+		if (D3DXCompileShader(shaderString.GetData(), shaderString.GetLength(), NULL, NULL, entry.GetData(), profile.GetData(), D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &shaderBuf, &errorsBuf, &pShader->m_pVSConstants) == D3D_OK)
+		{
+			m_pD3DDevice->CreateVertexShader((DWORD *) shaderBuf->GetBufferPointer(), &pShader->m_pVertexShader);
+
+			scHdr.vsSize = shaderBuf->GetBufferSize();
+
+			if(pStream)
+				pStream->Write(shaderBuf->GetBufferPointer(), 1, scHdr.vsSize);
+		}
+		else 
+		{
+			MsgError("ERROR: Cannot compile vertex shader for %s\n",pShader->GetName());
+			if(errorsBuf)
+			{
+				MsgError("%s\n",(const char *) errorsBuf->GetBufferPointer());
+			}
+			else
+			{
+				MsgError("Unknown error\n");
+			}
+		}
+	}
+
+	if (info.ps.text != NULL)
 	{
 		EqString shaderString;
 
@@ -2181,10 +2237,10 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		int psVersion = maxPSVersion;
 
-		if(params.pAPIPrefs)
+		if(info.apiPrefs)
 		{
-			profile = KV_GetValueString(params.pAPIPrefs->FindKeyBase("ps_profile"), 0, profile.GetData());
-			entry = KV_GetValueString(params.pAPIPrefs->FindKeyBase("EntryPoint"), 0, entry.GetData());
+			profile = KV_GetValueString(info.apiPrefs->FindKeyBase("ps_profile"), 0, profile.GetData());
+			entry = KV_GetValueString(info.apiPrefs->FindKeyBase("EntryPoint"), 0, entry.GetData());
 
 			char minor = '0';
 
@@ -2201,7 +2257,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		shaderString.Append(varargs("#define COMPILE_PS_%d_0\n", psVersion));
 
 		//shaderString.Append(varargs("#line %d\n", params.psLine + 1));
-		shaderString.Append(params.pszPSText);
+		shaderString.Append(info.ps.text);
 
 		if (D3DXCompileShader(shaderString.GetData(), shaderString.GetLength(), NULL, NULL, entry.GetData(), profile.GetData(), D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &shaderBuf, &errorsBuf, &pShader->m_pPSConstants) == D3D_OK)
 		{
@@ -2226,64 +2282,6 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 			}
 
 			MsgError("\n Profile: %s\n",profile.c_str());
-		}
-	}
-
-	if (params.pszVSText != NULL)
-	{
-		EqString shaderString;
-
-		if (extra  != NULL)
-			shaderString.Append(extra);
-
-		int maxVSVersion = D3DSHADER_VERSION_MAJOR(m_hCaps.VertexShaderVersion);
-		EqString profile(D3DXGetVertexShaderProfile(m_pD3DDevice));
-		EqString entry("vs_main");
-
-		int vsVersion = maxVSVersion;
-
-		if(params.pAPIPrefs)
-		{
-			profile = KV_GetValueString(params.pAPIPrefs->FindKeyBase("vs_profile"), 0, profile.GetData());
-			entry = KV_GetValueString(params.pAPIPrefs->FindKeyBase("EntryPoint"), 0, entry.GetData());
-
-			char minor = '0';
-
-			int cnt = sscanf(profile.GetData(), "vs_%d_%c", &vsVersion, &minor);
-
-			if(vsVersion > maxVSVersion)
-			{
-				MsgWarning("%s: vs version %s not supported\n", pShaderOutput->GetName(), profile.GetData());
-				vsVersion = maxVSVersion;
-			}
-		}
-		// else default to maximum
-
-		shaderString.Append(varargs("#define COMPILE_VS_%d_0\n", vsVersion));
-
-		//shaderString.Append(varargs("#line %d\n", params.vsLine + 1));
-		shaderString.Append(params.pszVSText);
-
-		if (D3DXCompileShader(shaderString.GetData(), shaderString.GetLength(), NULL, NULL, entry.GetData(), profile.GetData(), D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &shaderBuf, &errorsBuf, &pShader->m_pVSConstants) == D3D_OK)
-		{
-			m_pD3DDevice->CreateVertexShader((DWORD *) shaderBuf->GetBufferPointer(), &pShader->m_pVertexShader);
-
-			scHdr.vsSize = shaderBuf->GetBufferSize();
-
-			if(pStream)
-				pStream->Write(shaderBuf->GetBufferPointer(), 1, scHdr.vsSize);
-		}
-		else 
-		{
-			MsgError("ERROR: Cannot compile vertex shader for %s\n",pShader->GetName());
-			if(errorsBuf)
-			{
-				MsgError("%s\n",(const char *) errorsBuf->GetBufferPointer());
-			}
-			else
-			{
-				MsgError("Unknown error\n");
-			}
 		}
 	}
 
@@ -2452,8 +2450,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	{
 		scHdr.numSamplers = nSamplers;
 		scHdr.numConstants = nConstants;
-		scHdr.psChecksum = params.psChecksum;
-		scHdr.vsChecksum = params.vsChecksum;
+		scHdr.psChecksum = info.ps.checksum;
+		scHdr.vsChecksum = info.vs.checksum;
 
 		pStream->Write(samplers, nSamplers, sizeof(Sampler_t));
 		pStream->Write(constants, nConstants, sizeof(DX9ShaderConstant));
@@ -3224,333 +3222,4 @@ void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const DkList<CImage*
 
 	// set for output
 	*pTex = pTexture;
-}
-
-/*
-void ShaderAPID3DX9::AddTextureInternal(ITexture** pTex, CImage *texImage, SamplerStateParam_t& sSamplingParams, int nFlags)
-{
-	HOOK_TO_CVAR(r_loadmiplevel);
-
-	int quality = r_loadmiplevel->GetInt();
-
-	if(nFlags & TEXFLAG_NOQUALITYLOD)
-		quality = 0;
-
-	if(!pTex)
-		return;
-
-	Finish();
-
-	CD3D9Texture* pTexture = NULL;
-
-	if(*pTex)
-	{
-		pTexture = (CD3D9Texture*)*pTex;
-	}
-	else
-	{
-		pTexture = new CD3D9Texture;
-	}
-
-	pTexture->mipMapped = (texImage->GetMipMapCount() > 1);
-
-	if(quality > 0 && !pTexture->mipMapped)
-	{
-		if(!texImage->CreateMipMaps(quality))
-			quality = 0;
-	}
-
-	pTexture->m_pool = D3DPOOL_MANAGED;
-
-	// create array of textures
-	pTexture->textures.setNum(1);
-
-	ETextureFormat format = texImage->GetFormat();
-	if (texImage->IsCube())
-	{
-		if (m_pD3DDevice->CreateCubeTexture(texImage->GetWidth(quality), texImage->GetMipMapCount() - quality, 0, formats[format], pTexture->m_pool, (LPDIRECT3DCUBETEXTURE9 *) pTexture->textures.ptr(), NULL) != D3D_OK)
-		{
-			pTexture->textures.clear();
-			MsgError("Couldn't create cubemap texture for %s\n", texImage->GetName());
-			delete pTexture;
-			*pTex = NULL;
-			return;
-		}
-		nFlags |= TEXFLAG_CUBEMAP;
-	} 
-	else if (texImage->Is3D())
-	{
-		if (m_pD3DDevice->CreateVolumeTexture(texImage->GetWidth(quality), texImage->GetHeight(quality), texImage->GetDepth(quality), texImage->GetMipMapCount()-quality, 0, formats[format], pTexture->m_pool, (LPDIRECT3DVOLUMETEXTURE9 *) pTexture->textures.ptr(), NULL) != D3D_OK)
-		{
-			pTexture->textures.clear();
-			MsgError("Couldn't create volumetric texture for %s\n", texImage->GetName());
-			delete pTexture;
-			*pTex = NULL;
-			return;
-		}
-	} 
-	else 
-	{
-		if (m_pD3DDevice->CreateTexture(texImage->GetWidth(quality), texImage->GetHeight(quality), texImage->GetMipMapCount()-quality, 0, formats[format], pTexture->m_pool, (LPDIRECT3DTEXTURE9 *) pTexture->textures.ptr(), NULL) != D3D_OK)
-		{
-			pTexture->textures.clear();
-			MsgError("Couldn't create texture for %s\n", texImage->GetName());
-			delete pTexture;
-			*pTex = NULL;
-			return;
-		}
-	}
-
-	if (format == FORMAT_RGB8)
-		texImage->Convert(FORMAT_RGBA8);
-
-	if (format == FORMAT_RGB8 || format == FORMAT_RGBA8)
-		texImage->SwapChannels(0, 2);
-
-	unsigned char *src;
-	int mipMapLevel = quality;
-	while ((src = texImage->GetPixels(mipMapLevel)) != NULL)
-	{
-		int size = texImage->GetMipMappedSize(mipMapLevel, 1);
-
-		int lockBoxLevel = mipMapLevel-quality;
-
-		if (texImage->Is3D())
-		{
-			D3DLOCKED_BOX box;
-			if (((LPDIRECT3DVOLUMETEXTURE9) pTexture->textures[0])->LockBox(lockBoxLevel, &box, NULL, 0) == D3D_OK)
-			{
-				memcpy(box.pBits, src, size);
-				((LPDIRECT3DVOLUMETEXTURE9) pTexture->textures[0])->UnlockBox(lockBoxLevel);
-			}
-		}
-		else if (texImage->IsCube())
-		{
-			size /= 6;
-
-			D3DLOCKED_RECT rect;
-			for (int i = 0; i < 6; i++)
-			{
-				if (((LPDIRECT3DCUBETEXTURE9) pTexture->textures[0])->LockRect((D3DCUBEMAP_FACES) i, lockBoxLevel, &rect, NULL, 0) == D3D_OK)
-				{
-					memcpy(rect.pBits, src, size);
-					((LPDIRECT3DCUBETEXTURE9) pTexture->textures[0])->UnlockRect((D3DCUBEMAP_FACES) i, lockBoxLevel);
-				}
-				src += size;				
-			}
-		}
-		else 
-		{
-			D3DLOCKED_RECT rect;
-
-			if (((LPDIRECT3DTEXTURE9) pTexture->textures[0])->LockRect(lockBoxLevel, &rect, NULL, 0) == D3D_OK)
-			{
-				memcpy(rect.pBits, src, size);
-				((LPDIRECT3DTEXTURE9) pTexture->textures[0])->UnlockRect(lockBoxLevel);
-			}
-		}
-		mipMapLevel++;
-	}
-
-	CScopedMutex scoped(m_Mutex);
-
-	// Bind this sampler state to texture
-	pTexture->SetSamplerState(sSamplingParams);
-	pTexture->SetDimensions(texImage->GetWidth(quality),texImage->GetHeight(quality));
-	pTexture->SetFormat(texImage->GetFormat());
-	pTexture->SetFlags(nFlags | TEXFLAG_MANAGED);
-	pTexture->SetName(texImage->GetName());
-
-	
-	if(! (*pTex) )
-		m_TextureList.append(pTexture);
-
-	*pTex = pTexture;
-}
-
-void ShaderAPID3DX9::AddAnimatedTextureInternal(ITexture** pTex, CImage **texImage, int numTextures, SamplerStateParam_t& sSamplingParams,int nFlags)
-{
-	HOOK_TO_CVAR(r_loadmiplevel);
-
-	int quality = r_loadmiplevel->GetInt();
-
-	if(nFlags & TEXFLAG_NOQUALITYLOD)
-		quality = 0;
-
-	int wSize = texImage[0]->GetWidth();
-	int hSize = texImage[0]->GetHeight();
-
-	if(!pTex)
-		return;
-
-	Finish();
-
-	for(int i = 0; i < numTextures; i++)
-	{
-		if(texImage[i]->GetWidth() != wSize || texImage[i]->GetHeight() != hSize)
-		{
-			MsgError("ERROR! All textures that uses animation must be with same dimensions!\n");
-			return;
-		}
-	}
-
-	CD3D9Texture* pTexture = NULL;
-
-	if(*pTex)
-	{
-		pTexture = (CD3D9Texture*)*pTex;
-	}
-	else
-	{
-		pTexture = new CD3D9Texture;
-	}
-
-	pTexture->mipMapped = (texImage[0]->GetMipMapCount() > 1);
-
-	if(quality > 0 && !pTexture->mipMapped)
-	{
-		for(int i = 0; i < numTextures; i++)
-		{
-			if(!texImage[i]->CreateMipMaps(quality))
-			{
-				quality = 0;
-				break;
-			}
-		}
-	}
-
-	// create array of textures
-	pTexture->textures.setNum(numTextures);
-	pTexture->m_numAnimatedTextureFrames = numTextures;
-
-	pTexture->m_pool = D3DPOOL_MANAGED;
-
-	for(int i = 0; i < numTextures; i++)
-	{
-		ETextureFormat format = texImage[i]->GetFormat();
-
-		pTexture->textures[i] = NULL;
-
-		if (texImage[i]->IsCube())
-		{
-			if (m_pD3DDevice->CreateCubeTexture(texImage[i]->GetWidth(quality), texImage[i]->GetMipMapCount() - quality, 0, formats[format], pTexture->m_pool, (LPDIRECT3DCUBETEXTURE9 *) &pTexture->textures[i], NULL) != D3D_OK)
-			{
-				MsgError("Couldn't create cubemap texture for %s\n", texImage[i]->GetName());
-				delete pTexture;
-				*pTex = NULL;
-				return;
-			}
-			nFlags |= TEXFLAG_CUBEMAP;
-		} 
-		else if (texImage[i]->Is3D())
-		{
-			if (m_pD3DDevice->CreateVolumeTexture(texImage[i]->GetWidth(quality), texImage[i]->GetHeight(quality), texImage[i]->GetDepth(quality), texImage[i]->GetMipMapCount()-quality, 0, formats[format], pTexture->m_pool, (LPDIRECT3DVOLUMETEXTURE9 *) &pTexture->textures[i], NULL) != D3D_OK)
-			{
-				MsgError("Couldn't create volumetric texture for %s\n", texImage[i]->GetName());
-				delete pTexture;
-				*pTex = NULL;
-				return;
-			}
-		} 
-		else 
-		{
-			if (m_pD3DDevice->CreateTexture(texImage[i]->GetWidth(quality), texImage[i]->GetHeight(quality), texImage[i]->GetMipMapCount()-quality, 0, formats[format], pTexture->m_pool, (LPDIRECT3DTEXTURE9 *) &pTexture->textures[i], NULL) != D3D_OK)
-			{
-				MsgError("Couldn't create texture for %s\n", texImage[i]->GetName());
-				delete pTexture;
-				*pTex = NULL;
-				return;
-			}
-		}
-
-		if (format == FORMAT_RGB8)
-			texImage[i]->Convert(FORMAT_RGBA8);
-
-		if (format == FORMAT_RGB8 || format == FORMAT_RGBA8)
-			texImage[i]->SwapChannels(0, 2);
-
-		unsigned char *src;
-		int mipMapLevel = quality;
-		while ((src = texImage[i]->GetPixels(mipMapLevel)) != NULL)
-		{
-			int size = texImage[i]->GetMipMappedSize(mipMapLevel, 1);
-
-			int lockBoxLevel = mipMapLevel-quality;
-
-			if (texImage[i]->Is3D())
-			{
-				D3DLOCKED_BOX box;
-				if (((LPDIRECT3DVOLUMETEXTURE9) pTexture->textures[i])->LockBox(lockBoxLevel, &box, NULL, 0) == D3D_OK)
-				{
-					memcpy(box.pBits, src, size);
-					((LPDIRECT3DVOLUMETEXTURE9) pTexture->textures[i])->UnlockBox(lockBoxLevel);
-				}
-			}
-			else if (texImage[i]->IsCube())
-			{
-				size /= 6;
-
-				D3DLOCKED_RECT rect;
-				for (int i = 0; i < 6; i++)
-				{
-					if (((LPDIRECT3DCUBETEXTURE9) pTexture->textures[i])->LockRect((D3DCUBEMAP_FACES) i, lockBoxLevel, &rect, NULL, 0) == D3D_OK)
-					{
-						memcpy(rect.pBits, src, size);
-						((LPDIRECT3DCUBETEXTURE9) pTexture->textures[i])->UnlockRect((D3DCUBEMAP_FACES) i, lockBoxLevel);
-					}
-					src += size;				
-				}
-			}
-			else 
-			{
-				D3DLOCKED_RECT rect;
-				if (((LPDIRECT3DTEXTURE9) pTexture->textures[i])->LockRect(lockBoxLevel, &rect, NULL, 0) == D3D_OK)
-				{
-					memcpy(rect.pBits, src, size);
-					((LPDIRECT3DTEXTURE9) pTexture->textures[i])->UnlockRect(lockBoxLevel);
-				}
-			}
-			mipMapLevel++;
-		}
-	}
-
-	CScopedMutex scoped(m_Mutex);
-
-	// Bind this sampler state to texture
-	pTexture->SetSamplerState(sSamplingParams);
-	pTexture->SetDimensions(texImage[0]->GetWidth(quality),texImage[0]->GetHeight(quality));
-	pTexture->SetFormat(texImage[0]->GetFormat());
-	pTexture->SetFlags(nFlags | TEXFLAG_MANAGED);
-	pTexture->SetName(texImage[0]->GetName());
-
-	if(! (*pTex) )
-		m_TextureList.append(pTexture);
-
-	*pTex = pTexture;
-
-	Finish();
-}
-*/
-//-------------------------------------------------------------
-// Fogging
-//-------------------------------------------------------------
-
-void ShaderAPID3DX9::SetupFog(FogInfo_t* fogparams)
-{
-	m_bFogEnabled = fogparams->enableFog;
-
-	// setup shader fog
-	float fogScale = 1.0 / (fogparams->fogfar - fogparams->fognear);
-
-	Vector4D VectorFOGParams(fogparams->fognear,fogparams->fogfar, fogScale, 1.0f);
-
-	SetShaderConstantVector3D("ViewPos", fogparams->viewPos);
-
-	SetShaderConstantVector4D("FogParams", VectorFOGParams);
-	SetShaderConstantVector3D("FogColor", fogparams->fogColor);
-}
-
-bool ShaderAPID3DX9::IsFogEnabled()
-{
-	return m_bFogEnabled;
 }

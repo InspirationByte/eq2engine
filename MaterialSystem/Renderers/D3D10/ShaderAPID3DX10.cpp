@@ -71,8 +71,6 @@ ShaderAPID3DX10::ShaderAPID3DX10() : ShaderAPI_Base()
 
 	m_pCustomSamplerState = new SamplerStateParam_t;
 
-	m_bFogEnabled = false;
-
 	m_pMeshBufferTexturedShader = NULL;
 	m_pMeshBufferNoTextureShader = NULL;
 
@@ -123,28 +121,26 @@ void ShaderAPID3DX10::Init(const shaderapiinitparams_t &params)
 	{
 		m_pMeshBufferTexturedShader = CreateNewShaderProgram("MeshBuffer_Textured");
 
-		shaderprogram_params_t shaderparam;
+		shaderProgramCompileInfo_t info;
 
-		memset(&shaderparam, 0, sizeof(shaderparam));
-		shaderparam.pszPSText = s_FFPMeshBuilder_Textured_PixelProgram;
-		shaderparam.pszVSText = s_FFPMeshBuilder_VertexProgram;
-		shaderparam.bDisableCache = true;
+		info.ps.text = s_FFPMeshBuilder_Textured_PixelProgram;
+		info.vs.text = s_FFPMeshBuilder_VertexProgram;
+		info.disableCache = true;
 
-		CompileShadersFromStream(m_pMeshBufferTexturedShader, shaderparam);
+		CompileShadersFromStream(m_pMeshBufferTexturedShader, info);
 	}
 
 	if(m_pMeshBufferNoTextureShader == NULL)
 	{
 		m_pMeshBufferNoTextureShader = CreateNewShaderProgram("MeshBuffer_NoTexture");
 
-		shaderprogram_params_t shaderparam;
+		shaderProgramCompileInfo_t info;
 
-		memset(&shaderparam, 0, sizeof(shaderparam));
-		shaderparam.pszPSText = s_FFPMeshBuilder_NoTexture_PixelProgram;
-		shaderparam.pszVSText = s_FFPMeshBuilder_VertexProgram;
-		shaderparam.bDisableCache = true;
+		info.ps.text = s_FFPMeshBuilder_NoTexture_PixelProgram;
+		info.vs.text = s_FFPMeshBuilder_VertexProgram;
+		info.disableCache = true;
 
-		CompileShadersFromStream(m_pMeshBufferNoTextureShader, shaderparam);
+		CompileShadersFromStream(m_pMeshBufferNoTextureShader, info);
 	}
 }
 
@@ -1418,7 +1414,7 @@ struct shaderCacheHdr_t
 
 // Load any shader from stream
 bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
-												const shaderprogram_params_t& params,
+												const shaderProgramCompileInfo_t& info,
 												const char* extra)
 {
 	CD3D10ShaderProgram* pShader = (CD3D10ShaderProgram*)pShaderOutput;
@@ -1441,7 +1437,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	bool needsCompile = true;
 
-	if(!(params.bDisableCache || r_skipShaderCache.GetBool()))
+	if(!(info.disableCache || r_skipShaderCache.GetBool()))
 	{
 		pStream = GetFileSystem()->Open(cache_file_name.GetData(), "rb", -1);
 
@@ -1453,9 +1449,9 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 			pStream->Read(&scHdr, 1, sizeof(shaderCacheHdr_t));
 
 			if(	scHdr.ident == SHADERCACHE_IDENT &&
-				scHdr.vsChecksum == params.vsChecksum &&
-				scHdr.gsChecksum == params.gsChecksum &&
-				scHdr.psChecksum == params.psChecksum)
+				scHdr.vsChecksum == info.vs.checksum &&
+				scHdr.gsChecksum == info.gs.checksum &&
+				scHdr.psChecksum == info.ps.checksum)
 			{
 				// read vertex shader
 				if(scHdr.vsSize > 0)
@@ -1544,7 +1540,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	UINT compileFlags = D3D10_SHADER_PACK_MATRIX_ROW_MAJOR | D3D10_SHADER_ENABLE_STRICTNESS;// | D3D10_SHADER_DEBUG | D3D10_SHADER_SKIP_OPTIMIZATION;
 
-	if (params.pszVSText != NULL)
+	if (info.vs.text != NULL)
 	{
 		EqString shaderString;
 		if (extra  != NULL)
@@ -1552,7 +1548,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		// we're always compiling SM 4.0
 
-		shaderString.Append(params.pszVSText);
+		shaderString.Append(info.vs.text);
 
 #ifdef COMPILE_D3D_10_1
 		// Use D3DX functions so we can compile to SM4.1
@@ -1601,7 +1597,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		SAFE_RELEASE(errorsBuf);
 	}
 
-	if (params.pszGSText != NULL)
+	if (info.gs.text != NULL)
 	{
 		EqString shaderString;
 
@@ -1610,7 +1606,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		// we always compiling SM 4.0
 
-		shaderString.Append(params.pszGSText);
+		shaderString.Append(info.gs.text);
 
 #ifdef COMPILE_D3D_10_1
 		// Use D3DX functions so we can compile to SM4.1
@@ -1656,7 +1652,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		SAFE_RELEASE(errorsBuf);
 	}
 
-	if (params.pszPSText != NULL)
+	if (info.ps.text != NULL)
 	{
 		EqString shaderString;
 		if (extra  != NULL)
@@ -1664,7 +1660,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		// we always compiling SM 4.0
 
-		shaderString.Append(params.pszPSText);
+		shaderString.Append(info.ps.text);
 
 #ifdef COMPILE_D3D_10_1
 		// Use D3DX functions so we can compile to SM4.1
@@ -1713,9 +1709,9 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	if(pStream)
 	{
-		scHdr.vsChecksum = params.vsChecksum;
-		scHdr.gsChecksum = params.gsChecksum;
-		scHdr.psChecksum = params.psChecksum;
+		scHdr.vsChecksum = info.vs.checksum;
+		scHdr.gsChecksum = info.gs.checksum;
+		scHdr.psChecksum = info.ps.checksum;
 
 		pStream->Seek(0,VS_SEEK_SET);
 		pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
@@ -4257,35 +4253,6 @@ void ShaderAPID3DX10::SetTexture( ITexture* pTexture, const char* pszName, int i
 		m_pSelectedTexturesPS[index] = pTexture;
 		m_pSelectedTextureSlicesPS[index] = -1;
 	}
-}
-
-//-------------------------------------------------------------
-// Fogging
-//-------------------------------------------------------------
-
-void ShaderAPID3DX10::SetupFog(FogInfo_t* fogparams)
-{
-	m_bFogEnabled = fogparams->enableFog;
-
-	// setup shader fog
-	float fogScale = 1.0 / (fogparams->fogfar - fogparams->fognear);
-
-	Vector4D VectorFOGParams(fogparams->fognear,fogparams->fogfar, fogScale, 1.0f);
-
-	SetShaderConstantVector4D("FogParams", VectorFOGParams);
-	SetShaderConstantVector3D("FogColor", fogparams->fogColor);
-	SetShaderConstantVector3D("ViewPos", fogparams->viewPos);
-}
-
-void ShaderAPID3DX10::SetFogEnabled(bool bEnable)
-{
-	//m_pD3DDevice->SetRenderState(D3DRS_FOGENABLE, bEnable ? TRUE : FALSE);
-	m_bFogEnabled = bEnable;
-}
-
-bool ShaderAPID3DX10::IsFogEnabled()
-{
-	return m_bFogEnabled;
 }
 
 void ShaderAPID3DX10::SetViewport(int x, int y, int w, int h)

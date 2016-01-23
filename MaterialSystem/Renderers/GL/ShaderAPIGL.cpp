@@ -304,30 +304,28 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 	{
 		m_pMeshBufferTexturedShader = CreateNewShaderProgram("MeshBuffer_Textured");
 
-		shaderprogram_params_t sparams;
-		memset(&sparams, 0, sizeof(sparams));
+		shaderProgramCompileInfo_t sinfo;
 
-		sparams.pAPIPrefs = &baseMeshBufferParams;
-		sparams.pszPSText = s_FFPMeshBuilder_Textured_PixelProgram;
-		sparams.pszVSText = s_FFPMeshBuilder_VertexProgram;
-		sparams.bDisableCache = true;
+		sinfo.apiPrefs = &baseMeshBufferParams;
+		sinfo.ps.text = s_FFPMeshBuilder_Textured_PixelProgram;
+		sinfo.vs.text = s_FFPMeshBuilder_VertexProgram;
+		sinfo.disableCache = true;
 
-		CompileShadersFromStream(m_pMeshBufferTexturedShader, sparams);
+		CompileShadersFromStream(m_pMeshBufferTexturedShader, sinfo);
 	}
 
 	if(m_pMeshBufferNoTextureShader == NULL)
 	{
 		m_pMeshBufferNoTextureShader = CreateNewShaderProgram("MeshBuffer_NoTexture");
 
-		shaderprogram_params_t sparams;
-		memset(&sparams, 0, sizeof(sparams));
+		shaderProgramCompileInfo_t sinfo;
 
-		sparams.pAPIPrefs = &baseMeshBufferParams;
-		sparams.pszPSText = s_FFPMeshBuilder_NoTexture_PixelProgram;
-		sparams.pszVSText = s_FFPMeshBuilder_VertexProgram;
-		sparams.bDisableCache = true;
+		sinfo.apiPrefs = &baseMeshBufferParams;
+		sinfo.ps.text = s_FFPMeshBuilder_NoTexture_PixelProgram;
+		sinfo.vs.text = s_FFPMeshBuilder_VertexProgram;
+		sinfo.disableCache = true;
 
-		CompileShadersFromStream(m_pMeshBufferNoTextureShader,sparams);
+		CompileShadersFromStream(m_pMeshBufferNoTextureShader,sinfo);
 	}
 }
 
@@ -1888,7 +1886,7 @@ int samplerComparator(const void *sampler0, const void *sampler1)
 ConVar gl_disable_shaders("gl_disable_shaders", "0", "Disable OpenGL shader compilation", CV_CHEAT);
 
 // Load any shader from stream
-bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const shaderprogram_params_t& params,const char* extra)
+bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const shaderProgramCompileInfo_t& info, const char* extra)
 {
 	if(!pShaderOutput)
 		return false;
@@ -1899,7 +1897,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		return false;
 	}
 
-	if (params.pszVSText == NULL && params.pszPSText == NULL)
+	if (info.vs.text == NULL && info.ps.text == NULL)
 		return false;
 
     if(gl_disable_shaders.GetBool())
@@ -1911,7 +1909,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	GLint vsResult, fsResult, linkResult;
 
 	// compile vertex
-	if(params.pszVSText)
+	if(info.vs.text)
 	{
 		// create GL program
 		prog->m_program = gl::CreateProgram();
@@ -1927,7 +1925,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		// append useful HLSL replacements
 		shaderString.Append(SHADER_HELPERS_STRING);
-		shaderString.Append(params.pszVSText);
+		shaderString.Append(info.vs.text);
 
 		const char* sStr = shaderString.c_str();
 
@@ -1947,16 +1945,18 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			GLint len;
 
 			gl::GetShaderInfoLog(prog->m_vertexShader, sizeof(infoLog), &len, infoLog);
-			MsgError("Vertex shader '%s' error: %s\n", prog->GetName(), infoLog);
+			MsgError("Vertex shader %s error:\n%s\n", prog->GetName(), infoLog);
 
-			Msg("Full shader dump:\n\n%s", shaderString.c_str());
+			MsgInfo("Shader files dump:");
+			for(int i = 0; i < info.vs.includes.numElem(); i++)
+				MsgInfo("\t%d : %s\n", i+1, info.vs.includes[i].c_str());
 		}
 	}
 	else
 		return false; // vertex shader is required
 
 	// compile fragment
-	if(params.pszPSText)
+	if(info.ps.text)
 	{
 		EqString shaderString;
 
@@ -1969,7 +1969,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		// append useful HLSL replacements
 		shaderString.Append(SHADER_HELPERS_STRING);
-		shaderString.Append(params.pszPSText);
+		shaderString.Append(info.ps.text);
 
 		const char* sStr = shaderString.c_str();
 
@@ -1988,8 +1988,12 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			char infoLog[2048];
 			GLint len;
 
-			gl::GetShaderInfoLog(prog->m_vertexShader, sizeof(infoLog), &len, infoLog);
-			MsgError("Pixel (fragment) shader '%s' error: %s\n", prog->GetName(), infoLog);
+			gl::GetShaderInfoLog(prog->m_fragmentShader, sizeof(infoLog), &len, infoLog);
+			MsgError("Pixel shader %s error:\n%s\n", prog->GetName(), infoLog);
+
+			MsgInfo("Shader files dump:");
+			for(int i = 0; i < info.ps.includes.numElem(); i++)
+				MsgInfo("\t%d : %s\n", i+1, info.ps.includes[i].c_str());
 		}
 	}
 	else
@@ -1997,9 +2001,9 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 	if(fsResult && vsResult)
 	{
-		for(int i = 0; i < params.pAPIPrefs->keys.numElem(); i++)
+		for(int i = 0; i < info.apiPrefs->keys.numElem(); i++)
 		{
-			kvkeybase_t* kp = params.pAPIPrefs->keys[i];
+			kvkeybase_t* kp = info.apiPrefs->keys[i];
 
 			if( !stricmp(kp->name, "attribute") )
 			{
@@ -2517,20 +2521,6 @@ void ShaderAPIGL::DrawMeshBufferPrimitives(PrimitiveType_e nType, int nVertices,
 		DrawIndexedPrimitives(nType, 0, nIndices, 0, nVertices);
 	else
 		DrawNonIndexedPrimitives(nType, 0, nVertices);
-}
-
-//-------------------------------------------------------------
-// Fogging
-//-------------------------------------------------------------
-
-void ShaderAPIGL::SetupFog(FogInfo_t* fogparams)
-{
-
-}
-
-bool ShaderAPIGL::IsFogEnabled()
-{
-	return false;
 }
 
 bool ShaderAPIGL::IsDeviceActive()

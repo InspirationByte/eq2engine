@@ -360,7 +360,7 @@ public:
 
 	// Load any shader from stream
 	bool						CompileShadersFromStream(	IShaderProgram* pShaderOutput,
-															const shaderprogram_params_t& params,
+															const shaderProgramCompileInfo_t& info,
 															const char* extra = NULL){return true;}
 
 	// Set current shader for rendering
@@ -424,14 +424,6 @@ public:
 
 	// Draw elements
 	void						DrawNonIndexedPrimitives(PrimitiveType_e nType, int nFirstVertex, int nVertices){}
-
-//-------------------------------------------------------------
-// Fogging
-//-------------------------------------------------------------
-
-	void						SetupFog(FogInfo_t* fogparams) {}
-	void						SetFogEnabled(bool bEnable) {}
-	bool						IsFogEnabled() {return false;}
 
 protected:
 

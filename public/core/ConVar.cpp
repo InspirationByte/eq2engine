@@ -13,6 +13,7 @@
 #include "utils/DkList.h"
 #include "utils/strtools.h"
 
+#include <malloc.h> // alloca
 
 #if defined(_DEBUG) && defined(_WIN32)
 #	define _CRTDBG_MAP_ALLOC

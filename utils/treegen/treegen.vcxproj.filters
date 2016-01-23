@@ -67,6 +67,9 @@
     <ClInclude Include="..\..\shared_engine\eqParallelJobs.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\shared_engine\eqGlobalMutex.h">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="windows\mainicon.ico">
@@ -112,6 +115,9 @@
     </ClCompile>
     <ClCompile Include="..\..\shared_engine\eqParallelJobs.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\eqGlobalMutex.cpp">
+      <Filter>Source Files\EngineLib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

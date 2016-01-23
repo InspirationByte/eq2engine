@@ -289,8 +289,15 @@ void CBaseShader::ParamSetup_Fog()
 	FogInfo_t fog;
 	materials->GetFogInfo(fog);
 
-	// setup fog
-	g_pShaderAPI->SetupFog(&fog);
+	// setup shader fog
+	float fogScale = 1.0 / (fog.fogfar - fog.fognear);
+
+	Vector4D VectorFOGParams(fog.fognear,fog.fogfar, fogScale, 1.0f);
+
+	g_pShaderAPI->SetShaderConstantVector3D("ViewPos", fog.viewPos);
+
+	g_pShaderAPI->SetShaderConstantVector4D("FogParams", VectorFOGParams);
+	g_pShaderAPI->SetShaderConstantVector3D("FogColor", fog.fogColor);
 }
 
 // get texture transformation from vars

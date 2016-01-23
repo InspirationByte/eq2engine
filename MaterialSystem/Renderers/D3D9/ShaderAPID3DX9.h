@@ -303,7 +303,7 @@ public:
 
 	// Load any shader from stream
 	bool						CompileShadersFromStream(	IShaderProgram* pShaderOutput,
-															const shaderprogram_params_t& params,
+															const shaderProgramCompileInfo_t& info,
 															const char* extra = NULL
 															);
 
@@ -313,54 +313,7 @@ public:
 	// RAW Constant (Used for structure types, etc.)
 	int							SetShaderConstantRaw(const char *pszName, const void *data, int nSize, int nConstId);
 
-
-	//-----------------------------------------------------
-	// Advanced shader programming
-	//-----------------------------------------------------
-	/*
-	// Pixel Shader constants setup (by register number)
-	void						SetPixelShaderConstantInt(int reg, const int constant);
-	void						SetPixelShaderConstantFloat(int reg, const float constant);
-	void						SetPixelShaderConstantVector2D(int reg, const Vector2D &constant);
-	void						SetPixelShaderConstantVector3D(int reg, const Vector3D &constant);
-	void						SetPixelShaderConstantVector4D(int reg, const Vector4D &constant);
-	void						SetPixelShaderConstantMatrix4(int reg, const Matrix4x4 &constant);
-	void						SetPixelShaderConstantFloatArray(int reg, const float *constant, int count);
-	void						SetPixelShaderConstantVector2DArray(int reg, const Vector2D *constant, int count);
-	void						SetPixelShaderConstantVector3DArray(int reg, const Vector3D *constant, int count);
-	void						SetPixelShaderConstantVector4DArray(int reg, const Vector4D *constant, int count);
-	void						SetPixelShaderConstantMatrix4Array(int reg, const Matrix4x4 *constant, int count);
-
-	// Vertex Shader constants setup (by register number)
-	void						SetVertexShaderConstantInt(int reg, const int constant);
-	void						SetVertexShaderConstantFloat(int reg, const float constant);
-	void						SetVertexShaderConstantVector2D(int reg, const Vector2D &constant);
-	void						SetVertexShaderConstantVector3D(int reg, const Vector3D &constant);
-	void						SetVertexShaderConstantVector4D(int reg, const Vector4D &constant);
-	void						SetVertexShaderConstantMatrix4(int reg, const Matrix4x4 &constant);
-	void						SetVertexShaderConstantFloatArray(int reg, const float *constant, int count);
-	void						SetVertexShaderConstantVector2DArray(int reg, const Vector2D *constant, int count);
-	void						SetVertexShaderConstantVector3DArray(int reg, const Vector3D *constant, int count);
-	void						SetVertexShaderConstantVector4DArray(int reg, const Vector4D *constant, int count);
-	void						SetVertexShaderConstantMatrix4Array(int reg, const Matrix4x4 *constant, int count);
-
-	// RAW Constant
-	void						SetPixelShaderConstantRaw(int reg, const void *data, int nVectors = 1);
-	void						SetVertexShaderConstantRaw(int reg, const void *data, int nVectors = 1);
-	*/
-
-//-------------------------------------------------------------
-// Fogging
-//-------------------------------------------------------------
-
-	void						SetupFog(FogInfo_t* fogparams);
-	bool						IsFogEnabled();
-
 	void						CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0);
-
-	//void						AddTextureInternal(ITexture** pTex, CImage *texImage,SamplerStateParam_t& sSamplingParams,int nFlags = 0);
-	//void						AddAnimatedTextureInternal(ITexture** pTex, CImage **texImage, int numTextures, SamplerStateParam_t& sSamplingParams,int nFlags = 0);
-
 protected:
 
 	IDirect3DBaseTexture9*		CreateD3DTextureFromImage(CImage* pSrc, int& wide, int& tall, int nFlags = 0);
@@ -441,8 +394,6 @@ private:
 
 	D3DCAPS9					m_hCaps;
 #endif
-
-	bool						m_bFogEnabled;
 
 	// the main renderer
 	//ITexture*					m_pBackBuffer;

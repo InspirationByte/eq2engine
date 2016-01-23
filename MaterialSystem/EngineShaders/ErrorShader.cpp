@@ -48,7 +48,7 @@ public:
 
 		AddShaderToAutoremover(&m_pProgram);
 
-		return g_pShaderAPI->LoadShadersFromFile(m_pProgram,"BaseUnlit", defines.GetData(), NULL);
+		return g_pShaderAPI->LoadShadersFromFile(m_pProgram,"BaseUnlit", defines.GetData());
 	}
 
 	void SetupShader()

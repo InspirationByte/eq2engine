@@ -147,6 +147,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\driversgame\BillboardList.h" />
+    <ClInclude Include="..\..\shared_engine\eqGlobalMutex.h" />
     <ClInclude Include="..\..\shared_engine\eqParallelJobs.h" />
     <ClInclude Include="..\..\shared_engine\modelloader_shared.h" />
     <ClInclude Include="..\..\shared_engine\studio_egf.h" />
@@ -162,6 +163,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\driversgame\BillboardList.cpp" />
+    <ClCompile Include="..\..\shared_engine\eqGlobalMutex.cpp" />
     <ClCompile Include="..\..\shared_engine\eqParallelJobs.cpp" />
     <ClCompile Include="..\..\shared_engine\modelloader_shared.cpp" />
     <ClCompile Include="..\..\shared_engine\studio_egf.cpp" />

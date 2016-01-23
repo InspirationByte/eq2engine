@@ -1095,8 +1095,6 @@ void CEGFViewFrame::ReDraw()
 
 		materials->SetFogInfo(fog);
 
-		g_pShaderAPI->SetupFog(&fog);
-
 		// setup perspective
 		g_mProjMat = perspectiveMatrixY(DEG2RAD(g_pCameraParams.GetFOV()), w, h, 0.25f, 2500.0f);
 

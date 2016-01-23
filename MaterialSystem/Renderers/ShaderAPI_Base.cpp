@@ -12,8 +12,6 @@
 #include "DebugInterface.h"
 #include "Platform.h"
 
-#pragma TODO("Add ShaderAPI capabilities")
-
 #include "ShaderAPI_Base.h"
 #include "CTexture.h"
 #include "imaging/PixWriter.h"
@@ -891,78 +889,7 @@ bool isShaderIncDef(const char ch)
 //-------------------------------------------------------------
 // Shaders and it's operations
 //-------------------------------------------------------------
-void ProcessShaderText(char** buffer, DkList<EqString> &include_buffers, const char* pszFileName, bool bStart = false)
-{
-	if(!(*buffer))
-		return;
-
-	//DkList<char*> includes;
-
-	Tokenizer tok;
-	tok.setString(*buffer);
-
-	char *str;
-	while((str = tok.next(isShaderIncDef)) != NULL)
-	{
-		if(!strcmp("//", str))
-		{
-			str = tok.next(isShaderIncDef);
-			if(strcmp("$INCLUDE", str))
-				continue;
-
-			char *inc_text = tok.next(isShaderInc);
-
-			EqString inc_filename(EqString(SHADERS_DEFAULT_PATH) + g_pShaderAPI->GetRendererName() + "/" + EqString(inc_text));
-
-			char* psBuffer = GetFileSystem()->GetFileBuffer(inc_filename.GetData());
-
-			ProcessShaderText(&psBuffer, include_buffers, inc_filename.GetData());
-
-			if(!psBuffer)
-				MsgWarning("Cannot open file '%s' for include!\n", inc_filename.GetData());
-			else
-				include_buffers.append(psBuffer);
-
-			PPFree( psBuffer );
-
-			continue;
-		}
-
-		tok.goToNextLine();
-	}
-
-	/*
-	for(int i = includes.numElem()-1; i >= 0; i--)
-	{
-		include_buffers.append(includes[i]);
-		PPFree(includes[i]);
-		//delete [] includes[i];
-	}*/
-
-	if(bStart && include_buffers.numElem())
-	{
-		EqString shader_text(*buffer);
-
-		for(int i = 0; i < include_buffers.numElem(); i++)
-		{
-#ifdef IS_OPENGL
-            shader_text = include_buffers[i]+EqString("\r\n")+"\r\n#line 1\r\n"+shader_text;
-#else
-            shader_text = include_buffers[i]+EqString("\r\n")+varargs("\r\n#line 1 \"%s\"\r\n", pszFileName)+shader_text;
-#endif // IS_OPENGL
-		}
-
-		*buffer = (char*)PPReAlloc(*buffer, shader_text.GetLength()+1);
-		strcpy(*buffer, shader_text.GetData());
-	}
-
-	//includes.clear();
-}
-
-//-------------------------------------------------------------
-// Shaders and it's operations
-//-------------------------------------------------------------
-void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, bool bStart = false)
+void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, shaderProgramText_t& textData, bool bStart = false)
 {
 	if(!(*buffer))
 		return;
@@ -978,7 +905,7 @@ void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, bool bSta
 	EqString newSrc;
 
 #ifdef IS_OPENGL
-	newSrc = "\r\n#line 1\r\n";		// I hate, hate and hate GLSL for not supporting source file names, only file numbers. So this is fucked.
+	newSrc = varargs("\r\n#line 1 %d\r\n", textData.includes.numElem());		// I hate, hate and hate GLSL for not supporting source file names, only file numbers. So this is fucked.
 #else
 	newSrc = "\r\n#line 1 \"" + _Es(pszFileName) + "\"\r\n";
 #endif // IS_OPENGL
@@ -1008,9 +935,12 @@ void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, bool bSta
 
 				EqString inc_filename(EqString(SHADERS_DEFAULT_PATH) + g_pShaderAPI->GetRendererName() + "/" + EqString(inc_text));
 
+				// add include filename
+				textData.includes.append( inc_filename );
+
 				char* psBuffer = GetFileSystem()->GetFileBuffer(inc_filename.GetData());
 
-				ProcessShaderFileIncludes(&psBuffer, inc_filename.GetData());
+				ProcessShaderFileIncludes(&psBuffer, inc_filename.GetData(), textData);
 
 				if(psBuffer)
 				{
@@ -1036,7 +966,7 @@ void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, bool bSta
 		if(afterSkipLine)
 		{
 #ifdef IS_OPENGL
-			newSrc = newSrc + varargs("#line %d\r\n", nLine);
+			newSrc = newSrc + varargs("#line %d %d\r\n", nLine, textData.includes.numElem());
 #else
 			newSrc = newSrc + varargs("#line %d \"", nLine) + _Es(pszFileName) + "\"\r\n";
 #endif // IS_OPENGL
@@ -1051,7 +981,7 @@ void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, bool bSta
 }
 
 // Loads and compiles shaders from files
-bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const char* pszFilePrefix, const char *extra, const char **attributeNames, int nAttributes)
+bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const char* pszFilePrefix, const char *extra)
 {
 	if(pShaderOutput == NULL)
 		return false;
@@ -1060,22 +990,15 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 
 	CScopedMutex m(m_Mutex);
 
-	// finish previous operations
-	Finish();
-
 	EqString fileNameVS(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(pszFilePrefix) + ".vs");
 	EqString fileNamePS(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(pszFilePrefix) + ".ps");
 	EqString fileNameGS(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(pszFilePrefix) + ".gs");
 
-	bool vsRequiried = true;
+	bool vsRequiried = true;	// vertex shader is always required
 	bool psRequiried = false;
 	bool gsRequiried = false;
 
-	shaderprogram_params_t params;
-	memset(&params, 0, sizeof(params));
-
-	params.attributeNames = attributeNames;
-	params.nAttributes = nAttributes;
+	shaderProgramCompileInfo_t info;
 
 	// Load KeyValues
 	KeyValues pKv;
@@ -1088,7 +1011,7 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 		kvkeybase_t* vertexProgramName = sec->FindKeyBase("VertexShaderProgram");
 		kvkeybase_t* geometryProgramName = sec->FindKeyBase("GeometryShaderProgram");
 
-		params.bDisableCache = KV_GetValueBool(sec->FindKeyBase("DisableCache"));
+		info.disableCache = KV_GetValueBool(sec->FindKeyBase("DisableCache"));
 
 		if(pixelProgramName)
 			psRequiried = true;
@@ -1101,68 +1024,56 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 		fileNameGS = EqString(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(KV_GetValueString(geometryProgramName)) + ".gs");
 
 		// API section
+		// find corresponding API
 		for(int i = 0; i < sec->keys.numElem(); i++)
 		{
 			if(!stricmp(sec->keys[i]->name, "api") && !stricmp(KV_GetValueString(sec->keys[i]), GetRendererName()))
 			{
-				params.pAPIPrefs = sec->keys[i];
+				info.apiPrefs = sec->keys[i];
 				break;
 			}
 		}
 	}
 
-	params.pszPSText = GetFileSystem()->GetFileBuffer(fileNamePS.GetData());
-	params.pszVSText = GetFileSystem()->GetFileBuffer(fileNameVS.GetData());
-	params.pszGSText = GetFileSystem()->GetFileBuffer(fileNameGS.GetData());
-	params.pszHSText = NULL;
-	params.pszDSText = NULL;
+	// add first files as includes (index = 0)
+	info.vs.includes.append(fileNameVS);
+	info.ps.includes.append(fileNamePS);
+	info.gs.includes.append(fileNameGS);
 
-	if(!params.pszPSText && psRequiried)
+	// load them
+	info.vs.text = GetFileSystem()->GetFileBuffer(fileNameVS.GetData());
+	info.ps.text = GetFileSystem()->GetFileBuffer(fileNamePS.GetData());
+	info.gs.text = GetFileSystem()->GetFileBuffer(fileNameGS.GetData());
+
+	if(!info.ps.text && psRequiried)
 		MsgError("Can't open pixel shader file '%s'!\n",fileNamePS.GetData());
 
-	if(!params.pszVSText && vsRequiried)
+	if(!info.vs.text && vsRequiried)
 		MsgError("Can't open vertex shader file '%s'!\n",fileNameVS.GetData());
 
-	if(!params.pszGSText && gsRequiried)
+	if(!info.gs.text && gsRequiried)
 		MsgError("Can't open geometry shader file '%s'!\n",fileNameVS.GetData());
 
-	ProcessShaderFileIncludes(&params.pszPSText, fileNamePS.GetData(), true);
-	ProcessShaderFileIncludes(&params.pszVSText, fileNameVS.GetData(), true);
-	ProcessShaderFileIncludes(&params.pszGSText, fileNameGS.GetData(), true);
-
-	params.psChecksum = -1;
-	params.vsChecksum = -1;
-	params.gsChecksum = -1;
-	params.hsChecksum = -1;
-	params.dsChecksum = -1;
+	ProcessShaderFileIncludes(&info.vs.text, fileNameVS.GetData(), info.vs, true);
+	ProcessShaderFileIncludes(&info.ps.text, fileNamePS.GetData(), info.ps, true);
+	ProcessShaderFileIncludes(&info.gs.text, fileNameGS.GetData(), info.gs, true);
 
 	// checksum please
-	if(params.pszPSText)
-		params.psChecksum = CRC32_BlockChecksum(params.pszPSText, strlen(params.pszPSText));
+	if(info.vs.text)
+		info.vs.checksum = CRC32_BlockChecksum(info.vs.text, strlen(info.vs.text));
 
-	if(params.pszVSText)
-		params.vsChecksum = CRC32_BlockChecksum(params.pszVSText, strlen(params.pszVSText));
+	if(info.ps.text)
+		info.ps.checksum = CRC32_BlockChecksum(info.ps.text, strlen(info.ps.text));
 
-	if(params.pszGSText)
-		params.gsChecksum = CRC32_BlockChecksum(params.pszGSText, strlen(params.pszGSText));
+	if(info.gs.text)
+		info.gs.checksum = CRC32_BlockChecksum(info.gs.text, strlen(info.gs.text));
 
-	if(params.pszHSText)
-		params.hsChecksum = CRC32_BlockChecksum(params.pszHSText, strlen(params.pszHSText));
+	// compile the shaders
+	bResult = CompileShadersFromStream( pShaderOutput, info, extra );
 
-	if(params.pszDSText)
-		params.dsChecksum = CRC32_BlockChecksum(params.pszDSText, strlen(params.pszDSText));
-
-	// Don't worry about geometry shader.
-	bResult = CompileShadersFromStream( pShaderOutput, params, extra );
-
-	if(params.pszPSText)
-		PPFree(params.pszPSText);
-
-	if(params.pszVSText)
-		PPFree(params.pszVSText);
-
-	if(params.pszGSText)
-		PPFree(params.pszGSText);
+	PPFree(info.vs.text);
+	PPFree(info.ps.text);
+	PPFree(info.gs.text);
 
 	return bResult;
 }

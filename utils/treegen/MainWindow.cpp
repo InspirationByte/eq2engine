@@ -10,11 +10,6 @@
 #include "IEqModel.h"
 #include "BillboardList.h"
 
-#include "eqParallelJobs.h"
-
-static Threading::CEqParallelJobThreads s_parallelJobs;
-Threading::CEqParallelJobThreads* g_parallelJobs = &s_parallelJobs;
-
 #include <wx/settings.h>
 
 #define APPLICATION_NAME		"maketree"
@@ -319,7 +314,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 
 		if(file && file->ShowModal() == wxID_OK)
 		{
-			EqString fname(file->GetPath().c_str());
+			EqString fname(file->GetPath().c_str().AsChar());
 
 			FlushCache();
 			g_pModel = NULL;
@@ -377,7 +372,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 
 		if(file && file->ShowModal() == wxID_OK)
 		{
-			EqString fname(file->GetPath().c_str());
+			EqString fname(file->GetPath().c_str().AsChar());
 			g_billboardList.SaveBlb(fname.c_str());
 		}
 
@@ -398,7 +393,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 
 		if(file && file->ShowModal() == wxID_OK)
 		{
-			EqString fname(file->GetPath().c_str());
+			EqString fname(file->GetPath().c_str().AsChar());
 
 			DkList<Vector3D> points;
 
@@ -747,8 +742,6 @@ void CMainWindow::ReDraw()
 		fog.viewPos = g_pCameraParams.GetOrigin();
 
 		materials->SetFogInfo(fog);
-
-		g_pShaderAPI->SetupFog(&fog);
 
 		materials->SetAmbientColor(ColorRGBA(1,1,1,1));
 

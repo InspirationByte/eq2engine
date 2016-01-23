@@ -304,7 +304,7 @@ public:
 
 	// Load any shader from stream
 	bool				CompileShadersFromStream(	IShaderProgram* pShaderOutput,
-													const shaderprogram_params_t& params,
+													const shaderProgramCompileInfo_t& info,
 													const char* extra = NULL
 													);
 
@@ -334,13 +334,6 @@ public:
 
 	// mesh buffer FFP emulation
 	void				DrawMeshBufferPrimitives(PrimitiveType_e nType, int nVertices, int nIndices);
-
-//-------------------------------------------------------------
-// Fogging
-//-------------------------------------------------------------
-
-	void				SetupFog(FogInfo_t* fogparams);
-	bool				IsFogEnabled();
 
 protected:
 

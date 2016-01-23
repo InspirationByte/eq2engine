@@ -410,14 +410,12 @@ public:
 	// Loads and compiles shaders from files
 	virtual bool				LoadShadersFromFile(	IShaderProgram* pShaderOutput,
 														const char* pszFileNamePrefix,
-														const char* extra = NULL,
-														const char** attributeNames = NULL,
-														int nAttributes = 0
+														const char* extra = NULL
 														) = 0;
 
 	// Load any shader from stream
 	virtual bool				CompileShadersFromStream(	IShaderProgram* pShaderOutput,
-															const shaderprogram_params_t& params,
+															const shaderProgramCompileInfo_t& info,
 															const char* extra = NULL
 															) = 0;
 
@@ -487,13 +485,6 @@ public:
 
 	// Non-Indexed primitive drawer
 	virtual void				DrawNonIndexedPrimitives(PrimitiveType_e nType, int nFirstVertex, int nVertices) = 0;
-
-//-------------------------------------------------------------
-// Fogging
-//-------------------------------------------------------------
-
-	virtual void				SetupFog(FogInfo_t* fogparams) = 0;
-	virtual bool				IsFogEnabled() = 0;
 
 };
 
