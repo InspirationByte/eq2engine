@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "MainWindow.h"
+#include "FontCache.h"
 
 #include "IEqModel.h"
 #include "BillboardList.h"
@@ -192,6 +193,8 @@ void InitMatSystem(EQWNDHANDLE window)
 	// register all shaders
 	for(int i = 0; i < pShaderRegistrators.numElem(); i++)
 		materials->RegisterShader( pShaderRegistrators[i].shader_name, pShaderRegistrators[i].dispatcher );
+
+	g_fontCache->Init();
 }
 
 CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style )

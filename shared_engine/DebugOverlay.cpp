@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DebugOverlay.h"
-#include "Font.h"
+#include "FontCache.h"
 
 #include "DebugInterface.h"
 #include "math/math_util.h"
@@ -101,7 +101,7 @@ void CDebugOverlay::Init()
 {
 	Platform_InitTime();
 
-	m_pDebugFont = InternalLoadFont("debug");
+	m_pDebugFont = g_fontCache->GetFont("debug", 0);
 }
 
 void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
@@ -649,7 +649,7 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 			textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 			textStl.textColor = color;
 
-			Vector2D textPos = drawFadedTextBoxPosition + Vector2D( 0, (idx*8) );
+			Vector2D textPos = drawFadedTextBoxPosition + Vector2D( 0, (idx*m_pDebugFont->GetLineHeight()) );
 
 			m_pDebugFont->RenderText( current.pszText.GetData(), textPos, textStl);
 			current.color.w -= m_frametime * current.m_fFadeTime;
@@ -689,13 +689,13 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 
 		if(m_TextArray.numElem())
 		{
-			GUIDrawWindow(Rectangle_t(drawTextBoxPosition.x,drawTextBoxPosition.y,drawTextBoxPosition.x+380,drawTextBoxPosition.y+(m_TextArray.numElem()*8)),ColorRGBA(0.5f,0.5f,0.5f,0.5f));
+			GUIDrawWindow(Rectangle_t(drawTextBoxPosition.x,drawTextBoxPosition.y,drawTextBoxPosition.x+380,drawTextBoxPosition.y+(m_TextArray.numElem()*m_pDebugFont->GetLineHeight())),ColorRGBA(0.5f,0.5f,0.5f,0.5f));
 
 			for (int i = 0;i < m_TextArray.numElem();i++)
 			{
 				textStl.textColor = m_TextArray[i].color;
 
-				Vector2D textPos(drawTextBoxPosition.x,drawTextBoxPosition.y+(i*8));
+				Vector2D textPos(drawTextBoxPosition.x,drawTextBoxPosition.y+(i*m_pDebugFont->GetLineHeight()));
 
 				m_pDebugFont->RenderText(m_TextArray[i].pszText.GetData(), textPos, textStl);
 			}
@@ -715,7 +715,7 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 			float textLen = m_pDebugFont->GetStringWidth( m_RightTextFadeArray[i].pszText.c_str(), textStl.styleFlag );
 
 			rTextFadeStyle.textColor = m_RightTextFadeArray[i].color;
-			Vector2D textPos(winWide - (textLen*8), 45+(i*8));
+			Vector2D textPos(winWide - (textLen*m_pDebugFont->GetLineHeight()), 45+(i*m_pDebugFont->GetLineHeight()));
 
 			m_pDebugFont->RenderText( m_RightTextFadeArray[i].pszText.GetData(), textPos, rTextFadeStyle);
 

@@ -70,6 +70,9 @@
     <ClInclude Include="..\..\shared_engine\eqGlobalMutex.h">
       <Filter>Source Files\EngineLib</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\shared_engine\FontCache.h">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="windows\mainicon.ico">
@@ -104,9 +107,6 @@
     <ClCompile Include="..\..\shared_engine\DebugOverlay.cpp">
       <Filter>Source Files\EngineLib\Renderer\Debug</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\shared_engine\Font.cpp">
-      <Filter>Source Files\EngineLib\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\shared_engine\EffectRender.cpp">
       <Filter>Source Files\EngineLib</Filter>
     </ClCompile>
@@ -117,6 +117,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\shared_engine\eqGlobalMutex.cpp">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\FontCache.cpp">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\Font.cpp">
       <Filter>Source Files\EngineLib</Filter>
     </ClCompile>
   </ItemGroup>

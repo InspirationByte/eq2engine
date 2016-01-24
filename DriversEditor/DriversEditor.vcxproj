@@ -175,6 +175,7 @@
     <ClInclude Include="..\shared_engine\Audio\soundzero.h" />
     <ClInclude Include="..\shared_engine\eqGlobalMutex.h" />
     <ClInclude Include="..\shared_engine\eqParallelJobs.h" />
+    <ClInclude Include="..\shared_engine\FontCache.h" />
     <ClInclude Include="..\shared_engine\studio_egf.h" />
     <ClInclude Include="..\shared_engine\EffectRender.h" />
     <ClInclude Include="..\shared_engine\EqParticles.h" />
@@ -289,6 +290,7 @@
     <ClCompile Include="..\shared_engine\Audio\soundzero.cpp" />
     <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp" />
     <ClCompile Include="..\shared_engine\eqParallelJobs.cpp" />
+    <ClCompile Include="..\shared_engine\FontCache.cpp" />
     <ClCompile Include="..\shared_engine\studio_egf.cpp" />
     <ClCompile Include="..\shared_engine\EffectRender.cpp" />
     <ClCompile Include="..\shared_engine\EqParticles_Render.cpp" />

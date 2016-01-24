@@ -7,6 +7,8 @@
 
 #include "EditorMain.h"
 
+#include "FontCache.h"
+
 #include "UI_HeightEdit.h"
 #include "UI_LevelModels.h"
 #include "UI_RoadEditor.h"
@@ -195,6 +197,8 @@ void InitMatSystem(HWND window)
 	DrvSyn_RegisterShaderOverrides();
 
 	g_parallelJobs->Init( g_cpuCaps->GetCPUCount() );
+
+	g_fontCache->Init();
 
 	g_pModelCache->PrecacheModel("models/error.egf");
 
@@ -1102,12 +1106,10 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 
 	Destroy();
 
-	/*
 	ses->StopAllSounds();
 	ses->Shutdown();
 
 	soundsystem->Shutdown();
-	*/
 
 	// shutdown material system
 	materials->Shutdown();
@@ -1118,6 +1120,8 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 	
 	// shutdown core
 	GetCore()->Shutdown();
+
+	wxExit();
 }
 
 void CMainWindow::OnButtons(wxCommandEvent& event)

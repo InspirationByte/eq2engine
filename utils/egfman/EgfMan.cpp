@@ -17,6 +17,9 @@
 #include <commdlg.h>
 
 #include "EditorHeader.h"
+#include "FontCache.h"
+
+
 #include "DebugOverlay.h"
 #include "CAnimatedModel.h"
 #include "math/math_util.h"
@@ -265,6 +268,8 @@ void InitMatSystem(HWND window)
 	materials->LoadShaderLibrary("eqBaseShaders.dll");
 
 	g_pModelCache->PrecacheModel("models/error.egf");
+
+	g_fontCache->Init();
 
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();

@@ -580,7 +580,7 @@ void CModelListRenderPanel::Redraw()
 		return;
 
 	if(!m_pFont)
-		m_pFont = InternalLoadFont("debug");
+		m_pFont = g_fontCache->GetFont("debug", 0);
 
 	int w, h;
 	GetClientSize(&w, &h);

@@ -170,11 +170,15 @@
   <ItemGroup>
     <ClCompile Include="..\public\BaseRenderableObject.cpp" />
     <ClCompile Include="..\public\Decals.cpp" />
+    <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp" />
+    <ClCompile Include="..\shared_engine\eqParallelJobs.cpp" />
     <ClCompile Include="..\shared_engine\Font.cpp" />
     <ClCompile Include="..\public\mtriangle_framework.cpp" />
     <ClCompile Include="..\public\Utils\GeomTools.cpp" />
     <ClCompile Include="..\public\Math\math_util.cpp" />
     <ClCompile Include="..\public\ViewParams.cpp" />
+    <ClCompile Include="..\shared_engine\FontCache.cpp" />
+    <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp" />
     <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp" />
     <ClCompile Include="Audio\EqSoundSystemA.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -214,7 +218,6 @@
     <ClCompile Include="Physics\DkBulletPhysics.cpp" />
     <ClCompile Include="Physics\DkPhysicsJoint.cpp" />
     <ClCompile Include="Physics\DkPhysicsRope.cpp" />
-    <ClCompile Include="UFont.cpp" />
     <ClCompile Include="ViewRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -229,6 +232,10 @@
     <ClInclude Include="..\public\Utils\DkList.h" />
     <ClInclude Include="..\public\Utils\GeomTools.h" />
     <ClInclude Include="..\public\ViewParams.h" />
+    <ClInclude Include="..\shared_engine\eqGlobalMutex.h" />
+    <ClInclude Include="..\shared_engine\eqParallelJobs.h" />
+    <ClInclude Include="..\shared_engine\FontCache.h" />
+    <ClInclude Include="..\shared_engine\FontLayoutBuilders.h" />
     <ClInclude Include="..\shared_engine\physics\BulletConvert.h" />
     <ClInclude Include="..\shared_engine\physics\BulletShapeCache.h" />
     <ClInclude Include="Audio\EqSoundSystemA.h" />
@@ -240,7 +247,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="EqGameLevel.h" />
-    <ClInclude Include="UFont.h" />
     <ClInclude Include="..\public\coord.h" />
     <ClInclude Include="..\public\Math\DkMath.h" />
     <ClInclude Include="ViewRenderer.h" />

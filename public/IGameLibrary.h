@@ -31,6 +31,7 @@ class IMaterialSystem;
 class IShaderAPI;
 class ISoundSystem;
 class IModelCache;
+class KeyValues;
 
 #define LOADINGSCREEN_SHOW		1
 #define LOADINGSCREEN_DESTROY	2

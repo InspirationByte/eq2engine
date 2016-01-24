@@ -34,8 +34,6 @@ BOOL WINAPI DllMain(HINSTANCE module_handle, DWORD reason_for_call, LPVOID reser
 
 extern void EngineMessage();
 
-#include "UFont.h"
-
 //---------------------------------------------------------------------------
 // Purpose: Entry point for engine dll to run under normal mode
 //---------------------------------------------------------------------------

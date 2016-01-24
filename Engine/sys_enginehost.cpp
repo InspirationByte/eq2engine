@@ -9,6 +9,7 @@
 #include "IEngineGame.h"
 #include "sys_console.h"
 
+
 #include "Imaging/ImageLoader.h"
 
 #include "materialsystem/IMaterialSystem.h"
@@ -25,6 +26,7 @@
 #include <direct.h>
 #include "IGameLibrary.h"
 #include "Font.h"
+#include "FontCache.h"
 
 #ifdef PLAT_SDL
 #include "SDL_mouse.h"
@@ -89,7 +91,7 @@ DECLARE_CMD(toggleconsole, "Toggles console", 0)
 {
 	if(g_pSysConsole->IsVisible() && g_pSysConsole->IsShiftPressed())
 	{
-		g_pSysConsole->con_full_enabled = !g_pSysConsole->con_full_enabled;
+		g_pSysConsole->SetLogVisible(g_pSysConsole->IsLogVisible());
 		return;
 	}
 
@@ -720,8 +722,6 @@ bool CEngineHost::InitSubSystems()
 
 	SDL_GetWindowSize(m_hHWND, &m_nWidth, &m_nHeight);
 
-	g_pSysConsole->m_hwnd = m_hHWND;
-
 	SetPreErrorCallback(OnEngineError);
 
 	int bpp = r_bpp.GetInt();
@@ -805,6 +805,11 @@ bool CEngineHost::InitSubSystems()
 
 	// Initialize sound system
 	soundsystem->Init();
+
+	if(!g_fontCache->Init())
+		return false;
+
+	g_pSysConsole->Initialize();
 
 	debugoverlay->Init();
 
@@ -1123,7 +1128,8 @@ int CEngineHost::Frame()
 								engine->GetGameState() == IEngineGame::GAME_RUNNING_MENU || 
 								engine->GetGameState() == IEngineGame::GAME_LEVEL_LOAD);
 
-	g_pSysConsole->DrawSelf(fullscreen_console, m_nWidth, m_nHeight,/*m_pDefaultFont*/pFont, m_fCurTime);
+
+	g_pSysConsole->DrawSelf(fullscreen_console, m_nWidth, m_nHeight, m_fCurTime);
 
 	// End frame from render lib
 	EndScene();

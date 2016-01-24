@@ -235,6 +235,9 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	if(!materialSystemStatus)
 		return false;
 
+	if( !g_fontCache->Init() )
+		return false;
+
 	// Initialize sound system
 	soundsystem->Init();
 
@@ -261,9 +264,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	// make job threads
 	g_parallelJobs->Init( (int)ceil((float)g_cpuCaps->GetCPUCount() / 2.0f) );
-
-	if( !g_fontCache->Init() )
-		return false;
 
 	// init console
 	g_pSysConsole->Initialize();

@@ -12,20 +12,94 @@
 #include "BaseTilebasedEditor.h"
 #include "Font.h"
 
+enum ELayerType
+{
+	LAYER_TEXTURE = 0,
+	LAYER_MODEL,
+	LAYER_CORNER_MODEL
+};
+
+struct buildLayer_t
+{
+	buildLayer_t() 
+		: height(1.0f), type(LAYER_TEXTURE), repeatTimes(0), repeatInterval(0), model(nullptr), material(nullptr), atlEntry(nullptr)
+	{
+	}
+
+	float					height;			// height in units
+	int						type;			// ELayerType
+	int						repeatTimes;	// height repeat times
+	int						repeatInterval;	// repeat after repeatInterval times
+	CLevelModel*			model;
+	IMaterial*				material;
+	TexAtlasEntry_t*		atlEntry;
+};
+
+struct buildLayerCollection_t
+{
+	buildLayerCollection_t()
+	{
+	}
+
+	EqString				name;
+	DkList<buildLayer_t>	layers;
+};
+
+//------------------------------------------------------------
+
 class CBuildingLayerEditDialog : public wxDialog 
 {
+	enum
+	{
+		LAYEREDIT_NEW = 1000,
+		LAYEREDIT_DELETE,
+		LAYEREDIT_CHOOSEMODEL,
+		LAYEREDIT_TOGGLEPREVIEW
+	};
+
 public:
 	CBuildingLayerEditDialog( wxWindow* parent ); 
 	~CBuildingLayerEditDialog();
 
+	void UpdateSelection();
+
 protected:
+
+	void OnIdle(wxIdleEvent &event){Redraw();}
+	void OnEraseBackground(wxEraseEvent& event) {}
+	void OnMouseMotion(wxMouseEvent& event);
+
+	void Redraw();
+
+	void OnBtnsClick( wxCommandEvent& event );
+
+	void ChangeHeight( wxCommandEvent& event );
+	void ChangeRepeat( wxSpinEvent& event );
+	void ChangeInterval( wxSpinEvent& event );
+	void ChangeType( wxCommandEvent& event );
+
+	IEqSwapChain*	m_pSwapChain;
+	IEqFont*		m_pFont;
+
+	wxStaticBoxSizer* m_propertyBox;
+
 	wxPanel* m_renderPanel;
 	wxPanel* m_panel18;
+	wxButton* m_newBtn;
+	wxButton* m_delBtn;
+	wxTextCtrl* m_height;
+	wxSpinCtrl* m_repeat;
+	wxSpinCtrl* m_interval;
+	wxChoice* m_typeSel;
+	wxButton* m_btnChoose;
+	wxButton* m_previewBtn;
 
-	wxButton* m_button16;
-	wxButton* m_button14;
-	wxButton* m_button15;
-	wxButton* m_button18;
+	// what we modifying
+	buildLayerCollection_t	m_layerColl;
+	buildLayer_t*			m_selLayer;
+	Vector2D				m_mousePos;
+	int						m_mouseoverItem;
+	int						m_selectedItem;
 };
 
 //-----------------------------------------------------------------------------

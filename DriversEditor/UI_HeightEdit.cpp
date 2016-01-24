@@ -246,7 +246,7 @@ void CMaterialAtlasList::Redraw()
 		return;
 
 	if(!m_pFont)
-		m_pFont = InternalLoadFont("debug");
+		m_pFont = g_fontCache->GetFont("debug", 0);
 
 	g_bTexturesInit = true;
 

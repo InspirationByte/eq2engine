@@ -135,9 +135,6 @@
     <ClCompile Include="Audio\EqSoundSystemA.cpp">
       <Filter>Source Files\Audio\NEW</Filter>
     </ClCompile>
-    <ClCompile Include="UFont.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp">
       <Filter>Source Files\Physics\Bullet</Filter>
     </ClCompile>
@@ -181,6 +178,18 @@
       <Filter>Source Files\System</Filter>
     </ClCompile>
     <ClCompile Include="..\shared_engine\Font.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\FontCache.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\eqParallelJobs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -383,9 +392,6 @@
     <ClInclude Include="Audio\IEqSoundSystem.h">
       <Filter>Source Files\Audio\NEW</Filter>
     </ClInclude>
-    <ClInclude Include="UFont.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\Font.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -394,6 +400,18 @@
     </ClInclude>
     <ClInclude Include="..\shared_engine\physics\BulletShapeCache.h">
       <Filter>Source Files\Physics\Bullet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\FontCache.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\FontLayoutBuilders.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\eqGlobalMutex.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\eqParallelJobs.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

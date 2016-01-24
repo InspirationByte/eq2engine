@@ -379,6 +379,9 @@
     <ClInclude Include="UI_RoadEditor.h">
       <Filter>Source Files\Editor\Modes</Filter>
     </ClInclude>
+    <ClInclude Include="..\shared_engine\FontCache.h">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Notes.txt" />
@@ -548,6 +551,9 @@
     </ClCompile>
     <ClCompile Include="UI_RoadEditor.cpp">
       <Filter>Source Files\Editor\Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\FontCache.cpp">
+      <Filter>Source Files\EngineLib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

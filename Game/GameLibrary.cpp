@@ -413,8 +413,9 @@ void CGameLibrary::PostRender()
 
 		g_pViewEntity->CalcView(origin, angles, fFOV);
 
-		g_pEngineHost->GetDefaultFont()->DrawSetColor(ColorRGBA(0,1,0,1.0f));
-		g_pEngineHost->GetDefaultFont()->DrawText(varargs("--- Camera origin: %.1f %.1f %.1f ---",origin.x,origin.y,origin.z),25,55,20,25);
+		eqFontStyleParam_t fstyle;
+		fstyle.textColor = ColorRGBA(0,1,0,1.0f);
+		g_pEngineHost->GetDefaultFont()->RenderText(varargs("--- Camera origin: %.1f %.1f %.1f ---",origin.x,origin.y,origin.z),Vector2D(25,55),fstyle);
 	}
 
 	if(r_showfps.GetBool())
@@ -443,8 +444,9 @@ void CGameLibrary::PostRender()
 				col = ColorRGBA(0,1,0,1);
 		}
 
-		g_pEngineHost->GetDefaultFont()->DrawSetColor(col);
-		g_pEngineHost->GetDefaultFont()->DrawText(varargs("FPS: %d on world '%s'\nCurrent game time: %f\n", fps, gpGlobals->worldname, gpGlobals->curtime), 0, 16,16,16);
+		eqFontStyleParam_t fstyle;
+		fstyle.textColor = col;
+		g_pEngineHost->GetDefaultFont()->RenderText(varargs("FPS: %d on world '%s'\nCurrent game time: %f\n", fps, gpGlobals->worldname, gpGlobals->curtime), Vector2D(0, 16), fstyle);
 	}
 }
 
