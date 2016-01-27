@@ -6,8 +6,12 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "UI_BuildingConstruct.h"
+#include "UI_HeightEdit.h"
+
 #include "EditorMain.h"
 #include "FontCache.h"
+#include "FontLayoutBuilders.h"
+
 
 CBuildingLayerEditDialog::~CBuildingLayerEditDialog()
 {
@@ -34,6 +38,8 @@ CBuildingLayerEditDialog::CBuildingLayerEditDialog( wxWindow* parent )
 	
 	m_renderPanel = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	//m_renderPanel->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ) );
+
+	m_renderPanel->SetDropTarget(this);
 
 	m_pSwapChain = materials->CreateSwapChain(m_renderPanel->GetHandle());
 	
@@ -119,6 +125,56 @@ CBuildingLayerEditDialog::CBuildingLayerEditDialog( wxWindow* parent )
 	m_renderPanel->Connect( wxEVT_ERASE_BACKGROUND, wxEraseEventHandler( CBuildingLayerEditDialog::OnEraseBackground ), NULL, this );
 
 	m_renderPanel->Connect(wxEVT_MOTION, wxMouseEventHandler( CBuildingLayerEditDialog::OnMouseMotion ), NULL, this);
+	m_renderPanel->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(CBuildingLayerEditDialog::OnMouseScroll), NULL, this);
+	m_renderPanel->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(CBuildingLayerEditDialog::OnMouseClick), NULL, this);
+	m_renderPanel->Connect(wxEVT_SCROLLBAR, wxScrollWinEventHandler(CBuildingLayerEditDialog::OnScrollbarChange), NULL, this);
+}
+
+void CBuildingLayerEditDialog::OnScrollbarChange(wxScrollWinEvent& event)
+{
+	if(event.GetEventType() == wxEVT_SCROLLWIN_LINEUP)
+	{
+		SetScrollPos(wxVERTICAL, GetScrollPos(wxVERTICAL) - 1, true);
+	}
+	else if(event.GetEventType() == wxEVT_SCROLLWIN_LINEDOWN)
+	{
+		SetScrollPos(wxVERTICAL, GetScrollPos(wxVERTICAL) + 1, true);
+	}
+	else if(event.GetEventType() == wxEVT_SCROLLWIN_PAGEUP)
+	{
+		SetScrollPos(wxVERTICAL, GetScrollPos(wxVERTICAL) - 1, true);
+	}
+	else if(event.GetEventType() == wxEVT_SCROLLWIN_PAGEDOWN)
+	{
+		SetScrollPos(wxVERTICAL, GetScrollPos(wxVERTICAL) + 1, true);
+	}
+	else if(event.GetEventType() == wxEVT_SCROLLWIN_TOP)
+	{
+		SetScrollPos(wxVERTICAL, GetScrollPos(wxVERTICAL) - 1, true);
+	}
+	else if(event.GetEventType() == wxEVT_SCROLLWIN_BOTTOM)
+	{
+		SetScrollPos(wxVERTICAL, GetScrollPos(wxVERTICAL) + 1, true);
+	}
+	else
+		SetScrollPos(wxVERTICAL, event.GetPosition(), true);
+
+	Redraw();
+}
+
+void CBuildingLayerEditDialog::OnMouseScroll(wxMouseEvent& event)
+{
+	int scroll_pos =  GetScrollPos(wxVERTICAL);
+
+	SetScrollPos(wxVERTICAL, scroll_pos - event.GetWheelRotation()/100, true);
+}
+
+void CBuildingLayerEditDialog::OnMouseClick(wxMouseEvent& event)
+{
+	// set selection to mouse over
+	m_selectedItem = m_mouseoverItem;
+
+	UpdateSelection();
 }
 
 void CBuildingLayerEditDialog::OnMouseMotion(wxMouseEvent& event)
@@ -127,6 +183,23 @@ void CBuildingLayerEditDialog::OnMouseMotion(wxMouseEvent& event)
 	m_mousePos.y = event.GetY();
 
 	Redraw();
+}
+
+bool CBuildingLayerEditDialog::OnDropPoiner(wxCoord x, wxCoord y, void* ptr, EDragDropPointerType type)
+{
+	if(!m_selLayer)
+		return false;
+
+	if(type == DRAGDROP_PTR_COMPOSITE_MATERIAL)
+	{
+		matAtlasElem_t* elem = (matAtlasElem_t*)ptr;
+
+		m_selLayer->type = LAYER_TEXTURE;
+		m_selLayer->material = elem->material;
+		m_selLayer->atlEntry = elem->entry;
+	}
+
+	return true;
 }
 
 void CBuildingLayerEditDialog::Redraw()
@@ -153,9 +226,14 @@ void CBuildingLayerEditDialog::Redraw()
 	blendParams.mask = COLORMASK_ALL;
 	blendParams.blendFunc = BLENDFUNC_ADD;
 
+	CRectangleTextLayoutBuilder rectLayout;
+
 	eqFontStyleParam_t fontParam;
 	fontParam.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 	fontParam.textColor = ColorRGBA(1,1,1,1);
+	fontParam.layoutBuilder = &rectLayout;
+
+	m_mouseoverItem = -1;
 
 	if( materials->BeginFrame() )
 	{
@@ -287,7 +365,20 @@ void CBuildingLayerEditDialog::Redraw()
 				}
 
 				// render layer name text
-				m_pFont->RenderText("pls sel model/tex", name_rect.vleftTop, fontParam);
+				rectLayout.SetRectangle(name_rect);
+
+				if(elem.type == LAYER_TEXTURE && elem.material)
+				{
+					EqString material_name = elem.material->GetName();
+					material_name.Replace( CORRECT_PATH_SEPARATOR, '\n' );
+
+					m_pFont->RenderText(material_name.c_str(), name_rect.vleftTop, fontParam);
+				}
+				else
+					m_pFont->RenderText("drag&drop material or model", name_rect.vleftTop, fontParam);
+
+				//else if(elem.type == LAYER_MODEL)
+				//	m_pFont->RenderText("pls sel model", name_rect.vleftTop, fontParam);
 
 				nItem++;
 			}
@@ -311,6 +402,13 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 		}
 		case LAYEREDIT_DELETE:
 		{
+			if(m_selectedItem >= 0)
+			{
+				m_layerColl.layers.removeIndex(m_selectedItem);
+				m_selectedItem--;
+			}
+			
+			UpdateSelection();
 			break;
 		}
 		case LAYEREDIT_CHOOSEMODEL:
@@ -370,7 +468,7 @@ void CBuildingLayerEditDialog::ChangeType( wxCommandEvent& event )
 //-----------------------------------------------------------------------------
 
 CUI_BuildingConstruct::CUI_BuildingConstruct( wxWindow* parent )
-	 : wxPanel( parent, -1, wxDefaultPosition, wxDefaultSize), CBaseTilebasedEditor()
+	 : wxPanel( parent, -1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL | wxNO_BORDER | wxSTAY_ON_TOP), CBaseTilebasedEditor()
 {
 	wxBoxSizer* bSizer9;
 	bSizer9 = new wxBoxSizer( wxHORIZONTAL );
@@ -457,13 +555,13 @@ void CUI_BuildingConstruct::OnFilterChange( wxCommandEvent& event )
 void CUI_BuildingConstruct::OnCreateClick( wxCommandEvent& event )
 {
 	// TODO: newLayer
-	m_layerEditDlg->ShowModal();
+	m_layerEditDlg->Show();
 }
 
 void CUI_BuildingConstruct::OnEditClick( wxCommandEvent& event )
 {
 	// TODO: set existing layers
-	m_layerEditDlg->ShowModal();
+	m_layerEditDlg->Show();
 }
 
 void CUI_BuildingConstruct::OnDeleteClick( wxCommandEvent& event )

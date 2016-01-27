@@ -176,6 +176,7 @@
     <ClInclude Include="..\shared_engine\eqGlobalMutex.h" />
     <ClInclude Include="..\shared_engine\eqParallelJobs.h" />
     <ClInclude Include="..\shared_engine\FontCache.h" />
+    <ClInclude Include="..\shared_engine\FontLayoutBuilders.h" />
     <ClInclude Include="..\shared_engine\studio_egf.h" />
     <ClInclude Include="..\shared_engine\EffectRender.h" />
     <ClInclude Include="..\shared_engine\EqParticles.h" />
@@ -204,6 +205,7 @@
     <ClInclude Include="..\public\CPU.h" />
     <ClInclude Include="..\public\DebugInterface.h" />
     <ClInclude Include="DkCore.h" />
+    <ClInclude Include="DragDropObjects.h" />
     <ClInclude Include="editaxis.h" />
     <ClInclude Include="IEditorTool.h" />
     <ClInclude Include="EditorMain.h" />
@@ -291,6 +293,7 @@
     <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp" />
     <ClCompile Include="..\shared_engine\eqParallelJobs.cpp" />
     <ClCompile Include="..\shared_engine\FontCache.cpp" />
+    <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp" />
     <ClCompile Include="..\shared_engine\studio_egf.cpp" />
     <ClCompile Include="..\shared_engine\EffectRender.cpp" />
     <ClCompile Include="..\shared_engine\EqParticles_Render.cpp" />

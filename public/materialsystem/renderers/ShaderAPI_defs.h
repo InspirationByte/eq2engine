@@ -243,23 +243,6 @@ typedef struct SamplerStateParam_s
 	void*			userData;		// user data to store API-specific pointers
 }SamplerStateParam_t;
 
-// fog parameters
-
-struct FogInfo_t
-{
-	bool enableFog;
-
-	Vector3D viewPos;
-
-	// TODO: fog mode (linear, exponental (2x), etc)
-
-	float fogdensity;
-	float fognear;
-	float fogfar;
-
-	Vector3D fogColor;
-};
-
 //---------------------------------------
 //        LOWER LEVEL CONSTANTS
 //---------------------------------------

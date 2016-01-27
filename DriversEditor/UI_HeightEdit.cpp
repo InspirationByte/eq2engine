@@ -15,6 +15,8 @@
 #include "math/math_util.h"
 #include "TextureView.h"
 
+#include "DragDropObjects.h"
+
 #include "world.h"
 
 class CMaterialReplaceDialog : public wxDialog 
@@ -151,10 +153,43 @@ CMaterialAtlasList::CMaterialAtlasList(CUI_HeightEdit* parent) : wxPanel( parent
 	m_heightEdit = parent;
 }
 
+
+
 void CMaterialAtlasList::OnMouseMotion(wxMouseEvent& event)
 {
 	pointer_position.x = event.GetX();
 	pointer_position.y = event.GetY();
+
+	if( event.Dragging() && GetSelectedMaterial() )
+	{
+		if(mouseover_id == -1)
+			return;
+
+		/*
+		kvkeybase_t kvdata;
+		kvdata.SetKey("material", m_filteredlist[mouseover_id].material->GetName() );
+		kvdata.SetKey("atlas", varargs("%d", m_filteredlist[mouseover_id].entryIdx) );
+
+		CMemoryStream str;
+		str.Open(NULL,VS_OPEN_WRITE | VS_OPEN_READ, 1024);
+
+		KV_WriteToStream_r(&kvdata, &str, 0, false, true);
+		ubyte _zero = 0;
+		str.Write(&_zero, 1, 1);
+
+		wxTextDataObject dropData(str.GetBasePointer());
+
+		wxDropSource dragSource( dropData, this );
+
+		wxDragResult result = dragSource.DoDragDrop( wxDrag_CopyOnly );
+		*/
+
+		CPointerDataObject dropData;
+		dropData.SetCompositeMaterial( &m_filteredlist[mouseover_id] );
+		wxDropSource dragSource( dropData, this );
+
+		wxDragResult result = dragSource.DoDragDrop( wxDrag_CopyOnly );
+	}
 
 	Redraw();
 }

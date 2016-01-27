@@ -11,6 +11,7 @@
 #include "EditorHeader.h"
 #include "BaseTilebasedEditor.h"
 #include "Font.h"
+#include "DragDropObjects.h"
 
 enum ELayerType
 {
@@ -30,7 +31,7 @@ struct buildLayer_t
 	int						type;			// ELayerType
 	int						repeatTimes;	// height repeat times
 	int						repeatInterval;	// repeat after repeatInterval times
-	CLevelModel*			model;
+	objectcont_t*			model;
 	IMaterial*				material;
 	TexAtlasEntry_t*		atlEntry;
 };
@@ -47,7 +48,7 @@ struct buildLayerCollection_t
 
 //------------------------------------------------------------
 
-class CBuildingLayerEditDialog : public wxDialog 
+class CBuildingLayerEditDialog : public wxDialog, CPointerDropTarget
 {
 	enum
 	{
@@ -68,6 +69,8 @@ protected:
 	void OnIdle(wxIdleEvent &event){Redraw();}
 	void OnEraseBackground(wxEraseEvent& event) {}
 	void OnMouseMotion(wxMouseEvent& event);
+	void OnMouseScroll(wxMouseEvent& event);
+	void OnMouseClick(wxMouseEvent& event);
 
 	void Redraw();
 
@@ -78,12 +81,17 @@ protected:
 	void ChangeInterval( wxSpinEvent& event );
 	void ChangeType( wxCommandEvent& event );
 
+	void OnScrollbarChange(wxScrollWinEvent& event);
+
+	bool OnDropPoiner(wxCoord x, wxCoord y, void* ptr, EDragDropPointerType type);
+
 	IEqSwapChain*	m_pSwapChain;
 	IEqFont*		m_pFont;
 
 	wxStaticBoxSizer* m_propertyBox;
 
-	wxPanel* m_renderPanel;
+	wxPanel*			m_renderPanel;
+
 	wxPanel* m_panel18;
 	wxButton* m_newBtn;
 	wxButton* m_delBtn;

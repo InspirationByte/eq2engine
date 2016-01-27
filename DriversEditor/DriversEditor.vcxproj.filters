@@ -382,6 +382,12 @@
     <ClInclude Include="..\shared_engine\FontCache.h">
       <Filter>Source Files\EngineLib</Filter>
     </ClInclude>
+    <ClInclude Include="..\shared_engine\FontLayoutBuilders.h">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="DragDropObjects.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Notes.txt" />
@@ -553,6 +559,9 @@
       <Filter>Source Files\Editor\Modes</Filter>
     </ClCompile>
     <ClCompile Include="..\shared_engine\FontCache.cpp">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp">
       <Filter>Source Files\EngineLib</Filter>
     </ClCompile>
   </ItemGroup>

@@ -317,6 +317,15 @@ void CMaterialSystem::Shutdown()
 	{
 		Msg("MatSystem shutdown...\n");
 
+		for (blendStateMap_t::iterator i = m_blendStates.begin(); i != m_blendStates.end(); ++i)
+			g_pShaderAPI->DestroyRenderState(i->second);
+
+		for (depthStateMap_t::iterator i = m_depthStates.begin(); i != m_depthStates.end(); ++i)
+			g_pShaderAPI->DestroyRenderState(i->second);
+
+		for (rasterStateMap_t::iterator i = m_rasterStates.begin(); i != m_rasterStates.end(); ++i)
+			g_pShaderAPI->DestroyRenderState(i->second);
+
 		// shutdown thread first
 		g_threadedMaterialLoader.StopThread(true);
 
@@ -480,11 +489,6 @@ void CMaterialSystem::ReloadAllTextures()
 // Frees all textures
 void CMaterialSystem::FreeAllTextures()
 {
-	if(m_pLoadedMaterials.numElem() == 0)
-	{
-		return;
-	}
-
 	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
 	{
 		if(m_pLoadedMaterials[i] != NULL)
@@ -499,9 +503,6 @@ void CMaterialSystem::FreeAllTextures()
 // Reloads materials
 void CMaterialSystem::ReloadAllMaterials(bool bTouchTextures,bool bTouchShaders, bool wait)
 {
-	if(m_pLoadedMaterials.numElem() == 0)
-		return;
-
 	g_pLoadBeginCallback();
 
 	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
@@ -513,6 +514,10 @@ void CMaterialSystem::ReloadAllMaterials(bool bTouchTextures,bool bTouchShaders,
 		// Flush materials
 		mat->Cleanup(bTouchShaders, bTouchTextures, false);
 		mat->Init( old_name.GetData(), false );
+
+		// preload material if it was visible
+		if(mat->m_frameBound == m_frame-1 || mat->m_frameBound == m_frame)
+			PutMaterialToLoadingQueue(mat);
 	}
 
 	PreloadNewMaterials();
@@ -528,17 +533,11 @@ void CMaterialSystem::FreeMaterials(bool bFreeAll)
 {
 	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
 	{
-		Msg("freeing %s\n", m_pLoadedMaterials[i]->GetName());
+		DevMsg(2, "freeing %s\n", m_pLoadedMaterials[i]->GetName());
 
 		((CMaterial*)m_pLoadedMaterials[i])->Cleanup();
 		CMaterial* pMaterial = (CMaterial*)m_pLoadedMaterials[i];
 		delete ((CMaterial*)pMaterial);
-
-		// remove
-		m_pLoadedMaterials.removeIndex(i);
-
-		// do some correction
-		i--;
 	}
 }
 
@@ -554,13 +553,10 @@ void CMaterialSystem::FreeMaterial(IMaterial *pMaterial)
 
 	if(pMaterial->Ref_Count() <= 0)
 	{
-		// find index
-		int ind = m_pLoadedMaterials.findIndex(pMaterial);
-
 		((CMaterial*)pMaterial)->Cleanup();
 		DevMsg(2,"Material unloaded: %s\n",pMaterial->GetName());
 
-		m_pLoadedMaterials.remove(pMaterial);
+		m_pLoadedMaterials.fastRemove(pMaterial);
 		delete ((CMaterial*)pMaterial);
 	}
 }
@@ -943,6 +939,15 @@ void CMaterialSystem::SetFogInfo(const FogInfo_t &info)
 // returns fog info
 void CMaterialSystem::GetFogInfo(FogInfo_t &info)
 {
+	if( r_overdraw.GetBool() )
+	{
+		static FogInfo_t nofog;
+
+		info = nofog;
+
+		return;
+	}
+
 	info = m_fogInfo;
 }
 
@@ -1061,7 +1066,7 @@ void CMaterialSystem::DrawPrimitivesFFP(PrimitiveType_e type, Vertex3D_t *pVerts
 	g_pShaderAPI->SetTexture(pTexture, NULL, 0);
 
 	if(!blendParams)
-		SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD, COLORMASK_ALL, false,0.9f);
+		SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD, COLORMASK_ALL);
 	else
 		SetBlendingStates(*blendParams);
 
@@ -1161,7 +1166,7 @@ void CMaterialSystem::DrawPrimitives2DFFP(	PrimitiveType_e type, Vertex2D_t *pVe
 // sets blending
 void CMaterialSystem::SetBlendingStates(const BlendStateParam_t& blend)
 {
-	SetBlendingStates(blend.srcFactor, blend.dstFactor, blend.blendFunc, blend.mask, blend.alphaTest, blend.alphaTestRef);
+	SetBlendingStates(blend.srcFactor, blend.dstFactor, blend.blendFunc, blend.mask);
 }
 
 // sets depth stencil state
@@ -1173,49 +1178,74 @@ void CMaterialSystem::SetDepthStates(const DepthStencilStateParams_t& depth)
 // sets rasterizer extended mode
 void CMaterialSystem::SetRasterizerStates(const RasterizerStateParams_t& raster)
 {
-	SetRasterizerStates(raster.cullMode, raster.fillMode, raster.depthBias, raster.slopeDepthBias, raster.multiSample, raster.scissor);
+	SetRasterizerStates(raster.cullMode, raster.fillMode, raster.multiSample, raster.scissor);
 }
+
+// pack blending function to ushort
+struct blendStateIndex_t
+{
+	blendStateIndex_t( BlendingFactor_e nSrcFactor, BlendingFactor_e nDestFactor, BlendingFunction_e nBlendingFunc, int colormask ) 
+		: srcFactor(nSrcFactor), destFactor(nDestFactor), colMask(colormask), blendFunc(nBlendingFunc)
+	{
+	}
+
+	ushort srcFactor : 4;
+	ushort destFactor : 4;
+	ushort colMask : 4;
+	ushort blendFunc : 4;
+};
+
+assert_sizeof(blendStateIndex_t,2);
 
 // sets blending
-void CMaterialSystem::SetBlendingStates(BlendingFactor_e nSrcFactor,BlendingFactor_e nDestFactor, BlendingFunction_e nBlendingFunc, int colormask, bool bAlphaTest, float alphaTestFactor)
+void CMaterialSystem::SetBlendingStates(BlendingFactor_e nSrcFactor, BlendingFactor_e nDestFactor, BlendingFunction_e nBlendingFunc, int colormask)
 {
-	static IRenderState*			m_pBlendingStates[10][10][4][16] = {{{}}};
-	static IRenderState*			m_pNoBlending = NULL;
+	ushort stateIndex = *(ushort*)&( blendStateIndex_t(nSrcFactor, nDestFactor, nBlendingFunc, colormask) );
 
-	if(nSrcFactor == BLENDFACTOR_ONE && nDestFactor == BLENDFACTOR_ZERO && nBlendingFunc == BLENDFUNC_ADD)
+	IRenderState* state = nullptr;
+
+	if( !m_blendStates.count(stateIndex) )
 	{
-		if(m_pNoBlending == NULL)
-		{
-			BlendStateParam_t desc;
-			desc.blendEnable = false;
-			m_pNoBlending = g_pShaderAPI->CreateBlendingState(desc);
-		}
+		BlendStateParam_t desc;
+		// no sense to enable blending when no visual effects...
+		desc.blendEnable = !(nSrcFactor == BLENDFACTOR_ONE && nDestFactor == BLENDFACTOR_ZERO && nBlendingFunc == BLENDFUNC_ADD);
+		desc.srcFactor = nSrcFactor;
+		desc.dstFactor = nDestFactor;
+		desc.blendFunc = nBlendingFunc;
+		desc.mask = colormask;
 
-		g_pShaderAPI->SetBlendingState(m_pNoBlending);
+		state = g_pShaderAPI->CreateBlendingState(desc);
+		m_blendStates[stateIndex] = state;
 	}
 	else
-	{
-		if(!m_pBlendingStates[nSrcFactor][nDestFactor][nBlendingFunc][colormask])
-		{
-			BlendStateParam_t desc;
-			desc.srcFactor = nSrcFactor;
-			desc.dstFactor = nDestFactor;
-			desc.blendFunc = nBlendingFunc;
-			desc.blendEnable = true;
-			desc.mask = colormask;
+		state = m_blendStates[stateIndex];
 
-			m_pBlendingStates[nSrcFactor][nDestFactor][nBlendingFunc][colormask] = g_pShaderAPI->CreateBlendingState(desc);
-		}
-
-		g_pShaderAPI->SetBlendingState(m_pBlendingStates[nSrcFactor][nDestFactor][nBlendingFunc][colormask]);
-	}
+	g_pShaderAPI->SetBlendingState( state );
 }
+
+// pack depth states to ubyte
+struct depthStateIndex_t
+{
+	depthStateIndex_t( bool bDoDepthTest, bool bDoDepthWrite, CompareFunc_e depthCompFunc ) 
+		: doDepthTest(bDoDepthTest), doDepthWrite(bDoDepthWrite), compFunc(depthCompFunc)
+	{
+	}
+
+	ubyte doDepthTest : 1;
+	ubyte doDepthWrite : 1;
+	ubyte compFunc : 3;
+};
+
+assert_sizeof(depthStateIndex_t,1);
 
 // sets depth stencil state
 void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, CompareFunc_e depthCompFunc)
 {
-	static IRenderState* m_pDepthNoStencil[2][2][7] = {{}};
-	if(!m_pDepthNoStencil[bDoDepthTest][bDoDepthWrite][depthCompFunc])
+	ubyte stateIndex = *(ushort*)&( depthStateIndex_t(bDoDepthTest, bDoDepthWrite, depthCompFunc) );
+
+	IRenderState* state = nullptr;
+
+	if( !m_depthStates.count(stateIndex) )
 	{
 		DepthStencilStateParams_t desc;
 		desc.depthWrite = bDoDepthWrite;
@@ -1223,25 +1253,39 @@ void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, Comp
 		desc.depthFunc = depthCompFunc;
 		desc.doStencilTest = false;
 
-		m_pDepthNoStencil[bDoDepthTest][bDoDepthWrite][depthCompFunc] = g_pShaderAPI->CreateDepthStencilState(desc);
+		state = g_pShaderAPI->CreateDepthStencilState(desc);
+		m_depthStates[stateIndex] = state;
 	}
+	else
+		state = m_depthStates[stateIndex];
 
-	g_pShaderAPI->SetDepthStencilState(m_pDepthNoStencil[bDoDepthTest][bDoDepthWrite][depthCompFunc]);
+	g_pShaderAPI->SetDepthStencilState( state );
 }
 
-// sets rasterizer extended mode
-void CMaterialSystem::SetRasterizerStates(CullMode_e nCullMode, FillMode_e nFillMode, float depthBias, float slopeDepthBias,bool bMultiSample,bool bScissor)
+// pack blending function to ushort
+struct rasterStateIndex_t
 {
-	static IRenderState* s_pRasterizerStatesNoSlope[3][3][2][2] = {{{{}}}};
+	rasterStateIndex_t( CullMode_e nCullMode, FillMode_e nFillMode, bool bMultiSample,bool bScissor ) 
+		: cullMode(nCullMode), fillMode(nFillMode), multisample(bMultiSample), scissor(bScissor)
+	{
+	}
 
-	// TODO: remove FFP depth biasing and use shader depth bias
-	//		 also use depth range
-	bool bUseDepthBias = false;
+	ubyte cullMode : 2;
+	ubyte fillMode : 2;
+	ubyte multisample : 1;
+	ubyte scissor : 1;
+};
 
-	if(depthBias != 0.0f || slopeDepthBias != 0.0f)
-		bUseDepthBias = true;
+assert_sizeof(rasterStateIndex_t,1);
 
-	if( !s_pRasterizerStatesNoSlope[nCullMode][nFillMode][bMultiSample][bScissor] )
+// sets rasterizer extended mode
+void CMaterialSystem::SetRasterizerStates(CullMode_e nCullMode, FillMode_e nFillMode,bool bMultiSample,bool bScissor)
+{
+	ubyte stateIndex = *(ushort*)&( rasterStateIndex_t(nCullMode, nFillMode, bMultiSample, bScissor) );
+
+	IRenderState* state = nullptr;
+
+	if( !m_rasterStates.count(stateIndex) )
 	{
 		RasterizerStateParams_t desc;
 		desc.cullMode = nCullMode;
@@ -1249,10 +1293,13 @@ void CMaterialSystem::SetRasterizerStates(CullMode_e nCullMode, FillMode_e nFill
 		desc.multiSample = bMultiSample;
 		desc.scissor = bScissor;
 
-		s_pRasterizerStatesNoSlope[nCullMode][nFillMode][bMultiSample][bScissor] = g_pShaderAPI->CreateRasterizerState(desc);
+		state = g_pShaderAPI->CreateRasterizerState(desc);
+		m_rasterStates[stateIndex] = state;
 	}
+	else
+		state = m_rasterStates[stateIndex];
 
-	g_pShaderAPI->SetRasterizerState( s_pRasterizerStatesNoSlope[nCullMode][nFillMode][bMultiSample][bScissor] );
+	g_pShaderAPI->SetRasterizerState( state );
 }
 
 // use this if you have objects that must be destroyed when device is lost
@@ -1287,7 +1334,7 @@ DECLARE_CMD(r_reloadallmaterials,"Reloads all materials",0)
 	materials->ReloadAllMaterials();
 }
 
-DECLARE_CMD(r_unloadalltextures,"Frees all textures",0)
+DECLARE_CMD(r_unloadmaterialtextures,"Frees all textures",0)
 {
 	MsgInfo("*** Unloading textures...\n \n");
 	materials->FreeAllTextures();

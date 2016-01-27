@@ -399,20 +399,17 @@ public:
 	virtual void							SetBlendingStates(	BlendingFactor_e nSrcFactor,
 																BlendingFactor_e nDestFactor,
 																BlendingFunction_e nBlendingFunc = BLENDFUNC_ADD,
-																int colormask = COLORMASK_ALL,
-																bool bAlphaTest = false,
-																float alphaTestFactor = 0.5f
+																int colormask = COLORMASK_ALL
 																) = 0;
 
 	// sets depth stencil state
 	virtual void							SetDepthStates(	bool bDoDepthTest,
-																	bool bDoDepthWrite,
-																	CompareFunc_e depthCompFunc = COMP_LEQUAL) = 0;
+															bool bDoDepthWrite,
+															CompareFunc_e depthCompFunc = COMP_LEQUAL) = 0;
 
 	// sets rasterizer extended mode
 	virtual void							SetRasterizerStates(	CullMode_e nCullMode,
 																	FillMode_e nFillMode = FILL_SOLID,
-																	float depthBias = 0.0f, float slopeDepthBias = 0.0f,
 																	bool bMultiSample = true,
 																	bool bScissor = false
 																	) = 0;

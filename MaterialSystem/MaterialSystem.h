@@ -16,6 +16,7 @@
 #include "Platform.h"
 #include "materialsystem/IMaterialSystem.h"
 #include "material.h"
+#include <map>
 
 #include "utils/eqthread.h"
 
@@ -28,6 +29,10 @@ struct shaderoverride_t
 };
 
 class IRenderLibrary;
+
+typedef std::map<ushort,IRenderState*> blendStateMap_t;
+typedef std::map<ubyte,IRenderState*> depthStateMap_t;
+typedef std::map<ubyte,IRenderState*> rasterStateMap_t;
 
 class CMaterialSystem : public IMaterialSystem
 {
@@ -214,9 +219,7 @@ public:
 	void							SetBlendingStates(	BlendingFactor_e nSrcFactor,
 														BlendingFactor_e nDestFactor,
 														BlendingFunction_e nBlendingFunc,
-														int colormask = COLORMASK_ALL,
-														bool bAlphaTest = false,
-														float alphaTestFactor = 0.5f
+														int colormask = COLORMASK_ALL
 														);
 
 	// sets depth stencil state
@@ -227,7 +230,6 @@ public:
 	// sets rasterizer extended mode
 	void							SetRasterizerStates(CullMode_e nCullMode,
 														FillMode_e nFillMode = FILL_SOLID,
-														float depthBias = 0.0f, float slopeDepthBias = 0.0f,
 														bool bMultiSample = true,
 														bool bScissor = false
 														);
@@ -286,6 +288,10 @@ private:
 	CullMode_e						m_nCurrentCullMode;				// culling mode. For shaders. TODO: remove, and check matrix handedness.
 
 	//-------------------------------------------------------------------------
+
+	blendStateMap_t					m_blendStates;
+	depthStateMap_t					m_depthStates;
+	rasterStateMap_t				m_rasterStates;
 
 	IMaterialRenderParamCallbacks*	m_preApplyCallback;
 

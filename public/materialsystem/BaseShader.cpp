@@ -225,7 +225,7 @@ void CBaseShader::Unload(bool bUnloadShaders, bool bUnloadTextures)
 		for(int i = 0; i < m_UsedTextures.numElem(); i++)
 		{
 			g_pShaderAPI->FreeTexture(*m_UsedTextures[i]);
- 			*m_UsedTextures[i] = NULL;
+ 			*m_UsedTextures[i] = g_pShaderAPI->GetErrorTexture();
 		}
 
 		m_UsedTextures.clear();
@@ -251,7 +251,7 @@ void CBaseShader::ParamSetup_AlphaModel_Solid()
 void CBaseShader::ParamSetup_AlphaModel_Alphatest()
 {
 	// setup default alphatesting from shaderapi
-	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD, COLORMASK_ALL, true);
+	//materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD, COLORMASK_ALL, true);
 }
 
 void CBaseShader::ParamSetup_AlphaModel_Translucent()

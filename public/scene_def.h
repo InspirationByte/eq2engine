@@ -11,6 +11,25 @@
 #include "dktypes.h"
 #include "math/DkMath.h"
 
+// fog parameters
+struct FogInfo_t
+{
+	FogInfo_t() : enableFog(false)
+	{}
+
+	bool		enableFog;
+
+	Vector3D	viewPos;
+
+	// TODO: fog mode (linear, exponental (2x), etc)
+
+	float		fogdensity;
+	float		fognear;
+	float		fogfar;
+
+	Vector3D	fogColor;
+};
+
 class ITexture;
 
 // Scene render modes
