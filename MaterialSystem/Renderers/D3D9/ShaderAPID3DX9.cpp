@@ -2106,18 +2106,18 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 				scHdr.psChecksum == info.ps.checksum &&
 				scHdr.vsChecksum == info.vs.checksum)
 			{
-				// read pixel shader
-				ubyte* pShaderMem = (ubyte*)malloc(scHdr.psSize);
-				pStream->Read(pShaderMem, 1, scHdr.psSize);
-		
-				m_pD3DDevice->CreatePixelShader((DWORD *) pShaderMem, &pShader->m_pPixelShader);
-				free(pShaderMem);
-
 				// read vertex shader
 				pShaderMem = (ubyte*)malloc(scHdr.vsSize);
 				pStream->Read(pShaderMem, 1, scHdr.vsSize);
 		
 				m_pD3DDevice->CreateVertexShader((DWORD *) pShaderMem, &pShader->m_pVertexShader);
+				free(pShaderMem);
+
+				// read pixel shader
+				ubyte* pShaderMem = (ubyte*)malloc(scHdr.psSize);
+				pStream->Read(pShaderMem, 1, scHdr.psSize);
+		
+				m_pD3DDevice->CreatePixelShader((DWORD *) pShaderMem, &pShader->m_pPixelShader);
 				free(pShaderMem);
 
 				// read samplers and constants
