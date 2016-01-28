@@ -90,7 +90,7 @@ namespace gl
 {
 	namespace exts
 	{
-		LoadTest var_EXT_draw_instanced;
+		LoadTest var_ARB_draw_instanced;
 		LoadTest var_ARB_instanced_arrays;
 		LoadTest var_ARB_multisample;
 		LoadTest var_ARB_fragment_shader;
@@ -114,18 +114,18 @@ namespace gl
 	
 	namespace _detail
 	{
-		typedef void (CODEGEN_FUNCPTR *PFNDRAWARRAYSINSTANCEDEXT)(GLenum, GLint, GLsizei, GLsizei);
-		PFNDRAWARRAYSINSTANCEDEXT DrawArraysInstancedEXT = 0;
-		typedef void (CODEGEN_FUNCPTR *PFNDRAWELEMENTSINSTANCEDEXT)(GLenum, GLsizei, GLenum, const void *, GLsizei);
-		PFNDRAWELEMENTSINSTANCEDEXT DrawElementsInstancedEXT = 0;
+		typedef void (CODEGEN_FUNCPTR *PFNDRAWARRAYSINSTANCEDARB)(GLenum, GLint, GLsizei, GLsizei);
+		PFNDRAWARRAYSINSTANCEDARB DrawArraysInstancedARB = 0;
+		typedef void (CODEGEN_FUNCPTR *PFNDRAWELEMENTSINSTANCEDARB)(GLenum, GLsizei, GLenum, const void *, GLsizei);
+		PFNDRAWELEMENTSINSTANCEDARB DrawElementsInstancedARB = 0;
 		
-		static int Load_EXT_draw_instanced()
+		static int Load_ARB_draw_instanced()
 		{
 			int numFailed = 0;
-			DrawArraysInstancedEXT = reinterpret_cast<PFNDRAWARRAYSINSTANCEDEXT>(IntGetProcAddress("glDrawArraysInstancedEXT"));
-			if(!DrawArraysInstancedEXT) ++numFailed;
-			DrawElementsInstancedEXT = reinterpret_cast<PFNDRAWELEMENTSINSTANCEDEXT>(IntGetProcAddress("glDrawElementsInstancedEXT"));
-			if(!DrawElementsInstancedEXT) ++numFailed;
+			DrawArraysInstancedARB = reinterpret_cast<PFNDRAWARRAYSINSTANCEDARB>(IntGetProcAddress("glDrawArraysInstancedARB"));
+			if(!DrawArraysInstancedARB) ++numFailed;
+			DrawElementsInstancedARB = reinterpret_cast<PFNDRAWELEMENTSINSTANCEDARB>(IntGetProcAddress("glDrawElementsInstancedARB"));
+			if(!DrawElementsInstancedARB) ++numFailed;
 			return numFailed;
 		}
 		
@@ -3002,7 +3002,7 @@ namespace gl
 			void InitializeMappingTable(std::vector<MapEntry> &table)
 			{
 				table.reserve(19);
-				table.push_back(MapEntry("GL_EXT_draw_instanced", &exts::var_EXT_draw_instanced, _detail::Load_EXT_draw_instanced));
+				table.push_back(MapEntry("GL_ARB_draw_instanced", &exts::var_ARB_draw_instanced, _detail::Load_ARB_draw_instanced));
 				table.push_back(MapEntry("GL_ARB_instanced_arrays", &exts::var_ARB_instanced_arrays, _detail::Load_ARB_instanced_arrays));
 				table.push_back(MapEntry("GL_ARB_multisample", &exts::var_ARB_multisample, _detail::Load_ARB_multisample));
 				table.push_back(MapEntry("GL_ARB_fragment_shader", &exts::var_ARB_fragment_shader));
@@ -3025,7 +3025,7 @@ namespace gl
 			
 			void ClearExtensionVars()
 			{
-				exts::var_EXT_draw_instanced = exts::LoadTest();
+				exts::var_ARB_draw_instanced = exts::LoadTest();
 				exts::var_ARB_instanced_arrays = exts::LoadTest();
 				exts::var_ARB_multisample = exts::LoadTest();
 				exts::var_ARB_fragment_shader = exts::LoadTest();
