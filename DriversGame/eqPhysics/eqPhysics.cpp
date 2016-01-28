@@ -117,37 +117,6 @@ public:
 		return 1.0f;
 	}
 
-	int CalculateUnionContact(CollisionData_t& out)
-	{
-		out.fract = 0.0f;
-		out.normal = FVector3D(0);
-		out.position = FVector3D(0);
-
-		int numPositiveContacts = m_collisions.numElem();
-
-		float fScale = 1.0f / numPositiveContacts;
-
-		for(int i = 0; i < m_collisions.numElem(); i++)
-		{
-			if(ph_centerCollisionPos.GetBool())
-				out.position += fScale*m_collisions[i].position;
-			else
-				out.position = m_collisions[i].position;
-
-			out.normal += fScale*m_collisions[i].normal;
-
-			if(fabs(m_collisions[i].fract) > out.fract)
-			{
-				out.fract = m_collisions[i].fract;
-				out.materialIndex = m_collisions[i].materialIndex;
-			}
-		}
-
-		out.normal = normalize(out.normal);
-
-		return numPositiveContacts;
-	}
-
 	DkList<CollisionData_t> m_collisions;
 	Vector3D				m_center;
 };
@@ -585,9 +554,6 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 
 	float iter_delta = 1.0f / numCollResults;
 
-	int oldNum = pairs.numElem();
-	pairs.setNum(oldNum + numCollResults);
-
 	for(int j = 0; j < numCollResults; j++)
 	{
 		CollisionData_t& coll = cbResult.m_collisions[j];
@@ -596,10 +562,11 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 		float		hitDepth = -coll.fract; // so hit depth is the time
 		FVector3D	hitPos = coll.position;
 
-		if(hitDepth < 0)
-			hitDepth = 0.0f;
+		if(hitDepth < 0 && !(bodyA->m_flags & COLLOBJ_ISGHOST))
+			continue;
 
-		ContactPair_t& newPair = pairs[oldNum+j];
+		int idx = pairs.append(ContactPair_t());
+		ContactPair_t& newPair = pairs[idx];
 		newPair.normal = hitNormal;
 		newPair.flags = 0;
 		newPair.depth = hitDepth;
@@ -722,9 +689,6 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 
 	float iter_delta = 1.0f / numCollResults;
 
-	int oldNum = contactPairs.numElem();
-	contactPairs.setNum(oldNum + numCollResults);
-
 	for(int j = 0; j < numCollResults; j++)
 	{
 		CollisionData_t& coll = cbResult.m_collisions[j];
@@ -740,13 +704,14 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 			hitDepth *= -1.0f;
 		}
 
-		if(hitDepth < 0)
-			hitDepth = 0.0f;
+		if(hitDepth < 0 && !(staticObj->m_flags & COLLOBJ_ISGHOST))
+			continue;
 
 		if(hitDepth > 1.0f)
 			hitDepth = 1.0f;
 
-		ContactPair_t& newPair = contactPairs[oldNum+j];
+		int idx = contactPairs.append(ContactPair_t());
+		ContactPair_t& newPair = contactPairs[idx];
 		newPair.normal = hitNormal;
 		newPair.flags = COLLPAIRFLAG_OBJECTA_STATIC;
 		newPair.depth = hitDepth;
