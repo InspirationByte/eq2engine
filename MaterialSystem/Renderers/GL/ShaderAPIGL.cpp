@@ -226,7 +226,7 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 #else
 	m_caps.isHardwareOcclusionQuerySupported = gl::exts::var_ARB_occlusion_query;
 #endif // USE_GLES2
-	m_caps.isInstancingSupported = gl::exts::var_ARB_instanced_arrays;
+	m_caps.isInstancingSupported = gl::exts::var_ARB_instanced_arrays && gl::exts::var_ARB_draw_instanced;
 
 	gl::GetIntegerv(gl::MAX_TEXTURE_SIZE, &m_caps.maxTextureSize);
 
@@ -2484,7 +2484,7 @@ void ShaderAPIGL::DrawIndexedPrimitives(PrimitiveType_e nType, int nFirstIndex, 
 		numInstances = m_pCurrentVertexBuffers[m_boundInstanceStream]->GetVertexCount();
 
 	if(numInstances)
-		gl::DrawElementsInstancedEXT(glPrimitiveType[nType], nIndices, indexSize == 2? gl::UNSIGNED_SHORT : gl::UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex), numInstances);
+		gl::DrawElementsInstancedARB(glPrimitiveType[nType], nIndices, indexSize == 2? gl::UNSIGNED_SHORT : gl::UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex), numInstances);
 	else
 		gl::DrawElements(glPrimitiveType[nType], nIndices, indexSize == 2? gl::UNSIGNED_SHORT : gl::UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
 	GL_END_CRITICAL();
@@ -2510,7 +2510,7 @@ void ShaderAPIGL::DrawNonIndexedPrimitives(PrimitiveType_e nType, int nFirstVert
 		numInstances = m_pCurrentVertexBuffers[m_boundInstanceStream]->GetVertexCount();
 
 	if(numInstances)
-		gl::DrawArraysInstancedEXT(glPrimitiveType[nType], nFirstVertex, nVertices, numInstances);
+		gl::DrawArraysInstancedARB(glPrimitiveType[nType], nFirstVertex, nVertices, numInstances);
 	else
 		gl::DrawArrays(glPrimitiveType[nType], nFirstVertex, nVertices);
 	GL_END_CRITICAL();
