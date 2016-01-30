@@ -19,7 +19,7 @@ enum EDragDropPointerType
 
 class IMaterial;
 struct matAtlasElem_t;
-struct objectcont_t;
+class CLevObjectDef;
 
 class CPointerDataObject : public wxCustomDataObject
 {
@@ -34,11 +34,11 @@ public:
 
 	void					SetMaterial(IMaterial* mat) {m_data.ptr = mat; m_data.type = DRAGDROP_PTR_MATERIAL;Store();}
 	void					SetCompositeMaterial(matAtlasElem_t* mat) {m_data.ptr = mat; m_data.type = DRAGDROP_PTR_COMPOSITE_MATERIAL;Store();}
-	void					SetModelContainer(objectcont_t* obj) {m_data.ptr = obj; m_data.type = DRAGDROP_PTR_OBJECTCONTAINER;Store();}
+	void					SetModelContainer(CLevObjectDef* obj) {m_data.ptr = obj; m_data.type = DRAGDROP_PTR_OBJECTCONTAINER;Store();}
 
 	IMaterial*				GetMaterial()			{return (IMaterial*)m_data.ptr;}
 	matAtlasElem_t*			GetCompositeMaterial()	{return (matAtlasElem_t*)m_data.ptr;}
-	objectcont_t*			GetModelContainer()		{return (objectcont_t*)m_data.ptr;}
+	CLevObjectDef*			GetModelContainer()		{return (CLevObjectDef*)m_data.ptr;}
 protected:
 
 	struct ptrdata_t

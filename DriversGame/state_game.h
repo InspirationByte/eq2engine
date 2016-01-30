@@ -30,6 +30,7 @@ public:
 	int			GetType() const {return GAME_STATE_GAME;}
 
 	bool		Update( float fDt );
+	bool		UpdatePauseState();
 
 	void		DrawMenu( float fDt );
 
@@ -43,6 +44,7 @@ public:
 	void		HandleJoyAxis( short axis, short value );
 
 	int			GetPauseMode() const;
+	void		SetPauseState( bool pause );
 
 	//---------------------------------------------
 

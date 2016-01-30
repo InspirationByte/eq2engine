@@ -46,7 +46,7 @@ public:
 		float fLength = camDist*EDAXIS_SCALE;
 		float fLengthHalf = fLength*0.5f;
 
-		float fBoxSize = 0.08f*fLength;
+		//float fBoxSize = 0.08f*fLength;
 
 		Vector3D v_x, v_y, v_z;
 

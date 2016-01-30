@@ -43,9 +43,8 @@ void CObject_Static::OnRemove()
 
 	if(m_userData)
 	{
-		regobjectref_t* ref = (regobjectref_t*)m_userData;
-
-		ref->object = NULL;
+		regionObject_t* ref = (regionObject_t*)m_userData;
+		ref->game_object = NULL;
 	}
 }
 

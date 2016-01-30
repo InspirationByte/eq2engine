@@ -9,6 +9,8 @@
 
 #include "EditorMain.h"
 
+#include "DragDropObjects.h"
+
 #include "imaging/ImageLoader.h"
 
 #include "IDebugOverlay.h"
@@ -215,9 +217,9 @@ public:
 			return;
 		}
 
-		m_whichReplace = (objectcont_t*)m_selection1->GetClientData(sel);
+		m_whichReplace = (CLevObjectDef*)m_selection1->GetClientData(sel);
 
-		m_preview1->SetTexture( m_whichReplace->m_preview );
+		m_preview1->SetTexture( m_whichReplace->GetPreview() );
 	}
 
 	void OnChangeSelection2( wxCommandEvent& event )
@@ -232,9 +234,9 @@ public:
 			return;
 		}
 
-		m_replaceTo = (objectcont_t*)m_selection2->GetClientData(sel);
+		m_replaceTo = (CLevObjectDef*)m_selection2->GetClientData(sel);
 
-		m_preview2->SetTexture( m_replaceTo->m_preview );
+		m_preview2->SetTexture( m_replaceTo->GetPreview() );
 	}
 
 	void OnReplaceClick( wxCommandEvent& event )
@@ -252,9 +254,9 @@ public:
 
 			for(int i = 0; i < modModels->m_selRefs.numElem(); i++)
 			{
-				if(modModels->m_selRefs[i].selRef->container == m_whichReplace)
+				if(modModels->m_selRefs[i].selRef->def == m_whichReplace)
 				{
-					modModels->m_selRefs[i].selRef->container = m_replaceTo;
+					modModels->m_selRefs[i].selRef->def = m_replaceTo;
 					numReplaced++;
 				}
 			}
@@ -283,7 +285,7 @@ public:
 		}
 	}
 
-	void SetWhichToReplaceDef( objectcont_t* ref )
+	void SetWhichToReplaceDef( CLevObjectDef* ref )
 	{
 		for(int i = 0; i < m_selection1->GetCount(); i++)
 		{
@@ -296,7 +298,7 @@ public:
 		m_whichReplace = ref;
 
 		if(m_whichReplace)
-			m_preview1->SetTexture( m_whichReplace->m_preview );
+			m_preview1->SetTexture( m_whichReplace->GetPreview() );
 	}
 
 	void RefreshObjectDefLists()
@@ -350,8 +352,8 @@ protected:
 	wxButton*		m_replaceBtn;
 	wxButton*		m_replaceAllBtn;
 
-	objectcont_t*	m_whichReplace;
-	objectcont_t*	m_replaceTo;
+	CLevObjectDef*	m_whichReplace;
+	CLevObjectDef*	m_replaceTo;
 };
 
 //--------------------------------------------------------------------------------
@@ -401,6 +403,18 @@ void CModelListRenderPanel::OnMouseMotion(wxMouseEvent& event)
 {
 	pointer_position.x = event.GetX();
 	pointer_position.y = event.GetY();
+
+	if( event.Dragging() && GetSelectedModel() )
+	{
+		if(mouseover_id == -1)
+			return;
+
+		CPointerDataObject dropData;
+		dropData.SetModelContainer( m_filteredlist[mouseover_id] );
+		wxDropSource dragSource( dropData, this );
+
+		wxDragResult result = dragSource.DoDragDrop( wxDrag_CopyOnly );
+	}
 
 	Redraw();
 }
@@ -465,7 +479,7 @@ void CModelListRenderPanel::OnScrollbarChange(wxScrollWinEvent& event)
 
 void CModelListRenderPanel::OnContextEvent(wxCommandEvent& event)
 {
-	objectcont_t* cont = GetSelectedModelContainer();
+	CLevObjectDef* cont = GetSelectedModelContainer();
 
 	if(!cont)
 		return;
@@ -526,7 +540,7 @@ void CModelListRenderPanel::OnMouseClick(wxMouseEvent& event)
 	if(selection_id == -1)
 		return;
 
-	objectcont_t* cont = GetSelectedModelContainer();
+	CLevObjectDef* cont = GetSelectedModelContainer();
 
 	if(event.RightUp() && cont && cont->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 	{
@@ -591,7 +605,7 @@ void CModelListRenderPanel::Redraw()
 
 	materials->SetAmbientColor( color4_white );
 
-	DkList<objectcont_t*>& modellist = g_pGameWorld->m_level.m_objectDefs;
+	DkList<CLevObjectDef*>& modellist = g_pGameWorld->m_level.m_objectDefs;
 
 	if( materials->BeginFrame() )
 	{
@@ -658,7 +672,7 @@ void CModelListRenderPanel::Redraw()
 
 				if( screenRect.IsIntersectsRectangle(check_rect) )
 				{
-					ITexture* pTex = m_filteredlist[i]->m_preview;
+					ITexture* pTex = m_filteredlist[i]->GetPreview();
 
 					if(!pTex)
 					{
@@ -742,119 +756,15 @@ void CModelListRenderPanel::Redraw()
 	}
 }
 
-#define PREVIEW_BOX_SIZE 256
-
-void CopyRendertargetToTexture(ITexture* rt, ITexture* dest)
-{
-	g_pShaderAPI->Reset(STATE_RESET_TEX);
-
-	texlockdata_t readFrom;
-	texlockdata_t writeTo;
-	memset(&readFrom, 0, sizeof(readFrom));
-
-	rt->Lock(&readFrom, NULL, false, true);
-
-	if(readFrom.pData)
-	{
-		dest->Lock(&writeTo, NULL, true, false);
-
-		if(writeTo.pData)
-		{
-			memcpy(writeTo.pData, readFrom.pData, writeTo.nPitch*PREVIEW_BOX_SIZE);
-		}
-	}
-
-	dest->Unlock();
-	rt->Unlock();
-}
-
-extern void RenderModelDef( objectcont_t* obj, float fDistance, const BoundingBox& aabb, bool preloadMaterials = false, int nRenderFlags = 0);
-
-void RenderNewPreview(objectcont_t* obj, ITexture* dst)
-{
-	static ITexture* pTempRendertarget = g_pShaderAPI->CreateRenderTarget(PREVIEW_BOX_SIZE, PREVIEW_BOX_SIZE, FORMAT_RGBA8);
-
-	Vector3D	camera_rotation(35,225,0);
-	Vector3D	camera_target(0);
-	float		camDistance = 0.0f;
-	
-	BoundingBox bbox;
-
-	if(obj->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-	{
-		bbox = obj->m_model->m_bbox;
-
-		//Msg("RENDER preview for STATIC model\n");
-		camDistance = length(obj->m_model->m_bbox.GetSize())+0.5f;
-		camera_target = obj->m_model->m_bbox.GetCenter();
-	}
-	else
-	{
-		//Msg("RENDER preview for DEF model\n");
-
-		bbox = BoundingBox(obj->m_defModel->GetBBoxMins(),obj->m_defModel->GetBBoxMaxs());
-
-		camDistance = length(bbox.GetSize())+0.5f;
-		camera_target = bbox.GetCenter();
-	}
-
-	Vector3D forward, right;
-	AngleVectors(camera_rotation, &forward, &right);
-
-	Vector3D cam_pos = camera_target - forward*camDistance;
-
-	// setup perspective
-	Matrix4x4 mProjMat = perspectiveMatrixY(DEG2RAD(60), PREVIEW_BOX_SIZE, PREVIEW_BOX_SIZE, 0.05f, 512.0f);
-
-	Matrix4x4 mViewMat = rotateZXY4(DEG2RAD(-camera_rotation.x),DEG2RAD(-camera_rotation.y),DEG2RAD(-camera_rotation.z));
-	mViewMat.translate(-cam_pos);
-
-	materials->SetMatrix(MATRIXMODE_PROJECTION, mProjMat);
-	materials->SetMatrix(MATRIXMODE_VIEW, mViewMat);
-
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
-
-	// setup render
-	g_pShaderAPI->ChangeRenderTarget( pTempRendertarget );
-
-	g_pShaderAPI->Clear(true, true, false, ColorRGBA(0.25,0.25,0.25,1.0f));
-
-	RenderModelDef(obj, 0.0f, bbox, true, 0);
-
-	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
-
-	// copy rendertarget
-	CopyRendertargetToTexture(pTempRendertarget, dst);
-}
 
 void CModelListRenderPanel::RebuildPreviewShots()
 {
-	DkList<objectcont_t*>& modellist = g_pGameWorld->m_level.m_objectDefs;
+	DkList<CLevObjectDef*>& modellist = g_pGameWorld->m_level.m_objectDefs;
 
 	// build/rebuild preview using rendertarget and blitting
 	for(int i = 0; i < modellist.numElem(); i++)
 	{
-		if( modellist[i]->m_dirtyPreview )
-		{
-			if(!modellist[i]->m_preview)
-			{
-				CImage emptyImage;
-				emptyImage.Create(FORMAT_RGBA8, PREVIEW_BOX_SIZE, PREVIEW_BOX_SIZE, 1, 1);
-
-				DkList<CImage*> images;
-				images.append(&emptyImage);
-
-				SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(TEXFILTER_TRILINEAR, ADDRESSMODE_CLAMP, ADDRESSMODE_CLAMP, ADDRESSMODE_CLAMP);
-
-				modellist[i]->m_preview = g_pShaderAPI->CreateTexture(images, sampler);
-				modellist[i]->m_preview->Ref_Grab();
-			}
-
-			// try render preview
-			RenderNewPreview( modellist[i],  modellist[i]->m_preview);
-
-			modellist[i]->m_dirtyPreview = false;
-		}
+		modellist[i]->RefreshPreview();
 	}
 }
 
@@ -863,7 +773,7 @@ void CModelListRenderPanel::ReleaseModelPreviews()
 	m_filteredlist.clear(false);
 }
 
-objectcont_t* CModelListRenderPanel::GetSelectedModelContainer()
+CLevObjectDef* CModelListRenderPanel::GetSelectedModelContainer()
 {
 	if(selection_id >= m_filteredlist.numElem())
 		selection_id = -1;
@@ -963,7 +873,7 @@ void CModelListRenderPanel::ChangeFilter(const wxString& filter, const wxString&
 
 	m_filteredlist.clear();
 
-	DkList<objectcont_t*> shownArray;
+	DkList<CLevObjectDef*> shownArray;
 
 	if(bOnlyUsed)
 	{
@@ -980,7 +890,7 @@ void CModelListRenderPanel::ChangeFilter(const wxString& filter, const wxString&
 	}
 	else
 	{
-		DkList<objectcont_t*>& modellist = g_pGameWorld->m_level.m_objectDefs;
+		DkList<CLevObjectDef*>& modellist = g_pGameWorld->m_level.m_objectDefs;
 
 		shownArray.resize(modellist.numElem());
 		shownArray.append(g_pGameWorld->m_level.m_objectDefs);
@@ -1035,7 +945,7 @@ void CModelListRenderPanel::AddLevelModels()
 	Redraw();
 }
 
-void CModelListRenderPanel::AddModel(objectcont_t* container)
+void CModelListRenderPanel::AddModel(CLevObjectDef* container)
 {
 	container->m_model->Ref_Grab();
 
@@ -1043,7 +953,7 @@ void CModelListRenderPanel::AddModel(objectcont_t* container)
 	AddLevelModels();
 }
 
-void CModelListRenderPanel::RemoveModel(objectcont_t* container)
+void CModelListRenderPanel::RemoveModel(CLevObjectDef* container)
 {
 	for(int x = 0; x < g_pGameWorld->m_level.m_wide; x++)
 	{
@@ -1055,9 +965,9 @@ void CModelListRenderPanel::RemoveModel(objectcont_t* container)
 
 			for(int i = 0; i < pReg->m_objects.numElem(); i++)
 			{
-				if(pReg->m_objects[i]->container == container)
+				if(pReg->m_objects[i]->def == container)
 				{
-					FreeLevObjectRef( pReg->m_objects[i] );
+					delete pReg->m_objects[i];
 					pReg->m_objects.fastRemoveIndex(i);
 					i--;
 				}
@@ -1067,7 +977,7 @@ void CModelListRenderPanel::RemoveModel(objectcont_t* container)
 
 	g_pGameWorld->m_level.m_objectDefs.remove(container);
 
-	FreeLevObjectContainer(container);
+	delete container;
 
 	AddLevelModels();
 }
@@ -1244,7 +1154,7 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 
 					EqString path(paths[i].wchar_str());
 
-					objectcont_t* container = new objectcont_t;
+					CLevObjectDef* container = new CLevObjectDef();
 					container->m_model = pLevModel;
 					container->m_name = path.Path_Extract_Name().Path_Strip_Ext().c_str();
 
@@ -1260,7 +1170,7 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 	else if(event.GetId() == ELM_IMPORTOVER)
 	{
 		// find model
-		objectcont_t* cont = m_modelPicker->GetSelectedModelContainer();
+		CLevObjectDef* cont = m_modelPicker->GetSelectedModelContainer();
 
 		if(!cont)
 		{
@@ -1278,7 +1188,7 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 			if( LoadSharedModel(&model, file->GetPath()) )
 			{
 				cont->m_model->CreateFrom( &model );
-				cont->m_dirtyPreview = true;
+				cont->SetDirtyPreview();
 
 				// TODO: create preivew
 
@@ -1386,7 +1296,7 @@ void CUI_LevelModels::DeleteSelection()
 {
 	for(int i = 0; i < m_selRefs.numElem(); i++)
 	{
-		objectcont_t* cont = m_selRefs[i].selRef->container;
+		CLevObjectDef* cont = m_selRefs[i].selRef->def;
 
 		// remove and invalidate
 		if(cont->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
@@ -1639,7 +1549,7 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 			if(event.Dragging() && !m_tiledPlacement->GetValue())
 				return;
 
-			regobjectref_t* modelref = NULL;
+			regionObject_t* modelref = NULL;
 
 			int pick_Idx = -1;
 
@@ -1658,25 +1568,25 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 
 			if(!modelref)
 			{
-				regobjectref_t* ref = new regobjectref_t;
+				regionObject_t* ref = new regionObject_t;
 
 				pick_Idx = m_selectedRegion->m_objects.append( ref );
 
 				modelref = m_selectedRegion->m_objects[pick_Idx];
 			}
-			else if(modelref->container->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+			else if(modelref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 			{
-				CLevelModel* model = modelref->container->m_model;
+				CLevelModel* model = modelref->def->m_model;
 
 				if(model)
 					model->Ref_Drop();
 			}
 
-			modelref->container = m_modelPicker->GetSelectedModelContainer();
+			modelref->def = m_modelPicker->GetSelectedModelContainer();
 
-			if(modelref->container->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+			if(modelref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 			{
-				CLevelModel* model = modelref->container->m_model;
+				CLevelModel* model = modelref->def->m_model;
 
 				if(model)
 					model->Ref_Grab();
@@ -1718,10 +1628,10 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 					m_selectedRegion->m_objects[i]->tile_x == tx && 
 					m_selectedRegion->m_objects[i]->tile_y == ty)
 				{
-					regobjectref_t* ref = m_selectedRegion->m_objects[i];
+					regionObject_t* ref = m_selectedRegion->m_objects[i];
 
-					if(ref->container->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-						ref->container->m_model->Ref_Drop();
+					if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+						ref->def->m_model->Ref_Drop();
 
 					m_selectedRegion->m_objects.fastRemoveIndex(i);
 
@@ -1783,7 +1693,7 @@ void CUI_LevelModels::OnKey(wxKeyEvent& event, bool bDown)
 		{
 			if(event.GetRawKeyCode() == 'R' && m_selRefs.numElem())
 			{
-				m_modelReplacement->SetWhichToReplaceDef( m_selRefs[0].selRef->container );
+				m_modelReplacement->SetWhichToReplaceDef( m_selRefs[0].selRef->def );
 				m_modelReplacement->CenterOnParent();
 				m_modelReplacement->Show();
 			}
@@ -1818,9 +1728,9 @@ void CUI_LevelModels::OnRender()
 	// render model we want to place
 	if( (m_modelPicker->GetSelectedModelContainer() || m_selRefs.numElem()) )
 	{
-		regobjectref_t tref;
+		regionObject_t tref;
 
-		tref.container = m_modelPicker->GetSelectedModelContainer();
+		tref.def = m_modelPicker->GetSelectedModelContainer();
 
 		tref.position = m_lastpos;
 		tref.rotation = Vector3D(0, -m_rotation*90.0f, 0);
@@ -1829,7 +1739,7 @@ void CUI_LevelModels::OnRender()
 		tref.tile_y = m_last_ty;
 
 		// placement model overview
-		if( (m_editMode == MEDIT_PLACEMENT) && m_selectedRegion && !m_isSelecting && tref.container)
+		if( (m_editMode == MEDIT_PLACEMENT) && m_selectedRegion && !m_isSelecting && tref.def)
 		{
 			Matrix4x4 wmatrix = GetModelRefRenderMatrix(m_selectedRegion, &tref);
 
@@ -1840,7 +1750,7 @@ void CUI_LevelModels::OnRender()
 			ColorRGBA oldcol = materials->GetAmbientColor();
 			materials->SetAmbientColor(ColorRGBA(1,0.5,0.5,1));
 
-			RenderModelDef(tref.container, 0.0f, tref.bbox, false, 0);
+			tref.def->Render(0.0f, tref.bbox, false, 0);
 
 			materials->SetAmbientColor(oldcol);
 		}
@@ -1849,7 +1759,7 @@ void CUI_LevelModels::OnRender()
 
 		for(int i = 0; i < m_selRefs.numElem(); i++)
 		{
-			regobjectref_t* selectionRef = m_selRefs[i].selRef;
+			regionObject_t* selectionRef = m_selRefs[i].selRef;
 
 			Matrix4x4 wmatrix = GetModelRefRenderMatrix(m_selRefs[i].selRegion, selectionRef);
 
@@ -1860,7 +1770,7 @@ void CUI_LevelModels::OnRender()
 			ColorRGBA oldcol = materials->GetAmbientColor();
 			materials->SetAmbientColor(ColorRGBA(1,0.5,0.5,1));
 
-			RenderModelDef(selectionRef->container, 0.0f, tref.bbox, false, 0);
+			selectionRef->def->Render(0.0f, tref.bbox, false, 0);
 			//selectionRef->model->Render(0);
 
 			materials->SetAmbientColor(oldcol);
@@ -1878,6 +1788,8 @@ void CUI_LevelModels::OnRender()
 			float clength = length(m_editAxis.m_position-g_camera_target);
 			m_editAxis.Draw(clength);
 		}
+		tref.def = NULL;
+
 	}
 }
 

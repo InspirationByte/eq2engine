@@ -25,7 +25,7 @@ enum EModelEditMode
 // selection info for region relocation
 struct refselectioninfo_t
 {
-	regobjectref_t*	selRef;
+	regionObject_t*	selRef;
 	CLevelRegion*	selRegion;
 };
 
@@ -51,7 +51,7 @@ public:
 	void					RebuildPreviewShots();
 	void					ReleaseModelPreviews();
 
-	objectcont_t*			GetSelectedModelContainer();
+	CLevObjectDef*			GetSelectedModelContainer();
 	CLevelModel*			GetSelectedModel();
 	void					SelectModel(CLevelModel* pMaterial);
 
@@ -62,8 +62,8 @@ public:
 
 	void					RefreshScrollbar();
 
-	void					AddModel(objectcont_t* container);
-	void					RemoveModel(objectcont_t* container);
+	void					AddModel(CLevObjectDef* container);
+	void					RemoveModel(CLevObjectDef* container);
 	void					AddLevelModels();
 
 	DECLARE_EVENT_TABLE()
@@ -71,7 +71,7 @@ protected:
 
 	wxMenu*					m_contextMenu;
 
-	DkList<objectcont_t*>	m_filteredlist;
+	DkList<CLevObjectDef*>	m_filteredlist;
 
 	IEqFont*				m_pFont;
 

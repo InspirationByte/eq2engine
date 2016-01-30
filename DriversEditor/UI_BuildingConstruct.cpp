@@ -199,6 +199,7 @@ bool CBuildingLayerEditDialog::OnDropPoiner(wxCoord x, wxCoord y, void* ptr, EDr
 		m_selLayer->atlEntry = elem->entry;
 	}
 
+
 	return true;
 }
 
@@ -316,7 +317,8 @@ void CBuildingLayerEditDialog::Redraw()
 				}
 				else
 				{
-					// TODO: model snapshot by it's container
+					if(elem.model)
+						pTex = elem.model->preview;
 				}
 
 				texture_aspect = pTex->GetWidth() / pTex->GetHeight();
@@ -373,6 +375,10 @@ void CBuildingLayerEditDialog::Redraw()
 					material_name.Replace( CORRECT_PATH_SEPARATOR, '\n' );
 
 					m_pFont->RenderText(material_name.c_str(), name_rect.vleftTop, fontParam);
+				}
+				else if(elem.type == LAYER_MODEL && elem.model)
+				{
+					m_pFont->RenderText(elem.model->name.c_str(), name_rect.vleftTop, fontParam);
 				}
 				else
 					m_pFont->RenderText("drag&drop material or model", name_rect.vleftTop, fontParam);

@@ -200,8 +200,6 @@ public:
 												BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
 												RasterizerStateParams_t* rasterParams = NULL);			// draws 2D primitives
 
-	//void							DrawLineArraysFFP(Vertex3D_t *pVerts, int nVerts);									// draws line arrays
-
 //-----------------------------
 // State setup
 //-----------------------------
@@ -263,8 +261,6 @@ public:
 
 	// prints loaded materials to console
 	void							PrintLoadedMaterials();
-
-	//IRenderState*					GetRasterizerState(RasterizerStateParams_t &rasterParams);
 
 private:
 

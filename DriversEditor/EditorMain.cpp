@@ -23,9 +23,12 @@
 #include "eqParallelJobs.h"
 
 #include "EditorActionHistory.h"
+#include "materialsystem/MaterialProxy.h"
 
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay *debugoverlay = ( IDebugOverlay * )&g_DebugOverlays;
+
+IProxyFactory*		proxyfactory	= NULL;
 
 DKMODULE*			g_matsysmodule = NULL;
 IShaderAPI*			g_pShaderAPI = NULL;
@@ -204,6 +207,11 @@ void InitMatSystem(HWND window)
 
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();
+
+	if(!proxyfactory)
+		proxyfactory = materials->GetProxyFactory();
+
+	InitMaterialProxies();
 }
 
 void InitScene();

@@ -680,7 +680,7 @@ void Game_DrawDirectorUI( float fDt )
 
 	if(g_freecam.GetBool())
 	{
-		Vector2D halfScreen = screenSize / 2;
+		Vector2D halfScreen = Vector2D(screenSize)*0.5f;
 
 		Vertex2D_t tmprect[] =
 		{
@@ -1033,6 +1033,18 @@ int CState_Game::GetPauseMode() const
 	return PAUSEMODE_NONE;
 }
 
+void CState_Game::SetPauseState( bool state )
+{
+	if(!m_exitGame)
+		m_showMenu = state;
+
+	if(m_showMenu)
+		m_selection = 0;
+
+	// update pause state
+	UpdatePauseState();
+}
+
 //-------------------------------------------------------------------------------
 // Game frame step along with rendering
 //-------------------------------------------------------------------------------
@@ -1095,40 +1107,13 @@ bool CState_Game::Update( float fDt )
 		}
 	}
 
-	int pauseMode = GetPauseMode();
-
-	if( pauseMode > 0 )
-	{
-		// reset buttons
-		if(m_showMenu)
-			g_nClientButtons = 0;
-
+	// update pause state
+	if( !UpdatePauseState() )
 		fGameFrameDt = 0.0f;
 
-		ISoundPlayable* musicChan = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
-		if(musicChan)
-			musicChan->Pause();
-
-		ISoundPlayable* voiceChan = soundsystem->GetStaticStreamChannel(CHAN_VOICE);
-		if(voiceChan)
-			voiceChan->Pause();
-	}
-	else
-	{
-		if(m_pauseState != (pauseMode > 0))
-		{
-			ISoundPlayable* musicChan = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
-			if(musicChan)
-				musicChan->Play();
-
-			ISoundPlayable* voiceChan = soundsystem->GetStaticStreamChannel(CHAN_VOICE);
-			if(voiceChan)
-				voiceChan->Play();
-		}
-	}
-
-	soundsystem->SetPauseState( pauseMode > 0);
-	m_pauseState = (pauseMode > 0);
+	// reset buttons
+	if(m_showMenu)
+		g_nClientButtons = 0;
 
 	Game_Frame( fGameFrameDt );
 
@@ -1188,6 +1173,40 @@ bool CState_Game::Update( float fDt )
 	DrawMenu(fDt);
 
 	return true;
+}
+
+bool CState_Game::UpdatePauseState()
+{
+	int pauseMode = GetPauseMode();
+
+	if( pauseMode > 0 )
+	{
+		ISoundPlayable* musicChan = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
+		if(musicChan)
+			musicChan->Pause();
+
+		ISoundPlayable* voiceChan = soundsystem->GetStaticStreamChannel(CHAN_VOICE);
+		if(voiceChan)
+			voiceChan->Pause();
+	}
+	else
+	{
+		if(m_pauseState != (pauseMode > 0))
+		{
+			ISoundPlayable* musicChan = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
+			if(musicChan)
+				musicChan->Play();
+
+			ISoundPlayable* voiceChan = soundsystem->GetStaticStreamChannel(CHAN_VOICE);
+			if(voiceChan)
+				voiceChan->Play();
+		}
+	}
+
+	soundsystem->SetPauseState( pauseMode > 0);
+	m_pauseState = (pauseMode > 0);
+
+	return (pauseMode == 0);
 }
 
 void CState_Game::DrawMenu( float fDt )
@@ -1288,11 +1307,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 			return;
 		}
 
-		if(!m_exitGame)
-			m_showMenu = !m_showMenu;
-
-		if(m_showMenu)
-			m_selection = 0;
+		SetPauseState( !m_showMenu );
 	}
 
 	if( m_showMenu )

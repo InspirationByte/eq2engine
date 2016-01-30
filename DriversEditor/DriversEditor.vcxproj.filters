@@ -56,11 +56,14 @@
     <Filter Include="Libs\bullet">
       <UniqueIdentifier>{2a988474-3aee-4191-afef-d0fda9cd9b80}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Shaders">
-      <UniqueIdentifier>{289d2682-a92a-4189-a59f-caa9b5c470c5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Editor\Modes">
       <UniqueIdentifier>{13bffbe4-3c2d-4a20-b6be-29acc1ba2c40}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\MatSystem">
+      <UniqueIdentifier>{d179cdd9-3a4f-4cc1-bda4-4b4333604257}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\MatSystem\Shaders">
+      <UniqueIdentifier>{289d2682-a92a-4189-a59f-caa9b5c470c5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -341,7 +344,7 @@
       <Filter>Source Files\EngineLib</Filter>
     </ClInclude>
     <ClInclude Include="..\public\materialsystem\BaseShader.h">
-      <Filter>Source Files\Shaders</Filter>
+      <Filter>Source Files\MatSystem\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="..\shared_engine\Audio\alsnd_stream.h">
       <Filter>Source Files\EngineLib\Audio</Filter>
@@ -387,6 +390,12 @@
     </ClInclude>
     <ClInclude Include="DragDropObjects.h">
       <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="EditorPreviewable.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\materialsystem\MaterialProxy.h">
+      <Filter>Source Files\MatSystem</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -508,13 +517,13 @@
       <Filter>Source Files\EngineLib</Filter>
     </ClCompile>
     <ClCompile Include="..\DriversGame\Shader_StaticObjs.cpp">
-      <Filter>Source Files\Shaders</Filter>
+      <Filter>Source Files\MatSystem\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="..\DriversGame\ShaderOverrides.cpp">
-      <Filter>Source Files\Shaders</Filter>
+      <Filter>Source Files\MatSystem\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="..\public\materialsystem\BaseShader.cpp">
-      <Filter>Source Files\Shaders</Filter>
+      <Filter>Source Files\MatSystem\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="..\shared_engine\Audio\alsnd_stream.cpp">
       <Filter>Source Files\EngineLib\Audio</Filter>
@@ -532,10 +541,10 @@
       <Filter>Source Files\Editor</Filter>
     </ClCompile>
     <ClCompile Include="..\DriversGame\Shader_VehicleBody.cpp">
-      <Filter>Source Files\Shaders</Filter>
+      <Filter>Source Files\MatSystem\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="..\DriversGame\Shader_Water.cpp">
-      <Filter>Source Files\Shaders</Filter>
+      <Filter>Source Files\MatSystem\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp">
       <Filter>Source Files\EngineLib</Filter>
@@ -563,6 +572,12 @@
     </ClCompile>
     <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp">
       <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="EditorPreviewable.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\materialsystem\MaterialProxy.cpp">
+      <Filter>Source Files\MatSystem</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

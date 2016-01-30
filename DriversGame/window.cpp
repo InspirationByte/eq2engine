@@ -252,12 +252,17 @@ void InitWindowAndRun()
 		while(SDL_PollEvent(&event))
 			EQHandleSDLEvents( &event );
 
+		if(!s_bActive) g_pHost->SignalPause();
+
 		if (s_bActive || g_pHost->IsInMultiplayerGame())
 		{
+			
 			g_pHost->Frame();
 		}
 		else
 			Threading::Yield();
+
+		
 
 		// or yield
 		if(sys_sleep.GetInt() > 0)

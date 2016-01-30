@@ -22,9 +22,8 @@ using namespace Threading;
 
 #ifdef EDITOR
 #include "../DriversEditor/level_generator.h"
+#include "../DriversEditor/EditorPreviewable.h"
 #endif // EDITOR
-
-#define USE_INSTANCING
 
 #define MAX_MODEL_INSTANCES 1024
 
@@ -95,7 +94,7 @@ struct lmodel_batch_t
 
 //-----------------------------------------------------------------------------------------
 
-struct regobjectref_t;
+struct regionObject_t;
 class CLevelRegion;
 class CEqBulletIndexedMesh;
 
@@ -129,7 +128,7 @@ public:
 
 	void					Render(int nDrawFlags, const BoundingBox& aabb);
 
-	void					CreateCollisionObjects( CLevelRegion* reg, regobjectref_t* ref );
+	void					CreateCollisionObjects( CLevelRegion* reg, regionObject_t* ref );
 
 	// to create the physics
 	DkList<CEqBulletIndexedMesh*>	m_batchMeshes;
@@ -166,22 +165,23 @@ protected:
 //-----------------------------------------------------------------------------------------
 
 class CGameObject;
+class CLevObjectDef;
 
-struct objectcont_t;
-
-struct regobjectref_t
+struct regionObject_t
 {
 	PPMEM_MANAGED_OBJECT()
 
-	regobjectref_t()
+	regionObject_t()
 	{
-		object = NULL;
-		container = NULL;
+		game_object = NULL;
+		def = NULL;
 	}
 
-	CGameObject*	object;
+	~regionObject_t();
 
-	objectcont_t*	container;
+	CLevObjectDef*	def;
+
+	CGameObject*	game_object;
 
 	Vector3D		position;
 	Vector3D		rotation;
@@ -246,31 +246,28 @@ void LoadDefLightData( wlightdata_t& out, kvkeybase_t* sec );
 bool DrawDefLightData( Matrix4x4& objDefMatrix, const wlightdata_t& data, float brightness );
 
 // model container, for editor
-struct objectcont_t
+#ifdef EDITOR
+class CLevObjectDef : public CEditorPreviewable
+#else
+class CLevObjectDef
+#endif // EDITOR
 {
+public:
 	PPMEM_MANAGED_OBJECT()
 
-	objectcont_t()
-	{
-		m_model = NULL;
-#ifdef USE_INSTANCING
-		m_instData = NULL;
-#endif // USE_INSTANCING
-		m_defModel = NULL;
+	CLevObjectDef();
+	~CLevObjectDef();
 
 #ifdef EDITOR
-		m_preview = NULL;
-		m_dirtyPreview = true;
+	void					RefreshPreview();
 #endif // EDITOR
-		memset(&m_info, 0, sizeof(levmodelinfo_t));
-	}
+	void					Render( float lodDistance, const BoundingBox& bbox, bool preloadMaterials = false, int nRenderFlags = 0);
 
 	EqString				m_name;
 
-	CLevelModel*			m_model;
+	CLevelModel*			m_model;		// static model
 
 	//-----------------------------
-
 
 	IEqModel*				m_defModel;
 
@@ -279,19 +276,9 @@ struct objectcont_t
 
 	levmodelinfo_t			m_info;
 
-#ifdef EDITOR
-	ITexture*				m_preview;
-	bool					m_dirtyPreview;
-#endif // EDITOR
-
-#ifdef USE_INSTANCING
 	wlightdata_t			m_lightData;
 	levObjInstanceData_t*	m_instData;
-#endif // USE_INSTANCING
 };
-
-void FreeLevObjectRef(regobjectref_t* obj);
-void FreeLevObjectContainer(objectcont_t* container);
 
 //----------------------------------------------------------------------
 
@@ -393,8 +380,8 @@ public:
 	Vector3D						CellToPosition(int x, int y) const;
 	IVector2D						GetTileAndNeighbourRegion(int x, int y, CLevelRegion** reg) const;
 
-	void							WriteRegionData(IVirtualStream* stream, DkList<objectcont_t*>& models, bool final);
-	void							ReadLoadRegion(IVirtualStream* stream, DkList<objectcont_t*>& models);
+	void							WriteRegionData(IVirtualStream* stream, DkList<CLevObjectDef*>& models, bool final);
+	void							ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>& models);
 
 	void							WriteRegionRoads(IVirtualStream* stream);
 	void							ReadLoadRoads(IVirtualStream* stream);
@@ -412,7 +399,7 @@ public:
 
 #ifdef EDITOR
 	int								Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float& dist);
-	int								Ed_ReplaceDefs(objectcont_t* whichReplace, objectcont_t* replaceTo);
+	int								Ed_ReplaceDefs(CLevObjectDef* whichReplace, CLevObjectDef* replaceTo);
 #endif
 
 	BoundingBox						m_bbox;
@@ -422,7 +409,7 @@ public:
 	levroadcell_t*					m_roads;			///< road data. Must correspond with heightfield
 	navGrid_t						m_navGrid;
 
-	DkList<regobjectref_t*>			m_objects;			///< complex and non-complex models
+	DkList<regionObject_t*>			m_objects;			///< complex and non-complex models
 	DkList<levOccluderLine_t>		m_occluders;		///< occluders
 
 	// TODO: road array, visibility data and other....
@@ -437,7 +424,7 @@ public:
 	CGameLevel*						m_level;
 };
 
-Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regobjectref_t* ref);
+Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regionObject_t* ref);
 
 //
 // Helper struct for road straight
@@ -576,7 +563,7 @@ public:
 	int								UpdateRegions( RegionLoadUnloadCallbackFunc func = NULL);
 	void							RespawnAllObjects();
 
-	void							Nav_AddObstacle(CLevelRegion* reg, regobjectref_t* ref);
+	void							Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref);
 
 	//
 	// conversions
@@ -605,7 +592,7 @@ public:
 
 	// TODO: render code
 
-	DkList<objectcont_t*>			m_objectDefs;
+	DkList<CLevObjectDef*>			m_objectDefs;
 
 	int								m_wide;
 	int								m_tall;

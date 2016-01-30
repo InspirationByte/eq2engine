@@ -29,6 +29,220 @@ ConVar r_enableLevelInstancing("r_enableLevelInstancing", "1", "Enable level mod
 
 //------------------------------------------------------------------------------------
 
+regionObject_t::~regionObject_t()
+{
+	// no def = fake object
+	if(!def)
+		return;
+
+	if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+	{
+		CLevelModel* mod = def->m_model;
+		mod->Ref_Drop();
+
+		// the model cannot be removed if it's not loaded with region
+		if(mod->Ref_Count() <= 0)
+			delete mod;
+
+		for(int i = 0; i < collisionObjects.numElem(); i++)
+			g_pPhysics->m_physics.DestroyStaticObject( collisionObjects[i] );
+	}
+	else
+	{
+		// delete associated object from game world
+		if( g_pGameWorld->IsValidObject( game_object ) )
+			g_pGameWorld->RemoveObject( game_object );
+
+		game_object = NULL;
+	}
+}
+
+//------------------------------------------------------------------------------------
+
+CLevObjectDef::CLevObjectDef()
+{
+	m_model = NULL;
+	m_instData = NULL;
+	m_defModel = NULL;
+
+	memset(&m_info, 0, sizeof(levmodelinfo_t));
+}
+
+CLevObjectDef::~CLevObjectDef()
+{
+	if(m_info.type == LOBJ_TYPE_INTERNAL_STATIC && m_model)
+	{
+		m_model->Ref_Drop();
+
+		if(m_model->Ref_Count() <= 0)
+			delete m_model;
+	}
+
+	if(m_instData)
+		delete m_instData;
+}
+
+#ifdef EDITOR
+
+#define PREVIEW_BOX_SIZE 256
+
+void CopyRendertargetToTexture(ITexture* rt, ITexture* dest)
+{
+	g_pShaderAPI->Reset(STATE_RESET_TEX);
+
+	texlockdata_t readFrom;
+	texlockdata_t writeTo;
+	memset(&readFrom, 0, sizeof(readFrom));
+
+	rt->Lock(&readFrom, NULL, false, true);
+
+	if(readFrom.pData)
+	{
+		dest->Lock(&writeTo, NULL, true, false);
+
+		if(writeTo.pData)
+		{
+			memcpy(writeTo.pData, readFrom.pData, writeTo.nPitch*PREVIEW_BOX_SIZE);
+		}
+	}
+
+	dest->Unlock();
+	rt->Unlock();
+}
+
+void CLevObjectDef::RefreshPreview()
+{
+	if(!m_dirtyPreview)
+		return;
+
+	m_dirtyPreview = false;
+
+	if(!CreatePreview( PREVIEW_BOX_SIZE ))
+		return;
+
+	static ITexture* pTempRendertarget = g_pShaderAPI->CreateRenderTarget(PREVIEW_BOX_SIZE, PREVIEW_BOX_SIZE, FORMAT_RGBA8);
+
+	Vector3D	camera_rotation(35,225,0);
+	Vector3D	camera_target(0);
+	float		camDistance = 0.0f;
+	
+	BoundingBox bbox;
+
+	if(m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+	{
+		bbox = m_model->m_bbox;
+
+		//Msg("RENDER preview for STATIC model\n");
+		camDistance = length(m_model->m_bbox.GetSize())+0.5f;
+		camera_target = m_model->m_bbox.GetCenter();
+	}
+	else
+	{
+		//Msg("RENDER preview for DEF model\n");
+
+		bbox = BoundingBox(m_defModel->GetBBoxMins(),m_defModel->GetBBoxMaxs());
+
+		camDistance = length(bbox.GetSize())+0.5f;
+		camera_target = bbox.GetCenter();
+	}
+
+	Vector3D forward, right;
+	AngleVectors(camera_rotation, &forward, &right);
+
+	Vector3D cam_pos = camera_target - forward*camDistance;
+
+	// setup perspective
+	Matrix4x4 mProjMat = perspectiveMatrixY(DEG2RAD(60), PREVIEW_BOX_SIZE, PREVIEW_BOX_SIZE, 0.05f, 512.0f);
+
+	Matrix4x4 mViewMat = rotateZXY4(DEG2RAD(-camera_rotation.x),DEG2RAD(-camera_rotation.y),DEG2RAD(-camera_rotation.z));
+	mViewMat.translate(-cam_pos);
+
+	materials->SetMatrix(MATRIXMODE_PROJECTION, mProjMat);
+	materials->SetMatrix(MATRIXMODE_VIEW, mViewMat);
+
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+	// setup render
+	g_pShaderAPI->ChangeRenderTarget( pTempRendertarget );
+
+	g_pShaderAPI->Clear(true, true, false, ColorRGBA(0.25,0.25,0.25,1.0f));
+
+	Render(0.0f, bbox, true, 0);
+
+	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
+
+	// copy rendertarget
+	CopyRendertargetToTexture(pTempRendertarget, m_preview);
+}
+#endif // EDITOR
+
+void CLevObjectDef::Render( float lodDistance, const BoundingBox& bbox, bool preloadMaterials, int nRenderFlags)
+{
+	if(m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+	{
+		if(preloadMaterials)
+		{
+			m_model->PreloadTextures();
+			materials->Wait();
+		}
+
+		m_model->Render( nRenderFlags, bbox );
+	}
+	else
+	{
+		if( !m_defModel )
+			return;
+
+		materials->SetCullMode((nRenderFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
+
+		studiohdr_t* pHdr = m_defModel->GetHWData()->pStudioHdr;
+
+		int nLOD = m_defModel->SelectLod( lodDistance ); // lod distance check
+
+		for(int i = 0; i < pHdr->numbodygroups; i++)
+		{
+			int bodyGroupLOD = nLOD;
+
+			// TODO: check bodygroups for rendering
+
+			int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
+			int nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
+
+			// get the right LOD model number
+			while(nModDescId == -1 && bodyGroupLOD > 0)
+			{
+				bodyGroupLOD--;
+				nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
+			}
+
+			if(nModDescId == -1)
+				continue;
+
+			// render model groups that in this body group
+			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+			{
+				//materials->SetSkinningEnabled(true);
+				IMaterial* pMaterial = m_defModel->GetMaterial(nModDescId, j);
+
+				if(preloadMaterials)
+				{
+					materials->PutMaterialToLoadingQueue(pMaterial);
+					materials->Wait();
+				}
+
+				materials->BindMaterial(pMaterial, false);
+
+				g_pGameWorld->ApplyLighting(bbox);
+
+				//m_pModel->PrepareForSkinning( m_BoneMatrixList );
+				m_defModel->DrawGroup( nModDescId, j );
+			}
+		}
+	}
+}
+
+//------------------------------------------------------------------------------------
+
 #define LMODEL_VERSION		(1)
 
 struct lmodelbatch_file_s
@@ -87,14 +301,11 @@ CLevelModel::CLevelModel() :
 	m_verts (NULL),
 	m_indices (NULL),
 	m_numVerts (0),
-	m_numIndices (0)
+	m_numIndices (0),
+	m_vertexBuffer(NULL),
+	m_indexBuffer(NULL),
+	m_format(NULL)
 {
-	m_vertexBuffer = NULL;
-	m_indexBuffer = NULL;
-	m_format = NULL;
-
-	m_level = 0;
-
 	m_bbox.Reset();
 }
 
@@ -269,7 +480,7 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 #endif // EDITOR
 }
 
-void CLevelModel::CreateCollisionObjects( CLevelRegion* reg, regobjectref_t* ref )
+void CLevelModel::CreateCollisionObjects( CLevelRegion* reg, regionObject_t* ref )
 {
 	Matrix4x4 mat = GetModelRefRenderMatrix(reg, ref);
 	mat = transpose(mat);
@@ -283,7 +494,7 @@ void CLevelModel::CreateCollisionObjects( CLevelRegion* reg, regobjectref_t* ref
 		collObj->SetPosition( mat.getTranslationComponent() );
 
 		// make as ground
-		if(ref->container->m_info.modelflags & LMODEL_FLAG_ISGROUND)
+		if(ref->def->m_info.modelflags & LMODEL_FLAG_ISGROUND)
 		{
 			collObj->SetContents( OBJECTCONTENTS_SOLID_GROUND );
 			collObj->SetRestitution(0.0f);
@@ -313,7 +524,6 @@ bool CLevelModel::GenereateRenderData()
 	{
 		const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
-#ifdef USE_INSTANCING
 		if(caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
 		{
 			VertexFormatDesc_t pFormat[] = {
@@ -332,7 +542,6 @@ bool CLevelModel::GenereateRenderData()
 				m_format = g_pShaderAPI->CreateVertexFormat(pFormat, elementsOf(pFormat));
 		}
 		else
-#endif // USE_INSTANCING
 		{
 			VertexFormatDesc_t pFormat[] = {
 				{ 0, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position
@@ -356,25 +565,6 @@ bool CLevelModel::GenereateRenderData()
 	}
 
 	return true;
-
-	/*
-	int* lockIB = NULL;
-	if(indices.numElem() && m_indexbuffer->Lock(0, indices.numElem(), (void**)&lockIB, false))
-	{
-		if(lockIB)
-			memcpy(lockIB, indices.ptr(), indices.numElem()*sizeof(int));
-
-		m_indexbuffer->Unlock();
-	}
-
-	hfielddrawvertex_t* lockVB = NULL;
-	if(verts.numElem() && m_vertexbuffer->Lock(0, verts.numElem(), (void**)&lockVB, false))
-	{
-		if(lockVB)
-			memcpy(lockVB, verts.ptr(), verts.numElem()*sizeof(hfielddrawvertex_t));
-
-		m_vertexbuffer->Unlock();
-	}*/
 }
 
 void CLevelModel::PreloadTextures()
@@ -747,7 +937,7 @@ IVector2D CLevelRegion::GetTileAndNeighbourRegion(int x, int y, CLevelRegion** r
 }
 
 
-Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regobjectref_t* ref)
+Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regionObject_t* ref)
 {
 	// models are usually placed at heightfield 0
 	CHeightTileField& defField = *reg->m_heightfield[0];
@@ -756,8 +946,10 @@ Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regobjectref_t* ref)
 
 	Vector3D addHeight(0.0f);
 
-	if(ref->container->m_info.type == LOBJ_TYPE_OBJECT_CFG)
-		addHeight.y = -ref->container->m_defModel->GetBBoxMins().y;
+	CLevObjectDef* objectDef = ref->def;;
+
+	if(objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG)
+		addHeight.y = -objectDef->m_defModel->GetBBoxMins().y;
 
 	if(ref->tile_dependent)
 	{
@@ -766,8 +958,8 @@ Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regobjectref_t* ref)
 		Vector3D tilePosition(ref->tile_x*HFIELD_POINT_SIZE, tile->height*HFIELD_HEIGHT_STEP, ref->tile_y*HFIELD_POINT_SIZE);
 		Vector3D modelPosition = defField.m_position + tilePosition + addHeight;
 
-		if( (ref->container->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
-			ref->container->m_info.type != LOBJ_TYPE_OBJECT_CFG )
+		if( (ref->def->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
+			ref->def->m_info.type != LOBJ_TYPE_OBJECT_CFG )
 		{
 			Vector3D t,b,n;
 			defField.GetTileTBN( ref->tile_x, ref->tile_y, t,b,n );
@@ -792,82 +984,12 @@ Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regobjectref_t* ref)
 	return m;
 }
 
-void RenderModelDef( objectcont_t* obj, float fDistance, const BoundingBox& bbox, bool preloadMaterials = false, int nRenderFlags = 0)
-{
-	if(!obj)
-		return;
-
-	if(obj->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-	{
-		if(preloadMaterials)
-		{
-			obj->m_model->PreloadTextures();
-			materials->Wait();
-		}
-
-		//debugoverlay->Box3D(bbox.minPoint, bbox.maxPoint, ColorRGBA(1,1,0,0.1));
-
-		obj->m_model->Render( nRenderFlags, bbox );
-	}
-	else
-	{
-		if( !obj->m_defModel )
-			return;
-
-		materials->SetCullMode((nRenderFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
-
-		studiohdr_t* pHdr = obj->m_defModel->GetHWData()->pStudioHdr;
-
-		int nLOD = obj->m_defModel->SelectLod( fDistance ); // lod distance check
-
-		for(int i = 0; i < pHdr->numbodygroups; i++)
-		{
-			int bodyGroupLOD = nLOD;
-
-			// TODO: check bodygroups for rendering
-
-			int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
-			int nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
-
-			// get the right LOD model number
-			while(nModDescId == -1 && bodyGroupLOD > 0)
-			{
-				bodyGroupLOD--;
-				nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
-			}
-
-			if(nModDescId == -1)
-				continue;
-
-			// render model groups that in this body group
-			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
-			{
-				//materials->SetSkinningEnabled(true);
-				IMaterial* pMaterial = obj->m_defModel->GetMaterial(nModDescId, j);
-
-				if(preloadMaterials)
-				{
-					materials->PutMaterialToLoadingQueue(pMaterial);
-					materials->Wait();
-				}
-
-				materials->BindMaterial(pMaterial, false);
-
-				g_pGameWorld->ApplyLighting(bbox);
-
-				//m_pModel->PrepareForSkinning( m_BoneMatrixList );
-				obj->m_defModel->DrawGroup( nModDescId, j );
-			}
-		}
-	}
-}
-
 #ifdef EDITOR
 void CLevelRegion::Ed_Prerender()
 {
 	for(int i = 0; i < m_objects.numElem(); i++)
 	{
-		objectcont_t* cont = m_objects[i]->container;
+		CLevObjectDef* cont = m_objects[i]->def;
 
 		Matrix4x4 mat = GetModelRefRenderMatrix(this, m_objects[i]);
 
@@ -940,8 +1062,8 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 
 	for(int i = 0; i < m_objects.numElem(); i++)
 	{
-		regobjectref_t* ref = m_objects[i];
-		objectcont_t* cont = ref->container;
+		regionObject_t* ref = m_objects[i];
+		CLevObjectDef* cont = ref->def;
 
 
 #ifdef EDITOR
@@ -971,7 +1093,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 					float fDist = length(cameraPosition - ref->position);
 
 					materials->SetMatrix(MATRIXMODE_WORLD, mat);
-					RenderModelDef(cont, fDist, ref->bbox, false, nRenderFlags);
+					cont->Render(fDist, ref->bbox, false, nRenderFlags);
 				}
 			}
 		}
@@ -986,7 +1108,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 			BoundingBox bbox(cont->m_defModel->GetBBoxMins(), cont->m_defModel->GetBBoxMaxs());
 
 			if( occlFrustum.IsSphereVisible( ref->position, length(bbox.GetSize())) )
-				RenderModelDef(ref->container, fDist, ref->bbox, false, nRenderFlags);
+				cont->Render(fDist, ref->bbox, false, nRenderFlags);
 		}
 #else
 //----------------------------------------------------------------
@@ -1019,7 +1141,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 					float fDist = length(cameraPosition - ref->position);
 					materials->SetMatrix(MATRIXMODE_WORLD, mat);
 
-					RenderModelDef(cont, fDist, ref->bbox, false, nRenderFlags);
+					cont->Render(fDist, ref->bbox, false, nRenderFlags);
 				//}
 			}
 		}
@@ -1079,35 +1201,6 @@ void CLevelRegion::InitRoads()
 					defField.m_sizeh*AI_NAVIGATION_GRID_SCALE);
 }
 
-void FreeLevObjectRef(regobjectref_t* obj)
-{
-	if(obj->container->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-	{
-		CLevelModel* mod = obj->container->m_model;
-
-		mod->Ref_Drop();
-
-		// the model cannot be removed if it's not loaded with region
-		if(mod->Ref_Count() <= 0)
-			delete mod;
-
-		for(int i = 0; i < obj->collisionObjects.numElem(); i++)
-			g_pPhysics->m_physics.DestroyStaticObject( obj->collisionObjects[i] );
-	}
-	else
-	{
-		// delete associated object from game world
-		if( g_pGameWorld->IsValidObject(obj->object) )
-		{
-			g_pGameWorld->RemoveObject( obj->object );
-		}
-
-		obj->object = NULL;
-	}
-
-	delete obj;
-}
-
 void CLevelRegion::Cleanup()
 {
 	m_level->m_mutex.Lock();
@@ -1116,13 +1209,12 @@ void CLevelRegion::Cleanup()
 		g_pPhysics->RemoveHeightField( m_heightfield[i] );
 
 	for(int i = 0; i < m_objects.numElem(); i++)
-	{
-		FreeLevObjectRef( m_objects[i] );
-	}
+		delete m_objects[i];
+
+	m_objects.clear();
 
 	m_level->m_mutex.Unlock();
 
-	m_objects.clear();
 	m_occluders.clear();
 
 	delete [] m_roads;
@@ -1257,13 +1349,15 @@ int CLevelRegion::Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float
 
 		float raydist = MAX_COORD_UNITS;
 
-		if(m_objects[i]->container->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		CLevObjectDef* def = m_objects[i]->def;
+
+		if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
-			raydist = m_objects[i]->container->m_model->Ed_TraceRayDist(tray_start, tray_dir);
+			raydist = def->m_model->Ed_TraceRayDist(tray_start, tray_dir);
 		}
 		else
 		{
-			raydist = CheckStudioRayIntersection(m_objects[i]->container->m_defModel, tray_start, tray_dir);
+			raydist = CheckStudioRayIntersection(def->m_defModel, tray_start, tray_dir);
 		}
 
 		if(raydist < fMaxDist)
@@ -1278,15 +1372,15 @@ int CLevelRegion::Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float
 	return bestDistrefIdx;
 }
 
-int CLevelRegion::Ed_ReplaceDefs(objectcont_t* whichReplace, objectcont_t* replaceTo)
+int CLevelRegion::Ed_ReplaceDefs(CLevObjectDef* whichReplace, CLevObjectDef* replaceTo)
 {
 	int numReplaced = 0;
 
 	for(int i = 0; i < m_objects.numElem(); i++)
 	{
-		if(m_objects[i]->container == whichReplace)
+		if(m_objects[i]->def == whichReplace)
 		{
-			m_objects[i]->container = replaceTo;
+			m_objects[i]->def = replaceTo;
 			numReplaced++;
 		}
 	}
@@ -1358,28 +1452,6 @@ void CGameLevel::InitOLD(int wide, int tall, IVirtualStream* stream)
 	}
 }
 */
-void FreeLevObjectContainer(objectcont_t* container)
-{
-	if(container->m_info.type == LOBJ_TYPE_INTERNAL_STATIC
-		&& container->m_model)
-	{
-		container->m_model->Ref_Drop();
-
-		if(container->m_model->Ref_Count() <= 0)
-			delete container->m_model;
-	}
-
-#ifdef USE_INSTANCING
-	if(container->m_instData)
-		delete container->m_instData;
-#endif // USE_INSTANCING
-#ifdef EDITOR
-	if(container->m_preview)
-		g_pShaderAPI->FreeTexture(container->m_preview);
-#endif // EDITOR
-
-	delete container;
-}
 
 void CGameLevel::Cleanup()
 {
@@ -1416,19 +1488,15 @@ void CGameLevel::Cleanup()
 		delete [] m_occluderOffsets;
 	m_occluderOffsets = NULL;
 
-	DevMsg(2, "Freeing objects...\n");
+	DevMsg(2, "Freeing object definitions...\n");
 	for(int i = 0; i < m_objectDefs.numElem(); i++)
-	{
-		FreeLevObjectContainer(m_objectDefs[i]);
-	}
+		delete m_objectDefs[i];
 
 	m_objectDefs.clear();
 
-#ifdef USE_INSTANCING
 	if(m_instanceBuffer)
 		g_pShaderAPI->DestroyVertexBuffer(m_instanceBuffer);
 	m_instanceBuffer = NULL;
-#endif // USE_INSTANCING
 
 	m_wide = 0;
 	m_tall = 0;
@@ -1653,8 +1721,6 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 		}
 	}
 
-#ifdef USE_INSTANCING
-
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
 	if(!m_instanceBuffer && caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
@@ -1662,7 +1728,6 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 		m_instanceBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_MODEL_INSTANCES, sizeof(regObjectInstance_t));
 		m_instanceBuffer->SetFlags( VERTBUFFER_FLAG_INSTANCEDATA );
 	}
-#endif // USE_INSTANCING
 }
 
 void CGameLevel::ReadRegionInfo(IVirtualStream* stream)
@@ -1894,46 +1959,35 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
+	// load level models and associate objects from <levelname>_objects.txt
 	for(int i = 0; i < numModels; i++)
 	{
-		objectcont_t* container = new objectcont_t;
+		CLevObjectDef* def = new CLevObjectDef();
 
-		/*
-		levmodelinfo_old_t oldStruct;
+		stream->Read(&def->m_info, 1, sizeof(levmodelinfo_t));
 
-		stream->Read(&oldStruct, 1, sizeof(levmodelinfo_old_t));
+		def->m_name = modelNamePtr;
 
-		container->m_info.level = oldStruct.level;
-		container->m_info.modelflags = oldStruct.flags;
-		container->m_info.size = oldStruct.size;
-		container->m_info.type = oldStruct.type;
-		*/
-
-		stream->Read(&container->m_info, 1, sizeof(levmodelinfo_t));
-
-		container->m_name = modelNamePtr;
-
-		if(container->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
 			CLevelModel* model = new CLevelModel();
 			model->Load( stream );
 			model->PreloadTextures();
 
-			bool isGroundModel = (container->m_info.modelflags & LMODEL_FLAG_ISGROUND);
+			bool isGroundModel = (def->m_info.modelflags & LMODEL_FLAG_ISGROUND);
 
 			model->GeneratePhysicsData( isGroundModel );
 
 			model->Ref_Grab();
 
-			container->m_model = model;
-			container->m_defModel = NULL;
+			def->m_model = model;
+			def->m_defModel = NULL;
 
-#ifdef USE_INSTANCING
+			// init instancer
 			if(caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
-				container->m_instData = new levObjInstanceData_t;
-#endif // USE_INSTANCING
+				def->m_instData = new levObjInstanceData_t;
 		}
-		else if(container->m_info.type == LOBJ_TYPE_OBJECT_CFG)
+		else if(def->m_info.type == LOBJ_TYPE_OBJECT_CFG)
 		{
 			kvkeybase_t* foundDef = NULL;
 
@@ -1969,27 +2023,28 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 			int modelIdx = g_pModelCache->PrecacheModel( KV_GetValueString(modelName, 0, "models/error.egf"));
 
 			if(foundDef)
-				container->m_defKeyvalues.MergeFrom( foundDef, true );
+				def->m_defKeyvalues.MergeFrom( foundDef, true );
 
-			container->m_model = NULL;
+			def->m_model = NULL;
 			if(foundDef)
-				container->m_defType = foundDef->name;
+				def->m_defType = foundDef->name;
 			else
-				container->m_defType = "INVALID";
+				def->m_defType = "INVALID";
 
-			container->m_defModel = g_pModelCache->GetModel(modelIdx);
+			def->m_defModel = g_pModelCache->GetModel(modelIdx);
 
 #ifdef EDITOR
-			LoadDefLightData(container->m_lightData, foundDef);
+			LoadDefLightData(def->m_lightData, foundDef);
 #endif // EDITOR
 		}
 
-		m_objectDefs.append(container);
+		m_objectDefs.append(def);
 
 		// valid?
 		modelNamePtr += strlen(modelNamePtr)+1;
 	}
 
+	// load new objects from <levname>_objects.txt
 	for(int i = 0; i < kvDefs->keys.numElem(); i++)
 	{
 		if(!kvDefs->keys[i]->IsSection())
@@ -2008,19 +2063,19 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 		// precache model
 		int modelIdx = g_pModelCache->PrecacheModel( KV_GetValueString(modelName, 0, "models/error.egf"));
 
-		objectcont_t* container = new objectcont_t;
-		container->m_name = KV_GetValueString(kvDefs->keys[i], 0, "unnamed_def");
+		CLevObjectDef* def = new CLevObjectDef();
+		def->m_name = KV_GetValueString(kvDefs->keys[i], 0, "unnamed_def");
 
-		MsgInfo("Adding object definition '%s'\n", container->m_name.c_str());
+		MsgInfo("Adding object definition '%s'\n", def->m_name.c_str());
 
-		container->m_defKeyvalues.MergeFrom( kvDefs->keys[i], true );
+		def->m_defKeyvalues.MergeFrom( kvDefs->keys[i], true );
 
-		container->m_info.type = LOBJ_TYPE_OBJECT_CFG;
+		def->m_info.type = LOBJ_TYPE_OBJECT_CFG;
 
-		container->m_model = NULL;
-		container->m_defModel = g_pModelCache->GetModel(modelIdx);
+		def->m_model = NULL;
+		def->m_defModel = g_pModelCache->GetModel(modelIdx);
 
-		m_objectDefs.append(container);
+		m_objectDefs.append(def);
 	}
 
 	delete [] modelNamesData;
@@ -2381,7 +2436,7 @@ int FindIndexAsLevelModel(DkList<objectcont_t*>& listObjects, CLevelModel* model
 	return -1;
 }
 */
-int FindObjectContainer(DkList<objectcont_t*>& listObjects, objectcont_t* container)
+int FindObjectContainer(DkList<CLevObjectDef*>& listObjects, CLevObjectDef* container)
 {
 	for(int i = 0; i < listObjects.numElem(); i++)
 	{
@@ -2394,7 +2449,7 @@ int FindObjectContainer(DkList<objectcont_t*>& listObjects, objectcont_t* contai
 	return -1;
 }
 
-void CLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<objectcont_t*>& listObjects, bool final )
+void CLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObjectDef*>& listObjects, bool final )
 {
 	// create region model lists
 	DkList<CLevelModel*>			modelList;
@@ -2405,12 +2460,14 @@ void CLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<objectcont_t*
 	// collect models and cell objects
 	for(int i = 0; i < m_objects.numElem(); i++)
 	{
-		int objIdx = FindObjectContainer(listObjects, m_objects[i]->container);
+		CLevObjectDef* def = m_objects[i]->def;
 
-		if(m_objects[i]->container->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		int objIdx = FindObjectContainer(listObjects, def);
+
+		if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
-			 if( final && !(m_objects[i]->container->m_info.modelflags & LMODEL_FLAG_NONUNIQUE) )
-				objIdx = modelList.addUnique( m_objects[i]->container->m_model );
+			 if( final && !(def->m_info.modelflags & LMODEL_FLAG_NONUNIQUE) )
+				objIdx = modelList.addUnique( def->m_model );
 		}
 
 		levcellmodelobject_t object;
@@ -2460,7 +2517,7 @@ void CLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<objectcont_t*
 	stream->Write(regionData.GetBasePointer(), 1, regionData.Tell());
 }
 
-void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<objectcont_t*>& levelmodels)
+void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>& levelmodels)
 {
 	if(m_isLoaded)
 		return;
@@ -2497,26 +2554,21 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<objectcont_t*>&
 		levcellmodelobject_t cellObj;
 		stream->Read(&cellObj, 1, sizeof(levcellmodelobject_t));
 
-		//levcellmodelobject_old_t cellObj;
-		//stream->Read(&cellObj, 1, sizeof(levcellmodelobject_old_t));
-
 		// TODO: add models
-		regobjectref_t* ref = new regobjectref_t;
+		regionObject_t* ref = new regionObject_t;
 
 		if(regdatahdr.numModels == 0)
 		{
-			ref->container = levelmodels[cellObj.objIndex];
+			ref->def = levelmodels[cellObj.objIndex];
 
-			CLevelModel* model = ref->container->m_model;
+			CLevelModel* model = ref->def->m_model;
 			if(model)
-			{
 				model->Ref_Grab();
-			}
 		}
 		else
 		{
 #pragma todo("model (object) containers in region data fix")
-			ref->container = NULL;
+			ref->def = NULL;
 
 			//ref->model = modelList[cellObj.objIndex];
 			//if(ref->model)
@@ -2532,10 +2584,10 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<objectcont_t*>&
 
 		ref->transform = GetModelRefRenderMatrix( this, ref );
 
-		if(ref->container->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
 			// create collision objects and translate them
-			CLevelModel* model = ref->container->m_model;
+			CLevelModel* model = ref->def->m_model;
 			model->CreateCollisionObjects( this, ref );
 
 			for(int j = 0; j < ref->collisionObjects.numElem(); j++)
@@ -2559,7 +2611,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<objectcont_t*>&
 #ifndef EDITOR
 
 			// create object, spawn in game cycle
-			CGameObject* newObj = g_pGameWorld->CreateGameObject( ref->container->m_defType.c_str(), &ref->container->m_defKeyvalues );
+			CGameObject* newObj = g_pGameWorld->CreateGameObject( ref->def->m_defType.c_str(), &ref->def->m_defKeyvalues );
 
 			if(newObj)
 			{
@@ -2572,7 +2624,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<objectcont_t*>&
 				// network name for this object
 				newObj->SetName( varargs("_reg%d_ref%d", m_regionIndex, i) );
 
-				ref->object = newObj;
+				ref->game_object = newObj;
 
 				m_level->m_mutex.Lock();
 				g_pGameWorld->AddObject( newObj, false );
@@ -2600,30 +2652,30 @@ void CLevelRegion::RespawnObjects()
 #ifndef EDITOR
 	for(int i = 0; i < m_objects.numElem(); i++)
 	{
-		regobjectref_t* ref = m_objects[i];
+		regionObject_t* ref = m_objects[i];
 
-		if(ref->container->m_info.type != LOBJ_TYPE_OBJECT_CFG)
+		if(ref->def->m_info.type != LOBJ_TYPE_OBJECT_CFG)
 			continue;
 
 		// delete associated object from game world
-		if(ref->object)
+		if(ref->game_object)
 		{
 			//g_pGameWorld->RemoveObject(ref->object);
 
-			if(g_pGameWorld->m_pGameObjects.remove(ref->object))
+			if(g_pGameWorld->m_pGameObjects.remove(ref->game_object))
 			{
-				ref->object->OnRemove();
-				delete ref->object;
+				ref->game_object->OnRemove();
+				delete ref->game_object;
 			}
 
 		}
 
-		ref->object = NULL;
+		ref->game_object = NULL;
 
 		ref->transform = GetModelRefRenderMatrix( this, ref );
 
 		// create object, spawn in game cycle
-		CGameObject* newObj = g_pGameWorld->CreateGameObject( ref->container->m_defType.c_str(), &ref->container->m_defKeyvalues );
+		CGameObject* newObj = g_pGameWorld->CreateGameObject( ref->def->m_defType.c_str(), &ref->def->m_defKeyvalues );
 
 		if(newObj)
 		{
@@ -2636,7 +2688,7 @@ void CLevelRegion::RespawnObjects()
 			// network name for this object
 			newObj->SetName( varargs("_reg%d_ref%d", m_regionIndex, i) );
 
-			ref->object = newObj;
+			ref->game_object = newObj;
 
 			m_level->m_mutex.Lock();
 			g_pGameWorld->AddObject( newObj, false );
@@ -3497,8 +3549,6 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 	}
 #endif // EDITOR*/
 
-#ifdef USE_INSTANCING
-
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
 	if(caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
@@ -3553,7 +3603,6 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 		g_pShaderAPI->SetVertexBuffer( NULL, 2 );
 		g_pShaderAPI->ChangeVertexBuffer(NULL, 2);
 	}
-#endif // USE_INSTANCING
 }
 
 int	CGameLevel::Run()
@@ -3674,7 +3723,7 @@ void CGameLevel::RespawnAllObjects()
 #define OBSTACLE_STATIC_MAX_HEIGHT	(6.0f)
 #define OBSTACLE_PROP_MAX_HEIGHT	(4.0f)
 
-void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regobjectref_t* ref)
+void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 {
 	/*
 		transformedModel = transformModelRef(ref)
@@ -3691,15 +3740,17 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regobjectref_t* ref)
 
 	//Matrix4x4 transform = GetModelRefRenderMatrix(reg, ref);
 
-	if(ref->container->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+	CLevObjectDef* def = ref->def;
+
+	if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 	{
 		// static model processing
 
-		if((ref->container->m_info.modelflags & LMODEL_FLAG_ISGROUND) ||
-			(ref->container->m_info.modelflags & LMODEL_FLAG_NOCOLLIDE))
+		if((def->m_info.modelflags & LMODEL_FLAG_ISGROUND) ||
+			(def->m_info.modelflags & LMODEL_FLAG_NOCOLLIDE))
 			return;
 
-		CLevelModel* model = ref->container->m_model;
+		CLevelModel* model = def->m_model;
 
 		for (int i = 0; i < model->m_numIndices; i += 3)
 		{
@@ -3763,15 +3814,15 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regobjectref_t* ref)
 		}
 
 	}
-	else if(ref->container->m_defModel != NULL)
+	else if(def->m_defModel != NULL)
 	{
-		if(	ref->container->m_defType == "debris" ||
-			ref->container->m_defType == "sheets" ||
-			ref->container->m_defType == "misc")
+		if(	def->m_defType == "debris" ||
+			def->m_defType == "sheets" ||
+			def->m_defType == "misc")
 			return;
 
 		// studio model
-		physmodeldata_t* physData = &ref->container->m_defModel->GetHWData()->m_physmodel;
+		physmodeldata_t* physData = &def->m_defModel->GetHWData()->m_physmodel;
 
 		for(int i = 0; i < physData->numIndices; i+=3)
 		{

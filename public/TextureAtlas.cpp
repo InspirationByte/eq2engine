@@ -26,9 +26,7 @@ CTextureAtlas* TexAtlas_LoadAtlas(const char* pszFileName, const char* pszMyName
 		return new CTextureAtlas(pAtlasSec, pszMyName);
 	}
 	else if(!quiet)
-	{
 		MsgError("Couldn't load atlas '%s'\n", pszFileName);
-	}
 
 	return NULL;
 }
@@ -74,10 +72,7 @@ bool CTextureAtlas::Load( const char* pszFileName, const char* pszMyName )
 		InitAtlas(pAtlasSec, pszMyName);
 	}
 	else
-	{
-		MsgError("Couldn't load atlas '%s'\n", pszFileName);
 		return false;
-	}
 
 	return true;
 }

@@ -177,6 +177,7 @@
     <ClInclude Include="..\shared_engine\eqParallelJobs.h" />
     <ClInclude Include="..\shared_engine\FontCache.h" />
     <ClInclude Include="..\shared_engine\FontLayoutBuilders.h" />
+    <ClInclude Include="..\shared_engine\materialsystem\MaterialProxy.h" />
     <ClInclude Include="..\shared_engine\studio_egf.h" />
     <ClInclude Include="..\shared_engine\EffectRender.h" />
     <ClInclude Include="..\shared_engine\EqParticles.h" />
@@ -207,6 +208,7 @@
     <ClInclude Include="DkCore.h" />
     <ClInclude Include="DragDropObjects.h" />
     <ClInclude Include="editaxis.h" />
+    <ClInclude Include="EditorPreviewable.h" />
     <ClInclude Include="IEditorTool.h" />
     <ClInclude Include="EditorMain.h" />
     <ClInclude Include="ExceptionHandler.h" />
@@ -294,6 +296,7 @@
     <ClCompile Include="..\shared_engine\eqParallelJobs.cpp" />
     <ClCompile Include="..\shared_engine\FontCache.cpp" />
     <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp" />
+    <ClCompile Include="..\shared_engine\materialsystem\MaterialProxy.cpp" />
     <ClCompile Include="..\shared_engine\studio_egf.cpp" />
     <ClCompile Include="..\shared_engine\EffectRender.cpp" />
     <ClCompile Include="..\shared_engine\EqParticles_Render.cpp" />
@@ -312,6 +315,7 @@
     <ClCompile Include="..\public\ViewParams.cpp" />
     <ClCompile Include="..\shared_engine\DebugOverlay.cpp" />
     <ClCompile Include="..\shared_engine\modelloader_shared.cpp" />
+    <ClCompile Include="EditorPreviewable.cpp" />
     <ClCompile Include="level_generator.cpp" />
     <ClCompile Include="LoadLevDialog.cpp" />
     <ClCompile Include="NewLevelDialog.cpp" />

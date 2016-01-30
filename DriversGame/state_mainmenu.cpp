@@ -383,7 +383,6 @@ void CState_MainMenu::HandleKeyPress( int key, bool down )
 		else if(key == KEY_UP)
 		{
 	redecrement:
-
 			m_selection--;
 
 			if(m_selection < 0)

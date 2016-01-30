@@ -20,6 +20,13 @@ enum ELayerType
 	LAYER_CORNER_MODEL
 };
 
+struct layerModel_t
+{
+	CLevelModel*	model;
+	ITexture*		preview;
+	EqString		name;
+};
+
 struct buildLayer_t
 {
 	buildLayer_t() 
@@ -31,7 +38,7 @@ struct buildLayer_t
 	int						type;			// ELayerType
 	int						repeatTimes;	// height repeat times
 	int						repeatInterval;	// repeat after repeatInterval times
-	objectcont_t*			model;
+	layerModel_t*			model;
 	IMaterial*				material;
 	TexAtlasEntry_t*		atlEntry;
 };

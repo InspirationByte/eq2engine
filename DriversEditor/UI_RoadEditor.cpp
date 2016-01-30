@@ -169,7 +169,7 @@ void CUI_RoadEditor::PaintLine(int x0, int y0, int x1, int y1)
 
     for (iCount=0; iCount <= iSteps; iCount++)
     {
-		float percentage = (float)iCount/(float)iSteps;
+		//float percentage = (float)iCount/(float)iSteps;
 
 		PaintPointGlobal( floor(x), floor(y), dirIdx);
 
@@ -291,7 +291,7 @@ void CUI_RoadEditor::OnRender()
 
 				hfieldtile_t& tile = field->m_points[pt_idx];
 
-				int vindxs[4];
+				//int vindxs[4];
 
 				Vector3D p1(dxv[0] * HFIELD_POINT_SIZE, float(tile.height)*HFIELD_HEIGHT_STEP+0.1f, dyv[0] * HFIELD_POINT_SIZE);
 				Vector3D p2(dxv[1] * HFIELD_POINT_SIZE, float(tile.height)*HFIELD_HEIGHT_STEP+0.1f, dyv[1] * HFIELD_POINT_SIZE);

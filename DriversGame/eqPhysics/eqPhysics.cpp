@@ -599,7 +599,7 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 		return;
 
 	// test radius between bodies
-	float lenB = lengthSqr(bodyB->m_aabb.GetSize());
+	//float lenB = lengthSqr(bodyB->m_aabb.GetSize());
 
 	/*
 	switch(ph_checkMethod.GetInt())
@@ -1450,7 +1450,7 @@ public:
 			if(obj->GetMesh() && rayResult.m_localShapeInfo)
 			{
 				CEqBulletIndexedMesh* mesh = obj->GetMesh();
-				m_surfMaterialId = obj->GetMesh()->getSubPartMaterialId( rayResult.m_localShapeInfo->m_shapePart );
+				m_surfMaterialId = mesh->getSubPartMaterialId( rayResult.m_localShapeInfo->m_shapePart );
 			}
 
 			if(m_surfMaterialId == -1)
@@ -1610,7 +1610,7 @@ public:
 			if(obj->GetMesh() && rayResult.m_localShapeInfo)
 			{
 				CEqBulletIndexedMesh* mesh = obj->GetMesh();
-				m_surfMaterialId = obj->GetMesh()->getSubPartMaterialId( rayResult.m_localShapeInfo->m_shapePart );
+				m_surfMaterialId = mesh->getSubPartMaterialId( rayResult.m_localShapeInfo->m_shapePart );
 			}
 
 			if(m_surfMaterialId == -1)

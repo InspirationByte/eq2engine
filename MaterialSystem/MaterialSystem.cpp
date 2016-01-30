@@ -1200,7 +1200,8 @@ assert_sizeof(blendStateIndex_t,2);
 // sets blending
 void CMaterialSystem::SetBlendingStates(BlendingFactor_e nSrcFactor, BlendingFactor_e nDestFactor, BlendingFunction_e nBlendingFunc, int colormask)
 {
-	ushort stateIndex = *(ushort*)&( blendStateIndex_t(nSrcFactor, nDestFactor, nBlendingFunc, colormask) );
+	blendStateIndex_t idx(nSrcFactor, nDestFactor, nBlendingFunc, colormask);
+	ushort stateIndex = *(ushort*)&idx;
 
 	IRenderState* state = nullptr;
 
@@ -1241,7 +1242,8 @@ assert_sizeof(depthStateIndex_t,1);
 // sets depth stencil state
 void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, CompareFunc_e depthCompFunc)
 {
-	ubyte stateIndex = *(ushort*)&( depthStateIndex_t(bDoDepthTest, bDoDepthWrite, depthCompFunc) );
+	depthStateIndex_t idx(bDoDepthTest, bDoDepthWrite, depthCompFunc);
+	ubyte stateIndex = *(ushort*)&idx;
 
 	IRenderState* state = nullptr;
 
@@ -1281,7 +1283,8 @@ assert_sizeof(rasterStateIndex_t,1);
 // sets rasterizer extended mode
 void CMaterialSystem::SetRasterizerStates(CullMode_e nCullMode, FillMode_e nFillMode,bool bMultiSample,bool bScissor)
 {
-	ubyte stateIndex = *(ushort*)&( rasterStateIndex_t(nCullMode, nFillMode, bMultiSample, bScissor) );
+	rasterStateIndex_t idx(nCullMode, nFillMode, bMultiSample, bScissor);
+	ubyte stateIndex = *(ushort*)&idx;
 
 	IRenderState* state = nullptr;
 

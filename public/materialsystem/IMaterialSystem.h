@@ -508,7 +508,6 @@ extern IMaterialSystem* materials;
 			factory.dispatcher = &C##className##Factory;							\
 			factory.shader_name = #localName;										\
 			int idx = _InternalShaderList().append(factory);						\
-			printf("Register shader '%s' at %d\n", #localName, idx);                \
 		}																			\
 	};																				\
 	static C_Shader##localName##Foo g_CShader##localName##Foo;

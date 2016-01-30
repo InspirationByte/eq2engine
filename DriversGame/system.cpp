@@ -9,6 +9,7 @@
 
 #include "DebugOverlay.h"
 #include "system.h"
+#include "state_game.h"
 
 #include "StateManager.h"
 #include "materialsystem/MaterialProxy.h"
@@ -454,7 +455,7 @@ CGameHost::CGameHost()
 	m_bCenterMouse = false;
 	m_cursorVisible = true;
 
-	m_mousePos = vec2_zero;
+	m_mousePos = IVector2D(0);
 }
 
 void CGameHost::ShutdownSystems()
@@ -682,8 +683,17 @@ bool CGameHost::IsInMultiplayerGame() const
 	extern ConVar sv_maxplayers;
 
 	// maxplayers set and ingame
-	return (GetCurrentStateType() == GAME_STATE_GAME) &&
-			sv_maxplayers.GetInt() > 0;
+	return (GetCurrentStateType() == GAME_STATE_GAME) && sv_maxplayers.GetInt() > 1;
+}
+
+void CGameHost::SignalPause()
+{
+	if(GetCurrentStateType() != GAME_STATE_GAME)
+		return;
+
+	CState_Game* gameState = (CState_Game*)GetCurrentState();
+	gameState->SetPauseState( true );
+	ses->Update();
 }
 
 void CGameHost::SetWindowSize(int width, int height)
