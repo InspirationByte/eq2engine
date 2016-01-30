@@ -136,7 +136,7 @@ bool CD3DRenderLib::InitAPI(const shaderapiinitparams_t &params)
 	m_d3dpp.BackBufferHeight = m_height;
 	m_d3dpp.BackBufferCount  = 1;
 
-	DevMsg(3, "Initial backbuffer size: %d %d\n", m_width, m_height);
+	DevMsg(DEVMSG_SHADERAPI, "Initial backbuffer size: %d %d\n", m_width, m_height);
 
 	if(savedParams.bEnableVerticalSync)
 		m_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;

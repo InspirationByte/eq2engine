@@ -199,7 +199,7 @@ const wchar_t* CLocalize::GetTokenString(const char* pszToken,const wchar_t* psz
 			return m_lTokens[i]->GetText();
 	}
 
-	DevMsg(1, "LOCALIZER: Token %s not found\n", pszToken);
+	DevMsg(DEVMSG_LOCALE, "LOCALIZER: Token %s not found\n", pszToken);
 
 	return pszDefaultToken;
 }
@@ -214,7 +214,7 @@ ILocToken* CLocalize::GetToken( const char* pszToken )
 			return m_lTokens[i];
 	}
 
-	DevMsg(1, "LOCALIZER: Token %s not found\n", pszToken);
+	DevMsg(DEVMSG_LOCALE, "LOCALIZER: Token %s not found\n", pszToken);
 
 	return NULL;
 }

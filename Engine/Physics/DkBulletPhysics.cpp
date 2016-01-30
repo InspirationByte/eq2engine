@@ -227,7 +227,7 @@ bool DkPhysics::Init(int nSceneSize)
 						CopyMaterialParams(param, pMaterial);
 					}
 					else
-						DevMsg(1, "script error: physics surface properties '%s' doesn't exist\n", KV_GetValueString(pBaseNamePair) );
+						DevMsg(DEVMSG_CORE, "script error: physics surface properties '%s' doesn't exist\n", KV_GetValueString(pBaseNamePair) );
 				}
 
 				kvkeybase_t* pPair = pSec->FindKeyBase("friction");
@@ -325,7 +325,7 @@ class DkPhysicsDebugDrawer : public btIDebugDraw
 
 	void reportErrorWarning(const char * warn)
 	{
-		DevMsg(2, "EqPhysics warining: %s\n", warn);
+		DevMsg(DEVMSG_CORE, "EqPhysics warining: %s\n", warn);
 	}
 
 	void draw3dText(const btVector3 &vec,const char *text)
@@ -712,7 +712,7 @@ phySurfaceMaterial_t* DkPhysics::FindMaterial(const char* pszName)
 			return m_physicsMaterialDesc[i];
 	}
 
-	DevMsg(1, "DkPhysics::FindMaterial: %s not found\n", pszName);
+	DevMsg(DEVMSG_CORE, "DkPhysics::FindMaterial: %s not found\n", pszName);
 
 	return NULL;
 }
@@ -1234,7 +1234,7 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 
 	pPhysicsObject->m_pPhyObjectPointer->setDeactivationTime(3.0f);
 
-	DevMsg(2, "Creating static physics object\n" );
+	DevMsg(DEVMSG_CORE, "Creating static physics object\n" );
 
 	m_pPhysicsObjectList.append(pPhysicsObject);
 
@@ -1320,10 +1320,10 @@ IPhysicsObject* DkPhysics::CreateObject( physmodeldata_t* data, int nObject )
 
 	ASSERTMSG((nObject < data->numobjects), "DkPhysics::CreateObject - nObject is out of numobjects");
 
-	DevMsg(2, "Creating physics object\n");
-	DevMsg(2, "mass = %f (%f)\n", data->objects[nObject].object.mass, data->objects[nObject].object.mass * METERS_PER_UNIT_INV);
-	DevMsg(2, "surfaceprops = %s\n", data->objects[nObject].object.surfaceprops);
-	DevMsg(2, "shapes = %d\n", data->objects[nObject].object.numShapes);
+	DevMsg(DEVMSG_CORE, "Creating physics object\n");
+	DevMsg(DEVMSG_CORE, "mass = %f (%f)\n", data->objects[nObject].object.mass, data->objects[nObject].object.mass * METERS_PER_UNIT_INV);
+	DevMsg(DEVMSG_CORE, "surfaceprops = %s\n", data->objects[nObject].object.surfaceprops);
+	DevMsg(DEVMSG_CORE, "shapes = %d\n", data->objects[nObject].object.numShapes);
 
 	btCollisionShape* pShape = NULL;
 
@@ -1427,9 +1427,9 @@ IPhysicsObject* DkPhysics::CreateObjectCustom(int numShapes, int* shapeIdxs, con
 
 	CScopedMutex m(m_Mutex);
 
-	DevMsg(2, "Creating custom physics object\n");
-	DevMsg(2, "mass = %f (%f)\n", mass, mass * METERS_PER_UNIT_INV);
-	DevMsg(2, "surfaceprops = %s\n", surfaceProps);
+	DevMsg(DEVMSG_CORE, "Creating custom physics object\n");
+	DevMsg(DEVMSG_CORE, "mass = %f (%f)\n", mass, mass * METERS_PER_UNIT_INV);
+	DevMsg(DEVMSG_CORE, "surfaceprops = %s\n", surfaceProps);
 
 	btCollisionShape* pShape = NULL;
 
@@ -1642,7 +1642,7 @@ void DkPhysics::DestroyPhysicsObjects()
 
 	for(int i = 0; i < m_pPhysicsObjectList.numElem(); i++)
 	{
-		DevMsg(2, "Destroying physics object\n");
+		DevMsg(DEVMSG_CORE, "Destroying physics object\n");
 		DestroyPhysicsObject(m_pPhysicsObjectList[i]);
 		i--;
 	}

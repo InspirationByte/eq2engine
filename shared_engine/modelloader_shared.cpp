@@ -115,7 +115,7 @@ studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 		return NULL;
 	}
 
-	DevMsg(2,"Loading %s motion package\n", pszPath);
+	DevMsg(DEVMSG_CORE,"Loading %s motion package\n", pszPath);
 
 	animpackagehdr_t* pHDR = (animpackagehdr_t*)pData;
 
@@ -160,7 +160,7 @@ studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 				animationdescs = (animationdesc_t*)pData;
 
 				//	Msg("Num anim descs: %d\n", numAnimDescs);
-				DevMsg(2,"all animations: %d\n", numAnimDescs);
+				DevMsg(DEVMSG_CORE,"all animations: %d\n", numAnimDescs);
 
 				break;
 			}
@@ -169,7 +169,7 @@ studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 				numAnimFrames = pLump->size / sizeof(animframe_t);
 				animframes = (animframe_t*)pData;
 
-				DevMsg(2,"all animframes: %d\n", numAnimFrames);
+				DevMsg(DEVMSG_CORE,"all animframes: %d\n", numAnimFrames);
 
 				anim_frames_decompressed = false;
 
@@ -191,7 +191,7 @@ studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 				if (status == Z_OK)
 				{
 					numAnimFrames = realSize / sizeof(animframe_t);
-					DevMsg(2,"all animframes: %d\n", numAnimFrames);
+					DevMsg(DEVMSG_CORE,"all animframes: %d\n", numAnimFrames);
 
 					anim_frames_decompressed = true;
 				}
@@ -207,7 +207,7 @@ studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 				pMotion->sequences = (sequencedesc_t*)PPAlloc(pLump->size);
 				memcpy(pMotion->sequences, pData, pLump->size);
 
-				DevMsg(2,"sequence descs: %d\n", pMotion->numsequences);
+				DevMsg(DEVMSG_CORE,"sequence descs: %d\n", pMotion->numsequences);
 
 				break;
 			}
@@ -218,7 +218,7 @@ studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 				pMotion->events = (sequenceevent_t*)PPAlloc(pLump->size);
 				memcpy(pMotion->events, pData, pLump->size);
 
-				DevMsg(2,"events: %d\n", pMotion->numevents);
+				DevMsg(DEVMSG_CORE,"events: %d\n", pMotion->numevents);
 
 				break;
 			}
@@ -229,7 +229,7 @@ studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 				pMotion->posecontrollers = (posecontroller_t*)PPAlloc(pLump->size);
 				memcpy(pMotion->posecontrollers, pData, pLump->size);
 
-				DevMsg(2,"pose controllers: %d\n", pMotion->numposecontrollers);
+				DevMsg(DEVMSG_CORE,"pose controllers: %d\n", pMotion->numposecontrollers);
 
 				break;
 			}
@@ -289,7 +289,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 		if(!pData)
 			return false;
 
-		DevMsg(2, "Loading POD '%s'\n", pszPath);
+		DevMsg(DEVMSG_CORE, "Loading POD '%s'\n", pszPath);
 
 		physmodelhdr_t *pHdr = (physmodelhdr_t*)pData;
 	
@@ -322,7 +322,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 					physmodelprops_t* props = (physmodelprops_t*)pData;
 					pModel->modeltype = props->model_usage;
 
-					DevMsg(2, "PHYSLUMP_PROPERTIES\n");
+					DevMsg(DEVMSG_CORE, "PHYSLUMP_PROPERTIES\n");
 
 					break;
 				}
@@ -343,7 +343,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 						memcpy(&pModel->shapes[i].shape_info, &pGeomInfos[i], sizeof(physgeominfo_t));
 					}
 					
-					DevMsg(2, "PHYSLUMP_GEOMETRYINFO size = %d (cnt = %d)\n", pLump->size, numGeomInfos);
+					DevMsg(DEVMSG_CORE, "PHYSLUMP_GEOMETRYINFO size = %d (cnt = %d)\n", pLump->size, numGeomInfos);
 
 					break;
 				}
@@ -366,7 +366,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 						}
 					}
 
-					DevMsg(2, "PHYSLUMP_OBJECTS size = %d (cnt = %d)\n", pLump->size, numObjInfos);
+					DevMsg(DEVMSG_CORE, "PHYSLUMP_OBJECTS size = %d (cnt = %d)\n", pLump->size, numObjInfos);
 
 					break;
 				}
@@ -383,7 +383,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 						memcpy(pModel->joints, pJointData, pLump->size );
 					}
 
-					DevMsg(2, "PHYSLUMP_JOINTDATA\n");
+					DevMsg(DEVMSG_CORE, "PHYSLUMP_JOINTDATA\n");
 
 					break;
 				}
@@ -396,7 +396,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 					pModel->vertices = (Vector3D*)PPAlloc(pLump->size);
 					memcpy(pModel->vertices, pVertexData, pLump->size );
 
-					DevMsg(2, "PHYSLUMP_VERTEXDATA\n");
+					DevMsg(DEVMSG_CORE, "PHYSLUMP_VERTEXDATA\n");
 
 					break;
 				}
@@ -409,7 +409,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 					pModel->indices = (int*)PPAlloc(pLump->size);
 					memcpy(pModel->indices, pIndexData, pLump->size );
 
-					DevMsg(2, "PHYSLUMP_INDEXDATA\n");
+					DevMsg(DEVMSG_CORE, "PHYSLUMP_INDEXDATA\n");
 
 					break;
 				}
@@ -454,7 +454,7 @@ void Studio_FreeMotionData(studiomotiondata_t* pData, int numBones)
 
 void Studio_FreePhysModel(physmodeldata_t* pModel)
 {
-	DevMsg(2, "Studio_FreePhysModel()\n");
+	DevMsg(DEVMSG_CORE, "Studio_FreePhysModel()\n");
 
 	PPFree(pModel->indices);
 	PPFree(pModel->vertices);

@@ -614,7 +614,7 @@ void ShaderAPID3DX10::FreeTexture(ITexture* pTexture)
 
 	if(pTex->Ref_Count() <= 0)
 	{
-		DevMsg(3,"Texture unloaded: %s\n",pTexture->GetName());
+		DevMsg(DEVMSG_SHADERAPI,"Texture unloaded: %s\n",pTexture->GetName());
 
 		Reset(STATE_RESET_TEX);
 		ApplyTextures();
@@ -1253,7 +1253,7 @@ void ShaderAPID3DX10::DestroyVertexFormat(IVertexFormat* pFormat)
 		Apply();
 	}
 
-	DevMsg(3,"Destroying vertex format\n");
+	DevMsg(DEVMSG_SHADERAPI,"Destroying vertex format\n");
 
 	if(pVF->m_pVertexDecl)
 		pVF->m_pVertexDecl->Release();
@@ -1275,7 +1275,7 @@ void ShaderAPID3DX10::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 	Reset(STATE_RESET_VBO);
 	Apply();
 
-	DevMsg(3,"Destroying vertex buffer\n");
+	DevMsg(DEVMSG_SHADERAPI,"Destroying vertex buffer\n");
 
 	if(pVB->m_pVertexBuffer)
 		pVB->m_pVertexBuffer->Release();
@@ -1298,7 +1298,7 @@ void ShaderAPID3DX10::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 	Apply();
 
 
-	DevMsg(3,"Destroying index buffer\n");
+	DevMsg(DEVMSG_SHADERAPI,"Destroying index buffer\n");
 
 	if(pIB->m_pIndexBuffer)
 		pIB->m_pIndexBuffer->Release();
@@ -3221,7 +3221,7 @@ IVertexBuffer* ShaderAPID3DX10::CreateVertexBuffer(BufferAccessType_e nBufAccess
 	vbData.SysMemPitch = 0;
 	vbData.SysMemSlicePitch = 0;
 
-	DevMsg(3,"Creatting VBO with size %i KB\n", pBuffer->m_nSize / 1024);
+	DevMsg(DEVMSG_SHADERAPI,"Creatting VBO with size %i KB\n", pBuffer->m_nSize / 1024);
 
 	CScopedMutex scoped(m_Mutex);
 

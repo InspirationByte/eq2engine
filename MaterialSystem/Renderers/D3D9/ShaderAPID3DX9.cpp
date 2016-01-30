@@ -185,12 +185,12 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		// release unmanaged textures and rts
 		if(!is_managed)
 		{
-			DevMsg(3, "RESET: releasing %s\n", pTex->GetName());
+			DevMsg(DEVMSG_SHADERAPI, "RESET: releasing %s\n", pTex->GetName());
 			pTex->Release();
 		}
 	}
 
-	DevMsg(3, "Device objects releasing done, resetting...\n");
+	DevMsg(DEVMSG_SHADERAPI, "Device objects releasing done, resetting...\n");
 
 	if (FAILED(hr = m_pD3DDevice->Reset(&d3dpp)))
 	{
@@ -205,7 +205,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		return false;
 	}
 
-	DevMsg(3, "Restoring states...\n");
+	DevMsg(DEVMSG_SHADERAPI, "Restoring states...\n");
 
 	m_bDeviceIsLost = false;
 
@@ -287,7 +287,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 	Reset();
 	Apply();
 
-	DevMsg(3, "Restoring VBs...\n");
+	DevMsg(DEVMSG_SHADERAPI, "Restoring VBs...\n");
 	for(int i = 0; i < m_VBList.numElem(); i++)
 	{
 		CVertexBufferD3DX9* pVB = (CVertexBufferD3DX9*)m_VBList[i];
@@ -295,7 +295,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		pVB->Restore();
 	}
 
-	DevMsg(3, "Restoring IBs...\n");
+	DevMsg(DEVMSG_SHADERAPI, "Restoring IBs...\n");
 	for(int i = 0; i < m_IBList.numElem(); i++)
 	{
 		CIndexBufferD3DX9* pIB = (CIndexBufferD3DX9*)m_IBList[i];
@@ -303,14 +303,14 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		pIB->Restore();
 	}
 
-	DevMsg(3, "Restoring query...\n");
+	DevMsg(DEVMSG_SHADERAPI, "Restoring query...\n");
 	for(int i = 0; i < m_OcclusionQueryList.numElem(); i++)
 	{
 		CD3D9OcclusionQuery* query = (CD3D9OcclusionQuery*)m_OcclusionQueryList[i];
 		query->Init();
 	}
 
-	DevMsg(3, "Restoring RTs...\n");
+	DevMsg(DEVMSG_SHADERAPI, "Restoring RTs...\n");
 
 	// create texture surfaces
 	for(int i = 0; i < m_TextureList.numElem(); i++)
@@ -326,19 +326,19 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		// restore unmanaged texture
 		if(!is_managed && !is_rendertarget)
 		{
-			DevMsg(3, "Restoring texture %s\n", pTex->GetName());
+			DevMsg(DEVMSG_SHADERAPI, "Restoring texture %s\n", pTex->GetName());
 			RestoreTextureInternal(pTex);
 		}
 		else if(!is_managed && is_rendertarget)
 		{
-			DevMsg(3, "Restoring rentertarget %s\n", pTex->GetName());
+			DevMsg(DEVMSG_SHADERAPI, "Restoring rentertarget %s\n", pTex->GetName());
 			InternalCreateRenderTarget(m_pD3DDevice, pTex, pTex->GetFlags());
 		}
 
 		pTex->released = false;
 	}
 
-	DevMsg(3, "Restoring backbuffer...\n");
+	DevMsg(DEVMSG_SHADERAPI, "Restoring backbuffer...\n");
 
 	// this is a last operation because we
 	CreateD3DFrameBufferSurfaces();
@@ -1380,7 +1380,7 @@ void ShaderAPID3DX9::FreeTexture(ITexture* pTexture)
 
 	if(pTex->Ref_Count() <= 0)
 	{
-		DevMsg(3,"Texture unloaded: %s\n",pTexture->GetName());
+		DevMsg(DEVMSG_SHADERAPI,"Texture unloaded: %s\n",pTexture->GetName());
 
 		m_TextureList.remove(pTexture);
 		delete pTex;
@@ -1396,7 +1396,7 @@ bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nF
 {
 	if (IsDepthFormat(tex->GetFormat()))
 	{
-		DevMsg(3, "InternalCreateRenderTarget: creating depth/stencil surface\n");
+		DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating depth/stencil surface\n");
 
 		LPDIRECT3DSURFACE9 pSurface = NULL;
 
@@ -1419,7 +1419,7 @@ bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nF
 
 			LPDIRECT3DBASETEXTURE9 pTexture = NULL;
 
-			DevMsg(3, "InternalCreateRenderTarget: creating cubemap target\n");
+			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating cubemap target\n");
 			if (dev->CreateCubeTexture(tex->GetWidth(), tex->mipMapped? 0 : 1, tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DCUBETEXTURE9 *) &pTexture, NULL) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' cubemap render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
@@ -1445,7 +1445,7 @@ bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nF
 
 			tex->m_pool = D3DPOOL_DEFAULT;
 
-			DevMsg(3, "InternalCreateRenderTarget: creating render target single texture\n");
+			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating render target single texture\n");
 			if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->mipMapped? 0 : 1, tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DTEXTURE9 *) &pTexture, NULL) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
@@ -1909,7 +1909,7 @@ void ShaderAPID3DX9::DestroyVertexFormat(IVertexFormat* pFormat)
 		Apply();
 	}
 
-	DevMsg(3,"Destroying vertex format\n");
+	DevMsg(DEVMSG_SHADERAPI,"Destroying vertex format\n");
 
 	if(pVF->m_pVertexDecl)
 		pVF->m_pVertexDecl->Release();
@@ -1931,7 +1931,7 @@ void ShaderAPID3DX9::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 	Reset(STATE_RESET_VBO);
 	Apply();
 
-	DevMsg(3,"Destroying vertex buffer\n");
+	DevMsg(DEVMSG_SHADERAPI,"Destroying vertex buffer\n");
 
 	if(pVB->m_pVertexBuffer)
 		pVB->m_pVertexBuffer->Release();
@@ -1954,7 +1954,7 @@ void ShaderAPID3DX9::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 	Reset(STATE_RESET_VBO);
 	Apply();
 
-	DevMsg(3,"Destroying index buffer\n");
+	DevMsg(DEVMSG_SHADERAPI,"Destroying index buffer\n");
 
 	if(pIB->m_pIndexBuffer)
 		pIB->m_pIndexBuffer->Release();
@@ -2883,7 +2883,7 @@ IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(BufferAccessType_e nBufAccess,
 	pBuffer->m_nStrideSize = strideSize;
 	pBuffer->m_nInitialSize = nNumVerts*strideSize;
 
-	DevMsg(3,"Creatting VBO with size %i KB\n", pBuffer->m_nSize / 1024);
+	DevMsg(DEVMSG_SHADERAPI,"Creatting VBO with size %i KB\n", pBuffer->m_nSize / 1024);
 
 	HRESULT hr = m_pD3DDevice->TestCooperativeLevel();
 
@@ -2933,7 +2933,7 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, Bu
 
 	bool dynamic = (pBuffer->m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
-	DevMsg(3,"Creatting IBO with size %i KB\n",(nIndices*nIndexSize) / 1024);
+	DevMsg(DEVMSG_SHADERAPI,"Creatting IBO with size %i KB\n",(nIndices*nIndexSize) / 1024);
 
 	HRESULT hr = m_pD3DDevice->TestCooperativeLevel();
 

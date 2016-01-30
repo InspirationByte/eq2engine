@@ -20,7 +20,64 @@ Threading::CEqMutex g_debugOutputMutex;
 extern bool bDoLogs;
 extern bool bLoggingInitialized;
 
-ConVar developer("developer","0","Enable developer messages (2 is verbose)",CV_CHEAT);
+int g_developerMode = 0;
+
+void cc_developer_f( DkList<EqString>* args )
+{
+	if(CMD_ARGC == 0)
+	{
+		Msg("Usage: developer <string1> [string2] ...");
+		Msg("supported modes:\n");
+		Msg("\tcore\n");
+		Msg("\tlocale\n");
+		Msg("\tfilesys\n");
+		Msg("\tmatsys\n");
+		Msg("\renderert\n");
+		Msg("\tsound\n");
+		Msg("\tnetwork\n");
+		Msg("\tall\n");
+		Msg("use 'developer disable' to turn off\n");
+		return;
+	}
+
+	int newMode = 0;
+
+	for(int i = 0; i < args->numElem(); i++)
+	{
+		EqString& str = args->ptr()[i];
+
+		if( !str.CompareCaseIns("disable"))
+		{
+			g_developerMode = 0;
+			break;
+		}
+		else if( !str.CompareCaseIns("all") )
+			newMode = DEVMSG_ALL;
+		else if( !str.CompareCaseIns("core") )
+			newMode |= DEVMSG_CORE;
+		else if( !str.CompareCaseIns("locale") )
+			newMode |= DEVMSG_LOCALE;
+		else if( !str.CompareCaseIns("filesys") )
+			newMode |= DEVMSG_FS;
+		else if( !str.CompareCaseIns("matsys") )
+			newMode |= DEVMSG_MATSYSTEM;
+		else if( !str.CompareCaseIns("renderer") )
+			newMode |= DEVMSG_SHADERAPI;
+		else if( !str.CompareCaseIns("sound") )
+			newMode |= DEVMSG_SOUND;
+		else if( !str.CompareCaseIns("network") )
+			newMode |= DEVMSG_NETWORK;
+		else if( !str.CompareCaseIns("game") )
+			newMode |= DEVMSG_GAME;
+		else 
+			newMode = atoi( str.c_str() );
+	}
+
+	if( newMode > 0 )
+		g_developerMode = newMode;
+}
+
+ConCommand c_developer("developer",cc_developer_f,"Sets developer modes",CV_CHEAT);
 
 // Default spew
 void DefaultSpewFunc(SpewType_t type,const char* pMsg)
@@ -191,14 +248,11 @@ IEXPORTS void MsgAccept(const char *fmt,...)
 }
 
 // Developer messages
-IEXPORTS void DevMsg(int level,const char *fmt,...)
+IEXPORTS void DevMsg(int level, const char *fmt,...)
 {
 	// Don't print messages that lower than developer level
-	if(developer.GetInt() != 6)
-	{
-		if(developer.GetInt() != level)
-			return;
-	}
+	if( !(level & g_developerMode) )
+		return;
 
 	va_list argptr;
 

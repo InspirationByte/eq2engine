@@ -212,7 +212,7 @@ public:
 
 		if(pTex->Ref_Count() <= 0)
 		{
-			DevMsg(3,"Texture unloaded: %s\n",pTexture->GetName());
+			DevMsg(DEVMSG_SHADERAPI,"Texture unloaded: %s\n",pTexture->GetName());
 
 			m_TextureList.remove(pTexture);
 			delete pTex;

@@ -533,7 +533,7 @@ void CMaterialSystem::FreeMaterials(bool bFreeAll)
 {
 	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
 	{
-		DevMsg(2, "freeing %s\n", m_pLoadedMaterials[i]->GetName());
+		DevMsg(DEVMSG_MATSYSTEM, "freeing %s\n", m_pLoadedMaterials[i]->GetName());
 
 		((CMaterial*)m_pLoadedMaterials[i])->Cleanup();
 		CMaterial* pMaterial = (CMaterial*)m_pLoadedMaterials[i];
@@ -554,7 +554,7 @@ void CMaterialSystem::FreeMaterial(IMaterial *pMaterial)
 	if(pMaterial->Ref_Count() <= 0)
 	{
 		((CMaterial*)pMaterial)->Cleanup();
-		DevMsg(2,"Material unloaded: %s\n",pMaterial->GetName());
+		DevMsg(DEVMSG_MATSYSTEM,"Material unloaded: %s\n",pMaterial->GetName());
 
 		m_pLoadedMaterials.fastRemove(pMaterial);
 		delete ((CMaterial*)pMaterial);
@@ -572,7 +572,7 @@ void CMaterialSystem::RegisterShader(const char* pszShaderName, DISPATCH_CREATE_
 		}
 	}
 
-	DevMsg(2, "Registering shader '%s'\n", pszShaderName);
+	DevMsg(DEVMSG_MATSYSTEM, "Registering shader '%s'\n", pszShaderName);
 
 	shaderfactory_t newShader;
 

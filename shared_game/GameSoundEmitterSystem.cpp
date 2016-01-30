@@ -816,7 +816,7 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 	if(!kv.LoadFromFile(fileName))
 		return;
 
-	DevMsg(2, "Loading sound script file '%s'\n", fileName);
+	DevMsg(DEVMSG_SOUND, "Loading sound script file '%s'\n", fileName);
 
 	for(int i = 0; i <  kv.GetRootSection()->keys.numElem(); i++)
 	{

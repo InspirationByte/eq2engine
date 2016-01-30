@@ -199,7 +199,7 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 	else
 		m_vendor = VENDOR_OTHER;
 
-	DevMsg(3, "[DEBUG] ShaderAPIGL vendor: %d\n", m_vendor);
+	DevMsg(DEVMSG_SHADERAPI, "[DEBUG] ShaderAPIGL vendor: %d\n", m_vendor);
 
 	m_mainThreadId = Threading::GetCurrentThreadID();
 	m_currThreadId = m_mainThreadId;
@@ -903,7 +903,7 @@ void ShaderAPIGL::FreeTexture(ITexture* pTexture)
 
 	if(pTex->Ref_Count() <= 0)
 	{
-		DevMsg(3,"Texture unloaded: %s\n",pTex->GetName());
+		DevMsg(DEVMSG_SHADERAPI,"Texture unloaded: %s\n",pTex->GetName());
 
 		m_TextureList.remove(pTexture);
 		delete pTex;
@@ -2062,14 +2062,14 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		gl::GetProgramiv(prog->m_program, gl::OBJECT_ACTIVE_UNIFORMS_ARB, &uniformCount);
 		gl::GetProgramiv(prog->m_program, gl::OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &maxLength);
 
-		DevMsg(3, "[DEBUG] shader '%s' has %d samplers and uniforms (namelen=%d)\n", pShaderOutput->GetName(), uniformCount, maxLength);
+		DevMsg(DEVMSG_SHADERAPI, "[DEBUG] shader '%s' has %d samplers and uniforms (namelen=%d)\n", pShaderOutput->GetName(), uniformCount, maxLength);
 
 		if(maxLength == 0 && uniformCount > 0 || uniformCount > 256)
 		{
 			if(m_vendor == VENDOR_INTEL)
-				DevMsg(3, "Guess who? It's Intel! uniformCount to be zeroed\n");
+				DevMsg(DEVMSG_SHADERAPI, "Guess who? It's Intel! uniformCount to be zeroed\n");
 			else
-				DevMsg(3, "I... didn't... expect... that! uniformCount to be zeroed\n");
+				DevMsg(DEVMSG_SHADERAPI, "I... didn't... expect... that! uniformCount to be zeroed\n");
 
 			uniformCount = 0;
 		}
@@ -2097,7 +2097,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				GLint location = gl::GetUniformLocation(prog->m_program, tmpName);
 				gl::Uniform1i(location, nSamplers);
 
-				DevMsg(3, "[DEBUG] retrieving sampler '%s' at %d (location = %d)\n", tmpName, nSamplers, location);
+				DevMsg(DEVMSG_SHADERAPI, "[DEBUG] retrieving sampler '%s' at %d (location = %d)\n", tmpName, nSamplers, location);
 
 				sp->index = nSamplers;
 				strcpy(sp->name, tmpName);
@@ -2108,7 +2108,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				// Store all non-gl uniforms
 				if (strncmp(tmpName, "gl_", 3) != 0)
 				{
-					DevMsg(3, "[DEBUG] retrieving uniform '%s' at %d\n", tmpName, nUniforms);
+					DevMsg(DEVMSG_SHADERAPI, "[DEBUG] retrieving uniform '%s' at %d\n", tmpName, nUniforms);
 
 					char *bracket = strchr(tmpName, '[');
 					if (bracket == NULL || (bracket[1] == '0' && bracket[2] == ']'))
@@ -2328,7 +2328,7 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(BufferAccessType_e nBufAccess, in
 	pGLVertexBuffer->m_strideSize = strideSize;
 	pGLVertexBuffer->m_usage = glBufferUsages[nBufAccess];
 
-	DevMsg(3,"Creatting VBO with size %i KB\n", pGLVertexBuffer->GetSizeInBytes() / 1024);
+	DevMsg(DEVMSG_SHADERAPI,"Creatting VBO with size %i KB\n", pGLVertexBuffer->GetSizeInBytes() / 1024);
 
 	ThreadingSharingRequest();
 	gl::GenBuffers(1, &pGLVertexBuffer->m_nGL_VB_Index);
@@ -2350,7 +2350,7 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, Buffe
 	pGLIndexBuffer->m_nIndexSize = nIndexSize;
 	pGLIndexBuffer->m_usage = glBufferUsages[nBufAccess];
 
-	DevMsg(3,"Creatting IBO with size %i KB\n", (nIndices*nIndexSize) / 1024);
+	DevMsg(DEVMSG_SHADERAPI,"Creatting IBO with size %i KB\n", (nIndices*nIndexSize) / 1024);
 
 	int size = nIndices * nIndexSize;
 

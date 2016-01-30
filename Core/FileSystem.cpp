@@ -574,8 +574,6 @@ IFile* CFileSystem::GetFileHandle(const char* file_name_to_check,const char* opt
     if (flags == -1)
         flags |= SP_MOD | SP_DATA | SP_ROOT;
 
-	DevMsg(4,"Attemped to open file %s\n",file_name_to_check);
-
     char pFilePath[ MAX_PATH ];
     strcpy( pFilePath, file_name_to_check );
     FixSlashes(pFilePath);

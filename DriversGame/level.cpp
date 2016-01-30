@@ -558,7 +558,7 @@ bool CLevelModel::GenereateRenderData()
 		int vb_lock_size = m_numVerts;
 		int ib_lock_size = m_numIndices;
 
-		DevMsg(2, "Creating model buffer, %d verts %d indices in %d batches\n", m_numVerts, m_numIndices, m_numBatches);
+		DevMsg(DEVMSG_CORE, "Creating model buffer, %d verts %d indices in %d batches\n", m_numVerts, m_numIndices, m_numBatches);
 
 		m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(bufferType, vb_lock_size, sizeof(lmodeldrawvertex_t), m_verts);
 		m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(ib_lock_size, sizeof(uint32), bufferType, m_indices);
@@ -1462,12 +1462,12 @@ void CGameLevel::Cleanup()
 
 	StopThread();
 
-	DevMsg(2, "Stopping loader thread...\n");
+	DevMsg(DEVMSG_CORE, "Stopping loader thread...\n");
 
 	// remove regions first
 	int num = m_wide*m_tall;
 
-	DevMsg(2, "Unloading regions...\n");
+	DevMsg(DEVMSG_CORE, "Unloading regions...\n");
 	for(int i = 0; i < num; i++)
 	{
 		m_regions[i].Cleanup();
@@ -1488,7 +1488,7 @@ void CGameLevel::Cleanup()
 		delete [] m_occluderOffsets;
 	m_occluderOffsets = NULL;
 
-	DevMsg(2, "Freeing object definitions...\n");
+	DevMsg(DEVMSG_CORE, "Freeing object definitions...\n");
 	for(int i = 0; i < m_objectDefs.numElem(); i++)
 		delete m_objectDefs[i];
 
@@ -1559,16 +1559,16 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 		}
 		else if(lump.type == LEVLUMP_REGIONINFO)
 		{
-			DevMsg(2,"LEVLUMP_REGIONINFO size = %d", lump.size);
+			DevMsg(DEVMSG_CORE,"LEVLUMP_REGIONINFO size = %d", lump.size);
 
 			ReadRegionInfo(pFile);
 
 			float loadTime = Platform_GetCurrentTime()-startLumpTime;
-			DevMsg(2, " took %g seconds\n", loadTime);
+			DevMsg(DEVMSG_CORE, " took %g seconds\n", loadTime);
 		}
 		else if(lump.type == LEVLUMP_REGIONS)
 		{
-			DevMsg(2, "LEVLUMP_REGIONS size = %d\n", lump.size);
+			DevMsg(DEVMSG_CORE, "LEVLUMP_REGIONS size = %d\n", lump.size);
 
 			m_regionDataLumpOffset = pFile->Tell();
 
@@ -1595,7 +1595,7 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 		}
 		else if(lump.type == LEVLUMP_ROADS)
 		{
-			DevMsg(2, "LEVLUMP_ROADS size = %d\n", lump.size);
+			DevMsg(DEVMSG_CORE, "LEVLUMP_ROADS size = %d\n", lump.size);
 
 			int lump_pos = pFile->Tell();
 
@@ -1609,7 +1609,7 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 		}
 		else if(lump.type == LEVLUMP_OCCLUDERS)
 		{
-			DevMsg(2, "LEVLUMP_OCCLUDERS size = %d\n", lump.size);
+			DevMsg(DEVMSG_CORE, "LEVLUMP_OCCLUDERS size = %d\n", lump.size);
 
 			int lump_pos = pFile->Tell();
 
@@ -1623,7 +1623,7 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 		}
 		else if(lump.type == LEVLUMP_OBJECTDEFS)
 		{
-			DevMsg(2, "LEVLUMP_OBJECTDEFS size = %d\n", lump.size);
+			DevMsg(DEVMSG_CORE, "LEVLUMP_OBJECTDEFS size = %d\n", lump.size);
 #ifndef EDITOR
 			MsgWarning("Seems like level uses models from editor list, it means that level is not fully built!\n");
 #endif // EDITOR
@@ -1631,12 +1631,12 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 		}
 		else if(lump.type == LEVLUMP_HEIGHTFIELDS)
 		{
-			DevMsg(2, "LEVLUMP_HEIGHTFIELDS size = %d", lump.size);
+			DevMsg(DEVMSG_CORE, "LEVLUMP_HEIGHTFIELDS size = %d", lump.size);
 
 			ReadHeightfieldsLump(pFile);
 
 			float loadTime = Platform_GetCurrentTime()-startLumpTime;
-			DevMsg(2, " took %g seconds\n", loadTime);
+			DevMsg(DEVMSG_CORE, " took %g seconds\n", loadTime);
 		}
 
 		// TODO: other lumps
@@ -1650,7 +1650,7 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 	GetFileSystem()->Close(pFile);
 
 	float loadTime = Platform_GetCurrentTime()-startLoadTime;
-	DevMsg(2, "*** Level file read for %g seconds\n", loadTime);
+	DevMsg(DEVMSG_CORE, "*** Level file read for %g seconds\n", loadTime);
 
 	m_levelName = levelname;
 
@@ -1676,7 +1676,7 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 		m_numRegions = m_wide*m_tall;
 	}
 
-	DevMsg(2,"Creating map %d x %d regions (cell count = %d)\n", m_wide, m_tall, m_cellsSize);
+	DevMsg(DEVMSG_CORE,"Creating map %d x %d regions (cell count = %d)\n", m_wide, m_tall, m_cellsSize);
 
 	int nStepSize = HFIELD_POINT_SIZE*m_cellsSize;
 
@@ -1737,7 +1737,7 @@ void CGameLevel::ReadRegionInfo(IVirtualStream* stream)
 
 	m_numRegions = hdr.numRegions;
 
-	DevMsg(2,"[FILE] map %d x %d regions (cell count = %d) regs = %d\n", hdr.numRegionsWide, hdr.numRegionsTall, hdr.cellsSize, m_numRegions);
+	DevMsg(DEVMSG_CORE,"[FILE] map %d x %d regions (cell count = %d) regs = %d\n", hdr.numRegionsWide, hdr.numRegionsTall, hdr.cellsSize, m_numRegions);
 
 	int gridArraySize = hdr.numRegionsWide* hdr.numRegionsTall;
 
@@ -3635,14 +3635,14 @@ int CGameLevel::UpdateRegionLoading()
 				PreloadRegion(x,y);
 
 				numLoadedRegions++;
-				DevMsg(2, "Region %d loaded\n", idx);
+				DevMsg(DEVMSG_CORE, "Region %d loaded\n", idx);
 			}
 		}
 	}
 
 	float loadTime = Platform_GetCurrentTime()-startLoadTime;
 	if (numLoadedRegions)
-		DevMsg(2, "*** %d regions loaded for %g seconds\n", numLoadedRegions, loadTime);
+		DevMsg(DEVMSG_CORE, "*** %d regions loaded for %g seconds\n", numLoadedRegions, loadTime);
 
 	// wait for matsystem
 	if(numLoadedRegions)
@@ -3679,7 +3679,7 @@ int CGameLevel::UpdateRegions( RegionLoadUnloadCallbackFunc func )
 				m_regions[idx].m_scriptEventCallbackCalled = false;
 
 				numFreedRegions++;
-				DevMsg(2, "Region %d freed\n", idx);
+				DevMsg(DEVMSG_CORE, "Region %d freed\n", idx);
 			}
 			else
 			{

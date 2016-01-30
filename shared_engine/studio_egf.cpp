@@ -227,7 +227,7 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 
 void CEngineStudioEGF::DestroyModel()
 {
-	DevMsg(2, "CEngineStudioEGF::DestroyModel()\n");
+	DevMsg(DEVMSG_CORE, "CEngineStudioEGF::DestroyModel()\n");
 
 	// instancer is removed here if set
 	if(m_instancer != NULL)
@@ -611,7 +611,7 @@ void CEngineStudioEGF::LoadMotionPackages()
 {
 	studiohdr_t* pHdr = m_pHardwareData->pStudioHdr;
 
-	DevMsg(2, "Loading animations for '%s'\n", m_szPath.c_str());
+	DevMsg(DEVMSG_CORE, "Loading animations for '%s'\n", m_szPath.c_str());
 
 	// Try load default motion file
 	m_pHardwareData->motiondata[0] = Studio_LoadMotionData(( m_szPath.Path_Strip_Ext() + ".mop").GetData(), pHdr->numbones);
@@ -619,7 +619,7 @@ void CEngineStudioEGF::LoadMotionPackages()
 	if(m_pHardwareData->motiondata[0])
 		m_pHardwareData->numMotionPackages++;
 	else
-		DevMsg(2, "Can't open motion data package, skipped\n");
+		DevMsg(DEVMSG_CORE, "Can't open motion data package, skipped\n");
 
 	// load external motion packages if available
 	for(int i = 0; i < pHdr->nummotionpackages; i++)

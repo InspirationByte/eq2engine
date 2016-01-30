@@ -389,7 +389,7 @@ void CAnimatedModel::PreloadMotionData(studiomotiondata_t* pMotionData)
 	{
 		sequencedesc_t* seqdatadesc = &pMotionData->sequences[i];
 
-		//DevMsg(1,"%s, %s\n", seqdatadesc->name, seqdatadesc->activity);
+		//DevMsg(DEVMSG_GAME,"%s, %s\n", seqdatadesc->name, seqdatadesc->activity);
 
 		gsequence_t mod_sequence;
 		memset(&mod_sequence, 0, sizeof(mod_sequence));
@@ -502,7 +502,7 @@ void CAnimatedModel::SetActivity(Activity act,int slot)
 		}
 	}
 
-	DevMsg(1, "Activity \"%s\" not found!\n", GetActivityName(act));
+	DevMsg(DEVMSG_GAME, "Activity \"%s\" not found!\n", GetActivityName(act));
 }
 
 // returns current activity

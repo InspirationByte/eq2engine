@@ -199,10 +199,10 @@ void cc_addpackage(DkList<EqString>* args)
 ConCommand *c_disable_log;
 ConCommand *c_addpackage;
 
-extern ConVar developer;
-
 void PPMemInit();
 void PPMemShutdown();
+
+extern void cc_developer_f( DkList<EqString>* args );
 
 // Definition that we can't see or change throught console
 bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
@@ -275,7 +275,17 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		if(pAppDebug->FindKeyBase("PrintLeaksOnExit", KV_FLAG_NOVALUE))
 			g_bPrintLeaksOnShutdown = true;
 
-		developer.SetInt(KV_GetValueInt(pAppDebug->FindKeyBase("DeveloperMode"), 0, 0));
+		DkList<EqString> devModeList;
+
+		kvkeybase_t* devModesKv = pAppDebug->FindKeyBase("DeveloperMode");
+		if(devModesKv)
+		{
+			for(int i = 0; i < devModesKv->values.numElem();i++)
+				devModeList.append(devModesKv->values[i]);
+
+			if(devModeList.numElem())
+				cc_developer_f( &devModeList );
+		}
 
 		kvkeybase_t* pForceLogged = pAppDebug->FindKeyBase("ForceLogApplications");
 		if(pForceLogged)

@@ -172,7 +172,7 @@ void STA_CheckError(bool checkFatal = false)
 	if(checkFatal)
 		MsgError("AUDIO ERROR: %s\n", getALErrorString(alErr));
 	else
-		DevMsg(2, "AUDIO ERROR: %s\n", getALErrorString(alErr));
+		DevMsg(DEVMSG_SOUND, "AUDIO ERROR: %s\n", getALErrorString(alErr));
 }
 
 // Effect objects
@@ -327,7 +327,7 @@ void DkSoundSystemLocal::Init()
 
 	int max_sends = 0;
 	alcGetIntegerv(m_dev, ALC_MAX_AUXILIARY_SENDS, 1, &max_sends);
-	MsgInfo("Sound: max effect slots is: %d\n", max_sends);
+	DevMsg(DEVMSG_SOUND,"Sound: max effect slots is: %d\n", max_sends);
 
 	InitEffects();
 
@@ -432,7 +432,7 @@ void DkSoundSystemLocal::InitEffects()
 				continue;
 			}
 
-			MsgWarning("registering sound effect '%s'\n", effect.name);
+			DevMsg(DEVMSG_SOUND,"registering sound effect '%s'\n", effect.name);
 
 			m_effects.append(effect);
 		}

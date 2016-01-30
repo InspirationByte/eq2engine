@@ -30,7 +30,7 @@ void CMaterial::Init(const char* szFileName_noExt, bool flushMatVarsOnly)
 	if( m_szMaterialName.c_str()[0] == '/' ||  m_szMaterialName.c_str()[0] == '\\' )
 		m_szMaterialName = m_szMaterialName.c_str()+1;
 
-	DevMsg(2, "Loading material '%s'\n",szFileName_noExt);
+	DevMsg(DEVMSG_MATSYSTEM, "Loading material '%s'\n",szFileName_noExt);
 
 	InitVars();
 }

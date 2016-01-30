@@ -528,7 +528,7 @@ bool CEngineGame::LoadGame( bool loadSaved )
 
 		strcpy(gpGlobals->worldname, m_sLevelName.GetData());
 
-		DevMsg(2, "World loading time: %f ms\n", MEASURE_TIME_STATS(measure_loadw));
+		DevMsg(DEVMSG_CORE, "World loading time: %f ms\n", MEASURE_TIME_STATS(measure_loadw));
 	}
 
 	m_bIsGameLoaded = true;

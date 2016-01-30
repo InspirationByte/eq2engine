@@ -224,6 +224,8 @@ bool DkSoundSampleLocal::Load()
 
 	bool status = false;
 
+	DevMsg(DEVMSG_SOUND,"Loading sound sample '%s'\n", m_szName.c_str());
+
 	if(!stricmp(ext.GetData(),"wav"))
 	{
 		status = LoadWav( m_szName.c_str(), m_nALBuffer );

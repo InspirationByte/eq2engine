@@ -369,7 +369,7 @@ bool CEqLevel::LoadCompatibleWorldFile(const char* pszFileName)
 
 	ubyte* pLump = ((ubyte*)pHdr + sizeof(eqworldhdr_t));
 
-	DevMsg(2, "Loading %s lumps (%d)...\n", pszFileName, pHdr->num_lumps);
+	DevMsg(DEVMSG_CORE, "Loading %s lumps (%d)...\n", pszFileName, pHdr->num_lumps);
 
 	int nSectorSurfaceLumps = 0;
 
@@ -405,7 +405,7 @@ bool CEqLevel::LoadCompatibleWorldFile(const char* pszFileName)
 
 		int data_size = lump_data->data_size;
 
-		DevMsg(2, "Lump: %s\n", EQWORLD_LUMP_NAMES[lump_data->data_type]);
+		DevMsg(DEVMSG_CORE, "Lump: %s\n", EQWORLD_LUMP_NAMES[lump_data->data_type]);
 
 		switch(lump_data->data_type)
 		{
@@ -528,7 +528,7 @@ bool CEqLevel::LoadCompatibleWorldFile(const char* pszFileName)
 
 bool CEqLevel::LoadEntities(eqworldlump_t* pLump)
 {
-	DevMsg(2, "Loading entities\n");
+	DevMsg(DEVMSG_CORE, "Loading entities\n");
 
 	// load entities
 	ubyte* pEntityData = (ubyte*)pLump + sizeof(eqworldlump_t);
@@ -666,7 +666,7 @@ void CEqLevel::InitMaterials(eqworldlump_t* pMaterials)
 	m_numMaterials = pMaterials->data_size / sizeof(eqlevelmaterial_t);
 	eqlevelmaterial_t* pMaterialStrings = (eqlevelmaterial_t*)(((ubyte*)pMaterials) + sizeof(eqworldlump_t));
 
-	DevMsg(2, "Loading materials...\n");
+	DevMsg(DEVMSG_CORE, "Loading materials...\n");
 
 	m_pMaterials = new IMaterial*[m_numMaterials];
 	//m_nMaterialRenderCounter = DNewArray(int, m_numMaterials);
@@ -837,7 +837,7 @@ int CEqLevel::GetPhysicsSurfaces(eqphysicsvertex_t** ppVerts, int** ppIndices, e
 
 void CEqLevel::LoadPhysicsData(eqworldlump_t* pSurf, eqworldlump_t* pVerts, eqworldlump_t* pIndices)
 {
-	DevMsg(2, "Loading physics...\n");
+	DevMsg(DEVMSG_CORE, "Loading physics...\n");
 
 	int numPhysVerts = pVerts->data_size / sizeof(eqphysicsvertex_t);
 	eqphysicsvertex_t* pPhysVertexData = (eqphysicsvertex_t*)(((ubyte*)pVerts) + sizeof(eqworldlump_t));

@@ -827,7 +827,6 @@ void ObjectSoundEvents(IPhysicsObject* pObject, BaseEntity* pOwner)
 		physicsContactEvent_t* contact = pObject->GetContactEvent(i);
 
 		float fContactImpulse = contact->fImpulse;
-		DevMsg(1, "Contact impulse: %f\n", fContactImpulse);
 
 		if(fContactImpulse < ph_contact_min_momentum.GetFloat())
 			continue;
