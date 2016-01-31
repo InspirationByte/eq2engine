@@ -5,7 +5,10 @@
 // Description: Driver Syndicate level generator
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "Level.h"
+#include "materialsystem/IMaterialSystem.h"
+
+#include "level.h"
+#include "region.h"
 
 #define DEFAULT_ASPHALT_MATERIAL	"tools/default_road"
 #define DEFAULT_SIDEWALK_MATERIAL	"tools/default_side"

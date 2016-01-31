@@ -102,9 +102,9 @@ enum
 
 BEGIN_EVENT_TABLE(CMainWindow, wxFrame)
 	EVT_SIZE(OnSize)
-	EVT_ERASE_BACKGROUND(OnEraseBackground)
-	EVT_IDLE(OnIdle)
-	EVT_PAINT(OnPaint)
+	//EVT_ERASE_BACKGROUND(OnEraseBackground)
+	//EVT_IDLE(OnIdle)
+	//EVT_PAINT(OnPaint)
 	EVT_COMBOBOX(-1, OnComboboxChanged)
 	EVT_BUTTON(-1, OnButtons)
 	EVT_SLIDER(-1, OnButtons)
@@ -112,6 +112,13 @@ BEGIN_EVENT_TABLE(CMainWindow, wxFrame)
 	EVT_MENU_RANGE(Event_File_New, Event_Max_Menu_Range, ProcessAllMenuCommands)
 
 	EVT_SIZE(OnSize)
+
+	EVT_LEFT_DOWN(ProcessMouseEnter)
+	EVT_LEFT_UP(ProcessMouseLeave)
+	EVT_MIDDLE_DOWN(ProcessMouseEnter)
+	EVT_MIDDLE_UP(ProcessMouseLeave)
+	EVT_RIGHT_DOWN(ProcessMouseEnter)
+	EVT_RIGHT_UP(ProcessMouseLeave)
 
 	/*
 	EVT_KEY_DOWN(ProcessKeyboardDownEvents)
@@ -171,7 +178,7 @@ void InitMatSystem(HWND window)
 		materials_config.shaderapi_params.bIsWindowed = true;
 		materials_config.shaderapi_params.hWindow = window;
 		materials_config.shaderapi_params.nScreenFormat = format;
-		materials_config.shaderapi_params.bEnableVerticalSync = true;
+		materials_config.shaderapi_params.bEnableVerticalSync = false;
 
 		bool materialSystemStatus = materials->Init("materials/", "EqD3D9RHI", materials_config);
 
@@ -215,6 +222,7 @@ void InitMatSystem(HWND window)
 }
 
 void InitScene();
+
 
 CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) 
 	: wxFrame( parent, id, title, pos, size, style )
@@ -339,7 +347,14 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	debugoverlay->Init();
 
+		//EVT_ERASE_BACKGROUND(OnEraseBackground)
+	//EVT_IDLE(OnIdle)
+	//EVT_PAINT(OnPaint)
 	
+	m_pRenderPanel->Connect(wxEVT_ERASE_BACKGROUND, wxEraseEventHandler(CMainWindow::OnEraseBackground), NULL, this);
+	m_pRenderPanel->Connect(wxEVT_IDLE, wxIdleEventHandler(CMainWindow::OnIdle), NULL, this);
+	m_pRenderPanel->Connect(wxEVT_PAINT, wxPaintEventHandler(CMainWindow::OnPaint), NULL, this);
+
 	m_pRenderPanel->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(CMainWindow::ProcessMouseEvents), NULL, this);
 	m_pRenderPanel->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(CMainWindow::ProcessMouseEvents), NULL, this);
 	m_pRenderPanel->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(CMainWindow::ProcessMouseEvents), NULL, this);
@@ -360,10 +375,12 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	m_pRenderPanel->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&CMainWindow::ProcessKeyboardDownEvents, NULL, this);
 	m_pRenderPanel->Connect(wxEVT_KEY_UP, (wxObjectEventFunction)&CMainWindow::ProcessKeyboardUpEvents, NULL, this);
+
 	
+
 	/*
-	m_pRenderPanel->Connect(wxEVT_LEFT_DOWN, (wxObjectEventFunction)&CMainWindow::ProcessMouseEnter, NULL, this);
-	m_pRenderPanel->Connect(wxEVT_LEFT_UP, (wxObjectEventFunction)&CMainWindow::ProcessMouseLeave, NULL, this);
+	m_pRenderPanel->Connect(wxEVT_ENTER_WINDOW, (wxObjectEventFunction)&CMainWindow::ProcessMouseEnter, NULL, this);
+	m_pRenderPanel->Connect(wxEVT_LEAVE_WINDOW, (wxObjectEventFunction)&CMainWindow::ProcessMouseLeave, NULL, this);
 
 	m_pRenderPanel->Connect(wxEVT_MIDDLE_DOWN, (wxObjectEventFunction)&CMainWindow::ProcessMouseEnter, NULL, this);
 	m_pRenderPanel->Connect(wxEVT_MIDDLE_UP, (wxObjectEventFunction)&CMainWindow::ProcessMouseLeave, NULL, this);
@@ -421,19 +438,18 @@ void InitScene()
 
 void CMainWindow::OnIdle(wxIdleEvent &event)
 {
-	ReDraw();
-
 	event.RequestMore(true);
+	ReDraw();
 }
 
 void CMainWindow::ProcessMouseEnter(wxMouseEvent& event)
 {
-	//CaptureMouse();
+	CaptureMouse();
 }
 
 void CMainWindow::ProcessMouseLeave(wxMouseEvent& event)
 {
-	//ReleaseMouse();
+	ReleaseMouse();
 }
 
 void CMainWindow::MakeEnvironmentListMenu()
@@ -986,6 +1002,7 @@ void CMainWindow::ReDraw()
 	// compute time since last frame
 	g_realtime = Platform_GetCurrentTime();
 	
+	/*
 	float fps = 1000;
 
 	if ( fps != 0 )
@@ -998,7 +1015,7 @@ void CMainWindow::ReDraw()
 
 		if(( g_realtime - g_oldrealtime ) < minframetime )
 			return;
-	}
+	}*/
 	
 	g_frametime = g_realtime - g_oldrealtime;
 	g_oldrealtime = g_realtime;
@@ -1077,7 +1094,7 @@ void CMainWindow::ReDraw()
 		debugoverlay->Draw(g_mProjMat, g_mViewMat, w,h);
 
 		materials->EndFrame( NULL );
-		wxYield();
+		//wxYield();
 	}
 }
 

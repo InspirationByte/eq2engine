@@ -397,6 +397,12 @@
     <ClInclude Include="..\shared_engine\materialsystem\MaterialProxy.h">
       <Filter>Source Files\MatSystem</Filter>
     </ClInclude>
+    <ClInclude Include="..\DriversGame\region.h">
+      <Filter>Source Files\World</Filter>
+    </ClInclude>
+    <ClInclude Include="..\DriversGame\levelobject.h">
+      <Filter>Source Files\World</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Notes.txt" />
@@ -578,6 +584,12 @@
     </ClCompile>
     <ClCompile Include="..\shared_engine\materialsystem\MaterialProxy.cpp">
       <Filter>Source Files\MatSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\region.cpp">
+      <Filter>Source Files\World</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\levelobject.cpp">
+      <Filter>Source Files\World</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

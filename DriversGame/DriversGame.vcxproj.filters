@@ -333,6 +333,12 @@
     <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp">
       <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClCompile>
+    <ClCompile Include="levelobject.cpp">
+      <Filter>Файлы исходного кода\Game\World</Filter>
+    </ClCompile>
+    <ClCompile Include="region.cpp">
+      <Filter>Файлы исходного кода\Game\World</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">
@@ -648,6 +654,12 @@
     </ClInclude>
     <ClInclude Include="..\shared_engine\eqGlobalMutex.h">
       <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="levelobject.h">
+      <Filter>Файлы исходного кода\Game\World</Filter>
+    </ClInclude>
+    <ClInclude Include="region.h">
+      <Filter>Файлы исходного кода\Game\World</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

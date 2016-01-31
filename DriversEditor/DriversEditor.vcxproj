@@ -163,9 +163,11 @@
     <ClInclude Include="..\DriversGame\GameObject.h" />
     <ClInclude Include="..\DriversGame\heightfield.h" />
     <ClInclude Include="..\DriversGame\Level.h" />
+    <ClInclude Include="..\DriversGame\levelobject.h" />
     <ClInclude Include="..\DriversGame\occluderSet.h" />
     <ClInclude Include="..\DriversGame\physics.h" />
     <ClInclude Include="..\DriversGame\Rain.h" />
+    <ClInclude Include="..\DriversGame\region.h" />
     <ClInclude Include="..\DriversGame\world.h" />
     <ClInclude Include="..\public\materialsystem\BaseShader.h" />
     <ClInclude Include="..\shared_engine\Audio\alsnd_stream.h" />
@@ -278,9 +280,11 @@
     <ClCompile Include="..\DriversGame\GameObject.cpp" />
     <ClCompile Include="..\DriversGame\heightfield.cpp" />
     <ClCompile Include="..\DriversGame\level.cpp" />
+    <ClCompile Include="..\DriversGame\levelobject.cpp" />
     <ClCompile Include="..\DriversGame\occluderSet.cpp" />
     <ClCompile Include="..\DriversGame\physics.cpp" />
     <ClCompile Include="..\DriversGame\Rain.cpp" />
+    <ClCompile Include="..\DriversGame\region.cpp" />
     <ClCompile Include="..\DriversGame\ShaderOverrides.cpp" />
     <ClCompile Include="..\DriversGame\Shader_StaticObjs.cpp" />
     <ClCompile Include="..\DriversGame\Shader_VehicleBody.cpp" />

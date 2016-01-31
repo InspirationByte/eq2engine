@@ -7,8 +7,7 @@
 
 #include "AITrafficCar.h"
 #include "session_stuff.h"
-
-
+#include "heightfield.h"
 #include "IDebugOverlay.h"
 #include "world.h"
 #include "math/Volume.h"

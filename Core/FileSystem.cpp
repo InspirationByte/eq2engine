@@ -463,7 +463,7 @@ bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool ove
 
 bool CFileSystem::FileExist(const char* filename, int searchFlags)
 {
-	IFile* pFile = Open(filename,"rb",searchFlags);
+	IFile* pFile = GetFileHandle(filename,"rb",searchFlags);
 
     if (!pFile)
         return false;
@@ -700,7 +700,7 @@ bool CFileSystem::AddPackage(const char* packageName,SearchPath_e type)
 
     if (pPackageReader->SetPackageFilename( packageName ))
     {
-        MsgInfo("Adding package file '%s'\n",packageName);
+        DevMsg(DEVMSG_FS, "Adding package file '%s'\n",packageName);
 
         pPackageReader->SetSearchPath(type);
 		//pPackageReader->SetKey("SdkwIuO4");
@@ -723,7 +723,7 @@ bool CFileSystem::AddPackage(const char* packageName,SearchPath_e type)
 // sets fallback directory for mod
 void CFileSystem::AddSearchPath(const char* pszDir)
 {
-	Msg("Adding search patch '%s'\n", pszDir);
+	DevMsg(DEVMSG_FS, "Adding search patch '%s'\n", pszDir);
 
 	m_FSMutex.Lock();
 	m_directories.append(_Es(pszDir));

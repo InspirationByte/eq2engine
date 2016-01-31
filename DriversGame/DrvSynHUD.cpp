@@ -7,6 +7,7 @@
 
 #include "DrvSynHUD.h"
 #include "AICarManager.h"
+#include "heightfield.h"
 
 static CDrvSynHUDManager s_drvSynHUDManager;
 CDrvSynHUDManager* g_pGameHUD = &s_drvSynHUDManager;

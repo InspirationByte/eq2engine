@@ -158,11 +158,13 @@
     <ClCompile Include="car.cpp" />
     <ClCompile Include="DrvSynHUD.cpp" />
     <ClCompile Include="EventFSM.cpp" />
+    <ClCompile Include="levelobject.cpp" />
     <ClCompile Include="LiteHTMLContainer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="object_scripted.cpp" />
     <ClCompile Include="occluderSet.cpp" />
+    <ClCompile Include="region.cpp" />
     <ClCompile Include="state_mainmenu.cpp" />
     <ClCompile Include="game_singleplayer.cpp" />
     <ClCompile Include="LuaBinding_Drivers.cpp" />
@@ -286,6 +288,7 @@
     <ClInclude Include="EventFSM.h" />
     <ClInclude Include="DrvSynHUD.h" />
     <ClInclude Include="game_singleplayer.h" />
+    <ClInclude Include="levelobject.h" />
     <ClInclude Include="LiteHTMLContainer.h" />
     <ClInclude Include="LuaBinding_Drivers.h" />
     <ClInclude Include="object_debris.h" />
@@ -309,6 +312,7 @@
     <ClInclude Include="occluderSet.h" />
     <ClInclude Include="predictablerandom.h" />
     <ClInclude Include="Rain.h" />
+    <ClInclude Include="region.h" />
     <ClInclude Include="Resources\resource.h" />
     <ClInclude Include="session_stuff.h" />
     <ClInclude Include="state_game.h" />
