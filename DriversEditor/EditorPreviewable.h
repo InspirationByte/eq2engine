@@ -28,4 +28,6 @@ protected:
 	bool		m_dirtyPreview;
 };
 
+void UTIL_CopyRendertargetToTexture(ITexture* rt, ITexture* dest);
+
 #endif // EDITORPREVIEWABLE_H

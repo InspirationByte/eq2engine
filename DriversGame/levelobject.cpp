@@ -40,30 +40,6 @@ CLevObjectDef::~CLevObjectDef()
 
 #define PREVIEW_BOX_SIZE 256
 
-void CopyRendertargetToTexture(ITexture* rt, ITexture* dest)
-{
-	g_pShaderAPI->Reset(STATE_RESET_TEX);
-
-	texlockdata_t readFrom;
-	texlockdata_t writeTo;
-	memset(&readFrom, 0, sizeof(readFrom));
-
-	rt->Lock(&readFrom, NULL, false, true);
-
-	if(readFrom.pData)
-	{
-		dest->Lock(&writeTo, NULL, true, false);
-
-		if(writeTo.pData)
-		{
-			memcpy(writeTo.pData, readFrom.pData, writeTo.nPitch*PREVIEW_BOX_SIZE);
-		}
-	}
-
-	dest->Unlock();
-	rt->Unlock();
-}
-
 void CLevObjectDef::RefreshPreview()
 {
 	if(!m_dirtyPreview)
@@ -126,7 +102,7 @@ void CLevObjectDef::RefreshPreview()
 	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
 
 	// copy rendertarget
-	CopyRendertargetToTexture(pTempRendertarget, m_preview);
+	UTIL_CopyRendertargetToTexture(pTempRendertarget, m_preview);
 }
 #endif // EDITOR
 
@@ -583,7 +559,7 @@ void CLevelModel::ReleaseData()
 
 bool CLevelModel::CreateFrom(dsmmodel_t* pModel)
 {
-#ifdef NO_GAME
+#ifdef EDITOR
 	Cleanup();
 
 	DkList<lmodeldrawvertex_t>	vertexdata;

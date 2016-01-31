@@ -61,3 +61,25 @@ bool CEditorPreviewable::CreatePreview(int texSize)
 
 	return true;
 }
+
+void UTIL_CopyRendertargetToTexture(ITexture* rt, ITexture* dest)
+{
+	ASSERT(rt->GetWidth() == dest->GetWidth() && rt->GetHeight() == dest->GetHeight());
+
+	texlockdata_t readFrom;
+	texlockdata_t writeTo;
+	memset(&readFrom, 0, sizeof(readFrom));
+
+	rt->Lock(&readFrom, NULL, false, true);
+
+	if(readFrom.pData)
+	{
+		dest->Lock(&writeTo, NULL, true, false);
+
+		if(writeTo.pData)
+			memcpy(writeTo.pData, readFrom.pData, writeTo.nPitch*rt->GetHeight());
+	}
+
+	dest->Unlock();
+	rt->Unlock();
+}

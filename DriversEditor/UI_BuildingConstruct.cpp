@@ -12,6 +12,72 @@
 #include "FontCache.h"
 #include "FontLayoutBuilders.h"
 
+#define PREVIEW_BOX_SIZE 256
+
+CLayerModel::CLayerModel() : m_model(NULL)
+{
+}
+
+CLayerModel::~CLayerModel()
+{
+	delete m_model;
+}
+
+void CLayerModel::RefreshPreview()
+{
+	if(!m_dirtyPreview)
+		return;
+
+	m_dirtyPreview = false;
+
+	if(!CreatePreview( PREVIEW_BOX_SIZE ))
+		return;
+
+	static ITexture* pTempRendertarget = g_pShaderAPI->CreateRenderTarget(PREVIEW_BOX_SIZE, PREVIEW_BOX_SIZE, FORMAT_RGBA8);
+
+	Vector3D	camera_rotation(35,225,0);
+	Vector3D	camera_target(0);
+	float		camDistance = 0.0f;
+	
+	BoundingBox bbox;
+
+	bbox = m_model->m_bbox;
+
+	//Msg("RENDER preview for STATIC model\n");
+	camDistance = length(m_model->m_bbox.GetSize())+0.5f;
+	camera_target = m_model->m_bbox.GetCenter();
+
+
+	Vector3D forward, right;
+	AngleVectors(camera_rotation, &forward, &right);
+
+	Vector3D cam_pos = camera_target - forward*camDistance;
+
+	// setup perspective
+	Matrix4x4 mProjMat = perspectiveMatrixY(DEG2RAD(60), PREVIEW_BOX_SIZE, PREVIEW_BOX_SIZE, 0.05f, 512.0f);
+
+	Matrix4x4 mViewMat = rotateZXY4(DEG2RAD(-camera_rotation.x),DEG2RAD(-camera_rotation.y),DEG2RAD(-camera_rotation.z));
+	mViewMat.translate(-cam_pos);
+
+	materials->SetMatrix(MATRIXMODE_PROJECTION, mProjMat);
+	materials->SetMatrix(MATRIXMODE_VIEW, mViewMat);
+
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+	// setup render
+	g_pShaderAPI->ChangeRenderTarget( pTempRendertarget );
+
+	g_pShaderAPI->Clear(true, true, false, ColorRGBA(0.25,0.25,0.25,1.0f));
+
+	//Render(0.0f, bbox, true, 0);
+
+	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
+
+	// copy rendertarget
+	UTIL_CopyRendertargetToTexture(pTempRendertarget, m_preview);
+}
+
+//---------------------------------------------------------------------------------------
 
 CBuildingLayerEditDialog::~CBuildingLayerEditDialog()
 {
@@ -82,7 +148,7 @@ CBuildingLayerEditDialog::CBuildingLayerEditDialog( wxWindow* parent )
 	
 	m_propertyBox->Add( gSizer4, 0, wxEXPAND, 5 );
 	
-	wxString m_typeSelChoices[] = { wxT("Model"), wxT("Texture") };
+	wxString m_typeSelChoices[] = { wxT("Texture"), wxT("Model") };
 	int m_typeSelNChoices = sizeof( m_typeSelChoices ) / sizeof( wxString );
 	m_typeSel = new wxChoice( m_panel18, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_typeSelNChoices, m_typeSelChoices, 0 );
 	m_typeSel->SetSelection( 0 );
@@ -111,6 +177,8 @@ CBuildingLayerEditDialog::CBuildingLayerEditDialog( wxWindow* parent )
 	
 	this->Centre( wxBOTH );
 	
+	m_preview = false;
+
 	// Connect Events
 	m_newBtn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CBuildingLayerEditDialog::OnBtnsClick ), NULL, this );
 	m_delBtn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CBuildingLayerEditDialog::OnBtnsClick ), NULL, this );
@@ -198,12 +266,37 @@ bool CBuildingLayerEditDialog::OnDropPoiner(wxCoord x, wxCoord y, void* ptr, EDr
 		m_selLayer->material = elem->material;
 		m_selLayer->atlEntry = elem->entry;
 	}
+	else if(type == DRAGDROP_PTR_OBJECTCONTAINER)
+	{
+	
+	}
 
 
 	return true;
 }
 
 void CBuildingLayerEditDialog::Redraw()
+{
+	if(m_preview)
+		RenderPreview();
+	else
+		RenderList();
+}
+
+void CBuildingLayerEditDialog::RenderPreview()
+{
+	if(!materials)
+		return;
+
+	int w, h;
+	m_renderPanel->GetSize(&w, &h);
+	g_pShaderAPI->SetViewport(0, 0, w,h);
+
+	materials->GetConfiguration().wireframeMode = false;
+	materials->SetAmbientColor( color4_white );
+}
+
+void CBuildingLayerEditDialog::RenderList()
 {
 	if(!materials)
 		return;
@@ -318,7 +411,7 @@ void CBuildingLayerEditDialog::Redraw()
 				else
 				{
 					if(elem.model)
-						pTex = elem.model->preview;
+						pTex = elem.model->GetPreview();
 				}
 
 				texture_aspect = pTex->GetWidth() / pTex->GetHeight();
@@ -378,7 +471,7 @@ void CBuildingLayerEditDialog::Redraw()
 				}
 				else if(elem.type == LAYER_MODEL && elem.model)
 				{
-					m_pFont->RenderText(elem.model->name.c_str(), name_rect.vleftTop, fontParam);
+					m_pFont->RenderText(elem.model->m_name.c_str(), name_rect.vleftTop, fontParam);
 				}
 				else
 					m_pFont->RenderText("drag&drop material or model", name_rect.vleftTop, fontParam);
@@ -410,6 +503,9 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 		{
 			if(m_selectedItem >= 0)
 			{
+				if(m_selLayer->type >= LAYER_MODEL)
+					delete m_selLayer->model;
+
 				m_layerColl.layers.removeIndex(m_selectedItem);
 				m_selectedItem--;
 			}
@@ -419,10 +515,42 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 		}
 		case LAYEREDIT_CHOOSEMODEL:
 		{
+			if(!m_selLayer)
+			{
+				wxMessageBox("First you need to select layer!");
+				return;
+			}
+
+			wxFileDialog* file = new wxFileDialog(NULL, "Open OBJ/ESM", "./", "*.*", "Model files (*.obj, *.esm)|*.obj;*.esm", wxFD_FILE_MUST_EXIST | wxFD_OPEN);
+
+			if(file->ShowModal() == wxID_OK)
+			{
+				wxArrayString paths;
+				EqString path( file->GetPath().wchar_str() );
+
+				dsmmodel_t model;
+
+				if( !LoadSharedModel(&model, path.c_str()) )
+					return;
+
+				CLevelModel* pLevModel = new CLevelModel();
+				pLevModel->CreateFrom( &model );
+				FreeDSM(&model);
+
+				CLayerModel* lmodel = new CLayerModel();
+
+				lmodel->m_model = pLevModel;
+				lmodel->m_name = path.Path_Extract_Name().Path_Strip_Ext().c_str();
+
+				m_selLayer->model = lmodel;
+
+				lmodel->RefreshPreview();
+			}
 			break;
 		}
 		case LAYEREDIT_TOGGLEPREVIEW:
 		{
+			m_preview = !m_preview;
 			break;
 		}
 	}
@@ -447,6 +575,7 @@ void CBuildingLayerEditDialog::UpdateSelection()
 	m_repeat->SetValue( m_selLayer->repeatTimes );
 	m_interval->SetValue( m_selLayer->repeatInterval );
 	m_typeSel->SetSelection( m_selLayer->type );
+	m_btnChoose->Enable( m_selLayer->type >= LAYER_MODEL );
 }
 
 void CBuildingLayerEditDialog::ChangeHeight( wxCommandEvent& event )
@@ -466,7 +595,21 @@ void CBuildingLayerEditDialog::ChangeInterval( wxSpinEvent& event )
 
 void CBuildingLayerEditDialog::ChangeType( wxCommandEvent& event )
 {
-	if(m_selLayer) m_selLayer->type = m_typeSel->GetSelection();
+	if(m_selLayer)
+	{
+		if(m_selLayer->type == m_typeSel->GetSelection())
+			return;
+
+		if(m_selLayer->type >= LAYER_MODEL)
+		{
+			delete m_selLayer->model;
+			m_selLayer->model = NULL;
+		}
+
+		m_selLayer->type = m_typeSel->GetSelection();
+
+		m_btnChoose->Enable( m_selLayer->type >= LAYER_MODEL );
+	}
 }
 
 //------------------------------------------------------------------------

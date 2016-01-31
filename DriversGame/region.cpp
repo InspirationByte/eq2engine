@@ -8,6 +8,8 @@
 #include "world.h"
 #include "heightfield.h"
 
+#define AI_NAVIGATION_ROAD_PRIORITY (1)
+
 extern ConVar r_enableLevelInstancing;
 
 //-----------------------------------------------------------------------------------------
@@ -571,3 +573,349 @@ int CLevelRegion::Ed_ReplaceDefs(CLevObjectDef* whichReplace, CLevObjectDef* rep
 }
 
 #endif // EDITOR
+
+
+int FindObjectContainer(DkList<CLevObjectDef*>& listObjects, CLevObjectDef* container)
+{
+	for(int i = 0; i < listObjects.numElem(); i++)
+	{
+		if( listObjects[i] == container )
+			return i;
+	}
+
+	ASSERTMSG(false, "Programmer error, cannot find object definition (is editor cached it?)");
+
+	return -1;
+}
+
+void CLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObjectDef*>& listObjects, bool final )
+{
+	// create region model lists
+	DkList<CLevelModel*>			modelList;
+	DkList<levcellmodelobject_t>	cellObjectsList;
+
+	cellObjectsList.resize(m_objects.numElem());
+
+	// collect models and cell objects
+	for(int i = 0; i < m_objects.numElem(); i++)
+	{
+		CLevObjectDef* def = m_objects[i]->def;
+
+		int objIdx = FindObjectContainer(listObjects, def);
+
+		if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		{
+			 if( final && !(def->m_info.modelflags & LMODEL_FLAG_NONUNIQUE) )
+				objIdx = modelList.addUnique( def->m_model );
+		}
+
+		levcellmodelobject_t object;
+
+		memset(object.name, 0, LEV_OBJECT_NAME_LENGTH);
+
+		object.objIndex = objIdx;
+
+		object.tile_x = m_objects[i]->tile_dependent ? m_objects[i]->tile_x : -1;
+		object.tile_y = m_objects[i]->tile_dependent ? m_objects[i]->tile_y : -1;
+		object.position = m_objects[i]->position;
+		object.rotation = m_objects[i]->rotation;
+
+		// add
+		cellObjectsList.append(object);
+	}
+
+	CMemoryStream regionData;
+	regionData.Open(NULL, VS_OPEN_WRITE, 8192);
+
+	// write model data
+	for(int i = 0; i < modelList.numElem(); i++)
+	{
+		CMemoryStream modelData;
+		modelData.Open(NULL, VS_OPEN_WRITE, 8192);
+
+		modelList[i]->Save( &modelData );
+
+		int modelSize = modelData.Tell();
+
+		regionData.Write(&modelSize, 1, sizeof(int));
+		regionData.Write(modelData.GetBasePointer(), 1, modelData.Tell());
+	}
+
+	// write cell objects list
+	for(int i = 0; i < cellObjectsList.numElem(); i++)
+	{
+		regionData.Write(&cellObjectsList[i], 1, sizeof(levcellmodelobject_t));
+	}
+
+	levregiondatahdr_t regdatahdr;
+	regdatahdr.numModelObjects = cellObjectsList.numElem();
+	regdatahdr.numModels = modelList.numElem();
+	regdatahdr.size = regionData.Tell();
+
+	stream->Write(&regdatahdr, 1, sizeof(levregiondatahdr_t));
+	stream->Write(regionData.GetBasePointer(), 1, regionData.Tell());
+}
+
+void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>& levelmodels)
+{
+	if(m_isLoaded)
+		return;
+
+	for(int i = 0; i < GetNumHFields(); i++)
+	{
+		m_heightfield[i]->GenereateRenderData();
+	}
+
+	DkList<CLevelModel*>	modelList;
+
+	levregiondatahdr_t		regdatahdr;
+
+	stream->Read(&regdatahdr, 1, sizeof(levregiondatahdr_t));
+
+	// now read models
+	for(int i = 0; i < regdatahdr.numModels; i++)
+	{
+		int modelSize = 0;
+		stream->Read(&modelSize, 1, sizeof(int));
+
+		CLevelModel* modelRef = new CLevelModel();
+		modelRef->Load( stream );
+		modelRef->PreloadTextures();
+
+		modelList.append(modelRef);
+	}
+
+	m_objects.resize( regdatahdr.numModelObjects );
+
+	// read model cells
+	for(int i = 0; i < regdatahdr.numModelObjects; i++)
+	{
+		levcellmodelobject_t cellObj;
+		stream->Read(&cellObj, 1, sizeof(levcellmodelobject_t));
+
+		// TODO: add models
+		regionObject_t* ref = new regionObject_t;
+
+		if(regdatahdr.numModels == 0)
+		{
+			ref->def = levelmodels[cellObj.objIndex];
+
+			CLevelModel* model = ref->def->m_model;
+			if(model)
+				model->Ref_Grab();
+		}
+		else
+		{
+#pragma todo("model (object) containers in region data fix")
+			ref->def = NULL;
+
+			//ref->model = modelList[cellObj.objIndex];
+			//if(ref->model)
+			//	ref->model->Ref_Grab();
+		}
+
+		ref->tile_x = cellObj.tile_x;
+		ref->tile_y = cellObj.tile_y;
+
+		ref->tile_dependent = (ref->tile_x != -1 || ref->tile_y != -1);
+		ref->position = cellObj.position;
+		ref->rotation = cellObj.rotation;
+
+		ref->transform = GetModelRefRenderMatrix( this, ref );
+
+		if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		{
+			// create collision objects and translate them
+			CLevelModel* model = ref->def->m_model;
+			model->CreateCollisionObjects( this, ref );
+
+			for(int j = 0; j < ref->collisionObjects.numElem(); j++)
+			{
+				CScopedMutex m(m_level->m_mutex);
+
+				// add physics objects
+				g_pPhysics->m_physics.AddStaticObject( ref->collisionObjects[j] );
+			}
+
+			BoundingBox tbbox;
+
+			for(int i = 0; i < 8; i++)
+				tbbox.AddVertex((ref->transform*Vector4D(model->m_bbox.GetVertex(i), 1.0f)).xyz());
+
+			// set reference bbox for light testing
+			ref->bbox = tbbox;
+		}
+		else
+		{
+#ifndef EDITOR
+
+			// create object, spawn in game cycle
+			CGameObject* newObj = g_pGameWorld->CreateGameObject( ref->def->m_defType.c_str(), &ref->def->m_defKeyvalues );
+
+			if(newObj)
+			{
+				Vector3D eulAngles = EulerMatrixXYZ(ref->transform.getRotationComponent());
+
+				newObj->SetOrigin( transpose(ref->transform).getTranslationComponent() );
+				newObj->SetAngles( VRAD2DEG(eulAngles) );
+				newObj->SetUserData( ref );
+
+				// network name for this object
+				newObj->SetName( varargs("_reg%d_ref%d", m_regionIndex, i) );
+
+				ref->game_object = newObj;
+
+				m_level->m_mutex.Lock();
+				g_pGameWorld->AddObject( newObj, false );
+				m_level->m_mutex.Unlock();
+			}
+
+#endif
+		}
+
+		m_level->m_mutex.Lock();
+		m_objects.append(ref);
+		m_level->m_mutex.Unlock();
+	}
+
+	for(int i = 0; i < GetNumHFields(); i++)
+		g_pPhysics->AddHeightField( m_heightfield[i] );
+
+	Platform_Sleep(1);
+
+	m_isLoaded = true;
+}
+
+void CLevelRegion::RespawnObjects()
+{
+#ifndef EDITOR
+	for(int i = 0; i < m_objects.numElem(); i++)
+	{
+		regionObject_t* ref = m_objects[i];
+
+		if(ref->def->m_info.type != LOBJ_TYPE_OBJECT_CFG)
+			continue;
+
+		// delete associated object from game world
+		if(ref->game_object)
+		{
+			//g_pGameWorld->RemoveObject(ref->object);
+
+			if(g_pGameWorld->m_pGameObjects.remove(ref->game_object))
+			{
+				ref->game_object->OnRemove();
+				delete ref->game_object;
+			}
+
+		}
+
+		ref->game_object = NULL;
+
+		ref->transform = GetModelRefRenderMatrix( this, ref );
+
+		// create object, spawn in game cycle
+		CGameObject* newObj = g_pGameWorld->CreateGameObject( ref->def->m_defType.c_str(), &ref->def->m_defKeyvalues );
+
+		if(newObj)
+		{
+			Vector3D eulAngles = EulerMatrixXYZ(ref->transform.getRotationComponent());
+
+			newObj->SetOrigin( transpose(ref->transform).getTranslationComponent() );
+			newObj->SetAngles( VRAD2DEG(eulAngles) );
+			newObj->SetUserData( ref );
+
+			// network name for this object
+			newObj->SetName( varargs("_reg%d_ref%d", m_regionIndex, i) );
+
+			ref->game_object = newObj;
+
+			m_level->m_mutex.Lock();
+			g_pGameWorld->AddObject( newObj, false );
+			m_level->m_mutex.Unlock();
+		}
+	}
+#endif // EDITOR
+}
+
+void CLevelRegion::WriteRegionRoads( IVirtualStream* stream )
+{
+	CMemoryStream cells;
+	cells.Open(NULL, VS_OPEN_WRITE, 2048);
+
+	int numRoadCells = 0;
+
+	for(int x = 0; x < m_heightfield[0]->m_sizew; x++)
+	{
+		for(int y = 0; y < m_heightfield[0]->m_sizeh; y++)
+		{
+			int idx = y*m_heightfield[0]->m_sizew + x;
+
+			if(m_roads[idx].type == ROADTYPE_NOROAD)
+				continue;
+
+			m_roads[idx].posX = x;
+			m_roads[idx].posY = y;
+
+			cells.Write(&m_roads[idx], 1, sizeof(levroadcell_t));
+			numRoadCells++;
+		}
+	}
+
+	stream->Write(&numRoadCells, 1, sizeof(int));
+	stream->Write(cells.GetBasePointer(), 1, cells.Tell());
+}
+
+void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
+{
+	InitRoads();
+
+	int numRoadCells = 0;
+
+	stream->Read(&numRoadCells, 1, sizeof(int));
+
+	if( numRoadCells )
+	{
+		for(int i = 0; i < numRoadCells; i++)
+		{
+			levroadcell_t tmpCell;
+			stream->Read(&tmpCell, 1, sizeof(levroadcell_t));
+
+			int idx = tmpCell.posY*m_heightfield[0]->m_sizew + tmpCell.posX;
+			m_roads[idx] = tmpCell;
+
+#define NAVGRIDSCALE_HALF	int(AI_NAVIGATION_GRID_SCALE/2)
+
+			// higher the priority of road nodes
+			for(int j = 0; j < AI_NAVIGATION_GRID_SCALE*AI_NAVIGATION_GRID_SCALE; j++)
+			{
+				int ofsX = tmpCell.posX*AI_NAVIGATION_GRID_SCALE + (j % AI_NAVIGATION_GRID_SCALE);
+				int ofsY = tmpCell.posY*AI_NAVIGATION_GRID_SCALE + (j % NAVGRIDSCALE_HALF);
+
+				int navCellIdx = ofsY*m_heightfield[0]->m_sizew + ofsX;
+				m_navGrid.staticObst[navCellIdx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
+			}
+		}
+
+		for (int i = 0; i < m_objects.numElem(); i++)
+			m_level->Nav_AddObstacle(this, m_objects[i]);
+	}
+}
+
+void CLevelRegion::WriteRegionOccluders(IVirtualStream* stream)
+{
+	int numOccluders = m_occluders.numElem();
+
+	stream->Write(&numOccluders, 1, sizeof(int));
+	stream->Write(m_occluders.ptr(), 1, sizeof(levOccluderLine_t)*numOccluders);
+}
+
+void CLevelRegion::ReadLoadOccluders(IVirtualStream* stream)
+{
+	int numOccluders = 0;
+	stream->Read(&numOccluders, 1, sizeof(int));
+
+	m_occluders.setNum(numOccluders);
+	stream->Read(m_occluders.ptr(), 1, sizeof(levOccluderLine_t)*numOccluders);
+}
+
+//-----------------------------------------------------------------------------------------------------------

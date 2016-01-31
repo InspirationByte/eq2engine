@@ -20,11 +20,18 @@ enum ELayerType
 	LAYER_CORNER_MODEL
 };
 
-struct layerModel_t
+class CLayerModel : public CEditorPreviewable
 {
-	CLevelModel*	model;
-	ITexture*		preview;
-	EqString		name;
+public:
+	PPMEM_MANAGED_OBJECT()
+
+	CLayerModel();
+	~CLayerModel();
+
+	void			RefreshPreview();
+
+	CLevelModel*	m_model;
+	EqString		m_name;
 };
 
 struct buildLayer_t
@@ -38,7 +45,7 @@ struct buildLayer_t
 	int						type;			// ELayerType
 	int						repeatTimes;	// height repeat times
 	int						repeatInterval;	// repeat after repeatInterval times
-	layerModel_t*			model;
+	CLayerModel*			model;
 	IMaterial*				material;
 	TexAtlasEntry_t*		atlEntry;
 };
@@ -52,6 +59,8 @@ struct buildLayerCollection_t
 	EqString				name;
 	DkList<buildLayer_t>	layers;
 };
+
+
 
 //------------------------------------------------------------
 
@@ -73,13 +82,15 @@ public:
 
 protected:
 
-	void OnIdle(wxIdleEvent &event){Redraw();}
+	void OnIdle(wxIdleEvent &event) {Redraw();}
 	void OnEraseBackground(wxEraseEvent& event) {}
 	void OnMouseMotion(wxMouseEvent& event);
 	void OnMouseScroll(wxMouseEvent& event);
 	void OnMouseClick(wxMouseEvent& event);
 
 	void Redraw();
+	void RenderList();
+	void RenderPreview();
 
 	void OnBtnsClick( wxCommandEvent& event );
 
@@ -115,6 +126,7 @@ protected:
 	Vector2D				m_mousePos;
 	int						m_mouseoverItem;
 	int						m_selectedItem;
+	bool					m_preview;
 };
 
 //-----------------------------------------------------------------------------

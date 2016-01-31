@@ -89,7 +89,9 @@ struct lmodel_batch_t
 class CLevelModel : public RefCountedObject
 {
 	friend class CGameLevel;
-
+	friend class CLevelRegion;
+	friend class CLevObjectDef;
+	friend class CLayerModel;
 public:
 	PPMEM_MANAGED_OBJECT()
 
@@ -98,25 +100,26 @@ public:
 
 	void					Ref_DeleteObject() {}
 
-	void					Cleanup();
+
+
+	void					Cleanup();		// cleans up all including render data
+	void					ReleaseData();	// releases data but keeps batchs and VBO
+
+	void					Render(int nDrawFlags, const BoundingBox& aabb);
 
 	bool					CreateFrom(dsmmodel_t* pModel);
+
+	bool					GenereateRenderData();
+
+	void					PreloadTextures();
 
 	void					Load(IVirtualStream* stream);
 	void					Save(IVirtualStream* stream) const;
 
-	// releases data but keeps batchs and VBO
-	void					ReleaseData();
-
-	bool					GenereateRenderData();
-
-	void					GeneratePhysicsData(bool isGround = false);
-
-	void					PreloadTextures();
-
-	void					Render(int nDrawFlags, const BoundingBox& aabb);
+protected:
 
 	void					CreateCollisionObjects( CLevelRegion* reg, regionObject_t* ref );
+	void					GeneratePhysicsData(bool isGround = false);
 
 	// to create the physics
 	DkList<CEqBulletIndexedMesh*>	m_batchMeshes;
@@ -131,7 +134,6 @@ public:
 
 	int						m_level;	// editor parameter - model layer location (0 - ground, 1 - sand, 2 - trees, 3 - others)
 
-protected:
 	CEqBulletIndexedMesh*	CreateBulletTriangleMeshFromModelBatch(lmodel_batch_t* batch);
 
 	lmodel_batch_t*			m_batches;
