@@ -64,10 +64,16 @@ void CLayerModel::RefreshPreview()
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
+	materials->SetFogInfo(FogInfo_t());
+
 	// setup render
 	g_pShaderAPI->ChangeRenderTarget( pTempRendertarget );
 
 	g_pShaderAPI->Clear(true, true, false, ColorRGBA(0.25,0.25,0.25,1.0f));
+
+	m_model->PreloadTextures();
+	materials->Wait();
+	m_model->Render(0, bbox);
 
 	//Render(0.0f, bbox, true, 0);
 
@@ -93,7 +99,7 @@ CBuildingLayerEditDialog::~CBuildingLayerEditDialog()
 }
 
 CBuildingLayerEditDialog::CBuildingLayerEditDialog( wxWindow* parent ) 
-	: wxDialog( parent, wxID_ANY, wxT("Building floor layer set constructor - <filename>"), wxDefaultPosition,  wxSize( 756,558 ), wxDEFAULT_DIALOG_STYLE | wxSTAY_ON_TOP )
+	: wxDialog( parent, wxID_ANY, wxT("Building floor layer set constructor"), wxDefaultPosition,  wxSize( 756,558 ), wxDEFAULT_DIALOG_STYLE | wxSTAY_ON_TOP )
 {
 	m_pFont = NULL;
 
@@ -176,8 +182,7 @@ CBuildingLayerEditDialog::CBuildingLayerEditDialog( wxWindow* parent )
 	this->Layout();
 	
 	this->Centre( wxBOTH );
-	
-	m_preview = false;
+
 
 	// Connect Events
 	m_newBtn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CBuildingLayerEditDialog::OnBtnsClick ), NULL, this );
@@ -196,6 +201,9 @@ CBuildingLayerEditDialog::CBuildingLayerEditDialog( wxWindow* parent )
 	m_renderPanel->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(CBuildingLayerEditDialog::OnMouseScroll), NULL, this);
 	m_renderPanel->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(CBuildingLayerEditDialog::OnMouseClick), NULL, this);
 	m_renderPanel->Connect(wxEVT_SCROLLBAR, wxScrollWinEventHandler(CBuildingLayerEditDialog::OnScrollbarChange), NULL, this);
+
+	m_preview = false;
+	m_layerColl = NULL;
 }
 
 void CBuildingLayerEditDialog::OnScrollbarChange(wxScrollWinEvent& event)
@@ -239,10 +247,17 @@ void CBuildingLayerEditDialog::OnMouseScroll(wxMouseEvent& event)
 
 void CBuildingLayerEditDialog::OnMouseClick(wxMouseEvent& event)
 {
-	// set selection to mouse over
-	m_selectedItem = m_mouseoverItem;
+	if(m_preview)
+	{
+	
+	}
+	else
+	{
+		// set selection to mouse over
+		m_selectedItem = m_mouseoverItem;
 
-	UpdateSelection();
+		UpdateSelection();
+	}
 }
 
 void CBuildingLayerEditDialog::OnMouseMotion(wxMouseEvent& event)
@@ -298,6 +313,9 @@ void CBuildingLayerEditDialog::RenderPreview()
 
 void CBuildingLayerEditDialog::RenderList()
 {
+	if(!m_layerColl)
+		return;
+
 	if(!materials)
 		return;
 
@@ -346,7 +364,7 @@ void CBuildingLayerEditDialog::RenderList()
 
 		const float fSize = 128.0f;
 
-		for(int i = 0; i < m_layerColl.layers.numElem(); i++)
+		for(int i = 0; i < m_layerColl->layers.numElem(); i++)
 		{
 			float x_offset = 16 + nItem*(fSize+16);
 
@@ -364,9 +382,9 @@ void CBuildingLayerEditDialog::RenderList()
 		{
 			nItem = 0;
 
-			for(int i = 0; i < m_layerColl.layers.numElem(); i++)
+			for(int i = 0; i < m_layerColl->layers.numElem(); i++)
 			{
-				buildLayer_t& elem = m_layerColl.layers[i];
+				buildLayer_t& elem = m_layerColl->layers[i];
 
 				if(nItem >= numItems)
 				{
@@ -493,7 +511,7 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 	{
 		case LAYEREDIT_NEW:
 		{
-			m_selectedItem = m_layerColl.layers.append( buildLayer_t() );
+			m_selectedItem = m_layerColl->layers.append( buildLayer_t() );
 
 			UpdateSelection();
 
@@ -506,7 +524,7 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 				if(m_selLayer->type >= LAYER_MODEL)
 					delete m_selLayer->model;
 
-				m_layerColl.layers.removeIndex(m_selectedItem);
+				m_layerColl->layers.removeIndex(m_selectedItem);
 				m_selectedItem--;
 			}
 			
@@ -523,6 +541,8 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 
 			wxFileDialog* file = new wxFileDialog(NULL, "Open OBJ/ESM", "./", "*.*", "Model files (*.obj, *.esm)|*.obj;*.esm", wxFD_FILE_MUST_EXIST | wxFD_OPEN);
 
+			Hide();
+
 			if(file->ShowModal() == wxID_OK)
 			{
 				wxArrayString paths;
@@ -531,13 +551,23 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 				dsmmodel_t model;
 
 				if( !LoadSharedModel(&model, path.c_str()) )
+				{
+					Show();
 					return;
-
+				}
+					
 				CLevelModel* pLevModel = new CLevelModel();
 				pLevModel->CreateFrom( &model );
 				FreeDSM(&model);
 
-				CLayerModel* lmodel = new CLayerModel();
+				CLayerModel* lmodel = m_selLayer->model;
+
+				if(!lmodel)
+					lmodel = new CLayerModel();
+				else
+					delete lmodel->m_model;
+
+				lmodel->SetDirtyPreview();
 
 				lmodel->m_model = pLevModel;
 				lmodel->m_name = path.Path_Extract_Name().Path_Strip_Ext().c_str();
@@ -546,6 +576,9 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 
 				lmodel->RefreshPreview();
 			}
+
+			Show();
+
 			break;
 		}
 		case LAYEREDIT_TOGGLEPREVIEW:
@@ -566,7 +599,7 @@ void CBuildingLayerEditDialog::UpdateSelection()
 		return;
 	}
 
-	m_selLayer = &m_layerColl.layers[m_selectedItem];
+	m_selLayer = &m_layerColl->layers[m_selectedItem];
 
 	m_propertyBox->ShowItems(true);
 	Layout();
@@ -576,6 +609,16 @@ void CBuildingLayerEditDialog::UpdateSelection()
 	m_interval->SetValue( m_selLayer->repeatInterval );
 	m_typeSel->SetSelection( m_selLayer->type );
 	m_btnChoose->Enable( m_selLayer->type >= LAYER_MODEL );
+}
+
+void CBuildingLayerEditDialog::SetLayerCollection(buildLayerColl_t* coll)
+{
+	m_layerColl = coll;
+}
+
+buildLayerColl_t* CBuildingLayerEditDialog::GetLayerCollection() const
+{
+	return m_layerColl;
 }
 
 void CBuildingLayerEditDialog::ChangeHeight( wxCommandEvent& event )
@@ -611,8 +654,295 @@ void CBuildingLayerEditDialog::ChangeType( wxCommandEvent& event )
 		m_btnChoose->Enable( m_selLayer->type >= LAYER_MODEL );
 	}
 }
+//-----------------------------------------------------------------------------
+// Layer collection list
+//-----------------------------------------------------------------------------
 
-//------------------------------------------------------------------------
+BEGIN_EVENT_TABLE(CBuildingLayerList, wxPanel)
+    EVT_ERASE_BACKGROUND(CBuildingLayerList::OnEraseBackground)
+    EVT_IDLE(CBuildingLayerList::OnIdle)
+	EVT_SCROLLWIN(CBuildingLayerList::OnScrollbarChange)
+	EVT_MOTION(CBuildingLayerList::OnMouseMotion)
+	EVT_MOUSEWHEEL(CBuildingLayerList::OnMouseScroll)
+	EVT_LEFT_DOWN(CBuildingLayerList::OnMouseClick)
+	EVT_SIZE(CBuildingLayerList::OnSizeEvent)
+END_EVENT_TABLE()
+
+CBuildingLayerList::CBuildingLayerList(CUI_BuildingConstruct* parent) : wxPanel( parent, 0,0,640,480 )
+{
+	m_swapChain = NULL;
+
+	SetScrollbar(wxVERTICAL, 0, 8, 100);
+
+	m_nPreviewSize = 128;
+	m_bldConstruct = parent;
+}
+
+void CBuildingLayerList::OnSizeEvent(wxSizeEvent &event)
+{
+	if(!IsShown())
+		return;
+
+	if(materials && g_pMainFrame)
+	{
+		int w, h;
+		g_pMainFrame->GetSize(&w, &h);
+
+		RefreshScrollbar();
+
+		Redraw();
+	}
+}
+
+void CBuildingLayerList::OnIdle(wxIdleEvent &event)
+{
+	Redraw();
+}
+
+void CBuildingLayerList::OnEraseBackground(wxEraseEvent& event)
+{
+}
+
+void CBuildingLayerList::OnScrollbarChange(wxScrollWinEvent& event)
+{
+	if(event.GetEventType() == wxEVT_SCROLLWIN_LINEUP)
+	{
+		SetScrollPos(wxVERTICAL, GetScrollPos(wxVERTICAL) - 1, true);
+	}
+	else if(event.GetEventType() == wxEVT_SCROLLWIN_LINEDOWN)
+	{
+		SetScrollPos(wxVERTICAL, GetScrollPos(wxVERTICAL) + 1, true);
+	}
+	else if(event.GetEventType() == wxEVT_SCROLLWIN_PAGEUP)
+	{
+		SetScrollPos(wxVERTICAL, GetScrollPos(wxVERTICAL) - 1, true);
+	}
+	else if(event.GetEventType() == wxEVT_SCROLLWIN_PAGEDOWN)
+	{
+		SetScrollPos(wxVERTICAL, GetScrollPos(wxVERTICAL) + 1, true);
+	}
+	else if(event.GetEventType() == wxEVT_SCROLLWIN_TOP)
+	{
+		SetScrollPos(wxVERTICAL, GetScrollPos(wxVERTICAL) - 1, true);
+	}
+	else if(event.GetEventType() == wxEVT_SCROLLWIN_BOTTOM)
+	{
+		SetScrollPos(wxVERTICAL, GetScrollPos(wxVERTICAL) + 1, true);
+	}
+	else
+		SetScrollPos(wxVERTICAL, event.GetPosition(), true);
+
+	Redraw();
+}
+		
+void CBuildingLayerList::OnMouseMotion(wxMouseEvent& event)
+{
+	m_mousePos.x = event.GetX();
+	m_mousePos.y = event.GetY();
+
+	Redraw();
+}
+
+void CBuildingLayerList::OnMouseScroll(wxMouseEvent& event)
+{
+	int scroll_pos =  GetScrollPos(wxVERTICAL);
+
+	SetScrollPos(wxVERTICAL, scroll_pos - event.GetWheelRotation()/100, true);
+}
+
+void CBuildingLayerList::OnMouseClick(wxMouseEvent& event)
+{
+	// set selection to mouse over
+	m_selection = m_mouseOver;
+}
+
+void CBuildingLayerList::ReloadList()
+{
+
+}
+
+buildLayerColl_t* CBuildingLayerList::GetSelectedLayerColl() const
+{
+	return NULL;
+}
+
+void CBuildingLayerList::ChangeFilter(const wxString& filter)
+{
+	if(!IsShown())
+		return;
+
+	if(m_filter == filter)
+		return;
+
+	// remember filter string
+	m_filter = filter;
+
+	UpdateAndFilterList();
+}
+
+void CBuildingLayerList::UpdateAndFilterList()
+{
+	m_selection = -1;
+
+	m_filteredList.clear();
+
+	for(int i = 0; i < m_layerCollections.numElem(); i++)
+	{
+		// filter material path
+		if( m_filter.Length() > 0 )
+		{
+			int foundIndex = m_layerCollections[i]->name.Find(m_filter.c_str());
+
+			if(foundIndex == -1)
+				continue;
+		}
+
+		// add just material
+		m_filteredList.append( m_layerCollections[i] );
+	}
+
+	RefreshScrollbar();
+	Redraw();
+}
+
+void CBuildingLayerList::SetPreviewParams(int preview_size, bool bAspectFix)
+{
+	if(m_nPreviewSize != preview_size)
+		RefreshScrollbar();
+
+	m_nPreviewSize = preview_size;
+}
+
+void CBuildingLayerList::RefreshScrollbar()
+{
+	int w, h;
+	GetSize(&w, &h);
+
+	wxRect rect = GetScreenRect();
+	w = rect.GetWidth();
+	h = rect.GetHeight();
+
+	int numItems = 0;
+	int nItem = 0;
+
+	float fSize = (float)m_nPreviewSize;
+
+	for(int i = 0; i < m_filteredList.numElem(); i++)
+	{
+		float x_offset = 16 + nItem*(fSize+16);
+
+		if(x_offset + fSize > w)
+		{
+			numItems = i;
+			break;
+		}
+
+		numItems++;
+		nItem++;
+	}
+
+	if(numItems > 0)
+	{
+		int estimated_lines = m_filteredList.numElem() / numItems;
+
+		SetScrollbar(wxVERTICAL, 0, 8, estimated_lines + 10);
+	}
+}
+
+void CBuildingLayerList::Redraw()
+{
+	if(!materials)
+		return;
+
+	if(!m_swapChain)
+		m_swapChain = materials->CreateSwapChain((HWND)GetHWND());
+
+	if(!IsShown() && !IsShownOnScreen())
+		return;
+
+	int w, h;
+	GetClientSize(&w, &h);
+
+	g_pShaderAPI->SetViewport(0, 0, w, h);
+
+	if( materials->BeginFrame() )
+	{
+		g_pShaderAPI->Clear(true,true,false, ColorRGBA(0,0,0, 1));
+
+		if(!m_layerCollections.numElem())
+		{
+			materials->EndFrame(m_swapChain);
+			return;
+		}
+
+		float scrollbarpercent = GetScrollPos(wxVERTICAL);
+
+		IRectangle screenRect(0,0, w,h);
+		screenRect.Fix();
+
+		RedrawItems(screenRect, scrollbarpercent, m_nPreviewSize);
+
+		materials->EndFrame(m_swapChain);
+	}
+}
+
+Rectangle_t CBuildingLayerList::ItemGetImageCoordinates( buildLayerColl_t*& item )
+{
+	return Rectangle_t(0,0,1,1);
+}
+
+ITexture* CBuildingLayerList::ItemGetImage( buildLayerColl_t*& item )
+{
+	return g_pShaderAPI->GetErrorTexture();
+}
+
+void CBuildingLayerList::ItemPostRender( int id, buildLayerColl_t*& item, const IRectangle& rect )
+{
+	Rectangle_t name_rect(rect.GetLeftBottom(), rect.GetRightBottom() + Vector2D(0,25));
+	name_rect.Fix();
+
+	Vector2D lt = name_rect.GetLeftTop();
+	Vector2D rb = name_rect.GetRightBottom();
+
+	Vertex2D_t name_line[] = {MAKETEXQUAD(lt.x, lt.y, rb.x, rb.y, 0)};
+
+	ColorRGBA nameBackCol = ColorRGBA(0.25,0.25,1,1);
+
+	if(m_selection == id)
+		nameBackCol = ColorRGBA(1,0.25,0.25,1);
+	else if(m_mouseOver == id)
+		nameBackCol = ColorRGBA(0.25,0.1,0.25,1);
+
+	// draw name panel
+	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, nameBackCol);
+
+	eqFontStyleParam_t fontParam;
+	fontParam.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+	fontParam.textColor = ColorRGBA(1,1,1,1);
+
+	// render text
+	m_debugFont->RenderText(item->name.c_str(), name_rect.vleftTop, fontParam);
+}
+
+buildLayerColl_t* CBuildingLayerList::CreateCollection()
+{
+	buildLayerColl_t* newColl = new buildLayerColl_t();
+	m_layerCollections.append(newColl);
+
+	UpdateAndFilterList();
+
+	return newColl;
+}
+
+void CBuildingLayerList::DeleteCollection(buildLayerColl_t* coll)
+{
+	if(m_layerCollections.remove(coll))
+		delete coll;
+
+	UpdateAndFilterList();
+}
+
+//-----------------------------------------------------------------------------
 // the editor panel
 //-----------------------------------------------------------------------------
 
@@ -622,11 +952,9 @@ CUI_BuildingConstruct::CUI_BuildingConstruct( wxWindow* parent )
 	wxBoxSizer* bSizer9;
 	bSizer9 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_modelPicker = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	m_modelPicker->SetForegroundColour( wxColour( 0, 0, 0 ) );
-	m_modelPicker->SetBackgroundColour( wxColour( 0, 0, 0 ) );
+	m_layerCollList = new CBuildingLayerList( this );
 	
-	bSizer9->Add( m_modelPicker, 1, wxEXPAND|wxALL, 5 );
+	bSizer9->Add( m_layerCollList, 1, wxEXPAND|wxALL, 5 );
 	
 	m_pSettingsPanel = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxSize( -1,150 ), wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer10;
@@ -681,7 +1009,7 @@ CUI_BuildingConstruct::CUI_BuildingConstruct( wxWindow* parent )
 	
 	this->SetSizer( bSizer9 );
 	this->Layout();
-	
+
 	// Connect Events
 	m_filtertext->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( CUI_BuildingConstruct::OnFilterChange ), NULL, this );
 	m_button5->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CUI_BuildingConstruct::OnCreateClick ), NULL, this );
@@ -698,19 +1026,36 @@ CUI_BuildingConstruct::~CUI_BuildingConstruct()
 // Virtual event handlers, overide them in your derived class
 void CUI_BuildingConstruct::OnFilterChange( wxCommandEvent& event )
 {
-
+	m_layerCollList->ChangeFilter(m_filtertext->GetValue());
 }
 
 void CUI_BuildingConstruct::OnCreateClick( wxCommandEvent& event )
 {
-	// TODO: newLayer
-	m_layerEditDlg->Show();
+	wxTextEntryDialog* dlg = new wxTextEntryDialog(this, "Please enter name of layer set", "Enter the name");
+
+	if(dlg->ShowModal() == wxID_OK)
+	{
+		buildLayerColl_t* newLayerColl = m_layerCollList->CreateCollection();
+		newLayerColl->name = dlg->GetValue();
+		
+		m_layerEditDlg->SetLayerCollection(newLayerColl);
+		m_layerEditDlg->Show();
+	}
+
+	delete dlg;
 }
 
 void CUI_BuildingConstruct::OnEditClick( wxCommandEvent& event )
 {
+/*
+	if(m_selection == -1)
+		return;
+
+	m_layerEditDlg->SetLayerCollection( m_filteredlist[m_selection] );
+
 	// TODO: set existing layers
 	m_layerEditDlg->Show();
+	*/
 }
 
 void CUI_BuildingConstruct::OnDeleteClick( wxCommandEvent& event )

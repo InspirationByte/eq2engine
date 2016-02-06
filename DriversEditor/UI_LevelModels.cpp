@@ -381,13 +381,9 @@ END_EVENT_TABLE()
 
 CModelListRenderPanel::CModelListRenderPanel(wxWindow* parent) : wxPanel( parent, 0,0,640,480 )
 {
-	m_pFont = NULL;
 	m_swapChain = NULL;
 
 	SetScrollbar(wxVERTICAL, 0, 8, 100);
-
-	selection_id = -1;
-	pointer_position = vec2_zero;
 
 	m_nPreviewSize = 128;
 	m_bAspectFix = true;
@@ -401,20 +397,8 @@ CModelListRenderPanel::CModelListRenderPanel(wxWindow* parent) : wxPanel( parent
 
 void CModelListRenderPanel::OnMouseMotion(wxMouseEvent& event)
 {
-	pointer_position.x = event.GetX();
-	pointer_position.y = event.GetY();
-
-	if( event.Dragging() && GetSelectedModel() )
-	{
-		if(mouseover_id == -1)
-			return;
-
-		CPointerDataObject dropData;
-		dropData.SetModelContainer( m_filteredlist[mouseover_id] );
-		wxDropSource dragSource( dropData, this );
-
-		wxDragResult result = dragSource.DoDragDrop( wxDrag_CopyOnly );
-	}
+	m_mousePos.x = event.GetX();
+	m_mousePos.y = event.GetY();
 
 	Redraw();
 }
@@ -535,9 +519,9 @@ void CModelListRenderPanel::OnContextEvent(wxCommandEvent& event)
 void CModelListRenderPanel::OnMouseClick(wxMouseEvent& event)
 {
 	// set selection to mouse over
-	selection_id = mouseover_id;
+	m_selection = m_mouseOver;
 
-	if(selection_id == -1)
+	if(m_selection == -1)
 		return;
 
 	CLevObjectDef* cont = GetSelectedModelContainer();
@@ -582,6 +566,47 @@ void CModelListRenderPanel::OnEraseBackground(wxEraseEvent& event)
 	//Redraw();
 }
 
+Rectangle_t CModelListRenderPanel::ItemGetImageCoordinates( CLevObjectDef*& item )
+{
+	return Rectangle_t(0,0,1,1);
+}
+
+ITexture* CModelListRenderPanel::ItemGetImage( CLevObjectDef*& item )
+{
+	if(!item->GetPreview())
+		return g_pShaderAPI->GetErrorTexture();
+	
+	return item->GetPreview();
+}
+
+void CModelListRenderPanel::ItemPostRender( int id, CLevObjectDef*& item, const IRectangle& rect )
+{
+	Rectangle_t name_rect(rect.GetLeftBottom(), rect.GetRightBottom() + Vector2D(0,25));
+	name_rect.Fix();
+
+	Vector2D lt = name_rect.GetLeftTop();
+	Vector2D rb = name_rect.GetRightBottom();
+
+	Vertex2D_t name_line[] = {MAKETEXQUAD(lt.x, lt.y, rb.x, rb.y, 0)};
+
+	ColorRGBA nameBackCol = item->m_info.type == LOBJ_TYPE_INTERNAL_STATIC ? ColorRGBA(0.25,0.25,1,1) : ColorRGBA(0.5,0.5,0.25,1);
+
+	if(m_selection == id)
+		nameBackCol = ColorRGBA(1,0.25,0.25,1);
+	else if(m_mouseOver == id)
+		nameBackCol = ColorRGBA(0.25,0.1,0.25,1);
+
+	// draw name panel
+	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, nameBackCol);
+
+	eqFontStyleParam_t fontParam;
+	fontParam.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+	fontParam.textColor = ColorRGBA(1,1,1,1);
+
+	// render text
+	m_debugFont->RenderText(item->m_name.c_str(), name_rect.vleftTop, fontParam);
+}
+
 void CModelListRenderPanel::Redraw()
 {
 	if(!materials)
@@ -592,9 +617,6 @@ void CModelListRenderPanel::Redraw()
 
 	if(!IsShown() && !IsShownOnScreen())
 		return;
-
-	if(!m_pFont)
-		m_pFont = g_fontCache->GetFont("debug", 0);
 
 	int w, h;
 	GetClientSize(&w, &h);
@@ -617,140 +639,12 @@ void CModelListRenderPanel::Redraw()
 			return;
 		}
 
-		materials->Setup2D(w,h);
+		float scrollbarpercent = GetScrollPos(wxVERTICAL);
 
-		int nLine = 0;
-		int nItem = 0;
-
-		Rectangle_t screenRect(0,0, w,h);
+		IRectangle screenRect(0,0, w,h);
 		screenRect.Fix();
 
-		float scrollbarpercent = GetScrollPos(wxVERTICAL);///100.0f;
-
-		int numItems = 0;
-
-		float fSize = (float)m_nPreviewSize;
-
-		for(int i = 0; i < m_filteredlist.numElem(); i++)
-		{
-			float x_offset = 16 + nItem*(fSize+16);
-
-			if(x_offset + fSize > w)
-			{
-				numItems = i;
-				break;
-			}
-
-			numItems++;
-			nItem++;
-		}
-
-		if(numItems > 0)
-		{
-			int estimated_lines = m_filteredlist.numElem() / numItems;
-
-			nItem = 0;
-
-			for(int i = 0; i < m_filteredlist.numElem(); i++)
-			{
-				if(nItem >= numItems)
-				{
-					nItem = 0;
-					nLine++;
-				}
-
-				float x_offset = 16 + nItem*(fSize+16);
-				float y_offset = 8 + nLine*(fSize+48);
-
-				y_offset -= scrollbarpercent*(fSize+48);
-
-				Rectangle_t check_rect(x_offset, y_offset, x_offset + fSize,y_offset + fSize);
-				check_rect.Fix();
-
-				if( check_rect.vleftTop.y > screenRect.vrightBottom.y )
-					break;
-
-				if( screenRect.IsIntersectsRectangle(check_rect) )
-				{
-					ITexture* pTex = m_filteredlist[i]->GetPreview();
-
-					if(!pTex)
-					{
-						pTex = g_pShaderAPI->GetErrorTexture();
-					}
-
-					float texture_aspect = pTex->GetWidth() / pTex->GetHeight();
-
-					float x_scale = 1.0f;
-					float y_scale = 1.0f;
-
-					if(m_bAspectFix && (pTex->GetWidth() > pTex->GetHeight()))
-					{
-						y_scale /= texture_aspect;
-					}
-
-					Vertex2D_t verts[] = {MAKETEXQUAD(x_offset, y_offset, x_offset + fSize*x_scale,y_offset + fSize*y_scale, 0)};
-					Vertex2D_t name_line[] = {MAKETEXQUAD(x_offset, y_offset+fSize, x_offset + fSize,y_offset + fSize + 25, 0)};
-				
-					BlendStateParam_t params;
-					params.alphaTest = false;
-					params.alphaTestRef = 1.0f;
-					params.blendEnable = false;
-					params.srcFactor = BLENDFACTOR_ONE;
-					params.dstFactor = BLENDFACTOR_ZERO;
-					params.mask = COLORMASK_ALL;
-					params.blendFunc = BLENDFUNC_ADD;
-
-					ColorRGBA nameLineCol = ColorRGBA(0.25,0.25,1,1);
-
-					if( m_filteredlist[i]->m_info.type == LOBJ_TYPE_OBJECT_CFG )
-					{
-						nameLineCol = ColorRGBA(0.5,0.5,0.25,1);
-					}
-
-					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, nameLineCol, &params);
-
-					if( check_rect.IsInRectangle( pointer_position ) )
-					{
-						mouseover_id = i;
-
-						materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, verts,4, pTex, ColorRGBA(1,0.5f,0.5f,1), &params);
-
-						Vertex2D verts[] = {MAKETEXRECT(x_offset, y_offset, x_offset + fSize,y_offset + fSize, 0)};
-						materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, verts, elementsOf(verts), NULL, ColorRGBA(1,0,0,1));
-
-						materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, ColorRGBA(0.25,0.1,0.25,1), &params);
-					}
-					else
-						materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, verts,4, pTex, color4_white, &params);
-
-					if(selection_id == i)
-					{
-						//materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, verts,4, pTex, ColorRGBA(0.5f,1.0f,0.5f,1), &params);
-
-						Vertex2D verts[] = {MAKETEXRECT(x_offset, y_offset, x_offset + fSize,y_offset + fSize, 0)};
-						materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, verts, elementsOf(verts), NULL, ColorRGBA(0,1,0,1));
-
-						materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, ColorRGBA(1,0.25,0.25,1), &params);
-					}
-
-					EqString material_name = m_filteredlist[i]->m_name;
-
-					if(m_filteredlist[i]->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-						material_name = material_name + varargs(" (%d)", m_filteredlist[i]->m_model->Ref_Count()-1);
-
-					Rectangle_t name_rect(x_offset, y_offset+fSize, x_offset + fSize,y_offset + fSize + 400);
-
-					eqFontStyleParam_t fontParam;
-					fontParam.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-					fontParam.textColor = ColorRGBA(1,1,1,1);
-
-					m_pFont->RenderText( material_name.c_str(), name_rect.vleftTop, fontParam);
-				}
-
-				nItem++;
-			}
-		}
+		RedrawItems(screenRect, scrollbarpercent, m_nPreviewSize);
 
 		materials->EndFrame(m_swapChain);
 	}
@@ -770,43 +664,43 @@ void CModelListRenderPanel::RebuildPreviewShots()
 
 void CModelListRenderPanel::ReleaseModelPreviews()
 {
-	m_filteredlist.clear(false);
+	m_filteredList.clear(false);
 }
 
 CLevObjectDef* CModelListRenderPanel::GetSelectedModelContainer()
 {
-	if(selection_id >= m_filteredlist.numElem())
-		selection_id = -1;
+	if(m_selection >= m_filteredList.numElem())
+		m_selection = -1;
 
-	if(m_filteredlist.numElem() == 0)
+	if(m_filteredList.numElem() == 0)
 		return NULL;
 
-	if(selection_id == -1)
+	if(m_selection == -1)
 		return NULL;
 
-	return m_filteredlist[selection_id];
+	return m_filteredList[m_selection];
 }
 
 CLevelModel* CModelListRenderPanel::GetSelectedModel()
 {
-	if(m_filteredlist.numElem() == 0)
+	if(m_filteredList.numElem() == 0)
 		return NULL;
 
-	if(selection_id == -1)
+	if(m_selection == -1)
 		return NULL;
 
-	return m_filteredlist[selection_id]->m_model;
+	return m_filteredList[m_selection]->m_model;
 }
 
 void CModelListRenderPanel::SelectModel(CLevelModel* pModel)
 {
-	selection_id = -1;
+	m_selection = -1;
 
-	for(int i = 0; i < m_filteredlist.numElem(); i++)
+	for(int i = 0; i < m_filteredList.numElem(); i++)
 	{
-		if(m_filteredlist[i]->m_model == pModel)
+		if(m_filteredList[i]->m_model == pModel)
 		{
-			selection_id = i;
+			m_selection = i;
 			return;
 		}
 	}
@@ -835,7 +729,7 @@ void CModelListRenderPanel::RefreshScrollbar()
 
 	float fSize = (float)m_nPreviewSize;
 
-	for(int i = 0; i < m_filteredlist.numElem(); i++)
+	for(int i = 0; i < m_filteredList.numElem(); i++)
 	{
 		float x_offset = 16 + nItem*(fSize+16);
 
@@ -851,7 +745,7 @@ void CModelListRenderPanel::RefreshScrollbar()
 
 	if(numItems > 0)
 	{
-		int estimated_lines = m_filteredlist.numElem() / numItems;
+		int estimated_lines = m_filteredList.numElem() / numItems;
 
 		SetScrollbar(wxVERTICAL, 0, 8, estimated_lines + 10);
 	}
@@ -869,9 +763,9 @@ void CModelListRenderPanel::ChangeFilter(const wxString& filter, const wxString&
 	m_filter = filter;
 	m_filterTags = tags;
 
-	selection_id = -1;
+	m_selection = -1;
 
-	m_filteredlist.clear();
+	m_filteredList.clear();
 
 	DkList<CLevObjectDef*> shownArray;
 
@@ -898,7 +792,7 @@ void CModelListRenderPanel::ChangeFilter(const wxString& filter, const wxString&
 
 	if(filter.Length() == 0)
 	{
-		m_filteredlist.append(shownArray);
+		m_filteredList.append(shownArray);
 
 		RefreshScrollbar();
 
@@ -912,7 +806,7 @@ void CModelListRenderPanel::ChangeFilter(const wxString& filter, const wxString&
 			int foundIndex = shownArray[i]->m_name.Find(filter.c_str());
 
 			if(foundIndex != -1)
-				m_filteredlist.append(shownArray[i]);
+				m_filteredList.append(shownArray[i]);
 		}
 	}
 
@@ -921,7 +815,7 @@ void CModelListRenderPanel::ChangeFilter(const wxString& filter, const wxString&
 	Redraw();
 }
 
-void CModelListRenderPanel::AddLevelModels()
+void CModelListRenderPanel::RefreshLevelModels()
 {
 	for(int i = 0; i < g_pGameWorld->m_level.m_objectDefs.numElem(); i++)
 	{
@@ -936,8 +830,8 @@ void CModelListRenderPanel::AddLevelModels()
 		}
 	}
 
-	m_filteredlist.clear(false);
-	m_filteredlist.append( g_pGameWorld->m_level.m_objectDefs );
+	m_filteredList.clear(false);
+	m_filteredList.append( g_pGameWorld->m_level.m_objectDefs );
 
 	// refresh definition list?
 
@@ -950,7 +844,7 @@ void CModelListRenderPanel::AddModel(CLevObjectDef* container)
 	container->m_model->Ref_Grab();
 
 	g_pGameWorld->m_level.m_objectDefs.append(container);
-	AddLevelModels();
+	RefreshLevelModels();
 }
 
 void CModelListRenderPanel::RemoveModel(CLevObjectDef* container)
@@ -979,7 +873,7 @@ void CModelListRenderPanel::RemoveModel(CLevObjectDef* container)
 
 	delete container;
 
-	AddLevelModels();
+	RefreshLevelModels();
 }
 
 //-----------------------------------------------------------------------------------------------------------------
@@ -1813,7 +1707,7 @@ void CUI_LevelModels::OnLevelUnload()
 
 void CUI_LevelModels::OnLevelLoad()
 {
-	m_modelPicker->AddLevelModels();
+	m_modelPicker->RefreshLevelModels();
 	RefreshModelReplacement();
 }
 

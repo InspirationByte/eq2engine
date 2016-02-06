@@ -16,10 +16,10 @@ CParticleLowLevelRenderer*	g_pPFXRenderer = &s_pfxRenderer;
 
 //----------------------------------------------------------------------------------------------------
 
-#define MAX_PARTICLES	16384 // per frame, per group, quad-oriented
+ConVar r_particleBufferSize("r_particleBufferSize", "16384", "particle buffer size, change requires restart game", CV_ARCHIVE);
 
-#define PVBO_MAX_SIZE	(MAX_PARTICLES*sizeof(PFXVertex_t)*4)
-#define PIBO_MAX_SIZE	(MAX_PARTICLES*(sizeof(uint16)*6))
+#define PVBO_MAX_SIZE(s)	(s*sizeof(PFXVertex_t)*4)
+#define PIBO_MAX_SIZE(s)	(s*(sizeof(uint16)*6))
 
 CParticleRenderGroup::CParticleRenderGroup() : 	
 	m_pMaterial(NULL),
@@ -32,7 +32,8 @@ CParticleRenderGroup::CParticleRenderGroup() :
 	m_vertexBuffer(NULL),
 	m_indexBuffer(NULL),
 	m_vertexFormat(NULL),
-	m_useCustomProjMat(false)
+	m_useCustomProjMat(false),
+	m_maxQuadVerts(0)
 {
 
 }
@@ -42,7 +43,7 @@ CParticleRenderGroup::~CParticleRenderGroup()
 	Shutdown();
 }
 
-void CParticleRenderGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO )
+void CParticleRenderGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO, int maxQuads )
 {
 	m_bHasOwnVBO = bCreateOwnVBO;
 
@@ -52,9 +53,11 @@ void CParticleRenderGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO
 	m_pMaterial = materials->FindMaterial(pszMaterialName, true);
 	m_pMaterial->Ref_Grab();
 
+	m_maxQuadVerts = min(r_particleBufferSize.GetInt(), maxQuads);
+
 	// init buffers
-	m_pVerts	= (PFXVertex_t*)malloc(PVBO_MAX_SIZE);
-	m_pIndices	= (uint16*)malloc(PIBO_MAX_SIZE);
+	m_pVerts	= (PFXVertex_t*)malloc(PVBO_MAX_SIZE(m_maxQuadVerts));
+	m_pIndices	= (uint16*)malloc(PIBO_MAX_SIZE(m_maxQuadVerts));
 
 	if(!m_pVerts)
 		ASSERT(!"FAILED TO ALLOCATE VERTICES!\n");
@@ -95,7 +98,7 @@ void CParticleRenderGroup::AddIndex(uint16 idx)
 	if(!g_pPFXRenderer->IsInitialized())
 		return;
 
-	if(m_numVertices*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE)
+	if(m_numVertices*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE(m_maxQuadVerts))
 	{
 		MsgWarning("ParticleRenderGroup overflow\n");
 
@@ -142,7 +145,7 @@ void CParticleRenderGroup::AddParticleGeom(PFXVertex_t* verts, uint16* indices, 
 	if(!g_pPFXRenderer->IsInitialized())
 		return;
 
-	if(m_numVertices*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE)
+	if(m_numVertices*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE(m_maxQuadVerts))
 	{
 		MsgWarning("ParticleRenderGroup overflow\n");
 
@@ -197,7 +200,7 @@ int CParticleRenderGroup::AllocateGeom( int nVertices, int nIndices, PFXVertex_t
 	if(!g_pPFXRenderer->IsInitialized())
 		return -1;
 
-	if(m_numVertices*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE)
+	if(m_numVertices*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE(m_maxQuadVerts))
 	{
 		// don't warn me about overflow
 		m_numVertices = 0;
@@ -242,7 +245,7 @@ void CParticleRenderGroup::AddParticleStrip(PFXVertex_t* verts, int nVertices)
 	if(nVertices == 0)
 		return;
 
-	if(m_numVertices*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE)
+	if(m_numVertices*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE(m_maxQuadVerts))
 	{
 		MsgWarning("ParticleRenderGroup overflow\n");
 
@@ -379,10 +382,10 @@ CPFXAtlasGroup::CPFXAtlasGroup() : CParticleRenderGroup(), CTextureAtlas()
 
 }
 
-void CPFXAtlasGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO )
+void CPFXAtlasGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO, int maxQuads )
 {
 	if( CTextureAtlas::Load(pszMaterialName, pszMaterialName) )
-		CParticleRenderGroup::Init( m_material.GetData(), bCreateOwnVBO );
+		CParticleRenderGroup::Init( m_material.GetData(), bCreateOwnVBO, maxQuads);
 }
 
 void CPFXAtlasGroup::Shutdown()
@@ -443,19 +446,21 @@ bool CParticleLowLevelRenderer::InitBuffers()
 
 	MsgWarning("Initializing particle buffers...\n");
 
+	m_vbMaxQuads = r_particleBufferSize.GetInt();
+
 	if(!m_vertexBuffer)
 	{
-		void* tmpVert = malloc(PVBO_MAX_SIZE);
+		void* tmpVert = malloc(PVBO_MAX_SIZE(m_vbMaxQuads));
 
-		m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_PARTICLES, sizeof(PFXVertex_t), tmpVert);
+		m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, m_vbMaxQuads*4, sizeof(PFXVertex_t), tmpVert);
 		free(tmpVert);
 	}
 
 	if(!m_indexBuffer)
 	{
-		void* tmpIdx = malloc(PIBO_MAX_SIZE);
+		void* tmpIdx = malloc(PIBO_MAX_SIZE(m_vbMaxQuads));
 
-		m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(MAX_PARTICLES*2, sizeof(int16), BUFFER_DYNAMIC, tmpIdx);
+		m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(m_vbMaxQuads*6, sizeof(int16), BUFFER_DYNAMIC, tmpIdx);
 		free(tmpIdx);
 	}
 
@@ -542,7 +547,7 @@ bool CParticleLowLevelRenderer::MakeVBOFrom(CParticleRenderGroup* pGroup)
 	if(nVerts == 0 || nIndices == 0)
 		return false;
 	
-	if(nVerts*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE)
+	if(nVerts*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE(m_vbMaxQuads))
 		return false;
 
 	PFXVertex_t* copyVerts = NULL;

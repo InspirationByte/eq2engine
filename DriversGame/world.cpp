@@ -394,7 +394,7 @@ void CGameWorld::Init()
 	if(!g_vehicleEffects)
 	{
 		g_vehicleEffects = new CPFXAtlasGroup();
-		g_vehicleEffects->Init("scripts/effects_vehicles.atlas", false);
+		g_vehicleEffects->Init("scripts/effects_vehicles.atlas", false, 8192);
 		g_pPFXRenderer->AddRenderGroup( g_vehicleEffects );
 	}
 
@@ -408,14 +408,14 @@ void CGameWorld::Init()
 	if(!g_translParticles)
 	{
 		g_translParticles = new CPFXAtlasGroup();
-		g_translParticles->Init("scripts/effects_translucent.atlas", false);
+		g_translParticles->Init("scripts/effects_translucent.atlas", false, 8192);
 		g_pPFXRenderer->AddRenderGroup( g_translParticles );
 	}
 
 	if(!g_additPartcles)
 	{
 		g_additPartcles = new CPFXAtlasGroup();
-		g_additPartcles->Init("scripts/effects_additive.atlas", false);
+		g_additPartcles->Init("scripts/effects_additive.atlas", false, 4096);
 		g_pPFXRenderer->AddRenderGroup( g_additPartcles );
 
 		int lightId = g_additPartcles->FindEntryIndex("glow1");

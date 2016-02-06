@@ -62,7 +62,7 @@ public:
 						CParticleRenderGroup();
 			virtual		~CParticleRenderGroup();
 
-	virtual void		Init( const char* pszMaterialName, bool bCreateOwnVBO );
+	virtual void		Init( const char* pszMaterialName, bool bCreateOwnVBO = false, int maxQuads = 16384 );
 	virtual void		Shutdown();
 
 	// adds geometry to particle buffers
@@ -113,6 +113,8 @@ protected:
 	int					m_numVertices;
 	int					m_numIndices;
 
+	int					m_maxQuadVerts;
+
 	// uses own VBO? (in case if decals or something rendered)
 	bool				m_bHasOwnVBO;
 
@@ -133,7 +135,7 @@ class CPFXAtlasGroup : public CParticleRenderGroup, public CTextureAtlas
 public:
 	CPFXAtlasGroup();
 
-	void				Init( const char* pszMaterialName, bool bCreateOwnVBO );
+	void				Init( const char* pszMaterialName, bool bCreateOwnVBO, int maxQuads = 16384 );
 	void				Shutdown();
 };
 
@@ -176,6 +178,8 @@ protected:
 	IVertexBuffer*					m_vertexBuffer;
 	IIndexBuffer*					m_indexBuffer;
 	IVertexFormat*					m_vertexFormat;
+
+	int								m_vbMaxQuads;
 
 	bool							m_initialized;
 };

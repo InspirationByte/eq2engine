@@ -403,6 +403,9 @@
     <ClInclude Include="..\DriversGame\levelobject.h">
       <Filter>Source Files\World</Filter>
     </ClInclude>
+    <ClInclude Include="GenericImageListRenderer.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Notes.txt" />
@@ -590,6 +593,9 @@
     </ClCompile>
     <ClCompile Include="..\DriversGame\levelobject.cpp">
       <Filter>Source Files\World</Filter>
+    </ClCompile>
+    <ClCompile Include="GenericImageListRenderer.cpp">
+      <Filter>Source Files\Editor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

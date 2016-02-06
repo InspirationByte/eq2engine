@@ -140,16 +140,11 @@ bool g_bTexturesInit = false;
 
 CMaterialAtlasList::CMaterialAtlasList(CUI_HeightEdit* parent) : wxPanel( parent, 0,0,640,480 )
 {
-	m_pFont = NULL;
 	m_swapChain = NULL;
 
 	SetScrollbar(wxVERTICAL, 0, 8, 100);
 
-	selection_id = -1;
-	pointer_position = vec2_zero;
-
 	m_nPreviewSize = 128;
-	m_bAspectFix = true;
 	m_heightEdit = parent;
 }
 
@@ -157,16 +152,16 @@ CMaterialAtlasList::CMaterialAtlasList(CUI_HeightEdit* parent) : wxPanel( parent
 
 void CMaterialAtlasList::OnMouseMotion(wxMouseEvent& event)
 {
-	pointer_position.x = event.GetX();
-	pointer_position.y = event.GetY();
+	m_mousePos.x = event.GetX();
+	m_mousePos.y = event.GetY();
 
 	if( event.Dragging() && GetSelectedMaterial() )
 	{
-		if(mouseover_id == -1)
+		if(m_mouseOver == -1)
 			return;
 
 		CPointerDataObject dropData;
-		dropData.SetCompositeMaterial( &m_filteredlist[mouseover_id] );
+		dropData.SetCompositeMaterial( &m_filteredList[m_mouseOver] );
 		wxDropSource dragSource( dropData, this );
 
 		wxDragResult result = dragSource.DoDragDrop( wxDrag_CopyOnly );
@@ -236,10 +231,7 @@ void CMaterialAtlasList::OnScrollbarChange(wxScrollWinEvent& event)
 void CMaterialAtlasList::OnMouseClick(wxMouseEvent& event)
 {
 	// set selection to mouse over
-	selection_id = mouseover_id;
-
-	if(selection_id == -1)
-		return;
+	m_selection = m_mouseOver;
 }
 
 void CMaterialAtlasList::OnIdle(wxIdleEvent &event)
@@ -248,6 +240,69 @@ void CMaterialAtlasList::OnIdle(wxIdleEvent &event)
 
 void CMaterialAtlasList::OnEraseBackground(wxEraseEvent& event)
 {
+}
+
+Rectangle_t CMaterialAtlasList::ItemGetImageCoordinates( matAtlasElem_t& item )
+{
+	if(item.entry)
+		return item.entry->rect;
+	else
+		return Rectangle_t(0,0,1,1);
+}
+
+ITexture* CMaterialAtlasList::ItemGetImage( matAtlasElem_t& item )
+{
+	// preload
+	materials->PutMaterialToLoadingQueue( item.material );
+
+	if(item.material->GetState() == MATERIAL_LOAD_OK && item.material->GetBaseTexture())
+		return item.material->GetBaseTexture();
+	else
+		return g_pShaderAPI->GetErrorTexture();
+}
+
+void CMaterialAtlasList::ItemPostRender( int id, matAtlasElem_t& item, const IRectangle& rect )
+{
+	Rectangle_t name_rect(rect.GetLeftBottom(), rect.GetRightBottom() + Vector2D(0,25));
+	name_rect.Fix();
+
+	Vector2D lt = name_rect.GetLeftTop();
+	Vector2D rb = name_rect.GetRightBottom();
+
+	Vertex2D_t name_line[] = {MAKETEXQUAD(lt.x, lt.y, rb.x, rb.y, 0)};
+
+	ColorRGBA nameBackCol = ColorRGBA(0.25,0.25,1,1);
+
+	if(m_selection == id)
+		nameBackCol = ColorRGBA(1,0.25,0.25,1);
+	else if(m_mouseOver == id)
+		nameBackCol = ColorRGBA(0.25,0.1,0.25,1);
+
+	// draw name panel
+	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, nameBackCol);
+
+	EqString material_name = item.material->GetName();
+	material_name.Replace( CORRECT_PATH_SEPARATOR, '\n' );
+
+	eqFontStyleParam_t fontParam;
+	fontParam.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+	fontParam.textColor = ColorRGBA(1,1,1,1);
+
+	// render text
+	m_debugFont->RenderText(material_name.c_str(), name_rect.vleftTop, fontParam);
+
+	if(item.material->IsError())
+		m_debugFont->RenderText("BAD MATERIAL", rect.GetLeftTop(), fontParam);
+	else if(!item.material->GetBaseTexture())
+		m_debugFont->RenderText("no texture", rect.GetLeftTop() + Vector2D(0,10), fontParam);
+
+	// show atlas entry name
+	if(item.entry)
+	{
+		fontParam.textColor.w *= 0.5f;
+		m_debugFont->RenderText(item.entry->name, rect.GetLeftTop(), fontParam);
+		fontParam.textColor.w = 1.0f;
+	}
 }
 
 void CMaterialAtlasList::Redraw()
@@ -261,31 +316,12 @@ void CMaterialAtlasList::Redraw()
 	if(!IsShown() && !IsShownOnScreen())
 		return;
 
-	if(!m_pFont)
-		m_pFont = g_fontCache->GetFont("debug", 0);
-
 	g_bTexturesInit = true;
 
 	int w, h;
 	GetClientSize(&w, &h);
 
 	g_pShaderAPI->SetViewport(0, 0, w, h);
-
-	materials->GetConfiguration().wireframeMode = false;
-	materials->SetAmbientColor( color4_white );
-
-	BlendStateParam_t blendParams;
-	blendParams.alphaTest = false;
-	blendParams.alphaTestRef = 1.0f;
-	blendParams.blendEnable = false;
-	blendParams.srcFactor = BLENDFACTOR_ONE;
-	blendParams.dstFactor = BLENDFACTOR_ZERO;
-	blendParams.mask = COLORMASK_ALL;
-	blendParams.blendFunc = BLENDFUNC_ADD;
-
-	eqFontStyleParam_t fontParam;
-	fontParam.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-	fontParam.textColor = ColorRGBA(1,1,1,1);
 
 	if( materials->BeginFrame() )
 	{
@@ -297,149 +333,12 @@ void CMaterialAtlasList::Redraw()
 			return;
 		}
 
-		materials->Setup2D(w,h);
-
-		int nLine = 0;
-		int nItem = 0;
-
-		Rectangle_t screenRect(0,0, w,h);
-		screenRect.Fix();
-
 		float scrollbarpercent = GetScrollPos(wxVERTICAL);
 
-		int numItems = 0;
+		IRectangle screenRect(0,0, w,h);
+		screenRect.Fix();
 
-		float fSize = (float)m_nPreviewSize;
-
-		for(int i = 0; i < m_filteredlist.numElem(); i++)
-		{
-			float x_offset = 16 + nItem*(fSize+16);
-
-			if(x_offset + fSize > w)
-			{
-				numItems = i;
-				break;
-			}
-
-			numItems++;
-			nItem++;
-		}
-
-		if(numItems > 0)
-		{
-			nItem = 0;
-
-			for(int i = 0; i < m_filteredlist.numElem(); i++)
-			{
-				matAtlasElem_t& elem = m_filteredlist[i];
-
-				if(nItem >= numItems)
-				{
-					nItem = 0;
-					nLine++;
-				}
-
-				float x_offset = 16 + nItem*(fSize+16);
-				float y_offset = 8 + nLine*(fSize+48);
-
-				y_offset -= scrollbarpercent*(fSize+48);
-
-				Rectangle_t check_rect(x_offset, y_offset, x_offset + fSize,y_offset + fSize);
-				check_rect.Fix();
-
-				if( check_rect.vleftTop.y > screenRect.vrightBottom.y )
-					break;
-
-				if( !screenRect.IsIntersectsRectangle(check_rect) )
-				{
-					nItem++;
-					continue;
-				}
-
-				float texture_aspect = 1.0f;
-				float x_scale = 1.0f;
-				float y_scale = 1.0f;
-
-				ITexture* pTex = g_pShaderAPI->GetErrorTexture();
-				if(!elem.material->IsError())
-				{
-					// preload
-					materials->PutMaterialToLoadingQueue( elem.material );
-
-					if(elem.material->GetState() == MATERIAL_LOAD_OK && elem.material->GetBaseTexture())
-						pTex = elem.material->GetBaseTexture();
-					else
-						pTex = g_pShaderAPI->GetErrorTexture();
-
-					if(pTex) // TODO: atlas aspect, size, etc
-						texture_aspect = pTex->GetWidth() / pTex->GetHeight();
-				}
-
-				if(m_bAspectFix && (pTex->GetWidth() > pTex->GetHeight()))
-					y_scale /= texture_aspect;
-
-				Rectangle_t name_rect(x_offset, y_offset+fSize, x_offset + fSize,y_offset + fSize + 400);
-
-				Vertex2D_t verts[] = {MAKETEXQUAD(x_offset, y_offset, x_offset + fSize*x_scale,y_offset + fSize*y_scale, 0)};
-				Vertex2D_t name_line[] = {MAKETEXQUAD(x_offset, y_offset+fSize, x_offset + fSize,y_offset + fSize + 25, 0)};
-				
-				EqString material_name = elem.material->GetName();
-				material_name.Replace( CORRECT_PATH_SEPARATOR, '\n' );
-
-				if(elem.entry)
-				{
-					verts[0].m_vTexCoord = elem.entry->rect.GetLeftTop();
-					verts[1].m_vTexCoord = elem.entry->rect.GetLeftBottom();
-					verts[2].m_vTexCoord = elem.entry->rect.GetRightTop();
-					verts[3].m_vTexCoord = elem.entry->rect.GetRightBottom();
-				}
-
-				// draw name panel
-				materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, ColorRGBA(0.25,0.25,1,1), &blendParams);
-
-				// mouseover rectangle
-				if( check_rect.IsInRectangle( pointer_position ) )
-				{
-					mouseover_id = i;
-
-					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, verts,4, pTex, ColorRGBA(1,0.5f,0.5f,1), &blendParams);
-
-					Vertex2D rectVerts[] = {MAKETEXRECT(x_offset, y_offset, x_offset + fSize,y_offset + fSize, 0)};
-
-					materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, rectVerts, elementsOf(rectVerts), NULL, ColorRGBA(1,0,0,1));
-					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, ColorRGBA(0.25,0.1,0.25,1), &blendParams);
-				}
-				else
-					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, verts,4, pTex, color4_white, &blendParams);
-
-				// draw selection rectangle
-				if(selection_id == i)
-				{
-					Vertex2D rectVerts[] = {MAKETEXRECT(x_offset, y_offset, x_offset + fSize,y_offset + fSize, 0)};
-
-					materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, rectVerts, elementsOf(rectVerts), NULL, ColorRGBA(0,1,0,1));
-					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, ColorRGBA(1,0.25,0.25,1), &blendParams);
-				}
-
-				// render text
-				m_pFont->RenderText(material_name.c_str(), name_rect.vleftTop, fontParam);
-
-				if(elem.material->IsError())
-					m_pFont->RenderText("BAD MATERIAL", Vector2D(x_offset, y_offset), fontParam);
-				else if(!elem.material->GetBaseTexture())
-					m_pFont->RenderText("no texture", Vector2D(x_offset, y_offset+10), fontParam);
-
-				// show atlas entry name
-				if(elem.entry)
-				{
-					fontParam.textColor.w *= 0.5f;
-					m_pFont->RenderText(elem.entry->name, Vector2D(x_offset, y_offset), fontParam);
-					fontParam.textColor.w = 1.0f;
-				}
-
-				nItem++;
-			}
-		}
+		RedrawItems(screenRect, scrollbarpercent, m_nPreviewSize);
 
 		materials->EndFrame(m_swapChain);
 	}
@@ -448,7 +347,7 @@ void CMaterialAtlasList::Redraw()
 void CMaterialAtlasList::ReloadMaterialList()
 {
 	// reset
-	selection_id = -1;
+	m_selection = -1;
 
 	bool no_materails = (m_materialslist.numElem() == 0);
 
@@ -493,7 +392,7 @@ void CMaterialAtlasList::ReloadMaterialList()
 
 	// clean materials and filter list
 	m_materialslist.clear();
-	m_filteredlist.clear();
+	m_filteredList.clear();
 
 	EqString base_path(EqString(GetFileSystem()->GetCurrentGameDirectory()) + EqString("/") + materials->GetMaterialPath());
 	base_path = base_path.Left(base_path.GetLength()-1);
@@ -507,9 +406,9 @@ void CMaterialAtlasList::ReloadMaterialList()
 
 void CMaterialAtlasList::UpdateAndFilterList()
 {
-	selection_id = -1;
+	m_selection = -1;
 
-	m_filteredlist.clear();
+	m_filteredList.clear();
 
 	for(int i = 0; i < m_materialslist.numElem(); i++)
 	{
@@ -537,7 +436,7 @@ void CMaterialAtlasList::UpdateAndFilterList()
 				}
 
 				// add material with atlas entry
-				m_filteredlist.append( matAtlasElem_t(entry, j, m_materialslist[i].material) );
+				m_filteredList.append( matAtlasElem_t(entry, j, m_materialslist[i].material) );
 			}
 				
 		}
@@ -555,7 +454,7 @@ void CMaterialAtlasList::UpdateAndFilterList()
 			}
 
 			// add just material
-			m_filteredlist.append( matAtlasElem_t(NULL, 0, m_materialslist[i].material) );
+			m_filteredList.append( matAtlasElem_t(NULL, 0, m_materialslist[i].material) );
 		}
 	}
 
@@ -565,25 +464,25 @@ void CMaterialAtlasList::UpdateAndFilterList()
 
 int CMaterialAtlasList::GetSelectedAtlas() const
 {
-	if(selection_id == 0)
+	if(m_selection == 0)
 		return NULL;
 
-	return m_filteredlist[selection_id].entryIdx;
+	return m_filteredList[m_selection].entryIdx;
 }
 
 IMaterial* CMaterialAtlasList::GetSelectedMaterial() const
 {
-	if(selection_id == -1)
+	if(m_selection == -1)
 		return NULL;
 
-	return m_filteredlist[selection_id].material;
+	return m_filteredList[m_selection].material;
 }
 
 void CMaterialAtlasList::SelectMaterial(IMaterial* pMaterial, int atlasIdx)
 {
 	if(pMaterial == NULL)
 	{
-		selection_id = -1;
+		m_selection = -1;
 		return;
 	}
 
@@ -591,7 +490,7 @@ void CMaterialAtlasList::SelectMaterial(IMaterial* pMaterial, int atlasIdx)
 	tmp.material = pMaterial;
 	tmp.entryIdx = atlasIdx;
 
-	selection_id = m_filteredlist.findIndex( tmp, matAtlasElem_t::CompareByMaterialWithAtlasIdx );
+	m_selection = m_filteredList.findIndex( tmp, matAtlasElem_t::CompareByMaterialWithAtlasIdx );
 }
 
 bool CMaterialAtlasList::CheckDirForMaterials(const char* filename_to_add)
@@ -668,7 +567,7 @@ bool CMaterialAtlasList::CheckDirForMaterials(const char* filename_to_add)
 		FindClose(hFile);
 	}
 
-	selection_id = -1;
+	m_selection = -1;
 
 	return true;
 }
@@ -679,7 +578,6 @@ void CMaterialAtlasList::SetPreviewParams(int preview_size, bool bAspectFix)
 		RefreshScrollbar();
 
 	m_nPreviewSize = preview_size;
-	m_bAspectFix = bAspectFix;
 }
 
 void CMaterialAtlasList::RefreshScrollbar()
@@ -696,7 +594,7 @@ void CMaterialAtlasList::RefreshScrollbar()
 
 	float fSize = (float)m_nPreviewSize;
 
-	for(int i = 0; i < m_filteredlist.numElem(); i++)
+	for(int i = 0; i < m_filteredList.numElem(); i++)
 	{
 		float x_offset = 16 + nItem*(fSize+16);
 
@@ -712,7 +610,7 @@ void CMaterialAtlasList::RefreshScrollbar()
 
 	if(numItems > 0)
 	{
-		int estimated_lines = m_filteredlist.numElem() / numItems;
+		int estimated_lines = m_filteredList.numElem() / numItems;
 
 		SetScrollbar(wxVERTICAL, 0, 8, estimated_lines + 10);
 	}

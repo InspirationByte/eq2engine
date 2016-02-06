@@ -11,6 +11,7 @@
 #include "EditorHeader.h"
 #include "BaseTilebasedEditor.h"
 #include "Font.h"
+#include "GenericImageListRenderer.h"
 
 class CUI_HeightEdit;
 
@@ -67,19 +68,10 @@ struct matAtlasElem_t
 };
 
 // texture list panel
-class CMaterialAtlasList : public wxPanel
+class CMaterialAtlasList : public wxPanel, CGenericImageListRenderer<matAtlasElem_t>
 {
 public:
     CMaterialAtlasList(CUI_HeightEdit* parent);
-
-	void					OnSizeEvent(wxSizeEvent &event);
-	void					OnIdle(wxIdleEvent &event);
-	void					OnEraseBackground(wxEraseEvent& event);
-	void					OnScrollbarChange(wxScrollWinEvent& event);
-		
-	void					OnMouseMotion(wxMouseEvent& event);
-	void					OnMouseScroll(wxMouseEvent& event);
-	void					OnMouseClick(wxMouseEvent& event);
 
 	void					ReloadMaterialList();
 
@@ -99,23 +91,28 @@ public:
 	DECLARE_EVENT_TABLE()
 protected:
 
+	void					OnSizeEvent(wxSizeEvent &event);
+	void					OnIdle(wxIdleEvent &event);
+	void					OnEraseBackground(wxEraseEvent& event);
+	void					OnScrollbarChange(wxScrollWinEvent& event);
+		
+	void					OnMouseMotion(wxMouseEvent& event);
+	void					OnMouseScroll(wxMouseEvent& event);
+	void					OnMouseClick(wxMouseEvent& event);
+
+	Rectangle_t				ItemGetImageCoordinates( matAtlasElem_t& item );
+	ITexture*				ItemGetImage( matAtlasElem_t& item );
+	void					ItemPostRender( int id, matAtlasElem_t& item, const IRectangle& rect );
+
 	bool					CheckDirForMaterials(const char* filename_to_add);
 
 	DkList<matAtlas_t>		m_materialslist;
-	DkList<matAtlasElem_t>	m_filteredlist;
 
 	DkList<EqString>		m_loadfilter;
-
-	IEqFont*				m_pFont;
-
-	Vector2D				pointer_position;
-	int						selection_id;
-	int						mouseover_id;
 
 	wxString				m_filter;
 	wxString				m_filterTags;
 
-	bool					m_bAspectFix;
 	int						m_nPreviewSize;
 
 	IEqSwapChain*			m_swapChain;

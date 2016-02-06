@@ -12,6 +12,7 @@
 #include "BaseTilebasedEditor.h"
 #include "Font.h"
 #include "DragDropObjects.h"
+#include "GenericImageListRenderer.h"
 
 enum ELayerType
 {
@@ -50,9 +51,9 @@ struct buildLayer_t
 	TexAtlasEntry_t*		atlEntry;
 };
 
-struct buildLayerCollection_t
+struct buildLayerColl_t
 {
-	buildLayerCollection_t()
+	buildLayerColl_t()
 	{
 	}
 
@@ -60,9 +61,7 @@ struct buildLayerCollection_t
 	DkList<buildLayer_t>	layers;
 };
 
-
-
-//------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 class CBuildingLayerEditDialog : public wxDialog, CPointerDropTarget
 {
@@ -78,7 +77,9 @@ public:
 	CBuildingLayerEditDialog( wxWindow* parent ); 
 	~CBuildingLayerEditDialog();
 
-	void UpdateSelection();
+	void				UpdateSelection();
+	void				SetLayerCollection(buildLayerColl_t* coll);
+	buildLayerColl_t*	GetLayerCollection() const;
 
 protected:
 
@@ -121,12 +122,63 @@ protected:
 	wxButton* m_previewBtn;
 
 	// what we modifying
-	buildLayerCollection_t	m_layerColl;
+	buildLayerColl_t*		m_layerColl;
 	buildLayer_t*			m_selLayer;
 	Vector2D				m_mousePos;
 	int						m_mouseoverItem;
 	int						m_selectedItem;
 	bool					m_preview;
+};
+
+//-----------------------------------------------------------------------------
+
+// texture list panel
+class CBuildingLayerList : public wxPanel, CGenericImageListRenderer<buildLayerColl_t*>
+{
+	friend class CUI_BuildingConstruct;
+
+public:
+    CBuildingLayerList(CUI_BuildingConstruct* parent);
+
+	void					ReloadList();
+
+	buildLayerColl_t*		GetSelectedLayerColl() const;
+
+	void					Redraw();
+
+	void					ChangeFilter(const wxString& filter);
+	void					UpdateAndFilterList();
+	void					SetPreviewParams(int preview_size, bool bAspectFix);
+
+	void					RefreshScrollbar();
+
+	buildLayerColl_t*		CreateCollection();
+	void					DeleteCollection(buildLayerColl_t* coll);
+
+	DECLARE_EVENT_TABLE()
+protected:
+
+	void						OnSizeEvent(wxSizeEvent &event);
+	void						OnIdle(wxIdleEvent &event);
+	void						OnEraseBackground(wxEraseEvent& event);
+	void						OnScrollbarChange(wxScrollWinEvent& event);
+		
+	void						OnMouseMotion(wxMouseEvent& event);
+	void						OnMouseScroll(wxMouseEvent& event);
+	void						OnMouseClick(wxMouseEvent& event);
+
+	Rectangle_t					ItemGetImageCoordinates( buildLayerColl_t*& item );
+	ITexture*					ItemGetImage( buildLayerColl_t*& item );
+	void						ItemPostRender( int id, buildLayerColl_t*& item, const IRectangle& rect );
+
+	DkList<buildLayerColl_t*>	m_layerCollections;
+
+	wxString					m_filter;
+
+	int							m_nPreviewSize;
+
+	IEqSwapChain*				m_swapChain;
+	CUI_BuildingConstruct*		m_bldConstruct;
 };
 
 //-----------------------------------------------------------------------------
@@ -157,8 +209,8 @@ protected:
 	void OnDeleteClick( wxCommandEvent& event );
 		
 	CBuildingLayerEditDialog* m_layerEditDlg;
+	CBuildingLayerList*	m_layerCollList;
 
-	wxPanel*			m_modelPicker;
 	wxPanel*			m_pSettingsPanel;
 	wxTextCtrl*			m_filtertext;
 	wxChoice*			m_pPreviewSize;

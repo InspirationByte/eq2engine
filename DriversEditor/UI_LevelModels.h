@@ -12,6 +12,8 @@
 #include "EditorHeader.h"
 #include "BaseTilebasedEditor.h"
 #include "Font.h"
+#include "GenericImageListRenderer.h"
+
 
 #include "editaxis.h"
 
@@ -32,7 +34,7 @@ struct refselectioninfo_t
 class CReplaceModelDialog;
 
 // texture list panel
-class CModelListRenderPanel : public wxPanel
+class CModelListRenderPanel : public wxPanel, CGenericImageListRenderer<CLevObjectDef*>
 {
 public:
     CModelListRenderPanel(wxWindow* parent);
@@ -64,20 +66,16 @@ public:
 
 	void					AddModel(CLevObjectDef* container);
 	void					RemoveModel(CLevObjectDef* container);
-	void					AddLevelModels();
+	void					RefreshLevelModels();
 
 	DECLARE_EVENT_TABLE()
 protected:
 
+	Rectangle_t				ItemGetImageCoordinates( CLevObjectDef*& item );
+	ITexture*				ItemGetImage( CLevObjectDef*& item );
+	void					ItemPostRender( int id, CLevObjectDef*& item, const IRectangle& rect );
+
 	wxMenu*					m_contextMenu;
-
-	DkList<CLevObjectDef*>	m_filteredlist;
-
-	IEqFont*				m_pFont;
-
-	Vector2D				pointer_position;
-	int						selection_id;
-	int						mouseover_id;
 
 	wxString				m_filter;
 	wxString				m_filterTags;
