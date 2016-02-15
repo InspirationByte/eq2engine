@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright Å  Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Core Debug interface - DarkTech Core Implementation
@@ -127,7 +127,7 @@ void Log_WriteBOM(const char* fileName)
 	if( GetFileSystem()->FileExist(fileName) )
 		return;
 
-	char bom[3] = {0xEF,0xBB,0xBF};
+	char bom[3] = {(char)0xEF,(char)0xBB,(char)0xBF};
 		
 	FILE* pFile = fopen( fileName, "w" );
 	if(pFile)
