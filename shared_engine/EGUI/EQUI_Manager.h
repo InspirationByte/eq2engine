@@ -12,7 +12,7 @@
 #include "math/rectangle.h"
 #include "utils/dklist.h"
 
-class CEqPanel;
+class CEqUI_Panel;
 
 class CEqUI_Manager
 {
@@ -23,14 +23,14 @@ public:
 	void				Init();
 	void				Shutdown();
 
-	CEqPanel*			GetRootPanel();
-	void				SetRootPanel(CEqPanel* pPanel);
+	CEqUI_Panel*		GetRootPanel();
+	void				SetRootPanel(CEqUI_Panel* pPanel);
 
 	// the element loader
-	CEqPanel*			CreateElement( const char* pszTypeName );
-	void				DestroyElement( CEqPanel* pPanel );
+	CEqUI_Panel*		CreateElement( const char* pszTypeName );
+	void				DestroyElement( CEqUI_Panel* pPanel );
 
-	CEqPanel*			FindPanel( const char* pszPanelName );
+	CEqUI_Panel*		FindPanel( const char* pszPanelName );
 	void				DumpPanelsToConsole();
 
 	void				SetViewFrame(const IRectangle& rect);
@@ -41,9 +41,9 @@ public:
 	bool				ProcessMouseEvents(float x, float y, int nMouseButtons, int nMouseFlags);
 	bool				ProcessKeyboardEvents(int nKeyButtons,int nKeyFlags);
 private:
-	CEqPanel*			m_pRootPanel;
+	CEqUI_Panel*		m_rootPanel;
 
-	DkList<CEqPanel*>	m_AllocatedPanels;
+	DkList<CEqUI_Panel*>	m_allocatedPanels;
 
 	IRectangle			m_viewFrameRect;
 	IMaterial*			m_material;

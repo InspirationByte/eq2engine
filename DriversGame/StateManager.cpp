@@ -20,6 +20,7 @@
 
 #include "state_title.h"
 #include "state_mainmenu.h"
+#include "state_lobby.h"
 
 #include "physics.h"
 #include "world.h"
@@ -110,6 +111,7 @@ void InitRegisterStates()
 	g_states[GAME_STATE_GAME] = g_State_Game;
 	g_states[GAME_STATE_TITLESCREEN] = g_State_Title;
 	g_states[GAME_STATE_MAINMENU] = g_State_MainMenu;
+	g_states[GAME_STATE_MPLOBBY] = g_State_NetLobby;
 
 	// TODO: other states
 

@@ -42,3 +42,41 @@ EventFilterResult_e FilterLobbyUnwantedMessages( CNetworkThread* pNetThread, CNe
 
 	return disallow ? EVENTFILTER_ERROR_NOTALLOWED : EVENTFILTER_OK;
 }
+
+CState_NetGameLobby::CState_NetGameLobby() : m_server(true), m_netThread(NULL)
+{
+
+}
+
+CState_NetGameLobby::~CState_NetGameLobby()
+{
+
+}
+
+void CState_NetGameLobby::OnEnter( CBaseStateHandler* from )
+{
+	// Init net interface and thread
+
+}
+
+void CState_NetGameLobby::OnLeave( CBaseStateHandler* to )
+{
+	// destroy net thread and interface
+}
+
+bool CState_NetGameLobby::Update( float fDt )
+{
+	return true;
+}
+
+void CState_NetGameLobby::HandleKeyPress( int key, bool down )
+{
+
+}
+
+void CState_NetGameLobby::OnEnterSelection( bool isFinal )
+{
+
+}
+
+CState_NetGameLobby* g_State_NetLobby = new CState_NetGameLobby();

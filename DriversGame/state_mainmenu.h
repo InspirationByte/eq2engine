@@ -33,20 +33,7 @@ public:
 	void		HandleJoyAxis( short axis, short value ) {}
 
 	//------------------------------------------------------
-	/*
-	void		SetMenuObject(OOLUA::Table& tabl);
 
-	void		SetMenuStackTop(OOLUA::Table& tabl);
-	void		SetMenuTable(OOLUA::Table& tabl);
-
-	void		PushMenu(OOLUA::Table& tabl);
-	void		PopMenu();
-	bool		IsCanPopMenu();
-
-	void		EnterSelection();
-
-	void		PreEnterSelection();
-	*/
 	void		OnEnterSelection( bool isFinal );
 
 protected:
@@ -59,20 +46,6 @@ protected:
 	float					m_textEffect;
 
 	ITexture*				m_titleTexture;
-	/*
-	OOLUA::Table			m_menuStack;
-
-	EqLua::LuaTableFuncRef	m_stackReset;
-	EqLua::LuaTableFuncRef	m_stackGetTop;
-	EqLua::LuaTableFuncRef	m_stackGetCurMenu;
-	EqLua::LuaTableFuncRef	m_stackPush;
-	EqLua::LuaTableFuncRef	m_stackPop;
-	EqLua::LuaTableFuncRef	m_stackCanPop;
-
-	OOLUA::Table			m_menuElems;
-	int						m_selection;
-	int						m_numElems;
-	*/
 };
 
 extern CState_MainMenu* g_State_MainMenu;

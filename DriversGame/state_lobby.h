@@ -20,14 +20,17 @@ enum ELobbyMsgs
 	CMSG_LOBBY_SERVER_INFO,	// send/recieve
 };
 
+//
+// lobby menu state class
+//
 class CState_NetGameLobby : public CBaseStateHandler, public CLuaMenu
 {
 public:
 				CState_NetGameLobby();
 				~CState_NetGameLobby();
 
-	bool		IsServer() const;
-	void		SetServer( bool isServer );
+	bool		IsServer() const {return m_server;}
+	void		SetServer( bool isServer ) {m_server = isServer;}
 
 	int			GetType() const {return GAME_STATE_MPLOBBY;}
 
@@ -42,6 +45,16 @@ public:
 	void		HandleMouseWheel(int x,int y,int scroll) {}
 
 	void		HandleJoyAxis( short axis, short value ) {}
+
+	void		OnEnterSelection( bool isFinal );
+
+protected:
+	bool				m_server;
+
+	INetworkInterface*	m_netIface;
+	CNetworkThread		m_netThread;
 };
+
+extern CState_NetGameLobby* g_State_NetLobby;
 
 #endif // LOBBY_H
