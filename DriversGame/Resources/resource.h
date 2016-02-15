@@ -1,12 +1,9 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by Resources.rc
+// Включаемый файл, созданный в Microsoft Visual C++.
+// Используется Resources.rc
 //
 #define IDI_MAINICON                    101
-#define IDD_DIALOG1                     102
-
 #define IDB_BITMAP1                     111
-
 #define IDC_IMAGE1                      1000
 
 // Next default values for new objects

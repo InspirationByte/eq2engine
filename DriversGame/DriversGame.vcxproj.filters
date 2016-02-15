@@ -339,6 +339,12 @@
     <ClCompile Include="region.cpp">
       <Filter>Файлы исходного кода\Game\World</Filter>
     </ClCompile>
+    <ClCompile Include="predictable_object.cpp">
+      <Filter>Файлы исходного кода\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="state_lobby.cpp">
+      <Filter>Файлы исходного кода\Game\States</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">
@@ -661,15 +667,21 @@
     <ClInclude Include="region.h">
       <Filter>Файлы исходного кода\Game\World</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\launcher_logo.bmp">
-      <Filter>Файлы ресурсов</Filter>
-    </None>
+    <ClInclude Include="predictable_object.h">
+      <Filter>Файлы исходного кода\Game\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="state_lobby.h">
+      <Filter>Файлы исходного кода\Game\States</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\Resources.rc">
       <Filter>Файлы ресурсов</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resources\mainicon.ico">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
   </ItemGroup>
 </Project>

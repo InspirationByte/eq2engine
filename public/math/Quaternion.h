@@ -69,6 +69,7 @@ Quaternion operator * (const float scalar, const Quaternion &v);
 Quaternion operator * (const Quaternion &v, const float scalar);
 Quaternion operator / (const Quaternion &v, const float dividend);
 Quaternion operator * (const TVec3D<float>& v, const Quaternion &q);
+Quaternion operator ! (const Quaternion &q);
 
 // ------------------------------------------------------------------------------
 
@@ -86,7 +87,7 @@ TVec3D<float>	eulers(const Quaternion &q);
 void		renormalize(Quaternion& q);
 
 // axis angle of quaternion
-void		axisAngle(Quaternion& q, TVec3D<float> &axis, float &angle);
+void		axisAngle(const Quaternion& q, TVec3D<float> &axis, float &angle);
 
 // compares quaternion with epsilon
 bool		compare_epsilon(const Quaternion &u, const Quaternion &v, const float eps);

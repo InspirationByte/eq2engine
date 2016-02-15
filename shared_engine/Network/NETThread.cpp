@@ -1,5 +1,5 @@
-//////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+п»ї//////////////////////////////////////////////////////////////////////////////////
+// Copyright пїЅ Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine network thread
@@ -637,7 +637,7 @@ bool CNetworkThread::ProcessMessage( rcvdmessage_t* pMsg, CNetMessageBuffer* pOu
 			Msg("Got dull MSGTYPE_DATA while pOutput=NULL!!!\n");
 		}
 
-		// MSGTYPE_DATA будет удалён немедленно, если поток не ожидает его
+		// MSGTYPE_DATA пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
 		return (type == MSGTYPE_DATA);
 	}
 
@@ -657,13 +657,13 @@ bool CNetworkThread::ProcessMessage( rcvdmessage_t* pMsg, CNetMessageBuffer* pOu
 			return true;
 		}
 
-		// установка информации клиента
+		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		pMessage->SetClientInfo( pMsg->addr, pMsg->clientid );
 
-		// прочитанный идентификатор синхронности
+		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		pEvent->SetID(nEventID);
 
-		// чтение данных сообщения
+		// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		pEvent->Unpack( this, pMessage );
 
 		m_nLastClientID = pMessage->GetClientID();
@@ -686,7 +686,7 @@ bool CNetworkThread::ProcessMessage( rcvdmessage_t* pMsg, CNetMessageBuffer* pOu
 
 		pOutput->ResetPos();
 
-		// установка информации клиента
+		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		pOutput->SetClientInfo( pMsg->addr, pMsg->clientid );
 	}
 
@@ -712,7 +712,7 @@ int CNetworkThread::SendEvent( CNetEvent* pEvent, int nEventType, int client_id 
 {
 	ASSERT(pEvent);
 
-	if(nEventType != -1) // проверка на ошибки программиста
+	if(nEventType != -1) // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	{
 		ASSERTMSG(nEventType == pEvent->GetEventType(), varargs("bad event type (%d vs %d)", nEventType, pEvent->GetEventType()));
 	}
@@ -733,7 +733,7 @@ int CNetworkThread::SendEvent( CNetEvent* pEvent, int nEventType, int client_id 
 #ifndef NO_LUA
 	int nLuaEventID = -1;
 
-	// событие для Lua начинается с NETTHREAD_EVENTS_LUA_START
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ Lua пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ NETTHREAD_EVENTS_LUA_START
 	if(evt.event_type >= NETTHREAD_EVENTS_LUA_START)
 	{
 		nLuaEventID = evt.event_type - NETTHREAD_EVENTS_LUA_START;
@@ -757,7 +757,7 @@ int CNetworkThread::SendEvent( CNetEvent* pEvent, int nEventType, int client_id 
 
 	int8 msg_type = MSGTYPE_EVENT;
 
-	// хоть и для Int это слишком мало, но... сброс
+	// пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ Int пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅ... пїЅпїЅпїЅпїЅпїЅ
 	if(m_nEventCounter >= 65535)
 		m_nEventCounter = 0;
 
@@ -770,16 +770,16 @@ int CNetworkThread::SendEvent( CNetEvent* pEvent, int nEventType, int client_id 
 	evt.pStream->WriteUInt16( evt.event_id ); // write increment event counter
 
 #ifndef NO_LUA
-	// ID Lua события.
-	// Читается в LUANetEventCallbackFactory, хотя по сути должна быть частью Pack/Unpack
+	// ID Lua пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ LUANetEventCallbackFactory, пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ Pack/Unpack
 	if(nLuaEventID >= 0)
 		evt.pStream->WriteUInt16( nLuaEventID );
 #endif // NO_LUA
 
-	// содержимое сообщения
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	pEvent->Pack( this, evt.pStream );
 
-	// добавить это в пул
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ
 	m_pSentEvents.append( evt );
 
 	return evt.event_id;
@@ -855,8 +855,8 @@ bool CNetworkThread::SendWaitDataEvent(CNetEvent* pEvent, int nEventType, CNetMe
 			break;
 
 		if(!bMessageIsUp ||
-			((m_Timer.GetTime() - fPendingLastTime > fTimeOut) ||	// обычный таймаут приёма (время на ответ сервера ACK)
-			(m_Timer.GetTime() - fStartTime > fPendingTimeOut)))	// тайм-аут по размеру сообщения
+			((m_Timer.GetTime() - fPendingLastTime > fTimeOut) ||	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ ACK)
+			(m_Timer.GetTime() - fStartTime > fPendingTimeOut)))	// пїЅпїЅпїЅпїЅ-пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		{
 			//Msg("message timed out (up=%d) (stimeout=%g, ptimeout=%g)\n", bMessageIsUp ? 1 : 0, m_Timer.GetTime() - fStartTime, m_Timer.GetTime() - fPendingLastTime);
 			break;
@@ -1028,14 +1028,14 @@ CNetEvent* CNetworkThread::CreateEvent( CNetMessageBuffer *pMsg, int eventIdenti
 CLuaNetEvent::CLuaNetEvent(lua_State* vm, OOLUA::Table& table)
 {
 	m_state = vm;
-	m_table = table;		// копировать таблицу, она ещё нужна нам
+	m_table = table;		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
 
 	EqLua::LuaStackGuard g(m_state);
 
-	// нужно подложить таблицу, чтобы можно было вытащить функцию
+	// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	m_table.push_on_stack( m_state );
 
-	// получить ссылки на функции
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	lua_getfield(m_state, -1, "Pack");
 	m_pack.set_ref(m_state, luaL_ref(m_state, LUA_REGISTRYINDEX));
 
@@ -1196,10 +1196,10 @@ bool CLuaNetEvent::OnDeliveryFailed()
 	return result;
 }
 
-// данная фабрика предназначена для LUA. Выполняет код
+// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ LUA. пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
 CNetEvent* LUANetEventCallbackFactory(CNetworkThread* thread, CNetMessageBuffer* msg)
 {
-	// вызвать функцию в LUA
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ LUA
 	OOLUA::Script& state = GetLuaState();
 
 	EqLua::LuaStackGuard s(state);
@@ -1213,7 +1213,7 @@ CNetEvent* LUANetEventCallbackFactory(CNetworkThread* thread, CNetMessageBuffer*
 		return NULL;
 	}
 
-	// получить таблицу
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if (lua_isnil(state, -1))
 	{
 		MsgError("LuaNetEvent ID '%d' is not registered, maybe you forgot to AddNetEvent?\n", nLuaEventID);
@@ -1231,7 +1231,7 @@ CNetEvent* LUANetEventCallbackFactory(CNetworkThread* thread, CNetMessageBuffer*
 
 			table.lua_get(state, -1);
 
-			// теперь то можно инициализироваться
+			// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 			return (CNetEvent*)new CLuaNetEvent(state, table);
 		}
 	}
@@ -1246,7 +1246,7 @@ int CNetworkThread::SendLuaEvent(OOLUA::Table& luaevent, int nEventType, int cli
 	CLuaNetEvent* pEvent = new CLuaNetEvent(luaevent.state(), luaevent);
 	//pEvent->m_nEventID = NETTHREAD_EVENTS_LUA_START;
 
-	// event type является сложенным.
+	// event type пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
 	return SendEvent(pEvent, NETTHREAD_EVENTS_LUA_START + nEventType, client_id);
 }
 

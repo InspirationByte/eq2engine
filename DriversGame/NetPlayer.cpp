@@ -10,57 +10,50 @@
 
 #pragma todo("joystick parameters")
 
-//ConVar cl_interp("cl_interp", "0.1", "Interpolation time");
-//ConVar cl_interp_ratio("cl_interp_ratio", "1.0", "Interpolation ratio");
-
 ConVar cl_predict("cl_predict", "1", "Prediction");
 ConVar cl_predict_ratio("cl_predict_ratio", "0.3", "Client prediction ratio");
 ConVar cl_predict_tolerance("cl_predict_tolerance", "5.0", "Interpolation tolerance");
+ConVar cl_predict_angtolerance("cl_predict_angtolerance", "0.7", "Angular Interpolation tolerance");
 ConVar cl_predict_correct_power("cl_predict_correct_power", "2.0", "Tolerance correction power");
 
 ConVar cl_predict_debug("cl_debug_predict", "0", "Client prediction debug");
 
-float GetSnapshotInterp( const playersnapshot_t& a, const playersnapshot_t& b, int curTick, float fTime )
+float GetSnapshotInterp( const netObjSnapshot_t& a, const netObjSnapshot_t& b, int curTick, float fTime )
 {
-	int snapTimeA = a.timeStamp;
-	int snapTimeB = b.timeStamp;
+	int snapTimeA = a.in.timeStamp;
+	int snapTimeB = b.in.timeStamp;
 
 	int tickDiff = snapTimeB-snapTimeA;
 
 	float timeDiff = TICKS_TO_TIME(tickDiff);
 
-	float tickTime = TICKS_TO_TIME(curTick-snapTimeA);
-
-	float fLerp = fTime / timeDiff;//TICKS_TO_TIME(TIME_TO_TICKS(fTime)) * cl_interp.GetFloat();
-
-	//float fLerp = RemapVal( fIterpAmount*cl_interp_ratio.GetFloat(), 0.0f, timeDiff, 0.0f, 1.0f );
-	//float fLerp = RemapVal( (tickTime*cl_interp.GetFloat()+fIterpAmount)*cl_interp_ratio.GetFloat(), 0.0f, timeDiff, 0.0f, 1.0f );
+	float fLerp = fTime / timeDiff;
 
 	debugoverlay->Text(ColorRGBA(1,1,0,1), "GetSnapshotInterp: fTime=%.3f s, timeDiff=%.3f s numTickDiff=%d LERP=%g\n", fTime, timeDiff, tickDiff, fLerp);
 
 	return fLerp;
 }
 
-void InterpolateSnapshots(const playersnapshot_t& a, const playersnapshot_t& b, float factor, playersnapshot_t& result)
+void InterpolateSnapshots(const netObjSnapshot_t& a, const netObjSnapshot_t& b, float factor, netObjSnapshot_t& result)
 {
 	float fLerp = clamp(factor, -1.0f, 2.0f);
 
-	result.car_pos = lerp(a.car_pos, b.car_pos, fLerp);
+	result.position = lerp(a.position, b.position, fLerp);
 
 	// NaN test
 	if(!isnan(fLerp))
 	{
-		Quaternion resRot = slerp(a.car_rot, b.car_rot, fLerp);
+		Quaternion resRot = slerp(a.rotation, b.rotation, fLerp);
 		resRot.fastNormalize();
-		result.car_rot = resRot;
+		result.rotation = resRot;
 	}
 	else
-		result.car_rot = identity();
+		result.rotation = identity();
 
 	//result.car_angvel = lerp(a.car_angvel, b.car_angvel, fLerp);
-	result.car_vel = lerp(a.car_vel, b.car_vel, fLerp);
-	result.controls = (fLerp < 0.5f) ? a.controls : b.controls;
-	result.timeStamp = 0;
+	result.velocity = lerp(a.velocity, b.velocity, fLerp);
+	result.in.controls = (fLerp < 0.5f) ? a.in.controls : b.in.controls;
+	result.in.timeStamp = 0;
 }
 
 //
@@ -88,8 +81,8 @@ CNetPlayer::CNetPlayer( int clientID, const char* name )
 
 	m_curSnapshot = 0;
 	memset(m_snapshots, 0, sizeof(m_snapshots));
-	m_snapshots[0].car_rot = identity();
-	m_snapshots[1].car_rot = identity();
+	m_snapshots[0].rotation = identity();
+	m_snapshots[1].rotation = identity();
 
 	m_packetLatency = 0.0f;
 	m_interpTime = 0.0f;
@@ -130,12 +123,12 @@ bool CNetPlayer::IsAlive()
 }
 
 // client recieve
-bool CNetPlayer::AddSnapshot( const netsnapshot_t& snapshot )
+bool CNetPlayer::AddSnapshot( const netSnapshot_t& snapshot )
 {
-	if( m_snapshots[0].timeStamp >= snapshot.timeStamp)
+	if( m_snapshots[0].in.timeStamp >= snapshot.in.timeStamp)
 		return false;
 
-	if( m_snapshots[1].timeStamp >= snapshot.timeStamp )
+	if( m_snapshots[1].in.timeStamp >= snapshot.in.timeStamp )
 		return false;
 
 	float lastLat = m_snapshots[m_curSnapshot].latency;
@@ -149,10 +142,7 @@ bool CNetPlayer::AddSnapshot( const netsnapshot_t& snapshot )
 	m_curSnapshot++;
 
 	if(m_curSnapshot > 1)
-	{
-		//m_fCurTime = 0.0f;
 		m_curSnapshot = 0;
-	}
 
 	m_interpTime = 0.0f;
 	m_fLastCmdTime = m_fCurTime;
@@ -163,7 +153,7 @@ bool CNetPlayer::AddSnapshot( const netsnapshot_t& snapshot )
 	return true;
 }
 
-void CNetPlayer::AddControlSnapshot(int controls)
+void CNetPlayer::OnServerRecieveControls(int controls)
 {
 	m_lastPrevCmdTick = m_lastCmdTick;
 	m_lastCmdTick = m_curTick;
@@ -217,10 +207,10 @@ void CNetPlayer::Update(float fDt)
 
 	CNetGameSession* netSes = (CNetGameSession*)g_pGameSession;
 
-	if(netSes == NULL)
+	if( netSes == NULL )
 		return;
 
-	if(netSes->IsServer())
+	if( netSes->IsServer() )
 	{
 		if(m_isLocal)
 		{
@@ -240,19 +230,19 @@ void CNetPlayer::Update(float fDt)
 		m_disconnect = true;
 	}
 
-	float fOverallLatency = CalcLatency() * 0.5f;
+	float fOverallLatency = GetSnapshotLatency() * 0.5f;
 
 	debugoverlay->Text(ColorRGBA(1,1,1,1), "latency: %.2f ms (pck+snap=%.2f ms) (tick=%d)\n", m_packetLatency*500.0f, fOverallLatency*1000.0f, m_curTick);
 
 	if(netSes->IsClient())
 	{
 		// interpolate snapshot
-		playersnapshot_t interpSnap;
+		netObjSnapshot_t interpSnap;
 
 		float fSnapDelay = fOverallLatency;
 		float fLerp = 0.0f;
 
-		if(m_snapshots[0].timeStamp > m_snapshots[1].timeStamp)
+		if(m_snapshots[0].in.timeStamp > m_snapshots[1].in.timeStamp)
 		{
 			fLerp = GetSnapshotInterp(m_snapshots[1], m_snapshots[0], m_curTick, m_interpTime);
 			InterpolateSnapshots(m_snapshots[1], m_snapshots[0], fLerp, interpSnap);
@@ -263,10 +253,10 @@ void CNetPlayer::Update(float fDt)
 			InterpolateSnapshots(m_snapshots[0], m_snapshots[1], fLerp, interpSnap);
 		}
 
-		playersnapshot_t finSnap;
+		netObjSnapshot_t finSnap;
 
 		// find prediction snapshot
-		playersnapshot_t predSnap;
+		netObjSnapshot_t predSnap;
 		GetPredictedSnapshot(interpSnap, (fDt+fSnapDelay)*cl_predict_ratio.GetFloat(), predSnap);
 
 		FVector3D car_pos	= m_ownCar->GetPhysicsBody()->GetPosition();
@@ -283,67 +273,54 @@ void CNetPlayer::Update(float fDt)
 			finSnap = interpSnap;
 		}
 
-		float pos_diff = length(car_pos - finSnap.car_pos);
-		//float angvel_diff = length(car_angvel-finSnap.car_angvel);
-		float vel_diff = length(car_vel-finSnap.car_vel);
-		float angDiffAngle = dot(car_rot.asVector4D(), finSnap.car_rot.asVector4D());
+		float pos_diff = length(car_pos - finSnap.position);
+		float vel_diff = length(car_vel-finSnap.velocity);
+		float angDiffAngle = acos((car_rot * !finSnap.rotation).w)*2.0f;
 
 		// debug render
 		if(cl_predict_debug.GetBool())
 		{
-			Matrix4x4 mat(interpSnap.car_rot);
-			UTIL_DebugDrawOBB(interpSnap.car_pos,m_ownCar->GetPhysicsBody()->m_aabb.minPoint, m_ownCar->GetPhysicsBody()->m_aabb.maxPoint, mat, ColorRGBA(0.2, 1, 0.2, 0.1f));
+			Matrix4x4 mat(interpSnap.rotation);
+			UTIL_DebugDrawOBB(interpSnap.position,m_ownCar->GetPhysicsBody()->m_aabb.minPoint, m_ownCar->GetPhysicsBody()->m_aabb.maxPoint, mat, ColorRGBA(0.2, 1, 0.2, 0.1f));
 
-			Matrix4x4 mat2(predSnap.car_rot);
-			UTIL_DebugDrawOBB(predSnap.car_pos,m_ownCar->GetPhysicsBody()->m_aabb.minPoint, m_ownCar->GetPhysicsBody()->m_aabb.maxPoint, mat2, ColorRGBA(1.0, 1.0, 0.2, 0.1f));
+			Matrix4x4 mat2(predSnap.rotation);
+			UTIL_DebugDrawOBB(predSnap.position,m_ownCar->GetPhysicsBody()->m_aabb.minPoint, m_ownCar->GetPhysicsBody()->m_aabb.maxPoint, mat2, ColorRGBA(1.0, 1.0, 0.2, 0.1f));
 		}
 
 		// don't correct if it out of time
 		// should help in lagging, but brokes prediction
 
 		float fInterpTolerance = 1.0f;
+		float fAngInterTolerance = 1.0f;
 
 		float fTolerFactor = fOverallLatency+cl_predict_tolerance.GetFloat();
+		float fTolerAngFactor = fOverallLatency+cl_predict_angtolerance.GetFloat();
 
 		if(cl_predict.GetBool())
 		{
 			float fCarVel = length(m_ownCar->GetVelocity());
 
-			//float carVelTolerance = 1.0f - clamp(fCarVel / fTolerFactor, 0.0f, 1.0f)*cl_interp_veltolerance.GetFloat();
-
-			float fPosLerp = 0.0f;
-
 			if(pos_diff < cl_predict_tolerance.GetFloat())
 			{
 				// position difference - provide nearest is not so interpolated
-				fPosLerp = clamp((1.0f+pos_diff) / fTolerFactor, 0.0f, 1.0f);
+				float fPosLerp = clamp((1.0f+pos_diff) / fTolerFactor, 0.0f, 1.0f);
 				fPosLerp = pow(fPosLerp, cl_predict_correct_power.GetFloat());
 
 				fInterpTolerance += fPosLerp + cl_predict_tolerance.GetFloat()*0.5f;
 
-				// recalculate predicted snapshot according to velocity
-				//GetPredictedSnapshot(interpSnap, (fDt+fSnapDelay)*(1.0f-fPosLerp)*cl_predict_ratio.GetFloat(), predSnap);
-
 				// interpolate to predicted one accurately
-				m_ownCar->GetPhysicsBody()->SetPosition( lerp(car_pos, predSnap.car_pos, fPosLerp) );
-
-				/*
-				Quaternion predRot = slerp(car_rot, predSnap.car_rot, fPosLerp);
-				predRot.normalize();
-
-				m_ownCar->GetPhysicsBody()->SetOrientation(predRot);
-
-				InterpolateSnapshots(predSnap, interpSnap, fPosLerp*fPosLerp, finSnap);
-				*/
+				m_ownCar->GetPhysicsBody()->SetPosition( lerp(car_pos, predSnap.position, fPosLerp) );
 			}
 
-			if(angDiffAngle < 1.0)
+			if(angDiffAngle < cl_predict_angtolerance.GetFloat())
 			{
 				// position difference - provide nearest is not so interpolated
-				float fAngDiffLerp = clamp(angDiffAngle / 1.0f, 0.0f, 1.0f);
-				fAngDiffLerp = pow(fAngDiffLerp, cl_predict_correct_power.GetFloat()) * (0.15f+(1.0f-fPosLerp));
+				float fAngDiffLerp = clamp((1.0f+angDiffAngle) / fTolerAngFactor, 0.0f, 1.0f);
+				fAngDiffLerp = pow(fAngDiffLerp, cl_predict_correct_power.GetFloat());
 
-				Quaternion predRot = slerp(car_rot, predSnap.car_rot, fAngDiffLerp);
+				fAngInterTolerance += fAngDiffLerp + cl_predict_angtolerance.GetFloat()*0.5f;
+
+				Quaternion predRot = slerp(car_rot, predSnap.rotation, fAngDiffLerp);
 				predRot.fastNormalize();
 
 				m_ownCar->GetPhysicsBody()->SetOrientation(predRot);
@@ -356,59 +333,56 @@ void CNetPlayer::Update(float fDt)
 
 		float fMaxPosDiff = (fOverallLatency+fInterpTolerance) * cl_predict_tolerance.GetFloat();
 		float fMaxVelDiff = (fOverallLatency+fInterpTolerance) * 2.5f;
-		float fMaxAngDiff = fOverallLatency * 10.0f;
-		//float fMaxAngVelDiff = fOverallLatency * 2.5f;
+		float fMaxAngDiff = (fOverallLatency+fAngInterTolerance) * cl_predict_angtolerance.GetFloat();
 
 		if(pos_diff > fMaxPosDiff || vel_diff > fMaxVelDiff)
 		{
-			m_ownCar->GetPhysicsBody()->SetPosition(finSnap.car_pos);
-			m_ownCar->SetVelocity(finSnap.car_vel);
+			m_ownCar->GetPhysicsBody()->SetPosition(finSnap.position);
+			m_ownCar->SetVelocity(finSnap.velocity);
 		}
 
-
-		if(angDiffAngle < fMaxAngDiff)
-		{
-			m_ownCar->GetPhysicsBody()->SetOrientation(finSnap.car_rot);
-		}
-
+		if(angDiffAngle > fMaxAngDiff)
+			m_ownCar->GetPhysicsBody()->SetOrientation(finSnap.rotation);
 
 		if(!m_isLocal)
-			SetControls(finSnap.controls);
+			SetControls(finSnap.in.controls);
 	}
 
 	m_interpTime += fDt;
 	m_fCurTime += fDt;
 }
 
-void CNetPlayer::GetPredictedSnapshot( const playersnapshot_t& in, float fDt_diff, playersnapshot_t& out )
+void CNetPlayer::GetPredictedSnapshot( const netObjSnapshot_t& in, float fDt_diff, netObjSnapshot_t& out ) const
 {
-	Quaternion spin = AngularVelocityToSpin(in.car_rot, m_ownCar->GetAngularVelocity());
+	Quaternion spin = AngularVelocityToSpin(in.rotation, m_ownCar->GetAngularVelocity());
 
-	out.car_pos = in.car_pos + m_ownCar->GetVelocity()*fDt_diff;
-	out.car_rot = in.car_rot + spin*fDt_diff;
-	out.car_rot.fastNormalize();
-	out.timeStamp = fDt_diff;
+	out.position = in.position + m_ownCar->GetVelocity()*fDt_diff;
+	out.rotation = in.rotation + spin*fDt_diff;
+	out.rotation.fastNormalize();
+	out.in.timeStamp = fDt_diff;
 
 	// FIXME: 50% ratio?
 	//out.car_angvel = in.car_angvel + (m_ownCar->GetAngularVelocity()-in.car_angvel)*fDt_diff;
-	out.car_vel = in.car_vel + (m_ownCar->GetVelocity()-in.car_vel)*fDt_diff;
+	out.velocity = in.velocity + (m_ownCar->GetVelocity()-in.velocity)*fDt_diff;
 
-	out.controls = in.controls;
+	out.in.controls = in.in.controls;
 }
 
 extern ConVar sys_maxfps;
 
-float CNetPlayer::CalcLatency()
+float CNetPlayer::GetSnapshotLatency() const
 {
 	float fSnapLatency = (m_snapshots[0].latency + m_snapshots[1].latency) * 0.5f;
 
 	if(fSnapLatency < TICK_INTERVAL)
 		fSnapLatency = TICK_INTERVAL;
 
-	if(m_packetLatency < TICK_INTERVAL)
-		m_packetLatency = TICK_INTERVAL;
-
 	return fSnapLatency + m_packetLatency;
+}
+
+float CNetPlayer::GetLatency() const
+{
+	return m_packetLatency;
 }
 
 void CNetPlayer::NetUpdate(float fDt)
@@ -429,7 +403,7 @@ void CNetPlayer::NetUpdate(float fDt)
 
 	if( netSes->IsClient() && m_isLocal )
 	{
-		netinputcmd_t cmd;
+		netInputCmd_t cmd;
 		cmd.controls = m_curControls;
 		cmd.timeStamp = m_curSvTick;
 
@@ -439,27 +413,28 @@ void CNetPlayer::NetUpdate(float fDt)
 	else if( netSes->IsServer() )
 	{
 		// send snapshots to all clients
-		netsnapshot_t snap;
+		netSnapshot_t snap;
 		Quaternion orient = m_ownCar->GetPhysicsBody()->GetOrientation();
 
 
 		snap.car_pos = m_ownCar->GetPhysicsBody()->GetPosition();
 		snap.car_rot = TVec4D<half>(orient.x,orient.y,orient.z,orient.w);
 		snap.car_vel = m_ownCar->GetVelocity();
+
 		//snap.car_angvel = m_ownCar->GetAngularVelocity();
-		snap.controls = m_curControls;
 
-		snap.controls &= ~IN_SIREN;	// don't send siren toggle
+		snap.in.controls = m_curControls;
+		snap.in.controls &= ~IN_SIREN;	// don't send siren toggle
 
-		snap.timeStamp = m_curTick;
+		snap.in.timeStamp = m_curTick;
 
 		netSes->GetNetThread()->SendEvent(new CNetPlayerPacket(snap, m_id, m_packetTick), CMSG_PLAYERPACKET, NM_SENDTOALL, NSFLAG_IMMEDIATE);
 	}
 
+	// simulate and predict all ticks together
 	m_curSvTick += TIME_TO_TICKS(fDt);
 	m_curTick += TIME_TO_TICKS(fDt);
 	m_packetTick += TIME_TO_TICKS(fDt);
-
 }
 
 bool CNetPlayer::IsReady()
@@ -533,7 +508,7 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 
 	// TODO: select spawn point
 
-	netspawninfo_t* spawn = new netspawninfo_t;
+	netPlayerSpawnInfo_t* spawn = new netPlayerSpawnInfo_t;
 	spawn->m_spawnPos = Vector3D(0, 0.5, 10);
 	spawn->m_spawnRot = Vector3D(0,0,0);
 	spawn->m_spawnColor = Vector4D(0);
@@ -709,7 +684,7 @@ void CNetServerPlayerInfo::Process( CNetworkThread* pNetThread )
 
 	Msg("[CLIENT] recieved player info %s %s %d (time = %g)\n", m_carName.c_str(), m_playerName.c_str(), m_playerID, m_sync_time);
 
-	netspawninfo_t* spawn = new netspawninfo_t;
+	netPlayerSpawnInfo_t* spawn = new netPlayerSpawnInfo_t;
 	spawn->m_spawnPos = m_position;
 	spawn->m_spawnRot = eulers(m_rotation);
 	spawn->m_spawnColor = m_carColor;
@@ -773,7 +748,7 @@ void CNetServerPlayerInfo::Pack( CNetworkThread* pNetThread, CNetMessageBuffer* 
 
 //----------------------------------------------------------------------------
 
-CNetPlayerPacket::CNetPlayerPacket( const netinputcmd_t& cmd, int nPlayerID, int curTick )
+CNetPlayerPacket::CNetPlayerPacket( const netInputCmd_t& cmd, int nPlayerID, int curTick )
 {
 	m_type = PL_PACKET_CONTROLS;
 	m_snapshot.car_rot.w = 1.0f;
@@ -782,7 +757,7 @@ CNetPlayerPacket::CNetPlayerPacket( const netinputcmd_t& cmd, int nPlayerID, int
 	m_packetTick = curTick;
 }
 
-CNetPlayerPacket::CNetPlayerPacket( const netsnapshot_t& snapshot, int nPlayerID, int curTick )
+CNetPlayerPacket::CNetPlayerPacket( const netSnapshot_t& snapshot, int nPlayerID, int curTick )
 {
 	m_type = PL_PACKET_PROPS;
 	m_snapshot = snapshot;
@@ -793,7 +768,7 @@ CNetPlayerPacket::CNetPlayerPacket( const netsnapshot_t& snapshot, int nPlayerID
 CNetPlayerPacket::CNetPlayerPacket()
 {
 	m_type = PL_PACKET_CONTROLS;
-	memset(&m_snapshot, 0, sizeof(netsnapshot_t));
+	memset(&m_snapshot, 0, sizeof(netSnapshot_t));
 	m_snapshot.car_rot.w = 1.0f;
 	m_playerID = -1;
 	m_packetTick = 0;
@@ -827,7 +802,7 @@ void CNetPlayerPacket::Process( CNetworkThread* pNetThread )
 		{
 			player->m_lastPacketTick = m_packetTick;
 
-			player->AddControlSnapshot( m_inCmd.controls );
+			player->OnServerRecieveControls( m_inCmd.controls );
 
 			int tickDiff = (player->m_curTick - m_inCmd.timeStamp) + (m_packetTick - player->m_packetTick);
 
@@ -840,7 +815,7 @@ void CNetPlayerPacket::Process( CNetworkThread* pNetThread )
 		// make player ready
 		player->m_ready = true;
 
-		int snapTick = m_snapshot.timeStamp;
+		int snapTick = m_snapshot.in.timeStamp;
 
 		if( m_packetTick > player->m_lastPacketTick &&
 			player->AddSnapshot( m_snapshot ) )
@@ -853,7 +828,7 @@ void CNetPlayerPacket::Process( CNetworkThread* pNetThread )
 			player->m_packetTick = m_packetTick;
 			player->m_lastPacketTick = m_packetTick;
 
-			player->m_curSvTick = m_snapshot.timeStamp;
+			player->m_curSvTick = m_snapshot.in.timeStamp;
 		}
 	}
 	else
@@ -873,11 +848,11 @@ void CNetPlayerPacket::Unpack( CNetworkThread* pNetThread, CNetMessageBuffer* pS
 
 	if(m_type == PL_PACKET_CONTROLS)
 	{
-		pStream->ReadData( &m_inCmd, sizeof(netinputcmd_t) );
+		pStream->ReadData( &m_inCmd, sizeof(netInputCmd_t) );
 	}
 	else
 	{
-		pStream->ReadData( &m_snapshot, sizeof(netsnapshot_t) );
+		pStream->ReadData( &m_snapshot, sizeof(netSnapshot_t) );
 
 		// set new tick interval
 		g_svclientInfo.tickInterval = tick_interval;
@@ -893,7 +868,7 @@ void CNetPlayerPacket::Pack( CNetworkThread* pNetThread, CNetMessageBuffer* pStr
 
 	if(m_type == PL_PACKET_CONTROLS)
 	{
-		pStream->WriteData( &m_inCmd, sizeof(netinputcmd_t) );
+		pStream->WriteData( &m_inCmd, sizeof(netInputCmd_t) );
 	}
 	else
 	{

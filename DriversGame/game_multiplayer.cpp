@@ -216,7 +216,7 @@ bool CNetGameSession::Create_Server()
 
 	// TODO: get spawn point from mission script
 
-	netspawninfo_t* spawn = new netspawninfo_t;
+	netPlayerSpawnInfo_t* spawn = new netPlayerSpawnInfo_t;
 	spawn->m_spawnPos = Vector3D(0, 0.5, 10);
 	spawn->m_spawnRot = Vector3D(0,0,0);
 	spawn->m_spawnColor = Vector4D(0);
@@ -228,7 +228,7 @@ bool CNetGameSession::Create_Server()
 	return true;
 }
 
-void CNetGameSession::InitLocalPlayer(netspawninfo_t* spawnInfo, int clientID, int playerID)
+void CNetGameSession::InitLocalPlayer(netPlayerSpawnInfo_t* spawnInfo, int clientID, int playerID)
 {
 	CNetPlayer* player = CreatePlayer(spawnInfo, clientID, playerID, net_name.GetString());
 
@@ -718,7 +718,7 @@ void CNetGameSession::Update(float fDt)
 	}
 }
 
-CNetPlayer* CNetGameSession::CreatePlayer(netspawninfo_t* spawnInfo, int clientID, int playerID, const char* name)
+CNetPlayer* CNetGameSession::CreatePlayer(netPlayerSpawnInfo_t* spawnInfo, int clientID, int playerID, const char* name)
 {
 	for(int i = 0; i < m_players.numElem(); i++)
 	{
@@ -766,6 +766,13 @@ void CNetGameSession::DisconnectPlayer( int playerID, const char* reason )
 
 		if(m_players[i]->m_id == playerID)
 		{
+			// first we need to remove the car
+			if(m_players[i]->m_ownCar)
+			{
+				g_pGameWorld->RemoveObject(m_players[i]->m_ownCar);
+				m_players[i]->m_ownCar = NULL;
+			}
+
 			if( m_players[i]->m_ready )
 			{
 				// TODO: send disconnected message to all clients
@@ -780,8 +787,6 @@ void CNetGameSession::DisconnectPlayer( int playerID, const char* reason )
 			{
 				m_localPlayer = NULL;
 				m_playerCar = NULL;
-
-				SetCurrentState( g_states[GAME_STATE_MAINMENU] );
 			}
 			else if(IsServer())
 			{
@@ -793,14 +798,13 @@ void CNetGameSession::DisconnectPlayer( int playerID, const char* reason )
 				m_netThread.SendEvent( new CNetDisconnectEvent(playerID, reason), CMSG_DISCONNECT, NM_SENDTOALL, NSFLAG_GUARANTEED );
 			}
 
-			if(m_players[i]->m_ownCar)
-				g_pGameWorld->RemoveObject(m_players[i]->m_ownCar);
-
 			delete m_players[i];
-
 			m_players[i] = NULL;
 		}
 	}
+
+	if(!m_localPlayer)
+		SetCurrentState( g_states[GAME_STATE_MAINMENU] );
 }
 
 int CNetGameSession::GetMaxPlayers() const
@@ -923,7 +927,7 @@ void CNetSpawnInfo::Unpack( CNetworkThread* pNetThread, CNetMessageBuffer* pStre
 
 void CNetSpawnInfo::Pack( CNetworkThread* pNetThread, CNetMessageBuffer* pStream )
 {
-	Msg("Sending objectid=%d type=%s\n", m_objectId, s_objectTypeNames[m_object->ObjType()]);
+	//Msg("Sending objectid=%d type=%s\n", m_objectId, s_objectTypeNames[m_object->ObjType()]);
 
 	pStream->WriteInt( m_objEvent );
 	pStream->WriteInt( m_object->ObjType() );

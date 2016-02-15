@@ -13,68 +13,16 @@
 #include "car.h"
 #include "utils/eqstring.h"
 #include "Network/NETThread.h"
+#include "predictable_object.h"
 
 using namespace Networking;
 
-struct netsnapshot_s
+//
+// Player car spawn info
+//
+struct netPlayerSpawnInfo_t
 {
-	TVec4D<half>	car_rot;
-	FVector3D		car_pos;
-	Vector3D		car_vel;
-	//Vector3D		car_angvel;
-
-	// TODO: send damage info of vehicle
-
-	int				controls;
-
-	int				timeStamp;
-};
-
-ALIGNED_TYPE(netsnapshot_s,4) netsnapshot_t;
-
-struct netinputcmd_s
-{
-	int controls;
-
-	// FIXME: more controller info?
-
-	int	timeStamp;
-};
-
-ALIGNED_TYPE(netinputcmd_s,4) netinputcmd_t;
-
-struct playersnapshot_t
-{
-	playersnapshot_t() {}
-
-	playersnapshot_t(const netsnapshot_t& snap)
-	{
-		car_rot = Quaternion(snap.car_rot.w,snap.car_rot.x,snap.car_rot.y,snap.car_rot.z);
-		car_pos = snap.car_pos;
-		car_vel = snap.car_vel;
-		//car_angvel = snap.car_angvel;
-
-		controls = snap.controls;
-		timeStamp = snap.timeStamp;
-	}
-
-	Quaternion	car_rot;
-
-	FVector3D	car_pos;
-	Vector3D	car_vel;
-	//Vector3D	car_angvel;
-
-	int			controls;
-	int			timeStamp;
-
-	float		latency;
-
-	//int			pad;
-};
-
-struct netspawninfo_t
-{
-	netspawninfo_t()
+	netPlayerSpawnInfo_t()
 	{
 		m_useColor = true;
 		m_netCarID = -1;
@@ -89,11 +37,15 @@ struct netspawninfo_t
 	bool				m_useColor;
 };
 
+//------------------------------------------------------------------------------------
+
 //
 // Holds information about player of network state
 //
 class CNetPlayer
 {
+	friend class CPredictable;
+
 public:
 						CNetPlayer( int clientID, const char* name );
 						~CNetPlayer();
@@ -104,13 +56,17 @@ public:
 
 	bool				IsAlive();
 
+	float				GetLatency() const;
+
+	// when server recieves controls from player
+	void				OnServerRecieveControls(int controls);
+
 	// client recieve
-	bool				AddSnapshot( const netsnapshot_t& snapshot );
-	void				AddControlSnapshot(int controls);
+	bool				AddSnapshot( const netSnapshot_t& snapshot );
 
-	void				GetPredictedSnapshot( const playersnapshot_t& snapshot, float fDt_diff, playersnapshot_t& out );
+	void				GetPredictedSnapshot( const netObjSnapshot_t& snapshot, float fDt_diff, netObjSnapshot_t& out ) const;
+	float				GetSnapshotLatency() const;
 
-	float				CalcLatency();
 
 	void				NETSpawn();
 	void				NetUpdate(float fDt);
@@ -120,43 +76,40 @@ public:
 
 //protected:
 
-	netspawninfo_t*		m_spawnInfo;
+	netPlayerSpawnInfo_t*	m_spawnInfo;
 
-	int					m_curControls;
-	int					m_oldControls;
+	EqString				m_name;
+	EqString				m_carName;
+	CCar*					m_ownCar;
 
-	playersnapshot_t	m_snapshots[2];
-	int					m_curSnapshot;
+	int						m_clientID;
+	int						m_id;
 
-	EqString			m_name;
-	EqString			m_carName;
-	CCar*				m_ownCar;
+	bool					m_ready;
+	bool					m_disconnect;
 
-	int					m_clientID;
-	int					m_id;
+	bool					m_isLocal;
+	float					m_fNotreadyTime;
 
-	bool				m_ready;
-	bool				m_disconnect;
+	float					m_fCurTime;
+	float					m_fLastCmdTime;
 
-	bool				m_isLocal;
-	float				m_fNotreadyTime;
+	int						m_curControls;
+	int						m_oldControls;
 
-	float				m_fCurTime;
-	float				m_fLastCmdTime;
+	netObjSnapshot_t		m_snapshots[2];
+	int						m_curSnapshot;
 
-	//float				m_fPrevLastCmdTime;
-	//float				m_packetTime;
+	int						m_curTick;
+	int						m_curSvTick;
+	int						m_packetTick;
+	int						m_lastPacketTick;
 
-	int					m_curTick;
-	int					m_curSvTick;
-	int					m_packetTick;
-	int					m_lastPacketTick;
+	int						m_lastCmdTick;
+	int						m_lastPrevCmdTick;
 
-	int					m_lastCmdTick;
-	int					m_lastPrevCmdTick;
-
-	float				m_packetLatency;	// it's converted from tick difference * tick rate
-	float				m_interpTime;
+	float					m_packetLatency;	// it's converted from tick difference * tick rate
+	float					m_interpTime;
 
 };
 
@@ -273,8 +226,8 @@ enum EPlayerPacketType
 class CNetPlayerPacket : public CNetEvent
 {
 public:
-	CNetPlayerPacket( const netinputcmd_t& cmd, int nPlayerID, int curTick );
-	CNetPlayerPacket( const netsnapshot_t& snapshot, int nPlayerID, int curTick );
+	CNetPlayerPacket( const netInputCmd_t& cmd, int nPlayerID, int curTick );
+	CNetPlayerPacket( const netSnapshot_t& snapshot, int nPlayerID, int curTick );
 	CNetPlayerPacket();
 
 	void		Process( CNetworkThread* pNetThread );
@@ -289,8 +242,8 @@ protected:
 
 	EPlayerPacketType	m_type;
 
-	netinputcmd_t		m_inCmd;
-	netsnapshot_t		m_snapshot;
+	netInputCmd_t		m_inCmd;
+	netSnapshot_t		m_snapshot;
 
 	int					m_packetTick;
 

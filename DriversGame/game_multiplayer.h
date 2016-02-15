@@ -57,7 +57,7 @@ extern server_client_info_t	g_svclientInfo;
 #define SV_NEW_PLAYER (-1)	// for server: place player in a free slot
 
 class CNetPlayer;
-struct netspawninfo_t;
+struct netPlayerSpawnInfo_t;
 
 class CNetGameSession : public CGameSession
 {
@@ -80,7 +80,7 @@ public:
 	void					Update(float fDt);
 
 	// makes new player
-	CNetPlayer*				CreatePlayer(netspawninfo_t* spawnInfo, int clientID, int playerID, const char* name);
+	CNetPlayer*				CreatePlayer(netPlayerSpawnInfo_t* spawnInfo, int clientID, int playerID, const char* name);
 
 	// sends player disconnect message and removes from client/server list
 	void					DisconnectPlayer( int playerID, const char* reason);
@@ -92,7 +92,7 @@ public:
 	int						GetNumPlayers() const;
 
 	// initializes local player
-	void					InitLocalPlayer(netspawninfo_t* spawnInfo, int clientID = -1, int playerID = 0);
+	void					InitLocalPlayer(netPlayerSpawnInfo_t* spawnInfo, int clientID = -1, int playerID = 0);
 
 	// sends netplayer spawns
 	void					SendPlayerInfoList(int clientID);

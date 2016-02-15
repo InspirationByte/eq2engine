@@ -283,6 +283,11 @@ Vector4D Quaternion::asVector4D()
     return Vector4D(x,y,z,w);
 }
 
+Quaternion operator ! (const Quaternion &q)
+{
+	return Quaternion(q.w, -q.x, -q.y, -q.z);
+}
+
 #ifdef _WIN32
 #define isnan _isnan
 #endif
@@ -476,7 +481,7 @@ void renormalize(Quaternion& q)
         q.w = -sqrt ( len );
 }
 
-void axisAngle(Quaternion& q, Vector3D &axis, float &angle)
+void axisAngle(const Quaternion& q, TVec3D<float> &axis, float &angle)
 {
 	float scale = sqrtf(q.x*q.x + q.y*q.y + q.z*q.z);
 

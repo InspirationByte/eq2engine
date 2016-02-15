@@ -162,8 +162,10 @@
     <ClCompile Include="LiteHTMLContainer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="state_lobby.cpp" />
     <ClCompile Include="object_scripted.cpp" />
     <ClCompile Include="occluderSet.cpp" />
+    <ClCompile Include="predictable_object.cpp" />
     <ClCompile Include="region.cpp" />
     <ClCompile Include="state_mainmenu.cpp" />
     <ClCompile Include="game_singleplayer.cpp" />
@@ -290,6 +292,7 @@
     <ClInclude Include="game_singleplayer.h" />
     <ClInclude Include="levelobject.h" />
     <ClInclude Include="LiteHTMLContainer.h" />
+    <ClInclude Include="state_lobby.h" />
     <ClInclude Include="LuaBinding_Drivers.h" />
     <ClInclude Include="object_debris.h" />
     <ClInclude Include="GameObject.h" />
@@ -310,6 +313,7 @@
     <ClInclude Include="object_trafficlight.h" />
     <ClInclude Include="object_tree.h" />
     <ClInclude Include="occluderSet.h" />
+    <ClInclude Include="predictable_object.h" />
     <ClInclude Include="predictablerandom.h" />
     <ClInclude Include="Rain.h" />
     <ClInclude Include="region.h" />
@@ -329,10 +333,10 @@
     <ClInclude Include="world.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\launcher_logo.bmp" />
+    <ResourceCompile Include="Resources\Resources.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Resources\Resources.rc" />
+    <Image Include="Resources\mainicon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
