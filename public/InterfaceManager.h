@@ -24,11 +24,18 @@ public:
 //--------------------------------------------------------------
 
 #ifdef _MSC_VER
-#   define ONLY_EXPORTS	extern "C" __declspec(dllexport)
-#   define ONLY_IMPORTS	extern "C" __declspec(dllimport)
+#   define ONLY_EXPORTS	            extern "C" __declspec(dllexport)
+#   define ONLY_IMPORTS	            extern "C" __declspec(dllimport)
+
+#   define IFACE_PRIORITY_EXPORT1
+#   define IFACE_PRIORITY_EXPORT2
+
 #else // __GNUC__
-#   define ONLY_EXPORTS     __attribute__ ((visibility("default")))
+#   define ONLY_EXPORTS              __attribute__ ((visibility("default")))
 #   define ONLY_IMPORTS
+
+#   define IFACE_PRIORITY_EXPORT1    __attribute__ ((init_priority(110)))
+#   define IFACE_PRIORITY_EXPORT2    __attribute__ ((init_priority(120)))
 #endif // _MSC_VER
 
 #ifdef CROSSLINK_LIB
@@ -75,7 +82,7 @@ public:
 #ifdef DLL_EXPORT
 // dll export version
 #	define INTERFACE_SINGLETON(abstractclass, classname, interfacename, localname)			\
-		IEXPORTS abstractclass*		Get##classname();	\
+		IEXPORTS abstractclass* Get##classname();	\
 		class _##classname##Singleton : public CSingletonAbstract<abstractclass>	\
 		{	\
 		public:\
@@ -90,7 +97,7 @@ public:
 				pInstance = NULL;	\
 			}	\
 		};	\
-		static _##classname##Singleton localname;
+		static _##classname##Singleton localname IFACE_PRIORITY_EXPORT2;
 
 #else
 // dll import version
@@ -110,23 +117,23 @@ public:
 				pInstance = NULL;	\
 			}	\
 		};	\
-		static _##classname##Singleton localname;
+		static _##classname##Singleton localname IFACE_PRIORITY_EXPORT2;
 
 #endif
 
 #define EXPORTED_INTERFACE( interfacename, classname)							\
-	static classname s_##classname;												\
+	static classname s_##classname IFACE_PRIORITY_EXPORT1;						\
 	interfacename* g_p##interfacename = ( interfacename * )&s_##classname;		\
-	IEXPORTS interfacename *Get##classname( void ) {return g_p##interfacename;}	\
+	IEXPORTS interfacename *Get##classname( void ) {return g_p##interfacename;}
 
 #define EXPORTED_INTERFACE_FUNCTION( interfacename, classname, funcname)		\
-	static classname s_##classname;												\
+	static classname s_##classname IFACE_PRIORITY_EXPORT1;						\
 	interfacename* g_p##interfacename = ( interfacename * )&s_##classname;		\
 	IEXPORTS interfacename *funcname( void ) {return g_p##interfacename;}
 
-#define _INTERFACE_FUNCTION( interfacename, classname, funcname)		\
-	static classname s_##classname;												\
-	interfacename* g_p##interfacename = ( interfacename * )&s_##classname;		\
+#define _INTERFACE_FUNCTION( interfacename, classname, funcname)		        \
+	static classname s_##classname IFACE_PRIORITY_EXPORT1;				        \
+	interfacename* g_p##interfacename = ( interfacename * )&s_##classname;	    \
 	interfacename *funcname( void ) {return g_p##interfacename;}
 
 

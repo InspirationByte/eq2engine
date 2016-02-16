@@ -1,6 +1,26 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_layout_file>
-	<ActiveTarget name="Release Win32" />
+	<ActiveTarget name="Release" />
+	<File name="public/core/ConVar.cpp" open="0" top="0" tabpos="15" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="3393" topLine="108" />
+		</Cursor>
+	</File>
+	<File name="public/core/ConCommandBase.cpp" open="1" top="1" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1115" topLine="25" />
+		</Cursor>
+	</File>
+	<File name="public/core/cmdlib.cpp" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="3195" topLine="85" />
+		</Cursor>
+	</File>
+	<File name="public/core/ConCommandBase.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1758" topLine="21" />
+		</Cursor>
+	</File>
 	<File name="public/core/cmd_pacifier.cpp" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="789" topLine="0" />
@@ -9,16 +29,6 @@
 	<File name="public/core/ConCommand.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="1351" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="public/core/ConVar.cpp" open="0" top="0" tabpos="15" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="3393" topLine="108" />
-		</Cursor>
-	</File>
-	<File name="public/core/cmdlib.cpp" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="3195" topLine="85" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>

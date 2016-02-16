@@ -8,7 +8,6 @@
 #ifndef PREDICTABLE_OBJECT_H
 #define PREDICTABLE_OBJECT_H
 
-#include "Platform.h"
 #include "GameObject.h"
 
 //

@@ -186,6 +186,8 @@ void CConsoleCommands::RegisterCommand(ConCommandBase *pCmd)
 
 	m_pCommandBases.append( pCmd );
 
+	pCmd->m_bIsRegistered = true;
+
 	// alphabetic sort
 	qsort(m_pCommandBases.ptr(), m_pCommandBases.numElem(), sizeof(ConCommandBase*), alpha_cmd_comp);
 }

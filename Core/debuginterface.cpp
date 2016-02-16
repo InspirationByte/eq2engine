@@ -69,7 +69,7 @@ void cc_developer_f( DkList<EqString>* args )
 			newMode |= DEVMSG_NETWORK;
 		else if( !str.CompareCaseIns("game") )
 			newMode |= DEVMSG_GAME;
-		else 
+		else
 			newMode = atoi( str.c_str() );
 	}
 
@@ -77,7 +77,7 @@ void cc_developer_f( DkList<EqString>* args )
 		g_developerMode = newMode;
 }
 
-ConCommand c_developer("developer",cc_developer_f,"Sets developer modes",CV_CHEAT);
+ConCommand c_developer("developer",cc_developer_f,"Sets developer modes",CV_CHEAT | CV_UNREGISTERED);
 
 // Default spew
 void DefaultSpewFunc(SpewType_t type,const char* pMsg)
@@ -114,7 +114,7 @@ void cc_echo_f(DkList<EqString>* args)
 
 	Msg("%s\n", outText.GetData());
 }
-ConCommand c_echo("echo",cc_echo_f,"Displays the entered args",0);
+ConCommand c_echo("echo",cc_echo_f,"Displays the entered args",CV_UNREGISTERED);
 
 #ifndef DEBUG_NO_OUTPUT
 
@@ -128,7 +128,7 @@ void Log_WriteBOM(const char* fileName)
 		return;
 
 	char bom[3] = {(char)0xEF,(char)0xBB,(char)0xBF};
-		
+
 	FILE* pFile = fopen( fileName, "w" );
 	if(pFile)
 	{

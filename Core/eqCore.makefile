@@ -29,7 +29,7 @@ OBJDIR_RELEASE = .objs
 DEP_RELEASE = 
 OUT_RELEASE = ../../gamebin_linux/libeqCore.so
 
-OBJ_RELEASE = $(OBJDIR_RELEASE)/CmdLineParser.o $(OBJDIR_RELEASE)/CommandAccessor.o $(OBJDIR_RELEASE)/ConCommandFactory.o $(OBJDIR_RELEASE)/CoreVersion.o $(OBJDIR_RELEASE)/DPKFileReader.o $(OBJDIR_RELEASE)/DPKFileWriter.o $(OBJDIR_RELEASE)/DkCore.o $(OBJDIR_RELEASE)/ExceptionHandler.o $(OBJDIR_RELEASE)/FileSystem.o $(OBJDIR_RELEASE)/Localize.o $(OBJDIR_RELEASE)/debuginterface.o $(OBJDIR_RELEASE)/eqCPUServices.o $(OBJDIR_RELEASE)/ppmem.o
+OBJ_RELEASE = $(OBJDIR_RELEASE)/CmdLineParser.o $(OBJDIR_RELEASE)/ConCommandFactory.o $(OBJDIR_RELEASE)/CoreVersion.o $(OBJDIR_RELEASE)/DPKFileReader.o $(OBJDIR_RELEASE)/DPKFileWriter.o $(OBJDIR_RELEASE)/DkCore.o $(OBJDIR_RELEASE)/ExceptionHandler.o $(OBJDIR_RELEASE)/FileSystem.o $(OBJDIR_RELEASE)/Localize.o $(OBJDIR_RELEASE)/debuginterface.o $(OBJDIR_RELEASE)/eqCPUServices.o $(OBJDIR_RELEASE)/ppmem.o
 
 all: release
 
@@ -48,9 +48,6 @@ out_release: before_release $(OBJ_RELEASE) $(DEP_RELEASE)
 
 $(OBJDIR_RELEASE)/CmdLineParser.o: CmdLineParser.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c CmdLineParser.cpp -o $(OBJDIR_RELEASE)/CmdLineParser.o
-
-$(OBJDIR_RELEASE)/CommandAccessor.o: CommandAccessor.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c CommandAccessor.cpp -o $(OBJDIR_RELEASE)/CommandAccessor.o
 
 $(OBJDIR_RELEASE)/ConCommandFactory.o: ConCommandFactory.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ConCommandFactory.cpp -o $(OBJDIR_RELEASE)/ConCommandFactory.o

@@ -135,7 +135,7 @@ inline void CEGFInstancer<IT>::Cleanup()
 		{
 			delete [] m_instances[i][j];
 			m_instances[i][j] = NULL;
-			m_numInstances[i][j] = NULL;
+			m_numInstances[i][j] = 0;
 		}
 	}
 

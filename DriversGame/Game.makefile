@@ -29,7 +29,7 @@ OBJDIR_RELEASE = .objs
 DEP_RELEASE = 
 OUT_RELEASE = ../../gamebin_linux/game
 
-OBJ_RELEASE = $(OBJDIR_RELEASE)/eqPhysics/eqPhysics.o $(OBJDIR_RELEASE)/eqPhysics/eqPhysics_Body.o $(OBJDIR_RELEASE)/game_multiplayer.o $(OBJDIR_RELEASE)/game_singleplayer.o $(OBJDIR_RELEASE)/heightfield.o $(OBJDIR_RELEASE)/input.o $(OBJDIR_RELEASE)/level.o $(OBJDIR_RELEASE)/NetPlayer.o $(OBJDIR_RELEASE)/Rain.o $(OBJDIR_RELEASE)/ShaderOverrides.o $(OBJDIR_RELEASE)/Shader_StaticObjs.o $(OBJDIR_RELEASE)/Shader_VehicleBody.o $(OBJDIR_RELEASE)/Shader_Water.o $(OBJDIR_RELEASE)/StateManager.o $(OBJDIR_RELEASE)/main.o $(OBJDIR_RELEASE)/car.o $(OBJDIR_RELEASE)/eqPhysics/eqBulletIndexedMesh.o $(OBJDIR_RELEASE)/eqPhysics/eqCollision_Object.o $(OBJDIR_RELEASE)/eqPhysics/eqCollision_ObjectGrid.o $(OBJDIR_RELEASE)/state_title.o $(OBJDIR_RELEASE)/replay.o $(OBJDIR_RELEASE)/session_stuff.o $(OBJDIR_RELEASE)/state_game.o $(OBJDIR_RELEASE)/state_mainmenu.o $(OBJDIR_RELEASE)/system.o $(OBJDIR_RELEASE)/ui_luaMenu.o $(OBJDIR_RELEASE)/window.o $(OBJDIR_RELEASE)/world.o $(OBJDIR_RELEASE)/object_debris.o $(OBJDIR_RELEASE)/object_physics.o $(OBJDIR_RELEASE)/object_scripted.o $(OBJDIR_RELEASE)/object_sheets.o $(OBJDIR_RELEASE)/object_static.o $(OBJDIR_RELEASE)/object_trafficlight.o $(OBJDIR_RELEASE)/object_tree.o $(OBJDIR_RELEASE)/occluderSet.o $(OBJDIR_RELEASE)/physics.o $(OBJDIR_RELEASE)/__/shared_engine/DebugOverlay.o $(OBJDIR_RELEASE)/__/shared_engine/EGFInstancer.o $(OBJDIR_RELEASE)/__/shared_engine/EffectRender.o $(OBJDIR_RELEASE)/__/shared_engine/EngineSpew.o $(OBJDIR_RELEASE)/__/shared_engine/EngineVersion.o $(OBJDIR_RELEASE)/__/shared_engine/Audio/soundzero.o $(OBJDIR_RELEASE)/__/shared_engine/EqParticles_Render.o $(OBJDIR_RELEASE)/__/shared_engine/Font.o $(OBJDIR_RELEASE)/__/shared_engine/FontCache.o $(OBJDIR_RELEASE)/__/shared_engine/FontLayoutBuilders.o $(OBJDIR_RELEASE)/__/shared_engine/KeyBinding/Keys.o $(OBJDIR_RELEASE)/__/public/ViewParams.o $(OBJDIR_RELEASE)/__/public/luabinding/LuaBinding.o $(OBJDIR_RELEASE)/__/public/luabinding/LuaBinding_Engine.o $(OBJDIR_RELEASE)/__/public/materialsystem/BaseShader.o $(OBJDIR_RELEASE)/__/shared_engine/Audio/alsnd_emitter.o $(OBJDIR_RELEASE)/__/shared_engine/Audio/alsnd_sample.o $(OBJDIR_RELEASE)/__/shared_engine/Audio/alsnd_stream.o $(OBJDIR_RELEASE)/__/shared_engine/Audio/alsound_local.o $(OBJDIR_RELEASE)/AICarManager.o $(OBJDIR_RELEASE)/AIPursuerCar.o $(OBJDIR_RELEASE)/AITrafficCar.o $(OBJDIR_RELEASE)/BillboardList.o $(OBJDIR_RELEASE)/__/shared_game/GameSoundEmitterSystem.o $(OBJDIR_RELEASE)/CameraAnimator.o $(OBJDIR_RELEASE)/DrvSynHUD.o $(OBJDIR_RELEASE)/EventFSM.o $(OBJDIR_RELEASE)/GameObject.o $(OBJDIR_RELEASE)/LuaBinding_Drivers.o $(OBJDIR_RELEASE)/__/shared_engine/Network/NETThread.o $(OBJDIR_RELEASE)/__/shared_engine/cfgloader.o $(OBJDIR_RELEASE)/__/shared_engine/eqGlobalMutex.o $(OBJDIR_RELEASE)/__/shared_engine/eqParallelJobs.o $(OBJDIR_RELEASE)/__/shared_engine/materialsystem/MaterialProxy.o $(OBJDIR_RELEASE)/__/public/TextureAtlas.o $(OBJDIR_RELEASE)/__/shared_engine/modelloader_shared.o $(OBJDIR_RELEASE)/__/shared_engine/physics/BulletShapeCache.o $(OBJDIR_RELEASE)/__/shared_engine/studio_egf.o $(OBJDIR_RELEASE)/__/shared_engine/sys_console.o
+OBJ_RELEASE = $(OBJDIR_RELEASE)/input.o $(OBJDIR_RELEASE)/game_multiplayer.o $(OBJDIR_RELEASE)/game_singleplayer.o $(OBJDIR_RELEASE)/heightfield.o $(OBJDIR_RELEASE)/level.o $(OBJDIR_RELEASE)/levelobject.o $(OBJDIR_RELEASE)/main.o $(OBJDIR_RELEASE)/object_debris.o $(OBJDIR_RELEASE)/object_physics.o $(OBJDIR_RELEASE)/eqPhysics/eqBulletIndexedMesh.o $(OBJDIR_RELEASE)/ShaderOverrides.o $(OBJDIR_RELEASE)/Shader_StaticObjs.o $(OBJDIR_RELEASE)/Shader_VehicleBody.o $(OBJDIR_RELEASE)/Shader_Water.o $(OBJDIR_RELEASE)/StateManager.o $(OBJDIR_RELEASE)/car.o $(OBJDIR_RELEASE)/eqPhysics/eqCollision_Object.o $(OBJDIR_RELEASE)/eqPhysics/eqCollision_ObjectGrid.o $(OBJDIR_RELEASE)/eqPhysics/eqPhysics.o $(OBJDIR_RELEASE)/eqPhysics/eqPhysics_Body.o $(OBJDIR_RELEASE)/state_title.o $(OBJDIR_RELEASE)/session_stuff.o $(OBJDIR_RELEASE)/state_game.o $(OBJDIR_RELEASE)/state_lobby.o $(OBJDIR_RELEASE)/state_mainmenu.o $(OBJDIR_RELEASE)/replay.o $(OBJDIR_RELEASE)/system.o $(OBJDIR_RELEASE)/ui_luaMenu.o $(OBJDIR_RELEASE)/window.o $(OBJDIR_RELEASE)/world.o $(OBJDIR_RELEASE)/object_scripted.o $(OBJDIR_RELEASE)/object_sheets.o $(OBJDIR_RELEASE)/object_static.o $(OBJDIR_RELEASE)/object_trafficlight.o $(OBJDIR_RELEASE)/object_tree.o $(OBJDIR_RELEASE)/occluderSet.o $(OBJDIR_RELEASE)/physics.o $(OBJDIR_RELEASE)/predictable_object.o $(OBJDIR_RELEASE)/region.o $(OBJDIR_RELEASE)/__/shared_engine/DebugOverlay.o $(OBJDIR_RELEASE)/__/shared_engine/EGFInstancer.o $(OBJDIR_RELEASE)/__/shared_engine/EffectRender.o $(OBJDIR_RELEASE)/__/shared_engine/EngineSpew.o $(OBJDIR_RELEASE)/__/shared_engine/EngineVersion.o $(OBJDIR_RELEASE)/__/shared_engine/EqParticles_Render.o $(OBJDIR_RELEASE)/__/shared_engine/Font.o $(OBJDIR_RELEASE)/__/shared_engine/FontCache.o $(OBJDIR_RELEASE)/__/shared_engine/FontLayoutBuilders.o $(OBJDIR_RELEASE)/__/shared_engine/KeyBinding/Keys.o $(OBJDIR_RELEASE)/__/shared_engine/Network/NETThread.o $(OBJDIR_RELEASE)/__/public/ViewParams.o $(OBJDIR_RELEASE)/__/public/luabinding/LuaBinding.o $(OBJDIR_RELEASE)/__/public/luabinding/LuaBinding_Engine.o $(OBJDIR_RELEASE)/__/public/materialsystem/BaseShader.o $(OBJDIR_RELEASE)/__/shared_engine/Audio/alsnd_emitter.o $(OBJDIR_RELEASE)/__/shared_engine/Audio/alsnd_sample.o $(OBJDIR_RELEASE)/__/shared_engine/Audio/alsnd_stream.o $(OBJDIR_RELEASE)/__/shared_engine/Audio/alsound_local.o $(OBJDIR_RELEASE)/__/shared_engine/Audio/soundzero.o $(OBJDIR_RELEASE)/AIPursuerCar.o $(OBJDIR_RELEASE)/AITrafficCar.o $(OBJDIR_RELEASE)/BillboardList.o $(OBJDIR_RELEASE)/CameraAnimator.o $(OBJDIR_RELEASE)/DrvSynHUD.o $(OBJDIR_RELEASE)/EventFSM.o $(OBJDIR_RELEASE)/GameObject.o $(OBJDIR_RELEASE)/LuaBinding_Drivers.o $(OBJDIR_RELEASE)/NetPlayer.o $(OBJDIR_RELEASE)/Rain.o $(OBJDIR_RELEASE)/__/shared_engine/cfgloader.o $(OBJDIR_RELEASE)/__/shared_engine/eqGlobalMutex.o $(OBJDIR_RELEASE)/__/shared_engine/eqParallelJobs.o $(OBJDIR_RELEASE)/__/shared_engine/materialsystem/MaterialProxy.o $(OBJDIR_RELEASE)/__/shared_engine/modelloader_shared.o $(OBJDIR_RELEASE)/__/public/TextureAtlas.o $(OBJDIR_RELEASE)/__/shared_engine/physics/BulletShapeCache.o $(OBJDIR_RELEASE)/__/shared_engine/studio_egf.o $(OBJDIR_RELEASE)/__/shared_engine/sys_console.o $(OBJDIR_RELEASE)/__/shared_game/GameSoundEmitterSystem.o $(OBJDIR_RELEASE)/AICarManager.o
 
 all: release
 
@@ -37,18 +37,18 @@ clean: clean_release
 
 before_release: 
 	test -d ../../gamebin_linux || mkdir -p ../../gamebin_linux 
-	test -d $(OBJDIR_RELEASE)/eqPhysics || mkdir -p $(OBJDIR_RELEASE)/eqPhysics 
 	test -d $(OBJDIR_RELEASE) || mkdir -p $(OBJDIR_RELEASE) 
+	test -d $(OBJDIR_RELEASE)/eqPhysics || mkdir -p $(OBJDIR_RELEASE)/eqPhysics 
 	test -d $(OBJDIR_RELEASE)/__/shared_engine || mkdir -p $(OBJDIR_RELEASE)/__/shared_engine 
-	test -d $(OBJDIR_RELEASE)/__/shared_engine/Audio || mkdir -p $(OBJDIR_RELEASE)/__/shared_engine/Audio 
 	test -d $(OBJDIR_RELEASE)/__/shared_engine/KeyBinding || mkdir -p $(OBJDIR_RELEASE)/__/shared_engine/KeyBinding 
+	test -d $(OBJDIR_RELEASE)/__/shared_engine/Network || mkdir -p $(OBJDIR_RELEASE)/__/shared_engine/Network 
 	test -d $(OBJDIR_RELEASE)/__/public || mkdir -p $(OBJDIR_RELEASE)/__/public 
 	test -d $(OBJDIR_RELEASE)/__/public/luabinding || mkdir -p $(OBJDIR_RELEASE)/__/public/luabinding 
 	test -d $(OBJDIR_RELEASE)/__/public/materialsystem || mkdir -p $(OBJDIR_RELEASE)/__/public/materialsystem 
-	test -d $(OBJDIR_RELEASE)/__/shared_game || mkdir -p $(OBJDIR_RELEASE)/__/shared_game 
-	test -d $(OBJDIR_RELEASE)/__/shared_engine/Network || mkdir -p $(OBJDIR_RELEASE)/__/shared_engine/Network 
+	test -d $(OBJDIR_RELEASE)/__/shared_engine/Audio || mkdir -p $(OBJDIR_RELEASE)/__/shared_engine/Audio 
 	test -d $(OBJDIR_RELEASE)/__/shared_engine/materialsystem || mkdir -p $(OBJDIR_RELEASE)/__/shared_engine/materialsystem 
 	test -d $(OBJDIR_RELEASE)/__/shared_engine/physics || mkdir -p $(OBJDIR_RELEASE)/__/shared_engine/physics 
+	test -d $(OBJDIR_RELEASE)/__/shared_game || mkdir -p $(OBJDIR_RELEASE)/__/shared_game 
 
 after_release: 
 
@@ -57,11 +57,8 @@ release: before_release out_release after_release
 out_release: before_release $(OBJ_RELEASE) $(DEP_RELEASE)
 	$(LD) $(LIBDIR_RELEASE) -o $(OUT_RELEASE) $(OBJ_RELEASE)  $(LDFLAGS_RELEASE) $(LIB_RELEASE)
 
-$(OBJDIR_RELEASE)/eqPhysics/eqPhysics.o: eqPhysics/eqPhysics.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c eqPhysics/eqPhysics.cpp -o $(OBJDIR_RELEASE)/eqPhysics/eqPhysics.o
-
-$(OBJDIR_RELEASE)/eqPhysics/eqPhysics_Body.o: eqPhysics/eqPhysics_Body.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c eqPhysics/eqPhysics_Body.cpp -o $(OBJDIR_RELEASE)/eqPhysics/eqPhysics_Body.o
+$(OBJDIR_RELEASE)/input.o: input.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c input.cpp -o $(OBJDIR_RELEASE)/input.o
 
 $(OBJDIR_RELEASE)/game_multiplayer.o: game_multiplayer.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c game_multiplayer.cpp -o $(OBJDIR_RELEASE)/game_multiplayer.o
@@ -72,17 +69,23 @@ $(OBJDIR_RELEASE)/game_singleplayer.o: game_singleplayer.cpp
 $(OBJDIR_RELEASE)/heightfield.o: heightfield.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c heightfield.cpp -o $(OBJDIR_RELEASE)/heightfield.o
 
-$(OBJDIR_RELEASE)/input.o: input.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c input.cpp -o $(OBJDIR_RELEASE)/input.o
-
 $(OBJDIR_RELEASE)/level.o: level.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c level.cpp -o $(OBJDIR_RELEASE)/level.o
 
-$(OBJDIR_RELEASE)/NetPlayer.o: NetPlayer.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c NetPlayer.cpp -o $(OBJDIR_RELEASE)/NetPlayer.o
+$(OBJDIR_RELEASE)/levelobject.o: levelobject.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c levelobject.cpp -o $(OBJDIR_RELEASE)/levelobject.o
 
-$(OBJDIR_RELEASE)/Rain.o: Rain.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c Rain.cpp -o $(OBJDIR_RELEASE)/Rain.o
+$(OBJDIR_RELEASE)/main.o: main.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c main.cpp -o $(OBJDIR_RELEASE)/main.o
+
+$(OBJDIR_RELEASE)/object_debris.o: object_debris.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c object_debris.cpp -o $(OBJDIR_RELEASE)/object_debris.o
+
+$(OBJDIR_RELEASE)/object_physics.o: object_physics.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c object_physics.cpp -o $(OBJDIR_RELEASE)/object_physics.o
+
+$(OBJDIR_RELEASE)/eqPhysics/eqBulletIndexedMesh.o: eqPhysics/eqBulletIndexedMesh.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c eqPhysics/eqBulletIndexedMesh.cpp -o $(OBJDIR_RELEASE)/eqPhysics/eqBulletIndexedMesh.o
 
 $(OBJDIR_RELEASE)/ShaderOverrides.o: ShaderOverrides.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ShaderOverrides.cpp -o $(OBJDIR_RELEASE)/ShaderOverrides.o
@@ -99,14 +102,8 @@ $(OBJDIR_RELEASE)/Shader_Water.o: Shader_Water.cpp
 $(OBJDIR_RELEASE)/StateManager.o: StateManager.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c StateManager.cpp -o $(OBJDIR_RELEASE)/StateManager.o
 
-$(OBJDIR_RELEASE)/main.o: main.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c main.cpp -o $(OBJDIR_RELEASE)/main.o
-
 $(OBJDIR_RELEASE)/car.o: car.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c car.cpp -o $(OBJDIR_RELEASE)/car.o
-
-$(OBJDIR_RELEASE)/eqPhysics/eqBulletIndexedMesh.o: eqPhysics/eqBulletIndexedMesh.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c eqPhysics/eqBulletIndexedMesh.cpp -o $(OBJDIR_RELEASE)/eqPhysics/eqBulletIndexedMesh.o
 
 $(OBJDIR_RELEASE)/eqPhysics/eqCollision_Object.o: eqPhysics/eqCollision_Object.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c eqPhysics/eqCollision_Object.cpp -o $(OBJDIR_RELEASE)/eqPhysics/eqCollision_Object.o
@@ -114,11 +111,14 @@ $(OBJDIR_RELEASE)/eqPhysics/eqCollision_Object.o: eqPhysics/eqCollision_Object.c
 $(OBJDIR_RELEASE)/eqPhysics/eqCollision_ObjectGrid.o: eqPhysics/eqCollision_ObjectGrid.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c eqPhysics/eqCollision_ObjectGrid.cpp -o $(OBJDIR_RELEASE)/eqPhysics/eqCollision_ObjectGrid.o
 
+$(OBJDIR_RELEASE)/eqPhysics/eqPhysics.o: eqPhysics/eqPhysics.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c eqPhysics/eqPhysics.cpp -o $(OBJDIR_RELEASE)/eqPhysics/eqPhysics.o
+
+$(OBJDIR_RELEASE)/eqPhysics/eqPhysics_Body.o: eqPhysics/eqPhysics_Body.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c eqPhysics/eqPhysics_Body.cpp -o $(OBJDIR_RELEASE)/eqPhysics/eqPhysics_Body.o
+
 $(OBJDIR_RELEASE)/state_title.o: state_title.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c state_title.cpp -o $(OBJDIR_RELEASE)/state_title.o
-
-$(OBJDIR_RELEASE)/replay.o: replay.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c replay.cpp -o $(OBJDIR_RELEASE)/replay.o
 
 $(OBJDIR_RELEASE)/session_stuff.o: session_stuff.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c session_stuff.cpp -o $(OBJDIR_RELEASE)/session_stuff.o
@@ -126,8 +126,14 @@ $(OBJDIR_RELEASE)/session_stuff.o: session_stuff.cpp
 $(OBJDIR_RELEASE)/state_game.o: state_game.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c state_game.cpp -o $(OBJDIR_RELEASE)/state_game.o
 
+$(OBJDIR_RELEASE)/state_lobby.o: state_lobby.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c state_lobby.cpp -o $(OBJDIR_RELEASE)/state_lobby.o
+
 $(OBJDIR_RELEASE)/state_mainmenu.o: state_mainmenu.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c state_mainmenu.cpp -o $(OBJDIR_RELEASE)/state_mainmenu.o
+
+$(OBJDIR_RELEASE)/replay.o: replay.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c replay.cpp -o $(OBJDIR_RELEASE)/replay.o
 
 $(OBJDIR_RELEASE)/system.o: system.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c system.cpp -o $(OBJDIR_RELEASE)/system.o
@@ -140,12 +146,6 @@ $(OBJDIR_RELEASE)/window.o: window.cpp
 
 $(OBJDIR_RELEASE)/world.o: world.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c world.cpp -o $(OBJDIR_RELEASE)/world.o
-
-$(OBJDIR_RELEASE)/object_debris.o: object_debris.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c object_debris.cpp -o $(OBJDIR_RELEASE)/object_debris.o
-
-$(OBJDIR_RELEASE)/object_physics.o: object_physics.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c object_physics.cpp -o $(OBJDIR_RELEASE)/object_physics.o
 
 $(OBJDIR_RELEASE)/object_scripted.o: object_scripted.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c object_scripted.cpp -o $(OBJDIR_RELEASE)/object_scripted.o
@@ -168,6 +168,12 @@ $(OBJDIR_RELEASE)/occluderSet.o: occluderSet.cpp
 $(OBJDIR_RELEASE)/physics.o: physics.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c physics.cpp -o $(OBJDIR_RELEASE)/physics.o
 
+$(OBJDIR_RELEASE)/predictable_object.o: predictable_object.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c predictable_object.cpp -o $(OBJDIR_RELEASE)/predictable_object.o
+
+$(OBJDIR_RELEASE)/region.o: region.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c region.cpp -o $(OBJDIR_RELEASE)/region.o
+
 $(OBJDIR_RELEASE)/__/shared_engine/DebugOverlay.o: ../shared_engine/DebugOverlay.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_engine/DebugOverlay.cpp -o $(OBJDIR_RELEASE)/__/shared_engine/DebugOverlay.o
 
@@ -183,9 +189,6 @@ $(OBJDIR_RELEASE)/__/shared_engine/EngineSpew.o: ../shared_engine/EngineSpew.cpp
 $(OBJDIR_RELEASE)/__/shared_engine/EngineVersion.o: ../shared_engine/EngineVersion.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_engine/EngineVersion.cpp -o $(OBJDIR_RELEASE)/__/shared_engine/EngineVersion.o
 
-$(OBJDIR_RELEASE)/__/shared_engine/Audio/soundzero.o: ../shared_engine/Audio/soundzero.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_engine/Audio/soundzero.cpp -o $(OBJDIR_RELEASE)/__/shared_engine/Audio/soundzero.o
-
 $(OBJDIR_RELEASE)/__/shared_engine/EqParticles_Render.o: ../shared_engine/EqParticles_Render.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_engine/EqParticles_Render.cpp -o $(OBJDIR_RELEASE)/__/shared_engine/EqParticles_Render.o
 
@@ -200,6 +203,9 @@ $(OBJDIR_RELEASE)/__/shared_engine/FontLayoutBuilders.o: ../shared_engine/FontLa
 
 $(OBJDIR_RELEASE)/__/shared_engine/KeyBinding/Keys.o: ../shared_engine/KeyBinding/Keys.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_engine/KeyBinding/Keys.cpp -o $(OBJDIR_RELEASE)/__/shared_engine/KeyBinding/Keys.o
+
+$(OBJDIR_RELEASE)/__/shared_engine/Network/NETThread.o: ../shared_engine/Network/NETThread.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_engine/Network/NETThread.cpp -o $(OBJDIR_RELEASE)/__/shared_engine/Network/NETThread.o
 
 $(OBJDIR_RELEASE)/__/public/ViewParams.o: ../public/ViewParams.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../public/ViewParams.cpp -o $(OBJDIR_RELEASE)/__/public/ViewParams.o
@@ -225,8 +231,8 @@ $(OBJDIR_RELEASE)/__/shared_engine/Audio/alsnd_stream.o: ../shared_engine/Audio/
 $(OBJDIR_RELEASE)/__/shared_engine/Audio/alsound_local.o: ../shared_engine/Audio/alsound_local.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_engine/Audio/alsound_local.cpp -o $(OBJDIR_RELEASE)/__/shared_engine/Audio/alsound_local.o
 
-$(OBJDIR_RELEASE)/AICarManager.o: AICarManager.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c AICarManager.cpp -o $(OBJDIR_RELEASE)/AICarManager.o
+$(OBJDIR_RELEASE)/__/shared_engine/Audio/soundzero.o: ../shared_engine/Audio/soundzero.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_engine/Audio/soundzero.cpp -o $(OBJDIR_RELEASE)/__/shared_engine/Audio/soundzero.o
 
 $(OBJDIR_RELEASE)/AIPursuerCar.o: AIPursuerCar.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c AIPursuerCar.cpp -o $(OBJDIR_RELEASE)/AIPursuerCar.o
@@ -236,9 +242,6 @@ $(OBJDIR_RELEASE)/AITrafficCar.o: AITrafficCar.cpp
 
 $(OBJDIR_RELEASE)/BillboardList.o: BillboardList.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c BillboardList.cpp -o $(OBJDIR_RELEASE)/BillboardList.o
-
-$(OBJDIR_RELEASE)/__/shared_game/GameSoundEmitterSystem.o: ../shared_game/GameSoundEmitterSystem.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_game/GameSoundEmitterSystem.cpp -o $(OBJDIR_RELEASE)/__/shared_game/GameSoundEmitterSystem.o
 
 $(OBJDIR_RELEASE)/CameraAnimator.o: CameraAnimator.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c CameraAnimator.cpp -o $(OBJDIR_RELEASE)/CameraAnimator.o
@@ -255,8 +258,11 @@ $(OBJDIR_RELEASE)/GameObject.o: GameObject.cpp
 $(OBJDIR_RELEASE)/LuaBinding_Drivers.o: LuaBinding_Drivers.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c LuaBinding_Drivers.cpp -o $(OBJDIR_RELEASE)/LuaBinding_Drivers.o
 
-$(OBJDIR_RELEASE)/__/shared_engine/Network/NETThread.o: ../shared_engine/Network/NETThread.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_engine/Network/NETThread.cpp -o $(OBJDIR_RELEASE)/__/shared_engine/Network/NETThread.o
+$(OBJDIR_RELEASE)/NetPlayer.o: NetPlayer.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c NetPlayer.cpp -o $(OBJDIR_RELEASE)/NetPlayer.o
+
+$(OBJDIR_RELEASE)/Rain.o: Rain.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c Rain.cpp -o $(OBJDIR_RELEASE)/Rain.o
 
 $(OBJDIR_RELEASE)/__/shared_engine/cfgloader.o: ../shared_engine/cfgloader.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_engine/cfgloader.cpp -o $(OBJDIR_RELEASE)/__/shared_engine/cfgloader.o
@@ -270,11 +276,11 @@ $(OBJDIR_RELEASE)/__/shared_engine/eqParallelJobs.o: ../shared_engine/eqParallel
 $(OBJDIR_RELEASE)/__/shared_engine/materialsystem/MaterialProxy.o: ../shared_engine/materialsystem/MaterialProxy.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_engine/materialsystem/MaterialProxy.cpp -o $(OBJDIR_RELEASE)/__/shared_engine/materialsystem/MaterialProxy.o
 
-$(OBJDIR_RELEASE)/__/public/TextureAtlas.o: ../public/TextureAtlas.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../public/TextureAtlas.cpp -o $(OBJDIR_RELEASE)/__/public/TextureAtlas.o
-
 $(OBJDIR_RELEASE)/__/shared_engine/modelloader_shared.o: ../shared_engine/modelloader_shared.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_engine/modelloader_shared.cpp -o $(OBJDIR_RELEASE)/__/shared_engine/modelloader_shared.o
+
+$(OBJDIR_RELEASE)/__/public/TextureAtlas.o: ../public/TextureAtlas.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../public/TextureAtlas.cpp -o $(OBJDIR_RELEASE)/__/public/TextureAtlas.o
 
 $(OBJDIR_RELEASE)/__/shared_engine/physics/BulletShapeCache.o: ../shared_engine/physics/BulletShapeCache.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_engine/physics/BulletShapeCache.cpp -o $(OBJDIR_RELEASE)/__/shared_engine/physics/BulletShapeCache.o
@@ -285,21 +291,27 @@ $(OBJDIR_RELEASE)/__/shared_engine/studio_egf.o: ../shared_engine/studio_egf.cpp
 $(OBJDIR_RELEASE)/__/shared_engine/sys_console.o: ../shared_engine/sys_console.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_engine/sys_console.cpp -o $(OBJDIR_RELEASE)/__/shared_engine/sys_console.o
 
+$(OBJDIR_RELEASE)/__/shared_game/GameSoundEmitterSystem.o: ../shared_game/GameSoundEmitterSystem.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c ../shared_game/GameSoundEmitterSystem.cpp -o $(OBJDIR_RELEASE)/__/shared_game/GameSoundEmitterSystem.o
+
+$(OBJDIR_RELEASE)/AICarManager.o: AICarManager.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -std=c++11 -c AICarManager.cpp -o $(OBJDIR_RELEASE)/AICarManager.o
+
 clean_release: 
 	rm -f $(OBJ_RELEASE) $(OUT_RELEASE)
 	rm -rf ../../gamebin_linux
-	rm -rf $(OBJDIR_RELEASE)/eqPhysics
 	rm -rf $(OBJDIR_RELEASE)
+	rm -rf $(OBJDIR_RELEASE)/eqPhysics
 	rm -rf $(OBJDIR_RELEASE)/__/shared_engine
-	rm -rf $(OBJDIR_RELEASE)/__/shared_engine/Audio
 	rm -rf $(OBJDIR_RELEASE)/__/shared_engine/KeyBinding
+	rm -rf $(OBJDIR_RELEASE)/__/shared_engine/Network
 	rm -rf $(OBJDIR_RELEASE)/__/public
 	rm -rf $(OBJDIR_RELEASE)/__/public/luabinding
 	rm -rf $(OBJDIR_RELEASE)/__/public/materialsystem
-	rm -rf $(OBJDIR_RELEASE)/__/shared_game
-	rm -rf $(OBJDIR_RELEASE)/__/shared_engine/Network
+	rm -rf $(OBJDIR_RELEASE)/__/shared_engine/Audio
 	rm -rf $(OBJDIR_RELEASE)/__/shared_engine/materialsystem
 	rm -rf $(OBJDIR_RELEASE)/__/shared_engine/physics
+	rm -rf $(OBJDIR_RELEASE)/__/shared_game
 
 .PHONY: before_release after_release clean_release
 

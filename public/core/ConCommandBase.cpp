@@ -39,9 +39,7 @@ void ConCommandBase::Init(char const *name,char const *desc, int flags /*= 0*/,b
 	if(GetFlags() & CV_UNREGISTERED)
 		return;
 
-	//Dynamic initalizer must create GetCvars() first before registering pBase
-	g_sysConsole->RegisterCommand( this );
-	m_bIsRegistered = true;
+    Register(this);
 }
 
 ConCommandBase::~ConCommandBase()
@@ -49,7 +47,19 @@ ConCommandBase::~ConCommandBase()
 	if(m_bIsRegistered) Unregister( this );
 }
 
-void ConCommandBase::Unregister( ConCommandBase *pBase )
+//-----------------------------------------------------------
+
+// registering and unregistering commands must be done more internally without singletons
+IEXPORTS IConsoleCommands* GetCConsoleCommands( void );
+
+// static
+void ConCommandBase::Register( ConCommandBase* pBase )
 {
-	g_sysConsole->UnregisterCommand(pBase);
+    GetCConsoleCommands()->RegisterCommand( pBase );
+}
+
+// static
+void ConCommandBase::Unregister( ConCommandBase* pBase )
+{
+	GetCConsoleCommands()->UnregisterCommand(pBase);
 }

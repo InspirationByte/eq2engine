@@ -45,7 +45,8 @@ public:
 	bool			IsConCommand( void )	const	{return (m_nFlags & CMDBASE_CONCOMMAND) > 0;}
 	bool			IsRegistered( void )	const	{return m_bIsRegistered;}
 
-	static void		Unregister( ConCommandBase *pBase );
+    static void		Register( ConCommandBase* pBase );
+	static void		Unregister( ConCommandBase* pBase );
 
 protected:
 	void		Init(char const *name,char const *desc, int flags = 0,bool bIsConVar = false);

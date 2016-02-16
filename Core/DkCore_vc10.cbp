@@ -39,7 +39,6 @@
 			<Add directory="../libs" />
 		</Linker>
 		<Unit filename="CmdLineParser.cpp" />
-		<Unit filename="CommandAccessor.cpp" />
 		<Unit filename="ConCommandFactory.cpp" />
 		<Unit filename="CoreVersion.cpp" />
 		<Unit filename="DPKFileReader.cpp" />

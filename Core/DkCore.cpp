@@ -166,6 +166,8 @@ void cc_toggle_f(DkList<EqString>* args)
 ConCommand *c_toggle;
 ConCommand *c_exec;
 ConCommand *c_set;
+extern ConCommand c_developer;
+extern ConCommand c_echo;
 
 bool bDoLogs = false;
 bool bLoggingInitialized = false;
@@ -317,14 +319,6 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
     remove(tmp_path);
 
-    //atexit(DkCore_onExit);
-
-	// register core interfaces
-	RegisterInterface( CMDLINE_INTERFACE_VERSION, GetCommandLineParse());
-	RegisterInterface( FILESYSTEM_INTERFACE_VERSION, GetCFileSystem());
-	RegisterInterface( LOCALIZER_INTERFACE_VERSION , GetCLocalize());
-	RegisterInterface( CPUSERVICES_INTERFACE_VERSION , GetCEqCPUCaps());
-
     // Reset counter of same commands
     g_sysConsole->ResetCounter();
 
@@ -341,6 +335,8 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
     // Регистрация некоторых комманд.
     g_sysConsole->RegisterCommand(&cmd_info);
 	g_sysConsole->RegisterCommand(&cmd_coreversion);
+	g_sysConsole->RegisterCommand(&c_developer);
+	g_sysConsole->RegisterCommand(&c_echo);
 
     // Регистрация некоторых комманд.
     ((CConsoleCommands*)g_sysConsole.GetInstancePtr())->RegisterCommands();
@@ -388,8 +384,8 @@ bool CDkCore::Init(const char* pszApplicationName,int argc, char **argv)
 
         strCmdLine.Append(tmp_path);
     }
-    return Init(pszApplicationName, (char*)strCmdLine.GetData());
 
+    return Init(pszApplicationName, (char*)strCmdLine.GetData());
 }
 
 void CDkCore::InitSubInterfaces()
@@ -397,7 +393,11 @@ void CDkCore::InitSubInterfaces()
 	// init memory first
 	PPMemInit();
 
-
+	// register core interfaces
+	RegisterInterface( CMDLINE_INTERFACE_VERSION, GetCommandLineParse());
+	RegisterInterface( FILESYSTEM_INTERFACE_VERSION, GetCFileSystem());
+	RegisterInterface( LOCALIZER_INTERFACE_VERSION , GetCLocalize());
+	RegisterInterface( CPUSERVICES_INTERFACE_VERSION , GetCEqCPUCaps());
 }
 
 KeyValues* CDkCore::GetConfig()

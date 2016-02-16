@@ -11,7 +11,7 @@
 				<Option working_dir="../../gamebin_linux/" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option parameters=" +r_disableLightUpdates 1 +job_modelLoader 0 +r_enableLevelInstancing 0 +r_enableObjectsInstancing 0" />
+				<Option parameters="+job_modelLoader 0" />
 				<Compiler>
 					<Add option="-DSHINY_PROFILER=FALSE" />
 					<Add option="-DNDEBUG" />
@@ -175,6 +175,8 @@
 		<Unit filename="input.h" />
 		<Unit filename="level.cpp" />
 		<Unit filename="level.h" />
+		<Unit filename="levelobject.cpp" />
+		<Unit filename="levelobject.h" />
 		<Unit filename="levfile.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="object_debris.cpp" />
@@ -196,7 +198,11 @@
 		<Unit filename="occluderSet.h" />
 		<Unit filename="physics.cpp" />
 		<Unit filename="physics.h" />
+		<Unit filename="predictable_object.cpp" />
+		<Unit filename="predictable_object.h" />
 		<Unit filename="predictablerandom.h" />
+		<Unit filename="region.cpp" />
+		<Unit filename="region.h" />
 		<Unit filename="replay.cpp" />
 		<Unit filename="replay.h" />
 		<Unit filename="session_stuff.cpp" />
@@ -204,6 +210,8 @@
 		<Unit filename="state.h" />
 		<Unit filename="state_game.cpp" />
 		<Unit filename="state_game.h" />
+		<Unit filename="state_lobby.cpp" />
+		<Unit filename="state_lobby.h" />
 		<Unit filename="state_mainmenu.cpp" />
 		<Unit filename="state_mainmenu.h" />
 		<Unit filename="state_title.cpp" />
