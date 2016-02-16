@@ -22,19 +22,19 @@ FReal FPmath::sign(const FReal& f)
 
 FReal FPmath::floor(const FReal& f)
 {
-    return (f & (-1 << DECIMAL_BITS));
+    return (f & (-1 << FPMATH_DECIMAL_BITS));
 }
 
 FReal FPmath::ceil(const FReal& f)
 {
-    return (f & (ONE -1)) ? (f & (-1 << DECIMAL_BITS)) + 1 : f;
+    return (f & (FPMATH_ONE -1)) ? (f & (-1 << FPMATH_DECIMAL_BITS)) + 1 : f;
 }
 
 FReal FPmath::sqrt(const FReal& f)
 {
     register FReal s,r;
 
-    if (f < ONE)
+    if (f < FPMATH_ONE)
 	{
 		return 0;
 	}
@@ -58,7 +58,7 @@ FReal FPmath::sqrt2(const FReal& f)
     register int op=f.raw;
     register int res=0;
 
-    if (f < ONE)
+    if (f < FPMATH_ONE)
 	{
 		return 0;
 	}

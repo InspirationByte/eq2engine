@@ -12,8 +12,6 @@
 #include "IFont.h"
 #include <map>
 
-// loads font
-IEqFont* InternalLoadFont(const char* pszFontName);
 
 class CFont : public IEqFont
 {

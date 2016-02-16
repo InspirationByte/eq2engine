@@ -48,11 +48,11 @@ int _tmain(int argc, char **argv)
 	Msg(" Version 1.0\n");
 
 	// initialize file system
-	if(!GetFileSystem()->Init(false))
+	if(!g_fileSystem->Init(false))
 		return 0;
 
-	GetCmdLine()->ExecuteCommandLine(true,true);
-	if(GetCmdLine()->GetArgumentCount() <= 1)
+	g_cmdLine->ExecuteCommandLine(true,true);
+	if(g_cmdLine->GetArgumentCount() <= 1)
 	{
 		Usage();
 
@@ -64,29 +64,29 @@ int _tmain(int argc, char **argv)
 
 	CDPKFileWriter dpkWriter;
 
-	for(int i = 0; i < GetCmdLine()->GetArgumentCount(); i++)
+	for(int i = 0; i < g_cmdLine->GetArgumentCount(); i++)
 	{
-		char* arg = GetCmdLine()->GetArgumentString( i );
+		char* arg = g_cmdLine->GetArgumentString( i );
 
 		if(!stricmp(arg, "-o") || !stricmp(arg, "-out"))
 		{
-			outFileName = GetCmdLine()->GetArgumentsOf(i);
+			outFileName = g_cmdLine->GetArgumentsOf(i);
 		}
 		else if(!stricmp(arg, "-f") || !stricmp(arg, "-file"))
 		{
-			dpkWriter.AddFile( GetCmdLine()->GetArgumentsOf(i) );
+			dpkWriter.AddFile( g_cmdLine->GetArgumentsOf(i) );
 		}
 		else if(!stricmp(arg, "-d") || !stricmp(arg, "-dir"))
 		{
-			dpkWriter.AddDirecory( GetCmdLine()->GetArgumentsOf(i), true );
+			dpkWriter.AddDirecory( g_cmdLine->GetArgumentsOf(i), true );
 		}
 		else if(!stricmp(arg, "-m") || !stricmp(arg, "-mount"))
 		{
-			dpkWriter.SetMountPath( GetCmdLine()->GetArgumentsOf(i) );
+			dpkWriter.SetMountPath( g_cmdLine->GetArgumentsOf(i) );
 		}
 		else if(!stricmp(arg, "-c") || !stricmp(arg, "-compression"))
 		{
-			dpkWriter.SetCompression( atoi(GetCmdLine()->GetArgumentsOf(i)) );
+			dpkWriter.SetCompression( atoi(g_cmdLine->GetArgumentsOf(i)) );
 		}
 	}
 

@@ -152,7 +152,6 @@
     <ClCompile Include="DkCore.cpp" />
     <ClCompile Include="DPKFileReader.cpp" />
     <ClCompile Include="ExceptionHandler.cpp" />
-    <ClCompile Include="CommandAccessor.cpp" />
     <ClCompile Include="ConCommandFactory.cpp" />
     <ClCompile Include="CmdLineParser.cpp" />
     <ClCompile Include="DebugInterface.cpp" />
@@ -171,7 +170,6 @@
     <ClInclude Include="..\Engine\Imaging\zlib.h" />
     <ClInclude Include="Localize.h" />
     <ClInclude Include="CmdLineParser.h" />
-    <ClInclude Include="CommandAccessor.h" />
     <ClInclude Include="ConCommandFactory.h" />
     <ClInclude Include="..\public\core_base_header.h" />
     <ClInclude Include="CoreVersion.h" />
@@ -182,7 +180,6 @@
     <ClInclude Include="..\public\ICommandAccessor.h" />
     <ClInclude Include="..\public\IConCommandFactory.h" />
     <ClInclude Include="..\public\IDkCore.h" />
-    <ClInclude Include="..\public\IFileSystem.h" />
     <ClInclude Include="..\public\InterfaceManager.h" />
     <ClInclude Include="..\public\Platform\Platform.h" />
     <ClInclude Include="..\public\Utils\String.h" />

@@ -855,13 +855,13 @@ bool WriteEGF(const char* filename)
 	g_hdr->length = WRITE_OFS;
 
 	// open model file
-	DKFILE *file = GetFileSystem()->Open(filename, "wb");
+	DKFILE *file = g_fileSystem->Open(filename, "wb");
 	if(file)
 	{
 		// write model
 		file->Write(pStart,g_hdr->length,1);
 
-		GetFileSystem()->Close(file);
+		g_fileSystem->Close(file);
 
 		file = NULL;
 

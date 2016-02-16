@@ -101,9 +101,9 @@ bool CGameHost::LoadModules()
 {
 	// first, load matsystem module
 #ifdef _WIN32
-	g_matsysmodule = GetFileSystem()->LoadModule("EqMatSystem.dll");
+	g_matsysmodule = g_fileSystem->LoadModule("EqMatSystem.dll");
 #else
-    g_matsysmodule = GetFileSystem()->LoadModule("libeqMatSystem.so");
+    g_matsysmodule = g_fileSystem->LoadModule("libeqMatSystem.so");
 #endif // _WIN32
 
 	if(!g_matsysmodule)
@@ -154,7 +154,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	}
 
 #ifdef _WIN32
-	bool useOpenGLRender = GetCmdLine()->FindArgument("-ogl") != -1;
+	bool useOpenGLRender = g_cmdLine->FindArgument("-ogl") != -1;
 #else
     bool useOpenGLRender = true; // I don't see that other APIs could appear widely soon
 #endif // _WIN32
@@ -206,12 +206,12 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 #ifdef _WIN32
 	if(useOpenGLRender)
 		materialSystemStatus = materials->Init("materials/", "eqGLRHI", materials_config);
-	else if(GetCmdLine()->FindArgument("-norender") != -1)
+	else if(g_cmdLine->FindArgument("-norender") != -1)
 		materialSystemStatus = materials->Init("materials/", "eqNullRHI", materials_config);
 	else
 		materialSystemStatus = materials->Init("materials/", "eqD3D9RHI", materials_config);
 #else
-	if(GetCmdLine()->FindArgument("-norender") != -1)
+	if(g_cmdLine->FindArgument("-norender") != -1)
 		materialSystemStatus = materials->Init("materials/", "libeqNullRHI", materials_config);
     else
         materialSystemStatus = materials->Init("materials/", "libeqGLRHI", materials_config);
@@ -478,7 +478,7 @@ void CGameHost::ShutdownSystems()
 
 	materials->Shutdown();
 
-	GetFileSystem()->FreeModule( g_matsysmodule );
+	g_fileSystem->FreeModule( g_matsysmodule );
 }
 
 ConVar sys_maxfps("sys_maxfps", "60", "Max framerate", CV_CHEAT);

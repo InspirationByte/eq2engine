@@ -42,7 +42,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 {
 	long len = 0;
 
-	DKFILE* file = GetFileSystem()->Open(pszPath, "rb");
+	DKFILE* file = g_fileSystem->Open(pszPath, "rb");
 
 	if(!file)
 	{
@@ -55,7 +55,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 	char* _buffer = (char*)PPAlloc(len+32); // +32 bytes for conversion issues
 
 	file->Read(_buffer, 1, len);
-	GetFileSystem()->Close(file);
+	g_fileSystem->Close(file);
 
 	basemodelheader_t* pBaseHdr = (basemodelheader_t*)_buffer;
 
@@ -107,7 +107,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 
 studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 {
-	ubyte* pData = (ubyte*)GetFileSystem()->GetFileBuffer(pszPath);
+	ubyte* pData = (ubyte*)g_fileSystem->GetFileBuffer(pszPath);
 	ubyte* pStart = pData;
 
 	if(!pData)
@@ -280,9 +280,9 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 {
 	memset(pModel, 0, sizeof(physmodeldata_t));
 
-	if(GetFileSystem()->FileExist( pszPath ))
+	if(g_fileSystem->FileExist( pszPath ))
 	{
-		ubyte* pData = (ubyte*)GetFileSystem()->GetFileBuffer( pszPath );
+		ubyte* pData = (ubyte*)g_fileSystem->GetFileBuffer( pszPath );
 
 		ubyte* pStart = pData;
 

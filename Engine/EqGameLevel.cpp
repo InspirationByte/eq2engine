@@ -277,7 +277,7 @@ bool CEqLevel::CheckLevelExist(const char* pszLevelName)
 	// make a file	
 	EqString game_level_file(leveldir + "/world.build");
 
-	return GetFileSystem()->FileExist(game_level_file.GetData());
+	return g_fileSystem->FileExist(game_level_file.GetData());
 		
 }
 
@@ -335,7 +335,7 @@ bool CEqLevel::LoadCompatibleWorldFile(const char* pszFileName)
 	// make a file	
 	EqString game_level_file(leveldir + "/" + pszFileName);
 
-	ubyte* pLevelData = (ubyte*)GetFileSystem()->GetFileBuffer(game_level_file.GetData(), 0, -1, true);
+	ubyte* pLevelData = (ubyte*)g_fileSystem->GetFileBuffer(game_level_file.GetData(), 0, -1, true);
 
 	if(!pLevelData)
 	{

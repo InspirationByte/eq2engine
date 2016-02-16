@@ -58,13 +58,13 @@ int main(int argc, char **argv)
 	MsgWarning("Generates EGF of version %d\n", EQUILIBRIUM_MODEL_VERSION);
 
 	// Filesystem is first!
-	if(!GetFileSystem()->Init(false))
+	if(!g_fileSystem->Init(false))
 	{
 		GetCore()->Shutdown();
 		return 0;
 	}
 
-	GetCmdLine()->ExecuteCommandLine(true,true);
+	g_cmdLine->ExecuteCommandLine(true,true);
 
 	if(!stricmp("none", c_filename.GetString()))
 	{

@@ -6,6 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "NetMessageBuffer.h"
+#include "utils/strtools.h"
+#include "utils/KeyValues.h"
 
 #ifdef LINUX
 #include <wchar.h>

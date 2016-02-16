@@ -8,7 +8,7 @@
 #ifndef IFILESYSTEM_H
 #define IFILESYSTEM_H
 
-#include "core_base_header.h"
+#include "InterfaceManager.h"
 #include "IVirtualStream.h"
 
 #include <sys/types.h>
@@ -45,7 +45,7 @@ typedef IVirtualStream IFile; // pretty same
 // Filesystem interface
 //------------------------------------------------------------------------------
 
-class IFileSystem
+class IFileSystem : public ICoreModuleInterface
 {
 public:
     // Initialization of filesystem
@@ -105,9 +105,8 @@ public:
 
 	// returns procedure address of the loaded module
 	virtual void*		GetProcedureAddress(DKMODULE* pModule, const char* pszProc) = 0;
-
 };
 
-IEXPORTS IFileSystem*   GetFileSystem();
+INTERFACE_SINGLETON( IFileSystem, CFileSystem, FILESYSTEM_INTERFACE_VERSION, g_fileSystem )
 
 #endif // IFILESYSTEM_H

@@ -24,8 +24,6 @@ public:
 
 	virtual void					Shutdown() = 0;	// Shutdowns core
 
-	virtual ICommandLineParse*		GetCoreCommandLine() = 0;	// returns command line interface
-
 	virtual char*					GetApplicationName() = 0; // returns current application name string
 
 	virtual char*					GetCurrentUserName() = 0;	// returns current user name string
@@ -37,9 +35,9 @@ public:
 
 // Interface management for engine
 
-	virtual void					RegisterInterface(const char* pszName, void* ptr) = 0;	// registers interface for faster access
-	virtual void*					GetInterface(const char* pszName) = 0;			// returns registered interface
-	virtual void					UnregisterInterface(const char* pszName) = 0;			// unregisters interface
+	virtual void					RegisterInterface(const char* pszName, ICoreModuleInterface* iface) = 0;	// registers interface for faster access
+	virtual ICoreModuleInterface*	GetInterface(const char* pszName) = 0;										// returns registered interface
+	virtual void					UnregisterInterface(const char* pszName) = 0;								// unregisters interface
 };
 
 #ifndef _DKLAUNCHER_

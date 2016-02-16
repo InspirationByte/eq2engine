@@ -9,6 +9,7 @@
 #define EDITORACTIONHISTORY_H
 
 #include "VirtualStream.h"
+#include "utils/DkList.h"
 
 enum EHistoryAction
 {

@@ -336,7 +336,7 @@ void CRegionEditFrame::BuildAndSaveMapFromRegionImages()
 		}
 	}
 
-	EqString mapTexName(GetFileSystem()->GetCurrentGameDirectory() + _Es("/materials/levelmap/"));
+	EqString mapTexName(g_fileSystem->GetCurrentGameDirectory() + _Es("/materials/levelmap/"));
 	mapTexName.Append( g_pGameWorld->GetLevelName() );
 	mapTexName.Append(".tga");
 

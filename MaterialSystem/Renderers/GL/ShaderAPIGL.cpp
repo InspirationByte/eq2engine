@@ -23,6 +23,10 @@
 
 #include "imaging/ImageLoader.h"
 
+#include "IConCommandFactory.h"
+#include "utils/strtools.h"
+#include "utils/KeyValues.h"
+
 #ifdef PLAT_LINUX
 #include "glx_caps.hpp"
 #endif // PLAT_LINUX

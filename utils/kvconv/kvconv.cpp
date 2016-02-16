@@ -49,10 +49,10 @@ int main(int argc, char* argv[])
 {
 	GetCore()->Init("kvconv", argc, argv);
 
-	if(!GetFileSystem()->Init(false))
+	if(!g_fileSystem->Init(false))
 		return -1;
 
-	GetCmdLine()->ExecuteCommandLine( true, true );
+	g_cmdLine->ExecuteCommandLine( true, true );
 
 	GetCore()->Shutdown();
 

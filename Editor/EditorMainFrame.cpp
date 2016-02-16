@@ -331,7 +331,7 @@ void Editor_Init()
 {
 	GetLocalizer()->AddTokensFile("editor");
 
-	GetCmdLine()->ExecuteCommandLine(true,true);
+	g_cmdLine->ExecuteCommandLine(true,true);
 
 	Platform_InitTime();
 
@@ -341,10 +341,10 @@ void Editor_Init()
 
 	/*
 	// load editor settings
-	GetCommandAccessor()->ClearCommandBuffer();
-	GetCommandAccessor()->ParseFileToCommandBuffer("cfg/editor.cfg");
-	GetCommandAccessor()->ExecuteCommandBuffer();
-	GetCommandAccessor()->ClearCommandBuffer();
+	g_sysConsole->ClearCommandBuffer();
+	g_sysConsole->ParseFileToCommandBuffer("cfg/editor.cfg");
+	g_sysConsole->ExecuteCommandBuffer();
+	g_sysConsole->ClearCommandBuffer();
 	*/
 }
 
@@ -392,7 +392,7 @@ bool InitCore(HINSTANCE hInstance, char *pCmdLine)
 
 	*/
 
-	if(!GetFileSystem()->Init(true))
+	if(!g_fileSystem->Init(true))
 		return false;
 
 	return true;
@@ -483,7 +483,7 @@ public:
 				EqString filename = wfd.cFileName;
 				if( filename.GetLength() > 1 && filename != ".." && (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
 				{
-					if( GetFileSystem()->FileExist( (filename + "/GameInfo.txt").GetData() ) )
+					if( g_fileSystem->FileExist( (filename + "/GameInfo.txt").GetData() ) )
 					{
 						m_pGamesList->Append( filename.GetData() );
 					}
@@ -521,7 +521,7 @@ public:
 	{
 		if(event.GetId() == wxID_OK)
 		{
-			GetFileSystem()->AddSearchPath( m_pGamesList->GetValue() );
+			g_fileSystem->AddSearchPath( m_pGamesList->GetValue() );
 
 			// get the default game name
 			KeyValues kv;
@@ -567,12 +567,12 @@ bool EqEditorApplication::OnInit()
 
 	delete pGameSelDialog;
 	
-	GetFileSystem()->AddSearchPath("EqEditor");
+	g_fileSystem->AddSearchPath("EqEditor");
 
 	LoadEditorConfig();
 
 	// first, load matsystem module
-	g_matsysmodule =  GetFileSystem()->LoadModule("EqMatSystem.dll");
+	g_matsysmodule =  g_fileSystem->LoadModule("EqMatSystem.dll");
 
 	if(!g_matsysmodule)
 	{
@@ -770,11 +770,11 @@ CEditorFrame::CEditorFrame(const wxString& title, const wxPoint& pos, const wxSi
 			{
 				if(!stricmp(pSec->keys[i]->name,"AddSearchPath"))
 				{
-					GetFileSystem()->AddSearchPath(pSec->keys[i]->values[0]);
+					g_fileSystem->AddSearchPath(pSec->keys[i]->values[0]);
 				}
 				else if(!stricmp(pSec->keys[i]->name,"AddPackage"))
 				{
-					GetFileSystem()->AddPackage(pSec->keys[i]->values[0], SP_MOD);
+					g_fileSystem->AddPackage(pSec->keys[i]->values[0], SP_MOD);
 				}
 			}
 		}
@@ -1389,7 +1389,7 @@ void CEditorFrame::OnClose(wxCloseEvent& event)
 
 	// shutdown material system
 	materials->Shutdown();
-	GetFileSystem()->FreeModule(g_matsysmodule);
+	g_fileSystem->FreeModule(g_matsysmodule);
 
 	// shutdown core
 	GetCore()->Shutdown();
@@ -1985,7 +1985,7 @@ void CEditorFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 			args.Clear();
 
 			args.Append( ENGINE_EXECUTABLE_NAME " " );
-			args.Append(varargs("-game \"%s\" ", GetFileSystem()->GetCurrentGameDirectory()));
+			args.Append(varargs("-game \"%s\" ", g_fileSystem->GetCurrentGameDirectory()));
 			args.Append( varargs("+start_world \"%s\" ", g_pLevel->GetLevelName()) );
 
 			// there is a console window that user can close and resume editing world

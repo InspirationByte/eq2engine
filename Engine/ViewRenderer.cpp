@@ -860,7 +860,7 @@ void CViewRenderer::RenderOccluders()
 	{
 		r_vis_occlusiondump.SetBool(false);
 
-		DKFILE* pFile = GetFileSystem()->Open("occ_dump.raw", "wb", SP_ROOT);
+		DKFILE* pFile = g_fileSystem->Open("occ_dump.raw", "wb", SP_ROOT);
 		ubyte* pConv = (ubyte*)malloc(m_nOcclusionBufferSize*m_nOcclusionBufferSize);
 
 		for(int i = 0; i < m_nOcclusionBufferSize*m_nOcclusionBufferSize; i++)
@@ -868,8 +868,8 @@ void CViewRenderer::RenderOccluders()
 			pConv[i] = (ubyte)(((m_pOcclusionBuffer[i] - m_sceneinfo.m_fZNear) / (m_sceneinfo.m_fZFar - m_sceneinfo.m_fZNear)) * 255.0f);
 		}
 
-		GetFileSystem()->Write(pConv,1,m_nOcclusionBufferSize*m_nOcclusionBufferSize,pFile);
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Write(pConv,1,m_nOcclusionBufferSize*m_nOcclusionBufferSize,pFile);
+		g_fileSystem->Close(pFile);
 		
 		free(pConv);
 	}

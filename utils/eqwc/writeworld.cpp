@@ -14,10 +14,10 @@ void AddLump(int nLump, ubyte *pData, int nDataSize, eqworldhdr_t* pHdr, DKFILE*
 	lump.data_size = nDataSize;
 
 	// write lump hdr
-	GetFileSystem()->Write(&lump, 1, sizeof(eqworldlump_t), pFile);
+	g_fileSystem->Write(&lump, 1, sizeof(eqworldlump_t), pFile);
 
 	// write lump data
-	GetFileSystem()->Write(pData, 1, nDataSize, pFile);
+	g_fileSystem->Write(pData, 1, nDataSize, pFile);
 
 	pHdr->num_lumps++;
 }
@@ -28,31 +28,31 @@ void KV_WriteToFile_r(kvkeybase_t* pKeyBase, DKFILE* pFile, int nTabs, bool bOld
 
 void AddKVLump(int nLump, KeyValues &kv, eqworldhdr_t* pHdr, DKFILE* pFile)
 {
-	int begin_offset = GetFileSystem()->Tell(pFile);
+	int begin_offset = g_fileSystem->Tell(pFile);
 
 	eqworldlump_t lump;
 	lump.data_type = nLump;
 	lump.data_size = 0;
 
 	// write lump hdr
-	GetFileSystem()->Write(&lump, 1, sizeof(eqworldlump_t), pFile);
+	g_fileSystem->Write(&lump, 1, sizeof(eqworldlump_t), pFile);
 
-	int data_pos = GetFileSystem()->Tell(pFile);
+	int data_pos = g_fileSystem->Tell(pFile);
 
 	// write, without tabs
 	KV_WriteToFile_r(kv.GetRootSection(), pFile, 0, false);
 
-	int cur_pos = GetFileSystem()->Tell(pFile);
+	int cur_pos = g_fileSystem->Tell(pFile);
 
-	GetFileSystem()->Seek(pFile, begin_offset, SEEK_SET);
+	g_fileSystem->Seek(pFile, begin_offset, SEEK_SET);
 
 	lump.data_size = cur_pos - data_pos;
 
 	// write lump hdr agian
-	GetFileSystem()->Write(&lump, 1, sizeof(eqworldlump_t), pFile);
+	g_fileSystem->Write(&lump, 1, sizeof(eqworldlump_t), pFile);
 
 	// move forward
-	GetFileSystem()->Seek(pFile, cur_pos, SEEK_SET);
+	g_fileSystem->Seek(pFile, cur_pos, SEEK_SET);
 
 	pHdr->num_lumps++;
 }
@@ -87,7 +87,7 @@ void WriteOcclusionGeometry()
 
 	if(g_occlusionsurfaces.numElem() == 0)
 	{
-		GetFileSystem()->RemoveFile(world_geom_path.GetData(), SP_MOD);
+		g_fileSystem->RemoveFile(world_geom_path.GetData(), SP_MOD);
 		Msg("No occlusion surfaces found\n");
 		return;
 	}
@@ -98,13 +98,13 @@ void WriteOcclusionGeometry()
 
 	geomhdr.num_lumps = 0;
 
-	DKFILE* pFile = GetFileSystem()->Open(world_geom_path.GetData(), "wb", SP_MOD);
+	DKFILE* pFile = g_fileSystem->Open(world_geom_path.GetData(), "wb", SP_MOD);
 
 	if(pFile)
 	{
 		MsgWarning("Writing %s... ", world_geom_path.GetData());
 
-		GetFileSystem()->Write(&geomhdr, 1, sizeof(geomhdr),pFile);
+		g_fileSystem->Write(&geomhdr, 1, sizeof(geomhdr),pFile);
 
 		DkList<eqocclusionsurf_t>	occ_surfs;
 		DkList<Vector3D>			vertices;
@@ -122,11 +122,11 @@ void WriteOcclusionGeometry()
 		AddLump(EQWLUMP_OCCLUSION_INDICES, (ubyte*)indices.ptr(), indices.numElem()*sizeof(int), &geomhdr, pFile);
 		AddLump(EQWLUMP_OCCLUSION_VERTS, (ubyte*)vertices.ptr(), vertices.numElem()*sizeof(Vector3D), &geomhdr, pFile);
 
-		GetFileSystem()->Seek(pFile, 0, SEEK_SET);
+		g_fileSystem->Seek(pFile, 0, SEEK_SET);
 
 		// rewrite hdr
-		GetFileSystem()->Write(&geomhdr, 1, sizeof(geomhdr),pFile);
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Write(&geomhdr, 1, sizeof(geomhdr),pFile);
+		g_fileSystem->Close(pFile);
 
 		MsgWarning("Done\n");
 	}
@@ -217,7 +217,7 @@ void WriteWater(eqworldhdr_t* pHdr, DKFILE* pFile);
 void WriteDecals()
 {
 	// remove old decal file
-	GetFileSystem()->RemoveFile(varargs("worlds/%s/decals.build", worldGlobals.worldName.GetData()), SP_MOD);
+	g_fileSystem->RemoveFile(varargs("worlds/%s/decals.build", worldGlobals.worldName.GetData()), SP_MOD);
 
 	eqworldhdr_t geomhdr;
 	geomhdr.ident = EQWF_IDENT;
@@ -227,13 +227,13 @@ void WriteDecals()
 
 	EqString world_geom_path(varargs("worlds/%s/geometry.build", worldGlobals.worldName.GetData()));
 
-	DKFILE* pFile = GetFileSystem()->Open(world_geom_path.GetData(), "wb", SP_MOD);
+	DKFILE* pFile = g_fileSystem->Open(world_geom_path.GetData(), "wb", SP_MOD);
 
 	if(pFile)
 	{
 		MsgWarning("Writing %s... ", world_geom_path.GetData());
 
-		GetFileSystem()->Write(&geomhdr, 1, sizeof(geomhdr),pFile);
+		g_fileSystem->Write(&geomhdr, 1, sizeof(geomhdr),pFile);
 
 		DkList<eqlevelvertexlm_t>	vertices;
 		DkList<int>					indices;
@@ -249,11 +249,11 @@ void WriteDecals()
 
 		WriteRooms(&geomhdr, pFile);
 
-		GetFileSystem()->Seek(pFile, 0, SEEK_SET);
+		g_fileSystem->Seek(pFile, 0, SEEK_SET);
 
 		// rewrite hdr
-		GetFileSystem()->Write(&geomhdr, 1, sizeof(geomhdr),pFile);
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Write(&geomhdr, 1, sizeof(geomhdr),pFile);
+		g_fileSystem->Close(pFile);
 
 		MsgWarning("Done\n");
 	}
@@ -268,7 +268,7 @@ void WriteRenderGeometry()
 {
 	// remove all lightmaps because we rebuilded the level
 	for(int i = 0; i < 32; i++)
-		GetFileSystem()->RemoveFile(varargs("worlds/%s/lm#%d.dds", worldGlobals.worldName.GetData(), i), SP_MOD);
+		g_fileSystem->RemoveFile(varargs("worlds/%s/lm#%d.dds", worldGlobals.worldName.GetData(), i), SP_MOD);
 
 	eqworldhdr_t geomhdr;
 	geomhdr.ident = EQWF_IDENT;
@@ -278,13 +278,13 @@ void WriteRenderGeometry()
 
 	EqString world_geom_path(varargs("worlds/%s/geometry.build", worldGlobals.worldName.GetData()));
 
-	DKFILE* pFile = GetFileSystem()->Open(world_geom_path.GetData(), "wb", SP_MOD);
+	DKFILE* pFile = g_fileSystem->Open(world_geom_path.GetData(), "wb", SP_MOD);
 
 	if(pFile)
 	{
 		MsgWarning("Writing %s... ", world_geom_path.GetData());
 
-		GetFileSystem()->Write(&geomhdr, 1, sizeof(geomhdr),pFile);
+		g_fileSystem->Write(&geomhdr, 1, sizeof(geomhdr),pFile);
 
 		DkList<eqlevelvertexlm_t>	vertices;
 		DkList<int>					indices;
@@ -304,11 +304,11 @@ void WriteRenderGeometry()
 		// write water info
 		WriteWater(&geomhdr, pFile);
 
-		GetFileSystem()->Seek(pFile, 0, SEEK_SET);
+		g_fileSystem->Seek(pFile, 0, SEEK_SET);
 
 		// rewrite hdr
-		GetFileSystem()->Write(&geomhdr, 1, sizeof(geomhdr),pFile);
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Write(&geomhdr, 1, sizeof(geomhdr),pFile);
+		g_fileSystem->Close(pFile);
 
 		MsgWarning("Done\n");
 	}
@@ -329,23 +329,23 @@ void WritePhysics()
 
 	EqString world_geom_path(varargs("worlds/%s/physics.build", worldGlobals.worldName.GetData()));
 
-	DKFILE* pFile = GetFileSystem()->Open(world_geom_path.GetData(), "wb", SP_MOD);
+	DKFILE* pFile = g_fileSystem->Open(world_geom_path.GetData(), "wb", SP_MOD);
 
 	if(pFile)
 	{
 		MsgWarning("Writing %s... ", world_geom_path.GetData());
 
-		GetFileSystem()->Write(&physhdr, 1, sizeof(physhdr),pFile);
+		g_fileSystem->Write(&physhdr, 1, sizeof(physhdr),pFile);
 
 		AddLump( EQWLUMP_PHYS_VERTICES, (ubyte*)g_physicsverts.ptr(), g_physicsverts.numElem()*sizeof(eqphysicsvertex_t), &physhdr, pFile);
 		AddLump( EQWLUMP_PHYS_INDICES, (ubyte*)g_physicsindices.ptr(), g_physicsindices.numElem()*sizeof(int), &physhdr, pFile);
 		AddLump( EQWLUMP_PHYS_SURFACES, (ubyte*)g_physicssurfs.ptr(), g_physicssurfs.numElem()*sizeof(eqlevelphyssurf_t), &physhdr, pFile);
 
-		GetFileSystem()->Seek(pFile, 0, SEEK_SET);
+		g_fileSystem->Seek(pFile, 0, SEEK_SET);
 
 		// rewrite hdr
-		GetFileSystem()->Write(&physhdr, 1, sizeof(physhdr),pFile);
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Write(&physhdr, 1, sizeof(physhdr),pFile);
+		g_fileSystem->Close(pFile);
 
 		MsgWarning("Done\n");
 	}
@@ -393,7 +393,7 @@ void WriteNavMesh()
 
 	if(!worldGlobals.bOnlyEnts)
 	{
-		GetFileSystem()->RemoveFile(navmesh_geom_path.GetData(), SP_MOD);
+		g_fileSystem->RemoveFile(navmesh_geom_path.GetData(), SP_MOD);
 		return;
 	}
 }
@@ -632,7 +632,7 @@ void WriteWorld()
 
 	if(worldGlobals.bOnlyEnts)
 	{
-		ubyte* pLevelData = (ubyte*)GetFileSystem()->GetFileBuffer(world_data_path.GetData(), 0, -1, true);
+		ubyte* pLevelData = (ubyte*)g_fileSystem->GetFileBuffer(world_data_path.GetData(), 0, -1, true);
 
 		if(!pLevelData)
 			return;
@@ -679,13 +679,13 @@ void WriteWorld()
 			pLump += sizeof(eqworldlump_t)+data_size;
 		}
 
-		DKFILE* pFile = GetFileSystem()->Open(world_data_path.GetData(), "wb", SP_MOD);
+		DKFILE* pFile = g_fileSystem->Open(world_data_path.GetData(), "wb", SP_MOD);
 
 		if(pFile)
 		{
 			MsgWarning("Writing %s... ", world_data_path.GetData());
 
-			GetFileSystem()->Write(&worldhdr, 1, sizeof(worldhdr),pFile);
+			g_fileSystem->Write(&worldhdr, 1, sizeof(worldhdr),pFile);
 
 			for(int i = 0; i < lumps.numElem(); i++)
 				AddLump( lumps[i]->data_type, ((ubyte*)lumps[i])+sizeof(eqworldlump_t),lumps[i]->data_size,&worldhdr, pFile);
@@ -693,11 +693,11 @@ void WriteWorld()
 			// write new entities
 			WriteEntities(pFile, &worldhdr);
 
-			GetFileSystem()->Seek(pFile, 0, SEEK_SET);
+			g_fileSystem->Seek(pFile, 0, SEEK_SET);
 
 			// rewrite hdr
-			GetFileSystem()->Write(&worldhdr, 1, sizeof(worldhdr),pFile);
-			GetFileSystem()->Close(pFile);
+			g_fileSystem->Write(&worldhdr, 1, sizeof(worldhdr),pFile);
+			g_fileSystem->Close(pFile);
 
 			MsgWarning("Done\n");
 		}
@@ -711,13 +711,13 @@ void WriteWorld()
 		return;
 	}
 
-	DKFILE* pFile = GetFileSystem()->Open(world_data_path.GetData(), "wb", SP_MOD);
+	DKFILE* pFile = g_fileSystem->Open(world_data_path.GetData(), "wb", SP_MOD);
 
 	if(pFile)
 	{
 		MsgWarning("Writing %s... ", world_data_path.GetData());
 
-		GetFileSystem()->Write(&worldhdr, 1, sizeof(worldhdr),pFile);
+		g_fileSystem->Write(&worldhdr, 1, sizeof(worldhdr),pFile);
 
 		DkList<eqlevelmaterial_t> level_materials;
 		for(int i = 0; i < g_materials.numElem(); i++)
@@ -744,11 +744,11 @@ void WriteWorld()
 
 		WriteEntities(pFile, &worldhdr);
 
-		GetFileSystem()->Seek(pFile, 0, SEEK_SET);
+		g_fileSystem->Seek(pFile, 0, SEEK_SET);
 
 		// rewrite hdr
-		GetFileSystem()->Write(&worldhdr, 1, sizeof(worldhdr),pFile);
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Write(&worldhdr, 1, sizeof(worldhdr),pFile);
+		g_fileSystem->Close(pFile);
 
 		MsgWarning("Done\n");
 	}

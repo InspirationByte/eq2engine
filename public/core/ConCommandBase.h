@@ -30,6 +30,7 @@ class ConCommandBase
 {
 	friend class ConVar;
 	friend class ConCommand;
+	friend class CConsoleCommands;
 
 public:
 	ConCommandBase();

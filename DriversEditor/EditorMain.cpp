@@ -247,9 +247,9 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	InitMatSystem(m_pRenderPanel->GetHWND());
 
-	GetCommandAccessor()->ClearCommandBuffer();
-	GetCommandAccessor()->ParseFileToCommandBuffer("editor.cfg");
-	GetCommandAccessor()->ExecuteCommandBuffer();
+	g_sysConsole->ClearCommandBuffer();
+	g_sysConsole->ParseFileToCommandBuffer("editor.cfg");
+	g_sysConsole->ExecuteCommandBuffer();
 
 	soundsystem->Init();
 	ses->Init();
@@ -1141,7 +1141,7 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 
 	materials = NULL;
 
-	GetFileSystem()->FreeModule(g_matsysmodule);
+	g_fileSystem->FreeModule(g_matsysmodule);
 	
 	// shutdown core
 	GetCore()->Shutdown();
@@ -1163,12 +1163,12 @@ bool InitCore(char *pCmdLine)
 	// initialize core
 	GetCore()->Init("Editor", pCmdLine);
 
-	if(!GetFileSystem()->Init(false))
+	if(!g_fileSystem->Init(false))
 		return false;
 
-	GetFileSystem()->AddSearchPath("Editor");
+	g_fileSystem->AddSearchPath("Editor");
 
-	GetCmdLine()->ExecuteCommandLine( true, true );
+	g_cmdLine->ExecuteCommandLine( true, true );
 
 	return true;
 }
@@ -1198,7 +1198,7 @@ bool CEGFViewApp::OnInit()
 	setlocale(LC_ALL,"C");
 
 	// first, load matsystem module
-	g_matsysmodule = GetFileSystem()->LoadModule("EqMatSystem.dll");
+	g_matsysmodule = g_fileSystem->LoadModule("EqMatSystem.dll");
 
 	if(!g_matsysmodule)
 	{

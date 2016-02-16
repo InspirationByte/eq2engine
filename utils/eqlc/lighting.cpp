@@ -578,10 +578,10 @@ void AddLump(int nLump, ubyte *pData, int nDataSize, eqworldhdr_t* pHdr, DKFILE*
 	lump.data_size = nDataSize;
 
 	// write lump hdr
-	GetFileSystem()->Write(&lump, 1, sizeof(eqworldlump_t), pFile);
+	g_fileSystem->Write(&lump, 1, sizeof(eqworldlump_t), pFile);
 
 	// write lump data
-	GetFileSystem()->Write(pData, 1, nDataSize, pFile);
+	g_fileSystem->Write(pData, 1, nDataSize, pFile);
 
 
 	pHdr->num_lumps++;
@@ -594,31 +594,31 @@ void KV_WriteToFile_r(kvkeybase_t* pKeyBase, DKFILE* pFile, int nTabs = 0, bool 
 
 void AddKVLump(int nLump, KeyValues &kv, eqworldhdr_t* pHdr, DKFILE* pFile)
 {
-	int begin_offset = GetFileSystem()->Tell(pFile);
+	int begin_offset = g_fileSystem->Tell(pFile);
 
 	eqworldlump_t lump;
 	lump.data_type = nLump;
 	lump.data_size = 0;
 
 	// write lump hdr
-	GetFileSystem()->Write(&lump, 1, sizeof(eqworldlump_t), pFile);
+	g_fileSystem->Write(&lump, 1, sizeof(eqworldlump_t), pFile);
 
-	int data_pos = GetFileSystem()->Tell(pFile);
+	int data_pos = g_fileSystem->Tell(pFile);
 
 	// write, without tabs
 	KV_WriteToFile_r(kv.GetRootSection(), pFile, 0, false);
 
-	int cur_pos = GetFileSystem()->Tell(pFile);
+	int cur_pos = g_fileSystem->Tell(pFile);
 
-	GetFileSystem()->Seek(pFile, begin_offset, SEEK_SET);
+	g_fileSystem->Seek(pFile, begin_offset, SEEK_SET);
 
 	lump.data_size = cur_pos - data_pos;
 
 	// write lump hdr agian
-	GetFileSystem()->Write(&lump, 1, sizeof(eqworldlump_t), pFile);
+	g_fileSystem->Write(&lump, 1, sizeof(eqworldlump_t), pFile);
 
 	// move forward
-	GetFileSystem()->Seek(pFile, cur_pos, SEEK_SET);
+	g_fileSystem->Seek(pFile, cur_pos, SEEK_SET);
 
 	pHdr->num_lumps++;
 }
@@ -627,7 +627,7 @@ void SaveWorld()
 {
 	EqString world_geom_path(varargs("worlds/%s/world.build", g_worldName.GetData()));
 
-	ubyte* pLevelData = (ubyte*)GetFileSystem()->GetFileBuffer(world_geom_path.GetData(), 0, -1, true);
+	ubyte* pLevelData = (ubyte*)g_fileSystem->GetFileBuffer(world_geom_path.GetData(), 0, -1, true);
 
 	if(!pLevelData)
 		return;
@@ -684,13 +684,13 @@ void SaveWorld()
 
 	worldhdr.num_lumps = 0;
 
-	DKFILE* pFile = GetFileSystem()->Open(world_geom_path.GetData(), "wb", SP_MOD);
+	DKFILE* pFile = g_fileSystem->Open(world_geom_path.GetData(), "wb", SP_MOD);
 
 	if(pFile)
 	{
 		MsgWarning("Writing %s... ", world_geom_path.GetData());
 
-		GetFileSystem()->Write(&worldhdr, 1, sizeof(worldhdr),pFile);
+		g_fileSystem->Write(&worldhdr, 1, sizeof(worldhdr),pFile);
 
 		for(int i = 0; i < lumps.numElem(); i++)
 		{
@@ -704,13 +704,13 @@ void SaveWorld()
 		AddKVLump( EQWLUMP_ENTITIES, g_pLevel->m_EntityKeyValues, &worldhdr, pFile);
 
 		// seek back
-		GetFileSystem()->Seek(pFile, 0, SEEK_SET);
+		g_fileSystem->Seek(pFile, 0, SEEK_SET);
 
 		// rewrite hdr
-		GetFileSystem()->Write(&worldhdr, 1, sizeof(worldhdr),pFile);
+		g_fileSystem->Write(&worldhdr, 1, sizeof(worldhdr),pFile);
 		Msg("lumps: %d\n", worldhdr.num_lumps);
 
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Close(pFile);
 
 		MsgWarning("Done\n");
 	}
@@ -770,9 +770,9 @@ void FixEdgesAndSave(int nLightmap, bool bDirMap)
 	EqString fileName;
 	
 	if(bDirMap)
-		fileName = varargs("%s/worlds/%s/dm#%d.dds", GetFileSystem()->GetCurrentGameDirectory(), g_pLevel->m_levelpath.GetData(), nLightmap);
+		fileName = varargs("%s/worlds/%s/dm#%d.dds", g_fileSystem->GetCurrentGameDirectory(), g_pLevel->m_levelpath.GetData(), nLightmap);
 	else
-		fileName = varargs("%s/worlds/%s/lm#%d.dds", GetFileSystem()->GetCurrentGameDirectory(), g_pLevel->m_levelpath.GetData(), nLightmap);
+		fileName = varargs("%s/worlds/%s/lm#%d.dds", g_fileSystem->GetCurrentGameDirectory(), g_pLevel->m_levelpath.GetData(), nLightmap);
 
 	MsgInfo("Saving %s...\n", fileName.GetData());
 		

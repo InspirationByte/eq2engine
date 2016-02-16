@@ -382,11 +382,11 @@ void CEntityPropertiesPanel::OnOpenModel(wxCommandEvent &event)
 	wxFileDialog* file;
 	
 	if(m_currentParamType == PARAM_TYPE_TEXTURE)
-		file = new wxFileDialog(NULL, "Open DDS texture", varargs("%s/materials", GetFileSystem()->GetCurrentGameDirectory()), "*.dds", "Direct Draw Surface files (*.dds)|*.dds;", wxFD_FILE_MUST_EXIST | wxFD_OPEN);
+		file = new wxFileDialog(NULL, "Open DDS texture", varargs("%s/materials", g_fileSystem->GetCurrentGameDirectory()), "*.dds", "Direct Draw Surface files (*.dds)|*.dds;", wxFD_FILE_MUST_EXIST | wxFD_OPEN);
 	if(m_currentParamType == PARAM_TYPE_MATERIAL)
-		file = new wxFileDialog(NULL, "Open material file", varargs("%s/materials", GetFileSystem()->GetCurrentGameDirectory()), "*.mat", "Equilibrium Material file (*.mat)|*.mat;", wxFD_FILE_MUST_EXIST | wxFD_OPEN);
+		file = new wxFileDialog(NULL, "Open material file", varargs("%s/materials", g_fileSystem->GetCurrentGameDirectory()), "*.mat", "Equilibrium Material file (*.mat)|*.mat;", wxFD_FILE_MUST_EXIST | wxFD_OPEN);
 	else if(m_currentParamType == PARAM_TYPE_MODEL)
-		file = new wxFileDialog(NULL, "Open EGF model", varargs("%s/models", GetFileSystem()->GetCurrentGameDirectory()), "*.egf", "Equilibrium Geometry Files (*.egf)|*.egf;", wxFD_FILE_MUST_EXIST | wxFD_OPEN);
+		file = new wxFileDialog(NULL, "Open EGF model", varargs("%s/models", g_fileSystem->GetCurrentGameDirectory()), "*.egf", "Equilibrium Geometry Files (*.egf)|*.egf;", wxFD_FILE_MUST_EXIST | wxFD_OPEN);
 
 	if(file && (file->ShowModal() == wxID_OK))
 	{
@@ -396,13 +396,13 @@ void CEntityPropertiesPanel::OnOpenModel(wxCommandEvent &event)
 			path = path.Path_Strip_Ext();
 
 		FixSlashes((char*)path.GetData());
-		char* sub = strstr((char*)path.GetData(), varargs("%s/", GetFileSystem()->GetCurrentGameDirectory()));
+		char* sub = strstr((char*)path.GetData(), varargs("%s/", g_fileSystem->GetCurrentGameDirectory()));
 
 		char* pszPath = (char*)path.GetData();
 	
 		int diff = (sub - pszPath);
 
-		pszPath += diff + strlen(GetFileSystem()->GetCurrentGameDirectory()) + 1;
+		pszPath += diff + strlen(g_fileSystem->GetCurrentGameDirectory()) + 1;
 
 		if(m_currentParamType == PARAM_TYPE_TEXTURE || m_currentParamType == PARAM_TYPE_MATERIAL)
 			pszPath += strlen(materials->GetMaterialPath());

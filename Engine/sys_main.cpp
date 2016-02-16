@@ -52,12 +52,12 @@ ONLY_EXPORTS int CreateEngineFn(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR 
 	if(!stricmp("Eq32", modNamefromExe) || !stricmp("Eq64", modNamefromExe) || !stricmp("Equilibrium", modNamefromExe))
 		shouldUseExeName = false;
 
-	if(!GetFileSystem()->Init( shouldUseExeName ))
+	if(!g_fileSystem->Init( shouldUseExeName ))
 		return -1;
 
 	// if executable compiled especially for game, we start named mod
 	if(shouldUseExeName)
-		GetFileSystem()->AddSearchPath( modNamefromExe );
+		g_fileSystem->AddSearchPath( modNamefromExe );
 
 	Msg("Initializing Engine...\n \n");
 

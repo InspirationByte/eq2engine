@@ -8,22 +8,13 @@
 #include "CmdLineParser.h"
 #include "utils/strtools.h"
 #include "Platform.h"
-#include "InterfaceManager.h"
-#include "core_base_header.h"
-#include "CommandAccessor.h"
+#include "ConVar.h"
 #include "DebugInterface.h"
+#include "ConCommandFactory.h"
 #include <ctype.h>
 
-EXPORTED_INTERFACE_FUNCTION(ICommandLineParse, CommandLineParse, GetCmdLine)
-/*
-#ifdef _WIN32
-EXPOSE_SINGLE_INTERFACE_EXPORTS_EX(CmdLine,CommandLineParse,ICommandLineParse)
-#else
-	static CommandLineParse g_CmdLine;								\
-	ICommandLineParse *s_pCmdLine = ( ICommandLineParse * )&g_CmdLine;		\
-	IEXPORTS ICommandLineParse *GetCmdLine( void ) {return s_pCmdLine;}
-#endif
-*/
+EXPORTED_INTERFACE(ICommandLineParse, CommandLineParse);
+
 CommandLineParse::CommandLineParse()
 {
 	m_szFullArgString = " ";
@@ -142,7 +133,7 @@ void CommandLineParse::ExecuteCommandLine(bool cvars,bool commands, unsigned int
 		filterFlags = CmdFilterFlags;
 	}
 
-	GetCommandAccessor()->ClearCommandBuffer();
+	g_sysConsole->ClearCommandBuffer();
 
 	char tmp_path[2048];
 
@@ -155,13 +146,13 @@ void CommandLineParse::ExecuteCommandLine(bool cvars,bool commands, unsigned int
 
 			sprintf(tmp_path, "%s %s",tempStr.GetData(), tmpArgs.GetData());
 
-			GetCommandAccessor()->AppendToCommandBuffer(tmp_path);
+			g_sysConsole->AppendToCommandBuffer(tmp_path);
 		}
 	}
 
-	((ConCommandAccessor*)GetCommandAccessor())->EnableInitOnlyVarsChangeProtection(true);
-	GetCommandAccessor()->ExecuteCommandBuffer(filterFlags);
-	((ConCommandAccessor*)GetCommandAccessor())->EnableInitOnlyVarsChangeProtection(false);
+	((CConsoleCommands*)g_sysConsole.GetInstancePtr())->EnableInitOnlyVarsChangeProtection(true);
+	g_sysConsole->ExecuteCommandBuffer(filterFlags);
+	((CConsoleCommands*)g_sysConsole.GetInstancePtr())->EnableInitOnlyVarsChangeProtection(false);
 }
 
 char* CommandLineParse::GetArgumentString(int index)

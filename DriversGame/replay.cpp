@@ -443,7 +443,7 @@ void CReplayData::SaveToFile( const char* filename )
 	if(m_filename.Path_Extract_Ext().GetLength() == 0)
 		m_filename = m_filename + ".rdat";
 
-	IFile* pFile = GetFileSystem()->Open(m_filename.c_str(), "wb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open(m_filename.c_str(), "wb", SP_MOD);
 
 	if(pFile)
 	{
@@ -468,7 +468,7 @@ void CReplayData::SaveToFile( const char* filename )
 		// write events
 		WriteEvents( pFile );
 
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Close(pFile);
 
 		Msg("Replay '%s' saved\n", filename);
 	}
@@ -476,7 +476,7 @@ void CReplayData::SaveToFile( const char* filename )
 	if(m_cameras.numElem() > 0)
 	{
 		EqString camsFilename = m_filename.Path_Strip_Ext() + ".rcam";
-		IFile* pFile = GetFileSystem()->Open(camsFilename.c_str(), "wb", SP_MOD);
+		IFile* pFile = g_fileSystem->Open(camsFilename.c_str(), "wb", SP_MOD);
 
 		if(pFile)
 		{
@@ -491,7 +491,7 @@ void CReplayData::SaveToFile( const char* filename )
 				pFile->Write(&m_cameras[i], 1, sizeof(replaycamera_t));
 			}
 
-			GetFileSystem()->Close(pFile);
+			g_fileSystem->Close(pFile);
 
 			Msg("Replay cameras '%s' saved\n", filename);
 		}
@@ -569,13 +569,13 @@ bool CReplayData::SaveVehicleReplay( CCar* target, const char* filename )
 		return false;
 	}
 
-	IFile* pFile = GetFileSystem()->Open((_Es(filename) + ".vr").c_str(), "wb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open((_Es(filename) + ".vr").c_str(), "wb", SP_MOD);
 
 	if(pFile)
 	{
 		WriteVehicleAndFrames(rep, pFile);
 
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Close(pFile);
 
 		Msg("Car replay '%s' saved\n", filename);
 		return true;
@@ -600,7 +600,7 @@ void CReplayData::ReadEvent( replayevent_t& evt, IVirtualStream* stream )
 
 bool CReplayData::LoadVehicleReplay( CCar* target, const char* filename )
 {
-	IFile* pFile = GetFileSystem()->Open((_Es(filename) + ".vr").c_str(), "rb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open((_Es(filename) + ".vr").c_str(), "rb", SP_MOD);
 
 	if(pFile)
 	{
@@ -663,7 +663,7 @@ bool CReplayData::LoadVehicleReplay( CCar* target, const char* filename )
 		// events must be sorted
 		m_events.quickSort( _sortEventsFunc, 0, m_events.numElem()-1 );
 
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Close(pFile);
 
 		Msg("Car replay '%s' loaded\n", filename);
 		return true;
@@ -679,7 +679,7 @@ void CReplayData::LoadFromFile(const char* filename)
 	if(m_filename.Path_Extract_Ext().GetLength() == 0)
 		m_filename = m_filename + ".rdat";
 
-	IFile* pFile = GetFileSystem()->Open(m_filename.c_str(), "rb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open(m_filename.c_str(), "rb", SP_MOD);
 
 	if(pFile)
 	{
@@ -689,7 +689,7 @@ void CReplayData::LoadFromFile(const char* filename)
 		if(hdr.version != VEHICLEREPLAY_VERSION)
 		{
 			MsgError("Invalid replay file version!\n");
-			GetFileSystem()->Close(pFile);
+			g_fileSystem->Close(pFile);
 			return;
 		}
 
@@ -757,11 +757,11 @@ void CReplayData::LoadFromFile(const char* filename)
 
 		Msg("Replay %s loaded\n", filename);
 
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Close(pFile);
 
 		// try loading camera file
 		EqString camsFilename = m_filename.Path_Strip_Ext() + ".rcam";
-		pFile = GetFileSystem()->Open(camsFilename.c_str(), "rb", SP_MOD);
+		pFile = g_fileSystem->Open(camsFilename.c_str(), "rb", SP_MOD);
 		if(pFile)
 		{
 			replaycamerahdr_t camhdr;
@@ -785,7 +785,7 @@ void CReplayData::LoadFromFile(const char* filename)
 				MsgError("Unsupported camera replay file version!\n");
 			}
 
-			GetFileSystem()->Close(pFile);
+			g_fileSystem->Close(pFile);
 		}
 
 		// load mission, level, set environment

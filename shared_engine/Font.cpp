@@ -882,16 +882,3 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 	return false;
 }
-
-// loads font
-IEqFont* InternalLoadFont(const char* pszFontName)
-{
-	CFont* newFont = new CFont();
-	if( !newFont->LoadFont(pszFontName) )
-	{
-		delete newFont;
-		return NULL;
-	}
-
-	return newFont;
-}

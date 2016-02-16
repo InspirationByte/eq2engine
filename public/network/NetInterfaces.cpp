@@ -8,6 +8,7 @@
 #include "NetInterfaces.h"
 #include "DebugInterface.h"
 #include "c_udp.h"
+#include "IConCommandFactory.h"
 
 #include <zlib.h>
 

@@ -149,14 +149,16 @@ public:
 	// returns procedure address of the loaded module
 	void*						GetProcedureAddress(DKMODULE* pModule, const char* pszProc);
 
+	//-------------------------
+	bool						IsInitialized() const		{return m_isInit;}
+	const char*					GetInterfaceName() const	{return FILESYSTEM_INTERFACE_VERSION;}
+
 protected:
 
 	// This actually opens file
     IFile*						GetFileHandle(const char* file_name_to_check,const char* options, int searchFlags );
 
 private:
-
-	EqString					m_pszBinDir;
 
     EqString					m_pszDataDir;		// Used to load engine data
 	DkList<EqString>			m_directories;		// mod data, for fall back
@@ -169,6 +171,7 @@ private:
 	DkList<DKMODULE*>			m_pLoadedModules;
 
     bool						m_bEditorMode;
+	bool						m_isInit;
 
 	CEqMutex					m_FSMutex;
 };

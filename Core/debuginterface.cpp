@@ -124,7 +124,7 @@ ConCommand c_echo("echo",cc_echo_f,"Displays the entered args",0);
 void Log_WriteBOM(const char* fileName)
 {
 	// don't add if file is exist
-	if( GetFileSystem()->FileExist(fileName) )
+	if( g_fileSystem->FileExist(fileName) )
 		return;
 
 	char bom[3] = {(char)0xEF,(char)0xBB,(char)0xBF};

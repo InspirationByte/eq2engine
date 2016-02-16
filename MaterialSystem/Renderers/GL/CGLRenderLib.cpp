@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "Platform.h"
+#include "IDkCore.h"
 #include "CGLRenderLib.h"
 #include "gl_caps.hpp"
 
@@ -573,7 +574,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	if(!didLoad)
 		MsgError("OpenGL load errors: %i\n", didLoad.GetNumMissing());
 
-	if(GetCmdLine()->FindArgument("-glext") != -1)
+	if(g_cmdLine->FindArgument("-glext") != -1)
 		PrintGLExtensions();
 
 	{

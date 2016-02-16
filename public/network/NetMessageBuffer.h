@@ -23,6 +23,8 @@
 #include "luabinding/LuaBinding_Math.h"
 #endif // NO_LUA
 
+struct kvkeybase_t;
+
 namespace Networking
 {
 

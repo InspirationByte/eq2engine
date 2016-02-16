@@ -146,7 +146,7 @@ bool CD3DRenderLib::InitAPI(const shaderapiinitparams_t& sparams)
 
 	DWORD deviceFlags = 0;//D3D10_CREATE_DEVICE_SINGLETHREADED;
 
-	int debugres = GetCmdLine()->FindArgument("-debugd3d");
+	int debugres = g_cmdLine->FindArgument("-debugd3d");
 	if(debugres != -1)
 	{
 		deviceFlags |= D3D10_CREATE_DEVICE_DEBUG;

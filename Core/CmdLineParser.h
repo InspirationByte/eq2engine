@@ -32,6 +32,11 @@ public:
 	int					GetArgumentCount() { return m_iArgsCount;}				//Returns argument count
 
 	bool				IsArgument(char* pszString, bool skipMinus = false);									//Is this argument?
+
+	//-------------------------
+	bool				IsInitialized() const		{return true;}
+	const char*			GetInterfaceName() const	{return CMDLINE_INTERFACE_VERSION;}
+
 protected:
 	int					m_iArgsCount;
 	DkList<EqString>	m_szParams;

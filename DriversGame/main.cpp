@@ -65,7 +65,7 @@ int main(int argc, char** argv)
 
 #endif
 	// init file system
-	if(!GetFileSystem()->Init(false))
+	if(!g_fileSystem->Init(false))
 		return -2;
 
 	g_localizer->AddTokensFile("game");

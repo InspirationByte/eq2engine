@@ -22,20 +22,7 @@
 #include "DebugInterface.h"
 #include "utils/CRC32.h"
 
-#ifdef _WIN32
-
-EXPOSE_SINGLE_INTERFACE_EXPORTS_EX(FileSystem,CFileSystem,IFileSystem);
-
-#else
-
-static CFileSystem g_FileSystem;
-IFileSystem *s_pFileSystem = ( IFileSystem * )&g_FileSystem;
-IEXPORTS IFileSystem *GetFileSystem( void )
-{
-    return s_pFileSystem;
-}
-
-#endif
+EXPORTED_INTERFACE(IFileSystem, CFileSystem);
 
 //------------------------------------------------------------------------------
 // File stream
@@ -114,8 +101,6 @@ uint32 CFile::GetCRC32()
 
 int	CVirtualDPKFile::Seek( long pos, VirtStreamSeek_e seekType )
 {
-	CScopedMutex m(g_FileSystem.m_FSMutex);
-
 	return m_pDKPReader->Seek( m_pFilePtr, pos, seekType );
 }
 
@@ -126,8 +111,6 @@ long CVirtualDPKFile::Tell()
 
 size_t CVirtualDPKFile::Read( void *dest, size_t count, size_t size)
 {
-	CScopedMutex m(g_FileSystem.m_FSMutex);
-
 	return m_pDKPReader->Read( dest, count, size, m_pFilePtr );
 }
 
@@ -154,8 +137,6 @@ int	CVirtualDPKFile::Flush()
 
 char* CVirtualDPKFile::Gets( char *dest, int destSize )
 {
-	CScopedMutex m(g_FileSystem.m_FSMutex);
-
 	return m_pDKPReader->Gets(dest, destSize, m_pFilePtr );
 }
 
@@ -206,10 +187,9 @@ struct DKMODULE
 
 extern bool g_bPrintLeaksOnShutdown;
 
-CFileSystem::CFileSystem()
+CFileSystem::CFileSystem() : m_isInit(false), m_bEditorMode(false)
 {
     m_bEditorMode = false;
-	m_pszBinDir = "Bin32";
 }
 
 CFileSystem::~CFileSystem()
@@ -236,14 +216,14 @@ bool CFileSystem::Init(bool bEditorMode)
 	MsgInfo("* Engine Data directory: %s\n", m_pszDataDir.GetData());
 
 	// Change mod path?
-    int iModPathArg = GetCmdLine()->FindArgument("-game");
+    int iModPathArg = g_cmdLine->FindArgument("-game");
 
 	if(!m_bEditorMode)
 	{
 		if (iModPathArg == -1)
 			AddSearchPath((const char*)KV_GetValueString(pFilesystem->FindKeyBase("DefaultGameDir"), 0, "DefaultGameDir_MISSING" ));
 		else
-			AddSearchPath( GetCmdLine()->GetArgumentString(iModPathArg+1) );
+			AddSearchPath( g_cmdLine->GetArgumentString(iModPathArg+1) );
 
 		 MsgInfo("* Game Data directory: %s\n", GetCurrentGameDirectory());
 	}
@@ -259,11 +239,15 @@ bool CFileSystem::Init(bool bEditorMode)
 
 	g_localizer->Init();
 
+	m_isInit = true;
+
     return true;
 }
 
 void CFileSystem::Shutdown()
 {
+	m_isInit = false;
+
 	for(int i = 0; i < m_pLoadedModules.numElem(); i++)
 	{
 		FreeModule(m_pLoadedModules[i]);

@@ -184,11 +184,11 @@ void CAINavigator::InitNavigationMesh()
 
 	EqString nav_file_name(varargs("worlds/%s/navmesh.ai", gpGlobals->worldname));
 
-	if(GetFileSystem()->FileExist( nav_file_name.GetData() ))
+	if(g_fileSystem->FileExist( nav_file_name.GetData() ))
 	{
 		Msg("Loading AI navigation mesh from '%s'\n", nav_file_name.GetData());
 
-		DKFILE* pFile = GetFileSystem()->Open( nav_file_name.GetData(), "rb", SP_MOD );
+		DKFILE* pFile = g_fileSystem->Open( nav_file_name.GetData(), "rb", SP_MOD );
 		if(pFile)
 		{
 			navmesh_hdr_t hdr;
@@ -216,7 +216,7 @@ void CAINavigator::InitNavigationMesh()
 			else
 				MsgWarning("Bad navigation mesh format or version, rebuilding\n");
 
-			GetFileSystem()->Close(pFile);
+			g_fileSystem->Close(pFile);
 		}
 	}
 
@@ -528,7 +528,7 @@ void CAINavigator::InitNavigationMesh()
 		}
 
 		// save generated navigation mesh
-		DKFILE* pFile = GetFileSystem()->Open( nav_file_name.GetData() , "wb", SP_MOD);
+		DKFILE* pFile = g_fileSystem->Open( nav_file_name.GetData() , "wb", SP_MOD);
 		if(pFile)
 		{
 			navmesh_hdr_t hdr;
@@ -542,7 +542,7 @@ void CAINavigator::InitNavigationMesh()
 			// write navigation data
 			pFile->Write(navData, 1, navDataSize);
 
-			GetFileSystem()->Close(pFile);
+			g_fileSystem->Close(pFile);
 		}
 
 		m_pNavMesh = dtAllocNavMesh();

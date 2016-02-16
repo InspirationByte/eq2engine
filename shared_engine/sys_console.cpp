@@ -115,10 +115,10 @@ void CC_AutoCompletinon_AddCommandBase(DkList<EqString> *args)
 			pNode->argumentType = ARG_TYPE_MAPLIST;
 			isGeneric = false;
 
-			EqString dirname = GetFileSystem()->GetCurrentGameDirectory() + _Es("/maps/");
+			EqString dirname = g_fileSystem->GetCurrentGameDirectory() + _Es("/maps/");
 			//AutoCompletionCheckExtensionDir("*.eqbsp",dirname.getData(),true,&pNode->args);
 
-			EqString level_dir(GetFileSystem()->GetCurrentGameDirectory());
+			EqString level_dir(g_fileSystem->GetCurrentGameDirectory());
 			level_dir = level_dir + _Es("/Worlds/*.*");
 
 			WIN32_FIND_DATA wfd;
@@ -137,7 +137,7 @@ void CC_AutoCompletinon_AddCommandBase(DkList<EqString> *args)
 					if((wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && filename != ".." && filename != ".")
 					{
 						// check level compilation
-						if(!GetFileSystem()->FileExist(("worlds/" + filename + "/world.build").GetData()))
+						if(!g_fileSystem->FileExist(("worlds/" + filename + "/world.build").GetData()))
 							continue;
 
 						pNode->args.append(filename);
@@ -155,10 +155,10 @@ void CC_AutoCompletinon_AddCommandBase(DkList<EqString> *args)
 			pNode->argumentType = ARG_TYPE_CFGLIST;
 			isGeneric = false;
 
-			EqString dirname = GetFileSystem()->GetCurrentGameDirectory() + _Es("/cfg/");
+			EqString dirname = g_fileSystem->GetCurrentGameDirectory() + _Es("/cfg/");
 			AutoCompletionCheckExtensionDir("*.cfg",dirname.GetData(), false, &pNode->args);
 
-			dirname = GetFileSystem()->GetCurrentDataDirectory() + _Es("/cfg/");
+			dirname = g_fileSystem->GetCurrentDataDirectory() + _Es("/cfg/");
 			AutoCompletionCheckExtensionDir("*.cfg",dirname.GetData(), false, &pNode->args);
 
 			dirname = "cfg/";
@@ -303,7 +303,7 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 
 	if(con_Text.GetLength() > 0 && con_fastfind.GetBool())
 	{
-		const DkList<ConCommandBase*> *base = GetCvars()->GetAllCommands();
+		const DkList<ConCommandBase*> *base = g_sysConsole->GetAllCommands();
 
 		int enumcount = 0;
 		int ff_numelems = 0;
@@ -330,7 +330,7 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 		if(isspace(name.GetData()[name.GetLength()-1]))
 			name = name.Left(name.GetLength()-1);
 
-		ConCommandBase* pCommand = (ConCommandBase*)GetCvars()->FindBase( name.GetData() );
+		ConCommandBase* pCommand = (ConCommandBase*)g_sysConsole->FindBase( name.GetData() );
 
 		int commandinfo_size = 0;
 
@@ -525,7 +525,7 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w)
 	{
 		int max_string_length = 35;
 
-		const DkList<ConCommandBase*> *base = GetCvars()->GetAllCommands();
+		const DkList<ConCommandBase*> *base = g_sysConsole->GetAllCommands();
 
 		for(int i = 0; i < base->numElem();i++)
 		{
@@ -832,7 +832,7 @@ void CEqSysConsole::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 			{
 				if(con_fastfind_isbeingselected && con_fastfind_selection_index != -1)
 				{
-					const DkList<ConCommandBase*> *base = GetCvars()->GetAllCommands();
+					const DkList<ConCommandBase*> *base = g_sysConsole->GetAllCommands();
 					if(con_fastfind_selection_index < base->numElem())
 					{
 						bool bHasAutocompletion = false;
@@ -1082,10 +1082,10 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				{
 					MsgInfo("> %s\n",con_Text.GetData());
 
-					GetCommandAccessor()->ResetCounter();
-					GetCommandAccessor()->SetCommandBuffer((char*)con_Text.GetData());
+					g_sysConsole->ResetCounter();
+					g_sysConsole->SetCommandBuffer((char*)con_Text.GetData());
 
-					bool stat = GetCommandAccessor()->ExecuteCommandBuffer();
+					bool stat = g_sysConsole->ExecuteCommandBuffer();
 					if(!stat)
 						Msg("Unknown command or variable '%s'\n",con_Text.GetData());
 
@@ -1114,7 +1114,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 
 			case KEY_TAB:
 				{
-					const DkList<ConCommandBase*> *base = GetCvars()->GetAllCommands();
+					const DkList<ConCommandBase*> *base = g_sysConsole->GetAllCommands();
 
 					int enumcount = 0;
 					int enumcount2 = 0;

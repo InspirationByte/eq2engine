@@ -11,6 +11,7 @@
 
 #include "DebugInterface.h"
 #include "Platform.h"
+#include "IConCommandFactory.h"
 
 #include "ShaderAPI_Base.h"
 #include "CTexture.h"
@@ -20,6 +21,7 @@
 #include "utils/strtools.h"
 #include "utils/Tokenizer.h"
 #include "utils/CRC32.h"
+#include "utils/KeyValues.h"
 
 static ConVar rs_echo_texture_loading("r_echo_texture_loading","0","Echo textrue loading");
 
@@ -439,7 +441,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, Filter_e texture
 	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
 
 	// try reading animation buffer
-	char* animScriptBuffer = GetFileSystem()->GetFileBuffer(textureAnimPathExt.GetData());
+	char* animScriptBuffer = g_fileSystem->GetFileBuffer(textureAnimPathExt.GetData());
 
 	DkList<CImage*> pImages;
 
@@ -610,7 +612,7 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 
 bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 {
-	char* animScriptBuffer = GetFileSystem()->GetFileBuffer(pTexture->GetName());
+	char* animScriptBuffer = g_fileSystem->GetFileBuffer(pTexture->GetName());
 
 	DkList<CImage*> pImages;
 
@@ -938,7 +940,7 @@ void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, shaderPro
 				// add include filename
 				textData.includes.append( inc_filename );
 
-				char* psBuffer = GetFileSystem()->GetFileBuffer(inc_filename.GetData());
+				char* psBuffer = g_fileSystem->GetFileBuffer(inc_filename.GetData());
 
 				ProcessShaderFileIncludes(&psBuffer, inc_filename.GetData(), textData);
 
@@ -1041,9 +1043,9 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 	info.gs.includes.append(fileNameGS);
 
 	// load them
-	info.vs.text = GetFileSystem()->GetFileBuffer(fileNameVS.GetData());
-	info.ps.text = GetFileSystem()->GetFileBuffer(fileNamePS.GetData());
-	info.gs.text = GetFileSystem()->GetFileBuffer(fileNameGS.GetData());
+	info.vs.text = g_fileSystem->GetFileBuffer(fileNameVS.GetData());
+	info.ps.text = g_fileSystem->GetFileBuffer(fileNamePS.GetData());
+	info.gs.text = g_fileSystem->GetFileBuffer(fileNameGS.GetData());
 
 	if(!info.ps.text && psRequiried)
 		MsgError("Can't open pixel shader file '%s'!\n",fileNamePS.GetData());

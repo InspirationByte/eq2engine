@@ -19,7 +19,6 @@
 #include "DebugInterface.h"
 #include "ExceptionHandler.h"
 #include "ConCommandFactory.h"
-#include "CommandAccessor.h"
 
 #include "eqCPUServices.h"
 
@@ -96,15 +95,15 @@ void cc_exec_f(DkList<EqString>* args)
         return;
     }
 
-    GetCommandAccessor()->ClearCommandBuffer();
+    g_sysConsole->ClearCommandBuffer();
 
 	if(args->numElem() > 1)
-		GetCommandAccessor()->ParseFileToCommandBuffer((char*)(args->ptr()[0]).GetData(),args->ptr()[1].GetData());
+		g_sysConsole->ParseFileToCommandBuffer((char*)(args->ptr()[0]).GetData(),args->ptr()[1].GetData());
 	else
-		GetCommandAccessor()->ParseFileToCommandBuffer((char*)(args->ptr()[0]).GetData());
+		g_sysConsole->ParseFileToCommandBuffer((char*)(args->ptr()[0]).GetData());
 
-	((ConCommandAccessor*)GetCommandAccessor())->EnableInitOnlyVarsChangeProtection(false);
-	GetCommandAccessor()->ExecuteCommandBuffer();
+	((CConsoleCommands*)g_sysConsole.GetInstancePtr())->EnableInitOnlyVarsChangeProtection(false);
+	g_sysConsole->ExecuteCommandBuffer();
 }
 
 void cc_set_f(DkList<EqString>* args)
@@ -115,7 +114,7 @@ void cc_set_f(DkList<EqString>* args)
         return;
     }
 
-    ConVar *pConVar = (ConVar*)GetCvars()->FindCvar(args->ptr()[0].GetData());
+    ConVar *pConVar = (ConVar*)g_sysConsole->FindCvar(args->ptr()[0].GetData());
 
     if (!pConVar)
     {
@@ -147,7 +146,7 @@ void cc_toggle_f(DkList<EqString>* args)
         return;
     }
 
-    ConVar *pConVar = (ConVar*)GetCvars()->FindCvar(args->ptr()[0].GetData());
+    ConVar *pConVar = (ConVar*)g_sysConsole->FindCvar(args->ptr()[0].GetData());
 
     if (!pConVar)
     {
@@ -191,7 +190,7 @@ void cc_disable_logging(DkList<EqString>* args)
 void cc_addpackage(DkList<EqString>* args)
 {
 	if(args->numElem())
-		GetFileSystem()->AddPackage(args->ptr()[0].GetData(), SP_ROOT);
+		g_fileSystem->AddPackage(args->ptr()[0].GetData(), SP_ROOT);
 	else
 		MsgWarning("Usage: fs_addpackage <package name>\n");
 }
@@ -218,27 +217,27 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	// Командная строка
     if (pszCommandLine && strlen(pszCommandLine) > 0)
 	{
-        GetCmdLine()->Init(pszCommandLine);
+        g_cmdLine->Init(pszCommandLine);
 	}
 
-	int nNoLogIndex = GetCmdLine()->FindArgument("-nolog");
+	int nNoLogIndex = g_cmdLine->FindArgument("-nolog");
 
 	if(nNoLogIndex != -1)
 		bDoLogs = false;
 
-	int nLogIndex = GetCmdLine()->FindArgument("-log");
+	int nLogIndex = g_cmdLine->FindArgument("-log");
 
 	if(nLogIndex != -1)
 		bDoLogs = true;
 
-	int nWorkdirIndex = GetCmdLine()->FindArgument("-workdir");
+	int nWorkdirIndex = g_cmdLine->FindArgument("-workdir");
 
 	if(nWorkdirIndex != -1)
 	{
-		Msg("Setting working directory to %s\n", GetCmdLine()->GetArgumentsOf(nWorkdirIndex));
+		Msg("Setting working directory to %s\n", g_cmdLine->GetArgumentsOf(nWorkdirIndex));
 #ifdef _WIN32
 
-		SetCurrentDirectory( GetCmdLine()->GetArgumentsOf(nWorkdirIndex) );
+		SetCurrentDirectory( g_cmdLine->GetArgumentsOf(nWorkdirIndex) );
 #else
 
 #endif // _WIN32
@@ -321,15 +320,13 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
     //atexit(DkCore_onExit);
 
 	// register core interfaces
-	RegisterInterface( CMDACCESSOR_INTERFACE_VERSION, GetCommandAccessor());
-	RegisterInterface( CMDLINE_INTERFACE_VERSION, GetCmdLine());
-	RegisterInterface( CMDFACTORY_INTERFACE_VERSION, GetCvars());
-	RegisterInterface( FILESYSTEM_INTERFACE_VERSION, GetFileSystem());
+	RegisterInterface( CMDLINE_INTERFACE_VERSION, GetCommandLineParse());
+	RegisterInterface( FILESYSTEM_INTERFACE_VERSION, GetCFileSystem());
 	RegisterInterface( LOCALIZER_INTERFACE_VERSION , GetCLocalize());
 	RegisterInterface( CPUSERVICES_INTERFACE_VERSION , GetCEqCPUCaps());
 
     // Reset counter of same commands
-    GetCommandAccessor()->ResetCounter();
+    g_sysConsole->ResetCounter();
 
     // Show core message
     CoreMessage();
@@ -342,10 +339,11 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
     Platform_InitTime();
 
     // Регистрация некоторых комманд.
-    GetCvars()->RegisterCommand(&cmd_info);
-    GetCvars()->RegisterCommand(&cmd_coreversion);
+    g_sysConsole->RegisterCommand(&cmd_info);
+	g_sysConsole->RegisterCommand(&cmd_coreversion);
+
     // Регистрация некоторых комманд.
-    ((ConCommandFactory*)GetCvars())->RegisterCommands();
+    ((CConsoleCommands*)g_sysConsole.GetInstancePtr())->RegisterCommands();
 
     c_exec = new ConCommand("exec",cc_exec_f,"Execute configuration file");
     c_set = new ConCommand("set",cc_set_f,"Set ConVar value");
@@ -357,7 +355,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
     c_SupressAccessorMessages = new ConVar("c_SupressAccessorMessages","1","Supress command/variable accessing. Dispays errors only",CV_ARCHIVE);
 
     // Install exception handler
-    if (GetCmdLine()->FindArgument("-nocrashdump") == -1)
+    if (g_cmdLine->FindArgument("-nocrashdump") == -1)
         InstallExceptionHandler();
 
 	if(bDoLogs)
@@ -420,9 +418,9 @@ void CDkCore::Shutdown()
     // Никакого spew'а
     SetSpewFunction(nullspew);
 
-    ((ConCommandFactory*)GetCvars())->DeInit();
+    ((CConsoleCommands*)g_sysConsole.GetInstancePtr())->DeInit();
 
-    GetCoreCommandLine()->DeInit();
+    g_cmdLine->DeInit();
 
 #ifndef CORE_FINAL_RELEASE
 
@@ -461,11 +459,6 @@ void CDkCore::Shutdown()
 #endif
 }
 
-ICommandLineParse* CDkCore::GetCoreCommandLine()
-{
-    return GetCmdLine();
-}
-
 char* CDkCore::GetApplicationName()
 {
     return (char*)m_szApplicationName.GetData();
@@ -478,33 +471,29 @@ char* CDkCore::GetCurrentUserName()
 
 // Interface management for engine
 
-void CDkCore::RegisterInterface(const char* pszName, void* ptr)
+void CDkCore::RegisterInterface(const char* pszName, ICoreModuleInterface* ifPtr)
 {
 	//MsgInfo("Registering interface '%s'...\n", pszName);
 
 	for(int i = 0; i < m_interfaces.numElem(); i++)
 	{
-		if(!stricmp(m_interfaces[i].name, pszName))
-		{
-			ASSERTMSG(false, varargs("Interface %s already registered", pszName));
-		}
+		if(!strcmp(m_interfaces[i].name, pszName))
+			ASSERTMSG(false, varargs("Core interface module \"%s\" is already registered.", pszName));
 	}
 
-	coreinterface_t iface;
+	coreInterface_t iface;
 	iface.name = pszName;
-	iface.ptr = ptr;
+	iface.ptr = ifPtr;
 
 	m_interfaces.append(iface);
 }
 
-void* CDkCore::GetInterface(const char* pszName)
+ICoreModuleInterface* CDkCore::GetInterface(const char* pszName)
 {
 	for(int i = 0; i < m_interfaces.numElem(); i++)
 	{
 		if(!stricmp(m_interfaces[i].name, pszName))
-		{
 			return m_interfaces[i].ptr;
-		}
 	}
 
 	return NULL;
@@ -516,7 +505,7 @@ void CDkCore::UnregisterInterface(const char* pszName)
 	{
 		if(!stricmp(m_interfaces[i].name, pszName))
 		{
-			m_interfaces.removeIndex(i);
+			m_interfaces.fastRemoveIndex(i);
 			return;
 		}
 	}

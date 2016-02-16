@@ -927,7 +927,7 @@ void WritePODFile(const char* filename)
 
 	pHdr->num_lumps = 6;
 
-	DKFILE* pFile = GetFileSystem()->Open(filename, "wb", SP_MOD);
+	DKFILE* pFile = g_fileSystem->Open(filename, "wb", SP_MOD);
 
 	if(pFile)
 	{
@@ -935,7 +935,7 @@ void WritePODFile(const char* filename)
 		pFile->Write(pStart, 1, filesize);
 
 		Msg("Total written bytes: %d\n", filesize);
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Close(pFile);
 	}
 	else
 	{

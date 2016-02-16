@@ -1367,14 +1367,14 @@ void CEditableSurface::SaveToKeyValues(kvkeybase_t* pSection)
 	EqString object_full_filename(leveldir + modelFileName);
 
 	// remove it
-	GetFileSystem()->RemoveFile(object_full_filename.GetData(), SP_MOD);
+	g_fileSystem->RemoveFile(object_full_filename.GetData(), SP_MOD);
 
-	IFile* pStream = GetFileSystem()->Open(object_full_filename.GetData(), "wb");
+	IFile* pStream = g_fileSystem->Open(object_full_filename.GetData(), "wb");
 
 	// save model
 	WriteObject(pStream);
 
-	GetFileSystem()->Close(pStream);
+	g_fileSystem->Close(pStream);
 
 	pSection->AddKeyBase("meshfile", (char*)modelFileName.GetData());
 }
@@ -1389,7 +1389,7 @@ bool CEditableSurface::LoadFromKeyValues(kvkeybase_t* pSection)
 	{
 		EqString object_full_filename(leveldir + pPair->values[0]);
 
-		IFile* pStream = GetFileSystem()->Open(object_full_filename.GetData(), "rb");
+		IFile* pStream = g_fileSystem->Open(object_full_filename.GetData(), "rb");
 		if(!pStream)
 		{
 			MsgError("Failed to open '%s'\n", object_full_filename.GetData());
@@ -1398,7 +1398,7 @@ bool CEditableSurface::LoadFromKeyValues(kvkeybase_t* pSection)
 
 		bool state = ReadObject(pStream);
 
-		GetFileSystem()->Close(pStream);
+		g_fileSystem->Close(pStream);
 
 		return state;
 	}

@@ -252,7 +252,7 @@ bool DkSoundSampleLocal::LoadWav(const char *name, unsigned int buffer)
 	ALsizei freq;
 	ALboolean loop;
 
-	DKFILE* file = GetFileSystem()->Open((_Es(SOUND_DEFAULT_PATH) + name).GetData(), "rb");
+	DKFILE* file = g_fileSystem->Open((_Es(SOUND_DEFAULT_PATH) + name).GetData(), "rb");
 
 	if(!file)
 		return false;
@@ -261,7 +261,7 @@ bool DkSoundSampleLocal::LoadWav(const char *name, unsigned int buffer)
 
 	ubyte* fileBuffer = (ubyte*)malloc( fSize );
 	file->Read(fileBuffer, 1, fSize);
-	GetFileSystem()->Close(file);
+	g_fileSystem->Close(file);
 
 	LoadWavFromBufferEX( fileBuffer, &format, &data, &size, &freq, &loop );
 
@@ -333,7 +333,7 @@ bool DkSoundSampleLocal::LoadOgg(const char *name, unsigned int buffer)
 	ALsizei freq;
 
 	// Open for binary reading
-	DKFILE* pFile = GetFileSystem()->Open((_Es(SOUND_DEFAULT_PATH) + name).GetData(), "rb");
+	DKFILE* pFile = g_fileSystem->Open((_Es(SOUND_DEFAULT_PATH) + name).GetData(), "rb");
 	if(!pFile)
 		return false;
 
@@ -351,7 +351,7 @@ bool DkSoundSampleLocal::LoadOgg(const char *name, unsigned int buffer)
 
 	if(ovResult < 0)
 	{
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Close(pFile);
 		MsgError("Can't open sound '%s', is not an ogg file (%d)\n", name, ovResult);
 		return false;
 	}
@@ -394,7 +394,7 @@ bool DkSoundSampleLocal::LoadOgg(const char *name, unsigned int buffer)
 
 	ov_clear(&oggFile);
 
-	GetFileSystem()->Close(pFile);
+	g_fileSystem->Close(pFile);
 
 	PPFree(soundbuffer);
 

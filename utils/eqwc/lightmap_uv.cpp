@@ -1428,9 +1428,9 @@ void ParametrizeLightmapUVs()
 	EqString procfile_path(varargs("worlds/%s/eqwc_litgeometry.proc", worldGlobals.worldName.GetData()));
 
 	// if procfile with lightmaps is exist, load it
-	if( GetFileSystem()->FileExist(procfile_path.GetData(), SP_MOD) )
+	if( g_fileSystem->FileExist(procfile_path.GetData(), SP_MOD) )
 	{
-		IFile* pLoadStream = GetFileSystem()->Open( procfile_path.GetData(), "rb" );
+		IFile* pLoadStream = g_fileSystem->Open( procfile_path.GetData(), "rb" );
 
 		int nCount = 0;
 
@@ -1464,14 +1464,14 @@ void ParametrizeLightmapUVs()
 
 		Msg("Lightmaps retrieved: %d\n", worldGlobals.numLightmaps);
 
-		GetFileSystem()->Close(pLoadStream);
+		g_fileSystem->Close(pLoadStream);
 
 		return;
 	}
 
 	if(worldGlobals.bNoLightmap)
 	{
-		IFile* pSaveStream = GetFileSystem()->Open( procfile_path.GetData(), "wb");
+		IFile* pSaveStream = g_fileSystem->Open( procfile_path.GetData(), "wb");
 
 		int nCount = g_surfaces.numElem();
 
@@ -1491,7 +1491,7 @@ void ParametrizeLightmapUVs()
 			SaveLitSurface( pDestSurf, pSaveStream );
 		}
 
-		GetFileSystem()->Close(pSaveStream);
+		g_fileSystem->Close(pSaveStream);
 
 		return;
 	}
@@ -1569,7 +1569,7 @@ void ParametrizeLightmapUVs()
 	worldGlobals.numLightmaps = g_pLightmaps.numElem();
 
 	// save surfaces
-	IFile* pSaveStream = GetFileSystem()->Open( procfile_path.GetData(), "wb");
+	IFile* pSaveStream = g_fileSystem->Open( procfile_path.GetData(), "wb");
 		
 	int nCount = g_litsurfaces.numElem();
 
@@ -1579,14 +1579,14 @@ void ParametrizeLightmapUVs()
 	for(int i = 0; i < g_litsurfaces.numElem(); i++)
 		SaveLitSurface( g_litsurfaces[i], pSaveStream );
 
-	GetFileSystem()->Close(pSaveStream);
+	g_fileSystem->Close(pSaveStream);
 
 	// free unused data
 	for(int i = 0; i < g_pLightmaps.numElem(); i++)
 	{
 		// DEBUG CODE
 		/*
-		GetFileSystem()->MakeDir("EQWC_LightmapPack", SP_ROOT);
+		g_fileSystem->MakeDir("EQWC_LightmapPack", SP_ROOT);
 		
 		int qSize = worldGlobals.lightmapSize*4;	// mega size
 
@@ -1619,16 +1619,16 @@ void ParametrizeLightmapUVs()
 		}
 
 		// currently painted
-		IFile* pFile = GetFileSystem()->Open(varargs("EQWC_LightmapPack/lm_%d_check%d.raw", i, qSize), "wb", SP_ROOT);
+		IFile* pFile = g_fileSystem->Open(varargs("EQWC_LightmapPack/lm_%d_check%d.raw", i, qSize), "wb", SP_ROOT);
 		pFile->Write( pBigImage, 1, qSize*qSize);
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Close(pFile);
 
 		free(pBigImage);
 
 		// original
-		pFile = GetFileSystem()->Open(varargs("EQWC_LightmapPack/lm_%d_orig%d.raw", i, worldGlobals.lightmapSize), "wb", SP_ROOT);
+		pFile = g_fileSystem->Open(varargs("EQWC_LightmapPack/lm_%d_orig%d.raw", i, worldGlobals.lightmapSize), "wb", SP_ROOT);
 		pFile->Write(g_pLightmaps[i]->lightmap_pack_image, 1, worldGlobals.lightmapSize*worldGlobals.lightmapSize);
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Close(pFile);
 		*/
 		// END OF DEBUG CODE
 

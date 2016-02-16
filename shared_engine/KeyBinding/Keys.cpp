@@ -76,12 +76,12 @@ void CKeyCommandBinder::BindKey( char* pszCommand, char *pszArgs, const char* ps
 		keybind->isMouse = true;
 
 	// if we connecting libraries dynamically, that wouldn't properly execute
-	keybind->boundCommand1 = (ConCommand*)GetCvars()->FindCommand(varargs("+%s", pszCommand));
-	keybind->boundCommand2 = (ConCommand*)GetCvars()->FindCommand(varargs("-%s", pszCommand));
+	keybind->boundCommand1 = (ConCommand*)g_sysConsole->FindCommand(varargs("+%s", pszCommand));
+	keybind->boundCommand2 = (ConCommand*)g_sysConsole->FindCommand(varargs("-%s", pszCommand));
 
 	// if found only one command with plus or minus
 	if(!keybind->boundCommand1 || !keybind->boundCommand2)
-		keybind->boundCommand1 = (ConCommand*)GetCvars()->FindCommand( pszCommand );
+		keybind->boundCommand1 = (ConCommand*)g_sysConsole->FindCommand( pszCommand );
 
 	// if anly command found
 	if(keybind->boundCommand1 || keybind->boundCommand2)

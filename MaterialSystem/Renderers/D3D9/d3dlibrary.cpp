@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DebugInterface.h"
+#include "IDkCore.h"
 #include "D3DLibrary.h"
 #include "ShaderAPID3DX9.h"
 #include "d3dx9_def.h"
@@ -178,7 +179,7 @@ bool CD3DRenderLib::InitAPI(const shaderapiinitparams_t &params)
 	D3DDEVTYPE devtype = D3DDEVTYPE_HAL;
 	bool bSoftwareVertexProcessing = false;
 
-	int debugres = GetCmdLine()->FindArgument("-debugd3d");
+	int debugres = g_cmdLine->FindArgument("-debugd3d");
 	if(debugres != -1)
 	{
 		devtype = D3DDEVTYPE_REF;

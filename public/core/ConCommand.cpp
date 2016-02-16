@@ -25,7 +25,7 @@ void ConCommand::DispatchFunc(DkList<EqString> *args)
 {
 	if((GetFlags() & CV_CHEAT))
 	{
-		ConVar *cheats = (ConVar*)GetCvars()->FindCvar("__cheats"); //find cheats cvar
+		ConVar *cheats = (ConVar*)g_sysConsole->FindCvar("__cheats"); //find cheats cvar
 		if(cheats)
 		{
 			if(!cheats->GetBool())

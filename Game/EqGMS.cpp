@@ -140,7 +140,7 @@ void CEqScriptSystem::ExecuteFile(const char* pszFileName, gmUserObject* pObject
 	CScopedMutex m(m_Mutex);
 	//Msg("Loading and executing script '%s'...\n", pszFileName);
 
-	char* pszFileData = GetFileSystem()->GetFileBuffer(pszFileName, NULL, SP_MOD);
+	char* pszFileData = g_fileSystem->GetFileBuffer(pszFileName, NULL, SP_MOD);
 
 	if(!pszFileData)
 	{

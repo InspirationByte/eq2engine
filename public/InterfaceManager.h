@@ -11,6 +11,18 @@
 #ifndef INTERFACEMANAGER_H
 #define INTERFACEMANAGER_H
 
+//--------------------------------------------------------------
+// The base core interface to be queried
+//--------------------------------------------------------------
+class ICoreModuleInterface
+{
+public:
+	virtual bool		IsInitialized() const = 0;
+	virtual const char*	GetInterfaceName() const = 0;
+};
+
+//--------------------------------------------------------------
+
 #ifdef _MSC_VER
 #   define ONLY_EXPORTS	extern "C" __declspec(dllexport)
 #   define ONLY_IMPORTS	extern "C" __declspec(dllimport)
@@ -28,7 +40,6 @@
 #		define IEXPORTS		ONLY_IMPORTS
 #	endif
 #endif // CROSSLINK_LIB
-
 
 #define EXPOSE_SINGLE_INTERFACE(name,classname,interfacename)	\
 	static classname g_##name##;								\
