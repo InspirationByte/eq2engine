@@ -47,7 +47,7 @@ void ConvertHeaderToLatestVersion(basemodelheader_t* pHdr)
 studiohdr_t* Studio_LoadModel(const char* pszPath)
 {
 	long len = 0;
-	char* _buffer = GetFileSystem()->GetFileBuffer(pszPath,&len);
+	char* _buffer = g_fileSystem->GetFileBuffer(pszPath,&len);
 
 	if(!_buffer)
 	{
@@ -678,7 +678,7 @@ int LoadAnimationFromESA(const char* filename)
 	EqString finalFileName = filename;
 
 	// load from exporter-supported path
-	if(GetFileSystem()->FileExist( (animPath + "/anims/" + filename + ".esa").GetData() ))
+	if(g_fileSystem->FileExist( (animPath + "/anims/" + filename + ".esa").GetData() ))
 		finalFileName = animPath + "/anims/" + filename + ".esa";
 	else
 		finalFileName = animPath + "/" + filename + ".esa";
@@ -1062,7 +1062,7 @@ void LoadSequence(kvkeybase_t* section, char* seq_name)
 
 	bAlignAnimationLengths = KV_GetValueBool(pAlignLengthKey);
 
-	int arg_index = GetCmdLine()->FindArgument("-forcealign");
+	int arg_index = g_cmdLine->FindArgument("-forcealign");
 	if(arg_index != -1)
 	{
 		bAlignAnimationLengths = true;
@@ -1465,7 +1465,7 @@ void WriteAnimationPackage()
 	int comp_stats = Z_ERRNO;
 
 	// do not compress animation frames if option found
-	if(GetCmdLine()->FindArgument("-nocompress") == -1)
+	if(g_cmdLine->FindArgument("-nocompress") == -1)
 		comp_stats = compress2(pCompressedFrames, &nCompressedFramesSize, (ubyte*)g_animframes.ptr(), nFramesSize, 9);
 
 	if(comp_stats == Z_OK)
@@ -1495,7 +1495,7 @@ void WriteAnimationPackage()
 	pHdr->numLumps += 3;
 
 
-	DKFILE* file = GetFileSystem()->Open(("/models/" + _Es(g_outputfilename->values[0])).GetData(), "wb", SP_MOD);
+	DKFILE* file = g_fileSystem->Open(("/models/" + _Es(g_outputfilename->values[0])).GetData(), "wb", SP_MOD);
 	if(!file)
 	{
 		MsgError("Can't create file for writing!\n");
@@ -1506,7 +1506,7 @@ void WriteAnimationPackage()
 	file->Write(pStart, 1, filesize);
 
 	Msg("Total written bytes: %d\n", filesize);
-	GetFileSystem()->Close(file);
+	g_fileSystem->Close(file);
 
 	PPFree(pStart);
 }

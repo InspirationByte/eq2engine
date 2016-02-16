@@ -9,7 +9,10 @@
 
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
+#include "math/DkMath.h"
 
+#include "utils/strtools.h"
+#include "utils/KeyValues.h"
 #include "utils/RectanglePacker.h"
 
 unsigned long upper_power_of_two(unsigned long v)

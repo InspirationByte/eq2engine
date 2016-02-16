@@ -19,7 +19,7 @@ DECLARE_CMD(car_reload, "reload current car", 0)
 		EqString& fileName = g_pGameSession->GetPlayerCar()->m_conf->carScript;
 		carConfigEntry_t* conf = g_pGameSession->GetPlayerCar()->m_conf;
 
-		conf->scriptCRC = GetFileSystem()->GetFileCRC32(fileName.c_str(), SP_MOD);
+		conf->scriptCRC = g_fileSystem->GetFileCRC32(fileName.c_str(), SP_MOD);
 
 		Msg("Reloading car script '%s'...\n", fileName.c_str());
 
@@ -75,7 +75,7 @@ DECLARE_CMD(save, "Saves current replay", 0)
 
 	if(g_pGameSession)
 	{
-		GetFileSystem()->MakeDir("UserReplays", SP_MOD);
+		g_fileSystem->MakeDir("UserReplays", SP_MOD);
 		g_replayData->SaveToFile( ("UserReplays/" + CMD_ARGV(0)).c_str() );
 	}
 }

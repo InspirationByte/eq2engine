@@ -17,7 +17,7 @@
 #include "utils/CRC32.h"
 #include "utils/KeyValues.h"
 
-#include "ConCommand.h"
+#include "ConVar.h"
 
 ConVar net_fakelag("net_fakelag", "0", "Simulate lagging packets\n", CV_CHEAT);
 

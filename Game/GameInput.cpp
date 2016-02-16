@@ -24,7 +24,7 @@ void IN_MouseMove(float x, float y)
 	if(!g_pGameRules)
 		return;
 
-	static ConVar* m_sens = (ConVar*)GetCvars()->FindCvar("m_sensitivity");
+	static ConVar* m_sens = (ConVar*)g_sysConsole->FindCvar("m_sensitivity");
 	float mouse_senstivity = m_sens->GetFloat();
 
 	float mx = y;

@@ -36,7 +36,7 @@ DECLARE_CVAR_NONSTATIC(__cheats,1,"Wireframe",0);
 void InitStubMatSystem()
 {
 	// init matsystem
-	g_matsystemmod = GetFileSystem()->LoadModule("EqMatSystem.dll");
+	g_matsystemmod = g_fileSystem->LoadModule("EqMatSystem.dll");
 
 	if(!g_matsystemmod)
 	{
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 	GetCore()->Init("eqwc",argc,argv);
 
 	// Filesystem is first!
-	if(!GetFileSystem()->Init(false))
+	if(!g_fileSystem->Init(false))
 	{
 		GetCore()->Shutdown();
 		return 0;
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 	Platform_InitTime();
 
 	// Command line execution
-	GetCmdLine()->ExecuteCommandLine(true,true);
+	g_cmdLine->ExecuteCommandLine(true,true);
 
 	Msg("--------------------------------------------------------------------\n");
 	Msg("Equilibrium World Compiler\n");
@@ -168,63 +168,63 @@ int main(int argc, char **argv)
 
 	bool bWait = false;
 
-	for(int i = 0; i < GetCmdLine()->GetArgumentCount(); i++)
+	for(int i = 0; i < g_sysConsole->GetArgumentCount(); i++)
 	{
-		if(!stricmp("-world", GetCmdLine()->GetArgumentString(i)))
+		if(!stricmp("-world", g_cmdLine->GetArgumentString(i)))
 		{
-			worldGlobals.worldName = GetCmdLine()->GetArgumentString(i+1);
+			worldGlobals.worldName = g_cmdLine->GetArgumentString(i+1);
 			bWorldSpecified = true;
 		}	
-		if(!stricmp("-waitafterbuild", GetCmdLine()->GetArgumentString(i)))
+		if(!stricmp("-waitafterbuild", g_cmdLine->GetArgumentString(i)))
 		{
 			bWait = true;
 		}	
-		else if(!stricmp("-onlyents", GetCmdLine()->GetArgumentString(i)))
+		else if(!stricmp("-onlyents", g_cmdLine->GetArgumentString(i)))
 		{
 			MsgInfo("Only entities mode\n");
 			worldGlobals.bOnlyEnts = true;
 		}
-		else if(!stricmp("-nocsg", GetCmdLine()->GetArgumentString(i)))
+		else if(!stricmp("-nocsg", g_cmdLine->GetArgumentString(i)))
 		{
 			MsgInfo("Brush CSG disabled\n");
 			worldGlobals.bBrushCSG = false;
 		}
-		else if(!stricmp("-nosectors", GetCmdLine()->GetArgumentString(i)))
+		else if(!stricmp("-nosectors", g_cmdLine->GetArgumentString(i)))
 		{
 			MsgInfo("Sector division disabled\n");
 			worldGlobals.bSectorDivision = false;
 		}
-		else if(!stricmp("-2dsectors", GetCmdLine()->GetArgumentString(i)))
+		else if(!stricmp("-2dsectors", g_cmdLine->GetArgumentString(i)))
 		{
 			MsgInfo("2D X-Z Sector division enabled\n");
 			worldGlobals.bSectorsInXZ = true;
 		}
-		else if(!stricmp("-sectorsize", GetCmdLine()->GetArgumentString(i)))
+		else if(!stricmp("-sectorsize", g_cmdLine->GetArgumentString(i)))
 		{
-			worldGlobals.fSectorSize = atof(GetCmdLine()->GetArgumentString(i+1));
+			worldGlobals.fSectorSize = atof(g_cmdLine->GetArgumentString(i+1));
 			MsgInfo("Sector size = %g\n", worldGlobals.fSectorSize);
 		}
-		else if(!stricmp("-luxelspermeter", GetCmdLine()->GetArgumentString(i)))
+		else if(!stricmp("-luxelspermeter", g_cmdLine->GetArgumentString(i)))
 		{
-			worldGlobals.fLuxelsPerMeter = atof(GetCmdLine()->GetArgumentString(i+1));
+			worldGlobals.fLuxelsPerMeter = atof(g_cmdLine->GetArgumentString(i+1));
 			MsgInfo("Luxels per meter = %g\n", worldGlobals.fLuxelsPerMeter);
 		}
-		else if(!stricmp("-pickthresh", GetCmdLine()->GetArgumentString(i)))
+		else if(!stricmp("-pickthresh", g_cmdLine->GetArgumentString(i)))
 		{
-			worldGlobals.fPickThreshold = atof(GetCmdLine()->GetArgumentString(i+1));
+			worldGlobals.fPickThreshold = atof(g_cmdLine->GetArgumentString(i+1));
 			MsgInfo("LMUV Pick threshold = %g\n", worldGlobals.fPickThreshold);
 		}
-		else if(!stricmp("-lightmapsize", GetCmdLine()->GetArgumentString(i)))
+		else if(!stricmp("-lightmapsize", g_cmdLine->GetArgumentString(i)))
 		{
-			worldGlobals.lightmapSize = atoi(GetCmdLine()->GetArgumentString(i+1));
+			worldGlobals.lightmapSize = atoi(g_cmdLine->GetArgumentString(i+1));
 			MsgInfo("Lightmap size = %d\n", worldGlobals.lightmapSize);
 		}
-		else if(!stricmp("-nolightmap", GetCmdLine()->GetArgumentString(i)))
+		else if(!stricmp("-nolightmap", g_cmdLine->GetArgumentString(i)))
 		{
 			MsgInfo("Lightmap UV disabled\n");
 			worldGlobals.bNoLightmap = true;
 		}
-		else if(!stricmp("-onlyphysics", GetCmdLine()->GetArgumentString(i)))
+		else if(!stricmp("-onlyphysics", g_cmdLine->GetArgumentString(i)))
 		{
 			MsgInfo("Rebuild physics geometry only\n");
 			worldGlobals.bOnlyPhysics = true;
@@ -278,7 +278,7 @@ int main(int argc, char **argv)
 
 	materials->Shutdown();
 
-	GetFileSystem()->FreeModule( g_matsystemmod );
+	g_fileSystem->FreeModule( g_matsystemmod );
 	g_matsystemmod = NULL;
 
 	GetCore()->Shutdown();

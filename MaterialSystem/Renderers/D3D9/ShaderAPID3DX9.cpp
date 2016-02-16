@@ -23,6 +23,10 @@
 
 #include "Imaging/ImageLoader.h"
 
+#include "IConCommandFactory.h"
+#include "utils/strtools.h"
+#include "utils/KeyValues.h"
+
 bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags);
 
 // only needed for unmanaged textures
@@ -2084,7 +2088,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	CScopedMutex m(m_Mutex);
 
-	GetFileSystem()->MakeDir("ShaderCache_DX9", SP_MOD);
+	g_fileSystem->MakeDir("ShaderCache_DX9", SP_MOD);
 
 	EqString cache_file_name(varargs("ShaderCache_DX9/%s.scache", pShaderOutput->GetName()));
 
@@ -2094,7 +2098,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	if(!(info.disableCache || r_skipShaderCache.GetBool()))
 	{
-		pStream = GetFileSystem()->Open(cache_file_name.GetData(), "rb", -1);
+		pStream = g_fileSystem->Open(cache_file_name.GetData(), "rb", -1);
 
 		if(pStream)
 		{
@@ -2141,13 +2145,13 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 				MsgWarning("Shader cache for '%s' broken and will be recompiled\n", pShaderOutput->GetName());
 			}
 
-			GetFileSystem()->Close(pStream);
+			g_fileSystem->Close(pStream);
 		}
 	}
 
 	if(needsCompile)
 	{
-		pStream = GetFileSystem()->Open( cache_file_name.GetData(), "wb", SP_MOD );
+		pStream = g_fileSystem->Open( cache_file_name.GetData(), "wb", SP_MOD );
 
 		if(!pStream)
 			MsgError("ERROR: Cannot create shader cache file for %s\n", pShaderOutput->GetName());
@@ -2319,7 +2323,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 			pStream->Seek(0,VS_SEEK_SET);
 			pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
-			GetFileSystem()->Close(pStream);
+			g_fileSystem->Close(pStream);
 		}
 
 		return false; // Don't do anything
@@ -2353,7 +2357,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 			pStream->Seek(0,VS_SEEK_SET);
 			pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
-			GetFileSystem()->Close(pStream);
+			g_fileSystem->Close(pStream);
 		}
 
 		return false;
@@ -2458,7 +2462,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		pStream->Seek(0,VS_SEEK_SET);
 		pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
-		GetFileSystem()->Close(pStream);
+		g_fileSystem->Close(pStream);
 	}
 
 	pShader->m_pConstants  = constants;

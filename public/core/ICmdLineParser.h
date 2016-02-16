@@ -14,7 +14,7 @@
 
 #define CMDLINE_INTERFACE_VERSION		"CORE_CommandLine_001"
 
-class ICommandLineParse
+class ICommandLineParse : public ICoreModuleInterface
 {
 public:
 	virtual void			Init(const char* pszCommandLine) = 0;								//Initializes command line interface. See sys_win.cpp, WINMAIN function
@@ -29,9 +29,6 @@ public:
 	virtual int				GetArgumentCount() = 0;	//Returns argument count
 };
 
-#ifndef _DKLAUNCHER_
-IEXPORTS ICommandLineParse* GetCmdLine( void );
-//INTERFACE_SINGLETON(ICommandLineParse, CommandLineParse, CMDLINE_INTERFACE_VERSION, GetCmdLine())
-#endif
+INTERFACE_SINGLETON( ICommandLineParse, CommandLineParse, CMDLINE_INTERFACE_VERSION, g_cmdLine )
 
 #endif //ICMDLINEPARSER_H

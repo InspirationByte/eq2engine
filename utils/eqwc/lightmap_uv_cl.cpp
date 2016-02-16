@@ -122,7 +122,7 @@ cl_kernel OpenCLCreateKernelSrcFile(char* kernel_name, char* pszFileName)
 {
 	size_t src_size = 0;
 	long size = 0;
-	const char* source = (char*)GetFileSystem()->GetFileBuffer(pszFileName, &size);
+	const char* source = (char*)g_fileSystem->GetFileBuffer(pszFileName, &size);
 
 	src_size = size;
 

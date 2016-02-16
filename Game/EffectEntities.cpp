@@ -12,7 +12,7 @@
 #include "Rain.h"
 #include "Snow.h"
 
-//ConVar *r_fulllighting = (ConVar*)GetCvars()->FindCvar("r_fulllighting");
+//ConVar *r_fulllighting = (ConVar*)g_sysConsole->FindCvar("r_fulllighting");
 
 struct ThunderInfo_t
 {

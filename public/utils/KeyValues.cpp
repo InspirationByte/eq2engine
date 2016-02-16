@@ -437,7 +437,7 @@ void KV_WriteToStream_r(kvkeybase_t* pKeyBase, IVirtualStream* pStream, int nTab
 
 void KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
 {
-	IFile* pStream = GetFileSystem()->Open(pszFileName, "wt", nSearchFlags);
+	IFile* pStream = g_fileSystem->Open(pszFileName, "wt", nSearchFlags);
 
 	if(pStream)
 	{
@@ -445,7 +445,7 @@ void KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
 
 		//PPMemInfo();
 
-		GetFileSystem()->Close(pStream);
+		g_fileSystem->Close(pStream);
 	}
 	else
 	{
@@ -653,7 +653,7 @@ bool kvkeybase_t::IsDefinition() const
 kvkeybase_t* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, kvkeybase_t* pParseTo )
 {
 	long lSize = 0;
-	char* pBuffer = (char*)GetFileSystem()->GetFileBuffer(pszFileName, &lSize, nSearchFlags);
+	char* pBuffer = (char*)g_fileSystem->GetFileBuffer(pszFileName, &lSize, nSearchFlags);
 	char* _buffer = pBuffer;
 
 	if(!_buffer)

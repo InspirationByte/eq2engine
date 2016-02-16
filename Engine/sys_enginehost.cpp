@@ -340,7 +340,7 @@ void CC_Screenshot_f(DkList<EqString> *args)
 		int i = 0;
 		do 
 		{
-			EqString path = GetFileSystem()->GetCurrentGameDirectory() + _Es(varargs("/screenshots/screenshot_%04d.jpg", i));
+			EqString path = g_fileSystem->GetCurrentGameDirectory() + _Es(varargs("/screenshots/screenshot_%04d.jpg", i));
 
 			if ((file = fopen(path.GetData(), "r")) != NULL)
 			{
@@ -471,7 +471,7 @@ IEqFont* CEngineHost::LoadFont(const char* pszFontName)
 
 bool CEngineHost::LoadRenderer()
 {
-	pMatSystem = GetFileSystem()->LoadModule("EqMatSystem.dll");
+	pMatSystem = g_fileSystem->LoadModule("EqMatSystem.dll");
 
 	if(!pMatSystem)
 	{
@@ -496,7 +496,7 @@ bool CEngineHost::LoadGameLibrary()
 	pGameDll = LoadGameModule();
 	if(pGameDll)
 	{
-		CreateInterfaceFunc gameLibDispatcher = (CreateInterfaceFunc)GetFileSystem()->GetProcedureAddress( pGameDll, "GameLibFactory");
+		CreateInterfaceFunc gameLibDispatcher = (CreateInterfaceFunc)g_fileSystem->GetProcedureAddress( pGameDll, "GameLibFactory");
 
 		if(gameLibDispatcher)
 		{
@@ -855,11 +855,11 @@ bool CEngineHost::Init()
 			{
 				if(!stricmp(pGameInfoSec->keys[i]->name,"AddSearchPath"))
 				{
-					GetFileSystem()->AddSearchPath(pGameInfoSec->keys[i]->values[0]);
+					g_fileSystem->AddSearchPath(pGameInfoSec->keys[i]->values[0]);
 				}
 				else if(!stricmp(pGameInfoSec->keys[i]->name,"AddPackage"))
 				{
-					GetFileSystem()->AddPackage(pGameInfoSec->keys[i]->values[0], SP_MOD);
+					g_fileSystem->AddPackage(pGameInfoSec->keys[i]->values[0], SP_MOD);
 				}
 			}
 		}
@@ -867,14 +867,14 @@ bool CEngineHost::Init()
 	
 	//mkdir("screenshots");
 
-	GetFileSystem()->MakeDir("Cfg", SP_MOD);
-	GetFileSystem()->MakeDir("SavedGames", SP_MOD);
-	GetFileSystem()->MakeDir("Screenshots", SP_MOD);
+	g_fileSystem->MakeDir("Cfg", SP_MOD);
+	g_fileSystem->MakeDir("SavedGames", SP_MOD);
+	g_fileSystem->MakeDir("Screenshots", SP_MOD);
 	
 	// Parse the rs_renderer from configuration files
-	GetCommandAccessor()->ClearCommandBuffer();
-	GetCommandAccessor()->ParseFileToCommandBuffer("cfg/config_default.cfg","r_renderer");
-	GetCommandAccessor()->ExecuteCommandBuffer();
+	g_sysConsole->ClearCommandBuffer();
+	g_sysConsole->ParseFileToCommandBuffer("cfg/config_default.cfg","r_renderer");
+	g_sysConsole->ExecuteCommandBuffer();
 	
 	// register our host
 	GetCore()->RegisterInterface( IENGINEHOST_INTERFACE_VERSION, this );
@@ -898,11 +898,11 @@ bool CEngineHost::Init()
 		return initStatus;
 		
 	// execute configuration files and command line after all libraries are loaded.
-	GetCommandAccessor()->ClearCommandBuffer();
-	GetCommandAccessor()->ParseFileToCommandBuffer("cfg/config_default.cfg");
-	GetCommandAccessor()->ExecuteCommandBuffer();
+	g_sysConsole->ClearCommandBuffer();
+	g_sysConsole->ParseFileToCommandBuffer("cfg/config_default.cfg");
+	g_sysConsole->ExecuteCommandBuffer();
 
-	GetCmdLine()->ExecuteCommandLine(true,true);
+	g_cmdLine->ExecuteCommandLine(true,true);
 
 	// initialize subsystems
 	if(!InitSubSystems())
@@ -988,7 +988,7 @@ void CEngineHost::Shutdown()
 	engine->UnloadGame( true, true );
 
 	// shutdown game
-	GetFileSystem()->FreeModule( pGameDll );
+	g_fileSystem->FreeModule( pGameDll );
 
 	// shutdown cached sounds
 	soundsystem->ReleaseSamples();
@@ -998,7 +998,7 @@ void CEngineHost::Shutdown()
 
 	// Destroying renderer
 	materials->Shutdown();
-	GetFileSystem()->FreeModule(pMatSystem);
+	g_fileSystem->FreeModule(pMatSystem);
 
 	// unregister interfaces
 	GetCore()->UnregisterInterface(MATSYSTEM_INTERFACE_VERSION);

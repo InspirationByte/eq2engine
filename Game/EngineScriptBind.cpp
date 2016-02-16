@@ -79,9 +79,9 @@ EQGMS_DEFINE_LIBFUNC(console, Command)
 	GM_CHECK_NUM_PARAMS(1);
 	GM_CHECK_STRING_PARAM(a_string, 0);
 
-	GetCommandAccessor()->SetCommandBuffer(a_string);
-	GetCommandAccessor()->ExecuteCommandBuffer();
-	GetCommandAccessor()->ClearCommandBuffer();
+	g_sysConsole->SetCommandBuffer(a_string);
+	g_sysConsole->ExecuteCommandBuffer();
+	g_sysConsole->ClearCommandBuffer();
 
 	return GM_OK;
 }

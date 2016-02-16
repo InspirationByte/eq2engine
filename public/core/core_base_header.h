@@ -20,7 +20,6 @@
 #include "utils/KeyValues.h"			// json-like object notation
 
 #include "IConCommandFactory.h"			// Console command factory
-#include "ICommandAccessor.h"			// Console command factory
 
 #include "InterfaceManager.h"			// Manager of interfaces
 #include "IDkCore.h"					// Core class

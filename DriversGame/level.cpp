@@ -144,7 +144,7 @@ void CGameLevel::Cleanup()
 
 bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 {
-	IFile* pFile = GetFileSystem()->Open(varargs("levels/%s.lev", levelname), "rb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open(varargs("levels/%s.lev", levelname), "rb", SP_MOD);
 
 	if(!pFile)
 	{
@@ -161,14 +161,14 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 	if(hdr.ident != LEVEL_IDENT)
 	{
 		MsgError("** Invalid level file '%s'\n", levelname);
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Close(pFile);
 		return false;
 	}
 
 	if(hdr.version != LEVEL_VERSION)
 	{
 		MsgError("** '%s' - level is too old and/or unsupported by this game version\n", levelname);
-		GetFileSystem()->Close(pFile);
+		g_fileSystem->Close(pFile);
 		return false;
 	}
 
@@ -283,7 +283,7 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 	StartWorkerThread( "LevelLoaderThread" );
 #endif // EDITOR
 
-	GetFileSystem()->Close(pFile);
+	g_fileSystem->Close(pFile);
 
 	float loadTime = Platform_GetCurrentTime()-startLoadTime;
 	DevMsg(DEVMSG_CORE, "*** Level file read for %g seconds\n", loadTime);
@@ -425,7 +425,7 @@ void CGameLevel::LoadRegionAt(int regionIndex, IVirtualStream* stream)
 void CGameLevel::PreloadRegion(int x, int y)
 {
 	// open level file
-	IFile* pFile = GetFileSystem()->Open(varargs("levels/%s.lev", m_levelName.c_str()), "rb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open(varargs("levels/%s.lev", m_levelName.c_str()), "rb", SP_MOD);
 
 	if(!pFile)
 		return;
@@ -434,12 +434,12 @@ void CGameLevel::PreloadRegion(int x, int y)
 
 	LoadRegionAt(regIdx, pFile);
 
-	GetFileSystem()->Close(pFile);
+	g_fileSystem->Close(pFile);
 }
 
 bool CGameLevel::Save(const char* levelname, bool final)
 {
-	IFile* pFile = GetFileSystem()->Open(varargs("levels/%s.lev", levelname), "wb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open(varargs("levels/%s.lev", levelname), "wb", SP_MOD);
 
 	if(!pFile)
 	{
@@ -466,7 +466,7 @@ bool CGameLevel::Save(const char* levelname, bool final)
 	// write lump header and data
 	pFile->Write(&endLump, 1, sizeof(levlump_t));
 
-	GetFileSystem()->Close(pFile);
+	g_fileSystem->Close(pFile);
 
 	m_levelName = levelname;
 

@@ -214,7 +214,7 @@ void ParseAndLoadSurface(kvkeybase_t* pSection)
 
 	EqString object_full_filename(leveldir + pPair->values[0]);
 
-	IFile* pStream = GetFileSystem()->Open(object_full_filename.GetData(), "rb");
+	IFile* pStream = g_fileSystem->Open(object_full_filename.GetData(), "rb");
 
 	if(!pStream)
 	{
@@ -276,7 +276,7 @@ void ParseAndLoadSurface(kvkeybase_t* pSection)
 	g_surfacemodels.append(surf);
 
 	// before filesystem was changed I have forgotten to destroy the file handle :D
-	GetFileSystem()->Close(pStream);
+	g_fileSystem->Close(pStream);
 }
 
 void ParseAndLoadDecal(kvkeybase_t* pSection)

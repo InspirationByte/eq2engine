@@ -39,7 +39,7 @@ void CC_Screenshot_f(DkList<EqString> *args)
 		int i = 0;
 		do
 		{
-			GetFileSystem()->MakeDir("screenshots", SP_ROOT);
+			g_fileSystem->MakeDir("screenshots", SP_ROOT);
 			EqString path = _Es(varargs("screenshots/screenshot_%04d.jpg", i));
 
 			if ((file = fopen(path.GetData(), "r")) != NULL)
@@ -220,9 +220,9 @@ void InitWindowAndRun()
 		exit(0);
 
 	// execute configuration files and command line after all libraries are loaded.
-	GetCommandAccessor()->ClearCommandBuffer();
-	GetCommandAccessor()->ParseFileToCommandBuffer("cfg/config_default.cfg");
-	GetCommandAccessor()->ExecuteCommandBuffer();
+	g_sysConsole->ClearCommandBuffer();
+	g_sysConsole->ParseFileToCommandBuffer("cfg/config_default.cfg");
+	g_sysConsole->ExecuteCommandBuffer();
 
 	EQWNDHANDLE mainWindow = CreateEngineWindow();
 
@@ -235,7 +235,7 @@ void InitWindowAndRun()
 
 	InitSDLJoysticks();
 
-	GetCmdLine()->ExecuteCommandLine(true, true);
+	g_cmdLine->ExecuteCommandLine(true, true);
 
 	SDL_SetWindowTitle(mainWindow, GAME_WINDOW_TITLE);
 

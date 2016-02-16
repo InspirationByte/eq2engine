@@ -201,13 +201,13 @@ void DebugMessages_InitBinding(lua_State* state)
 
 ConVar* Lua_Console_FindCvar(const char* name)
 {
-	return (ConVar*)GetCvars()->FindCvar(name);
+	return (ConVar*)g_sysConsole->FindCvar(name);
 }
 
 void Lua_Console_ExecuteString(const char* cmd)
 {
-	GetCommandAccessor()->SetCommandBuffer(cmd);
-	GetCommandAccessor()->ExecuteCommandBuffer();
+	g_sysConsole->SetCommandBuffer(cmd);
+	g_sysConsole->ExecuteCommandBuffer();
 }
 
 int LLua_Console_FindCvar(lua_State* vm)

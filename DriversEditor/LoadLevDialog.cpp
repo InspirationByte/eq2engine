@@ -63,7 +63,7 @@ void CLoadLevelDialog::RebuildLevelList()
 {
 	m_levels->Clear();
 
-	EqString level_dir(GetFileSystem()->GetCurrentGameDirectory());
+	EqString level_dir(g_fileSystem->GetCurrentGameDirectory());
 	level_dir = level_dir + EqString("/levels/*.lev");
 
 	WIN32_FIND_DATAA wfd;

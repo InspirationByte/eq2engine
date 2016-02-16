@@ -11,10 +11,11 @@
 #include "IDkCore.h"
 
 // interface pointer keeper
-struct coreinterface_t
+struct coreInterface_t
 {
-	const char* name;
-	void* ptr;
+	const char*				name;		// module name
+	DKMODULE*				module;		// module which loads this interface
+	ICoreModuleInterface*	ptr;		// the interface pointer itself
 };
 
 // DarkTech core interface
@@ -28,8 +29,6 @@ public:
 
 	void					Shutdown();	// Shutdowns core
 
-	ICommandLineParse*		GetCoreCommandLine();	// command line parser interface
-
 	char*					GetApplicationName();
 
 	char*					GetCurrentUserName();
@@ -41,9 +40,9 @@ public:
 
 // Interface management for engine
 
-	void					RegisterInterface(const char* pszName, void* ptr);	// registers interface for faster access
-	void*					GetInterface(const char* pszName);			// returns registered interface
-	void					UnregisterInterface(const char* pszName);			// unregisters interface
+	void					RegisterInterface(const char* pszName, ICoreModuleInterface* iface);	// registers interface for faster access
+	ICoreModuleInterface*	GetInterface(const char* pszName);										// returns registered interface
+	void					UnregisterInterface(const char* pszName);								// unregisters interface
 
 private:
 	EqString				m_szApplicationName;
@@ -52,7 +51,7 @@ private:
 
 	KeyValues				m_coreConfiguration;
 
-	DkList<coreinterface_t> m_interfaces;
+	DkList<coreInterface_t> m_interfaces;
 };
 
 #endif //CDKCORE

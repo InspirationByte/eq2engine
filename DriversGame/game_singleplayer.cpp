@@ -467,7 +467,7 @@ void CGameSession::LoadCarData()
 				carent->carName = key->name;
 				carent->carScript = KV_GetValueString(key);
 
-				carent->scriptCRC = GetFileSystem()->GetFileCRC32(carent->carScript.c_str(), SP_MOD);
+				carent->scriptCRC = g_fileSystem->GetFileCRC32(carent->carScript.c_str(), SP_MOD);
 
 				if(carent->scriptCRC != 0)
 				{

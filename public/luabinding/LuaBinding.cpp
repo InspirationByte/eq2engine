@@ -224,7 +224,7 @@ bool LuaBinding_LoadAndDoFile(lua_State* state, const char* filename, const char
 	lua_setglobal(state, "CALLER_FILENAME");
 
 	long fileSize = 0;
-	const char* filebuf = GetFileSystem()->GetFileBuffer(filename, &fileSize);
+	const char* filebuf = g_fileSystem->GetFileBuffer(filename, &fileSize);
 
 	if(!filebuf)
 	{
@@ -309,7 +309,7 @@ int LuaBinding_ModuleFunc(lua_State* state)
 
 		EqString checkFilename = fileBase + filename;
 
-		if( GetFileSystem()->FileExist(checkFilename.c_str()) )
+		if( g_fileSystem->FileExist(checkFilename.c_str()) )
 			filename = checkFilename;
 	}
 	

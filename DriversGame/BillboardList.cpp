@@ -61,7 +61,7 @@ bool LoadObjAsPointList(const char* filename, DkList<Vector3D>& outPoints)
 {
 	Tokenizer tok;
 
-	char* pBuffer = GetFileSystem()->GetFileBuffer(filename);
+	char* pBuffer = g_fileSystem->GetFileBuffer(filename);
 
 	if (!pBuffer)
 	{

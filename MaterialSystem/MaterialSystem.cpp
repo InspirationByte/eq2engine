@@ -147,14 +147,14 @@ bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderA
 		pszShaderAPILibName = "EqD3D9RHI";
 
 	// Load Shader API from here...
-	m_rendermodule = GetFileSystem()->LoadModule(pszShaderAPILibName);
+	m_rendermodule = g_fileSystem->LoadModule(pszShaderAPILibName);
 	if(m_rendermodule)
 	{
 		m_pRenderLib = (IRenderLibrary*)GetCore()->GetInterface( RENDERER_INTERFACE_VERSION );
 		if(!m_pRenderLib)
 		{
 			ErrorMsg("MatSystem Error: Failed to initialize rendering library!!!");
-			GetFileSystem()->FreeModule(m_rendermodule);
+			g_fileSystem->FreeModule(m_rendermodule);
 			return false;
 		}
 	}
@@ -342,7 +342,7 @@ void CMaterialSystem::Shutdown()
 		m_pRenderLib->ExitAPI();
 
 		// shutdown render libraries, all shaders and other
-		GetFileSystem()->FreeModule( m_rendermodule );
+		g_fileSystem->FreeModule( m_rendermodule );
 	}
 }
 
@@ -362,12 +362,12 @@ typedef int (*InitShaderLibraryFunction)(IMaterialSystem* pMatSystem);
 // Adds new shader library
 bool CMaterialSystem::LoadShaderLibrary(const char* libname)
 {
-	DKMODULE* shaderlib = GetFileSystem()->LoadModule( libname );
+	DKMODULE* shaderlib = g_fileSystem->LoadModule( libname );
 
 	if(!shaderlib)
 		return false;
 
-	InitShaderLibraryFunction functionPtr = (InitShaderLibraryFunction)GetFileSystem()->GetProcedureAddress(shaderlib, "InitShaderLibrary");
+	InitShaderLibraryFunction functionPtr = (InitShaderLibraryFunction)g_fileSystem->GetProcedureAddress(shaderlib, "InitShaderLibrary");
 
 	if(!functionPtr)
 	{
@@ -386,7 +386,7 @@ bool CMaterialSystem::IsMaterialExist(const char* szMaterialName)
 {
 	EqString mat_path(m_szMaterialsdir + szMaterialName + _Es(".mat"));
 
-	return GetFileSystem()->FileExist(mat_path.GetData());
+	return g_fileSystem->FileExist(mat_path.GetData());
 }
 
 IMaterial* CMaterialSystem::FindMaterial(const char* szMaterialName,bool findExisting/* = false*/)

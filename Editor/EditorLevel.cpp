@@ -113,14 +113,14 @@ bool CEditorLevel::Save()
 
 	// make level formats
 	// create directory first
-	GetFileSystem()->MakeDir(leveldir.GetData(), SP_MOD);
+	g_fileSystem->MakeDir(leveldir.GetData(), SP_MOD);
 
 	EqString editor_level_file(leveldir + "/editorlevel.lvl");
 	EqString editor_level_file_new(leveldir + "/level.edlvl");
 
 	EqString leveleditordata(leveldir + "/surfdata");
 
-	//DKFILE* pFile = GetFileSystem()->Open( editor_level_file.getData(), "wb");
+	//DKFILE* pFile = g_fileSystem->Open( editor_level_file.getData(), "wb");
 
 	g_editormainframe->SetStatusText(varargs("Saving level '%s'\n", editor_level_file_new.GetData()));
 	Msg("Saving...\n");
@@ -147,7 +147,7 @@ bool CEditorLevel::Save()
 		pLayerSection->AddKeyBase("active", varargs("%d", m_pLayers[i]->active));
 	}
 
-	GetFileSystem()->MakeDir(leveleditordata.GetData(), SP_MOD);
+	g_fileSystem->MakeDir(leveleditordata.GetData(), SP_MOD);
 
 	for(int i = 0; i < m_pEditableList.numElem(); i++)
 	{
@@ -780,7 +780,7 @@ bool CEditorLevel::Load()
 	}
 	else
 	{
-		IFile* pStream = GetFileSystem()->Open(editor_level_file.GetData(), "rb");
+		IFile* pStream = g_fileSystem->Open(editor_level_file.GetData(), "rb");
 
 		// support old formats for now
 		if(pStream)
@@ -800,7 +800,7 @@ bool CEditorLevel::Load()
 			for(int i = 0; i < pObjects.numElem(); i++)
 				m_pEditableList.append(pObjects[i]);
 
-			GetFileSystem()->Close(pStream);
+			g_fileSystem->Close(pStream);
 
 			m_bSavedOnDisk = true;
 			m_bNeedsSave = false;
@@ -1443,10 +1443,10 @@ void CEditorLevel::UnhideAll()
 /*
 void AddSectorLump(int nLump, ubyte *pData, int nDataSize, eqworldhdr_t* pHdr, DKFILE* pFile)
 {
-	pHdr->lumps[nLump].data_offset = GetFileSystem()->Tell(pFile);
+	pHdr->lumps[nLump].data_offset = g_fileSystem->Tell(pFile);
 	pHdr->lumps[nLump].data_size = nDataSize;
 
-	GetFileSystem()->Write(pData, 1, nDataSize, pFile);
+	g_fileSystem->Write(pData, 1, nDataSize, pFile);
 }
 
 // writes key-values section.
@@ -1456,12 +1456,12 @@ void AddKeyValuesSectorLump(int nLump, KeyValues &kv, eqworldhdr_t* pHdr, DKFILE
 {
 	int nDataSize = 0;
 
-	pHdr->lumps[nLump].data_offset = GetFileSystem()->Tell(pFile);
+	pHdr->lumps[nLump].data_offset = g_fileSystem->Tell(pFile);
 
 	// write, without tabs
 	KVWriteSection_r(kv.GetRootSection(), pFile, 0, false);
 
-	nDataSize = GetFileSystem()->Tell(pFile) - pHdr->lumps[nLump].data_offset;
+	nDataSize = g_fileSystem->Tell(pFile) - pHdr->lumps[nLump].data_offset;
 	pHdr->lumps[nLump].data_size = nDataSize;
 }
 */
@@ -1554,7 +1554,7 @@ void CEditorLevel::BuildWorld()
 	// build EQWC arguments
 	EqString args;
 
-	args.Append(varargs("-game \"%s\" ", GetFileSystem()->GetCurrentGameDirectory()));
+	args.Append(varargs("-game \"%s\" ", g_fileSystem->GetCurrentGameDirectory()));
 
 	args.Append(varargs("-world \"%s\" ", g_pLevel->GetLevelName()));
 	args.Append("-waitafterbuild ");
@@ -1598,7 +1598,7 @@ void CEditorLevel::BuildWorld()
 		if(!g_editormainframe->GetBuildOptionsDialog()->IsLightmapsDisabled() && !g_editormainframe->GetBuildOptionsDialog()->IsPhysicsOnly())
 		{
 			EqString lc_args;
-			lc_args.Append(varargs("-game \"%s\" ", GetFileSystem()->GetCurrentGameDirectory()));
+			lc_args.Append(varargs("-game \"%s\" ", g_fileSystem->GetCurrentGameDirectory()));
 			lc_args.Append(varargs("-world %s ", g_pLevel->GetLevelName()));
 
 			system(varargs("bin32\\eqlc.exe %s", lc_args.GetData()));

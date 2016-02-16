@@ -11,20 +11,6 @@
 
 EXPORTED_INTERFACE(ILocalize, CLocalize);
 
-/*
-int GetTokenHashString(const char *str)
-{
-	int hash = 0;
-	for (; *str; str++)
-	{
-		int v1 = hash >> 19;
-		int v0 = hash << 5;
-		hash = ((v0 | v1) + *str) & 0xFFFFFF;
-	}
-
-	return hash;
-}*/
-
 void xstr_loc_convert_special_symbols(char* str, bool doNewline)
 {
 	char c = *str;
@@ -107,11 +93,11 @@ void CLocalize::Init()
 
     Msg("Language '%s' set\n", m_szLanguageName.c_str());
 
-	int langArg = GetCmdLine()->FindArgument("-language");
+	int langArg = g_cmdLine->FindArgument("-language");
 
 	if(langArg != -1)
 	{
-		char* args = GetCmdLine()->GetArgumentsOf(langArg);
+		char* args = g_cmdLine->GetArgumentsOf(langArg);
 
 		if(strlen(args) > 0)
 			m_szLanguageName = args;

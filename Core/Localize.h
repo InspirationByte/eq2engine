@@ -53,6 +53,9 @@ public:
 	const wchar_t*		GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken = 0);
 	ILocToken*			GetToken( const char* pszToken );
 
+	bool				IsInitialized() const {return m_szLanguageName.GetLength() > 0;}
+	const char*			GetInterfaceName() const {return LOCALIZER_INTERFACE_VERSION;}
+
 private:
 	DkList<CLocToken*>	m_lTokens;
 	EqString			m_szLanguageName;

@@ -14,9 +14,9 @@
 
 #include "InterfaceManager.h"
 
-#define RENDERER_INTERFACE_VERSION	"DkRenderer_0115"
+#define RENDERER_INTERFACE_VERSION	"DkRenderer_009"
 
-class IRenderLibrary
+class IRenderLibrary : public ICoreModuleInterface
 {
 public:
 	virtual bool			InitCaps() = 0;
@@ -46,6 +46,9 @@ public:
 
 	// returns default swap chain
 	virtual IEqSwapChain*	GetDefaultSwapchain() = 0;
+
+	bool					IsInitialized() const {return true;};
+	const char*				GetInterfaceName() const {return RENDERER_INTERFACE_VERSION;}
 };
 
 #endif //IRENDERLIB_H

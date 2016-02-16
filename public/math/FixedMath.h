@@ -53,9 +53,9 @@ This is a FReal point structure with an adjustable decimal place
 	Modified by:	Ilya Shurumov
 */
 
-#define DECIMAL_BITS    16
-#define ONE				(1 << DECIMAL_BITS)
-#define HALF			(1 << (DECIMAL_BITS - 1))
+const int FPMATH_DECIMAL_BITS	=   16;
+const int FPMATH_ONE			=	(1 << FPMATH_DECIMAL_BITS);
+const int FPMATH_HALF			=	(1 << (FPMATH_DECIMAL_BITS - 1));
 
 struct FReal
 {
@@ -67,14 +67,14 @@ struct FReal
 	//Constructors
 	FReal() {}
 	FReal(const FReal& x)					: raw(x.raw) {}
-	FReal(int x)							: raw(x << DECIMAL_BITS) {}
-	FReal(short x)							: raw(((signed long)x) << DECIMAL_BITS) {}
-	FReal(float x)							: raw((int)(x * ONE)) {}
-	FReal(double x)							: raw((int)(x * ONE)) {}
+	FReal(int x)							: raw(x << FPMATH_DECIMAL_BITS) {}
+	FReal(short x)							: raw(((signed long)x) << FPMATH_DECIMAL_BITS) {}
+	FReal(float x)							: raw((int)(x * FPMATH_ONE)) {}
+	FReal(double x)							: raw((int)(x * FPMATH_ONE)) {}
 
-	operator int() const					{ return raw >> DECIMAL_BITS; }
-	operator short() const					{ return raw >> DECIMAL_BITS; }
-	operator float() const					{ return (float)raw/(float)ONE; }
+	operator int() const					{ return raw >> FPMATH_DECIMAL_BITS; }
+	operator short() const					{ return raw >> FPMATH_DECIMAL_BITS; }
+	operator float() const					{ return (float)raw/(float)FPMATH_ONE; }
 	operator bool()	const					{ return raw!=0; }
 
 	//Setters
@@ -106,20 +106,20 @@ struct FReal
 	FReal& operator -=(float x)				{ *this = *this - x; return *this; }
 
 	//Multiplication and Division
-	FReal operator *(const FReal& x) const	{ return FReal(int64(raw)*int64(x.raw) >> DECIMAL_BITS, 0); }//{ return FReal((int)(((long long)raw*(long long)x.raw)>>DECIMAL_BITS),0); }
+	FReal operator *(const FReal& x) const	{ return FReal(int64(raw)*int64(x.raw) >> FPMATH_DECIMAL_BITS, 0); }//{ return FReal((int)(((long long)raw*(long long)x.raw)>>DECIMAL_BITS),0); }
 	FReal operator *(int x) const			{ return FReal(raw*x,0); }
 	FReal operator *(short x) const			{ return FReal(raw*x,0); }
-	FReal operator *(float x) const			{ return FReal((int64(raw)*int64(FReal(x).raw) >> DECIMAL_BITS),0); }
+	FReal operator *(float x) const			{ return FReal((int64(raw)*int64(FReal(x).raw) >> FPMATH_DECIMAL_BITS),0); }
 
 	FReal& operator *=(FReal x)				{ *this = *this * x; return *this; }
 	FReal& operator *=(int x)				{ *this = *this * x; return *this; }
 	FReal& operator *=(short x)				{ *this = *this * x; return *this; }
 	FReal& operator *=(float x)				{ *this = *this * x; return *this; }
 
-	FReal operator /(const FReal& x) const	{ return FReal(((int64(raw) << DECIMAL_BITS) / x.raw), 0);} //{ return FReal(((((long long)raw)<<(DECIMAL_BITS<<1))/x.raw)>>DECIMAL_BITS,0); }
+	FReal operator /(const FReal& x) const	{ return FReal(((int64(raw) << FPMATH_DECIMAL_BITS) / x.raw), 0);} //{ return FReal(((((long long)raw)<<(DECIMAL_BITS<<1))/x.raw)>>DECIMAL_BITS,0); }
 	FReal operator /(int x) const			{ return FReal(raw/x,0); }
 	FReal operator /(short x) const			{ return FReal(raw/x,0); }
-	FReal operator /(float x) const			{ return FReal(((int64(raw) << DECIMAL_BITS) / FReal(x).raw), 0);} //{ return FReal(((((long long)raw)<<(DECIMAL_BITS<<1))/FReal(x).raw)>>DECIMAL_BITS,0); }
+	FReal operator /(float x) const			{ return FReal(((int64(raw) << FPMATH_DECIMAL_BITS) / FReal(x).raw), 0);} //{ return FReal(((((long long)raw)<<(DECIMAL_BITS<<1))/FReal(x).raw)>>DECIMAL_BITS,0); }
 
 	FReal& operator /=(FReal x)				{ *this = *this / x; return *this; }
 	FReal& operator /=(int x)				{ *this = *this / x; return *this; }
@@ -230,7 +230,6 @@ extern inline bool operator <(float x, const FReal& y)		{ return FReal(x)<y; }
 extern inline bool operator >(int x, const FReal& y)		{ return FReal(x)>y; }
 extern inline bool operator >(short x, const FReal& y)		{ return FReal(x)>y; }
 extern inline bool operator >(float x, const FReal& y)		{ return FReal(x)>y; }
-
 
 namespace FPmath
 {

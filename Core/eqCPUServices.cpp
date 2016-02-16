@@ -159,6 +159,7 @@ void cpuidAsm(uint32 op, uint32 reg[4]){
 
 CEqCPUCaps::CEqCPUCaps()
 {
+	m_cpuCount		= 0;
 	m_cpuCMOV		= false;
 	m_cpuMMX		= false;
 	m_cpuSSE		= false;

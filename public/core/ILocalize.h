@@ -31,7 +31,7 @@ public:
 //--------------------------------------------------------------
 // Token cache
 //--------------------------------------------------------------
-class ILocalize
+class ILocalize : public ICoreModuleInterface
 {
 public:
 							~ILocalize() {}

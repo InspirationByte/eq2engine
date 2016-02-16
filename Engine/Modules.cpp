@@ -13,20 +13,20 @@ ConVar r_renderer("r_renderer","EqD3D9RHI"/*"EqShaderAPIGL"*/,"Renderer API to u
 DKMODULE* LoadRendererModule()
 {
 	// loads rendering library.
-	return GetFileSystem()->LoadModule(r_renderer.GetString());
+	return g_fileSystem->LoadModule(r_renderer.GetString());
 }
 
 DKMODULE* LoadGameModule()
 {
 #ifdef PLAT_POSIX
-	EqString moduleName(varargs("%s/GameLib.so", GetFileSystem()->GetCurrentGameDirectory()));
+	EqString moduleName(varargs("%s/GameLib.so", g_fileSystem->GetCurrentGameDirectory()));
 #else if PLAT_WIN
-	EqString moduleName(varargs("%s/GameLib.dll", GetFileSystem()->GetCurrentGameDirectory()));
+	EqString moduleName(varargs("%s/GameLib.dll", g_fileSystem->GetCurrentGameDirectory()));
 #endif // PLAT_WIN
 
 	// first extract it from package if it's not exist
-	GetFileSystem()->ExtractFile( moduleName.GetData(), true );
+	g_fileSystem->ExtractFile( moduleName.GetData(), true );
 
 	// loads game library from current game directory
-	return GetFileSystem()->LoadModule( moduleName.GetData() );
+	return g_fileSystem->LoadModule( moduleName.GetData() );
 }

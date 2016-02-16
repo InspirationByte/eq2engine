@@ -695,7 +695,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 	if(event.GetId() == Event_File_OpenModel)
 	{
 		wxFileDialog* file = new wxFileDialog(NULL, "Open EGF model", 
-													varargs("%s/models", GetFileSystem()->GetCurrentGameDirectory()), 
+													varargs("%s/models", g_fileSystem->GetCurrentGameDirectory()), 
 													"*.egf", 
 													"Equilibrium Geometry File (*.egf)|*.egf;", 
 													wxFD_FILE_MUST_EXIST | wxFD_OPEN);
@@ -767,7 +767,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 								EqString cmdLine(varargs("egfca.exe +filename \"%s\"", fname.GetData()));
 
-								if( GetFileSystem()->FileExist("bin32\\egfca.exe") )
+								if( g_fileSystem->FileExist("bin32\\egfca.exe") )
 								{
 									cmdLine = "bin32\\" + cmdLine;
 								}
@@ -1259,10 +1259,10 @@ bool InitCore(HINSTANCE hInstance, char *pCmdLine)
 	// initialize core
 	GetCore()->Init("EGFMan", pCmdLine);
 
-	if(!GetFileSystem()->Init(false))
+	if(!g_fileSystem->Init(false))
 		return false;
 
-	GetCmdLine()->ExecuteCommandLine( true, true );
+	g_cmdLine->ExecuteCommandLine( true, true );
 
 	return true;
 }
@@ -1300,7 +1300,7 @@ bool CEGFViewApp::OnInit()
 	setlocale(LC_ALL,"C");
 
 	// first, load matsystem module
-	g_matsysmodule = GetFileSystem()->LoadModule("EqMatSystem.dll");
+	g_matsysmodule = g_fileSystem->LoadModule("EqMatSystem.dll");
 
 	if(!g_matsysmodule)
 	{
@@ -1326,7 +1326,7 @@ int CEGFViewApp::OnExit()
 	// shutdown material system
 	materials->Shutdown();
 
-	GetFileSystem()->FreeModule(g_matsysmodule);
+	g_fileSystem->FreeModule(g_matsysmodule);
 	
 	// shutdown core
 	GetCore()->Shutdown();

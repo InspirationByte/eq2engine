@@ -106,11 +106,9 @@ void cc_meminfo_f(DkList<EqString> *args)
 	PPMemInfo( fullStats );
 }
 
-static ConCommand	ppmem_stats("ppmem_stats",cc_meminfo_f, "Memory info",0);
-
-static ConVar		ppmem_break_on_alloc("ppmem_break_on_alloc", "-1", "Helps to catch allocation id at stack trace",0);
-
-static ConVar		ppmem_freecheck("ppmem_freecheck", "0", "Checks memory validty before freeing",0);
+static ConCommand	ppmem_stats("ppmem_stats",cc_meminfo_f, "Memory info",CV_UNREGISTERED);
+static ConVar		ppmem_break_on_alloc("ppmem_break_on_alloc", "-1", "Helps to catch allocation id at stack trace",CV_UNREGISTERED);
+static ConVar		ppmem_freecheck("ppmem_freecheck", "0", "Checks memory validty before freeing",CV_UNREGISTERED);
 
 CPPMemPage::CPPMemPage()
 {
@@ -628,6 +626,11 @@ uint CPPMemPage::GetUsage()
 
 void PPMemInit()
 {
+
+    g_sysConsole->RegisterCommand(&ppmem_stats);
+    g_sysConsole->RegisterCommand(&ppmem_break_on_alloc);
+    g_sysConsole->RegisterCommand(&ppmem_freecheck);
+
 #ifdef PPMEM_DISABLE
 
 #	ifdef PPMEM_USE_JEMALLOC
@@ -731,7 +734,7 @@ void* PPDAlloc(uint size, const char* pszFileName, int nLine)
 #	endif // PPMEM_USE_JEMALLOC
 
 #else
-	
+
 	//if(size >= g_maxSizeAlloc)
 	//{
 	//	ASSERT(!"PPAlloc break: trying to allocate over 2GB of memory! Programmer, please check the code for unitialized variables!");

@@ -36,17 +36,17 @@ int main(int argc, char* argv[])
 
 	Install_SpewFunction();
 
-	if(!GetFileSystem()->Init(false))
+	if(!g_fileSystem->Init(false))
 		return -1;
 
 	Msg("atlasgen - the texture atlas generator for particles and decals\n");
 
-	if(GetCmdLine()->GetArgumentCount() <= 1)
+	if(g_cmdLine->GetArgumentCount() <= 1)
 	{
 		Usage();
 	}
 
-	GetCmdLine()->ExecuteCommandLine( true, true );
+	g_cmdLine->ExecuteCommandLine( true, true );
 
 	GetCore()->Shutdown();
 

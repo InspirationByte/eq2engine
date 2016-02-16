@@ -8,6 +8,7 @@
 #include "DebugInterface.h"
 #include "emptyLibrary.h"
 #include "ShaderAPIEmpty.h"
+#include "IDkCore.h"
 
 HOOK_TO_CVAR(r_screen);
 

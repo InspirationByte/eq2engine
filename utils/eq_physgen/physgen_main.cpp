@@ -85,7 +85,7 @@ void cc_load_egf(DkList<DkStr> *args)
 			return;
 		}
 
-		ubyte* buffer = (ubyte *)GetFileSystem()->GetFileBuffer(args->ptr()[0].getData());
+		ubyte* buffer = (ubyte *)g_fileSystem->GetFileBuffer(args->ptr()[0].getData());
 
 		if(buffer == NULL)
 		{
@@ -124,7 +124,7 @@ void cc_load_egf(DkList<DkStr> *args)
 
 		Msg("Output set to %s\n", outputname.getData());
 
-		if(GetFileSystem()->FileExist(script_name.getData()))
+		if(g_fileSystem->FileExist(script_name.getData()))
 		{
 			g_pScript = new KeyValues();
 			if(!g_pScript->LoadFromFile(script_name.getData())) // load rigid body info
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 	GetCore()->Init_Tools("physgen",argc,argv);
 
 	// Filesystem is first!
-	if(!GetFileSystem()->Init(false))
+	if(!g_fileSystem->Init(false))
 	{
 		GetCore()->Shutdown();
 		return 0;
@@ -190,7 +190,7 @@ int main(int argc, char **argv)
 	Msg("Add '+help' to command line to show arguments and usage\n\n");
 
 	// Command line execution test was passes not successfully
-	GetCmdLine()->ExecuteCommandLine(true,true);
+	g_cmdLine->ExecuteCommandLine(true,true);
 
 	physgenmakeparams_t params;
 	params.pModel = g_pHdr;

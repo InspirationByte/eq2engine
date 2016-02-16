@@ -310,7 +310,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 	else if(event.GetId() == Event_File_OpenEGF)
 	{
 		wxFileDialog* file = new wxFileDialog(NULL, "Open EGF model", 
-													varargs("%s/models", GetFileSystem()->GetCurrentGameDirectory()), 
+													varargs("%s/models", g_fileSystem->GetCurrentGameDirectory()), 
 													"*.egf", 
 													"Equilibrium Geometry File (*.egf)|*.egf;", 
 													wxFD_FILE_MUST_EXIST | wxFD_OPEN);
@@ -347,7 +347,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 
 		/*
 		wxFileDialog* file = new wxFileDialog(NULL, "Open texture atlas file", 
-													varargs("%s/scripts", GetFileSystem()->GetCurrentGameDirectory()), 
+													varargs("%s/scripts", g_fileSystem->GetCurrentGameDirectory()), 
 													"*.atlas", 
 													"Texture Atlas File (*.atlas)|*.atlas;", 
 													wxFD_FILE_MUST_EXIST | wxFD_OPEN);
@@ -368,7 +368,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 	{
 
 		wxFileDialog* file = new wxFileDialog(NULL, "Save billboard file", 
-													varargs("%s/scripts", GetFileSystem()->GetCurrentGameDirectory()), 
+													varargs("%s/scripts", g_fileSystem->GetCurrentGameDirectory()), 
 													"*.blb", 
 													"Billboard file (*.blb)|*.blb;", 
 													wxFD_OVERWRITE_PROMPT | wxFD_SAVE);
@@ -389,7 +389,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 		}
 
 		wxFileDialog* file = new wxFileDialog(NULL, "Open OBJ file", 
-													varargs("./", GetFileSystem()->GetCurrentGameDirectory()), 
+													varargs("./", g_fileSystem->GetCurrentGameDirectory()), 
 													"*.obj", 
 													"Wavefront OBJ (*.obj)|*.obj;", 
 													wxFD_FILE_MUST_EXIST | wxFD_OPEN);
@@ -817,7 +817,7 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 
 	materials = NULL;
 
-	GetFileSystem()->FreeModule(g_matsysmodule);
+	g_fileSystem->FreeModule(g_matsysmodule);
 
 	// shutdown core
 	GetCore()->Shutdown();
@@ -837,10 +837,10 @@ bool InitCore(const char *pCmdLine)
 	// initialize core
 	GetCore()->Init( APPLICATION_NAME, pCmdLine );
 
-	if(!GetFileSystem()->Init(false))
+	if(!g_fileSystem->Init(false))
 		return false;
 
-	GetCmdLine()->ExecuteCommandLine( true, true );
+	g_cmdLine->ExecuteCommandLine( true, true );
 
 	return true;
 }
@@ -875,9 +875,9 @@ bool CWXTemplateApplication::OnInit()
 
 	// first, load matsystem module
 #ifdef _WIN32
-	g_matsysmodule = GetFileSystem()->LoadModule("EqMatSystem.dll");
+	g_matsysmodule = g_fileSystem->LoadModule("EqMatSystem.dll");
 #elif LINUX
-    g_matsysmodule = GetFileSystem()->LoadModule("libeqMatSystema.so");
+    g_matsysmodule = g_fileSystem->LoadModule("libeqMatSystema.so");
 #endif
 
 	if(!g_matsysmodule)

@@ -108,7 +108,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 
 	Tokenizer tok;
 
-	char* pBuffer = GetFileSystem()->GetFileBuffer(filename);
+	char* pBuffer = g_fileSystem->GetFileBuffer(filename);
 
 	if (!pBuffer)
 	{
@@ -462,7 +462,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 
 bool SaveOBJ(dsmmodel_t* model, const char* filename)
 {
-	DKFILE* pFile = GetFileSystem()->Open(filename, "wt");
+	DKFILE* pFile = g_fileSystem->Open(filename, "wt");
 	if(!pFile)
 	{
 		MsgError("Failed to open for write '%s'!\n", filename);
@@ -521,7 +521,7 @@ bool SaveOBJ(dsmmodel_t* model, const char* filename)
 		}
 	}
 
-	GetFileSystem()->Close(pFile);
+	g_fileSystem->Close(pFile);
 
 	return true;
 }

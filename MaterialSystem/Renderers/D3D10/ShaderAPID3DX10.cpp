@@ -1423,7 +1423,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		return false;
 
 	// TODO: implement shader cache for D3D10
-	GetFileSystem()->MakeDir("ShaderCache_DX10", SP_MOD);
+	g_fileSystem->MakeDir("ShaderCache_DX10", SP_MOD);
 
 	ID3D10ShaderReflection *vsRefl = NULL;
 	ID3D10ShaderReflection *gsRefl = NULL;
@@ -1439,7 +1439,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	if(!(info.disableCache || r_skipShaderCache.GetBool()))
 	{
-		pStream = GetFileSystem()->Open(cache_file_name.GetData(), "rb", -1);
+		pStream = g_fileSystem->Open(cache_file_name.GetData(), "rb", -1);
 
 		if(pStream)
 		{
@@ -1504,7 +1504,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 				MsgWarning("Shader cache for '%s' broken and will be recompiled\n", pShaderOutput->GetName());
 			}
 
-			GetFileSystem()->Close(pStream);
+			g_fileSystem->Close(pStream);
 			pStream = NULL;
 		}
 
@@ -1512,7 +1512,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	if(needsCompile)
 	{
-		pStream = GetFileSystem()->Open(cache_file_name.GetData(), "wb", SP_MOD);
+		pStream = g_fileSystem->Open(cache_file_name.GetData(), "wb", SP_MOD);
 
 		if(!pStream)
 		{
@@ -1716,7 +1716,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		pStream->Seek(0,VS_SEEK_SET);
 		pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
 
-		GetFileSystem()->Close(pStream);
+		g_fileSystem->Close(pStream);
 	}
 
 create_constant_buffers:

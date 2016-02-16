@@ -52,6 +52,9 @@ public:
 	bool		IsCPUHasSSE41() const	{return m_cpuSSE41;}
 	bool		IsCPUHasSSE42() const	{return m_cpuSSE42;}
 
+	bool		IsInitialized() const	{return m_cpuCount && m_cpuVendor[0] != '\0';}
+	const char*	GetInterfaceName() const {return CPUSERVICES_INTERFACE_VERSION;}
+
 protected:
 
 	int m_cpuCount;

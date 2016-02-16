@@ -103,10 +103,10 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 	// initialize core
 	GetCore()->Init("leveleditor", lpszCmdLine);
 
-	if(!GetFileSystem()->Init(false))
+	if(!g_fileSystem->Init(false))
 		return -1;
 
-	GetFileSystem()->AddSearchPath("EqEditor");
+	g_fileSystem->AddSearchPath("EqEditor");
 
 	// first, load matsystem module
 	g_matsysmodule = FS_LoadModule("EqMatSystem.dll");

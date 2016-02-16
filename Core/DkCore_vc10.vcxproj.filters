@@ -48,9 +48,6 @@
     <ClCompile Include="ExceptionHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CommandAccessor.cpp">
-      <Filter>Source Files\Console</Filter>
-    </ClCompile>
     <ClCompile Include="ConCommandFactory.cpp">
       <Filter>Source Files\Console</Filter>
     </ClCompile>
@@ -122,9 +119,6 @@
     <ClInclude Include="..\public\DebugInterface.h">
       <Filter>Source Files\Debug</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\IFileSystem.h">
-      <Filter>Source Files\FileSystem</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\IDkCore.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -133,9 +127,6 @@
     </ClInclude>
     <ClInclude Include="..\public\core_base_header.h">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CommandAccessor.h">
-      <Filter>Source Files\Console</Filter>
     </ClInclude>
     <ClInclude Include="ConCommandFactory.h">
       <Filter>Source Files\Console</Filter>

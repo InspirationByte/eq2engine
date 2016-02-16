@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 	MsgWarning("Only used on EGF version %d\n", EQUILIBRIUM_MODEL_VERSION);
 
 	// Filesystem is first!
-	if(!GetFileSystem()->Init(false))
+	if(!g_fileSystem->Init(false))
 	{
 		GetCore()->Shutdown();
 		return 0;
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 
 	//Sleep(5000); //wait 5 seconds
 
-	GetCmdLine()->ExecuteCommandLine(true,true);
+	g_cmdLine->ExecuteCommandLine(true,true);
 
 	if(!stricmp("none", c_filename.GetString()))
 	{

@@ -394,7 +394,7 @@ void CMaterialAtlasList::ReloadMaterialList()
 	m_materialslist.clear();
 	m_filteredList.clear();
 
-	EqString base_path(EqString(GetFileSystem()->GetCurrentGameDirectory()) + EqString("/") + materials->GetMaterialPath());
+	EqString base_path(EqString(g_fileSystem->GetCurrentGameDirectory()) + EqString("/") + materials->GetMaterialPath());
 	base_path = base_path.Left(base_path.GetLength()-1);
 
 	CheckDirForMaterials( base_path.GetData() );
@@ -507,7 +507,7 @@ bool CMaterialAtlasList::CheckDirForMaterials(const char* filename_to_add)
 			return false;
 	}
 
-	EqString tex_dir(EqString(GetFileSystem()->GetCurrentGameDirectory()) + materials->GetMaterialPath());
+	EqString tex_dir(EqString(g_fileSystem->GetCurrentGameDirectory()) + materials->GetMaterialPath());
 
 	Msg("Searching directory for materials: '%s'\n", filename_to_add);
 

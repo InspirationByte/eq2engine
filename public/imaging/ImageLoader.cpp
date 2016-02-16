@@ -401,7 +401,7 @@ int CImage::GetDepth(const int mipMapLevel) const
 bool CImage::LoadDDS(const char *fileName, uint flags)
 {
 	DKFILE *file;
-	if ((file = GetFileSystem()->Open(fileName, "rb")) == NULL) return false;
+	if ((file = g_fileSystem->Open(fileName, "rb")) == NULL) return false;
 
 	SetName(fileName);
 
@@ -412,7 +412,7 @@ bool CImage::LoadDDS(const char *fileName, uint flags)
 bool CImage::LoadJPEG(const char *fileName)
 {
 	DKFILE *file;
-	if ((file = GetFileSystem()->Open(fileName, "rb")) == NULL) return false;
+	if ((file = g_fileSystem->Open(fileName, "rb")) == NULL) return false;
 
 	SetName(fileName);
 
@@ -424,7 +424,7 @@ bool CImage::LoadJPEG(const char *fileName)
 bool CImage::LoadTGA(const char *fileName)
 {
 	DKFILE *file;
-	if ((file = GetFileSystem()->Open(fileName, "rb")) == NULL) return false;
+	if ((file = g_fileSystem->Open(fileName, "rb")) == NULL) return false;
 
 	SetName(fileName);
 
@@ -446,7 +446,7 @@ bool CImage::LoadDDSfromHandle(DKFILE *fileHandle, uint flags)
 	if (header.dwMagic != MCHAR4('D','D','S',' '))
 	{
 		MsgError("This image is not Direct Draw Surface!\n");
-		GetFileSystem()->Close(file);
+		g_fileSystem->Close(file);
 		return false;
 	}
 
@@ -491,7 +491,7 @@ bool CImage::LoadDDSfromHandle(DKFILE *fileHandle, uint flags)
 			case 83: m_nFormat = FORMAT_ATI2N; break;
 			default:
 				MsgError("Unknown image format\n");
-				GetFileSystem()->Close(file);
+				g_fileSystem->Close(file);
 				return false;
 		}
 	}
@@ -527,7 +527,7 @@ bool CImage::LoadDDSfromHandle(DKFILE *fileHandle, uint flags)
 						break;
 					default:
 						MsgError("Unknown image format\n");
-						GetFileSystem()->Close(file);
+						g_fileSystem->Close(file);
 						return false;
 				}
 		}
@@ -561,7 +561,7 @@ bool CImage::LoadDDSfromHandle(DKFILE *fileHandle, uint flags)
 		_SwapChannels(m_pPixels, size / nChannels, nChannels, 0, 2);
 	}
 
-	GetFileSystem()->Close(file);
+	g_fileSystem->Close(file);
 	return true;
 }
 
@@ -619,7 +619,7 @@ bool CImage::LoadJPEGfromHandle(DKFILE *fileHandle)
 	jpeg_finish_decompress(&cinfo);
 	jpeg_destroy_decompress(&cinfo);
 
-	GetFileSystem()->Close(file);
+	g_fileSystem->Close(file);
 
 	return true;
 }
@@ -657,7 +657,7 @@ bool CImage::LoadTGAfromHandle(DKFILE *fileHandle)
 	// Read the file data
 	fBuffer = new ubyte[size - sizeof(header) - palLength];
 	file->Read(fBuffer, size - sizeof(header) - palLength, 1);
-	GetFileSystem()->Close(file);
+	g_fileSystem->Close(file);
 
 	size = m_nWidth * m_nHeight * pixelSize;
 

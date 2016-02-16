@@ -136,7 +136,7 @@ const char* OverrideShader_DepthWrite()
 void InitMatSystem()
 {
 	// init matsystem
-	g_matsystemmod = GetFileSystem()->LoadModule("EqMatSystem.dll");
+	g_matsystemmod = g_fileSystem->LoadModule("EqMatSystem.dll");
 
 	if(!g_matsystemmod)
 	{
@@ -221,7 +221,7 @@ int main(int argc, char **argv)
 	GetCore()->Init("eqlc",argc,argv);
 
 	// Filesystem is first!
-	if(!GetFileSystem()->Init(false))
+	if(!g_fileSystem->Init(false))
 	{
 		GetCore()->Shutdown();
 		return 0;
@@ -242,18 +242,18 @@ int main(int argc, char **argv)
 	InitMatSystem();
 
 	// Command line execution test was passes not successfully
-	GetCmdLine()->ExecuteCommandLine(true,true);
+	g_cmdLine->ExecuteCommandLine(true,true);
 
 	physics->Init(MAX_COORD_UNITS);
 	physics->CreateScene();
 
 	bool bWorldSpecified = false;
 
-	for(int i = 0; i < GetCmdLine()->GetArgumentCount(); i++)
+	for(int i = 0; i < g_sysConsole->GetArgumentCount(); i++)
 	{
-		if(!stricmp("-world", GetCmdLine()->GetArgumentString(i)))
+		if(!stricmp("-world", g_cmdLine->GetArgumentString(i)))
 		{
-			g_worldName = GetCmdLine()->GetArgumentString(i+1);
+			g_worldName = g_cmdLine->GetArgumentString(i+1);
 			bWorldSpecified = true;
 		}
 	}

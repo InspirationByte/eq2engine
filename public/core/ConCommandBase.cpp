@@ -39,23 +39,27 @@ void ConCommandBase::Init(char const *name,char const *desc, int flags /*= 0*/,b
 	if(GetFlags() & CV_UNREGISTERED)
 		return;
 
-	//Dynamic initalizer must create GetCvars() first before registering pBase
-	if(GetCvars())
-	{
-		GetCvars()->RegisterCommand( this );
-
-		m_bIsRegistered = true;
-	}
+    Register(this);
 }
 
 ConCommandBase::~ConCommandBase()
 {
-	// Ex: When renderer device is restarting or library is unloading it
-	// needs to be unregistered because without it causes NULL pointers
-	Unregister(this);
+	if(m_bIsRegistered) Unregister( this );
 }
 
-void ConCommandBase::Unregister( ConCommandBase *pBase )
+//-----------------------------------------------------------
+
+// registering and unregistering commands must be done more internally without singletons
+IEXPORTS IConsoleCommands* GetCConsoleCommands( void );
+
+// static
+void ConCommandBase::Register( ConCommandBase* pBase )
 {
-	GetCvars()->UnregisterCommand(pBase);
+    GetCConsoleCommands()->RegisterCommand( pBase );
+}
+
+// static
+void ConCommandBase::Unregister( ConCommandBase* pBase )
+{
+	GetCConsoleCommands()->UnregisterCommand(pBase);
 }

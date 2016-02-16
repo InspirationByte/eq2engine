@@ -262,6 +262,9 @@ public:
 	// prints loaded materials to console
 	void							PrintLoadedMaterials();
 
+	bool							IsInitialized() const {return (m_pRenderLib != NULL);}
+	const char*						GetInterfaceName() const {return MATSYSTEM_INTERFACE_VERSION;}
+
 private:
 
 	void							CreateWhiteTexture();

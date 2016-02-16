@@ -397,7 +397,7 @@ bool SaveGame_Write(const char* filename)
 
 	MsgInfo("Saving game to '%s'...\n", dest_file.GetData());
 
-	IFile* pStream = GetFileSystem()->Open(dest_file.GetData(), "wb", SP_MOD);
+	IFile* pStream = g_fileSystem->Open(dest_file.GetData(), "wb", SP_MOD);
 
 	if(!pStream)
 		return false;
@@ -455,7 +455,7 @@ bool SaveGame_Write(const char* filename)
 	pStream->Write(&save_hdr, 1, sizeof(save_hdr));
 	pStream->Seek(save_size, VS_SEEK_SET);
 
-	GetFileSystem()->Close(pStream);
+	g_fileSystem->Close(pStream);
 
 	MsgInfo("Successfully saved to '%s'...\n", dest_file.GetData());
 
@@ -698,7 +698,7 @@ bool DoLoadSavedGame( void* pData )
 	engine->SetGameState(IEngineGame::GAME_IDLE);
 
 	// close stream here
-	GetFileSystem()->Close( params->pStream );
+	g_fileSystem->Close( params->pStream );
 
 	PPFree(params);
 
@@ -716,7 +716,7 @@ void SaveGame_RestoreFromFile(const char* filename)
 
 	Msg("Loading game from '%s'...\n", dest_file.GetData());
 
-	IFile* pStream = GetFileSystem()->Open(dest_file.GetData(), "rb", SP_MOD);
+	IFile* pStream = g_fileSystem->Open(dest_file.GetData(), "rb", SP_MOD);
 
 	if(!pStream)
 	{
@@ -730,14 +730,14 @@ void SaveGame_RestoreFromFile(const char* filename)
 	if(header.ident != SAVEGAME_IDENT)
 	{
 		MsgError("Invalid savegame!\n");
-		GetFileSystem()->Close(pStream);
+		g_fileSystem->Close(pStream);
 		return;
 	}
 
 	if(header.version != SAVEGAME_VERSION)
 	{
 		MsgError("Invalid savegame version!\n");
-		GetFileSystem()->Close(pStream);
+		g_fileSystem->Close(pStream);
 		return;
 	}
 
@@ -773,7 +773,7 @@ void SaveGame_RestoreFromFile(const char* filename)
 		SaveGame_LoadEntities(pStream, header.numEntities);
 
 		// close stream
-		GetFileSystem()->Close(pStream);
+		g_fileSystem->Close(pStream);
 
 		GAME_STATE_GameStartSession( true );
 

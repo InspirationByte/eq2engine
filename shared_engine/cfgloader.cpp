@@ -13,7 +13,7 @@
 
 void WriteCfgFile(const char *pszFilename, bool bWriteKeyConfiguration /*= true*/)
 {
-	DKFILE *cfgfile = GetFileSystem()->Open(pszFilename,"w");
+	DKFILE *cfgfile = g_fileSystem->Open(pszFilename,"w");
 	if(!cfgfile)
 	{
 		return;
@@ -26,7 +26,7 @@ void WriteCfgFile(const char *pszFilename, bool bWriteKeyConfiguration /*= true*
 	if(bWriteKeyConfiguration)
 		GetKeyBindings()->WriteBindings(cfgfile);
 
-	const DkList<ConCommandBase*> *base = GetCvars()->GetAllCommands();
+	const DkList<ConCommandBase*> *base = g_sysConsole->GetAllCommands();
 
 	for(int i = 0; i < base->numElem();i++)
 	{
@@ -38,7 +38,7 @@ void WriteCfgFile(const char *pszFilename, bool bWriteKeyConfiguration /*= true*
 		}
 	}
 
-	GetFileSystem()->Close(cfgfile);
+	g_fileSystem->Close(cfgfile);
 }
 
 void CC_SaveCfg(DkList<EqString> *args)
