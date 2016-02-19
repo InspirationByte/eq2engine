@@ -10,9 +10,9 @@
 
 #include "IDkCore.h"
 
-#ifdef LINUX
+#ifdef PLAT_POSIX
 #   include <wchar.h>
-#endif
+#endif // PLAT_POSIX
 
 #define LOCALIZER_INTERFACE_VERSION		"CORE_Localizer_002"
 

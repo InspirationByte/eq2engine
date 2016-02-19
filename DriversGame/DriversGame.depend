@@ -1838,8 +1838,7 @@
 	"IFileSystem.h"
 	"DebugInterface.h"
 
-1452332103 /home/soap/Projects/eqengine/src_all/public/luabinding/LuaBinding.h
-	<iostream>
+1455905751 /home/soap/Projects/eqengine/src_all/public/luabinding/LuaBinding.h
 	"lua.h"
 	"lualib.h"
 	"lauxlib.h"
@@ -2205,7 +2204,7 @@
 	"IFileSystem.h"
 	"DebugInterface.h"
 
-1453486313 /home/soap/Projects/eqengine/src_all/public/platform/Platform.h
+1455900171 /home/soap/Projects/eqengine/src_all/public/platform/Platform.h
 	"dktypes.h"
 	"SDL.h"
 	"SDL_syswm.h"
@@ -2381,8 +2380,11 @@
 	"InterfaceManager.h"
 	"utils/eqthread.h"
 
-1453486584 /home/soap/Projects/eqengine/src_all/public/utils/eqthread.h
+1455905588 /home/soap/Projects/eqengine/src_all/public/utils/eqthread.h
 	"Platform.h"
+	<sched.h>
+	<pthread.h>
+	<errno.h>
 	<stdint.h>
 	"eqstring.h"
 

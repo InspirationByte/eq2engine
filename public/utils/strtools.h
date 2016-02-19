@@ -28,7 +28,7 @@
 
 #endif // _WIN32
 
-#ifdef LINUX
+#ifdef PLAT_POSIX
 
 #include <ctype.h>
 #include <string.h>
@@ -61,7 +61,7 @@ typedef __builtin_va_list	__gnuc_va_list;
 typedef __gnuc_va_list		va_list;
 typedef va_list				__va_list;
 
-wchar_t* wcsncpy(wchar_t * __restrict dst, const wchar_t * __restrict src, size_t n);
+//wchar_t* wcsncpy(wchar_t * __restrict dst, const wchar_t * __restrict src, size_t n);
 
 #endif // ANDROID
 
@@ -104,7 +104,7 @@ char*		xstrdup(const char*  s);
 bool		xisspace(const uint32 c);
 
 // converts string to lower case
-#ifdef LINUX
+#ifdef PLAT_POSIX
 char* strupr(char* s1);
 char* strlwr(char* s1);
 

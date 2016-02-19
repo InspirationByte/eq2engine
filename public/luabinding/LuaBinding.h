@@ -8,8 +8,6 @@
 #ifndef LUABINDING_H
 #define LUABINDING_H
 
-#include <iostream>
-
 extern "C"
 {
 #include "lua.h"

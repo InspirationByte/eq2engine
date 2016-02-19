@@ -68,7 +68,7 @@
 #  endif
 #  include <windows.h>
 
-#elif defined(LINUX) || defined(ANDROID)
+#elif defined(PLAT_LINUX) || defined(PLAT_ANDROID)
 #  include <stdio.h>
 
 #elif defined(__APPLE__)

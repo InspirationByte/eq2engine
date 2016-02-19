@@ -11,7 +11,7 @@
 #include "strtools.h"
 #include "DebugInterface.h"
 
-#ifdef LINUX
+#ifdef PLAT_POSIX
 
 #include <wchar.h>
 #include <wctype.h>
@@ -55,7 +55,7 @@ wchar_t* wcsupr(wchar_t* str)
 
 #endif
 
-#ifdef ANDROID
+#ifdef PLAT_DROID/*
 wchar_t* wcsncpy(wchar_t * __restrict dst, const wchar_t * __restrict src, size_t n)
 {
 	if (n != 0) {
@@ -72,7 +72,7 @@ wchar_t* wcsncpy(wchar_t * __restrict dst, const wchar_t * __restrict src, size_
 		} while (--n != 0);
 	}
 	return (dst);
-}
+}*/
 #endif // PLAT_DROID
 
 void FixSlashes( char* str )
