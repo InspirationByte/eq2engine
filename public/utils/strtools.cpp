@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright Å  Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Special String tools to do lesser memory errors
@@ -17,26 +17,22 @@
 #include <wctype.h>
 #include <stdarg.h>
 
-char* strupr(char* s1)
+char* strupr(char* str)
 {
-   char* p = s1;
-   while(*p)
-   {
-       toupper(*p);
-       p++;
-   }
-   return s1;
+    char* it = str;
+
+    while (*it != 0) { *it = toupper(*it); ++it; }
+
+    return str;
 }
 
-char* strlwr(char* s1)
+char* strlwr(char* str)
 {
-   char* p = s1;
-   while(*p)
-   {
-       tolower(*p);
-       p++;
-   }
-   return s1;
+    char* it = str;
+
+    while (*it != 0) { *it = tolower(*it); ++it; }
+
+    return str;
 }
 
 wchar_t* wcslwr(wchar_t* str)
