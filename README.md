@@ -19,6 +19,7 @@ List of dependencies:
 * bullet - Bullet Physics Library 2.83
 
 Also dependencies which not located in src_dependency are:
+
 * jpeg8
 * ogg, vorbis, vorbisfile
 * gtk+-2.0
