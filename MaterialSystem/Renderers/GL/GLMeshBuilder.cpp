@@ -9,26 +9,15 @@
 #include "DebugInterface.h"
 #include "ShaderAPIGL.h"
 
-/*
-#include <d3d10.h>
-#include <d3dx10.h>
-#include "d3dx10_def.h"
-#include "Renderer/ShaderAPI_defs.h"
-*/
 #include <malloc.h>
-
 
 // source-code based on this article:
 // http://www.gamedev.net/reference/programming/features/imind3d/default.asp
-// [concept ported to DirectX10]
-
-//#define FVF_LISTVERTEX   (D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_DIFFUSE | D3DFVF_TEX1)// | D3DFVF_TEXCOORDSIZE1(1) | D3DFVF_TEXCOORDSIZE2(0)
+// [concept ported to OpenGL]
 
 #define MIN_VERTEX_LIST_SIZE	2048
 
-#define MAX_VBO_VERTS			8192
-
-//extern ID3D10Device* pXDevice;
+#define MAX_VBO_VERTS			16384
 
 struct ListVertex
 {
@@ -53,7 +42,6 @@ static IIndexBuffer*		s_pIndexBuffer		= NULL;
 static IVertexFormat*		s_pVertexFormat	= NULL;
 
 //-----------------------------------------------------------------------------
-// "glBegin()"
 
 static VertexFormatDesc_t g_meshBuilder_format[] = {
 	0, 3, VERTEXTYPE_VERTEX,	ATTRIBUTEFORMAT_FLOAT,
@@ -69,13 +57,7 @@ CGLMeshBuilder::~CGLMeshBuilder()
 
 void CGLMeshBuilder::Begin( PrimitiveType_e Type)
 {
-	//if( pXDevice == NULL )
-	//	return;
-
-	//pXDevice->AddRef();
-
 	type = Type;
-	//PrimitiveType = d3dPrim[Type];
 
 	nAllocated = MIN_VERTEX_LIST_SIZE;
 	pVertList = (ListVertex*)realloc(pVertList, sizeof(ListVertex)*nAllocated);
@@ -119,7 +101,8 @@ void CGLMeshBuilder::AdvanceVertex()
 
 	if(nVertsAfter > MAX_VBO_VERTS)
 	{
-		MsgWarning("CD3D10MeshBuilder::AdvanceVertex(): OVERFLOW...\n");
+		MsgWarning("CGLMeshBuilder::AdvanceVertex(): OVERFLOW...\n");
+		nVerts = 0;
 		return;
 	}
 
@@ -223,8 +206,6 @@ void CGLMeshBuilder::End()
 
 	if(!s_pBuffer)
 	{
-		//ubyte* pTemp = (ubyte*)malloc(MAX_VBO_VERTS*sizeof(ListVertex));
-
 		s_pBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_VBO_VERTS, sizeof(ListVertex), NULL);
 		s_pIndexBuffer = g_pShaderAPI->CreateIndexBuffer(MAX_VBO_VERTS*3, sizeof(int), BUFFER_DYNAMIC, NULL);
 
@@ -233,10 +214,6 @@ void CGLMeshBuilder::End()
 
 	if(!s_pBuffer)
 		return;
-
-	// WARNING!
-	// FANS NOT SUPPORTED
-	// YES! ACTUALLY FANS! :P
 
 	void* pLockData = NULL;
 
@@ -249,8 +226,10 @@ void CGLMeshBuilder::End()
 		MsgError("CGLMeshBuilder lock of VB failed!\n");
 
 	int nIndices = 0;
-	
+
 	/*
+	// I think we have trouble there
+
 	if(type == PRIM_TRIANGLE_FAN)
 	{
 		// build a new index list
@@ -301,6 +280,4 @@ void CGLMeshBuilder::End()
 	pVertList = NULL;
 	nAllocated = 0;
 	nVerts = 0;
-
-	
 }

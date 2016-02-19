@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright Â© Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Description: CPU detection
@@ -41,10 +41,37 @@ inline uint64 getCycleNumber()
 #if defined(__APPLE__)
 
 void cpuidAsm(uint32 op, uint32 reg[4]);
+
 #define cpuid(func, a, b, c, d) { uint32 res[4]; cpuidAsm(func, res); a = res[0]; b = res[1]; c = res[2]; d = res[3]; }
 
 #elif defined(LINUX)
-#define cpuid(in, a, b, c, d) asm volatile ("cpuid": "=a" (a), "=b" (b), "=c" (c), "=d" (d) : "a" (in));
+
+#if defined(__PIC__) && !defined(__x86_64__)
+
+#define cpuid(in, a, b, c, d)   \
+    asm volatile(               \
+        "mov %%ebx, %%edi;"     \
+        "cpuid;"                \
+        "xchgl %%ebx, %%edi;" :  \
+        "=a" (a),  \
+        "=D" (b),  \
+        "=c" (c),  \
+        "=d" (d)   \
+         : "a" (in) \
+    );
+#else
+
+#define cpuid(in, a, b, c, d)   \
+    asm volatile( "cpuid":      \
+        "=a" (a),  \
+        "=b" (b),  \
+        "=c" (c),  \
+        "=d" (d)   \
+         : "a" (in) \
+    );
+
+#endif // __PIC__
+
 #endif
 
 #define rdtsc(a, d)\

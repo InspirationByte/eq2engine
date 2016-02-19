@@ -110,7 +110,7 @@
 	<X11/keysym.h>
 	<float.h>
 
-1422606819 /usr/include/SDL2/SDL.h
+1400119695 /usr/include/SDL2/SDL.h
 	"SDL_main.h"
 	"SDL_stdinc.h"
 	"SDL_assert.h"
@@ -141,12 +141,12 @@
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_main.h
+1400119696 /usr/include/SDL2/SDL_main.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_stdinc.h
+1400119696 /usr/include/SDL2/SDL_stdinc.h
 	"SDL_config.h"
 	<sys/types.h>
 	<stdio.h>
@@ -173,32 +173,32 @@
 	<stdlib.h>
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_config.h
+1400119696 /usr/include/SDL2/SDL_config.h
 	"SDL_platform.h"
 
-1422606819 /usr/include/SDL2/SDL_platform.h
+1400119696 /usr/include/SDL2/SDL_platform.h
 	"AvailabilityMacros.h"
 	"TargetConditionals.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/begin_code.h
+1400119696 /usr/include/SDL2/begin_code.h
 
-1422606819 /usr/include/SDL2/close_code.h
+1400119696 /usr/include/SDL2/close_code.h
 
-1422606819 /usr/include/SDL2/SDL_assert.h
+1400119695 /usr/include/SDL2/SDL_assert.h
 	"SDL_config.h"
 	"begin_code.h"
 	<signal.h>
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_atomic.h
+1400119695 /usr/include/SDL2/SDL_atomic.h
 	"SDL_stdinc.h"
 	"SDL_platform.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_audio.h
+1400119695 /usr/include/SDL2/SDL_audio.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_endian.h"
@@ -208,24 +208,24 @@
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_error.h
+1400119696 /usr/include/SDL2/SDL_error.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_endian.h
+1400119695 /usr/include/SDL2/SDL_endian.h
 	"SDL_stdinc.h"
 	<endian.h>
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_mutex.h
+1400119696 /usr/include/SDL2/SDL_mutex.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_thread.h
+1400119696 /usr/include/SDL2/SDL_thread.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_atomic.h"
@@ -234,18 +234,18 @@
 	<process.h>
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_rwops.h
+1400119696 /usr/include/SDL2/SDL_rwops.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_clipboard.h
+1400119695 /usr/include/SDL2/SDL_clipboard.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_cpuinfo.h
+1400119695 /usr/include/SDL2/SDL_cpuinfo.h
 	"SDL_stdinc.h"
 	<intrin.h>
 	<intrin.h>
@@ -257,7 +257,7 @@
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_events.h
+1400119696 /usr/include/SDL2/SDL_events.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_video.h"
@@ -271,7 +271,7 @@
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_video.h
+1400119696 /usr/include/SDL2/SDL_video.h
 	"SDL_stdinc.h"
 	"SDL_pixels.h"
 	"SDL_rect.h"
@@ -279,12 +279,12 @@
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_pixels.h
+1400119696 /usr/include/SDL2/SDL_pixels.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_rect.h
+1400119696 /usr/include/SDL2/SDL_rect.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_pixels.h"
@@ -292,7 +292,7 @@
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_surface.h
+1400119696 /usr/include/SDL2/SDL_surface.h
 	"SDL_stdinc.h"
 	"SDL_pixels.h"
 	"SDL_rect.h"
@@ -301,11 +301,11 @@
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_blendmode.h
+1400119695 /usr/include/SDL2/SDL_blendmode.h
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_keyboard.h
+1400119696 /usr/include/SDL2/SDL_keyboard.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_keycode.h"
@@ -313,27 +313,27 @@
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_keycode.h
+1400119696 /usr/include/SDL2/SDL_keycode.h
 	"SDL_stdinc.h"
 	"SDL_scancode.h"
 
-1422606819 /usr/include/SDL2/SDL_scancode.h
+1400119696 /usr/include/SDL2/SDL_scancode.h
 	"SDL_stdinc.h"
 
-1422606819 /usr/include/SDL2/SDL_mouse.h
+1400119696 /usr/include/SDL2/SDL_mouse.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_video.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_joystick.h
+1400119696 /usr/include/SDL2/SDL_joystick.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_gamecontroller.h
+1400119696 /usr/include/SDL2/SDL_gamecontroller.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_rwops.h"
@@ -341,11 +341,11 @@
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_quit.h
+1400119696 /usr/include/SDL2/SDL_quit.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 
-1422606819 /usr/include/SDL2/SDL_gesture.h
+1400119696 /usr/include/SDL2/SDL_gesture.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_video.h"
@@ -353,60 +353,60 @@
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_touch.h
+1400119696 /usr/include/SDL2/SDL_touch.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_video.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_filesystem.h
+1400119696 /usr/include/SDL2/SDL_filesystem.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_haptic.h
+1400119696 /usr/include/SDL2/SDL_haptic.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_joystick.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_hints.h
+1400119696 /usr/include/SDL2/SDL_hints.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_loadso.h
+1400119696 /usr/include/SDL2/SDL_loadso.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_log.h
+1400119696 /usr/include/SDL2/SDL_log.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_messagebox.h
+1400119696 /usr/include/SDL2/SDL_messagebox.h
 	"SDL_stdinc.h"
 	"SDL_video.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_power.h
+1400119696 /usr/include/SDL2/SDL_power.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_render.h
+1400119696 /usr/include/SDL2/SDL_render.h
 	"SDL_stdinc.h"
 	"SDL_rect.h"
 	"SDL_video.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_system.h
+1400119696 /usr/include/SDL2/SDL_system.h
 	"SDL_stdinc.h"
 	"SDL_keyboard.h"
 	"SDL_render.h"
@@ -414,18 +414,18 @@
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_timer.h
+1400119696 /usr/include/SDL2/SDL_timer.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_version.h
+1400119696 /usr/include/SDL2/SDL_version.h
 	"SDL_stdinc.h"
 	"begin_code.h"
 	"close_code.h"
 
-1422606819 /usr/include/SDL2/SDL_syswm.h
+1400119696 /usr/include/SDL2/SDL_syswm.h
 	"SDL_stdinc.h"
 	"SDL_error.h"
 	"SDL_video.h"
@@ -2392,7 +2392,7 @@
 1452159729 /home/soap/Projects/eqengine/src_all/public/IVirtualStream.h
 	"ppmem.h"
 
-1455637456 source:/home/soap/Projects/eqengine/src_all/public/luabinding/LuaBinding_Engine.cpp
+1455893931 source:/home/soap/Projects/eqengine/src_all/public/luabinding/LuaBinding_Engine.cpp
 	"LuaBinding_Engine.h"
 	"core_base_header.h"
 	"Network/NETThread.h"
@@ -2849,7 +2849,7 @@
 	"DebugInterface.h"
 	"utils/strtools.h"
 
-1454776643 source:/home/soap/Projects/eqengine/src_all/shared_engine/EqParticles_Render.cpp
+1455893931 source:/home/soap/Projects/eqengine/src_all/shared_engine/EqParticles_Render.cpp
 	"EqParticles.h"
 	"eqGlobalMutex.h"
 
@@ -3396,45 +3396,47 @@
 	"BaseRenderableObject.h"
 	"utils/DkList.h"
 
-1195756386 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/Shiny.h
-	"ShinyConfig.h"
+1363980704 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/Shiny.h
 	"ShinyMacros.h"
 	"ShinyManager.h"
 
-1196451626 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyConfig.h
+1263130820 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyConfig.h
 
-1433526545 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyMacros.h
+1363980704 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyMacros.h
 	"ShinyManager.h"
 
-1196450938 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyManager.h
+1363980704 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyManager.h
 	"ShinyZone.h"
 	"ShinyNode.h"
 	"ShinyNodePool.h"
 	"ShinyTools.h"
 	"ShinyOutput.h"
-	<iostream>
+	<stdio.h>
 
-1195756388 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyZone.h
+1363980704 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyZone.h
 	"ShinyData.h"
+	<memory.h>
 
-1195756388 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyData.h
+1363980704 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyData.h
 	"ShinyPrereqs.h"
 
-1196443290 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyPrereqs.h
+1363980704 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyPrereqs.h
 	"ShinyConfig.h"
+	"ShinyVersion.h"
 	<sys/types.h>
+	<stdint.h>
 
-1196432438 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyNode.h
+1363980704 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyNode.h
 	"ShinyData.h"
 	"ShinyTools.h"
 
-1196452278 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyTools.h
+1363980704 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyTools.h
 	"ShinyPrereqs.h"
 
-1195756386 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyNodePool.h
+1363980704 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyNodePool.h
 	"ShinyNode.h"
 
-1196451722 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyOutput.h
+1363980704 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyOutput.h
 	"ShinyNode.h"
 	"ShinyZone.h"
 	<string>
@@ -3654,7 +3656,7 @@
 	"world.h"
 	"input.h"
 
-1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/car.cpp
+1455893931 source:/home/soap/Projects/eqengine/src_all/DriversGame/car.cpp
 	"car.h"
 	"DebugOverlay.h"
 	"session_stuff.h"
@@ -3701,7 +3703,7 @@
 	"IDebugOverlay.h"
 	"DebugInterface.h"
 
-1454240092 source:/home/soap/Projects/eqengine/src_all/DriversGame/eqPhysics/eqPhysics.cpp
+1455893931 source:/home/soap/Projects/eqengine/src_all/DriversGame/eqPhysics/eqPhysics.cpp
 	"IDebugOverlay.h"
 	"ConVar.h"
 	"DebugInterface.h"
@@ -3752,7 +3754,7 @@
 	"eqParallelJobs.h"
 	"utils/eqtimer.h"
 
-1455637456 source:/home/soap/Projects/eqengine/src_all/DriversGame/game_singleplayer.cpp
+1455893931 source:/home/soap/Projects/eqengine/src_all/DriversGame/game_singleplayer.cpp
 	"luabinding/LuaBinding.h"
 	"game_singleplayer.h"
 	"replay.h"
@@ -3817,7 +3819,7 @@
 	"car.h"
 	"Shiny.h"
 
-1454240092 source:/home/soap/Projects/eqengine/src_all/DriversGame/object_physics.cpp
+1455893931 source:/home/soap/Projects/eqengine/src_all/DriversGame/object_physics.cpp
 	"object_physics.h"
 	"session_stuff.h"
 	"world.h"
@@ -3879,7 +3881,7 @@
 	"IDebugOverlay.h"
 	"ConVar.h"
 
-1452332103 source:/home/soap/Projects/eqengine/src_all/DriversGame/physics.cpp
+1455893931 source:/home/soap/Projects/eqengine/src_all/DriversGame/physics.cpp
 	"GameObject.h"
 	"eqGlobalMutex.h"
 	"physics.h"
@@ -3923,7 +3925,7 @@
 1452159728 source:/home/soap/Projects/eqengine/src_all/DriversGame/ShaderOverrides.cpp
 	"IMaterialSystem.h"
 
-1454240092 source:/home/soap/Projects/eqengine/src_all/DriversGame/state_game.cpp
+1455893931 source:/home/soap/Projects/eqengine/src_all/DriversGame/state_game.cpp
 	"state_game.h"
 	"CameraAnimator.h"
 	"session_stuff.h"
@@ -3972,7 +3974,7 @@
 	"KeyBinding/Keys.h"
 	"IDebugOverlay.h"
 
-1455637456 source:/home/soap/Projects/eqengine/src_all/DriversGame/system.cpp
+1455893931 source:/home/soap/Projects/eqengine/src_all/DriversGame/system.cpp
 	"LuaBinding_Drivers.h"
 	"DebugOverlay.h"
 	"system.h"
@@ -3998,7 +4000,7 @@
 	"EngineVersion.h"
 	"Mmsystem.h"
 
-1454776643 source:/home/soap/Projects/eqengine/src_all/DriversGame/world.cpp
+1455893931 source:/home/soap/Projects/eqengine/src_all/DriversGame/world.cpp
 	"world.h"
 	"IDebugOverlay.h"
 	"eqGlobalMutex.h"
@@ -6276,4 +6278,6 @@
 	"object_trafficlight.h"
 	"object_sheets.h"
 	"object_scripted.h"
+
+1263130820 /home/soap/Projects/eqengine/src_all/src_dependency/Shiny/include/ShinyVersion.h
 
