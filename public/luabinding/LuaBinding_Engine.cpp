@@ -86,6 +86,7 @@ OOLUA_EXPORT_FUNCTIONS(Networking::CNetMessageBuffer,
 										WriteVector3D, WriteVector4D,
 										ReadByte, ReadUByte, ReadInt16, ReadUInt16, ReadInt, ReadUInt, ReadBool, ReadFloat, ReadVector2D,
 										ReadVector3D, ReadVector4D, /*WriteString, ReadString,*/ WriteNetBuffer/*, WriteKeyValues, ReadKeyValues*/)
+
 OOLUA_EXPORT_FUNCTIONS_CONST(Networking::CNetMessageBuffer, GetMessageLength, GetClientID)
 
 OOLUA_EXPORT_FUNCTIONS(Networking::CNetworkThread,	SendData, SendEvent, SendWaitDataEvent)

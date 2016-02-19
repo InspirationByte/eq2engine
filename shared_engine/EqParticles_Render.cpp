@@ -21,7 +21,7 @@ ConVar r_particleBufferSize("r_particleBufferSize", "16384", "particle buffer si
 #define PVBO_MAX_SIZE(s)	(s*sizeof(PFXVertex_t)*4)
 #define PIBO_MAX_SIZE(s)	(s*(sizeof(uint16)*6))
 
-CParticleRenderGroup::CParticleRenderGroup() : 	
+CParticleRenderGroup::CParticleRenderGroup() :
 	m_pMaterial(NULL),
 	m_pVerts(NULL),
 	m_pIndices(NULL),
@@ -89,7 +89,7 @@ void CParticleRenderGroup::Shutdown()
 
 	if(m_bHasOwnVBO)
 	{
-		
+
 	}
 }
 
@@ -164,7 +164,7 @@ void CParticleRenderGroup::AddParticleGeom(PFXVertex_t* verts, uint16* indices, 
 	// if it's a second, first I'll add last index (3 if first, and add first one from fourIndices)
 	if( num_ind > 0 )
 	{
-		int lastIdx = m_pIndices[ num_ind-1 ];
+		uint16 lastIdx = m_pIndices[ num_ind-1 ];
 
 		nIndicesCurr = lastIdx+1;
 
@@ -175,7 +175,7 @@ void CParticleRenderGroup::AddParticleGeom(PFXVertex_t* verts, uint16* indices, 
 	}
 
 	//Msg("adding %d v %d i (%d verts %d indx in buffer)\n", nVertices, nIndices, m_numVertices, m_numIndices);
-	
+
 	AddVertices(verts, nVertices);
 
 	for(int i = 0; i < nIndices; i++)
@@ -262,7 +262,7 @@ void CParticleRenderGroup::AddParticleStrip(PFXVertex_t* verts, int nVertices)
 	// if it's a second, first I'll add last index (3 if first, and add first one from fourIndices)
 	if( num_ind > 0 )
 	{
-		int lastIdx = m_pIndices[ num_ind-1 ];
+		uint16 lastIdx = m_pIndices[ num_ind-1 ];
 
 		nIndicesCurr = lastIdx+1;
 
@@ -289,7 +289,7 @@ void CParticleRenderGroup::AddStripBreak()
 	// if it's a second, first I'll add last index (3 if first, and add first one from fourIndices)
 	if( num_ind > 0 )
 	{
-		int lastIdx = m_pIndices[ num_ind-1 ];
+		uint16 lastIdx = m_pIndices[ num_ind-1 ];
 
 		nIndicesCurr = lastIdx+1;
 
@@ -346,7 +346,7 @@ void CParticleRenderGroup::Render(int nViewRenderFlags)
 
 	materials->BindMaterial(m_pMaterial, false);
 	materials->Apply();
-	
+
 	// draw
 	g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLE_STRIP, 0, m_numIndices, 0, m_numVertices);
 
@@ -546,7 +546,7 @@ bool CParticleLowLevelRenderer::MakeVBOFrom(CParticleRenderGroup* pGroup)
 
 	if(nVerts == 0 || nIndices == 0)
 		return false;
-	
+
 	if(nVerts*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE(m_vbMaxQuads))
 		return false;
 
@@ -620,7 +620,7 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, CViewParams* view, Volume* fr
 
 	if(effect->tex)
 		texCoords = effect->tex->rect;
-	
+
 	verts[0].point = effect->vOrigin + (vUp * effect->fTall) + (effect->fWide * vRight);
 	verts[0].texcoord = Vector2D(texCoords.vrightBottom.x, texCoords.vrightBottom.y);
 	verts[0].color = effect->vColor;
@@ -662,7 +662,7 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, const Matrix4x4& viewMatrix, 
 
 	if(effect->tex)
 		texCoords = effect->tex->rect;
-	
+
 	verts[0].point = effect->vOrigin + (vUp * effect->fTall) + (effect->fWide * vRight);
 	verts[0].texcoord = Vector2D(texCoords.vrightBottom.x, texCoords.vrightBottom.y);
 	verts[0].color = effect->vColor;

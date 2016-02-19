@@ -824,7 +824,7 @@ kvkeybase_t* KV_ParseSection( const char* pszBuffer, const char* pszFileName, kv
 				// if we have reached this section ending, start parsing it's contents
 				if(nSectionRecursionSkip == 0)
 				{
-					int nLen = (int)pLast - (int)pFirstLetter;
+					int nLen = (int)(pLast - pFirstLetter);
 					char* pszTemp = (char*)malloc(nLen+1);
 					memcpy(pszTemp, pFirstLetter, nLen);
 					pszTemp[nLen] = 0;
@@ -862,7 +862,7 @@ kvkeybase_t* KV_ParseSection( const char* pszBuffer, const char* pszFileName, kv
 			((!bInQuotes && (isspace(c) || (c == KV_BREAK))) ||
 			(bInQuotes && (c == KV_STRING_BEGIN_END))))
 		{
-			int nLen = (int)pLast - (int)pFirstLetter;
+			int nLen = (int)(pLast - pFirstLetter);
 
 			// close token
 			if(nValueCounter <= 0)

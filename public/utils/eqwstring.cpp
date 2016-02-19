@@ -352,7 +352,7 @@ void EqWString::Replace( wchar_t whichChar, wchar_t to )
 
 	for(uint i = 0; i < m_nLength; i++)
 	{
-		if(*pStr == NULL)
+		if(*pStr == 0)
 			break;
 
 		if(*pStr == whichChar)

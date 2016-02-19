@@ -363,7 +363,7 @@ void EqString::Replace( char whichChar, char to )
 
 	for(uint i = 0; i < m_nLength; i++)
 	{
-		if(*pStr == NULL)
+		if(*pStr == 0)
 			break;
 
 		if(*pStr == whichChar)

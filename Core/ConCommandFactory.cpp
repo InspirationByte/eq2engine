@@ -378,7 +378,7 @@ void SplitCommandForValidArguments(const char* command, DkList<EqString> *comman
 			if ( *pChar != '\"' )
 				continue;
 
-			int nLen = (int)pChar - (int)pFirstLetter;
+			int nLen = (int)(pChar - pFirstLetter);
 
 			commands->append(_Es(pFirstLetter,nLen));
 
@@ -407,7 +407,7 @@ void SplitCommandForValidArguments(const char* command, DkList<EqString> *comman
 		// Here, we're in the middle of a word. Look for the end of it.
 		if ( isspace( *pChar ) )
 		{
-			int nLen = (int)pChar - (int)pFirstLetter;
+			int nLen = (int)(pChar - pFirstLetter);
 			commands->append(_Es(pFirstLetter,nLen));
 			pFirstLetter = NULL;
 		}
@@ -415,7 +415,7 @@ void SplitCommandForValidArguments(const char* command, DkList<EqString> *comman
 
 	if ( pFirstLetter )
 	{
-		int nLen = (int)pChar - (int)pFirstLetter;
+		int nLen = (int)(pChar - pFirstLetter);
 		commands->append(_Es(pFirstLetter,nLen));
 	}
 }

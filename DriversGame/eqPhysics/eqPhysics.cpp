@@ -449,7 +449,7 @@ extern ConVar ph_margin;
 
 void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& pairs)
 {
-	PROFILE_FUNC()
+	PROFILE_FUNC();
 
 	if(!bodyA->CheckCanCollideWith(bodyB))
 		return;
@@ -487,7 +487,7 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 
 	// trasform collision objects and test
 
-	PROFILE_BEGIN(shapeOperations)
+	PROFILE_BEGIN(shapeOperations);
 
 	// prepare for testing...
 	btCollisionObject* objA = bodyA->m_collObject;
@@ -520,7 +520,7 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 		objB = &boxObjectB;
 	}*/
 
-	PROFILE_BEGIN(matrixOperations)
+	PROFILE_BEGIN(matrixOperations);
 
 	// body a
 	Matrix4x4 eqTransA = Matrix4x4( bodyA->GetOrientation() );
@@ -546,7 +546,7 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 	EqPhysContactResultCallback cbResult;
 	cbResult.m_center = center;
 
-	PROFILE_BEGIN(contactPairTest)
+	PROFILE_BEGIN(contactPairTest);
 	m_collisionWorld->contactPairTest(objA, objB, cbResult);
 	PROFILE_END();
 
@@ -590,7 +590,7 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 
 void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& contactPairs)
 {
-	PROFILE_FUNC()
+	PROFILE_FUNC();
 
 	if(staticObj == NULL || bodyB == NULL)
 		return;
@@ -633,7 +633,7 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 	btCollisionObject* objA = staticObj->m_collObject;
 	btCollisionObject* objB = bodyB->m_collObject;
 
-	PROFILE_BEGIN(matrixOperations)
+	PROFILE_BEGIN(matrixOperations);
 
 	// body a
 	Matrix4x4 eqTransA;
@@ -681,7 +681,7 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 	EqPhysContactResultCallback cbResult;
 	cbResult.m_center = center;
 
-	PROFILE_BEGIN(contactPairTest)
+	PROFILE_BEGIN(contactPairTest);
 	m_collisionWorld->contactPairTest(objA, objB, cbResult);
 	PROFILE_END();
 
@@ -807,7 +807,7 @@ void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
 
 void CEqPhysics::IntegrateSingle(CEqRigidBody* body, float deltaTime)
 {
-	PROFILE_FUNC()
+	PROFILE_FUNC();
 
 	collgridcell_t* oldCell = body->GetCell();
 
@@ -838,7 +838,7 @@ ConVar ph_test1("ph_test1", "0");
 
 void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body, float deltaTime, DkList<ContactPair_t>& pairs)
 {
-	PROFILE_FUNC()
+	PROFILE_FUNC();
 
 	// don't refresh frozen object, other will wake up us (or user)
 	if (body->IsFrozen())
@@ -952,7 +952,7 @@ ConVar ph_carVsCarErp("ph_carVsCarErp", "0.15", "Car versus car erp", CV_CHEAT);
 
 void CEqPhysics::ProcessContactPair(const ContactPair_t& pair, float deltaTime)
 {
-	PROFILE_FUNC()
+	PROFILE_FUNC();
 
 	CEqRigidBody* bodyB = (CEqRigidBody*)pair.bodyB;
 
@@ -1084,7 +1084,7 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	if(!m_grid.IsInit())
 		return;
 
-	PROFILE_FUNC()
+	PROFILE_FUNC();
 
 	static DkList<ContactPair_t> contactPairs;
 
@@ -1554,7 +1554,7 @@ bool CEqPhysics::TestLineSingleObject(
 	btTransform startTrans(btident3, strt);
 	btTransform endTrans(btident3, endt);
 
-	
+
 
 #if BT_BULLET_VERSION >= 283 // new bullet
 	btCollisionObjectWrapper objWrap(NULL, object->m_shape, object->m_collObject, transIdent, 0, 0);

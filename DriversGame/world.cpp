@@ -143,7 +143,7 @@ void CGameWorld::Ed_FillEnviromentList(DkList<EqString>& list)
 	KeyValues envKvs;
 
 	bool status = envKvs.LoadFromFile(varargs("scripts/environments/%s_environment.txt", m_levelname.c_str()), SP_MOD);
-	
+
 	if( !status )
 	{
 		MsgWarning("No environment file loaded level '%s' (scripts/environments/<levelname>_environment.txt)!\n", m_levelname.c_str());
@@ -178,7 +178,7 @@ void CGameWorld::InitEnvironment()
 	KeyValues envKvs;
 
 	bool status = envKvs.LoadFromFile(varargs("scripts/environments/%s_environment.txt", m_levelname.c_str()), SP_MOD);
-	
+
 	if( !status )
 	{
 		MsgWarning("No environment file loaded level '%s' (scripts/environments/<levelname>_environment.txt)!\n", m_levelname.c_str());
@@ -311,7 +311,7 @@ void CGameWorld::InitEnvironment()
 	}
 
 	if ((m_envConfig.lightsType != 0 ||
-		m_envConfig.weatherType != WEATHER_TYPE_CLEAR) 
+		m_envConfig.weatherType != WEATHER_TYPE_CLEAR)
 		&& !m_reflectionTex)
 	{
 		m_reflectionTex = g_pShaderAPI->CreateNamedRenderTarget("_reflection", 512, 256, FORMAT_RGBA8, TEXFILTER_LINEAR, ADDRESSMODE_CLAMP);
@@ -375,7 +375,7 @@ void CGameWorld::Init()
 		// model at stream 1
 		{ 1, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position 0
 		{ 1, 2, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 4
-		
+
 		{ 1, 4, VERTEXTYPE_NONE, ATTRIBUTEFORMAT_HALF }, // Tangent UNUSED
 		{ 1, 4, VERTEXTYPE_NONE, ATTRIBUTEFORMAT_HALF }, // Binormal UNUSED
 		{ 1, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Normal (TC5)
@@ -440,7 +440,7 @@ void CGameWorld::Init()
 		m_lensTable[9] = {70.0f, lens2Id, ColorRGB(0.22f,0.9f,0.2f)};
 		m_lensTable[10] = {120.0f, lens2Id, ColorRGB(0.35f)};
 		m_lensTable[11] = {120.0f, lens4Id, ColorRGB(0.2f,0.3f,0.8f)};
-		
+
 	}
 
 	g_pPFXRenderer->PreloadMaterials();
@@ -461,7 +461,7 @@ void CGameWorld::Init()
 	// init render stuff
 	if(!m_lightsTex)
 	{
-		m_lightsTex = g_pShaderAPI->CreateProceduralTexture("_vlights", 
+		m_lightsTex = g_pShaderAPI->CreateProceduralTexture("_vlights",
 														FORMAT_RGBA16F, MAX_LIGHTS_TEXTURE, 2, 1,1,
 														TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, TEXFLAG_NOQUALITYLOD);
 
@@ -477,7 +477,7 @@ void CGameWorld::Init()
 		m_depthTestMat = materials->FindMaterial("engine/pointquery", true);
 		m_depthTestMat->Ref_Grab();
 	}
-	
+
 	InitEnvironment();
 }
 
@@ -669,7 +669,7 @@ void RegionCallbackFunc(CLevelRegion* reg, int regIdx)
 
 void CGameWorld::UpdateWorld(float fDt)
 {
-	PROFILE_FUNC()
+	PROFILE_FUNC();
 
 	static float jobFrametime = fDt;
 	jobFrametime = fDt;
@@ -724,7 +724,7 @@ void CGameWorld::UpdateWorld(float fDt)
 		m_lights[i].color = vec4_zero;
 	}
 
-	PROFILE_BEGIN(UpdateWorldObjectStates)
+	PROFILE_BEGIN(UpdateWorldObjectStates);
 
 	if( fDt > 0 )
 	{
@@ -768,18 +768,18 @@ void CGameWorld::UpdateWorld(float fDt)
 		}
 
 		//CLevelRegion* pReg = m_level.GetRegionAtPosition(g_pGameWorld->m_CameraParams.GetOrigin());
-		
+
 		//if( !pReg->m_isLoaded )
 		//	m_level.WaitForThread();
-		
+
 	}
 
 	PROFILE_END();
 
 	m_renderingObjects.clear();
 
-	PROFILE_BEGIN(SimulateWorldObjects)
-	
+	PROFILE_BEGIN(SimulateWorldObjects);
+
 	// simulate objects of world
 	for(int i = 0; i < g_pGameWorld->m_pGameObjects.numElem(); i++)
 	{
@@ -1079,7 +1079,7 @@ void CGameWorld::OnPreApplyMaterial( IMaterial* pMaterial )
 	if( pMaterial->GetState() != MATERIAL_LOAD_OK )
 		return;
 
-	
+
 
 	int numRTs;
 	int cubeTarg[MAX_MRTS];
@@ -1108,7 +1108,7 @@ void CGameWorld::OnPreApplyMaterial( IMaterial* pMaterial )
 	envParams.y = (m_envConfig.lightsType & WLIGHTS_CITY) > 0 ? 1.0f : 0.0f;
 
 	g_pShaderAPI->SetShaderConstantVector2D("ENVPARAMS", envParams);
-	
+
 
 	// always send all of them
 	//g_pShaderAPI->SetShaderConstantArrayVector4D("WorldLights", (Vector4D*)&m_lights[0].position, MAX_LIGHTS*2);
@@ -1207,7 +1207,7 @@ void CGameWorld::UpdateLightTexture()
 
 	if(r_disableLightUpdates.GetBool())
 		return;
-	
+
 	texlockdata_t lockdata;
 
 	m_lightsTex->Lock(&lockdata, NULL, true);
@@ -1281,7 +1281,7 @@ void CGameWorld::DrawLensFlare( const Vector2D& screenSize, const Vector2D& scre
 		cnt = max(0,cnt);
 
 		Vector2D lensPos;
-	
+
 		if(i < 2)
 			lensPos = screenPos + lensDir*(float(cnt)*invTableSize)*lensScale;
 		else
@@ -1341,12 +1341,12 @@ void CGameWorld::DrawFakeReflections()
 
 	view = rotateZXY4(radians.x, -radians.y, radians.z);
 	view.translate(newViewPos);
- 
+
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
 	materials->SetMatrix(MATRIXMODE_VIEW, view);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	/* 
+	/*
 	Matrix4x4 viewProj = proj*view;
 	TEMPORARILY DISABLED, NEEDS DEPTH BUFFER
 
@@ -1371,7 +1371,7 @@ void CGameWorld::DrawFakeReflections()
 	// Apply the vertical blur on texture
 	{
 		g_pShaderAPI->ChangeRenderTarget( m_reflectionTex );
-		
+
 		g_pShaderAPI->Reset( STATE_RESET_VBO );
 
 		// setup 2D here
@@ -1492,7 +1492,7 @@ void CGameWorld::Draw( int nRenderFlags )
 
 	if(r_drawObjects.GetBool())
 		UpdateRenderables( m_occludingFrustum );
-	
+
 	// rendering of instanced objects
 	if( m_renderingObjects.goToFirst() )
 	{
@@ -1589,9 +1589,9 @@ void CGameWorld::Draw( int nRenderFlags )
 			{
 				materials->BindMaterial(m_depthTestMat);
 				Vector2D screenQuad[] = {MAKEQUAD(
-											lensScreenPos.x, 
-											lensScreenPos.y, 
-											lensScreenPos.x, 
+											lensScreenPos.x,
+											lensScreenPos.y,
+											lensScreenPos.x,
 											lensScreenPos.y, -LENS_PIXELS_HALFSIZE)};
 
 				IMeshBuilder* pMeshBuilder = g_pShaderAPI->CreateMeshBuilder();
@@ -1622,7 +1622,7 @@ void CGameWorld::Draw( int nRenderFlags )
 				m_lensIntensityTiming += g_pHost->m_fGameFrameTime*10.0f;
 				m_lensIntensityTiming = min(1.0f, m_lensIntensityTiming*fIntensity);
 			}
-		}	
+		}
 	}
 #endif // EDITOR
 
@@ -1682,7 +1682,7 @@ void CGameWorld::QueryNearestRegions(const Vector3D& pos, bool waitLoad )
 bool CGameWorld::LoadLevel()
 {
 	bool result = true;
-	
+
 	if(!m_levelLoaded)
 	{
 		// load object definition file

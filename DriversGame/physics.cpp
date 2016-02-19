@@ -44,7 +44,7 @@ CPhysicsHFObject::~CPhysicsHFObject()
 
 void CPhysicsHFObject::PreSimulate( float fDt )
 {
-	PROFILE_FUNC()
+	PROFILE_FUNC();
 
 	if (!m_object->IsCanIterate(true))
 		return;
@@ -58,7 +58,7 @@ void CPhysicsHFObject::PreSimulate( float fDt )
 
 void CPhysicsHFObject::PostSimulate( float fDt )
 {
-	PROFILE_FUNC()
+	PROFILE_FUNC();
 
 	if (!m_object->IsCanIterate(true))
 		return;
@@ -111,7 +111,7 @@ ConVar ph_singleiter("ph_singleiter", "0");
 
 void CPhysicsEngine::Simulate( float fDt, int numIterations, FNSIMULATECALLBACK preIntegrateFn )
 {
-	PROFILE_FUNC()
+	PROFILE_FUNC();
 
 	double timestep = fDt / numIterations;
 

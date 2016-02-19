@@ -249,7 +249,7 @@ CGameObject* CGameSession::FindScriptObjectById(int scriptID)
 
 void Game_OnPhysicsUpdate(float fDt, int iterNum)
 {
-	PROFILE_FUNC()
+	PROFILE_FUNC();
 
 	if(fDt <= 0.0f)
 		return;
@@ -296,7 +296,7 @@ void GameJob_UpdatePhysics(void* data)
 //
 void CGameSession::Update( float fDt )
 {
-	PROFILE_FUNC()
+	PROFILE_FUNC();
 
 	if( m_missionStatus != MIS_STATUS_INGAME )
 	{

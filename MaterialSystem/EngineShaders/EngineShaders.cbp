@@ -17,6 +17,7 @@
 			</Target>
 		</Build>
 		<Compiler>
+			<Add option="-fPIC" />
 			<Add option="-DLINUX" />
 			<Add option="-DEQSHADER_LIBRARY" />
 			<Add directory="../../FileSystem" />

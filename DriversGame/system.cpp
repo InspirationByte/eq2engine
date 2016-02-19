@@ -668,7 +668,7 @@ bool CGameHost::Frame()
 	g_pShaderAPI->Flush();
 
 	// End frame from render lib
-	PROFILE_CODE(EndScene())
+	PROFILE_CODE(EndScene());
 
 	g_pShaderAPI->ResetCounters();
 

@@ -87,7 +87,7 @@ uint32 CFile::GetCRC32()
 
 	Seek(pos, VS_SEEK_SET);
 
-	unsigned long nCRC = CRC32_BlockChecksum( pFileData, fSize );
+	uint32 nCRC = CRC32_BlockChecksum( pFileData, fSize );
 
 	free(pFileData);
 
@@ -151,7 +151,7 @@ uint32 CVirtualDPKFile::GetCRC32()
 
 	Seek(pos, VS_SEEK_SET);
 
-	unsigned long nCRC = CRC32_BlockChecksum( pFileData, fSize );
+	uint32 nCRC = CRC32_BlockChecksum( pFileData, fSize );
 
 	free(pFileData);
 

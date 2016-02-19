@@ -14,13 +14,14 @@
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-fPIC" />
 					<Add option="-DNDEBUG" />
 				</Compiler>
 			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-std=c++11" />
-			<Add option="-m32 `pkg-config gtk+-2.0 --cflags`" />
+			<Add option="`pkg-config gtk+-2.0 --cflags`" />
 			<Add option="-DUSE_GTK" />
 			<Add option="-DCROSSLINK_LIB" />
 			<Add option="-DLINUX" />

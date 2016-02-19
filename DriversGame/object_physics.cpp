@@ -55,7 +55,7 @@ BEGIN_NETWORK_TABLE( CObject_Physics )
 
 	DEFINE_SENDPROP_FVECTOR3D(m_netPos),
 	DEFINE_SENDPROP_FVECTOR3D(m_netAngles),
-	
+
 END_NETWORK_TABLE()
 
 CObject_Physics::CObject_Physics( kvkeybase_t* kvdata )
@@ -67,7 +67,7 @@ CObject_Physics::CObject_Physics( kvkeybase_t* kvdata )
 
 CObject_Physics::~CObject_Physics()
 {
-	
+
 }
 
 void CObject_Physics::OnRemove()
@@ -179,7 +179,7 @@ const Vector3D& CObject_Physics::GetOrigin()
 }
 
 const Vector3D& CObject_Physics::GetAngles()
-{ 
+{
 	m_vecAngles = eulers(m_physBody->GetOrientation());
 	m_vecAngles = VRAD2DEG(m_vecAngles);
 
@@ -221,7 +221,7 @@ void CObject_Physics::Draw( int nRenderFlags )
 
 void CObject_Physics::Simulate(float fDt)
 {
-	PROFILE_FUNC()
+	PROFILE_FUNC();
 
 	for(int i = 0; i < m_physBody->m_collisionList.numElem(); i++)
 	{

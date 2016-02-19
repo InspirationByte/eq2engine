@@ -1367,7 +1367,7 @@ void CCar::AnalogSetControls(float accel_brake, float steering, bool extendSteer
 
 void CCar::UpdateCarPhysics(float delta)
 {
-	PROFILE_FUNC()
+	PROFILE_FUNC();
 
 	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
 

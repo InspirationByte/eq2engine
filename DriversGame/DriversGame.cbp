@@ -19,8 +19,7 @@
 			</Target>
 		</Build>
 		<Compiler>
-			<Add option="-g" />
-			<Add option="-m32 -Wno-invalid-offsetof `pkg-config sdl2 --cflags`" />
+			<Add option="-fPIC -Wno-invalid-offsetof `pkg-config sdl2 --cflags`" />
 			<Add option="-DLINUX" />
 			<Add option="-DNO_ENGINE" />
 			<Add option="-DNOENGINE" />
@@ -41,7 +40,7 @@
 			<Add directory="../src_dependency/Shiny/include" />
 		</Compiler>
 		<Linker>
-			<Add option="-pthread -leqCore `pkg-config sdl2 --libs` `pkg-config gtk+-2.0 --libs` `pkg-config vorbisfile --libs`" />
+			<Add option="-pthread -leqCore `pkg-config sdl2 --libs` `pkg-config gtk+-2.0 --libs`" />
 			<Add library="PrevLib" />
 			<Add library="coreLib" />
 			<Add library="../src_dependency/bullet/lib/libBulletCollision.a" />
@@ -52,7 +51,12 @@
 			<Add library="../src_dependency/luajit/src/libluajit.a" />
 			<Add library="dl" />
 			<Add library="openal" />
+			<Add library="../src_dependency/Shiny/lib/libShiny.a" />
+			<Add library="ogg" />
+			<Add library="vorbis" />
+			<Add library="vorbisfile" />
 			<Add directory="../libs" />
+			<Add directory="../src_dependency/openal-soft" />
 		</Linker>
 		<Unit filename="../public/TextureAtlas.cpp" />
 		<Unit filename="../public/TextureAtlas.h" />

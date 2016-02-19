@@ -17,8 +17,7 @@
 			</Target>
 		</Build>
 		<Compiler>
-			<Add option="-g" />
-			<Add option="-m32 `pkg-config gl --cflags`" />
+			<Add option="-fPIC `pkg-config gl --cflags`" />
 			<Add option="-DLINUX" />
 			<Add option="-DCORE_EXPORT" />
 			<Add option="-DDLL_EXPORT" />

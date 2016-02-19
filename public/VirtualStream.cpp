@@ -263,7 +263,7 @@ ubyte* CMemoryStream::GetBasePointer()
 
 uint32 CMemoryStream::GetCRC32()
 {
-	unsigned long nCRC = CRC32_BlockChecksum( m_pStart, Tell() );
+	uint32 nCRC = CRC32_BlockChecksum( m_pStart, Tell() );
 
 	return nCRC;
 }

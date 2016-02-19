@@ -49,9 +49,9 @@ struct dpkfileinfo_s
 	int		filenameHash;
 
 	uint64	offset;
-	long	size;				// The real file size
-	long	compressedSize;		// The compressed file size
-	
+	uint32	size;				// The real file size
+	uint32	compressedSize;		// The compressed file size
+
 	short	flags;
 };
 

@@ -1046,16 +1046,16 @@ bool CImage::SaveTGA(const char *fileName)
 
 	TGAHeader header = {
 		0x00,
-		(m_nFormat == FORMAT_I8)? 1 : 0,
-		(m_nFormat == FORMAT_I8)? 1 : 2,
+		(uint8)((m_nFormat == FORMAT_I8)? 1 : 0),
+		(uint8)((m_nFormat == FORMAT_I8)? 1 : 2),
 		0x0000,
-		(m_nFormat == FORMAT_I8)? 256 : 0,
-		(m_nFormat == FORMAT_I8)? 24  : 0,
+		(uint16)((m_nFormat == FORMAT_I8)? 256 : 0),
+		(uint8)((m_nFormat == FORMAT_I8)? 24  : 0),
 		0x0000,
 		0x0000,
-		m_nWidth,
-		m_nHeight,
-		nChannels * 8,
+		(uint16)m_nWidth,
+		(uint16)m_nHeight,
+		(uint8)(nChannels * 8),
 		0x00
 	};
 

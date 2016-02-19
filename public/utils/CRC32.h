@@ -12,13 +12,13 @@
 
 #include "Platform.h"
 
-void CRC32_InitChecksum( unsigned long &crcvalue );
+void CRC32_InitChecksum( uint32 &crcvalue );
 
-void CRC32_Update( unsigned long &crcvalue, const char data );
-void CRC32_UpdateChecksum( unsigned long &crcvalue, const void *data, int length );
+void CRC32_Update( uint32 &crcvalue, const char data );
+void CRC32_UpdateChecksum( uint32 &crcvalue, const void *data, int length );
 
-void CRC32_FinishChecksum( unsigned long &crcvalue );
+void CRC32_FinishChecksum( uint32 &crcvalue );
 
-unsigned long CRC32_BlockChecksum( const void *data, int length );
+uint32 CRC32_BlockChecksum( const void *data, int length );
 
 #endif // CRC32_H

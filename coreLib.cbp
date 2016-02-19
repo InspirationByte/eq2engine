@@ -14,12 +14,12 @@
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-fPIC" />
 					<Add option="-DNDEBUG" />
 				</Compiler>
 			</Target>
 		</Build>
 		<Compiler>
-			<Add option="-m32" />
 			<Add option="-DCROSSLINK_LIB" />
 			<Add option="-DLINUX" />
 			<Add directory="public/" />

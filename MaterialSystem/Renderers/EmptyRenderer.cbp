@@ -17,7 +17,7 @@
 			</Target>
 		</Build>
 		<Compiler>
-			<Add option="-m32" />
+			<Add option="-fPIC" />
 			<Add option="-DLINUX" />
 			<Add option="-DCORE_EXPORT" />
 			<Add option="-DDLL_EXPORT" />

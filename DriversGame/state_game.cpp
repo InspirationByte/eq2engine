@@ -564,7 +564,7 @@ void Game_UpdateCamera( float fDt )
 	}
 }
 
-static wchar_t* cameraTypeStrings[] = {
+static const wchar_t* cameraTypeStrings[] = {
 	L"Outside car",
 	L"In car",
 	L"Tripod",
@@ -702,7 +702,7 @@ void Game_Frame(float fDt)
 {
 	// Update game
 
-	PROFILE_FUNC()
+	PROFILE_FUNC();
 
 	// session update
 	g_pGameSession->UpdateLocalControls(g_nClientButtons);
@@ -779,11 +779,11 @@ void Game_Frame(float fDt)
 	}
 
 	if(!g_pause.GetBool())
-		PROFILER_UPDATE();
+		PROFILE_UPDATE();
 
 	if(eq_profiler_display.GetBool())
 	{
-		EqString profilerStr = PROFILER_OUTPUT_TREE_STRING().c_str();
+		EqString profilerStr = PROFILE_GET_TREE_STRING().c_str();
 
 		materials->Setup2D(screenSize.x,screenSize.y);
 

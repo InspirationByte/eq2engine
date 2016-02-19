@@ -105,7 +105,7 @@ void CommandLineParse::Parse_AddParameter( const char *pFirst, const char *pLast
 		return;
 
 	ASSERT( m_iArgsCount < 256 );
-	int nLen = (int)pLast - (int)pFirst;
+	int nLen = (int)(pLast - pFirst);
 
 	m_szParams.append(EqString(pFirst, nLen));
 
