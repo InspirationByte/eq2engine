@@ -24,7 +24,7 @@
 
 #include "utils/eqstring.h"
 
-#ifdef LINUX
+#ifdef PLAT_POSIX
 #include <time.h>
 #else
 
@@ -43,7 +43,7 @@ BOOL WINAPI DllMain(HINSTANCE module_handle, DWORD reason_for_call, LPVOID reser
     return TRUE;
 }
 
-#endif
+#endif // PLAT_POSIX
 
 //------------------------------------------------------------------------------------------
 
@@ -81,7 +81,7 @@ EqString UTIL_GetUserName()
     return buffer;
 #else
 	// TODO: linux user name
-    return "linuxuser";
+    return "";
 #endif
 }
 
@@ -174,11 +174,11 @@ bool bLoggingInitialized = false;
 
 void cc_enable_logging(DkList<EqString>* args)
 {
-#ifdef LINUX
+#ifdef PLAT_POSIX
 	mkdir("logs",S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #else
 	mkdir("logs");
-#endif // LINUX
+#endif // PLAT_POSIX
 	bDoLogs = true;
 }
 

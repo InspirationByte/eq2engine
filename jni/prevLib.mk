@@ -3,24 +3,22 @@
 ##
 include $(CLEAR_VARS)
 
-LOCAL_PATH				:= $(PROJ_PATH)/..
+LOCAL_PATH				:= $(SRC_PATH)
 NDK_APP_OUT				:= $(PROJ_PATH)/libs_android
 
-LOCAL_MODULE    		:= libPrevLib
-LOCAL_MODULE_FILENAME	:= libPrevLib
+LOCAL_MODULE    		:= prevLib
+LOCAL_MODULE_FILENAME	:= prevLib
 LOCAL_CFLAGS    		:= -DCROSSLINK_LIB -DANDROID -std=c++11 -pthread -fexceptions
+
 LOCAL_C_INCLUDES:= \
-	$(LOCAL_PATH)/public/ \
-	$(LOCAL_PATH)/public/core \
+	$(LOCAL_PATH)/public		\
+	$(LOCAL_PATH)/public/core 	\
 	$(LOCAL_PATH)/public/platform\
-	$(LOCAL_PATH)/public/utils\
-	$(LOCAL_PATH)/public/platform \
-	$(LOCAL_PATH)/public/network\
 	$(LOCAL_PATH)/public/math\
-	$(LOCAL_PATH)/public/imaging\
-	$(LOCAL_PATH)/public						\
 	$(LOCAL_PATH)/src_dependency/luajit/src		\
-	$(LOCAL_PATH)/src_dependency/oolua/include
+	$(LOCAL_PATH)/src_dependency/oolua/include	\
+	$(LOCAL_PATH)/src_dependency/libjpeg		\
+	$(LOCAL_PATH)/src_dependency/libpng
 
 LOCAL_SRC_FILES := \
 	public/utils/CRC32.cpp\
@@ -47,5 +45,7 @@ LOCAL_SRC_FILES := \
 	public/math/QuadTree.cpp\
 	public/math/Matrix.cpp\
 	public/imaging/ImageLoader.cpp
+
+LOCAL_STATIC_LIBRARIES := jpeg png
 
 include $(BUILD_STATIC_LIBRARY)

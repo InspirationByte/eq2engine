@@ -11,7 +11,7 @@ include $(NDK_ROOT)/sources/android/native_app_glue/Android.mk
 # include modules
 include $(PROJ_PATH)/coreLib.mk
 include $(PROJ_PATH)/prevLib.mk
-#include $(PROJ_PATH)/eqCore.mk
+include $(PROJ_PATH)/eqCore.mk
 
 include $(DEP_LIBS_MK)/jpeg.mk
 include $(DEP_LIBS_MK)/png.mk

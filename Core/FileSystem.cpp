@@ -812,7 +812,7 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 
 	HMODULE mod = dlopen( moduleFileName.c_str(), RTLD_LAZY | RTLD_LOCAL );
 
-	char* err = dlerror();
+	const char* err = dlerror();
 	int lastErr = 0;
 #endif // _WIN32 && MEMDLL
 

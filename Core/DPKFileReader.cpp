@@ -12,7 +12,7 @@
 #include "utils/strtools.h"
 #include "DebugInterface.h"
 
-#ifndef LINUX
+#ifndef PLAT_POSIX
 #include <direct.h>
 #include <shlobj.h>
 #else
@@ -265,7 +265,7 @@ void CDPKFileReader::DumpPackage(PACKAGE_DUMP_MODE mode)
 
             PPFree(_UncompressedData);
         }
-		
+
     }
 #endif // 0
 }
@@ -392,7 +392,7 @@ DPKFILE* CDPKFileReader::Open(const char* filename,const char* mode)
 
 	dpkhandle_t handle = DPK_HANDLE_INVALID;
 
-	if(	(fileInfo.flags & DPKFILE_FLAG_COMPRESSED) || 
+	if(	(fileInfo.flags & DPKFILE_FLAG_COMPRESSED) ||
 		(fileInfo.flags & DPKFILE_FLAG_ENCRYPTED))
 	{
 		//Msg("decomp/decrypt file '%s' (%d)\n", filename, dpkFileIndex);
@@ -427,7 +427,7 @@ DPKFILE* CDPKFileReader::Open(const char* filename,const char* mode)
 	file->info = &fileInfo;
 
 	// direct streaming
-	if(	!(fileInfo.flags & DPKFILE_FLAG_COMPRESSED) && 
+	if(	!(fileInfo.flags & DPKFILE_FLAG_COMPRESSED) &&
 		!(fileInfo.flags & DPKFILE_FLAG_ENCRYPTED))
 		fseek( file->file, fileInfo.offset, SEEK_SET );
 
@@ -450,7 +450,7 @@ void CDPKFileReader::Close( DPKFILE *fp )
 		{
 			char path[2048];
 			sprintf( path, "%s/tmp_%i", m_tempPath.c_str(), fp->handle );
-			
+
 			// try to remove file
 			remove(path);
 			rmdir(m_tempPath.c_str());

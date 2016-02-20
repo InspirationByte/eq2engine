@@ -33,6 +33,7 @@ Desktop.ini
 *.exp
 *.exe
 libs/
+libs_android/
 plugins/
 Release*/
 Debug*/
@@ -41,3 +42,4 @@ nbproject/
 gamebin/
 src_dependency/
 utils/driver_level*/
+obj/

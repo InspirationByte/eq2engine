@@ -44,9 +44,13 @@ void cpuidAsm(uint32 op, uint32 reg[4]);
 
 #define cpuid(func, a, b, c, d) { uint32 res[4]; cpuidAsm(func, res); a = res[0]; b = res[1]; c = res[2]; d = res[3]; }
 
-#elif defined(LINUX)
+#elif defined(LINUX) || defined(ANDROID)
 
-#if defined(__PIC__) && !defined(__x86_64__)
+#if defined(__arm__)
+
+#pragma todo("ARM cpuid, rdtsc")
+
+#elif defined(__PIC__) && !defined(__x86_64__)
 
 #define cpuid(in, a, b, c, d)   \
     asm volatile(               \
@@ -70,12 +74,20 @@ void cpuidAsm(uint32 op, uint32 reg[4]);
          : "a" (in) \
     );
 
-#endif // __PIC__
+#endif // __PIC__ && __x86_64__
 
 #endif
 
+#if defined(__arm__)
+
+#define rdtsc(a, d) a=d=0;
+
+#else
+
 #define rdtsc(a, d)\
   asm volatile ("rdtsc" : "=a" (a), "=d" (d));
+
+#endif // !__arm__
 
 inline uint64 getCycleNumber()
 {
@@ -221,12 +233,13 @@ void CEqCPUCaps::Init()
 
 #endif
 
-    MsgInfo("Number of cores: %d\n", m_cpuCount);
+    MsgInfo("[CPU] Number of cores: %d\n", m_cpuCount);
 
 	// Just in case ...
 	if (m_cpuCount < 1)
 		m_cpuCount = 1;
 
+#ifndef ANDROID
 	uint32 maxi, maxei, a, b, c, d;
 
 	m_cpuVendor[12]   = '\0';
@@ -278,9 +291,9 @@ void CEqCPUCaps::Init()
 				}
 			}
 		}
-		MsgInfo("CPU Vendor: %s\n", m_cpuBrandName);
+		MsgInfo("[CPU] Vendor: %s\n", m_cpuBrandName);
 
-		MsgInfo("    Features: %s%s%s%s%s%s%s%s%s%s%s\n",
+		MsgInfo("[CPU] Features: %s%s%s%s%s%s%s%s%s%s%s\n",
 			m_cpuCMOV ? "CMOV " : "",
 			m_cpuMMX ? "MMX " : "",
 			m_cpuMMXExt ? "MMX+ " : "",
@@ -293,6 +306,7 @@ void CEqCPUCaps::Init()
 			m_cpuSSE41 ? "SSE4.1 " : "",
 			m_cpuSSE42 ? "SSE 4.2 " : "");
 	}
+#endif // ANDROID
 }
 
 // CPU frequency in Hz
