@@ -3,11 +3,11 @@
 ##
 include $(CLEAR_VARS)
 
-LOCAL_PATH				:= $(PROJ_PATH)/..
+LOCAL_PATH				:= $(SRC_PATH)
 NDK_APP_OUT				:= $(PROJ_PATH)/libs_android
 
-LOCAL_MODULE    		:= libcoreLib
-LOCAL_MODULE_FILENAME	:= libcoreLib
+LOCAL_MODULE    		:= coreLib
+LOCAL_MODULE_FILENAME	:= coreLib
 LOCAL_CFLAGS    		:= -DCROSSLINK_LIB -DANDROID -std=c++11 -pthread
 LOCAL_C_INCLUDES:= \
 	$(LOCAL_PATH)/public/ \

@@ -2,12 +2,21 @@
 # compile equilibrium engine modules
 
 PROJ_PATH:= $(call my-dir)
-DEP_LIBS_MK:= $(PROJ_PATH)/../android_lib_mk
+SRC_PATH:= $(call my-dir)/..
+DEP_LIBS_MK:= $(SRC_PATH)/android_lib_mk
 
-include $(DEP_LIBS_MK)/jpeg.mk
+# glue is needed
+include $(NDK_ROOT)/sources/android/native_app_glue/Android.mk
 
+# include modules
 include $(PROJ_PATH)/coreLib.mk
 include $(PROJ_PATH)/prevLib.mk
+#include $(PROJ_PATH)/eqCore.mk
+
+include $(DEP_LIBS_MK)/jpeg.mk
+include $(DEP_LIBS_MK)/png.mk
+include $(DEP_LIBS_MK)/ogg.mk
+include $(DEP_LIBS_MK)/vorbis.mk
 
 #include $(CLEAR_VARS)
 #LOCAL_MODULE := libpng_static

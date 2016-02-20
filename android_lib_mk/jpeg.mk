@@ -1,5 +1,7 @@
-LOCAL_PATH := $(PROJ_PATH)/src_dependency/libjpeg
 include $(CLEAR_VARS)
+
+LOCAL_PATH := $(SRC_PATH)/src_dependency/libjpeg
+
 LOCAL_MODULE := jpeg
 
 LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)
