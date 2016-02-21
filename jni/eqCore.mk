@@ -1,10 +1,9 @@
 ##
-## libeqCore static library
+## libeqCore shared library
 ##
 include $(CLEAR_VARS)
 
 LOCAL_PATH				:= $(SRC_PATH)
-NDK_APP_OUT				:= $(PROJ_PATH)/libs_android
 
 LOCAL_MODULE    		:= eqCore
 LOCAL_MODULE_FILENAME	:= libeqCore

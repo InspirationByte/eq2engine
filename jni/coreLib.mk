@@ -4,7 +4,6 @@
 include $(CLEAR_VARS)
 
 LOCAL_PATH				:= $(SRC_PATH)
-NDK_APP_OUT				:= $(PROJ_PATH)/libs_android
 
 LOCAL_MODULE    		:= coreLib
 LOCAL_MODULE_FILENAME	:= coreLib

@@ -18,6 +18,10 @@ include $(DEP_LIBS_MK)/png.mk
 include $(DEP_LIBS_MK)/ogg.mk
 include $(DEP_LIBS_MK)/vorbis.mk
 
+include $(PROJ_PATH)/eqMatSystem.mk
+include $(PROJ_PATH)/eqBaseShaders.mk
+#include $(PROJ_PATH)/eqGLRHI.mk
+
 #include $(CLEAR_VARS)
 #LOCAL_MODULE := libpng_static
 #LOCAL_MODULE_FILENAME := png

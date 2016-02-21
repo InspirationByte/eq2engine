@@ -22,5 +22,6 @@ APP_MODULES := \
 	eqCore	\
 	ogg		\
 	vorbis	\
+	eqMatSystem\
 
 
