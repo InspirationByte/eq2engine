@@ -23,5 +23,6 @@ APP_MODULES := \
 	ogg		\
 	vorbis	\
 	eqMatSystem\
+	eqBaseShaders\
 
 

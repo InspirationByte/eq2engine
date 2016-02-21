@@ -8,7 +8,7 @@ LOCAL_PATH				:= $(SRC_PATH)
 LOCAL_MODULE    		:= eqMatSystem
 LOCAL_MODULE_FILENAME	:= libeqMatSystem
 LOCAL_CFLAGS    		:= -DANDROID -std=c++11 -pthread -fexceptions
-#LOCAL_LDFLAGS			:= -Wl,-soname=libeqCore.so
+
 LOCAL_C_INCLUDES:= \
 	$(LOCAL_PATH)/public\
 	$(LOCAL_PATH)/public/core \
