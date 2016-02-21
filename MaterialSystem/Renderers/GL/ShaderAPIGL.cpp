@@ -889,7 +889,7 @@ void ShaderAPIGL::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
 // Unload the texture and free the memory
 void ShaderAPIGL::FreeTexture(ITexture* pTexture)
 {
-	CGLTexture* pTex = dynamic_cast<CGLTexture*>(pTexture);
+	CGLTexture* pTex = (CGLTexture*)pTexture;
 
 	if(pTex == NULL)
 		return;

@@ -18,11 +18,13 @@ include $(DEP_LIBS_MK)/png.mk
 include $(DEP_LIBS_MK)/ogg.mk
 include $(DEP_LIBS_MK)/vorbis.mk
 
+include $(DEP_LIBS_MK)/OpenAL-MOB.mk
+
 include $(PROJ_PATH)/eqMatSystem.mk
 include $(PROJ_PATH)/eqBaseShaders.mk
 include $(PROJ_PATH)/eqNullRHI.mk
 include $(PROJ_PATH)/eqGLRHI.mk
-
 include $(SRC_PATH)/src_dependency/SDL2/Android.mk
+
 
 # include $(PROJ_PATH)/Game_DrvSyn.mk

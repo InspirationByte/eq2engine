@@ -676,7 +676,6 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 #ifdef USE_GLES2
 
 	eglSwapBuffers(eglDisplay, eglSurface);
-	gl::Finish();
 
 #elif PLAT_WIN
 	if (wgl::exts::var_EXT_swap_control)
@@ -694,9 +693,10 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 	}
 
 	glXSwapBuffers(display, (Window)savedParams.hWindow);
-	gl::Finish();
 
 #endif // PLAT_WIN
+
+    //gl::Finish();
 
     m_Renderer->GL_END_CRITICAL();
 }

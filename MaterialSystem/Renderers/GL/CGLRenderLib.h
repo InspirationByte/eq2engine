@@ -12,7 +12,7 @@
 #include "ShaderAPIGL.h"
 
 #ifdef USE_GLES2
-#include "EGL/egl.h"
+#include <EGL/egl.h>
 #endif // USE_GLES2
 
 class ShaderAPIGL;
@@ -60,11 +60,6 @@ protected:
 
 	DkList<IEqSwapChain*>	m_swapChains;
 
-
-#ifdef _WIN32
-	DISPLAY_DEVICE			device;
-	DEVMODE					dm;
-
 #ifdef USE_GLES2
     EGLNativeDisplayType	hdc;
     EGLNativeWindowType		hwnd;
@@ -72,12 +67,15 @@ protected:
     EGLSurface				eglSurface;
     EGLContext				glContext;
 	EGLContext				glContext2;
-#else
+
+#elif defined(_WIN32)
+	DISPLAY_DEVICE			device;
+	DEVMODE					dm;
+
 	HDC						hdc;
 	HGLRC					glContext;
 	HGLRC					glContext2;
 	HWND					hwnd;
-#endif // USE_GLES2
 
 #elif defined(LINUX)
 	GLXContext				glContext;

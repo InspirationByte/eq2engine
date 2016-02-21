@@ -13,7 +13,7 @@
 #include "gl_caps.hpp"
 
 #ifdef USE_GLES2
-#include "EGL/egl.h"
+#include <EGL/egl.h>
 #endif // USE_GLES2
 
 #ifdef LINUX
@@ -31,6 +31,7 @@ typedef XID GLXFBConfigID;
 typedef struct __GLXcontextRec *GLXContext;
 typedef struct __GLXFBConfigRec *GLXFBConfig;
 #endif
+
 #include "VertexFormatGL.h"
 
 //#define USE_OPENGL_ES

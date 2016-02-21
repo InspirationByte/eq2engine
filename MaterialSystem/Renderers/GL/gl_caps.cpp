@@ -10,7 +10,7 @@
 static void* AppleGLGetProcAddress (const char *name)
 {
 	static void* image = NULL;
-	
+
 	if (NULL == image)
 		image = dlopen("/System/Library/Frameworks/OpenGL.framework/Versions/Current/OpenGL", RTLD_LAZY);
 
@@ -53,9 +53,9 @@ static int TestPointer(const PROC pTest)
 	ptrdiff_t iTest;
 	if(!pTest) return 0;
 	iTest = (ptrdiff_t)pTest;
-	
+
 	if(iTest == 1 || iTest == 2 || iTest == 3 || iTest == -1) return 0;
-	
+
 	return 1;
 }
 
@@ -70,7 +70,7 @@ static PROC WinGetProcAddress(const char *name)
 	glMod = GetModuleHandleA("OpenGL32.dll");
 	return (PROC)GetProcAddress(glMod, (LPCSTR)name);
 }
-	
+
 #define IntGetProcAddress(name) WinGetProcAddress(name)
 #else
 	#if defined(__APPLE__)
@@ -78,6 +78,9 @@ static PROC WinGetProcAddress(const char *name)
 	#else
 		#if defined(__sgi) || defined(__sun)
 			#define IntGetProcAddress(name) SunGetProcAddress(name)
+        #elif defined(__ANDROID__)
+            #include <EGL/egl.h>
+            #define IntGetProcAddress(name) eglGetProcAddress(name)
 		#else /* GLX */
 		    #include <GL/glx.h>
 
@@ -109,16 +112,16 @@ namespace gl
 		LoadTest var_EXT_texture_compression_s3tc;
 		LoadTest var_EXT_texture_sRGB;
 		LoadTest var_EXT_texture_filter_anisotropic;
-		
+
 	} //namespace exts
-	
+
 	namespace _detail
 	{
 		typedef void (CODEGEN_FUNCPTR *PFNDRAWARRAYSINSTANCEDARB)(GLenum, GLint, GLsizei, GLsizei);
 		PFNDRAWARRAYSINSTANCEDARB DrawArraysInstancedARB = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNDRAWELEMENTSINSTANCEDARB)(GLenum, GLsizei, GLenum, const void *, GLsizei);
 		PFNDRAWELEMENTSINSTANCEDARB DrawElementsInstancedARB = 0;
-		
+
 		static int Load_ARB_draw_instanced()
 		{
 			int numFailed = 0;
@@ -128,10 +131,10 @@ namespace gl
 			if(!DrawElementsInstancedARB) ++numFailed;
 			return numFailed;
 		}
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNVERTEXATTRIBDIVISORARB)(GLuint, GLuint);
 		PFNVERTEXATTRIBDIVISORARB VertexAttribDivisorARB = 0;
-		
+
 		static int Load_ARB_instanced_arrays()
 		{
 			int numFailed = 0;
@@ -139,10 +142,10 @@ namespace gl
 			if(!VertexAttribDivisorARB) ++numFailed;
 			return numFailed;
 		}
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNSAMPLECOVERAGEARB)(GLfloat, GLboolean);
 		PFNSAMPLECOVERAGEARB SampleCoverageARB = 0;
-		
+
 		static int Load_ARB_multisample()
 		{
 			int numFailed = 0;
@@ -150,7 +153,7 @@ namespace gl
 			if(!SampleCoverageARB) ++numFailed;
 			return numFailed;
 		}
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNATTACHOBJECTARB)(GLhandleARB, GLhandleARB);
 		PFNATTACHOBJECTARB AttachObjectARB = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNCOMPILESHADERARB)(GLhandleARB);
@@ -229,7 +232,7 @@ namespace gl
 		PFNUSEPROGRAMOBJECTARB UseProgramObjectARB = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNVALIDATEPROGRAMARB)(GLhandleARB);
 		PFNVALIDATEPROGRAMARB ValidateProgramARB = 0;
-		
+
 		static int Load_ARB_shader_objects()
 		{
 			int numFailed = 0;
@@ -313,7 +316,7 @@ namespace gl
 			if(!ValidateProgramARB) ++numFailed;
 			return numFailed;
 		}
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNBINDATTRIBLOCATIONARB)(GLhandleARB, GLuint, const GLcharARB *);
 		PFNBINDATTRIBLOCATIONARB BindAttribLocationARB = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNDISABLEVERTEXATTRIBARRAYARB)(GLuint);
@@ -406,7 +409,7 @@ namespace gl
 		PFNVERTEXATTRIB4USVARB VertexAttrib4usvARB = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNVERTEXATTRIBPOINTERARB)(GLuint, GLint, GLenum, GLboolean, GLsizei, const void *);
 		PFNVERTEXATTRIBPOINTERARB VertexAttribPointerARB = 0;
-		
+
 		static int Load_ARB_vertex_shader()
 		{
 			int numFailed = 0;
@@ -504,7 +507,7 @@ namespace gl
 			if(!VertexAttribPointerARB) ++numFailed;
 			return numFailed;
 		}
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNBINDFRAMEBUFFER)(GLenum, GLuint);
 		PFNBINDFRAMEBUFFER BindFramebuffer = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNBINDRENDERBUFFER)(GLenum, GLuint);
@@ -545,7 +548,7 @@ namespace gl
 		PFNRENDERBUFFERSTORAGE RenderbufferStorage = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNRENDERBUFFERSTORAGEMULTISAMPLE)(GLenum, GLsizei, GLenum, GLsizei, GLsizei);
 		PFNRENDERBUFFERSTORAGEMULTISAMPLE RenderbufferStorageMultisample = 0;
-		
+
 		static int Load_ARB_framebuffer_object()
 		{
 			int numFailed = 0;
@@ -591,7 +594,7 @@ namespace gl
 			if(!RenderbufferStorageMultisample) ++numFailed;
 			return numFailed;
 		}
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNBINDFRAMEBUFFEREXT)(GLenum, GLuint);
 		PFNBINDFRAMEBUFFEREXT BindFramebufferEXT = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNBINDRENDERBUFFEREXT)(GLenum, GLuint);
@@ -626,7 +629,7 @@ namespace gl
 		PFNISRENDERBUFFEREXT IsRenderbufferEXT = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNRENDERBUFFERSTORAGEEXT)(GLenum, GLenum, GLsizei, GLsizei);
 		PFNRENDERBUFFERSTORAGEEXT RenderbufferStorageEXT = 0;
-		
+
 		static int Load_EXT_framebuffer_object()
 		{
 			int numFailed = 0;
@@ -666,10 +669,10 @@ namespace gl
 			if(!RenderbufferStorageEXT) ++numFailed;
 			return numFailed;
 		}
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNDRAWBUFFERSARB)(GLsizei, const GLenum *);
 		PFNDRAWBUFFERSARB DrawBuffersARB = 0;
-		
+
 		static int Load_ARB_draw_buffers()
 		{
 			int numFailed = 0;
@@ -677,7 +680,7 @@ namespace gl
 			if(!DrawBuffersARB) ++numFailed;
 			return numFailed;
 		}
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNCOLORMASKINDEXEDEXT)(GLuint, GLboolean, GLboolean, GLboolean, GLboolean);
 		PFNCOLORMASKINDEXEDEXT ColorMaskIndexedEXT = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNDISABLEINDEXEDEXT)(GLenum, GLuint);
@@ -690,7 +693,7 @@ namespace gl
 		PFNGETINTEGERINDEXEDVEXT GetIntegerIndexedvEXT = 0;
 		typedef GLboolean (CODEGEN_FUNCPTR *PFNISENABLEDINDEXEDEXT)(GLenum, GLuint);
 		PFNISENABLEDINDEXEDEXT IsEnabledIndexedEXT = 0;
-		
+
 		static int Load_EXT_draw_buffers2()
 		{
 			int numFailed = 0;
@@ -708,7 +711,7 @@ namespace gl
 			if(!IsEnabledIndexedEXT) ++numFailed;
 			return numFailed;
 		}
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNBEGINQUERYARB)(GLenum, GLuint);
 		PFNBEGINQUERYARB BeginQueryARB = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNDELETEQUERIESARB)(GLsizei, const GLuint *);
@@ -725,7 +728,7 @@ namespace gl
 		PFNGETQUERYIVARB GetQueryivARB = 0;
 		typedef GLboolean (CODEGEN_FUNCPTR *PFNISQUERYARB)(GLuint);
 		PFNISQUERYARB IsQueryARB = 0;
-		
+
 		static int Load_ARB_occlusion_query()
 		{
 			int numFailed = 0;
@@ -747,7 +750,7 @@ namespace gl
 			if(!IsQueryARB) ++numFailed;
 			return numFailed;
 		}
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNACCUM)(GLenum, GLfloat);
 		PFNACCUM Accum = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNALPHAFUNC)(GLenum, GLfloat);
@@ -1360,7 +1363,7 @@ namespace gl
 		PFNVERTEX4SV Vertex4sv = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNVIEWPORT)(GLint, GLint, GLsizei, GLsizei);
 		PFNVIEWPORT Viewport = 0;
-		
+
 		typedef GLboolean (CODEGEN_FUNCPTR *PFNARETEXTURESRESIDENT)(GLsizei, const GLuint *, GLboolean *);
 		PFNARETEXTURESRESIDENT AreTexturesResident = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNARRAYELEMENT)(GLint);
@@ -1421,7 +1424,7 @@ namespace gl
 		PFNTEXSUBIMAGE2D TexSubImage2D = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNVERTEXPOINTER)(GLint, GLenum, GLsizei, const void *);
 		PFNVERTEXPOINTER VertexPointer = 0;
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNCOPYTEXSUBIMAGE3D)(GLenum, GLint, GLint, GLint, GLint, GLint, GLint, GLsizei, GLsizei);
 		PFNCOPYTEXSUBIMAGE3D CopyTexSubImage3D = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNDRAWRANGEELEMENTS)(GLenum, GLuint, GLuint, GLsizei, GLenum, const void *);
@@ -1430,7 +1433,7 @@ namespace gl
 		PFNTEXIMAGE3D TexImage3D = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNTEXSUBIMAGE3D)(GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei, GLenum, GLenum, const void *);
 		PFNTEXSUBIMAGE3D TexSubImage3D = 0;
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNACTIVETEXTURE)(GLenum);
 		PFNACTIVETEXTURE ActiveTexture = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNCLIENTACTIVETEXTURE)(GLenum);
@@ -1523,7 +1526,7 @@ namespace gl
 		PFNMULTITEXCOORD4SV MultiTexCoord4sv = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNSAMPLECOVERAGE)(GLfloat, GLboolean);
 		PFNSAMPLECOVERAGE SampleCoverage = 0;
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNBLENDCOLOR)(GLfloat, GLfloat, GLfloat, GLfloat);
 		PFNBLENDCOLOR BlendColor = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNBLENDEQUATION)(GLenum);
@@ -1618,7 +1621,7 @@ namespace gl
 		PFNWINDOWPOS3S WindowPos3s = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNWINDOWPOS3SV)(const GLshort *);
 		PFNWINDOWPOS3SV WindowPos3sv = 0;
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNBEGINQUERY)(GLenum, GLuint);
 		PFNBEGINQUERY BeginQuery = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNBINDBUFFER)(GLenum, GLuint);
@@ -1657,7 +1660,7 @@ namespace gl
 		PFNMAPBUFFER MapBuffer = 0;
 		typedef GLboolean (CODEGEN_FUNCPTR *PFNUNMAPBUFFER)(GLenum);
 		PFNUNMAPBUFFER UnmapBuffer = 0;
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNATTACHSHADER)(GLuint, GLuint);
 		PFNATTACHSHADER AttachShader = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNBINDATTRIBLOCATION)(GLuint, GLuint, const GLchar *);
@@ -1844,7 +1847,7 @@ namespace gl
 		PFNVERTEXATTRIB4USV VertexAttrib4usv = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNVERTEXATTRIBPOINTER)(GLuint, GLint, GLenum, GLboolean, GLsizei, const void *);
 		PFNVERTEXATTRIBPOINTER VertexAttribPointer = 0;
-		
+
 		typedef void (CODEGEN_FUNCPTR *PFNUNIFORMMATRIX2X3FV)(GLint, GLsizei, GLboolean, const GLfloat *);
 		PFNUNIFORMMATRIX2X3FV UniformMatrix2x3fv = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNUNIFORMMATRIX2X4FV)(GLint, GLsizei, GLboolean, const GLfloat *);
@@ -1857,7 +1860,7 @@ namespace gl
 		PFNUNIFORMMATRIX4X2FV UniformMatrix4x2fv = 0;
 		typedef void (CODEGEN_FUNCPTR *PFNUNIFORMMATRIX4X3FV)(GLint, GLsizei, GLboolean, const GLfloat *);
 		PFNUNIFORMMATRIX4X3FV UniformMatrix4x3fv = 0;
-		
+
 		static int LoadCoreFunctions()
 		{
 			int numFailed = 0;
@@ -2965,12 +2968,12 @@ namespace gl
 			if(!UniformMatrix4x3fv) ++numFailed;
 			return numFailed;
 		}
-		
+
 	} //namespace _detail
-	
+
 	namespace sys
 	{
-		namespace 
+		namespace
 		{
 			typedef int (*PFN_LOADEXTENSION)();
 			struct MapEntry
@@ -2980,25 +2983,25 @@ namespace gl
 					, extVariable(_extVariable)
 					, loaderFunc(0)
 					{}
-					
+
 				MapEntry(const char *_extName, exts::LoadTest *_extVariable, PFN_LOADEXTENSION _loaderFunc)
 					: extName(_extName)
 					, extVariable(_extVariable)
 					, loaderFunc(_loaderFunc)
 					{}
-				
+
 				const char *extName;
 				exts::LoadTest *extVariable;
 				PFN_LOADEXTENSION loaderFunc;
 			};
-			
+
 			struct MapCompare
 			{
 				MapCompare(const char *test_) : test(test_) {}
 				bool operator()(const MapEntry &other) { return strcmp(test, other.extName) == 0; }
 				const char *test;
 			};
-			
+
 			void InitializeMappingTable(std::vector<MapEntry> &table)
 			{
 				table.reserve(19);
@@ -3022,7 +3025,7 @@ namespace gl
 				table.push_back(MapEntry("GL_EXT_texture_sRGB", &exts::var_EXT_texture_sRGB));
 				table.push_back(MapEntry("GL_EXT_texture_filter_anisotropic", &exts::var_EXT_texture_filter_anisotropic));
 			}
-			
+
 			void ClearExtensionVars()
 			{
 				exts::var_ARB_draw_instanced = exts::LoadTest();
@@ -3045,11 +3048,11 @@ namespace gl
 				exts::var_EXT_texture_sRGB = exts::LoadTest();
 				exts::var_EXT_texture_filter_anisotropic = exts::LoadTest();
 			}
-			
+
 			void LoadExtByName(std::vector<MapEntry> &table, const char *extensionName)
 			{
 				std::vector<MapEntry>::iterator entry = std::find_if(table.begin(), table.end(), MapCompare(extensionName));
-				
+
 				if(entry != table.end())
 				{
 					if(entry->loaderFunc)
@@ -3058,10 +3061,10 @@ namespace gl
 						(*entry->extVariable) = exts::LoadTest(true, 0);
 				}
 			}
-		} //namespace 
-		
-		
-		namespace 
+		} //namespace
+
+
+		namespace
 		{
 			static void ProcExtsFromExtString(const char *strExtList, std::vector<MapEntry> &table)
 			{
@@ -3069,7 +3072,7 @@ namespace gl
 				const char *strExtListEnd = strExtList + iExtListLen;
 				const char *strCurrPos = strExtList;
 				char strWorkBuff[256];
-			
+
 				while(*strCurrPos)
 				{
 					/*Get the extension at our position.*/
@@ -3081,42 +3084,42 @@ namespace gl
 						strEndStr = strExtListEnd;
 						iStop = 1;
 					}
-			
+
 					iStrLen = (int)((ptrdiff_t)strEndStr - (ptrdiff_t)strCurrPos);
-			
+
 					if(iStrLen > 255)
 						return;
-			
+
 					strncpy(strWorkBuff, strCurrPos, iStrLen);
 					strWorkBuff[iStrLen] = '\0';
-			
+
 					LoadExtByName(table, strWorkBuff);
-			
+
 					strCurrPos = strEndStr + 1;
 					if(iStop) break;
 				}
 			}
-			
-		} //namespace 
-		
+
+		} //namespace
+
 		exts::LoadTest LoadFunctions()
 		{
 			ClearExtensionVars();
 			std::vector<MapEntry> table;
 			InitializeMappingTable(table);
-			
+
 			_detail::GetString = reinterpret_cast<_detail::PFNGETSTRING>(IntGetProcAddress("glGetString"));
 			if(!_detail::GetString) return exts::LoadTest();
-			
+
 			ProcExtsFromExtString((const char *)gl::_detail::GetString(gl::EXTENSIONS), table);
-			
+
 			int numFailed = _detail::LoadCoreFunctions();
 			return exts::LoadTest(true, numFailed);
 		}
-		
+
 		static int g_major_version = 0;
 		static int g_minor_version = 0;
-		
+
 		static void ParseVersionFromString(int *pOutMajor, int *pOutMinor, const char *strVersion)
 		{
 			const char *strDotPos = NULL;
@@ -3124,15 +3127,15 @@ namespace gl
 			char strWorkBuff[10];
 			*pOutMinor = 0;
 			*pOutMajor = 0;
-		
+
 			strDotPos = strchr(strVersion, '.');
 			if(!strDotPos)
 				return;
-		
+
 			iLength = (int)((ptrdiff_t)strDotPos - (ptrdiff_t)strVersion);
 			strncpy(strWorkBuff, strVersion, iLength);
 			strWorkBuff[iLength] = '\0';
-		
+
 			*pOutMajor = atoi(strWorkBuff);
 			strDotPos = strchr(strVersion + iLength + 1, ' ');
 			if(!strDotPos)
@@ -3148,39 +3151,39 @@ namespace gl
 				strncpy(strWorkBuff, strVersion + iLength + 1, iLengthMinor);
 				strWorkBuff[iLengthMinor] = '\0';
 			}
-		
+
 			*pOutMinor = atoi(strWorkBuff);
 		}
-		
+
 		static void GetGLVersion()
 		{
 			ParseVersionFromString(&g_major_version, &g_minor_version, (const char *)_detail::GetString(VERSION));
 		}
-		
+
 		int GetMajorVersion()
 		{
 			if(g_major_version == 0)
 				GetGLVersion();
 			return g_major_version;
 		}
-		
+
 		int GetMinorVersion()
 		{
 			if(g_major_version == 0) //Yes, check the major version to get the minor one.
 				GetGLVersion();
 			return g_minor_version;
 		}
-		
+
 		bool IsVersionGEQ(int majorVersion, int minorVersion)
 		{
 			if(g_major_version == 0)
 				GetGLVersion();
-			
+
 			if(majorVersion < g_major_version) return true;
 			if(majorVersion > g_major_version) return false;
 			if(minorVersion <= g_minor_version) return true;
 			return false;
 		}
-		
+
 	} //namespace sys
 } //namespace gl

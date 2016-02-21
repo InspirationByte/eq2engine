@@ -36,6 +36,7 @@
 			<Add library="z" />
 			<Add library="jpeg" />
 			<Add library="eqCore" />
+			<Add library="GL" />
 			<Add directory="../../libs" />
 		</Linker>
 		<Unit filename="../Engine/Renderer.h" />
