@@ -10,7 +10,7 @@ APP_BUILD_SCRIPT 		:= $(APP_PROJECT_PATH)/Android.mk
 NDK_APP_LIBS_OUT		:= $(APP_PROJECT_PATH)/../libs_android
 
 APP_OPTIM 				:= release
-APP_PLATFORM	 		:= android-16
+APP_PLATFORM	 		:= android-18
 NDK_APP_SHORT_COMMANDS	:= true
 
 APP_MODULES := \
@@ -24,5 +24,6 @@ APP_MODULES := \
 	vorbis	\
 	eqMatSystem\
 	eqBaseShaders\
-
-
+	eqNullRHI\
+	eqGLRHI\
+	SDL2

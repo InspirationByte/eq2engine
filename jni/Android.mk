@@ -20,20 +20,9 @@ include $(DEP_LIBS_MK)/vorbis.mk
 
 include $(PROJ_PATH)/eqMatSystem.mk
 include $(PROJ_PATH)/eqBaseShaders.mk
-#include $(PROJ_PATH)/eqGLRHI.mk
+include $(PROJ_PATH)/eqNullRHI.mk
+include $(PROJ_PATH)/eqGLRHI.mk
 
-#include $(CLEAR_VARS)
-#LOCAL_MODULE := libpng_static
-#LOCAL_MODULE_FILENAME := png
-#LOCAL_SRC_FILES := $(EQ_LIBS)/libpng.a
-#include $(PREBUILT_STATIC_LIBRARY)
+include $(SRC_PATH)/src_dependency/SDL2/Android.mk
 
-#include $(CLEAR_VARS)
-#LOCAL_MODULE := libpng_static
-#LOCAL_MODULE_FILENAME := png
-#LOCAL_SRC_FILES := $(EQ_LIBS)/libpng.a
-#include $(PREBUILT_STATIC_LIBRARY)
-
-
-# $(call import-module, SDL)
-
+# include $(PROJ_PATH)/Game_DrvSyn.mk
