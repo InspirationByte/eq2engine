@@ -20,6 +20,11 @@ if [ ! -d "$LUAJIT_PATH" ]; then
 fi
 
 BUILD_ARCH=linux-$(uname -m)
+
+if [[ ("$BUILD_ARCH" == "linux-i686") || ("$BUILD_ARCH" == "linux-i586") ]]; then
+	BUILD_ARCH="linux-x86"
+fi
+
 DEST=$INSTALL_DIR/$TARGET_ARCH
 
 case "$TARGET_ARCH" in
@@ -32,8 +37,9 @@ armeabi)
 	NDKVER=$NDK/toolchains/arm-linux-androideabi-4.8
 	NDKP=$NDKVER/prebuilt/$BUILD_ARCH/bin/arm-linux-androideabi-
 	NDKF="--sysroot $NDK/platforms/android-$NDKABI/arch-arm"
+	NDKARCH="-march=armv5te -mfloat-abi=softfp"
 	rm -rf "$DEST"
-	make -C $LUAJIT_PATH install HOST_CC="gcc -m32" CROSS=$NDKP TARGET_FLAGS="$NDKF" DESTDIR="$DEST" PREFIX=
+	make -C $LUAJIT_PATH install HOST_CC="gcc -m32" CROSS=$NDKP TARGET_FLAGS="$NDKF $NDKARCH" DESTDIR="$DEST" PREFIX=
 	;;
 armeabi-v7a)
 	# Android/ARM, armeabi-v7a (ARMv7 VFP), Android 4.0+ (ICS)

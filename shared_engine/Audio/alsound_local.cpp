@@ -8,9 +8,21 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 //Local sound system
-#include "ISoundSystem.h"
-#include "core_base_header.h"
+
+#define AL_ALEXT_PROTOTYPES
+
+#include <AL/al.h>
+#include <AL/alc.h>
+#include <AL/alext.h>
+#include <vorbis/vorbisfile.h>
+
 #include "alsound_local.h"
+
+#include "ISoundSystem.h"
+#include "DebugInterface.h"
+#include "ConCommand.h"
+#include "ConVar.h"
+#include "utils/KeyValues.h"
 #include "eqParallelJobs.h"
 
 #include "IDebugOverlay.h"
@@ -175,60 +187,6 @@ void STA_CheckError(bool checkFatal = false)
 		DevMsg(DEVMSG_SOUND, "AUDIO ERROR: %s\n", getALErrorString(alErr));
 }
 
-// Effect objects
-LPALGENEFFECTS alGenEffects = NULL;
-LPALDELETEEFFECTS alDeleteEffects = NULL;
-LPALISEFFECT alIsEffect = NULL;
-LPALEFFECTI alEffecti = NULL;
-LPALEFFECTIV alEffectiv = NULL;
-LPALEFFECTF alEffectf = NULL;
-LPALEFFECTFV alEffectfv = NULL;
-LPALGETEFFECTI alGetEffecti = NULL;
-LPALGETEFFECTIV alGetEffectiv = NULL;
-LPALGETEFFECTF alGetEffectf = NULL;
-LPALGETEFFECTFV alGetEffectfv = NULL;
-
-// Auxiliary slot object
-LPALGENAUXILIARYEFFECTSLOTS alGenAuxiliaryEffectSlots = NULL;
-LPALDELETEAUXILIARYEFFECTSLOTS alDeleteAuxiliaryEffectSlots = NULL;
-LPALISAUXILIARYEFFECTSLOT alIsAuxiliaryEffectSlot = NULL;
-LPALAUXILIARYEFFECTSLOTI alAuxiliaryEffectSloti = NULL;
-LPALAUXILIARYEFFECTSLOTIV alAuxiliaryEffectSlotiv = NULL;
-LPALAUXILIARYEFFECTSLOTF alAuxiliaryEffectSlotf = NULL;
-LPALAUXILIARYEFFECTSLOTFV alAuxiliaryEffectSlotfv = NULL;
-LPALGETAUXILIARYEFFECTSLOTI alGetAuxiliaryEffectSloti = NULL;
-LPALGETAUXILIARYEFFECTSLOTIV alGetAuxiliaryEffectSlotiv = NULL;
-LPALGETAUXILIARYEFFECTSLOTF alGetAuxiliaryEffectSlotf = NULL;
-LPALGETAUXILIARYEFFECTSLOTFV alGetAuxiliaryEffectSlotfv = NULL;
-
-void ALExtInit()
-{
-	// Get function pointers
-	alGenEffects = (LPALGENEFFECTS)alGetProcAddress("alGenEffects");
-	alDeleteEffects = (LPALDELETEEFFECTS )alGetProcAddress("alDeleteEffects");
-	alIsEffect = (LPALISEFFECT )alGetProcAddress("alIsEffect");
-	alEffecti = (LPALEFFECTI)alGetProcAddress("alEffecti");
-	alEffectiv = (LPALEFFECTIV)alGetProcAddress("alEffectiv");
-	alEffectf = (LPALEFFECTF)alGetProcAddress("alEffectf");
-	alEffectfv = (LPALEFFECTFV)alGetProcAddress("alEffectfv");
-	alGetEffecti = (LPALGETEFFECTI)alGetProcAddress("alGetEffecti");
-	alGetEffectiv = (LPALGETEFFECTIV)alGetProcAddress("alGetEffectiv");
-	alGetEffectf = (LPALGETEFFECTF)alGetProcAddress("alGetEffectf");
-	alGetEffectfv = (LPALGETEFFECTFV)alGetProcAddress("alGetEffectfv");
-
-	alGenAuxiliaryEffectSlots = (LPALGENAUXILIARYEFFECTSLOTS)alGetProcAddress("alGenAuxiliaryEffectSlots");
-	alDeleteAuxiliaryEffectSlots = (LPALDELETEAUXILIARYEFFECTSLOTS)alGetProcAddress("alDeleteAuxiliaryEffectSlots");
-	alIsAuxiliaryEffectSlot = (LPALISAUXILIARYEFFECTSLOT)alGetProcAddress("alIsAuxiliaryEffectSlot");
-	alAuxiliaryEffectSloti = (LPALAUXILIARYEFFECTSLOTI)alGetProcAddress("alAuxiliaryEffectSloti");
-	alAuxiliaryEffectSlotiv = (LPALAUXILIARYEFFECTSLOTIV)alGetProcAddress("alAuxiliaryEffectSlotiv");
-	alAuxiliaryEffectSlotf = (LPALAUXILIARYEFFECTSLOTF)alGetProcAddress("alAuxiliaryEffectSlotf");
-	alAuxiliaryEffectSlotfv = (LPALAUXILIARYEFFECTSLOTFV)alGetProcAddress("alAuxiliaryEffectSlotfv");
-	alGetAuxiliaryEffectSloti = (LPALGETAUXILIARYEFFECTSLOTI)alGetProcAddress("alGetAuxiliaryEffectSloti");
-	alGetAuxiliaryEffectSlotiv = (LPALGETAUXILIARYEFFECTSLOTIV)alGetProcAddress("alGetAuxiliaryEffectSlotiv");
-	alGetAuxiliaryEffectSlotf = (LPALGETAUXILIARYEFFECTSLOTF)alGetProcAddress("alGetAuxiliaryEffectSlotf");
-	alGetAuxiliaryEffectSlotfv = (LPALGETAUXILIARYEFFECTSLOTFV)alGetProcAddress("alGetAuxiliaryEffectSlotfv");
-}
-
 void DkSoundSystemLocal::Init()
 {
 	Msg(" \n--------- InitSound --------- \n");
@@ -298,9 +256,6 @@ void DkSoundSystemLocal::Init()
 	}
 
 	STA_CheckError(true);
-
-	// init extensions
-	ALExtInit();
 
 	// Clear Error Code (so we can catch any new errors)
 	STA_CheckError(true);

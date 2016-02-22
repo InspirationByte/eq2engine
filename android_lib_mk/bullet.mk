@@ -51,6 +51,7 @@ LOCAL_SRC_FILES := \
 	BulletCollision/CollisionDispatch/btUnionFind.cpp \
 	BulletCollision/CollisionDispatch/SphereTriangleDetector.cpp \
 	BulletCollision/CollisionDispatch/btHashedSimplePairCache.cpp \
+	BulletCollision/CollisionDispatch/btInternalEdgeUtility.cpp \
 	BulletCollision/CollisionShapes/btConvexPolyhedron.cpp\
 	BulletCollision/CollisionShapes/btBoxShape.cpp \
 	BulletCollision/CollisionShapes/btBox2dShape.cpp \

@@ -5,11 +5,11 @@
 ##
 include $(CLEAR_VARS)
 
-LOCAL_PATH			:= $(SRC_PATH)
+LOCAL_PATH				:= $(SRC_PATH)
 
 LOCAL_MODULE    		:= game
-LOCAL_MODULE_FILENAME		:= libGame
-LOCAL_CFLAGS    		:= -DCROSSLINK_LIB -DANDROID -DNO_ENGINE -DNOENGINE -DGAME_DRIVERS -DEQ_USE_SDL -std=c++11 -pthread -fexceptions -Wno-invalid-offsetof
+LOCAL_MODULE_FILENAME	:= libGame
+LOCAL_CFLAGS    		:= -DCROSSLINK_LIB -DANDROID -DNO_ENGINE -DNOENGINE -DGAME_DRIVERS -DEQ_USE_SDL -DSHINY_IS_COMPILED=FALSE -std=c++11 -pthread -fexceptions -Wno-invalid-offsetof
 LOCAL_LDFLAGS			:= -pthread
 
 LOCAL_C_INCLUDES:= \
@@ -20,12 +20,8 @@ LOCAL_C_INCLUDES:= \
 	$(LOCAL_PATH)/public/materialsystem\
 	$(LOCAL_PATH)/shared_engine\
 	$(LOCAL_PATH)/shared_game\
-	$(LOCAL_PATH)/src_dependency/luajit/src		\
-	$(LOCAL_PATH)/src_dependency/oolua/include	\
-	$(LOCAL_PATH)/src_dependency/libjpeg		\
-	$(LOCAL_PATH)/src_dependency/libpng		\
-	$(LOCAL_PATH)/src_dependency/Shiny/include	\
-	$(LOCAL_PATH)/src_dependency/bullet/src
+	$(LOCAL_PATH)/src_dependency/luajit/src\
+	$(LOCAL_PATH)/src_dependency/Shiny/include
 
 LOCAL_SRC_FILES := \
 	DriversGame/main.cpp\
@@ -89,11 +85,6 @@ LOCAL_SRC_FILES := \
 	shared_engine/FontLayoutBuilders.cpp\
 	shared_engine/KeyBinding/Keys.cpp\
 	shared_engine/Network/NETThread.cpp\
-	shared_engine/Audio/alsnd_emitter.cpp\
-	shared_engine/Audio/alsnd_sample.cpp\
-	shared_engine/Audio/alsnd_stream.cpp\
-	shared_engine/Audio/alsound_local.cpp\
-	shared_engine/Audio/soundzero.cpp\
 	shared_engine/cfgloader.cpp\
 	shared_engine/eqGlobalMutex.cpp\
 	shared_engine/eqParallelJobs.cpp\
@@ -103,6 +94,11 @@ LOCAL_SRC_FILES := \
 	shared_engine/studio_egf.cpp\
 	shared_engine/sys_console.cpp\
 	shared_game/GameSoundEmitterSystem.cpp\
+	shared_engine/Audio/alsound_local.cpp\
+	shared_engine/Audio/alsnd_emitter.cpp\
+	shared_engine/Audio/alsnd_sample.cpp\
+	shared_engine/Audio/alsnd_stream.cpp\
+	shared_engine/Audio/soundzero.cpp\
 	public/ViewParams.cpp\
 	public/luabinding/LuaBinding.cpp\
 	public/luabinding/LuaBinding_Engine.cpp\
@@ -118,11 +114,12 @@ LOCAL_STATIC_LIBRARIES := \
 	png\
 	oolua\
 	luajit\
-	SDL2_static\
-	Shiny\
-	OpenAL-MOB\
 	ogg\
 	vorbis\
 	bullet
+
+LOCAL_STATIC_LIBRARIES += SDL2_static
+# LOCAL_STATIC_LIBRARIES += Shiny
+LOCAL_STATIC_LIBRARIES += OpenAL-MOB
 
 include $(BUILD_SHARED_LIBRARY)

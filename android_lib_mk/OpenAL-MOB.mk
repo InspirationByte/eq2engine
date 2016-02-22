@@ -2,8 +2,10 @@ LOCAL_PATH := $(SRC_PATH)/src_dependency/OpenAL-MOB
 include $(CLEAR_VARS)
 LOCAL_MODULE := OpenAL-MOB
 
+LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include
+
 LOCAL_C_INCLUDES := \
-	$(LOCAL_PATH)/include			\
+	$(LOCAL_EXPORT_C_INCLUDES)		\
 	$(LOCAL_PATH)/OpenAL32/Include	\
 	$(LOCAL_PATH)/mob/Include		\
 	$(LOCAL_PATH)/build_android

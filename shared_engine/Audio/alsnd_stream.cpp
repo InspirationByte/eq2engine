@@ -10,6 +10,10 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 
+#include <AL/al.h>
+#include <AL/alc.h>
+#include <vorbis/vorbisfile.h>
+
 #include "DebugInterface.h"
 #include "alsound_local.h"
 
