@@ -28,4 +28,7 @@ APP_MODULES := \
 	eqGLRHI\
 	SDL2_static\
 	OpenAL-MOB\
-	Shiny
+	Shiny\
+	luajit\
+	oolua\
+	game

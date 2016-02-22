@@ -17,9 +17,10 @@ include $(DEP_LIBS_MK)/jpeg.mk
 include $(DEP_LIBS_MK)/png.mk
 include $(DEP_LIBS_MK)/ogg.mk
 include $(DEP_LIBS_MK)/vorbis.mk
-
 include $(DEP_LIBS_MK)/OpenAL-MOB.mk
 include $(DEP_LIBS_MK)/Shiny.mk
+include $(DEP_LIBS_MK)/luajit.mk
+include $(DEP_LIBS_MK)/oolua.mk
 
 include $(PROJ_PATH)/eqMatSystem.mk
 include $(PROJ_PATH)/eqBaseShaders.mk
@@ -27,14 +28,4 @@ include $(PROJ_PATH)/eqNullRHI.mk
 include $(PROJ_PATH)/eqGLRHI.mk
 include $(SRC_PATH)/src_dependency/SDL2/Android.mk
 
-# add LuaJIT prebuilt
-include $(CLEAR_VARS)
-
-LOCAL_MODULE	:= libluajit
-LOCAL_SRC_FILES	:= $(SRC_PATH)/obj/local/$(TARGET_ARCH_ABI)/lib/libluajit-5.1.a
-LOCAL_EXPORT_C_INCLUDES := $(SRC_PATH)/obj/local/$(TARGET_ARCH_ABI)/include
-
-include $(PREBUILT_STATIC_LIBRARY)
-
-
-# include $(PROJ_PATH)/Game_DrvSyn.mk
+include $(PROJ_PATH)/libGame_DrvSyn.mk # game
