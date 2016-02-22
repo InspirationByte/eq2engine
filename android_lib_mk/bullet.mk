@@ -15,6 +15,8 @@ LOCAL_SRC_FILES := \
 	LinearMath/btGeometryUtil.cpp \
 	LinearMath/btQuickprof.cpp \
 	LinearMath/btSerializer.cpp \
+	LinearMath/btConvexHull.cpp \
+	LinearMath/btConvexHullComputer.cpp \
 	BulletCollision/BroadphaseCollision/btAxisSweep3.cpp \
 	BulletCollision/BroadphaseCollision/btBroadphaseProxy.cpp \
 	BulletCollision/BroadphaseCollision/btCollisionAlgorithm.cpp \
@@ -33,6 +35,7 @@ LOCAL_SRC_FILES := \
 	BulletCollision/CollisionDispatch/btCollisionObject.cpp \
 	BulletCollision/CollisionDispatch/btCollisionWorld.cpp \
 	BulletCollision/CollisionDispatch/btCompoundCollisionAlgorithm.cpp \
+	BulletCollision/CollisionDispatch/btCompoundCompoundCollisionAlgorithm.cpp \
 	BulletCollision/CollisionDispatch/btConvexConcaveCollisionAlgorithm.cpp \
 	BulletCollision/CollisionDispatch/btConvexConvexAlgorithm.cpp \
 	BulletCollision/CollisionDispatch/btConvexPlaneCollisionAlgorithm.cpp \
@@ -47,6 +50,8 @@ LOCAL_SRC_FILES := \
 	BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.cpp \
 	BulletCollision/CollisionDispatch/btUnionFind.cpp \
 	BulletCollision/CollisionDispatch/SphereTriangleDetector.cpp \
+	BulletCollision/CollisionDispatch/btHashedSimplePairCache.cpp \
+	BulletCollision/CollisionShapes/btConvexPolyhedron.cpp\
 	BulletCollision/CollisionShapes/btBoxShape.cpp \
 	BulletCollision/CollisionShapes/btBox2dShape.cpp \
 	BulletCollision/CollisionShapes/btBvhTriangleMeshShape.cpp \
@@ -94,6 +99,7 @@ LOCAL_SRC_FILES := \
 	BulletCollision/Gimpact/gim_memory.cpp \
 	BulletCollision/Gimpact/gim_tri_collision.cpp \
 	BulletCollision/NarrowPhaseCollision/btContinuousConvexCollision.cpp \
+	BulletCollision/NarrowPhaseCollision/btPolyhedralContactClipping.cpp \
 	BulletCollision/NarrowPhaseCollision/btConvexCast.cpp \
 	BulletCollision/NarrowPhaseCollision/btGjkConvexCast.cpp \
 	BulletCollision/NarrowPhaseCollision/btGjkEpa2.cpp \

@@ -116,10 +116,10 @@ LOCAL_STATIC_LIBRARIES := \
 	coreLib prevLib\
 	jpeg\
 	png\
+	oolua\
+	luajit\
 	SDL2_static\
 	Shiny\
-	luajit\
-	oolua\
 	OpenAL-MOB\
 	ogg\
 	vorbis\
