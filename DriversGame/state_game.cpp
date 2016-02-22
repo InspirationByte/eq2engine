@@ -202,7 +202,7 @@ DECLARE_CMD(start, "loads a level or starts mission", 0)
 
 void fnMaxplayersTest(ConVar* pVar,char const* pszOldValue)
 {
-	if(dynamic_cast<CNetGameSession*>(g_pGameSession) != NULL)
+	if(g_pGameSession != NULL && g_pGameSession->GetSessionType() == SESSION_NETWORK)
 		Msg("maxplayers will be changed upon restart\n");
 }
 

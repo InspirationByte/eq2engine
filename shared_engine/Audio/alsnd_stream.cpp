@@ -100,7 +100,10 @@ void DkSoundAmbient::SetPitch(float val)
 void DkSoundAmbient::SetSample(ISoundSample* sample)
 {
 	Stop();
-	m_sample = dynamic_cast<DkSoundSampleLocal*>(sample);
+
+#pragma todo("workaround for disabled RTTI")
+
+	m_sample = (DkSoundSampleLocal*)(sample);
 }
 
 ISoundSample* DkSoundAmbient::GetSample() const

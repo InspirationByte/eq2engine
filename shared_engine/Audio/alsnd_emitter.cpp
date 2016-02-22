@@ -58,7 +58,9 @@ void DkSoundEmitterLocal::SetVelocity(Vector3D& velocity)
 
 void DkSoundEmitterLocal::SetSample(ISoundSample* sample)
 {
-	m_sample = dynamic_cast<DkSoundSampleLocal*>(sample);
+#pragma todo("workaround for disabled RTTI")
+
+	m_sample = (DkSoundSampleLocal*)(sample);
 }
 
 ISoundSample* DkSoundEmitterLocal::GetSample() const
