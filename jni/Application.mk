@@ -26,6 +26,6 @@ APP_MODULES := \
 	eqBaseShaders\
 	eqNullRHI\
 	eqGLRHI\
-	SDL2\
+	SDL2_static\
 	OpenAL-MOB\
 	Shiny

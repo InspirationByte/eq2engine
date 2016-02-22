@@ -1,3 +1,5 @@
+# vorbis and vorbisfile
+
 LOCAL_PATH := $(SRC_PATH)/src_dependency/libvorbis
 include $(CLEAR_VARS)
 LOCAL_MODULE := vorbis
