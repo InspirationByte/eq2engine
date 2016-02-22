@@ -19,6 +19,7 @@ include $(DEP_LIBS_MK)/ogg.mk
 include $(DEP_LIBS_MK)/vorbis.mk
 
 include $(DEP_LIBS_MK)/OpenAL-MOB.mk
+include $(DEP_LIBS_MK)/Shiny.mk
 
 include $(PROJ_PATH)/eqMatSystem.mk
 include $(PROJ_PATH)/eqBaseShaders.mk

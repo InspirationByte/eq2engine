@@ -4,14 +4,14 @@ APP_PROJECT_PATH		:= $(call my-dir)
 APP_ABI         		:= armeabi armeabi-v7a # x86 x86_64
 
 # need to support C++ stl
-APP_STL			 		:= gnustl_static
+APP_STL			 	:= gnustl_static
 
 APP_BUILD_SCRIPT 		:= $(APP_PROJECT_PATH)/Android.mk
 NDK_APP_LIBS_OUT		:= $(APP_PROJECT_PATH)/../libs_android
 
-APP_OPTIM 				:= release
+APP_OPTIM 			:= release
 APP_PLATFORM	 		:= android-16
-NDK_APP_SHORT_COMMANDS	:= true
+NDK_APP_SHORT_COMMANDS		:= true
 
 APP_MODULES := \
 	android_native_app_glue \
@@ -27,4 +27,5 @@ APP_MODULES := \
 	eqNullRHI\
 	eqGLRHI\
 	SDL2\
-	OpenAL-MOB
+	OpenAL-MOB\
+	Shiny
