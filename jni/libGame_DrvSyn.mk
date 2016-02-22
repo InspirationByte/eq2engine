@@ -9,15 +9,15 @@ LOCAL_PATH			:= $(SRC_PATH)
 
 LOCAL_MODULE    		:= game
 LOCAL_MODULE_FILENAME		:= libGame
-LOCAL_CFLAGS    		:= -DCROSSLINK_LIB -DANDROID -DNO_ENGINE -DNOENGINE -DGAME_DRIVERS -DEQ_USE_SDL -std=c++11 -pthread -fexceptions
+LOCAL_CFLAGS    		:= -DCROSSLINK_LIB -DANDROID -DNO_ENGINE -DNOENGINE -DGAME_DRIVERS -DEQ_USE_SDL -std=c++11 -pthread -fexceptions -Wno-invalid-offsetof
 LOCAL_LDFLAGS			:= -pthread
-
 
 LOCAL_C_INCLUDES:= \
 	$(LOCAL_PATH)/public		\
 	$(LOCAL_PATH)/public/core 	\
 	$(LOCAL_PATH)/public/platform\
 	$(LOCAL_PATH)/public/math\
+	$(LOCAL_PATH)/public/materialsystem\
 	$(LOCAL_PATH)/shared_engine\
 	$(LOCAL_PATH)/shared_game\
 	$(LOCAL_PATH)/src_dependency/luajit/src		\
@@ -109,6 +109,8 @@ LOCAL_SRC_FILES := \
 	public/materialsystem/BaseShader.cpp\
 	public/TextureAtlas.cpp
 
+LOCAL_SHARED_LIBRARIES := eqCore
+
 LOCAL_STATIC_LIBRARIES := \
 	android_native_app_glue\
 	coreLib prevLib\
@@ -121,6 +123,6 @@ LOCAL_STATIC_LIBRARIES := \
 	OpenAL-MOB\
 	ogg\
 	vorbis\
-	eqCore
+	bullet
 
-include $(BUILD_STATIC_LIBRARY)
+include $(BUILD_SHARED_LIBRARY)

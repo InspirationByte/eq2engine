@@ -21,6 +21,7 @@ include $(DEP_LIBS_MK)/OpenAL-MOB.mk
 include $(DEP_LIBS_MK)/Shiny.mk
 include $(DEP_LIBS_MK)/luajit.mk
 include $(DEP_LIBS_MK)/oolua.mk
+include $(DEP_LIBS_MK)/bullet.mk
 
 include $(PROJ_PATH)/eqMatSystem.mk
 include $(PROJ_PATH)/eqBaseShaders.mk

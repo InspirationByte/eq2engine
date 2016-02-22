@@ -31,4 +31,5 @@ APP_MODULES := \
 	Shiny\
 	luajit\
 	oolua\
+	bullet\
 	game
