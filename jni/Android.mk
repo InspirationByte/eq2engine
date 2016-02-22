@@ -1,8 +1,8 @@
 # Android Native Library makefile
 # compile equilibrium engine modules
 
-PROJ_PATH:= $(call my-dir)
-SRC_PATH:= $(call my-dir)/..
+PROJ_PATH:= $(APP_PROJECT_PATH)
+SRC_PATH:= $(PROJ_PATH)/..
 DEP_LIBS_MK:= $(SRC_PATH)/android_lib_mk
 
 # glue is needed

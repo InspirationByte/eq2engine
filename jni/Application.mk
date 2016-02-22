@@ -26,7 +26,7 @@ APP_MODULES := \
 	eqBaseShaders\
 	eqNullRHI\
 	eqGLRHI\
-	SDL2_static\
+	SDL2\
 	OpenAL-MOB\
 	Shiny\
 	luajit\

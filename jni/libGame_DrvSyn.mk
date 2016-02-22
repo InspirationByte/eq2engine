@@ -9,7 +9,7 @@ LOCAL_PATH				:= $(SRC_PATH)
 
 LOCAL_MODULE    		:= game
 LOCAL_MODULE_FILENAME	:= libGame
-LOCAL_CFLAGS    		:= -DCROSSLINK_LIB -DANDROID -DNO_ENGINE -DNOENGINE -DGAME_DRIVERS -DEQ_USE_SDL -DSHINY_IS_COMPILED=FALSE -std=c++11 -pthread -fexceptions -Wno-invalid-offsetof
+LOCAL_CFLAGS    		:= -DANDROID -DNO_ENGINE -DNOENGINE -DGAME_DRIVERS -DEQ_USE_SDL -DSHINY_IS_COMPILED=FALSE -std=c++11 -pthread -fexceptions -Wno-invalid-offsetof
 LOCAL_LDFLAGS			:= -pthread
 
 LOCAL_C_INCLUDES:= \
@@ -24,7 +24,6 @@ LOCAL_C_INCLUDES:= \
 	$(LOCAL_PATH)/src_dependency/Shiny/include
 
 LOCAL_SRC_FILES := \
-	DriversGame/main.cpp\
 	DriversGame/input.cpp\
 	DriversGame/game_multiplayer.cpp\
 	DriversGame/game_singleplayer.cpp\
@@ -103,7 +102,9 @@ LOCAL_SRC_FILES := \
 	public/luabinding/LuaBinding.cpp\
 	public/luabinding/LuaBinding_Engine.cpp\
 	public/materialsystem/BaseShader.cpp\
-	public/TextureAtlas.cpp
+	public/TextureAtlas.cpp\
+	DriversGame/main.cpp\
+	src_dependency/SDL2/src/main/android/SDL_android_main.c
 
 LOCAL_SHARED_LIBRARIES := eqCore
 
@@ -118,7 +119,7 @@ LOCAL_STATIC_LIBRARIES := \
 	vorbis\
 	bullet
 
-LOCAL_STATIC_LIBRARIES += SDL2_static
+LOCAL_STATIC_LIBRARIES += SDL2
 # LOCAL_STATIC_LIBRARIES += Shiny
 LOCAL_STATIC_LIBRARIES += OpenAL-MOB
 

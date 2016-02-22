@@ -1,6 +1,9 @@
-//-=-=-=-=-=-=-=-=-=-= Copyright (C) Damage Byte L.L.C 2009-2013 =-=-=-=-=-=-=-=-=-=-=-
-//
-// Description: //////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2015
+//////////////////////////////////////////////////////////////////////////////////
+// Description: Entry points for various platforms
+//////////////////////////////////////////////////////////////////////////////////
 
 #ifdef _WIN32
 
@@ -21,6 +24,41 @@
 extern ConVar r_fullscreen;
 
 DECLARE_CVAR_NONSTATIC(__cheats,1,"Wireframe",0);
+
+#if defined(ANDROID) && !defined(EQ_USE_SDL) // sdl makes our main() function ok
+
+#include <jni.h>
+#include <android_native_app_glue.h>
+
+// android app
+void android_main( struct android_app* state )
+{
+    app_dummy();
+
+	// init core
+	if(!GetCore()->Init("Game", 0, NULL))
+		return;
+
+	// init file system
+	if(!g_fileSystem->Init(false))
+		return;
+
+	g_localizer->AddTokensFile("game");
+
+	//SetThreadAffinityMask(GetCurrentThread(), 1);
+
+	InstallEngineSpewFunction();
+
+	// initialize timers
+	Platform_InitTime();
+
+	InitWindowAndRun();
+
+	// shutdown
+	GetCore()->Shutdown();
+}
+
+#else
 
 #ifdef _WIN32
 int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, int nCmdShow)
@@ -57,13 +95,17 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 		return -1;
 
 #else
+
+// posix apps
 int main(int argc, char** argv)
 {
+
 	// init core
 	if(!GetCore()->Init("Game", argc, argv))
 		return -1;
 
 #endif
+
 	// init file system
 	if(!g_fileSystem->Init(false))
 		return -2;
@@ -84,3 +126,5 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+
+#endif // ANDROID
