@@ -1,0 +1,67 @@
+apply plugin: 'com.android.model.application'
+
+//noinspection GroovyAssignabilityCheck
+task ndkBuildRelease(type: Exec) {
+    println "buildNative Application.mk"
+
+    Properties properties = new Properties()
+    properties.load(project.rootProject.file('local.properties').newDataInputStream())
+    def ndkDir = properties.getProperty('ndk.dir', null)
+    if (ndkDir == null)
+        throw new GradleException("NDK location not found. Define location with ndk.dir in the local.properties file or with an ANDROID_NDK_ROOT environment variable.")
+
+    def eqEnginePath = file('../..').absolutePath
+    def makefilePath = eqEnginePath + '/jni/Application.mk'
+
+    commandLine "$ndkDir/ndk-build",
+            "NDK_PROJECT_PATH="+eqEnginePath,
+            "NDK_APPLICATION_MK="+makefilePath
+}
+
+tasks.whenTaskAdded { task ->
+    //if (task.name == 'compileDebugJava') {
+    //    task.dependsOn ndkBuildDebug
+    //} else if (task.name == 'compileReleaseJava') {
+        task.dependsOn ndkBuildRelease
+    //}
+}
+
+model {
+    android {
+        compileSdkVersion = 23
+        buildToolsVersion = "23.0.2"
+
+        defaultConfig.with {
+            applicationId = "com.insbyte.driversyndicate"
+            minSdkVersion.apiLevel = 18
+            targetSdkVersion.apiLevel = 23
+
+        }
+    }
+
+    android.sources {
+        main.jni {
+            source {
+                //srcDirs += ['src/main/jni/src']
+                //srcDirs += ['src/main/jni/SDL2/src']
+                //exclude '**/SDL_coreaudio.c'
+
+                srcDirs = []
+            }
+        }
+
+        main.jniLibs {
+            source {
+                srcDirs += ['../../libs_android']
+            }
+        }
+
+    }
+
+    android.buildTypes {
+        release {
+            minifyEnabled = false
+            proguardFiles += file('proguard-rules.pro')
+        }
+    }
+}
