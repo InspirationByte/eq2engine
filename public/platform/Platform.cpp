@@ -14,15 +14,6 @@
 #include <stdarg.h>
 #endif // _WIN32
 
-void emptycallback(void) {}
-
-PREERRORMESSAGECALLBACK preerror_callback = emptycallback;
-
-void SetPreErrorCallback(PREERRORMESSAGECALLBACK callback)
-{
-	preerror_callback = callback;
-}
-
 #if !defined(_WIN32) && defined(USE_GTK)
 
 #include <gtk/gtk.h>
@@ -45,9 +36,95 @@ void MessageBox(const char *string, const GtkMessageType msgType)
 
 #endif // _WIN32
 
+void emptycallback(void) {}
+void DefaultPlatformMessageBoxCallback(const char* messageStr, EMessageBoxType type )
+{
+#ifdef _WIN32
+	switch(type)
+	{
+		case MSGBOX_INFO:
+			MessageBoxA(GetDesktopWindow(), messageStr, "INFO", MB_OK | MB_ICONINFORMATION);
+			break;
+		case MSGBOX_WARNING:
+			MessageBoxA(GetDesktopWindow(), messageStr, "WARNING", MB_OK | MB_ICONWARNING);
+			break;
+		case MSGBOX_ERROR:
+			MessageBoxA(GetDesktopWindow(), messageStr, "ERROR", MB_OK | MB_ICONERROR);
+			break;
+		case MSGBOX_CRASH:
+			MessageBoxA(GetDesktopWindow(), messageStr, "FATAL ERROR", MB_OK | MB_ICONERROR);
+			break;
+	}
+#elif defined(LINUX) && defined(USE_GTK)
+	switch(type)
+	{
+		case MSGBOX_INFO:
+			MessageBox(messageStr, GTK_MESSAGE_INFO);
+			break;
+		case MSGBOX_WARNING:
+			MessageBox(messageStr, GTK_MESSAGE_WARNING);
+			break;
+		case MSGBOX_ERROR:
+			MessageBox(messageStr, GTK_MESSAGE_ERROR);
+			break;
+		case MSGBOX_CRASH:
+			MessageBox(messageStr, GTK_MESSAGE_ERROR);
+			break;
+	}
+#elif __APPLE__
+	Str255 msg;
+    c2pstrcpy(msg, string);
+    SInt16 ret;
+	switch(type)
+	{
+		case MSGBOX_INFO:
+			StandardAlert(kAlertNoteAlert, msg, NULL, NULL, &ret);
+			break;
+		case MSGBOX_WARNING:
+			StandardAlert(kAlertCautionAlert, msg, NULL, NULL, &ret);
+			break;
+		case MSGBOX_ERROR:
+			StandardAlert(kAlertStopAlert, msg, NULL, NULL, &ret);
+			break;
+		case MSGBOX_CRASH:
+			StandardAlert(kAlertStopAlert, msg, NULL, NULL, &ret);
+			break;
+	}
+#else
+	switch(type)
+	{
+		case MSGBOX_INFO:
+			MsgInfo("%s", messageStr);
+			break;
+		case MSGBOX_WARNING:
+			MsgWarning("%s", messageStr);
+			break;
+		case MSGBOX_ERROR:
+			MsgError("%s", messageStr);
+			break;
+		case MSGBOX_CRASH:
+			MsgError("%s", messageStr);
+			break;
+	}
+#endif
+}
+
+PREERRORMESSAGECALLBACK g_preerror_callback = emptycallback;
+MESSAGECB g_msgBoxCallback = DefaultPlatformMessageBoxCallback;
+
+void SetPreErrorCallback(PREERRORMESSAGECALLBACK callback)
+{
+	g_preerror_callback = callback;
+}
+
+void SetMessageBoxCallback(MESSAGECB callback)
+{
+	g_msgBoxCallback = callback;
+}
+
 void ErrorMsg(const char* fmt, ...)
 {
-	preerror_callback();
+	g_preerror_callback();
 
 	va_list		argptr;
 
@@ -59,26 +136,12 @@ void ErrorMsg(const char* fmt, ...)
 	vsnprintf(string, 4096, fmt,argptr);
 	va_end (argptr);
 
-#ifdef _WIN32
-    MessageBoxA(GetDesktopWindow(), string, "Error", MB_OK | MB_ICONERROR);
-#elif LINUX
-#ifdef USE_GTK
-	MessageBox(string, GTK_MESSAGE_ERROR);
-#else
-	MsgError(string);
-#endif // USE_GTK
-#elif __APPLE__
-	Str255 msg;
-    c2pstrcpy(msg, string);
-
-    SInt16 ret;
-    StandardAlert(kAlertStopAlert, msg, NULL, NULL, &ret);
-#endif
+	g_msgBoxCallback(string, MSGBOX_CRASH);
 }
 
 void CrashMsg(const char* fmt, ...)
 {
-	preerror_callback();
+	g_preerror_callback();
 
 	va_list		argptr;
 
@@ -90,22 +153,7 @@ void CrashMsg(const char* fmt, ...)
 	vsnprintf(string, 4096, fmt,argptr);
 	va_end (argptr);
 
-
-#ifdef _WIN32
-    MessageBoxA(GetDesktopWindow(), string, "FATAL ERROR", MB_OK | MB_ICONERROR);
-#elif LINUX
-#ifdef USE_GTK
-	MessageBox(string, GTK_MESSAGE_ERROR);
-#else
-	MsgError(string);
-#endif // USE_GTK
-#elif __APPLE__
-	Str255 msg;
-    c2pstrcpy(msg, string);
-
-    SInt16 ret;
-    StandardAlert(kAlertStopAlert, msg, NULL, NULL, &ret);
-#endif
+	g_msgBoxCallback(string, MSGBOX_ERROR);
 }
 
 void WarningMsg(const char* fmt, ...)
@@ -120,22 +168,7 @@ void WarningMsg(const char* fmt, ...)
 	vsnprintf(string, 4096, fmt,argptr);
 	va_end (argptr);
 
-
-#ifdef _WIN32
-    MessageBoxA(GetDesktopWindow(), string, "Warning", MB_OK | MB_ICONWARNING);
-#elif LINUX
-#ifdef USE_GTK
-	MessageBox(string, GTK_MESSAGE_WARNING);
-#else
-	MsgError(string);
-#endif // USE_GTK
-#elif __APPLE__
-	Str255 msg;
-    c2pstrcpy(msg, string);
-
-    SInt16 ret;
-    StandardAlert(kAlertCautionAlert, msg, NULL, NULL, &ret);
-#endif
+	g_msgBoxCallback(string, MSGBOX_WARNING);
 }
 
 void InfoMsg(const char* fmt, ...)
@@ -150,21 +183,7 @@ void InfoMsg(const char* fmt, ...)
 	vsnprintf(string, 4096, fmt,argptr);
 	va_end (argptr);
 
-#ifdef _WIN32
-    MessageBoxA(GetDesktopWindow(), string, "Information", MB_OK | MB_ICONINFORMATION);
-#elif LINUX
-#ifdef USE_GTK
-	MessageBox(string, GTK_MESSAGE_INFO);
-#else
-	MsgError(string);
-#endif // USE_GTK
-#elif __APPLE__
-	Str255 msg;
-    c2pstrcpy(msg, string);
-
-    SInt16 ret;
-    StandardAlert(kAlertNoteAlert, msg, NULL, NULL, &ret);
-#endif
+	g_msgBoxCallback(string, MSGBOX_INFO);
 }
 
 

@@ -189,6 +189,9 @@ extern bool g_bPrintLeaksOnShutdown;
 
 CFileSystem::CFileSystem() : m_isInit(false), m_bEditorMode(false)
 {
+	// required by mobile port
+	GetCore()->RegisterInterface( FILESYSTEM_INTERFACE_VERSION, this);
+
     m_bEditorMode = false;
 }
 
@@ -207,9 +210,12 @@ bool CFileSystem::Init(bool bEditorMode)
 
 	if(!pFilesystem)
 	{
-		Msg("CoreConfig.txt missing FileSystemDirectories section!\n");
+		Msg("EQ.CONFIG missing FileSystemDirectories section!\n");
 		return false;
 	}
+
+	if(m_basePath.GetLength() > 0)
+		MsgInfo("* FS Init with basePath=%s\n", m_basePath.GetData());
 
 	m_pszDataDir = KV_GetValueString(pFilesystem->FindKeyBase("EngineDataDir"), 0, "EngineBase" );
 
@@ -564,12 +570,16 @@ IFile* CFileSystem::GetFileHandle(const char* file_name_to_check,const char* opt
 
 	char tmp_path[2048];
 
+	EqString basePath = m_basePath;
+	if(basePath.GetLength() > 0)
+		basePath.Append( CORRECT_PATH_SEPARATOR );
+
     //First we checking mod directory
     if (flags & SP_MOD)
     {
 		for(int i = 0; i < m_directories.numElem(); i++)
 		{
-			sprintf(tmp_path, "%s/%s", m_directories[i].GetData(), pFilePath);
+			sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_directories[i].c_str(), pFilePath);
 
 			FILE *tmpFile = fopen(tmp_path,options);
 			if (tmpFile)
@@ -585,7 +595,7 @@ IFile* CFileSystem::GetFileHandle(const char* file_name_to_check,const char* opt
     //Then we checking data directory
     if (flags & SP_DATA)
     {
-		sprintf(tmp_path, "%s/%s", m_pszDataDir.GetData(), pFilePath);
+		sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_pszDataDir.c_str(), pFilePath);
 
         FILE *tmpFile = fopen(tmp_path,options);
         if (tmpFile)
@@ -597,7 +607,8 @@ IFile* CFileSystem::GetFileHandle(const char* file_name_to_check,const char* opt
         }
     }
 
-    //And checking root
+    // And checking root.
+    // not adding basepath to this
     if (flags & SP_ROOT)
     {
         FILE *tmpFile = fopen(pFilePath,options);
@@ -611,6 +622,7 @@ IFile* CFileSystem::GetFileHandle(const char* file_name_to_check,const char* opt
     }
 
     // If failed to load directly, load it from package, in backward order
+    // NOTE: basepath is not added to DPK paths
     for (int i = m_pPackages.numElem()-1; i >= 0;i--)
     {
         CDPKFileReader* pPackageReader = m_pPackages[i];

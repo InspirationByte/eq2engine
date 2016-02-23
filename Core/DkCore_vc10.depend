@@ -1353,7 +1353,7 @@
 	"IFileSystem.h"
 	"DebugInterface.h"
 
-1456130933 /home/soap/Projects/EqEngine/src_all/public/platform/Platform.h
+1456249192 /home/soap/Projects/EqEngine/src_all/public/platform/Platform.h
 	"dktypes.h"
 	"SDL.h"
 	"SDL_syswm.h"
@@ -1533,7 +1533,7 @@
 	<stdint.h>
 	"eqstring.h"
 
-1455891158 /home/soap/Projects/EqEngine/src_all/public/core/IFileSystem.h
+1456245096 /home/soap/Projects/EqEngine/src_all/public/core/IFileSystem.h
 	"InterfaceManager.h"
 	"IVirtualStream.h"
 	<sys/types.h>
@@ -1625,17 +1625,18 @@
 	<malloc.h>
 	<crtdbg.h>
 
-1455891158 source:/home/soap/Projects/EqEngine/src_all/Core/debuginterface.cpp
+1456247086 source:/home/soap/Projects/EqEngine/src_all/Core/debuginterface.cpp
 	"DebugInterface.h"
 	"core_base_header.h"
 	"Platform.h"
 	"resource.h"
 	<stdarg.h>
 	"utils/eqthread.h"
+	<android/log.h>
 
 1455508694 /home/soap/Projects/EqEngine/src_all/Core/resource.h
 
-1456130933 source:/home/soap/Projects/EqEngine/src_all/Core/DkCore.cpp
+1456245215 source:/home/soap/Projects/EqEngine/src_all/Core/DkCore.cpp
 	<ctime>
 	<direct.h>
 	<locale.h>
@@ -1657,7 +1658,7 @@
 	"platform/Platform.h"
 	"InterfaceManager.h"
 
-1456130933 source:/home/soap/Projects/EqEngine/src_all/Core/eqCPUServices.cpp
+1456239395 source:/home/soap/Projects/EqEngine/src_all/Core/eqCPUServices.cpp
 	"eqCPUServices.h"
 	"DebugInterface.h"
 	"ConCommandFactory.h"
@@ -1666,7 +1667,7 @@
 	<unistd.h>
 	<sys/time.h>
 
-1456130933 source:/home/soap/Projects/EqEngine/src_all/Core/FileSystem.cpp
+1456245706 source:/home/soap/Projects/EqEngine/src_all/Core/FileSystem.cpp
 	"FileSystem.h"
 	"utils/SmartPtr.h"
 	<direct.h>
@@ -1676,7 +1677,7 @@
 	"DebugInterface.h"
 	"utils/CRC32.h"
 
-1455891158 /home/soap/Projects/EqEngine/src_all/Core/FileSystem.h
+1456245152 /home/soap/Projects/EqEngine/src_all/Core/FileSystem.h
 	"IFileSystem.h"
 	"DPKFileReader.h"
 	"utils/eqthread.h"

@@ -222,7 +222,7 @@ void CEqCPUCaps::Init()
 	GetSystemInfo(&sysInfo);
 	m_cpuCount = sysInfo.dwNumberOfProcessors;
 
-#elif defined(LINUX)
+#elif defined(LINUX) || defined(ANDROID)
 	//m_cpuCount = sysconf(_SC_NPROCESSORS_CONF);
 	m_cpuCount = sysconf(_SC_NPROCESSORS_ONLN);
 

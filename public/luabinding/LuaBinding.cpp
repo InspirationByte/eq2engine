@@ -207,7 +207,7 @@ static void eqlua_open_libs(lua_State *L)
 
 bool LuaBinding_LoadAndDoFile(lua_State* state, const char* filename, const char* pszFuncName)
 {
-	DevMsg(2, "running '%s'...\n", filename);
+	DevMsg(DEVMSG_GAME, "running '%s'...\n", filename);
 
 	LuaStackGuard s(state);
 
@@ -299,7 +299,7 @@ bool LuaBinding_DoBuffer(lua_State* state, const char* data, int size, const cha
 int LuaBinding_ModuleFunc(lua_State* state)
 {
 	EqString filename = lua_tostring(state, -1);
-	
+
 	lua_getglobal( state, "CALLER_FILENAME" );
 	const char* curr_file = lua_tostring(state, -1);
 
@@ -312,7 +312,7 @@ int LuaBinding_ModuleFunc(lua_State* state)
 		if( g_fileSystem->FileExist(checkFilename.c_str()) )
 			filename = checkFilename;
 	}
-	
+
 	if( !LuaBinding_LoadAndDoFile(state, filename.c_str(), "module()") )
 	{
 		EqString err = OOLUA::get_last_error(state).c_str();
@@ -321,7 +321,7 @@ int LuaBinding_ModuleFunc(lua_State* state)
 
 		return 0;
 	}
-	
+
 	LuaStackGuard s(state);
 
 	if(curr_file)
@@ -353,7 +353,7 @@ int LuaErrorHandler(lua_State* L)
 		lua_insert(L, -2); // stack: err stackTrace debug
 		lua_pop(L, 1); // stack: err stackTrace
 		lua_pushstring(L, "Error:"); // stack: err stackTrace "Error:"
-		lua_insert(L, -3); // stack: "Error:" err stackTrace  
+		lua_insert(L, -3); // stack: "Error:" err stackTrace
 		lua_pushstring(L, "\n"); // stack: "Error:" err stackTrace "\n"
 		lua_insert(L, -2); // stack: "Error:" err "\n" stackTrace
 		lua_concat(L, 4); // stack: "Error:"+err+"\n"+stackTrace

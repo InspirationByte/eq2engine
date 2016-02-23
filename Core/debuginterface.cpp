@@ -13,6 +13,19 @@
 #include <stdarg.h>
 #include "utils/eqthread.h"
 
+#ifdef ANDROID
+#include <android/log.h>
+#define EQENGINE_LOG_TAG(v) varargs("%s %s", GetCore()->GetApplicationName(), v)
+#endif // ANDROID
+
+static const char* s_spewTypeStr[] = {
+	"",
+	"[INFO]",
+	"[WARN]",
+	"[ERR]",
+	"",
+};
+
 Threading::CEqMutex g_debugOutputMutex;
 
 //#define DEBUG_NO_OUTPUT
@@ -153,8 +166,19 @@ void SpewMessageToOutput(SpewType_t spewtype,char const* pMsgFormat, va_list arg
 	ASSERT( len < 2048 );
 	ASSERT( g_fnConSpewFunc );
 
+#ifdef ANDROID
+	const char* logTag = EQENGINE_LOG_TAG(s_spewTypeStr[spewtype]);
+
+	// force log into android debug output
+	__android_log_print(ANDROID_LOG_DEBUG, logTag, "%s", pTempBuffer);
+#else
+
+#endif // ANDROID
+
 	if(!bLoggingInitialized)
 	{
+		printf( "%s", pTempBuffer );
+	/*
 		switch(spewtype)
 		{
 			case SPEW_NORM:
@@ -170,6 +194,7 @@ void SpewMessageToOutput(SpewType_t spewtype,char const* pMsgFormat, va_list arg
 				break;
 		}
 		return;
+		*/
 	}
 
 	if(bDoLogs)

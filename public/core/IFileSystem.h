@@ -56,6 +56,10 @@ public:
 	// Directory stuff
 	//------------------------------------------------------------
 
+	// something like working directory
+	virtual void		SetBasePath(const char* path) = 0;
+	virtual const char*	GetBasePath() const = 0;
+
     // Returns current game path
     virtual const char* GetCurrentGameDirectory() = 0;
 

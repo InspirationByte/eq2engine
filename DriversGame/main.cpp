@@ -101,13 +101,51 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 
 #else
 
+#include <unistd.h>
+
+#ifdef ANDROID
+void EQSDLMessageBoxCallback(const char* messageStr, EMessageBoxType type )
+{
+	switch(type)
+	{
+		case MSGBOX_INFO:
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "INFO", messageStr, NULL);
+			break;
+		case MSGBOX_WARNING:
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "WARNING", messageStr, NULL);
+			break;
+		case MSGBOX_ERROR:
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR", messageStr, NULL);
+			break;
+		case MSGBOX_CRASH:
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FATAL ERROR", messageStr, NULL);
+			break;
+	}
+
+}
+#endif // ANDROID
+
+
 // posix apps
 int main(int argc, char** argv)
 {
+#ifdef ANDROID
+	const char* androidStoragePath = "/storage/external_SD/eqengine"; //SDL_AndroidGetInternalStoragePath();
+
+	// preconfigure game base path
+	g_fileSystem->SetBasePath( androidStoragePath );
+
+	//SetMessageBoxCallback(EQSDLMessageBoxCallback);
+
+#endif // ANDROID
 
 	// init core
 	if(!GetCore()->Init("Game", argc, argv))
 		return -1;
+
+#ifdef ANDROID
+	MsgInfo("Android storage path: %s\n", androidStoragePath);
+#endif // ANDROID
 
 #endif
 

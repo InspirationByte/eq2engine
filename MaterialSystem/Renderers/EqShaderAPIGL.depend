@@ -581,7 +581,7 @@
 
 1455508694 /home/soap/Projects/EqEngine/src_all/public/coord.h
 
-1456130933 /home/soap/Projects/EqEngine/src_all/public/platform/Platform.h
+1456249192 /home/soap/Projects/EqEngine/src_all/public/platform/Platform.h
 	"dktypes.h"
 	"SDL.h"
 	"SDL_syswm.h"
@@ -742,7 +742,7 @@
 	"textureformats.h"
 	"IFileSystem.h"
 
-1455891158 /home/soap/Projects/EqEngine/src_all/public/core/IFileSystem.h
+1456245096 /home/soap/Projects/EqEngine/src_all/public/core/IFileSystem.h
 	"InterfaceManager.h"
 	"IVirtualStream.h"
 	<sys/types.h>
@@ -905,4 +905,113 @@
 
 1455508694 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/VertexFormatGL.cpp
 	"VertexFormatGL.h"
+
+1456130933 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/gl_caps.cpp
+	<algorithm>
+	<vector>
+	<string.h>
+	<stddef.h>
+	"gl_caps.hpp"
+	<dlfcn.h>
+	<dlfcn.h>
+	<stdio.h>
+	<EGL/egl.h>
+	<GL/glx.h>
+
+1456130933 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/GLMeshBuilder.cpp
+	"GLMeshBuilder.h"
+	"DebugInterface.h"
+	"ShaderAPIGL.h"
+	<malloc.h>
+
+1455508694 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/GLMeshBuilder.h
+	"IMeshBuilder.h"
+
+1456130933 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/ShaderAPIGL.cpp
+	"ShaderAPIGL.h"
+	"CGLTexture.h"
+	"VertexFormatGL.h"
+	"VertexBufferGL.h"
+	"IndexBufferGL.h"
+	"GLShaderProgram.h"
+	"GLRenderState.h"
+	"GLMeshBuilder.h"
+	"GLOcclusionQuery.h"
+	"Platform.h"
+	"DebugInterface.h"
+	"shaderapigl_def.h"
+	"imaging/ImageLoader.h"
+	"IConCommandFactory.h"
+	"utils/strtools.h"
+	"utils/KeyValues.h"
+	"glx_caps.hpp"
+
+1455508694 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/GLRenderState.h
+	"IRenderState.h"
+
+1456242067 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/CGLRenderLib.cpp
+	"Platform.h"
+	"IDkCore.h"
+	"CGLRenderLib.h"
+	"gl_caps.hpp"
+	"wgl_caps.hpp"
+	"glx_caps.hpp"
+	"agl_caps.hpp"
+	"imaging/ImageLoader.h"
+
+1455891158 /home/soap/Projects/EqEngine/src_all/public/core/IDkCore.h
+	"ICmdLineParser.h"
+	"core_base_header.h"
+
+1455891158 /home/soap/Projects/EqEngine/src_all/public/core/ICmdLineParser.h
+	<stdio.h>
+	"InterfaceManager.h"
+
+1455891158 /home/soap/Projects/EqEngine/src_all/public/core/core_base_header.h
+	"platform/Platform.h"
+	"utils/strtools.h"
+	"utils/eqtimer.h"
+	"utils/KeyValues.h"
+	"IConCommandFactory.h"
+	"InterfaceManager.h"
+	"IDkCore.h"
+	"IEqCPUServices.h"
+	"ILocalize.h"
+	"ppmem.h"
+	"ICmdLineParser.h"
+	"IFileSystem.h"
+	"DebugInterface.h"
+
+1455508694 /home/soap/Projects/EqEngine/src_all/public/utils/eqtimer.h
+	<stdio.h>
+	<stdlib.h>
+	"platform/Platform.h"
+	<sys/time.h>
+
+1455891158 /home/soap/Projects/EqEngine/src_all/public/core/IEqCPUServices.h
+	"IDkCore.h"
+	"dktypes.h"
+	"cpuInstrDefs.h"
+
+1456130933 /home/soap/Projects/EqEngine/src_all/public/core/ILocalize.h
+	"IDkCore.h"
+	<wchar.h>
+
+1456240779 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/CGLRenderLib.h
+	"../IRenderLibrary.h"
+	"ShaderAPIGL.h"
+	<EGL/egl.h>
+
+1455891158 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/IRenderLibrary.h
+	"IShaderAPI.h"
+	"IEqSwapChain.h"
+	"DebugInterface.h"
+	"InterfaceManager.h"
+
+1455508694 /home/soap/Projects/EqEngine/src_all/public/materialsystem/renderers/IEqSwapChain.h
+	"Platform.h"
+	"ITexture.h"
+
+1455508694 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/wgl_caps.hpp
+	<windows.h>
 

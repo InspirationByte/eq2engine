@@ -4061,7 +4061,7 @@
 1455637456 source:/home/soap/Projects/eqengine/src_all/DriversGame/state_lobby.cpp
 	"state_lobby.h"
 
-1455891158 source:/home/soap/Projects/EqEngine/src_all/public/luabinding/LuaBinding.cpp
+1456247503 source:/home/soap/Projects/EqEngine/src_all/public/luabinding/LuaBinding.cpp
 	"LuaBinding.h"
 	"IFileSystem.h"
 	"DebugInterface.h"
@@ -4420,7 +4420,7 @@
 
 1455508694 /home/soap/Projects/EqEngine/src_all/public/utils/singleton.h
 
-1455891158 /home/soap/Projects/EqEngine/src_all/public/core/IFileSystem.h
+1456245096 /home/soap/Projects/EqEngine/src_all/public/core/IFileSystem.h
 	"InterfaceManager.h"
 	"IVirtualStream.h"
 	<sys/types.h>
@@ -4435,7 +4435,7 @@
 	"InterfaceManager.h"
 	"utils/eqthread.h"
 
-1456130933 /home/soap/Projects/EqEngine/src_all/public/platform/Platform.h
+1456249192 /home/soap/Projects/EqEngine/src_all/public/platform/Platform.h
 	"dktypes.h"
 	"SDL.h"
 	"SDL_syswm.h"
@@ -5640,7 +5640,7 @@
 	"ShinyMacros.h"
 	"ShinyManager.h"
 
-1364002304 /home/soap/Projects/EqEngine/src_all/src_dependency/Shiny/include/ShinyMacros.h
+1456236679 /home/soap/Projects/EqEngine/src_all/src_dependency/Shiny/include/ShinyMacros.h
 	"ShinyManager.h"
 
 1364002304 /home/soap/Projects/EqEngine/src_all/src_dependency/Shiny/include/ShinyManager.h
@@ -6062,7 +6062,7 @@
 	"DrvSynHUD.h"
 	"system.h"
 
-1456226622 source:/home/soap/Projects/EqEngine/src_all/DriversGame/main.cpp
+1456249529 source:/home/soap/Projects/EqEngine/src_all/DriversGame/main.cpp
 	<io.h>
 	<fcntl.h>
 	<crtdbg.h>
@@ -6073,6 +6073,7 @@
 	"utils/DkLinkedList.h"
 	<jni.h>
 	<android_native_app_glue.h>
+	<unistd.h>
 
 1456130952 source:/home/soap/Projects/EqEngine/src_all/DriversGame/NetPlayer.cpp
 	"NetPlayer.h"
@@ -6252,7 +6253,7 @@
 	"KeyBinding/Keys.h"
 	"IDebugOverlay.h"
 
-1456228157 source:/home/soap/Projects/EqEngine/src_all/DriversGame/system.cpp
+1456247165 source:/home/soap/Projects/EqEngine/src_all/DriversGame/system.cpp
 	"LuaBinding_Drivers.h"
 	"DebugOverlay.h"
 	"system.h"
@@ -6269,7 +6270,7 @@
 1455508694 source:/home/soap/Projects/EqEngine/src_all/DriversGame/ui_luaMenu.cpp
 	"ui_luaMenu.h"
 
-1456228631 source:/home/soap/Projects/EqEngine/src_all/DriversGame/window.cpp
+1456242067 source:/home/soap/Projects/EqEngine/src_all/DriversGame/window.cpp
 	"Platform.h"
 	"DebugInterface.h"
 	"system.h"

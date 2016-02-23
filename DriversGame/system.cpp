@@ -200,6 +200,8 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	materials_config.shaderapi_params.hWindow = (void*)winfo.info.x11.window;
 #elif APPLE
 	materials_config.shaderapi_params.hWindow = (void*)winfo.info.cocoa.window;
+#elif ANDROID
+	materials_config.shaderapi_params.hWindow = (void*)winfo.info.android.window;
 #endif
 
 	materials_config.shaderapi_params.nScreenFormat = format;
@@ -284,6 +286,8 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 		ErrorMsg("Lua base initialization error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
 		return false;
 	}
+
+	MsgInfo("EqEngine systems init successfully\n");
 
 	return true;
 }

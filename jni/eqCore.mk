@@ -7,8 +7,11 @@ LOCAL_PATH				:= $(SRC_PATH)
 
 LOCAL_MODULE    		:= eqCore
 LOCAL_MODULE_FILENAME	:= libeqCore
-LOCAL_CFLAGS    		:= -DCROSSLINK_LIB -DANDROID -DCORE_EXPORT -DDLL_EXPORT -DSUPRESS_DEVMESSAGES -std=c++11 -pthread -fexceptions
+LOCAL_CFLAGS    		:= -DCROSSLINK_LIB -DPPMEM_DISABLE -DANDROID -DCORE_EXPORT -DDLL_EXPORT -DSUPRESS_DEVMESSAGES -std=c++11 -pthread -fexceptions
 #LOCAL_LDFLAGS			:= -Wl,-soname=libeqCore.so
+
+LOCAL_LDFLAGS			:= -pthread -llog
+
 LOCAL_C_INCLUDES:= \
 	$(LOCAL_PATH)/public/core \
 	$(LOCAL_PATH)/public/platform\

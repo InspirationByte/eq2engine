@@ -395,7 +395,6 @@ void CDkCore::InitSubInterfaces()
 
 	// register core interfaces
 	RegisterInterface( CMDLINE_INTERFACE_VERSION, GetCommandLineParse());
-	RegisterInterface( FILESYSTEM_INTERFACE_VERSION, GetCFileSystem());
 	RegisterInterface( LOCALIZER_INTERFACE_VERSION , GetCLocalize());
 	RegisterInterface( CPUSERVICES_INTERFACE_VERSION , GetCEqCPUCaps());
 }

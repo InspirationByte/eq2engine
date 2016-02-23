@@ -9,7 +9,7 @@ LOCAL_PATH				:= $(SRC_PATH)
 
 LOCAL_MODULE    		:= game
 LOCAL_MODULE_FILENAME	:= libGame
-LOCAL_CFLAGS    		:= -DANDROID -DNO_ENGINE -DNOENGINE -DGAME_DRIVERS -DEQ_USE_SDL -DSHINY_IS_COMPILED=FALSE -std=c++11 -pthread -fexceptions -Wno-invalid-offsetof
+LOCAL_CFLAGS    		:= -g -DANDROID -DNO_ENGINE -DNOENGINE -DGAME_DRIVERS -DEQ_USE_SDL -DSHINY_IS_COMPILED=FALSE -std=c++11 -pthread -fexceptions -Wno-invalid-offsetof
 LOCAL_LDFLAGS			:= -pthread
 
 LOCAL_C_INCLUDES:= \

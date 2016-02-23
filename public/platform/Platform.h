@@ -142,8 +142,18 @@
 //---------------------------------------------------------------------------------------------
 
 typedef void (*PREERRORMESSAGECALLBACK)( void );
-
 void SetPreErrorCallback(PREERRORMESSAGECALLBACK callback);
+
+enum EMessageBoxType
+{
+	MSGBOX_INFO = 0,
+	MSGBOX_WARNING,
+	MSGBOX_ERROR,
+	MSGBOX_CRASH,
+};
+
+typedef void (*MESSAGECB)( const char* str, EMessageBoxType type );
+void SetMessageBoxCallback(MESSAGECB callback);
 
 void CrashMsg(const char* fmt, ...);
 void ErrorMsg(const char* fmt, ...);

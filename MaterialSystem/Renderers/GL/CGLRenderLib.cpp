@@ -191,10 +191,15 @@ int dComp(const DispRes &d0, const DispRes &d1){
 
 #endif // PLAT_LINUX
 
-#if defined(USE_GLES2) && defined(PLAT_WIN)
+#if defined(USE_GLES2) // && defined(PLAT_WIN)
 bool OpenNativeDisplay(EGLNativeDisplayType* nativedisp_out)
 {
+#ifdef ANDROID
+	*nativedisp_out = EGL_DEFAULT_DISPLAY;
+#else
     *nativedisp_out = (EGLNativeDisplayType) NULL;
+#endif // ANDROID
+
     return true;
 }
 
@@ -207,7 +212,136 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 {
 	savedParams = params;
 
-#ifdef PLAT_WIN
+#ifdef USE_GLES2
+
+#ifdef ANDROID
+	// other EGL
+	hwnd = (EGLNativeWindowType)params.hWindow;
+#else
+	// other
+	hwnd = (void*)params.hWindow;
+#endif // ANDROID
+
+	Msg("Initializing EGL context...\n");
+
+    EGLBoolean bsuccess;
+
+    // create native window
+    EGLNativeDisplayType nativeDisplay;
+    if(!OpenNativeDisplay(&nativeDisplay))
+    {
+        MsgError("Could not get open native display\n");
+        return false;
+    }
+
+    // get egl display handle
+    eglDisplay = eglGetDisplay(nativeDisplay);
+    if(eglDisplay == EGL_NO_DISPLAY)
+    {
+        MsgError("Could not get EGL display\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    MsgInfo("eglInitialize...\n");
+
+    // Initialize the display
+    EGLint major = 0;
+    EGLint minor = 0;
+    bsuccess = eglInitialize(eglDisplay, &major, &minor);
+    if (!bsuccess)
+    {
+        MsgError("Could not initialize EGL display\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+    if (major < 1 || minor < 4)
+    {
+        // Does not support EGL 1.4
+        MsgError("System does not support at least EGL 1.4\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    MsgInfo("eglChooseConfig...\n");
+
+    // Obtain the first configuration with a depth buffer
+    // Obtain the first configuration with a depth buffer
+    EGLint attrs[] = {
+		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+
+		EGL_DEPTH_SIZE, 16,
+
+		EGL_RED_SIZE, 8,
+		EGL_GREEN_SIZE, 8,
+		EGL_BLUE_SIZE, 8,
+
+		EGL_NONE
+	};
+
+    EGLint numConfig =0;
+    EGLConfig eglConfig = 0;
+    bsuccess = eglChooseConfig(eglDisplay, attrs, &eglConfig, 1, &numConfig);
+    if (!bsuccess)
+    {
+        MsgError("Could not find valid EGL config\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    // Get the native visual id
+    int nativeVid;
+    if (!eglGetConfigAttrib(eglDisplay, eglConfig, EGL_NATIVE_VISUAL_ID, &nativeVid))
+    {
+        MsgError("Could not get native visual id\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    // Create a surface for the main window
+    eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, hwnd, NULL);
+    if (eglSurface == EGL_NO_SURFACE)
+    {
+        MsgError("Could not create EGL surface\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    MsgInfo("eglBindAPI...\n");
+
+	eglBindAPI(EGL_OPENGL_ES_API);
+
+	// context attribute list
+    EGLint contextAttr[] = {
+		EGL_CONTEXT_CLIENT_VERSION, 2,
+		EGL_NONE
+	};
+
+	MsgInfo("eglCreateContext...\n");
+
+    // Create two OpenGL ES contexts
+    glContext = eglCreateContext(eglDisplay, eglConfig, EGL_NO_CONTEXT, contextAttr);
+    if (glContext == EGL_NO_CONTEXT)
+    {
+        MsgError("Could not create EGL context\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    glContext2 = eglCreateContext(eglDisplay, eglConfig, glContext, contextAttr);
+    if (glContext == EGL_NO_CONTEXT)
+    {
+        MsgError("Could not create EGL context\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+	MsgInfo("attempt to eglMakeCurrent...\n");
+
+	eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext);
+
+#elif defined(PLAT_WIN)
 	if (r_screen->GetInt() >= GetSystemMetrics(SM_CMONITORS))
 		r_screen->SetValue("0");
 
@@ -297,116 +431,6 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 	hdc = GetDC(hwnd);
 
-#ifdef USE_GLES2
-    EGLBoolean bsuccess;
-
-    // create native window
-    EGLNativeDisplayType nativeDisplay;
-    if(!OpenNativeDisplay(&nativeDisplay))
-    {
-        MsgError("Could not get open native display\n");
-        return false;
-    }
-
-    // get egl display handle
-    eglDisplay = eglGetDisplay(nativeDisplay);
-    if(eglDisplay == EGL_NO_DISPLAY)
-    {
-        MsgError("Could not get EGL display\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-
-    // Initialize the display
-    EGLint major = 0;
-    EGLint minor = 0;
-    bsuccess = eglInitialize(eglDisplay, &major, &minor);
-    if (!bsuccess)
-    {
-        MsgError("Could not initialize EGL display\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-    if (major < 1 || minor < 4)
-    {
-        // Does not support EGL 1.4
-        MsgError("System does not support at least EGL 1.4\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-
-    // Obtain the first configuration with a depth buffer
-    // Obtain the first configuration with a depth buffer
-    EGLint attrs[] = {
-		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-
-		EGL_DEPTH_SIZE, 16,
-
-		EGL_RED_SIZE, 8,
-		EGL_GREEN_SIZE, 8,
-		EGL_BLUE_SIZE, 8,
-
-		EGL_NONE
-	};
-
-    EGLint numConfig =0;
-    EGLConfig eglConfig = 0;
-    bsuccess = eglChooseConfig(eglDisplay, attrs, &eglConfig, 1, &numConfig);
-    if (!bsuccess)
-    {
-        MsgError("Could not find valid EGL config\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-
-    // Get the native visual id
-    int nativeVid;
-    if (!eglGetConfigAttrib(eglDisplay, eglConfig, EGL_NATIVE_VISUAL_ID, &nativeVid))
-    {
-        MsgError("Could not get native visual id\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-
-    // Create a surface for the main window
-    eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, hwnd, NULL);
-    if (eglSurface == EGL_NO_SURFACE)
-    {
-        MsgError("Could not create EGL surface\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-
-	eglBindAPI(EGL_OPENGL_ES_API);
-
-	// context attribute list
-    EGLint contextAttr[] = {
-		EGL_CONTEXT_CLIENT_VERSION, 2,
-		EGL_NONE
-	};
-
-    // Create two OpenGL ES contexts
-    glContext = eglCreateContext(eglDisplay, eglConfig, EGL_NO_CONTEXT, contextAttr);
-    if (glContext == EGL_NO_CONTEXT)
-    {
-        MsgError("Could not create EGL context\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-
-    glContext2 = eglCreateContext(eglDisplay, eglConfig, glContext, contextAttr);
-    if (glContext == EGL_NO_CONTEXT)
-    {
-        MsgError("Could not create EGL context\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-
-
-
-	eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext);
-#else
 	int iAttribs[] = {
 		wgl::DRAW_TO_WINDOW_ARB,	gl::TRUE_,
 		wgl::ACCELERATION_ARB,		wgl::FULL_ACCELERATION_ARB,
@@ -459,7 +483,6 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	wglShareLists(glContext2, glContext);
 
 	wglMakeCurrent(hdc, glContext);
-#endif // #ifdef USE_GLES2
 
 #elif PLAT_LINUX
 
@@ -556,19 +579,14 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 			savedParams.bIsWindowed = true;
 		}
 	}
-/*
-	// Create a blank cursor for cursor hiding
-	XColor dummy;
-	char data = 0;
-	Pixmap blank = XCreateBitmapFromData(display, (Drawable)savedParams.hWindow, &data, 1, 1);
-	blankCursor = XCreatePixmapCursor(display, blank, blank, &dummy, &dummy, 0, 0);
-	XFreePixmap(display, blank);
-*/
+
 	glContext = glXCreateContext(display, vi, None, True);
 	glContext2 = glXCreateContext(display, vi, glContext, True);
 
 	glXMakeCurrent(display, (GLXDrawable)savedParams.hWindow, glContext);
 #endif //PLAT_WIN
+
+	Msg("Initializing GL extensions...\n");
 
 	gl::exts::LoadTest didLoad = gl::sys::LoadFunctions();
 	if(!didLoad)
