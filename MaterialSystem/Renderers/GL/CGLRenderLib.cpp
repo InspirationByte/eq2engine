@@ -26,24 +26,27 @@
 
 /*
 
-OpenGL extensions to generate using glLoadGen
+OpenGL extensions used to generate gl_caps.hpp/cpp
 
 EXT_texture_compression_s3tc
 EXT_texture_sRGB
 EXT_texture_filter_anisotropic
-EXT_multisample
+ARB_draw_instanced
 ARB_instanced_arrays
+ARB_multisample
 ARB_fragment_shader
 ARB_shader_objects
-EXT_vertex_shader
+ARB_vertex_shader
 ARB_framebuffer_object
+EXT_framebuffer_object
 ARB_draw_buffers
 EXT_draw_buffers2
 ARB_half_float_pixel
 ARB_depth_buffer_float
 EXT_packed_depth_stencil
 ARB_texture_rectangle
-ATI_texture_float
+ARB_texture_float
+ARB_occlusion_query
 
 */
 

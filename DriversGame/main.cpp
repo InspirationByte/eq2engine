@@ -25,45 +25,29 @@ extern ConVar r_fullscreen;
 
 DECLARE_CVAR_NONSTATIC(__cheats,1,"Wireframe",0);
 
-#if defined(ANDROID) && !defined(EQ_USE_SDL) // sdl makes our main() function ok
+#if defined(ANDROID) && defined(EQ_USE_SDL)
 
-#include <jni.h>
-#include <android_native_app_glue.h>
-
-// android app
-void android_main( struct android_app* state )
+void EQSDLMessageBoxCallback(const char* messageStr, EMessageBoxType type )
 {
-    app_dummy();
+	switch(type)
+	{
+		case MSGBOX_INFO:
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "INFO", messageStr, NULL);
+			break;
+		case MSGBOX_WARNING:
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "WARNING", messageStr, NULL);
+			break;
+		case MSGBOX_ERROR:
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR", messageStr, NULL);
+			break;
+		case MSGBOX_CRASH:
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FATAL ERROR", messageStr, NULL);
+			break;
+	}
 
-	// init core
-	if(!GetCore()->Init("Game", 0, NULL))
-		return;
-
-	// init file system
-	if(!g_fileSystem->Init(false))
-		return;
-
-	g_localizer->AddTokensFile("game");
-
-	//SetThreadAffinityMask(GetCurrentThread(), 1);
-
-	InstallEngineSpewFunction();
-
-	// initialize timers
-	Platform_InitTime();
-
-	if(!Host_Init())
-		return;
-
-	Host_GameLoop();
-
-	Host_Terminate();
-
-	// shutdown
-	GetCore()->Shutdown();
 }
 
-#else
+#endif // ANDROID && EQ_USE_SDL
 
 #ifdef _WIN32
 int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, int nCmdShow)
@@ -98,33 +82,9 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 	// init core
 	if(!GetCore()->Init("Game", lpszCmdLine))
 		return -1;
-
 #else
 
 #include <unistd.h>
-
-#ifdef ANDROID
-void EQSDLMessageBoxCallback(const char* messageStr, EMessageBoxType type )
-{
-	switch(type)
-	{
-		case MSGBOX_INFO:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "INFO", messageStr, NULL);
-			break;
-		case MSGBOX_WARNING:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "WARNING", messageStr, NULL);
-			break;
-		case MSGBOX_ERROR:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR", messageStr, NULL);
-			break;
-		case MSGBOX_CRASH:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FATAL ERROR", messageStr, NULL);
-			break;
-	}
-
-}
-#endif // ANDROID
-
 
 // posix apps
 int main(int argc, char** argv)
@@ -135,7 +95,7 @@ int main(int argc, char** argv)
 	// preconfigure game base path
 	g_fileSystem->SetBasePath( androidStoragePath );
 
-	//SetMessageBoxCallback(EQSDLMessageBoxCallback);
+	SetMessageBoxCallback(EQSDLMessageBoxCallback);
 
 #endif // ANDROID
 
@@ -155,8 +115,6 @@ int main(int argc, char** argv)
 
 	g_localizer->AddTokensFile("game");
 
-	//SetThreadAffinityMask(GetCurrentThread(), 1);
-
 	InstallEngineSpewFunction();
 
 	// initialize timers
@@ -174,5 +132,3 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-
-#endif // ANDROID

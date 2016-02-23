@@ -135,7 +135,7 @@ EQWNDHANDLE Sys_CreateWindow()
 	return handle;
 }
 
-bool s_bActive = false;
+bool s_bActive = true;
 bool s_bProcessInput = true;
 
 static CGameHost s_Host;
@@ -246,6 +246,9 @@ void Host_GameLoop()
 #endif
 
 	SDL_Event event;
+
+    // TODO:    use this in right place
+    //          e.g. g_pHost->RequestTextInput()
 	SDL_StartTextInput();
 
 	do
