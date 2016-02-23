@@ -1406,7 +1406,7 @@
 	"InterfaceManager.h"
 	"utils/eqthread.h"
 
-1455508694 /home/soap/Projects/EqEngine/src_all/public/platform/Platform.h
+1456130933 /home/soap/Projects/EqEngine/src_all/public/platform/Platform.h
 	"dktypes.h"
 	"SDL.h"
 	"SDL_syswm.h"
@@ -1425,8 +1425,11 @@
 
 1455508694 /home/soap/Projects/EqEngine/src_all/public/utils/singleton.h
 
-1455508694 /home/soap/Projects/EqEngine/src_all/public/utils/eqthread.h
+1456130933 /home/soap/Projects/EqEngine/src_all/public/utils/eqthread.h
 	"Platform.h"
+	<sched.h>
+	<pthread.h>
+	<errno.h>
 	<stdint.h>
 	"eqstring.h"
 
@@ -1665,7 +1668,7 @@
 	"IFileSystem.h"
 	"DebugInterface.h"
 
-1455508694 /home/soap/Projects/EqEngine/src_all/public/utils/strtools.h
+1456130933 /home/soap/Projects/EqEngine/src_all/public/utils/strtools.h
 	"utils/DkLinkedList.h"
 	"utils/DkList.h"
 	"utils/eqstring.h"
@@ -1714,7 +1717,7 @@
 	"dktypes.h"
 	"cpuInstrDefs.h"
 
-1455891158 /home/soap/Projects/EqEngine/src_all/public/core/ILocalize.h
+1456130933 /home/soap/Projects/EqEngine/src_all/public/core/ILocalize.h
 	"IDkCore.h"
 	<wchar.h>
 

@@ -905,8 +905,8 @@ void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
 	{
 		for(int y = 0; y < m_sizeh; y++)
 		{
-			float dxv[4] = NEIGHBOR_OFFS_DX(x, 0.5);
-			float dyv[4] = NEIGHBOR_OFFS_DY(y, 0.5);
+			float dxv[4] = NEIGHBOR_OFFS_DX((float)x, 0.5f);
+			float dyv[4] = NEIGHBOR_OFFS_DY((float)y, 0.5f);
 
 			int pt_idx = y*m_sizew + x;
 			hfieldtile_t& tile = m_points[pt_idx];

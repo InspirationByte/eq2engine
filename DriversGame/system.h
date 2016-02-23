@@ -16,12 +16,6 @@
 
 #include "utils/eqtimer.h"
 
-using namespace Threading;
-
-EQWNDHANDLE CreateEngineWindow();
-
-void InitWindowAndRun();
-
 class CGameHost
 {
 public:
@@ -32,50 +26,60 @@ public:
 		QUIT_RESTART
 	};
 
-				CGameHost();
+						CGameHost();
 
-	bool		LoadModules();
-	bool		InitSystems( EQWNDHANDLE pWindow, bool bWindowed );
-	void		ShutdownSystems();
+	bool				LoadModules();
+	bool				InitSystems( EQWNDHANDLE pWindow, bool bWindowed );
+	void				ShutdownSystems();
 
-	bool		Frame();
-	bool		FilterTime( double fDt );
+	bool				Frame();
 
-	bool		IsInMultiplayerGame() const;
-	void		SignalPause();
+	bool				IsInMultiplayerGame() const;
+	void				SignalPause();
 
-	void		SetWindowSize(int width, int height);
+	void				OnWindowResize(int width, int height);
 
-	void		BeginScene();
+	void				ProcessKeyChar( int chr );
+	void				TrapKey_Event( int key, bool down );
+	void				TrapMouse_Event( float x, float y, int buttons, bool down );
+	void				TrapMouseMove_Event( int x, int y );
+	void				TrapMouseWheel_Event(int x, int y, int scroll);
 
-	void		EndScene();
+	void				TrapJoyAxis_Event( short axis, short value );
+	void				TrapJoyBall_Event( short ball, short xrel, short yrel );
+	void				TrapJoyButton_Event( short button, bool down);
 
-	void		ProcessKeyChar( int chr );
-	void		TrapKey_Event( int key, bool down );
-	void		TrapMouse_Event( float x, float y, int buttons, bool down );
-	void		TrapMouseMove_Event( int x, int y );
-	void		TrapMouseWheel_Event(int x, int y, int scroll);
+	void				StartTrapMode();
+	bool				IsTrapping();
+	bool				CheckDoneTrapping( int& buttons, int& key );
 
-	void		TrapJoyAxis_Event( short axis, short value );
-	void		TrapJoyBall_Event( short ball, short xrel, short yrel );
-	void		TrapJoyButton_Event( short button, bool down);
+	void				SetCursorPosition(int x, int y);
+	void				SetCursorShow(bool bShow);
 
-	void		StartTrapMode();
-	bool		IsTrapping();
-	bool		CheckDoneTrapping( int& buttons, int& key );
+	void				SetCenterMouseEnable(bool center);
 
-	void		SetCursorPosition(int x, int y);
-	void		SetCursorShow(bool bShow);
+	double				GetCurTime() const {return m_fCurTime;}
+	double				GetFrameTime() const {return m_fGameFrameTime;}
 
-	void		SetCenterMouseEnable(bool center);
+	const IVector2D&	GetWindowSize() const {return m_winSize;}
+	IEqFont*			GetDefaultFont() const {return m_pDefaultFont;}
 
-// protected:
+	int					GetQuitState() const {return m_nQuitState;}
+
+// static
+
+	static void			HostQuitToDesktop();
+	static void 		HostExitCmd(DkList<EqString> *args);
+
+protected:
+
+	void				BeginScene();
+	void				EndScene();
+	bool				FilterTime( double fDt );
 
 	EQWNDHANDLE	m_pWindow;
 
-	int			m_nWidth;
-	int			m_nHeight;
-
+	IVector2D	m_winSize;
 	IVector2D	m_mousePos;
 	IVector2D	m_prevMousePos;
 	Vector2D	m_mouseDelta;

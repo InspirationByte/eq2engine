@@ -1520,7 +1520,7 @@ void CGameWorld::Draw( int nRenderFlags )
 
 	// draw sky
 #ifndef EDITOR
-	Vector2D screenSize(g_pHost->m_nWidth, g_pHost->m_nHeight);
+	const Vector2D& screenSize = g_pHost->GetWindowSize();
 #else
 	Vector2D screenSize(512, 512);
 #endif // EDITOR
@@ -1614,12 +1614,12 @@ void CGameWorld::Draw( int nRenderFlags )
 			int collMask = OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_SOLID_GROUND;
 			if( g_pPhysics->TestLine(m_CameraParams.GetOrigin(), virtualSunPos, coll, collMask))
 			{
-				m_lensIntensityTiming -= g_pHost->m_fGameFrameTime*10.0f;
+				m_lensIntensityTiming -= g_pHost->GetFrameTime()*10.0f;
 				m_lensIntensityTiming = max(0.0f, m_lensIntensityTiming*fIntensity);
 			}
 			else
 			{
-				m_lensIntensityTiming += g_pHost->m_fGameFrameTime*10.0f;
+				m_lensIntensityTiming += g_pHost->GetFrameTime()*10.0f;
 				m_lensIntensityTiming = min(1.0f, m_lensIntensityTiming*fIntensity);
 			}
 		}

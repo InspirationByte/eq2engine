@@ -17,6 +17,7 @@
 			</Target>
 		</Build>
 		<Compiler>
+			<Add option="-O3" />
 			<Add option="-fPIC" />
 			<Add option="-DLINUX" />
 			<Add option="-DCORE_EXPORT" />

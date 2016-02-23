@@ -16,7 +16,7 @@
 
 #include "Platform.h"
 #include "IDkCore.h"
-#include "system.h"
+#include "window.h"
 #include "EngineSpew.h"
 
 #include "utils/DkLinkedList.h"
@@ -52,7 +52,12 @@ void android_main( struct android_app* state )
 	// initialize timers
 	Platform_InitTime();
 
-	InitWindowAndRun();
+	if(!Host_Init())
+		return;
+
+	Host_GameLoop();
+
+	Host_Terminate();
 
 	// shutdown
 	GetCore()->Shutdown();
@@ -119,7 +124,12 @@ int main(int argc, char** argv)
 	// initialize timers
 	Platform_InitTime();
 
-	InitWindowAndRun();
+	if(!Host_Init())
+		return -3;
+
+	Host_GameLoop();
+
+	Host_Terminate();
 
 	// shutdown
 	GetCore()->Shutdown();
