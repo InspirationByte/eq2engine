@@ -1029,10 +1029,20 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 		// find corresponding API
 		for(int i = 0; i < sec->keys.numElem(); i++)
 		{
-			if(!stricmp(sec->keys[i]->name, "api") && !stricmp(KV_GetValueString(sec->keys[i]), GetRendererName()))
+			if(!stricmp(sec->keys[i]->name, "api"))
 			{
-				info.apiPrefs = sec->keys[i];
-				break;
+				for(int j = 0; j < sec->keys[i]->values.numElem(); j++)
+				{
+					if(!stricmp(KV_GetValueString(sec->keys[i], j), GetRendererName()))
+					{
+						info.apiPrefs = sec->keys[i];
+						break;
+					}
+
+				}
+
+				if(info.apiPrefs)
+					break;
 			}
 		}
 	}

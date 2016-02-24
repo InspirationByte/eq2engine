@@ -138,7 +138,7 @@ extern void DrvSyn_RegisterShaderOverrides();
 bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 {
 	m_pWindow = pWindow;
-	SDL_GetWindowSize(m_pWindow, &m_winSize.x, &m_winSize.y);
+	
 
 	int bpp = 32;
 
@@ -193,7 +193,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 		ErrorMsg("Can't get SDL window WM info!\n");
 		return false;
 	}
-
+	
 #ifdef _WIN32
 	materials_config.shaderapi_params.hWindow = winfo.info.win.window;
 #elif LINUX
@@ -231,6 +231,10 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	if(!materials->LoadShaderLibrary("libeqBaseShaders.so"))
 		return false;
 #endif // _WIN32
+
+	int wide,tall;
+	SDL_GetWindowSize(m_pWindow, &wide, &tall);
+	OnWindowResize(wide,tall);
 
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();

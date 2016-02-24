@@ -81,8 +81,8 @@
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">eqGLRHI</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">
-    <LibraryPath>..\..\packages\ANGLE.WindowsStore.2.1.6\bin\Windows\Win32;$(LibraryPath)</LibraryPath>
-    <IncludePath>H:\Projects\Equilibrium\SHARED_FOR_EQ\eq_src\packages\ANGLE.WindowsStore.2.1.6\Include;$(IncludePath)</IncludePath>
+    <LibraryPath>H:\Projects\Equilibrium\SHARED_FOR_EQ\LEARN\gles_sdk\x86;$(LibraryPath)</LibraryPath>
+    <IncludePath>H:\Projects\Equilibrium\SHARED_FOR_EQ\LEARN\gles_sdk\include\EGL;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -197,10 +197,16 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="CTexture.cpp" />
+    <ClCompile Include="GL\glad.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="GL\glad_es3.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="GL\GLMeshBuilder.cpp" />
     <ClCompile Include="GL\GLOcclusionQuery.cpp" />
     <ClCompile Include="GL\GLShaderProgram.cpp" />
-    <ClCompile Include="GL\gl_caps.cpp" />
+    <ClCompile Include="GL\gl_loader.cpp" />
     <ClCompile Include="GL\wgl_caps.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">true</ExcludedFromBuild>
     </ClCompile>
@@ -215,11 +221,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CTexture.h" />
+    <ClInclude Include="GL\glad.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="GL\glad_es3.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="GL\GLMeshBuilder.h" />
     <ClInclude Include="GL\GLOcclusionQuery.h" />
     <ClInclude Include="GL\GLRenderState.h" />
     <ClInclude Include="GL\GLShaderProgram.h" />
-    <ClInclude Include="GL\gl_caps.hpp" />
+    <ClInclude Include="GL\gl_loader.h" />
     <ClInclude Include="GL\wgl_caps.hpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">true</ExcludedFromBuild>
     </ClInclude>

@@ -72,10 +72,16 @@
     <ClCompile Include="GL\GLOcclusionQuery.cpp">
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClCompile>
-    <ClCompile Include="GL\gl_caps.cpp">
+    <ClCompile Include="GL\wgl_caps.cpp">
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClCompile>
-    <ClCompile Include="GL\wgl_caps.cpp">
+    <ClCompile Include="GL\gl_loader.cpp">
+      <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="GL\glad.c">
+      <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="GL\glad_es3.c">
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClCompile>
   </ItemGroup>
@@ -155,10 +161,16 @@
     <ClInclude Include="GL\GLOcclusionQuery.h">
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClInclude>
-    <ClInclude Include="GL\gl_caps.hpp">
+    <ClInclude Include="GL\wgl_caps.hpp">
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClInclude>
-    <ClInclude Include="GL\wgl_caps.hpp">
+    <ClInclude Include="GL\gl_loader.h">
+      <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="GL\glad.h">
+      <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="GL\glad_es3.h">
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClInclude>
   </ItemGroup>

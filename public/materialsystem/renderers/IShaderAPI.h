@@ -38,11 +38,19 @@
 
 struct kvkeybase_t;
 
+// designed to be sent as hWindow param
+struct externalWindowDisplayParams_t
+{
+	void*			window;
+	void**			paramArray;
+	int				numParams;
+};
+
 // shader api initializer
 struct shaderapiinitparams_t
 {
 	// basic parameters for shader API initialization
-	void*			hWindow;				// OS window handle
+	void*			hWindow;				// OS window handle or externalWindowDisplayParams_t
 
 	bool			bIsWindowed;			// is windowed?
 	ETextureFormat	nScreenFormat;			// screen back buffer format

@@ -43,7 +43,9 @@ static void* SunGetProcAddress (const GLubyte* name)
 }
 #endif /* __sgi || __sun */
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(USE_GLES2)
+
+#include <windows.h>
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4055)
@@ -81,12 +83,11 @@ static PROC WinGetProcAddress(const char *name)
 	#else
 		#if defined(__sgi) || defined(__sun)
 			#define glProcAddressFunc(name) SunGetProcAddress(name)
-        #elif defined(__ANDROID__)
+        #elif defined(__ANDROID__) || defined(USE_GLES2)
             #include <EGL/egl.h>
             #define glProcAddressFunc(name) eglGetProcAddress(name)
 		#else /* GLX */
 		    #include <GL/glx.h>
-
 			#define glProcAddressFunc(name) (void*)(*glXGetProcAddressARB)((const GLubyte*)name)
 		#endif
 	#endif

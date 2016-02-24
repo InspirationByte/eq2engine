@@ -66,8 +66,6 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 		return false;
 	}
 
-	int nLockByteCount = m_strideSize*sizeToLock;
-
 	// discard if dynamic
 	bool discard = dynamic;
 
@@ -82,20 +80,37 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 	m_lockDiscard = discard;
 
 	// allocate memory for lock data
-	m_lockPtr = (ubyte*)malloc(nLockByteCount);
-	(*outdata) = m_lockPtr;
 	m_lockSize = sizeToLock;
 	m_lockOffs = lockOfs;
 	m_lockReadOnly = readOnly;
 
 	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
 
+#ifdef USE_GLES2
+	// map buffer
+	pGLRHI->ThreadingSharingRequest();
+	glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
+
+	GLbitfield mapFlags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | (discard ? GL_MAP_INVALIDATE_RANGE_BIT : 0);
+	m_lockPtr = (ubyte*)glMapBufferRange(GL_ARRAY_BUFFER, 0, m_numVerts*m_strideSize, mapFlags );
+	(*outdata) = m_lockPtr + m_lockOffs*m_strideSize;
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	pGLRHI->ThreadingSharingRelease();
+
+	if(m_lockPtr == NULL)
+		ASSERTMSG(false, "Failed to map vertex buffer!");
+#else
+
+	int nLockByteCount = m_strideSize*sizeToLock;
+
+	m_lockPtr = (ubyte*)malloc(nLockByteCount);
+	(*outdata) = m_lockPtr;
 
 	// read data into the buffer if we're not discarding
 	if( !discard )
 	{
 		pGLRHI->ThreadingSharingRequest();
-
 		glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
 
 		// lock whole buffer
@@ -105,9 +120,9 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 		(*outdata) = m_lockPtr + m_lockOffs*m_strideSize;
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 		pGLRHI->ThreadingSharingRelease();
 	}
+#endif // USE_GLES2
 
 	m_bIsLocked = true;
 
@@ -130,16 +145,21 @@ void CVertexBufferGL::Unlock()
 			//if( m_boundStream == -1 )
 			glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
 
+#ifdef USE_GLES2
+			glUnmapBuffer(GL_ARRAY_BUFFER);
+#else
 			glBufferSubData(GL_ARRAY_BUFFER, 0, m_lockSize*m_strideSize, m_lockPtr);
+#endif // USE_GLES2
 
 			// check if bound
-			//if( m_boundStream == -1 )
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 			pGLRHI->ThreadingSharingRelease();
 		}
 
+#ifndef USE_GLES2 // don't do dis...
 		free(m_lockPtr);
+#endif // USE_GLES2
 		m_lockPtr = NULL;
 	}
 	else

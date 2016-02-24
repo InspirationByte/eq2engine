@@ -197,12 +197,7 @@ int dComp(const DispRes &d0, const DispRes &d1){
 #if defined(USE_GLES2) // && defined(PLAT_WIN)
 bool OpenNativeDisplay(EGLNativeDisplayType* nativedisp_out)
 {
-#ifdef ANDROID
 	*nativedisp_out = EGL_DEFAULT_DISPLAY;
-#else
-    *nativedisp_out = (EGLNativeDisplayType) NULL;
-#endif // ANDROID
-
     return true;
 }
 
@@ -222,7 +217,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	hwnd = (EGLNativeWindowType)params.hWindow;
 #else
 	// other
-	hwnd = (void*)params.hWindow;
+	hwnd = (EGLNativeWindowType)params.hWindow;
 #endif // ANDROID
 
 	Msg("Initializing EGL context...\n");
@@ -233,7 +228,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
     EGLNativeDisplayType nativeDisplay;
     if(!OpenNativeDisplay(&nativeDisplay))
     {
-        MsgError("Could not get open native display\n");
+        ErrorMsg("OpenGL ES init error: Cannot open native display!");
         return false;
     }
 
@@ -241,7 +236,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
     eglDisplay = eglGetDisplay(nativeDisplay);
     if(eglDisplay == EGL_NO_DISPLAY)
     {
-        MsgError("Could not get EGL display\n");
+        ErrorMsg("OpenGL ES init error: Could not get EGL display (%d)", eglDisplay);
         CloseNativeDisplay(nativeDisplay);
         return false;
     }
@@ -254,14 +249,14 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
     bsuccess = eglInitialize(eglDisplay, &major, &minor);
     if (!bsuccess)
     {
-        MsgError("Could not initialize EGL display\n");
+        ErrorMsg("OpenGL ES init error: Could not initialize EGL display!");
         CloseNativeDisplay(nativeDisplay);
         return false;
     }
-    if (major < 1 || minor < 4)
+    if (major < 1)
     {
         // Does not support EGL 1.4
-        MsgError("System does not support at least EGL 1.4\n");
+        ErrorMsg("OpenGL ES init error: System does not support at least EGL 3.0");
         CloseNativeDisplay(nativeDisplay);
         return false;
     }
@@ -271,7 +266,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
     // Obtain the first configuration with a depth buffer
     // Obtain the first configuration with a depth buffer
     EGLint attrs[] = {
-		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
 
 		EGL_DEPTH_SIZE, 16,
@@ -288,7 +283,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
     bsuccess = eglChooseConfig(eglDisplay, attrs, &eglConfig, 1, &numConfig);
     if (!bsuccess)
     {
-        MsgError("Could not find valid EGL config\n");
+        ErrorMsg("OpenGL ES init error: Could not find valid EGL config");
         CloseNativeDisplay(nativeDisplay);
         return false;
     }
@@ -297,7 +292,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
     int nativeVid;
     if (!eglGetConfigAttrib(eglDisplay, eglConfig, EGL_NATIVE_VISUAL_ID, &nativeVid))
     {
-        MsgError("Could not get native visual id\n");
+        ErrorMsg("OpenGL ES init error: Could not get native visual id");
         CloseNativeDisplay(nativeDisplay);
         return false;
     }
@@ -306,7 +301,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
     eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, hwnd, NULL);
     if (eglSurface == EGL_NO_SURFACE)
     {
-        MsgError("Could not create EGL surface\n");
+        ErrorMsg("OpenGL ES init error: Could not create EGL surface\n");
         CloseNativeDisplay(nativeDisplay);
         return false;
     }
@@ -317,7 +312,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 	// context attribute list
     EGLint contextAttr[] = {
-		EGL_CONTEXT_CLIENT_VERSION, 2,
+		EGL_CONTEXT_CLIENT_VERSION, 3,
 		EGL_NONE
 	};
 
@@ -327,7 +322,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
     glContext = eglCreateContext(eglDisplay, eglConfig, EGL_NO_CONTEXT, contextAttr);
     if (glContext == EGL_NO_CONTEXT)
     {
-        MsgError("Could not create EGL context\n");
+        ErrorMsg("OpenGL ES init error: Could not create EGL context\n");
         CloseNativeDisplay(nativeDisplay);
         return false;
     }
@@ -335,7 +330,7 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
     glContext2 = eglCreateContext(eglDisplay, eglConfig, glContext, contextAttr);
     if (glContext == EGL_NO_CONTEXT)
     {
-        MsgError("Could not create EGL context\n");
+         ErrorMsg("OpenGL ES init error: Could not create EGL context\n");
         CloseNativeDisplay(nativeDisplay);
         return false;
     }
@@ -435,9 +430,9 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	hdc = GetDC(hwnd);
 
 	int iAttribs[] = {
-		wgl::DRAW_TO_WINDOW_ARB,	gl::TRUE_,
+		wgl::DRAW_TO_WINDOW_ARB,	GL_TRUE,
 		wgl::ACCELERATION_ARB,		wgl::FULL_ACCELERATION_ARB,
-		wgl::DOUBLE_BUFFER_ARB,		gl::TRUE_,
+		wgl::DOUBLE_BUFFER_ARB,		GL_TRUE,
 		wgl::RED_BITS_ARB,			8,
 		wgl::GREEN_BITS_ARB,		8,
 		wgl::BLUE_BITS_ARB,			8,
@@ -662,7 +657,6 @@ void CGLRenderLib::ExitAPI()
 	wglMakeCurrent(NULL, NULL);
 	wglDeleteContext(glContext);
 	wglDeleteContext(glContext2);
-#endif // USE_GLES2
 
 	ReleaseDC(hwnd, hdc);
 
@@ -671,6 +665,8 @@ void CGLRenderLib::ExitAPI()
 		// Reset display mode to default
 		ChangeDisplaySettingsEx((const char *) device.DeviceName, NULL, NULL, 0, NULL);
 	}
+#endif // USE_GLES2
+
 #else
 
 #ifdef PLAT_LINUX
@@ -736,12 +732,15 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 
 void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 {
+	if(m_width == w && m_height == h)
+		return;
+
 	m_width = w;
 	m_height = h;
 
 	if(!savedParams.bIsWindowed)
 	{
-#ifdef PLAT_WIN
+#if defined(PLAT_WIN) && !defined(USE_GLES2)
 		dm.dmPelsWidth = m_width;
 		dm.dmPelsHeight = m_height;
 
@@ -750,7 +749,7 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 			MsgError("Couldn't set fullscreen mode\n");
 			WarningMsg("Couldn't set fullscreen mode");
 		}
-#endif // PLAT_WIN
+#endif // PLAT_WIN && !USE_GLES2
 	}
 
 	if (glContext != NULL)

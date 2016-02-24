@@ -105,31 +105,6 @@ public:
 	// Renderer string (ex: OpenGL, D3D9)
 	const char*			GetRendererName() const;
 
-	// Render targetting support
-	bool				IsSupportsRendertargetting() const;
-
-	// Render targetting support for Multiple RTs
-	bool				IsSupportsMRT() const;
-
-	// Supports multitexturing???
-	bool				IsSupportsMultitexturing() const;
-
-	// The driver/hardware is supports Pixel shaders?
-	bool				IsSupportsPixelShaders() const;
-
-	// The driver/hardware is supports Vertex shaders?
-	bool				IsSupportsVertexShaders() const;
-
-	// The driver/hardware is supports Geometry shaders?
-	bool				IsSupportsGeometryShaders() const;
-
-	// The driver/hardware is supports Domain shaders?
-	bool				IsSupportsDomainShaders() const;
-
-	// The driver/hardware is supports Hull (tessellator) shaders?
-	bool				IsSupportsHullShaders() const;
-
-
 //-------------------------------------------------------------
 // MT Synchronization
 //-------------------------------------------------------------

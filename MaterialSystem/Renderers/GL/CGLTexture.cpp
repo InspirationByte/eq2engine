@@ -116,6 +116,9 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
 	m_lockOffs = lockOffset;
 	m_lockReadOnly = bReadOnly;
 
+#ifdef USE_GLES2
+	// Always need to discard data from GLES :(
+#else
     if(!bDiscard)
     {
     	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
@@ -128,10 +131,12 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
         GLenum srcType = chanTypePerFormat[m_iFormat];
 
         glGetTexImage(glTarget,m_nLockLevel, srcFormat, srcType, m_lockPtr);
+
         glBindTexture(glTarget, 0);
 
         pGLRHI->GL_END_CRITICAL();
     }
+#endif // USE_GLES2
 }
 
 // unlocks texture for modifications, etc

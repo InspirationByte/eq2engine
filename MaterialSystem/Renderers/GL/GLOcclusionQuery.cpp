@@ -1,5 +1,5 @@
-//////////////////////////////////////////////////////////////////////////////////
-// Copyright � Inspiration Byte
+﻿//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
 // 2009-2014
 //////////////////////////////////////////////////////////////////////////////////
 // Description: OpenGL Occlusion query
@@ -31,14 +31,23 @@ CGLOcclusionQuery::~CGLOcclusionQuery()
 // begins the occlusion query issue
 void CGLOcclusionQuery::Begin()
 {
+#ifdef USE_GLES2
+	glBeginQuery(GL_ANY_SAMPLES_PASSED, m_query);
+#else
 	glBeginQuery(GL_SAMPLES_PASSED, m_query);
+#endif // USE_GLES2
 	m_ready = false;
 }
 
 // ends the occlusion query issue
 void CGLOcclusionQuery::End()
 {
+#ifdef USE_GLES2
+	glEndQuery(GL_ANY_SAMPLES_PASSED);
+#else
 	glEndQuery(GL_SAMPLES_PASSED);
+#endif // USE_GLES2
+	
 	glFlush();
 }
 
@@ -50,14 +59,19 @@ bool CGLOcclusionQuery::IsReady()
 
 	m_pixelsVisible = 0;
 
-	GLint available;
-	glGetQueryObjectiv(m_query, GL_QUERY_RESULT_AVAILABLE, &available);
+	GLuint available;
+	glGetQueryObjectuiv(m_query, GL_QUERY_RESULT_AVAILABLE, &available);
 
 	m_ready = (available > 0);
 
 	if(m_ready)
 	{
 		glGetQueryObjectuiv(m_query, GL_QUERY_RESULT, &m_pixelsVisible);
+		
+#ifdef USE_GLES2
+		// too sad GL ES can't properly read pixel count
+		m_pixelsVisible = (m_pixelsVisible & GL_TRUE) == GL_TRUE;
+#endif // USE_GLES2
 	}
 
 	return m_ready;

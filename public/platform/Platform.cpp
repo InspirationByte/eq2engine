@@ -137,6 +137,8 @@ void ErrorMsg(const char* fmt, ...)
 	va_end (argptr);
 
 	g_msgBoxCallback(string, MSGBOX_CRASH);
+
+	MsgError("FATAL ERROR: %s\n", string);
 }
 
 void CrashMsg(const char* fmt, ...)
@@ -154,6 +156,8 @@ void CrashMsg(const char* fmt, ...)
 	va_end (argptr);
 
 	g_msgBoxCallback(string, MSGBOX_ERROR);
+
+	MsgError("ERROR: %s\n", string);
 }
 
 void WarningMsg(const char* fmt, ...)
@@ -169,6 +173,8 @@ void WarningMsg(const char* fmt, ...)
 	va_end (argptr);
 
 	g_msgBoxCallback(string, MSGBOX_WARNING);
+
+	MsgError("WARNING: %s\n", string);
 }
 
 void InfoMsg(const char* fmt, ...)
@@ -184,6 +190,7 @@ void InfoMsg(const char* fmt, ...)
 	va_end (argptr);
 
 	g_msgBoxCallback(string, MSGBOX_INFO);
+	MsgError("INFO: %s\n", string);
 }
 
 

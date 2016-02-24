@@ -27,6 +27,11 @@ struct gladGLversionStruct GLVersion;
 #define _GLAD_IS_SOME_NEW_VERSION 1
 #endif
 
+#ifdef _MSC_VER
+#pragma warning(disable:4055)
+#pragma warning(disable:4127)
+#endif //_MSC_VER
+
 static int max_loaded_major;
 static int max_loaded_minor;
 

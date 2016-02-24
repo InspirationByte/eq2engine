@@ -27,6 +27,11 @@ struct gladGLversionStruct GLVersion;
 #define _GLAD_IS_SOME_NEW_VERSION 1
 #endif
 
+#ifdef _MSC_VER
+#pragma warning(disable:4055)
+#pragma warning(disable:4127)
+#endif //_MSC_VER
+
 static int max_loaded_major;
 static int max_loaded_minor;
 
@@ -810,6 +815,7 @@ PFNGLGETINTEGERINDEXEDVEXTPROC glad_glGetIntegerIndexedvEXT;
 PFNGLENABLEINDEXEDEXTPROC glad_glEnableIndexedEXT;
 PFNGLDISABLEINDEXEDEXTPROC glad_glDisableIndexedEXT;
 PFNGLISENABLEDINDEXEDEXTPROC glad_glIsEnabledIndexedEXT;
+
 static void load_GL_VERSION_1_0(GLADloadproc load) {
 	if(!GLAD_GL_VERSION_1_0) return;
 	glad_glCullFace = (PFNGLCULLFACEPROC)load("glCullFace");

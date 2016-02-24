@@ -44,7 +44,7 @@ static char s_FFPMeshBuilder_VertexProgram[] =
 "uniform mat4 WVP;\n"
 "void main()\n"
 "{\n"
-"	GL_Position = WVP * input_vPos;\n"
+"	gl_Position = WVP * input_vPos;\n"
 "	vColor = input_color;\n"
 "	texCoord = input_texCoord;\n"
 "}";
@@ -54,7 +54,7 @@ static char s_FFPMeshBuilder_NoTexture_PixelProgram[] =
 "varying vec4 vColor;\n"
 "void main()\n"
 "{\n"
-"	GL_FragColor = vColor;\n"
+"	gl_FragColor = vColor;\n"
 "}";
 
 static char s_FFPMeshBuilder_Textured_PixelProgram[] =
@@ -64,7 +64,7 @@ static char s_FFPMeshBuilder_Textured_PixelProgram[] =
 "varying vec4 vColor;\n"
 "void main()\n"
 "{\n"
-"	GL_FragColor = texture2D(Base, texCoord)*vColor;\n"
+"	gl_FragColor = texture2D(Base, texCoord)*vColor;\n"
 "}";
 
 #else
@@ -222,15 +222,17 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 
 	m_caps.maxTextureAnisotropicLevel = 1;
 
+#ifdef USE_GLES2
+	m_caps.isHardwareOcclusionQuerySupported = true;
+	m_caps.isInstancingSupported = true; // GL ES 3
+#else
+	m_caps.isInstancingSupported = GLAD_GL_ARB_instanced_arrays && GLAD_GL_ARB_draw_instanced;
+	m_caps.isHardwareOcclusionQuerySupported = GLAD_GL_ARB_occlusion_query;
+	
 	if (GLAD_GL_EXT_texture_filter_anisotropic)
 		glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_caps.maxTextureAnisotropicLevel);
 
-#ifdef USE_GLES2
-	m_caps.isHardwareOcclusionQuerySupported = false;
-#else
-	m_caps.isHardwareOcclusionQuerySupported = GLAD_GL_ARB_occlusion_query;
 #endif // USE_GLES2
-	m_caps.isInstancingSupported = GLAD_GL_ARB_instanced_arrays && GLAD_GL_ARB_draw_instanced;
 
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &m_caps.maxTextureSize);
 
@@ -239,28 +241,33 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 	m_caps.maxVertexGenericAttributes = MAX_GENERIC_ATTRIB;
 	m_caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
 
-#ifdef USE_GLES2
-	// ES 2.0 supports shaders
-	m_caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED;
-#else
-	m_caps.shadersSupportedFlags = ((GLAD_GL_ARB_vertex_shader || GLAD_GL_ARB_shader_objects) ? SHADER_CAPS_VERTEX_SUPPORTED : 0)
-								 | ((GLAD_GL_ARB_fragment_shader || GLAD_GL_ARB_shader_objects) ? SHADER_CAPS_PIXEL_SUPPORTED : 0);
-#endif // USE_GLES2
-	m_caps.maxTextureUnits = MAX_TEXTUREUNIT;
+	m_caps.maxTextureUnits = 1;
 	m_caps.maxVertexStreams = MAX_VERTEXSTREAM;
 	m_caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
 
-	m_caps.maxTextureUnits = 1;
+#ifdef USE_GLES2
+	// ES 2.0 supports shaders
+	m_caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED;
+
+	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &m_caps.maxTextureUnits);
+#else
+	m_caps.shadersSupportedFlags = ((GLAD_GL_ARB_vertex_shader || GLAD_GL_ARB_shader_objects) ? SHADER_CAPS_VERTEX_SUPPORTED : 0)
+								 | ((GLAD_GL_ARB_fragment_shader || GLAD_GL_ARB_shader_objects) ? SHADER_CAPS_PIXEL_SUPPORTED : 0);
 
 	if (m_caps.shadersSupportedFlags & SHADER_CAPS_PIXEL_SUPPORTED)
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &m_caps.maxTextureUnits);
 	else
 		glGetIntegerv(GL_MAX_TEXTURE_UNITS, &m_caps.maxTextureUnits);
+#endif // USE_GLES2
 
+	
+
+#ifndef USE_GLES2
 	if (GLAD_GL_ARB_draw_buffers)
+#endif // USE_GLES2
 	{
 		m_caps.maxRenderTargets = 1;
-		glGetIntegerv(GL_MAX_DRAW_BUFFERS_ARB, &m_caps.maxRenderTargets);
+		glGetIntegerv(GL_MAX_DRAW_BUFFERS, &m_caps.maxRenderTargets);
 	}
 
 	if (m_caps.maxRenderTargets > MAX_MRTS)
@@ -474,6 +481,7 @@ void ShaderAPIGL::ApplyBlendState()
 				}
 			}
 
+#if 0 // don't use FFP alpha test it's freakin slow and deprecated
 			if(pSelectedState->m_params.alphaTest)
 			{
 				glEnable(GL_ALPHA_TEST);
@@ -483,6 +491,7 @@ void ShaderAPIGL::ApplyBlendState()
 			{
 				glDisable(GL_ALPHA_TEST);
 			}
+#endif // 0
 		}
 
 		int mask = COLORMASK_ALL;
@@ -588,6 +597,7 @@ void ShaderAPIGL::ApplyRasterizerState()
 				glCullFace(cullConst[m_nCurrentCullMode]);
 			}
 
+#ifndef USE_GLES2
 			if (FILL_SOLID != m_nCurrentFillMode)
 			{
 				m_nCurrentFillMode = FILL_SOLID;
@@ -600,7 +610,7 @@ void ShaderAPIGL::ApplyRasterizerState()
 
 				m_bCurrentMultiSampleEnable = false;
 			}
-
+#endif // USE_GLES2
 			if (false != m_bCurrentScissorEnable)
 			{
 				glDisable(GL_SCISSOR_TEST);
@@ -629,6 +639,7 @@ void ShaderAPIGL::ApplyRasterizerState()
 				m_nCurrentCullMode = pSelectedState->m_params.cullMode;
 			}
 
+#ifndef USE_GLES2
 			if (pSelectedState->m_params.fillMode != m_nCurrentFillMode)
 			{
 				m_nCurrentFillMode = pSelectedState->m_params.fillMode;
@@ -647,6 +658,7 @@ void ShaderAPIGL::ApplyRasterizerState()
 				}
 				m_bCurrentMultiSampleEnable = pSelectedState->m_params.multiSample;
 			}
+#endif // USE_GLES2
 
 			if (pSelectedState->m_params.scissor != m_bCurrentScissorEnable)
 			{
@@ -778,59 +790,10 @@ const char* ShaderAPIGL::GetDeviceNameString() const
 const char* ShaderAPIGL::GetRendererName() const
 {
 #ifdef USE_GLES2
-	return "OpenGL_ES";
+	return "OpenGLES";
 #else
 	return "OpenGL";
 #endif // USE_GLES2
-}
-
-// Pixel shader version
-bool ShaderAPIGL::IsSupportsPixelShaders() const
-{
-	return GLAD_GL_ARB_fragment_shader;
-}
-
-// Vertex shader version
-bool ShaderAPIGL::IsSupportsVertexShaders() const
-{
-	return GLAD_GL_ARB_vertex_shader;
-}
-
-// Geometry shader version
-bool ShaderAPIGL::IsSupportsGeometryShaders() const
-{
-	// For now is not possible
-	return false;
-}
-
-// The driver/hardware is supports Domain shaders?
-bool ShaderAPIGL::IsSupportsDomainShaders() const
-{
-	return false;
-}
-
-// The driver/hardware is supports Hull (tessellator) shaders?
-bool ShaderAPIGL::IsSupportsHullShaders() const
-{
-	return false;
-}
-
-// Render targetting support
-bool ShaderAPIGL::IsSupportsRendertargetting() const
-{
-	return GLAD_GL_ARB_draw_buffers || GLAD_GL_EXT_draw_buffers2;
-}
-
-// Render targetting support for Multiple RTs
-bool ShaderAPIGL::IsSupportsMRT() const
-{
-	return GLAD_GL_ARB_draw_buffers;
-}
-
-// Supports multitexturing???
-bool ShaderAPIGL::IsSupportsMultitexturing() const
-{
-	return true;//GLAD_GL_EXT_multitexture;
 }
 
 //-------------------------------------------------------------
@@ -997,7 +960,7 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 		if (IsDepthFormat(format))
 		{
 			if (IsStencilFormat(format))
-				srcFormat = GL_DEPTH_STENCIL_EXT;
+				srcFormat = GL_DEPTH_STENCIL;
 			else
 				srcFormat = GL_DEPTH_COMPONENT;
 		}
@@ -1162,6 +1125,9 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 		}
 		else
 		{
+#ifdef USE_GLES2
+			ASSERTMSG(false, "CreateGLTextureFromImage - 1D textures not supported");
+#else
 			glTexImage1D(	gltarget,
 							mipMapLevel - nQuality,
 							internalFormat,
@@ -1170,6 +1136,7 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 							srcFormat,
 							srcType,
 							src);
+#endif // USE_GLES2
 		}
 
 		mipMapLevel++;
@@ -1200,7 +1167,11 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& 
 
 	int wide = 0, tall = 0;
 
-	pTexture->glTarget = pImages[0]->IsCube()? GL_TEXTURE_CUBE_MAP : pImages[0]->Is3D()? GL_TEXTURE_3D : pImages[0]->Is2D()? GL_TEXTURE_2D : GL_TEXTURE_1D;
+#ifdef USE_GLES2
+	pTexture->glTarget = pImages[0]->IsCube()? GL_TEXTURE_CUBE_MAP : pImages[0]->Is3D()? GL_TEXTURE_3D : pImages[0]->Is2D() ? GL_TEXTURE_2D : 0;
+#else
+	pTexture->glTarget = pImages[0]->IsCube()? GL_TEXTURE_CUBE_MAP : pImages[0]->Is3D()? GL_TEXTURE_3D : pImages[0]->Is2D() ? GL_TEXTURE_2D : GL_TEXTURE_1D;
+#endif // USE_GLES2
 
 	for(int i = 0; i < pImages.numElem(); i++)
 	{
@@ -1267,7 +1238,9 @@ void ShaderAPIGL::InternalSetupSampler(uint texTarget, const SamplerStateParam_t
 	// Set requested wrapping modes
 	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, (sampler.wrapS == ADDRESSMODE_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 
+#ifndef USE_GLES2
 	if (texTarget != GL_TEXTURE_1D)
+#endif // USE_GLES2
 		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, (sampler.wrapT == ADDRESSMODE_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 
 	if (texTarget == GL_TEXTURE_3D)
@@ -1277,14 +1250,20 @@ void ShaderAPIGL::InternalSetupSampler(uint texTarget, const SamplerStateParam_t
 	glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, minFilters[sampler.magFilter]);
 	glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, minFilters[sampler.minFilter]);
 
+#ifdef USE_GLES2
+	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+#else
 	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+#endif // USE_GLES2
 	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_FUNC, depthConst[sampler.nComparison]);
 
+#ifndef USE_GLES2
 	// Setup anisotropic filtering
 	if (sampler.aniso > 1 && GLAD_GL_EXT_texture_filter_anisotropic)
 	{
 		glTexParameteri(texTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, sampler.aniso);
 	}
+#endif // USE_GLES2
 
 	//GL_END_CRITICAL();
 }
@@ -1374,7 +1353,11 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 
 		if (nNumRTs == 0)
 		{
+#ifdef USE_GLES2
+			glDrawBuffers(0, GL_NONE);
+#else
 			glDrawBuffer(GL_NONE);
+#endif // USE_GLES2
 			glReadBuffer(GL_NONE);
 		}
 		else
@@ -1593,7 +1576,13 @@ void ShaderAPIGL::LoadMatrix(const Matrix4x4 &matrix)
 // Set Depth range for next primitives
 void ShaderAPIGL::SetDepthRange(float fZNear,float fZFar)
 {
+#ifdef USE_GLES2
+	glDepthRangef(fZNear,fZFar);
+	
+#else
 	glDepthRange(fZNear,fZFar);
+#endif // USE_GLES2
+
 }
 
 // Changes the vertex format
@@ -1675,11 +1664,19 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 {
 	CVertexBufferGL* pSelectedBuffer = (CVertexBufferGL*)pVertexBuffer;
 
+#ifdef USE_GLES2
+	const GLsizei glTypes[] = {
+		GL_FLOAT,
+		GL_HALF_FLOAT,
+		GL_UNSIGNED_BYTE,
+	};
+#else
 	const GLsizei glTypes[] = {
 		GL_FLOAT,
 		GL_HALF_FLOAT_ARB,
 		GL_UNSIGNED_BYTE,
 	};
+#endif // USE_GLES2
 
 	GLuint vbo = 0;
 
@@ -1739,6 +1736,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 					// instance vertex attrib divisor
 					int selStreamParam = instanceBuffer ? 1 : 0;
+
 					glVertexAttribDivisorARB(i, selStreamParam);
 				}
 			}
@@ -1908,6 +1906,12 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
     if(gl_disable_shaders.GetBool())
         return false;
+
+	if(!info.apiPrefs)
+	{
+		MsgError("Shader %s error: missing %s api preferences\n", pShaderOutput->GetName(), GetRendererName());
+		return false;
+	}
 
 	ThreadingSharingRequest();
 
@@ -2092,7 +2096,11 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			GLint length, size;
 			glGetActiveUniform(prog->m_program, i, maxLength, &length, &size, &type, tmpName);
 
+#ifdef USE_GLES2
+			if (type >= GL_SAMPLER_2D && type <= GL_SAMPLER_CUBE_SHADOW)
+#else
 			if (type >= GL_SAMPLER_1D && type <= GL_SAMPLER_2D_RECT_SHADOW_ARB)
+#endif // USE_GLES3
 			{
 				GLShaderSampler_t* sp = &samplers[nSamplers];
 				ASSERTMSG(sp, "WHAT?");
@@ -2324,8 +2332,6 @@ IVertexFormat* ShaderAPIGL::CreateVertexFormat(VertexFormatDesc_s *formatDesc, i
 
 IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(BufferAccessType_e nBufAccess, int nNumVerts, int strideSize, void *pData )
 {
-
-
 	CVertexBufferGL* pGLVertexBuffer = new CVertexBufferGL();
 
 	pGLVertexBuffer->m_numVerts = nNumVerts;
@@ -2827,7 +2833,7 @@ void ShaderAPIGL::ThreadingSharingRequest()
 	m_isSharing = true;
 
 #ifdef USE_GLES2
-	eglMakeCurrent(m_display, m_eglSurface, m_eglSurface, m_glContext2);
+	//eglMakeCurrent(m_display, m_eglSurface, m_eglSurface, m_glContext2);
 #elif _WIN32
 	wglMakeCurrent(m_hdc, m_glContext2);
 #elif LINUX
@@ -2858,7 +2864,7 @@ bool ShaderAPIGL::GL_CRITICAL()
 	m_currThreadId = currThread;
 
 #ifdef USE_GLES2
-	eglMakeCurrent(m_display, m_eglSurface, m_eglSurface, m_glContext);
+	//eglMakeCurrent(m_display, m_eglSurface, m_eglSurface, m_glContext);
 #elif _WIN32
 	wglMakeCurrent(m_hdc, m_glContext);
 #elif LINUX
@@ -2903,7 +2909,7 @@ void ShaderAPIGL::ThreadingSharingRelease()
 	m_isSharing = false;
 
 #ifdef USE_GLES2
-	eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	//eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 #elif _WIN32
 	wglMakeCurrent(NULL, NULL);
 #elif LINUX

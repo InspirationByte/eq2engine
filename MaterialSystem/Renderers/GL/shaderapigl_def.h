@@ -11,16 +11,27 @@
 static const int internalFormats[] = {
 	0,
 	// Unsigned formats
+#ifdef USE_GLES2
+	0, //GL_INTENSITY8,
+	0, //GL_LUMINANCE8_ALPHA8,
+#else
 	GL_INTENSITY8,
 	GL_LUMINANCE8_ALPHA8,
+#endif // USE_GLES2
 	GL_RGB8,
 	GL_RGBA8,
 
+#ifdef USE_GLES2
+	0, //GL_INTENSITY16,
+	0, //GL_LUMINANCE16_ALPHA16,
+	GL_RGB16I,
+	GL_RGBA16I,
+#else
 	GL_INTENSITY16,
 	GL_LUMINANCE16_ALPHA16,
 	GL_RGB16,
 	GL_RGBA16,
-
+#endif // USE_GLES2
 	// Signed formats
 	0,
 	0,
@@ -31,7 +42,18 @@ static const int internalFormats[] = {
 	0,
 	0,
 	0,
+#ifdef USE_GLES2
+	// Float formats
+	0, // GL_INTENSITY16F_ARB,
+	0, //GL_LUMINANCE_ALPHA16F_ARB,
+	GL_RGB16F,
+	GL_RGBA16F,
 
+	//GL_INTENSITY32F_ARB,
+	//GL_LUMINANCE_ALPHA32F_ARB,
+	GL_RGB32F,
+	GL_RGBA32F,
+#else
 	// Float formats
 	GL_INTENSITY16F_ARB,
 	GL_LUMINANCE_ALPHA16F_ARB,
@@ -42,6 +64,7 @@ static const int internalFormats[] = {
 	GL_LUMINANCE_ALPHA32F_ARB,
 	GL_RGB32F_ARB,
 	GL_RGBA32F_ARB,
+#endif // USE_GLES2
 
 	// Signed integer formats
 	0, // GL_INTENSITY16I_EXT,
@@ -69,22 +92,34 @@ static const int internalFormats[] = {
 	0, // RGBE8 not directly supported
 	0, // GL_RGB9_E5,
 	0, // GL_R11F_G11F_B10F,
+#ifdef USE_GLES2
+	0, // GL_RGB5,
+#else
 	GL_RGB5,
+#endif // USE_GLES2
 	GL_RGBA4,
 	GL_RGB10_A2,
 
 	// Depth formats
 	GL_DEPTH_COMPONENT16,
 	GL_DEPTH_COMPONENT24,
-	GL_DEPTH24_STENCIL8_EXT,
+	GL_DEPTH24_STENCIL8,
 	0, // GL_DEPTH_COMPONENT32F,
 
 	// Compressed formats
+#ifdef USE_GLES2
+	0, //GL_COMPRESSED_RGB_S3TC_DXT1_EXT,
+	0, //GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
+	0, //GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+	0, // ATI1N not yet supported
+	0, //GL_COMPRESSED_LUMINANCE_ALPHA,
+#else
 	GL_COMPRESSED_RGB_S3TC_DXT1_EXT,
 	GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
 	GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
 	0, // ATI1N not yet supported
 	GL_COMPRESSED_LUMINANCE_ALPHA,			//COMPRESSED_LUMINANCE_ALPHA_3DC_ATI,
+#endif // USE_GLES2
 };
 
 static const int chanCountTypes[] = { 0, GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA };
@@ -115,10 +150,17 @@ static const int chanTypePerFormat[] = {
 	0,
 
 	// Float formats
+#ifdef USE_GLES2
+	GL_HALF_FLOAT,
+	GL_HALF_FLOAT,
+	GL_HALF_FLOAT,
+	GL_HALF_FLOAT,
+#else
 	GL_HALF_FLOAT_ARB,
 	GL_HALF_FLOAT_ARB,
 	GL_HALF_FLOAT_ARB,
 	GL_HALF_FLOAT_ARB,
+#endif // USE_GLES2
 
 	GL_FLOAT,
 	GL_FLOAT,
@@ -152,19 +194,30 @@ static const int chanTypePerFormat[] = {
 	0, // RGBE9E5 not supported
 	0, // RG11B10F not supported
 	GL_UNSIGNED_SHORT_5_6_5,
+#ifdef USE_GLES2
+	0, // GL_UNSIGNED_SHORT_4_4_4_4 ???,
+#else
 	GL_UNSIGNED_SHORT_4_4_4_4_REV,
+#endif // USE_GLES2
 	GL_UNSIGNED_INT_2_10_10_10_REV,
 
 	// Depth formats
 	GL_UNSIGNED_SHORT,
 	GL_UNSIGNED_INT,
-	GL_UNSIGNED_INT_24_8_EXT,
+	GL_UNSIGNED_INT_24_8,
 	0, // D32F not supported
 
 	// Compressed formats
+#ifdef USE_GLES2
+	0, //GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,
+	0, //GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
+	0, //GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+#else
 	GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,
 	GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
 	GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+#endif // USE_GLES2
+
 	0,//(D3DFORMAT) '1ITA', // 3Dc 1 channel
 	0,//(D3DFORMAT) '2ITA', // 3Dc 2 channels
 };
@@ -221,11 +274,13 @@ static const int cullConst[] = {
 	GL_FRONT,
 };
 
+#ifndef USE_GLES2
 static const int fillConst[] = {
 	GL_FILL,
 	GL_LINE,
 	GL_POINT,
 };
+#endif // USE_GLES2
 
 static const int minFilters[] = {
 	GL_NEAREST,
@@ -236,12 +291,14 @@ static const int minFilters[] = {
 	GL_LINEAR_MIPMAP_LINEAR,
 };
 
+#ifndef USE_GLES2
 static const int matrixModeConst[] = {
 	GL_MODELVIEW,
 	GL_PROJECTION,
 	GL_MODELVIEW,
 	GL_TEXTURE,
 };
+#endif // USE_GLES2
 
 // for some speedup
 static const int mbTypeConst[] = {
@@ -251,15 +308,24 @@ static const int mbTypeConst[] = {
 	GL_TRIANGLE_STRIP,
 	GL_LINE_STRIP,
 	GL_LINE_LOOP,
+#ifdef USE_GLES2
+	0, // GL_POLYGON,
+	0, // GL_QUADS,
+#else
 	GL_POLYGON,
 	GL_QUADS,
+#endif // USE_GLES2
 };
 
 static const int glPrimitiveType[] = {
 	GL_TRIANGLES,
 	GL_TRIANGLE_FAN,
 	GL_TRIANGLE_STRIP,
+#ifdef USE_GLES2
+	0, // GL_QUADS,
+#else
 	GL_QUADS,
+#endif // USE_GLES2
 	GL_LINES,
 	GL_LINE_STRIP,
 	GL_LINE_LOOP,
@@ -271,5 +337,20 @@ static const int glBufferUsages[] = {
 	GL_STATIC_DRAW,
 	GL_DYNAMIC_DRAW,
 };
+
+#ifdef USE_GLES2
+
+#define glDrawElementsInstancedARB glDrawElementsInstanced
+#define glDrawArraysInstancedARB glDrawArraysInstanced
+#define glVertexAttribDivisorARB glVertexAttribDivisor
+
+#define GL_OBJECT_COMPILE_STATUS_ARB GL_COMPILE_STATUS
+#define GL_OBJECT_COMPILE_STATUS_ARB GL_COMPILE_STATUS
+#define GL_OBJECT_LINK_STATUS_ARB GL_LINK_STATUS
+
+#define GL_OBJECT_ACTIVE_UNIFORMS_ARB GL_ACTIVE_UNIFORMS
+#define GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB GL_ACTIVE_UNIFORM_MAX_LENGTH
+
+#endif // USE_GLES2
 
 #endif //GLRENDERER_CONSTANTS_H
