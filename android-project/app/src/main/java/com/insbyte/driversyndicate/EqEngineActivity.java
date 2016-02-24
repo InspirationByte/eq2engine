@@ -14,7 +14,7 @@ public class EqEngineActivity extends org.libsdl.app.SDLActivity {
 
     protected String[] getArguments() {
         return new String[]{
-                "-norender",
+               // "-norender",
         };
     }
 }

@@ -228,7 +228,7 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 #else
 	m_caps.isInstancingSupported = GLAD_GL_ARB_instanced_arrays && GLAD_GL_ARB_draw_instanced;
 	m_caps.isHardwareOcclusionQuerySupported = GLAD_GL_ARB_occlusion_query;
-	
+
 	if (GLAD_GL_EXT_texture_filter_anisotropic)
 		glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_caps.maxTextureAnisotropicLevel);
 
@@ -238,7 +238,7 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 
 	m_caps.maxRenderTargets = MAX_MRTS;
 
-	m_caps.maxVertexGenericAttributes = MAX_GENERIC_ATTRIB;
+	m_caps.maxVertexGenericAttributes = MAX_GL_GENERIC_ATTRIB;
 	m_caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
 
 	m_caps.maxTextureUnits = 1;
@@ -246,9 +246,10 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 	m_caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
 
 #ifdef USE_GLES2
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &m_caps.maxVertexGenericAttributes);
+
 	// ES 2.0 supports shaders
 	m_caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED;
-
 	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &m_caps.maxTextureUnits);
 #else
 	m_caps.shadersSupportedFlags = ((GLAD_GL_ARB_vertex_shader || GLAD_GL_ARB_shader_objects) ? SHADER_CAPS_VERTEX_SUPPORTED : 0)
@@ -260,7 +261,7 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 		glGetIntegerv(GL_MAX_TEXTURE_UNITS, &m_caps.maxTextureUnits);
 #endif // USE_GLES2
 
-	
+
 
 #ifndef USE_GLES2
 	if (GLAD_GL_ARB_draw_buffers)
@@ -1578,7 +1579,7 @@ void ShaderAPIGL::SetDepthRange(float fZNear,float fZFar)
 {
 #ifdef USE_GLES2
 	glDepthRangef(fZNear,fZFar);
-	
+
 #else
 	glDepthRange(fZNear,fZFar);
 #endif // USE_GLES2
@@ -1644,7 +1645,7 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 		}
 #endif // GL_NO_DEPRECATED_ATTRIBUTES
 
-		for (int i = 0; i < MAX_GL_GENERIC_ATTRIB; i++)
+		for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 		{
 			if ( pSelectedFormat->m_hGeneric[i].m_nSize && !pCurrentFormat->m_hGeneric[i].m_nSize)
 				glEnableVertexAttribArray(i);
@@ -1727,7 +1728,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 				glColorPointer(cvf->m_hColor.m_nSize, glTypes[cvf->m_hColor.m_nFormat], vertexSize, base + cvf->m_hColor.m_nOffset);
 #endif // GL_NO_DEPRECATED_ATTRIBUTES
 
-			for (int i = 0; i < MAX_GL_GENERIC_ATTRIB; i++)
+			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 			{
 				if (cvf->m_hGeneric[i].m_nStream == nStream)
 				{

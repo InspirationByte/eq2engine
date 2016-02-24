@@ -16,6 +16,11 @@
 #endif // PLAT_LINUX && !IS_OPENGL
 
 #ifdef USE_GLES2
+
+#ifndef EGL_OPENGL_ES3_BIT
+#define EGL_OPENGL_ES3_BIT 0x00000040
+#endif // EGL_OPENGL_ES3_BIT
+
 #elif PLAT_WIN
 #include "wgl_caps.hpp"
 #elif PLAT_LINUX
@@ -23,6 +28,8 @@
 #else
 #include "agl_caps.hpp"
 #endif // USE_GLES2
+
+
 
 /*
 
@@ -212,11 +219,18 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 #ifdef USE_GLES2
 
+    eglSurface = EGL_NO_SURFACE;
+
 #ifdef ANDROID
-	// other EGL
-	hwnd = (EGLNativeWindowType)params.hWindow;
+    externalWindowDisplayParams_t* winParams = (externalWindowDisplayParams_t*)params.hWindow;
+
+    ASSERT(winParams != NULL);
+
+    eglSurface = (EGLSurface)winParams->paramArray[0];
+
+	hwnd = (EGLNativeWindowType)winParams->window;
 #else
-	// other
+	// other EGL
 	hwnd = (EGLNativeWindowType)params.hWindow;
 #endif // ANDROID
 
@@ -298,7 +312,9 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
     }
 
     // Create a surface for the main window
-    eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, hwnd, NULL);
+    if(eglSurface == EGL_NO_SURFACE)
+        eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, hwnd, NULL);
+
     if (eglSurface == EGL_NO_SURFACE)
     {
         ErrorMsg("OpenGL ES init error: Could not create EGL surface\n");

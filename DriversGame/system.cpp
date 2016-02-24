@@ -138,7 +138,7 @@ extern void DrvSyn_RegisterShaderOverrides();
 bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 {
 	m_pWindow = pWindow;
-	
+
 
 	int bpp = 32;
 
@@ -193,7 +193,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 		ErrorMsg("Can't get SDL window WM info!\n");
 		return false;
 	}
-	
+
 #ifdef _WIN32
 	materials_config.shaderapi_params.hWindow = winfo.info.win.window;
 #elif LINUX
@@ -201,7 +201,16 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 #elif APPLE
 	materials_config.shaderapi_params.hWindow = (void*)winfo.info.cocoa.window;
 #elif ANDROID
-	materials_config.shaderapi_params.hWindow = (void*)winfo.info.android.window;
+
+    externalWindowDisplayParams_t winParams;
+    winParams.window = (void*)winfo.info.android.window;
+
+    void* paramArray[] = {(void*)winfo.info.android.surface};
+
+	winParams.paramArray = paramArray;
+	winParams.numParams = 1;
+
+	materials_config.shaderapi_params.hWindow = &winParams;
 #endif
 
 	materials_config.shaderapi_params.nScreenFormat = format;
