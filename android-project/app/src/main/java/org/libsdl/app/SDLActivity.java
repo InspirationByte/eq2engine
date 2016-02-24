@@ -34,7 +34,7 @@ import android.content.pm.ActivityInfo;
  SDL Activity
  */
 public class SDLActivity extends Activity {
-    private static final String TAG = "EqEngine_SDL";
+    private static final String TAG = "SDL";
 
     // Keep track of the paused state
     public static boolean mIsPaused, mIsSurfaceReady, mHasFocus;

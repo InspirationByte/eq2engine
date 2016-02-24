@@ -12,11 +12,9 @@ public class EqEngineActivity extends org.libsdl.app.SDLActivity {
         };
     }
 
-/*
-    static {
-        System.loadLibrary("SDL2");
-        System.loadLibrary("eqCore");
-        System.loadLibrary("Game");
+    protected String[] getArguments() {
+        return new String[]{
+                "-norender",
+        };
     }
-    */
 }

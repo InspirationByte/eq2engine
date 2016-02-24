@@ -26,6 +26,7 @@
 			<Add option="-DNOENGINE" />
 			<Add option="-DGAME_DRIVERS" />
 			<Add option="-DEQ_USE_SDL" />
+			<Add option="-DBIG_REPLAYS" />
 			<Add directory="../shared_engine" />
 			<Add directory="../FileSystem" />
 			<Add directory="../Engine" />
