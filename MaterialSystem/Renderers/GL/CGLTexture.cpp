@@ -8,7 +8,11 @@
 #include "CGLTexture.h"
 #include "DebugInterface.h"
 
-#include "gl_caps.hpp"
+#ifdef USE_GLES2
+#include "glad_es3.h"
+#else
+#include "glad.h"
+#endif
 
 #include "shaderapigl_def.h"
 
@@ -40,14 +44,14 @@ void CGLTexture::Release()
 
 void CGLTexture::ReleaseTextures()
 {
-	if (glTarget == gl::RENDERBUFFER_EXT)
+	if (glTarget == GL_RENDERBUFFER)
 	{
-		gl::DeleteRenderbuffersEXT(1, &glDepthID);
+		glDeleteRenderbuffers(1, &glDepthID);
 	}
 	else
 	{
 		for(int i = 0; i < textures.numElem(); i++)
-			gl::DeleteTextures(1, &textures[i].glTexID);
+			glDeleteTextures(1, &textures[i].glTexID);
 	}
 }
 
@@ -118,13 +122,13 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
 
         pGLRHI->GL_CRITICAL();
 
-        gl::BindTexture(glTarget, textures[0].glTexID);
+        glBindTexture(glTarget, textures[0].glTexID);
 
         GLenum srcFormat = chanCountTypes[GetChannelCount(m_iFormat)];
         GLenum srcType = chanTypePerFormat[m_iFormat];
 
-        gl::GetTexImage(glTarget,m_nLockLevel, srcFormat, srcType, m_lockPtr);
-        gl::BindTexture(glTarget, 0);
+        glGetTexImage(glTarget,m_nLockLevel, srcFormat, srcType, m_lockPtr);
+        glBindTexture(glTarget, 0);
 
         pGLRHI->GL_END_CRITICAL();
     }
@@ -144,9 +148,9 @@ void CGLTexture::Unlock()
 
             pGLRHI->GL_CRITICAL();
 
-			gl::BindTexture(glTarget, textures[0].glTexID);
-			gl::TexSubImage2D(glTarget, 0, 0, 0, m_iWidth, m_iHeight, srcFormat, srcType, m_lockPtr);
-			gl::BindTexture(glTarget, 0);
+			glBindTexture(glTarget, textures[0].glTexID);
+			glTexSubImage2D(glTarget, 0, 0, 0, m_iWidth, m_iHeight, srcFormat, srcType, m_lockPtr);
+			glBindTexture(glTarget, 0);
 
 			pGLRHI->GL_END_CRITICAL();
 		}

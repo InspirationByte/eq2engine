@@ -2,39 +2,44 @@
 // Copyright © Inspiration Byte
 // 2009-2014
 //////////////////////////////////////////////////////////////////////////////////
-// Description: OpenGL Occlusion query 
+// Description: OpenGL Occlusion query
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "GLOcclusionQuery.h"
 #include "ShaderAPIGL.h"
-#include "gl_caps.hpp"
+
+#ifdef USE_GLES2
+#include "glad_es3.h"
+#else
+#include "glad.h"
+#endif
 
 CGLOcclusionQuery::CGLOcclusionQuery()
 {
 	m_ready = false;
 	m_pixelsVisible = 0;
-	m_query = gl::NONE;
+	m_query = GL_NONE;
 
-	gl::GenQueries(1, &m_query);
+	glGenQueries(1, &m_query);
 }
 
 CGLOcclusionQuery::~CGLOcclusionQuery()
 {
-	gl::DeleteQueries(1, &m_query);
+	glDeleteQueries(1, &m_query);
 }
 
 // begins the occlusion query issue
 void CGLOcclusionQuery::Begin()
 {
-	gl::BeginQuery(gl::SAMPLES_PASSED, m_query);
+	glBeginQuery(GL_SAMPLES_PASSED, m_query);
 	m_ready = false;
 }
 
 // ends the occlusion query issue
 void CGLOcclusionQuery::End()
 {
-	gl::EndQuery(gl::SAMPLES_PASSED);
-	gl::Flush();
+	glEndQuery(GL_SAMPLES_PASSED);
+	glFlush();
 }
 
 // returns status
@@ -46,13 +51,13 @@ bool CGLOcclusionQuery::IsReady()
 	m_pixelsVisible = 0;
 
 	GLint available;
-	gl::GetQueryObjectiv(m_query, gl::QUERY_RESULT_AVAILABLE, &available);
+	glGetQueryObjectiv(m_query, GL_QUERY_RESULT_AVAILABLE, &available);
 
 	m_ready = (available > 0);
 
 	if(m_ready)
 	{
-		gl::GetQueryObjectuiv(m_query, gl::QUERY_RESULT, &m_pixelsVisible);
+		glGetQueryObjectuiv(m_query, GL_QUERY_RESULT, &m_pixelsVisible);
 	}
 
 	return m_ready;

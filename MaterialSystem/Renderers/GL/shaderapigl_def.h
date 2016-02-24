@@ -11,15 +11,15 @@
 static const int internalFormats[] = {
 	0,
 	// Unsigned formats
-	gl::INTENSITY8,
-	gl::LUMINANCE8_ALPHA8,
-	gl::RGB8,
-	gl::RGBA8,
+	GL_INTENSITY8,
+	GL_LUMINANCE8_ALPHA8,
+	GL_RGB8,
+	GL_RGBA8,
 
-	gl::INTENSITY16,
-	gl::LUMINANCE16_ALPHA16,
-	gl::RGB16,
-	gl::RGBA16,
+	GL_INTENSITY16,
+	GL_LUMINANCE16_ALPHA16,
+	GL_RGB16,
+	GL_RGBA16,
 
 	// Signed formats
 	0,
@@ -33,75 +33,75 @@ static const int internalFormats[] = {
 	0,
 
 	// Float formats
-	gl::INTENSITY16F_ARB,
-	gl::LUMINANCE_ALPHA16F_ARB,
-	gl::RGB16F_ARB,
-	gl::RGBA16F_ARB,
+	GL_INTENSITY16F_ARB,
+	GL_LUMINANCE_ALPHA16F_ARB,
+	GL_RGB16F_ARB,
+	GL_RGBA16F_ARB,
 
-	gl::INTENSITY32F_ARB,
-	gl::LUMINANCE_ALPHA32F_ARB,
-	gl::RGB32F_ARB,
-	gl::RGBA32F_ARB,
+	GL_INTENSITY32F_ARB,
+	GL_LUMINANCE_ALPHA32F_ARB,
+	GL_RGB32F_ARB,
+	GL_RGBA32F_ARB,
 
 	// Signed integer formats
-	0, // gl::INTENSITY16I_EXT,
-	0, // gl::LUMINANCE_ALPHA16I_EXT,
-	0, // gl::RGB16I_EXT,
-	0, // gl::RGBA16I_EXT,
+	0, // GL_INTENSITY16I_EXT,
+	0, // GL_LUMINANCE_ALPHA16I_EXT,
+	0, // GL_RGB16I_EXT,
+	0, // GL_RGBA16I_EXT,
 
-	0, // gl::INTENSITY32I_EXT,
-	0, // gl::LUMINANCE_ALPHA32I_EXT,
-	0, // gl::RGB32I_EXT,
-	0, // gl::RGBA32I_EXT,
+	0, // GL_INTENSITY32I_EXT,
+	0, // GL_LUMINANCE_ALPHA32I_EXT,
+	0, // GL_RGB32I_EXT,
+	0, // GL_RGBA32I_EXT,
 
 	// Unsigned integer formats
-	0, // gl::INTENSITY16UI_EXT,
-	0, // gl::LUMINANCE_ALPHA16UI_EXT,
-	0, // gl::RGB16UI_EXT,
-	0, // gl::RGBA16UI_EXT,
+	0, // GL_INTENSITY16UI_EXT,
+	0, // GL_LUMINANCE_ALPHA16UI_EXT,
+	0, // GL_RGB16UI_EXT,
+	0, // GL_RGBA16UI_EXT,
 
-	0, // gl::INTENSITY32UI_EXT,
-	0, // gl::LUMINANCE_ALPHA32UI_EXT,
-	0, // gl::RGB32UI_EXT,
-	0, // gl::RGBA32UI_EXT,
+	0, // GL_INTENSITY32UI_EXT,
+	0, // GL_LUMINANCE_ALPHA32UI_EXT,
+	0, // GL_RGB32UI_EXT,
+	0, // GL_RGBA32UI_EXT,
 
 	// Packed formats
 	0, // RGBE8 not directly supported
-	0, // gl::RGB9_E5,
-	0, // gl::R11F_G11F_B10F,
-	gl::RGB5,
-	gl::RGBA4,
-	gl::RGB10_A2,
+	0, // GL_RGB9_E5,
+	0, // GL_R11F_G11F_B10F,
+	GL_RGB5,
+	GL_RGBA4,
+	GL_RGB10_A2,
 
 	// Depth formats
-	gl::DEPTH_COMPONENT16,
-	gl::DEPTH_COMPONENT24,
-	gl::DEPTH24_STENCIL8_EXT,
-	0, // gl::DEPTH_COMPONENT32F,
+	GL_DEPTH_COMPONENT16,
+	GL_DEPTH_COMPONENT24,
+	GL_DEPTH24_STENCIL8_EXT,
+	0, // GL_DEPTH_COMPONENT32F,
 
 	// Compressed formats
-	gl::COMPRESSED_RGB_S3TC_DXT1_EXT,
-	gl::COMPRESSED_RGBA_S3TC_DXT3_EXT,
-	gl::COMPRESSED_RGBA_S3TC_DXT5_EXT,
+	GL_COMPRESSED_RGB_S3TC_DXT1_EXT,
+	GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
+	GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
 	0, // ATI1N not yet supported
-	gl::COMPRESSED_LUMINANCE_ALPHA,			//COMPRESSED_LUMINANCE_ALPHA_3DC_ATI,
+	GL_COMPRESSED_LUMINANCE_ALPHA,			//COMPRESSED_LUMINANCE_ALPHA_3DC_ATI,
 };
 
-static const int chanCountTypes[] = { 0, gl::LUMINANCE, gl::LUMINANCE_ALPHA, gl::RGB, gl::RGBA };
+static const int chanCountTypes[] = { 0, GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA };
 
 static const int chanTypePerFormat[] = {
 	0,
 
 	// Unsigned formats
-	gl::UNSIGNED_BYTE,
-	gl::UNSIGNED_BYTE,
-	gl::UNSIGNED_BYTE,
-	gl::UNSIGNED_BYTE,
+	GL_UNSIGNED_BYTE,
+	GL_UNSIGNED_BYTE,
+	GL_UNSIGNED_BYTE,
+	GL_UNSIGNED_BYTE,
 
-	gl::UNSIGNED_SHORT,
-	gl::UNSIGNED_SHORT,
-	gl::UNSIGNED_SHORT,
-	gl::UNSIGNED_SHORT,
+	GL_UNSIGNED_SHORT,
+	GL_UNSIGNED_SHORT,
+	GL_UNSIGNED_SHORT,
+	GL_UNSIGNED_SHORT,
 
 	// Signed formats
 	0,
@@ -115,15 +115,15 @@ static const int chanTypePerFormat[] = {
 	0,
 
 	// Float formats
-	gl::HALF_FLOAT_ARB,
-	gl::HALF_FLOAT_ARB,
-	gl::HALF_FLOAT_ARB,
-	gl::HALF_FLOAT_ARB,
+	GL_HALF_FLOAT_ARB,
+	GL_HALF_FLOAT_ARB,
+	GL_HALF_FLOAT_ARB,
+	GL_HALF_FLOAT_ARB,
 
-	gl::FLOAT,
-	gl::FLOAT,
-	gl::FLOAT,
-	gl::FLOAT,
+	GL_FLOAT,
+	GL_FLOAT,
+	GL_FLOAT,
+	GL_FLOAT,
 
 	// Signed integer formats
 	0,
@@ -151,125 +151,125 @@ static const int chanTypePerFormat[] = {
 	0, // RGBE8 not directly supported
 	0, // RGBE9E5 not supported
 	0, // RG11B10F not supported
-	gl::UNSIGNED_SHORT_5_6_5,
-	gl::UNSIGNED_SHORT_4_4_4_4_REV,
-	gl::UNSIGNED_INT_2_10_10_10_REV,
+	GL_UNSIGNED_SHORT_5_6_5,
+	GL_UNSIGNED_SHORT_4_4_4_4_REV,
+	GL_UNSIGNED_INT_2_10_10_10_REV,
 
 	// Depth formats
-	gl::UNSIGNED_SHORT,
-	gl::UNSIGNED_INT,
-	gl::UNSIGNED_INT_24_8_EXT,
+	GL_UNSIGNED_SHORT,
+	GL_UNSIGNED_INT,
+	GL_UNSIGNED_INT_24_8_EXT,
 	0, // D32F not supported
 
 	// Compressed formats
-	gl::COMPRESSED_RGBA_S3TC_DXT1_EXT,
-	gl::COMPRESSED_RGBA_S3TC_DXT3_EXT,
-	gl::COMPRESSED_RGBA_S3TC_DXT5_EXT,
+	GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,
+	GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
+	GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
 	0,//(D3DFORMAT) '1ITA', // 3Dc 1 channel
 	0,//(D3DFORMAT) '2ITA', // 3Dc 2 channels
 };
 
 static const int blendingConsts[] = {
-	gl::ZERO,
-	gl::ONE,
-	gl::SRC_COLOR,
-	gl::ONE_MINUS_SRC_COLOR,
-	gl::DST_COLOR,
-	gl::ONE_MINUS_DST_COLOR,
-	gl::SRC_ALPHA,
-	gl::ONE_MINUS_SRC_ALPHA,
-	gl::DST_ALPHA,
-	gl::ONE_MINUS_DST_ALPHA,
-	gl::SRC_ALPHA_SATURATE,
+	GL_ZERO,
+	GL_ONE,
+	GL_SRC_COLOR,
+	GL_ONE_MINUS_SRC_COLOR,
+	GL_DST_COLOR,
+	GL_ONE_MINUS_DST_COLOR,
+	GL_SRC_ALPHA,
+	GL_ONE_MINUS_SRC_ALPHA,
+	GL_DST_ALPHA,
+	GL_ONE_MINUS_DST_ALPHA,
+	GL_SRC_ALPHA_SATURATE,
 };
 
 static const int blendingModes[] = {
-	gl::FUNC_ADD,
-	gl::FUNC_SUBTRACT,
-	gl::FUNC_REVERSE_SUBTRACT,
-	gl::MIN,
-	gl::MAX,
+	GL_FUNC_ADD,
+	GL_FUNC_SUBTRACT,
+	GL_FUNC_REVERSE_SUBTRACT,
+	GL_MIN,
+	GL_MAX,
 };
 
 static const int depthConst[] = {
-	gl::NEVER,
-	gl::LESS,
-	gl::EQUAL,
-	gl::LEQUAL,
-	gl::GREATER,
-	gl::NOTEQUAL,
-	gl::GEQUAL,
-	gl::ALWAYS,
+	GL_NEVER,
+	GL_LESS,
+	GL_EQUAL,
+	GL_LEQUAL,
+	GL_GREATER,
+	GL_NOTEQUAL,
+	GL_GEQUAL,
+	GL_ALWAYS,
 };
 
 static const int stencilConst[] = {
-	gl::KEEP,
-	gl::ZERO,
-	gl::REPLACE,
-	gl::INVERT,
-	gl::INCR_WRAP,
-	gl::DECR_WRAP,
-	gl::MAX,
-	gl::INCR,
-	gl::DECR,
-	gl::ALWAYS,
+	GL_KEEP,
+	GL_ZERO,
+	GL_REPLACE,
+	GL_INVERT,
+	GL_INCR_WRAP,
+	GL_DECR_WRAP,
+	GL_MAX,
+	GL_INCR,
+	GL_DECR,
+	GL_ALWAYS,
 };
 
 static const int cullConst[] = {
-	gl::NONE,
-	gl::BACK,
-	gl::FRONT,
+	GL_NONE,
+	GL_BACK,
+	GL_FRONT,
 };
 
 static const int fillConst[] = {
-	gl::FILL,
-	gl::LINE,
-	gl::POINT,
+	GL_FILL,
+	GL_LINE,
+	GL_POINT,
 };
 
 static const int minFilters[] = {
-	gl::NEAREST, 
-	gl::LINEAR, 
-	gl::LINEAR_MIPMAP_NEAREST,
-	gl::LINEAR_MIPMAP_LINEAR,
-	gl::LINEAR_MIPMAP_NEAREST,
-	gl::LINEAR_MIPMAP_LINEAR,
+	GL_NEAREST,
+	GL_LINEAR,
+	GL_LINEAR_MIPMAP_NEAREST,
+	GL_LINEAR_MIPMAP_LINEAR,
+	GL_LINEAR_MIPMAP_NEAREST,
+	GL_LINEAR_MIPMAP_LINEAR,
 };
 
 static const int matrixModeConst[] = {
-	gl::MODELVIEW,
-	gl::PROJECTION,
-	gl::MODELVIEW,
-	gl::TEXTURE,
+	GL_MODELVIEW,
+	GL_PROJECTION,
+	GL_MODELVIEW,
+	GL_TEXTURE,
 };
 
 // for some speedup
 static const int mbTypeConst[] = {
-	gl::POINTS,
-	gl::LINES,
-	gl::TRIANGLES,
-	gl::TRIANGLE_STRIP,
-	gl::LINE_STRIP,
-	gl::LINE_LOOP,
-	gl::POLYGON,
-	gl::QUADS,
+	GL_POINTS,
+	GL_LINES,
+	GL_TRIANGLES,
+	GL_TRIANGLE_STRIP,
+	GL_LINE_STRIP,
+	GL_LINE_LOOP,
+	GL_POLYGON,
+	GL_QUADS,
 };
 
 static const int glPrimitiveType[] = {
-	gl::TRIANGLES,
-	gl::TRIANGLE_FAN,
-	gl::TRIANGLE_STRIP,
-	gl::QUADS,
-	gl::LINES,
-	gl::LINE_STRIP,
-	gl::LINE_LOOP,
-	gl::POINTS,
+	GL_TRIANGLES,
+	GL_TRIANGLE_FAN,
+	GL_TRIANGLE_STRIP,
+	GL_QUADS,
+	GL_LINES,
+	GL_LINE_STRIP,
+	GL_LINE_LOOP,
+	GL_POINTS,
 };
 
 static const int glBufferUsages[] = {
-	gl::STREAM_DRAW,
-	gl::STATIC_DRAW,
-	gl::DYNAMIC_DRAW,
+	GL_STREAM_DRAW,
+	GL_STATIC_DRAW,
+	GL_DYNAMIC_DRAW,
 };
 
 #endif //GLRENDERER_CONSTANTS_H

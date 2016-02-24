@@ -8,14 +8,14 @@
 #include "Platform.h"
 #include "IDkCore.h"
 #include "CGLRenderLib.h"
-#include "gl_caps.hpp"
+
+#include "gl_loader.h"
 
 #if !defined(IS_OPENGL)
 #error "IS_OPENGL'' Should in your project!!!"
 #endif // PLAT_LINUX && !IS_OPENGL
 
 #ifdef USE_GLES2
-
 #elif PLAT_WIN
 #include "wgl_caps.hpp"
 #elif PLAT_LINUX
@@ -157,9 +157,9 @@ bool CGLRenderLib::InitCaps()
 
 void PrintGLExtensions()
 {
-	const char *ver = (const char *) gl::GetString(gl::VERSION);
+	const char *ver = (const char *) glGetString(GL_VERSION);
 	Msg("OpenGL version: %s\n \n",ver);
-	const char *exts = (const char *) gl::GetString(gl::EXTENSIONS);
+	const char *exts = (const char *) glGetString(GL_EXTENSIONS);
 
 	DkList<EqString> splExts;
 	xstrsplit(exts," ",splExts);
@@ -591,19 +591,31 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 	Msg("Initializing GL extensions...\n");
 
-	gl::exts::LoadTest didLoad = gl::sys::LoadFunctions();
-	if(!didLoad)
-		MsgError("OpenGL load errors: %i\n", didLoad.GetNumMissing());
+#ifdef USE_GLES2
+	// load GLES2 GL 3.0 extensions using glad
+	if(!gladLoadGLES2Loader( gladHelperLoaderFunction ))
+	{
+		MsgError("Cannot load OpenGL ES 2.0!\n");
+		return false;
+	}
+#else
+	// load OpenGL extensions using glad
+	if(!gladLoadGLLoader( gladHelperLoaderFunction ))
+	{
+		MsgError("Cannot load OpenGL extensions or several functions!\n");
+		return false;
+	}
+#endif // USE_GLES2
 
 	if(g_cmdLine->FindArgument("-glext") != -1)
 		PrintGLExtensions();
 
 	{
-		const char *rend = (const char *) gl::GetString(gl::RENDERER);
-		const char *vendor = (const char *) gl::GetString(gl::VENDOR);
+		const char *rend = (const char *) glGetString(GL_RENDERER);
+		const char *vendor = (const char *) glGetString(GL_VENDOR);
 		Msg("*Detected video adapter: %s by %s\n",rend,vendor);
 
-		const char *version = (const char *) gl::GetString(gl::VERSION);
+		const char *version = (const char *) glGetString(GL_VERSION);
 		Msg("*OpenGL version is: %s\n",version);
 	}
 
@@ -623,10 +635,10 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	m_Renderer->m_glContext = this->glContext;
 	m_Renderer->m_glContext2 = this->glContext2;
 
-	if (gl::exts::var_ARB_multisample && params.nMultisample > 0)
-	{
-		gl::Enable(gl::MULTISAMPLE_ARB);
-	}
+#ifndef USE_GLES2 // TEMPORARILY DISABLED
+	if (GLAD_GL_ARB_multisample && params.nMultisample > 0)
+		glEnable(GL_MULTISAMPLE_ARB);
+#endif // USE_GLES2
 
 	return true;
 }
@@ -744,7 +756,7 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 	if (glContext != NULL)
 	{
 		m_Renderer->GL_CRITICAL();
-		gl::Viewport(0, 0, m_width, m_height);
+		glViewport(0, 0, m_width, m_height);
 		m_Renderer->GL_END_CRITICAL();
 	}
 }
@@ -753,12 +765,12 @@ bool CGLRenderLib::CaptureScreenshot(CImage &img)
 {
 	m_Renderer->GL_CRITICAL();
 
-	gl::Finish();
+	glFinish();
 
 	ubyte *pixels = img.Create(FORMAT_RGB8, m_width, m_height, 1, 1);
 	ubyte *flipped = new ubyte[m_width * m_height * 3];
 
-	gl::ReadPixels(0, 0, m_width, m_height, gl::RGB, gl::UNSIGNED_BYTE, flipped);
+	glReadPixels(0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, flipped);
 	for (int y = 0; y < m_height; y++)
 		memcpy(pixels + y * m_width * 3, flipped + (m_height - y - 1) * m_width * 3, m_width * 3);
 

@@ -10,7 +10,12 @@
 #include "ShaderAPIGL.h"
 #include "VertexBufferGL.h"
 #include "DebugInterface.h"
-#include "gl_caps.hpp"
+
+#ifdef USE_GLES2
+#include "glad_es3.h"
+#else
+#include "glad.h"
+#endif
 
 CVertexBufferGL::CVertexBufferGL()
 {
@@ -46,7 +51,7 @@ int CVertexBufferGL::GetStrideSize()
 // locks vertex buffer and gives to programmer buffer data
 bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
 {
-	bool dynamic = (m_usage == gl::DYNAMIC_DRAW);
+	bool dynamic = (m_usage == GL_DYNAMIC_DRAW);
 
 	if(m_bIsLocked)
 	{
@@ -91,15 +96,15 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 	{
 		pGLRHI->ThreadingSharingRequest();
 
-		gl::BindBuffer(gl::ARRAY_BUFFER, m_nGL_VB_Index);
+		glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
 
 		// lock whole buffer
-		gl::GetBufferSubData(gl::ARRAY_BUFFER, 0, m_numVerts*m_strideSize, m_lockPtr);
+		glGetBufferSubData(GL_ARRAY_BUFFER, 0, m_numVerts*m_strideSize, m_lockPtr);
 
 		// give user buffer with offset
 		(*outdata) = m_lockPtr + m_lockOffs*m_strideSize;
 
-		gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 		pGLRHI->ThreadingSharingRelease();
 	}
@@ -123,13 +128,13 @@ void CVertexBufferGL::Unlock()
 			pGLRHI->ThreadingSharingRequest();
 
 			//if( m_boundStream == -1 )
-			gl::BindBuffer(gl::ARRAY_BUFFER, m_nGL_VB_Index);
+			glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
 
-			gl::BufferSubData(gl::ARRAY_BUFFER, 0, m_lockSize*m_strideSize, m_lockPtr);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, m_lockSize*m_strideSize, m_lockPtr);
 
 			// check if bound
 			//if( m_boundStream == -1 )
-			gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 			pGLRHI->ThreadingSharingRelease();
 		}
