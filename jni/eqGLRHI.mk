@@ -18,6 +18,7 @@ LOCAL_C_INCLUDES:= \
 
 LOCAL_SRC_FILES := \
 	MaterialSystem/Renderers/GL/glad_es3.c		\
+	MaterialSystem/Renderers/GL/gl_loader.cpp	\
 	MaterialSystem/Renderers/GL/CGLRenderLib.cpp	\
 	MaterialSystem/Renderers/GL/ShaderAPIGL.cpp	\
 	MaterialSystem/Renderers/GL/GLMeshBuilder.cpp	\

@@ -63,7 +63,7 @@ struct shaderapiinitparams_t
 
 	bool			bEnableVerticalSync;	// vertical syncronization
 
-	char			textures_path[128];		// texture path
+	char			textures_path[64];		// texture path
 };
 
 // sets default parameters of shader api
@@ -77,7 +77,7 @@ static void DefaultShaderAPIParameters(shaderapiinitparams_t* params)
 	params->nDepthBits				= 24;
 	params->bEnableVerticalSync		= false;
 
-	strcpy(params->textures_path, TEXTURE_DEFAULT_PATH);
+	memset(params->textures_path, 0, sizeof(params->textures_path));
 }
 
 class CImage;

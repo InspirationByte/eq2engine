@@ -83,7 +83,7 @@ EQWNDHANDLE Sys_CreateWindow()
 
 #ifdef PLAT_SDL
 
-	int sdlFlags = SDL_WINDOW_SHOWN/* | SDL_WINDOW_OPENGL*/; // SDL_WINDOW_ALLOW_HIGHDPI
+	int sdlFlags = SDL_WINDOW_SHOWN;// | SDL_WINDOW_OPENGL; // SDL_WINDOW_ALLOW_HIGHDPI
 
 	if(isWindowed)
 	{
@@ -95,6 +95,12 @@ EQWNDHANDLE Sys_CreateWindow()
 	}
 
 	handle = SDL_CreateWindow(GAME_WINDOW_TITLE, nAdjustedPosX, nAdjustedPosY, nAdjustedWide, nAdjustedTall, sdlFlags);
+
+	if(handle == NULL)
+	{
+		ErrorMsg("Can't create window!\n%s\n",SDL_GetError());
+		return NULL;
+	}
 
 #elif PLAT_WIN
 

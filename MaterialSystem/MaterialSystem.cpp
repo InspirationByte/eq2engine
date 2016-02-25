@@ -187,7 +187,9 @@ bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderA
 			return false;
 		}
 
-		strcpy(m_config.shaderapi_params.textures_path, m_szMaterialsdir.GetData());
+		// copy default path
+		if(m_config.shaderapi_params.textures_path[0] == 0)
+			strcpy(m_config.shaderapi_params.textures_path, m_szMaterialsdir.GetData());
 
 		// init new created shader api with this parameters
 		m_pShaderAPI->Init( m_config.shaderapi_params );
@@ -1184,7 +1186,7 @@ void CMaterialSystem::SetRasterizerStates(const RasterizerStateParams_t& raster)
 // pack blending function to ushort
 struct blendStateIndex_t
 {
-	blendStateIndex_t( BlendingFactor_e nSrcFactor, BlendingFactor_e nDestFactor, BlendingFunction_e nBlendingFunc, int colormask ) 
+	blendStateIndex_t( BlendingFactor_e nSrcFactor, BlendingFactor_e nDestFactor, BlendingFunction_e nBlendingFunc, int colormask )
 		: srcFactor(nSrcFactor), destFactor(nDestFactor), colMask(colormask), blendFunc(nBlendingFunc)
 	{
 	}
@@ -1227,7 +1229,7 @@ void CMaterialSystem::SetBlendingStates(BlendingFactor_e nSrcFactor, BlendingFac
 // pack depth states to ubyte
 struct depthStateIndex_t
 {
-	depthStateIndex_t( bool bDoDepthTest, bool bDoDepthWrite, CompareFunc_e depthCompFunc ) 
+	depthStateIndex_t( bool bDoDepthTest, bool bDoDepthWrite, CompareFunc_e depthCompFunc )
 		: doDepthTest(bDoDepthTest), doDepthWrite(bDoDepthWrite), compFunc(depthCompFunc)
 	{
 	}
@@ -1267,7 +1269,7 @@ void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, Comp
 // pack blending function to ushort
 struct rasterStateIndex_t
 {
-	rasterStateIndex_t( CullMode_e nCullMode, FillMode_e nFillMode, bool bMultiSample,bool bScissor ) 
+	rasterStateIndex_t( CullMode_e nCullMode, FillMode_e nFillMode, bool bMultiSample,bool bScissor )
 		: cullMode(nCullMode), fillMode(nFillMode), multisample(bMultiSample), scissor(bScissor)
 	{
 	}

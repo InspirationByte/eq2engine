@@ -139,7 +139,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 {
 	m_pWindow = pWindow;
 
-
 	int bpp = 32;
 
 	ETextureFormat format = FORMAT_RGB8;
@@ -189,10 +188,12 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	if( !SDL_GetWindowWMInfo(m_pWindow, &winfo) )
 	{
-		MsgError("SDL_GetWindowWMInfo failed %s", SDL_GetError());
+		MsgError("SDL_GetWindowWMInfo failed %s\n\tWindow handle: %p", SDL_GetError(), m_pWindow);
 		ErrorMsg("Can't get SDL window WM info!\n");
 		return false;
 	}
+
+	const char* materialsPath = "materials/";
 
 #ifdef _WIN32
 	materials_config.shaderapi_params.hWindow = winfo.info.win.window;
@@ -211,6 +212,8 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	winParams.numParams = 1;
 
 	materials_config.shaderapi_params.hWindow = &winParams;
+
+	materialsPath = "mmaterials/";
 #endif
 
 	materials_config.shaderapi_params.nScreenFormat = format;
@@ -219,19 +222,23 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
     bool materialSystemStatus = false;
 
+    const char* rendererName = "eqNullRHI";
+
 #ifdef _WIN32
 	if(useOpenGLRender)
-		materialSystemStatus = materials->Init("materials/", "eqGLRHI", materials_config);
+		rendererName = "eqGLRHI";
 	else if(g_cmdLine->FindArgument("-norender") != -1)
-		materialSystemStatus = materials->Init("materials/", "eqNullRHI", materials_config);
+		rendererName = "eqNullRHI";
 	else
-		materialSystemStatus = materials->Init("materials/", "eqD3D9RHI", materials_config);
+		rendererName = "eqD3D9RHI";
 #else
 	if(g_cmdLine->FindArgument("-norender") != -1)
-		materialSystemStatus = materials->Init("materials/", "libeqNullRHI", materials_config);
+		rendererName = "libeqNullRHI";
     else
-        materialSystemStatus = materials->Init("materials/", "libeqGLRHI", materials_config);
+        rendererName = "libeqGLRHI";
 #endif // _WIN32
+
+	materialSystemStatus = materials->Init(materialsPath, rendererName, materials_config);
 
 #ifdef _WIN32
 	if(!materials->LoadShaderLibrary("eqBaseShaders.dll"))

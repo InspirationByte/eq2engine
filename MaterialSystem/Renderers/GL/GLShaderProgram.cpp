@@ -27,7 +27,7 @@ CGLShaderProgram::~CGLShaderProgram()
 	free(m_samplers);
 	free(m_constants);
 
-	glDeleteShader(m_vertexShader);
-	glDeleteShader(m_fragmentShader);
+	//glDeleteShader(m_vertexShader);
+	//glDeleteShader(m_fragmentShader);
 	glDeleteProgram(m_program);
 }

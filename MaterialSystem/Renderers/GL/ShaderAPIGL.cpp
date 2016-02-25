@@ -382,7 +382,9 @@ void ShaderAPIGL::ApplyTextures()
 				if(pCurrentTexture != NULL)
 				{
 					glBindTexture(pCurrentTexture->glTarget, 0);
+#ifndef USE_GLES2
 					glDisable(pCurrentTexture->glTarget);
+#endif // USE_GLES2
 				}
 			}
 			else
@@ -390,7 +392,9 @@ void ShaderAPIGL::ApplyTextures()
 				if (pCurrentTexture == NULL)
 				{
 					// enable texture
+#ifndef USE_GLES2
 					glEnable( pSelectedTexture->glTarget );
+#endif // USE_GLES2
 
 					glBindTexture(pSelectedTexture->glTarget, pSelectedTexture->GetCurrentTexture().glTexID);
 
@@ -400,15 +404,14 @@ void ShaderAPIGL::ApplyTextures()
 				}
 				else
 				{
+#ifndef USE_GLES2
 					if (pSelectedTexture->glTarget != pCurrentTexture->glTarget)
 					{
 						// disable previously chosen target
 						glDisable(pCurrentTexture->glTarget);
-
 						glEnable(pSelectedTexture->glTarget);
 					}
 
-#ifndef USE_GLES2
 					if (pSelectedTexture->m_flLod != pCurrentTexture->m_flLod)
 					{
 						glTexEnvf(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, pSelectedTexture->m_flLod);
@@ -1023,15 +1026,22 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
         internalFormat = internalFormats[format - (FORMAT_I32F - FORMAT_I16F)];
 	}
 
+	if(internalFormat == 0)
+	{
+		MsgError("'%s' has unsupported image format\n", pSrc->GetName());
+		return 0;
+	}
+
 	ThreadingSharingRequest();
 
 	// Generate a texture
 	glGenTextures(1, &textureID);
 
+#ifndef USE_GLES2
 	glEnable(gltarget);
+#endif // USE_GLES2
 
 	glBindTexture( gltarget, textureID );
-
 
 	// Setup the sampler state
 	InternalSetupSampler(gltarget, sampler);
@@ -2161,6 +2171,9 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		// restore current program we previously stored
 		glUseProgram(currProgram);
+
+		glDeleteShader(prog->m_fragmentShader);
+		glDeleteShader(prog->m_vertexShader);
 
 		// Shorten arrays to actual count
 		samplers = (GLShaderSampler_t  *) realloc(samplers, nSamplers * sizeof(GLShaderSampler_t));
