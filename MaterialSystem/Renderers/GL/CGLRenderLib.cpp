@@ -255,8 +255,6 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
         return false;
     }
 
-    MsgInfo("eglInitialize...\n");
-
     // Initialize the display
     EGLint major = 0;
     EGLint minor = 0;
@@ -275,8 +273,6 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
         return false;
     }
 
-    MsgInfo("eglChooseConfig...\n");
-
     // Obtain the first configuration with a depth buffer
     // Obtain the first configuration with a depth buffer
     EGLint attrs[] = {
@@ -285,9 +281,9 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 		EGL_DEPTH_SIZE, 16,
 
-		EGL_RED_SIZE, 8,
-		EGL_GREEN_SIZE, 8,
-		EGL_BLUE_SIZE, 8,
+		EGL_RED_SIZE, 5,
+		EGL_GREEN_SIZE, 6,
+		EGL_BLUE_SIZE, 5,
 
 		EGL_NONE
 	};
@@ -322,8 +318,6 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
         return false;
     }
 
-    MsgInfo("eglBindAPI...\n");
-
 	eglBindAPI(EGL_OPENGL_ES_API);
 
 	// context attribute list
@@ -350,8 +344,6 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
         CloseNativeDisplay(nativeDisplay);
         return false;
     }
-
-	MsgInfo("attempt to eglMakeCurrent...\n");
 
 	eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext);
 

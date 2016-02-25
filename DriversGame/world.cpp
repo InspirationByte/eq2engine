@@ -1228,6 +1228,8 @@ void CGameWorld::UpdateLightTexture()
 	debugoverlay->Text(ColorRGBA(1,1,0,1),"lights in view: %d/%d", m_numLights,MAX_LIGHTS_TEXTURE);
 }
 
+ConVar r_no3D("r_no3D", "0", "Disable 3D rendering", CV_CHEAT);
+
 ConVar r_drawWorld("r_drawWorld", "1", "Draw world", CV_CHEAT);
 ConVar r_drawObjects("r_drawObjects", "1", "Draw objects", CV_CHEAT);
 ConVar r_drawFakeReflections("r_drawFakeReflections", "1", "Draw fake reflections", CV_ARCHIVE);
@@ -1402,6 +1404,12 @@ void CGameWorld::DrawFakeReflections()
 
 void CGameWorld::Draw( int nRenderFlags )
 {
+	if(r_no3D.GetBool())
+	{
+		g_pPFXRenderer->ClearBuffers();
+		return;
+	}
+
 	g_parallelJobs->Wait();
 
 #ifdef EDITOR

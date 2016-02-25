@@ -3,7 +3,7 @@ LOCAL_PATH := $(SRC_PATH)/src_dependency/Shiny
 include $(CLEAR_VARS)
 LOCAL_MODULE 		:= Shiny
 LOCAL_MODULE_FILENAME	:= libShiny
-LOCAL_CFLAGS    	:= 
+LOCAL_CFLAGS    	:= -std=c99 -Wall -Wpedantic -DSHINY_STATIC_LINK=TRUE
 
 LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include
 

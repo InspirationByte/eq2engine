@@ -1028,7 +1028,7 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 
 	if(internalFormat == 0)
 	{
-		MsgError("'%s' has unsupported image format\n", pSrc->GetName());
+		MsgError("'%s' has unsupported image format (%d)\n", pSrc->GetName(), format);
 		return 0;
 	}
 

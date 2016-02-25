@@ -306,10 +306,19 @@ void CParticleRenderGroup::SetCustomProjectionMatrix(const Matrix4x4& mat)
 	m_customProjMat = mat;
 }
 
+void CParticleRenderGroup::ClearBuffers()
+{
+	m_numIndices = 0;
+	m_numVertices = 0;
+	m_useCustomProjMat = false;
+}
+
+ConVar r_drawParticles("r_drawParticles", "1", "Render particles", CV_CHEAT);
+
 // prepares render buffers and sends renderables to ViewRenderer
 void CParticleRenderGroup::Render(int nViewRenderFlags)
 {
-	if(!m_initialized)
+	if(!m_initialized || !r_drawParticles.GetBool())
 	{
 		m_numIndices = 0;
 		m_numVertices = 0;
@@ -534,6 +543,14 @@ void CParticleLowLevelRenderer::Render(int nRenderFlags)
 		m_renderGroups[i]->Render( nRenderFlags );
 	}
 #endif
+}
+
+void CParticleLowLevelRenderer::ClearBuffers()
+{
+	for(int i = 0; i < m_renderGroups.numElem(); i++)
+	{
+		m_renderGroups[i]->ClearBuffers();
+	}
 }
 
 bool CParticleLowLevelRenderer::MakeVBOFrom(CParticleRenderGroup* pGroup)

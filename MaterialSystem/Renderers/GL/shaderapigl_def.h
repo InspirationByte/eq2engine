@@ -8,7 +8,7 @@
 #ifndef GLRENDERER_CONSTANTS_H
 #define GLRENDERER_CONSTANTS_H
 
-static const int internalFormats[] = {
+static const int internalFormats[FORMAT_COUNT] = {
 	0,
 	// Unsigned formats
 #ifdef USE_GLES2
@@ -20,7 +20,6 @@ static const int internalFormats[] = {
 #endif // USE_GLES2
 	GL_RGB8,
 	GL_RGBA8,
-
 #ifdef USE_GLES2
 	0, //GL_INTENSITY16,
 	0, //GL_LUMINANCE16_ALPHA16,
@@ -32,6 +31,7 @@ static const int internalFormats[] = {
 	GL_RGB16,
 	GL_RGBA16,
 #endif // USE_GLES2
+
 	// Signed formats
 	0,
 	0,
@@ -48,9 +48,8 @@ static const int internalFormats[] = {
 	0, //GL_LUMINANCE_ALPHA16F_ARB,
 	GL_RGB16F,
 	GL_RGBA16F,
-
-	//GL_INTENSITY32F_ARB,
-	//GL_LUMINANCE_ALPHA32F_ARB,
+	0, //GL_INTENSITY32F_ARB,
+	0, //GL_LUMINANCE_ALPHA32F_ARB,
 	GL_RGB32F,
 	GL_RGBA32F,
 #else
@@ -59,7 +58,6 @@ static const int internalFormats[] = {
 	GL_LUMINANCE_ALPHA16F_ARB,
 	GL_RGB16F_ARB,
 	GL_RGBA16F_ARB,
-
 	GL_INTENSITY32F_ARB,
 	GL_LUMINANCE_ALPHA32F_ARB,
 	GL_RGB32F_ARB,
@@ -113,6 +111,7 @@ static const int internalFormats[] = {
 	0, //GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
 	0, // ATI1N not yet supported
 	0, //GL_COMPRESSED_LUMINANCE_ALPHA,
+
 	0x8D64, // which is GL_COMPRESSED_RGB8_ETC1
 	GL_COMPRESSED_RGB8_ETC2,
 	GL_COMPRESSED_RGBA8_ETC2_EAC,
@@ -126,6 +125,7 @@ static const int internalFormats[] = {
 	GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
 	0, // ATI1N not yet supported
 	GL_COMPRESSED_LUMINANCE_ALPHA,			//COMPRESSED_LUMINANCE_ALPHA_3DC_ATI,
+
 	0, // GL_COMPRESSED_RGB8_ETC1
 	0, // GL_COMPRESSED_RGB8_ETC2,
 	0, // GL_COMPRESSED_RGBA8_ETC2_EAC,
