@@ -43,3 +43,8 @@ gamebin/
 src_dependency/
 utils/driver_level*/
 obj/
+android-project/.gradle/
+android-project/.idea/
+android-project/app/
+android-project/build/
+*.*~
