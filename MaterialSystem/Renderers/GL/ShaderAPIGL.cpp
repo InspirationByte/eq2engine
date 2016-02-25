@@ -36,6 +36,7 @@
 #ifdef USE_GLES2
 
 static char s_FFPMeshBuilder_VertexProgram[] =
+"precision lowp float;\n"
 "attribute vec4 input_vPos;\n"
 "attribute vec2 input_texCoord;\n"
 "attribute vec4 input_color;\n"
@@ -50,7 +51,7 @@ static char s_FFPMeshBuilder_VertexProgram[] =
 "}";
 
 static char s_FFPMeshBuilder_NoTexture_PixelProgram[] =
-"precision mediump float;\n"
+"precision lowp float;\n"
 "varying vec4 vColor;\n"
 "void main()\n"
 "{\n"
@@ -58,7 +59,7 @@ static char s_FFPMeshBuilder_NoTexture_PixelProgram[] =
 "}";
 
 static char s_FFPMeshBuilder_Textured_PixelProgram[] =
-"precision mediump float;\n"
+"precision lowp float;\n"
 "uniform sampler2D Base;\n"
 "varying vec2 texCoord;\n"
 "varying vec4 vColor;\n"
@@ -261,7 +262,8 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 		glGetIntegerv(GL_MAX_TEXTURE_UNITS, &m_caps.maxTextureUnits);
 #endif // USE_GLES2
 
-
+	if(m_caps.maxTextureUnits > MAX_TEXTUREUNIT)
+		m_caps.maxTextureUnits = MAX_TEXTUREUNIT;
 
 #ifndef USE_GLES2
 	if (GLAD_GL_ARB_draw_buffers)
@@ -290,7 +292,7 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 	attr->AppendValue("1");
 
 	attr = baseMeshBufferParams.AddKeyBase("attribute", "input_color");
-	attr->AppendValue("2");
+	attr->AppendValue("3");
 
 	s_uniformFuncs[CONSTANT_FLOAT]		= (void *) glUniform1fv;
 	s_uniformFuncs[CONSTANT_VECTOR2D]	= (void *) glUniform2fv;
@@ -367,7 +369,7 @@ void ShaderAPIGL::ApplyTextures()
 {
 	GL_CRITICAL();
 
-	for (int i = 0; i < MAX_TEXTUREUNIT; i++)
+	for (int i = 0; i < m_caps.maxTextureUnits; i++)
 	{
 		CGLTexture* pCurrentTexture = (CGLTexture*)m_pCurrentTextures[i];
 		CGLTexture* pSelectedTexture = (CGLTexture*)m_pSelectedTextures[i];

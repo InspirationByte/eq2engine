@@ -21,10 +21,10 @@
 
 struct ListVertex
 {
-	float x, y, z;
-	float tu, tv;//, tr;
-	ColorRGBA Diffuse;
-	float nx, ny, nz;
+	half x, y, z;
+	half tu, tv;
+	half nx, ny, nz;
+	TVec4D<half> Diffuse;
 };
 
 static bool bRenderBegun = false;
@@ -44,10 +44,10 @@ static IVertexFormat*		s_pVertexFormat	= NULL;
 //-----------------------------------------------------------------------------
 
 static VertexFormatDesc_t g_meshBuilder_format[] = {
-	0, 3, VERTEXTYPE_VERTEX,	ATTRIBUTEFORMAT_FLOAT,
-	0, 2, VERTEXTYPE_TEXCOORD,	ATTRIBUTEFORMAT_FLOAT,
-	0, 4, VERTEXTYPE_COLOR,		ATTRIBUTEFORMAT_FLOAT,
-	0, 3, VERTEXTYPE_NORMAL,	ATTRIBUTEFORMAT_FLOAT,
+	0, 3, VERTEXTYPE_VERTEX,	ATTRIBUTEFORMAT_HALF,
+	0, 2, VERTEXTYPE_TEXCOORD,	ATTRIBUTEFORMAT_HALF,
+	0, 3, VERTEXTYPE_NORMAL,	ATTRIBUTEFORMAT_HALF,
+	0, 4, VERTEXTYPE_COLOR,		ATTRIBUTEFORMAT_HALF,
 };
 
 CGLMeshBuilder::~CGLMeshBuilder()
@@ -217,60 +217,13 @@ void CGLMeshBuilder::End()
 
 	void* pLockData = NULL;
 
-	if(s_pBuffer->Lock(0, nVerts, &pLockData, false))
-	{
-		memcpy( pLockData, pVertList, sizeof(ListVertex)*nVerts);
-		s_pBuffer->Unlock();
-	}
-	else
-		MsgError("CGLMeshBuilder lock of VB failed!\n");
+	s_pBuffer->Update(pVertList, nVerts, 0, true);
 
 	int nIndices = 0;
 
-	/*
-	// I think we have trouble there
-
-	if(type == PRIM_TRIANGLE_FAN)
-	{
-		// build a new index list
-		type = PRIM_TRIANGLES;
-
-		int num_triangles = ((nVerts < 4) ? 1 : (2 + nVerts - 4));
-		int num_indices = num_triangles*3;
-
-		if(nVerts < 3)
-		{
-			num_triangles = 0;
-			num_indices = 0;
-		}
-
-		int* pIndices = NULL;
-		if(s_pIndexBuffer->Lock(0, num_indices, (void**)&pIndices, false))
-		{
-			// fill out buffer
-			for(int i = 0; i < num_triangles; i++)
-			{
-				int idx0 = 0;
-				int idx1 = i+1;
-				int idx2 = i+2;
-
-				pIndices[i*3] = idx0;
-				pIndices[i*3 +1] = idx1;
-				pIndices[i*3 +2] = idx2;
-			}
-
-			s_pIndexBuffer->Unlock();
-		}
-
-		nIndices = num_indices;
-
-		g_pShaderAPI->SetIndexBuffer(s_pIndexBuffer);
-	}
-	else*/
-		g_pShaderAPI->SetIndexBuffer(NULL);
-
 	g_pShaderAPI->SetVertexFormat( s_pVertexFormat );
 	g_pShaderAPI->SetVertexBuffer( s_pBuffer, 0 );
+	g_pShaderAPI->SetIndexBuffer(NULL);
 
 	// this call allows to use shaders internally
 	((ShaderAPIGL*)g_pShaderAPI)->DrawMeshBufferPrimitives(type, nVerts, nIndices);

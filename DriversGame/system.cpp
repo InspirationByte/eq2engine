@@ -240,6 +240,9 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	materialSystemStatus = materials->Init(materialsPath, rendererName, materials_config);
 
+	if(!materialSystemStatus)
+		return false;
+
 #ifdef _WIN32
 	if(!materials->LoadShaderLibrary("eqBaseShaders.dll"))
 		return false;
@@ -259,9 +262,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	DrvSyn_RegisterShaderOverrides();
 
 	g_pShaderAPI = materials->GetShaderAPI();
-
-	if(!materialSystemStatus)
-		return false;
 
 	if( !g_fontCache->Init() )
 		return false;

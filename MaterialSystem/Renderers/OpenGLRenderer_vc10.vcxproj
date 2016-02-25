@@ -241,11 +241,11 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </CustomBuildStep>
-    <ClInclude Include="..\public\Renderer\IIndexBuffer.h" />
+    <ClInclude Include="..\..\public\MaterialSystem\Renderers\IIndexBuffer.h" />
     <ClInclude Include="..\public\Renderer\IShaderAPI.h" />
     <ClInclude Include="..\public\Renderer\IShaderProgram.h" />
-    <ClInclude Include="..\public\Renderer\IVertexBuffer.h" />
-    <ClInclude Include="..\public\Renderer\IVertexFormat.h" />
+    <ClInclude Include="..\..\public\MaterialSystem\Renderers\IVertexBuffer.h" />
+    <ClInclude Include="..\..\public\MaterialSystem\Renderers\IVertexFormat.h" />
     <ClInclude Include="..\public\Renderer\renderer_def.h" />
     <ClInclude Include="ShaderAPI_Base.h" />
     <CustomBuildStep Include="GL\CGLRenderLib.h" />

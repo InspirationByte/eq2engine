@@ -89,19 +89,10 @@
     <ClInclude Include="IRenderLibrary.h">
       <Filter>Source Files\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Renderer\IIndexBuffer.h">
-      <Filter>Source Files\Renderer\Interfaces</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\Renderer\IShaderAPI.h">
       <Filter>Source Files\Renderer\Interfaces</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Renderer\IShaderProgram.h">
-      <Filter>Source Files\Renderer\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\Renderer\IVertexBuffer.h">
-      <Filter>Source Files\Renderer\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\Renderer\IVertexFormat.h">
       <Filter>Source Files\Renderer\Interfaces</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Renderer\renderer_def.h">
@@ -172,6 +163,15 @@
     </ClInclude>
     <ClInclude Include="GL\glad_es3.h">
       <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\MaterialSystem\Renderers\IVertexBuffer.h">
+      <Filter>Source Files\Renderer\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\MaterialSystem\Renderers\IVertexFormat.h">
+      <Filter>Source Files\Renderer\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\MaterialSystem\Renderers\IIndexBuffer.h">
+      <Filter>Source Files\Renderer\Interfaces</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

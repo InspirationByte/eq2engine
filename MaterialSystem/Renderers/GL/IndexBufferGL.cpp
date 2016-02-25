@@ -36,6 +36,36 @@ int CIndexBufferGL::GetIndicesCount()
 	return m_nIndices;
 }
 
+// updates buffer without map/unmap operations which are slower
+void CIndexBufferGL::Update(void* data, int size, int offset, bool discard /*= true*/)
+{
+	bool dynamic = (m_usage == GL_DYNAMIC_DRAW);
+
+	if(m_bIsLocked)
+	{
+		ASSERT(!"Vertex buffer can't be updated while locked!");
+		return;
+	}
+
+	if(offset+size > m_nIndices && !dynamic)
+	{
+		ASSERT(!"Update() with bigger size cannot be used on static vertex buffer!");
+		return;
+	}
+
+	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
+	pGLRHI->ThreadingSharingRequest();
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset*m_nIndexSize, size*m_nIndexSize, data);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	if(dynamic && discard && offset == 0)
+		m_nIndices = size;
+
+	pGLRHI->ThreadingSharingRelease();
+}
+
 // locks index buffer and gives to programmer buffer data
 bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
 {

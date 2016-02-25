@@ -48,6 +48,36 @@ int CVertexBufferGL::GetStrideSize()
 	return m_strideSize;
 }
 
+// updates buffer without map/unmap operations which are slower
+void CVertexBufferGL::Update(void* data, int size, int offset, bool discard /*= true*/)
+{
+	bool dynamic = (m_usage == GL_DYNAMIC_DRAW);
+
+	if(m_bIsLocked)
+	{
+		ASSERT(!"Vertex buffer can't be updated while locked!");
+		return;
+	}
+
+	if(offset+size > m_numVerts && !dynamic)
+	{
+		ASSERT(!"Update() with bigger size cannot be used on static vertex buffer!");
+		return;
+	}
+
+	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
+	pGLRHI->ThreadingSharingRequest();
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
+	glBufferSubData(GL_ARRAY_BUFFER, offset*m_strideSize, size*m_strideSize, data);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	if(dynamic && discard && offset == 0)
+		m_numVerts = size;
+
+	pGLRHI->ThreadingSharingRelease();
+}
+
 // locks vertex buffer and gives to programmer buffer data
 bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
 {
@@ -59,23 +89,22 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 		return false;
 	}
 
-	if(sizeToLock > m_numVerts && !dynamic)
-	{
-		MsgError("Static vertex buffer is not resizable, must be less or equal %d (%d)\n", m_numVerts, sizeToLock);
-		ASSERT(!"Static vertex buffer is not resizable. Debug it!\n");
-		return false;
-	}
-
 	// discard if dynamic
 	bool discard = dynamic;
-
-	if(readOnly)
-		discard = false;
 
 	// don't lock at other offset
 	// TODO: in other APIs
 	if( discard )
 		lockOfs = 0;
+
+	if(lockOfs+sizeToLock > m_numVerts && !dynamic)
+	{
+		ASSERT(!"Static vertex buffer is not resizable. Debug it!\n");
+		return false;
+	}
+
+	if(readOnly)
+		discard = false;
 
 	m_lockDiscard = discard;
 
