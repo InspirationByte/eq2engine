@@ -640,7 +640,7 @@
 1455508694 /home/soap/Projects/EqEngine/src_all/public/core/DebugInterface.h
 	"InterfaceManager.h"
 
-1455508694 /home/soap/Projects/EqEngine/src_all/public/materialsystem/renderers/IShaderAPI.h
+1456398071 /home/soap/Projects/EqEngine/src_all/public/materialsystem/renderers/IShaderAPI.h
 	"Platform.h"
 	"utils/DkList.h"
 	"ShaderAPICaps.h"
@@ -685,7 +685,7 @@
 	"ShaderAPI_defs.h"
 	"ppmem.h"
 
-1455891158 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/ShaderAPI_Base.cpp
+1456391374 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/ShaderAPI_Base.cpp
 	"DebugInterface.h"
 	"Platform.h"
 	"IConCommandFactory.h"
@@ -805,10 +805,10 @@
 	"Matrix.h"
 	"Volume.h"
 
-1456318741 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/CGLTexture.cpp
+1456391374 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/CGLTexture.cpp
 	"CGLTexture.h"
 	"DebugInterface.h"
-	"glad_es2.h"
+	"glad_es3.h"
 	"glad.h"
 	"shaderapigl_def.h"
 
@@ -817,9 +817,9 @@
 	"utils/DkList.h"
 	"ShaderAPIGL.h"
 
-1456311894 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/ShaderAPIGL.h
+1456391374 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/ShaderAPIGL.h
 	"../ShaderAPI_Base.h"
-	"glad_es2.h"
+	"glad_es3.h"
 	<EGL/egl.h>
 	"glad.h"
 	<X11/Xlib.h>
@@ -842,25 +842,25 @@
 1455508694 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/VertexFormatGL.h
 	"IVertexFormat.h"
 
-1456313499 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/shaderapigl_def.h
+1456391374 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/shaderapigl_def.h
 
-1456318805 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/GLOcclusionQuery.cpp
+1456391374 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/GLOcclusionQuery.cpp
 	"GLOcclusionQuery.h"
 	"ShaderAPIGL.h"
-	"glad_es2.h"
+	"glad_es3.h"
 	"glad.h"
 
 1455508694 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/GLOcclusionQuery.h
 	"IOcclusionQuery.h"
 
-1456318952 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/GLShaderProgram.cpp
+1456397755 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/GLShaderProgram.cpp
 	"GLShaderProgram.h"
 
-1456313389 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/GLShaderProgram.h
+1456323703 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/GLShaderProgram.h
 	"IShaderProgram.h"
 	"utils/eqstring.h"
 	"ShaderAPI_defs.h"
-	"glad_es2.h"
+	"glad_es3.h"
 	"glad.h"
 
 1455508694 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/glx_caps.cpp
@@ -885,24 +885,24 @@
 	<stdint.h>
 	<inttypes.h>
 
-1456318936 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/IndexBufferGL.cpp
+1456391374 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/IndexBufferGL.cpp
 	<malloc.h>
 	"IndexBufferGL.h"
 	"ShaderAPIGL.h"
 	"DebugInterface.h"
-	"glad_es2.h"
+	"glad_es3.h"
 	"glad.h"
 
 1455508694 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/IndexBufferGL.h
 	"Platform.h"
 	"IIndexBuffer.h"
 
-1456318890 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/VertexBufferGL.cpp
+1456391374 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/VertexBufferGL.cpp
 	<malloc.h>
 	"ShaderAPIGL.h"
 	"VertexBufferGL.h"
 	"DebugInterface.h"
-	"glad_es2.h"
+	"glad_es3.h"
 	"glad.h"
 
 1455508694 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/VertexBufferGL.h
@@ -933,7 +933,7 @@
 1455508694 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/GLMeshBuilder.h
 	"IMeshBuilder.h"
 
-1456318517 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/ShaderAPIGL.cpp
+1456398289 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/ShaderAPIGL.cpp
 	"ShaderAPIGL.h"
 	"CGLTexture.h"
 	"VertexFormatGL.h"
@@ -955,7 +955,7 @@
 1455508694 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/GLRenderState.h
 	"IRenderState.h"
 
-1456313364 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/CGLRenderLib.cpp
+1456391374 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/CGLRenderLib.cpp
 	"Platform.h"
 	"IDkCore.h"
 	"CGLRenderLib.h"
@@ -1034,17 +1034,29 @@
 
 1456313152 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/gl_loader.h
 
-1456312939 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/glad.c
+1456391374 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/glad.c
 	<stdio.h>
 	<stdlib.h>
 	<string.h>
 	"glad.h"
 
-1456313152 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/gl_loader.cpp
+1456391374 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/gl_loader.cpp
 	"gl_loader.h"
 	<dlfcn.h>
 	<dlfcn.h>
 	<stdio.h>
+	<windows.h>
 	<EGL/egl.h>
 	<GL/glx.h>
+
+1456309953 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/GL/glad_es3.h
+	<windows.h>
+	<stddef.h>
+	<KHR/khrplatform.h>
+	<inttypes.h>
+	<inttypes.h>
+	<inttypes.h>
+	<stdint.h>
+	<stdint.h>
+	<inttypes.h>
 

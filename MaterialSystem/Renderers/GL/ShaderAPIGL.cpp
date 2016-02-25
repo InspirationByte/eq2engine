@@ -1063,7 +1063,7 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 
 			for (uint i = 0; i < 6; i++)
 			{
-				if (IsCompressedFormat(format))
+				if( IsCompressedFormat(format) )
 				{
 					glCompressedTexImage2D(	GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
 											lockBoxLevel,
@@ -2175,6 +2175,9 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		glDeleteShader(prog->m_fragmentShader);
 		glDeleteShader(prog->m_vertexShader);
 
+		prog->m_fragmentShader = 0;
+		prog->m_vertexShader = 0;
+
 		// Shorten arrays to actual count
 		samplers = (GLShaderSampler_t  *) realloc(samplers, nSamplers * sizeof(GLShaderSampler_t));
 		uniforms = (GLShaderConstant_t *) realloc(uniforms, nUniforms * sizeof(GLShaderConstant_t));
@@ -2511,6 +2514,7 @@ void ShaderAPIGL::DrawIndexedPrimitives(PrimitiveType_e nType, int nFirstIndex, 
 		glDrawElementsInstancedARB(glPrimitiveType[nType], nIndices, indexSize == 2? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex), numInstances);
 	else
 		glDrawElements(glPrimitiveType[nType], nIndices, indexSize == 2? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
+
 	GL_END_CRITICAL();
 
 	m_nDrawIndexedPrimitiveCalls++;
