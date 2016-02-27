@@ -65,7 +65,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;NO_ENGINE;NOENGINE;GAME_DRIVERS;EQ_USE_SDL;PLAT_PC;BIG_REPLAYS;SHINY_PROFILER=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;NO_ENGINE;NOENGINE;GAME_DRIVERS;EQ_USE_SDL;PLAT_PC;BIG_REPLAYS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\public\materialsystem;..\public\materialsystem\renderers;..\Physics\bullet\src;..\Physics\bullet\src\BulletSoftBody;..\utils\eq_physgen;..\utils\wx\include;..\utils\wx\include\msvc;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\oolua\include;..\src_dependency\lua\src;..\src_dependency\jpeg;..\src_dependency\shiny\include;..\src_dependency\litehtml\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -235,10 +235,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </Library>
     <Library Include="..\src_dependency\SDL2\lib\SDL2.lib" />
-    <Library Include="..\src_dependency\Shiny\lib\Shiny.lib">
+    <Library Include="..\src_dependency\Shiny\lib\Release\Shiny.lib">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </Library>
-    <Library Include="..\src_dependency\Shiny\lib\ShinyDebug.lib">
+    <Library Include="..\src_dependency\Shiny\lib\Debug\Shiny.lib">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </Library>
   </ItemGroup>

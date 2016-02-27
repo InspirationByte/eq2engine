@@ -37,6 +37,10 @@ ConVar cam_velocity_springdamp("cam_velocity_springdamp", "8");
 
 ConVar cam_velocityeffects("cam_velocityeffects", "1", "Enable velocity effects", CV_ARCHIVE);
 
+ConVar cam_velocity_forwardmod("cam_velocity_forwardmod", "1.0");
+ConVar cam_velocity_sidemod("cam_velocity_sidemod", "0.0");
+ConVar cam_velocity_upmod("cam_velocity_upmod", "1.0");
+
 //---------------------------------------------------------------------------------------------------------------
 
 CCameraAnimator::CCameraAnimator() : 	
@@ -96,7 +100,13 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 	{
 		if(cam_velocityeffects.GetBool())
 		{
-			pos -= m_vecCameraVelDiff;
+			Vector3D car_side = targetRotation.rows[0].xyz();
+
+			Vector3D velDiffFwd = car_forward * dot(m_vecCameraVelDiff, car_forward) * cam_velocity_forwardmod.GetFloat();
+			Vector3D velDiffSide = car_side * dot(m_vecCameraVelDiff, car_side) * cam_velocity_sidemod.GetFloat();
+			Vector3D velDiffUp = vec3_up * dot(m_vecCameraVelDiff, vec3_up)  * cam_velocity_upmod.GetFloat();
+
+			pos -= velDiffFwd+velDiffSide+velDiffUp;
 
 			Vector3D camVelDiff = (targetVelocity-m_vecCameraVel)*CAR_ACCEL_VEL_FACTOR;
 

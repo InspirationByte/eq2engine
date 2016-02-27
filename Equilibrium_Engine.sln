@@ -50,16 +50,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CoreFramework", "CoreFramew
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ShaderLibs", "ShaderLibs", "{62D3AE4C-416C-47DF-8126-48AD87CA474A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fcompress", "utils\dk_compressor\fcompressor_vc8.vcxproj", "{A41DD6A5-FB30-4D47-9385-EE6885695BD7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fcompress", "utils\fcompress\fcompressor_vc8.vcxproj", "{A41DD6A5-FB30-4D47-9385-EE6885695BD7}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "egfca", "utils\eq_physgen\physgen.vcxproj", "{736DB03C-DE8F-4E61-9786-A74DF1FF7047}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "egfca", "utils\egfca\physgen.vcxproj", "{736DB03C-DE8F-4E61-9786-A74DF1FF7047}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "animca", "utils\dk_animationcomp\anim_compiler.vcxproj", "{D038395E-C792-4813-8BBB-14A9F73A7FBC}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kvconv", "utils\kvconv\kvconv.vcxproj", "{23A1EE72-658E-451E-9CA6-2E0D66FD1F2E}"
-	ProjectSection(ProjectDependencies) = postProject
-		{5EDDCDB2-E467-4DB3-AD7E-4E78F5020028} = {5EDDCDB2-E467-4DB3-AD7E-4E78F5020028}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "animca", "utils\animca\anim_compiler.vcxproj", "{D038395E-C792-4813-8BBB-14A9F73A7FBC}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DriversGame", "DriversGame\DriversGame.vcxproj", "{45869401-A830-49BA-AF72-96815D8BFEBE}"
 	ProjectSection(ProjectDependencies) = postProject

@@ -401,10 +401,10 @@
     <Library Include="..\src_dependency\bullet\lib\Debug\LinearMath_Debug.lib">
       <Filter>Libs\bullet</Filter>
     </Library>
-    <Library Include="..\src_dependency\Shiny\lib\Shiny.lib">
+    <Library Include="..\src_dependency\Shiny\lib\Release\Shiny.lib">
       <Filter>Libs\shiny</Filter>
     </Library>
-    <Library Include="..\src_dependency\Shiny\lib\ShinyDebug.lib">
+    <Library Include="..\src_dependency\Shiny\lib\Debug\Shiny.lib">
       <Filter>Libs\shiny</Filter>
     </Library>
   </ItemGroup>
