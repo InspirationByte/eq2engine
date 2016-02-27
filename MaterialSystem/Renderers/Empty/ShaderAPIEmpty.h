@@ -56,6 +56,11 @@ public:
 	// retuns stride size
 	int			GetStrideSize() {return m_stride;}
 
+	// updates buffer without map/unmap operations which are slower
+	void		Update(void* data, int size, int offset, bool discard = true)
+	{
+	}
+
 	// locks vertex buffer and gives to programmer buffer data
 	bool		Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
 	{
@@ -84,6 +89,11 @@ public:
 
 	// returns index count
 	int			GetIndicesCount() {return 0;}
+
+	// updates buffer without map/unmap operations which are slower
+	void		Update(void* data, int size, int offset, bool discard = true)
+	{
+	}
 
 	// locks vertex buffer and gives to programmer buffer data
 	bool		Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)

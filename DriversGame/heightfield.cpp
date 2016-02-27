@@ -905,8 +905,8 @@ void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
 	{
 		for(int y = 0; y < m_sizeh; y++)
 		{
-			float dxv[4] = NEIGHBOR_OFFS_DX(x, 0.5);
-			float dyv[4] = NEIGHBOR_OFFS_DY(y, 0.5);
+			float dxv[4] = NEIGHBOR_OFFS_DX((float)x, 0.5f);
+			float dyv[4] = NEIGHBOR_OFFS_DY((float)y, 0.5f);
 
 			int pt_idx = y*m_sizew + x;
 			hfieldtile_t& tile = m_points[pt_idx];
@@ -1122,33 +1122,21 @@ void CHeightTileFieldRenderable::GenereateRenderData()
 
 		m_vertexbuffer = g_pShaderAPI->CreateVertexBuffer(bufferType, vb_lock_size, sizeof(hfielddrawvertex_t), verts.ptr());
 		m_indexbuffer = g_pShaderAPI->CreateIndexBuffer(ib_lock_size, sizeof(int), bufferType, indices.ptr());
-
-		return;
 #endif
 	}
 
-	int* lockIB = NULL;
-	if(indices.numElem() && m_indexbuffer->Lock(0, indices.numElem(), (void**)&lockIB, false))
-	{
-		if(lockIB)
-			memcpy(lockIB, indices.ptr(), indices.numElem()*sizeof(int));
-
-		m_indexbuffer->Unlock();
-	}
-
-	hfielddrawvertex_t* lockVB = NULL;
-	if(verts.numElem() && m_vertexbuffer->Lock(0, verts.numElem(), (void**)&lockVB, false))
-	{
-		if(lockVB)
-			memcpy(lockVB, verts.ptr(), verts.numElem()*sizeof(hfielddrawvertex_t));
-
-		m_vertexbuffer->Unlock();
-	}
+#ifdef EDITOR
+	m_vertexbuffer->Update(verts.ptr(), verts.numElem(), 0, true);
+	m_indexbuffer->Update(indices.ptr(), indices.numElem(), 0, true);
+#endif
 }
+
+ConVar r_drawHfields("r_drawHfields", "1", "Draw heightfields", CV_ARCHIVE);
 
 void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t& occlSet)
 {
-	//g_pShaderAPI->Reset();
+	if(!r_drawHfields.GetBool())
+		return;
 
 	if(m_isChanged)
 	{
@@ -1166,12 +1154,14 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 	if(m_batches == NULL)
 		return;
 
+	ASSERT(m_numBatches < 1024);
+
 	for(int i = 0; i < m_numBatches; i++)
 	{
 		if(!occlSet.IsBoxVisible(m_batches[i].bbox))
 			continue;
 
-		g_pGameWorld->ApplyLighting( m_batches[i].bbox );
+		//g_pGameWorld->ApplyLighting( m_batches[i].bbox );
 
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 		materials->SetCullMode((nDrawFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
@@ -1180,10 +1170,7 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 		g_pShaderAPI->SetVertexBuffer(m_vertexbuffer, 0);
 		g_pShaderAPI->SetIndexBuffer(m_indexbuffer);
 
-		materials->BindMaterial(m_batches[i].pMaterial, false);
-		//debugoverlay->Box3D(m_batches[i].bbox.minPoint, m_batches[i].bbox.maxPoint, ColorRGBA(1,1,0,0.1));
-
-		materials->Apply();
+		materials->BindMaterial(m_batches[i].pMaterial, true);
 
 		g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLES, m_batches[i].startIndex, m_batches[i].numIndices, 0, m_numVerts);
 	}

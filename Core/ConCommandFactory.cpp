@@ -173,7 +173,7 @@ void CConsoleCommands::RegisterCommand(ConCommandBase *pCmd)
 	_RegisterOrDie();
 
 	ASSERT(pCmd != NULL);
-	ASSERT(FindBase(pCmd->GetName()) == NULL);
+	ASSERTMSG(FindBase(pCmd->GetName()) == NULL, varargs("ConCmd/CVar %s already registered", pCmd->GetName()));
 
 	//if(FindBase(pCmd->GetName()) != NULL)
 	//	MsgError("%s already declared.\n",pCmd->GetName());

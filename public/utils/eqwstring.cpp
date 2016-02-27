@@ -13,9 +13,9 @@
 #include "platform/Platform.h"
 #include "utils/strtools.h"
 
-#ifdef LINUX
+#ifdef PLAT_POSIX
 #include <wchar.h>
-#endif // LINUX
+#endif // PLAT_POSIX
 
 #define BASE_BUFFER		32	// 32 characters initial buffer
 #define EXTEND_CHARS	32	// 32 characters for extending

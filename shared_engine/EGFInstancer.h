@@ -208,11 +208,7 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 			g_pShaderAPI->ChangeVertexBuffer( NULL, 2 );
 
 			// upload instance buffer
-			if( m_instanceBuf->Lock(0, numInst, (void**)&instData, false))
-			{
-				memcpy(instData, m_instances[i][lod], sizeof(IT)*numInst);
-				m_instanceBuf->Unlock();
-			}
+			m_instanceBuf->Update(m_instances[i][lod], numInst, 0, true);
 
 			int bodyGroupLOD = lod;	// TODO: select lods or instance them
 

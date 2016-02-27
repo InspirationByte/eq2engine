@@ -10,6 +10,10 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 
+#include <AL/al.h>
+#include <AL/alc.h>
+#include <vorbis/vorbisfile.h>
+
 #include "DebugInterface.h"
 #include "alsound_local.h"
 
@@ -100,7 +104,10 @@ void DkSoundAmbient::SetPitch(float val)
 void DkSoundAmbient::SetSample(ISoundSample* sample)
 {
 	Stop();
-	m_sample = dynamic_cast<DkSoundSampleLocal*>(sample);
+
+#pragma todo("workaround for disabled RTTI")
+
+	m_sample = (DkSoundSampleLocal*)(sample);
 }
 
 ISoundSample* DkSoundAmbient::GetSample() const

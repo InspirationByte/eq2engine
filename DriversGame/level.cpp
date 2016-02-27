@@ -1860,13 +1860,7 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 
 			int numInstances = m_objectDefs[i]->m_instData->numInstances;
 
-			// upload
-			if( m_instanceBuffer->Lock(0, numInstances, (void**)&instData, false))
-			{
-				memcpy(instData, m_objectDefs[i]->m_instData->instances, sizeof(regObjectInstance_t)*numInstances);
-
-				m_instanceBuffer->Unlock();
-			}
+			m_instanceBuffer->Update(m_objectDefs[i]->m_instData->instances, numInstances, 0, true);
 
 			m_objectDefs[i]->m_model->Render(nRenderFlags, m_objectDefs[i]->m_model->m_bbox);
 

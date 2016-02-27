@@ -100,6 +100,10 @@ public:
 	// Directory stuff
 	//------------------------------------------------------------
 
+	// something like working directory
+	void						SetBasePath(const char* path)	{m_basePath = path;}
+	const char*					GetBasePath() const				{return m_basePath.c_str();}
+
     // Returns current game path
     const char*					GetCurrentGameDirectory();
 
@@ -159,6 +163,8 @@ protected:
     IFile*						GetFileHandle(const char* file_name_to_check,const char* options, int searchFlags );
 
 private:
+
+	EqString					m_basePath;			// base prepended path
 
     EqString					m_pszDataDir;		// Used to load engine data
 	DkList<EqString>			m_directories;		// mod data, for fall back

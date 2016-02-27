@@ -9,33 +9,22 @@
 #include "DebugInterface.h"
 #include "ShaderAPIGL.h"
 
-/*
-#include <d3d10.h>
-#include <d3dx10.h>
-#include "d3dx10_def.h"
-#include "Renderer/ShaderAPI_defs.h"
-*/
 #include <malloc.h>
-
 
 // source-code based on this article:
 // http://www.gamedev.net/reference/programming/features/imind3d/default.asp
-// [concept ported to DirectX10]
-
-//#define FVF_LISTVERTEX   (D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_DIFFUSE | D3DFVF_TEX1)// | D3DFVF_TEXCOORDSIZE1(1) | D3DFVF_TEXCOORDSIZE2(0)
+// [concept ported to OpenGL]
 
 #define MIN_VERTEX_LIST_SIZE	2048
 
-#define MAX_VBO_VERTS			8192
-
-//extern ID3D10Device* pXDevice;
+#define MAX_VBO_VERTS			16384
 
 struct ListVertex
 {
-	float x, y, z;
-	float tu, tv;//, tr;
-	ColorRGBA Diffuse;
-	float nx, ny, nz;
+	half x, y, z;
+	half tu, tv;
+	half nx, ny, nz;
+	TVec4D<half> Diffuse;
 };
 
 static bool bRenderBegun = false;
@@ -53,13 +42,12 @@ static IIndexBuffer*		s_pIndexBuffer		= NULL;
 static IVertexFormat*		s_pVertexFormat	= NULL;
 
 //-----------------------------------------------------------------------------
-// "glBegin()"
 
 static VertexFormatDesc_t g_meshBuilder_format[] = {
-	0, 3, VERTEXTYPE_VERTEX,	ATTRIBUTEFORMAT_FLOAT,
-	0, 2, VERTEXTYPE_TEXCOORD,	ATTRIBUTEFORMAT_FLOAT,
-	0, 4, VERTEXTYPE_COLOR,		ATTRIBUTEFORMAT_FLOAT,
-	0, 3, VERTEXTYPE_NORMAL,	ATTRIBUTEFORMAT_FLOAT,
+	0, 3, VERTEXTYPE_VERTEX,	ATTRIBUTEFORMAT_HALF,
+	0, 2, VERTEXTYPE_TEXCOORD,	ATTRIBUTEFORMAT_HALF,
+	0, 3, VERTEXTYPE_NORMAL,	ATTRIBUTEFORMAT_HALF,
+	0, 4, VERTEXTYPE_COLOR,		ATTRIBUTEFORMAT_HALF,
 };
 
 CGLMeshBuilder::~CGLMeshBuilder()
@@ -69,13 +57,7 @@ CGLMeshBuilder::~CGLMeshBuilder()
 
 void CGLMeshBuilder::Begin( PrimitiveType_e Type)
 {
-	//if( pXDevice == NULL )
-	//	return;
-
-	//pXDevice->AddRef();
-
 	type = Type;
-	//PrimitiveType = d3dPrim[Type];
 
 	nAllocated = MIN_VERTEX_LIST_SIZE;
 	pVertList = (ListVertex*)realloc(pVertList, sizeof(ListVertex)*nAllocated);
@@ -119,7 +101,8 @@ void CGLMeshBuilder::AdvanceVertex()
 
 	if(nVertsAfter > MAX_VBO_VERTS)
 	{
-		MsgWarning("CD3D10MeshBuilder::AdvanceVertex(): OVERFLOW...\n");
+		MsgWarning("CGLMeshBuilder::AdvanceVertex(): OVERFLOW...\n");
+		nVerts = 0;
 		return;
 	}
 
@@ -223,8 +206,6 @@ void CGLMeshBuilder::End()
 
 	if(!s_pBuffer)
 	{
-		//ubyte* pTemp = (ubyte*)malloc(MAX_VBO_VERTS*sizeof(ListVertex));
-
 		s_pBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_VBO_VERTS, sizeof(ListVertex), NULL);
 		s_pIndexBuffer = g_pShaderAPI->CreateIndexBuffer(MAX_VBO_VERTS*3, sizeof(int), BUFFER_DYNAMIC, NULL);
 
@@ -234,64 +215,15 @@ void CGLMeshBuilder::End()
 	if(!s_pBuffer)
 		return;
 
-	// WARNING!
-	// FANS NOT SUPPORTED
-	// YES! ACTUALLY FANS! :P
-
 	void* pLockData = NULL;
 
-	if(s_pBuffer->Lock(0, nVerts, &pLockData, false))
-	{
-		memcpy( pLockData, pVertList, sizeof(ListVertex)*nVerts);
-		s_pBuffer->Unlock();
-	}
-	else
-		MsgError("CGLMeshBuilder lock of VB failed!\n");
+	s_pBuffer->Update(pVertList, nVerts, 0, true);
 
 	int nIndices = 0;
-	
-	/*
-	if(type == PRIM_TRIANGLE_FAN)
-	{
-		// build a new index list
-		type = PRIM_TRIANGLES;
-
-		int num_triangles = ((nVerts < 4) ? 1 : (2 + nVerts - 4));
-		int num_indices = num_triangles*3;
-
-		if(nVerts < 3)
-		{
-			num_triangles = 0;
-			num_indices = 0;
-		}
-
-		int* pIndices = NULL;
-		if(s_pIndexBuffer->Lock(0, num_indices, (void**)&pIndices, false))
-		{
-			// fill out buffer
-			for(int i = 0; i < num_triangles; i++)
-			{
-				int idx0 = 0;
-				int idx1 = i+1;
-				int idx2 = i+2;
-
-				pIndices[i*3] = idx0;
-				pIndices[i*3 +1] = idx1;
-				pIndices[i*3 +2] = idx2;
-			}
-
-			s_pIndexBuffer->Unlock();
-		}
-
-		nIndices = num_indices;
-
-		g_pShaderAPI->SetIndexBuffer(s_pIndexBuffer);
-	}
-	else*/
-		g_pShaderAPI->SetIndexBuffer(NULL);
 
 	g_pShaderAPI->SetVertexFormat( s_pVertexFormat );
 	g_pShaderAPI->SetVertexBuffer( s_pBuffer, 0 );
+	g_pShaderAPI->SetIndexBuffer(NULL);
 
 	// this call allows to use shaders internally
 	((ShaderAPIGL*)g_pShaderAPI)->DrawMeshBufferPrimitives(type, nVerts, nIndices);
@@ -301,6 +233,4 @@ void CGLMeshBuilder::End()
 	pVertList = NULL;
 	nAllocated = 0;
 	nVerts = 0;
-
-	
 }

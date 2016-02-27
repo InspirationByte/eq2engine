@@ -10,7 +10,12 @@
 #include "IndexBufferGL.h"
 #include "ShaderAPIGL.h"
 #include "DebugInterface.h"
-#include "gl_caps.hpp"
+
+#ifdef USE_GLES2
+#include "glad_es3.h"
+#else
+#include "glad.h"
+#endif
 
 CIndexBufferGL::CIndexBufferGL()
 {
@@ -31,10 +36,40 @@ int CIndexBufferGL::GetIndicesCount()
 	return m_nIndices;
 }
 
+// updates buffer without map/unmap operations which are slower
+void CIndexBufferGL::Update(void* data, int size, int offset, bool discard /*= true*/)
+{
+	bool dynamic = (m_usage == GL_DYNAMIC_DRAW);
+
+	if(m_bIsLocked)
+	{
+		ASSERT(!"Vertex buffer can't be updated while locked!");
+		return;
+	}
+
+	if(offset+size > m_nIndices && !dynamic)
+	{
+		ASSERT(!"Update() with bigger size cannot be used on static vertex buffer!");
+		return;
+	}
+
+	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
+	pGLRHI->ThreadingSharingRequest();
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset*m_nIndexSize, size*m_nIndexSize, data);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	if(dynamic && discard && offset == 0)
+		m_nIndices = size;
+
+	pGLRHI->ThreadingSharingRelease();
+}
+
 // locks index buffer and gives to programmer buffer data
 bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
 {
-	bool dynamic = (m_usage == gl::DYNAMIC_DRAW);
+	bool dynamic = (m_usage == GL_DYNAMIC_DRAW);
 
 	if(m_bIsLocked)
 	{
@@ -48,8 +83,6 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 		ASSERT(!"Static index buffer is not resizable. Debug it!\n");
 		return false;
 	}
-
-	int nLockByteCount = m_nIndexSize*sizeToLock;
 
 	// discard if dynamic
 	bool discard = dynamic;
@@ -65,31 +98,50 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 	m_lockDiscard = discard;
 
 	// allocate memory for lock data
-	m_lockPtr = (ubyte*)malloc(nLockByteCount);
-	(*outdata) = m_lockPtr;
 	m_lockSize = sizeToLock;
 	m_lockOffs = lockOfs;
 	m_lockReadOnly = readOnly;
 
+	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
+
+#ifdef USE_GLES2
+	// map buffer
+	pGLRHI->ThreadingSharingRequest();
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+
+	GLbitfield mapFlags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | (discard ? GL_MAP_INVALIDATE_RANGE_BIT : 0);
+	m_lockPtr = (ubyte*)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, m_nIndices*m_nIndexSize, mapFlags );
+	(*outdata) = m_lockPtr + m_lockOffs*m_nIndexSize;
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	pGLRHI->ThreadingSharingRelease();
+
+	if(m_lockPtr == NULL)
+		ASSERTMSG(false, "Failed to map index buffer!");
+#else
+	int nLockByteCount = m_nIndexSize*sizeToLock;
+
+	m_lockPtr = (ubyte*)malloc(nLockByteCount);
+	(*outdata) = m_lockPtr;
+
 	// read data into the buffer if we're not discarding
 	if( !discard )
 	{
-		ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
-
 		pGLRHI->ThreadingSharingRequest();
 
-		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
 
 		// lock whole buffer
-		gl::GetBufferSubData(gl::ELEMENT_ARRAY_BUFFER, 0, m_nIndices*m_nIndexSize, m_lockPtr);
+		glGetBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, m_nIndices*m_nIndexSize, m_lockPtr);
 
 		// give user buffer with offset
 		(*outdata) = m_lockPtr + m_lockOffs*m_nIndexSize;
 
-		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 		pGLRHI->ThreadingSharingRelease();
 	}
+#endif // USE_GLES2
 
 	m_bIsLocked = true;
 
@@ -110,16 +162,22 @@ void CIndexBufferGL::Unlock()
 
 			pGLRHI->ThreadingSharingRequest();
 
-			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
 
-			gl::BufferSubData(gl::ELEMENT_ARRAY_BUFFER, 0, m_lockSize*m_nIndexSize, m_lockPtr);
+#ifdef USE_GLES2
+			glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+#else
+			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, m_lockSize*m_nIndexSize, m_lockPtr);
+#endif // USE_GLES2
 
-			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 			pGLRHI->ThreadingSharingRelease();
 		}
 
+#ifndef USE_GLES2 // don't do dis...
 		free(m_lockPtr);
+#endif // USE_GLES2
 		m_lockPtr = NULL;
 	}
 	else

@@ -8,13 +8,18 @@
 #include "Platform.h"
 #include "IDkCore.h"
 #include "CGLRenderLib.h"
-#include "gl_caps.hpp"
+
+#include "gl_loader.h"
 
 #if !defined(IS_OPENGL)
 #error "IS_OPENGL'' Should in your project!!!"
 #endif // PLAT_LINUX && !IS_OPENGL
 
 #ifdef USE_GLES2
+
+#ifndef EGL_OPENGL_ES3_BIT
+#define EGL_OPENGL_ES3_BIT 0x00000040
+#endif // EGL_OPENGL_ES3_BIT
 
 #elif PLAT_WIN
 #include "wgl_caps.hpp"
@@ -24,26 +29,31 @@
 #include "agl_caps.hpp"
 #endif // USE_GLES2
 
+
+
 /*
 
-OpenGL extensions to generate using glLoadGen
+OpenGL extensions used to generate gl_caps.hpp/cpp
 
 EXT_texture_compression_s3tc
 EXT_texture_sRGB
 EXT_texture_filter_anisotropic
-EXT_multisample
+ARB_draw_instanced
 ARB_instanced_arrays
+ARB_multisample
 ARB_fragment_shader
 ARB_shader_objects
-EXT_vertex_shader
+ARB_vertex_shader
 ARB_framebuffer_object
+EXT_framebuffer_object
 ARB_draw_buffers
 EXT_draw_buffers2
 ARB_half_float_pixel
 ARB_depth_buffer_float
 EXT_packed_depth_stencil
 ARB_texture_rectangle
-ATI_texture_float
+ARB_texture_float
+ARB_occlusion_query
 
 */
 
@@ -154,9 +164,9 @@ bool CGLRenderLib::InitCaps()
 
 void PrintGLExtensions()
 {
-	const char *ver = (const char *) gl::GetString(gl::VERSION);
+	const char *ver = (const char *) glGetString(GL_VERSION);
 	Msg("OpenGL version: %s\n \n",ver);
-	const char *exts = (const char *) gl::GetString(gl::EXTENSIONS);
+	const char *exts = (const char *) glGetString(GL_EXTENSIONS);
 
 	DkList<EqString> splExts;
 	xstrsplit(exts," ",splExts);
@@ -191,10 +201,10 @@ int dComp(const DispRes &d0, const DispRes &d1){
 
 #endif // PLAT_LINUX
 
-#if defined(USE_GLES2) && defined(PLAT_WIN)
+#if defined(USE_GLES2) // && defined(PLAT_WIN)
 bool OpenNativeDisplay(EGLNativeDisplayType* nativedisp_out)
 {
-    *nativedisp_out = (EGLNativeDisplayType) NULL;
+	*nativedisp_out = EGL_DEFAULT_DISPLAY;
     return true;
 }
 
@@ -207,7 +217,137 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 {
 	savedParams = params;
 
-#ifdef PLAT_WIN
+#ifdef USE_GLES2
+
+    eglSurface = EGL_NO_SURFACE;
+
+#ifdef ANDROID
+    externalWindowDisplayParams_t* winParams = (externalWindowDisplayParams_t*)params.hWindow;
+
+    ASSERT(winParams != NULL);
+
+    eglSurface = (EGLSurface)winParams->paramArray[0];
+
+	hwnd = (EGLNativeWindowType)winParams->window;
+#else
+	// other EGL
+	hwnd = (EGLNativeWindowType)params.hWindow;
+#endif // ANDROID
+
+	Msg("Initializing EGL context...\n");
+
+    EGLBoolean bsuccess;
+
+    // create native window
+    EGLNativeDisplayType nativeDisplay;
+    if(!OpenNativeDisplay(&nativeDisplay))
+    {
+        ErrorMsg("OpenGL ES init error: Cannot open native display!");
+        return false;
+    }
+
+    // get egl display handle
+    eglDisplay = eglGetDisplay(nativeDisplay);
+    if(eglDisplay == EGL_NO_DISPLAY)
+    {
+        ErrorMsg("OpenGL ES init error: Could not get EGL display (%d)", eglDisplay);
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    // Initialize the display
+    EGLint major = 0;
+    EGLint minor = 0;
+    bsuccess = eglInitialize(eglDisplay, &major, &minor);
+    if (!bsuccess)
+    {
+        ErrorMsg("OpenGL ES init error: Could not initialize EGL display!");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+    if (major < 1)
+    {
+        // Does not support EGL 1.4
+        ErrorMsg("OpenGL ES init error: System does not support at least EGL 3.0");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    // Obtain the first configuration with a depth buffer
+    // Obtain the first configuration with a depth buffer
+    EGLint attrs[] = {
+		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
+		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+
+		EGL_DEPTH_SIZE, 16,
+
+		EGL_RED_SIZE, 5,
+		EGL_GREEN_SIZE, 6,
+		EGL_BLUE_SIZE, 5,
+
+		EGL_NONE
+	};
+
+    EGLint numConfig =0;
+    EGLConfig eglConfig = 0;
+    bsuccess = eglChooseConfig(eglDisplay, attrs, &eglConfig, 1, &numConfig);
+    if (!bsuccess)
+    {
+        ErrorMsg("OpenGL ES init error: Could not find valid EGL config");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    // Get the native visual id
+    int nativeVid;
+    if (!eglGetConfigAttrib(eglDisplay, eglConfig, EGL_NATIVE_VISUAL_ID, &nativeVid))
+    {
+        ErrorMsg("OpenGL ES init error: Could not get native visual id");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    // Create a surface for the main window
+    if(eglSurface == EGL_NO_SURFACE)
+        eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, hwnd, NULL);
+
+    if (eglSurface == EGL_NO_SURFACE)
+    {
+        ErrorMsg("OpenGL ES init error: Could not create EGL surface\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+	eglBindAPI(EGL_OPENGL_ES_API);
+
+	// context attribute list
+    EGLint contextAttr[] = {
+		EGL_CONTEXT_CLIENT_VERSION, 3,
+		EGL_NONE
+	};
+
+	MsgInfo("eglCreateContext...\n");
+
+    // Create two OpenGL ES contexts
+    glContext = eglCreateContext(eglDisplay, eglConfig, EGL_NO_CONTEXT, contextAttr);
+    if (glContext == EGL_NO_CONTEXT)
+    {
+        ErrorMsg("OpenGL ES init error: Could not create EGL context\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+    glContext2 = eglCreateContext(eglDisplay, eglConfig, glContext, contextAttr);
+    if (glContext == EGL_NO_CONTEXT)
+    {
+         ErrorMsg("OpenGL ES init error: Could not create EGL context\n");
+        CloseNativeDisplay(nativeDisplay);
+        return false;
+    }
+
+	eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext);
+
+#elif defined(PLAT_WIN)
 	if (r_screen->GetInt() >= GetSystemMetrics(SM_CMONITORS))
 		r_screen->SetValue("0");
 
@@ -297,120 +437,10 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 
 	hdc = GetDC(hwnd);
 
-#ifdef USE_GLES2
-    EGLBoolean bsuccess;
-
-    // create native window
-    EGLNativeDisplayType nativeDisplay;
-    if(!OpenNativeDisplay(&nativeDisplay))
-    {
-        MsgError("Could not get open native display\n");
-        return false;
-    }
-
-    // get egl display handle
-    eglDisplay = eglGetDisplay(nativeDisplay);
-    if(eglDisplay == EGL_NO_DISPLAY)
-    {
-        MsgError("Could not get EGL display\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-
-    // Initialize the display
-    EGLint major = 0;
-    EGLint minor = 0;
-    bsuccess = eglInitialize(eglDisplay, &major, &minor);
-    if (!bsuccess)
-    {
-        MsgError("Could not initialize EGL display\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-    if (major < 1 || minor < 4)
-    {
-        // Does not support EGL 1.4
-        MsgError("System does not support at least EGL 1.4\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-
-    // Obtain the first configuration with a depth buffer
-    // Obtain the first configuration with a depth buffer
-    EGLint attrs[] = {
-		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-
-		EGL_DEPTH_SIZE, 16,
-
-		EGL_RED_SIZE, 8,
-		EGL_GREEN_SIZE, 8,
-		EGL_BLUE_SIZE, 8,
-
-		EGL_NONE
-	};
-
-    EGLint numConfig =0;
-    EGLConfig eglConfig = 0;
-    bsuccess = eglChooseConfig(eglDisplay, attrs, &eglConfig, 1, &numConfig);
-    if (!bsuccess)
-    {
-        MsgError("Could not find valid EGL config\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-
-    // Get the native visual id
-    int nativeVid;
-    if (!eglGetConfigAttrib(eglDisplay, eglConfig, EGL_NATIVE_VISUAL_ID, &nativeVid))
-    {
-        MsgError("Could not get native visual id\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-
-    // Create a surface for the main window
-    eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, hwnd, NULL);
-    if (eglSurface == EGL_NO_SURFACE)
-    {
-        MsgError("Could not create EGL surface\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-
-	eglBindAPI(EGL_OPENGL_ES_API);
-
-	// context attribute list
-    EGLint contextAttr[] = {
-		EGL_CONTEXT_CLIENT_VERSION, 2,
-		EGL_NONE
-	};
-
-    // Create two OpenGL ES contexts
-    glContext = eglCreateContext(eglDisplay, eglConfig, EGL_NO_CONTEXT, contextAttr);
-    if (glContext == EGL_NO_CONTEXT)
-    {
-        MsgError("Could not create EGL context\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-
-    glContext2 = eglCreateContext(eglDisplay, eglConfig, glContext, contextAttr);
-    if (glContext == EGL_NO_CONTEXT)
-    {
-        MsgError("Could not create EGL context\n");
-        CloseNativeDisplay(nativeDisplay);
-        return false;
-    }
-
-
-
-	eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext);
-#else
 	int iAttribs[] = {
-		wgl::DRAW_TO_WINDOW_ARB,	gl::TRUE_,
+		wgl::DRAW_TO_WINDOW_ARB,	GL_TRUE,
 		wgl::ACCELERATION_ARB,		wgl::FULL_ACCELERATION_ARB,
-		wgl::DOUBLE_BUFFER_ARB,		gl::TRUE_,
+		wgl::DOUBLE_BUFFER_ARB,		GL_TRUE,
 		wgl::RED_BITS_ARB,			8,
 		wgl::GREEN_BITS_ARB,		8,
 		wgl::BLUE_BITS_ARB,			8,
@@ -459,7 +489,6 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	wglShareLists(glContext2, glContext);
 
 	wglMakeCurrent(hdc, glContext);
-#endif // #ifdef USE_GLES2
 
 #elif PLAT_LINUX
 
@@ -556,33 +585,40 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 			savedParams.bIsWindowed = true;
 		}
 	}
-/*
-	// Create a blank cursor for cursor hiding
-	XColor dummy;
-	char data = 0;
-	Pixmap blank = XCreateBitmapFromData(display, (Drawable)savedParams.hWindow, &data, 1, 1);
-	blankCursor = XCreatePixmapCursor(display, blank, blank, &dummy, &dummy, 0, 0);
-	XFreePixmap(display, blank);
-*/
+
 	glContext = glXCreateContext(display, vi, None, True);
 	glContext2 = glXCreateContext(display, vi, glContext, True);
 
 	glXMakeCurrent(display, (GLXDrawable)savedParams.hWindow, glContext);
 #endif //PLAT_WIN
 
-	gl::exts::LoadTest didLoad = gl::sys::LoadFunctions();
-	if(!didLoad)
-		MsgError("OpenGL load errors: %i\n", didLoad.GetNumMissing());
+	Msg("Initializing GL extensions...\n");
+
+#ifdef USE_GLES2
+	// load GLES2 GL 3.0 extensions using glad
+	if(!gladLoadGLES2Loader( gladHelperLoaderFunction ))
+	{
+		MsgError("Cannot load OpenGL ES 2.0!\n");
+		return false;
+	}
+#else
+	// load OpenGL extensions using glad
+	if(!gladLoadGLLoader( gladHelperLoaderFunction ))
+	{
+		MsgError("Cannot load OpenGL extensions or several functions!\n");
+		return false;
+	}
+#endif // USE_GLES2
 
 	if(g_cmdLine->FindArgument("-glext") != -1)
 		PrintGLExtensions();
 
 	{
-		const char *rend = (const char *) gl::GetString(gl::RENDERER);
-		const char *vendor = (const char *) gl::GetString(gl::VENDOR);
+		const char *rend = (const char *) glGetString(GL_RENDERER);
+		const char *vendor = (const char *) glGetString(GL_VENDOR);
 		Msg("*Detected video adapter: %s by %s\n",rend,vendor);
 
-		const char *version = (const char *) gl::GetString(gl::VERSION);
+		const char *version = (const char *) glGetString(GL_VERSION);
 		Msg("*OpenGL version is: %s\n",version);
 	}
 
@@ -602,10 +638,10 @@ bool CGLRenderLib::InitAPI( const shaderapiinitparams_t& params )
 	m_Renderer->m_glContext = this->glContext;
 	m_Renderer->m_glContext2 = this->glContext2;
 
-	if (gl::exts::var_ARB_multisample && params.nMultisample > 0)
-	{
-		gl::Enable(gl::MULTISAMPLE_ARB);
-	}
+#ifndef USE_GLES2 // TEMPORARILY DISABLED
+	if (GLAD_GL_ARB_multisample && params.nMultisample > 0)
+		glEnable(GL_MULTISAMPLE_ARB);
+#endif // USE_GLES2
 
 	return true;
 }
@@ -629,7 +665,6 @@ void CGLRenderLib::ExitAPI()
 	wglMakeCurrent(NULL, NULL);
 	wglDeleteContext(glContext);
 	wglDeleteContext(glContext2);
-#endif // USE_GLES2
 
 	ReleaseDC(hwnd, hdc);
 
@@ -638,6 +673,8 @@ void CGLRenderLib::ExitAPI()
 		// Reset display mode to default
 		ChangeDisplaySettingsEx((const char *) device.DeviceName, NULL, NULL, 0, NULL);
 	}
+#endif // USE_GLES2
+
 #else
 
 #ifdef PLAT_LINUX
@@ -676,7 +713,6 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 #ifdef USE_GLES2
 
 	eglSwapBuffers(eglDisplay, eglSurface);
-	gl::Finish();
 
 #elif PLAT_WIN
 	if (wgl::exts::var_EXT_swap_control)
@@ -694,21 +730,25 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 	}
 
 	glXSwapBuffers(display, (Window)savedParams.hWindow);
-	gl::Finish();
 
 #endif // PLAT_WIN
+
+    //gl::Finish();
 
     m_Renderer->GL_END_CRITICAL();
 }
 
 void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 {
+	if(m_width == w && m_height == h)
+		return;
+
 	m_width = w;
 	m_height = h;
 
 	if(!savedParams.bIsWindowed)
 	{
-#ifdef PLAT_WIN
+#if defined(PLAT_WIN) && !defined(USE_GLES2)
 		dm.dmPelsWidth = m_width;
 		dm.dmPelsHeight = m_height;
 
@@ -717,13 +757,13 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 			MsgError("Couldn't set fullscreen mode\n");
 			WarningMsg("Couldn't set fullscreen mode");
 		}
-#endif // PLAT_WIN
+#endif // PLAT_WIN && !USE_GLES2
 	}
 
 	if (glContext != NULL)
 	{
 		m_Renderer->GL_CRITICAL();
-		gl::Viewport(0, 0, m_width, m_height);
+		glViewport(0, 0, m_width, m_height);
 		m_Renderer->GL_END_CRITICAL();
 	}
 }
@@ -732,12 +772,12 @@ bool CGLRenderLib::CaptureScreenshot(CImage &img)
 {
 	m_Renderer->GL_CRITICAL();
 
-	gl::Finish();
+	glFinish();
 
 	ubyte *pixels = img.Create(FORMAT_RGB8, m_width, m_height, 1, 1);
 	ubyte *flipped = new ubyte[m_width * m_height * 3];
 
-	gl::ReadPixels(0, 0, m_width, m_height, gl::RGB, gl::UNSIGNED_BYTE, flipped);
+	glReadPixels(0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, flipped);
 	for (int y = 0; y < m_height; y++)
 		memcpy(pixels + y * m_width * 3, flipped + (m_height - y - 1) * m_width * 3, m_width * 3);
 

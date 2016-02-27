@@ -12,6 +12,10 @@
 
 #ifdef PLAT_POSIX
 
+#include <sched.h>
+#include <pthread.h>
+#include <errno.h>
+
 #include <stdint.h>
 #define INFINITE 0xFFFFFFFF
 

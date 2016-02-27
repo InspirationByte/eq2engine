@@ -9,23 +9,11 @@
 #ifndef ALSOUND_LOCAL_H
 #define ALSOUND_LOCAL_H
 
-#include "al/al.h"
-#include "al/alc.h"
-#include "al/alext.h"
-
-#ifdef _WIN32
-#include "vorbis/vorbisfile.h"
-#else
-#include <vorbis/vorbisfile.h>
-#endif // _WIN32
-
 #include "soundzero.h"
 
 #include "alsnd_sample.h"
 #include "alsnd_emitter.h"
 #include "alsnd_stream.h"
-
-//#include "EFX-Util.h"
 
 #define AL_FORMAT_VORBIS_EXT			0x10003
 

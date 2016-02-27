@@ -575,7 +575,7 @@ bool CNetworkClient::Connect( const char* pszAddress, int portNumber, int client
 	int a1, a2, a3, a4;
 	if(sscanf(pszAddress, "%d.%d.%d.%d", &a1, &a2, &a3, &a4) == 4)
 	{
-#ifdef LINUX
+#ifndef _WIN32
 		uint8* host_ip = (uint8*)&hostaddress.s_addr;
 		host_ip[0] = (uint8)a1;
 		host_ip[1] = (uint8)a2;
@@ -586,7 +586,7 @@ bool CNetworkClient::Connect( const char* pszAddress, int portNumber, int client
 		hostaddress.S_un.S_un_b.s_b2 = (unsigned char)a2;
 		hostaddress.S_un.S_un_b.s_b3 = (unsigned char)a3;
 		hostaddress.S_un.S_un_b.s_b4 = (unsigned char)a4;
-#endif // LINUX
+#endif // !_WIN32
 	}
 	else
 	{
@@ -602,7 +602,7 @@ bool CNetworkClient::Connect( const char* pszAddress, int portNumber, int client
 
 		hostaddress = *((struct in_addr *)(hn->h_addr));
 
-#ifdef LINUX
+#ifndef _WIN32
 		uint8* host_ip = (uint8*)&hostaddress.s_addr;
 		Msg("host address: %d.%d.%d.%d\n",	host_ip[0],
 											host_ip[1],
@@ -613,7 +613,7 @@ bool CNetworkClient::Connect( const char* pszAddress, int portNumber, int client
 											hostaddress.S_un.S_un_b.s_b2,
 											hostaddress.S_un.S_un_b.s_b3,
 											hostaddress.S_un.S_un_b.s_b4);
-#endif // LINUX
+#endif // !_WIN32
 
 
 	}

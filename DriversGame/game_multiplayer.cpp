@@ -621,7 +621,7 @@ void CNetGameSession::Update(float fDt)
 
 	//------------------------------------------------------------
 
-	m_curTimeNetwork = g_pHost->m_fCurTime;
+	m_curTimeNetwork = g_pHost->GetCurTime();
 
 	double fNetRate = IsServer() ? sv_rate.GetFloat() : cl_cmdrate.GetFloat();
 

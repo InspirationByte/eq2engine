@@ -98,27 +98,28 @@ bool CState_MainMenu::Update( float fDt )
 			m_textFade += fDt*4.0f;
 	}
 
+	const IVector2D& screenSize = g_pHost->GetWindowSize();
+
 	m_fade = clamp(m_fade, 0.0f, 1.0f);
 	m_textFade = clamp(m_textFade, 0.0f, 1.0f);
 
-	materials->Setup2D(g_pHost->m_nWidth, g_pHost->m_nHeight);
+	materials->Setup2D(screenSize.x,screenSize.y);
 	g_pShaderAPI->Clear( true,true, false, ColorRGBA(0.25f,0,0,0.0f));
 
-	IVector2D screen(g_pHost->m_nWidth, g_pHost->m_nHeight);
-	IVector2D halfScreen(g_pHost->m_nWidth/2, g_pHost->m_nHeight/2);
+	IVector2D halfScreen(screenSize.x/2, screenSize.y/2);
 
-	float widthFac = (float)g_pHost->m_nWidth/(float)m_titleTexture->GetWidth();
-	float heightFac = (float)g_pHost->m_nHeight/(float)m_titleTexture->GetHeight();
+	float widthFac = (float)screenSize.x/(float)m_titleTexture->GetWidth();
+	float heightFac = (float)screenSize.y/(float)m_titleTexture->GetHeight();
 	float texSizeFactor = widthFac > heightFac ? widthFac : heightFac;
 
 	float halfWidth = m_titleTexture->GetWidth()*0.5f;
 	float halfHeight = m_titleTexture->GetHeight()*0.5f;
 
-	Vertex2D_t tmprect[] = { 
-		MAKETEXQUAD((halfScreen.x-halfWidth*texSizeFactor), 
-					(halfScreen.y-halfHeight*texSizeFactor), 
-					(halfScreen.x+halfWidth*texSizeFactor), 
-					(halfScreen.y+halfHeight*texSizeFactor), 0.0f) 
+	Vertex2D_t tmprect[] = {
+		MAKETEXQUAD((halfScreen.x-halfWidth*texSizeFactor),
+					(halfScreen.y-halfHeight*texSizeFactor),
+					(halfScreen.x+halfWidth*texSizeFactor),
+					(halfScreen.y+halfHeight*texSizeFactor), 0.0f)
 		};
 
 	// Cancel textures

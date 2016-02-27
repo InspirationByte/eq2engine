@@ -202,7 +202,7 @@ DECLARE_CMD(start, "loads a level or starts mission", 0)
 
 void fnMaxplayersTest(ConVar* pVar,char const* pszOldValue)
 {
-	if(dynamic_cast<CNetGameSession*>(g_pGameSession) != NULL)
+	if(g_pGameSession != NULL && g_pGameSession->GetSessionType() == SESSION_NETWORK)
 		Msg("maxplayers will be changed upon restart\n");
 }
 
@@ -518,7 +518,7 @@ void Game_UpdateCamera( float fDt )
 	// camera overriden here
 	if( g_freecam.GetBool() )
 	{
-		Game_UpdateFreeCamera( g_pHost->m_fGameFrameTime );
+		Game_UpdateFreeCamera( g_pHost->GetFrameTime() );
 
 		camera.SetOrigin(g_camera_freepos);
 		camera.SetAngles(g_camera_freeangles);
@@ -647,7 +647,7 @@ DECLARE_CMD(director_pick_ray, "Director mode - picks object with ray", 0)
 
 void Game_DrawDirectorUI( float fDt )
 {
-	IVector2D screenSize(g_pHost->m_nWidth, g_pHost->m_nHeight);
+	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
 	materials->Setup2D(screenSize.x,screenSize.y);
 
@@ -667,7 +667,7 @@ void Game_DrawDirectorUI( float fDt )
 
 	Vector2D directorTextPos(15, screenSize.y/3);
 
-	g_pHost->m_pDefaultFont->RenderText(str, directorTextPos, params);
+	g_pHost->GetDefaultFont()->RenderText(str, directorTextPos, params);
 
 	replaycamera_t* cam = g_replayData->GetCurrentCamera();
 
@@ -676,7 +676,7 @@ void Game_DrawDirectorUI( float fDt )
 	params.align = TEXT_ALIGN_HCENTER;
 
 	Vector2D frameInfoTextPos(screenSize.x/2, screenSize.y - (screenSize.y/6));
-	g_pHost->m_pDefaultFont->RenderText(framesStr, frameInfoTextPos, params);
+	g_pHost->GetDefaultFont()->RenderText(framesStr, frameInfoTextPos, params);
 
 	if(g_freecam.GetBool())
 	{
@@ -759,7 +759,7 @@ void Game_Frame(float fDt)
 
 	float render_begin = MEASURE_TIME_BEGIN();
 
-	IVector2D screenSize(g_pHost->m_nWidth, g_pHost->m_nHeight);
+	const IVector2D& screenSize = g_pHost->GetWindowSize();
 	g_pGameWorld->BuildViewMatrices(screenSize.x,screenSize.y, 0);
 
 	// render
@@ -1056,9 +1056,11 @@ bool CState_Game::Update( float fDt )
 	if(!g_pGameSession)
 		return false;
 
+	const IVector2D& screenSize = g_pHost->GetWindowSize();
+
 	if(!m_isGameRunning)
 	{
-		materials->Setup2D(g_pHost->m_nWidth, g_pHost->m_nHeight);
+		materials->Setup2D(screenSize.x, screenSize.y);
 		g_pShaderAPI->Clear( true,true, false );
 
 		IEqFont* font = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD+TEXT_STYLE_ITALIC);
@@ -1068,7 +1070,7 @@ bool CState_Game::Update( float fDt )
 		eqFontStyleParam_t param;
 		param.styleFlag |= TEXT_STYLE_SHADOW;
 
-		font->RenderText(loadingStr, Vector2D(100,g_pHost->m_nHeight - 100), param);
+		font->RenderText(loadingStr, Vector2D(100,screenSize.y - 100), param);
 
 		if(g_pGameWorld->m_level.IsWorkDone() && materials->GetLoadingQueue() == 0)
 			m_isGameRunning = true;
@@ -1121,9 +1123,9 @@ bool CState_Game::Update( float fDt )
 	{
 		ColorRGBA blockCol(0.0,0.0,0.0,m_fade);
 
-		Vertex2D_t tmprect1[] = { MAKETEXQUAD(0, 0,g_pHost->m_nWidth, g_pHost->m_nHeight, 0) };
+		Vertex2D_t tmprect1[] = { MAKETEXQUAD(0, 0,screenSize.x, screenSize.y, 0) };
 
-		materials->Setup2D(g_pHost->m_nWidth, g_pHost->m_nHeight);
+		materials->Setup2D(screenSize.x,screenSize.y);
 
 		BlendStateParam_t blending;
 		blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
@@ -1155,10 +1157,10 @@ bool CState_Game::Update( float fDt )
 		{
 			ColorRGBA blockCol(0.0,0.0,0.0,1.0f);
 
-			Vertex2D_t tmprect1[] = { MAKETEXQUAD(0, 0,g_pHost->m_nWidth, g_pHost->m_nHeight*m_fade*0.5f, 0) };
-			Vertex2D_t tmprect2[] = { MAKETEXQUAD(0, g_pHost->m_nHeight*0.5f + g_pHost->m_nHeight*(1.0f-m_fade)*0.5f,g_pHost->m_nWidth, g_pHost->m_nHeight, 0) };
+			Vertex2D_t tmprect1[] = { MAKETEXQUAD(0, 0,screenSize.x, screenSize.y*m_fade*0.5f, 0) };
+			Vertex2D_t tmprect2[] = { MAKETEXQUAD(0, screenSize.y*0.5f + screenSize.y*(1.0f-m_fade)*0.5f,screenSize.x, screenSize.y, 0) };
 
-			materials->Setup2D(g_pHost->m_nWidth, g_pHost->m_nHeight);
+			materials->Setup2D(screenSize.x, screenSize.y);
 			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect1,elementsOf(tmprect1), NULL, blockCol);
 			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect2,elementsOf(tmprect2), NULL, blockCol);
 
@@ -1214,10 +1216,11 @@ void CState_Game::DrawMenu( float fDt )
 	if( !m_showMenu )
 		return;
 
-	materials->Setup2D(g_pHost->m_nWidth, g_pHost->m_nHeight);
+	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
-	IVector2D screen(g_pHost->m_nWidth, g_pHost->m_nHeight);
-	IVector2D halfScreen(g_pHost->m_nWidth/2, g_pHost->m_nHeight/2);
+	materials->Setup2D(screenSize.x,screenSize.y);
+
+	IVector2D halfScreen(screenSize.x/2, screenSize.y/2);
 
 	IEqFont* font = g_fontCache->GetFont("Roboto", 30);
 

@@ -72,10 +72,16 @@
     <ClCompile Include="GL\GLOcclusionQuery.cpp">
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClCompile>
-    <ClCompile Include="GL\gl_caps.cpp">
+    <ClCompile Include="GL\wgl_caps.cpp">
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClCompile>
-    <ClCompile Include="GL\wgl_caps.cpp">
+    <ClCompile Include="GL\gl_loader.cpp">
+      <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="GL\glad.c">
+      <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="GL\glad_es3.c">
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClCompile>
   </ItemGroup>
@@ -83,19 +89,10 @@
     <ClInclude Include="IRenderLibrary.h">
       <Filter>Source Files\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Renderer\IIndexBuffer.h">
-      <Filter>Source Files\Renderer\Interfaces</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\Renderer\IShaderAPI.h">
       <Filter>Source Files\Renderer\Interfaces</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Renderer\IShaderProgram.h">
-      <Filter>Source Files\Renderer\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\Renderer\IVertexBuffer.h">
-      <Filter>Source Files\Renderer\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\Renderer\IVertexFormat.h">
       <Filter>Source Files\Renderer\Interfaces</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Renderer\renderer_def.h">
@@ -155,11 +152,26 @@
     <ClInclude Include="GL\GLOcclusionQuery.h">
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClInclude>
-    <ClInclude Include="GL\gl_caps.hpp">
-      <Filter>Source Files\Renderer\OpenGL</Filter>
-    </ClInclude>
     <ClInclude Include="GL\wgl_caps.hpp">
       <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="GL\gl_loader.h">
+      <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="GL\glad.h">
+      <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="GL\glad_es3.h">
+      <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\MaterialSystem\Renderers\IVertexBuffer.h">
+      <Filter>Source Files\Renderer\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\MaterialSystem\Renderers\IVertexFormat.h">
+      <Filter>Source Files\Renderer\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\MaterialSystem\Renderers\IIndexBuffer.h">
+      <Filter>Source Files\Renderer\Interfaces</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

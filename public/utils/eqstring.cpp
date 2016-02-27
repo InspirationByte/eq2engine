@@ -13,9 +13,9 @@
 #include "platform/Platform.h"
 #include "utils/strtools.h"
 
-#ifdef LINUX
+#ifdef PLAT_POSIX
 #include <string.h>
-#endif
+#endif // PLAT_POSIX
 
 #define BASE_BUFFER		32	// 32 characters initial buffer
 #define EXTEND_CHARS	32	// 32 characters for extending
@@ -24,7 +24,7 @@
 #define xstricmp stricmp
 #else
 #define xstricmp strcasecmp
-#endif // LINUX
+#endif // _WIN32
 
 EqString::EqString()
 {

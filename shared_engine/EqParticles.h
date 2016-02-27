@@ -93,6 +93,7 @@ public:
 
 	// renders this buffer
 	void				Render(int nViewRenderFlags);
+	void				ClearBuffers();
 
 	void				SetCustomProjectionMatrix(const Matrix4x4& mat);
 
@@ -163,6 +164,7 @@ public:
 
 	// prepares render buffers and sends renderables to ViewRenderer
 	void							Render(int nRenderFlags);
+	void							ClearBuffers();
 
 	bool							MakeVBOFrom(CParticleRenderGroup* pGroup);
 

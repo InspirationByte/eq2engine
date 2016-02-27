@@ -306,10 +306,19 @@ void CParticleRenderGroup::SetCustomProjectionMatrix(const Matrix4x4& mat)
 	m_customProjMat = mat;
 }
 
+void CParticleRenderGroup::ClearBuffers()
+{
+	m_numIndices = 0;
+	m_numVertices = 0;
+	m_useCustomProjMat = false;
+}
+
+ConVar r_drawParticles("r_drawParticles", "1", "Render particles", CV_CHEAT);
+
 // prepares render buffers and sends renderables to ViewRenderer
 void CParticleRenderGroup::Render(int nViewRenderFlags)
 {
-	if(!m_initialized)
+	if(!m_initialized || !r_drawParticles.GetBool())
 	{
 		m_numIndices = 0;
 		m_numVertices = 0;
@@ -536,6 +545,14 @@ void CParticleLowLevelRenderer::Render(int nRenderFlags)
 #endif
 }
 
+void CParticleLowLevelRenderer::ClearBuffers()
+{
+	for(int i = 0; i < m_renderGroups.numElem(); i++)
+	{
+		m_renderGroups[i]->ClearBuffers();
+	}
+}
+
 bool CParticleLowLevelRenderer::MakeVBOFrom(CParticleRenderGroup* pGroup)
 {
 	if(!m_initialized)
@@ -550,25 +567,8 @@ bool CParticleLowLevelRenderer::MakeVBOFrom(CParticleRenderGroup* pGroup)
 	if(nVerts*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE(m_vbMaxQuads))
 		return false;
 
-	PFXVertex_t* copyVerts = NULL;
-	if(m_vertexBuffer->Lock(0, nVerts, (void**)&copyVerts, false))
-	{
-		if(!copyVerts)
-			return false;
-
-		memcpy(copyVerts, pGroup->m_pVerts ,sizeof(PFXVertex_t)*nVerts);
-		m_vertexBuffer->Unlock();
-	}
-
-	int16* copyIndices = NULL;
-	if(m_indexBuffer->Lock(0, nIndices, (void**)&copyIndices, false))
-	{
-		if(!copyIndices)
-			return false;
-
-		memcpy(copyIndices, pGroup->m_pIndices, sizeof(int16)*nIndices);
-		m_indexBuffer->Unlock();
-	}
+	m_vertexBuffer->Update((void*)pGroup->m_pVerts, nVerts, 0, true);
+	m_indexBuffer->Update((void*)pGroup->m_pIndices, nIndices, 0, true);
 
 	return true;
 }

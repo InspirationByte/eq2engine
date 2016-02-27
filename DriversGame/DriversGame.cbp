@@ -13,6 +13,7 @@
 				<Option compiler="gcc" />
 				<Option parameters="+job_modelLoader 0" />
 				<Compiler>
+					<Add option="-O3" />
 					<Add option="-DSHINY_PROFILER=FALSE" />
 					<Add option="-DNDEBUG" />
 				</Compiler>
@@ -25,6 +26,7 @@
 			<Add option="-DNOENGINE" />
 			<Add option="-DGAME_DRIVERS" />
 			<Add option="-DEQ_USE_SDL" />
+			<Add option="-DBIG_REPLAYS" />
 			<Add directory="../shared_engine" />
 			<Add directory="../FileSystem" />
 			<Add directory="../Engine" />
@@ -38,6 +40,7 @@
 			<Add directory="../src_dependency/oolua/include" />
 			<Add directory="../src_dependency/luajit/src" />
 			<Add directory="../src_dependency/Shiny/include" />
+			<Add directory="../src_dependency/openal-soft/include" />
 		</Compiler>
 		<Linker>
 			<Add option="-pthread -leqCore `pkg-config sdl2 --libs` `pkg-config gtk+-2.0 --libs`" />
@@ -226,6 +229,7 @@
 		<Unit filename="ui_luaMenu.cpp" />
 		<Unit filename="ui_luaMenu.h" />
 		<Unit filename="window.cpp" />
+		<Unit filename="window.h" />
 		<Unit filename="world.cpp" />
 		<Unit filename="world.h" />
 		<Extensions>

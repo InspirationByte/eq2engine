@@ -17,6 +17,7 @@
 			</Target>
 		</Build>
 		<Compiler>
+			<Add option="-O3" />
 			<Add option="-fPIC `pkg-config gl --cflags`" />
 			<Add option="-DLINUX" />
 			<Add option="-DCORE_EXPORT" />
@@ -36,37 +37,11 @@
 			<Add library="z" />
 			<Add library="jpeg" />
 			<Add library="eqCore" />
+			<Add library="GL" />
 			<Add directory="../../libs" />
 		</Linker>
-		<Unit filename="../Engine/Renderer.h" />
-		<Unit filename="../FileSystem/ifilesystem.h" />
-		<Unit filename="../public/CharSet.h" />
-		<Unit filename="../public/ConCommand.h" />
-		<Unit filename="../public/ConCommandBase.h" />
-		<Unit filename="../public/ConVar.h" />
-		<Unit filename="../public/DebugInterface.h" />
-		<Unit filename="../public/ICmdLineParser.h" />
-		<Unit filename="../public/IConCommandFactory.h" />
-		<Unit filename="../public/IDkCore.h" />
-		<Unit filename="../public/IMeshBuilder.h" />
-		<Unit filename="../public/InterfaceManager.h" />
-		<Unit filename="../public/Platform/Platform.h" />
-		<Unit filename="../public/Renderer/IShaderAPI.h" />
-		<Unit filename="../public/Renderer/IShaderProgram.h" />
-		<Unit filename="../public/Renderer/renderer_def.h" />
-		<Unit filename="../public/Utils/Align.h" />
-		<Unit filename="../public/Utils/Queue.h" />
-		<Unit filename="../public/Utils/String.h" />
-		<Unit filename="../public/Utils/strtools.h" />
-		<Unit filename="../public/consolenode.h" />
-		<Unit filename="../public/core_base_header.h" />
-		<Unit filename="../public/textureformats.h" />
 		<Unit filename="CTexture.cpp" />
 		<Unit filename="CTexture.h" />
-		<Unit filename="D3D9/D3DLibrary.h" />
-		<Unit filename="Empty/CEmptyTexture.h" />
-		<Unit filename="Empty/ShaderAPIEmpty.h" />
-		<Unit filename="Empty/emptyLibrary.h" />
 		<Unit filename="GL/CGLRenderLib.cpp" />
 		<Unit filename="GL/CGLRenderLib.h" />
 		<Unit filename="GL/CGLTexture.cpp" />
@@ -87,8 +62,13 @@
 		<Unit filename="GL/VertexFormatGL.cpp" />
 		<Unit filename="GL/VertexFormatGL.h" />
 		<Unit filename="GL/eqGLCaps.h" />
-		<Unit filename="GL/gl_caps.cpp" />
 		<Unit filename="GL/gl_caps.hpp" />
+		<Unit filename="GL/gl_loader.cpp" />
+		<Unit filename="GL/gl_loader.h" />
+		<Unit filename="GL/glad.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="GL/glad.h" />
 		<Unit filename="GL/glx_caps.cpp" />
 		<Unit filename="GL/glx_caps.hpp" />
 		<Unit filename="GL/shaderapigl_def.h" />

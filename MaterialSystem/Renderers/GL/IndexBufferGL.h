@@ -25,6 +25,9 @@ public:
 	// returns index count
 	int				GetIndicesCount();
 
+	// updates buffer without map/unmap operations which are slower
+	void			Update(void* data, int size, int offset, bool discard /*= true*/);
+
 	// locks index buffer and gives to programmer buffer data
 	bool			Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly);
 

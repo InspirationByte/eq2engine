@@ -90,14 +90,15 @@ bool CState_Title::Update( float fDt )
 	m_fade = clamp(m_fade, 0.0f, 1.0f);
 	m_actionTimeout = max(0,m_actionTimeout);
 
-	materials->Setup2D(g_pHost->m_nWidth, g_pHost->m_nHeight);
+	const IVector2D& screenSize = g_pHost->GetWindowSize();
+
+	materials->Setup2D(screenSize.x, screenSize.y);
 	g_pShaderAPI->Clear( true,true, false, ColorRGBA(0.25f,0,0,0.0f));
 
-	IVector2D screen(g_pHost->m_nWidth, g_pHost->m_nHeight);
-	IVector2D halfScreen(g_pHost->m_nWidth/2, g_pHost->m_nHeight/2);
+	IVector2D halfScreen(screenSize.x/2, screenSize.y/2);
 
-	float widthFac = (float)g_pHost->m_nWidth/(float)m_titleTexture->GetWidth();
-	float heightFac = (float)g_pHost->m_nHeight/(float)m_titleTexture->GetHeight();
+	float widthFac = (float)screenSize.x/(float)m_titleTexture->GetWidth();
+	float heightFac = (float)screenSize.y/(float)m_titleTexture->GetHeight();
 	float texSizeFactor = widthFac > heightFac ? widthFac : heightFac;
 
 	float halfWidth = m_titleTexture->GetWidth()*0.5f;
@@ -129,7 +130,7 @@ bool CState_Title::Update( float fDt )
 	fontParam.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
 	fontParam.textColor = color4_white;
 
-	float textPos = pow(1.0f-m_fade, 4.0f)*(float)g_pHost->m_nWidth*-1.0f;
+	float textPos = pow(1.0f-m_fade, 4.0f)*(float)screenSize.x*-1.0f;
 
 	float textYOffs = 0.0;
 

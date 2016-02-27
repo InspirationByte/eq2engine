@@ -10,13 +10,15 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 
+#include <AL/al.h>
+#include <AL/alc.h>
+#include <AL/alext.h>
+#include <vorbis/vorbisfile.h>
+
 #include "DebugInterface.h"
 #include "alsound_local.h"
 
-#include "al/alut.h"
-
 // WAVE FILE LOADER
-
 typedef struct                                  /* WAV File-header */
 {
 	ALubyte  Id[4];

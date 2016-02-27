@@ -252,11 +252,11 @@ bool CUDPSocket::Init( int port )
 
 	hostaddress = *((in_addr *)( hostinfo->h_addr ));
 
-#ifdef LINUX
+#ifndef _WIN32
 	addr.sin_addr.s_addr = INADDR_ANY;
 #else
 	addr.sin_addr.S_un.S_addr = INADDR_ANY;
-#endif // LINUX
+#endif // !_WIN32
 
 	// Bind address to socket
 	if( bind(sock, (struct sockaddr *)&addr, sizeof(sockaddr_in)) == SOCKET_ERROR )
@@ -269,7 +269,7 @@ bool CUDPSocket::Init( int port )
 		return false;
 	}
 
-#ifdef LINUX
+#ifndef _WIN32
 	uint8* host_ip = (uint8*)&hostaddress.s_addr;
 	Msg("\nAddress: %u.%u.%u.%u:%d\n\n",	(unsigned char)host_ip[0],
 											(unsigned char)host_ip[1],
@@ -282,7 +282,7 @@ bool CUDPSocket::Init( int port )
 											(unsigned char)hostaddress.S_un.S_un_b.s_b3,
 											(unsigned char)hostaddress.S_un.S_un_b.s_b4,
 											port);
-#endif // LINUX
+#endif // !_WIN32
 	m_sock = sock;
 
 	m_init = true;

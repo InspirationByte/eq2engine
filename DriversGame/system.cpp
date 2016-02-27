@@ -83,19 +83,23 @@ DECLARE_CMD(toggleconsole, "Toggles console", 0)
 	}
 }
 
-void CC_Exit_F(DkList<EqString> *args)
+void CGameHost::HostQuitToDesktop()
 {
 	g_pHost->m_nQuitState = CGameHost::QUIT_TODESKTOP;
 }
 
-ConCommand cc_exit("exit",CC_Exit_F,"Closes current instance of engine");
-ConCommand cc_quit("quit",CC_Exit_F,"Closes current instance of engine");
-ConCommand cc_quti("quti",CC_Exit_F,"This made for keyboard writing errors");
+void CGameHost::HostExitCmd(DkList<EqString> *args)
+{
+	HostQuitToDesktop();
+}
 
-DECLARE_CVAR		(r_clear,0,"Clear the backbuffer",CV_ARCHIVE);
-DECLARE_CVAR		(r_vSync,0,"Vertical syncronization",CV_ARCHIVE);
+ConCommand cc_exit("exit",CGameHost::HostExitCmd,"Closes current instance of engine");
+ConCommand cc_quit("quit",CGameHost::HostExitCmd,"Closes current instance of engine");
+ConCommand cc_quti("quti",CGameHost::HostExitCmd,"This made for keyboard writing errors");
 
-extern ConVar r_antialiasing;
+DECLARE_CVAR(r_clear,0,"Clear the backbuffer",CV_ARCHIVE);
+DECLARE_CVAR(r_vSync,0,"Vertical syncronization",CV_ARCHIVE);
+DECLARE_CVAR(r_antialiasing,0,"Multisample antialiasing",CV_ARCHIVE);
 
 bool CGameHost::LoadModules()
 {
@@ -184,10 +188,12 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	if( !SDL_GetWindowWMInfo(m_pWindow, &winfo) )
 	{
-		MsgError("SDL_GetWindowWMInfo failed %s", SDL_GetError());
+		MsgError("SDL_GetWindowWMInfo failed %s\n\tWindow handle: %p", SDL_GetError(), m_pWindow);
 		ErrorMsg("Can't get SDL window WM info!\n");
 		return false;
 	}
+
+	const char* materialsPath = "materials/";
 
 #ifdef _WIN32
 	materials_config.shaderapi_params.hWindow = winfo.info.win.window;
@@ -195,6 +201,19 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	materials_config.shaderapi_params.hWindow = (void*)winfo.info.x11.window;
 #elif APPLE
 	materials_config.shaderapi_params.hWindow = (void*)winfo.info.cocoa.window;
+#elif ANDROID
+
+    externalWindowDisplayParams_t winParams;
+    winParams.window = (void*)winfo.info.android.window;
+
+    void* paramArray[] = {(void*)winfo.info.android.surface};
+
+	winParams.paramArray = paramArray;
+	winParams.numParams = 1;
+
+	materials_config.shaderapi_params.hWindow = &winParams;
+
+	materialsPath = "mmaterials/";
 #endif
 
 	materials_config.shaderapi_params.nScreenFormat = format;
@@ -203,19 +222,26 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
     bool materialSystemStatus = false;
 
+    const char* rendererName = "eqNullRHI";
+
 #ifdef _WIN32
 	if(useOpenGLRender)
-		materialSystemStatus = materials->Init("materials/", "eqGLRHI", materials_config);
+		rendererName = "eqGLRHI";
 	else if(g_cmdLine->FindArgument("-norender") != -1)
-		materialSystemStatus = materials->Init("materials/", "eqNullRHI", materials_config);
+		rendererName = "eqNullRHI";
 	else
-		materialSystemStatus = materials->Init("materials/", "eqD3D9RHI", materials_config);
+		rendererName = "eqD3D9RHI";
 #else
 	if(g_cmdLine->FindArgument("-norender") != -1)
-		materialSystemStatus = materials->Init("materials/", "libeqNullRHI", materials_config);
+		rendererName = "libeqNullRHI";
     else
-        materialSystemStatus = materials->Init("materials/", "libeqGLRHI", materials_config);
+        rendererName = "libeqGLRHI";
 #endif // _WIN32
+
+	materialSystemStatus = materials->Init(materialsPath, rendererName, materials_config);
+
+	if(!materialSystemStatus)
+		return false;
 
 #ifdef _WIN32
 	if(!materials->LoadShaderLibrary("eqBaseShaders.dll"))
@@ -225,6 +251,10 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 		return false;
 #endif // _WIN32
 
+	int wide,tall;
+	SDL_GetWindowSize(m_pWindow, &wide, &tall);
+	OnWindowResize(wide,tall);
+
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();
 
@@ -232,9 +262,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	DrvSyn_RegisterShaderOverrides();
 
 	g_pShaderAPI = materials->GetShaderAPI();
-
-	if(!materialSystemStatus)
-		return false;
 
 	if( !g_fontCache->Init() )
 		return false;
@@ -279,6 +306,8 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 		ErrorMsg("Lua base initialization error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
 		return false;
 	}
+
+	MsgInfo("EqEngine systems init successfully\n");
 
 	return true;
 }
@@ -426,22 +455,11 @@ void InputCommands_SDL(SDL_Event* event)
 	}
 }
 
-CGameHost::CGameHost()
+CGameHost::CGameHost() :
+	m_winSize(0), m_prevMousePos(0), m_mousePos(0), m_pWindow(NULL), m_nQuitState(QUIT_NOTQUITTING),
+	m_bTrapMode(false), m_bDoneTrapping(false), m_nTrapKey(0), m_nTrapButtons(0), m_bCenterMouse(false),
+	m_cursorVisible(true), m_pDefaultFont(NULL)
 {
-	m_nWidth = 0;
-	m_nHeight = 0;
-
-	m_prevMousePos = m_mousePos = IVector2D(0);
-
-	m_pWindow = NULL;
-
-	m_nQuitState = QUIT_NOTQUITTING;
-
-	m_bTrapMode = false;
-	m_bDoneTrapping = false;
-	m_nTrapKey = 0;
-	m_nTrapButtons = 0;
-
 	m_fCurTime = 0;
 	m_fFrameTime = 0;
 	m_fOldTime = 0;
@@ -449,17 +467,12 @@ CGameHost::CGameHost()
 	m_fGameCurTime = 0;
 	m_fGameFrameTime = 0;
 	m_fGameOldTime = 0;
-
-	m_pDefaultFont = NULL;
-
-	m_bCenterMouse = false;
-	m_cursorVisible = true;
-
-	m_mousePos = IVector2D(0);
 }
 
 void CGameHost::ShutdownSystems()
 {
+	SDL_DestroyWindow(g_pHost->m_pWindow);
+
 	// calls OnLeave and unloads state
 	SetCurrentState( NULL );
 
@@ -642,9 +655,9 @@ bool CGameHost::Frame()
 	materials->GetMatrix(MATRIXMODE_PROJECTION, proj);
 	materials->GetMatrix(MATRIXMODE_VIEW, view);
 
-	debugoverlay->Draw(proj, view, m_nWidth, m_nHeight);
+	debugoverlay->Draw(proj, view, m_winSize.x, m_winSize.y);
 
-	materials->Setup2D(m_nWidth, m_nHeight);
+	materials->Setup2D(m_winSize.x, m_winSize.y);
 
 	if(r_showFPS.GetBool())
 	{
@@ -662,7 +675,7 @@ bool CGameHost::Frame()
 
 	static IEqFont* pConsoleFont = g_fontCache->GetFont("console", 0);
 
-	g_pSysConsole->DrawSelf(true, m_nWidth, m_nHeight, m_fCurTime);
+	g_pSysConsole->DrawSelf(true, m_winSize.x, m_winSize.y, m_fCurTime);
 
 	// issue the rendering of anything
 	g_pShaderAPI->Flush();
@@ -696,22 +709,19 @@ void CGameHost::SignalPause()
 	ses->Update();
 }
 
-void CGameHost::SetWindowSize(int width, int height)
+void CGameHost::OnWindowResize(int width, int height)
 {
-	m_nWidth = width;
-	m_nHeight = height;
+	m_winSize.x = width;
+	m_winSize.y = height;
 
 	if(materials)
-	{
-		materials->SetDeviceBackbufferSize( width,height );
-		//Sleep(1000);
-	}
+		materials->SetDeviceBackbufferSize( width, height );
 }
 
 void CGameHost::BeginScene()
 {
 	// reset viewport
-	g_pShaderAPI->SetViewport(0,0, m_nWidth, m_nHeight);
+	g_pShaderAPI->SetViewport(0,0, m_winSize.x, m_winSize.y);
 
 	// Begin frame from render lib
 	materials->BeginFrame();
@@ -774,7 +784,7 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 void CGameHost::TrapMouseMove_Event( int x, int y )
 {
 	if(m_bCenterMouse && s_bActive && !g_pSysConsole->IsVisible())
-		SetCursorPosition(m_nWidth/2,m_nHeight/2);
+		SetCursorPosition(m_winSize.x/2,m_winSize.y/2);
 
 	m_mousePos = IVector2D(x,y);
 	Vector2D delta = (Vector2D)m_prevMousePos - (Vector2D)m_mousePos;

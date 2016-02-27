@@ -1074,7 +1074,12 @@ void CCar::Spawn()
 	{
 #ifndef EDITOR
 #ifndef BIG_REPLAYS
-		if(dynamic_cast<CAITrafficCar*>(this) == NULL)		// don't spawn traffic cars
+
+		// don't spawn traffic cars
+
+		// no RTTI
+		// if(dynamic_cast<CAITrafficCar*>(this) == NULL)
+		if( ObjType() == GO_CAR )
 #endif // BIG_REPLAYS
 		{
 			g_replayData->PushEvent( REPLAY_EVENT_SPAWN, this );
@@ -1127,7 +1132,10 @@ void CCar::OnRemove()
 	{
 #ifndef EDITOR
 #ifndef BIG_REPLAYS
-		if(dynamic_cast<CAITrafficCar*>(this) == NULL)		// don't spawn traffic cars
+		// don't remove traffic cars by replay
+		// no RTTI
+		// if(dynamic_cast<CAITrafficCar*>(this) == NULL)
+		if( ObjType() == GO_CAR )
 #endif // BIG_REPLAYS
 			g_replayData->PushEvent( REPLAY_EVENT_REMOVE, this );
 #endif // EDITOR

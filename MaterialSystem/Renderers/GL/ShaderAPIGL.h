@@ -10,11 +10,12 @@
 
 #include "../ShaderAPI_Base.h"
 
-#include "gl_caps.hpp"
-
 #ifdef USE_GLES2
-#include "EGL/egl.h"
-#endif // USE_GLES2
+#include "glad_es3.h"
+#include <EGL/egl.h>
+#else
+#include "glad.h"
+#endif
 
 #ifdef LINUX
 #include <X11/Xlib.h>
@@ -31,6 +32,7 @@ typedef XID GLXFBConfigID;
 typedef struct __GLXcontextRec *GLXContext;
 typedef struct __GLXFBConfigRec *GLXFBConfig;
 #endif
+
 #include "VertexFormatGL.h"
 
 //#define USE_OPENGL_ES
@@ -102,31 +104,6 @@ public:
 
 	// Renderer string (ex: OpenGL, D3D9)
 	const char*			GetRendererName() const;
-
-	// Render targetting support
-	bool				IsSupportsRendertargetting() const;
-
-	// Render targetting support for Multiple RTs
-	bool				IsSupportsMRT() const;
-
-	// Supports multitexturing???
-	bool				IsSupportsMultitexturing() const;
-
-	// The driver/hardware is supports Pixel shaders?
-	bool				IsSupportsPixelShaders() const;
-
-	// The driver/hardware is supports Vertex shaders?
-	bool				IsSupportsVertexShaders() const;
-
-	// The driver/hardware is supports Geometry shaders?
-	bool				IsSupportsGeometryShaders() const;
-
-	// The driver/hardware is supports Domain shaders?
-	bool				IsSupportsDomainShaders() const;
-
-	// The driver/hardware is supports Hull (tessellator) shaders?
-	bool				IsSupportsHullShaders() const;
-
 
 //-------------------------------------------------------------
 // MT Synchronization

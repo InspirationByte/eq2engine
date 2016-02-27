@@ -11,7 +11,12 @@
 #include "IShaderProgram.h"
 #include "utils/eqstring.h"
 #include "ShaderAPI_defs.h"
-#include "gl_caps.hpp"
+
+#ifdef USE_GLES2
+#include "glad_es3.h"
+#else
+#include "glad.h"
+#endif
 
 #define MAX_CONSTANT_NAMELEN 64
 

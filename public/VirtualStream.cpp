@@ -9,7 +9,7 @@
 #include "IFileSystem.h"
 #include "utils/CRC32.h"
 
-#ifdef LINUX
+#ifdef PLAT_POSIX
 #include <stdarg.h> // va_*
 #endif // LINUX
 
