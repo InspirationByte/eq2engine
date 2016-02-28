@@ -154,9 +154,8 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 
 	Cleanup();
 
-	levelhdr_t hdr;
-
-	pFile->Read(&hdr, sizeof(levelhdr_t), 1);
+	levHdr_t hdr;
+	pFile->Read(&hdr, sizeof(levHdr_t), 1);
 
 	if(hdr.ident != LEVEL_IDENT)
 	{
@@ -181,8 +180,8 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 	{
 		float startLumpTime = Platform_GetCurrentTime();
 
-		levlump_t lump;
-		if( pFile->Read(&lump, 1, sizeof(levlump_t)) == 0 )
+		levLump_t lump;
+		if( pFile->Read(&lump, 1, sizeof(levLump_t)) == 0 )
 		{
 			isOK = false;
 			break;
@@ -193,7 +192,7 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 			isOK = true;
 			break;
 		}
-		else if(lump.type == LEVLUMP_REGIONINFO)
+		else if(lump.type == LEVLUMP_REGIONMAPINFO)
 		{
 			DevMsg(DEVMSG_CORE,"LEVLUMP_REGIONINFO size = %d", lump.size);
 
@@ -368,8 +367,8 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 
 void CGameLevel::ReadRegionInfo(IVirtualStream* stream)
 {
-	levregionshdr_t hdr;
-	stream->Read(&hdr, 1, sizeof(levregionshdr_t));
+	levRegionMapInfo_t hdr;
+	stream->Read(&hdr, 1, sizeof(levRegionMapInfo_t));
 
 	m_numRegions = hdr.numRegions;
 
@@ -447,11 +446,11 @@ bool CGameLevel::Save(const char* levelname, bool final)
 		return false;
 	}
 
-	levelhdr_t hdr;
+	levHdr_t hdr;
 	hdr.ident = LEVEL_IDENT;
 	hdr.version = LEVEL_VERSION;
 
-	pFile->Write(&hdr, sizeof(levelhdr_t), 1);
+	pFile->Write(&hdr, sizeof(levHdr_t), 1);
 
 	// write models first if available
 	WriteObjectDefsLump( pFile );
@@ -459,12 +458,12 @@ bool CGameLevel::Save(const char* levelname, bool final)
 	// write region info
 	WriteLevelRegions( pFile, levelname, final );
 
-	levlump_t endLump;
+	levLump_t endLump;
 	endLump.type = LEVLUMP_ENDMARKER;
 	endLump.size = 0;
 
 	// write lump header and data
-	pFile->Write(&endLump, 1, sizeof(levlump_t));
+	pFile->Write(&endLump, 1, sizeof(levLump_t));
 
 	g_fileSystem->Close(pFile);
 
@@ -600,7 +599,7 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 	{
 		CLevObjectDef* def = new CLevObjectDef();
 
-		stream->Read(&def->m_info, 1, sizeof(levmodelinfo_t));
+		stream->Read(&def->m_info, 1, sizeof(levObjectDefInfo_t));
 
 		def->m_name = modelNamePtr;
 
@@ -770,17 +769,17 @@ void CGameLevel::WriteObjectDefsLump(IVirtualStream* stream)
 
 		m_objectDefs[i]->m_info.size = modelSize;
 
-		modelsLump.Write(&m_objectDefs[i]->m_info, 1, sizeof(levmodelinfo_t));
+		modelsLump.Write(&m_objectDefs[i]->m_info, 1, sizeof(levObjectDefInfo_t));
 		modelsLump.Write(modeldata.GetBasePointer(), 1, modelSize);
 	}
 
 	// compute lump size
-	levlump_t modelLumpInfo;
+	levLump_t modelLumpInfo;
 	modelLumpInfo.type = LEVLUMP_OBJECTDEFS;
 	modelLumpInfo.size = modelsLump.Tell();
 
 	// write lump header and data
-	stream->Write(&modelLumpInfo, 1, sizeof(levlump_t));
+	stream->Write(&modelLumpInfo, 1, sizeof(levLump_t));
 	stream->Write(modelsLump.GetBasePointer(), 1, modelsLump.Tell());
 }
 
@@ -853,12 +852,12 @@ void CGameLevel::WriteHeightfieldsLump(IVirtualStream* stream)
 	}
 
 	// compute lump size
-	levlump_t hfieldLumpInfo;
+	levLump_t hfieldLumpInfo;
 	hfieldLumpInfo.type = LEVLUMP_HEIGHTFIELDS;
 	hfieldLumpInfo.size = hfielddata.Tell();
 
 	// write lump header and data
-	stream->Write(&hfieldLumpInfo, 1, sizeof(levlump_t));
+	stream->Write(&hfieldLumpInfo, 1, sizeof(levLump_t));
 	stream->Write(hfielddata.GetBasePointer(), 1, hfielddata.Tell());
 }
 
@@ -867,12 +866,12 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 	//long fpos = file->Tell();
 
 	// ---------- LEVLUMP_REGIONINFO ----------
-	levregionshdr_t regHdr;
+	levRegionMapInfo_t regMapInfoHdr;
 
-	regHdr.numRegionsWide = m_wide;
-	regHdr.numRegionsTall = m_tall;
-	regHdr.cellsSize = m_cellsSize;
-	regHdr.numRegions = 0; // to be proceed
+	regMapInfoHdr.numRegionsWide = m_wide;
+	regMapInfoHdr.numRegionsTall = m_tall;
+	regMapInfoHdr.cellsSize = m_cellsSize;
+	regMapInfoHdr.numRegions = 0; // to be proceed
 
 	int* regionOffsetArray = new int[m_wide*m_tall];
 	int* roadOffsetArray = new int[m_wide*m_tall];
@@ -901,7 +900,7 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 			// write each region if not empty
 			if( !m_regions[idx].IsRegionEmpty() )
 			{
-				regHdr.numRegions++;
+				regMapInfoHdr.numRegions++;
 
 				regionOffsetArray[idx] = regionDataStream.Tell();
 				roadOffsetArray[idx] = roadDataStream.Tell();
@@ -921,24 +920,24 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 		}
 	}
 
-	// LEVLUMP_REGIONINFO
+	// LEVLUMP_REGIONMAPINFO
 	{
 		CMemoryStream regInfoLump;
 		regInfoLump.Open(NULL, VS_OPEN_WRITE, 2048);
 
 		// write regions header
-		regInfoLump.Write(&regHdr, 1, sizeof(levregionshdr_t));
+		regInfoLump.Write(&regMapInfoHdr, 1, sizeof(levRegionMapInfo_t));
 
 		// write region offset array
 		regInfoLump.Write(regionOffsetArray, m_wide*m_tall, sizeof(int));
 
 		// compute lump size
-		levlump_t regInfoLumpInfo;
-		regInfoLumpInfo.type = LEVLUMP_REGIONINFO;
+		levLump_t regInfoLumpInfo;
+		regInfoLumpInfo.type = LEVLUMP_REGIONMAPINFO;
 		regInfoLumpInfo.size = regInfoLump.Tell();
 
 		// write lump header and data
-		file->Write(&regInfoLumpInfo, 1, sizeof(levlump_t));
+		file->Write(&regInfoLumpInfo, 1, sizeof(levLump_t));
 		file->Write(regInfoLump.GetBasePointer(), 1, regInfoLump.Tell());
 	}
 
@@ -959,12 +958,12 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 		roadsLump.Write(roadDataStream.GetBasePointer(), 1, roadDataStream.Tell());
 
 		// compute lump size
-		levlump_t roadDataLumpInfo;
+		levLump_t roadDataLumpInfo;
 		roadDataLumpInfo.type = LEVLUMP_ROADS;
 		roadDataLumpInfo.size = roadsLump.Tell();
 
 		// write lump header and data
-		file->Write(&roadDataLumpInfo, 1, sizeof(levlump_t));
+		file->Write(&roadDataLumpInfo, 1, sizeof(levLump_t));
 		file->Write(roadsLump.GetBasePointer(), 1, roadsLump.Tell());
 	}
 	/*
@@ -997,12 +996,12 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 		occludersLump.Write(occluderLstOffsetArray, m_wide*m_tall, sizeof(int));
 		occludersLump.Write(occluderDataStream.GetBasePointer(), 1, occluderDataStream.Tell());
 
-		levlump_t occludersLumpInfo;
+		levLump_t occludersLumpInfo;
 		occludersLumpInfo.type = LEVLUMP_OCCLUDERS;
 		occludersLumpInfo.size = occludersLump.Tell();
 
 		// write lump header and data
-		file->Write(&occludersLumpInfo, 1, sizeof(levlump_t));
+		file->Write(&occludersLumpInfo, 1, sizeof(levLump_t));
 
 		// write occluder offset array
 		file->Write(occludersLump.GetBasePointer(), 1, occludersLump.Tell());
@@ -1010,12 +1009,12 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 
 	// LEVLUMP_REGIONS
 	{
-		levlump_t regDataLumpInfo;
+		levLump_t regDataLumpInfo;
 		regDataLumpInfo.type = LEVLUMP_REGIONS;
 		regDataLumpInfo.size = regionDataStream.Tell();
 
 		// write lump header and data
-		file->Write(&regDataLumpInfo, 1, sizeof(levlump_t));
+		file->Write(&regDataLumpInfo, 1, sizeof(levLump_t));
 		file->Write(regionDataStream.GetBasePointer(), 1, regionDataStream.Tell());
 	}
 
@@ -1833,7 +1832,6 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 
 	if(caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
 	{
-		regObjectInstance_t* instData;
 
 		materials->SetInstancingEnabled( true ); // matsystem switch to use instancing in shaders
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());

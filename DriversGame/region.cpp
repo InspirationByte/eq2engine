@@ -591,8 +591,8 @@ int FindObjectContainer(DkList<CLevObjectDef*>& listObjects, CLevObjectDef* cont
 void CLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObjectDef*>& listObjects, bool final )
 {
 	// create region model lists
-	DkList<CLevelModel*>			modelList;
-	DkList<levcellmodelobject_t>	cellObjectsList;
+	DkList<CLevelModel*>		modelList;
+	DkList<levCellObject_t>		cellObjectsList;
 
 	cellObjectsList.resize(m_objects.numElem());
 
@@ -601,19 +601,19 @@ void CLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObjectDef
 	{
 		CLevObjectDef* def = m_objects[i]->def;
 
-		int objIdx = FindObjectContainer(listObjects, def);
+		int objectDefId = FindObjectContainer(listObjects, def);
 
 		if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
 			 if( final && !(def->m_info.modelflags & LMODEL_FLAG_NONUNIQUE) )
-				objIdx = modelList.addUnique( def->m_model );
+				objectDefId = modelList.addUnique( def->m_model );
 		}
 
-		levcellmodelobject_t object;
+		levCellObject_t object;
 
 		memset(object.name, 0, LEV_OBJECT_NAME_LENGTH);
 
-		object.objIndex = objIdx;
+		object.objectDefId = objectDefId;
 
 		object.tile_x = m_objects[i]->tile_dependent ? m_objects[i]->tile_x : -1;
 		object.tile_y = m_objects[i]->tile_dependent ? m_objects[i]->tile_y : -1;
@@ -644,15 +644,15 @@ void CLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObjectDef
 	// write cell objects list
 	for(int i = 0; i < cellObjectsList.numElem(); i++)
 	{
-		regionData.Write(&cellObjectsList[i], 1, sizeof(levcellmodelobject_t));
+		regionData.Write(&cellObjectsList[i], 1, sizeof(levCellObject_t));
 	}
 
-	levregiondatahdr_t regdatahdr;
+	levRegionDataInfo_t regdatahdr;
 	regdatahdr.numModelObjects = cellObjectsList.numElem();
 	regdatahdr.numModels = modelList.numElem();
 	regdatahdr.size = regionData.Tell();
 
-	stream->Write(&regdatahdr, 1, sizeof(levregiondatahdr_t));
+	stream->Write(&regdatahdr, 1, sizeof(levRegionDataInfo_t));
 	stream->Write(regionData.GetBasePointer(), 1, regionData.Tell());
 }
 
@@ -668,9 +668,9 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 
 	DkList<CLevelModel*>	modelList;
 
-	levregiondatahdr_t		regdatahdr;
+	levRegionDataInfo_t		regdatahdr;
 
-	stream->Read(&regdatahdr, 1, sizeof(levregiondatahdr_t));
+	stream->Read(&regdatahdr, 1, sizeof(levRegionDataInfo_t));
 
 	// now read models
 	for(int i = 0; i < regdatahdr.numModels; i++)
@@ -690,15 +690,15 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 	// read model cells
 	for(int i = 0; i < regdatahdr.numModelObjects; i++)
 	{
-		levcellmodelobject_t cellObj;
-		stream->Read(&cellObj, 1, sizeof(levcellmodelobject_t));
+		levCellObject_t cellObj;
+		stream->Read(&cellObj, 1, sizeof(levCellObject_t));
 
 		// TODO: add models
 		regionObject_t* ref = new regionObject_t;
 
 		if(regdatahdr.numModels == 0)
 		{
-			ref->def = levelmodels[cellObj.objIndex];
+			ref->def = levelmodels[cellObj.objectDefId];
 
 			CLevelModel* model = ref->def->m_model;
 			if(model)

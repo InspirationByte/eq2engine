@@ -19,7 +19,7 @@ CLevObjectDef::CLevObjectDef()
 	m_instData = NULL;
 	m_defModel = NULL;
 
-	memset(&m_info, 0, sizeof(levmodelinfo_t));
+	memset(&m_info, 0, sizeof(levObjectDefInfo_t));
 }
 
 CLevObjectDef::~CLevObjectDef()

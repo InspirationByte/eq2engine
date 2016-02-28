@@ -124,15 +124,6 @@ void CParticleRenderGroup::AddVertices(PFXVertex_t* verts, int nVerts)
 	m_numVertices += nVerts;
 }
 
-/*
-void CParticleRenderGroup::AddVertices2(eqlevelvertex_t *verts, int nVerts)
-{
-	eqlevelvertex_t* pPartVerts = (eqlevelvertex_t*)m_pVerts;
-
-	memcpy(&pPartVerts[m_numVertices], verts, nVerts*sizeof(eqlevelvertex_t));
-	m_numVertices += nVerts;
-}
-*/
 void CParticleRenderGroup::AddIndices(uint16 *indices, int nIndx)
 {
 	memcpy(&m_pIndices[m_numIndices], indices, nIndx*sizeof(uint16));
@@ -298,6 +289,8 @@ void CParticleRenderGroup::AddStripBreak()
 
 		AddIndices(degenerate, 2);
 	}
+
+	//AddIndex( 0xFFFF );
 }
 
 void CParticleRenderGroup::SetCustomProjectionMatrix(const Matrix4x4& mat)

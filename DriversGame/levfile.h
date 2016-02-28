@@ -22,7 +22,7 @@ enum ELevelLumps
 
 	// client and server lumps
 	LEVLUMP_REGIONS,			// region data
-	LEVLUMP_REGIONINFO,			// regions info
+	LEVLUMP_REGIONMAPINFO,		// region map info
 
 	LEVLUMP_OBJECTDEFS,			// object definition cache ()
 	//LEVLUMP_CURVEDFIELDS,		// heightfields with positions and rotations
@@ -35,24 +35,24 @@ enum ELevelLumps
 #define LEVEL_IDENT			MCHAR4('D','L','V','L')		// Drivers LEVEL
 #define LEVEL_VERSION		1
 
-struct levelhdr_s
+struct levHdr_s
 {
 	int ident;
 	int version;
 };
 
-ALIGNED_TYPE(levelhdr_s,4) levelhdr_t;
+ALIGNED_TYPE(levHdr_s,4) levHdr_t;
 
-struct levlump_s
+struct levLump_s
 {
 	int type; // ELevelLumps
 	int size; // size in bytes
 };
 
-ALIGNED_TYPE(levlump_s,4) levlump_t;
+ALIGNED_TYPE(levLump_s,4) levLump_t;
 
 // region data header
-struct levregionshdr_s
+struct levRegionMapInfo_s
 {
 	// regions grid
 	int numRegionsWide;
@@ -64,16 +64,16 @@ struct levregionshdr_s
 	int numRegions;
 };
 
-ALIGNED_TYPE(levregionshdr_s,4) levregionshdr_t;
+ALIGNED_TYPE(levRegionMapInfo_s,4) levRegionMapInfo_t;
 
-struct levregiondatahdr_s
+struct levRegionDataInfo_s
 {
-	int numModels;
-	int numModelObjects;
-	int size;
+	int		numModels;
+	int		numModelObjects;
+	int		size;
 };
 
-ALIGNED_TYPE(levregiondatahdr_s,4) levregiondatahdr_t;
+ALIGNED_TYPE(levRegionDataInfo_s,4) levRegionDataInfo_t;
 
 enum ELevObjectType
 {
@@ -89,7 +89,7 @@ enum ELevModelFlags
 	LMODEL_FLAG_NONUNIQUE		= (1 << 3),		// model is not unique so it stored in global model list/lump
 };
 
-struct levmodelinfo_s
+struct levObjectDefInfo_s
 {
 	int8	type;			// ELevObjectType
 
@@ -98,26 +98,26 @@ struct levmodelinfo_s
 	int		size;			// internal model size (unused if OBJECT_CFG )
 };
 
-ALIGNED_TYPE(levmodelinfo_s,4) levmodelinfo_t;
+ALIGNED_TYPE(levObjectDefInfo_s,4) levObjectDefInfo_t;
 
 #define LEV_OBJECT_NAME_LENGTH 80
 
 // region cell model object
-struct levcellmodelobject_s
+struct levCellObject_s
 {
 	FVector3D	position;
 	Vector3D	rotation;
 
 	// tile position
-	int			tile_x;
-	int			tile_y;
+	ushort		tile_x;
+	ushort		tile_y;
 
-	int			objIndex;
+	ushort		objectDefId;
 
 	char		name[LEV_OBJECT_NAME_LENGTH];
 };
 
-ALIGNED_TYPE(levcellmodelobject_s,4) levcellmodelobject_t;
+ALIGNED_TYPE(levCellObject_s,4) levCellObject_t;
 
 //-----------------------------------------------------------------------------------
 
@@ -139,8 +139,7 @@ enum ERoadType
 
 enum ERoadFlags
 {
-	ROAD_FLAG_HAS_TRAFFICLIGHT = (1 << 0),
-
+	ROAD_FLAG_HAS_TRAFFICLIGHT = (1 << 0),	// this flag can be only set at ROADTYPE_JUNCTION
 	ROAD_FLAG_RESERVED_3 = (1 << 2),
 };
 
@@ -150,7 +149,6 @@ struct levroadcell_s
 	uint8	flags:4;		// ERoadFlags
 
 	int8	direction;		// ERoadDir
-	
 
 	// position on region
 	ushort	posX;
@@ -158,15 +156,6 @@ struct levroadcell_s
 };
 
 ALIGNED_TYPE(levroadcell_s,4) levroadcell_t;
-
-#define MAX_JUNCTION_ROADS	48
-
-struct levroadjunction_s
-{
-	short roadLinks[MAX_JUNCTION_ROADS];
-};
-
-ALIGNED_TYPE(levroadjunction_s,4) levroadJunction_t;
 
 //-----------------------------------------------------------------------------------
 

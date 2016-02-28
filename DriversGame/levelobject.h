@@ -229,7 +229,7 @@ public:
 	EqString				m_defType;
 	kvkeybase_t				m_defKeyvalues;
 
-	levmodelinfo_t			m_info;
+	levObjectDefInfo_t		m_info;
 
 	wlightdata_t			m_lightData;
 	levObjInstanceData_t*	m_instData;
