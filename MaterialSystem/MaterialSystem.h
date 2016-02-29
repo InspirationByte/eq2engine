@@ -13,7 +13,7 @@
 #define CMATERIALSYSTEM_H
 
 #include "utils/DkList.h"
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "materialsystem/IMaterialSystem.h"
 #include "material.h"
 #include <map>
@@ -33,6 +33,8 @@ class IRenderLibrary;
 typedef std::map<ushort,IRenderState*> blendStateMap_t;
 typedef std::map<ubyte,IRenderState*> depthStateMap_t;
 typedef std::map<ubyte,IRenderState*> rasterStateMap_t;
+
+struct DKMODULE;
 
 class CMaterialSystem : public IMaterialSystem
 {

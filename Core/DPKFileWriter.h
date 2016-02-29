@@ -13,7 +13,7 @@
 #include <direct.h>
 #endif
 
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "dpk_defs.h"
 #include "utils/DkList.h"
 

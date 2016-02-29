@@ -5,15 +5,14 @@
 // Description: Base debug interface for console programs handler
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "Platform.h"
+#ifdef _WIN32
+
+#include "platform/Platform.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "DebugInterface.h"
 
-#ifdef _WIN32
 #include <conio.h>
-
-
 
 static unsigned short g_InitialColor = 0xFFFF;
 static unsigned short g_LastColor = 0xFFFF;

@@ -19,8 +19,12 @@
 #include "IDebugOverlay.h"
 #include "GameSoundEmitterSystem.h"
 #include "utils/KeyValues.h"
+#include "utils/strtools.h"
 #include "FontCache.h"
 #include "network/NetMessageBuffer.h"
+#include "ILocalize.h"
+#include "IConCommandFactory.h"
+
 
 #ifndef __INTELLISENSE__
 

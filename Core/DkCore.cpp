@@ -202,6 +202,7 @@ ConCommand *c_addpackage;
 
 void PPMemInit();
 void PPMemShutdown();
+void InitMessageBoxPlatform();
 
 extern void cc_developer_f( DkList<EqString>* args );
 
@@ -210,6 +211,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 {
 #ifdef _WIN32
 	setlocale(LC_ALL,"C");
+	InitMessageBoxPlatform();
 #endif // _WIN32
 
 	InitSubInterfaces();

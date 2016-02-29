@@ -8,9 +8,9 @@
 #ifndef IN_KEYS_IDENT_H
 #define IN_KEYS_IDENT_H
 
-#include "Platform.h"
-
 //#define MOU_MOVE   0x0080
+
+#include "platform/Platform.h"
 
 #ifdef PLAT_SDL
 
@@ -57,7 +57,7 @@
 #define KEY_TILDE		SDL_SCANCODE_GRAVE
 #define KEY_LALT		SDL_SCANCODE_LALT
 #define KEY_RALT		SDL_SCANCODE_RALT
-#define KEY_PGDN		SDL_SCANCODE_PAGEDOWN 
+#define KEY_PGDN		SDL_SCANCODE_PAGEDOWN
 #define KEY_PGUP		SDL_SCANCODE_PAGEUP
 
 #define KEY_F1			SDL_SCANCODE_F1
@@ -176,7 +176,7 @@
 #define KEY_TILDE		VK_OEM_3
 #define KEY_LALT		VK_LMENU
 #define KEY_RALT		VK_RMENU
-#define KEY_PGDN		VK_NEXT 
+#define KEY_PGDN		VK_NEXT
 #define KEY_PGUP		VK_PRIOR
 
 #define KEY_F1			VK_F1

@@ -10,7 +10,7 @@
 
 #include "math/DkMath.h"
 #include "utils/DkList.h"
-#include "Platform.h"
+#include "dktypes.h"
 
 // for PrimitiveType_e
 #include "materialsystem/renderers/ShaderAPI_defs.h"

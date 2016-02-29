@@ -5,11 +5,12 @@
 // Description: Drivers window handler
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "Platform.h"
 #include "DebugInterface.h"
 #include "system.h"
 #include "sys_console.h"
 #include "imaging/ImageLoader.h"
+#include "IConCommandFactory.h"
+#include "utils/strtools.h"
 
 #include "EngineVersion.h"
 

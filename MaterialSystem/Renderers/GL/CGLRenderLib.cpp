@@ -5,9 +5,10 @@
 // Description: DarkTech OpenGL ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "Platform.h"
 #include "IDkCore.h"
 #include "CGLRenderLib.h"
+#include "IConCommandFactory.h"
+#include "utils/strtools.h"
 
 #include "gl_loader.h"
 

@@ -7,6 +7,7 @@
 
 #include "eqthread.h"
 #include "DebugInterface.h"
+#include "platform/MessageBox.h"
 
 namespace Threading
 {

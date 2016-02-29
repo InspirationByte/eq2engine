@@ -9,7 +9,7 @@
 #define IMAGE_H
 
 #include <stdio.h>
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "utils/eqstring.h"
 
 #include "textureformats.h"

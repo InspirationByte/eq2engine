@@ -7,7 +7,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "strtools.h"
 #include "DebugInterface.h"
 

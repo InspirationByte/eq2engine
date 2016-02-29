@@ -9,8 +9,9 @@
 
 #include "IMaterial.h"
 #include "math/DkMath.h"
-#include "renderers/IShaderAPI.h"
 
+class IShaderProgram;
+class ITexture;
 class IMaterial;
 
 #define SHADERCONST_WORLDVIEWPROJ		90
@@ -44,6 +45,7 @@ enum ShaderDefaultParams_e
 
 	SHADERPARAM_COUNT,
 };
+
 
 class IMaterialSystemShader
 {

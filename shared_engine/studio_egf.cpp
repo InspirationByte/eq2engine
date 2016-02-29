@@ -10,8 +10,10 @@
 #include "math/math_util.h"
 #include "utils/SmartPtr.h"
 #include "utils/GeomTools.h"
+#include "utils/strtools.h"
 #include "physics/IStudioShapeCache.h"
 #include "eqParallelJobs.h"
+#include "ConVar.h"
 
 #if !defined(EDITOR) && !defined(NOENGINE) && !defined(NO_GAME)
 #include "IEngineGame.h"

@@ -31,7 +31,7 @@ key_section
 
 class IVirtualStream;
 
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "utils/DkList.h"
 #include "math/DkMath.h"
 

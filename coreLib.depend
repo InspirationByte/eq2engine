@@ -15,14 +15,14 @@
 
 1456741403 /home/soap/Projects/EqEngine/src_all/public//utils/singleton.h
 
-1456741403 source:/home/soap/Projects/EqEngine/src_all/public/core/cmdlib.cpp
-	"Platform.h"
+1456749483 source:/home/soap/Projects/EqEngine/src_all/public/core/cmdlib.cpp
+	"platform/Platform.h"
 	<sys/types.h>
 	<sys/stat.h>
 	"DebugInterface.h"
 	<conio.h>
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/platform/Platform.h
+1456748474 /home/soap/Projects/EqEngine/src_all/public/platform/Platform.h
 	"dktypes.h"
 	"SDL.h"
 	"SDL_syswm.h"
@@ -31,7 +31,7 @@
 	<X11/keysym.h>
 	<float.h>
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public//dktypes.h
+1456749666 /home/soap/Projects/EqEngine/src_all/public//dktypes.h
 	<stddef.h>
 	<string.h>
 
@@ -53,8 +53,9 @@
 	<stdio.h>
 	<stdlib.h>
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public//utils/DkList.h
-	"platform/Platform.h"
+1456748507 /home/soap/Projects/EqEngine/src_all/public//utils/DkList.h
+	"platform/MessageBox.h"
+	"dktypes.h"
 
 1456741403 /home/soap/Projects/EqEngine/src_all/public//platform/Platform.h
 	"dktypes.h"
@@ -97,13 +98,14 @@
 	"ConCommandBase.h"
 	"IConCommandFactory.h"
 
-1456741403 source:/home/soap/Projects/EqEngine/src_all/public/core/ConVar.cpp
+1456748620 source:/home/soap/Projects/EqEngine/src_all/public/core/ConVar.cpp
 	"ConVar.h"
 	"IConCommandFactory.h"
 	"ICmdLineParser.h"
 	"DebugInterface.h"
 	"utils/DkList.h"
 	"utils/strtools.h"
+	"platform/Platform.h"
 	<malloc.h>
 	<crtdbg.h>
 
@@ -119,5 +121,20 @@
 	<ctype.h>
 	<string.h>
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public//utils/DkLinkedList.h
+1456750115 /home/soap/Projects/EqEngine/src_all/public//utils/DkLinkedList.h
+	"dktypes.h"
+
+1456748309 /home/soap/Projects/EqEngine/src_all/public//platform/MessageBox.h
+
+1456748937 /home/soap/Projects/EqEngine/src_all/public/core//platform/MessageBox.h
+	"InterfaceManager.h"
+
+1456749674 /home/soap/Projects/EqEngine/src_all/public/core/platform/Platform.h
+	"dktypes.h"
+	"SDL.h"
+	"SDL_syswm.h"
+	<windows.h>
+	<stdio.h>
+	<X11/keysym.h>
+	<float.h>
 

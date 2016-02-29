@@ -10,7 +10,7 @@
 #define IVERTEXFORMAT_H
 
 
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "ShaderAPI_defs.h"
 
 class IVertexFormat

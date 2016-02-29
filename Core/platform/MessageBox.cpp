@@ -1,18 +1,14 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright Â© Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Provides all shared definitions of engine
-//////////////////////////////////////////////////////////////////////////////////-
+// Description: System messageboxes
+//////////////////////////////////////////////////////////////////////////////////
 
-#include "Platform.h"
-#include "core_base_header.h"
-#include "DebugInterface.h"
-#include <time.h>
-
-#ifndef _WIN32
+#include "platform/MessageBox.h"
+#include <string.h>
 #include <stdarg.h>
-#endif // _WIN32
+#include "DebugInterface.h"
 
 #if !defined(_WIN32) && defined(USE_GTK)
 
@@ -34,9 +30,10 @@ void MessageBox(const char *string, const GtkMessageType msgType)
     gtk_main();
 }
 
-#endif // _WIN32
+#endif // !_WIN32 && USE_GTK
 
 void emptycallback(void) {}
+
 void DefaultPlatformMessageBoxCallback(const char* messageStr, EMessageBoxType type )
 {
 #ifdef _WIN32
@@ -112,17 +109,17 @@ void DefaultPlatformMessageBoxCallback(const char* messageStr, EMessageBoxType t
 PREERRORMESSAGECALLBACK g_preerror_callback = emptycallback;
 MESSAGECB g_msgBoxCallback = DefaultPlatformMessageBoxCallback;
 
-void SetPreErrorCallback(PREERRORMESSAGECALLBACK callback)
+IEXPORTS void SetPreErrorCallback(PREERRORMESSAGECALLBACK callback)
 {
 	g_preerror_callback = callback;
 }
 
-void SetMessageBoxCallback(MESSAGECB callback)
+IEXPORTS void SetMessageBoxCallback(MESSAGECB callback)
 {
 	g_msgBoxCallback = callback;
 }
 
-void ErrorMsg(const char* fmt, ...)
+IEXPORTS void ErrorMsg(const char* fmt, ...)
 {
 	g_preerror_callback();
 
@@ -141,7 +138,7 @@ void ErrorMsg(const char* fmt, ...)
 	MsgError("FATAL ERROR: %s\n", string);
 }
 
-void CrashMsg(const char* fmt, ...)
+IEXPORTS void CrashMsg(const char* fmt, ...)
 {
 	g_preerror_callback();
 
@@ -160,7 +157,7 @@ void CrashMsg(const char* fmt, ...)
 	MsgError("ERROR: %s\n", string);
 }
 
-void WarningMsg(const char* fmt, ...)
+IEXPORTS void WarningMsg(const char* fmt, ...)
 {
 	va_list		argptr;
 
@@ -177,7 +174,7 @@ void WarningMsg(const char* fmt, ...)
 	MsgError("WARNING: %s\n", string);
 }
 
-void InfoMsg(const char* fmt, ...)
+IEXPORTS void InfoMsg(const char* fmt, ...)
 {
 	va_list		argptr;
 
@@ -192,147 +189,6 @@ void InfoMsg(const char* fmt, ...)
 	g_msgBoxCallback(string, MSGBOX_INFO);
 	MsgError("INFO: %s\n", string);
 }
-
-
-// Utility functions
-#ifdef _WIN32
-
-#ifndef _DKLAUNCHER_
-#include <malloc.h> // for _heapchk
-
-void __CheckHeap()
-{
-    // Check heap status
-    int heapstatus = _heapchk();
-    switch ( heapstatus )
-    {
-    case _HEAPOK:
-        Msg(" OK - heap is fine\n" );
-        break;
-    case _HEAPEMPTY:
-        Msg(" OK - heap is empty\n" );
-        break;
-    case _HEAPBADBEGIN:
-        Msg( " ERROR - bad start of heap\n" );
-        break;
-    case _HEAPBADNODE:
-        Msg( " ERROR - bad node in heap\n" );
-        break;
-    }
-}
-
-#endif // _DKLAUNCHER_
-
-#else
-
-void __CheckHeap()
-{
-
-}
-
-#endif // _WIN32
-
-#ifdef _WIN32
-
-static LARGE_INTEGER g_PerformanceFrequency;
-static LARGE_INTEGER g_ClockStart;
-
-#else
-
-#include <sys/time.h>
-#include <errno.h>
-timeval start;
-
-#endif // _WIN32
-
-// Platform QueryPerformanceCounterkAlertCautionAlert initializer
-void Platform_InitTime()
-{
-#ifdef _WIN32
-    if ( !g_PerformanceFrequency.QuadPart )
-    {
-        QueryPerformanceFrequency(&g_PerformanceFrequency);
-        QueryPerformanceCounter(&g_ClockStart);
-    }
-#else
-	gettimeofday(&start, NULL);
-#endif // _WIN32
-}
-
-// returns current time since application is running
-float Platform_GetCurrentTime()
-{
-#ifdef _WIN32
-
-    LARGE_INTEGER curr;
-    QueryPerformanceCounter(&curr);
-    return (float) (double(curr.QuadPart) / double(g_PerformanceFrequency.QuadPart));
-
-#else
-
-    timeval curr;
-    gettimeofday(&curr, NULL);
-    return (float(curr.tv_sec - start.tv_sec) + 0.000001f * float(curr.tv_usec - start.tv_usec));
-
-#endif // _WIN32
-}
-
-// sleeps the execution thread and let other processes to run for a specified amount of time.
-void Platform_Sleep(uint32 nMilliseconds)
-{
-#ifdef _WIN32
-
-	Sleep(nMilliseconds);
-
-#else
-
-	struct timespec ts;
-	ts.tv_sec = (time_t) (nMilliseconds / 1000);
-	ts.tv_nsec = (long) (nMilliseconds % 1000) * 1000000;
-
-
-    while(nanosleep(&ts, NULL)==-1 && errno == EINTR){}
-
-#endif //_WIN32
-}
-
-
-void AssertValidReadPtr( void* ptr, int count/* = 1*/ )
-{
-#ifdef _WIN32
-    ASSERT(!IsBadReadPtr( ptr, count ));
-#endif
-}
-
-void AssertValidStringPtr( const char* ptr, int maxchar/* = 0xFFFFFF */ )
-{
-#ifdef _WIN32
-    ASSERT(!IsBadStringPtr( ptr, maxchar ));
-#endif
-}
-
-void AssertValidWStringPtr( const wchar_t* ptr, int maxchar/* = 0xFFFFFF */ )
-{
-#ifdef _WIN32
-    ASSERT(!IsBadStringPtrW( ptr, maxchar ));
-#endif
-}
-
-void AssertValidWritePtr( void* ptr, int count/* = 1*/ )
-{
-#ifdef _WIN32
-    ASSERT(!IsBadWritePtr( ptr, count ));
-#endif
-}
-
-void AssertValidReadWritePtr( void* ptr, int count/* = 1*/ )
-{
-#ifdef _WIN32
-    ASSERT(!( IsBadWritePtr(ptr, count) || IsBadReadPtr(ptr,count)));
-#endif
-}
-
-#include <stdio.h>
 
 #ifdef _WIN32
 
@@ -359,7 +215,7 @@ void AssertLogMsg(const char *fmt,...)
     }
 }
 
-void _InternalAssert(const char *file, int line, const char *statement)
+IEXPORTS void _InternalAssert(const char *file, int line, const char *statement)
 {
     static bool debug = true;
 
@@ -411,17 +267,11 @@ void _InternalAssert(const char *file, int line, const char *statement)
     }
 }
 
-void outputDebugString(const char *str)
-{
-    OutputDebugStringA(str);
-    OutputDebugStringA("\n");
-}
-
 #else
 
 #include <signal.h>
 
-void _InternalAssert(const char *file, int line, const char *statement)
+IEXPORTS void _InternalAssert(const char *file, int line, const char *statement)
 {
     static bool debug = true;
 
@@ -436,9 +286,11 @@ void _InternalAssert(const char *file, int line, const char *statement)
     }
 }
 
-void outputDebugString(const char *str)
-{
-    printf("%s\n", str);
-}
+#endif //
 
-#endif // _WIN32
+void InitMessageBoxPlatform()
+{
+#if !defined(_WIN32) && defined(USE_GTK)
+	gtk_init(NULL, NULL);
+#endif // !_WIN32 && USE_GTK
+}

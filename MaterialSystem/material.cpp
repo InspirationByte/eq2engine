@@ -11,7 +11,7 @@
 #include "DebugInterface.h"
 
 #include "material.h"
-#include "utils/eqstring.h"
+#include "utils/strtools.h"
 #include "BaseShader.h"
 
 CMaterial::CMaterial() : m_state(MATERIAL_LOAD_ERROR), m_pShader(nullptr), m_proxyIsDirty(true), m_frameBound(0)
@@ -246,8 +246,8 @@ bool CMaterial::LoadShaderAndTextures()
 // waits for material loading
 void CMaterial::WaitForLoading() const
 {
-	do{ 
-		Threading::Yield(); 
+	do{
+		Threading::Yield();
 	} while(m_state == MATERIAL_LOAD_INQUEUE);
 }
 

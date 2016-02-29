@@ -12,7 +12,7 @@
 #define SHADERAPI_INTERFACE_H
 
 // Platform definitions
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "utils/DkList.h"
 
 // Various declarations

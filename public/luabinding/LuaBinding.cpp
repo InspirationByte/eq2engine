@@ -5,8 +5,8 @@
 // Description: OOLua binding
 //////////////////////////////////////////////////////////////////////////////////
 
-
 #include "LuaBinding.h"
+#include "platform/MessageBox.h"
 #include "IFileSystem.h"
 
 #include "DebugInterface.h"

@@ -10,7 +10,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DebugInterface.h"
-#include "Platform.h"
 #include "IConCommandFactory.h"
 
 #include "ShaderAPI_Base.h"

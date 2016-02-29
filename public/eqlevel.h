@@ -14,7 +14,7 @@
 #ifndef EQLEVEL_H
 #define EQLEVEL_H
 
-#include "Platform.h"
+#include "dktypes.h"
 #include "coord.h" // MAX_COORD_UNITS
 #include "math/DkMath.h"
 

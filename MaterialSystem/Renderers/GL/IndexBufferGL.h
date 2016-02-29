@@ -8,13 +8,12 @@
 #ifndef INDEXBUFFERGL_H
 #define INDEXBUFFERGL_H
 
-#include "Platform.h"
 #include "IIndexBuffer.h"
 
 class CIndexBufferGL : public IIndexBuffer
 {
 public:
-	
+
 	friend class	ShaderAPIGL;
 
 					CIndexBufferGL();

@@ -8,7 +8,6 @@
 #ifndef VERTEXBUFFERGL_H
 #define VERTEXBUFFERGL_H
 
-#include "Platform.h"
 #include "IVertexBuffer.h"
 
 class CVertexBufferGL : public IVertexBuffer

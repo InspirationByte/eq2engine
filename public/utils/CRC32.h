@@ -10,7 +10,7 @@
 ===============================================================================
 */
 
-#include "Platform.h"
+#include "platform/Platform.h"
 
 void CRC32_InitChecksum( uint32 &crcvalue );
 

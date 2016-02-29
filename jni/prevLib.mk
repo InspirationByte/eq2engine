@@ -21,7 +21,6 @@ LOCAL_C_INCLUDES:= \
 
 LOCAL_SRC_FILES := \
 	public/utils/CRC32.cpp\
-	public/platform/Platform.cpp\
 	public/network/net_defs.cpp\
 	public/network/c_udp.cpp\
 	public/network/NetMessageBuffer.cpp\

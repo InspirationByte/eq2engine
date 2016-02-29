@@ -16,7 +16,6 @@
 #include "GLMeshBuilder.h"
 #include "GLOcclusionQuery.h"
 
-#include "Platform.h"
 #include "DebugInterface.h"
 
 #include "shaderapigl_def.h"

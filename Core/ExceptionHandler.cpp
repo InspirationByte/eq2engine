@@ -5,7 +5,7 @@
 // Description: Crash report library connection
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "stdio.h"
 #include "IDkCore.h"
 #include "DebugInterface.h"

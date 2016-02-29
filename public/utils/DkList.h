@@ -8,7 +8,8 @@
 #ifndef DKLIST_H
 #define DKLIST_H
 
-#include "platform/Platform.h"
+#include "platform/MessageBox.h"
+#include "dktypes.h"
 
 #define USE_QSORT
 

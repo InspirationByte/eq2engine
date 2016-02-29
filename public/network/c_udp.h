@@ -14,7 +14,7 @@
 #include "utils/DkList.h"
 #include "utils/eqthread.h"
 
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "net_defs.h"
 #include "VirtualStream.h"
 

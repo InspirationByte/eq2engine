@@ -9,7 +9,7 @@
 #define LEVFILE_H
 
 #include "math/DkMath.h"
-#include "Platform.h"
+#include "dktypes.h"
 
 enum ELevelLumps
 {

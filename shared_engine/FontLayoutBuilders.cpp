@@ -7,7 +7,7 @@
 
 #include "FontLayoutBuilders.h"
 
-#ifdef LINUX
+#ifdef PLAT_POSIX
 #include <wctype.h> // iswspace
 #endif
 

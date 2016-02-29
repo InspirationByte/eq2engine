@@ -8,7 +8,8 @@
 #ifndef ILOCALIZE
 #define ILOCALIZE
 
-#include "IDkCore.h"
+#include "platform/Platform.h"
+#include "InterfaceManager.h"
 
 #ifdef PLAT_POSIX
 #   include <wchar.h>

@@ -5,7 +5,6 @@
 // Description: DarkTech main entry point
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "Platform.h"
 #include "DebugInterface.h"
 #include "renderers/IShaderAPI.h"
 #include "materialsystem/IMaterialSystem.h"

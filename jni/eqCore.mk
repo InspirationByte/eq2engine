@@ -18,6 +18,8 @@ LOCAL_C_INCLUDES:= \
 	$(LOCAL_PATH)/public
 
 LOCAL_SRC_FILES := \
+	Core/platform/Platform.cpp	\
+	Core/platform/MessageBox.cpp	\
 	Core/CmdLineParser.cpp		\
 	Core/ConCommandFactory.cpp	\
 	Core/CoreVersion.cpp		\

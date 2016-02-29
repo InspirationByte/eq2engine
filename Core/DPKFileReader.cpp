@@ -6,17 +6,19 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DPKFileReader.h"
+#include "platform/Platform.h"
 
 #include <zlib.h>
 
 #include "utils/strtools.h"
 #include "DebugInterface.h"
 
-#ifndef PLAT_POSIX
+#ifdef _WIN32
 #include <direct.h>
 #include <shlobj.h>
 #else
 #include <unistd.h>
+#include <sys/stat.h>
 #endif
 
 CDPKFileReader::CDPKFileReader()

@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "LuaBinding_Drivers.h"
+#include "IEqCPUServices.h"
 
 #include "DebugOverlay.h"
 #include "system.h"

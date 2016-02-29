@@ -31,6 +31,12 @@ DECLARE_CMD(toggleconsole, "Toggles console", 0)
 {
 }
 
+// shows console
+DECLARE_CMD(con_show, "Show console", 0)
+{
+	g_pSysConsole->SetVisible(true);
+}
+
 ConVar con_enable("con_enable","1","Enable console", CV_CHEAT);
 ConVar con_fastfind("con_fastfind","1","Show FastFind popup in console",CV_ARCHIVE);
 ConVar con_fastfind_count("con_fastfind_count","35","FastFind listed vars count",CV_ARCHIVE);

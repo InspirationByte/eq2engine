@@ -9,7 +9,7 @@
 #define MESHBUILDER_H
 
 #include <stdio.h>
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "math/Vector.h"
 #include "ShaderAPI_defs.h"
 

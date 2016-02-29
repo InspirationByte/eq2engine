@@ -708,11 +708,11 @@
 
 1456741403 /home/soap/Projects/EqEngine/src_all/public/textureformats.h
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/materialsystem/renderers/ShaderAPI_defs.h
+1456748977 /home/soap/Projects/EqEngine/src_all/public/materialsystem/renderers/ShaderAPI_defs.h
 	"math/Vector.h"
 	"math/Matrix.h"
 	"math/Rectangle.h"
-	"Platform.h"
+	"platform/Platform.h"
 	"textureformats.h"
 	"utils/DkList.h"
 	"utils/eqstring.h"
@@ -725,7 +725,7 @@
 	"math_common.h"
 	"Vector_Inline.h"
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/dktypes.h
+1456749666 /home/soap/Projects/EqEngine/src_all/public/dktypes.h
 	<stddef.h>
 	<string.h>
 
@@ -765,8 +765,9 @@
 	<X11/keysym.h>
 	<float.h>
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/utils/DkList.h
-	"platform/Platform.h"
+1456748507 /home/soap/Projects/EqEngine/src_all/public/utils/DkList.h
+	"platform/MessageBox.h"
+	"dktypes.h"
 
 1456741403 /home/soap/Projects/EqEngine/src_all/public/utils/eqstring.h
 	<stdlib.h>
@@ -780,9 +781,9 @@
 	"dktypes.h"
 	"eqstring.h"
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/core/ppmem.h
+1456748634 /home/soap/Projects/EqEngine/src_all/public/core/ppmem.h
 	<string.h>
-	"Platform.h"
+	"platform/Platform.h"
 	"InterfaceManager.h"
 	"utils/eqthread.h"
 
@@ -792,8 +793,8 @@
 
 1456741403 /home/soap/Projects/EqEngine/src_all/public/utils/singleton.h
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/utils/eqthread.h
-	"Platform.h"
+1456748645 /home/soap/Projects/EqEngine/src_all/public/utils/eqthread.h
+	"platform/Platform.h"
 	<sched.h>
 	<pthread.h>
 	<errno.h>
@@ -810,13 +811,14 @@
 	<ctype.h>
 	<string.h>
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/utils/DkLinkedList.h
+1456750115 /home/soap/Projects/EqEngine/src_all/public/utils/DkLinkedList.h
+	"dktypes.h"
 
 1456741403 /home/soap/Projects/EqEngine/src_all/public/core/DebugInterface.h
 	"InterfaceManager.h"
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/materialsystem/renderers/IShaderAPI.h
-	"Platform.h"
+1456748973 /home/soap/Projects/EqEngine/src_all/public/materialsystem/renderers/IShaderAPI.h
+	"platform/Platform.h"
 	"utils/DkList.h"
 	"ShaderAPICaps.h"
 	"IShaderProgram.h"
@@ -839,16 +841,16 @@
 1456741403 /home/soap/Projects/EqEngine/src_all/public/materialsystem/renderers/IVertexBuffer.h
 	"ShaderAPI_defs.h"
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/materialsystem/renderers/IVertexFormat.h
-	"Platform.h"
+1456748982 /home/soap/Projects/EqEngine/src_all/public/materialsystem/renderers/IVertexFormat.h
+	"platform/Platform.h"
 	"ShaderAPI_defs.h"
 
 1456741403 /home/soap/Projects/EqEngine/src_all/public/materialsystem/renderers/IIndexBuffer.h
 	"ShaderAPI_defs.h"
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/materialsystem/renderers/IMeshBuilder.h
+1456748987 /home/soap/Projects/EqEngine/src_all/public/materialsystem/renderers/IMeshBuilder.h
 	<stdio.h>
-	"Platform.h"
+	"platform/Platform.h"
 	"math/Vector.h"
 	"ShaderAPI_defs.h"
 
@@ -860,11 +862,12 @@
 	"ShaderAPI_defs.h"
 	"ppmem.h"
 
-1456741403 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/Empty/emptylibrary.cpp
+1456750833 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/Empty/emptylibrary.cpp
 	"DebugInterface.h"
 	"emptyLibrary.h"
 	"ShaderAPIEmpty.h"
 	"IDkCore.h"
+	"IConCommandFactory.h"
 
 1456741403 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/Empty/emptyLibrary.h
 	"IShaderAPI.h"
@@ -876,8 +879,7 @@
 	"DebugInterface.h"
 	"InterfaceManager.h"
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/materialsystem/renderers/IEqSwapChain.h
-	"Platform.h"
+1456749074 /home/soap/Projects/EqEngine/src_all/public/materialsystem/renderers/IEqSwapChain.h
 	"ITexture.h"
 
 1456741403 /home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/Empty/ShaderAPIEmpty.h
@@ -894,9 +896,9 @@
 	"../CTexture.h"
 	"utils/DkList.h"
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/imaging/ImageLoader.h
+1456748640 /home/soap/Projects/EqEngine/src_all/public/imaging/ImageLoader.h
 	<stdio.h>
-	"Platform.h"
+	"platform/Platform.h"
 	"utils/eqstring.h"
 	"textureformats.h"
 	"IFileSystem.h"
@@ -910,9 +912,8 @@
 1456741403 /home/soap/Projects/EqEngine/src_all/public/IVirtualStream.h
 	"ppmem.h"
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/core/IDkCore.h
+1456749547 /home/soap/Projects/EqEngine/src_all/public/core/IDkCore.h
 	"ICmdLineParser.h"
-	"core_base_header.h"
 
 1456741403 /home/soap/Projects/EqEngine/src_all/public/core/ICmdLineParser.h
 	<stdio.h>
@@ -939,8 +940,8 @@
 	"platform/Platform.h"
 	<sys/time.h>
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/utils/KeyValues.h
-	"Platform.h"
+1456748664 /home/soap/Projects/EqEngine/src_all/public/utils/KeyValues.h
+	"platform/Platform.h"
 	"utils/DkList.h"
 	"math/DkMath.h"
 
@@ -1023,9 +1024,8 @@
 	"IDkCore.h"
 	<wchar.h>
 
-1456741403 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/ShaderAPI_Base.cpp
+1456749025 source:/home/soap/Projects/EqEngine/src_all/MaterialSystem/Renderers/ShaderAPI_Base.cpp
 	"DebugInterface.h"
-	"Platform.h"
 	"IConCommandFactory.h"
 	"ShaderAPI_Base.h"
 	"CTexture.h"
@@ -1040,10 +1040,22 @@
 	"textureformats.h"
 	"DebugInterface.h"
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/utils/Tokenizer.h
-	"Platform.h"
+1456748956 /home/soap/Projects/EqEngine/src_all/public/utils/Tokenizer.h
+	"platform/Platform.h"
 	"DkList.h"
 
-1456741403 /home/soap/Projects/EqEngine/src_all/public/utils/CRC32.h
-	"Platform.h"
+1456748660 /home/soap/Projects/EqEngine/src_all/public/utils/CRC32.h
+	"platform/Platform.h"
+
+1456749674 /home/soap/Projects/EqEngine/src_all/public/core/platform/Platform.h
+	"dktypes.h"
+	"SDL.h"
+	"SDL_syswm.h"
+	<windows.h>
+	<stdio.h>
+	<X11/keysym.h>
+	<float.h>
+
+1456748937 /home/soap/Projects/EqEngine/src_all/public/core/platform/MessageBox.h
+	"InterfaceManager.h"
 

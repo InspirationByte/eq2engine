@@ -115,55 +115,9 @@
 #define offsetOf(structure,member)		(size_t)&(((structure *)0)->member)
 #define elementSizeOf(structure,member)	sizeof(((structure *)0)->member)
 
-#ifdef _MSC_VER // maybe GCC?
-
-#define forceinline __forceinline
-#define _ALIGNED(x) __declspec(align(x))
-
-#define ALIGNED_TYPE(s, a) typedef s _ALIGNED(a)
-
-#else
-
-#define forceinline inline
-#define _ALIGNED(x) __attribute__ ((aligned(x)))
-
-#define ALIGNED_TYPE(s, a) typedef struct s _ALIGNED(a)
-
-#endif
-
 // Abstract class identifier
 #define abstract_class class
 
-// Pure specifier
-//#define PURE =0
-
-//---------------------------------------------------------------------------------------------
-// Message utilities
-//---------------------------------------------------------------------------------------------
-
-typedef void (*PREERRORMESSAGECALLBACK)( void );
-void SetPreErrorCallback(PREERRORMESSAGECALLBACK callback);
-
-enum EMessageBoxType
-{
-	MSGBOX_INFO = 0,
-	MSGBOX_WARNING,
-	MSGBOX_ERROR,
-	MSGBOX_CRASH,
-};
-
-typedef void (*MESSAGECB)( const char* str, EMessageBoxType type );
-void SetMessageBoxCallback(MESSAGECB callback);
-
-void CrashMsg(const char* fmt, ...);
-void ErrorMsg(const char* fmt, ...);
-void WarningMsg(const char* fmt, ...);
-void InfoMsg(const char* fmt, ...);
-
-#ifndef _DKLAUNCHER_
-// Heap checking
-void __CheckHeap();
-#endif
 
 //---------------------------------------------------------------------------------------------
 // Timer
@@ -197,21 +151,6 @@ void	Platform_Sleep(uint32 nMilliseconds);
 #define stricmp(a, b) strcasecmp(a, b)
 
 #endif // PLAT_WIN
-
-//------------------------------------------------------------------------------------------------
-
-void			outputDebugString(const char *str);
-extern void		_InternalAssert(const char *file, int line, const char *statement);
-extern void		AssertLogMsg(const char *fmt,...);
-
-#define			ASSERT(b) if (!(b)) _InternalAssert(__FILE__, __LINE__, #b)
-#define			ASSERTMSG(b, msg) if (!(b)) _InternalAssert(__FILE__, __LINE__, msg)
-
-void			AssertValidReadPtr( void* ptr, int count = 1 );
-void			AssertValidWritePtr( void* ptr, int count = 1 );
-void			AssertValidStringPtr( const char* ptr, int maxchar = 0xFFFFFF  );
-void			AssertValidWStringPtr( const wchar_t* ptr, int maxchar = 0xFFFFFF );
-void			AssertValidReadWritePtr( void* ptr, int count = 1 );
 
 //------------------------------------------------------------------------------------------------
 

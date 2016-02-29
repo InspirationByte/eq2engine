@@ -9,7 +9,6 @@
 #define IDKCORE
 
 #include "ICmdLineParser.h"
-#include "core_base_header.h"
 
 class KeyValues;
 class ICommandLineParse;

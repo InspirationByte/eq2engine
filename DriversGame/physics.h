@@ -8,7 +8,7 @@
 #ifndef PHYSICS_H
 #define PHYSICS_H
 
-#include "Platform.h"
+#include "dktypes.h"
 #include "utils/DkList.h"
 #include "math/DkMath.h"
 #include "core_base_header.h"

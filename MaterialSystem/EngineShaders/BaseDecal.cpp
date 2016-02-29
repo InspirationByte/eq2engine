@@ -7,6 +7,7 @@
 
 #include "BaseShader.h"
 #include "vars_generic.h"
+#include "IDkCore.h"
 
 //ConVar r_decals_depthbias("decal_depthbias", "0.000005f", "Decal depth bias", CV_ARCHIVE);
 //ConVar r_decals_slopedepthbias("decal_slopedepthbias", "0", "Decal depth bias", CV_ARCHIVE);
@@ -161,7 +162,7 @@ public:
 
 		// define fog parameter.
 		SHADER_DECLARE_SIMPLE_DEFINITION(materials->GetConfiguration().editormode, "EDITOR");
-		
+
 		if(bDeferredShading && !bIsModulated)
 		{
 			// disable FFP alphatesting, let use the shader for better perfomance
@@ -175,7 +176,7 @@ public:
 
 			// define fog parameter.
 			SHADER_DECLARE_SIMPLE_DEFINITION(m_fogenabled, "DOFOG");
-		
+
 			// compile with fog
 			SHADER_FIND_OR_COMPILE(Ambient_fog, "BaseDecal_Deferred");
 		}
@@ -186,7 +187,7 @@ public:
 
 			// define fog parameter.
 			SHADER_DECLARE_SIMPLE_DEFINITION(m_fogenabled, "DOFOG");
-		
+
 			// compile with fog
 			SHADER_FIND_OR_COMPILE(Ambient_fog, "BaseDecal_Ambient");
 		}

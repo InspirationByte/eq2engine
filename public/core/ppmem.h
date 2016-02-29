@@ -37,7 +37,7 @@
 
 #include <string.h>
 
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "InterfaceManager.h"
 
 #include "utils/eqthread.h"

@@ -5,9 +5,12 @@
 // Description: DarkTech localization
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "utils/strtools.h"
+
 #include "Localize.h"
 #include "DebugInterface.h"
-#include "utils/strtools.h"
+#include "IDkCore.h"
+#include "utils/KeyValues.h"
 
 EXPORTED_INTERFACE(ILocalize, CLocalize);
 

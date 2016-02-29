@@ -7,7 +7,7 @@
 
 #include "DebugInterface.h"
 #include "materialvar.h"
-#include "IMaterialSystem.h"
+#include "utils/strtools.h"
 
 CMatVar::CMatVar()
 {

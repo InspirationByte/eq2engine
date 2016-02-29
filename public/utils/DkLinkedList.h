@@ -8,6 +8,8 @@
 #ifndef DKLINKEDLIST_H
 #define DKLINKEDLIST_H
 
+#include "dktypes.h"
+
 template <class TYPE>
 struct DkLLNode
 {
@@ -127,7 +129,7 @@ public:
 		return false;
 	}
 
-	const T & getCurrent() const 
+	const T & getCurrent() const
 	{
 		return curr->object;
 	}

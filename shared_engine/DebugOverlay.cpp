@@ -10,6 +10,8 @@
 
 #include "DebugInterface.h"
 #include "math/math_util.h"
+#include "ConVar.h"
+#include "utils/strtools.h"
 
 #include "materialsystem/IMaterialSystem.h"
 

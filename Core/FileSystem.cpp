@@ -10,6 +10,11 @@
 #pragma todo("UTF-8 filenames support")
 
 #include "utils/SmartPtr.h"
+#include "utils/KeyValues.h"
+#include "utils/strtools.h"
+#include "IDkCore.h"
+#include "ILocalize.h"
+
 
 #ifdef _WIN32 // Not in linux
 #include <direct.h>	// mkdir()

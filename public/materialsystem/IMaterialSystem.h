@@ -1,35 +1,30 @@
-//******************* Copyright (C) Illusion Way, L.L.C 2010 *********************
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2015
+//////////////////////////////////////////////////////////////////////////////////
+// Description: DarkTech material sub-rendering system
 //
-// Description: Equilibrium Material sub-rendering system
-//
-// TODO:	(DONE) Refactor IMaterialSystem interface, to work in small lib EqMatSystem.dll
-//			(DONE) Move some helper functions from scenerenderer interface.
-//			(DONE) Make a stub-mode support (no rendering, no shader loading, etc.)
-//			(DONE) Preset and dynamically changeable lighting model
-//			(DONE) Optimize shader parameter setup
-//			Make texture loader (ITextureLoader,something) here and make loaders registrator
-//			Add pushing/popping the states
-//
-// How to use:
-//		Taking interface: materials = (IMaterialSystem*)GetCore()->GetInterface(MATSYSTEM_INTERFACE_VERSION);
-//		Initializing for tools: materials->Init("materials/", "EqShaderAPIEmpty", NULL, FORMAT_NONE, true, true);
+// Features: - Cached texture loading
+//			 - Material management
+//			 - Shader management
 //////////////////////////////////////////////////////////////////////////////////
 
 #ifndef IMATERIALSYSTEM_H
 #define IMATERIALSYSTEM_H
 
 #include "DebugInterface.h"
+#include "IDkCore.h"
 
 #include "renderers/IShaderAPI.h"
-#include "renderers/IEqSwapChain.h"
 
 #include "IMaterial.h"
 #include "IMatSysShader.h"
 #include "ViewParams.h"
 #include "scene_def.h"
-#include "IDkCore.h"
 
 class CImage;
+class IEqSwapChain;
+class IShaderAPI;
 
 // interface version for Shaders_*** dlls
 #define MATSYSTEM_INTERFACE_VERSION "MaterialSystem_008"

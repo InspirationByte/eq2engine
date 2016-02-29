@@ -14,7 +14,8 @@
 
 #endif // _WIN32
 
-#include "Platform.h"
+#include "platform/MessageBox.h"
+
 #include "IDkCore.h"
 #include "window.h"
 #include "EngineSpew.h"

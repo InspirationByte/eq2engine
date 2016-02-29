@@ -9,6 +9,8 @@
 #define CDKCORE
 
 #include "IDkCore.h"
+#include "IFileSystem.h"
+#include "utils/KeyValues.h"
 
 // interface pointer keeper
 struct coreInterface_t

@@ -9,6 +9,7 @@
 #include "emptyLibrary.h"
 #include "ShaderAPIEmpty.h"
 #include "IDkCore.h"
+#include "IConCommandFactory.h"
 
 HOOK_TO_CVAR(r_screen);
 

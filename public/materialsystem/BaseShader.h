@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "materialsystem/IMaterialSystem.h"
+#include "utils/strtools.h"
 
 #define DECLARE_SHADER(classname)	\
 	class C##classname##Shader : public CBaseShader

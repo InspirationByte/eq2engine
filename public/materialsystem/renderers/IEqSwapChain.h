@@ -8,7 +8,6 @@
 #ifndef IEQSWAPCHAIN_H
 #define IEQSWAPCHAIN_H
 
-#include "Platform.h"
 #include "ITexture.h"
 
 class IEqSwapChain

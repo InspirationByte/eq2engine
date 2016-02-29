@@ -86,6 +86,22 @@ assert_sizeof( long long, 8);
 assert_sizeof( float, 4);
 assert_sizeof( double, 8);
 
+#ifdef _MSC_VER // maybe GCC?
+
+#define forceinline __forceinline
+#define _ALIGNED(x) __declspec(align(x))
+
+#define ALIGNED_TYPE(s, a) typedef s _ALIGNED(a)
+
+#else
+
+#define forceinline inline
+#define _ALIGNED(x) __attribute__ ((aligned(x)))
+
+#define ALIGNED_TYPE(s, a) typedef struct s _ALIGNED(a)
+
+#endif
+
 #define ERROR_BUFFER_LENGTH 2048
 
 class CEqException
@@ -112,7 +128,5 @@ protected:
 private:
 	char s_szError[ERROR_BUFFER_LENGTH];
 };
-
-
 
 #endif // DKTYPES_H

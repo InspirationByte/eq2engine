@@ -14,7 +14,8 @@
 #include <direct.h>
 #endif
 
-#include "IDkCore.h"
+#include "utils/eqstring.h"
+#include "utils/DkList.h"
 #include "dpk_defs.h"
 
 typedef int dpkhandle_t;
@@ -70,7 +71,7 @@ public:
 protected:
 	dpkhandle_t				DecompressFile( int fileIndex );
 
-	
+
 	dpkheader_t				m_header;
 	dpkfileinfo_t*			m_dpkFiles;
 

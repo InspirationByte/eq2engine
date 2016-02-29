@@ -7,6 +7,7 @@
 
 #include "EqParticles.h"
 #include "eqGlobalMutex.h"
+#include "IConCommandFactory.h"
 
 using namespace Threading;
 

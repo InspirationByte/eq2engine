@@ -11,7 +11,7 @@
 #include "math/Vector.h"
 #include "math/Matrix.h"
 #include "math/Rectangle.h"
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "textureformats.h"
 #include "utils/DkList.h"
 #include "utils/eqstring.h"

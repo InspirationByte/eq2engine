@@ -7,7 +7,7 @@
 
 #include "CmdLineParser.h"
 #include "utils/strtools.h"
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "ConVar.h"
 #include "DebugInterface.h"
 #include "ConCommandFactory.h"
