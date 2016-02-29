@@ -106,9 +106,15 @@ static const int internalFormats[FORMAT_COUNT] = {
 
 	// Compressed formats
 #ifdef USE_GLES2
+#ifdef _WIN32 // temporary: ANGLE
 	0x83F0, //0, //GL_COMPRESSED_RGB_S3TC_DXT1_EXT,
 	0x83F2, //0, //GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
 	0x83F3, //0, //GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+#else
+	0, //GL_COMPRESSED_RGB_S3TC_DXT1_EXT,
+	0, //GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
+	0, //GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+#endif // _WIN32
 	0, // ATI1N not yet supported
 	0, //GL_COMPRESSED_LUMINANCE_ALPHA,
 

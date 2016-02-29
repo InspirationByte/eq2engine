@@ -1284,14 +1284,16 @@ void CGameWorld::DrawLensFlare( const Vector2D& screenSize, const Vector2D& scre
 
 		Vector2D lensPos;
 
+		//float sizeScale = (2000.0f-lensDist)*0.0007f;
+		float fScale = m_lensTable[i].scale;//*sizeScale;
+
 		if(i < 2)
+		{
 			lensPos = screenPos + lensDir*(float(cnt)*invTableSize)*lensScale;
+			fScale *= intensity;
+		}
 		else
 			lensPos = halfScreen + lensDir*((0.5f+float(cnt-halfTable))*invTableSize)*lensScale;
-
-		//float sizeScale = (2000.0f-lensDist)*0.0007f;
-
-		float fScale = m_lensTable[i].scale;//*sizeScale;
 
 		ColorRGB lensColor = m_lensTable[i].color * m_envConfig.sunColor * intensity;
 

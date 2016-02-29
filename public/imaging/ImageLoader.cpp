@@ -92,7 +92,7 @@ struct DDSHeader
 	uint32 dwReserved2;
 };
 
-struct DDSHeaderDX10
+struct DDSHeaderDXT10
 {
     uint32 dxgiFormat;
     uint32 resourceDimension;
@@ -458,10 +458,10 @@ bool CImage::LoadDDSfromHandle(DKFILE *fileHandle, uint flags)
 
 	if (header.ddpfPixelFormat.dwFourCC == MCHAR4('D','X','1','0'))
 	{
-		DDSHeaderDX10 dx10Header;
-		file->Read(&dx10Header, sizeof(dx10Header), 1);
+		DDSHeaderDXT10 dxt10Header;
+		file->Read(&dxt10Header, sizeof(dxt10Header), 1);
 
-		switch (dx10Header.dxgiFormat)
+		switch (dxt10Header.dxgiFormat)
 		{
 			case 61: m_nFormat = FORMAT_R8; break;
 			case 49: m_nFormat = FORMAT_RG8; break;
@@ -489,8 +489,12 @@ bool CImage::LoadDDSfromHandle(DKFILE *fileHandle, uint flags)
 			case 77: m_nFormat = FORMAT_DXT5; break;
 			case 80: m_nFormat = FORMAT_ATI1N; break;
 			case 83: m_nFormat = FORMAT_ATI2N; break;
+			case 0:
+				MsgError("Invalid DDS file %s %d\n", GetName());
+				g_fileSystem->Close(file);
+				return false;
 			default:
-				MsgError("Unknown image format\n");
+				MsgError("Image %s has unknown or invalid DXGI format %d\n", GetName(), dxt10Header.dxgiFormat);
 				g_fileSystem->Close(file);
 				return false;
 		}
@@ -514,7 +518,7 @@ bool CImage::LoadDDSfromHandle(DKFILE *fileHandle, uint flags)
 			case MCHAR4('A','T','I','2'): m_nFormat = FORMAT_ATI2N; break;
 			case MCHAR4('E','T','C','1'): m_nFormat = FORMAT_ETC1; break;
 			case MCHAR4('E','T','C','2'): m_nFormat = FORMAT_ETC2; break;
-			case MCHAR4('E','T','2','E'): m_nFormat = FORMAT_ETC2_EAC; break;
+			case MCHAR4('E','T','A','2'): m_nFormat = FORMAT_ETC2_EAC; break;
 			default:
 				switch (header.ddpfPixelFormat.dwRGBBitCount)
 				{
@@ -529,7 +533,7 @@ bool CImage::LoadDDSfromHandle(DKFILE *fileHandle, uint flags)
 						m_nFormat = (header.ddpfPixelFormat.dwRBitMask == 0x3FF00000)? FORMAT_RGB10A2 : FORMAT_RGBA8;
 						break;
 					default:
-						MsgError("Unknown image format\n");
+						MsgError("Image %s has unknown format.\n", GetName());
 						g_fileSystem->Close(file);
 						return false;
 				}
@@ -869,8 +873,8 @@ bool CImage::SaveDDS(const char *fileName)
 	// Set up the header
 	DDSHeader header;
 	memset(&header, 0, sizeof(header));
-	DDSHeaderDX10 headerDX10;
-	memset(&headerDX10, 0, sizeof(headerDX10));
+	DDSHeaderDXT10 headerDXT10;
+	memset(&headerDXT10, 0, sizeof(headerDXT10));
 
 	header.dwMagic = MCHAR4('D', 'D', 'S', ' ');
 	header.dwSize = 124;
@@ -930,15 +934,15 @@ bool CImage::SaveDDS(const char *fileName)
 			case FORMAT_ATI2N:   header.ddpfPixelFormat.dwFourCC = MCHAR4('A','T','I','2'); break;
 			default:
 				header.ddpfPixelFormat.dwFourCC = MCHAR4('D','X','1','0');
-				headerDX10.arraySize = 1;
-				headerDX10.miscFlag = (m_nDepth == 0)? D3D10_RESOURCE_MISC_TEXTURECUBE : 0;
-				headerDX10.resourceDimension = Is1D()? D3D10_RESOURCE_DIMENSION_TEXTURE1D : Is3D()? D3D10_RESOURCE_DIMENSION_TEXTURE3D : D3D10_RESOURCE_DIMENSION_TEXTURE2D;
+				headerDXT10.arraySize = 1;
+				headerDXT10.miscFlag = (m_nDepth == 0)? D3D10_RESOURCE_MISC_TEXTURECUBE : 0;
+				headerDXT10.resourceDimension = Is1D()? D3D10_RESOURCE_DIMENSION_TEXTURE1D : Is3D()? D3D10_RESOURCE_DIMENSION_TEXTURE3D : D3D10_RESOURCE_DIMENSION_TEXTURE2D;
 				switch (m_nFormat)
 				{
-					//case FORMAT_RGBA8:    headerDX10.dxgiFormat = 28; break;
-					case FORMAT_RGB32F:   headerDX10.dxgiFormat = 6; break;
-					case FORMAT_RGB9E5:   headerDX10.dxgiFormat = 67; break;
-					case FORMAT_RG11B10F: headerDX10.dxgiFormat = 26; break;
+					//case FORMAT_RGBA8:    headerDXT10.dxgiFormat = 28; break;
+					case FORMAT_RGB32F:   headerDXT10.dxgiFormat = 6; break;
+					case FORMAT_RGB9E5:   headerDXT10.dxgiFormat = 67; break;
+					case FORMAT_RG11B10F: headerDXT10.dxgiFormat = 26; break;
 					default:
 						return false;
 				}
@@ -955,7 +959,7 @@ bool CImage::SaveDDS(const char *fileName)
 	if ((file = fopen(fileName, "wb")) == NULL) return false;
 
 	fwrite(&header, sizeof(header), 1, file);
-	if (headerDX10.dxgiFormat) fwrite(&headerDX10, sizeof(headerDX10), 1, file);
+	if (headerDXT10.dxgiFormat) fwrite(&headerDXT10, sizeof(headerDXT10), 1, file);
 
 
 	int size = GetMipMappedSize(0, m_nMipMaps);

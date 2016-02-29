@@ -1062,12 +1062,17 @@ void CMaterialSystem::SetupOrtho(float left, float right, float top, float botto
 // Helper rendering operations (warning, slow)
 //-----------------------------
 
+ConVar r_noffp("r_noffp","0","No FFP emulated primitives", CV_CHEAT);
+
 // draws 2D primitives
 void CMaterialSystem::DrawPrimitivesFFP(PrimitiveType_e type, Vertex3D_t *pVerts, int nVerts,
 										ITexture* pTexture, const ColorRGBA &color,
 										BlendStateParam_t* blendParams, DepthStencilStateParams_t* depthParams,
 										RasterizerStateParams_t* rasterParams)
 {
+	if(r_noffp.GetBool())
+		return;
+
 	g_pShaderAPI->Reset();
 
 	g_pShaderAPI->SetTexture(pTexture, NULL, 0);
@@ -1119,6 +1124,9 @@ void CMaterialSystem::DrawPrimitives2DFFP(	PrimitiveType_e type, Vertex2D_t *pVe
 											BlendStateParam_t* blendParams, DepthStencilStateParams_t* depthParams,
 											RasterizerStateParams_t* rasterParams)
 {
+	if(r_noffp.GetBool())
+		return;
+
 	g_pShaderAPI->Reset();
 
 	g_pShaderAPI->SetTexture(pTexture,0);
