@@ -8,10 +8,7 @@
 		<Project filename="PrevLib.cbp" />
 		<Project filename="coreLib.cbp" />
 		<Project filename="MaterialSystem/MatSystem.cbp" />
-		<Project filename="utils/atlasgen/atlasgen.cbp" />
 		<Project filename="MaterialSystem/Renderers/EmptyRenderer.cbp" />
-		<Project filename="utils/dk_animationcomp/anim_compiler.cbp" />
-		<Project filename="utils/matsys_wxapp_template/matsys_wxapp_template.cbp" />
 		<Project filename="DriversGame/DriversGame.cbp" />
 		<Project filename="MaterialSystem/EngineShaders/EngineShaders.cbp" />
 		<Project filename="MaterialSystem/Renderers/EqShaderAPIGL.cbp" />
