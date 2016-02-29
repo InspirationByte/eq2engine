@@ -6,6 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "platform/Platform.h"
+#include "platform/MessageBox.h"
+#include "ppmem.h"
 #include "stdio.h"
 #include "IDkCore.h"
 #include "DebugInterface.h"

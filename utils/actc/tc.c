@@ -46,7 +46,7 @@ typedef struct TableRoot
 
 typedef struct TableIterator {
     int i1, i2, i3;
-    uint i;
+    unsigned int i;
     TableLevel3 *CurLevel3;
     int CheckLevel1, CheckLevel2;
 } TableIterator;
@@ -69,7 +69,7 @@ TableIterator *tableNewIterator(void)
     return ti;
 }
 
-int tableRetrieve(uint a, TableRoot *table, void **ref)
+int tableRetrieve(unsigned int a, TableRoot *table, void **ref)
 {
     int i1 = a / (LEVEL2COUNT * LEVEL3COUNT);
     int i2 = (a / LEVEL3COUNT) % LEVEL2COUNT;
@@ -86,7 +86,7 @@ int tableRetrieve(uint a, TableRoot *table, void **ref)
     return 1;
 }
 
-int tableInsert(uint a, TableRoot *table, void *ref)
+int tableInsert(unsigned int a, TableRoot *table, void *ref)
 {
     int i1 = a / (LEVEL2COUNT * LEVEL3COUNT);
     int i2 = (a / LEVEL3COUNT) % LEVEL2COUNT;
@@ -119,7 +119,7 @@ int tableInsert(uint a, TableRoot *table, void *ref)
     return 1;
 }
 
-int tableRemove(uint a, TableRoot *table, void **wasref)
+int tableRemove(unsigned int a, TableRoot *table, void **wasref)
 {
     int i1 = a / (LEVEL2COUNT * LEVEL3COUNT);
     int i2 = (a / LEVEL3COUNT) % LEVEL2COUNT;
@@ -160,7 +160,7 @@ void tableResetIterator(TableIterator *ti)
     ti->CheckLevel2 = 1;
 }
 
-int tableIterate(TableRoot *table, TableIterator *ti, uint *i, void **ref)
+int tableIterate(TableRoot *table, TableIterator *ti, unsigned int *i, void **ref)
 {
     int done;
 
@@ -286,7 +286,7 @@ typedef struct {
 } ACTCEdge;
 
 typedef struct ACTCVertex {
-    uint V;
+    unsigned int V;
     int Count;
     struct ACTCVertex **PointsToMe;
     struct ACTCVertex *Next;
@@ -314,7 +314,7 @@ struct _ACTCData {
     /* alternate vertex array if range small enough */
     ACTCVertex *StaticVerts;
     int UsingStaticVerts;
-    uint VertRange;
+    unsigned int VertRange;
 
     /* During consolidation */
     int CurWindOrder;
@@ -329,8 +329,8 @@ struct _ACTCData {
     int Error;
 
     /* actcParam-settable parameters */
-    uint MinInputVert;
-    uint MaxInputVert;
+    unsigned int MinInputVert;
+    unsigned int MaxInputVert;
     int MaxVertShare;
     int MaxEdgeShare;
     int MinFanVerts;
@@ -463,7 +463,7 @@ int actcGetError(ACTCData *tc)
     return error;
 }
 
-static void *reallocAndAppend(void **ptr, uint *itemCount, size_t itemBytes,
+static void *reallocAndAppend(void **ptr, unsigned int *itemCount, size_t itemBytes,
     void *append)
 {
     void *t;
@@ -486,7 +486,7 @@ static void *reallocAndAppend(void **ptr, uint *itemCount, size_t itemBytes,
  * linear in the NUMBER OF UNIQUE VERTEX INDICES, which is almost always
  * going to be less than the number of vertices.)
  */
-static int incVertexValence(ACTCData *tc, uint v, ACTCVertex **found)
+static int incVertexValence(ACTCData *tc, unsigned int v, ACTCVertex **found)
 {
     ACTCVertex *vertex;
 
@@ -958,7 +958,7 @@ int actcParami(ACTCData *tc, int param, int value)
     return ACTC_NO_ERROR;
 }
 
-int actcParamu(ACTCData *tc, int param, uint value)
+int actcParamu(ACTCData *tc, int param, unsigned int value)
 {
     /*
      * XXX - yes, this is questionable, but I consulted industry
@@ -1015,7 +1015,7 @@ int actcGetParami(ACTCData *tc, int param, int *value)
     return ACTC_NO_ERROR;
 }
 
-int actcGetParamu(ACTCData *tc, int param, uint *value)
+int actcGetParamu(ACTCData *tc, int param, unsigned int *value)
 {
     return actcGetParami(tc, param, (int *)value);
 }
@@ -1064,7 +1064,7 @@ static int unmapEdgeTriangle(ACTCData *tc, ACTCEdge *edge, ACTCVertex *v3)
 
 static int mapVertexEdge(ACTCData *tc, ACTCVertex *v1, ACTCVertex *v2, ACTCEdge **edge)
 {
-    uint i;
+    unsigned int i;
     ACTCEdge tmp;
     void *r;
 
@@ -1124,7 +1124,7 @@ static int unmapVertexEdge(ACTCData *tc, ACTCVertex *v1, ACTCVertex *v2)
     return ACTC_NO_ERROR;
 }
 
-int actcAddTriangle(ACTCData *tc, uint v1, uint v2, uint v3)
+int actcAddTriangle(ACTCData *tc, unsigned int v1, unsigned int v2, unsigned int v3)
 {
     ACTCVertex *vertexRec1;
     ACTCVertex *vertexRec2;
@@ -1190,7 +1190,7 @@ returnError1:
     return tc->Error;
 }
 
-int actcStartNextPrim(ACTCData *tc, uint *v1Return, uint *v2Return)
+int actcStartNextPrim(ACTCData *tc, unsigned int *v1Return, unsigned int *v2Return)
 {
     ACTCVertex *v1 = NULL;
     ACTCVertex *v2 = NULL;
@@ -1268,7 +1268,7 @@ int unmapEdgeTriangleByVerts(ACTCData *tc, ACTCVertex *v1, ACTCVertex *v2,
     return ACTC_NO_ERROR;
 }
 
-int actcGetNextVert(ACTCData *tc, uint *vertReturn)
+int actcGetNextVert(ACTCData *tc, unsigned int *vertReturn)
 {
     ACTCEdge *edge;
     int wasEdgeFound = 0;
@@ -1358,15 +1358,15 @@ int actcGetNextVert(ACTCData *tc, uint *vertReturn)
 }
 
 int actcTrianglesToPrimitives(ACTCData *tc, int triangleCount,
-    uint (*triangles)[3], int primTypes[], int primLengths[], uint vertices[],
+    unsigned int (*triangles)[3], int primTypes[], int primLengths[], unsigned int vertices[],
     int maxBatchSize)
 {
     int r;
     int curTriangle;
     int curPrimitive;
-    uint curVertex;
+    unsigned int curVertex;
     int prim;
-    uint v1, v2, v3;
+    unsigned int v1, v2, v3;
     int lastPrim;
     int passesWithoutPrims;
     int trisSoFar;

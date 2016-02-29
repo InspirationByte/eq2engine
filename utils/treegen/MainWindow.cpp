@@ -10,6 +10,9 @@
 
 #include "IEqModel.h"
 #include "BillboardList.h"
+#include "ILocalize.h"
+
+#include "IFileSystem.h"
 
 #include <wx/settings.h>
 

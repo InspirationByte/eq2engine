@@ -6,7 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DebugInterface.h"
-#include "Platform.h"
 #include "ShaderAPID3DX9.h"
 #include "CD3D9Texture.h"
 #include "d3dx9_def.h"

@@ -6,10 +6,9 @@
 //				Index Buffer Direct3D 9 declaration
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef INDEXBUFFERD3DX9_H
-#define INDEXBUFFERD3DX9_H
+#ifndef INDEXBUFFERD3DX10_H
+#define INDEXBUFFERD3DX10_H
 
-#include "Platform.h"
 #include "IIndexBuffer.h"
 
 class CIndexBufferD3DX10 : public IIndexBuffer

@@ -212,9 +212,6 @@
     <ClCompile Include="public\Imaging\ImageLoader.cpp">
       <Filter>Source Files\Imaging</Filter>
     </ClCompile>
-    <ClCompile Include="public\Platform\Platform.cpp">
-      <Filter>Source Files\Platform</Filter>
-    </ClCompile>
     <ClCompile Include="public\utils\KeyValues.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>

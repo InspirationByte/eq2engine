@@ -27,7 +27,8 @@
 
 ConVar cheats("__cheats", "1");
 
-IPhysics* physics = new DkPhysics();
+static DkPhysics s_physics;
+IPhysics* physics = &s_physics;
 
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay *debugoverlay = ( IDebugOverlay * )&g_DebugOverlays;
@@ -734,7 +735,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 			wxArrayString paths;
 			file->GetPaths(paths);
 
-			for(int i = 0; i < paths.size(); i++)
+			for(size_t i = 0; i < paths.size(); i++)
 			{
 				EqString model_aftercomp_name;
 
@@ -1254,8 +1255,6 @@ void CEGFViewFrame::OnButtons(wxCommandEvent& event)
 
 bool InitCore(HINSTANCE hInstance, char *pCmdLine)
 {
-	RECT rect;
-
 	// initialize core
 	GetCore()->Init("EGFMan", pCmdLine);
 

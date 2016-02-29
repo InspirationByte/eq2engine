@@ -7,8 +7,6 @@
 
 #include "FileSystem.h"
 
-#pragma todo("UTF-8 filenames support")
-
 #include "utils/SmartPtr.h"
 #include "utils/KeyValues.h"
 #include "utils/strtools.h"

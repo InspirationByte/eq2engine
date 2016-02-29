@@ -9,6 +9,7 @@
 #define PLATFORM_H
 
 #include "dktypes.h"
+#include "InterfaceManager.h"
 
 //---------------------------------------------
 // Platform definitions
@@ -124,13 +125,13 @@
 //---------------------------------------------------------------------------------------------
 
 // Platform QueryPerformanceCounter initializer
-void	Platform_InitTime();
+IEXPORTS void	Platform_InitTime();
 
 // returns current time since application is running
-float	Platform_GetCurrentTime();
+IEXPORTS float	Platform_GetCurrentTime();
 
 // sleeps the execution thread and let other processes to run for a specified amount of time.
-void	Platform_Sleep(uint32 nMilliseconds);
+IEXPORTS void	Platform_Sleep(uint32 nMilliseconds);
 
 //------------------------------------------------------------------------------------------------
 

@@ -4,13 +4,16 @@
     <Filter Include="Libs">
       <UniqueIdentifier>{54b96b2f-ae9c-4b2b-a658-830aa6b004a4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="actc">
-      <UniqueIdentifier>{759b4e8b-f12d-4773-8970-91b2e9a7241f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="utils">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>
       </Extensions>
+    </Filter>
+    <Filter Include="tristripper">
+      <UniqueIdentifier>{b693a5db-51d9-4d37-89ef-8ef8f0eb9adf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="actc">
+      <UniqueIdentifier>{88bda2d0-6f19-4236-a77c-c9386fd8769f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -25,13 +28,22 @@
       <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\..\public\dsm_esm_loader.cpp" />
-    <ClCompile Include="..\actc\tc.c">
-      <Filter>actc</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\public\Utils\GeomTools.cpp">
       <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\..\public\math\math_util.cpp" />
+    <ClCompile Include="..\tristripper\src\connectivity_graph.cpp">
+      <Filter>tristripper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tristripper\src\policy.cpp">
+      <Filter>tristripper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tristripper\src\tri_stripper.cpp">
+      <Filter>tristripper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\actc\tc.c">
+      <Filter>actc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="physgen_process.h" />
@@ -42,18 +54,15 @@
     <ClInclude Include="..\..\public\dsm_loader.h" />
     <ClInclude Include="..\..\public\dsm_obj_loader.h" />
     <ClInclude Include="..\..\public\dsm_esm_loader.h" />
-    <ClInclude Include="..\actc\tc.h">
-      <Filter>actc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\public\Utils\GeomTools.h">
       <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\actc\tc.h">
+      <Filter>actc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\libs\DkCore.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\nvtristrip\lib\Release\NvTriStrip.lib">
       <Filter>Libs</Filter>
     </Library>
     <Library Include="..\..\libs\CoreLib.lib">

@@ -16,6 +16,7 @@
 #ifdef _WIN32
 #include <direct.h>
 #include <shlobj.h>
+#include <malloc.h>
 #else
 #include <unistd.h>
 #include <sys/stat.h>

@@ -37,12 +37,12 @@ struct medge_t
 		idx[1] = tmp;
 	}
 
-	bool CompareWith( const medge_t& other )
+	bool CompareWith( const medge_t& other ) const
 	{
 		return (idx[0] == other.idx[0] && idx[1] == other.idx[1]);
 	}
 
-	bool IsConnected(const medge_t& other, bool &swap)
+	bool IsConnected(const medge_t& other, bool &swap) const
 	{
 		swap = true;
 
@@ -87,14 +87,14 @@ struct mtriangle_t
 		e.idx[1] = indices[i2];
 	}
 
-	bool IsOwnEdge(const medge_t& edge, int &edge_idx)
+	bool IsOwnEdge(const medge_t& edge, int &edge_idx, bool ignoreOrder = true) const
 	{
 		medge_t swapped_edge = edge;
 		swapped_edge.Swap();
 
 		for(int i = 0; i < 3; i++)
 		{
-			if(edges[i].CompareWith(swapped_edge) || edges[i].CompareWith(edge))
+			if(edges[i].CompareWith(edge) || (ignoreOrder && edges[i].CompareWith(swapped_edge)) )
 			{
 				edge_idx = i;
 				return true;
@@ -107,7 +107,7 @@ struct mtriangle_t
 	}
 
 	// quad helper
-	int GetOppositeVertexIndex(int edge_idx)
+	int GetOppositeVertexIndex(int edge_idx) const
 	{
 		ASSERT(edge_idx < 3);
 
@@ -120,7 +120,7 @@ struct mtriangle_t
 	}
 
 	// promoted to self-remove, as this totally useless function
-	bool HasDuplicates()
+	bool HasDuplicates() const
 	{
 		// look around and try find same edges
 		for(int i = 0; i < index_connections.numElem(); i++)
@@ -140,6 +140,13 @@ struct mtriangle_t
 		}
 
 		return false;
+	}
+
+	bool Compare(int v1, int v2, int v3) const
+	{
+		return	(indices[0] == v1 && indices[1] == v2 && indices[2] == v3 ) ||
+				(indices[1] == v1 && indices[2] == v2 && indices[0] == v3 ) ||
+				(indices[2] == v1 && indices[0] == v2 && indices[1] == v3 );
 	}
 
 	medge_t					edges[3];
@@ -178,11 +185,14 @@ public:
 												const int* in_trilistidxs, 
 												int num_indices);
 
-	int						FindTriangleByEdge(	const DkList<mtriangle_t>& tri_list, 
-												const medge_t &edge,
-												int& found_edge_idx);
+	int						FindTriangleByEdge(	const medge_t &edge,
+												int& found_edge_idx, 
+												bool ignore_order) const;
+
+	int						FindTriangle(int v1, int v2, int v3, bool ignore_order) const;
 
 	void					GenOptimizedTriangleList( DkList<int>& output );
+	void					GenOptimizedStrips( DkList<int>& output, bool usePrimRestart = false );
 
 	DkList<mtriangle_t>*	GetTriangles() {return &m_triangleList;}
 

@@ -10,7 +10,7 @@
 #ifndef DKPHYSICS_IS_DEFINED
 #define DKPHYSICS_IS_DEFINED
 
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "DebugInterface.h"
 
 // DarkTech headers

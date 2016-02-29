@@ -9,6 +9,7 @@
 
 #include "level.h"
 #include "region.h"
+#include "utils/strtools.h"
 
 #define DEFAULT_ASPHALT_MATERIAL	"tools/default_road"
 #define DEFAULT_SIDEWALK_MATERIAL	"tools/default_side"

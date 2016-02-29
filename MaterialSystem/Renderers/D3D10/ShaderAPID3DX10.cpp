@@ -5,9 +5,11 @@
 // Description: DarkTech Direct3D 10 ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DebugInterface.h"
-#include "Platform.h"
 #include "ShaderAPID3DX10.h"
+#include "utils/strtools.h"
+
+#include "DebugInterface.h"
+#include "IConCommandFactory.h"
 #include "D3D10Texture.h"
 
 #include "d3dx10_def.h"

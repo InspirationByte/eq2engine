@@ -5,19 +5,9 @@
 // Description: Eq Geometry Format Writer
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core_base_header.h"
-
-#include "scriptcompile.h"
-#include "utils/geomtools.h"
-
-#include "dsm_esm_loader.h"
-
-#include "mtriangle_framework.h"
-
-using namespace MTriangle;
-
-//#define USE_ACTC
+#define USE_ACTC
 //#define USE_NVTRISTRIP
+//#define USE_TRISTRIPPER
 #define OPTIMIZE_BY_MTRIANGLE
 
 #ifdef USE_ACTC
@@ -31,9 +21,24 @@ extern "C"
 #	include "../nvtristrip/include/NvTriStrip.h"
 #endif // USE_NVTRISTRIP
 
+#ifdef USE_TRISTRIPPER
+#	include "../tristripper/include/tri_stripper.h"
+#endif // USE_TRISTRIPPER
+
 #ifdef OPTIMIZE_BY_MTRIANGLE
 #	include "mtriangle_framework.h"
+using namespace MTriangle;
 #endif // OPTIMIZE_BY_MTRIANGLE
+
+
+#include "core_base_header.h"
+
+#include "scriptcompile.h"
+#include "utils/geomtools.h"
+
+#include "dsm_esm_loader.h"
+
+#include "mtriangle_framework.h"
 
 // extern compilation-time data
 extern DkList<egfcamodel_t>			g_modelrefs;	// all loaded model references
@@ -296,6 +301,18 @@ void ApplyShapeKeyOnVertex( esmshapekey_t* modShapeKey, const dsmvertex_t& vert,
 	}
 }
 
+void ReverseStrip(int* indices, int memb)
+{
+   unsigned int i;
+   int* original = new int[memb];
+   memcpy(original, indices, memb*sizeof(int));
+
+   for (i = 0; i != memb; ++i)
+      indices[i] = original[memb-1-i];
+
+   delete [] original;
+}
+
 // writes group
 void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc_t* dstGroup)
 {
@@ -313,6 +330,8 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 
 	dstGroup->numindices = 0;
 	dstGroup->numvertices = srcGroup->verts.numElem();
+
+
 
 	DkList<studiovertexdesc_t>	gVertexList;
 	DkList<studiovertexdesc_t>	gVertexList2;
@@ -413,15 +432,6 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 		usedVertList[idx2].tangent = normalize(usedVertList[idx2].tangent);
 		usedVertList[idx2].binormal = normalize(usedVertList[idx2].binormal);
 	}
-	
-
-#ifdef USE_NVTRISTRIP
-
-	SetListsOnly( true );
-	SetStitchStrips( true );
-	SetMinStripSize( 0 );
-
-#endif // USE_NVTRISTRIP
 
 #ifdef OPTIMIZE_BY_MTRIANGLE
 
@@ -435,9 +445,49 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 	// generate optimized triangle list using neighbour triangles
 	triGraph->GenOptimizedTriangleList( gIndexList );
 
-	delete triGraph;
-
 #endif // OPTIMIZE_BY_MTRIANGLE
+
+#ifdef USE_TRISTRIPPER
+	
+	triangle_stripper::indices idxList;
+	triangle_stripper::primitive_vector outPrims;
+
+	for(int i = 0; i < gIndexList.numElem(); i++)
+		idxList.push_back( gIndexList[i] );
+
+	gIndexList.clear();
+
+	triangle_stripper::tri_stripper stripper(idxList);
+	stripper.SetCacheSize(24);
+
+	stripper.Strip(&outPrims);
+
+	for(int i = 0; i < outPrims.size(); i++)
+	{
+		if(outPrims[i].Type != triangle_stripper::TRIANGLE_STRIP)
+		{
+			MsgWarning("Not a triangle strip!\n");
+			continue;
+		}
+
+		// add degenerates
+		if( gIndexList.numElem() > 2 && outPrims[i].Indices.size() > 0 )
+		{
+			int degIdx1 = gIndexList[gIndexList.numElem()-1];
+			int degIdx2 = outPrims[i].Indices[0];
+
+			gIndexList.append( degIdx1 );
+			gIndexList.append( degIdx2 );
+		}
+
+		for(int j = 0; j < outPrims[i].Indices.size(); j++)
+			gIndexList.append( outPrims[i].Indices[j] );
+	}
+
+	dstGroup->primitiveType = EGFPRIM_TRI_STRIP;
+
+	//stripper.
+#endif // USE_TRISTRIPPER
 
 #ifdef USE_ACTC
 
@@ -484,10 +534,14 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 
 	int nTriangleResults = 0;
 
-	// NOTE: some strips goes flipped
+	int length = 0;
+	int primCount = 0;
+	int flipStart = 0;
+
+	int evenPrimitives = 0;
 
 	actcBeginOutput(tc);
-	while((prim = actcStartNextPrim(tc, &v1, &v2) != ACTC_DATABASE_EMPTY))
+	while(prim = actcStartNextPrim(tc, &v1, &v2) != ACTC_DATABASE_EMPTY)
 	{
 		if(prim == ACTC_PRIM_FAN)
 		{
@@ -497,22 +551,39 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 			goto skipOptimize;
 		}
 
-		// add degenerates
-		if(gOptIndexList.numElem() > 2)
+		if(primCount && v1 != v3)
 		{
+			// wait, WHAT? 
 			gOptIndexList.append( v3 );
 			gOptIndexList.append( v1 );
 		}
 
+		length = 0;
+
 		gOptIndexList.append( v1 );
 		gOptIndexList.append( v2 );
+
+		int flipStart = gOptIndexList.numElem();
 
 		// start a primitive of type "prim" with v1 and v2
 		while(actcGetNextVert(tc, &v3) != ACTC_PRIM_COMPLETE)
 		{
 			gOptIndexList.append( v3 );
+			length++;
 			nTriangleResults++;
 		}
+
+		if(length & 1)
+		{
+			// TODO: reverse instead of adding extra index
+			//ReverseStrip(&gOptIndexList[flipStart], gOptIndexList.numElem()-flipStart);
+
+			// flip
+			gOptIndexList.append( v3 );
+		}
+		
+			
+		primCount++;
 	}
 	actcEndOutput( tc );
 
@@ -524,7 +595,7 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 		MsgWarning("Optimization may not profit: input tris count: %d, out tris count:", gIndexList.numElem() / 3, nTriangleResults);
 	}
 
-	MsgWarning("group optimization complete: %d tris to %d\n", gIndexList.numElem() / 3, nTriangleResults);
+	MsgWarning("group optimization complete: %d tris to %d, even prims: %d\n", gIndexList.numElem() / 3, nTriangleResults, evenPrimitives);
 
 	gIndexList.clear();
 

@@ -7,11 +7,6 @@
 
 #include <sys/types.h>
 
-// if MSVC used
-#ifdef _MSC_VER
-typedef unsigned int uint;
-#endif
-
 typedef struct _ACTCData ACTCData;
 
 /*
@@ -52,28 +47,28 @@ typedef struct _ACTCData ACTCData;
 ACTCData *actcNew(void);
 int actcParami(ACTCData *tc, int param, int value);
 int actcGetParami(ACTCData *tc, int param, int *value);
-int actcParamu(ACTCData *tc, int param, uint value);
-int actcGetParamu(ACTCData *tc, int param, uint *value);
+int actcParamu(ACTCData *tc, int param, unsigned int value);
+int actcGetParamu(ACTCData *tc, int param, unsigned int *value);
 int actcGetError(ACTCData *tc);
 int actcMakeEmpty(ACTCData *tc);
 void actcDelete(ACTCData *tc);
-void actcDumpState(ACTCData *tc, FILE *fp);
+//void actcDumpState(ACTCData *tc, FILE *fp);
 
 int actcBeginInput(ACTCData *tc);
 int actcGetIsDuringInput(ACTCData *tc);
-int actcAddTriangle(ACTCData *tc, uint v1, uint v2, uint v3);
+int actcAddTriangle(ACTCData *tc, unsigned int v1, unsigned int v2, unsigned int v3);
 int actcEndInput(ACTCData *tc);
 
 int actcBeginOutput(ACTCData *tc);
 int actcGetIsDuringOutput(ACTCData *tc);
-int actcStartNextPrim(ACTCData *tc, uint *v1Return, uint *v2Return);
-int actcGetNextVert(ACTCData *tc, uint *vReturn);
+int actcStartNextPrim(ACTCData *tc, unsigned int *v1Return, unsigned int *v2Return);
+int actcGetNextVert(ACTCData *tc, unsigned int *vReturn);
 int actcEndOutput(ACTCData *tc);
 
 int actcGetMemoryAllocation(ACTCData *tc, size_t *bytesAllocated);
 
 int actcTrianglesToPrimitives(ACTCData *tc, int triangleCount,
-    uint (*triangles)[3], int primTypes[], int primLengths[], uint vertices[],
+    unsigned int (*triangles)[3], int primTypes[], int primLengths[], unsigned int vertices[],
     int maxBatchSize);
 
 #endif /* _ACTC_H_ */

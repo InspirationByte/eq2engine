@@ -7,6 +7,7 @@
 
 #include "DebugInterface.h"
 #include "IDkCore.h"
+#include "IConCommandFactory.h"
 #include "D3DLibrary.h"
 #include "ShaderAPID3DX9.h"
 #include "d3dx9_def.h"

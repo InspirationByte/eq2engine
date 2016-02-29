@@ -8,7 +8,6 @@
 #ifndef VERTEXBUFFERD3DX9_H
 #define VERTEXBUFFERD3DX9_H
 
-#include "Platform.h"
 #include "IVertexBuffer.h"
 
 struct vborestoredata_t

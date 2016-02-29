@@ -72,6 +72,12 @@
     <ClCompile Include="eqCPUServices.cpp">
       <Filter>Source Files\CPU</Filter>
     </ClCompile>
+    <ClCompile Include="platform\MessageBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="platform\Platform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Engine\Imaging\zconf.h">

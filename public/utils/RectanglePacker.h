@@ -11,6 +11,10 @@
 #include "dktypes.h"
 #include "utils/DkList.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable:4244)
+#endif // _MSC_VER
+
 struct PackerRectangle
 {
 	float x, y;
@@ -23,7 +27,7 @@ struct PackerRectangle
 
 inline int OriginalAreaComp(PackerRectangle *const &elem0, PackerRectangle *const &elem1)
 {
-	return elem1->width * elem1->height - elem0->width * elem0->height;
+	return (int)(elem1->width * elem1->height - elem0->width * elem0->height);
 }
 
 inline int AreaComp(PackerRectangle *const &elem0, PackerRectangle *const &elem1)

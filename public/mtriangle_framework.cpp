@@ -34,13 +34,24 @@ void CAdjacentTriangleGraph::Clear()
 	m_triangleList.clear();
 }
 
-int CAdjacentTriangleGraph::FindTriangleByEdge(	const DkList<mtriangle_t>& tri_list, 
-												const medge_t &edge,
-												int& found_edge_idx)
+int CAdjacentTriangleGraph::FindTriangleByEdge(	const medge_t &edge,
+												int& found_edge_idx, 
+												bool ignore_order) const
 {
 	for(int i = 0; i < m_triangleList.numElem(); i++)
 	{
-		if(m_triangleList[i].IsOwnEdge(edge, found_edge_idx))
+		if(m_triangleList[i].IsOwnEdge(edge, found_edge_idx, ignore_order))
+			return i;
+	}
+
+	return -1;
+}
+
+int CAdjacentTriangleGraph::FindTriangle(int v1, int v2, int v3, bool ignore_order) const
+{
+	for(int i = 0; i < m_triangleList.numElem(); i++)
+	{
+		if(m_triangleList[i].Compare(v1,v2,v3) || (ignore_order && m_triangleList[i].Compare(v3,v2,v1)))
 			return i;
 	}
 
@@ -163,6 +174,11 @@ void CAdjacentTriangleGraph::GenOptimizedTriangleList( DkList<int>& output )
 	}
 
 	// done
+}
+
+void CAdjacentTriangleGraph::GenOptimizedStrips( DkList<int>& output, bool usePrimRestart )
+{
+	ASSERTMSG(false, "CAdjacentTriangleGraph::GenOptimizedStrips not implemented");
 }
 
 // builds neigbourhood table for specified triangle, also using a vertex information

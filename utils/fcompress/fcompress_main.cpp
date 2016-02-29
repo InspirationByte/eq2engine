@@ -9,11 +9,12 @@
 #include <stdio.h>
 #include <tchar.h>
 #include <crtdbg.h>
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "DebugInterface.h"
 #include "DPKFileWriter.h"
 #include "DPKFileReader.h"
-//#include "SHAFWriter.h"
+#include "IDkCore.h"
+#include "IFileSystem.h"
 #include "cmdlib.h"
 #include "utils/eqtimer.h"
 

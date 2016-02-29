@@ -11,6 +11,7 @@
 #include "D3D10SwapChain.h"
 #include "d3dx10_def.h"
 #include "Imaging/ImageLoader.h"
+#include "IConCommandFactory.h"
 
 HOOK_TO_CVAR(r_screen);
 

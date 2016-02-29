@@ -192,8 +192,12 @@ DkPhysics::DkPhysics() : hBox(btVector3(1,1,1)), hSphere(1), m_WorkDoneSignal(tr
 	m_solver = NULL;
 	m_dynamicsWorld = NULL;
 
-
 	m_fPhysicsNextTime = 0.0f;
+}
+
+DkPhysics::~DkPhysics()
+{
+
 }
 
 // Initialize physics

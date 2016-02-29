@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "platform/Platform.h"
+#include "platform/MessageBox.h"
 #include "DebugInterface.h"
 #include <time.h>
 
@@ -27,7 +28,7 @@ timeval start;
 #endif // _WIN32
 
 // Platform QueryPerformanceCounterkAlertCautionAlert initializer
-void Platform_InitTime()
+IEXPORTS void Platform_InitTime()
 {
 #ifdef _WIN32
     if ( !g_PerformanceFrequency.QuadPart )
@@ -41,7 +42,7 @@ void Platform_InitTime()
 }
 
 // returns current time since application is running
-float Platform_GetCurrentTime()
+IEXPORTS float Platform_GetCurrentTime()
 {
 #ifdef _WIN32
 
@@ -59,7 +60,7 @@ float Platform_GetCurrentTime()
 }
 
 // sleeps the execution thread and let other processes to run for a specified amount of time.
-void Platform_Sleep(uint32 nMilliseconds)
+IEXPORTS void Platform_Sleep(uint32 nMilliseconds)
 {
 #ifdef _WIN32
 
@@ -76,21 +77,21 @@ void Platform_Sleep(uint32 nMilliseconds)
 }
 
 
-void AssertValidReadPtr( void* ptr, int count/* = 1*/ )
+IEXPORTS void AssertValidReadPtr( void* ptr, int count/* = 1*/ )
 {
 #ifdef _WIN32
     ASSERT(!IsBadReadPtr( ptr, count ));
 #endif
 }
 
-void AssertValidStringPtr( const char* ptr, int maxchar/* = 0xFFFFFF */ )
+IEXPORTS void AssertValidStringPtr( const char* ptr, int maxchar/* = 0xFFFFFF */ )
 {
 #ifdef _WIN32
     ASSERT(!IsBadStringPtr( ptr, maxchar ));
 #endif
 }
 
-void AssertValidWStringPtr( const wchar_t* ptr, int maxchar/* = 0xFFFFFF */ )
+IEXPORTS void AssertValidWStringPtr( const wchar_t* ptr, int maxchar/* = 0xFFFFFF */ )
 {
 #ifdef _WIN32
     ASSERT(!IsBadStringPtrW( ptr, maxchar ));
@@ -104,7 +105,7 @@ void AssertValidWritePtr( void* ptr, int count/* = 1*/ )
 #endif
 }
 
-void AssertValidReadWritePtr( void* ptr, int count/* = 1*/ )
+IEXPORTS void AssertValidReadWritePtr( void* ptr, int count/* = 1*/ )
 {
 #ifdef _WIN32
     ASSERT(!( IsBadWritePtr(ptr, count) || IsBadReadPtr(ptr,count)));
@@ -115,7 +116,7 @@ void AssertValidReadWritePtr( void* ptr, int count/* = 1*/ )
 
 #ifdef _WIN32
 
-void outputDebugString(const char *str)
+IEXPORTS void outputDebugString(const char *str)
 {
     OutputDebugStringA(str);
     OutputDebugStringA("\n");
@@ -123,7 +124,7 @@ void outputDebugString(const char *str)
 
 #else
 
-void outputDebugString(const char *str)
+IEXPORTS void outputDebugString(const char *str)
 {
     printf("%s\n", str);
 }

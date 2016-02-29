@@ -73,7 +73,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>..\FileSystem;..\Engine\Imaging;..\Engine;..\public;..\public\core;..\public\platform;..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\FileSystem;..\Engine\Imaging;..\Engine;..\public;..\public\core;..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;CORE_EXPORT;DLL_EXPORT;SUPRESS_DEVMESSAGES;USECRTMEMDEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
@@ -157,6 +157,8 @@
     <ClCompile Include="DebugInterface.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="Localize.cpp" />
+    <ClCompile Include="platform\MessageBox.cpp" />
+    <ClCompile Include="platform\Platform.cpp" />
     <ClCompile Include="ppmem.cpp" />
   </ItemGroup>
   <ItemGroup>

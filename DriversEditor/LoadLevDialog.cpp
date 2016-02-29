@@ -6,6 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "LoadLevDialog.h"
+#include "ILocalize.h"
+#include "IFileSystem.h"
 
 #define BUTTON_OPEN			1000
 #define BUTTON_CANCEL		1001

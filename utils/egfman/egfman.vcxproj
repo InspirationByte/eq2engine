@@ -67,7 +67,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>..\..\Engine;..\..\public;..\..\public\core;..\..\shared_engine;..\..\public\platform;..\..\src_dependency\wx\include;..\..\src_dependency\wx\include\msvc;..\..\src_dependency\wx\include\msw;..\..\src_dependency\bullet\src;..\..\src_dependency\bullet\src\BulletSoftBody;..\eq_physgen;..\..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;PHYSICS_EXPORT;NO_GAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;PHYSICS_EXPORT;NO_GAME;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>

@@ -8,7 +8,6 @@
 #include <d3d9.h>
 #include <d3dx9.h>
 
-#include "Platform.h"
 #include "ShaderAPI_defs.h"
 #include "D3D9ShaderProgram.h"
 

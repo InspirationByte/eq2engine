@@ -8,7 +8,7 @@
 
 #include <stdio.h>
 
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "utils/strtools.h"
 #include "IDkCore.h"
 #include "utils/align.h"
@@ -18,6 +18,8 @@
 #include <iostream>
 #include <malloc.h>
 #include "model.h"
+#include "IConCommandFactory.h"
+#include "IFileSystem.h"
 
 #ifdef _WIN32
 #include <tchar.h>

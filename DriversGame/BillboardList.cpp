@@ -10,7 +10,8 @@
 #endif // GAME_DRIVERS
 
 #include "BillboardList.h"
-
+#include "IFileSystem.h"
+#include "utils/strtools.h"
 #include "utils/Tokenizer.h"
 #include "IDebugOverlay.h"
 #include "IEqModel.h"

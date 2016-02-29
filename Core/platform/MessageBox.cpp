@@ -9,6 +9,12 @@
 #include <string.h>
 #include <stdarg.h>
 #include "DebugInterface.h"
+#include "IDkCore.h"
+#include <time.h>
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif // _WIN32
 
 #if !defined(_WIN32) && defined(USE_GTK)
 

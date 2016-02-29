@@ -6,10 +6,9 @@
 //				Vertex Buffer Direct3D 9 declaration
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef VERTEXBUFFERD3DX9_H
-#define VERTEXBUFFERD3DX9_H
+#ifndef VERTEXBUFFERD3DX10_H
+#define VERTEXBUFFERD3DX10_H
 
-#include "Platform.h"
 #include "IVertexBuffer.h"
 
 class CVertexBufferD3DX10 : public IVertexBuffer
@@ -46,4 +45,4 @@ protected:
 	bool						m_bIsLocked;
 };
 
-#endif // VERTEXBUFFERD3DX9_H
+#endif // VERTEXBUFFERD3DX10_H

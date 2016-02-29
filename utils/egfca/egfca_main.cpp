@@ -8,13 +8,14 @@
 
 #include <stdio.h>
 
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "Utils/strtools.h"
 #include "IDkCore.h"
 #include "Utils/Align.h"
 #include "DebugInterface.h"
 #include "cmdlib.h"
-
+#include "IConCommandFactory.h"
+#include "IFileSystem.h"
 #include <iostream>
 #include <malloc.h>
 #include "model.h"

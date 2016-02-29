@@ -98,7 +98,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>public;public\core;public\platform;src_dependency\sdl2\include;src_dependency\lua\src;src_dependency\oolua\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>public;public\core;src_dependency\sdl2\include;src_dependency\lua\src;src_dependency\oolua\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;CROSSLINK_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
@@ -224,7 +224,6 @@
     <ClCompile Include="public\Network\NetMessageBuffer.cpp" />
     <ClCompile Include="public\Network\NetInterfaces.cpp" />
     <ClCompile Include="public\Network\net_defs.cpp" />
-    <ClCompile Include="public\Platform\Platform.cpp" />
     <ClCompile Include="public\Utils\CRC32.cpp" />
     <ClCompile Include="public\Utils\eqthread.cpp" />
     <ClCompile Include="public\utils\eqwstring.cpp" />

@@ -10,6 +10,7 @@
 
 #include "platform/Platform.h"
 #include "InterfaceManager.h"
+#include "utils/strtools.h"
 
 #ifdef PLAT_POSIX
 #   include <wchar.h>
