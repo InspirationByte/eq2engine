@@ -2500,7 +2500,7 @@ void CCar::Simulate( float fDt )
 		}
 
 		// make exhaust light smoke
-		if(	m_isLocalCar &&
+		if(	m_enabled && m_isLocalCar &&
 			m_conf->m_exhaustDir != -1 &&
 			GetSpeed() < 15.0f)
 		{

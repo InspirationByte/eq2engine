@@ -293,7 +293,7 @@ void CEqPhysics::AddToMoveableList( CEqRigidBody* body )
 
 	Threading::CScopedMutex m(m_mutex);
 
-	CHECK_ALREADY_IN_LIST(m_dynObjects, body);
+	CHECK_ALREADY_IN_LIST(m_moveable, body);
 
 	m_moveable.append( body );
 }

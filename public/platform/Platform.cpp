@@ -332,8 +332,6 @@ void AssertValidReadWritePtr( void* ptr, int count/* = 1*/ )
 #endif
 }
 
-#ifndef DEBUG
-
 #include <stdio.h>
 
 #ifdef _WIN32
@@ -421,6 +419,8 @@ void outputDebugString(const char *str)
 
 #else
 
+#include <signal.h>
+
 void _InternalAssert(const char *file, int line, const char *statement)
 {
     static bool debug = true;
@@ -429,12 +429,10 @@ void _InternalAssert(const char *file, int line, const char *statement)
     {
         char str[1024];
 
-        sprintf(str, "Failed: (%s)\n\nFile: %s\nLine: %d\n\n", statement, file, line);
+        MsgError("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, statement);
 
-#ifndef _DKLAUNCHER_
-        ErrorMsg("\n*Assertion failed, file \"%s\", line %d\n*Expression was \"%s\"", file, line, statement);
-        exit(0);
-#endif //_DKLAUNCHER_
+        // make breakpoint
+		raise( SIGINT );
     }
 }
 
@@ -444,4 +442,3 @@ void outputDebugString(const char *str)
 }
 
 #endif // _WIN32
-#endif // DEBUG

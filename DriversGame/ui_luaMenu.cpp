@@ -171,7 +171,7 @@ void CLuaMenu::EnterSelection()
 						if(!stricmp(commandStr.c_str(), "Pop"))
 							PopMenu();
 					}
-	
+
 					OOLUA::Table nextMenu;
 					if( params.safe_at("nextMenu", nextMenu))
 						PushMenu( nextMenu, m_selection );

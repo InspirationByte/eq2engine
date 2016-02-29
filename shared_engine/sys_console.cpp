@@ -26,6 +26,12 @@
 
 #define CURSOR_BLINK_TIME (0.2f)
 
+// dummy command
+DECLARE_CMD(toggleconsole, "Toggles console", 0)
+{
+}
+
+ConVar con_enable("con_enable","1","Enable console", CV_CHEAT);
 ConVar con_fastfind("con_fastfind","1","Show FastFind popup in console",CV_ARCHIVE);
 ConVar con_fastfind_count("con_fastfind_count","35","FastFind listed vars count",CV_ARCHIVE);
 ConVar con_autocompletion_enable("con_autocompletion_enable","1","Enable autocompletion for console\n See file <game dir>/common/autocompletion.cfg",CV_ARCHIVE);
@@ -569,7 +575,7 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w)
 
 		m_font->RenderText("Possible variants: ", Vector2D(x+5,y+2), variantsTextParams);
 
-		
+
 
 		for(int i = 0; i < base->numElem();i++)
 		{
@@ -751,28 +757,28 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, float curTim
 
 	float inputGfxOfs = m_font->GetStringWidth(CONSOLE_INPUT_STARTSTR, inputTextStyle.styleFlag);
 	float cursorPosition = inputGfxOfs + m_font->GetStringWidth(con_Text.c_str(), inputTextStyle.styleFlag, m_cursorPos);
-	
+
 	// render selection
 	if(m_startCursorPos != -1)
 	{
 		float selStartPosition = inputGfxOfs + m_font->GetStringWidth(con_Text.c_str(), inputTextStyle.styleFlag, m_startCursorPos);
 
-		Vertex2D_t rect[] = { MAKETEXQUAD(	inputTextPos.x + selStartPosition, 
-											inputTextPos.y - 10, 
-											inputTextPos.x + cursorPosition, 
+		Vertex2D_t rect[] = { MAKETEXQUAD(	inputTextPos.x + selStartPosition,
+											inputTextPos.y - 10,
+											inputTextPos.x + cursorPosition,
 											inputTextPos.y + 4, 0) };
 		// Cancel textures
 		g_pShaderAPI->Reset();
 
 		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), NULL, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
 	}
-	
+
 	// render cursor
 	if(m_cursorVisible)
 	{
-		Vertex2D_t rect[] = { MAKETEXQUAD(	inputTextPos.x + cursorPosition, 
+		Vertex2D_t rect[] = { MAKETEXQUAD(	inputTextPos.x + cursorPosition,
 											inputTextPos.y - 10,
-											inputTextPos.x + cursorPosition + 1, 
+											inputTextPos.x + cursorPosition + 1,
 											inputTextPos.y + 4, 0) };
 
 		// Cancel textures
@@ -793,41 +799,43 @@ void CEqSysConsole::MousePos(const Vector2D &pos)
 	m_mousePosition = pos;
 }
 
-void CEqSysConsole::KeyChar(int ch)
+bool CEqSysConsole::KeyChar(int ch)
 {
-	if(m_visible)
+	if(!m_visible)
+		return false;
+
+	// Font is not loaded, skip
+	if(m_font == NULL)
+		return false;
+
+	if(ch == '~')
+		return false;
+
+	CFont* cFont = (CFont*)m_font;
+
+	if(ch )
+
+	// THis is a weird thing
+	if(cFont->GetFontCharById(ch).advX > 0.0f && ch != '`')
 	{
-		// Font is not loaded, skip
-		if(m_font == NULL)
-			return;
+		char text[2];
+		text[0] = ch;
+		text[1] = 0;
 
-		if(ch == '~')
-			return;
-
-		CFont* cFont = (CFont*)m_font;
-
-		if(ch )
-
-		// THis is a weird thing
-		if(cFont->GetFontCharById(ch).advX > 0.0f && ch != '`')
-		{
-			char text[2];
-			text[0] = ch;
-			text[1] = 0;
-
-			con_Text.Insert( text, m_cursorPos);
-			m_cursorPos += 1;
-		}
+		con_Text.Insert( text, m_cursorPos);
+		m_cursorPos += 1;
 	}
 }
 
-void CEqSysConsole::MouseEvent(const Vector2D &pos, int Button,bool pressed)
+bool CEqSysConsole::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 {
+	if(!m_visible)
+		return false;
+
 	if (pressed)
 	{
 		if (Button == MOU_B1)
 		{
-
 			if(m_visible)
 			{
 				if(con_fastfind_isbeingselected && con_fastfind_selection_index != -1)
@@ -868,22 +876,36 @@ void CEqSysConsole::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 			}
 		}
 	}
+
+	return true;
 }
 
 bool CEqSysConsole::KeyPress(int key, bool pressed)
 {
-	if(!m_visible)
-		return false;
-
-	int action_index = GetKeyBindings()->GetBindingIndexByKey(key);
-
-	if(action_index != -1)
+	if( pressed ) // catch "DOWN" event
 	{
-		if(!stricmp(GetKeyBindings()->GetBindingList()->ptr()[action_index]->commandString.GetData(), "toggleconsole"))
+		int action_index = GetKeyBindings()->GetBindingIndexByKey(key);
+
+		if(action_index != -1)
 		{
-			return false;
+			if(!stricmp(GetKeyBindings()->GetBindingList()->ptr()[action_index]->commandString.GetData(), "toggleconsole"))
+			{
+				if(g_pSysConsole->IsVisible() && g_pSysConsole->IsShiftPressed())
+				{
+					g_pSysConsole->SetLogVisible( !g_pSysConsole->IsLogVisible() );
+					return false;
+				}
+
+				SetVisible(!IsVisible());
+				return false;
+			}
 		}
 	}
+
+
+
+	if(!m_visible)
+		return false;
 
 	if(pressed)
 	{

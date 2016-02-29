@@ -733,8 +733,6 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 
 #endif // PLAT_WIN
 
-    //gl::Finish();
-
     m_Renderer->GL_END_CRITICAL();
 }
 

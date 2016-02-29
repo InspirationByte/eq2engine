@@ -70,7 +70,7 @@ public:
 
 	void	SetVisible(bool bVisible)		{ m_visible = bVisible; }
 	bool	IsVisible() const				{return m_visible;}
-	
+
 	void	SetLogVisible( bool bVisible )	{ m_logVisible = bVisible; }
 	bool	IsLogVisible() const			{ return m_logVisible; }
 
@@ -81,9 +81,9 @@ public:
 
 	// events
 	bool	KeyPress(int key, bool pressed);
-	void	MouseEvent(const Vector2D &pos, int Button,bool pressed);
+	bool	KeyChar(int ch);
+	bool	MouseEvent(const Vector2D &pos, int Button,bool pressed);
 	void	MousePos(const Vector2D &pos);
-	void	KeyChar(int ch);
 
 	void	AddAutoCompletionNode(AutoCompletionNode_s *pNode);
 

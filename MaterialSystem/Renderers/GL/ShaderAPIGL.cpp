@@ -2931,9 +2931,9 @@ void ShaderAPIGL::ThreadingSharingRelease()
 #ifdef USE_GLES2
 	//eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 #elif _WIN32
-	wglMakeCurrent(NULL, NULL);
+	//wglMakeCurrent(NULL, NULL);
 #elif LINUX
-    glXMakeCurrent(m_display, None, NULL);
+    //glXMakeCurrent(m_display, None, NULL);
 #elif __APPLE__
 
 #endif

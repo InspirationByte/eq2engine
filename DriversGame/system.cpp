@@ -56,32 +56,7 @@ IProxyFactory*		proxyfactory	= NULL;
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay* debugoverlay = ( IDebugOverlay * )&g_DebugOverlays;
 
-ConVar con_enable("con_enable","1","Enable console", CV_CHEAT);
 DECLARE_CVAR(m_invert,0,"Mouse inversion enabled?", CV_ARCHIVE);
-
-DECLARE_CMD(toggleconsole, "Toggles console", 0)
-{
-	if(g_pSysConsole->IsVisible() && g_pSysConsole->IsShiftPressed())
-	{
-		g_pSysConsole->SetLogVisible( !g_pSysConsole->IsLogVisible() );
-		return;
-	}
-
-	if(!con_enable.GetBool())
-	{
-		g_pSysConsole->SetVisible(false);
-		return;
-	}
-
-	if(g_pSysConsole->IsVisible())
-	{
-		g_pSysConsole->SetVisible(false);
-	}
-	else
-	{
-		g_pSysConsole->SetVisible(true);
-	}
-}
 
 void CGameHost::HostQuitToDesktop()
 {
@@ -748,11 +723,8 @@ void CGameHost::TrapKey_Event( int key, bool down )
 		return;
 	}
 
-	if(g_pSysConsole->IsVisible())
-	{
-		if(g_pSysConsole->KeyPress( key, down ))
-			return;
-	}
+	if(g_pSysConsole->KeyPress( key, down ))
+		return;
 
 	if(GetCurrentState())
 		GetCurrentState()->HandleKeyPress( key, down );
@@ -771,12 +743,8 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 		return;
 	}
 
-	if( g_pSysConsole->IsVisible() )
-	{
-		g_pSysConsole->MouseEvent( Vector2D(x,y), buttons, down );
-
+	if( g_pSysConsole->MouseEvent( Vector2D(x,y), buttons, down ) )
 		return;
-	}
 
 	GetKeyBindings()->OnMouseEvent(buttons, down);
 }
@@ -825,11 +793,8 @@ void CGameHost::TrapJoyButton_Event( short button, bool down)
 
 void CGameHost::ProcessKeyChar( int chr )
 {
-	if(g_pSysConsole->IsVisible())
-	{
-		g_pSysConsole->KeyChar( chr );
+	if(g_pSysConsole->KeyChar( chr ))
 		return;
-	}
 }
 
 void CGameHost::StartTrapMode()

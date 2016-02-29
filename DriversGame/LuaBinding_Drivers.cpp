@@ -34,7 +34,7 @@ public:
 	{
 		if( data.hitobject )
 		{
-			if(	(data.hitobject->GetContents() & OBJECTCONTENTS_SOLID_GROUND) || 
+			if(	(data.hitobject->GetContents() & OBJECTCONTENTS_SOLID_GROUND) ||
 				(data.hitobject->GetContents() & OBJECTCONTENTS_SOLID_OBJECTS))
 				return NULL;
 
@@ -126,7 +126,7 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 
 	LUA_SET_GLOBAL_ENUMCONST(state, PURSUER_TYPE_COP);
 	LUA_SET_GLOBAL_ENUMCONST(state, PURSUER_TYPE_GANG);
-	
+
 
 	//-------------------
 	// physics stuff
@@ -156,7 +156,7 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	OOLUA::set_global(state, "SetCurrentStateType", L_SetCurrentStateType);
 	OOLUA::set_global(state, "GetCurrentStateType", L_GetCurrentStateType);
 	OOLUA::set_global(state, "SheduleNextStateType", L_SheduleNextStateType);
-	
+
 
 	//OOLUA::set_global(state, "SetCurrentState", L_SetCurrentState);
 	//OOLUA::set_global(state, "GetCurrentState", L_GetCurrentState);
@@ -165,7 +165,7 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 
 	// init object classes
 	OOLUA::register_class<CCar>(state);
-	OOLUA::register_class_static<CCar>(state, "nullptr", CCarNULLPointer );
+	//OOLUA::register_class_static<CCar>(state, "nullptr", CCarNULLPointer );
 
 	OOLUA::register_class<CAIPursuerCar>(state);
 
