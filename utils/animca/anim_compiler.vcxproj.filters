@@ -14,9 +14,6 @@
     <ClCompile Include="..\..\public\math\math_util.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\public\animationfile.h" />
-  </ItemGroup>
-  <ItemGroup>
     <Library Include="..\..\libs\DkCore.lib">
       <Filter>Libs</Filter>
     </Library>
