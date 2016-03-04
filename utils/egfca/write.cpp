@@ -6,9 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #define USE_ACTC
-//#define USE_NVTRISTRIP
-//#define USE_TRISTRIPPER
-#define OPTIMIZE_BY_MTRIANGLE
 
 #ifdef USE_ACTC
 extern "C"
@@ -16,20 +13,6 @@ extern "C"
 #	include "../actc/tc.h"
 }
 #endif // USE_ACTC
-
-#ifdef USE_NVTRISTRIP
-#	include "../nvtristrip/include/NvTriStrip.h"
-#endif // USE_NVTRISTRIP
-
-#ifdef USE_TRISTRIPPER
-#	include "../tristripper/include/tri_stripper.h"
-#endif // USE_TRISTRIPPER
-
-#ifdef OPTIMIZE_BY_MTRIANGLE
-#	include "mtriangle_framework.h"
-using namespace MTriangle;
-#endif // OPTIMIZE_BY_MTRIANGLE
-
 
 #include "core_base_header.h"
 
@@ -87,23 +70,6 @@ void WriteAdvance(void* data, int size)
 // from exporter - compares two verts
 bool CompareVertex(const studiovertexdesc_t &v0, const studiovertexdesc_t &v1)
 {
-	/*
-	if(v0.point == v1.point &&
-		v0.normal == v1.normal &&
-		v0.texCoord == v1.texCoord &&
-		v0.boneweights.bones[0] == v1.boneweights.bones[0] &&
-		v0.boneweights.bones[1] == v1.boneweights.bones[1] &&
-		v0.boneweights.bones[2] == v1.boneweights.bones[2] &&
-		v0.boneweights.bones[3] == v1.boneweights.bones[3] &&
-		v0.boneweights.weight[0] == v1.boneweights.weight[0] &&
-		v0.boneweights.weight[1] == v1.boneweights.weight[1] &&
-		v0.boneweights.weight[2] == v1.boneweights.weight[2] &&
-		v0.boneweights.weight[3] == v1.boneweights.weight[3]
-		)
-		return true;
-
-	return false;
-*/
 	if(	compare_epsilon(v0.point, v1.point, 0.0015f) &&
 		compare_epsilon(v0.normal, v1.normal, 0.0015f) &&
 		compare_epsilon(v0.texCoord, v1.texCoord, 0.0025f) &&
@@ -206,87 +172,6 @@ studiovertexdesc_t MakeStudioVertex(const dsmvertex_t& vert)
 
 	return vertex;
 }
-
-/*
-void MapVertexOrderIndicesTo( DkList<studiovertexdesc_t>& verts, DkList<int32>& indices, dsmgroup_t* orderByGroup )
-{
-	//DkList<int32> remapIndices;
-
-	// TODO: map them by topology.
-
-	Msg("MapVertexOrderIndicesTo... ");
-
-	// first check: find all vertices
-	for(int i = 0; i < orderByGroup->verts.numElem(); i++)
-	{
-		studiovertexdesc_t vertex = MakeStudioVertex( orderByGroup->verts[i] );
-
-		int idx = FindVertexInListNoPosition( verts, vertex );
-
-		if(idx == -1)
-		{
-			MsgError("vertex not found, aborting.\n");
-			return;
-		}
-	}
-
-	// verts found, time to remap them
-
-	DkList<studiovertexdesc_t>	gVertexList;
-	DkList<int32>				gIndexList;
-
-	// make vertex list of order group
-	for(int i = 0; i < orderByGroup->verts.numElem(); i++)
-	{
-		gVertexList.resize(gVertexList.numElem() + orderByGroup->verts.numElem());
-		gIndexList.resize(gVertexList.numElem() + orderByGroup->verts.numElem());
-
-		studiovertexdesc_t vertex = MakeStudioVertex( orderByGroup->verts[i] );
-
-		// add vertex or point to existing vertex if found duplicate
-		int nIndex = 0;
-
-		int equalVertex = FindVertexInList(gVertexList, vertex);
-
-		if( equalVertex == -1 )
-		{
-			nIndex = gVertexList.numElem();
-
-			gVertexList.append(vertex);
-			//gVertexList2.append(vertex[1]);
-		}
-		else
-			nIndex = equalVertex;
-
-		gIndexList.append(nIndex);
-	}
-
-	DkList<studiovertexdesc_t>	newVerts;
-	DkList<int32>				newIndices;
-
-	newVerts.setNum(gVertexList.numElem());
-
-	// go through index list
-	for(int i = 0; i < gIndexList.numElem(); i++)
-	{
-		studiovertexdesc_t& vertex = gVertexList[ gIndexList[i] ];
-
-		int idx = FindVertexInListNoPosition( verts, vertex );
-
-		newVerts[gIndexList[i]] = verts[idx];
-
-		newIndices.append(gIndexList[i]);
-	}
-
-	verts.clear();
-	indices.clear();
-
-	verts.append(newVerts);
-	indices.append(newIndices);
-
-	Msg("\n");
-}
-*/
 
 void ApplyShapeKeyOnVertex( esmshapekey_t* modShapeKey, const dsmvertex_t& vert, studiovertexdesc_t& studioVert )
 {
@@ -433,64 +318,7 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 		usedVertList[idx2].binormal = normalize(usedVertList[idx2].binormal);
 	}
 
-#ifdef OPTIMIZE_BY_MTRIANGLE
-
-	MsgInfo("MTriangle optimizes group...\n");
-
-	CAdjacentTriangleGraph* triGraph = new CAdjacentTriangleGraph();
-	triGraph->Build(gIndexList.ptr(), gIndexList.numElem());
-
-	gIndexList.clear();
-
-	// generate optimized triangle list using neighbour triangles
-	triGraph->GenOptimizedTriangleList( gIndexList );
-
-#endif // OPTIMIZE_BY_MTRIANGLE
-
-#ifdef USE_TRISTRIPPER
-	
-	triangle_stripper::indices idxList;
-	triangle_stripper::primitive_vector outPrims;
-
-	for(int i = 0; i < gIndexList.numElem(); i++)
-		idxList.push_back( gIndexList[i] );
-
-	gIndexList.clear();
-
-	triangle_stripper::tri_stripper stripper(idxList);
-	stripper.SetCacheSize(24);
-
-	stripper.Strip(&outPrims);
-
-	for(int i = 0; i < outPrims.size(); i++)
-	{
-		if(outPrims[i].Type != triangle_stripper::TRIANGLE_STRIP)
-		{
-			MsgWarning("Not a triangle strip!\n");
-			continue;
-		}
-
-		// add degenerates
-		if( gIndexList.numElem() > 2 && outPrims[i].Indices.size() > 0 )
-		{
-			int degIdx1 = gIndexList[gIndexList.numElem()-1];
-			int degIdx2 = outPrims[i].Indices[0];
-
-			gIndexList.append( degIdx1 );
-			gIndexList.append( degIdx2 );
-		}
-
-		for(int j = 0; j < outPrims[i].Indices.size(); j++)
-			gIndexList.append( outPrims[i].Indices[j] );
-	}
-
-	dstGroup->primitiveType = EGFPRIM_TRI_STRIP;
-
-	//stripper.
-#endif // USE_TRISTRIPPER
-
 #ifdef USE_ACTC
-
 	// optimize model using ACTC
 	DkList<int32>	gOptIndexList;
 
@@ -511,7 +339,6 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 
 	// we want only triangle fans (say THANKS to DirectX10)
 	actcParami(tc, ACTC_OUT_MIN_FAN_VERTS, INT_MAX);
-	//actcParami(tc, ACTC_OUT_MAX_PRIM_VERTS, 64);
 	actcParami(tc, ACTC_OUT_HONOR_WINDING, ACTC_FALSE);
 
 	actcBeginInput(tc);
@@ -520,10 +347,7 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 
 	// input all indices
 	for(uint32 i = 0; i < gIndexList.numElem(); i+=3)
-	{
 		actcAddTriangle(tc, gIndexList[i], gIndexList[i+1], gIndexList[i+2]);
-		//actcAddTriangle(tc, gIndexList[i+2], gIndexList[i+1], gIndexList[i]);
-	}
 
 	actcEndInput(tc);
 
@@ -560,10 +384,10 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 
 		length = 0;
 
+		int flipStart = gOptIndexList.numElem();
+
 		gOptIndexList.append( v1 );
 		gOptIndexList.append( v2 );
-
-		int flipStart = gOptIndexList.numElem();
 
 		// start a primitive of type "prim" with v1 and v2
 		while(actcGetNextVert(tc, &v3) != ACTC_PRIM_COMPLETE)
@@ -581,7 +405,6 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 			// flip
 			gOptIndexList.append( v3 );
 		}
-		
 			
 		primCount++;
 	}
@@ -590,16 +413,10 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 	// destroy context
 	actcDelete( tc );
 
-	if(nTriangleResults > gIndexList.numElem() / 3)
-	{
-		MsgWarning("Optimization may not profit: input tris count: %d, out tris count:", gIndexList.numElem() / 3, nTriangleResults);
-	}
-
-	MsgWarning("group optimization complete: %d tris to %d, even prims: %d\n", gIndexList.numElem() / 3, nTriangleResults, evenPrimitives);
-
-	gIndexList.clear();
+	MsgWarning("group optimization complete\n");
 
 	// replace
+	gIndexList.clear();
 	gIndexList.append( gOptIndexList );
 
 	gOptIndexList.clear();
@@ -609,7 +426,6 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 
 	// set index count and now that is triangle strip
 	dstGroup->numindices = gIndexList.numElem();
-
 
 skipOptimize:
 

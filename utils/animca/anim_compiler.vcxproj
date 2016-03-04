@@ -252,9 +252,6 @@
     <ClCompile Include="AnimScriptCompiler.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\public\animationfile.h" />
-  </ItemGroup>
-  <ItemGroup>
     <Library Include="..\..\libs\CoreLib.lib" />
     <Library Include="..\..\libs\DkCore.lib" />
     <Library Include="..\..\libs\FrameworkLib.lib" />

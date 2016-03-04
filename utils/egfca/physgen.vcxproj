@@ -64,7 +64,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>..\..\Engine\Imaging;..\..\FileSystem;..\..\core;..\..\public;..\..\public\core;..\..\public\Platform;..\..\Engine;..\..\src_dependency\Bullet\src;..\..\src_dependency\sdl2\include;..\tristripper\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\core;..\..\public;..\..\public\core;..\..\public\Platform;..\..\Engine;..\..\src_dependency\Bullet\src;..\..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_TOOLS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <MinimalRebuild>false</MinimalRebuild>
@@ -138,15 +138,8 @@
     <ClCompile Include="..\..\public\mtriangle_framework.cpp" />
     <ClCompile Include="..\..\public\Utils\GeomTools.cpp" />
     <ClCompile Include="..\actc\tc.c" />
-    <ClCompile Include="..\tristripper\src\connectivity_graph.cpp" />
-    <ClCompile Include="..\tristripper\src\policy.cpp" />
-    <ClCompile Include="..\tristripper\src\tri_stripper.cpp" />
     <ClCompile Include="scriptcompile.cpp" />
     <ClCompile Include="egfca_main.cpp" />
-    <ClCompile Include="physgen_main.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="physgen_process.cpp" />
     <ClCompile Include="write.cpp" />
   </ItemGroup>

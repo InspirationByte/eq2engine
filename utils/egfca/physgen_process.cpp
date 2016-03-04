@@ -100,8 +100,6 @@ void SetupRagdollBones()
 	}
 }
 
-#define ASSUME_ALL_SHAPES_ARE_CONVEX
-
 // adds shape to datas
 int AddShape(DkList<dsmvertex_t> &vertices, DkList<int> &indices, int shapeType = PHYSSHAPE_TYPE_CONVEX, bool assumedAsConvex = false)
 {
