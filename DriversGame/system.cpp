@@ -17,6 +17,7 @@
 
 #include "KeyBinding/Keys.h"
 #include "FontCache.h"
+#include "EGUI/EQUI_Manager.h"
 
 #include "network/net_defs.h"
 
@@ -271,6 +272,8 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	// init console
 	g_pSysConsole->Initialize();
+
+	g_pEqUIManager->Init();
 
 	m_pDefaultFont = g_fontCache->GetFont("default",0);
 
@@ -649,7 +652,7 @@ bool CGameHost::Frame()
 		m_pDefaultFont->RenderText(varargs("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps), Vector2D(15), params);
 	}
 
-	static IEqFont* pConsoleFont = g_fontCache->GetFont("console", 0);
+	g_pEqUIManager->Render();
 
 	g_pSysConsole->DrawSelf(true, m_winSize.x, m_winSize.y, m_fCurTime);
 
