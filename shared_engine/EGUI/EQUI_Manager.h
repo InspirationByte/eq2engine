@@ -9,8 +9,8 @@
 #define EQUI_MANAGER_H
 
 #include "materialsystem/IMaterialSystem.h"
-#include "math/rectangle.h"
-#include "utils/dklist.h"
+#include "math/Rectangle.h"
+#include "utils/DkList.h"
 
 class CEqUI_Panel;
 
@@ -23,23 +23,25 @@ public:
 	void				Init();
 	void				Shutdown();
 
-	CEqUI_Panel*		GetRootPanel();
+	CEqUI_Panel*		GetRootPanel() const;
 	void				SetRootPanel(CEqUI_Panel* pPanel);
 
 	// the element loader
 	CEqUI_Panel*		CreateElement( const char* pszTypeName );
-	void				DestroyElement( CEqUI_Panel* pPanel );
 
-	CEqUI_Panel*		FindPanel( const char* pszPanelName );
-	void				DumpPanelsToConsole();
+	void				AddPanel(CEqUI_Panel* panel);
+	void				DestroyPanel( CEqUI_Panel* pPanel );
+	CEqUI_Panel*		FindPanel( const char* pszPanelName ) const;
 
 	void				SetViewFrame(const IRectangle& rect);
-	IRectangle			GetViewFrame();
+	const IRectangle&	GetViewFrame() const;
 
 	void				Render();
 
 	bool				ProcessMouseEvents(float x, float y, int nMouseButtons, int nMouseFlags);
 	bool				ProcessKeyboardEvents(int nKeyButtons,int nKeyFlags);
+
+	void				DumpPanelsToConsole();
 private:
 	CEqUI_Panel*		m_rootPanel;
 
@@ -47,7 +49,7 @@ private:
 
 	IRectangle			m_viewFrameRect;
 	IMaterial*			m_material;
-	
+
 };
 
 extern CEqUI_Manager*	g_pEqUIManager;

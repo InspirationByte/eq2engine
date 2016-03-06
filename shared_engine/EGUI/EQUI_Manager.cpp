@@ -65,7 +65,7 @@ void CEqUI_Manager::Shutdown()
 	m_allocatedPanels.clear();
 }
 
-CEqUI_Panel* CEqUI_Manager::GetRootPanel()
+CEqUI_Panel* CEqUI_Manager::GetRootPanel() const
 {
 	return m_rootPanel;
 }
@@ -102,12 +102,10 @@ CEqUI_Panel* CEqUI_Manager::CreateElement( const char* pszTypeName )
 	return pElement;
 }
 
-void CEqUI_Manager::DestroyElement( CEqUI_Panel* pPanel )
+void CEqUI_Manager::DestroyPanel( CEqUI_Panel* pPanel )
 {
 	if(!pPanel)
 		return;
-
-	pPanel->Shutdown();
 
 	delete pPanel;
 
@@ -117,7 +115,7 @@ void CEqUI_Manager::DestroyElement( CEqUI_Panel* pPanel )
 		m_rootPanel = NULL;
 }
 
-CEqUI_Panel* CEqUI_Manager::FindPanel( const char* pszPanelName )
+CEqUI_Panel* CEqUI_Manager::FindPanel( const char* pszPanelName ) const
 {
 	for(int i = 0; i < m_allocatedPanels.numElem(); i++)
 	{
@@ -147,7 +145,7 @@ void CEqUI_Manager::SetViewFrame(const IRectangle& rect)
 	m_viewFrameRect = rect;
 }
 
-IRectangle	CEqUI_Manager::GetViewFrame()
+const IRectangle& CEqUI_Manager::GetViewFrame() const
 {
 	return m_viewFrameRect;
 }
@@ -157,7 +155,7 @@ void CEqUI_Manager::Render()
 	if(!m_rootPanel)
 		return;
 
-	m_rootPanel->SetRect( m_viewFrameRect );
+	m_rootPanel->SetRectangle( m_viewFrameRect );
 
 	m_rootPanel->Render();
 }

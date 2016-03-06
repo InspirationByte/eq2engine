@@ -8,10 +8,10 @@
 #ifndef EGUI_PANEL_H
 #define EGUI_PANEL_H
 
-#include "math/dkmath.h"
-#include "math/rectangle.h"
+#include "math/DkMath.h"
+#include "math/Rectangle.h"
 #include "utils/eqstring.h"
-#include "utils/dklinkedlist.h"
+#include "utils/DkLinkedList.h"
 #include "utils/KeyValues.h"
 
 enum EqUI_Type_e
@@ -22,11 +22,11 @@ enum EqUI_Type_e
 	EQUI_BUTTON,
 	EQUI_IMAGE,
 	EQUI_TEXTINPUT,
-	
+
 	EQUI_TYPES,
 };
 
-static char* s_equi_typestrings[] = 
+static const char* s_equi_typestrings[] =
 {
 	"panel",
 	"button",
@@ -49,72 +49,83 @@ static EqUI_Type_e EqUI_ResolveElementTypeString(const char* pszTypeName)
 	return EQUI_INVALID;
 }
 
-// eq panel class
-class CEqUI_Panel
+class IEqUIControl
 {
 public:
-	CEqUI_Panel();
 
-	virtual void			InitFromKeyValues( kvkeybase_t* pSection = NULL );
-	virtual void			Shutdown();
+	IEqUIControl();
 
-	void					AddChild(CEqUI_Panel* pControl);
-	void					RemoveChild(CEqUI_Panel* pControl);
-	void					ClearChilds(bool bFree = true);
+	virtual int				GetType() const = 0;
 
-	// returns child control 
-	CEqUI_Panel*			GetControl( const char* pszName );
+	// name and type
+	const char*				GetName() const {return m_name.c_str();}
+	void					SetName(const char* pszName) {m_name = pszName;}
 
-	const char*				GetName() const;
-	void					SetName(const char* pszName);
+	// visibility
+	virtual void			Show() {m_visible = true;}
+	virtual void			Hide() {m_visible = false;}
 
-	virtual int				GetType() const {return EQUI_PANEL;}
+	virtual void			SetVisible(bool bVisible) {m_visible = bVisible;}
+	virtual bool			IsVisible() const {return m_visible;}
 
-	virtual void			SetColor(const ColorRGBA &color);
-	virtual void			GetColor(ColorRGBA &color) const;
+	// activation
+	virtual void			Enable(bool value) {m_enabled = value;}
+	virtual bool			IsEnabled() const {return m_enabled;}
 
-	virtual void			SetSelectionColor(const ColorRGBA &color);
-	virtual void			GetSelectionColor(ColorRGBA &color) const;
-
-	virtual void			Show();
-	virtual void			Hide();
-
-	virtual void			SetVisible(bool bVisible);
-	virtual bool			IsVisible() const;
-
-	virtual void			Render();
-
-	virtual void			Enable();
-	virtual void			Disable();
-
-	virtual bool			IsEnabled() const;
-
-	virtual bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int nMouseFlags);
-	virtual bool			ProcessKeyboardEvents(int nKeyButtons,int nKeyFlags);
-
+	// position and size
 	void					SetSize(const IVector2D& size);
 	void					SetPosition(const IVector2D& pos);
-
-	void					SetRect(const IRectangle& rect);
 
 	const IVector2D&		GetSize() const;
 	const IVector2D&		GetPosition() const;
 
 	// clipping rectangle, size position
+	void					SetRectangle(const IRectangle& rect);
 	virtual IRectangle		GetRectangle() const;
 
-	virtual bool			ProcessCommand( const char* pszCommand );
-
-	virtual bool			ProcessCommandExecute( const char* pszCommand );
-
 protected:
-
 	IVector2D				m_position;
 	IVector2D				m_size;
 
 	bool					m_visible;
 	bool					m_enabled;
 	EqString				m_name;
+};
+
+// eq panel class
+class CEqUI_Panel : public IEqUIControl
+{
+public:
+	CEqUI_Panel();
+	~CEqUI_Panel();
+
+	virtual void			InitFromKeyValues( kvkeybase_t* pSection = NULL );
+	virtual void			Destroy();
+
+	// child controls
+	void					AddChild(CEqUI_Panel* pControl);
+	void					RemoveChild(CEqUI_Panel* pControl);
+	CEqUI_Panel*			FindChild( const char* pszName );
+	void					ClearChilds(bool bFree = true);
+
+	virtual int				GetType() const {return EQUI_PANEL;}
+
+	// apperance
+	virtual void			SetColor(const ColorRGBA &color);
+	virtual void			GetColor(ColorRGBA &color) const;
+
+	virtual void			SetSelectionColor(const ColorRGBA &color);
+	virtual void			GetSelectionColor(ColorRGBA &color) const;
+
+	// control and render
+	virtual bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int nMouseFlags);
+	virtual bool			ProcessKeyboardEvents(int nKeyButtons,int nKeyFlags);
+	virtual bool			ProcessCommand( const char* pszCommand );
+	virtual bool			ProcessCommandExecute( const char* pszCommand );
+
+	virtual void			Render();
+
+protected:
 
 	DkLinkedList<CEqUI_Panel*>	m_childPanels;		// child panels
 	CEqUI_Panel*				m_parent;			// parent panel (null is a starting panel)

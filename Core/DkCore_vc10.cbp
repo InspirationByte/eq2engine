@@ -59,6 +59,8 @@
 		<Unit filename="debuginterface.cpp" />
 		<Unit filename="eqCPUServices.cpp" />
 		<Unit filename="eqCPUServices.h" />
+		<Unit filename="platform/MessageBox.cpp" />
+		<Unit filename="platform/Platform.cpp" />
 		<Unit filename="ppmem.cpp" />
 		<Extensions>
 			<code_completion />

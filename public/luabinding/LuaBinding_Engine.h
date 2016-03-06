@@ -24,7 +24,8 @@
 #include "network/NetMessageBuffer.h"
 #include "ILocalize.h"
 #include "IConCommandFactory.h"
-
+#include "EGUI/EQUI_Manager.h"
+#include "EGUI/EqUI_Panel.h"
 
 #ifndef __INTELLISENSE__
 
@@ -196,6 +197,58 @@ OOLUA_PROXY( CEqFontCache )
 	OOLUA_MFUNC_CONST( GetFont )
 OOLUA_PROXY_END
 
+//
+// UI panel
+//
+
+OOLUA_PROXY(IEqUIControl)
+	OOLUA_MFUNC_CONST( GetName )
+	OOLUA_MFUNC( SetName )
+
+	OOLUA_MFUNC_CONST( GetType )
+
+	OOLUA_MFUNC( Show )
+	OOLUA_MFUNC( Hide )
+
+	OOLUA_MFUNC( SetVisible )
+	OOLUA_MFUNC_CONST( IsVisible )
+
+	OOLUA_MFUNC( Enable )
+	OOLUA_MFUNC_CONST( IsEnabled )
+	OOLUA_MFUNC( SetSize )
+	OOLUA_MFUNC( SetPosition )
+
+	OOLUA_MFUNC_CONST( GetSize )
+	OOLUA_MFUNC_CONST( GetPosition )
+OOLUA_PROXY_END
+
+OOLUA_PROXY(CEqUI_Panel, IEqUIControl)
+	OOLUA_MFUNC( AddChild )
+	OOLUA_MFUNC( RemoveChild )
+	OOLUA_MFUNC( FindChild )
+	OOLUA_MFUNC( ClearChilds )
+
+	OOLUA_MFUNC( SetColor )
+	OOLUA_MFUNC_CONST( GetColor )
+
+	OOLUA_MFUNC( SetSelectionColor )
+	OOLUA_MFUNC_CONST( GetSelectionColor )
+OOLUA_PROXY_END
+
+//
+// UI panel manager
+//
+
+OOLUA_PROXY(CEqUI_Manager)
+	OOLUA_TAGS( Abstract )
+
+	OOLUA_MFUNC_CONST( GetRootPanel )
+	OOLUA_MFUNC( SetRootPanel )
+
+	OOLUA_MFUNC( AddPanel );
+	OOLUA_MFUNC( DestroyPanel );
+	OOLUA_MFUNC_CONST( FindPanel )
+OOLUA_PROXY_END
 #endif // __INTELLISENSE__
 
 #define LUA_SET_GLOBAL_ENUMCONST(state, constName)	\

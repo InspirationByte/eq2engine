@@ -7,9 +7,50 @@
 
 #include "EqUI_Panel.h"
 #include "EQUI_Manager.h"
-#include "materialsystem/imaterialsystem.h"
+#include "materialsystem/IMaterialSystem.h"
 
-CEqUI_Panel::CEqUI_Panel() : m_visible(true), m_enabled(true), m_parent(NULL), m_currentElement(NULL)
+IEqUIControl::IEqUIControl() : m_visible(true), m_enabled(true)
+{
+
+}
+
+void IEqUIControl::SetSize(const IVector2D &size)
+{
+	m_size = size;
+}
+
+void IEqUIControl::SetPosition(const IVector2D &pos)
+{
+	m_position = pos;
+}
+
+void IEqUIControl::SetRectangle(const IRectangle& rect)
+{
+	m_position = rect.vleftTop;
+	m_size = rect.vrightBottom - m_position;
+}
+
+const IVector2D& IEqUIControl::GetSize() const
+{
+	return m_size;
+}
+
+const IVector2D& IEqUIControl::GetPosition() const
+{
+	return m_position;
+}
+
+// clipping rectangle, size position
+IRectangle	IEqUIControl::GetRectangle() const
+{
+	return IRectangle(m_position, m_position + m_size);
+}
+
+//
+//
+//
+
+CEqUI_Panel::CEqUI_Panel() : m_parent(NULL), m_currentElement(NULL)
 {
 	m_position = IVector2D(0);
 	m_size = IVector2D(32,32);
@@ -18,12 +59,17 @@ CEqUI_Panel::CEqUI_Panel() : m_visible(true), m_enabled(true), m_parent(NULL), m
 	m_selColor = ColorRGBA(0.25f);
 }
 
+CEqUI_Panel::~CEqUI_Panel()
+{
+	Destroy();
+}
+
 void CEqUI_Panel::InitFromKeyValues( kvkeybase_t* pSection )
 {
 	// TODO: initialize scheme of GUIs
 }
 
-void CEqUI_Panel::Shutdown()
+void CEqUI_Panel::Destroy()
 {
 	ClearChilds();
 }
@@ -44,7 +90,7 @@ void CEqUI_Panel::RemoveChild(CEqUI_Panel* pControl)
 			{
 				pControl->m_parent = NULL;
 
-				g_pEqUIManager->DestroyElement(pControl);
+				g_pEqUIManager->DestroyPanel(pControl);
 
 				m_childPanels.removeCurrent();
 				return;
@@ -54,8 +100,8 @@ void CEqUI_Panel::RemoveChild(CEqUI_Panel* pControl)
 	}
 }
 
-// returns child control 
-CEqUI_Panel* CEqUI_Panel::GetControl(const char* pszName)
+// returns child control
+CEqUI_Panel* CEqUI_Panel::FindChild(const char* pszName)
 {
 	DkLinkedListIterator<CEqUI_Panel*> iter(m_childPanels);
 
@@ -81,7 +127,7 @@ void CEqUI_Panel::ClearChilds(bool bFree)
 			m_childPanels.getCurrent()->m_parent = NULL;
 
 			if(bFree)
-				g_pEqUIManager->DestroyElement(m_childPanels.getCurrent());
+				g_pEqUIManager->DestroyPanel(m_childPanels.getCurrent());
 
 			m_childPanels.setCurrent(NULL);
 		}
@@ -89,16 +135,6 @@ void CEqUI_Panel::ClearChilds(bool bFree)
 	}
 
 	m_childPanels.clear();
-}
-
-const char* CEqUI_Panel::GetName() const
-{
-	return m_name.GetData();
-}
-
-void CEqUI_Panel::SetName(const char* pszName)
-{
-	m_name = pszName;
 }
 
 void CEqUI_Panel::SetColor(const ColorRGBA &color)
@@ -119,26 +155,6 @@ void CEqUI_Panel::SetSelectionColor(const ColorRGBA &color)
 void CEqUI_Panel::GetSelectionColor(ColorRGBA &color) const
 {
 	color = m_selColor;
-}
-
-void CEqUI_Panel::Show()
-{
-	m_visible = true;
-}
-
-void CEqUI_Panel::Hide()
-{
-	m_visible = false;
-}
-
-void CEqUI_Panel::SetVisible(bool bVisible)
-{
-	m_visible = bVisible;
-}
-
-bool CEqUI_Panel::IsVisible() const
-{
-	return m_visible;
 }
 
 void DrawAlphaFilledRectangle(const IRectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2)
@@ -188,24 +204,9 @@ void CEqUI_Panel::Render()
 	// do it recursively
 }
 
-void CEqUI_Panel::Enable()
-{
-	m_enabled = true;
-}
-
-void CEqUI_Panel::Disable()
-{
-	m_enabled = false;
-}
-
-bool CEqUI_Panel::IsEnabled() const
-{
-	return m_enabled;
-}
-
 bool CEqUI_Panel::ProcessMouseEvents(float x, float y, int nMouseButtons, int nMouseFlags)
 {
-	
+
 	return false;
 }
 
@@ -213,38 +214,6 @@ bool CEqUI_Panel::ProcessKeyboardEvents(int nKeyButtons, int nKeyFlags)
 {
 
 	return true;
-}
-
-void CEqUI_Panel::SetSize(const IVector2D &size)
-{
-	m_size = size;
-}
-
-void CEqUI_Panel::SetPosition(const IVector2D &pos)
-{
-	m_position = pos;
-}
-
-void CEqUI_Panel::SetRect(const IRectangle& rect)
-{
-	m_position = rect.vleftTop;
-	m_size = rect.vrightBottom - m_position;
-}
-
-const IVector2D& CEqUI_Panel::GetSize() const
-{
-	return m_size;
-}
-
-const IVector2D& CEqUI_Panel::GetPosition() const
-{
-	return m_position;
-}
-
-// clipping rectangle, size position
-IRectangle	CEqUI_Panel::GetRectangle() const
-{
-	return IRectangle(m_position, m_position + m_size);
 }
 
 bool CEqUI_Panel::ProcessCommand(const char* pszCommand)
