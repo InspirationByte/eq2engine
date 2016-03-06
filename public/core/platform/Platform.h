@@ -17,8 +17,8 @@
 
 #ifdef EQ_USE_SDL
 #	define PLAT_SDL 1
-#	include "SDL.h"
-#	include "SDL_syswm.h"
+#	include <SDL.h>
+#	include <SDL_syswm.h>
 #endif // EQ_USE_SDL
 
 #ifdef _WIN32

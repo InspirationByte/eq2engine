@@ -1753,3 +1753,425 @@
 	<gtk/gtk.h>
 	<signal.h>
 
+1457289077 source:/home/soap/Projects/EqEngine/src_main/Core/CmdLineParser.cpp
+	"CmdLineParser.h"
+	"utils/strtools.h"
+	"platform/Platform.h"
+	"ConVar.h"
+	"DebugInterface.h"
+	"ConCommandFactory.h"
+	<ctype.h>
+
+1457289077 /home/soap/Projects/EqEngine/src_main/Core/CmdLineParser.h
+	<stdio.h>
+	"ICmdLineParser.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ICmdLineParser.h
+	<stdio.h>
+	"InterfaceManager.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/InterfaceManager.h
+	<stdio.h>
+	"utils/singleton.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/singleton.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/DkList.h
+	"platform/MessageBox.h"
+	"dktypes.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/platform/MessageBox.h
+	"InterfaceManager.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/dktypes.h
+	<stddef.h>
+	<string.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/eqstring.h
+	<stdlib.h>
+	<string.h>
+	"dktypes.h"
+	"eqwstring.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/eqwstring.h
+	<stdlib.h>
+	<string.h>
+	"dktypes.h"
+	"eqstring.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/strtools.h
+	"utils/DkLinkedList.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+	"utils/eqwstring.h"
+	<ctype.h>
+	<string.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/DkLinkedList.h
+	"dktypes.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/platform/Platform.h
+	"dktypes.h"
+	"InterfaceManager.h"
+	"SDL.h"
+	"SDL_syswm.h"
+	<windows.h>
+	<stdio.h>
+	<X11/keysym.h>
+	<float.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ConVar.h
+	<stdio.h>
+	<stdlib.h>
+	"ConCommandBase.h"
+	"InterfaceManager.h"
+	"utils\DkStr.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ConCommandBase.h
+	<stdio.h>
+	<stdlib.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/DebugInterface.h
+	"InterfaceManager.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/Core/ConCommandFactory.h
+	<stdio.h>
+	<stdlib.h>
+	"ConVar.h"
+	"ConCommand.h"
+	"InterfaceManager.h"
+	"IConCommandFactory.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ConCommand.h
+	<stdio.h>
+	<stdlib.h>
+	"ConCommandBase.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+	"InterfaceManager.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/IConCommandFactory.h
+	<stdio.h>
+	<stdlib.h>
+	"utils/DkList.h"
+	"ConVar.h"
+	"ConCommand.h"
+	"ConCommandBase.h"
+	"InterfaceManager.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/Core/ConCommandFactory.cpp
+	<stdio.h>
+	<stdlib.h>
+	"ConCommandFactory.h"
+	"IFileSystem.h"
+	"utils/strtools.h"
+	"ConVar.h"
+	"ConCommand.h"
+	"DebugInterface.h"
+	"IDkCore.h"
+	<malloc.h>
+	<crtdbg.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/IFileSystem.h
+	"InterfaceManager.h"
+	"IVirtualStream.h"
+	<sys/types.h>
+	<sys/stat.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/IVirtualStream.h
+	"ppmem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ppmem.h
+	<string.h>
+	"platform/Platform.h"
+	"InterfaceManager.h"
+	"utils/eqthread.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/eqthread.h
+	"platform/Platform.h"
+	<sched.h>
+	<pthread.h>
+	<errno.h>
+	<stdint.h>
+	"eqstring.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/IDkCore.h
+	"ICmdLineParser.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/Core/CoreVersion.cpp
+	"CoreVersion.h"
+	"DebugInterface.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/Core/CoreVersion.h
+	"core_base_header.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/core_base_header.h
+	"platform/Platform.h"
+	"utils/strtools.h"
+	"utils/eqtimer.h"
+	"utils/KeyValues.h"
+	"IConCommandFactory.h"
+	"InterfaceManager.h"
+	"IDkCore.h"
+	"IEqCPUServices.h"
+	"ILocalize.h"
+	"ppmem.h"
+	"ICmdLineParser.h"
+	"IFileSystem.h"
+	"DebugInterface.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/eqtimer.h
+	<stdio.h>
+	<stdlib.h>
+	"platform/Platform.h"
+	<sys/time.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/KeyValues.h
+	"platform/Platform.h"
+	"utils/DkList.h"
+	"math/DkMath.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/DkMath.h
+	"Vector.h"
+	"Matrix.h"
+	"Random.h"
+	"BoundingBox.h"
+	"SIMD.h"
+	"Volume.h"
+	"FVector.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Vector.h
+	<limits.h>
+	<float.h>
+	"dktypes.h"
+	"math_common.h"
+	"Vector_Inline.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/math_common.h
+	<math.h>
+	<float.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Vector_Inline.h
+	"Vector.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Matrix.h
+	"Vector.h"
+	"Quaternion.h"
+	"Matrix_Inline.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Quaternion.h
+	"Matrix.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Matrix_Inline.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Random.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/BoundingBox.h
+	"Vector.h"
+	"FixedMath.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/FixedMath.h
+	"dktypes.h"
+	<limits.h>
+	<float.h>
+	<math.h>
+	"math/math_common.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/SIMD.h
+	"Vector.h"
+	<xmmintrin.h>
+	"cpuInstrDefs.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/cpuInstrDefs.h
+	<mmintrin.h>
+	<emmintrin.h>
+	<mm3dnow.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Volume.h
+	"Matrix.h"
+	"Vector.h"
+	"math_common.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/FVector.h
+	"FixedMath.h"
+	"Matrix.h"
+	"Volume.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/IEqCPUServices.h
+	"IDkCore.h"
+	"dktypes.h"
+	"cpuInstrDefs.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ILocalize.h
+	"platform/Platform.h"
+	"InterfaceManager.h"
+	"utils/strtools.h"
+	<wchar.h>
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/Core/debuginterface.cpp
+	"DebugInterface.h"
+	"core_base_header.h"
+	"platform/Platform.h"
+	"resource.h"
+	<stdarg.h>
+	"utils/eqthread.h"
+	<android/log.h>
+
+1457289077 /home/soap/Projects/EqEngine/src_main/Core/resource.h
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/Core/DkCore.cpp
+	<ctime>
+	<direct.h>
+	<locale.h>
+	<crtdbg.h>
+	"DkCore.h"
+	"CoreVersion.h"
+	"DebugInterface.h"
+	"ExceptionHandler.h"
+	"ConCommandFactory.h"
+	"eqCPUServices.h"
+	"utils/eqstring.h"
+	<time.h>
+
+1457289077 /home/soap/Projects/EqEngine/src_main/Core/DkCore.h
+	"IDkCore.h"
+	"IFileSystem.h"
+	"utils/KeyValues.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/Core/ExceptionHandler.h
+
+1457289077 /home/soap/Projects/EqEngine/src_main/Core/eqCPUServices.h
+	"IEqCPUServices.h"
+	"platform/Platform.h"
+	"InterfaceManager.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/Core/DPKFileReader.cpp
+	"DPKFileReader.h"
+	"platform/Platform.h"
+	<zlib.h>
+	"utils/strtools.h"
+	"DebugInterface.h"
+	<direct.h>
+	<shlobj.h>
+	<malloc.h>
+	<unistd.h>
+	<sys/stat.h>
+
+1457289077 /home/soap/Projects/EqEngine/src_main/Core/DPKFileReader.h
+	<stdio.h>
+	<direct.h>
+	"utils/eqstring.h"
+	"utils/DkList.h"
+	"dpk_defs.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/Core/dpk_defs.h
+	"dktypes.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/Core/DPKFileWriter.cpp
+	"DPKFileWriter.h"
+	<zlib.h>
+	"utils/strtools.h"
+	"core/DebugInterface.h"
+	"core/cmd_pacifier.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/Core/DPKFileWriter.h
+	<stdio.h>
+	<direct.h>
+	"platform/Platform.h"
+	"dpk_defs.h"
+	"utils/DkList.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/cmd_pacifier.h
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/Core/eqCPUServices.cpp
+	"eqCPUServices.h"
+	"DebugInterface.h"
+	"ConCommandFactory.h"
+	<intrin.h>
+	"Windows.h"
+	<unistd.h>
+	<sys/time.h>
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/Core/ExceptionHandler.cpp
+	"platform/Platform.h"
+	"platform/MessageBox.h"
+	"ppmem.h"
+	"stdio.h"
+	"IDkCore.h"
+	"DebugInterface.h"
+	"ExceptionHandler.h"
+	"dbgHelp.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/Core/FileSystem.cpp
+	"FileSystem.h"
+	"utils/SmartPtr.h"
+	"utils/KeyValues.h"
+	"utils/strtools.h"
+	"IDkCore.h"
+	"ILocalize.h"
+	<direct.h>
+	<unistd.h>
+	<stdarg.h>
+	<dlfcn.h>
+	"DebugInterface.h"
+	"utils/CRC32.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/Core/FileSystem.h
+	"IFileSystem.h"
+	"DPKFileReader.h"
+	"utils/eqthread.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/SmartPtr.h
+	<malloc.h>
+	"ppmem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/CRC32.h
+	"platform/Platform.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/Core/Localize.cpp
+	"utils/strtools.h"
+	"Localize.h"
+	"DebugInterface.h"
+	"IDkCore.h"
+	"utils/KeyValues.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/Core/Localize.h
+	"ILocalize.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+	"utils/eqwstring.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/Core/platform/MessageBox.cpp
+	"platform/MessageBox.h"
+	<string.h>
+	<stdarg.h>
+	"DebugInterface.h"
+	"IDkCore.h"
+	<time.h>
+	<Windows.h>
+	<gtk/gtk.h>
+	<signal.h>
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/Core/platform/Platform.cpp
+	"platform/Platform.h"
+	"platform/MessageBox.h"
+	"DebugInterface.h"
+	<time.h>
+	<stdarg.h>
+	<sys/time.h>
+	<errno.h>
+	<stdio.h>
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/Core/ppmem.cpp
+	"ppmem.h"
+	<malloc.h>
+	"DebugInterface.h"
+	"IConCommandFactory.h"
+	"utils/eqstring.h"
+	"utils/DkList.h"
+	"utils/eqthread.h"
+	<stdio.h>
+	<jemalloc/jemalloc.h>
+

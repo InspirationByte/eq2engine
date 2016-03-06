@@ -4051,3 +4051,757 @@
 	<X11/keysym.h>
 	<float.h>
 
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/imaging/ImageLoader.cpp
+	"ImageLoader.h"
+	"DebugInterface.h"
+	<string.h>
+	<stdlib.h>
+	"../math/Vector.h"
+	<jpeglib.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/imaging/ImageLoader.h
+	<stdio.h>
+	"platform/Platform.h"
+	"utils/eqstring.h"
+	"textureformats.h"
+	"IFileSystem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/platform/Platform.h
+	"dktypes.h"
+	"InterfaceManager.h"
+	"SDL.h"
+	"SDL_syswm.h"
+	<windows.h>
+	<stdio.h>
+	<X11/keysym.h>
+	<float.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/dktypes.h
+	<stddef.h>
+	<string.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/InterfaceManager.h
+	<stdio.h>
+	"utils/singleton.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/singleton.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/eqstring.h
+	<stdlib.h>
+	<string.h>
+	"dktypes.h"
+	"eqwstring.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/eqwstring.h
+	<stdlib.h>
+	<string.h>
+	"dktypes.h"
+	"eqstring.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/textureformats.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/IFileSystem.h
+	"InterfaceManager.h"
+	"IVirtualStream.h"
+	<sys/types.h>
+	<sys/stat.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/IVirtualStream.h
+	"ppmem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ppmem.h
+	<string.h>
+	"platform/Platform.h"
+	"InterfaceManager.h"
+	"utils/eqthread.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/eqthread.h
+	"platform/Platform.h"
+	<sched.h>
+	<pthread.h>
+	<errno.h>
+	<stdint.h>
+	"eqstring.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/DebugInterface.h
+	"InterfaceManager.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Vector.h
+	<limits.h>
+	<float.h>
+	"dktypes.h"
+	"math_common.h"
+	"Vector_Inline.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/math_common.h
+	<math.h>
+	<float.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Vector_Inline.h
+	"Vector.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/math/FixedMath.cpp
+	"FixedMath.h"
+	"Vector.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/FixedMath.h
+	"dktypes.h"
+	<limits.h>
+	<float.h>
+	<math.h>
+	"math/math_common.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/math/FVector.cpp
+	"FVector.h"
+	"DkMath.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/FVector.h
+	"FixedMath.h"
+	"Matrix.h"
+	"Volume.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Matrix.h
+	"Vector.h"
+	"Quaternion.h"
+	"Matrix_Inline.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Quaternion.h
+	"Matrix.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Matrix_Inline.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Volume.h
+	"Matrix.h"
+	"Vector.h"
+	"math_common.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/DkMath.h
+	"Vector.h"
+	"Matrix.h"
+	"Random.h"
+	"BoundingBox.h"
+	"SIMD.h"
+	"Volume.h"
+	"FVector.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Random.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/BoundingBox.h
+	"Vector.h"
+	"FixedMath.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/SIMD.h
+	"Vector.h"
+	<xmmintrin.h>
+	"cpuInstrDefs.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/cpuInstrDefs.h
+	<mmintrin.h>
+	<emmintrin.h>
+	<mm3dnow.h>
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/math/math_util.cpp
+	"Matrix.h"
+	"Vector.h"
+	"Volume.h"
+	"math_util.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/math_util.h
+	"Matrix.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/math/Matrix.cpp
+	"Matrix.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/math/QuadTree.cpp
+	"QuadTree.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/QuadTree.h
+	"Vector.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/math/Quaternion.cpp
+	"DkMath.h"
+	"Matrix.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/math/Random.cpp
+	<stdlib.h>
+	"dktypes.h"
+	"Random.h"
+	<math.h>
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/math/Vector.cpp
+	"Vector.h"
+	"DkMath.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/math/Volume.cpp
+	"Volume.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/network/c_udp.cpp
+	"c_udp.h"
+	"net_defs.h"
+	"DebugInterface.h"
+	"utils/strtools.h"
+	"utils/CRC32.h"
+	"utils/KeyValues.h"
+	"ConVar.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/network/c_udp.h
+	"utils/DkList.h"
+	"utils/eqthread.h"
+	<map>
+	"platform/Platform.h"
+	"net_defs.h"
+	"VirtualStream.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/DkList.h
+	"platform/MessageBox.h"
+	"dktypes.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/platform/MessageBox.h
+	"InterfaceManager.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/network/net_defs.h
+	<winsock.h>
+	<unistd.h>
+	<sys/types.h>
+	<sys/socket.h>
+	<sys/ioctl.h>
+	<netinet/in.h>
+	<netinet/ip.h>
+	<netdb.h>
+	<errno.h>
+	<fcntl.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/VirtualStream.h
+	"IVirtualStream.h"
+	"IFileSystem.h"
+	"DebugInterface.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/strtools.h
+	"utils/DkLinkedList.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+	"utils/eqwstring.h"
+	<ctype.h>
+	<string.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/DkLinkedList.h
+	"dktypes.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/CRC32.h
+	"platform/Platform.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/KeyValues.h
+	"platform/Platform.h"
+	"utils/DkList.h"
+	"math/DkMath.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ConVar.h
+	<stdio.h>
+	<stdlib.h>
+	"ConCommandBase.h"
+	"InterfaceManager.h"
+	"utils\DkStr.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ConCommandBase.h
+	<stdio.h>
+	<stdlib.h>
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/network/net_defs.cpp
+	"net_defs.h"
+	"DebugInterface.h"
+	"dktypes.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/network/NetInterfaces.cpp
+	"NetInterfaces.h"
+	"DebugInterface.h"
+	"IConCommandFactory.h"
+	<zlib.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/network/NetInterfaces.h
+	"c_udp.h"
+	"platform/Platform.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/IConCommandFactory.h
+	<stdio.h>
+	<stdlib.h>
+	"utils/DkList.h"
+	"ConVar.h"
+	"ConCommand.h"
+	"ConCommandBase.h"
+	"InterfaceManager.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ConCommand.h
+	<stdio.h>
+	<stdlib.h>
+	"ConCommandBase.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+	"InterfaceManager.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/network/NetMessageBuffer.cpp
+	"NetMessageBuffer.h"
+	"utils/strtools.h"
+	"utils/KeyValues.h"
+	<wchar.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/network/NetMessageBuffer.h
+	"net_defs.h"
+	"NetInterfaces.h"
+	"DebugInterface.h"
+	<string.h>
+	<time.h>
+	"math/Vector.h"
+	"VirtualStream.h"
+	"luabinding/LuaBinding_Math.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/luabinding/LuaBinding_Math.h
+	"LuaBinding.h"
+	"math/DkMath.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/luabinding/LuaBinding.h
+	"lua.h"
+	"lualib.h"
+	"lauxlib.h"
+	"oolua.h"
+	"DebugInterface.h"
+
+1431628200 /home/soap/Projects/EqEngine/src_main/src_dependency/luajit/src/lua.h
+	<stdarg.h>
+	<stddef.h>
+	"luaconf.h"
+
+1431628200 /home/soap/Projects/EqEngine/src_main/src_dependency/luajit/src/luaconf.h
+	<limits.h>
+	<stddef.h>
+	<assert.h>
+
+1431628200 /home/soap/Projects/EqEngine/src_main/src_dependency/luajit/src/lualib.h
+	"lua.h"
+
+1431628200 /home/soap/Projects/EqEngine/src_main/src_dependency/luajit/src/lauxlib.h
+	<stddef.h>
+	<stdio.h>
+	"lua.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua.h
+	"lua_includes.h"
+	"oolua_dsl.h"
+	"proxy_function_exports.h"
+	"oolua_version.h"
+	"oolua_error.h"
+	"oolua_stack.h"
+	"oolua_script.h"
+	"oolua_open.h"
+	"oolua_chunk.h"
+	"oolua_registration.h"
+	"oolua_table.h"
+	"oolua_ref.h"
+	"oolua_helpers.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/lua_includes.h
+	"lua/lua.h"
+	"lua/lauxlib.h"
+	"lua/lualib.h"
+
+1431613800 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/lua/lua.h
+	<stdarg.h>
+	<stddef.h>
+	"luaconf.h"
+
+1431613800 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/lua/luaconf.h
+	<limits.h>
+	<stddef.h>
+	<assert.h>
+
+1431613800 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/lua/lauxlib.h
+	<stddef.h>
+	<stdio.h>
+	"lua.h"
+
+1431613800 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/lua/lualib.h
+	"lua.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_dsl.h
+	"dsl_va_args.h"
+	"proxy_class.h"
+	"proxy_constructor.h"
+	"proxy_member_function.h"
+	"proxy_none_member_function.h"
+	"proxy_public_member.h"
+	"proxy_tags.h"
+	"default_trait_caller.h"
+	"oolua_stack_fwd.h"
+	"oolua_traits.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/dsl_va_args.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_class.h
+	"type_list.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/type_list.h
+	"typelist_structs.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/typelist_structs.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_constructor.h
+	"lua_includes.h"
+	"oolua_traits_fwd.h"
+	"proxy_tags.h"
+	"proxy_storage.h"
+	"proxy_tag_info.h"
+	"proxy_userdata.h"
+	"proxy_stack_helper.h"
+	"proxy_constructor_param_tester.h"
+	"type_converters.h"
+	"oolua_boilerplate.h"
+	"oolua_exception.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_traits_fwd.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_tags.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_storage.h
+	"lua_includes.h"
+	"oolua_traits_fwd.h"
+	"oolua_stack_fwd.h"
+	"oolua_config.h"
+	"proxy_userdata.h"
+	"proxy_base_checker.h"
+	"proxy_class.h"
+	"lvd_types.h"
+	"class_from_stack.h"
+	"type_list.h"
+	"char_arrays.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_stack_fwd.h
+	"oolua_traits_fwd.h"
+
+1452437093 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_config.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_userdata.h
+	"oolua_config.h"
+	"lvd_types.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/lvd_types.h
+	"platform_check.h"
+	"type_list.h"
+	<stdint.h>
+	<stdint.h>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/platform_check.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_base_checker.h
+	"type_list.h"
+	"proxy_userdata.h"
+	"proxy_class.h"
+	"oolua_config.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/class_from_stack.h
+	"lua_includes.h"
+	"proxy_class.h"
+	"proxy_userdata.h"
+	"oolua_config.h"
+	"lvd_type_traits.h"
+	"proxy_base_checker.h"
+	<cassert>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/lvd_type_traits.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/char_arrays.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_tag_info.h
+	"proxy_class.h"
+	"type_list.h"
+	"lvd_type_traits.h"
+	"oolua_config.h"
+	"lvd_types.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_stack_helper.h
+	"lua_includes.h"
+	"oolua_stack_fwd.h"
+	"oolua_string.h"
+	<cassert>
+	"push_pointer_internal.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_string.h
+	"lvd_type_traits.h"
+	"proxy_test.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_test.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/push_pointer_internal.h
+	"proxy_userdata.h"
+	"proxy_storage.h"
+	"lvd_type_traits.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_constructor_param_tester.h
+	"proxy_userdata.h"
+	"lua_includes.h"
+	"class_from_stack.h"
+	"oolua_config.h"
+	"type_list.h"
+	"oolua_string.h"
+	"oolua_traits_fwd.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/type_converters.h
+
+1452190739 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_boilerplate.h
+	"oolua_config.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_exception.h
+	"oolua_config.h"
+	<exception>
+	<cstddef>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_member_function.h
+	"oolua_traits_fwd.h"
+	"oolua_boilerplate.h"
+	"proxy_caller.h"
+	"default_trait_caller.h"
+	<cassert>
+	"oolua_config.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_caller.h
+	"oolua_boilerplate.h"
+	"oolua_traits_fwd.h"
+	"type_converters.h"
+	"proxy_stack_helper.h"
+	"lua_includes.h"
+	"oolua_config.h"
+	"oolua_exception.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/default_trait_caller.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_none_member_function.h
+	"oolua_traits_fwd.h"
+	"oolua_boilerplate.h"
+	"proxy_caller.h"
+	"default_trait_caller.h"
+	"oolua_config.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_public_member.h
+	"oolua_stack_fwd.h"
+	"proxy_test.h"
+	"lvd_type_traits.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_traits.h
+	"oolua_traits_fwd.h"
+	"lvd_types.h"
+	"lvd_type_traits.h"
+	"proxy_test.h"
+	"oolua_string.h"
+
+1452190739 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_function_exports.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_version.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_error.h
+	"oolua_config.h"
+	"oolua_exception.h"
+	<cassert>
+	<string>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_stack.h
+	"oolua_stack_fwd.h"
+	"oolua_push.h"
+	"oolua_pull.h"
+	"stack_get.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_push.h
+	"lua_includes.h"
+	"oolua_stack_fwd.h"
+	"oolua_traits_fwd.h"
+	"oolua_string.h"
+	"oolua_config.h"
+	"lvd_types.h"
+	"lvd_type_traits.h"
+	<cassert>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_pull.h
+	"lua_includes.h"
+	"oolua_config.h"
+	"oolua_stack_fwd.h"
+	"oolua_traits_fwd.h"
+	"oolua_string.h"
+	"lvd_types.h"
+	"lvd_type_traits.h"
+	<cassert>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/stack_get.h
+	"lua_includes.h"
+	"oolua_traits_fwd.h"
+	"oolua_stack_fwd.h"
+	"oolua_string.h"
+	"lvd_types.h"
+	"lvd_type_traits.h"
+	"oolua_config.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_script.h
+	"lua_includes.h"
+	"oolua_stack_fwd.h"
+	"oolua_registration_fwd.h"
+	"oolua_function.h"
+	<string>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_registration_fwd.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_function.h
+	"lua_includes.h"
+	"oolua_stack_fwd.h"
+	"oolua_ref.h"
+	"oolua_boilerplate.h"
+	<string>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_ref.h
+	"lua_includes.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_open.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_chunk.h
+	<string>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_registration.h
+	"lua_includes.h"
+	"proxy_class.h"
+	"proxy_userdata.h"
+	"proxy_operators.h"
+	"proxy_function_dispatch.h"
+	"proxy_storage.h"
+	"proxy_tags.h"
+	"proxy_tag_info.h"
+	"proxy_base_checker.h"
+	"class_from_stack.h"
+	"push_pointer_internal.h"
+	"oolua_table.h"
+	"oolua_config.h"
+	"char_arrays.h"
+	"lvd_types.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_operators.h
+	"lua_includes.h"
+	"proxy_userdata.h"
+	"proxy_storage.h"
+	"oolua_stack_fwd.h"
+	"oolua_traits_fwd.h"
+	"push_pointer_internal.h"
+	"type_list.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_function_dispatch.h
+	"lua_includes.h"
+	"proxy_class.h"
+	"class_from_stack.h"
+	"oolua_config.h"
+	"oolua_exception.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_table.h
+	"lua_includes.h"
+	<string>
+	"oolua_stack_fwd.h"
+	"oolua_ref.h"
+	"oolua_config.h"
+	"oolua_error.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_helpers.h
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/utils/CRC32.cpp
+	"CRC32.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/utils/eqstring.cpp
+	"eqstring.h"
+	<stdio.h>
+	<malloc.h>
+	"platform/Platform.h"
+	"utils/strtools.h"
+	<string.h>
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/utils/eqthread.cpp
+	"eqthread.h"
+	"DebugInterface.h"
+	"platform/MessageBox.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/utils/eqtimer.cpp
+	"eqtimer.h"
+	<math.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/eqtimer.h
+	<stdio.h>
+	<stdlib.h>
+	"platform/Platform.h"
+	<sys/time.h>
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/utils/eqwstring.cpp
+	"eqwstring.h"
+	<stdio.h>
+	<malloc.h>
+	"platform/Platform.h"
+	"utils/strtools.h"
+	<wchar.h>
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/utils/KeyValues.cpp
+	<stdarg.h>
+	"core_base_header.h"
+	"DebugInterface.h"
+	"KeyValues.h"
+	<ctype.h>
+	"utils/strtools.h"
+	"IVirtualStream.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/core_base_header.h
+	"platform/Platform.h"
+	"utils/strtools.h"
+	"utils/eqtimer.h"
+	"utils/KeyValues.h"
+	"IConCommandFactory.h"
+	"InterfaceManager.h"
+	"IDkCore.h"
+	"IEqCPUServices.h"
+	"ILocalize.h"
+	"ppmem.h"
+	"ICmdLineParser.h"
+	"IFileSystem.h"
+	"DebugInterface.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/IDkCore.h
+	"ICmdLineParser.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ICmdLineParser.h
+	<stdio.h>
+	"InterfaceManager.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/IEqCPUServices.h
+	"IDkCore.h"
+	"dktypes.h"
+	"cpuInstrDefs.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ILocalize.h
+	"platform/Platform.h"
+	"InterfaceManager.h"
+	"utils/strtools.h"
+	<wchar.h>
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/utils/strtools.cpp
+	<stdarg.h>
+	<stdio.h>
+	"platform/Platform.h"
+	"strtools.h"
+	"DebugInterface.h"
+	<wchar.h>
+	<wctype.h>
+	<stdarg.h>
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/utils/Tokenizer.cpp
+	"Tokenizer.h"
+	<stdio.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/Tokenizer.h
+	"platform/Platform.h"
+	"DkList.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/VirtualStream.cpp
+	"VirtualStream.h"
+	"IFileSystem.h"
+	"utils/CRC32.h"
+	<stdarg.h>
+

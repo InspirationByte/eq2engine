@@ -200,7 +200,7 @@ OOLUA_PROXY_END
 //
 // UI panel
 //
-
+/*
 OOLUA_PROXY(IEqUIControl)
 	OOLUA_MFUNC_CONST( GetName )
 	OOLUA_MFUNC( SetName )
@@ -249,6 +249,9 @@ OOLUA_PROXY(CEqUI_Manager)
 	OOLUA_MFUNC( DestroyPanel );
 	OOLUA_MFUNC_CONST( FindPanel )
 OOLUA_PROXY_END
+*/
+
+
 #endif // __INTELLISENSE__
 
 #define LUA_SET_GLOBAL_ENUMCONST(state, constName)	\

@@ -61,15 +61,15 @@
 			<Add library="z" />
 			<Add library="jpeg" />
 			<Add library="../src_dependency/oolua/local_install/liboolua.a" />
-			<Add library="../src_dependency/luajit/src/libluajit.a" />
+			<Add library="../src_dependency/luajit/libluajit.a" />
 			<Add library="dl" />
-			<Add library="openal" />
 			<Add library="../src_dependency/Shiny/lib/libShiny.a" />
 			<Add library="ogg" />
 			<Add library="vorbis" />
 			<Add library="vorbisfile" />
+			<Add library="openal" />
 			<Add directory="../libs" />
-			<Add directory="../src_dependency/openal-soft" />
+			<Add directory="../src_dependency/openal-soft/build_linux" />
 		</Linker>
 		<Unit filename="../public/TextureAtlas.cpp" />
 		<Unit filename="../public/TextureAtlas.h" />

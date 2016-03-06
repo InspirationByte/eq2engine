@@ -6340,3 +6340,2259 @@
 1456748937 /home/soap/Projects/EqEngine/src_all/public/core/platform/MessageBox.h
 	"InterfaceManager.h"
 
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/luabinding/LuaBinding.cpp
+	"LuaBinding.h"
+	"platform/MessageBox.h"
+	"IFileSystem.h"
+	"DebugInterface.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/luabinding/LuaBinding.h
+	"lua.h"
+	"lualib.h"
+	"lauxlib.h"
+	"oolua.h"
+	"DebugInterface.h"
+
+1431628200 /home/soap/Projects/EqEngine/src_main/src_dependency/luajit/src/lua.h
+	<stdarg.h>
+	<stddef.h>
+	"luaconf.h"
+
+1431628200 /home/soap/Projects/EqEngine/src_main/src_dependency/luajit/src/luaconf.h
+	<limits.h>
+	<stddef.h>
+	<assert.h>
+
+1431628200 /home/soap/Projects/EqEngine/src_main/src_dependency/luajit/src/lualib.h
+	"lua.h"
+
+1431628200 /home/soap/Projects/EqEngine/src_main/src_dependency/luajit/src/lauxlib.h
+	<stddef.h>
+	<stdio.h>
+	"lua.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua.h
+	"lua_includes.h"
+	"oolua_dsl.h"
+	"proxy_function_exports.h"
+	"oolua_version.h"
+	"oolua_error.h"
+	"oolua_stack.h"
+	"oolua_script.h"
+	"oolua_open.h"
+	"oolua_chunk.h"
+	"oolua_registration.h"
+	"oolua_table.h"
+	"oolua_ref.h"
+	"oolua_helpers.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/lua_includes.h
+	"lua/lua.h"
+	"lua/lauxlib.h"
+	"lua/lualib.h"
+
+1431613800 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/lua/lua.h
+	<stdarg.h>
+	<stddef.h>
+	"luaconf.h"
+
+1431613800 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/lua/luaconf.h
+	<limits.h>
+	<stddef.h>
+	<assert.h>
+
+1431613800 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/lua/lauxlib.h
+	<stddef.h>
+	<stdio.h>
+	"lua.h"
+
+1431613800 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/lua/lualib.h
+	"lua.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_dsl.h
+	"dsl_va_args.h"
+	"proxy_class.h"
+	"proxy_constructor.h"
+	"proxy_member_function.h"
+	"proxy_none_member_function.h"
+	"proxy_public_member.h"
+	"proxy_tags.h"
+	"default_trait_caller.h"
+	"oolua_stack_fwd.h"
+	"oolua_traits.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/dsl_va_args.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_class.h
+	"type_list.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/type_list.h
+	"typelist_structs.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/typelist_structs.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_constructor.h
+	"lua_includes.h"
+	"oolua_traits_fwd.h"
+	"proxy_tags.h"
+	"proxy_storage.h"
+	"proxy_tag_info.h"
+	"proxy_userdata.h"
+	"proxy_stack_helper.h"
+	"proxy_constructor_param_tester.h"
+	"type_converters.h"
+	"oolua_boilerplate.h"
+	"oolua_exception.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_traits_fwd.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_tags.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_storage.h
+	"lua_includes.h"
+	"oolua_traits_fwd.h"
+	"oolua_stack_fwd.h"
+	"oolua_config.h"
+	"proxy_userdata.h"
+	"proxy_base_checker.h"
+	"proxy_class.h"
+	"lvd_types.h"
+	"class_from_stack.h"
+	"type_list.h"
+	"char_arrays.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_stack_fwd.h
+	"oolua_traits_fwd.h"
+
+1452437093 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_config.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_userdata.h
+	"oolua_config.h"
+	"lvd_types.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/lvd_types.h
+	"platform_check.h"
+	"type_list.h"
+	<stdint.h>
+	<stdint.h>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/platform_check.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_base_checker.h
+	"type_list.h"
+	"proxy_userdata.h"
+	"proxy_class.h"
+	"oolua_config.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/class_from_stack.h
+	"lua_includes.h"
+	"proxy_class.h"
+	"proxy_userdata.h"
+	"oolua_config.h"
+	"lvd_type_traits.h"
+	"proxy_base_checker.h"
+	<cassert>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/lvd_type_traits.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/char_arrays.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_tag_info.h
+	"proxy_class.h"
+	"type_list.h"
+	"lvd_type_traits.h"
+	"oolua_config.h"
+	"lvd_types.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_stack_helper.h
+	"lua_includes.h"
+	"oolua_stack_fwd.h"
+	"oolua_string.h"
+	<cassert>
+	"push_pointer_internal.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_string.h
+	"lvd_type_traits.h"
+	"proxy_test.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_test.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/push_pointer_internal.h
+	"proxy_userdata.h"
+	"proxy_storage.h"
+	"lvd_type_traits.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_constructor_param_tester.h
+	"proxy_userdata.h"
+	"lua_includes.h"
+	"class_from_stack.h"
+	"oolua_config.h"
+	"type_list.h"
+	"oolua_string.h"
+	"oolua_traits_fwd.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/type_converters.h
+
+1452190739 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_boilerplate.h
+	"oolua_config.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_exception.h
+	"oolua_config.h"
+	<exception>
+	<cstddef>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_member_function.h
+	"oolua_traits_fwd.h"
+	"oolua_boilerplate.h"
+	"proxy_caller.h"
+	"default_trait_caller.h"
+	<cassert>
+	"oolua_config.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_caller.h
+	"oolua_boilerplate.h"
+	"oolua_traits_fwd.h"
+	"type_converters.h"
+	"proxy_stack_helper.h"
+	"lua_includes.h"
+	"oolua_config.h"
+	"oolua_exception.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/default_trait_caller.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_none_member_function.h
+	"oolua_traits_fwd.h"
+	"oolua_boilerplate.h"
+	"proxy_caller.h"
+	"default_trait_caller.h"
+	"oolua_config.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_public_member.h
+	"oolua_stack_fwd.h"
+	"proxy_test.h"
+	"lvd_type_traits.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_traits.h
+	"oolua_traits_fwd.h"
+	"lvd_types.h"
+	"lvd_type_traits.h"
+	"proxy_test.h"
+	"oolua_string.h"
+
+1452190739 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_function_exports.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_version.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_error.h
+	"oolua_config.h"
+	"oolua_exception.h"
+	<cassert>
+	<string>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_stack.h
+	"oolua_stack_fwd.h"
+	"oolua_push.h"
+	"oolua_pull.h"
+	"stack_get.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_push.h
+	"lua_includes.h"
+	"oolua_stack_fwd.h"
+	"oolua_traits_fwd.h"
+	"oolua_string.h"
+	"oolua_config.h"
+	"lvd_types.h"
+	"lvd_type_traits.h"
+	<cassert>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_pull.h
+	"lua_includes.h"
+	"oolua_config.h"
+	"oolua_stack_fwd.h"
+	"oolua_traits_fwd.h"
+	"oolua_string.h"
+	"lvd_types.h"
+	"lvd_type_traits.h"
+	<cassert>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/stack_get.h
+	"lua_includes.h"
+	"oolua_traits_fwd.h"
+	"oolua_stack_fwd.h"
+	"oolua_string.h"
+	"lvd_types.h"
+	"lvd_type_traits.h"
+	"oolua_config.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_script.h
+	"lua_includes.h"
+	"oolua_stack_fwd.h"
+	"oolua_registration_fwd.h"
+	"oolua_function.h"
+	<string>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_registration_fwd.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_function.h
+	"lua_includes.h"
+	"oolua_stack_fwd.h"
+	"oolua_ref.h"
+	"oolua_boilerplate.h"
+	<string>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_ref.h
+	"lua_includes.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_open.h
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_chunk.h
+	<string>
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_registration.h
+	"lua_includes.h"
+	"proxy_class.h"
+	"proxy_userdata.h"
+	"proxy_operators.h"
+	"proxy_function_dispatch.h"
+	"proxy_storage.h"
+	"proxy_tags.h"
+	"proxy_tag_info.h"
+	"proxy_base_checker.h"
+	"class_from_stack.h"
+	"push_pointer_internal.h"
+	"oolua_table.h"
+	"oolua_config.h"
+	"char_arrays.h"
+	"lvd_types.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_operators.h
+	"lua_includes.h"
+	"proxy_userdata.h"
+	"proxy_storage.h"
+	"oolua_stack_fwd.h"
+	"oolua_traits_fwd.h"
+	"push_pointer_internal.h"
+	"type_list.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/proxy_function_dispatch.h
+	"lua_includes.h"
+	"proxy_class.h"
+	"class_from_stack.h"
+	"oolua_config.h"
+	"oolua_exception.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_table.h
+	"lua_includes.h"
+	<string>
+	"oolua_stack_fwd.h"
+	"oolua_ref.h"
+	"oolua_config.h"
+	"oolua_error.h"
+
+1442500996 /home/soap/Projects/EqEngine/src_main/src_dependency/oolua/include/oolua_helpers.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/DebugInterface.h
+	"InterfaceManager.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/InterfaceManager.h
+	<stdio.h>
+	"utils/singleton.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/singleton.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/platform/MessageBox.h
+	"InterfaceManager.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/IFileSystem.h
+	"InterfaceManager.h"
+	"IVirtualStream.h"
+	<sys/types.h>
+	<sys/stat.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/IVirtualStream.h
+	"ppmem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ppmem.h
+	<string.h>
+	"platform/Platform.h"
+	"InterfaceManager.h"
+	"utils/eqthread.h"
+
+1457292040 /home/soap/Projects/EqEngine/src_main/public/core/platform/Platform.h
+	"dktypes.h"
+	"InterfaceManager.h"
+	<SDL.h>
+	<SDL_syswm.h>
+	<windows.h>
+	<stdio.h>
+	<X11/keysym.h>
+	<float.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/dktypes.h
+	<stddef.h>
+	<string.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/eqthread.h
+	"platform/Platform.h"
+	<sched.h>
+	<pthread.h>
+	<errno.h>
+	<stdint.h>
+	"eqstring.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/eqstring.h
+	<stdlib.h>
+	<string.h>
+	"dktypes.h"
+	"eqwstring.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/eqwstring.h
+	<stdlib.h>
+	<string.h>
+	"dktypes.h"
+	"eqstring.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/luabinding/LuaBinding_Engine.cpp
+	"LuaBinding_Engine.h"
+	"core_base_header.h"
+	"Network/NETThread.h"
+
+1457292265 /home/soap/Projects/EqEngine/src_main/public/luabinding/LuaBinding_Engine.h
+	"LuaBinding.h"
+	"LuaBinding_Math.h"
+	"IDebugOverlay.h"
+	"GameSoundEmitterSystem.h"
+	"utils/KeyValues.h"
+	"utils/strtools.h"
+	"FontCache.h"
+	"network/NetMessageBuffer.h"
+	"ILocalize.h"
+	"IConCommandFactory.h"
+	"EGUI/EQUI_Manager.h"
+	"EGUI/EqUI_Panel.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/luabinding/LuaBinding_Math.h
+	"LuaBinding.h"
+	"math/DkMath.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/DkMath.h
+	"Vector.h"
+	"Matrix.h"
+	"Random.h"
+	"BoundingBox.h"
+	"SIMD.h"
+	"Volume.h"
+	"FVector.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Vector.h
+	<limits.h>
+	<float.h>
+	"dktypes.h"
+	"math_common.h"
+	"Vector_Inline.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/math_common.h
+	<math.h>
+	<float.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Vector_Inline.h
+	"Vector.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Matrix.h
+	"Vector.h"
+	"Quaternion.h"
+	"Matrix_Inline.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Quaternion.h
+	"Matrix.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Matrix_Inline.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Random.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/BoundingBox.h
+	"Vector.h"
+	"FixedMath.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/FixedMath.h
+	"dktypes.h"
+	<limits.h>
+	<float.h>
+	<math.h>
+	"math/math_common.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/SIMD.h
+	"Vector.h"
+	<xmmintrin.h>
+	"cpuInstrDefs.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/cpuInstrDefs.h
+	<mmintrin.h>
+	<emmintrin.h>
+	<mm3dnow.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Volume.h
+	"Matrix.h"
+	"Vector.h"
+	"math_common.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/FVector.h
+	"FixedMath.h"
+	"Matrix.h"
+	"Volume.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/IDebugOverlay.h
+	"InterfaceManager.h"
+	"math/Vector.h"
+	"math/Matrix.h"
+	"utils/DkLinkedList.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/DkLinkedList.h
+	"dktypes.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_game/GameSoundEmitterSystem.h
+	"math/Vector.h"
+	"ISoundSystem.h"
+	"utils/eqstring.h"
+	"utils/DkList.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/ISoundSystem.h
+	"math/Vector.h"
+	"math/Matrix.h"
+	"ppmem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/DkList.h
+	"platform/MessageBox.h"
+	"dktypes.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/KeyValues.h
+	"platform/Platform.h"
+	"utils/DkList.h"
+	"math/DkMath.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/strtools.h
+	"utils/DkLinkedList.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+	"utils/eqwstring.h"
+	<ctype.h>
+	<string.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/FontCache.h
+	"IFont.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/IFont.h
+	"math/Rectangle.h"
+	"materialsystem/IMaterialSystem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Rectangle.h
+	"Vector.h"
+	"math_util.h"
+	"coord.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/math/math_util.h
+	"Matrix.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/coord.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMaterialSystem.h
+	"DebugInterface.h"
+	"IDkCore.h"
+	"renderers/IShaderAPI.h"
+	"IMaterial.h"
+	"IMatSysShader.h"
+	"ViewParams.h"
+	"scene_def.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/IDkCore.h
+	"ICmdLineParser.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ICmdLineParser.h
+	<stdio.h>
+	"InterfaceManager.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IShaderAPI.h
+	"platform/Platform.h"
+	"utils/DkList.h"
+	"ShaderAPICaps.h"
+	"IShaderProgram.h"
+	"IVertexBuffer.h"
+	"IVertexFormat.h"
+	"IIndexBuffer.h"
+	"IMeshBuilder.h"
+	"ITexture.h"
+	"IOcclusionQuery.h"
+	"IRenderState.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/ShaderAPICaps.h
+	"textureformats.h"
+	"ShaderAPI_defs.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/textureformats.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/ShaderAPI_defs.h
+	"math/Vector.h"
+	"math/Matrix.h"
+	"math/Rectangle.h"
+	"platform/Platform.h"
+	"textureformats.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+	"ppmem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IShaderProgram.h
+	"ppmem.h"
+	"refcounted.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/refcounted.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IVertexBuffer.h
+	"ShaderAPI_defs.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IVertexFormat.h
+	"platform/Platform.h"
+	"ShaderAPI_defs.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IIndexBuffer.h
+	"ShaderAPI_defs.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IMeshBuilder.h
+	<stdio.h>
+	"platform/Platform.h"
+	"math/Vector.h"
+	"ShaderAPI_defs.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/ITexture.h
+	"textureformats.h"
+	"ShaderAPI_defs.h"
+	"refcounted.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IOcclusionQuery.h
+	"dktypes.h"
+	"ppmem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IRenderState.h
+	"ShaderAPI_defs.h"
+	"ppmem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMaterial.h
+	"ppmem.h"
+	"refcounted.h"
+	"IMatSysShader.h"
+	"IMaterialVar.h"
+	"IMaterialProxy.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMatSysShader.h
+	"IMaterial.h"
+	"math/DkMath.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMaterialVar.h
+	"math/Vector.h"
+	"ppmem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMaterialProxy.h
+	"IMaterial.h"
+	"utils/KeyValues.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/ViewParams.h
+	"math/DkMath.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/scene_def.h
+	"dktypes.h"
+	"math/DkMath.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/network/NetMessageBuffer.h
+	"net_defs.h"
+	"NetInterfaces.h"
+	"DebugInterface.h"
+	<string.h>
+	<time.h>
+	"math/Vector.h"
+	"VirtualStream.h"
+	"luabinding/LuaBinding_Math.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/network/net_defs.h
+	<winsock.h>
+	<unistd.h>
+	<sys/types.h>
+	<sys/socket.h>
+	<sys/ioctl.h>
+	<netinet/in.h>
+	<netinet/ip.h>
+	<netdb.h>
+	<errno.h>
+	<fcntl.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/network/NetInterfaces.h
+	"c_udp.h"
+	"platform/Platform.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/network/c_udp.h
+	"utils/DkList.h"
+	"utils/eqthread.h"
+	<map>
+	"platform/Platform.h"
+	"net_defs.h"
+	"VirtualStream.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/VirtualStream.h
+	"IVirtualStream.h"
+	"IFileSystem.h"
+	"DebugInterface.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ILocalize.h
+	"platform/Platform.h"
+	"InterfaceManager.h"
+	"utils/strtools.h"
+	<wchar.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/IConCommandFactory.h
+	<stdio.h>
+	<stdlib.h>
+	"utils/DkList.h"
+	"ConVar.h"
+	"ConCommand.h"
+	"ConCommandBase.h"
+	"InterfaceManager.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ConVar.h
+	<stdio.h>
+	<stdlib.h>
+	"ConCommandBase.h"
+	"InterfaceManager.h"
+	"utils\DkStr.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ConCommandBase.h
+	<stdio.h>
+	<stdlib.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ConCommand.h
+	<stdio.h>
+	<stdlib.h>
+	"ConCommandBase.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+	"InterfaceManager.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/EGUI/EQUI_Manager.h
+	"materialsystem/IMaterialSystem.h"
+	"math/Rectangle.h"
+	"utils/DkList.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/EGUI/EqUI_Panel.h
+	"math/DkMath.h"
+	"math/Rectangle.h"
+	"utils/eqstring.h"
+	"utils/DkLinkedList.h"
+	"utils/KeyValues.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/core_base_header.h
+	"platform/Platform.h"
+	"utils/strtools.h"
+	"utils/eqtimer.h"
+	"utils/KeyValues.h"
+	"IConCommandFactory.h"
+	"InterfaceManager.h"
+	"IDkCore.h"
+	"IEqCPUServices.h"
+	"ILocalize.h"
+	"ppmem.h"
+	"ICmdLineParser.h"
+	"IFileSystem.h"
+	"DebugInterface.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/eqtimer.h
+	<stdio.h>
+	<stdlib.h>
+	"platform/Platform.h"
+	<sys/time.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/core/IEqCPUServices.h
+	"IDkCore.h"
+	"dktypes.h"
+	"cpuInstrDefs.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/Network/NETThread.h
+	"luabinding/LuaBinding.h"
+	"utils/eqthread.h"
+	"utils/DkList.h"
+	"utils/eqtimer.h"
+	"network/c_udp.h"
+	"network/NetInterfaces.h"
+	"network/NetMessageBuffer.h"
+	"network/NetEvent.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/network/NetEvent.h
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/materialsystem/BaseShader.cpp
+	"BaseShader.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/BaseShader.h
+	"materialsystem/IMaterialSystem.h"
+	"utils/strtools.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/TextureAtlas.cpp
+	"TextureAtlas.h"
+	"core_base_header.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/TextureAtlas.h
+	"math/DkMath.h"
+	"math/Rectangle.h"
+	"utils/eqstring.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/public/ViewParams.cpp
+	"ViewParams.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/Audio/alsnd_emitter.cpp
+	<sys/stat.h>
+	<stdlib.h>
+	<AL/al.h>
+	<AL/alc.h>
+	<AL/alext.h>
+	<vorbis/vorbisfile.h>
+	"DebugInterface.h"
+	"alsound_local.h"
+
+1408086420 /home/soap/Projects/EqEngine/src_main/src_dependency/openal-soft/include/AL/al.h
+
+1408086420 /home/soap/Projects/EqEngine/src_main/src_dependency/openal-soft/include/AL/alc.h
+
+1408086420 /home/soap/Projects/EqEngine/src_main/src_dependency/openal-soft/include/AL/alext.h
+	<stddef.h>
+	<inttypes.h>
+	<stdint.h>
+	<inttypes.h>
+	"alc.h"
+	"al.h"
+	"efx.h"
+
+1408086420 /home/soap/Projects/EqEngine/src_main/src_dependency/openal-soft/include/AL/efx.h
+	"alc.h"
+	"al.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/Audio/alsound_local.h
+	"soundzero.h"
+	"alsnd_sample.h"
+	"alsnd_emitter.h"
+	"alsnd_stream.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/Audio/soundzero.h
+	"ISoundSystem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/Audio/alsnd_sample.h
+	"utils/eqthread.h"
+	"utils/DkList.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/Audio/alsnd_emitter.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/Audio/alsnd_stream.h
+	"ISoundSystem.h"
+	"IFileSystem.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/Audio/alsnd_sample.cpp
+	<sys/stat.h>
+	<stdlib.h>
+	<AL/al.h>
+	<AL/alc.h>
+	<AL/alext.h>
+	<vorbis/vorbisfile.h>
+	"DebugInterface.h"
+	"alsound_local.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/Audio/alsnd_stream.cpp
+	<sys/stat.h>
+	<stdlib.h>
+	<AL/al.h>
+	<AL/alc.h>
+	<vorbis/vorbisfile.h>
+	"DebugInterface.h"
+	"alsound_local.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/Audio/alsound_local.cpp
+	<AL/al.h>
+	<AL/alc.h>
+	<AL/alext.h>
+	<vorbis/vorbisfile.h>
+	"alsound_local.h"
+	"ISoundSystem.h"
+	"DebugInterface.h"
+	"ConCommand.h"
+	"ConVar.h"
+	"utils/KeyValues.h"
+	"eqParallelJobs.h"
+	"IDebugOverlay.h"
+	"IEngineGame.h"
+	"IEngineHost.h"
+	"coord.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/eqParallelJobs.h
+	"utils/eqthread.h"
+	"utils/DkList.h"
+	"utils/DkLinkedList.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/IEngineGame.h
+	"in_keys_ident.h"
+	"IEqModel.h"
+	"GlobalVarsBase.h"
+	"ISoundSystem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/in_keys_ident.h
+	"platform/Platform.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/IEqModel.h
+	"model.h"
+	"ppmem.h"
+	"Decals.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/model.h
+	"math/DkMath.h"
+	"utils/DkList.h"
+	"dktypes.h"
+	"materialsystem/renderers/ShaderAPI_defs.h"
+	"motionpackage.h"
+	"physmodel.h"
+	"model_eq.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/motionpackage.h
+	"platform/Platform.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/physmodel.h
+	"platform/Platform.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/model_eq.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/Decals.h
+	"eqlevel.h"
+	"model.h"
+	"math/BoundingBox.h"
+	"ppmem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/eqlevel.h
+	"dktypes.h"
+	"coord.h"
+	"math/DkMath.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/GlobalVarsBase.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/IEngineHost.h
+	"math/Vector.h"
+	"math/Matrix.h"
+	"in_keys_ident.h"
+	"IFont.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/Audio/soundzero.cpp
+	"DebugInterface.h"
+	"soundzero.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/cfgloader.cpp
+	"core_base_header.h"
+	"utils/strtools.h"
+	"IConCommandFactory.h"
+	"KeyBinding/Keys.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/KeyBinding/Keys.h
+	<stdio.h>
+	<stdlib.h>
+	"ConCommand.h"
+	"utils/DkList.h"
+	"in_keys_ident.h"
+	"IFileSystem.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/DebugOverlay.cpp
+	"DebugOverlay.h"
+	"FontCache.h"
+	"DebugInterface.h"
+	"math/math_util.h"
+	"ConVar.h"
+	"utils/strtools.h"
+	"materialsystem/IMaterialSystem.h"
+	<stdarg.h>
+	"math/Rectangle.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/DebugOverlay.h
+	"IDebugOverlay.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+	"utils/eqthread.h"
+	"math/Vector.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/EffectRender.cpp
+	"EffectRender.h"
+	"core_base_header.h"
+	"IDebugOverlay.h"
+	"eqParallelJobs.h"
+	"eqGlobalMutex.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/EffectRender.h
+	"TextureAtlas.h"
+	"utils/eqthread.h"
+	"math/DkMath.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/eqGlobalMutex.h
+	"utils/eqthread.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/EGFInstancer.cpp
+	"EGFInstancer.h"
+	"renderers/IShaderAPI.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/EGFInstancer.h
+	"IEqModel.h"
+	"materialsystem/IMaterialSystem.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/EGUI/EQUI_Manager.cpp
+	"EQUI_Manager.h"
+	"core_base_header.h"
+	"in_keys_ident.h"
+	"EqUI_Panel.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/EGUI/EqUI_Panel.cpp
+	"EqUI_Panel.h"
+	"EQUI_Manager.h"
+	"materialsystem/IMaterialSystem.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/EngineSpew.cpp
+	"EngineSpew.h"
+	"DebugInterface.h"
+	"IDebugOverlay.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/EngineSpew.h
+	"core_base_header.h"
+	"math/Vector.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/EngineVersion.cpp
+	"EngineVersion.h"
+	"ConCommand.h"
+	"utils/strtools.h"
+	<string.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/EngineVersion.h
+	"DebugInterface.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/eqGlobalMutex.cpp
+	"eqGlobalMutex.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/eqParallelJobs.cpp
+	"eqParallelJobs.h"
+	"eqGlobalMutex.h"
+	"DebugInterface.h"
+	"utils/strtools.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/EqParticles_Render.cpp
+	"EqParticles.h"
+	"eqGlobalMutex.h"
+	"IConCommandFactory.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/EqParticles.h
+	"materialsystem/IMaterialSystem.h"
+	"BaseRenderableObject.h"
+	"EffectRender.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/BaseRenderableObject.h
+	"math/DkMath.h"
+	"dktypes.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/Font.cpp
+	"DebugInterface.h"
+	"math/Rectangle.h"
+	"materialsystem/IMaterialSystem.h"
+	"Font.h"
+	"utils/DkList.h"
+	"utils/strtools.h"
+	<stdlib.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/Font.h
+	"IFont.h"
+	<map>
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/FontCache.cpp
+	"FontCache.h"
+	"Font.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/FontLayoutBuilders.cpp
+	"FontLayoutBuilders.h"
+	<wctype.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/FontLayoutBuilders.h
+	"IFont.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/KeyBinding/Keys.cpp
+	"KeyBinding/Keys.h"
+	"cfgloader.h"
+	"IConCommandFactory.h"
+	"DebugInterface.h"
+	"utils/strtools.h"
+	"InterfaceManager.h"
+	"IEngineGame.h"
+	"sys_console.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/cfgloader.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/sys_console.h
+	<stdio.h>
+	"DebugInterface.h"
+	"math/Vector.h"
+	"Font.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/materialsystem/MaterialProxy.cpp
+	"MaterialProxy.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/materialsystem/MaterialProxy.h
+	"IMaterialSystem.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/modelloader_shared.cpp
+	"DebugInterface.h"
+	"modelloader_shared.h"
+	"IFileSystem.h"
+	<zlib.h>
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/modelloader_shared.h
+	"model.h"
+	"ppmem.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/Network/NETThread.cpp
+	"NETThread.h"
+	"eqGlobalMutex.h"
+	"ConVar.h"
+	"utils/strtools.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/physics/BulletShapeCache.cpp
+	"BulletShapeCache.h"
+	"btBulletCollisionCommon.h"
+	"BulletConvert.h"
+	"eqGlobalMutex.h"
+	"ConVar.h"
+	"DebugInterface.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/physics/BulletShapeCache.h
+	"physics/IStudioShapeCache.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/physics/IStudioShapeCache.h
+	"model.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/btBulletCollisionCommon.h
+	"BulletCollision/CollisionDispatch/btCollisionWorld.h"
+	"BulletCollision/CollisionDispatch/btCollisionObject.h"
+	"BulletCollision/CollisionShapes/btBoxShape.h"
+	"BulletCollision/CollisionShapes/btSphereShape.h"
+	"BulletCollision/CollisionShapes/btCapsuleShape.h"
+	"BulletCollision/CollisionShapes/btCylinderShape.h"
+	"BulletCollision/CollisionShapes/btConeShape.h"
+	"BulletCollision/CollisionShapes/btStaticPlaneShape.h"
+	"BulletCollision/CollisionShapes/btConvexHullShape.h"
+	"BulletCollision/CollisionShapes/btTriangleMesh.h"
+	"BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
+	"BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h"
+	"BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h"
+	"BulletCollision/CollisionShapes/btTriangleMeshShape.h"
+	"BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h"
+	"BulletCollision/CollisionShapes/btCompoundShape.h"
+	"BulletCollision/CollisionShapes/btTetrahedronShape.h"
+	"BulletCollision/CollisionShapes/btEmptyShape.h"
+	"BulletCollision/CollisionShapes/btMultiSphereShape.h"
+	"BulletCollision/CollisionShapes/btUniformScalingShape.h"
+	"BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h"
+	"BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h"
+	"BulletCollision/CollisionDispatch/btCollisionDispatcher.h"
+	"BulletCollision/BroadphaseCollision/btSimpleBroadphase.h"
+	"BulletCollision/BroadphaseCollision/btAxisSweep3.h"
+	"BulletCollision/BroadphaseCollision/btMultiSapBroadphase.h"
+	"BulletCollision/BroadphaseCollision/btDbvtBroadphase.h"
+	"LinearMath/btQuaternion.h"
+	"LinearMath/btTransform.h"
+	"LinearMath/btDefaultMotionState.h"
+	"LinearMath/btQuickprof.h"
+	"LinearMath/btIDebugDraw.h"
+	"LinearMath/btSerializer.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionDispatch/btCollisionWorld.h
+	"LinearMath/btVector3.h"
+	"LinearMath/btTransform.h"
+	"btCollisionObject.h"
+	"btCollisionDispatcher.h"
+	"BulletCollision/BroadphaseCollision/btOverlappingPairCache.h"
+	"LinearMath/btAlignedObjectArray.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btVector3.h
+	"btScalar.h"
+	"btMinMax.h"
+	"btAlignedAllocator.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btScalar.h
+	<math.h>
+	<stdlib.h>
+	<float.h>
+	<ppcintrinsics.h>
+	<emmintrin.h>
+	<stdio.h>
+	<assert.h>
+	<assert.h>
+	<spu_printf.h>
+	<assert.h>
+	<smmintrin.h>
+	<tmmintrin.h>
+	<pmmintrin.h>
+	<emmintrin.h>
+	<arm_neon.h>
+	<assert.h>
+	<stdio.h>
+	<assert.h>
+	<arm_neon.h>
+	<arm_neon.h>
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btMinMax.h
+	"btScalar.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btAlignedAllocator.h
+	"btScalar.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btTransform.h
+	"btMatrix3x3.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btMatrix3x3.h
+	"btVector3.h"
+	"btQuaternion.h"
+	<stdio.h>
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btQuaternion.h
+	"btVector3.h"
+	"btQuadWord.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btQuadWord.h
+	"btScalar.h"
+	"btMinMax.h"
+	<altivec.h>
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionDispatch/btCollisionObject.h
+	"LinearMath/btTransform.h"
+	"LinearMath/btMotionState.h"
+	"LinearMath/btAlignedAllocator.h"
+	"LinearMath/btAlignedObjectArray.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btMotionState.h
+	"btTransform.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btAlignedObjectArray.h
+	"btScalar.h"
+	"btAlignedAllocator.h"
+	<memory.h>
+	<string.h>
+	<new>
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionDispatch/btCollisionDispatcher.h
+	"BulletCollision/BroadphaseCollision/btDispatcher.h"
+	"BulletCollision/NarrowPhaseCollision/btPersistentManifold.h"
+	"BulletCollision/CollisionDispatch/btManifoldResult.h"
+	"BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
+	"LinearMath/btAlignedObjectArray.h"
+	"btCollisionCreateFunc.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/BroadphaseCollision/btDispatcher.h
+	"LinearMath/btScalar.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/NarrowPhaseCollision/btPersistentManifold.h
+	"LinearMath/btVector3.h"
+	"LinearMath/btTransform.h"
+	"btManifoldPoint.h"
+	"LinearMath/btAlignedAllocator.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/NarrowPhaseCollision/btManifoldPoint.h
+	"LinearMath/btVector3.h"
+	"LinearMath/btTransformUtil.h"
+	"physics_effects/base_level/solver/pfx_constraint_row.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btTransformUtil.h
+	"btTransform.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionDispatch/btManifoldResult.h
+	"BulletCollision/NarrowPhaseCollision/btPersistentManifold.h"
+	"BulletCollision/NarrowPhaseCollision/btDiscreteCollisionDetectorInterface.h"
+	"LinearMath/btTransform.h"
+	"BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h"
+	"BulletCollision/CollisionDispatch/btCollisionObject.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/NarrowPhaseCollision/btDiscreteCollisionDetectorInterface.h
+	"LinearMath/btTransform.h"
+	"LinearMath/btVector3.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h
+	"LinearMath/btScalar.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/BroadphaseCollision/btBroadphaseProxy.h
+	"LinearMath/btScalar.h"
+	"LinearMath/btVector3.h"
+	"LinearMath/btAlignedAllocator.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionDispatch/btCollisionCreateFunc.h
+	"LinearMath/btAlignedObjectArray.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/BroadphaseCollision/btOverlappingPairCache.h
+	"btBroadphaseInterface.h"
+	"btBroadphaseProxy.h"
+	"btOverlappingPairCallback.h"
+	"LinearMath/btAlignedObjectArray.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/BroadphaseCollision/btBroadphaseInterface.h
+	"btBroadphaseProxy.h"
+	"LinearMath/btVector3.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/BroadphaseCollision/btOverlappingPairCallback.h
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btBoxShape.h
+	"btPolyhedralConvexShape.h"
+	"btCollisionMargin.h"
+	"BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
+	"LinearMath/btVector3.h"
+	"LinearMath/btMinMax.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btPolyhedralConvexShape.h
+	"LinearMath/btMatrix3x3.h"
+	"btConvexInternalShape.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btConvexInternalShape.h
+	"btConvexShape.h"
+	"LinearMath/btAabbUtil2.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btConvexShape.h
+	"btCollisionShape.h"
+	"LinearMath/btVector3.h"
+	"LinearMath/btTransform.h"
+	"LinearMath/btMatrix3x3.h"
+	"btCollisionMargin.h"
+	"LinearMath/btAlignedAllocator.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btCollisionShape.h
+	"LinearMath/btTransform.h"
+	"LinearMath/btVector3.h"
+	"LinearMath/btMatrix3x3.h"
+	"BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btCollisionMargin.h
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btAabbUtil2.h
+	"btTransform.h"
+	"btVector3.h"
+	"btMinMax.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btSphereShape.h
+	"btConvexInternalShape.h"
+	"BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btCapsuleShape.h
+	"btConvexInternalShape.h"
+	"BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btCylinderShape.h
+	"btBoxShape.h"
+	"BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
+	"LinearMath/btVector3.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btConeShape.h
+	"btConvexInternalShape.h"
+	"BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btStaticPlaneShape.h
+	"btConcaveShape.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btConcaveShape.h
+	"btCollisionShape.h"
+	"BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
+	"btTriangleCallback.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btTriangleCallback.h
+	"LinearMath/btVector3.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btConvexHullShape.h
+	"btPolyhedralConvexShape.h"
+	"BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
+	"LinearMath/btAlignedObjectArray.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btTriangleMesh.h
+	"btTriangleIndexVertexArray.h"
+	"LinearMath/btVector3.h"
+	"LinearMath/btAlignedObjectArray.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h
+	"btStridingMeshInterface.h"
+	"LinearMath/btAlignedObjectArray.h"
+	"LinearMath/btScalar.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btStridingMeshInterface.h
+	"LinearMath/btVector3.h"
+	"btTriangleCallback.h"
+	"btConcaveShape.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h
+	"btPolyhedralConvexShape.h"
+	"BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h
+	"btTriangleMeshShape.h"
+	"btOptimizedBvh.h"
+	"LinearMath/btAlignedAllocator.h"
+	"btTriangleInfoMap.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btTriangleMeshShape.h
+	"btConcaveShape.h"
+	"btStridingMeshInterface.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btOptimizedBvh.h
+	"BulletCollision/BroadphaseCollision/btQuantizedBvh.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/BroadphaseCollision/btQuantizedBvh.h
+	<stdio.h>
+	<stdlib.h>
+	"LinearMath/btVector3.h"
+	"LinearMath/btAlignedAllocator.h"
+	"LinearMath/btAlignedAllocator.h"
+	"LinearMath/btAlignedObjectArray.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btTriangleInfoMap.h
+	"LinearMath/btHashMap.h"
+	"LinearMath/btSerializer.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btHashMap.h
+	"btAlignedObjectArray.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btSerializer.h
+	"btScalar.h"
+	"btHashMap.h"
+	<memory.h>
+	<string.h>
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h
+	"BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btCompoundShape.h
+	"btCollisionShape.h"
+	"LinearMath/btVector3.h"
+	"LinearMath/btTransform.h"
+	"LinearMath/btMatrix3x3.h"
+	"btCollisionMargin.h"
+	"LinearMath/btAlignedObjectArray.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btTetrahedronShape.h
+	"btPolyhedralConvexShape.h"
+	"BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btEmptyShape.h
+	"btConcaveShape.h"
+	"LinearMath/btVector3.h"
+	"LinearMath/btTransform.h"
+	"LinearMath/btMatrix3x3.h"
+	"btCollisionMargin.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btMultiSphereShape.h
+	"btConvexInternalShape.h"
+	"BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
+	"LinearMath/btAlignedObjectArray.h"
+	"LinearMath/btAabbUtil2.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btUniformScalingShape.h
+	"btConvexShape.h"
+	"BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h
+	"btActivatingCollisionAlgorithm.h"
+	"BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
+	"BulletCollision/CollisionDispatch/btCollisionCreateFunc.h"
+	"btCollisionDispatcher.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionDispatch/btActivatingCollisionAlgorithm.h
+	"BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h
+	"LinearMath/btScalar.h"
+	"LinearMath/btAlignedObjectArray.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h
+	"btCollisionConfiguration.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionDispatch/btCollisionConfiguration.h
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/BroadphaseCollision/btSimpleBroadphase.h
+	"btOverlappingPairCache.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/BroadphaseCollision/btAxisSweep3.h
+	"LinearMath/btVector3.h"
+	"btOverlappingPairCache.h"
+	"btBroadphaseInterface.h"
+	"btBroadphaseProxy.h"
+	"btOverlappingPairCallback.h"
+	"btDbvtBroadphase.h"
+	<stdio.h>
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/BroadphaseCollision/btDbvtBroadphase.h
+	"BulletCollision/BroadphaseCollision/btDbvt.h"
+	"BulletCollision/BroadphaseCollision/btOverlappingPairCache.h"
+	"LinearMath/btQuickprof.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/BroadphaseCollision/btDbvt.h
+	"LinearMath/btAlignedObjectArray.h"
+	"LinearMath/btVector3.h"
+	"LinearMath/btTransform.h"
+	"LinearMath/btAabbUtil2.h"
+	<emmintrin.h>
+	<memory.h>
+	<string.h>
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btQuickprof.h
+	<stdio.h>
+	"btScalar.h"
+	"btAlignedAllocator.h"
+	<new>
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/BroadphaseCollision/btMultiSapBroadphase.h
+	"btBroadphaseInterface.h"
+	"LinearMath/btAlignedObjectArray.h"
+	"btOverlappingPairCache.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btDefaultMotionState.h
+	"btMotionState.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/LinearMath/btIDebugDraw.h
+	"btVector3.h"
+	"btTransform.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/physics/BulletConvert.h
+	"LinearMath/btTransform.h"
+	"IDebugOverlay.h"
+	"math/Vector.h"
+	"math/Matrix.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/studio_egf.cpp
+	"studio_egf.h"
+	"DebugInterface.h"
+	"math/math_util.h"
+	"utils/SmartPtr.h"
+	"utils/GeomTools.h"
+	"utils/strtools.h"
+	"physics/IStudioShapeCache.h"
+	"eqParallelJobs.h"
+	"ConVar.h"
+	"IEngineGame.h"
+	"IDebugOverlay.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/shared_engine/studio_egf.h
+	"IEqModel.h"
+	"modelloader_shared.h"
+	"materialsystem/IMaterialSystem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/SmartPtr.h
+	<malloc.h>
+	"ppmem.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/GeomTools.h
+	"utils/DkList.h"
+	"math/DkMath.h"
+	"GeomTools_inline.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/GeomTools_inline.h
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_engine/sys_console.cpp
+	"sys_console.h"
+	<stdio.h>
+	"FontLayoutBuilders.h"
+	"EngineSpew.h"
+	"EngineVersion.h"
+	"FontCache.h"
+	"KeyBinding/Keys.h"
+
+1457289078 source:/home/soap/Projects/EqEngine/src_main/shared_game/GameSoundEmitterSystem.cpp
+	"GameSoundEmitterSystem.h"
+	"core_base_header.h"
+	"IEngineWorld.h"
+	"IEngineHost.h"
+	"IViewRenderer.h"
+	"IDebugOverlay.h"
+	"math/Random.h"
+	"Shiny.h"
+	"BaseEngineHeader.h"
+	"IEngineGame.h"
+	"EngineEntities.h"
+	"IDkPhysics.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/IEngineWorld.h
+	"eqlevel.h"
+	"math/BoundingBox.h"
+	"Decals.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/IViewRenderer.h
+	"materialsystem/IMaterialSystem.h"
+	"IEngineWorld.h"
+	"ViewParams.h"
+	"RenderList.h"
+	"scene_def.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/RenderList.h
+	"BaseRenderableObject.h"
+	"utils/DkList.h"
+
+1363980704 /home/soap/Projects/EqEngine/src_main/src_dependency/Shiny/include/Shiny.h
+	"ShinyMacros.h"
+	"ShinyManager.h"
+
+1456152675 /home/soap/Projects/EqEngine/src_main/src_dependency/Shiny/include/ShinyMacros.h
+	"ShinyManager.h"
+
+1363980704 /home/soap/Projects/EqEngine/src_main/src_dependency/Shiny/include/ShinyManager.h
+	"ShinyZone.h"
+	"ShinyNode.h"
+	"ShinyNodePool.h"
+	"ShinyTools.h"
+	"ShinyOutput.h"
+	<stdio.h>
+
+1363980704 /home/soap/Projects/EqEngine/src_main/src_dependency/Shiny/include/ShinyZone.h
+	"ShinyData.h"
+	<memory.h>
+
+1363980704 /home/soap/Projects/EqEngine/src_main/src_dependency/Shiny/include/ShinyData.h
+	"ShinyPrereqs.h"
+
+1363980704 /home/soap/Projects/EqEngine/src_main/src_dependency/Shiny/include/ShinyPrereqs.h
+	"ShinyConfig.h"
+	"ShinyVersion.h"
+	<sys/types.h>
+	<stdint.h>
+
+1263130820 /home/soap/Projects/EqEngine/src_main/src_dependency/Shiny/include/ShinyConfig.h
+
+1263130820 /home/soap/Projects/EqEngine/src_main/src_dependency/Shiny/include/ShinyVersion.h
+
+1363980704 /home/soap/Projects/EqEngine/src_main/src_dependency/Shiny/include/ShinyNode.h
+	"ShinyData.h"
+	"ShinyTools.h"
+
+1363980704 /home/soap/Projects/EqEngine/src_main/src_dependency/Shiny/include/ShinyTools.h
+	"ShinyPrereqs.h"
+
+1363980704 /home/soap/Projects/EqEngine/src_main/src_dependency/Shiny/include/ShinyNodePool.h
+	"ShinyNode.h"
+
+1363980704 /home/soap/Projects/EqEngine/src_main/src_dependency/Shiny/include/ShinyOutput.h
+	"ShinyNode.h"
+	"ShinyZone.h"
+	<string>
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/AICarManager.cpp
+	"AICarManager.h"
+	"heightfield.h"
+	"session_stuff.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/AICarManager.h
+	"utils/eqstring.h"
+	"AIPursuerCar.h"
+	"oolua.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/AIPursuerCar.h
+	"AITrafficCar.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/AITrafficCar.h
+	"car.h"
+	"level.h"
+	"EventFSM.h"
+	"utils/DkList.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/car.h
+	"world.h"
+	"CameraAnimator.h"
+	"EqParticles.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/world.h
+	"luabinding/LuaBinding.h"
+	"materialsystem/IMaterialSystem.h"
+	"input.h"
+	"level.h"
+	"GameObject.h"
+	"predictablerandom.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/input.h
+	"core_base_header.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/level.h
+	"dsm_loader.h"
+	"region.h"
+	"levelobject.h"
+	"imaging/ImageLoader.h"
+	"../DriversEditor/level_generator.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/dsm_loader.h
+	"math/Vector.h"
+	"utils/DkList.h"
+	"utils/eqstring.h"
+	"ppmem.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/region.h
+	"utils/eqthread.h"
+	"math/Vector.h"
+	"occluderSet.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/occluderSet.h
+	"math/DkMath.h"
+	"utils/DkList.h"
+	"ppmem.h"
+	"levfile.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/levfile.h
+	"math/DkMath.h"
+	"dktypes.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/levelobject.h
+	"math/Vector.h"
+	"utils/KeyValues.h"
+	"refcounted.h"
+	"ppmem.h"
+	"../DriversEditor/EditorPreviewable.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversEditor/EditorPreviewable.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/imaging/ImageLoader.h
+	<stdio.h>
+	"platform/Platform.h"
+	"utils/eqstring.h"
+	"textureformats.h"
+	"IFileSystem.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversEditor/level_generator.h
+	"utils/eqstring.h"
+	"heightfield.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/GameObject.h
+	"LuaBinding_Drivers.h"
+	"occluderSet.h"
+	"IEqModel.h"
+	"GameSoundEmitterSystem.h"
+	"physics.h"
+	"EGFInstancer.h"
+	"network/netpropvar.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/LuaBinding_Drivers.h
+	"luabinding/LuaBinding.h"
+	"luabinding/LuaBinding_Engine.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/physics.h
+	"dktypes.h"
+	"utils/DkList.h"
+	"math/DkMath.h"
+	"core_base_header.h"
+	"eqPhysics/eqPhysics.h"
+	"eqPhysics/eqPhysics_Body.h"
+	"eqPhysics/eqCollision_Object.h"
+	"drivers_coord.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/eqPhysics/eqPhysics.h
+	"math/FVector.h"
+	"math/BoundingBox.h"
+	"utils/DkList.h"
+	"btBulletCollisionCommon.h"
+	"eqCollision_ObjectGrid.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/eqPhysics/eqCollision_ObjectGrid.h
+	"math/Vector.h"
+	"utils/DkList.h"
+	"ppmem.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/eqPhysics/eqPhysics_Body.h
+	"math/DkMath.h"
+	"utils/DkList.h"
+	"eqCollision_Object.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/eqPhysics/eqCollision_Object.h
+	"math/Quaternion.h"
+	"eqPhysics.h"
+	"IEqModel.h"
+	"btBulletCollisionCommon.h"
+	"physics/IStudioShapeCache.h"
+	"utils/eqstring.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/drivers_coord.h
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/network/netpropvar.h
+	"NetMessageBuffer.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/predictablerandom.h
+	"math/DkMath.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/CameraAnimator.h
+	"math/DkMath.h"
+	"ViewParams.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/EventFSM.h
+	<map>
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/heightfield.h
+	"materialsystem/IMaterialSystem.h"
+	"IVirtualStream.h"
+	"occluderSet.h"
+	"TextureAtlas.h"
+	"math/DkMath.h"
+	"../DriversEditor/EditorActionHistory.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversEditor/EditorActionHistory.h
+	"VirtualStream.h"
+	"utils/DkList.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/session_stuff.h
+	"state_game.h"
+	"game_singleplayer.h"
+	"game_multiplayer.h"
+	"replay.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/state_game.h
+	"ui_luaMenu.h"
+	"StateManager.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/ui_luaMenu.h
+	"LuaBinding_Drivers.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/StateManager.h
+	"Font.h"
+	"utils/KeyValues.h"
+	"materialsystem/IMaterialSystem.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/game_singleplayer.h
+	"physics.h"
+	"AICarManager.h"
+	"LuaBinding_Drivers.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/game_multiplayer.h
+	"session_stuff.h"
+	"Network/NETThread.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/replay.h
+	"car.h"
+	"in_keys_ident.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/AIPursuerCar.cpp
+	"AIPursuerCar.h"
+	"session_stuff.h"
+	"object_debris.h"
+	"AICarManager.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/object_debris.h
+	"GameObject.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/AITrafficCar.cpp
+	"AITrafficCar.h"
+	"session_stuff.h"
+	"heightfield.h"
+	"IDebugOverlay.h"
+	"world.h"
+	"math/Volume.h"
+	"Shiny.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/BillboardList.cpp
+	"world.h"
+	"BillboardList.h"
+	"IFileSystem.h"
+	"utils/strtools.h"
+	"utils/Tokenizer.h"
+	"IDebugOverlay.h"
+	"IEqModel.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/BillboardList.h
+	"EqParticles.h"
+	"TextureAtlas.h"
+
+1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/Tokenizer.h
+	"platform/Platform.h"
+	"DkList.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/CameraAnimator.cpp
+	"CameraAnimator.h"
+	"ConVar.h"
+	"math/math_util.h"
+	"world.h"
+	"input.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/car.cpp
+	"car.h"
+	"DebugOverlay.h"
+	"session_stuff.h"
+	"EqParticles.h"
+	"replay.h"
+	"Shiny.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/DrvSynHUD.cpp
+	"DrvSynHUD.h"
+	"AICarManager.h"
+	"heightfield.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/DrvSynHUD.h
+	"math/DkMath.h"
+	"utils/eqwstring.h"
+	"car.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/eqPhysics/eqBulletIndexedMesh.cpp
+	"eqBulletIndexedMesh.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/eqPhysics/eqBulletIndexedMesh.h
+	"platform/Platform.h"
+	"utils/DkList.h"
+	"BulletCollision/CollisionShapes/btStridingMeshInterface.h"
+	"math/DkMath.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/eqPhysics/eqCollision_Object.cpp
+	"eqCollision_Object.h"
+	"BulletCollision/CollisionDispatch/btInternalEdgeUtility.h"
+	"eqBulletIndexedMesh.h"
+	"../shared_engine/physics/BulletConvert.h"
+	"materialsystem/IMaterialSystem.h"
+	"ConVar.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionDispatch/btInternalEdgeUtility.h
+	"LinearMath/btHashMap.h"
+	"LinearMath/btVector3.h"
+	"BulletCollision/CollisionShapes/btTriangleInfoMap.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/eqPhysics/eqCollision_ObjectGrid.cpp
+	"eqCollision_ObjectGrid.h"
+	"eqCollision_Object.h"
+	"eqBulletIndexedMesh.h"
+	"IDebugOverlay.h"
+	"DebugInterface.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/eqPhysics/eqPhysics.cpp
+	"IDebugOverlay.h"
+	"ConVar.h"
+	"DebugInterface.h"
+	"utils/KeyValues.h"
+	"eqPhysics.h"
+	"eqPhysics_Body.h"
+	"BulletCollision/CollisionShapes/btTriangleShape.h"
+	"BulletCollision/CollisionDispatch/btInternalEdgeUtility.h"
+	"eqBulletIndexedMesh.h"
+	"eqGlobalMutex.h"
+	"Shiny.h"
+	"../shared_engine/physics/BulletConvert.h"
+
+1452292601 /home/soap/Projects/EqEngine/src_main/src_dependency/bullet/src/BulletCollision/CollisionShapes/btTriangleShape.h
+	"btConvexShape.h"
+	"btBoxShape.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/eqPhysics/eqPhysics_Body.cpp
+	"eqPhysics_Body.h"
+	"IDebugOverlay.h"
+	"../shared_engine/physics/BulletConvert.h"
+	"ConVar.h"
+	"DebugInterface.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/EventFSM.cpp
+	"EventFSM.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/game_multiplayer.cpp
+	"luabinding/LuaBinding.h"
+	"game_multiplayer.h"
+	"NetPlayer.h"
+	"StateManager.h"
+	"IDebugOverlay.h"
+	"system.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/NetPlayer.h
+	"game_multiplayer.h"
+	"car.h"
+	"utils/eqstring.h"
+	"Network/NETThread.h"
+	"predictable_object.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/predictable_object.h
+	"GameObject.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/system.h
+	"materialsystem/IMaterialSystem.h"
+	"GameSoundEmitterSystem.h"
+	"in_keys_ident.h"
+	"IFont.h"
+	"eqParallelJobs.h"
+	"utils/eqtimer.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/game_singleplayer.cpp
+	"luabinding/LuaBinding.h"
+	"game_singleplayer.h"
+	"replay.h"
+	"eqParallelJobs.h"
+	"DrvSynHUD.h"
+	"Shiny.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/GameObject.cpp
+	"GameObject.h"
+	"world.h"
+	"game_multiplayer.h"
+	"replay.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/heightfield.cpp
+	"world.h"
+	"heightfield.h"
+	"VirtualStream.h"
+	"IDebugOverlay.h"
+	"math/math_util.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/input.cpp
+	"input.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/level.cpp
+	"world.h"
+	"heightfield.h"
+	"levfile.h"
+	"level.h"
+	"physics.h"
+	"VirtualStream.h"
+	"utils/GeomTools.h"
+	"../shared_engine/physics/BulletConvert.h"
+	"eqGlobalMutex.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/levelobject.cpp
+	"world.h"
+	"utils/GeomTools.h"
+	"eqPhysics/eqBulletIndexedMesh.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/LuaBinding_Drivers.cpp
+	"LuaBinding_Drivers.h"
+	"world.h"
+	"car.h"
+	"game_multiplayer.h"
+	"StateManager.h"
+	"DrvSynHUD.h"
+	"system.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/main.cpp
+	<io.h>
+	<fcntl.h>
+	<crtdbg.h>
+	"platform/MessageBox.h"
+	"IDkCore.h"
+	"window.h"
+	"EngineSpew.h"
+	"utils/DkLinkedList.h"
+	<unistd.h>
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/window.h
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/NetPlayer.cpp
+	"NetPlayer.h"
+	"IDebugOverlay.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/object_debris.cpp
+	"object_debris.h"
+	"materialsystem/IMaterialSystem.h"
+	"world.h"
+	"car.h"
+	"Shiny.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/object_physics.cpp
+	"object_physics.h"
+	"session_stuff.h"
+	"world.h"
+	"IDebugOverlay.h"
+	"state_game.h"
+	"Shiny.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/object_physics.h
+	"GameObject.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/object_scripted.cpp
+	"object_scripted.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/object_scripted.h
+	"GameObject.h"
+	"world.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/object_sheets.cpp
+	"object_sheets.h"
+	"world.h"
+	"EqParticles.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/object_sheets.h
+	"GameObject.h"
+	"state_game.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/object_static.cpp
+	"object_static.h"
+	"materialsystem/IMaterialSystem.h"
+	"world.h"
+	"Shiny.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/object_static.h
+	"GameObject.h"
+	"world.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/object_trafficlight.cpp
+	"object_trafficlight.h"
+	"materialsystem/IMaterialSystem.h"
+	"world.h"
+	"Shiny.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/object_trafficlight.h
+	"GameObject.h"
+	"world.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/object_tree.cpp
+	"object_tree.h"
+	"materialsystem/IMaterialSystem.h"
+	"world.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/object_tree.h
+	"GameObject.h"
+	"world.h"
+	"BillboardList.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/occluderSet.cpp
+	"occluderSet.h"
+	"IDebugOverlay.h"
+	"ConVar.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/physics.cpp
+	"GameObject.h"
+	"eqGlobalMutex.h"
+	"physics.h"
+	"heightfield.h"
+	"IDebugOverlay.h"
+	"utils/GeomTools.h"
+	"../shared_engine/physics/BulletConvert.h"
+	"Shiny.h"
+	"eqPhysics/eqBulletIndexedMesh.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/predictable_object.cpp
+	"predictable_object.h"
+	"NetPlayer.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/Rain.cpp
+	"world.h"
+	"Rain.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/Rain.h
+	"math/DkMath.h"
+	"DebugInterface.h"
+	"EqParticles.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/region.cpp
+	"world.h"
+	"heightfield.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/replay.cpp
+	"replay.h"
+	"StateManager.h"
+	"session_stuff.h"
+	"IDebugOverlay.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/session_stuff.cpp
+	"session_stuff.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/Shader_StaticObjs.cpp
+	"BaseShader.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/Shader_VehicleBody.cpp
+	"BaseShader.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/Shader_Water.cpp
+	"BaseShader.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/ShaderOverrides.cpp
+	"IMaterialSystem.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/state_game.cpp
+	"state_game.h"
+	"CameraAnimator.h"
+	"session_stuff.h"
+	"Rain.h"
+	"KeyBinding/Keys.h"
+	"sys_console.h"
+	"system.h"
+	"FontCache.h"
+	"DrvSynHUD.h"
+	"Shiny.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/state_lobby.cpp
+	"state_lobby.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/state_lobby.h
+	"session_stuff.h"
+	"Network/NETThread.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/state_mainmenu.cpp
+	"state_mainmenu.h"
+	"state_game.h"
+	"in_keys_ident.h"
+	"system.h"
+	"FontCache.h"
+	"KeyBinding/Keys.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/state_mainmenu.h
+	"ui_luaMenu.h"
+	"StateManager.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/state_title.cpp
+	"state_mainmenu.h"
+	"state_title.h"
+	"state_game.h"
+	"in_keys_ident.h"
+	"system.h"
+	"FontCache.h"
+	"replay.h"
+	"KeyBinding/Keys.h"
+
+1457289077 /home/soap/Projects/EqEngine/src_main/DriversGame/state_title.h
+	"StateManager.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/StateManager.cpp
+	"LuaBinding_Drivers.h"
+	"StateManager.h"
+	"session_stuff.h"
+	"state_title.h"
+	"state_mainmenu.h"
+	"state_lobby.h"
+	"physics.h"
+	"world.h"
+	"KeyBinding/Keys.h"
+	"IDebugOverlay.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/system.cpp
+	"LuaBinding_Drivers.h"
+	"IEqCPUServices.h"
+	"DebugOverlay.h"
+	"system.h"
+	"state_game.h"
+	"StateManager.h"
+	"materialsystem/MaterialProxy.h"
+	"KeyBinding/Keys.h"
+	"FontCache.h"
+	"EGUI/EQUI_Manager.h"
+	"network/net_defs.h"
+	"sys_console.h"
+	"cfgloader.h"
+	"Shiny.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/ui_luaMenu.cpp
+	"ui_luaMenu.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/window.cpp
+	"DebugInterface.h"
+	"system.h"
+	"sys_console.h"
+	"imaging/ImageLoader.h"
+	"IConCommandFactory.h"
+	"utils/strtools.h"
+	"EngineVersion.h"
+	"Mmsystem.h"
+
+1457289077 source:/home/soap/Projects/EqEngine/src_main/DriversGame/world.cpp
+	"world.h"
+	"IDebugOverlay.h"
+	"eqGlobalMutex.h"
+	"EqParticles.h"
+	"Rain.h"
+	"BillboardList.h"
+	"imaging/ImageLoader.h"
+	"Shiny.h"
+	"system.h"
+	"eqParallelJobs.h"
+	"object_debris.h"
+	"object_physics.h"
+	"object_static.h"
+	"object_tree.h"
+	"object_trafficlight.h"
+	"object_sheets.h"
+	"object_scripted.h"
+
