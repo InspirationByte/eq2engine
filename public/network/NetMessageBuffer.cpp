@@ -58,38 +58,6 @@ void CNetMessageBuffer::ResetPos()
 		m_pMessage[i]->pos = 0;
 }
 
-bool CNetMessageBuffer::Receive(int wait_timeout)
-{
-	time_t start_time = time(NULL);
-
-	int ready = 0;
-	do
-	{
-		ready = m_pInterface->GetIncommingMessages();
-
-		if(time(NULL) - start_time > wait_timeout)
-			break;
-
-	}while(!ready);
-
-	netmessage_t msg;
-	memset(&msg, 0, sizeof(msg));
-
-	int msg_len = 0;
-
-	if(m_pInterface->Receive(&msg, msg_len))
-	{
-		WriteData( msg.message_bytes, msg.message_size-NETMESSAGE_HDR );
-		m_nClientID = msg.clientid;
-
-		ResetPos();
-
-		return true;
-	}
-
-	return false;
-}
-
 void CNetMessageBuffer::DebugWriteToFile(const char* fileprefix)
 {
 	char filename[260] = {0};
@@ -107,14 +75,20 @@ void CNetMessageBuffer::DebugWriteToFile(const char* fileprefix)
 	}
 }
 
-bool CNetMessageBuffer::Send( short& outProtoMsgId, int nFlags )
+bool CNetMessageBuffer::Send( int nFlags )
 {
-	static netmessage_t message;
+	for(int i = 0; i < m_pMessage.numElem(); i++)
+	{
+		if(m_pMessage[i]->msgId != -1)
+			return true;
+	}
 
-	message.clientid = m_nClientID;
-	message.nfragments = m_pMessage.numElem();
-	message.fragmentid = 0;
-	message.messageid = s_nMessageId++;
+	static netMessage_t message;
+
+	message.header.clientid = m_nClientID;
+	message.header.nfragments = m_pMessage.numElem();
+	message.header.fragmentid = 0;
+	message.header.messageid = s_nMessageId++;
 
 	if(s_nMessageId >= 32766)
 		s_nMessageId = 0;
@@ -123,18 +97,51 @@ bool CNetMessageBuffer::Send( short& outProtoMsgId, int nFlags )
 
 	for(int i = 0; i < m_pMessage.numElem(); i++)
 	{
-		message.fragmentid = i;
-		message.message_size = m_pMessage[i]->len;
+		message.header.fragmentid = i;
+		message.header.message_size = m_pMessage[i]->len;
 
-		memcpy(message.message_bytes, m_pMessage[i]->data, m_pMessage[i]->len);
+		memcpy(message.data, m_pMessage[i]->data, m_pMessage[i]->len);
+
+		m_pMessage[i]->confirmed = false;
+
 		// send fragment
-		status = m_pInterface->Send( &message, m_pMessage[i]->len/* + (m_pMessage[i]->len%16)*/, outProtoMsgId, nFlags);
+		status = m_pInterface->Send( &message, m_pMessage[i]->len, m_pMessage[i]->msgId, nFlags);
 
 		if(!status)
 			break;
 	}
 
 	return status;
+}
+
+int CNetMessageBuffer::GetOverallStatus() const
+{
+	for(int i = 0; i < m_pMessage.numElem(); i++)
+	{
+		if( !m_pMessage[i]->confirmed )
+		{
+			if(m_pMessage[i]->msgId == CUDP_MESSAGE_ID_ERROR)
+				return DELIVERY_FAILED;
+
+			return DELIVERY_IN_PROGRESS;
+		}
+	}
+
+	return DELIVERY_SUCCESS;
+}
+
+void CNetMessageBuffer::SetMessageStatus(short msgId, int status)
+{
+	for(int i = 0; i < m_pMessage.numElem(); i++)
+	{
+		if(!m_pMessage[i]->confirmed && m_pMessage[i]->msgId == msgId)
+		{
+			if(status == DELIVERY_SUCCESS)
+				m_pMessage[i]->confirmed = true;
+			else
+				m_pMessage[i]->msgId = CUDP_MESSAGE_ID_ERROR;
+		}
+	}
 }
 
 int	CNetMessageBuffer::GetClientID() const
@@ -366,9 +373,9 @@ void CNetMessageBuffer::TryExtendSubMsg()
 	if((m_nSubMessageId < 0) || (m_nSubMessageId >= m_pMessage.numElem()))
 	{
 		submsg_t* newmsg = new submsg_t;
-		newmsg->len = 0;
-		newmsg->pos = 0;
-		memset(newmsg, 0, sizeof(submsg_t));
+#ifdef DEBUG
+		memset(newmsg->data, 0, sizeof(newmsg->data));
+#endif // DEBUG
 
 		// make a new message id
 		m_nSubMessageId = m_pMessage.append( newmsg );

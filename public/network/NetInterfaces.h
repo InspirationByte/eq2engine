@@ -8,40 +8,35 @@
 #ifndef NETINTERFACES_H
 #define NETINTERFACES_H
 
-#include "net_defs.h"
+#include "c_udp.h"
 #include "platform/Platform.h"
 #include "utils/DkList.h"
 #include "utils/eqstring.h"
 
-#define USE_CUDP_SOCKET
-
 namespace Networking
 {
 
-enum ESendFlags
+struct netMessage_s
 {
-	NSFLAG_GUARANTEED	= (1 << 0),
-	NSFLAG_IMMEDIATE	= (1 << 1),
-};
+	struct hdr_t
+	{
+		ubyte	nfragments;
+		ubyte	fragmentid;
 
-struct netmessage_s
-{
-	ubyte	nfragments;
-	ubyte	fragmentid;
+		short	messageid;
+		short	clientid;
 
-	short	messageid;
-	short	clientid;
-
-	ushort	message_size;
-	ushort	compressed_size;
+		ushort	message_size;
+		ushort	compressed_size;
+	} header;
 
 	// data
-	ubyte	message_bytes[MAX_MESSAGE_LENGTH];
+	ubyte	data[MAX_MESSAGE_LENGTH];
 };
 
-ALIGNED_TYPE(netmessage_s,2) netmessage_t;
+ALIGNED_TYPE(netMessage_s,2) netMessage_t;
 
-#define NETMESSAGE_HDR	12	// the network message header size
+#define NETMESSAGE_HDR	sizeof(netMessage_t::hdr_t)	// the network message header size
 
 #define NM_SENDTOLAST	(-1)
 #define NM_SENDTOALL	(-2)
@@ -56,7 +51,7 @@ struct svclient_t
 
 //-------------------------------------------------------------------------------------------------------
 
-class CUDPSocket;
+class CEqRDPSocket;
 
 // a shared networking interface
 class INetworkInterface
@@ -65,28 +60,22 @@ public:
 	virtual				~INetworkInterface() {}
 
 	virtual	void		Shutdown() = 0;
-	virtual int			GetIncommingMessages() = 0;
 
-	// basic message sending
-	bool				Receive( netmessage_t* msg, int &msg_size, sockaddr_in* from = NULL  );
-	bool				Send( netmessage_t* msg, int msg_size, short& msg_id, int flags = 0 );
+	bool				PreProcessRecievedMessage( ubyte* data, int size, netMessage_t& out );
+	bool				Send( netMessage_t* msg, int msg_size, short& msg_id, int flags = 0 );
 
+	void				Update( int timeMs, CDPRecvPipe_fn func, void* recvObj );
 
-	void				Update( int timeMs );
-
-	CUDPSocket*			GetSocket();
-
-	virtual sockaddr_in	GetSocketAddress() = 0;
+	CEqRDPSocket*		GetSocket() const {return m_pSocket;}
+	sockaddr_in			GetAddress() const {return m_pSocket->GetAddress();}
 
 protected:
 
 	// basic message sending
-	virtual bool		InternalReceive( netmessage_t* msg, int &msg_size, sockaddr_in* from = NULL  ) = 0;
-	virtual bool		InternalSend( netmessage_t* msg, int msg_size, short& msg_id, int flags = 0 ) = 0;
+	virtual bool		OnRecieved( netMessage_t* msg, const sockaddr_in& from ) = 0;
+	virtual bool		InternalSend( netMessage_t* msg, int msg_size, short& msg_id, int flags = 0 ) = 0;
 
-#ifdef USE_CUDP_SOCKET
-	CUDPSocket*			m_pSocket;
-#endif // USE_CUDP_SOCKET
+	CEqRDPSocket*		m_pSocket;
 
 	hostent*			m_hostinfo;
 
@@ -104,9 +93,8 @@ public:
 	bool				Init( int portNumber );
 	void				Shutdown();
 
-	int					GetIncommingMessages();
-	bool				InternalReceive( netmessage_t* msg, int &msg_size, sockaddr_in* from = NULL );
-	bool				InternalSend( netmessage_t* msg, int msg_size, short& msg_id, int flags = 0 );
+	bool				OnRecieved( netMessage_t* msg, const sockaddr_in& from  );
+	bool				InternalSend( netMessage_t* msg, int msg_size, short& msg_id, int flags = 0 );
 
 	int					GetClientCount();
 
@@ -117,15 +105,7 @@ public:
 	svclient_t*			GetClientById(int id);
 	void				RemoveClientById(int id);
 
-	sockaddr_in			GetSocketAddress();
-
 private:
-#ifndef USE_CUDP_SOCKET
-	SOCKET				m_socket;
-	sockaddr_in			m_Server;
-#endif // #ifdef USE_CUDP_SOCKET
-
-
 	svclient_t			m_lastclient;
 
 	DkList<svclient_t*>	m_clients;
@@ -140,28 +120,18 @@ public:
 	CNetworkClient();
 	~CNetworkClient();
 
-	bool				Connect( const char* pszAddress, int portNumber, int clientPort );
-	void				Shutdown();
+	bool			Connect( const char* pszAddress, int portNumber, int clientPort );
+	void			Shutdown();
 
-	bool				Heartbeat();
+	bool			OnRecieved( netMessage_t* msg, const sockaddr_in& from );
+	bool			InternalSend( netMessage_t* msg, int msg_size, short& msg_id, int flags = 0 );
 
-	int					GetIncommingMessages();
-	bool				InternalReceive( netmessage_t* msg, int &msg_size, sockaddr_in* from = NULL );
-	bool				InternalSend( netmessage_t* msg, int msg_size, short& msg_id, int flags = 0 );
+	void			SetClientID(int nID);
+	int				GetClientID();
 
-	void				SetClientID(int nID);
-	int					GetClientID();
-
-	sockaddr_in			GetSocketAddress();
 
 private:
-
-#ifndef USE_CUDP_SOCKET
-	SOCKET				m_socket;
-	sockaddr_in			m_Client;
-#endif
-
-	sockaddr_in			m_Server;
+	sockaddr_in		m_Server;
 
 	int				m_nClientID;
 };

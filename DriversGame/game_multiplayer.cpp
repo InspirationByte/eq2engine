@@ -135,7 +135,7 @@ DECLARE_CMD(disconnect, "shutdown game", 0)
 		CNetPlayer* player = ses->GetLocalPlayer();
 
 		if(player)
-			ses->GetNetThread()->SendEvent( new CNetDisconnectEvent(player->m_id, "Disconnect by user"), CMSG_DISCONNECT, NM_SENDTOALL, NSFLAG_GUARANTEED );
+			ses->GetNetThread()->SendEvent( new CNetDisconnectEvent(player->m_id, "Disconnect by user"), CMSG_DISCONNECT, NM_SENDTOALL, CDPSEND_GUARANTEED );
 	}
 
 	if(GetCurrentStateType() == GAME_STATE_GAME)
@@ -356,7 +356,7 @@ bool CNetGameSession::Create_Client()
 		g_pGameWorld->m_level.WaitForThread();
 
 		// send syncronization status
-		m_netThread.SendEvent( new CNetSyncronizePlayerEvent(), CMSG_PLAYER_SYNC, NM_SERVER, NSFLAG_GUARANTEED );
+		m_netThread.SendEvent( new CNetSyncronizePlayerEvent(), CMSG_PLAYER_SYNC, NM_SERVER, CDPSEND_GUARANTEED );
 	}
 	else
 	{
@@ -463,7 +463,7 @@ void CNetGameSession::Net_SendObjectData( CGameObject* obj, int nClientID )
 
 	obj->m_isNetworkStateChanged = false;
 
-	m_netThread.SendEvent(new CNetObjectFrame(obj), CMSG_OBJECT_FRAME, nClientID, NSFLAG_IMMEDIATE);
+	m_netThread.SendEvent(new CNetObjectFrame(obj), CMSG_OBJECT_FRAME, nClientID);
 }
 
 void CNetGameSession::SendObjectSpawns( int clientID )
@@ -476,7 +476,7 @@ void CNetGameSession::SendObjectSpawns( int clientID )
 			continue;
 
 		// send spawn for existing clients
-		m_netThread.SendEvent(new CNetSpawnInfo(obj, NETOBJ_SPAWN), CMSG_OBJECT_SPAWN, clientID, NSFLAG_GUARANTEED);
+		m_netThread.SendEvent(new CNetSpawnInfo(obj, NETOBJ_SPAWN), CMSG_OBJECT_SPAWN, clientID, CDPSEND_GUARANTEED);
 	}
 }
 
@@ -494,7 +494,7 @@ void CNetGameSession::SendPlayerInfoList( int clientID )
 
 		Msg("[SERVER] sending player info %s %s %d\n", m_players[i]->m_carName.c_str(), m_players[i]->m_name.c_str(), m_players[i]->m_id);
 
-		m_netThread.SendEvent( new CNetServerPlayerInfo( m_players[i] ), CMSG_SERVERPLAYER_INFO, NM_SENDTOALL, NSFLAG_GUARANTEED );
+		m_netThread.SendEvent( new CNetServerPlayerInfo( m_players[i] ), CMSG_SERVERPLAYER_INFO, NM_SENDTOALL, CDPSEND_GUARANTEED );
 	}
 }
 
@@ -526,7 +526,7 @@ void CNetGameSession::Shutdown()
 				continue;
 
 			// send to other clients
-			m_netThread.SendEvent( new CNetDisconnectEvent(m_players[i]->m_id, "server shutdown"), CMSG_DISCONNECT, NM_SENDTOALL, NSFLAG_GUARANTEED );
+			m_netThread.SendEvent( new CNetDisconnectEvent(m_players[i]->m_id, "server shutdown"), CMSG_DISCONNECT, NM_SENDTOALL, CDPSEND_GUARANTEED );
 		}
 
 
@@ -547,7 +547,7 @@ void CNetGameSession::Shutdown()
 
 		if(player)
 		{
-			m_netThread.SendEvent( new CNetDisconnectEvent(player->m_id, "Disconnect by user"), CMSG_DISCONNECT, NM_SERVER, NSFLAG_GUARANTEED );
+			m_netThread.SendEvent( new CNetDisconnectEvent(player->m_id, "Disconnect by user"), CMSG_DISCONNECT, NM_SERVER, CDPSEND_GUARANTEED );
 		}
 
 		// send disconnect
@@ -795,7 +795,7 @@ void CNetGameSession::DisconnectPlayer( int playerID, const char* reason )
 				srv->RemoveClientById( m_players[i]->m_clientID );
 
 				// send to other clients
-				m_netThread.SendEvent( new CNetDisconnectEvent(playerID, reason), CMSG_DISCONNECT, NM_SENDTOALL, NSFLAG_GUARANTEED );
+				m_netThread.SendEvent( new CNetDisconnectEvent(playerID, reason), CMSG_DISCONNECT, NM_SENDTOALL, CDPSEND_GUARANTEED );
 			}
 
 			delete m_players[i];

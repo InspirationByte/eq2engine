@@ -408,7 +408,7 @@ void CNetPlayer::NetUpdate(float fDt)
 		cmd.timeStamp = m_curSvTick;
 
 		// send sv tick and current time tick in controls
-		netSes->GetNetThread()->SendEvent(new CNetPlayerPacket(cmd, m_id, m_curTick), CMSG_PLAYERPACKET, NM_SERVER, NSFLAG_IMMEDIATE);
+		netSes->GetNetThread()->SendEvent(new CNetPlayerPacket(cmd, m_id, m_curTick), CMSG_PLAYERPACKET, NM_SERVER);
 	}
 	else if( netSes->IsServer() )
 	{
@@ -428,7 +428,7 @@ void CNetPlayer::NetUpdate(float fDt)
 
 		snap.in.timeStamp = m_curTick;
 
-		netSes->GetNetThread()->SendEvent(new CNetPlayerPacket(snap, m_id, m_packetTick), CMSG_PLAYERPACKET, NM_SENDTOALL, NSFLAG_IMMEDIATE);
+		netSes->GetNetThread()->SendEvent(new CNetPlayerPacket(snap, m_id, m_packetTick), CMSG_PLAYERPACKET, NM_SENDTOALL);
 	}
 
 	// simulate and predict all ticks together
@@ -474,7 +474,7 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 
 		buffer.WriteKeyValues(&kvs);
 
-		pNetThread->SendData(&buffer, m_nEventID, m_clientID, NSFLAG_GUARANTEED);
+		pNetThread->SendData(&buffer, m_nEventID, m_clientID, CDPSEND_GUARANTEED);
 
 		return;
 	}
@@ -495,7 +495,7 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 
 		buffer.WriteKeyValues(&kvs);
 
-		pNetThread->SendData(&buffer, m_nEventID, m_clientID, NSFLAG_GUARANTEED);
+		pNetThread->SendData(&buffer, m_nEventID, m_clientID, CDPSEND_GUARANTEED);
 
 		return;
 	}
@@ -534,7 +534,7 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 
 	buffer.WriteKeyValues(&kvs);
 
-	pNetThread->SendData(&buffer, m_nEventID, cl_id, NSFLAG_GUARANTEED);
+	pNetThread->SendData(&buffer, m_nEventID, cl_id, CDPSEND_GUARANTEED);
 }
 
 void CNetConnectQueryEvent::Unpack( CNetworkThread* pNetThread, CNetMessageBuffer* pStream )
@@ -632,7 +632,7 @@ void CNetClientPlayerInfo::Process( CNetworkThread* pNetThread )
 	CNetMessageBuffer buffer;
 	buffer.WriteKeyValues(&kvs);
 
-	pNetThread->SendData(&buffer, m_nEventID, m_clientID, NSFLAG_GUARANTEED);
+	pNetThread->SendData(&buffer, m_nEventID, m_clientID, CDPSEND_GUARANTEED);
 }
 
 void CNetClientPlayerInfo::Unpack( CNetworkThread* pNetThread, CNetMessageBuffer* pStream )

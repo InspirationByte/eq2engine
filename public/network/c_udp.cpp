@@ -30,7 +30,7 @@ namespace Networking
 
 #define UDP_CDP_IDENT						MCHAR4('E','Q','D','P')		// signature: EqDatagramPacket
 
-#define UDP_CDP_PROTOCOL_VERSION			7			// protocol version
+#define UDP_CDP_PROTOCOL_VERSION			9			// protocol version
 
 #define UDP_CDP_MIN_SEND_BUFFER				2048		// minimal send buffer; tweak this if you have bandwith issues
 #define UDP_CDP_MIN_MESSAGESIZE				512
@@ -53,12 +53,46 @@ namespace Networking
 //ConVar net_cudp_removetime("net_cudp_removetime", "500", 1.0, 80.0, "Delay to send message buffer", CV_CHEAT);
 //ConVar net_cudp_recvtimeout("net_cudp_recvtimeout", "1500", 1.0, 80.0, "Delay to send message buffer", CV_CHEAT);
 
+//------------------------------------------------------------------------------
+// message buffer
+//------------------------------------------------------------------------------
+struct cdp_queued_message_t
+{
+	cdp_queued_message_t()
+	{
+		bytestream = NULL;
+		flags = 0;
+		sendTimes.SetValue(0);
+		sentTimeout.SetValue(0);
+		removeTimeout.SetValue(0);
+		sendTime = 0;
+	}
+
+	CEqInterlockedInteger	sendTimes;		// send times
+	CEqInterlockedInteger	sentTimeout;	// timeout to send
+	CEqInterlockedInteger	removeTimeout;	// timeout to remove
+
+	uint32					sendTime;
+
+	short					flags;
+
+	sockaddr_in				addr;			// address of sender or receiver
+
+	CMemoryStream*			bytestream;
+
+	bool Write( void* pData, int nSize );
+
+	void WriteReset();
+
+	void ReadReset();
+};
+
 // big message header
 struct udp_cdp_hdr_s
 {
 	int				ident;					// UDP_CDP_IDENT
 	ubyte			protocol_version;		// UDP_RCP_PROTOCOL_VERSION
-	ubyte			flags;					// message flags ( CDPSendFlags_e )
+	ubyte			flags;					// message flags ( ECDPSendFlags )
 
 	//unsigned long	crc32;					// message CRC32
 	short			message_id;				// less than CDP_MAX_MESSAGE_ID
@@ -84,36 +118,36 @@ struct udp_cdp_packetstate_s
 
 ALIGNED_TYPE(udp_cdp_packetstate_s,2) udp_cdp_packetstate_t;
 
-void FreeMessage(cdp_message_t* pMessage)
-{
-	delete pMessage->bytestream;
-	delete pMessage;
-}
-
-bool cdp_message_t::Write( void* pData, int nSize )
+bool cdp_queued_message_t::Write( void* pData, int nSize )
 {
 	ASSERT( bytestream->Tell() + nSize < UDP_CDP_MAX_MESSAGEPAYLOAD );
 
 	return bytestream->Write( pData, 1, nSize ) > 0;
 }
 
-void cdp_message_t::WriteReset()
+void cdp_queued_message_t::WriteReset()
 {
 	delete bytestream;
 	bytestream = NULL;
 }
 
-void cdp_message_t::ReadReset()
+void cdp_queued_message_t::ReadReset()
 {
 	bytestream->Seek(0, VS_SEEK_SET);
 }
 
-// allocates message
-cdp_message_t* AllocMessage()
+void FreeMessage(cdp_queued_message_t* pMessage)
 {
-	cdp_message_t* pMessage = new cdp_message_t;
+	delete pMessage->bytestream;
+	delete pMessage;
+}
 
-	memset(pMessage, 0, sizeof(cdp_message_t));
+// allocates message
+cdp_queued_message_t* AllocMessage()
+{
+	cdp_queued_message_t* pMessage = new cdp_queued_message_t;
+
+	memset(pMessage, 0, sizeof(cdp_queued_message_t));
 
 	if(!pMessage->bytestream)
 	{
@@ -122,7 +156,6 @@ cdp_message_t* AllocMessage()
 		if( !pMessage->bytestream->Open( NULL, VS_OPEN_WRITE, UDP_CDP_MIN_MESSAGESIZE ))
 		{
 			FreeMessage(pMessage);
-
 			return NULL;
 		}
 	}
@@ -130,7 +163,7 @@ cdp_message_t* AllocMessage()
 	return pMessage;
 }
 
-int cdp_get_incomming_messages( SOCKET sock )
+int udp_select_messages( SOCKET sock )
 {
 	struct timeval stTimeOut;
 
@@ -163,7 +196,7 @@ int cdp_get_incomming_messages( SOCKET sock )
 #endif
 }
 
-CUDPSocket::CUDPSocket()
+CEqRDPSocket::CEqRDPSocket()
 {
 	m_sock = -1;
 
@@ -172,32 +205,14 @@ CUDPSocket::CUDPSocket()
 	m_init = false;
 
 	m_nMessageIDInc = 0;
-
-	m_nRecvCallback = NULL;
 }
 
-CUDPSocket::~CUDPSocket()
+CEqRDPSocket::~CEqRDPSocket()
 {
-	if(m_init)
-	{
-		closesocket( m_sock );
-
-		m_sock = -1;
-		m_init = false;
-
-		memset(&m_addr, 0, sizeof(sockaddr_in));
-
-		// cleanup lists
-		for(int i = 0; i < m_pMessageQueue.numElem(); i++)
-		{
-			FreeMessage(m_pMessageQueue[i]);
-		}
-
-		m_pMessageQueue.clear();
-	}
+	Close();
 }
 
-bool CUDPSocket::Init( int port )
+bool CEqRDPSocket::Init( int port )
 {
 	SOCKET sock = socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP );
 
@@ -211,7 +226,6 @@ bool CUDPSocket::Init( int port )
 	int	i = 1;
 
 #ifdef _WIN32
-
 	// create non-blocking socket
 	if(ioctlsocket (sock, FIONBIO, &_true) == -1)
 	{
@@ -292,25 +306,33 @@ bool CUDPSocket::Init( int port )
 	m_nUnconfirmedRemoveTimeout		= CDP_SEND_REMOVE_TIMEOUT_MS;
 	m_nRecvTimeout					= CDP_RECV_TIMEOUT_MS;
 
-	/*
-	TKeyValues kvs;
-	if( kvs.LoadFromFile( "cdp_config.cfg", SP_ROOT ) )
-	{
-		m_nSendTimeout = kint(kvs.GetRoot().FindKey("send_timeout"), CDP_SEND_TIMEOUT_MS);
-		m_nUnconfirmedRemoveTimeout = kint(kvs.GetRoot().FindKey("sendremove_timeout"), CDP_SEND_REMOVE_TIMEOUT_MS);
-		m_nRecvTimeout = kint(kvs.GetRoot().FindKey("recv_timeout"), CDP_RECV_TIMEOUT_MS);
-	}
-	*/
-
-	//m_receivedIds.Resize( CDP_MAX_MESSAGE_ID );
-
 	return true;
 }
 
-void CUDPSocket::SendMessageStatus(  const sockaddr_in* to, short message_id, bool isOk  )
+void CEqRDPSocket::Close()
+{
+	if(!m_init)
+		return;
+
+	closesocket( m_sock );
+
+	m_sock = -1;
+	m_init = false;
+
+	memset(&m_addr, 0, sizeof(sockaddr_in));
+
+	// cleanup lists
+	for(int i = 0; i < m_pMessageQueue.numElem(); i++)
+		FreeMessage(m_pMessageQueue[i]);
+
+	m_pMessageQueue.clear();
+	m_receivedIds.clear();
+}
+
+void CEqRDPSocket::SendMessageStatus(  const sockaddr_in* to, short message_id, bool isOk  )
 {
 	// alloc new message
-	cdp_message_t* buffer = AllocMessage();
+	cdp_queued_message_t* buffer = AllocMessage();
 	buffer->addr = *to;
 
 	udp_cdp_hdr_t hdr;
@@ -350,16 +372,16 @@ void CUDPSocket::SendMessageStatus(  const sockaddr_in* to, short message_id, bo
 }
 
 // sends message
-int CUDPSocket::Send( char* data, int size, const sockaddr_in* to, short& msgId, short flags/* = 0 */)
+int CEqRDPSocket::Send( char* data, int size, const sockaddr_in* to, short& msgId, short flags/* = 0 */)
 {
 	// don't write zero-length messages
 	if(size <= 0)
 	{
-		msgId = CUDP_MESSAGE_ERROR;
+		msgId = CUDP_MESSAGE_ID_ERROR;
 		return -1;
 	}
 
-	cdp_message_t* buffer = NULL;
+	cdp_queued_message_t* buffer = NULL;
 
 	bool continiousMessage = (flags & CDPSEND_GUARANTEED) > 0;
 
@@ -378,7 +400,6 @@ int CUDPSocket::Send( char* data, int size, const sockaddr_in* to, short& msgId,
 		hdr.protocol_version = UDP_CDP_PROTOCOL_VERSION;
 		hdr.message_id = GetMessageUniqueID();
 		hdr.flags = 0; // mark it as unguaranteed, but not necessary for sender, may be reciever
-		//hdr.crc32 = 0;
 
 		// write header before return
 		buffer->Write( &hdr, sizeof( udp_cdp_hdr_t ) );
@@ -386,7 +407,7 @@ int CUDPSocket::Send( char* data, int size, const sockaddr_in* to, short& msgId,
 
 	if(!buffer)
 	{
-		msgId = CUDP_MESSAGE_ERROR;
+		msgId = CUDP_MESSAGE_ID_ERROR;
 		return -1;
 	}
 
@@ -427,7 +448,7 @@ int CUDPSocket::Send( char* data, int size, const sockaddr_in* to, short& msgId,
 		if(net_fakelag.GetInt() && RandomInt(0, net_fakelag.GetInt()) == 0)
 		{
 			FreeMessage( buffer );
-			msgId = CUDP_MESSAGE_IMMEDIATE;
+			msgId = CUDP_MESSAGE_ID_IMMEDIATE;
 			return size;
 		}
 
@@ -437,7 +458,7 @@ int CUDPSocket::Send( char* data, int size, const sockaddr_in* to, short& msgId,
 		// free buffer since we just allocated it
 		FreeMessage( buffer );
 
-		msgId = CUDP_MESSAGE_IMMEDIATE;
+		msgId = CUDP_MESSAGE_ID_IMMEDIATE;
 	}
 
 	/*
@@ -459,71 +480,16 @@ int CUDPSocket::Send( char* data, int size, const sockaddr_in* to, short& msgId,
 	return size;
 }
 
-// receives message
-int CUDPSocket::Recv( char* data, int size, sockaddr_in* from, short flags/* = 0 */)
-{
-	if(m_ReceivedMessageQueue.numElem() == 0)
-		return 0;
-
-	m_Mutex.Lock();
-
-	// return first message from receive buffer
-	int copy_size = m_ReceivedMessageQueue[0].data->bytestream->Tell();
-
-	// safety first
-	if(copy_size > size)
-		copy_size = size;
-
-	memcpy( data, m_ReceivedMessageQueue[0].data->bytestream->GetBasePointer(), copy_size );
-
-	// copy address if we want
-	if(from)
-		*from = m_ReceivedMessageQueue[0].data->addr;
-
-	/*
-	char filename[256];
-
-	strcpy( filename, varargs("msg_debug/cdp_recv_msg_%d", m_ReceivedMessageQueue[i].message_id) );
-
-	FILE* pFile = fopen(filename, "wb");
-	if(pFile)
-	{
-		fwrite(data, copy_size, 1, pFile);
-		fclose(pFile);
-	}
-	*/
-
-
-	FreeMessage( m_ReceivedMessageQueue[0].data );
-	m_ReceivedMessageQueue.fastRemoveIndex( 0 );
-
-	m_Mutex.Unlock();
-
-	return copy_size;
-}
-
-void CUDPSocket::PutMessageOrdered( const cdp_receive_info_t& info )
-{
-	for(int i = 0; i < m_ReceivedMessageQueue.numElem(); i++)
-	{
-		if(m_ReceivedMessageQueue[i].message_id > info.message_id)
-			continue;
-
-		m_ReceivedMessageQueue.insert( info, i+1 );
-		return;
-	}
-
-	m_ReceivedMessageQueue.append( info );
-}
-
 // this really updates socket
-void CUDPSocket::UpdateRecv( int timeMs )
+void CEqRDPSocket::UpdateRecieve( int dtMs, CDPRecvPipe_fn recvFunc, void* recvObj )
 {
 	if(!m_init)
 		return;
 
+	ASSERT(recvFunc);
+
 	// get incomming messages from socket
-	int count = cdp_get_incomming_messages( m_sock );
+	int count = udp_select_messages( m_sock );
 
 	for( int i = 0; i < count; i++ )
 	{
@@ -586,28 +552,8 @@ void CUDPSocket::UpdateRecv( int timeMs )
                 SendMessageStatus( &fromaddr, hdr->message_id, true );
 			}
 
-
 			continue;
 		}
-
-		/*
-		// now message recieved, check it's CRC
-		unsigned long crc32_check = hdr->crc32;
-		hdr->crc32 = 0;
-
-		hdr->crc32 = CRC32_BlockChecksum( message_buffer, r_size );
-
-		if( hdr->crc32 != crc32_check )
-		{
-			SendMessageStatus( &fromaddr, hdr->message_id, false );
-
-			// discard, crc error
-			continue;
-		}
-		*/
-
-		if( hdr->message_id >= (CDP_MAX_MESSAGE_ID - 1) )
-			m_receivedIds.clear( false );	// SetNum because needs less reallocations
 
 		// add to received IDs
 		if(hdr->message_id != -1)
@@ -644,47 +590,18 @@ void CUDPSocket::UpdateRecv( int timeMs )
 			// is a packet
 			if( subhdr->data_type == CDP_DATA_PACKETDATA )
 			{
-				//Threading::CScopedMutex m( m_Mutex );
-
 				// if message was guaranteed
 				if(hdr->flags & CDPSEND_GUARANTEED)
 					SendMessageStatus( &fromaddr, hdr->message_id, true );
 
 				// get message size
 				int msg_size = subhdr->size-sizeof(udp_cdp_submsg_t);
-				char* rbuf = ((char*)subhdr) + sizeof(udp_cdp_submsg_t);
+				ubyte* rbuf = ((ubyte*)subhdr) + sizeof(udp_cdp_submsg_t);
 
-				cdp_message_t* message = AllocMessage();
+				ERecvMessageKind recvFlags = (hdr->flags & CDPSEND_IS_RESPONSE) ? RECV_MSG_RESPONSE_DATA : RECV_MSG_DATA;
 
-				message->Write( rbuf, msg_size );
-				message->addr = fromaddr;
-
-				cdp_receive_info_t info;
-				info.message_id = hdr->message_id;
-				info.data = message;
-				info.flags = hdr->flags;
-
-				bool shouldAdd = true;
-
-				// make call.
-				if( m_nRecvCallback != NULL )
-					shouldAdd = (m_nRecvCallback)( info );
-
-				if(shouldAdd)
-				{
-                    m_Mutex.Lock();
-
-					// put ordered or in recieve order
-					if( hdr->flags & CDPSEND_PRESERVE_ORDER )
-						PutMessageOrdered( info );
-					else
-						m_ReceivedMessageQueue.append( info );
-
-                    m_Mutex.Unlock();
-				}
-				else
-					FreeMessage(message);
-
+				// make the reciever happy
+				(recvFunc)(recvObj, rbuf, msg_size, fromaddr, hdr->message_id, recvFlags );
 
 				/*
 				// DEBUG
@@ -709,22 +626,17 @@ void CUDPSocket::UpdateRecv( int timeMs )
 				udp_cdp_packetstate_t* statehdr = (udp_cdp_packetstate_t*)rbuf;
 
 				// got state
-				if( statehdr->status == 0x1 )
+				//if( statehdr->status == 0x1 )
 				{
-					// add status to list
-					msg_status_t msgStat;
-					msgStat.message_id = statehdr->message_id;
-					msgStat.status = DELIVERY_SUCCESS;
+					// make sender happy
+					(recvFunc)(recvObj, NULL, DELIVERY_SUCCESS, fromaddr, hdr->message_id, RECV_MSG_STATUS );
 
-					Lock();
-					m_messageSendStatus.append( msgStat );
-					Unlock();
-
-					// finally remove
+					m_Mutex.Lock();
 					RemoveMessageFromSendPool( statehdr->message_id );
+					m_Mutex.Unlock();
 				}
-				else
-					CheckMessageForResend( statehdr->message_id );
+				//else
+				//	CheckMessageForResend( statehdr->message_id );
 			}
 
 			msg_idx++;
@@ -733,7 +645,7 @@ void CUDPSocket::UpdateRecv( int timeMs )
 
 	for(int i = 0; i < m_receivedIds.numElem(); i++)
 	{
-		m_receivedIds[i].timeMs += timeMs;
+		m_receivedIds[i].timeMs += dtMs;
 
 		if( m_receivedIds[i].timeMs > m_nRecvTimeout )
 		{
@@ -744,34 +656,33 @@ void CUDPSocket::UpdateRecv( int timeMs )
 	}
 }
 
-void CUDPSocket::UpdateSend( int timeMs )
+void CEqRDPSocket::UpdateSendQueue( int timeMs, CDPRecvPipe_fn recvFunc, void* recvObj )
 {
 	if(!m_init)
 		return;
 
+	ASSERT(recvFunc);
+
 	for(int i = 0; i < m_pMessageQueue.numElem(); i++)
 	{
-		cdp_message_t* buffer = m_pMessageQueue[i];
+		cdp_queued_message_t* buffer = m_pMessageQueue[i];
 
 		// after 5 retries of sending that should be removed
 		// TODO: tweak
-		if( buffer->sendTimes.GetValue() > 5 )
+		if( buffer->sendTimes.GetValue() >= 5 )
 		{
 			buffer->removeTimeout.Add(timeMs);
 
-			// remove if timed out
+			// Expired message
 			if( buffer->removeTimeout.GetValue() >= m_nUnconfirmedRemoveTimeout )
 			{
 				// add pending message ids
 				udp_cdp_hdr_t* pMsgHdr = (udp_cdp_hdr_t*)buffer->bytestream->GetBasePointer();
 
-				msg_status_t msgStat;
-				msgStat.message_id = pMsgHdr->message_id;
-				msgStat.status = DELIVERY_FAILED;
+				// make sender happy
+				(recvFunc)(recvObj, NULL, DELIVERY_FAILED, buffer->addr, pMsgHdr->message_id, RECV_MSG_STATUS );
 
 				m_Mutex.Lock();
-
-				m_messageSendStatus.append( msgStat );
 
 				// remove
 				FreeMessage( buffer );
@@ -799,19 +710,13 @@ void CUDPSocket::UpdateSend( int timeMs )
 			// set the send time
 			buffer->sendTime = m_time;
 
-			/*
-			// set crc
-			udp_cdp_hdr_t* pData = (udp_cdp_hdr_t*)buffer->bytestream->GetBasePointer();
-			pData->crc32 = 0;
-			pData->crc32 = buffer->bytestream->GetCRC32(); // before CRC32 being computed it should be always zero
-			*/
-
 			bool bSend = true;
 
 			// FAKE LAG
 			if(net_fakelag.GetInt() && RandomInt(0, net_fakelag.GetInt()) == 0)
 				bSend = false;
 
+			
 			if(bSend)
 			{
 				int s_size = sendto( m_sock, (char*)buffer->bytestream->GetBasePointer(), buffer->bytestream->Tell(), 0, (sockaddr*)&buffer->addr, sizeof(sockaddr_in) );
@@ -834,7 +739,6 @@ void CUDPSocket::UpdateSend( int timeMs )
 				}
 			}
 
-
 			// if this message is unguaranteed, remove now
 			if( !(buffer->flags & CDPSEND_GUARANTEED) )
 			{
@@ -846,9 +750,7 @@ void CUDPSocket::UpdateSend( int timeMs )
 				i--;
 
 				if(m_pMessageQueue.numElem() < UDP_CDP_MAX_QUEUE_BUFFERS)
-				{
 					m_SendSignal.Raise();
-				}
 
 				continue;
 			}
@@ -881,7 +783,7 @@ void CUDPSocket::UpdateSend( int timeMs )
 	m_time += timeMs;
 }
 
-bool CUDPSocket::HasAnyMessageWithId( short message_id, const sockaddr_in& addr  )
+bool CEqRDPSocket::HasAnyMessageWithId( short message_id, const sockaddr_in& addr  )
 {
 	CScopedMutex m(m_Mutex);
 
@@ -895,7 +797,7 @@ bool CUDPSocket::HasAnyMessageWithId( short message_id, const sockaddr_in& addr 
 }
 
 // returns a free message (it could create new buffer or return one freed)
-cdp_message_t* CUDPSocket::GetFreeBuffer( int freeSpaceRequired, const sockaddr_in* to, short nFlags )
+cdp_queued_message_t* CEqRDPSocket::GetFreeBuffer( int freeSpaceRequired, const sockaddr_in* to, short nFlags )
 {
 	ASSERT(freeSpaceRequired < UDP_CDP_MAX_MESSAGEPAYLOAD);
 
@@ -951,7 +853,7 @@ cdp_message_t* CUDPSocket::GetFreeBuffer( int freeSpaceRequired, const sockaddr_
 		m_SendSignal.Clear();
 	}
 
-	cdp_message_t* buffer = AllocMessage();
+	cdp_queued_message_t* buffer = AllocMessage();
 
 	buffer->flags = nFlags;
 
@@ -972,11 +874,11 @@ cdp_message_t* CUDPSocket::GetFreeBuffer( int freeSpaceRequired, const sockaddr_
 	return buffer;
 }
 
-void CUDPSocket::RemoveMessageFromSendPool( short message_id )
+void CEqRDPSocket::RemoveMessageFromSendPool( short message_id )
 {
 	for( int i = 0; i < m_pMessageQueue.numElem(); i++ )
 	{
-		cdp_message_t* pMsg = m_pMessageQueue[i];
+		cdp_queued_message_t* pMsg = m_pMessageQueue[i];
 
 		// this could not be happened, but i'll keep it there
 		//if( pMsg->sendTimes == 0 )
@@ -987,8 +889,6 @@ void CUDPSocket::RemoveMessageFromSendPool( short message_id )
 
 		if( hdr->message_id == message_id )
 		{
-			Threading::CScopedMutex m( m_Mutex );
-
 			FreeMessage( m_pMessageQueue[i] );
 			m_pMessageQueue.fastRemoveIndex( i );
 			i--;
@@ -996,11 +896,11 @@ void CUDPSocket::RemoveMessageFromSendPool( short message_id )
 	}
 }
 
-void CUDPSocket::CheckMessageForResend( short message_id )
+void CEqRDPSocket::CheckMessageForResend( short message_id )
 {
 	for( int i = 0; i < m_pMessageQueue.numElem(); i++ )
 	{
-		cdp_message_t* pMsg = m_pMessageQueue[i];
+		cdp_queued_message_t* pMsg = m_pMessageQueue[i];
 
 		// this could not be happened, but i'll keep it there
 		if( pMsg->sendTimes.GetValue() == 0 )
@@ -1022,7 +922,7 @@ void CUDPSocket::CheckMessageForResend( short message_id )
 	}
 }
 
-int CUDPSocket::GetMessageUniqueID()
+int CEqRDPSocket::GetMessageUniqueID()
 {
 	// reset
 	if( m_nMessageIDInc >= CDP_MAX_MESSAGE_ID )
@@ -1031,56 +931,15 @@ int CUDPSocket::GetMessageUniqueID()
 	return m_nMessageIDInc++;
 }
 
-// select function for receiving messages
-int	CUDPSocket::GetReceivedMessageCount()
-{
-	return m_ReceivedMessageQueue.numElem();
-}
-
-int CUDPSocket::GetSendPoolCount()
+int CEqRDPSocket::GetSendPoolCount() const
 {
 	return m_pMessageQueue.numElem();
 }
 
-void CUDPSocket::GetMessageStatusList( DkList<msg_status_t>& msgStatusList )
+void CEqRDPSocket::PrintStats() const
 {
-	Threading::CScopedMutex m( m_Mutex );
-
-	msgStatusList.append( m_messageSendStatus );
-	m_messageSendStatus.clear();
-}
-
-void CUDPSocket::SetRecvCallback(const CDPRecvCallback_fn cb)
-{
-	m_nRecvCallback = cb;
-}
-
-// sets the delay times of protocol
-void CUDPSocket::SetDelayTimes( int nSendBufferTimeout, int nUnconfirmedRemoveTimeout, int nReceivedIdsTimeout )
-{
-	m_nSendTimeout = nSendBufferTimeout;
-	m_nUnconfirmedRemoveTimeout = nUnconfirmedRemoveTimeout;
-	m_nRecvTimeout = nReceivedIdsTimeout;
-}
-
-void CUDPSocket::Lock()
-{
-	m_Mutex.Lock();
-}
-
-void CUDPSocket::Unlock()
-{
-	m_Mutex.Unlock();
-}
-
-void CUDPSocket::PrintStats()
-{
-
 	Msg("m_pMessageQueue = %d\n", m_pMessageQueue.numElem());
-	Msg("m_ReceivedMessageQueue = %d\n", m_ReceivedMessageQueue.numElem());
 	Msg("m_receivedIds = %d\n", m_receivedIds.numElem());
-	Msg("m_messageSendStatus = %d\n", m_messageSendStatus.numElem());
-
 }
 
 }; // namespace CUDP

@@ -32,13 +32,25 @@ namespace Networking
 // Network message stuff
 // ------------------------------------------
 
-#define MAX_SUBMESSAGE_LENGTH MAX_MESSAGE_LENGTH
+#define MAX_SUBMESSAGE_LENGTH UDP_CDP_MAX_MESSAGEPAYLOAD
 
 struct submsg_t
 {
+	submsg_t()
+	{
+		len = 0;
+		pos = 0;
+		confirmed = false;
+		msgId = -1;
+	}
+
 	int		len;
 	int		pos;
 	ubyte	data[MAX_SUBMESSAGE_LENGTH];
+
+	// sent
+	short	msgId;
+	bool	confirmed;
 };
 
 // ------------------------------------------
@@ -55,11 +67,11 @@ public:
 
 	void				ResetPos();
 
-	bool				Receive(int wait_timeout = 0);
-
 	void				DebugWriteToFile(const char* fileprefix);
 
-	bool				Send( short& outProtoMsgId, int nFlags = 0 );
+	bool				Send( int nFlags = 0 );
+	int					GetOverallStatus() const;
+	void				SetMessageStatus(short msgId, int status);
 
 	int					GetClientID() const;
 	void				GetClientInfo(sockaddr_in& addr, int& clientId) const;
@@ -101,7 +113,6 @@ public:
 	Vector4D			ReadVector4D()				{Vector4D v;ReadData((ubyte*)&v, sizeof(Vector4D));return v;}
 
 	void				ReadKeyValues(kvkeybase_t* kbase);
-
 
 	void				ReadString(char* pszDestStr);
 	void				ReadWString(wchar_t* pszDestStr);

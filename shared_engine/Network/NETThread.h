@@ -44,16 +44,15 @@ typedef EventFilterResult_e (*pfnEventFilterCallback)( CNetworkThread* pNetThrea
 // event filter callback definition
 typedef void (*pfnUpdateCycleCallback)( CNetworkThread* pNetThread, double fDt);
 
-struct rcvdmessage_t;
-struct netfragmsg_t;
+struct rcvdMessage_t;
+struct netFragMsg_t;
 
-struct sendevent_t
+struct sendEvent_t
 {
+
 	uint16				event_type;
 	uint16				event_id;
 	int					client_id;
-
-	short				message_id;
 
 	int					flags;
 
@@ -82,7 +81,7 @@ public:
 	virtual void				OnCycle() {}
 
 	void						FreeMessages();
-	void						FreeMessage( rcvdmessage_t* pMessage );
+	void						FreeMessage( rcvdMessage_t* pMessage );
 
 	INetworkInterface*			GetNetworkInterface();
 	void						SetNetworkInterface(INetworkInterface* pInterface);
@@ -93,7 +92,7 @@ public:
 
 	void						StopWork();
 
-	int							GetPooledEventCount() {return m_pSentEvents.numElem();}
+	int							GetPooledEventCount() {return m_queuedEvents.numElem();}
 	bool						IsMessageInPool(int nEventID);
 
 	///< sets event filter callback, usually for servers
@@ -118,7 +117,7 @@ public:
 	bool						SendData(CNetMessageBuffer* pData, int nMsgEventID, int client_id = -1, int flags = 0);
 
 	///< sends event, returns event ID
-	int							SendEvent( CNetEvent* pEvent, int nEventType, int client_id = -1, int flags = NSFLAG_IMMEDIATE);
+	int							SendEvent( CNetEvent* pEvent, int nEventType, int client_id = -1, int flags = CDPSEND_IMMEDIATE);
 
 	///< sends event and waits for data (SendData)
 	///< you should not call it inside another event.
@@ -138,65 +137,73 @@ public:
 	//-----------------------------------------------------
 
 	///< time
-	double						GetCurTime() {return m_fCurTime;}
+	double						GetCurTime() {return m_Timer.GetTime();}
 
 	///< previous time
-	double						GetPrevTime() {return m_fPrevTime;}
+	double						GetPrevTime() {return m_prevTime;}
 
 protected:
 	virtual int					Run();
 
 private:
+
+	static void					OnUCDPRecievedStatic(void* thisptr, ubyte* data, int size, const sockaddr_in& from, short msgId, ERecvMessageKind type);
+	void						OnUCDPRecieved(ubyte* data, int size, const sockaddr_in& from, short msgId, ERecvMessageKind type);
+
 	int							DispatchEvents();
-	EEventMessageStatus			DispatchEvent( int nIndex, DkList<msg_status_t>& msgStates );
-
-
+	EEventMessageStatus			DispatchEvent( sendEvent_t& evt );
 
 	CNetEvent*					CreateEvent( CNetMessageBuffer *pMsg, int eventIdentifier );
 
-	bool						ProcessMessage( rcvdmessage_t* pMsg, CNetMessageBuffer* pOutput = NULL, int nWaitEventID = -1 );
+	bool						ProcessMessage( rcvdMessage_t* pMsg, CNetMessageBuffer* pOutput = NULL, int nWaitEventID = -1 );
 
 	///< simply adds message
-	void						AddMessage(rcvdmessage_t* pMessage, rcvdmessage_t* pAddTo);
+	void						AddMessage(rcvdMessage_t* pMessage, rcvdMessage_t* pAddTo);
 
 	///< adds fragmented message to waiter
-	void						AddFragmentedMessage( netmessage_t* pMsg, int size, const sockaddr_in& addr );
+	void						AddFragmentedMessage( netMessage_t* pMsg, int size, const sockaddr_in& addr );
 
 	///< dispatches fragmented message to the queue
-	void						DispatchFragmentedMessage( netfragmsg_t* pMsg );
+	void						DispatchFragmentedMessage( netFragMsg_t* pMsg );
 
 protected:
 
-	DkList<rcvdmessage_t*>		m_lagMessages;
-
-	DkList<sendevent_t>			m_pSentEvents;
-
+	// event factory
 	DkList<neteventfactory_t>	m_netEventFactory;
 
-	DkList<netfragmsg_t*>		m_fragmented_messages;
+	// network interface this thread using
+	INetworkInterface*			m_netInterface;
 
-	Threading::CEqMutex&		m_Mutex;
-	bool						m_bLockUpdateDispatch;
-	bool						m_bStopWork;
+	// delayed messages, for testing network only
+	DkList<rcvdMessage_t*>		m_lateMessages;
 
-	pfnEventFilterCallback		m_fnEventFilter;
+	// all undispatched fragmented messages
+	DkList<netFragMsg_t*>		m_fragmented_messages;
 
-	pfnUpdateCycleCallback		m_fnCycleCallback;
+	// message queue
+	rcvdMessage_t*				m_firstMessage;
+	rcvdMessage_t*				m_lastMessage;
 
-	int							m_nLastClientID;
+	// events
+	DkList<sendEvent_t>			m_queuedEvents;
 
-	rcvdmessage_t*				m_pFirstMessage;
-	rcvdmessage_t*				m_pLastMessage;
+	// callbacks
+	pfnEventFilterCallback		m_fnEventFilter;		// event filter callback
+	pfnUpdateCycleCallback		m_fnCycleCallback;		// thread cycle callback, used for heartbeat or smth
 
-	INetworkInterface*			m_pNetInterface;
+	// last client ID, used for synchronized messages which returns DATA
+	int							m_lastClientID;
 
-	double						m_fCurTime;
-	double						m_fPrevTime;
+	Threading::CEqMutex&		m_mutex;
+	bool						m_lockUpdateDispatch;
+	bool						m_stopWork;
+
+	double						m_prevTime;
 
 	CEqTimer					m_Timer;
 
 	///< this was made for syncronized client queries
-	int							m_nEventCounter;
+	int							m_eventCounter;
 };
 
 #ifndef NO_LUA

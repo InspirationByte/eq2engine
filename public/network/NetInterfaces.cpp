@@ -7,7 +7,6 @@
 
 #include "NetInterfaces.h"
 #include "DebugInterface.h"
-#include "c_udp.h"
 #include "IConCommandFactory.h"
 
 #include <zlib.h>
@@ -28,70 +27,63 @@ DECLARE_CVAR_CLAMP(net_compress_level, 1, 1, 9, "Compression ratio", CV_ARCHIVE)
 
 //-------------------------------------------------------------------------------------------------------
 
-void INetworkInterface::Update( int timeMs )
+void INetworkInterface::Update( int timeMs, CDPRecvPipe_fn func, void* recvObj )
 {
-#ifdef USE_CUDP_SOCKET
-	ASSERT(m_pSocket);
+	ASSERTMSG(m_pSocket != NULL, "INetworkInterface - not initialized.");
 
-	m_pSocket->UpdateRecv( timeMs );
-	m_pSocket->UpdateSend( timeMs );
-#endif // USE_CUDP_SOCKET
+	m_pSocket->UpdateSendQueue( timeMs, func, recvObj);
+	m_pSocket->UpdateRecieve( timeMs, func, recvObj);
 }
 
-CUDPSocket* INetworkInterface::GetSocket()
+//
+// This decompresses recieved message\fragment
+//
+bool INetworkInterface::PreProcessRecievedMessage( ubyte* data, int size, netMessage_t& out )
 {
-#ifdef USE_CUDP_SOCKET
-	return m_pSocket;
-#endif // USE_CUDP_SOCKET
+	netMessage_t* msg = (netMessage_t*)data;
 
-	return NULL;
-}
+	out.header = msg->header;
 
-// basic message sending
-bool INetworkInterface::Receive( netmessage_t* msg, int &msg_size, sockaddr_in* from )
-{
-	bool result = InternalReceive(msg, msg_size, from);
-
-	if( result && msg->compressed_size > 0 )
+	// decompress message and put to &out
+	if( msg->header.compressed_size > 0 )
 	{
-		uLongf decompSize = msg->message_size;
+		uLongf decompSize = msg->header.message_size;
 		Bytef* decompData = (Bytef*)malloc( decompSize );
 
-		int z_result = uncompress(decompData, &decompSize, msg->message_bytes, msg->compressed_size );
+		int z_result = uncompress(decompData, &decompSize, msg->data, msg->header.compressed_size );
 
 		if(z_result == Z_OK)
-		{
-			msg_size = decompSize;
-			msg->compressed_size = 0;
-			memcpy(msg->message_bytes, decompData, decompSize);
-		}
-		else
-		{
-			result = false;
-		}
+			memcpy(out.data, decompData, decompSize);
 
 		free( decompData );
+
+		if(z_result != Z_OK)
+			return false;
+	}
+	else
+	{
+		memcpy(out.data, msg->data, msg->header.message_size);
 	}
 
-	return result;
+	return true;
 }
 
-bool INetworkInterface::Send( netmessage_t* msg, int msg_size, short& msg_id, int flags )
+bool INetworkInterface::Send( netMessage_t* msg, int msg_size, short& msg_id, int flags )
 {
-	msg->compressed_size = 0;
+	msg->header.compressed_size = 0;
 
 	if(net_compress.GetBool())
 	{
-		uLongf compSize = (msg->message_size * 1.1) + 12;
+		uLongf compSize = (msg->header.message_size * 1.1) + 12;
 		Bytef* compData = (Bytef*)malloc( compSize );
 
-		int z_result = compress2(compData,&compSize,(ubyte*)msg->message_bytes, msg->message_size, net_compress_level.GetInt());
+		int z_result = compress2(compData,&compSize,(ubyte*)msg->data, msg->header.message_size, net_compress_level.GetInt());
 
 		if(z_result == Z_OK)
 		{
 			msg_size = compSize;
-			msg->compressed_size = compSize;
-			memcpy(msg->message_bytes, compData, compSize);
+			msg->header.compressed_size = compSize;
+			memcpy(msg->data, compData, compSize);
 		}
 		else
 		{
@@ -112,9 +104,7 @@ bool INetworkInterface::Send( netmessage_t* msg, int msg_size, short& msg_id, in
 CNetworkServer::CNetworkServer()
 {
 	m_lastclient.client_id = -1;
-#ifdef USE_CUDP_SOCKET
 	m_pSocket = NULL;
-#endif // USE_CUDP_SOCKET
 }
 
 CNetworkServer::~CNetworkServer()
@@ -124,92 +114,23 @@ CNetworkServer::~CNetworkServer()
 
 bool CNetworkServer::Init( int portNumber )
 {
-#ifdef USE_CUDP_SOCKET
-	m_pSocket = new CUDPSocket();
+	m_pSocket = new CEqRDPSocket();
 
 	if(!m_pSocket->Init( portNumber ))
 	{
 		MsgError("Could not initialize socket.\n");
 		return false;
 	}
-#else
 
-	// Open a datagram socket
-	m_socket = socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP );
-	if (m_socket == INVALID_SOCKET)
-	{
-		MsgError("Could not create socket.\n");
-		return false;
-	}
-
-	unsigned long _true = 1;
-	int	i = 1;
-
-	if(ioctlsocket (m_socket, FIONBIO, &_true) == -1)
-	{
-		MsgError("cannot make socket non-blocking!\n");
-		return false;
-	}
-
-
-	if (setsockopt(m_socket, SOL_SOCKET, SO_BROADCAST, (char *)&i, sizeof(i)) == -1)
-	{
-		MsgError("Cannot make socket broadcasting!\n");
-		return false;
-	}
-
-	memset((void *)&m_Server, NULL, sizeof(struct sockaddr_in));
-
-	m_Server.sin_family = AF_INET;
-	m_Server.sin_port = htons(portNumber);
-
-	// Set address automatically
-	// Get host name of this computer
-	char host_name[256];
-	gethostname(host_name, sizeof(host_name));
-	m_hostinfo = gethostbyname(host_name);
-
-	if (m_hostinfo == NULL)
-	{
-		Msg("Unable to get hostinfo!\n");
-		return false;
-	}
-
-	in_addr hostaddress;
-
-	hostaddress = *((in_addr *)( m_hostinfo->h_addr ));
-
-	m_Server.sin_addr.S_un.S_addr = INADDR_ANY;
-
-	// Bind address to socket
-	if( bind(m_socket, (struct sockaddr *)&m_Server, sizeof(struct sockaddr_in)) == SOCKET_ERROR )
-	{
-		closesocket(m_socket);
-
-		int nErrorMsg = WSAGetLastError();
-		MsgError( "Failed to bind socket to port %d (%s)!!!\n", portNumber, NETErrorString( WSAGetLastError() ) );
-		return false;
-	}
-
-	Msg("\nServer Address: %u.%u.%u.%u:%d\n\n",	(unsigned char)hostaddress.S_un.S_un_b.s_b1,
-												(unsigned char)hostaddress.S_un.S_un_b.s_b2,
-												(unsigned char)hostaddress.S_un.S_un_b.s_b3,
-												(unsigned char)hostaddress.S_un.S_un_b.s_b4,
-												portNumber);
-#endif // USE_CUDP_SOCKET
 	return true;
 }
 
 void CNetworkServer::Shutdown()
 {
-#ifdef USE_CUDP_SOCKET
 	if(m_pSocket)
 		delete m_pSocket;
 
 	m_pSocket = NULL;
-#else
-	closesocket(m_socket);
-#endif // USE_CUDP_SOCKET
 }
 
 svclient_t* CNetworkServer::GetLastClient()
@@ -260,76 +181,27 @@ void CNetworkServer::RemoveClientById(int id)
 	}
 }
 
-int CNetworkServer::GetIncommingMessages()
+bool CNetworkServer::OnRecieved( netMessage_t* msg, const sockaddr_in& from )
 {
-#ifdef USE_CUDP_SOCKET
-	return m_pSocket->GetReceivedMessageCount();
-#else
-	struct timeval stTimeOut;
-
-	fd_set stReadFDS;
-
-	FD_ZERO(&stReadFDS);
-
-	// Timeout of one second
-	stTimeOut.tv_sec = 0;
-	stTimeOut.tv_usec = 20 * 1000;
-
-	FD_SET(m_socket, &stReadFDS);
-
-	return select( m_socket+1, &stReadFDS, NULL, NULL, &stTimeOut);
-#endif // USE_CUDP_SOCKET
-}
-
-bool CNetworkServer::InternalReceive( netmessage_t* msg, int& msg_size, sockaddr_in* from )
-{
-	sockaddr_in client;
-	int cl_len = sizeof(struct sockaddr_in);
-
-#ifdef USE_CUDP_SOCKET
-
-	msg_size = m_pSocket->Recv((char*)msg, sizeof(netmessage_t), &client);
-	msg_size -= NETMESSAGE_HDR;
-
-#else
-	msg_size = recvfrom(m_socket, (char*)msg, MAX_MESSAGE_LENGTH+NETMESSAGE_HDR, 0, (struct sockaddr *)&client, &cl_len);
-	if( msg_size < 0 )
-	{
-		int nErrorMsg = WSAGetLastError();
-
-		// skip WSAEWOULDBLOCK, WSAENOTCONN and WSAECONNRESET to avoid receiving ICMP error
-		if( nErrorMsg != WSAEWOULDBLOCK && nErrorMsg != WSAENOTCONN && nErrorMsg != WSAECONNRESET )
-		{
-			Msg("receive error (%s)\n", NETErrorString(nErrorMsg));
-			return false;
-		}
-
-		return false;
-	}
-#endif // USE_CUDP_SOCKET
-
-	if(from)
-		(*from) = client;
-
 	bool bResult = false;
 
 	// this is only used if client is not connected
-	if( msg->clientid == -1 )
+	if( msg->header.clientid == -1 )
 	{
-		m_lastclient.client_addr = client;
+		m_lastclient.client_addr = from;
 		m_lastclient.client_id = -1;
 		bResult = true;
 	}
 	else
 	{
-		if(msg->clientid >= 0 && (msg->clientid < m_clients.numElem()))
+		if(msg->header.clientid >= 0 && (msg->header.clientid < m_clients.numElem()))
 		{
 			for(int i = 0; i < m_clients.numElem(); i++)
 			{
 				if(!m_clients[i])
 					continue;
 
-				if(NETCompareAdr(m_clients[i]->client_addr, client) && m_clients[i]->client_id == msg->clientid)
+				if(NETCompareAdr(m_clients[i]->client_addr, from) && m_clients[i]->client_id == msg->header.clientid)
 				{
 					m_lastclient.client_addr = m_clients[i]->client_addr;
 					m_lastclient.client_id = m_clients[i]->client_id;
@@ -343,11 +215,11 @@ bool CNetworkServer::InternalReceive( netmessage_t* msg, int& msg_size, sockaddr
 	return bResult;
 }
 
-bool CNetworkServer::InternalSend( netmessage_t* msg, int msg_size, short& msg_id, int flags)
+bool CNetworkServer::InternalSend( netMessage_t* msg, int msg_size, short& msg_id, int flags)
 {
 	svclient_t* pClient;
 
-	if(msg->clientid == NM_SENDTOALL)
+	if(msg->header.clientid == NM_SENDTOALL)
 	{
 		int numClientsToSend = 0;
 		int numSent = 0;
@@ -357,7 +229,7 @@ bool CNetworkServer::InternalSend( netmessage_t* msg, int msg_size, short& msg_i
 			if(!m_clients[i])
 				continue;
 
-			msg->clientid = m_clients[i]->client_id;
+			msg->header.clientid = m_clients[i]->client_id;
 			numSent += InternalSend(msg, msg_size, msg_id, flags) ? 1 : 0;
 
 			numClientsToSend++;
@@ -367,16 +239,14 @@ bool CNetworkServer::InternalSend( netmessage_t* msg, int msg_size, short& msg_i
 	}
 	else
 	{
-		if(msg->clientid != NM_SENDTOLAST)
+		if(msg->header.clientid != NM_SENDTOLAST)
 		{
-			//pClient = m_clients[msg->clientid];
-
 			for(int i = 0; i < m_clients.numElem(); i++)
 			{
 				if(!m_clients[i])
 					continue;
 
-				if(m_clients[i]->client_id == msg->clientid)
+				if(m_clients[i]->client_id == msg->header.clientid)
 				{
 					pClient = m_clients[i];
 					break;
@@ -392,13 +262,7 @@ bool CNetworkServer::InternalSend( netmessage_t* msg, int msg_size, short& msg_i
 			return false;
 		}
 
-#ifdef USE_CUDP_SOCKET
-
-		int nCUDPFlags = 0;
-		nCUDPFlags |= (flags & NSFLAG_GUARANTEED) ? (CDPSEND_GUARANTEED | CDPSEND_PRESERVE_ORDER) : 0;
-		nCUDPFlags |= (flags & NSFLAG_IMMEDIATE) ? CDPSEND_IMMEDIATE : 0;
-
-		int sended = m_pSocket->Send((char *)msg, msg_size + NETMESSAGE_HDR, &pClient->client_addr, msg_id, nCUDPFlags );
+		int sended = m_pSocket->Send((char *)msg, msg_size + NETMESSAGE_HDR, &pClient->client_addr, msg_id, flags );
 
 		sended -= NETMESSAGE_HDR;
 
@@ -407,30 +271,6 @@ bool CNetworkServer::InternalSend( netmessage_t* msg, int msg_size, short& msg_i
 			MsgError("Bad sent message (%d versus %d)\n", msg_size, sended);
 			return false;
 		}
-#else
-		int cl_len = sizeof(struct sockaddr_in);
-
-		int sended = sendto(m_socket, (char *)msg, msg_size + NETMESSAGE_HDR, 0, (struct sockaddr *)&pClient->client_addr, cl_len);
-
-		sended -= NETMESSAGE_HDR;
-
-		if( sended != msg_size )
-		{
-			if( sended < 0 )
-			{
-				int nErrorMsg = WSAGetLastError();
-
-				// skip WSAEWOULDBLOCK and WSAENOTCONN to avoid freeze
-				if( nErrorMsg != WSAEWOULDBLOCK && nErrorMsg != WSAENOTCONN )
-				{
-					return false;
-				}
-			}
-
-			MsgError("Bad sent message (%d versus %d)\n", msg_size, sended);
-			return false;
-		}
-#endif // USE_CUDP_SOCKET
 	}
 
 	return true;
@@ -462,15 +302,6 @@ int CNetworkServer::GetClientCount()
 	return m_clients.numElem();
 }
 
-sockaddr_in CNetworkServer::GetSocketAddress()
-{
-#ifdef USE_CUDP_SOCKET
-	return m_pSocket->GetAddress();
-#else
-	return m_Server;
-#endif // USE_CUDP_SOCKET
-}
-
 //-------------------------------------------------------------------------------------------------------
 // Client
 //-------------------------------------------------------------------------------------------------------
@@ -478,10 +309,7 @@ sockaddr_in CNetworkServer::GetSocketAddress()
 CNetworkClient::CNetworkClient()
 {
 	m_nClientID = -1;
-
-#ifdef USE_CUDP_SOCKET
 	m_pSocket = NULL;
-#endif // USE_CUDP_SOCKET
 }
 
 CNetworkClient::~CNetworkClient()
@@ -491,8 +319,7 @@ CNetworkClient::~CNetworkClient()
 
 bool CNetworkClient::Connect( const char* pszAddress, int portNumber, int clientPort )
 {
-#ifdef USE_CUDP_SOCKET
-	m_pSocket = new CUDPSocket();
+	m_pSocket = new CEqRDPSocket();
 
 	bool bState = false;
 
@@ -510,65 +337,6 @@ bool CNetworkClient::Connect( const char* pszAddress, int portNumber, int client
 		MsgError("Could not initialize socket.\n");
 		return false;
 	}
-#else
-	// Open a datagram socket
-	m_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (m_socket == INVALID_SOCKET)
-	{
-		MsgError("Could not create socket.\n");
-		return false;
-	}
-
-	unsigned long _true = 1;
-	int	i = 1;
-
-	if(ioctlsocket (m_socket, FIONBIO, &_true) == -1)
-	{
-		Msg("cannot make socket non-locking!\n");
-		return false;
-	}
-
-
-	if (setsockopt(m_socket, SOL_SOCKET, SO_BROADCAST, (char *)&i, sizeof(i)) == -1)
-	{
-		Msg("Set socket is broadcasting!\n");
-		return false;
-	}
-	//---------------------------------------------------------------------------
-
-	memset((void *)&m_Client, NULL, sizeof(struct sockaddr_in));
-
-	// Set family and port
-	m_Client.sin_family = AF_INET;
-	m_Client.sin_port = htons(clientPort);
-
-	// Set address automatically
-	// Get host name of this computer
-	char host_name[256];
-	gethostname(host_name, sizeof(host_name));
-	m_hostinfo = gethostbyname(host_name);
-
-	// Check for NULL pointer
-	if (m_hostinfo == NULL)
-	{
-		Msg("Unable to get hostinfo!\n");
-		return false;
-	}
-
-	// Assign the address
-	m_Client.sin_addr.S_un.S_un_b.s_b1 = m_hostinfo->h_addr_list[0][0];
-	m_Client.sin_addr.S_un.S_un_b.s_b2 = m_hostinfo->h_addr_list[0][1];
-	m_Client.sin_addr.S_un.S_un_b.s_b3 = m_hostinfo->h_addr_list[0][2];
-	m_Client.sin_addr.S_un.S_un_b.s_b4 = m_hostinfo->h_addr_list[0][3];
-
-	// Bind local address to socket
-	if (bind(m_socket, (struct sockaddr *)&m_Client, sizeof(struct sockaddr_in)) == SOCKET_ERROR)
-	{
-		MsgError("Failed to bind client socket!\n");
-		return false;
-	}
-
-#endif // USE_CUDP_SOCKET
 
 	in_addr hostaddress;
 
@@ -635,88 +403,25 @@ bool CNetworkClient::Connect( const char* pszAddress, int portNumber, int client
 
 void CNetworkClient::Shutdown()
 {
-#ifdef USE_CUDP_SOCKET
 	if(m_pSocket)
 		delete m_pSocket;
 
 	m_pSocket = NULL;
-#else
-	closesocket(m_socket);
-#endif
 }
 
-bool CNetworkClient::Heartbeat()
+bool CNetworkClient::OnRecieved( netMessage_t* msg, const sockaddr_in& from )
 {
-	return false;
-}
-
-bool CNetworkClient::InternalReceive( netmessage_t* msg, int &msg_size, sockaddr_in* from)
-{
-
-	int cl_len = sizeof(struct sockaddr_in);
-
-	sockaddr_in afrom;
-
-	if(!from)
-		from = &afrom;
-
-#ifdef USE_CUDP_SOCKET
-	msg_size = m_pSocket->Recv( (char*)msg, sizeof(netmessage_t), from );
-
-	if( msg_size <= 0 )
-		return false;
-
-	msg_size -= NETMESSAGE_HDR;
-#else
-	sockaddr_in server;
-	msg_size = recvfrom(m_socket, (char*)msg, MAX_MESSAGE_LENGTH+NETMESSAGE_HDR, 0, (struct sockaddr *)&server, &cl_len);
-	if( msg_size < 0 )
-	{
-		int nErrorMsg = WSAGetLastError();
-
-		// skip WSAEWOULDBLOCK, WSAENOTCONN and WSAECONNRESET to avoid receiving ICMP error
-		if( nErrorMsg != WSAEWOULDBLOCK && nErrorMsg != WSAENOTCONN && nErrorMsg != WSAECONNRESET )
-		{
-			Msg("receive error (%s)\n", NETErrorString(nErrorMsg));
-			return false;
-		}
-
-		return false;
-	}
-
-	if(msg_size == 0)
-	{
-		return false;
-	}
-
-#endif // USE_CUDP_SOCKET
-
-	/*
-	// not me?
-	if(msg->clientid != m_nClientID)
-	{
-		Msg("invalid client id (%d vs %d)\n", msg->clientid, m_nClientID);
-		msg_size = 0;
-		return false;
-	}
-	*/
-
-	// set to zero
-	msg->clientid = NM_SERVER;
+	// set to server
+	msg->header.clientid = NM_SERVER;
 
 	return true;
 }
 
-bool CNetworkClient::InternalSend( netmessage_t* msg, int msg_size, short& msg_id, int flags )
+bool CNetworkClient::InternalSend( netMessage_t* msg, int msg_size, short& msg_id, int flags )
 {
-	msg->clientid = m_nClientID;
+	msg->header.clientid = m_nClientID;
 
-#ifdef USE_CUDP_SOCKET
-	int nCUDPFlags = 0;
-	nCUDPFlags |= (flags & NSFLAG_GUARANTEED) ? (CDPSEND_GUARANTEED | CDPSEND_PRESERVE_ORDER) : 0;
-	nCUDPFlags |= (flags & NSFLAG_IMMEDIATE) ? CDPSEND_IMMEDIATE : 0;
-
-	int sended = m_pSocket->Send((char *)msg, msg_size + NETMESSAGE_HDR, &m_Server, msg_id, nCUDPFlags);
+	int sended = m_pSocket->Send((char *)msg, msg_size + NETMESSAGE_HDR, &m_Server, msg_id, flags );
 
 	sended -= NETMESSAGE_HDR;
 
@@ -725,61 +430,8 @@ bool CNetworkClient::InternalSend( netmessage_t* msg, int msg_size, short& msg_i
 		MsgError("Bad sent message (%d versus %d)\n", msg_size, sended);
 		return false;
 	}
-#else
-	int cl_len = sizeof(struct sockaddr_in);
-
-	int sended = sendto(m_socket, (char *)msg, msg_size, 0, (struct sockaddr *)&m_Server, cl_len);
-	sended -= NETMESSAGE_HDR;
-
-	if( sended != msg_size )
-	{
-		if( sended < 0 )
-		{
-			int nErrorMsg = WSAGetLastError();
-
-			// skip WSAEWOULDBLOCK and WSAENOTCONN to avoid freeze
-			if( nErrorMsg != WSAEWOULDBLOCK && nErrorMsg != WSAENOTCONN )
-			{
-				return false;
-			}
-		}
-
-		MsgError("Bad sent message (%d versus %d)\n", msg_size, sended);
-		return false;
-	}
-#endif // USE_CUDP_SOCKET
 
 	return true;
-}
-
-int CNetworkClient::GetIncommingMessages()
-{
-#ifdef USE_CUDP_SOCKET
-	return m_pSocket->GetReceivedMessageCount();
-#else
-	struct timeval stTimeOut;
-
-	fd_set stReadFDS;
-
-	FD_ZERO(&stReadFDS);
-
-	// Timeout of one second
-	stTimeOut.tv_sec = 0;
-	stTimeOut.tv_usec = 20 * 1000;
-
-	FD_SET(m_socket, &stReadFDS);
-
-	return select( m_socket+1, &stReadFDS, NULL, NULL, &stTimeOut);
-#endif
-}
-
-sockaddr_in CNetworkClient::GetSocketAddress()
-{
-#ifdef USE_CUDP_SOCKET
-	return m_pSocket->GetAddress();
-#else
-	return m_Client;
-#endif
 }
 
 void CNetworkClient::SetClientID(int nClientID)

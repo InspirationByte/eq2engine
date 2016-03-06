@@ -2,10 +2,9 @@
 // Copyright © Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Controlled (un)reilable datagramm protocol
+// Description: Controlled reilable datagramm protocol
 //
 //				TODO:	buffer overflow protection
-//						raw socket support
 //////////////////////////////////////////////////////////////////////////////////
 
 #ifndef C_UDP_H
@@ -13,178 +12,110 @@
 
 #include "utils/DkList.h"
 #include "utils/eqthread.h"
+#include <map>
 
 #include "platform/Platform.h"
 #include "net_defs.h"
 #include "VirtualStream.h"
 
-#define CUDP_MESSAGE_IMMEDIATE	(-3)
-#define CUDP_MESSAGE_ERROR		(-2)
+#define CUDP_MESSAGE_ID_IMMEDIATE			(-3)
+#define CUDP_MESSAGE_ID_ERROR				(-2)
+#define UDP_CDP_MAX_MESSAGEPAYLOAD			MAX_MESSAGE_LENGTH		// maximum payload for this protocol type; Tweak this if you have issues
+
+using namespace Threading;
 
 namespace Networking
 {
 
-using namespace Threading;
-
-#define UDP_CDP_MAX_MESSAGEPAYLOAD		(16*1024)		// maximum payload for this protocol type; Tweak this if you have issues
-
-enum CDPSendFlags_e
+enum ECDPSendFlags
 {
-	CDPSEND_PRESERVE_ORDER	= (1 << 0),		// preserves ordering (not 100%)
-	CDPSEND_GUARANTEED		= (1 << 1),		// just simply send UDP message
-	CDPSEND_IMMEDIATE		= (1 << 2),		// send message immediately as it comes to buffer. It kills order preserving
+	CDPSEND_GUARANTEED		= (1 << 0),		// just simply send UDP message
+	CDPSEND_IMMEDIATE		= (1 << 1),		// send message immediately as it comes to buffer. It kills order preserving
+	CDPSEND_IS_RESPONSE		= (1 << 2),		// contains response header
 };
 
-struct cdp_message_t;
-
-struct cdp_receive_info_t
+enum EDeliveryStatus
 {
-	short			message_id;
-	short			flags;
-
-	cdp_message_t*	data;
-};
-
-struct cdp_receive_msgid_t
-{
-	sockaddr_in		addr;
-	short			msgid;
-	int				timeMs;
-};
-
-// recieve callback
-typedef bool (*CDPRecvCallback_fn)( const cdp_receive_info_t& info );
-
-// send callback
-typedef bool (*CDPSendCallback_fn)( cdp_message_t* message );
-
-//------------------------------------------------------------------------------
-// message buffer
-//------------------------------------------------------------------------------
-struct cdp_message_t
-{
-	cdp_message_t()
-	{
-		bytestream = NULL;
-		flags = 0;
-		sendTimes.SetValue(0);
-		sentTimeout.SetValue(0);
-		removeTimeout.SetValue(0);
-		sendTime = 0;
-	}
-
-	CEqInterlockedInteger	sendTimes;		// send times
-	CEqInterlockedInteger	sentTimeout;	// timeout to send
-	CEqInterlockedInteger	removeTimeout;	// timeout to remove
-
-	uint32					sendTime;
-
-	short					flags;
-
-	sockaddr_in				addr;			// address of sender or receiver
-
-	CMemoryStream*			bytestream;
-
-	bool Write( void* pData, int nSize );
-
-	void WriteReset();
-
-	void ReadReset();
-};
-
-enum DeliveryStatus_e
-{
-	DELIVERY_INVALID = -1,
+	DELIVERY_IN_PROGRESS = -1,
 	DELIVERY_SUCCESS = 0,
 	DELIVERY_FAILED,
 };
 
-struct msg_status_t
+enum ERecvMessageKind
 {
-	short				message_id;
-	DeliveryStatus_e	status;
+	RECV_MSG_DATA = 0,
+	RECV_MSG_RESPONSE_DATA,
+	RECV_MSG_STATUS,
 };
 
-class CUDPSocket
+struct cdp_queued_message_t;
+
+// recv callback
+// when it's @type is RECV_MSG_STATUS, @size is EDeliveryStatus
+typedef void (*CDPRecvPipe_fn)(void* thisptr, ubyte* data, int size, const sockaddr_in& from, short msgId, ERecvMessageKind type);
+
+class CEqRDPSocket
 {
 public:
-								CUDPSocket();
-								~CUDPSocket();
+									CEqRDPSocket();
+									~CEqRDPSocket();
 
-	bool						Init(int port);
+	bool							Init(int port);
+	void							Close();
 
-	// sends message
-	int							Send( char* data, int size, const sockaddr_in* to, short& msgId, short flags = CDPSEND_PRESERVE_ORDER );
-
-	// receives message
-	int							Recv( char* data, int size, sockaddr_in* from, short flags = 0 );
+	// puts message to send queue, or sends it immediately if flags used
+	int								Send( char* data, int size, const sockaddr_in* to, short& msgId, short flags = 0 );
 
 	// this really updates socket
-	void						UpdateRecv( int timeMs );
-	void						UpdateSend( int timeMs );
+	void							UpdateRecieve( int dtMs, CDPRecvPipe_fn recvFunc, void* recvObj );
+	void							UpdateSendQueue( int dtMs, CDPRecvPipe_fn recvFunc, void* recvObj );
 
-	int							GetReceivedMessageCount();
-	int							GetSendPoolCount();
+	int								GetSendPoolCount() const;
 
-	// sets the recieved callback NOTE: this is called from another thread
-	void						SetRecvCallback( const CDPRecvCallback_fn cb );
+	void							PrintStats() const;
 
-	void						GetMessageStatusList( DkList<msg_status_t>& msgStatusList );
-
-	void						PrintStats();
-
-	sockaddr_in					GetAddress() { return m_addr; }
+	sockaddr_in						GetAddress() const { return m_addr; }
 
 protected:
-	cdp_message_t*				GetFreeBuffer( int freeSpaceRequired, const sockaddr_in* to, short nFlags );
+	cdp_queued_message_t*			GetFreeBuffer( int freeSpaceRequired, const sockaddr_in* to, short nFlags );
 
-	void						PutMessageOrdered( const cdp_receive_info_t& info );
+	bool							HasAnyMessageWithId( short message_id, const sockaddr_in& addr );
 
-	bool						HasAnyMessageWithId( short message_id, const sockaddr_in& addr );
+	void							RemoveMessageFromSendPool( short message_id );
+	void							CheckMessageForResend( short message_id );
 
-	void						RemoveMessageFromSendPool( short message_id );
-	void						CheckMessageForResend( short message_id );
+	void							SendMessageStatus( const sockaddr_in* to, short message_id, bool isOk );
 
-	void						SendMessageStatus( const sockaddr_in* to, short message_id, bool isOk );
-
-	int							GetMessageUniqueID();
-
-	void						Lock();
-	void						Unlock();
-
-	// sets the delay times of protocol
-	void						SetDelayTimes(	int nSendBufferTimeout,			// wait time for full filling up buffer in milliseconds. Less value - higher send rate.
-												int nUnconfirmedRemoveTimeout,	// remove unconfirmed (but sent) messages
-												int nReceivedIdsTimeout			// time to flush confirmed message ids
-												);
+	int								GetMessageUniqueID();
 
 private:
-	bool						m_init;
+	bool							m_init;
 
-	SOCKET 						m_sock;
+	SOCKET 							m_sock;
 
-	sockaddr_in					m_addr;
+	sockaddr_in						m_addr;
+
+	struct cdp_receive_msgid_t
+	{
+		sockaddr_in		addr;
+		short			msgid;
+		int				timeMs;
+	};
 
 	// messages are not limited, but they are splitted
-	DkList<cdp_message_t*> 		m_pMessageQueue;
+	DkList<cdp_queued_message_t*> 	m_pMessageQueue;
+	DkList<cdp_receive_msgid_t>		m_receivedIds;
 
-	DkList<cdp_receive_info_t>	m_ReceivedMessageQueue;
-	DkList<cdp_receive_msgid_t>	m_receivedIds;
+	int								m_nMessageIDInc;
 
-	DkList<msg_status_t>		m_messageSendStatus;
+	int								m_nSendTimeout;
+	int								m_nUnconfirmedRemoveTimeout;
+	int								m_nRecvTimeout;
 
-	int							m_nMessageIDInc;
+	uint32							m_time;
 
-	int							m_nSendTimeout;
-	int							m_nUnconfirmedRemoveTimeout;
-	int							m_nRecvTimeout;
-
-	uint32						m_time;
-
-	CDPRecvCallback_fn			m_nRecvCallback;
-
-	CEqMutex					m_Mutex;
-	CEqSignal					m_SendSignal;
+	CEqMutex						m_Mutex;
+	CEqSignal						m_SendSignal;
 };
 
 }; // namespace CUDP

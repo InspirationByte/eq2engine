@@ -41,8 +41,8 @@ namespace Networking
 {
 
 // equilibrium net protocol defaults
-const int	DEFAULT_CLIENTPORT		= 12510;
-const int	DEFAULT_SERVERPORT		= 12500;
+const int	DEFAULT_CLIENTPORT					= 12510;
+const int	DEFAULT_SERVERPORT					= 12500;
 
 const int	MAX_MESSAGE_LENGTH					= (16*1024);
 const int	EQUILIBRIUM_NETPROTOCOL_VERSION		= 4;

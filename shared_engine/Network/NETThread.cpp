@@ -20,8 +20,6 @@ extern OOLUA::Script& GetLuaState();
 namespace Networking
 {
 
-#define NET_MAX_SIZE
-
 enum MessageFlags_e
 {
 	MSGFLAG_PROCESSED = (1 << 0),		// processed and can be removed
@@ -38,9 +36,9 @@ enum EMsgDataType
 //----------------------------------
 // received message linked list
 //----------------------------------
-struct rcvdmessage_t
+struct rcvdMessage_t
 {
-	rcvdmessage_t()
+	rcvdMessage_t()
 	{
 		pNext = NULL;
 		pPrev = NULL;
@@ -51,28 +49,24 @@ struct rcvdmessage_t
 		recvTime = 0.0;
 	}
 
+	ERecvMessageKind	type;
+
 	short				clientid;
 	short				messageid;
 
-	sockaddr_in			addr;		// paired with client id now, unnecessary to check
-
 	int					flags;
 
-	CNetMessageBuffer*	pMessage;
+	sockaddr_in			addr;		// paired with client id now, unnecessary to check
 
-	rcvdmessage_t*		pNext;
-	rcvdmessage_t*		pPrev;
+	rcvdMessage_t*		pNext;
+	rcvdMessage_t*		pPrev;
 
 	double				recvTime;
+
+	CNetMessageBuffer*	data;
 };
 
-struct netmsg_fragment_t
-{
-	netmessage_t* pMsg;
-	int	size;
-};
-
-struct netfragmsg_t
+struct netFragMsg_t
 {
 	short			client_id;
 	sockaddr_in		addr;		// paired with client id now, unnecessary to check
@@ -80,28 +74,18 @@ struct netfragmsg_t
 	short			message_id;
 	uint8			nfragments;
 
-	DkList< netmsg_fragment_t > frags;
+	DkList< netMessage_t* > parts;
 };
 
-CNetworkThread::CNetworkThread( INetworkInterface* pInterface ) : Threading::CEqThread(), m_Mutex(GetGlobalMutex(MUTEXPURPOSE_NET_THREAD))
+//--------------------------------------------------------------------
+
+CNetworkThread::CNetworkThread( INetworkInterface* pInterface ) 
+	: Threading::CEqThread(), m_mutex(GetGlobalMutex(MUTEXPURPOSE_NET_THREAD)),
+	m_firstMessage(NULL), m_lastMessage(NULL), m_netInterface(pInterface),
+	m_prevTime(0.0), m_lastClientID(-1), m_stopWork(false), m_lockUpdateDispatch(false),
+	m_fnCycleCallback(NULL), m_fnEventFilter(NULL), m_eventCounter(0)
 {
-	m_pFirstMessage = NULL;
-	m_pLastMessage = NULL;
 
-	m_pNetInterface = pInterface;
-
-	m_fCurTime = 0.0;
-	m_fPrevTime = 0.0;
-
-	m_nLastClientID = 0;
-	m_bStopWork = false;
-
-	m_fnCycleCallback = NULL;
-	m_fnEventFilter = NULL;
-
-	m_nEventCounter = 0;
-
-	m_bLockUpdateDispatch = false;
 }
 
 CNetworkThread::~CNetworkThread()
@@ -134,12 +118,13 @@ void CNetworkThread::Init()
 
 INetworkInterface* CNetworkThread::GetNetworkInterface()
 {
-	return m_pNetInterface;
+	return m_netInterface;
 }
 
 void CNetworkThread::SetNetworkInterface(INetworkInterface* pInterface)
 {
-	m_pNetInterface = pInterface;
+	// TODO: reset undispatched events
+	m_netInterface = pInterface;
 }
 
 void CNetworkThread::StopWork()
@@ -147,9 +132,9 @@ void CNetworkThread::StopWork()
 	if(IsTerminating() || !IsRunning())
 		return;
 
-	m_Mutex.Lock();
-	m_bStopWork = true;
-	m_Mutex.Unlock();
+	m_mutex.Lock();
+	m_stopWork = true;
+	m_mutex.Unlock();
 
 	// move all pooled events to send buffer
 	DispatchEvents();
@@ -158,143 +143,153 @@ void CNetworkThread::StopWork()
 	StopThread();
 }
 
+void CNetworkThread::OnUCDPRecievedStatic(void* thisptr, ubyte* data, int size, const sockaddr_in& from, short msgId, ERecvMessageKind type)
+{
+	CNetworkThread* thisThread = (CNetworkThread*)thisptr;
+
+	thisThread->OnUCDPRecieved( data, size, from, msgId, type );
+}
+
+void CNetworkThread::OnUCDPRecieved(ubyte* data, int size, const sockaddr_in& from, short msgId, ERecvMessageKind type)
+{
+	if(type == RECV_MSG_STATUS)
+	{
+		// TODO: find sent event with msgId and signal about it's success
+		int status = size;
+
+		CScopedMutex m(m_mutex);
+
+		for(int i = 0; i < m_queuedEvents.numElem(); i++)
+			m_queuedEvents[i].pStream->SetMessageStatus(msgId, status);
+
+		return;
+	}
+
+	netMessage_t::hdr_t* msgHdr = (netMessage_t::hdr_t*)data;
+
+	if( msgHdr->nfragments > 1 )
+	{
+		netMessage_t* rcvdMsg = new netMessage_t;
+
+		if(!m_netInterface->PreProcessRecievedMessage( data, size, *rcvdMsg))
+		{
+			// TODO: if it had fragments, remove them // if(rcvdMsg->header.nfragments > 0)
+			delete rcvdMsg;
+			return;
+		}
+
+		// add fragment to waiter
+		// this function also will try to dispatch message that got fully received
+		m_mutex.Lock();
+		AddFragmentedMessage( rcvdMsg, rcvdMsg->header.message_size, from );
+		m_mutex.Unlock();
+	}
+	else
+	{
+		netMessage_t rcvdMsg; // fixme: allocate in temp memory?
+
+		if(!m_netInterface->PreProcessRecievedMessage( data, size, rcvdMsg))
+			return;
+
+		// add as usual
+		rcvdMessage_t* pMsg = new rcvdMessage_t;
+		pMsg->type = type;
+
+		pMsg->data = new CNetMessageBuffer( m_netInterface );
+		pMsg->data->SetClientInfo( from, rcvdMsg.header.clientid );
+		pMsg->addr = from;
+		pMsg->messageid = rcvdMsg.header.messageid;
+
+		// write contents
+		pMsg->data->WriteData( rcvdMsg.data, rcvdMsg.header.message_size);
+
+		pMsg->flags = 0;
+
+		pMsg->pNext = NULL;
+		pMsg->pPrev = NULL;
+		pMsg->clientid = rcvdMsg.header.clientid;
+
+		// queue our message
+		m_mutex.Lock();
+		AddMessage(pMsg, m_lastMessage);
+		m_mutex.Unlock();
+	}
+}
+
 int CNetworkThread::Run()
 {
-	if(!m_pNetInterface)
+	if(!m_netInterface)
 		return -1;
 
-	m_fCurTime = m_Timer.GetTime();
-	m_fPrevTime = m_Timer.GetTime();
+	double curTime = m_Timer.GetTime();
+	m_prevTime = m_Timer.GetTime();
 
 	// completely stop work after all messages are sent
 	bool bDoStopWork = false;
 
 	while(!bDoStopWork)
 	{
-		bDoStopWork = m_bStopWork && (m_pNetInterface->GetSocket()->GetSendPoolCount() == 0);
+		// wait for send if shutting down
+		bDoStopWork = m_stopWork && (m_netInterface->GetSocket()->GetSendPoolCount() == 0);
 
-		// wait for other operations
-
-		m_fCurTime = m_Timer.GetTime();
+		curTime = m_Timer.GetTime();
 
 		// do custom cycles
 		OnCycle();
 
 		// TEST:	checking for lag packets
 		//			and add them
-		for(int i = 0; i < m_lagMessages.numElem(); i++)
+		for(int i = 0; i < m_lateMessages.numElem(); i++)
 		{
-			if(m_fCurTime >= m_lagMessages[i]->recvTime )
+			if(curTime >= m_lateMessages[i]->recvTime )
 			{
-				AddMessage(m_lagMessages[i], m_pLastMessage);
+				AddMessage(m_lateMessages[i], m_lastMessage);
 
-				m_lagMessages.removeIndex(i);
+				m_lateMessages.removeIndex(i);
 				i--;
 			}
 		}
 
-		double timeSinceLastUpdate = m_fCurTime - m_fPrevTime;
+		double timeSinceLastUpdate = curTime - m_prevTime;
 
 		// call our cycle callback
 		if(m_fnCycleCallback)
 			(m_fnCycleCallback)(this, timeSinceLastUpdate);
 
-		m_pNetInterface->Update( (int)(timeSinceLastUpdate * 1000.0) );
+		m_netInterface->Update( (int)(timeSinceLastUpdate * 1000.0), OnUCDPRecievedStatic, this );
 
-		int ready = m_pNetInterface->GetIncommingMessages();
-
-		if( ready < 0 )
-			Msg("error %d\n", ready);
-
-		if( ready )
-		{
-			// UDP subfragment method
-			for(int i = 0; i < ready; i++)
-			{
-				netmessage_t* pRcvdMsg = new netmessage_t;
-				int msg_size = 0;
-
-				sockaddr_in from;
-
-				if( m_pNetInterface->Receive( pRcvdMsg, msg_size, &from ) )
-				{
-					if( pRcvdMsg->nfragments > 1 )
-					{
-						// add fragment to waiter
-						// this function also will try to dispatch message that got fully received
-						m_Mutex.Lock();
-						AddFragmentedMessage( pRcvdMsg, msg_size, from );
-						m_Mutex.Unlock();
-					}
-					else
-					{
-						// add as usual
-						rcvdmessage_t* pMsg = new rcvdmessage_t;
-
-						pMsg->pMessage = new CNetMessageBuffer( m_pNetInterface );
-						pMsg->pMessage->SetClientInfo( from, pRcvdMsg->clientid );
-						pMsg->addr = from;
-						pMsg->messageid = pRcvdMsg->messageid;
-
-						// write contents
-						pMsg->pMessage->WriteData( pRcvdMsg->message_bytes, pRcvdMsg->message_size);
-
-						pMsg->flags = 0;
-
-						pMsg->pNext = NULL;
-						pMsg->pPrev = NULL;
-						pMsg->clientid = pRcvdMsg->clientid;
-
-						// queue message
-						m_Mutex.Lock();
-						AddMessage(pMsg, m_pLastMessage);
-						m_Mutex.Unlock();
-
-						// delete netmessage
-						delete pRcvdMsg;
-					}
-				}
-				else
-				{
-					delete pRcvdMsg;
-				}
-			}
-		}
-
-		m_fPrevTime = m_fCurTime;
+		m_prevTime = curTime;
 
 		// this system is lagging very hard if you use 1
 		Platform_Sleep( 1 );
 	}
 
 	// reset
-	m_bStopWork = false;
+	m_stopWork = false;
 
 	return 0;
 }
 
 
-void CNetworkThread::FreeMessage(rcvdmessage_t* pMsg)
+void CNetworkThread::FreeMessage(rcvdMessage_t* pMsg)
 {
 	if(pMsg->pPrev)
 		pMsg->pPrev->pNext = pMsg->pNext;
 	else
-		m_pFirstMessage = pMsg->pNext;
+		m_firstMessage = pMsg->pNext;
 
 	if(pMsg->pNext)
 		pMsg->pNext->pPrev = pMsg->pPrev;
 	else
-		m_pLastMessage = pMsg->pPrev;
+		m_lastMessage = pMsg->pPrev;
 
-	delete pMsg->pMessage;
+	delete pMsg->data;
 	delete pMsg;
 }
 
-int g_msg = 0;
-
-void CNetworkThread::AddMessage(rcvdmessage_t* pMsg, rcvdmessage_t* pAddTo)
+void CNetworkThread::AddMessage(rcvdMessage_t* pMsg, rcvdMessage_t* pAddTo)
 {
-	pMsg->recvTime = m_fCurTime;
+	pMsg->recvTime = GetCurTime();
 
 	// LAG PACKETS
 	if( !(pMsg->flags & MSGFLAG_TESTLAGGING) && net_fakelatency.GetFloat() > 0 )
@@ -305,25 +300,25 @@ void CNetworkThread::AddMessage(rcvdmessage_t* pMsg, rcvdmessage_t* pAddTo)
 
 		pMsg->recvTime += RandomFloat(net_fakelatency.GetFloat() * net_fakelatency_randthresh.GetFloat(), net_fakelatency.GetFloat()) * 0.001f;
 
-		m_lagMessages.append( pMsg );
+		m_lateMessages.append( pMsg );
 
 		return;
 	}
 
-	pMsg->pMessage->ResetPos();
+	pMsg->data->ResetPos();
 
 	// filter event receiving, at 'add' level
-	int8 type = pMsg->pMessage->ReadByte();
+	int8 type = pMsg->data->ReadByte();
 
 	if( type == MSGTYPE_EVENT )
 	{
-		int nEventType = pMsg->pMessage->ReadInt();
+		int nEventType = pMsg->data->ReadInt();
 
 		// filter events
 		if( m_fnEventFilter )
 		{
 			// assume the eventfilter can decode our messages
-			int result = (m_fnEventFilter)( this, pMsg->pMessage, nEventType );
+			int result = (m_fnEventFilter)( this, pMsg->data, nEventType );
 
 			if( result == EVENTFILTER_ERROR_NOTALLOWED )
 			{
@@ -339,12 +334,12 @@ void CNetworkThread::AddMessage(rcvdmessage_t* pMsg, rcvdmessage_t* pAddTo)
 	}
 
 	// reset
-	pMsg->pMessage->ResetPos();
+	pMsg->data->ResetPos();
 
-	if(!m_pFirstMessage || !pAddTo)
+	if(!m_firstMessage || !pAddTo)
 	{
-		m_pFirstMessage = pMsg;
-		m_pLastMessage = pMsg;
+		m_firstMessage = pMsg;
+		m_lastMessage = pMsg;
 		return;
 	}
 
@@ -352,7 +347,7 @@ void CNetworkThread::AddMessage(rcvdmessage_t* pMsg, rcvdmessage_t* pAddTo)
 	pMsg->pNext = pAddTo->pNext;
 
 	if(!pAddTo->pNext)
-		m_pLastMessage = pMsg;
+		m_lastMessage = pMsg;
 	else
 		pAddTo->pNext->pPrev = pMsg;
 
@@ -360,119 +355,116 @@ void CNetworkThread::AddMessage(rcvdmessage_t* pMsg, rcvdmessage_t* pAddTo)
 }
 
 // adds fragmented message to waiter
-void CNetworkThread::AddFragmentedMessage( netmessage_t* pMsg, int size, const sockaddr_in& addr )
+void CNetworkThread::AddFragmentedMessage( netMessage_t* pMsg, int size, const sockaddr_in& addr )
 {
-	netfragmsg_t* pFragMsgs = NULL;
+	netFragMsg_t* fragMsg = NULL;
 	int idx = -1;
 
 	// find waiting message
 	for(int i = 0; i < m_fragmented_messages.numElem(); i++)
 	{
-		netfragmsg_t* pFragMsg = m_fragmented_messages[i];
+		netFragMsg_t* msg = m_fragmented_messages[i];
 
-		if(	pFragMsg->client_id == pMsg->clientid &&
-			pFragMsg->message_id == pMsg->messageid &&
-			pFragMsg->nfragments == pMsg->nfragments &&
-			pFragMsg->frags.numElem() < pMsg->nfragments)
+		if(	msg->client_id == pMsg->header.clientid &&
+			msg->message_id == pMsg->header.messageid &&
+			msg->nfragments == pMsg->header.nfragments &&
+			msg->parts.numElem() < pMsg->header.nfragments)
 		{
-			pFragMsgs = pFragMsg;
+			fragMsg = msg;
 			idx = i;
 			break;
 		}
 	}
 
 	// create if not found
-	if(!pFragMsgs)
+	if(!fragMsg)
 	{
-		pFragMsgs = new netfragmsg_t;
-		pFragMsgs->client_id = pMsg->clientid;
-		pFragMsgs->addr = addr;
-		pFragMsgs->message_id = pMsg->messageid;
-		pFragMsgs->nfragments = pMsg->nfragments;
+		fragMsg = new netFragMsg_t;
+		fragMsg->client_id = pMsg->header.clientid;
+		fragMsg->addr = addr;
+		fragMsg->message_id = pMsg->header.messageid;
+		fragMsg->nfragments = pMsg->header.nfragments;
 
-		idx = m_fragmented_messages.append(pFragMsgs);
+		idx = m_fragmented_messages.append(fragMsg);
 	}
 
-	netmsg_fragment_t frag;
-
-	frag.pMsg = pMsg;
-	frag.size = size;
-
 	// add message
-	pFragMsgs->frags.append( frag );
+	fragMsg->parts.append( pMsg );
 
-	if( pFragMsgs->frags.numElem() == pFragMsgs->nfragments )
+	if( fragMsg->parts.numElem() == fragMsg->nfragments )
 	{
-		DispatchFragmentedMessage( pFragMsgs );
+		DispatchFragmentedMessage( fragMsg );
 
 		// delete this fragment collection
-		delete pFragMsgs;
+		delete fragMsg;
+
 		m_fragmented_messages.fastRemoveIndex( idx );
 	}
 }
 
-int compare_msg_frags( const netmsg_fragment_t &a, const netmsg_fragment_t &b)
+int sort_cmp_msgParts( netMessage_t* const &a, netMessage_t* const &b)
 {
-	return a.pMsg->fragmentid - b.pMsg->fragmentid;
+	return a->header.fragmentid - b->header.fragmentid;
 }
 
 // dispatches fragmented message to the queue
-void CNetworkThread::DispatchFragmentedMessage( netfragmsg_t* pMsg )
+void CNetworkThread::DispatchFragmentedMessage( netFragMsg_t* pMsg )
 {
 	// sort messages by fragment id and join em all to the single message
 	// then we have to add it to the main processing queue
-	pMsg->frags.sort( compare_msg_frags );
+	pMsg->parts.sort( sort_cmp_msgParts );
 
 	// copy message
-	rcvdmessage_t* pRcvdMsg = new rcvdmessage_t;
+	rcvdMessage_t* rcvdMsg = new rcvdMessage_t;
 
-	CNetMessageBuffer* pMessage = new CNetMessageBuffer( m_pNetInterface );
-	pMessage->SetClientInfo(pMsg->addr, pMsg->client_id);
-	pRcvdMsg->pMessage = pMessage;
+	CNetMessageBuffer* finalBuffer = new CNetMessageBuffer( m_netInterface );
+	finalBuffer->SetClientInfo(pMsg->addr, pMsg->client_id);
+
+	rcvdMsg->data = finalBuffer;
 
 	// write fragments to received message and reset pointers
-	for(int i = 0; i < pMsg->frags.numElem(); i++)
+	for(int i = 0; i < pMsg->parts.numElem(); i++)
 	{
-		pMessage->WriteData( pMsg->frags[i].pMsg->message_bytes, pMsg->frags[i].size - NETMESSAGE_HDR);
+		finalBuffer->WriteData( pMsg->parts[i]->data, pMsg->parts[i]->header.message_size);
 
-		delete pMsg->frags[i].pMsg;
+		delete pMsg->parts[i];
 	}
 
-	pRcvdMsg->flags = MSGFLAG_FRAGMENTED;
+	rcvdMsg->flags = MSGFLAG_FRAGMENTED;
 
-	pRcvdMsg->pNext = NULL;
-	pRcvdMsg->pPrev = NULL;
-	pRcvdMsg->clientid = pMsg->client_id;
-	pRcvdMsg->messageid = pMsg->message_id;
-	pRcvdMsg->addr = pMsg->addr;
+	rcvdMsg->pNext = NULL;
+	rcvdMsg->pPrev = NULL;
+	rcvdMsg->clientid = pMsg->client_id;
+	rcvdMsg->messageid = pMsg->message_id;
+	rcvdMsg->addr = pMsg->addr;
 
 	// queue message
-	AddMessage( pRcvdMsg, m_pLastMessage );
+	AddMessage( rcvdMsg, m_lastMessage );
 }
 
 void CNetworkThread::FreeMessages()
 {
-	m_Mutex.Lock();
+	m_mutex.Lock();
 
-	rcvdmessage_t* pMsg = m_pFirstMessage;
+	rcvdMessage_t* pMsg = m_firstMessage;
 
 	while( pMsg )
 	{
-		rcvdmessage_t* toRem = pMsg;
+		rcvdMessage_t* toRem = pMsg;
 
 		pMsg = pMsg->pNext;
 
-		delete toRem->pMessage;
+		delete toRem->data;
 		delete toRem;
 	}
 
-	m_pFirstMessage = NULL;
-	m_pLastMessage = NULL;
+	m_firstMessage = NULL;
+	m_lastMessage = NULL;
 
-	m_Mutex.Unlock();
+	m_mutex.Unlock();
 }
 
-void DestroySendEvent(const sendevent_t& evt)
+void DestroySendEvent(const sendEvent_t& evt)
 {
 	delete evt.pEvent;
 	delete evt.pStream;
@@ -481,28 +473,22 @@ void DestroySendEvent(const sendevent_t& evt)
 // generates events from recieved messages
 int CNetworkThread::UpdateDispatchEvents()
 {
-	if( !m_pNetInterface )
+	if( !m_netInterface )
 		return 0;
 
-	// wait for signal (this really shouldn't happen)
-	//while(m_bLockUpdateDispatch){ Platform_Sleep( 1 ); }
-
-	rcvdmessage_t* pMsg = m_pFirstMessage;
+	rcvdMessage_t* pMsg = m_firstMessage;
 
 	while(pMsg)
 	{
-		rcvdmessage_t* procMsg = pMsg;
+		rcvdMessage_t* procMsg = pMsg;
 
 		ProcessMessage( procMsg );
 
 		pMsg = pMsg->pNext;
 
-		m_Mutex.Lock();
-
-		//if(procMsg->flags & MSGFLAG_PROCESSED)
+		m_mutex.Lock();
 		FreeMessage( procMsg );
-
-		m_Mutex.Unlock();
+		m_mutex.Unlock();
 	}
 
 	// dispatch events
@@ -511,23 +497,18 @@ int CNetworkThread::UpdateDispatchEvents()
 
 int CNetworkThread::DispatchEvents()
 {
-	CUDPSocket* pSock = m_pNetInterface->GetSocket();
-
-	DkList<msg_status_t> msgStates;
-	pSock->GetMessageStatusList( msgStates );
-
 	int numPendingMessages = 0;
 
 	// Try to send our events/datas
-	for(int i = 0; i < m_pSentEvents.numElem(); i++)
+	for(int i = 0; i < m_queuedEvents.numElem(); i++)
 	{
-		EEventMessageStatus status = DispatchEvent(i, msgStates);
+		EEventMessageStatus status = DispatchEvent( m_queuedEvents[i] );
 
 		// if it's no longer pending and sent or have error
 		if( status != EVTMSGSTATUS_PENDING )
 		{
-			DestroySendEvent( m_pSentEvents[i] );
-			m_pSentEvents.removeIndex(i);
+			DestroySendEvent( m_queuedEvents[i] );
+			m_queuedEvents.fastRemoveIndex(i);
 			i--;
 		}
 		else
@@ -537,92 +518,39 @@ int CNetworkThread::DispatchEvents()
 	return numPendingMessages;
 }
 
-EEventMessageStatus CNetworkThread::DispatchEvent( int nIndex, DkList<msg_status_t>& msgStates )
+EEventMessageStatus CNetworkThread::DispatchEvent( sendEvent_t& evt )
 {
-	sendevent_t& eventdata = m_pSentEvents[nIndex];
-
-	if(eventdata.flags & NSFLAG_IMMEDIATE)
+	if( evt.flags & CDPSEND_IMMEDIATE )
 	{
 		// if interface fails, run down immediately!
-		if( !eventdata.pStream->Send( eventdata.message_id, eventdata.flags) )
+		if( !evt.pStream->Send( evt.flags ) )
 			return EVTMSGSTATUS_ERROR;
 
 		return EVTMSGSTATUS_OK;
 	}
 
 	// send non-immediate messages
-
-	int msgId = eventdata.message_id;
-
-	if( msgId >= 0 )
+	if( !evt.pStream->Send( evt.flags ) )
 	{
-		msg_status_t state = {-1, DELIVERY_INVALID};
-
-		// search for this event/data
-		for(int j = 0; j < msgStates.numElem(); j++)
-		{
-			if(msgStates[j].message_id == msgId)
-			{
-				state = msgStates[j];
-				break;
-			}
-		}
-
-		// not invalid?
-		if( state.status != DELIVERY_INVALID )
-		{
-			if(state.status != DELIVERY_SUCCESS)
-			{
-				// if there is no event, or this is a event and it handles removal
-				if( (!eventdata.pEvent) ||
-					(eventdata.pEvent && !eventdata.pEvent->OnDeliveryFailed()) )
-				{
-					return EVTMSGSTATUS_ERROR;
-				}
-				else
-				{
-					m_pSentEvents[nIndex].message_id = -1; // reset message
-				}
-			}
-			else
-			{
-				return EVTMSGSTATUS_OK;
-			}
-		}
-	}
-	else
-	{
-		// send and assign message id
-		if(msgId != CUDP_MESSAGE_ERROR)
-		{
-			// if interface fails, run down immediately!
-			if( !eventdata.pStream->Send( eventdata.message_id, eventdata.flags) )
-			{
-				MsgError("DispatchEvent error: can't send eventtype=%d to client=%d\n", m_pSentEvents[nIndex].event_type, m_pSentEvents[nIndex].client_id);
-				return EVTMSGSTATUS_ERROR;
-			}
-
-			if(	eventdata.message_id == CUDP_MESSAGE_IMMEDIATE )
-				return EVTMSGSTATUS_OK;
-		}
-
-		/*
-		if(msgId  -1)
-		{
-			return EVTMSGSTATUS_ERROR;
-		}*/
+		MsgError("DispatchEvent error: can't send eventtype=%d to client=%d\n", evt.event_type, evt.client_id);
+		return EVTMSGSTATUS_ERROR;
 	}
 
-	return EVTMSGSTATUS_PENDING;
+	int sendStatus = evt.pStream->GetOverallStatus();
+
+	if(sendStatus == DELIVERY_IN_PROGRESS)
+		return EVTMSGSTATUS_PENDING;
+
+	return sendStatus == DELIVERY_SUCCESS ? EVTMSGSTATUS_OK : EVTMSGSTATUS_ERROR;
 }
 
-bool CNetworkThread::ProcessMessage( rcvdmessage_t* pMsg, CNetMessageBuffer* pOutput, int nWaitEventID)
+bool CNetworkThread::ProcessMessage( rcvdMessage_t* pMsg, CNetMessageBuffer* pOutput, int nWaitEventID)
 {
 	// already processed message? (NEVER HAPPENS)
 	if( pMsg->flags & MSGFLAG_PROCESSED )
 		return true;
 
-	CNetMessageBuffer* pMessage = pMsg->pMessage;
+	CNetMessageBuffer* pMessage = pMsg->data;
 
 	// always do it
 	pMessage->ResetPos();
@@ -639,17 +567,16 @@ bool CNetworkThread::ProcessMessage( rcvdmessage_t* pMsg, CNetMessageBuffer* pOu
 			Msg("Got dull MSGTYPE_DATA while pOutput=NULL!!!\n");
 		}
 
-		// MSGTYPE_DATA ����� ����� ����������, ���� ����� �� ������� ���
 		return (type == MSGTYPE_DATA);
 	}
 
 	if( type == MSGTYPE_EVENT )
 	{
-		int nEventType = pMsg->pMessage->ReadUInt16();
-		int nEventID = pMsg->pMessage->ReadUInt16();
+		int nEventType = pMessage->ReadUInt16();
+		int nEventID = pMessage->ReadUInt16();
 
 		// dispatch event
-		CNetEvent* pEvent = CreateEvent( pMsg->pMessage, nEventType );
+		CNetEvent* pEvent = CreateEvent( pMessage, nEventType );
 
 		if( !pEvent )
 		{
@@ -659,16 +586,12 @@ bool CNetworkThread::ProcessMessage( rcvdmessage_t* pMsg, CNetMessageBuffer* pOu
 			return true;
 		}
 
-		// ��������� ���������� �������
 		pMessage->SetClientInfo( pMsg->addr, pMsg->clientid );
-
-		// ����������� ������������� ������������
 		pEvent->SetID(nEventID);
 
-		// ������ ������ ���������
 		pEvent->Unpack( this, pMessage );
 
-		m_nLastClientID = pMessage->GetClientID();
+		m_lastClientID = pMessage->GetClientID();
 
 		// now process it
 		pEvent->Process( this );
@@ -677,18 +600,15 @@ bool CNetworkThread::ProcessMessage( rcvdmessage_t* pMsg, CNetMessageBuffer* pOu
 	}
 	else
 	{
-		int nMsgEventID = pMsg->pMessage->ReadUInt16();
-		int nMsgDataSize = pMsg->pMessage->ReadInt();
+		int nMsgEventID = pMessage->ReadUInt16();
+		int nMsgDataSize = pMessage->ReadInt();
 
 		// this is not our event
 		if(nWaitEventID != nMsgEventID)
 			return false;
 
-		pOutput->WriteNetBuffer(pMsg->pMessage, true, nMsgDataSize);
-
+		pOutput->WriteNetBuffer(pMessage, true, nMsgDataSize);
 		pOutput->ResetPos();
-
-		// ��������� ���������� �������
 		pOutput->SetClientInfo( pMsg->addr, pMsg->clientid );
 	}
 
@@ -714,19 +634,17 @@ int CNetworkThread::SendEvent( CNetEvent* pEvent, int nEventType, int client_id 
 {
 	ASSERT(pEvent);
 
-	if(nEventType != -1) // �������� �� ������ ������������
+	if(nEventType != -1)
 	{
 		ASSERTMSG(nEventType == pEvent->GetEventType(), varargs("bad event type (%d vs %d)", nEventType, pEvent->GetEventType()));
 	}
 	else
 		nEventType = pEvent->GetEventType();
 
-	if(!m_pNetInterface)
+	if(!m_netInterface)
 		ASSERT(!"m_pNetInterface=NULL when SendEvent called. Please fix your algorhithms");
 
-	//CScopedMutex m(m_Mutex);
-
-	sendevent_t evt;
+	sendEvent_t evt;
 
 	evt.event_type = nEventType;
 	evt.client_id = client_id;
@@ -735,7 +653,7 @@ int CNetworkThread::SendEvent( CNetEvent* pEvent, int nEventType, int client_id 
 #ifndef NO_LUA
 	int nLuaEventID = -1;
 
-	// ������� ��� Lua ���������� � NETTHREAD_EVENTS_LUA_START
+	// Lua events starts from NETTHREAD_EVENTS_LUA_START
 	if(evt.event_type >= NETTHREAD_EVENTS_LUA_START)
 	{
 		nLuaEventID = evt.event_type - NETTHREAD_EVENTS_LUA_START;
@@ -744,13 +662,11 @@ int CNetworkThread::SendEvent( CNetEvent* pEvent, int nEventType, int client_id 
 	}
 #endif // NO_LUA
 
-	evt.message_id = -1; // to be assigned
-
 	evt.pEvent = pEvent;
-	evt.pStream = new CNetMessageBuffer(m_pNetInterface);
+	evt.pStream = new CNetMessageBuffer(m_netInterface);
 
 	if(evt.client_id == NM_SENDTOLAST)
-		evt.client_id = m_nLastClientID; // doesn't matter for server
+		evt.client_id = m_lastClientID; // doesn't matter for server
 
 	sockaddr_in emptyAddr;
 	memset(&emptyAddr, 0, sizeof(emptyAddr));
@@ -759,11 +675,10 @@ int CNetworkThread::SendEvent( CNetEvent* pEvent, int nEventType, int client_id 
 
 	int8 msg_type = MSGTYPE_EVENT;
 
-	// ���� � ��� Int ��� ������� ����, ��... �����
-	if(m_nEventCounter >= 65535)
-		m_nEventCounter = 0;
+	if(m_eventCounter >= 65535)
+		m_eventCounter = 0;
 
-	evt.event_id = m_nEventCounter++;
+	evt.event_id = m_eventCounter++;
 
 	// write message header
 	evt.pStream->WriteByte( msg_type );
@@ -772,17 +687,17 @@ int CNetworkThread::SendEvent( CNetEvent* pEvent, int nEventType, int client_id 
 	evt.pStream->WriteUInt16( evt.event_id ); // write increment event counter
 
 #ifndef NO_LUA
-	// ID Lua �������.
-	// �������� � LUANetEventCallbackFactory, ���� �� ���� ������ ���� ������ Pack/Unpack
+	// handle Lua-handled network events
 	if(nLuaEventID >= 0)
 		evt.pStream->WriteUInt16( nLuaEventID );
 #endif // NO_LUA
 
-	// ���������� ���������
 	pEvent->Pack( this, evt.pStream );
 
-	// �������� ��� � ���
-	m_pSentEvents.append( evt );
+	// to send pipe
+	m_mutex.Lock();
+	m_queuedEvents.append( evt );
+	m_mutex.Unlock();
 
 	return evt.event_id;
 }
@@ -792,41 +707,35 @@ bool CNetworkThread::SendWaitDataEvent(CNetEvent* pEvent, int nEventType, CNetMe
 {
 	ASSERT(pOutputData);
 
-	// block next UpdateDispatchEvents routine for a while
-	//m_bLockUpdateDispatch = true;
-
 	// push event to queue
-	int nEventID = SendEvent(pEvent, nEventType, client_id, NSFLAG_GUARANTEED);
+	int nEventID = SendEvent(pEvent, nEventType, client_id, CDPSEND_GUARANTEED);
 
-#pragma todo("non-fixed timeout for SendWaitDataEvent")
-
-	const double fTimeOut = 2.5; // 5 seconds to reach timeout
+	const double fTimeOut = 2.5; // 2.5 seconds to reach timeout
 	const double fPendingTimeOut = 5.0; // 5 seconds to reach timeout
 
 	double fStartTime = m_Timer.GetTime();
 	double fPendingLastTime = m_Timer.GetTime();
-
-	CUDPSocket* pSock = m_pNetInterface->GetSocket();
 
 	bool bMessageIsUp = false;
 	bool bErrorMessage = false;
 
 	while(true)
 	{
-		DkList<msg_status_t> msgStates;
-		pSock->GetMessageStatusList( msgStates );
-
 		// dispatch events
 		// but check our local event for status
-		for(int i = 0; i < m_pSentEvents.numElem(); i++)
+		for(int i = 0; i < m_queuedEvents.numElem(); i++)
 		{
-			EEventMessageStatus status = DispatchEvent(i, msgStates);
+			EEventMessageStatus status = DispatchEvent( m_queuedEvents[i] );
 
-			if(m_pSentEvents[i].event_id == nEventID)
+			if( m_queuedEvents[i].event_id == nEventID )
 			{
 				if( status == EVTMSGSTATUS_ERROR)
 				{
 					bErrorMessage = true;
+				}
+				else if( status == EVTMSGSTATUS_OK )
+				{
+					bMessageIsUp = true;
 				}
 				else
 				{
@@ -837,15 +746,10 @@ bool CNetworkThread::SendWaitDataEvent(CNetEvent* pEvent, int nEventType, CNetMe
 			}
 
 			// if it's no longer pending and sent or have error
-			if(status != EVTMSGSTATUS_PENDING)
+			if( status != EVTMSGSTATUS_PENDING )
 			{
-				if(status == EVTMSGSTATUS_OK)
-				{
-					bMessageIsUp = true;
-				}
-
-				DestroySendEvent( m_pSentEvents[i] );
-				m_pSentEvents.fastRemoveIndex(i);
+				DestroySendEvent( m_queuedEvents[i] );
+				m_queuedEvents.fastRemoveIndex(i);
 				i--;
 			}
 
@@ -853,32 +757,31 @@ bool CNetworkThread::SendWaitDataEvent(CNetEvent* pEvent, int nEventType, CNetMe
 				break;
 		}
 
-		if(bErrorMessage)
-			break;
-
 		if(!bMessageIsUp ||
-			((m_Timer.GetTime() - fPendingLastTime > fTimeOut) ||	// ������� ������� ����� (����� �� ����� ������� ACK)
-			(m_Timer.GetTime() - fStartTime > fPendingTimeOut)))	// ����-��� �� ������� ���������
+			((m_Timer.GetTime() - fPendingLastTime > fTimeOut) ||	// did not recieved any confirmation
+			(m_Timer.GetTime() - fStartTime > fPendingTimeOut)))
 		{
-			//Msg("message timed out (up=%d) (stimeout=%g, ptimeout=%g)\n", bMessageIsUp ? 1 : 0, m_Timer.GetTime() - fStartTime, m_Timer.GetTime() - fPendingLastTime);
+			//Msg("message timed out (up=%d) (stimeout=%g, ptimeout=%g)\n", 
+			//	bMessageIsUp ? 1 : 0, m_Timer.GetTime() - fStartTime, m_Timer.GetTime() - fPendingLastTime);
+
 			break;
 		}
 
-		rcvdmessage_t* pMsg = m_pFirstMessage;
+		rcvdMessage_t* pMsg = m_firstMessage;
 
 		while(pMsg)
 		{
-			rcvdmessage_t* procMsg = pMsg;
+			rcvdMessage_t* procMsg = pMsg;
 
-            pMsg = pMsg->pNext;
+			pMsg = pMsg->pNext;
 
 			bool result = ProcessMessage( procMsg, pOutputData, nEventID );
 
 			if( result )
 			{
-				m_Mutex.Lock();
+				m_mutex.Lock();
 				FreeMessage( procMsg );
-				m_Mutex.Unlock();
+				m_mutex.Unlock();
 
 				// if message was read
 				if(pOutputData->GetMessageLength() > 0)
@@ -893,17 +796,14 @@ bool CNetworkThread::SendWaitDataEvent(CNetEvent* pEvent, int nEventType, CNetMe
 		Platform_Sleep(1);
 	}
 
-	// clear
-	m_bLockUpdateDispatch = false;
-
 	return (pOutputData->GetMessageLength() > 0);
 }
 
 bool CNetworkThread::IsMessageInPool(int nEventID)
 {
-	for(int i = 0; i < m_pSentEvents.numElem(); i++)
+	for(int i = 0; i < m_queuedEvents.numElem(); i++)
 	{
-		if(m_pSentEvents[i].event_id == nEventID)
+		if(m_queuedEvents[i].event_id == nEventID)
 		{
 			return true;
 		}
@@ -916,24 +816,22 @@ bool CNetworkThread::SendData(CNetMessageBuffer* pData, int nMsgEventID, int cli
 {
 	ASSERT(pData);
 
-	if(!m_pNetInterface)
+	if(!m_netInterface)
 		ASSERT(!"m_pNetInterface=NULL when SendData called. Did you forgot 'SetNetworkInterface'? ");
 
-	CScopedMutex m(m_Mutex);
+	CScopedMutex m(m_mutex);
 
-	sendevent_t evt;
+	sendEvent_t evt;
 
 	evt.event_type = -1;
 	evt.client_id = client_id;
 	evt.flags = nFlags;
 
-	evt.message_id = -1;	// to be assigned
-
 	evt.pEvent = NULL;		// no event, data only
-	evt.pStream = new CNetMessageBuffer(m_pNetInterface);
+	evt.pStream = new CNetMessageBuffer(m_netInterface);
 
 	if(evt.client_id == NM_SENDTOLAST)
-		evt.client_id = m_nLastClientID; // doesn't matter for server
+		evt.client_id = m_lastClientID; // doesn't matter for server
 
 	sockaddr_in emptyAddr;
 	memset(&emptyAddr, 0, sizeof(emptyAddr));
@@ -952,7 +850,7 @@ bool CNetworkThread::SendData(CNetMessageBuffer* pData, int nMsgEventID, int cli
 	evt.event_id = nMsgEventID;
 
 	// add to pool
-	m_pSentEvents.append( evt );
+	m_queuedEvents.append( evt );
 
 	return true;
 }
@@ -1030,14 +928,12 @@ CNetEvent* CNetworkThread::CreateEvent( CNetMessageBuffer *pMsg, int eventIdenti
 CLuaNetEvent::CLuaNetEvent(lua_State* vm, OOLUA::Table& table)
 {
 	m_state = vm;
-	m_table = table;		// ���������� �������, ��� ��� ����� ���
+	m_table = table;
 
 	EqLua::LuaStackGuard g(m_state);
 
-	// ����� ��������� �������, ����� ����� ���� �������� �������
 	m_table.push_on_stack( m_state );
 
-	// �������� ������ �� �������
 	lua_getfield(m_state, -1, "Pack");
 	m_pack.set_ref(m_state, luaL_ref(m_state, LUA_REGISTRYINDEX));
 
@@ -1198,10 +1094,8 @@ bool CLuaNetEvent::OnDeliveryFailed()
 	return result;
 }
 
-// ������ ������� ������������� ��� LUA. ��������� ���
 CNetEvent* LUANetEventCallbackFactory(CNetworkThread* thread, CNetMessageBuffer* msg)
 {
-	// ������� ������� � LUA
 	OOLUA::Script& state = GetLuaState();
 
 	EqLua::LuaStackGuard s(state);
@@ -1215,7 +1109,6 @@ CNetEvent* LUANetEventCallbackFactory(CNetworkThread* thread, CNetMessageBuffer*
 		return NULL;
 	}
 
-	// �������� �������
 	if (lua_isnil(state, -1))
 	{
 		MsgError("LuaNetEvent ID '%d' is not registered, maybe you forgot to AddNetEvent?\n", nLuaEventID);
@@ -1233,7 +1126,6 @@ CNetEvent* LUANetEventCallbackFactory(CNetworkThread* thread, CNetMessageBuffer*
 
 			table.lua_get(state, -1);
 
-			// ������ �� ����� ������������������
 			return (CNetEvent*)new CLuaNetEvent(state, table);
 		}
 	}
@@ -1246,9 +1138,7 @@ CNetEvent* LUANetEventCallbackFactory(CNetworkThread* thread, CNetMessageBuffer*
 int CNetworkThread::SendLuaEvent(OOLUA::Table& luaevent, int nEventType, int client_id)
 {
 	CLuaNetEvent* pEvent = new CLuaNetEvent(luaevent.state(), luaevent);
-	//pEvent->m_nEventID = NETTHREAD_EVENTS_LUA_START;
 
-	// event type �������� ���������.
 	return SendEvent(pEvent, NETTHREAD_EVENTS_LUA_START + nEventType, client_id);
 }
 
