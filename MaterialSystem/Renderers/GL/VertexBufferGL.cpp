@@ -66,16 +66,19 @@ void CVertexBufferGL::Update(void* data, int size, int offset, bool discard /*= 
 	}
 
 	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
+
 	pGLRHI->ThreadingSharingRequest();
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
 	glBufferSubData(GL_ARRAY_BUFFER, offset*m_strideSize, size*m_strideSize, data);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+	pGLRHI->ThreadingSharingRelease();
+
 	if(dynamic && discard && offset == 0)
 		m_numVerts = size;
 
-	pGLRHI->ThreadingSharingRelease();
+
 }
 
 // locks vertex buffer and gives to programmer buffer data

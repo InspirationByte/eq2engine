@@ -1154,8 +1154,6 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 	if(m_batches == NULL)
 		return;
 
-	ASSERT(m_numBatches < 1024);
-
 	for(int i = 0; i < m_numBatches; i++)
 	{
 		if(!occlSet.IsBoxVisible(m_batches[i].bbox))
@@ -1172,6 +1170,6 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 
 		materials->BindMaterial(m_batches[i].pMaterial, true);
 
-		g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLES, m_batches[i].startIndex, m_batches[i].numIndices, 0, m_numVerts);
+		g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLES, m_batches[i].startIndex, m_batches[i].numIndices, m_batches[i].startVertex, m_batches[i].numVerts);
 	}
 }

@@ -2360,12 +2360,18 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(BufferAccessType_e nBufAccess, in
 
 	ThreadingSharingRequest();
 	glGenBuffers(1, &pGLVertexBuffer->m_nGL_VB_Index);
+
 	glBindBuffer(GL_ARRAY_BUFFER, pGLVertexBuffer->m_nGL_VB_Index);
 	glBufferData(GL_ARRAY_BUFFER, pGLVertexBuffer->GetSizeInBytes(), pData, glBufferUsages[nBufAccess]);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	Finish();
+
 	ThreadingSharingRelease();
 
+	m_Mutex.Lock();
 	m_VBList.append( pGLVertexBuffer );
+	m_Mutex.Unlock();
 
 	return pGLVertexBuffer;
 }
@@ -2384,12 +2390,18 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, Buffe
 
 	ThreadingSharingRequest();
 	glGenBuffers(1, &pGLIndexBuffer->m_nGL_IB_Index);
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pGLIndexBuffer->m_nGL_IB_Index);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, pData, glBufferUsages[nBufAccess]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	Finish();
+
 	ThreadingSharingRelease();
 
+	m_Mutex.Lock();
 	m_IBList.append( pGLIndexBuffer );
+	m_Mutex.Unlock();
 
 	return pGLIndexBuffer;
 }
