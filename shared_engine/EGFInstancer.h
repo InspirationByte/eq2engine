@@ -191,8 +191,6 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 	// proceed to render
 	materials->SetInstancingEnabled(true);
 
-	IT* instData;
-
 	for(int lod = 0; lod < MAX_INSTANCE_LODS; lod++)
 	{
 		for(int i = 0; i < pHdr->numbodygroups; i++)

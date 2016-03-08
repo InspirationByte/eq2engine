@@ -215,8 +215,6 @@ void CGLMeshBuilder::End()
 	if(!s_pBuffer)
 		return;
 
-	void* pLockData = NULL;
-
 	s_pBuffer->Update(pVertList, nVerts, 0, true);
 
 	int nIndices = 0;
