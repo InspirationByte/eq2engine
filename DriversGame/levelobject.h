@@ -44,11 +44,10 @@ struct lmodeldrawvertex_s
 		texcoord = t;
 	}
 
-	Vector3D	position;
-	Vector2D	texcoord;
+	Vector3D		position;
+	Vector2D		texcoord;
 
-	Vector3D	normal;
-	//Matrix3x3	tbn;
+	Vector3D		normal;
 };
 
 // comparsion operator
@@ -158,10 +157,8 @@ class IEqModel;
 
 struct regObjectInstance_t
 {
-	Matrix4x4		worldTransform;
-
-	//Quaternion	quat;
-	//Vector4D		position;
+	Quaternion		rotation;
+	Vector4D		position;
 
 	//int			lightIndex[16];		// light indexes to fetch from texture
 };
