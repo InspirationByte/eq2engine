@@ -17,6 +17,8 @@ CEqBulletIndexedMesh::CEqBulletIndexedMesh(ubyte* vertexBase, int vertexStride, 
 
 	m_numVerts = numVerts;
 	m_numIndices = numIndices;
+
+	m_indexType = m_indexStride == 2 ? PHY_SHORT : PHY_INTEGER;
 }
 
 void CEqBulletIndexedMesh::AddSubpart(int firstIndex, int numIndices, int firstVertex, int numVerts, int materialId)
@@ -55,7 +57,7 @@ void CEqBulletIndexedMesh::getLockedVertexIndexBase(unsigned char **vertexbase, 
 		(*vertexbase) = m_vertexData;// + m_subparts[subpart].firstVertex*m_vertexStride;
 
 		indexstride = m_indexStride*3;
-		indicestype = PHY_INTEGER;
+		indicestype = m_indexType;
 		numfaces = m_subparts[subpart].numIndices / 3;
 		(*indexbase) = m_indexData + m_subparts[subpart].firstIndex*m_indexStride;
 	}
@@ -69,7 +71,7 @@ void CEqBulletIndexedMesh::getLockedVertexIndexBase(unsigned char **vertexbase, 
 		(*vertexbase) = m_vertexData;
 
 		indexstride = m_indexStride*3;
-		indicestype = PHY_INTEGER;
+		indicestype = m_indexType;
 		numfaces = m_numIndices / 3;
 		(*indexbase) = m_indexData;
 	}
@@ -87,7 +89,7 @@ void CEqBulletIndexedMesh::getLockedReadOnlyVertexIndexBase(const unsigned char 
 		(*vertexbase) = m_vertexData;// + m_subparts[subpart].firstVertex*m_vertexStride;
 
 		indexstride = m_indexStride*3;
-		indicestype = PHY_INTEGER;
+		indicestype = m_indexType;
 		numfaces = m_subparts[subpart].numIndices / 3;
 		(*indexbase) = m_indexData + m_subparts[subpart].firstIndex*m_indexStride;
 	}
@@ -101,7 +103,7 @@ void CEqBulletIndexedMesh::getLockedReadOnlyVertexIndexBase(const unsigned char 
 		(*vertexbase) = m_vertexData;
 
 		indexstride = m_indexStride*3;
-		indicestype = PHY_INTEGER;
+		indicestype = m_indexType;
 		numfaces = m_numIndices / 3;
 		(*indexbase) = m_indexData;
 	}

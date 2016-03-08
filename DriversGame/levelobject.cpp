@@ -173,7 +173,7 @@ void CLevObjectDef::Render( float lodDistance, const BoundingBox& bbox, bool pre
 
 //------------------------------------------------------------------------------------
 
-#define LMODEL_VERSION		(1)
+#define LMODEL_VERSION		(2)
 
 struct lmodelbatch_file_s
 {
@@ -290,7 +290,7 @@ void CLevelModel::Cleanup()
 CEqBulletIndexedMesh* CLevelModel::CreateBulletTriangleMeshFromModelBatch(lmodel_batch_t* batch)
 {
 	CEqBulletIndexedMesh* pTriMesh = new CEqBulletIndexedMesh(	((ubyte*)m_verts)+offsetOf(lmodeldrawvertex_t, position), sizeof(lmodeldrawvertex_t),
-																(ubyte*)m_indices, sizeof(uint32), m_numVerts, m_numIndices);
+																(ubyte*)m_indices, sizeof(uint16), m_numVerts, m_numIndices);
 
 	return pTriMesh;
 }
@@ -311,7 +311,7 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 
 	// regenerate mesh
 	DkList<lmodeldrawvertex_t>	verts;
-	DkList<int>					indices;
+	DkList<uint16>				indices;
 
 	for(int i = 0; i < m_numBatches; i++)
 	{
@@ -328,9 +328,9 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 
 		for(uint32 j = 0; j < m_batches[i].numIndices; j += 3)
 		{
-			int vtxId0 = m_indices[m_batches[i].startIndex+j];
-			int vtxId1 = m_indices[m_batches[i].startIndex+j+1];
-			int vtxId2 = m_indices[m_batches[i].startIndex+j+2];
+			uint16 vtxId0 = m_indices[m_batches[i].startIndex+j];
+			uint16 vtxId1 = m_indices[m_batches[i].startIndex+j+1];
+			uint16 vtxId2 = m_indices[m_batches[i].startIndex+j+2];
 
 			if(isGround)
 			{
@@ -341,9 +341,9 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 					continue;
 			}
 
-			int idx0 = batchverts.addUnique( m_verts[vtxId0], physModelVertexComparator );
-			int idx1 = batchverts.addUnique( m_verts[vtxId1], physModelVertexComparator );
-			int idx2 = batchverts.addUnique( m_verts[vtxId2], physModelVertexComparator );
+			uint16 idx0 = batchverts.addUnique( m_verts[vtxId0], physModelVertexComparator );
+			uint16 idx1 = batchverts.addUnique( m_verts[vtxId1], physModelVertexComparator );
+			uint16 idx2 = batchverts.addUnique( m_verts[vtxId2], physModelVertexComparator );
 			batchindices.append(idx0);
 			batchindices.append(idx1);
 			batchindices.append(idx2);
@@ -371,16 +371,16 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 	m_numIndices = indices.numElem();
 
 	m_verts = new lmodeldrawvertex_t[m_numVerts];
-	m_indices = new int[m_numIndices];
+	m_indices = new uint16[m_numIndices];
 
 	memcpy(m_verts, verts.ptr(), sizeof(lmodeldrawvertex_t)*m_numVerts);
-	memcpy(m_indices, indices.ptr(), sizeof(uint32)*m_numIndices);
+	memcpy(m_indices, indices.ptr(), sizeof(uint16)*m_numIndices);
 
 	verts.clear();
 	indices.clear();
 
 	CEqBulletIndexedMesh* mesh = new CEqBulletIndexedMesh(	((ubyte*)m_verts)+offsetOf(lmodeldrawvertex_t, position), sizeof(lmodeldrawvertex_t),
-															(ubyte*)m_indices, sizeof(uint32), m_numVerts, m_numIndices);
+															(ubyte*)m_indices, sizeof(uint16), m_numVerts, m_numIndices);
 
 	m_batchMeshes.append(mesh);
 
@@ -491,7 +491,7 @@ bool CLevelModel::GenereateRenderData()
 		DevMsg(DEVMSG_CORE, "Creating model buffer, %d verts %d indices in %d batches\n", m_numVerts, m_numIndices, m_numBatches);
 
 		m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(bufferType, vb_lock_size, sizeof(lmodeldrawvertex_t), m_verts);
-		m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(ib_lock_size, sizeof(uint32), bufferType, m_indices);
+		m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(ib_lock_size, sizeof(uint16), bufferType, m_indices);
 	}
 
 	return true;
@@ -563,7 +563,7 @@ bool CLevelModel::CreateFrom(dsmmodel_t* pModel)
 	Cleanup();
 
 	DkList<lmodeldrawvertex_t>	vertexdata;
-	DkList<int>					indexdata;
+	DkList<uint16>				indexdata;
 
 	m_numBatches = pModel->groups.numElem();
 	m_batches = new lmodel_batch_t[m_numBatches];
@@ -670,10 +670,10 @@ bool CLevelModel::CreateFrom(dsmmodel_t* pModel)
 	m_numIndices = indexdata.numElem();
 
 	m_verts = new lmodeldrawvertex_t[m_numVerts];
-	m_indices = new int[m_numIndices];
+	m_indices = new uint16[m_numIndices];
 
 	memcpy(m_verts, vertexdata.ptr(), sizeof(lmodeldrawvertex_t)*m_numVerts);
-	memcpy(m_indices, indexdata.ptr(), sizeof(int)*m_numIndices);
+	memcpy(m_indices, indexdata.ptr(), sizeof(uint16)*m_numIndices);
 
 	return GenereateRenderData();
 #else
@@ -711,11 +711,11 @@ void CLevelModel::Load(IVirtualStream* stream)
 	}
 
 	m_verts = new lmodeldrawvertex_t[m_numVerts];
-	m_indices = new int[m_numIndices];
+	m_indices = new uint16[m_numIndices];
 
 	// write data
 	stream->Read(m_verts, 1, sizeof(lmodeldrawvertex_t)*m_numVerts);
-	stream->Read(m_indices, 1, sizeof(uint32)*m_numIndices);
+	stream->Read(m_indices, 1, sizeof(uint16)*m_numIndices);
 
 	GenereateRenderData();
 
@@ -742,7 +742,7 @@ void CLevelModel::Save(IVirtualStream* stream) const
 
 	// write data
 	stream->Write(m_verts, 1, sizeof(lmodeldrawvertex_t)*m_numVerts);
-	stream->Write(m_indices, 1, sizeof(uint32)*m_numIndices);
+	stream->Write(m_indices, 1, sizeof(uint16)*m_numIndices);
 }
 
 #ifdef EDITOR

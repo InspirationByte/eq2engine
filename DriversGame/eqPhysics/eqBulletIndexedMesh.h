@@ -65,6 +65,8 @@ protected:
 	int								m_numVerts;
 	int								m_numIndices;
 
+	PHY_ScalarType					m_indexType;
+
 	DkList<eqBulletMeshSubpart_t>	m_subparts; // or batches
 };
 

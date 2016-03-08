@@ -140,7 +140,7 @@ protected:
 	int						m_numBatches;
 
 	lmodeldrawvertex_t*		m_verts;
-	int*					m_indices;
+	uint16*					m_indices;
 
 	int						m_numVerts;
 	int						m_numIndices;
