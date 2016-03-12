@@ -15,6 +15,7 @@
 #include "Shiny.h"
 
 #pragma todo("optimize vehicle code")
+#pragma TODO("use torque curve based on integer numbers? Heavy vehicles will be proud")
 
 static const char* s_pBodyPartsNames[] =
 {
@@ -46,35 +47,74 @@ static Vector3D s_BodyPartDirections[] =
 	Vector3D(1.0f,0,-1.0f),
 };
 
-#define DEFAULT_CAMERA_FOV			(60.0f) // old: 52
+//
+// Some default parameters for handling
+//
+
+#define DEFAULT_CAMERA_FOV			(60.0f)
 #define CAMERA_MIN_FOV				(50.0f)
 #define CAMERA_MAX_FOV				(90.0f)
+
+#define ACCELERATION_CONST			(2.0f)
+#define	ACCELERATION_SOUND_CONST	(10.0f)
+#define STEERING_CONST				(1.5f)
+#define STEERING_HELP_CONST			(0.4f)
+
+#define ANTIROLL_FACTOR_DEADZONE	(0.01f)
+#define ANTIROLL_FACTOR_MAX			(1.0f)
+#define ANTIROLL_SCALE				(4.0f)
+
+#define MIN_VISUAL_BODYPART_DAMAGE	(0.32f)
+
+#define DAMAGE_MINIMPACT			(0.45f)
+#define DAMAGE_SCALE				(0.12f)
+#define	DAMAGE_VISUAL_SCALE			(0.75f)
+
+#define DEFAULT_MAX_SPEED			(110.0f)
+#define BURNOUT_MAX_SPEED			(62.0f)
+
+#define DAMAGE_SOUND_SCALE			(0.25f)
+
+#define	DAMAGE_WATERDAMAGE_RATE		(5.5f)
+
+#define CAR_DEFAULT_MAX_DAMAGE		(16.0f)
+
+#define SKIDMARK_MAX_LENGTH			(256)
+#define SKIDMARK_MIN_INTERVAL		(0.25f)
+
+#define WHELL_ROLL_RESISTANCE_CONST		(150)
+#define WHELL_ROLL_RESISTANCE_HALF		(WHELL_ROLL_RESISTANCE_CONST * 0.5f)
 
 extern int g_CurrCameraMode;
 
 bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 {
-	conf->m_cleanModelName = KV_GetValueString(kvs->FindKeyBase("cleanmodel"));
-	conf->m_damModelName = KV_GetValueString(kvs->FindKeyBase("damagedmodel"));
+	conf->m_cleanModelName = KV_GetValueString(kvs->FindKeyBase("cleanModel"));
+	conf->m_damModelName = KV_GetValueString(kvs->FindKeyBase("damagedModel"));
 
-	const char* defaultWheelName = KV_GetValueString(kvs->FindKeyBase("wheeltype"), 0, "wheel1");
+	const char* defaultWheelName = KV_GetValueString(kvs->FindKeyBase("wheelType"), 0, "wheel1");
 
-	conf->m_body_size = KV_GetVector3D(kvs->FindKeyBase("bodysize"));
+	conf->m_body_size = KV_GetVector3D(kvs->FindKeyBase("bodySize"));
 	conf->m_body_center = KV_GetVector3D(kvs->FindKeyBase("center"));
-	conf->m_virtualMassCenter = KV_GetVector3D(kvs->FindKeyBase("gravitycenter"));
+	conf->m_virtualMassCenter = KV_GetVector3D(kvs->FindKeyBase("gravityCenter"));
 
 	conf->m_differentialRatio = KV_GetValueFloat(kvs->FindKeyBase("differential"));
-	conf->m_torqueMult = KV_GetValueFloat(kvs->FindKeyBase("torquemultipler"));
-	conf->m_transmissionRate = KV_GetValueFloat(kvs->FindKeyBase("transmissionrate"));
+	conf->m_torqueMult = KV_GetValueFloat(kvs->FindKeyBase("torqueMultipler"));
+	conf->m_transmissionRate = KV_GetValueFloat(kvs->FindKeyBase("transmissionRate"));
 
-	conf->m_maxSpeed = KV_GetValueFloat(kvs->FindKeyBase("maxspeed"), 0, 110);
+	conf->m_maxSpeed = KV_GetValueFloat(kvs->FindKeyBase("maxSpeed"), 0, DEFAULT_MAX_SPEED);
+	conf->m_burnoutMaxSpeed = KV_GetValueFloat(kvs->FindKeyBase("burnoutMaxSpeed"), 0, BURNOUT_MAX_SPEED);
+	
+
+	conf->m_steeringSpeed = KV_GetValueFloat(kvs->FindKeyBase("steerSpeed"), 0, STEERING_CONST);
+	conf->m_handbrakeScale = KV_GetValueFloat(kvs->FindKeyBase("handbrakeScale"), 0, 1.0f);
 
 	//conf->m_differentialRatio *= 2.7f;
 	//conf->m_transmissionRate *= 0.34f;
 
 	conf->m_mass = KV_GetValueFloat(kvs->FindKeyBase("mass"));
 
-	conf->m_antiRoll = KV_GetValueFloat(kvs->FindKeyBase("antiroll"));
+	conf->m_antiRoll = KV_GetValueFloat(kvs->FindKeyBase("antiRoll"));
 
 	float suspensionLift = KV_GetValueFloat(kvs->FindKeyBase("suspensionLift"));
 
@@ -246,26 +286,6 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 
 #pragma todo("better gearbox code for shifting effect")
 #pragma todo("make correct lateral sliding on steering wheels")
-#pragma todo("non-realtime FindAtlasTexture lookups")
-
-#define ANTIROLL_FACTOR_DEADZONE	(0.01f)
-#define ANTIROLL_FACTOR_MAX			(1.0f)
-#define ANTIROLL_SCALE				(4.0f)
-
-#define MIN_VISUAL_BODYPART_DAMAGE	(0.32f)
-
-#define DAMAGE_MINIMPACT			(0.45f)
-#define DAMAGE_SCALE				(0.12f)
-#define	DAMAGE_VISUAL_SCALE			(0.75f)
-
-#define DAMAGE_SOUND_SCALE			(0.25f)
-
-#define	DAMAGE_WATERDAMAGE_RATE		(5.5f)
-
-#define CAR_DEFAULT_MAX_DAMAGE		(16.0f)
-
-#define SKIDMARK_MAX_LENGTH			(256)
-#define SKIDMARK_MIN_INTERVAL		(0.25f)
 
 // wheel friction modifier on diferrent weathers
 static float weatherTireFrictionMod[WEATHER_COUNT] =
@@ -638,11 +658,6 @@ protected:
 	float		fEndSize;
 	float		fLength;
 };
-
-#define ACCELERATION_CONST			(2.0f)
-#define	ACCELERATION_SOUND_CONST	(10.0f)
-#define STEERING_CONST				(1.5f)
-#define STEERING_HELP_CONST			(0.4f)
 
 float DBTorqueCurveFromRPM( float fRPM )
 {
@@ -1369,10 +1384,6 @@ void CCar::AnalogSetControls(float accel_brake, float steering, bool extendSteer
 	SetControlVars(accelRatio, brakeRatio, steering);
 }
 
-#define BURNOUT_MAX_SPEED				(62.0f)
-#define WHELL_ROLL_RESISTANCE_CONST		(150)
-#define WHELL_ROLL_RESISTANCE_HALF		(WHELL_ROLL_RESISTANCE_CONST * 0.5f)
-
 void CCar::UpdateCarPhysics(float delta)
 {
 	PROFILE_FUNC();
@@ -1444,7 +1455,7 @@ void CCar::UpdateCarPhysics(float delta)
 
 	//------------------------------------------------------------------------------------------
 
-	bool bDoBurnout = bBurnout && (abs(GetSpeed()) < BURNOUT_MAX_SPEED);// && (fHandbrake == 0);
+	bool bDoBurnout = bBurnout && (abs(GetSpeed()) < m_conf->m_burnoutMaxSpeed);// && (fHandbrake == 0);
 
 	FReal accel_scale = 1;
 
@@ -1492,7 +1503,7 @@ void CCar::UpdateCarPhysics(float delta)
 		FReal steer_diff = fSteerAngle-m_steering;
 
 		if(FPmath::abs(steer_diff) > 0.1f)
-			m_steering += FPmath::sign(steer_diff) * STEERING_CONST * delta;
+			m_steering += FPmath::sign(steer_diff) * m_conf->m_steeringSpeed * delta;
 		else
 			m_steering = fSteerAngle;
 	}
@@ -1664,13 +1675,60 @@ void CCar::UpdateCarPhysics(float delta)
 
 	float car_speed = wheelsSpeed;
 
-	if(numWheelsOnGround)
+	FReal fAcceleration = m_fAcceleration;
+	FReal fBreakage = fBrake;
+
+	// check neutral zone
+	if( !bDoBurnout && (fsimilar(car_speed, 0.0f, 0.1f) || !numDriveWheelsOnGround))
 	{
+		if(fBrake > 0)
+			m_nGear = 0;
+		else if(fAcceleration > 0)
+			m_nGear = 1;
+
+		m_nPrevGear = m_nGear;
+
+		if(m_nGear == 0)
+		{
+			// find gear to diffential
+			torqueConvert = differentialRatio * m_conf->m_gears[m_nGear];
+			FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
+			m_radsPerSec = gearRadsPerSecond;
+			torque = DBTorqueCurve(gearRadsPerSecond) * m_conf->m_torqueMult;
+
+			torque *= torqueConvert * transmissionRate;
+			
+
+			// swap brake and acceleration
+			swap(fAcceleration, fBreakage);
+			fBreakage.raw *= -1;
+		}
+	}
+	else
+	{
+		// switch gears quickly if we move in wrong direction
+		if(car_speed < 0.0f && m_nGear > 0)
+			m_nGear = 0;
+		else if(car_speed > 0.0f && m_nGear == 0)
+			m_nGear = 1;
+
+		m_nPrevGear = m_nGear;
+
+
 		//
 		// update gearbox
 		//
 
-		if(m_nGear > 0)
+		if(m_nGear == 0 && !bDoBurnout)
+		{
+			// Use next physics frame to calculate torque
+
+
+			// swap brake and acceleration
+			swap(fAcceleration, fBreakage);
+			fBreakage.raw *= -1;
+		}
+		else
 		{
 			int newGear = m_nGear;
 
@@ -1731,50 +1789,10 @@ void CCar::UpdateCarPhysics(float delta)
 		m_nPrevGear = m_nGear;
 	}
 
-	// check neutral zone
-	if(fsimilar(car_speed, 0.0f, 1.0f) || !numDriveWheelsOnGround)
-	{
-		if(fBrake > 0)
-			m_nGear = 0;
-		else if(fAccel > 0)
-			m_nGear = 1;
-	}
-	else
-	{
-		if(car_speed < 0.0f && m_nGear > 0)
-			m_nGear = 0;
-		else if(car_speed > 0.0f && m_nGear == 0)
-			m_nGear = 1;
-	}
+	if(m_isLocalCar)
+		debugoverlay->Text(ColorRGBA(1,1,1,1), "output torque: %g",(float)torque);
 
-	if( bDoBurnout && m_nGear == 0 )
-		m_nGear = 1;
-
-	if(m_nGear == 0)
-	{
-		// find gear to diffential
-		torqueConvert = differentialRatio * m_conf->m_gears[m_nGear];
-		FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
-
-		FReal gearTorque = DBTorqueCurve(gearRadsPerSecond) * m_conf->m_torqueMult;
- 		if(gearTorque < 0)
-			gearTorque = 0.0f;
-
-		torque = gearTorque * torqueConvert * transmissionRate;
-	}
-
-	FReal fAcceleration = m_fAcceleration;
-	FReal fBreakage = fBrake;
-
-	if( m_nGear == 0 && numWheelsOnGround)
-	{
-		// swap brake and acceleration
-		swap(fAcceleration, fBreakage);
-
-		fBreakage *= -1;
-	}
-
-	m_brakeLightsEnabled = FPmath::abs(fBreakage) > 0.05f && fabs(car_speed) > 0.01f;
+	m_brakeLightsEnabled = !bDoBurnout && FPmath::abs(fBreakage) > 0.05f && fabs(car_speed) > 0.01f;
 
 	if(fHandbrake > 0)
 		fAcceleration = 0;
@@ -1829,7 +1847,7 @@ void CCar::UpdateCarPhysics(float delta)
 		Vector3D wheel_right = wrotation.rows[0];
 		Vector3D wheel_forward = wrotation.rows[2];
 
-		float fPitchFac = RemapVal(BURNOUT_MAX_SPEED - GetSpeed(), 0.0f, 70.0f, 0.0f, 1.0f);
+		float fPitchFac = RemapVal(m_conf->m_burnoutMaxSpeed - GetSpeed(), 0.0f, 70.0f, 0.0f, 1.0f);
 
 		if(wheel.collisionInfo.fract < 1.0f)
 		{
@@ -1926,7 +1944,7 @@ void CCar::UpdateCarPhysics(float delta)
 
 				if((wheelConf.flags & WHEEL_FLAG_HANDBRAKE) && handbrakes > 0.0f)
 				{
-					fLongitudinalForce += handbrakes;
+					fLongitudinalForce += handbrakes*m_conf->m_handbrakeScale;
 				}
 			}
 

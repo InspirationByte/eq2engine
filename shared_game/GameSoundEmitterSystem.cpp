@@ -814,7 +814,10 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 {
 	KeyValues kv;
 	if(!kv.LoadFromFile(fileName))
+	{
+		MsgError("*** Error! Failed to open script sound file '%s'!\n", fileName);
 		return;
+	}
 
 	DevMsg(DEVMSG_SOUND, "Loading sound script file '%s'\n", fileName);
 

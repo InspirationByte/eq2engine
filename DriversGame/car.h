@@ -133,7 +133,12 @@ struct carConfigEntry_t
 	float						m_differentialRatio;
 	float						m_torqueMult;
 	float						m_transmissionRate;
+
 	float						m_maxSpeed;
+	float						m_burnoutMaxSpeed;
+
+	float						m_steeringSpeed;
+	float						m_handbrakeScale;
 
 	DkList<carWheelConfig_t>	m_wheels;
 	DkList<float>				m_gears;
