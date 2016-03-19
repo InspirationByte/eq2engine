@@ -274,11 +274,14 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 		conf->m_sndHornSignal = KV_GetValueString(pSoundSec->FindKeyBase("horn"), 0, "generic.horn1");
 		conf->m_sndSiren = KV_GetValueString(pSoundSec->FindKeyBase("siren"), 0, "generic.copsiren1");
 
+		conf->m_sndBrakeRelease = KV_GetValueString(pSoundSec->FindKeyBase("brake_release"), 0, "");
+
 		PrecacheScriptSound( conf->m_sndEngineIdle.c_str() );
 		PrecacheScriptSound( conf->m_sndEngineRPMLow.c_str() );
 		PrecacheScriptSound( conf->m_sndEngineRPMHigh.c_str() );
 		PrecacheScriptSound( conf->m_sndHornSignal.c_str() );
 		PrecacheScriptSound( conf->m_sndSiren.c_str() );
+		PrecacheScriptSound( conf->m_sndBrakeRelease.c_str() );
 	}
 
 	return true;
@@ -817,6 +820,7 @@ CCar::CCar( carConfigEntry_t* config ) :
 	m_steering(0.0f),
 	m_steeringHelper(0.0f),
 	m_fAcceleration(0.0f),
+	m_fBreakage(0.0f),
 	m_fAccelEffect(0.0f),
 	m_controlButtons(0),
 	m_oldControlButtons(0),
@@ -1477,9 +1481,14 @@ void CCar::UpdateCarPhysics(float delta)
 
 		if(m_fAcceleration < 0)
 			m_fAcceleration = 0;
+
+
+		
 	}
 	else
+	{
 		m_fAcceleration = fAccel;
+	}
 
 	#define RPM_REFRESH_TIMES 16
 
@@ -1788,6 +1797,31 @@ void CCar::UpdateCarPhysics(float delta)
 
 		m_nPrevGear = m_nGear;
 	}
+
+	if(fabs(fBreakage) > m_fBreakage)
+	{
+		m_fBreakage += delta * ACCELERATION_CONST;
+	}
+	else
+	{
+		if(m_fBreakage > 0.4f && fabs(fBreakage) < 0.01f && m_conf->m_sndBrakeRelease.GetLength() > 0)
+		{
+			// m_fBreakage is volume
+			EmitSound_t ep;
+			ep.name = m_conf->m_sndBrakeRelease.c_str();
+			ep.fVolume = m_fBreakage;
+			ep.fPitch = 1.0f+(1.0f-m_fBreakage);
+			ep.origin = GetOrigin();
+
+			EmitSoundWithParams(&ep);
+			m_fBreakage = 0.0f;
+		}
+
+		m_fBreakage -= delta * ACCELERATION_CONST;
+	}
+
+	if(m_fBreakage < 0)
+		m_fBreakage = 0;
 
 	if(m_isLocalCar)
 		debugoverlay->Text(ColorRGBA(1,1,1,1), "output torque: %g",(float)torque);
@@ -3236,7 +3270,7 @@ void CCar::UpdateSounds( float fDt )
 
 	float fIdleFac = (m_fEngineRPM > 1800) || fAccelOrBrake ? 0.0f : 1.0f;
 
-	m_engineIdleFactor = clamp(m_engineIdleFactor - sign(m_engineIdleFactor-fIdleFac)*fDt*(1.5f+(float)m_fAcceleration), 0.0f, 1.0f);
+	m_engineIdleFactor = (clamp(2200.0f-m_fEngineRPM, 0.0f,2200.0f)/2200.0f);
 
 	float fEngineSoundVol = clamp((1.0f - m_engineIdleFactor), 0.45f, 1.0f);
 

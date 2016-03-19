@@ -169,6 +169,7 @@ struct carConfigEntry_t
 	EqString					m_sndEngineRPMHigh;
 	EqString					m_sndHornSignal;
 	EqString					m_sndSiren;
+	EqString					m_sndBrakeRelease;
 };
 
 bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs );
@@ -454,6 +455,8 @@ protected:
 	FReal					m_radsPerSec;	// current rotations per sec
 
 	FReal					m_fAcceleration;
+	FReal					m_fBreakage;
+
 	FReal					m_fAccelEffect;
 	FReal					m_steeringHelper;
 	FReal					m_steering;

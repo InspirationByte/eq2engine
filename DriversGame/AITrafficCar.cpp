@@ -15,11 +15,18 @@
 #include "Shiny.h"
 
 #pragma todo("Peer2peer network model for AI cars")
-
 #pragma todo("Teach how to brake to the line strictly - enter 'required speed' parameter")
+/*
+carla brake ineffectiveness per mass: 0.2 (14000 x 2800kg), effectiveness = 5
+bus brake ineffectiveness per mass: 0.5 (15500 x 9000kg), effectiveness = 1.72
+
+so brake distance scale is:
+	brakeDistScale = bodyMass / brakeTorque
+
+	???
+*/
 
 ConVar g_traffic_maxspeed("g_trafficMaxspeed", "36");
-
 ConVar g_disableTrafficLights("g_disableTrafficLights", "0", NULL, CV_CHEAT);
 
 // here's some signal sequences i've recorded

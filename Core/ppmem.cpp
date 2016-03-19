@@ -44,6 +44,8 @@
 
 #pragma todo("Last node priority optimization (for allocations smallest than 10 kb)")
 
+#pragma fixme("In-Page allocation BUG, sometimes object cannot be deallocated properly, CheckPage() indicates outrange and application crashes. Multithreading bug?")
+
 #include <stdio.h>
 
 using namespace Threading;
@@ -866,7 +868,7 @@ void PPFree(void* ptr)
 	// find placement in page
 	while( pPage )
 	{
-		if(ptr >= pPage->GetBase() && ptr <= pPage->GetBase()+ pPage->GetPageSize())
+		if(ptr >= pPage->GetBase() && ptr <= pPage->GetBase() + pPage->GetPageSize())
 		{
 			datPage = pPage;
 			break;
