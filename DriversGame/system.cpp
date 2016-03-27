@@ -630,11 +630,7 @@ bool CGameHost::Frame()
 	debugoverlay->Text(Vector4D(1), "primitives: %i", g_pShaderAPI->GetTrianglesCount());
 	debugoverlay->Text(Vector4D(1,1,1,1), "engtime: %.2f\n", m_fCurTime);
 
-	Matrix4x4 proj, view;
-	materials->GetMatrix(MATRIXMODE_PROJECTION, proj);
-	materials->GetMatrix(MATRIXMODE_VIEW, view);
-
-	debugoverlay->Draw(proj, view, m_winSize.x, m_winSize.y);
+	debugoverlay->Draw(m_winSize.x, m_winSize.y);
 
 	materials->Setup2D(m_winSize.x, m_winSize.y);
 

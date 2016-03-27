@@ -20,16 +20,15 @@
 #endif
 
 #if !defined(EDITOR) &&  !defined(NO_GAME)
-static ConVar rs_stats("r_frameStats","0","Draws debug text",CV_ARCHIVE);
-static ConVar r_debugdrawgraphs("r_debugDrawGraphs","0","Draws debug graphs",CV_ARCHIVE);
-static ConVar r_debugdrawboxes("r_debugDrawBoxes","0","Draws debug boxes",CV_ARCHIVE);
-static ConVar r_debugdrawlines("r_debugDrawLines","0","Draws debug lines",CV_ARCHIVE);
+#define DEBUG_DEFAULT_VALUE "0"
 #else
-static ConVar rs_stats("r_frameStats","1","Debug stats text",CV_ARCHIVE);
-static ConVar r_debugdrawgraphs("r_debugDrawGraphs","1","Debug graphs",CV_ARCHIVE);
-static ConVar r_debugdrawboxes("r_debugDrawBoxes","1","Debug boxes",CV_ARCHIVE);
-static ConVar r_debugdrawlines("r_debugDrawLines","1","Debug lines",CV_ARCHIVE);
-#endif
+#define DEBUG_DEFAULT_VALUE "1"
+#endif // !EDITOR && !NO_GAME
+
+static ConVar r_drawFrameStats("r_frameStats", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
+static ConVar r_debugdrawgraphs("r_debugDrawGraphs", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
+static ConVar r_debugdrawboxes("r_debugDrawBoxes", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
+static ConVar r_debugdrawlines("r_debugDrawLines", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
 
 ITexture* g_pDebugTexture = NULL;
 
@@ -44,8 +43,8 @@ void OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
 		g_pDebugTexture->Ref_Grab();
 }
 
-ConVar r_showTexture("r_showTexture", "", OnShowTextureChanged, "if r_debugShowTexture enabled, it shows the selected texture in overlay", CV_CHEAT);
-ConVar r_showTextureScale("r_showTextureScale", "1.0", "texture debug scale", CV_ARCHIVE);
+ConVar r_showTexture("r_debug_showTexture", "", OnShowTextureChanged, "input texture name to show texture. To hide view input anything else.", CV_CHEAT);
+ConVar r_showTextureScale("r_debug_textureScale", "1.0", NULL, CV_ARCHIVE);
 
 #include "math/Rectangle.h"
 
@@ -108,7 +107,7 @@ void CDebugOverlay::Init()
 
 void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
 {
-	if(!rs_stats.GetBool())
+	if(!r_drawFrameStats.GetBool())
 		return;
 
 	DebugTextNode_t textNode;
@@ -129,7 +128,7 @@ void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
 
 void CDebugOverlay::Text3D(const Vector3D &origin, const ColorRGBA &color, char const *fmt,...)
 {
-	if(!rs_stats.GetBool())
+	if(!r_drawFrameStats.GetBool())
 		return;
 
 	va_list		argptr;
@@ -151,7 +150,7 @@ void CDebugOverlay::Text3D(const Vector3D &origin, const ColorRGBA &color, char 
 
 void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const ColorRGBA &color, char const *fmt,...)
 {
-	if(!rs_stats.GetBool())
+	if(!r_drawFrameStats.GetBool())
 		return;
 
 	va_list		argptr;
@@ -177,7 +176,7 @@ void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFade
 {
 	if(position == 1)
 	{
-		if(!rs_stats.GetBool())
+		if(!r_drawFrameStats.GetBool())
 			return;
 	}
 
@@ -258,6 +257,14 @@ void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vecto
 	poly.lifetime = fTime;
 
 	m_polygons.append(poly);
+}
+
+void CDebugOverlay::Draw3DFunc( OnDebugDrawFn func, void* args )
+{
+	Threading::CScopedMutex m(m_mutex);
+
+	DebugDrawFunc_t fn = {func, args};
+	m_drawFuncs.append(fn);
 }
 
 /*
@@ -592,7 +599,13 @@ void DrawPolygons(DebugPolyNode_t* polygons, int numPolys, float frameTime)
 	g_pShaderAPI->DestroyMeshBuilder(pMB);
 }
 
-void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWide, int winTall)
+void CDebugOverlay::SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view )
+{
+	m_projMat = proj;
+	m_viewMat = view;
+}
+
+void CDebugOverlay::Draw(int winWide, int winTall)
 {
 	float fCurTime = Platform_GetCurrentTime();
 
@@ -600,10 +613,23 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 
 	m_oldtime = fCurTime;
 
-	materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
-	materials->SetMatrix(MATRIXMODE_VIEW, view);
+	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
+	materials->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
+	// draw custom stuff
+	{
+		Threading::CScopedMutex m(m_mutex);
+
+		for(int i = 0; i < m_drawFuncs.numElem(); i++)
+		{
+			m_drawFuncs[i].func(m_drawFuncs[i].arg);
+		}
+
+		m_drawFuncs.clear();
+	}
+
+	// draw all of 3d stuff
 	{
 		Threading::CScopedMutex m(m_mutex);
 
@@ -616,6 +642,7 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 		DrawPolygons(m_polygons.ptr(), m_polygons.numElem(), m_frametime);
 	}
 
+	// now rendering 2D stuff
 	materials->Setup2D(winWide, winTall);
 
 #ifdef EDITOR
@@ -663,7 +690,7 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 		}while(m_LeftTextFadeArray.goToNext());
 	}
 
-	if(rs_stats.GetBool())
+	if(r_drawFrameStats.GetBool())
 	{
 		Threading::CScopedMutex m(m_mutex);
 
@@ -675,7 +702,7 @@ void CDebugOverlay::Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWi
 		{
 			Vector3D screen(0);
 
-			bool beh = PointToScreen_Z(m_Text3DArray[i].origin, screen, proj * view, Vector2D(winWide, winTall));
+			bool beh = PointToScreen_Z(m_Text3DArray[i].origin, screen, m_projMat * m_viewMat, Vector2D(winWide, winTall));
 
 			bool visible = true;
 

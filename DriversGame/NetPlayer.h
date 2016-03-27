@@ -67,7 +67,6 @@ public:
 	void				GetPredictedSnapshot( const netObjSnapshot_t& snapshot, float fDt_diff, netObjSnapshot_t& out ) const;
 	float				GetSnapshotLatency() const;
 
-
 	void				NETSpawn();
 	void				NetUpdate(float fDt);
 	void				Update(float fDt);

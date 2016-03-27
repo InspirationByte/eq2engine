@@ -30,10 +30,9 @@ using namespace Threading;
 
 #define PHYSGRID_WORLD_SIZE 24	// compromised betwen memory usage and performance
 
-ConVar ph_debugrender("ph_debugrender", "0", "no desc", CV_CHEAT);
-ConVar ph_showcontacts("ph_showcontacts", "0", "no desc", CV_CHEAT);
+ConVar ph_showcontacts("ph_showcontacts", "0", NULL, CV_CHEAT);
 ConVar ph_erp("ph_erp", "0.01", "Error correction", CV_CHEAT);
-ConVar ph_centerCollisionPos("ph_centerCollisionPos", "1", "no desc", CV_CHEAT);
+ConVar ph_centerCollisionPos("ph_centerCollisionPos", "1", NULL, CV_CHEAT);
 
 const int collisionList_Max = 16;
 
@@ -1746,11 +1745,8 @@ bool CEqPhysics::TestConvexSweepSingleObject(	CEqCollisionObject* object,
 
 void UTIL_DebugDrawOBB(const FVector3D& pos, const Vector3D& mins, const Vector3D& maxs, const Matrix4x4& matrix, const ColorRGBA& color);
 
-void CEqPhysics::DebugDrawBodies()
+void CEqPhysics::DebugDrawBodies(int mode)
 {
-	if(!ph_debugrender.GetBool())
-		return;
-
 	for(int i = 0; i < m_dynObjects.numElem(); i++)
 	{
 		Matrix4x4 mat(m_dynObjects[i]->GetOrientation());
@@ -1763,10 +1759,10 @@ void CEqPhysics::DebugDrawBodies()
 		UTIL_DebugDrawOBB(m_dynObjects[i]->GetPosition(),m_dynObjects[i]->m_aabb.minPoint, m_dynObjects[i]->m_aabb.maxPoint, mat, bodyCol);
 	}
 
-	if(ph_debugrender.GetInt() >= 2)
+	if(mode >= 2)
 		m_grid.DebugRender();
 
-	if(ph_debugrender.GetInt() >= 3)
+	if(mode >= 3)
 	{
 		for(int i = 0; i < m_staticObjects.numElem(); i++)
 		{

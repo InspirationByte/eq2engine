@@ -222,15 +222,15 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 		float dist_multipler = 1.0f;
 
-		if( !fsimilar(look_angle, 0.0f) && !bLookBack )
+		if( !bLookBack )
 		{
-			dist_multipler = clamp(fabs((look_angle-m_fLookAngle) / 90.0f), 0.0f, 1.0f);
+			dist_multipler = clamp(fabs(m_fLookAngle) / 90.0f, 0.0f, 1.0f);
 		}
 
 		Vector3D forward, up, right;
 		AngleVectors(euler_angles, &forward, &right, &up);
 
-		Vector3D camPos = pos + forward*lerp(m_carConfig.widthInCar, m_carConfig.distInCar, dist_multipler);
+		Vector3D camPos = pos + forward*lerp(m_carConfig.distInCar, m_carConfig.widthInCar, dist_multipler);
 
 		debugoverlay->Box3D(camPos-0.1f, camPos+0.1f, ColorRGBA(0,1,0,1), 0.0f);
 

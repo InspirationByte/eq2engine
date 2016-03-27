@@ -172,7 +172,6 @@ public:
 	void							UpdateLightTexture();
 
 	bool							AddLight(const wlight_t& light);
-	void							ApplyLighting(const BoundingBox& bbox);
 	int								GetLightIndexList(const BoundingBox& bbox, int* lights, int maxLights = MAX_LIGHTS_INST) const;
 	void							GetLightList(const BoundingBox& bbox, wlight_t list[MAX_LIGHTS], int& numLights) const;
 

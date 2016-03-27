@@ -65,6 +65,12 @@ struct DebugPolyNode_t
 	float lifetime;
 };
 
+struct DebugDrawFunc_t
+{
+	OnDebugDrawFn func;
+	void* arg;
+};
+
 class CDebugOverlay : public IDebugOverlay
 {
 public:
@@ -83,6 +89,8 @@ public:
 	void							Box3D(const Vector3D &mins, const Vector3D &maxs, const ColorRGBA &color1, float fTime = 0.0f);
 	void							Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime = 0.0f);
 
+	void							Draw3DFunc( OnDebugDrawFn func, void* args );
+
 	//void							Line2D(Vector2D &start, Vector2D &end, ColorRGBA &color1, ColorRGBA &color2, float fTime = 0.0f);
 	//void							Box2D(Vector2D &mins, Vector2D &maxs, ColorRGBA &color1, float fTime = 0.0f);
 
@@ -93,11 +101,15 @@ public:
 
 	void							RemoveAllGraphs();
 
-	void							Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWide, int winTall);
+	void							SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view );
+	void							Draw( int winWide, int winTall );
 private:
 	void							CleanOverlays();
 
 	IEqFont*						m_pDebugFont;
+
+	Matrix4x4						m_projMat;
+	Matrix4x4						m_viewMat;
 
 	DkList<DebugTextNode_t>			m_TextArray;
 	DkList<DebugText3DNode_t>		m_Text3DArray;
@@ -113,6 +125,8 @@ private:
 
 	DkList<debugGraphBucket_t*>		m_graphbuckets;
 	DkList<DebugPolyNode_t>			m_polygons;
+
+	DkList<DebugDrawFunc_t>			m_drawFuncs;
 
 	float							m_frametime;
 	float							m_oldtime;

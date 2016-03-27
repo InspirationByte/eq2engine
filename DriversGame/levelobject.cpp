@@ -11,6 +11,8 @@
 
 extern ConVar r_enableLevelInstancing;
 
+ConVar r_drawStaticRegionModels("r_drawStaticRegionModels", "1", NULL, CV_CHEAT);
+
 //------------------------------------------------------------------------------------
 
 CLevObjectDef::CLevObjectDef()
@@ -161,8 +163,6 @@ void CLevObjectDef::Render( float lodDistance, const BoundingBox& bbox, bool pre
 				}
 
 				materials->BindMaterial(pMaterial, false);
-
-				g_pGameWorld->ApplyLighting(bbox);
 
 				//m_pModel->PrepareForSkinning( m_BoneMatrixList );
 				m_defModel->DrawGroup( nModDescId, j );
@@ -503,11 +503,9 @@ void CLevelModel::PreloadTextures()
 	}
 }
 
-ConVar r_drawLevelModels("r_drawLevelModels", "1", "Draw level models (region parts)", CV_CHEAT);
-
 void CLevelModel::Render(int nDrawFlags, const BoundingBox& aabb)
 {
-	if(!r_drawLevelModels.GetBool())
+	if(!r_drawStaticRegionModels.GetBool())
 		return;
 
 	if(!m_vertexBuffer || !m_indexBuffer || !m_format)
@@ -528,9 +526,6 @@ void CLevelModel::Render(int nDrawFlags, const BoundingBox& aabb)
 		materials->SetCullMode((nDrawFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
 
 		materials->BindMaterial(m_batches[i].pMaterial, false);
-
-		if (!(caps.isInstancingSupported && r_enableLevelInstancing.GetBool()))
-			g_pGameWorld->ApplyLighting( aabb );
 
 		materials->Apply();
 

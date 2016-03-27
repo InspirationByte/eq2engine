@@ -35,16 +35,39 @@ CPFXAtlasGroup* g_treeAtlas = NULL;
 
 ConVar r_zfar("r_zfar", "350", "Z depth far on main scene", CV_ARCHIVE);
 
-ConVar fog_override("fog_override","0","Fog parameters override", CV_CHEAT);
-ConVar fog_enable("fog_enable","0","Enables fog",CV_ARCHIVE);
+ConVar fog_override("fog_override","0","Override fog parameters", CV_CHEAT);
+ConVar fog_enable("fog_enable","0",NULL,CV_ARCHIVE);
 
-ConVar fog_color_r("fog_color_r","0.5","Fog color",CV_ARCHIVE);
-ConVar fog_color_g("fog_color_g","0.5","Fog color",CV_ARCHIVE);
-ConVar fog_color_b("fog_color_b","0.5","Fog color",CV_ARCHIVE);
-ConVar fog_far("fog_far","400","Fog far",CV_ARCHIVE);
-ConVar fog_near("fog_near","20","Fog near",CV_ARCHIVE);
+ConVar fog_color_r("fog_color_r","0.5",NULL,CV_ARCHIVE);
+ConVar fog_color_g("fog_color_g","0.5",NULL,CV_ARCHIVE);
+ConVar fog_color_b("fog_color_b","0.5",NULL,CV_ARCHIVE);
+ConVar fog_far("fog_far","400",NULL,CV_ARCHIVE);
+ConVar fog_near("fog_near","20",NULL,CV_ARCHIVE);
 
-DECLARE_CMD(w_setEnvironment, "Sets new environment parameters for level", CV_CHEAT)
+ConVar r_no3D("r_no3D", "0", "Disable whole 3D rendering", CV_CHEAT);
+
+ConVar r_drawWorld("r_drawWorld", "1", "Draw all static world", CV_CHEAT);
+ConVar r_drawObjects("r_drawObjects", "1", "Draw dynamic objects", CV_CHEAT);
+ConVar r_drawFakeReflections("r_drawFakeReflections", "1", "Draw fake reflections", CV_ARCHIVE);
+
+ConVar r_nightBrightness("r_nightBrightness", "1.0", "Night ambient brightness", CV_ARCHIVE);
+ConVar r_drawLensFlare("r_drawLensFlare", "2", "Draw lens flare\n\t1 - query by physics\n\t2 - query by occlusion", CV_ARCHIVE);
+
+ConVar r_lightDistanceScale("r_lightDistanceScale", "0.3", "Light distance scale cutoff", CV_ARCHIVE);
+
+ConVar r_ambientScale("r_ambientScale", "1.0f", "Ambient brightness scale", CV_ARCHIVE);
+
+ConVar r_freezeFrustum("r_freezeFrustum", "0", NULL, CV_CHEAT);
+
+ConVar r_glowsProjOffset("r_glowsProjOffset", "0.018", "Projection matrix planes offset", CV_CHEAT);
+ConVar r_glowsProjOffsetB("r_glowsProjOffsetB", "0.0", "Projection matrix planes offset", CV_CHEAT);
+
+ConVar r_ortho("r_ortho", "0", NULL, CV_CHEAT);
+ConVar r_ortho_size("r_ortho_size", "0.5", NULL, CV_ARCHIVE);
+
+#define LIGHT_FADE_DIST (25.0f)
+
+DECLARE_CMD(w_setEnvironment, "Loads new environment parameters", CV_CHEAT)
 {
 	if(CMD_ARGC == 0)
 	{
@@ -61,7 +84,6 @@ DECLARE_CMD(w_respawn, "Respawn all level objects", CV_CHEAT)
 {
 	g_pGameWorld->m_level.RespawnAllObjects();
 }
-
 
 int SortGameObjectsByDistance(CGameObject* const& a, CGameObject* const& b)
 {
@@ -813,10 +835,6 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 	}
 }
 
-ConVar r_lightDistanceScale("r_lightDistanceScale", "0.3", "Light distance scale for rendering", CV_ARCHIVE);
-
-#define LIGHT_FADE_DIST (25.0f)
-
 bool CGameWorld::AddLight(const wlight_t& light)
 {
 	if(m_numLights >= MAX_LIGHTS_QUEUE-1)
@@ -846,13 +864,6 @@ bool CGameWorld::AddLight(const wlight_t& light)
 
 	return true;
 }
-
-ConVar r_freezeFrustum("r_freezeFrustum", "0", "Freeze frustum updates", CV_CHEAT);
-
-ConVar r_glowsProjOffset("r_glowsProjOffset", "0.018", "Projection matrix planes offset", CV_CHEAT);
-ConVar r_glowsProjOffsetB("r_glowsProjOffsetB", "0.0", "Projection matrix planes offset", CV_CHEAT);
-ConVar r_ortho("r_ortho", "0", "Enable orthographical projection", CV_CHEAT);
-ConVar r_ortho_size("r_ortho_size", "0.5", "Orthographical projection size");
 
 void CGameWorld::BuildViewMatrices(int width, int height, int nRenderFlags)
 {
@@ -1063,7 +1074,7 @@ void DrawSkyBox(IMaterial* pSkyMaterial, int renderFlags)
 	//g_pShaderAPI->Flush();
 }
 
-ConVar r_ambientScale("r_ambientScale", "1.0f", "Ambient color scale", CV_ARCHIVE);
+
 
 const float wetnessLevels[WEATHER_COUNT] =
 {
@@ -1108,46 +1119,6 @@ void CGameWorld::OnPreApplyMaterial( IMaterial* pMaterial )
 	envParams.y = (m_envConfig.lightsType & WLIGHTS_CITY) > 0 ? 1.0f : 0.0f;
 
 	g_pShaderAPI->SetShaderConstantVector2D("ENVPARAMS", envParams);
-
-
-	// always send all of them
-	//g_pShaderAPI->SetShaderConstantArrayVector4D("WorldLights", (Vector4D*)&m_lights[0].position, MAX_LIGHTS*2);
-}
-
-ConVar r_regularLightTextureUpdates("r_regularLightTextureUpdates", "0", NULL, CV_ARCHIVE);
-
-void CGameWorld::ApplyLighting( const BoundingBox& bbox )
-{
-	if(!m_lightsTex || !r_regularLightTextureUpdates.GetBool())
-		return;
-
-	//bbox.Intersects();
-	texlockdata_t lockdata;
-
-	int appliedLights = 0;
-
-	m_lightsTex->Lock(&lockdata, NULL, true);
-	if(lockdata.pData)
-	{
-		memset(lockdata.pData, 0, MAX_LIGHTS_TEXTURE*2*sizeof(TVec4D<half>));
-
-		TVec4D<half>* lightData = (TVec4D<half>*)lockdata.pData;
-
-		for(int i = 0; i < m_numLights; i++)
-		{
-			if(appliedLights >= MAX_LIGHTS-1)
-				break;
-
-			if(!bbox.IntersectsSphere(m_lights[i].position.xyz(), m_lights[i].position.w))
-				continue;
-
-			lightData[appliedLights] = Vector4D(m_CameraParams.GetOrigin()-m_lights[i].position.xyz(), 1.0f / m_lights[i].position.w);
-			lightData[MAX_LIGHTS_TEXTURE+appliedLights] = m_lights[i].color;
-
-			appliedLights++;
-		}
-		m_lightsTex->Unlock();
-	}
 }
 
 int CGameWorld::GetLightIndexList(const BoundingBox& bbox, int* lights, int maxLights) const
@@ -1227,15 +1198,6 @@ void CGameWorld::UpdateLightTexture()
 
 	debugoverlay->Text(ColorRGBA(1,1,0,1),"lights in view: %d/%d", m_numLights,MAX_LIGHTS_TEXTURE);
 }
-
-ConVar r_no3D("r_no3D", "0", "Disable 3D rendering", CV_CHEAT);
-
-ConVar r_drawWorld("r_drawWorld", "1", "Draw world", CV_CHEAT);
-ConVar r_drawObjects("r_drawObjects", "1", "Draw objects", CV_CHEAT);
-ConVar r_drawFakeReflections("r_drawFakeReflections", "1", "Draw fake reflections", CV_ARCHIVE);
-
-ConVar r_nightBrightness("r_nightBrightness", "1.0f", "Night ambient brightness", CV_ARCHIVE);
-ConVar r_drawLensFlare("r_drawLensFlare", "2", "Draw lens flare, 1-query by physics, 2-query by occlusion", CV_ARCHIVE);
 
 void CGameWorld::UpdateOccludingFrustum()
 {
@@ -1489,6 +1451,9 @@ void CGameWorld::Draw( int nRenderFlags )
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
 	materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+	// set debugoverlay transformation
+	debugoverlay->SetMatrices(m_matrices[MATRIXMODE_PROJECTION], m_matrices[MATRIXMODE_VIEW]);
 
 	// set global pre-apply callback
 	materials->SetMaterialRenderParamCallback(this);

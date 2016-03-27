@@ -60,15 +60,14 @@ void channels_callback(ConVar* pVar,char const* pszOldValue)
 	}
 }
 
-//ConVar snd_timescale("snd_timescale","1.0",0.5f,2.0f,"Sound pitch for mixer. May be combined with the sys_timescale value",CV_ARCHIVE);
-//ConVar snd_timescale("snd_timescale","1.0","Sound pitch for mixer. May be combined with the sys_timescale value",CV_ARCHIVE);
 extern ConVar sys_timescale;
-static ConVar snd_channels("snd_channels","32",channels_callback,"Maximum allowed channels for sound system",CV_ARCHIVE);
-static ConVar snd_volume("snd_volume","1.0",0.0f,1.0f,"Sound mixing volume",CV_ARCHIVE);
-static ConVar snd_devicetype("snd_devicetype","0","Sound device index", CV_ARCHIVE);
-static ConVar snd_samplerate("snd_samplerate","44100","Sound sample rate", CV_ARCHIVE);
 
-static ConVar snd_outputchannels("snd_outputchannels","2","Sound output channels", CV_ARCHIVE);
+static ConVar snd_device("snd_device","0", NULL, CV_ARCHIVE);
+
+static ConVar snd_3dchannels("snd_3dchannels","32", channels_callback,NULL,CV_ARCHIVE);
+static ConVar snd_volume("snd_volume","1.0",0.0f,1.0f, NULL, CV_ARCHIVE);
+static ConVar snd_samplerate("snd_samplerate", "44100", NULL, CV_ARCHIVE);
+static ConVar snd_outputchannels("snd_outputchannels", "2", "Output channels. 2 is headphones, 4 - quad surround system, 5 - 5.1 surround", CV_ARCHIVE);
 
 DECLARE_CMD(snd_reloadeffects,"Play a sound",0)
 {
@@ -174,19 +173,6 @@ const char* getALErrorString(int err)
 	}
 }
 
-void STA_CheckError(bool checkFatal = false)
-{
-	int alErr = alGetError();
-
-	if(alErr == AL_NO_ERROR)
-		return;
-
-	if(checkFatal)
-		MsgError("AUDIO ERROR: %s\n", getALErrorString(alErr));
-	else
-		DevMsg(DEVMSG_SOUND, "AUDIO ERROR: %s\n", getALErrorString(alErr));
-}
-
 void DkSoundSystemLocal::Init()
 {
 	Msg(" \n--------- InitSound --------- \n");
@@ -208,15 +194,15 @@ void DkSoundSystemLocal::Init()
 		devices += strlen(devices) + 1;
 	}
 
-	if(snd_devicetype.GetInt() >= tempListChars.numElem())
+	if(snd_device.GetInt() >= tempListChars.numElem())
 	{
-		MsgError("snd_devicetype: Invalid audio device specifier\n");
-		snd_devicetype.SetInt(0);
+		MsgError("snd_device: Invalid audio device selected, reset to 0\n");
+		snd_device.SetInt(0);
 	}
 
-	Msg("Audio device: %s\n", tempListChars[snd_devicetype.GetInt()]);
+	Msg("Audio device: %s\n", tempListChars[snd_device.GetInt()]);
 
-	m_dev = alcOpenDevice((ALCchar*)tempListChars[snd_devicetype.GetInt()]);
+	m_dev = alcOpenDevice((ALCchar*)tempListChars[snd_device.GetInt()]);
 
 	int alErr = AL_NO_ERROR;
 
@@ -255,14 +241,8 @@ void DkSoundSystemLocal::Init()
 		MsgError("alcMakeContextCurrent error: %s\n", getALCErrorString(alErr));
 	}
 
-	STA_CheckError(true);
-
-	// Clear Error Code (so we can catch any new errors)
-	STA_CheckError(true);
-
 	//Set Gain
 	alListenerf(AL_GAIN, snd_volume.GetFloat());
-	//alListenerf(AL_METERS_PER_UNIT, METERS_PER_UNIT);
 
 #ifndef NO_ENGINE
 	if(gpGlobals)
@@ -287,23 +267,19 @@ void DkSoundSystemLocal::Init()
 	InitEffects();
 
 	//Create channels
-	for(int i = 0; i < snd_channels.GetInt(); i++)
+	for(int i = 0; i < snd_3dchannels.GetInt(); i++)
 	{
 		sndChannel_t *c = new sndChannel_t;
 		alGenSources(1, &c->alSource);
 
 		alSourcei(c->alSource, AL_LOOPING,AL_FALSE);
 		alSourcei(c->alSource, AL_SOURCE_RELATIVE, AL_FALSE);
-		//alSourcef(c->alSource, AL_AIR_ABSORPTION_FACTOR, 0.2f);
-		//alSourcef(c->alSource, AL_ROOM_ROLLOFF_FACTOR, 0.0f);
 		alSourcei(c->alSource, AL_AUXILIARY_SEND_FILTER_GAIN_AUTO, AL_TRUE);
 
 		alSourcef(c->alSource, AL_DOPPLER_FACTOR, 1.0f);
 
 		m_pChannels.append(c);
 	}
-
-	STA_CheckError();
 
 	//Activate soundsystem
 	m_bSoundInit = true;
@@ -773,8 +749,6 @@ ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, bool streaming, b
 	g_parallelJobs->Submit();
 
 	m_pSoundSamples.append( pNewSample );
-
-	STA_CheckError();
 
 #ifndef NO_ENGINE
 	g_pEngineHost->EndResourceLoading();

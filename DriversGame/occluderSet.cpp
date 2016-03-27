@@ -10,12 +10,12 @@
 
 #include "ConVar.h"
 
-ConVar r_debugOccluders("r_debugOccluders", "0", "Debug occlusion plane volumes", CV_CHEAT);
-ConVar r_noOcclusion("r_noOcclusion", "0", "Disables occlusion for debugging purposes", 0);
+ConVar r_debugOccluders("r_debugOccluders", "0", NULL, CV_CHEAT);
+ConVar r_occlusion("r_occlusion", "1", NULL, CV_CHEAT);
 
 occludingVolume_t::occludingVolume_t(levOccluderLine_t* occl, const Vector3D& cameraPos)
 {
-	if(r_noOcclusion.GetBool())
+	if(!r_occlusion.GetBool())
 		return;
 
 	Plane pl(occl->start, occl->end, occl->end+Vector3D(0,occl->height,0));
@@ -106,7 +106,7 @@ bool occludingFrustum_t::IsBoxVisible( const BoundingBox& bbox) const
 	if(!frustum.IsBoxInside(bbox.minPoint, bbox.maxPoint))
 		return false;
 
-	if(r_noOcclusion.GetBool())
+	if(!r_occlusion.GetBool())
 		return true;
 
 	// here is negated
@@ -124,7 +124,7 @@ bool occludingFrustum_t::IsSphereVisible( const Vector3D& pos, float radius ) co
 	if(!frustum.IsSphereInside(pos, radius))
 		return false;
 
-	if(r_noOcclusion.GetBool())
+	if(!r_occlusion.GetBool())
 		return true;
 
 	// here is negated
@@ -139,7 +139,7 @@ bool occludingFrustum_t::IsSphereVisible( const Vector3D& pos, float radius ) co
 
 bool occludingFrustum_t::IsBoxVisibleThruOcc( const BoundingBox& bbox) const
 {
-	if(r_noOcclusion.GetBool())
+	if(!r_occlusion.GetBool())
 		return true;
 
 	// here is negated
@@ -154,7 +154,7 @@ bool occludingFrustum_t::IsBoxVisibleThruOcc( const BoundingBox& bbox) const
 
 bool occludingFrustum_t::IsSphereVisibleThruOcc( const Vector3D& pos, float radius ) const
 {
-	if(r_noOcclusion.GetBool())
+	if(!r_occlusion.GetBool())
 		return true;
 
 	// here is negated

@@ -1131,11 +1131,11 @@ void CHeightTileFieldRenderable::GenereateRenderData()
 #endif
 }
 
-ConVar r_drawHfields("r_drawHfields", "1", "Draw heightfields", CV_ARCHIVE);
+ConVar r_drawHeightfields("r_drawHeightfields", "1", NULL, CV_CHEAT);
 
 void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t& occlSet)
 {
-	if(!r_drawHfields.GetBool())
+	if(!r_drawHeightfields.GetBool())
 		return;
 
 	if(m_isChanged)
@@ -1158,8 +1158,6 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 	{
 		if(!occlSet.IsBoxVisible(m_batches[i].bbox))
 			continue;
-
-		//g_pGameWorld->ApplyLighting( m_batches[i].bbox );
 
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 		materials->SetCullMode((nDrawFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);

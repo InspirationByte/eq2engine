@@ -49,8 +49,8 @@ DECLARE_CMD(test_scriptsound, "Test the scripted sound",0)
 	}
 }
 
-DECLARE_CVAR(emitsound_debug, 0, "Show debug boxes of sound emit", CV_CHEAT);
-DECLARE_CVAR(snd_musicvolume, 0.5, "Music volume", CV_ARCHIVE);
+ConVar emitsound_debug("scriptsound_debug", "0", NULL, CV_CHEAT);
+ConVar snd_musicvolume("snd_musicvolume", "0.5", NULL, CV_ARCHIVE);
 
 bool CSoundController::IsStopped() const
 {

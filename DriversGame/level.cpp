@@ -25,6 +25,8 @@ using namespace EqBulletUtils;
 using namespace Threading;
 
 ConVar r_enableLevelInstancing("r_enableLevelInstancing", "1", "Enable level models instancing if available", CV_ARCHIVE);
+ConVar r_drawStaticLights("r_drawStaticLights", "1", "Draw static lights", CV_CHEAT);
+ConVar w_freeze("w_freeze", "0", "Freeze region spooler", CV_CHEAT);
 
 //-----------------------------------------------------------------------------------------
 
@@ -49,45 +51,6 @@ CGameLevel::CGameLevel() :
 {
 
 }
-
-	/*
-void CGameLevel::InitOLD(int wide, int tall, IVirtualStream* stream)
-{
-	m_wide = wide;
-	m_tall = tall;
-	m_cellsSize = LEVEL_HEIGHTFIELD_SIZE;
-	m_regions = new CLevelRegion[m_wide*m_tall]();
-
-	Vector3D center = Vector3D(m_wide*LEVEL_HEIGHTFIELD_STEP_SIZE, 0, m_tall*LEVEL_HEIGHTFIELD_STEP_SIZE)*0.5f - Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
-
-	for(int x = 0; x < m_wide; x++)
-	{
-		for(int y = 0; y < m_tall; y++)
-		{
-			int idx = y*m_wide+x;
-
-			m_regions[idx].m_heightfield[0]->Init( m_cellsSize, x, y );
-			m_regions[idx].m_heightfield[0]->m_position = Vector3D(x*LEVEL_HEIGHTFIELD_STEP_SIZE, 0, y*LEVEL_HEIGHTFIELD_STEP_SIZE) - center;
-
-			m_regions[idx].m_bbox.Reset();
-			m_regions[idx].m_bbox.AddVertex(m_regions[idx].m_heightfield[0]->m_position - LEVEL_HEIGHTFIELD_STEP_SIZE/2 - Vector3D(0, 1024, 0));
-			m_regions[idx].m_bbox.AddVertex(m_regions[idx].m_heightfield[0]->m_position + LEVEL_HEIGHTFIELD_STEP_SIZE/2 + Vector3D(0, 1024, 0));
-
-			if(stream)
-				m_regions[idx][0]->m_heightfield.ReadFromStream(stream);
-		}
-	}
-
-	for(int x = 0; x < m_wide; x++)
-	{
-		for(int y = 0; y < m_tall; y++)
-		{
-			int idx = y*m_wide+x;
-			g_pPhysics->AddHeightField( &m_regions[idx].m_heightfield );
-		}
-	}
-}
-*/
 
 void CGameLevel::Cleanup()
 {
@@ -509,8 +472,6 @@ void LoadDefLightData( wlightdata_t& out, kvkeybase_t* sec )
 		}
 	}
 }
-
-ConVar r_drawStaticLights("r_drawStaticLights", "1", "Draw static lights", CV_CHEAT);
 
 //
 // from car.cpp, pls move
@@ -1666,8 +1627,6 @@ void CGameLevel::QueryNearestRegions( const IVector2D& point, bool waitLoad )
 			WaitForThread();
 	}
 }
-
-ConVar w_freeze("w_freeze", "0", "Freeze world loading/unloading", CV_CHEAT);
 
 #ifdef EDITOR
 void CGameLevel::Ed_Prerender(const Vector3D& cameraPosition)

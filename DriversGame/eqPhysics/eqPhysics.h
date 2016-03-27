@@ -275,7 +275,7 @@ public:
 																void* args = NULL);
 
 	///< draws physics bounding boxes
-	void							DebugDrawBodies();
+	void							DebugDrawBodies(int mode);
 
 	///< Simulates physics
 	void							SimulateStep( float deltaTime, int iteration, FNSIMULATECALLBACK preIntegrFunc);	///< simulates physics

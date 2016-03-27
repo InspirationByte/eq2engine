@@ -16,9 +16,13 @@
 
 #include "utils/GeomTools.h"
 
+#include "eqPhysics/eqBulletIndexedMesh.h"
 #include "../shared_engine/physics/BulletConvert.h"
 
 #include "Shiny.h"
+
+ConVar ph_debugrender("ph_debugrender", "0", NULL, CV_CHEAT);
+ConVar ph_singleiter("ph_singleiter", "0");
 
 using namespace EqBulletUtils;
 
@@ -107,15 +111,18 @@ void CPhysicsEngine::SceneShutdown()
 
 const int constIterationsFramerate = 60;
 
-ConVar ph_singleiter("ph_singleiter", "0");
+void PhysDebugRender(void* arg)
+{
+	CPhysicsEngine* physEngine = (CPhysicsEngine*)arg;
+
+	physEngine->m_physics.DebugDrawBodies( ph_debugrender.GetInt() );
+}
 
 void CPhysicsEngine::Simulate( float fDt, int numIterations, FNSIMULATECALLBACK preIntegrateFn )
 {
 	PROFILE_FUNC();
 
 	double timestep = fDt / numIterations;
-
-	m_physics.DebugDrawBodies();
 
 	if(ph_singleiter.GetBool())
 		numIterations = 1;
@@ -125,6 +132,10 @@ void CPhysicsEngine::Simulate( float fDt, int numIterations, FNSIMULATECALLBACK 
 		m_physics.PrepareSimulateStep();
 		m_physics.SimulateStep(timestep, i, preIntegrateFn);
 	}
+
+	// debug rendering
+	if(ph_debugrender.GetBool())
+		debugoverlay->Draw3DFunc( PhysDebugRender, this );
 }
 
 bool CPhysicsEngine::TestLine(const FVector3D& start, const FVector3D& end, CollisionData_t& coll, int rayMask, eqPhysCollisionFilter* filter)
@@ -154,8 +165,6 @@ eqPhysSurfParam_t* CPhysicsEngine::GetSurfaceParamByID( int id )
 {
 	return m_physics.GetSurfaceParamByID(id);
 }
-
-#include "eqPhysics/eqBulletIndexedMesh.h"
 
 bool physHFieldVertexComparator(const hfielddrawvertex_t &a, const hfielddrawvertex_t &b)
 {

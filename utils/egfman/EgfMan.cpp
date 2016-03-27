@@ -1092,7 +1092,6 @@ void CEGFViewFrame::ReDraw()
 		g_pCameraParams.SetOrigin(g_camera_target + forward*-g_fCamDistance);
 
 		ShowFPS();
-		debugoverlay->Text(color4_white, "Camera position: %g %g %g\n", g_camera_target.x,g_camera_target.y,g_camera_target.z);
 
 		FogInfo_t fog;
 		materials->GetFogInfo(fog);
@@ -1132,8 +1131,12 @@ void CEGFViewFrame::ReDraw()
 		physics->Simulate( g_frametime, 1 );
 		g_pModel->Update( g_frametime );
 
+		g_pShaderAPI->ResetCounters();
+
 		// Now we can draw our model
 		g_pModel->Render((int)m_pDrawPhysModel->IsChecked(), g_fCamDistance);
+
+		debugoverlay->Text(color4_white, "polygon count: %d\n", g_pShaderAPI->GetTrianglesCount());
 
 		// draw floor 1x1 meters
 		debugoverlay->Polygon3D(Vector3D(-64,0,-64), Vector3D(-64,0,64), Vector3D(64,0,64), ColorRGBA(1,1,0,0.25));

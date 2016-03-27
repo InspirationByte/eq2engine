@@ -15,7 +15,7 @@ DkList<connode_t*> *s_pMessages = &s_Messages;
 
 DkList<connode_t*> *GetAllMessages( void ) {return s_pMessages;}
 
-DECLARE_CMD(clear,"Clear console output",0)
+DECLARE_CMD(clear,NULL,0)
 {
 	for(int i = 0;i < s_Messages.numElem();i++)
 	{
@@ -26,8 +26,8 @@ DECLARE_CMD(clear,"Clear console output",0)
 	s_Messages.clear();
 }
 
-static ConVar con_minicon("con_minicon","0","Enable mini console output",CV_ARCHIVE);
-static ConVar con_minicon_time("con_minicon_time","0.25f","Enable mini console output",CV_ARCHIVE);
+static ConVar con_minicon("con_minicon","0",NULL,CV_ARCHIVE);
+static ConVar con_minicon_time("con_minicon_time","0.25f",NULL,CV_ARCHIVE);
 
 ColorRGBA console_spew_colors[] =
 {

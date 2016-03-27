@@ -89,8 +89,10 @@ extern int g_CurrCameraMode;
 
 bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 {
-	conf->m_cleanModelName = KV_GetValueString(kvs->FindKeyBase("cleanModel"));
-	conf->m_damModelName = KV_GetValueString(kvs->FindKeyBase("damagedModel"));
+	conf->m_cleanModelName = KV_GetValueString(kvs->FindKeyBase("cleanModel"), 0, "");
+	conf->m_damModelName = KV_GetValueString(kvs->FindKeyBase("damagedModel"), 0, conf->m_cleanModelName.c_str());
+
+	ASSERTMSG(conf->m_cleanModelName.GetLength(), "ParseCarConfig - missing cleanModel!\n");
 
 	const char* defaultWheelName = KV_GetValueString(kvs->FindKeyBase("wheelType"), 0, "wheel1");
 

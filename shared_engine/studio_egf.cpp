@@ -699,7 +699,7 @@ int CEngineStudioEGF::SelectLod(float dist_to_camera)
 
 	int idealLOD = 0;
 
-	for(int i = 1; i < m_pHardwareData->pStudioHdr->numlodparams; i++)
+	for(int i = r_lodstart.GetInt(); i < m_pHardwareData->pStudioHdr->numlodparams; i++)
 	{
 		if(dist_to_camera > m_pHardwareData->pStudioHdr->pLodParams(i)->distance * r_lodscale.GetFloat())
 			idealLOD = i;

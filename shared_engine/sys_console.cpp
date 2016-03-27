@@ -37,10 +37,10 @@ DECLARE_CMD(con_show, "Show console", 0)
 	g_pSysConsole->SetVisible(true);
 }
 
-ConVar con_enable("con_enable","1","Enable console", CV_CHEAT);
-ConVar con_fastfind("con_fastfind","1","Show FastFind popup in console",CV_ARCHIVE);
-ConVar con_fastfind_count("con_fastfind_count","35","FastFind listed vars count",CV_ARCHIVE);
-ConVar con_autocompletion_enable("con_autocompletion_enable","1","Enable autocompletion for console\n See file <game dir>/common/autocompletion.cfg",CV_ARCHIVE);
+ConVar con_enable("con_enable","1",NULL, CV_CHEAT);
+ConVar con_fastfind("con_fastfind","1",NULL,CV_ARCHIVE);
+ConVar con_fastfind_count("con_fastfind_count","35",NULL,CV_ARCHIVE);
+ConVar con_autocompletion_enable("con_autocompletion_enable","1","See file <game dir>/cfg/autocompletion.cfg",CV_ARCHIVE);
 
 static CEqSysConsole s_SysConsole;
 CEqSysConsole* g_pSysConsole = &s_SysConsole;

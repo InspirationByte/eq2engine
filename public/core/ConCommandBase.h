@@ -18,7 +18,6 @@ enum CommandBaseFlags_e
 	CV_ARCHIVE			= (1 << 4), //Save on disk. Only ConVar have this flag
 	CV_CLIENTCONTROLS	= (1 << 5), // Indicates that this command is client-controlled, and will disable on pause or when console is enabled
 
-
 	CMDBASE_CONVAR		= (1 << 6), // Is ConVar
 	CMDBASE_CONCOMMAND	= (1 << 7) // Is ConCommand
 };

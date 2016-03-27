@@ -327,7 +327,10 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 					if(!cont->m_instData)	// make new instancing data
 						cont->m_instData = new levObjInstanceData_t;
 
-					cont->m_instData->instances[cont->m_instData->numInstances++].worldTransform = mat;
+					regObjectInstance_t& inst = cont->m_instData->instances[cont->m_instData->numInstances++];
+
+					inst.position = Vector4D(GetModelRefPosition(this, ref), 1.0f);
+					inst.rotation = GetModelRefRotation(this, ref);
 				}
 				else
 				{
