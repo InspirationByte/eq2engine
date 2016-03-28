@@ -2654,6 +2654,7 @@ void CCar::Simulate( float fDt )
 		// draw effects
 		Vector3D rightVec = GetRightVector();
 		Vector3D forward = GetForwardVector();
+		Vector3D upVec = GetUpVector();
 
 		Vector3D cam_pos = g_pGameWorld->m_CameraParams.GetOrigin();
 
@@ -2720,29 +2721,35 @@ void CCar::Simulate( float fDt )
 					break;
 				}
 				case LIGHTS_DOUBLE:
+				case LIGHTS_DOUBLE_VERTICAL:
 				{
+					Vector3D lDirVec = rightVec;
+
+					if(m_conf->m_headlightType == LIGHTS_DOUBLE_VERTICAL)
+						lDirVec = upVec;
+
 					if (m_bodyParts[CB_FRONT_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
 					{
-						DrawLightEffect(positionL - rightVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
-						DrawLightEffect(positionL - rightVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontSizeScale, 1);
+						DrawLightEffect(positionL - lDirVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
+						DrawLightEffect(positionL - lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontSizeScale, 1);
 					}
 
 					if (m_bodyParts[CB_FRONT_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
 					{
-						DrawLightEffect(positionL + rightVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
-						DrawLightEffect(positionL + rightVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontSizeScale, 1);
+						DrawLightEffect(positionL + lDirVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
+						DrawLightEffect(positionL + lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontSizeScale, 1);
 					}
 
 					if (m_bodyParts[CB_FRONT_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
 					{
-						DrawLightEffect(positionR - rightVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
-						DrawLightEffect(positionR - rightVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontSizeScale, 1);
+						DrawLightEffect(positionR - lDirVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
+						DrawLightEffect(positionR - lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontSizeScale, 1);
 					}
 
 					if (m_bodyParts[CB_FRONT_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
 					{
-						DrawLightEffect(positionR + rightVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
-						DrawLightEffect(positionR + rightVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontSizeScale, 1);
+						DrawLightEffect(positionR + lDirVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
+						DrawLightEffect(positionR + lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontSizeScale, 1);
 					}
 
 					break;
@@ -2787,35 +2794,41 @@ void CCar::Simulate( float fDt )
 				break;
 			}
 			case LIGHTS_DOUBLE:
+			case LIGHTS_DOUBLE_VERTICAL:
 			{
+				Vector3D lDirVec = rightVec;
+
+				if(m_conf->m_headlightType == LIGHTS_DOUBLE_VERTICAL)
+					lDirVec = upVec;
+
 				if (m_brakeLightsEnabled)
 				{
 					if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
-						DrawLightEffect(positionL - rightVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
+						DrawLightEffect(positionL - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
 
 					if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-						DrawLightEffect(positionL + rightVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
+						DrawLightEffect(positionL + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
 
 					if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-						DrawLightEffect(positionR - rightVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
+						DrawLightEffect(positionR - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
 
 					if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
-						DrawLightEffect(positionR + rightVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
+						DrawLightEffect(positionR + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
 				}
 
 				if (bLightsOn)
 				{
 					if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
-						DrawLightEffect(positionL - rightVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+						DrawLightEffect(positionL - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
 
 					if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-						DrawLightEffect(positionL + rightVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+						DrawLightEffect(positionL + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
 
 					if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-						DrawLightEffect(positionR - rightVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+						DrawLightEffect(positionR - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
 
 					if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
-						DrawLightEffect(positionR + rightVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+						DrawLightEffect(positionR + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
 				}
 				break;
 			}

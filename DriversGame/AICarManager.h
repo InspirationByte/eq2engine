@@ -36,6 +36,19 @@ struct	carConfigEntry_t;
 class	CAITrafficCar;
 class	CAIPursuerCar;
 
+struct civCarEntry_t
+{
+	civCarEntry_t()
+	{
+		nextSpawn = 0;
+		spawnInterval = 0;
+	}
+
+	carConfigEntry_t*	config;
+	int					spawnInterval;
+	int					nextSpawn;
+};
+
 //-------------------------------------------------------------------------------
 
 class CAICarManager
@@ -92,7 +105,7 @@ protected:
 
 	void						CircularSpawnTrafficCars( int x0, int y0, int radius );
 
-	DkList<carConfigEntry_t*>	m_civCarEntries;
+	DkList<civCarEntry_t>		m_civCarEntries;
 
 	Vector3D					m_leadPosition;
 	Vector3D					m_leadRemovePosition;

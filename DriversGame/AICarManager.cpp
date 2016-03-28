@@ -176,7 +176,16 @@ CCar* CAICarManager::SpawnRandomTrafficCar(const IVector2D& globalCell, int carT
 
 			g_pGameWorld->m_random.Regenerate();
 
-			pNewCar = new CAITrafficCar(m_civCarEntries[randCar]);
+			m_civCarEntries[randCar].nextSpawn--;
+
+			if(m_civCarEntries[randCar].nextSpawn <= 0)
+			{
+				pNewCar = new CAITrafficCar(m_civCarEntries[randCar].config);
+				m_civCarEntries[randCar].nextSpawn = m_civCarEntries[randCar].spawnInterval;
+			}
+
+
+			
 		}
 	}
 	else
@@ -192,7 +201,8 @@ CCar* CAICarManager::SpawnRandomTrafficCar(const IVector2D& globalCell, int carT
 
 				g_pGameWorld->m_random.Regenerate();
 
-				pNewCar = new CAITrafficCar(m_civCarEntries[randCar]);
+				pNewCar = new CAITrafficCar(m_civCarEntries[randCar].config);
+
 				break;
 			}
 			case CAR_TYPE_PURSUER_COP_AI:
@@ -218,7 +228,8 @@ CCar* CAICarManager::SpawnRandomTrafficCar(const IVector2D& globalCell, int carT
 
 				g_pGameWorld->m_random.Regenerate();
 
-				pNewCar = new CAIPursuerCar(m_civCarEntries[randCar], PURSUER_TYPE_GANG);
+				pNewCar = new CAIPursuerCar(m_civCarEntries[randCar].config, PURSUER_TYPE_GANG);
+
 				break;
 			}
 		}

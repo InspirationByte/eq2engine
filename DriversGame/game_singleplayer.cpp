@@ -504,14 +504,30 @@ void CGameSession::LoadCarData()
 		{
 			for (int i = 0; i < civCars->keys.numElem(); i++)
 			{
-				carConfigEntry_t* conf = FindCarEntryByName(civCars->keys[i]->name );
+				carConfigEntry_t* conf = FindCarEntryByName( civCars->keys[i]->name );
 
 				if(conf)
-					g_pAIManager->m_civCarEntries.append(conf);
+				{
+					civCarEntry_t entry;
+					entry.config = conf;
+					entry.spawnInterval = KV_GetValueInt(civCars->keys[i], 0, 0);
+
+					g_pAIManager->m_civCarEntries.append(entry);
+				}
+					
 			}
 		}
 		else
-			g_pAIManager->m_civCarEntries.append(m_carEntries);
+		{
+			for (int i = 0; i < m_carEntries.numElem(); i++)
+			{
+				civCarEntry_t entry;
+				entry.config = m_carEntries[i];
+				entry.spawnInterval = 0;
+
+				g_pAIManager->m_civCarEntries.append(entry);
+			}
+		}
 
 		kvkeybase_t* lightCop = kvs.GetRootSection()->FindKeyBase("lightcop");
 		kvkeybase_t* heavyCop = kvs.GetRootSection()->FindKeyBase("heavycop");

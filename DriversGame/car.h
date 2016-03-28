@@ -50,6 +50,7 @@ enum ELightsType
 {
 	LIGHTS_SINGLE,
 	LIGHTS_DOUBLE,
+	LIGHTS_DOUBLE_VERTICAL,
 };
 
 // siren light types
