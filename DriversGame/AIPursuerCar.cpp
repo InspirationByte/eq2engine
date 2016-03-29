@@ -12,13 +12,12 @@
 
 #include "AICarManager.h"
 
-const float AI_COPVIEW_FAR			= 30.0f;
+
+
 const float AI_COPVIEW_FOV			= 85.0f;
-
-const float AI_COPVIEW_FAR_WANTED	= 70.0f;
 const float AI_COPVIEW_FOV_WANTED	= 90.0f;
-const float AI_COPVIEW_FAR_ROADBLOCK	= 10.0f;
 
+const float AI_COPVIEW_FAR_ROADBLOCK	= 10.0f;
 
 const float AI_COPVIEW_RADIUS			= 10.0f;
 const float AI_COPVIEW_RADIUS_WANTED	= 18.0f;

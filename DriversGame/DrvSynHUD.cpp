@@ -14,7 +14,7 @@ CDrvSynHUDManager* g_pGameHUD = &s_drvSynHUDManager;
 
 ConVar r_drawHUD("r_drawHUD", "1", "Draw Heads-Up display", CV_ARCHIVE);
 
-#define MAP_ZOOM	80.0f
+#define MAP_ZOOM	(2.0f) // TODO: dynamic zoom
 
 //----------------------------------------------------------------------------------
 /*
@@ -60,6 +60,8 @@ void CDrvSynHUDManager::Init()
 	m_timeDisplayEnable = false;
 	m_timeDisplayValue = 0.0;
 
+	m_radarBlank = 0.0f;
+
 	m_damageTok = g_localizer->GetToken("HUD_DAMAGE_TITLE");
 	m_felonyTok = g_localizer->GetToken("HUD_FELONY_TITLE");
 }
@@ -69,11 +71,13 @@ void CDrvSynHUDManager::Cleanup()
 	g_pShaderAPI->FreeTexture( m_mapTexture );
 	m_mapTexture = NULL;
 
-	for(int i = 0; i < m_displayObjects.numElem(); i++)
+	/*
+	for(hudDisplayObjIterator_t iterator = m_displayObjects.begin(); iterator != m_displayObjects.end(); iterator++)
 	{
-		if(m_displayObjects[i].object)
-			m_displayObjects[i].object->Ref_Drop();
+		if(iterator->second.object)
+			iterator->second.object->Ref_Drop();
 	}
+	*/
 
 	m_displayObjects.clear();
 	SetDisplayMainVehicle(NULL);
@@ -125,6 +129,8 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 	if(m_enable)
 	{
+		bool inPursuit = (m_mainVehicle ? m_mainVehicle->GetPursuedCount() > 0 : false);
+
 		Rectangle_t damageRect(35,65,410, 92);
 
 		Vertex2D_t dmgrect[] = { MAKETEXQUAD(damageRect.vleftTop.x, damageRect.vleftTop.y,damageRect.vrightBottom.x, damageRect.vrightBottom.y, 0) };
@@ -159,12 +165,16 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		// Draw felony text
 		float felonyPercent = 0.0f;
 
+		bool hasFelony = false;
+
 		if( m_mainVehicle )
 		{
 			felonyPercent = m_mainVehicle->GetFelony()*100;
 
+			hasFelony = felonyPercent >= 10.0f;
+
 			// if cars pursues me
-			if(felonyPercent >= 10.0f && m_mainVehicle->GetPursuedCount() > 0)
+			if(felonyPercent >= 10.0f && inPursuit)
 			{
 				float colorValue = clamp(sin(m_curTime*16.0)*16,-1,1); //sin(g_pHost->m_fGameCurTime*8.0f);
 
@@ -189,7 +199,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 		roboto30b->RenderText(varargs_w(m_felonyTok ? m_felonyTok->GetText() : L"Undefined", (int)felonyPercent), felonyTextPos, fontParams);
 
-		if( m_mainVehicle && m_mainVehicle->GetPursuedCount() > 0 )
+		if( m_mainVehicle && inPursuit )
 		{
 			static DkList<Vertex2D_t> copTriangles(32);
 
@@ -200,7 +210,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 				if(!pursuer)
 					continue;
 
-				if(!pursuer->IsAlive())
+				if(!pursuer->InPursuit())
 					continue;
 
 				Vector3D pursuerPos = pursuer->GetOrigin();
@@ -272,34 +282,33 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		// display radar and map
 		if( m_showMap )
 		{
+			BlendStateParam_t mapBlending;
+			mapBlending.srcFactor = BLENDFACTOR_SRC_ALPHA;
+			mapBlending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+
+			BlendStateParam_t additiveBlend;
+			additiveBlend.srcFactor = BLENDFACTOR_ONE;
+			additiveBlend.dstFactor = BLENDFACTOR_ONE;
+			
+
+			RasterizerStateParams_t raster;
+			raster.scissor = true;
+			raster.cullMode = CULL_FRONT;
+
 			IVector2D mapSize(250,250);
-			IVector2D mapPos = screenSize-mapSize-IVector2D(55,55);
-
-			float fWidthRate = mapSize.y / mapSize.x;
+			IVector2D mapPos = screenSize-mapSize-IVector2D(55);
 			
-			Rectangle_t mapRect(mapPos, mapPos+mapSize);
-			Vertex2D_t tmprect[] = { MAKETEXQUAD(mapRect.vleftTop.x, mapRect.vleftTop.y,mapRect.vrightBottom.x, mapRect.vrightBottom.y, 0) };
+			float viewRotation = DEG2RAD( camera.GetAngles().y + 180);
+			Vector3D viewPos = Vector3D(camera.GetOrigin().xz() * Vector2D(1.0f,-1.0f), 0.0f);
+			Vector2D playerPos(0);
 
-			Vector2D imgSize(1.0f);
-			
-			if(m_mapTexture)
-				imgSize = Vector2D(m_mapTexture->GetWidth(),m_mapTexture->GetHeight());
+			float mapZoom = MAP_ZOOM / HFIELD_POINT_SIZE;
 
-			Vector2D invMapSize = 1.0f / imgSize;
+			IRectangle mapRectangle(mapPos, mapPos+mapSize);
 
-			Vector2D mapCoords[] = {
-				Vector2D(-1, -1),
-				Vector2D(-1, 1),
-				Vector2D(1, -1),
-				Vector2D(1, 1),
-			};
+			g_pShaderAPI->SetScissorRectangle(mapRectangle);
 
-			Vector2D worldSize( g_pGameWorld->m_level.m_wide*g_pGameWorld->m_level.m_cellsSize, g_pGameWorld->m_level.m_tall*g_pGameWorld->m_level.m_cellsSize);
-
-			Vector2D worldToImg = (1.0f / (imgSize*HFIELD_POINT_SIZE));
-
-			Vector2D camOnMap = camera.GetOrigin().xz() * Vector2D(-1,1);
-			Matrix2x2 camOnMapRot = rotate2( -DEG2RAD( camera.GetAngles().y + 180) );
+			Vector2D mapCenter( mapRectangle.GetCenter() );
 
 			if(m_mainVehicle)
 			{
@@ -310,39 +319,188 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 				if (Yangle < 0.0)
 					Yangle += 360.0f;
 
-				camOnMap = m_mainVehicle->GetOrigin().xz() * Vector2D(-1,1);
-				camOnMapRot = rotate2( -DEG2RAD( Yangle + 90) );
+				viewPos = Vector3D(m_mainVehicle->GetOrigin().xz()*Vector2D(1.0f,-1.0f), 0.0f);
+				viewRotation = DEG2RAD( Yangle + 90);
+
+				playerPos = m_mainVehicle->GetOrigin().xz() * Vector2D(-1.0f,1.0f);
+			}
+			
+			Matrix4x4 mapTransform = rotateZ4(viewRotation);
+
+			
+			//materials->SetMatrix(MATRIXMODE_PROJECTION, perspectiveMatrixY(mapSize.x,mapSize.y, 90.0f, 0.1f, 1000.0f));
+			//materials->SetMatrix(MATRIXMODE_VIEW, rotateZXY4(DEG2RAD(40.0f), DEG2RAD(180.0f), DEG2RAD(180.0f)) * translate(0.0f, 200.0f, -500.0f));
+			//materials->SetMatrix(MATRIXMODE_WORLD, mapTransform * translate(viewPos));
+			
+			materials->SetMatrix(MATRIXMODE_VIEW, translate(mapCenter.x,mapCenter.y, 0.0f) * scale4(mapZoom, mapZoom, 1.0f));
+			materials->SetMatrix(MATRIXMODE_WORLD, mapTransform * translate(viewPos));
+
+			Vector2D imgSize(1.0f);
+			
+			if(m_mapTexture)
+				imgSize = Vector2D(m_mapTexture->GetWidth(),m_mapTexture->GetHeight());
+
+			Vector2D imgToWorld = imgSize*HFIELD_POINT_SIZE;
+			Vector2D imgHalf = imgToWorld * 0.5f;
+
+			Vertex2D_t mapVerts[] = { MAKETEXQUAD(-imgHalf.x, -imgHalf.y, imgHalf.x, imgHalf.y, 0) };
+
+			ColorRGBA mapColor = ColorRGBA(1,1,1,0.5f);
+
+			// draw the map rectangle
+			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, mapVerts, elementsOf(mapVerts), m_mapTexture, mapColor, &blending, NULL, &raster);
+
+			Vertex2D_t targetFan[16];
+
+
+			// display cop cars on map
+			for(int i = 0; i < g_pAIManager->m_copCars.numElem(); i++)
+			{
+				CAIPursuerCar* pursuer = g_pAIManager->m_copCars[i];
+
+				if(!pursuer)
+					continue;
+
+				if(!pursuer->IsAlive() || !pursuer->IsEnabled())
+					continue;
+
+				// don't reveal cop position
+				if(inPursuit && !pursuer->InPursuit())
+					continue;
+
+				Vector3D cop_forward = pursuer->GetForwardVector();
+
+				float Yangle = RAD2DEG(atan2f(cop_forward.z, cop_forward.x));
+
+				if (Yangle < 0.0)
+					Yangle += 360.0f;
+
+				Vector2D copPos = pursuer->GetOrigin().xz() * Vector2D(-1.0f,1.0f);
+
+				targetFan[0].m_vPosition = copPos;
+				targetFan[0].m_vColor = ColorRGBA(1,1,1,1);
+
+				float size = hasFelony ? AI_COPVIEW_FAR_WANTED : AI_COPVIEW_FAR;
+				float angFac = hasFelony ? 36.0f : 12.0f;
+				float angOffs = hasFelony ? 180.0f : -120.0f;
+
+				for(int i = 1; i < 7; i++)
+				{
+					float ss,cs;
+					float angle = float(i-1) * angFac + Yangle + angOffs;
+					SinCos(DEG2RAD(angle), &ss, &cs);
+
+					targetFan[i].m_vPosition = copPos + Vector2D(ss, cs)*size;
+					targetFan[i].m_vColor = ColorRGBA(1,1,1,0.0f);
+				}
+
+				// draw cop car dot
+				materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_FAN,targetFan,7, NULL, ColorRGBA(1), &blending, NULL, &raster);
 			}
 
-			for(int i = 0; i < 4; i++)
+			Vertex2D_t arrowFan[3];
+
+			for(hudDisplayObjIterator_t iterator = m_displayObjects.begin(); iterator != m_displayObjects.end(); iterator++)
 			{
-				Vector2D rotated = camOnMapRot*mapCoords[i];
+				hudDisplayObject_t& obj = iterator->second;
 
-				Vector2D texCoord = (Vector2D(0.5f,0.5f) + camOnMap*worldToImg + rotated*invMapSize*Vector2D(fWidthRate,1.0f)*MAP_ZOOM);
+				if(obj.flags & HUD_DOBJ_IS_TARGET)
+				{
+					Vector2D objPos = (obj.object ? obj.object->GetOrigin().xz() : obj.point.xz()) * Vector2D(-1.0f,1.0f);
 
-				tmprect[i].m_vTexCoord = texCoord;
+					targetFan[0].m_vPosition = objPos;
+					targetFan[0].m_vColor = ColorRGBA(1,1,1,1);
+
+					for(int i = 1; i < 12; i++)
+					{
+						float ss,cs;
+						float angle = float(i-1) * 36.0f;
+						SinCos(DEG2RAD(angle), &ss, &cs);
+
+						targetFan[i].m_vPosition = objPos + Vector2D(ss, cs) * obj.flashValue * 24.0f;
+						targetFan[i].m_vColor = 0.0f;
+					}
+
+					obj.flashValue -= fDt;
+					if(obj.flashValue < 0.0f)
+						obj.flashValue = 1.0f;
+
+					ColorRGBA arrowCol1(0.0f,0.0f,0.0f,0.5f);
+					ColorRGBA arrowCol2(0.0f,0.0f,0.0f,0.15f);
+
+					arrowFan[0].m_vPosition = objPos;
+					arrowFan[0].m_vColor = arrowCol1;
+
+					Vector2D targetDir = (objPos - playerPos);
+					Vector2D ntargetDir = normalize(targetDir);
+					Vector2D targetPerpendicular = Vector2D(-ntargetDir.y,ntargetDir.x);
+
+					float distToTarg = length(targetDir);
+
+					arrowFan[1].m_vPosition = playerPos - targetPerpendicular*distToTarg*0.25f;
+					arrowFan[1].m_vColor = arrowCol2;
+
+					arrowFan[2].m_vPosition = playerPos + targetPerpendicular*distToTarg*0.25f;
+					arrowFan[2].m_vColor = arrowCol2;
+
+					// draw target arrow
+					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_FAN,arrowFan,3, NULL, ColorRGBA(1), &blending, NULL, &raster);
+
+					// draw flashing dot
+					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_FAN,targetFan,12, NULL, ColorRGBA(1), &additiveBlend, NULL, &raster);
+				}
+			}
+
+			if(inPursuit)
+			{
+				float colorValue = sin(m_curTime*16.0);
+
+				float v1 = pow(-min(0,colorValue), 2.0f);
+				float v2 = pow(max(0,colorValue), 2.0f);
+
+				m_radarBlank = 1.0f;
+
+				materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,mapVerts,elementsOf(mapVerts), NULL, ColorRGBA(v1,0,v2,1), &additiveBlend, NULL, &raster);
+			}
+
+			// draw radar blank after the pursuit ends
+			if(!inPursuit && m_radarBlank > 0)
+			{
+				materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,mapVerts,elementsOf(mapVerts), NULL, ColorRGBA(m_radarBlank), &additiveBlend, NULL, &raster);
+				m_radarBlank -= fDt;
 			}
 
 			Vertex2D_t plrFan[16];
 
-			plrFan[0].m_vPosition = mapRect.GetCenter();
+			plrFan[0].m_vPosition = playerPos;
 			plrFan[0].m_vColor = ColorRGBA(0,0,0,1);
 
 			for(int i = 1; i < 16; i++)
 			{
-				plrFan[i].m_vPosition = plrFan[0].m_vPosition + Vector2D(sin((float)i-1/15.0f), cos((float)i-1/15.0f))*4.0f;
+				float ss,cs;
+				float angle = float(i-1) * 25.7142f;
+				SinCos(DEG2RAD(angle), &ss, &cs);
+
+				plrFan[i].m_vPosition = playerPos + Vector2D(ss, cs)*10.0f;
 				plrFan[i].m_vColor = 0.0f;
 			}
 
-			BlendStateParam_t blending;
-			blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-			blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+			// draw player car dot
+			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_FAN,plrFan,elementsOf(plrFan), NULL, ColorRGBA(1), &blending, NULL, &raster);
 
-			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect,elementsOf(tmprect), m_mapTexture, ColorRGBA(1,1,1,0.8f), &blending);
-			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_FAN,plrFan,elementsOf(plrFan), NULL, ColorRGBA(1), &blending);
+			/*
+			IVector2D mapSize(250,250);
+			IVector2D mapPos = screenSize-mapSize-IVector2D(55);
 
-			// display objects on map
+			float fWidthRate = mapSize.y / mapSize.x;
+			
+			Rectangle_t mapRect(mapPos, mapPos+mapSize);
+			Vertex2D_t tmprect[] = { MAKETEXQUAD(mapRect.vleftTop.x, mapRect.vleftTop.y,mapRect.vrightBottom.x, mapRect.vrightBottom.y, 0) };
+			*/
 		}
+
+		materials->SetMatrix(MATRIXMODE_VIEW, identity4());
+		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 	}
 
 	// show message on screen
@@ -379,18 +537,57 @@ void CDrvSynHUDManager::SetDisplayMainVehicle( CCar* car )
 // HUD map management
 int	CDrvSynHUDManager::AddTrackingObject( CGameObject* obj, int flags )
 {
-	return -1;
+	hudDisplayObject_t dispObj;
+
+	dispObj.object = obj;
+
+	//if(obj)
+	//	obj->Ref_Grab();
+
+	dispObj.flags = flags;
+	dispObj.point = vec3_zero;
+	dispObj.flashValue = 1.0f;
+
+	int handleId = m_handleCounter++;
+
+	m_displayObjects[handleId] = dispObj;
+
+	return handleId;
+}
+
+int	CDrvSynHUDManager::AddMapTargetPoint( const Vector3D& position )
+{
+	hudDisplayObject_t dispObj;
+
+	dispObj.object = NULL;
+	dispObj.flags = HUD_DOBJ_IS_TARGET;
+	dispObj.point = position;
+	dispObj.flashValue = 1.0f;
+
+	int handleId = m_handleCounter++;
+
+	m_displayObjects[handleId] = dispObj;
+
+	return handleId;
 }
 
 void CDrvSynHUDManager::RemoveTrackingObject( int handle )
 {
+	if(m_displayObjects.count(handle) > 0)
+	{
+		hudDisplayObject_t& obj = m_displayObjects[handle];
+		if(obj.object)
+			obj.object->Ref_Drop();
 
+		m_displayObjects.erase(handle);
+	}
 }
 
 #ifndef __INTELLISENSE__
 OOLUA_EXPORT_FUNCTIONS(
 	CDrvSynHUDManager, 
 	AddTrackingObject, 
+	AddMapTargetPoint,
 	RemoveTrackingObject,
 	ShowScreenMessage, 
 	SetTimeDisplay,

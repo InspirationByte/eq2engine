@@ -12,21 +12,24 @@
 #include "utils/eqwstring.h"
 #include "car.h"
 
-enum EHUDTargetFlags
+enum EHUDDisplayObjectFlags
 {
-	HUDTARGET_FLAG_SHOWONMAP	= (1 << 0),	// show this target on map
-	HUDTARGET_FLAG_COP			= (1 << 1), // show cop mark and field of view on map
-	HUDTARGET_FLAG_CAR_DAMAGE	= (1 << 2), // show car damage above the hood
-	HUDTARGET_FLAG_PLAYER		= (1 << 3), // show player info if assigned to this car on top or on side of screen
+	HUD_DOBJ_IS_TARGET	= (1 << 0),	// show this target on map
+	HUD_DOBJ_CAR_DAMAGE	= (1 << 1), // show car damage above the hood
+
+	// to be added later
+	//HUDTARGET_FLAG_PLAYERINFO	= (1 << 2), // show player info if assigned to this car on top or on side of screen
 };
 
 struct hudDisplayObject_t
 {
-	int				handle;
-	int				flags;
-	CGameObject*	object;
-	Vector3D		point;
+	int				flags;		// flags or type
+	CGameObject*	object;		// bound object
+	Vector3D		point;		// static position if object is undefined
+	float			flashValue; // flashing
 };
+
+typedef std::map<int, hudDisplayObject_t>::iterator hudDisplayObjIterator_t;
 
 //----------------------------------------------------------------------------------
 
@@ -47,6 +50,7 @@ public:
 
 	// HUD map management
 	int							AddTrackingObject( CGameObject* obj, int flags );
+	int							AddMapTargetPoint( const Vector3D& position );
 	void						RemoveTrackingObject( int handle );
 
 	void						ShowScreenMessage( const char* token, float time );
@@ -63,26 +67,27 @@ public:
 
 protected:
 
-	bool						m_enable;
-	bool						m_showMap;
+	bool								m_enable;
+	bool								m_showMap;
 
+	float								m_radarBlank;
 
-	ITexture*					m_mapTexture;
+	ITexture*							m_mapTexture;
 	
-	DkList<hudDisplayObject_t>	m_displayObjects;
-	int							m_handleCounter;
+	std::map<int, hudDisplayObject_t>	m_displayObjects;
+	int									m_handleCounter;
 
-	CCar*						m_mainVehicle;
-	float						m_curTime;
+	CCar*								m_mainVehicle;
+	float								m_curTime;
 
-	float						m_screenMessageTime;
-	EqWString					m_screenMessageText;
+	float								m_screenMessageTime;
+	EqWString							m_screenMessageText;
 
-	bool						m_timeDisplayEnable;
-	double						m_timeDisplayValue;
+	bool								m_timeDisplayEnable;
+	double								m_timeDisplayValue;
 
-	ILocToken*					m_damageTok;
-	ILocToken*					m_felonyTok;
+	ILocToken*							m_damageTok;
+	ILocToken*							m_felonyTok;
 };
 
 
@@ -92,6 +97,7 @@ OOLUA_PROXY( CDrvSynHUDManager )
 	OOLUA_TAGS(Abstract)
 
 	OOLUA_MFUNC( AddTrackingObject )
+	OOLUA_MFUNC( AddMapTargetPoint )
 	OOLUA_MFUNC( RemoveTrackingObject )
 	OOLUA_MFUNC( ShowScreenMessage )
 	OOLUA_MFUNC( SetTimeDisplay )
