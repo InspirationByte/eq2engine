@@ -326,7 +326,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 			}
 			
 			Matrix4x4 mapTransform = rotateZ4(viewRotation);
-
 			
 			//materials->SetMatrix(MATRIXMODE_PROJECTION, perspectiveMatrixY(mapSize.x,mapSize.y, 90.0f, 0.1f, 1000.0f));
 			//materials->SetMatrix(MATRIXMODE_VIEW, rotateZXY4(DEG2RAD(40.0f), DEG2RAD(180.0f), DEG2RAD(180.0f)) * translate(0.0f, 200.0f, -500.0f));
@@ -487,16 +486,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 			// draw player car dot
 			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_FAN,plrFan,elementsOf(plrFan), NULL, ColorRGBA(1), &blending, NULL, &raster);
-
-			/*
-			IVector2D mapSize(250,250);
-			IVector2D mapPos = screenSize-mapSize-IVector2D(55);
-
-			float fWidthRate = mapSize.y / mapSize.x;
-			
-			Rectangle_t mapRect(mapPos, mapPos+mapSize);
-			Vertex2D_t tmprect[] = { MAKETEXQUAD(mapRect.vleftTop.x, mapRect.vleftTop.y,mapRect.vrightBottom.x, mapRect.vrightBottom.y, 0) };
-			*/
 		}
 
 		materials->SetMatrix(MATRIXMODE_VIEW, identity4());
@@ -576,8 +565,8 @@ void CDrvSynHUDManager::RemoveTrackingObject( int handle )
 	if(m_displayObjects.count(handle) > 0)
 	{
 		hudDisplayObject_t& obj = m_displayObjects[handle];
-		if(obj.object)
-			obj.object->Ref_Drop();
+		//if(obj.object)
+		//	obj.object->Ref_Drop();
 
 		m_displayObjects.erase(handle);
 	}
