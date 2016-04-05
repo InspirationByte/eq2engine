@@ -178,8 +178,14 @@ void CObject_TrafficLight::Draw( int nRenderFlags )
 		int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
 		CGameObjectInstancer* instancer = (CGameObjectInstancer*)m_pModel->GetInstancer();
-		gameObjectInstance_t& inst = instancer->NewInstance( m_bodyGroupFlags, nLOD );
-		inst.world = m_worldMatrix;
+		for(int i = 0; i < MAX_INSTANCE_BODYGROUPS; i++)
+		{
+			if(!(m_bodyGroupFlags & (1 << i)))
+				continue;
+
+			gameObjectInstance_t& inst = instancer->NewInstance( i , nLOD );
+			inst.world = m_worldMatrix;
+		}
 	}
 	else
 		CGameObject::Draw( nRenderFlags );

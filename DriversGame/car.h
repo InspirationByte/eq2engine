@@ -75,6 +75,7 @@ enum EWheelFlags
 struct carWheelConfig_t
 {
 	char				wheelName[16];
+	char				hubcapName[16];
 
 	Vector3D			suspensionTop;
 	Vector3D			suspensionBottom;
@@ -194,15 +195,18 @@ struct wheelData_t
 		pWheelObject = NULL;
 		pitch = 0.0f;
 		pitchVel = 0.0f;
-		isBurningOut = false;
-		onGround = true;
-		lastOnGround = true;
+
+		flags.isBurningOut = false;
+		flags.onGround = true;
+		flags.lastOnGround = true;
+		flags.lostHubcap = false;
+		flags.doSkidmarks = false;
+		flags.lastDoSkidmarks = false;
+
 		smokeTime = 0.0f;
 		surfparam = NULL;
-
-		doSkidmarks = false;
-		lastDoSkidmarks = false;
-		bodyIndex = 0;
+		damage = 0.0f;
+		hubcapBodygroup = 0;
 		velocityVec = vec3_zero;
 	}
 
@@ -217,19 +221,24 @@ struct wheelData_t
 
 	Vector3D				velocityVec;
 
+	int8					hubcapBodygroup;	// loose hubcaps
+
 	float					pitch;
 	float					pitchVel;
-	bool					isBurningOut;
-
-	bool					onGround;
-	bool					lastOnGround;
-
-	bool					doSkidmarks;
-	bool					lastDoSkidmarks;
 
 	float					smokeTime;
+	float					damage;				// this parameter affects hubcaps
 
-	int						bodyIndex;
+	// 1 byte
+	struct
+	{
+		bool					isBurningOut : 1;
+		bool					onGround : 1;
+		bool					lastOnGround : 1;
+		bool					doSkidmarks : 1;
+		bool					lastDoSkidmarks : 1;
+		bool					lostHubcap : 1;
+	} flags;
 };
 
 // bodypart
@@ -311,6 +320,8 @@ public:
 
 	float					GetTractionSliding(bool surfCheck);		// returns absolute traction sliding
 	float					GetTractionSlidingAtWheel(int wheel);	// returns absolute traction sliding from all wheels
+
+	void					StrikeHubcap(int wheel);
 
 	//-----------------------------------
 

@@ -279,12 +279,6 @@ void Game_ShutdownSession()
 
 	if(g_pGameSession)
 		g_pGameSession->Shutdown();
-}
-
-void Game_Cleanup()
-{
-	if(g_pGameSession)
-		delete g_pGameSession;
 
 	g_pGameSession = NULL;
 }
@@ -986,8 +980,6 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 
 	m_fade = 1.0f;
 
-	g_pHost->SetCenterMouseEnable(true);
-
 	//-------------------------
 
 	m_menuTitleToken = g_localizer->GetToken("MENU_GAME_TITLE_PAUSE");
@@ -1017,7 +1009,6 @@ void CState_Game::OnLeave( CBaseStateHandler* to )
 
 	if(	m_isGameRunning )
 	{
-		g_pHost->SetCenterMouseEnable(false);
 		m_isGameRunning = false;
 	}
 }
@@ -1045,6 +1036,23 @@ void CState_Game::SetPauseState( bool state )
 	UpdatePauseState();
 }
 
+void CState_Game::DrawLoadingScreen()
+{
+	const IVector2D& screenSize = g_pHost->GetWindowSize();
+
+	materials->Setup2D(screenSize.x, screenSize.y);
+	g_pShaderAPI->Clear( true,true, false );
+
+	IEqFont* font = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD+TEXT_STYLE_ITALIC);
+
+	const wchar_t* loadingStr = LocalizedString("#GAME_IS_LOADING");
+
+	eqFontStyleParam_t param;
+	param.styleFlag |= TEXT_STYLE_SHADOW;
+
+	font->RenderText(loadingStr, Vector2D(100,screenSize.y - 100), param);
+}
+
 //-------------------------------------------------------------------------------
 // Game frame step along with rendering
 //-------------------------------------------------------------------------------
@@ -1060,17 +1068,7 @@ bool CState_Game::Update( float fDt )
 
 	if(!m_isGameRunning)
 	{
-		materials->Setup2D(screenSize.x, screenSize.y);
-		g_pShaderAPI->Clear( true,true, false );
-
-		IEqFont* font = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD+TEXT_STYLE_ITALIC);
-
-		const wchar_t* loadingStr = LocalizedString("#GAME_IS_LOADING");
-
-		eqFontStyleParam_t param;
-		param.styleFlag |= TEXT_STYLE_SHADOW;
-
-		font->RenderText(loadingStr, Vector2D(100,screenSize.y - 100), param);
+		DrawLoadingScreen();
 
 		if(g_pGameWorld->m_level.IsWorkDone() && materials->GetLoadingQueue() == 0)
 			m_isGameRunning = true;

@@ -82,6 +82,8 @@ void CCameraAnimator::CalmDown()
 	m_vecCameraVel = vec3_zero;
 	m_vecCameraVelDiff = vec3_zero;
 	m_vecCameraSpringVel = vec3_zero;
+	m_fLookAngle = 0.0f;
+	m_fTempCamAngle = 0.0f;
 }
 
 void CCameraAnimator::Animate(	ECameraMode mode, 
@@ -215,26 +217,36 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 		lookmatrix = rotateX3(DEG2RAD(2.5f))*lookmatrix;
 
-		Vector3D euler_angles = EulerMatrixZXY(transpose(targetRotation.getRotationComponent())*transpose(lookmatrix));
+		Vector3D euler_angles = EulerMatrixZXY(transpose(targetRotation.getRotationComponent()));//*transpose(lookmatrix));
 		euler_angles = VRAD2DEG(euler_angles);
 
 		euler_angles *= Vector3D(-1,1,-1);
 
-		float dist_multipler = 1.0f;
-
-		if( !bLookBack )
-		{
-			dist_multipler = clamp(fabs(m_fLookAngle) / 90.0f, 0.0f, 1.0f);
-		}
-
 		Vector3D forward, up, right;
 		AngleVectors(euler_angles, &forward, &right, &up);
 
-		Vector3D camPos = pos + forward*lerp(m_carConfig.distInCar, m_carConfig.widthInCar, dist_multipler);
+		Vector3D vecDir = forward*m_carConfig.distInCar;
+
+		if( !bLookBack )
+		{
+			float dist_multipler = (m_fLookAngle / 90.0f);
+			vecDir = lerp(forward * m_carConfig.distInCar, right*m_carConfig.widthInCar*sign(dist_multipler), fabs(dist_multipler));
+		}
+		else
+		{
+			vecDir *= -1.0f;
+		}
+
+		Vector3D camPos = pos + vecDir + up * m_carConfig.heightInCar;
 
 		debugoverlay->Box3D(camPos-0.1f, camPos+0.1f, ColorRGBA(0,1,0,1), 0.0f);
+		debugoverlay->Text3D(camPos, 100.0f, ColorRGBA(1), "angle: %g", m_fLookAngle);
 
-		m_viewParams.SetOrigin(camPos + up * m_carConfig.heightInCar);
+		euler_angles = EulerMatrixZXY(transpose(targetRotation.getRotationComponent())*transpose(lookmatrix));
+		euler_angles = VRAD2DEG(euler_angles);
+		euler_angles *= Vector3D(-1,1,-1);
+
+		m_viewParams.SetOrigin(camPos);
 		m_viewParams.SetAngles(euler_angles);
 		m_viewParams.SetFOV(m_carConfig.fov);
 	}

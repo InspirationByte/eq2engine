@@ -54,6 +54,8 @@ public:
 	void						RemoveTrackingObject( int handle );
 
 	void						ShowScreenMessage( const char* token, float time );
+	void						ShowLastScreenMessage();
+
 	void						SetTimeDisplay(bool enabled, double time);
 
 	void						Enable(bool enable)		{m_enable = enable;}

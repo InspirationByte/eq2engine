@@ -63,11 +63,14 @@ void CObject_Debris::Spawn()
 
 	m_smashSound = KV_GetValueString(m_keyValues->FindKeyBase("smashsound"), 0, "");
 
-	ses->PrecacheSound(m_smashSound.c_str());
-	ses->PrecacheSound((m_smashSound + "_light").c_str());
-	ses->PrecacheSound((m_smashSound + "_medium").c_str());
-	ses->PrecacheSound((m_smashSound + "_hard").c_str());
-	
+	if(m_smashSound.GetLength() > 0)
+	{
+		ses->PrecacheSound(m_smashSound.c_str());
+		ses->PrecacheSound((m_smashSound + "_light").c_str());
+		ses->PrecacheSound((m_smashSound + "_medium").c_str());
+		ses->PrecacheSound((m_smashSound + "_hard").c_str());
+	}
+
 	CEqRigidBody* body = new CEqRigidBody();
 
 	BoundingBox bbox(m_pModel->GetBBoxMins(), m_pModel->GetBBoxMaxs());
@@ -80,7 +83,7 @@ void CObject_Debris::Spawn()
 		body->SetRestitution( 0.15f );
 		body->SetMass(obj->mass);
 		body->SetGravity(body->GetGravity() * 3.5f);
-		body->SetDebugName("debris");
+		body->SetDebugName("hubcap");
 
 		// additional error correction required
 		body->m_erp = 0.05f;
@@ -110,7 +113,71 @@ void CObject_Debris::Spawn()
 		delete body;
 	}
 
-	//m_keyValues.Cleanup();
+	// baseclass spawn
+	CGameObject::Spawn();
+}
+
+void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup)
+{
+	m_pModel = model;
+	m_bodyGroupFlags = (1 << bodyGroup);
+	m_collOccured = true;
+
+	if(g_pShaderAPI->GetCaps().isInstancingSupported &&
+		m_pModel && m_pModel->GetInstancer() == NULL)
+	{
+		CGameObjectInstancer* instancer = new CGameObjectInstancer();
+
+		// init with this preallocated buffer and format
+		instancer->Init( g_pGameWorld->m_objectInstVertexFormat, g_pGameWorld->m_objectInstVertexBuffer );
+
+		m_pModel->SetInstancer( instancer );
+	}
+
+	// TODO: hubcap sounds
+	m_smashSound = "";
+	
+	CEqRigidBody* body = new CEqRigidBody();
+
+	BoundingBox bbox(m_pModel->GetBBoxMins(), m_pModel->GetBBoxMaxs());
+
+	if( body->Initialize(&m_pModel->GetHWData()->m_physmodel, 0) )//
+	{
+		physobject_t* obj = &m_pModel->GetHWData()->m_physmodel.objects[0].object;
+
+		body->SetFriction( 0.8f );
+		body->SetRestitution( 0.15f );
+		body->SetMass(obj->mass);
+		body->SetGravity(body->GetGravity() * 3.5f);
+		body->SetDebugName("debris");
+
+		// additional error correction required
+		body->m_erp = 0.05f;
+
+		//body->SetCenterOfMass( obj->mass_center);
+
+		body->m_flags = COLLOBJ_DISABLE_RESPONSE;
+
+		body->SetPosition( m_vecOrigin );
+		body->SetOrientation(Quaternion(DEG2RAD(m_vecAngles.x),DEG2RAD(m_vecAngles.y),DEG2RAD(m_vecAngles.z)));
+
+		body->SetContents( OBJECTCONTENTS_DEBRIS );
+		body->SetCollideMask( COLLIDEMASK_DEBRIS );
+
+		body->SetUserData(this);
+
+		m_physBody = body;
+
+		// initially this object is not moveable
+		g_pPhysics->m_physics.AddToWorld( m_physBody, true );
+
+		m_bbox = body->m_aabb_transformed;
+	}
+	else
+	{
+		MsgError("No physics model for '%s'\n", m_pModel->GetName());
+		delete body;
+	}
 
 	// baseclass spawn
 	CGameObject::Spawn();
@@ -181,8 +248,14 @@ void CObject_Debris::Draw( int nRenderFlags )
 		int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
 		CGameObjectInstancer* instancer = (CGameObjectInstancer*)m_pModel->GetInstancer();
-		gameObjectInstance_t& inst = instancer->NewInstance( m_bodyGroupFlags, nLOD );
-		inst.world = m_worldMatrix;
+		for(int i = 0; i < MAX_INSTANCE_BODYGROUPS; i++)
+		{
+			if(!(m_bodyGroupFlags & (1 << i)))
+				continue;
+
+			gameObjectInstance_t& inst = instancer->NewInstance( i , nLOD );
+			inst.world = m_worldMatrix;
+		}
 	}
 	else
 		CGameObject::Draw( nRenderFlags );

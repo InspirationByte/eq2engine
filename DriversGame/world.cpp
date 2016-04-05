@@ -430,7 +430,7 @@ void CGameWorld::Init()
 	if(!g_translParticles)
 	{
 		g_translParticles = new CPFXAtlasGroup();
-		g_translParticles->Init("scripts/effects_translucent.atlas", false, 8192);
+		g_translParticles->Init("scripts/effects_translucent.atlas", false, 10000);
 		g_pPFXRenderer->AddRenderGroup( g_translParticles );
 	}
 
@@ -723,8 +723,6 @@ void CGameWorld::UpdateWorld(float fDt)
 		}
 
 		UpdateTrafficLightState(fDt);
-
-		debugoverlay->Text(ColorRGBA(0,1,0,1), "Traffic light dir: %d, time to change: %g s", m_globalTrafficLightDirection.Get(), m_globalTrafficLightTime.Get());
 
 		if(m_envConfig.weatherType >= WEATHER_TYPE_RAIN && m_rainSound)
 		{

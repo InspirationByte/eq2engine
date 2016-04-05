@@ -144,30 +144,28 @@ inline void CEGFInstancer<IT>::Cleanup()
 }
 
 template <class IT>
-inline IT& CEGFInstancer<IT>::NewInstance( ubyte bodyGroupFlags, int lod )
+inline IT& CEGFInstancer<IT>::NewInstance( ubyte bodyGroup, int lod )
 {
 	static IT dummy;
 
-	int idx = bodyGroupFlags-1;
+	if(bodyGroup == 0xFF)
+		return dummy;
 
-	if(idx == -1)
-		return dummy;	// nothing to render
-
-	int numInst = m_numInstances[idx][lod];
+	int numInst = m_numInstances[bodyGroup][lod];
 
 	if(numInst >= MAX_EGF_INSTANCES)
 		return dummy; // overflow
 
-	if(!m_instances[idx][lod])
-		m_instances[idx][lod] = new IT[MAX_EGF_INSTANCES];
+	if(!m_instances[bodyGroup][lod])
+		m_instances[bodyGroup][lod] = new IT[MAX_EGF_INSTANCES];
 
 	m_hasInstances = true;
 
 	// assign instance
-	IT& theInst = m_instances[idx][lod][numInst];
+	IT& theInst = m_instances[bodyGroup][lod][numInst];
 
 	numInst++;
-	m_numInstances[idx][lod] = numInst;
+	m_numInstances[bodyGroup][lod] = numInst;
 
 	return theInst;
 }

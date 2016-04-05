@@ -12,12 +12,16 @@
 
 class CObject_Debris : public CGameObject
 {
+	friend class CCar;
+
 public:
 	CObject_Debris( kvkeybase_t* kvdata );
 	~CObject_Debris();
 
 	void				OnRemove();
+
 	void				Spawn();
+	void				SpawnAsHubcap(IEqModel* model, int8 bodyGroup);
 
 	void				SetOrigin(const Vector3D& origin);
 	void				SetAngles(const Vector3D& angles);

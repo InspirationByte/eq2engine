@@ -12,6 +12,17 @@ CReplayData*			g_replayData = &s_replayData;
 
 bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs );
 
+DECLARE_CMD(car_loosehubcaps, "looses hubcaps on current car", 0)
+{
+	if(g_pGameSession && g_pGameSession->GetPlayerCar())
+	{
+		CCar* car = g_pGameSession->GetPlayerCar();
+
+		for(int i = 0; i < car->GetWheelCount(); i++)
+			car->StrikeHubcap(i);
+	}
+}
+
 DECLARE_CMD(car_reload, "reload current car", 0)
 {
 	if(g_pGameSession && g_pGameSession->GetPlayerCar())

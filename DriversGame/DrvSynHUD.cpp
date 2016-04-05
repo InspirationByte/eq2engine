@@ -12,9 +12,15 @@
 static CDrvSynHUDManager s_drvSynHUDManager;
 CDrvSynHUDManager* g_pGameHUD = &s_drvSynHUDManager;
 
-ConVar r_drawHUD("r_drawHUD", "1", "Draw Heads-Up display", CV_ARCHIVE);
+ConVar r_drawHUD("hud_draw", "1", NULL, CV_ARCHIVE);
 
-#define MAP_ZOOM	(2.0f) // TODO: dynamic zoom
+ConVar hud_mapZoom("hud_mapZoom", "1.5", NULL, CV_ARCHIVE);
+ConVar hud_mapSize("hud_mapSize", "250", NULL, CV_ARCHIVE);
+
+DECLARE_CMD(hud_showLastMessage, NULL, 0)
+{
+	g_pGameHUD->ShowLastScreenMessage();
+}
 
 //----------------------------------------------------------------------------------
 /*
@@ -86,7 +92,16 @@ void CDrvSynHUDManager::Cleanup()
 void CDrvSynHUDManager::ShowScreenMessage( const char* token, float time )
 {
 	m_screenMessageText = LocalizedString(token);
+
 	m_screenMessageTime = time;
+
+	if(time != 0.0f && time <= 1.0f)
+		m_screenMessageTime += 0.5f;
+}
+
+void CDrvSynHUDManager::ShowLastScreenMessage()
+{
+	m_screenMessageTime = 2.0f;
 }
 
 void CDrvSynHUDManager::SetTimeDisplay(bool enabled, double time)
@@ -295,14 +310,14 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 			raster.scissor = true;
 			raster.cullMode = CULL_FRONT;
 
-			IVector2D mapSize(250,250);
+			IVector2D mapSize(hud_mapSize.GetInt());
 			IVector2D mapPos = screenSize-mapSize-IVector2D(55);
 			
 			float viewRotation = DEG2RAD( camera.GetAngles().y + 180);
 			Vector3D viewPos = Vector3D(camera.GetOrigin().xz() * Vector2D(1.0f,-1.0f), 0.0f);
 			Vector2D playerPos(0);
 
-			float mapZoom = MAP_ZOOM / HFIELD_POINT_SIZE;
+			float mapZoom = hud_mapZoom.GetFloat() / HFIELD_POINT_SIZE;
 
 			IRectangle mapRectangle(mapPos, mapPos+mapSize);
 
@@ -336,7 +351,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 			Vector2D imgSize(1.0f);
 			
-			if(m_mapTexture)
+			if( m_mapTexture )
 				imgSize = Vector2D(m_mapTexture->GetWidth(),m_mapTexture->GetHeight());
 
 			Vector2D imgToWorld = imgSize*HFIELD_POINT_SIZE;
@@ -462,13 +477,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 				materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,mapVerts,elementsOf(mapVerts), NULL, ColorRGBA(v1,0,v2,1), &additiveBlend, NULL, &raster);
 			}
 
-			// draw radar blank after the pursuit ends
-			if(!inPursuit && m_radarBlank > 0)
-			{
-				materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,mapVerts,elementsOf(mapVerts), NULL, ColorRGBA(m_radarBlank), &additiveBlend, NULL, &raster);
-				m_radarBlank -= fDt;
-			}
-
 			Vertex2D_t plrFan[16];
 
 			plrFan[0].m_vPosition = playerPos;
@@ -486,6 +494,13 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 			// draw player car dot
 			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_FAN,plrFan,elementsOf(plrFan), NULL, ColorRGBA(1), &blending, NULL, &raster);
+
+			// draw radar blank after the pursuit ends
+			if(!inPursuit && m_radarBlank > 0)
+			{
+				materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,mapVerts,elementsOf(mapVerts), NULL, ColorRGBA(m_radarBlank), &additiveBlend, NULL, &raster);
+				m_radarBlank -= fDt;
+			}
 		}
 
 		materials->SetMatrix(MATRIXMODE_VIEW, identity4());
@@ -497,12 +512,22 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 	{
 		m_screenMessageTime -= fDt;
 
+		float textYOffs = 0.0f;
+		float textAlpha = 1.0f;
+
+		if(m_screenMessageTime <= 1.0f)
+		{
+			textAlpha = pow(m_screenMessageTime, 5.0f);
+			textYOffs = (1.0f-m_screenMessageTime)*5.0f;
+			textYOffs = pow(textYOffs, 5.0f);
+		}
+
 		eqFontStyleParam_t scrMsgParams;
 		scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
 		scrMsgParams.align = TEXT_ALIGN_HCENTER;
-		scrMsgParams.textColor = ColorRGBA(1,1,0.25f,1);
+		scrMsgParams.textColor = ColorRGBA(1,1,0.25f,textAlpha);
 
-		Vector2D screenMessagePos(screenSize.x / 2, screenSize.y / 3);
+		Vector2D screenMessagePos(screenSize.x / 2, screenSize.y / 3 - textYOffs);
 
 		roboto30b->RenderText(m_screenMessageText.c_str(), screenMessagePos, scrMsgParams);
 	}

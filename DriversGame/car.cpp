@@ -11,6 +11,7 @@
 #include "session_stuff.h"
 #include "EqParticles.h"
 #include "replay.h"
+#include "object_debris.h"
 
 #include "Shiny.h"
 
@@ -94,7 +95,11 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 
 	ASSERTMSG(conf->m_cleanModelName.GetLength(), "ParseCarConfig - missing cleanModel!\n");
 
-	const char* defaultWheelName = KV_GetValueString(kvs->FindKeyBase("wheelType"), 0, "wheel1");
+	kvkeybase_t* wheelModelType = kvs->FindKeyBase("wheelBodyGroup");
+
+	const char* defaultWheelName = KV_GetValueString(wheelModelType, 0, "wheel1");
+	const char* defaultHubcapName = KV_GetValueString(wheelModelType, 1, "");
+	
 
 	conf->m_body_size = KV_GetVector3D(kvs->FindKeyBase("bodySize"));
 	conf->m_body_center = KV_GetVector3D(kvs->FindKeyBase("center"));
@@ -169,12 +174,20 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 			wconf.width = wheel_width;
 			wconf.woffset = widthAdd;
 
-			const char* wheelName = KV_GetValueString(kvs->FindKeyBase("wheelname"), 0, NULL);
+			kvkeybase_t* wheelModels = kvs->FindKeyBase("bodyGroup");
+
+			const char* wheelName = KV_GetValueString(wheelModels, 0, NULL);
+			const char* hubcapName = KV_GetValueString(wheelModels, 1, NULL);
 
 			if(wheelName)
 				strncpy(wconf.wheelName, wheelName, 16 );
 			else
 				strncpy(wconf.wheelName, defaultWheelName, 16 );
+
+			if(hubcapName)
+				strncpy(wconf.hubcapName, hubcapName, 16 );
+			else
+				strncpy(wconf.hubcapName, defaultHubcapName, 16 );
 
 			wconf.flags = (bDriveWheel ? WHEEL_FLAG_DRIVE : 0) | (bHandbrakeWheel ? WHEEL_FLAG_HANDBRAKE : 0) | (bSteerWheel ? WHEEL_FLAG_STEER : 0);
 			wconf.springConst = KV_GetValueFloat(pWheelKv->FindKeyBase("SuspensionSpringConstant"), 0, 100.0f);
@@ -788,14 +801,18 @@ void CCarWheelModel::Draw( int nRenderFlags )
 		int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
 		CGameObjectInstancer* instancer = (CGameObjectInstancer*)m_pModel->GetInstancer();
-		gameObjectInstance_t& inst = instancer->NewInstance( m_bodyGroupFlags, nLOD );
-		inst.world = m_worldMatrix;
+		for(int i = 0; i < MAX_INSTANCE_BODYGROUPS; i++)
+		{
+			if(!(m_bodyGroupFlags & (1 << i)))
+				continue;
+
+			gameObjectInstance_t& inst = instancer->NewInstance( i , nLOD );
+			inst.world = m_worldMatrix;
+		}
 	}
 	else
 		BaseClass::Draw( nRenderFlags );
 }
-
-
 
 BEGIN_NETWORK_TABLE( CCar )
 	DEFINE_SENDPROP_BYTE(m_sirenEnabled),
@@ -918,13 +935,21 @@ void CCar::CreateCarPhysics()
 
 		wheelData_t winfo;
 
-		winfo.bodyIndex = Studio_FindBodyGroupId(wheelModel->GetHWData()->pStudioHdr, wconf.wheelName);
+		int wheelBodyGroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->pStudioHdr, wconf.wheelName);
 
+		if(wheelBodyGroup == -1)
+		{
+			MsgWarning("Wheel submodel '%s' not found\n", wconf.wheelName);
+			wheelBodyGroup = 0;
+		}
+
+		winfo.hubcapBodygroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->pStudioHdr, wconf.hubcapName);
 		winfo.pWheelObject = pWheelObject;
 
 		pWheelObject->SetModelPtr( wheelModel );
 
-		pWheelObject->m_bodyGroupFlags = (1 << winfo.bodyIndex);
+		pWheelObject->m_bodyGroupFlags = (1 << wheelBodyGroup) |
+										 (winfo.hubcapBodygroup != -1 ? (1 << winfo.hubcapBodygroup) : 0);
 
 		m_pWheels.append(winfo);
 	}
@@ -2128,9 +2153,10 @@ void CCar::UpdateCarPhysics(float delta)
 			wheel.pitchVel = dot(wheel_forward, carBody->GetLinearVelocity());
 		}
 
-		wheel.isBurningOut = bDoBurnout && (wheelConf.flags & WHEEL_FLAG_DRIVE);
+		
 
-		if(wheel.isBurningOut)
+		bool burnout = bDoBurnout && (wheelConf.flags & WHEEL_FLAG_DRIVE);
+		if(burnout)
 		{
 			if((wheelConf.flags & WHEEL_FLAG_DRIVE)
 				&& wheel.pitchVel < 0
@@ -2139,6 +2165,8 @@ void CCar::UpdateCarPhysics(float delta)
 
 			wheel.pitch += (15.0f/wheelConf.radius) * fPitchFac * delta;
 		}
+
+		wheel.flags.isBurningOut = burnout;
 
 		wheel.pitch += (wheel.pitchVel/wheelConf.radius)*delta;
 
@@ -2414,6 +2442,23 @@ void CCar::OnPhysicsFrame( float fDt )
 		numHitTimes++;
 	}
 
+	// wheel damage and hubcaps
+	for(int i = 0; i < m_pWheels.numElem(); i++)
+	{
+		float lateralSliding = GetLateralSlidingAtWheel(i) * sign(m_conf->m_wheels[i].suspensionTop.x);
+		lateralSliding = max(0.0f,lateralSliding);
+
+		if(lateralSliding > 10.0f)
+			m_pWheels[i].damage += lateralSliding*0.0015f;
+
+		if(m_pWheels[i].damage >= 1.0f)
+		{
+			m_pWheels[i].damage = 1.0f;
+
+			StrikeHubcap(i);
+		}
+	}
+
 	if(IsAlive() || isInWater)	// if car goes underwater and dies here, we need to keep underwater state
 		m_inWater = isInWater;
 
@@ -2449,6 +2494,34 @@ void CCar::OnPhysicsFrame( float fDt )
 			}
 		}
 	}
+}
+
+void CCar::StrikeHubcap(int wheel)
+{
+	wheelData_t& wdata = m_pWheels[wheel];
+	carWheelConfig_t& wheelConf = m_conf->m_wheels[wheel];
+
+	if(wdata.flags.lostHubcap || wdata.hubcapBodygroup == -1)
+		return;
+
+	bool leftWheel = sign(wheelConf.suspensionTop.x) < 0.0f;
+
+	Quaternion wheelRotation = Quaternion(wdata.wheelOrient) * Quaternion(-wdata.pitch, leftWheel ? PI_F : 0.0f, 0.0f);
+	Matrix4x4 wheelTranslation = transpose(m_worldMatrix * Matrix4x4(wheelRotation));
+
+	Vector3D wheelPos = wdata.pWheelObject->GetOrigin();
+
+	CObject_Debris* hubcapObj = new CObject_Debris(NULL);
+	hubcapObj->SpawnAsHubcap(wdata.pWheelObject->GetModel(), wdata.hubcapBodygroup);
+	hubcapObj->SetOrigin( wheelPos );
+	hubcapObj->m_physBody->SetOrientation( Quaternion(wheelTranslation.getRotationComponent()) );
+	hubcapObj->m_physBody->SetLinearVelocity( wdata.velocityVec );
+	hubcapObj->m_physBody->SetAngularVelocity( wheelTranslation.rows[0].xyz() * sign(wheelConf.suspensionTop.x) * -wdata.pitchVel * PI_F );
+	g_pGameWorld->AddObject(hubcapObj, true);
+
+
+	wdata.flags.lostHubcap = true;
+	wdata.pWheelObject->m_bodyGroupFlags &= ~(1 << wdata.hubcapBodygroup);
 }
 
 ConVar r_drawSkidMarks("r_drawSkidMarks", "1", "Draw skidmarks, 1 - player, 2 - all cars", CV_ARCHIVE);
@@ -2876,9 +2949,9 @@ void CCar::Simulate( float fDt )
 			wheelData_t& wheel = m_pWheels[i];
 			carWheelConfig_t& wheelConf = m_conf->m_wheels[i];
 
-			if(!wheel.doSkidmarks)
+			if(!wheel.flags.doSkidmarks)
 			{
-				wheel.lastDoSkidmarks = wheel.doSkidmarks;
+				wheel.flags.lastDoSkidmarks = wheel.flags.doSkidmarks;
 				continue;
 			}
 
@@ -2889,7 +2962,7 @@ void CCar::Simulate( float fDt )
 				wheel.skidMarks.removeIndex(0); // this is slow
 			}
 
-			if(!wheel.lastDoSkidmarks && wheel.doSkidmarks && (wheel.skidMarks.numElem() > 0))
+			if(!wheel.flags.lastDoSkidmarks && wheel.flags.doSkidmarks && (wheel.skidMarks.numElem() > 0))
 			{
 				int nLast = wheel.skidMarks.numElem()-1;
 
@@ -2943,7 +3016,7 @@ void CCar::Simulate( float fDt )
 					wheel.skidMarks.append(skidmarkPair);
 			}
 
-			wheel.lastDoSkidmarks = wheel.doSkidmarks;
+			wheel.flags.lastDoSkidmarks = wheel.flags.doSkidmarks;
 		}
 
 		for(int i = 0; i < m_pWheels.numElem(); i++)
@@ -3013,25 +3086,25 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 
 	Matrix3x3 wheelMat = transpose(m_worldMatrix.getRotationComponent() * wheel.wheelOrient);
 
-	wheel.lastOnGround = wheel.onGround;
+	wheel.flags.lastOnGround = wheel.flags.onGround;
 
 	if( wheel.collisionInfo.fract >= 1.0f )
 	{
-		wheel.doSkidmarks = false;
-		wheel.onGround = false;
+		wheel.flags.doSkidmarks = false;
+		wheel.flags.onGround = false;
 		return;
 	}
 
-	wheel.onGround = true;
-	wheel.doSkidmarks = (GetTractionSlidingAtWheel(nWheel) > 3.0f || fabs(GetLateralSlidingAtWheel(nWheel)) > 2.0f);
+	wheel.flags.onGround = true;
+	wheel.flags.doSkidmarks = (GetTractionSlidingAtWheel(nWheel) > 3.0f || fabs(GetLateralSlidingAtWheel(nWheel)) > 2.0f);
 
-	if( wheel.onGround && wheel.surfparam != NULL )
+	if( wheel.flags.onGround && wheel.surfparam != NULL )
 	{
 		Vector3D smoke_pos = wheel.collisionInfo.position + wheel.collisionInfo.normal * wheelConf.radius*0.5f;
 
 		if(wheel.surfparam->word == 'C')	// concrete/asphalt
 		{
-			if(!wheel.lastOnGround && m_isLocalCar)
+			if(!wheel.flags.lastOnGround && m_isLocalCar)
 			{
 				EmitSound_t ep;
 
@@ -3489,10 +3562,10 @@ float CCar::GetTractionSliding(bool surfCheck)
 
 float CCar::GetTractionSlidingAtWheel(int wheel)
 {
-	if(!m_pWheels[wheel].onGround)
+	if(!m_pWheels[wheel].flags.onGround)
 		return 0.0f;
 
-	return abs(GetSpeed() - abs(GetWheelSpeed(wheel))) + m_pWheels[wheel].isBurningOut*100.0f;
+	return abs(GetSpeed() - abs(GetWheelSpeed(wheel))) + m_pWheels[wheel].flags.isBurningOut*100.0f;
 }
 
 bool CCar::IsAnyWheelOnGround() const
@@ -3527,8 +3600,14 @@ void CCar::DrawBody( int nRenderFlags )
 		int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
 		CGameObjectInstancer* instancer = (CGameObjectInstancer*)m_pModel->GetInstancer();
-		gameObjectInstance_t& inst = instancer->NewInstance( m_bodyGroupFlags, nLOD );
-		inst.world = m_worldMatrix;
+		for(int i = 0; i < MAX_INSTANCE_BODYGROUPS; i++)
+		{
+			if(!(m_bodyGroupFlags & (1 << i)))
+				continue;
+
+			gameObjectInstance_t& inst = instancer->NewInstance( i , nLOD );
+			inst.world = m_worldMatrix;
+		}
 
 		// g_pShaderAPI->SetShaderConstantVector4D("CarColor", m_carColor);
 		return;
@@ -3706,20 +3785,35 @@ void CCar::Draw( int nRenderFlags )
 			if(wheelVisualPosFactor < wheelConf.visualTop)
 				wheelVisualPosFactor = wheelConf.visualTop;
 
+			bool leftWheel = wheelConf.suspensionTop.x < 0.0f;
+
 			Vector3D wheelSuspDir = fastNormalize(wheelConf.suspensionTop - wheelConf.suspensionBottom);
 			Vector3D wheelCenterPos = lerp(wheelConf.suspensionTop, wheelConf.suspensionBottom, wheelVisualPosFactor) + wheelSuspDir*wheelConf.radius;
 
-			Matrix4x4 wheelTranslationLocal = m_worldMatrix*(translate(Vector3D(wheelCenterPos + wheels_offs - Vector3D(wheelConf.woffset, 0, 0)))*Matrix4x4(transpose(wheel.wheelOrient)*rotateX3(wheel.pitch))*scale4(wheelConf.width,wheelConf.radius*2,wheelConf.radius*2));
+			Quaternion wheelRotation = Quaternion(wheel.wheelOrient) * Quaternion(-wheel.pitch, leftWheel ? PI_F : 0.0f, 0.0f);
+			//wheelRotation.normalize();
 
-			wheel.pWheelObject->SetOrigin(transpose(wheelTranslationLocal).getTranslationComponent());
+			Matrix4x4 wheelScale = scale4(wheelConf.width,wheelConf.radius*2,wheelConf.radius*2);
+			Matrix4x4 wheelTranslation = m_worldMatrix*(translate(Vector3D(wheelCenterPos + wheels_offs - Vector3D(wheelConf.woffset, 0, 0))) * Matrix4x4(wheelRotation) * wheelScale);
+
+			/*
+			Matrix3x3 wheelRotation = transpose(wheel.wheelOrient)*rotateXY3(wheel.pitch, leftWheel ? PI_F : 0.0f);
+
+			Matrix4x4 wheelTranslation = m_worldMatrix*(translate(Vector3D(wheelCenterPos + wheels_offs - Vector3D(wheelConf.woffset, 0, 0)))*Matrix4x4(wheelRotation) * wheelScale);
+			
+			wheel.pWheelObject->SetOrigin(transpose(wheelTranslation).getTranslationComponent());
+			*/
 
 			if(bDraw)
 			{
+				wheel.pWheelObject->SetOrigin(transpose(wheelTranslation).getTranslationComponent());
+
 				wheel.pWheelObject->m_bbox = m_bbox;
-				wheel.pWheelObject->m_worldMatrix = wheelTranslationLocal;
+				wheel.pWheelObject->m_worldMatrix = wheelTranslation;
 
 				wheel.pWheelObject->Draw(nRenderFlags);
 			}
+			
 		}
 	}
 

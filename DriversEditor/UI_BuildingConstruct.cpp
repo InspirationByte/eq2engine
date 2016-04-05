@@ -43,10 +43,8 @@ void CLayerModel::RefreshPreview()
 
 	bbox = m_model->m_bbox;
 
-	//Msg("RENDER preview for STATIC model\n");
 	camDistance = length(m_model->m_bbox.GetSize())+0.5f;
 	camera_target = m_model->m_bbox.GetCenter();
-
 
 	Vector3D forward, right;
 	AngleVectors(camera_rotation, &forward, &right);
@@ -1047,27 +1045,26 @@ void CUI_BuildingConstruct::OnCreateClick( wxCommandEvent& event )
 
 void CUI_BuildingConstruct::OnEditClick( wxCommandEvent& event )
 {
-/*
-	if(m_selection == -1)
+	buildLayerColl_t* layerColl = m_layerCollList->GetSelectedLayerColl();
+
+	if(!layerColl)
 		return;
 
-	m_layerEditDlg->SetLayerCollection( m_filteredlist[m_selection] );
+	m_layerEditDlg->SetLayerCollection( layerColl );
 
-	// TODO: set existing layers
 	m_layerEditDlg->Show();
-	*/
 }
 
 void CUI_BuildingConstruct::OnDeleteClick( wxCommandEvent& event )
 {
-
+	
 }
 
 //------------------------------------------------------------------------
 
 void CUI_BuildingConstruct::InitTool()
 {
-
+	//m_layerCollList->LoadLayerCollections();
 }
 
 void CUI_BuildingConstruct::ShutdownTool()

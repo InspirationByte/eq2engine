@@ -207,7 +207,7 @@ public:
 
 	virtual void				SetModel(const char* pszModelName);
 	virtual void				SetModelPtr(IEqModel* modelPtr);
-	IEqModel*					GetModel();
+	IEqModel*					GetModel() const {return m_pModel;}
 
 	virtual void				Simulate(float fDt);
 

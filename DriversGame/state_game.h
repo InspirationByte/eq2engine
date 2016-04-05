@@ -33,6 +33,7 @@ public:
 	bool		UpdatePauseState();
 
 	void		DrawMenu( float fDt );
+	void		DrawLoadingScreen();
 
 	void		OnEnter( CBaseStateHandler* from );
 	void		OnLeave( CBaseStateHandler* to );
