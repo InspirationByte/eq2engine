@@ -933,7 +933,6 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 				{
 					// generate random number just for correctness
 					g_pGameWorld->m_random.Regenerate();
-					g_pGameWorld->m_random.Regenerate();
 
 					type = CAR_TYPE_TRAFFIC_AI;
 				}

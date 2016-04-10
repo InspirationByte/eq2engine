@@ -257,7 +257,10 @@ void Game_OnPhysicsUpdate(float fDt, int iterNum)
 	//CScopedMutex m(g_parallelJobs->GetMutex());
 
 	if(g_replayData)
+	{
 		g_pGameWorld->m_random.SetSeed(g_replayData->m_tick);
+		g_pGameWorld->m_random.Regenerate();
+	}
 
 	// update traffic car spawn/remove from here
 	if( IsServer() && (iterNum == 0) && g_pGameSession->GetLeadCar())

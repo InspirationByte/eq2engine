@@ -12,7 +12,7 @@
 #include "materialsystem/IMaterialSystem.h"
 
 #define MAX_EGF_INSTANCES			256
-#define MAX_INSTANCE_BODYGROUPS		4		// only 4 groups can be instanced
+#define MAX_INSTANCE_BODYGROUPS		8		// only 4 groups can be instanced
 #define MAX_INSTANCE_LODS			4		// only 4 lods can be instanced
 
 //---------------------------------------------------------------------
@@ -74,7 +74,7 @@ inline CEGFInstancer<IT>::~CEGFInstancer()
 template <class IT>
 inline void CEGFInstancer<IT>::ValidateAssert()
 {
-	ASSERTMSG(m_vertFormat != NULL, "Instancer is not valid - did you forgot to initialize it???");
+	ASSERTMSG(m_vertFormat != NULL && m_instanceBuf != NULL, "Instancer is not valid - did you forgot to initialize it???");
 }
 
 template <class IT>
@@ -186,6 +186,8 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 
 	studiohdr_t* pHdr = model->GetHWData()->pStudioHdr;
 
+	ASSERTMSG(pHdr->numbodygroups <= MAX_INSTANCE_BODYGROUPS, "Model got too many body groups! Tell it to programmer or reduce body group count.");
+
 	// proceed to render
 	materials->SetInstancingEnabled(true);
 
@@ -220,7 +222,7 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 
 			if(nModDescId == -1)
 				continue;
-
+			
 			// render model groups that in this body group
 			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
 			{

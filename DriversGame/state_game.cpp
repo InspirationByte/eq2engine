@@ -59,6 +59,7 @@ Vector3D				g_camera_droppedangles = vec3_zero;
 
 Vector3D				g_camera_freepos = vec3_zero;
 Vector3D				g_camera_freeangles = vec3_zero;
+Vector3D				g_camera_freevelocity = vec3_zero;
 float					g_camera_fov = DIRECTOR_DEFAULT_CAMERA_FOV;
 Vector3D				g_camera_angle(0);
 float					g_camera_angleRestoreTime = 0.0f;
@@ -395,10 +396,26 @@ void Game_UpdateFreeCamera(float fDt)
 	else if(g_nClientButtons & IN_RIGHT)
 		camMoveVec += r;
 
-	CollisionData_t coll;
-	g_pPhysics->TestLine(g_camera_freepos, g_camera_freepos+camMoveVec, coll);
+	g_camera_freevelocity += camMoveVec * 200.0f * fDt;
 
-	g_camera_freepos += camMoveVec*g_freecam_speed.GetFloat() * fDt;
+	float camSpeed = length(g_camera_freevelocity);
+
+	if(camSpeed > 1.0f)
+		g_camera_freevelocity -= normalize(g_camera_freevelocity) * 90.0f * fDt;
+	else
+		g_camera_freevelocity = vec3_zero;
+
+	if(camSpeed > g_freecam_speed.GetFloat())
+	{
+		float speedDiffScale = g_freecam_speed.GetFloat() / camSpeed;
+
+		g_camera_freevelocity *= speedDiffScale;
+	}
+
+	//CollisionData_t coll;
+	//g_pPhysics->TestLine(g_camera_freepos, g_camera_freepos+camMoveVec, coll);
+
+	g_camera_freepos += g_camera_freevelocity * fDt;
 }
 
 void DrawGradientFilledRectangle(Rectangle_t &rect, ColorRGBA &color1, ColorRGBA &color2)

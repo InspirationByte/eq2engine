@@ -1489,6 +1489,7 @@ void CGameWorld::Draw( int nRenderFlags )
 				model->GetInstancer()->Draw( nRenderFlags, model );
 			}
 		}
+
 	}
 
 	// draw sky

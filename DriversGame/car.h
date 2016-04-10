@@ -75,6 +75,7 @@ enum EWheelFlags
 struct carWheelConfig_t
 {
 	char				wheelName[16];
+	char				hubcapWheelName[16];
 	char				hubcapName[16];
 
 	Vector3D			suspensionTop;
@@ -206,7 +207,8 @@ struct wheelData_t
 		smokeTime = 0.0f;
 		surfparam = NULL;
 		damage = 0.0f;
-		hubcapBodygroup = 0;
+		hubcapBodygroup = -1;
+		damagedWheelBodygroup = -1;
 		velocityVec = vec3_zero;
 	}
 
@@ -222,6 +224,7 @@ struct wheelData_t
 	Vector3D				velocityVec;
 
 	int8					hubcapBodygroup;	// loose hubcaps
+	int8					damagedWheelBodygroup;
 
 	float					pitch;
 	float					pitchVel;

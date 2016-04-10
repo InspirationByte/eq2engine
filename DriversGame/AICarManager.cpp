@@ -170,11 +170,11 @@ CCar* CAICarManager::SpawnRandomTrafficCar(const IVector2D& globalCell, int carT
 		else
 		{
 			// regenerate random number two times
-			g_pGameWorld->m_random.Regenerate();
+			//g_pGameWorld->m_random.Regenerate();
 
 			int randCar = g_pGameWorld->m_random.Get(0, m_civCarEntries.numElem() - 1);
 
-			g_pGameWorld->m_random.Regenerate();
+			//g_pGameWorld->m_random.Regenerate();
 
 			m_civCarEntries[randCar].nextSpawn--;
 
@@ -183,9 +183,6 @@ CCar* CAICarManager::SpawnRandomTrafficCar(const IVector2D& globalCell, int carT
 				pNewCar = new CAITrafficCar(m_civCarEntries[randCar].config);
 				m_civCarEntries[randCar].nextSpawn = m_civCarEntries[randCar].spawnInterval;
 			}
-
-
-			
 		}
 	}
 	else
@@ -195,11 +192,11 @@ CCar* CAICarManager::SpawnRandomTrafficCar(const IVector2D& globalCell, int carT
 			case CAR_TYPE_TRAFFIC_AI:
 			{
 				// regenerate random number two times
-				g_pGameWorld->m_random.Regenerate();
+				//g_pGameWorld->m_random.Regenerate();
 
 				int randCar = g_pGameWorld->m_random.Get(0, m_civCarEntries.numElem() - 1);
 
-				g_pGameWorld->m_random.Regenerate();
+				//g_pGameWorld->m_random.Regenerate();
 
 				pNewCar = new CAITrafficCar(m_civCarEntries[randCar].config);
 
@@ -222,11 +219,11 @@ CCar* CAICarManager::SpawnRandomTrafficCar(const IVector2D& globalCell, int carT
 			case CAR_TYPE_PURSUER_GANG_AI:
 			{
 				// regenerate random number two times
-				g_pGameWorld->m_random.Regenerate();
+				//g_pGameWorld->m_random.Regenerate();
 
 				int randCar = g_pGameWorld->m_random.Get(0, m_civCarEntries.numElem() - 1);
 
-				g_pGameWorld->m_random.Regenerate();
+				//g_pGameWorld->m_random.Regenerate();
 
 				pNewCar = new CAIPursuerCar(m_civCarEntries[randCar].config, PURSUER_TYPE_GANG);
 
@@ -237,6 +234,9 @@ CCar* CAICarManager::SpawnRandomTrafficCar(const IVector2D& globalCell, int carT
 
 	if(!pNewCar)
 		return NULL;
+
+	// car will be spawn, regenerate random
+	g_pGameWorld->m_random.Regenerate();
 
 	pNewCar->Spawn();
 

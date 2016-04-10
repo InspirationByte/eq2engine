@@ -29,7 +29,8 @@ DkList<studioattachment_t>		g_attachments;	// attachment list
 DkList<studiobodygroup_t>		g_bodygroups;	// body group list
 DkList<studiomaterialdesc_t>	g_materials;	// materials that this model uses
 
-Vector3D g_scalemodel = Vector3D(1);
+Vector3D g_modelScale(1.0f);
+Vector3D g_modelOffset(0.0f);
 
 bool g_notextures = false;
 
@@ -165,7 +166,10 @@ egfcamodel_t LoadModel(const char* pszFileName)
 	// scale bones
 	for(int i = 0; i < mod.model->bones.numElem(); i++)
 	{
-		mod.model->bones[i]->position *= g_scalemodel;
+		mod.model->bones[i]->position *= g_modelScale;
+
+		if(mod.model->bones[i]->parent_id == -1)
+			mod.model->bones[i]->position += g_modelOffset;
 	}
 
 	// check material list
@@ -174,7 +178,8 @@ egfcamodel_t LoadModel(const char* pszFileName)
 		// scale vertices
 		for(int j = 0; j < mod.model->groups[i]->verts.numElem(); j++)
 		{
-			mod.model->groups[i]->verts[j].position *= g_scalemodel;
+			mod.model->groups[i]->verts[j].position *= g_modelScale;
+			mod.model->groups[i]->verts[j].position += g_modelOffset;
 		}
 
 		// if material is not found, add new one
@@ -333,15 +338,19 @@ dsmmodel_t* ParseAndLoadModels(kvkeybase_t* pKeyBase)
 //************************************
 bool LoadModels(kvkeybase_t* pSection)
 {
-	// try apply global scale
-	kvkeybase_t* pair = pSection->FindKeyBase("global_scale");
-
-	if(pair)
-		sscanf(pair->values[0], "%f %f %f", &g_scalemodel.x,&g_scalemodel.y,&g_scalemodel.z);
-
 	for(int i = 0; i < pSection->keys.numElem(); i++)
 	{
-		if(!stricmp(pSection->keys[i]->name, "model"))
+		if(!stricmp(pSection->keys[i]->name, "global_scale"))
+		{
+			// try apply global scale
+			g_modelScale = KV_GetVector3D(pSection->keys[i], 0, Vector3D(1.0f));
+		}
+		if(!stricmp(pSection->keys[i]->name, "global_offset"))
+		{
+			// try apply global offset
+			g_modelOffset = KV_GetVector3D(pSection->keys[i], 0, Vector3D(0.0f));
+		}
+		else if(!stricmp(pSection->keys[i]->name, "model"))
 		{
 			// parse and load model
 			dsmmodel_t* model = ParseAndLoadModels( pSection->keys[i] );
@@ -988,7 +997,10 @@ void MakePhysModel(kvkeybase_t* pSection, char* egf_out_name)
 	// scale bones
 	for(int i = 0; i < physicsmodel->bones.numElem(); i++)
 	{
-		physicsmodel->bones[i]->position *= g_scalemodel;
+		physicsmodel->bones[i]->position *= g_modelScale;
+
+		if(physicsmodel->bones[i]->parent_id == -1)
+			physicsmodel->bones[i]->position += g_modelOffset;
 	}
 
 	// check material list
@@ -997,7 +1009,8 @@ void MakePhysModel(kvkeybase_t* pSection, char* egf_out_name)
 		// scale vertices
 		for(int j = 0; j < physicsmodel->groups[i]->verts.numElem(); j++)
 		{
-			physicsmodel->groups[i]->verts[j].position *= g_scalemodel;
+			physicsmodel->groups[i]->verts[j].position *= g_modelScale;
+			physicsmodel->groups[i]->verts[j].position += g_modelOffset;
 		}
 	}
 
