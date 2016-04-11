@@ -400,20 +400,40 @@ void Game_UpdateFreeCamera(float fDt)
 
 	float camSpeed = length(g_camera_freevelocity);
 
-	if(camSpeed > 1.0f)
-		g_camera_freevelocity -= normalize(g_camera_freevelocity) * 90.0f * fDt;
-	else
-		g_camera_freevelocity = vec3_zero;
-
+	// limit camera speed
 	if(camSpeed > g_freecam_speed.GetFloat())
 	{
 		float speedDiffScale = g_freecam_speed.GetFloat() / camSpeed;
-
 		g_camera_freevelocity *= speedDiffScale;
 	}
 
-	//CollisionData_t coll;
-	//g_pPhysics->TestLine(g_camera_freepos, g_camera_freepos+camMoveVec, coll);
+	btSphereShape collShape(0.5f);
+
+	// update camera collision
+	if(camSpeed > 1.0f)
+	{
+		g_camera_freevelocity -= normalize(g_camera_freevelocity) * 90.0f * fDt;
+
+		CollisionData_t coll;
+		g_pPhysics->TestConvexSweep(&collShape, Quaternion(0,0,0,0), g_camera_freepos, g_camera_freepos+g_camera_freevelocity, coll, 0xFFFFFFFF);
+
+		if(coll.fract == 0.0f)
+		{
+			float nDot = dot(coll.normal, g_camera_freevelocity);
+			g_camera_freevelocity -= coll.normal*nDot;
+			g_camera_freepos = g_camera_freepos;
+		}
+	}
+	else
+	{
+		g_camera_freevelocity = vec3_zero;
+	}
+
+	CollisionData_t coll;
+	g_pPhysics->TestConvexSweep(&collShape, Quaternion(0,0,0,0), g_camera_freepos, g_camera_freepos+f*200.0f, coll, 0xFFFFFFFF);
+
+	debugoverlay->Box3D(coll.position - 0.5f, coll.position + 0.5f, ColorRGBA(0,1,0,0.25f), 0.1f);
+	debugoverlay->Line3D(coll.position, coll.position + coll.normal, ColorRGBA(0,0,1,0.25f), ColorRGBA(0,0,1,0.25f) );
 
 	g_camera_freepos += g_camera_freevelocity * fDt;
 }

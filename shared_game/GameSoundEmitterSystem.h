@@ -36,6 +36,7 @@ enum Channel_t
 	CHAN_ITEM,
 	CHAN_BODY,
 	CHAN_WEAPON,
+	CHAN_SIGNAL,
 	CHAN_STREAM,	// streaming channel
 
 	CHAN_COUNT
@@ -48,6 +49,7 @@ static int channel_max_sounds[CHAN_COUNT] =
 	3,	// 3 for item (clicks, etc)
 	16,	// 3 for body
 	1,	// 1 for weapon shoot sounds
+	1,	// 1 for signal
 	1	// one streaming sound
 };
 
@@ -58,6 +60,7 @@ static const char* channel_names[CHAN_COUNT] =
 	"CHAN_ITEM",
 	"CHAN_BODY",
 	"CHAN_WEAPON",
+	"CHAN_SIGNAL",
 	"CHAN_STREAM",
 };
 
@@ -94,17 +97,17 @@ public:
 	void		EmitSound(const char* name);
 
 	// emit sound with parameters
-	void		EmitSoundWithParams(EmitSound_t *ep);
+	void		EmitSoundWithParams( EmitSound_t* ep );
 
-	int			GetChannelSoundCount(Channel_t chan);
-	void		DecrementChannelSoundCount(Channel_t chan);
+	int			GetChannelSoundCount( Channel_t chan );
+	void		DecrementChannelSoundCount( Channel_t chan );
 
 	void		SetSoundVolumeScale( float fScale ) {m_volumeScale = fScale;}
 	float		GetSoundVolumeScale() const { return m_volumeScale;}
 
 protected:
 	// sounds at channel counter
-	int			m_numChannelSounds[CHAN_COUNT];
+	uint8		m_numChannelSounds[CHAN_COUNT];
 
 	float		m_volumeScale;
 };

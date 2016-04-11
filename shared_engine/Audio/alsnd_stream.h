@@ -37,23 +37,6 @@ public:
 
 protected:
 
-	float				m_volume;
-	float				m_pitch;
-
-	bool				m_playing;
-	bool				m_loaded;
-	bool				m_ready;
-
-	ALuint				m_alSource;
-
-	ALuint				m_buffer[2];
-	IFile*				m_oggFile;
-	OggVorbis_File		m_oggStream;
-
-	vorbis_info*		m_vorbisInfo;
-	vorbis_comment*		m_vorbisComment;
-	ALenum				m_format;
-
 	void				OpenStreamFile(const char *name);
 
 	void				ResetStream();
@@ -65,6 +48,26 @@ protected:
 
 	bool				UploadStream(ALuint buffer);
 	void				EmptyStreamQueue();
+
+//
+
+	float				m_volume;
+	float				m_pitch;
+
+	ALenum				m_format;
+	ALuint				m_alSource;
+	ALuint				m_buffer[2];
+	
+	bool				m_playing : 1;
+	bool				m_loaded : 1;
+	bool				m_ready : 1;
+
+	IFile*				m_oggFile;
+	OggVorbis_File		m_oggStream;
+
+	vorbis_info*		m_vorbisInfo;
+	//vorbis_comment*		m_vorbisComment;
+	
 };
 
 #endif

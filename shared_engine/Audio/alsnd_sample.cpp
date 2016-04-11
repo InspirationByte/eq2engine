@@ -189,8 +189,7 @@ enum ESAMPLE_LOAD_STATE
 
 DkSoundSampleLocal::DkSoundSampleLocal()
 {
-	m_bLooping = false;
-	m_bStreaming = false;
+	m_flags = 0;
 	m_loadState = SAMPLE_LOAD_ERROR;
 	m_szName = "null.wav";
 	m_nChannels = 1;
@@ -201,25 +200,18 @@ DkSoundSampleLocal::~DkSoundSampleLocal()
 	alDeleteBuffers(1, &m_nALBuffer);
 }
 
-int DkSoundSampleLocal::GetFlags()
-{
-	return m_nFlags;
-}
-
-void DkSoundSampleLocal::Init(const char *name, bool streaming, bool looping, int nFlags)
+void DkSoundSampleLocal::Init(const char *name, int flags)
 {
 	m_szName = name;
-	m_bStreaming = streaming;
-	m_bLooping = looping;
-	m_nFlags = nFlags;
+	m_flags = flags;
 
-	if(!m_bStreaming)
+	if(!(m_flags & SAMPLE_FLAG_STREAMED))
 		alGenBuffers(1, &m_nALBuffer);
 }
 
 bool DkSoundSampleLocal::Load()
 {
-	if(m_bStreaming)
+	if(m_flags & SAMPLE_FLAG_STREAMED)
 		return true;
 
 	EqString ext = m_szName.Path_Extract_Ext();
@@ -275,7 +267,10 @@ bool DkSoundSampleLocal::LoadWav(const char *name, unsigned int buffer)
 	// load buffer data into
 	alBufferData( buffer, format, data, size, freq );
 
-	m_bLooping = (loop > 0);
+	m_flags &= ~SAMPLE_FLAG_LOOPING;
+
+	if(loop)
+		m_flags |= SAMPLE_FLAG_LOOPING;
 
 	free( data );
 
@@ -394,7 +389,7 @@ bool DkSoundSampleLocal::LoadOgg(const char *name, unsigned int buffer)
 	// Upload sound data to buffer
 	alBufferData(buffer, format, soundbuffer, size, freq);
 
-	ov_clear(&oggFile);
+	ov_clear( &oggFile );
 
 	g_fileSystem->Close(pFile);
 

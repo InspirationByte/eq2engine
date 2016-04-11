@@ -14,7 +14,7 @@
 DkSoundSampleZero zeroSample;
 //DkSoundEmitterZero zeroEmitter;
 
-int DkSoundSampleZero::GetFlags()
+int DkSoundSampleZero::GetFlags() const
 {
 	return SAMPLE_FLAG_REMOVEWHENSTOPPED;
 }

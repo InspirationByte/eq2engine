@@ -42,7 +42,9 @@ public:
 
 	virtual			~ISoundSample() {}
 
-	virtual	int		GetFlags() = 0;
+	virtual int		GetFlags() const = 0;
+
+	// TODO: float	GetDurationInSeconds() const = 0;
 };
 
 enum ESampleFlags
@@ -86,15 +88,15 @@ public:
 class ISoundEmitter : public ISoundPlayable
 {
 public:
-	virtual				~ISoundEmitter() {}
+	virtual					~ISoundEmitter() {}
 
-	virtual bool		IsVirtual() const = 0;
+	virtual bool			IsVirtual() const = 0;
 
-	virtual void		SetPosition(Vector3D &position) = 0;
-	virtual void		SetVelocity(Vector3D &velocity) = 0;
+	virtual void			SetPosition(Vector3D &position) = 0;
+	virtual void			SetVelocity(Vector3D &velocity) = 0;
 
-	virtual void		GetParams(soundParams_t *param) const = 0;
-	virtual void		SetParams(soundParams_t *param) = 0;
+	virtual void			GetParams(soundParams_t *param) const = 0;
+	virtual void			SetParams(soundParams_t *param) = 0;
 };
 
 //------------------------------------------------------------------------------------
@@ -146,7 +148,7 @@ public:
 	virtual void				FreeEmitter(ISoundEmitter* pEmitter) = 0;
 	virtual bool				IsValidEmitter(ISoundEmitter* pEmitter) const = 0;
 
-	virtual ISoundSample*		LoadSample(const char *name, bool streaming, bool looping = false, int nFlags = 0) = 0;
+	virtual ISoundSample*		LoadSample(const char *name, int nFlags = 0) = 0;
 	virtual ISoundSample*		FindSampleByName( const char *name ) = 0;
 	virtual void				ReleaseSample(ISoundSample *pSample) = 0;
 

@@ -108,10 +108,7 @@ void DkSoundEmitterLocal::Play()
 	{
 		sndChannel_t *c = pSoundSystem->m_pChannels[m_nChannel];
 
-		if(m_sample->m_bLooping)
-			alSourcei(c->alSource,AL_LOOPING, AL_TRUE);
-		else
-			alSourcei(c->alSource,AL_LOOPING, AL_FALSE);
+		alSourcei(c->alSource, AL_LOOPING, (m_sample->m_flags & SAMPLE_FLAG_LOOPING) > 0 ? AL_TRUE : AL_FALSE );
 
 		m_sample->WaitForLoad();
 
@@ -180,7 +177,7 @@ void DkSoundEmitterLocal::Pause()
 bool DkSoundEmitterLocal::IsStopped() const
 {
 	// only looping samples couldn't be get stopped in virtual mode...
-	bool virtualLooped = m_virtual && m_sample->m_bLooping && (m_virtualState == AL_STOPPED);
+	bool virtualLooped = m_virtual && (m_sample->m_flags & SAMPLE_FLAG_LOOPING) && (m_virtualState == AL_STOPPED);
 
 	return(m_nChannel < 0) && !virtualLooped;
 }

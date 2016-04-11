@@ -464,8 +464,8 @@ protected:
 	float					m_fEngineRPM;
 	float					m_engineIdleFactor;
 
-	int						m_nGear;
-	int						m_nPrevGear;
+	short					m_nGear;
+	short					m_nPrevGear;
 
 	FReal					m_radsPerSec;	// current rotations per sec
 
@@ -502,11 +502,9 @@ protected:
 	ISoundController*		m_pIdleSound;
 	ISoundController*		m_pHornSound;
 	ISoundController*		m_pSirenSound;
-	
-	bool					m_brakeLightsEnabled;
 
-	int						m_controlButtons;
-	int						m_oldControlButtons;
+	short					m_controlButtons;
+	short					m_oldControlButtons;
 
 	float					m_curTime;
 
@@ -518,7 +516,9 @@ protected:
 	CNetworkVar(float,		m_gameMaxDamage);
 
 	CNetworkVar(float,		m_gameFelony);	// felony percentage
-	CNetworkVar(int,		m_numPursued);
+	CNetworkVar(short,		m_numPursued);
+
+	bool					m_brakeLightsEnabled;
 
 	CNetworkVar(bool,		m_locked);
 	CNetworkVar(bool,		m_enabled);

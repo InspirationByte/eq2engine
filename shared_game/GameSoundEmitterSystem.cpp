@@ -379,7 +379,9 @@ void CSoundEmitterSystem::PrecacheSound(const char* pszName)
 
 	for(int i = 0; i < pSound->soundFileNames.numElem(); i++)
 	{
-		ISoundSample* pCachedSample = soundsystem->LoadSample(pSound->soundFileNames[i].GetData(), pSound->extraStreaming, pSound->loop);
+		int flags = (pSound->extraStreaming ? SAMPLE_FLAG_STREAMED : 0) | (pSound->loop ? SAMPLE_FLAG_LOOPING : 0);
+
+		ISoundSample* pCachedSample = soundsystem->LoadSample(pSound->soundFileNames[i].GetData(), flags);
 		if(pCachedSample)
 			pSound->pSamples.append(pCachedSample);
 	}

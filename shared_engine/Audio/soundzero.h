@@ -14,7 +14,7 @@
 class DkSoundSampleZero : public ISoundSample
 {
 public:
-	int			GetFlags();
+	int			GetFlags() const;
 };
 
 class DkSoundEmitterZero : public ISoundEmitter

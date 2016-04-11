@@ -749,34 +749,6 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 void CEqPhysics::PrepareSimulateStep()
 {
 
-/*
-	// clear collision list of ghost objects and assign new cell if changed
-	for(int i = 0; i < m_ghostObjects.numElem(); i++)
-	{
-		CEqCollisionObject* obj = m_ghostObjects[i];
-
-		if(obj->GetMesh() != NULL)	// probably is a station
-			continue;
-
-		// assign cells
-		collgridcell_t* oldCell = obj->GetCell();
-
-		// get new cell
-		collgridcell_t* newCell = m_grid.GetCellAtPos(obj->GetPosition());
-
-		// move object in grid
-		if (newCell != oldCell)
-		{
-			if (oldCell)
-				oldCell->m_dynamicObjs.fastRemove(obj);
-
-			if (newCell)
-				newCell->m_dynamicObjs.append(obj);
-
-			obj->SetCell(newCell);
-		}
-	}
-	*/
 }
 
 void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
@@ -885,66 +857,6 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body, float deltaTime, DkL
 			}
 		}
 	}
-
-	/*else
-	{
-		collgridcell_t* cell = body->GetCell();
-
-		if (!cell)
-			return;
-
-		// check for static objects
-		for (int j = 0; j < cell->m_gridObjects.numElem(); j++)
-			SolveStaticVsBodyCollision(cell->m_gridObjects[j], body, body->GetLastFrameTime(), pairs);
-
-
-		// check for dynamic objects in cell
-		for (int j = 0; j < cell->m_dynamicObjs.numElem(); j++)
-		{
-			CEqCollisionObject* collObj = cell->m_dynamicObjs[j];
-
-			if (collObj == body)
-				continue;
-
-			if(collObj->IsDynamic())
-			{
-				SolveBodyCollisions(body, (CEqRigidBody*)cell->m_dynamicObjs[j], body->GetLastFrameTime(), pairs);
-			}
-			else
-			{
-				SolveStaticVsBodyCollision(cell->m_dynamicObjs[j], body, body->GetLastFrameTime(), pairs);
-			}
-		}
-
-		int dx[8] = NEIGHBORCELLS_OFFS_XDX(cell->x, 1);
-		int dy[8] = NEIGHBORCELLS_OFFS_YDY(cell->y, 1);
-
-		// repeat for neighbour cells
-		for (int j = 0; j < 8; j++)
-		{
-			collgridcell_t* ncell = m_grid.GetCellAt(dx[j], dy[j]);
-
-			if (!ncell)
-				continue;
-
-			// check for dynamic objects
-			for (int k = 0; k < ncell->m_dynamicObjs.numElem(); k++)
-			{
-				//if (ncell->m_dynamicObjs[k] == body)
-				//	continue;
-
-				if(ncell->m_dynamicObjs[k]->IsDynamic())
-				{
-					SolveBodyCollisions(body, (CEqRigidBody*)ncell->m_dynamicObjs[k], body->GetLastFrameTime(), pairs);
-				}
-				else
-				{
-					SolveStaticVsBodyCollision(ncell->m_dynamicObjs[k], body, body->GetLastFrameTime(), pairs);
-				}
-			}
-		}
-	}
-	*/
 }
 
 ConVar ph_carVsCarErp("ph_carVsCarErp", "0.15", "Car versus car erp", CV_CHEAT);
@@ -1658,33 +1570,15 @@ bool CEqPhysics::TestConvexSweepSingleObject(	CEqCollisionObject* object,
 	Matrix4x4 obj_mat; // don't use fixed point, it's damn slow
 	object->ConstructRenderMatrix(obj_mat);
 
+	obj_mat = transpose(obj_mat);
+
 	// NEW
-	btTransform transIdent = ConvertMatrix4ToBullet(transpose(obj_mat));
+	btTransform transIdent = ConvertMatrix4ToBullet(obj_mat);
 
 	btVector3 strt = ConvertPositionToBullet(start);
 	btVector3 endt = ConvertPositionToBullet(end);
 
 	Matrix4x4 shapeTransform(params->rotation);
-
-	/*
-	btTransform transIdent;
-	transIdent.setIdentity();
-
-	Matrix4x4 inv_obj_mat = !(obj_mat);
-
-	Matrix4x4 shapeTransform(params->rotation);
-	shapeTransform = inv_obj_mat * shapeTransform;
-
-	// transform ray over object
-	Vector3D ray_start = (inv_obj_mat*Vector4D(start, 1.0f)).xyz();
-	Vector3D ray_end = (inv_obj_mat*Vector4D(end, 1.0f)).xyz();
-
-	btVector3 strt = ConvertPositionToBullet(ray_start);
-	btVector3 endt = ConvertPositionToBullet(ray_end);
-	*/
-	//btTransform startTrans(btident3, strt);
-	//btTransform endTrans(btident3, endt);
-
 
 	// define start and end trasformations
 	btTransform startTrans = ConvertMatrix4ToBullet(shapeTransform);
@@ -1729,9 +1623,10 @@ bool CEqPhysics::TestConvexSweepSingleObject(	CEqCollisionObject* object,
 	if(convexCallback.hasHit())
 	{
 		coll.fract = convexCallback.m_closestHitFraction;
-		// TODO: fix some tolerance
-		coll.position = (obj_mat * Vector4D(ConvertBulletToDKVectors(convexCallback.m_hitPointWorld), 1.0f)).xyz();
-		coll.normal = (obj_mat.getRotationComponent() * ConvertBulletToDKVectors(convexCallback.m_hitNormalWorld));
+
+		coll.position = ConvertBulletToDKVectors(convexCallback.m_hitPointWorld);
+		coll.normal = ConvertBulletToDKVectors(convexCallback.m_hitNormalWorld);
+
 		coll.materialIndex = convexCallback.m_surfMaterialId;
 		coll.hitobject = object;
 

@@ -29,28 +29,26 @@ public:
 
 	static void		SampleLoaderJob( void* loadSampleData );
 
-	void			Init(const char *name, bool streaming, bool looping, int nFlags = 0);
+	void			Init(const char *name, int flags);
 
 	bool			Load();
 	bool			LoadWav(const char *name, unsigned int buffer);
 	bool			LoadOgg(const char *name, unsigned int buffer);
 
-	// flags
-	int				GetFlags();
-
 	const char*		GetName() const {return m_szName.c_str();}
 
 	void			WaitForLoad();
 
+	int				GetFlags() const {return m_flags;}
+
 private:
-	int				m_nChannels;
-	bool			m_bStreaming;
-	bool			m_bLooping;
 	EqString		m_szName;
 	unsigned int	m_nALBuffer;
-	int				m_nFlags;
-
+	
 	volatile int	m_loadState;
+
+	uint8			m_nChannels;
+	uint8			m_flags;
 };
 
 //----------------------------------------------------------------------------------------------------------

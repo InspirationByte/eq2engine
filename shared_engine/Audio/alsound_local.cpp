@@ -44,7 +44,7 @@ DECLARE_CMD(snd_play,"Play a sound",0)
 	if(args->numElem() <= 0)
 		return;
 
-	ISoundSample* pSample = soundsystem->LoadSample(args->ptr()[0].GetData(),false,true,SAMPLE_FLAG_REMOVEWHENSTOPPED);
+	ISoundSample* pSample = soundsystem->LoadSample(args->ptr()[0].GetData(), SAMPLE_FLAG_REMOVEWHENSTOPPED);
 	ISoundPlayable* staticChannel = soundsystem->GetStaticStreamChannel(0);
 
 	staticChannel->SetSample(pSample);
@@ -722,7 +722,7 @@ ISoundEmitter* DkSoundSystemLocal::AllocEmitter()
 	return NULL;
 }
 
-ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, bool streaming, bool looping, int nFlags)
+ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, int nFlags)
 {
 	if(!m_bSoundInit)
 		return (ISoundSample*) &zeroSample;
@@ -743,7 +743,7 @@ ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, bool streaming, b
 #endif
 
 	DkSoundSampleLocal* pNewSample = new DkSoundSampleLocal();
-	pNewSample->Init(name, streaming, looping, nFlags);
+	pNewSample->Init(name, nFlags);
 
 	g_parallelJobs->AddJob( DkSoundSampleLocal::SampleLoaderJob, pNewSample );
 	g_parallelJobs->Submit();

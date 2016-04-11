@@ -93,7 +93,7 @@ public:
 	void					FreeEmitter(ISoundEmitter* pEmitter);
 	bool					IsValidEmitter(ISoundEmitter* pEmitter) const;
 
-	ISoundSample*			LoadSample(const char *name, bool streaming, bool looping = false, int nFlags = 0);
+	ISoundSample*			LoadSample(const char *name, int nFlags = 0);
 	ISoundSample*			FindSampleByName( const char *name );
 	void					ReleaseSample(ISoundSample *pSample);
 
@@ -118,7 +118,6 @@ protected:
 	soundParams_t			m_defaultParams;
 
 	bool					m_bSoundInit;
-
 	bool					m_pauseState;
 
 	DkList<ISoundEmitter*>	m_pSoundEmitters;

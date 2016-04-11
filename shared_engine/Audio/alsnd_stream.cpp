@@ -54,13 +54,13 @@ void DkSoundAmbient::Play()
 
 	alSourcei(m_alSource, AL_SOURCE_RELATIVE, AL_TRUE);
 
-	alSourcei(m_alSource, AL_LOOPING, m_sample->m_bLooping && !m_sample->m_bStreaming);
+	alSourcei(m_alSource, AL_LOOPING, (m_sample->m_flags & SAMPLE_FLAG_LOOPING) && !(m_sample->m_flags & SAMPLE_FLAG_STREAMED));
 
 	alSourcef(m_alSource, AL_GAIN, m_volume);
 	alSourcef(m_alSource, AL_PITCH, m_pitch);
 
 	//Play
-	if( m_sample->m_bStreaming )
+	if( m_sample->m_flags & SAMPLE_FLAG_STREAMED )
 	{
 		EqString soundPath = (_Es(SOUND_DEFAULT_PATH) +  m_sample->m_szName).c_str();
 
@@ -137,7 +137,7 @@ void DkSoundAmbient::Update()
 	if(!m_sample)
 		return;
 
-	if(m_sample->m_bStreaming)
+	if( m_sample->m_flags & SAMPLE_FLAG_STREAMED )
 		UpdateStreaming();
 	else if(GetState() == SOUND_STATE_STOPPED)
 		m_sample = NULL;
@@ -184,7 +184,7 @@ void DkSoundAmbient::OpenStreamFile(const char *name)
 	}
 
 	m_vorbisInfo = ov_info(&m_oggStream, -1);
-	m_vorbisComment = ov_comment(&m_oggStream, -1);
+	//m_vorbisComment = ov_comment(&m_oggStream, -1);
 
 	if(m_vorbisInfo->channels == 1)
 		m_format = AL_FORMAT_MONO16;
@@ -242,7 +242,7 @@ void DkSoundAmbient::UpdateStreaming()
 	if(state == AL_STOPPED)
 	{
 		//Make sure music is looping
-		if(!hasData && m_sample->m_bLooping)
+		if(!hasData && (m_sample->m_flags & SAMPLE_FLAG_LOOPING))
 		{
 			ResetStream();
 		}
