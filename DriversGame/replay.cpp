@@ -257,21 +257,22 @@ bool CReplayData::IsCarPlaying( CCar* pCar )
 	if(!(m_state == REPL_PLAYING || m_state == REPL_RECORDING))
 		return false;
 
-	// FIXME: might be slow
-	for(int i = 0; i < m_vehicles.numElem(); i++)
+	if(pCar->m_replayID == REPLAY_NOT_TRACKED)
+		return false;
+
+	vehiclereplay_t& veh = m_vehicles[pCar->m_replayID];
+
+	if(veh.obj_car == pCar)
 	{
-		if(m_vehicles[i].obj_car == pCar)
-		{
-			if(!m_vehicles[i].done)
-				return false;
+		if(!(veh.done || veh.curr_frame < veh.replayArray.numElem()))
+			return false;
 
-			int lastFrameIdx = m_vehicles[i].replayArray.numElem()-1;
+		int lastFrameIdx = veh.replayArray.numElem()-1;
 
-			replaycontrol_t& frame = m_vehicles[i].replayArray[lastFrameIdx];
+		replaycontrol_t& frame = veh.replayArray[lastFrameIdx];
 
-			// wait for our tick
-			return (m_tick < frame.tick);
-		}
+		// wait for our tick
+		return (m_tick < frame.tick);
 	}
 
 	return false;
@@ -281,7 +282,8 @@ ConVar replay_framecorrect("replay_framecorrect", "1", "Correct replay frames", 
 
 void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 {
-	if(!rep->done)
+	// if replay is complete or it's playback time, play this.
+	if(!(rep->done || rep->curr_frame < rep->replayArray.numElem()))
 		return;
 
 	if(rep->curr_frame >= rep->replayArray.numElem())
@@ -307,7 +309,7 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 	{
 		rep->check = false;
 
-		// correct whole framw
+		// correct whole frame
 		rep->obj_car->GetPhysicsBody()->SetPosition(frame.car_origin);
 		rep->obj_car->GetPhysicsBody()->SetOrientation(Quaternion(frame.car_rot.w, frame.car_rot.x, frame.car_rot.y, frame.car_rot.z));
 		rep->obj_car->GetPhysicsBody()->SetLinearVelocity(frame.car_vel);
@@ -343,7 +345,8 @@ void CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 {
 	int nFrame = rep->replayArray.numElem();
 
-	if(rep->done)
+	// if replay is done or current frames are loaded and must be played (or rewinded)
+	if( rep->done || rep->curr_frame < rep->replayArray.numElem() )
 		return;
 
 	// position must be set
@@ -598,55 +601,76 @@ void CReplayData::ReadEvent( replayevent_t& evt, IVirtualStream* stream )
 	// TODO: make replay event data
 }
 
-bool CReplayData::LoadVehicleReplay( CCar* target, const char* filename )
+bool CReplayData::LoadVehicleReplay( CCar* target, const char* filename, int& tickCount )
 {
+	if(	m_state == REPL_PLAYING ||
+		m_state == REPL_INIT_PLAYBACK)
+	{
+		tickCount = 0;
+		return true;
+	}
+
 	IFile* pFile = g_fileSystem->Open((_Es(filename) + ".vr").c_str(), "rb", SP_MOD);
 
 	if(pFile)
 	{
+		// read replay file header
+		vehiclereplay_file_t data;
+		pFile->Read(&data, 1, sizeof(vehiclereplay_file_t));
+
 		// try to inject frames
 		int repIdx = FindVehicleReplayByCar(target);
 
+		bool wereTracked = true;
+
+		// make vehicle tracking if not
 		if(repIdx == REPLAY_NOT_TRACKED)
 		{
 			vehiclereplay_t newRep;
 			repIdx = m_vehicles.append(newRep);
+			wereTracked = false;
 		}
 
 		vehiclereplay_t& veh = m_vehicles[repIdx];
 
-		// event will spawn this car
-		veh.obj_car = target;
+		if(!wereTracked)
+		{
+			// don't overwrite some data
+			veh.obj_car = target;
+			veh.name = data.name;
 
-		vehiclereplay_file_t data;
-		pFile->Read(&data, 1, sizeof(vehiclereplay_file_t));
+			veh.car_initial_pos = data.car_initial_pos;
+			veh.car_initial_rot = Quaternion(data.car_initial_rot.w, data.car_initial_rot.x, data.car_initial_rot.y, data.car_initial_rot.z);
+			veh.car_initial_vel = data.car_initial_vel;
+			veh.car_initial_angvel = data.car_initial_angvel;
 
-		veh.car_initial_pos = data.car_initial_pos;
-		veh.car_initial_rot = Quaternion(data.car_initial_rot.w, data.car_initial_rot.x, data.car_initial_rot.y, data.car_initial_rot.z);
-		veh.car_initial_vel = data.car_initial_vel;
-		veh.car_initial_angvel = data.car_initial_angvel;
-		veh.scriptObjectId = data.scriptObjectId;
+			// set replay id
+			veh.obj_car->m_replayID = repIdx;
+			veh.curr_frame = 0;
 
-		veh.name = data.name;
+			veh.scriptObjectId = data.scriptObjectId;
+		}
+		else
+			veh.curr_frame = veh.replayArray.numElem();
 
-		veh.curr_frame = 0;
-		veh.check = false;
-		veh.done = true;
+		veh.check = true;
+		//veh.done = true;
 
+		// read frames of vehicle controls
 		for(int j = 0; j < data.numFrames; j++)
 		{
 			replaycontrol_t control;
 			pFile->Read(&control, 1, sizeof(replaycontrol_t));
 
-			// add offset to the tick
+			tickCount = control.tick;
+
+			// add offset to the ticks
 			control.tick += m_tick;
 
 			veh.replayArray.append(control);
 		}
 
-		veh.obj_car->m_replayID = repIdx;
-		m_activeVehicles.append(repIdx);
-
+		// read events if we have some
 		int numEvents = 0;
 		pFile->Read(&numEvents, 1, sizeof(int));
 
@@ -660,14 +684,18 @@ bool CReplayData::LoadVehicleReplay( CCar* target, const char* filename )
 			m_events.append( evt );
 		}
 
-		// events must be sorted
+		// events must be sorted again
 		m_events.quickSort( _sortEventsFunc, 0, m_events.numElem()-1 );
+
+		// make this vehicle active if not
+		m_activeVehicles.addUnique( repIdx );
 
 		g_fileSystem->Close(pFile);
 
-		Msg("Car replay '%s' loaded\n", filename);
 		return true;
 	}
+
+	MsgWarning("Cannot load vehicle replay '%s'\n", filename);
 
 	return false;
 }
@@ -789,7 +817,7 @@ void CReplayData::LoadFromFile(const char* filename)
 		}
 
 		// load mission, level, set environment
-		m_state = REPL_INITIALIZE;
+		m_state = REPL_INIT_PLAYBACK;
 
 		if(!LoadMissionScript( hdr.missionscript ))
 		{

@@ -104,7 +104,7 @@ DECLARE_CMD(fastseek, "Does instant replay. You can fetch to frame if specified"
 
 	g_replayData->Stop();
 	g_replayData->m_tick = 0;
-	g_replayData->m_state = REPL_INITIALIZE;
+	g_replayData->m_state = REPL_INIT_PLAYBACK;
 
 	Game_QuickRestart(true);
 
@@ -131,7 +131,7 @@ void Game_InstantReplay(int replayTo)
 	{
 		g_replayData->Stop();
 		g_replayData->m_tick = 0;
-		g_replayData->m_state = REPL_INITIALIZE;
+		g_replayData->m_state = REPL_INIT_PLAYBACK;
 
 		Game_QuickRestart(true);
 	}
@@ -145,7 +145,7 @@ void Game_InstantReplay(int replayTo)
 		{
 			g_replayData->Stop();
 			g_replayData->m_tick = 0;
-			g_replayData->m_state = REPL_INITIALIZE;
+			g_replayData->m_state = REPL_INIT_PLAYBACK;
 
 			Game_QuickRestart(true);
 		}
@@ -251,7 +251,7 @@ void Game_InitializeSession()
 
 #endif // __INTELLISENSE__
 
-	if(g_replayData->m_state != REPL_INITIALIZE)
+	if(g_replayData->m_state != REPL_INIT_PLAYBACK)
 		g_replayData->Clear();
 
 	g_pGameSession->Init();
@@ -429,11 +429,17 @@ void Game_UpdateFreeCamera(float fDt)
 		g_camera_freevelocity = vec3_zero;
 	}
 
+	
+	g_pPhysics->m_physics.SetDebugRaycast(true);
+
+	// test code, must be removed after fixing raycast broadphase
 	CollisionData_t coll;
-	g_pPhysics->TestConvexSweep(&collShape, Quaternion(0,0,0,0), g_camera_freepos, g_camera_freepos+f*200.0f, coll, 0xFFFFFFFF);
+	g_pPhysics->TestConvexSweep(&collShape, Quaternion(0,0,0,0), g_camera_freepos, g_camera_freepos+f*2000.0f, coll, 0xFFFFFFFF);
 
 	debugoverlay->Box3D(coll.position - 0.5f, coll.position + 0.5f, ColorRGBA(0,1,0,0.25f), 0.1f);
 	debugoverlay->Line3D(coll.position, coll.position + coll.normal, ColorRGBA(0,0,1,0.25f), ColorRGBA(0,0,1,0.25f) );
+	
+	g_pPhysics->m_physics.SetDebugRaycast(false);
 
 	g_camera_freepos += g_camera_freevelocity * fDt;
 }

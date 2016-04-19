@@ -1606,8 +1606,21 @@ void CCar::UpdateCarPhysics(float delta)
 		Vector3D line_start = (m_worldMatrix*Vector4D(wheelConf.suspensionTop, 1)).xyz();
 		Vector3D line_end = (m_worldMatrix*Vector4D(wheelConf.suspensionBottom, 1)).xyz();
 
+		float fractionOld = wheel.collisionInfo.fract;
+
 		// trace solid ground only
 		g_pPhysics->TestLine(line_start, line_end, wheel.collisionInfo, OBJECTCONTENTS_SOLID_GROUND, &collFilter);
+
+		if(m_isLocalCar &&
+			(wheel.collisionInfo.fract - fractionOld) >= 0.08f)
+		{
+			EmitSound_t ep;
+
+			ep.name = "generic.wheelOnGround";
+
+			ep.origin = GetOrigin();
+			EmitSoundWithParams(&ep);
+		}
 
 		if(wheelConf.flags & WHEEL_FLAG_DRIVE)
 		{
@@ -3161,16 +3174,6 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 
 		if(wheel.surfparam->word == 'C')	// concrete/asphalt
 		{
-			if(!wheel.flags.lastOnGround && m_isLocalCar)
-			{
-				EmitSound_t ep;
-
-				ep.name = "generic.wheelOnGround";
-
-				ep.origin = GetOrigin();
-				EmitSoundWithParams(&ep);
-			}
-
 			wheel.smokeTime -= fDt;
 
 			float fSliding = GetTractionSlidingAtWheel(nWheel)+fabs(GetLateralSlidingAtWheel(nWheel));

@@ -120,7 +120,7 @@ void CGameSession::Init()
 	g_pGameWorld->m_random.SetSeed(0);
 
 	// start recorder
-	if( g_replayData->m_state != REPL_INITIALIZE )
+	if( g_replayData->m_state != REPL_INIT_PLAYBACK )
 	{
 		g_replayData->StartRecording();
 	}
@@ -134,13 +134,13 @@ void CGameSession::Init()
 			Msg("CGameSession::Init, :CMissionManager_InitMission() error:\n %s\n", OOLUA::get_last_error(state).c_str());
 	}
 
-	if( g_replayData->m_state == REPL_INITIALIZE )
+	if( g_replayData->m_state == REPL_INIT_PLAYBACK )
 	{
 		g_replayData->StartPlay();
 	}
 
 	// start recorder
-	if( g_replayData->m_state != REPL_INITIALIZE )
+	if( g_replayData->m_state != REPL_INIT_PLAYBACK )
 	{
 		//
 		// Spawn default car if script not did
@@ -169,11 +169,17 @@ void CGameSession::Init()
 	m_missionStatus = MIS_STATUS_INGAME;
 }
 
-void CGameSession::LoadCarReplay(CCar* pCar, const char* filename)
+extern ConVar sys_maxfps;
+
+
+float CGameSession::LoadCarReplay(CCar* pCar, const char* filename)
 {
-	if(	g_replayData->m_state != REPL_PLAYING &&
-		g_replayData->m_state != REPL_INITIALIZE)
-		g_replayData->LoadVehicleReplay(pCar, filename);
+	int numTicks = 0;
+	g_replayData->LoadVehicleReplay(pCar, filename, numTicks);
+
+	float fixedTicksDelta = 1.0f / (sys_maxfps.GetFloat()*PHYSICS_ITERATION_COUNT);
+
+	return numTicks * fixedTicksDelta;
 }
 
 void CGameSession::Shutdown()
@@ -218,7 +224,7 @@ int	CGameSession::GetMissionStatus() const
 bool CGameSession::IsReplay() const
 {
 	return (g_replayData->m_state == REPL_PLAYING ||
-			g_replayData->m_state == REPL_INITIALIZE);
+			g_replayData->m_state == REPL_INIT_PLAYBACK);
 }
 
 void CGameSession::ResetReplay()

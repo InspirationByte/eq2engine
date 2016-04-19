@@ -299,6 +299,8 @@ public:
 	// checks collision (made especially for rays, but could be used in other situations)
 	bool							CheckAllowContactTest(eqPhysCollisionFilter* filterParams,CEqCollisionObject* object);
 
+	void							SetDebugRaycast(bool enable) {m_debugRaycast = enable;}
+
 protected:
 
 	///< tests line versus some objects
@@ -347,6 +349,8 @@ protected:
 	btCollisionDispatcher*			m_collDispatcher;
 
 	int								m_numRayQueries;
+
+	bool							m_debugRaycast;
 };
 
 #endif // EQPHYSICS_H

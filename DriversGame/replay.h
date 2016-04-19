@@ -211,10 +211,12 @@ ALIGNED_TYPE(replaycamerahdr_s,4) replaycamerahdr_t;
 
 enum EReplayState
 {
-	REPL_NONE,
+	REPL_NONE = 0,
+
 	REPL_RECORDING,
+
+	REPL_INIT_PLAYBACK,
 	REPL_PLAYING,
-	REPL_INITIALIZE,
 };
 
 class CReplayData
@@ -251,7 +253,7 @@ public:
 	bool					SaveVehicleReplay( CCar* target, const char* filename );
 
 	void					LoadFromFile(const char* filename);
-	bool					LoadVehicleReplay( CCar* target, const char* filename );
+	bool					LoadVehicleReplay( CCar* target, const char* filename, int& tickCount );
 
 	//------------------------------------------------------
 

@@ -56,7 +56,7 @@ public:
 	CCar*						GetLeadCar() const;
 	void						SetLeadCar(CCar* pCar);
 
-	void						LoadCarReplay(CCar* pCar, const char* filename);
+	float						LoadCarReplay(CCar* pCar, const char* filename);
 
 	virtual int					GetSessionType() const {return SESSION_SINGLE;}
 

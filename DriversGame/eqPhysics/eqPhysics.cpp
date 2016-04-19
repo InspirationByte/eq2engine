@@ -124,7 +124,7 @@ public:
 
 CEqPhysics::CEqPhysics() : m_mutex(GetGlobalMutex(MUTEXPURPOSE_PHYSICS))
 {
-
+	m_debugRaycast = false;
 }
 
 CEqPhysics::~CEqPhysics()
@@ -1053,116 +1053,35 @@ void CEqPhysics::InternalTestLineCollisionCells(int y1, int x1, int y2, int x2,
 	F func,
 	void* args)
 {
-	int i;               // loop counter
-	int ystep, xstep;    // the step on y and x axis
-	int error;           // the error accumulated during the increment
-	int errorprev;       // *vision the previous value of the error variable
-	int y = y1, x = x1;  // the line points
-	int ddy, ddx;        // compulsory variables: the double values of dy and dx
-	int dx = x2 - x1;
-	int dy = y2 - y1;
+	//if( TestLineCollisionOnCell(y1, x1, start, end, rayBox, coll, rayMask, filterParams, func, args) )
+	//	return;
 
-	if( TestLineCollisionOnCell(y1, x1, start, end, rayBox, coll, rayMask, filterParams, func, args) )
-		return;
+    int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
+    int dy = -abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
+    int err = dx + dy, e2;
 
-	// NB the last point can't be here, because of its previous point (which has to be verified)
-	if (dy < 0)
+    for (;;)
 	{
-		ystep = -1;
-		dy = -dy;
-	}
-	else
-		ystep = 1;
+		if( TestLineCollisionOnCell(y1, x1, start, end, rayBox, coll, rayMask, filterParams, func, args) )
+			return; // if we just found nearest collision, stop.
 
-	if (dx < 0)
-	{
-		xstep = -1;
-		dx = -dx;
-	}
-	else
-		xstep = 1;
+        if (x1 == x2 && y1 == y2)
+			break;
 
-	ddy = 2 * dy;  // work with double values for full precision
-	ddx = 2 * dx;
+        e2 = 2 * err;
 
-	if (ddx >= ddy)
-	{
-		// first octant (0 <= slope <= 1)
-		// compulsory initialization (even for errorprev, needed when dx==dy)
-		errorprev = error = dx;  // start in the middle of the square
-		for (i=0 ; i < dx ; i++)
+        // EITHER horizontal OR vertical step (but not both!)
+        if (e2 > dy)
+		{ 
+            err += dy;
+            x1 += sx;
+        }
+		else if (e2 < dx)
 		{
-			// do not use the first point (already done)
-			x += xstep;
-			error += ddy;
-			if (error > ddx)
-			{
-				// increment y if AFTER the middle ( > )
-				y += ystep;
-				error -= ddx;
-				// three cases (octant == right->right-top for directions below):
-				if (error + errorprev < ddx)  // bottom square also
-				{
-					if(TestLineCollisionOnCell(y - ystep, x, start, end, rayBox, coll, rayMask, filterParams, func, args))
-						return;
-				}
-				else if (error + errorprev > ddx)  // left square also
-				{
-					TestLineCollisionOnCell(y, x - xstep, start, end, rayBox, coll, rayMask, filterParams, func, args);
-					return;
-				}
-				else
-				{  // corner: bottom and left squares also
-					if(TestLineCollisionOnCell(y - ystep, x, start, end, rayBox, coll, rayMask, filterParams, func, args))
-						return;
-
-					if(TestLineCollisionOnCell(y, x - xstep, start, end, rayBox, coll, rayMask, filterParams, func, args))
-						return;
-				}
-			}
-			if( TestLineCollisionOnCell(y, x, start, end, rayBox, coll, rayMask, filterParams, func, args))
-				return;
-			errorprev = error;
-		}
-	}
-	else
-	{
-		// the same as above
-		errorprev = error = dy;
-		for (i=0 ; i < dy ; i++)
-		{
-			y += ystep;
-			error += ddx;
-			if (error > ddy)
-			{
-				x += xstep;
-				error -= ddy;
-				if (error + errorprev < ddy)
-				{
-					if(TestLineCollisionOnCell(y, x - xstep, start, end, rayBox, coll, rayMask, filterParams, func, args))
-						return;
-				}
-				else if (error + errorprev > ddy)
-				{
-					if(TestLineCollisionOnCell(y - ystep, x, start, end, rayBox, coll, rayMask, filterParams, func, args))
-						return;
-				}
-				else
-				{
-					if(TestLineCollisionOnCell(y, x - xstep, start, end, rayBox, coll, rayMask, filterParams, func, args))
-						return;
-					if(TestLineCollisionOnCell(y - ystep, x, start, end, rayBox, coll, rayMask, filterParams, func, args))
-						return;
-				}
-			}
-
-			if(TestLineCollisionOnCell(y, x, start, end, rayBox, coll, rayMask, filterParams, func, args))
-				return;
-
-			errorprev = error;
-		}
-	}
-	// assert ((y == y2) && (x == x2));  // the last point (y2,x2) has to be the same with the last point of the algorithm
+            err += dx;
+            y1 += sy;
+        }
+    }
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------
@@ -1197,6 +1116,14 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 		objectTypeTesting &= ~0x2;
 
 	bool staticInBoundTest = (rayBox.minPoint.y <= cell->cellBoundUsed);
+
+	if(staticInBoundTest && m_debugRaycast)
+	{
+		Vector3D cellMin, cellMax;
+
+		if(m_grid.GetCellBounds(x, y, cellMin, cellMax))
+			debugoverlay->Box3D(cellMin, cellMax, ColorRGBA(1,0,0,0.25f));
+	}
 
 	// static objects are not checked if line is not in Y bound
 	if(staticInBoundTest && (objectTypeTesting & 0x1))
@@ -1318,8 +1245,11 @@ bool CEqPhysics::TestConvexSweepCollision(	btCollisionShape* shape,
 
 	Vector3D lineDir = fastNormalize(Vector3D(end-start));
 
-	m_grid.GetPointAt(start - sBoxSize*lineDir, startCell.x, startCell.y);
-	m_grid.GetPointAt(end + sBoxSize*lineDir, endCell.x, endCell.y);
+	//m_grid.GetPointAt(start - sBoxSize*lineDir, startCell.x, startCell.y);
+	//m_grid.GetPointAt(end + sBoxSize*lineDir, endCell.x, endCell.y);
+
+	m_grid.GetPointAt(start, startCell.x, startCell.y);
+	m_grid.GetPointAt(end , endCell.x, endCell.y);
 
 	InternalTestLineCollisionCells(	startCell.y, startCell.x,
 									endCell.y, endCell.x,
