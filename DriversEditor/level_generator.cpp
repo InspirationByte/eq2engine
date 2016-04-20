@@ -113,6 +113,15 @@ void LoadTileTextureFile(const char* filename, LevelGenParams_t& params)
 		}
 	}
 }
+
+enum EMapImageFlags
+{
+	MAP_FLAG_JUNCTION			= (1 << 0),
+	MAP_FLAG_STRAIGHT			= (1 << 1),
+
+	MAP_FLAG_JUNCTION_MANUAL	= (1 << 2),	// manually textured junction
+};
+
 bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, LevelGenParams_t& genParams )
 {
 	int iw = img.GetWidth();
@@ -130,7 +139,8 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 	if(regH & (0x1))
 		regH++;
 
-	Init(regW, regH, cellsPerRegion, true);
+	if(!genParams.keepOldLevel)
+		Init(regW, regH, cellsPerRegion, true);
 
 	// make sure that we use image littler than world size
 	if(iw > m_wide*m_cellsSize || ih > m_tall*m_cellsSize)
@@ -146,6 +156,9 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 
 	TVec3D<ubyte>* pixels = (TVec3D<ubyte>*)img.GetPixels();
 
+	ubyte* pixelFlagMap = (ubyte*)malloc( iw*ih );
+	memset(pixelFlagMap, 0, iw*ih);
+
 	Msg("Generating tilemap from '%s'...\n", img.GetName());
 
 #define GTEX( name ) genParams.tiles.##name.material, genParams.tiles.##name.atlasIdx
@@ -157,6 +170,9 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 #define GEN_TILE_JUNCTION	2
 
 #define PIXELIDX(x,y,w,h) (h-1-y)*w+x;
+
+	int rdir_x[] = ROADNEIGHBOUR_OFFS_X(0);
+	int rdir_y[] = ROADNEIGHBOUR_OFFS_Y(0);
 
 	// first pass: make everything
 	for(int x = 0; x < iw; x++)
@@ -183,9 +199,6 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 
 			int roff_x[] = ROADNEIGHBOUR_OFFS_X(x);
 			int roff_y[] = ROADNEIGHBOUR_OFFS_Y(y);
-
-			int rdir_x[] = ROADNEIGHBOUR_OFFS_X(0);
-			int rdir_y[] = ROADNEIGHBOUR_OFFS_Y(0);
 			
 			// check if this tile is best to put sidewalk
 			if(pixels[pixIdx][GEN_TILE_GRASS] > 0)
@@ -254,6 +267,9 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 						reg->m_roads[tileIdx].direction = tileDirection;
 						reg->m_roads[tileIdx].type = ROADTYPE_STRAIGHT;
 
+						// mark as straight
+						pixelFlagMap[pixIdx] = MAP_FLAG_STRAIGHT;
+
 						bool isOddCount = halfWidth & 0x1;
 
 						// mark other road tiles
@@ -261,6 +277,8 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 						{
 							int trdx = x-rdir_x[widthCheckDir]*i;
 							int trdy = y-rdir_y[widthCheckDir]*i;
+
+							int wpixIdx = PIXELIDX(trdx,trdy,iw,ih);
 
 							// convert to region-position
 							CLevelRegion* roadReg = NULL;
@@ -271,6 +289,8 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 
 							roadReg->m_roads[rTileIdx].direction = tileDirection;
 							roadReg->m_roads[rTileIdx].type = ROADTYPE_STRAIGHT;
+
+							pixelFlagMap[wpixIdx] = MAP_FLAG_STRAIGHT;
 
 							int rotation = tileDirection + 1;
 
@@ -299,35 +319,17 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 					}
 					else
 					{
-						int rotation = tileDirection;//+2;
-
-						while(rotation > 4)
-							rotation -= 4;
-
-						hfieldtile_t* tile = reg->GetHField()->GetTile(localTilePos.x,localTilePos.y);
-
-						if(tile->atlasIdx == genParams.tiles.normal_faded.atlasIdx )
-							reg->GetHField()->SetPointMaterial( localTilePos.x,localTilePos.y, GTEX(normal_outercorner) );
-						else
-							reg->GetHField()->SetPointMaterial( localTilePos.x,localTilePos.y, GTEX(normal_faded) );
-						
-						tile->rotatetex = rotation;
-						reg->m_roads[tileIdx].type = ROADTYPE_JUNCTION;
+						pixelFlagMap[pixIdx] = MAP_FLAG_JUNCTION;
 					}
 				}
-				else if(reg->m_roads[tileIdx].type == ROADTYPE_NOROAD)
+				else if(pixelFlagMap[pixIdx] == 0)
 				{
-					//reg->GetHField()->SetPointMaterial( localTilePos.x,localTilePos.y, GTEX(normal) );
-					reg->m_roads[tileIdx].type = ROADTYPE_JUNCTION;
+					pixelFlagMap[pixIdx] = MAP_FLAG_JUNCTION;
 				}
 			}
 
 			// road tiles
-			if( pixels[pixIdx][GEN_TILE_ROAD] > 0 || pixels[pixIdx][GEN_TILE_JUNCTION] > 0 )
-			{
-				//reg->GetHField()->SetPointMaterial( localTilePos.x,localTilePos.y, pAsphalt );
-			}
-			else if(pixels[pixIdx][GEN_TILE_GRASS] > 0)
+			if( !genParams.onlyRoadTextures && pixels[pixIdx][GEN_TILE_GRASS] > 0)
 			{
 				// grass or sidewalk tiles
 				if( putSidewalk )
@@ -342,100 +344,130 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 			}
 		}
 	}
-
-	for(int x = 0; x < iw; x++)
+	
+	if(!genParams.onlyRoadTextures)
 	{
-		for(int y = 0; y < ih; y++)
+		// remove damn short roads
+		for(int x = 0; x < iw; x++)
 		{
-			int pixIdx = PIXELIDX(x,y,iw,ih);
-
-			// empty? Don't put tiles
-			if(pixels[pixIdx][GEN_TILE_GRASS] == 0 && pixels[pixIdx][GEN_TILE_ROAD] == 0 && pixels[pixIdx][GEN_TILE_JUNCTION] == 0)
-				continue;
-
-			// convert to region-position
-			CLevelRegion* reg = NULL;
-			IVector2D localTilePos;
-			GlobalToLocalPoint( imgOffsetOnWorld+IVector2D(x,y), localTilePos, &reg);
-
-			int tileIdx = localTilePos.y*m_cellsSize+localTilePos.x;
-
-			int roff_x[] = ROADNEIGHBOUR_OFFS_X(0);
-			int roff_y[] = ROADNEIGHBOUR_OFFS_Y(0);
-
-			if(reg->m_roads[tileIdx].type == ROADTYPE_JUNCTION)
+			for(int y = 0; y < ih; y++)
 			{
-				for(int i = 0; i < 4; i++)
+				int pixIdx = PIXELIDX(x,y,iw,ih);
+
+				// convert to region-position
+				CLevelRegion* reg = NULL;
+				IVector2D localTilePos;
+				GlobalToLocalPoint( imgOffsetOnWorld+IVector2D(x,y), localTilePos, &reg);
+
+				int tileIdx = localTilePos.y*m_cellsSize+localTilePos.x;
+
+				if(pixelFlagMap[pixIdx] == MAP_FLAG_STRAIGHT)
 				{
-					int cx = x+roff_x[i];
-					int cy = y+roff_y[i];
+					int tileDir = reg->m_roads[tileIdx].direction;
 
-					// convert to region-position
-					CLevelRegion* creg = NULL;
-					IVector2D cTilePos;
-					GlobalToLocalPoint( imgOffsetOnWorld+IVector2D(cx,cy), cTilePos, &creg);
+					// check road length for 1 cell
+					int fdx = x + rdir_x[tileDir];
+					int fdy = y + rdir_y[tileDir];
 
-					int cTileIdx = cTilePos.y*m_cellsSize+cTilePos.x;
-					if( creg->m_roads[cTileIdx].type == ROADTYPE_STRAIGHT)
+					int bdx = x - rdir_x[tileDir];
+					int bdy = y - rdir_y[tileDir];
+
+					int fwdPixIdx = PIXELIDX(fdx,fdy,iw,ih);
+					int bckPixIdx = PIXELIDX(bdx,bdy,iw,ih);
+
+					if( !(pixelFlagMap[fwdPixIdx] == MAP_FLAG_STRAIGHT) && !(pixelFlagMap[bckPixIdx] == MAP_FLAG_STRAIGHT) )
 					{
-						for(int s = 1; s < 4; s++)
-						{
-							int nx = x+roff_x[i]*s;
-							int ny = y+roff_y[i]*s;
-
-							int npixIdx = PIXELIDX(nx,ny,iw,ih);
-
-							// convert to region-position
-							CLevelRegion* nreg = NULL;
-							IVector2D nTilePos;
-							GlobalToLocalPoint( imgOffsetOnWorld+IVector2D(nx,ny), nTilePos, &nreg);
-
-							int nTileIdx = nTilePos.y*m_cellsSize+nTilePos.x;
-							if(!nreg->m_roads)
-								break;
-
-							if( !nreg->m_roads[nTileIdx].type == ROADTYPE_STRAIGHT)
-								break;
-
-							// outgoing or incoming are accepted directions
-							if((i%2) != (nreg->m_roads[nTileIdx].direction%2))
-								break;
-
-							hfieldtile_t* ntile = nreg->GetHField()->GetTile(nTilePos.x,nTilePos.y);
-
-							bool isInverted =	(ntile->atlasIdx == GATL(line_longdots_inv)) ||
-												(ntile->atlasIdx == GATL(line_shortdots_inv));
-
-
-							if(s < 3)
-								nreg->m_roads[nTileIdx].flags |= ROAD_FLAG_RESERVED_3; // TO BE SET AS JUNCTION
-
-							if(s == 2)
-							{
-								if(isInverted)
-									nreg->GetHField()->SetPointMaterial(nTilePos.x,nTilePos.y, GTEX(zebra_inv));
-								else
-									nreg->GetHField()->SetPointMaterial(nTilePos.x,nTilePos.y, GTEX(zebra));
-							}
-							else
-							{
-								nreg->GetHField()->SetPointMaterial(nTilePos.x,nTilePos.y, GTEX(normal_faded));
-
-								if(isInverted)
-									ntile->rotatetex += 2;
-
-								while(ntile->rotatetex > 4)
-									ntile->rotatetex -= 4;
-							}
-						}
+						pixelFlagMap[pixIdx] = MAP_FLAG_JUNCTION;
 					}
 				}
-
-				reg->GetHField()->SetPointMaterial( localTilePos.x,localTilePos.y, GTEX(normal_darken) );
 			}
 		}
 	}
 
+	// put zebra on the straights and grow the junction
+	for(int x = 0; x < iw; x++)
+	{
+		for(int y = 0; y < ih; y++)
+		{
+			int pixIdx = PIXELIDX(x,y,iw,ih);
+
+			// empty? Don't put tiles
+			if(pixels[pixIdx][GEN_TILE_GRASS] == 0 && pixels[pixIdx][GEN_TILE_ROAD] == 0 && pixels[pixIdx][GEN_TILE_JUNCTION] == 0)
+				continue;
+
+			// now processing junctions
+			if(pixelFlagMap[pixIdx] == MAP_FLAG_JUNCTION)
+			{
+				// look for neighbours
+				// find a straight
+				for(int i = 0; i < 4; i++)
+				{
+					int cx = x+rdir_x[i];
+					int cy = y+rdir_y[i];
+
+					int cpixIdx = PIXELIDX(cx,cy,iw,ih);
+
+					// we have straight, start from it
+					if( pixelFlagMap[cpixIdx] != MAP_FLAG_STRAIGHT )
+						continue;
+
+					for(int s = 1; s < 4; s++)
+					{
+						int nx = x+rdir_x[i]*s;
+						int ny = y+rdir_y[i]*s;
+
+						int npixIdx = PIXELIDX(nx,ny,iw,ih);
+
+						// convert to region-position
+						CLevelRegion* nreg = NULL;
+						IVector2D nTilePos;
+						GlobalToLocalPoint( imgOffsetOnWorld+IVector2D(nx,ny), nTilePos, &nreg);
+
+						int nTileIdx = nTilePos.y*m_cellsSize+nTilePos.x;
+						if(!nreg->m_roads)
+							break;
+
+						// outgoing or incoming are accepted directions
+						if((i%2) != (nreg->m_roads[nTileIdx].direction%2))
+							break;
+
+
+						hfieldtile_t* ntile = nreg->GetHField()->GetTile(nTilePos.x,nTilePos.y);
+
+						bool isInverted =	(ntile->atlasIdx == GATL(line_longdots_inv)) ||
+											(ntile->atlasIdx == GATL(line_shortdots_inv));
+
+						if(genParams.onlyRoadTextures && s <= 2)
+							pixelFlagMap[npixIdx] |= MAP_FLAG_JUNCTION;
+
+						if(s == 2)
+						{
+							if(isInverted)
+								nreg->GetHField()->SetPointMaterial(nTilePos.x,nTilePos.y, GTEX(zebra_inv));
+							else
+								nreg->GetHField()->SetPointMaterial(nTilePos.x,nTilePos.y, GTEX(zebra));
+
+							pixelFlagMap[npixIdx] |= MAP_FLAG_JUNCTION_MANUAL;
+						}
+						else
+						{
+							nreg->GetHField()->SetPointMaterial(nTilePos.x,nTilePos.y, GTEX(normal_faded));
+
+							if(isInverted)
+								ntile->rotatetex += 2;
+
+							while(ntile->rotatetex > 4)
+								ntile->rotatetex -= 4;
+
+							pixelFlagMap[npixIdx] |= MAP_FLAG_JUNCTION_MANUAL;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// make junction painted correct
 	for(int x = 0; x < iw; x++)
 	{
 		for(int y = 0; y < ih; y++)
@@ -456,12 +488,18 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 			int roff_x[] = ROADNEIGHBOUR_OFFS_X(0);
 			int roff_y[] = ROADNEIGHBOUR_OFFS_Y(0);
 
-			if(reg->m_roads[tileIdx].flags & ROAD_FLAG_RESERVED_3)
-				reg->m_roads[tileIdx].type = ROADTYPE_JUNCTION;
+			if((pixelFlagMap[pixIdx] & MAP_FLAG_JUNCTION))
+			{
+				if(!genParams.onlyRoadTextures)
+					reg->m_roads[tileIdx].type = ROADTYPE_JUNCTION;
 
-			reg->m_roads[tileIdx].flags &= ~ROAD_FLAG_RESERVED_3;
+				if(!(pixelFlagMap[pixIdx] & MAP_FLAG_JUNCTION_MANUAL))
+					reg->GetHField()->SetPointMaterial( localTilePos.x,localTilePos.y, GTEX(normal_darken) );
+			}
 		}
 	}
+
+	free(pixelFlagMap);
 
 	return true;
 }

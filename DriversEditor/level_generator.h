@@ -23,6 +23,9 @@ struct LevelGenParams_t
 	{
 		for(int i = 0; i < atlases.numElem(); i++)
 			delete atlases[i];
+
+		onlyRoadTextures = false;
+		keepOldLevel = false;
 	}
 
 	struct tileTextures_t
@@ -49,6 +52,9 @@ struct LevelGenParams_t
 		tileGenTexture_t sidewalk;
 		tileGenTexture_t grass;
 	} tiles;
+
+	bool onlyRoadTextures;
+	bool keepOldLevel;
 
 	DkList<CTextureAtlas*> atlases;
 };

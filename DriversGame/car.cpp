@@ -2559,6 +2559,7 @@ void CCar::OnPhysicsFrame( float fDt )
 
 void CCar::StrikeHubcap(int wheel)
 {
+#ifndef EDITOR
 	wheelData_t& wdata = m_pWheels[wheel];
 	carWheelConfig_t& wheelConf = m_conf->m_wheels[wheel];
 
@@ -2592,6 +2593,7 @@ void CCar::StrikeHubcap(int wheel)
 
 	wdata.flags.lostHubcap = true;
 	wdata.pWheelObject->m_bodyGroupFlags = (1 << wdata.damagedWheelBodygroup);
+#endif // EDITOR
 }
 
 ConVar r_drawSkidMarks("r_drawSkidMarks", "1", "Draw skidmarks, 1 - player, 2 - all cars", CV_ARCHIVE);

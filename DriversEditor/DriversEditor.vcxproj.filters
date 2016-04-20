@@ -540,9 +540,6 @@
     <ClCompile Include="..\DriversGame\occluderSet.cpp">
       <Filter>Source Files\World</Filter>
     </ClCompile>
-    <ClCompile Include="level_generator.cpp">
-      <Filter>Source Files\World</Filter>
-    </ClCompile>
     <ClCompile Include="RegionEditFrame.cpp">
       <Filter>Source Files\Editor</Filter>
     </ClCompile>
@@ -595,6 +592,9 @@
       <Filter>Source Files\World</Filter>
     </ClCompile>
     <ClCompile Include="GenericImageListRenderer.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="level_generator.cpp">
       <Filter>Source Files\Editor</Filter>
     </ClCompile>
   </ItemGroup>

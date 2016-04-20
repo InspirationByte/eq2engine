@@ -140,7 +140,6 @@ enum ERoadType
 enum ERoadFlags
 {
 	ROAD_FLAG_HAS_TRAFFICLIGHT = (1 << 0),	// this flag can be only set at ROADTYPE_JUNCTION
-	ROAD_FLAG_RESERVED_3 = (1 << 2),
 };
 
 struct levroadcell_s
