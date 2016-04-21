@@ -94,6 +94,8 @@ CNewLevelDialog::CNewLevelDialog( wxWindow* parent ) : wxDialog( parent, -1, wxT
 
 CNewLevelDialog::~CNewLevelDialog()
 {
+	delete m_imageTemplateFilename;
+	m_imageTemplateFilename = NULL;
 }
 
 static int cellSizeTable[] = 

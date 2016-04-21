@@ -95,6 +95,8 @@ enum
 	Event_View_Environments_Start,
 	Event_View_Environments_End = Event_View_Environments_Start + EDITOR_MAX_ENVIRONMENT_LIST,	// max weather types. If you have issues with this - increase
 
+	Event_Level_RebuildRoadTextures,
+
 	Event_Max_Menu_Range,
 };
 
@@ -333,7 +335,8 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_menu_view->AppendSeparator();
 
 	m_menu_build = new wxMenu();
-	m_pMenu->Append( m_menu_build, wxT("Build") );
+	m_pMenu->Append( m_menu_build, wxT("Level") );
+	m_menu_build->Append(Event_Level_RebuildRoadTextures, DKLOC("TOKEN_REBUILDROADTEXTURES", L"Rebuild road textures"));
 	
 	this->SetMenuBar( m_pMenu );
 	
@@ -539,8 +542,6 @@ void CMainWindow::NewLevelPrompt()
 
 		m_regionEditorFrame->OnLevelUnload();
 
-		
-
 		g_pGameWorld->SetLevelName("unnamed");
 
 		m_bNeedsSave = false;
@@ -555,7 +556,7 @@ void CMainWindow::NewLevelPrompt()
 
 		g_pGameWorld->Init();
 
-		if( m_newLevelDialog->GetLevelImageFileName() !=  NULL )
+		if( m_newLevelDialog->GetLevelImageFileName() != NULL )
 		{
 			Msg("USING IMAGE '%s'\n", m_newLevelDialog->GetLevelImageFileName());
 
@@ -566,10 +567,11 @@ void CMainWindow::NewLevelPrompt()
 			{
 				// load tile description from txt
 				LevelGenParams_t genParams;
+				genParams.cellsPerRegion = cellSize;
 
 				LoadTileTextureFile((imageFilename.Path_Strip_Ext()+"_textures.txt").c_str(), genParams);
 
-				if(!g_pGameWorld->m_level.Ed_GenerateFromImage( img, cellSize, genParams))
+				if(!g_pGameWorld->m_level.Ed_GenerateMap( genParams, &img ))
 				{
 					wxMessageBox("Image is bigger that level size! Nothing is generated.", "Warning", wxOK | wxCENTRE, this);
 				}
@@ -701,6 +703,31 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 
 		g_pGameWorld->SetEnvironmentName( m_environmentList[envId].c_str() );
 		g_pGameWorld->InitEnvironment();
+	}
+	else if(event.GetId() == Event_Level_RebuildRoadTextures)
+	{
+		wxFileDialog* file = new wxFileDialog(NULL, "Open texture info file", 
+													wxEmptyString, 
+													"*_textures.txt", 
+													"Texture info file (*_textures.txt)|*_textures.txt;", 
+													wxFD_FILE_MUST_EXIST | wxFD_OPEN);
+
+		if(file && file->ShowModal() == wxID_OK)
+		{
+			EqString fname(file->GetPath().wchar_str());
+
+			// load tile description from txt
+			LevelGenParams_t genParams;
+			genParams.keepOldLevel = true;
+			genParams.onlyRoadTextures = true;
+
+			LoadTileTextureFile(fname.c_str(), genParams);
+
+			if(!g_pGameWorld->m_level.Ed_GenerateMap( genParams, NULL ))
+				wxMessageBox("Error happen.", "Error", wxOK | wxCENTRE, this);
+		}
+		else
+			return;
 	}
 	else if(event.GetId() == Event_File_Exit)
 	{

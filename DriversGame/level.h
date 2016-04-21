@@ -185,7 +185,7 @@ public:
 
 #ifdef EDITOR
 	int								Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CLevelRegion** reg, float& dist);
-	bool							Ed_GenerateFromImage(const CImage& img, int cellsPerRegion, LevelGenParams_t& genParams);
+	bool							Ed_GenerateMap(LevelGenParams_t& genParams, const CImage* img);
 #endif
 
 	// TODO: render code

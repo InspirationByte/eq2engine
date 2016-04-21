@@ -122,31 +122,70 @@ enum EMapImageFlags
 	MAP_FLAG_JUNCTION_MANUAL	= (1 << 2),	// manually textured junction
 };
 
-bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, LevelGenParams_t& genParams )
+#define GTEX( name ) genParams.tiles.##name.material, genParams.tiles.##name.atlasIdx
+#define GATL( name ) genParams.tiles.##name.atlasIdx
+
+// channel indexes
+#define GEN_TILE_GRASS		1
+#define GEN_TILE_ROAD		0
+#define GEN_TILE_JUNCTION	2
+
+inline int PixelToArrayIndex(int x,int y,int w,int h)
 {
-	int iw = img.GetWidth();
-	int ih = img.GetHeight();
+	if(x < 0 || y < 0 || x >= w || y >= h)
+		return -1;
 
-	int regW = iw / cellsPerRegion;
-	int regH = ih / cellsPerRegion;
+	return (h-1-y)*w+x;
+}
 
-	regW += 2;
-	regH += 2;
+bool CGameLevel::Ed_GenerateMap( LevelGenParams_t& genParams, const CImage* img )
+{
+	int iw = 0;
+	int ih = 0;
 
-	if(regW & (0x1))
-		regW++;
-
-	if(regH & (0x1))
-		regH++;
+	TVec3D<ubyte>* pixels = NULL;
 
 	if(!genParams.keepOldLevel)
-		Init(regW, regH, cellsPerRegion, true);
-
-	// make sure that we use image littler than world size
-	if(iw > m_wide*m_cellsSize || ih > m_tall*m_cellsSize)
 	{
-		return false;
+		ASSERTMSG(genParams.cellsPerRegion >= 32, "Programmer error! cellsPerRegion must be greater than or equal 32");
+		ASSERTMSG(img, "Programmer error! NULL image input for Ed_GenerateMap");
+
+		iw = img->GetWidth();
+		ih = img->GetHeight();
+
+		int regW = iw / genParams.cellsPerRegion;
+		int regH = ih / genParams.cellsPerRegion;
+
+		regW += 2;
+		regH += 2;
+
+		if(regW & (0x1))
+			regW++;
+
+		if(regH & (0x1))
+			regH++;
+
+		pixels = (TVec3D<ubyte>*)img->GetPixels();
+
+		Init(regW, regH, genParams.cellsPerRegion, true);
+
+		Msg("Generating full map from '%s'...\n", img->GetName());
+
+		// this check is not needed anymore
+		//if(iw > m_wide*m_cellsSize || ih > m_tall*m_cellsSize)
+
 	}
+	else
+	{
+		// use existing map just to regenerate old one
+		iw = m_wide * m_cellsSize;
+		ih = m_tall * m_cellsSize;
+
+		pixels = new TVec3D<ubyte>[iw*ih];
+	}
+
+	ubyte* pixelFlagMap = new ubyte[iw*ih];
+	memset(pixelFlagMap, 0, iw*ih);
 
 	// world center
 	IVector2D worldCenter( m_wide*m_cellsSize/2, m_tall*m_cellsSize/2);
@@ -154,32 +193,44 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 
 	IVector2D imgOffsetOnWorld = worldCenter-imgCenter;
 
-	TVec3D<ubyte>* pixels = (TVec3D<ubyte>*)img.GetPixels();
-
-	ubyte* pixelFlagMap = (ubyte*)malloc( iw*ih );
-	memset(pixelFlagMap, 0, iw*ih);
-
-	Msg("Generating tilemap from '%s'...\n", img.GetName());
-
-#define GTEX( name ) genParams.tiles.##name.material, genParams.tiles.##name.atlasIdx
-#define GATL( name ) genParams.tiles.##name.atlasIdx
-
-	// channel indexes
-#define GEN_TILE_GRASS		1
-#define GEN_TILE_ROAD		0
-#define GEN_TILE_JUNCTION	2
-
-#define PIXELIDX(x,y,w,h) (h-1-y)*w+x;
-
 	int rdir_x[] = ROADNEIGHBOUR_OFFS_X(0);
 	int rdir_y[] = ROADNEIGHBOUR_OFFS_Y(0);
+
+	// copy road map to image
+	if(genParams.keepOldLevel)
+	{
+		for(int x = 0; x < iw; x++)
+		{
+			for(int y = 0; y < ih; y++)
+			{
+				int pixIdx = PixelToArrayIndex(x,y,iw,ih);
+
+				// convert to region-position
+				CLevelRegion* reg = NULL;
+				IVector2D localTilePos;
+				GlobalToLocalPoint( imgOffsetOnWorld+IVector2D(x,y), localTilePos, &reg);
+
+				if(!reg)
+					continue;
+
+				int tileIdx = localTilePos.y*m_cellsSize+localTilePos.x;
+				if(reg->m_roads[tileIdx].type != ROADTYPE_NOROAD)
+				{
+					pixels[pixIdx][GEN_TILE_ROAD] = 255;
+					reg->GetHField()->SetChanged();
+				}
+				else
+					pixels[pixIdx][GEN_TILE_GRASS] = 255;
+			}
+		}
+	}
 
 	// first pass: make everything
 	for(int x = 0; x < iw; x++)
 	{
 		for(int y = 0; y < ih; y++)
 		{
-			int pixIdx = PIXELIDX(x,y,iw,ih);
+			int pixIdx = PixelToArrayIndex(x,y,iw,ih);
 
 			// empty? Don't put tiles
 			if(pixels[pixIdx][GEN_TILE_GRASS] == 0 && pixels[pixIdx][GEN_TILE_ROAD] == 0 && pixels[pixIdx][GEN_TILE_JUNCTION] == 0)
@@ -205,7 +256,10 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 			{
 				for(int i = 0; i < 8; i++)
 				{
-					int npixIdx = PIXELIDX(off_dx[i],off_dy[i],iw,ih);
+					int npixIdx = PixelToArrayIndex(off_dx[i],off_dy[i],iw,ih);
+
+					if(npixIdx == -1)
+						continue;
 
 					if( pixels[npixIdx][GEN_TILE_ROAD] > 0 || pixels[npixIdx][GEN_TILE_JUNCTION] > 0 )
 					{
@@ -220,7 +274,10 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 
 				for(int i = 0; i < 4; i++)
 				{
-					int npixIdx = PIXELIDX(roff_x[i],roff_y[i],iw,ih);
+					int npixIdx = PixelToArrayIndex(roff_x[i],roff_y[i],iw,ih);
+
+					if(npixIdx == -1)
+						continue;
 
 					if( pixels[npixIdx][GEN_TILE_GRASS] > 0 )
 					{
@@ -243,7 +300,7 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 						int trdx = x - rdir_x[widthCheckDir]*roadWidth;
 						int trdy = y - rdir_y[widthCheckDir]*roadWidth;
 
-						int npixIdx = PIXELIDX(trdx,trdy,iw,ih);
+						int npixIdx = PixelToArrayIndex(trdx,trdy,iw,ih);
 
 						// empty? Don't put tiles
 						if(pixels[npixIdx][GEN_TILE_ROAD] == 0)
@@ -278,7 +335,7 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 							int trdx = x-rdir_x[widthCheckDir]*i;
 							int trdy = y-rdir_y[widthCheckDir]*i;
 
-							int wpixIdx = PIXELIDX(trdx,trdy,iw,ih);
+							int wpixIdx = PixelToArrayIndex(trdx,trdy,iw,ih);
 
 							// convert to region-position
 							CLevelRegion* roadReg = NULL;
@@ -345,40 +402,37 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 		}
 	}
 	
-	if(!genParams.onlyRoadTextures)
+	// remove damn short roads
+	for(int x = 0; x < iw; x++)
 	{
-		// remove damn short roads
-		for(int x = 0; x < iw; x++)
+		for(int y = 0; y < ih; y++)
 		{
-			for(int y = 0; y < ih; y++)
+			int pixIdx = PixelToArrayIndex(x,y,iw,ih);
+
+			// convert to region-position
+			CLevelRegion* reg = NULL;
+			IVector2D localTilePos;
+			GlobalToLocalPoint( imgOffsetOnWorld+IVector2D(x,y), localTilePos, &reg);
+
+			int tileIdx = localTilePos.y*m_cellsSize+localTilePos.x;
+
+			if(pixelFlagMap[pixIdx] == MAP_FLAG_STRAIGHT)
 			{
-				int pixIdx = PIXELIDX(x,y,iw,ih);
+				int tileDir = reg->m_roads[tileIdx].direction;
 
-				// convert to region-position
-				CLevelRegion* reg = NULL;
-				IVector2D localTilePos;
-				GlobalToLocalPoint( imgOffsetOnWorld+IVector2D(x,y), localTilePos, &reg);
+				// check road length for 1 cell
+				int fdx = x + rdir_x[tileDir];
+				int fdy = y + rdir_y[tileDir];
 
-				int tileIdx = localTilePos.y*m_cellsSize+localTilePos.x;
+				int bdx = x - rdir_x[tileDir];
+				int bdy = y - rdir_y[tileDir];
 
-				if(pixelFlagMap[pixIdx] == MAP_FLAG_STRAIGHT)
+				int fwdPixIdx = PixelToArrayIndex(fdx,fdy,iw,ih);
+				int bckPixIdx = PixelToArrayIndex(bdx,bdy,iw,ih);
+
+				if( !(pixelFlagMap[fwdPixIdx] == MAP_FLAG_STRAIGHT) && !(pixelFlagMap[bckPixIdx] == MAP_FLAG_STRAIGHT) )
 				{
-					int tileDir = reg->m_roads[tileIdx].direction;
-
-					// check road length for 1 cell
-					int fdx = x + rdir_x[tileDir];
-					int fdy = y + rdir_y[tileDir];
-
-					int bdx = x - rdir_x[tileDir];
-					int bdy = y - rdir_y[tileDir];
-
-					int fwdPixIdx = PIXELIDX(fdx,fdy,iw,ih);
-					int bckPixIdx = PIXELIDX(bdx,bdy,iw,ih);
-
-					if( !(pixelFlagMap[fwdPixIdx] == MAP_FLAG_STRAIGHT) && !(pixelFlagMap[bckPixIdx] == MAP_FLAG_STRAIGHT) )
-					{
-						pixelFlagMap[pixIdx] = MAP_FLAG_JUNCTION;
-					}
+					pixelFlagMap[pixIdx] = MAP_FLAG_JUNCTION;
 				}
 			}
 		}
@@ -389,7 +443,7 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 	{
 		for(int y = 0; y < ih; y++)
 		{
-			int pixIdx = PIXELIDX(x,y,iw,ih);
+			int pixIdx = PixelToArrayIndex(x,y,iw,ih);
 
 			// empty? Don't put tiles
 			if(pixels[pixIdx][GEN_TILE_GRASS] == 0 && pixels[pixIdx][GEN_TILE_ROAD] == 0 && pixels[pixIdx][GEN_TILE_JUNCTION] == 0)
@@ -405,7 +459,7 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 					int cx = x+rdir_x[i];
 					int cy = y+rdir_y[i];
 
-					int cpixIdx = PIXELIDX(cx,cy,iw,ih);
+					int cpixIdx = PixelToArrayIndex(cx,cy,iw,ih);
 
 					// we have straight, start from it
 					if( pixelFlagMap[cpixIdx] != MAP_FLAG_STRAIGHT )
@@ -416,7 +470,7 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 						int nx = x+rdir_x[i]*s;
 						int ny = y+rdir_y[i]*s;
 
-						int npixIdx = PIXELIDX(nx,ny,iw,ih);
+						int npixIdx = PixelToArrayIndex(nx,ny,iw,ih);
 
 						// convert to region-position
 						CLevelRegion* nreg = NULL;
@@ -437,7 +491,7 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 						bool isInverted =	(ntile->atlasIdx == GATL(line_longdots_inv)) ||
 											(ntile->atlasIdx == GATL(line_shortdots_inv));
 
-						if(genParams.onlyRoadTextures && s <= 2)
+						if(s <= 2)
 							pixelFlagMap[npixIdx] |= MAP_FLAG_JUNCTION;
 
 						if(s == 2)
@@ -472,7 +526,7 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 	{
 		for(int y = 0; y < ih; y++)
 		{
-			int pixIdx = PIXELIDX(x,y,iw,ih);
+			int pixIdx = PixelToArrayIndex(x,y,iw,ih);
 
 			// empty? Don't put tiles
 			if(pixels[pixIdx][GEN_TILE_GRASS] == 0 && pixels[pixIdx][GEN_TILE_ROAD] == 0 && pixels[pixIdx][GEN_TILE_JUNCTION] == 0)
@@ -490,8 +544,7 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 
 			if((pixelFlagMap[pixIdx] & MAP_FLAG_JUNCTION))
 			{
-				if(!genParams.onlyRoadTextures)
-					reg->m_roads[tileIdx].type = ROADTYPE_JUNCTION;
+				reg->m_roads[tileIdx].type = ROADTYPE_JUNCTION;
 
 				if(!(pixelFlagMap[pixIdx] & MAP_FLAG_JUNCTION_MANUAL))
 					reg->GetHField()->SetPointMaterial( localTilePos.x,localTilePos.y, GTEX(normal_darken) );
@@ -499,7 +552,10 @@ bool CGameLevel::Ed_GenerateFromImage( const CImage& img, int cellsPerRegion, Le
 		}
 	}
 
-	free(pixelFlagMap);
+	if(genParams.keepOldLevel)
+		delete [] pixels;
+
+	delete [] pixelFlagMap;
 
 	return true;
 }
