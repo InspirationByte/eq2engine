@@ -98,11 +98,11 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 
 	kvkeybase_t* wheelModelType = kvs->FindKeyBase("wheelBodyGroup");
 
-	
+
 	const char* defaultWheelName = KV_GetValueString(wheelModelType, 0, "wheel1");
 	const char* defaultHubcapWheelName = KV_GetValueString(wheelModelType, 1, "");
 	const char* defaultHubcapName = KV_GetValueString(wheelModelType, 2, "");
-	
+
 	conf->m_body_size = KV_GetVector3D(kvs->FindKeyBase("bodySize"));
 	conf->m_body_center = KV_GetVector3D(kvs->FindKeyBase("center"));
 	conf->m_virtualMassCenter = KV_GetVector3D(kvs->FindKeyBase("gravityCenter"));
@@ -113,7 +113,7 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 
 	conf->m_maxSpeed = KV_GetValueFloat(kvs->FindKeyBase("maxSpeed"), 0, DEFAULT_MAX_SPEED);
 	conf->m_burnoutMaxSpeed = KV_GetValueFloat(kvs->FindKeyBase("burnoutMaxSpeed"), 0, BURNOUT_MAX_SPEED);
-	
+
 
 	conf->m_steeringSpeed = KV_GetValueFloat(kvs->FindKeyBase("steerSpeed"), 0, STEERING_CONST);
 	conf->m_handbrakeScale = KV_GetValueFloat(kvs->FindKeyBase("handbrakeScale"), 0, 1.0f);
@@ -959,7 +959,7 @@ void CCar::CreateCarPhysics()
 			// if hubcapped model not available
 			winfo.flags.lostHubcap = true;
 		}
-		
+
 		if(bestDefaultWheelBodyGroup == -1)
 		{
 			MsgWarning("Wheel submodel (%s) not found!!!\n", wconf.wheelName);
@@ -1759,7 +1759,7 @@ void CCar::UpdateCarPhysics(float delta)
 			torque = DBTorqueCurve(gearRadsPerSecond) * m_conf->m_torqueMult;
 
 			torque *= torqueConvert * transmissionRate;
-			
+
 
 			// swap brake and acceleration
 			swap(fAcceleration, fBreakage);
@@ -1851,7 +1851,7 @@ void CCar::UpdateCarPhysics(float delta)
 		m_nPrevGear = m_nGear;
 	}
 
-	if(fabs(fBreakage) > m_fBreakage)
+	if(FPmath::abs(fBreakage) > m_fBreakage)
 	{
 		m_fBreakage += delta * ACCELERATION_CONST;
 	}
@@ -2179,7 +2179,7 @@ void CCar::UpdateCarPhysics(float delta)
 			wheel.pitchVel = dot(wheel_forward, carBody->GetLinearVelocity());
 		}
 
-		
+
 
 		bool burnout = bDoBurnout && (wheelConf.flags & WHEEL_FLAG_DRIVE);
 		if(burnout)
@@ -2484,7 +2484,7 @@ void CCar::OnPhysicsFrame( float fDt )
 	for(int i = 0; i < m_pWheels.numElem(); i++)
 	{
 		wheelData_t& wheel = m_pWheels[i];
-		
+
 		//debugoverlay->Text3D(wheel.pWheelObject->GetOrigin(), 10.0f, color4_white, "damage: %.2f", wheel.damage);
 
 		if(wheel.flags.lostHubcap)
@@ -3860,7 +3860,7 @@ void CCar::Draw( int nRenderFlags )
 			Matrix3x3 wheelRotation = transpose(wheel.wheelOrient)*rotateXY3(wheel.pitch, leftWheel ? PI_F : 0.0f);
 
 			Matrix4x4 wheelTranslation = m_worldMatrix*(translate(Vector3D(wheelCenterPos - Vector3D(wheelConf.woffset, 0, 0)))*Matrix4x4(wheelRotation) * wheelScale);
-			
+
 			wheel.pWheelObject->SetOrigin(transpose(wheelTranslation).getTranslationComponent());
 			*/
 
@@ -3873,7 +3873,7 @@ void CCar::Draw( int nRenderFlags )
 
 				wheel.pWheelObject->Draw(nRenderFlags);
 			}
-			
+
 		}
 	}
 

@@ -1015,15 +1015,15 @@ void CHeightTileFieldRenderable::CleanRenderData(bool deleteVBO)
 
 	if(deleteVBO)
 	{
-		if(m_format)
-			g_pShaderAPI->DestroyVertexFormat(m_format);
-
-		m_format = NULL;
-
 		if(m_vertexbuffer)
 			g_pShaderAPI->DestroyVertexBuffer(m_vertexbuffer);
 
 		m_vertexbuffer = NULL;
+
+		if(m_format)
+			g_pShaderAPI->DestroyVertexFormat(m_format);
+
+		m_format = NULL;
 
 		if(m_indexbuffer)
 			g_pShaderAPI->DestroyIndexBuffer(m_indexbuffer);
@@ -1141,7 +1141,7 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 	if(m_isChanged)
 	{
 #ifdef EDITOR
-		g_pShaderAPI->Reset();
+		g_pShaderAPI->Reset(RESET_TYPE_VBO);
 		g_pShaderAPI->ApplyBuffers();
 
 		// regenerate again
@@ -1150,9 +1150,6 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 
 		m_isChanged = false;
 	}
-
-	if(m_batches == NULL)
-		return;
 
 	for(int i = 0; i < m_numBatches; i++)
 	{
