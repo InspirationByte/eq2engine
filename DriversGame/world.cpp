@@ -1078,7 +1078,7 @@ const float wetnessLevels[WEATHER_COUNT] =
 {
 	0.0f,
 	0.55f,
-	4.5f
+	1.0f
 };
 
 void CGameWorld::OnPreApplyMaterial( IMaterial* pMaterial )

@@ -431,9 +431,7 @@ bool CGameLevel::Ed_GenerateMap( LevelGenParams_t& genParams, const CImage* img 
 				int bckPixIdx = PixelToArrayIndex(bdx,bdy,iw,ih);
 
 				if( !(pixelFlagMap[fwdPixIdx] == MAP_FLAG_STRAIGHT) && !(pixelFlagMap[bckPixIdx] == MAP_FLAG_STRAIGHT) )
-				{
 					pixelFlagMap[pixIdx] = MAP_FLAG_JUNCTION;
-				}
 			}
 		}
 	}
