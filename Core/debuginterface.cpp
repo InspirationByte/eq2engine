@@ -37,22 +37,6 @@ int g_developerMode = 0;
 
 void cc_developer_f( DkList<EqString>* args )
 {
-	if(CMD_ARGC == 0)
-	{
-		Msg("Usage: developer <string1> [string2] ...");
-		Msg("supported modes:\n");
-		Msg("\tcore\n");
-		Msg("\tlocale\n");
-		Msg("\tfilesys\n");
-		Msg("\tmatsys\n");
-		Msg("\renderert\n");
-		Msg("\tsound\n");
-		Msg("\tnetwork\n");
-		Msg("\tall\n");
-		Msg("use 'developer disable' to turn off\n");
-		return;
-	}
-
 	int newMode = 0;
 
 	for(int i = 0; i < args->numElem(); i++)
@@ -87,7 +71,23 @@ void cc_developer_f( DkList<EqString>* args )
 	}
 
 	if( newMode > 0 )
-		g_developerMode = newMode;
+        g_developerMode = newMode;
+    else if(CMD_ARGC == 0 || newMode == 0)
+	{
+		Msg("Usage: developer <string1> [string2] ...");
+		Msg("supported modes:\n");
+		Msg("\tcore\n");
+		Msg("\tlocale\n");
+		Msg("\tfilesys\n");
+		Msg("\tmatsys\n");
+		Msg("\trenderer\n");
+		Msg("\tsound\n");
+		Msg("\tnetwork\n");
+		Msg("\tgame\n");
+		Msg("\tall\n");
+		Msg("use 'developer disable' to turn off\n");
+		return;
+	}
 }
 
 ConCommand c_developer("developer",cc_developer_f,"Sets developer modes",CV_CHEAT | CV_UNREGISTERED);

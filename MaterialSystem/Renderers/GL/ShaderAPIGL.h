@@ -319,6 +319,9 @@ protected:
 	bool				GL_CRITICAL();
 	void				GL_END_CRITICAL();
 
+	void                SwitchGLContext();
+	void                ResetGLContext();
+
 	void				CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags = 0);
 	GLuint				CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags);
 
@@ -392,6 +395,7 @@ private:
 	bool				m_isMainAtCritical;
 
 	CEqSignal			m_busySignal;
+	CEqMutex            m_contextMutex;
 
 	EGraphicsVendor		m_vendor;
 };

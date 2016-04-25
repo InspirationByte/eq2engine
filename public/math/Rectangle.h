@@ -135,6 +135,17 @@ struct TRectangle
 	{
 		return vrightBottom - vleftTop;
 	}
+
+	// modifiers
+    void FlipX()
+	{
+        QuickSwap(vleftTop.x,vrightBottom.x);
+	}
+
+	void FlipY()
+	{
+        QuickSwap(vleftTop.y,vrightBottom.y);
+	}
 };
 
 typedef TRectangle<float, (int)V_MAX_COORD>	Rectangle_t;

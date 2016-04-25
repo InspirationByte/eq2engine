@@ -32,6 +32,8 @@
 
 #define GL_NO_DEPRECATED_ATTRIBUTES
 
+#define FUCK_YOU_OPENGL_CONTEXT_SWITCHING
+
 #ifdef USE_GLES2
 
 static char s_FFPMeshBuilder_VertexProgram[] =
@@ -100,6 +102,46 @@ static char s_FFPMeshBuilder_Textured_PixelProgram[] =
 "}";
 
 #endif // USE_GLES2
+
+void GLAssertOnError(const char* op)
+{
+	GLenum lastError = glGetError();
+	if(lastError != GL_NO_ERROR)
+	{
+        EqString errString = varargs("code %x", lastError);
+
+        switch(lastError)
+        {
+            case GL_NO_ERROR:
+                errString = "GL_NO_ERROR";
+                break;
+            case GL_INVALID_ENUM:
+                errString = "GL_INVALID_ENUM";
+                break;
+            case GL_INVALID_VALUE:
+                errString = "GL_INVALID_VALUE";
+                break;
+            case GL_INVALID_OPERATION:
+                errString = "GL_INVALID_OPERATION";
+                break;
+            case GL_INVALID_FRAMEBUFFER_OPERATION:
+                errString = "GL_INVALID_FRAMEBUFFER_OPERATION";
+                break;
+            case GL_OUT_OF_MEMORY:
+                errString = "GL_OUT_OF_MEMORY";
+                break;
+            case GL_STACK_UNDERFLOW:
+                errString = "GL_STACK_UNDERFLOW";
+                break;
+            case GL_STACK_OVERFLOW:
+                errString = "GL_STACK_OVERFLOW";
+                break;
+        }
+
+        //ASSERTMSG(false, varargs("GL error occured while '%s' (error %s)!", op, errString.c_str()));
+        Msg("GL error occured while '%s' (error %s)!", op, errString.c_str());
+	}
+}
 
 typedef GLvoid (APIENTRY *UNIFORM_FUNC)(GLint location, GLsizei count, const void *value);
 typedef GLvoid (APIENTRY *UNIFORM_MAT_FUNC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
@@ -207,8 +249,11 @@ void ShaderAPIGL::Init(const shaderapiinitparams_t &params)
 
 	m_mainThreadId = Threading::GetCurrentThreadID();
 	m_currThreadId = m_mainThreadId;
+
 	m_isSharing = false;
 	m_isMainAtCritical = false;
+
+	// don't wait on first commands
 	m_busySignal.Raise();
 
 	// Set some of my preferred defaults
@@ -1925,16 +1970,20 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		return false;
 	}
 
-	ThreadingSharingRequest();
-
 	CGLShaderProgram* prog = (CGLShaderProgram*)pShaderOutput;
 	GLint vsResult, fsResult, linkResult;
 
 	// compile vertex
 	if(info.vs.text)
 	{
+        GL_CRITICAL();
+
 		// create GL program
 		prog->m_program = glCreateProgram();
+
+		GLAssertOnError("create program");
+
+		GL_END_CRITICAL();
 
 		EqString shaderString;
 
@@ -1951,7 +2000,10 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		const char* sStr = shaderString.c_str();
 
+		GL_CRITICAL();
 		prog->m_vertexShader = glCreateShader(GL_VERTEX_SHADER);
+
+		GLAssertOnError("create shader");
 
 		glShaderSource(prog->m_vertexShader, 1, &sStr, NULL);
 		glCompileShader(prog->m_vertexShader);
@@ -1973,6 +2025,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			for(int i = 0; i < info.vs.includes.numElem(); i++)
 				MsgInfo("\t%d : %s\n", i+1, info.vs.includes[i].c_str());
 		}
+
+		GL_END_CRITICAL();
 	}
 	else
 		return false; // vertex shader is required
@@ -1995,6 +2049,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		const char* sStr = shaderString.c_str();
 
+		GL_CRITICAL();
 		prog->m_fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
 		glShaderSource(prog->m_fragmentShader, 1, &sStr, NULL);
@@ -2017,6 +2072,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			for(int i = 0; i < info.ps.includes.numElem(); i++)
 				MsgInfo("\t%d : %s\n", i+1, info.ps.includes[i].c_str());
 		}
+
+		GL_END_CRITICAL();
 	}
 	else
 		fsResult = GL_TRUE;
@@ -2051,9 +2108,13 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			}
 		}
 
+		GL_CRITICAL();
+
 		// link program and go
 		glLinkProgram(prog->m_program);
 		glGetProgramiv(prog->m_program, GL_OBJECT_LINK_STATUS_ARB, &linkResult);
+
+		GL_END_CRITICAL();
 
 		if( !linkResult )
 		{
@@ -2068,6 +2129,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		// get current set program
 		GLuint currProgram = (m_pCurrentShader == NULL)? 0 : ((CGLShaderProgram*)m_pCurrentShader)->m_program;
 
+		GL_CRITICAL();
 		// use freshly generated program to retirieve constants (uniforms) and samplers
 		glUseProgram(prog->m_program);
 
@@ -2081,6 +2143,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		GLint uniformCount, maxLength;
 		glGetProgramiv(prog->m_program, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &uniformCount);
 		glGetProgramiv(prog->m_program, GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &maxLength);
+
+		GL_END_CRITICAL();
 
 		DevMsg(DEVMSG_SHADERAPI, "[DEBUG] shader '%s' has %d samplers and uniforms (namelen=%d)\n", pShaderOutput->GetName(), uniformCount, maxLength);
 
@@ -2100,12 +2164,15 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		int nSamplers = 0;
 		int nUniforms = 0;
 
+		GL_CRITICAL();
+
 		char* tmpName = new char[maxLength+1];
 
 		for (int i = 0; i < uniformCount; i++)
 		{
 			GLenum type;
 			GLint length, size;
+
 			glGetActiveUniform(prog->m_program, i, maxLength, &length, &size, &type, tmpName);
 
 #ifdef USE_GLES2
@@ -2176,6 +2243,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		glDeleteShader(prog->m_fragmentShader);
 		glDeleteShader(prog->m_vertexShader);
 
+		GL_END_CRITICAL();
+
 		prog->m_fragmentShader = 0;
 		prog->m_vertexShader = 0;
 
@@ -2202,8 +2271,6 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	}
 	else
 		return false;
-
-	ThreadingSharingRelease();
 
 	return true;
 }
@@ -2361,6 +2428,8 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(BufferAccessType_e nBufAccess, in
 	ThreadingSharingRequest();
 	glGenBuffers(1, &pGLVertexBuffer->m_nGL_VB_Index);
 
+    GLAssertOnError("create vertex buffer");
+
 	glBindBuffer(GL_ARRAY_BUFFER, pGLVertexBuffer->m_nGL_VB_Index);
 	glBufferData(GL_ARRAY_BUFFER, pGLVertexBuffer->GetSizeInBytes(), pData, glBufferUsages[nBufAccess]);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -2391,6 +2460,8 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, Buffe
 	ThreadingSharingRequest();
 	glGenBuffers(1, &pGLIndexBuffer->m_nGL_IB_Index);
 
+	GLAssertOnError("create index buffer");
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pGLIndexBuffer->m_nGL_IB_Index);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, pData, glBufferUsages[nBufAccess]);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -2419,7 +2490,7 @@ void ShaderAPIGL::DestroyVertexFormat(IVertexFormat* pFormat)
 	if (m_pCurrentVertexFormat == pFormat)
 	{
 		Reset(STATE_RESET_VF);
-		Apply();
+		ApplyBuffers();
 	}
 
 	m_VFList.remove(pFormat);
@@ -2435,14 +2506,15 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 	CScopedMutex m(m_Mutex);
 
-	//Reset(STATE_RESET_VBO);
-	//Apply();
-
 	m_VBList.remove(pVertexBuffer);
 
 	ThreadingSharingRequest();
 
+    Reset(STATE_RESET_VF | STATE_RESET_VB);
+    ApplyBuffers();
+
 	glDeleteBuffers(1, &pVB->m_nGL_VB_Index);
+	GLAssertOnError("destroy vertex buffer");
 
 	ThreadingSharingRelease();
 
@@ -2459,14 +2531,15 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 	CScopedMutex m(m_Mutex);
 
-	//Reset(STATE_RESET_VBO);
-	//Apply();
+    Reset(STATE_RESET_IB);
+    ApplyBuffers();
 
 	m_IBList.remove(pIndexBuffer);
 
 	ThreadingSharingRequest();
 
 	glDeleteBuffers(1, &pIB->m_nGL_IB_Index);
+	GLAssertOnError("destroy index buffer");
 
 	ThreadingSharingRelease();
 
@@ -2791,9 +2864,15 @@ void ShaderAPIGL::GetViewportDimensions(int &wide, int &tall)
 // sets scissor rectangle
 void ShaderAPIGL::SetScissorRectangle( const IRectangle &rect )
 {
-    // TODO: d3d to gl coord system
-    IVector2D size = rect.GetSize();
-	glScissor( rect.vleftTop.x, rect.vleftTop.y, size.x, size.y);
+    IRectangle scissor(rect);
+
+    scissor.vleftTop.y = m_nViewportHeight - scissor.vleftTop.y;
+    scissor.vrightBottom.y = m_nViewportHeight - scissor.vrightBottom.y;
+
+    QuickSwap(scissor.vleftTop.y, scissor.vrightBottom.y);
+
+    IVector2D size = scissor.GetSize();
+	glScissor( scissor.vleftTop.x, scissor.vleftTop.y, size.x, size.y);
 }
 
 int ShaderAPIGL::GetSamplerUnit(CGLShaderProgram* prog, const char* samplerName)
@@ -2842,13 +2921,109 @@ void ShaderAPIGL::SetTexture( ITexture* pTexture, const char* pszName, int index
 // OpenGL multithreaded context switching
 //----------------------------------------------------------------------------------------
 
+void ShaderAPIGL::SwitchGLContext()
+{
+    uintptr_t thisThreadId = Threading::GetCurrentThreadID();
+
+    // switching to this thread
+    if(m_mainThreadId == thisThreadId)
+    {
+        // not on this thread?
+        if(m_currThreadId != thisThreadId)
+        {
+            // wait for thread
+            m_busySignal.Wait();
+
+            Msg("GL switches to main thread, context 1\n");
+
+            // quickly reset
+            m_busySignal.Clear();
+
+            //ResetGLContext();
+
+#ifdef USE_GLES2
+            //eglMakeCurrent(m_display, m_eglSurface, m_eglSurface, m_glContext);
+#elif _WIN32
+            wglMakeCurrent(m_hdc, m_glContext);
+#elif LINUX
+            glXMakeCurrent(m_display, (Window)m_params.hWindow, m_glContext);
+#elif __APPLE__
+
+#endif
+        }
+        else // keep it locked
+            m_busySignal.Clear();
+
+        // already at main thread
+    }
+    else // not a main thread
+    {
+        // not on this thread?
+        if(m_currThreadId != thisThreadId)
+        {
+            // wait for thread
+            m_busySignal.Wait();
+
+            Msg("GL switches to OTHER thread, context 2");
+
+            // quickly reset
+            m_busySignal.Clear();
+
+            //ResetGLContext();
+
+#ifdef USE_GLES2
+            //eglMakeCurrent(m_display, m_eglSurface, m_eglSurface, m_glContext2);
+#elif _WIN32
+            wglMakeCurrent(m_hdc, m_glContext2);
+#elif LINUX
+            glXMakeCurrent(m_display, (Window)m_params.hWindow, m_glContext2);
+#elif __APPLE__
+
+#endif
+        }
+        else // keep it locked
+            m_busySignal.Clear();
+    }
+
+    // made a switch
+    m_currThreadId = thisThreadId;
+}
+
+void ShaderAPIGL::ResetGLContext()
+{
+    if(!m_isSharing) // don't reset context if nothing is at
+        return;
+
+    m_isSharing = false;
+
+    glFinish();
+
+    Msg("Switch to NULL\n");
+
+#ifdef USE_GLES2
+	//eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+#elif _WIN32
+	//wglMakeCurrent(NULL, NULL);
+#elif LINUX
+    //glXMakeCurrent(m_display, None, NULL);
+#elif __APPLE__
+
+#endif
+}
+
 // Owns context for current execution thread
 void ShaderAPIGL::ThreadingSharingRequest()
 {
+#ifdef FUCK_YOU_OPENGL_CONTEXT_SWITCHING
+    SwitchGLContext();
+#else
 	uintptr_t currThread = Threading::GetCurrentThreadID();
 
 	if(m_mainThreadId == currThread)
-		return;
+	{
+        GL_CRITICAL();
+        return;
+	}
 
 	if(m_isSharing)
 	{
@@ -2875,11 +3050,16 @@ void ShaderAPIGL::ThreadingSharingRequest()
 
 	// don't fuck with the mutex
 	m_busySignal.Clear();
+#endif // FUCK_YOU_OPENGL_CONTEXT_SWITCHING
 }
 
 // GL_CRITICAL is made for things that are called from main thread
 bool ShaderAPIGL::GL_CRITICAL()
 {
+#ifdef FUCK_YOU_OPENGL_CONTEXT_SWITCHING
+    SwitchGLContext();
+    return true;
+#else
 	uintptr_t currThread = Threading::GetCurrentThreadID();
 
 	if(m_currThreadId == currThread)
@@ -2908,29 +3088,34 @@ bool ShaderAPIGL::GL_CRITICAL()
 	m_busySignal.Clear();
 
 	return true;
+#endif // FUCK_YOU_OPENGL_CONTEXT_SWITCHING
 }
 
 // GL_END_CRITICAL releases main thread and lets other threads to take control over gl context
 void ShaderAPIGL::GL_END_CRITICAL()
 {
+#ifndef FUCK_YOU_OPENGL_CONTEXT_SWITCHING
 	if(!m_isMainAtCritical)
 		return;
 
 	m_isMainAtCritical = false;
-	m_busySignal.Raise();
+#endif // FUCK_YOU_OPENGL_CONTEXT_SWITCHING
 
-/*
-	if(!m_isMainAtCritical)
-		return;
-
-	m_isMainAtCritical = false;
-	m_busySignal.Raise();
-	*/
+    // end of use
+    m_busySignal.Raise();
 }
 
 // Release context sharing situation
 void ShaderAPIGL::ThreadingSharingRelease()
 {
+#ifndef FUCK_YOU_OPENGL_CONTEXT_SWITCHING
+    uintptr_t currThread = Threading::GetCurrentThreadID();
+    if(m_mainThreadId == currThread && m_isMainAtCritical)
+    {
+        GL_END_CRITICAL();
+        return;
+    }
+
 	if( m_isMainAtCritical )
 		m_busySignal.Wait();
 
@@ -2949,5 +3134,7 @@ void ShaderAPIGL::ThreadingSharingRelease()
 
 #endif
 
-	m_busySignal.Raise();
+#endif // FUCK_YOU_OPENGL_CONTEXT_SWITCHING
+    // end of use
+    m_busySignal.Raise();
 }

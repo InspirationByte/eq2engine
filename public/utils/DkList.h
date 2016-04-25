@@ -16,14 +16,6 @@
 #define DEBUG_CHECK_LIST_BOUNDS
 
 template< class T >
-inline void DkList_Swap( T &a, T &b )
-{
-	T c = a;
-	a = b;
-	b = c;
-}
-
-template< class T >
 class DkList
 {
 public:
@@ -629,10 +621,10 @@ inline bool DkList<T>::fastRemove( T const & obj )
 template< class T >
 inline void DkList<T>::swap( DkList<T> &other )
 {
-	DkList_Swap( m_nNumElem, other.m_nNumElem );
-	DkList_Swap( m_nSize, other.m_nSize );
-	DkList_Swap( m_nGranularity, other.m_nGranularity );
-	DkList_Swap( m_pListPtr, other.m_pListPtr );
+	QuickSwap( m_nNumElem, other.m_nNumElem );
+	QuickSwap( m_nSize, other.m_nSize );
+	QuickSwap( m_nGranularity, other.m_nGranularity );
+	QuickSwap( m_pListPtr, other.m_pListPtr );
 }
 
 // -----------------------------------------------------------------
@@ -721,7 +713,7 @@ inline void DkList<T>::shellSort(int (* comparator )(const T &a, const T &b), in
 			{
 				// T t = a[j];
 
-				DkList_Swap(m_pListPtr[j], m_pListPtr[j + gap]);
+				QuickSwap(m_pListPtr[j], m_pListPtr[j + gap]);
 
 				// a[j] = a[j + gap];
 				// a[j + gap] = t;
@@ -794,7 +786,7 @@ inline void shellSort(T* list, int numElems, int (* comparator )(const T &elem0,
 			{
 				// T t = a[j];
 
-				DkList_Swap(list[j], list[j + gap]);
+				QuickSwap(list[j], list[j + gap]);
 
 				// a[j] = a[j + gap];
 				// a[j + gap] = t;

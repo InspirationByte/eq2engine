@@ -1078,6 +1078,8 @@ int CModelCache::PrecacheModel( const char* modelName )
 	if(strlen(modelName) <= 0)
 		return CACHE_INVALID_MODEL;
 
+    DevMsg(DEVMSG_CORE, "Caching model '%s'\n", modelName);
+
 	if(m_egfFormat == NULL)
 	{
 		VertexFormatDesc_t pFormat[] = {
