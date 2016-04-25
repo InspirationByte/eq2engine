@@ -31,17 +31,25 @@ CGLOcclusionQuery::~CGLOcclusionQuery()
 // begins the occlusion query issue
 void CGLOcclusionQuery::Begin()
 {
+	ShaderAPIGL* glAPI = (ShaderAPIGL*)g_pShaderAPI;
+	glAPI->GL_CRITICAL();
+
 #ifdef USE_GLES2
 	glBeginQuery(GL_ANY_SAMPLES_PASSED, m_query);
 #else
 	glBeginQuery(GL_SAMPLES_PASSED, m_query);
 #endif // USE_GLES2
 	m_ready = false;
+
+	glAPI->GL_END_CRITICAL();
 }
 
 // ends the occlusion query issue
 void CGLOcclusionQuery::End()
 {
+	ShaderAPIGL* glAPI = (ShaderAPIGL*)g_pShaderAPI;
+	glAPI->GL_CRITICAL();
+
 #ifdef USE_GLES2
 	glEndQuery(GL_ANY_SAMPLES_PASSED);
 #else
@@ -49,6 +57,8 @@ void CGLOcclusionQuery::End()
 #endif // USE_GLES2
 	
 	glFlush();
+
+	glAPI->GL_END_CRITICAL();
 }
 
 // returns status
@@ -58,6 +68,9 @@ bool CGLOcclusionQuery::IsReady()
 		return true;
 
 	m_pixelsVisible = 0;
+
+	ShaderAPIGL* glAPI = (ShaderAPIGL*)g_pShaderAPI;
+	glAPI->GL_CRITICAL();
 
 	GLuint available;
 	glGetQueryObjectuiv(m_query, GL_QUERY_RESULT_AVAILABLE, &available);
@@ -73,6 +86,8 @@ bool CGLOcclusionQuery::IsReady()
 		m_pixelsVisible = (m_pixelsVisible & GL_TRUE) == GL_TRUE;
 #endif // USE_GLES2
 	}
+
+	glAPI->GL_END_CRITICAL();
 
 	return m_ready;
 }

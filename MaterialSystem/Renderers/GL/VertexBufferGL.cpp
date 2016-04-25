@@ -67,13 +67,13 @@ void CVertexBufferGL::Update(void* data, int size, int offset, bool discard /*= 
 
 	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
 
-	pGLRHI->ThreadingSharingRequest();
+	pGLRHI->GL_CRITICAL();
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
 	glBufferSubData(GL_ARRAY_BUFFER, offset*m_strideSize, size*m_strideSize, data);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	pGLRHI->ThreadingSharingRelease();
+	pGLRHI->GL_END_CRITICAL();
 
 	if(dynamic && discard && offset == 0)
 		m_numVerts = size;
@@ -120,7 +120,7 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 
 #ifdef USE_GLES2
 	// map buffer
-	pGLRHI->ThreadingSharingRequest();
+	pGLRHI->GL_CRITICAL();
 	glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
 
 	GLbitfield mapFlags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | (discard ? GL_MAP_INVALIDATE_RANGE_BIT : 0);
@@ -128,7 +128,7 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 	(*outdata) = m_lockPtr + m_lockOffs*m_strideSize;
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	pGLRHI->ThreadingSharingRelease();
+	pGLRHI->GL_END_CRITICAL();
 
 	if(m_lockPtr == NULL)
 		ASSERTMSG(false, "Failed to map vertex buffer!");
@@ -142,7 +142,7 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 	// read data into the buffer if we're not discarding
 	if( !discard )
 	{
-		pGLRHI->ThreadingSharingRequest();
+		pGLRHI->GL_CRITICAL();
 		glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
 
 		// lock whole buffer
@@ -152,7 +152,7 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 		(*outdata) = m_lockPtr + m_lockOffs*m_strideSize;
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		pGLRHI->ThreadingSharingRelease();
+		pGLRHI->GL_END_CRITICAL();
 	}
 #endif // USE_GLES2
 
@@ -172,7 +172,7 @@ void CVertexBufferGL::Unlock()
 		if( !m_lockReadOnly )
 		{
 			ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
-			pGLRHI->ThreadingSharingRequest();
+			pGLRHI->GL_CRITICAL();
 
 			//if( m_boundStream == -1 )
 			glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
@@ -186,7 +186,7 @@ void CVertexBufferGL::Unlock()
 			// check if bound
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-			pGLRHI->ThreadingSharingRelease();
+			pGLRHI->GL_END_CRITICAL();
 		}
 
 #ifndef USE_GLES2 // don't do dis...

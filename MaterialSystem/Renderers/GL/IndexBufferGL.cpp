@@ -55,13 +55,13 @@ void CIndexBufferGL::Update(void* data, int size, int offset, bool discard /*= t
 
 	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
 
-	pGLRHI->ThreadingSharingRequest();
+	pGLRHI->GL_CRITICAL();
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset*m_nIndexSize, size*m_nIndexSize, data);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	pGLRHI->ThreadingSharingRelease();
+	pGLRHI->GL_END_CRITICAL();
 
 	if(dynamic && discard && offset == 0)
 		m_nIndices = size;
@@ -109,7 +109,7 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 
 #ifdef USE_GLES2
 	// map buffer
-	pGLRHI->ThreadingSharingRequest();
+	pGLRHI->GL_CRITICAL();
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
 
 	GLbitfield mapFlags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | (discard ? GL_MAP_INVALIDATE_RANGE_BIT : 0);
@@ -117,7 +117,7 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 	(*outdata) = m_lockPtr + m_lockOffs*m_nIndexSize;
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	pGLRHI->ThreadingSharingRelease();
+	pGLRHI->GL_END_CRITICAL();
 
 	if(m_lockPtr == NULL)
 		ASSERTMSG(false, "Failed to map index buffer!");
@@ -130,7 +130,7 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 	// read data into the buffer if we're not discarding
 	if( !discard )
 	{
-		pGLRHI->ThreadingSharingRequest();
+		pGLRHI->GL_CRITICAL();
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
 
@@ -142,7 +142,7 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-		pGLRHI->ThreadingSharingRelease();
+		pGLRHI->GL_END_CRITICAL();
 	}
 #endif // USE_GLES2
 
@@ -163,7 +163,7 @@ void CIndexBufferGL::Unlock()
 		{
 			ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
 
-			pGLRHI->ThreadingSharingRequest();
+			pGLRHI->GL_CRITICAL();
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
 
@@ -175,7 +175,7 @@ void CIndexBufferGL::Unlock()
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-			pGLRHI->ThreadingSharingRelease();
+			pGLRHI->GL_END_CRITICAL();
 		}
 
 #ifndef USE_GLES2 // don't do dis...

@@ -62,6 +62,7 @@ public:
 	friend class		CGLTexture;
 	friend class		CGLRenderLib;
 	friend class		CGLShaderProgram;
+	friend class		CGLOcclusionQuery;
 
 						~ShaderAPIGL();
 						ShaderAPIGL();
@@ -314,9 +315,7 @@ public:
 
 protected:
 
-	void				ThreadingSharingRequest();
-	void				ThreadingSharingRelease();
-	bool				GL_CRITICAL();
+	void				GL_CRITICAL();
 	void				GL_END_CRITICAL();
 
 	void                SwitchGLContext();
@@ -391,11 +390,9 @@ private:
 
 	uintptr_t			m_mainThreadId;
 	uintptr_t			m_currThreadId;
-	bool				m_isSharing;
-	bool				m_isMainAtCritical;
+	bool				m_contextBound;
 
 	CEqSignal			m_busySignal;
-	CEqMutex            m_contextMutex;
 
 	EGraphicsVendor		m_vendor;
 };
