@@ -361,6 +361,9 @@
   <ItemGroup>
     <ResourceCompile Include="windows\Resources.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="windows\mainicon.ico" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

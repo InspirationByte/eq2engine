@@ -101,7 +101,7 @@ public:
 	CAITrafficCar( carConfigEntry_t* carConfig );
 	~CAITrafficCar();
 
-	virtual void		InitAI(CLevelRegion* reg, levroadcell_t* cell);
+	virtual void		InitAI( bool isParked );
 
 	virtual void		Spawn();
 	virtual void		OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy);

@@ -304,6 +304,7 @@ public:
 	void					DebugReloadCar();
 
 	virtual void			Spawn();
+	virtual void			PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell);
 
 	void					Draw( int nRenderFlags );
 

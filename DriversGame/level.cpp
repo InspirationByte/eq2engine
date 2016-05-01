@@ -399,6 +399,7 @@ void CGameLevel::PreloadRegion(int x, int y)
 	g_fileSystem->Close(pFile);
 }
 
+#ifdef EDITOR
 bool CGameLevel::Save(const char* levelname, bool final)
 {
 	IFile* pFile = g_fileSystem->Open(varargs("levels/%s.lev", levelname), "wb", SP_MOD);
@@ -434,6 +435,7 @@ bool CGameLevel::Save(const char* levelname, bool final)
 
 	return true;
 }
+#endif // EDITOR
 
 //-------------------------------------------------------------------------------------------------
 
@@ -677,6 +679,37 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 	delete [] modelNamesData;
 }
 
+void CGameLevel::ReadHeightfieldsLump( IVirtualStream* stream )
+{
+	for(int i = 0; i < m_numRegions; i++)
+	{
+		int idx = 0;
+		stream->Read(&idx, 1, sizeof(int));
+
+		int numFields = 1;
+		stream->Read(&numFields, 1, sizeof(int));
+
+		IVector2D regionPos;
+		regionPos.x = idx % m_wide;
+		regionPos.y = (idx - regionPos.x) / m_wide;
+
+		for(int j = 0; j < numFields; j++)
+		{
+			// hfield 0 is init by default
+			if( !m_regions[idx].m_heightfield[j] )
+			{
+				m_regions[idx].m_heightfield[j] = new CHeightTileFieldRenderable();
+				m_regions[idx].m_heightfield[j]->m_fieldIdx = j;
+				m_regions[idx].m_heightfield[j]->m_position = m_regions[idx].m_heightfield[0]->m_position;
+			}
+
+			m_regions[idx].m_heightfield[j]->Init(m_cellsSize, regionPos);
+			m_regions[idx].m_heightfield[j]->ReadFromStream(stream);
+		}
+	}
+}
+
+#ifdef EDITOR
 void CGameLevel::WriteObjectDefsLump(IVirtualStream* stream)
 {
 	// if(m_finalBuild)
@@ -744,35 +777,6 @@ void CGameLevel::WriteObjectDefsLump(IVirtualStream* stream)
 	stream->Write(modelsLump.GetBasePointer(), 1, modelsLump.Tell());
 }
 
-void CGameLevel::ReadHeightfieldsLump( IVirtualStream* stream )
-{
-	for(int i = 0; i < m_numRegions; i++)
-	{
-		int idx = 0;
-		stream->Read(&idx, 1, sizeof(int));
-
-		int numFields = 1;
-		stream->Read(&numFields, 1, sizeof(int));
-
-		IVector2D regionPos;
-		regionPos.x = idx % m_wide;
-		regionPos.y = (idx - regionPos.x) / m_wide;
-
-		for(int j = 0; j < numFields; j++)
-		{
-			// hfield 0 is init by default
-			if( !m_regions[idx].m_heightfield[j] )
-			{
-				m_regions[idx].m_heightfield[j] = new CHeightTileFieldRenderable();
-				m_regions[idx].m_heightfield[j]->m_fieldIdx = j;
-				m_regions[idx].m_heightfield[j]->m_position = m_regions[idx].m_heightfield[0]->m_position;
-			}
-
-			m_regions[idx].m_heightfield[j]->Init(m_cellsSize, regionPos);
-			m_regions[idx].m_heightfield[j]->ReadFromStream(stream);
-		}
-	}
-}
 
 void CGameLevel::WriteHeightfieldsLump(IVirtualStream* stream)
 {
@@ -987,7 +991,6 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 	//-------------------------------------------------------------------------------
 }
 
-#ifdef EDITOR
 int CGameLevel::Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CLevelRegion** reg, float& dist)
 {
 	float max_dist = MAX_COORD_UNITS;
@@ -1019,7 +1022,6 @@ int CGameLevel::Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, C
 }
 
 #endif
-
 
 CLevelRegion* CGameLevel::GetRegionAtPosition(const Vector3D& pos) const
 {

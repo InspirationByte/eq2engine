@@ -199,7 +199,7 @@ public:
 	//-----------------------------
 
 	// Finds or loads material (if findExisting option specified, or not found in cache)
-	virtual IMaterial*						FindMaterial(const char* szMaterialName, bool findExisting = false) = 0;
+	virtual IMaterial*						FindMaterial(const char* szMaterialName, bool findExisting = true) = 0;
 
 	// Creates material system shader
 	virtual IMaterialSystemShader*			CreateShaderInstance(const char* szShaderName) = 0;

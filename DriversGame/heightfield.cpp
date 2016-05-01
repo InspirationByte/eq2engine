@@ -1141,7 +1141,7 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 	if(m_isChanged)
 	{
 #ifdef EDITOR
-		g_pShaderAPI->Reset(RESET_TYPE_VBO);
+		g_pShaderAPI->Reset(STATE_RESET_VBO);
 		g_pShaderAPI->ApplyBuffers();
 
 		// regenerate again

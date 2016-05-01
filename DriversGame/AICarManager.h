@@ -71,7 +71,7 @@ public:
 	void						SetMaxTrafficCars(int count);
 	int							GetMaxTrafficCars() const;		
 	
-	CCar*						SpawnRandomTrafficCar(const IVector2D& globalCell, int carType = CAR_TYPE_NORMAL, bool doChecks = true);
+	CCar*						SpawnTrafficCar( const IVector2D& globalCell );
 
 	// ----- COPS ------
 	void						SetCopsEnabled(bool enable);									// switch to spawn
@@ -101,7 +101,7 @@ public:
 
 protected:
 
-	void						RemoveTrafficCar(CAITrafficCar* car);
+	void						RemoveTrafficCar(CCar* car);
 
 	void						CircularSpawnTrafficCars( int x0, int y0, int radius );
 
@@ -133,7 +133,7 @@ protected:
 
 	float						m_trafficUpdateTime;
 
-	DkList<CAITrafficCar*>		m_trafficCars;
+	DkList<CCar*>				m_trafficCars;
 
 public:
 	DkList<CAIPursuerCar*>		m_copCars;

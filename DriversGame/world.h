@@ -129,7 +129,11 @@ public:
 
 	void							SetLevelName(const char* name);
 	const char*						GetLevelName() const;
+
 	bool							LoadLevel();
+#ifdef EDITOR
+	bool							SaveLevel();
+#endif // EDITOR
 
 	void							SetEnvironmentName(const char* name);
 	const char*						GetEnvironmentName() const;

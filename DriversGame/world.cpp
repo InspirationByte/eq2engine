@@ -1706,6 +1706,15 @@ bool CGameWorld::LoadLevel()
 	return result;
 }
 
+#ifdef EDITOR
+bool CGameWorld::SaveLevel()
+{
+	// save editor data
+
+	return m_level.Save( m_levelname.c_str() );
+}
+#endif // EDITOR
+
 void CGameWorld::SetLevelName(const char* name)
 {
 	m_levelname = name;

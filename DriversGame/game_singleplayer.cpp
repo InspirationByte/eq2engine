@@ -399,21 +399,21 @@ CCar* CGameSession::CreateCar(const char* name, int carType)
 			else if (carType == CAR_TYPE_TRAFFIC_AI)
 			{
 				CAITrafficCar* traffic = new CAITrafficCar(m_carEntries[i]);
-				traffic->InitAI(NULL,NULL);
+				traffic->InitAI(false);
 
 				car = traffic;
 			}
 			else if (carType == CAR_TYPE_PURSUER_COP_AI)
 			{
 				CAIPursuerCar* traffic = new CAIPursuerCar(m_carEntries[i], PURSUER_TYPE_COP);
-				traffic->InitAI(NULL, NULL);
+				traffic->InitAI(false);
 
 				car = traffic;
 			}
 			else if (carType == CAR_TYPE_PURSUER_GANG_AI)
 			{
 				CAIPursuerCar* traffic = new CAIPursuerCar(m_carEntries[i], PURSUER_TYPE_GANG);
-				traffic->InitAI(NULL, NULL);
+				traffic->InitAI(false);
 
 				car = traffic;
 			}
@@ -437,7 +437,7 @@ CAIPursuerCar* CGameSession::CreatePursuerCar(const char* name, int type)
 		if(!m_carEntries[i]->carName.CompareCaseIns(name))
 		{
 			CAIPursuerCar* car = new CAIPursuerCar(m_carEntries[i],(EPursuerAIType) type);
-			car->InitAI(NULL, NULL);
+			car->InitAI(false);
 
 			// manage this car
 			g_pAIManager->m_copCars.append(car);

@@ -614,7 +614,8 @@ bool CMainWindow::SavePrompt(bool showQuestion, bool changeLevelName, bool bForc
 		// if it's already on disk, save it
 		if(IsSavedOnDisk() && bForceSave)
 		{
-			g_pGameWorld->m_level.Save(g_pGameWorld->GetLevelName());
+			g_pGameWorld->SaveLevel();
+			
 			m_bSavedOnDisk = true;
 			m_bNeedsSave = false;
 		}
@@ -622,7 +623,6 @@ bool CMainWindow::SavePrompt(bool showQuestion, bool changeLevelName, bool bForc
 		return true;
 	}
 	
-
 	if(showQuestion)
 	{
 		int result = wxMessageBox(varargs("Do you want to save level '%s'?", g_pGameWorld->GetLevelName()), "Question", wxYES_NO | wxCANCEL | wxCENTRE | wxICON_WARNING, this);
@@ -634,7 +634,6 @@ bool CMainWindow::SavePrompt(bool showQuestion, bool changeLevelName, bool bForc
 			return true;
 	}
 
-
 	if(!IsSavedOnDisk() || changeLevelName)
 	{
 		m_levelsavedialog->SetValue(g_pGameWorld->GetLevelName());
@@ -642,10 +641,8 @@ bool CMainWindow::SavePrompt(bool showQuestion, bool changeLevelName, bool bForc
 		if(m_levelsavedialog->ShowModal() == wxID_OK)
 		{
 			g_pGameWorld->SetLevelName(m_levelsavedialog->GetValue());
+			g_pGameWorld->SaveLevel();
 
-			//AddRecentWorld((char*)m_levelsavedialog->GetValue().c_str().AsChar());
-
-			g_pGameWorld->m_level.Save(g_pGameWorld->GetLevelName());
 			m_bSavedOnDisk = true;
 			m_bNeedsSave = false;
 		}

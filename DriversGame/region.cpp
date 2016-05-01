@@ -913,7 +913,7 @@ void CLevelRegion::WriteRegionRoads( IVirtualStream* stream )
 		{
 			int idx = y*m_heightfield[0]->m_sizew + x;
 
-			if(m_roads[idx].type == ROADTYPE_NOROAD)
+			if(m_roads[idx].type == ROADTYPE_NOROAD && m_roads[idx].flags == 0)
 				continue;
 
 			m_roads[idx].posX = x;

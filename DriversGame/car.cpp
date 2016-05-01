@@ -12,6 +12,7 @@
 #include "EqParticles.h"
 #include "replay.h"
 #include "object_debris.h"
+#include "heightfield.h"
 
 #include "Shiny.h"
 
@@ -1230,6 +1231,27 @@ void CCar::OnRemove()
 	m_pHornSound = NULL;
 	m_pSirenSound = NULL;
 	m_pSurfSound = NULL;
+}
+
+void CCar::PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell)
+{
+	if (!reg || !cell)
+		return;
+
+	Vector3D t,b,n;
+	reg->GetHField()->GetTileTBN(cell->posX, cell->posY, t,b,n);
+	Vector3D pos = reg->CellToPosition(cell->posX, cell->posY);
+
+	float roadCellAngle = cell->direction*-90.0f + 180.0f;
+
+	Matrix3x3 cellAngle(b,n,t);
+	Matrix3x3 finalAngle = !cellAngle*rotateY3(DEG2RAD(roadCellAngle) );
+
+	SetOrigin(pos - Vector3D(0.0f, m_conf->m_wheels[0].suspensionBottom.y, 0.0f));
+
+	Quaternion rotation( finalAngle );
+	renormalize(rotation);
+	m_pPhysicsObject->m_object->SetOrientation(rotation);
 }
 
 void CCar::SetOrigin(const Vector3D& origin)
