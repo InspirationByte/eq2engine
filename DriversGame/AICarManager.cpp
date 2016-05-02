@@ -118,22 +118,22 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 
 		if (str.breakIter <= 1)
 			return NULL;
-
-		// don't spawn if distance between cars is too short
-		for (int j = 0; j < m_trafficCars.numElem(); j++)
-		{
-			if (!m_trafficCars[j]->GetPhysicsBody())
-				continue;
-
-			IVector2D trafficPosGlobal;
-			if (!g_pGameWorld->m_level.GetTileGlobal(m_trafficCars[j]->GetOrigin(), trafficPosGlobal))
-				continue;
-
-			if (distance(trafficPosGlobal, globalCell) < TRAFFIC_BETWEEN_DISTANCE*TRAFFIC_BETWEEN_DISTANCE)
-				return NULL;
-		}
 	}
-					
+	
+	// don't spawn if distance between cars is too short
+	for (int j = 0; j < m_trafficCars.numElem(); j++)
+	{
+		if (!m_trafficCars[j]->GetPhysicsBody())
+			continue;
+
+		IVector2D trafficPosGlobal;
+		if (!g_pGameWorld->m_level.GetTileGlobal(m_trafficCars[j]->GetOrigin(), trafficPosGlobal))
+			continue;
+
+		if (distance(trafficPosGlobal, globalCell) < TRAFFIC_BETWEEN_DISTANCE*TRAFFIC_BETWEEN_DISTANCE)
+			return NULL;
+	}
+
 	Vector3D newSpawnPos = g_pGameWorld->m_level.GlobalTilePointToPosition(globalCell);
 
 	// if velocity is negative to new spawn origin, cancel spawning
@@ -155,15 +155,19 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 		
 		// car will be spawn, regenerate random
 		g_pGameWorld->m_random.Regenerate();
+		g_replayData->PushEvent(REPLAY_EVENT_FORCE_RANDOM);
 
-		newCar->Enable(false);
 		newCar->Spawn();
+		newCar->Enable(false);
 		newCar->PlaceOnRoadCell(pReg, roadCell);
 
 		if( conf->m_colors.numElem() > 0 )
 		{
 			int col_idx = g_pGameWorld->m_random.Get(0, conf->m_colors.numElem() - 1);
 			newCar->SetColorScheme(col_idx);
+
+			// car random color
+			g_replayData->PushEvent(REPLAY_EVENT_CAR_RANDOMCOLOR, newCar->m_replayID);
 		}
 
 		g_pGameWorld->AddObject(newCar, true);
@@ -213,6 +217,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 
 	// car will be spawn, regenerate random
 	g_pGameWorld->m_random.Regenerate();
+	g_replayData->PushEvent(REPLAY_EVENT_FORCE_RANDOM);
 
 	pNewCar->Spawn();
 	pNewCar->PlaceOnRoadCell(pReg, roadCell);
@@ -473,10 +478,10 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 
 		CAIPursuerCar* copBlockCar = new CAIPursuerCar(conf, PURSUER_TYPE_COP);
 
-		copBlockCar->Enable(false);
 		copBlockCar->m_sirenEnabled = true;
 
 		copBlockCar->Spawn();
+		copBlockCar->Enable(false);
 		copBlockCar->PlaceOnRoadCell(pReg, roadCell);
 		copBlockCar->InitAI(false);
 

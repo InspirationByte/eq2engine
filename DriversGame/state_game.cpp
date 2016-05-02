@@ -625,7 +625,7 @@ void Game_DirectorControlKeys(int key, bool down)
 			cam.origin = g_camera_freepos;
 			cam.rotation = g_camera_freeangles;
 			cam.startTick = g_replayData->m_tick;
-			cam.targetIdx = g_replayData->FindVehicleReplayByCar(viewedCar);
+			cam.targetIdx = viewedCar->m_replayID;
 			cam.type = g_nDirectorCameraType;
 
 			int camIndex = g_replayData->AddCamera(cam);

@@ -1029,7 +1029,7 @@ void DrawSkyBox(IMaterial* pSkyMaterial, int renderFlags)
 		pMeshBuilder->Position3f( skySize, -skySize, -skySize);
 		pMeshBuilder->AdvanceVertex();
 
-		pMeshBuilder->Position3f(-skySize,  skySize,  skySize);
+		pMeshBuilder->Position3f(skySize,  -skySize,  -skySize);
 		pMeshBuilder->AdvanceVertex();
 		pMeshBuilder->Position3f(-skySize,  skySize,  skySize);
 		pMeshBuilder->AdvanceVertex();

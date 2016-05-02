@@ -1145,7 +1145,7 @@ void CCar::Spawn()
 		if( ObjType() == GO_CAR )
 #endif // BIG_REPLAYS
 		{
-			g_replayData->PushEvent( REPLAY_EVENT_SPAWN, this );
+			g_replayData->PushSpawnOrRemoveEvent( REPLAY_EVENT_SPAWN, this );
 		}
 #endif // EDITOR
 	}
@@ -1200,7 +1200,7 @@ void CCar::OnRemove()
 		// if(dynamic_cast<CAITrafficCar*>(this) == NULL)
 		if( ObjType() == GO_CAR )
 #endif // BIG_REPLAYS
-			g_replayData->PushEvent( REPLAY_EVENT_REMOVE, this );
+			g_replayData->PushSpawnOrRemoveEvent( REPLAY_EVENT_REMOVE, this );
 #endif // EDITOR
 	}
 
@@ -3089,6 +3089,8 @@ void CCar::Simulate( float fDt )
 
 				Vector3D skidmarkPos = ( wheel.collisionInfo.position - wheelMat.rows[0]*wheelConf.width*sign(wheelConf.suspensionTop.x)*0.5f ) + wheel.collisionInfo.normal*0.008f + wheelDir*0.05f;
 
+				skidmarkPos += wheel.velocityVec*fDt*0.5f;
+
 				skidmarkPair.v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.5f, vec2_zero, ColorRGBA(1,1,1,fAlpha));
 				skidmarkPair.v1 = PFXVertex_t(skidmarkPos + wheelRightDir*wheelConf.width*0.5f, vec2_zero, ColorRGBA(1,1,1,fAlpha));
 
@@ -3144,7 +3146,6 @@ void CCar::Simulate( float fDt )
 					//pair.v0.color.w = 0.0f;
 					//pair.v1.color.w = 0.0f;
 
-
 					numSkidMarks = mark-nStartMark;
 
 					g_vehicleEffects->AddParticleStrip(&wheel.skidMarks[nStartMark].v0, numSkidMarks*2);
@@ -3160,7 +3161,6 @@ void CCar::Simulate( float fDt )
 
 					//pair.v0.color.w = 0.0f;
 					//pair.v1.color.w = 0.0f;
-
 
 					numSkidMarks = wheel.skidMarks.numElem()-nStartMark;
 
@@ -4040,6 +4040,7 @@ void CCar::SetInfiniteMass( bool infMass )
 void CCar::Lock(bool lock)
 {
 	m_locked = lock;
+	g_replayData->PushEvent(REPLAY_EVENT_CAR_LOCK, m_replayID, (void*)lock);
 }
 
 bool CCar::IsLocked() const
@@ -4050,6 +4051,7 @@ bool CCar::IsLocked() const
 void CCar::Enable(bool enable)
 {
 	m_enabled = enable;
+	g_replayData->PushEvent(REPLAY_EVENT_CAR_ENABLE, m_replayID, (void*)enable);
 }
 
 bool CCar::IsEnabled() const
