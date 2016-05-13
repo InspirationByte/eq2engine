@@ -138,12 +138,13 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 
 	float startLoadTime = Platform_GetCurrentTime();
 
+	levLump_t lump;
+
 	// okay, here we go
 	do
 	{
 		float startLumpTime = Platform_GetCurrentTime();
 
-		levLump_t lump;
 		if( pFile->Read(&lump, 1, sizeof(levLump_t)) == 0 )
 		{
 			isOK = false;
@@ -157,16 +158,16 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 		}
 		else if(lump.type == LEVLUMP_REGIONMAPINFO)
 		{
-			DevMsg(DEVMSG_CORE,"LEVLUMP_REGIONINFO size = %d", lump.size);
+			DevMsg(DEVMSG_GAME,"LEVLUMP_REGIONINFO size = %d\n", lump.size);
 
 			ReadRegionInfo(pFile);
 
 			float loadTime = Platform_GetCurrentTime()-startLumpTime;
-			DevMsg(DEVMSG_CORE, " took %g seconds\n", loadTime);
+			DevMsg(DEVMSG_GAME, " took %g seconds\n", loadTime);
 		}
 		else if(lump.type == LEVLUMP_REGIONS)
 		{
-			DevMsg(DEVMSG_CORE, "LEVLUMP_REGIONS size = %d\n", lump.size);
+			DevMsg(DEVMSG_GAME, "LEVLUMP_REGIONS size = %d\n", lump.size);
 
 			m_regionDataLumpOffset = pFile->Tell();
 
@@ -193,7 +194,7 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 		}
 		else if(lump.type == LEVLUMP_ROADS)
 		{
-			DevMsg(DEVMSG_CORE, "LEVLUMP_ROADS size = %d\n", lump.size);
+			DevMsg(DEVMSG_GAME, "LEVLUMP_ROADS size = %d\n", lump.size);
 
 			int lump_pos = pFile->Tell();
 
@@ -207,7 +208,7 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 		}
 		else if(lump.type == LEVLUMP_OCCLUDERS)
 		{
-			DevMsg(DEVMSG_CORE, "LEVLUMP_OCCLUDERS size = %d\n", lump.size);
+			DevMsg(DEVMSG_GAME, "LEVLUMP_OCCLUDERS size = %d\n", lump.size);
 
 			int lump_pos = pFile->Tell();
 
@@ -221,7 +222,7 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 		}
 		else if(lump.type == LEVLUMP_OBJECTDEFS)
 		{
-			DevMsg(DEVMSG_CORE, "LEVLUMP_OBJECTDEFS size = %d\n", lump.size);
+			DevMsg(DEVMSG_GAME, "LEVLUMP_OBJECTDEFS size = %d\n", lump.size);
 #ifndef EDITOR
 			MsgWarning("Seems like level uses models from editor list, it means that level is not fully built!\n");
 #endif // EDITOR
@@ -229,12 +230,26 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 		}
 		else if(lump.type == LEVLUMP_HEIGHTFIELDS)
 		{
-			DevMsg(DEVMSG_CORE, "LEVLUMP_HEIGHTFIELDS size = %d", lump.size);
+			DevMsg(DEVMSG_GAME, "LEVLUMP_HEIGHTFIELDS size = %d\n", lump.size);
+
+			int lump_pos = pFile->Tell();
 
 			ReadHeightfieldsLump(pFile);
 
 			float loadTime = Platform_GetCurrentTime()-startLumpTime;
-			DevMsg(DEVMSG_CORE, " took %g seconds\n", loadTime);
+			DevMsg(DEVMSG_GAME, " took %g seconds\n", loadTime);
+
+			pFile->Seek(lump_pos+lump.size, VS_SEEK_SET);
+		}
+		else if(lump.type == LEVLUMP_ZONES)
+		{
+			DevMsg(DEVMSG_GAME, "LEVLUMP_ZONES size = %d\n", lump.size);
+
+			int lump_pos = pFile->Tell();
+
+			// TODO: load LEVLUMP_ZONES
+
+			pFile->Seek(lump_pos+lump.size, VS_SEEK_SET);
 		}
 
 		// TODO: other lumps
@@ -248,9 +263,11 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 	g_fileSystem->Close(pFile);
 
 	float loadTime = Platform_GetCurrentTime()-startLoadTime;
-	DevMsg(DEVMSG_CORE, "*** Level file read for %g seconds\n", loadTime);
+	DevMsg(DEVMSG_GAME, "*** Level file read for %g seconds\n", loadTime);
 
 	m_levelName = levelname;
+
+	Msg("LEVEL %s\n", isOK ? "OK" : "LOAD FAILED");
 
 	return isOK;
 }
@@ -790,26 +807,26 @@ void CGameLevel::WriteHeightfieldsLump(IVirtualStream* stream)
 		{
 			int idx = y*m_wide+x;
 
+			CLevelRegion* reg = &m_regions[idx];
+
 			// write each region if not empty
-			if( !m_regions[idx].IsRegionEmpty() )
+			if( !reg->IsRegionEmpty() )
 			{
 				// heightfield index
 				hfielddata.Write(&idx, 1, sizeof(int));
 
-				int numFields = m_regions[idx].GetNumHFields();
+				int numFields = reg->GetNumHFields();
 
-				int numNonEmptyFields = m_regions[idx].GetNumNomEmptyHFields();
+				int numNonEmptyFields = reg->GetNumNomEmptyHFields();
 				hfielddata.Write(&numNonEmptyFields, 1, sizeof(int));
 
 				// write region heightfield data
 				for(int i = 0; i < numFields; i++)
 				{
-
-
-					if(	m_regions[idx].m_heightfield[i] &&
-						!m_regions[idx].m_heightfield[i]->IsEmpty())
+					if(	reg->m_heightfield[i] &&
+						!reg->m_heightfield[i]->IsEmpty())
 					{
-						m_regions[idx].m_heightfield[i]->WriteToStream( &hfielddata );
+						reg->m_heightfield[i]->WriteToStream( &hfielddata );
 					}
 				}
 			}
@@ -826,10 +843,14 @@ void CGameLevel::WriteHeightfieldsLump(IVirtualStream* stream)
 	stream->Write(hfielddata.GetBasePointer(), 1, hfielddata.Tell());
 }
 
+struct zoneRegions_t
+{
+	EqString zoneName;
+	DkList<int> regionList;
+};
+
 void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, bool final)
 {
-	//long fpos = file->Tell();
-
 	// ---------- LEVLUMP_REGIONINFO ----------
 	levRegionMapInfo_t regMapInfoHdr;
 
@@ -849,11 +870,13 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 	CMemoryStream roadDataStream;
 	roadDataStream.Open(NULL, VS_OPEN_WRITE, 2048);
 
-	CMemoryStream roadJuncDataStream;
-	roadJuncDataStream.Open(NULL, VS_OPEN_WRITE, 2048);
-
 	CMemoryStream occluderDataStream;
 	occluderDataStream.Open(NULL, VS_OPEN_WRITE, 2048);
+
+	CMemoryStream zoneDataStream;
+	zoneDataStream.Open(NULL, VS_OPEN_WRITE, 2048);
+
+	DkList<zoneRegions_t> zoneRegionList;
 
 	// build region offsets
 	for(int x = 0; x < m_wide; x++)
@@ -862,8 +885,10 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 		{
 			int idx = y*m_wide+x;
 
+			CLevelRegion& reg = m_regions[idx];
+
 			// write each region if not empty
-			if( !m_regions[idx].IsRegionEmpty() )
+			if( !reg.IsRegionEmpty() )
 			{
 				regMapInfoHdr.numRegions++;
 
@@ -872,9 +897,29 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 				occluderLstOffsetArray[idx] = occluderDataStream.Tell();
 
 				// write em all
-				m_regions[idx].WriteRegionData( &regionDataStream, m_objectDefs, final );
-				m_regions[idx].WriteRegionRoads( &roadDataStream );
-				m_regions[idx].WriteRegionOccluders( &occluderDataStream );
+				reg.WriteRegionData( &regionDataStream, m_objectDefs, final );
+				reg.WriteRegionRoads( &roadDataStream );
+				reg.WriteRegionOccluders( &occluderDataStream );
+
+				for(int i = 0; i < reg.m_zones.numElem(); i++)
+				{
+					regZone_t& zone = reg.m_zones[i];
+
+					// find needed region list
+					zoneRegions_t* zoneRegions = zoneRegionList.findFirst( [zone](const zoneRegions_t& x) {return !x.zoneName.CompareCaseIns(zone.zoneName);} );
+
+					if(!zoneRegions) // and if not found - create
+					{
+						zoneRegions_t zr;
+						zr.zoneName = zone.zoneName;
+
+						int idx = zoneRegionList.append( zr );
+						zoneRegions = &zoneRegionList[idx];
+					}
+
+					// add region index to this zone
+					zoneRegions->regionList.append( idx );
+				}
 			}
 			else
 			{
@@ -904,6 +949,8 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 		// write lump header and data
 		file->Write(&regInfoLumpInfo, 1, sizeof(levLump_t));
 		file->Write(regInfoLump.GetBasePointer(), 1, regInfoLump.Tell());
+
+		regInfoLump.Close();
 	}
 
 	// LEVLUMP_HEIGHTFIELDS
@@ -930,28 +977,10 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 		// write lump header and data
 		file->Write(&roadDataLumpInfo, 1, sizeof(levLump_t));
 		file->Write(roadsLump.GetBasePointer(), 1, roadsLump.Tell());
+
+		file->Flush();
+		roadsLump.Close();
 	}
-	/*
-	// LEVLUMP_ROADJUNCTIONS
-	{
-		CMemoryStream roadJunctsLump;
-		roadJunctsLump.Open(NULL, VS_OPEN_WRITE, 2048);
-
-		// write road junction offset array
-		roadJunctsLump.Write(roadOffsetArray, m_wide*m_tall, sizeof(int));
-
-		// write road junction data
-		roadJunctsLump.Write(roadJuncDataLump.GetBasePointer(), 1, roadJuncDataLump.Tell());
-
-		// compute lump size
-		levlump_t roadDataLumpInfo;
-		roadDataLumpInfo.type = LEVLUMP_ROADJUNCTIONS;
-		roadDataLumpInfo.size = roadJunctsLump.Tell();
-
-		// write lump header and data
-		file->Write(&roadDataLumpInfo, 1, sizeof(levlump_t));
-		file->Write(roadJunctsLump.GetBasePointer(), 1, roadJunctsLump.Tell());
-	}*/
 
 	// LEVLUMP_OCCLUDERS
 	{
@@ -970,6 +999,9 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 
 		// write occluder offset array
 		file->Write(occludersLump.GetBasePointer(), 1, occludersLump.Tell());
+
+		file->Flush();
+		occludersLump.Close();
 	}
 
 	// LEVLUMP_REGIONS
@@ -981,8 +1013,47 @@ void CGameLevel::WriteLevelRegions(IVirtualStream* file, const char* levelname, 
 		// write lump header and data
 		file->Write(&regDataLumpInfo, 1, sizeof(levLump_t));
 		file->Write(regionDataStream.GetBasePointer(), 1, regionDataStream.Tell());
+
+		file->Flush();
+		regionDataStream.Close();
 	}
 
+	// LEVLUMP_ZONES
+	{
+		CMemoryStream zonesRegionsLump;
+		zonesRegionsLump.Open(NULL, VS_OPEN_WRITE, 2048);
+
+		int zoneCount = zoneRegionList.numElem();
+		zonesRegionsLump.Write(&zoneCount, 1, sizeof(int));
+
+		levZoneRegions_t zoneHdr;
+
+		// process all zones
+		for(int i = 0; i < zoneRegionList.numElem(); i++)
+		{
+			memset(&zoneHdr, 0, sizeof(zoneHdr));
+			strncpy(zoneHdr.name, zoneRegionList[i].zoneName.c_str(), sizeof(zoneHdr.name) );
+
+			zoneHdr.numRegions = zoneRegionList[i].regionList.numElem();
+
+			// write header
+			zonesRegionsLump.Write(&zoneHdr, 1, sizeof(zoneHdr));
+
+			// write region indexes
+			zonesRegionsLump.Write(zoneRegionList[i].regionList.ptr(), 1, sizeof(int)*zoneHdr.numRegions);
+		}
+
+		levLump_t zoneLumpInfo;
+		zoneLumpInfo.type = LEVLUMP_ZONES;
+		zoneLumpInfo.size = zonesRegionsLump.Tell();
+
+		// write lump header and data
+		file->Write(&zoneLumpInfo, 1, sizeof(levLump_t));
+		file->Write(zonesRegionsLump.GetBasePointer(), 1, zonesRegionsLump.Tell());
+
+		file->Flush();
+		zonesRegionsLump.Close();
+	}
 
 	delete [] regionOffsetArray;
 	delete [] roadOffsetArray;
@@ -1644,7 +1715,6 @@ void CGameLevel::Ed_Prerender(const Vector3D& cameraPosition)
 		// query this region
 		if(region)
 		{
-			//region->m_queryTimes.Increment();
 			region->m_render = frustum.IsBoxInside(region->m_bbox.minPoint, region->m_bbox.maxPoint);
 
 			if(region->m_render)
@@ -1664,8 +1734,6 @@ void CGameLevel::Ed_Prerender(const Vector3D& cameraPosition)
 
 			if(nregion)
 			{
-				//nregion->m_queryTimes.Increment();
-
 				if(frustum.IsBoxInside(nregion->m_bbox.minPoint, nregion->m_bbox.maxPoint))
 				{
 					nregion->Ed_Prerender();
@@ -1694,7 +1762,6 @@ void CGameLevel::CollectVisibleOccluders(occludingFrustum_t& frustumOccluders, c
 		// query this region
 		if(region)
 		{
-			//region->m_queryTimes.Increment();
 			bool visible = frustumOccluders.frustum.IsBoxInside(region->m_bbox.minPoint, region->m_bbox.maxPoint);
 
 			if(visible)
@@ -1727,7 +1794,6 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 	// don't render too far?
 	IVector2D camPosReg;
 
-//#ifndef EDITOR
 	// mark renderable regions
 	if( GetPointAt(cameraPosition, camPosReg) )
 	{
@@ -1765,29 +1831,7 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 				}
 			}
 		}
-	}/*
-#else
-
-	// render all in frustum
-	for(int x = 0; x < m_wide; x++)
-	{
-		for(int y = 0; y < m_tall; y++)
-		{
-			int idx = y*m_wide+x;
-
-			CLevelRegion* region = &m_regions[idx];
-
-			// query this region
-			region->m_render = frustum.IsBoxInside(region->m_bbox.minPoint, region->m_bbox.maxPoint);
-
-			if(region->m_render)
-			{
-				region->Render( cameraPosition, viewProj, nRenderFlags );
-				region->m_render = false;
-			}
-		}
 	}
-#endif // EDITOR*/
 
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
@@ -2455,7 +2499,6 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 		IVector2D testPoint = end;
 		navcell_t lastCell = Nav_GetCellStateAtGlobalPoint(testPoint);
 
-		int counter = 0;
 		int lastDir = -1;
 
 		do

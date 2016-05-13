@@ -57,6 +57,9 @@ struct buildLayerColl_t
 	{
 	}
 
+	void					Save(IVirtualStream* stream, kvkeybase_t* kvs);
+	void					Load(IVirtualStream* stream, kvkeybase_t* kvs);
+
 	EqString				name;
 	DkList<buildLayer_t>	layers;
 };
@@ -155,6 +158,11 @@ public:
 	buildLayerColl_t*		CreateCollection();
 	void					DeleteCollection(buildLayerColl_t* coll);
 
+	void					LoadLayerCollections( const char* levelName );
+	void					SaveLayerCollections( const char* levelName );
+
+	void					RemoveAllLayerCollections();
+
 	DECLARE_EVENT_TABLE()
 protected:
 
@@ -192,13 +200,16 @@ public:
 
 	void		MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos );
 
-	void		InitTool();
-	void		ShutdownTool();
-
 	void		Update_Refresh();
 
 	void		OnKey(wxKeyEvent& event, bool bDown);
 	void		OnRender();
+
+	void		InitTool();
+
+	void		OnLevelLoad();
+	void		OnLevelSave();
+	void		OnLevelUnload();
 	
 protected:
 

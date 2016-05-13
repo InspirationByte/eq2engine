@@ -4040,7 +4040,9 @@ void CCar::SetInfiniteMass( bool infMass )
 void CCar::Lock(bool lock)
 {
 	m_locked = lock;
+#ifndef EDITOR
 	g_replayData->PushEvent(REPLAY_EVENT_CAR_LOCK, m_replayID, (void*)lock);
+#endif // EDITOR
 }
 
 bool CCar::IsLocked() const
@@ -4051,7 +4053,9 @@ bool CCar::IsLocked() const
 void CCar::Enable(bool enable)
 {
 	m_enabled = enable;
+#ifndef EDITOR
 	g_replayData->PushEvent(REPLAY_EVENT_CAR_ENABLE, m_replayID, (void*)enable);
+#endif // EDITOR
 }
 
 bool CCar::IsEnabled() const

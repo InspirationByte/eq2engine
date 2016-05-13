@@ -645,11 +645,18 @@ bool CMainWindow::SavePrompt(bool showQuestion, bool changeLevelName, bool bForc
 
 			m_bSavedOnDisk = true;
 			m_bNeedsSave = false;
+
+			for(int i = 0; i < m_tools.numElem(); i++)
+				m_tools[i]->OnLevelSave();
 		}
 	}
 	else
 	{
-		g_pGameWorld->m_level.Save(g_pGameWorld->GetLevelName());
+		g_pGameWorld->SaveLevel();
+
+		for(int i = 0; i < m_tools.numElem(); i++)
+			m_tools[i]->OnLevelSave();
+
 		m_bSavedOnDisk = true;
 		m_bNeedsSave = false;
 	}
@@ -721,7 +728,10 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 			LoadTileTextureFile(fname.c_str(), genParams);
 
 			if(!g_pGameWorld->m_level.Ed_GenerateMap( genParams, NULL ))
+			{
 				wxMessageBox("Error happen.", "Error", wxOK | wxCENTRE, this);
+			}
+			g_pMainFrame->NotifyUpdate();
 		}
 		else
 			return;

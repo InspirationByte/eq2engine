@@ -12,6 +12,8 @@
 #include "FontCache.h"
 #include "FontLayoutBuilders.h"
 
+#include "world.h"
+
 #define PREVIEW_BOX_SIZE 256
 
 CLayerModel::CLayerModel() : m_model(NULL)
@@ -510,6 +512,7 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 		case LAYEREDIT_NEW:
 		{
 			m_selectedItem = m_layerColl->layers.append( buildLayer_t() );
+			g_pMainFrame->NotifyUpdate();
 
 			UpdateSelection();
 
@@ -524,6 +527,8 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 
 				m_layerColl->layers.removeIndex(m_selectedItem);
 				m_selectedItem--;
+
+				g_pMainFrame->NotifyUpdate();
 			}
 			
 			UpdateSelection();
@@ -573,6 +578,8 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 				m_selLayer->model = lmodel;
 
 				lmodel->RefreshPreview();
+
+				g_pMainFrame->NotifyUpdate();
 			}
 
 			Show();
@@ -761,7 +768,10 @@ void CBuildingLayerList::ReloadList()
 
 buildLayerColl_t* CBuildingLayerList::GetSelectedLayerColl() const
 {
-	return NULL;
+	if(m_selection == -1)
+		return NULL;
+
+	return m_filteredList[m_selection];
 }
 
 void CBuildingLayerList::ChangeFilter(const wxString& filter)
@@ -929,6 +939,8 @@ buildLayerColl_t* CBuildingLayerList::CreateCollection()
 
 	UpdateAndFilterList();
 
+	g_pMainFrame->NotifyUpdate();
+
 	return newColl;
 }
 
@@ -936,6 +948,208 @@ void CBuildingLayerList::DeleteCollection(buildLayerColl_t* coll)
 {
 	if(m_layerCollections.remove(coll))
 		delete coll;
+
+	UpdateAndFilterList();
+
+	g_pMainFrame->NotifyUpdate();
+}
+
+void CBuildingLayerList::LoadLayerCollections( const char* levelName )
+{
+	EqString folderPath = varargs("levels/%s_editor",levelName);
+
+	KeyValues kvDefs;
+	if(!kvDefs.LoadFromFile(_Es(folderPath + "/buildingTemplates.def").c_str()))
+		return;
+
+	// load model files
+	IFile* pFile = g_fileSystem->Open(_Es(folderPath + "/buildingTemplateModels.dat").c_str(), "rb", SP_MOD);
+
+	if(!pFile)
+	{
+		ErrorMsg("Failed to open buildingTemplateModels.dat !!!");
+		return;
+	}
+
+	int numLayerCollections = 0;
+	pFile->Read(&numLayerCollections, 1, sizeof(int));
+
+	for(int i = 0; i < kvDefs.GetRootSection()->keys.numElem(); i++)
+	{
+		if(stricmp(kvDefs.GetRootSection()->keys[i]->name, "template"))
+			continue;
+
+		kvkeybase_t* templateSec = kvDefs.GetRootSection()->keys[i];
+
+		buildLayerColl_t* coll = new buildLayerColl_t();
+		m_layerCollections.append(coll);
+
+		coll->name = KV_GetValueString(templateSec, 0, "unnamed");
+
+		coll->Load(pFile, templateSec);
+	}
+
+	UpdateAndFilterList();
+
+	g_fileSystem->Close( pFile );
+}
+
+void CBuildingLayerList::SaveLayerCollections( const char* levelName )
+{
+	EqString folderPath = varargs("levels/%s_editor",levelName);
+
+	// make folder <levelName>_editor and put this stuff there
+	g_fileSystem->MakeDir(folderPath.c_str(), SP_MOD);
+
+	// keyvalues file buildings.def
+	KeyValues kvDefs;
+
+	// save model files
+	IFile* pFile = g_fileSystem->Open(_Es(folderPath + "/buildingTemplateModels.dat").c_str(), "wb", SP_MOD);
+
+	int numLayerCollections = m_layerCollections.numElem();
+	pFile->Write(&numLayerCollections, 1, sizeof(int));
+
+	for(int i = 0; i < m_layerCollections.numElem(); i++)
+	{
+		buildLayerColl_t* coll = m_layerCollections[i];
+
+		kvkeybase_t* layerCollData = kvDefs.GetRootSection()->AddKeyBase("template", coll->name.c_str());
+
+		coll->Save( pFile, layerCollData );
+	}
+
+	kvDefs.SaveToFile(_Es(folderPath + "/buildingTemplates.def").c_str());
+
+	g_fileSystem->Close( pFile );
+}
+
+// layer model header
+struct layerModelFileHdr_t
+{
+	int		layerId;
+	char	name[80];
+	int		size;
+};
+
+void buildLayerColl_t::Save(IVirtualStream* stream, kvkeybase_t* kvs)
+{
+	int numModels = 0;
+	layerModelFileHdr_t hdr;
+
+	for(int i = 0; i < layers.numElem(); i++)
+	{
+		// save both model and texture to kvs info
+		kvkeybase_t* layerKvs = kvs->AddKeyBase("layer");
+		layerKvs->SetKey("type", varargs("%d", layers[i].type));
+		layerKvs->SetKey("repeatInterval", varargs("%d", layers[i].repeatInterval));
+		layerKvs->SetKey("repeatTimes", varargs("%d", layers[i].repeatTimes));
+		layerKvs->SetKey("height", varargs("%d", layers[i].height));
+
+		if(layers[i].type == LAYER_TEXTURE && layers[i].material != NULL)
+			layerKvs->SetKey("material", layers[i].material->GetName());
+		else if(layers[i].type != LAYER_TEXTURE && layers[i].model != NULL)
+			layerKvs->SetKey("model", layers[i].model->m_name.c_str());
+
+		if(layers[i].type == LAYER_TEXTURE)
+			continue;
+
+		numModels++;
+	}
+
+	stream->Write(&numModels, 1, sizeof(int));
+
+	CMemoryStream modelStream;
+
+	for(int i = 0; i < layers.numElem(); i++)
+	{
+		if(layers[i].type == LAYER_TEXTURE)
+			continue;
+
+		// write model to temporary stream
+		modelStream.Open(NULL, VS_OPEN_READ | VS_OPEN_WRITE, 2048);
+		layers[i].model->m_model->Save( &modelStream );
+
+		// prepare header
+		memset(&hdr, 0, sizeof(hdr));
+		hdr.layerId = i;
+		hdr.size = modelStream.Tell();
+		strncpy(hdr.name, layers[i].model->m_name.c_str(), sizeof(hdr.name));
+
+		// write header
+		stream->Write(&hdr, 1, sizeof(hdr));
+
+		// write model
+		stream->Write(modelStream.GetBasePointer(), 1, hdr.size);
+
+		modelStream.Close();
+	}
+}
+
+void buildLayerColl_t::Load(IVirtualStream* stream, kvkeybase_t* kvs)
+{
+	// read layers first
+	for(int i = 0; i < kvs->keys.numElem(); i++)
+	{
+		if(stricmp(kvs->keys[i]->name, "layer"))
+			continue;
+
+		kvkeybase_t* layerKvs = kvs->keys[i];
+
+		int newLayer = layers.append(buildLayer_t());
+		buildLayer_t& layer = layers[newLayer];
+
+		layer.type = KV_GetValueInt(layerKvs->FindKeyBase("type"));
+		layer.repeatInterval = KV_GetValueInt(layerKvs->FindKeyBase("repeatInterval"));
+		layer.repeatTimes = KV_GetValueInt(layerKvs->FindKeyBase("repeatTimes"));
+		layer.height = KV_GetValueInt(layerKvs->FindKeyBase("height"));
+
+		if(layer.type == LAYER_TEXTURE)
+			layer.material = materials->FindMaterial(KV_GetValueString(layerKvs->FindKeyBase("material")));
+		else
+			layer.model = NULL;
+	}
+
+	// read models
+	int numModels = 0;
+	stream->Read(&numModels, 1, sizeof(int));
+
+	layerModelFileHdr_t hdr;
+
+	for(int i = 0; i < numModels; i++)
+	{
+		stream->Read(&hdr, 1, sizeof(hdr));
+
+		// make layer model
+		CLayerModel* mod = new CLayerModel();
+		layers[hdr.layerId].model = mod;
+
+		mod->m_name = hdr.name;
+
+		// read model
+		int modOffset = stream->Tell();
+		mod->m_model = new CLevelModel();
+		mod->m_model->Load(stream);
+
+		mod->SetDirtyPreview();
+		mod->RefreshPreview();
+
+		int modelSize = stream->Tell() - modOffset;
+
+		// a bit paranoid
+		ASSERT(layers[hdr.layerId].type == ELayerType::LAYER_MODEL || layers[hdr.layerId].type == ELayerType::LAYER_CORNER_MODEL);
+		ASSERT(hdr.size == modelSize);
+	}
+}
+
+void CBuildingLayerList::RemoveAllLayerCollections()
+{
+	for(int i = 0; i < m_layerCollections.numElem(); i++)
+	{
+		delete m_layerCollections[i];
+	}
+
+	m_layerCollections.clear();
 
 	UpdateAndFilterList();
 }
@@ -1062,16 +1276,6 @@ void CUI_BuildingConstruct::OnDeleteClick( wxCommandEvent& event )
 
 //------------------------------------------------------------------------
 
-void CUI_BuildingConstruct::InitTool()
-{
-	//m_layerCollList->LoadLayerCollections();
-}
-
-void CUI_BuildingConstruct::ShutdownTool()
-{
-
-}
-
 void CUI_BuildingConstruct::Update_Refresh()
 {
 
@@ -1080,6 +1284,32 @@ void CUI_BuildingConstruct::Update_Refresh()
 void CUI_BuildingConstruct::OnKey(wxKeyEvent& event, bool bDown)
 {
 
+}
+
+//------------------------------------------------------------------------
+
+void CUI_BuildingConstruct::InitTool()
+{
+
+}
+
+void CUI_BuildingConstruct::OnLevelLoad()
+{
+	CBaseTilebasedEditor::OnLevelLoad();
+	m_layerCollList->LoadLayerCollections( g_pGameWorld->GetLevelName() );
+}
+
+void CUI_BuildingConstruct::OnLevelSave()
+{
+	CBaseTilebasedEditor::OnLevelSave();
+	m_layerCollList->SaveLayerCollections( g_pGameWorld->GetLevelName() );
+}
+
+void CUI_BuildingConstruct::OnLevelUnload()
+{
+	CBaseTilebasedEditor::OnLevelUnload();
+
+	m_layerCollList->RemoveAllLayerCollections();
 }
 
 //------------------------------------------------------------------------

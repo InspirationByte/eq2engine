@@ -460,6 +460,11 @@ void CLevelRegion::Cleanup()
 
 	m_objects.clear();
 
+	for(int i = 0; i < m_zones.numElem(); i++)
+		delete [] m_zones[i].zoneName;
+
+	m_zones.clear();
+
 	m_level->m_mutex.Unlock();
 
 	m_occluders.clear();

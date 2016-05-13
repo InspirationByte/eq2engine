@@ -84,8 +84,6 @@ public:
 	CGameLevel();
 
 	void					Init(int wide, int tall, int cells, bool isCleanLevel);	// number of height fields
-	//void					InitOLD(int wide, int tall, IVirtualStream* stream = NULL);	// number of height fields
-
 	void					Cleanup();
 
 	bool					Load(const char* levelname, kvkeybase_t* kvDefs);

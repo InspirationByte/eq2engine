@@ -36,17 +36,34 @@ struct	carConfigEntry_t;
 class	CAITrafficCar;
 class	CAIPursuerCar;
 
+struct carZoneInfo_t
+{
+	EqString				name;
+	int						spawnInterval;
+};
+
 struct civCarEntry_t
 {
 	civCarEntry_t()
 	{
 		nextSpawn = 0;
-		spawnInterval = 0;
 	}
 
-	carConfigEntry_t*	config;
-	int					spawnInterval;
-	int					nextSpawn;
+	int	GetZoneSpawnInterval( const char* zone ) const
+	{
+		for(int i = 0; i < zoneList.numElem(); i++)
+		{
+			if(!zoneList[i].name.CompareCaseIns(zone))
+				return zoneList[i].spawnInterval;
+		}
+
+		return -1; // don't spawn
+	}
+
+	carConfigEntry_t*		config;
+	int						nextSpawn;
+
+	DkList<carZoneInfo_t>	zoneList;
 };
 
 //-------------------------------------------------------------------------------
@@ -66,6 +83,8 @@ public:
 	void						UpdateCopStuff(float fDt);
 
 	void						RemoveAllCars();
+
+	civCarEntry_t*				FindCivCarEntry( const char* name );
 
 	// ----- TRAFFIC ------
 	void						SetMaxTrafficCars(int count);

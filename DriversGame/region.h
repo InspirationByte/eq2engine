@@ -14,6 +14,8 @@ using namespace Threading;
 #include "math/Vector.h"
 #include "occluderSet.h"
 
+#include "utils/strtools.h"
+
 #define ENGINE_REGION_MAX_HFIELDS		4	// you could make more
 #define MAX_MODEL_INSTANCES				1024
 
@@ -130,6 +132,22 @@ struct regionObject_t
 	DkList<CEqCollisionObject*> collisionObjects;
 };
 
+struct regZone_t
+{
+	regZone_t(char* name)
+	{
+		zoneName = xstrdup(name);
+	}
+
+	regZone_t()
+	{
+		zoneName = NULL;
+	}
+
+	char*	zoneName;
+	uint	zoneHash;
+};
+
 //----------------------------------------------------------------------
 
 class CLevelRegion
@@ -176,6 +194,8 @@ public:
 #ifdef EDITOR
 	int								Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float& dist);
 	int								Ed_ReplaceDefs(CLevObjectDef* whichReplace, CLevObjectDef* replaceTo);
+
+	bool							m_modified; // needs saving?
 #endif
 
 	BoundingBox						m_bbox;
@@ -187,6 +207,8 @@ public:
 
 	DkList<regionObject_t*>			m_objects;			///< complex and non-complex models
 	DkList<levOccluderLine_t>		m_occluders;		///< occluders
+
+	DkList<regZone_t>				m_zones;
 
 	// TODO: road array, visibility data and other....
 	bool							m_render;

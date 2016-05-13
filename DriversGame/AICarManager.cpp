@@ -208,7 +208,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 		if(m_civCarEntries[randCar].nextSpawn <= 0)
 		{
 			pNewCar = new CAITrafficCar(m_civCarEntries[randCar].config);
-			m_civCarEntries[randCar].nextSpawn = m_civCarEntries[randCar].spawnInterval;
+			m_civCarEntries[randCar].nextSpawn = m_civCarEntries[randCar].GetZoneSpawnInterval("default");
 		}
 	}
 
@@ -394,7 +394,21 @@ void CAICarManager::RemoveAllCars()
 	{
 		RemoveTrafficCar(m_trafficCars[i]);
 	}
+
 	m_trafficCars.clear();
+}
+
+civCarEntry_t* CAICarManager::FindCivCarEntry( const char* name )
+{
+	for(int i = 0; i < m_civCarEntries.numElem(); i++)
+	{
+		if(!m_civCarEntries[i].config->carName.CompareCaseIns(name))
+		{
+			return &m_civCarEntries[i];
+		}
+	}
+
+	return NULL;
 }
 
 DECLARE_CMD(force_roadblock, "Forces spawn roadblock on cur car", CV_CHEAT)

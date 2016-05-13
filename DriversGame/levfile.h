@@ -25,7 +25,8 @@ enum ELevelLumps
 	LEVLUMP_REGIONMAPINFO,		// region map info
 
 	LEVLUMP_OBJECTDEFS,			// object definition cache ()
-	//LEVLUMP_CURVEDFIELDS,		// heightfields with positions and rotations
+
+	LEVLUMP_ZONES,				// region zone name lists of levZoneRegions_t
 
 	// TODO: curves?
 
@@ -34,6 +35,9 @@ enum ELevelLumps
 
 #define LEVEL_IDENT			MCHAR4('D','L','V','L')		// Drivers LEVEL
 #define LEVEL_VERSION		1
+
+#define LEV_OBJECT_NAME_LENGTH		 80
+#define LEV_REG_ZONE_NAME_LENGTH	 80
 
 struct levHdr_s
 {
@@ -100,8 +104,6 @@ struct levObjectDefInfo_s
 
 ALIGNED_TYPE(levObjectDefInfo_s,4) levObjectDefInfo_t;
 
-#define LEV_OBJECT_NAME_LENGTH 80
-
 // region cell model object
 struct levCellObject_s
 {
@@ -118,6 +120,17 @@ struct levCellObject_s
 };
 
 ALIGNED_TYPE(levCellObject_s,4) levCellObject_t;
+
+//-----------------------------------------------------------------------------------
+
+// zones build by regions
+struct levZoneRegions_s
+{
+	int		numRegions;
+	char	name[LEV_REG_ZONE_NAME_LENGTH];
+};
+
+ALIGNED_TYPE(levZoneRegions_s,4) levZoneRegions_t;
 
 //-----------------------------------------------------------------------------------
 

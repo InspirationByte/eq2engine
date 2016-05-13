@@ -24,6 +24,7 @@ public:
 
 	virtual void		OnLevelUnload() {};
 	virtual void		OnLevelLoad() {};
+	virtual void		OnLevelSave() {};
 };
 
 #endif // EDITINTERFACE_H
