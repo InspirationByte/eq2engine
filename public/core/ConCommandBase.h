@@ -47,6 +47,8 @@ public:
     static void		Register( ConCommandBase* pBase );
 	static void		Unregister( ConCommandBase* pBase );
 
+	virtual void	LuaCleanup();
+
 protected:
 	void		Init(char const *name,char const *desc, int flags = 0,bool bIsConVar = false);
 

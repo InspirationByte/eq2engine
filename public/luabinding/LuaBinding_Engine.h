@@ -38,9 +38,11 @@ OOLUA_PROXY( ConVar )
 		No_default_constructor
 	)
 
+	/*
 	OOLUA_CTORS(
 		OOLUA_CTOR(char const *,char const *,char const *, int)
 	)
+	*/
 
 	OOLUA_MFUNC(RevertToDefaultValue)
 

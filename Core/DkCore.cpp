@@ -87,85 +87,6 @@ EqString UTIL_GetUserName()
 
 ConVar *c_SupressAccessorMessages = NULL;
 
-void cc_exec_f(DkList<EqString>* args)
-{
-    if (args->numElem() == 0)
-    {
-        MsgWarning("Example: exec <filename> [command lookup] - executes configuration file\n");
-        return;
-    }
-
-    g_sysConsole->ClearCommandBuffer();
-
-	if(args->numElem() > 1)
-		g_sysConsole->ParseFileToCommandBuffer((char*)(args->ptr()[0]).GetData(),args->ptr()[1].GetData());
-	else
-		g_sysConsole->ParseFileToCommandBuffer((char*)(args->ptr()[0]).GetData());
-
-	((CConsoleCommands*)g_sysConsole.GetInstancePtr())->EnableInitOnlyVarsChangeProtection(false);
-	g_sysConsole->ExecuteCommandBuffer();
-}
-
-void cc_set_f(DkList<EqString>* args)
-{
-    if (args->numElem() == 0)
-    {
-        MsgError("No command and arguments for set.\n");
-        return;
-    }
-
-    ConVar *pConVar = (ConVar*)g_sysConsole->FindCvar(args->ptr()[0].GetData());
-
-    if (!pConVar)
-    {
-        MsgError("Unknown variable '%s'\n",args->ptr()[0].GetData());
-        return;
-    }
-
-    EqString pArgs;
-	char tmp_path[2048];
-    for (int i = 1; i < args->numElem();i++)
-    {
-		sprintf(tmp_path, i < args->numElem() ? (char*) "%s " : (char*) "%s" , args->ptr()[i].GetData());
-
-        pArgs.Append(tmp_path);
-    }
-
-    if (pArgs.GetLength() > 0 && !(pConVar->GetFlags() & CV_CHEAT) && !(pConVar->GetFlags() & CV_INITONLY))
-    {
-        pConVar->SetValue( pArgs.GetData() );
-        MsgWarning("%s set to %s\n",pConVar->GetName(), pArgs.GetData());
-    }
-}
-
-void cc_toggle_f(DkList<EqString>* args)
-{
-    if (args->numElem() == 0)
-    {
-        MsgError("No command and arguments for toggle.\n");
-        return;
-    }
-
-    ConVar *pConVar = (ConVar*)g_sysConsole->FindCvar(args->ptr()[0].GetData());
-
-    if (!pConVar)
-    {
-        MsgError("Unknown variable '%s'\n",args->ptr()[0].GetData());
-        return;
-    }
-
-	bool nValue = pConVar->GetBool();
-
-    if (!(pConVar->GetFlags() & CV_CHEAT) && !(pConVar->GetFlags() & CV_INITONLY))
-    {
-        pConVar->SetBool(!nValue);
-        MsgWarning("%s = %s\n",pConVar->GetName(),pConVar->GetString());
-    }
-}
-
-ConCommand *c_toggle;
-ConCommand *c_exec;
-ConCommand *c_set;
 extern ConCommand c_developer;
 extern ConCommand c_echo;
 
@@ -342,10 +263,6 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
     // Регистрация некоторых комманд.
     ((CConsoleCommands*)g_sysConsole.GetInstancePtr())->RegisterCommands();
-
-    c_exec = new ConCommand("exec",cc_exec_f,"Execute configuration file");
-    c_set = new ConCommand("set",cc_set_f,"Set ConVar value");
-	c_toggle = new ConCommand("togglevar",cc_toggle_f,"Toggles ConVar value");
 
 	c_enable_log = new ConCommand("enablelog",cc_enable_logging,"Enable logging");
     c_disable_log = new ConCommand("disablelog",cc_disable_logging,"Disable logging");

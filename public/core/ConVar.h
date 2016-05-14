@@ -40,6 +40,8 @@ public:
 	ConVar(char const *name,char const *pszDefaultValue,float clampmin,float clampmax,CONVAR_CHANGE_CALLBACK callback,char const *desc = 0, int flags = 0);
 
 	void			RevertToDefaultValue(); //Reverts to default value
+	const char*		GetDefaultValue() const;
+
 	void			SetValue(char const *newvalue); //Sets string value
 	void			SetFloat(const float newvalue);
 	void			SetInt(const int newvalue);
@@ -58,6 +60,8 @@ public:
 	const char*		GetString() const	{return m_szValueString;}
 	int				GetInt() const		{return m_nValue;}
 	bool			GetBool() const		{return (m_nValue > 0);}
+
+	virtual void	LuaCleanup();
 
 	//operator float () {return GetFloat();}
 	//operator int () {return GetInt();}
