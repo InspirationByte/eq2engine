@@ -297,7 +297,7 @@ protected:
 	void					PlayVehicleFrame(vehiclereplay_t* rep);
 
 	// records vehicle frame
-	void					RecordVehicleFrame(vehiclereplay_t* rep);
+	bool					RecordVehicleFrame(vehiclereplay_t* rep);
 
 	void					RaiseTickEvents();
 	void					RaiseReplayEvent(const replayevent_t& evt);

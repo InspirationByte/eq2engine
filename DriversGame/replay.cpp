@@ -218,9 +218,12 @@ void CReplayData::UpdateReplayObject( int replayId )
 	vehiclereplay_t* rep = &m_vehicles[ replayId ];
 
 	if(m_state == REPL_RECORDING)
-		RecordVehicleFrame( rep );
-
-	PlayVehicleFrame( rep );
+	{
+		if(!RecordVehicleFrame( rep ))
+			PlayVehicleFrame( rep ); // should play already recorded
+	}
+	else
+		PlayVehicleFrame( rep );
 }
 
 
@@ -237,7 +240,7 @@ bool CReplayData::IsCarPlaying( CCar* pCar )
 
 	if(veh.obj_car == pCar)
 	{
-		if(!(veh.done || veh.curr_frame < veh.replayArray.numElem()))
+		if(!(veh.done || veh.curr_frame < veh.replayArray.numElem()-1))
 			return false;
 
 		int lastFrameIdx = veh.replayArray.numElem()-1;
@@ -245,7 +248,7 @@ bool CReplayData::IsCarPlaying( CCar* pCar )
 		replaycontrol_t& frame = veh.replayArray[lastFrameIdx];
 
 		// wait for our tick
-		return (m_tick < frame.tick);
+		return (m_tick <= frame.tick);
 	}
 
 	return false;
@@ -255,23 +258,23 @@ ConVar replay_framecorrect("replay_framecorrect", "1", "Correct replay frames", 
 
 void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 {
+	if(rep->obj_car == NULL)
+		return;
+
+	if(rep->obj_car->IsLocked())
+		return;
+
 	// if replay is complete or it's playback time, play this.
-	if(!(rep->done || rep->curr_frame < rep->replayArray.numElem()))
+	if(!(rep->done || rep->curr_frame < rep->replayArray.numElem()-1))
 		return;
 
 	if(rep->curr_frame >= rep->replayArray.numElem())
-		return;
+		return; // done playing it
 
 	replaycontrol_t& frame = rep->replayArray[rep->curr_frame];
 
 	// wait for our tick
 	if(m_tick < frame.tick)
-		return;
-
-	if(rep->obj_car == NULL)
-		return;
-
-	if(rep->obj_car->IsLocked())
 		return;
 
 	// advance frame
@@ -314,13 +317,13 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 }
 
 // records vehicle frame
-void CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
+bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 {
 	int nFrame = rep->replayArray.numElem();
 
 	// if replay is done or current frames are loaded and must be played (or rewinded)
 	if( rep->done || rep->curr_frame < rep->replayArray.numElem() )
-		return;
+		return false; // done or has future frames
 
 	// position must be set
 	if(nFrame == 0)
@@ -369,7 +372,7 @@ void CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 	if (rep->skeptFrames < rep->skipFrames)
 	{
 		rep->skeptFrames++;
-		return;
+		return true;
 	}
 	else
 		rep->skeptFrames = 0;
@@ -407,7 +410,10 @@ void CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 		con.tick = m_tick;
 
 		rep->replayArray.append(con);
+		rep->curr_frame++;
 	}
+
+	return true;
 }
 
 extern EqString g_scriptName;
