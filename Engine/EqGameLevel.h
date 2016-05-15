@@ -169,6 +169,9 @@ public:
 	CEqLevel();
 	~CEqLevel();
 
+	bool							IsInitialized() const {return true;}
+	const char*						GetInterfaceName() const {return IEQLEVEL_INTERFACE_VERSION;};
+
 	bool							CheckLevelExist(const char* pszLevelName);
 
 	bool							LoadLevel(const char* pszLevelName);

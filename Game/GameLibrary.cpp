@@ -179,8 +179,6 @@ bool CGameLibrary::Init(	ISoundSystem*	pSoundSystem,
 
 	materials->AddDestroyLostCallbacks( ShutdownParticleBuffers, InitParticleBuffers );
 
-	Platform_InitTime();
-
 	g_pEqUIManager->Init();
 
 	g_pRootPanel = g_pEqUIManager->CreateElement("Panel");

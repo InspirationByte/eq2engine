@@ -20,6 +20,9 @@ class CEntityFactory  : public IEntityFactory
 public:
 	CEntityFactory();
 
+	bool			IsInitialized() const {return true;}
+	const char*		GetInterfaceName() const {return IENTFACTORY_INTERFACE_VERSION;};
+
 	void			AddEntity(const char *classname,DISPATCH_ENTFUNC dispatch );
 	IEntity*		CreateEntityByName(const char *entName);
 	int				GetEntityFactoryCount() {return m_hEntities.getCount();}

@@ -8,7 +8,8 @@
 #include <direct.h>
 #include <crtdbg.h>
 
-#include "Platform.h"
+#include "platform/Platform.h"
+#include "platform/MessageBox.h"
 
 #include "IDkCore.h"
 #include "IFileSystem.h"

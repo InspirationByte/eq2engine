@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core_base_header.h"
-#include "Platform.h"
+#include "platform/Platform.h"
 
 ConVar r_renderer("r_renderer","EqD3D9RHI"/*"EqShaderAPIGL"*/,"Renderer API to use",CV_ARCHIVE);
 

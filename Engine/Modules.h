@@ -8,7 +8,7 @@
 #ifndef MODULES_H
 #define MODULES_H
 
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "InterfaceManager.h"
 
 DKMODULE *LoadRendererModule();

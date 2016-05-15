@@ -46,6 +46,9 @@ public:
 												DkPhysics();
 												~DkPhysics();
 
+	bool										IsInitialized() const {return true;}
+	const char*									GetInterfaceName() const {return IPHYSICS_INTERFACE_VERSION;};
+
 	// Initialize physics
 	bool										Init(int nSceneSize);
 
