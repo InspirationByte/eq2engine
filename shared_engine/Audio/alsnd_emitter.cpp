@@ -104,16 +104,16 @@ void DkSoundEmitterLocal::Play()
 	if(m_nChannel < 0)
 		m_nChannel = pSoundSystem->RequestChannel( this );
 
-	if(m_nChannel > -1)
+	if(m_nChannel >= 0)
 	{
 		sndChannel_t *c = pSoundSystem->m_pChannels[m_nChannel];
 
-		alSourcei(c->alSource, AL_LOOPING, (m_sample->m_flags & SAMPLE_FLAG_LOOPING) > 0 ? AL_TRUE : AL_FALSE );
-
 		m_sample->WaitForLoad();
 
+		alSourcei(c->alSource, AL_LOOPING, (m_sample->m_flags & SAMPLE_FLAG_LOOPING) > 0 ? AL_TRUE : AL_FALSE );
+
 		alSourcefv(c->alSource,AL_POSITION, vPosition);
-		alSourcei(c->alSource, AL_BUFFER, m_sample->m_nALBuffer);
+		alSourcei(c->alSource, AL_BUFFER, m_sample->m_alBuffer);
 
 		alSourcePlay(c->alSource);
 
@@ -139,7 +139,7 @@ void DkSoundEmitterLocal::Play()
 
 void DkSoundEmitterLocal::Stop()
 {
-	if(m_nChannel != -1)
+	if(m_nChannel >= 0)
 	{
 		DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 
@@ -157,9 +157,20 @@ void DkSoundEmitterLocal::Stop()
 	}
 }
 
+void DkSoundEmitterLocal::StopLoop()
+{
+	if(m_nChannel >= 0)
+	{
+		DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
+
+		sndChannel_t *c = pSoundSystem->m_pChannels[m_nChannel];
+		alSourcei(c->alSource, AL_LOOPING, AL_FALSE );
+	}
+}
+
 void DkSoundEmitterLocal::Pause()
 {
-	if(m_nChannel != -1)
+	if(m_nChannel >= 0)
 	{
 		DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 

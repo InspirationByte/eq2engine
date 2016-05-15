@@ -23,6 +23,8 @@ public:
 
 	void				Play();
 	void				Stop();
+	void				StopLoop();
+
 	void				Pause();
 
 	void				Update();

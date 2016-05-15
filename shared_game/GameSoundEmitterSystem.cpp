@@ -115,7 +115,7 @@ void CSoundController::PauseSound()
 	m_emitData->pEmitter->Pause();
 }
 
-void CSoundController::StopSound()
+void CSoundController::StopSound(bool force)
 {
 	if(!m_emitData)
 	{
@@ -129,12 +129,32 @@ void CSoundController::StopSound()
 		return;
 	}
 
-	m_emitData->pEmitter->Stop();
+	if(!force && m_emitData->script && m_emitData->script->stopLoop)
+		m_emitData->pEmitter->StopLoop();
+	else
+		m_emitData->pEmitter->Stop();
 
 	// at stop we invalidate channel and detach emitter
 	m_emitData->pController = NULL;
 	m_emitParams.emitterIndex = -1;
 	m_emitData = NULL;
+}
+
+void CSoundController::StopLoop()
+{
+	if(!m_emitData)
+	{
+		return;
+	}
+
+	if(!m_emitData->pEmitter)
+	{
+		m_emitData->pController = NULL;
+		m_emitParams.emitterIndex = -1;
+		return;
+	}
+
+	m_emitData->pEmitter->StopLoop();
 }
 
 void CSoundController::SetPitch(float fPitch)
@@ -278,7 +298,7 @@ void CSoundEmitterSystem::Shutdown()
 {
 	for(int i = 0; i < m_pSoundControllerList.numElem(); i++)
 	{
-		m_pSoundControllerList[i]->StopSound();
+		m_pSoundControllerList[i]->StopSound(true);
 
 		delete m_pSoundControllerList[i];
 	}
@@ -799,7 +819,7 @@ void CSoundEmitterSystem::Update()
 		if( remove )
 		{
 			if(emitter->pController)
-				emitter->pController->StopSound();
+				emitter->pController->StopSound(true);
 
 			soundsystem->FreeEmitter( emitter->pEmitter );
 
@@ -853,6 +873,7 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 		pSoundData->fMaxDistance = KV_GetValueFloat( curSec->FindKeyBase("maxdistance"), 0, 100.0f );
 		pSoundData->fAirAbsorption = KV_GetValueFloat( curSec->FindKeyBase("airabsorption"), 0, 0.0f );
 		pSoundData->loop = KV_GetValueBool( curSec->FindKeyBase("loop"), 0, false );
+		pSoundData->stopLoop = KV_GetValueBool( curSec->FindKeyBase("stopLoop"), 0, false );
 		pSoundData->extraStreaming = KV_GetValueBool( curSec->FindKeyBase("streamed"), 0, false );
 		pSoundData->is2d = KV_GetValueBool(curSec->FindKeyBase("is2d"), 0, false);
 

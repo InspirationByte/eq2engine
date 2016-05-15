@@ -29,6 +29,9 @@ public:
 
 	void				Play();
 	void				Stop();
+
+	void				StopLoop();
+
 	void				Pause();
 
 	ESoundState			GetState() const;

@@ -140,7 +140,7 @@ OOLUA_PROXY( ISoundController )
 
 	OOLUA_MEM_FUNC_RENAME( Start, void, StartSound, const char* )
 	OOLUA_MEM_FUNC_RENAME( Pause, void, PauseSound )
-	OOLUA_MEM_FUNC_RENAME( Stop, void, StopSound )
+	OOLUA_MEM_FUNC_RENAME( Stop, void, StopSound, bool )
 
 	OOLUA_MFUNC( SetPitch )
 	OOLUA_MFUNC( SetVolume )

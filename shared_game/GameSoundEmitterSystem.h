@@ -178,9 +178,10 @@ struct scriptsounddata_t
 	float		fAirAbsorption;
 	float		fMaxDistance;
 
-	bool		extraStreaming;
-	bool		loop;
-	bool		is2d;
+	bool		extraStreaming : 1;
+	bool		loop : 1;
+	bool		stopLoop : 1;
+	bool		is2d : 1;
 
 	Channel_t	channel;
 };
@@ -198,7 +199,8 @@ public:
 
 	virtual void			StartSound( const char* newSoundName = NULL ) = 0; // starts sound
 	virtual void			PauseSound() = 0; // pauses sound
-	virtual void			StopSound() = 0; // stops sound and detach channel
+	virtual void			StopSound(bool force = false) = 0; // stops sound and detach channel
+	virtual void			StopLoop() = 0; // stops sound loop
 
 	virtual EmitSound_t&	GetEmitParams() = 0;
 
@@ -253,7 +255,9 @@ public:
 
 	void			PauseSound(); // pauses sound
 
-	void			StopSound(); // stops sound
+	void			StopSound(bool force = false); // stops sound
+
+	void			StopLoop(); // stops sound loop
 
 	EmitSound_t&	GetEmitParams() {return m_emitParams;}
 

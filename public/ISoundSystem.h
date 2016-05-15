@@ -74,6 +74,7 @@ public:
 
 	virtual void			Play() = 0;
 	virtual void			Stop() = 0;
+	virtual void			StopLoop() = 0;
 	virtual void			Pause() = 0;
 
 	virtual void			SetVolume(float val) = 0;
