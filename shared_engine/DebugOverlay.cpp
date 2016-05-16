@@ -100,8 +100,6 @@ CDebugOverlay::CDebugOverlay() :
 
 void CDebugOverlay::Init()
 {
-	Platform_InitTime();
-
 	m_pDebugFont = g_fontCache->GetFont("debug", 0);
 }
 

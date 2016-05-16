@@ -144,7 +144,7 @@ public:
 
 //--------------------------------------------------------------------------------------------------
 
-class IEqLevel
+class IEqLevel : public ICoreModuleInterface
 {
 public:
 	// check level for existance (needs for changelevel)

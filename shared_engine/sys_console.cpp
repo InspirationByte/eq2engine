@@ -819,8 +819,6 @@ bool CEqSysConsole::KeyChar(int ch)
 
 	CFont* cFont = (CFont*)m_font;
 
-	if(ch )
-
 	// THis is a weird thing
 	if(cFont->GetFontCharById(ch).advX > 0.0f && ch != '`')
 	{
@@ -831,6 +829,8 @@ bool CEqSysConsole::KeyChar(int ch)
 		con_Text.Insert( text, m_cursorPos);
 		m_cursorPos += 1;
 	}
+
+	return true;
 }
 
 bool CEqSysConsole::MouseEvent(const Vector2D &pos, int Button,bool pressed)

@@ -25,7 +25,7 @@ class IMaterialSystem;
 
 #define IENGINEHOST_INTERFACE_VERSION "IEngineHost_001"
 
-class IEngineHost
+class IEngineHost : public ICoreModuleInterface
 {
 public:
 	enum
@@ -69,7 +69,6 @@ public:
 	virtual EQWNDHANDLE				GetWindowHandle() = 0;
 
 	virtual IEqFont*				GetDefaultFont() = 0;
-	virtual IEqFont*				LoadFont(const char* pszFontName) = 0;
 
 	virtual IShaderAPI*				GetRenderer( void ) = 0;
 	virtual IPhysics*				GetPhysics( void ) = 0;

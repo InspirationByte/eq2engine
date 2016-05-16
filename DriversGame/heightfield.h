@@ -149,9 +149,13 @@ public:
 
 	void						Init(int size = HFIELD_MIN_POINTS, const IVector2D& regionPos = IVector2D(-1));
 	void						Destroy();
+	void						UnloadMaterials();
 
+	void						ReadOnlyPoints( IVirtualStream* stream );
+	void						ReadOnlyMaterials( IVirtualStream* stream );
 
 	void						ReadFromStream( IVirtualStream* stream );
+
 	int							WriteToStream( IVirtualStream* stream );
 
 	void						Optimize();
@@ -183,6 +187,8 @@ public:
 	int							m_fieldIdx;		// the hfield index in region's array
 
 	void*						m_userData;
+
+	int							m_levOffset;
 
 	DkList<hfieldmaterial_t*>	m_materials;
 

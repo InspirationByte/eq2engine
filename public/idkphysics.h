@@ -205,7 +205,7 @@ static void SetDefaultPhysModelInfoParams(physmodelcreateinfo_t* info) // TODO: 
 	info->flipXAxis = true;
 }
 
-class IPhysics
+class IPhysics : public ICoreModuleInterface
 {
 public:
 	virtual bool 								Init(int nSceneSize) = 0;						// Initialize physics

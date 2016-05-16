@@ -369,12 +369,27 @@ void CGameLevel::LoadRegionAt(int regionIndex, IVirtualStream* stream)
 	if(m_regionOffsets[regionIndex] == -1)
 		return;
 
+	CLevelRegion& reg = m_regions[regionIndex];
 
 	int loffset = stream->Tell();
+
+#ifndef EDITOR
+	// Reload materials
+	for(int i = 0; i < reg.GetNumHFields(); i++)
+	{
+		CHeightTileField* hfield = reg.GetHField(i);
+		if(!hfield)
+			continue;
+
+		stream->Seek(hfield->m_levOffset, VS_SEEK_SET);
+		hfield->ReadOnlyMaterials(stream);
+	}
+#endif // EDITOR
 
 	// Read region data
 	int regOffset = m_regionDataLumpOffset + m_regionOffsets[regionIndex];
 	stream->Seek(regOffset, VS_SEEK_SET);
+
 	m_regions[regionIndex].ReadLoadRegion(stream, m_objectDefs);
 
 	// read roads
@@ -590,7 +605,6 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 			model->PreloadTextures();
 
 			bool isGroundModel = (def->m_info.modelflags & LMODEL_FLAG_ISGROUND);
-
 			model->GeneratePhysicsData( isGroundModel );
 
 			model->Ref_Grab();
@@ -604,6 +618,8 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 		}
 		else if(def->m_info.type == LOBJ_TYPE_OBJECT_CFG)
 		{
+			def->m_model = NULL;
+
 			kvkeybase_t* foundDef = NULL;
 
 			for(int j = 0; j < kvDefs->keys.numElem(); j++)
@@ -625,32 +641,27 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 				}
 			}
 
-			kvkeybase_t* modelName = NULL;
-
-			if(foundDef == NULL)
+			if(foundDef)
 			{
-				MsgError("Cannot find object def '%s'\n", modelNamePtr);
+				def->m_defType = foundDef->name;
+
+				def->m_defKeyvalues.MergeFrom( foundDef, true );
+#ifdef EDITOR
+				LoadDefLightData(def->m_lightData, foundDef);
+#endif // EDITOR
+
+				// try precache model
+				int modelIdx = g_pModelCache->PrecacheModel( KV_GetValueString(foundDef->FindKeyBase("model"), 0, "models/error.egf"));
+				def->m_defModel = g_pModelCache->GetModel(modelIdx);
 			}
 			else
-				modelName = foundDef->FindKeyBase("model");
-
-			// precache model
-			int modelIdx = g_pModelCache->PrecacheModel( KV_GetValueString(modelName, 0, "models/error.egf"));
-
-			if(foundDef)
-				def->m_defKeyvalues.MergeFrom( foundDef, true );
-
-			def->m_model = NULL;
-			if(foundDef)
-				def->m_defType = foundDef->name;
-			else
+			{
+				MsgError("Cannot find object def '%s'\n", modelNamePtr);
 				def->m_defType = "INVALID";
 
-			def->m_defModel = g_pModelCache->GetModel(modelIdx);
-
-#ifdef EDITOR
-			LoadDefLightData(def->m_lightData, foundDef);
-#endif // EDITOR
+				// error model
+				def->m_defModel = g_pModelCache->GetModel(0);
+			}
 		}
 
 		m_objectDefs.append(def);
@@ -712,16 +723,25 @@ void CGameLevel::ReadHeightfieldsLump( IVirtualStream* stream )
 
 		for(int j = 0; j < numFields; j++)
 		{
+			CHeightTileFieldRenderable* hfield = m_regions[idx].m_heightfield[j];
+
 			// hfield 0 is init by default
-			if( !m_regions[idx].m_heightfield[j] )
+			if( !hfield )
 			{
-				m_regions[idx].m_heightfield[j] = new CHeightTileFieldRenderable();
-				m_regions[idx].m_heightfield[j]->m_fieldIdx = j;
-				m_regions[idx].m_heightfield[j]->m_position = m_regions[idx].m_heightfield[0]->m_position;
+				hfield = new CHeightTileFieldRenderable();
+				m_regions[idx].m_heightfield[j] = hfield;
+
+				hfield->m_fieldIdx = j;
+				hfield->m_position = m_regions[idx].m_heightfield[0]->m_position;
 			}
 
-			m_regions[idx].m_heightfield[j]->Init(m_cellsSize, regionPos);
-			m_regions[idx].m_heightfield[j]->ReadFromStream(stream);
+			hfield->Init(m_cellsSize, regionPos);
+			hfield->m_levOffset = stream->Tell();
+#ifdef EDITOR
+			hfield->ReadFromStream(stream);
+#else
+			hfield->ReadOnlyPoints(stream);
+#endif // EDITOR
 		}
 	}
 }

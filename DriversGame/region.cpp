@@ -153,10 +153,8 @@ Quaternion GetModelRefRotation(CLevelRegion* reg, regionObject_t* ref)
 
 	if(ref->tile_dependent)
 	{
-		hfieldtile_t* tile = defField.GetTile( ref->tile_x, ref->tile_y );
-
-		if( (ref->def->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
-			ref->def->m_info.type != LOBJ_TYPE_OBJECT_CFG )
+		if( (objectDef->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
+			objectDef->m_info.type != LOBJ_TYPE_OBJECT_CFG )
 		{
 			Vector3D t,b,n;
 			defField.GetTileTBN( ref->tile_x, ref->tile_y, t,b,n );
@@ -453,7 +451,14 @@ void CLevelRegion::Cleanup()
 	m_level->m_mutex.Lock();
 
 	for(int i = 0; i < GetNumHFields(); i++)
-		g_pPhysics->RemoveHeightField( m_heightfield[i] );
+	{
+		if(m_heightfield[i])
+		{
+			g_pPhysics->RemoveHeightField( m_heightfield[i] );
+			m_heightfield[i]->CleanRenderData();
+		}
+			
+	}
 
 	for(int i = 0; i < m_objects.numElem(); i++)
 		delete m_objects[i];
@@ -473,12 +478,6 @@ void CLevelRegion::Cleanup()
 	m_roads = NULL;
 
 	m_navGrid.Cleanup();
-
-	for(int i = 0; i < GetNumHFields(); i++)
-	{
-		if(m_heightfield[i])
-			m_heightfield[i]->CleanRenderData();
-	}
 
 	m_isLoaded = false;
 

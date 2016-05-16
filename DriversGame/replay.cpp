@@ -1086,7 +1086,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 
 			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
 			if(rep.obj_car)
-				rep.obj_car->Enable( (bool)evt.eventData );
+				rep.obj_car->Lock( (bool)evt.eventData );
 
 			break;
 		}

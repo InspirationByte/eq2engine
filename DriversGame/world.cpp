@@ -451,7 +451,7 @@ void CGameWorld::Init()
 		m_lensTable[1] = {150.0f, lightId, ColorRGB(2.0f)};
 
 		m_lensTable[2] = {120.0f, lens4Id, ColorRGB(0.2f,0.3f,0.8f)};
-		m_lensTable[3] = {100.0f, lens2Id, ColorRGB(0.35f)};
+		m_lensTable[3] = {100.0f, lens3Id, ColorRGB(0.35f)};
 		m_lensTable[4] = {70.0f, lens2Id, ColorRGB(0.22f,0.9f,0.2f)};
 		m_lensTable[5] = {60.0f, lens1Id, ColorRGB(1,1,1)};
 
@@ -460,7 +460,7 @@ void CGameWorld::Init()
 
 		m_lensTable[8] = {60.0f, lens1Id, ColorRGB(1,1,1)};
 		m_lensTable[9] = {70.0f, lens2Id, ColorRGB(0.22f,0.9f,0.2f)};
-		m_lensTable[10] = {120.0f, lens2Id, ColorRGB(0.35f)};
+		m_lensTable[10] = {120.0f, lens3Id, ColorRGB(0.35f)};
 		m_lensTable[11] = {120.0f, lens4Id, ColorRGB(0.2f,0.3f,0.8f)};
 
 	}

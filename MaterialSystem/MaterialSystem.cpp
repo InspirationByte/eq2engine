@@ -555,13 +555,12 @@ void CMaterialSystem::FreeMaterial(IMaterial *pMaterial)
 	if(pMaterial == NULL)
 		return;
 
-	if (pMaterial->Ref_Count() > 0)
-		pMaterial->Ref_Drop();
+	pMaterial->Ref_Drop();
 
 	if(pMaterial->Ref_Count() <= 0)
 	{
 		((CMaterial*)pMaterial)->Cleanup();
-		DevMsg(DEVMSG_MATSYSTEM,"Material unloaded: %s\n",pMaterial->GetName());
+		DevMsg(DEVMSG_MATSYSTEM,"freeing %s\n",pMaterial->GetName());
 
 		m_pLoadedMaterials.fastRemove(pMaterial);
 		delete ((CMaterial*)pMaterial);
@@ -1334,7 +1333,7 @@ void CMaterialSystem::PrintLoadedMaterials()
 	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
 	{
 		if(m_pLoadedMaterials[i])
-			Msg("%s\n", m_pLoadedMaterials[i]->GetName());
+			Msg("%s (%d)\n", m_pLoadedMaterials[i]->GetName(), m_pLoadedMaterials[i]->Ref_Count());
 	}
 	Msg("---END MATERIALS---\n");
 }
@@ -1356,4 +1355,9 @@ DECLARE_CMD(r_unloadmaterialtextures,"Frees all textures",0)
 {
 	MsgInfo("*** Unloading textures...\n \n");
 	materials->FreeAllTextures();
+}
+
+DECLARE_CMD(r_materialsInfo,"Matsystem info",0)
+{
+	materials->PrintLoadedMaterials();
 }
