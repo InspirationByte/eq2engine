@@ -37,6 +37,7 @@ struct worldinfo_t
 	ColorRGBA	ambientColor;
 
 	Vector3D	sunDir;
+	float		rainBrightness;
 
 	FogInfo_t	fogInfo;
 };

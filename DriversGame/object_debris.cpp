@@ -73,8 +73,6 @@ void CObject_Debris::Spawn()
 
 	CEqRigidBody* body = new CEqRigidBody();
 
-	BoundingBox bbox(m_pModel->GetBBoxMins(), m_pModel->GetBBoxMaxs());
-
 	if( body->Initialize(&m_pModel->GetHWData()->m_physmodel, 0) )//
 	{
 		physobject_t* obj = &m_pModel->GetHWData()->m_physmodel.objects[0].object;
@@ -138,8 +136,6 @@ void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup)
 	m_smashSound = "";
 	
 	CEqRigidBody* body = new CEqRigidBody();
-
-	BoundingBox bbox(m_pModel->GetBBoxMins(), m_pModel->GetBBoxMaxs());
 
 	if( body->Initialize(&m_pModel->GetHWData()->m_physmodel, 0) )//
 	{

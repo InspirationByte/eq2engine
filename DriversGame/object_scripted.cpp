@@ -23,11 +23,9 @@ void CObject_Scripted::Spawn()
 {
 }
 
-
 void CObject_Scripted::Draw( int nRenderFlags )
 {
 }
-
 
 void CObject_Scripted::Simulate(float fDt)
 {

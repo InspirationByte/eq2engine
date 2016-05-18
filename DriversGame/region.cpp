@@ -129,7 +129,7 @@ Vector3D GetModelRefPosition(CLevelRegion* reg, regionObject_t* ref)
 	CLevObjectDef* objectDef = ref->def;;
 
 	if(objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG)
-		addHeight.y = -objectDef->m_defModel->GetBBoxMins().y;
+		addHeight.y = -objectDef->m_defModel->GetAABB().minPoint.y;
 
 	if(ref->tile_dependent)
 	{
@@ -185,7 +185,7 @@ Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regionObject_t* ref)
 	CLevObjectDef* objectDef = ref->def;;
 
 	if(objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG)
-		addHeight.y = -objectDef->m_defModel->GetBBoxMins().y;
+		addHeight.y = -objectDef->m_defModel->GetAABB().minPoint.y;
 
 	Vector3D refPos = GetModelRefPosition(reg,ref);
 

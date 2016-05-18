@@ -1388,6 +1388,7 @@ void CGameWorld::Draw( int nRenderFlags )
 
 	m_info.ambientColor = ColorRGBA(ambColor, 1.0f);
 	m_info.sunColor = ColorRGBA(m_envConfig.sunColor, 1.0f);
+	m_info.rainBrightness = m_envConfig.rainBrightness;
 
 	float fSkyBrightness = 1.0f;
 
@@ -1398,6 +1399,7 @@ void CGameWorld::Draw( int nRenderFlags )
 		fThunderLight += saturate(sin((m_fThunderTime - m_fNextThunderTime)*70.0f));
 
 		fSkyBrightness = 1.0f + (1.0 - fThunderLight)*0.35f;
+		m_info.rainBrightness += fThunderLight*0.5f;
 
 		m_info.sunColor = ColorRGBA(m_envConfig.sunColor + 0.9f * fThunderLight, 1.0f);
 	}

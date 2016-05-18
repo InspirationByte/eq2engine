@@ -59,7 +59,7 @@ void CEffectRenderer::RegisterEffectForRender(IEffect* pEffect)
 
 	if(m_numEffects.GetValue() >= MAX_VISIBLE_EFFECTS)
 	{
-		DevMsg(1, "Effect list overflow!\n");
+		DevMsg(DEVMSG_CORE, "Effect list overflow!\n");
 
 		// effect list overflow
 		pEffect->DestroyEffect();

@@ -193,8 +193,8 @@ struct TMat4 // Matrix4x4
 	void		setTranslation(const TVec3D<T> &v);
 	void		translate(const TVec3D<T> &v);
 
-	TVec3D<T>	getTranslationComponent() const;
-	TMat3<T>	getRotationComponent() const;
+	const TVec3D<T>&	getTranslationComponent() const;
+	TMat3<T>			getRotationComponent() const;
 };
 
 template <typename T>

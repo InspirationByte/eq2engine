@@ -211,12 +211,12 @@ struct TAABBox //BoundingBox
 		maxPoint = TVec3D<T>(-(T)TMAX);
     }
 
-	TVec3D<T> GetMinPoint() const
+	const TVec3D<T>& GetMinPoint() const
 	{
 		return minPoint;
 	}
 
-	TVec3D<T> GetMaxPoint() const
+	const TVec3D<T>& GetMaxPoint() const
 	{
 		return maxPoint;
 	}

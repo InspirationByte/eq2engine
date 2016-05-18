@@ -34,7 +34,7 @@ DkSoundEmitterLocal::~DkSoundEmitterLocal()
 {
 }
 
-void DkSoundEmitterLocal::SetPosition(Vector3D& position)
+void DkSoundEmitterLocal::SetPosition(const Vector3D& position)
 {
 	//Take over position
 	vPosition = position;
@@ -49,7 +49,7 @@ void DkSoundEmitterLocal::SetPosition(Vector3D& position)
 	alSourcefv(c->alSource,AL_POSITION, vPosition);
 }
 
-void DkSoundEmitterLocal::SetVelocity(Vector3D& velocity)
+void DkSoundEmitterLocal::SetVelocity(const Vector3D& velocity)
 {
 	if(m_nChannel == -1)
 		return;

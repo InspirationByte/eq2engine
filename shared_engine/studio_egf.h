@@ -22,7 +22,8 @@ public:
 	static void ModelLoaderJob( void* data );
 
 	bool				LoadModel( const char* pszPath, bool useJob = true );
-	const char*			GetPath() const;
+
+	const char*			GetName() const;
 
 //------------------------------------------------------------
 // base methods
@@ -30,15 +31,12 @@ public:
 	
 	void				DestroyModel();
 
-	const char*			GetName() const;
-
 	studiohwdata_t*		GetHWData() const;
 
 	// selects a lod. returns index
 	int					SelectLod(float dist_to_camera);
 
-	const Vector3D&		GetBBoxMins() const;
-	const Vector3D&		GetBBoxMaxs() const;
+	const BoundingBox&	GetAABB() const;
 
 	// makes dynamic temporary decal
 	studiotempdecal_t*	MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices);
@@ -79,16 +77,10 @@ private:
 	bool				LoadGenerateVertexBuffer();
 	void				LoadMotionPackages();
 
-	volatile int		m_readyState;
+	//-----------------------------------------------
 
 	IEqModelInstancer*	m_instancer;
-
-	EqString			m_szPath;
-
 	studiohwdata_t*		m_pHardwareData;
-
-	bool				m_bSoftwareSkinned;
-	bool				m_bSoftwareSkinChanged;
 
 	IVertexBuffer*		m_pVB;
 	IIndexBuffer*		m_pIB;
@@ -96,15 +88,20 @@ private:
 	// array of material index for each group
 	IMaterial*			m_pMaterials[MAX_STUDIOGROUPS];
 
-	int					m_nNumMaterials;
-	int					m_nNumGroups;
+	bool				m_bSoftwareSkinned;
+	bool				m_bSoftwareSkinChanged;
+
+	uint8				m_nNumMaterials;
+	uint8				m_nNumGroups;
+	volatile short		m_readyState;
 
 	int					m_numVertices;
 	int					m_numIndices;
 
 	EGFHwVertex_t*		m_pSWVertices;
 
-	Vector3D			m_vBBOX[2];
+	BoundingBox			m_aabb;
+	EqString			m_szPath;
 };
 
 //-------------------------------------------------------------------------------------

@@ -112,36 +112,5 @@ inline void SpringFunction(T& value, T& velocity, float spring_const, float spri
 	velocity -= value * springForceMagnitude;
 }
 
-//------------------------------------------------------------------------------------------------------------------------
-
-#define POINT_TO_BBOX(p, bmin, bmax)\
-{									\
-	if ( p.x < bmin.x )				\
-		bmin.x = p.x;				\
-	if ( p.x > bmax.x )				\
-		bmax.x = p.x;				\
-									\
-	if ( p.y < bmin.y )				\
-		bmin.y = p.y;				\
-	if ( p.y > bmax.y )				\
-		bmax.y = p.y;				\
-									\
-	if ( p.z < bmin.z )				\
-		bmin.z = p.z;				\
-	if ( p.z > bmax.z )				\
-		bmax.z = p.z;	}
-
-#define POINT_TO_RECT(p, rmin, rmax)\
-{									\
-	if ( p.x < rmin.x )				\
-		rmin.x = p.x;				\
-	if ( p.x > rmax.x )				\
-		rmax.x = p.x;				\
-									\
-	if ( p.y < rmin.y )				\
-		rmin.y = p.y;				\
-	if ( p.y > rmax.y )				\
-		rmax.y = p.y;				\
-}
 
 #endif // MATH_UTIL_H

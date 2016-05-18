@@ -213,7 +213,7 @@ TMat4<T>::TMat4(const Quaternion &q)
 }
 
 template <typename T>
-inline TVec3D<T> TMat4<T>::getTranslationComponent() const
+inline const TVec3D<T>& TMat4<T>::getTranslationComponent() const
 {
 	return rows[3].xyz();
 }

@@ -55,9 +55,6 @@ CEngineStudioEGF::CEngineStudioEGF()
 	m_nNumMaterials = 0;
 
 	m_pHardwareData = NULL;
-
-	m_vBBOX[0] = Vector3D(MAX_COORD_UNITS);
-	m_vBBOX[1] = Vector3D(-MAX_COORD_UNITS);
 }
 
 CEngineStudioEGF::~CEngineStudioEGF()
@@ -300,7 +297,7 @@ void CEngineStudioEGF::LoadPhysicsData()
 
 extern ConVar r_detaillevel;
 
-void CopyGroupVertexDataToHWList(DkList<EGFHwVertex_t>& hwVtxList, modelgroupdesc_t* pGroup, Vector3D &bboxMin, Vector3D &bboxMax)
+void CopyGroupVertexDataToHWList(DkList<EGFHwVertex_t>& hwVtxList, modelgroupdesc_t* pGroup, BoundingBox& aabb)
 {
 	// huge speedup
 	hwVtxList.resize(hwVtxList.numElem() + pGroup->numvertices);
@@ -313,7 +310,7 @@ void CopyGroupVertexDataToHWList(DkList<EGFHwVertex_t>& hwVtxList, modelgroupdes
 
 		hwVtxList.append(pNewVertex);
 
-		POINT_TO_BBOX(pVertex->point, bboxMin, bboxMax);
+		aabb.AddVertex(pVertex->point);
 	}
 }
 
@@ -472,7 +469,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 				int new_offset = loadedvertices.numElem();
 
 				// copy vertices to new buffer first
-				CopyGroupVertexDataToHWList(loadedvertices, pGroup, m_vBBOX[0], m_vBBOX[1]);
+				CopyGroupVertexDataToHWList(loadedvertices, pGroup, m_aabb);
 
 				// then using new offset copy indices to buffer
 				int nGenIndexSize = CopyGroupIndexDataToHWList(loadedindices_short, loadedindices, pGroup, new_offset);
@@ -762,24 +759,14 @@ void CEngineStudioEGF::DrawDebug()
 	*/
 }
 
-const Vector3D& CEngineStudioEGF::GetBBoxMins() const
+const BoundingBox& CEngineStudioEGF::GetAABB() const
 {
-	return m_vBBOX[0];
-}
-
-const Vector3D& CEngineStudioEGF::GetBBoxMaxs() const
-{
-	return m_vBBOX[1];
+	return m_aabb;
 }
 
 const char* CEngineStudioEGF::GetName() const
 {
-	return m_szPath.GetData();//m_pHardwareData->pStudioHdr->modelname;
-}
-
-const char* CEngineStudioEGF::GetPath() const
-{
-	return m_szPath.GetData();
+	return m_szPath.c_str();
 }
 
 studiohwdata_t* CEngineStudioEGF::GetHWData() const
@@ -845,8 +832,6 @@ void MakeDecalTexCoord(DkList<EGFHwVertex_t>& verts, DkList<int>& indices, const
 		uaxis = texMatrix.rows[0];
 		vaxis = texMatrix.rows[1];
 
-		//debugoverlay->Line3D(info.origin, info.origin + info.normal*10, ColorRGBA(0,0,1,1), ColorRGBA(0,1,0,1), 100500);
-
 		for(int i = 0; i < verts.numElem(); i++)
 		{
 			float one_over_w = 1.0f / fabs(dot(fSize,uaxis*uaxis) * info.texScale.x);
@@ -873,8 +858,12 @@ void MakeDecalTexCoord(DkList<EGFHwVertex_t>& verts, DkList<int>& indices, const
 			float one_over_w = 1.0f / fabs(dot(fSize,Vector3D(verts[i].tangent)));
 			float one_over_h = 1.0f / fabs(dot(fSize,Vector3D(verts[i].binormal)));
 
-			verts[i].texcoord.x = fabs(dot(info.origin-verts[i].pos,Vector3D(verts[i].tangent)*sign(verts[i].tangent))*one_over_w+0.5f);
-			verts[i].texcoord.y = fabs(dot(info.origin-verts[i].pos,Vector3D(verts[i].binormal)*sign(verts[i].binormal))*one_over_h+0.5f);
+			Vector3D t,b;
+			t = Vector3D(verts[i].tangent);
+			b = Vector3D(verts[i].binormal);
+
+			verts[i].texcoord.x = fabs(dot(info.origin-verts[i].pos,t*sign(t))*one_over_w+0.5f);
+			verts[i].texcoord.y = fabs(dot(info.origin-verts[i].pos,b*sign(b))*one_over_h+0.5f);
 		}
 	}
 
@@ -920,7 +909,7 @@ studiotempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info,
 	DkList<EGFHwVertex_t>	verts;
 	DkList<int>				indices;
 
-	Matrix4x4 tempMatrixArray[128];// = PPAllocStructArray(Matrix4x4, m_pHardwareData->pStudioHdr->numbones);
+	Matrix4x4* tempMatrixArray = PPAllocStructArray(Matrix4x4, m_pHardwareData->pStudioHdr->numbones);
 
 	if(jointMatrices)
 	{
@@ -995,7 +984,7 @@ studiotempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info,
 				}
 			}
 
-			MakeDecalTexCoord( g_verts, g_indices, (decalmakeinfo_t)info );
+			MakeDecalTexCoord( g_verts, g_indices, info );
 
 			int nStart = verts.numElem();
 
@@ -1012,6 +1001,8 @@ studiotempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info,
 			verts.append( g_verts );
 		}
 	}
+
+	PPFree( tempMatrixArray );
 
 	if(verts.numElem() && indices.numElem())
 	{

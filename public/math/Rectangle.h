@@ -85,6 +85,26 @@ struct TRectangle
 		return (vleftTop + vrightBottom)*0.5f;
 	}
 
+	TRectangle<T, TMAX> GetTopVertical(float sizePercent) const
+	{
+		return TRectangle<T, TMAX>(vleftTop, lerp(vleftTop, vrightBottom, TVec2D<T>(1.0f, sizePercent)));
+	}
+
+	TRectangle<T, TMAX> GetBottomVertical(float sizePercent) const
+	{
+		return TRectangle<T, TMAX>(lerp(vrightBottom, vleftTop, TVec2D<T>(1.0f, sizePercent), vrightBottom));
+	}
+
+	TRectangle<T, TMAX> GetLeftHorizontal(float sizePercent) const
+	{
+		return TRectangle<T, TMAX>(vleftTop, lerp(vleftTop, vrightBottom, TVec2D<T>(sizePercent, 1.0f)));
+	}
+
+	TRectangle<T, TMAX> GetRightHorizontal(float sizePercent) const
+	{
+		return TRectangle<T, TMAX>(lerp(vrightBottom, vleftTop, TVec2D<T>(sizePercent, 1.0f), vrightBottom));
+	}
+
 	bool IsInRectangle(const TVec2D<T> &point) const
 	{
 		return ((point.x >= vleftTop.x) && (point.x <= vrightBottom.x) && (point.y >= vleftTop.y) && (point.y <= vrightBottom.y));
