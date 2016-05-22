@@ -649,7 +649,7 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 #define TRAFFICLIGHT_TIME 15.0f
 
-void GWJob_UpdateWorldAndEffects(void* data)
+void GWJob_UpdateWorldAndEffects(void* data, int i)
 {
 	float fDt = *(float*)data;
 	g_pRainEmitter->Update_Draw(fDt, g_pGameWorld->m_envConfig.rainDensity, 200.0f);

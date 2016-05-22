@@ -24,7 +24,11 @@ namespace Threading
 			m_curJob->flags |= JOB_FLAG_CURRENT;
 
 			// execute
-			(m_curJob->func)( m_curJob->arguments );
+			int iter = 0;
+			while(m_curJob->numIter-- > 0)
+			{
+				(m_curJob->func)( m_curJob->arguments, iter++ );
+			}
 
 			m_curJob->flags |= JOB_FLAG_EXECUTED;
 			m_curJob->flags &= ~JOB_FLAG_CURRENT;
@@ -89,10 +93,7 @@ namespace Threading
 	void CEqParallelJobThreads::Shutdown()
 	{
 		for (int i = 0; i < m_jobThreads.numElem(); i++)
-		{
-			m_jobThreads[i]->StopThread(true);
 			delete m_jobThreads[i];
-		}
 
 		m_jobThreads.clear();
 	}
@@ -141,7 +142,7 @@ namespace Threading
 	// wait for specific job
 	void CEqParallelJobThreads::WaitForJob(eqParallelJob_t* job)
 	{
-		// TODO: make right code?
+		while(!(job->flags & JOB_FLAG_EXECUTED)) { Platform_Sleep(1); }
 	}
 
 	// called by job thread

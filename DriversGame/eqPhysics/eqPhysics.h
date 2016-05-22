@@ -283,18 +283,20 @@ public:
 	///< Prepares dynamic objects to simulation. Must be called before SimulateStep
 	void							PrepareSimulateStep();
 
+	static void						PerformCollisionDetectionJob(void* thisPhys, int i);
+
 	//------------------------------------------------------
 	
 	//------------------------------------------------------
 
 	///< Integrates single body without collision detection
-	void							IntegrateSingle(CEqRigidBody* body, float deltaTime);
+	void							IntegrateSingle(CEqRigidBody* body);
 
 	///< detects body collisions
-	void							DetectCollisionsSingle(CEqRigidBody* body, float deltaTime, DkList<ContactPair_t>& pairs);
+	void							DetectCollisionsSingle(CEqRigidBody* body, DkList<ContactPair_t>& pairs);
 
 	///< processes contact pairs
-	void							ProcessContactPair(const ContactPair_t& pair, float deltaTime);
+	void							ProcessContactPair(const ContactPair_t& pair);
 
 	// checks collision (made especially for rays, but could be used in other situations)
 	bool							CheckAllowContactTest(eqPhysCollisionFilter* filterParams,CEqCollisionObject* object);
@@ -344,11 +346,15 @@ protected:
 
 	DkList<CEqCollisionObject*>		m_ghostObjects;
 
+	DkList<ContactPair_t>			m_contactPairs;
+
 	btCollisionWorld*				m_collisionWorld;
 	btCollisionConfiguration*		m_collConfig;
 	btCollisionDispatcher*			m_collDispatcher;
 
 	int								m_numRayQueries;
+
+	float							m_fDt;
 
 	bool							m_debugRaycast;
 };

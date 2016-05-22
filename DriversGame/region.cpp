@@ -347,7 +347,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 			// render studio model
 			//if( frustum.IsBoxInside(cont->m_defModel->GetBBoxMins(), cont->m_defModel->GetBBoxMaxs()) )
 
-			BoundingBox bbox(cont->m_defModel->GetBBoxMins(), cont->m_defModel->GetBBoxMaxs());
+			const BoundingBox& bbox = cont->m_defModel->GetAABB();
 
 			if( occlFrustum.IsSphereVisible( ref->position, length(bbox.GetSize())) )
 				cont->Render(fDist, ref->bbox, false, nRenderFlags);
@@ -527,7 +527,7 @@ int	CLevelRegion::GetNumNomEmptyHFields() const
 
 float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D& ray_dir)
 {
-	BoundingBox bbox(pModel->GetBBoxMins(), pModel->GetBBoxMaxs());
+	const BoundingBox& bbox = pModel->GetAABB();
 
 	float f1,f2;
 	if(!bbox.IntersectsRay(ray_start, ray_dir, f1,f2))

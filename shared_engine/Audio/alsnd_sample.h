@@ -27,7 +27,7 @@ public:
 					DkSoundSampleLocal();
 					~DkSoundSampleLocal();
 
-	static void		SampleLoaderJob( void* loadSampleData );
+	static void		SampleLoaderJob( void* loadSampleData, int i );
 
 	void			Init(const char *name, int flags);
 

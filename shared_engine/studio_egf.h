@@ -19,7 +19,7 @@ public:
 						CEngineStudioEGF();
 						~CEngineStudioEGF();
 
-	static void ModelLoaderJob( void* data );
+	static void ModelLoaderJob( void* data, int i );
 
 	bool				LoadModel( const char* pszPath, bool useJob = true );
 

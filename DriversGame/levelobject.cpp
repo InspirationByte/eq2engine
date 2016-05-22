@@ -64,15 +64,12 @@ void CLevObjectDef::RefreshPreview()
 	{
 		bbox = m_model->m_bbox;
 
-		//Msg("RENDER preview for STATIC model\n");
 		camDistance = length(m_model->m_bbox.GetSize())+0.5f;
 		camera_target = m_model->m_bbox.GetCenter();
 	}
 	else
 	{
-		//Msg("RENDER preview for DEF model\n");
-
-		bbox = BoundingBox(m_defModel->GetBBoxMins(),m_defModel->GetBBoxMaxs());
+		bbox = m_defModel->GetAABB();
 
 		camDistance = length(bbox.GetSize())+0.5f;
 		camera_target = bbox.GetCenter();

@@ -544,7 +544,7 @@ bool CEqThread::StartWorkerThread( const char * name_, ThreadPriority_e priority
 
 void CEqThread::StopThread( bool wait )
 {
-	if ( !m_bIsRunning )
+	if ( !m_bIsRunning || m_bIsTerminating )
 		return;
 
 	if ( m_bIsWorker )

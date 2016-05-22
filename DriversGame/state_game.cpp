@@ -471,7 +471,7 @@ void DrawGradientFilledRectangle(Rectangle_t &rect, ColorRGBA &color1, ColorRGBA
 	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,r3,elementsOf(r3), NULL, color2, &blending);
 }
 
-void GRJob_DrawEffects(void* data)
+void GRJob_DrawEffects(void* data, int i)
 {
 	float fDt = *(float*)data;
 

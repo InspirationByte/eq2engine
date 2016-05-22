@@ -38,9 +38,17 @@ struct TRectangle
 		vrightBottom.y = rightBottom.y;
 	}
 
-	void AddVertex(const TVec2D<T> &vert)
+	void AddVertex(const TVec2D<T> &p)
 	{
-		POINT_TO_RECT(vert, vleftTop, vrightBottom);
+		if ( p.x < vleftTop.x )
+			vleftTop.x = p.x;
+		if ( p.x > vrightBottom.x )
+			vrightBottom.x = p.x;
+
+		if ( p.y < vleftTop.y )
+			vleftTop.y = p.y;
+		if ( p.y > vrightBottom.y )
+			vrightBottom.y = p.y;
 	}
 
 	void Reset()

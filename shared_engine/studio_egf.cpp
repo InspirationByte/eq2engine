@@ -342,7 +342,7 @@ int CopyGroupIndexDataToHWList(DkList<uint16>& hwIdxList, DkList<uint32>& hwIdxL
 	return index_size;
 }
 
-void CEngineStudioEGF::ModelLoaderJob( void* data )
+void CEngineStudioEGF::ModelLoaderJob( void* data, int i )
 {
 	CEngineStudioEGF* model = (CEngineStudioEGF*)data;
 

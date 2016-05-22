@@ -2767,10 +2767,8 @@ void CCar::Simulate( float fDt )
 
 		m_engineSmokeTime = 0.0f;
 	}
-}
 
-void CCar::DrawEffects(int lod)
-{
+	// Draw light flares
 	// render siren lights
 	if (m_sirenEnabled)
 	{
@@ -3041,7 +3039,10 @@ void CCar::DrawEffects(int lod)
 
 		}
 	}
+}
 
+void CCar::DrawEffects(int lod)
+{
 	bool drawOnLocal = m_isLocalCar && (r_drawSkidMarks.GetInt() != 0);
 	bool drawOnOther = !m_isLocalCar && (r_drawSkidMarks.GetInt() == 2);
 

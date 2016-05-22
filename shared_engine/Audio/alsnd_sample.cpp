@@ -425,7 +425,7 @@ void DkSoundSampleLocal::WaitForLoad()
 
 //-----------------------------------------------------------------------------------------------------------------
 
-void DkSoundSampleLocal::SampleLoaderJob(void* smp)
+void DkSoundSampleLocal::SampleLoaderJob(void* smp, int i)
 {
 	DkSoundSampleLocal* sample = (DkSoundSampleLocal*)smp;
 
