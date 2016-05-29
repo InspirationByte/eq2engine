@@ -63,7 +63,7 @@ void CObject_Debris::Spawn()
 
 	m_smashSound = KV_GetValueString(m_keyValues->FindKeyBase("smashsound"), 0, "");
 
-	if(m_smashSound.GetLength() > 0)
+	if(m_smashSound.Length() > 0)
 	{
 		ses->PrecacheSound(m_smashSound.c_str());
 		ses->PrecacheSound((m_smashSound + "_light").c_str());

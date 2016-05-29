@@ -80,7 +80,7 @@ int Save_String(void* pStruct, void* pObjectPtr, IVirtualStream* pStream)
 
 	int len = 0;
 
-	int strLen = strPtr->GetLength()+1; // save with null
+	int strLen = strPtr->Length()+1; // save with null
 
 	len += pStream->Write(&strLen, 1, sizeof(int));
 	len += pStream->Write((char*)strPtr->GetData(), 1, strLen);

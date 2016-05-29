@@ -154,6 +154,7 @@ public:
 	void							AddObject(CGameObject* pObject, bool spawned = true);
 	void							RemoveObject(CGameObject* pObject);
 	bool							IsValidObject(CGameObject* pObject) const;
+
 	void							UpdateWorld(float fDt);
 	void							UpdateTrafficLightState(float fDt);
 
@@ -273,13 +274,17 @@ OOLUA_PROXY_END
 
 OOLUA_PROXY(CGameWorld)
 	OOLUA_MFUNC(SetEnvironmentName)
+	OOLUA_MFUNC_CONST(GetEnvironmentName)
+
 	OOLUA_MFUNC(SetLevelName)
+	OOLUA_MFUNC_CONST(GetLevelName)
 
-	OOLUA_MFUNC_CONST(IsValidObject)
-
-	OOLUA_MFUNC_CONST(CreateObject)
 	OOLUA_MFUNC(GetCameraParams)
 
+	OOLUA_MFUNC_CONST(CreateObject)
+	OOLUA_MFUNC(RemoveObject)
+	OOLUA_MFUNC_CONST(IsValidObject)
+	
 	OOLUA_MFUNC_CONST(FindObjectByName)
 
 	OOLUA_MFUNC(QueryNearestRegions)

@@ -95,7 +95,7 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 	conf->m_cleanModelName = KV_GetValueString(kvs->FindKeyBase("cleanModel"), 0, "");
 	conf->m_damModelName = KV_GetValueString(kvs->FindKeyBase("damagedModel"), 0, conf->m_cleanModelName.c_str());
 
-	ASSERTMSG(conf->m_cleanModelName.GetLength(), "ParseCarConfig - missing cleanModel!\n");
+	ASSERTMSG(conf->m_cleanModelName.Length(), "ParseCarConfig - missing cleanModel!\n");
 
 	kvkeybase_t* wheelModelType = kvs->FindKeyBase("wheelBodyGroup");
 
@@ -1881,7 +1881,7 @@ void CCar::UpdateCarPhysics(float delta)
 	}
 	else
 	{
-		if(m_fBreakage > 0.4f && fabs(fBreakage) < 0.01f && m_conf->m_sndBrakeRelease.GetLength() > 0)
+		if(m_fBreakage > 0.4f && fabs(fBreakage) < 0.01f && m_conf->m_sndBrakeRelease.Length() > 0)
 		{
 			// m_fBreakage is volume
 			EmitSound_t ep;

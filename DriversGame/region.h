@@ -128,6 +128,7 @@ struct regionObject_t
 	int				level;
 
 	BoundingBox		bbox;
+	EqString		name;
 
 	DkList<CEqCollisionObject*> collisionObjects;
 };

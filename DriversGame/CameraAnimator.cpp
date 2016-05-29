@@ -5,6 +5,12 @@
 // Description: Driver Syndicate camera animator
 //////////////////////////////////////////////////////////////////////////////////
 
+
+//
+// TODO:	rework this code, it looks like piece of shit
+//			add director features HERE
+//
+
 #include "CameraAnimator.h"
 #include "ConVar.h"
 #include "math/math_util.h"
@@ -98,7 +104,7 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 	Vector3D car_forward = targetRotation.rows[2].xyz();
 
-	if(mode == CAM_MODE_OUTCAR)
+	if(mode == CAM_MODE_OUTCAR || mode == CAM_MODE_OUTCAR_FIXED)
 	{
 		if(cam_velocityeffects.GetBool())
 		{
@@ -205,6 +211,21 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		m_viewParams.SetOrigin(cam_pos);
 		m_viewParams.SetAngles(cam_angles);
 		m_viewParams.SetFOV(m_carConfig.fov);
+	}
+	else if(mode == CAM_MODE_OUTCAR_FIXED)
+	{
+		Vector3D euler_angles = EulerMatrixZXY(transpose(targetRotation.getRotationComponent()));//*transpose(lookmatrix));
+		euler_angles = VRAD2DEG(euler_angles);
+		euler_angles *= Vector3D(-1,1,-1);
+
+		euler_angles += addRot + m_rotation;
+
+		Vector3D forward;
+		AngleVectors(euler_angles, &forward);
+
+		m_viewParams.SetOrigin( pos - forward * m_carConfig.dist);
+		m_viewParams.SetAngles( euler_angles );
+		m_viewParams.SetFOV( m_cameraFOV );
 	}
 	else if(mode == CAM_MODE_INCAR)
 	{

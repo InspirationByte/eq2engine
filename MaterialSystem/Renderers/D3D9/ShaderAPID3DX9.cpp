@@ -2204,7 +2204,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		//shaderString.Append(varargs("#line %d\n", params.vsLine + 1));
 		shaderString.Append(info.vs.text);
 
-		if (D3DXCompileShader(shaderString.GetData(), shaderString.GetLength(), NULL, NULL, entry.GetData(), profile.GetData(), D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &shaderBuf, &errorsBuf, &pShader->m_pVSConstants) == D3D_OK)
+		if (D3DXCompileShader(shaderString.GetData(), shaderString.Length(), NULL, NULL, entry.GetData(), profile.GetData(), D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &shaderBuf, &errorsBuf, &pShader->m_pVSConstants) == D3D_OK)
 		{
 			m_pD3DDevice->CreateVertexShader((DWORD *) shaderBuf->GetBufferPointer(), &pShader->m_pVertexShader);
 
@@ -2262,7 +2262,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		//shaderString.Append(varargs("#line %d\n", params.psLine + 1));
 		shaderString.Append(info.ps.text);
 
-		if (D3DXCompileShader(shaderString.GetData(), shaderString.GetLength(), NULL, NULL, entry.GetData(), profile.GetData(), D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &shaderBuf, &errorsBuf, &pShader->m_pPSConstants) == D3D_OK)
+		if (D3DXCompileShader(shaderString.GetData(), shaderString.Length(), NULL, NULL, entry.GetData(), profile.GetData(), D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &shaderBuf, &errorsBuf, &pShader->m_pPSConstants) == D3D_OK)
 		{
 			m_pD3DDevice->CreatePixelShader((DWORD *) shaderBuf->GetBufferPointer(), &pShader->m_pPixelShader);
 

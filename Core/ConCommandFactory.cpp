@@ -448,7 +448,7 @@ void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename, const c
 		else
 			tmpStr = xstrtrim(cmds[i].GetData());
 
-		if(tmpStr.GetLength() > 0)
+		if(tmpStr.Length() > 0)
 		{
 			if(doCommandLookup)
 			{

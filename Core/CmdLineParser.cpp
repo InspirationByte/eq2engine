@@ -29,7 +29,7 @@ CommandLineParse::~CommandLineParse()
 
 void CommandLineParse::Init(const char* pszCommandLine)
 {
-	if(m_szFullArgString.GetLength())
+	if(m_szFullArgString.Length())
 		m_szFullArgString.Empty();
 
 	m_iArgsCount = 0;
@@ -141,7 +141,7 @@ void CommandLineParse::ExecuteCommandLine(bool cvars,bool commands, unsigned int
 	{
 		if(!IsArgument( (char*)m_szParams[i].GetData(), true))
 		{
-			EqString tempStr = m_szParams[i].Mid(1,m_szParams[i].GetLength() - 1);
+			EqString tempStr = m_szParams[i].Mid(1,m_szParams[i].Length() - 1);
 			EqString tmpArgs( GetArgumentsOf(i) );
 
 			sprintf(tmp_path, "%s %s",tempStr.GetData(), tmpArgs.GetData());

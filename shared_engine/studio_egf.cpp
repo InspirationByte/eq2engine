@@ -552,7 +552,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		fpath.Path_FixSlashes();
 
         if(fpath.c_str()[0] == CORRECT_PATH_SEPARATOR)
-            fpath = EqString(fpath.c_str(),fpath.GetLength()-1);
+            fpath = EqString(fpath.c_str(),fpath.Length()-1);
 
 		for(int j = 0; j < pHdr->numsearchpathdescs; j++)
 		{
@@ -561,8 +561,8 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
                 EqString spath(pHdr->pMaterialSearchPath(j)->m_szSearchPathString);
 				spath.Path_FixSlashes();
 
-                if(spath.c_str()[spath.GetLength()-1] == CORRECT_PATH_SEPARATOR)
-                    spath = spath.Left(spath.GetLength()-1);
+                if(spath.c_str()[spath.Length()-1] == CORRECT_PATH_SEPARATOR)
+                    spath = spath.Left(spath.Length()-1);
 
 				EqString extend_path = spath + CORRECT_PATH_SEPARATOR + fpath;
 

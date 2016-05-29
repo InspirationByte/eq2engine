@@ -1224,12 +1224,11 @@ void BaseAnimating::UpdateIkChain( gikchain_t* pIkChain )
 {
 	for(int i = 0; i < pIkChain->numlinks; i++)
 	{
-		int bone_id = pIkChain->links[i].bone_index;
-
 		// this is broken
 		pIkChain->links[i].localTrans = Matrix4x4(pIkChain->links[i].quat);
 		pIkChain->links[i].localTrans.setTranslation(pIkChain->links[i].position);
 
+		//int bone_id = pIkChain->links[i].bone_index;
 		//pIkChain->links[i].localTrans = m_LocalBonematrixList[bone_id] * pIkChain->links[i].localTrans;
 	}
 
@@ -1286,7 +1285,7 @@ void BaseAnimating::UpdateIkChain( gikchain_t* pIkChain )
 
 // inverse kinematics
 
-void BaseAnimating::SetIKWorldTarget(int chain_id, Vector3D &world_position, Matrix4x4 *externaltransform)
+void BaseAnimating::SetIKWorldTarget(int chain_id, const Vector3D &world_position, Matrix4x4 *externaltransform)
 {
 	if(chain_id == -1)
 		return;
@@ -1311,7 +1310,7 @@ void BaseAnimating::SetIKWorldTarget(int chain_id, Vector3D &world_position, Mat
 	SetIKLocalTarget(chain_id, local);
 }
 
-void BaseAnimating::SetIKLocalTarget(int chain_id, Vector3D &local_position)
+void BaseAnimating::SetIKLocalTarget(int chain_id, const Vector3D &local_position)
 {
 	if(chain_id == -1)
 		return;

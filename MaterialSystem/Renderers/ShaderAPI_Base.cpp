@@ -461,7 +461,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, Filter_e texture
 		// and load image files for further uploading to GPU
 		for(int i = 0; i < cmds.numElem(); i++)
 		{
-			cmds[i] = cmds[i].Left(cmds[i].GetLength()-1);
+			cmds[i] = cmds[i].Left(cmds[i].Length()-1);
 
 			if(!(nFlags & TEXFLAG_REALFILEPATH))
 				texturePathA = EqString(m_params.textures_path) + cmds[i];
@@ -630,7 +630,7 @@ bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 
 		for(int i = 0; i < cmds.numElem(); i++)
 		{
-			cmds[i] = cmds[i].Left(cmds[i].GetLength()-1);
+			cmds[i] = cmds[i].Left(cmds[i].Length()-1);
 
 			texturePathA = EqString(m_params.textures_path) + cmds[i];
 			texturePathExtA = texturePathA + EqString(TEXTURE_DEFAULT_EXTENSION);
@@ -977,7 +977,7 @@ void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, shaderPro
 		newSrc = newSrc + str;
 	}
 
-	*buffer = (char*)PPReAlloc(*buffer, newSrc.GetLength()+1);
+	*buffer = (char*)PPReAlloc(*buffer, newSrc.Length()+1);
 	strcpy(*buffer, newSrc.GetData());
 }
 

@@ -106,6 +106,9 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	//-------------------
 	// object stuff
 
+	LUA_SET_GLOBAL_ENUMCONST(state, GO_STATE_IDLE);
+	LUA_SET_GLOBAL_ENUMCONST(state, GO_STATE_REMOVE);
+
 	LUA_SET_GLOBAL_ENUMCONST(state, GO_DEFAULT);
 	LUA_SET_GLOBAL_ENUMCONST(state, GO_CAR);
 	LUA_SET_GLOBAL_ENUMCONST(state, GO_CAR_AI);
@@ -114,6 +117,8 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	LUA_SET_GLOBAL_ENUMCONST(state, GO_PHYSICS);
 	LUA_SET_GLOBAL_ENUMCONST(state, GO_STATIC);
 	LUA_SET_GLOBAL_ENUMCONST(state, GO_LIGHT_TRAFFIC);
+
+
 
 	//-------------------
 	// vehicle stuff
@@ -187,7 +192,7 @@ DECLARE_CMD(lexec, "Executes Lua string", 0)
 	if(CMD_ARGC == 0)
 		return;
 
-	if(!EqLua::LuaBinding_DoBuffer(GetLuaState(), CMD_ARGV(0).c_str(), CMD_ARGV(0).GetLength(), "lexec"))
+	if(!EqLua::LuaBinding_DoBuffer(GetLuaState(), CMD_ARGV(0).c_str(), CMD_ARGV(0).Length(), "lexec"))
 	{
 		MsgError("lua_exec error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
 	}

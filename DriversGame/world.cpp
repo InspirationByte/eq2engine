@@ -1809,7 +1809,7 @@ CGameObject* CGameWorld::FindObjectByName( const char* objectName ) const
 
 	for(int i = 0; i < objList.numElem(); i++)
 	{
-		if(objList[i]->m_name.GetLength() == 0)
+		if(objList[i]->m_name.Length() == 0)
 			continue;
 
 		if( !objList[i]->m_name.Compare(objectName) )
@@ -1824,8 +1824,8 @@ CGameWorld*	g_pGameWorld = &s_GameWorld;
 
 #ifndef NO_LUA
 
-OOLUA_EXPORT_FUNCTIONS(CGameWorld, SetEnvironmentName, SetLevelName, GetCameraParams, QueryNearestRegions)
-OOLUA_EXPORT_FUNCTIONS_CONST(CGameWorld, FindObjectByName, CreateObject, IsValidObject)
+OOLUA_EXPORT_FUNCTIONS(CGameWorld, SetEnvironmentName, SetLevelName, GetCameraParams, QueryNearestRegions, RemoveObject)
+OOLUA_EXPORT_FUNCTIONS_CONST(CGameWorld, FindObjectByName, CreateObject, IsValidObject, GetEnvironmentName, GetLevelName)
 
 OOLUA_EXPORT_FUNCTIONS(CViewParams, SetOrigin, SetAngles, SetFOV)
 OOLUA_EXPORT_FUNCTIONS_CONST(CViewParams, GetOrigin, GetAngles, GetFOV)

@@ -47,7 +47,7 @@ public:
 	const wchar_t*	c_str() const {return GetData();}
 
 	// length of it
-	uint			GetLength() const;
+	uint			Length() const;
 
 	// string allocated size in bytes
 	uint			GetSize() const;
@@ -177,8 +177,8 @@ public:
 protected:
 	wchar_t*	m_pszString;
 
-	uint		m_nLength;			// length of string
-	uint		m_nAllocated;		// allocation size
+	uint16		m_nLength;			// length of string
+	uint16		m_nAllocated;		// allocation size
 };
 
 #endif // EQWSTRING_H

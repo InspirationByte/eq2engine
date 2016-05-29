@@ -57,9 +57,9 @@ void SetOptimalCameraDistance()
 	{
 		BoundingBox;
 
-		Vector3D bsize = g_pModel->m_pModel->GetBBoxMaxs()-g_pModel->m_pModel->GetBBoxMins();
+		Vector3D bsize = g_pModel->m_pModel->GetAABB().GetSize();
 
-		g_fCamDistance = length(bsize);
+		g_fCamDistance = length(bsize)*2.0f;
 	}
 }
 

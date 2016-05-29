@@ -422,7 +422,7 @@ void CReplayData::SaveToFile( const char* filename )
 {
 	m_filename = filename;
 
-	if(m_filename.Path_Extract_Ext().GetLength() == 0)
+	if(m_filename.Path_Extract_Ext().Length() == 0)
 		m_filename = m_filename + ".rdat";
 
 	IFile* pFile = g_fileSystem->Open(m_filename.c_str(), "wb", SP_MOD);
@@ -729,7 +729,7 @@ void CReplayData::LoadFromFile(const char* filename)
 {
 	m_filename = filename;
 
-	if(m_filename.Path_Extract_Ext().GetLength() == 0)
+	if(m_filename.Path_Extract_Ext().Length() == 0)
 		m_filename = m_filename + ".rdat";
 
 	IFile* pFile = g_fileSystem->Open(m_filename.c_str(), "rb", SP_MOD);

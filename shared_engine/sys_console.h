@@ -67,14 +67,13 @@ public:
 
 	void	SetLastLine();
 	void	AddToLinePos(int num);
+	void	SetText( const char* text );
 
 	void	SetVisible(bool bVisible)		{ m_visible = bVisible; }
 	bool	IsVisible() const				{return m_visible;}
 
 	void	SetLogVisible( bool bVisible )	{ m_logVisible = bVisible; }
 	bool	IsLogVisible() const			{ return m_logVisible; }
-
-	void	SetText( const char* text )		{ con_Text = text; m_cursorPos = m_startCursorPos = con_Text.GetLength();}
 
 	bool	IsShiftPressed() const			{return m_shiftModifier;}
 	bool	IsCtrlPressed() const			{return m_ctrlModifier;}

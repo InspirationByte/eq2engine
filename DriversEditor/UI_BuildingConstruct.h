@@ -21,6 +21,15 @@ enum ELayerType
 	LAYER_CORNER_MODEL
 };
 
+enum EBuildingPlaceMode
+{
+	ED_BUILD_READY = 0,
+	ED_BUILD_BEGUN,				// 1st point
+	ED_BUILD_WAITFORSELECT,		// next points
+	ED_BUILD_SELECTEDPOINT,		// selected points
+	ED_BUILD_DONE,
+};
+
 class CLayerModel : public CEditorPreviewable
 {
 public:
@@ -191,6 +200,30 @@ protected:
 
 //-----------------------------------------------------------------------------
 
+struct segmentPoint_t
+{
+	Vector3D	position;
+	int			layerId;
+	float		scale;
+};
+
+struct buildingSource_t
+{
+	buildingSource_t()
+	{
+		layerColl = NULL;
+		order = 1;
+		layerId = 0;
+		segmentScale = 1.0f;
+	}
+
+	DkList<segmentPoint_t>	points;
+	buildLayerColl_t*		layerColl;
+	int						layerId;
+	int						order;
+	float					segmentScale;
+};
+
 class CUI_BuildingConstruct : public wxPanel, public CBaseTilebasedEditor
 {
 public:
@@ -198,7 +231,15 @@ public:
 	CUI_BuildingConstruct( wxWindow* parent ); 
 	~CUI_BuildingConstruct();
 
+	
+	void		ProcessMouseEvents( wxMouseEvent& event );
 	void		MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos );
+
+	void		CancelBuilding();
+	void		CompleteBuilding();
+
+	void		ClearSelection();
+	void		DeleteSelection();
 
 	void		Update_Refresh();
 
@@ -218,16 +259,27 @@ protected:
 	void OnCreateClick( wxCommandEvent& event );
 	void OnEditClick( wxCommandEvent& event );
 	void OnDeleteClick( wxCommandEvent& event );
-		
-	CBuildingLayerEditDialog* m_layerEditDlg;
-	CBuildingLayerList*	m_layerCollList;
 
-	wxPanel*			m_pSettingsPanel;
-	wxTextCtrl*			m_filtertext;
-	wxChoice*			m_pPreviewSize;
-	wxButton*			m_button5;
-	wxButton*			m_button3;
-	wxButton*			m_button8;
+	int							m_mouseLastY;
+		
+	CBuildingLayerEditDialog*	m_layerEditDlg;
+	CBuildingLayerList*			m_layerCollList;
+
+	wxPanel*					m_pSettingsPanel;
+	wxTextCtrl*					m_filtertext;
+	wxChoice*					m_pPreviewSize;
+	wxButton*					m_button5;
+	wxButton*					m_button3;
+	wxButton*					m_button8;
+
+	wxCheckBox*					m_tiledPlacement;
+
+	Vector3D					m_mousePoint;
+	Vector3D					m_placementPoint;
+	bool						m_placeError;
+
+	int							m_mode;
+	buildingSource_t			m_building;
 };
 
 #endif // UI_BUILDINGCOSTRUCT_H

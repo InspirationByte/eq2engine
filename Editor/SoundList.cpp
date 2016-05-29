@@ -64,7 +64,7 @@ void CSoundList::UpdateList()
 	// fill the list
 	for(int i = 0; i < ses->m_scriptsoundlist.numElem(); i++)
 	{
-		if(search_str.GetLength() == 0)
+		if(search_str.Length() == 0)
 		{
 			m_pSndList->AppendString( ses->m_scriptsoundlist[i]->pszName );
 		}

@@ -175,7 +175,7 @@ void CNetMessageBuffer::WriteString(const char* pszStr)
 
 void CNetMessageBuffer::WriteString(const EqString& str)
 {
-	int len = str.GetLength() + 1;
+	int len = str.Length() + 1;
 
 	WriteInt( len );
 	WriteData(str.GetData(), len);
