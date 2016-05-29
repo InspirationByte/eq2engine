@@ -1,6 +1,11 @@
-# Equilibrium Engine #
+![eqengine_logo.jpg](https://bitbucket.org/repo/BzA5LG/images/960076965-eqengine_logo.jpg)
 
-The game engine/framework originally developed for White Cage
+The game engine/framework developing for these titles:
+
+* Project Unost ** TOKAMAK **
+* Project RoofManiac
+* Project Underdome **White Cage**
+* Project Drivers **The Driver Syndicate**
 
 Folder overview
 -------------
