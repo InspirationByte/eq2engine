@@ -258,6 +258,9 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 
 #ifndef EDITOR
 	StartWorkerThread( "LevelLoaderThread" );
+#else
+	// regenerate nav grid
+	Nav_ClearCellStates();
 #endif // EDITOR
 
 	g_fileSystem->Close(pFile);
@@ -2017,7 +2020,7 @@ void CGameLevel::RespawnAllObjects()
 
 //#ifdef EDITOR
 
-#define OBSTACLE_STATIC_MAX_HEIGHT	(6.0f)
+#define OBSTACLE_STATIC_MAX_HEIGHT	(8.0f)
 #define OBSTACLE_PROP_MAX_HEIGHT	(4.0f)
 
 void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
@@ -2049,6 +2052,8 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 
 		CLevelModel* model = def->m_model;
 
+		Matrix4x4 refTransform = ref->transform;
+
 		for (int i = 0; i < model->m_numIndices; i += 3)
 		{
 			if (i + 1 > model->m_numIndices || i + 2 > model->m_numIndices)
@@ -2066,9 +2071,9 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			p1 = model->m_verts[model->m_indices[i + 1]].position;
 			p2 = model->m_verts[model->m_indices[i + 2]].position;
 
-			v0 = (ref->transform*Vector4D(p0, 1.0f)).xyz();
-			v1 = (ref->transform*Vector4D(p1, 1.0f)).xyz();
-			v2 = (ref->transform*Vector4D(p2, 1.0f)).xyz();
+			v0 = (refTransform*Vector4D(p0, 1.0f)).xyz();
+			v1 = (refTransform*Vector4D(p1, 1.0f)).xyz();
+			v2 = (refTransform*Vector4D(p2, 1.0f)).xyz();
 
 			Vector3D normal;
 			ComputeTriangleNormal(v0, v1, v2, normal);
@@ -2076,7 +2081,7 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			//if(fabs(dot(normal,vec3_up)) > 0.8f)
 			//	continue;
 
-			if(v0.y > OBSTACLE_STATIC_MAX_HEIGHT || v1.y > OBSTACLE_STATIC_MAX_HEIGHT || v2.y > OBSTACLE_STATIC_MAX_HEIGHT)
+			if(p0.y > OBSTACLE_STATIC_MAX_HEIGHT || p1.y > OBSTACLE_STATIC_MAX_HEIGHT || p2.y > OBSTACLE_STATIC_MAX_HEIGHT)
 				continue;
 
 			//debugoverlay->Polygon3D(v0, v1, v2, ColorRGBA(1, 0, 1, 0.25f), 100.0f);
@@ -2091,15 +2096,15 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			Nav_GetCellRangeFromAABB(vertbox.minPoint, vertbox.maxPoint, min, max);
 
 			// extend
-			min.x = clamp(min.x-1, 0, navCellGridSize*m_wide);
-			min.y = clamp(min.y-1, 0, navCellGridSize*m_tall);
-			max.x = clamp(max.x+1, 0, navCellGridSize*m_wide);
-			max.y = clamp(max.y+1, 0, navCellGridSize*m_tall);
+			//min.x = clamp(min.x-1, -1, navCellGridSize*m_wide);
+			//min.y = clamp(min.y-1, -1, navCellGridSize*m_tall);
+			//max.x = clamp(max.x+1, -1, navCellGridSize*m_wide);
+			//max.y = clamp(max.y+1, -1, navCellGridSize*m_tall);
 
 			// in this range do...
-			for (int y = min.y; y < max.y + 1; y++)
+			for (int y = min.y; y < max.y; y++)
 			{
-				for (int x = min.x; x < max.x + 1; x++)
+				for (int x = min.x; x < max.x; x++)
 				{
 					//Vector3D pointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(IVector2D(x, y));
 					//debugoverlay->Box3D(pointPos - 0.5f, pointPos + 0.5f, ColorRGBA(1, 0, 1, 0.1f));
@@ -2160,17 +2165,15 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			Nav_GetCellRangeFromAABB(vertbox.minPoint, vertbox.maxPoint, min, max);
 
 			// extend
-			min.x = clamp(min.x - 1, 0, navCellGridSize*m_wide);
-			min.y = clamp(min.y - 1, 0, navCellGridSize*m_tall);
-
-			max.x = clamp(max.x + 1, 0, navCellGridSize*m_wide);
-			max.y = clamp(max.y + 1, 0, navCellGridSize*m_tall);
-
+			//min.x = clamp(min.x - 1, 0, navCellGridSize*m_wide);
+			//min.y = clamp(min.y - 1, 0, navCellGridSize*m_tall);
+			//max.x = clamp(max.x + 1, 0, navCellGridSize*m_wide);
+			//max.y = clamp(max.y + 1, 0, navCellGridSize*m_tall);
 
 			// in this range do...
-			for (int y = min.y; y < max.y + 1; y++)
+			for (int y = min.y; y < max.y; y++)
 			{
-				for (int x = min.x; x < max.x + 1; x++)
+				for (int x = min.x; x < max.x; x++)
 				{
 					//Vector3D pointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(IVector2D(x, y));
 					//debugoverlay->Box3D(pointPos - 0.5f, pointPos + 0.5f, ColorRGBA(1, 0, 1, 0.1f));
@@ -2246,8 +2249,8 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 
 void CGameLevel::Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& maxs, IVector2D& xy1, IVector2D& xy2) const
 {
-	xy1 = Nav_PositionToGlobalNavPoint(mins);
-	xy2 = Nav_PositionToGlobalNavPoint(maxs);
+	xy1 = Nav_PositionToGlobalNavPoint(mins)-1;
+	xy2 = Nav_PositionToGlobalNavPoint(maxs)+1;
 }
 
 void CGameLevel::Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion) const
@@ -2393,8 +2396,20 @@ void CGameLevel::Nav_ClearCellStates()
 
 			m_mutex.Lock();
 
-			if(m_regions[idx].m_isLoaded) // zero them
-				memset(m_regions[idx].m_navGrid.cellStates, 0, navSize*navSize);
+			CLevelRegion& reg = m_regions[idx];
+
+			if(reg.m_isLoaded) // zero them
+			{
+				memset(reg.m_navGrid.cellStates, 0, navSize*navSize);
+
+				if( reg.m_navGrid.dirty )
+				{
+					for (int i = 0; i < reg.m_objects.numElem(); i++)
+						Nav_AddObstacle(&reg, reg.m_objects[i]);
+
+					reg.m_navGrid.dirty = false;
+				}
+			}
 
 			m_mutex.Unlock();
 		}

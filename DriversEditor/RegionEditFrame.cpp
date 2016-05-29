@@ -64,6 +64,8 @@ CRegionEditFrame::CRegionEditFrame( wxWindow* parent ) :
 	m_pRenderPanel->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(CRegionEditFrame::ProcessMouseEvents), NULL, this);
 	m_pRenderPanel->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(CRegionEditFrame::ProcessMouseEvents), NULL, this);
 	m_pRenderPanel->Connect(wxEVT_MOTION, (wxObjectEventFunction)&CRegionEditFrame::ProcessMouseEvents, NULL, this);
+	m_pRenderPanel->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&CRegionEditFrame::OnKey, NULL, this);
+	m_pRenderPanel->Connect(wxEVT_KEY_UP, (wxObjectEventFunction)&CRegionEditFrame::OnKey, NULL, this);
 
 	m_swapChain = materials->CreateSwapChain(m_pRenderPanel->GetHandle());
 
@@ -76,6 +78,8 @@ CRegionEditFrame::CRegionEditFrame( wxWindow* parent ) :
 	m_zoomLevel = 0.5;
 	m_viewPos = vec2_zero;
 	m_mouseoverRegion = -1;
+
+	m_showsNavGrid = false;
 }
 
 CRegionEditFrame::~CRegionEditFrame()
@@ -91,6 +95,8 @@ CRegionEditFrame::~CRegionEditFrame()
 	m_pRenderPanel->Disconnect(wxEVT_LEFT_DOWN, wxMouseEventHandler(CRegionEditFrame::ProcessMouseEvents), NULL, this);
 	m_pRenderPanel->Disconnect(wxEVT_LEFT_UP, wxMouseEventHandler(CRegionEditFrame::ProcessMouseEvents), NULL, this);
 	m_pRenderPanel->Disconnect(wxEVT_MOTION, (wxObjectEventFunction)&CRegionEditFrame::ProcessMouseEvents, NULL, this);
+	m_pRenderPanel->Disconnect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&CRegionEditFrame::OnKey, NULL, this);
+	m_pRenderPanel->Disconnect(wxEVT_KEY_UP, (wxObjectEventFunction)&CRegionEditFrame::OnKey, NULL, this);
 }
 
 void CRegionEditFrame::ProcessAllMenuCommands(wxCommandEvent& event)
@@ -102,6 +108,14 @@ void CRegionEditFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 			BuildAndSaveMapFromRegionImages();
 			break;
 		}
+	}
+}
+
+void CRegionEditFrame::OnKey(wxKeyEvent& event)
+{
+	if(event.GetRawKeyCode() == 'N')
+	{
+		m_showsNavGrid = (event.GetEventType() == wxEVT_KEY_DOWN);
 	}
 }
 
@@ -216,6 +230,7 @@ void CRegionEditFrame::OnLevelUnload()
 		{
 			int regIdx = y*m_regWide+x;
 			g_pShaderAPI->FreeTexture(m_regionMap[regIdx].image);
+			g_pShaderAPI->FreeTexture(m_regionMap[regIdx].aiMapImage);
 		}
 	}
 
@@ -282,6 +297,42 @@ void CRegionEditFrame::RegenerateRegionImage(regionMap_t* regMap)
 		}
 
 		regMap->image->Unlock();
+		lockdata.pData = NULL;
+	}
+
+	navGrid_t& navGrid = regMap->region->m_navGrid;
+
+	if(!regMap->aiMapImage)
+	{
+		regMap->aiMapImage = g_pShaderAPI->CreateProceduralTexture("aiMapTex_%d", FORMAT_RGBA8, navGrid.wide, navGrid.tall, 1, 1,TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, TEXFLAG_NOQUALITYLOD);
+		regMap->aiMapImage->Ref_Grab();
+	}
+
+	regMap->aiMapImage->Lock(&lockdata, NULL, true);
+	if(lockdata.pData)
+	{
+		memset(lockdata.pData, 0, navGrid.wide*navGrid.tall*sizeof(TVec4D<ubyte>));
+
+		TVec4D<ubyte>* imgData = (TVec4D<ubyte>*)lockdata.pData;
+
+		for(int y = 0; y < navGrid.tall; y++)
+		{
+			for(int x = 0; x < navGrid.wide; x++)
+			{
+				int pixIdx = y*navGrid.tall+x;
+
+				TVec4D<ubyte> color(0);
+				color.z = 255-navGrid.staticObst[pixIdx] * 32;
+				//color.x = regMap->region->m_roads[pixIdx].type == ROADTYPE_JUNCTION ? 128 : 0;
+				//color.z = regMap->region->m_roads[pixIdx].type == ROADTYPE_STRAIGHT ? 128 : 0;
+				//color.y = 32;
+				//color.w = 255;
+
+				imgData[pixIdx] = color;
+			}
+		}
+
+		regMap->aiMapImage->Unlock();
 	}
 
 }
@@ -459,7 +510,9 @@ void CRegionEditFrame::ReDraw()
 					Vertex3D_t(v4, Vector2D(1,1), color4_white),
 				};
 
-				materials->DrawPrimitivesFFP(PRIM_TRIANGLE_STRIP, verts, elementsOf(verts), rm->image, color4_white, &params, &depthparams);
+				ITexture* showTexture = m_showsNavGrid ? rm->aiMapImage : rm->image;
+
+				materials->DrawPrimitivesFFP(PRIM_TRIANGLE_STRIP, verts, elementsOf(verts), showTexture, color4_white, &params, &depthparams);
 
 				if(m_mouseoverRegion == regIdx)
 				{

@@ -635,6 +635,8 @@ bool CReplayData::LoadVehicleReplay( CCar* target, const char* filename, int& ti
 		return true;
 	}
 
+	Msg("Loading vehicle frames from '%s'\n", filename);
+
 	IFile* pFile = g_fileSystem->Open((_Es(filename) + ".vr").c_str(), "rb", SP_MOD);
 
 	if(pFile)

@@ -229,7 +229,7 @@ void DkSoundEmitterLocal::Update()
 
 		return;
 	}
-	else if(m_sample && (m_sample->m_nChannels == 1))
+	else if(m_sample/* && (m_sample->m_nChannels == 1)*/)
 	{
 		if( (length(vPosition - soundsystem->GetListenerPosition())) > m_params.maxDistance)
 		{

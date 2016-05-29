@@ -57,6 +57,7 @@ struct navGrid_t
 		cellStates = NULL;
 		wide = 0;
 		tall = 0;
+		dirty = false;
 	}
 
 	~navGrid_t()
@@ -77,6 +78,8 @@ struct navGrid_t
 
 		cellStates = new navcell_t[w*h];
 		memset(cellStates, 0, w*h);
+
+		dirty = true;
 	}
 
 	void Cleanup()
@@ -89,13 +92,17 @@ struct navGrid_t
 
 		wide = 0;
 		tall = 0;
+
+		dirty = false;
 	}
 
 	ubyte*		staticObst;		///< A* static navigation grid
 	navcell_t*	cellStates;		///< A* open/close state list
 
-	int			wide;
-	int			tall;
+	ushort		wide;
+	ushort		tall;
+	
+	bool		dirty;
 };
 
 //----------------------------------------------------------------------

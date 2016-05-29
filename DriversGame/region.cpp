@@ -965,19 +965,22 @@ void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 
 #define NAVGRIDSCALE_HALF	int(AI_NAVIGATION_GRID_SCALE/2)
 
-			// higher the priority of road nodes
-			for(int j = 0; j < AI_NAVIGATION_GRID_SCALE*AI_NAVIGATION_GRID_SCALE; j++)
-			{
-				int ofsX = tmpCell.posX*AI_NAVIGATION_GRID_SCALE + (j % AI_NAVIGATION_GRID_SCALE);
-				int ofsY = tmpCell.posY*AI_NAVIGATION_GRID_SCALE + (j % NAVGRIDSCALE_HALF);
+			if(tmpCell.type == ERoadType::ROADTYPE_PARKINGLOT)
+				continue;
 
-				int navCellIdx = ofsY*m_heightfield[0]->m_sizew + ofsX;
-				m_navGrid.staticObst[navCellIdx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
+			// higher the priority of road nodes
+			for(int j = 0; j < AI_NAVIGATION_GRID_SCALE; j++)
+			{
+				for(int k = 0; k < AI_NAVIGATION_GRID_SCALE; k++)
+				{
+					int ofsX = tmpCell.posX*AI_NAVIGATION_GRID_SCALE+j;
+					int ofsY = tmpCell.posY*AI_NAVIGATION_GRID_SCALE+k;
+
+					int navCellIdx = ofsY*m_navGrid.tall + ofsX;
+					m_navGrid.staticObst[navCellIdx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
+				}
 			}
 		}
-
-		for (int i = 0; i < m_objects.numElem(); i++)
-			m_level->Nav_AddObstacle(this, m_objects[i]);
 	}
 }
 
