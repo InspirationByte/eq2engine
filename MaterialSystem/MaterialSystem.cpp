@@ -180,7 +180,7 @@ bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderA
 
 	if(m_pRenderLib->InitCaps())
 	{
-		if(!m_pRenderLib->InitAPI(m_config.shaderapi_params))
+		if(!m_pRenderLib->InitAPI( m_config.shaderapi_params ))
 			return false;
 
 		// we created all we've need

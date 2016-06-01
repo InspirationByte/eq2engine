@@ -2249,8 +2249,8 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 
 void CGameLevel::Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& maxs, IVector2D& xy1, IVector2D& xy2) const
 {
-	xy1 = Nav_PositionToGlobalNavPoint(mins)-1;
-	xy2 = Nav_PositionToGlobalNavPoint(maxs)+1;
+	xy1 = Nav_PositionToGlobalNavPoint(mins)-2;
+	xy2 = Nav_PositionToGlobalNavPoint(maxs)+2;
 }
 
 void CGameLevel::Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion) const

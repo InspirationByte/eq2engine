@@ -27,14 +27,14 @@ public:
 	void					ExitAPI();
 	void					ReleaseSwapChains();
 
-	bool					InitAPI(const shaderapiinitparams_t &params);
+	bool					InitAPI( shaderapiinitparams_t &params );
 
 	// frame begin/end
 	void					BeginFrame();
 	void					EndFrame(IEqSwapChain* swapChain = NULL);
 
 	// renderer interface
-	IShaderAPI*				GetRenderer() {return m_Renderer;}
+	IShaderAPI*				GetRenderer() const {return (IShaderAPI*)m_Renderer;}
 
 	// sets backbuffer size for default swap chain
 	void					SetBackbufferSize(int w, int h);
@@ -53,7 +53,7 @@ public:
 
 protected:
 
-	IShaderAPI*				m_Renderer;
+	ShaderAPID3DX9*			m_Renderer;
 
 	DkList<IEqSwapChain*>	m_swapChains;
 
@@ -76,7 +76,5 @@ protected:
 	int						m_height;
 
 	bool					m_bResized;
-
-	shaderapiinitparams_t	savedParams;
 };
 #endif //CGLRENDERLIB_H

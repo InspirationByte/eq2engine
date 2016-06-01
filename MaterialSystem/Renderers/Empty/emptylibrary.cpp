@@ -33,12 +33,10 @@ bool CEmptyRenderLib::InitCaps()
 	return true;
 }
 
-bool CEmptyRenderLib::InitAPI(const shaderapiinitparams_t &params)
+bool CEmptyRenderLib::InitAPI( shaderapiinitparams_t &params)
 {
-	savedParams = params;
-
 	m_Renderer = new ShaderAPIEmpty();
-	m_Renderer->Init(savedParams);
+	m_Renderer->Init(params);
 
 	g_pShaderAPI = m_Renderer;
 

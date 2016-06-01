@@ -195,7 +195,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	materials_config.shaderapi_params.nScreenFormat = format;
 	materials_config.shaderapi_params.bEnableVerticalSync = r_vSync.GetBool();
-	materials_config.shaderapi_params.nMultisample = 0;
 
     bool materialSystemStatus = false;
 

@@ -26,6 +26,7 @@ public:
 	friend class				CD3D9ShaderProgram;
 	friend class				CD3D9Texture;
 	friend class				CD3DRenderLib;
+	friend class				CD3D9OcclusionQuery;
 	
 	friend class				CD3D9DepthStencilState;
 	friend class				CD3D9RasterizerState;
@@ -49,7 +50,7 @@ public:
 
 
 	// Init + Shurdown
-	void						Init(const shaderapiinitparams_t &params);
+	void						Init( shaderapiinitparams_t &params );
 	void						Shutdown();
 
 	void						PrintAPIInfo();

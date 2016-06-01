@@ -65,6 +65,7 @@ CBaseShader::CBaseShader()
 	m_depthtest			= true;
 
 	m_fogenabled		= true;
+	m_msaaEnabled		= true;
 
 	m_nFlags			= 0;
 
@@ -107,10 +108,14 @@ void CBaseShader::InitParams()
 		IMatVar* pDepthTest				= m_pAssignedMaterial->GetMaterialVar("ztest", "1");
 		IMatVar* pDepthWrite			= m_pAssignedMaterial->GetMaterialVar("zwrite", "1");
 
+		IMatVar* pNoMSAA			= m_pAssignedMaterial->GetMaterialVar("NoMSAA", "0");
+
 		m_depthtest = (pDepthTest->GetInt() > 0);
 		m_depthwrite = (pDepthWrite->GetInt() > 0);
 
 		m_fogenabled = !(pNoFog->GetInt() > 0);
+
+		m_msaaEnabled = !(pNoMSAA->GetInt() > 0);
 
 		// required
 		m_pBaseTextureTransformVar	= GetAssignedMaterial()->GetMaterialVar("BaseTextureTransform", "[0 0]");
@@ -294,7 +299,7 @@ void CBaseShader::ParamSetup_RasterState()
 	if(materials->GetConfiguration().wireframeMode && materials->GetConfiguration().editormode)
 		cull_mode = CULL_NONE;
 
-	materials->SetRasterizerStates(cull_mode, (FillMode_e)materials->GetConfiguration().wireframeMode);
+	materials->SetRasterizerStates(cull_mode, (FillMode_e)materials->GetConfiguration().wireframeMode, m_msaaEnabled);
 }
 
 void CBaseShader::ParamSetup_Transform()

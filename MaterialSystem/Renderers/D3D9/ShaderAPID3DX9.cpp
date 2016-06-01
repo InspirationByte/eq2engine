@@ -415,7 +415,7 @@ void ShaderAPID3DX9::ReleaseD3DFrameBufferSurfaces()
 }
 
 // Init + Shurdown
-void ShaderAPID3DX9::Init(const shaderapiinitparams_t &params)
+void ShaderAPID3DX9::Init( shaderapiinitparams_t &params )
 {
 	m_bDeviceIsLost = false;
 	m_bDeviceAtReset = false;
@@ -950,11 +950,13 @@ void ShaderAPID3DX9::ApplyRasterizerState()
 			m_pD3DDevice->SetRenderState(D3DRS_FILLMODE, fillConst[m_nCurrentFillMode]);
 		}
 
+		
 		if (m_bCurrentMultiSampleEnable != true)
 		{
 			m_bCurrentMultiSampleEnable = true;
 			m_pD3DDevice->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, m_bCurrentMultiSampleEnable );
 		}
+		
 
 		if (m_bCurrentScissorEnable != false)
 		{
@@ -988,11 +990,13 @@ void ShaderAPID3DX9::ApplyRasterizerState()
 			m_pD3DDevice->SetRenderState(D3DRS_FILLMODE, fillConst[m_nCurrentFillMode]);
 		}
 
+		
 		if (pSelectedState->m_params.multiSample != m_bCurrentMultiSampleEnable)
 		{
 			m_bCurrentMultiSampleEnable = pSelectedState->m_params.multiSample;
 			m_pD3DDevice->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, m_bCurrentMultiSampleEnable );
 		}
+		
 
 		if (pSelectedState->m_params.scissor != m_bCurrentScissorEnable)
 		{
