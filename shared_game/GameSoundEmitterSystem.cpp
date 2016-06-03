@@ -434,6 +434,8 @@ scriptsounddata_t* CSoundEmitterSystem::FindSound(const char* soundName)
 extern CWorldInfo* g_pWorldInfo;
 #endif
 
+ConVar snd_roloff("snd_roloff", "2.0");
+
 // simple sound emitter
 int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 {
@@ -532,7 +534,7 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 		sParams.maxDistance			= pScriptSound->fMaxDistance;
 		sParams.referenceDistance	= pScriptSound->fAtten * emit->fRadiusMultiplier;
 		sParams.pitch				= emit->fPitch * pScriptSound->fPitch;
-		sParams.rolloff				= 1.0f;
+		sParams.rolloff				= pScriptSound->fRolloff;
 		sParams.volume				= edata->origVolume;
 		sParams.airAbsorption		= pScriptSound->fAirAbsorption;
 		sParams.is2D				= pScriptSound->is2d;
@@ -870,6 +872,7 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 		pSoundData->fVolume = KV_GetValueFloat( curSec->FindKeyBase("volume"), 0, 1.0f );
 		pSoundData->fAtten = KV_GetValueFloat( curSec->FindKeyBase("distance"), 0, 35.0f );
 		pSoundData->fPitch = KV_GetValueFloat( curSec->FindKeyBase("pitch"), 0, 1.0f );
+		pSoundData->fRolloff = KV_GetValueFloat( curSec->FindKeyBase("rolloff"), 0, 1.0f );
 		pSoundData->fMaxDistance = KV_GetValueFloat( curSec->FindKeyBase("maxdistance"), 0, 100.0f );
 		pSoundData->fAirAbsorption = KV_GetValueFloat( curSec->FindKeyBase("airabsorption"), 0, 0.0f );
 		pSoundData->loop = KV_GetValueBool( curSec->FindKeyBase("loop"), 0, false );

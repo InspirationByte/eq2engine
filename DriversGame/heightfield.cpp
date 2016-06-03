@@ -17,6 +17,8 @@ CHeightTileField::CHeightTileField()
 	m_position = vec3_zero;
 	m_points = NULL;
 
+	m_hasTransparentSubsets = false;
+
 	m_sizew = 0;
 	m_sizeh = 0;
 
@@ -61,6 +63,7 @@ void CHeightTileField::UnloadMaterials()
 		delete m_materials[i];
 	}
 	m_materials.clear();
+	m_hasTransparentSubsets = false;
 }
 
 struct material_s
@@ -147,7 +150,12 @@ void CHeightTileField::ReadFromStream( IVirtualStream* stream )
 		matBundle->atlas = TexAtlas_LoadAtlas(("materials/"+_Es(matNamePtr)+".atlas").c_str(), matNamePtr, true);
 
 		if(matBundle->material)
+		{
 			matBundle->material->Ref_Grab();
+
+			if(matBundle->material->GetFlags() & MATERIAL_FLAG_TRANSPARENT)
+				m_hasTransparentSubsets = true;
+		}
 
 		m_materials.append( matBundle );
 
@@ -257,6 +265,9 @@ bool CHeightTileField::SetPointMaterial(int x, int y, IMaterial* pMaterial, int 
 			matBundle->atlas = TexAtlas_LoadAtlas(("materials/"+_Es(pMaterial->GetName())+".atlas").c_str(), pMaterial->GetName(), true);
 
 			matIdx = m_materials.append(matBundle);
+
+			if(matBundle->material->GetFlags() & MATERIAL_FLAG_TRANSPARENT)
+				m_hasTransparentSubsets = true;
 		}
 
 		if(tile.texture == matIdx && tile.atlasIdx == atlIdx)
@@ -532,6 +543,8 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 {
 	Vector3D hfield_offset = generate_render ? m_position : vec3_zero;//Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
 
+	m_hasTransparentSubsets = false;
+
 	// generate polys
 	for(int x = 0; x < m_sizew; x++)
 	{
@@ -587,6 +600,9 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 
 				batch->sx = sx;
 				batch->sy = sy;
+
+				if(batch->materialBundle->material->GetFlags() & MATERIAL_FLAG_TRANSPARENT)
+					m_hasTransparentSubsets = true;
 
 				batches.append(batch);
 			}
@@ -1199,6 +1215,11 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 	if(!r_drawHeightfields.GetBool())
 		return;
 
+	bool renderTranslucency = (nDrawFlags & RFLAG_TRANSLUCENCY) > 0;
+
+	if(renderTranslucency && !m_hasTransparentSubsets)
+		return;
+
 	if(m_isChanged)
 	{
 #ifdef EDITOR
@@ -1214,7 +1235,14 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 
 	for(int i = 0; i < m_numBatches; i++)
 	{
-		if(!occlSet.IsBoxVisible(m_batches[i].bbox))
+		hfielddrawbatch_t& batch = m_batches[i];
+
+		if(!occlSet.IsBoxVisible(batch.bbox))
+			continue;
+
+		bool isTransparent = (batch.pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT) > 0;
+
+		if(isTransparent != renderTranslucency)
 			continue;
 
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
@@ -1224,8 +1252,8 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 		g_pShaderAPI->SetVertexBuffer(m_vertexbuffer, 0);
 		g_pShaderAPI->SetIndexBuffer(m_indexbuffer);
 
-		materials->BindMaterial(m_batches[i].pMaterial, true);
+		materials->BindMaterial(batch.pMaterial, true);
 
-		g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLES, m_batches[i].startIndex, m_batches[i].numIndices, m_batches[i].startVertex, m_batches[i].numVerts);
+		g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLES, batch.startIndex, batch.numIndices, batch.startVertex, batch.numVerts);
 	}
 }

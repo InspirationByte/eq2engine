@@ -49,6 +49,8 @@ CLevelRegion::CLevelRegion()
 	m_level = NULL;
 	m_roads = NULL;
 
+	m_hasTransparentSubsets = false;
+
 	m_render = true;
 	m_isLoaded = false;
 	m_scriptEventCallbackCalled = true;
@@ -297,6 +299,8 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 	Volume frustum;
 #endif // EDITOR
 
+	bool renderTranslucency = (nRenderFlags & RFLAG_TRANSLUCENCY) > 0;
+
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
 	for(int i = 0; i < m_objects.numElem(); i++)
@@ -360,6 +364,9 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 		if(cont->m_info.type != LOBJ_TYPE_INTERNAL_STATIC)
 			continue;
 
+		if(renderTranslucency && !cont->m_model->m_hasTransparentSubsets)
+			continue;
+
 		Matrix4x4 mat = GetModelRefRenderMatrix(this, ref);
 		//frustum.LoadAsFrustum(viewProj * mat);
 
@@ -376,18 +383,10 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 			}
 			else
 			{
-			/*
-				if( ref->object )
-				{
-					ref->object->Draw( nRenderFlags );
-				}
-				else
-				{*/
-					float fDist = length(cameraPosition - ref->position);
-					materials->SetMatrix(MATRIXMODE_WORLD, mat);
+				float fDist = length(cameraPosition - ref->position);
+				materials->SetMatrix(MATRIXMODE_WORLD, mat);
 
-					cont->Render(fDist, ref->bbox, false, nRenderFlags);
-				//}
+				cont->Render(fDist, ref->bbox, false, nRenderFlags);
 			}
 		}
 #endif	// EDITOR
@@ -480,6 +479,7 @@ void CLevelRegion::Cleanup()
 	m_navGrid.Cleanup();
 
 	m_isLoaded = false;
+	m_hasTransparentSubsets = false;
 
 	m_queryTimes.SetValue(0);
 }
@@ -737,6 +737,9 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 	for(int i = 0; i < GetNumHFields(); i++)
 	{
 		m_heightfield[i]->GenereateRenderData();
+
+		if(m_heightfield[i]->m_hasTransparentSubsets)
+			m_hasTransparentSubsets = true;
 	}
 
 	DkList<CLevelModel*>	modelList;
@@ -811,6 +814,9 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 				// add physics objects
 				g_pPhysics->m_physics.AddStaticObject( ref->collisionObjects[j] );
 			}
+
+			if(model->m_hasTransparentSubsets)
+				m_hasTransparentSubsets = true;
 
 			BoundingBox tbbox;
 

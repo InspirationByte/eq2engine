@@ -60,8 +60,6 @@ void channels_callback(ConVar* pVar,char const* pszOldValue)
 	}
 }
 
-extern ConVar sys_timescale;
-
 static ConVar snd_device("snd_device","0", NULL, CV_ARCHIVE);
 
 static ConVar snd_3dchannels("snd_3dchannels","32", channels_callback,NULL,CV_ARCHIVE);
@@ -96,7 +94,7 @@ DkSoundSystemLocal::DkSoundSystemLocal()
 	m_defaultParams.referenceDistance = 1.0f;
 	m_defaultParams.maxDistance = 128000;
 #endif
-	m_defaultParams.rolloff = 2.0f;
+	m_defaultParams.rolloff = 2.1f;
 	m_defaultParams.volume = 1.0f;
 	m_defaultParams.pitch = 1.0f;
 	m_defaultParams.airAbsorption = 0.0f;
@@ -243,20 +241,11 @@ void DkSoundSystemLocal::Init()
 
 	//Set Gain
 	alListenerf(AL_GAIN, snd_volume.GetFloat());
-
-#ifndef NO_ENGINE
-	if(gpGlobals)
-		alListenerf(AL_PITCH, sys_timescale.GetFloat() * gpGlobals->timescale);
-	else
-		alListenerf(AL_PITCH, sys_timescale.GetFloat());
-#else
 	alListenerf(AL_PITCH, 1.0f);
-#endif
 
 	alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
-	//alDistanceModel(AL_EXPONENT_DISTANCE);
 
-	// Create 32 ambient channels TODO: remove
+	// 8 stream/ambient source
 	for(int i = 0; i < 8; i++)
 		m_pAmbients.append(new DkSoundAmbient);
 
@@ -275,7 +264,7 @@ void DkSoundSystemLocal::Init()
 		alSourcei(c->alSource, AL_LOOPING,AL_FALSE);
 		alSourcei(c->alSource, AL_SOURCE_RELATIVE, AL_FALSE);
 		alSourcei(c->alSource, AL_AUXILIARY_SEND_FILTER_GAIN_AUTO, AL_TRUE);
-
+		alSourcef(c->alSource, AL_MAX_GAIN, 0.9f);
 		alSourcef(c->alSource, AL_DOPPLER_FACTOR, 1.0f);
 
 		m_pChannels.append(c);

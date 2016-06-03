@@ -107,6 +107,8 @@ void CLevObjectDef::RefreshPreview()
 
 void CLevObjectDef::Render( float lodDistance, const BoundingBox& bbox, bool preloadMaterials, int nRenderFlags)
 {
+	bool renderTranslucency = (nRenderFlags & RFLAG_TRANSLUCENCY) > 0;
+
 	if(m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 	{
 		if(preloadMaterials)
@@ -152,6 +154,11 @@ void CLevObjectDef::Render( float lodDistance, const BoundingBox& bbox, bool pre
 			{
 				//materials->SetSkinningEnabled(true);
 				IMaterial* pMaterial = m_defModel->GetMaterial(nModDescId, j);
+
+				bool isTransparent = (pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT) > 0;
+
+				if(isTransparent != renderTranslucency)
+					continue;
 
 				if(preloadMaterials)
 				{
@@ -231,7 +238,8 @@ CLevelModel::CLevelModel() :
 	m_numIndices (0),
 	m_vertexBuffer(NULL),
 	m_indexBuffer(NULL),
-	m_format(NULL)
+	m_format(NULL),
+	m_hasTransparentSubsets(false)
 {
 	m_bbox.Reset();
 }
@@ -282,6 +290,8 @@ void CLevelModel::Cleanup()
 		delete m_batchMeshes[i];
 
 	m_batchMeshes.clear();
+
+	m_hasTransparentSubsets = false;
 }
 
 CEqBulletIndexedMesh* CLevelModel::CreateBulletTriangleMeshFromModelBatch(lmodel_batch_t* batch)
@@ -508,6 +518,8 @@ void CLevelModel::Render(int nDrawFlags, const BoundingBox& aabb)
 	if(!m_vertexBuffer || !m_indexBuffer || !m_format)
 		return;
 
+	bool renderTranslucency = (nDrawFlags & RFLAG_TRANSLUCENCY) > 0;
+
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
 	if(!caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
@@ -520,13 +532,20 @@ void CLevelModel::Render(int nDrawFlags, const BoundingBox& aabb)
 
 	for(int i = 0; i < m_numBatches; i++)
 	{
+		lmodel_batch_t& batch = m_batches[i];
+
+		bool isTransparent = (batch.pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT) > 0;
+
+		if(isTransparent != renderTranslucency)
+			continue;
+
 		materials->SetCullMode((nDrawFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
 
-		materials->BindMaterial(m_batches[i].pMaterial, false);
+		materials->BindMaterial(batch.pMaterial, false);
 
 		materials->Apply();
 
-		g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLES, m_batches[i].startIndex, m_batches[i].numIndices, 0, m_numVerts);
+		g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLES, batch.startIndex, batch.numIndices, 0, m_numVerts);
 	}
 }
 
@@ -654,6 +673,9 @@ bool CLevelModel::CreateFrom(dsmmodel_t* pModel)
 
 		m_batches[i].pMaterial = materials->FindMaterial(pszPath, true);
 		m_batches[i].pMaterial->Ref_Grab();
+
+		if(m_batches[i].pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT)
+			m_hasTransparentSubsets = true;
 	}
 
 	m_numVerts = vertexdata.numElem();
@@ -698,6 +720,9 @@ void CLevelModel::Load(IVirtualStream* stream)
 
 		m_batches[i].pMaterial = materials->FindMaterial(batch.materialname, true);
 		m_batches[i].pMaterial->Ref_Grab();
+
+		if(m_batches[i].pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT)
+			m_hasTransparentSubsets = true;
 	}
 
 	if(m_numVerts == 0 || m_numIndices == 0)

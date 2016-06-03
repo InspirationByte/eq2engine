@@ -23,6 +23,7 @@ enum ERenderFlags
 {
 	RFLAG_FLIP_VIEWPORT_X	= (1 << 25),
 	RFLAG_INSTANCE			= (1 << 26),
+	RFLAG_TRANSLUCENCY		= (1 << 27)
 };
 
 // 2 regs, 52 lights, 128 regs (PS/VS), can be reduced to 48

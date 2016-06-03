@@ -195,6 +195,8 @@ public:
 	int							m_sizew;
 	int							m_sizeh;
 
+	bool						m_hasTransparentSubsets;
+
 protected:
 
 	hfieldtile_t*		m_points;		// the heightfield

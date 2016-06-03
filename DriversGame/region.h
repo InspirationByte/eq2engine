@@ -224,6 +224,7 @@ public:
 	int								m_regionIndex;
 
 	bool							m_scriptEventCallbackCalled;
+	bool							m_hasTransparentSubsets;
 
 	CEqInterlockedInteger			m_queryTimes;		///< render (client) or physics engine query for server
 

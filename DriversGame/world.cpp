@@ -62,6 +62,8 @@ ConVar r_freezeFrustum("r_freezeFrustum", "0", NULL, CV_CHEAT);
 ConVar r_glowsProjOffset("r_glowsProjOffset", "0.018", "Projection matrix planes offset", CV_CHEAT);
 ConVar r_glowsProjOffsetB("r_glowsProjOffsetB", "0.0", "Projection matrix planes offset", CV_CHEAT);
 
+ConVar r_drawsky("r_drawsky", "1", NULL, CV_CHEAT);
+
 ConVar r_ortho("r_ortho", "0", NULL, CV_CHEAT);
 ConVar r_ortho_size("r_ortho_size", "0.5", NULL, CV_ARCHIVE);
 
@@ -1374,6 +1376,12 @@ void CGameWorld::Draw( int nRenderFlags )
 
 	g_parallelJobs->Wait();
 
+#ifndef EDITOR
+	const Vector2D& screenSize = g_pHost->GetWindowSize();
+#else
+	Vector2D screenSize(512, 512);
+#endif // EDITOR
+
 #ifdef EDITOR
 	m_level.Ed_Prerender(m_CameraParams.GetOrigin());
 #endif // EDITOR
@@ -1463,7 +1471,32 @@ void CGameWorld::Draw( int nRenderFlags )
 
 	// world rendering
 	if(r_drawWorld.GetBool())
+	{
+		// DRAW ONLY OPAQUE OBJECTS
 		m_level.Render(m_CameraParams.GetOrigin(), m_viewprojection, m_occludingFrustum, nRenderFlags);
+	}
+
+	if(r_drawsky.GetBool())
+	{
+		//
+		// Draw sky
+		//
+	#ifndef EDITOR
+		Matrix4x4 skyProj = perspectiveMatrixY(DEG2RAD(m_CameraParams.GetFOV()), screenSize.x, screenSize.y, 1.0f, 10000.0f);
+		materials->SetMatrix(MATRIXMODE_PROJECTION, skyProj);
+	#endif // EDITOR
+		materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
+		materials->SetMatrix(MATRIXMODE_WORLD, translate(m_CameraParams.GetOrigin()));
+
+		materials->SetAmbientColor(fSkyBrightness);
+		DrawSkyBox(m_skyMaterial, nRenderFlags);
+
+		// restore state
+		materials->SetAmbientColor(m_info.ambientColor * r_ambientScale.GetFloat());
+		materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
+		materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
+		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+	}
 
 	if(r_drawObjects.GetBool())
 		UpdateRenderables( m_occludingFrustum );
@@ -1494,25 +1527,15 @@ void CGameWorld::Draw( int nRenderFlags )
 
 	}
 
-	// draw sky
-#ifndef EDITOR
-	const Vector2D& screenSize = g_pHost->GetWindowSize();
-#else
-	Vector2D screenSize(512, 512);
-#endif // EDITOR
+	/*
+	if(r_drawWorld.GetBool())
+	{
+		// UpdateUnderwaterBuffer();
 
-	//
-	// Draw sky
-	//
-#ifndef EDITOR
-	Matrix4x4 skyProj = perspectiveMatrixY(DEG2RAD(m_CameraParams.GetFOV()), screenSize.x, screenSize.y, 1.0f, 10000.0f);
-	materials->SetMatrix(MATRIXMODE_PROJECTION, skyProj);
-#endif // EDITOR
-	materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
-	materials->SetMatrix(MATRIXMODE_WORLD, translate(m_CameraParams.GetOrigin()));
-
-	materials->SetAmbientColor(fSkyBrightness);
-	DrawSkyBox(m_skyMaterial, nRenderFlags);
+		// DRAW ONLY TRANSPARENT OBJECTS
+		m_level.Render(m_CameraParams.GetOrigin(), m_viewprojection, m_occludingFrustum, nRenderFlags | RFLAG_TRANSLUCENCY);
+	}
+	*/
 
 	//
 	// Draw particles

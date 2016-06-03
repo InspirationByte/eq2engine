@@ -1814,6 +1814,8 @@ extern ConVar r_regularLightTextureUpdates;
 
 void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& occlFrustum, int nRenderFlags)
 {
+	bool renderTranslucency = (nRenderFlags & RFLAG_TRANSLUCENCY) > 0;
+
 	// don't render too far?
 	IVector2D camPosReg;
 
@@ -1825,8 +1827,7 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 		// query this region
 		if(region)
 		{
-			//region->m_queryTimes.Increment();
-			region->m_render = occlFrustum.IsBoxVisible( region->m_bbox );
+			region->m_render = !(renderTranslucency && !region->m_hasTransparentSubsets); 
 
 			if(region->m_render)
 			{
@@ -1843,7 +1844,7 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 		{
 			CLevelRegion* nregion = GetRegionAt(IVector2D(dx[i], dy[i]));
 
-			if(nregion)
+			if(nregion && !(renderTranslucency && !nregion->m_hasTransparentSubsets))
 			{
 				nregion->m_render = occlFrustum.IsBoxVisible( nregion->m_bbox );
 
@@ -1856,11 +1857,14 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 		}
 	}
 
+	// FIXME: DISABLED
+	if(renderTranslucency)
+		return;
+
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
 	if(caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
 	{
-
 		materials->SetInstancingEnabled( true ); // matsystem switch to use instancing in shaders
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
@@ -1869,13 +1873,20 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 
 		for(int i = 0; i < m_objectDefs.numElem(); i++)
 		{
-			if(m_objectDefs[i]->m_info.type != LOBJ_TYPE_INTERNAL_STATIC)
+			CLevObjectDef* def = m_objectDefs[i];
+
+			if(def->m_info.type != LOBJ_TYPE_INTERNAL_STATIC)
 				continue;
 
-			if(!m_objectDefs[i]->m_model || !m_objectDefs[i]->m_instData)
+			if(!def->m_model || !def->m_instData)
 				continue;
 
-			if(m_objectDefs[i]->m_instData->numInstances == 0)
+			if(def->m_instData->numInstances == 0)
+				continue;
+
+			CLevelModel* model = def->m_model;
+			
+			if(renderTranslucency && !model->m_hasTransparentSubsets)
 				continue;
 
 			// set vertex buffer
@@ -1884,14 +1895,14 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 			// before lock we have to unbind our buffer
 			g_pShaderAPI->ChangeVertexBuffer( NULL, 2 );
 
-			int numInstances = m_objectDefs[i]->m_instData->numInstances;
+			int numInstances = def->m_instData->numInstances;
 
-			m_instanceBuffer->Update(m_objectDefs[i]->m_instData->instances, numInstances, 0, true);
+			m_instanceBuffer->Update(def->m_instData->instances, numInstances, 0, true);
 
-			m_objectDefs[i]->m_model->Render(nRenderFlags, m_objectDefs[i]->m_model->m_bbox);
+			model->Render(nRenderFlags, model->m_bbox);
 
 			// reset instance count
-			m_objectDefs[i]->m_instData->numInstances = 0;
+			def->m_instData->numInstances = 0;
 
 			// disable this vertex buffer or our cars will be drawn many times
 			g_pShaderAPI->SetVertexBuffer( NULL, 2 );

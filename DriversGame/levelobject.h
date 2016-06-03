@@ -143,6 +143,8 @@ protected:
 	lmodeldrawvertex_t*		m_verts;
 	uint16*					m_indices;
 
+	bool					m_hasTransparentSubsets;
+
 	int						m_numVerts;
 	int						m_numIndices;
 

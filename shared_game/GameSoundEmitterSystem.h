@@ -174,6 +174,7 @@ struct scriptsounddata_t
 
 	float		fVolume;
 	float		fAtten;
+	float		fRolloff;
 	float		fPitch;
 	float		fAirAbsorption;
 	float		fMaxDistance;
