@@ -199,11 +199,6 @@ bool ConVar::ClampValue( float& value )
 
 void ConVar::InternalSetString(char const *value)
 {
-#ifdef CVAR_USE_STRING_AS_DYNAMICALLY_ALLOCATED_VALUE
-	// Setup value
-	m_iStringLength = strlen( value ) + 1;
-	m_szValueString = value;
-#else
 	int len = strlen(value) + 1;
 
 	char* pszOldValue = (char*)stackalloc( m_iStringLength+1 );
@@ -223,7 +218,7 @@ void ConVar::InternalSetString(char const *value)
 
 	if (m_szValueString)
 		memcpy( m_szValueString, value, len );
-#endif
+
 	if ( m_fnChangeCallback )
 	{
 		(m_fnChangeCallback)(this,pszOldValue);

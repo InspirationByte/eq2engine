@@ -9,19 +9,10 @@
 #ifndef CONVAR_H
 #define CONVAR_H
 
-// Uncomment to use String class
-// #define CVAR_USE_STRING_AS_DYNAMICALLY_ALLOCATED_VALUE
-
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "ConCommandBase.h"
 #include "InterfaceManager.h"
-
-#ifdef CVAR_USE_STRING_AS_DYNAMICALLY_ALLOCATED_VALUE
-#	include "utils\DkStr.h"
-#endif
 
 // The Microsoft C++ Compiler fixes the typedef problem
 // Buf for linux we needs this:
@@ -87,11 +78,7 @@ private:
 	CONVAR_CHANGE_CALLBACK	m_fnChangeCallback;
 
 	// Dynamically allocated value
-#ifdef CVAR_USE_STRING_AS_DYNAMICALLY_ALLOCATED_VALUE
-	String					m_szValueString;
-#else
 	char*					m_szValueString;
-#endif
 
 	// String length
 	int						m_iStringLength;
