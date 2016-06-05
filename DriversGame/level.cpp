@@ -521,7 +521,7 @@ bool DrawDefLightData( Matrix4x4& objDefMatrix, const wlightdata_t& data, float 
 
 	if(g_pGameWorld->m_envConfig.lightsType & WLIGHTS_LAMPS)
 	{
-		for(int i = 0; i < data.m_lights.numElem() && r_drawStaticLights.GetBool(); i++)
+		for(int i = 0; i < data.m_lights.numElem(); i++)
 		{
 			wlight_t light = data.m_lights[i];
 			light.color.w *= brightness * g_pGameWorld->m_envConfig.streetLightIntensity;
@@ -534,7 +534,9 @@ bool DrawDefLightData( Matrix4x4& objDefMatrix, const wlightdata_t& data, float 
 			light.position = Vector4D(lightPos, light.position.w);
 ///-------------------------------------------
 
-			lightsAdded = lightsAdded || g_pGameWorld->AddLight( light );
+			bool added = r_drawStaticLights.GetBool() ? g_pGameWorld->AddLight( light ) : true;
+
+			lightsAdded = lightsAdded || added;
 		}
 
 		if(!lightsAdded)

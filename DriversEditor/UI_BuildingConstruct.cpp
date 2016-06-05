@@ -277,7 +277,7 @@ bool CBuildingLayerEditDialog::OnDropPoiner(wxCoord x, wxCoord y, void* ptr, EDr
 	{
 		matAtlasElem_t* elem = (matAtlasElem_t*)ptr;
 
-		m_selLayer->type = LAYER_TEXTURE;
+		m_selLayer->type = BUILDLAYER_TEXTURE;
 		m_selLayer->material = elem->material;
 		m_selLayer->atlEntry = elem->entry;
 	}
@@ -415,7 +415,7 @@ void CBuildingLayerEditDialog::RenderList()
 
 				ITexture* pTex = g_pShaderAPI->GetErrorTexture();
 
-				if(elem.type == LAYER_TEXTURE)
+				if(elem.type == BUILDLAYER_TEXTURE)
 				{
 					if(elem.material && !elem.material->IsError())
 					{
@@ -442,7 +442,7 @@ void CBuildingLayerEditDialog::RenderList()
 				Vertex2D_t verts[] = {MAKETEXQUAD(x_offset, y_offset, x_offset + fSize*x_scale,y_offset + fSize*y_scale, 0)};
 				Vertex2D_t name_line[] = {MAKETEXQUAD(x_offset, y_offset+fSize, x_offset + fSize,y_offset + fSize + 25, 0)};
 
-				if(elem.type == LAYER_TEXTURE && elem.atlEntry)
+				if(elem.type == BUILDLAYER_TEXTURE && elem.atlEntry)
 				{
 					verts[0].m_vTexCoord = elem.atlEntry->rect.GetLeftTop();
 					verts[1].m_vTexCoord = elem.atlEntry->rect.GetLeftBottom();
@@ -480,14 +480,14 @@ void CBuildingLayerEditDialog::RenderList()
 				// render layer name text
 				rectLayout.SetRectangle(name_rect);
 
-				if(elem.type == LAYER_TEXTURE && elem.material)
+				if(elem.type == BUILDLAYER_TEXTURE && elem.material)
 				{
 					EqString material_name = elem.material->GetName();
 					material_name.Replace( CORRECT_PATH_SEPARATOR, '\n' );
 
 					m_pFont->RenderText(material_name.c_str(), name_rect.vleftTop, fontParam);
 				}
-				else if(elem.type == LAYER_MODEL && elem.model)
+				else if(elem.type == BUILDLAYER_MODEL && elem.model)
 				{
 					m_pFont->RenderText(elem.model->m_name.c_str(), name_rect.vleftTop, fontParam);
 				}
@@ -522,7 +522,7 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 		{
 			if(m_selectedItem >= 0)
 			{
-				if(m_selLayer->type >= LAYER_MODEL)
+				if(m_selLayer->type >= BUILDLAYER_MODEL)
 					delete m_selLayer->model;
 
 				m_layerColl->layers.removeIndex(m_selectedItem);
@@ -613,7 +613,7 @@ void CBuildingLayerEditDialog::UpdateSelection()
 	m_repeat->SetValue( m_selLayer->repeatTimes );
 	m_interval->SetValue( m_selLayer->repeatInterval );
 	m_typeSel->SetSelection( m_selLayer->type );
-	m_btnChoose->Enable( m_selLayer->type >= LAYER_MODEL );
+	m_btnChoose->Enable( m_selLayer->type >= BUILDLAYER_MODEL );
 }
 
 void CBuildingLayerEditDialog::SetLayerCollection(buildLayerColl_t* coll)
@@ -648,7 +648,7 @@ void CBuildingLayerEditDialog::ChangeType( wxCommandEvent& event )
 		if(m_selLayer->type == m_typeSel->GetSelection())
 			return;
 
-		if(m_selLayer->type >= LAYER_MODEL)
+		if(m_selLayer->type >= BUILDLAYER_MODEL)
 		{
 			delete m_selLayer->model;
 			m_selLayer->model = NULL;
@@ -656,7 +656,7 @@ void CBuildingLayerEditDialog::ChangeType( wxCommandEvent& event )
 
 		m_selLayer->type = m_typeSel->GetSelection();
 
-		m_btnChoose->Enable( m_selLayer->type >= LAYER_MODEL );
+		m_btnChoose->Enable( m_selLayer->type >= BUILDLAYER_MODEL );
 	}
 }
 //-----------------------------------------------------------------------------
@@ -1024,124 +1024,6 @@ void CBuildingLayerList::SaveLayerCollections( const char* levelName )
 	g_fileSystem->Close( pFile );
 }
 
-// layer model header
-struct layerModelFileHdr_t
-{
-	int		layerId;
-	char	name[80];
-	int		size;
-};
-
-void buildLayerColl_t::Save(IVirtualStream* stream, kvkeybase_t* kvs)
-{
-	int numModels = 0;
-	layerModelFileHdr_t hdr;
-
-	for(int i = 0; i < layers.numElem(); i++)
-	{
-		// save both model and texture to kvs info
-		kvkeybase_t* layerKvs = kvs->AddKeyBase("layer");
-		layerKvs->SetKey("type", varargs("%d", layers[i].type));
-		layerKvs->SetKey("repeatInterval", varargs("%d", layers[i].repeatInterval));
-		layerKvs->SetKey("repeatTimes", varargs("%d", layers[i].repeatTimes));
-		layerKvs->SetKey("height", varargs("%d", layers[i].height));
-
-		if(layers[i].type == LAYER_TEXTURE && layers[i].material != NULL)
-			layerKvs->SetKey("material", layers[i].material->GetName());
-		else if(layers[i].type != LAYER_TEXTURE && layers[i].model != NULL)
-			layerKvs->SetKey("model", layers[i].model->m_name.c_str());
-
-		if(layers[i].type == LAYER_TEXTURE)
-			continue;
-
-		numModels++;
-	}
-
-	stream->Write(&numModels, 1, sizeof(int));
-
-	CMemoryStream modelStream;
-
-	for(int i = 0; i < layers.numElem(); i++)
-	{
-		if(layers[i].type == LAYER_TEXTURE)
-			continue;
-
-		// write model to temporary stream
-		modelStream.Open(NULL, VS_OPEN_READ | VS_OPEN_WRITE, 2048);
-		layers[i].model->m_model->Save( &modelStream );
-
-		// prepare header
-		memset(&hdr, 0, sizeof(hdr));
-		hdr.layerId = i;
-		hdr.size = modelStream.Tell();
-		strncpy(hdr.name, layers[i].model->m_name.c_str(), sizeof(hdr.name));
-
-		// write header
-		stream->Write(&hdr, 1, sizeof(hdr));
-
-		// write model
-		stream->Write(modelStream.GetBasePointer(), 1, hdr.size);
-
-		modelStream.Close();
-	}
-}
-
-void buildLayerColl_t::Load(IVirtualStream* stream, kvkeybase_t* kvs)
-{
-	// read layers first
-	for(int i = 0; i < kvs->keys.numElem(); i++)
-	{
-		if(stricmp(kvs->keys[i]->name, "layer"))
-			continue;
-
-		kvkeybase_t* layerKvs = kvs->keys[i];
-
-		int newLayer = layers.append(buildLayer_t());
-		buildLayer_t& layer = layers[newLayer];
-
-		layer.type = KV_GetValueInt(layerKvs->FindKeyBase("type"));
-		layer.repeatInterval = KV_GetValueInt(layerKvs->FindKeyBase("repeatInterval"));
-		layer.repeatTimes = KV_GetValueInt(layerKvs->FindKeyBase("repeatTimes"));
-		layer.height = KV_GetValueInt(layerKvs->FindKeyBase("height"));
-
-		if(layer.type == LAYER_TEXTURE)
-			layer.material = materials->FindMaterial(KV_GetValueString(layerKvs->FindKeyBase("material")));
-		else
-			layer.model = NULL;
-	}
-
-	// read models
-	int numModels = 0;
-	stream->Read(&numModels, 1, sizeof(int));
-
-	layerModelFileHdr_t hdr;
-
-	for(int i = 0; i < numModels; i++)
-	{
-		stream->Read(&hdr, 1, sizeof(hdr));
-
-		// make layer model
-		CLayerModel* mod = new CLayerModel();
-		layers[hdr.layerId].model = mod;
-
-		mod->m_name = hdr.name;
-
-		// read model
-		int modOffset = stream->Tell();
-		mod->m_model = new CLevelModel();
-		mod->m_model->Load(stream);
-
-		mod->SetDirtyPreview();
-		mod->RefreshPreview();
-
-		int modelSize = stream->Tell() - modOffset;
-
-		// a bit paranoid
-		ASSERT(layers[hdr.layerId].type == ELayerType::LAYER_MODEL || layers[hdr.layerId].type == ELayerType::LAYER_CORNER_MODEL);
-		ASSERT(hdr.size == modelSize);
-	}
-}
-
 void CBuildingLayerList::RemoveAllLayerCollections()
 {
 	for(int i = 0; i < m_layerCollections.numElem(); i++)
@@ -1238,6 +1120,9 @@ CUI_BuildingConstruct::CUI_BuildingConstruct( wxWindow* parent )
 
 	m_layerEditDlg = new CBuildingLayerEditDialog(g_pMainFrame);
 	m_placeError = false;
+
+	m_curLayerId = 0;
+	m_curSegmentScale = 1.0f;
 }
 
 CUI_BuildingConstruct::~CUI_BuildingConstruct()
@@ -1365,34 +1250,56 @@ void CUI_BuildingConstruct::ProcessMouseEvents( wxMouseEvent& event )
 		float delta = m_mouseLastY - event.GetY();
 		
 		// make scale
-		m_building.segmentScale += delta*0.001f;
-
-		m_building.segmentScale = clamp(m_building.segmentScale,0.5f, 2.0f);
+		m_curSegmentScale += delta*0.001f;
+		m_curSegmentScale = clamp(m_curSegmentScale,0.5f, 2.0f);
 	}
 	else
 		CBaseTilebasedEditor::ProcessMouseEvents(event);
 
 	m_mouseLastY = event.GetY();
-
-	
 }
+
+
+/*
+	1. move to EditorLevel.h and EditorLevel.cpp:
+
+		buildingData_t
+		
+			buildLayerColl_t
+				buildLayer_t
+
+			buildSegmentPoint_t
+
+	2. Save all building sources per region in regionBuildings.dat
+
+	3. buildingSources must be converted to CLevelModel using only Editor.
+		CLevelModel must have reference to buildingSource so it can be edited
+		Building model must be regenerated on the fly when it's dirty and completed editing
+
+	4. Generated building models are stored in region models data block
+
+	5. Make per-region model list so we can load models in specified regions
+		Generated models are not visible it the list, so they can't be reused.
+
+*/
+
 
 void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos )
 {
 	if(event.GetWheelRotation() != 0)
 	{
 		int wheelSign = sign(event.GetWheelRotation());
-		m_building.layerId += wheelSign;
+		m_curLayerId += wheelSign;
 	}
 
 	if(m_building.layerColl != NULL)
 	{
-		if(m_building.layerId >= m_building.layerColl->layers.numElem())
-			m_building.layerId = m_building.layerColl->layers.numElem() - 1;
+		if(m_curLayerId >= m_building.layerColl->layers.numElem())
+			m_curLayerId = m_building.layerColl->layers.numElem() - 1;
 	}
 
-	if(m_building.layerId < 0)
-		m_building.layerId = 0;
+	if(m_curLayerId < 0)
+		m_curLayerId = 0;
 
 	IVector2D globalTile;
 	g_pGameWorld->m_level.LocalToGlobalPoint(IVector2D(tx,ty), m_selectedRegion, globalTile);
@@ -1419,15 +1326,16 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 
 			if(m_mode == ED_BUILD_BEGUN)
 			{
-				segmentPoint_t segment;
-				segment.layerId = m_building.layerId;
+				buildSegmentPoint_t segment;
+				segment.layerId = m_curLayerId;
 				segment.position = m_mousePoint;
 
 				// make a first point
 				m_building.points.append( segment );
 				m_building.layerColl = m_layerCollList->GetSelectedLayerColl();
 				m_building.order = 1;
-				m_building.segmentScale = 1.0f;
+
+				m_curSegmentScale = 1.0f;
 
 				m_mode = ED_BUILD_SELECTEDPOINT;
 				return;
@@ -1443,11 +1351,11 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				newPoint.y = firstPoint.y;	// height must match
 
 				// set last point layer id
-				segmentPoint_t& lastPoint = m_building.points[m_building.points.numElem()-1];
-				lastPoint.layerId = m_building.layerId;
-				lastPoint.scale = m_building.segmentScale;
+				buildSegmentPoint_t& lastPoint = m_building.points[m_building.points.numElem()-1];
+				lastPoint.layerId = m_curLayerId;
+				lastPoint.scale = m_curSegmentScale;
 
-				segmentPoint_t segment;
+				buildSegmentPoint_t segment;
 				segment.layerId = 0;
 				segment.position = newPoint;
 				segment.scale = 1.0f;
@@ -1484,7 +1392,8 @@ void CUI_BuildingConstruct::CompleteBuilding()
 
 	m_building.points.clear();
 	m_building.layerColl = NULL;
-	m_building.layerId = 0;
+	m_curLayerId = 0;
+	m_curSegmentScale = 1.0f;
 
 	m_mode = ED_BUILD_READY;
 }
@@ -1503,25 +1412,6 @@ void CUI_BuildingConstruct::DeleteSelection()
 		else
 			CancelBuilding();
 	}
-}
-
-void CalculateBuildingModelTransform(Matrix4x4& partTransform, 
-	buildLayer_t& layer, 
-	const Vector3D& startPoint, 
-	const Vector3D& endPoint, 
-	int order, 
-	Vector3D& size, float scale,
-	int iteration )
-{
-	// first we find angle
-	Vector3D partDir = normalize(order > 0 ? (endPoint - startPoint) : (startPoint - endPoint));
-
-	// make right vector by order
-	Vector3D rightVec = cross(partDir, vec3_up);
-
-	Vector3D yoffset(0,size.y * 0.5f,0);
-
-	partTransform = translate(startPoint + yoffset + partDir*size.z*scale*0.5f*float(order * (iteration*2 + 1))) * Matrix4x4(Matrix3x3(rightVec, vec3_up, partDir)*scale3(-1.0f,1.0f,scale));
 }
 
 extern void ListQuadTex(const Vector3D &v1, const Vector3D &v2, const Vector3D& v3, const Vector3D& v4, int rotate, const ColorRGBA &color, DkList<Vertex3D_t> &verts);
@@ -1543,22 +1433,22 @@ void CUI_BuildingConstruct::OnRender()
 
 		Vector3D endPoint = m_building.points[0].position;
 
-		DkList<segmentPoint_t> allPoints;
+		DkList<buildSegmentPoint_t> allPoints;
 		allPoints.append(m_building.points);
 
 		debugoverlay->Box3D(m_mousePoint - 0.5f, m_mousePoint + 0.5f, ColorRGBA(1,0,0,1));
 		m_mousePoint.y = endPoint.y;
 
-		debugoverlay->Text3D(m_mousePoint, -1.0f, color4_white, "layer: %d", m_building.layerId);
+		debugoverlay->Text3D(m_mousePoint, -1.0f, color4_white, "layer: %d scale: %g", m_curLayerId, m_curSegmentScale);
 
-		segmentPoint_t& lastPoint = allPoints[allPoints.numElem()-1];
+		buildSegmentPoint_t& lastPoint = allPoints[allPoints.numElem()-1];
 
 		// set last point layer id and scale
-		lastPoint.layerId = m_building.layerId;
-		lastPoint.scale = m_building.segmentScale;
+		lastPoint.layerId = m_curLayerId;
+		lastPoint.scale = m_curSegmentScale;
 
 		// add virtual point
-		segmentPoint_t justPoint;
+		buildSegmentPoint_t justPoint;
 		justPoint.position = m_mousePoint;
 		allPoints.append( justPoint );
 
@@ -1570,8 +1460,8 @@ void CUI_BuildingConstruct::OnRender()
 
 		for(int i = 1; i < allPoints.numElem(); i++)
 		{
-			segmentPoint_t& start = allPoints[i-1];
-			segmentPoint_t& end = allPoints[i];
+			buildSegmentPoint_t& start = allPoints[i-1];
+			buildSegmentPoint_t& end = allPoints[i];
 
 			debugoverlay->Line3D(start.position, end.position, ColorRGBA(1,1,1,1), ColorRGBA(1,1,1,1), 0.0f);
 
@@ -1581,9 +1471,10 @@ void CUI_BuildingConstruct::OnRender()
 
 			// draw models or walls
 			buildLayer_t& layer = m_building.layerColl->layers[ start.layerId ];
-			if(layer.type == LAYER_MODEL || layer.type == LAYER_CORNER_MODEL)
+
+			if(layer.type == BUILDLAYER_MODEL || layer.type == BUILDLAYER_CORNER_MODEL)
 			{
-				if(!layer.model)
+				if( !layer.model )
 					continue;
 
 				// draw model
@@ -1591,7 +1482,7 @@ void CUI_BuildingConstruct::OnRender()
 
 				const BoundingBox& modelBox = model->GetAABB();
 				Vector3D size = modelBox.GetSize();
-				float modelLen = size.z*start.scale;
+				float modelLen = size.x*start.scale;
 
 				float remainingLength = length(end.position - start.position);
 
@@ -1619,10 +1510,6 @@ void CUI_BuildingConstruct::OnRender()
 				m_placementPoint = start.position + direction * floor(numIterations) * modelLen;
 
 				debugoverlay->Box3D(m_placementPoint-0.5f, m_placementPoint+0.5f, ColorRGBA(1,1,0,1));
-			}
-			else
-			{
-				
 			}
 		}
 

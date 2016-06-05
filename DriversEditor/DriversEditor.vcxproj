@@ -210,6 +210,7 @@
     <ClInclude Include="DkCore.h" />
     <ClInclude Include="DragDropObjects.h" />
     <ClInclude Include="editaxis.h" />
+    <ClInclude Include="EditorLevel.h" />
     <ClInclude Include="EditorPreviewable.h" />
     <ClInclude Include="GenericImageListRenderer.h" />
     <ClInclude Include="IEditorTool.h" />
@@ -316,6 +317,7 @@
     <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp" />
     <ClCompile Include="BaseTilebasedEditor.cpp" />
     <ClCompile Include="EditorActionHistory.cpp" />
+    <ClCompile Include="EditorLevel.cpp" />
     <ClCompile Include="EditorMain.cpp" />
     <ClCompile Include="..\public\ViewParams.cpp" />
     <ClCompile Include="..\shared_engine\DebugOverlay.cpp" />

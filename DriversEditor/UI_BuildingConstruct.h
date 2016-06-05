@@ -14,12 +14,7 @@
 #include "DragDropObjects.h"
 #include "GenericImageListRenderer.h"
 
-enum ELayerType
-{
-	LAYER_TEXTURE = 0,
-	LAYER_MODEL,
-	LAYER_CORNER_MODEL
-};
+#include "EditorLevel.h"
 
 enum EBuildingPlaceMode
 {
@@ -28,49 +23,6 @@ enum EBuildingPlaceMode
 	ED_BUILD_WAITFORSELECT,		// next points
 	ED_BUILD_SELECTEDPOINT,		// selected points
 	ED_BUILD_DONE,
-};
-
-class CLayerModel : public CEditorPreviewable
-{
-public:
-	PPMEM_MANAGED_OBJECT()
-
-	CLayerModel();
-	~CLayerModel();
-
-	void			RefreshPreview();
-
-	CLevelModel*	m_model;
-	EqString		m_name;
-};
-
-struct buildLayer_t
-{
-	buildLayer_t() 
-		: height(1.0f), type(LAYER_TEXTURE), repeatTimes(0), repeatInterval(0), model(nullptr), material(nullptr), atlEntry(nullptr)
-	{
-	}
-
-	float					height;			// height in units
-	int						type;			// ELayerType
-	int						repeatTimes;	// height repeat times
-	int						repeatInterval;	// repeat after repeatInterval times
-	CLayerModel*			model;
-	IMaterial*				material;
-	TexAtlasEntry_t*		atlEntry;
-};
-
-struct buildLayerColl_t
-{
-	buildLayerColl_t()
-	{
-	}
-
-	void					Save(IVirtualStream* stream, kvkeybase_t* kvs);
-	void					Load(IVirtualStream* stream, kvkeybase_t* kvs);
-
-	EqString				name;
-	DkList<buildLayer_t>	layers;
 };
 
 //-----------------------------------------------------------------------------
@@ -200,30 +152,6 @@ protected:
 
 //-----------------------------------------------------------------------------
 
-struct segmentPoint_t
-{
-	Vector3D	position;
-	int			layerId;
-	float		scale;
-};
-
-struct buildingSource_t
-{
-	buildingSource_t()
-	{
-		layerColl = NULL;
-		order = 1;
-		layerId = 0;
-		segmentScale = 1.0f;
-	}
-
-	DkList<segmentPoint_t>	points;
-	buildLayerColl_t*		layerColl;
-	int						layerId;
-	int						order;
-	float					segmentScale;
-};
-
 class CUI_BuildingConstruct : public wxPanel, public CBaseTilebasedEditor
 {
 public:
@@ -280,6 +208,9 @@ protected:
 
 	int							m_mode;
 	buildingSource_t			m_building;
+
+	int							m_curLayerId;
+	float						m_curSegmentScale;
 };
 
 #endif // UI_BUILDINGCOSTRUCT_H

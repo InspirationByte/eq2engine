@@ -342,7 +342,7 @@ void CGameWorld::InitEnvironment()
 		m_reflectionTex->Ref_Grab();
 
 		m_tempReflTex = g_pShaderAPI->CreateNamedRenderTarget("_tempTexture", 512, 256, FORMAT_RGBA8, TEXFILTER_NEAREST, ADDRESSMODE_CLAMP);
-		m_reflectionTex->Ref_Grab();
+		m_tempReflTex->Ref_Grab();
 
 		m_blurYMaterial = materials->FindMaterial("engine/BlurY", true);
 		m_blurYMaterial->Ref_Grab();
@@ -1481,10 +1481,11 @@ void CGameWorld::Draw( int nRenderFlags )
 		//
 		// Draw sky
 		//
-	#ifndef EDITOR
+#ifndef EDITOR
 		Matrix4x4 skyProj = perspectiveMatrixY(DEG2RAD(m_CameraParams.GetFOV()), screenSize.x, screenSize.y, 1.0f, 10000.0f);
 		materials->SetMatrix(MATRIXMODE_PROJECTION, skyProj);
-	#endif // EDITOR
+#endif // EDITOR
+
 		materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
 		materials->SetMatrix(MATRIXMODE_WORLD, translate(m_CameraParams.GetOrigin()));
 

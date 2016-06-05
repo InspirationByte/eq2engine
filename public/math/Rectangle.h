@@ -59,8 +59,8 @@ struct TRectangle
 
 	void Fix()
 	{
-		Vector2D lt = vleftTop;
-		Vector2D rb = vrightBottom;
+		TVec2D<T> lt(vleftTop);
+		TVec2D<T> rb(vrightBottom);
 
 		Reset();
 
