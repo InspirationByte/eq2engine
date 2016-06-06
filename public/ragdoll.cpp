@@ -152,8 +152,7 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 
 void ragdoll_t::GetBoundingBox(Vector3D &mins, Vector3D &maxs)
 {
-	Vector3D ragdoll_bboxmin(MAX_COORD_UNITS);
-	Vector3D ragdoll_bboxmax(-MAX_COORD_UNITS);
+	BoundingBox aabb;
 
 	for(int i = 0; i < m_numParts; i++)
 	{
@@ -164,13 +163,13 @@ void ragdoll_t::GetBoundingBox(Vector3D &mins, Vector3D &maxs)
 
 			m_pParts[i]->GetAABB(partAABBMins, partAABBMaxs);
 
-			POINT_TO_BBOX(partAABBMins, ragdoll_bboxmin, ragdoll_bboxmax);
-			POINT_TO_BBOX(partAABBMaxs, ragdoll_bboxmin, ragdoll_bboxmax);
+			aabb.AddVertex(partAABBMins);
+			aabb.AddVertex(partAABBMaxs);
 		}
 	}
 
-	mins = ragdoll_bboxmin;
-	maxs = ragdoll_bboxmax;
+	mins = aabb.minPoint;
+	maxs = aabb.maxPoint;
 }
 
 Vector3D ragdoll_t::GetPosition()

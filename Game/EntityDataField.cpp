@@ -175,7 +175,7 @@ void CBaseEntityOutput::FireOutput( variable_t &Value, BaseEntity *pActivator, B
 	{
 		CEventAction* pAction = m_pActionList[i];
 
-		if(pAction->m_szParameter.GetLength() == 0)
+		if(pAction->m_szParameter.Length() == 0)
 		{
 			g_EventQueue.AddEvent(pAction->m_szTargetName.GetData(), pAction->m_szTargetInput.GetData(), Value, fDelay + pAction->m_fDelay, pAction->m_nTimesToFire, pActivator, pCaller);
 		}

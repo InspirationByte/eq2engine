@@ -415,7 +415,7 @@ void ShaderAPID3DX9::ReleaseD3DFrameBufferSurfaces()
 }
 
 // Init + Shurdown
-void ShaderAPID3DX9::Init(const shaderapiinitparams_t &params)
+void ShaderAPID3DX9::Init( shaderapiinitparams_t &params )
 {
 	m_bDeviceIsLost = false;
 	m_bDeviceAtReset = false;
@@ -950,11 +950,13 @@ void ShaderAPID3DX9::ApplyRasterizerState()
 			m_pD3DDevice->SetRenderState(D3DRS_FILLMODE, fillConst[m_nCurrentFillMode]);
 		}
 
+		
 		if (m_bCurrentMultiSampleEnable != true)
 		{
 			m_bCurrentMultiSampleEnable = true;
 			m_pD3DDevice->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, m_bCurrentMultiSampleEnable );
 		}
+		
 
 		if (m_bCurrentScissorEnable != false)
 		{
@@ -988,11 +990,13 @@ void ShaderAPID3DX9::ApplyRasterizerState()
 			m_pD3DDevice->SetRenderState(D3DRS_FILLMODE, fillConst[m_nCurrentFillMode]);
 		}
 
+		
 		if (pSelectedState->m_params.multiSample != m_bCurrentMultiSampleEnable)
 		{
 			m_bCurrentMultiSampleEnable = pSelectedState->m_params.multiSample;
 			m_pD3DDevice->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, m_bCurrentMultiSampleEnable );
 		}
+		
 
 		if (pSelectedState->m_params.scissor != m_bCurrentScissorEnable)
 		{
@@ -2204,7 +2208,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		//shaderString.Append(varargs("#line %d\n", params.vsLine + 1));
 		shaderString.Append(info.vs.text);
 
-		if (D3DXCompileShader(shaderString.GetData(), shaderString.GetLength(), NULL, NULL, entry.GetData(), profile.GetData(), D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &shaderBuf, &errorsBuf, &pShader->m_pVSConstants) == D3D_OK)
+		if (D3DXCompileShader(shaderString.GetData(), shaderString.Length(), NULL, NULL, entry.GetData(), profile.GetData(), D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &shaderBuf, &errorsBuf, &pShader->m_pVSConstants) == D3D_OK)
 		{
 			m_pD3DDevice->CreateVertexShader((DWORD *) shaderBuf->GetBufferPointer(), &pShader->m_pVertexShader);
 
@@ -2262,7 +2266,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		//shaderString.Append(varargs("#line %d\n", params.psLine + 1));
 		shaderString.Append(info.ps.text);
 
-		if (D3DXCompileShader(shaderString.GetData(), shaderString.GetLength(), NULL, NULL, entry.GetData(), profile.GetData(), D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &shaderBuf, &errorsBuf, &pShader->m_pPSConstants) == D3D_OK)
+		if (D3DXCompileShader(shaderString.GetData(), shaderString.Length(), NULL, NULL, entry.GetData(), profile.GetData(), D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &shaderBuf, &errorsBuf, &pShader->m_pPSConstants) == D3D_OK)
 		{
 			m_pD3DDevice->CreatePixelShader((DWORD *) shaderBuf->GetBufferPointer(), &pShader->m_pPixelShader);
 

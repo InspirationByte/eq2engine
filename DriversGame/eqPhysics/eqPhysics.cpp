@@ -18,7 +18,7 @@
 
 #include "eqBulletIndexedMesh.h"
 
-//#include "eqParallelJobs.h"
+#include "eqParallelJobs.h"
 #include "eqGlobalMutex.h"
 
 #include "Shiny.h"
@@ -238,6 +238,7 @@ void CEqPhysics::DestroyWorld()
 	m_grid.Destroy();
 #endif // EDITOR
 
+	m_contactPairs.clear();
 
 	for (int i = 0; i < m_physSurfaceParams.numElem(); i++)
 		delete m_physSurfaceParams[i];
@@ -776,14 +777,14 @@ void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
 #define NEIGHBORCELLS_OFFS_XDX(x, f)	{x-f, x, x+f, x, x-f, x+f, x+f, x-f}
 #define NEIGHBORCELLS_OFFS_YDY(y, f)	{y, y-f, y, y+f, y-f, y-f, y+f, y+f}
 
-void CEqPhysics::IntegrateSingle(CEqRigidBody* body, float deltaTime)
+void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 {
 	PROFILE_FUNC();
 
 	collgridcell_t* oldCell = body->GetCell();
 
 	// move object
-	body->Integrate(deltaTime);
+	body->Integrate( m_fDt );
 
 	if(body->IsCanIterate(true))
 	{
@@ -807,7 +808,7 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body, float deltaTime)
 
 ConVar ph_test1("ph_test1", "0");
 
-void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body, float deltaTime, DkList<ContactPair_t>& pairs)
+void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body, DkList<ContactPair_t>& pairs)
 {
 	PROFILE_FUNC();
 
@@ -861,7 +862,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body, float deltaTime, DkL
 
 ConVar ph_carVsCarErp("ph_carVsCarErp", "0.15", "Car versus car erp", CV_CHEAT);
 
-void CEqPhysics::ProcessContactPair(const ContactPair_t& pair, float deltaTime)
+void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 {
 	PROFILE_FUNC();
 
@@ -995,46 +996,52 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	if(!m_grid.IsInit())
 		return;
 
+	// save delta
+	m_fDt = deltaTime;
+
 	PROFILE_FUNC();
 
-	static DkList<ContactPair_t> contactPairs;
-
+	// move all bodies
 	for (int i = 0; i < m_moveable.numElem(); i++)
 	{
 		CEqRigidBody* body = m_moveable[i];
 
 		if(body->m_callbacks)
-			body->m_callbacks->PreSimulate( deltaTime );
+			body->m_callbacks->PreSimulate( m_fDt );
 
 		body->m_collisionList.clear( false );
 
-		IntegrateSingle(body, deltaTime);
+		IntegrateSingle(body);
 	}
 
 	if(preIntegrFunc)
-		preIntegrFunc(deltaTime, iteration);
+		preIntegrFunc(m_fDt, iteration);
 
 	// calculate collisions
 	for (int i = 0; i < m_moveable.numElem(); i++)
-	{
-		CEqRigidBody* body = m_moveable[i];
-		DetectCollisionsSingle(body, deltaTime, contactPairs);
-	}
+		DetectCollisionsSingle(m_moveable[i], m_contactPairs);
 
-	for (int i = 0; i < contactPairs.numElem(); i++)
-		ProcessContactPair(contactPairs[i], deltaTime);
+	// process generated contact pairs
+	for (int i = 0; i < m_contactPairs.numElem(); i++)
+		ProcessContactPair(m_contactPairs[i]);
 
-	contactPairs.clear(false);
+	m_contactPairs.clear(false);
 
 	for (int i = 0; i < m_moveable.numElem(); i++)
 	{
 		CEqRigidBody* body = m_moveable[i];
 
 		if(body->m_callbacks)
-			body->m_callbacks->PostSimulate( deltaTime );
+			body->m_callbacks->PostSimulate(m_fDt);
 	}
 
 	m_numRayQueries = 0;
+}
+
+void CEqPhysics::PerformCollisionDetectionJob(void* thisPhys, int i)
+{
+	CEqPhysics* thisPhysics = (CEqPhysics*)thisPhys;
+	thisPhysics->DetectCollisionsSingle(thisPhysics->m_moveable[i], thisPhysics->m_contactPairs);
 }
 
 //----------------------------------------------------------------------------------------------------

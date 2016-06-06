@@ -87,7 +87,7 @@ typedef struct
 #define WAV_CUE_ID			((' '<<24)+('e'<<16)+('u'<<8)+'c')
 #define WAV_SAMPLE_ID		(('l'<<24)+('p'<<16)+('m'<<8)+'s')
 
-void LoadWavFromBufferEX(ubyte *memory, ALenum *format, ALvoid **data,ALsizei *size,ALsizei *freq, ALboolean* loop)
+void LoadWavFromBufferEX(ubyte *memory, ALenum *format, ALvoid **data,ALsizei *size,ALsizei *freq, int& loopStart, int& loopEnd)
 {
 	wavchunkhdr_t ChunkHdr;
 	wavexhdr_t FmtExHdr;
@@ -95,13 +95,15 @@ void LoadWavFromBufferEX(ubyte *memory, ALenum *format, ALvoid **data,ALsizei *s
 	wavsamplehdr_t SmplHdr;
 	wavfmthdr_t FmtHdr;
 
+	loopStart = -1;
+	loopEnd = -1;
+
 	ubyte *Stream;
 
 	*format = AL_FORMAT_MONO16;
 	*data = NULL;
 	*size = 0;
 	*freq = 22050;
-	*loop = AL_FALSE;
 
 	if (memory)
 	{
@@ -162,11 +164,18 @@ void LoadWavFromBufferEX(ubyte *memory, ALenum *format, ALvoid **data,ALsizei *s
 				{
 				   	memcpy(&SmplHdr,Stream,sizeof(wavsamplehdr_t));
 					Stream += ChunkHdr.Size;
+
+					if ( SmplHdr.Loop[0].Type == 0 )
+					{
+						ASSERT( SmplHdr.Loops > 0 );
+						loopStart = SmplHdr.Loop[0].Start;
+						loopEnd = SmplHdr.Loop[0].End;
+					}
 				}
 				else if (ChunkHdr.Id == WAV_CUE_ID)
 				{
 					wavcuehdr_t *cueData = (wavcuehdr_t*)Stream;
-					*loop = (cueData->SampleOffset != 0xFFFF);
+					loopStart = cueData->SampleOffset;
 					Stream += ChunkHdr.Size;
 				}
 
@@ -193,11 +202,12 @@ DkSoundSampleLocal::DkSoundSampleLocal()
 	m_loadState = SAMPLE_LOAD_ERROR;
 	m_szName = "null.wav";
 	m_nChannels = 1;
+	m_loopStart = -1;
 }
 
 DkSoundSampleLocal::~DkSoundSampleLocal()
 {
-	alDeleteBuffers(1, &m_nALBuffer);
+	alDeleteBuffers(1, &m_alBuffer);
 }
 
 void DkSoundSampleLocal::Init(const char *name, int flags)
@@ -206,7 +216,7 @@ void DkSoundSampleLocal::Init(const char *name, int flags)
 	m_flags = flags;
 
 	if(!(m_flags & SAMPLE_FLAG_STREAMED))
-		alGenBuffers(1, &m_nALBuffer);
+		alGenBuffers(1, &m_alBuffer);
 }
 
 bool DkSoundSampleLocal::Load()
@@ -222,11 +232,11 @@ bool DkSoundSampleLocal::Load()
 
 	if(!stricmp(ext.GetData(),"wav"))
 	{
-		status = LoadWav( m_szName.c_str(), m_nALBuffer );
+		status = LoadWav( m_szName.c_str(), m_alBuffer );
 	}
 	else if(!stricmp(ext.GetData(),"ogg"))
 	{
-		status = LoadOgg( m_szName.c_str(), m_nALBuffer );
+		status = LoadOgg( m_szName.c_str(), m_alBuffer );
 	}
 	else
 	{
@@ -244,7 +254,6 @@ bool DkSoundSampleLocal::LoadWav(const char *name, unsigned int buffer)
 	ALvoid *data;
 	ALsizei size;
 	ALsizei freq;
-	ALboolean loop;
 
 	DKFILE* file = g_fileSystem->Open((_Es(SOUND_DEFAULT_PATH) + name).GetData(), "rb");
 
@@ -257,20 +266,31 @@ bool DkSoundSampleLocal::LoadWav(const char *name, unsigned int buffer)
 	file->Read(fileBuffer, 1, fSize);
 	g_fileSystem->Close(file);
 
-	LoadWavFromBufferEX( fileBuffer, &format, &data, &size, &freq, &loop );
-
-	if((format == AL_FORMAT_MONO8) || (format == AL_FORMAT_MONO16))
-		m_nChannels = 1;
-	else if((format == AL_FORMAT_STEREO8) || (format == AL_FORMAT_STEREO16))
-		m_nChannels = 2;
+	LoadWavFromBufferEX( fileBuffer, &format, &data, &size, &freq, m_loopStart, m_loopEnd );
 
 	// load buffer data into
 	alBufferData( buffer, format, data, size, freq );
 
 	m_flags &= ~SAMPLE_FLAG_LOOPING;
 
-	if(loop)
+	if(m_loopStart >= 0)
+	{
+		if(m_loopStart > 0)
+		{
+			if(m_loopEnd == -1)
+				alGetBufferi( buffer, AL_SAMPLE_LENGTH_SOFT, &m_loopEnd); // loop to the end
+
+			int sampleOffs[] = {m_loopStart, m_loopEnd};
+			alBufferiv(buffer, AL_LOOP_POINTS_SOFT, sampleOffs);
+		}
+
 		m_flags |= SAMPLE_FLAG_LOOPING;
+	}
+
+	if((format == AL_FORMAT_MONO8) || (format == AL_FORMAT_MONO16))
+		m_nChannels = 1;
+	else if((format == AL_FORMAT_STEREO8) || (format == AL_FORMAT_STEREO16))
+		m_nChannels = 2;
 
 	free( data );
 
@@ -405,7 +425,7 @@ void DkSoundSampleLocal::WaitForLoad()
 
 //-----------------------------------------------------------------------------------------------------------------
 
-void DkSoundSampleLocal::SampleLoaderJob(void* smp)
+void DkSoundSampleLocal::SampleLoaderJob(void* smp, int i)
 {
 	DkSoundSampleLocal* sample = (DkSoundSampleLocal*)smp;
 

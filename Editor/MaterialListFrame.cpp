@@ -369,7 +369,7 @@ void CTextureListPanel::ReloadMaterialList()
 	m_filteredlist.clear();
 
 	EqString base_path(EqString(g_fileSystem->GetCurrentGameDirectory()) + EqString("/") + materials->GetMaterialPath());
-	base_path = base_path.Left(base_path.GetLength()-1);
+	base_path = base_path.Left(base_path.Length()-1);
 
 	CheckDirForMaterials( base_path.GetData() );
 
@@ -428,7 +428,7 @@ bool CTextureListPanel::CheckDirForMaterials(const char* filename_to_add)
 				if(ext == "mat")
 				{
 					filename = filename.Path_Strip_Ext();
-					filename = filename.Right(filename.GetLength() - tex_dir.GetLength());
+					filename = filename.Right(filename.Length() - tex_dir.Length());
 
 					IMaterial* pMaterial = materials->FindMaterial( filename.GetData(), true);
 					if(pMaterial)

@@ -263,7 +263,7 @@ void CEntityPropertiesPanel::OnSelectParameter(wxListEvent &event)
 
 		m_pKeyText->SetValue(wxString(m_CurrentProps[index].key.GetData()));
 
-		if(m_CurrentProps[index].value.GetLength() > 0 && m_CurrentProps[index].value_desc && m_CurrentProps[index].value_desc->type == PARAM_TYPE_CHOICE)
+		if(m_CurrentProps[index].value.Length() > 0 && m_CurrentProps[index].value_desc && m_CurrentProps[index].value_desc->type == PARAM_TYPE_CHOICE)
 		{
 			int idx = atoi(m_CurrentProps[index].value.GetData());
 
@@ -324,7 +324,7 @@ void CEntityPropertiesPanel::OnOpenModel(wxCommandEvent &event)
 		wxColourDialog* pDialog = new wxColourDialog(this);
 		pDialog->GetColourData().SetChooseFull(true);
 
-		if(m_CurrentProps[m_nSelectedProp].value.GetLength())
+		if(m_CurrentProps[m_nSelectedProp].value.Length())
 		{
 			if(m_currentParamType == PARAM_TYPE_COLOR4)
 			{
@@ -478,11 +478,11 @@ void AddEntPropToList(entProp_t &prop, DkList<entProp_t> &list)
 	{
 		if(!stricmp(list[i].key.GetData(), prop.key.GetData()))
 		{
-			if(prop.value.GetLength() == 0)
+			if(prop.value.Length() == 0)
 				return;
 
 			// if zero length, update value (only when definition is available)
-			if(list[i].value.GetLength() == 0 && list[i].value_desc)
+			if(list[i].value.Length() == 0 && list[i].value_desc)
 			{
 				list[i].value = prop.value.GetData();
 			}
@@ -510,7 +510,7 @@ bool CollectEntityParameters(CBaseEditableObject* pObject, void* userdata)
 	propertycheckdata_t *pData = (propertycheckdata_t*)userdata;
 
 	// copy name
-	if(pData->name.GetLength() > 0)
+	if(pData->name.Length() > 0)
 	{
 		if(stricmp(pData->name.GetData(), pObject->GetName()))
 			pData->name_differs = true;
@@ -531,7 +531,7 @@ bool CollectEntityParameters(CBaseEditableObject* pObject, void* userdata)
 	edef_entity_t* pDefinition = pEntity->GetDefinition();
 
 	// copy class name
-	if(pData->classname.GetLength() > 0)
+	if(pData->classname.Length() > 0)
 	{
 		if(stricmp(pData->classname.GetData(), pEntity->GetClassname()))
 			pData->class_differs = true;
@@ -902,7 +902,7 @@ void CEntityPropertiesPanel::UpdateSelection()
 		else
 			item_id = m_pKeyList->InsertItem(m_pKeyList->GetItemCount(), wxString(entData.params[i].key.GetData()));
 
-		if(entData.params[i].value.GetLength() > 0 && entData.params[i].value_desc && entData.params[i].value_desc->type == PARAM_TYPE_CHOICE)
+		if(entData.params[i].value.Length() > 0 && entData.params[i].value_desc && entData.params[i].value_desc->type == PARAM_TYPE_CHOICE)
 		{
 			int idx = atoi(entData.params[i].value.GetData());
 

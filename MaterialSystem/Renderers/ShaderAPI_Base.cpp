@@ -79,9 +79,9 @@ ShaderAPI_Base::ShaderAPI_Base()
 }
 
 // Init + Shurdown
-void ShaderAPI_Base::Init(const shaderapiinitparams_t &params)
+void ShaderAPI_Base::Init( shaderapiinitparams_t &params )
 {
-	m_params = params;
+	m_params = &params;
 
 	m_nScreenFormat = params.nScreenFormat;
 
@@ -409,7 +409,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, Filter_e texture
 	EqString texturePath;
 
 	if(!(nFlags & TEXFLAG_REALFILEPATH))
-		texturePath = EqString(m_params.textures_path) + pszFileName;
+		texturePath = EqString(m_params->textures_path) + pszFileName;
 	else
 		texturePath = pszFileName;
 
@@ -461,10 +461,10 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, Filter_e texture
 		// and load image files for further uploading to GPU
 		for(int i = 0; i < cmds.numElem(); i++)
 		{
-			cmds[i] = cmds[i].Left(cmds[i].GetLength()-1);
+			cmds[i] = cmds[i].Left(cmds[i].Length()-1);
 
 			if(!(nFlags & TEXFLAG_REALFILEPATH))
-				texturePathA = EqString(m_params.textures_path) + cmds[i];
+				texturePathA = EqString(m_params->textures_path) + cmds[i];
 			else
 				texturePathA = cmds[i];
 
@@ -630,9 +630,9 @@ bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 
 		for(int i = 0; i < cmds.numElem(); i++)
 		{
-			cmds[i] = cmds[i].Left(cmds[i].GetLength()-1);
+			cmds[i] = cmds[i].Left(cmds[i].Length()-1);
 
-			texturePathA = EqString(m_params.textures_path) + cmds[i];
+			texturePathA = EqString(m_params->textures_path) + cmds[i];
 			texturePathExtA = texturePathA + EqString(TEXTURE_DEFAULT_EXTENSION);
 
 			CImage* pImage = new CImage();
@@ -977,7 +977,7 @@ void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, shaderPro
 		newSrc = newSrc + str;
 	}
 
-	*buffer = (char*)PPReAlloc(*buffer, newSrc.GetLength()+1);
+	*buffer = (char*)PPReAlloc(*buffer, newSrc.Length()+1);
 	strcpy(*buffer, newSrc.GetData());
 }
 

@@ -24,11 +24,14 @@ public:
 	void				SetVolume(float val);
 	void				SetPitch(float val);
 
-	void				SetPosition(Vector3D &position);
-	void				SetVelocity(Vector3D &velocity);
+	void				SetPosition(const Vector3D &position);
+	void				SetVelocity(const Vector3D &velocity);
 
 	void				Play();
 	void				Stop();
+
+	void				StopLoop();
+
 	void				Pause();
 
 	ESoundState			GetState() const;

@@ -22,31 +22,33 @@ struct proxyvar_t
 {
 	proxyvar_t()
 	{
-		fValue = 0.0f;
-		vec_elem = -1;
+		value = 0.0f;
+		vec_idx = -1;
 		type = PV_CONSTANT;
-		pVar = NULL;
+		mv = NULL;
 	}
 
-	IMatVar*		pVar;
-	float			fValue;
-	int8			vec_elem;
+	IMatVar*		mv;
+	float			value;
 
-	ProxyVarType_e	type;
+	int8			vec_idx : 4;
+	int8			type : 4;
 };
+
+//--------------------------------------------------------
 
 class CBaseMaterialProxy : public IMaterialProxy
 {
 public:
 	CBaseMaterialProxy();
 
-	void UpdateVar(proxyvar_t* var, float fDt);
+	void UpdateVar(proxyvar_t& var, float fDt);
 
 protected:
-	proxyvar_t ParseVariable(char* pszVal);
+	void ParseVariable(proxyvar_t& var, char* pszVal);
 	
-	void PVarSetValue(proxyvar_t* var, float value);
-	void PVarSetValueInt(proxyvar_t* var, int value);
+	void mvSetValue(proxyvar_t& var, float value);
+	void mvSetValueInt(proxyvar_t& var, int value);
 
 protected:
 	IMaterial*	m_pMaterial;

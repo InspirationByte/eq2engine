@@ -451,7 +451,7 @@ void CGameWorld::Init()
 		m_lensTable[1] = {150.0f, lightId, ColorRGB(2.0f)};
 
 		m_lensTable[2] = {120.0f, lens4Id, ColorRGB(0.2f,0.3f,0.8f)};
-		m_lensTable[3] = {100.0f, lens2Id, ColorRGB(0.35f)};
+		m_lensTable[3] = {100.0f, lens3Id, ColorRGB(0.35f)};
 		m_lensTable[4] = {70.0f, lens2Id, ColorRGB(0.22f,0.9f,0.2f)};
 		m_lensTable[5] = {60.0f, lens1Id, ColorRGB(1,1,1)};
 
@@ -460,7 +460,7 @@ void CGameWorld::Init()
 
 		m_lensTable[8] = {60.0f, lens1Id, ColorRGB(1,1,1)};
 		m_lensTable[9] = {70.0f, lens2Id, ColorRGB(0.22f,0.9f,0.2f)};
-		m_lensTable[10] = {120.0f, lens2Id, ColorRGB(0.35f)};
+		m_lensTable[10] = {120.0f, lens3Id, ColorRGB(0.35f)};
 		m_lensTable[11] = {120.0f, lens4Id, ColorRGB(0.2f,0.3f,0.8f)};
 
 	}
@@ -649,7 +649,7 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 #define TRAFFICLIGHT_TIME 15.0f
 
-void GWJob_UpdateWorldAndEffects(void* data)
+void GWJob_UpdateWorldAndEffects(void* data, int i)
 {
 	float fDt = *(float*)data;
 	g_pRainEmitter->Update_Draw(fDt, g_pGameWorld->m_envConfig.rainDensity, 200.0f);
@@ -1029,7 +1029,7 @@ void DrawSkyBox(IMaterial* pSkyMaterial, int renderFlags)
 		pMeshBuilder->Position3f( skySize, -skySize, -skySize);
 		pMeshBuilder->AdvanceVertex();
 
-		pMeshBuilder->Position3f(-skySize,  skySize,  skySize);
+		pMeshBuilder->Position3f(skySize,  -skySize,  -skySize);
 		pMeshBuilder->AdvanceVertex();
 		pMeshBuilder->Position3f(-skySize,  skySize,  skySize);
 		pMeshBuilder->AdvanceVertex();
@@ -1388,6 +1388,7 @@ void CGameWorld::Draw( int nRenderFlags )
 
 	m_info.ambientColor = ColorRGBA(ambColor, 1.0f);
 	m_info.sunColor = ColorRGBA(m_envConfig.sunColor, 1.0f);
+	m_info.rainBrightness = m_envConfig.rainBrightness;
 
 	float fSkyBrightness = 1.0f;
 
@@ -1398,6 +1399,7 @@ void CGameWorld::Draw( int nRenderFlags )
 		fThunderLight += saturate(sin((m_fThunderTime - m_fNextThunderTime)*70.0f));
 
 		fSkyBrightness = 1.0f + (1.0 - fThunderLight)*0.35f;
+		m_info.rainBrightness += fThunderLight*0.5f;
 
 		m_info.sunColor = ColorRGBA(m_envConfig.sunColor + 0.9f * fThunderLight, 1.0f);
 	}
@@ -1706,6 +1708,15 @@ bool CGameWorld::LoadLevel()
 	return result;
 }
 
+#ifdef EDITOR
+bool CGameWorld::SaveLevel()
+{
+	// save editor data
+
+	return m_level.Save( m_levelname.c_str() );
+}
+#endif // EDITOR
+
 void CGameWorld::SetLevelName(const char* name)
 {
 	m_levelname = name;
@@ -1798,7 +1809,7 @@ CGameObject* CGameWorld::FindObjectByName( const char* objectName ) const
 
 	for(int i = 0; i < objList.numElem(); i++)
 	{
-		if(objList[i]->m_name.GetLength() == 0)
+		if(objList[i]->m_name.Length() == 0)
 			continue;
 
 		if( !objList[i]->m_name.Compare(objectName) )
@@ -1813,8 +1824,8 @@ CGameWorld*	g_pGameWorld = &s_GameWorld;
 
 #ifndef NO_LUA
 
-OOLUA_EXPORT_FUNCTIONS(CGameWorld, SetEnvironmentName, SetLevelName, GetCameraParams, QueryNearestRegions)
-OOLUA_EXPORT_FUNCTIONS_CONST(CGameWorld, FindObjectByName, CreateObject, IsValidObject)
+OOLUA_EXPORT_FUNCTIONS(CGameWorld, SetEnvironmentName, SetLevelName, GetCameraParams, QueryNearestRegions, RemoveObject)
+OOLUA_EXPORT_FUNCTIONS_CONST(CGameWorld, FindObjectByName, CreateObject, IsValidObject, GetEnvironmentName, GetLevelName)
 
 OOLUA_EXPORT_FUNCTIONS(CViewParams, SetOrigin, SetAngles, SetFOV)
 OOLUA_EXPORT_FUNCTIONS_CONST(CViewParams, GetOrigin, GetAngles, GetFOV)

@@ -108,8 +108,6 @@ void CObject_Physics::Spawn()
 
 	CEqRigidBody* body = new CEqRigidBody();
 
-	BoundingBox bbox(m_pModel->GetBBoxMins(), m_pModel->GetBBoxMaxs());
-
 	if( body->Initialize(&m_pModel->GetHWData()->m_physmodel, 0) )//
 	{
 		m_netPos = m_vecOrigin;

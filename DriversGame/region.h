@@ -14,6 +14,8 @@ using namespace Threading;
 #include "math/Vector.h"
 #include "occluderSet.h"
 
+#include "utils/strtools.h"
+
 #define ENGINE_REGION_MAX_HFIELDS		4	// you could make more
 #define MAX_MODEL_INSTANCES				1024
 
@@ -55,6 +57,7 @@ struct navGrid_t
 		cellStates = NULL;
 		wide = 0;
 		tall = 0;
+		dirty = false;
 	}
 
 	~navGrid_t()
@@ -75,6 +78,8 @@ struct navGrid_t
 
 		cellStates = new navcell_t[w*h];
 		memset(cellStates, 0, w*h);
+
+		dirty = true;
 	}
 
 	void Cleanup()
@@ -87,13 +92,17 @@ struct navGrid_t
 
 		wide = 0;
 		tall = 0;
+
+		dirty = false;
 	}
 
 	ubyte*		staticObst;		///< A* static navigation grid
 	navcell_t*	cellStates;		///< A* open/close state list
 
-	int			wide;
-	int			tall;
+	ushort		wide;
+	ushort		tall;
+	
+	bool		dirty;
 };
 
 //----------------------------------------------------------------------
@@ -126,8 +135,25 @@ struct regionObject_t
 	int				level;
 
 	BoundingBox		bbox;
+	EqString		name;
 
 	DkList<CEqCollisionObject*> collisionObjects;
+};
+
+struct regZone_t
+{
+	regZone_t(char* name)
+	{
+		zoneName = xstrdup(name);
+	}
+
+	regZone_t()
+	{
+		zoneName = NULL;
+	}
+
+	char*	zoneName;
+	uint	zoneHash;
 };
 
 //----------------------------------------------------------------------
@@ -176,6 +202,8 @@ public:
 #ifdef EDITOR
 	int								Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float& dist);
 	int								Ed_ReplaceDefs(CLevObjectDef* whichReplace, CLevObjectDef* replaceTo);
+
+	bool							m_modified; // needs saving?
 #endif
 
 	BoundingBox						m_bbox;
@@ -187,6 +215,8 @@ public:
 
 	DkList<regionObject_t*>			m_objects;			///< complex and non-complex models
 	DkList<levOccluderLine_t>		m_occluders;		///< occluders
+
+	DkList<regZone_t>				m_zones;
 
 	// TODO: road array, visibility data and other....
 	bool							m_render;

@@ -90,7 +90,7 @@ const wchar_t* EqWString::GetData() const
 }
 
 // length of it
-uint EqWString::GetLength() const
+uint EqWString::Length() const
 {
 	return m_nLength;
 }
@@ -213,7 +213,7 @@ void EqWString::Assign(const EqWString &str, int nStart, int len)
 {
 	ASSERT(nStart >= 0);
 
-	int nLen = str.GetLength();
+	int nLen = str.Length();
 
 	ASSERT(len <= nLen);
 
@@ -265,7 +265,7 @@ void EqWString::Append(const wchar_t* pszStr, int nCount)
 
 void EqWString::Append(const EqWString &str)
 {
-	int nNewLen = m_nLength + str.GetLength();
+	int nNewLen = m_nLength + str.Length();
 
 	if( ExtendAlloc( nNewLen ) )
 	{
@@ -303,7 +303,7 @@ void EqWString::Insert(const wchar_t* pszStr, int nInsertPos)
 
 void EqWString::Insert(const EqWString &str, int nInsertPos)
 {
-	int nNewLen = m_nLength + str.GetLength();
+	int nNewLen = m_nLength + str.Length();
 
 	if( ExtendAlloc( nNewLen ) )
 	{
@@ -311,10 +311,10 @@ void EqWString::Insert(const EqWString &str, int nInsertPos)
 		wcscpy(tmp, &m_pszString[nInsertPos]);
 
 		// copy the part to the far
-		wcsncpy(&m_pszString[nInsertPos + str.GetLength()], tmp, m_nLength - nInsertPos);
+		wcsncpy(&m_pszString[nInsertPos + str.Length()], tmp, m_nLength - nInsertPos);
 
 		// copy insertable
-		wcsncpy(m_pszString + nInsertPos, str.GetData(), str.GetLength());
+		wcsncpy(m_pszString + nInsertPos, str.GetData(), str.Length());
 
 		m_pszString[nNewLen] = 0;
 		m_nLength = nNewLen;

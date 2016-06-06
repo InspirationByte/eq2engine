@@ -12,6 +12,8 @@
 #include "FontCache.h"
 #include "FontLayoutBuilders.h"
 
+#include "world.h"
+
 #define PREVIEW_BOX_SIZE 256
 
 CLayerModel::CLayerModel() : m_model(NULL)
@@ -510,6 +512,7 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 		case LAYEREDIT_NEW:
 		{
 			m_selectedItem = m_layerColl->layers.append( buildLayer_t() );
+			g_pMainFrame->NotifyUpdate();
 
 			UpdateSelection();
 
@@ -524,6 +527,8 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 
 				m_layerColl->layers.removeIndex(m_selectedItem);
 				m_selectedItem--;
+
+				g_pMainFrame->NotifyUpdate();
 			}
 			
 			UpdateSelection();
@@ -573,6 +578,8 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 				m_selLayer->model = lmodel;
 
 				lmodel->RefreshPreview();
+
+				g_pMainFrame->NotifyUpdate();
 			}
 
 			Show();
@@ -761,7 +768,10 @@ void CBuildingLayerList::ReloadList()
 
 buildLayerColl_t* CBuildingLayerList::GetSelectedLayerColl() const
 {
-	return NULL;
+	if(m_selection == -1)
+		return NULL;
+
+	return m_filteredList[m_selection];
 }
 
 void CBuildingLayerList::ChangeFilter(const wxString& filter)
@@ -929,6 +939,8 @@ buildLayerColl_t* CBuildingLayerList::CreateCollection()
 
 	UpdateAndFilterList();
 
+	g_pMainFrame->NotifyUpdate();
+
 	return newColl;
 }
 
@@ -936,6 +948,208 @@ void CBuildingLayerList::DeleteCollection(buildLayerColl_t* coll)
 {
 	if(m_layerCollections.remove(coll))
 		delete coll;
+
+	UpdateAndFilterList();
+
+	g_pMainFrame->NotifyUpdate();
+}
+
+void CBuildingLayerList::LoadLayerCollections( const char* levelName )
+{
+	EqString folderPath = varargs("levels/%s_editor",levelName);
+
+	KeyValues kvDefs;
+	if(!kvDefs.LoadFromFile(_Es(folderPath + "/buildingTemplates.def").c_str()))
+		return;
+
+	// load model files
+	IFile* pFile = g_fileSystem->Open(_Es(folderPath + "/buildingTemplateModels.dat").c_str(), "rb", SP_MOD);
+
+	if(!pFile)
+	{
+		ErrorMsg("Failed to open buildingTemplateModels.dat !!!");
+		return;
+	}
+
+	int numLayerCollections = 0;
+	pFile->Read(&numLayerCollections, 1, sizeof(int));
+
+	for(int i = 0; i < kvDefs.GetRootSection()->keys.numElem(); i++)
+	{
+		if(stricmp(kvDefs.GetRootSection()->keys[i]->name, "template"))
+			continue;
+
+		kvkeybase_t* templateSec = kvDefs.GetRootSection()->keys[i];
+
+		buildLayerColl_t* coll = new buildLayerColl_t();
+		m_layerCollections.append(coll);
+
+		coll->name = KV_GetValueString(templateSec, 0, "unnamed");
+
+		coll->Load(pFile, templateSec);
+	}
+
+	UpdateAndFilterList();
+
+	g_fileSystem->Close( pFile );
+}
+
+void CBuildingLayerList::SaveLayerCollections( const char* levelName )
+{
+	EqString folderPath = varargs("levels/%s_editor",levelName);
+
+	// make folder <levelName>_editor and put this stuff there
+	g_fileSystem->MakeDir(folderPath.c_str(), SP_MOD);
+
+	// keyvalues file buildings.def
+	KeyValues kvDefs;
+
+	// save model files
+	IFile* pFile = g_fileSystem->Open(_Es(folderPath + "/buildingTemplateModels.dat").c_str(), "wb", SP_MOD);
+
+	int numLayerCollections = m_layerCollections.numElem();
+	pFile->Write(&numLayerCollections, 1, sizeof(int));
+
+	for(int i = 0; i < m_layerCollections.numElem(); i++)
+	{
+		buildLayerColl_t* coll = m_layerCollections[i];
+
+		kvkeybase_t* layerCollData = kvDefs.GetRootSection()->AddKeyBase("template", coll->name.c_str());
+
+		coll->Save( pFile, layerCollData );
+	}
+
+	kvDefs.SaveToFile(_Es(folderPath + "/buildingTemplates.def").c_str());
+
+	g_fileSystem->Close( pFile );
+}
+
+// layer model header
+struct layerModelFileHdr_t
+{
+	int		layerId;
+	char	name[80];
+	int		size;
+};
+
+void buildLayerColl_t::Save(IVirtualStream* stream, kvkeybase_t* kvs)
+{
+	int numModels = 0;
+	layerModelFileHdr_t hdr;
+
+	for(int i = 0; i < layers.numElem(); i++)
+	{
+		// save both model and texture to kvs info
+		kvkeybase_t* layerKvs = kvs->AddKeyBase("layer");
+		layerKvs->SetKey("type", varargs("%d", layers[i].type));
+		layerKvs->SetKey("repeatInterval", varargs("%d", layers[i].repeatInterval));
+		layerKvs->SetKey("repeatTimes", varargs("%d", layers[i].repeatTimes));
+		layerKvs->SetKey("height", varargs("%d", layers[i].height));
+
+		if(layers[i].type == LAYER_TEXTURE && layers[i].material != NULL)
+			layerKvs->SetKey("material", layers[i].material->GetName());
+		else if(layers[i].type != LAYER_TEXTURE && layers[i].model != NULL)
+			layerKvs->SetKey("model", layers[i].model->m_name.c_str());
+
+		if(layers[i].type == LAYER_TEXTURE)
+			continue;
+
+		numModels++;
+	}
+
+	stream->Write(&numModels, 1, sizeof(int));
+
+	CMemoryStream modelStream;
+
+	for(int i = 0; i < layers.numElem(); i++)
+	{
+		if(layers[i].type == LAYER_TEXTURE)
+			continue;
+
+		// write model to temporary stream
+		modelStream.Open(NULL, VS_OPEN_READ | VS_OPEN_WRITE, 2048);
+		layers[i].model->m_model->Save( &modelStream );
+
+		// prepare header
+		memset(&hdr, 0, sizeof(hdr));
+		hdr.layerId = i;
+		hdr.size = modelStream.Tell();
+		strncpy(hdr.name, layers[i].model->m_name.c_str(), sizeof(hdr.name));
+
+		// write header
+		stream->Write(&hdr, 1, sizeof(hdr));
+
+		// write model
+		stream->Write(modelStream.GetBasePointer(), 1, hdr.size);
+
+		modelStream.Close();
+	}
+}
+
+void buildLayerColl_t::Load(IVirtualStream* stream, kvkeybase_t* kvs)
+{
+	// read layers first
+	for(int i = 0; i < kvs->keys.numElem(); i++)
+	{
+		if(stricmp(kvs->keys[i]->name, "layer"))
+			continue;
+
+		kvkeybase_t* layerKvs = kvs->keys[i];
+
+		int newLayer = layers.append(buildLayer_t());
+		buildLayer_t& layer = layers[newLayer];
+
+		layer.type = KV_GetValueInt(layerKvs->FindKeyBase("type"));
+		layer.repeatInterval = KV_GetValueInt(layerKvs->FindKeyBase("repeatInterval"));
+		layer.repeatTimes = KV_GetValueInt(layerKvs->FindKeyBase("repeatTimes"));
+		layer.height = KV_GetValueInt(layerKvs->FindKeyBase("height"));
+
+		if(layer.type == LAYER_TEXTURE)
+			layer.material = materials->FindMaterial(KV_GetValueString(layerKvs->FindKeyBase("material")));
+		else
+			layer.model = NULL;
+	}
+
+	// read models
+	int numModels = 0;
+	stream->Read(&numModels, 1, sizeof(int));
+
+	layerModelFileHdr_t hdr;
+
+	for(int i = 0; i < numModels; i++)
+	{
+		stream->Read(&hdr, 1, sizeof(hdr));
+
+		// make layer model
+		CLayerModel* mod = new CLayerModel();
+		layers[hdr.layerId].model = mod;
+
+		mod->m_name = hdr.name;
+
+		// read model
+		int modOffset = stream->Tell();
+		mod->m_model = new CLevelModel();
+		mod->m_model->Load(stream);
+
+		mod->SetDirtyPreview();
+		mod->RefreshPreview();
+
+		int modelSize = stream->Tell() - modOffset;
+
+		// a bit paranoid
+		ASSERT(layers[hdr.layerId].type == ELayerType::LAYER_MODEL || layers[hdr.layerId].type == ELayerType::LAYER_CORNER_MODEL);
+		ASSERT(hdr.size == modelSize);
+	}
+}
+
+void CBuildingLayerList::RemoveAllLayerCollections()
+{
+	for(int i = 0; i < m_layerCollections.numElem(); i++)
+	{
+		delete m_layerCollections[i];
+	}
+
+	m_layerCollections.clear();
 
 	UpdateAndFilterList();
 }
@@ -977,15 +1191,23 @@ CUI_BuildingConstruct::CUI_BuildingConstruct( wxWindow* parent )
 	
 	
 	bSizer10->Add( sbSizer2, 0, wxEXPAND, 5 );
+
+	wxStaticBoxSizer* sbSizer6;
+	sbSizer6 = new wxStaticBoxSizer( new wxStaticBox( m_pSettingsPanel, wxID_ANY, wxT("Properties") ), wxVERTICAL );
+
+	m_tiledPlacement = new wxCheckBox( m_pSettingsPanel, wxID_ANY, wxT("Tiled placement (T)"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_tiledPlacement->SetValue(true); 
+	sbSizer6->Add( m_tiledPlacement, 0, wxALL, 5 );
+	
+	
+	bSizer10->Add( sbSizer6, 0, wxEXPAND, 5 );
 	
 	wxGridSizer* gSizer2;
 	gSizer2 = new wxGridSizer( 0, 3, 0, 0 );
-	
-	
+
 	bSizer10->Add( gSizer2, 1, wxEXPAND, 5 );
 	
-	wxStaticBoxSizer* sbSizer20;
-	sbSizer20 = new wxStaticBoxSizer( new wxStaticBox( m_pSettingsPanel, wxID_ANY, wxT("Sets") ), wxVERTICAL );
+	wxStaticBoxSizer* sbSizer20 = new wxStaticBoxSizer( new wxStaticBox( m_pSettingsPanel, wxID_ANY, wxT("Sets") ), wxVERTICAL );
 	
 	m_button5 = new wxButton( m_pSettingsPanel, wxID_ANY, wxT("Create..."), wxDefaultPosition, wxDefaultSize, 0 );
 	sbSizer20->Add( m_button5, 0, wxALL, 5 );
@@ -1015,6 +1237,7 @@ CUI_BuildingConstruct::CUI_BuildingConstruct( wxWindow* parent )
 	m_button8->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CUI_BuildingConstruct::OnDeleteClick ), NULL, this );
 
 	m_layerEditDlg = new CBuildingLayerEditDialog(g_pMainFrame);
+	m_placeError = false;
 }
 
 CUI_BuildingConstruct::~CUI_BuildingConstruct()
@@ -1057,20 +1280,16 @@ void CUI_BuildingConstruct::OnEditClick( wxCommandEvent& event )
 
 void CUI_BuildingConstruct::OnDeleteClick( wxCommandEvent& event )
 {
+	buildLayerColl_t* layerColl = m_layerCollList->GetSelectedLayerColl();
 	
+	if(m_building.layerColl == layerColl)
+		m_building.layerColl = NULL;
+
+	m_layerCollList->DeleteCollection(layerColl);
+
 }
 
 //------------------------------------------------------------------------
-
-void CUI_BuildingConstruct::InitTool()
-{
-	//m_layerCollList->LoadLayerCollections();
-}
-
-void CUI_BuildingConstruct::ShutdownTool()
-{
-
-}
 
 void CUI_BuildingConstruct::Update_Refresh()
 {
@@ -1079,17 +1298,340 @@ void CUI_BuildingConstruct::Update_Refresh()
 
 void CUI_BuildingConstruct::OnKey(wxKeyEvent& event, bool bDown)
 {
-
+	// hotkeys
+	if(!bDown)
+	{
+		if(event.m_keyCode == WXK_ESCAPE)
+		{
+			CancelBuilding();
+			ClearSelection();
+		}
+		else if(event.m_keyCode == WXK_DELETE)
+		{
+			DeleteSelection();
+		}
+		else if(event.m_keyCode == WXK_SPACE)
+		{
+			m_building.order = m_building.order > 0 ? -1 : 1;
+		}
+		else if(event.m_keyCode == WXK_RETURN)
+		{
+			CompleteBuilding();
+		}
+		else if(event.GetRawKeyCode() == 'T')
+		{
+			m_tiledPlacement->SetValue(!m_tiledPlacement->GetValue());
+		}
+	}
 }
 
 //------------------------------------------------------------------------
 
-void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos )
+void CUI_BuildingConstruct::InitTool()
 {
+
+}
+
+void CUI_BuildingConstruct::OnLevelLoad()
+{
+	CBaseTilebasedEditor::OnLevelLoad();
+	m_layerCollList->LoadLayerCollections( g_pGameWorld->GetLevelName() );
+
+	m_mode = ED_BUILD_READY;
+}
+
+void CUI_BuildingConstruct::OnLevelSave()
+{
+	CBaseTilebasedEditor::OnLevelSave();
+	m_layerCollList->SaveLayerCollections( g_pGameWorld->GetLevelName() );
+}
+
+void CUI_BuildingConstruct::OnLevelUnload()
+{
+	ClearSelection();
+	CancelBuilding();
+
+	CBaseTilebasedEditor::OnLevelUnload();
+
+	m_layerCollList->RemoveAllLayerCollections();
+}
+
+//------------------------------------------------------------------------
+
+void CUI_BuildingConstruct::ProcessMouseEvents( wxMouseEvent& event )
+{
+	if(event.ButtonIsDown(wxMOUSE_BTN_RIGHT) && event.Dragging())
+	{
+		float delta = m_mouseLastY - event.GetY();
+		
+		// make scale
+		m_building.segmentScale += delta*0.001f;
+
+		m_building.segmentScale = clamp(m_building.segmentScale,0.5f, 2.0f);
+	}
+	else
+		CBaseTilebasedEditor::ProcessMouseEvents(event);
+
+	m_mouseLastY = event.GetY();
+
 	
 }
 
+void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos )
+{
+	if(event.GetWheelRotation() != 0)
+	{
+		int wheelSign = sign(event.GetWheelRotation());
+		m_building.layerId += wheelSign;
+	}
+
+	if(m_building.layerColl != NULL)
+	{
+		if(m_building.layerId >= m_building.layerColl->layers.numElem())
+			m_building.layerId = m_building.layerColl->layers.numElem() - 1;
+	}
+
+	if(m_building.layerId < 0)
+		m_building.layerId = 0;
+
+	IVector2D globalTile;
+	g_pGameWorld->m_level.LocalToGlobalPoint(IVector2D(tx,ty), m_selectedRegion, globalTile);
+
+	Vector3D tilePos = g_pGameWorld->m_level.GlobalTilePointToPosition(globalTile);
+
+	if(m_tiledPlacement->GetValue())
+		m_mousePoint = tilePos;
+	else
+		m_mousePoint = ppos;
+
+	if(!event.ControlDown() && !event.AltDown())
+	{
+		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging())
+		{
+			if( !m_layerCollList->GetSelectedLayerColl() && m_mode == ED_BUILD_READY )
+			{
+				wxMessageBox("Please select template to begin", "Can't do it!", wxOK | wxCENTRE, g_pMainFrame);
+				return;
+			}
+
+			if(m_mode == ED_BUILD_READY)
+				m_mode = ED_BUILD_BEGUN;	// make to the point 1
+
+			if(m_mode == ED_BUILD_BEGUN)
+			{
+				segmentPoint_t segment;
+				segment.layerId = m_building.layerId;
+				segment.position = m_mousePoint;
+
+				// make a first point
+				m_building.points.append( segment );
+				m_building.layerColl = m_layerCollList->GetSelectedLayerColl();
+				m_building.order = 1;
+				m_building.segmentScale = 1.0f;
+
+				m_mode = ED_BUILD_SELECTEDPOINT;
+				return;
+			}
+			else if(m_mode == ED_BUILD_SELECTEDPOINT)
+			{
+				if(m_placeError)
+					return;
+
+				Vector3D firstPoint = m_building.points[0].position;
+
+				Vector3D newPoint = m_placementPoint;
+				newPoint.y = firstPoint.y;	// height must match
+
+				// set last point layer id
+				segmentPoint_t& lastPoint = m_building.points[m_building.points.numElem()-1];
+				lastPoint.layerId = m_building.layerId;
+				lastPoint.scale = m_building.segmentScale;
+
+				segmentPoint_t segment;
+				segment.layerId = 0;
+				segment.position = newPoint;
+				segment.scale = 1.0f;
+
+				// make other points
+				m_building.points.append( segment );
+
+				// ED_BUILD_DONE if connected to begin point
+				//if(distance(ppos, m_building.points[0]) < 2.0f)
+				//	m_mode = ED_BUILD_DONE;
+
+				return;
+			}
+
+			(int)m_mode++;
+		}
+	}
+}
+
+void CUI_BuildingConstruct::CancelBuilding()
+{
+	if(m_mode != ED_BUILD_READY)
+	{
+		m_building.points.clear();
+		m_building.layerColl = NULL;
+
+		m_mode = ED_BUILD_READY;
+	}
+}
+
+void CUI_BuildingConstruct::CompleteBuilding()
+{
+	// TODO: generate building model for region:
+
+	m_building.points.clear();
+	m_building.layerColl = NULL;
+	m_building.layerId = 0;
+
+	m_mode = ED_BUILD_READY;
+}
+
+void CUI_BuildingConstruct::ClearSelection()
+{
+
+}
+
+void CUI_BuildingConstruct::DeleteSelection()
+{
+	if(m_mode == ED_BUILD_SELECTEDPOINT)
+	{
+		if(m_building.points.numElem() > 1)
+			m_building.points.removeIndex(m_building.points.numElem()-1);
+		else
+			CancelBuilding();
+	}
+}
+
+void CalculateBuildingModelTransform(Matrix4x4& partTransform, 
+	buildLayer_t& layer, 
+	const Vector3D& startPoint, 
+	const Vector3D& endPoint, 
+	int order, 
+	Vector3D& size, float scale,
+	int iteration )
+{
+	// first we find angle
+	Vector3D partDir = normalize(order > 0 ? (endPoint - startPoint) : (startPoint - endPoint));
+
+	// make right vector by order
+	Vector3D rightVec = cross(partDir, vec3_up);
+
+	Vector3D yoffset(0,size.y * 0.5f,0);
+
+	partTransform = translate(startPoint + yoffset + partDir*size.z*scale*0.5f*float(order * (iteration*2 + 1))) * Matrix4x4(Matrix3x3(rightVec, vec3_up, partDir)*scale3(-1.0f,1.0f,scale));
+}
+
+extern void ListQuadTex(const Vector3D &v1, const Vector3D &v2, const Vector3D& v3, const Vector3D& v4, int rotate, const ColorRGBA &color, DkList<Vertex3D_t> &verts);
+
 void CUI_BuildingConstruct::OnRender()
 {
-	
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+	if(m_selectedRegion)
+	{
+		CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
+
+		field->DebugRender(false,m_mouseOverTileHeight);
+	}
+
+	if(m_building.points.numElem() > 0 && m_building.layerColl != NULL)
+	{
+		// Render dynamic preview of the building we're making
+
+		Vector3D endPoint = m_building.points[0].position;
+
+		DkList<segmentPoint_t> allPoints;
+		allPoints.append(m_building.points);
+
+		debugoverlay->Box3D(m_mousePoint - 0.5f, m_mousePoint + 0.5f, ColorRGBA(1,0,0,1));
+		m_mousePoint.y = endPoint.y;
+
+		debugoverlay->Text3D(m_mousePoint, -1.0f, color4_white, "layer: %d", m_building.layerId);
+
+		segmentPoint_t& lastPoint = allPoints[allPoints.numElem()-1];
+
+		// set last point layer id and scale
+		lastPoint.layerId = m_building.layerId;
+		lastPoint.scale = m_building.segmentScale;
+
+		// add virtual point
+		segmentPoint_t justPoint;
+		justPoint.position = m_mousePoint;
+		allPoints.append( justPoint );
+
+		Matrix4x4 partTransform;
+		BoundingBox tempBBox;
+
+		m_placementPoint = m_mousePoint;
+		m_placeError = false;
+
+		for(int i = 1; i < allPoints.numElem(); i++)
+		{
+			segmentPoint_t& start = allPoints[i-1];
+			segmentPoint_t& end = allPoints[i];
+
+			debugoverlay->Line3D(start.position, end.position, ColorRGBA(1,1,1,1), ColorRGBA(1,1,1,1), 0.0f);
+
+			//
+			// PROTOTYPE
+			//
+
+			// draw models or walls
+			buildLayer_t& layer = m_building.layerColl->layers[ start.layerId ];
+			if(layer.type == LAYER_MODEL || layer.type == LAYER_CORNER_MODEL)
+			{
+				if(!layer.model)
+					continue;
+
+				// draw model
+				CLevelModel* model = layer.model->m_model;
+
+				const BoundingBox& modelBox = model->GetAABB();
+				Vector3D size = modelBox.GetSize();
+				float modelLen = size.z*start.scale;
+
+				float remainingLength = length(end.position - start.position);
+
+				float iterationsPerLen = remainingLength / modelLen;
+
+				int numIterations = (int)(iterationsPerLen + 0.5f);
+
+				for(int iter = 0; iter < numIterations; iter++)
+				{
+					// calculate transform
+					CalculateBuildingModelTransform( partTransform, layer, start.position, end.position, m_building.order, size, start.scale, iter );
+
+					materials->SetMatrix(MATRIXMODE_WORLD, partTransform);
+					model->Render(0, tempBBox);
+
+					remainingLength -= modelLen;
+				}
+
+				m_placeError = (numIterations == 0);
+
+				float totalLen = length(m_building.points[0].position - endPoint);
+
+				// recalc placement point by preview
+				Vector3D direction = normalize(end.position - start.position);
+				m_placementPoint = start.position + direction * floor(numIterations) * modelLen;
+
+				debugoverlay->Box3D(m_placementPoint-0.5f, m_placementPoint+0.5f, ColorRGBA(1,1,0,1));
+			}
+			else
+			{
+				
+			}
+		}
+
+		for(int i = 0; i < m_building.points.numElem(); i++)
+		{
+			Vector3D point = m_building.points[i].position;
+			debugoverlay->Box3D(point - 0.5f, point + 0.5f, ColorRGBA(0,1,0,1));
+		}
+	}
+
+	CBaseTilebasedEditor::OnRender();
 }

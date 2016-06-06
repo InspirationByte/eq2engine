@@ -297,7 +297,6 @@ IVector2D GetPerpendicularDirVec(const IVector2D& vec)
 CAITrafficCar::CAITrafficCar( carConfigEntry_t* carConfig ) : CCar(carConfig), CFSM_Base()
 {
 	m_frameSkip = false;
-	m_hasDamage = false;
 	m_switchedLane = false;
 	m_autohandbrake = false;
 
@@ -319,26 +318,8 @@ CAITrafficCar::~CAITrafficCar()
 	
 }
 
-void CAITrafficCar::InitAI(CLevelRegion* reg, levroadcell_t* cell)
+void CAITrafficCar::InitAI( bool isParked )
 {
-	if (reg && cell)
-	{
-		Vector3D t,b,n;
-		reg->GetHField()->GetTileTBN(cell->posX, cell->posY, t,b,n);
-		Vector3D pos = reg->CellToPosition(cell->posX, cell->posY);
-
-		float roadCellAngle = cell->direction*-90.0f + 180.0f;
-
-		Matrix3x3 cellAngle(b,n,t);
-		Matrix3x3 finalAngle = !cellAngle*rotateY3(DEG2RAD(roadCellAngle) );
-
-		SetOrigin(pos - Vector3D(0.0f, m_conf->m_wheels[0].suspensionBottom.y, 0.0f));
-
-		Quaternion rotation( finalAngle );
-		renormalize(rotation);
-		m_pPhysicsObject->m_object->SetOrientation(rotation);
-	}
-
 	AI_SetState( &CAITrafficCar::SearchForRoad );
 	m_speedModifier = g_pGameWorld->m_random.Get(0,10);
 }
@@ -356,12 +337,8 @@ void CAITrafficCar::Spawn()
 	if( m_conf->m_colors.numElem() > 0 )
 	{
 		int col_idx = g_pGameWorld->m_random.Get(0, m_conf->m_colors.numElem() - 1);
-
 		SetColorScheme(col_idx);
-		//m_carColor = m_conf->m_colors[col_idx];
 	}
-	else
-		m_carColor = color4_white;
 }
 
 int CAITrafficCar::DeadState( float fDt, EStateTransition transition )
@@ -468,6 +445,9 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 
 void CAITrafficCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy)
 {
+	if(FSMGetCurrentState() == &CAITrafficCar::DeadState)
+		return;
+
 	if(pair.impactVelocity > 2.0f && (pair.bodyA->m_flags & BODY_ISCAR))
 	{
 		// restore collision
@@ -475,8 +455,6 @@ void CAITrafficCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 		GetPhysicsBody()->SetMinFrameTime(0.0f);
 
 		SignalNoSequence(0.7f, 0.5f);
-
-		m_hasDamage = true;
 
 		CEqRigidBody* body = (CEqRigidBody*)pair.bodyA;
 

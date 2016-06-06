@@ -304,8 +304,10 @@ public:
 	void					DebugReloadCar();
 
 	virtual void			Spawn();
+	virtual void			PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell);
 
 	void					Draw( int nRenderFlags );
+	void					DrawEffects( int lod );
 
 	void					AlignToGround();	// align car to ground
 
@@ -519,6 +521,7 @@ protected:
 	CNetworkVar(short,		m_numPursued);
 
 	bool					m_brakeLightsEnabled;
+	bool					m_visible;
 
 	CNetworkVar(bool,		m_locked);
 	CNetworkVar(bool,		m_enabled);
@@ -530,6 +533,7 @@ protected:
 	TexAtlasEntry_t*		m_trans_raindrops;
 	TexAtlasEntry_t*		m_trans_fleck;
 	TexAtlasEntry_t*		m_veh_skidmark_asphalt;
+	TexAtlasEntry_t*		m_veh_raintrail;
 	TexAtlasEntry_t*		m_veh_shadow;
 };
 

@@ -115,6 +115,8 @@ public:
 	void					Load(IVirtualStream* stream);
 	void					Save(IVirtualStream* stream) const;
 
+	const BoundingBox&		GetAABB() const {return m_bbox;}
+
 protected:
 
 	void					CreateCollisionObjects( CLevelRegion* reg, regionObject_t* ref );

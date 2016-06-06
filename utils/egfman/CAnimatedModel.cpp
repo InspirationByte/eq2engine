@@ -119,7 +119,7 @@ void CAnimatedModel::TogglePhysicsState()
 			}
 			else if(m_pPhysicsObject)
 			{
-				m_pPhysicsObject->SetPosition(Vector3D(0,m_pModel->GetBBoxMaxs().y,0));
+				m_pPhysicsObject->SetPosition(Vector3D(0,m_pModel->GetAABB().maxPoint.y,0));
 				m_pPhysicsObject->SetAngles(vec3_zero);
 				//m_pPhysicsObject->SetFriction();
 				m_pPhysicsObject->SetActivationState(PS_ACTIVE);
@@ -1323,7 +1323,7 @@ void CAnimatedModel::UpdateIkChain( gikchain_t* pIkChain, float frameTime )
 
 // inverse kinematics
 
-void CAnimatedModel::SetIKWorldTarget(int chain_id, Vector3D &world_position, Matrix4x4 *externaltransform)
+void CAnimatedModel::SetIKWorldTarget(int chain_id, const Vector3D &world_position, Matrix4x4 *externaltransform)
 {
 	if(chain_id == -1)
 		return;
@@ -1348,7 +1348,7 @@ void CAnimatedModel::SetIKWorldTarget(int chain_id, Vector3D &world_position, Ma
 	SetIKLocalTarget(chain_id, local);
 }
 
-void CAnimatedModel::SetIKLocalTarget(int chain_id, Vector3D &local_position)
+void CAnimatedModel::SetIKLocalTarget(int chain_id, const Vector3D &local_position)
 {
 	if(chain_id == -1)
 		return;

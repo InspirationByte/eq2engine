@@ -74,6 +74,7 @@ public:
 
 	virtual void			Play() = 0;
 	virtual void			Stop() = 0;
+	virtual void			StopLoop() = 0;
 	virtual void			Pause() = 0;
 
 	virtual void			SetVolume(float val) = 0;
@@ -92,8 +93,8 @@ public:
 
 	virtual bool			IsVirtual() const = 0;
 
-	virtual void			SetPosition(Vector3D &position) = 0;
-	virtual void			SetVelocity(Vector3D &velocity) = 0;
+	virtual void			SetPosition(const Vector3D &position) = 0;
+	virtual void			SetVelocity(const Vector3D &velocity) = 0;
 
 	virtual void			GetParams(soundParams_t *param) const = 0;
 	virtual void			SetParams(soundParams_t *param) = 0;
@@ -128,7 +129,7 @@ public:
 											const Vector3D& velocity,
 											sndEffect_t* pEffect = NULL) = 0;
 
-	virtual Vector3D			GetListenerPosition()  = 0;
+	virtual const Vector3D&		GetListenerPosition() const  = 0;
 
 	//-----------------------------------------------------------------------------------------
 

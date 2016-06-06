@@ -216,7 +216,23 @@ int LLua_Console_FindCvar(lua_State* vm)
 	OOLUA_C_FUNCTION(OOLUA::maybe_null<ConVar*>, Lua_Console_FindCvar, const char* )
 }
 
+ConVar* Lua_Console_CreateCvar(char const* name,char const* value,char const* desc, int flags)
+{
+	return new ConVar(xstrdup(name),xstrdup(value),xstrdup(desc),flags);
+}
+
+void Lua_Console_RemoveCvar(ConVar* cvar)
+{
+	g_sysConsole->UnregisterCommand(cvar);
+	cvar->LuaCleanup();
+
+	delete cvar;
+}
+
 OOLUA_CFUNC(Lua_Console_ExecuteString, LLua_Console_ExecuteString)
+OOLUA_CFUNC(Lua_Console_CreateCvar, LLua_Console_CreateCvar)
+OOLUA_CFUNC(Lua_Console_RemoveCvar, LLua_Console_RemoveCvar)
+
 
 //---------------------------------------------------------------------------------------
 //
@@ -331,6 +347,8 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	OOLUA::Table consoleTab = OOLUA::new_table(state);
 	consoleTab.set("FindCvar", LLua_Console_FindCvar);
 	consoleTab.set("ExecuteString", LLua_Console_ExecuteString);
+	consoleTab.set("CreateCvar", LLua_Console_CreateCvar);
+	consoleTab.set("RemoveCvar", LLua_Console_RemoveCvar);
 
 	OOLUA::set_global(state, "console", consoleTab);
 

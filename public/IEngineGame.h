@@ -18,7 +18,7 @@
 
 typedef bool (*pfnSavedGameLoader)( void* pData );
 
-class IEngineGame
+class IEngineGame : public ICoreModuleInterface
 {
 public:
 	enum

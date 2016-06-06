@@ -59,12 +59,22 @@ enum EReplayFlags
 	REPLAY_FLAG_IS_PUSHED	= (1 << 14)
 };
 
+// replay event opcodes
 enum EReplayEventType
 {
-	REPLAY_EVENT_SPAWN = 0,
+	// demo end indicator
+	REPLAY_EVENT_END = 0,
+
+	// object spawn/remove
+	REPLAY_EVENT_SPAWN,
 	REPLAY_EVENT_REMOVE,
-	REPLAY_EVENT_RESERVED,
-	REPLAY_EVENT_STOP,
+
+	REPLAY_EVENT_FORCE_RANDOM,
+
+	REPLAY_EVENT_SET_PLAYERCAR,
+	REPLAY_EVENT_CAR_RANDOMCOLOR,
+	REPLAY_EVENT_CAR_ENABLE,
+	REPLAY_EVENT_CAR_LOCK,
 };
 
 struct replaycontrol_s
@@ -258,15 +268,14 @@ public:
 	//------------------------------------------------------
 
 	// replay events
-	void					PushEvent(EReplayEventType type, CGameObject* object);
+	void					PushSpawnOrRemoveEvent(EReplayEventType type, CGameObject* object);
+	void					PushEvent(EReplayEventType type, int replayId = REPLAY_NOT_TRACKED, void* eventData = NULL);
 
 	replaycamera_t*			GetCurrentCamera();
 	int						AddCamera(const replaycamera_t& camera);
 	void					RemoveCamera(int frameIndex);
 
 	CCar*					GetCarByReplayIndex(int index);
-
-	int						FindVehicleReplayByCar(CCar* pCar);
 
 	EReplayState			m_state;
 	int						m_tick;
@@ -288,7 +297,7 @@ protected:
 	void					PlayVehicleFrame(vehiclereplay_t* rep);
 
 	// records vehicle frame
-	void					RecordVehicleFrame(vehiclereplay_t* rep);
+	bool					RecordVehicleFrame(vehiclereplay_t* rep);
 
 	void					RaiseTickEvents();
 	void					RaiseReplayEvent(const replayevent_t& evt);

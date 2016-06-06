@@ -399,21 +399,21 @@ CCar* CGameSession::CreateCar(const char* name, int carType)
 			else if (carType == CAR_TYPE_TRAFFIC_AI)
 			{
 				CAITrafficCar* traffic = new CAITrafficCar(m_carEntries[i]);
-				traffic->InitAI(NULL,NULL);
+				traffic->InitAI(false);
 
 				car = traffic;
 			}
 			else if (carType == CAR_TYPE_PURSUER_COP_AI)
 			{
 				CAIPursuerCar* traffic = new CAIPursuerCar(m_carEntries[i], PURSUER_TYPE_COP);
-				traffic->InitAI(NULL, NULL);
+				traffic->InitAI(false);
 
 				car = traffic;
 			}
 			else if (carType == CAR_TYPE_PURSUER_GANG_AI)
 			{
 				CAIPursuerCar* traffic = new CAIPursuerCar(m_carEntries[i], PURSUER_TYPE_GANG);
-				traffic->InitAI(NULL, NULL);
+				traffic->InitAI(false);
 
 				car = traffic;
 			}
@@ -437,7 +437,7 @@ CAIPursuerCar* CGameSession::CreatePursuerCar(const char* name, int type)
 		if(!m_carEntries[i]->carName.CompareCaseIns(name))
 		{
 			CAIPursuerCar* car = new CAIPursuerCar(m_carEntries[i],(EPursuerAIType) type);
-			car->InitAI(NULL, NULL);
+			car->InitAI(false);
 
 			// manage this car
 			g_pAIManager->m_copCars.append(car);
@@ -465,11 +465,13 @@ void CGameSession::LoadCarData()
 	// initialize vehicle list
 
 	KeyValues kvs;
-	if(kvs.LoadFromFile("scripts/cars.txt"))
+	if(kvs.LoadFromFile("scripts/vehicles.txt"))
 	{
-		for(int i = 0; i < kvs.GetRootSection()->keys.numElem(); i++)
+		kvkeybase_t* vehicleRegistry = kvs.GetRootSection()->FindKeyBase("vehicles");
+
+		for(int i = 0; i < vehicleRegistry->keys.numElem(); i++)
 		{
-			kvkeybase_t* key = kvs.GetRootSection()->keys[i];
+			kvkeybase_t* key = vehicleRegistry->keys[i];
 			if(!key->IsSection() && !key->IsDefinition())
 			{
 				carConfigEntry_t* carent = new carConfigEntry_t();
@@ -498,8 +500,6 @@ void CGameSession::LoadCarData()
 
 					PrecacheStudioModel( carent->m_cleanModelName.c_str() );
 					PrecacheStudioModel( carent->m_damModelName.c_str() );
-
-					Msg("added car '%s'\n", carent->carName.c_str());
 					m_carEntries.append(carent);
 				}
 				else
@@ -507,23 +507,43 @@ void CGameSession::LoadCarData()
 			}
 		}
 
-		kvkeybase_t* civCars = kvs.GetRootSection()->FindKeyBase("civilian");
+		kvkeybase_t* zone_presets = kvs.GetRootSection()->FindKeyBase("zones");
 
-		if (civCars)
+		if (zone_presets)
 		{
-			for (int i = 0; i < civCars->keys.numElem(); i++)
+			// thru all zone presets
+			for(int i = 0; i < zone_presets->keys.numElem(); i++)
 			{
-				carConfigEntry_t* conf = FindCarEntryByName( civCars->keys[i]->name );
+				kvkeybase_t* zone_kv = zone_presets->keys[i];
 
-				if(conf)
+				// thru vehicles in zone preset
+				for (int i = 0; i < zone_kv->keys.numElem(); i++)
 				{
-					civCarEntry_t entry;
-					entry.config = conf;
-					entry.spawnInterval = KV_GetValueInt(civCars->keys[i], 0, 0);
+					carConfigEntry_t* carConfig = FindCarEntryByName( zone_kv->keys[i]->name );
 
-					g_pAIManager->m_civCarEntries.append(entry);
+					if(!carConfig)
+					{
+						MsgWarning("Unknown vehicle '%s' for zone '%s'\n", zone_kv->keys[i]->name, zone_kv->name);
+						continue;
+					}
+
+					civCarEntry_t* civCarEntry = g_pAIManager->FindCivCarEntry( zone_kv->keys[i]->name );
+
+					// add new car entry if not exist
+					if(!civCarEntry)
+					{
+						civCarEntry_t entry;
+						entry.config = carConfig;
+
+						int idx = g_pAIManager->m_civCarEntries.append( entry );
+						civCarEntry = &g_pAIManager->m_civCarEntries[i];
+					}
+
+					int spawnInterval = KV_GetValueInt( zone_kv->keys[i], 0, 0);
+
+					// append zone with given spawn interval
+					civCarEntry->zoneList.append(carZoneInfo_t {zone_kv->name, spawnInterval} );
 				}
-					
 			}
 		}
 		else
@@ -532,7 +552,7 @@ void CGameSession::LoadCarData()
 			{
 				civCarEntry_t entry;
 				entry.config = m_carEntries[i];
-				entry.spawnInterval = 0;
+				entry.zoneList.append( carZoneInfo_t {"default", 0} );
 
 				g_pAIManager->m_civCarEntries.append(entry);
 			}
@@ -546,7 +566,7 @@ void CGameSession::LoadCarData()
 	}
 	else
 	{
-		MsgError("no scripts/cars.txt file!");
+		CrashMsg("FATAL: no scripts/vehicles.txt file!");
 	}
 }
 

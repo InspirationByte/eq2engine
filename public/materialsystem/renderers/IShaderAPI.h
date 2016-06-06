@@ -94,7 +94,7 @@ public:
 
 	// initializes shader api.
 	// Don't use this, this already called by materials->Init()
-	virtual void				Init(const shaderapiinitparams_t &params) = 0;
+	virtual void				Init( shaderapiinitparams_t &params ) = 0;
 
 	// shutdowns shader api. Don't use this, this already called by materials->Shutdown()
 	virtual void				Shutdown() = 0;

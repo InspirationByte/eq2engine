@@ -21,19 +21,19 @@ public:
 	void		Init(const char* pszName,const char* pszValue);
 
 	// returns name
-	const char* GetName();
+	const char* GetName() const;
 
 	// sets new name
 	void		SetName(const char* szNewName);
 
 	// Value returners
 	const char* GetString();
-	int			GetInt();
-	float		GetFloat();
+	int			GetInt() const;
+	float		GetFloat() const;
 
-	Vector2D	GetVector2();
-	Vector3D	GetVector3();
-	Vector4D	GetVector4();
+	Vector2D	GetVector2() const;
+	Vector3D	GetVector3() const;
+	Vector4D	GetVector4() const;
 
 	// Value setup
 	void		SetString(const char* szValue);
@@ -45,7 +45,7 @@ public:
 	void		SetVector4(Vector4D &vector);
 
 	// texture pointer
-	ITexture*	GetTexture();
+	ITexture*	GetTexture() const;
 
 	// assigns texture
 	void		AssignTexture(ITexture* pTexture);
@@ -54,9 +54,10 @@ private:
 	EqString	m_pszVarName;
 	EqString	m_pszValue;
 
-	Vector4D	m_vVector;
-	float		m_flValue;
+	Vector4D	m_vector;
+
 	int			m_nValue;
+	int			m_isDirtyString;
 
 	ITexture*	m_pAssignedTexture;
 };

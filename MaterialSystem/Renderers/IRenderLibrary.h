@@ -21,7 +21,7 @@ class IRenderLibrary : public ICoreModuleInterface
 public:
 	virtual bool			InitCaps() = 0;
 
-	virtual bool			InitAPI(const shaderapiinitparams_t &params) = 0;
+	virtual bool			InitAPI( shaderapiinitparams_t &params ) = 0;
 	virtual void			ExitAPI() = 0;
 	virtual void			ReleaseSwapChains() = 0;
 
@@ -30,7 +30,7 @@ public:
 	virtual void			EndFrame(IEqSwapChain* swapChain = NULL) = 0;
 
 	// renderer interface
-	virtual IShaderAPI*		GetRenderer() = 0;
+	virtual IShaderAPI*		GetRenderer() const = 0;
 
 	// sets backbuffer size for default swap chain
 	virtual void			SetBackbufferSize(int w, int h) = 0;

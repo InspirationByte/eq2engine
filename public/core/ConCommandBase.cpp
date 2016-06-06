@@ -9,6 +9,8 @@
 #include "IConCommandFactory.h"
 //#include "core_base_header.h"
 
+static const char* defaultDescString = "No description";
+
 // Default constructor
 ConCommandBase::ConCommandBase()
 {
@@ -27,7 +29,7 @@ void ConCommandBase::Init(char const *name,char const *desc, int flags /*= 0*/,b
 	if(desc)
 		m_szDesc = desc;
 	else
-		m_szDesc = "No description";
+		m_szDesc = defaultDescString;
 
 	m_nFlags = flags;
 
@@ -62,4 +64,12 @@ void ConCommandBase::Register( ConCommandBase* pBase )
 void ConCommandBase::Unregister( ConCommandBase* pBase )
 {
 	GetCConsoleCommands()->UnregisterCommand(pBase);
+}
+
+void ConCommandBase::LuaCleanup()
+{
+	delete [] m_szName;
+
+	if(m_szDesc != defaultDescString)
+		delete [] m_szDesc;
 }

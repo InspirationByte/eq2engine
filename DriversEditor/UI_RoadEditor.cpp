@@ -17,7 +17,7 @@ CUI_RoadEditor::CUI_RoadEditor( wxWindow* parent) : wxPanel( parent, -1, wxDefau
 	
 	fgSizer5->Add( new wxStaticText( this, wxID_ANY, wxT("Type (T)"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
 	
-	wxString m_typeSelChoices[] = { wxT("Straight"), wxT("Junction") };
+	wxString m_typeSelChoices[] = { wxT("Straight"), wxT("Junction"), wxT("Parking lot") };
 	int m_typeSelNChoices = sizeof( m_typeSelChoices ) / sizeof( wxString );
 	m_typeSel = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxSize( 100,-1 ), m_typeSelNChoices, m_typeSelChoices, 0 );
 	m_typeSel->SetSelection( 0 );
@@ -30,8 +30,11 @@ CUI_RoadEditor::CUI_RoadEditor( wxWindow* parent) : wxPanel( parent, -1, wxDefau
 	m_rotationSel = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_rotationSelNChoices, m_rotationSelChoices, 0 );
 	m_rotationSel->SetSelection( 0 );
 	fgSizer5->Add( m_rotationSel, 0, wxALL|wxEXPAND, 5 );
-	
-	
+
+	m_parking = new wxCheckBox(this, wxID_ANY, wxT("Is parking"));
+
+	fgSizer5->Add( m_parking, 0, wxALL|wxEXPAND, 5 );
+
 	this->SetSizer( fgSizer5 );
 	this->Layout();
 
@@ -43,6 +46,7 @@ CUI_RoadEditor::CUI_RoadEditor( wxWindow* parent) : wxPanel( parent, -1, wxDefau
 
 	m_trafficDir = NULL;
 	m_trafficDirVar = NULL;
+	m_trafficParking = NULL;
 }
 
 CUI_RoadEditor::~CUI_RoadEditor()
@@ -79,6 +83,8 @@ void CUI_RoadEditor::OnRotationOrTypeTextChanged(wxCommandEvent& event)
 {
 	m_rotation = m_rotationSel->GetSelection();
 	m_type = m_typeSel->GetSelection()+1;
+
+	m_parking->SetValue(false);
 }
 
 // IEditorTool stuff
@@ -107,6 +113,11 @@ void CUI_RoadEditor::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, 
 		{
 			roadCell->type = GetRoadType();
 			roadCell->direction = GetRotation();
+
+			roadCell->flags = 0;
+
+			if( m_parking->GetValue() )
+				roadCell->flags |= ROAD_FLAG_PARKING;
 		}
 		else if(event.ButtonUp(wxMOUSE_BTN_MIDDLE))
 		{
@@ -117,6 +128,7 @@ void CUI_RoadEditor::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, 
 		{
 			// remove
 			roadCell->type = ROADTYPE_NOROAD;
+			roadCell->flags = 0;
 		}
 	}
 }
@@ -196,6 +208,7 @@ void CUI_RoadEditor::PaintPointGlobal(int x, int y, int direction)
 		roadCell->type = GetRoadType();
 
 	roadCell->direction = direction;
+	roadCell->flags = 0;
 }
 
 void CUI_RoadEditor::ProcessMouseEvents( wxMouseEvent& event )
@@ -221,7 +234,7 @@ void CUI_RoadEditor::OnKey(wxKeyEvent& event, bool bDown)
 		{
 			m_type += 1;
 
-			if(m_type > 2)
+			if(m_type > 3)
 				m_type = 1;
 
 			SetRoadType(m_type);
@@ -275,6 +288,9 @@ void CUI_RoadEditor::OnRender()
 		DkList<Vertex3D_t> variant_verts(64);
 		variant_verts.resize(field->m_sizew*field->m_sizeh*6);
 
+		DkList<Vertex3D_t> parking_verts(64);
+		parking_verts.resize(field->m_sizew*field->m_sizeh*6);
+
 		for(int x = 0; x < field->m_sizew; x++)
 		{
 			for(int y = 0; y < field->m_sizeh; y++)
@@ -283,15 +299,13 @@ void CUI_RoadEditor::OnRender()
 
 				levroadcell_t* cell = &m_selectedRegion->m_roads[pt_idx];
 
-				if(cell->type == ROADTYPE_NOROAD)
+				if(cell->type == ROADTYPE_NOROAD && cell->flags == 0)
 					continue;
 
 				float dxv[4] = NEIGHBOR_OFFS_DX(x, 0.5);
 				float dyv[4] = NEIGHBOR_OFFS_DY(y, 0.5);
 
 				hfieldtile_t& tile = field->m_points[pt_idx];
-
-				//int vindxs[4];
 
 				Vector3D p1(dxv[0] * HFIELD_POINT_SIZE, float(tile.height)*HFIELD_HEIGHT_STEP+0.1f, dyv[0] * HFIELD_POINT_SIZE);
 				Vector3D p2(dxv[1] * HFIELD_POINT_SIZE, float(tile.height)*HFIELD_HEIGHT_STEP+0.1f, dyv[1] * HFIELD_POINT_SIZE);
@@ -307,14 +321,26 @@ void CUI_RoadEditor::OnRender()
 
 				if(cell->type == ROADTYPE_STRAIGHT)
 				{
-					tileColor[cell->direction] += 0.25f;
-					ListQuadTex(p1, p2, p3, p4, cell->direction, tileColor, straight_verts);
+					if(cell->flags & ROAD_FLAG_PARKING)
+					{
+						tileColor[cell->direction] += 0.25f;
+						ListQuadTex(p1, p2, p3, p4, cell->direction, tileColor, parking_verts);
+					}
+					else
+					{
+						tileColor[cell->direction] += 0.25f;
+						ListQuadTex(p1, p2, p3, p4, cell->direction, tileColor, straight_verts);
+					}
 				}
 				else if(cell->type == ROADTYPE_JUNCTION)
 				{
 					ListQuadTex(p1, p2, p3, p4, cell->direction, tileColor, variant_verts);
 				}
-				
+				else if(cell->type == ROADTYPE_PARKINGLOT)
+				{
+					tileColor.x = 1.0f;
+					ListQuadTex(p1, p2, p3, p4, cell->direction, tileColor, parking_verts);
+				}
 			}
 		}
 
@@ -342,6 +368,9 @@ void CUI_RoadEditor::OnRender()
 
 		if(variant_verts.numElem())
 			materials->DrawPrimitivesFFP(PRIM_TRIANGLES, variant_verts.ptr(), variant_verts.numElem(), m_trafficDirVar->GetBaseTexture(), color4_white, &blend, &depth, &raster);
+		
+		if(parking_verts.numElem())
+			materials->DrawPrimitivesFFP(PRIM_TRIANGLES, parking_verts.ptr(), parking_verts.numElem(), m_trafficParking->GetBaseTexture(), color4_white, &blend, &depth, &raster);
 	}
 
 	CBaseTilebasedEditor::OnRender();
@@ -349,14 +378,17 @@ void CUI_RoadEditor::OnRender()
 
 void CUI_RoadEditor::InitTool()
 {
-	m_trafficDir = materials->FindMaterial("traffic_dir", true);
-	m_trafficDirVar = materials->FindMaterial("traffic_dir_variant", true);
+	m_trafficDir = materials->FindMaterial("traffic_dir");
+	m_trafficDirVar = materials->FindMaterial("traffic_dir_variant");
+	m_trafficParking = materials->FindMaterial("traffic_dir_parking");
 
 	materials->PutMaterialToLoadingQueue(m_trafficDir);
 	materials->PutMaterialToLoadingQueue(m_trafficDirVar);
+	materials->PutMaterialToLoadingQueue(m_trafficParking);
 
 	m_trafficDir->Ref_Grab();
 	m_trafficDirVar->Ref_Grab();
+	m_trafficParking->Ref_Grab();
 }
 
 void CUI_RoadEditor::ReloadTool()

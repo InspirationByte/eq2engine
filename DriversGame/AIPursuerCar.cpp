@@ -84,11 +84,6 @@ CAIPursuerCar::~CAIPursuerCar()
 
 }
 
-void CAIPursuerCar::InitAI(CLevelRegion* reg, levroadcell_t* cell)
-{
-	BaseClass::InitAI(reg, cell);
-}
-
 void CAIPursuerCar::Spawn()
 {
 	BaseClass::Spawn();

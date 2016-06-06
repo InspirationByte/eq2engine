@@ -64,15 +64,12 @@ void CLevObjectDef::RefreshPreview()
 	{
 		bbox = m_model->m_bbox;
 
-		//Msg("RENDER preview for STATIC model\n");
 		camDistance = length(m_model->m_bbox.GetSize())+0.5f;
 		camera_target = m_model->m_bbox.GetCenter();
 	}
 	else
 	{
-		//Msg("RENDER preview for DEF model\n");
-
-		bbox = BoundingBox(m_defModel->GetBBoxMins(),m_defModel->GetBBoxMaxs());
+		bbox = m_defModel->GetAABB();
 
 		camDistance = length(bbox.GetSize())+0.5f;
 		camera_target = bbox.GetCenter();
@@ -450,7 +447,7 @@ bool CLevelModel::GenereateRenderData()
 	if(!m_indices || !m_verts)
 		return false;
 
-	if(!m_vertexBuffer || !m_indexBuffer || !m_format)
+	if((!m_vertexBuffer || !m_indexBuffer || !m_format))
 	{
 		const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
@@ -702,6 +699,9 @@ void CLevelModel::Load(IVirtualStream* stream)
 		m_batches[i].pMaterial = materials->FindMaterial(batch.materialname, true);
 		m_batches[i].pMaterial->Ref_Grab();
 	}
+
+	if(m_numVerts == 0 || m_numIndices == 0)
+		return;
 
 	m_verts = new lmodeldrawvertex_t[m_numVerts];
 	m_indices = new uint16[m_numIndices];

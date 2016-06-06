@@ -17,9 +17,6 @@
     <ClCompile Include="launcher_win.cpp">
       <Filter>Launcher</Filter>
     </ClCompile>
-    <ClCompile Include="..\public\Platform\Platform.cpp">
-      <Filter>Launcher</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">

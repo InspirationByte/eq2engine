@@ -37,6 +37,7 @@ struct worldinfo_t
 	ColorRGBA	ambientColor;
 
 	Vector3D	sunDir;
+	float		rainBrightness;
 
 	FogInfo_t	fogInfo;
 };
@@ -129,7 +130,11 @@ public:
 
 	void							SetLevelName(const char* name);
 	const char*						GetLevelName() const;
+
 	bool							LoadLevel();
+#ifdef EDITOR
+	bool							SaveLevel();
+#endif // EDITOR
 
 	void							SetEnvironmentName(const char* name);
 	const char*						GetEnvironmentName() const;
@@ -149,6 +154,7 @@ public:
 	void							AddObject(CGameObject* pObject, bool spawned = true);
 	void							RemoveObject(CGameObject* pObject);
 	bool							IsValidObject(CGameObject* pObject) const;
+
 	void							UpdateWorld(float fDt);
 	void							UpdateTrafficLightState(float fDt);
 
@@ -268,13 +274,17 @@ OOLUA_PROXY_END
 
 OOLUA_PROXY(CGameWorld)
 	OOLUA_MFUNC(SetEnvironmentName)
+	OOLUA_MFUNC_CONST(GetEnvironmentName)
+
 	OOLUA_MFUNC(SetLevelName)
+	OOLUA_MFUNC_CONST(GetLevelName)
 
-	OOLUA_MFUNC_CONST(IsValidObject)
-
-	OOLUA_MFUNC_CONST(CreateObject)
 	OOLUA_MFUNC(GetCameraParams)
 
+	OOLUA_MFUNC_CONST(CreateObject)
+	OOLUA_MFUNC(RemoveObject)
+	OOLUA_MFUNC_CONST(IsValidObject)
+	
 	OOLUA_MFUNC_CONST(FindObjectByName)
 
 	OOLUA_MFUNC(QueryNearestRegions)

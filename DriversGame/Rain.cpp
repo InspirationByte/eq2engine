@@ -37,7 +37,7 @@ bool CRippleEffect::DrawEffect(float dTime)
 
 	fCurSize = lerp(fStartSize, fEndSize, 1.0f - lifeTimePerc);
 
-	ColorRGB lighting = g_pGameWorld->m_envConfig.rainBrightness;
+	ColorRGB lighting = g_pGameWorld->m_info.rainBrightness;
 
 	Vector4D col = ColorRGBA(lighting,lifeTimePerc*2.0f);
 	/*
@@ -133,7 +133,7 @@ void FX_DrawRainTracer(const Vector3D &origin, Vector3D &line_dir, float width, 
 
 void RainParticle::Update(float dt)
 {
-	ColorRGB lighting = g_pGameWorld->m_envConfig.rainBrightness;
+	ColorRGB lighting = g_pGameWorld->m_info.rainBrightness;
 
 	//TexAtlasEntry_t* rain = g_translParticles->FindAtlasTexture();
 

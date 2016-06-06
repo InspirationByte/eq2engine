@@ -217,7 +217,7 @@ bool CFileSystem::Init(bool bEditorMode)
 		return false;
 	}
 
-	if(m_basePath.GetLength() > 0)
+	if(m_basePath.Length() > 0)
 		MsgInfo("* FS Init with basePath=%s\n", m_basePath.GetData());
 
 	m_pszDataDir = KV_GetValueString(pFilesystem->FindKeyBase("EngineDataDir"), 0, "EngineBase" );
@@ -513,13 +513,13 @@ void CFileSystem::MakeDir(const char* dirname, SearchPath_e search )
         break;
     }
 
-	if(searchPath.GetLength() > 0)
+	if(searchPath.Length() > 0)
 		searchPath.Append(_Es(CORRECT_PATH_SEPARATOR) + dirname);
 	else
 		searchPath = dirname;
 
-	if(	!(searchPath.c_str()[searchPath.GetLength()-1] == CORRECT_PATH_SEPARATOR  ||
-		searchPath.c_str()[searchPath.GetLength()-1] == INCORRECT_PATH_SEPARATOR))
+	if(	!(searchPath.c_str()[searchPath.Length()-1] == CORRECT_PATH_SEPARATOR  ||
+		searchPath.c_str()[searchPath.Length()-1] == INCORRECT_PATH_SEPARATOR))
 		searchPath.Append( CORRECT_PATH_SEPARATOR );
 
 	searchPath.Path_FixSlashes();
@@ -574,7 +574,7 @@ IFile* CFileSystem::GetFileHandle(const char* file_name_to_check,const char* opt
 	char tmp_path[2048];
 
 	EqString basePath = m_basePath;
-	if(basePath.GetLength() > 0)
+	if(basePath.Length() > 0)
 		basePath.Append( CORRECT_PATH_SEPARATOR );
 
     //First we checking mod directory
@@ -800,7 +800,7 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 
 #ifdef _WIN32
 	// make default module extension
-	if(modExt.GetLength() == 0)
+	if(modExt.Length() == 0)
 		moduleFileName = moduleFileName + ".dll";
 
 	HMODULE mod = LoadLibrary( moduleFileName.c_str() );
@@ -822,7 +822,7 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 
 #else
 	// make default module extension
-	if(modExt.GetLength() == 0)
+	if(modExt.Length() == 0)
 		moduleFileName = moduleFileName + ".so";
 
 	HMODULE mod = dlopen( moduleFileName.c_str(), RTLD_LAZY | RTLD_LOCAL );

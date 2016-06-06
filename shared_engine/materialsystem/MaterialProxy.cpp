@@ -23,24 +23,22 @@ CBaseMaterialProxy::CBaseMaterialProxy()
 	m_pMaterial = NULL;
 }
 
-proxyvar_t CBaseMaterialProxy::ParseVariable(char* pszVal)
+void CBaseMaterialProxy::ParseVariable(proxyvar_t& var, char* pszVal)
 {
-	proxyvar_t var;
-
-	var.fValue = 0.0f;
-	var.vec_elem = -1;
+	var.value = 0.0f;
+	var.vec_idx = -1;
 	var.type = PV_CONSTANT;
-	var.pVar = NULL;
+	var.mv = NULL;
 
 	if(!pszVal)
-		return var;
+		return;
 
 	char* pairval = pszVal;
 		
 	char firstSymbol = pairval[0];
 	if(firstSymbol == PAIR_VARIABLE)
 	{
-		char *varName = pairval+1;
+		char* varName = pairval+1;
 		int len = 0;
 
 		while(1)
@@ -55,10 +53,13 @@ proxyvar_t CBaseMaterialProxy::ParseVariable(char* pszVal)
 		memcpy(varNameStr, varName, len);
 		varNameStr[len] = '\0';
 
-		var.pVar = m_pMaterial->GetMaterialVar(varNameStr, "0");
+		var.mv = m_pMaterial->GetMaterialVar(varNameStr, "0");
 
-		if(!var.pVar)
+		if(!var.mv)
+		{
 			MsgWarning("Proxy error: variable '%s' not found in '%s'\n", varNameStr, m_pMaterial->GetName());
+			return;
+		}
 
 		char* varExt = varName + len;
 
@@ -68,19 +69,16 @@ proxyvar_t CBaseMaterialProxy::ParseVariable(char* pszVal)
 			varExt += 1;
 				
 			char varIndexstr[2];
-			memcpy(varIndexstr, varExt, 1);
+			varIndexstr[0] = *varExt;
 			varIndexstr[1] = '\0';
 
-			var.vec_elem = atoi(varIndexstr);
+			var.vec_idx = atoi(varIndexstr);
 		}
 
-		if(var.pVar)
-		{
-			if(var.vec_elem == -1)
-				var.fValue = var.pVar->GetFloat();
-			else
-				var.fValue = var.pVar->GetVector4()[(int)var.vec_elem];
-		}
+		if(var.vec_idx == -1)
+			var.value = var.mv->GetFloat();
+		else
+			var.value = var.mv->GetVector4()[(int)var.vec_idx];
 
 		var.type = PV_VARIABLE;
 	}
@@ -89,96 +87,81 @@ proxyvar_t CBaseMaterialProxy::ParseVariable(char* pszVal)
 		char *constString = pairval+1;
 		float value = (float)atof(constString);
 
-		var.fValue = value;
-		var.vec_elem = -1;
+		var.value = value;
+		var.vec_idx = -1;
 		var.type = PV_CONSTANT;
 	}
 	else if(!stricmp(pairval, CONST_NAME_FRAMETIME))
 	{
-		var.fValue = 0.0f;
-		var.vec_elem = -1;
+		var.value = 0.0f;
+		var.vec_idx = -1;
 		var.type = PV_FRAMETIME;
 	}
 	else if(!stricmp(pairval, CONST_NAME_GAMETIME))
 	{
-		var.fValue = 0.0f;
-		var.vec_elem = -1;
+		var.value = 0.0f;
+		var.vec_idx = -1;
 		var.type = PV_GAMETIME;
 	}
-
-	return var;
 }
 
-void CBaseMaterialProxy::UpdateVar(proxyvar_t* var, float fDt)
+void CBaseMaterialProxy::UpdateVar(proxyvar_t& var, float fDt)
 {
-	if(var->type == PV_CONSTANT)
+	if(!var.mv)
 		return;
-	else if(var->type == PV_VARIABLE)
-	{
-		if(var->pVar)
-		{
-			if(var->vec_elem == -1)
-				var->fValue = var->pVar->GetFloat();
-			else
-				var->fValue = var->pVar->GetVector4()[(int)var->vec_elem];
-		}
-	}
-	else if(var->type == PV_GAMETIME)
-	{
-		var->fValue = 0.0f; // + game time
-	}
-	else if(var->type == PV_FRAMETIME)
-	{
-		var->fValue = fDt;
-	}
-}
 
-void CBaseMaterialProxy::PVarSetValue(proxyvar_t* var, float value)
-{
-	if(var->type == PV_CONSTANT)
-		return;
-	else if(var->type == PV_VARIABLE)
+	switch(var.type)
 	{
-		if(var->pVar)
+		case PV_VARIABLE:
 		{
-			var->fValue = value;
-
-			if(var->vec_elem == -1)
-			{
-				var->pVar->SetFloat(value);
-			}
+			if(var.vec_idx == -1)
+				var.value = var.mv->GetFloat();
 			else
-			{
-				Vector4D outval = var->pVar->GetVector4();
-				outval[(int)var->vec_elem] = value;
-				var->pVar->SetVector4(outval);
-			}
+				var.value = var.mv->GetVector4()[(int)var.vec_idx];
+
+			break;
 		}
+		case PV_GAMETIME:
+			var.value = 0.0f; // + game time
+			break;
+		case PV_FRAMETIME:
+			var.value = fDt;
+			break;
 	}
 }
 
-void CBaseMaterialProxy::PVarSetValueInt(proxyvar_t* var, int value)
+void CBaseMaterialProxy::mvSetValue(proxyvar_t& var, float value)
 {
-	if(var->type == PV_CONSTANT)
+	if(!var.mv || var.type != PV_VARIABLE)
 		return;
-	else if(var->type == PV_VARIABLE)
-	{
-		if(var->pVar)
-		{
-			var->fValue = value;
 
-			if(var->vec_elem == -1)
-			{
-				var->pVar->SetInt(value);
-			}
-			else
-			{
-				Vector4D outval = var->pVar->GetVector4();
-				outval[(int)var->vec_elem] = value;
-				var->pVar->SetVector4(outval);
-			}
-		}
+	var.value = value;
+
+	if(var.vec_idx >= 0)
+	{
+		Vector4D outval = var.mv->GetVector4();
+		outval[(int)var.vec_idx] = value;
+		var.mv->SetVector4(outval);
 	}
+	else
+		var.mv->SetFloat(value);
+}
+
+void CBaseMaterialProxy::mvSetValueInt(proxyvar_t& var, int value)
+{
+	if(!var.mv || var.type != PV_VARIABLE)
+		return;
+
+	var.value = value;
+
+	if(var.vec_idx >= 0)
+	{
+		Vector4D outval = var.mv->GetVector4();
+		outval[(int)var.vec_idx] = value;
+		var.mv->SetVector4(outval);
+	}
+	else
+		var.mv->SetInt(value);
 }
 
 //-------------------------------------------------------------------------------------------------------
@@ -200,9 +183,9 @@ public:
 			return;
 		}
 
-		in1 = ParseVariable( pKeyBase->values[0] );
-		in2 = ParseVariable( pKeyBase->values[1] );
-		out = ParseVariable( pKeyBase->values[2] );
+		ParseVariable(in1, pKeyBase->values[0] );
+		ParseVariable(in2, pKeyBase->values[1] );
+		ParseVariable(out, pKeyBase->values[2] );
 
 		useFrameTime = false;
 
@@ -215,13 +198,13 @@ public:
 
 	void UpdateProxy(float dt)
 	{
-		UpdateVar(&in1, dt);
-		UpdateVar(&in2, dt);
+		UpdateVar(in1, dt);
+		UpdateVar(in2, dt);
 
 		if(useFrameTime)
-			PVarSetValue(&out, in1.fValue + in2.fValue*dt);
+			mvSetValue(out, in1.value + in2.value*dt);
 		else
-			PVarSetValue(&out, in1.fValue + in2.fValue);
+			mvSetValue(out, in1.value + in2.value);
 	}
 private:
 	proxyvar_t in1;
@@ -247,9 +230,9 @@ public:
 			return;
 		}
 
-		in1 = ParseVariable( pKeyBase->values[0] );
-		in2 = ParseVariable( pKeyBase->values[1] );
-		out = ParseVariable( pKeyBase->values[2] );
+		ParseVariable(in1, pKeyBase->values[0] );
+		ParseVariable(in2, pKeyBase->values[1] );
+		ParseVariable(out, pKeyBase->values[2] );
 
 		useFrameTime = false;
 
@@ -262,13 +245,13 @@ public:
 
 	void UpdateProxy(float dt)
 	{
-		UpdateVar(&in1, dt);
-		UpdateVar(&in2, dt);
+		UpdateVar(in1, dt);
+		UpdateVar(in2, dt);
 
 		if(useFrameTime)
-			PVarSetValue(&out, in1.fValue - in2.fValue*dt);
+			mvSetValue(out, in1.value - in2.value*dt);
 		else
-			PVarSetValue(&out, in1.fValue - in2.fValue);
+			mvSetValue(out, in1.value - in2.value);
 	}
 private:
 	proxyvar_t in1;
@@ -294,9 +277,9 @@ public:
 			return;
 		}
 
-		in1 = ParseVariable( pKeyBase->values[0] );
-		in2 = ParseVariable( pKeyBase->values[1] );
-		out = ParseVariable( pKeyBase->values[2] );
+		ParseVariable(in1, pKeyBase->values[0] );
+		ParseVariable(in2, pKeyBase->values[1] );
+		ParseVariable(out, pKeyBase->values[2] );
 
 		useFrameTime = false;
 
@@ -309,13 +292,13 @@ public:
 
 	void UpdateProxy(float dt)
 	{
-		UpdateVar(&in1, dt);
-		UpdateVar(&in2, dt);
+		UpdateVar(in1, dt);
+		UpdateVar(in2, dt);
 
 		if(useFrameTime)
-			PVarSetValue(&out, in1.fValue * in2.fValue*dt);
+			mvSetValue(out, in1.value * in2.value*dt);
 		else
-			PVarSetValue(&out, in1.fValue * in2.fValue);
+			mvSetValue(out, in1.value * in2.value);
 	}
 private:
 	proxyvar_t in1;
@@ -341,9 +324,9 @@ public:
 			return;
 		}
 
-		in1 = ParseVariable( pKeyBase->values[0] );
-		in2 = ParseVariable( pKeyBase->values[1] );
-		out = ParseVariable( pKeyBase->values[2] );
+		ParseVariable(in1, pKeyBase->values[0] );
+		ParseVariable(in2, pKeyBase->values[1] );
+		ParseVariable(out, pKeyBase->values[2] );
 
 		useFrameTime = false;
 
@@ -356,13 +339,13 @@ public:
 
 	void UpdateProxy(float dt)
 	{
-		UpdateVar(&in1, dt);
-		UpdateVar(&in2, dt);
+		UpdateVar(in1, dt);
+		UpdateVar(in2, dt);
 
 		if(useFrameTime)
-			PVarSetValue(&out, in1.fValue / in2.fValue*dt);
+			mvSetValue(out, in1.value / in2.value*dt);
 		else
-			PVarSetValue(&out, in1.fValue / in2.fValue);
+			mvSetValue(out, in1.value / in2.value);
 	}
 private:
 	proxyvar_t in1;
@@ -373,7 +356,7 @@ private:
 	bool useFrameTime;
 };
 
-// sinus proxy
+// sine proxy
 class CSinProxy : public CBaseMaterialProxy
 {
 public:
@@ -386,15 +369,45 @@ public:
 			return;
 		}
 
-		in = ParseVariable( pKeyBase->values[0] );
-		out = ParseVariable( pKeyBase->values[1] );
+		ParseVariable(in, pKeyBase->values[0] );
+		ParseVariable(out, pKeyBase->values[1] );
 	}
 
 	void UpdateProxy(float dt)
 	{
-		UpdateVar(&in, dt);
+		UpdateVar(in, dt);
 
-		PVarSetValue(&out, sin(in.fValue));
+		mvSetValue(out, sin(in.value));
+	}
+private:
+	proxyvar_t in;
+
+	proxyvar_t out;
+};
+
+
+// saturate proxy
+class CAbsProxy : public CBaseMaterialProxy
+{
+public:
+	void InitProxy(IMaterial* pAssignedMaterial, kvkeybase_t* pKeyBase)
+	{
+		m_pMaterial = pAssignedMaterial;
+		if(pKeyBase->values.numElem() < 2)
+		{
+			MsgError("'abs' proxy in '%s' error: invalid argument count\n Usage: abs v1 out [options]\n");
+			return;
+		}
+
+		ParseVariable(in, pKeyBase->values[0] );
+		ParseVariable(out, pKeyBase->values[1] );
+	}
+
+	void UpdateProxy(float dt)
+	{
+		UpdateVar(in, dt);
+
+		mvSetValue(out, fabs(in.value));
 	}
 private:
 	proxyvar_t in;
@@ -411,37 +424,37 @@ public:
 		m_pMaterial = pAssignedMaterial;
 		kvkeybase_t* pair = NULL;
 
-		pair = pKeyBase->FindKeyBase("framerate");
-		fFrate = ParseVariable((char*)KV_GetValueString(pair));
+		// frame count is the only static variable, frame rate is dynamic
+		frameCount = KV_GetValueInt(pKeyBase);
 
-		pair = pKeyBase->FindKeyBase("framecount");
-		fFcount = ParseVariable((char*)KV_GetValueString(pair));
+		pair = pKeyBase->FindKeyBase("framerate");
+		ParseVariable(frameRate, (char*)KV_GetValueString(pair));
 
 		pair = pKeyBase->FindKeyBase("frameVar");
-		out = ParseVariable((char*)KV_GetValueString(pair));
+		ParseVariable(out,(char*)KV_GetValueString(pair));
 
 		time = 0.0f;
 	}
 
 	void UpdateProxy(float dt)
 	{
-		UpdateVar(&fFrate, dt);
-		UpdateVar(&out, dt);
+		UpdateVar(frameRate, dt);
+		UpdateVar(out, dt);
 
-		if(int(time) > int(fFcount.fValue))
+		if(int(time) >= frameCount)
 			time = 0.0f;
 
-		time += dt * fFrate.fValue;
+		time += dt * frameRate.value;
 
-		PVarSetValueInt( &out, time );
+		mvSetValueInt( out, time );
 	}
 private:
-	float time;
+	float		time;
 
-	proxyvar_t fFrate;
-	proxyvar_t fFcount;
+	proxyvar_t	frameRate;
+	int			frameCount;
 
-	proxyvar_t out;
+	proxyvar_t	out;
 };
 
 // declare proxies
@@ -450,6 +463,7 @@ DECLARE_PROXY(subtract, CSubProxy);
 DECLARE_PROXY(multiply, CMulProxy);
 DECLARE_PROXY(divide, CDivProxy);
 DECLARE_PROXY(sin, CSinProxy);
+DECLARE_PROXY(abs, CAbsProxy);
 DECLARE_PROXY(animatedtexture, CAnimatedTextureProxy);
 
 void InitMaterialProxies()
@@ -459,5 +473,6 @@ void InitMaterialProxies()
 	REGISTER_PROXY(multiply, CMulProxy);
 	REGISTER_PROXY(divide, CDivProxy);
 	REGISTER_PROXY(sin, CSinProxy);
+	REGISTER_PROXY(abs, CAbsProxy);
 	REGISTER_PROXY(animatedtexture, CAnimatedTextureProxy);
 }

@@ -83,13 +83,14 @@ class CGameLevel : public CEqThread
 public:
 	CGameLevel();
 
-	void							Init(int wide, int tall, int cells, bool isCleanLevel);	// number of height fields
-	//void							InitOLD(int wide, int tall, IVirtualStream* stream = NULL);	// number of height fields
+	void					Init(int wide, int tall, int cells, bool isCleanLevel);	// number of height fields
+	void					Cleanup();
 
-	void							Cleanup();
+	bool					Load(const char* levelname, kvkeybase_t* kvDefs);
 
-	bool							Load(const char* levelname, kvkeybase_t* kvDefs);
-	bool							Save(const char* levelname, bool final = false);
+#ifdef EDITOR
+	bool					Save(const char* levelname, bool final = false);
+#endif // EDITOR
 
 	//---------------------------------
 
@@ -101,103 +102,103 @@ public:
 	CLevelRegion*					GetRegionAt(const IVector2D& XYPos) const;
 
 	// resolving indexes
-	bool							GetPointAt(const Vector3D& pos, IVector2D& outXYPos) const;
-	CLevelRegion*					GetRegionAtPosition(const Vector3D& pos) const;
+	bool					GetPointAt(const Vector3D& pos, IVector2D& outXYPos) const;
+	CLevelRegion*			GetRegionAtPosition(const Vector3D& pos) const;
 
 	//
 	// Global (per tile) indexes
 	//
-	bool							GetTileGlobal(const Vector3D& pos, IVector2D& outGlobalXYPos) const;
+	bool					GetTileGlobal(const Vector3D& pos, IVector2D& outGlobalXYPos) const;
 
-	bool							GetRegionAndTile(const Vector3D& pos, CLevelRegion** pReg, IVector2D& outLocalXYPos) const;
-	bool							GetRegionAndTileAt(const IVector2D& point, CLevelRegion** pReg, IVector2D& outLocalXYPos) const;
+	bool					GetRegionAndTile(const Vector3D& pos, CLevelRegion** pReg, IVector2D& outLocalXYPos) const;
+	bool					GetRegionAndTileAt(const IVector2D& point, CLevelRegion** pReg, IVector2D& outLocalXYPos) const;
 
 	//
 	// conversions
 	//
-	IVector2D						PositionToGlobalTilePoint( const Vector3D& pos ) const;
-	Vector3D						GlobalTilePointToPosition( const IVector2D& point ) const;
+	IVector2D				PositionToGlobalTilePoint( const Vector3D& pos ) const;
+	Vector3D				GlobalTilePointToPosition( const IVector2D& point ) const;
 
-	void							GlobalToLocalPoint( const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion ) const;
-	void							LocalToGlobalPoint( const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const;
+	void					GlobalToLocalPoint( const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion ) const;
+	void					LocalToGlobalPoint( const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const;
 
-	levroadcell_t*					GetGlobalRoadTile(const Vector3D& pos, CLevelRegion** pRegion = NULL) const;
-	levroadcell_t*					GetGlobalRoadTileAt(const IVector2D& point, CLevelRegion** pRegion = NULL) const;
+	levroadcell_t*			GetGlobalRoadTile(const Vector3D& pos, CLevelRegion** pRegion = NULL) const;
+	levroadcell_t*			GetGlobalRoadTileAt(const IVector2D& point, CLevelRegion** pRegion = NULL) const;
 
 	//---------------------------------
 
-	straight_t						GetStraightAtPoint( const IVector2D& point, int numIterations = 4 ) const;
-	straight_t						GetStraightAtPos( const Vector3D& pos, int numIterations = 4 ) const;
+	straight_t				GetStraightAtPoint( const IVector2D& point, int numIterations = 4 ) const;
+	straight_t				GetStraightAtPos( const Vector3D& pos, int numIterations = 4 ) const;
 
-	roadJunction_t					GetJunctionAtPoint( const IVector2D& point, int numIterations = 4 ) const;
-	roadJunction_t					GetJunctionAtPos( const Vector3D& pos, int numIterations = 4 ) const;
+	roadJunction_t			GetJunctionAtPoint( const IVector2D& point, int numIterations = 4 ) const;
+	roadJunction_t			GetJunctionAtPos( const Vector3D& pos, int numIterations = 4 ) const;
 
 	// current road lane
-	int								GetLaneIndexAtPoint( const IVector2D& point, int numIterations = 8 );
-	int								GetLaneIndexAtPos( const Vector3D& pos, int numIterations = 8 );
+	int						GetLaneIndexAtPoint( const IVector2D& point, int numIterations = 8 );
+	int						GetLaneIndexAtPos( const Vector3D& pos, int numIterations = 8 );
 
 	// road width in lane count
-	int								GetNumLanesAtPoint( const IVector2D& point, int numIterations = 8 );
-	int								GetNumLanesAtPos( const Vector3D& pos, int numIterations = 8 );
+	int						GetNumLanesAtPoint( const IVector2D& point, int numIterations = 8 );
+	int						GetNumLanesAtPos( const Vector3D& pos, int numIterations = 8 );
 
-	int								GetRoadWidthInLanesAtPoint( const IVector2D& point, int numIterations = 16 );
-	int								GetRoadWidthInLanesAtPos( const Vector3D& pos, int numIterations = 16 );
+	int						GetRoadWidthInLanesAtPoint( const IVector2D& point, int numIterations = 16 );
+	int						GetRoadWidthInLanesAtPos( const Vector3D& pos, int numIterations = 16 );
 
 
 	//---------------------------------
 
-	void							PreloadRegion(int x, int y);
+	void					PreloadRegion(int x, int y);
 
-	void							QueryNearestRegions(const Vector3D& pos, bool waitLoad = false);
-	void							QueryNearestRegions(const IVector2D& point, bool waitLoad = false);
+	void					QueryNearestRegions(const Vector3D& pos, bool waitLoad = false);
+	void					QueryNearestRegions(const IVector2D& point, bool waitLoad = false);
 
 #ifdef EDITOR
-	void							Ed_Prerender(const Vector3D& cameraPosition);
+	void					Ed_Prerender(const Vector3D& cameraPosition);
 #endif // EDITOR
 
-	void							CollectVisibleOccluders(occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition);
-	void							Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& frustumOccluders, int nRenderFlags);
+	void					CollectVisibleOccluders(occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition);
+	void					Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& frustumOccluders, int nRenderFlags);
 
-	int								UpdateRegions( RegionLoadUnloadCallbackFunc func = NULL);
-	void							RespawnAllObjects();
+	int						UpdateRegions( RegionLoadUnloadCallbackFunc func = NULL);
+	void					RespawnAllObjects();
 
-	void							Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref);
+	void					Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref);
 
 	//
 	// conversions
 	//
-	void							Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& maxs, IVector2D& xy1, IVector2D& xy2) const;
+	void					Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& maxs, IVector2D& xy1, IVector2D& xy2) const;
 
-	IVector2D						Nav_PositionToGlobalNavPoint(const Vector3D& pos) const;
+	IVector2D				Nav_PositionToGlobalNavPoint(const Vector3D& pos) const;
 
-	Vector3D						Nav_GlobalPointToPosition(const IVector2D& point) const;
+	Vector3D				Nav_GlobalPointToPosition(const IVector2D& point) const;
 
-	void							Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion) const;
-	void							Nav_LocalToGlobalPoint(const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const;
+	void					Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion) const;
+	void					Nav_LocalToGlobalPoint(const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const;
 
-	navcell_t&						Nav_GetCellStateAtGlobalPoint(const IVector2D& point);
-	ubyte&							Nav_GetTileAtGlobalPoint(const IVector2D& point);
+	navcell_t&				Nav_GetCellStateAtGlobalPoint(const IVector2D& point);
+	ubyte&					Nav_GetTileAtGlobalPoint(const IVector2D& point);
 
-	bool							Nav_FindPath(const Vector3D& start, const Vector3D& end, pathFindResult_t& result, int iterationLimit = 256, bool cellPriority = false);
-	bool							Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pathFindResult_t& result, int iterationLimit = 256, bool cellPriority = false);
+	bool					Nav_FindPath(const Vector3D& start, const Vector3D& end, pathFindResult_t& result, int iterationLimit = 256, bool cellPriority = false);
+	bool					Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pathFindResult_t& result, int iterationLimit = 256, bool cellPriority = false);
 
-	void							Nav_ClearCellStates();
+	void					Nav_ClearCellStates();
 
 #ifdef EDITOR
-	int								Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CLevelRegion** reg, float& dist);
-	bool							Ed_GenerateMap(LevelGenParams_t& genParams, const CImage* img);
+	int						Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CLevelRegion** reg, float& dist);
+	bool					Ed_GenerateMap(LevelGenParams_t& genParams, const CImage* img);
 #endif
 
 	// TODO: render code
 
-	DkList<CLevObjectDef*>			m_objectDefs;
+	DkList<CLevObjectDef*>	m_objectDefs;
 
-	int								m_wide;
-	int								m_tall;
+	int						m_wide;
+	int						m_tall;
 
-	int								m_cellsSize;
+	int						m_cellsSize;
 
-	CEqMutex&						m_mutex;
+	CEqMutex&				m_mutex;
 
 protected:
 
@@ -205,16 +206,19 @@ protected:
 
 	int						Run();
 
+#ifdef EDITOR
 	void					WriteLevelRegions(IVirtualStream* stream, const char* levelname, bool final);
 	void					WriteObjectDefsLump(IVirtualStream* stream);
 	void					WriteHeightfieldsLump(IVirtualStream* stream);
-
+#endif // EDITOR
 	void					ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs);
 	void					ReadHeightfieldsLump(IVirtualStream* stream);
 
 	void					ReadRegionInfo(IVirtualStream* stream);
 
 	void					LoadRegionAt(int regionIndex, IVirtualStream* stream); // loads region
+
+	//--------------------------------------------------------
 
 	CLevelRegion*			m_regions;
 

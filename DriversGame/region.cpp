@@ -129,7 +129,7 @@ Vector3D GetModelRefPosition(CLevelRegion* reg, regionObject_t* ref)
 	CLevObjectDef* objectDef = ref->def;;
 
 	if(objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG)
-		addHeight.y = -objectDef->m_defModel->GetBBoxMins().y;
+		addHeight.y = -objectDef->m_defModel->GetAABB().minPoint.y;
 
 	if(ref->tile_dependent)
 	{
@@ -153,10 +153,8 @@ Quaternion GetModelRefRotation(CLevelRegion* reg, regionObject_t* ref)
 
 	if(ref->tile_dependent)
 	{
-		hfieldtile_t* tile = defField.GetTile( ref->tile_x, ref->tile_y );
-
-		if( (ref->def->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
-			ref->def->m_info.type != LOBJ_TYPE_OBJECT_CFG )
+		if( (objectDef->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
+			objectDef->m_info.type != LOBJ_TYPE_OBJECT_CFG )
 		{
 			Vector3D t,b,n;
 			defField.GetTileTBN( ref->tile_x, ref->tile_y, t,b,n );
@@ -187,7 +185,7 @@ Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regionObject_t* ref)
 	CLevObjectDef* objectDef = ref->def;;
 
 	if(objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG)
-		addHeight.y = -objectDef->m_defModel->GetBBoxMins().y;
+		addHeight.y = -objectDef->m_defModel->GetAABB().minPoint.y;
 
 	Vector3D refPos = GetModelRefPosition(reg,ref);
 
@@ -349,7 +347,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 			// render studio model
 			//if( frustum.IsBoxInside(cont->m_defModel->GetBBoxMins(), cont->m_defModel->GetBBoxMaxs()) )
 
-			BoundingBox bbox(cont->m_defModel->GetBBoxMins(), cont->m_defModel->GetBBoxMaxs());
+			const BoundingBox& bbox = cont->m_defModel->GetAABB();
 
 			if( occlFrustum.IsSphereVisible( ref->position, length(bbox.GetSize())) )
 				cont->Render(fDist, ref->bbox, false, nRenderFlags);
@@ -453,12 +451,24 @@ void CLevelRegion::Cleanup()
 	m_level->m_mutex.Lock();
 
 	for(int i = 0; i < GetNumHFields(); i++)
-		g_pPhysics->RemoveHeightField( m_heightfield[i] );
+	{
+		if(m_heightfield[i])
+		{
+			g_pPhysics->RemoveHeightField( m_heightfield[i] );
+			m_heightfield[i]->CleanRenderData();
+		}
+			
+	}
 
 	for(int i = 0; i < m_objects.numElem(); i++)
 		delete m_objects[i];
 
 	m_objects.clear();
+
+	for(int i = 0; i < m_zones.numElem(); i++)
+		delete [] m_zones[i].zoneName;
+
+	m_zones.clear();
 
 	m_level->m_mutex.Unlock();
 
@@ -468,12 +478,6 @@ void CLevelRegion::Cleanup()
 	m_roads = NULL;
 
 	m_navGrid.Cleanup();
-
-	for(int i = 0; i < GetNumHFields(); i++)
-	{
-		if(m_heightfield[i])
-			m_heightfield[i]->CleanRenderData();
-	}
 
 	m_isLoaded = false;
 
@@ -523,7 +527,7 @@ int	CLevelRegion::GetNumNomEmptyHFields() const
 
 float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D& ray_dir)
 {
-	BoundingBox bbox(pModel->GetBBoxMins(), pModel->GetBBoxMaxs());
+	const BoundingBox& bbox = pModel->GetAABB();
 
 	float f1,f2;
 	if(!bbox.IntersectsRay(ray_start, ray_dir, f1,f2))
@@ -555,7 +559,10 @@ float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D
 
 			uint32 *pIndices = pGroup->pVertexIdx(0);
 
-			for(uint32 k = 0; k < pGroup->numindices; k+=3)
+			int numTriangles = floor((float)pGroup->numindices / 3.0f);
+			int validIndexes = numTriangles * 3;
+
+			for(uint32 k = 0; k < validIndexes; k+=3)
 			{
 				Vector3D v0,v1,v2;
 
@@ -662,7 +669,8 @@ void CLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObjectDef
 	// collect models and cell objects
 	for(int i = 0; i < m_objects.numElem(); i++)
 	{
-		CLevObjectDef* def = m_objects[i]->def;
+		regionObject_t* robj = m_objects[i];
+		CLevObjectDef* def = robj->def;
 
 		int objectDefId = FindObjectContainer(listObjects, def);
 
@@ -674,7 +682,9 @@ void CLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObjectDef
 
 		levCellObject_t object;
 
+		// copy name
 		memset(object.name, 0, LEV_OBJECT_NAME_LENGTH);
+		strncpy(object.name,robj->name.c_str(), LEV_OBJECT_NAME_LENGTH);
 
 		object.objectDefId = objectDefId;
 
@@ -777,6 +787,8 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 			//	ref->model->Ref_Grab();
 		}
 
+		ref->name = cellObj.name;
+
 		ref->tile_x = cellObj.tile_x;
 		ref->tile_y = cellObj.tile_y;
 
@@ -808,9 +820,9 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 			// set reference bbox for light testing
 			ref->bbox = tbbox;
 		}
+#ifndef EDITOR
 		else
 		{
-#ifndef EDITOR
 
 			// create object, spawn in game cycle
 			CGameObject* newObj = g_pGameWorld->CreateGameObject( ref->def->m_defType.c_str(), &ref->def->m_defKeyvalues );
@@ -823,8 +835,11 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 				newObj->SetAngles( VRAD2DEG(eulAngles) );
 				newObj->SetUserData( ref );
 
-				// network name for this object
-				newObj->SetName( varargs("_reg%d_ref%d", m_regionIndex, i) );
+				// game name of this object
+				if( ref->name.Length() > 0 )
+					newObj->SetName( ref->name.c_str() );
+				else if(newObj->ObjType() != GO_SCRIPTED)
+					newObj->SetName( varargs("_reg%d_ref%d", m_regionIndex, i) );
 
 				ref->game_object = newObj;
 
@@ -832,9 +847,8 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 				g_pGameWorld->AddObject( newObj, false );
 				m_level->m_mutex.Unlock();
 			}
-
-#endif
 		}
+#endif
 
 		m_level->m_mutex.Lock();
 		m_objects.append(ref);
@@ -887,8 +901,11 @@ void CLevelRegion::RespawnObjects()
 			newObj->SetAngles( VRAD2DEG(eulAngles) );
 			newObj->SetUserData( ref );
 
-			// network name for this object
-			newObj->SetName( varargs("_reg%d_ref%d", m_regionIndex, i) );
+			// game name of this object
+			if( ref->name.Length() > 0 )
+				newObj->SetName( ref->name.c_str() );
+			else if(newObj->ObjType() != GO_SCRIPTED)
+				newObj->SetName( varargs("_reg%d_ref%d", m_regionIndex, i) );
 
 			ref->game_object = newObj;
 
@@ -913,7 +930,7 @@ void CLevelRegion::WriteRegionRoads( IVirtualStream* stream )
 		{
 			int idx = y*m_heightfield[0]->m_sizew + x;
 
-			if(m_roads[idx].type == ROADTYPE_NOROAD)
+			if(m_roads[idx].type == ROADTYPE_NOROAD && m_roads[idx].flags == 0)
 				continue;
 
 			m_roads[idx].posX = x;
@@ -948,19 +965,22 @@ void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 
 #define NAVGRIDSCALE_HALF	int(AI_NAVIGATION_GRID_SCALE/2)
 
-			// higher the priority of road nodes
-			for(int j = 0; j < AI_NAVIGATION_GRID_SCALE*AI_NAVIGATION_GRID_SCALE; j++)
-			{
-				int ofsX = tmpCell.posX*AI_NAVIGATION_GRID_SCALE + (j % AI_NAVIGATION_GRID_SCALE);
-				int ofsY = tmpCell.posY*AI_NAVIGATION_GRID_SCALE + (j % NAVGRIDSCALE_HALF);
+			if(tmpCell.type == ERoadType::ROADTYPE_PARKINGLOT)
+				continue;
 
-				int navCellIdx = ofsY*m_heightfield[0]->m_sizew + ofsX;
-				m_navGrid.staticObst[navCellIdx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
+			// higher the priority of road nodes
+			for(int j = 0; j < AI_NAVIGATION_GRID_SCALE; j++)
+			{
+				for(int k = 0; k < AI_NAVIGATION_GRID_SCALE; k++)
+				{
+					int ofsX = tmpCell.posX*AI_NAVIGATION_GRID_SCALE+j;
+					int ofsY = tmpCell.posY*AI_NAVIGATION_GRID_SCALE+k;
+
+					int navCellIdx = ofsY*m_navGrid.tall + ofsX;
+					m_navGrid.staticObst[navCellIdx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
+				}
 			}
 		}
-
-		for (int i = 0; i < m_objects.numElem(); i++)
-			m_level->Nav_AddObstacle(this, m_objects[i]);
 	}
 }
 

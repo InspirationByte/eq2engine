@@ -27,7 +27,7 @@ public:
 					DkSoundSampleLocal();
 					~DkSoundSampleLocal();
 
-	static void		SampleLoaderJob( void* loadSampleData );
+	static void		SampleLoaderJob( void* loadSampleData, int i );
 
 	void			Init(const char *name, int flags);
 
@@ -43,12 +43,15 @@ public:
 
 private:
 	EqString		m_szName;
-	unsigned int	m_nALBuffer;
+	unsigned int	m_alBuffer;
 	
 	volatile int	m_loadState;
 
 	uint8			m_nChannels;
 	uint8			m_flags;
+
+	int				m_loopStart;
+	int				m_loopEnd;
 };
 
 //----------------------------------------------------------------------------------------------------------

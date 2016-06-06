@@ -136,7 +136,7 @@ bool CState_Title::Update( float fDt )
 
 	fontParam.textColor.w = pow(m_fade, 2.0f);
 
-	copyrightFont->RenderText(L"Copyright Inspiration Byte 2015", halfScreen + Vector2D(0.0f,300.0f), fontParam);
+	copyrightFont->RenderText(g_localizer->GetTokenString("INSCOPYRIGHT", L"Copyright © Inspiration Byte 2016"), halfScreen + IVector2D(0,300), fontParam);
 
 	if( m_goesFromTitle )
 	{

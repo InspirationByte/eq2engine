@@ -20,7 +20,7 @@ public:
 
 	bool			InitCaps();
 
-	bool			InitAPI(const shaderapiinitparams_t &params);
+	bool			InitAPI( shaderapiinitparams_t &params);
 	void			ExitAPI();
 	void			ReleaseSwapChains() {}
 
@@ -29,7 +29,7 @@ public:
 	void			EndFrame(IEqSwapChain* swapChain = NULL);
 
 	// renderer interface
-	IShaderAPI*		GetRenderer() {return m_Renderer;}
+	IShaderAPI*		GetRenderer() const {return (IShaderAPI*)m_Renderer;}
 
 	// sets backbuffer size for default swap chain
 	void			SetBackbufferSize(int w, int h);
@@ -57,8 +57,5 @@ protected:
 	bool					m_bActive;
 
 	bool					m_bResized;
-
-	shaderapiinitparams_t	savedParams;
-
 };
 #endif //CGLRENDERLIB_H

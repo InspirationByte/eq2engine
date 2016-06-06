@@ -5,7 +5,7 @@
 // Description: DarkTech main entry point
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "EngineVersion.h" // Engine version
 #include "EngineSpew.h"
 #include "sys_enginehost.h"
@@ -65,9 +65,6 @@ ONLY_EXPORTS int CreateEngineFn(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR 
 
 	// tell engine information
 	EngineMessage();
-
-	// Initialize time and query perfomance
-	Platform_InitTime();
 
 	// Initial status
 	int iStatus = -1;

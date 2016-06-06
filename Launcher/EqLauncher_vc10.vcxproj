@@ -396,7 +396,6 @@
     <None Include="splashscreen.bmp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\public\Platform\Platform.cpp" />
     <ClCompile Include="launcher_win.cpp" />
   </ItemGroup>
   <ItemGroup>

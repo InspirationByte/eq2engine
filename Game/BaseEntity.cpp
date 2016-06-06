@@ -190,7 +190,7 @@ void BaseEntity::OnGameStart()
 void BaseEntity::InitScriptHooks()
 {
 	// load script if present
-	if(m_pszScriptName.GetLength())
+	if(m_pszScriptName.Length())
 	{
 		// you can use ENT_BINDSCRIPT in your other operations
 		//OBJ_BINDSCRIPT( m_pszScriptName.GetData(), this );
@@ -259,7 +259,7 @@ void BaseEntity::SetTargetEntity(BaseEntity* pEnt)
 
 void BaseEntity::CheckTargetEntity()
 {
-	if(m_pszTargetEntity.GetLength() > 0)
+	if(m_pszTargetEntity.Length() > 0)
 	{
 		m_pTargetEntityPointer = (BaseEntity*)UTIL_EntByName(m_pszTargetEntity.GetData());
 
@@ -774,7 +774,7 @@ void BaseEntity::SetNextThink(float flTime)
 
 const char* BaseEntity::GetModelName()
 {
-	if(m_pszModelName.GetLength() == 0)
+	if(m_pszModelName.Length() == 0)
 		return NULL;
 
 	return m_pszModelName.GetData();

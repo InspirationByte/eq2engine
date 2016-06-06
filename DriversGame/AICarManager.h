@@ -36,17 +36,34 @@ struct	carConfigEntry_t;
 class	CAITrafficCar;
 class	CAIPursuerCar;
 
+struct carZoneInfo_t
+{
+	EqString				name;
+	int						spawnInterval;
+};
+
 struct civCarEntry_t
 {
 	civCarEntry_t()
 	{
 		nextSpawn = 0;
-		spawnInterval = 0;
 	}
 
-	carConfigEntry_t*	config;
-	int					spawnInterval;
-	int					nextSpawn;
+	int	GetZoneSpawnInterval( const char* zone ) const
+	{
+		for(int i = 0; i < zoneList.numElem(); i++)
+		{
+			if(!zoneList[i].name.CompareCaseIns(zone))
+				return zoneList[i].spawnInterval;
+		}
+
+		return -1; // don't spawn
+	}
+
+	carConfigEntry_t*		config;
+	int						nextSpawn;
+
+	DkList<carZoneInfo_t>	zoneList;
 };
 
 //-------------------------------------------------------------------------------
@@ -67,11 +84,13 @@ public:
 
 	void						RemoveAllCars();
 
+	civCarEntry_t*				FindCivCarEntry( const char* name );
+
 	// ----- TRAFFIC ------
 	void						SetMaxTrafficCars(int count);
 	int							GetMaxTrafficCars() const;		
 	
-	CCar*						SpawnRandomTrafficCar(const IVector2D& globalCell, int carType = CAR_TYPE_NORMAL, bool doChecks = true);
+	CCar*						SpawnTrafficCar( const IVector2D& globalCell );
 
 	// ----- COPS ------
 	void						SetCopsEnabled(bool enable);									// switch to spawn
@@ -101,7 +120,7 @@ public:
 
 protected:
 
-	void						RemoveTrafficCar(CAITrafficCar* car);
+	void						RemoveTrafficCar(CCar* car);
 
 	void						CircularSpawnTrafficCars( int x0, int y0, int radius );
 
@@ -133,7 +152,7 @@ protected:
 
 	float						m_trafficUpdateTime;
 
-	DkList<CAITrafficCar*>		m_trafficCars;
+	DkList<CCar*>				m_trafficCars;
 
 public:
 	DkList<CAIPursuerCar*>		m_copCars;

@@ -130,6 +130,9 @@ public:
 	void						ToggleSelection( refselectioninfo_t& ref );
 	void						ClearSelection();
 	void						DeleteSelection();
+	void						DuplicateSelection();
+
+	void						MoveSelectionToNewRegions();
 
 protected:
 

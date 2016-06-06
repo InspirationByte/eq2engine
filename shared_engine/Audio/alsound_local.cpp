@@ -601,7 +601,7 @@ void DkSoundSystemLocal::SetListener( const Vector3D &position, const Vector3D &
 	//alDopplerVelocity(length(velocity));
 }
 
-Vector3D DkSoundSystemLocal::GetListenerPosition()
+const Vector3D& DkSoundSystemLocal::GetListenerPosition() const
 {
 	return m_listenerOrigin;
 }

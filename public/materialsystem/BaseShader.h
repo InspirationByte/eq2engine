@@ -260,9 +260,10 @@ protected:
 
 	SHADERPARAMFUNC				m_param_functors[SHADERPARAM_COUNT];
 
-	bool						m_depthwrite;
-	bool						m_depthtest;
-	bool						m_fogenabled;
+	bool						m_depthwrite : 1;
+	bool						m_depthtest : 1;
+	bool						m_fogenabled : 1;
+	bool						m_msaaEnabled : 1;
 
 	IMatVar*					m_pBaseTextureTransformVar;
 	IMatVar*					m_pBaseTextureScaleVar;

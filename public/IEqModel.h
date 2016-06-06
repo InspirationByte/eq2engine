@@ -94,8 +94,7 @@ public:
 	// selects lod index
 	virtual int					SelectLod(float fDistance) = 0;
 
-	virtual const Vector3D&		GetBBoxMins() const = 0;
-	virtual const Vector3D&		GetBBoxMaxs() const = 0;
+	virtual const BoundingBox&	GetAABB() const = 0;
 
 	// makes dynamic temporary decal
 	virtual studiotempdecal_t*	MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices) = 0;

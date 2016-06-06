@@ -95,25 +95,10 @@ void ConVar::Create(char const *pszName,char const *pszDefaultValue,char const *
 	static const char* empty_string = "";
 
 	// Setup default value first
-	m_szDefaultValueString = pszDefaultValue ? pszDefaultValue : empty_string;
+	m_szDefaultValueString = pszDefaultValue;
 
-	SetValue(m_szDefaultValueString);
-	/*
-#ifdef CVAR_USE_STRING_AS_DYNAMICALLY_ALLOCATED_VALUE
-	// Setup value
-	m_iStringLength = strlen( m_szDefaultValueString ) + 1;
-	m_szValueString = m_szDefaultValueString;
-#else
-	// Setup value
-	m_iStringLength = strlen( m_szDefaultValueString ) + 1;
-	m_szValueString = new char[m_iStringLength];
-	memcpy( m_szValueString, m_szDefaultValueString, m_iStringLength );
-#endif
+	SetValue( GetDefaultValue() );
 
-	// Setup numeric values
-	m_flValue = (float)atof(m_szValueString);
-	m_nValue = atoi(m_szValueString);
-	*/
 	// Not clamped by this initializer
 	m_bClamp = false;
 
@@ -125,30 +110,11 @@ void ConVar::Create(char const *pszName,char const *pszDefaultValue,char const *
 
 void ConVar::Create(char const *pszName,char const *pszDefaultValue,float fClampMin,float fClampMax,char const *pszHelpString, int nFlags)
 {
-	static const char* empty_string = "";
-
 	// Setup default value first
-	m_szDefaultValueString = pszDefaultValue ? pszDefaultValue : empty_string;
+	m_szDefaultValueString = pszDefaultValue;
 
-	SetValue(m_szDefaultValueString);
+	SetValue( GetDefaultValue() );
 
-	/*
-#ifdef CVAR_USE_STRING_AS_DYNAMICALLY_ALLOCATED_VALUE
-	// Setup value
-	m_iStringLength = strlen( m_szDefaultValueString ) + 1;
-	m_szValueString = m_szDefaultValueString;
-#else
-	// Setup value
-	m_iStringLength = strlen( m_szDefaultValueString ) + 1;
-	m_szValueString = new char[m_iStringLength];
-	memcpy( m_szValueString, m_szDefaultValueString, m_iStringLength );
-#endif
-
-
-	// Setup numeric values and clamp
-	m_flValue = (float)clamp((float)atof(m_szValueString),fClampMin,fClampMax);
-	m_nValue = (int)clamp((float)atof(m_szValueString),fClampMin,fClampMax);
-	*/
 	// Clamped by this initializer
 	m_bClamp = true;
 	m_fClampMin = fClampMin;
@@ -172,7 +138,13 @@ void ConVar::SetCallback(CONVAR_CHANGE_CALLBACK newCallBack)
 
 void ConVar::RevertToDefaultValue()
 {
-	InternalSetValue(m_szDefaultValueString);
+	InternalSetValue( GetDefaultValue() );
+}
+
+const char*	ConVar::GetDefaultValue() const
+{
+	static const char* empty_string = "";
+	return m_szDefaultValueString ? m_szDefaultValueString : empty_string;;
 }
 
 void ConVar::SetValue(const char* newvalue)
@@ -283,4 +255,10 @@ bool ConVar::CheckCommandLine(int startAt/* = 0 */)
 		return true;
 	else
 		return false;
+}
+
+void ConVar::LuaCleanup()
+{
+	delete [] m_szDefaultValueString;
+	ConCommandBase::LuaCleanup();
 }

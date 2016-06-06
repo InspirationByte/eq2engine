@@ -132,8 +132,6 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	Platform_InitTime();
-
 	// Command line execution
 	g_cmdLine->ExecuteCommandLine(true,true);
 

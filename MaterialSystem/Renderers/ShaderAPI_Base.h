@@ -22,7 +22,7 @@ class ShaderAPI_Base : public IShaderAPI
 public:
 										ShaderAPI_Base();
 	// Init + Shurdown
-	virtual void						Init(const shaderapiinitparams_t &params);
+	virtual void						Init( shaderapiinitparams_t &params );
 	virtual void						Shutdown();
 
 	void								ThreadLock();
@@ -174,7 +174,7 @@ protected:
 // Useful data
 //-------------------------------------------------------------
 
-	shaderapiinitparams_t				m_params;
+	const shaderapiinitparams_t*		m_params;
 	ShaderAPICaps_t						m_caps;
 
 	// Shader list

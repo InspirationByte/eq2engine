@@ -1199,7 +1199,6 @@ void CUI_LevelModels::DeleteSelection()
 		}
 
 		delete m_selRefs[i].selRef;
-
 	}
 
 	for(int i = 0; i < m_selRefs.numElem(); i++)
@@ -1209,9 +1208,43 @@ void CUI_LevelModels::DeleteSelection()
 
 	m_selRefs.clear();
 
-
-
 	g_pMainFrame->NotifyUpdate();
+}
+
+void CUI_LevelModels::DuplicateSelection()
+{
+	DkList<regionObject_t*> newObjects;
+
+	for(int i = 0; i < m_selRefs.numElem(); i++)
+	{
+		regionObject_t* modelref = new regionObject_t;
+		m_selectedRegion->m_objects.append( modelref );
+
+		*modelref = *m_selRefs[i].selRef;
+
+		CLevObjectDef* cont = m_selRefs[i].selRef->def;
+
+		// remove and invalidate
+		if(cont->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+			cont->m_model->Ref_Grab();
+
+		modelref->tile_x += 1;
+		modelref->tile_y += 1;
+		modelref->position += Vector3D(1,0,1);
+
+		newObjects.append(modelref);
+	}
+
+	ClearSelection();
+
+	for(int i = 0; i < newObjects.numElem(); i++)
+	{
+		refselectioninfo_t sel;
+		sel.selRegion = m_selectedRegion;
+		sel.selRef = newObjects[i];
+
+		ToggleSelection(sel);
+	}
 }
 
 void CUI_LevelModels::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos )
@@ -1547,6 +1580,12 @@ void CUI_LevelModels::OnKey(wxKeyEvent& event, bool bDown)
 		{
 			if(event.m_keyCode == WXK_SPACE)
 			{
+				if(event.ControlDown())
+				{
+					DuplicateSelection();
+					return;
+				}
+
 				m_rotation += 1;
 
 				if(m_rotation > 3)
@@ -1581,6 +1620,31 @@ void CUI_LevelModels::OnKey(wxKeyEvent& event, bool bDown)
 			{
 				m_tiledPlacement->SetValue(!m_tiledPlacement->GetValue());
 			}
+			else if(event.GetRawKeyCode() == 'N')
+			{
+				if(m_selRefs.numElem() == 0)
+					return;
+
+				if(m_selRefs.numElem() > 1)
+				{
+					wxMessageBox("Cannot rename multiple objects", "Warning", wxOK | wxICON_EXCLAMATION, g_pMainFrame);
+					return;
+				}
+
+				regionObject_t* ref = m_selRefs[0].selRef;
+
+				wxTextEntryDialog* dlg = new wxTextEntryDialog(this, "Rename object (use if you have scripted objects)", "Object name");
+
+				dlg->SetValue( ref->name.c_str() );
+
+				if( dlg->ShowModal() == wxID_OK)
+				{
+					ref->name = dlg->GetValue();
+					g_pMainFrame->NotifyUpdate();
+				}
+
+				delete dlg;
+			}
 		}
 
 		if(event.ControlDown())
@@ -1604,6 +1668,11 @@ void CUI_LevelModels::OnKey(wxKeyEvent& event, bool bDown)
 			}
 		}
 	}
+}
+
+void CUI_LevelModels::MoveSelectionToNewRegions()
+{
+	// recalculate regions by object reference positions
 }
 
 void CUI_LevelModels::OnRender()

@@ -79,7 +79,7 @@ void AutoCompletionCheckExtensionDir(const char* extension, const char *dir, boo
 				break;
 
 			EqString filename = wfd.cFileName;
-			if(filename.GetLength() > 1 && filename != ".." && filename != "." && !(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+			if(filename.Length() > 1 && filename != ".." && filename != "." && !(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 			{
 				if(stripExtensions)
 					strings->append(filename.Path_Strip_Ext());
@@ -256,7 +256,7 @@ void CEqSysConsole::AddAutoCompletionNode(AutoCompletionNode_s *pNode)
 
 void CEqSysConsole::consoleRemTextInRange(int start,int len)
 {
-	if(uint(start+len) > con_Text.GetLength())
+	if(uint(start+len) > con_Text.Length())
 		return;
 
 	con_Text.Remove(start,len);
@@ -313,7 +313,7 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 	helpTextParams.textColor = s_conHelpTextColor;
 	helpTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
 
-	if(con_Text.GetLength() > 0 && con_fastfind.GetBool())
+	if(con_Text.Length() > 0 && con_fastfind.GetBool())
 	{
 		const DkList<ConCommandBase*> *base = g_sysConsole->GetAllCommands();
 
@@ -339,8 +339,8 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 
 		EqString name(con_Text);
 
-		if(isspace(name.GetData()[name.GetLength()-1]))
-			name = name.Left(name.GetLength()-1);
+		if(isspace(name.GetData()[name.Length()-1]))
+			name = name.Left(name.Length()-1);
 
 		ConCommandBase* pCommand = (ConCommandBase*)g_sysConsole->FindBase( name.GetData() );
 
@@ -501,7 +501,7 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 				if(cstr)
 				{
 					int ofs = cstr - base->ptr()[i]->GetName();
-					int len = con_Text.GetLength();
+					int len = con_Text.Length();
 
 					float lookupStrStart = m_font->GetStringWidth(cvarName, variantsTextParams.styleFlag, ofs);
 					float lookupStrEnd = lookupStrStart + m_font->GetStringWidth(cvarName+ofs, variantsTextParams.styleFlag, len);
@@ -525,15 +525,15 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w)
 	con_fastfind_selection_autocompletion_val_index = -1;
 
 	EqString name(con_Text);
-	if(isspace(name.GetData()[name.GetLength()-1]))
+	if(isspace(name.GetData()[name.Length()-1]))
 	{
-		name = name.Left(name.GetLength()-1);
+		name = name.Left(name.Length()-1);
 	}
 
 	int enumcount = 0;
 	int enumcount2 = 1;
 
-	if(name.GetLength() > 0 && con_autocompletion_enable.GetBool())
+	if(name.Length() > 0 && con_autocompletion_enable.GetBool())
 	{
 		int max_string_length = 35;
 
@@ -645,6 +645,12 @@ void CEqSysConsole::SetLastLine()
 void CEqSysConsole::AddToLinePos(int num)
 {
 	m_logScrollPosition += num;
+}
+
+void CEqSysConsole::SetText( const char* text )
+{
+	con_Text = text;
+	m_cursorPos = m_startCursorPos = con_Text.Length();
 }
 
 void CEqSysConsole::DrawSelf(bool transparent,int width,int height, float curTime)
@@ -819,8 +825,6 @@ bool CEqSysConsole::KeyChar(int ch)
 
 	CFont* cFont = (CFont*)m_font;
 
-	if(ch )
-
 	// THis is a weird thing
 	if(cFont->GetFontCharById(ch).advX > 0.0f && ch != '`')
 	{
@@ -831,6 +835,8 @@ bool CEqSysConsole::KeyChar(int ch)
 		con_Text.Insert( text, m_cursorPos);
 		m_cursorPos += 1;
 	}
+
+	return true;
 }
 
 bool CEqSysConsole::MouseEvent(const Vector2D &pos, int Button,bool pressed)
@@ -864,7 +870,7 @@ bool CEqSysConsole::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 						if(!bHasAutocompletion)
 							con_Text = con_Text + _Es(" ");
 
-						m_cursorPos = con_Text.GetLength();
+						m_cursorPos = con_Text.Length();
 					}
 				}
 
@@ -876,7 +882,7 @@ bool CEqSysConsole::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 						int val_ind = con_fastfind_selection_autocompletion_val_index;
 
 						con_Text = m_hAutoCompletionNodes[ac_ind]->cmd_name + _Es(" \"") + m_hAutoCompletionNodes[ac_ind]->args[val_ind] + _Es("\"");
-						m_cursorPos = con_Text.GetLength();
+						m_cursorPos = con_Text.Length();
 					}
 				}
 			}
@@ -943,7 +949,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				}
 				return true;
 			case KEY_DELETE:
-				if (m_cursorPos <= con_Text.GetLength())
+				if (m_cursorPos <= con_Text.Length())
 				{
 					if(m_startCursorPos != -1 && m_startCursorPos != m_cursorPos)
 					{
@@ -985,7 +991,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 			case KEY_A:
 				if(m_ctrlModifier)
 				{
-					m_cursorPos = con_Text.GetLength();
+					m_cursorPos = con_Text.Length();
 					m_startCursorPos = 0;
 				}
 			case KEY_C:
@@ -1009,7 +1015,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 
 							char* chBuffer;
 							EmptyClipboard();
-							hgBuffer= GlobalAlloc(GMEM_DDESHARE, tmpString.GetLength()+1);
+							hgBuffer= GlobalAlloc(GMEM_DDESHARE, tmpString.Length()+1);
 							chBuffer= (char*)GlobalLock(hgBuffer);
 							strcpy(chBuffer, tmpString.GetData());
 							GlobalUnlock(hgBuffer);
@@ -1039,7 +1045,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 
 							char* chBuffer;
 							EmptyClipboard();
-							hgBuffer= GlobalAlloc(GMEM_DDESHARE, tmpString.GetLength()+1);
+							hgBuffer= GlobalAlloc(GMEM_DDESHARE, tmpString.Length()+1);
 							chBuffer= (char*)GlobalLock(hgBuffer);
 							strcpy(chBuffer, tmpString.GetData());
 							GlobalUnlock(hgBuffer);
@@ -1101,12 +1107,12 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 						}
 
 						consoleInsText((char*)tmpString.GetData(),m_cursorPos);
-						m_cursorPos += tmpString.GetLength();
+						m_cursorPos += tmpString.Length();
 					}
 				}
 				return true;
 			case KEY_ENTER:
-				if (con_Text.GetLength() > 0)
+				if (con_Text.Length() > 0)
 				{
 					MsgInfo("> %s\n",con_Text.GetData());
 
@@ -1171,7 +1177,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 							if(max_match_chars == -1)
 							{
 								matching_str = conVarName;
-								max_match_chars = matching_str.GetLength();
+								max_match_chars = matching_str.Length();
 							}
 							else
 							{
@@ -1197,12 +1203,12 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 					if(enumcount == 1)
 					{
 						con_Text = varargs("%s ",base->ptr()[cmdindex]->GetName());
-						m_cursorPos = con_Text.GetLength();
+						m_cursorPos = con_Text.Length();
 					}
 					else if(max_match_chars != 0)
 					{
 						con_Text = matching_str;
-						m_cursorPos = con_Text.GetLength();
+						m_cursorPos = con_Text.Length();
 					}
 
 				}
@@ -1244,7 +1250,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				//m_visible = !m_visible;
 				return true;
 			case KEY_RIGHT:
-				if (m_cursorPos < con_Text.GetLength())
+				if (m_cursorPos < con_Text.Length())
 				{
 					m_cursorPos++;
 
@@ -1257,13 +1263,13 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				if(!commandHistory.numElem())
 					return true;
 
-				if(con_Text.GetLength() == 0)
+				if(con_Text.Length() == 0)
 				{
 					// display last
 					con_histIndex = 0;
 
 					con_Text = commandHistory[con_histIndex];
-					m_cursorPos = commandHistory[con_histIndex].GetLength();
+					m_cursorPos = commandHistory[con_histIndex].Length();
 					return true;
 				}
 
@@ -1273,20 +1279,20 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				if(con_histIndex > commandHistory.numElem()-1) con_histIndex = commandHistory.numElem()-1;
 
 				con_Text = commandHistory[con_histIndex];
-				m_cursorPos = commandHistory[con_histIndex].GetLength();
+				m_cursorPos = commandHistory[con_histIndex].Length();
 
 				return true;
 			case KEY_UP:
 				if(!commandHistory.numElem())
 					return true;
 
-				if(con_Text.GetLength() == 0)
+				if(con_Text.Length() == 0)
 				{
 					// display last
 					con_histIndex = commandHistory.numElem()-1;
 
 					con_Text = commandHistory[con_histIndex];
-					m_cursorPos = commandHistory[con_histIndex].GetLength();
+					m_cursorPos = commandHistory[con_histIndex].Length();
 					return true;
 				}
 
@@ -1296,7 +1302,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				if(con_histIndex > commandHistory.numElem()-1) con_histIndex = commandHistory.numElem()-1;
 
 				con_Text = commandHistory[con_histIndex];
-				m_cursorPos = commandHistory[con_histIndex].GetLength();
+				m_cursorPos = commandHistory[con_histIndex].Length();
 
 				return true;
 			default:

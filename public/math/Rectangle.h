@@ -38,9 +38,17 @@ struct TRectangle
 		vrightBottom.y = rightBottom.y;
 	}
 
-	void AddVertex(const TVec2D<T> &vert)
+	void AddVertex(const TVec2D<T> &p)
 	{
-		POINT_TO_RECT(vert, vleftTop, vrightBottom);
+		if ( p.x < vleftTop.x )
+			vleftTop.x = p.x;
+		if ( p.x > vrightBottom.x )
+			vrightBottom.x = p.x;
+
+		if ( p.y < vleftTop.y )
+			vleftTop.y = p.y;
+		if ( p.y > vrightBottom.y )
+			vrightBottom.y = p.y;
 	}
 
 	void Reset()
@@ -83,6 +91,26 @@ struct TRectangle
     TVec2D<T> GetCenter() const
 	{
 		return (vleftTop + vrightBottom)*0.5f;
+	}
+
+	TRectangle<T, TMAX> GetTopVertical(float sizePercent) const
+	{
+		return TRectangle<T, TMAX>(vleftTop, lerp(vleftTop, vrightBottom, TVec2D<T>(1.0f, sizePercent)));
+	}
+
+	TRectangle<T, TMAX> GetBottomVertical(float sizePercent) const
+	{
+		return TRectangle<T, TMAX>(lerp(vrightBottom, vleftTop, TVec2D<T>(1.0f, sizePercent), vrightBottom));
+	}
+
+	TRectangle<T, TMAX> GetLeftHorizontal(float sizePercent) const
+	{
+		return TRectangle<T, TMAX>(vleftTop, lerp(vleftTop, vrightBottom, TVec2D<T>(sizePercent, 1.0f)));
+	}
+
+	TRectangle<T, TMAX> GetRightHorizontal(float sizePercent) const
+	{
+		return TRectangle<T, TMAX>(lerp(vrightBottom, vleftTop, TVec2D<T>(sizePercent, 1.0f), vrightBottom));
 	}
 
 	bool IsInRectangle(const TVec2D<T> &point) const

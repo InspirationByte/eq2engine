@@ -233,7 +233,7 @@ bool CGameObject::CheckVisibility( const occludingFrustum_t& frustum ) const
 	if( !m_pModel )
 		return false;
 
-	if(!frustum.IsSphereVisible(GetOrigin(), length(m_pModel->GetBBoxMaxs())))
+	if(!frustum.IsSphereVisible(GetOrigin(), length(m_pModel->GetAABB().maxPoint)))
 		return false;
 
 	return true;

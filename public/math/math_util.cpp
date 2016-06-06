@@ -204,7 +204,7 @@ float TriangleArea( const Vector3D& v1, const Vector3D& v2, const Vector3D& v3)
 	float d2 = length(v2 - v3);
 	float d3 = length(v3 - v1);
 
-	float h = (d1 + d2 + d3) * 0.5;
+	float h = (d1 + d2 + d3) * 0.5f;
 
 	return sqrt(h * (h - d1) * (h - d2) * (h - d3));
 }

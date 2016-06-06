@@ -46,7 +46,7 @@ public:
 protected:
 
 	wxChoice*					m_typeSel;
-
+	wxCheckBox*					m_parking;
 	wxChoice*					m_rotationSel;
 
 	int							m_rotation;
@@ -54,6 +54,7 @@ protected:
 
 	IMaterial*					m_trafficDir;
 	IMaterial*					m_trafficDirVar;
+	IMaterial*					m_trafficParking;
 };
 
 #endif // UI_ROADEDITOR

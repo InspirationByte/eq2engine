@@ -80,6 +80,8 @@ void CUI_OccluderEditor::ProcessMouseEvents( wxMouseEvent& event )
 				// add to current region
 				m_selectedRegion->m_occluders.append( m_newOccl );
 
+				g_pMainFrame->NotifyUpdate();
+
 				m_mode = ED_OCCL_READY;
 			}
 		}
@@ -190,6 +192,8 @@ void CUI_OccluderEditor::DeleteSelection()
 	{
 		int occIdx = m_selection[i].occIdx;
 		m_selection[i].region->m_occluders.fastRemoveIndex(occIdx);
+
+		g_pMainFrame->NotifyUpdate();
 	}
 
 	m_selection.clear();

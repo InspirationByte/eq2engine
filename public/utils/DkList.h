@@ -8,6 +8,8 @@
 #ifndef DKLIST_H
 #define DKLIST_H
 
+#include <functional>
+
 #include "platform/MessageBox.h"
 #include "dktypes.h"
 
@@ -28,6 +30,10 @@ public:
 
 	// returns number of elements in list
 	int				numElem( void ) const;
+
+	// returns number elements which satisfies to the condition
+	template< typename COMPAREFUNC >
+	int				numElem( COMPAREFUNC comparator ) const;
 
 	// returns number of elements allocated for
 	int				numAllocated( void ) const;
@@ -60,6 +66,11 @@ public:
 	// appends another list
 	int				append( const DkList<T> &other );
 
+	// appends another list with transformation
+	// return false to not add the element
+	template< class T2, typename TRANSFORMFUNC >
+	int				append( const DkList<T2> &other, TRANSFORMFUNC transform );
+
 	// inserts the element at the given index
 	int				insert( const T & obj, int index = 0 );
 
@@ -73,10 +84,18 @@ public:
 	int				findIndex( const T & obj ) const;
 
 	// finds the index for the given element
-	int				findIndex( const T & obj, bool (* comparator )(const T &a, const T &b)  ) const;
+	int				findIndex( const T & obj, bool (* comparator )(const T &a, const T &b) ) const;
 
 	// finds pointer to the given element
 	T *				find( T const & obj ) const;
+
+	// returns first found element which satisfies to the condition
+	template< typename COMPAREFUNC >
+	T*				findFirst( COMPAREFUNC comparator ) const;
+
+	// returns last found element which satisfies to the condition
+	template< typename COMPAREFUNC >
+	T*				findLast( COMPAREFUNC comparator ) const;
 
 	// removes the element at the given index
 	bool			removeIndex( int index );
@@ -158,6 +177,24 @@ template< class T >
 inline int DkList<T>::numElem( void ) const
 {
 	return m_nNumElem;
+}
+
+// -----------------------------------------------------------------
+// returns number elements which satisfies to the condition
+// -----------------------------------------------------------------
+template< class T >
+template< typename COMPAREFUNC >
+inline int DkList<T>::numElem( COMPAREFUNC comparator ) const
+{
+	int theCount = 0;
+
+	for(int i = 0; i < m_nNumElem; i++)
+	{
+		if(comparator(m_pListPtr[i]))
+			theCount++;
+	}
+
+	return theCount;
 }
 
 // -----------------------------------------------------------------
@@ -399,6 +436,30 @@ inline int DkList<T>::append( const DkList<T> &other )
 }
 
 // -----------------------------------------------------------------
+// appends another list with transformation
+// return false to not add the element
+// -----------------------------------------------------------------
+template< class T >
+template< class T2, typename TRANSFORMFUNC >
+inline int DkList<T>::append( const DkList<T2> &other, TRANSFORMFUNC transform )
+{
+	int nOtherElems = other.numElem();
+
+	// it can't predict how many elements it will have. So this is slower implementation
+
+	// try transform and append the elements
+	for (int i = 0; i < nOtherElems; i++)
+	{
+		T newObj;
+		if(transform(newObj, other[i]))
+			append(other[i]);
+	}
+		
+
+	return numElem();
+}
+
+// -----------------------------------------------------------------
 // Increases the m_nSize of the list by at leat one element if necessary
 // and inserts the supplied data into it.
 // -----------------------------------------------------------------
@@ -521,6 +582,40 @@ inline T *DkList<T>::find( T const & obj ) const
 
 	if ( i >= 0 )
 		return &m_pListPtr[ i ];
+
+	return NULL;
+}
+
+// -----------------------------------------------------------------
+// returns first element which satisfies to the condition
+// Returns NULL if the data is not found.
+// -----------------------------------------------------------------
+template< class T >
+template< typename COMPAREFUNC >
+inline T *DkList<T>::findFirst( COMPAREFUNC comparator  ) const
+{
+	for( int i = 0; i < m_nNumElem; i++ )
+	{
+		if ( comparator(m_pListPtr[i]) )
+			return &m_pListPtr[i];
+	}
+
+	return NULL;
+}
+
+// -----------------------------------------------------------------
+// returns last element which satisfies to the condition
+// Returns NULL if the data is not found.
+// -----------------------------------------------------------------
+template< class T >
+template< typename COMPAREFUNC >
+inline T *DkList<T>::findLast( COMPAREFUNC comparator ) const
+{
+	for( int i = m_nNumElem-1; i >= 0; i-- )
+	{
+		if ( comparator(m_pListPtr[i]) )
+			return &m_pListPtr[i];
+	}
 
 	return NULL;
 }

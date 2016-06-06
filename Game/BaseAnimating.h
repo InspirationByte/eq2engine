@@ -92,8 +92,8 @@ public:
 
 // inverse kinematics
 
-	void						SetIKWorldTarget(int chain_id, Vector3D &world_position, Matrix4x4 *externaltransform = NULL); // sets ik world point, use external transform if model transform differs from entity transform
-	void						SetIKLocalTarget(int chain_id, Vector3D &local_position);	// sets local, model-space ik point target
+	void						SetIKWorldTarget(int chain_id, const Vector3D &world_position, Matrix4x4 *externaltransform = NULL); // sets ik world point, use external transform if model transform differs from entity transform
+	void						SetIKLocalTarget(int chain_id, const Vector3D &local_position);	// sets local, model-space ik point target
 
 	void						SetIKChainEnabled(int chain_id, bool enabled);				// enables or disables ik chain.
 	bool						IsIKChainEnabled(int chain_id);								// returns status if ik chain

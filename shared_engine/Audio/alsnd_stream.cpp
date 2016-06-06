@@ -74,7 +74,7 @@ void DkSoundAmbient::Play()
 	}
 	else
 	{
-		alSourcei(m_alSource, AL_BUFFER, m_sample->m_nALBuffer);
+		alSourcei(m_alSource, AL_BUFFER, m_sample->m_alBuffer);
 		alSourcePlay(m_alSource);
 	}
 }
@@ -82,6 +82,11 @@ void DkSoundAmbient::Play()
 void DkSoundAmbient::Stop()
 {
 	StopStreaming();
+}
+
+void DkSoundAmbient::StopLoop()
+{
+	alSourcei(m_alSource, AL_LOOPING, AL_FALSE);
 }
 
 void DkSoundAmbient::Pause()

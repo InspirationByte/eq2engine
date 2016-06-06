@@ -63,7 +63,7 @@ void CObject_Debris::Spawn()
 
 	m_smashSound = KV_GetValueString(m_keyValues->FindKeyBase("smashsound"), 0, "");
 
-	if(m_smashSound.GetLength() > 0)
+	if(m_smashSound.Length() > 0)
 	{
 		ses->PrecacheSound(m_smashSound.c_str());
 		ses->PrecacheSound((m_smashSound + "_light").c_str());
@@ -72,8 +72,6 @@ void CObject_Debris::Spawn()
 	}
 
 	CEqRigidBody* body = new CEqRigidBody();
-
-	BoundingBox bbox(m_pModel->GetBBoxMins(), m_pModel->GetBBoxMaxs());
 
 	if( body->Initialize(&m_pModel->GetHWData()->m_physmodel, 0) )//
 	{
@@ -138,8 +136,6 @@ void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup)
 	m_smashSound = "";
 	
 	CEqRigidBody* body = new CEqRigidBody();
-
-	BoundingBox bbox(m_pModel->GetBBoxMins(), m_pModel->GetBBoxMaxs());
 
 	if( body->Initialize(&m_pModel->GetHWData()->m_physmodel, 0) )//
 	{

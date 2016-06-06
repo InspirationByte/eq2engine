@@ -1557,7 +1557,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		if (SUCCEEDED(D3DX10CompileFromMemory(shaderString.getData(), shaderString.length(), pShader->GetName(), NULL, NULL, "vs_main", "vs_4_1", compileFlags, 0, NULL, &shaderBuf, &errorsBuf, NULL)))
 		{
 #else
-		if (SUCCEEDED(D3D10CompileShader(shaderString.GetData(), shaderString.GetLength(), pShader->GetName(), NULL, NULL, "vs_main", "vs_4_0", compileFlags, &shaderBuf, &errorsBuf)))
+		if (SUCCEEDED(D3D10CompileShader(shaderString.GetData(), shaderString.Length(), pShader->GetName(), NULL, NULL, "vs_main", "vs_4_0", compileFlags, &shaderBuf, &errorsBuf)))
 		{
 #endif
 			if (SUCCEEDED(m_pD3DDevice->CreateVertexShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), &pShader->m_pVertexShader)))
@@ -1615,7 +1615,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		if (SUCCEEDED(D3DX10CompileFromMemory(shaderString.getData(), shaderString.length(), pShader->GetName(), NULL, NULL, "gs_main", "gs_4_1", compileFlags, 0, NULL, &shaderBuf, &errorsBuf, NULL)))
 		{
 #else
-		if (SUCCEEDED(D3D10CompileShader(shaderString.GetData(), shaderString.GetLength(), pShader->GetName(), NULL, NULL, "gs_main", "gs_4_0", compileFlags, &shaderBuf, &errorsBuf)))
+		if (SUCCEEDED(D3D10CompileShader(shaderString.GetData(), shaderString.Length(), pShader->GetName(), NULL, NULL, "gs_main", "gs_4_0", compileFlags, &shaderBuf, &errorsBuf)))
 		{
 #endif
 			if (SUCCEEDED(m_pD3DDevice->CreateGeometryShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), &pShader->m_pGeomShader)))
@@ -1669,7 +1669,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		if (SUCCEEDED(D3DX10CompileFromMemory(shaderString.getData(), shaderString.length(), pShader->GetName(), NULL, NULL, "ps_main", "ps_4_1", compileFlags, 0, NULL, &shaderBuf, &errorsBuf, NULL)))
 		{
 #else
-		if (SUCCEEDED(D3D10CompileShader(shaderString.GetData(), shaderString.GetLength(), pShader->GetName(), NULL, NULL, "ps_main", "ps_4_0", compileFlags, &shaderBuf, &errorsBuf)))
+		if (SUCCEEDED(D3D10CompileShader(shaderString.GetData(), shaderString.Length(), pShader->GetName(), NULL, NULL, "ps_main", "ps_4_0", compileFlags, &shaderBuf, &errorsBuf)))
 		{
 #endif
 			if (SUCCEEDED(m_pD3DDevice->CreatePixelShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), &pShader->m_pPixelShader)))
@@ -3170,7 +3170,7 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(VertexFormatDesc_s *formatDes
 
 	CScopedMutex scoped(m_Mutex);
 
-	if (SUCCEEDED(D3D10CompileShader(vertexShaderString.GetData(), vertexShaderString.GetLength(), "VertexFormatInputSignaturePassShader", NULL, NULL, "main", "vs_4_0", compileFlags, &pGeneratedVertexShader, &errorsBuf)))
+	if (SUCCEEDED(D3D10CompileShader(vertexShaderString.GetData(), vertexShaderString.Length(), "VertexFormatInputSignaturePassShader", NULL, NULL, "main", "vs_4_0", compileFlags, &pGeneratedVertexShader, &errorsBuf)))
 	{
 		if (SUCCEEDED(m_pD3DDevice->CreateVertexShader(pGeneratedVertexShader->GetBufferPointer(), pGeneratedVertexShader->GetBufferSize(), &pShader)))
 		{

@@ -29,6 +29,9 @@ class CEngineHost : public IEngineHost
 {
 public:
 	
+	bool					IsInitialized() const {return true;};
+	const char*				GetInterfaceName() const {return IENGINEHOST_INTERFACE_VERSION;}
+
 	friend class			CFont;
 
 							CEngineHost();
@@ -74,8 +77,6 @@ public:
 	IShaderAPI*				GetRenderer();
 	IPhysics*				GetPhysics();
 	IMaterialSystem*		GetMaterialSystem();
-
-	IEqFont*				LoadFont(const char* pszFontName);
 
 	void					EnterResourceLoading();
 	void					EndResourceLoading();

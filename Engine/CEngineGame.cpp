@@ -50,6 +50,9 @@ public:
 						CEngineGame( void );
 	virtual				~CEngineGame( void );
 
+	bool				IsInitialized() const {return true;}
+	const char*			GetInterfaceName() const {return IENGINEGAME_INTERFACE_VERSION;};
+
 	bool				Init( void );
 	void				Shutdown( void );
 

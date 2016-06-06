@@ -23,6 +23,7 @@ CHeightTileField::CHeightTileField()
 	m_regionPos = 0;
 
 	m_fieldIdx = 0;
+	m_levOffset = 0;
 
 	m_userData = NULL;
 }
@@ -39,7 +40,9 @@ void CHeightTileField::Init(int size, const IVector2D& regionPos)
 
 	m_regionPos = regionPos;
 
+#ifdef EDITOR
 	m_points = new hfieldtile_t[m_sizew*m_sizeh];
+#endif // EDITOR
 }
 
 void CHeightTileField::Destroy()
@@ -47,6 +50,11 @@ void CHeightTileField::Destroy()
 	delete [] m_points;
 	m_points = NULL;
 
+	UnloadMaterials();
+}
+
+void CHeightTileField::UnloadMaterials()
+{
 	for(int i = 0; i < m_materials.numElem(); i++)
 	{
 		materials->FreeMaterial( m_materials[i]->material );
@@ -62,17 +70,68 @@ struct material_s
 
 ALIGNED_TYPE(material_s,4) material_t;
 
-void CHeightTileField::ReadFromStream( IVirtualStream* stream )
+void CHeightTileField::ReadOnlyPoints( IVirtualStream* stream )
 {
-	int numMaterials = 0;
-	int matNamesSize = 0;
-
 	if(!m_points)
 		m_points = new hfieldtile_t[m_sizew*m_sizeh];
 
 	stream->Read(m_points, m_sizew*m_sizeh, sizeof(hfieldtile_t));
 
-	stream->Read(&numMaterials, sizeof(int), 1);
+	int numMaterials = 0;
+	int matNamesSize = 0;
+
+	stream->Read(&numMaterials, 1, sizeof(int));
+	stream->Read(&matNamesSize, 1, sizeof(int));
+
+	stream->Seek(matNamesSize, VS_SEEK_CUR);
+}
+
+void CHeightTileField::ReadOnlyMaterials( IVirtualStream* stream )
+{
+	if(m_materials.numElem() > 0)
+		return;
+
+	stream->Seek(m_sizew*m_sizeh*sizeof(hfieldtile_t), VS_SEEK_CUR);
+
+	int numMaterials = 0;
+	int matNamesSize = 0;
+
+	stream->Read(&numMaterials, 1, sizeof(int));
+	stream->Read(&matNamesSize, 1, sizeof(int));
+
+	char* matNamesData = new char[matNamesSize];
+
+	stream->Read(matNamesData, 1, matNamesSize);
+
+	char* matNamePtr = matNamesData;
+
+	for(int i = 0; i < numMaterials; i++)
+	{
+		hfieldmaterial_t* matBundle = new hfieldmaterial_t();
+		matBundle->material = materials->FindMaterial(matNamePtr, true);
+		matBundle->atlas = TexAtlas_LoadAtlas(("materials/"+_Es(matNamePtr)+".atlas").c_str(), matNamePtr, true);
+
+		if(matBundle->material)
+			matBundle->material->Ref_Grab();
+
+		m_materials.append( matBundle );
+
+		// valid?
+		matNamePtr += strlen(matNamePtr)+1;
+	}
+
+	delete [] matNamesData;
+}
+
+void CHeightTileField::ReadFromStream( IVirtualStream* stream )
+{
+	m_points = new hfieldtile_t[m_sizew*m_sizeh];
+	stream->Read(m_points, m_sizew*m_sizeh, sizeof(hfieldtile_t));
+
+	int numMaterials = 0;
+	int matNamesSize = 0;
+
+	stream->Read(&numMaterials, 1, sizeof(int));
 	stream->Read(&matNamesSize, 1, sizeof(int));
 
 	char* matNamesData = new char[matNamesSize];
@@ -170,7 +229,7 @@ bool CHeightTileField::SetPointMaterial(int x, int y, IMaterial* pMaterial, int 
 
 	if(pMaterial == NULL)
 	{
-		int matIdx = tile.texture;
+		//int matIdx = tile.texture;
 
 		// decrement
 		//if(matIdx >= 0)
@@ -532,10 +591,10 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 				batches.append(batch);
 			}
 
-			IMaterial* batchMaterial = batch->materialBundle->material;
 			CTextureAtlas* batchAtlas = batch->materialBundle->atlas;
 
 			/*
+			IMaterial* batchMaterial = batch->materialBundle->material;
 			if(batchMaterial->GetBaseTexture())
 			{
 				fTexelX = 1.0f / batchMaterial->GetBaseTexture()->GetWidth();
@@ -1029,6 +1088,8 @@ void CHeightTileFieldRenderable::CleanRenderData(bool deleteVBO)
 			g_pShaderAPI->DestroyIndexBuffer(m_indexbuffer);
 
 		m_indexbuffer = NULL;
+
+		UnloadMaterials();
 	}
 
 	m_isChanged = true;
@@ -1141,7 +1202,7 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 	if(m_isChanged)
 	{
 #ifdef EDITOR
-		g_pShaderAPI->Reset(RESET_TYPE_VBO);
+		g_pShaderAPI->Reset(STATE_RESET_VBO);
 		g_pShaderAPI->ApplyBuffers();
 
 		// regenerate again

@@ -68,7 +68,7 @@ public:
 						ShaderAPIGL();
 
 	// Init + Shurdown
-	void				Init(const shaderapiinitparams_t &params);
+	void				Init( shaderapiinitparams_t &params);
 	void				Shutdown();
 
 	void				PrintAPIInfo();

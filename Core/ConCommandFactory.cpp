@@ -103,13 +103,145 @@ void CC_Cmdlist_f(DkList<EqString> *args)
 	MsgWarning("********Command list ends*********\n");
 }
 
+void CC_Revert_f(DkList<EqString> *args)
+{
+	if(CMD_ARGC == 0)
+	{
+		Msg("Usage: revert <cvar name>\n");
+		return;
+	}
+
+	ConVar* cv = (ConVar*)g_sysConsole->FindCvar( CMD_ARGV(0).c_str() );
+	if(cv)
+	{
+		cv->SetValue( cv->GetDefaultValue() );
+		Msg("%s set to '%s'\n", cv->GetName(), cv->GetString());
+	}
+	else
+		MsgError("No such cvar '%s'\n", CMD_ARGV(0).c_str() );
+}
+
+void cc_toggle_f(DkList<EqString>* args)
+{
+    if (args->numElem() == 0)
+    {
+        MsgError("No command and arguments for toggle.\n");
+        return;
+    }
+
+    ConVar *pConVar = (ConVar*)g_sysConsole->FindCvar(args->ptr()[0].GetData());
+
+    if (!pConVar)
+    {
+        MsgError("Unknown variable '%s'\n",args->ptr()[0].GetData());
+        return;
+    }
+
+	bool nValue = pConVar->GetBool();
+
+    if (!(pConVar->GetFlags() & CV_CHEAT) && !(pConVar->GetFlags() & CV_INITONLY))
+    {
+        pConVar->SetBool(!nValue);
+        MsgWarning("%s = %s\n",pConVar->GetName(),pConVar->GetString());
+    }
+}
+
+void cc_exec_f(DkList<EqString>* args)
+{
+    if (args->numElem() == 0)
+    {
+        MsgWarning("Example: exec <filename> [command lookup] - executes configuration file\n");
+        return;
+    }
+
+    g_sysConsole->ClearCommandBuffer();
+
+	if(args->numElem() > 1)
+		g_sysConsole->ParseFileToCommandBuffer((char*)(args->ptr()[0]).GetData(),args->ptr()[1].GetData());
+	else
+		g_sysConsole->ParseFileToCommandBuffer((char*)(args->ptr()[0]).GetData());
+
+	((CConsoleCommands*)g_sysConsole.GetInstancePtr())->EnableInitOnlyVarsChangeProtection(false);
+	g_sysConsole->ExecuteCommandBuffer();
+}
+
+void cc_set_f(DkList<EqString>* args)
+{
+    if (args->numElem() == 0)
+    {
+        MsgError("Usage: set <convar>\n");
+        return;
+    }
+
+    ConVar *pConVar = (ConVar*)g_sysConsole->FindCvar(args->ptr()[0].GetData());
+
+    if (!pConVar)
+    {
+        MsgError("Unknown variable '%s'\n",args->ptr()[0].GetData());
+        return;
+    }
+
+    EqString pArgs;
+	char tmp_path[2048];
+    for (int i = 1; i < args->numElem();i++)
+    {
+		sprintf(tmp_path, i < args->numElem()-1 ? (char*) "%s " : (char*) "%s" , args->ptr()[i].GetData());
+
+        pArgs.Append(tmp_path);
+    }
+
+    if (!(pConVar->GetFlags() & CV_CHEAT) && !(pConVar->GetFlags() & CV_INITONLY))
+    {
+        pConVar->SetValue( pArgs.GetData() );
+        Msg("%s set to %s\n",pConVar->GetName(), pArgs.GetData());
+    }
+}
+
+void cc_seta_f(DkList<EqString>* args)
+{
+    if (args->numElem() == 0)
+    {
+        MsgError("Usage: seta <convar>\n");
+        return;
+    }
+
+    ConVar *pConVar = (ConVar*)g_sysConsole->FindCvar(args->ptr()[0].GetData());
+
+    if (!pConVar)
+    {
+        MsgError("Unknown variable '%s'\n",args->ptr()[0].GetData());
+        return;
+    }
+
+    EqString pArgs;
+	char tmp_path[2048];
+    for (int i = 1; i < args->numElem();i++)
+    {
+		sprintf(tmp_path, i < args->numElem()-1 ? (char*) "%s " : (char*) "%s" , args->ptr()[i].GetData());
+
+        pArgs.Append(tmp_path);
+    }
+
+    pConVar->SetValue( pArgs.GetData() );
+}
+
+ConCommand toggle("togglevar",cc_toggle_f,"Toggles ConVar value",CV_UNREGISTERED);
+ConCommand exec("exec",cc_exec_f,"Execute configuration file",CV_UNREGISTERED);
+ConCommand set("set",cc_set_f,"Sets cvar value",CV_UNREGISTERED);
+ConCommand seta("seta",cc_seta_f,"Sets cvar value incl. restricted",CV_UNREGISTERED);
 ConCommand cvarlist("cvarlist",CC_Cvarlist_f,"Prints out all aviable cvars",CV_UNREGISTERED);
 ConCommand cmdlist("cmdlist",CC_Cmdlist_f,"Prints out all aviable commands",CV_UNREGISTERED);
+ConCommand revert("revert",CC_Revert_f,"Reverts cvar to it's default value",CV_UNREGISTERED);
 
 void CConsoleCommands::RegisterCommands()
 {
+	RegisterCommand(&toggle);
+	RegisterCommand(&exec);
+	RegisterCommand(&set);
+	RegisterCommand(&seta);
 	RegisterCommand(&cvarlist);
 	RegisterCommand(&cmdlist);
+	RegisterCommand(&revert);
 }
 
 const ConVar *CConsoleCommands::FindCvar(const char* name)
@@ -168,6 +300,11 @@ static void _RegisterOrDie()
 		GetCore()->RegisterInterface( CONSOLE_INTERFACE_VERSION, GetCConsoleCommands());
 }
 
+bool isCvarChar(char c)
+{
+	return c == '+' ||  c == '-' || c == '_' || isalpha(c);
+}
+
 void CConsoleCommands::RegisterCommand(ConCommandBase *pCmd)
 {
 	_RegisterOrDie();
@@ -177,6 +314,8 @@ void CConsoleCommands::RegisterCommand(ConCommandBase *pCmd)
 
 	//if(FindBase(pCmd->GetName()) != NULL)
 	//	MsgError("%s already declared.\n",pCmd->GetName());
+
+	ASSERTMSG(isCvarChar(*pCmd->GetName()), "RegisterCommand - command name has invalid start character!");
 
 	// Already registered
 	if ( pCmd->IsRegistered() )
@@ -309,7 +448,7 @@ void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename, const c
 		else
 			tmpStr = xstrtrim(cmds[i].GetData());
 
-		if(tmpStr.GetLength() > 0)
+		if(tmpStr.Length() > 0)
 		{
 			if(doCommandLookup)
 			{
@@ -512,11 +651,12 @@ bool CConsoleCommands::ExecuteCommandBuffer(unsigned int CmdFilterFlags/* = -1*/
 			// Primitive executor tries to find optional arguments
 			if(pArgs.numElem() == 0)
 			{
-				MsgInfo("%s = %s\n",pConVar->GetName(),pConVar->GetString());
+				MsgInfo("%s is '%s' (default value is '%s')\n",pConVar->GetName(),pConVar->GetString(), pConVar->GetDefaultValue());
 				continue;
 			}
 
 			pConVar->SetValue(pArgs[0].GetData());
+			Msg("%s set to '%s'\n", pConVar->GetName(), pConVar->GetString());
 		}
 		else
 		{

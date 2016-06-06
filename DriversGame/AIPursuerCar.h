@@ -47,8 +47,6 @@ public:
 	CAIPursuerCar(carConfigEntry_t* carConfig, EPursuerAIType type);
 	~CAIPursuerCar();
 
-	virtual void		InitAI(CLevelRegion* reg, levroadcell_t* cell);
-
 	virtual void		Spawn();
 	void				Precache();
 	void				OnRemove();

@@ -18,10 +18,12 @@ struct regionMap_t
 	{
 		region = NULL;
 		image = NULL;
+		aiMapImage = NULL;
 	}
 
 	CLevelRegion*	region;
 	ITexture*		image;	// image of region
+	ITexture*		aiMapImage;
 };
 
 class CRegionEditFrame : public wxFrame 
@@ -44,6 +46,7 @@ public:
 	void OnPaint( wxPaintEvent& event ) {}
 	void OnResizeWin( wxSizeEvent& event );
 	void OnIdle(wxIdleEvent &event);
+	void OnKey(wxKeyEvent& event);
 
 	void ProcessMouseEvents(wxMouseEvent& event);
 
@@ -77,6 +80,8 @@ protected:
 	wxPoint			m_mouseOldPos;
 
 	int				m_mouseoverRegion;
+
+	bool			m_showsNavGrid;
 };
 
 #endif // REGIONEDITFRAME_H

@@ -72,7 +72,7 @@ public:
 												const Vector3D& velocity,
 												sndEffect_t* pEffect = NULL);
 
-	Vector3D				GetListenerPosition();
+	const Vector3D&			GetListenerPosition() const;
 
 	//-----------------------------------------------------------------------------------------
 

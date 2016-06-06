@@ -18,7 +18,7 @@ public:
 	PPMEM_MANAGED_OBJECT();
 
 	// get material var name
-	virtual const char*	GetName()	= 0;
+	virtual const char*	GetName() const	= 0;
 
 	//set material var name
 	virtual void		SetName(const char* szNewName)	= 0;
@@ -27,18 +27,18 @@ public:
 	virtual const char*	GetString()	= 0;
 
 	// get material var integer value
-	virtual int			GetInt()	= 0;
+	virtual int			GetInt() const	= 0;
 
 	// get material var float value
-	virtual float		GetFloat()	= 0;
+	virtual float		GetFloat() const	= 0;
 
 	// get vector value
-	virtual Vector2D	GetVector2()	= 0;
-	virtual Vector3D	GetVector3()	= 0;
-	virtual Vector4D	GetVector4()	= 0;
+	virtual Vector2D	GetVector2() const	= 0;
+	virtual Vector3D	GetVector3() const	= 0;
+	virtual Vector4D	GetVector4() const	= 0;
 
 	// texture pointer
-	virtual ITexture*	GetTexture() = 0;
+	virtual ITexture*	GetTexture() const = 0;
 
 	// assign texture
 	virtual void		AssignTexture(ITexture* pTexture) = 0;

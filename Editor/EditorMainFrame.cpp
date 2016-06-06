@@ -183,7 +183,7 @@ bool SaveRegOptions()
 
 	// Write Recent Files
 	for ( int i = 0; i < g_recentPath.numElem(); i++ )	
-		RegSetValueExA(hKey, varargs("mru%d",i), 0, REG_SZ, (BYTE*)g_recentPath[i].GetData(), g_recentPath[i].GetLength() );	
+		RegSetValueExA(hKey, varargs("mru%d",i), 0, REG_SZ, (BYTE*)g_recentPath[i].GetData(), g_recentPath[i].Length() );	
 
 	return true;
 }
@@ -333,8 +333,6 @@ void Editor_Init()
 
 	g_cmdLine->ExecuteCommandLine(true,true);
 
-	Platform_InitTime();
-
 	MsgInfo("\n\nLevel Editor build %d, %s\n", BUILD_NUMBER_EDITOR - BUILD_NUMBER_SUBTRACTED, COMPILE_DATE);
 
 	MsgInfo("Initializing...\n\n");
@@ -481,7 +479,7 @@ public:
 					break;
 
 				EqString filename = wfd.cFileName;
-				if( filename.GetLength() > 1 && filename != ".." && (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
+				if( filename.Length() > 1 && filename != ".." && (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
 				{
 					if( g_fileSystem->FileExist( (filename + "/GameInfo.txt").GetData() ) )
 					{

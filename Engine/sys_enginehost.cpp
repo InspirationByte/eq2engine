@@ -32,6 +32,8 @@
 #include "SDL_mouse.h"
 #endif
 
+#include "FontCache.h"
+
 /*
 enum HostEmulationMode_e
 {
@@ -85,8 +87,8 @@ void cc_printres_f(DkList<EqString> *args)
 }
 ConCommand cc_printres("sys_print_resources",cc_printres_f,"Prints all loaded resources to the console");
 
+/*
 ConVar con_enable("con_enable","1","Enable console",CV_ARCHIVE | CV_CHEAT);
-
 DECLARE_CMD(toggleconsole, "Toggles console", 0)
 {
 	if(g_pSysConsole->IsVisible() && g_pSysConsole->IsShiftPressed())
@@ -118,6 +120,7 @@ DECLARE_CMD(toggleconsole, "Toggles console", 0)
 
 	g_pEngineHost->SetCursorShow(g_pSysConsole->IsVisible(), true);
 }
+*/
 
 static EQCURSOR staticDefaultCursor[20];
 
@@ -462,11 +465,6 @@ EQWNDHANDLE CEngineHost::GetWindowHandle()
 IEqFont* CEngineHost::GetDefaultFont()
 {
 	return m_pDefaultFont;
-}
-
-IEqFont* CEngineHost::LoadFont(const char* pszFontName)
-{
-	return InternalLoadFont(pszFontName);
 }
 
 bool CEngineHost::LoadRenderer()
@@ -970,7 +968,7 @@ bool CEngineHost::Init()
 		}
 	}
 
-	m_pDefaultFont = LoadFont("default");
+	m_pDefaultFont = g_fontCache->GetFont("default", 0);
 
 	//InitNetworking();
 	
@@ -1115,8 +1113,6 @@ int CEngineHost::Frame()
 
 	if(!engine->EngineRunFrame( m_fFrameTime ))
 		return 0;
-
-	static IEqFont* pFont = LoadFont("console");
 
 	// Draw debug overlays
 	debugoverlay->Draw(viewrenderer->GetMatrix(MATRIXMODE_PROJECTION), viewrenderer->GetMatrix(MATRIXMODE_VIEW), m_nWidth, m_nHeight);

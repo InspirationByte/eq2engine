@@ -20,7 +20,7 @@ struct Entfactory_t
 	char *classname;
 };
 
-class IEntityFactory
+class IEntityFactory : public ICoreModuleInterface
 {
 public:
 	virtual void					AddEntity(const char *classname,DISPATCH_ENTFUNC dispatch ) = 0;

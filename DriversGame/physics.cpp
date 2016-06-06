@@ -69,7 +69,7 @@ void CPhysicsHFObject::PostSimulate( float fDt )
 
 	if (m_owner->m_state == GO_STATE_IDLE)
 	{
-		float lastdt = m_object->GetLastFrameTime();
+		//float lastdt = m_object->GetLastFrameTime();
 		m_owner->OnPhysicsFrame(fDt);
 	}
 

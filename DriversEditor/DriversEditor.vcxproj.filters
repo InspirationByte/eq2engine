@@ -644,4 +644,7 @@
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="windows\mainicon.ico" />
+  </ItemGroup>
 </Project>

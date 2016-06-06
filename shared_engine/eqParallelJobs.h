@@ -31,7 +31,7 @@ This is the diferrent conception of jobs
 
 namespace Threading
 {
-	typedef void(*jobFunction_t)(void *);
+	typedef void(*jobFunction_t)(void *, int i);
 
 	enum EJobFlags
 	{
@@ -44,7 +44,7 @@ namespace Threading
 
 	struct eqParallelJob_t
 	{
-		eqParallelJob_t() : flags(0), arguments(nullptr), threadId(0)
+		eqParallelJob_t() : flags(0), arguments(nullptr), threadId(0), numIter(1)
 		{
 		}
 
@@ -52,6 +52,7 @@ namespace Threading
 		void*			arguments;
 		volatile int	flags;		// EJobFlags
 		uintptr_t		threadId;	// выбор потока
+		int				numIter;
 	};
 
 	class CEqParallelJobThreads;

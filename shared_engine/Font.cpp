@@ -8,8 +8,6 @@
 
 /*
 TODO:
-		- New font system, font file format
-		- Support utf16/wchar_t translated strings
 		- Make in-engine font generator
 		- Text rendering services
 		- Text rendering shaders and effects
@@ -21,6 +19,7 @@ TODO:
 #include "Font.h"
 #include "utils/DkList.h"
 #include "utils/strtools.h"
+#include "utils/DkLinkedList.h"
 
 #include <stdlib.h>
 
@@ -202,8 +201,6 @@ float CFont::_GetStringWidth( const CHAR_T* str, int styleFlags, int charCount, 
 
     return totalWidth;
 }
-
-
 
 //
 // Fills text buffer and processes tags
@@ -534,197 +531,6 @@ int CFont::GetTextQuadsCount(const CHAR_T* str, int styleFlags) const
 	return n;
 }
 
-/*
-//------------------------------------------------------------------------------
-//
-// LEGACY - fills ASCII text within rectangle
-//
-int CFont::RectangularFillTextBuffer(Vertex2D_t *dest, const char *str, float x, float y, float charWidth, float charHeight, Rectangle_t &rect, int* nLinesCount, bool enableWidthRatio, float fOffset)
-{
-	float startx = x;
-
-	if(nLinesCount != NULL)
-		(*nLinesCount) = 1;
-
-	int numVertsToDraw = 0;
-
-    while (*str)
-	{
-		const eqFontChar_t& chr = GetFontCharById(*(unsigned char*)str);//m_FontChars[*(unsigned char*)str];
-		float cw = charWidth;
-
-		if(enableWidthRatio)
-			cw *= chr.ratio;
-
-		Rectangle_t charRect(x,y,x + cw,y + charHeight);
-
-		if (*str == '\n')
-		{
-			if(nLinesCount != NULL)
-				(*nLinesCount)++;
-
-			y += charHeight;
-			x = startx;
-		}
-		else
-		{
-			if(!rect.IsFullyInside(charRect))
-			{
-				if(nLinesCount != NULL)
-					(*nLinesCount)++;
-
-				y += charHeight;
-				x = startx;
-
-				if(y + charHeight > rect.vrightBottom.y)
-				{
-					str++;
-					continue;
-				}
-			}
-
-			dest[0].m_vPosition = Vector2D(x, y);
-			dest[0].m_vTexCoord = Vector2D(chr.x0, chr.y0);
-			dest[1].m_vPosition = Vector2D(x + cw, y);
-			dest[1].m_vTexCoord = Vector2D(chr.x1, chr.y0);
-			dest[2].m_vPosition = Vector2D(x, y + charHeight);
-			dest[2].m_vTexCoord = Vector2D(chr.x0, chr.y1);
-
-			dest[3].m_vPosition = Vector2D(x, y + charHeight);
-			dest[3].m_vTexCoord = Vector2D(chr.x0, chr.y1);
-			dest[4].m_vPosition = Vector2D(x + cw, y);
-			dest[4].m_vTexCoord = Vector2D(chr.x1, chr.y0);
-			dest[5].m_vPosition = Vector2D(x + cw, y + charHeight);
-			dest[5].m_vTexCoord = Vector2D(chr.x1, chr.y1);
-
-			dest[0].m_vColor = m_textColor;
-			dest[1].m_vColor = m_textColor;
-			dest[2].m_vColor = m_textColor;
-			dest[3].m_vColor = m_textColor;
-			dest[4].m_vColor = m_textColor;
-			dest[5].m_vColor = m_textColor;
-
-			dest			+= 6;
-			numVertsToDraw	+= 6;
-			x += cw + m_spacing;
-		}
-
-		str++;
-    } //while
-
-	return numVertsToDraw;
-}
-
-//
-// LEGACY - fills ASCII text
-//
-int CFont::FillTextBuffer(Vertex2D_t *dest, const char *str, float x, float y, float charWidth, float charHeight, ETextOrientation textOrientation, bool enableWidthRatio, int styleFlags, float fOffset)
-{
-	int numVertsToDraw = 0;
-
-	float startx = x;
-
-    while (*str)
-	{
-		switch(textOrientation)
-		{
-			case TEXT_ORIENT_UP:
-			case TEXT_ORIENT_DOWN:
-			{
-				if (*str == '\n')
-				{
-					// Do nothing in this case
-				}
-				else
-				{
-					const eqFontChar_t& chr = GetFontCharById(*(ubyte*) str); //m_FontChars[*(ubyte*) str];
-
-					float cw = charWidth;
-
-					if(enableWidthRatio)
-						cw *= chr.ratio;
-
-					float ch = charHeight;
-
-					dest[0].m_vPosition = Vector2D(x-fOffset, y-fOffset);
-					dest[0].m_vTexCoord = Vector2D(chr.x0, chr.y0);
-					dest[1].m_vPosition = Vector2D(x + cw + fOffset, y-fOffset);
-					dest[1].m_vTexCoord = Vector2D(chr.x1, chr.y0);
-					dest[2].m_vPosition = Vector2D(x-fOffset, y + charHeight+fOffset);
-					dest[2].m_vTexCoord = Vector2D(chr.x0, chr.y1);
-
-					dest[3].m_vPosition = Vector2D(x-fOffset, y + charHeight+fOffset);
-					dest[3].m_vTexCoord = Vector2D(chr.x0, chr.y1);
-					dest[4].m_vPosition = Vector2D(x + cw+fOffset, y-fOffset);
-					dest[4].m_vTexCoord = Vector2D(chr.x1, chr.y0);
-					dest[5].m_vPosition = Vector2D(x + cw+fOffset, y + charHeight+fOffset);
-					dest[5].m_vTexCoord = Vector2D(chr.x1, chr.y1);
-
-					dest[0].m_vColor = m_textColor;
-					dest[1].m_vColor = m_textColor;
-					dest[2].m_vColor = m_textColor;
-					dest[3].m_vColor = m_textColor;
-					dest[4].m_vColor = m_textColor;
-					dest[5].m_vColor = m_textColor;
-
-					numVertsToDraw	+= 6;
-					dest			+= 6;
-
-					y += (textOrientation == TEXT_ORIENT_DOWN) ? (ch+m_spacing) : -(ch+m_spacing);
-				}
-				break;
-			}
-			case TEXT_ORIENT_RIGHT:
-			default:
-			{
-				if (*str == '\n')
-				{
-					y += charHeight;
-					x = startx;
-				}
-				else
-				{
-					const eqFontChar_t& chr = GetFontCharById(*(ubyte*) str); //m_FontChars[*(ubyte*) str];
-
-					float cw = charWidth;
-					if(enableWidthRatio)
-						cw *= chr.ratio;
-
-					dest[0].m_vPosition = Vector2D(x-fOffset, y-fOffset);
-					dest[0].m_vTexCoord = Vector2D(chr.x0, chr.y0);
-					dest[1].m_vPosition = Vector2D(x + cw + fOffset, y-fOffset);
-					dest[1].m_vTexCoord = Vector2D(chr.x1, chr.y0);
-					dest[2].m_vPosition = Vector2D(x-fOffset, y + charHeight+fOffset);
-					dest[2].m_vTexCoord = Vector2D(chr.x0, chr.y1);
-
-					dest[3].m_vPosition = Vector2D(x-fOffset, y + charHeight+fOffset);
-					dest[3].m_vTexCoord = Vector2D(chr.x0, chr.y1);
-					dest[4].m_vPosition = Vector2D(x + cw+fOffset, y-fOffset);
-					dest[4].m_vTexCoord = Vector2D(chr.x1, chr.y0);
-					dest[5].m_vPosition = Vector2D(x + cw+fOffset, y + charHeight+fOffset);
-					dest[5].m_vTexCoord = Vector2D(chr.x1, chr.y1);
-
-					dest[0].m_vColor = m_textColor;
-					dest[1].m_vColor = m_textColor;
-					dest[2].m_vColor = m_textColor;
-					dest[3].m_vColor = m_textColor;
-					dest[4].m_vColor = m_textColor;
-					dest[5].m_vColor = m_textColor;
-
-					numVertsToDraw	+= 6;
-					dest			+= 6;
-					x += cw+m_spacing;
-				}
-				break;
-			}
-		} //switch
-
-		str++;
-    } //while
-
-	return numVertsToDraw;
-}*/
-
 bool CFont::LoadFont( const char* filenamePrefix )
 {
 	m_name = filenamePrefix;
@@ -870,8 +676,6 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 			}
 		}
-
-		//MsgInfo("Font loaded: '%s'\n", filenamePrefix);
 
 		return true;
 	}

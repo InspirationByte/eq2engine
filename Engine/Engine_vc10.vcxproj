@@ -63,7 +63,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>..\FileSystem;..\Engine;..\public;..\public\core;..\shared_engine;..\public\platform;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\bullet\Extras\Serialization\BulletWorldImporter;..\src_dependency\bullet\src\BulletSoftBody;..\src_dependency\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\FileSystem;..\Engine;..\public;..\public\core;..\shared_engine;..\public\platform;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\bullet\Extras\Serialization\BulletWorldImporter;..\src_dependency\bullet\src\BulletSoftBody;..\src_dependency\zlib;..\src_dependency\OpenALSoftCustom\include;..\src_dependency\libogg\include;..\src_dependency\libvorbis\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;PHYSICS_EXPORT;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;USE_SIMD;EQ_USE_SDL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
