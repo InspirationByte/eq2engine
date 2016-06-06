@@ -681,7 +681,7 @@ void CGLRenderLib::ExitAPI()
     glXMakeCurrent(display, None, NULL);
     glXDestroyContext(display, glContext);
 
-	if(!params.bIsWindowed)
+	if(!m_Renderer->m_params->bIsWindowed)
 	{
 		if (XF86VidModeSwitchToMode(display, m_screen, dmodes[0]))
 			XF86VidModeSetViewPort(display, m_screen, 0, 0);
