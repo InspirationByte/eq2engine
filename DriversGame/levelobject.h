@@ -220,20 +220,20 @@ public:
 	void					Render( float lodDistance, const BoundingBox& bbox, bool preloadMaterials = false, int nRenderFlags = 0);
 
 	EqString				m_name;
+	levObjectDefInfo_t		m_info;
+
+	//-----------------------------
 
 	CLevelModel*			m_model;		// static model
 
 	//-----------------------------
 
 	IEqModel*				m_defModel;
+	kvkeybase_t*			m_defKeyvalues;
+	levObjInstanceData_t*	m_instData;
 
 	EqString				m_defType;
-	kvkeybase_t				m_defKeyvalues;
-
-	levObjectDefInfo_t		m_info;
-
 	wlightdata_t			m_lightData;
-	levObjInstanceData_t*	m_instData;
 };
 
 

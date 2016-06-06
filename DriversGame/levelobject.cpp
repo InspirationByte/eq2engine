@@ -15,12 +15,12 @@ ConVar r_drawStaticRegionModels("r_drawStaticRegionModels", "1", NULL, CV_CHEAT)
 
 //------------------------------------------------------------------------------------
 
-CLevObjectDef::CLevObjectDef()
+CLevObjectDef::CLevObjectDef() :
+	m_model(NULL),
+	m_instData(NULL),
+	m_defModel(NULL),
+	m_defKeyvalues(NULL)
 {
-	m_model = NULL;
-	m_instData = NULL;
-	m_defModel = NULL;
-
 	memset(&m_info, 0, sizeof(levObjectDefInfo_t));
 }
 
@@ -34,8 +34,8 @@ CLevObjectDef::~CLevObjectDef()
 			delete m_model;
 	}
 
-	if(m_instData)
-		delete m_instData;
+	delete m_instData;
+	delete m_defKeyvalues;
 }
 
 #ifdef EDITOR

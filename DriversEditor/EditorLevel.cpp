@@ -31,9 +31,7 @@ void buildLayerColl_t::Save(IVirtualStream* stream, kvkeybase_t* kvs)
 		// save both model and texture to kvs info
 		kvkeybase_t* layerKvs = kvs->AddKeyBase("layer");
 		layerKvs->SetKey("type", varargs("%d", layers[i].type));
-		layerKvs->SetKey("repeatInterval", varargs("%d", layers[i].repeatInterval));
-		layerKvs->SetKey("repeatTimes", varargs("%d", layers[i].repeatTimes));
-		layerKvs->SetKey("height", varargs("%d", layers[i].height));
+		layerKvs->SetKey("size", varargs("%d", layers[i].size));
 
 		if(layers[i].type == BUILDLAYER_TEXTURE && layers[i].material != NULL)
 			layerKvs->SetKey("material", layers[i].material->GetName());
@@ -89,9 +87,7 @@ void buildLayerColl_t::Load(IVirtualStream* stream, kvkeybase_t* kvs)
 		buildLayer_t& layer = layers[newLayer];
 
 		layer.type = KV_GetValueInt(layerKvs->FindKeyBase("type"));
-		layer.repeatInterval = KV_GetValueInt(layerKvs->FindKeyBase("repeatInterval"));
-		layer.repeatTimes = KV_GetValueInt(layerKvs->FindKeyBase("repeatTimes"));
-		layer.height = KV_GetValueInt(layerKvs->FindKeyBase("height"));
+		layer.size = KV_GetValueInt(layerKvs->FindKeyBase("size"), 0, layer.size);
 
 		if(layer.type == BUILDLAYER_TEXTURE)
 			layer.material = materials->FindMaterial(KV_GetValueString(layerKvs->FindKeyBase("material")));

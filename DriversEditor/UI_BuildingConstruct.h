@@ -34,7 +34,6 @@ class CBuildingLayerEditDialog : public wxDialog, CPointerDropTarget
 		LAYEREDIT_NEW = 1000,
 		LAYEREDIT_DELETE,
 		LAYEREDIT_CHOOSEMODEL,
-		LAYEREDIT_TOGGLEPREVIEW
 	};
 
 public:
@@ -55,13 +54,10 @@ protected:
 
 	void Redraw();
 	void RenderList();
-	void RenderPreview();
 
 	void OnBtnsClick( wxCommandEvent& event );
 
-	void ChangeHeight( wxCommandEvent& event );
-	void ChangeRepeat( wxSpinEvent& event );
-	void ChangeInterval( wxSpinEvent& event );
+	void ChangeSize( wxCommandEvent& event );
 	void ChangeType( wxCommandEvent& event );
 
 	void OnScrollbarChange(wxScrollWinEvent& event);
@@ -78,12 +74,9 @@ protected:
 	wxPanel* m_panel18;
 	wxButton* m_newBtn;
 	wxButton* m_delBtn;
-	wxTextCtrl* m_height;
-	wxSpinCtrl* m_repeat;
-	wxSpinCtrl* m_interval;
+	wxSpinCtrl* m_size;
 	wxChoice* m_typeSel;
 	wxButton* m_btnChoose;
-	wxButton* m_previewBtn;
 
 	// what we modifying
 	buildLayerColl_t*		m_layerColl;
@@ -91,7 +84,6 @@ protected:
 	Vector2D				m_mousePos;
 	int						m_mouseoverItem;
 	int						m_selectedItem;
-	bool					m_preview;
 };
 
 //-----------------------------------------------------------------------------
@@ -207,7 +199,7 @@ protected:
 	bool						m_placeError;
 
 	int							m_mode;
-	buildingSource_t			m_building;
+	buildingSource_t			m_newBuilding;
 
 	int							m_curLayerId;
 	float						m_curSegmentScale;

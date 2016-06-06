@@ -43,17 +43,14 @@ enum EBuildLayerType
 struct buildLayer_t
 {
 	buildLayer_t() 
-		: height(1.0f), type(BUILDLAYER_TEXTURE), repeatTimes(0), repeatInterval(0), model(nullptr), material(nullptr), atlEntry(nullptr)
+		: size(16.0f), type(BUILDLAYER_TEXTURE), model(nullptr), material(nullptr)
 	{
 	}
 
-	float					height;			// height in units
+	float					size;			// size in units
 	int						type;			// ELayerType
-	int						repeatTimes;	// height repeat times
-	int						repeatInterval;	// repeat after repeatInterval times
 	CLayerModel*			model;
 	IMaterial*				material;
-	TexAtlasEntry_t*		atlEntry;
 };
 
 struct buildLayerColl_t

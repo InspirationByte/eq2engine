@@ -133,7 +133,7 @@ Vector3D GetModelRefPosition(CLevelRegion* reg, regionObject_t* ref)
 	if(objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG)
 		addHeight.y = -objectDef->m_defModel->GetAABB().minPoint.y;
 
-	if(ref->tile_dependent)
+	if(ref->tile_x != 0xFFFF)
 	{
 		hfieldtile_t* tile = defField.GetTile( ref->tile_x, ref->tile_y );
 
@@ -153,7 +153,7 @@ Quaternion GetModelRefRotation(CLevelRegion* reg, regionObject_t* ref)
 
 	Matrix3x3 m = rotateXYZ3(DEG2RAD(ref->rotation.x), DEG2RAD(ref->rotation.y), DEG2RAD(ref->rotation.z));
 
-	if(ref->tile_dependent)
+	if(ref->tile_x!= 0xFFFF)
 	{
 		if( (objectDef->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
 			objectDef->m_info.type != LOBJ_TYPE_OBJECT_CFG )
@@ -191,7 +191,7 @@ Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regionObject_t* ref)
 
 	Vector3D refPos = GetModelRefPosition(reg,ref);
 
-	if(ref->tile_dependent)
+	if(ref->tile_x!= 0xFFFF)
 	{
 		hfieldtile_t* tile = defField.GetTile( ref->tile_x, ref->tile_y );
 
@@ -688,8 +688,8 @@ void CLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObjectDef
 
 		object.objectDefId = objectDefId;
 
-		object.tile_x = m_objects[i]->tile_dependent ? m_objects[i]->tile_x : -1;
-		object.tile_y = m_objects[i]->tile_dependent ? m_objects[i]->tile_y : -1;
+		object.tile_x = m_objects[i]->tile_x;
+		object.tile_y = m_objects[i]->tile_y;
 		object.position = m_objects[i]->position;
 		object.rotation = m_objects[i]->rotation;
 
@@ -795,7 +795,6 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		ref->tile_x = cellObj.tile_x;
 		ref->tile_y = cellObj.tile_y;
 
-		ref->tile_dependent = (ref->tile_x != -1 || ref->tile_y != -1);
 		ref->position = cellObj.position;
 		ref->rotation = cellObj.rotation;
 
@@ -831,7 +830,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		{
 
 			// create object, spawn in game cycle
-			CGameObject* newObj = g_pGameWorld->CreateGameObject( ref->def->m_defType.c_str(), &ref->def->m_defKeyvalues );
+			CGameObject* newObj = g_pGameWorld->CreateGameObject( ref->def->m_defType.c_str(), ref->def->m_defKeyvalues );
 
 			if(newObj)
 			{
@@ -897,7 +896,7 @@ void CLevelRegion::RespawnObjects()
 		ref->transform = GetModelRefRenderMatrix( this, ref );
 
 		// create object, spawn in game cycle
-		CGameObject* newObj = g_pGameWorld->CreateGameObject( ref->def->m_defType.c_str(), &ref->def->m_defKeyvalues );
+		CGameObject* newObj = g_pGameWorld->CreateGameObject( ref->def->m_defType.c_str(), ref->def->m_defKeyvalues );
 
 		if(newObj)
 		{

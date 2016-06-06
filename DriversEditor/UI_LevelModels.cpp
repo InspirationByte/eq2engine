@@ -1483,13 +1483,15 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 			// prevent placement on this tile again
 			for(int i = 0; i < m_selectedRegion->m_objects.numElem(); i++)
 			{
-				if(	m_selectedRegion->m_objects[i]->tile_dependent && 
-					(m_selectedRegion->m_objects[i]->tile_dependent == m_tiledPlacement->GetValue()) && 
-					(m_selectedRegion->m_objects[i]->tile_x == tx) && 
-					(m_selectedRegion->m_objects[i]->tile_y == ty))
+				regionObject_t* obj = m_selectedRegion->m_objects[i];
+
+				if(	obj->tile_x != 0xFFFF && 
+					((obj->tile_x != 0xFFFF) == m_tiledPlacement->GetValue()) && 
+					(obj->tile_x == tx) && 
+					(obj->tile_y == ty))
 				{
 					pick_Idx = i;
-					modelref = m_selectedRegion->m_objects[i];
+					modelref = obj;
 				}
 			}
 
@@ -1521,8 +1523,8 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 
 			modelref->position = ppos;
 			modelref->rotation = Vector3D(0, -m_rotation*90.0f, 0);
-			modelref->tile_dependent = m_tiledPlacement->GetValue();
-			modelref->tile_x = tx;
+
+			modelref->tile_x = m_tiledPlacement->GetValue() ? 0xFFFF : tx;
 			modelref->tile_y = ty;
 			
 			ClearSelection();
@@ -1551,14 +1553,14 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 			// remove model from tile
 			for(int i = 0; i < m_selectedRegion->m_objects.numElem(); i++)
 			{
-				if(	m_selectedRegion->m_objects[i]->tile_dependent && 
-					m_selectedRegion->m_objects[i]->tile_x == tx && 
-					m_selectedRegion->m_objects[i]->tile_y == ty)
-				{
-					regionObject_t* ref = m_selectedRegion->m_objects[i];
+				regionObject_t* obj = m_selectedRegion->m_objects[i];
 
-					if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-						ref->def->m_model->Ref_Drop();
+				if(	(obj->tile_x != 0xFFFF) && 
+					obj->tile_x == tx && 
+					obj->tile_y == ty)
+				{
+					if(obj->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+						obj->def->m_model->Ref_Drop();
 
 					m_selectedRegion->m_objects.fastRemoveIndex(i);
 
@@ -1697,8 +1699,7 @@ void CUI_LevelModels::OnRender()
 
 		tref.position = m_lastpos;
 		tref.rotation = Vector3D(0, -m_rotation*90.0f, 0);
-		tref.tile_dependent = m_tiledPlacement->GetValue();
-		tref.tile_x = m_last_tx;
+		tref.tile_x = m_tiledPlacement->GetValue() ? 0xFFFF : m_last_tx;
 		tref.tile_y = m_last_ty;
 
 		// placement model overview

@@ -123,18 +123,16 @@ struct regionObject_t
 
 	CGameObject*	game_object;
 
+	Matrix4x4		transform;
+
+	ushort			tile_x;
+	ushort			tile_y;
+
+	BoundingBox		bbox;
+
 	Vector3D		position;
 	Vector3D		rotation;
 
-	Matrix4x4		transform;
-
-	short			tile_x;
-	short			tile_y;
-	bool			tile_dependent;
-
-	int				level;
-
-	BoundingBox		bbox;
 	EqString		name;
 
 	DkList<CEqCollisionObject*> collisionObjects;
@@ -155,6 +153,8 @@ struct regZone_t
 	char*	zoneName;
 	uint	zoneHash;
 };
+
+struct buildingSource_t;
 
 //----------------------------------------------------------------------
 
@@ -204,6 +204,8 @@ public:
 	int								Ed_ReplaceDefs(CLevObjectDef* whichReplace, CLevObjectDef* replaceTo);
 
 	bool							m_modified; // needs saving?
+
+	DkList<buildingSource_t*>		m_buildings;
 #endif
 
 	BoundingBox						m_bbox;

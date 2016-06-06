@@ -650,7 +650,8 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 			{
 				def->m_defType = foundDef->name;
 
-				def->m_defKeyvalues.MergeFrom( foundDef, true );
+				def->m_defKeyvalues = new kvkeybase_t();
+				def->m_defKeyvalues->MergeFrom( foundDef, true );
 #ifdef EDITOR
 				LoadDefLightData(def->m_lightData, foundDef);
 #endif // EDITOR
@@ -678,28 +679,31 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 	// load new objects from <levname>_objects.txt
 	for(int i = 0; i < kvDefs->keys.numElem(); i++)
 	{
-		if(!kvDefs->keys[i]->IsSection())
+		kvkeybase_t* defSection = kvDefs->keys[i];
+
+		if(!defSection->IsSection())
 			continue;
 
-		if(!stricmp(kvDefs->keys[i]->name, "billboardlist"))
+		if(!stricmp(defSection->name, "billboardlist"))
 			continue;
 
-		bool isAlreadyAdded = KV_GetValueBool(kvDefs->keys[i]->FindKeyBase("IsExist"), 0, false);
+		bool isAlreadyAdded = KV_GetValueBool(defSection->FindKeyBase("IsExist"), 0, false);
 
 		if(isAlreadyAdded)
 			continue;
 
-		kvkeybase_t* modelName = kvDefs->keys[i]->FindKeyBase("model");
+		kvkeybase_t* modelName = defSection->FindKeyBase("model");
 
 		// precache model
 		int modelIdx = g_pModelCache->PrecacheModel( KV_GetValueString(modelName, 0, "models/error.egf"));
 
 		CLevObjectDef* def = new CLevObjectDef();
-		def->m_name = KV_GetValueString(kvDefs->keys[i], 0, "unnamed_def");
+		def->m_name = KV_GetValueString(defSection, 0, "unnamed_def");
 
 		MsgInfo("Adding object definition '%s'\n", def->m_name.c_str());
 
-		def->m_defKeyvalues.MergeFrom( kvDefs->keys[i], true );
+		def->m_defKeyvalues = new kvkeybase_t();
+		def->m_defKeyvalues->MergeFrom( defSection, true );
 
 		def->m_info.type = LOBJ_TYPE_OBJECT_CFG;
 

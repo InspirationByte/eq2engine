@@ -1813,12 +1813,14 @@ CGameObject* CGameWorld::CreateObject( const char* objectDefName ) const
 
 	for(int i = 0; i < m_level.m_objectDefs.numElem(); i++)
 	{
-		if(m_level.m_objectDefs[i]->m_info.type != LOBJ_TYPE_OBJECT_CFG)
+		CLevObjectDef* def = m_level.m_objectDefs[i];
+
+		if(def->m_info.type != LOBJ_TYPE_OBJECT_CFG)
 			continue;
 
-		if( m_level.m_objectDefs[i]->m_name == objectDefName)
+		if(def->m_name == objectDefName)
 		{
-			return CreateGameObject(m_level.m_objectDefs[i]->m_defType.c_str(),&m_level.m_objectDefs[i]->m_defKeyvalues);
+			return CreateGameObject(def->m_defType.c_str(), def->m_defKeyvalues);
 		}
 	}
 

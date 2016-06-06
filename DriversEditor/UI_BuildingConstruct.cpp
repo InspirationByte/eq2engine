@@ -90,12 +90,9 @@ CBuildingLayerEditDialog::~CBuildingLayerEditDialog()
 	// Disconnect Events
 	m_newBtn->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CBuildingLayerEditDialog::OnBtnsClick ), NULL, this );
 	m_delBtn->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CBuildingLayerEditDialog::OnBtnsClick ), NULL, this );
-	m_height->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( CBuildingLayerEditDialog::ChangeHeight ), NULL, this );
-	m_repeat->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( CBuildingLayerEditDialog::ChangeRepeat ), NULL, this );
-	m_interval->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( CBuildingLayerEditDialog::ChangeInterval ), NULL, this );
+	m_size->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( CBuildingLayerEditDialog::ChangeSize ), NULL, this );
 	m_typeSel->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( CBuildingLayerEditDialog::ChangeType ), NULL, this );
 	m_btnChoose->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CBuildingLayerEditDialog::OnBtnsClick ), NULL, this );
-	m_previewBtn->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CBuildingLayerEditDialog::OnBtnsClick ), NULL, this );
 }
 
 CBuildingLayerEditDialog::CBuildingLayerEditDialog( wxWindow* parent ) 
@@ -137,22 +134,8 @@ CBuildingLayerEditDialog::CBuildingLayerEditDialog( wxWindow* parent )
 	
 	m_propertyBox->Add( new wxStaticText( m_panel18, wxID_ANY, wxT("Height"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxRIGHT|wxLEFT, 5 );
 	
-	m_height = new wxTextCtrl( m_panel18, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
-	m_propertyBox->Add( m_height, 0, wxRIGHT|wxLEFT, 5 );
-	
-	m_propertyBox->Add( new wxStaticText( m_panel18, wxID_ANY, wxT("Repeat / Interval"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxRIGHT|wxLEFT, 5 );
-	
-	wxGridSizer* gSizer4;
-	gSizer4 = new wxGridSizer( 0, 2, 0, 0 );
-	
-	m_repeat = new wxSpinCtrl( m_panel18, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 60,-1 ), wxSP_ARROW_KEYS, 0, 100, 0 );
-	gSizer4->Add( m_repeat, 0, wxALL, 5 );
-	
-	m_interval = new wxSpinCtrl( m_panel18, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 60,-1 ), wxSP_ARROW_KEYS, 0, 100, 0 );
-	gSizer4->Add( m_interval, 0, wxALL, 5 );
-	
-	
-	m_propertyBox->Add( gSizer4, 0, wxEXPAND, 5 );
+	m_size = new wxSpinCtrl( m_panel18, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 60,-1 ), wxSP_ARROW_KEYS, 1, 128, 0 );
+	m_propertyBox->Add( m_size, 0, wxRIGHT|wxLEFT, 5 );
 	
 	wxString m_typeSelChoices[] = { wxT("Texture"), wxT("Model") };
 	int m_typeSelNChoices = sizeof( m_typeSelChoices ) / sizeof( wxString );
@@ -167,10 +150,6 @@ CBuildingLayerEditDialog::CBuildingLayerEditDialog( wxWindow* parent )
 	bSizer21->Add( m_propertyBox, 1, wxEXPAND, 5 );
 
 	m_propertyBox->ShowItems(false);
-	
-	m_previewBtn = new wxButton( m_panel18, LAYEREDIT_TOGGLEPREVIEW, wxT("Toggle preview"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer21->Add( m_previewBtn, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, 5 );
-	
 	
 	m_panel18->SetSizer( bSizer21 );
 	m_panel18->Layout();
@@ -187,12 +166,9 @@ CBuildingLayerEditDialog::CBuildingLayerEditDialog( wxWindow* parent )
 	// Connect Events
 	m_newBtn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CBuildingLayerEditDialog::OnBtnsClick ), NULL, this );
 	m_delBtn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CBuildingLayerEditDialog::OnBtnsClick ), NULL, this );
-	m_height->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( CBuildingLayerEditDialog::ChangeHeight ), NULL, this );
-	m_repeat->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( CBuildingLayerEditDialog::ChangeRepeat ), NULL, this );
-	m_interval->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( CBuildingLayerEditDialog::ChangeInterval ), NULL, this );
+	m_size->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( CBuildingLayerEditDialog::ChangeSize ), NULL, this );
 	m_typeSel->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( CBuildingLayerEditDialog::ChangeType ), NULL, this );
 	m_btnChoose->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CBuildingLayerEditDialog::OnBtnsClick ), NULL, this );
-	m_previewBtn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CBuildingLayerEditDialog::OnBtnsClick ), NULL, this );
 
 	m_renderPanel->Connect( wxEVT_IDLE, wxIdleEventHandler( CBuildingLayerEditDialog::OnIdle ), NULL, this );
 	m_renderPanel->Connect( wxEVT_ERASE_BACKGROUND, wxEraseEventHandler( CBuildingLayerEditDialog::OnEraseBackground ), NULL, this );
@@ -202,7 +178,6 @@ CBuildingLayerEditDialog::CBuildingLayerEditDialog( wxWindow* parent )
 	m_renderPanel->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(CBuildingLayerEditDialog::OnMouseClick), NULL, this);
 	m_renderPanel->Connect(wxEVT_SCROLLBAR, wxScrollWinEventHandler(CBuildingLayerEditDialog::OnScrollbarChange), NULL, this);
 
-	m_preview = false;
 	m_layerColl = NULL;
 }
 
@@ -247,17 +222,10 @@ void CBuildingLayerEditDialog::OnMouseScroll(wxMouseEvent& event)
 
 void CBuildingLayerEditDialog::OnMouseClick(wxMouseEvent& event)
 {
-	if(m_preview)
-	{
-	
-	}
-	else
-	{
-		// set selection to mouse over
-		m_selectedItem = m_mouseoverItem;
+	// set selection to mouse over
+	m_selectedItem = m_mouseoverItem;
 
-		UpdateSelection();
-	}
+	UpdateSelection();
 }
 
 void CBuildingLayerEditDialog::OnMouseMotion(wxMouseEvent& event)
@@ -279,36 +247,18 @@ bool CBuildingLayerEditDialog::OnDropPoiner(wxCoord x, wxCoord y, void* ptr, EDr
 
 		m_selLayer->type = BUILDLAYER_TEXTURE;
 		m_selLayer->material = elem->material;
-		m_selLayer->atlEntry = elem->entry;
 	}
 	else if(type == DRAGDROP_PTR_OBJECTCONTAINER)
 	{
 	
 	}
 
-
 	return true;
 }
 
 void CBuildingLayerEditDialog::Redraw()
 {
-	if(m_preview)
-		RenderPreview();
-	else
-		RenderList();
-}
-
-void CBuildingLayerEditDialog::RenderPreview()
-{
-	if(!materials)
-		return;
-
-	int w, h;
-	m_renderPanel->GetSize(&w, &h);
-	g_pShaderAPI->SetViewport(0, 0, w,h);
-
-	materials->GetConfiguration().wireframeMode = false;
-	materials->SetAmbientColor( color4_white );
+	RenderList();
 }
 
 void CBuildingLayerEditDialog::RenderList()
@@ -442,6 +392,7 @@ void CBuildingLayerEditDialog::RenderList()
 				Vertex2D_t verts[] = {MAKETEXQUAD(x_offset, y_offset, x_offset + fSize*x_scale,y_offset + fSize*y_scale, 0)};
 				Vertex2D_t name_line[] = {MAKETEXQUAD(x_offset, y_offset+fSize, x_offset + fSize,y_offset + fSize + 25, 0)};
 
+				/*
 				if(elem.type == BUILDLAYER_TEXTURE && elem.atlEntry)
 				{
 					verts[0].m_vTexCoord = elem.atlEntry->rect.GetLeftTop();
@@ -449,6 +400,7 @@ void CBuildingLayerEditDialog::RenderList()
 					verts[2].m_vTexCoord = elem.atlEntry->rect.GetRightTop();
 					verts[3].m_vTexCoord = elem.atlEntry->rect.GetRightBottom();
 				}
+				*/
 
 				// draw name panel
 				materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, ColorRGBA(0.25,0.25,1,1), &blendParams);
@@ -586,11 +538,6 @@ void CBuildingLayerEditDialog::OnBtnsClick( wxCommandEvent& event )
 
 			break;
 		}
-		case LAYEREDIT_TOGGLEPREVIEW:
-		{
-			m_preview = !m_preview;
-			break;
-		}
 	}
 }
 
@@ -609,9 +556,7 @@ void CBuildingLayerEditDialog::UpdateSelection()
 	m_propertyBox->ShowItems(true);
 	Layout();
 
-	m_height->SetValue( varargs("%g", m_selLayer->height) );
-	m_repeat->SetValue( m_selLayer->repeatTimes );
-	m_interval->SetValue( m_selLayer->repeatInterval );
+	m_size->SetValue( varargs("%g", m_selLayer->size) );
 	m_typeSel->SetSelection( m_selLayer->type );
 	m_btnChoose->Enable( m_selLayer->type >= BUILDLAYER_MODEL );
 }
@@ -626,19 +571,9 @@ buildLayerColl_t* CBuildingLayerEditDialog::GetLayerCollection() const
 	return m_layerColl;
 }
 
-void CBuildingLayerEditDialog::ChangeHeight( wxCommandEvent& event )
+void CBuildingLayerEditDialog::ChangeSize( wxCommandEvent& event )
 {
-	if(m_selLayer) m_selLayer->height = atoi(m_height->GetValue());
-}
-
-void CBuildingLayerEditDialog::ChangeRepeat( wxSpinEvent& event )
-{
-	if(m_selLayer) m_selLayer->repeatTimes = m_repeat->GetValue();
-}
-
-void CBuildingLayerEditDialog::ChangeInterval( wxSpinEvent& event )
-{
-	if(m_selLayer) m_selLayer->repeatInterval = m_interval->GetValue();
+	if(m_selLayer) m_selLayer->size = m_size->GetValue();
 }
 
 void CBuildingLayerEditDialog::ChangeType( wxCommandEvent& event )
@@ -1167,8 +1102,8 @@ void CUI_BuildingConstruct::OnDeleteClick( wxCommandEvent& event )
 {
 	buildLayerColl_t* layerColl = m_layerCollList->GetSelectedLayerColl();
 	
-	if(m_building.layerColl == layerColl)
-		m_building.layerColl = NULL;
+	if(m_newBuilding.layerColl == layerColl)
+		m_newBuilding.layerColl = NULL;
 
 	m_layerCollList->DeleteCollection(layerColl);
 
@@ -1197,7 +1132,7 @@ void CUI_BuildingConstruct::OnKey(wxKeyEvent& event, bool bDown)
 		}
 		else if(event.m_keyCode == WXK_SPACE)
 		{
-			m_building.order = m_building.order > 0 ? -1 : 1;
+			m_newBuilding.order = m_newBuilding.order > 0 ? -1 : 1;
 		}
 		else if(event.m_keyCode == WXK_RETURN)
 		{
@@ -1292,10 +1227,10 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 		m_curLayerId += wheelSign;
 	}
 
-	if(m_building.layerColl != NULL)
+	if(m_newBuilding.layerColl != NULL)
 	{
-		if(m_curLayerId >= m_building.layerColl->layers.numElem())
-			m_curLayerId = m_building.layerColl->layers.numElem() - 1;
+		if(m_curLayerId >= m_newBuilding.layerColl->layers.numElem())
+			m_curLayerId = m_newBuilding.layerColl->layers.numElem() - 1;
 	}
 
 	if(m_curLayerId < 0)
@@ -1331,9 +1266,9 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				segment.position = m_mousePoint;
 
 				// make a first point
-				m_building.points.append( segment );
-				m_building.layerColl = m_layerCollList->GetSelectedLayerColl();
-				m_building.order = 1;
+				m_newBuilding.points.append( segment );
+				m_newBuilding.layerColl = m_layerCollList->GetSelectedLayerColl();
+				m_newBuilding.order = 1;
 
 				m_curSegmentScale = 1.0f;
 
@@ -1345,13 +1280,13 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				if(m_placeError)
 					return;
 
-				Vector3D firstPoint = m_building.points[0].position;
+				Vector3D firstPoint = m_newBuilding.points[0].position;
 
 				Vector3D newPoint = m_placementPoint;
 				newPoint.y = firstPoint.y;	// height must match
 
 				// set last point layer id
-				buildSegmentPoint_t& lastPoint = m_building.points[m_building.points.numElem()-1];
+				buildSegmentPoint_t& lastPoint = m_newBuilding.points[m_newBuilding.points.numElem()-1];
 				lastPoint.layerId = m_curLayerId;
 				lastPoint.scale = m_curSegmentScale;
 
@@ -1361,16 +1296,14 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				segment.scale = 1.0f;
 
 				// make other points
-				m_building.points.append( segment );
+				m_newBuilding.points.append( segment );
 
 				// ED_BUILD_DONE if connected to begin point
-				//if(distance(ppos, m_building.points[0]) < 2.0f)
+				//if(distance(ppos, m_newBuilding.points[0]) < 2.0f)
 				//	m_mode = ED_BUILD_DONE;
 
 				return;
 			}
-
-			(int)m_mode++;
 		}
 	}
 }
@@ -1379,8 +1312,8 @@ void CUI_BuildingConstruct::CancelBuilding()
 {
 	if(m_mode != ED_BUILD_READY)
 	{
-		m_building.points.clear();
-		m_building.layerColl = NULL;
+		m_newBuilding.points.clear();
+		m_newBuilding.layerColl = NULL;
 
 		m_mode = ED_BUILD_READY;
 	}
@@ -1390,8 +1323,8 @@ void CUI_BuildingConstruct::CompleteBuilding()
 {
 	// TODO: generate building model for region:
 
-	m_building.points.clear();
-	m_building.layerColl = NULL;
+	m_newBuilding.points.clear();
+	m_newBuilding.layerColl = NULL;
 	m_curLayerId = 0;
 	m_curSegmentScale = 1.0f;
 
@@ -1407,8 +1340,8 @@ void CUI_BuildingConstruct::DeleteSelection()
 {
 	if(m_mode == ED_BUILD_SELECTEDPOINT)
 	{
-		if(m_building.points.numElem() > 1)
-			m_building.points.removeIndex(m_building.points.numElem()-1);
+		if(m_newBuilding.points.numElem() > 1)
+			m_newBuilding.points.removeIndex(m_newBuilding.points.numElem()-1);
 		else
 			CancelBuilding();
 	}
@@ -1427,14 +1360,14 @@ void CUI_BuildingConstruct::OnRender()
 		field->DebugRender(false,m_mouseOverTileHeight);
 	}
 
-	if(m_building.points.numElem() > 0 && m_building.layerColl != NULL)
+	if(m_newBuilding.points.numElem() > 0 && m_newBuilding.layerColl != NULL)
 	{
 		// Render dynamic preview of the building we're making
 
-		Vector3D endPoint = m_building.points[0].position;
+		Vector3D endPoint = m_newBuilding.points[0].position;
 
 		DkList<buildSegmentPoint_t> allPoints;
-		allPoints.append(m_building.points);
+		allPoints.append(m_newBuilding.points);
 
 		debugoverlay->Box3D(m_mousePoint - 0.5f, m_mousePoint + 0.5f, ColorRGBA(1,0,0,1));
 		m_mousePoint.y = endPoint.y;
@@ -1470,16 +1403,16 @@ void CUI_BuildingConstruct::OnRender()
 			//
 
 			// draw models or walls
-			buildLayer_t& layer = m_building.layerColl->layers[ start.layerId ];
+			buildLayer_t& layer = m_newBuilding.layerColl->layers[ start.layerId ];
 
 			if(layer.type == BUILDLAYER_MODEL || layer.type == BUILDLAYER_CORNER_MODEL)
 			{
 				if( !layer.model )
 					continue;
 
-				// draw model
 				CLevelModel* model = layer.model->m_model;
 
+				// compute iteration count from model width
 				const BoundingBox& modelBox = model->GetAABB();
 				Vector3D size = modelBox.GetSize();
 				float modelLen = size.x*start.scale;
@@ -1490,20 +1423,17 @@ void CUI_BuildingConstruct::OnRender()
 
 				int numIterations = (int)(iterationsPerLen + 0.5f);
 
+				// calculate transformation for each iteration
 				for(int iter = 0; iter < numIterations; iter++)
 				{
-					// calculate transform
-					CalculateBuildingModelTransform( partTransform, layer, start.position, end.position, m_building.order, size, start.scale, iter );
+					CalculateBuildingModelTransform( partTransform, layer, start.position, end.position, m_newBuilding.order, size, start.scale, iter );
 
 					materials->SetMatrix(MATRIXMODE_WORLD, partTransform);
 					model->Render(0, tempBBox);
-
-					remainingLength -= modelLen;
 				}
 
+				// do not place points if no interations made
 				m_placeError = (numIterations == 0);
-
-				float totalLen = length(m_building.points[0].position - endPoint);
 
 				// recalc placement point by preview
 				Vector3D direction = normalize(end.position - start.position);
@@ -1513,9 +1443,9 @@ void CUI_BuildingConstruct::OnRender()
 			}
 		}
 
-		for(int i = 0; i < m_building.points.numElem(); i++)
+		for(int i = 0; i < m_newBuilding.points.numElem(); i++)
 		{
-			Vector3D point = m_building.points[i].position;
+			Vector3D point = m_newBuilding.points[i].position;
 			debugoverlay->Box3D(point - 0.5f, point + 0.5f, ColorRGBA(0,1,0,1));
 		}
 	}
