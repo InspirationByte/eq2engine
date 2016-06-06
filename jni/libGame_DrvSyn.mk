@@ -98,6 +98,8 @@ LOCAL_SRC_FILES := \
 	shared_engine/Audio/alsnd_sample.cpp\
 	shared_engine/Audio/alsnd_stream.cpp\
 	shared_engine/Audio/soundzero.cpp\
+	shared_engine/EGUI/EQUI_Manager.cpp\
+	shared_engine/EGUI/EqUI_Panel.cpp\
 	public/ViewParams.cpp\
 	public/luabinding/LuaBinding.cpp\
 	public/luabinding/LuaBinding_Engine.cpp\
