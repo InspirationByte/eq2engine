@@ -5,14 +5,24 @@
 // Description: OpenGL Mesh builder
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "IMeshBuilder.h"
-
 #ifndef GLMESHBUILDER_H
 #define GLMESHBUILDER_H
+
+#include "IMeshBuilder.h"
+#include "IShaderAPI.h"
+
+struct ListVertex_t
+{
+	TVec3D<half> pos;
+	TVec2D<half> texCoord;
+	TVec3D<half> normal;
+	TVec4D<half> color;
+};
 
 class CGLMeshBuilder : public IMeshBuilder
 {
 public:
+	CGLMeshBuilder();
 	~CGLMeshBuilder();
 
 	void		Begin(PrimitiveType_e type);
@@ -37,6 +47,19 @@ public:
 	void		TexCoord3fv	(const float *v);
 
 	void		AdvanceVertex();	// advances vertexx
+
+protected:
+	bool					m_renderBegun;
+
+	PrimitiveType_e			m_primType;
+
+	DkList<ListVertex_t>	m_vertList;
+
+	ListVertex_t			m_curVertex;
+
+	IVertexBuffer*			m_vertexBuffer;
+	IIndexBuffer*			m_indexBuffer;
+	IVertexFormat*			m_vertexFormat;
 };
 
 #endif // GLMESHBUILDER_H

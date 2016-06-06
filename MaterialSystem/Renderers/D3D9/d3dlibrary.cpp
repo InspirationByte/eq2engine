@@ -244,11 +244,20 @@ bool CD3DRenderLib::InitAPI( shaderapiinitparams_t &params )
 
 void CD3DRenderLib::ExitAPI()
 {
+	if (!m_Renderer->m_params->bIsWindowed)
+	{
+		// Reset display mode to default
+		ChangeDisplaySettingsEx(m_dispDev.DeviceName, NULL, NULL, 0, NULL);
+	}
+
 	delete m_Renderer;
 
     if (m_rhi != NULL)
 	{
-		m_rhi->Release();
+		ULONG numUnreleased = m_rhi->Release();
+
+		MsgWarning("D3D warning: unreleased objects: %d\n", numUnreleased);
+
 		m_rhi = NULL;
 	}
 
@@ -259,12 +268,6 @@ void CD3DRenderLib::ExitAPI()
 	}
 
 	DestroyWindow(hwnd);
-
-	if (!m_Renderer->m_params->bIsWindowed)
-	{
-		// Reset display mode to default
-		ChangeDisplaySettingsEx(m_dispDev.DeviceName, NULL, NULL, 0, NULL);
-	}
 }
 
 void CD3DRenderLib::BeginFrame()

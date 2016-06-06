@@ -9,37 +9,7 @@
 #include "DebugInterface.h"
 #include "ShaderAPIGL.h"
 
-#include <malloc.h>
-
-// source-code based on this article:
-// http://www.gamedev.net/reference/programming/features/imind3d/default.asp
-// [concept ported to OpenGL]
-
-#define MIN_VERTEX_LIST_SIZE	2048
-
-#define MAX_VBO_VERTS			16384
-
-struct ListVertex
-{
-	half x, y, z;
-	half tu, tv;
-	half nx, ny, nz;
-	TVec4D<half> Diffuse;
-};
-
-static bool bRenderBegun = false;
-
-//static D3D10_PRIMITIVE_TOPOLOGY PrimitiveType = D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-static PrimitiveType_e type;
-
-static ListVertex *pVertList = NULL;
-ListVertex fill_vertex;
-static int nVerts = 0;
-static int nAllocated = MIN_VERTEX_LIST_SIZE;
-
-static IVertexBuffer*		s_pBuffer			= NULL;
-static IIndexBuffer*		s_pIndexBuffer		= NULL;
-static IVertexFormat*		s_pVertexFormat	= NULL;
+#define MAX_VBO_VERTS		(32767)
 
 //-----------------------------------------------------------------------------
 
@@ -50,89 +20,88 @@ static VertexFormatDesc_t g_meshBuilder_format[] = {
 	0, 4, VERTEXTYPE_COLOR,		ATTRIBUTEFORMAT_HALF,
 };
 
-CGLMeshBuilder::~CGLMeshBuilder()
+CGLMeshBuilder::CGLMeshBuilder() : m_vertList(1024)
 {
-	ASSERT(!bRenderBegun);
+	m_renderBegun = false;
+	m_vertexBuffer	= NULL;
+	m_indexBuffer	= NULL;
+	m_vertexFormat	= NULL;
+
+	m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_VBO_VERTS, sizeof(ListVertex_t), NULL);
+	//m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(MAX_VBO_VERTS*3, sizeof(int), BUFFER_DYNAMIC, NULL);
+	m_vertexFormat = g_pShaderAPI->CreateVertexFormat(g_meshBuilder_format, elementsOf(g_meshBuilder_format));
 }
 
-void CGLMeshBuilder::Begin( PrimitiveType_e Type)
+CGLMeshBuilder::~CGLMeshBuilder()
 {
-	type = Type;
+	m_vertList.clear();
 
-	nAllocated = MIN_VERTEX_LIST_SIZE;
-	pVertList = (ListVertex*)realloc(pVertList, sizeof(ListVertex)*nAllocated);
-	nVerts = 0;
+	g_pShaderAPI->DestroyVertexBuffer(m_vertexBuffer);
+	g_pShaderAPI->DestroyIndexBuffer(m_indexBuffer);
+	g_pShaderAPI->DestroyVertexFormat(m_vertexFormat);
+}
 
-	fill_vertex.Diffuse = ColorRGBA( 1, 1, 1, 1 );
+//-----------------------------------------------------------------------------
+// "glBegin()"
 
-	fill_vertex.x = 0;
-	fill_vertex.y = 0;
-	fill_vertex.z = 0;
+void CGLMeshBuilder::Begin( PrimitiveType_e type)
+{
+	m_primType = type;
 
-	fill_vertex.nx = 0;
-	fill_vertex.ny = 0;
-	fill_vertex.nz = 0;
+	m_vertList.setNum(0, false);
 
-	fill_vertex.tu = 0;
-	fill_vertex.tv = 0;
+	m_curVertex.color = TVec4D<half>( 1.0f, 1.0f, 1.0f, 1.0f );
+	m_curVertex.pos = vec3_zero;
+	m_curVertex.normal = Vector3D(0,1,0);
+	m_curVertex.texCoord = vec2_zero;
 
-	bRenderBegun = true;
+	m_renderBegun = true;
 }
 //-----------------------------------------------------------------------------
 void CGLMeshBuilder::Position3f( float x, float y, float z )
 {
-	if( !bRenderBegun )
-		return;
-
-	fill_vertex.x = x;
-	fill_vertex.y = y;
-	fill_vertex.z = z;
+	m_curVertex.pos.x = x;
+	m_curVertex.pos.y = y;
+	m_curVertex.pos.z = z;
 }
 //-----------------------------------------------------------------------------
 void CGLMeshBuilder::Position3fv( const float* v )
 {
-	Position3f( v[0], v[1], v[2] );
+	m_curVertex.pos.x = v[0];
+	m_curVertex.pos.y = v[1];
+	m_curVertex.pos.z = v[2];
 }
 
 //-----------------------------------------------------------------------------
 void CGLMeshBuilder::AdvanceVertex()
 {
-	int nVertsAfter = nVerts+1;
-
-	if(nVertsAfter > MAX_VBO_VERTS)
-	{
-		MsgWarning("CGLMeshBuilder::AdvanceVertex(): OVERFLOW...\n");
-		nVerts = 0;
+	if(!m_renderBegun)
 		return;
-	}
 
-	if(nVertsAfter > nAllocated)
+	m_vertList.append(m_curVertex);
+
+	if(m_vertList.numElem() > MAX_VBO_VERTS)
 	{
-		nAllocated += MIN_VERTEX_LIST_SIZE;
-		pVertList = (ListVertex*)realloc(pVertList, sizeof(ListVertex)*nAllocated);
+		m_vertList.setNum(0, false);
+		MsgWarning("CGLMeshBuilder vertex list overflow!\n");
 	}
-
-	pVertList[nVerts] = fill_vertex;
-
-	nVerts++;
 }
 
 //-----------------------------------------------------------------------------
 void CGLMeshBuilder::Color4f(float r, float g, float b, float a )
 {
-	fill_vertex.Diffuse = ColorRGBA( r, g, b, a );
+	m_curVertex.color = TVec4D<half>( r, g, b, a );
 }
-
 //-----------------------------------------------------------------------------
 void CGLMeshBuilder::Color4fv( const float* pColor )
 {
-	Color4f( pColor[0], pColor[1], pColor[2], pColor[3] );
+	m_curVertex.color = TVec4D<half>( pColor[0], pColor[1], pColor[2], pColor[3] );
 }
 
 //-----------------------------------------------------------------------------
 void CGLMeshBuilder::Color3f( float r, float g, float b )
 {
-	fill_vertex.Diffuse = ColorRGBA( r, g, b, 1.0f );
+	m_curVertex.color = TVec4D<half>( r, g, b, 1.0f );
 }
 
 //-----------------------------------------------------------------------------
@@ -144,91 +113,69 @@ void CGLMeshBuilder::Color3fv( float const *rgb )
 //-----------------------------------------------------------------------------
 void CGLMeshBuilder::Normal3f( float nx, float ny, float nz )
 {
-	fill_vertex.nx = nx;
-	fill_vertex.ny = ny;
-	fill_vertex.nz = nz;
+	m_curVertex.normal.x = nx;
+	m_curVertex.normal.y = ny;
+	m_curVertex.normal.z = nz;
 }
 
 //-----------------------------------------------------------------------------
 void CGLMeshBuilder::Normal3fv( const float *v )
 {
-	fill_vertex.nx = v[0];
-	fill_vertex.ny = v[1];
-	fill_vertex.nz = v[2];
+	m_curVertex.normal.x = v[0];
+	m_curVertex.normal.y = v[1];
+	m_curVertex.normal.z = v[2];
 }
 
 //-----------------------------------------------------------------------------
 void CGLMeshBuilder::TexCoord2f( float tu, float tv )
 {
-	fill_vertex.tu = tu;
-	fill_vertex.tv = tv;
-	//fill_vertex.tr = 0;
+	m_curVertex.texCoord.x = tu;
+	m_curVertex.texCoord.y = tv;
 }
 
 //-----------------------------------------------------------------------------
 void CGLMeshBuilder::TexCoord2fv( const float *v )
 {
-	fill_vertex.tu = v[0];
-	fill_vertex.tv = v[1];
-	//fill_vertex.tr = v[2];
+	m_curVertex.texCoord.x = v[0];
+	m_curVertex.texCoord.y = v[1];
 }
 
 void CGLMeshBuilder::TexCoord3f( float s, float t, float r )
 {
-	fill_vertex.tu = s;
-	fill_vertex.tv = t;
-	//fill_vertex.tr = r;
+	m_curVertex.texCoord.x = s;
+	m_curVertex.texCoord.y = t;
 }
 
 void CGLMeshBuilder::TexCoord3fv( const float *v )
 {
-	fill_vertex.tu = v[0];
-	fill_vertex.tv = v[1];
-	//fill_vertex.tr = v[2];
+	m_curVertex.texCoord.x = v[0];
+	m_curVertex.texCoord.y = v[1];
 }
 
 //-----------------------------------------------------------------------------
 void CGLMeshBuilder::End()
 {
-	if( !bRenderBegun)
+	if( !m_renderBegun )
 		return;
 
-	if(!nVerts)
+	int numVerts = m_vertList.numElem();
+
+	if(numVerts > 0)
 	{
-		bRenderBegun = false;
-		return;
+		g_pShaderAPI->Reset(STATE_RESET_VBO);
+		g_pShaderAPI->ApplyBuffers();
+
+		m_vertexBuffer->Update(m_vertList.ptr(), numVerts, 0, true);
+
+		int nIndices = 0;
+
+		g_pShaderAPI->SetVertexFormat( m_vertexFormat );
+		g_pShaderAPI->SetVertexBuffer( m_vertexBuffer, 0 );
+		g_pShaderAPI->SetIndexBuffer(NULL);
+
+		// this call allows to use shaders internally
+		((ShaderAPIGL*)g_pShaderAPI)->DrawMeshBufferPrimitives(m_primType, numVerts, nIndices);
 	}
 
-	bRenderBegun = false;
-
-	g_pShaderAPI->Reset(STATE_RESET_VBO);
-	g_pShaderAPI->ApplyBuffers();
-
-	if(!s_pBuffer)
-	{
-		s_pBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_VBO_VERTS, sizeof(ListVertex), NULL);
-		//s_pIndexBuffer = g_pShaderAPI->CreateIndexBuffer(MAX_VBO_VERTS*3, sizeof(int), BUFFER_DYNAMIC, NULL);
-
-		s_pVertexFormat = g_pShaderAPI->CreateVertexFormat(g_meshBuilder_format, elementsOf(g_meshBuilder_format));
-	}
-
-	if(!s_pBuffer)
-		return;
-
-	s_pBuffer->Update(pVertList, nVerts, 0, true);
-
-	int nIndices = 0;
-
-	g_pShaderAPI->SetVertexFormat( s_pVertexFormat );
-	g_pShaderAPI->SetVertexBuffer( s_pBuffer, 0 );
-	g_pShaderAPI->SetIndexBuffer(NULL);
-
-	// this call allows to use shaders internally
-	((ShaderAPIGL*)g_pShaderAPI)->DrawMeshBufferPrimitives(type, nVerts, nIndices);
-
-	free(pVertList);
-
-	pVertList = NULL;
-	nAllocated = 0;
-	nVerts = 0;
+	m_renderBegun = false;
 }

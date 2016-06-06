@@ -191,6 +191,8 @@ ShaderAPIGL::ShaderAPIGL() : ShaderAPI_Base()
 
 	m_nCurrentFrontFace = 0;
 
+	m_meshBuilder = NULL;
+
 	m_nCurrentSrcFactor = BLENDFACTOR_ONE;
 	m_nCurrentDstFactor = BLENDFACTOR_ZERO;
 	m_nCurrentBlendFunc = BLENDFUNC_ADD;
@@ -390,15 +392,16 @@ void ShaderAPIGL::Init( shaderapiinitparams_t &params)
 
 		CompileShadersFromStream(m_pMeshBufferNoTextureShader,sinfo);
 	}
+
+	m_meshBuilder = new CGLMeshBuilder();
 }
 
 void ShaderAPIGL::Shutdown()
 {
-	GL_CRITICAL();
+	delete m_meshBuilder;
+	m_meshBuilder = NULL;
 
 	ShaderAPI_Base::Shutdown();
-
-	GL_END_CRITICAL();
 }
 
 void ShaderAPIGL::Reset(int nResetType/* = STATE_RESET_ALL*/)
@@ -2494,15 +2497,17 @@ void ShaderAPIGL::DestroyVertexFormat(IVertexFormat* pFormat)
 
 	CScopedMutex m(m_Mutex);
 
-	// reset if in use
-	if (m_pCurrentVertexFormat == pFormat)
+	if(m_VFList.remove(pFormat))
 	{
-		Reset(STATE_RESET_VF);
-		ApplyBuffers();
-	}
+		// reset if in use
+		if (m_pCurrentVertexFormat == pFormat)
+		{
+			Reset(STATE_RESET_VF);
+			ApplyBuffers();
+		}
 
-	m_VFList.remove(pFormat);
-	delete pVF;
+		delete pVF;
+	}
 }
 
 // Destroy vertex buffer
@@ -2514,19 +2519,20 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 	CScopedMutex m(m_Mutex);
 
-	m_VBList.remove(pVertexBuffer);
+	if(m_VBList.remove(pVertexBuffer))
+	{
+		GL_CRITICAL();
 
-	GL_CRITICAL();
+		Reset(STATE_RESET_VF | STATE_RESET_VB);
+		ApplyBuffers();
 
-    Reset(STATE_RESET_VF | STATE_RESET_VB);
-    ApplyBuffers();
+		glDeleteBuffers(1, &pVB->m_nGL_VB_Index);
+		GLCheckError("delete vertex buffer");
 
-	glDeleteBuffers(1, &pVB->m_nGL_VB_Index);
-	GLCheckError("delete vertex buffer");
+		GL_END_CRITICAL();
 
-	GL_END_CRITICAL();
-
-	delete pVB;
+		delete pVB;
+	}
 }
 
 // Destroy index buffer
@@ -2539,19 +2545,20 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 	CScopedMutex m(m_Mutex);
 
-    Reset(STATE_RESET_IB);
-    ApplyBuffers();
+	if(m_IBList.remove(pIndexBuffer))
+	{
+		Reset(STATE_RESET_IB);
+		ApplyBuffers();
 
-	m_IBList.remove(pIndexBuffer);
+		GL_CRITICAL();
 
-	GL_CRITICAL();
+		glDeleteBuffers(1, &pIB->m_nGL_IB_Index);
+		GLCheckError("delete index buffer");
 
-	glDeleteBuffers(1, &pIB->m_nGL_IB_Index);
-	GLCheckError("delete index buffer");
+		GL_END_CRITICAL();
 
-	GL_END_CRITICAL();
-
-	delete pIndexBuffer;
+		delete pIndexBuffer;
+	}
 }
 
 //-------------------------------------------------------------
@@ -2560,17 +2567,15 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 IVertexFormat* pPlainFormat = NULL;
 
-static CGLMeshBuilder s_MeshBuilder;
-
 // Creates new mesh builder
 IMeshBuilder* ShaderAPIGL::CreateMeshBuilder()
 {
-	return &s_MeshBuilder;//new D3D9MeshBuilder();
+	return m_meshBuilder;
 }
 
 void ShaderAPIGL::DestroyMeshBuilder(IMeshBuilder* pBuilder)
 {
-	//delete pBuilder;
+
 }
 
 PRIMCOUNTER g_pGLPrimCounterCallbacks[] =

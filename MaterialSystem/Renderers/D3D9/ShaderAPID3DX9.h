@@ -20,9 +20,9 @@ class ShaderAPID3DX9 : public ShaderAPI_Base
 {
 public:
 
-	friend class 				CVertexFormatD3D9;
-	friend class 				CVertexBufferD3D9;
-	friend class 				CIndexBufferD3D9;
+	friend class 				CVertexFormatD3DX9;
+	friend class 				CVertexBufferD3DX9;
+	friend class 				CIndexBufferD3DX9;
 	friend class				CD3D9ShaderProgram;
 	friend class				CD3D9Texture;
 	friend class				CD3DRenderLib;
@@ -387,7 +387,6 @@ private:
 #else
 	LPDIRECT3DDEVICE9			m_pD3DDevice;
 	LPDIRECT3DQUERY9			m_pEventQuery;
-	LPDIRECT3DQUERY9			m_pOcclusionQuery;
 	D3DTRANSFORMSTATETYPE		m_nCurrentMatrixMode;
 
 	LPDIRECT3DSURFACE9			m_pFBColor;
@@ -395,6 +394,8 @@ private:
 
 	D3DCAPS9					m_hCaps;
 #endif
+
+	CD3D9MeshBuilder*			m_meshBuilder;
 
 	// the main renderer
 	//ITexture*					m_pBackBuffer;

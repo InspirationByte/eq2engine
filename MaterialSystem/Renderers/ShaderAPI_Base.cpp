@@ -172,6 +172,14 @@ void ShaderAPI_Base::Shutdown()
 	}
 
 	m_RasterizerStates.clear();
+
+	for(int i = 0; i < m_OcclusionQueryList.numElem(); i++)
+	{
+		DestroyOcclusionQuery(m_OcclusionQueryList[i]);
+		i--;
+	}
+
+	m_OcclusionQueryList.clear();
 }
 
 //-------------------------------------------------------------

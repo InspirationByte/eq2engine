@@ -51,6 +51,7 @@ class 		CIndexBufferGL;
 class		CGLTexture;
 class		CGLRenderLib;
 class		CGLShaderProgram;
+class		CGLMeshBuilder;
 
 class ShaderAPIGL : public ShaderAPI_Base
 {
@@ -368,6 +369,8 @@ private:
 
 	IShaderProgram*		m_pMeshBufferNoTextureShader;
 	IShaderProgram*		m_pMeshBufferTexturedShader;
+
+	CGLMeshBuilder*		m_meshBuilder;
 
 #ifdef USE_GLES2
     EGLNativeDisplayType	m_hdc;

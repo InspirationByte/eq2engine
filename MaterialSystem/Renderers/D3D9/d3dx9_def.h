@@ -177,6 +177,19 @@ const D3DPRIMITIVETYPE d3dPrim[] = {
 	D3DPT_POINTLIST,
 };
 
+static PRIMCOUNTER s_DX9PrimitiveCounterFunctions[] = 
+{
+	PrimCount_TriangleList,
+	PrimCount_TriangleFanStrip,
+	PrimCount_TriangleFanStrip,
+	PrimCount_None,
+	PrimCount_ListList,
+	PrimCount_ListStrip,
+	PrimCount_None,
+	PrimCount_Points,
+	PrimCount_None,
+};
+
 const D3DTEXTUREFILTERTYPE d3dFilterType[] = {
     D3DTEXF_POINT,
     D3DTEXF_LINEAR,

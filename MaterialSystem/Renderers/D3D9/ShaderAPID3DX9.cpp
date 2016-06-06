@@ -41,7 +41,7 @@ ShaderAPID3DX9::ShaderAPID3DX9() : ShaderAPI_Base()
 	Msg("Initializing Direct3D9 Shader API...\n");
 
 	m_pEventQuery = NULL;
-	m_pOcclusionQuery = NULL;
+	m_meshBuilder = NULL;
 
 	m_pD3DDevice = NULL;
 
@@ -101,8 +101,6 @@ ShaderAPID3DX9::ShaderAPID3DX9() : ShaderAPI_Base()
 	m_fCurrentSlopeDepthBias = 0.0f;
 }
 
-LPDIRECT3DDEVICE9 pXDevice = NULL;
-
 // Only in D3DX9 Renderer
 #ifdef USE_D3DEX
 void ShaderAPID3DX9::SetD3DDevice(LPDIRECT3DDEVICE9EX d3ddev, D3DCAPS9 &d3dcaps)
@@ -111,7 +109,6 @@ void ShaderAPID3DX9::SetD3DDevice(LPDIRECT3DDEVICE9 d3ddev, D3DCAPS9 &d3dcaps)
 #endif
 {
 	m_pD3DDevice = d3ddev;
-	pXDevice = m_pD3DDevice;
 	m_hCaps = d3dcaps;
 }
 
@@ -146,11 +143,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 	if(m_pEventQuery)
 		m_pEventQuery->Release();
 
-	if(m_pOcclusionQuery)
-		m_pOcclusionQuery->Release();
-
 	m_pEventQuery = NULL;
-	m_pOcclusionQuery = NULL;
 
 	g_pShaderAPI->Reset();
 	g_pShaderAPI->Apply();
@@ -313,6 +306,8 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		query->Init();
 	}
 
+	m_pD3DDevice->CreateQuery(D3DQUERYTYPE_EVENT, &m_pEventQuery);
+
 	DevMsg(DEVMSG_SHADERAPI, "Restoring RTs...\n");
 
 	// create texture surfaces
@@ -460,6 +455,10 @@ void ShaderAPID3DX9::Init( shaderapiinitparams_t &params )
 
 	m_pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 
+	m_pD3DDevice->CreateQuery(D3DQUERYTYPE_EVENT, &m_pEventQuery);
+
+	m_meshBuilder = new CD3D9MeshBuilder(m_pD3DDevice);
+
 	// set the anisotropic level
 	if (m_caps.maxTextureAnisotropicLevel > 1)
 	{
@@ -540,29 +539,15 @@ void ShaderAPID3DX9::Shutdown()
 {
 	ShaderAPI_Base::Shutdown();
 
-	for(int i = 0; i < m_TextureList.numElem(); i++)
-	{
-		FreeTexture(m_TextureList[i]);
-		i--;
-	}
+	ReleaseD3DFrameBufferSurfaces();
 
-	for(int i = 0; i < m_VBList.numElem(); i++)
-	{
-		DestroyVertexBuffer(m_VBList[i]);
-		i--;
-	}
+	if(m_pEventQuery)
+		m_pEventQuery->Release();
 
-	for(int i = 0; i < m_IBList.numElem(); i++)
-	{
-		DestroyIndexBuffer(m_IBList[i]);
-		i--;
-	}
+	m_pEventQuery = NULL;
 
-	for(int i = 0; i < m_VFList.numElem(); i++)
-	{
-		DestroyVertexFormat(m_VFList[i]);
-		i--;
-	}
+	delete m_meshBuilder;
+	m_meshBuilder = NULL;
 }
 
 //-------------------------------------------------------------
@@ -1149,8 +1134,8 @@ bool ShaderAPID3DX9::IsSupportsGeometryShaders() const
 // Synchronization
 void ShaderAPID3DX9::Flush()
 {
-	if (m_pEventQuery == NULL)
-		m_pD3DDevice->CreateQuery(D3DQUERYTYPE_EVENT, &m_pEventQuery);
+	if(!m_pEventQuery)
+		return;
 
 	m_pEventQuery->Issue(D3DISSUE_END);
 	m_pEventQuery->GetData(NULL, 0, D3DGETDATA_FLUSH);
@@ -1158,8 +1143,8 @@ void ShaderAPID3DX9::Flush()
 
 void ShaderAPID3DX9::Finish()
 {
-	if (m_pEventQuery == NULL)
-		m_pD3DDevice->CreateQuery(D3DQUERYTYPE_EVENT, &m_pEventQuery);
+	if(!m_pEventQuery)
+		return;
 
 	m_pEventQuery->Issue(D3DISSUE_END);
 
@@ -1909,20 +1894,22 @@ void ShaderAPID3DX9::DestroyVertexFormat(IVertexFormat* pFormat)
 
 	CScopedMutex m(m_Mutex);
 
-	// reset if in use
-	if(m_pCurrentVertexFormat == pVF)
+	if(m_VFList.remove(pVF))
 	{
-		Reset(STATE_RESET_VF);
-		Apply();
+		// reset if in use
+		if(m_pCurrentVertexFormat == pVF)
+		{
+			Reset(STATE_RESET_VF);
+			Apply();
+		}
+
+		DevMsg(DEVMSG_SHADERAPI,"Destroying vertex format\n");
+
+		if(pVF->m_pVertexDecl)
+			pVF->m_pVertexDecl->Release();
+
+		delete pVF;
 	}
-
-	DevMsg(DEVMSG_SHADERAPI,"Destroying vertex format\n");
-
-	if(pVF->m_pVertexDecl)
-		pVF->m_pVertexDecl->Release();
-
-	m_VFList.remove(pVF);
-	delete pVF;
 }
 
 // Destroy vertex buffer
@@ -1934,17 +1921,19 @@ void ShaderAPID3DX9::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 	CScopedMutex m(m_Mutex);
 
-	// reset if in use
-	Reset(STATE_RESET_VBO);
-	Apply();
+	if(m_VBList.remove(pVB))
+	{
+		// reset if in use
+		Reset(STATE_RESET_VBO);
+		Apply();
 
-	DevMsg(DEVMSG_SHADERAPI,"Destroying vertex buffer\n");
+		DevMsg(DEVMSG_SHADERAPI,"Destroying vertex buffer\n");
 
-	if(pVB->m_pVertexBuffer)
-		pVB->m_pVertexBuffer->Release();
+		if(pVB->m_pVertexBuffer)
+			pVB->m_pVertexBuffer->Release();
 
-	m_VBList.remove(pVB);
-	delete pVB;
+		delete pVB;
+	}
 }
 
 // Destroy index buffer
@@ -1957,30 +1946,31 @@ void ShaderAPID3DX9::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 	CScopedMutex m(m_Mutex);
 
-	// reset if in use
-	Reset(STATE_RESET_VBO);
-	Apply();
+	if(m_IBList.remove(pIB))
+	{
+		// reset if in use
+		Reset(STATE_RESET_VBO);
+		Apply();
 
-	DevMsg(DEVMSG_SHADERAPI,"Destroying index buffer\n");
+		DevMsg(DEVMSG_SHADERAPI,"Destroying index buffer\n");
 
-	if(pIB->m_pIndexBuffer)
-		pIB->m_pIndexBuffer->Release();
+		if(pIB->m_pIndexBuffer)
+			pIB->m_pIndexBuffer->Release();
 
-	m_IBList.remove(pIB);
-	delete pIB;
+	
+		delete pIB;
+	}
 }
-
-static D3D9MeshBuilder s_MeshBuilder;
 
 // Creates new mesh builder
 IMeshBuilder* ShaderAPID3DX9::CreateMeshBuilder()
 {
-	return &s_MeshBuilder;//new D3D9MeshBuilder();
+	return m_meshBuilder;
 }
 
 void ShaderAPID3DX9::DestroyMeshBuilder(IMeshBuilder* pBuilder)
 {
-	//delete pBuilder;
+
 }
 
 //-------------------------------------------------------------
@@ -2983,25 +2973,12 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, Bu
 // Primitive drawing (lower level than DrawPrimitives2D)
 //-------------------------------------------------------------
 
-PRIMCOUNTER g_pDX9PrimCounterCallbacks[] = 
-{
-	PrimCount_TriangleList,
-	PrimCount_TriangleFanStrip,
-	PrimCount_TriangleFanStrip,
-	PrimCount_None,
-	PrimCount_ListList,
-	PrimCount_ListStrip,
-	PrimCount_None,
-	PrimCount_Points,
-	PrimCount_None,
-};
-
 // Indexed primitive drawer
 void ShaderAPID3DX9::DrawIndexedPrimitives(PrimitiveType_e nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
 {
 	ASSERT(nVertices > 0);
 
-	int nTris = g_pDX9PrimCounterCallbacks[nType](nIndices);
+	int nTris = s_DX9PrimitiveCounterFunctions[nType](nIndices);
 
 	m_pD3DDevice->DrawIndexedPrimitive( d3dPrim[nType], nBaseVertex, nFirstVertex, nVertices, nFirstIndex, nTris );
 	
@@ -3013,7 +2990,7 @@ void ShaderAPID3DX9::DrawIndexedPrimitives(PrimitiveType_e nType, int nFirstInde
 // Draw elements
 void ShaderAPID3DX9::DrawNonIndexedPrimitives(PrimitiveType_e nType, int nFirstVertex, int nVertices)
 {
-	int nTris = g_pDX9PrimCounterCallbacks[nType](nVertices);
+	int nTris = s_DX9PrimitiveCounterFunctions[nType](nVertices);
 	m_pD3DDevice->DrawPrimitive(d3dPrim[nType], nFirstVertex, nTris);
 
 	m_nDrawCalls++;
