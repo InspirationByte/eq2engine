@@ -2953,7 +2953,7 @@ void ShaderAPIGL::SwitchGLContext()
 #elif _WIN32
             wglMakeCurrent(m_hdc, m_glContext);
 #elif LINUX
-            glXMakeCurrent(m_display, (Window)m_params.hWindow, m_glContext);
+            glXMakeCurrent(m_display, (Window)m_params->hWindow, m_glContext);
 #elif __APPLE__
 
 #endif
@@ -2983,7 +2983,7 @@ void ShaderAPIGL::SwitchGLContext()
 #elif _WIN32
             wglMakeCurrent(m_hdc, m_glContext2);
 #elif LINUX
-            glXMakeCurrent(m_display, (Window)m_params.hWindow, m_glContext2);
+            glXMakeCurrent(m_display, (Window)m_params->hWindow, m_glContext2);
 #elif __APPLE__
 
 #endif

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Description: scripted object
@@ -24,7 +24,7 @@ void CObject_Scripted::OnRemove()
 	if(m_onRemove.Push())
 	{
 		if(!m_onRemove.Call(0, 0, 0))
-			MsgError("Error in script call OnRemove:\n%s\n", OOLUA::get_last_error(state));
+			MsgError("Error in script call OnRemove:\n%s\n", OOLUA::get_last_error(state).c_str());
 	}
 
 	BaseClass::OnRemove();
@@ -55,12 +55,12 @@ void CObject_Scripted::Spawn()
 		if(m_onSpawn.Push())
 		{
 			if(!m_onSpawn.Call(0, 0, 0))
-				MsgError("Error in script call OnSpawn:\n%s\n", OOLUA::get_last_error(state));
+				MsgError("Error in script call OnSpawn:\n%s\n", OOLUA::get_last_error(state).c_str());
 		}
 
 	}
 	else
-		MsgError("Error in script call CreateScriptedObject:\n%s\n", OOLUA::get_last_error(state));
+		MsgError("Error in script call CreateScriptedObject:\n%s\n", OOLUA::get_last_error(state).c_str());
 }
 
 void CObject_Scripted::Draw( int nRenderFlags )
@@ -75,6 +75,6 @@ void CObject_Scripted::Simulate(float fDt)
 	if(m_simulate.Push() && state.push(fDt))
 	{
 		if(!m_simulate.Call(1, 0, 0))
-			MsgError("Error in script call Simulate:\n%s\n", OOLUA::get_last_error(state));
+			MsgError("Error in script call Simulate:\n%s\n", OOLUA::get_last_error(state).c_str());
 	}
 }
