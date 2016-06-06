@@ -897,10 +897,12 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		controls |= IN_BRAKE;
 	}
 
+	/*
 	if(frontColl.fract < 1.0f)
 	{
 		steeringTargetPos += frontColl.normal*(1.0f-frontColl.fract)*5.0f;
 	}
+	*/
 
 	if(fabs(fSpeed) > 40.0f)
 	{

@@ -268,6 +268,7 @@
     <ClInclude Include="..\shared_engine\EqParticles.h" />
     <ClInclude Include="..\public\materialsystem\BaseShader.h" />
     <ClInclude Include="..\shared_engine\Font.h" />
+    <ClInclude Include="..\shared_engine\video\AVStream.h" />
     <ClInclude Include="..\shared_game\GameSoundEmitterSystem.h" />
     <ClInclude Include="..\public\imaging\ImageLoader.h" />
     <ClInclude Include="..\public\luabinding\LuaBinding.h" />

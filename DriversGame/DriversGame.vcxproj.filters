@@ -85,6 +85,9 @@
     <Filter Include="Файлы исходного кода\MatSystem\Shaders">
       <UniqueIdentifier>{a52e7e21-8296-4b28-b177-f2d8a8ce1082}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Файлы исходного кода\EngineLib\Video">
+      <UniqueIdentifier>{da93cfaf-86d5-4006-aefe-f57baa14a9c3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -672,6 +675,9 @@
     </ClInclude>
     <ClInclude Include="state_lobby.h">
       <Filter>Файлы исходного кода\Game\States</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\video\AVStream.h">
+      <Filter>Файлы исходного кода\EngineLib\Video</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
