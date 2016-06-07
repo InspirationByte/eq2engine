@@ -1287,55 +1287,30 @@ void CCar::SetAngularVelocity(const Vector3D& vel)
 	m_pPhysicsObject->m_object->SetAngularVelocity( vel );
 }
 
-const Vector3D& CCar::GetOrigin()
-{
-	if(m_pPhysicsObject)
-		m_vecOrigin = m_pPhysicsObject->m_object->GetPosition();
-
-	return m_vecOrigin;
-}
-
-const Vector3D& CCar::GetAngles()
-{
-	if(m_pPhysicsObject)
-	{
-		m_vecAngles = eulers(m_pPhysicsObject->m_object->GetOrientation());
-		m_vecAngles = VRAD2DEG(m_vecAngles);
-	}
-
-	return m_vecAngles;
-}
-
 const Quaternion& CCar::GetOrientation() const
 {
+	if(!m_pPhysicsObject)
+	{
+		static Quaternion _zeroQuaternion;
+		return _zeroQuaternion;
+	}
+
 	return m_pPhysicsObject->m_object->GetOrientation();
 }
 
 const Vector3D CCar::GetForwardVector() const
 {
-	Matrix4x4 m(m_pPhysicsObject->m_object->GetOrientation());
-
-	m = transpose(m);
-
-	return m.rows[2].xyz();
+	return rotateVector(vec3_forward,GetOrientation()); //(vec3_forward*GetOrientation()).asVector4D().xyz();
 }
 
 const Vector3D CCar::GetUpVector() const
 {
-	Matrix4x4 m(m_pPhysicsObject->m_object->GetOrientation());
-
-	m = transpose(m);
-
-	return m.rows[1].xyz();
+	return rotateVector(vec3_up,GetOrientation()); //(vec3_up*GetOrientation()).asVector4D().xyz();
 }
 
 const Vector3D CCar::GetRightVector() const
 {
-	Matrix4x4 m(m_pPhysicsObject->m_object->GetOrientation());
-
-	m = transpose(m);
-
-	return m.rows[0].xyz();
+	return rotateVector(vec3_right,GetOrientation()); //(vec3_right*GetOrientation()).asVector4D().xyz();
 }
 
 const Vector3D& CCar::GetVelocity() const
@@ -2635,8 +2610,6 @@ void CCar::Simulate( float fDt )
 	if(!m_pPhysicsObject)
 		return;
 
-	m_vecOrigin = m_pPhysicsObject->m_object->GetPosition();
-
 	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
 
 	if(!carBody)
@@ -3086,7 +3059,7 @@ void CCar::DrawEffects(int lod)
 		float skidPitchVel = wheel.pitchVel + fSkid*2.0f;
 
 		// make some trails
-		if(	lod == 0 && 
+		if(	lod == 0 && wheel.surfparam != NULL &&
 			wheel.surfparam->word == 'C' && 
 			g_pGameWorld->m_envConfig.weatherType > WEATHER_TYPE_CLEAR && 
 			fabs(skidPitchVel) > 2.0f )

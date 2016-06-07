@@ -650,8 +650,6 @@ void CGLRenderLib::ExitAPI()
 	m_Renderer->GL_CRITICAL();
 	m_Renderer->GL_END_CRITICAL();
 
-	delete m_Renderer;
-
 #ifdef PLAT_WIN
 
 #ifdef USE_GLES2
@@ -696,6 +694,9 @@ void CGLRenderLib::ExitAPI()
 #endif // PLAT_LIUX
 
 #endif // PLAT_WIN
+
+	delete m_Renderer;
+
 }
 
 void CGLRenderLib::BeginFrame()

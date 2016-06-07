@@ -278,9 +278,9 @@ void Quaternion::fastNormalize()
 	w *= invLen;
 }
 
-Vector4D Quaternion::asVector4D()
+TVec4D<float>& Quaternion::asVector4D() const
 {
-    return Vector4D(x,y,z,w);
+    return (TVec4D<float>&)*this;
 }
 
 Quaternion operator ! (const Quaternion &q)
@@ -378,50 +378,6 @@ float length(const Quaternion &q)
 
 Vector3D eulers(const Quaternion &q)
 {
-	/*
-	float sqw = q.w*q.w;
-	float sqx = q.x*q.x;
-	float sqy = q.y*q.y;
-	float sqz = q.z*q.z;
-
-	return Vector3D(atan2f(2.0f * ( q.y * q.z + q.x * q.w ) , ( -sqx - sqy + sqz + sqw )),
-					-asinf(2.0f * ( q.x * q.z - q.y * q.w )),
-					atan2f(2.0f * ( q.x * q.y + q.z * q.w ) , (  sqx - sqy - sqz + sqw )));
-	*/
-	/*
-	double	r11, r21, r31, r32, r33, r12, r13;
-
-	Vector3D out;
-
-	double sqw = (double)q.w * (double)q.w;
-	double sqx = (double)q.x * (double)q.x;
-	double sqy = (double)q.y * (double)q.y;
-	double sqz = (double)q.z * (double)q.z;
-
-	r11 = sqw + sqx - sqy - sqz;
-	r21 = 2.0 * ((double)q.x*(double)q.y + (double)q.w*(double)q.z);
-	r31 = 2.0 * ((double)q.x*(double)q.z - (double)q.w*(double)q.y);
-	r32 = 2.0 * ((double)q.y*(double)q.z + (double)q.w*(double)q.x);
-	r33 = sqw - sqx - sqy + sqz;
-
-	double tmp = abs(r31);
-	if(tmp > 0.999999)
-	{
-		r12 = 2.0 * ((double)q.x*(double)q.y - (double)q.w*(double)q.z);
-		r13 = 2.0 * ((double)q.x*(double)q.z + (double)q.w*(double)q.y);
-
-		out.x = 0.0f; //roll
-		out.y = (float) (-(PI*0.5) * r31/tmp); // pitch
-		out.z = (float) atan2(-r12, -r31*r13); // yaw
-		return out;
-	}
-
-	out.x = (float) atan2(r32, r33); // roll
-	out.y = (float) asin(-r31);		 // pitch
-	out.z = (float) atan2(r21, r11); // yaw
-	return out;
-	*/
-
 	const double sqw = q.w*q.w;
 	const double sqx = q.x*q.x;
 	const double sqy = q.y*q.y;
@@ -500,6 +456,13 @@ void axisAngle(const Quaternion& q, TVec3D<float> &axis, float &angle)
 		axis.y = q.y * invscale;
 		axis.z = q.z * invscale;
 	}
+}
+
+// vector rotation
+Vector3D rotateVector( const TVec3D<float>& p, const Quaternion& q )
+{
+    Quaternion temp = q * Quaternion( 0.0f, p.x, p.y, p.z );
+    return ( temp * !q ).asVector4D().xyz();
 }
 
 Quaternion identity()

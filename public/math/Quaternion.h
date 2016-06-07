@@ -42,13 +42,9 @@ struct Quaternion
 	Quaternion(const TVec4D<float> &v);
 	Quaternion(const float a, const TVec3D<float>& axis);
 
+	operator float *() const { return (float *) &x; }
 
-	operator const float *() const
-	{
-		return &x;
-	}
-
-	TVec4D<float> asVector4D();
+	TVec4D<float>& asVector4D() const;
 
 	void operator += (const Quaternion &v);
 	void operator -= (const Quaternion &v);
@@ -74,28 +70,28 @@ Quaternion operator ! (const Quaternion &q);
 // ------------------------------------------------------------------------------
 
 // interpolates quaternion
-Quaternion	slerp(const Quaternion &q0, const Quaternion &q1, const float t);
-Quaternion	scerp(const Quaternion &q0, const Quaternion &q1, const Quaternion &q2, const Quaternion &q3, const float t);
+Quaternion		slerp(const Quaternion &q0, const Quaternion &q1, const float t);
+Quaternion		scerp(const Quaternion &q0, const Quaternion &q1, const Quaternion &q2, const Quaternion &q3, const float t);
 
 // length of quaternion
-float		length(const Quaternion &q);
+float			length(const Quaternion &q);
 
 // returns euler angles of quaternion
 TVec3D<float>	eulers(const Quaternion &q);
 
 // recalculates w comp
-void		renormalize(Quaternion& q);
+void			renormalize(Quaternion& q);
 
 // axis angle of quaternion
-void		axisAngle(const Quaternion& q, TVec3D<float> &axis, float &angle);
+void			axisAngle(const Quaternion& q, TVec3D<float> &axis, float &angle);
 
 // compares quaternion with epsilon
-bool		compare_epsilon(const Quaternion &u, const Quaternion &v, const float eps);
+bool			compare_epsilon(const Quaternion &u, const Quaternion &v, const float eps);
 
 // vector rotation
-//Vector4D	quatRotate(Vector3D &p, Quaternion &q )
+TVec3D<float>	rotateVector( const TVec3D<float>& p, const Quaternion& q );
 
 // quaternion identity
-Quaternion	identity();
+Quaternion		identity();
 
 #endif // QUATERNION_H

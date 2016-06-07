@@ -55,6 +55,10 @@ void CPhysicsHFObject::PreSimulate( float fDt )
 
 	if (m_owner->m_state == GO_STATE_IDLE)
 	{
+		Vector3D angles = eulers(m_object->GetOrientation());
+		m_owner->m_vecAngles = VRAD2DEG(angles);
+		m_owner->m_vecOrigin = m_object->GetPosition();
+
 		float lastdt = m_object->GetLastFrameTime();
 		m_owner->OnPrePhysicsFrame(lastdt);
 	}
@@ -69,6 +73,10 @@ void CPhysicsHFObject::PostSimulate( float fDt )
 
 	if (m_owner->m_state == GO_STATE_IDLE)
 	{
+		Vector3D angles = eulers(m_object->GetOrientation());
+		m_owner->m_vecAngles = VRAD2DEG(angles);
+		m_owner->m_vecOrigin = m_object->GetPosition();
+
 		//float lastdt = m_object->GetLastFrameTime();
 		m_owner->OnPhysicsFrame(fDt);
 	}

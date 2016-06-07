@@ -347,8 +347,6 @@ public:
 	void					SetVelocity(const Vector3D& vel);
 	void					SetAngularVelocity(const Vector3D& vel);
 
-	const Vector3D&			GetOrigin();
-	const Vector3D&			GetAngles();
 	const Quaternion&		GetOrientation() const;
 
 	const Vector3D			GetForwardVector() const;
