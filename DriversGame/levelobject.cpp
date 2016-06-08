@@ -28,14 +28,17 @@ CLevObjectDef::~CLevObjectDef()
 {
 	if(m_info.type == LOBJ_TYPE_INTERNAL_STATIC && m_model)
 	{
+		delete m_instData;
+
 		m_model->Ref_Drop();
 
 		if(m_model->Ref_Count() <= 0)
 			delete m_model;
 	}
-
-	delete m_instData;
-	delete m_defKeyvalues;
+	else
+	{
+		delete m_defKeyvalues;
+	}
 }
 
 #ifdef EDITOR
@@ -233,6 +236,7 @@ CLevelModel::CLevelModel() :
 	m_batches (NULL),
 	m_numBatches (0),
 	m_verts (NULL),
+	m_physVerts(NULL),
 	m_indices (NULL),
 	m_numVerts (0),
 	m_numIndices (0),
@@ -253,11 +257,12 @@ CLevelModel::~CLevelModel()
 void CLevelModel::Cleanup()
 {
 	delete [] m_verts;
-
 	m_verts = NULL;
 
-	delete [] m_indices;
+	delete [] m_physVerts;
+	m_physVerts = NULL;
 
+	delete [] m_indices;
 	m_indices = NULL;
 
 	m_numVerts = 0;
@@ -294,17 +299,9 @@ void CLevelModel::Cleanup()
 	m_hasTransparentSubsets = false;
 }
 
-CEqBulletIndexedMesh* CLevelModel::CreateBulletTriangleMeshFromModelBatch(lmodel_batch_t* batch)
+bool physModelVertexComparator(const Vector3D &a, const Vector3D &b)
 {
-	CEqBulletIndexedMesh* pTriMesh = new CEqBulletIndexedMesh(	((ubyte*)m_verts)+offsetOf(lmodeldrawvertex_t, position), sizeof(lmodeldrawvertex_t),
-																(ubyte*)m_indices, sizeof(uint16), m_numVerts, m_numIndices);
-
-	return pTriMesh;
-}
-
-bool physModelVertexComparator(const lmodeldrawvertex_t &a, const lmodeldrawvertex_t &b)
-{
-	return compare_epsilon(a.position, b.position, 0.001f);
+	return compare_epsilon(a, b, 0.001f);
 }
 
 void CLevelModel::GeneratePhysicsData(bool isGround)
@@ -317,8 +314,8 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 	lmodel_batch_t* tempBatches = new lmodel_batch_t[m_numBatches];
 
 	// regenerate mesh
-	DkList<lmodeldrawvertex_t>	verts;
-	DkList<uint16>				indices;
+	DkList<Vector3D>	physVerts;
+	DkList<uint16>		indices;
 
 	for(int i = 0; i < m_numBatches; i++)
 	{
@@ -327,8 +324,8 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 		tempBatches[i].numVerts = m_batches[i].numVerts;
 		tempBatches[i].numIndices = m_batches[i].numIndices;
 
-		DkList<lmodeldrawvertex_t>	batchverts;
-		DkList<uint32>				batchindices;
+		DkList<Vector3D>	batchverts;
+		DkList<uint32>		batchindices;
 
 		batchverts.resize(m_batches[i].numVerts);
 		batchindices.resize(m_batches[i].numIndices);
@@ -348,45 +345,47 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 					continue;
 			}
 
-			uint16 idx0 = batchverts.addUnique( m_verts[vtxId0], physModelVertexComparator );
-			uint16 idx1 = batchverts.addUnique( m_verts[vtxId1], physModelVertexComparator );
-			uint16 idx2 = batchverts.addUnique( m_verts[vtxId2], physModelVertexComparator );
+			uint16 idx0 = batchverts.addUnique( m_verts[vtxId0].position, physModelVertexComparator );
+			uint16 idx1 = batchverts.addUnique( m_verts[vtxId1].position, physModelVertexComparator );
+			uint16 idx2 = batchverts.addUnique( m_verts[vtxId2].position, physModelVertexComparator );
 			batchindices.append(idx0);
 			batchindices.append(idx1);
 			batchindices.append(idx2);
 		}
 
-		tempBatches[i].startVertex = verts.numElem();
+		tempBatches[i].startVertex = physVerts.numElem();
 		tempBatches[i].startIndex = indices.numElem();
 
 		tempBatches[i].numVerts = batchverts.numElem();
 		tempBatches[i].numIndices = batchindices.numElem();
 
-		verts.append(batchverts);
+		physVerts.append(batchverts);
 
 		for(int j = 0; j < batchindices.numElem(); j++)
 			indices.append(tempBatches[i].startVertex + batchindices[j]);
 	}
 
 	delete [] m_verts;
+	m_verts = NULL;		// no longer to be used
 
+	delete [] m_physVerts;
 	delete [] m_indices;
 
 	int numOldVerts = m_numVerts;
 
-	m_numVerts = verts.numElem();
+	m_numVerts = physVerts.numElem();
 	m_numIndices = indices.numElem();
 
-	m_verts = new lmodeldrawvertex_t[m_numVerts];
+	m_physVerts = new Vector3D[m_numVerts];
 	m_indices = new uint16[m_numIndices];
 
-	memcpy(m_verts, verts.ptr(), sizeof(lmodeldrawvertex_t)*m_numVerts);
+	memcpy(m_physVerts, physVerts.ptr(), sizeof(Vector3D)*m_numVerts);
 	memcpy(m_indices, indices.ptr(), sizeof(uint16)*m_numIndices);
 
-	verts.clear();
+	physVerts.clear();
 	indices.clear();
 
-	CEqBulletIndexedMesh* mesh = new CEqBulletIndexedMesh(	((ubyte*)m_verts)+offsetOf(lmodeldrawvertex_t, position), sizeof(lmodeldrawvertex_t),
+	CEqBulletIndexedMesh* mesh = new CEqBulletIndexedMesh(	(ubyte*)m_physVerts, sizeof(Vector3D),
 															(ubyte*)m_indices, sizeof(uint16), m_numVerts, m_numIndices);
 
 	m_batchMeshes.append(mesh);

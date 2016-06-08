@@ -135,12 +135,11 @@ protected:
 
 	int						m_level;	// editor parameter - model layer location (0 - ground, 1 - sand, 2 - trees, 3 - others)
 
-	CEqBulletIndexedMesh*	CreateBulletTriangleMeshFromModelBatch(lmodel_batch_t* batch);
-
 	lmodel_batch_t*			m_batches;
 	int						m_numBatches;
 
-	lmodeldrawvertex_t*		m_verts;
+	lmodeldrawvertex_t*		m_verts;		// this is NULL after GeneratePhysicsData
+	Vector3D*				m_physVerts;	// this is used after GeneratePhysicsData
 	uint16*					m_indices;
 
 	bool					m_hasTransparentSubsets;

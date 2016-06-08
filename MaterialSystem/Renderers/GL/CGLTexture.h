@@ -28,9 +28,8 @@ public:
 
 	void					Release();
 	void					ReleaseTextures();
-	void					ReleaseSurfaces();
 
-	eqGlTex					GetCurrentTexture();
+	eqGlTex&				GetCurrentTexture();
 
 	// locks texture for modifications, etc
 	void					Lock(texlockdata_t* pLockData, Rectangle_t* pRect = NULL, bool bDiscard = false, bool bReadOnly = false, int nLevel = 0, int nCubeFaceId = 0);
@@ -38,18 +37,15 @@ public:
 	// unlocks texture for modifications, etc
 	void					Unlock();
 
-	bool					mipMapped;
-
 	DkList<eqGlTex>			textures;
 
 	float					m_flLod;
 	GLuint					glTarget;
 	GLuint					glDepthID;
 
-	//bool					released;
-
 	int						m_nLockLevel;
 	bool					m_bIsLocked;
+	int						m_texSize;
 
 protected:
 	ubyte*					m_lockPtr;

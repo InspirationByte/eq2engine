@@ -26,6 +26,8 @@
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
 
+HOOK_TO_CVAR(r_loadmiplevel);
+
 #ifdef PLAT_LINUX
 #include "glx_caps.hpp"
 #endif // PLAT_LINUX
@@ -947,7 +949,6 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 	tex_flags |= TEXFLAG_RENDERTARGET;
 
 	pTexture->SetFlags(tex_flags);
-	pTexture->mipMapped = false;
 	pTexture->SetName(pszName);
 
 	pTexture->glTarget = (tex_flags & TEXFLAG_CUBEMAP) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
@@ -1025,8 +1026,6 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 {
 	if(!pSrc)
 		return 0;
-
-	HOOK_TO_CVAR(r_loadmiplevel);
 
 	int nQuality = r_loadmiplevel->GetInt();
 
@@ -1219,6 +1218,8 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& 
 	pTexture->glTarget = pImages[0]->IsCube()? GL_TEXTURE_CUBE_MAP : pImages[0]->Is3D()? GL_TEXTURE_3D : pImages[0]->Is2D() ? GL_TEXTURE_2D : GL_TEXTURE_1D;
 #endif // USE_GLES2
 
+	int mipCount = 0;
+
 	for(int i = 0; i < pImages.numElem(); i++)
 	{
 		SamplerStateParam_t ss = sampler;
@@ -1237,6 +1238,16 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& 
 
 		if(nGlTex)
 		{
+			int nQuality = r_loadmiplevel->GetInt();
+
+			// force quality to best
+			if((nFlags & TEXFLAG_NOQUALITYLOD) || pImages[i]->GetMipMapCount() == 1)
+				nQuality = 0;
+
+			mipCount += pImages[i]->GetMipMapCount()-nQuality;
+
+			pTexture->m_texSize += pImages[i]->GetMipMappedSize(nQuality);
+
 			eqGlTex tex;
 			tex.glTexID = nGlTex;
 
@@ -1259,6 +1270,7 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& 
 	// Bind this sampler state to texture
 	pTexture->SetSamplerState(sampler);
 	pTexture->SetDimensions(wide, tall);
+	pTexture->SetMipCount(mipCount);
 	pTexture->SetFormat(pImages[0]->GetFormat());
 	pTexture->SetFlags(nFlags | TEXFLAG_MANAGED);
 	pTexture->SetName( pImages[0]->GetName() );

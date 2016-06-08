@@ -80,6 +80,7 @@ void CObject_Physics::OnRemove()
 		m_physBody = NULL;
 	}
 
+	// this might be required to
 	if(m_userData)
 	{
 		regionObject_t* ref = (regionObject_t*)m_userData;

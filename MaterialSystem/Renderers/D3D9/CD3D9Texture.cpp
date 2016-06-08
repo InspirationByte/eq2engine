@@ -13,13 +13,10 @@
 
 CD3D9Texture::CD3D9Texture() : CTexture()
 {
-	mipMapped = false;
-
-	released = false;
-
 	m_nLockLevel = 0;
 	m_bIsLocked = false;
 	m_pLockSurface = NULL;
+	m_texSize = 0;
 }
 
 CD3D9Texture::~CD3D9Texture()
@@ -29,38 +26,24 @@ CD3D9Texture::~CD3D9Texture()
 
 void CD3D9Texture::Release()
 {
-	if(released)
-		return;
-
 	ReleaseTextures();
 	ReleaseSurfaces();
-
-	released = true;
 }
 
 void CD3D9Texture::ReleaseTextures()
 {
 	for (int i = 0; i < textures.numElem(); i++)
-	{
 		textures[i]->Release();
-	}
 
 	textures.clear();
 }
 
 void CD3D9Texture::ReleaseSurfaces()
 {
-	if(released)
-		return;
-
 	for (int i = 0; i < surfaces.numElem(); i++)
-	{
 		surfaces[i]->Release();
-	}
 
 	surfaces.clear();
-
-	released = true;
 }
 
 LPDIRECT3DBASETEXTURE9 CD3D9Texture::GetCurrentTexture()

@@ -15,34 +15,28 @@ class CTexture : public ITexture
 {
 public:
 
-							CTexture();
-							~CTexture();
+								CTexture();
+								~CTexture();
 
-	const char*				GetName();
-	ETextureFormat			GetFormat();
+	const char*					GetName() const;
+	ETextureFormat				GetFormat() const;
 
-	int						GetWidth();
-	int						GetHeight();
+	int							GetWidth() const;
+	int							GetHeight() const;
+	int							GetMipCount() const;
 
-	//void					PrintInfo();
+	int							GetFlags() const;
+	const SamplerStateParam_t&	GetSamplerState() const {return m_samplerState;}
+	int							GetAnimatedTextureFrames() const;
+	int							GetCurrentAnimatedTextureFrame() const;
 
-	int						GetFlags();
-	SamplerStateParam_t&	GetSamplerState() {return m_samplerState;}
-
-	void					SetName(const char* pszNewName);
-	void					SetFlags(int iFlags) {m_iFlags = iFlags;}
-	void					SetDimensions(int width,int height) {m_iWidth = width; m_iHeight = height;}
-	void					SetFormat(ETextureFormat newformat) {m_iFormat = newformat;}
-	void					SetSamplerState(const SamplerStateParam_t& newSamplerState) {m_samplerState = newSamplerState;}
-
-	// Animated texture props
-	int						GetAnimatedTextureFrames();
-
-	// current frame
-	int						GetCurrentAnimatedTextureFrame();
-
-	// sets current animated texture frames
-	void					SetAnimatedTextureFrame(int frame);
+	void						SetName(const char* pszNewName);
+	void						SetFlags(int iFlags) {m_iFlags = iFlags;}
+	void						SetDimensions(int width,int height) {m_iWidth = width; m_iHeight = height;}
+	void						SetMipCount(int count) {m_mipCount = count;}
+	void						SetFormat(ETextureFormat newformat) {m_iFormat = newformat;}
+	void						SetSamplerState(const SamplerStateParam_t& newSamplerState) {m_samplerState = newSamplerState;}
+	void						SetAnimatedTextureFrame(int frame);		// sets current animated texture frames
 
 private:
 	// refcounted
@@ -51,14 +45,17 @@ private:
 protected:
 	EqString				m_szTexName;
 
-	ETextureFormat					m_iFormat;
-	uint					m_iFlags;
-	int						m_iWidth;
-	int						m_iHeight;
-	SamplerStateParam_t		m_samplerState;
+	ushort					m_iFlags;
+	ushort					m_iWidth;
+	ushort					m_iHeight;
+	ushort					m_mipCount;
 
-	int						m_nAnimatedTextureFrame;
-	int						m_numAnimatedTextureFrames;
+	ushort					m_nAnimatedTextureFrame;
+	ushort					m_numAnimatedTextureFrames;
+
+	ETextureFormat			m_iFormat;
+
+	SamplerStateParam_t		m_samplerState;
 };
 
 #endif //CTEXTURE_H

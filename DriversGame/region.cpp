@@ -36,7 +36,10 @@ regionObject_t::~regionObject_t()
 	{
 		// delete associated object from game world
 		if( g_pGameWorld->IsValidObject( game_object ) )
+		{
+			game_object->SetUserData(NULL);
 			g_pGameWorld->RemoveObject( game_object );
+		}
 
 		game_object = NULL;
 	}
@@ -885,6 +888,7 @@ void CLevelRegion::RespawnObjects()
 
 			if(g_pGameWorld->m_pGameObjects.remove(ref->game_object))
 			{
+				ref->game_object->SetUserData(NULL);
 				ref->game_object->OnRemove();
 				delete ref->game_object;
 			}

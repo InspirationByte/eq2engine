@@ -36,17 +36,15 @@ public:
 	// unlocks texture for modifications, etc
 	void					Unlock();
 
-	DWORD usage;
-	bool mipMapped;
-
 	DkList<LPDIRECT3DBASETEXTURE9>	textures;
 	DkList<LPDIRECT3DSURFACE9>		surfaces;
 
 	D3DPOOL					m_pool;
+	DWORD					usage;
+	int						m_texSize;
 
-	bool					released;
-	int						m_nLockLevel;
 	bool					m_bIsLocked;
+	ushort					m_nLockLevel;
 	LPDIRECT3DSURFACE9		m_pLockSurface;
 };
 

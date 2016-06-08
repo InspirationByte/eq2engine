@@ -109,8 +109,6 @@ struct navGrid_t
 
 struct regionObject_t
 {
-	PPMEM_MANAGED_OBJECT()
-
 	regionObject_t()
 	{
 		game_object = NULL;
@@ -161,7 +159,10 @@ struct buildingSource_t;
 class CLevelRegion
 {
 	friend class CGameLevel;
+
 public:
+	PPMEM_MANAGED_OBJECT();
+
 	CLevelRegion();
 	~CLevelRegion();
 

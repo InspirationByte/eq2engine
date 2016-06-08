@@ -39,6 +39,7 @@ void CObject_Debris::OnRemove()
 		m_physBody = NULL;
 	}
 
+	// debris objects requires setting reference to NULL
 	if(m_userData)
 	{
 		regionObject_t* ref = (regionObject_t*)m_userData;

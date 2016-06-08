@@ -26,6 +26,8 @@
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
 
+HOOK_TO_CVAR(r_loadmiplevel);
+
 bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags);
 
 // only needed for unmanaged textures
@@ -332,8 +334,6 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 			DevMsg(DEVMSG_SHADERAPI, "Restoring rentertarget %s\n", pTex->GetName());
 			InternalCreateRenderTarget(m_pD3DDevice, pTex, pTex->GetFlags());
 		}
-
-		pTex->released = false;
 	}
 
 	DevMsg(DEVMSG_SHADERAPI, "Restoring backbuffer...\n");
@@ -504,13 +504,42 @@ void ShaderAPID3DX9::PrintAPIInfo()
 
 	MsgInfo("------ Loaded textures ------");
 
+	int allTexturesSize = 0;
+
 	CScopedMutex scoped(m_Mutex);
 	for(int i = 0; i < m_TextureList.numElem(); i++)
 	{
 		CD3D9Texture* pTexture = (CD3D9Texture*)m_TextureList[i];
 
-		MsgInfo("     %s (%d) - %dx%d\n", pTexture->GetName(), pTexture->Ref_Count(), pTexture->GetWidth(),pTexture->GetHeight());
+		ETextureFormat texFmt = pTexture->GetFormat();
+
+		float textureSize = 0;
+		
+		if(IsCompressedFormat(texFmt))
+			textureSize = pTexture->m_texSize;
+		else
+			textureSize = pTexture->GetWidth() * pTexture->GetHeight() * pTexture->GetMipCount() * GetBytesPerPixel(texFmt);
+
+		allTexturesSize += textureSize / 1024;
+
+		MsgInfo("     %s (%d) - %dx%d (~%.2f kb)\n", pTexture->GetName(), pTexture->Ref_Count(), pTexture->GetWidth(),pTexture->GetHeight(), (textureSize / 1024.0f));
 	}
+
+	Msg("Texture memory: %.2f MB\n", ((float)allTexturesSize / 1024.0f));
+
+	int allBuffersSize = 0;
+
+	// get vb's size
+	for(int i = 0; i < m_VBList.numElem(); i++)
+		allBuffersSize += (float)m_VBList[i]->GetSizeInBytes() / 1024.0f;
+
+	// get ib's size
+	for(int i = 0; i < m_IBList.numElem(); i++)
+		allBuffersSize += (float)(m_IBList[i]->GetIndicesCount() * m_IBList[i]->GetIndexSize()) / 1024.0f;
+
+	Msg("VBO memory: %.2f MB\n", ((float)allBuffersSize / 1024.0f));
+
+	Msg("TOTAL USAGE: %g MB\n", ((float)(allTexturesSize+allBuffersSize) / 1024.0f));
 }
 
 void ShaderAPID3DX9::SetViewport(int x, int y, int w, int h)
@@ -593,7 +622,7 @@ void ShaderAPID3DX9::ApplyTextures()
 #endif
 
 				m_pD3DDevice->SetTexture(i, pTexture->GetCurrentTexture());
-				m_pSelectedSamplerStates[i] = &pTexture->GetSamplerState();
+				m_pSelectedSamplerStates[i] = (SamplerStateParam_t*)&pTexture->GetSamplerState();
 			}
 			m_pCurrentTextures[i] = m_pSelectedTextures[i];
 		}
@@ -612,7 +641,7 @@ void ShaderAPID3DX9::ApplyTextures()
 			else 
 			{
 				m_pD3DDevice->SetTexture(D3DVERTEXTEXTURESAMPLER0+i, pTexture->GetCurrentTexture());
-				m_pSelectedVertexSamplerStates[i] = &pTexture->GetSamplerState();
+				m_pSelectedVertexSamplerStates[i] = (SamplerStateParam_t*)&pTexture->GetSamplerState();
 			}
 			m_pCurrentVertexTextures[i] = m_pSelectedVertexTextures[i];
 		}
@@ -1412,7 +1441,7 @@ bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nF
 			LPDIRECT3DBASETEXTURE9 pTexture = NULL;
 
 			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating cubemap target\n");
-			if (dev->CreateCubeTexture(tex->GetWidth(), tex->mipMapped? 0 : 1, tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DCUBETEXTURE9 *) &pTexture, NULL) != D3D_OK)
+			if (dev->CreateCubeTexture(tex->GetWidth(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DCUBETEXTURE9 *) &pTexture, NULL) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' cubemap render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 				ASSERT(!"Couldn't create cubemap render target");
@@ -1438,7 +1467,7 @@ bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nF
 			tex->m_pool = D3DPOOL_DEFAULT;
 
 			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating render target single texture\n");
-			if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->mipMapped? 0 : 1, tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DTEXTURE9 *) &pTexture, NULL) != D3D_OK)
+			if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DTEXTURE9 *) &pTexture, NULL) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 				ASSERT(!"Couldn't create render target");
@@ -1472,7 +1501,6 @@ ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureForm
 	tex_flags |= TEXFLAG_RENDERTARGET;
 
 	pTexture->SetFlags(tex_flags);
-	pTexture->mipMapped = false;
 	pTexture->SetName("_rt_001");
 
 	CScopedMutex scoped(m_Mutex);
@@ -1516,7 +1544,6 @@ ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width,
 
 	pTexture->SetFlags(tex_flags);
 
-	pTexture->mipMapped = false;
 	pTexture->SetName(pszName);
 
 	CScopedMutex scoped(m_Mutex);
@@ -3006,8 +3033,6 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 	if(!pSrc)
 		return NULL;
 
-	HOOK_TO_CVAR(r_loadmiplevel);
-
 	int nQuality = r_loadmiplevel->GetInt();
 
 	// force quality to best
@@ -3035,13 +3060,16 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 	// do spin wait (if in other thread)
 	//DEVICE_SPIN_WAIT
 
+	int numMipmapsReal = (pSrc->GetMipMapCount() - nQuality);
+	numMipmapsReal = max(0, numMipmapsReal);
+
 	// wait before all textures will be processed by other threads
 	Finish();
 
 	if (pSrc->IsCube())
 	{
 		if (m_pD3DDevice->CreateCubeTexture(pSrc->GetWidth(nQuality),
-											pSrc->GetMipMapCount() - nQuality,
+											numMipmapsReal,
 											0,
 											formats[nFormat],
 											nPool,
@@ -3060,7 +3088,7 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 		if (m_pD3DDevice->CreateVolumeTexture(	pSrc->GetWidth(nQuality), 
 												pSrc->GetHeight(nQuality), 
 												pSrc->GetDepth(nQuality), 
-												pSrc->GetMipMapCount()-nQuality, 
+												numMipmapsReal, 
 												0,
 												formats[nFormat],
 												nPool,
@@ -3076,7 +3104,7 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 	{
 		if (m_pD3DDevice->CreateTexture(pSrc->GetWidth(nQuality),
 										pSrc->GetHeight(nQuality), 
-										pSrc->GetMipMapCount()-nQuality, 
+										numMipmapsReal, 
 										0, 
 										formats[nFormat], 
 										nPool, 
@@ -3166,13 +3194,27 @@ void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const DkList<CImage*
 		pTexture = new CD3D9Texture();
 
 	int wide = 0, tall = 0;
+	int numMips = 0;
 
 	for(int i = 0; i < pImages.numElem(); i++)
 	{
 		IDirect3DBaseTexture9* pD3DTex = CreateD3DTextureFromImage(pImages[i], wide, tall, nFlags);
 
 		if(pD3DTex)
+		{
+			int nQuality = r_loadmiplevel->GetInt();
+
+			// force quality to best
+			if((nFlags & TEXFLAG_NOQUALITYLOD) || pImages[i]->GetMipMapCount() == 1)
+				nQuality = 0;
+
+			numMips += pImages[i]->GetMipMapCount() - nQuality;
+
+			pTexture->m_texSize += pImages[i]->GetMipMappedSize(nQuality);
+
 			pTexture->textures.append(pD3DTex);
+		}
+			
 	}
 
 	if(!pTexture->textures.numElem())
@@ -3190,6 +3232,7 @@ void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const DkList<CImage*
 	// Bind this sampler state to texture
 	pTexture->SetSamplerState(sampler);
 	pTexture->SetDimensions(wide, tall);
+	pTexture->SetMipCount(numMips);
 	pTexture->SetFormat(pImages[0]->GetFormat());
 	pTexture->SetFlags(nFlags | TEXFLAG_MANAGED);
 	pTexture->SetName( pImages[0]->GetName() );

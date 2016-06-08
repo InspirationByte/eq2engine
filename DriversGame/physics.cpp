@@ -174,25 +174,22 @@ eqPhysSurfParam_t* CPhysicsEngine::GetSurfaceParamByID( int id )
 	return m_physics.GetSurfaceParamByID(id);
 }
 
-bool physHFieldVertexComparator(const hfielddrawvertex_t &a, const hfielddrawvertex_t &b)
+bool physHFieldVertexComparator(const Vector3D &a, const Vector3D &b)
 {
-	return compare_epsilon(a.position, b.position, 0.001f);
+	return compare_epsilon(a, b, 0.001f);
 }
 
 CEqBulletIndexedMesh* CreateBulletTriangleMeshFromBatch(hfieldbatch_t* batch)
 {
 	// generate optimized/reduced set
-	DkList<hfielddrawvertex_t>	batchverts;
-	DkList<uint32>				batchindices;
-
-	batchverts.resize(batch->verts.numElem());
+	DkList<uint32>		batchindices;
 	batchindices.resize(batch->indices.numElem());
 
 	for(int i = 0; i < batch->indices.numElem(); i++)
 	{
 		int vtxId = batch->indices[i];
 
-		int idx = batchverts.addUnique( batch->verts[vtxId] , physHFieldVertexComparator );
+		int idx = batch->physicsVerts.addUnique( batch->verts[vtxId].position, physHFieldVertexComparator );
 
 		batchindices.append(idx);
 	}
@@ -200,12 +197,10 @@ CEqBulletIndexedMesh* CreateBulletTriangleMeshFromBatch(hfieldbatch_t* batch)
 	batch->verts.clear();
 	batch->indices.clear();
 
-	batch->verts.append(batchverts);
 	batch->indices.append(batchindices);
 
-	CEqBulletIndexedMesh* pTriMesh = new CEqBulletIndexedMesh(	((ubyte*)batch->verts.ptr())+offsetOf(hfielddrawvertex_t, position), sizeof(hfielddrawvertex_t),
-																(ubyte*)batch->indices.ptr(), sizeof(uint32), batch->verts.numElem(), batch->indices.numElem() );
-
+	CEqBulletIndexedMesh* pTriMesh = new CEqBulletIndexedMesh( (ubyte*)batch->physicsVerts.ptr(), sizeof(Vector3D),
+																(ubyte*)batch->indices.ptr(), sizeof(uint32), batch->physicsVerts.numElem(), batch->indices.numElem() );
 
 	return pTriMesh;
 }
@@ -229,23 +224,6 @@ void CPhysicsEngine::AddHeightField( CHeightTileField* pField )
 	}
 
 	// add collision object
-
-	int nVerts = 0;
-	int nIndices = 0;
-
-	for(int i = 0; i < fieldInfo->m_batches.numElem(); i++)
-	{
-		hfieldbatch_t* batch = fieldInfo->m_batches[i];
-
-		nVerts += batch->verts.numElem();
-		nIndices += batch->indices.numElem();
-	}
-
-	nVerts = 0;
-	nIndices = 0;
-
-	// TODO: array of static objects and transformation info since it's a fixed point physics...
-
     Threading::CEqMutex& mutex = Threading::GetGlobalMutex(Threading::MUTEXPURPOSE_LEVEL_LOADER);
 
 	for(int i = 0; i < fieldInfo->m_batches.numElem(); i++)
@@ -262,9 +240,6 @@ void CPhysicsEngine::AddHeightField( CHeightTileField* pField )
 			MsgError("FindSurfaceParam: invalid material '%s' in material '%s'\n", pVar->GetString(), material->GetName());
 			param = FindSurfaceParam( "default" );
 		}
-
-		nVerts += batch->verts.numElem();
-		nIndices += batch->indices.numElem();
 
 		// add physics object
 		CEqBulletIndexedMesh* mesh = CreateBulletTriangleMeshFromBatch( batch );

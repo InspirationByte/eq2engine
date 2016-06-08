@@ -2084,9 +2084,20 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 				model->m_indices[i + 2] >= model->m_numVerts)
 				continue;
 
-			p0 = model->m_verts[model->m_indices[i]].position;
-			p1 = model->m_verts[model->m_indices[i + 1]].position;
-			p2 = model->m_verts[model->m_indices[i + 2]].position;
+			// take physics geometry vertices
+			if(model->m_physVerts != NULL)
+			{
+				p0 = model->m_physVerts[model->m_indices[i]];
+				p1 = model->m_physVerts[model->m_indices[i + 1]];
+				p2 = model->m_physVerts[model->m_indices[i + 2]];
+			}
+			else
+			{
+				// mostly used in editor...
+				p0 = model->m_verts[model->m_indices[i]].position;
+				p1 = model->m_verts[model->m_indices[i + 1]].position;
+				p2 = model->m_verts[model->m_indices[i + 2]].position;
+			}
 
 			v0 = (refTransform*Vector4D(p0, 1.0f)).xyz();
 			v1 = (refTransform*Vector4D(p1, 1.0f)).xyz();

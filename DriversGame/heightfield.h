@@ -51,8 +51,6 @@ enum EFieldTileFlag
 
 struct hfieldtile_s
 {
-	PPMEM_MANAGED_OBJECT()
-
 	hfieldtile_s()
 	{
 		height = 0;
@@ -120,8 +118,6 @@ struct hfieldmaterial_t
 
 struct hfieldbatch_t
 {
-	PPMEM_MANAGED_OBJECT()
-
 	hfieldbatch_t()
 	{
 		materialBundle = NULL;
@@ -129,6 +125,7 @@ struct hfieldbatch_t
 	}
 
 	DkList<hfielddrawvertex_t>	verts;
+	DkList<Vector3D>			physicsVerts;
 	DkList<uint32>				indices;
 
 	int							sx;

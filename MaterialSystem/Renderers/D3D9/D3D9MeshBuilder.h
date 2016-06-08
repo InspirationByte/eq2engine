@@ -15,9 +15,12 @@
 #include <d3dx9.h>
 
 #include "d3dx9_def.h"
+#include "ppmem.h"
 
 struct ListVertex_t
 {
+	PPMEM_MANAGED_OBJECT();
+
 	Vector3D pos;
 	Vector3D normal;
 	D3DCOLOR color;

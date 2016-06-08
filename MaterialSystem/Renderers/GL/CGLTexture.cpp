@@ -21,7 +21,7 @@ CGLTexture::CGLTexture()
 	m_flLod = 0.0f;
 	glTarget = 0;
 	glDepthID = 0;
-	mipMapped = false;
+	m_texSize = 0;
 	m_nLockLevel = 0;
 	m_bIsLocked = false;
 
@@ -55,7 +55,7 @@ void CGLTexture::ReleaseTextures()
 	}
 }
 
-eqGlTex CGLTexture::GetCurrentTexture()
+eqGlTex& CGLTexture::GetCurrentTexture()
 {
 	static eqGlTex nulltex = {0};
 

@@ -33,12 +33,6 @@ void CObject_Tree::OnRemove()
 		g_pPhysics->m_physics.DestroyStaticObject(m_pPhysicsObject);
 	}
 	m_pPhysicsObject = NULL;
-
-	if(m_userData)
-	{
-		regionObject_t* ref = (regionObject_t*)m_userData;
-		ref->game_object = NULL;
-	}
 }
 
 void CObject_Tree::Spawn()

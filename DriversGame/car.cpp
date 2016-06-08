@@ -3022,8 +3022,6 @@ void CCar::DrawEffects(int lod)
 	ColorRGB ambientAndSund = g_pGameWorld->m_info.rainBrightness;
 	TexAtlasEntry_t* skidmarkEntry = m_veh_skidmark_asphalt;
 
-	PFXVertexPair_t trailPair[2];
-
 	for(int i = 0; i < m_pWheels.numElem(); i++)
 	{
 		wheelData_t& wheel = m_pWheels[i];
@@ -3067,6 +3065,12 @@ void CCar::DrawEffects(int lod)
 			minimumSkid = 0.45f;
 			float wheelTrailFac = pow(fabs(skidPitchVel) - 2.0f, 0.5f);
 
+			PFXVertexPair_t* trailPair;
+
+			// begin horizontal
+			if(g_vehicleEffects->AllocateGeom(4,4, (PFXVertex_t**)&trailPair, NULL, true) == -1)
+				continue;
+
 			trailPair[0] = skidmarkPair;
 
 			trailPair[1].v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.75f, vec2_zero, ColorRGBA(ambientAndSund,0.0f));
@@ -3086,7 +3090,9 @@ void CCar::DrawEffects(int lod)
 			trailPair[1].v0.texcoord = rect.GetLeftBottom() + offset;
 			trailPair[1].v1.texcoord = rect.GetRightBottom() + offset;
 
-			g_vehicleEffects->AddParticleStrip(&trailPair[0].v0, 4);
+			// begin vertical
+			if(g_vehicleEffects->AllocateGeom(4,4, (PFXVertex_t**)&trailPair, NULL, true) == -1)
+				continue;
 
 			rect = rect.GetLeftHorizontal(0.35f);
 
@@ -3102,8 +3108,6 @@ void CCar::DrawEffects(int lod)
 			trailPair[0].v1.texcoord = rect.GetRightTop() + offset;
 			trailPair[1].v0.texcoord = rect.GetLeftBottom() + offset;
 			trailPair[1].v1.texcoord = rect.GetRightBottom() + offset;
-
-			g_vehicleEffects->AddParticleStrip(&trailPair[0].v0, 4);
 		}
 
 		if( drawOnLocal || drawOnOther )

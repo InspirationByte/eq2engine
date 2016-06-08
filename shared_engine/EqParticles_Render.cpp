@@ -57,8 +57,8 @@ void CParticleRenderGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO
 	m_maxQuadVerts = min(r_particleBufferSize.GetInt(), maxQuads);
 
 	// init buffers
-	m_pVerts	= (PFXVertex_t*)malloc(PVBO_MAX_SIZE(m_maxQuadVerts));
-	m_pIndices	= (uint16*)malloc(PIBO_MAX_SIZE(m_maxQuadVerts));
+	m_pVerts	= (PFXVertex_t*)PPAlloc(PVBO_MAX_SIZE(m_maxQuadVerts));
+	m_pIndices	= (uint16*)PPAlloc(PIBO_MAX_SIZE(m_maxQuadVerts));
 
 	if(!m_pVerts)
 		ASSERT(!"FAILED TO ALLOCATE VERTICES!\n");
@@ -82,8 +82,8 @@ void CParticleRenderGroup::Shutdown()
 	materials->FreeMaterial(m_pMaterial);
 	m_pMaterial = NULL;
 
-	free(m_pVerts);
-	free(m_pIndices);
+	PPFree(m_pVerts);
+	PPFree(m_pIndices);
 
 	m_pIndices = NULL;
 	m_pVerts = NULL;

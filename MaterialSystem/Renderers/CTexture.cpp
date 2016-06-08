@@ -17,6 +17,7 @@ CTexture::CTexture()
 	m_iFlags = 0;
 	m_iWidth = 0;
 	m_iHeight = 0;
+	m_mipCount = 1;
 
 	// default frame is zero
 	m_nAnimatedTextureFrame = 0;
@@ -30,27 +31,32 @@ CTexture::~CTexture()
 
 }
 
-const char* CTexture::GetName()
+const char* CTexture::GetName() const
 {
 	return m_szTexName.GetData();
 }
 
-ETextureFormat CTexture::GetFormat()
+ETextureFormat CTexture::GetFormat() const
 {
 	return m_iFormat;
 }
 
-int CTexture::GetWidth()
+int CTexture::GetWidth() const
 {
 	return m_iWidth;
 }
 
-int CTexture::GetHeight()
+int CTexture::GetHeight() const
 {
 	return m_iHeight;
 }
 
-int CTexture::GetFlags()
+int	CTexture::GetMipCount() const
+{
+	return m_mipCount;
+}
+
+int CTexture::GetFlags() const
 {
 	return m_iFlags;
 }
@@ -61,13 +67,13 @@ void CTexture::SetName(const char* pszNewName)
 }
 
 // Animated texture props
-int CTexture::GetAnimatedTextureFrames()
+int CTexture::GetAnimatedTextureFrames() const
 {
 	return m_numAnimatedTextureFrames;
 }
 
 // current frame
-int CTexture::GetCurrentAnimatedTextureFrame()
+int CTexture::GetCurrentAnimatedTextureFrame() const
 {
 	return m_nAnimatedTextureFrame;
 }

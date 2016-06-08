@@ -13,6 +13,8 @@
 
 struct ListVertex_t
 {
+	PPMEM_MANAGED_OBJECT();
+
 	TVec3D<half> pos;
 	TVec2D<half> texCoord;
 	TVec3D<half> normal;
