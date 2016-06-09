@@ -402,6 +402,8 @@ IMaterial* CMaterialSystem::FindMaterial(const char* szMaterialName,bool findExi
 	if( strlen(szMaterialName) == 0 )
 		return NULL;
 
+	CScopedMutex m(m_Mutex);
+
 	g_pLoadBeginCallback();
 
 	if(findExisting)
@@ -451,6 +453,8 @@ void CMaterialSystem::PreloadNewMaterials()
 	if(m_config.stubMode)
 		return;
 
+	CScopedMutex m(m_Mutex);
+
 	g_pLoadBeginCallback();
 
 	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
@@ -496,6 +500,8 @@ void CMaterialSystem::ReloadAllTextures()
 // Frees all textures
 void CMaterialSystem::FreeAllTextures()
 {
+	CScopedMutex m(m_Mutex);
+
 	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
 	{
 		if(m_pLoadedMaterials[i] != NULL)
@@ -510,6 +516,8 @@ void CMaterialSystem::FreeAllTextures()
 // Reloads materials
 void CMaterialSystem::ReloadAllMaterials(bool bTouchTextures,bool bTouchShaders, bool wait)
 {
+	CScopedMutex m(m_Mutex);
+
 	g_pLoadBeginCallback();
 
 	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
@@ -538,6 +546,8 @@ void CMaterialSystem::ReloadAllMaterials(bool bTouchTextures,bool bTouchShaders,
 // frees all materials (if bFreeAll is positive, will free locked)
 void CMaterialSystem::FreeMaterials(bool bFreeAll)
 {
+	CScopedMutex m(m_Mutex);
+
 	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
 	{
 		DevMsg(DEVMSG_MATSYSTEM, "freeing %s\n", m_pLoadedMaterials[i]->GetName());
@@ -554,6 +564,8 @@ void CMaterialSystem::FreeMaterial(IMaterial *pMaterial)
 	// if already freed.
 	if(pMaterial == NULL)
 		return;
+
+	CScopedMutex m(m_Mutex);
 
 	pMaterial->Ref_Drop();
 
@@ -775,29 +787,17 @@ IMaterial* CMaterialSystem::GetBoundMaterial()
 // captures screenshot to CImage data
 bool CMaterialSystem::CaptureScreenshot(CImage &img)
 {
-	// freeze render
-	CScopedMutex m(m_Mutex);
-
 	return m_pRenderLib->CaptureScreenshot( img );
 }
 
 // update all materials and proxies
 void CMaterialSystem::Update(float dt)
 {
-	CScopedMutex m(m_Mutex);
-
 	if(debugoverlay)
 		debugoverlay->Graph_AddValue(0, m_nMaterialChanges);
 
 	m_fCurrFrameTime = dt;
-	/*
-	// reset bind count
-	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
-	{
-		CMaterial* pMat = (CMaterial*)m_pLoadedMaterials[i];
-		pMat->m_numBounds = 0;
-	}
-	*/
+
 	m_nMaterialChanges = 0;
 }
 
@@ -1329,6 +1329,8 @@ void CMaterialSystem::AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLIC
 // prints loaded materials to console
 void CMaterialSystem::PrintLoadedMaterials()
 {
+	CScopedMutex m(m_Mutex);
+
 	Msg("---MATERIALS---\n");
 	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
 	{
