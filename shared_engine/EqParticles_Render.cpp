@@ -56,9 +56,11 @@ void CParticleRenderGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO
 
 	m_maxQuadVerts = min(r_particleBufferSize.GetInt(), maxQuads);
 
+	DevMsg(DEVMSG_CORE, "[PARTICLEVBO] Allocating %d quads (%d bytes VB and %d bytes IB)\n", m_maxQuadVerts, PVBO_MAX_SIZE(m_maxQuadVerts), PIBO_MAX_SIZE(m_maxQuadVerts));
+
 	// init buffers
-	m_pVerts	= (PFXVertex_t*)PPAlloc(PVBO_MAX_SIZE(m_maxQuadVerts));
-	m_pIndices	= (uint16*)PPAlloc(PIBO_MAX_SIZE(m_maxQuadVerts));
+	m_pVerts	= (PFXVertex_t*)malloc(PVBO_MAX_SIZE(m_maxQuadVerts));
+	m_pIndices	= (uint16*)malloc(PIBO_MAX_SIZE(m_maxQuadVerts));
 
 	if(!m_pVerts)
 		ASSERT(!"FAILED TO ALLOCATE VERTICES!\n");
@@ -82,8 +84,8 @@ void CParticleRenderGroup::Shutdown()
 	materials->FreeMaterial(m_pMaterial);
 	m_pMaterial = NULL;
 
-	PPFree(m_pVerts);
-	PPFree(m_pIndices);
+	free(m_pVerts);
+	free(m_pIndices);
 
 	m_pIndices = NULL;
 	m_pVerts = NULL;
@@ -99,7 +101,7 @@ void CParticleRenderGroup::AddIndex(uint16 idx)
 	if(!g_pPFXRenderer->IsInitialized())
 		return;
 
-	if(m_numVertices*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE(m_maxQuadVerts))
+	if(m_numVertices > PVBO_MAX_SIZE(m_maxQuadVerts))
 	{
 		MsgWarning("ParticleRenderGroup overflow\n");
 
@@ -137,7 +139,7 @@ void CParticleRenderGroup::AddParticleGeom(PFXVertex_t* verts, uint16* indices, 
 	if(!g_pPFXRenderer->IsInitialized())
 		return;
 
-	if(m_numVertices*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE(m_maxQuadVerts))
+	if(m_numVertices > PVBO_MAX_SIZE(m_maxQuadVerts))
 	{
 		MsgWarning("ParticleRenderGroup overflow\n");
 
@@ -192,7 +194,7 @@ int CParticleRenderGroup::AllocateGeom( int nVertices, int nIndices, PFXVertex_t
 	if(!g_pPFXRenderer->IsInitialized())
 		return -1;
 
-	if(m_numVertices*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE(m_maxQuadVerts))
+	if(m_numVertices > PVBO_MAX_SIZE(m_maxQuadVerts))
 	{
 		// don't warn me about overflow
 		m_numVertices = 0;
@@ -237,7 +239,7 @@ void CParticleRenderGroup::AddParticleStrip(PFXVertex_t* verts, int nVertices)
 	if(nVertices == 0)
 		return;
 
-	if(m_numVertices*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE(m_maxQuadVerts))
+	if(m_numVertices > PVBO_MAX_SIZE(m_maxQuadVerts))
 	{
 		MsgWarning("ParticleRenderGroup overflow\n");
 
@@ -246,6 +248,8 @@ void CParticleRenderGroup::AddParticleStrip(PFXVertex_t* verts, int nVertices)
 
 		return;
 	}
+
+	Threading::CScopedMutex m(g_pPFXRenderer->m_mutex);
 
 	int num_ind = m_numIndices;
 
@@ -558,7 +562,7 @@ bool CParticleLowLevelRenderer::MakeVBOFrom(CParticleRenderGroup* pGroup)
 	if(nVerts == 0 || nIndices == 0)
 		return false;
 
-	if(nVerts*sizeof(PFXVertex_t)*4 > PVBO_MAX_SIZE(m_vbMaxQuads))
+	if(nVerts > PVBO_MAX_SIZE(m_vbMaxQuads))
 		return false;
 
 	m_vertexBuffer->Update((void*)pGroup->m_pVerts, nVerts, 0, true);

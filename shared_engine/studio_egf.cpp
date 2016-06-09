@@ -1069,8 +1069,6 @@ int CModelCache::PrecacheModel( const char* modelName )
 	if(strlen(modelName) <= 0)
 		return CACHE_INVALID_MODEL;
 
-    DevMsg(DEVMSG_CORE, "Caching model '%s'\n", modelName);
-
 	if(m_egfFormat == NULL)
 	{
 		VertexFormatDesc_t pFormat[] = {
@@ -1092,6 +1090,8 @@ int CModelCache::PrecacheModel( const char* modelName )
 
 	if(idx == CACHE_INVALID_MODEL)
 	{
+		DevMsg(DEVMSG_CORE, "Caching model '%s'\n", modelName);
+
 #if !defined(EDITOR) && !defined(NOENGINE) && !defined(NO_GAME)
 		IEqModel* pModel = engine->LoadModel(modelName, false);
 #else

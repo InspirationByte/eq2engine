@@ -1153,7 +1153,7 @@ void CCar::Spawn()
 	m_trans_grasspart = g_translParticles->FindEntry("grasspart");
 	m_trans_smoke2 = g_translParticles->FindEntry("smoke2");
 	m_trans_raindrops = g_translParticles->FindEntry("rain_ripple");
-	
+
 	m_trans_fleck = g_translParticles->FindEntry("fleck");
 	m_veh_skidmark_asphalt = g_vehicleEffects->FindEntry("skidmark_asphalt");
 	m_veh_raintrail = g_vehicleEffects->FindEntry("rain_trail");
@@ -3058,8 +3058,8 @@ void CCar::DrawEffects(int lod)
 
 		// make some trails
 		if(	lod == 0 && wheel.surfparam != NULL &&
-			wheel.surfparam->word == 'C' && 
-			g_pGameWorld->m_envConfig.weatherType > WEATHER_TYPE_CLEAR && 
+			wheel.surfparam->word == 'C' &&
+			g_pGameWorld->m_envConfig.weatherType > WEATHER_TYPE_CLEAR &&
 			fabs(skidPitchVel) > 2.0f )
 		{
 			minimumSkid = 0.45f;
@@ -3202,6 +3202,7 @@ void CCar::DrawEffects(int lod)
 					//pair.v1.color.w = 0.0f;
 
 					numSkidMarks = mark-nStartMark;
+					//numSkidMarks = min(numSkidMarks, 4);
 
 					g_vehicleEffects->AddParticleStrip(&wheel.skidMarks[nStartMark].v0, numSkidMarks*2);
 
@@ -3218,6 +3219,7 @@ void CCar::DrawEffects(int lod)
 					//pair.v1.color.w = 0.0f;
 
 					numSkidMarks = wheel.skidMarks.numElem()-nStartMark;
+					//numSkidMarks = min(numSkidMarks, 4);
 
 					g_vehicleEffects->AddParticleStrip(&wheel.skidMarks[nStartMark].v0, numSkidMarks*2);
 

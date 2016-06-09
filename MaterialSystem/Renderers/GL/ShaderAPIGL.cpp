@@ -2947,6 +2947,8 @@ void ShaderAPIGL::SetTexture( ITexture* pTexture, const char* pszName, int index
 // OpenGL multithreaded context switching
 //----------------------------------------------------------------------------------------
 
+ConVar gl_disable_context_switch("gl_disable_context_switch", "0", NULL, CV_CHEAT);
+
 void ShaderAPIGL::SwitchGLContext()
 {
     uintptr_t thisThreadId = Threading::GetCurrentThreadID();
@@ -2965,15 +2967,19 @@ void ShaderAPIGL::SwitchGLContext()
 
             ResetGLContext();
 
+			if(!gl_disable_context_switch.GetBool())
+			{
 #ifdef USE_GLES2
-            eglMakeCurrent(m_display, m_eglSurface, m_eglSurface, m_glContext);
+				eglMakeCurrent(m_display, m_eglSurface, m_eglSurface, m_glContext);
 #elif _WIN32
-            wglMakeCurrent(m_hdc, m_glContext);
+				wglMakeCurrent(m_hdc, m_glContext);
 #elif LINUX
-            glXMakeCurrent(m_display, (Window)m_params->hWindow, m_glContext);
+				glXMakeCurrent(m_display, (Window)m_params->hWindow, m_glContext);
 #elif __APPLE__
 
 #endif
+			}
+
 
 			m_contextBound = true;
         }
@@ -2995,15 +3001,18 @@ void ShaderAPIGL::SwitchGLContext()
 
             ResetGLContext();
 
+            if(!gl_disable_context_switch.GetBool())
+            {
 #ifdef USE_GLES2
-            eglMakeCurrent(m_display, m_eglSurface, m_eglSurface, m_glContext2);
+				eglMakeCurrent(m_display, m_eglSurface, m_eglSurface, m_glContext2);
 #elif _WIN32
-            wglMakeCurrent(m_hdc, m_glContext2);
+				wglMakeCurrent(m_hdc, m_glContext2);
 #elif LINUX
-            glXMakeCurrent(m_display, (Window)m_params->hWindow, m_glContext2);
+				glXMakeCurrent(m_display, (Window)m_params->hWindow, m_glContext2);
 #elif __APPLE__
 
 #endif
+            }
 
 			m_contextBound = true;
         }
@@ -3017,20 +3026,24 @@ void ShaderAPIGL::SwitchGLContext()
 
 void ShaderAPIGL::ResetGLContext()
 {
-    if(!m_contextBound) // don't reset context if nothing is at
+    if(!m_contextBound) // don't r eset context if nothing is at
         return;
 
     m_contextBound = false;
 
+    if(!gl_disable_context_switch.GetBool())
+    {
 #ifdef USE_GLES2
-	eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+		eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 #elif _WIN32
-	wglMakeCurrent(NULL, NULL);
+		wglMakeCurrent(NULL, NULL);
 #elif LINUX
-    glXMakeCurrent(m_display, None, NULL);
+		glXMakeCurrent(m_display, None, NULL);
 #elif __APPLE__
 
 #endif
+    }
+
 }
 
 // Owns context for current execution thread
