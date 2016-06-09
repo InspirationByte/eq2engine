@@ -231,7 +231,6 @@ void CGameWorld::InitEnvironment()
 		m_envConfig.skyboxMaterial->Ref_Grab();
 
 		materials->PutMaterialToLoadingQueue(m_envConfig.skyboxMaterial);
-		materials->Wait();
 
 		AngleVectors(m_envConfig.sunAngles, &m_info.sunDir);
 
@@ -252,7 +251,6 @@ void CGameWorld::InitEnvironment()
 		m_envConfig.skyboxMaterial->Ref_Grab();
 
 		materials->PutMaterialToLoadingQueue(m_envConfig.skyboxMaterial);
-		materials->Wait();
 
 		MsgError("ERROR - environment config '%s' not found in '%s_environment.txt'", m_envName.c_str(), m_levelname.c_str());
 		return;
@@ -284,7 +282,6 @@ void CGameWorld::InitEnvironment()
 	AngleVectors(m_envConfig.sunAngles, &m_info.sunDir);
 
 	materials->PutMaterialToLoadingQueue(m_envConfig.skyboxMaterial);
-	materials->Wait();
 
 	m_envConfig.rainBrightness = KV_GetValueFloat(envSection->FindKeyBase("rainBrightness"));
 	m_envConfig.rainDensity = KV_GetValueFloat(envSection->FindKeyBase("rainDensity"));
@@ -501,8 +498,6 @@ void CGameWorld::Init()
 		m_depthTestMat = materials->FindMaterial("engine/pointquery", true);
 		m_depthTestMat->Ref_Grab();
 	}
-
-	InitEnvironment();
 }
 
 void CGameWorld::AddObject(CGameObject* pObject, bool spawned)
@@ -1466,8 +1461,10 @@ void CGameWorld::Draw( int nRenderFlags )
 	// set global pre-apply callback
 	materials->SetMaterialRenderParamCallback(this);
 
-	if(m_skyMaterial)	// setup the $env_cubemap texture
+	if(m_skyMaterial && m_skyMaterial->GetState() == MATERIAL_LOAD_OK)	// setup the $env_cubemap texture
 		materials->SetEnvironmentMapTexture( m_skyMaterial->GetBaseTexture() );
+	else
+		materials->SetEnvironmentMapTexture( g_pShaderAPI->GetErrorTexture() );
 
 	// world rendering
 	if(r_drawWorld.GetBool())

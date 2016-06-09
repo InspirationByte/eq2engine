@@ -56,12 +56,29 @@ class CEqMatSystemThreadedLoader : public CEqThread
 public:
 	virtual int Run()
 	{
-		for(int i = 0; i < m_pMaterials.numElem(); i++)
-			m_pMaterials[i]->LoadShaderAndTextures();
+		int counter = 0;
 
-		m_Mutex.Lock();
-		m_pMaterials.setNum(0);
-		m_Mutex.Unlock();
+		while(true)
+		{
+			m_Mutex.Lock();
+				// out of bounds
+				if(counter >= m_newMaterials.numElem())
+				{
+					m_newMaterials.setNum(0);
+					m_Mutex.Unlock();
+					break;
+				}
+
+				IMaterial* material = m_newMaterials[counter];
+				counter++;
+			m_Mutex.Unlock();
+
+			// load this material
+			material->LoadShaderAndTextures();
+
+			if(!material)
+				continue;
+		}
 
 		// run thread code here
 		return 0;
@@ -70,18 +87,19 @@ public:
 	void AddMaterial(IMaterial* pMaterial)
 	{
 		m_Mutex.Lock();
-		m_pMaterials.addUnique( pMaterial );
+		m_newMaterials.addUnique( pMaterial );
 		m_Mutex.Unlock();
 	}
 
 	int GetCount()
 	{
 		CScopedMutex m(m_Mutex);
-		return m_pMaterials.numElem();
+		return m_newMaterials.numElem();
 	}
 
 protected:
-	DkList<IMaterial*>	m_pMaterials;
+	DkList<IMaterial*>	m_newMaterials;
+
 	CEqMutex			m_Mutex;
 };
 
@@ -461,7 +479,7 @@ void CMaterialSystem::PreloadNewMaterials()
 	{
 		if(m_pLoadedMaterials[i] != NULL)
 		{
-			if(m_pLoadedMaterials[i]->IsError())
+			if(m_pLoadedMaterials[i]->GetState() != MATERIAL_LOAD_NEED_LOAD)
 				continue;
 
 			PutMaterialToLoadingQueue(m_pLoadedMaterials[i]);
