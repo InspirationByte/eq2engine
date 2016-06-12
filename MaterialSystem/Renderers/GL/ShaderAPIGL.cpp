@@ -1757,7 +1757,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 		GL_END_CRITICAL();
 	}
 
-	bool instanceBuffer = (nStream > 0) && pSelectedBuffer && (pSelectedBuffer->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
+	bool instanceBuffer = (nStream > 0) && pSelectedBuffer != NULL && (pSelectedBuffer->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
 
 	if (pSelectedBuffer != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream] || m_pCurrentVertexFormat != m_pActiveVertexFormat[nStream])
 	{

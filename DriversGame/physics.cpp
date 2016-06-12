@@ -233,11 +233,13 @@ void CPhysicsEngine::AddHeightField( CHeightTileField* pField )
 
 		IMatVar* pVar = material->GetMaterialVar("surfaceprops", "default");
 
-		eqPhysSurfParam_t* param = FindSurfaceParam( pVar->GetString() );
+		const char* surfParamName = pVar->GetString();
+
+		eqPhysSurfParam_t* param = FindSurfaceParam( surfParamName );
 
 		if(!param)
 		{
-			MsgError("FindSurfaceParam: invalid material '%s' in material '%s'\n", pVar->GetString(), material->GetName());
+			MsgError("FindSurfaceParam: invalid material '%s' in material '%s'\n", surfParamName, material->GetName());
 			param = FindSurfaceParam( "default" );
 		}
 

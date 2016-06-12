@@ -10,6 +10,7 @@
 #include <stdarg.h>
 #include "DebugInterface.h"
 #include "IDkCore.h"
+#include "ConCommand.h"
 #include <time.h>
 
 #ifdef _WIN32
@@ -17,6 +18,8 @@
 #endif // _WIN32
 
 #if !defined(_WIN32) && defined(USE_GTK)
+
+void InitMessageBoxPlatform();
 
 #include <gtk/gtk.h>
 
@@ -59,6 +62,9 @@ void DefaultPlatformMessageBoxCallback(const char* messageStr, EMessageBoxType t
 			break;
 	}
 #elif defined(LINUX) && defined(USE_GTK)
+
+    InitMessageBoxPlatform();
+
 	switch(type)
 	{
 		case MSGBOX_INFO:
@@ -279,14 +285,24 @@ IEXPORTS void _InternalAssert(const char *file, int line, const char *statement)
 
 IEXPORTS void _InternalAssert(const char *file, int line, const char *statement)
 {
-    static bool debug = true;
+    char str[1024];
+    sprintf(str, "%s\n\nFile: %s\nLine: %d\n\nBreak on this error?", statement, file, line);
+
+    MsgError("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, statement);
+
+    InitMessageBoxPlatform();
+
+    GtkWidget *dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_YES_NO, str);
+    gint result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+    bool debug = (result == GTK_RESPONSE_YES);
+
+    gtk_widget_destroy(dialog);
+    g_idle_add(idle, NULL);
+    gtk_main();
 
     if (debug)
     {
-        char str[1024];
-
-        MsgError("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, statement);
-
         // make breakpoint
 		raise( SIGINT );
     }
@@ -297,6 +313,16 @@ IEXPORTS void _InternalAssert(const char *file, int line, const char *statement)
 void InitMessageBoxPlatform()
 {
 #if !defined(_WIN32) && defined(USE_GTK)
-	gtk_init(NULL, NULL);
+	gtk_init_check(NULL, NULL);
 #endif // !_WIN32 && USE_GTK
+}
+
+DECLARE_CMD(test_error, "Test error messagebox", 0)
+{
+    ErrorMsg("Test error messagebox!");
+}
+
+DECLARE_CMD(test_assert, "Test assert messagebox", 0)
+{
+    ASSERTMSG(false, "Test ASSERT messagebox!");
 }

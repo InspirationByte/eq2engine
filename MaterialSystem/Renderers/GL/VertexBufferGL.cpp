@@ -26,6 +26,7 @@ CVertexBufferGL::CVertexBufferGL()
 	m_bIsLocked = false;
 	m_lockDiscard = false;
 	m_lockPtr = NULL;
+	m_flags = 0;
 
 	m_boundStream = -1;
 }

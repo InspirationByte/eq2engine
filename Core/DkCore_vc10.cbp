@@ -28,10 +28,12 @@
 			</Target>
 		</Build>
 		<Compiler>
+			<Add option="`pkg-config gtk+-2.0 --cflags`" />
 			<Add option="-DLINUX" />
 			<Add option="-DCORE_EXPORT" />
 			<Add option="-DDLL_EXPORT" />
 			<Add option="-DSUPRESS_DEVMESSAGES" />
+			<Add option="-DUSE_GTK" />
 			<Add directory="../FileSystem" />
 			<Add directory="../Engine/Imaging" />
 			<Add directory="../Engine" />
