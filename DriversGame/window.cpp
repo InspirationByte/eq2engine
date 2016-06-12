@@ -215,7 +215,7 @@ void EQHandleSDLEvents(SDL_Event* event)
 //
 bool Host_Init()
 {
-	if( SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK) < 0)
+	if( SDL_Init(/*SDL_INIT_VIDEO | */SDL_INIT_EVENTS | SDL_INIT_JOYSTICK) < 0)
 	{
 		ErrorMsg( "Failed to init SDL system!\n" );
 		return false;

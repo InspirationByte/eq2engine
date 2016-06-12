@@ -64,7 +64,7 @@ CMemoryStream::~CMemoryStream()
 	// destroy memory
 	m_pCurrent = NULL;
 
-	free( m_pStart );
+	PPFree( m_pStart );
 	m_pStart = NULL;
 	m_nAllocatedSize = 0;
 	m_nUsageFlags = 0;
@@ -161,7 +161,7 @@ bool CMemoryStream::Open(ubyte* data, int nOpenFlags, int nDataSize)
 	{
 		// data will be written reset it
 		if(m_pStart)
-			free(m_pStart);
+			PPFree(m_pStart);
 
 		m_nAllocatedSize = 0;
 
@@ -203,13 +203,13 @@ void CMemoryStream::ReAllocate(long nNewSize)
 
 	long curPos = Tell();
 
-	ubyte* pTemp = (ubyte*)malloc( nNewSize );
+	ubyte* pTemp = (ubyte*)PPAlloc( nNewSize );
 
 	if(m_pStart && m_nAllocatedSize > 0)
 	{
 		memcpy( pTemp, m_pStart, m_nAllocatedSize );
 
-		free(m_pStart);
+		PPFree(m_pStart);
 	}
 
 	m_nAllocatedSize = nNewSize;

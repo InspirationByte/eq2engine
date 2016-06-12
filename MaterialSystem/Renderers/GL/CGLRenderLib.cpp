@@ -202,24 +202,9 @@ int dComp(const DispRes &d0, const DispRes &d1){
 
 #endif // PLAT_LINUX
 
-#if defined(USE_GLES2) // && defined(PLAT_WIN)
-bool OpenNativeDisplay(EGLNativeDisplayType* nativedisp_out)
-{
-	*nativedisp_out = EGL_DEFAULT_DISPLAY;
-    return true;
-}
-
-void CloseNativeDisplay(EGLNativeDisplayType nativedisp)
-{
-}
-#endif // USE_GLES2 && PLAT_WIN
-
 bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 {
 #ifdef USE_GLES2
-
-    eglSurface = EGL_NO_SURFACE;
-
 #ifdef ANDROID
     externalWindowDisplayParams_t* winParams = (externalWindowDisplayParams_t*)params.hWindow;
 
@@ -229,8 +214,12 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 
 	hwnd = (EGLNativeWindowType)winParams->window;
 #else
+	
 	// other EGL
 	hwnd = (EGLNativeWindowType)params.hWindow;
+
+	eglSurface = EGL_NO_SURFACE;
+
 #endif // ANDROID
 
 	Msg("Initializing EGL context...\n");
@@ -238,21 +227,21 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
     EGLBoolean bsuccess;
 
     // create native window
-    EGLNativeDisplayType nativeDisplay;
-    if(!OpenNativeDisplay(&nativeDisplay))
-    {
-        ErrorMsg("OpenGL ES init error: Cannot open native display!");
-        return false;
-    }
+#ifdef ANDROID
+    EGLNativeDisplayType nativeDisplay = EGL_DEFAULT_DISPLAY;
+#else
+	EGLNativeDisplayType nativeDisplay = (EGLNativeDisplayType)GetDC((HWND)hwnd);
+#endif // #ifdef ANDROID
 
     // get egl display handle
     eglDisplay = eglGetDisplay(nativeDisplay);
+	
     if(eglDisplay == EGL_NO_DISPLAY)
     {
         ErrorMsg("OpenGL ES init error: Could not get EGL display (%d)", eglDisplay);
-        CloseNativeDisplay(nativeDisplay);
         return false;
     }
+	
 
     // Initialize the display
     EGLint major = 0;
@@ -261,14 +250,12 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
     if (!bsuccess)
     {
         ErrorMsg("OpenGL ES init error: Could not initialize EGL display!");
-        CloseNativeDisplay(nativeDisplay);
         return false;
     }
     if (major < 1)
     {
         // Does not support EGL 1.4
         ErrorMsg("OpenGL ES init error: System does not support at least EGL 3.0");
-        CloseNativeDisplay(nativeDisplay);
         return false;
     }
 
@@ -293,7 +280,6 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
     if (!bsuccess)
     {
         ErrorMsg("OpenGL ES init error: Could not find valid EGL config");
-        CloseNativeDisplay(nativeDisplay);
         return false;
     }
 
@@ -302,7 +288,6 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
     if (!eglGetConfigAttrib(eglDisplay, eglConfig, EGL_NATIVE_VISUAL_ID, &nativeVid))
     {
         ErrorMsg("OpenGL ES init error: Could not get native visual id");
-        CloseNativeDisplay(nativeDisplay);
         return false;
     }
 
@@ -313,7 +298,6 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
     if (eglSurface == EGL_NO_SURFACE)
     {
         ErrorMsg("OpenGL ES init error: Could not create EGL surface\n");
-        CloseNativeDisplay(nativeDisplay);
         return false;
     }
 
@@ -332,7 +316,6 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
     if (glContext == EGL_NO_CONTEXT)
     {
         ErrorMsg("OpenGL ES init error: Could not create EGL context\n");
-        CloseNativeDisplay(nativeDisplay);
         return false;
     }
 
@@ -340,7 +323,6 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
     if (glContext == EGL_NO_CONTEXT)
     {
          ErrorMsg("OpenGL ES init error: Could not create EGL context\n");
-        CloseNativeDisplay(nativeDisplay);
         return false;
     }
 

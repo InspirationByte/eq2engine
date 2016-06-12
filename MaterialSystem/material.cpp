@@ -12,6 +12,7 @@
 
 #include "material.h"
 #include "utils/strtools.h"
+#include "utils/eqthread.h"
 #include "BaseShader.h"
 
 CMaterial::CMaterial() : m_state(MATERIAL_LOAD_ERROR), m_pShader(nullptr), m_proxyIsDirty(true), m_frameBound(0)

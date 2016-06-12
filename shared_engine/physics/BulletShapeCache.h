@@ -11,6 +11,7 @@
 #define BULLETSHAPECACHE_H
 
 #include "physics/IStudioShapeCache.h"
+#include "utils/eqthread.h"
 
 class btCollisionShape;
 

@@ -11,6 +11,8 @@
 
 #include "DebugInterface.h"
 
+#include "utils/strtools.h"
+
 extern "C"
 {
 //#include "lundump.h"

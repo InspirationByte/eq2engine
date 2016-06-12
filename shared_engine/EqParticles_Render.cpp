@@ -59,8 +59,8 @@ void CParticleRenderGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO
 	DevMsg(DEVMSG_CORE, "[PARTICLEVBO] Allocating %d quads (%d bytes VB and %d bytes IB)\n", m_maxQuadVerts, PVBO_MAX_SIZE(m_maxQuadVerts), PIBO_MAX_SIZE(m_maxQuadVerts));
 
 	// init buffers
-	m_pVerts	= (PFXVertex_t*)malloc(PVBO_MAX_SIZE(m_maxQuadVerts));
-	m_pIndices	= (uint16*)malloc(PIBO_MAX_SIZE(m_maxQuadVerts));
+	m_pVerts	= (PFXVertex_t*)PPAlloc(PVBO_MAX_SIZE(m_maxQuadVerts));
+	m_pIndices	= (uint16*)PPAlloc(PIBO_MAX_SIZE(m_maxQuadVerts));
 
 	if(!m_pVerts)
 		ASSERT(!"FAILED TO ALLOCATE VERTICES!\n");
@@ -84,8 +84,8 @@ void CParticleRenderGroup::Shutdown()
 	materials->FreeMaterial(m_pMaterial);
 	m_pMaterial = NULL;
 
-	free(m_pVerts);
-	free(m_pIndices);
+	PPFree(m_pVerts);
+	PPFree(m_pIndices);
 
 	m_pIndices = NULL;
 	m_pVerts = NULL;
@@ -556,8 +556,8 @@ bool CParticleLowLevelRenderer::MakeVBOFrom(CParticleRenderGroup* pGroup)
 	if(!m_initialized)
 		return false;
 
-	int nVerts		= pGroup->m_numVertices;
-	int nIndices	= pGroup->m_numIndices;
+	uint16 nVerts	= pGroup->m_numVertices;
+	uint16 nIndices	= pGroup->m_numIndices;
 
 	if(nVerts == 0 || nIndices == 0)
 		return false;

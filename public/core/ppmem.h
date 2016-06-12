@@ -20,17 +20,6 @@
 //				that is attached to 'ppmem_stats' console command
 //
 //////////////////////////////////////////////////////////////////////////////////
-//
-//		How memory is put:
-//		 __________________________________            ____________________________
-//		|----data----|endmark|ppmem_alloc_t|~~~FREE~~~|-data-|endmark|ppmem_alloc_t|
-//		|____________|_4byte_|_____________|~~~SPACE~~|______|_4byte_|_____________|...
-//
-//		ppmem_alloc_t only put if PPMEM_INTERNAL_ALLOC is on.
-//
-//	[07/06/14] - fixed possible page deallocation bug
-//
-//////////////////////////////////////////////////////////////////////////////////
 
 #ifndef PPMEM_H
 #define PPMEM_H
@@ -39,56 +28,6 @@
 
 #include "platform/Platform.h"
 #include "InterfaceManager.h"
-
-#include "utils/eqthread.h"
-
-#define DEFAULT_PAGE_SIZE	(32*1024*1024) // 32 megabyte
-
-struct ppmem_alloc_t;
-
-// memory page class
-class CPPMemPage
-{
-public:
-	CPPMemPage();
-	CPPMemPage(uint page_size);
-
-	~CPPMemPage();
-
-	void			FreePage();
-
-	// allocates memory in that page
-	void*			Alloc(uint size, const char* pszFileName = NULL, int nLine = 0);
-
-	// frees memory
-	bool			Free(void* ptr);
-
-	// resizes allocation or finds new one
-	void*			ReAlloc(void* ptr, uint newsize, const char* pszFileName = NULL, int nLine = 0);
-
-	ubyte*			GetBase();
-
-	uint			GetPageSize();
-	uint			GetUsage();
-
-	uint			PrintAllocMap( bool fullStats );
-	uint			CheckPage();
-
-	CPPMemPage*		m_pNextPage;
-
-protected:
-	ppmem_alloc_t*	FindBestMemLoc(uint size);
-	void			RemoveAlloc( ppmem_alloc_t* cur, ppmem_alloc_t* prev );
-
-	ubyte*			m_pBase;
-
-	uint			m_nPageSize;
-
-	ppmem_alloc_t*	m_pAllocations;
-
-	Threading::CEqInterlockedInteger	m_nLowAllocated;
-	Threading::CEqInterlockedInteger	m_nAllocations;
-};
 
 IEXPORTS void	PPMemInfo( bool fullStats = true );
 
@@ -120,5 +59,12 @@ IEXPORTS void	PPFree( void* ptr );
 	{											\
 		PPFree(p);								\
 	}
+
+/*
+class CMemPoolPage
+{
+
+};
+*/
 
 #endif // PPMEM_H

@@ -111,10 +111,10 @@ protected:
 	PFXVertex_t*		m_pVerts;
 	uint16*				m_pIndices;
 
-	int					m_numVertices;
-	int					m_numIndices;
+	uint16				m_numVertices;
+	uint16				m_numIndices;
 
-	int					m_maxQuadVerts;
+	uint16				m_maxQuadVerts;
 
 	// uses own VBO? (in case if decals or something rendered)
 	bool				m_bHasOwnVBO;

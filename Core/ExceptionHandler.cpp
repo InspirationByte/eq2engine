@@ -16,6 +16,7 @@
 #ifdef _WIN32
 
 #include "dbgHelp.h"
+#include "stdlib.h"
 
 typedef struct _MODULEINFO {  LPVOID lpBaseOfDll;  DWORD SizeOfImage;  LPVOID EntryPoint;
 } MODULEINFO, *LPMODULEINFO;

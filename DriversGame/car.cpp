@@ -3497,8 +3497,6 @@ void CCar::UpdateSounds( float fDt )
 
 	float fAccelOrBrake = ((m_controlButtons & IN_ACCELERATE) || (m_controlButtons & IN_BRAKE)) && !(m_controlButtons & IN_HANDBRAKE);
 
-	float fIdleFac = (m_fEngineRPM > 1800) || fAccelOrBrake ? 0.0f : 1.0f;
-
 	m_engineIdleFactor = (clamp(2200.0f-m_fEngineRPM, 0.0f,2200.0f)/2200.0f);
 
 	float fEngineSoundVol = clamp((1.0f - m_engineIdleFactor), 0.45f, 1.0f);

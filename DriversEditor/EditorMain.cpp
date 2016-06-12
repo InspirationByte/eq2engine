@@ -436,6 +436,7 @@ void InitScene()
 	g_pGameWorld->SetEnvironmentName("day_clear");
 
 	g_pGameWorld->Init();
+	g_pGameWorld->InitEnvironment();
 	g_pGameWorld->m_level.Init(16, 16, 64, true);
 }
 
@@ -555,6 +556,7 @@ void CMainWindow::NewLevelPrompt()
 		g_pGameWorld->SetEnvironmentName("day_clear");
 
 		g_pGameWorld->Init();
+		g_pGameWorld->InitEnvironment();
 
 		if( m_newLevelDialog->GetLevelImageFileName() != NULL )
 		{

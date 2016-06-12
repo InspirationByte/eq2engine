@@ -11,6 +11,7 @@
 #include "IDkCore.h"
 #include "IFileSystem.h"
 #include "utils/KeyValues.h"
+#include "utils/eqstring.h"
 
 // interface pointer keeper
 struct coreInterface_t

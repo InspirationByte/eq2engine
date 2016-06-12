@@ -26,6 +26,7 @@ TODO:
 #include "math/FVector.h"
 #include "math/BoundingBox.h"
 #include "utils/DkList.h"
+#include "utils/eqthread.h"
 
 #include "btBulletCollisionCommon.h"
 
