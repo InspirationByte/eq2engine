@@ -14,6 +14,7 @@ CMatVar::CMatVar()
 	m_nValue = 0;
 	m_vector = Vector4D(0);
 	m_pAssignedTexture = NULL;
+	m_isDirtyString = 0;
 }
 
 // initializes the material var

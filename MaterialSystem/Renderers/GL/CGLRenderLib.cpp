@@ -70,6 +70,7 @@ IShaderAPI* g_pShaderAPI = NULL;
 CGLRenderLib::CGLRenderLib()
 {
 	GetCore()->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
+	glContext2 = NULL;
 }
 
 CGLRenderLib::~CGLRenderLib()
@@ -202,6 +203,47 @@ int dComp(const DispRes &d0, const DispRes &d1){
 
 #endif // PLAT_LINUX
 
+void* CGLRenderLib::GetSharedContext()
+{
+	return glContext2;
+}
+
+void CGLRenderLib::DropSharedContext()
+{
+	if(glContext2 != NULL)
+	{
+#ifdef USE_GLES2
+		eglDestroyContext(eglDisplay, glContext2);
+#else
+
+#endif // USE_GLES2
+	}
+
+	glContext2 = NULL;
+}
+
+void CGLRenderLib::RestoreSharedContext()
+{
+	if(glContext2 != NULL)
+		return;
+
+#ifdef USE_GLES2
+	// context attribute list
+    EGLint contextAttr[] = {
+		EGL_CONTEXT_CLIENT_VERSION, 3,
+		EGL_NONE
+	};
+
+    glContext2 = eglCreateContext(eglDisplay, eglConfig, glContext, contextAttr);
+    if (glContext2 == EGL_NO_CONTEXT)
+    {
+		ErrorMsg("OpenGL ES error: Could not create EGL context\n");
+    }
+#else
+
+#endif // USE_GLES2
+}
+
 bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 {
 #ifdef USE_GLES2
@@ -275,7 +317,6 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 	};
 
     EGLint numConfig =0;
-    EGLConfig eglConfig = 0;
     bsuccess = eglChooseConfig(eglDisplay, attrs, &eglConfig, 1, &numConfig);
     if (!bsuccess)
     {
@@ -319,13 +360,18 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
         return false;
     }
 
+	RestoreSharedContext();
+	glContext2 = GetSharedContext();
+	
+	/*
     glContext2 = eglCreateContext(eglDisplay, eglConfig, glContext, contextAttr);
-    if (glContext == EGL_NO_CONTEXT)
+    if (glContext2 == EGL_NO_CONTEXT)
     {
-         ErrorMsg("OpenGL ES init error: Could not create EGL context\n");
+		ErrorMsg("OpenGL ES init error: Could not create EGL context\n");
         return false;
-    }
+    }*/
 
+	// assign to this thread
 	eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext);
 
 #elif defined(PLAT_WIN)
@@ -636,14 +682,16 @@ void CGLRenderLib::ExitAPI()
 
 #ifdef USE_GLES2
 	eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	DropSharedContext();
 	eglDestroyContext(eglDisplay, glContext);
-	eglDestroyContext(eglDisplay, glContext2);
+	//eglDestroyContext(eglDisplay, glContext2);
+	
 	eglDestroySurface(eglDisplay, eglSurface);
 	eglTerminate(eglDisplay);
 #else
 	wglMakeCurrent(NULL, NULL);
 	wglDeleteContext(glContext);
-	wglDeleteContext(glContext2);
+	//wglDeleteContext(glContext2);
 
 	ReleaseDC(hwnd, hdc);
 
