@@ -82,6 +82,10 @@ struct buildingSource_t
 	int							order;
 };
 
+int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, float layerXSize);
+int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, buildLayer_t& layer);
+float GetSegmentLength(buildLayer_t& layer);
+
 void CalculateBuildingModelTransform(Matrix4x4& partTransform, 
 									buildLayer_t& layer, 
 									const Vector3D& startPoint, 
@@ -89,5 +93,12 @@ void CalculateBuildingModelTransform(Matrix4x4& partTransform,
 									int order, 
 									Vector3D& size, float scale,
 									int iteration );
+
+// Rendering the building
+void RenderBuilding( buildingSource_t* building, buildSegmentPoint_t* extraSegment );
+
+// Generates new levelmodel of building
+// Returns local-positioned model, and it's position in the world
+CLevelModel* GenerateBuildingModel( buildingSource_t* building, Vector3D& position );
 
 #endif // EDITORLEVEL_H

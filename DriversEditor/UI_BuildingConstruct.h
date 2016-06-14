@@ -164,6 +164,9 @@ public:
 	void		Update_Refresh();
 
 	void		OnKey(wxKeyEvent& event, bool bDown);
+
+	Vector3D	ComputePlacementPointBasedOnMouse(buildSegmentPoint_t& point);
+
 	void		OnRender();
 
 	void		InitTool();

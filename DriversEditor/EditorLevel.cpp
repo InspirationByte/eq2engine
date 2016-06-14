@@ -8,6 +8,7 @@
 #include "EditorLevel.h"
 #include "level.h"
 #include "IMaterialSystem.h"
+#include "IDebugOverlay.h"
 
 #include "VirtualStream.h"
 
@@ -146,4 +147,107 @@ void CalculateBuildingModelTransform(Matrix4x4& partTransform,
 	Vector3D yoffset(0,size.y * 0.5f,0);
 
 	partTransform = translate(startPoint + yoffset + partDir*size.x*scale*0.5f*float(order * (iteration*2 + 1))) * Matrix4x4(Matrix3x3(partDir, vec3_up, forwardVec)*scale3(-scale,1.0f,1.0f));
+}
+
+int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, float layerXSize)
+{
+	float remainingLength = length(end.position - start.position);
+	return (int)((remainingLength / layerXSize) + 0.5f);
+}
+
+int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, buildLayer_t& layer)
+{
+	float len = GetSegmentLength(layer) * start.scale;
+
+	return GetLayerSegmentIterations(start, end, len);
+}
+
+float GetSegmentLength( buildLayer_t& layer )
+{
+	float sizeX = layer.size;
+
+	if(layer.type == BUILDLAYER_MODEL || layer.type == BUILDLAYER_CORNER_MODEL)
+	{
+		CLevelModel* model = layer.model->m_model;
+
+		// compute iteration count from model width
+		const BoundingBox& modelBox = model->GetAABB();
+
+		Vector3D size = modelBox.GetSize();
+		sizeX = size.x;
+	}
+
+	return sizeX;
+}
+
+//
+// Rendering the building
+//
+void RenderBuilding( buildingSource_t* building, buildSegmentPoint_t* extraSegment )
+{
+	if(building->points.numElem() == 0 || building->layerColl == NULL)
+		return;
+
+	// Render dynamic preview of the building we're making
+	DkList<buildSegmentPoint_t> allPoints;
+	allPoints.append(building->points);
+
+	if(extraSegment)
+	{
+		allPoints[allPoints.numElem()-1].layerId = extraSegment->layerId;
+		allPoints[allPoints.numElem()-1].scale = extraSegment->scale;
+		allPoints.append(*extraSegment);
+	}
+
+	Matrix4x4 partTransform;
+	BoundingBox tempBBox;
+
+	for(int i = 1; i < allPoints.numElem(); i++)
+	{
+		buildSegmentPoint_t& start = allPoints[i-1];
+		buildSegmentPoint_t& end = allPoints[i];
+
+		// draw models or walls
+		buildLayer_t& layer = building->layerColl->layers[ start.layerId ];
+
+		if(layer.type == BUILDLAYER_MODEL || layer.type == BUILDLAYER_CORNER_MODEL)
+		{
+			CLevelModel* model = layer.model->m_model;
+
+			// compute iteration count from model width
+			const BoundingBox& modelBox = model->GetAABB();
+
+			Vector3D size = modelBox.GetSize();
+			float modelLen = size.x*start.scale;
+
+			int numIterations = GetLayerSegmentIterations(start, end, modelLen);
+
+			// calculate transformation for each iteration
+			for(int iter = 0; iter < numIterations; iter++)
+			{
+				CLevelModel* model = layer.model->m_model;
+
+				CalculateBuildingModelTransform( partTransform, layer, start.position, end.position, building->order, size, start.scale, iter );
+
+				materials->SetMatrix(MATRIXMODE_WORLD, partTransform);
+				model->Render(0, tempBBox);
+			}
+		}
+		else
+		{
+		
+		}
+	}
+}
+
+//
+// Generates new levelmodel of building
+// Returns local-positioned model, and it's position in the world
+//
+CLevelModel* GenerateBuildingModel( buildingSource_t* building, Vector3D& position )
+{
+	if(building->points.numElem() == 0 || building->layerColl == NULL)
+		return NULL;
+
+	return NULL;
 }

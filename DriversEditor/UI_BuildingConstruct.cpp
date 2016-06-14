@@ -1360,95 +1360,63 @@ void CUI_BuildingConstruct::OnRender()
 		field->DebugRender(false,m_mouseOverTileHeight);
 	}
 
+	// only draw if building is not empty
 	if(m_newBuilding.points.numElem() > 0 && m_newBuilding.layerColl != NULL)
 	{
-		// Render dynamic preview of the building we're making
+		buildSegmentPoint_t& start = m_newBuilding.points[0];
 
-		Vector3D endPoint = m_newBuilding.points[0].position;
+		// height of the segments must be equal to each other
+		m_mousePoint.y = start.position.y;
 
-		DkList<buildSegmentPoint_t> allPoints;
-		allPoints.append(m_newBuilding.points);
+		buildSegmentPoint_t extraSegment;
+		m_placementPoint = ComputePlacementPointBasedOnMouse( extraSegment );
 
+		//
+		// Finally render the dynamic preview of our building
+		//
+		RenderBuilding(&m_newBuilding, &extraSegment);
+
+		// render the actual and computed points
 		debugoverlay->Box3D(m_mousePoint - 0.5f, m_mousePoint + 0.5f, ColorRGBA(1,0,0,1));
-		m_mousePoint.y = endPoint.y;
+		debugoverlay->Box3D(m_placementPoint-0.5f, m_placementPoint+0.5f, ColorRGBA(1,1,0,1));
 
-		debugoverlay->Text3D(m_mousePoint, -1.0f, color4_white, "layer: %d scale: %g", m_curLayerId, m_curSegmentScale);
-
-		buildSegmentPoint_t& lastPoint = allPoints[allPoints.numElem()-1];
-
-		// set last point layer id and scale
-		lastPoint.layerId = m_curLayerId;
-		lastPoint.scale = m_curSegmentScale;
-
-		// add virtual point
-		buildSegmentPoint_t justPoint;
-		justPoint.position = m_mousePoint;
-		allPoints.append( justPoint );
-
-		Matrix4x4 partTransform;
-		BoundingBox tempBBox;
-
-		m_placementPoint = m_mousePoint;
-		m_placeError = false;
-
-		for(int i = 1; i < allPoints.numElem(); i++)
-		{
-			buildSegmentPoint_t& start = allPoints[i-1];
-			buildSegmentPoint_t& end = allPoints[i];
-
-			debugoverlay->Line3D(start.position, end.position, ColorRGBA(1,1,1,1), ColorRGBA(1,1,1,1), 0.0f);
-
-			//
-			// PROTOTYPE
-			//
-
-			// draw models or walls
-			buildLayer_t& layer = m_newBuilding.layerColl->layers[ start.layerId ];
-
-			if(layer.type == BUILDLAYER_MODEL || layer.type == BUILDLAYER_CORNER_MODEL)
-			{
-				if( !layer.model )
-					continue;
-
-				CLevelModel* model = layer.model->m_model;
-
-				// compute iteration count from model width
-				const BoundingBox& modelBox = model->GetAABB();
-				Vector3D size = modelBox.GetSize();
-				float modelLen = size.x*start.scale;
-
-				float remainingLength = length(end.position - start.position);
-
-				float iterationsPerLen = remainingLength / modelLen;
-
-				int numIterations = (int)(iterationsPerLen + 0.5f);
-
-				// calculate transformation for each iteration
-				for(int iter = 0; iter < numIterations; iter++)
-				{
-					CalculateBuildingModelTransform( partTransform, layer, start.position, end.position, m_newBuilding.order, size, start.scale, iter );
-
-					materials->SetMatrix(MATRIXMODE_WORLD, partTransform);
-					model->Render(0, tempBBox);
-				}
-
-				// do not place points if no interations made
-				m_placeError = (numIterations == 0);
-
-				// recalc placement point by preview
-				Vector3D direction = normalize(end.position - start.position);
-				m_placementPoint = start.position + direction * floor(numIterations) * modelLen;
-
-				debugoverlay->Box3D(m_placementPoint-0.5f, m_placementPoint+0.5f, ColorRGBA(1,1,0,1));
-			}
-		}
-
+		// render points of building
 		for(int i = 0; i < m_newBuilding.points.numElem(); i++)
 		{
 			Vector3D point = m_newBuilding.points[i].position;
 			debugoverlay->Box3D(point - 0.5f, point + 0.5f, ColorRGBA(0,1,0,1));
 		}
 	}
+	else
+	{
+		m_placementPoint = m_mousePoint;
+		m_placeError = false;
+	}
 
 	CBaseTilebasedEditor::OnRender();
+}
+
+Vector3D CUI_BuildingConstruct::ComputePlacementPointBasedOnMouse(buildSegmentPoint_t& newPoint)
+{
+	int numSegs = m_newBuilding.points.numElem();
+
+	// now the computations
+	buildSegmentPoint_t& end = m_newBuilding.points[numSegs-1];
+
+	// get scaled segment length of last node
+	buildLayer_t& layer = m_newBuilding.layerColl->layers[m_curLayerId];
+	float segLen = GetSegmentLength(layer) * m_curSegmentScale;
+
+	// add virtual point
+	newPoint.position = m_mousePoint;
+	newPoint.layerId = m_curLayerId;
+	newPoint.scale = m_curSegmentScale;
+
+	// calculate segment interations from last node to mouse position
+	int numIterations = GetLayerSegmentIterations(end, newPoint, segLen);
+	m_placeError = (numIterations == 0);
+
+	// compute the valid placement point of segment
+	Vector3D segmentDir = normalize(newPoint.position - end.position);
+	return end.position + segmentDir * floor(numIterations) * segLen;
 }
