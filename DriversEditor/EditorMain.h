@@ -67,6 +67,9 @@ public:
 	void			NewLevelPrompt();
 	bool			SavePrompt(bool showQuestion = true, bool changeLevelName = false, bool bForceSave = false);
 	
+	void			OnLevelUnload();
+	void			OnLevelLoad();
+
 	void			NotifyUpdate();
 	bool			IsNeedsSave();
 	bool			IsSavedOnDisk();

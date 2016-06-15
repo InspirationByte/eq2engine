@@ -55,6 +55,8 @@ struct buildLayer_t
 
 struct buildLayerColl_t
 {
+	~buildLayerColl_t();
+
 	void					Save(IVirtualStream* stream, kvkeybase_t* kvs);
 	void					Load(IVirtualStream* stream, kvkeybase_t* kvs);
 

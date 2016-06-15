@@ -469,7 +469,26 @@ void CMainWindow::MakeEnvironmentListMenu()
 	}
 
 	m_menu_environment_itm = m_menu_view->AppendSubMenu( m_menu_environment, wxT("Environment") );
+}
 
+void CMainWindow::OnLevelUnload()
+{
+	for(int i = 0; i < m_tools.numElem(); i++)
+		m_tools[i]->OnLevelUnload();
+
+	g_pEditorActionObserver->OnLevelUnload();
+
+	m_regionEditorFrame->OnLevelUnload();
+}
+
+void CMainWindow::OnLevelLoad()
+{
+	for(int i = 0; i < m_tools.numElem(); i++)
+		m_tools[i]->OnLevelLoad();
+
+	g_pEditorActionObserver->OnLevelLoad();
+
+	m_regionEditorFrame->OnLevelLoad();
 }
 
 void CMainWindow::OpenLevelPrompt()
@@ -482,13 +501,7 @@ void CMainWindow::OpenLevelPrompt()
 
 	if(m_loadleveldialog->ShowModal() == wxID_OK)
 	{
-		for(int i = 0; i < m_tools.numElem(); i++)
-			m_tools[i]->OnLevelUnload();
-
-		g_pEditorActionObserver->OnLevelUnload();
-
-		m_regionEditorFrame->OnLevelUnload();
-
+		OnLevelUnload();
 		g_pGameWorld->Cleanup();
 
 		g_pGameWorld->SetLevelName( m_loadleveldialog->GetSelectedLevelString() );
@@ -501,12 +514,7 @@ void CMainWindow::OpenLevelPrompt()
 		m_bSavedOnDisk = true;
 		m_bNeedsSave = false;
 
-		for(int i = 0; i < m_tools.numElem(); i++)
-			m_tools[i]->OnLevelLoad();
-
-		g_pEditorActionObserver->OnLevelLoad();
-
-		m_regionEditorFrame->OnLevelLoad();
+		OnLevelLoad();
 
 		//ResetViews();
 		//UpdateAllWindows();
@@ -535,20 +543,13 @@ void CMainWindow::NewLevelPrompt()
 		if(!SavePrompt())
 			return;
 
-		// onUnload level
-		for(int i = 0; i < m_tools.numElem(); i++)
-			m_tools[i]->OnLevelUnload();
-
-		g_pEditorActionObserver->OnLevelUnload();
-
-		m_regionEditorFrame->OnLevelUnload();
+		OnLevelUnload();
+		g_pGameWorld->Cleanup();
 
 		g_pGameWorld->SetLevelName("unnamed");
 
 		m_bNeedsSave = false;
 		m_bSavedOnDisk = false;
-
-		g_pGameWorld->Cleanup();
 
 		// init new level
 		g_pPhysics->SceneInit();
@@ -582,13 +583,7 @@ void CMainWindow::NewLevelPrompt()
 		else
 			g_pGameWorld->m_level.Init(wide, tall, cellSize, true);
 
-		m_regionEditorFrame->OnLevelLoad();
-
-		// onUnload level
-		for(int i = 0; i < m_tools.numElem(); i++)
-			m_tools[i]->OnLevelLoad();
-
-		m_regionEditorFrame->OnLevelLoad();
+		OnLevelLoad();
 	}
 
 }
@@ -1150,19 +1145,19 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 	if(!SavePrompt())
 		return;
 
+	OnLevelUnload();
+	g_pGameWorld->Cleanup();
+
 	g_parallelJobs->Wait();
 	g_parallelJobs->Shutdown();
+
+	Msg("EXIT CLEANUP...\n");
 
 	m_levelsavedialog->Destroy();
 
 	for(int i = 0; i < m_tools.numElem(); i++)
-	{
 		m_tools[i]->ShutdownTool();
-	}
 
-	Msg("EXIT CLEANUP...\n");
-
-	g_pGameWorld->Cleanup();
 	g_pModelCache->ReleaseCache();
 
 	Destroy();

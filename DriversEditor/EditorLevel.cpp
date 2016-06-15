@@ -22,6 +22,17 @@ struct layerModelFileHdr_t
 	int		size;
 };
 
+buildLayerColl_t::~buildLayerColl_t()
+{
+	for(int i = 0; i < layers.numElem(); i++)
+	{
+		if(layers[i].type == BUILDLAYER_TEXTURE)
+			materials->FreeMaterial(layers[i].material);
+		else
+			delete layers[i].model;
+	}
+}
+
 void buildLayerColl_t::Save(IVirtualStream* stream, kvkeybase_t* kvs)
 {
 	int numModels = 0;
@@ -91,7 +102,10 @@ void buildLayerColl_t::Load(IVirtualStream* stream, kvkeybase_t* kvs)
 		layer.size = KV_GetValueInt(layerKvs->FindKeyBase("size"), 0, layer.size);
 
 		if(layer.type == BUILDLAYER_TEXTURE)
+		{
 			layer.material = materials->FindMaterial(KV_GetValueString(layerKvs->FindKeyBase("material")));
+			layer.material->Ref_Grab();
+		}
 		else
 			layer.model = NULL;
 	}
