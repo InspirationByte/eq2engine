@@ -75,11 +75,33 @@ struct buildingSource_t
 	{
 		layerColl = NULL;
 		order = 1;
+		model = NULL;
+		modelPosition = vec3_zero;
+	}
+
+	buildingSource_t(const buildingSource_t& copyFrom)
+	{
+		layerColl = copyFrom.layerColl;
+		order = copyFrom.order;
+
+		points.append( copyFrom.points );
+
+		// I do not copy model for re-generation reason
+		model = NULL;
+		modelPosition = vec3_zero;
+	}
+
+	~buildingSource_t()
+	{
+		delete model;
 	}
 
 	DkList<buildSegmentPoint_t>	points;
 	buildLayerColl_t*			layerColl;
 	int							order;
+
+	CLevelModel*				model;
+	Vector3D					modelPosition;
 };
 
 int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, float layerXSize);
@@ -99,6 +121,6 @@ void RenderBuilding( buildingSource_t* building, buildSegmentPoint_t* extraSegme
 
 // Generates new levelmodel of building
 // Returns local-positioned model, and it's position in the world
-CLevelModel* GenerateBuildingModel( buildingSource_t* building, Vector3D& position );
+bool GenerateBuildingModel( buildingSource_t* building );
 
 #endif // EDITORLEVEL_H

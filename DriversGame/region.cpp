@@ -452,6 +452,14 @@ void CLevelRegion::Cleanup()
 {
 	m_level->m_mutex.Lock();
 
+#ifdef EDITOR
+	// Clear editor data
+	for(int i = 0; i < m_buildings.numElem(); i++)
+		delete m_buildings[i];
+
+	m_buildings.clear();
+#endif // EDITOR
+
 	for(int i = 0; i < GetNumHFields(); i++)
 	{
 		if(m_heightfield[i])

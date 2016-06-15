@@ -165,7 +165,7 @@ public:
 
 	void		OnKey(wxKeyEvent& event, bool bDown);
 
-	Vector3D	ComputePlacementPointBasedOnMouse(buildSegmentPoint_t& point);
+	Vector3D	ComputePlacementPointBasedOnMouse();
 
 	void		OnRender();
 
@@ -198,7 +198,6 @@ protected:
 	wxCheckBox*					m_tiledPlacement;
 
 	Vector3D					m_mousePoint;
-	Vector3D					m_placementPoint;
 	bool						m_placeError;
 
 	int							m_mode;

@@ -1164,6 +1164,8 @@ void CUI_BuildingConstruct::OnLevelSave()
 {
 	CBaseTilebasedEditor::OnLevelSave();
 	m_layerCollList->SaveLayerCollections( g_pGameWorld->GetLevelName() );
+
+	// save each region of level
 }
 
 void CUI_BuildingConstruct::OnLevelUnload()
@@ -1282,21 +1284,21 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 
 				Vector3D firstPoint = m_newBuilding.points[0].position;
 
-				Vector3D newPoint = m_placementPoint;
-				newPoint.y = firstPoint.y;	// height must match
-
-				// set last point layer id
+				// Modify last point to use selected segment and layer
 				buildSegmentPoint_t& lastPoint = m_newBuilding.points[m_newBuilding.points.numElem()-1];
 				lastPoint.layerId = m_curLayerId;
 				lastPoint.scale = m_curSegmentScale;
 
-				buildSegmentPoint_t segment;
-				segment.layerId = 0;
-				segment.position = newPoint;
-				segment.scale = 1.0f;
+				// height of the segments must be equal to first point
+				m_mousePoint.y = firstPoint.y;
 
-				// make other points
-				m_newBuilding.points.append( segment );
+				buildSegmentPoint_t newSegment;
+				newSegment.layerId = 0;
+				newSegment.scale = 1.0f;
+				newSegment.position = ComputePlacementPointBasedOnMouse();
+
+				// Add point to the building
+				m_newBuilding.points.append( newSegment );
 
 				// ED_BUILD_DONE if connected to begin point
 				//if(distance(ppos, m_newBuilding.points[0]) < 2.0f)
@@ -1321,7 +1323,20 @@ void CUI_BuildingConstruct::CancelBuilding()
 
 void CUI_BuildingConstruct::CompleteBuilding()
 {
-	// TODO: generate building model for region:
+	// generate building model for region:
+	if(!m_selectedRegion || m_newBuilding.points.numElem() == 0 || m_newBuilding.layerColl == NULL)
+		return;
+
+	buildingSource_t* newBuilding = new buildingSource_t(m_newBuilding);
+
+	if( !GenerateBuildingModel(newBuilding) )
+	{
+		delete newBuilding;
+		return;
+	}
+
+	// add building to the region
+	int newIdx = m_selectedRegion->m_buildings.append( newBuilding );
 
 	m_newBuilding.points.clear();
 	m_newBuilding.layerColl = NULL;
@@ -1353,23 +1368,27 @@ void CUI_BuildingConstruct::OnRender()
 {
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	if(m_selectedRegion)
-	{
-		CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
+	if(!m_selectedRegion)
+		return;
 
-		field->DebugRender(false,m_mouseOverTileHeight);
+	CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
+	field->DebugRender(false,m_mouseOverTileHeight);
+
+	// render completed buildings
+	for(int i = 0; i < m_selectedRegion->m_buildings.numElem(); i++)
+	{
+		RenderBuilding(m_selectedRegion->m_buildings[i], NULL);
 	}
+
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	// only draw if building is not empty
 	if(m_newBuilding.points.numElem() > 0 && m_newBuilding.layerColl != NULL)
 	{
-		buildSegmentPoint_t& start = m_newBuilding.points[0];
-
-		// height of the segments must be equal to each other
-		m_mousePoint.y = start.position.y;
-
 		buildSegmentPoint_t extraSegment;
-		m_placementPoint = ComputePlacementPointBasedOnMouse( extraSegment );
+		extraSegment.position = ComputePlacementPointBasedOnMouse();
+		extraSegment.layerId = m_curLayerId;
+		extraSegment.scale = m_curSegmentScale;
 
 		//
 		// Finally render the dynamic preview of our building
@@ -1378,7 +1397,7 @@ void CUI_BuildingConstruct::OnRender()
 
 		// render the actual and computed points
 		debugoverlay->Box3D(m_mousePoint - 0.5f, m_mousePoint + 0.5f, ColorRGBA(1,0,0,1));
-		debugoverlay->Box3D(m_placementPoint-0.5f, m_placementPoint+0.5f, ColorRGBA(1,1,0,1));
+		debugoverlay->Box3D(extraSegment.position-0.5f, extraSegment.position+0.5f, ColorRGBA(1,1,0,1));
 
 		// render points of building
 		for(int i = 0; i < m_newBuilding.points.numElem(); i++)
@@ -1388,15 +1407,12 @@ void CUI_BuildingConstruct::OnRender()
 		}
 	}
 	else
-	{
-		m_placementPoint = m_mousePoint;
 		m_placeError = false;
-	}
 
 	CBaseTilebasedEditor::OnRender();
 }
 
-Vector3D CUI_BuildingConstruct::ComputePlacementPointBasedOnMouse(buildSegmentPoint_t& newPoint)
+Vector3D CUI_BuildingConstruct::ComputePlacementPointBasedOnMouse()
 {
 	int numSegs = m_newBuilding.points.numElem();
 
@@ -1407,16 +1423,14 @@ Vector3D CUI_BuildingConstruct::ComputePlacementPointBasedOnMouse(buildSegmentPo
 	buildLayer_t& layer = m_newBuilding.layerColl->layers[m_curLayerId];
 	float segLen = GetSegmentLength(layer) * m_curSegmentScale;
 
-	// add virtual point
-	newPoint.position = m_mousePoint;
-	newPoint.layerId = m_curLayerId;
-	newPoint.scale = m_curSegmentScale;
+	buildSegmentPoint_t testSegPoint;
+	testSegPoint.position = m_mousePoint;
 
 	// calculate segment interations from last node to mouse position
-	int numIterations = GetLayerSegmentIterations(end, newPoint, segLen);
+	int numIterations = GetLayerSegmentIterations(end, testSegPoint, segLen);
 	m_placeError = (numIterations == 0);
 
 	// compute the valid placement point of segment
-	Vector3D segmentDir = normalize(newPoint.position - end.position);
+	Vector3D segmentDir = normalize(m_mousePoint - end.position);
 	return end.position + segmentDir * floor(numIterations) * segLen;
 }

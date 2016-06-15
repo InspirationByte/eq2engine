@@ -244,10 +244,10 @@ void RenderBuilding( buildingSource_t* building, buildSegmentPoint_t* extraSegme
 // Generates new levelmodel of building
 // Returns local-positioned model, and it's position in the world
 //
-CLevelModel* GenerateBuildingModel( buildingSource_t* building, Vector3D& position )
+bool GenerateBuildingModel( buildingSource_t* building )
 {
 	if(building->points.numElem() == 0 || building->layerColl == NULL)
-		return NULL;
+		return false;
 
-	return NULL;
+	return true;
 }
