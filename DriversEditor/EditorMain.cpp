@@ -836,8 +836,8 @@ void CMainWindow::ProcessMouseEvents(wxMouseEvent& event)
 
 				extern float g_frametime;
 
-				cam_pos -= right*move_delta_x * camera_move_factor * g_fCamSpeed * g_frametime;
-				cam_pos += up*move_delta_y * camera_move_factor * g_fCamSpeed * g_frametime;
+				cam_pos -= right*move_delta_x * camera_move_factor;
+				cam_pos += up*move_delta_y * camera_move_factor;
 
 				g_vLastMousePosition = prev_mouse_pos;
 			}

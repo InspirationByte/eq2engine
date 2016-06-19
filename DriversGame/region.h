@@ -113,13 +113,14 @@ struct regionObject_t
 	{
 		game_object = NULL;
 		def = NULL;
+		physObject = NULL;
 	}
 
 	~regionObject_t();
 
-	CLevObjectDef*	def;
-
-	CGameObject*	game_object;
+	CLevObjectDef*			def;
+	CGameObject*			game_object;
+	CEqCollisionObject*		physObject;
 
 	Matrix4x4		transform;
 
@@ -133,7 +134,7 @@ struct regionObject_t
 
 	EqString		name;
 
-	DkList<CEqCollisionObject*> collisionObjects;
+	
 };
 
 struct regZone_t

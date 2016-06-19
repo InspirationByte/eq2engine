@@ -13,6 +13,7 @@
 #include "EditorPreviewable.h"
 #include "ppmem.h"
 #include "utils/DkList.h"
+#include "utils/DkLinkedList.h"
 
 class CLevelModel;
 class IMaterial;
@@ -81,42 +82,29 @@ struct buildingSource_t
 		modelPosition = vec3_zero;
 	}
 
-	buildingSource_t(const buildingSource_t& copyFrom)
-	{
-		layerColl = copyFrom.layerColl;
-		order = copyFrom.order;
+	buildingSource_t(buildingSource_t& copyFrom);
 
-		points.append( copyFrom.points );
+	~buildingSource_t();
 
-		// I do not copy model for re-generation reason
-		model = NULL;
-		modelPosition = vec3_zero;
-	}
+	DkLinkedList<buildSegmentPoint_t>	points;
+	buildLayerColl_t*					layerColl; 
+	int									order;
 
-	~buildingSource_t()
-	{
-		delete model;
-	}
-
-	DkList<buildSegmentPoint_t>	points;
-	buildLayerColl_t*			layerColl;
-	int							order;
-
-	CLevelModel*				model;
-	Vector3D					modelPosition;
+	CLevelModel*						model;
+	Vector3D							modelPosition;
 };
 
 int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, float layerXSize);
 int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, buildLayer_t& layer);
 float GetSegmentLength(buildLayer_t& layer);
 
-void CalculateBuildingModelTransform(Matrix4x4& partTransform, 
-									buildLayer_t& layer, 
-									const Vector3D& startPoint, 
-									const Vector3D& endPoint, 
-									int order, 
-									Vector3D& size, float scale,
-									int iteration );
+void CalculateBuildingSegmentTransform(	Matrix4x4& partTransform, 
+										buildLayer_t& layer, 
+										const Vector3D& startPoint, 
+										const Vector3D& endPoint, 
+										int order, 
+										Vector3D& size, float scale,
+										int iteration );
 
 // Rendering the building
 void RenderBuilding( buildingSource_t* building, buildSegmentPoint_t* extraSegment );

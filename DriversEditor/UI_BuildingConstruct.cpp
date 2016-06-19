@@ -1268,7 +1268,7 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				segment.position = m_mousePoint;
 
 				// make a first point
-				m_newBuilding.points.append( segment );
+				m_newBuilding.points.addLast( segment );
 				m_newBuilding.layerColl = m_layerCollList->GetSelectedLayerColl();
 				m_newBuilding.order = 1;
 
@@ -1282,10 +1282,16 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				if(m_placeError)
 					return;
 
-				Vector3D firstPoint = m_newBuilding.points[0].position;
+				if(!m_newBuilding.points.goToFirst())
+					return;
+
+				Vector3D firstPoint = m_newBuilding.points.getCurrent().position;
+
+				if(!m_newBuilding.points.goToLast())
+					return;
 
 				// Modify last point to use selected segment and layer
-				buildSegmentPoint_t& lastPoint = m_newBuilding.points[m_newBuilding.points.numElem()-1];
+				buildSegmentPoint_t& lastPoint = m_newBuilding.points.getCurrentNode()->object;
 				lastPoint.layerId = m_curLayerId;
 				lastPoint.scale = m_curSegmentScale;
 
@@ -1298,7 +1304,7 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				newSegment.position = ComputePlacementPointBasedOnMouse();
 
 				// Add point to the building
-				m_newBuilding.points.append( newSegment );
+				m_newBuilding.points.addLast( newSegment );
 
 				// ED_BUILD_DONE if connected to begin point
 				//if(distance(ppos, m_newBuilding.points[0]) < 2.0f)
@@ -1324,7 +1330,7 @@ void CUI_BuildingConstruct::CancelBuilding()
 void CUI_BuildingConstruct::CompleteBuilding()
 {
 	// generate building model for region:
-	if(!m_selectedRegion || m_newBuilding.points.numElem() == 0 || m_newBuilding.layerColl == NULL)
+	if(!m_selectedRegion || m_newBuilding.points.getCount() == 0 || m_newBuilding.layerColl == NULL)
 		return;
 
 	buildingSource_t* newBuilding = new buildingSource_t(m_newBuilding);
@@ -1355,8 +1361,11 @@ void CUI_BuildingConstruct::DeleteSelection()
 {
 	if(m_mode == ED_BUILD_SELECTEDPOINT)
 	{
-		if(m_newBuilding.points.numElem() > 1)
-			m_newBuilding.points.removeIndex(m_newBuilding.points.numElem()-1);
+		if(m_newBuilding.points.getCount() > 1)
+		{
+			m_newBuilding.points.goToLast();
+			m_newBuilding.points.removeCurrent(); //removeIndex(m_newBuilding.points.numElem()-1);
+		}
 		else
 			CancelBuilding();
 	}
@@ -1374,16 +1383,10 @@ void CUI_BuildingConstruct::OnRender()
 	CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
 	field->DebugRender(false,m_mouseOverTileHeight);
 
-	// render completed buildings
-	for(int i = 0; i < m_selectedRegion->m_buildings.numElem(); i++)
-	{
-		RenderBuilding(m_selectedRegion->m_buildings[i], NULL);
-	}
-
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	// only draw if building is not empty
-	if(m_newBuilding.points.numElem() > 0 && m_newBuilding.layerColl != NULL)
+	if(m_newBuilding.points.getCount() > 0 && m_newBuilding.layerColl != NULL)
 	{
 		buildSegmentPoint_t extraSegment;
 		extraSegment.position = ComputePlacementPointBasedOnMouse();
@@ -1400,10 +1403,9 @@ void CUI_BuildingConstruct::OnRender()
 		debugoverlay->Box3D(extraSegment.position-0.5f, extraSegment.position+0.5f, ColorRGBA(1,1,0,1));
 
 		// render points of building
-		for(int i = 0; i < m_newBuilding.points.numElem(); i++)
+		for(DkLLNode<buildSegmentPoint_t>* lln = m_newBuilding.points.goToFirst(); lln != NULL; lln = m_newBuilding.points.goToNext())
 		{
-			Vector3D point = m_newBuilding.points[i].position;
-			debugoverlay->Box3D(point - 0.5f, point + 0.5f, ColorRGBA(0,1,0,1));
+			debugoverlay->Box3D(lln->object.position - 0.5f, lln->object.position + 0.5f, ColorRGBA(0,1,0,1));
 		}
 	}
 	else
@@ -1414,10 +1416,11 @@ void CUI_BuildingConstruct::OnRender()
 
 Vector3D CUI_BuildingConstruct::ComputePlacementPointBasedOnMouse()
 {
-	int numSegs = m_newBuilding.points.numElem();
+	if(!m_newBuilding.points.goToLast())
+		return vec3_zero;
 
 	// now the computations
-	buildSegmentPoint_t& end = m_newBuilding.points[numSegs-1];
+	const buildSegmentPoint_t& end = m_newBuilding.points.getCurrent();
 
 	// get scaled segment length of last node
 	buildLayer_t& layer = m_newBuilding.layerColl->layers[m_curLayerId];

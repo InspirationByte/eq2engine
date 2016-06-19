@@ -8,6 +8,10 @@
 #include "world.h"
 #include "heightfield.h"
 
+#ifdef EDITOR
+#include "../DriversEditor/EditorLevel.h"
+#endif // EDITOR
+
 #define AI_NAVIGATION_ROAD_PRIORITY (1)
 
 extern ConVar r_enableLevelInstancing;
@@ -29,8 +33,8 @@ regionObject_t::~regionObject_t()
 		if(mod->Ref_Count() <= 0)
 			delete mod;
 
-		for(int i = 0; i < collisionObjects.numElem(); i++)
-			g_pPhysics->m_physics.DestroyStaticObject( collisionObjects[i] );
+		g_pPhysics->m_physics.DestroyStaticObject( physObject );
+		physObject = NULL;
 	}
 	else
 	{
@@ -395,6 +399,14 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 #endif	// EDITOR
 	}
 
+#ifdef EDITOR
+	// render completed buildings
+	for(int i = 0; i < m_buildings.numElem(); i++)
+	{
+		RenderBuilding(m_buildings[i], NULL);
+	}
+#endif // EDITOR
+
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	for(int i = 0; i < GetNumHFields(); i++)
@@ -573,7 +585,7 @@ float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D
 			int numTriangles = floor((float)pGroup->numindices / 3.0f);
 			int validIndexes = numTriangles * 3;
 
-			for(uint32 k = 0; k < validIndexes; k+=3)
+			for(int k = 0; k < validIndexes; k+=3)
 			{
 				Vector3D v0,v1,v2;
 
@@ -815,15 +827,10 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		{
 			// create collision objects and translate them
 			CLevelModel* model = ref->def->m_model;
-			model->CreateCollisionObjects( this, ref );
+			model->CreateCollisionObject( ref );
 
-			for(int j = 0; j < ref->collisionObjects.numElem(); j++)
-			{
-				CScopedMutex m(m_level->m_mutex);
-
-				// add physics objects
-				g_pPhysics->m_physics.AddStaticObject( ref->collisionObjects[j] );
-			}
+			// add physics objects
+			g_pPhysics->m_physics.AddStaticObject( ref->physObject );
 
 			if(model->m_hasTransparentSubsets)
 				m_hasTransparentSubsets = true;

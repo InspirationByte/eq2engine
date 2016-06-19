@@ -243,7 +243,8 @@ CLevelModel::CLevelModel() :
 	m_vertexBuffer(NULL),
 	m_indexBuffer(NULL),
 	m_format(NULL),
-	m_hasTransparentSubsets(false)
+	m_hasTransparentSubsets(false),
+	m_physicsMesh(NULL)
 {
 	m_bbox.Reset();
 }
@@ -291,10 +292,8 @@ void CLevelModel::Cleanup()
 
 	m_bbox.Reset();
 
-	for(int i = 0; i < m_batchMeshes.numElem(); i++)
-		delete m_batchMeshes[i];
-
-	m_batchMeshes.clear();
+	delete m_physicsMesh;
+	m_physicsMesh = NULL;
 
 	m_hasTransparentSubsets = false;
 }
@@ -385,10 +384,11 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 	physVerts.clear();
 	indices.clear();
 
-	CEqBulletIndexedMesh* mesh = new CEqBulletIndexedMesh(	(ubyte*)m_physVerts, sizeof(Vector3D),
-															(ubyte*)m_indices, sizeof(uint16), m_numVerts, m_numIndices);
+	delete m_physicsMesh;
+	m_physicsMesh = NULL;
 
-	m_batchMeshes.append(mesh);
+	m_physicsMesh = new CEqBulletIndexedMesh(	(ubyte*)m_physVerts, sizeof(Vector3D),
+												(ubyte*)m_indices, sizeof(uint16), m_numVerts, m_numIndices);
 
 	for(int i = 0; i < m_numBatches; i++)
 	{
@@ -407,48 +407,44 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 		if(param)
 			surfParamId = param->id;
 
-		mesh->AddSubpart(tempBatches[i].startIndex, tempBatches[i].numIndices, tempBatches[i].startVertex, tempBatches[i].numVerts, surfParamId);
+		m_physicsMesh->AddSubpart(tempBatches[i].startIndex, tempBatches[i].numIndices, tempBatches[i].startVertex, tempBatches[i].numVerts, surfParamId);
 	}
 
 	m_numVerts = numOldVerts;
-
 	delete [] tempBatches;
 #endif // EDITOR
 }
 
-void CLevelModel::CreateCollisionObjects( CLevelRegion* reg, regionObject_t* ref )
+void CLevelModel::CreateCollisionObject( regionObject_t* ref )
 {
-	Matrix4x4 mat = GetModelRefRenderMatrix(reg, ref);
-	mat = transpose(mat);
+	Matrix4x4 transform = transpose( ref->transform );
 
-	for(int i = 0; i < m_batchMeshes.numElem(); i++)
+	bool isGround = ref->def->m_info.modelflags & LMODEL_FLAG_ISGROUND;
+
+	CEqCollisionObject* collObj = new CEqCollisionObject();
+	collObj->Initialize(m_physicsMesh);
+
+	collObj->SetOrientation( Quaternion(transform.getRotationComponent()) );
+	collObj->SetPosition( transform.getTranslationComponent() );
+
+	// make as ground
+	if( isGround )
 	{
-		CEqCollisionObject* collObj = new CEqCollisionObject();
-		collObj->Initialize(m_batchMeshes[i]);
-
-		collObj->SetOrientation( Quaternion(mat.getRotationComponent()) );
-		collObj->SetPosition( mat.getTranslationComponent() );
-
-		// make as ground
-		if(ref->def->m_info.modelflags & LMODEL_FLAG_ISGROUND)
-		{
-			collObj->SetContents( OBJECTCONTENTS_SOLID_GROUND );
-			collObj->SetRestitution(0.0f);
-			collObj->SetFriction(1.0f);
-		}
-		else
-		{
-			collObj->SetContents( OBJECTCONTENTS_SOLID_OBJECTS );
-			collObj->SetFriction(0.0f);
-			collObj->SetRestitution(1.0f);
-		}
-
-		collObj->SetCollideMask(0);
-
-		// don't add them to world
-		ref->collisionObjects.append(collObj);
+		collObj->SetContents( OBJECTCONTENTS_SOLID_GROUND );
+		collObj->SetRestitution(0.0f);
+		collObj->SetFriction(1.0f);
+	}
+	else
+	{
+		collObj->SetContents( OBJECTCONTENTS_SOLID_OBJECTS );
+		collObj->SetFriction(0.0f);
+		collObj->SetRestitution(1.0f);
 	}
 
+	collObj->SetCollideMask(0);
+
+	// don't add them to world
+	ref->physObject = collObj;
 }
 
 bool CLevelModel::GenereateRenderData()
@@ -735,7 +731,6 @@ void CLevelModel::Load(IVirtualStream* stream)
 	stream->Read(m_indices, 1, sizeof(uint16)*m_numIndices);
 
 	GenereateRenderData();
-
 }
 
 void CLevelModel::Save(IVirtualStream* stream) const
