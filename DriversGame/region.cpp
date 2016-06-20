@@ -827,10 +827,12 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		{
 			// create collision objects and translate them
 			CLevelModel* model = ref->def->m_model;
+#ifndef EDITOR
 			model->CreateCollisionObject( ref );
 
 			// add physics objects
 			g_pPhysics->m_physics.AddStaticObject( ref->physObject );
+#endif // EDITOR
 
 			if(model->m_hasTransparentSubsets)
 				m_hasTransparentSubsets = true;

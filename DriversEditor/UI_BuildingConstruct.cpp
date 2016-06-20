@@ -1341,8 +1341,13 @@ void CUI_BuildingConstruct::CompleteBuilding()
 		return;
 	}
 
+	CLevelRegion* region = g_pGameWorld->m_level.GetRegionAtPosition(newBuilding->modelPosition);
+
+	if( !region )
+		region = m_selectedRegion;
+
 	// add building to the region
-	int newIdx = m_selectedRegion->m_buildings.append( newBuilding );
+	int newIdx = region->m_buildings.append( newBuilding );
 
 	m_newBuilding.points.clear();
 	m_newBuilding.layerColl = NULL;

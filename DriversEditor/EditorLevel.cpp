@@ -225,7 +225,14 @@ void RenderBuilding( buildingSource_t* building, buildSegmentPoint_t* extraSegme
 {
 	if(building->model != NULL)
 	{
+		Matrix4x4 transform = translate(building->modelPosition) * identity4();
+		
+		materials->SetMatrix(MATRIXMODE_WORLD, transform);
+
 		// draw model
+		BoundingBox aabb;
+
+		building->model->Render(0,aabb);
 
 		return;
 	}
@@ -317,7 +324,7 @@ void CBuildingModelGenerator::AppendModel(CLevelModel* model, const Matrix4x4& t
 
 		lmodel_batch_t& destBatch = GetBatch( srcBatch->pMaterial );
 
-		for (int j = 0; j < srcBatch->numIndices; j++)
+		for (uint16 j = 0; j < srcBatch->numIndices; j++)
 		{
 			int srcIdx = model->m_indices[srcBatch->startIndex+ j ];
 			lmodeldrawvertex_t destVtx = model->m_verts[srcIdx];
@@ -375,6 +382,8 @@ CLevelModel* CBuildingModelGenerator::GenerateModel()
 
 	memcpy(model->m_verts, m_verts.ptr(), sizeof(lmodeldrawvertex_t)*model->m_numVerts);
 	memcpy(model->m_indices, m_indices.ptr(), sizeof(uint16)*model->m_numIndices);
+
+	model->GenereateRenderData();
 
 	return model;
 }
