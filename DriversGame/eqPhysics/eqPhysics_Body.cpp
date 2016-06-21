@@ -28,6 +28,7 @@ IEqPhysCallback::~IEqPhysCallback()
 	m_object->m_callbacks = nullptr;
 }
 
+
 //-----------------------------------------------------------------------------------------
 
 ConVar ph_debug_body("ph_debug_body", "0", "Print debug body information in screen");

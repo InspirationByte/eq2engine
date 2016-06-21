@@ -145,6 +145,8 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 	m_fLookAngle += fLookAngleDiff * fDt * CAM_LOOK_TURN_SPEED;
 
+	m_fLookAngle = ConstrainAngle180(m_fLookAngle);
+
 	bool bLookBack = (nButtons & IN_LOOKLEFT) && (nButtons & IN_LOOKRIGHT);
 
 	Vector3D cam_vec = cross(vec3_up, car_forward);

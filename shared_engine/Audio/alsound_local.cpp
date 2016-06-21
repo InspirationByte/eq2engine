@@ -431,42 +431,45 @@ void DkSoundSystemLocal::Update()
 		}
 	}
 
-
-	//Channels
+	// update channels
 	for( int i = 0; i < m_pChannels.numElem(); i++ )
 	{
-		if(!m_pChannels[i]->emitter)
+		sndChannel_t* chnl = m_pChannels[i];
+
+		if(!chnl->emitter)
 			continue;
 
 		nChannelsInUse++;
 
 		if(m_pauseState)
 		{
-			if( !m_pChannels[i]->onGamePause && m_pChannels[i]->alState == AL_PLAYING )
+			if( !chnl->onGamePause && chnl->alState == AL_PLAYING )
 			{
-				m_pChannels[i]->onGamePause = true;
+				chnl->onGamePause = true;
 
-				alGetSourcei(m_pChannels[i]->alSource, AL_SAMPLE_OFFSET, &m_pChannels[i]->lastPauseOffsetBytes);
-				alSourcePause(m_pChannels[i]->alSource);
+				alGetSourcei(chnl->alSource, AL_SAMPLE_OFFSET, &chnl->lastPauseOffsetBytes);
+				alSourcePause(chnl->alSource);
 			}
 		}
 		else if( !m_pauseState )
 		{
-			if( m_pChannels[i]->onGamePause && m_pChannels[i]->alState == AL_PLAYING )
+			if( chnl->onGamePause && chnl->alState == AL_PLAYING )
 			{
-				m_pChannels[i]->onGamePause = false;
+				chnl->onGamePause = false;
 
-				alSourcePlay(m_pChannels[i]->alSource);
-				alSourcei(m_pChannels[i]->alSource, AL_SAMPLE_OFFSET, m_pChannels[i]->lastPauseOffsetBytes);
+				alSourcePlay(chnl->alSource);
+				alSourcei(chnl->alSource, AL_SAMPLE_OFFSET, chnl->lastPauseOffsetBytes);
 			}
 
-			// update sound state
-			alGetSourcei(m_pChannels[i]->alSource, AL_SOURCE_STATE, &m_pChannels[i]->alState);
+			// update source state
+			alGetSourcei(chnl->alSource, AL_SOURCE_STATE, &chnl->alState);
 
-			if(m_pChannels[i]->alState == AL_STOPPED && m_pChannels[i]->emitter)
+			// and if it was stopped it drops channel
+			if(chnl->alState == AL_STOPPED)
 			{
-				m_pChannels[i]->emitter->m_nChannel = -1;
-				m_pChannels[i]->emitter = NULL; //Free channel
+				chnl->alState = AL_STOPPED;
+				chnl->emitter->m_nChannel = -1;
+				chnl->emitter = NULL;
 			}
 		}
 	}
@@ -645,17 +648,8 @@ void DkSoundSystemLocal::FreeEmitter(ISoundEmitter* pEmitter)
 	if(pEmitter == NULL)
 		return;
 
-	if(!pEmitter->GetState() != SOUND_STATE_STOPPED)
+	if(pEmitter->GetState() != SOUND_STATE_STOPPED)
 		pEmitter->Stop();
-
-	//Look for a channel
-	for(int i = 0; i < m_pChannels.numElem(); i++)
-	{
-		if(m_pChannels[i]->emitter == pEmitter)
-		{
-			m_pChannels[i]->emitter = NULL;
-		}
-	}
 
 	// Remove sample
 	m_pSoundEmitters.remove(pEmitter);
@@ -679,6 +673,7 @@ void DkSoundSystemLocal::ReleaseEmitters()
 {
 	for(int i = 0; i < m_pSoundEmitters.numElem(); i++)
 	{
+		m_pSoundEmitters[i]->Stop();
 		delete ((DkSoundEmitterLocal*)m_pSoundEmitters[i]);
 	}
 
@@ -781,14 +776,10 @@ int	DkSoundSystemLocal::RequestChannel(DkSoundEmitterLocal *emitter)
 	if( (length(emitter->vPosition-m_listenerOrigin)) > emitter->m_params.maxDistance)
 		return -1;
 
-	//Look for a channel
 	for(int i = 0; i < m_pChannels.numElem(); i++)
 	{
-		if(!m_pChannels[i]->emitter)
-		{
-			m_pChannels[i]->emitter = emitter;
+		if(m_pChannels[i]->emitter == NULL)
 			return i;
-		}
 	}
 
 	return -1;

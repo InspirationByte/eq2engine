@@ -46,6 +46,9 @@ public:
 
 protected:
 
+	bool				SelfAssignChannel();
+	bool				DropChannel();
+
 	bool				m_virtual;
 	ALenum				m_virtualState;
 
