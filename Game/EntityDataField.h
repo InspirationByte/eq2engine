@@ -14,6 +14,10 @@
 #include "SaveGame_DkList.h"
 #include "SaveGame_Events.h"
 
+#include "utils/eqstring.h"
+#include "math/Vector.h"
+#include "math/Matrix.h"
+
 // 
 // TODO: script bindings goes here
 //

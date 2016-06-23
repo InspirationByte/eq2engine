@@ -47,7 +47,7 @@ public:
 	void								Update(int nViewRenderFlags, void* userdata);		// updates the render list.
 	void								Render(int nViewRenderFlags, void* userdata);		// draws render list
 
-	void								SortByDistanceFrom(Vector3D& origin);
+	void								SortByDistanceFrom(const Vector3D& origin);
 
 	void								Remove(int id);
 	void								Clear();										// clear it

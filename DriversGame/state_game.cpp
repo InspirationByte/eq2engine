@@ -876,7 +876,7 @@ void CState_Game::LoadGame()
 
 	UnloadGame();
 
-	ses->Init();
+	ses->Init(EQ_DRVSYN_DEFAULT_SOUND_DISTANCE);
 
 	PrecacheStudioModel( "models/error.egf" );
 	PrecacheScriptSound( "menu.back" );
@@ -1017,7 +1017,7 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 	if(m_isGameRunning)
 		return;
 
-	ses->Init();
+	ses->Init(EQ_DRVSYN_DEFAULT_SOUND_DISTANCE);
 
 	LoadGame();
 

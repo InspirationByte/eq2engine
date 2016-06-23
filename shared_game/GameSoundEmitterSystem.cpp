@@ -281,10 +281,12 @@ void EmitSound_t::Init( const char* pszName, const Vector3D& pos, float volume, 
 //
 //----------------------------------------------------------------------------
 
-void CSoundEmitterSystem::Init()
+void CSoundEmitterSystem::Init(float maxDistance)
 {
 	if(m_isInit)
 		return;
+
+	m_defaultMaxDistance = maxDistance;
 
 	LoadScriptSoundFile("scripts/sounds.txt");
 
@@ -655,6 +657,10 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channel)
 		MsgError("Emit2DSound: unknown sound '%s'\n", emit->name);
 }
 
+#ifndef NO_ENGINE
+ConVar snd_occlusion_debug("snd_occlusion_debug", "0");
+#endif // NO_ENGINE
+
 bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &params, bool bForceNoInterp )
 {
 	ASSERT(soundsystem->IsValidEmitter( emitter->pEmitter ));
@@ -790,6 +796,7 @@ void CSoundEmitterSystem::Update()
 
 #ifndef NO_ENGINE
 	m_nRooms = eqlevel->GetRoomsForPoint( m_vViewPos, m_rooms );
+	m_bViewIsAvailable = m_nRooms > 0;
 #endif
 
 	if(m_pUnreleasedSounds.numElem())
@@ -870,10 +877,10 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 		pSoundData->namehash = StringToHash( sname.c_str() );
 
 		pSoundData->fVolume = KV_GetValueFloat( curSec->FindKeyBase("volume"), 0, 1.0f );
-		pSoundData->fAtten = KV_GetValueFloat( curSec->FindKeyBase("distance"), 0, 35.0f );
+		pSoundData->fAtten = KV_GetValueFloat( curSec->FindKeyBase("distance"), 0, m_defaultMaxDistance * 0.35f );
 		pSoundData->fPitch = KV_GetValueFloat( curSec->FindKeyBase("pitch"), 0, 1.0f );
 		pSoundData->fRolloff = KV_GetValueFloat( curSec->FindKeyBase("rolloff"), 0, 1.0f );
-		pSoundData->fMaxDistance = KV_GetValueFloat( curSec->FindKeyBase("maxdistance"), 0, 100.0f );
+		pSoundData->fMaxDistance = KV_GetValueFloat( curSec->FindKeyBase("maxdistance"), 0, m_defaultMaxDistance );
 		pSoundData->fAirAbsorption = KV_GetValueFloat( curSec->FindKeyBase("airabsorption"), 0, 0.0f );
 		pSoundData->loop = KV_GetValueBool( curSec->FindKeyBase("loop"), 0, false );
 		pSoundData->stopLoop = KV_GetValueBool( curSec->FindKeyBase("stopLoop"), 0, false );

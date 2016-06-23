@@ -27,6 +27,7 @@
 #include "IGameLibrary.h"
 #include "Font.h"
 #include "FontCache.h"
+#include "eqParallelJobs.h"
 
 #ifdef PLAT_SDL
 #include "SDL_mouse.h"
@@ -72,13 +73,6 @@ void CC_Exit_F(DkList<EqString> *args)
 ConCommand cc_exit("exit",CC_Exit_F,"Closes current instance of engine");
 ConCommand cc_quit("quit",CC_Exit_F,"Closes current instance of engine");
 ConCommand cc_quti("quti",CC_Exit_F,"This made for keyboard writing errors");
-
-void CC_Error_f(DkList<EqString> *args)
-{
-	ErrorMsg("FATAL ERROR");
-}
-
-ConCommand cc_error("test_error",CC_Error_f,"Test error");
 
 void cc_printres_f(DkList<EqString> *args)
 {
@@ -813,6 +807,8 @@ bool CEngineHost::InitSubSystems()
 
 	engine->Init();
 
+	g_parallelJobs->Init(g_cpuCaps->GetCPUCount() / 2);
+
 	Msg("--------- GameDllInit --------- \n");
 	if(!gamedll->Init(soundsystem, physics, debugoverlay, g_pModelCache, viewrenderer))
 		return false;
@@ -977,6 +973,8 @@ bool CEngineHost::Init()
 
 void CEngineHost::Shutdown()
 {
+	g_parallelJobs->Shutdown();
+
 	engine->Shutdown();
 
 	// Save configuration before full unload

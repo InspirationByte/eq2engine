@@ -150,7 +150,7 @@ void FillEntityParameters(BaseEntity* pEnt, kvkeybase_t* pEntSection)
 void GAME_STATE_SpawnEntities( KeyValues* inputKeyValues )
 {
 	// Initialize sound emitter system
-	ses->Init();
+	ses->Init(EQ_AUDIO_MAX_DISTANCE);
 
 	PrecachePhysicsSounds();
 
@@ -295,12 +295,8 @@ void GAME_STATE_Postrender()
 
 	if(engine->GetGameState() == IEngineGame::GAME_PAUSE)
 	{
-		static const char* pausetext = "pause";
-
-		Rectangle_t winRect(20,20,720,150);
-
-		g_pEngineHost->GetDefaultFont()->DrawSetColor(ColorRGBA(1,1,1,1.0f));
-		g_pEngineHost->GetDefaultFont()->DrawTextInRect(pausetext,winRect,35,35);
+		eqFontStyleParam_t style;
+		g_pEngineHost->GetDefaultFont()->RenderText("PAUSED.", Vector2D(20,20), style);
 	}
 
 	if(first_game_update_frames == FRAMES_TO_START_GAME)

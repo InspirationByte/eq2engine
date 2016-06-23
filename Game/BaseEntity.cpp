@@ -788,10 +788,7 @@ void BaseEntity::SetModel(IEqModel* pModel)
 	ClearDecals();
 
 	if(m_pModel)
-	{
-		m_vBBox.minPoint = m_pModel->GetBBoxMins();
-		m_vBBox.maxPoint = m_pModel->GetBBoxMaxs();
-	}
+		m_vBBox = m_pModel->GetAABB();
 }
 
 void BaseEntity::SetModel(const char* pszModelName)

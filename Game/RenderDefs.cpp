@@ -7,6 +7,7 @@
 
 #include "RenderDefs.h"
 #include "IViewRenderer.h"
+#include "ConVar.h"
 
 void ComputePointLightParams(CViewParams* pView, dlight_t* pLight, int &nDrawFlags)
 {

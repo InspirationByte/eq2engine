@@ -164,7 +164,7 @@ binding_t* CKeyCommandBinder::FindBinding(const char* pszKeyStr)
 void CKeyCommandBinder::OnKeyEvent(const int keyIdent, bool bPressed)
 {
 	if(in_keys_debug.GetBool())
-		MsgWarning("-- KeyPress: %c (%d)\n", keyIdent, bPressed);
+		MsgWarning("-- KeyPress: %s (%d)\n", KeyIndexToString(keyIdent), bPressed);
 
 	for(int i = 0; i < m_pBindings.numElem(); i++)
 	{

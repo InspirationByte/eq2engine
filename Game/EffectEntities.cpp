@@ -532,7 +532,7 @@ public:
 				forw = rotMatrix.rows[2].xyz();
 
 				//AngleVectors(,&forw);
-
+				/* REWRITE_GAME_EFFECTS
 				CSmokeEffect* pEffect = new CSmokeEffect(GetAbsOrigin(),
 														forw*m_fParticleMaxSpeed+RandomFloat(-0.1f, 0.1f),
 														startsize+RandomFloat(-0.9f, 0.9f), 
@@ -543,8 +543,9 @@ public:
 														startcolor*RandomFloat(0.9f, 1.1f), 
 														endcolor*RandomFloat(0.9f, 1.1f), 
 														m_fParticleAlpha);
-
+				
 				effectrenderer->RegisterEffectForRender(pEffect);
+				*/
 			}
 
 			m_fNextParticleEmissionTime = gpGlobals->curtime+m_fParticlesEmitTime;
@@ -690,7 +691,7 @@ public:
 				Matrix4x4 rotMatrix = !rotateXYZ4(DEG2RAD(angles.x), DEG2RAD(angles.y), DEG2RAD(angles.z));
 
 				forw = rotMatrix.rows[2].xyz();
-
+				/* REWRITE_GAME_EFFECTS
 				CSparkLine* pEffect = new CSparkLine(	GetAbsOrigin(),
 														forw*m_fParticleMaxSpeed+RandomFloat(-0.1f, 0.1f),
 														m_vGravity*RandomFloat(0.9f, 1.1f),
@@ -700,8 +701,9 @@ public:
 														m_fParticleLifeTime+RandomFloat(-0.12f, 0.12f), 
 														itsGroup,
 														true);
-
+				
 				effectrenderer->RegisterEffectForRender(pEffect);
+				*/
 			}
 
 			m_fNextParticleEmissionTime = gpGlobals->curtime+m_fParticlesEmitTime;
