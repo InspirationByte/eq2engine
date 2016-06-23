@@ -35,6 +35,21 @@ DECLARE_CMD(toggleconsole, "Toggles console", 0)
 DECLARE_CMD(con_show, "Show console", 0)
 {
 	g_pSysConsole->SetVisible(true);
+	g_pSysConsole->SetLogVisible(false);
+}
+
+// shows console with log
+DECLARE_CMD(con_show_full, "Show console", 0)
+{
+	g_pSysConsole->SetVisible(true);
+	g_pSysConsole->SetLogVisible(true);
+}
+
+// hides console
+DECLARE_CMD(con_hide, "Hides console", 0)
+{
+	g_pSysConsole->SetVisible(false);
+	g_pSysConsole->SetLogVisible(false);
 }
 
 ConVar con_enable("con_enable","1",NULL, CV_CHEAT);

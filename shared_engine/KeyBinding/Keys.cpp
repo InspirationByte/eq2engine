@@ -20,7 +20,7 @@
 
 _INTERFACE_FUNCTION(CKeyCommandBinder, CKeyCommandBinder, GetKeyBindings)
 
-//EXPOSE_SINGLE_INTERFACE_NOBASE_EX(KeyBindings,CKeyCommandBinder);
+ConVar in_keys_debug("in_keys_debug", "0", "Debug CKeyCommandBinder");
 
 CKeyCommandBinder::CKeyCommandBinder()
 {
@@ -163,6 +163,9 @@ binding_t* CKeyCommandBinder::FindBinding(const char* pszKeyStr)
 //
 void CKeyCommandBinder::OnKeyEvent(const int keyIdent, bool bPressed)
 {
+	if(in_keys_debug.GetBool())
+		MsgWarning("-- KeyPress: %c (%d)\n", keyIdent, bPressed);
+
 	for(int i = 0; i < m_pBindings.numElem(); i++)
 	{
 		if(s_keynames[m_pBindings[i]->key_index].keynum == keyIdent)
@@ -222,6 +225,9 @@ void CKeyCommandBinder::ExecuteBinding( binding_t* pBinding, bool bState )
 		if((cmd->GetFlags() & CV_CLIENTCONTROLS) && (engine->GetGameState() == IEngineGame::GAME_PAUSE || g_pSysConsole->IsVisible()))
 			return;
 #endif
+
+		if(in_keys_debug.GetBool())
+			MsgWarning("dispatch %s\n", cmd->GetName());
 
 		cmd->DispatchFunc( &args );
 	}
