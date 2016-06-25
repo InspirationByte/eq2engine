@@ -79,10 +79,14 @@ void CSoundController::StartSound(const char* newSoundName)
 
 		// can't start
 		if(chan == CHAN_INVALID)
+		{
+			MsgError("Can't emit sound '%s', CHAN_INVALID\n", m_emitParams.name);
 			return;
+		}
 
 		if(m_emitParams.emitterIndex < 0 || m_emitParams.emitterIndex > ses->m_pCurrentTempEmitters.numElem()-1)
 		{
+			MsgError("Can't emit sound '%s', no out of emitters\n", m_emitParams.name);
 			return;
 		}
 
@@ -96,7 +100,10 @@ void CSoundController::StartSound(const char* newSoundName)
 	}
 
 	if(!m_emitData->pEmitter)
+	{
+		m_emitData = NULL;
 		return;
+	}
 
 	// resume previous sample
 	m_emitData->pEmitter->Play();
@@ -364,7 +371,7 @@ ISoundController* CSoundEmitterSystem::CreateSoundController(EmitSound_t *ep)
 
 	pController->m_soundName = ep->name; // copy sound name since the params can use non-permanent adresses
 	pController->m_emitParams = *ep;
-	pController->m_emitParams.name = (char*)pController->m_soundName.GetData();
+	pController->m_emitParams.name = (char*)pController->m_soundName.c_str();
 
 	return pController;
 }

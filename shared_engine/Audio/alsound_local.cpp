@@ -706,6 +706,8 @@ ISoundEmitter* DkSoundSystemLocal::AllocEmitter()
 	return NULL;
 }
 
+ConVar job_soundLoader("job_soundLoader", "1", "Multi-threaded sound sample loading", CV_ARCHIVE);
+
 ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, int nFlags)
 {
 	if(!m_bSoundInit)
@@ -729,8 +731,15 @@ ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, int nFlags)
 	DkSoundSampleLocal* pNewSample = new DkSoundSampleLocal();
 	pNewSample->Init(name, nFlags);
 
-	g_parallelJobs->AddJob( DkSoundSampleLocal::SampleLoaderJob, pNewSample );
-	g_parallelJobs->Submit();
+	if(job_soundLoader.GetBool())
+	{
+		g_parallelJobs->AddJob( DkSoundSampleLocal::SampleLoaderJob, pNewSample );
+		g_parallelJobs->Submit();
+	}
+	else
+	{
+		pNewSample->Load();
+	}
 
 	m_pSoundSamples.append( pNewSample );
 

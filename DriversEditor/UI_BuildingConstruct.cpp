@@ -1013,7 +1013,7 @@ CUI_BuildingConstruct::CUI_BuildingConstruct( wxWindow* parent )
 	sbSizer6 = new wxStaticBoxSizer( new wxStaticBox( m_pSettingsPanel, wxID_ANY, wxT("Properties") ), wxVERTICAL );
 
 	m_tiledPlacement = new wxCheckBox( m_pSettingsPanel, wxID_ANY, wxT("Tiled placement (T)"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_tiledPlacement->SetValue(true); 
+	m_tiledPlacement->SetValue(false); 
 	sbSizer6->Add( m_tiledPlacement, 0, wxALL, 5 );
 	
 	

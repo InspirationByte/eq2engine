@@ -796,9 +796,7 @@ void BaseEntity::SetModel(const char* pszModelName)
 	if(!pszModelName)
 	{
 		m_pModel = NULL;
-
 		m_pszModelName = "";
-
 		return;
 	}
 
@@ -806,10 +804,7 @@ void BaseEntity::SetModel(const char* pszModelName)
 		return;
 
 	if(strlen(pszModelName) == 0)
-	{
-		//SetModel( (IEqModel*)NULL );
 		return;
-	}
 
 	m_pszModelName = pszModelName;
 
@@ -820,6 +815,12 @@ void BaseEntity::SetModel(const char* pszModelName)
 
 	IEqModel* pModel = g_pModelCache->GetModel(mod_index);
 
+	if(pModel->GetHWData() == NULL)
+	{
+		pModel = g_pModelCache->GetModel(0);
+		pModel->GetHWData();
+	}
+
 	SetModel( pModel );
 }
 
@@ -827,18 +828,23 @@ IPhysicsObject* BaseEntity::PhysicsInitStatic()
 {
 	PhysicsDestroyObject();
 
-	if(m_pModel && m_pModel->GetHWData()->m_physmodel.numobjects == 1)
+	if(!m_pModel->GetHWData())
+		return NULL;
+
+	physmodeldata_t& physMod = m_pModel->GetHWData()->m_physmodel;
+
+	if(physMod.numobjects == 1)
 	{
-		float fOldMass = m_pModel->GetHWData()->m_physmodel.objects[0].object.mass;
-		m_pModel->GetHWData()->m_physmodel.objects[0].object.mass = 0;
-		IPhysicsObject* pObject = physics->CreateObject(&m_pModel->GetHWData()->m_physmodel);
+		float fOldMass = physMod.objects[0].object.mass;
+		physMod.objects[0].object.mass = 0;
+		IPhysicsObject* pObject = physics->CreateObject(&physMod);
 
 		pObject->SetEntityObjectPtr(this);
 
 		// disable events for this object
 		pObject->AddFlags( PO_NO_EVENTS );
 
-		m_pModel->GetHWData()->m_physmodel.objects[0].object.mass = fOldMass;
+		physMod.objects[0].object.mass = fOldMass;
 
 		PhysicsSetObject(pObject);
 
