@@ -61,8 +61,6 @@ public:
 
 	//virtual void				SetUpdatesEnabled(bool enabled);
 
-	virtual IEqModel*			LoadModel(const char* filename, bool loadErrorIfFail = true) = 0;
-
 	virtual void				SetCenterMouseCursor(bool enable) = 0;
 };
 

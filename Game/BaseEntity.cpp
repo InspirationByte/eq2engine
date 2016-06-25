@@ -827,7 +827,7 @@ IPhysicsObject* BaseEntity::PhysicsInitStatic()
 {
 	PhysicsDestroyObject();
 
-	if(m_pModel->GetHWData()->m_physmodel.numobjects == 1)
+	if(m_pModel && m_pModel->GetHWData()->m_physmodel.numobjects == 1)
 	{
 		float fOldMass = m_pModel->GetHWData()->m_physmodel.objects[0].object.mass;
 		m_pModel->GetHWData()->m_physmodel.objects[0].object.mass = 0;

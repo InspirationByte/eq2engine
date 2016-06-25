@@ -15,6 +15,8 @@
 // streams in studio models used exclusively in interpolation
 class CEngineStudioEGF : public IEqModel
 {
+	friend class		CModelCache;
+
 public:
 						CEngineStudioEGF();
 						~CEngineStudioEGF();
@@ -102,6 +104,9 @@ private:
 
 	BoundingBox			m_aabb;
 	EqString			m_szPath;
+
+	int					m_cacheIdx;
+
 };
 
 //-------------------------------------------------------------------------------------
@@ -110,6 +115,8 @@ private:
 
 class CModelCache : public IModelCache
 {
+	friend class			CEngineStudioEGF;
+
 public:
 							CModelCache();
 
@@ -133,6 +140,7 @@ public:
 	void					PrintLoadedModels() const;
 
 private:
+
 	DkList<IEqModel*>		m_pModels;
 	IVertexFormat*			m_egfFormat;	// vertex format for streams
 };

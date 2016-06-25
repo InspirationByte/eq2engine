@@ -2169,7 +2169,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		}
 	}
 
-	if(needsCompile)
+	if(needsCompile && info.vs.text != NULL)
 	{
 		pStream = g_fileSystem->Open( cache_file_name.GetData(), "wb", SP_MOD );
 
