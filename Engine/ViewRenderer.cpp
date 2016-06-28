@@ -2491,7 +2491,7 @@ void CViewRenderer::SetDrawMode(ViewDrawMode_e mode)
 			// attach shadowmap texture
 			g_pShaderAPI->ChangeRenderTarget(m_pShadowMaps[nLightType][0], m_nCubeFaceId, m_pShadowMapDepth[m_nCubeFaceId]);
 #else
-			SetupShadowDepth(nLightType, 0, /*m_nCubeFaceId*/POSITIVE_Y);
+			SetupShadowDepth(nLightType, 0, m_nCubeFaceId);
 			
 			/*
 			// attach shadowmap texture
@@ -2538,11 +2538,16 @@ void CViewRenderer::SetupShadowDepth(int nLightType, int sunIndex, int cubeIndex
 #ifdef EQLC
 	g_pShaderAPI->ChangeRenderTarget(m_pShadowMaps[nLightType][sunIndex], cubeIndex, m_pShadowMapDepth[nLightType]);
 #else
-	// attach shadowmap texture
-	g_pShaderAPI->ChangeRenderTargets(NULL, 0, NULL, m_pShadowMaps[nLightType][sunIndex], cubeIndex);
 
-	// drop D3D9 support
-	// g_pShaderAPI->ChangeRenderTarget(m_pShadowMaps[nLightType][sunIndex], cubeIndex, m_pShadowMapDepth[nLightType]);
+	if(g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
+	{
+		g_pShaderAPI->ChangeRenderTarget(m_pShadowMaps[nLightType][sunIndex], cubeIndex, m_pShadowMapDepth[nLightType]);
+	}
+	else
+	{
+		// attach shadowmap texture
+		g_pShaderAPI->ChangeRenderTargets(NULL, 0, NULL, m_pShadowMaps[nLightType][sunIndex], /*cubeIndex*/POSITIVE_Y);
+	}
 #endif
 
 	// clear it

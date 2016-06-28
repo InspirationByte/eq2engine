@@ -115,7 +115,7 @@ struct levCellObject_s
 	ushort		tile_y;
 
 	ushort		objectDefId : 15;
-	ushort		defFromRegion : 1;
+	ushort		uniqueRegionModel : 1;
 
 	char		name[LEV_OBJECT_NAME_LENGTH];
 };

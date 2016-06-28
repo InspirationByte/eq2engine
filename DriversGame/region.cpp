@@ -695,21 +695,24 @@ void CLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObjectDef
 		regionObject_t* robj = m_objects[i];
 		CLevObjectDef* def = robj->def;
 
-		int objectDefId = FindObjectContainer(listObjects, def);
-
-		if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-		{
-			 if( final && !(def->m_info.modelflags & LMODEL_FLAG_NONUNIQUE) )
-				objectDefId = modelList.addUnique( def->m_model );
-		}
-
 		levCellObject_t object;
+
+		if(	def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC && 
+			!(def->m_info.modelflags & LMODEL_FLAG_NONUNIQUE) &&
+			final)
+		{
+			object.objectDefId = modelList.addUnique( def->m_model );
+			object.uniqueRegionModel = 1;
+		}
+		else
+		{
+			object.objectDefId = FindObjectContainer(listObjects, def);
+			object.uniqueRegionModel = 0;
+		}
 
 		// copy name
 		memset(object.name, 0, LEV_OBJECT_NAME_LENGTH);
 		strncpy(object.name,robj->name.c_str(), LEV_OBJECT_NAME_LENGTH);
-
-		object.objectDefId = objectDefId;
 
 		object.tile_x = m_objects[i]->tile_x;
 		object.tile_y = m_objects[i]->tile_y;

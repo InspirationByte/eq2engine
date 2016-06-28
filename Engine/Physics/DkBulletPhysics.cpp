@@ -383,8 +383,8 @@ ConVar ph_contact_min_dist("ph_contact_min_dist", "-0.005f", "Minimum distance/i
 
 bool EQContactAddedCallback(btManifoldPoint& cp,const btCollisionObjectWrapper* colObj0,int partId0,int index0,const btCollisionObjectWrapper* colObj1,int partId1,int index1)
 {
-	AdjustSingleSidedContact(cp,colObj0, colObj1, partId0, index0);
-	AdjustSingleSidedContact(cp,colObj1, colObj0, partId1, index1);
+	//AdjustSingleSidedContact(cp,colObj0, colObj1, partId0, index0);
+	//AdjustSingleSidedContact(cp,colObj1, colObj0, partId1, index1);
 
 	CPhysicsObject*		pObjA = (CPhysicsObject*)colObj0->getCollisionObject()->getUserPointer();
 	CPhysicsObject*		pObjB = (CPhysicsObject*)colObj1->getCollisionObject()->getUserPointer();
