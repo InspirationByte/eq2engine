@@ -8,6 +8,8 @@
 #ifndef GAMEOBJECT_H
 #define GAMEOBJECT_H
 
+#define EQ_DRVSYN_DEFAULT_SOUND_DISTANCE (100.0f)
+
 #include "LuaBinding_Drivers.h"
 
 #include "occluderSet.h"

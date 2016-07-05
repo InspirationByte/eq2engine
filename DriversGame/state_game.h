@@ -11,8 +11,6 @@
 #include "ui_luaMenu.h"
 #include "StateManager.h"
 
-#define EQ_DRVSYN_DEFAULT_SOUND_DISTANCE (100.0f)
-
 enum EPauseMode
 {
 	PAUSEMODE_NONE = 0,

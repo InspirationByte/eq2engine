@@ -15,10 +15,6 @@
 
 #include "imaging/ImageLoader.h"
 
-#ifdef EDITOR
-#include "../DriversEditor/level_generator.h"
-#endif // EDITOR
-
 #define AI_NAVIGATION_GRID_SCALE	2
 
 #define ROADNEIGHBOUR_OFFS_X(x)		{x, x-1, x, x+1}		// non-diagonal
@@ -82,15 +78,12 @@ class CGameLevel : public CEqThread
 
 public:
 	CGameLevel();
+	virtual ~CGameLevel() {}
 
 	void					Init(int wide, int tall, int cells, bool isCleanLevel);	// number of height fields
 	void					Cleanup();
 
 	bool					Load(const char* levelname, kvkeybase_t* kvDefs);
-
-#ifdef EDITOR
-	bool					Save(const char* levelname, bool final = false);
-#endif // EDITOR
 
 	//---------------------------------
 
@@ -152,10 +145,6 @@ public:
 	void					QueryNearestRegions(const Vector3D& pos, bool waitLoad = false);
 	void					QueryNearestRegions(const IVector2D& point, bool waitLoad = false);
 
-#ifdef EDITOR
-	void					Ed_Prerender(const Vector3D& cameraPosition);
-#endif // EDITOR
-
 	void					CollectVisibleOccluders(occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition);
 	void					Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& frustumOccluders, int nRenderFlags);
 
@@ -184,11 +173,6 @@ public:
 
 	void					Nav_ClearCellStates();
 
-#ifdef EDITOR
-	int						Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CLevelRegion** reg, float& dist);
-	bool					Ed_GenerateMap(LevelGenParams_t& genParams, const CImage* img);
-#endif
-
 	// TODO: render code
 
 	DkList<CLevObjectDef*>	m_objectDefs;
@@ -206,11 +190,6 @@ protected:
 
 	int						Run();
 
-#ifdef EDITOR
-	void					WriteLevelRegions(IVirtualStream* stream, const char* levelname, bool final);
-	void					WriteObjectDefsLump(IVirtualStream* stream);
-	void					WriteHeightfieldsLump(IVirtualStream* stream);
-#endif // EDITOR
 	void					ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs);
 	void					ReadHeightfieldsLump(IVirtualStream* stream);
 
@@ -219,8 +198,11 @@ protected:
 	void					LoadRegionAt(int regionIndex, IVirtualStream* stream); // loads region
 
 	//--------------------------------------------------------
-
+#ifdef EDITOR
+	CEditorLevelRegion*		m_regions;
+#else
 	CLevelRegion*			m_regions;
+#endif // EDITOR
 
 	int*					m_regionOffsets;			// spooling data offsets in LEVLUMP_REGIONS
 	int*					m_roadOffsets;				// spooling data offsets in LEVLUMP_ROADS

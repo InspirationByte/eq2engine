@@ -9,6 +9,7 @@
 #include "level.h"
 #include "IMaterialSystem.h"
 #include "IDebugOverlay.h"
+#include "world.h"
 
 #include "VirtualStream.h"
 
@@ -469,4 +470,758 @@ bool GenerateBuildingModel( buildingSource_t* building )
 	building->model = generator.GenerateModel();
 
 	return (building->model != NULL);
+}
+
+//-------------------------------------------------------------------------------------------
+
+bool CEditorLevel::Save(const char* levelname, bool isFinal)
+{
+	IFile* pFile = g_fileSystem->Open(varargs("levels/%s.lev", levelname), "wb", SP_MOD);
+
+	if(!pFile)
+	{
+		MsgError("can't open level '%s' for write\n", levelname);
+		return false;
+	}
+
+	levHdr_t hdr;
+	hdr.ident = LEVEL_IDENT;
+	hdr.version = LEVEL_VERSION;
+
+	pFile->Write(&hdr, sizeof(levHdr_t), 1);
+
+	// write models first if available
+	WriteObjectDefsLump( pFile );
+
+	// write region info
+	WriteLevelRegions( pFile, isFinal );
+
+	levLump_t endLump;
+	endLump.type = LEVLUMP_ENDMARKER;
+	endLump.size = 0;
+
+	// write lump header and data
+	pFile->Write(&endLump, 1, sizeof(levLump_t));
+
+	g_fileSystem->Close(pFile);
+
+	m_levelName = levelname;
+
+	return true;
+}
+
+void CEditorLevel::WriteObjectDefsLump(IVirtualStream* stream)
+{
+	// if(m_finalBuild)
+	//	return;
+
+	if(m_objectDefs.numElem() == 0)
+		return;
+
+	CMemoryStream modelsLump;
+	modelsLump.Open(NULL, VS_OPEN_WRITE, 2048);
+
+	int numModels = m_objectDefs.numElem();
+
+	modelsLump.Write(&numModels, 1, sizeof(int));
+
+	// write model names
+	CMemoryStream modelNamesData;
+	modelNamesData.Open(NULL, VS_OPEN_WRITE, 2048);
+
+	char nullSymbol = '\0';
+
+	for(int i = 0; i < m_objectDefs.numElem(); i++)
+	{
+		modelNamesData.Print(m_objectDefs[i]->m_name.c_str());
+		modelNamesData.Write(&nullSymbol, 1, 1);
+	}
+
+	modelNamesData.Write(&nullSymbol, 1, 1);
+
+	int modelNamesSize = modelNamesData.Tell();
+
+	modelsLump.Write(&modelNamesSize, 1, sizeof(int));
+	modelsLump.Write(modelNamesData.GetBasePointer(), 1, modelNamesSize);
+
+	// write model data
+	for(int i = 0; i < m_objectDefs.numElem(); i++)
+	{
+		CMemoryStream modeldata;
+		modeldata.Open(NULL, VS_OPEN_WRITE, 2048);
+
+		if(m_objectDefs[i]->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		{
+			m_objectDefs[i]->m_model->Save( &modeldata );
+		}
+		else if(m_objectDefs[i]->m_info.type == LOBJ_TYPE_OBJECT_CFG)
+		{
+			// do nothing
+		}
+
+		int modelSize = modeldata.Tell();
+
+		m_objectDefs[i]->m_info.size = modelSize;
+
+		modelsLump.Write(&m_objectDefs[i]->m_info, 1, sizeof(levObjectDefInfo_t));
+		modelsLump.Write(modeldata.GetBasePointer(), 1, modelSize);
+	}
+
+	// compute lump size
+	levLump_t modelLumpInfo;
+	modelLumpInfo.type = LEVLUMP_OBJECTDEFS;
+	modelLumpInfo.size = modelsLump.Tell();
+
+	// write lump header and data
+	stream->Write(&modelLumpInfo, 1, sizeof(levLump_t));
+	stream->Write(modelsLump.GetBasePointer(), 1, modelsLump.Tell());
+}
+
+
+void CEditorLevel::WriteHeightfieldsLump(IVirtualStream* stream)
+{
+	CMemoryStream hfielddata;
+	hfielddata.Open(NULL, VS_OPEN_WRITE, 16384);
+
+	// build region offsets
+	for(int x = 0; x < m_wide; x++)
+	{
+		for(int y = 0; y < m_tall; y++)
+		{
+			int idx = y*m_wide+x;
+
+			CLevelRegion* reg = &m_regions[idx];
+
+			// write each region if not empty
+			if( !reg->IsRegionEmpty() )
+			{
+				// heightfield index
+				hfielddata.Write(&idx, 1, sizeof(int));
+
+				int numFields = reg->GetNumHFields();
+
+				int numNonEmptyFields = reg->GetNumNomEmptyHFields();
+				hfielddata.Write(&numNonEmptyFields, 1, sizeof(int));
+
+				// write region heightfield data
+				for(int i = 0; i < numFields; i++)
+				{
+					if(	reg->m_heightfield[i] &&
+						!reg->m_heightfield[i]->IsEmpty())
+					{
+						reg->m_heightfield[i]->WriteToStream( &hfielddata );
+					}
+				}
+			}
+		}
+	}
+
+	// compute lump size
+	levLump_t hfieldLumpInfo;
+	hfieldLumpInfo.type = LEVLUMP_HEIGHTFIELDS;
+	hfieldLumpInfo.size = hfielddata.Tell();
+
+	// write lump header and data
+	stream->Write(&hfieldLumpInfo, 1, sizeof(levLump_t));
+	stream->Write(hfielddata.GetBasePointer(), 1, hfielddata.Tell());
+}
+
+struct zoneRegions_t
+{
+	EqString zoneName;
+	DkList<int> regionList;
+};
+
+void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
+{
+	// ---------- LEVLUMP_REGIONINFO ----------
+	levRegionMapInfo_t regMapInfoHdr;
+
+	regMapInfoHdr.numRegionsWide = m_wide;
+	regMapInfoHdr.numRegionsTall = m_tall;
+	regMapInfoHdr.cellsSize = m_cellsSize;
+	regMapInfoHdr.numRegions = 0; // to be proceed
+
+	int* regionOffsetArray = new int[m_wide*m_tall];
+	int* roadOffsetArray = new int[m_wide*m_tall];
+	int* occluderLstOffsetArray = new int[m_wide*m_tall];
+
+	// allocate writeable data streams
+	CMemoryStream regionDataStream;
+	regionDataStream.Open(NULL, VS_OPEN_WRITE, 2048);
+
+	CMemoryStream roadDataStream;
+	roadDataStream.Open(NULL, VS_OPEN_WRITE, 2048);
+
+	CMemoryStream occluderDataStream;
+	occluderDataStream.Open(NULL, VS_OPEN_WRITE, 2048);
+
+	CMemoryStream zoneDataStream;
+	zoneDataStream.Open(NULL, VS_OPEN_WRITE, 2048);
+
+	DkList<zoneRegions_t> zoneRegionList;
+
+	// build region offsets
+	for(int x = 0; x < m_wide; x++)
+	{
+		for(int y = 0; y < m_tall; y++)
+		{
+			int idx = y*m_wide+x;
+
+			CEditorLevelRegion& reg = *(CEditorLevelRegion*)&m_regions[idx];
+
+			// write each region if not empty
+			if( !reg.IsRegionEmpty() )
+			{
+				regMapInfoHdr.numRegions++;
+
+				regionOffsetArray[idx] = regionDataStream.Tell();
+				roadOffsetArray[idx] = roadDataStream.Tell();
+				occluderLstOffsetArray[idx] = occluderDataStream.Tell();
+
+				// write em all
+				reg.WriteRegionData( &regionDataStream, m_objectDefs, isFinal );
+				reg.WriteRegionRoads( &roadDataStream );
+				reg.WriteRegionOccluders( &occluderDataStream );
+
+				for(int i = 0; i < reg.m_zones.numElem(); i++)
+				{
+					regZone_t& zone = reg.m_zones[i];
+
+					// find needed region list
+					zoneRegions_t* zoneRegions = zoneRegionList.findFirst( [zone](const zoneRegions_t& x) {return !x.zoneName.CompareCaseIns(zone.zoneName);} );
+
+					if(!zoneRegions) // and if not found - create
+					{
+						zoneRegions_t zr;
+						zr.zoneName = zone.zoneName;
+
+						int idx = zoneRegionList.append( zr );
+						zoneRegions = &zoneRegionList[idx];
+					}
+
+					// add region index to this zone
+					zoneRegions->regionList.append( idx );
+				}
+			}
+			else
+			{
+				regionOffsetArray[idx] = -1;
+				roadOffsetArray[idx] = -1;
+				occluderLstOffsetArray[idx] = -1;
+			}
+		}
+	}
+
+	// LEVLUMP_REGIONMAPINFO
+	{
+		CMemoryStream regInfoLump;
+		regInfoLump.Open(NULL, VS_OPEN_WRITE, 2048);
+
+		// write regions header
+		regInfoLump.Write(&regMapInfoHdr, 1, sizeof(levRegionMapInfo_t));
+
+		// write region offset array
+		regInfoLump.Write(regionOffsetArray, m_wide*m_tall, sizeof(int));
+
+		// compute lump size
+		levLump_t regInfoLumpInfo;
+		regInfoLumpInfo.type = LEVLUMP_REGIONMAPINFO;
+		regInfoLumpInfo.size = regInfoLump.Tell();
+
+		// write lump header and data
+		file->Write(&regInfoLumpInfo, 1, sizeof(levLump_t));
+		file->Write(regInfoLump.GetBasePointer(), 1, regInfoLump.Tell());
+
+		regInfoLump.Close();
+	}
+
+	// LEVLUMP_HEIGHTFIELDS
+	{
+		WriteHeightfieldsLump( file );
+	}
+
+	// LEVLUMP_ROADS
+	{
+		CMemoryStream roadsLump;
+		roadsLump.Open(NULL, VS_OPEN_WRITE, 2048);
+
+		// write road offset array
+		roadsLump.Write(roadOffsetArray, m_wide*m_tall, sizeof(int));
+
+		// write road data
+		roadsLump.Write(roadDataStream.GetBasePointer(), 1, roadDataStream.Tell());
+
+		// compute lump size
+		levLump_t roadDataLumpInfo;
+		roadDataLumpInfo.type = LEVLUMP_ROADS;
+		roadDataLumpInfo.size = roadsLump.Tell();
+
+		// write lump header and data
+		file->Write(&roadDataLumpInfo, 1, sizeof(levLump_t));
+		file->Write(roadsLump.GetBasePointer(), 1, roadsLump.Tell());
+
+		file->Flush();
+		roadsLump.Close();
+	}
+
+	// LEVLUMP_OCCLUDERS
+	{
+		CMemoryStream occludersLump;
+		occludersLump.Open(NULL, VS_OPEN_WRITE, 2048);
+
+		occludersLump.Write(occluderLstOffsetArray, m_wide*m_tall, sizeof(int));
+		occludersLump.Write(occluderDataStream.GetBasePointer(), 1, occluderDataStream.Tell());
+
+		levLump_t occludersLumpInfo;
+		occludersLumpInfo.type = LEVLUMP_OCCLUDERS;
+		occludersLumpInfo.size = occludersLump.Tell();
+
+		// write lump header and data
+		file->Write(&occludersLumpInfo, 1, sizeof(levLump_t));
+
+		// write occluder offset array
+		file->Write(occludersLump.GetBasePointer(), 1, occludersLump.Tell());
+
+		file->Flush();
+		occludersLump.Close();
+	}
+
+	// LEVLUMP_REGIONS
+	{
+		levLump_t regDataLumpInfo;
+		regDataLumpInfo.type = LEVLUMP_REGIONS;
+		regDataLumpInfo.size = regionDataStream.Tell();
+
+		// write lump header and data
+		file->Write(&regDataLumpInfo, 1, sizeof(levLump_t));
+		file->Write(regionDataStream.GetBasePointer(), 1, regionDataStream.Tell());
+
+		file->Flush();
+		regionDataStream.Close();
+	}
+
+	// LEVLUMP_ZONES
+	{
+		CMemoryStream zonesRegionsLump;
+		zonesRegionsLump.Open(NULL, VS_OPEN_WRITE, 2048);
+
+		int zoneCount = zoneRegionList.numElem();
+		zonesRegionsLump.Write(&zoneCount, 1, sizeof(int));
+
+		levZoneRegions_t zoneHdr;
+
+		// process all zones
+		for(int i = 0; i < zoneRegionList.numElem(); i++)
+		{
+			memset(&zoneHdr, 0, sizeof(zoneHdr));
+			strncpy(zoneHdr.name, zoneRegionList[i].zoneName.c_str(), sizeof(zoneHdr.name) );
+
+			zoneHdr.numRegions = zoneRegionList[i].regionList.numElem();
+
+			// write header
+			zonesRegionsLump.Write(&zoneHdr, 1, sizeof(zoneHdr));
+
+			// write region indexes
+			zonesRegionsLump.Write(zoneRegionList[i].regionList.ptr(), 1, sizeof(int)*zoneHdr.numRegions);
+		}
+
+		levLump_t zoneLumpInfo;
+		zoneLumpInfo.type = LEVLUMP_ZONES;
+		zoneLumpInfo.size = zonesRegionsLump.Tell();
+
+		// write lump header and data
+		file->Write(&zoneLumpInfo, 1, sizeof(levLump_t));
+		file->Write(zonesRegionsLump.GetBasePointer(), 1, zonesRegionsLump.Tell());
+
+		file->Flush();
+		zonesRegionsLump.Close();
+	}
+
+	delete [] regionOffsetArray;
+	delete [] roadOffsetArray;
+	delete [] occluderLstOffsetArray;
+
+	//-------------------------------------------------------------------------------
+}
+
+void CEditorLevel::ReadLevelBuildings()
+{
+
+}
+
+void CEditorLevel::WriteLevelBuildings()
+{
+
+}
+
+int CEditorLevel::Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CLevelRegion** reg, float& dist)
+{
+	float max_dist = MAX_COORD_UNITS;
+	int bestDistrefIdx = NULL;
+	CLevelRegion* bestReg = NULL;
+
+	// build region offsets
+	for(int x = 0; x < m_wide; x++)
+	{
+		for(int y = 0; y < m_tall; y++)
+		{
+			int idx = y*m_wide+x;
+
+			CEditorLevelRegion& reg = *(CEditorLevelRegion*)&m_regions[idx];
+
+			float refdist = MAX_COORD_UNITS;
+			int foundIdx = reg.Ed_SelectRef(start, dir, refdist);
+
+			if(foundIdx != -1 && (refdist < max_dist))
+			{
+				max_dist = refdist;
+				bestReg = &reg;
+				bestDistrefIdx = foundIdx;
+			}
+		}
+	}
+
+	*reg = bestReg;
+	dist = max_dist;
+	return bestDistrefIdx;
+}
+
+void CEditorLevel::Ed_Prerender(const Vector3D& cameraPosition)
+{
+	Volume& frustum = g_pGameWorld->m_frustum;
+	IVector2D camPosReg;
+
+	// mark renderable regions
+	if( GetPointAt(cameraPosition, camPosReg) )
+	{
+		CEditorLevelRegion* region = (CEditorLevelRegion*)GetRegionAt(camPosReg);
+
+		// query this region
+		if(region)
+		{
+			region->m_render = frustum.IsBoxInside(region->m_bbox.minPoint, region->m_bbox.maxPoint);
+
+			if(region->m_render)
+			{
+				region->Ed_Prerender();
+				region->m_render = false;
+			}
+		}
+
+		int dx[8] = NEIGHBOR_OFFS_XDX(camPosReg.x, 1);
+		int dy[8] = NEIGHBOR_OFFS_YDY(camPosReg.y, 1);
+
+		// surrounding regions frustum
+		for(int i = 0; i < 8; i++)
+		{
+			CEditorLevelRegion* nregion = (CEditorLevelRegion*)GetRegionAt(IVector2D(dx[i], dy[i]));
+
+			if(nregion)
+			{
+				if(frustum.IsBoxInside(nregion->m_bbox.minPoint, nregion->m_bbox.maxPoint))
+				{
+					nregion->Ed_Prerender();
+					nregion->m_render = false;
+				}
+			}
+		}
+
+		//SignalWork();
+	}
+}
+
+void CEditorLevelRegion::Cleanup()
+{
+	CLevelRegion::Cleanup();
+
+	// Clear editor data
+	for(int i = 0; i < m_buildings.numElem(); i++)
+		delete m_buildings[i];
+
+	m_buildings.clear();
+}
+
+int FindObjectContainer(DkList<CLevObjectDef*>& listObjects, CLevObjectDef* container)
+{
+	for(int i = 0; i < listObjects.numElem(); i++)
+	{
+		if( listObjects[i] == container )
+			return i;
+	}
+
+	ASSERTMSG(false, "Programmer error, cannot find object definition (is editor cached it?)");
+
+	return -1;
+}
+
+void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObjectDef*>& listObjects, bool final )
+{
+	// create region model lists
+	DkList<CLevelModel*>		modelList;
+	DkList<levCellObject_t>		cellObjectsList;
+
+	cellObjectsList.resize(m_objects.numElem());
+
+	// collect models and cell objects
+	for(int i = 0; i < m_objects.numElem(); i++)
+	{
+		regionObject_t* robj = m_objects[i];
+		CLevObjectDef* def = robj->def;
+
+		levCellObject_t object;
+
+		if(	def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC && 
+			!(def->m_info.modelflags & LMODEL_FLAG_NONUNIQUE) &&
+			final)
+		{
+			object.objectDefId = modelList.addUnique( def->m_model );
+			object.uniqueRegionModel = 1;
+		}
+		else
+		{
+			object.objectDefId = FindObjectContainer(listObjects, def);
+			object.uniqueRegionModel = 0;
+		}
+
+		// copy name
+		memset(object.name, 0, LEV_OBJECT_NAME_LENGTH);
+		strncpy(object.name,robj->name.c_str(), LEV_OBJECT_NAME_LENGTH);
+
+		object.tile_x = m_objects[i]->tile_x;
+		object.tile_y = m_objects[i]->tile_y;
+		object.position = m_objects[i]->position;
+		object.rotation = m_objects[i]->rotation;
+
+		// add
+		cellObjectsList.append(object);
+	}
+
+	CMemoryStream regionData;
+	regionData.Open(NULL, VS_OPEN_WRITE, 8192);
+
+	// write model data
+	for(int i = 0; i < modelList.numElem(); i++)
+	{
+		CMemoryStream modelData;
+		modelData.Open(NULL, VS_OPEN_WRITE, 8192);
+
+		modelList[i]->Save( &modelData );
+
+		int modelSize = modelData.Tell();
+
+		regionData.Write(&modelSize, 1, sizeof(int));
+		regionData.Write(modelData.GetBasePointer(), 1, modelData.Tell());
+	}
+
+	// write cell objects list
+	for(int i = 0; i < cellObjectsList.numElem(); i++)
+	{
+		regionData.Write(&cellObjectsList[i], 1, sizeof(levCellObject_t));
+	}
+
+	levRegionDataInfo_t regdatahdr;
+	regdatahdr.numModelObjects = cellObjectsList.numElem();
+	regdatahdr.numModels = modelList.numElem();
+	regdatahdr.size = regionData.Tell();
+
+	stream->Write(&regdatahdr, 1, sizeof(levRegionDataInfo_t));
+	stream->Write(regionData.GetBasePointer(), 1, regionData.Tell());
+}
+
+
+void CEditorLevelRegion::WriteRegionRoads( IVirtualStream* stream )
+{
+	CMemoryStream cells;
+	cells.Open(NULL, VS_OPEN_WRITE, 2048);
+
+	int numRoadCells = 0;
+
+	for(int x = 0; x < m_heightfield[0]->m_sizew; x++)
+	{
+		for(int y = 0; y < m_heightfield[0]->m_sizeh; y++)
+		{
+			int idx = y*m_heightfield[0]->m_sizew + x;
+
+			if(m_roads[idx].type == ROADTYPE_NOROAD && m_roads[idx].flags == 0)
+				continue;
+
+			m_roads[idx].posX = x;
+			m_roads[idx].posY = y;
+
+			cells.Write(&m_roads[idx], 1, sizeof(levroadcell_t));
+			numRoadCells++;
+		}
+	}
+
+	stream->Write(&numRoadCells, 1, sizeof(int));
+	stream->Write(cells.GetBasePointer(), 1, cells.Tell());
+}
+
+void CEditorLevelRegion::WriteRegionOccluders(IVirtualStream* stream)
+{
+	int numOccluders = m_occluders.numElem();
+
+	stream->Write(&numOccluders, 1, sizeof(int));
+	stream->Write(m_occluders.ptr(), 1, sizeof(levOccluderLine_t)*numOccluders);
+}
+
+void CEditorLevelRegion::ReadRegionBuildings( IVirtualStream* stream )
+{
+
+}
+
+void CEditorLevelRegion::WriteRegionBuildings( IVirtualStream* stream )
+{
+
+}
+
+float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D& ray_dir)
+{
+	const BoundingBox& bbox = pModel->GetAABB();
+
+	float f1,f2;
+	if(!bbox.IntersectsRay(ray_start, ray_dir, f1,f2))
+		return MAX_COORD_UNITS;
+
+	float best_dist = MAX_COORD_UNITS;
+	float fraction = 1.0f;
+
+	studiohdr_t* pHdr = pModel->GetHWData()->pStudioHdr;
+	int nLod = 0;
+
+	for(int i = 0; i < pHdr->numbodygroups; i++)
+	{
+		int nLodableModelIndex = pHdr->pBodyGroups(i)->lodmodel_index;
+		int nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+
+		while(nLod > 0 && nModDescId != -1)
+		{
+			nLod--;
+			nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+		}
+
+		if(nModDescId == -1)
+			continue;
+
+		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+		{
+			modelgroupdesc_t* pGroup = pHdr->pModelDesc(nModDescId)->pGroup(j);
+
+			uint32 *pIndices = pGroup->pVertexIdx(0);
+
+			int numTriangles = floor((float)pGroup->numindices / 3.0f);
+			int validIndexes = numTriangles * 3;
+
+			for(int k = 0; k < validIndexes; k+=3)
+			{
+				Vector3D v0,v1,v2;
+
+				v0 = pGroup->pVertex(pIndices[k])->point;
+				v1 = pGroup->pVertex(pIndices[k+1])->point;
+				v2 = pGroup->pVertex(pIndices[k+2])->point;
+
+				float dist = MAX_COORD_UNITS+1;
+
+				if(IsRayIntersectsTriangle(v0,v1,v2, ray_start, ray_dir, dist))
+				{
+					if(dist < best_dist && dist > 0)
+					{
+						best_dist = dist;
+						fraction = dist;
+
+						//outPos = lerp(start, end, dist);
+					}
+				}
+			}
+		}
+	}
+
+	return fraction;
+}
+
+int CEditorLevelRegion::Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float& dist)
+{
+	int bestDistrefIdx = -1;
+	float fMaxDist = MAX_COORD_UNITS;
+
+	for(int i = 0; i < m_objects.numElem(); i++)
+	{
+		Matrix4x4 wmatrix = GetModelRefRenderMatrix(this, m_objects[i]);
+
+		Vector3D tray_start = ((!wmatrix)*Vector4D(start, 1)).xyz();
+		Vector3D tray_dir = (!wmatrix.getRotationComponent())*dir;
+
+		float raydist = MAX_COORD_UNITS;
+
+		CLevObjectDef* def = m_objects[i]->def;
+
+		if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		{
+			raydist = def->m_model->Ed_TraceRayDist(tray_start, tray_dir);
+		}
+		else
+		{
+			raydist = CheckStudioRayIntersection(def->m_defModel, tray_start, tray_dir);
+		}
+
+		if(raydist < fMaxDist)
+		{
+			fMaxDist = raydist;
+			bestDistrefIdx = i;
+		}
+	}
+
+	dist = fMaxDist;
+
+	return bestDistrefIdx;
+}
+
+int CEditorLevelRegion::Ed_ReplaceDefs(CLevObjectDef* whichReplace, CLevObjectDef* replaceTo)
+{
+	int numReplaced = 0;
+
+	for(int i = 0; i < m_objects.numElem(); i++)
+	{
+		if(m_objects[i]->def == whichReplace)
+		{
+			m_objects[i]->def = replaceTo;
+			numReplaced++;
+		}
+	}
+
+	return numReplaced;
+}
+
+void CEditorLevelRegion::Ed_Prerender()
+{
+	for(int i = 0; i < m_objects.numElem(); i++)
+	{
+		CLevObjectDef* cont = m_objects[i]->def;
+
+		Matrix4x4 mat = GetModelRefRenderMatrix(this, m_objects[i]);
+
+		DrawDefLightData(mat, cont->m_lightData, 1.0f);
+	}
+}
+
+void CEditorLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& frustumOccluders, int nRenderFlags)
+{
+	CLevelRegion::Render(cameraPosition, viewProj, frustumOccluders, nRenderFlags);
+
+	// render completed buildings
+	for(int i = 0; i < m_buildings.numElem(); i++)
+	{
+		RenderBuilding(m_buildings[i], NULL);
+	}
+}
+
+void LoadLevelBuildings( const char* levelName )
+{
+	
+}
+
+void SaveLevelBuildings( const char* levelName )
+{
+	
 }

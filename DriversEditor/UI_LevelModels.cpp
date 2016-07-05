@@ -274,7 +274,7 @@ public:
 				{
 					int idx = y*g_pGameWorld->m_level.m_wide + x;
 
-					CLevelRegion* pReg = g_pGameWorld->m_level.GetRegionAt(IVector2D(x,y));
+					CEditorLevelRegion* pReg = (CEditorLevelRegion*)g_pGameWorld->m_level.GetRegionAt(IVector2D(x,y));
 
 					if(pReg)
 						numReplaced += pReg->Ed_ReplaceDefs( m_whichReplace, m_replaceTo );

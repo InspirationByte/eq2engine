@@ -83,13 +83,16 @@ bool CUndoableObject::Undoable_Redo()
 	if(m_curHist == NO_HISTORY)
 		m_curHist = 0;
 
+	WarningMsg("Cur hist: %d, total: %d\n", m_curHist, m_histOffsets.numElem());
+
 	// no redo
-	if(m_curHist+1 > m_histOffsets.numElem()-1)
+	if(m_curHist > m_histOffsets.numElem()-1)
 		return false;
+
+	m_curHist++;
 
 	m_modifyMark = false;
 
-	m_curHist++;
 	m_changesStream.Seek( m_histOffsets[m_curHist].start, VS_SEEK_SET );
 	Undoable_ReadObjectData(&m_changesStream);
 	
@@ -185,7 +188,8 @@ void CEditorActionObserver::Redo()
 		return;
 
 	m_curHist++;
-	m_events[m_curHist].object->Undoable_Redo();
+	CUndoableObject* undoable = m_events[m_curHist].object;
+	undoable->Undoable_Redo();
 }
 
 //---------------------------------------------------

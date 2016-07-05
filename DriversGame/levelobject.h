@@ -92,6 +92,8 @@ class CLevelModel : public RefCountedObject
 	friend class CLevObjectDef;
 	friend class CLayerModel;
 	friend class CBuildingModelGenerator;
+
+	friend class CEditorLevelRegion;
 public:
 	PPMEM_MANAGED_OBJECT()
 

@@ -120,6 +120,8 @@ void CDrvSynHUDManager::FadeOut()
 
 }
 
+ConVar hud_map_pos("hud_map_pos", "0", "Map position (0 - bottom, 1 - top)", CV_ARCHIVE);
+
 // render the screen with maps and shit
 void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , const Matrix4x4& projMatrix, const Matrix4x4& viewMatrix )
 {
@@ -312,6 +314,11 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 			IVector2D mapSize(hud_mapSize.GetInt());
 			IVector2D mapPos = screenSize-mapSize-IVector2D(55);
+
+			if(hud_map_pos.GetInt() == 1)
+			{
+				mapPos.y = 55;
+			}
 			
 			float viewRotation = DEG2RAD( camera.GetAngles().y + 180);
 			Vector3D viewPos = Vector3D(camera.GetOrigin().xz() * Vector2D(1.0f,-1.0f), 0.0f);

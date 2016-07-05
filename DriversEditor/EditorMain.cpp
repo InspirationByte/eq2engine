@@ -254,7 +254,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	g_sysConsole->ExecuteCommandBuffer();
 
 	soundsystem->Init();
-	ses->Init();
+	ses->Init(EQ_DRVSYN_DEFAULT_SOUND_DISTANCE);
 	
 	m_nbPanel = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxSize( -1,300 ), wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer4;

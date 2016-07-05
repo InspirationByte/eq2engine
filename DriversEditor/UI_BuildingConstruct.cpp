@@ -106,9 +106,9 @@ CBuildingLayerEditDialog::CBuildingLayerEditDialog( wxWindow* parent )
 	bSizer18 = new wxBoxSizer( wxHORIZONTAL );
 	
 	m_renderPanel = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	//m_renderPanel->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ) );
 
-	m_renderPanel->SetDropTarget(this);
+	// THIS CRASHES ON EXIT
+	//m_renderPanel->SetDropTarget(this);
 
 	m_pSwapChain = materials->CreateSwapChain(m_renderPanel->GetHandle());
 	
@@ -1157,6 +1157,8 @@ void CUI_BuildingConstruct::OnLevelLoad()
 	CBaseTilebasedEditor::OnLevelLoad();
 	m_layerCollList->LoadLayerCollections( g_pGameWorld->GetLevelName() );
 
+	
+
 	m_mode = ED_BUILD_READY;
 }
 
@@ -1166,6 +1168,7 @@ void CUI_BuildingConstruct::OnLevelSave()
 	m_layerCollList->SaveLayerCollections( g_pGameWorld->GetLevelName() );
 
 	// save each region of level
+
 }
 
 void CUI_BuildingConstruct::OnLevelUnload()
@@ -1341,10 +1344,10 @@ void CUI_BuildingConstruct::CompleteBuilding()
 		return;
 	}
 
-	CLevelRegion* region = g_pGameWorld->m_level.GetRegionAtPosition(newBuilding->modelPosition);
+	CEditorLevelRegion* region = (CEditorLevelRegion*)g_pGameWorld->m_level.GetRegionAtPosition(newBuilding->modelPosition);
 
 	if( !region )
-		region = m_selectedRegion;
+		region = (CEditorLevelRegion*)m_selectedRegion;
 
 	// add building to the region
 	int newIdx = region->m_buildings.append( newBuilding );

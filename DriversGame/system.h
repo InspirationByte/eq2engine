@@ -49,6 +49,9 @@ public:
 	void				TrapJoyBall_Event( short ball, short xrel, short yrel );
 	void				TrapJoyButton_Event( short button, bool down);
 
+	void				TouchMotion_Event( float x, float y );
+	void				Touch_Event( float x, float y, bool down );
+
 	void				StartTrapMode();
 	bool				IsTrapping();
 	bool				CheckDoneTrapping( int& buttons, int& key );

@@ -231,21 +231,6 @@ Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regionObject_t* ref)
 	return m;
 }
 
-#ifdef EDITOR
-void CLevelRegion::Ed_Prerender()
-{
-	for(int i = 0; i < m_objects.numElem(); i++)
-	{
-		CLevObjectDef* cont = m_objects[i]->def;
-
-		Matrix4x4 mat = GetModelRefRenderMatrix(this, m_objects[i]);
-
-		DrawDefLightData(mat, cont->m_lightData, 1.0f);
-	}
-}
-#endif // EDITOR
-
-
 static Vector3D s_sortCamPos;
 
 int occluderComparator(levOccluderLine_t* const& a, levOccluderLine_t* const& b)
@@ -399,14 +384,6 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 #endif	// EDITOR
 	}
 
-#ifdef EDITOR
-	// render completed buildings
-	for(int i = 0; i < m_buildings.numElem(); i++)
-	{
-		RenderBuilding(m_buildings[i], NULL);
-	}
-#endif // EDITOR
-
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	for(int i = 0; i < GetNumHFields(); i++)
@@ -463,14 +440,6 @@ void CLevelRegion::InitRoads()
 void CLevelRegion::Cleanup()
 {
 	m_level->m_mutex.Lock();
-
-#ifdef EDITOR
-	// Clear editor data
-	for(int i = 0; i < m_buildings.numElem(); i++)
-		delete m_buildings[i];
-
-	m_buildings.clear();
-#endif // EDITOR
 
 	for(int i = 0; i < GetNumHFields(); i++)
 	{
@@ -544,215 +513,6 @@ int	CLevelRegion::GetNumNomEmptyHFields() const
 	}
 
 	return nCount;
-}
-
-#ifdef EDITOR
-
-float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D& ray_dir)
-{
-	const BoundingBox& bbox = pModel->GetAABB();
-
-	float f1,f2;
-	if(!bbox.IntersectsRay(ray_start, ray_dir, f1,f2))
-		return MAX_COORD_UNITS;
-
-	float best_dist = MAX_COORD_UNITS;
-	float fraction = 1.0f;
-
-	studiohdr_t* pHdr = pModel->GetHWData()->pStudioHdr;
-	int nLod = 0;
-
-	for(int i = 0; i < pHdr->numbodygroups; i++)
-	{
-		int nLodableModelIndex = pHdr->pBodyGroups(i)->lodmodel_index;
-		int nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
-
-		while(nLod > 0 && nModDescId != -1)
-		{
-			nLod--;
-			nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
-		}
-
-		if(nModDescId == -1)
-			continue;
-
-		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
-		{
-			modelgroupdesc_t* pGroup = pHdr->pModelDesc(nModDescId)->pGroup(j);
-
-			uint32 *pIndices = pGroup->pVertexIdx(0);
-
-			int numTriangles = floor((float)pGroup->numindices / 3.0f);
-			int validIndexes = numTriangles * 3;
-
-			for(int k = 0; k < validIndexes; k+=3)
-			{
-				Vector3D v0,v1,v2;
-
-				v0 = pGroup->pVertex(pIndices[k])->point;
-				v1 = pGroup->pVertex(pIndices[k+1])->point;
-				v2 = pGroup->pVertex(pIndices[k+2])->point;
-
-				float dist = MAX_COORD_UNITS+1;
-
-				if(IsRayIntersectsTriangle(v0,v1,v2, ray_start, ray_dir, dist))
-				{
-					if(dist < best_dist && dist > 0)
-					{
-						best_dist = dist;
-						fraction = dist;
-
-						//outPos = lerp(start, end, dist);
-					}
-				}
-			}
-		}
-	}
-
-	return fraction;
-}
-
-int CLevelRegion::Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float& dist)
-{
-	int bestDistrefIdx = -1;
-	float fMaxDist = MAX_COORD_UNITS;
-
-	for(int i = 0; i < m_objects.numElem(); i++)
-	{
-		Matrix4x4 wmatrix = GetModelRefRenderMatrix(this, m_objects[i]);
-
-		Vector3D tray_start = ((!wmatrix)*Vector4D(start, 1)).xyz();
-		Vector3D tray_dir = (!wmatrix.getRotationComponent())*dir;
-
-		float raydist = MAX_COORD_UNITS;
-
-		CLevObjectDef* def = m_objects[i]->def;
-
-		if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-		{
-			raydist = def->m_model->Ed_TraceRayDist(tray_start, tray_dir);
-		}
-		else
-		{
-			raydist = CheckStudioRayIntersection(def->m_defModel, tray_start, tray_dir);
-		}
-
-		if(raydist < fMaxDist)
-		{
-			fMaxDist = raydist;
-			bestDistrefIdx = i;
-		}
-	}
-
-	dist = fMaxDist;
-
-	return bestDistrefIdx;
-}
-
-int CLevelRegion::Ed_ReplaceDefs(CLevObjectDef* whichReplace, CLevObjectDef* replaceTo)
-{
-	int numReplaced = 0;
-
-	for(int i = 0; i < m_objects.numElem(); i++)
-	{
-		if(m_objects[i]->def == whichReplace)
-		{
-			m_objects[i]->def = replaceTo;
-			numReplaced++;
-		}
-	}
-
-	return numReplaced;
-}
-
-#endif // EDITOR
-
-
-int FindObjectContainer(DkList<CLevObjectDef*>& listObjects, CLevObjectDef* container)
-{
-	for(int i = 0; i < listObjects.numElem(); i++)
-	{
-		if( listObjects[i] == container )
-			return i;
-	}
-
-	ASSERTMSG(false, "Programmer error, cannot find object definition (is editor cached it?)");
-
-	return -1;
-}
-
-void CLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObjectDef*>& listObjects, bool final )
-{
-	// create region model lists
-	DkList<CLevelModel*>		modelList;
-	DkList<levCellObject_t>		cellObjectsList;
-
-	cellObjectsList.resize(m_objects.numElem());
-
-	// collect models and cell objects
-	for(int i = 0; i < m_objects.numElem(); i++)
-	{
-		regionObject_t* robj = m_objects[i];
-		CLevObjectDef* def = robj->def;
-
-		levCellObject_t object;
-
-		if(	def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC && 
-			!(def->m_info.modelflags & LMODEL_FLAG_NONUNIQUE) &&
-			final)
-		{
-			object.objectDefId = modelList.addUnique( def->m_model );
-			object.uniqueRegionModel = 1;
-		}
-		else
-		{
-			object.objectDefId = FindObjectContainer(listObjects, def);
-			object.uniqueRegionModel = 0;
-		}
-
-		// copy name
-		memset(object.name, 0, LEV_OBJECT_NAME_LENGTH);
-		strncpy(object.name,robj->name.c_str(), LEV_OBJECT_NAME_LENGTH);
-
-		object.tile_x = m_objects[i]->tile_x;
-		object.tile_y = m_objects[i]->tile_y;
-		object.position = m_objects[i]->position;
-		object.rotation = m_objects[i]->rotation;
-
-		// add
-		cellObjectsList.append(object);
-	}
-
-	CMemoryStream regionData;
-	regionData.Open(NULL, VS_OPEN_WRITE, 8192);
-
-	// write model data
-	for(int i = 0; i < modelList.numElem(); i++)
-	{
-		CMemoryStream modelData;
-		modelData.Open(NULL, VS_OPEN_WRITE, 8192);
-
-		modelList[i]->Save( &modelData );
-
-		int modelSize = modelData.Tell();
-
-		regionData.Write(&modelSize, 1, sizeof(int));
-		regionData.Write(modelData.GetBasePointer(), 1, modelData.Tell());
-	}
-
-	// write cell objects list
-	for(int i = 0; i < cellObjectsList.numElem(); i++)
-	{
-		regionData.Write(&cellObjectsList[i], 1, sizeof(levCellObject_t));
-	}
-
-	levRegionDataInfo_t regdatahdr;
-	regdatahdr.numModelObjects = cellObjectsList.numElem();
-	regdatahdr.numModels = modelList.numElem();
-	regdatahdr.size = regionData.Tell();
-
-	stream->Write(&regdatahdr, 1, sizeof(levRegionDataInfo_t));
-	stream->Write(regionData.GetBasePointer(), 1, regionData.Tell());
 }
 
 void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>& levelmodels)
@@ -946,34 +706,6 @@ void CLevelRegion::RespawnObjects()
 #endif // EDITOR
 }
 
-void CLevelRegion::WriteRegionRoads( IVirtualStream* stream )
-{
-	CMemoryStream cells;
-	cells.Open(NULL, VS_OPEN_WRITE, 2048);
-
-	int numRoadCells = 0;
-
-	for(int x = 0; x < m_heightfield[0]->m_sizew; x++)
-	{
-		for(int y = 0; y < m_heightfield[0]->m_sizeh; y++)
-		{
-			int idx = y*m_heightfield[0]->m_sizew + x;
-
-			if(m_roads[idx].type == ROADTYPE_NOROAD && m_roads[idx].flags == 0)
-				continue;
-
-			m_roads[idx].posX = x;
-			m_roads[idx].posY = y;
-
-			cells.Write(&m_roads[idx], 1, sizeof(levroadcell_t));
-			numRoadCells++;
-		}
-	}
-
-	stream->Write(&numRoadCells, 1, sizeof(int));
-	stream->Write(cells.GetBasePointer(), 1, cells.Tell());
-}
-
 void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 {
 	InitRoads();
@@ -1011,14 +743,6 @@ void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 			}
 		}
 	}
-}
-
-void CLevelRegion::WriteRegionOccluders(IVirtualStream* stream)
-{
-	int numOccluders = m_occluders.numElem();
-
-	stream->Write(&numOccluders, 1, sizeof(int));
-	stream->Write(m_occluders.ptr(), 1, sizeof(levOccluderLine_t)*numOccluders);
 }
 
 void CLevelRegion::ReadLoadOccluders(IVirtualStream* stream)

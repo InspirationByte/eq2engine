@@ -266,6 +266,8 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	// Set default cursor
 	SDL_SetCursor( staticDefaultCursor[dc_arrow] );
 
+	GetKeyBindings()->Init();
+
 	// make job threads
 	g_parallelJobs->Init( (int)ceil((float)g_cpuCaps->GetCPUCount() / 2.0f) );
 
@@ -292,7 +294,8 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 //--------------------------------------------------------------------------------------
 
-ConVar joy_debug("joy_debug", "0", "Joystick debug messages", 0);
+ConVar in_joy_debug("in_joy_debug", "0", "Joystick debug messages", 0);
+ConVar in_mouse_to_touch("in_mouse_to_touch", "1", "Convert mouse clicks to touch input", CV_ARCHIVE);
 
 void InputCommands_SDL(SDL_Event* event)
 {
@@ -358,6 +361,17 @@ void InputCommands_SDL(SDL_Event* event)
 
 			break;
 		}
+		case SDL_FINGERMOTION:
+		{
+			g_pHost->TouchMotion_Event( event->tfinger.x,event->tfinger.y);
+			break;
+		}
+		case SDL_FINGERUP:
+		case SDL_FINGERDOWN:
+		{
+			g_pHost->Touch_Event( event->tfinger.x,event->tfinger.y, (event->type == SDL_FINGERUP) ? false : true);
+			break;
+		}
 		case SDL_MOUSEWHEEL:
 		{
 			int x, y;
@@ -370,7 +384,7 @@ void InputCommands_SDL(SDL_Event* event)
 		}
 		case SDL_JOYAXISMOTION:
 		{
-			if(joy_debug.GetBool())
+			if(in_joy_debug.GetBool())
 			{
 				Msg("Joystick %d axis %d value: %d\n",
 							event->jaxis.which,
@@ -382,7 +396,7 @@ void InputCommands_SDL(SDL_Event* event)
 		}
 		case SDL_JOYHATMOTION:
 		{
-			if(joy_debug.GetBool())
+			if(in_joy_debug.GetBool())
 			{
 				Msg("Joystick %d hat %d value:",
 					event->jhat.which, event->jhat.hat);
@@ -403,7 +417,7 @@ void InputCommands_SDL(SDL_Event* event)
 		}
         case SDL_JOYBALLMOTION:
 		{
-			if(joy_debug.GetBool())
+			if(in_joy_debug.GetBool())
 			{
 				Msg("Joystick %d ball %d delta: (%d,%d)\n",
 					event->jball.which,
@@ -419,7 +433,7 @@ void InputCommands_SDL(SDL_Event* event)
 		{
 			bool down = (event->type == SDL_JOYBUTTONDOWN) ? true : false;
 
-			if(joy_debug.GetBool())
+			if(in_joy_debug.GetBool())
 			{
 				Msg("Joystick %d button %d %s\n",
 					event->jbutton.which, event->jbutton.button, down ? "down" : "up");
@@ -458,6 +472,8 @@ void CGameHost::ShutdownSystems()
 
 	// Save configuration before full unload
 	WriteCfgFile("cfg/config.cfg",true);
+
+	GetKeyBindings()->Shutdown();
 
 	// shutdown systems...
 
@@ -649,6 +665,8 @@ bool CGameHost::Frame()
 
 	g_pEqUIManager->Render();
 
+	GetKeyBindings()->DebugDraw(m_winSize);
+
 	g_pSysConsole->DrawSelf(true, m_winSize.x, m_winSize.y, m_fCurTime);
 
 	// issue the rendering of anything
@@ -742,6 +760,9 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 		return;
 	}
 
+	if(in_mouse_to_touch.GetBool())
+		g_pHost->Touch_Event( x/m_winSize.x, y/m_winSize.y, down);
+
 	if( g_pSysConsole->MouseEvent( Vector2D(x,y), buttons, down ) )
 		return;
 
@@ -788,6 +809,16 @@ void CGameHost::TrapJoyButton_Event( short button, bool down)
 
 	if(GetCurrentState())
 		GetCurrentState()->HandleKeyPress( JOYSTICK_START_KEYS + button, down );
+}
+
+void CGameHost::TouchMotion_Event( float x, float y )
+{
+	// TODO: uses this!
+}
+
+void CGameHost::Touch_Event( float x, float y, bool down )
+{
+	GetKeyBindings()->OnTouchEvent( Vector2D(x,y), down );
 }
 
 void CGameHost::ProcessKeyChar( int chr )

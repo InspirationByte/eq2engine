@@ -165,32 +165,22 @@ public:
 	PPMEM_MANAGED_OBJECT();
 
 	CLevelRegion();
-	~CLevelRegion();
+	virtual ~CLevelRegion();
 
 	void							Init();
 	void							InitRoads();
-	void							Cleanup();
+	virtual void					Cleanup();
 
 	bool							IsRegionEmpty();	///< returns true if no models or placed tiles of heightfield found here
 
-#ifdef EDITOR
-	void							Ed_Prerender();
-#endif // EDITOR
-
 	void							CollectVisibleOccluders(occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition);
-	void							Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& frustumOccluders, int nRenderFlags);
-
+	virtual void					Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& frustumOccluders, int nRenderFlags);
 
 	Vector3D						CellToPosition(int x, int y) const;
 	IVector2D						GetTileAndNeighbourRegion(int x, int y, CLevelRegion** reg) const;
 
-	void							WriteRegionData(IVirtualStream* stream, DkList<CLevObjectDef*>& models, bool final);
 	void							ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>& models);
-
-	void							WriteRegionRoads(IVirtualStream* stream);
 	void							ReadLoadRoads(IVirtualStream* stream);
-
-	void							WriteRegionOccluders(IVirtualStream* stream);
 	void							ReadLoadOccluders(IVirtualStream* stream);
 
 	void							RespawnObjects();
@@ -200,15 +190,6 @@ public:
 	int								GetNumNomEmptyHFields() const;
 
 	//----------------------------------------------------
-
-#ifdef EDITOR
-	int								Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float& dist);
-	int								Ed_ReplaceDefs(CLevObjectDef* whichReplace, CLevObjectDef* replaceTo);
-
-	bool							m_modified; // needs saving?
-
-	DkList<buildingSource_t*>		m_buildings;
-#endif
 
 	BoundingBox						m_bbox;
 

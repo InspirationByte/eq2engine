@@ -911,21 +911,18 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 {
 	if( pressed ) // catch "DOWN" event
 	{
-		int action_index = GetKeyBindings()->GetBindingIndexByKey(key);
+		binding_t* tgBind = GetKeyBindings()->LookupBinding(key);
 
-		if(action_index != -1)
+		if(tgBind && !stricmp(tgBind->commandString.c_str(), "toggleconsole"))
 		{
-			if(!stricmp(GetKeyBindings()->GetBindingList()->ptr()[action_index]->commandString.GetData(), "toggleconsole"))
+			if(g_pSysConsole->IsVisible() && g_pSysConsole->IsShiftPressed())
 			{
-				if(g_pSysConsole->IsVisible() && g_pSysConsole->IsShiftPressed())
-				{
-					g_pSysConsole->SetLogVisible( !g_pSysConsole->IsLogVisible() );
-					return false;
-				}
-
-				SetVisible(!IsVisible());
+				g_pSysConsole->SetLogVisible( !g_pSysConsole->IsLogVisible() );
 				return false;
 			}
+
+			SetVisible(!IsVisible());
+			return false;
 		}
 	}
 
