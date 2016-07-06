@@ -14,6 +14,8 @@ TARGET_ABI=$2
 LUAJIT_PATH=$3
 INSTALL_DIR=$4
 
+TOOLCHAIN_VER="4.9"
+
 if [ ! -d "$LUAJIT_PATH" ]; then
 	echo 'LuaJIT path not set. Example for this script: mk-luajit "/path/to/luajit-2.0" target-arch abi-number /install/dir'
 	exit 1
@@ -34,7 +36,7 @@ clean)
 armeabi)
 	# Android/ARM, armeabi (ARMv5TE soft-float), Android 2.2+ (Froyo)
 	NDKABI=$TARGET_ABI
-	NDKVER=$NDK/toolchains/arm-linux-androideabi-4.8
+	NDKVER=$NDK/toolchains/arm-linux-androideabi-$TOOLCHAIN_VER
 	NDKP=$NDKVER/prebuilt/$BUILD_ARCH/bin/arm-linux-androideabi-
 	NDKF="--sysroot $NDK/platforms/android-$NDKABI/arch-arm"
 	NDKARCH="-march=armv5te -mfloat-abi=softfp"
@@ -44,7 +46,7 @@ armeabi)
 armeabi-v7a)
 	# Android/ARM, armeabi-v7a (ARMv7 VFP), Android 4.0+ (ICS)
 	NDKABI=$TARGET_ABI
-	NDKVER=$NDK/toolchains/arm-linux-androideabi-4.8
+	NDKVER=$NDK/toolchains/arm-linux-androideabi-$TOOLCHAIN_VER
 	NDKP=$NDKVER/prebuilt/$BUILD_ARCH/bin/arm-linux-androideabi-
 	NDKF="--sysroot $NDK/platforms/android-$NDKABI/arch-arm"
 	NDKARCH="-march=armv7-a -mfloat-abi=softfp -Wl,--fix-cortex-a8"
@@ -53,7 +55,7 @@ armeabi-v7a)
 mips)
 	# Android/MIPS, mips (MIPS32R1 hard-float), Android 4.0+ (ICS)
 	NDKABI=$TARGET_ABI
-	NDKVER=$NDK/toolchains/mipsel-linux-android-4.8
+	NDKVER=$NDK/toolchains/mipsel-linux-android-$TOOLCHAIN_VER
 	NDKP=$NDKVER/prebuilt/$BUILD_ARCH/bin/mipsel-linux-android-
 	NDKF="--sysroot $NDK/platforms/android-$NDKABI/arch-mips"
 	make -C $LUAJIT_PATH install HOST_CC="gcc -m32" CROSS=$NDKP TARGET_FLAGS="$NDKF" DESTDIR="$DEST" PREFIX=
@@ -61,7 +63,7 @@ mips)
 x86)
 	# Android/x86, x86 (i686 SSE3), Android 4.0+ (ICS)
 	NDKABI=$TARGET_ABI
-	NDKVER=$NDK/toolchains/x86-4.6
+	NDKVER=$NDK/toolchains/x86-$TOOLCHAIN_VER
 	NDKP=$NDKVER/prebuilt/$BUILD_ARCH/bin/i686-linux-android-
 	NDKF="--sysroot $NDK/platforms/android-$NDKABI/arch-x86"
 	make -C $LUAJIT_PATH install HOST_CC="gcc -m32" CROSS=$NDKP TARGET_FLAGS="$NDKF" DESTDIR="$DEST" PREFIX=

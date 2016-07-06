@@ -7,7 +7,7 @@
 #
 ###########################################################
 
-export NDK=${HOME}"/Android/Sdk/ndk-bundle/android-ndk-r10e"
+export NDK=${HOME}"/Android/Sdk/ndk-bundle"
 export NDK_ROOT=$NDK
 
 EQENGINE_PATH=${PWD}/..
