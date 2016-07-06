@@ -44,7 +44,7 @@ void RainEmitter::Init()
 }
 
 extern CWorldInfo* g_pWorldInfo;
-
+/* REWRITE_GAME_EFFECTS
 bool CRippleEffect::DrawEffect(float dTime)
 {
 	m_fLifeTime -= dTime;
@@ -59,36 +59,6 @@ bool CRippleEffect::DrawEffect(float dTime)
 	ColorRGB lighting = ComputeLightingForPoint(m_vOrigin, false);
 
 	Vector4D col = ColorRGBA(lighting,lifeTimePerc*2);
-
-	/*
-	ParticleVertex_t verts[4];
-
-	// top right
-	verts[0].point = m_vOrigin + binormal*fCurSize + tangent*fCurSize;
-	verts[0].texcoord = Vector2D(1,1);
-	verts[0].color = col;
-	verts[0].normal = normal;
-
-	// top left
-	verts[1].point = m_vOrigin + binormal*fCurSize - tangent*fCurSize;
-	verts[1].texcoord = Vector2D(1,0);
-	verts[1].color = col;
-	verts[1].normal = normal;
-
-	// bottom right
-	verts[2].point = m_vOrigin - binormal*fCurSize + tangent*fCurSize;
-	verts[2].texcoord = Vector2D(0,1);
-	verts[2].color = col;
-	verts[2].normal = normal;
-
-	// bottom left
-	verts[3].point = m_vOrigin - binormal*fCurSize - tangent*fCurSize;
-	verts[3].texcoord = Vector2D(0,0);
-	verts[3].color = col;
-	verts[3].normal = normal;
-
-	AddParticleQuad(verts, m_nMaterialGroup);
-	*/
 
 	PFXBillboard_t effect;
 
@@ -122,7 +92,7 @@ bool CRippleEffect::DrawEffect(float dTime)
 
 	return true;
 }
-
+*/
 
 void RainEmitter::Update_Draw(float dt, float emit_rate, float rain_speed)
 {
@@ -168,9 +138,11 @@ void RainEmitter::Update_Draw(float dt, float emit_rate, float rain_speed)
 
 void RainEmitter::MakeRipple(Vector3D &origin, Vector3D &normal, float startsize, float endsize, float lifetime)
 {
+/* REWRITE_GAME_EFFECTS
 	CRippleEffect* pEffect = new CRippleEffect(origin, normal, startsize, endsize, lifetime, EFFECT_GROUP_ID( Rain, 1),  EFFECT_GROUP_ID( Rain, 2));
 
 	effectrenderer->RegisterEffectForRender(pEffect);
+	*/
 }
 
 void RainEmitter::RemoveRipple(int index)

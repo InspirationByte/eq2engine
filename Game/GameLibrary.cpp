@@ -34,14 +34,10 @@
 #include "EGUI/EQUI_Manager.h"
 #include "EGUI/EqUI_Panel.h"
 
-#include "eqParallelJobs.h"
-
 using namespace Threading;
 
 extern void SaveRestoreInitDefaults();
 
-static CEqParallelJobThreads s_parallelJobs;
-CEqParallelJobThreads * g_parallelJobs = &s_parallelJobs;
 
 ONLY_EXPORTS IGameLibrary* GameLibFactory( void ) {return gamedll;}
 
@@ -64,7 +60,7 @@ IDebugOverlay*			debugoverlay	= NULL;
 IProxyFactory*			proxyfactory	= NULL;
 
 // non-engine globals
-CEqPanel*				g_pRootPanel = NULL;
+CEqUI_Panel*			g_pRootPanel = NULL;
 
 void ImportEngineInterfaces()
 {

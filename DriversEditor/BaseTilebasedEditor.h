@@ -10,7 +10,8 @@
 
 #include "EditorHeader.h"
 #include "IEditorTool.h"
-#include "level.h"
+#include "region.h"
+#include "heightfield.h"
 
 class CBaseTilebasedEditor : public IEditorTool
 {

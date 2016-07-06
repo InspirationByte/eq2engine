@@ -19,8 +19,6 @@
 
 #include "refcounted.h"
 
-#include "Utils/eqjobs.h"
-
 ConVar r_detail_dist("r_detail_dist", "1500");
 
 ConVar r_zfar("r_zfar", "-1", "Z-Far range", CV_CHEAT);
@@ -586,8 +584,6 @@ ConVar r_drawTransparents("r_drawTransparents","1","Draw transparent world", CV_
 ConVar r_drawTransparentsForwardLighting("r_drawTransparentsForwardLighting","1","Draw transparent world with forward shading", CV_CHEAT);
 
 ConVar r_lightShadowDisableDistScale("r_lightShadowDisableDistScale", "0.08f", "Shadowmap disables at distance", CV_ARCHIVE);
-
-CEqJobList* g_pJobList = NULL;
 
 void GR_EffectRenderer()
 {
@@ -1248,8 +1244,6 @@ void GR_Init()
 
 	for(int i = 0; i < nTransparents; i++)
 		g_transparentsList->AddRenderable( pObjectList[i] );
-
-	g_pJobList = new CEqJobList();
 }
 
 void GR_SetupDynamicsIBO()
@@ -1328,9 +1322,6 @@ void GR_Shutdown()
 	g_pLightViewAreaList = NULL;
 	g_transparentsList->Clear();
 	GR_Cleanup();
-
-	delete g_pJobList;
-	g_pJobList = NULL;
 
 	g_pCurrentWaterInfo = NULL;
 }

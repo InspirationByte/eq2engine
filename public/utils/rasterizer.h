@@ -54,9 +54,9 @@ public:
 
 	void		Clear(const T &color);
 
-	void		DrawTriangle(const T &color1, Vector2D &p1, const T &color2, Vector2D &p2, const T &color3, Vector2D &p3);
-	void		DrawTriangleZ(Vector3D &p1, Vector3D &p2, Vector3D &p3);
-	void		DrawLine(const T &color1, Vector2D &p1, const T &color2, Vector2D &p2);
+	void		DrawTriangle(const T &color1, const Vector2D &p1, const T &color2, const Vector2D &p2, const T &color3, const Vector2D &p3);
+	void		DrawTriangleZ(const Vector3D &p1, const Vector3D &p2, const Vector3D &p3);
+	void		DrawLine(const T &color1, const Vector2D &p1, const T &color2, const Vector2D &p2);
 
 	void		SetAdditiveColor(bool bAdditive);
 	void		SetColorClampDiscardEnable(bool bEnable, const T &minColor, const T &maxColor);
@@ -356,7 +356,7 @@ inline void CRasterizer<T>::DrawSpansBetweenEdges(const REdge_t<T> &e1, const RE
 }
 
 template < class T >
-inline void CRasterizer<T>::DrawTriangle( const T &color1, Vector2D &p1, const T &color2, Vector2D &p2, const T &color3, Vector2D &p3 )
+inline void CRasterizer<T>::DrawTriangle( const T &color1, const Vector2D &p1, const T &color2, const Vector2D &p2, const T &color3, const Vector2D &p3 )
 {
 	// create edges for the triangle
 	REdge_t<T> edges[3] = 
@@ -390,7 +390,7 @@ inline void CRasterizer<T>::DrawTriangle( const T &color1, Vector2D &p1, const T
 }
 
 template < class T >
-inline void CRasterizer<T>::DrawTriangleZ(Vector3D &p1, Vector3D &p2, Vector3D &p3)
+inline void CRasterizer<T>::DrawTriangleZ(const Vector3D &p1, const Vector3D &p2, const Vector3D &p3)
 {
 	m_bUseTriangleForZ = true;
 
@@ -403,7 +403,7 @@ inline void CRasterizer<T>::DrawTriangleZ(Vector3D &p1, Vector3D &p2, Vector3D &
 }
 
 template < class T >
-inline void CRasterizer<T>::DrawLine(const T &color1, Vector2D &p1, const T &color2, Vector2D &p2)
+inline void CRasterizer<T>::DrawLine(const T &color1, const Vector2D &p1, const T &color2, const Vector2D &p2)
 {
 	float xdiff = (p2.x - p1.x);
 	float ydiff = (p2.y - p1.y);

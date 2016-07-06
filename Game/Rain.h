@@ -46,6 +46,7 @@ struct ripple_t
 	float lifetime;
 };
 
+/*
 class CRippleEffect : public IEffect
 {
 public:
@@ -81,7 +82,7 @@ protected:
 
 	int			drop_material;
 };
-
+*/
 class RainEmitter
 {
 public:

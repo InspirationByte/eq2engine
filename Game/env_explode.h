@@ -86,8 +86,7 @@ inline void ExplodeAddImpulseToEachObject(IPhysicsObject* pObject, void* data)
 		}
 		else if(!exp->fast)
 		{
-			Vector3D bboxMin(MAX_COORD_UNITS);
-			Vector3D bboxMax(-MAX_COORD_UNITS);
+			BoundingBox aabb;
 
 			int numHits = 0;
 
@@ -103,13 +102,13 @@ inline void ExplodeAddImpulseToEachObject(IPhysicsObject* pObject, void* data)
 				{
 					numHits++;
 
-					POINT_TO_BBOX(tr.traceEnd, bboxMin, bboxMax);
+					aabb.AddVertex(tr.traceEnd);
 				}
 			}
 
 			if(numHits > 0)
 			{
-				Vector3D centerOfHits = (bboxMin+bboxMax)*0.5f;
+				Vector3D centerOfHits = aabb.GetCenter();
 				Vector3D dir = centerOfHits - exp->origin;
 				float distToHit = length(dir);
 

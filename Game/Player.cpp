@@ -570,8 +570,8 @@ void CWhiteCagePlayer::OnPostRender()
 
 			Vector2D wpn_text_pos(g_pEngineHost->GetWindowSize().x-350, g_pEngineHost->GetWindowSize().y - 150);
 
-			g_pEngineHost->GetDefaultFont()->DrawSetColor(1,1,1,1);
-			g_pEngineHost->GetDefaultFont()->DrawText(varargs("%d\n%d", nClipCount, nTotalAmmo), wpn_text_pos.x, wpn_text_pos.y, 50,50);
+			eqFontStyleParam_t style;
+			g_pEngineHost->GetDefaultFont()->RenderText(varargs("%d\n%d", nClipCount, nTotalAmmo), wpn_text_pos, style);
 		}
 
 		Vector2D center_pos(g_pEngineHost->GetWindowSize().x*0.5f, g_pEngineHost->GetWindowSize().y*0.5f);

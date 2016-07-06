@@ -52,7 +52,7 @@ static int btInternalGetHash(int partId, int triangleIndex)
 
 /// Adjusts collision for using single side, ignoring internal triangle edges
 /// If this info map is missing, or the triangle is not store in this map, nothing will be done
-void AdjustSingleSidedContact(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap,const btCollisionObjectWrapper* colObj1Wrap, int partId0, int index0)
+void AdjustSingleSidedContact(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap)
 {
 	//btAssert(colObj0->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE);
 	if (colObj0Wrap->getCollisionShape()->getShapeType() != TRIANGLE_SHAPE_PROXYTYPE)
@@ -65,21 +65,12 @@ void AdjustSingleSidedContact(btManifoldPoint& cp, const btCollisionObjectWrappe
 	else
 	   trimesh = (btBvhTriangleMeshShape*)colObj0Wrap->getCollisionObject()->getCollisionShape();
 
-	btTriangleInfoMap* triangleInfoMapPtr = (btTriangleInfoMap*) trimesh->getTriangleInfoMap();
-	if (!triangleInfoMapPtr)
-		return;
-
-	int hash = btInternalGetHash(partId0,index0);
-
-	btTriangleInfo* info = triangleInfoMapPtr->find(hash);
-	if (!info)
-		return;
-
 	const btTriangleShape* tri_shape = static_cast<const btTriangleShape*>(colObj0Wrap->getCollisionShape());
 
 	btVector3 tri_normal;
 	tri_shape->calcNormal(tri_normal);
 
+	btVector3 newNormal = colObj0Wrap->getCollisionObject()->getWorldTransform().getBasis()*tri_normal;
 	cp.m_normalWorldOnB = colObj0Wrap->getCollisionObject()->getWorldTransform().getBasis()*tri_normal;
 }
 
@@ -88,9 +79,16 @@ void AdjustSingleSidedContact(btManifoldPoint& cp, const btCollisionObjectWrappe
 class EqPhysContactResultCallback : public btCollisionWorld::ContactResultCallback
 {
 public:
+	EqPhysContactResultCallback(bool singleSided, const Vector3D& center) : m_center(center), m_singleSided(singleSided)
+	{
+	}
+
 	btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1)
 	{
-		AdjustSingleSidedContact(cp,colObj1Wrap,colObj0Wrap, partId1,index1);
+		if(m_singleSided)
+			AdjustSingleSidedContact(cp, colObj1Wrap);
+		else
+			btAdjustInternalEdgeContacts(cp, colObj1Wrap,colObj0Wrap, partId1, index1);
 
 		int numColls = m_collisions.numElem();
 		m_collisions.setNum(numColls+1);
@@ -118,6 +116,7 @@ public:
 
 	DkList<CollisionData_t> m_collisions;
 	Vector3D				m_center;
+	bool					m_singleSided;
 };
 
 //------------------------------------------------------------------------------------------------------------
@@ -543,8 +542,7 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 
 	PROFILE_END();
 
-	EqPhysContactResultCallback cbResult;
-	cbResult.m_center = center;
+	EqPhysContactResultCallback cbResult(false,center);
 
 	PROFILE_BEGIN(contactPairTest);
 	m_collisionWorld->contactPairTest(objA, objB, cbResult);
@@ -678,8 +676,7 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 
 	PROFILE_END();
 
-	EqPhysContactResultCallback cbResult;
-	cbResult.m_center = center;
+	EqPhysContactResultCallback	cbResult((bodyB->m_flags & BODY_ISCAR), center);
 
 	PROFILE_BEGIN(contactPairTest);
 	m_collisionWorld->contactPairTest(objA, objB, cbResult);

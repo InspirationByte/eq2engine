@@ -49,6 +49,8 @@
 // AI
 #include "AI/ai_navigator.h"
 
+#define EQ_AUDIO_MAX_DISTANCE	 (10000.0f)
+
 extern BaseEntity* g_pViewEntity;
 
 #define PrecacheScriptSound(snd)	ses->PrecacheSound(snd)

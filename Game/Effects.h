@@ -33,7 +33,7 @@ struct effectdispatch_t
 */
 
 extern Vector3D ComputeLightingForPoint(Vector3D &point, bool doPhysics);
-
+/*
 class CSmokeEffect : public IEffect
 {
 public:
@@ -251,7 +251,7 @@ protected:
 	float		fLength;
 
 	bool		lights;
-};
+};*/
 
 void PrecacheEffects();
 void UnloadEffects();

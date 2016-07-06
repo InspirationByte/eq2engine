@@ -1085,6 +1085,7 @@ public:
 	void Precache()
 	{
 		m_pDecalMaterial = materials->FindMaterial(m_matName.GetData());
+		m_pDecalMaterial->Ref_Grab();
 	}
 
 	void Spawn()

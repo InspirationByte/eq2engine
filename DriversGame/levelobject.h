@@ -91,6 +91,9 @@ class CLevelModel : public RefCountedObject
 	friend class CLevelRegion;
 	friend class CLevObjectDef;
 	friend class CLayerModel;
+	friend class CBuildingModelGenerator;
+
+	friend class CEditorLevelRegion;
 public:
 	PPMEM_MANAGED_OBJECT()
 
@@ -119,11 +122,11 @@ public:
 
 protected:
 
-	void					CreateCollisionObjects( CLevelRegion* reg, regionObject_t* ref );
+	void					CreateCollisionObject( regionObject_t* ref );
+
 	void					GeneratePhysicsData(bool isGround = false);
 
-	// to create the physics
-	DkList<CEqBulletIndexedMesh*>	m_batchMeshes;
+	CEqBulletIndexedMesh*	m_physicsMesh;
 
 	//-------------------------------------------------------------------
 

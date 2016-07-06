@@ -167,9 +167,6 @@
     <ClInclude Include="..\public\Utils\strtools.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\GameSoundEmitterSystem.h">
-      <Filter>Source Files\GameLib\Sound</Filter>
-    </ClInclude>
     <ClInclude Include="BaseActor.h">
       <Filter>Source Files\GameLib\GameCommon</Filter>
     </ClInclude>
@@ -494,9 +491,6 @@
     <ClInclude Include="EntityQueue.h">
       <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared_engine\eqParallelJobs.h">
-      <Filter>Source Files\EngineLib</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\Libs\DkCore.lib">
@@ -506,6 +500,9 @@
       <Filter>Libs</Filter>
     </Library>
     <Library Include="..\libs\FrameworkLib.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\Shiny\lib\Release\Shiny.lib">
       <Filter>Libs</Filter>
     </Library>
   </ItemGroup>
@@ -655,9 +652,6 @@
       <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
     </ClCompile>
     <ClCompile Include="Snow.cpp">
-      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="MaterialProxy.cpp">
       <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
     </ClCompile>
     <ClCompile Include="GameInput.cpp">
@@ -897,7 +891,10 @@
     <ClCompile Include="..\shared_engine\EffectRender.cpp">
       <Filter>Source Files\GameLib\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\eqParallelJobs.cpp">
+    <ClCompile Include="..\shared_engine\materialsystem\MaterialProxy.cpp">
+      <Filter>Source Files\EngineLib\MaterialSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp">
       <Filter>Source Files\EngineLib</Filter>
     </ClCompile>
   </ItemGroup>

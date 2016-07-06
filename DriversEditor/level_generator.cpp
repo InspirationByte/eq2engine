@@ -7,7 +7,7 @@
 
 #include "materialsystem/IMaterialSystem.h"
 
-#include "level.h"
+#include "EditorLevel.h"
 #include "region.h"
 #include "utils/strtools.h"
 
@@ -138,7 +138,7 @@ inline int PixelToArrayIndex(int x,int y,int w,int h)
 	return (h-1-y)*w+x;
 }
 
-bool CGameLevel::Ed_GenerateMap( LevelGenParams_t& genParams, const CImage* img )
+bool CEditorLevel::Ed_GenerateMap( LevelGenParams_t& genParams, const CImage* img )
 {
 	int iw = 0;
 	int ih = 0;

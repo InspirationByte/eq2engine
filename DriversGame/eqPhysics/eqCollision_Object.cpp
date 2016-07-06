@@ -61,21 +61,17 @@ CEqCollisionObject::~CEqCollisionObject()
 
 void CEqCollisionObject::Destroy()
 {
-	if(m_collObject)
-		delete m_collObject;
+	delete m_collObject;
 
 	if(!m_hasStudioShape)
-	{
-		if(m_shape)
-			delete m_shape;
-	}
+		delete m_shape;
 
-	if(m_trimap)
-		delete m_trimap;
+	delete m_trimap;
 
 	m_shape = NULL;
 	m_collObject = NULL;
 	m_mesh = NULL;
+	m_trimap = NULL;
 }
 
 void CEqCollisionObject::InitAABB()
@@ -148,8 +144,6 @@ bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh )
 	m_shape->setMargin(ph_margin.GetFloat());
 
 	m_trimap = new btTriangleInfoMap();
-	//now you can adjust some thresholds in triangleInfoMap  if needed.
-
 	btGenerateInternalEdgeInfo((btBvhTriangleMeshShape*)m_shape, m_trimap);
 
 	InitAABB();

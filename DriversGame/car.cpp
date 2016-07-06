@@ -322,8 +322,10 @@ static float weatherTireFrictionMod[WEATHER_COUNT] =
 	0.75f
 };
 
-ConVar g_night("g_night", "0");
+ConVar g_debug_car_lights("g_debug_car_lights", "0");
 ConVar g_autohandbrake("g_autohandbrake", "1", "Auto handbrake steering helper", CV_CHEAT);
+
+ConVar r_drawSkidMarks("r_drawSkidMarks", "1", "Draw skidmarks, 1 - player, 2 - all cars", CV_ARCHIVE);
 
 extern CPFXAtlasGroup* g_vehicleEffects;
 extern CPFXAtlasGroup* g_translParticles;
@@ -2595,8 +2597,6 @@ void CCar::StrikeHubcap(int wheel)
 #endif // EDITOR
 }
 
-ConVar r_drawSkidMarks("r_drawSkidMarks", "1", "Draw skidmarks, 1 - player, 2 - all cars", CV_ARCHIVE);
-
 float triangleWave( float pos )
 {
 	float sinVal = sin(pos);
@@ -2615,7 +2615,7 @@ void CCar::Simulate( float fDt )
 	if(!carBody)
 		return;
 
-	bool bLightsOn = m_enabled && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS) || g_night.GetBool();
+	bool bLightsOn = m_enabled && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS) || g_debug_car_lights.GetBool();
 
 	if( bLightsOn && m_isLocalCar &&
 		(m_bodyParts[CB_FRONT_LEFT].damage < 1.0f || m_bodyParts[CB_FRONT_RIGHT].damage < 1.0f) )
@@ -2823,7 +2823,7 @@ void CCar::Simulate( float fDt )
 		Plane brake_plane(-forward, -dot(-forward, brakelight_position));
 		Plane back_plane(-forward, -dot(-forward, backlight_position));
 
-		bool bLightsOn = m_enabled && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS) || g_night.GetBool();
+		bool bLightsOn = m_enabled && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS) || g_debug_car_lights.GetBool();
 
 		float fLightsAlpha = dot(-cam_forward, forward);
 

@@ -55,6 +55,8 @@ CEngineStudioEGF::CEngineStudioEGF()
 	m_nNumMaterials = 0;
 
 	m_pHardwareData = NULL;
+
+	m_cacheIdx = -1;
 }
 
 CEngineStudioEGF::~CEngineStudioEGF()
@@ -347,17 +349,14 @@ void CEngineStudioEGF::ModelLoaderJob( void* data, int i )
 	CEngineStudioEGF* model = (CEngineStudioEGF*)data;
 
 	// single-thread version
-
 	if(!model->LoadFromFile())
 	{
-		model->m_readyState = EQMODEL_LOAD_ERROR;
 		model->DestroyModel();
 		return;
 	}
 
 	if( !model->LoadGenerateVertexBuffer())
 	{
-		model->m_readyState = EQMODEL_LOAD_ERROR;
 		model->DestroyModel();
 		return;
 	}
@@ -390,14 +389,12 @@ bool CEngineStudioEGF::LoadModel( const char* pszPath, bool useJob )
 
 	if(!LoadFromFile())
 	{
-		m_readyState = EQMODEL_LOAD_ERROR;
 		DestroyModel();
 		return false;
 	}
 
 	if( !LoadGenerateVertexBuffer())
 	{
-		m_readyState = EQMODEL_LOAD_ERROR;
 		DestroyModel();
 		return false;
 	}
@@ -1049,16 +1046,6 @@ void CModelCache::ReloadModels()
 	g_pShaderAPI->Reset();
 	g_pShaderAPI->Apply();
 
-	/*
-	for(int i = 0; i < m_pModels.numElem(); i++)
-	{
-		if(m_pModels[i]->GetHWData()->pStudioHdr)
-		{
-			m_pModels[i]->DestroyModel();
-			((CEngineStudioEGF*)m_pModels[i])->LoadModel();
-		}
-	}
-	*/
 }
 
 ConVar job_modelLoader("job_modelLoader", "0", "Load models in parallel threads", CV_ARCHIVE);
@@ -1092,31 +1079,26 @@ int CModelCache::PrecacheModel( const char* modelName )
 	{
 		DevMsg(DEVMSG_CORE, "Caching model '%s'\n", modelName);
 
-#if !defined(EDITOR) && !defined(NOENGINE) && !defined(NO_GAME)
-		IEqModel* pModel = engine->LoadModel(modelName, false);
-#else
 		CEngineStudioEGF* pModel = new CEngineStudioEGF;
+		pModel->m_cacheIdx = m_pModels.append(pModel);
+
 		if(!pModel->LoadModel( modelName, job_modelLoader.GetBool() ))
 		{
+			m_pModels[pModel->m_cacheIdx] = NULL;
+
 			delete pModel;
 			pModel = NULL;
 		}
-
-#endif
 
 		if(!pModel)
 			return 0; // return error model index
 
 #if !defined(EDITOR) && !defined(NOENGINE) && !defined(NO_GAME)
 		if(gpGlobals && gpGlobals->curtime > 0)
-		{
 			MsgWarning("WARNING! Late precache of model '%s'\n", modelName );
-		}
-		else
-			pModel->LoadMaterials();
 #endif
 
-		return m_pModels.append(pModel);
+		return pModel->m_cacheIdx;
 	}
 
 	return idx;
@@ -1132,15 +1114,15 @@ IEqModel* CModelCache::GetModel(int index) const
 {
 	IEqModel* model = NULL;
 
-	if(index == -1)
+	if(index == CACHE_INVALID_MODEL)
 		model = m_pModels[0];
+	else
+		model = m_pModels[index];
 
-	model = m_pModels[index];
-
-	if(model->GetLoadingState() != EQMODEL_LOAD_ERROR)
+	if(model && model->GetLoadingState() != EQMODEL_LOAD_ERROR)
 		return model;
 	else
-		return NULL;
+		return m_pModels[0];
 }
 
 const char* CModelCache::GetModelFilename(IEqModel* pModel) const
@@ -1157,6 +1139,9 @@ int CModelCache::GetModelIndex(const char* modelName) const
 
 	for(int i = 0; i < m_pModels.numElem(); i++)
 	{
+		if(m_pModels[i] == NULL)
+			continue;
+
 		if(!stricmp(m_pModels[i]->GetName(), str))
 			return i;
 	}

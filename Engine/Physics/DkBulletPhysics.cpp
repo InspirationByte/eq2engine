@@ -33,6 +33,49 @@ static ConVar ph_gravity("ph_gravity","800","World gravity",CV_CHEAT);
 static ConVar ph_iterations("ph_iterations","10","Physics iterations",CV_CHEAT);
 ConVar ph_framerate_approx("ph_framerate_approx", "200", "Physics framerate approximately",CV_ARCHIVE);
 
+static int btInternalGetHash(int partId, int triangleIndex)
+{
+	int hash = (partId<<(31-MAX_NUM_PARTS_IN_BITS)) | triangleIndex;
+	return hash;
+}
+
+/// Adjusts collision for using single side, ignoring internal triangle edges
+/// If this info map is missing, or the triangle is not store in this map, nothing will be done
+void AdjustSingleSidedContact(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap,const btCollisionObjectWrapper* colObj1Wrap, int partId0, int index0)
+{
+	//btAssert(colObj0->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE);
+	if (colObj0Wrap->getCollisionShape()->getShapeType() != TRIANGLE_SHAPE_PROXYTYPE)
+		return;
+
+	btBvhTriangleMeshShape* trimesh = 0;
+
+	if( colObj0Wrap->getCollisionObject()->getCollisionShape()->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE )
+	   trimesh = ((btScaledBvhTriangleMeshShape*)colObj0Wrap->getCollisionObject()->getCollisionShape())->getChildShape();
+	else
+	   trimesh = (btBvhTriangleMeshShape*)colObj0Wrap->getCollisionObject()->getCollisionShape();
+
+	/*
+	btTriangleInfoMap* triangleInfoMapPtr = (btTriangleInfoMap*) trimesh->getTriangleInfoMap();
+	if (!triangleInfoMapPtr)
+		return;
+
+	int hash = btInternalGetHash(partId0,index0);
+
+	btTriangleInfo* info = triangleInfoMapPtr->find(hash);
+	if (!info)
+		return;
+	*/
+	const btTriangleShape* tri_shape = static_cast<const btTriangleShape*>(colObj0Wrap->getCollisionShape());
+
+	btVector3 tri_normal;
+	tri_shape->calcNormal(tri_normal);
+
+	btVector3 newNormal = colObj0Wrap->getCollisionObject()->getWorldTransform().getBasis()*tri_normal;
+
+	if(cp.m_normalWorldOnB.dot(newNormal) <= 0)
+		cp.m_normalWorldOnB = newNormal;
+}
+
 // single-sided collision implementation
 extern ContactAddedCallback		gContactAddedCallback;
 
@@ -42,34 +85,11 @@ bool EQCheckNeedsCollision(btCollisionObjectWrapper* body0,btCollisionObjectWrap
 	IPhysicsObject* pObject2 = (IPhysicsObject*)body1->getCollisionObject()->getUserPointer();
 
 	if(pObject1 && pObject2)
-	{/*
-		if(pObject1->ShouldCollideWith(pObject2))// || pObject2->ShouldCollideWith(pObject1))
-			return true;
-		else
-			return false;*/
-
-		//if(!pObject1->ShouldCollideWith(pObject2) && !pObject2->ShouldCollideWith(pObject1))
-		//	return false;
-
-		
+	{
 		if((pObject1->GetContents() & pObject2->GetCollisionMask()) || (pObject1->GetCollisionMask() & pObject2->GetContents()))
 			return true;
 		else
 			return false;
-			
-		/*
-		int nContentsObject1 = pObject1->GetContents();
-		int nCollMaskObject1 = pObject1->GetCollisionMask();
-
-		int nContentsObject2 = pObject2->GetContents();
-		int nCollMaskObject2 = pObject2->GetCollisionMask();
-
-		bool shouldCollide = (nContentsObject1 & nCollMaskObject2) != 0;
-		shouldCollide = shouldCollide && (nContentsObject2 & nCollMaskObject1);
-
-		if(!shouldCollide)
-			return false;
-		*/
 	}
 
 	return true;
@@ -363,6 +383,9 @@ ConVar ph_contact_min_dist("ph_contact_min_dist", "-0.005f", "Minimum distance/i
 
 bool EQContactAddedCallback(btManifoldPoint& cp,const btCollisionObjectWrapper* colObj0,int partId0,int index0,const btCollisionObjectWrapper* colObj1,int partId1,int index1)
 {
+	//AdjustSingleSidedContact(cp,colObj0, colObj1, partId0, index0);
+	//AdjustSingleSidedContact(cp,colObj1, colObj0, partId1, index1);
+
 	CPhysicsObject*		pObjA = (CPhysicsObject*)colObj0->getCollisionObject()->getUserPointer();
 	CPhysicsObject*		pObjB = (CPhysicsObject*)colObj1->getCollisionObject()->getUserPointer();
 
@@ -887,33 +910,6 @@ btRigidBody* DkPhysics::LocalCreateRigidBody(float mass, Vector3D &mass_center, 
 
 btCollisionShape* InternalGenerateMesh(physmodelcreateinfo_t *info, DkList <btTriangleIndexVertexArray*> *triangleMeshes)
 {
-	/*
-	if(info->data->numIndices > 0 && info->data->indices)
-	{
-		for(uint i = 0; i < info->data->numIndices; i++)
-		{
-			uint index = 0;
-			Vector3D vertexToCheck = UTIL_VertexAtPos((ubyte*)info->data->vertices, info->data->vertexSize, info->data->vertexPosOffset, info->data->indices[i]);
-
-			uint found_index = -1;
-			for(int j = 0; j < info->data->numVertices; j++)
-			{
-				Vector3D vertex = UTIL_VertexAtPos((ubyte*)info->data->vertices, info->data->vertexSize, info->data->vertexPosOffset, j);
-				if(vertex == vertexToCheck)
-				{
-					found_index = j;
-					break;
-				}
-			}
-
-			if(found_index != -1 && found_index != i)
-			{
-				info->data->indices[i] = found_index;
-			}
-		}
-	}
-	*/
-	
 	if(!info->genConvex)
 	{
 		btTriangleIndexVertexArray* pTriMesh = new btTriangleIndexVertexArray(
@@ -924,36 +920,15 @@ btCollisionShape* InternalGenerateMesh(physmodelcreateinfo_t *info, DkList <btTr
 			(float*)info->data->vertices,
 			sizeof(Vector3D)
 			);
-			
-		/*
-		btTriangleMesh* pTriMesh = new btTriangleMesh(true, true);
-
-		for(uint i = 0; i < info->data->numIndices; i+=3)
-		{
-			Vector3D pos1 = UTIL_VertexAtPos((ubyte*)info->data->vertices, info->data->vertexSize, info->data->vertexPosOffset, info->data->indices[i+2]);
-			Vector3D pos2 = UTIL_VertexAtPos((ubyte*)info->data->vertices, info->data->vertexSize, info->data->vertexPosOffset, info->data->indices[i+1]);
-			Vector3D pos3 = UTIL_VertexAtPos((ubyte*)info->data->vertices, info->data->vertexSize, info->data->vertexPosOffset, info->data->indices[i]);
-
-			if(info->flipXAxis)
-			{
-				pos1.x *= -1;
-				pos2.x *= -1;
-				pos3.x *= -1;
-			}
-
-			pTriMesh->addTriangle(	ConvertPositionToBullet(pos1),
-									ConvertPositionToBullet(pos2),
-									ConvertPositionToBullet(pos3),
-									true);
-		}
-		*/
 
 		triangleMeshes->append( pTriMesh );
 
 		
 
 		btCollisionShape* shape = new btBvhTriangleMeshShape(pTriMesh, false);
-		//((btGImpactMeshShape *)shape)->updateBound();
+
+
+
 
 		return shape;
 	}
@@ -961,30 +936,6 @@ btCollisionShape* InternalGenerateMesh(physmodelcreateinfo_t *info, DkList <btTr
 	{
 		if(info->convexMargin != -1)
 		{
-			/*
-			btTriangleMesh* trimesh = DNewArgs(btTriangleMesh, (true, true));
-
-
-			for(uint i = 0; i < info->data->numIndices; i+=3)
-			{
-				Vector3D pos1 = UTIL_VertexAtPos((ubyte*)info->data->vertices, info->data->vertexSize, info->data->vertexPosOffset, info->data->indices[i+2]);
-				Vector3D pos2 = UTIL_VertexAtPos((ubyte*)info->data->vertices, info->data->vertexSize, info->data->vertexPosOffset, info->data->indices[i+1]);
-				Vector3D pos3 = UTIL_VertexAtPos((ubyte*)info->data->vertices, info->data->vertexSize, info->data->vertexPosOffset, info->data->indices[i]);
-
-				if(info->flipXAxis)
-				{
-					pos1.x *= -1;
-					pos2.x *= -1;
-					pos3.x *= -1;
-				}
-
-				trimesh->addTriangle(	ConvertPositionToBullet(pos1),
-										ConvertPositionToBullet(pos2),
-										ConvertPositionToBullet(pos3),
-										false);
-			}
-			*/
-
 			btTriangleIndexVertexArray* pTriMesh = new btTriangleIndexVertexArray(
 				(int)info->data->numIndices/3,
 				(int*)info->data->indices,
@@ -1174,7 +1125,16 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 
 	btCollisionShape* shape = NULL;
 
+	DkList<btTriangleIndexVertexArray*> triangle_mesges;
+
 	shape = InternalGenerateMesh(info, &m_triangleMeshes);
+
+	/*
+		m_trimap = new btTriangleInfoMap();
+		//now you can adjust some thresholds in triangleInfoMap  if needed.
+
+		btGenerateInternalEdgeInfo((btBvhTriangleMeshShape*)m_shape, m_trimap);
+	*/
 
 	if(!shape)
 	{
@@ -1236,7 +1196,10 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 	pPhysicsObject->SetCollisionMask( nCollideMask );
 	pPhysicsObject->SetFriction(material->friction);
 
-	pPhysicsObject->m_pPhyObjectPointer->setDeactivationTime(3.0f);
+	// don't add events!
+	pPhysicsObject->AddFlags(PO_NO_EVENTS);
+	
+	pPhysicsObject->m_pPhyObjectPointer->setCollisionFlags(pPhysicsObject->m_pPhyObjectPointer->getCollisionFlags()  | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
 
 	DevMsg(DEVMSG_CORE, "Creating static physics object\n" );
 

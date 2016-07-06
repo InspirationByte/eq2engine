@@ -91,13 +91,13 @@ public:
 	// min bbox dimensions
 	Vector3D GetBBoxMins()
 	{
-		return m_pModel->GetBBoxMins();
+		return m_pModel->GetAABB().minPoint;
 	}
 
 	// max bbox dimensions
 	Vector3D GetBBoxMaxs()
 	{
-		return m_pModel->GetBBoxMaxs();
+		return m_pModel->GetAABB().maxPoint;
 	}
 
 protected:

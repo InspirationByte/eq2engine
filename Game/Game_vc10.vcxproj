@@ -291,7 +291,6 @@
     <ClInclude Include="..\public\RenderList.h" />
     <ClInclude Include="..\public\Utils\Align.h" />
     <ClInclude Include="..\public\CharSet.h" />
-    <ClInclude Include="..\shared_engine\eqParallelJobs.h" />
     <ClInclude Include="AI\AIBaseNPC.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClInclude>
@@ -354,7 +353,6 @@
     <ClInclude Include="..\public\Utils\Queue.h" />
     <ClInclude Include="..\public\Utils\String.h" />
     <ClInclude Include="..\public\Utils\strtools.h" />
-    <ClInclude Include="..\public\GameSoundEmitterSystem.h" />
     <ClInclude Include="EffectRender.h" />
     <ClInclude Include="FilterPipelineBase.h" />
     <ClInclude Include="GameRenderer.h" />
@@ -562,6 +560,7 @@
     <Library Include="..\libs\CoreLib.lib" />
     <Library Include="..\Libs\DkCore.lib" />
     <Library Include="..\libs\FrameworkLib.lib" />
+    <Library Include="..\src_dependency\Shiny\lib\Release\Shiny.lib" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\public\anim_activity.cpp" />
@@ -571,7 +570,8 @@
     <ClCompile Include="..\public\dsm_esm_loader.cpp" />
     <ClCompile Include="..\public\dsm_loader.cpp" />
     <ClCompile Include="..\public\dsm_obj_loader.cpp" />
-    <ClCompile Include="..\shared_engine\eqParallelJobs.cpp" />
+    <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp" />
+    <ClCompile Include="..\shared_engine\materialsystem\MaterialProxy.cpp" />
     <ClCompile Include="..\shared_game\GameSoundEmitterSystem.cpp" />
     <ClCompile Include="..\public\ragdoll.cpp" />
     <ClCompile Include="..\public\RenderList.cpp" />
@@ -811,7 +811,6 @@
     <ClCompile Include="GameInput.cpp" />
     <ClCompile Include="PlayerSpawn.cpp" />
     <ClCompile Include="GlobalVarsGame.cpp" />
-    <ClCompile Include="MaterialProxy.cpp" />
     <ClCompile Include="ModelEntities.cpp" />
     <ClCompile Include="Rain.cpp" />
     <ClCompile Include="Snow.cpp" />

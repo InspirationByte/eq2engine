@@ -16,6 +16,7 @@ struct particle_spark_t
 	Vector3D normal;
 };
 
+/*
 class CQuadEffect : public IEffect
 {
 public:
@@ -180,7 +181,7 @@ protected:
 
 	int			nDraws;
 };
-
+*/
 // base engine effect group
 DECLARE_EFFECT_GROUP(ConcreteDecals)
 {
@@ -335,7 +336,7 @@ void FX_DrawTracer(Vector3D &origin, Vector3D &line_dir, float width, float leng
 }
 
 //ConVar r_maxTempDecals("r_maxTempDecals", "1000", "Maximum of temp decals in game");
-
+/* REWRITE_GAME_EFFECTS
 class CDecalEffect : public IEffect//, public CBaseRenderableObject
 {
 public:
@@ -344,14 +345,6 @@ public:
 		InternalInit(sortPos, lifetime, matIndex);
 		m_pDecal = decal;
 
-		//m_vLastColor = ComputeLightingForPoint(m_vOrigin, false);
-		/*
-		for(int i = 0; i < m_pDecal->vertexCount; i++)
-		{
-			m_pDecal->vertexArray[i].color = Vector4D(m_vLastColor,1);
-		}
-		*/
-
 		//g_transparentsList->AddRenderable( this );
 
 		nDraws = 0;
@@ -359,17 +352,6 @@ public:
 
 	void DestroyEffect()
 	{
-		/*
-		for(int i = 0; i < g_transparentsList->GetRenderableCount(); i++)
-		{
-			if(g_transparentsList->GetRenderable(i) == this)
-			{
-				g_transparentsList->Remove(i);
-				break;
-			}
-		}
-		*/
-	
 		delete m_pDecal;
 	}
 
@@ -379,26 +361,6 @@ public:
 
 		if(m_fLifeTime <= 0)
 			return false;
-
-		/*
-		if(materials->GetLightingModel() != MATERIAL_LIGHT_DEFERRED)
-		{
-			if(nDraws > 5)
-			{
-				m_vLastColor = ComputeLightingForPoint(m_vOrigin, false);
-
-				for(int i = 0; i < m_pDecal->vertexCount; i++)
-				{
-					m_pDecal->vertexArray[i].color = Vector4D(m_vLastColor,1);
-				}
-				nDraws = 0;
-			}
-		}
-		else
-		{
-			nDraws = 0;
-		}
-		*/
 
 		nDraws = 0;
 
@@ -424,14 +386,14 @@ protected:
 
 	int			nDraws;
 };
-
+*/
 ConVar r_impactsvisibledist("r_impactsvisibledist", "1600");
 
 void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 {
 	if(g_pViewEntity && length(tr.traceEnd - g_pViewEntity->GetEyeOrigin()) > r_impactsvisibledist.GetFloat())
 		return;
-
+	/* REWRITE_GAME_EFFECTS
 	if(tr.hitmaterial)
 	{
 		EmitSound_t rico;
@@ -583,14 +545,6 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 				}
 			}
 
-			/*
-			for(int i = 0; i < 4; i++)
-			{
-				CSmokeEffect* pEffect = new CSmokeEffect(origin+normal*4, normal*RandomFloat(10,25), RandomFloat(0.8,3), RandomFloat(14,19), RandomFloat(0.35,0.75), EFFECT_GROUP_ID( Smoke, RandomInt(1,6)), RandomFloat(10,105));
-				effectrenderer->RegisterEffectForRender(pEffect);
-			}
-			*/
-
 			for(int i = 0; i < 15; i++)
 			{
 				Vector3D reflDir = reflect(impactDirection, tr.normal);
@@ -736,10 +690,13 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 			}
 		}
 	}
+	*/
 }
 
 void UTIL_ExplosionEffect(Vector3D &origin, Vector3D &direction, bool onGround)
 {
+	/* REWRITE_GAME_EFFECTS
+
 	int gID = 6;
 
 	float fDecScale = 45.0f;
@@ -754,7 +711,7 @@ void UTIL_ExplosionEffect(Vector3D &origin, Vector3D &direction, bool onGround)
 	decal.flags = DECALFLAG_CULLING;
 
 	tempdecal_t* pDecal = eqlevel->MakeTempDecal(decal);
-			
+
 	if(pDecal)
 	{
 		CDecalEffect* pEffect = new CDecalEffect(pDecal, decal.origin, 60, EFFECT_GROUP_ID(ConcreteDecals, gID));
@@ -816,6 +773,7 @@ void UTIL_ExplosionEffect(Vector3D &origin, Vector3D &direction, bool onGround)
 		CSmokeEffect* pEffect = new CSmokeEffect(origin+dir*5.0f, dir*RandomFloat(180,200), RandomFloat(40,49), RandomFloat(94,119), RandomFloat(1.25,2.05), EFFECT_GROUP_ID( Smoke, 0), RandomFloat(10,105), Vector3D(0,15,0), ColorRGB(0,0,0), ColorRGB(0,0,0));
 		effectrenderer->RegisterEffectForRender(pEffect);
 	}
+	*/
 }
 
 ConVar ph_contact_min_momentum("ph_contact_min_momentum", "60", "Minimum contact momentum for playing sound and making effects", CV_CHEAT);

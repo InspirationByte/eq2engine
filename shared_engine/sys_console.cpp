@@ -35,6 +35,21 @@ DECLARE_CMD(toggleconsole, "Toggles console", 0)
 DECLARE_CMD(con_show, "Show console", 0)
 {
 	g_pSysConsole->SetVisible(true);
+	g_pSysConsole->SetLogVisible(false);
+}
+
+// shows console with log
+DECLARE_CMD(con_show_full, "Show console", 0)
+{
+	g_pSysConsole->SetVisible(true);
+	g_pSysConsole->SetLogVisible(true);
+}
+
+// hides console
+DECLARE_CMD(con_hide, "Hides console", 0)
+{
+	g_pSysConsole->SetVisible(false);
+	g_pSysConsole->SetLogVisible(false);
 }
 
 ConVar con_enable("con_enable","1",NULL, CV_CHEAT);
@@ -896,21 +911,18 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 {
 	if( pressed ) // catch "DOWN" event
 	{
-		int action_index = GetKeyBindings()->GetBindingIndexByKey(key);
+		binding_t* tgBind = GetKeyBindings()->LookupBinding(key);
 
-		if(action_index != -1)
+		if(tgBind && !stricmp(tgBind->commandString.c_str(), "toggleconsole"))
 		{
-			if(!stricmp(GetKeyBindings()->GetBindingList()->ptr()[action_index]->commandString.GetData(), "toggleconsole"))
+			if(g_pSysConsole->IsVisible() && g_pSysConsole->IsShiftPressed())
 			{
-				if(g_pSysConsole->IsVisible() && g_pSysConsole->IsShiftPressed())
-				{
-					g_pSysConsole->SetLogVisible( !g_pSysConsole->IsLogVisible() );
-					return false;
-				}
-
-				SetVisible(!IsVisible());
+				g_pSysConsole->SetLogVisible( !g_pSysConsole->IsLogVisible() );
 				return false;
 			}
+
+			SetVisible(!IsVisible());
+			return false;
 		}
 	}
 

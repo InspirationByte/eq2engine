@@ -22,6 +22,7 @@ CObject_Debris::CObject_Debris( kvkeybase_t* kvdata )
 	m_keyValues = kvdata;
 	m_physBody = NULL;
 	m_collOccured = false;
+	m_fTimeToRemove = 0.0f;
 }
 
 CObject_Debris::~CObject_Debris()

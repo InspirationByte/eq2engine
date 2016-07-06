@@ -342,7 +342,7 @@ void CBaseWeapon::SecondaryAttack()
 {
 
 }
-
+/*
 class CMuzzleEffect : public IEffect
 {
 public:
@@ -460,7 +460,7 @@ protected:
 	float		fEndSize;
 	float		rotate;
 };
-
+*/
 void CBaseWeapon::FireBullets(int numBullets, Vector3D &origin, Vector3D &angles, float fMaxDist)
 {
 	Vector3D forward, up, right;

@@ -69,7 +69,7 @@ static int DistanceCompare(const void* obj1, const void* obj2)
 	return -UTIL_CompareFloats(pObjectA->m_fViewDistance, pObjectB->m_fViewDistance);
 }
 
-void CBasicRenderList::SortByDistanceFrom(Vector3D& origin)
+void CBasicRenderList::SortByDistanceFrom(const Vector3D& origin)
 {
 	//Msg("num objc: %d\n", m_ObjectList.numElem());
 

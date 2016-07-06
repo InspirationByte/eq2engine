@@ -84,8 +84,6 @@ public:
 
 	void				SetCenterMouseCursor(bool enable) {m_bCenterMouse = enable;}
 
-	IEqModel*			LoadModel(const char* filename, bool loadErrorIfFail = true);
-
 private:
 
 	virtual	int			Run();
@@ -221,39 +219,6 @@ void CEngineGame::ProcessKeyChar( ubyte ch )
 {
 	// Only in-game ui
 	gamedll->ProcessKeyChar( ch );
-}
-
-IEqModel* CEngineGame::LoadModel(const char* filename, bool loadErrorIfFail)
-{
-	g_pEngineHost->EnterResourceLoading();
-
-	CEngineStudioEGF* pModel = new CEngineStudioEGF();
-
-	CScopedPointer<CEngineStudioEGF> sptr(pModel, SPTR_NEW);
-
-	bool result = pModel->LoadModel( filename );
-
-	if( loadErrorIfFail )
-	{
-		if(!result)
-			pModel->LoadModel("models/error.egf");
-	}
-	else
-	{
-		if(!result)
-		{
-			g_pEngineHost->EndResourceLoading();
-
-			return NULL;
-		}
-	}
-
-	// disable deallocation of scoped pointer
-	sptr.Disable();
-
-	g_pEngineHost->EndResourceLoading();
-
-	return pModel;
 }
 
 double CEngineGame::StateUpdate( void )

@@ -54,6 +54,12 @@ public:
 	// returns default swap chain
 	IEqSwapChain*			GetDefaultSwapchain();
 
+	void*					GetSharedContext();		// this is called in other thread
+	void					DropSharedContext();
+
+	void					RestoreSharedContext();	// this is often called in main thread
+	
+
 protected:
 
 	ShaderAPIGL*			m_Renderer;
@@ -67,6 +73,8 @@ protected:
     EGLSurface				eglSurface;
     EGLContext				glContext;
 	EGLContext				glContext2;
+
+	EGLConfig				eglConfig;
 
 #elif defined(_WIN32)
 	DISPLAY_DEVICE			device;

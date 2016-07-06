@@ -106,9 +106,9 @@ CBuildingLayerEditDialog::CBuildingLayerEditDialog( wxWindow* parent )
 	bSizer18 = new wxBoxSizer( wxHORIZONTAL );
 	
 	m_renderPanel = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	//m_renderPanel->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ) );
 
-	m_renderPanel->SetDropTarget(this);
+	// THIS CRASHES ON EXIT
+	//m_renderPanel->SetDropTarget(this);
 
 	m_pSwapChain = materials->CreateSwapChain(m_renderPanel->GetHandle());
 	
@@ -1013,7 +1013,7 @@ CUI_BuildingConstruct::CUI_BuildingConstruct( wxWindow* parent )
 	sbSizer6 = new wxStaticBoxSizer( new wxStaticBox( m_pSettingsPanel, wxID_ANY, wxT("Properties") ), wxVERTICAL );
 
 	m_tiledPlacement = new wxCheckBox( m_pSettingsPanel, wxID_ANY, wxT("Tiled placement (T)"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_tiledPlacement->SetValue(true); 
+	m_tiledPlacement->SetValue(false); 
 	sbSizer6->Add( m_tiledPlacement, 0, wxALL, 5 );
 	
 	
@@ -1157,6 +1157,8 @@ void CUI_BuildingConstruct::OnLevelLoad()
 	CBaseTilebasedEditor::OnLevelLoad();
 	m_layerCollList->LoadLayerCollections( g_pGameWorld->GetLevelName() );
 
+	
+
 	m_mode = ED_BUILD_READY;
 }
 
@@ -1164,6 +1166,9 @@ void CUI_BuildingConstruct::OnLevelSave()
 {
 	CBaseTilebasedEditor::OnLevelSave();
 	m_layerCollList->SaveLayerCollections( g_pGameWorld->GetLevelName() );
+
+	// save each region of level
+
 }
 
 void CUI_BuildingConstruct::OnLevelUnload()
@@ -1266,7 +1271,7 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				segment.position = m_mousePoint;
 
 				// make a first point
-				m_newBuilding.points.append( segment );
+				m_newBuilding.points.addLast( segment );
 				m_newBuilding.layerColl = m_layerCollList->GetSelectedLayerColl();
 				m_newBuilding.order = 1;
 
@@ -1280,23 +1285,29 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				if(m_placeError)
 					return;
 
-				Vector3D firstPoint = m_newBuilding.points[0].position;
+				if(!m_newBuilding.points.goToFirst())
+					return;
 
-				Vector3D newPoint = m_placementPoint;
-				newPoint.y = firstPoint.y;	// height must match
+				Vector3D firstPoint = m_newBuilding.points.getCurrent().position;
 
-				// set last point layer id
-				buildSegmentPoint_t& lastPoint = m_newBuilding.points[m_newBuilding.points.numElem()-1];
+				if(!m_newBuilding.points.goToLast())
+					return;
+
+				// Modify last point to use selected segment and layer
+				buildSegmentPoint_t& lastPoint = m_newBuilding.points.getCurrentNode()->object;
 				lastPoint.layerId = m_curLayerId;
 				lastPoint.scale = m_curSegmentScale;
 
-				buildSegmentPoint_t segment;
-				segment.layerId = 0;
-				segment.position = newPoint;
-				segment.scale = 1.0f;
+				// height of the segments must be equal to first point
+				m_mousePoint.y = firstPoint.y;
 
-				// make other points
-				m_newBuilding.points.append( segment );
+				buildSegmentPoint_t newSegment;
+				newSegment.layerId = 0;
+				newSegment.scale = 1.0f;
+				newSegment.position = ComputePlacementPointBasedOnMouse();
+
+				// Add point to the building
+				m_newBuilding.points.addLast( newSegment );
 
 				// ED_BUILD_DONE if connected to begin point
 				//if(distance(ppos, m_newBuilding.points[0]) < 2.0f)
@@ -1321,7 +1332,25 @@ void CUI_BuildingConstruct::CancelBuilding()
 
 void CUI_BuildingConstruct::CompleteBuilding()
 {
-	// TODO: generate building model for region:
+	// generate building model for region:
+	if(!m_selectedRegion || m_newBuilding.points.getCount() == 0 || m_newBuilding.layerColl == NULL)
+		return;
+
+	buildingSource_t* newBuilding = new buildingSource_t(m_newBuilding);
+
+	if( !GenerateBuildingModel(newBuilding) )
+	{
+		delete newBuilding;
+		return;
+	}
+
+	CEditorLevelRegion* region = (CEditorLevelRegion*)g_pGameWorld->m_level.GetRegionAtPosition(newBuilding->modelPosition);
+
+	if( !region )
+		region = (CEditorLevelRegion*)m_selectedRegion;
+
+	// add building to the region
+	int newIdx = region->m_buildings.append( newBuilding );
 
 	m_newBuilding.points.clear();
 	m_newBuilding.layerColl = NULL;
@@ -1340,8 +1369,11 @@ void CUI_BuildingConstruct::DeleteSelection()
 {
 	if(m_mode == ED_BUILD_SELECTEDPOINT)
 	{
-		if(m_newBuilding.points.numElem() > 1)
-			m_newBuilding.points.removeIndex(m_newBuilding.points.numElem()-1);
+		if(m_newBuilding.points.getCount() > 1)
+		{
+			m_newBuilding.points.goToLast();
+			m_newBuilding.points.removeCurrent(); //removeIndex(m_newBuilding.points.numElem()-1);
+		}
 		else
 			CancelBuilding();
 	}
@@ -1353,102 +1385,63 @@ void CUI_BuildingConstruct::OnRender()
 {
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	if(m_selectedRegion)
+	if(!m_selectedRegion)
+		return;
+
+	CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
+	field->DebugRender(false,m_mouseOverTileHeight);
+
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+	// only draw if building is not empty
+	if(m_newBuilding.points.getCount() > 0 && m_newBuilding.layerColl != NULL)
 	{
-		CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
+		buildSegmentPoint_t extraSegment;
+		extraSegment.position = ComputePlacementPointBasedOnMouse();
+		extraSegment.layerId = m_curLayerId;
+		extraSegment.scale = m_curSegmentScale;
 
-		field->DebugRender(false,m_mouseOverTileHeight);
-	}
+		//
+		// Finally render the dynamic preview of our building
+		//
+		RenderBuilding(&m_newBuilding, &extraSegment);
 
-	if(m_newBuilding.points.numElem() > 0 && m_newBuilding.layerColl != NULL)
-	{
-		// Render dynamic preview of the building we're making
-
-		Vector3D endPoint = m_newBuilding.points[0].position;
-
-		DkList<buildSegmentPoint_t> allPoints;
-		allPoints.append(m_newBuilding.points);
-
+		// render the actual and computed points
 		debugoverlay->Box3D(m_mousePoint - 0.5f, m_mousePoint + 0.5f, ColorRGBA(1,0,0,1));
-		m_mousePoint.y = endPoint.y;
+		debugoverlay->Box3D(extraSegment.position-0.5f, extraSegment.position+0.5f, ColorRGBA(1,1,0,1));
 
-		debugoverlay->Text3D(m_mousePoint, -1.0f, color4_white, "layer: %d scale: %g", m_curLayerId, m_curSegmentScale);
-
-		buildSegmentPoint_t& lastPoint = allPoints[allPoints.numElem()-1];
-
-		// set last point layer id and scale
-		lastPoint.layerId = m_curLayerId;
-		lastPoint.scale = m_curSegmentScale;
-
-		// add virtual point
-		buildSegmentPoint_t justPoint;
-		justPoint.position = m_mousePoint;
-		allPoints.append( justPoint );
-
-		Matrix4x4 partTransform;
-		BoundingBox tempBBox;
-
-		m_placementPoint = m_mousePoint;
+		// render points of building
+		for(DkLLNode<buildSegmentPoint_t>* lln = m_newBuilding.points.goToFirst(); lln != NULL; lln = m_newBuilding.points.goToNext())
+		{
+			debugoverlay->Box3D(lln->object.position - 0.5f, lln->object.position + 0.5f, ColorRGBA(0,1,0,1));
+		}
+	}
+	else
 		m_placeError = false;
 
-		for(int i = 1; i < allPoints.numElem(); i++)
-		{
-			buildSegmentPoint_t& start = allPoints[i-1];
-			buildSegmentPoint_t& end = allPoints[i];
-
-			debugoverlay->Line3D(start.position, end.position, ColorRGBA(1,1,1,1), ColorRGBA(1,1,1,1), 0.0f);
-
-			//
-			// PROTOTYPE
-			//
-
-			// draw models or walls
-			buildLayer_t& layer = m_newBuilding.layerColl->layers[ start.layerId ];
-
-			if(layer.type == BUILDLAYER_MODEL || layer.type == BUILDLAYER_CORNER_MODEL)
-			{
-				if( !layer.model )
-					continue;
-
-				CLevelModel* model = layer.model->m_model;
-
-				// compute iteration count from model width
-				const BoundingBox& modelBox = model->GetAABB();
-				Vector3D size = modelBox.GetSize();
-				float modelLen = size.x*start.scale;
-
-				float remainingLength = length(end.position - start.position);
-
-				float iterationsPerLen = remainingLength / modelLen;
-
-				int numIterations = (int)(iterationsPerLen + 0.5f);
-
-				// calculate transformation for each iteration
-				for(int iter = 0; iter < numIterations; iter++)
-				{
-					CalculateBuildingModelTransform( partTransform, layer, start.position, end.position, m_newBuilding.order, size, start.scale, iter );
-
-					materials->SetMatrix(MATRIXMODE_WORLD, partTransform);
-					model->Render(0, tempBBox);
-				}
-
-				// do not place points if no interations made
-				m_placeError = (numIterations == 0);
-
-				// recalc placement point by preview
-				Vector3D direction = normalize(end.position - start.position);
-				m_placementPoint = start.position + direction * floor(numIterations) * modelLen;
-
-				debugoverlay->Box3D(m_placementPoint-0.5f, m_placementPoint+0.5f, ColorRGBA(1,1,0,1));
-			}
-		}
-
-		for(int i = 0; i < m_newBuilding.points.numElem(); i++)
-		{
-			Vector3D point = m_newBuilding.points[i].position;
-			debugoverlay->Box3D(point - 0.5f, point + 0.5f, ColorRGBA(0,1,0,1));
-		}
-	}
-
 	CBaseTilebasedEditor::OnRender();
+}
+
+Vector3D CUI_BuildingConstruct::ComputePlacementPointBasedOnMouse()
+{
+	if(!m_newBuilding.points.goToLast())
+		return vec3_zero;
+
+	// now the computations
+	const buildSegmentPoint_t& end = m_newBuilding.points.getCurrent();
+
+	// get scaled segment length of last node
+	buildLayer_t& layer = m_newBuilding.layerColl->layers[m_curLayerId];
+	float segLen = GetSegmentLength(layer) * m_curSegmentScale;
+
+	buildSegmentPoint_t testSegPoint;
+	testSegPoint.position = m_mousePoint;
+
+	// calculate segment interations from last node to mouse position
+	int numIterations = GetLayerSegmentIterations(end, testSegPoint, segLen);
+	m_placeError = (numIterations == 0);
+
+	// compute the valid placement point of segment
+	Vector3D segmentDir = normalize(m_mousePoint - end.position);
+	return end.position + segmentDir * floor(numIterations) * segLen;
 }

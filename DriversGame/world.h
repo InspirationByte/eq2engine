@@ -17,6 +17,11 @@
 
 #include "predictablerandom.h"
 
+#ifdef EDITOR
+#include "../DriversEditor/level_generator.h"
+#include "../DriversEditor/EditorLevel.h"
+#endif // EDITOR
+
 class CBillboardList;
 
 enum ERenderFlags
@@ -191,7 +196,12 @@ public:
 
 public:
 	CViewParams						m_CameraParams;
+
+#ifdef EDITOR
+	CEditorLevel					m_level;
+#else
 	CGameLevel						m_level;
+#endif // EDITOR
 
 	occludingFrustum_t				m_occludingFrustum;
 

@@ -281,9 +281,9 @@ class CSoundEmitterSystem
 	friend class				CSoundController;
 
 public:
-								CSoundEmitterSystem() : m_isInit(false) {}
+								CSoundEmitterSystem() : m_isInit(false), m_defaultMaxDistance(100.0f) {}
 
-	void						Init();
+	void						Init(float maxDistance);
 	void						Shutdown();
 
 	void						PrecacheSound(const char* pszName);							// precaches sound
@@ -331,6 +331,8 @@ private:
 	bool						m_bViewIsAvailable;
 	int							m_rooms[2];
 	int							m_nRooms;
+
+	float						m_defaultMaxDistance;
 };
 
 extern CSoundEmitterSystem* ses;

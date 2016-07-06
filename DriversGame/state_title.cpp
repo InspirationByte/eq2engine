@@ -30,7 +30,7 @@ CState_Title::~CState_Title()
 
 void CState_Title::OnEnter( CBaseStateHandler* from )
 {
-	ses->Init();
+	ses->Init(100.0f);
 
 	ses->PrecacheSound( "menu.click" );
 	ses->PrecacheSound( "menu.thunder" );

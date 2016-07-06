@@ -8,7 +8,7 @@
 #ifndef MATERIALPROXY_H
 #define MATERIALPROXY_H
 
-#include "IMaterialSystem.h"
+#include "materialsystem/IMaterialSystem.h"
 
 enum ProxyVarType_e
 {

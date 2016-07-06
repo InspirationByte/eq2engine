@@ -113,10 +113,10 @@ public:
 		return (curr != NULL);
 	}
 
-	bool goToFirst() { return (curr = first) != NULL; }
-	bool goToLast () { return (curr = last ) != NULL; }
-	bool goToPrev () { return (curr = curr->prev) != NULL; }
-	bool goToNext () { return (curr = curr->next) != NULL; }
+	DkLLNode<T>* goToFirst() { return curr = first; }
+	DkLLNode<T>* goToLast () { return curr = last; }
+	DkLLNode<T>* goToPrev () { return curr = curr->prev; }
+	DkLLNode<T>* goToNext () { return curr = curr->next; }
 
 	bool goToObject(const T& object)
 	{

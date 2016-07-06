@@ -297,10 +297,14 @@ void CPhysicsEngine::RemoveObject( CPhysicsHFObject* pPhysObject )
 
 	pPhysObject->m_object->SetUserData(NULL);
 
-	m_physics.DestroyBody( pPhysObject->m_object );
+	CEqRigidBody* body = pPhysObject->m_object;
+
+	// detach HFObject from body and remove from list
+	delete pPhysObject;
 	m_pObjects.fastRemove( pPhysObject );
 
-	delete pPhysObject;
+	// destroy body
+	m_physics.DestroyBody( body );
 }
 
 void CPhysicsEngine::RemoveHeightField( CHeightTileField* pPhysObject )

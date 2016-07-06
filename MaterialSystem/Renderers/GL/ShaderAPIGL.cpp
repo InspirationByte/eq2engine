@@ -222,6 +222,8 @@ ShaderAPIGL::ShaderAPIGL() : ShaderAPI_Base()
 	m_pMeshBufferNoTextureShader = NULL;
 
 	m_boundInstanceStream = -1;
+
+	m_glContext2 = 0;
 }
 
 void ShaderAPIGL::PrintAPIInfo()
@@ -1705,14 +1707,16 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 
 		for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 		{
-			if ( pSelectedFormat->m_hGeneric[i].m_nSize && !pCurrentFormat->m_hGeneric[i].m_nSize)
-			{
-				glEnableVertexAttribArray(i);
-			}
-
-			if (!pSelectedFormat->m_hGeneric[i].m_nSize &&  pCurrentFormat->m_hGeneric[i].m_nSize)
+			if (!pSelectedFormat->m_hGeneric[i].m_nSize && pCurrentFormat->m_hGeneric[i].m_nSize)
 			{
 				glDisableVertexAttribArray(i);
+				GLCheckError("disable vtx attrib");
+			}
+
+			if(pSelectedFormat->m_hGeneric[i].m_nSize && !pCurrentFormat->m_hGeneric[i].m_nSize)
+			{
+				glEnableVertexAttribArray(i);
+				GLCheckError("enable vtx attrib");
 			}
 		}
 
@@ -1751,6 +1755,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 		GL_CRITICAL();
 
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		GLCheckError("bind array");
 
 		m_nCurrentVBO = vbo;
 
@@ -1796,12 +1801,18 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 				if (cvf->m_hGeneric[i].m_nStream == nStream)
 				{
 					if(cvf->m_hGeneric[i].m_nSize)
+					{
 						glVertexAttribPointer(i, cvf->m_hGeneric[i].m_nSize, glTypes[cvf->m_hGeneric[i].m_nFormat], GL_TRUE, vertexSize, base + cvf->m_hGeneric[i].m_nOffset);
+						GLCheckError("attribpointer");
+					}
+
 
 					// instance vertex attrib divisor
 					int selStreamParam = instanceBuffer ? 1 : 0;
 
 					glVertexAttribDivisorARB(i, selStreamParam);
+
+					GLCheckError("divisor");
 				}
 			}
 
@@ -1845,11 +1856,14 @@ void ShaderAPIGL::ChangeIndexBuffer(IIndexBuffer *pIndexBuffer)
 		if (pIndexBuffer == NULL)
 		{
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+			GLCheckError("bind elem array 0");
 		}
 		else
 		{
 			CIndexBufferGL* pSelectedIndexBffer = (CIndexBufferGL*)pIndexBuffer;
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pSelectedIndexBffer->m_nGL_IB_Index);
+			GLCheckError("bind elem array");
 		}
 
 		m_pCurrentIndexBuffer = pIndexBuffer;
@@ -1992,7 +2006,10 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		prog->m_program = glCreateProgram();
 
 		if(!GLCheckError("create program"))
+		{
+			GL_END_CRITICAL();
 			return false;
+		}
 
 		GL_END_CRITICAL();
 
@@ -2015,15 +2032,22 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		prog->m_vertexShader = glCreateShader(GL_VERTEX_SHADER);
 
 		if(!GLCheckError("create vertex shader"))
+		{
+			GL_END_CRITICAL();
 			return false;
+		}
 
 		glShaderSource(prog->m_vertexShader, 1, &sStr, NULL);
 		glCompileShader(prog->m_vertexShader);
+
+		GLCheckError("compile vert shader");
+
 		glGetShaderiv(prog->m_vertexShader, GL_OBJECT_COMPILE_STATUS_ARB, &vsResult);
 
 		if (vsResult)
 		{
 			glAttachShader(prog->m_program, prog->m_vertexShader);
+			GLCheckError("attach vert shader");
 		}
 		else
 		{
@@ -2065,15 +2089,21 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		prog->m_fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
 		if(!GLCheckError("create fragment shader"))
+		{
+			GL_END_CRITICAL();
 			return false;
+		}
 
 		glShaderSource(prog->m_fragmentShader, 1, &sStr, NULL);
 		glCompileShader(prog->m_fragmentShader);
 		glGetShaderiv(prog->m_fragmentShader, GL_OBJECT_COMPILE_STATUS_ARB, &fsResult);
 
+		GLCheckError("compile frag shader");
+
 		if (fsResult)
 		{
 			glAttachShader(prog->m_program, prog->m_fragmentShader);
+			GLCheckError("attach frag shader");
 		}
 		else
 		{
@@ -2120,6 +2150,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 				// bind attribute
 				glBindAttribLocation(prog->m_program, attribIndex, nameStr);
+				GLCheckError("bind attrib");
 			}
 		}
 
@@ -2128,6 +2159,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		// link program and go
 		glLinkProgram(prog->m_program);
 		glGetProgramiv(prog->m_program, GL_OBJECT_LINK_STATUS_ARB, &linkResult);
+
+		GLCheckError("link program");
 
 		GL_END_CRITICAL();
 
@@ -2147,6 +2180,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		GL_CRITICAL();
 		// use freshly generated program to retirieve constants (uniforms) and samplers
 		glUseProgram(prog->m_program);
+
+		GLCheckError("test use program");
 
 		// intel buggygl fix
 		if( m_vendor == VENDOR_INTEL )
@@ -2255,8 +2290,12 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		// restore current program we previously stored
 		glUseProgram(currProgram);
 
+		GLCheckError("restore use program");
+
 		glDeleteShader(prog->m_fragmentShader);
 		glDeleteShader(prog->m_vertexShader);
+
+		GLCheckError("delete shaders");
 
 		GL_END_CRITICAL();
 
@@ -2443,15 +2482,21 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(BufferAccessType_e nBufAccess, in
 	GL_CRITICAL();
 	glGenBuffers(1, &pGLVertexBuffer->m_nGL_VB_Index);
 
-    if(!GLCheckError("create vertex buffer"))
+    if(!GLCheckError("gen vert buffer"))
 	{
 		delete pGLVertexBuffer;
+		GL_END_CRITICAL();
+
 		return NULL;
 	}
 
 	glBindBuffer(GL_ARRAY_BUFFER, pGLVertexBuffer->m_nGL_VB_Index);
 	glBufferData(GL_ARRAY_BUFFER, pGLVertexBuffer->GetSizeInBytes(), pData, glBufferUsages[nBufAccess]);
+
+	GLCheckError("upload vtx data");
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
 
 	Finish();
 
@@ -2479,14 +2524,19 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, Buffe
 	GL_CRITICAL();
 	glGenBuffers(1, &pGLIndexBuffer->m_nGL_IB_Index);
 
-    if(!GLCheckError("create index buffer"))
+    if(!GLCheckError("gen idx buffer"))
 	{
 		delete pGLIndexBuffer;
+		GL_END_CRITICAL();
+
 		return NULL;
 	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pGLIndexBuffer->m_nGL_IB_Index);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, pData, glBufferUsages[nBufAccess]);
+
+	GLCheckError("upload idx data");
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	Finish();
@@ -2626,6 +2676,8 @@ void ShaderAPIGL::DrawIndexedPrimitives(PrimitiveType_e nType, int nFirstIndex, 
 	else
 		glDrawElements(glPrimitiveType[nType], nIndices, indexSize == 2? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
 
+	GLCheckError("draw elements");
+
 	GL_END_CRITICAL();
 
 	m_nDrawIndexedPrimitiveCalls++;
@@ -2652,6 +2704,8 @@ void ShaderAPIGL::DrawNonIndexedPrimitives(PrimitiveType_e nType, int nFirstVert
 		glDrawArraysInstancedARB(glPrimitiveType[nType], nFirstVertex, nVertices, numInstances);
 	else
 		glDrawArrays(glPrimitiveType[nType], nFirstVertex, nVertices);
+
+	GLCheckError("draw arrays");
 
 	GL_END_CRITICAL();
 
@@ -3049,12 +3103,12 @@ void ShaderAPIGL::ResetGLContext()
 // Owns context for current execution thread
 void ShaderAPIGL::GL_CRITICAL()
 {
-    SwitchGLContext();
+    //SwitchGLContext();
 }
 
 // Releases context
 void ShaderAPIGL::GL_END_CRITICAL()
 {
     // end of use
-    m_busySignal.Raise();
+    //m_busySignal.Raise();
 }

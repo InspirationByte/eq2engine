@@ -32,7 +32,7 @@ CState_MainMenu::~CState_MainMenu()
 
 void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 {
-	ses->Init();
+	ses->Init(100.0f);
 
 	ses->PrecacheSound( "menu.back" );
 	ses->PrecacheSound( "menu.roll" );
