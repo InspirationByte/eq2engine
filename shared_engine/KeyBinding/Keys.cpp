@@ -278,7 +278,7 @@ void CKeyCommandBinder::OnMouseWheel( const int scroll )
 	}
 }
 
-void CKeyCommandBinder::OnTouchEvent( const Vector2D& pos, bool down )
+void CKeyCommandBinder::OnTouchEvent( const Vector2D& pos, int finger, bool down )
 {
 	if(in_touchzones_debug.GetBool())
 		MsgWarning("-- Touch [%g %g] (%d)\n", pos.x, pos.y, down);
@@ -289,12 +289,23 @@ void CKeyCommandBinder::OnTouchEvent( const Vector2D& pos, bool down )
 
 		Rectangle_t rect(tz->position - tz->size*0.5f, tz->position + tz->size*0.5f);
 
-		if( rect.IsInRectangle(pos) )
+		if(!down)
+		{
+			if(tz->finger == finger) // if finger up
+			{
+				ExecuteTouchZone( tz, down );
+				tz->finger = -1;
+			}
+		}
+		else if( rect.IsInRectangle(pos) )
 		{
 			if(in_touchzones_debug.GetBool())
 				Msg("found zone %s\n", tz->name.c_str());
 
+			tz->finger = finger;
+
 			ExecuteTouchZone( tz, down );
+			continue;
 		}
 	}
 }

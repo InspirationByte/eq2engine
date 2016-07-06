@@ -42,6 +42,11 @@ public:
 
 struct touchzone_t
 {
+	touchzone_t()
+	{
+		finger = -1;
+	}
+
 	Vector2D position;
 	Vector2D size;
 
@@ -53,7 +58,7 @@ struct touchzone_t
 	EqString	argumentString;
 	EqString	commandString;	// safe for writing
 
-	// TODO: bool state
+	int			finger;
 };
 
 //
@@ -99,7 +104,7 @@ public:
 	void					OnMouseEvent( const int button, bool bPressed );
 	void					OnMouseWheel( const int scroll );
 
-	void					OnTouchEvent( const Vector2D& pos, bool down );
+	void					OnTouchEvent( const Vector2D& pos, int finger, bool down );
 
 	// executes binding with selected state
 	void					ExecuteBinding( binding_t* pBinding, bool bState );
