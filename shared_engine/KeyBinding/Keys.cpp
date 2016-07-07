@@ -55,7 +55,7 @@ void CKeyCommandBinder::Shutdown()
 void CKeyCommandBinder::InitTouchZones()
 {
 	for(int i = 0; i < m_touchZones.numElem(); i++)
-		delete m_touchZones[i]; 
+		delete m_touchZones[i];
 
 	m_touchZones.clear();
 
@@ -333,10 +333,10 @@ void CKeyCommandBinder::DebugDraw(const Vector2D& screenSize)
 
 		Rectangle_t rect((tz->position-tz->size*0.5f)*screenSize, (tz->position+tz->size*0.5f)*screenSize);
 
-		defaultFont->RenderText(tz->name.c_str(), rect.vleftTop, fontParams);
+		defaultFont->RenderText( tz->name.c_str() , rect.vleftTop, fontParams);
 
 		Vertex2D_t touchQuad[] = { MAKETEXQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vrightBottom.y, 0) };
-		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,touchQuad,elementsOf(touchQuad), NULL, ColorRGBA(0.435,0.435,0.435,0.35f), &blending);
+		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,touchQuad,elementsOf(touchQuad), NULL, ColorRGBA(0.435,0.435,0.435, tz->finger >= 0 ? 0.25f : 0.35f  ), &blending);
 	}
 
 }

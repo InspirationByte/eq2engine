@@ -33,35 +33,36 @@ model {
 
         defaultConfig.with {
             applicationId = "com.insbyte.driversyndicate"
+
             minSdkVersion.apiLevel = 18
             targetSdkVersion.apiLevel = 23
 
         }
     }
 
-    android.sources {
-        main.jni {
-            source {
-                //srcDirs += ['src/main/jni/src']
-                //srcDirs += ['src/main/jni/SDL2/src']
-                //exclude '**/SDL_coreaudio.c'
+    android.sources.main {
 
-                srcDirs = []
+            jni {
+                source {
+                    //srcDirs += ['src/main/jni/src']
+                    //srcDirs += ['src/main/jni/SDL2/src']
+                    //exclude '**/SDL_coreaudio.c'
+
+                    srcDirs = []
+                }
             }
-        }
 
-        main.jniLibs {
-            source {
-                srcDirs += ['../../libs_android']
+            jniLibs {
+                source {
+                    srcDirs += ['../../libs_android']
+                }
             }
-        }
-
     }
 
     android.buildTypes {
         release {
             minifyEnabled = false
-            proguardFiles += file('proguard-rules.pro')
+            proguardFiles.add(file("proguard-rules.pro"))
         }
     }
 }
