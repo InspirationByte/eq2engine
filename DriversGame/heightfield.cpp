@@ -112,7 +112,7 @@ void CHeightTileField::ReadOnlyMaterials( IVirtualStream* stream )
 	{
 		hfieldmaterial_t* matBundle = new hfieldmaterial_t();
 		matBundle->material = materials->FindMaterial(matNamePtr, true);
-		matBundle->atlas = TexAtlas_LoadAtlas(("materials/"+_Es(matNamePtr)+".atlas").c_str(), matNamePtr, true);
+		matBundle->atlas = TexAtlas_LoadAtlas((materials->GetMaterialPath() + _Es(CORRECT_PATH_SEPARATOR) +_Es(matNamePtr)+".atlas").c_str(), matNamePtr, true);
 
 		if(matBundle->material)
 			matBundle->material->Ref_Grab();
@@ -147,7 +147,7 @@ void CHeightTileField::ReadFromStream( IVirtualStream* stream )
 	{
 		hfieldmaterial_t* matBundle = new hfieldmaterial_t();
 		matBundle->material = materials->FindMaterial(matNamePtr, true);
-		matBundle->atlas = TexAtlas_LoadAtlas(("materials/"+_Es(matNamePtr)+".atlas").c_str(), matNamePtr, true);
+		matBundle->atlas = TexAtlas_LoadAtlas((materials->GetMaterialPath() + _Es(CORRECT_PATH_SEPARATOR) +_Es(matNamePtr)+".atlas").c_str(), matNamePtr, true);
 
 		if(matBundle->material)
 		{
@@ -262,7 +262,7 @@ bool CHeightTileField::SetPointMaterial(int x, int y, IMaterial* pMaterial, int 
 			// try to load atlas
 			hfieldmaterial_t* matBundle = new hfieldmaterial_t;
 			matBundle->material = pMaterial;
-			matBundle->atlas = TexAtlas_LoadAtlas(("materials/"+_Es(pMaterial->GetName())+".atlas").c_str(), pMaterial->GetName(), true);
+			matBundle->atlas = TexAtlas_LoadAtlas((materials->GetMaterialPath() + _Es(CORRECT_PATH_SEPARATOR)+_Es(pMaterial->GetName())+".atlas").c_str(), pMaterial->GetName(), true);
 
 			matIdx = m_materials.append(matBundle);
 
@@ -1222,13 +1222,11 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 
 	if(m_isChanged)
 	{
-#ifdef EDITOR
 		g_pShaderAPI->Reset(STATE_RESET_VBO);
 		g_pShaderAPI->ApplyBuffers();
 
 		// regenerate again
 		GenereateRenderData();
-#endif // EDITOR
 
 		m_isChanged = false;
 	}

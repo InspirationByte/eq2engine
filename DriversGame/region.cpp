@@ -448,7 +448,7 @@ void CLevelRegion::Cleanup()
 			g_pPhysics->RemoveHeightField( m_heightfield[i] );
 			m_heightfield[i]->CleanRenderData();
 		}
-			
+
 	}
 
 	for(int i = 0; i < m_objects.numElem(); i++)
@@ -515,6 +515,8 @@ int	CLevelRegion::GetNumNomEmptyHFields() const
 	return nCount;
 }
 
+ConVar w_pregeneratedhfields("w_pregeneratedhfields", "1");
+
 void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>& levelmodels)
 {
 	if(m_isLoaded)
@@ -522,7 +524,8 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 
 	for(int i = 0; i < GetNumHFields(); i++)
 	{
-		m_heightfield[i]->GenereateRenderData();
+        if(w_pregeneratedhfields.GetBool())
+            m_heightfield[i]->GenereateRenderData();
 
 		if(m_heightfield[i]->m_hasTransparentSubsets)
 			m_hasTransparentSubsets = true;

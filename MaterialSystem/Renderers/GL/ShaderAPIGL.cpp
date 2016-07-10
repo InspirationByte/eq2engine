@@ -1189,8 +1189,11 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 		mipMapLevel++;
 	}
 
+
+#ifndef USE_GLES2
 	if(pSrc->IsCube())
 		glDisable( GL_TEXTURE_CUBE_MAP );
+#endif //USE_GLES2
 
 	glBindTexture(gltarget, 0);
 
