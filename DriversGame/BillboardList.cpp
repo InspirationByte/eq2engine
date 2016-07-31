@@ -260,8 +260,13 @@ void CBillboardList::DestroyBlb()
 
 #define MIN_DISAPPEAR_DISTANCE (800.0f)
 
+ConVar r_drawBillboardLists("r_drawBillboardLists", "1", "Draw billboard lists (used by trees)", CV_CHEAT );
+
 void CBillboardList::DrawBillboards()
 {
+    if(!r_drawBillboardLists.GetBool())
+        return;
+
 	PFXBillboard_t effect;
 
 	Matrix4x4 viewMat, worldMat;
