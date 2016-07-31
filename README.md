@@ -47,7 +47,6 @@ List of dependencies:
 
 Mobile platforms dependencies are:
 
-* **OpenAL-MOB** - used instead of just openal-soft - take it from https://github.com/Jawbone/OpenAL-MOB
 * **SDL2** - optionally can be configured in SDL_config_android.h with SDL_VIDEO_RENDER_OGL_ES=0 and SDL_VIDEO_RENDER_OGL_ES2=0
 * **ogg** and **vorbis**
 * **libjpeg** (jpeg8)
