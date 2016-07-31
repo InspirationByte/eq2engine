@@ -67,6 +67,8 @@ protected:
 
 	DkList<CPhysicsHFObject*>	m_pObjects;
 	DkList<CHeightTileField*>	m_heightFields;		// heightfield is sort of static objects
+
+	float						m_dtAccumulator;
 };
 
 extern CPhysicsEngine* g_pPhysics;

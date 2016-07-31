@@ -524,7 +524,7 @@ bool CGameHost::FilterTime( double dTime )
 	}
 	else
 	{
-		//m_fGameFrameTime = (m_fGameCurTime - m_fGameOldTime) * (double)sys_timescale.GetFloat();
+		m_fGameFrameTime = (m_fGameCurTime - m_fGameOldTime) * (double)sys_timescale.GetFloat();
 	}
 
 	m_fGameFrameTime = min( m_fGameFrameTime, MAX_FRAMETIME );
@@ -614,11 +614,13 @@ bool CGameHost::Frame()
 	materials->GetConfiguration().wireframeMode = r_wireframe->GetBool();
 
 	PROFILE_BLOCK(UpdateStates);
+
 	if(!UpdateStates( m_fGameFrameTime ))
 	{
 		g_pHost->m_nQuitState = CGameHost::QUIT_TODESKTOP;
 		return false;
 	}
+
 	PROFILE_END();
 
 	ses->Update();
