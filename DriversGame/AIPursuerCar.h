@@ -33,8 +33,8 @@ enum EInfractionType
 	INFRACTION_HIT_VEHICLE,		// hit the vehicle
 };
 
-const float AI_COPVIEW_FAR			= 30.0f;
-const float AI_COPVIEW_FAR_WANTED	= 70.0f;
+const float AI_COPVIEW_FAR			= 60.0f;
+const float AI_COPVIEW_FAR_WANTED	= 100.0f;
 
 class CAIPursuerCar : public CAITrafficCar
 {

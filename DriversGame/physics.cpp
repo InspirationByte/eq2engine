@@ -93,6 +93,7 @@ CPhysicsEngine::CPhysicsEngine()
 void CPhysicsEngine::SceneInit()
 {
 	m_physics.InitWorld();
+	m_dtAccumulator = 0.0f;
 
 //	m_nextPhysicsUpdate = 0.0f;
 //	m_curTime = 0.0f;
@@ -126,16 +127,37 @@ void PhysDebugRender(void* arg)
 	physEngine->m_physics.DebugDrawBodies( ph_debugrender.GetInt() );
 }
 
+const float PHYSICS_FRAME_INTERVAL = (1.0f / 60.0f);
+
 void CPhysicsEngine::Simulate( float fDt, int numIterations, FNSIMULATECALLBACK preIntegrateFn )
 {
 	PROFILE_FUNC();
 
-	double timestep = fDt / numIterations;
+	m_dtAccumulator += fDt;
+
+	int iterationMultiplier = 0;
+
+	while(m_dtAccumulator > PHYSICS_FRAME_INTERVAL)
+	{
+		iterationMultiplier++;
+		m_dtAccumulator -= PHYSICS_FRAME_INTERVAL;
+	}
+
+	if(iterationMultiplier > 1)
+		debugoverlay->Text(color4_white, "LOW FRAMERATE\n");
+	//else
+	//	iterationMultiplier = 1; // always make some frame
+
+	double timestep = PHYSICS_FRAME_INTERVAL / numIterations;
 
 	if(ph_singleiter.GetBool())
 		numIterations = 1;
 
-	for(int i = 0; i < numIterations; i++)
+	// do real iteration count
+	int nRealIterations = numIterations*iterationMultiplier;
+
+	// do real iteration count
+	for(int i = 0; i < nRealIterations; i++)
 	{
 		m_physics.PrepareSimulateStep();
 		m_physics.SimulateStep(timestep, i, preIntegrateFn);
