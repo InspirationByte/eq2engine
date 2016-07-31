@@ -1,6 +1,6 @@
 LOCAL_PATH := $(SRC_PATH)/src_dependency/OpenAL-MOB
 include $(CLEAR_VARS)
-LOCAL_MODULE := OpenAL-MOB
+LOCAL_MODULE := openal-soft
 
 LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include
 
