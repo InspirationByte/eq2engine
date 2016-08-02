@@ -17,7 +17,7 @@ include $(DEP_LIBS_MK)/jpeg.mk
 include $(DEP_LIBS_MK)/png.mk
 include $(DEP_LIBS_MK)/ogg.mk
 include $(DEP_LIBS_MK)/vorbis.mk
-include $(DEP_LIBS_MK)/OpenAL-MOB.mk
+include $(DEP_LIBS_MK)/openal-soft.mk
 include $(DEP_LIBS_MK)/Shiny.mk
 include $(DEP_LIBS_MK)/luajit.mk
 include $(DEP_LIBS_MK)/oolua.mk

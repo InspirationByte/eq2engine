@@ -7,6 +7,7 @@
 
 #include "ImageLoader.h"
 #include "DebugInterface.h"
+#include "ConVar.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -490,9 +491,11 @@ bool CImage::LoadDDSfromHandle(DKFILE *fileHandle, uint flags)
 			case 80: m_nFormat = FORMAT_ATI1N; break;
 			case 83: m_nFormat = FORMAT_ATI2N; break;
 			case 0:
-				MsgError("Invalid DDS file %s %d\n", GetName());
-				g_fileSystem->Close(file);
-				return false;
+                m_nFormat = FORMAT_ETC2;
+				MsgError("Invalid DDS file %s\n", GetName());
+				//g_fileSystem->Close(file);
+				//return false;
+				break;
 			default:
 				MsgError("Image %s has unknown or invalid DXGI format %d\n", GetName(), dxt10Header.dxgiFormat);
 				g_fileSystem->Close(file);

@@ -27,7 +27,7 @@ APP_MODULES := \
 	eqNullRHI\
 	eqGLRHI\
 	SDL2\
-	OpenAL-MOB\
+	openal-soft\
 	Shiny\
 	luajit\
 	oolua\
