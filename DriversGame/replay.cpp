@@ -1050,7 +1050,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 		}
 		case REPLAY_EVENT_FORCE_RANDOM:
 		{
-			g_pGameWorld->m_random.Regenerate();
+			g_replayRandom.Regenerate();
 			break;
 		}
 		case REPLAY_EVENT_CAR_RANDOMCOLOR:
@@ -1065,7 +1065,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 
 			if( conf->m_colors.numElem() > 0 )
 			{
-				int col_idx = g_pGameWorld->m_random.Get(0, conf->m_colors.numElem() - 1);
+				int col_idx = g_replayRandom.Get(0, conf->m_colors.numElem() - 1);
 				rep.obj_car->SetColorScheme(col_idx);
 			}
 			break;

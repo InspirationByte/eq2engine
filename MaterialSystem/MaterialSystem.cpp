@@ -45,7 +45,7 @@ ConVar				r_textureanisotrophy("r_textureanisotrophy", "4", "Mipmap anisotropic 
 
 ConVar				r_lightscale("r_lightscale", "1.0f", "Global light scale", CV_ARCHIVE);
 ConVar				r_shaderCompilerShowLogs("r_shaderCompilerShowLogs", "0","Show warnings of shader compilation",CV_ARCHIVE);
-ConVar				r_wireframe("r_wireframe",0,"Enables wireframe rendering",0);
+ConVar				r_wireframe("r_wireframe","0","Enables wireframe rendering",0);
 
 //
 // Threaded material loader

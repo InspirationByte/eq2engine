@@ -488,7 +488,7 @@ void CGameHost::ShutdownSystems()
 	g_fileSystem->FreeModule( g_matsysmodule );
 }
 
-ConVar sys_maxfps("sys_maxfps", "60", "Max framerate", CV_CHEAT);
+ConVar sys_maxfps("sys_maxfps", "0", "Frame rate limit", CV_CHEAT);
 ConVar sys_timescale("sys_timescale", "1.0f", "Time scale", CV_CHEAT);
 
 #define GAME_MAX_FRAMERATE (sys_maxfps.GetFloat()) // 60 fps limit
@@ -515,12 +515,12 @@ bool CGameHost::FilterTime( double dTime )
 
 		double minframetime = 1.0 / fps;
 
-		if(( m_fGameCurTime - m_fGameOldTime ) < minframetime )
-		{
-			return false;
-		}
+		m_fGameFrameTime = (m_fGameCurTime - m_fGameOldTime) * (double)sys_timescale.GetFloat();
 
-		m_fGameFrameTime = minframetime * (double)sys_timescale.GetFloat();
+		if(m_fGameFrameTime < minframetime )
+			return false;
+
+		//m_fGameFrameTime = minframetime * (double)sys_timescale.GetFloat();
 	}
 	else
 	{

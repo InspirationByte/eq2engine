@@ -321,7 +321,7 @@ CAITrafficCar::~CAITrafficCar()
 void CAITrafficCar::InitAI( bool isParked )
 {
 	AI_SetState( &CAITrafficCar::SearchForRoad );
-	m_speedModifier = g_pGameWorld->m_random.Get(0,10);
+	m_speedModifier = g_replayRandom.Get(0,10);
 }
 
 void CAITrafficCar::Spawn()
@@ -336,7 +336,7 @@ void CAITrafficCar::Spawn()
 
 	if( m_conf->m_colors.numElem() > 0 )
 	{
-		int col_idx = g_pGameWorld->m_random.Get(0, m_conf->m_colors.numElem() - 1);
+		int col_idx = g_replayRandom.Get(0, m_conf->m_colors.numElem() - 1);
 		SetColorScheme(col_idx);
 	}
 }
@@ -528,8 +528,7 @@ void CAITrafficCar::SwitchLane()
 
 	IVector2D rightPerpDir = GetDirectionVec( m_straights[STRAIGHT_CURRENT].direction+1 );
 
-	//g_pGameWorld->m_random.Regenerate();
-	int randomLane = g_pGameWorld->m_random.Get(0, 1);
+	int randomLane = g_replayRandom.Get(0, 1);
 
 	if(randomLane == 0)
 		randomLane = -1;
@@ -847,7 +846,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 		if( allowedStraightIds.numElem() )
 		{
-			int rndIdx = g_pGameWorld->m_random.Get(0, allowedStraightIds.numElem() - 1);
+			int rndIdx = g_replayRandom.Get(0, allowedStraightIds.numElem() - 1);
 			m_nextJuncDetails.selectedStraight = allowedStraightIds[rndIdx];
 			//Msg("Selected allowed straight earlier\n");
 		}
@@ -865,12 +864,12 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 			if(allowedStraightIds.numElem())
 			{
-				int rndIdx = g_pGameWorld->m_random.Get(0, allowedStraightIds.numElem() - 1);
+				int rndIdx = g_replayRandom.Get(0, allowedStraightIds.numElem() - 1);
 				m_nextJuncDetails.selectedStraight = allowedStraightIds[rndIdx];
 			}
 			else
 			{
-				m_nextJuncDetails.selectedStraight = g_pGameWorld->m_random.Get(0, m_nextJuncDetails.foundStraights.numElem() - 1);
+				m_nextJuncDetails.selectedStraight = g_replayRandom.Get(0, m_nextJuncDetails.foundStraights.numElem() - 1);
 			}
 		}
 	}

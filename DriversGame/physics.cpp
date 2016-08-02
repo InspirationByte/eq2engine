@@ -133,34 +133,24 @@ void CPhysicsEngine::Simulate( float fDt, int numIterations, FNSIMULATECALLBACK 
 {
 	PROFILE_FUNC();
 
-	m_dtAccumulator += fDt;
-
-	int iterationMultiplier = 0;
-
-	while(m_dtAccumulator > PHYSICS_FRAME_INTERVAL)
-	{
-		iterationMultiplier++;
-		m_dtAccumulator -= PHYSICS_FRAME_INTERVAL;
-	}
-
-	if(iterationMultiplier > 1)
-		debugoverlay->Text(color4_white, "LOW FRAMERATE\n");
-	//else
-	//	iterationMultiplier = 1; // always make some frame
-
 	double timestep = PHYSICS_FRAME_INTERVAL / numIterations;
 
-	if(ph_singleiter.GetBool())
-		numIterations = 1;
+	m_dtAccumulator += fDt;
 
-	// do real iteration count
-	int nRealIterations = numIterations*iterationMultiplier;
-
-	// do real iteration count
-	for(int i = 0; i < nRealIterations; i++)
+	// increase fixed frames if we're going low
+	while(m_dtAccumulator > PHYSICS_FRAME_INTERVAL)
 	{
-		m_physics.PrepareSimulateStep();
-		m_physics.SimulateStep(timestep, i, preIntegrateFn);
+		if(ph_singleiter.GetBool())
+			numIterations = 1;
+
+		// do real iteration count
+		for(int i = 0; i < numIterations; i++)
+		{
+			m_physics.PrepareSimulateStep();
+			m_physics.SimulateStep(timestep, i, preIntegrateFn);
+		}
+
+		m_dtAccumulator -= PHYSICS_FRAME_INTERVAL;
 	}
 
 	// debug rendering

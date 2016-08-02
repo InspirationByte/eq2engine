@@ -214,8 +214,6 @@ public:
 	IVertexFormat*					m_objectInstVertexFormat;
 	IVertexBuffer*					m_objectInstVertexBuffer;
 
-	CPredictableRandomGenerator		m_random;
-
 	CNetworkVar(float,				m_globalTrafficLightTime);
 	CNetworkVar(int,				m_globalTrafficLightDirection);
 
@@ -266,6 +264,8 @@ public:
 
 	Volume							m_frustum;
 };
+
+extern CPredictableRandomGenerator	g_replayRandom;
 
 extern CGameWorld*					g_pGameWorld;
 

@@ -347,9 +347,9 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 				playerPos = m_mainVehicle->GetOrigin().xz() * Vector2D(-1.0f,1.0f);
 			}
 			
-			Matrix4x4 mapTransform = rotateZ4(viewRotation);
+			Matrix4x4 mapTransform = rotateZ4(viewRotation);// * rotateX4(DEG2RAD(25));
 			
-			//materials->SetMatrix(MATRIXMODE_PROJECTION, perspectiveMatrixY(mapSize.x,mapSize.y, 90.0f, 0.1f, 1000.0f));
+			//materials->SetMatrix(MATRIXMODE_PROJECTION, perspectiveMatrixY(mapSize.x,mapSize.y, 90.0f, 0.0f, 1000.0f));
 			//materials->SetMatrix(MATRIXMODE_VIEW, rotateZXY4(DEG2RAD(40.0f), DEG2RAD(180.0f), DEG2RAD(180.0f)) * translate(0.0f, 200.0f, -500.0f));
 			//materials->SetMatrix(MATRIXMODE_WORLD, mapTransform * translate(viewPos));
 			
@@ -398,7 +398,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 				Vector2D copPos = pursuer->GetOrigin().xz() * Vector2D(-1.0f,1.0f);
 
-				targetFan[0].m_vPosition = copPos;
+				targetFan[0].m_vPosition = copPos + Vector2D(cop_forward.z, cop_forward.x)*10.0f;
 				targetFan[0].m_vColor = ColorRGBA(1,1,1,1);
 
 				float size = hasFelony ? AI_COPVIEW_FAR_WANTED : AI_COPVIEW_FAR;
@@ -411,7 +411,11 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 					float angle = float(i-1) * angFac + Yangle + angOffs;
 					SinCos(DEG2RAD(angle), &ss, &cs);
 
-					targetFan[i].m_vPosition = copPos + Vector2D(ss, cs)*size;
+					if(i == 1 || i == 6)
+						targetFan[i].m_vPosition = copPos + Vector2D(ss, cs)*10.0f;
+					else
+						targetFan[i].m_vPosition = copPos + Vector2D(ss, cs)*size;
+
 					targetFan[i].m_vColor = ColorRGBA(1,1,1,0.0f);
 				}
 

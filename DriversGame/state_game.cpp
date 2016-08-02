@@ -114,7 +114,6 @@ DECLARE_CMD(fastseek, "Does instant replay. You can fetch to frame if specified"
 	{
 		// TODO: use g_replayData->m_demoFrameRate
 		Game_OnPhysicsUpdate(frameRate, 0);
-		g_pGameWorld->UpdateTrafficLightState(frameRate);
 
 		replayTo--;
 	}
@@ -161,7 +160,6 @@ void Game_InstantReplay(int replayTo)
 	{
 		// TODO: use g_replayData->m_demoFrameRate
 		g_pPhysics->Simulate(frameRate, PHYSICS_ITERATION_COUNT, Game_OnPhysicsUpdate);
-		g_pGameWorld->UpdateTrafficLightState(frameRate);
 
 		replayTo--;
 		replayTo--;

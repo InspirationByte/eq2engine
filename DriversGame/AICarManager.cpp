@@ -147,14 +147,14 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 	{
 		CCar* newCar = NULL;
 
-		int randCar = g_pGameWorld->m_random.Get(0, m_civCarEntries.numElem() - 1);
+		int randCar = g_replayRandom.Get(0, m_civCarEntries.numElem() - 1);
 
 		carConfigEntry_t* conf = m_civCarEntries[randCar].config;
 
 		newCar = new CCar(conf);
 		
 		// car will be spawn, regenerate random
-		g_pGameWorld->m_random.Regenerate();
+		g_replayRandom.Regenerate();
 		g_replayData->PushEvent(REPLAY_EVENT_FORCE_RANDOM);
 
 		newCar->Spawn();
@@ -163,7 +163,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 
 		if( conf->m_colors.numElem() > 0 )
 		{
-			int col_idx = g_pGameWorld->m_random.Get(0, conf->m_colors.numElem() - 1);
+			int col_idx = g_replayRandom.Get(0, conf->m_colors.numElem() - 1);
 			newCar->SetColorScheme(col_idx);
 
 			// car random color
@@ -201,7 +201,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 	}
 	else
 	{
-		int randCar = g_pGameWorld->m_random.Get(0, m_civCarEntries.numElem() - 1);
+		int randCar = g_replayRandom.Get(0, m_civCarEntries.numElem() - 1);
 
 		m_civCarEntries[randCar].nextSpawn--;
 
@@ -216,7 +216,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 		return NULL;
 
 	// car will be spawn, regenerate random
-	g_pGameWorld->m_random.Regenerate();
+	g_replayRandom.Regenerate();
 	g_replayData->PushEvent(REPLAY_EVENT_FORCE_RANDOM);
 
 	pNewCar->Spawn();

@@ -676,7 +676,7 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 
 	PROFILE_END();
 
-	EqPhysContactResultCallback	cbResult((bodyB->m_flags & BODY_ISCAR), center);
+	EqPhysContactResultCallback	cbResult(/*(bodyB->m_flags & BODY_ISCAR)*/true, center);
 
 	PROFILE_BEGIN(contactPairTest);
 	m_collisionWorld->contactPairTest(objA, objB, cbResult);

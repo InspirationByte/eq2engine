@@ -12,15 +12,15 @@
 
 #include "AICarManager.h"
 
-
+// TODO: make these constants initialized from Lua
 
 const float AI_COPVIEW_FOV			= 85.0f;
 const float AI_COPVIEW_FOV_WANTED	= 90.0f;
 
 const float AI_COPVIEW_FAR_ROADBLOCK	= 10.0f;
 
-const float AI_COPVIEW_RADIUS			= 10.0f;
-const float AI_COPVIEW_RADIUS_WANTED	= 18.0f;
+const float AI_COPVIEW_RADIUS			= 18.0f;
+const float AI_COPVIEW_RADIUS_WANTED	= 25.0f;
 const float AI_COPVIEW_RADIUS_PURSUIT	= 120.0f;
 const float AI_COPVIEW_RADIUS_ROADBLOCK = 15.0f;
 

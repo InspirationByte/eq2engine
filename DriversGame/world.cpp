@@ -25,6 +25,8 @@
 #include "eqParallelJobs.h"
 #endif // NO_GAME
 
+CPredictableRandomGenerator	g_replayRandom;
+
 CPFXAtlasGroup* g_vehicleEffects = NULL;
 
 CPFXAtlasGroup* g_translParticles = NULL;
@@ -365,7 +367,7 @@ void CGameWorld::InitEnvironment()
 
 void CGameWorld::Init()
 {
-	m_random.SetSeed(0);
+	g_replayRandom.SetSeed(0);
 
 	m_frameTime = 0.0f;
 	m_curTime = 0.0f;
@@ -718,8 +720,6 @@ void CGameWorld::UpdateWorld(float fDt)
 				m_info.ambientColor = ColorRGBA(m_envConfig.ambientColor, m_envConfig.brightnessModFactor);
 			}
 		}
-
-		UpdateTrafficLightState(fDt);
 
 		if(m_envConfig.weatherType >= WEATHER_TYPE_RAIN && m_rainSound)
 		{

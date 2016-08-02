@@ -117,7 +117,7 @@ void CGameSession::Init()
 	// load cars
 	LoadCarData();
 
-	g_pGameWorld->m_random.SetSeed(0);
+	g_replayRandom.SetSeed(0);
 
 	// start recorder
 	if( g_replayData->m_state != REPL_INIT_PLAYBACK )
@@ -230,7 +230,7 @@ bool CGameSession::IsReplay() const
 void CGameSession::ResetReplay()
 {
 	g_replayData->m_tick = 0;
-	g_pGameWorld->m_random.SetSeed(0);
+	g_replayRandom.SetSeed(0);
 
 	// FIXME: remove objects?
 }
@@ -260,35 +260,41 @@ void Game_OnPhysicsUpdate(float fDt, int iterNum)
 	if(fDt <= 0.0f)
 		return;
 
-	//CScopedMutex m(g_parallelJobs->GetMutex());
-
 	if(g_replayData)
 	{
-		g_pGameWorld->m_random.SetSeed(g_replayData->m_tick);
-		g_pGameWorld->m_random.Regenerate();
+		// always regenerate predictable random
+		g_replayRandom.SetSeed(g_replayData->m_tick);
+		g_replayRandom.Regenerate();
 	}
 
-	// update traffic car spawn/remove from here
-	if( IsServer() && (iterNum == 0) && g_pGameSession->GetLeadCar())
+	// next is only calculated at the server
+	if( IsServer() )
 	{
-		Vector3D spawnPos = g_pGameSession->GetLeadCar()->GetOrigin();
-		Vector3D removePos = g_pGameSession->GetLeadCar()->GetOrigin();
+		CCar* leadCar = g_pGameSession->GetLeadCar();
 
-		if( g_pGameSession->GetPlayerCar() )
-			removePos = g_pGameSession->GetPlayerCar()->GetOrigin();
+		// update traffic lights
+		g_pGameWorld->UpdateTrafficLightState(fDt);
 
-		Vector3D leadVel = g_pGameSession->GetLeadCar()->GetVelocity();
+		// update traffic car spawn/remove from here
+		if(iterNum == 0 && leadCar)
+		{
+			CCar* plrCar = g_pGameSession->GetPlayerCar();
 
+			Vector3D spawnPos, removePos;
+			
+			spawnPos = removePos = leadCar->GetOrigin();
 
-		g_pAIManager->UpdateCarRespawn(fDt, spawnPos, removePos, leadVel);
+			if( plrCar )
+				removePos = plrCar->GetOrigin();
+
+			// vehicle respawn is oriented on the lead car, but removal is always depends on player
+			g_pAIManager->UpdateCarRespawn(fDt, spawnPos, removePos, leadCar->GetVelocity());
+		}
 	}
 
-	// update replay recording
+	// do replays and prerecorded stuff
 	if(g_replayData)
-	{
-		//g_replayData->UpdateRecording(fDt);
 		g_replayData->UpdatePlayback(fDt);
-	}
 }
 
 void GameJob_UpdatePhysics(void* data)
