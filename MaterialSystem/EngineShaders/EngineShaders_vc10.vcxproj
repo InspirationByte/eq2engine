@@ -177,6 +177,7 @@
     <ClCompile Include="FlashlightReflector.cpp" />
     <ClCompile Include="HDRBloom.cpp" />
     <ClCompile Include="HDRBlur.cpp" />
+    <ClCompile Include="SDFFont.cpp" />
     <ClCompile Include="ShadersMain.cpp" />
     <ClCompile Include="BaseParticle.cpp" />
     <ClCompile Include="shaders\BaseUnlit.cpp" />

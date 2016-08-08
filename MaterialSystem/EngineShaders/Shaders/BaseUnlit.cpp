@@ -30,10 +30,12 @@ public:
 	void InitTextures()
 	{
 		// parse material variables
-		SHADER_PARAM_TEXTURE(BaseTexture, m_pBaseTexture);
+		SHADER_PARAM_TEXTURE_NOERROR(BaseTexture, m_pBaseTexture);
 
 		// set texture setup
-		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &CBaseUnlit::SetupBaseTexture0);
+		if(m_pBaseTexture)
+			SetParameterFunctor(SHADERPARAM_BASETEXTURE, &CBaseUnlit::SetupBaseTexture0);
+
 		SetParameterFunctor(SHADERPARAM_COLOR, &CBaseUnlit::SetColorModulation);
 	}
 

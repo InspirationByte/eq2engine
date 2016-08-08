@@ -123,7 +123,8 @@ void CObject_Sheets::Simulate( float fDt )
 	// we have to deal with cleaning up collision list
 	m_ghostObject->m_collisionList.clear( false );
 
-	PFXVertex_t sheetQuad[4];
+	PFXVertex_t* sheetQuad;
+
 	const float sheetScale = 0.2f;
 	ColorRGBA color = (g_pGameWorld->m_info.ambientColor+g_pGameWorld->m_info.sunColor);
 
@@ -194,22 +195,23 @@ void CObject_Sheets::Simulate( float fDt )
 
 		texCoords = sheet.entry->rect;
 
-		sheetQuad[0].point = sheetPos + (vUp * sheetScale) + (sheetScale * vRight);
-		sheetQuad[0].texcoord = Vector2D(texCoords.vrightBottom.x, texCoords.vrightBottom.y);
-		sheetQuad[0].color = color;
+		if(sheet.atlas->AllocateGeom(4,4, &sheetQuad, NULL, true) != -1)
+		{
+			sheetQuad[0].point = sheetPos + (vUp * sheetScale) + (sheetScale * vRight);
+			sheetQuad[0].texcoord = Vector2D(texCoords.vrightBottom.x, texCoords.vrightBottom.y);
+			sheetQuad[0].color = color;
 
-		sheetQuad[1].point = sheetPos + (vUp * sheetScale) - (sheetScale * vRight);
-		sheetQuad[1].texcoord = Vector2D(texCoords.vrightBottom.x, texCoords.vleftTop.y);
-		sheetQuad[1].color = color;
+			sheetQuad[1].point = sheetPos + (vUp * sheetScale) - (sheetScale * vRight);
+			sheetQuad[1].texcoord = Vector2D(texCoords.vrightBottom.x, texCoords.vleftTop.y);
+			sheetQuad[1].color = color;
 
-		sheetQuad[2].point = sheetPos - (vUp * sheetScale) + (sheetScale * vRight);
-		sheetQuad[2].texcoord = Vector2D(texCoords.vleftTop.x, texCoords.vrightBottom.y);
-		sheetQuad[2].color = color;
+			sheetQuad[2].point = sheetPos - (vUp * sheetScale) + (sheetScale * vRight);
+			sheetQuad[2].texcoord = Vector2D(texCoords.vleftTop.x, texCoords.vrightBottom.y);
+			sheetQuad[2].color = color;
 
-		sheetQuad[3].point = sheetPos - (vUp * sheetScale) - (sheetScale * vRight);
-		sheetQuad[3].texcoord = Vector2D(texCoords.vleftTop.x, texCoords.vleftTop.y);
-		sheetQuad[3].color = color;
-
-		sheet.atlas->AddParticleQuad(sheetQuad);
+			sheetQuad[3].point = sheetPos - (vUp * sheetScale) - (sheetScale * vRight);
+			sheetQuad[3].texcoord = Vector2D(texCoords.vleftTop.x, texCoords.vleftTop.y);
+			sheetQuad[3].color = color;
+		}
 	}
 }

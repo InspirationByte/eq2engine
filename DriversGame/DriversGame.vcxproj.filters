@@ -348,6 +348,9 @@
     <ClCompile Include="state_lobby.cpp">
       <Filter>Файлы исходного кода\Game\States</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared_engine\SpriteBuilder.cpp">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">
@@ -678,6 +681,9 @@
     </ClInclude>
     <ClInclude Include="..\shared_engine\video\AVStream.h">
       <Filter>Файлы исходного кода\EngineLib\Video</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\SpriteBuilder.h">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

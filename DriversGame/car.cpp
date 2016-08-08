@@ -3875,10 +3875,9 @@ void CCar::Draw( int nRenderFlags )
 		{
 			TexAtlasEntry_t* carShadow = m_veh_shadow;
 
-			if(carShadow)
+			PFXVertex_t* verts;
+			if(carShadow && g_vehicleEffects->AllocateGeom(4,4, &verts, NULL, true) != -1)
 			{
-				PFXVertex_t verts[4];
-
 				Vector3D shadow_size = m_conf->m_body_size + Vector3D(0.35f,0,0.25f);
 
 				verts[0].point = GetOrigin() + shadow_size.z*GetForwardVector() + shadow_size.x*GetRightVector();
@@ -3906,8 +3905,6 @@ void CCar::Draw( int nRenderFlags )
 
 					verts[i].color = ColorRGBA(1.0f, 1.0f, 1.0f, clamp(0.8f + 1.0f-(shadowcoll.fract*8.0f), 0.0f, 1.0f));
 				}
-
-				g_vehicleEffects->AddParticleQuad(verts);
 			}
 		}
 

@@ -493,12 +493,6 @@ CHeightTileFieldRenderable* CLevelRegion::GetHField( int idx ) const
 
 int CLevelRegion::GetNumHFields() const
 {
-	for(int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
-	{
-		if(m_heightfield[i] == NULL)
-			return i;
-	}
-
 	return ENGINE_REGION_MAX_HFIELDS;
 }
 
@@ -524,6 +518,9 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 
 	for(int i = 0; i < GetNumHFields(); i++)
 	{
+		if(!m_heightfield[i])
+			continue;
+
         if(w_pregeneratedhfields.GetBool())
             m_heightfield[i]->GenereateRenderData();
 
@@ -647,7 +644,10 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 	}
 
 	for(int i = 0; i < GetNumHFields(); i++)
-		g_pPhysics->AddHeightField( m_heightfield[i] );
+	{
+		if(m_heightfield[i])
+			g_pPhysics->AddHeightField( m_heightfield[i] );
+	}
 
 	Platform_Sleep(1);
 

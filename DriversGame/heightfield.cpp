@@ -1220,6 +1220,7 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 	if(renderTranslucency && !m_hasTransparentSubsets)
 		return;
 
+#ifdef EDITOR
 	if(m_isChanged)
 	{
 		g_pShaderAPI->Reset(STATE_RESET_VBO);
@@ -1230,6 +1231,7 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 
 		m_isChanged = false;
 	}
+#endif // EDITOR
 
 	for(int i = 0; i < m_numBatches; i++)
 	{

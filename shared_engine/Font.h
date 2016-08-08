@@ -12,7 +12,6 @@
 #include "IFont.h"
 #include <map>
 
-
 class CFont : public IEqFont
 {
 	friend class			CEngineHost;
@@ -100,6 +99,8 @@ protected:
 
 	Vertex2D_t*					m_vertexBuffer;
 	int							m_numVerts;
+
+	bool						m_isSDF;
 };
 
 #endif //IFONT_H

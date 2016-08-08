@@ -698,16 +698,21 @@ void CGameLevel::ReadHeightfieldsLump( IVirtualStream* stream )
 
 		for(int j = 0; j < numFields; j++)
 		{
-			CHeightTileFieldRenderable* hfield = m_regions[idx].m_heightfield[j];
+			int hfieldIndex = j;
+			stream->Read(&hfieldIndex, 1, sizeof(int));
+
+			CHeightTileFieldRenderable* hfield = m_regions[idx].m_heightfield[hfieldIndex];
 
 			// hfield 0 is init by default
 			if( !hfield )
 			{
 				hfield = new CHeightTileFieldRenderable();
-				m_regions[idx].m_heightfield[j] = hfield;
+				m_regions[idx].m_heightfield[hfieldIndex] = hfield;
 
-				hfield->m_fieldIdx = j;
-				hfield->m_position = m_regions[idx].m_heightfield[0]->m_position;
+				hfield->m_fieldIdx = hfieldIndex;
+
+				if(hfieldIndex > 0)
+					hfield->m_position = m_regions[idx].m_heightfield[0]->m_position;
 			}
 
 			hfield->Init(m_cellsSize, regionPos);

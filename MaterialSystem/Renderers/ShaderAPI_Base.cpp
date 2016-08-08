@@ -554,9 +554,6 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, Filter_e texture
 	if(!pFoundTexture)
 		pFoundTexture = GenerateErrorTexture(nFlags);
 
-	if(!pFoundTexture)
-		return NULL;
-
 	return pFoundTexture;
 }
 
@@ -709,6 +706,9 @@ bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 // Error texture generator
 ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
 {
+	if(nFlags & TEXFLAG_NULL_ON_ERROR)
+		return NULL;
+
 	SamplerStateParam_t texSamplerParams = MakeSamplerState(TEXFILTER_TRILINEAR_ANISO,ADDRESSMODE_WRAP,ADDRESSMODE_WRAP,ADDRESSMODE_WRAP);
 
 	Vector4D color;

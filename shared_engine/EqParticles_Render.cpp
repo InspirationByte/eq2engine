@@ -19,22 +19,9 @@ CParticleLowLevelRenderer*	g_pPFXRenderer = &s_pfxRenderer;
 
 ConVar r_particleBufferSize("r_particleBufferSize", "16384", "particle buffer size, change requires restart game", CV_ARCHIVE);
 
-#define PVBO_MAX_SIZE(s)	(s*sizeof(PFXVertex_t)*4)
-#define PIBO_MAX_SIZE(s)	(s*(sizeof(uint16)*6))
-
 CParticleRenderGroup::CParticleRenderGroup() :
 	m_pMaterial(NULL),
-	m_pVerts(NULL),
-	m_pIndices(NULL),
-	m_numVertices(0),
-	m_numIndices(0),
-	m_bHasOwnVBO(false),
-	m_initialized(false),
-	m_vertexBuffer(NULL),
-	m_indexBuffer(NULL),
-	m_vertexFormat(NULL),
-	m_useCustomProjMat(false),
-	m_maxQuadVerts(0)
+	m_useCustomProjMat(false)
 {
 
 }
@@ -46,32 +33,13 @@ CParticleRenderGroup::~CParticleRenderGroup()
 
 void CParticleRenderGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO, int maxQuads )
 {
-	m_bHasOwnVBO = bCreateOwnVBO;
+	maxQuads = min(r_particleBufferSize.GetInt(), maxQuads);
 
-	if(m_bHasOwnVBO)
-		ASSERT(!"CParticleRenderGroup::Init: bCreateOwnVBO not supported =(");
+	// init sprite stuff
+	CSpriteBuilder::Init(bCreateOwnVBO, maxQuads);
 
 	m_pMaterial = materials->FindMaterial(pszMaterialName, true);
 	m_pMaterial->Ref_Grab();
-
-	m_maxQuadVerts = min(r_particleBufferSize.GetInt(), maxQuads);
-
-	DevMsg(DEVMSG_CORE, "[PARTICLEVBO] Allocating %d quads (%d bytes VB and %d bytes IB)\n", m_maxQuadVerts, PVBO_MAX_SIZE(m_maxQuadVerts), PIBO_MAX_SIZE(m_maxQuadVerts));
-
-	// init buffers
-	m_pVerts	= (PFXVertex_t*)PPAlloc(PVBO_MAX_SIZE(m_maxQuadVerts));
-	m_pIndices	= (uint16*)PPAlloc(PIBO_MAX_SIZE(m_maxQuadVerts));
-
-	if(!m_pVerts)
-		ASSERT(!"FAILED TO ALLOCATE VERTICES!\n");
-
-	if(!m_pIndices)
-		ASSERT(!"FAILED TO ALLOCATE INDICES!\n");
-
-	m_numVertices = 0;
-	m_numIndices = 0;
-
-	m_initialized = true;
 }
 
 void CParticleRenderGroup::Shutdown()
@@ -79,223 +47,10 @@ void CParticleRenderGroup::Shutdown()
 	if(!m_initialized)
 		return;
 
-	m_initialized = false;
+	CSpriteBuilder::Shutdown();
 
 	materials->FreeMaterial(m_pMaterial);
 	m_pMaterial = NULL;
-
-	PPFree(m_pVerts);
-	PPFree(m_pIndices);
-
-	m_pIndices = NULL;
-	m_pVerts = NULL;
-
-	if(m_bHasOwnVBO)
-	{
-
-	}
-}
-
-void CParticleRenderGroup::AddIndex(uint16 idx)
-{
-	if(!g_pPFXRenderer->IsInitialized())
-		return;
-
-	if(m_numVertices > PVBO_MAX_SIZE(m_maxQuadVerts))
-	{
-		MsgWarning("ParticleRenderGroup overflow\n");
-
-		m_numVertices = 0;
-		m_numIndices = 0;
-
-		return;
-	}
-
-	m_pIndices[m_numIndices] = idx;
-	m_numIndices++;
-}
-
-void CParticleRenderGroup::AddVertex(const PFXVertex_t &vert)
-{
-	m_pVerts[m_numVertices] = vert;
-	m_numVertices++;
-}
-
-void CParticleRenderGroup::AddVertices(PFXVertex_t* verts, int nVerts)
-{
-	memcpy(&m_pVerts[m_numVertices], verts, nVerts*sizeof(PFXVertex_t));
-	m_numVertices += nVerts;
-}
-
-void CParticleRenderGroup::AddIndices(uint16 *indices, int nIndx)
-{
-	memcpy(&m_pIndices[m_numIndices], indices, nIndx*sizeof(uint16));
-	m_numIndices += nIndx;
-}
-
-// adds geometry to particle buffers
-void CParticleRenderGroup::AddParticleGeom(PFXVertex_t* verts, uint16* indices, int nVertices, int nIndices)
-{
-	if(!g_pPFXRenderer->IsInitialized())
-		return;
-
-	if(m_numVertices > PVBO_MAX_SIZE(m_maxQuadVerts))
-	{
-		MsgWarning("ParticleRenderGroup overflow\n");
-
-		m_numVertices = 0;
-		m_numIndices = 0;
-
-		return;
-	}
-
-	Threading::CScopedMutex m(g_pPFXRenderer->m_mutex);
-
-	int num_ind = m_numIndices;
-
-	uint16 nIndicesCurr = 0;
-
-	// if it's a second, first I'll add last index (3 if first, and add first one from fourIndices)
-	if( num_ind > 0 )
-	{
-		uint16 lastIdx = m_pIndices[ num_ind-1 ];
-
-		nIndicesCurr = lastIdx+1;
-
-		// add two last indices to make degenerates
-		uint16 degenerate[2] = {lastIdx, nIndicesCurr};
-
-		AddIndices(degenerate, 2);
-	}
-
-	//Msg("adding %d v %d i (%d verts %d indx in buffer)\n", nVertices, nIndices, m_numVertices, m_numIndices);
-
-	AddVertices(verts, nVertices);
-
-	for(int i = 0; i < nIndices; i++)
-		indices[i] += nIndicesCurr;
-
-	AddIndices(indices, nIndices);
-}
-
-// adds particle quad
-void CParticleRenderGroup::AddParticleQuad(PFXVertex_t fourVerts[4])
-{
-	uint16 indexArray[4] = {0,1,2,3};
-
-	AddParticleGeom(fourVerts, indexArray, 4, 4 );
-}
-
-// allocates a fixed strip for further use.
-// returns vertex start index. Returns -1 if failed
-// this provides less copy operations
-int CParticleRenderGroup::AllocateGeom( int nVertices, int nIndices, PFXVertex_t** verts, uint16** indices, bool preSetIndices )
-{
-	if(!g_pPFXRenderer->IsInitialized())
-		return -1;
-
-	if(m_numVertices > PVBO_MAX_SIZE(m_maxQuadVerts))
-	{
-		// don't warn me about overflow
-		m_numVertices = 0;
-		m_numIndices = 0;
-		return -1;
-	}
-
-	Threading::CScopedMutex m(g_pPFXRenderer->m_mutex);
-
-	AddStripBreak();
-
-	int startVertex = m_numVertices;
-	int startIndex = m_numIndices;
-
-	// give the pointers
-	*verts = &m_pVerts[startVertex];
-
-	// indices are optional
-	if(indices)
-		*indices = &m_pIndices[startIndex];
-
-	// apply offsets
-	m_numVertices += nVertices;
-	m_numIndices += nIndices;
-
-	// make it linear and end with strip break
-	if(preSetIndices)
-	{
-		for(int i = 0; i < nIndices; i++)
-			m_pIndices[startIndex+i] = startVertex+i;
-	}
-
-	return startVertex;
-}
-
-// adds strip to list
-void CParticleRenderGroup::AddParticleStrip(PFXVertex_t* verts, int nVertices)
-{
-	if(!g_pPFXRenderer->IsInitialized())
-		return;
-
-	if(nVertices == 0)
-		return;
-
-	if(m_numVertices > PVBO_MAX_SIZE(m_maxQuadVerts))
-	{
-		MsgWarning("ParticleRenderGroup overflow\n");
-
-		m_numVertices = 0;
-		m_numIndices = 0;
-
-		return;
-	}
-
-	Threading::CScopedMutex m(g_pPFXRenderer->m_mutex);
-
-	int num_ind = m_numIndices;
-
-	uint16 nIndicesCurr = 0;
-
-	// if it's a second, first I'll add last index (3 if first, and add first one from fourIndices)
-	if( num_ind > 0 )
-	{
-		uint16 lastIdx = m_pIndices[ num_ind-1 ];
-
-		nIndicesCurr = lastIdx+1;
-
-		// add two last indices to make degenerates
-		uint16 degenerate[2] = {lastIdx, nIndicesCurr};
-
-		AddIndices(degenerate, 2);
-	}
-
-	// add indices
-
-	AddVertices(verts, nVertices);
-
-	for(int i = 0; i < nVertices; i++)
-		m_pIndices[m_numIndices++] = nIndicesCurr+i;
-}
-
-void CParticleRenderGroup::AddStripBreak()
-{
-	int num_ind = m_numIndices;
-
-	uint16 nIndicesCurr = 0;
-
-	// if it's a second, first I'll add last index (3 if first, and add first one from fourIndices)
-	if( num_ind > 0 )
-	{
-		uint16 lastIdx = m_pIndices[ num_ind-1 ];
-
-		nIndicesCurr = lastIdx+1;
-
-		// add two last indices to make degenerates
-		uint16 degenerate[2] = {lastIdx, nIndicesCurr};
-
-		AddIndices(degenerate, 2);
-	}
-
-	//AddIndex( 0xFFFF );
 }
 
 void CParticleRenderGroup::SetCustomProjectionMatrix(const Matrix4x4& mat)
@@ -304,11 +59,24 @@ void CParticleRenderGroup::SetCustomProjectionMatrix(const Matrix4x4& mat)
 	m_customProjMat = mat;
 }
 
-void CParticleRenderGroup::ClearBuffers()
+int CParticleRenderGroup::AllocateGeom( int nVertices, int nIndices, PFXVertex_t** verts, uint16** indices, bool preSetIndices )
 {
-	m_numIndices = 0;
-	m_numVertices = 0;
-	m_useCustomProjMat = false;
+	if(!g_pPFXRenderer->IsInitialized())
+		return -1;
+
+	Threading::CScopedMutex m(g_pPFXRenderer->m_mutex);
+
+	return _AllocateGeom(nVertices, nIndices, verts, indices, preSetIndices);
+}
+
+void CParticleRenderGroup::AddParticleStrip(PFXVertex_t* verts, int nVertices)
+{
+	if(!g_pPFXRenderer->IsInitialized())
+		return;
+
+	Threading::CScopedMutex m(g_pPFXRenderer->m_mutex);
+
+	_AddParticleStrip(verts, nVertices);
 }
 
 ConVar r_drawParticles("r_drawParticles", "1", "Render particles", CV_CHEAT);
@@ -457,7 +225,7 @@ bool CParticleLowLevelRenderer::InitBuffers()
 
 	if(!m_vertexBuffer)
 	{
-		void* tmpVert = malloc(PVBO_MAX_SIZE(m_vbMaxQuads));
+		void* tmpVert = malloc(SVBO_MAX_SIZE(m_vbMaxQuads, PFXVertex_t));
 
 		m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, m_vbMaxQuads*4, sizeof(PFXVertex_t), tmpVert);
 		free(tmpVert);
@@ -465,7 +233,7 @@ bool CParticleLowLevelRenderer::InitBuffers()
 
 	if(!m_indexBuffer)
 	{
-		void* tmpIdx = malloc(PIBO_MAX_SIZE(m_vbMaxQuads));
+		void* tmpIdx = malloc(SIBO_MAX_SIZE(m_vbMaxQuads));
 
 		m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(m_vbMaxQuads*6, sizeof(int16), BUFFER_DYNAMIC, tmpIdx);
 		free(tmpIdx);
@@ -562,7 +330,7 @@ bool CParticleLowLevelRenderer::MakeVBOFrom(CParticleRenderGroup* pGroup)
 	if(nVerts == 0 || nIndices == 0)
 		return false;
 
-	if(nVerts > PVBO_MAX_SIZE(m_vbMaxQuads))
+	if(nVerts > SVBO_MAX_SIZE(m_vbMaxQuads, PFXVertex_t))
 		return false;
 
 	m_vertexBuffer->Update((void*)pGroup->m_pVerts, nVerts, 0, true);

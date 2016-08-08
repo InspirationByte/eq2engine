@@ -20,6 +20,7 @@ TODO:
 #include "utils/DkList.h"
 #include "utils/strtools.h"
 #include "utils/DkLinkedList.h"
+#include "FontCache.h"
 
 #include <stdlib.h>
 
@@ -127,6 +128,8 @@ CFont::CFont()
 	m_baseline = 0.0f;
 	m_lineHeight = 0.0f;
 	m_scale = Vector2D(1.0f);
+
+	m_isSDF = false;
 }
 
 CFont::~CFont()
@@ -412,12 +415,39 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 	ASSERTMSG(numVertsToDraw <= m_numVerts, varargs("Font:RenderText error: numVertsToDraw > m_numVerts (%d > %d)", numVertsToDraw, m_numVerts));
 
 	//
-	// FFP render part
+	// render part
 	//
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 	
+	/*
+	IVertexBuffer* vb = g_fontCache->m_fontVB;
+	vb->Update(m_vertexBuffer, numVertsToDraw, 0, true);
+
+	g_pShaderAPI->SetVertexFormat(g_fontCache->m_fontFmt);
+	g_pShaderAPI->SetVertexBuffer(vb, 0);
+	g_pShaderAPI->SetIndexBuffer(NULL);
+
+	materials->SetAmbientColor(params.textColor);
+
+	materials->BindMaterial( g_fontCache->m_simpleMat, false );
+	g_pShaderAPI->SetTexture(m_fontTexture, "BaseTexture", 0);
+
+	// draw shadow
+	if(params.styleFlag & TEXT_STYLE_SHADOW)
+	{
+		materials->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));
+		//g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_TRIANGLES, 0, numVertsToDraw);
+	}
+
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+	materials->Apply();
+
+	g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_TRIANGLES, 0, numVertsToDraw);
+	*/
+
 	// draw shadow
 	if(params.styleFlag & TEXT_STYLE_SHADOW)
 	{
@@ -457,12 +487,37 @@ void CFont::RenderText(const char* pszText, const Vector2D& start, const eqFontS
 	ASSERTMSG(numVertsToDraw <= m_numVerts, varargs("Font:RenderText error: numVertsToDraw > m_numVerts (%d > %d)", numVertsToDraw, m_numVerts));
 
 	//
-	// FFP render part
+	// render part
 	//
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-	
+	/*
+	IVertexBuffer* vb = g_fontCache->m_fontVB;
+	vb->Update(m_vertexBuffer, numVertsToDraw, 0, true);
+
+	g_pShaderAPI->SetVertexFormat(g_fontCache->m_fontFmt);
+	g_pShaderAPI->SetVertexBuffer(vb, 0);
+	g_pShaderAPI->SetIndexBuffer(NULL);
+
+	materials->SetAmbientColor(params.textColor);
+
+	materials->BindMaterial( g_fontCache->m_simpleMat, false );
+	g_pShaderAPI->SetTexture(m_fontTexture, "BaseTexture", 0);
+
+	// draw shadow
+	if(params.styleFlag & TEXT_STYLE_SHADOW)
+	{
+		materials->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));
+		//g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_TRIANGLES, 0, numVertsToDraw);
+	}
+
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+	materials->Apply();
+
+	g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_TRIANGLES, 0, numVertsToDraw);*/
+
 	// draw shadow
 	if(params.styleFlag & TEXT_STYLE_SHADOW)
 	{
@@ -560,6 +615,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 			m_baseline = KV_GetValueFloat( fontSec->FindKeyBase("baseline") );
 			m_lineHeight = KV_GetValueFloat( fontSec->FindKeyBase("lineheight") );
 			m_scale = KV_GetVector2D( fontSec->FindKeyBase("scale") );
+			m_isSDF = KV_GetValueBool( fontSec->FindKeyBase("isSDF") );
 
 			m_invTexSize = Vector2D(1.0f, 1.0f);
 			

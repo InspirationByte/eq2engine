@@ -609,6 +609,9 @@ void CEditorLevel::WriteHeightfieldsLump(IVirtualStream* stream)
 					if(	reg->m_heightfield[i] &&
 						!reg->m_heightfield[i]->IsEmpty())
 					{
+						int hfieldIndex = i;
+						hfielddata.Write(&hfieldIndex, 1, sizeof(int));
+
 						reg->m_heightfield[i]->WriteToStream( &hfielddata );
 					}
 				}

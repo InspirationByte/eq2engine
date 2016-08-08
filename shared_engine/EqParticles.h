@@ -11,6 +11,7 @@
 
 #include "materialsystem/IMaterialSystem.h"
 #include "BaseRenderableObject.h"
+#include "SpriteBuilder.h"
 
 #include "EffectRender.h"
 
@@ -49,9 +50,9 @@ struct PFXVertex_t
 //
 // You can derive it
 #ifndef NO_ENGINE
-class CParticleRenderGroup : public CBaseRenderableObject
+class CParticleRenderGroup : public CSpriteBuilder<PFXVertex_t>, public CBaseRenderableObject
 #else
-class CParticleRenderGroup
+class CParticleRenderGroup : public CSpriteBuilder<PFXVertex_t>
 #endif
 {
 	friend class CParticleLowLevelRenderer;
@@ -65,24 +66,6 @@ public:
 	virtual void		Init( const char* pszMaterialName, bool bCreateOwnVBO = false, int maxQuads = 16384 );
 	virtual void		Shutdown();
 
-	// adds geometry to particle buffers
-	void				AddParticleGeom(PFXVertex_t* verts, uint16* indices, int nVertices, int nIndices);
-
-	// adds particle quad
-	void				AddParticleQuad(PFXVertex_t fourVerts[4]);
-
-	// adds strip to list
-	void				AddParticleStrip(PFXVertex_t* verts, int nVertices);
-
-	// allocates a fixed strip for further use.
-	// returns vertex start index. Returns -1 if failed
-	// terminate with AddStripBreak();
-	// this provides less copy operations
-	int					AllocateGeom( int nVertices, int nIndices, PFXVertex_t** verts, uint16** indices, bool preSetIndices = false );
-
-	// adds triangle strip break indices
-	void				AddStripBreak();
-
 	//-------------------------------------------------------------------
 
 	// min bbox dimensions
@@ -93,37 +76,20 @@ public:
 
 	// renders this buffer
 	void				Render(int nViewRenderFlags);
-	void				ClearBuffers();
 
 	void				SetCustomProjectionMatrix(const Matrix4x4& mat);
 
+	// allocates a fixed strip for further use.
+	// returns vertex start index. Returns -1 if failed
+	// terminate with AddStripBreak();
+	// this provides less copy operations
+	int					AllocateGeom( int nVertices, int nIndices, PFXVertex_t** verts, uint16** indices, bool preSetIndices = false );
+
+	void				AddParticleStrip(PFXVertex_t* verts, int nVertices);
+
 protected:
 
-	// internal use only
-	void				AddIndex(uint16 idx);
-	void				AddVertex(const PFXVertex_t& vert);
-	void				AddVertices(PFXVertex_t* verts, int nVerts);
-	//void				AddVertices2(eqlevelvertex_t* verts, int nVerts);
-	void				AddIndices(uint16* indices, int nIndx);
-
 	IMaterial*			m_pMaterial;
-
-	PFXVertex_t*		m_pVerts;
-	uint16*				m_pIndices;
-
-	uint16				m_numVertices;
-	uint16				m_numIndices;
-
-	uint16				m_maxQuadVerts;
-
-	// uses own VBO? (in case if decals or something rendered)
-	bool				m_bHasOwnVBO;
-
-	bool				m_initialized;
-
-	IVertexBuffer*		m_vertexBuffer;
-	IIndexBuffer*		m_indexBuffer;
-	IVertexFormat*		m_vertexFormat;
 
 	bool				m_useCustomProjMat;
 	Matrix4x4			m_customProjMat;

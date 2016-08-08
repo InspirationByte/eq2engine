@@ -49,6 +49,8 @@ struct eqFontFamily_t
 
 class CEqFontCache
 {
+	friend class CFont;
+
 public:
 	CEqFontCache();
 	virtual					~CEqFontCache() {}
@@ -68,6 +70,12 @@ protected:
 
 	DkList<eqFontFamily_t*>	m_fonts;
 	eqFontFamily_t*			m_defaultFont;
+
+	IMaterial*				m_simpleMat;
+	IMaterial*				m_sdfMatReg;
+	
+	IVertexFormat*			m_fontFmt;
+	IVertexBuffer*			m_fontVB;
 };
 
 extern CEqFontCache* g_fontCache;

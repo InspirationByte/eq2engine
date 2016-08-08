@@ -8,6 +8,8 @@
 #include "FontCache.h"
 #include "Font.h"
 
+#define FONTBUFFER_MAX (16384)
+
 using namespace eqFontsInternal;
 
 static CEqFontCache s_fontCache;
@@ -30,7 +32,12 @@ int compareFontSizes( eqFontStyleInfo_t* const &a, eqFontStyleInfo_t* const &b )
 	return a->size - b->size;
 }
 
-CEqFontCache::CEqFontCache() : m_defaultFont(nullptr)
+CEqFontCache::CEqFontCache() : 
+	m_defaultFont(nullptr),
+	m_simpleMat(nullptr),
+	m_sdfMatReg(nullptr),
+	m_fontFmt(nullptr),
+	m_fontVB(nullptr)
 {
 }
 
@@ -143,7 +150,26 @@ bool CEqFontCache::Init()
 
 	if(!m_defaultFont)
 		MsgError("ERROR: No default font specified in '%s'!\n", FONT_DEFAULT_LIST_FILENAME);
+	/*
+	void* tmp = malloc(FONTBUFFER_MAX*sizeof(Vertex2D_t));
 
+	VertexFormatDesc_s format[] = {
+		{ 0, 2, VERTEXTYPE_VERTEX,		ATTRIBUTEFORMAT_FLOAT },	// vertex position
+		{ 0, 2, VERTEXTYPE_TEXCOORD,	ATTRIBUTEFORMAT_FLOAT },	// vertex texture coord
+		{ 0, 4, VERTEXTYPE_TEXCOORD,	ATTRIBUTEFORMAT_FLOAT },	// vertex color
+	};
+
+	m_fontFmt = g_pShaderAPI->CreateVertexFormat(format, elementsOf(format));
+	m_fontVB = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, FONTBUFFER_MAX, sizeof(Vertex2D_t), tmp);
+
+	free(tmp);
+
+	m_simpleMat = materials->FindMaterial("ui/text");
+	m_simpleMat->Ref_Grab();
+
+	m_sdfMatReg = materials->FindMaterial("ui/text_sdf_regular");
+	m_sdfMatReg->Ref_Grab();
+	*/
 	return true;	
 }
 
@@ -168,7 +194,16 @@ void CEqFontCache::Shutdown()
 	}
 
 	m_fonts.clear();
-	m_defaultFont = NULL;
+	m_defaultFont = nullptr;
+
+	materials->FreeMaterial( m_simpleMat );
+	materials->FreeMaterial( m_sdfMatReg );
+
+	m_simpleMat = nullptr;
+	m_sdfMatReg = nullptr;
+
+	g_pShaderAPI->DestroyVertexBuffer(m_fontVB);
+	g_pShaderAPI->DestroyVertexFormat(m_fontFmt);
 }
 
 void CEqFontCache::ReloadFonts()

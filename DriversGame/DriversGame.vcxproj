@@ -134,6 +134,7 @@
     <ClCompile Include="..\shared_engine\modelloader_shared.cpp" />
     <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp" />
     <ClCompile Include="..\shared_engine\Network\NETThread.cpp" />
+    <ClCompile Include="..\shared_engine\SpriteBuilder.cpp" />
     <ClCompile Include="..\shared_engine\studio_egf.cpp" />
     <ClCompile Include="..\shared_engine\sys_console.cpp" />
     <ClCompile Include="..\shared_engine\cfgloader.cpp" />
@@ -268,6 +269,7 @@
     <ClInclude Include="..\shared_engine\EqParticles.h" />
     <ClInclude Include="..\public\materialsystem\BaseShader.h" />
     <ClInclude Include="..\shared_engine\Font.h" />
+    <ClInclude Include="..\shared_engine\SpriteBuilder.h" />
     <ClInclude Include="..\shared_engine\video\AVStream.h" />
     <ClInclude Include="..\shared_game\GameSoundEmitterSystem.h" />
     <ClInclude Include="..\public\imaging\ImageLoader.h" />

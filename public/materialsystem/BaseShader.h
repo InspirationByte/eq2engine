@@ -125,7 +125,7 @@
 	}	\
 	\
 	if(mv_##param) {\
-		variable = g_pShaderAPI->LoadTexture(mv_##param->GetString(),m_nTextureFilter,m_nAddressMode);	\
+		variable = g_pShaderAPI->LoadTexture(mv_##param->GetString(),m_nTextureFilter,m_nAddressMode, TEXFLAG_NULL_ON_ERROR);	\
 		if(variable){ \
 			mv_##param->AssignTexture(variable);\
 			variable->Ref_Grab();	\

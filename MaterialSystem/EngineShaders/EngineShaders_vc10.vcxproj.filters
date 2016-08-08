@@ -102,6 +102,9 @@
     <ClCompile Include="..\..\public\materialsystem\BaseShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SDFFont.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vars_generic.h">
