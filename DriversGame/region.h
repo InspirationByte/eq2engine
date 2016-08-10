@@ -107,6 +107,8 @@ struct navGrid_t
 
 //----------------------------------------------------------------------
 
+class CLevelModel;
+
 struct regionObject_t
 {
 	regionObject_t()
@@ -133,8 +135,6 @@ struct regionObject_t
 	Vector3D		rotation;
 
 	EqString		name;
-
-	
 };
 
 struct regZone_t
@@ -200,6 +200,8 @@ public:
 
 	DkList<regionObject_t*>			m_objects;			///< complex and non-complex models
 	DkList<levOccluderLine_t>		m_occluders;		///< occluders
+
+	DkList<CLevObjectDef*>			m_regionDefs;		///< region object defs
 
 	DkList<regZone_t>				m_zones;
 

@@ -469,6 +469,9 @@ bool GenerateBuildingModel( buildingSource_t* building )
 	building->modelPosition = generator.GetAABB().GetCenter();
 	building->model = generator.GenerateModel();
 
+	if(building->model)
+		building->model->Ref_Grab();
+
 	return (building->model != NULL);
 }
 
@@ -964,19 +967,42 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 	DkList<CLevelModel*>		modelList;
 	DkList<levCellObject_t>		cellObjectsList;
 
-	cellObjectsList.resize(m_objects.numElem());
+	DkList<regionObject_t*>		regObjects;
+	regObjects.append(m_objects);
+
+	DkList<regionObject_t*>		tempObjects;
+
+	// save buildings also
+	for(int i = 0; i < m_buildings.numElem(); i++)
+	{
+		regionObject_t* tempObject = new regionObject_t();
+		tempObjects.append(tempObject);
+
+		tempObject->def = new CLevObjectDef();
+		tempObject->def->m_info.type = LOBJ_TYPE_INTERNAL_STATIC;
+		tempObject->def->m_info.modelflags = LMODEL_FLAG_NONUNIQUE;
+		tempObject->def->m_model = m_buildings[i]->model;
+		tempObject->def->m_model->Ref_Grab();
+
+		tempObject->tile_x = 0xFFFF;
+		tempObject->tile_y = 0xFFFF;
+		tempObject->position = m_buildings[i]->modelPosition;
+		tempObject->rotation = vec3_zero;
+
+		m_buildings[i]->regObjectId = regObjects.append(tempObject);
+	}
+
+	cellObjectsList.resize(regObjects.numElem());
 
 	// collect models and cell objects
-	for(int i = 0; i < m_objects.numElem(); i++)
+	for(int i = 0; i < regObjects.numElem(); i++)
 	{
-		regionObject_t* robj = m_objects[i];
+		regionObject_t* robj = regObjects[i];
 		CLevObjectDef* def = robj->def;
 
 		levCellObject_t object;
 
-		if(	def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC && 
-			!(def->m_info.modelflags & LMODEL_FLAG_NONUNIQUE) &&
-			final)
+		if(	def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC && (def->m_info.modelflags & LMODEL_FLAG_NONUNIQUE))
 		{
 			object.objectDefId = modelList.addUnique( def->m_model );
 			object.uniqueRegionModel = 1;
@@ -991,10 +1017,10 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 		memset(object.name, 0, LEV_OBJECT_NAME_LENGTH);
 		strncpy(object.name,robj->name.c_str(), LEV_OBJECT_NAME_LENGTH);
 
-		object.tile_x = m_objects[i]->tile_x;
-		object.tile_y = m_objects[i]->tile_y;
-		object.position = m_objects[i]->position;
-		object.rotation = m_objects[i]->rotation;
+		object.tile_x = robj->tile_x;
+		object.tile_y = robj->tile_y;
+		object.position = robj->position;
+		object.rotation = robj->rotation;
 
 		// add
 		cellObjectsList.append(object);
@@ -1024,14 +1050,20 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 	}
 
 	levRegionDataInfo_t regdatahdr;
-	regdatahdr.numModelObjects = cellObjectsList.numElem();
-	regdatahdr.numModels = modelList.numElem();
+	regdatahdr.numCellObjects = cellObjectsList.numElem();
+	regdatahdr.numObjectDefs = modelList.numElem();
 	regdatahdr.size = regionData.Tell();
 
 	stream->Write(&regdatahdr, 1, sizeof(levRegionDataInfo_t));
 	stream->Write(regionData.GetBasePointer(), 1, regionData.Tell());
-}
 
+	// aftersave cleanup
+	for(int i = 0; i < tempObjects.numElem(); i++)
+	{
+		delete tempObjects[i]->def;
+		delete tempObjects[i];
+	}
+}
 
 void CEditorLevelRegion::WriteRegionRoads( IVirtualStream* stream )
 {

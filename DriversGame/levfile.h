@@ -72,8 +72,8 @@ ALIGNED_TYPE(levRegionMapInfo_s,4) levRegionMapInfo_t;
 
 struct levRegionDataInfo_s
 {
-	int		numModels;
-	int		numModelObjects;
+	int		numObjectDefs;
+	int		numCellObjects;
 	int		size;
 };
 

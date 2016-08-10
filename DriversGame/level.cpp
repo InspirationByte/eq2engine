@@ -301,7 +301,6 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 	DevMsg(DEVMSG_CORE,"Creating map %d x %d regions (cell count = %d)\n", m_wide, m_tall, m_cellsSize);
 
 	int nStepSize = HFIELD_POINT_SIZE*m_cellsSize;
-
 	Vector3D center = Vector3D(m_wide*nStepSize, 0, m_tall*nStepSize)*0.5f - Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
 
 	// setup heightfield positions and we've done here
@@ -318,9 +317,10 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 				m_regions[idx].m_isLoaded = clean;
 			}
 
-
+			m_regions[idx].m_regionIndex = idx;
 			m_regions[idx].m_level = this;
 			m_regions[idx].Init();
+
 
 			for(int i = 0; i < m_regions[idx].GetNumHFields(); i++)
 			{
@@ -329,10 +329,9 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 
 				m_regions[idx].m_heightfield[i]->m_regionPos = IVector2D(x,y);
 				m_regions[idx].m_heightfield[i]->m_position = Vector3D(x*nStepSize, 0, y*nStepSize) - center;
-				m_regions[idx].m_regionIndex = idx;
 
-				// init other things like road data
 #ifdef EDITOR
+				// init other things like road data
 				m_regions[idx].m_heightfield[i]->Init(m_cellsSize, IVector2D(x, y));
 			}
 
@@ -340,6 +339,7 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 #else
 			}
 #endif // EDITOR
+
 		}
 	}
 
@@ -386,6 +386,9 @@ void CGameLevel::LoadRegionAt(int regionIndex, IVirtualStream* stream)
 	{
 		CHeightTileField* hfield = reg.GetHField(i);
 		if(!hfield)
+			continue;
+
+		if(hfield->m_levOffset == 0)
 			continue;
 
 		stream->Seek(hfield->m_levOffset, VS_SEEK_SET);
@@ -684,6 +687,9 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 
 void CGameLevel::ReadHeightfieldsLump( IVirtualStream* stream )
 {
+	int nStepSize = HFIELD_POINT_SIZE*m_cellsSize;
+	Vector3D center = Vector3D(m_wide*nStepSize, 0, m_tall*nStepSize)*0.5f - Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
+
 	for(int i = 0; i < m_numRegions; i++)
 	{
 		int idx = 0;
@@ -703,7 +709,6 @@ void CGameLevel::ReadHeightfieldsLump( IVirtualStream* stream )
 
 			CHeightTileFieldRenderable* hfield = m_regions[idx].m_heightfield[hfieldIndex];
 
-			// hfield 0 is init by default
 			if( !hfield )
 			{
 				hfield = new CHeightTileFieldRenderable();
@@ -711,12 +716,13 @@ void CGameLevel::ReadHeightfieldsLump( IVirtualStream* stream )
 
 				hfield->m_fieldIdx = hfieldIndex;
 
-				if(hfieldIndex > 0)
-					hfield->m_position = m_regions[idx].m_heightfield[0]->m_position;
+				hfield->m_regionPos = IVector2D(regionPos.x, regionPos.y);
+				hfield->m_position = Vector3D(regionPos.x*nStepSize, 0, regionPos.y*nStepSize) - center;
 			}
 
 			hfield->Init(m_cellsSize, regionPos);
 			hfield->m_levOffset = stream->Tell();
+
 #ifdef EDITOR
 			hfield->ReadFromStream(stream);
 #else

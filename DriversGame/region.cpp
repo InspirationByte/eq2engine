@@ -135,9 +135,9 @@ Vector3D GetModelRefPosition(CLevelRegion* reg, regionObject_t* ref)
 
 	Vector3D addHeight(0.0f);
 
-	CLevObjectDef* objectDef = ref->def;;
+	CLevObjectDef* objectDef = ref->def;
 
-	if(objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG)
+	if(objectDef != NULL && objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG)
 		addHeight.y = -objectDef->m_defModel->GetAABB().minPoint.y;
 
 	if(ref->tile_x != 0xFFFF)
@@ -162,7 +162,7 @@ Quaternion GetModelRefRotation(CLevelRegion* reg, regionObject_t* ref)
 
 	if(ref->tile_x!= 0xFFFF)
 	{
-		if( (objectDef->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
+		if( objectDef != NULL && (objectDef->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
 			objectDef->m_info.type != LOBJ_TYPE_OBJECT_CFG )
 		{
 			Vector3D t,b,n;
@@ -193,20 +193,18 @@ Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regionObject_t* ref)
 
 	CLevObjectDef* objectDef = ref->def;;
 
-	if(objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG)
+	if(objectDef != NULL && objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG)
 		addHeight.y = -objectDef->m_defModel->GetAABB().minPoint.y;
-
-	Vector3D refPos = GetModelRefPosition(reg,ref);
 
 	if(ref->tile_x!= 0xFFFF)
 	{
 		hfieldtile_t* tile = defField.GetTile( ref->tile_x, ref->tile_y );
 
 		Vector3D tilePosition(ref->tile_x*HFIELD_POINT_SIZE, tile->height*HFIELD_HEIGHT_STEP, ref->tile_y*HFIELD_POINT_SIZE);
-		Vector3D modelPosition =defField.m_position + tilePosition + addHeight;
+		Vector3D modelPosition = defField.m_position + tilePosition + addHeight;
 
-		if( (ref->def->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
-			ref->def->m_info.type != LOBJ_TYPE_OBJECT_CFG )
+		if( objectDef != NULL && (objectDef->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
+			objectDef->m_info.type != LOBJ_TYPE_OBJECT_CFG )
 		{
 			Vector3D t,b,n;
 			defField.GetTileTBN( ref->tile_x, ref->tile_y, t,b,n );
@@ -300,7 +298,6 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 		regionObject_t* ref = m_objects[i];
 		CLevObjectDef* cont = ref->def;
 
-
 #ifdef EDITOR
 //----------------------------------------------------------------
 // IN-EDITOR RENDERER
@@ -366,7 +363,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 		if( occlFrustum.IsSphereVisible( ref->position, length(ref->bbox.GetSize())) )
 		{
 			if(	caps.isInstancingSupported &&
-				r_enableLevelInstancing.GetBool())
+				r_enableLevelInstancing.GetBool() && cont->m_instData)
 			{
 				regObjectInstance_t& inst = cont->m_instData->instances[cont->m_instData->numInstances++];
 
@@ -400,7 +397,7 @@ void CLevelRegion::Init()
 
 #ifdef EDITOR
 	// init all hfields
-	for(int i = 1; i < ENGINE_REGION_MAX_HFIELDS; i++)
+	for(int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
 	{
 		m_heightfield[i] = new CHeightTileFieldRenderable();
 		m_heightfield[i]->m_fieldIdx = i;
@@ -458,6 +455,9 @@ void CLevelRegion::Cleanup()
 
 	for(int i = 0; i < m_zones.numElem(); i++)
 		delete [] m_zones[i].zoneName;
+
+	for(int i = 0; i < m_regionDefs.numElem(); i++)
+		delete m_regionDefs[i];
 
 	m_zones.clear();
 
@@ -528,14 +528,16 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 			m_hasTransparentSubsets = true;
 	}
 
-	DkList<CLevelModel*>	modelList;
-
 	levRegionDataInfo_t		regdatahdr;
-
 	stream->Read(&regdatahdr, 1, sizeof(levRegionDataInfo_t));
 
-	// now read models
-	for(int i = 0; i < regdatahdr.numModels; i++)
+	m_regionDefs.resize( regdatahdr.numObjectDefs );
+	m_objects.resize( regdatahdr.numCellObjects );
+
+	//
+	// Load models (object definitions)
+	//
+	for(int i = 0; i < regdatahdr.numObjectDefs; i++)
 	{
 		int modelSize = 0;
 		stream->Read(&modelSize, 1, sizeof(int));
@@ -544,37 +546,31 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		modelRef->Load( stream );
 		modelRef->PreloadTextures();
 
-		modelList.append(modelRef);
+		CLevObjectDef* newDef = new CLevObjectDef();
+		newDef->m_info.type = LOBJ_TYPE_INTERNAL_STATIC;
+		newDef->m_info.modelflags = LMODEL_FLAG_NONUNIQUE;
+		newDef->m_model = modelRef;
+		
+		modelRef->GenereateRenderData();
+
+#ifndef EDITOR
+		modelRef->GeneratePhysicsData(false);
+#endif // EDITOR
+
+		m_regionDefs.append(newDef);
 	}
 
-	m_objects.resize( regdatahdr.numModelObjects );
+	levCellObject_t cellObj;
 
-	// read model cells
-	for(int i = 0; i < regdatahdr.numModelObjects; i++)
+	//
+	// READ cell objects
+	//
+	for(int i = 0; i < regdatahdr.numCellObjects; i++)
 	{
-		levCellObject_t cellObj;
 		stream->Read(&cellObj, 1, sizeof(levCellObject_t));
 
-		// TODO: add models
+		// Init basics
 		regionObject_t* ref = new regionObject_t;
-
-		if(regdatahdr.numModels == 0)
-		{
-			ref->def = levelmodels[cellObj.objectDefId];
-
-			CLevelModel* model = ref->def->m_model;
-			if(model)
-				model->Ref_Grab();
-		}
-		else
-		{
-#pragma todo("model (object) containers in region data fix")
-			ref->def = NULL;
-
-			//ref->model = modelList[cellObj.objIndex];
-			//if(ref->model)
-			//	ref->model->Ref_Grab();
-		}
 
 		ref->name = cellObj.name;
 
@@ -584,12 +580,27 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		ref->position = cellObj.position;
 		ref->rotation = cellObj.rotation;
 
+		m_level->m_mutex.Lock();
+		m_objects.append(ref);
+		m_level->m_mutex.Unlock();
+
+		//
+		// pick from region or global list
+		//
+		if(cellObj.uniqueRegionModel > 0)
+			ref->def = m_regionDefs[cellObj.objectDefId];
+		else
+			ref->def = levelmodels[cellObj.objectDefId];
+
+		// calculate the transformation
 		ref->transform = GetModelRefRenderMatrix( this, ref );
 
 		if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
 			// create collision objects and translate them
 			CLevelModel* model = ref->def->m_model;
+			model->Ref_Grab();
+
 #ifndef EDITOR
 			model->CreateCollisionObject( ref );
 
@@ -637,10 +648,6 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 			}
 		}
 #endif
-
-		m_level->m_mutex.Lock();
-		m_objects.append(ref);
-		m_level->m_mutex.Unlock();
 	}
 
 	for(int i = 0; i < GetNumHFields(); i++)

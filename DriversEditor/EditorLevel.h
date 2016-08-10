@@ -94,6 +94,7 @@ struct buildingSource_t
 
 	CLevelModel*						model;
 	Vector3D							modelPosition;
+	int									regObjectId;	// region object index
 };
 
 int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, float layerXSize);
