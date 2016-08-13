@@ -90,7 +90,7 @@ enum ELevModelFlags
 	LMODEL_FLAG_ISGROUND		= (1 << 0),
 	LMODEL_FLAG_NOCOLLIDE		= (1 << 1),
 	LMODEL_FLAG_ALIGNTOCELL		= (1 << 2),		// object matrix is modified by cell
-	LMODEL_FLAG_NONUNIQUE		= (1 << 3),		// model is not unique so it stored in global model list/lump
+	LMODEL_FLAG_UNIQUE			= (1 << 3),		// model is unique so it stored in global model list/lump
 };
 
 struct levObjectDefInfo_s

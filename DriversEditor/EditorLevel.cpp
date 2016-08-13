@@ -980,8 +980,9 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 
 		tempObject->def = new CLevObjectDef();
 		tempObject->def->m_info.type = LOBJ_TYPE_INTERNAL_STATIC;
-		tempObject->def->m_info.modelflags = LMODEL_FLAG_NONUNIQUE;
+		tempObject->def->m_info.modelflags = LMODEL_FLAG_UNIQUE;
 		tempObject->def->m_model = m_buildings[i]->model;
+		tempObject->def->m_model->Ref_Grab();
 		tempObject->def->m_model->Ref_Grab();
 
 		tempObject->tile_x = 0xFFFF;
@@ -1002,7 +1003,7 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 
 		levCellObject_t object;
 
-		if(	def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC && (def->m_info.modelflags & LMODEL_FLAG_NONUNIQUE))
+		if(	def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC && (def->m_info.modelflags & LMODEL_FLAG_UNIQUE))
 		{
 			object.objectDefId = modelList.addUnique( def->m_model );
 			object.uniqueRegionModel = 1;

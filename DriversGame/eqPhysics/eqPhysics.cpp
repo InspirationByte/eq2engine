@@ -542,7 +542,7 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 
 	PROFILE_END();
 
-	EqPhysContactResultCallback cbResult(false,center);
+	EqPhysContactResultCallback cbResult(true,center);
 
 	PROFILE_BEGIN(contactPairTest);
 	m_collisionWorld->contactPairTest(objA, objB, cbResult);

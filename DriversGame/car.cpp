@@ -3259,25 +3259,57 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 
 			float fSliding = GetTractionSlidingAtWheel(nWheel)+fabs(GetLateralSlidingAtWheel(nWheel));
 
-			if(fSliding > 5.0f && g_pGameWorld->m_envConfig.weatherType == WEATHER_TYPE_CLEAR)
+			if(fSliding > 5.0f)
 			{
 				// spawn smoke
-				if(wheel.smokeTime <= 0.0)
+				if(wheel.smokeTime > 0.0)
+					return;
+
+				float efficency = RemapValClamp(fSliding, 5.0f, 40.0f, 0.4f, 1.0f);
+				float timeScale = RemapValClamp(fSliding, 5.0f, 40.0f, 0.7f, 1.0f);
+
+				if(g_pGameWorld->m_envConfig.weatherType >= WEATHER_TYPE_RAIN)
 				{
-					wheel.smokeTime = 0.1f;
+					ColorRGB rippleColor(0.8f, 0.8f, 0.8f);
 
-					float efficency = RemapValClamp(fSliding, 5.0f, 40.0f, 0.4f, 1.0f);
-					float timeScale = RemapValClamp(fSliding, 5.0f, 40.0f, 0.7f, 1.0f);
+					Vector3D rightDir = wheelMat.rows[0] * 0.7f;
+					Vector3D particleVel = wheel.velocityVec*0.35f + Vector3D(0.0f,1.2f,1.0f);
 
+					CSmokeEffect* pSmoke = new CSmokeEffect(wheel.collisionInfo.position, particleVel + rightDir,
+							RandomFloat(0.1f, 0.2f), RandomFloat(0.9f, 1.1f),
+							RandomFloat(0.1f),
+							g_translParticles, m_trans_raindrops,
+							RandomFloat(5, 35), Vector3D(0,RandomFloat(-0.9, -8.2) , 0),
+							rippleColor, rippleColor);
+
+					effectrenderer->RegisterEffectForRender(pSmoke);
+
+					pSmoke = new CSmokeEffect(wheel.collisionInfo.position, particleVel - rightDir,
+							RandomFloat(0.1f, 0.2f), RandomFloat(0.9f, 1.1f),
+							RandomFloat(0.1f),
+							g_translParticles, m_trans_raindrops,
+							RandomFloat(5, 35), Vector3D(0,RandomFloat(-0.9, -8.2) , 0),
+							rippleColor, rippleColor);
+
+					effectrenderer->RegisterEffectForRender(pSmoke);
+
+
+					wheel.smokeTime = 0.07f;
+				}
+				else
+				{
 					ColorRGB smokeCol(0.86f, 0.9f, 0.97f);
 
-					CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, wheel.velocityVec*0.25f+Vector3D(0,1, 1),
-															RandomFloat(0.1, 0.3)*efficency, RandomFloat(1.0, 1.8)*timeScale,
-															RandomFloat(1.2f)*timeScale,
-															g_translParticles, m_trans_smoke2,
-															RandomFloat(25, 85), Vector3D(1,RandomFloat(-0.7, 0.2) , 1),
-															smokeCol, smokeCol);
+					CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, wheel.velocityVec*0.25f+Vector3D(0,1,1),
+								RandomFloat(0.1, 0.3)*efficency, RandomFloat(1.0, 1.8)*timeScale,
+								RandomFloat(1.2f)*timeScale,
+								g_translParticles, m_trans_smoke2,
+								RandomFloat(25, 85), Vector3D(1,RandomFloat(-0.7, 0.2) , 1),
+								smokeCol, smokeCol);
+					
 					effectrenderer->RegisterEffectForRender(pSmoke);
+
+					wheel.smokeTime = 0.1f;
 				}
 			}
 		}

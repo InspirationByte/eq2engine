@@ -56,8 +56,8 @@ public:
 		m_alignToGround = new wxCheckBox( this, wxID_ANY, wxT("align to ground"), wxDefaultPosition, wxDefaultSize, 0 );
 		gSizer2->Add( m_alignToGround, 0, wxALL, 5 );
 	
-		m_nonUnique = new wxCheckBox( this, wxID_ANY, wxT("non unique"), wxDefaultPosition, wxDefaultSize, 0 );
-		gSizer2->Add( m_nonUnique, 0, wxALL, 5 );
+		m_unique = new wxCheckBox( this, wxID_ANY, wxT("unique"), wxDefaultPosition, wxDefaultSize, 0 );
+		gSizer2->Add( m_unique, 0, wxALL, 5 );
 	
 	
 		bSizer13->Add( gSizer2, 0, wxEXPAND, 5 );
@@ -89,7 +89,7 @@ public:
 		if(modelFlags & LMODEL_FLAG_ALIGNTOCELL)
 			m_alignToGround->SetValue(true);
 
-		if(modelFlags & LMODEL_FLAG_NONUNIQUE)
+		if(modelFlags & LMODEL_FLAG_UNIQUE)
 			m_nonUnique->SetValue(true);
 
 		m_plcLevel->SetValue(modPlace);
@@ -107,7 +107,7 @@ public:
 		nFlags |= m_isGround->GetValue() ? LMODEL_FLAG_ISGROUND : 0;
 		nFlags |= m_noCollide->GetValue() ? LMODEL_FLAG_NOCOLLIDE : 0;
 		nFlags |= m_alignToGround->GetValue() ? LMODEL_FLAG_ALIGNTOCELL : 0;
-		nFlags |= m_nonUnique->GetValue() ? LMODEL_FLAG_NONUNIQUE : 0;
+		nFlags |= m_unique->GetValue() ? LMODEL_FLAG_UNIQUE : 0;
 
 		return nFlags;
 	}
@@ -121,7 +121,7 @@ protected:
 	wxCheckBox* m_isGround;
 	wxCheckBox* m_noCollide;
 	wxCheckBox* m_alignToGround;
-	wxCheckBox* m_nonUnique;
+	wxCheckBox* m_unique;
 
 	wxSpinCtrl* m_plcLevel;
 };

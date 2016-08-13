@@ -578,10 +578,10 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 			model->Load( stream );
 			model->PreloadTextures();
 
+			model->Ref_Grab();
+
 			bool isGroundModel = (def->m_info.modelflags & LMODEL_FLAG_ISGROUND);
 			model->GeneratePhysicsData( isGroundModel );
-
-			model->Ref_Grab();
 
 			def->m_model = model;
 			def->m_defModel = NULL;

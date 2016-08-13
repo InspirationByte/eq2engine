@@ -313,7 +313,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 			//if( frustum.IsBoxInside(cont->m_model->m_bbox.minPoint, cont->m_model->m_bbox.maxPoint) )
 			if( occlFrustum.IsSphereVisible( ref->position, length(ref->bbox.GetSize())) )
 			{
-				if (caps.isInstancingSupported)
+				if (caps.isInstancingSupported && !(cont->m_info.modelflags & LMODEL_FLAG_UNIQUE))
 				{
 					if(!cont->m_instData)	// make new instancing data
 						cont->m_instData = new levObjInstanceData_t;
@@ -456,10 +456,12 @@ void CLevelRegion::Cleanup()
 	for(int i = 0; i < m_zones.numElem(); i++)
 		delete [] m_zones[i].zoneName;
 
+	m_zones.clear();
+
 	for(int i = 0; i < m_regionDefs.numElem(); i++)
 		delete m_regionDefs[i];
 
-	m_zones.clear();
+	m_regionDefs.clear();
 
 	m_level->m_mutex.Unlock();
 
@@ -545,13 +547,12 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		CLevelModel* modelRef = new CLevelModel();
 		modelRef->Load( stream );
 		modelRef->PreloadTextures();
+		modelRef->Ref_Grab();
 
 		CLevObjectDef* newDef = new CLevObjectDef();
 		newDef->m_info.type = LOBJ_TYPE_INTERNAL_STATIC;
-		newDef->m_info.modelflags = LMODEL_FLAG_NONUNIQUE;
+		newDef->m_info.modelflags = LMODEL_FLAG_UNIQUE;
 		newDef->m_model = modelRef;
-		
-		modelRef->GenereateRenderData();
 
 #ifndef EDITOR
 		modelRef->GeneratePhysicsData(false);
