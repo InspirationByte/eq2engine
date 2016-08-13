@@ -163,6 +163,7 @@
     <ClCompile Include="LiteHTMLContainer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="ParticleEffects.cpp" />
     <ClCompile Include="state_lobby.cpp" />
     <ClCompile Include="object_scripted.cpp" />
     <ClCompile Include="occluderSet.cpp" />
@@ -295,6 +296,7 @@
     <ClInclude Include="game_singleplayer.h" />
     <ClInclude Include="levelobject.h" />
     <ClInclude Include="LiteHTMLContainer.h" />
+    <ClInclude Include="ParticleEffects.h" />
     <ClInclude Include="state_lobby.h" />
     <ClInclude Include="LuaBinding_Drivers.h" />
     <ClInclude Include="object_debris.h" />

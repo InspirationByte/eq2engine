@@ -19,7 +19,7 @@ DECLARE_CMD(car_loosehubcaps, "looses hubcaps on current car", 0)
 		CCar* car = g_pGameSession->GetPlayerCar();
 
 		for(int i = 0; i < car->GetWheelCount(); i++)
-			car->StrikeHubcap(i);
+			car->ReleaseHubcap(i);
 	}
 }
 
@@ -55,9 +55,6 @@ DECLARE_CMD(car_reload, "reload current car", 0)
 		}
 
 		g_pGameSession->GetPlayerCar()->DebugReloadCar();
-
-
-
 		g_pGameSession->GetPlayerCar()->SetColorScheme(RandomInt(0,conf->m_colors.numElem()-1));
 	}
 }

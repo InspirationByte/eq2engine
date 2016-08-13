@@ -88,6 +88,9 @@
     <Filter Include="Файлы исходного кода\EngineLib\Video">
       <UniqueIdentifier>{da93cfaf-86d5-4006-aefe-f57baa14a9c3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Файлы исходного кода\Game\Effects">
+      <UniqueIdentifier>{24900d55-c6ae-47b2-bbbc-a55e149f284f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -350,6 +353,9 @@
     </ClCompile>
     <ClCompile Include="..\shared_engine\SpriteBuilder.cpp">
       <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticleEffects.cpp">
+      <Filter>Файлы исходного кода\Game\Effects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -684,6 +690,9 @@
     </ClInclude>
     <ClInclude Include="..\shared_engine\SpriteBuilder.h">
       <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleEffects.h">
+      <Filter>Файлы исходного кода\Game\Effects</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

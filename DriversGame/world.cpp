@@ -536,6 +536,8 @@ bool CGameWorld::IsValidObject(CGameObject* pObject) const
 
 void CGameWorld::Cleanup( bool unloadLevel )
 {
+	m_occludingFrustum.Clear();
+
 	if(!unloadLevel)
 		m_level.UpdateRegions();
 
@@ -1068,8 +1070,6 @@ void DrawSkyBox(IMaterial* pSkyMaterial, int renderFlags)
 
 	//g_pShaderAPI->Flush();
 }
-
-
 
 const float wetnessLevels[WEATHER_COUNT] =
 {

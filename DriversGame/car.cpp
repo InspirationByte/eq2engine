@@ -13,6 +13,7 @@
 #include "replay.h"
 #include "object_debris.h"
 #include "heightfield.h"
+#include "ParticleEffects.h"
 
 #include "Shiny.h"
 
@@ -56,6 +57,8 @@ static Vector3D s_BodyPartDirections[] =
 #define DEFAULT_CAMERA_FOV			(60.0f)
 #define CAMERA_MIN_FOV				(50.0f)
 #define CAMERA_MAX_FOV				(90.0f)
+
+#define CAMERA_DISTANCE_BIAS		(0.25f)
 
 #define ACCELERATION_CONST			(2.0f)
 #define	ACCELERATION_SOUND_CONST	(10.0f)
@@ -115,12 +118,8 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 	conf->m_maxSpeed = KV_GetValueFloat(kvs->FindKeyBase("maxSpeed"), 0, DEFAULT_MAX_SPEED);
 	conf->m_burnoutMaxSpeed = KV_GetValueFloat(kvs->FindKeyBase("burnoutMaxSpeed"), 0, BURNOUT_MAX_SPEED);
 
-
 	conf->m_steeringSpeed = KV_GetValueFloat(kvs->FindKeyBase("steerSpeed"), 0, STEERING_CONST);
 	conf->m_handbrakeScale = KV_GetValueFloat(kvs->FindKeyBase("handbrakeScale"), 0, 1.0f);
-
-	//conf->m_differentialRatio *= 2.7f;
-	//conf->m_transmissionRate *= 0.34f;
 
 	conf->m_mass = KV_GetValueFloat(kvs->FindKeyBase("mass"));
 
@@ -210,8 +209,6 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 			conf->m_wheels.append(wconf);
 		}
 	}
-
-	#define CAMERA_DISTANCE_BIAS 0.25f
 
 	conf->m_cameraConf.dist = KV_GetValueFloat(kvs->FindKeyBase("camera_distance"), 0, 7.0f);
 	conf->m_cameraConf.distInCar = KV_GetValueFloat(kvs->FindKeyBase("camera_distance_in"), 0, conf->m_body_size.z - CAMERA_DISTANCE_BIAS);
@@ -311,8 +308,7 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 	return true;
 }
 
-#pragma todo("better gearbox code for shifting effect")
-#pragma todo("make correct lateral sliding on steering wheels")
+#pragma todo("make better lateral sliding on steering wheels when going backwards")
 
 // wheel friction modifier on diferrent weathers
 static float weatherTireFrictionMod[WEATHER_COUNT] =
@@ -331,363 +327,6 @@ extern CPFXAtlasGroup* g_vehicleEffects;
 extern CPFXAtlasGroup* g_translParticles;
 extern CPFXAtlasGroup* g_additPartcles;
 
-void DrawLightEffect(const Vector3D& position, const ColorRGBA& color, float size, int type = 0)
-{
-	PFXBillboard_t effect;
-
-	effect.vColor = color;
-
-	effect.nFlags = EFFECT_FLAG_NO_FRUSTUM_CHECK;
-	effect.fZAngle = g_pGameWorld->m_CameraParams.GetAngles().y;
-
-	effect.group = g_additPartcles;
-
-	effect.fWide = size;
-	effect.fTall = size;
-
-	effect.vOrigin = position;
-
-	if(type == 0)
-		effect.tex = g_additPartcles->FindEntry("light1");
-	else if(type == 1)
-		effect.tex = g_additPartcles->FindEntry("glow2");
-	else if(type == 2)
-		effect.tex = g_additPartcles->FindEntry("light1a");
-	else if(type == 3)
-		effect.tex = g_additPartcles->FindEntry("glow1");
-
-	Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, NULL);
-}
-
-void PoliceSirenEffect(float fCurTime, const ColorRGB& color, const Vector3D& pos, const Vector3D& dir_right, float rDist, float width)
-{
-	PFXBillboard_t effect;
-
-	float fSinFactor = sinf(fCurTime*16.0f);
-
-	effect.vColor = Vector4D(color * fSinFactor, 1.0f);
-	effect.nFlags = EFFECT_FLAG_NO_FRUSTUM_CHECK;
-	effect.fZAngle = g_pGameWorld->m_CameraParams.GetAngles().y;
-
-	effect.group = g_additPartcles;
-
-	float min_size = 0.025f;
-
-	float max_size = 0.55f;
-	float max_glow_size = 1.05f;
-
-	// TODO: trace particle visibility
-
-	effect.fWide = lerp(min_size, max_size, fabs(fSinFactor));
-	effect.fTall = lerp(min_size, max_size, fabs(fSinFactor));
-
-	effect.vOrigin = pos + dir_right*rDist - dir_right*width;
-	effect.tex = g_additPartcles->FindEntry("light1");
-
-	// no frustum for now
-	Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, NULL);
-	effect.tex = g_additPartcles->FindEntry("glow1");
-	effect.fWide = lerp(min_size, max_glow_size, fabs(fSinFactor));
-	effect.fTall = lerp(min_size, max_glow_size, fabs(fSinFactor));
-	Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, NULL);
-
-	float fCosFactor = sinf((fCurTime*16.0f)+PI_F);
-
-	effect.vColor = Vector4D(color * fCosFactor, 1.0f);
-	effect.fWide = lerp(min_size, max_size, fabs(fCosFactor));
-	effect.fTall = lerp(min_size, max_size, fabs(fCosFactor));
-
-	effect.vOrigin = pos + dir_right*rDist + dir_right*width;
-	effect.tex = g_additPartcles->FindEntry("light1a");
-
-	// no frustum for now
-	Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, NULL);
-	effect.tex = g_additPartcles->FindEntry("glow1");
-	effect.fWide = lerp(min_size, max_glow_size, fabs(fCosFactor));
-	effect.fTall = lerp(min_size, max_glow_size, fabs(fCosFactor));
-
-	Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, NULL);
-}
-
-class CFleckEffect : public IEffect
-{
-public:
-	CFleckEffect(const Vector3D &position, const Vector3D &velocity, const Vector3D &gravity, float StartSize, float lifetime, float rotation, const ColorRGB& color, CPFXAtlasGroup* group, TexAtlasEntry_t* entry)
-	{
-		InternalInit(position, lifetime, group, entry);
-
-		fStartSize = StartSize;
-
-		m_vVelocity = velocity;
-
-		rotate = rotation;
-
-		nDraws = 0;
-
-		m_vGravity = gravity;
-
-		m_vLastColor = color * g_pGameWorld->m_info.ambientColor.xyz()*2.0f;
-
-		m_group = group;
-		m_entry = entry;
-	}
-
-	bool DrawEffect(float dTime)
-	{
-		m_fLifeTime -= dTime;
-
-		if(m_fLifeTime <= 0)
-			return false;
-
-		m_vOrigin += m_vVelocity*dTime*1.25f;
-
-		m_vVelocity += m_vGravity*dTime*1.25f;
-
-		SetSortOrigin(m_vOrigin);
-
-		float lifeTimePerc = GetLifetimePercent();
-
-		PFXBillboard_t effect;
-
-		effect.group = m_group;
-		effect.tex = m_entry;
-
-		effect.vOrigin = m_vOrigin;
-		effect.vColor = Vector4D(m_vLastColor,lifeTimePerc*2);
-		effect.nFlags = EFFECT_FLAG_NO_FRUSTUM_CHECK;
-
-		effect.fZAngle = lifeTimePerc*rotate;
-
-		//internaltrace_t tr;
-		//physics->InternalTraceLine(m_vOrigin,m_vOrigin+normalize(m_vVelocity), COLLISION_GROUP_WORLD | COLLISION_GROUP_OBJECTS, &tr);
-		/*
-		CollisionData_t coll;
-		g_pPhysics->TestLine(m_vOrigin, m_vOrigin+normalize(m_vVelocity), coll);
-
-		if(coll.fract < 1.0f)
-		{
-			m_vVelocity = reflect(m_vVelocity, coll.normal)*0.25f;
-			m_fLifeTime -= dTime*8;
-
-			effect.fZAngle = 0.0f;
-		}*/
-
-		effect.fWide = fStartSize;
-		effect.fTall = fStartSize;
-
-		Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, NULL);
-
-		nDraws++;
-
-		return true;
-	}
-
-protected:
-	Vector3D	tangent;
-	Vector3D	binormal;
-	Vector3D	normal;
-
-	Vector3D	m_vVelocity;
-	Vector3D	m_vGravity;
-
-	Vector3D	m_vLastColor;
-
-	float		fStartSize;
-	float		rotate;
-
-	int			nDraws;
-
-	CPFXAtlasGroup*		m_group;
-	TexAtlasEntry_t*	m_entry;
-};
-
-class CSmokeEffect : public IEffect
-{
-public:
-	CSmokeEffect(const Vector3D &position, const Vector3D &velocity, float StartSize, float EndSize, float lifetime, CPFXAtlasGroup* group, TexAtlasEntry_t* entry, float rotation, const Vector3D &gravity = vec3_zero, const Vector3D &color1 = color3_white, const Vector3D &color2 = color3_white, float alpha = 1.0f)
-	{
-		InternalInit( position, lifetime, group, entry );
-
-		fCurSize = StartSize;
-		fStartSize = StartSize;
-		fEndSize = EndSize;
-
-		m_vVelocity = velocity;
-
-		rotate = rotation;
-
-		m_vGravity = gravity;
-
-		m_color1 = color1;
-		m_color2 = color2;
-
-		m_alpha = alpha;
-	}
-
-	bool DrawEffect(float dTime)
-	{
-		m_fLifeTime -= dTime;
-
-		if(m_fLifeTime <= 0)
-			return false;
-
-		m_vOrigin += m_vVelocity*dTime;
-
-		m_vCurrColor = (g_pGameWorld->m_info.ambientColor.xyz()+g_pGameWorld->m_info.sunColor.xyz());
-
-		float lifeTimePerc = GetLifetimePercent();
-
-		float fStartAlpha = clamp((1.0f-lifeTimePerc) * 50.0f, 0.0f, 1.0f);
-
-		Vector3D col_lerp = lerp(m_color2, m_color1, lifeTimePerc);
-
-		m_vVelocity += m_vGravity*dTime;
-
-		SetSortOrigin(m_vOrigin);
-
-		PFXBillboard_t effect;
-
-		effect.vOrigin = m_vOrigin;
-		effect.vColor = Vector4D(m_vCurrColor * col_lerp, lifeTimePerc*m_alpha*fStartAlpha);
-		effect.group = m_atlGroup;
-		effect.tex = m_atlEntry;
-		effect.nFlags = EFFECT_FLAG_NO_FRUSTUM_CHECK;
-		effect.fZAngle = lifeTimePerc*rotate;
-
-		effect.fWide = lerp(fStartSize, fEndSize, 1.0f-lifeTimePerc);
-		effect.fTall = lerp(fStartSize, fEndSize, 1.0f-lifeTimePerc);
-
-		// no frustum for now
-		Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, NULL);
-
-		return true;
-	}
-
-protected:
-	Vector3D	tangent;
-	Vector3D	binormal;
-	Vector3D	normal;
-
-	Vector3D	m_color1;
-	Vector3D	m_color2;
-
-	Vector3D	m_vGravity;
-
-	Vector3D	m_vVelocity;
-
-	Vector3D	m_vCurrColor;
-
-	float		fCurSize;
-
-	float		fStartSize;
-	float		fEndSize;
-	float		rotate;
-
-	float		m_alpha;
-};
-
-class CSparkLine : public IEffect
-{
-public:
-	CSparkLine(const Vector3D &position, const Vector3D &velocity, const Vector3D &gravity, float length, float StartSize, float EndSize, float lifetime, CPFXAtlasGroup* group, TexAtlasEntry_t* entry)
-	{
-		InternalInit(position, lifetime, group, entry);
-
-		fCurSize = StartSize;
-		fStartSize = StartSize;
-		fEndSize = EndSize;
-
-		m_vVelocity = velocity;
-
-		fLength = length;
-
-		vGravity = gravity;
-	}
-
-	bool DrawEffect(float dTime)
-	{
-		m_fLifeTime -= dTime;
-
-		if(m_fLifeTime <= 0)
-			return false;
-
-		PFXVertex_t* verts;
-		if(m_atlGroup->AllocateGeom( 4, 4, &verts, NULL, true ) < 0)
-			return false;
-
-		m_vOrigin += m_vVelocity*dTime*2.0f;
-
-		SetSortOrigin(m_vOrigin);
-
-		float lifeTimePerc = GetLifetimePercent();
-
-		Vector3D viewDir = fastNormalize(m_vOrigin - effectrenderer->GetViewSortPosition());
-		Vector3D lineDir = m_vVelocity;
-
-		Vector3D vEnd = m_vOrigin + fastNormalize(m_vVelocity)*(fLength*length(m_vVelocity)*0.001f);
-
-		Vector3D ccross = fastNormalize(cross(lineDir, viewDir));
-
-		float scale = lerp(fStartSize, fEndSize, 1.0f-lifeTimePerc);
-
-		Vector3D temp;
-
-		VectorMA( vEnd, scale, ccross, temp );
-
-		Vector4D color(Vector3D(1)*lifeTimePerc, 1);
-
-		verts[0].point = temp;
-		verts[0].texcoord = m_atlEntry->rect.GetLeftTop();
-		verts[0].color = color;
-
-		VectorMA( vEnd, -scale, ccross, temp );
-
-		verts[1].point = temp;
-		verts[1].texcoord = m_atlEntry->rect.GetLeftBottom();
-		verts[1].color = color;
-
-		VectorMA( m_vOrigin, scale, ccross, temp );
-
-		verts[2].point = temp;
-		verts[2].texcoord = m_atlEntry->rect.GetRightTop();
-		verts[2].color = color;
-
-		VectorMA( m_vOrigin, -scale, ccross, temp );
-
-		verts[3].point = temp;
-		verts[3].texcoord = m_atlEntry->rect.GetRightBottom();
-		verts[3].color = color;
-
-		CollisionData_t coll;
-		g_pPhysics->TestLine(m_vOrigin, vEnd, coll);
-
-		m_vVelocity += vGravity*dTime*2.0f;
-
-		if(coll.fract < 1.0f)
-		{
-			m_vVelocity = reflect(m_vVelocity, coll.normal)*0.8f;
-			m_fLifeTime -= dTime*2;
-		}
-
-		return true;
-	}
-
-protected:
-	Vector3D	tangent;
-	Vector3D	binormal;
-	Vector3D	normal;
-
-	Vector3D	vGravity;
-
-	Vector3D	m_vVelocity;
-
-	float		fCurSize;
-
-	float		fStartSize;
-	float		fEndSize;
-	float		fLength;
-};
-
 float DBTorqueCurveFromRPM( float fRPM )
 {
 	float fTorque = ( fRPM * ( 0.225f * 0.001f ) );
@@ -703,27 +342,9 @@ static float DBTorqueCurve ( float radsPerSec )
 {
 	float fRPM = radsPerSec * 60.0f / ( 2.0f * PI_F );
 
-	//if ( fRPM < 2450.0f )
-	//	fRPM = 2450.0f;
-
-	/*
-	if ( fRPM > 9800.0f )
-	{
-		fRPM = 9800.0f;
-
-		return 0;
-	}*/
-
 	return DBTorqueCurveFromRPM( fRPM );
 }
 
-/*
-ConVar sa_initialGrad("sa_initialGrad", "24.0");
-ConVar sa_endGrad("sa_endGrad", "1.46");
-ConVar sa_endOffset("sa_endOffset", "2.9");
-ConVar sa_segEndA("sa_segEndA", "0.1");
-ConVar sa_segEndB("sa_segEndB", "0.2");
-*/
 float DBSlipAngleToLateralForce(float fSlipAngle, float fLongitudinalForce, eqPhysSurfParam_t* surfParam)
 {
 	const float fInitialGradient = 22.0f;
@@ -751,12 +372,6 @@ float DBSlipAngleToLateralForce(float fSlipAngle, float fLongitudinalForce, eqPh
 	else if (fSlipAngle < fSegmentEndB)
 	{
 		fResult = fSign * cerp(
-			/*
-			fSegmentEndAOut,
-			fSegmentEndBOut,
-			fCubicGradA,
-			fCubicGradB,
-			*/
 			fCubicGradB, fCubicGradA, fSegmentEndBOut, fSegmentEndAOut,
 			(fSlipAngle - fSegmentEndA) * fInvSegBLength);
 	}
@@ -1135,22 +750,10 @@ void CCar::Spawn()
 	// baseclass spawn
 	CGameObject::Spawn();
 
-	if(m_replayID == REPLAY_NOT_TRACKED)
-	{
 #ifndef EDITOR
-#ifndef BIG_REPLAYS
-
-		// don't spawn traffic cars
-
-		// no RTTI
-		// if(dynamic_cast<CAITrafficCar*>(this) == NULL)
-		if( ObjType() == GO_CAR )
-#endif // BIG_REPLAYS
-		{
-			g_replayData->PushSpawnOrRemoveEvent( REPLAY_EVENT_SPAWN, this );
-		}
+	if(m_replayID == REPLAY_NOT_TRACKED)
+		g_replayData->PushSpawnOrRemoveEvent( REPLAY_EVENT_SPAWN, this );
 #endif // EDITOR
-	}
 
 	m_trans_grasspart = g_translParticles->FindEntry("grasspart");
 	m_trans_smoke2 = g_translParticles->FindEntry("smoke2");
@@ -1184,8 +787,6 @@ void CCar::AlignToGround()
 
 	float suspLowPos = lerp(m_conf->m_wheels[0].suspensionTop.y, m_conf->m_wheels[0].suspensionBottom.y, 0.85f);
 
-
-
 	pos = Vector3D(m_vecOrigin.x, pos.y - suspLowPos, m_vecOrigin.z);
 
 	SetOrigin( pos );
@@ -1195,18 +796,10 @@ void CCar::OnRemove()
 {
 	CGameObject::OnRemove();
 
-	if(m_replayID != REPLAY_NOT_TRACKED)
-	{
 #ifndef EDITOR
-#ifndef BIG_REPLAYS
-		// don't remove traffic cars by replay
-		// no RTTI
-		// if(dynamic_cast<CAITrafficCar*>(this) == NULL)
-		if( ObjType() == GO_CAR )
-#endif // BIG_REPLAYS
-			g_replayData->PushSpawnOrRemoveEvent( REPLAY_EVENT_REMOVE, this );
+	if(m_replayID != REPLAY_NOT_TRACKED)
+		g_replayData->PushSpawnOrRemoveEvent( REPLAY_EVENT_REMOVE, this );
 #endif // EDITOR
-	}
 
 	ses->RemoveSoundController(m_pIdleSound);
 	ses->RemoveSoundController(m_pEngineSound);
@@ -1302,17 +895,17 @@ const Quaternion& CCar::GetOrientation() const
 
 const Vector3D CCar::GetForwardVector() const
 {
-	return rotateVector(vec3_forward,GetOrientation()); //(vec3_forward*GetOrientation()).asVector4D().xyz();
+	return rotateVector(vec3_forward,GetOrientation());
 }
 
 const Vector3D CCar::GetUpVector() const
 {
-	return rotateVector(vec3_up,GetOrientation()); //(vec3_up*GetOrientation()).asVector4D().xyz();
+	return rotateVector(vec3_up,GetOrientation()); 
 }
 
 const Vector3D CCar::GetRightVector() const
 {
-	return rotateVector(vec3_right,GetOrientation()); //(vec3_right*GetOrientation()).asVector4D().xyz();
+	return rotateVector(vec3_right,GetOrientation());
 }
 
 const Vector3D& CCar::GetVelocity() const
@@ -1877,9 +1470,6 @@ void CCar::UpdateCarPhysics(float delta)
 	if(m_fBreakage < 0)
 		m_fBreakage = 0;
 
-	if(m_isLocalCar)
-		debugoverlay->Text(ColorRGBA(1,1,1,1), "output torque: %g",(float)torque);
-
 	m_brakeLightsEnabled = !bDoBurnout && FPmath::abs(fBreakage) > 0.05f && fabs(car_speed) > 0.01f;
 
 	if(fHandbrake > 0)
@@ -2180,8 +1770,6 @@ void CCar::UpdateCarPhysics(float delta)
 			wheel.pitchVel = dot(wheel_forward, carBody->GetLinearVelocity());
 		}
 
-
-
 		bool burnout = bDoBurnout && (wheelConf.flags & WHEEL_FLAG_DRIVE);
 		if(burnout)
 		{
@@ -2248,10 +1836,10 @@ void CCar::EmitCollisionParticles(const Vector3D& position, const Vector3D& velo
 
 			CSparkLine* pSpark = new CSparkLine(Vector3D(position+normal*0.05f),
 												n*rwlen*0.25f,	// velocity
-												Vector3D(0.0f,-15.0f, 0.0f),		// gravity
+												Vector3D(0.0f,RandomFloat(0.4f, -15.0f), 0.0f),		// gravity
 												RandomFloat(50.8, 80.0), // len
-												RandomFloat(0.01f, 0.02f), RandomFloat(0.01f, 0.02f), // sizes
-												RandomFloat(0.8f, 1.45f),// lifetime
+												RandomFloat(0.005f, 0.01f), RandomFloat(0.01f, 0.02f), // sizes
+												RandomFloat(0.5f, 1.2f),// lifetime
 												effgroup, entry);  // group - texture
 			effectrenderer->RegisterEffectForRender(pSpark);
 		}
@@ -2517,7 +2105,7 @@ void CCar::OnPhysicsFrame( float fDt )
 		{
 			wheel.damage = 1.0f;
 
-			StrikeHubcap(i);
+			ReleaseHubcap(i);
 		}
 	}
 
@@ -2558,7 +2146,7 @@ void CCar::OnPhysicsFrame( float fDt )
 	}
 }
 
-void CCar::StrikeHubcap(int wheel)
+void CCar::ReleaseHubcap(int wheel)
 {
 #ifndef EDITOR
 	wheelData_t& wdata = m_pWheels[wheel];
@@ -3249,146 +2837,140 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 	wheel.flags.onGround = true;
 	wheel.flags.doSkidmarks = (GetTractionSlidingAtWheel(nWheel) > 3.0f || fabs(GetLateralSlidingAtWheel(nWheel)) > 2.0f);
 
+	wheel.smokeTime -= fDt;
+
 	if( wheel.flags.onGround && wheel.surfparam != NULL )
 	{
 		Vector3D smoke_pos = wheel.collisionInfo.position + wheel.collisionInfo.normal * wheelConf.radius*0.5f;
 
 		if(wheel.surfparam->word == 'C')	// concrete/asphalt
 		{
-			wheel.smokeTime -= fDt;
-
 			float fSliding = GetTractionSlidingAtWheel(nWheel)+fabs(GetLateralSlidingAtWheel(nWheel));
 
-			if(fSliding > 5.0f)
+			if(fSliding < 5.0f)
+				return;
+
+			// spawn smoke
+			if(wheel.smokeTime > 0.0)
+				return;
+
+			float efficency = RemapValClamp(fSliding, 5.0f, 40.0f, 0.4f, 1.0f);
+			float timeScale = RemapValClamp(fSliding, 5.0f, 40.0f, 0.7f, 1.0f);
+
+			if(g_pGameWorld->m_envConfig.weatherType >= WEATHER_TYPE_RAIN)
+			{
+				ColorRGB rippleColor(0.8f, 0.8f, 0.8f);
+
+				Vector3D rightDir = wheelMat.rows[0] * 0.7f;
+				Vector3D particleVel = wheel.velocityVec*0.35f + Vector3D(0.0f,1.2f,1.0f);
+
+				CSmokeEffect* pSmoke = new CSmokeEffect(wheel.collisionInfo.position, particleVel + rightDir,
+						RandomFloat(0.1f, 0.2f), RandomFloat(0.9f, 1.1f),
+						RandomFloat(0.1f)*efficency,
+						g_translParticles, m_trans_raindrops,
+						RandomFloat(5, 35), Vector3D(0,RandomFloat(-0.9, -8.2) , 0),
+						rippleColor, rippleColor);
+
+				effectrenderer->RegisterEffectForRender(pSmoke);
+
+				pSmoke = new CSmokeEffect(wheel.collisionInfo.position, particleVel - rightDir,
+						RandomFloat(0.1f, 0.2f), RandomFloat(0.9f, 1.1f),
+						RandomFloat(0.1f),
+						g_translParticles, m_trans_raindrops,
+						RandomFloat(5, 35), Vector3D(0,RandomFloat(-0.9, -8.2) , 0),
+						rippleColor, rippleColor);
+
+				effectrenderer->RegisterEffectForRender(pSmoke);
+
+
+				wheel.smokeTime = 0.07f;
+			}
+			else
+			{
+				ColorRGB smokeCol(0.86f, 0.9f, 0.97f);
+
+				CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, wheel.velocityVec*0.25f+Vector3D(0,1,1),
+							RandomFloat(0.1, 0.3)*efficency, RandomFloat(1.0, 1.8)*timeScale,
+							RandomFloat(1.2f)*timeScale,
+							g_translParticles, m_trans_smoke2,
+							RandomFloat(25, 85), Vector3D(1,RandomFloat(-0.7, 0.2) , 1),
+							smokeCol, smokeCol);
+					
+				effectrenderer->RegisterEffectForRender(pSmoke);
+
+				wheel.smokeTime = 0.1f;
+			}
+		}
+		else if(wheel.surfparam->word == 'S')	// sand
+		{
+			if(GetTractionSlidingAtWheel(nWheel) > 5.0f || fabs(GetLateralSlidingAtWheel(nWheel)) > 2.5f)
 			{
 				// spawn smoke
 				if(wheel.smokeTime > 0.0)
 					return;
 
-				float efficency = RemapValClamp(fSliding, 5.0f, 40.0f, 0.4f, 1.0f);
-				float timeScale = RemapValClamp(fSliding, 5.0f, 40.0f, 0.7f, 1.0f);
+				wheel.smokeTime = 0.08f;
 
-				if(g_pGameWorld->m_envConfig.weatherType >= WEATHER_TYPE_RAIN)
-				{
-					ColorRGB rippleColor(0.8f, 0.8f, 0.8f);
+				Vector3D vel = -wheelMat.rows[2]*GetTractionSlidingAtWheel(nWheel) * 0.025f;
+				vel += wheelMat.rows[0]*GetLateralSlidingAtWheel(nWheel) * 0.025f;
 
-					Vector3D rightDir = wheelMat.rows[0] * 0.7f;
-					Vector3D particleVel = wheel.velocityVec*0.35f + Vector3D(0.0f,1.2f,1.0f);
+				CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, vel,
+														RandomFloat(0.11, 0.14), RandomFloat(1.1, 1.5),
+														RandomFloat(0.15f),
+														g_translParticles, m_trans_smoke2,
+														RandomFloat(5, 35), Vector3D(1,RandomFloat(-3.9, -5.2) , 1),
+														ColorRGB(0.95f,0.757f,0.611f), ColorRGB(0.95f,0.757f,0.611f));
 
-					CSmokeEffect* pSmoke = new CSmokeEffect(wheel.collisionInfo.position, particleVel + rightDir,
-							RandomFloat(0.1f, 0.2f), RandomFloat(0.9f, 1.1f),
-							RandomFloat(0.1f),
-							g_translParticles, m_trans_raindrops,
-							RandomFloat(5, 35), Vector3D(0,RandomFloat(-0.9, -8.2) , 0),
-							rippleColor, rippleColor);
-
-					effectrenderer->RegisterEffectForRender(pSmoke);
-
-					pSmoke = new CSmokeEffect(wheel.collisionInfo.position, particleVel - rightDir,
-							RandomFloat(0.1f, 0.2f), RandomFloat(0.9f, 1.1f),
-							RandomFloat(0.1f),
-							g_translParticles, m_trans_raindrops,
-							RandomFloat(5, 35), Vector3D(0,RandomFloat(-0.9, -8.2) , 0),
-							rippleColor, rippleColor);
-
-					effectrenderer->RegisterEffectForRender(pSmoke);
-
-
-					wheel.smokeTime = 0.07f;
-				}
-				else
-				{
-					ColorRGB smokeCol(0.86f, 0.9f, 0.97f);
-
-					CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, wheel.velocityVec*0.25f+Vector3D(0,1,1),
-								RandomFloat(0.1, 0.3)*efficency, RandomFloat(1.0, 1.8)*timeScale,
-								RandomFloat(1.2f)*timeScale,
-								g_translParticles, m_trans_smoke2,
-								RandomFloat(25, 85), Vector3D(1,RandomFloat(-0.7, 0.2) , 1),
-								smokeCol, smokeCol);
-					
-					effectrenderer->RegisterEffectForRender(pSmoke);
-
-					wheel.smokeTime = 0.1f;
-				}
-			}
-		}
-		else if(wheel.surfparam->word == 'S')	// sand
-		{
-			wheel.smokeTime -= fDt;
-
-			if(GetTractionSlidingAtWheel(nWheel) > 5.0f || fabs(GetLateralSlidingAtWheel(nWheel)) > 2.5f)
-			{
-				// spawn smoke
-				if(wheel.smokeTime <= 0.0)
-				{
-					wheel.smokeTime = 0.08f;
-
-					Vector3D vel = -wheelMat.rows[2]*GetTractionSlidingAtWheel(nWheel) * 0.025f;
-					vel += wheelMat.rows[0]*GetLateralSlidingAtWheel(nWheel) * 0.025f;
-
-					CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, vel,
-															RandomFloat(0.11, 0.14), RandomFloat(1.1, 1.5),
-															RandomFloat(0.15f),
-															g_translParticles, m_trans_smoke2,
-															RandomFloat(5, 35), Vector3D(1,RandomFloat(-3.9, -5.2) , 1),
-															ColorRGB(0.95f,0.757f,0.611f), ColorRGB(0.95f,0.757f,0.611f));
-
-					effectrenderer->RegisterEffectForRender(pSmoke);
-				}
+				effectrenderer->RegisterEffectForRender(pSmoke);
 			}
 		}
 		else if(wheel.surfparam->word == 'G' || wheel.surfparam->word == 'D')	// grass or dirt
 		{
-			wheel.smokeTime -= fDt;
-
-
 			if(GetTractionSlidingAtWheel(nWheel) > 5.0f || fabs(GetLateralSlidingAtWheel(nWheel)) > 2.5f)
 			{
 				// spawn smoke
-				if(wheel.smokeTime <= 0.0)
+				if(wheel.smokeTime > 0.0f)
+					return;
+
+				wheel.smokeTime = 0.08f;
+
+				Vector3D vel = -wheelMat.rows[2]*GetTractionSlidingAtWheel(nWheel) * 0.025f;
+				vel += wheelMat.rows[0]*GetLateralSlidingAtWheel(nWheel) * 0.025f;
+
+				CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, vel,
+														RandomFloat(0.11, 0.14), RandomFloat(1.5, 1.7),
+														RandomFloat(0.35f),
+														g_translParticles, m_trans_smoke2,
+														RandomFloat(25, 85), Vector3D(1,RandomFloat(-3.9, -5.2) , 1),
+														ColorRGB(0.1f,0.08f,0.00f), ColorRGB(0.1f,0.08f,0.00f));
+
+				effectrenderer->RegisterEffectForRender(pSmoke);
+
+				if(wheel.surfparam->word != 'G')
+					return;
+
+				vel += Vector3D(0, 1.5f, 0);
+
+				float len = length(vel);
+
+				Vector3D grass_pos = wheel.collisionInfo.position;
+
+
+				for(int i = 0; i < 4; i++)
 				{
-					wheel.smokeTime = 0.08f;
+					Vector3D rnd_ang = VectorAngles(fastNormalize(vel)) + Vector3D(RandomFloat(-35,35),RandomFloat(-35,35),RandomFloat(-35,35));
+					Vector3D n;
+					AngleVectors(rnd_ang, &n);
 
-					Vector3D vel = -wheelMat.rows[2]*GetTractionSlidingAtWheel(nWheel) * 0.025f;
-					vel += wheelMat.rows[0]*GetLateralSlidingAtWheel(nWheel) * 0.025f;
-
-					CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, vel,
-															RandomFloat(0.11, 0.14), RandomFloat(1.5, 1.7),
-															RandomFloat(0.35f),
-															g_translParticles, m_trans_smoke2,
-															RandomFloat(25, 85), Vector3D(1,RandomFloat(-3.9, -5.2) , 1),
-															ColorRGB(0.1f,0.08f,0.00f), ColorRGB(0.1f,0.08f,0.00f));
-
-					effectrenderer->RegisterEffectForRender(pSmoke);
-
-
-					if(wheel.surfparam->word == 'G')
-					{
-						vel += Vector3D(0, 1.5f, 0);
-
-						float len = length(vel);
-
-						Vector3D grass_pos = wheel.collisionInfo.position;
-
-
-						for(int i = 0; i < 4; i++)
-						{
-							Vector3D rnd_ang = VectorAngles(fastNormalize(vel)) + Vector3D(RandomFloat(-35,35),RandomFloat(-35,35),RandomFloat(-35,35));
-							Vector3D n;
-							AngleVectors(rnd_ang, &n);
-
-							CSparkLine* pSpark = new CSparkLine(grass_pos,
-																n*len,	// velocity
-																Vector3D(0.0f,-3.0f, 0.0f),		// gravity
-																RandomFloat(90.0, 100.0), // len
-																RandomFloat(0.01f, 0.02f), RandomFloat(0.01f, 0.02f), // sizes
-																RandomFloat(0.35f, 0.45f),// lifetime
-																g_translParticles, m_trans_grasspart);  // group - texture
-							effectrenderer->RegisterEffectForRender(pSpark);
-						}
-					}
-				} // smoke time
+					CSparkLine* pSpark = new CSparkLine(grass_pos,
+														n*len,	// velocity
+														Vector3D(0.0f,-3.0f, 0.0f),		// gravity
+														RandomFloat(90.0, 100.0), // len
+														RandomFloat(0.01f, 0.02f), RandomFloat(0.01f, 0.02f), // sizes
+														RandomFloat(0.35f, 0.45f),// lifetime
+														g_translParticles, m_trans_grasspart);  // group - texture
+					effectrenderer->RegisterEffectForRender(pSpark);
+				}
 			} // traction slide
 		} // selector
 	}
@@ -3888,9 +3470,6 @@ void CCar::Draw( int nRenderFlags )
 #endif // EDITOR
 
 	CEqRigidBody* pCarBody = m_pPhysicsObject->m_object;
-
-	//Matrix4x4 m;
-	//pCarBody->ConstructRenderMatrix(m);
 
 	pCarBody->UpdateBoundingBoxTransform();
 	m_bbox = pCarBody->m_aabb_transformed;

@@ -284,10 +284,8 @@ void CAICarManager::RemoveTrafficCar(CCar* car)
 
 void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity)
 {
-#ifdef BIG_REPLAYS
 	if (g_replayData->m_state == REPL_PLAYING)
 		return;
-#endif // BIG_REPLAYS
 
 	m_trafficUpdateTime -= fDt;
 

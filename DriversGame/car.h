@@ -307,6 +307,7 @@ public:
 	virtual void			PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell);
 
 	void					Draw( int nRenderFlags );
+
 	void					DrawEffects( int lod );
 
 	void					AlignToGround();	// align car to ground
@@ -326,7 +327,7 @@ public:
 	float					GetTractionSliding(bool surfCheck);		// returns absolute traction sliding
 	float					GetTractionSlidingAtWheel(int wheel);	// returns absolute traction sliding from all wheels
 
-	void					StrikeHubcap(int wheel);
+	void					ReleaseHubcap(int wheel);
 
 	//-----------------------------------
 

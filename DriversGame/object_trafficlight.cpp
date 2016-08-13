@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "object_trafficlight.h"
-#include "materialsystem/IMaterialSystem.h"
+#include "ParticleEffects.h"
 #include "world.h"
 
 #include "Shiny.h"
@@ -184,11 +184,6 @@ void CObject_TrafficLight::Draw( int nRenderFlags )
 	else
 		CGameObject::Draw( nRenderFlags );
 }
-
-//
-// from car.cpp, pls move
-//
-extern void DrawLightEffect(const Vector3D& position, const ColorRGBA& color, float size, int type = 0);
 
 void CObject_TrafficLight::Simulate(float fDt)
 {

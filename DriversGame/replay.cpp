@@ -906,6 +906,8 @@ void CReplayData::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject* ob
 				m_vehicles[evt.replayIndex].done = true;
 				m_vehicles[evt.replayIndex].obj_car = NULL;
 			}
+			else
+				return; // you can't do that
 
 			// no additional information needed
 			m_activeVehicles.fastRemove( evt.replayIndex );
