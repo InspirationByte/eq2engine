@@ -481,33 +481,26 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 				variantsTextParams.textColor = selTextColor;
 				variantsTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
 
+				char* str = NULL;
+
 				if(base->ptr()[i]->IsConVar())
 				{
 					ConVar *cv = (ConVar*)base->ptr()[i];
-					char* str = NULL;
 
 					if(bHasAutocompletion)
 						str = varargs("%s [%s] ->", cv->GetName(), cv->GetString());
 					else
 						str = varargs("%s [%s]",cv->GetName(), cv->GetString());
-
-					m_font->RenderText( str, Vector2D(x+5, textYPos),variantsTextParams);
 				}
 				else
 				{
-					if(!bHasAutocompletion)
-					{
-						char* str = varargs("%s ()",base->ptr()[i]->GetName());
-
-						m_font->RenderText( str, Vector2D(x+5, textYPos),variantsTextParams);
-					}
+					if(bHasAutocompletion)
+						str = varargs("%s () ->",base->ptr()[i]->GetName());
 					else
-					{
-						char* str = varargs("%s ()",base->ptr()[i]->GetName());
-
-						m_font->RenderText( str, Vector2D(x+5, textYPos),variantsTextParams);
-					}
+						str = varargs("%s ()",base->ptr()[i]->GetName());
 				}
+
+				m_font->RenderText( str, Vector2D(x+5, textYPos),variantsTextParams);
 
 				const char* cvarName = base->ptr()[i]->GetName();
 

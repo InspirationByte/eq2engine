@@ -83,7 +83,7 @@ public:
 	void					Init(int wide, int tall, int cells, bool isCleanLevel);	// number of height fields
 	void					Cleanup();
 
-	bool					Load(const char* levelname, kvkeybase_t* kvDefs);
+	virtual bool			Load(const char* levelname, kvkeybase_t* kvDefs);
 
 	//---------------------------------
 

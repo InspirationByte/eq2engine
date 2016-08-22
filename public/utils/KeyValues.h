@@ -67,9 +67,12 @@ struct kvkeybase_t
 	// adds new keybase
 	kvkeybase_t*			AddKeyBase(const char* pszName, const char* pszValue = NULL);
 
-
 	// sets the key
 	void					SetKey(const char* pszName, const char* pszValue = NULL);
+	void					SetKey(const char* pszName, int value);
+	void					SetKey(const char* pszName, float value);
+	void					SetKey(const char* pszName, const Vector3D& value);
+	void					SetKey(const char* pszName, const Vector4D& value);
 
 	// removes key base
 	void					RemoveKeyBase(const char* pszName);
@@ -89,6 +92,10 @@ struct kvkeybase_t
 
 	// adds value to array
 	int						AppendValue(const char* pszValue);
+	int						AppendValue(int value);
+	int						AppendValue(float value);
+	int						AppendValue(const Vector3D& value);
+	int						AppendValue(const Vector4D& value);
 
 	//----------------------------------------------
 

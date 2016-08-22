@@ -80,12 +80,12 @@ OOLUA_PROXY(kvkeybase_t)
 
 
 	OOLUA_MFUNC(AddKeyBase)
-	OOLUA_MFUNC(SetKey)
+	OOLUA_MEM_FUNC(void, SetKey, const char*, const char*)
 	OOLUA_MFUNC(RemoveKeyBase)
 
 	OOLUA_MFUNC(SetValue)
 	OOLUA_MFUNC(SetValueByIndex)
-	OOLUA_MFUNC(AppendValue)
+	OOLUA_MEM_FUNC(int, AppendValue, const char*)
 	OOLUA_MEM_FUNC(void, MergeFrom, const kvkeybase_t*, bool)
 
 	OOLUA_MEM_FUNC_CONST(maybe_null<kvkeybase_t*>, FindKeyBase, const char*, int)

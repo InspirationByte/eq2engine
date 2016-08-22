@@ -90,7 +90,7 @@ public:
 			m_alignToGround->SetValue(true);
 
 		if(modelFlags & LMODEL_FLAG_UNIQUE)
-			m_nonUnique->SetValue(true);
+			m_unique->SetValue(true);
 
 		m_plcLevel->SetValue(modPlace);
 	}

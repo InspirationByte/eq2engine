@@ -1157,7 +1157,8 @@ void CUI_BuildingConstruct::OnLevelLoad()
 	CBaseTilebasedEditor::OnLevelLoad();
 	m_layerCollList->LoadLayerCollections( g_pGameWorld->GetLevelName() );
 
-	
+	// assign layers on buildings
+	g_pGameWorld->m_level.PostLoadEditorBuilding( m_layerCollList->m_layerCollections );
 
 	m_mode = ED_BUILD_READY;
 }
@@ -1168,7 +1169,7 @@ void CUI_BuildingConstruct::OnLevelSave()
 	m_layerCollList->SaveLayerCollections( g_pGameWorld->GetLevelName() );
 
 	// save each region of level
-
+	
 }
 
 void CUI_BuildingConstruct::OnLevelUnload()

@@ -548,6 +548,67 @@ void kvkeybase_t::SetKey(const char* pszName, const char* pszValue)
 	}
 }
 
+void kvkeybase_t::SetKey(const char* pszName, int value)
+{
+	kvkeybase_t* pKeyBase = FindKeyBase(pszName);
+
+	if(!pKeyBase)
+	{
+		pKeyBase = new kvkeybase_t;
+		pKeyBase->SetName(pszName);
+		keys.append( pKeyBase );
+	}
+
+	pKeyBase->SetValueByIndex(varargs("%d", value));
+}
+
+void kvkeybase_t::SetKey(const char* pszName, float value)
+{
+	kvkeybase_t* pKeyBase = FindKeyBase(pszName);
+
+	if(!pKeyBase)
+	{
+		pKeyBase = new kvkeybase_t;
+		pKeyBase->SetName(pszName);
+		keys.append( pKeyBase );
+	}
+
+	pKeyBase->SetValueByIndex(varargs("%g", value));
+}
+
+void kvkeybase_t::SetKey(const char* pszName, const Vector3D& value)
+{
+	kvkeybase_t* pKeyBase = FindKeyBase(pszName);
+
+	if(!pKeyBase)
+	{
+		pKeyBase = new kvkeybase_t;
+		pKeyBase->SetName(pszName);
+		keys.append( pKeyBase );
+	}
+
+	pKeyBase->SetValueByIndex(varargs("%g", value.x), 0);
+	pKeyBase->SetValueByIndex(varargs("%g", value.y), 1);
+	pKeyBase->SetValueByIndex(varargs("%g", value.z), 2);
+}
+
+void kvkeybase_t::SetKey(const char* pszName, const Vector4D& value)
+{
+	kvkeybase_t* pKeyBase = FindKeyBase(pszName);
+
+	if(!pKeyBase)
+	{
+		pKeyBase = new kvkeybase_t;
+		pKeyBase->SetName(pszName);
+		keys.append( pKeyBase );
+	}
+
+	pKeyBase->SetValueByIndex(varargs("%g", value.x), 0);
+	pKeyBase->SetValueByIndex(varargs("%g", value.y), 1);
+	pKeyBase->SetValueByIndex(varargs("%g", value.z), 2);
+	pKeyBase->SetValueByIndex(varargs("%g", value.w), 3);
+}
+
 // removes key base
 void kvkeybase_t::RemoveKeyBase( const char* pszName )
 {
@@ -610,6 +671,45 @@ int	kvkeybase_t::AppendValue( const char* pszValue )
 	strcpy(pszAlloc, pszValue);
 
 	return values.append(pszAlloc);
+}
+
+int	kvkeybase_t::AppendValue(int value)
+{
+	EqString tmp = varargs("%d", value);
+
+	char* pszAlloc = (char*)malloc(tmp.Length() + 1);
+	strcpy(pszAlloc, tmp.c_str());
+
+	return values.append(pszAlloc);
+}
+
+int	kvkeybase_t::AppendValue(float value)
+{
+	EqString tmp = varargs("%G", value);
+
+	char* pszAlloc = (char*)malloc(tmp.Length() + 1);
+	strcpy(pszAlloc, tmp.c_str());
+
+	return values.append(pszAlloc);
+}
+
+int	kvkeybase_t::AppendValue(const Vector3D& value)
+{
+	int offs = AppendValue(value.x);
+	AppendValue(value.y);
+	AppendValue(value.z);
+
+	return offs;
+}
+
+int	kvkeybase_t::AppendValue(const Vector4D& value)
+{
+	int offs = AppendValue(value.x);
+	AppendValue(value.y);
+	AppendValue(value.z);
+	AppendValue(value.w);
+
+	return offs;
 }
 
 void kvkeybase_t::MergeFrom(const kvkeybase_t* base, bool recursive)

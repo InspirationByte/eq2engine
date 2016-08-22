@@ -165,6 +165,7 @@
     <ClInclude Include="..\DriversGame\Level.h" />
     <ClInclude Include="..\DriversGame\levelobject.h" />
     <ClInclude Include="..\DriversGame\occluderSet.h" />
+    <ClInclude Include="..\DriversGame\ParticleEffects.h" />
     <ClInclude Include="..\DriversGame\physics.h" />
     <ClInclude Include="..\DriversGame\Rain.h" />
     <ClInclude Include="..\DriversGame\region.h" />
@@ -284,6 +285,7 @@
     <ClCompile Include="..\DriversGame\level.cpp" />
     <ClCompile Include="..\DriversGame\levelobject.cpp" />
     <ClCompile Include="..\DriversGame\occluderSet.cpp" />
+    <ClCompile Include="..\DriversGame\ParticleEffects.cpp" />
     <ClCompile Include="..\DriversGame\physics.cpp" />
     <ClCompile Include="..\DriversGame\Rain.cpp" />
     <ClCompile Include="..\DriversGame\region.cpp" />

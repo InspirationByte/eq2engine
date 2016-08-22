@@ -365,7 +365,7 @@ bool CEditorLevel::Ed_GenerateMap( LevelGenParams_t& genParams, const CImage* im
 								while(rotation > 4)
 									rotation -= 4;
 
-								if((i%2) == isOddCount)
+								if(((i%2) > 0 ? true : false) == isOddCount)
 									roadReg->GetHField()->SetPointMaterial( roadWTilePos.x,roadWTilePos.y, GTEX(line_longdots) );
 								else
 									roadReg->GetHField()->SetPointMaterial( roadWTilePos.x,roadWTilePos.y, GTEX(line_longdots_inv) );
@@ -536,9 +536,6 @@ bool CEditorLevel::Ed_GenerateMap( LevelGenParams_t& genParams, const CImage* im
 			GlobalToLocalPoint( imgOffsetOnWorld+IVector2D(x,y), localTilePos, &reg);
 
 			int tileIdx = localTilePos.y*m_cellsSize+localTilePos.x;
-
-			int roff_x[] = ROADNEIGHBOUR_OFFS_X(0);
-			int roff_y[] = ROADNEIGHBOUR_OFFS_Y(0);
 
 			if((pixelFlagMap[pixIdx] & MAP_FLAG_JUNCTION))
 			{

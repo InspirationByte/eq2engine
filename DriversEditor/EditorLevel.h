@@ -85,8 +85,12 @@ struct buildingSource_t
 	}
 
 	buildingSource_t(buildingSource_t& copyFrom);
-
 	~buildingSource_t();
+
+	void ToKeyValues(kvkeybase_t* kvs);
+	void FromKeyValues(kvkeybase_t* kvs);
+
+	EqString							loadBuildingName;
 
 	DkLinkedList<buildSegmentPoint_t>	points;
 	buildLayerColl_t*					layerColl; 
@@ -123,7 +127,10 @@ class CEditorLevel : public CGameLevel
 	friend class CEditorLevelRegion;
 public:
 
-	bool	Save(const char* levelname, bool final = false);
+	bool	Load(const char* levelname, kvkeybase_t* kvDefs);
+
+	bool	Save(const char* levelname, bool isfinal = false);
+
 	void	Ed_Prerender(const Vector3D& cameraPosition);
 
 	int		Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CLevelRegion** reg, float& dist);
@@ -133,8 +140,10 @@ public:
 	void	WriteObjectDefsLump(IVirtualStream* stream);
 	void	WriteHeightfieldsLump(IVirtualStream* stream);
 
-	void	ReadLevelBuildings();
-	void	WriteLevelBuildings();
+	void	SaveEditorBuildings( const char* levelName );
+	void	LoadEditorBuildings( const char* levelName );
+
+	void	PostLoadEditorBuilding( DkList<buildLayerColl_t*>& buildingTemplates );
 };
 
 //-----------------------------------------------------------------------------------

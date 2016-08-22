@@ -167,6 +167,45 @@ buildingSource_t::~buildingSource_t()
 	delete model;
 }
 
+void buildingSource_t::ToKeyValues(kvkeybase_t* kvs)
+{
+	kvs->SetName( layerColl->name.c_str() );
+	kvs->SetKey("order", order);
+	kvs->SetKey("objectId", regObjectId);
+	kvs->SetKey("position", modelPosition);
+
+	kvkeybase_t* kvPoints = kvs->AddKeyBase("points");
+
+	for(DkLLNode<buildSegmentPoint_t>* lln = points.goToFirst(); lln != NULL; lln = points.goToNext())
+	{
+		kvkeybase_t* kvp = kvPoints->AddKeyBase(varargs("%d", lln->object.layerId));
+		kvp->AppendValue(lln->object.position);
+		kvp->AppendValue(lln->object.scale);
+	}
+}
+
+void buildingSource_t::FromKeyValues(kvkeybase_t* kvs)
+{
+	loadBuildingName = kvs->name;
+	order = KV_GetValueInt(kvs->FindKeyBase("order"));
+	regObjectId = KV_GetValueInt(kvs->FindKeyBase("objectId"));
+	modelPosition = KV_GetVector3D(kvs->FindKeyBase("position"));
+
+	kvkeybase_t* kvPoints = kvs->FindKeyBase("points");
+	for(int i = 0; i < kvPoints->keys.numElem(); i++)
+	{
+		kvkeybase_t* pkv = kvPoints->keys[i];
+
+		buildSegmentPoint_t newSeg;
+
+		newSeg.layerId = atoi(pkv->name);
+		newSeg.position = KV_GetVector3D(pkv, 0);
+		newSeg.scale = KV_GetValueFloat(pkv, 3);
+		
+		points.addLast( newSeg );
+	}
+}
+
 //-------------------------------------------------------
 
 void CalculateBuildingSegmentTransform(Matrix4x4& partTransform, 
@@ -477,6 +516,18 @@ bool GenerateBuildingModel( buildingSource_t* building )
 
 //-------------------------------------------------------------------------------------------
 
+bool CEditorLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
+{
+	bool result = CGameLevel::Load(levelname, kvDefs);
+
+	if(result)
+	{
+		LoadEditorBuildings(levelname);
+	}
+
+	return result;
+}
+
 bool CEditorLevel::Save(const char* levelname, bool isFinal)
 {
 	IFile* pFile = g_fileSystem->Open(varargs("levels/%s.lev", levelname), "wb", SP_MOD);
@@ -498,6 +549,9 @@ bool CEditorLevel::Save(const char* levelname, bool isFinal)
 
 	// write region info
 	WriteLevelRegions( pFile, isFinal );
+
+	// editor-related stuff
+	SaveEditorBuildings( levelname );
 
 	levLump_t endLump;
 	endLump.type = LEVLUMP_ENDMARKER;
@@ -579,7 +633,6 @@ void CEditorLevel::WriteObjectDefsLump(IVirtualStream* stream)
 	stream->Write(&modelLumpInfo, 1, sizeof(levLump_t));
 	stream->Write(modelsLump.GetBasePointer(), 1, modelsLump.Tell());
 }
-
 
 void CEditorLevel::WriteHeightfieldsLump(IVirtualStream* stream)
 {
@@ -851,14 +904,106 @@ void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
 	//-------------------------------------------------------------------------------
 }
 
-void CEditorLevel::ReadLevelBuildings()
+void CEditorLevel::SaveEditorBuildings( const char* levelName )
 {
+	EqString path = varargs("levels/%s_editor/buildings.ekv", levelName);
 
+	KeyValues kvs;
+	kvkeybase_t* root = kvs.GetRootSection();
+
+	// build region offsets
+	for(int x = 0; x < m_wide; x++)
+	{
+		for(int y = 0; y < m_tall; y++)
+		{
+			int idx = y*m_wide+x;
+
+			CEditorLevelRegion* reg = (CEditorLevelRegion*)&m_regions[idx];
+
+			for(int i = 0; i < reg->m_buildings.numElem(); i++)
+			{
+				buildingSource_t* buildingSrc = reg->m_buildings[i];
+				kvkeybase_t* bldKvs = root->AddKeyBase("", varargs("%d", i));
+
+				bldKvs->SetKey("region", varargs("%d", idx));
+				buildingSrc->ToKeyValues(bldKvs);
+			}
+		}
+	}
+
+	kvs.SaveToFile( path.c_str(), SP_MOD );
 }
 
-void CEditorLevel::WriteLevelBuildings()
-{
+typedef std::pair<CEditorLevelRegion*, regionObject_t*> regionObjectPair_t;
 
+void CEditorLevel::LoadEditorBuildings( const char* levelName )
+{
+	EqString path = varargs("levels/%s_editor/buildings.ekv", levelName);
+
+	KeyValues kvs;
+	if(!kvs.LoadFromFile(path.c_str(), SP_MOD))
+		return;
+
+	kvkeybase_t* root = kvs.GetRootSection();
+
+	DkList<regionObjectPair_t> deletingObjects;
+	deletingObjects.resize( root->keys.numElem() );
+
+	for(int i = 0; i < root->keys.numElem(); i++)
+	{
+		kvkeybase_t* bldKvs = root->keys[i];
+
+		buildingSource_t* newBld = new buildingSource_t();
+		newBld->FromKeyValues(bldKvs);
+
+		int regIndex = KV_GetValueInt(bldKvs->FindKeyBase("region"));
+		CEditorLevelRegion* reg = (CEditorLevelRegion*)&m_regions[regIndex];
+
+		reg->m_buildings.append( newBld );
+		
+		MsgInfo("** removing generated building cell object %d (total=%d)\n", newBld->regObjectId, reg->m_objects.numElem());
+		deletingObjects.append( regionObjectPair_t(reg, reg->m_objects[newBld->regObjectId]) );
+	}
+
+	// now we can freely remove them
+	for(int i = 0; i < deletingObjects.numElem(); i++)
+	{
+		CEditorLevelRegion* reg = deletingObjects[i].first;
+		regionObject_t* ref = deletingObjects[i].second;
+
+		reg->m_objects.fastRemove(ref);
+		delete ref;
+	}
+}
+
+void CEditorLevel::PostLoadEditorBuilding( DkList<buildLayerColl_t*>& buildingTemplates )
+{
+	// build region offsets
+	for(int x = 0; x < m_wide; x++)
+	{
+		for(int y = 0; y < m_tall; y++)
+		{
+			int idx = y*m_wide+x;
+
+			CEditorLevelRegion& reg = *(CEditorLevelRegion*)&m_regions[idx];
+
+			// generate models for every building
+			for(int i = 0; i < reg.m_buildings.numElem(); i++)
+			{
+				EqString& name = reg.m_buildings[i]->loadBuildingName;
+
+				buildLayerColl_t** layerColl = buildingTemplates.findFirst([name](buildLayerColl_t* c){ return !c->name.CompareCaseIns(name);} );
+
+				if( layerColl )
+				{
+					reg.m_buildings[i]->layerColl = *layerColl;
+					GenerateBuildingModel(reg.m_buildings[i]);
+				}
+				else
+					MsgError("**ERROR** unknown building name '%s'!\n", name.c_str());
+			}
+		}
+	}
 }
 
 int CEditorLevel::Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CLevelRegion** reg, float& dist)
@@ -972,7 +1117,9 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 
 	DkList<regionObject_t*>		tempObjects;
 
+	//
 	// save buildings also
+	//
 	for(int i = 0; i < m_buildings.numElem(); i++)
 	{
 		regionObject_t* tempObject = new regionObject_t();
@@ -990,6 +1137,7 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 		tempObject->position = m_buildings[i]->modelPosition;
 		tempObject->rotation = vec3_zero;
 
+		// make object id to save buildings
 		m_buildings[i]->regObjectId = regObjects.append(tempObject);
 	}
 
@@ -1250,14 +1398,4 @@ void CEditorLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4&
 	{
 		RenderBuilding(m_buildings[i], NULL);
 	}
-}
-
-void LoadLevelBuildings( const char* levelName )
-{
-	
-}
-
-void SaveLevelBuildings( const char* levelName )
-{
-	
 }

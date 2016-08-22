@@ -293,6 +293,8 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
+	m_level->m_mutex.Lock();
+
 	for(int i = 0; i < m_objects.numElem(); i++)
 	{
 		regionObject_t* ref = m_objects[i];
@@ -381,6 +383,8 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 #endif	// EDITOR
 	}
 
+	m_level->m_mutex.Unlock();
+
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	for(int i = 0; i < GetNumHFields(); i++)
@@ -463,8 +467,6 @@ void CLevelRegion::Cleanup()
 
 	m_regionDefs.clear();
 
-	m_level->m_mutex.Unlock();
-
 	m_occluders.clear();
 
 	delete [] m_roads;
@@ -474,6 +476,8 @@ void CLevelRegion::Cleanup()
 
 	m_isLoaded = false;
 	m_hasTransparentSubsets = false;
+
+	m_level->m_mutex.Unlock();
 
 	m_queryTimes.SetValue(0);
 }
@@ -573,6 +577,8 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		// Init basics
 		regionObject_t* ref = new regionObject_t;
 
+		ASSERT(ref);
+
 		ref->name = cellObj.name;
 
 		ref->tile_x = cellObj.tile_x;
@@ -580,10 +586,6 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 
 		ref->position = cellObj.position;
 		ref->rotation = cellObj.rotation;
-
-		m_level->m_mutex.Lock();
-		m_objects.append(ref);
-		m_level->m_mutex.Unlock();
 
 		//
 		// pick from region or global list
@@ -649,6 +651,13 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 			}
 		}
 #endif
+
+		// finally add that object
+		m_level->m_mutex.Lock();
+
+		m_objects.append(ref);
+
+		m_level->m_mutex.Unlock();
 	}
 
 	for(int i = 0; i < GetNumHFields(); i++)

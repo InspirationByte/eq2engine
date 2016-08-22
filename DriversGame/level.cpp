@@ -122,14 +122,14 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 
 	if(hdr.ident != LEVEL_IDENT)
 	{
-		MsgError("** Invalid level file '%s'\n", levelname);
+		MsgError("**ERROR** invalid level '%s' \n", levelname);
 		g_fileSystem->Close(pFile);
 		return false;
 	}
 
 	if(hdr.version != LEVEL_VERSION)
 	{
-		MsgError("** '%s' - level is too old and/or unsupported by this game version\n", levelname);
+		MsgError("**ERROR** '%s' - unsupported lev file version\n", levelname);
 		g_fileSystem->Close(pFile);
 		return false;
 	}
@@ -376,6 +376,10 @@ void CGameLevel::LoadRegionAt(int regionIndex, IVirtualStream* stream)
 	if(m_regionOffsets[regionIndex] == -1)
 		return;
 
+#ifdef EDITOR
+	Msg("* Loading region %d\n", regionIndex);
+#endif // EDITOR
+
 	CLevelRegion& reg = m_regions[regionIndex];
 
 	int loffset = stream->Tell();
@@ -400,7 +404,7 @@ void CGameLevel::LoadRegionAt(int regionIndex, IVirtualStream* stream)
 	int regOffset = m_regionDataLumpOffset + m_regionOffsets[regionIndex];
 	stream->Seek(regOffset, VS_SEEK_SET);
 
-	m_regions[regionIndex].ReadLoadRegion(stream, m_objectDefs);
+	reg.ReadLoadRegion(stream, m_objectDefs);
 
 	// read roads
 	if(m_roadDataLumpOffset > 0 && m_roadOffsets[regionIndex] != -1)
@@ -408,7 +412,7 @@ void CGameLevel::LoadRegionAt(int regionIndex, IVirtualStream* stream)
 		int roadsOffset = m_roadDataLumpOffset + m_roadOffsets[regionIndex];
 		stream->Seek(roadsOffset, VS_SEEK_SET);
 
-		m_regions[regionIndex].ReadLoadRoads(stream);
+		reg.ReadLoadRoads(stream);
 	}
 
 	// read occluders
@@ -417,10 +421,10 @@ void CGameLevel::LoadRegionAt(int regionIndex, IVirtualStream* stream)
 		int occlOffset = m_occluderDataLumpOffset + m_occluderOffsets[regionIndex];
 		stream->Seek(occlOffset, VS_SEEK_SET);
 
-		m_regions[regionIndex].ReadLoadOccluders(stream);
+		reg.ReadLoadOccluders(stream);
 	}
 
-	m_regions[regionIndex].m_scriptEventCallbackCalled = false;
+	reg.m_scriptEventCallbackCalled = false;
 
 	// return back
 	stream->Seek(loffset, VS_SEEK_SET);
@@ -1618,8 +1622,6 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 
 	int navCellGridSize = m_cellsSize*AI_NAVIGATION_GRID_SCALE;
 
-	//Matrix4x4 transform = GetModelRefRenderMatrix(reg, ref);
-
 	CLevObjectDef* def = ref->def;
 
 	if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
@@ -1686,12 +1688,6 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			IVector2D min, max;
 			Nav_GetCellRangeFromAABB(vertbox.minPoint, vertbox.maxPoint, min, max);
 
-			// extend
-			//min.x = clamp(min.x-1, -1, navCellGridSize*m_wide);
-			//min.y = clamp(min.y-1, -1, navCellGridSize*m_tall);
-			//max.x = clamp(max.x+1, -1, navCellGridSize*m_wide);
-			//max.y = clamp(max.y+1, -1, navCellGridSize*m_tall);
-
 			// in this range do...
 			for (int y = min.y; y < max.y; y++)
 			{
@@ -1755,12 +1751,6 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			IVector2D min, max;
 			Nav_GetCellRangeFromAABB(vertbox.minPoint, vertbox.maxPoint, min, max);
 
-			// extend
-			//min.x = clamp(min.x - 1, 0, navCellGridSize*m_wide);
-			//min.y = clamp(min.y - 1, 0, navCellGridSize*m_tall);
-			//max.x = clamp(max.x + 1, 0, navCellGridSize*m_wide);
-			//max.y = clamp(max.y + 1, 0, navCellGridSize*m_tall);
-
 			// in this range do...
 			for (int y = min.y; y < max.y; y++)
 			{
@@ -1775,66 +1765,6 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			}
 		}
 	}
-
-
-	/*
-		//-----------------------------------------------------------------------------
-		// Studio triangles
-		//-----------------------------------------------------------------------------
-
-		studiohdr_t* pHdr = m_pModel->GetHWData()->pStudioHdr;
-		int nLod = 0;
-
-		Matrix4x4 transform = GetRenderWorldTransform();
-
-		int i = 0;
-
-		int nLodableModelIndex = pHdr->pBodyGroups(i)->lodmodel_index;
-		int nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
-
-		while(nLod > 0 && nModDescId != -1)
-		{
-			nLod--;
-			nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
-		}
-
-		if(nModDescId == -1)
-			continue;
-
-		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
-		{
-			modelgroupdesc_t* pGroup = pHdr->pModelDesc(nModDescId)->pGroup(j);
-
-			uint32 *pIndices = pGroup->pVertexIdx(0);
-
-			for(int k = 0; k < pGroup->numindices; k+=3)
-			{
-				Vector3D v0,v1,v2;
-
-				v0 = pGroup->pVertex(pIndices[k])->point;
-				v1 = pGroup->pVertex(pIndices[k+1])->point;
-				v2 = pGroup->pVertex(pIndices[k+2])->point;
-
-				v0 = (transform*Vector4D(v0,1)).xyz();
-				v1 = (transform*Vector4D(v1,1)).xyz();
-				v2 = (transform*Vector4D(v2,1)).xyz();
-
-				float dist = MAX_COORD_UNITS+1;
-
-				if(IsRayIntersectsTriangle(v0,v1,v2, start, ray_dir, dist))
-				{
-					if(dist < best_dist && dist > 0)
-					{
-						best_dist = dist;
-						fraction = dist;
-
-						outPos = lerp(start, end, dist);
-					}
-				}
-			}
-		}
-	*/
-
 }
 //#endif // EDITOR
 

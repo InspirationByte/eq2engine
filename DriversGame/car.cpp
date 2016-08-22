@@ -3109,7 +3109,7 @@ void CCar::UpdateSounds( float fDt )
 	if(m_isLocalCar && m_pEngineSoundLow->IsStopped())
 		m_pEngineSoundLow->StartSound();
 
-	float fAccelOrBrake = ((m_controlButtons & IN_ACCELERATE) || (m_controlButtons & IN_BRAKE)) && !(m_controlButtons & IN_HANDBRAKE);
+	//float fAccelOrBrake = ((m_controlButtons & IN_ACCELERATE) || (m_controlButtons & IN_BRAKE)) && !(m_controlButtons & IN_HANDBRAKE);
 
 	m_engineIdleFactor = (clamp(2200.0f-m_fEngineRPM, 0.0f,2200.0f)/2200.0f);
 
