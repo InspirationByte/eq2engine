@@ -76,12 +76,20 @@ public:
 	void						LoadCarData();
 	carConfigEntry_t*			FindCarEntryByName(const char* name);
 
+	//-------------------------------------------------------------------------
+	// functions only used by Lua
+
+	CCar*						Lua_CreateCar(const char* name, int type = CAR_TYPE_NORMAL);
+	CAIPursuerCar*				Lua_CreatePursuerCar(const char* name, int type = PURSUER_TYPE_COP);
+
 protected:
 
 	float						m_waitForExitTime;
 	int							m_missionStatus;
 
 	int							m_scriptIDCounter;
+
+	int							m_scriptIDReplayCounter;
 
 	DkList<carConfigEntry_t*>	m_carEntries;
 
@@ -100,8 +108,8 @@ protected:
 OOLUA_PROXY(CGameSession)
 	OOLUA_TAGS( Abstract )
 
-	OOLUA_MFUNC(CreateCar)
-	OOLUA_MFUNC(CreatePursuerCar)
+	OOLUA_MEM_FUNC_RENAME(CreateCar, CCar*, Lua_CreateCar, const char*, int)
+	OOLUA_MEM_FUNC_RENAME(CreatePursuerCar, CAIPursuerCar*, Lua_CreatePursuerCar, const char*, int)
 
 	OOLUA_MFUNC(LoadCarReplay)
 

@@ -76,6 +76,7 @@ CGameSession::CGameSession()
 	m_leadCar = NULL;
 
 	m_scriptIDCounter = 0;
+	m_scriptIDReplayCounter = 0;
 }
 
 CGameSession::~CGameSession()
@@ -111,6 +112,7 @@ void CGameSession::Init()
 
 	//-------------------------------------------------------------------
 	m_scriptIDCounter = 0;
+	m_scriptIDReplayCounter = 0;
 
 	g_pAIManager->Init();
 
@@ -121,11 +123,15 @@ void CGameSession::Init()
 
 	// start recorder
 	if( g_replayData->m_state != REPL_INIT_PLAYBACK )
-	{
 		g_replayData->StartRecording();
-	}
 
+	if( g_replayData->m_state == REPL_INIT_PLAYBACK ) // make scripted cars work first
+		g_replayData->StartPlay();
+	
+	//
 	// MISSION SCRIPT INITIALIZER CALL
+	// also will spawn mission objects, if not in replay.
+	//
 	{
 		// bind function and call, table pushed automatically
 		m_lua_misman_InitMission.Push();
@@ -134,23 +140,18 @@ void CGameSession::Init()
 			Msg("CGameSession::Init, :CMissionManager_InitMission() error:\n %s\n", OOLUA::get_last_error(state).c_str());
 	}
 
-	if( g_replayData->m_state == REPL_INIT_PLAYBACK )
-	{
-		g_replayData->StartPlay();
-	}
-
 	// start recorder
-	if( g_replayData->m_state != REPL_INIT_PLAYBACK )
+	if( g_replayData->m_state <= REPL_RECORDING )
 	{
 		//
 		// Spawn default car if script not did
 		//
-		if( GetPlayerCar() == NULL )
+		if( !GetPlayerCar() )
 		{
 			// make a player car
 			CCar* playerCar = CreateCar( g_car.GetString() );
 
-			if(playerCar)
+			if( playerCar )
 			{
 				playerCar->SetOrigin(Vector3D(0, 0.5, 10));
 				playerCar->SetAngles(Vector3D(0,0,0));
@@ -161,10 +162,11 @@ void CGameSession::Init()
 				SetPlayerCar(playerCar);
 			}
 		}
-
-		// load regions on player car position
-		g_pGameWorld->m_level.QueryNearestRegions( GetPlayerCar()->GetOrigin(), false);
 	}
+
+	// load regions on player car position
+	if( GetPlayerCar() )
+		g_pGameWorld->m_level.QueryNearestRegions( GetPlayerCar()->GetOrigin(), false);
 
 	m_missionStatus = MIS_STATUS_INGAME;
 }
@@ -401,7 +403,9 @@ CCar* CGameSession::CreateCar(const char* name, int carType)
 			CCar* car = NULL;
 
 			if (carType == CAR_TYPE_NORMAL)
+			{
 				car = new CCar(m_carEntries[i]);
+			}
 			else if (carType == CAR_TYPE_TRAFFIC_AI)
 			{
 				CAITrafficCar* traffic = new CAITrafficCar(m_carEntries[i]);
@@ -425,13 +429,13 @@ CCar* CGameSession::CreateCar(const char* name, int carType)
 			}
 
 			if (!car)
-				MsgError("Car is exist, but unknown car type '%d'\n", carType);
+				MsgError("Unknown car type '%d'\n", carType);
 
 			return car;
 		}
 	}
 
-	MsgError("cannot find car %s\n", name);
+	MsgError("Can't create car '%s'\n", name);
 
 	return NULL;
 }
@@ -453,7 +457,43 @@ CAIPursuerCar* CGameSession::CreatePursuerCar(const char* name, int type)
 		}
 	}
 
-	MsgError("cannot find car %s\n", name);
+	MsgError("Can't create pursuer car '%s'\n", name);
+
+	return NULL;
+}
+
+CCar* CGameSession::Lua_CreateCar(const char* name, int type)
+{
+	if(g_replayData && g_replayData->m_state == REPL_PLAYING)
+	{
+		CGameObject* scriptObject = FindScriptObjectById( m_scriptIDReplayCounter );
+		m_scriptIDReplayCounter++;
+
+		if(scriptObject && (scriptObject->ObjType() == GO_CAR || scriptObject->ObjType() == GO_CAR_AI))
+			return (CCar*)scriptObject;
+
+		ASSERTMSG(false, varargs("Lua_CreateCar - no valid script car by replay (id=%d)", m_scriptIDReplayCounter-1));
+	}
+	else
+		return CreateCar(name, type);
+
+	return NULL;
+}
+
+CAIPursuerCar* CGameSession::Lua_CreatePursuerCar(const char* name, int type)
+{
+	if(g_replayData && g_replayData->m_state == REPL_PLAYING)
+	{
+		CGameObject* scriptObject = FindScriptObjectById( m_scriptIDReplayCounter );
+		m_scriptIDReplayCounter++;
+
+		if(scriptObject && scriptObject->ObjType() == GO_CAR_AI)
+			return (CAIPursuerCar*)scriptObject;
+
+		ASSERTMSG(false, varargs("Lua_CreatePursuerCar - no valid script car by replay (id=%d)", m_scriptIDReplayCounter-1));
+	}
+	else
+		return CreatePursuerCar(name, type);
 
 	return NULL;
 }
@@ -509,7 +549,7 @@ void CGameSession::LoadCarData()
 					m_carEntries.append(carent);
 				}
 				else
-					MsgError("cannot open car parameters file '%s'\n", carent->carScript.c_str());
+					MsgError("Can't open car script '%s'\n", carent->carScript.c_str());
 			}
 		}
 

@@ -120,6 +120,10 @@ void CGameObject::Precache()
 // fast lua helpers
 void CGameObject::L_Activate()
 {
+	// - You can't do that
+	if(m_scriptID != SCRIPT_ID_NOTSCRIPTED)
+		return;
+
 #ifndef NO_LUA
 	m_scriptID = g_pGameSession->GenScriptID();
 #endif // NO_LUA

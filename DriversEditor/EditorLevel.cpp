@@ -997,7 +997,7 @@ void CEditorLevel::PostLoadEditorBuilding( DkList<buildLayerColl_t*>& buildingTe
 				if( layerColl )
 				{
 					reg.m_buildings[i]->layerColl = *layerColl;
-					GenerateBuildingModel(reg.m_buildings[i]);
+					GenerateBuildingModel(reg.m_buildings[i]); // or it will waste draw calls
 				}
 				else
 					MsgError("**ERROR** unknown building name '%s'!\n", name.c_str());

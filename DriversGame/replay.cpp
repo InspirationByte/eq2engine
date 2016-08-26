@@ -206,7 +206,6 @@ CCar* CReplayData::GetCarByReplayIndex(int index)
 	return NULL;
 }
 
-
 void CReplayData::UpdateReplayObject( int replayId )
 {
 	if(m_state == REPL_NONE)
@@ -972,54 +971,51 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 			m_activeVehicles.append( evt.replayIndex );
 
 			// spawn replay car if not scripted
-			if( rep.scriptObjectId == SCRIPT_ID_NOTSCRIPTED )
+			int type = CAR_TYPE_NORMAL;
+
+			if (evt.eventFlags == REPLAY_FLAG_CAR_AI)
 			{
-				int type = CAR_TYPE_NORMAL;
-
-				if (evt.eventFlags == REPLAY_FLAG_CAR_AI)
-				{
-					type = CAR_TYPE_TRAFFIC_AI;
-				}
-				else if (evt.eventFlags == REPLAY_FLAG_CAR_COP_AI)
-				{
-					// pursuer cars aren't random for now
-					type = CAR_TYPE_PURSUER_COP_AI;
-				}
-				else if (evt.eventFlags == REPLAY_FLAG_CAR_GANG_AI)
-				{
-					type = CAR_TYPE_PURSUER_GANG_AI;
-				}
-
-				// create car and spawn
-				rep.obj_car = g_pGameSession->CreateCar(rep.name.c_str(), type);
-
-				// assign the replay index so it can play self
-				rep.obj_car->m_replayID = evt.replayIndex;
-			
-				ASSERTMSG(rep.obj_car, varargs("ERROR! Cannot find car '%s'", rep.name.c_str()));
-			
-				// temp
-				if(g_pGameSession->GetPlayerCar() == NULL)
-				{
-					g_pGameSession->SetPlayerCar(rep.obj_car);
-					g_pGameWorld->m_level.QueryNearestRegions(rep.car_initial_pos, true);
-				}
-
-				rep.obj_car->Spawn();
-				g_pGameWorld->AddObject( rep.obj_car );
+				type = CAR_TYPE_TRAFFIC_AI;
 			}
-			else
+			else if (evt.eventFlags == REPLAY_FLAG_CAR_COP_AI)
 			{
-				CGameObject* obj = g_pGameSession->FindScriptObjectById( rep.scriptObjectId );
+				// pursuer cars aren't random for now
+				type = CAR_TYPE_PURSUER_COP_AI;
+			}
+			else if (evt.eventFlags == REPLAY_FLAG_CAR_GANG_AI)
+			{
+				type = CAR_TYPE_PURSUER_GANG_AI;
+			}
 
-				if( obj && IsCar(obj) )
-				{
-					rep.obj_car = (CCar*)obj;
-					rep.obj_car->m_replayID = evt.replayIndex;
-				}
+			// create car and spawn
+			rep.obj_car = g_pGameSession->CreateCar(rep.name.c_str(), type);
+
+			// assign the replay index so it can play self
+			rep.obj_car->m_replayID = evt.replayIndex;
+			
+			ASSERTMSG(rep.obj_car, varargs("ERROR! Cannot find car '%s'", rep.name.c_str()));
+			
+			// temp
+			if(g_pGameSession->GetPlayerCar() == NULL)
+			{
+				g_pGameSession->SetPlayerCar(rep.obj_car);
+				g_pGameWorld->m_level.QueryNearestRegions(rep.car_initial_pos, true);
+			}
+			
+			// spawn
+			rep.obj_car->Spawn();
+
+			if( rep.scriptObjectId != SCRIPT_ID_NOTSCRIPTED )
+			{
+				// here is an exception for lua call
+				rep.obj_car->m_scriptID = g_pGameSession->GenScriptID();
+
+				ASSERT(rep.scriptObjectId == rep.obj_car->GetScriptID());
 			}
 
 			SetupReplayCar( &rep );
+
+			g_pGameWorld->AddObject( rep.obj_car );
 
 			break;
 		}
