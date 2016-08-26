@@ -143,7 +143,7 @@ public:
 	void	SaveEditorBuildings( const char* levelName );
 	void	LoadEditorBuildings( const char* levelName );
 
-	void	PostLoadEditorBuilding( DkList<buildLayerColl_t*>& buildingTemplates );
+	void	PostLoadEditorBuildings( DkList<buildLayerColl_t*>& buildingTemplates );
 };
 
 //-----------------------------------------------------------------------------------

@@ -61,7 +61,7 @@ void CBaseTilebasedEditor::ProcessMouseEvents( wxMouseEvent& event )
 			m_mouseOverTile = IVector2D(x, y);
 
 			if(m_selectedRegion)
-				hfieldtile_t* tile = m_selectedRegion->GetHField(m_selectedHField)->GetTile(m_mouseOverTile.x, m_mouseOverTile.y);
+				tile = m_selectedRegion->GetHField(m_selectedHField)->GetTile(m_mouseOverTile.x, m_mouseOverTile.y);
 
 			if(tile)
 				m_mouseOverTileHeight = tile->height*HFIELD_HEIGHT_STEP;

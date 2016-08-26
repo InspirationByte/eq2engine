@@ -1158,7 +1158,7 @@ void CUI_BuildingConstruct::OnLevelLoad()
 	m_layerCollList->LoadLayerCollections( g_pGameWorld->GetLevelName() );
 
 	// assign layers on buildings
-	g_pGameWorld->m_level.PostLoadEditorBuilding( m_layerCollList->m_layerCollections );
+	g_pGameWorld->m_level.PostLoadEditorBuildings( m_layerCollList->m_layerCollections );
 
 	m_mode = ED_BUILD_READY;
 }
@@ -1351,7 +1351,7 @@ void CUI_BuildingConstruct::CompleteBuilding()
 		region = (CEditorLevelRegion*)m_selectedRegion;
 
 	// add building to the region
-	int newIdx = region->m_buildings.append( newBuilding );
+	region->m_buildings.append( newBuilding );
 
 	m_newBuilding.points.clear();
 	m_newBuilding.layerColl = NULL;

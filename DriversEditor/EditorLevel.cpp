@@ -946,9 +946,6 @@ void CEditorLevel::LoadEditorBuildings( const char* levelName )
 
 	kvkeybase_t* root = kvs.GetRootSection();
 
-	DkList<regionObjectPair_t> deletingObjects;
-	deletingObjects.resize( root->keys.numElem() );
-
 	for(int i = 0; i < root->keys.numElem(); i++)
 	{
 		kvkeybase_t* bldKvs = root->keys[i];
@@ -960,25 +957,15 @@ void CEditorLevel::LoadEditorBuildings( const char* levelName )
 		CEditorLevelRegion* reg = (CEditorLevelRegion*)&m_regions[regIndex];
 
 		reg->m_buildings.append( newBld );
-		
-		MsgInfo("** removing generated building cell object %d (total=%d)\n", newBld->regObjectId, reg->m_objects.numElem());
-		deletingObjects.append( regionObjectPair_t(reg, reg->m_objects[newBld->regObjectId]) );
-	}
-
-	// now we can freely remove them
-	for(int i = 0; i < deletingObjects.numElem(); i++)
-	{
-		CEditorLevelRegion* reg = deletingObjects[i].first;
-		regionObject_t* ref = deletingObjects[i].second;
-
-		reg->m_objects.fastRemove(ref);
-		delete ref;
 	}
 }
 
-void CEditorLevel::PostLoadEditorBuilding( DkList<buildLayerColl_t*>& buildingTemplates )
+void CEditorLevel::PostLoadEditorBuildings( DkList<buildLayerColl_t*>& buildingTemplates )
 {
-	// build region offsets
+	//
+	// Editor buildings must be restored here after loading building templates
+	//
+
 	for(int x = 0; x < m_wide; x++)
 	{
 		for(int y = 0; y < m_tall; y++)
@@ -1109,7 +1096,7 @@ int FindObjectContainer(DkList<CLevObjectDef*>& listObjects, CLevObjectDef* cont
 void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObjectDef*>& listObjects, bool final )
 {
 	// create region model lists
-	DkList<CLevelModel*>		modelList;
+	DkList<CLevObjectDef*>		regionDefs;
 	DkList<levCellObject_t>		cellObjectsList;
 
 	DkList<regionObject_t*>		regObjects;
@@ -1118,24 +1105,33 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 	DkList<regionObject_t*>		tempObjects;
 
 	//
-	// save buildings also
+	// SAVE generated buildings as cell objects
 	//
 	for(int i = 0; i < m_buildings.numElem(); i++)
 	{
+		CLevelModel* model = m_buildings[i]->model;
+
+		CLevObjectDef* def = new CLevObjectDef();
+
+		def->m_info.type = LOBJ_TYPE_INTERNAL_STATIC;
+		def->m_info.modelflags = LMODEL_FLAG_UNIQUE | LMODEL_FLAG_GENERATED;
+		def->m_info.level = 0;
+
+		def->m_model = model;
+		def->m_model->Ref_Grab();
+		def->m_model->Ref_Grab();
+
+		regionDefs.append(def);
+
 		regionObject_t* tempObject = new regionObject_t();
-		tempObjects.append(tempObject);
-
-		tempObject->def = new CLevObjectDef();
-		tempObject->def->m_info.type = LOBJ_TYPE_INTERNAL_STATIC;
-		tempObject->def->m_info.modelflags = LMODEL_FLAG_UNIQUE;
-		tempObject->def->m_model = m_buildings[i]->model;
-		tempObject->def->m_model->Ref_Grab();
-		tempObject->def->m_model->Ref_Grab();
-
+		
+		tempObject->def = def;
 		tempObject->tile_x = 0xFFFF;
 		tempObject->tile_y = 0xFFFF;
 		tempObject->position = m_buildings[i]->modelPosition;
 		tempObject->rotation = vec3_zero;
+
+		tempObjects.append(tempObject);
 
 		// make object id to save buildings
 		m_buildings[i]->regObjectId = regObjects.append(tempObject);
@@ -1143,24 +1139,15 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 
 	cellObjectsList.resize(regObjects.numElem());
 
+	//
 	// collect models and cell objects
+	//
 	for(int i = 0; i < regObjects.numElem(); i++)
 	{
 		regionObject_t* robj = regObjects[i];
 		CLevObjectDef* def = robj->def;
 
 		levCellObject_t object;
-
-		if(	def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC && (def->m_info.modelflags & LMODEL_FLAG_UNIQUE))
-		{
-			object.objectDefId = modelList.addUnique( def->m_model );
-			object.uniqueRegionModel = 1;
-		}
-		else
-		{
-			object.objectDefId = FindObjectContainer(listObjects, def);
-			object.uniqueRegionModel = 0;
-		}
 
 		// copy name
 		memset(object.name, 0, LEV_OBJECT_NAME_LENGTH);
@@ -1170,29 +1157,51 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 		object.tile_y = robj->tile_y;
 		object.position = robj->position;
 		object.rotation = robj->rotation;
+		object.flags = 0;
+
+		if(	def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC && (def->m_info.modelflags & LMODEL_FLAG_UNIQUE))
+		{
+			int isGenerated = (def->m_info.modelflags & LMODEL_FLAG_GENERATED) ? CELLOBJ_GENERATED : 0;
+
+			object.objectDefId = FindObjectContainer(regionDefs, def);
+			object.flags = CELLOBJ_REGION_DEF | isGenerated;
+		}
+		else
+			object.objectDefId = FindObjectContainer(listObjects, def); // uses shared object list
 
 		// add
 		cellObjectsList.append(object);
 	}
 
+	CMemoryStream modelData;
 	CMemoryStream regionData;
+
 	regionData.Open(NULL, VS_OPEN_WRITE, 8192);
 
-	// write model data
-	for(int i = 0; i < modelList.numElem(); i++)
+	//
+	// write REGION object definitions
+	//
+	for(int i = 0; i < regionDefs.numElem(); i++)
 	{
-		CMemoryStream modelData;
+		CLevObjectDef* def = regionDefs[i];
+
 		modelData.Open(NULL, VS_OPEN_WRITE, 8192);
 
-		modelList[i]->Save( &modelData );
+		// write model
+		def->m_model->Save( &modelData );
 
-		int modelSize = modelData.Tell();
+		// save def info
+		levObjectDefInfo_t& defInfo = def->m_info;
+		defInfo.size = modelData.Tell();
 
-		regionData.Write(&modelSize, 1, sizeof(int));
+		// now write in to region
+		regionData.Write(&defInfo, 1, sizeof(levObjectDefInfo_t));
 		regionData.Write(modelData.GetBasePointer(), 1, modelData.Tell());
 	}
 
-	// write cell objects list
+	//
+	// write whole cell objects list
+	//
 	for(int i = 0; i < cellObjectsList.numElem(); i++)
 	{
 		regionData.Write(&cellObjectsList[i], 1, sizeof(levCellObject_t));
@@ -1200,13 +1209,15 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 
 	levRegionDataInfo_t regdatahdr;
 	regdatahdr.numCellObjects = cellObjectsList.numElem();
-	regdatahdr.numObjectDefs = modelList.numElem();
+	regdatahdr.numObjectDefs = regionDefs.numElem();
 	regdatahdr.size = regionData.Tell();
 
 	stream->Write(&regdatahdr, 1, sizeof(levRegionDataInfo_t));
 	stream->Write(regionData.GetBasePointer(), 1, regionData.Tell());
 
-	// aftersave cleanup
+	//
+	// aftersave cleanup of generated data
+	//
 	for(int i = 0; i < tempObjects.numElem(); i++)
 	{
 		delete tempObjects[i]->def;

@@ -141,7 +141,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 		return NULL;
 
 	// if this is a parking straight, the cars might start here stopped or even empty
-	bool isParkingStraight = (roadCell->flags & ROAD_FLAG_PARKING);
+	bool isParkingStraight = (roadCell->flags & ROAD_FLAG_PARKING) > 0;
 
 	if(isParkingLot)
 	{

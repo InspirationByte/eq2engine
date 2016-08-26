@@ -272,7 +272,7 @@ public:
 			{
 				for(int y = 0; y < g_pGameWorld->m_level.m_tall; y++)
 				{
-					int idx = y*g_pGameWorld->m_level.m_wide + x;
+					// int idx = y*g_pGameWorld->m_level.m_wide + x;
 
 					CEditorLevelRegion* pReg = (CEditorLevelRegion*)g_pGameWorld->m_level.GetRegionAt(IVector2D(x,y));
 
@@ -853,7 +853,7 @@ void CModelListRenderPanel::RemoveModel(CLevObjectDef* container)
 	{
 		for(int y = 0; y < g_pGameWorld->m_level.m_tall; y++)
 		{
-			int idx = y*g_pGameWorld->m_level.m_wide + x;
+			// int idx = y*g_pGameWorld->m_level.m_wide + x;
 
 			CLevelRegion* pReg = g_pGameWorld->m_level.GetRegionAt(IVector2D(x,y));
 

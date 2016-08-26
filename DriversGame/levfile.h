@@ -106,6 +106,12 @@ struct levObjectDefInfo_s
 
 ALIGNED_TYPE(levObjectDefInfo_s,4) levObjectDefInfo_t;
 
+enum ECellObjectFlags
+{
+	CELLOBJ_REGION_DEF		= (1 << 0),	// region def
+	CELLOBJ_GENERATED		= (1 << 0),	// could be regenerated in editor
+};
+
 // region cell model object
 struct levCellObject_s
 {
@@ -116,8 +122,8 @@ struct levCellObject_s
 	ushort		tile_x;
 	ushort		tile_y;
 
-	ushort		objectDefId : 15;
-	ushort		uniqueRegionModel : 1;
+	ushort		objectDefId : 14; // 4096 max
+	ushort		flags : 2;
 
 	char		name[LEV_OBJECT_NAME_LENGTH];
 };

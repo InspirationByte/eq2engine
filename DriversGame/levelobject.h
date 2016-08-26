@@ -102,8 +102,6 @@ public:
 
 	void					Ref_DeleteObject() {}
 
-
-
 	void					Cleanup();		// cleans up all including render data
 	void					ReleaseData();	// releases data but keeps batchs and VBO
 

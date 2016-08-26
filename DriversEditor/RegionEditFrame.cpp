@@ -343,7 +343,7 @@ void CRegionEditFrame::BuildAndSaveMapFromRegionImages()
 	int imgTall = m_regTall*m_regCells;
 
 	CImage img;
-	TVec3D<ubyte>* imgData = (TVec3D<ubyte>*)img.Create(FORMAT_RGB8, m_regWide*m_regCells, m_regTall*m_regCells, 1, 1, 1);
+	TVec3D<ubyte>* imgData = (TVec3D<ubyte>*)img.Create(FORMAT_RGB8, imgWide, imgTall, 1, 1, 1);
 
 	int imgSize = m_regWide*m_regCells*m_regTall*m_regCells;
 
@@ -376,7 +376,8 @@ void CRegionEditFrame::BuildAndSaveMapFromRegionImages()
 					regionMap_t* regMap = &m_regionMap[regIdx];
 
 					TVec3D<ubyte> color(255);
-					bool placeRoad = regMap->region->m_roads[regPixIdx].type > ROADTYPE_NOROAD;
+					bool placeRoad = regMap->region->m_roads[regPixIdx].type > ROADTYPE_NOROAD && regMap->region->m_roads[regPixIdx].type < ROADTYPE_PARKINGLOT;
+
 					color.x = placeRoad ? 255 : 255;
 					color.y = placeRoad ? 80 : 255;
 					color.z = placeRoad ? 80 : 255;
@@ -435,7 +436,7 @@ void CRegionEditFrame::ReDraw()
 		g_pShaderAPI->Clear(true,true,false, ColorRGBA(0,0,0, 1));
 		
 		// find aspect
-		float aspect = (float)w / (float)h;
+		//float aspect = (float)w / (float)h;
 
 		//float half_w = aspect*m_zoomLevel;
 		//float half_h = m_zoomLevel;

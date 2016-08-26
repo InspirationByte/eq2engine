@@ -403,7 +403,9 @@ void CLevelRegion::Init()
 	// init all hfields
 	for(int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
 	{
-		m_heightfield[i] = new CHeightTileFieldRenderable();
+		if(!m_heightfield[i])
+			m_heightfield[i] = new CHeightTileFieldRenderable();
+
 		m_heightfield[i]->m_fieldIdx = i;
 	}
 #endif // EDITOR
@@ -545,8 +547,18 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 	//
 	for(int i = 0; i < regdatahdr.numObjectDefs; i++)
 	{
-		int modelSize = 0;
-		stream->Read(&modelSize, 1, sizeof(int));
+		levObjectDefInfo_t defInfo;
+		stream->Read(&defInfo, 1, sizeof(levObjectDefInfo_t));
+
+#ifdef EDITOR
+		// don't use regenerated models in editor.
+		if( defInfo.modelflags & LMODEL_FLAG_GENERATED )
+		{
+			// skip model data and continue
+			stream->Seek(defInfo.size, VS_SEEK_CUR);
+			continue;
+		}
+#endif // EDITOR
 
 		CLevelModel* modelRef = new CLevelModel();
 		modelRef->Load( stream );
@@ -554,8 +566,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		modelRef->Ref_Grab();
 
 		CLevObjectDef* newDef = new CLevObjectDef();
-		newDef->m_info.type = LOBJ_TYPE_INTERNAL_STATIC;
-		newDef->m_info.modelflags = LMODEL_FLAG_UNIQUE;
+		newDef->m_info = defInfo;
 		newDef->m_model = modelRef;
 
 #ifndef EDITOR
@@ -574,6 +585,11 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 	{
 		stream->Read(&cellObj, 1, sizeof(levCellObject_t));
 
+#ifdef EDITOR
+		if(cellObj.flags & CELLOBJ_GENERATED)
+			continue;
+#endif // EDITOR
+
 		// Init basics
 		regionObject_t* ref = new regionObject_t;
 
@@ -590,7 +606,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		//
 		// pick from region or global list
 		//
-		if(cellObj.uniqueRegionModel > 0)
+		if(cellObj.flags & CELLOBJ_REGION_DEF)
 			ref->def = m_regionDefs[cellObj.objectDefId];
 		else
 			ref->def = levelmodels[cellObj.objectDefId];

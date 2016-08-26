@@ -1620,7 +1620,7 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 
 	*/
 
-	int navCellGridSize = m_cellsSize*AI_NAVIGATION_GRID_SCALE;
+	//int navCellGridSize = m_cellsSize*AI_NAVIGATION_GRID_SCALE;
 
 	CLevObjectDef* def = ref->def;
 
