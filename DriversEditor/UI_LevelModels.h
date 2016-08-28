@@ -136,12 +136,10 @@ public:
 
 protected:
 
-	CEditAxisXYZ				m_editAxis;
+	
 
 	CModelListRenderPanel*		m_modelPicker;
 	CReplaceModelDialog*		m_modelReplacement;
-
-	DkList<refselectioninfo_t>	m_selRefs;
 
 	wxPanel*					m_pSettingsPanel;
 	wxCheckBox*					m_tiledPlacement;
@@ -155,6 +153,10 @@ protected:
 
 	int							m_rotation;
 
+	CEditAxisXYZ				m_editAxis;
+
+	DkList<refselectioninfo_t>	m_selRefs;
+
 	int							m_last_tx;
 	int							m_last_ty;
 	Vector3D					m_lastpos;
@@ -167,6 +169,7 @@ protected:
 	int							m_draggedAxes;
 
 	EModelEditMode				m_editMode;
+
 };
 
 #endif // UI_LEVELMODELS_H

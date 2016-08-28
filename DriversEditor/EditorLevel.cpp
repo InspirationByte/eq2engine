@@ -147,24 +147,29 @@ void buildLayerColl_t::Load(IVirtualStream* stream, kvkeybase_t* kvs)
 
 buildingSource_t::buildingSource_t(buildingSource_t& copyFrom)
 {
-	layerColl = copyFrom.layerColl;
-	order = copyFrom.order;
-
-	for(DkLLNode<buildSegmentPoint_t>* lln = copyFrom.points.goToFirst(); lln != NULL; lln = copyFrom.points.goToNext())
-	{
-		points.addLast(lln->object);
-	}
-
-	//points.append( copyFrom.points );
-
-	// I do not copy model for re-generation reason
-	model = NULL;
-	modelPosition = vec3_zero;
+	InitFrom(copyFrom);
 }
 
 buildingSource_t::~buildingSource_t()
 {
 	delete model;
+}
+
+void buildingSource_t::InitFrom(buildingSource_t& from)
+{
+	points.clear();
+
+	layerColl = from.layerColl;
+	order = from.order;
+
+	for(DkLLNode<buildSegmentPoint_t>* lln = from.points.goToFirst(); lln != NULL; lln = from.points.goToNext())
+	{
+		points.addLast(lln->object);
+	}
+
+	// I do not copy model for re-generation reason
+	model = NULL;
+	modelPosition = vec3_zero;
 }
 
 void buildingSource_t::ToKeyValues(kvkeybase_t* kvs)
@@ -336,6 +341,13 @@ void RenderBuilding( buildingSource_t* building, buildSegmentPoint_t* extraSegme
 	}
 }
 
+struct genBatch_t
+{
+	DkList<lmodeldrawvertex_t>	verts;
+	DkList<uint16>				indices;
+	IMaterial*					material;
+};
+
 class CBuildingModelGenerator
 {
 public:
@@ -346,11 +358,10 @@ public:
 
 protected:
 
-	lmodel_batch_t&		GetBatch(IMaterial* material);
+	genBatch_t*			GetBatch(IMaterial* material);
 
-	DkList<lmodel_batch_t> m_batches;
-	DkList<lmodeldrawvertex_t> m_verts;
-	DkList<uint16> m_indices;
+	DkList<genBatch_t*>	m_batches;
+
 	BoundingBox m_aabb;
 };
 
@@ -362,7 +373,7 @@ void CBuildingModelGenerator::AppendModel(CLevelModel* model, const Matrix4x4& t
 	{
 		lmodel_batch_t* srcBatch = &model->m_batches[i];
 
-		lmodel_batch_t& destBatch = GetBatch( srcBatch->pMaterial );
+		genBatch_t* destBatch = GetBatch( srcBatch->pMaterial );
 
 		for (uint16 j = 0; j < srcBatch->numIndices; j++)
 		{
@@ -372,16 +383,13 @@ void CBuildingModelGenerator::AppendModel(CLevelModel* model, const Matrix4x4& t
 			destVtx.position = (transform*Vector4D(destVtx.position, 1.0f)).xyz();
 			destVtx.normal = rotTransform*destVtx.normal;
 
-			int destIdx = m_verts.addUnique(destVtx);
+			int destIdx = destBatch->verts.addUnique(destVtx);
 
-			m_indices.append(destIdx);
+			destBatch->indices.append(destIdx);
 
 			// extend aabb
 			m_aabb.AddVertex( destVtx.position );
 		}
-
-		destBatch.numIndices = m_indices.numElem() - destBatch.startIndex;
-		destBatch.numVerts = m_verts.numElem() - destBatch.startVertex;
 	}
 }
 
@@ -391,61 +399,81 @@ CLevelModel* CBuildingModelGenerator::GenerateModel()
 	model->m_numBatches = m_batches.numElem();
 	model->m_batches = new lmodel_batch_t[model->m_numBatches];
 
+	DkList<lmodeldrawvertex_t>	allVerts;
+	DkList<uint16>				allIndices;
+
+	Vector3D center = m_aabb.GetCenter();
+
+	// join the batches
 	for(int i = 0; i < model->m_numBatches; i++)
 	{
 		// copy batch
+		genBatch_t* srcBatch = m_batches[i];
 		lmodel_batch_t& destBatch = model->m_batches[i];
-		destBatch = m_batches[i];
 
-		// or it would crash
+		// setup
+		destBatch.numVerts = srcBatch->verts.numElem();
+		destBatch.numIndices = srcBatch->indices.numElem();
+
+		destBatch.pMaterial = srcBatch->material;
 		destBatch.pMaterial->Ref_Grab();
-	}
 
-	Vector3D center = m_aabb.GetCenter();
+		// setup
+		destBatch.startVertex = allVerts.numElem();
+		destBatch.startIndex = allIndices.numElem();
+
+		// copy contents
+		uint16 firstIndex = allVerts.numElem();
+
+		// add indices
+		for(int j = 0; j < srcBatch->indices.numElem(); j++)
+			allIndices.append(firstIndex + srcBatch->indices[j]);
+
+		// add vertices
+		for(int j = 0; j < srcBatch->verts.numElem(); j++)
+		{
+			lmodeldrawvertex_t vert = srcBatch->verts[j];
+			vert.position -= center;
+
+			allVerts.append( vert );
+		}
+	}
 
 	// correct aabb
 	m_aabb.minPoint -= center;
 	m_aabb.maxPoint -= center;
 
-	// move verts
-	for(int i = 0; i < m_verts.numElem(); i++)
-		m_verts[i].position -= center;
-
 	model->m_bbox = m_aabb;
 
 	// copy vbo's
-	model->m_numVerts = m_verts.numElem();
-	model->m_numIndices = m_indices.numElem();
+	model->m_numVerts = allVerts.numElem();
+	model->m_numIndices = allIndices.numElem();
 
 	model->m_verts = new lmodeldrawvertex_t[model->m_numVerts];
 	model->m_indices = new uint16[model->m_numIndices];
 
-	memcpy(model->m_verts, m_verts.ptr(), sizeof(lmodeldrawvertex_t)*model->m_numVerts);
-	memcpy(model->m_indices, m_indices.ptr(), sizeof(uint16)*model->m_numIndices);
+	memcpy(model->m_verts, allVerts.ptr(), sizeof(lmodeldrawvertex_t)*model->m_numVerts);
+	memcpy(model->m_indices, allIndices.ptr(), sizeof(uint16)*model->m_numIndices);
 
 	model->GenereateRenderData();
 
 	return model;
 }
 
-lmodel_batch_t& CBuildingModelGenerator::GetBatch(IMaterial* material)
+genBatch_t* CBuildingModelGenerator::GetBatch(IMaterial* material)
 {
 	for(int i = 0; i < m_batches.numElem(); i++)
 	{
-		if(m_batches[i].pMaterial == material)
+		if(m_batches[i]->material == material)
 			return m_batches[i];
 	}
 
-	lmodel_batch_t newBatch;
-	newBatch.pMaterial = material;
-	newBatch.startIndex = m_indices.numElem();
-	newBatch.startVertex = m_verts.numElem();
-	newBatch.numIndices = 0;
-	newBatch.numVerts = 0;
+	genBatch_t* newBatch = new genBatch_t();
+	newBatch->material = material;
 
-	int newIdx = m_batches.append(newBatch);
+	m_batches.append(newBatch);
 
-	return m_batches[newIdx];
+	return newBatch;
 }
 
 //

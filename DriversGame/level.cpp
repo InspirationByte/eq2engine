@@ -59,9 +59,8 @@ void CGameLevel::Cleanup()
 
 	Msg("Unloading level...\n");
 
-	StopThread();
-
 	DevMsg(DEVMSG_CORE, "Stopping loader thread...\n");
+	StopThread();
 
 	// remove regions first
 	int num = m_wide*m_tall;
@@ -87,7 +86,7 @@ void CGameLevel::Cleanup()
 		delete [] m_occluderOffsets;
 	m_occluderOffsets = NULL;
 
-	DevMsg(DEVMSG_CORE, "Freeing object definitions...\n");
+	DevMsg(DEVMSG_CORE, "Unloading object defs...\n");
 	for(int i = 0; i < m_objectDefs.numElem(); i++)
 		delete m_objectDefs[i];
 
@@ -223,9 +222,7 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 		else if(lump.type == LEVLUMP_OBJECTDEFS)
 		{
 			DevMsg(DEVMSG_GAME, "LEVLUMP_OBJECTDEFS size = %d\n", lump.size);
-#ifndef EDITOR
-			MsgWarning("Seems like level uses models from editor list, it means that level is not fully built!\n");
-#endif // EDITOR
+
 			ReadObjectDefsLump(pFile, kvDefs);
 		}
 		else if(lump.type == LEVLUMP_HEIGHTFIELDS)
@@ -375,10 +372,6 @@ void CGameLevel::LoadRegionAt(int regionIndex, IVirtualStream* stream)
 {
 	if(m_regionOffsets[regionIndex] == -1)
 		return;
-
-#ifdef EDITOR
-	Msg("* Loading region %d\n", regionIndex);
-#endif // EDITOR
 
 	CLevelRegion& reg = m_regions[regionIndex];
 
@@ -649,7 +642,9 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 		modelNamePtr += strlen(modelNamePtr)+1;
 	}
 
+	//
 	// load new objects from <levname>_objects.txt
+	//
 	for(int i = 0; i < kvDefs->keys.numElem(); i++)
 	{
 		kvkeybase_t* defSection = kvDefs->keys[i];

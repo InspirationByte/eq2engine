@@ -16,12 +16,19 @@
 
 #include "EditorLevel.h"
 
-enum EBuildingPlaceMode
+#include "editaxis.h"
+
+enum EBuildingEditMode
 {
 	ED_BUILD_READY = 0,
+
+	ED_BUILD_MOVEMENT,
+
 	ED_BUILD_BEGUN,				// 1st point
 	ED_BUILD_WAITFORSELECT,		// next points
+
 	ED_BUILD_SELECTEDPOINT,		// selected points
+
 	ED_BUILD_DONE,
 };
 
@@ -183,6 +190,8 @@ protected:
 	void OnEditClick( wxCommandEvent& event );
 	void OnDeleteClick( wxCommandEvent& event );
 
+	CEditAxisXYZ				m_editAxis;
+
 	int							m_mouseLastY;
 		
 	CBuildingLayerEditDialog*	m_layerEditDlg;
@@ -200,11 +209,20 @@ protected:
 	Vector3D					m_mousePoint;
 	bool						m_placeError;
 
-	int							m_mode;
-	buildingSource_t			m_newBuilding;
+	EBuildingEditMode			m_mode;
+	buildingSource_t*			m_editingBuilding;
+	buildingSource_t			m_editingCopy;		// for cancel reason
+	bool						m_isEditingNewBuilding;
 
 	int							m_curLayerId;
 	float						m_curSegmentScale;
+
+	DkList<buildingSource_t>	m_selectedBuildings;
+
+	Vector3D					m_dragPos;
+	Vector3D					m_dragOffs;
+	bool						m_isSelecting;
+	int							m_draggedAxes;
 };
 
 #endif // UI_BUILDINGCOSTRUCT_H

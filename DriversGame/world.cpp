@@ -189,8 +189,6 @@ void CGameWorld::Ed_FillEnviromentList(DkList<EqString>& list)
 }
 #endif // EDITOR
 
-
-
 void CGameWorld::InitEnvironment()
 {
 	// TODO: IsLoaded
@@ -1309,21 +1307,27 @@ void CGameWorld::DrawFakeReflections()
 
 	/*
 	Matrix4x4 viewProj = proj*view;
-	TEMPORARILY DISABLED, NEEDS DEPTH BUFFER
+	// TEMPORARILY DISABLED, NEEDS DEPTH BUFFER
+	// and prettier look
 
 	if(r_drawFakeReflections.GetInt() > 1)
 	{
-		// wetness
-		Vector2D envParams(0.0f);
+		worldEnvConfig_t conf = m_envConfig;
 
-		// texture lights
-		envParams.y = (m_envConfig.lightsType & WLIGHTS_CITY) > 0 ? 1.0f : 0.0f;
+		m_envConfig.ambientColor *= 0.25f;
+		m_envConfig.sunColor *= 0.25f;
+		m_envConfig.fogColor *= 0.0f;
 
 		materials->SetAmbientColor(ColorRGBA(0, 0, 0, 1.0f));
 
+		materials->SetMaterialRenderParamCallback(this);
+
 		m_level.Render(newViewPos, viewProj, m_occludingFrustum, 0);
 
-		materials->SetAmbientColor(ColorRGBA(1, 1, 1, 1.0f));
+		// restore
+		materials->SetAmbientColor(ColorRGBA(1.0f));
+		materials->SetMaterialRenderParamCallback(NULL);
+		m_envConfig = conf;
 	}*/
 
 	// draw only additive particles

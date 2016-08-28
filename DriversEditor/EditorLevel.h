@@ -87,6 +87,8 @@ struct buildingSource_t
 	buildingSource_t(buildingSource_t& copyFrom);
 	~buildingSource_t();
 
+	void InitFrom(buildingSource_t& copyFrom);
+
 	void ToKeyValues(kvkeybase_t* kvs);
 	void FromKeyValues(kvkeybase_t* kvs);
 

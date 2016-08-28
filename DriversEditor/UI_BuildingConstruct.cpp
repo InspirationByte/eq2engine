@@ -1058,6 +1058,8 @@ CUI_BuildingConstruct::CUI_BuildingConstruct( wxWindow* parent )
 
 	m_curLayerId = 0;
 	m_curSegmentScale = 1.0f;
+	m_isEditingNewBuilding = false;
+	m_editingBuilding = NULL;
 }
 
 CUI_BuildingConstruct::~CUI_BuildingConstruct()
@@ -1102,11 +1104,10 @@ void CUI_BuildingConstruct::OnDeleteClick( wxCommandEvent& event )
 {
 	buildLayerColl_t* layerColl = m_layerCollList->GetSelectedLayerColl();
 	
-	if(m_newBuilding.layerColl == layerColl)
-		m_newBuilding.layerColl = NULL;
+	if(m_editingBuilding && m_editingBuilding->layerColl == layerColl)
+		m_editingBuilding->layerColl = NULL;
 
 	m_layerCollList->DeleteCollection(layerColl);
-
 }
 
 //------------------------------------------------------------------------
@@ -1123,8 +1124,16 @@ void CUI_BuildingConstruct::OnKey(wxKeyEvent& event, bool bDown)
 	{
 		if(event.m_keyCode == WXK_ESCAPE)
 		{
-			CancelBuilding();
-			ClearSelection();
+			if(m_mode == ED_BUILD_MOVEMENT)
+			{
+				m_mode = ED_BUILD_READY;
+			}
+			else if(m_mode == ED_BUILD_READY)
+			{
+				ClearSelection();
+			}
+			else
+				CancelBuilding();
 		}
 		else if(event.m_keyCode == WXK_DELETE)
 		{
@@ -1132,7 +1141,8 @@ void CUI_BuildingConstruct::OnKey(wxKeyEvent& event, bool bDown)
 		}
 		else if(event.m_keyCode == WXK_SPACE)
 		{
-			m_newBuilding.order = m_newBuilding.order > 0 ? -1 : 1;
+			if(m_editingBuilding)
+				m_editingBuilding->order = m_editingBuilding->order > 0 ? -1 : 1;
 		}
 		else if(event.m_keyCode == WXK_RETURN)
 		{
@@ -1233,10 +1243,10 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 		m_curLayerId += wheelSign;
 	}
 
-	if(m_newBuilding.layerColl != NULL)
+	if(m_editingBuilding->layerColl != NULL)
 	{
-		if(m_curLayerId >= m_newBuilding.layerColl->layers.numElem())
-			m_curLayerId = m_newBuilding.layerColl->layers.numElem() - 1;
+		if(m_curLayerId >= m_editingBuilding->layerColl->layers.numElem())
+			m_curLayerId = m_editingBuilding->layerColl->layers.numElem() - 1;
 	}
 
 	if(m_curLayerId < 0)
@@ -1271,10 +1281,13 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				segment.layerId = m_curLayerId;
 				segment.position = m_mousePoint;
 
+				m_editingBuilding = new buildingSource_t();
+				m_isEditingNewBuilding = true;
+
 				// make a first point
-				m_newBuilding.points.addLast( segment );
-				m_newBuilding.layerColl = m_layerCollList->GetSelectedLayerColl();
-				m_newBuilding.order = 1;
+				m_editingBuilding->points.addLast( segment );
+				m_editingBuilding->layerColl = m_layerCollList->GetSelectedLayerColl();
+				m_editingBuilding->order = 1;
 
 				m_curSegmentScale = 1.0f;
 
@@ -1286,16 +1299,16 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				if(m_placeError)
 					return;
 
-				if(!m_newBuilding.points.goToFirst())
+				if(!m_editingBuilding->points.goToFirst())
 					return;
 
-				Vector3D firstPoint = m_newBuilding.points.getCurrent().position;
+				Vector3D firstPoint = m_editingBuilding->points.getCurrent().position;
 
-				if(!m_newBuilding.points.goToLast())
+				if(!m_editingBuilding->points.goToLast())
 					return;
 
 				// Modify last point to use selected segment and layer
-				buildSegmentPoint_t& lastPoint = m_newBuilding.points.getCurrentNode()->object;
+				buildSegmentPoint_t& lastPoint = m_editingBuilding->points.getCurrentNode()->object;
 				lastPoint.layerId = m_curLayerId;
 				lastPoint.scale = m_curSegmentScale;
 
@@ -1308,10 +1321,10 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				newSegment.position = ComputePlacementPointBasedOnMouse();
 
 				// Add point to the building
-				m_newBuilding.points.addLast( newSegment );
+				m_editingBuilding->points.addLast( newSegment );
 
 				// ED_BUILD_DONE if connected to begin point
-				//if(distance(ppos, m_newBuilding.points[0]) < 2.0f)
+				//if(distance(ppos, m_editingBuilding->points[0]) < 2.0f)
 				//	m_mode = ED_BUILD_DONE;
 
 				return;
@@ -1324,8 +1337,26 @@ void CUI_BuildingConstruct::CancelBuilding()
 {
 	if(m_mode != ED_BUILD_READY)
 	{
-		m_newBuilding.points.clear();
-		m_newBuilding.layerColl = NULL;
+		if( m_isEditingNewBuilding )
+		{
+			delete m_editingBuilding;
+			m_editingBuilding = NULL;
+			return;
+		}
+		else
+		{
+			// delete model
+			delete m_editingBuilding->model;
+
+			// reset from the copy
+			m_editingBuilding->InitFrom( m_editingCopy );
+			GenerateBuildingModel(m_editingBuilding);
+
+			m_editingBuilding = NULL;
+
+			m_editingCopy.points.clear();
+			m_editingCopy.layerColl = NULL;
+		}
 
 		m_mode = ED_BUILD_READY;
 	}
@@ -1334,27 +1365,29 @@ void CUI_BuildingConstruct::CancelBuilding()
 void CUI_BuildingConstruct::CompleteBuilding()
 {
 	// generate building model for region:
-	if(!m_selectedRegion || m_newBuilding.points.getCount() == 0 || m_newBuilding.layerColl == NULL)
+	if(!m_selectedRegion || m_editingBuilding->points.getCount() == 0 || m_editingBuilding->layerColl == NULL)
 		return;
 
-	buildingSource_t* newBuilding = new buildingSource_t(m_newBuilding);
-
-	if( !GenerateBuildingModel(newBuilding) )
+	if( !GenerateBuildingModel(m_editingBuilding) )
 	{
-		delete newBuilding;
+		CancelBuilding();
 		return;
 	}
 
-	CEditorLevelRegion* region = (CEditorLevelRegion*)g_pGameWorld->m_level.GetRegionAtPosition(newBuilding->modelPosition);
+	if( !m_isEditingNewBuilding )
+		return;
+
+	// if not ex
+	CEditorLevelRegion* region = (CEditorLevelRegion*)g_pGameWorld->m_level.GetRegionAtPosition(m_editingBuilding->modelPosition);
 
 	if( !region )
 		region = (CEditorLevelRegion*)m_selectedRegion;
 
 	// add building to the region
-	region->m_buildings.append( newBuilding );
+	region->m_buildings.append( m_editingBuilding );
 
-	m_newBuilding.points.clear();
-	m_newBuilding.layerColl = NULL;
+	m_editingBuilding = NULL;
+
 	m_curLayerId = 0;
 	m_curSegmentScale = 1.0f;
 
@@ -1363,17 +1396,28 @@ void CUI_BuildingConstruct::CompleteBuilding()
 
 void CUI_BuildingConstruct::ClearSelection()
 {
-
+	m_selectedBuildings.clear();
 }
 
 void CUI_BuildingConstruct::DeleteSelection()
 {
-	if(m_mode == ED_BUILD_SELECTEDPOINT)
+	if(m_mode == ED_BUILD_READY)
 	{
-		if(m_newBuilding.points.getCount() > 1)
+		if(m_selectedBuildings.numElem() > 0)
 		{
-			m_newBuilding.points.goToLast();
-			m_newBuilding.points.removeCurrent(); //removeIndex(m_newBuilding.points.numElem()-1);
+			// TODO: delete from their regions
+		}
+	}
+	else if(m_mode == ED_BUILD_SELECTEDPOINT)
+	{
+		if(m_editingBuilding->points.getCount() > 1)
+		{
+			// don't delete first point if we're editing
+			if(!m_isEditingNewBuilding && m_editingBuilding->points.getCount() == 1)
+				return;
+
+			m_editingBuilding->points.goToLast();
+			m_editingBuilding->points.removeCurrent(); //removeIndex(m_editingBuilding->points.numElem()-1);
 		}
 		else
 			CancelBuilding();
@@ -1395,7 +1439,7 @@ void CUI_BuildingConstruct::OnRender()
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	// only draw if building is not empty
-	if(m_newBuilding.points.getCount() > 0 && m_newBuilding.layerColl != NULL)
+	if(m_editingBuilding->points.getCount() > 0 && m_editingBuilding->layerColl != NULL)
 	{
 		buildSegmentPoint_t extraSegment;
 		extraSegment.position = ComputePlacementPointBasedOnMouse();
@@ -1405,14 +1449,14 @@ void CUI_BuildingConstruct::OnRender()
 		//
 		// Finally render the dynamic preview of our building
 		//
-		RenderBuilding(&m_newBuilding, &extraSegment);
+		RenderBuilding(m_editingBuilding, &extraSegment);
 
 		// render the actual and computed points
 		debugoverlay->Box3D(m_mousePoint - 0.5f, m_mousePoint + 0.5f, ColorRGBA(1,0,0,1));
 		debugoverlay->Box3D(extraSegment.position-0.5f, extraSegment.position+0.5f, ColorRGBA(1,1,0,1));
 
 		// render points of building
-		for(DkLLNode<buildSegmentPoint_t>* lln = m_newBuilding.points.goToFirst(); lln != NULL; lln = m_newBuilding.points.goToNext())
+		for(DkLLNode<buildSegmentPoint_t>* lln = m_editingBuilding->points.goToFirst(); lln != NULL; lln = m_editingBuilding->points.goToNext())
 		{
 			debugoverlay->Box3D(lln->object.position - 0.5f, lln->object.position + 0.5f, ColorRGBA(0,1,0,1));
 		}
@@ -1425,14 +1469,14 @@ void CUI_BuildingConstruct::OnRender()
 
 Vector3D CUI_BuildingConstruct::ComputePlacementPointBasedOnMouse()
 {
-	if(!m_newBuilding.points.goToLast())
+	if(!m_editingBuilding->points.goToLast())
 		return vec3_zero;
 
 	// now the computations
-	const buildSegmentPoint_t& end = m_newBuilding.points.getCurrent();
+	const buildSegmentPoint_t& end = m_editingBuilding->points.getCurrent();
 
 	// get scaled segment length of last node
-	buildLayer_t& layer = m_newBuilding.layerColl->layers[m_curLayerId];
+	buildLayer_t& layer = m_editingBuilding->layerColl->layers[m_curLayerId];
 	float segLen = GetSegmentLength(layer) * m_curSegmentScale;
 
 	buildSegmentPoint_t testSegPoint;
