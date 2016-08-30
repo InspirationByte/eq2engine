@@ -27,7 +27,7 @@ enum EOccluderPlaceMode
 struct selectedOccluder_t
 {
 	int occIdx;
-	CLevelRegion* region;
+	CEditorLevelRegion* region;
 };
 
 class CUI_OccluderEditor : public wxPanel, public CBaseTilebasedEditor

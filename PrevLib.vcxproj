@@ -176,6 +176,7 @@
     <ClInclude Include="public\Math\DkMath.h" />
     <ClInclude Include="public\math\FixedMath.h" />
     <ClInclude Include="public\math\FVector.h" />
+    <ClInclude Include="public\math\GridUtils.h" />
     <ClInclude Include="public\Math\math_common.h" />
     <ClInclude Include="public\Math\Matrix.h" />
     <ClInclude Include="public\math\Matrix_Inline.h" />

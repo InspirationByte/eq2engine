@@ -30,13 +30,15 @@ enum ECarBodyPart
 	CB_BACK_LEFT,
 	CB_BACK_RIGHT,
 
+	CB_TOP_ROOF,
+
 	CB_PART_COUNT,
 };
 
 // window bodypart ids
 enum ECarWindowParts
 {
-	CB_WINDOW_FRONT = 6,
+	CB_WINDOW_FRONT = 7,
 	CB_WINDOW_BACK,
 
 	CB_WINDOW_LEFT,
@@ -45,7 +47,7 @@ enum ECarWindowParts
 	CB_PART_WINDOW_PARTS = CB_PART_COUNT + 4
 };
 
-// light types
+// front and back light types
 enum ELightsType
 {
 	LIGHTS_SINGLE,
@@ -54,13 +56,26 @@ enum ELightsType
 };
 
 // siren light types
-enum ESirenType
+enum EServiceLightsType
 {
-	SIREN_NONE = 0,
-	SIREN_SINGLE,
-	SIREN_DOUBLE,
-	SIREN_DOUBLE_SINGLECOLOR,
-	SIREN_DOUBLE_SINGLECOLOR_RED,
+	SERVICE_LIGHTS_NONE = 0,
+	SERVICE_LIGHTS_SINGLE,
+	SERVICE_LIGHTS_DOUBLE,
+	SERVICE_LIGHTS_DOUBLE_SINGLECOLOR,
+	SERVICE_LIGHTS_DOUBLE_SINGLECOLOR_RED,
+};
+
+enum ECarLightTypeFlags
+{
+	CAR_LIGHT_HEADLIGHTS		= (1 << 0),		// front lights
+	CAR_LIGHT_HEADLIGHTS_FAR	= (1 << 1),		// front far lights
+	CAR_LIGHT_BRAKE				= (1 << 2),		// brake lights
+	CAR_LIGHT_REVERSELIGHT		= (1 << 3),		// white back lights
+	CAR_LIGHT_DIM_LEFT			= (1 << 4),		// dimensional left lights
+	CAR_LIGHT_DIM_RIGHT			= (1 << 5),		// dimensional right lights
+	CAR_LIGHT_SERVICELIGHTS		= (1 << 6),		// flashing lights of service cars
+
+	CAR_LIGHT_EMERGENCY			= (CAR_LIGHT_DIM_LEFT | CAR_LIGHT_DIM_RIGHT),	// emergency light flags (dim. left and right)
 };
 
 // wheel flags
@@ -79,24 +94,21 @@ struct carWheelConfig_t
 	char				hubcapName[16];
 
 	Vector3D			suspensionTop;
+	float				steerMultipler;
+
 	Vector3D			suspensionBottom;
+	float				brakeTorque;
 
 	float				springConst;
 	float				dampingConst;
-
-	float				brakeTorque;
-
-	int					flags; // EWheelFlags
-
-	float				steerMultipler;
-
 	float				width;
 	float				radius;
-	float				woffset;
 
+	float				woffset;
 	float				visualTop;
 
 	int					wheelBodyPart;	// damage effets on wheels like bad breakage, suspension effects
+	int					flags;			// EWheelFlags
 };
 
 // color scheme
@@ -117,62 +129,65 @@ struct carColorScheme_t
 
 struct carConfigEntry_t
 {
-	EqString					carName;
-	EqString					carScript;
 	uint						scriptCRC;	// for network and replays
 
-	EqString					m_cleanModelName;
-	EqString					m_damModelName;
-
-	carCameraConfig_t			m_cameraConf;
-
 	Vector3D					m_body_size;
-	Vector3D					m_body_center;
-	Vector3D					m_virtualMassCenter;
-
-	float						m_mass;
 	float						m_antiRoll;
 
+	Vector3D					m_body_center;
+	float						m_handbrakeScale;
+
+	Vector3D					m_virtualMassCenter;
+	float						m_mass;
+	
 	float						m_differentialRatio;
 	float						m_torqueMult;
 	float						m_transmissionRate;
-
 	float						m_maxSpeed;
+
 	float						m_burnoutMaxSpeed;
-
 	float						m_steeringSpeed;
-	float						m_handbrakeScale;
 
-	DkList<carWheelConfig_t>	m_wheels;
-	DkList<float>				m_gears;
-
+	carCameraConfig_t			m_cameraConf;
 
 	Vector4D					m_sirenPositionWidth;
 	int							m_sirenType;
 
-	int							m_headlightType;
 	Vector4D					m_headlightPosition;
+	int							m_headlightType;
 
 	Vector4D					m_backlightPosition;
 
-	int							m_brakelightType;
 	Vector4D					m_brakelightPosition;
+	int							m_brakelightType;
+
+	Vector4D					m_frontDimLights;
+	Vector4D					m_backDimLights;
 
 	Vector3D					m_enginePosition;
 
 	Vector3D					m_exhaustPosition;
 	int							m_exhaustDir;		// 0 - back, 1 - left, 2 - up
 
-	DkList<carColorScheme_t>	m_colors;
 	bool						m_useBodyColor;
 
+	DkList<carWheelConfig_t>	m_wheels;
+	DkList<float>				m_gears;
+	DkList<carColorScheme_t>	m_colors;
+
 	//--------------------------------------------
+
 	EqString					m_sndEngineIdle;
 	EqString					m_sndEngineRPMLow;
 	EqString					m_sndEngineRPMHigh;
 	EqString					m_sndHornSignal;
 	EqString					m_sndSiren;
 	EqString					m_sndBrakeRelease;
+
+	EqString					carName;
+	EqString					carScript;
+	EqString					m_cleanModelName;
+	EqString					m_damModelName;
 };
 
 bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs );
@@ -519,7 +534,8 @@ protected:
 	CNetworkVar(float,		m_gameFelony);	// felony percentage
 	CNetworkVar(short,		m_numPursued);
 
-	bool					m_brakeLightsEnabled;
+	ubyte					m_lightsEnabled;
+
 	bool					m_visible;
 
 	CNetworkVar(bool,		m_locked);

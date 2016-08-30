@@ -525,7 +525,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 		if(m_type == PURSUER_TYPE_COP)
 		{
-			if (m_conf->m_sirenType != SIREN_NONE)
+			if (m_conf->m_sirenType != SERVICE_LIGHTS_NONE)
 				m_sirenEnabled = true;
 
 			if (m_targInfo.target->GetPursuedCount() == 0 &&
@@ -946,7 +946,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 int	CAIPursuerCar::DeadState( float fDt, EStateTransition transition )
 {
-	if( m_deathTime > 0 && m_conf->m_sirenType != SIREN_NONE && m_pSirenSound )
+	if( m_deathTime > 0 && m_conf->m_sirenType != SERVICE_LIGHTS_NONE && m_pSirenSound )
 	{
 		m_pSirenSound->SetPitch( m_deathTime / AI_COP_DEATHTIME );
 		m_deathTime -= fDt;

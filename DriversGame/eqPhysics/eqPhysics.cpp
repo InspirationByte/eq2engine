@@ -2,7 +2,15 @@
 // Copyright © Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Equilibrium 3D fixed point physics
+// Description: Equilibrium fixed point 3D physics engine
+//
+//	FEATURES:
+//				Fixed point object positions
+//				Best works with fixed timestep
+//				Simple dynamics build from ground up
+//				Raycasting along with sweep collision test
+//				Using Bullet Collision Library for fast collision detection
+//
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "IDebugOverlay.h"

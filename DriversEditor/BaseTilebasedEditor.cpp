@@ -28,7 +28,7 @@ void CBaseTilebasedEditor::ProcessMouseEvents( wxMouseEvent& event )
 	g_pMainFrame->GetMouseScreenVectors(event.GetX(),event.GetY(), ray_start, ray_dir);
 
 	Vector3D point_pos;
-	m_selectedRegion = g_pMainFrame->GetRegionAtScreenPos(event.GetX(),event.GetY(), m_mouseOverTileHeight, point_pos);
+	m_selectedRegion = (CEditorLevelRegion*)g_pMainFrame->GetRegionAtScreenPos(event.GetX(),event.GetY(), m_mouseOverTileHeight, point_pos);
 
 	int x, y;
 	if( m_selectedRegion && m_selectedRegion->GetHField(m_selectedHField)->PointAtPos(point_pos, x, y) )

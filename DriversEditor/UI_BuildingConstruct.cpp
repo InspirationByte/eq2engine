@@ -1243,7 +1243,7 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 		m_curLayerId += wheelSign;
 	}
 
-	if(m_editingBuilding->layerColl != NULL)
+	if(m_editingBuilding && m_editingBuilding->layerColl != NULL)
 	{
 		if(m_curLayerId >= m_editingBuilding->layerColl->layers.numElem())
 			m_curLayerId = m_editingBuilding->layerColl->layers.numElem() - 1;
@@ -1251,6 +1251,9 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 
 	if(m_curLayerId < 0)
 		m_curLayerId = 0;
+
+	Vector3D ray_start, ray_dir;
+	g_pMainFrame->GetMouseScreenVectors(event.GetX(),event.GetY(), ray_start, ray_dir);
 
 	IVector2D globalTile;
 	g_pGameWorld->m_level.LocalToGlobalPoint(IVector2D(tx,ty), m_selectedRegion, globalTile);
@@ -1262,8 +1265,31 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 	else
 		m_mousePoint = ppos;
 
-	if(!event.ControlDown() && !event.AltDown())
+	if(event.ControlDown())
 	{
+
+		m_isSelecting = true;
+		
+		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
+		{
+			float dist = MAX_COORD_UNITS;
+
+			buildingSelInfo_t info;
+
+			int refIdx = g_pGameWorld->m_level.Ed_SelectBuildingAndReg(ray_start, ray_dir, &info.selRegion, dist);
+
+			if(refIdx != -1 && info.selRegion)
+			{
+				info.selBuild = info.selRegion->m_buildings[refIdx];
+
+				ToggleSelection( info );
+			}
+		}
+	}
+	else
+	{
+		m_isSelecting = false;
+
 		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging())
 		{
 			if( !m_layerCollList->GetSelectedLayerColl() && m_mode == ED_BUILD_READY )
@@ -1343,7 +1369,7 @@ void CUI_BuildingConstruct::CancelBuilding()
 			m_editingBuilding = NULL;
 			return;
 		}
-		else
+		else if(m_editingBuilding)
 		{
 			// delete model
 			delete m_editingBuilding->model;
@@ -1392,20 +1418,35 @@ void CUI_BuildingConstruct::CompleteBuilding()
 	m_curSegmentScale = 1.0f;
 
 	m_mode = ED_BUILD_READY;
+
+	g_pMainFrame->NotifyUpdate();
 }
 
 void CUI_BuildingConstruct::ClearSelection()
 {
-	m_selectedBuildings.clear();
+	m_selBuildings.clear();
 }
 
 void CUI_BuildingConstruct::DeleteSelection()
 {
 	if(m_mode == ED_BUILD_READY)
 	{
-		if(m_selectedBuildings.numElem() > 0)
+		if(m_selBuildings.numElem() > 0)
 		{
-			// TODO: delete from their regions
+			for(int i = 0; i < m_selBuildings.numElem(); i++)
+			{
+				buildingSource_t* bs = m_selBuildings[i].selBuild;
+				delete bs;
+			}
+
+			for(int i = 0; i < m_selBuildings.numElem(); i++)
+			{
+				m_selBuildings[i].selRegion->m_buildings.remove( m_selBuildings[i].selBuild );
+			}
+
+			m_selBuildings.clear();
+
+			g_pMainFrame->NotifyUpdate();
 		}
 	}
 	else if(m_mode == ED_BUILD_SELECTEDPOINT)
@@ -1424,7 +1465,41 @@ void CUI_BuildingConstruct::DeleteSelection()
 	}
 }
 
+void CUI_BuildingConstruct::RecalcSelectionCenter()
+{
+	BoundingBox bbox;
+
+	for(int i = 0; i < m_selBuildings.numElem(); i++)
+	{
+		bbox.AddVertex( m_selBuildings[i].selBuild->modelPosition );
+	}
+
+	m_editAxis.m_position = bbox.GetCenter();
+}
+
+void CUI_BuildingConstruct::ToggleSelection( buildingSelInfo_t& bld )
+{
+	for(int i = 0; i < m_selBuildings.numElem(); i++)
+	{
+		if(	m_selBuildings[i].selRegion == bld.selRegion &&
+			m_selBuildings[i].selBuild == bld.selBuild)
+		{
+			m_selBuildings.fastRemoveIndex(i);
+
+			RecalcSelectionCenter();
+			return;
+		}
+	}
+
+	m_selBuildings.append( bld );
+
+	RecalcSelectionCenter();
+}
+
+
 extern void ListQuadTex(const Vector3D &v1, const Vector3D &v2, const Vector3D& v3, const Vector3D& v4, int rotate, const ColorRGBA &color, DkList<Vertex3D_t> &verts);
+
+extern Vector3D g_camera_target;
 
 void CUI_BuildingConstruct::OnRender()
 {
@@ -1436,10 +1511,35 @@ void CUI_BuildingConstruct::OnRender()
 	CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
 	field->DebugRender(false,m_mouseOverTileHeight);
 
+	if( m_selBuildings.numElem() > 0 )
+	{
+		for(int i = 0; i < m_selBuildings.numElem(); i++)
+		{
+			Matrix4x4 wmatrix = identity4() * translate(m_selBuildings[i].selBuild->modelPosition);
+
+			// render
+			materials->SetCullMode(CULL_BACK);
+			materials->SetMatrix(MATRIXMODE_WORLD, wmatrix);
+
+			ColorRGBA oldcol = materials->GetAmbientColor();
+			materials->SetAmbientColor(ColorRGBA(1,0.5,0.5,1));
+
+			m_selBuildings[i].selBuild->model->Render(0,BoundingBox());
+
+			materials->SetAmbientColor(oldcol);
+			materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+		}
+
+		m_editAxis.SetProps(identity3(), m_editAxis.m_position);
+
+		float clength = length(m_editAxis.m_position-g_camera_target);
+		m_editAxis.Draw(clength);
+	}
+
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	// only draw if building is not empty
-	if(m_editingBuilding->points.getCount() > 0 && m_editingBuilding->layerColl != NULL)
+	if(m_editingBuilding && m_editingBuilding->points.getCount() > 0 && m_editingBuilding->layerColl != NULL)
 	{
 		buildSegmentPoint_t extraSegment;
 		extraSegment.position = ComputePlacementPointBasedOnMouse();

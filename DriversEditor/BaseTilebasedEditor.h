@@ -13,6 +13,8 @@
 #include "region.h"
 #include "heightfield.h"
 
+class CEditorLevelRegion;
+
 class CBaseTilebasedEditor : public IEditorTool
 {
 public:
@@ -29,7 +31,7 @@ public:
 	virtual void				MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos ) = 0;
 
 protected:
-	CLevelRegion*				m_selectedRegion;
+	CEditorLevelRegion*			m_selectedRegion;
 	IVector2D					m_mouseOverTile;
 	float						m_mouseOverTileHeight;
 

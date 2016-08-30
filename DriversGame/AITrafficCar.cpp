@@ -573,6 +573,11 @@ void CAITrafficCar::SwitchLane()
 		if( g_pPhysics->TestConvexSweep(shape, GetOrientation(), GetOrigin(), traceEnd, coll, AI_TRACE_CONTENTS, &collFilter) )
 			return;
 
+		if( randomLane < 0 )
+			m_lightsEnabled |= CAR_LIGHT_DIM_LEFT;
+		else if( randomLane > 0 )
+			m_lightsEnabled |= CAR_LIGHT_DIM_RIGHT;
+
 		m_switchedLane = true;
 
 		ChangeRoad( newStraight );
@@ -728,7 +733,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	{
 		targetOfsOnLine = projWay + AI_TARGET_DIST_NOLANE*invStraightDist;
 	}
-
+	
 	if( m_switchedLane )
 	{
 		bool isOnPrevRoad = IsPointOnStraight(carPosOnCell, m_straights[STRAIGHT_PREV]);
@@ -745,6 +750,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		else
 		{
 			m_switchedLane = false;
+			m_lightsEnabled &= ~CAR_LIGHT_EMERGENCY;
 		}
 	}
 
@@ -928,29 +934,40 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 			// Breakage before junction when changing direction
 			//
 
-			if( m_nextJuncDetails.selectedStraight != -1 && 
-				carForwardSpeed > 8.0f*trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType] )
+			if(m_nextJuncDetails.selectedStraight != -1)
 			{
-				straight_t& selRoad = m_nextJuncDetails.foundStraights[ m_nextJuncDetails.selectedStraight ];
+				straight_t& selRoad = m_nextJuncDetails.foundStraights[m_nextJuncDetails.selectedStraight];
+				int currentDir = m_straights[STRAIGHT_CURRENT].direction;
 
-				if( m_straights[STRAIGHT_CURRENT].direction != selRoad.direction )
+				m_lightsEnabled &= ~CAR_LIGHT_EMERGENCY;
+
+				if( CompareDirection(m_straights[STRAIGHT_CURRENT].direction-1, selRoad.direction) )
+					m_lightsEnabled |= CAR_LIGHT_DIM_LEFT;
+				else if( CompareDirection(m_straights[STRAIGHT_CURRENT].direction+1, selRoad.direction) )
+					m_lightsEnabled |= CAR_LIGHT_DIM_RIGHT;
+				else
+					m_lightsEnabled &= ~CAR_LIGHT_EMERGENCY;
+
+				if( carForwardSpeed > 8.0f*trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType] )
 				{
-					float distToNextStraight = distToStop;
+					if( m_straights[STRAIGHT_CURRENT].direction != selRoad.direction )
+					{
+						float distToNextStraight = distToStop;
 
-					float fBrakeRate = 1.0f - RemapValClamp(distToNextStraight, 0.0f, AI_ROAD_STOP_DIST, 0.0f, 1.0f);
+						float fBrakeRate = 1.0f - RemapValClamp(distToNextStraight, 0.0f, AI_ROAD_STOP_DIST, 0.0f, 1.0f);
 
-					brake = clamp(fBrakeRate + (carForwardSpeed-distToStop)*0.25f, 0.0f, 0.5f);
+						brake = clamp(fBrakeRate + (carForwardSpeed-distToStop)*0.25f, 0.0f, 0.5f);
 
-					accelerator -= brake*1.1f;
+						accelerator -= brake*1.1f;
 
-					if(brake >= 0.5f)
-						controls |= IN_BRAKE;
+						if(brake >= 0.5f)
+							controls |= IN_BRAKE;
+					}
 				}
-			}
-			else if(m_nextJuncDetails.selectedStraight != -1 && 
-				carForwardSpeed > 3.0f*trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType])
-			{
-				accelerator *= 0.25f;
+				else if(carForwardSpeed > 3.0f*trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType])
+				{
+					accelerator *= 0.25f;
+				}
 			}
 		}
 	}

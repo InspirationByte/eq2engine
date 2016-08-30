@@ -151,6 +151,12 @@ protected:
 
 //-----------------------------------------------------------------------------
 
+struct buildingSelInfo_t
+{
+	buildingSource_t*		selBuild;
+	CEditorLevelRegion*		selRegion;
+};
+
 class CUI_BuildingConstruct : public wxPanel, public CBaseTilebasedEditor
 {
 public:
@@ -173,6 +179,10 @@ public:
 	void		OnKey(wxKeyEvent& event, bool bDown);
 
 	Vector3D	ComputePlacementPointBasedOnMouse();
+
+	void		RecalcSelectionCenter();
+	void		ToggleSelection( buildingSelInfo_t& ref );
+
 
 	void		OnRender();
 
@@ -217,7 +227,7 @@ protected:
 	int							m_curLayerId;
 	float						m_curSegmentScale;
 
-	DkList<buildingSource_t>	m_selectedBuildings;
+	DkList<buildingSelInfo_t>	m_selBuildings;
 
 	Vector3D					m_dragPos;
 	Vector3D					m_dragOffs;

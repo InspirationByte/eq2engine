@@ -31,6 +31,8 @@ static const char* s_pBodyPartsNames[] =
 	"back.left",
 	"back.right",
 
+	"top.roof",
+
 	"window.front",
 	"window.back",
 
@@ -48,6 +50,8 @@ static Vector3D s_BodyPartDirections[] =
 
 	Vector3D(-1.0f,0,-1.0f),
 	Vector3D(1.0f,0,-1.0f),
+
+	Vector3D(0,1.0f,0),
 };
 
 //
@@ -222,7 +226,7 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 
 	if(visuals)
 	{
-		conf->m_sirenType = KV_GetValueInt(visuals->FindKeyBase("siren_lights"), 0, SIREN_NONE);
+		conf->m_sirenType = KV_GetValueInt(visuals->FindKeyBase("siren_lights"), 0, SERVICE_LIGHTS_NONE);
 		conf->m_sirenPositionWidth = KV_GetVector4D(visuals->FindKeyBase("siren_lights"), 1, vec4_zero);
 
 		conf->m_headlightType = KV_GetValueInt(visuals->FindKeyBase("headlights"), 0, LIGHTS_SINGLE);
@@ -232,6 +236,9 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 
 		conf->m_brakelightType = KV_GetValueInt(visuals->FindKeyBase("brakelights"), 0, LIGHTS_SINGLE);
 		conf->m_brakelightPosition = KV_GetVector4D(visuals->FindKeyBase("brakelights"), 1, vec4_zero);
+
+		conf->m_frontDimLights = KV_GetVector4D(visuals->FindKeyBase("frontdimlights"), 0, vec4_zero);
+		conf->m_backDimLights = KV_GetVector4D(visuals->FindKeyBase("backdimlights"), 0, vec4_zero);
 
 		conf->m_enginePosition = KV_GetVector3D(visuals->FindKeyBase("engine"), 0, vec3_zero);
 
@@ -474,7 +481,7 @@ CCar::CCar( carConfigEntry_t* config ) :
 	m_sirenEnabled(false),
 	m_oldSirenState(false),
 	m_isLocalCar(false),
-	m_brakeLightsEnabled(false),
+	m_lightsEnabled(false),
 	m_nGear(1),
 	m_radsPerSec(0.0f),
 	m_effectTime(0.0f),
@@ -691,7 +698,7 @@ void CCar::InitCarSound()
 
 	m_pHornSound = ses->CreateSoundController(&horn_ep);
 
-	if(m_conf->m_sirenType != SIREN_NONE)
+	if(m_conf->m_sirenType != SERVICE_LIGHTS_NONE)
 	{
 		EmitSound_t siren_ep;
 
@@ -965,7 +972,7 @@ void CCar::SetControlButtons(int flags)
 
 	m_controlButtons = flags;
 
-	if(	m_conf->m_sirenType != SIREN_NONE &&
+	if(	m_conf->m_sirenType != SERVICE_LIGHTS_NONE &&
 		(m_controlButtons & IN_SIREN) && !(m_oldControlButtons & IN_SIREN))
 	{
 		m_oldSirenState = m_sirenEnabled;
@@ -1470,7 +1477,12 @@ void CCar::UpdateCarPhysics(float delta)
 	if(m_fBreakage < 0)
 		m_fBreakage = 0;
 
-	m_brakeLightsEnabled = !bDoBurnout && FPmath::abs(fBreakage) > 0.05f && fabs(car_speed) > 0.01f;
+	bool brakeLightsActive = !bDoBurnout && FPmath::abs(fBreakage) > 0.05f && fabs(car_speed) > 0.01f;
+
+	if(brakeLightsActive)
+		m_lightsEnabled |= CAR_LIGHT_BRAKE;
+	else
+		m_lightsEnabled &= ~CAR_LIGHT_BRAKE;
 
 	if(fHandbrake > 0)
 		fAcceleration = 0;
@@ -2203,9 +2215,32 @@ void CCar::Simulate( float fDt )
 	if(!carBody)
 		return;
 
-	bool bLightsOn = m_enabled && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS) || g_debug_car_lights.GetBool();
 
-	if( bLightsOn && m_isLocalCar &&
+	//
+	// TODO: CALCULATE THIS SOMEWHERE EARLY
+	//
+	bool headLightsEnabled = m_enabled && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS) || g_debug_car_lights.GetBool();
+	bool reverseLightsEnabled = (m_nGear == 0 && (m_controlButtons & IN_BRAKE) && GetSpeedWheels() < 0.0f);
+
+	if(headLightsEnabled)
+		m_lightsEnabled |= CAR_LIGHT_HEADLIGHTS;
+	else
+		m_lightsEnabled &= ~CAR_LIGHT_HEADLIGHTS;
+
+	if(reverseLightsEnabled)
+		m_lightsEnabled |= CAR_LIGHT_REVERSELIGHT;
+	else
+		m_lightsEnabled &= ~CAR_LIGHT_REVERSELIGHT;
+
+	if(m_sirenEnabled)
+		m_lightsEnabled |= CAR_LIGHT_SERVICELIGHTS;
+	else
+		m_lightsEnabled &= ~CAR_LIGHT_SERVICELIGHTS;
+	//
+	//------------------------------------
+	//
+
+	if( (m_lightsEnabled & CAR_LIGHT_HEADLIGHTS) && m_isLocalCar &&
 		(m_bodyParts[CB_FRONT_LEFT].damage < 1.0f || m_bodyParts[CB_FRONT_RIGHT].damage < 1.0f) )
 	{
 		float lightIntensity = 1.0f;
@@ -2329,9 +2364,10 @@ void CCar::Simulate( float fDt )
 		m_engineSmokeTime = 0.0f;
 	}
 
+
 	// Draw light flares
 	// render siren lights
-	if (m_sirenEnabled)
+	if ( m_lightsEnabled & CAR_LIGHT_SERVICELIGHTS )
 	{
 		Vector3D siren_pos_noX(0.0f, m_conf->m_sirenPositionWidth.y, m_conf->m_sirenPositionWidth.z);
 
@@ -2341,7 +2377,7 @@ void CCar::Simulate( float fDt )
 
 		switch(m_conf->m_sirenType)
 		{
-			case SIREN_DOUBLE:
+			case SERVICE_LIGHTS_DOUBLE:
 			{
 				ColorRGB col1(1,0.25,0);
 				ColorRGB col2(0,0.25,1);
@@ -2360,14 +2396,14 @@ void CCar::Simulate( float fDt )
 
 				break;
 			}
-			case SIREN_DOUBLE_SINGLECOLOR:
+			case SERVICE_LIGHTS_DOUBLE_SINGLECOLOR:
 			{
 				PoliceSirenEffect(m_curTime, ColorRGB(0,0.2,1), siren_position, rightVec, -m_conf->m_sirenPositionWidth.x, m_conf->m_sirenPositionWidth.w);
 				PoliceSirenEffect(m_curTime+PI_F, ColorRGB(0,0.2,1), siren_position, rightVec, m_conf->m_sirenPositionWidth.x, m_conf->m_sirenPositionWidth.w);
 
 				break;
 			}
-			case SIREN_DOUBLE_SINGLECOLOR_RED:
+			case SERVICE_LIGHTS_DOUBLE_SINGLECOLOR_RED:
 			{
 				PoliceSirenEffect(m_curTime, ColorRGB(1,0.2,0), siren_position, rightVec, -m_conf->m_sirenPositionWidth.x, m_conf->m_sirenPositionWidth.w);
 				PoliceSirenEffect(m_curTime+PI_F, ColorRGB(1,0.2,0), siren_position, rightVec, m_conf->m_sirenPositionWidth.x, m_conf->m_sirenPositionWidth.w);
@@ -2407,11 +2443,15 @@ void CCar::Simulate( float fDt )
 		Vector3D backlight_pos_noX(0.0f, m_conf->m_backlightPosition.y, m_conf->m_backlightPosition.z);
 		Vector3D backlight_position = (m_worldMatrix * Vector4D(backlight_pos_noX, 1.0f)).xyz();
 
+		Vector3D frontdimlight_pos_noX(0.0f, m_conf->m_frontDimLights.y, m_conf->m_frontDimLights.z);
+		Vector3D backdimlight_pos_noX(0.0f, m_conf->m_backDimLights.y, m_conf->m_backDimLights.z);
+
+		Vector3D frontdimlight_position = (m_worldMatrix * Vector4D(frontdimlight_pos_noX, 1.0f)).xyz();
+		Vector3D backdimlight_position = (m_worldMatrix * Vector4D(backdimlight_pos_noX, 1.0f)).xyz();
+
 		Plane front_plane(forward, -dot(forward, headlight_position));
 		Plane brake_plane(-forward, -dot(-forward, brakelight_position));
 		Plane back_plane(-forward, -dot(-forward, backlight_position));
-
-		bool bLightsOn = m_enabled && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS) || g_debug_car_lights.GetBool();
 
 		float fLightsAlpha = dot(-cam_forward, forward);
 
@@ -2420,14 +2460,17 @@ void CCar::Simulate( float fDt )
 		const float BRAKELIGHT_RADIUS = 0.25f;
 		const float BRAKEBACKLIGHT_RADIUS = 0.2f;
 		const float BACKLIGHT_RADIUS = 0.125f;
+		const float DIMLIGHT_RADIUS = 0.17f;
 
 		const float BRAKEBACKLIGHT_INTENSITY = 0.7f;
 		const float BACKLIGHT_INTENSITY = 0.7f;
+		const float DIMLIGHT_INTENSITY = 0.7f;
 
 		float fHeadlightsAlpha = clamp((fLightsAlpha > 0.0f ? fLightsAlpha : 0.0f) + front_plane.Distance(cam_pos)*0.1f, 0.0f, 1.0f);
+		float fBackLightAlpha = clamp((fLightsAlpha < 0.0f ? -fLightsAlpha : 0.0f) + back_plane.Distance(cam_pos)*0.1f, 0.0f, 1.0f);
 
 		// render some lights
-		if (bLightsOn && fHeadlightsAlpha > 0.0f)
+		if ((m_lightsEnabled & CAR_LIGHT_HEADLIGHTS) && fHeadlightsAlpha > 0.0f)
 		{
 			float fHeadlightsGlowAlpha = fHeadlightsAlpha*0.25f;
 
@@ -2496,7 +2539,7 @@ void CCar::Simulate( float fDt )
 
 		float fBrakeLightAlpha = clamp((fLightsAlpha < 0.0f ? -fLightsAlpha : 0.0f) + brake_plane.Distance(cam_pos)*0.1f, 0.0f, 1.0f);
 
-		if ((m_brakeLightsEnabled || bLightsOn) && fBrakeLightAlpha > 0)
+		if (((m_lightsEnabled & CAR_LIGHT_BRAKE) || (m_lightsEnabled && CAR_LIGHT_HEADLIGHTS)) && fBrakeLightAlpha > 0)
 		{
 			// draw brake lights
 			float fBrakeLightAlpha2 = fBrakeLightAlpha*0.6f;
@@ -2509,75 +2552,105 @@ void CCar::Simulate( float fDt )
 
 			switch (m_conf->m_brakelightType)
 			{
-			case LIGHTS_SINGLE:
-			{
-				if (m_brakeLightsEnabled)
+				case LIGHTS_SINGLE:
 				{
-					if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-						DrawLightEffect(positionL, brakelightColor2, BRAKELIGHT_RADIUS, 2);
+					if (m_lightsEnabled & CAR_LIGHT_BRAKE)
+					{
+						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
+							DrawLightEffect(positionL, brakelightColor2, BRAKELIGHT_RADIUS, 2);
 
-					if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-						DrawLightEffect(positionR, brakelightColor2, BRAKELIGHT_RADIUS, 2);
+						if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
+							DrawLightEffect(positionR, brakelightColor2, BRAKELIGHT_RADIUS, 2);
+					}
+
+					if (m_lightsEnabled && CAR_LIGHT_HEADLIGHTS)
+					{
+						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
+							DrawLightEffect(positionL, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+
+						if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
+							DrawLightEffect(positionR, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+					}
+					break;
 				}
-
-				if (bLightsOn)
+				case LIGHTS_DOUBLE:
+				case LIGHTS_DOUBLE_VERTICAL:
 				{
-					if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-						DrawLightEffect(positionL, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+					Vector3D lDirVec = rightVec;
 
-					if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-						DrawLightEffect(positionR, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+					if(m_conf->m_headlightType == LIGHTS_DOUBLE_VERTICAL)
+						lDirVec = upVec;
+
+					if (m_lightsEnabled & CAR_LIGHT_BRAKE)
+					{
+						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
+							DrawLightEffect(positionL - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
+
+						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
+							DrawLightEffect(positionL + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
+
+						if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
+							DrawLightEffect(positionR - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
+
+						if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
+							DrawLightEffect(positionR + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
+					}
+
+					if (m_lightsEnabled && CAR_LIGHT_HEADLIGHTS)
+					{
+						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
+							DrawLightEffect(positionL - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+
+						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
+							DrawLightEffect(positionL + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+
+						if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
+							DrawLightEffect(positionR - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+
+						if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
+							DrawLightEffect(positionR + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+					}
+					break;
 				}
-				break;
 			}
-			case LIGHTS_DOUBLE:
-			case LIGHTS_DOUBLE_VERTICAL:
+		}
+
+		// any kind of dimension lights
+		if((m_lightsEnabled & CAR_LIGHT_DIM_LEFT) || (m_lightsEnabled & CAR_LIGHT_DIM_RIGHT))
+		{
+			Vector3D positionFL = frontdimlight_position - rightVec*m_conf->m_frontDimLights.x;
+			Vector3D positionFR = frontdimlight_position + rightVec*m_conf->m_frontDimLights.x;
+
+			Vector3D positionRL = backdimlight_position - rightVec*m_conf->m_backDimLights.x;
+			Vector3D positionRR = backdimlight_position + rightVec*m_conf->m_backDimLights.x;
+
+			ColorRGBA dimLightsColor(1,0.8,0.0f, 1.0f);
+
+			dimLightsColor *= clamp(sin(m_curTime*10.0f)*1.6f, 0.0f, 1.0f);
+
+			if(m_lightsEnabled & CAR_LIGHT_DIM_LEFT)
 			{
-				Vector3D lDirVec = rightVec;
+				if (m_bodyParts[CB_FRONT_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
+					DrawLightEffect(positionFL, dimLightsColor*DIMLIGHT_INTENSITY, DIMLIGHT_RADIUS, 1);
 
-				if(m_conf->m_headlightType == LIGHTS_DOUBLE_VERTICAL)
-					lDirVec = upVec;
-
-				if (m_brakeLightsEnabled)
-				{
-					if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
-						DrawLightEffect(positionL - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
-
-					if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-						DrawLightEffect(positionL + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
-
-					if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-						DrawLightEffect(positionR - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
-
-					if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
-						DrawLightEffect(positionR + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
-				}
-
-				if (bLightsOn)
-				{
-					if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
-						DrawLightEffect(positionL - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
-
-					if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-						DrawLightEffect(positionL + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
-
-					if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-						DrawLightEffect(positionR - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
-
-					if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
-						DrawLightEffect(positionR + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
-				}
-				break;
+				if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
+					DrawLightEffect(positionRL, dimLightsColor*DIMLIGHT_INTENSITY, DIMLIGHT_RADIUS, 1);
 			}
+
+			if(m_lightsEnabled & CAR_LIGHT_DIM_RIGHT)
+			{
+				if (m_bodyParts[CB_FRONT_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
+					DrawLightEffect(positionFR, dimLightsColor*DIMLIGHT_INTENSITY, DIMLIGHT_RADIUS, 1);
+
+				if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
+					DrawLightEffect(positionRR, dimLightsColor*DIMLIGHT_INTENSITY, DIMLIGHT_RADIUS, 1);
 			}
 		}
 
 		// draw back lights
-		if (m_nGear == 0 && (m_controlButtons & IN_BRAKE) && GetSpeedWheels() < 0.0f)
+		if (m_lightsEnabled & CAR_LIGHT_REVERSELIGHT)
 		{
 			// draw back lights
-
-			float fBackLightAlpha = clamp((fLightsAlpha < 0.0f ? -fLightsAlpha : 0.0f) + back_plane.Distance(cam_pos)*0.1f, 0.0f, 1.0f);
 			float fBackLightAlpha2 = fBackLightAlpha * 0.3f;
 
 			Vector3D positionL = backlight_position - rightVec*m_conf->m_backlightPosition.x;
@@ -2637,8 +2710,8 @@ void CCar::DrawEffects(int lod)
 		skidmarkPos += velAtWheel*0.0065f;
 
 		PFXVertexPair_t skidmarkPair;
-		skidmarkPair.v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.5f, vec2_zero, ColorRGBA(ambientAndSund,1.0f));
-		skidmarkPair.v1 = PFXVertex_t(skidmarkPos + wheelRightDir*wheelConf.width*0.5f, vec2_zero, ColorRGBA(ambientAndSund,1.0f));
+		skidmarkPair.v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
+		skidmarkPair.v1 = PFXVertex_t(skidmarkPos + wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
 
 		float fSkid = (GetTractionSlidingAtWheel(i)+fabs(GetLateralSlidingAtWheel(i)))*0.15f - minimumSkid;
 
@@ -2660,6 +2733,9 @@ void CCar::DrawEffects(int lod)
 				continue;
 
 			trailPair[0] = skidmarkPair;
+
+			trailPair[0].v0.color = ColorRGBA(ambientAndSund,1.0f);
+			trailPair[0].v1.color = ColorRGBA(ambientAndSund,1.0f);
 
 			trailPair[1].v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.75f, vec2_zero, ColorRGBA(ambientAndSund,0.0f));
 			trailPair[1].v1 = PFXVertex_t(skidmarkPos + wheelRightDir*wheelConf.width*0.75f, vec2_zero, ColorRGBA(ambientAndSund,0.0f));

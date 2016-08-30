@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2016
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Editor level data
 //////////////////////////////////////////////////////////////////////////////////
@@ -1021,11 +1021,11 @@ void CEditorLevel::PostLoadEditorBuildings( DkList<buildLayerColl_t*>& buildingT
 	}
 }
 
-int CEditorLevel::Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CLevelRegion** reg, float& dist)
+int CEditorLevel::Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CEditorLevelRegion** reg, float& dist)
 {
 	float max_dist = MAX_COORD_UNITS;
 	int bestDistrefIdx = NULL;
-	CLevelRegion* bestReg = NULL;
+	CEditorLevelRegion* bestReg = NULL;
 
 	// build region offsets
 	for(int x = 0; x < m_wide; x++)
@@ -1038,6 +1038,38 @@ int CEditorLevel::Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir,
 
 			float refdist = MAX_COORD_UNITS;
 			int foundIdx = reg.Ed_SelectRef(start, dir, refdist);
+
+			if(foundIdx != -1 && (refdist < max_dist))
+			{
+				max_dist = refdist;
+				bestReg = &reg;
+				bestDistrefIdx = foundIdx;
+			}
+		}
+	}
+
+	*reg = bestReg;
+	dist = max_dist;
+	return bestDistrefIdx;
+}
+
+int	CEditorLevel::Ed_SelectBuildingAndReg(const Vector3D& start, const Vector3D& dir, CEditorLevelRegion** reg, float& dist)
+{
+	float max_dist = MAX_COORD_UNITS;
+	int bestDistrefIdx = NULL;
+	CEditorLevelRegion* bestReg = NULL;
+
+	// build region offsets
+	for(int x = 0; x < m_wide; x++)
+	{
+		for(int y = 0; y < m_tall; y++)
+		{
+			int idx = y*m_wide+x;
+
+			CEditorLevelRegion& reg = *(CEditorLevelRegion*)&m_regions[idx];
+
+			float refdist = MAX_COORD_UNITS;
+			int foundIdx = reg.Ed_SelectBuilding(start, dir, refdist);
 
 			if(foundIdx != -1 && (refdist < max_dist))
 			{
@@ -1387,6 +1419,34 @@ int CEditorLevelRegion::Ed_SelectRef(const Vector3D& start, const Vector3D& dir,
 		{
 			raydist = CheckStudioRayIntersection(def->m_defModel, tray_start, tray_dir);
 		}
+
+		if(raydist < fMaxDist)
+		{
+			fMaxDist = raydist;
+			bestDistrefIdx = i;
+		}
+	}
+
+	dist = fMaxDist;
+
+	return bestDistrefIdx;
+}
+
+int	CEditorLevelRegion::Ed_SelectBuilding(const Vector3D& start, const Vector3D& dir, float& dist)
+{
+	int bestDistrefIdx = -1;
+	float fMaxDist = MAX_COORD_UNITS;
+
+	for(int i = 0; i < m_buildings.numElem(); i++)
+	{
+		Vector3D tray_start = start - m_buildings[i]->modelPosition;
+		Vector3D tray_dir = dir;
+
+		float raydist = MAX_COORD_UNITS;
+
+		buildingSource_t* building = m_buildings[i];
+
+		raydist = building->model->Ed_TraceRayDist(tray_start, tray_dir);
 
 		if(raydist < fMaxDist)
 		{

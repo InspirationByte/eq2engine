@@ -28,7 +28,7 @@ enum EModelEditMode
 struct refselectioninfo_t
 {
 	regionObject_t*	selRef;
-	CLevelRegion*	selRegion;
+	CEditorLevelRegion*	selRegion;
 };
 
 class CReplaceModelDialog;

@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "UI_HeightEdit.h"
-
+#include "EditorLevel.h"
 #include "EditorMain.h"
 
 #include "IDebugOverlay.h"

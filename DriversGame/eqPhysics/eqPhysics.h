@@ -2,7 +2,15 @@
 // Copyright © Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Equilibrium fixed point 3D physics, developed for "Drivers"
+// Description: Equilibrium fixed point 3D physics engine
+//
+//	FEATURES:
+//				Fixed point object positions
+//				Best works with fixed timestep
+//				Simple dynamics build from ground up
+//				Raycasting along with sweep collision test
+//				Using Bullet Collision Library for fast collision detection
+//
 //////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -17,7 +25,7 @@ TODO:
 		- Multithreaded integration, collision detection and collision response
 		- Multithreaded line test (test bunch of lines)
 		- Sweep test
-		- Constraints (car doors, other)
+		- Constraints (car doors, hoods, other)
 */
 
 #ifndef EQPHYSICS_H
