@@ -520,9 +520,6 @@ void Game_UpdateCamera( float fDt )
 		Vector3D carPos = viewedCar->GetOrigin();
 		Vector3D carAngles = viewedCar->GetAngles();
 
-		debugoverlay->Text(ColorRGBA(1,1,0,1), "---- VIEWED CAR ORIGIN: %g %g %g\n", carPos.x ,carPos.y, carPos.z);
-		debugoverlay->Text(ColorRGBA(1,1,0,1), "---- VIEWED CAR ANGLES: %g %g %g\n", carAngles.x ,carAngles.y, carAngles.z);
-
 		CEqRigidBody* carBody = viewedCar->GetPhysicsBody();
 
 		Matrix4x4 m(carBody->GetOrientation());
@@ -732,7 +729,6 @@ void Game_DrawDirectorUI( float fDt )
 ConVar eq_profiler_display("eqProfiler_display", "0", "Display profiler on screen");
 extern ConVar g_pause;
 
-
 void Game_Frame(float fDt)
 {
 	// Update game
@@ -770,14 +766,6 @@ void Game_Frame(float fDt)
 		cam_velocity = viewedCar->GetVelocity();
 
 	CViewParams* curView = g_pGameWorld->GetCameraParams();
-
-	{
-		Vector3D viewpos = curView->GetOrigin();
-		Vector3D viewrot = curView->GetAngles();
-		debugoverlay->Text(ColorRGBA(1,1,0,1), "*** camera position: %g %g %g", viewpos.x,viewpos.y,viewpos.z);
-		debugoverlay->Text(ColorRGBA(1,1,0,1), "*** camera rotation: %g %g %g", viewrot.x,viewrot.y,viewrot.z);
-	}
-
 
 	effectrenderer->SetViewSortPosition(curView->GetOrigin());
 

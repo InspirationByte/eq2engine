@@ -61,7 +61,7 @@ ConVar r_ambientScale("r_ambientScale", "1.0f", "Ambient brightness scale", CV_A
 
 ConVar r_freezeFrustum("r_freezeFrustum", "0", NULL, CV_CHEAT);
 
-ConVar r_glowsProjOffset("r_glowsProjOffset", "0.018", "Projection matrix planes offset", CV_CHEAT);
+ConVar r_glowsProjOffset("r_glowsProjOffset", "0.01", "Projection matrix planes offset", CV_CHEAT);
 ConVar r_glowsProjOffsetB("r_glowsProjOffsetB", "0.0", "Projection matrix planes offset", CV_CHEAT);
 
 ConVar r_drawsky("r_drawsky", "1", NULL, CV_CHEAT);

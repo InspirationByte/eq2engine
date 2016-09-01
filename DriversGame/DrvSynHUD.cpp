@@ -122,6 +122,10 @@ void CDrvSynHUDManager::FadeOut()
 
 ConVar hud_map_pos("hud_map_pos", "0", "Map position (0 - bottom, 1 - top)", CV_ARCHIVE);
 
+ConVar g_showCameraPosition("g_showCameraPosition", "0", NULL, CV_CHEAT);
+ConVar g_showCarPosition("g_showCarPosition", "0", NULL, CV_CHEAT);
+
+
 // render the screen with maps and shit
 void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , const Matrix4x4& projMatrix, const Matrix4x4& viewMatrix )
 {
@@ -135,6 +139,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 	static IEqFont* roboto30 = g_fontCache->GetFont("Roboto", 30);
 	static IEqFont* roboto30b = g_fontCache->GetFont("Roboto", 30, TEXT_STYLE_BOLD);
 	static IEqFont* robotocon30b = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD);
+	static IEqFont* defFont = g_fontCache->GetFont("default", 0);
 		
 	eqFontStyleParam_t fontParams;
 	fontParams.styleFlag |= TEXT_STYLE_SHADOW;
@@ -541,6 +546,29 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		Vector2D screenMessagePos(screenSize.x / 2, screenSize.y / 3 - textYOffs);
 
 		roboto30b->RenderText(m_screenMessageText.c_str(), screenMessagePos, scrMsgParams);
+	}
+
+	if(g_showCameraPosition.GetBool())
+	{
+		Vector3D viewpos = g_pGameWorld->GetCameraParams()->GetOrigin();
+		Vector3D viewrot = g_pGameWorld->GetCameraParams()->GetAngles();
+
+		eqFontStyleParam_t style;
+		style.styleFlag |= TEXT_STYLE_SHADOW;
+		style.textColor = ColorRGBA(0.25f,1,0.25f, 1.0f);
+		defFont->RenderText(varargs("camera position: %.2f %g.2f %g.2f\ncamera angles: %.2f %.2f %.2f", viewpos.x,viewpos.y,viewpos.z, viewrot.x,viewrot.y,viewrot.z), Vector2D(20, 180), style);
+	}
+
+	if(g_showCarPosition.GetBool() && m_mainVehicle)
+	{
+		Vector3D carpos = m_mainVehicle->GetOrigin();
+		Vector3D carrot = m_mainVehicle->GetAngles();
+
+		eqFontStyleParam_t style;
+		style.styleFlag |= TEXT_STYLE_SHADOW;
+		style.textColor = ColorRGBA(1,1,0.25f, 1.0f);
+
+		defFont->RenderText(varargs("car position: %.2f %.2f %.2f\ncar angles: %.2f %.2f %.2f", carpos.x,carpos.y,carpos.z, carrot.x,carrot.y,carrot.z), Vector2D(20, 220), style);
 	}
 }
 
