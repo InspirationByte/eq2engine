@@ -39,7 +39,7 @@ using namespace Threading;
 #define PHYSGRID_WORLD_SIZE 24	// compromised betwen memory usage and performance
 
 ConVar ph_showcontacts("ph_showcontacts", "0", NULL, CV_CHEAT);
-ConVar ph_erp("ph_erp", "0.01", "Error correction", CV_CHEAT);
+ConVar ph_erp("ph_erp", "0.05", "Error correction", CV_CHEAT);
 ConVar ph_centerCollisionPos("ph_centerCollisionPos", "1", NULL, CV_CHEAT);
 
 const int collisionList_Max = 16;

@@ -1495,6 +1495,9 @@ void CEditorLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4&
 	// render completed buildings
 	for(int i = 0; i < m_buildings.numElem(); i++)
 	{
+		if(m_buildings[i]->hide)
+			continue;
+
 		RenderBuilding(m_buildings[i], NULL);
 	}
 }

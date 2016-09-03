@@ -174,6 +174,8 @@ public:
 	void		ClearSelection();
 	void		DeleteSelection();
 
+	void		EditSelectedBuilding();
+
 	void		Update_Refresh();
 
 	void		OnKey(wxKeyEvent& event, bool bDown);
@@ -182,7 +184,6 @@ public:
 
 	void		RecalcSelectionCenter();
 	void		ToggleSelection( buildingSelInfo_t& ref );
-
 
 	void		OnRender();
 

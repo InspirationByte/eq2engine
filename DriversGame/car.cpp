@@ -2466,15 +2466,25 @@ void CCar::Simulate( float fDt )
 		const float BACKLIGHT_INTENSITY = 0.7f;
 		const float DIMLIGHT_INTENSITY = 0.7f;
 
-		float fHeadlightsAlpha = clamp((fLightsAlpha > 0.0f ? fLightsAlpha : 0.0f) + front_plane.Distance(cam_pos)*0.1f, 0.0f, 1.0f);
+		float headlightDistance = front_plane.Distance(cam_pos);
+
+		float fHeadlightsAlpha = clamp((fLightsAlpha > 0.0f ? fLightsAlpha : 0.0f) + headlightDistance*0.1f, 0.0f, 1.0f);
 		float fBackLightAlpha = clamp((fLightsAlpha < 0.0f ? -fLightsAlpha : 0.0f) + back_plane.Distance(cam_pos)*0.1f, 0.0f, 1.0f);
 
 		// render some lights
 		if ((m_lightsEnabled & CAR_LIGHT_HEADLIGHTS) && fHeadlightsAlpha > 0.0f)
 		{
-			float fHeadlightsGlowAlpha = fHeadlightsAlpha*0.25f;
+			float frontSizeScale = fHeadlightsAlpha;
+			float frontGlowSizeScale = fHeadlightsAlpha*0.28f;
 
-			float frontSizeScale = fHeadlightsAlpha;//1.0f-pow(1.0f-max(0,fLightsAlpha), 2.0f);
+			float fHeadlightsGlowAlpha = fHeadlightsAlpha;
+
+			if(	m_conf->m_headlightType > LIGHTS_SINGLE)
+				fHeadlightsAlpha *= 0.65f;
+
+			float lightLensPercentage = clamp((100.0f-headlightDistance) * 0.025f, 0.0f, 1.0f);
+			fHeadlightsAlpha *= lightLensPercentage;
+			fHeadlightsGlowAlpha *= clamp(1.0f - lightLensPercentage, 0.25f, 1.0f);
 
 			Vector3D positionL = headlight_position - rightVec*m_conf->m_headlightPosition.x;
 			Vector3D positionR = headlight_position + rightVec*m_conf->m_headlightPosition.x;
@@ -2489,13 +2499,13 @@ void CCar::Simulate( float fDt )
 					if (m_bodyParts[CB_FRONT_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
 					{
 						DrawLightEffect(positionL, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
-						DrawLightEffect(positionL, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontSizeScale, 1);
+						DrawLightEffect(positionL, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontGlowSizeScale, 1);
 					}
 
 					if (m_bodyParts[CB_FRONT_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
 					{
 						DrawLightEffect(positionR, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
-						DrawLightEffect(positionR, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontSizeScale, 1);
+						DrawLightEffect(positionR, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontGlowSizeScale, 1);
 					}
 
 					break;
@@ -2511,25 +2521,25 @@ void CCar::Simulate( float fDt )
 					if (m_bodyParts[CB_FRONT_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
 					{
 						DrawLightEffect(positionL - lDirVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
-						DrawLightEffect(positionL - lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontSizeScale, 1);
+						DrawLightEffect(positionL - lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontGlowSizeScale, 1);
 					}
 
 					if (m_bodyParts[CB_FRONT_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
 					{
 						DrawLightEffect(positionL + lDirVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
-						DrawLightEffect(positionL + lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontSizeScale, 1);
+						DrawLightEffect(positionL + lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontGlowSizeScale, 1);
 					}
 
 					if (m_bodyParts[CB_FRONT_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
 					{
 						DrawLightEffect(positionR - lDirVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
-						DrawLightEffect(positionR - lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontSizeScale, 1);
+						DrawLightEffect(positionR - lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontGlowSizeScale, 1);
 					}
 
 					if (m_bodyParts[CB_FRONT_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
 					{
 						DrawLightEffect(positionR + lDirVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
-						DrawLightEffect(positionR + lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontSizeScale, 1);
+						DrawLightEffect(positionR + lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontGlowSizeScale, 1);
 					}
 
 					break;

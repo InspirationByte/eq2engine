@@ -82,6 +82,7 @@ struct buildingSource_t
 		order = 1;
 		model = NULL;
 		modelPosition = vec3_zero;
+		hide = false;
 	}
 
 	buildingSource_t(buildingSource_t& copyFrom);
@@ -101,6 +102,8 @@ struct buildingSource_t
 	CLevelModel*						model;
 	Vector3D							modelPosition;
 	int									regObjectId;	// region object index
+
+	bool								hide;
 };
 
 int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, float layerXSize);

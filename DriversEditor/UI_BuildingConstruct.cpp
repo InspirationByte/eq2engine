@@ -1135,6 +1135,10 @@ void CUI_BuildingConstruct::OnKey(wxKeyEvent& event, bool bDown)
 			else
 				CancelBuilding();
 		}
+		else if(event.GetRawKeyCode() == 'E')
+		{
+			EditSelectedBuilding();
+		}
 		else if(event.m_keyCode == WXK_DELETE)
 		{
 			DeleteSelection();
@@ -1359,6 +1363,21 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 	}
 }
 
+void CUI_BuildingConstruct::EditSelectedBuilding()
+{
+	if(m_selBuildings.numElem() != 1)
+	{
+		if(m_selBuildings.numElem() > 1)
+			wxMessageBox("You need to select ONE building to begin editing", "Can't do it!", wxOK | wxCENTRE, g_pMainFrame);
+
+		return;
+	}
+
+	// don't forget to copy
+	buildingSource_t* selBuilding = m_selBuildings[0].selBuild;
+	m_editingCopy.InitFrom(*selBuilding);
+}
+
 void CUI_BuildingConstruct::CancelBuilding()
 {
 	if(m_mode != ED_BUILD_READY)
@@ -1484,6 +1503,7 @@ void CUI_BuildingConstruct::ToggleSelection( buildingSelInfo_t& bld )
 		if(	m_selBuildings[i].selRegion == bld.selRegion &&
 			m_selBuildings[i].selBuild == bld.selBuild)
 		{
+			bld.selBuild->hide = false;
 			m_selBuildings.fastRemoveIndex(i);
 
 			RecalcSelectionCenter();
@@ -1492,6 +1512,7 @@ void CUI_BuildingConstruct::ToggleSelection( buildingSelInfo_t& bld )
 	}
 
 	m_selBuildings.append( bld );
+	bld.selBuild->hide = true;
 
 	RecalcSelectionCenter();
 }
