@@ -289,6 +289,8 @@ protected:
 
 
 	EqLua::LuaTableFuncRef		m_luaOnCarCollision;
+	EqLua::LuaTableFuncRef		m_luaOnRemove;
+
 	EqLua::LuaTableFuncRef		m_luaOnPackMessage;
 	EqLua::LuaTableFuncRef		m_luaOnUnpackMessage;
 

@@ -1179,7 +1179,7 @@ bool TestChartPut(lm_chart_t* pChart, uint& x_pos, uint& y_pos)
 
 //------------------------------------------------------------------------------
 // TestAndPackChart - Tests chart on image in all possible positions and packs
-// FIXME: FUCKING SLOW!!! Do some threaded processing?
+// FIXME: DAMN TOO SLOW!!! Do some threaded processing?
 //------------------------------------------------------------------------------
 void TestAndPackChart(int id)
 {

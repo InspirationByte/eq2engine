@@ -61,8 +61,8 @@ ConVar r_ambientScale("r_ambientScale", "1.0f", "Ambient brightness scale", CV_A
 
 ConVar r_freezeFrustum("r_freezeFrustum", "0", NULL, CV_CHEAT);
 
-ConVar r_glowsProjOffset("r_glowsProjOffset", "0.01", "Projection matrix planes offset", CV_CHEAT);
-ConVar r_glowsProjOffsetB("r_glowsProjOffsetB", "0.0", "Projection matrix planes offset", CV_CHEAT);
+ConVar r_glowsProjOffset("r_glowsProjOffset", "0.015", "Projection matrix planes offset", CV_CHEAT);
+ConVar r_glowsProjOffsetB("r_glowsProjOffsetB", "-11.0", "Projection matrix planes offset", CV_CHEAT);
 
 ConVar r_drawsky("r_drawsky", "1", NULL, CV_CHEAT);
 
@@ -1369,11 +1369,11 @@ void CGameWorld::Draw( int nRenderFlags )
 {
 	if(r_no3D.GetBool())
 	{
+		g_parallelJobs->Wait();
 		g_pPFXRenderer->ClearBuffers();
+
 		return;
 	}
-
-	g_parallelJobs->Wait();
 
 #ifndef EDITOR
 	const Vector2D& screenSize = g_pHost->GetWindowSize();
@@ -1546,6 +1546,9 @@ void CGameWorld::Draw( int nRenderFlags )
 
 	// restore projection and draw the particles
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
+
+	// wait scheduled PFX render
+	g_parallelJobs->Wait();
 
 	// draw particle effects
 	g_pPFXRenderer->Render( nRenderFlags );

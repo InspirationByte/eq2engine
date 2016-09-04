@@ -1584,7 +1584,7 @@ int ComputeTriangleIndexByIndices(int *ids, int* indices, int nIndices)
 	int nTriangle = 0;
 	int nTris = nIndices / 3;
 
-	// TODO: need a rolling function that checks this fucking triangle
+	// TODO: need a rolling function that checks this triangle
 
 	for(int i = 0; i < nTris; i++)
 	{

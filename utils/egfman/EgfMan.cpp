@@ -98,6 +98,9 @@ enum
 
 	Event_Max_Menu_Range,
 
+	// Model tab
+	Event_Model_ToggleBodypart,
+
 	// combobox
 	Event_Sequence_Changed,
 	Event_PoseCont_Changed,

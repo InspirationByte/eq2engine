@@ -95,7 +95,6 @@ static Vector3D s_BodyPartDirections[] =
 #define WHELL_ROLL_RESISTANCE_CONST		(150)
 #define WHELL_ROLL_RESISTANCE_HALF		(WHELL_ROLL_RESISTANCE_CONST * 0.5f)
 
-extern int g_CurrCameraMode;
 
 bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 {
@@ -2081,6 +2080,28 @@ void CCar::OnPhysicsFrame( float fDt )
 		numHitTimes++;
 	}
 
+#ifndef NO_LUA
+	if(numHitTimes > 0)
+	{
+		OOLUA::Script& state = GetLuaState();
+		EqLua::LuaStackGuard g(state);
+
+		if( m_luaOnCollision.Push() )
+		{
+			OOLUA::Table tab = OOLUA::new_table(state);
+
+			tab.set("impulse", fHitImpulse);
+
+			OOLUA::push(state, tab);
+	
+			if(!m_luaOnCollision.Call(1, 0, 0))
+			{
+				MsgError("CGameObject:OnCollide error:\n %s\n", OOLUA::get_last_error(state).c_str());
+			}
+		}
+	}
+#endif // NO_LUA
+
 	// wheel damage and hubcaps
 	for(int i = 0; i < m_pWheels.numElem(); i++)
 	{
@@ -2287,10 +2308,10 @@ void CCar::Simulate( float fDt )
 	m_engineSmokeTime += fDt;
 
 	m_visible = g_pGameWorld->m_occludingFrustum.IsSphereVisible(GetOrigin(), length(m_conf->m_body_size));
-
+	
 #ifndef EDITOR
 	// don't render car
-	if(	g_CurrCameraMode == CAM_MODE_INCAR &&
+	if(	g_pCameraAnimator->GetRealMode() == CAM_MODE_INCAR &&
 		g_pGameSession->GetViewCar() == this)
 		m_visible = false;
 #endif // EDITOR
@@ -3207,7 +3228,7 @@ void CCar::UpdateSounds( float fDt )
 		fRPMDiff = 1.0f;
 
 #ifndef EDITOR
-	if(g_pCameraAnimator->GetMode() == CAM_MODE_INCAR &&
+	if(g_pCameraAnimator->GetRealMode() == CAM_MODE_INCAR &&
 		g_pGameSession->GetViewCar() == this)
 	{
 		SetSoundVolumeScale(0.5f);
@@ -3550,7 +3571,7 @@ void CCar::Draw( int nRenderFlags )
 
 #ifndef EDITOR
 	// don't render car
-	if(	g_pCameraAnimator->GetMode() == CAM_MODE_INCAR &&
+	if(	g_pCameraAnimator->GetRealMode() == CAM_MODE_INCAR &&
 		g_pGameSession->GetViewCar() == this)
 		bDraw = false;
 #endif // EDITOR
@@ -3842,6 +3863,12 @@ void CCar::DecrementPursue()
 int CCar::GetPursuedCount() const
 {
 	return m_numPursued;
+}
+
+void CCar::L_RegisterEventHandler(const OOLUA::Table& tableRef)
+{
+	BaseClass::L_RegisterEventHandler(tableRef);
+	m_luaOnCollision.Get(m_luaEvtHandler, "OnCollide", true);
 }
 
 #ifndef NO_LUA

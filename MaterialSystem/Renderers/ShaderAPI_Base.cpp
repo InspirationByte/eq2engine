@@ -914,7 +914,7 @@ void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, shaderPro
 	EqString newSrc;
 
 #ifdef IS_OPENGL
-	newSrc = varargs("\r\n#line 1 %d\r\n", textData.includes.numElem());		// I hate, hate and hate GLSL for not supporting source file names, only file numbers. So this is fucked.
+	newSrc = varargs("\r\n#line 1 %d\r\n", textData.includes.numElem());		// I hate, hate and hate GLSL for not supporting source file names, only file numbers.
 #else
 	newSrc = "\r\n#line 1 \"" + _Es(pszFileName) + "\"\r\n";
 #endif // IS_OPENGL

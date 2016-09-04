@@ -31,44 +31,46 @@
 
 #include "Shiny.h"
 
-#define					DIRECTOR_DEFAULT_CAMERA_FOV	 (60.0f) // old: 52
-
 static CCameraAnimator	s_cameraAnimator;
 CCameraAnimator*		g_pCameraAnimator = &s_cameraAnimator;
 
 CGameSession*			g_pGameSession = NULL;
 
+extern ConVar			net_server;
+
 ConVar					g_pause("g_pause", "0", "Pauses the game");
+
 ConVar					g_freecam("g_freecam", "0", "Enable free camera");
 ConVar					g_freecam_speed("g_freecam_speed", "10", "free camera speed", CV_ARCHIVE);
 
-extern ConVar			net_server;
-
 ConVar					g_mouse_sens("g_mouse_sens", "1.0", "mouse sensitivity", CV_ARCHIVE);
 
-ConVar					g_director("g_director", "0", "Enable director mode");
+ConVar					g_director("g_director", "0", "Enable director mode when replay playing");
 
 int						g_nOldControlButtons	= 0;
-int						g_CurrCameraMode		= CAM_MODE_OUTCAR;
 int						g_nDirectorCameraType	= CAM_MODE_TRIPOD_ZOOM;
 
-DkList<CCar*>			g_cars;
+#define					DIRECTOR_DEFAULT_CAMERA_FOV	 (60.0f) // old: 52
 
-Vector3D				g_camera_droppedpos = vec3_zero;
-Vector3D				g_camera_droppedangles = vec3_zero;
+struct freeCameraProps_t
+{
+	freeCameraProps_t()
+	{
+		fov = DIRECTOR_DEFAULT_CAMERA_FOV;
+		position = vec3_zero;
+		angles = vec3_zero;
+		velocity = vec3_zero;
+	}
 
-Vector3D				g_camera_freepos = vec3_zero;
-Vector3D				g_camera_freeangles = vec3_zero;
-Vector3D				g_camera_freevelocity = vec3_zero;
-float					g_camera_fov = DIRECTOR_DEFAULT_CAMERA_FOV;
-Vector3D				g_camera_angle(0);
-float					g_camera_angleRestoreTime = 0.0f;
+	Vector3D	position;
+	Vector3D	angles;
+	Vector3D	velocity;
+	float		fov;
+} g_freeCamProps;
 
-#define					CAMERA_ROTATE_HOLD_TIME (2.0f)		// on phones must be littler
 
 void Game_ShutdownSession();
 void Game_InitializeSession();
-
 
 void Game_QuickRestart(bool demo)
 {
@@ -118,7 +120,7 @@ DECLARE_CMD(fastseek, "Does instant replay. You can fetch to frame if specified"
 		replayTo--;
 	}
 
-	g_pCameraAnimator->CalmDown();
+	g_pCameraAnimator->Reset();
 }
 
 void Game_InstantReplay(int replayTo)
@@ -152,7 +154,7 @@ void Game_InstantReplay(int replayTo)
 
 	g_pGameWorld->m_level.WaitForThread();
 
-	g_pCameraAnimator->CalmDown();
+	g_pCameraAnimator->Reset();
 
 	const float frameRate = 1.0f / 60.0f;
 
@@ -174,7 +176,6 @@ DECLARE_CMD(instantreplay, "Does instant replay (slowly). You can fetch to frame
 
 	Game_InstantReplay( replayTo );
 }
-
 
 DECLARE_CMD(start, "loads a level or starts mission", 0)
 {
@@ -218,6 +219,7 @@ bool Game_LoadWorld()
 	g_pGameWorld->Init();
 	return g_pGameWorld->LoadLevel();
 }
+
 //------------------------------------------------------------------------------
 // Initilizes game session
 //------------------------------------------------------------------------------
@@ -257,11 +259,7 @@ void Game_InitializeSession()
 	//reset cameras
 	g_nDirectorCameraType = 0;
 
-	if(g_CurrCameraMode > CAM_MODE_INCAR)
-		g_CurrCameraMode = CAM_MODE_OUTCAR;
-
-	g_pCameraAnimator->CalmDown();
-	g_camera_angle = vec3_zero;
+	g_pCameraAnimator->Reset();
 
 	// reset buttons
 	g_nClientButtons = 0;
@@ -273,8 +271,6 @@ void Game_ShutdownSession()
 	g_parallelJobs->Wait();
 
 	effectrenderer->RemoveAllEffects();
-
-	g_cars.clear();
 
 	if(g_pGameSession)
 		g_pGameSession->Shutdown();
@@ -310,17 +306,6 @@ void Game_HandleKeys(int key, bool down)
 
 	if(g_director.GetBool())
 		Game_DirectorControlKeys(key, down);
-
-	if(down)
-	{
-		if(key >= KEY_1 && key <= KEY_9)
-		{
-			int index = key - KEY_1;
-
-			if(index < g_cars.numElem())
-				g_pGameSession->SetPlayerCar(g_cars[index]);
-		}
-	}
 }
 
 void Game_JoyAxis( short axis, short value )
@@ -380,7 +365,7 @@ void Game_JoyAxis( short axis, short value )
 void Game_UpdateFreeCamera(float fDt)
 {
 	Vector3D f, r;
-	AngleVectors(g_camera_freeangles, &f, &r);
+	AngleVectors(g_freeCamProps.angles, &f, &r);
 
 	Vector3D camMoveVec(0.0f);
 
@@ -394,15 +379,15 @@ void Game_UpdateFreeCamera(float fDt)
 	else if(g_nClientButtons & IN_RIGHT)
 		camMoveVec += r;
 
-	g_camera_freevelocity += camMoveVec * 200.0f * fDt;
+	g_freeCamProps.velocity += camMoveVec * 200.0f * fDt;
 
-	float camSpeed = length(g_camera_freevelocity);
+	float camSpeed = length(g_freeCamProps.velocity);
 
 	// limit camera speed
 	if(camSpeed > g_freecam_speed.GetFloat())
 	{
 		float speedDiffScale = g_freecam_speed.GetFloat() / camSpeed;
-		g_camera_freevelocity *= speedDiffScale;
+		g_freeCamProps.velocity *= speedDiffScale;
 	}
 
 	btSphereShape collShape(0.5f);
@@ -410,21 +395,20 @@ void Game_UpdateFreeCamera(float fDt)
 	// update camera collision
 	if(camSpeed > 1.0f)
 	{
-		g_camera_freevelocity -= normalize(g_camera_freevelocity) * 90.0f * fDt;
+		g_freeCamProps.velocity -= normalize(g_freeCamProps.velocity) * 90.0f * fDt;
 
 		CollisionData_t coll;
-		g_pPhysics->TestConvexSweep(&collShape, Quaternion(0,0,0,0), g_camera_freepos, g_camera_freepos+g_camera_freevelocity, coll, 0xFFFFFFFF);
+		g_pPhysics->TestConvexSweep(&collShape, Quaternion(0,0,0,0), g_freeCamProps.position, g_freeCamProps.position+g_freeCamProps.velocity, coll, 0xFFFFFFFF);
 
 		if(coll.fract == 0.0f)
 		{
-			float nDot = dot(coll.normal, g_camera_freevelocity);
-			g_camera_freevelocity -= coll.normal*nDot;
-			g_camera_freepos = g_camera_freepos;
+			float nDot = dot(coll.normal, g_freeCamProps.velocity);
+			g_freeCamProps.velocity -= coll.normal*nDot;
 		}
 	}
 	else
 	{
-		g_camera_freevelocity = vec3_zero;
+		g_freeCamProps.velocity = vec3_zero;
 	}
 
 	
@@ -432,168 +416,14 @@ void Game_UpdateFreeCamera(float fDt)
 
 	// test code, must be removed after fixing raycast broadphase
 	CollisionData_t coll;
-	g_pPhysics->TestConvexSweep(&collShape, Quaternion(0,0,0,0), g_camera_freepos, g_camera_freepos+f*2000.0f, coll, 0xFFFFFFFF);
+	g_pPhysics->TestConvexSweep(&collShape, Quaternion(0,0,0,0), g_freeCamProps.position, g_freeCamProps.position+f*2000.0f, coll, 0xFFFFFFFF);
 
 	debugoverlay->Box3D(coll.position - 0.5f, coll.position + 0.5f, ColorRGBA(0,1,0,0.25f), 0.1f);
 	debugoverlay->Line3D(coll.position, coll.position + coll.normal, ColorRGBA(0,0,1,0.25f), ColorRGBA(0,0,1,0.25f) );
 	
 	g_pPhysics->m_physics.SetDebugRaycast(false);
 
-	g_camera_freepos += g_camera_freevelocity * fDt;
-}
-
-void DrawGradientFilledRectangle(Rectangle_t &rect, ColorRGBA &color1, ColorRGBA &color2)
-{
-	Vertex2D_t tmprect[] = { MAKEQUADCOLORED(rect.vleftTop.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vrightBottom.y, 0, 1.0f, 0.5f,1.0f, 0.5f) };
-
-	// Cancel textures
-	g_pShaderAPI->Reset(STATE_RESET_TEX);
-
-	BlendStateParam_t blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect,elementsOf(tmprect), NULL, color1, &blending);
-
-	// Set color
-
-	// Draw 4 solid rectangles
-	Vertex2D_t r0[] = { MAKETEXQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vleftTop.x, rect.vrightBottom.y, -1) };
-	Vertex2D_t r1[] = { MAKETEXQUAD(rect.vrightBottom.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vrightBottom.y, -1) };
-	Vertex2D_t r2[] = { MAKETEXQUAD(rect.vleftTop.x, rect.vrightBottom.y,rect.vrightBottom.x, rect.vrightBottom.y, -1) };
-	Vertex2D_t r3[] = { MAKETEXQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vleftTop.y, -1) };
-
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,r0,elementsOf(r0), NULL, color2, &blending);
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,r1,elementsOf(r1), NULL, color2, &blending);
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,r2,elementsOf(r2), NULL, color2, &blending);
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,r3,elementsOf(r3), NULL, color2, &blending);
-}
-
-void GRJob_DrawEffects(void* data, int i)
-{
-	float fDt = *(float*)data;
-
-	effectrenderer->DrawEffects( fDt );
-}
-
-void Game_UpdateCamera( float fDt )
-{
-	if((g_nClientButtons & IN_LOOKLEFT) || (g_nClientButtons & IN_LOOKRIGHT))
-		g_camera_angle = 0.0f; //restore camera angles
-
-	int camMode = g_CurrCameraMode;
-
-	CCar* viewedCar = g_pGameSession->GetViewCar();
-
-	if(!g_freecam.GetBool() &&
-		g_replayData->m_state == REPL_PLAYING &&
-		g_replayData->m_cameras.numElem() > 0)
-	{
-		// replay controls camera
-		replaycamera_t* replCamera = g_replayData->GetCurrentCamera();
-
-		if(replCamera)
-		{
-			// Process camera
-			viewedCar = g_replayData->GetCarByReplayIndex( replCamera->targetIdx );
-			camMode = replCamera->type;
-			g_pCameraAnimator->SetDropPosition( replCamera->origin );
-			g_pCameraAnimator->SetRotation( replCamera->rotation );
-			g_pCameraAnimator->SetFOV( replCamera->fov );
-		}
-	}
-
-	// Viewed car camera animation is always enabled
-	if( viewedCar )
-	{
-		float speedRatio = length(viewedCar->GetVelocity());
-		speedRatio = RemapValClamp(speedRatio, 0.0f, 40.0f, 0.0f, 1.0f);
-
-		if(g_camera_angleRestoreTime <= 0.0f)
-		{
-			g_camera_angle -= g_camera_angle*fDt*speedRatio*5.0f;
-		}
-		else
-			g_camera_angleRestoreTime -= fDt* (1.0f+speedRatio);
-
-
-		Vector3D carPos = viewedCar->GetOrigin();
-		Vector3D carAngles = viewedCar->GetAngles();
-
-		CEqRigidBody* carBody = viewedCar->GetPhysicsBody();
-
-		Matrix4x4 m(carBody->GetOrientation());
-		m = transpose(m);
-
-		g_pCameraAnimator->SetCameraProps(	viewedCar->m_conf->m_cameraConf);
-
-		if( viewedCar->IsInWater() && camMode == CAM_MODE_INCAR )
-			camMode = CAM_MODE_OUTCAR;
-
-		if( !viewedCar->IsEnabled() && !viewedCar->IsAlive() && g_CurrCameraMode != CAM_MODE_TRIPOD_ZOOM )
-		{
-			g_CurrCameraMode = CAM_MODE_TRIPOD_ZOOM;
-			camMode = CAM_MODE_TRIPOD_ZOOM;
-			g_pCameraAnimator->SetDropPosition(carBody->GetPosition() + Vector3D(0,3,0) - viewedCar->GetForwardVector()*5.0f);
-		}
-
-		g_pCameraAnimator->Animate((ECameraMode)camMode,
-									g_nClientButtons,
-									carBody->GetPosition(), m, carBody->GetLinearVelocity(),
-									fDt,
-									g_camera_angle);
-	}
-
-	// take the previous camera
-	CViewParams& camera = *g_pGameWorld->GetCameraParams();
-
-	// camera overriden here
-	if( g_freecam.GetBool() )
-	{
-		Game_UpdateFreeCamera( g_pHost->GetFrameTime() );
-
-		camera.SetOrigin(g_camera_freepos);
-		camera.SetAngles(g_camera_freeangles);
-		camera.SetFOV(g_camera_fov);
-
-		g_pCameraAnimator->SetDropPosition(g_camera_freepos);
-	}
-	else
-	{
-		// if has viewed car, set camera from it
-		if(viewedCar)
-			camera = g_pCameraAnimator->GetCamera();
-
-		// always
-		g_camera_freepos = camera.GetOrigin();
-		g_camera_freeangles = camera.GetAngles();
-		g_camera_fov = DIRECTOR_DEFAULT_CAMERA_FOV;
-	}
-
-
-
-
-
-	// refresh main camera modes here
-	{
-		//
-		// Check camera switch buttons
-		//
-		if(	(g_nClientButtons & IN_CHANGECAM) && !(g_nOldControlButtons & IN_CHANGECAM))
-		{
-			g_CurrCameraMode += 1;
-
-			if(g_CurrCameraMode == CAM_MODE_TRIPOD_ZOOM)
-			{
-				Vector3D dropPos = viewedCar->GetOrigin() + Vector3D(0,viewedCar->m_conf->m_body_size.y,0) - viewedCar->GetForwardVector()*viewedCar->m_conf->m_body_size.z*1.1f;
-				g_pCameraAnimator->SetDropPosition(dropPos);
-			}
-
-			// rollin
-			if( g_CurrCameraMode > CAM_MODE_TRIPOD_ZOOM )
-				g_CurrCameraMode = CAM_MODE_OUTCAR;
-		}
-	}
+	g_freeCamProps.position += g_freeCamProps.velocity * fDt;
 }
 
 static const wchar_t* cameraTypeStrings[] = {
@@ -616,9 +446,9 @@ void Game_DirectorControlKeys(int key, bool down)
 		{
 			replaycamera_t cam;
 
-			cam.fov = g_camera_fov;
-			cam.origin = g_camera_freepos;
-			cam.rotation = g_camera_freeangles;
+			cam.fov = g_freeCamProps.fov;
+			cam.origin = g_freeCamProps.position;
+			cam.rotation = g_freeCamProps.angles;
 			cam.startTick = g_replayData->m_tick;
 			cam.targetIdx = viewedCar->m_replayID;
 			cam.type = g_nDirectorCameraType;
@@ -659,9 +489,9 @@ DECLARE_CMD(director_pick_ray, "Director mode - picks object with ray", 0)
 	if(!g_director.GetBool())
 		return;
 
-	Vector3D start = g_camera_freepos;
+	Vector3D start = g_freeCamProps.position;
 	Vector3D dir;
-	AngleVectors(g_camera_freeangles, &dir);
+	AngleVectors(g_freeCamProps.angles, &dir);
 
 	Vector3D end = start + dir*1000.0f;
 
@@ -687,11 +517,11 @@ void Game_DrawDirectorUI( float fDt )
 		L"SET CAMERA = &#FFFF00;KP_ENTER&;\n"
 		L"SET CAMERA KEYFRAME = &#FFFF00;SPACE&;\n"
 		L"CHANGE CAMERA TYPE = &#FFFF00;1-5&; (Current is &#FFFF00;'%s'&;)\n"
-		L"CAMERA ZOOM = &#FFFF00;MOUSE WHEEL&; (%.2f degrees)\n"
+		L"CAMERA ZOOM = &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
 		L"SET TARGET OBJECT = &#FFFF00;LEFT MOUSE CLICK ON OBJECT&;\n"
 		L"PLAY/PAUSE = &#FFFF00;O&;\n"
 		L"FREE CAMERA = &#FFFF00;I&;\n"
-		L"SEEK = &#FFFF00;fastseek <frame>&; (in console)\n", cameraTypeStrings[g_nDirectorCameraType], g_camera_fov);
+		L"SEEK = &#FFFF00;fastseek <frame>&; (in console)\n", cameraTypeStrings[g_nDirectorCameraType], g_freeCamProps.fov);
 
 	eqFontStyleParam_t params;
 	params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
@@ -729,98 +559,6 @@ void Game_DrawDirectorUI( float fDt )
 ConVar eq_profiler_display("eqProfiler_display", "0", "Display profiler on screen");
 extern ConVar g_pause;
 
-void Game_Frame(float fDt)
-{
-	// Update game
-
-	PROFILE_FUNC();
-
-	// session update
-	g_pGameSession->UpdateLocalControls(g_nClientButtons);
-
-	g_pGameWorld->UpdateOccludingFrustum();
-
-	static float jobFrametime = fDt;
-	jobFrametime = fDt;
-
-	g_pGameSession->Update(fDt);
-
-	CCar* viewedCar = g_pGameSession->GetViewCar();
-
-	// debug display
-	if(g_replayData->m_state == REPL_RECORDING)
-	{
-		debugoverlay->Text(ColorRGBA(1, 0, 0, 1), "RECORDING FRAMES (tick %d)\n", g_replayData->m_tick);
-	}
-	else if(g_replayData->m_state == REPL_PLAYING)
-	{
-		debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "PLAYING FRAMES (tick %d)\n", g_replayData->m_tick);
-	}
-
-	Game_UpdateCamera(fDt);
-
-	Vector3D cam_velocity = vec3_zero;
-
-	// animate the camera if car is present
-	if( viewedCar && g_CurrCameraMode <= CAM_MODE_INCAR && !g_freecam.GetBool() )
-		cam_velocity = viewedCar->GetVelocity();
-
-	CViewParams* curView = g_pGameWorld->GetCameraParams();
-
-	effectrenderer->SetViewSortPosition(curView->GetOrigin());
-
-	g_parallelJobs->AddJob(GRJob_DrawEffects, &jobFrametime);
-	g_parallelJobs->Submit();
-
-	Vector3D f,r,u;
-	AngleVectors(curView->GetAngles(), &f, &r, &u);
-
-	// update sound
-	soundsystem->SetListener(curView->GetOrigin(), f, u, cam_velocity);
-	g_pRainEmitter->SetViewVelocity(cam_velocity);
-
-
-	float render_begin = MEASURE_TIME_BEGIN();
-
-	const IVector2D& screenSize = g_pHost->GetWindowSize();
-	g_pGameWorld->BuildViewMatrices(screenSize.x,screenSize.y, 0);
-
-	// render
-	PROFILE_CODE(g_pGameWorld->Draw( 0 ));
-	debugoverlay->Text(ColorRGBA(1,1,0,1), "render time, ms: %g", abs(MEASURE_TIME_STATS(render_begin)));
-
-
-	// Test HUD
-	if( g_replayData->m_state != REPL_PLAYING )
-	{
-		g_pGameHUD->Render( fDt, screenSize );
-	}
-
-	if(	g_director.GetBool() && g_replayData->m_state == REPL_PLAYING)
-	{
-		Game_DrawDirectorUI( fDt );
-	}
-
-	if(!g_pause.GetBool())
-		PROFILE_UPDATE();
-
-	if(eq_profiler_display.GetBool())
-	{
-		EqString profilerStr = PROFILE_GET_TREE_STRING().c_str();
-
-		materials->Setup2D(screenSize.x,screenSize.y);
-
-		eqFontStyleParam_t params;
-		params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-
-		static IEqFont* consoleFont = g_fontCache->GetFont("console", 16);
-
-		consoleFont->RenderText(profilerStr.c_str(), Vector2D(45), params);
-	}
-
-	g_nOldControlButtons = g_nClientButtons;
-}
-
 //-------------------------------------------------------------------------------
 
 CState_Game* g_State_Game = new CState_Game();
@@ -830,6 +568,7 @@ CState_Game::CState_Game() : CBaseStateHandler()
 	m_demoMode = false;
 	m_isGameRunning = false;
 	m_fade = 1.0f;
+	m_doLoadingFrames = 0;
 }
 
 CState_Game::~CState_Game()
@@ -854,6 +593,8 @@ void CState_Game::UnloadGame()
 	Game_ShutdownSession();
 
 	g_pModelCache->ReleaseCache();
+
+	ses->Shutdown();
 }
 
 void CState_Game::LoadGame()
@@ -880,7 +621,6 @@ void CState_Game::LoadGame()
 	{
 		SetNextState(g_states[GAME_STATE_TITLESCREEN]);
 		m_loadingError = true;
-		return;
 	}
 }
 
@@ -967,7 +707,7 @@ void CState_Game::OnMenuCommand( const char* command )
 		if(g_pGameSession->GetMissionStatus() == MIS_STATUS_INGAME)
 			g_pGameSession->SignalMissionStatus(MIS_STATUS_FAILED, 0.0f);
 
-		m_sheduledRestart = true;
+		m_scheduledRestart = true;
 	}
 	else if(!stricmp(command, "quickReplay"))
 	{
@@ -981,7 +721,7 @@ void CState_Game::OnMenuCommand( const char* command )
 			g_pGameSession->SignalMissionStatus(MIS_STATUS_FAILED, 0.0f);
 		}
 
-		m_sheduledQuickReplay = true;
+		m_scheduledQuickReplay = true;
 	}
 	else if(!stricmp(command, "goToDirector"))
 	{
@@ -993,28 +733,29 @@ void CState_Game::OnMenuCommand( const char* command )
 // @from - used to transfer data
 void CState_Game::OnEnter( CBaseStateHandler* from )
 {
+	if(m_isGameRunning)
+		return;
+
 	m_loadingError = false;
 	m_exitGame = false;
 	m_showMenu = false;
 
-	m_sheduledRestart = false;
-	m_sheduledQuickReplay = false;
+	m_scheduledRestart = false;
+	m_scheduledQuickReplay = false;
 
-	if(m_isGameRunning)
-		return;
-
-	ses->Init(EQ_DRVSYN_DEFAULT_SOUND_DISTANCE);
-
-	LoadGame();
+	m_doLoadingFrames = 2;
 
 	m_fade = 1.0f;
 
-	//-------------------------
-
 	m_menuTitleToken = g_localizer->GetToken("MENU_GAME_TITLE_PAUSE");
+}
+
+bool CState_Game::DoLoadingFrame()
+{
+	LoadGame();
 
     if(!g_pGameSession)
-        return;
+        return false;	// no game session causes a real problem
 
 	if(g_pGameSession->GetSessionType() == SESSION_SINGLE)
 		m_gameMenuName = "GameMenuStack";
@@ -1022,6 +763,8 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 		m_gameMenuName = "MPGameMenuStack";
 
 	SetupMenuStack( m_gameMenuName.c_str() );
+
+	return true;
 }
 
 // when the state changes to something
@@ -1034,7 +777,6 @@ void CState_Game::OnLeave( CBaseStateHandler* to )
 		return;
 
 	UnloadGame();
-	ses->Shutdown();
 
 	if(	m_isGameRunning )
 	{
@@ -1065,6 +807,13 @@ void CState_Game::SetPauseState( bool state )
 	UpdatePauseState();
 }
 
+void CState_Game::StartReplay( const char* path )
+{
+	g_replayData->LoadFromFile( path );
+
+	SetCurrentState( this, true );
+}
+
 void CState_Game::DrawLoadingScreen()
 {
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
@@ -1090,14 +839,18 @@ bool CState_Game::Update( float fDt )
 	if(m_loadingError)
 		return false;
 
-	if(!g_pGameSession)
-		return false;
-
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
 	if(!m_isGameRunning)
 	{
 		DrawLoadingScreen();
+		
+		m_doLoadingFrames--;
+
+		if( m_doLoadingFrames > 0 )
+			return true;
+		else if( m_doLoadingFrames == 0 )	
+			return DoLoadingFrame(); // actual level loading happened here
 
 		if(g_pGameWorld->m_level.IsWorkDone() && materials->GetLoadingQueue() == 0)
 			m_isGameRunning = true;
@@ -1130,7 +883,7 @@ bool CState_Game::Update( float fDt )
 		else if(!m_showMenu)
 		{
 			// set other menu
-			m_showMenu = !m_sheduledRestart && !m_sheduledQuickReplay;
+			m_showMenu = !m_scheduledRestart && !m_scheduledQuickReplay;
 
 			SetupMenuStack("MissionEndMenuStack");
 		}
@@ -1144,9 +897,12 @@ bool CState_Game::Update( float fDt )
 	if(m_showMenu)
 		g_nClientButtons = 0;
 
-	Game_Frame( fGameFrameDt );
+	//
+	// Update, Render, etc
+	//
+	DoGameFrame( fGameFrameDt );
 
-	if(m_exitGame || m_sheduledRestart || m_sheduledQuickReplay)
+	if(m_exitGame || m_scheduledRestart || m_scheduledQuickReplay)
 	{
 		ColorRGBA blockCol(0.0,0.0,0.0,m_fade);
 
@@ -1164,14 +920,14 @@ bool CState_Game::Update( float fDt )
 
 		if(m_fade >= 1.0f)
 		{
-			if(m_sheduledRestart)
+			if(m_scheduledRestart)
 				Game_QuickRestart(false);
 
-			if(m_sheduledQuickReplay)
+			if(m_scheduledQuickReplay)
 				Game_InstantReplay(0);
 
-			m_sheduledRestart = false;
-			m_sheduledQuickReplay = false;
+			m_scheduledRestart = false;
+			m_scheduledQuickReplay = false;
 
 			return !m_exitGame;
 		}
@@ -1308,6 +1064,171 @@ void CState_Game::DrawMenu( float fDt )
 	}
 }
 
+CCar* CState_Game::GetViewCar() const
+{
+	CCar* viewedCar = g_pGameSession->GetViewCar();
+
+	if(g_replayData->m_state == REPL_PLAYING && g_replayData->m_cameras.numElem() > 0)
+	{
+		// replay controls camera
+		replaycamera_t* replCamera = g_replayData->GetCurrentCamera();
+
+		if(replCamera)
+			viewedCar = g_replayData->GetCarByReplayIndex( replCamera->targetIdx );
+	}
+
+	return viewedCar;
+}
+
+Vector3D CState_Game::GetViewVelocity() const
+{
+	CCar* viewedCar = GetViewCar();
+
+	Vector3D cam_velocity = vec3_zero;
+
+	// animate the camera if car is present
+	if( viewedCar && g_pCameraAnimator->GetMode() <= CAM_MODE_INCAR && !g_freecam.GetBool() )
+		cam_velocity = viewedCar->GetVelocity();
+
+	return cam_velocity;
+}
+
+void GRJob_DrawEffects(void* data, int i)
+{
+	float fDt = *(float*)data;
+	effectrenderer->DrawEffects( fDt );
+}
+
+void CState_Game::RenderMainView3D( float fDt )
+{
+	static float jobFrametime = fDt;
+	jobFrametime = fDt;
+
+	// post draw effects
+	g_parallelJobs->AddJob(GRJob_DrawEffects, &jobFrametime);
+	g_parallelJobs->Submit();
+
+	// rebuild view
+	const IVector2D& screenSize = g_pHost->GetWindowSize();
+	g_pGameWorld->BuildViewMatrices(screenSize.x,screenSize.y, 0);
+
+	// frustum update
+	PROFILE_CODE(g_pGameWorld->UpdateOccludingFrustum());
+
+	// render
+	PROFILE_CODE(g_pGameWorld->Draw( 0 ));
+}
+
+void CState_Game::RenderMainView2D( float fDt )
+{
+	const IVector2D& screenSize = g_pHost->GetWindowSize();
+
+	// draw HUD
+	if( g_replayData->m_state != REPL_PLAYING )
+		g_pGameHUD->Render( fDt, screenSize );
+
+	if(	g_director.GetBool() && g_replayData->m_state == REPL_PLAYING)
+		Game_DrawDirectorUI( fDt );
+
+	if(!g_pause.GetBool())
+		PROFILE_UPDATE();
+
+	if(eq_profiler_display.GetBool())
+	{
+		EqString profilerStr = PROFILE_GET_TREE_STRING().c_str();
+
+		materials->Setup2D(screenSize.x,screenSize.y);
+
+		eqFontStyleParam_t params;
+		params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+
+		static IEqFont* consoleFont = g_fontCache->GetFont("console", 16);
+
+		consoleFont->RenderText(profilerStr.c_str(), Vector2D(45), params);
+	}
+}
+
+void CState_Game::DoGameFrame(float fDt)
+{
+	// Update game
+	PROFILE_FUNC();
+
+	// session update
+	g_pGameSession->UpdateLocalControls( g_nClientButtons );
+	g_pGameSession->Update(fDt);
+
+	//Game_UpdateCamera(fDt);
+	DoCameraUpdates( fDt );
+
+	// render all
+	RenderMainView3D( fDt );
+	RenderMainView2D( fDt );
+
+	g_nOldControlButtons = g_nClientButtons;
+}
+
+void CState_Game::DoCameraUpdates( float fDt )
+{
+	int camControls = (g_replayData->m_state == REPL_PLAYING) ? 0 : g_nClientButtons;
+
+	CViewParams* curView = g_pGameWorld->GetCameraParams();
+
+	if( g_freecam.GetBool() )
+	{
+		Game_UpdateFreeCamera( g_pHost->GetFrameTime() );
+
+		curView->SetOrigin(g_freeCamProps.position);
+		curView->SetAngles(g_freeCamProps.angles);
+		curView->SetFOV(g_freeCamProps.fov);
+
+		g_pCameraAnimator->SetDropPosition(g_freeCamProps.position);
+	}
+	else
+	{
+		CCar* viewedCar = g_pGameSession->GetViewCar();
+
+		if(g_replayData->m_state == REPL_PLAYING && g_replayData->m_cameras.numElem() > 0)
+		{
+			// replay controls camera
+			replaycamera_t* replCamera = g_replayData->GetCurrentCamera();
+
+			if(replCamera)
+			{
+				// Process camera
+				viewedCar = g_replayData->GetCarByReplayIndex( replCamera->targetIdx );
+
+				g_pCameraAnimator->SetMode( (ECameraMode)replCamera->type );
+				g_pCameraAnimator->SetDropPosition( replCamera->origin );
+				g_pCameraAnimator->SetRotation( replCamera->rotation );
+				g_pCameraAnimator->SetFOV( replCamera->fov );
+
+				g_pCameraAnimator->Update(fDt, 0, viewedCar);
+			}
+		}
+
+		g_pCameraAnimator->Update(fDt, camControls, viewedCar);
+
+		// set final result to the world renderer
+		g_pGameWorld->SetCameraParams( g_pCameraAnimator->GetCamera() );
+
+		// always
+		g_freeCamProps.position = curView->GetOrigin();
+		g_freeCamProps.angles = curView->GetAngles();
+		g_freeCamProps.fov = DIRECTOR_DEFAULT_CAMERA_FOV;
+	}
+
+	// also update various systems
+	Vector3D viewVelocity = GetViewVelocity();
+
+	Vector3D f,r,u;
+	AngleVectors(curView->GetAngles(), &f, &r, &u);
+
+	// all positions and velocity props
+	soundsystem->SetListener(curView->GetOrigin(), f, u, viewVelocity);
+	effectrenderer->SetViewSortPosition(curView->GetOrigin());
+	g_pRainEmitter->SetViewVelocity(viewVelocity);
+}
+
 void CState_Game::HandleKeyPress( int key, bool down )
 {
 	if(!m_isGameRunning)
@@ -1400,34 +1321,21 @@ reincrement:
 	}
 }
 
-ConVar g_freelook("g_freelook", "0", "freelook camera", CV_ARCHIVE);
-
 void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )
 {
 	if(!m_isGameRunning)
 		return;
 
-	g_pHost->SetCenterMouseEnable( g_freecam.GetBool() || g_freelook.GetBool() );
+	g_pHost->SetCenterMouseEnable( g_freecam.GetBool() );
 	g_pHost->SetCursorShow( g_pSysConsole->IsVisible() );
 
 	if( m_showMenu )
 		return;
 
-	if( g_freelook.GetBool() )
-	{
-		g_camera_angle.x += deltaY * g_mouse_sens.GetFloat();
-		g_camera_angle.y += deltaX * g_mouse_sens.GetFloat();
-
-		g_camera_angleRestoreTime = CAMERA_ROTATE_HOLD_TIME;
-
-		g_camera_angle.y = ConstrainAngle180(g_camera_angle.y);
-		g_camera_angle.x = clamp(g_camera_angle.x, -25.0f, 50.0f);
-	}
-
 	if(g_freecam.GetBool() && !g_pSysConsole->IsVisible()) // && g_pHost->m_hasWindowFocus)
 	{
-		g_camera_freeangles.x += deltaY * g_mouse_sens.GetFloat();
-		g_camera_freeangles.y += deltaX * g_mouse_sens.GetFloat();
+		g_freeCamProps.angles.x += deltaY * g_mouse_sens.GetFloat();
+		g_freeCamProps.angles.y += deltaX * g_mouse_sens.GetFloat();
 	}
 }
 
@@ -1436,7 +1344,7 @@ void CState_Game::HandleMouseWheel(int x,int y,int scroll)
 	if(!m_isGameRunning)
 		return;
 
-	g_camera_fov -= scroll;
+	g_freeCamProps.fov -= scroll;
 }
 
 void CState_Game::HandleJoyAxis( short axis, short value )

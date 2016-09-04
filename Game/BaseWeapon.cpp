@@ -255,7 +255,7 @@ void CBaseWeapon::SetClip(int nBullets)
 
 void CBaseWeapon::SetAmmoType(int nAmmoType)
 {
-	// fuck out for now
+	// TODO: make me functional again
 }
 
 int CBaseWeapon::GetClip()

@@ -34,6 +34,8 @@ struct carCameraConfig_t
 	float						widthInCar;
 };
 
+class CCar;
+
 class CCameraAnimator
 {
 public:
@@ -43,27 +45,29 @@ public:
 	void					SetCameraProps(const carCameraConfig_t& conf);
 
 	void					SetFOV(float fFOV);
-
 	void					SetDropPosition(const Vector3D& camPos);
-
 	void					SetRotation(const Vector3D& camPos);
 
-	void					CalmDown();
+	void					Reset();
+
+	CViewParams&			GetCamera();
+
+	ECameraMode				GetRealMode() const				{return m_realMode;}
+	ECameraMode				GetMode() const					{return m_mode;}
+	void					SetMode( ECameraMode newMode )	{m_mode = newMode;}
+
+	void					Update( float fDt, int nButtons, CCar* target );
+
+protected:
 
 	void					Animate(	ECameraMode mode, int nButtons, 
 										const Vector3D& targetOrigin, 
-										const Matrix4x4& targetRotation, 
+										const Quaternion& targetRotation, 
 										const Vector3D& targetVelocity,
 										float fDt,
 										Vector3D& addRot);
 
-	CViewParams&			GetCamera();
-
-	ECameraMode				GetMode() const {return m_mode;}
-
-protected:
-
-	carCameraConfig_t		m_carConfig;
+	carCameraConfig_t*		m_carConfig;
 	float					m_cameraDistVar;
 	float					m_cameraFOV;
 
@@ -81,6 +85,8 @@ protected:
 	CViewParams				m_viewParams;
 
 	ECameraMode				m_mode;
+	ECameraMode				m_realMode;
+	int						m_oldBtns;
 };
 
 extern CCameraAnimator*		g_pCameraAnimator;

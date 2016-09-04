@@ -111,8 +111,7 @@ DECLARE_CMD(replay, "starts specified replay", 0)
 {
 	if(CMD_ARGC > 0)
 	{
-		g_replayData->LoadFromFile( ("UserReplays/" + CMD_ARGV(0)).c_str() );
-		SetCurrentState(g_State_Game);
+		g_State_Game->StartReplay( ("UserReplays/" + CMD_ARGV(0)).c_str() );
 	}
 	else
 	{

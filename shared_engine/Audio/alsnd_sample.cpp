@@ -311,7 +311,7 @@ int	eqogg_seek(void *datasource, ogg_int64_t offset, int whence)
 {
 	IFile* pFile = (IFile*)datasource;
 
-	// let's do some fuckin' undocumented features of ogg
+	// let's do some undocumented features of ogg
 
 	int returnVal;
 

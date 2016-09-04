@@ -21,6 +21,8 @@ enum EPauseMode
 
 //--------------------------------------------------------------------------------------
 
+class CCar;
+
 class CState_Game : public CBaseStateHandler, public CLuaMenu
 {
 public:
@@ -30,10 +32,6 @@ public:
 	int			GetType() const {return GAME_STATE_GAME;}
 
 	bool		Update( float fDt );
-	bool		UpdatePauseState();
-
-	void		DrawMenu( float fDt );
-	void		DrawLoadingScreen();
 
 	void		OnEnter( CBaseStateHandler* from );
 	void		OnLeave( CBaseStateHandler* to );
@@ -47,6 +45,8 @@ public:
 	int			GetPauseMode() const;
 	void		SetPauseState( bool pause );
 
+	void		StartReplay( const char* path );
+
 	//---------------------------------------------
 
 	void		UnloadGame();
@@ -59,14 +59,33 @@ public:
 	void		SetDemoMode(bool mode) {m_demoMode = mode;}
 
 	bool		IsGameRunning() {return m_isGameRunning;}
-
-	void		OnEnterSelection( bool isFinal );
-
-	void		OnMenuCommand( const char* command );
-
+	
 	void		SetupMenuStack( const char* name );
 
 protected:
+
+	bool		DoLoadingFrame();
+
+	bool		UpdatePauseState();
+
+	void		DoGameFrame( float fDt );
+	void		DoCameraUpdates( float fDt );
+
+	void		RenderMainView3D( float fDt );
+	void		RenderMainView2D( float fDt );
+
+	void		DrawMenu( float fDt );
+	void		DrawLoadingScreen();
+
+	void		OnEnterSelection( bool isFinal );
+	void		OnMenuCommand( const char* command );
+
+	Vector3D	GetViewVelocity() const;
+	CCar*		GetViewCar() const;
+
+	//----------------------------------------------
+
+	int			m_doLoadingFrames;
 
 	bool		m_isGameRunning;
 	bool		m_pauseState;
@@ -79,8 +98,8 @@ protected:
 
 	bool		m_showMenu;
 
-	bool		m_sheduledRestart;
-	bool		m_sheduledQuickReplay;
+	bool		m_scheduledRestart;
+	bool		m_scheduledQuickReplay;
 
 	EqString	m_gameMenuName;
 };

@@ -160,6 +160,19 @@ void CGameObject::Spawn()
 
 void CGameObject::OnRemove()
 {
+#ifndef NO_LUA
+	OOLUA::Script& state = GetLuaState();
+	EqLua::LuaStackGuard g(state);
+
+	if( m_luaOnRemove.Push() )
+	{
+		if(!m_luaOnRemove.Call(1, 0, 0))
+		{
+			MsgError("CGameObject:OnRemove error:\n %s\n", OOLUA::get_last_error(state).c_str());
+		}
+	}
+#endif // NO_LUA
+
 #ifndef EDITOR
 	// call NET_REMOVE
 	if((g_pGameSession->GetSessionType() == SESSION_NETWORK) &&
@@ -378,10 +391,9 @@ void CGameObject::OnPhysicsFrame(float fDt)
 #ifndef NO_LUA
 void CGameObject::L_RegisterEventHandler(const OOLUA::Table& tableRef)
 {
-	OOLUA::Script& state = GetLuaState();
-
 	m_luaEvtHandler = tableRef;
 	m_luaOnCarCollision.Get(m_luaEvtHandler, "OnCarCollision", true);
+	m_luaOnRemove.Get(m_luaEvtHandler, "OnRemove", true);
 }
 
 OOLUA::Table& CGameObject::L_GetEventHandler()
