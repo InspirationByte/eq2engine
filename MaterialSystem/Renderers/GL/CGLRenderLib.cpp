@@ -226,15 +226,13 @@ GL_CONTEXT CGLRenderLib::CreateSharedContext(GL_CONTEXT shareWith)
 #ifdef USE_GLES2
 	// context attribute list
     EGLint contextAttr[] = {
-		EGL_CONTEXT_CLIENT_VERSION, 3,
+		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE
 	};
 
-    EGLContext context = eglCreateContext(eglDisplay, eglConfig, glContext, contextAttr);
+    EGLContext context = eglCreateContext(eglDisplay, eglConfig, shareWith, contextAttr);
     if (context == EGL_NO_CONTEXT)
-    {
-		ErrorMsg("OpenGL ES error: Could not create EGL context\n");
-    }
+        ASSERTMSG(false, "Failed to create context for share!");
 #else
 
 #ifdef PLAT_WIN
@@ -276,8 +274,8 @@ GL_CONTEXT CGLRenderLib::GetFreeSharedContext(uintptr_t threadId)
 			{
 				m_contexts[i].isAqquired = true;
 				m_contexts[i].threadId = threadId;
-			}	
-			
+			}
+
 			return (GL_CONTEXT)m_contexts[i].context;
 		}
 	}
@@ -297,7 +295,7 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 
 	hwnd = (EGLNativeWindowType)winParams->window;
 #else
-	
+
 	// other EGL
 	hwnd = (EGLNativeWindowType)params.hWindow;
 
@@ -318,13 +316,13 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 
     // get egl display handle
     eglDisplay = eglGetDisplay(nativeDisplay);
-	
+
     if(eglDisplay == EGL_NO_DISPLAY)
     {
         ErrorMsg("OpenGL ES init error: Could not get EGL display (%d)", eglDisplay);
         return false;
     }
-	
+
 
     // Initialize the display
     EGLint major = 0;
@@ -387,7 +385,7 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 
 	// context attribute list
     EGLint contextAttr[] = {
-		EGL_CONTEXT_CLIENT_VERSION, 3,
+		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE
 	};
 
@@ -400,7 +398,7 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
         ErrorMsg("OpenGL ES init error: Could not create EGL context\n");
         return false;
     }
-	
+
 	InitSharedContexts();
 
 	/*
@@ -610,7 +608,6 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 		colorBits = 24;
 	}
 
-	XVisualInfo *vi;
 	while (true)
 	{
 		int attribs[] = {

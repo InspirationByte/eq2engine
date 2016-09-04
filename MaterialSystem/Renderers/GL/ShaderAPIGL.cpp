@@ -470,7 +470,7 @@ void ShaderAPIGL::ApplyTextures()
 		}
 	}
 
-	
+
 }
 
 void ShaderAPIGL::ApplySamplerState()
@@ -554,7 +554,7 @@ void ShaderAPIGL::ApplyBlendState()
 
 		m_pCurrentBlendstate = m_pSelectedBlendstate;
 
-		
+
 	}
 }
 
@@ -619,7 +619,7 @@ void ShaderAPIGL::ApplyDepthState()
 
 		m_pCurrentDepthState = m_pSelectedDepthState;
 
-		
+
 	}
 }
 
@@ -716,7 +716,7 @@ void ShaderAPIGL::ApplyRasterizerState()
 
 		}
 
-		
+
 	}
 
 	m_pCurrentRasterizerState = m_pSelectedRasterizerState;
@@ -739,7 +739,7 @@ void ShaderAPIGL::ApplyShaderProgram()
 
 		m_pCurrentShader = m_pSelectedShader;
 
-		
+
 	}
 }
 
@@ -764,7 +764,7 @@ void ShaderAPIGL::ApplyConstants()
 			}
 		}
 
-		
+
 	}
 }
 
@@ -807,7 +807,7 @@ void ShaderAPIGL::Clear(bool bClearColor,
 		glClear(clearBits);
 	}
 
-	
+
 }
 //-------------------------------------------------------------
 // Renderer information
@@ -874,7 +874,7 @@ void ShaderAPIGL::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
 		delete pQuery;
 
 	m_OcclusionQueryList.fastRemove( pQuery );
-	
+
 }
 
 //-------------------------------------------------------------
@@ -1186,7 +1186,7 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 
 	glBindTexture(gltarget, 0);
 
-	
+
 
 	return textureID;
 }
@@ -1384,7 +1384,7 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		m_pCurrentColorRenderTargets[i] = colorRT;
 	}
 
-	
+
 
 	if (nNumRTs != m_nCurrentRenderTargets)
 	{
@@ -1412,7 +1412,7 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 
 		m_nCurrentRenderTargets = nNumRTs;
 
-		
+
 	}
 
 	CGLTexture* pDepth = (CGLTexture*)pDepthTarget;
@@ -1448,7 +1448,7 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 
 		m_pCurrentDepthRenderTarget = pDepth;
 
-		
+
 	}
 
 
@@ -1532,7 +1532,7 @@ void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 		m_pCurrentDepthRenderTarget = NULL;
 	}
 
-	
+
 }
 
 //-------------------------------------------------------------
@@ -1680,7 +1680,7 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 
 		m_pCurrentVertexFormat = pVertexFormat;
 
-		
+
 	}
 }
 
@@ -1768,7 +1768,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 				}
 			}
 
-			
+
 		}
 	}
 
@@ -1975,7 +1975,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		if(!GLCheckError("create vertex shader"))
 		{
-			
+
 			return false;
 		}
 
@@ -2004,7 +2004,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				MsgInfo("\t%d : %s\n", i+1, info.vs.includes[i].c_str());
 		}
 
-		
+
 	}
 	else
 		return false; // vertex shader is required
@@ -2031,7 +2031,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		if(!GLCheckError("create fragment shader"))
 		{
-			
+
 			return false;
 		}
 
@@ -2059,7 +2059,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				MsgInfo("\t%d : %s\n", i+1, info.ps.includes[i].c_str());
 		}
 
-		
+
 	}
 	else
 		fsResult = GL_TRUE;
@@ -2101,7 +2101,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		GLCheckError("link program");
 
-		
+
 
 		if( !linkResult )
 		{
@@ -2231,7 +2231,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		GLCheckError("delete shaders");
 
-		
+
 
 		prog->m_fragmentShader = 0;
 		prog->m_vertexShader = 0;
@@ -2420,7 +2420,7 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(BufferAccessType_e nBufAccess, in
     if(!GLCheckError("gen vert buffer"))
 	{
 		delete pGLVertexBuffer;
-		
+
 
 		return NULL;
 	}
@@ -2460,7 +2460,7 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, Buffe
     if(!GLCheckError("gen idx buffer"))
 	{
 		delete pGLIndexBuffer;
-		
+
 
 		return NULL;
 	}
@@ -2957,7 +2957,7 @@ void ShaderAPIGL::GL_CRITICAL()
 		//Msg("Apply context to thread\n");
 
 #ifdef USE_GLES2
-		eglMakeCurrent(m_display, m_eglSurface, m_eglSurface, worker.context);
+		eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, worker.context);
 #elif _WIN32
 		wglMakeCurrent(m_hdc, worker.context);
 #elif LINUX
@@ -3026,7 +3026,7 @@ void  ShaderAPIGL::EndAsyncOperation()
 			break;
 		}
 	}
-	
+
 	ASSERTMSG(workerIdx != -1, "EndAsyncOperation() call requires BeginAsyncOperation() before this thread starts!");
 
 	if(workerIdx != -1)
@@ -3040,13 +3040,13 @@ void  ShaderAPIGL::EndAsyncOperation()
 		if(worker.numWorks <= 0)
 		{
 			glFinish();
-		
+
 #ifdef USE_GLES2
 			eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 #elif _WIN32
 			wglMakeCurrent(NULL, NULL);
 #elif LINUX
-			glXMakeCurrent(display, None, NULL);
+			glXMakeCurrent(m_display, None, NULL);
 #elif __APPLE__
 
 #endif

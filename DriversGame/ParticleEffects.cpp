@@ -5,9 +5,9 @@
 // Description: Particle effects
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "world.h"
 #include "ParticleEffects.h"
 #include "EqParticles.h"
-#include "world.h"
 
 extern CPFXAtlasGroup* g_vehicleEffects;
 extern CPFXAtlasGroup* g_translParticles;
@@ -17,10 +17,10 @@ extern CPFXAtlasGroup* g_additPartcles;
 // Fleck particle
 //-----------------------------------------------------------------------------------------------
 CFleckEffect::CFleckEffect(const Vector3D &position, const Vector3D &velocity, const Vector3D &gravity,
-							float StartSize, 
-							float lifetime, 
-							float rotation, 
-							const ColorRGB& color, 
+							float StartSize,
+							float lifetime,
+							float rotation,
+							const ColorRGB& color,
 							CPFXAtlasGroup* group, TexAtlasEntry_t* entry)
 {
 	InternalInit(position, lifetime, group, entry);
@@ -94,12 +94,12 @@ bool CFleckEffect::DrawEffect(float dTime)
 //-----------------------------------------------------------------------------------------------
 // Smoke particle
 //-----------------------------------------------------------------------------------------------
-CSmokeEffect::CSmokeEffect(	const Vector3D &position, const Vector3D &velocity, 
-							float StartSize, float EndSize, 
-							float lifetime, 
-							CPFXAtlasGroup* group, TexAtlasEntry_t* entry, 
-							float rotation, 
-							const Vector3D &gravity, 
+CSmokeEffect::CSmokeEffect(	const Vector3D &position, const Vector3D &velocity,
+							float StartSize, float EndSize,
+							float lifetime,
+							CPFXAtlasGroup* group, TexAtlasEntry_t* entry,
+							float rotation,
+							const Vector3D &gravity,
 							const Vector3D &color1, const Vector3D &color2, float alpha)
 {
 	InternalInit( position, lifetime, group, entry );
@@ -162,9 +162,9 @@ bool CSmokeEffect::DrawEffect(float dTime)
 //-----------------------------------------------------------------------------------------------
 // Spark particle
 //-----------------------------------------------------------------------------------------------
-CSparkLine::CSparkLine(const Vector3D &position, const Vector3D &velocity, const Vector3D &gravity, 
-						float length, float StartSize, float EndSize, 
-						float lifetime, 
+CSparkLine::CSparkLine(const Vector3D &position, const Vector3D &velocity, const Vector3D &gravity,
+						float length, float StartSize, float EndSize,
+						float lifetime,
 						CPFXAtlasGroup* group, TexAtlasEntry_t* entry)
 {
 	InternalInit(position, lifetime, group, entry);

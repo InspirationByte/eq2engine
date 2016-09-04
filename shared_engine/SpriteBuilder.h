@@ -174,9 +174,6 @@ void CSpriteBuilder<VTX_TYPE>::AddParticleStrip(VTX_TYPE* verts, int nVertices)
 template <class VTX_TYPE>
 int CSpriteBuilder<VTX_TYPE>::_AllocateGeom( int nVertices, int nIndices, VTX_TYPE** verts, uint16** indices, bool preSetIndices )
 {
-	if(!g_pPFXRenderer->IsInitialized())
-		return -1;
-
 	if(m_numVertices > SVBO_MAX_SIZE(m_maxQuadVerts, VTX_TYPE))
 	{
 		// don't warn me about overflow

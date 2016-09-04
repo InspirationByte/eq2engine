@@ -73,6 +73,7 @@ LOCAL_SRC_FILES := \
 	DriversGame/LuaBinding_Drivers.cpp\
 	DriversGame/NetPlayer.cpp\
 	DriversGame/Rain.cpp\
+	DriversGame/ParticleEffects.cpp\
 	shared_engine/DebugOverlay.cpp\
 	shared_engine/EGFInstancer.cpp\
 	shared_engine/EffectRender.cpp\
@@ -92,6 +93,7 @@ LOCAL_SRC_FILES := \
 	shared_engine/physics/BulletShapeCache.cpp\
 	shared_engine/studio_egf.cpp\
 	shared_engine/sys_console.cpp\
+	shared_engine/SpriteBuilder.cpp\
 	shared_game/GameSoundEmitterSystem.cpp\
 	shared_engine/Audio/alsound_local.cpp\
 	shared_engine/Audio/alsnd_emitter.cpp\

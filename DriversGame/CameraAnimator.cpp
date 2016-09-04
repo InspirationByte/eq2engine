@@ -49,7 +49,7 @@ ConVar cam_velocity_upmod("cam_velocity_upmod", "1.0");
 
 //---------------------------------------------------------------------------------------------------------------
 
-CCameraAnimator::CCameraAnimator() : 	
+CCameraAnimator::CCameraAnimator() :
 	m_vecCameraVel(0.0f),
 	m_vecCameraVelDiff(0.0f),
 	m_vecCameraSpringVel(0.0f),
@@ -61,7 +61,7 @@ CCameraAnimator::CCameraAnimator() :
 	m_cameraFOV(DEFAULT_CAMERA_FOV),
 	m_carConfig(NULL)
 {
-	
+
 }
 
 void CCameraAnimator::SetCameraProps( const carCameraConfig_t& conf )
@@ -138,11 +138,11 @@ void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
 	m_oldBtns = nButtons;
 }
 
-void CCameraAnimator::Animate(	ECameraMode mode, 
-								int nButtons, 
-								const Vector3D& targetOrigin, const Quaternion& targetRotation, const Vector3D& targetVelocity, 
-								float fDt, 
-								Vector3D& addRot )
+void CCameraAnimator::Animate(	ECameraMode mode,
+								int nButtons,
+								const Vector3D& targetOrigin, const Quaternion& targetRotation, const Vector3D& targetVelocity,
+								float fDt,
+								const Vector3D& addRot )
 {
 	m_realMode = mode;
 
@@ -330,7 +330,7 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		{
 			m_viewParams.SetFOV(m_cameraFOV);
 		}
-		
+
 	}
 	else if(mode == CAM_MODE_TRIPOD_STATIC)
 	{

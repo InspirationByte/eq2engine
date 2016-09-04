@@ -85,7 +85,7 @@ public:
 
 	void					InitSharedContexts();
 	void					DestroySharedContexts();
-	
+
 protected:
 
 	ShaderAPIGL*			m_Renderer;
@@ -113,6 +113,7 @@ protected:
 	GLXContext				glContext;
     XF86VidModeModeInfo**	dmodes;
     Display*				display;
+    XVisualInfo*            vi;
     int						m_screen;
 #elif defined(__APPLE__)
 	AGLContext				glContext;

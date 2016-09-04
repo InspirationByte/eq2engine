@@ -125,7 +125,6 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 	(*outdata) = m_lockPtr + m_lockOffs*m_strideSize;
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	pGLRHI->GL_END_CRITICAL();
 
 	if(m_lockPtr == NULL)
 		ASSERTMSG(false, "Failed to map vertex buffer!");

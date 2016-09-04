@@ -119,6 +119,8 @@
 		<Unit filename="../shared_engine/KeyBinding/Keys.h" />
 		<Unit filename="../shared_engine/Network/NETThread.cpp" />
 		<Unit filename="../shared_engine/Network/NETThread.h" />
+		<Unit filename="../shared_engine/SpriteBuilder.cpp" />
+		<Unit filename="../shared_engine/SpriteBuilder.h" />
 		<Unit filename="../shared_engine/cfgloader.cpp" />
 		<Unit filename="../shared_engine/cfgloader.h" />
 		<Unit filename="../shared_engine/eqGlobalMutex.cpp" />
@@ -159,6 +161,8 @@
 		<Unit filename="LuaBinding_Drivers.h" />
 		<Unit filename="NetPlayer.cpp" />
 		<Unit filename="NetPlayer.h" />
+		<Unit filename="ParticleEffects.cpp" />
+		<Unit filename="ParticleEffects.h" />
 		<Unit filename="Rain.cpp" />
 		<Unit filename="Rain.h" />
 		<Unit filename="ShaderOverrides.cpp" />

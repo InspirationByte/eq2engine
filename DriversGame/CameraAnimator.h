@@ -60,12 +60,12 @@ public:
 
 protected:
 
-	void					Animate(	ECameraMode mode, int nButtons, 
-										const Vector3D& targetOrigin, 
-										const Quaternion& targetRotation, 
+	void					Animate(	ECameraMode mode, int nButtons,
+										const Vector3D& targetOrigin,
+										const Quaternion& targetRotation,
 										const Vector3D& targetVelocity,
 										float fDt,
-										Vector3D& addRot);
+										const Vector3D& addRot);
 
 	carCameraConfig_t*		m_carConfig;
 	float					m_cameraDistVar;
