@@ -30,7 +30,7 @@
 #include "agl_caps.hpp"
 #endif // USE_GLES2
 
-
+extern bool GLCheckError(const char* op);
 
 /*
 
@@ -70,7 +70,6 @@ IShaderAPI* g_pShaderAPI = NULL;
 CGLRenderLib::CGLRenderLib()
 {
 	GetCore()->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
-	glContext2 = NULL;
 }
 
 CGLRenderLib::~CGLRenderLib()
@@ -203,29 +202,26 @@ int dComp(const DispRes &d0, const DispRes &d1){
 
 #endif // PLAT_LINUX
 
-void* CGLRenderLib::GetSharedContext()
+void CGLRenderLib::DestroySharedContexts()
 {
-	return glContext2;
-}
-
-void CGLRenderLib::DropSharedContext()
-{
-	if(glContext2 != NULL)
+	for(int i = 0; i < MAX_SHARED_CONTEXTS; i++)
 	{
 #ifdef USE_GLES2
-		eglDestroyContext(eglDisplay, glContext2);
+		eglDestroyContext(eglDisplay, (EGLContext)m_contexts[i].context);
 #else
+
+#ifdef PLAT_WIN
+		wglDeleteContext((HGLRC)m_contexts[i].context);
+#elif PLAT_LINUX
+		glXDestroyContext(display, m_contexts[i].context);
+#endif // PLAT_WIN || PLAT_LINUX
 
 #endif // USE_GLES2
 	}
-
-	glContext2 = NULL;
 }
 
-void CGLRenderLib::RestoreSharedContext()
+GL_CONTEXT CGLRenderLib::CreateSharedContext(GL_CONTEXT shareWith)
 {
-	if(glContext2 != NULL)
-		return;
 
 #ifdef USE_GLES2
 	// context attribute list
@@ -234,14 +230,59 @@ void CGLRenderLib::RestoreSharedContext()
 		EGL_NONE
 	};
 
-    glContext2 = eglCreateContext(eglDisplay, eglConfig, glContext, contextAttr);
-    if (glContext2 == EGL_NO_CONTEXT)
+    EGLContext context = eglCreateContext(eglDisplay, eglConfig, glContext, contextAttr);
+    if (context == EGL_NO_CONTEXT)
     {
 		ErrorMsg("OpenGL ES error: Could not create EGL context\n");
     }
 #else
 
+#ifdef PLAT_WIN
+	HGLRC context = wglCreateContext(hdc);
+
+	if(context == NULL)
+		ASSERTMSG(false, "Failed to create context for share!");
+
+	if( wglShareLists(context, shareWith) == FALSE)
+		ASSERTMSG(false, varargs("wglShareLists - Failed to share (err=%d, ctx=%d)!", GetLastError(), context));
+
+#elif PLAT_LINUX
+	GLXContext context = glXCreateContext(display, vi, glContext, True);
+#endif // PLAT_WIN || PLAT_LINUX
+
 #endif // USE_GLES2
+
+	return context;
+}
+
+void CGLRenderLib::InitSharedContexts()
+{
+	for(int i = 0; i < MAX_SHARED_CONTEXTS; i++)
+	{
+		//GL_CONTEXT shareWith = (i > 0) ? m_contexts[i-1].context : glContext;
+
+		GL_CONTEXT context = CreateSharedContext(glContext);
+		m_contexts[i] = glsCtx_t(context);
+	}
+}
+
+GL_CONTEXT CGLRenderLib::GetFreeSharedContext(uintptr_t threadId)
+{
+	for(int i = 0; i < MAX_SHARED_CONTEXTS; i++)
+	{
+		if(!m_contexts[i].isAqquired || m_contexts[i].threadId == threadId)
+		{
+			if(!m_contexts[i].isAqquired)
+			{
+				m_contexts[i].isAqquired = true;
+				m_contexts[i].threadId = threadId;
+			}	
+			
+			return (GL_CONTEXT)m_contexts[i].context;
+		}
+	}
+
+	return NULL;
 }
 
 bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
@@ -359,10 +400,9 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
         ErrorMsg("OpenGL ES init error: Could not create EGL context\n");
         return false;
     }
-
-	RestoreSharedContext();
-	glContext2 = GetSharedContext();
 	
+	InitSharedContexts();
+
 	/*
     glContext2 = eglCreateContext(eglDisplay, eglConfig, glContext, contextAttr);
     if (glContext2 == EGL_NO_CONTEXT)
@@ -511,11 +551,10 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 	SetPixelFormat(hdc, pixelFormats[bestFormat], &pfd);
 
 	glContext = wglCreateContext(hdc);
-	glContext2 = wglCreateContext(hdc);
-
-	wglShareLists(glContext2, glContext);
+	InitSharedContexts();
 
 	wglMakeCurrent(hdc, glContext);
+
 
 #elif PLAT_LINUX
 
@@ -614,7 +653,7 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 	}
 
 	glContext = glXCreateContext(display, vi, None, True);
-	glContext2 = glXCreateContext(display, vi, glContext, True);
+	InitSharedContexts();
 
 	glXMakeCurrent(display, (GLXDrawable)params.hWindow, glContext);
 #endif //PLAT_WIN
@@ -663,7 +702,6 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 #endif //PLAT_WIN
 
 	m_Renderer->m_glContext = this->glContext;
-	m_Renderer->m_glContext2 = this->glContext2;
 
 #ifndef USE_GLES2 // TEMPORARILY DISABLED
 	if (GLAD_GL_ARB_multisample && params.nMultisample > 0)
@@ -675,23 +713,20 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 
 void CGLRenderLib::ExitAPI()
 {
-	m_Renderer->GL_CRITICAL();
-	m_Renderer->GL_END_CRITICAL();
-
 #ifdef PLAT_WIN
 
 #ifdef USE_GLES2
 	eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-	DropSharedContext();
 	eglDestroyContext(eglDisplay, glContext);
-	//eglDestroyContext(eglDisplay, glContext2);
-	
+
 	eglDestroySurface(eglDisplay, eglSurface);
 	eglTerminate(eglDisplay);
 #else
 	wglMakeCurrent(NULL, NULL);
+
+	DestroySharedContexts();
+
 	wglDeleteContext(glContext);
-	//wglDeleteContext(glContext2);
 
 	ReleaseDC(hwnd, hdc);
 
@@ -729,17 +764,14 @@ void CGLRenderLib::ExitAPI()
 
 }
 
+
 void CGLRenderLib::BeginFrame()
 {
-	m_Renderer->GL_CRITICAL();
 	m_Renderer->SetViewport(0, 0, m_width, m_height);
-	m_Renderer->GL_END_CRITICAL();
 }
 
 void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 {
-	m_Renderer->GL_CRITICAL();
-
 #ifdef USE_GLES2
 
 	eglSwapBuffers(eglDisplay, eglSurface);
@@ -762,8 +794,6 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 	glXSwapBuffers(display, (Window)m_Renderer->m_params->hWindow);
 
 #endif // PLAT_WIN
-
-    m_Renderer->GL_END_CRITICAL();
 }
 
 void CGLRenderLib::SetBackbufferSize(const int w, const int h)
@@ -790,16 +820,12 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 
 	if (glContext != NULL)
 	{
-		m_Renderer->GL_CRITICAL();
 		glViewport(0, 0, m_width, m_height);
-		m_Renderer->GL_END_CRITICAL();
 	}
 }
 
 bool CGLRenderLib::CaptureScreenshot(CImage &img)
 {
-	m_Renderer->GL_CRITICAL();
-
 	glFinish();
 
 	ubyte *pixels = img.Create(FORMAT_RGB8, m_width, m_height, 1, 1);
@@ -810,8 +836,6 @@ bool CGLRenderLib::CaptureScreenshot(CImage &img)
 		memcpy(pixels + y * m_width * 3, flipped + (m_height - y - 1) * m_width * 3, m_width * 3);
 
 	delete [] flipped;
-
-	m_Renderer->GL_END_CRITICAL();
 
 	return true;
 }

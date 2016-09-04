@@ -133,8 +133,6 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
         glGetTexImage(glTarget,m_nLockLevel, srcFormat, srcType, m_lockPtr);
 
         glBindTexture(glTarget, 0);
-
-        pGLRHI->GL_END_CRITICAL();
     }
 #endif // USE_GLES2
 }
@@ -156,8 +154,6 @@ void CGLTexture::Unlock()
 			glBindTexture(glTarget, textures[0].glTexID);
 			glTexSubImage2D(glTarget, 0, 0, 0, m_iWidth, m_iHeight, srcFormat, srcType, m_lockPtr);
 			glBindTexture(glTarget, 0);
-
-			pGLRHI->GL_END_CRITICAL();
 		}
 
 		free(m_lockPtr);

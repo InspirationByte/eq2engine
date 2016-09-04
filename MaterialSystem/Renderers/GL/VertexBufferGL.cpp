@@ -74,12 +74,8 @@ void CVertexBufferGL::Update(void* data, int size, int offset, bool discard /*= 
 	glBufferSubData(GL_ARRAY_BUFFER, offset*m_strideSize, size*m_strideSize, data);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	pGLRHI->GL_END_CRITICAL();
-
 	if(dynamic && discard && offset == 0)
 		m_numVerts = size;
-
-
 }
 
 // locks vertex buffer and gives to programmer buffer data
@@ -153,7 +149,6 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 		(*outdata) = m_lockPtr + m_lockOffs*m_strideSize;
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		pGLRHI->GL_END_CRITICAL();
 	}
 #endif // USE_GLES2
 
@@ -186,8 +181,6 @@ void CVertexBufferGL::Unlock()
 
 			// check if bound
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-			pGLRHI->GL_END_CRITICAL();
 		}
 
 #ifndef USE_GLES2 // don't do dis...

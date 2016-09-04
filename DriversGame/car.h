@@ -436,7 +436,9 @@ public:
 	void					DecrementPursue();
 	int						GetPursuedCount() const;
 
+#ifndef NO_LUA
 	virtual void			L_RegisterEventHandler(const OOLUA::Table& tableRef);
+#endif // NO_LUA
 
 public:
 	carConfigEntry_t*		m_conf;
@@ -545,7 +547,9 @@ protected:
 	CNetworkVar(bool,		m_autohandbrake);
 	CNetworkVar(bool,		m_inWater);
 
+#ifndef NO_LUA
 	EqLua::LuaTableFuncRef	m_luaOnCollision;
+#endif // NO_LUA
 
 	TexAtlasEntry_t*		m_trans_grasspart;
 	TexAtlasEntry_t*		m_trans_smoke2;

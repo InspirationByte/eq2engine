@@ -35,7 +35,27 @@ typedef struct __GLXFBConfigRec *GLXFBConfig;
 
 #include "VertexFormatGL.h"
 
-//#define USE_OPENGL_ES
+struct activeWorker_t
+{
+	activeWorker_t() : numWorks(0), active(false)
+	{
+	}
+
+	uintptr_t			threadId;
+
+#ifdef USE_GLES2
+	EGLContext			context;
+#elif _WIN32
+	HGLRC				context;
+#elif defined(LINUX)
+	GLXContext			context;
+#elif defined(__APPLE__)
+	GLXContext			context;
+#endif // _WIN32
+
+	int					numWorks;
+	bool				active;
+};
 
 enum EGraphicsVendor
 {
@@ -114,6 +134,12 @@ public:
 	// Synchronization
 	void				Flush();
 	void				Finish();
+
+	// prepares for async operation (required to be called in main thread)
+	void				BeginAsyncOperation( uintptr_t threadId );
+
+	// completes for async operation (must be called in worker thread)
+	void				EndAsyncOperation();
 
 //-------------------------------------------------------------
 // State manipulation
@@ -317,10 +343,6 @@ public:
 protected:
 
 	void				GL_CRITICAL();
-	void				GL_END_CRITICAL();
-
-	void                SwitchGLContext();
-	void                ResetGLContext();
 
 	void				CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags = 0);
 	GLuint				CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags);
@@ -330,74 +352,72 @@ protected:
 
 private:
 	//OpenGL - Specific
-	void				InternalSetupSampler(uint texTarget, const SamplerStateParam_t& sSamplingParams);
-	void				InternalChangeFrontFace(int nCullFaceMode);
+	void					InternalSetupSampler(uint texTarget, const SamplerStateParam_t& sSamplingParams);
+	void					InternalChangeFrontFace(int nCullFaceMode);
 
-	GLuint				m_frameBuffer;
-	GLuint				m_depthBuffer;
+	GLuint					m_frameBuffer;
+	GLuint					m_depthBuffer;
 
-	GLenum				m_drawBuffers[MAX_MRTS];
+	GLenum					m_drawBuffers[MAX_MRTS];
 
-	int					m_boundInstanceStream;
+	int						m_boundInstanceStream;
 
-	int					m_nCurrentRenderTargets;
+	int						m_nCurrentRenderTargets;
 
-	int					m_nCurrentFrontFace;
+	int						m_nCurrentFrontFace;
 
-	int					m_nCurrentSrcFactor;
-	int					m_nCurrentDstFactor;
-	int					m_nCurrentBlendFunc;
+	int						m_nCurrentSrcFactor;
+	int						m_nCurrentDstFactor;
+	int						m_nCurrentBlendFunc;
 
-	int					m_nCurrentDepthFunc;
-	bool				m_bCurrentDepthTestEnable;
-	bool				m_bCurrentDepthWriteEnable;
+	int						m_nCurrentDepthFunc;
+	bool					m_bCurrentDepthTestEnable;
+	bool					m_bCurrentDepthWriteEnable;
 
-	bool				m_bCurrentMultiSampleEnable;
-	bool				m_bCurrentScissorEnable;
-	int					m_nCurrentCullMode;
-	int					m_nCurrentFillMode;
+	bool					m_bCurrentMultiSampleEnable;
+	bool					m_bCurrentScissorEnable;
+	int						m_nCurrentCullMode;
+	int						m_nCurrentFillMode;
 
-	int					m_nCurrentMask;
-	bool				m_bCurrentBlendEnable;
+	int						m_nCurrentMask;
+	bool					m_bCurrentBlendEnable;
 
-	uint				m_nCurrentVBO;
+	uint					m_nCurrentVBO;
 
-	IRectangle			m_viewPort;
+	IRectangle				m_viewPort;
 
-	int					m_nCurrentMatrixMode;
-	Matrix4x4			m_matrices[4];
+	int						m_nCurrentMatrixMode;
+	Matrix4x4				m_matrices[4];
 
-	IShaderProgram*		m_pMeshBufferNoTextureShader;
-	IShaderProgram*		m_pMeshBufferTexturedShader;
+	IShaderProgram*			m_pMeshBufferNoTextureShader;
+	IShaderProgram*			m_pMeshBufferTexturedShader;
 
-	CGLMeshBuilder*		m_meshBuilder;
+	CGLMeshBuilder*			m_meshBuilder;
 
 #ifdef USE_GLES2
     EGLNativeDisplayType	m_hdc;
     EGLDisplay				m_display;
     EGLSurface				m_eglSurface;
     EGLContext				m_glContext;
-	EGLContext				m_glContext2;
 #elif _WIN32
-	HDC					m_hdc;
-	HGLRC				m_glContext;
-	HGLRC				m_glContext2;
+	HDC						m_hdc;
+	HGLRC					m_glContext;
 #elif defined(LINUX)
-	GLXContext			m_glContext;
-	GLXContext			m_glContext2;
-	Display*            m_display;
+	GLXContext				m_glContext;
+	Display*				 m_display;
 #elif defined(__APPLE__)
-	AGLContext			m_glContext;
-	GLXContext			m_glContext2;
+	AGLContext				m_glContext;
 #endif // _WIN32
 
-	uintptr_t			m_mainThreadId;
-	uintptr_t			m_currThreadId;
-	bool				m_contextBound;
+	DkList<activeWorker_t>	m_activeWorkers;
 
-	CEqSignal			m_busySignal;
+	uintptr_t				m_mainThreadId;
+	uintptr_t				m_currThreadId;
+	bool					m_contextBound;
 
-	EGraphicsVendor		m_vendor;
+	CEqSignal				m_busySignal;
+
+	EGraphicsVendor			m_vendor;
 };
 
 #endif // SHADERAPIGL_H

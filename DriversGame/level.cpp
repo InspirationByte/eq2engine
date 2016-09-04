@@ -255,6 +255,7 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 
 #ifndef EDITOR
 	StartWorkerThread( "LevelLoaderThread" );
+	
 #else
 	// regenerate nav grid
 	Nav_ClearCellStates();
@@ -1330,6 +1331,8 @@ void CGameLevel::QueryNearestRegions( const IVector2D& point, bool waitLoad )
 
 	if( numNeedToLoad > 0 )
 	{
+		g_pShaderAPI->BeginAsyncOperation( GetThreadID() );
+
 		// signal loader
 		SignalWork();
 
@@ -1487,6 +1490,8 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 int	CGameLevel::Run()
 {
 	UpdateRegionLoading();
+
+	g_pShaderAPI->EndAsyncOperation();
 
 	return 0;
 }

@@ -10,12 +10,37 @@
 
 #include "../IRenderLibrary.h"
 #include "ShaderAPIGL.h"
+#include <map>
 
 #ifdef USE_GLES2
 #include <EGL/egl.h>
 #endif // USE_GLES2
 
 class ShaderAPIGL;
+
+#ifdef USE_GLES2
+#define GL_CONTEXT EGLContext
+#elif _WIN32
+#define GL_CONTEXT HGLRC
+#elif defined(LINUX)
+#define GL_CONTEXT GLXContext
+#elif defined(__APPLE__)
+#define GL_CONTEXT GLXContext
+#endif // _WIN32
+
+struct glsCtx_t
+{
+	glsCtx_t() {}
+	glsCtx_t(GL_CONTEXT ctx) : context(ctx), isAqquired(false), threadId(0)
+	{
+	}
+
+	GL_CONTEXT	context;
+	bool		isAqquired;
+	uintptr_t	threadId;
+};
+
+#define MAX_SHARED_CONTEXTS 1 // thank you, OpenGL, REALLY FUCKED ME with having multiple context, works perfect btw it crashes
 
 class CGLRenderLib : public IRenderLibrary
 {
@@ -54,12 +79,13 @@ public:
 	// returns default swap chain
 	IEqSwapChain*			GetDefaultSwapchain();
 
-	void*					GetSharedContext();		// this is called in other thread
-	void					DropSharedContext();
+	GL_CONTEXT				GetFreeSharedContext(uintptr_t threadId);
 
-	void					RestoreSharedContext();	// this is often called in main thread
+	GL_CONTEXT				CreateSharedContext(GL_CONTEXT shareWith);
+
+	void					InitSharedContexts();
+	void					DestroySharedContexts();
 	
-
 protected:
 
 	ShaderAPIGL*			m_Renderer;
@@ -72,7 +98,6 @@ protected:
     EGLDisplay				eglDisplay;
     EGLSurface				eglSurface;
     EGLContext				glContext;
-	EGLContext				glContext2;
 
 	EGLConfig				eglConfig;
 
@@ -82,18 +107,15 @@ protected:
 
 	HDC						hdc;
 	HGLRC					glContext;
-	HGLRC					glContext2;
 	HWND					hwnd;
 
 #elif defined(LINUX)
 	GLXContext				glContext;
-	GLXContext				glContext2;
     XF86VidModeModeInfo**	dmodes;
-    Display*                display;
-    int                     m_screen;
+    Display*				display;
+    int						m_screen;
 #elif defined(__APPLE__)
 	AGLContext				glContext;
-	AGLContext				glContext2;
 	CFArrayRef				dmodes;
 	CFDictionaryRef			initialMode;
 #endif // _WIN32
@@ -102,5 +124,7 @@ protected:
 	int						m_height;
 
 	bool					m_bResized;
+
+	glsCtx_t				m_contexts[MAX_SHARED_CONTEXTS];
 };
 #endif //CGLRENDERLIB_H

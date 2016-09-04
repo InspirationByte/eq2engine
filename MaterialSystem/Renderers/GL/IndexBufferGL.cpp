@@ -61,12 +61,8 @@ void CIndexBufferGL::Update(void* data, int size, int offset, bool discard /*= t
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset*m_nIndexSize, size*m_nIndexSize, data);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	pGLRHI->GL_END_CRITICAL();
-
 	if(dynamic && discard && offset == 0)
 		m_nIndices = size;
-
-
 }
 
 // locks index buffer and gives to programmer buffer data
@@ -141,8 +137,6 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 		(*outdata) = m_lockPtr + m_lockOffs*m_nIndexSize;
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		pGLRHI->GL_END_CRITICAL();
 	}
 #endif // USE_GLES2
 
@@ -174,8 +168,6 @@ void CIndexBufferGL::Unlock()
 #endif // USE_GLES2
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-			pGLRHI->GL_END_CRITICAL();
 		}
 
 #ifndef USE_GLES2 // don't do dis...

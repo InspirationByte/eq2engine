@@ -3865,11 +3865,13 @@ int CCar::GetPursuedCount() const
 	return m_numPursued;
 }
 
+#ifndef NO_LUA
 void CCar::L_RegisterEventHandler(const OOLUA::Table& tableRef)
 {
 	BaseClass::L_RegisterEventHandler(tableRef);
 	m_luaOnCollision.Get(m_luaEvtHandler, "OnCollide", true);
 }
+#endif // NO_LUA
 
 #ifndef NO_LUA
 OOLUA_EXPORT_FUNCTIONS(

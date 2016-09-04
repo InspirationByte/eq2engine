@@ -64,6 +64,16 @@ public:
 	void								ResetCounters();
 
 //-------------------------------------------------------------
+// MT Synchronizatio
+//-------------------------------------------------------------
+
+	// prepares for async operation (required to be called in main thread)
+	virtual void					BeginAsyncOperation( uintptr_t threadId ) {}	// obsolete for D3D
+
+	// completes for async operation (must be called in worker thread)
+	virtual void					EndAsyncOperation() {}							// obsolete for D3D
+
+//-------------------------------------------------------------
 // Textures
 //-------------------------------------------------------------
 
