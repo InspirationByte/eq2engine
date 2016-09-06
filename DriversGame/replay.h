@@ -103,21 +103,20 @@ struct vehiclereplay_t
 
 	int			scriptObjectId;
 
-	DkList<replaycontrol_t> replayArray;
-
-	EqString	name;
-
 	int64		curr_frame; // play only
-	bool		check;
-	bool		recordOnlyCollisions;
-	bool		done;
 
-	int			skipFrames;
-	int			skeptFrames;
+	uint16		skipFrames;
+	uint16		skeptFrames;
+
+	bool		check		: 1;
+	bool		recordOnlyCollisions : 2;
+	bool		done		: 3;
+	bool		onEvent		: 4;
 
 	CCar*		obj_car;
+	EqString	name;
 
-	// float	startTime;	// start time when actually car spawned
+	DkList<replaycontrol_t> replayArray;
 };
 
 struct replayevent_t

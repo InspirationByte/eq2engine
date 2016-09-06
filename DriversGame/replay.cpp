@@ -61,6 +61,7 @@ int CReplayData::Record(CCar* pCar, bool onlyCollisions)
 	veh.curr_frame = 0;
 	veh.check = false;
 	veh.done = false;
+	veh.onEvent = true;
 
 	veh.skipFrames = 0;
 	veh.skeptFrames = 0;
@@ -109,14 +110,15 @@ void CReplayData::Stop()
 
 	for(int i = 0; i < m_vehicles.numElem(); i++)
 	{
-		m_vehicles[i].done = true;
+		vehiclereplay_t& veh = m_vehicles[i];
+		veh.done = true;
 
 		if(m_state == REPL_PLAYING)
 		{
-			m_vehicles[i].obj_car = NULL;	// release
-			m_vehicles[i].curr_frame = 0;
-			m_vehicles[i].skeptFrames = 0;
-			m_vehicles[i].skipFrames = 0;
+			veh.obj_car = NULL;	// release
+			veh.curr_frame = 0;
+			veh.skeptFrames = 0;
+			veh.skipFrames = 0;
 		}
 	}
 
@@ -260,8 +262,8 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 	if(rep->obj_car == NULL)
 		return;
 
-	if(rep->obj_car->IsLocked())
-		return;
+	//if(rep->obj_car->IsLocked())
+	//	return;
 
 	// if replay is complete or it's playback time, play this.
 	if(!(rep->done || rep->curr_frame < rep->replayArray.numElem()-1))
@@ -345,12 +347,18 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 	uint control_flags = rep->obj_car->GetControlButtons();
 	control_flags &= ~IN_MISC; // kill misc buttons, left only needed
 
-	if(nFrame == 0)
+	rep->skeptFrames++;
+
+	// decide to discard frames or not depending on events
+	// or record only frames where collision ocurred
+	if(!rep->recordOnlyCollisions && !rep->onEvent)
 	{
-		addControls = true;
-	}
-	else // add only when old buttons has changed
-	{
+		// skip frames if not on event
+		if (rep->skeptFrames < rep->skipFrames)
+			return true;
+		else
+			rep->skeptFrames = 0;
+
 		replaycontrol_t& prevControl = rep->replayArray[nFrame-1];
 
 		// unpack
@@ -368,19 +376,9 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 		addControls = (prevControl.button_flags != control_flags) || (accelControl != prevAccelControl) || (brakeControl != prevbrakeControl) || (steerControl != prevsteerControl);
 	}
 
-	if (rep->skeptFrames < rep->skipFrames)
-	{
-		rep->skeptFrames++;
-		return true;
-	}
-	else
-		rep->skeptFrames = 0;
+	// add replay frame if car has collision with objects
 
-	if (rep->recordOnlyCollisions)
-		addControls = false;
-
-	// TODO: add replay frame if car has collision with objects
-	if( addControls || rep->obj_car->GetPhysicsBody()->m_collisionList.numElem() > 0 )
+	if( rep->onEvent || addControls || rep->obj_car->GetPhysicsBody()->m_collisionList.numElem() > 0 )
 	{
 		replaycontrol_t con;
 		con.button_flags = control_flags;
@@ -781,6 +779,7 @@ void CReplayData::LoadFromFile(const char* filename)
 			veh.curr_frame = 0;
 			veh.check = false;
 			veh.done = true;
+			veh.onEvent = false;
 
 			for(int j = 0; j < data.numFrames; j++)
 			{
@@ -879,8 +878,11 @@ void CReplayData::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject* ob
 			CAITrafficCar* pCar = (CAITrafficCar*)object;
 
 			evt.replayIndex = Record(pCar, false);
-			m_vehicles[evt.replayIndex].skipFrames = 64;	// skip frames
-			m_vehicles[evt.replayIndex].skeptFrames = 0;
+
+			vehiclereplay_t& veh = m_vehicles[evt.replayIndex];
+
+			veh.skipFrames = 64;	// skip frames
+			veh.skeptFrames = 0;
 
 			if ( pCar->IsPursuer() )
 				evt.eventFlags |= REPLAY_FLAG_CAR_COP_AI;
@@ -901,9 +903,12 @@ void CReplayData::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject* ob
 
 			if(evt.replayIndex != REPLAY_NOT_TRACKED)
 			{
+				vehiclereplay_t& veh = m_vehicles[evt.replayIndex];
+
 				// make replay done, and invalidate realtime data
-				m_vehicles[evt.replayIndex].done = true;
-				m_vehicles[evt.replayIndex].obj_car = NULL;
+				veh.done = true;
+				veh.onEvent = true;
+				veh.obj_car = NULL;
 			}
 			else
 				return; // you can't do that
@@ -927,6 +932,9 @@ void CReplayData::PushEvent(EReplayEventType type, int replayId, void* eventData
 	evt.replayIndex = replayId;
 	evt.eventData = eventData;
 	evt.eventFlags = REPLAY_FLAG_IS_PUSHED;
+
+	if(evt.replayIndex != REPLAY_NOT_TRACKED)
+		m_vehicles[evt.replayIndex].onEvent = true;
 
 	m_events.append( evt );
 }
@@ -1085,6 +1093,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 				break;
 
 			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+
 			if(rep.obj_car)
 				rep.obj_car->Lock( (bool)evt.eventData );
 

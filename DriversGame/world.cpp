@@ -35,9 +35,9 @@ CPFXAtlasGroup* g_treeAtlas = NULL;
 
 //-----------------------------------------------------------------------------------
 
-ConVar r_zfar("r_zfar", "350", "Z depth far on main scene", CV_ARCHIVE);
+ConVar r_zfar("r_zfar", "350", NULL, CV_ARCHIVE);
 
-ConVar fog_override("fog_override","0","Override fog parameters", CV_CHEAT);
+ConVar fog_override("fog_override","0",NULL, CV_CHEAT);
 ConVar fog_enable("fog_enable","0",NULL,CV_ARCHIVE);
 
 ConVar fog_color_r("fog_color_r","0.5",NULL,CV_ARCHIVE);
@@ -48,21 +48,21 @@ ConVar fog_near("fog_near","20",NULL,CV_ARCHIVE);
 
 ConVar r_no3D("r_no3D", "0", "Disable whole 3D rendering", CV_CHEAT);
 
-ConVar r_drawWorld("r_drawWorld", "1", "Draw all static world", CV_CHEAT);
-ConVar r_drawObjects("r_drawObjects", "1", "Draw dynamic objects", CV_CHEAT);
-ConVar r_drawFakeReflections("r_drawFakeReflections", "1", "Draw fake reflections", CV_ARCHIVE);
+ConVar r_drawWorld("r_drawWorld", "1", NULL, CV_CHEAT);
+ConVar r_drawObjects("r_drawObjects", "1", NULL, CV_CHEAT);
+ConVar r_drawFakeReflections("r_drawFakeReflections", "1", NULL, CV_ARCHIVE);
 
-ConVar r_nightBrightness("r_nightBrightness", "1.0", "Night ambient brightness", CV_ARCHIVE);
+ConVar r_nightBrightness("r_nightBrightness", "1.0", NULL, CV_ARCHIVE);
 ConVar r_drawLensFlare("r_drawLensFlare", "2", "Draw lens flare\n\t1 - query by physics\n\t2 - query by occlusion", CV_ARCHIVE);
 
 ConVar r_lightDistanceScale("r_lightDistanceScale", "0.3", "Light distance scale cutoff", CV_ARCHIVE);
 
-ConVar r_ambientScale("r_ambientScale", "1.0f", "Ambient brightness scale", CV_ARCHIVE);
+ConVar r_ambientScale("r_ambientScale", "1.0f", NULL, CV_ARCHIVE);
 
 ConVar r_freezeFrustum("r_freezeFrustum", "0", NULL, CV_CHEAT);
 
-ConVar r_glowsProjOffset("r_glowsProjOffset", "0.015", "Projection matrix planes offset", CV_CHEAT);
-ConVar r_glowsProjOffsetB("r_glowsProjOffsetB", "-11.0", "Projection matrix planes offset", CV_CHEAT);
+ConVar r_glowsProjOffset("r_glowsProjOffset", "0.015", NULL, CV_CHEAT);
+ConVar r_glowsProjOffsetB("r_glowsProjOffsetB", "0.0", NULL, CV_CHEAT);
 
 ConVar r_drawsky("r_drawsky", "1", NULL, CV_CHEAT);
 
