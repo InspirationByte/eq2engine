@@ -59,7 +59,6 @@ int CReplayData::Record(CCar* pCar, bool onlyCollisions)
 	veh.name = pCar->m_conf->carName.c_str();
 
 	veh.curr_frame = 0;
-	veh.check = false;
 	veh.done = false;
 	veh.onEvent = true;
 
@@ -262,9 +261,6 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 	if(rep->obj_car == NULL)
 		return;
 
-	//if(rep->obj_car->IsLocked())
-	//	return;
-
 	// if replay is complete or it's playback time, play this.
 	if(!(rep->done || rep->curr_frame < rep->replayArray.numElem()-1))
 		return;
@@ -280,12 +276,9 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 
 	// advance frame
 	rep->curr_frame++;
-	rep->check = true;
 
-	if(rep->check)
+	if(!rep->obj_car->IsLocked())
 	{
-		rep->check = false;
-
 		// correct whole frame
 		rep->obj_car->GetPhysicsBody()->SetPosition(frame.car_origin);
 		rep->obj_car->GetPhysicsBody()->SetOrientation(Quaternion(frame.car_rot.w, frame.car_rot.x, frame.car_rot.y, frame.car_rot.z));
@@ -677,9 +670,6 @@ bool CReplayData::LoadVehicleReplay( CCar* target, const char* filename, int& ti
 		else
 			veh.curr_frame = veh.replayArray.numElem();
 
-		veh.check = true;
-		//veh.done = true;
-
 		// read frames of vehicle controls
 		for(int j = 0; j < data.numFrames; j++)
 		{
@@ -777,7 +767,6 @@ void CReplayData::LoadFromFile(const char* filename)
 			veh.name = data.name;
 
 			veh.curr_frame = 0;
-			veh.check = false;
 			veh.done = true;
 			veh.onEvent = false;
 
@@ -853,7 +842,7 @@ void CReplayData::LoadFromFile(const char* filename)
 	}
 }
 
-void CReplayData::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject* object)
+void CReplayData::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject* object, int eventFlags)
 {
 	if( m_state != REPL_RECORDING )
 		return;
@@ -863,7 +852,7 @@ void CReplayData::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject* ob
 	evt.frameIndex = m_tick;
 	evt.replayIndex = REPLAY_NOT_TRACKED;
 	evt.eventData = NULL;
-	evt.eventFlags = REPLAY_FLAG_IS_PUSHED;
+	evt.eventFlags = REPLAY_FLAG_IS_PUSHED | eventFlags;
 
 	// assign replay index
 	if( type == REPLAY_EVENT_SPAWN )
@@ -885,7 +874,14 @@ void CReplayData::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject* ob
 			veh.skeptFrames = 0;
 
 			if ( pCar->IsPursuer() )
-				evt.eventFlags |= REPLAY_FLAG_CAR_COP_AI;
+			{
+				CAIPursuerCar* pursuer = (CAIPursuerCar*)pCar;
+
+				if(pursuer->GetPursuerType() == PURSUER_TYPE_COP)
+					evt.eventFlags |= REPLAY_FLAG_CAR_COP_AI;
+				else if(pursuer->GetPursuerType() == PURSUER_TYPE_GANG)
+					evt.eventFlags |= REPLAY_FLAG_CAR_GANG_AI;
+			}
 			else
 				evt.eventFlags |= REPLAY_FLAG_CAR_AI;
 
@@ -921,7 +917,7 @@ void CReplayData::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject* ob
 	m_events.append( evt );
 }
 
-void CReplayData::PushEvent(EReplayEventType type, int replayId, void* eventData)
+void CReplayData::PushEvent(EReplayEventType type, int replayId, void* eventData, int eventFlags)
 {
 	if( m_state != REPL_RECORDING )
 		return;
@@ -931,7 +927,7 @@ void CReplayData::PushEvent(EReplayEventType type, int replayId, void* eventData
 	evt.frameIndex = m_tick;
 	evt.replayIndex = replayId;
 	evt.eventData = eventData;
-	evt.eventFlags = REPLAY_FLAG_IS_PUSHED;
+	evt.eventFlags = REPLAY_FLAG_IS_PUSHED | eventFlags;
 
 	if(evt.replayIndex != REPLAY_NOT_TRACKED)
 		m_vehicles[evt.replayIndex].onEvent = true;
@@ -1037,14 +1033,11 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 
 			m_activeVehicles.fastRemove( evt.replayIndex );
 
-			if( rep.scriptObjectId == SCRIPT_ID_NOTSCRIPTED )
-			{
-				if(g_pGameSession->GetPlayerCar() == rep.obj_car)
-					g_pGameSession->SetPlayerCar(NULL);
+			if(g_pGameSession->GetPlayerCar() == rep.obj_car)
+				g_pGameSession->SetPlayerCar(NULL);
 
-				g_pGameWorld->RemoveObject(rep.obj_car);
-				rep.obj_car = NULL;
-			}
+			g_pGameWorld->RemoveObject(rep.obj_car);
+			rep.obj_car = NULL;
 
 			break;
 		}

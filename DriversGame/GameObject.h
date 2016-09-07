@@ -88,10 +88,17 @@ enum EGameObjectState
 	GO_STATE_NOTSPAWN = -1,
 
 	GO_STATE_IDLE = 0,
+
 	GO_STATE_REMOVE,
+	GO_STATE_REMOVE_BY_SCRIPT,
 
 	GO_STATE_REMOVED	// extra state for checking
 };
+
+static inline bool IsRemoveState(EGameObjectState state)
+{
+	return state == GO_STATE_REMOVE || state == GO_STATE_REMOVE_BY_SCRIPT;
+}
 
 //-------------------------------------------------------------------------------------------
 
@@ -237,6 +244,7 @@ public:
 	// fast lua helpers
 
 	// Adds object like g_gameWorld->AddObject, but made for script registrator. DON'T USE IN C++
+	void						L_Remove();
 	void						L_Activate();
 	virtual void				L_SetContents(int contents)		{}
 	virtual void				L_SetCollideMask(int contents)	{}
@@ -260,7 +268,7 @@ public:
 
 	int							m_scriptID;	// object script ID for replay purposes
 
-	int							m_state;
+	EGameObjectState			m_state;
 
 	Matrix4x4					m_worldMatrix;
 
@@ -304,7 +312,7 @@ OOLUA_PROXY(CGameObject)
 
 	OOLUA_MEM_FUNC(void, SetModel, const char*)
 
-	OOLUA_MFUNC(Remove)
+	OOLUA_MEM_FUNC_RENAME(Remove, void, L_Remove)
 
 	OOLUA_MFUNC(SetOrigin)
 	OOLUA_MFUNC(SetAngles)

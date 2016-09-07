@@ -136,6 +136,11 @@ void  CGameObject::Remove()
 	m_state = GO_STATE_REMOVE;
 }
 
+void  CGameObject::L_Remove()
+{
+	m_state = GO_STATE_REMOVE_BY_SCRIPT;
+}
+
 void CGameObject::Spawn()
 {
 #ifndef EDITOR

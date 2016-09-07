@@ -62,6 +62,8 @@ public:
 
 	bool				CheckObjectVisibility(CCar* obj);
 
+	EPursuerAIType		GetPursuerType() const {return m_type;}
+
 protected:
 
 	int					PassiveCopState( float fDt, EStateTransition transition );

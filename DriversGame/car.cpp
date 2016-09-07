@@ -758,7 +758,7 @@ void CCar::Spawn()
 
 #ifndef EDITOR
 	if(m_replayID == REPLAY_NOT_TRACKED)
-		g_replayData->PushSpawnOrRemoveEvent( REPLAY_EVENT_SPAWN, this );
+		g_replayData->PushSpawnOrRemoveEvent( REPLAY_EVENT_SPAWN, this, (m_state == GO_STATE_REMOVE_BY_SCRIPT) ? REPLAY_FLAG_SCRIPT_CALL : 0  );
 #endif // EDITOR
 
 	m_trans_grasspart = g_translParticles->FindEntry("grasspart");
@@ -804,7 +804,7 @@ void CCar::OnRemove()
 
 #ifndef EDITOR
 	if(m_replayID != REPLAY_NOT_TRACKED)
-		g_replayData->PushSpawnOrRemoveEvent( REPLAY_EVENT_REMOVE, this );
+		g_replayData->PushSpawnOrRemoveEvent( REPLAY_EVENT_REMOVE, this, (m_state == GO_STATE_REMOVE_BY_SCRIPT) ? REPLAY_FLAG_SCRIPT_CALL : 0 );
 #endif // EDITOR
 
 	ses->RemoveSoundController(m_pIdleSound);
@@ -3813,7 +3813,7 @@ void CCar::Lock(bool lock)
 {
 	m_locked = lock;
 #ifndef EDITOR
-	g_replayData->PushEvent(REPLAY_EVENT_CAR_LOCK, m_replayID, (void*)lock);
+	g_replayData->PushEvent( REPLAY_EVENT_CAR_LOCK, m_replayID, (void*)lock );
 #endif // EDITOR
 }
 
@@ -3826,7 +3826,7 @@ void CCar::Enable(bool enable)
 {
 	m_enabled = enable;
 #ifndef EDITOR
-	g_replayData->PushEvent(REPLAY_EVENT_CAR_ENABLE, m_replayID, (void*)enable);
+	g_replayData->PushEvent( REPLAY_EVENT_CAR_ENABLE, m_replayID, (void*)enable );
 #endif // EDITOR
 }
 

@@ -556,7 +556,7 @@ void CGameWorld::Cleanup( bool unloadLevel )
 			obj->OnRemove();
 
 			if (obj->m_state != GO_STATE_REMOVED)
-				ASSERTMSG(false, "PROGRAMMER ERROR - your object doesn't fully called OnRemove. Please check your objects!!!");
+				ASSERTMSG(false, "PROGRAMMER ERROR - your object doesn't fully called OnRemove (not GO_STATE_REMOVED)");
 
 			obj->Ref_Drop();
 			i--;
@@ -765,7 +765,7 @@ void CGameWorld::UpdateWorld(float fDt)
 		{
 			CGameObject* obj = m_pGameObjects[i];
 
-			if(obj->m_state == GO_STATE_REMOVE)
+			if(IsRemoveState(obj->m_state))
 			{
 				m_level.m_mutex.Lock();
 
@@ -774,7 +774,7 @@ void CGameWorld::UpdateWorld(float fDt)
 					obj->OnRemove();
 
 					if (obj->m_state != GO_STATE_REMOVED)
-						ASSERTMSG(false, "PROGRAMMER ERROR - your object doesn't fully called OnRemove. Please check your objects!!!");
+						ASSERTMSG(false, "PROGRAMMER ERROR - your object doesn't fully called OnRemove (not GO_STATE_REMOVED)");
 
 					obj->Ref_Drop();
 					i--;

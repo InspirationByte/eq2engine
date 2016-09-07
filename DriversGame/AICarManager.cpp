@@ -155,7 +155,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 		
 		// car will be spawn, regenerate random
 		g_replayRandom.Regenerate();
-		g_replayData->PushEvent(REPLAY_EVENT_FORCE_RANDOM);
+		g_replayData->PushEvent( REPLAY_EVENT_FORCE_RANDOM );
 
 		newCar->Spawn();
 		newCar->Enable(false);

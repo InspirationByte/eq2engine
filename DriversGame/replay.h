@@ -55,6 +55,8 @@ enum EReplayFlags
 	REPLAY_FLAG_CAR_COP_AI	= (1 << 1),
 	REPLAY_FLAG_CAR_GANG_AI = (1 << 2),
 
+	REPLAY_FLAG_SCRIPT_CALL	= (1 << 3),
+
 	// this is a marker
 	REPLAY_FLAG_IS_PUSHED	= (1 << 14)
 };
@@ -108,10 +110,9 @@ struct vehiclereplay_t
 	uint16		skipFrames;
 	uint16		skeptFrames;
 
-	bool		check		: 1;
-	bool		recordOnlyCollisions : 2;
-	bool		done		: 3;
-	bool		onEvent		: 4;
+	bool		recordOnlyCollisions : 1;
+	bool		done		: 1;
+	bool		onEvent		: 1;
 
 	CCar*		obj_car;
 	EqString	name;
@@ -267,8 +268,8 @@ public:
 	//------------------------------------------------------
 
 	// replay events
-	void					PushSpawnOrRemoveEvent(EReplayEventType type, CGameObject* object);
-	void					PushEvent(EReplayEventType type, int replayId = REPLAY_NOT_TRACKED, void* eventData = NULL);
+	void					PushSpawnOrRemoveEvent(EReplayEventType type, CGameObject* object, int eventFlags = 0);
+	void					PushEvent(EReplayEventType type, int replayId = REPLAY_NOT_TRACKED, void* eventData = NULL, int eventFlags = 0);
 
 	replaycamera_t*			GetCurrentCamera();
 	int						AddCamera(const replaycamera_t& camera);
