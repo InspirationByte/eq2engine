@@ -1443,6 +1443,11 @@ void CUI_BuildingConstruct::CompleteBuilding()
 
 void CUI_BuildingConstruct::ClearSelection()
 {
+	for(int i = 0; i < m_selBuildings.numElem(); i++)
+	{
+		m_selBuildings[i].selBuild->hide = false;
+	}
+
 	m_selBuildings.clear();
 }
 

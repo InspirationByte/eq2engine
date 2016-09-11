@@ -607,7 +607,7 @@ void CNetGameSession::Update(float fDt)
 		}
 		else
 		{
-			g_pGameWorld->m_level.QueryNearestRegions( g_pGameWorld->m_CameraParams.GetOrigin(), false);
+			g_pGameWorld->m_level.QueryNearestRegions( g_pGameWorld->m_view.GetOrigin(), false);
 		}
 	}
 

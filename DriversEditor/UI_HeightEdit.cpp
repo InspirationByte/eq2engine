@@ -146,9 +146,10 @@ CMaterialAtlasList::CMaterialAtlasList(CUI_HeightEdit* parent) : wxPanel( parent
 
 	m_nPreviewSize = 128;
 	m_heightEdit = parent;
+
+	m_mouseOver = -1;
+	m_selection = -1;
 }
-
-
 
 void CMaterialAtlasList::OnMouseMotion(wxMouseEvent& event)
 {
@@ -347,6 +348,7 @@ void CMaterialAtlasList::Redraw()
 void CMaterialAtlasList::ReloadMaterialList()
 {
 	// reset
+	m_mouseOver = -1;
 	m_selection = -1;
 
 	bool no_materails = (m_materialslist.numElem() == 0);
@@ -406,6 +408,7 @@ void CMaterialAtlasList::ReloadMaterialList()
 
 void CMaterialAtlasList::UpdateAndFilterList()
 {
+	m_mouseOver = -1;
 	m_selection = -1;
 
 	m_filteredList.clear();

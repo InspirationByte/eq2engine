@@ -287,7 +287,7 @@ void CGameObject::Draw( int nRenderFlags )
 
 	studiohdr_t* pHdr = m_pModel->GetHWData()->pStudioHdr;
 
-	float camDist = g_pGameWorld->m_CameraParams.GetLODScaledDistFrom( GetOrigin() );
+	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
 
 	int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 

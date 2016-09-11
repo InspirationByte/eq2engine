@@ -162,8 +162,9 @@ protected:
 	Vector3D					m_lastpos;
 
 	Vector3D					m_dragPos;
-
 	Vector3D					m_dragOffs;
+
+	float						m_dragPrevMove;
 
 	bool						m_isSelecting;
 	int							m_draggedAxes;

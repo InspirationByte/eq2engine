@@ -285,7 +285,7 @@ void CBillboardList::DrawBillboards()
 	int numLights = 0;
 	g_pGameWorld->GetLightList(lightBbox, applyLights, numLights);
 
-	float fDistToCenter = length(g_pGameWorld->m_CameraParams.GetOrigin()-transformPos);
+	float fDistToCenter = length(g_pGameWorld->m_view.GetOrigin()-transformPos);
 	//float fTreeSizeFactor = pow(1.0f / m_aabb.GetSize().x, 2.0f)*5.0f;
 
 #endif // GAME_DRIVERS

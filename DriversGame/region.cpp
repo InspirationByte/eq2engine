@@ -301,6 +301,10 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 		CLevObjectDef* cont = ref->def;
 
 #ifdef EDITOR
+
+		if(ref->hide)
+			continue;
+
 //----------------------------------------------------------------
 // IN-EDITOR RENDERER
 //----------------------------------------------------------------

@@ -1013,6 +1013,7 @@ CUI_LevelModels::CUI_LevelModels( wxWindow* parent ) : wxPanel( parent, -1, wxDe
 	m_editMode = MEDIT_PLACEMENT;
 
 	m_dragOffs = vec3_zero;
+	m_dragPrevMove = 0.0f;
 }
 
 CUI_LevelModels::~CUI_LevelModels()
@@ -1169,6 +1170,8 @@ void CUI_LevelModels::ToggleSelection( refselectioninfo_t& ref )
 		if(	m_selRefs[i].selRegion == ref.selRegion &&
 			m_selRefs[i].selRef == ref.selRef)
 		{
+			ref.selRef->hide = false;
+
 			m_selRefs.fastRemoveIndex(i);
 
 			RecalcSelectionCenter();
@@ -1177,12 +1180,18 @@ void CUI_LevelModels::ToggleSelection( refselectioninfo_t& ref )
 	}
 
 	m_selRefs.append( ref );
+	ref.selRef->hide = true;
 
 	RecalcSelectionCenter();
 }
 
 void CUI_LevelModels::ClearSelection()
 {
+	for(int i = 0; i < m_selRefs.numElem(); i++)
+	{
+		m_selRefs[i].selRef->hide = false;
+	}
+
 	m_selRefs.clear();
 }
 
@@ -1193,11 +1202,6 @@ void CUI_LevelModels::DeleteSelection()
 		CLevObjectDef* cont = m_selRefs[i].selRef->def;
 
 		// remove and invalidate
-		if(cont->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-		{
-			cont->m_model->Ref_Drop();
-		}
-
 		delete m_selRefs[i].selRef;
 	}
 
@@ -1258,6 +1262,9 @@ void CUI_LevelModels::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile,
 	{
 		m_isSelecting = true;
 		
+		if(event.Dragging())
+			return;
+
 		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
 		{
 			float dist = MAX_COORD_UNITS;
@@ -1420,16 +1427,20 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 
 				movement *= edAxis;
 
+				float diffMove = m_dragPrevMove - length(movement);
+
+				m_dragPrevMove = length(movement);
+
 				m_dragPos += movement;
 
 				Matrix3x3 addRot;
 
 				if(m_draggedAxes & AXIS_X)
-					addRot = rotateX3( DEG2RAD(length(movement)) );
+					addRot = rotateX3( DEG2RAD(diffMove) );
 				else if(m_draggedAxes & AXIS_Y)
-					addRot = rotateY3( DEG2RAD(length(movement)) );
+					addRot = rotateY3( DEG2RAD(diffMove) );
 				else if(m_draggedAxes & AXIS_Z)
-					addRot = rotateZ3( DEG2RAD(length(movement)) );
+					addRot = rotateZ3( DEG2RAD(diffMove) );
 
 				m_editAxis.m_rotation = m_editAxis.m_rotation*addRot;
 
@@ -1458,6 +1469,7 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 	{
 		m_draggedAxes = 0;
 		m_dragOffs = vec3_zero;
+		m_dragPrevMove = 0.0f;
 	}
 }
 
@@ -1524,7 +1536,7 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 			modelref->position = ppos;
 			modelref->rotation = Vector3D(0, -m_rotation*90.0f, 0);
 
-			modelref->tile_x = m_tiledPlacement->GetValue() ? 0xFFFF : tx;
+			modelref->tile_x = m_tiledPlacement->GetValue() ? tx : 0xFFFF;
 			modelref->tile_y = ty;
 			
 			ClearSelection();
@@ -1559,8 +1571,7 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 					obj->tile_x == tx && 
 					obj->tile_y == ty)
 				{
-					if(obj->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-						obj->def->m_model->Ref_Drop();
+					delete obj;
 
 					m_selectedRegion->m_objects.fastRemoveIndex(i);
 
@@ -1699,7 +1710,7 @@ void CUI_LevelModels::OnRender()
 
 		tref.position = m_lastpos;
 		tref.rotation = Vector3D(0, -m_rotation*90.0f, 0);
-		tref.tile_x = m_tiledPlacement->GetValue() ? 0xFFFF : m_last_tx;
+		tref.tile_x = m_tiledPlacement->GetValue() ? m_last_tx : 0xFFFF;
 		tref.tile_y = m_last_ty;
 
 		// placement model overview

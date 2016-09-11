@@ -84,7 +84,7 @@ bool CFleckEffect::DrawEffect(float dTime)
 	effect.fWide = fStartSize;
 	effect.fTall = fStartSize;
 
-	Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, NULL);
+	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);
 
 	nDraws++;
 
@@ -154,7 +154,7 @@ bool CSmokeEffect::DrawEffect(float dTime)
 	effect.fTall = lerp(fStartSize, fEndSize, 1.0f-lifeTimePerc);
 
 	// no frustum for now
-	Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, NULL);
+	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);
 
 	return true;
 }
@@ -260,7 +260,7 @@ void DrawLightEffect(const Vector3D& position, const ColorRGBA& color, float siz
 	effect.vColor = color;
 
 	effect.nFlags = EFFECT_FLAG_NO_FRUSTUM_CHECK;
-	effect.fZAngle = g_pGameWorld->m_CameraParams.GetAngles().y;
+	effect.fZAngle = g_pGameWorld->m_view.GetAngles().y;
 
 	effect.group = g_additPartcles;
 
@@ -278,7 +278,7 @@ void DrawLightEffect(const Vector3D& position, const ColorRGBA& color, float siz
 	else if(type == 3)
 		effect.tex = g_additPartcles->FindEntry("glow1");
 
-	Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, NULL);
+	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);
 }
 
 //
@@ -292,7 +292,7 @@ void PoliceSirenEffect(float fCurTime, const ColorRGB& color, const Vector3D& po
 
 	effect.vColor = Vector4D(color * fSinFactor, 1.0f);
 	effect.nFlags = EFFECT_FLAG_NO_FRUSTUM_CHECK;
-	effect.fZAngle = g_pGameWorld->m_CameraParams.GetAngles().y;
+	effect.fZAngle = g_pGameWorld->m_view.GetAngles().y;
 
 	effect.group = g_additPartcles;
 
@@ -310,11 +310,11 @@ void PoliceSirenEffect(float fCurTime, const ColorRGB& color, const Vector3D& po
 	effect.tex = g_additPartcles->FindEntry("light1");
 
 	// no frustum for now
-	Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, NULL);
+	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);
 	effect.tex = g_additPartcles->FindEntry("glow1");
 	effect.fWide = lerp(min_size, max_glow_size, fabs(fSinFactor));
 	effect.fTall = lerp(min_size, max_glow_size, fabs(fSinFactor));
-	Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, NULL);
+	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);
 
 	float fCosFactor = sinf((fCurTime*16.0f)+PI_F);
 
@@ -326,12 +326,12 @@ void PoliceSirenEffect(float fCurTime, const ColorRGB& color, const Vector3D& po
 	effect.tex = g_additPartcles->FindEntry("light1a");
 
 	// no frustum for now
-	Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, NULL);
+	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);
 	effect.tex = g_additPartcles->FindEntry("glow1");
 	effect.fWide = lerp(min_size, max_glow_size, fabs(fCosFactor));
 	effect.fTall = lerp(min_size, max_glow_size, fabs(fCosFactor));
 
-	Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, NULL);
+	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);
 }
 
 //-----------------------------------------------------------------------------

@@ -45,18 +45,27 @@ public:
 	void					SetCameraProps(const carCameraConfig_t& conf);
 
 	void					SetFOV(float fFOV);
-	void					SetDropPosition(const Vector3D& camPos);
-	void					SetRotation(const Vector3D& camPos);
+	void					SetOrigin(const Vector3D& camPos);
+	void					SetAngles(const Vector3D& angles);
+
+	const Vector3D&			GetOrigin() const;
+	const Vector3D&			GetAngles() const;
+	float					GetFOV() const;
 
 	void					Reset();
 
-	CViewParams&			GetCamera();
+	const CViewParams&		GetComputedView() const;
 
-	ECameraMode				GetRealMode() const				{return m_realMode;}
-	ECameraMode				GetMode() const					{return m_mode;}
-	void					SetMode( ECameraMode newMode )	{m_mode = newMode;}
+	int						GetRealMode() const				{return m_realMode;}
+	int						GetMode() const					{return m_mode;}
+	void					SetMode( int newMode )			{m_mode = (ECameraMode)newMode;}
 
 	void					Update( float fDt, int nButtons, CCar* target );
+
+	void					SetScripted( bool enable )		{ m_scriptControl = enable; }
+	bool					IsScripted() const				{ return m_scriptControl; }
+
+	void					L_Update( float fDt, CCar* target );
 
 protected:
 
@@ -82,11 +91,13 @@ protected:
 	Vector3D				m_dropPos;
 	Vector3D				m_rotation;
 
-	CViewParams				m_viewParams;
+	CViewParams				m_computedView;
 
 	ECameraMode				m_mode;
 	ECameraMode				m_realMode;
 	int						m_oldBtns;
+
+	bool					m_scriptControl;
 };
 
 extern CCameraAnimator*		g_pCameraAnimator;

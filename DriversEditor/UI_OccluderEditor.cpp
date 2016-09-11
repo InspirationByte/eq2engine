@@ -59,8 +59,11 @@ void CUI_OccluderEditor::ProcessMouseEvents( wxMouseEvent& event )
 	{
 		if(event.ControlDown())
 		{
+			if(event.Dragging())
+				return;
+
 			// selection mode
-			if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
+			if(event.ButtonIsDown(wxMOUSE_BTN_LEFT) )
 			{
 				Vector3D ray_start, ray_dir;
 				g_pMainFrame->GetMouseScreenVectors(event.GetX(),event.GetY(), ray_start, ray_dir);

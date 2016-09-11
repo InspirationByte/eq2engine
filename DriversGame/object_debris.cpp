@@ -242,7 +242,7 @@ void CObject_Debris::Draw( int nRenderFlags )
 
 	if(r_enableObjectsInstancing.GetBool() && m_pModel->GetInstancer())
 	{
-		float camDist = g_pGameWorld->m_CameraParams.GetLODScaledDistFrom( GetOrigin() );
+		float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
 		int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
 		CGameObjectInstancer* instancer = (CGameObjectInstancer*)m_pModel->GetInstancer();

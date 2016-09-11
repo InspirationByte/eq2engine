@@ -187,15 +187,15 @@ public:
 	int								GetLightIndexList(const BoundingBox& bbox, int* lights, int maxLights = MAX_LIGHTS_INST) const;
 	void							GetLightList(const BoundingBox& bbox, wlight_t list[MAX_LIGHTS], int& numLights) const;
 
-	void							SetCameraParams(CViewParams& params);
-	CViewParams*					GetCameraParams();
+	void							SetView(const CViewParams& params);
+	CViewParams*					GetView();
 
 	//--------------------------------------------------------------------------
 
 	void							OnPreApplyMaterial( IMaterial* pMaterial );
 
 public:
-	CViewParams						m_CameraParams;
+	CViewParams						m_view;
 
 #ifdef EDITOR
 	CEditorLevel					m_level;
@@ -290,7 +290,7 @@ OOLUA_PROXY(CGameWorld)
 	OOLUA_MFUNC(SetLevelName)
 	OOLUA_MFUNC_CONST(GetLevelName)
 
-	OOLUA_MFUNC(GetCameraParams)
+	OOLUA_MFUNC(GetView)
 
 	OOLUA_MFUNC_CONST(CreateObject)
 	OOLUA_MFUNC(RemoveObject)

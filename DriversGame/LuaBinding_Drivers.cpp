@@ -59,6 +59,48 @@ OOLUA_PROXY_END
 OOLUA_EXPORT_FUNCTIONS(CLCollisionData)
 OOLUA_EXPORT_FUNCTIONS_CONST(CLCollisionData, GetPosition, GetNormal, GetLineFract, GetFract, GetHitObject)
 
+OOLUA_PROXY(CCameraAnimator)
+	OOLUA_TAGS( Abstract )
+
+	OOLUA_MFUNC( SetScripted )
+	OOLUA_MFUNC_CONST( IsScripted )
+
+	OOLUA_MEM_FUNC_RENAME( Update, void, L_Update, float, CCar* )
+
+	OOLUA_MFUNC_CONST(GetRealMode)
+	OOLUA_MFUNC_CONST(GetMode)
+	OOLUA_MFUNC(SetMode)
+
+	OOLUA_MFUNC(SetOrigin)
+	OOLUA_MFUNC(SetAngles)
+	OOLUA_MFUNC(SetFOV)
+
+	OOLUA_MFUNC_CONST(GetOrigin)
+	OOLUA_MFUNC_CONST(GetAngles)
+	OOLUA_MFUNC_CONST(GetFOV)
+
+OOLUA_PROXY_END
+
+OOLUA_EXPORT_FUNCTIONS(
+	CCameraAnimator, 
+	SetScripted, 
+	Update,
+	SetMode,
+	SetOrigin,
+	SetAngles,
+	SetFOV
+)
+
+OOLUA_EXPORT_FUNCTIONS_CONST(
+	CCameraAnimator,
+	IsScripted,
+	GetRealMode,
+	GetMode,
+	GetOrigin,
+	GetAngles,
+	GetFOV
+)
+
 CLCollisionData Lua_Util_TestLine(const Vector3D& start, const Vector3D& end, int contents)
 {
 	CLCollisionData coll;
@@ -149,6 +191,14 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	LUA_SET_GLOBAL_ENUMCONST(state, HUD_DOBJ_CAR_DAMAGE);
 	//LUA_SET_GLOBAL_ENUMCONST(state, HUDTARGET_FLAG_PLAYERINFO);
 
+	// CAMERA
+	LUA_SET_GLOBAL_ENUMCONST(state, CAM_MODE_OUTCAR);
+	LUA_SET_GLOBAL_ENUMCONST(state, CAM_MODE_INCAR);
+	LUA_SET_GLOBAL_ENUMCONST(state, CAM_MODE_TRIPOD_ZOOM);
+	LUA_SET_GLOBAL_ENUMCONST(state, CAM_MODE_TRIPOD_FIXEDZOOM);
+	LUA_SET_GLOBAL_ENUMCONST(state, CAM_MODE_TRIPOD_STATIC);
+	LUA_SET_GLOBAL_ENUMCONST(state, CAM_MODE_OUTCAR_FIXED);
+
 	OOLUA::register_class<CLCollisionData>(state);
 
 	OOLUA::register_class<CGameWorld>(state);
@@ -157,6 +207,7 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	OOLUA::register_class<CNetGameSession>(state);
 	OOLUA::register_class<CViewParams>(state);
 	OOLUA::register_class<CDrvSynHUDManager>(state);
+	OOLUA::register_class<CCameraAnimator>(state);
 
 	OOLUA::set_global(state, "SetCurrentStateType", L_SetCurrentStateType);
 	OOLUA::set_global(state, "GetCurrentStateType", L_GetCurrentStateType);
@@ -177,6 +228,8 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	OOLUA::set_global(state, "world", g_pGameWorld);
 	OOLUA::set_global_to_nil(state, "game");
 	OOLUA::set_global(state, "ai", g_pAIManager);
+
+	OOLUA::set_global(state, "cameraAnimator", g_pCameraAnimator);
 
 	OOLUA::Table utilTable = OOLUA::new_table(state);
 	utilTable.set("TestLine", L_Lua_Util_TestLine);

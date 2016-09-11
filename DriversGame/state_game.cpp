@@ -1171,7 +1171,7 @@ void CState_Game::DoCameraUpdates( float fDt )
 {
 	int camControls = (g_replayData->m_state == REPL_PLAYING) ? 0 : g_nClientButtons;
 
-	CViewParams* curView = g_pGameWorld->GetCameraParams();
+	CViewParams* curView = g_pGameWorld->GetView();
 
 	if( g_freecam.GetBool() )
 	{
@@ -1181,37 +1181,40 @@ void CState_Game::DoCameraUpdates( float fDt )
 		curView->SetAngles(g_freeCamProps.angles);
 		curView->SetFOV(g_freeCamProps.fov);
 
-		g_pCameraAnimator->SetDropPosition(g_freeCamProps.position);
+		g_pCameraAnimator->SetOrigin(g_freeCamProps.position);
 	}
 	else
 	{
-		CCar* viewedCar = g_pGameSession->GetViewCar();
-
-		if(g_replayData->m_state == REPL_PLAYING && g_replayData->m_cameras.numElem() > 0)
+		if(!g_pCameraAnimator->IsScripted())
 		{
-			// replay controls camera
-			replaycamera_t* replCamera = g_replayData->GetCurrentCamera();
+			CCar* viewedCar = g_pGameSession->GetViewCar();
 
-			if(replCamera)
+			if(g_replayData->m_state == REPL_PLAYING && g_replayData->m_cameras.numElem() > 0)
 			{
-				// Process camera
-				viewedCar = g_replayData->GetCarByReplayIndex( replCamera->targetIdx );
+				// replay controls camera
+				replaycamera_t* replCamera = g_replayData->GetCurrentCamera();
 
-				g_pCameraAnimator->SetMode( (ECameraMode)replCamera->type );
-				g_pCameraAnimator->SetDropPosition( replCamera->origin );
-				g_pCameraAnimator->SetRotation( replCamera->rotation );
-				g_pCameraAnimator->SetFOV( replCamera->fov );
+				if(replCamera)
+				{
+					// Process camera
+					viewedCar = g_replayData->GetCarByReplayIndex( replCamera->targetIdx );
 
-				g_pCameraAnimator->Update(fDt, 0, viewedCar);
+					g_pCameraAnimator->SetMode( (ECameraMode)replCamera->type );
+					g_pCameraAnimator->SetOrigin( replCamera->origin );
+					g_pCameraAnimator->SetAngles( replCamera->rotation );
+					g_pCameraAnimator->SetFOV( replCamera->fov );
+
+					g_pCameraAnimator->Update(fDt, 0, viewedCar);
+				}
 			}
+
+			g_pCameraAnimator->Update(fDt, camControls, viewedCar);
 		}
 
-		g_pCameraAnimator->Update(fDt, camControls, viewedCar);
-
 		// set final result to the world renderer
-		g_pGameWorld->SetCameraParams( g_pCameraAnimator->GetCamera() );
+		g_pGameWorld->SetView( g_pCameraAnimator->GetComputedView() );
 
-		// always
+		// as always
 		g_freeCamProps.position = curView->GetOrigin();
 		g_freeCamProps.angles = curView->GetAngles();
 		g_freeCamProps.fov = DIRECTOR_DEFAULT_CAMERA_FOV;

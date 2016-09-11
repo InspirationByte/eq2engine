@@ -116,6 +116,9 @@ struct regionObject_t
 		game_object = NULL;
 		def = NULL;
 		physObject = NULL;
+#ifdef EDITOR
+		hide = false;
+#endif // EDITOR
 	}
 
 	~regionObject_t();
@@ -135,6 +138,10 @@ struct regionObject_t
 	Vector3D		rotation;
 
 	EqString		name;
+
+#ifdef EDITOR
+	bool			hide;
+#endif // EDITOR
 };
 
 struct regZone_t

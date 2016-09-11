@@ -299,7 +299,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 			numbers20->RenderText(varargs_w(L"'%02d", millisecs), millisDisplayTextPos, numFontParams);
 		}
 
-		CViewParams& camera = *g_pGameWorld->GetCameraParams();
+		CViewParams& camera = *g_pGameWorld->GetView();
 
 		// display radar and map
 		if( m_showMap )
@@ -550,8 +550,8 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 	if(g_showCameraPosition.GetBool())
 	{
-		Vector3D viewpos = g_pGameWorld->GetCameraParams()->GetOrigin();
-		Vector3D viewrot = g_pGameWorld->GetCameraParams()->GetAngles();
+		Vector3D viewpos = g_pGameWorld->GetView()->GetOrigin();
+		Vector3D viewrot = g_pGameWorld->GetView()->GetAngles();
 
 		eqFontStyleParam_t style;
 		style.styleFlag |= TEXT_STYLE_SHADOW;

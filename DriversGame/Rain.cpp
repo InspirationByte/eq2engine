@@ -96,7 +96,7 @@ void FX_DrawRainTracer(const Vector3D &origin, Vector3D &line_dir, float width, 
 	if( g_translParticles->AllocateGeom( 4, 4, &verts, NULL, true ) < 0 )
 		return;
 
-	Vector3D viewDir = origin - g_pGameWorld->m_CameraParams.GetOrigin();
+	Vector3D viewDir = origin - g_pGameWorld->m_view.GetOrigin();
 	Vector3D lineDir = line_dir;
 
 	Vector3D ccross = fastNormalize(cross(lineDir, viewDir));
@@ -169,10 +169,10 @@ void RainEmitter::SetViewVelocity( const Vector3D& vel )
 
 void RainEmitter::Update_Draw(float dt, float emit_rate, float rain_speed)
 {
-	Vector3D viewOrigin = g_pGameWorld->m_CameraParams.GetOrigin();
+	Vector3D viewOrigin = g_pGameWorld->m_view.GetOrigin();
 
 	Vector3D viewDir;
-	AngleVectors(g_pGameWorld->m_CameraParams.GetAngles(),&viewDir);
+	AngleVectors(g_pGameWorld->m_view.GetAngles(),&viewDir);
 
 	float startH = rain_start_h.GetFloat()+viewOrigin.y;
 
@@ -229,7 +229,7 @@ void RainEmitter::EmitParticles(float dt, float rate, float rain_speed)
 		if(rParticles.numElem() >= rain_max_particles.GetInt())
 			break;
 
-		Vector3D viewOrigin = g_pGameWorld->m_CameraParams.GetOrigin() + m_viewVelocity*rain_viewVelocityOfsScale.GetFloat();
+		Vector3D viewOrigin = g_pGameWorld->m_view.GetOrigin() + m_viewVelocity*rain_viewVelocityOfsScale.GetFloat();
 
 		RainParticle *pNewParticle = new RainParticle();
 

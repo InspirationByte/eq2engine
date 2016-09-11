@@ -14,7 +14,6 @@
 #include "CameraAnimator.h"
 #include "ConVar.h"
 #include "math/math_util.h"
-#include "world.h"
 #include "car.h"
 
 #define DEFAULT_CAMERA_FOV			(52.0f)
@@ -74,14 +73,29 @@ void CCameraAnimator::SetFOV(float fFOV)
 	m_cameraFOV = fFOV;
 }
 
-void CCameraAnimator::SetDropPosition(const Vector3D& camPos)
+void CCameraAnimator::SetOrigin(const Vector3D& camPos)
 {
 	m_dropPos = camPos;
 }
 
-void CCameraAnimator::SetRotation(const Vector3D& camRot)
+void CCameraAnimator::SetAngles(const Vector3D& camRot)
 {
 	m_rotation = camRot;
+}
+
+const Vector3D& CCameraAnimator::GetOrigin() const
+{
+	return m_dropPos;
+}
+
+const Vector3D&	CCameraAnimator::GetAngles() const
+{
+	return m_rotation;
+}
+
+float CCameraAnimator::GetFOV() const 
+{
+	return m_cameraFOV;
 }
 
 void CCameraAnimator::Reset()
@@ -109,7 +123,7 @@ void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
 			// compute drop  position
 			Vector3D dropPos = target->GetOrigin() + Vector3D(0,target->m_conf->m_body_size.y,0) - target->GetForwardVector()*target->m_conf->m_body_size.z*1.1f;
 
-			SetDropPosition( dropPos );
+			SetOrigin( dropPos );
 		}
 
 		// rollin
@@ -136,6 +150,23 @@ void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
 		Animate(m_mode, nButtons, vec3_zero, Quaternion(), vec3_zero, fDt, vec3_zero);
 
 	m_oldBtns = nButtons;
+}
+
+void CCameraAnimator::L_Update( float fDt, CCar* target )
+{
+	if( target )
+	{
+		ECameraMode camMode = m_mode;
+
+		if( target->IsInWater() && camMode == CAM_MODE_INCAR )
+			camMode = CAM_MODE_OUTCAR;
+
+		SetCameraProps( target->m_conf->m_cameraConf );
+
+		Animate(camMode, 0, target->GetOrigin(), target->GetOrientation(), target->GetVelocity(), fDt, vec3_zero);
+	}
+	else
+		Animate(CAM_MODE_TRIPOD_STATIC, 0, vec3_zero, Quaternion(), vec3_zero, fDt, vec3_zero);
 }
 
 void CCameraAnimator::Animate(	ECameraMode mode,
@@ -256,9 +287,9 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 		cam_angles = VectorAngles(normalize(cam_target - cam_pos));
 
-		m_viewParams.SetOrigin(cam_pos);
-		m_viewParams.SetAngles(cam_angles);
-		m_viewParams.SetFOV(m_carConfig->fov);
+		m_computedView.SetOrigin(cam_pos);
+		m_computedView.SetAngles(cam_angles);
+		m_computedView.SetFOV(m_carConfig->fov);
 	}
 	else if(mode == CAM_MODE_OUTCAR_FIXED && m_carConfig)
 	{
@@ -267,9 +298,9 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		Vector3D forward;
 		AngleVectors(euler_angles, &forward);
 
-		m_viewParams.SetOrigin( pos - forward * m_carConfig->dist);
-		m_viewParams.SetAngles( euler_angles );
-		m_viewParams.SetFOV( m_cameraFOV );
+		m_computedView.SetOrigin( pos - forward * m_carConfig->dist);
+		m_computedView.SetAngles( euler_angles );
+		m_computedView.SetFOV( m_cameraFOV );
 	}
 	else if(mode == CAM_MODE_INCAR && m_carConfig)
 	{
@@ -295,9 +326,9 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 		Vector3D camPos = pos + vecDir + up * m_carConfig->heightInCar;
 
-		m_viewParams.SetOrigin(camPos);
-		m_viewParams.SetAngles(euler_angles);
-		m_viewParams.SetFOV(m_carConfig->fov);
+		m_computedView.SetOrigin(camPos);
+		m_computedView.SetAngles(euler_angles);
+		m_computedView.SetFOV(m_carConfig->fov);
 	}
 	else if(mode == CAM_MODE_TRIPOD_ZOOM || mode == CAM_MODE_TRIPOD_FIXEDZOOM)
 	{
@@ -306,8 +337,8 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 		Vector3D cam_angles = VectorAngles(normalize(cam_target - cam_pos));
 
-		m_viewParams.SetAngles(cam_angles);
-		m_viewParams.SetOrigin(m_dropPos);
+		m_computedView.SetAngles(cam_angles);
+		m_computedView.SetOrigin(m_dropPos);
 
 		if(mode == CAM_MODE_TRIPOD_ZOOM)
 		{
@@ -324,23 +355,24 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 			float distance_factor = 1.0f - (fDistance / ZOOM_END_DIST);
 
 			float fFov = lerp(START_FOV, END_FOV, clamp(2.5f+log(1.0f-distance_factor), 0.0f, 1.0f));
-			m_viewParams.SetFOV(fFov);
+
+			m_computedView.SetFOV(fFov);
 		}
 		else
 		{
-			m_viewParams.SetFOV(m_cameraFOV);
+			m_computedView.SetFOV(m_cameraFOV);
 		}
 
 	}
 	else if(mode == CAM_MODE_TRIPOD_STATIC)
 	{
-		m_viewParams.SetAngles(m_rotation);
-		m_viewParams.SetOrigin(m_dropPos);
-		m_viewParams.SetFOV(m_cameraFOV);
+		m_computedView.SetAngles(m_rotation);
+		m_computedView.SetOrigin(m_dropPos);
+		m_computedView.SetFOV(m_cameraFOV);
 	}
 }
 
-CViewParams& CCameraAnimator::GetCamera()
+const CViewParams& CCameraAnimator::GetComputedView() const
 {
-	return m_viewParams;
+	return m_computedView;
 }

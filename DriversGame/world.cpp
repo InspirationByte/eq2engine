@@ -91,7 +91,7 @@ DECLARE_CMD(w_respawn, "Respawn all level objects", CV_CHEAT)
 
 int SortGameObjectsByDistance(CGameObject* const& a, CGameObject* const& b)
 {
-	Vector3D cam_pos = g_pGameWorld->m_CameraParams.GetOrigin();
+	Vector3D cam_pos = g_pGameWorld->m_view.GetOrigin();
 	Vector3D objPosA = a->GetOrigin();
 	Vector3D objPosB = b->GetOrigin();
 
@@ -119,10 +119,6 @@ CGameWorld::CGameWorld()
 	m_rainSound = NULL;
 	m_vehicleVertexFormat = NULL;
 
-	// set view params
-	CViewParams viewparams( Vector3D(0.0f, 15.0f, -80.0f), vec3_zero, 60.0f);
-
-	m_CameraParams = viewparams;
 	m_sceneinfo.m_fZNear = 0.25f;
 #ifdef EDITOR
 	m_sceneinfo.m_fZFar = 8000.0f;
@@ -712,7 +708,7 @@ void CGameWorld::UpdateWorld(float fDt)
 
 				EmitSound_t thunderSnd;
 				thunderSnd.name = "rain.thunder";
-				thunderSnd.origin = m_CameraParams.GetOrigin();
+				thunderSnd.origin = m_view.GetOrigin();
 				thunderSnd.fRadiusMultiplier = 10.0f;
 
 				ses->EmitSound(&thunderSnd);
@@ -723,7 +719,7 @@ void CGameWorld::UpdateWorld(float fDt)
 
 		if(m_envConfig.weatherType >= WEATHER_TYPE_RAIN && m_rainSound)
 		{
-			m_rainSound->SetOrigin(m_CameraParams.GetOrigin());
+			m_rainSound->SetOrigin(m_view.GetOrigin());
 
 			if(m_rainSound->IsStopped())
 				m_rainSound->StartSound();
@@ -862,7 +858,8 @@ bool CGameWorld::AddLight(const wlight_t& light)
 
 void CGameWorld::BuildViewMatrices(int width, int height, int nRenderFlags)
 {
-	Vector3D vRadianRotation			= VDEG2RAD(m_CameraParams.GetAngles());
+	Vector3D vRadianRotation = m_view.GetAngles();
+	vRadianRotation = VDEG2RAD(vRadianRotation);
 
 	// this is negated matrix
 	Matrix4x4 viewMatrix;
@@ -878,7 +875,7 @@ void CGameWorld::BuildViewMatrices(int width, int height, int nRenderFlags)
 		if(nRenderFlags & RFLAG_FLIP_VIEWPORT_X)
 			width *= -1;
 
-		m_matrices[MATRIXMODE_PROJECTION]	= perspectiveMatrixY(DEG2RAD(m_CameraParams.GetFOV()), width, height, m_sceneinfo.m_fZNear, m_sceneinfo.m_fZFar);
+		m_matrices[MATRIXMODE_PROJECTION]	= perspectiveMatrixY(DEG2RAD(m_view.GetFOV()), width, height, m_sceneinfo.m_fZNear, m_sceneinfo.m_fZFar);
 
 		if(r_ortho.GetBool())
 			m_matrices[MATRIXMODE_PROJECTION]	= orthoMatrixR(width*-r_ortho_size.GetFloat(), width*r_ortho_size.GetFloat(), height*-r_ortho_size.GetFloat(), height*r_ortho_size.GetFloat(), -m_sceneinfo.m_fZFar, m_sceneinfo.m_fZFar);
@@ -886,7 +883,7 @@ void CGameWorld::BuildViewMatrices(int width, int height, int nRenderFlags)
 		viewMatrix = rotateZXY4(-vRadianRotation.x,-vRadianRotation.y,-vRadianRotation.z);
 	//}
 
-	viewMatrix.translate(-m_CameraParams.GetOrigin());
+	viewMatrix.translate(-m_view.GetOrigin());
 
 	m_matrices[MATRIXMODE_VIEW]			= viewMatrix;
 	m_matrices[MATRIXMODE_WORLD]		= identity4();
@@ -900,7 +897,7 @@ void CGameWorld::BuildViewMatrices(int width, int height, int nRenderFlags)
 	if(materials->GetLight() && (materials->GetLight()->nType != DLT_OMNIDIRECTIONAL) && (materials->GetLight()->nFlags & LFLAG_MATRIXSET))
 		m_viewprojection = materials->GetLight()->lightWVP;
 
-	Matrix4x4 customGlowsProj = perspectiveMatrixY(DEG2RAD(m_CameraParams.GetFOV()), width, height, m_sceneinfo.m_fZNear+r_glowsProjOffset.GetFloat(), m_sceneinfo.m_fZFar+r_glowsProjOffsetB.GetFloat());
+	Matrix4x4 customGlowsProj = perspectiveMatrixY(DEG2RAD(m_view.GetFOV()), width, height, m_sceneinfo.m_fZNear+r_glowsProjOffset.GetFloat(), m_sceneinfo.m_fZFar+r_glowsProjOffsetB.GetFloat());
 
 	g_additPartcles->SetCustomProjectionMatrix( customGlowsProj );
 
@@ -909,7 +906,7 @@ void CGameWorld::BuildViewMatrices(int width, int height, int nRenderFlags)
 
 	FogInfo_t fog;
 	materials->GetFogInfo(fog);
-	fog.viewPos = m_CameraParams.GetOrigin();
+	fog.viewPos = m_view.GetOrigin();
 	materials->SetFogInfo(fog);
 }
 
@@ -1183,7 +1180,7 @@ void CGameWorld::UpdateLightTexture()
 
 		for(int i = 0; i < m_numLights && i < MAX_LIGHTS_TEXTURE; i++)
 		{
-			lightData[i] = Vector4D(m_CameraParams.GetOrigin()-m_lights[i].position.xyz(), 1.0f / m_lights[i].position.w);
+			lightData[i] = Vector4D(m_view.GetOrigin()-m_lights[i].position.xyz(), 1.0f / m_lights[i].position.w);
 			lightData[MAX_LIGHTS_TEXTURE+i] = m_lights[i].color;
 		}
 		m_lightsTex->Unlock();
@@ -1195,7 +1192,7 @@ void CGameWorld::UpdateLightTexture()
 void CGameWorld::UpdateOccludingFrustum()
 {
 	m_occludingFrustum.Clear();
-	m_level.CollectVisibleOccluders( m_occludingFrustum, m_CameraParams.GetOrigin() );
+	m_level.CollectVisibleOccluders( m_occludingFrustum, m_view.GetOrigin() );
 }
 
 void GRJob_UpdateRenderables(void* data)
@@ -1282,14 +1279,14 @@ void CGameWorld::DrawFakeReflections()
 		return;
 
 	CollisionData_t coll;
-	g_pPhysics->TestLine(m_CameraParams.GetOrigin(), m_CameraParams.GetOrigin() - Vector3D(0, 100, 0), coll, (OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS));
+	g_pPhysics->TestLine(m_view.GetOrigin(), m_view.GetOrigin() - Vector3D(0, 100, 0), coll, (OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS));
 
 	float traceResultDist = coll.fract*100.0f;
 
 	Matrix4x4 proj, view;
 
 	// quickly produce matrices
-	Vector3D radians = m_CameraParams.GetAngles();
+	Vector3D radians = m_view.GetAngles();
 	radians = VDEG2RAD(radians);
 
 	Vector3D newViewPos = -(coll.position - Vector3D(0, traceResultDist,0));
@@ -1418,7 +1415,7 @@ void CGameWorld::Draw( int nRenderFlags )
 	{
 		FogInfo_t overrridefog;
 
-		overrridefog.viewPos = m_CameraParams.GetOrigin();
+		overrridefog.viewPos = m_view.GetOrigin();
 
 		overrridefog.enableFog = fog_enable.GetBool();
 		overrridefog.fogColor = Vector3D(fog_color_r.GetFloat(), fog_color_g.GetFloat(), fog_color_b.GetFloat());
@@ -1429,7 +1426,7 @@ void CGameWorld::Draw( int nRenderFlags )
 	}
 	else
 	{
-		m_info.fogInfo.viewPos = m_CameraParams.GetOrigin();
+		m_info.fogInfo.viewPos = m_view.GetOrigin();
 
 		m_info.fogInfo.enableFog = m_envConfig.fogEnable;
 		m_info.fogInfo.fogColor = m_envConfig.fogColor;
@@ -1474,7 +1471,7 @@ void CGameWorld::Draw( int nRenderFlags )
 	if(r_drawWorld.GetBool())
 	{
 		// DRAW ONLY OPAQUE OBJECTS
-		m_level.Render(m_CameraParams.GetOrigin(), m_viewprojection, m_occludingFrustum, nRenderFlags);
+		m_level.Render(m_view.GetOrigin(), m_viewprojection, m_occludingFrustum, nRenderFlags);
 	}
 
 	if(r_drawsky.GetBool())
@@ -1483,12 +1480,12 @@ void CGameWorld::Draw( int nRenderFlags )
 		// Draw sky
 		//
 #ifndef EDITOR
-		Matrix4x4 skyProj = perspectiveMatrixY(DEG2RAD(m_CameraParams.GetFOV()), screenSize.x, screenSize.y, 1.0f, 10000.0f);
+		Matrix4x4 skyProj = perspectiveMatrixY(DEG2RAD(m_view.GetFOV()), screenSize.x, screenSize.y, 1.0f, 10000.0f);
 		materials->SetMatrix(MATRIXMODE_PROJECTION, skyProj);
 #endif // EDITOR
 
 		materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
-		materials->SetMatrix(MATRIXMODE_WORLD, translate(m_CameraParams.GetOrigin()));
+		materials->SetMatrix(MATRIXMODE_WORLD, translate(m_view.GetOrigin()));
 
 		materials->SetAmbientColor(fSkyBrightness);
 		DrawSkyBox(m_skyMaterial, nRenderFlags);
@@ -1558,7 +1555,7 @@ void CGameWorld::Draw( int nRenderFlags )
 
 #ifndef EDITOR
 
-	Vector3D virtualSunPos = m_CameraParams.GetOrigin() + m_envConfig.sunLensDirection*1000.0f;
+	Vector3D virtualSunPos = m_view.GetOrigin() + m_envConfig.sunLensDirection*1000.0f;
 
 	Vector2D lensScreenPos;
 	PointToScreen(virtualSunPos, lensScreenPos, m_viewprojection, screenSize);
@@ -1616,7 +1613,7 @@ void CGameWorld::Draw( int nRenderFlags )
 		{
 			CollisionData_t coll;
 			int collMask = OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_SOLID_GROUND;
-			if( g_pPhysics->TestLine(m_CameraParams.GetOrigin(), virtualSunPos, coll, collMask))
+			if( g_pPhysics->TestLine(m_view.GetOrigin(), virtualSunPos, coll, collMask))
 			{
 				m_lensIntensityTiming -= g_pHost->GetFrameTime()*10.0f;
 				m_lensIntensityTiming = max(0.0f, m_lensIntensityTiming*fIntensity);
@@ -1657,14 +1654,14 @@ void CGameWorld::Draw( int nRenderFlags )
 	//g_pShaderAPI->Flush();
 }
 
-void CGameWorld::SetCameraParams(CViewParams& params)
+void CGameWorld::SetView(const CViewParams& params)
 {
-	m_CameraParams = params;
+	m_view = params;
 }
 
-CViewParams* CGameWorld::GetCameraParams()
+CViewParams* CGameWorld::GetView()
 {
-	return &m_CameraParams;
+	return &m_view;
 }
 
 CBillboardList* CGameWorld::FindBillboardList(const char* name) const
@@ -1854,7 +1851,7 @@ CGameWorld*	g_pGameWorld = &s_GameWorld;
 
 #ifndef NO_LUA
 
-OOLUA_EXPORT_FUNCTIONS(CGameWorld, SetEnvironmentName, SetLevelName, GetCameraParams, QueryNearestRegions, RemoveObject)
+OOLUA_EXPORT_FUNCTIONS(CGameWorld, SetEnvironmentName, SetLevelName, GetView, QueryNearestRegions, RemoveObject)
 OOLUA_EXPORT_FUNCTIONS_CONST(CGameWorld, FindObjectByName, CreateObject, IsValidObject, GetEnvironmentName, GetLevelName)
 
 OOLUA_EXPORT_FUNCTIONS(CViewParams, SetOrigin, SetAngles, SetFOV)

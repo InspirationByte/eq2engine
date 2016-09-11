@@ -168,7 +168,7 @@ void CObject_TrafficLight::Draw( int nRenderFlags )
 
 	if(r_enableObjectsInstancing.GetBool() && m_pModel->GetInstancer())
 	{
-		float camDist = g_pGameWorld->m_CameraParams.GetLODScaledDistFrom( GetOrigin() );
+		float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
 		int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
 		CGameObjectInstancer* instancer = (CGameObjectInstancer*)m_pModel->GetInstancer();
@@ -208,9 +208,9 @@ void CObject_TrafficLight::Simulate(float fDt)
 		Vector3D dir;
 		AngleVectors(m_vecAngles-Vector3D(0.0f,90.0f,0.0f), &dir);
 
-		Vector3D cam_pos = g_pGameWorld->m_CameraParams.GetOrigin();
+		Vector3D cam_pos = g_pGameWorld->m_view.GetOrigin();
 		Vector3D cam_forward;
-		AngleVectors(g_pGameWorld->m_CameraParams.GetAngles(), &cam_forward);
+		AngleVectors(g_pGameWorld->m_view.GetAngles(), &cam_forward);
 
 		Plane pl(dir,-dot(dir, m_vecOrigin+dir*5.0f));
 

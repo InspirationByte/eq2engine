@@ -429,7 +429,7 @@ void CCarWheelModel::Draw( int nRenderFlags )
 {
 	if(r_enableObjectsInstancing.GetBool() && m_pModel->GetInstancer())
 	{
-		float camDist = g_pGameWorld->m_CameraParams.GetLODScaledDistFrom( GetOrigin() );
+		float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
 		int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
 		CGameObjectInstancer* instancer = (CGameObjectInstancer*)m_pModel->GetInstancer();
@@ -966,17 +966,10 @@ int	CCar::L_GetCollideMask()
 
 void CCar::SetControlButtons(int flags)
 {
-	// make no misc controls
+	// make no misc controls here
 	flags &= ~IN_MISC;
 
 	m_controlButtons = flags;
-
-	if(	m_conf->m_sirenType != SERVICE_LIGHTS_NONE &&
-		(m_controlButtons & IN_SIREN) && !(m_oldControlButtons & IN_SIREN))
-	{
-		m_oldSirenState = m_sirenEnabled;
-		m_sirenEnabled = !m_sirenEnabled;
-	}
 }
 
 int	CCar::GetControlButtons()
@@ -2236,6 +2229,11 @@ void CCar::Simulate( float fDt )
 	if(!carBody)
 		return;
 
+	if(	m_conf->m_sirenType > SERVICE_LIGHTS_NONE && (m_controlButtons & IN_SIREN) && !(m_oldControlButtons & IN_SIREN))
+	{
+		m_oldSirenState = m_sirenEnabled;
+		m_sirenEnabled = !m_sirenEnabled;
+	}
 
 	//
 	// TODO: CALCULATE THIS SOMEWHERE EARLY
@@ -2450,10 +2448,10 @@ void CCar::Simulate( float fDt )
 		Vector3D forward = GetForwardVector();
 		Vector3D upVec = GetUpVector();
 
-		Vector3D cam_pos = g_pGameWorld->m_CameraParams.GetOrigin();
+		Vector3D cam_pos = g_pGameWorld->m_view.GetOrigin();
 
 		Vector3D cam_forward;
-		AngleVectors(g_pGameWorld->m_CameraParams.GetAngles(), &cam_forward);
+		AngleVectors(g_pGameWorld->m_view.GetAngles(), &cam_forward);
 
 		Vector3D headlight_pos_noX(0.0f, m_conf->m_headlightPosition.y, m_conf->m_headlightPosition.z);
 		Vector3D headlight_position = (m_worldMatrix * Vector4D(headlight_pos_noX, 1.0f)).xyz();
@@ -3450,13 +3448,13 @@ void CCar::DrawBody( int nRenderFlags )
 
 	studiohdr_t* pHdr = m_pModel->GetHWData()->pStudioHdr;
 
-	float camDist = g_pGameWorld->m_CameraParams.GetLODScaledDistFrom( GetOrigin() );
+	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
 
 	int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
 	if(nLOD > 0 && r_enableObjectsInstancing.GetBool() && m_pModel->GetInstancer())
 	{
-		float camDist = g_pGameWorld->m_CameraParams.GetLODScaledDistFrom( GetOrigin() );
+		float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
 		int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
 		CGameObjectInstancer* instancer = (CGameObjectInstancer*)m_pModel->GetInstancer();
@@ -3581,7 +3579,7 @@ void CCar::Draw( int nRenderFlags )
 	pCarBody->UpdateBoundingBoxTransform();
 	m_bbox = pCarBody->m_aabb_transformed;
 
-	float camDist = g_pGameWorld->m_CameraParams.GetLODScaledDistFrom( GetOrigin() );
+	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
 	int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
 	if(nLOD == 0)
