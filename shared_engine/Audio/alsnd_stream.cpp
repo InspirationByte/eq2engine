@@ -59,6 +59,9 @@ void DkSoundAmbient::Play()
 	alSourcef(m_alSource, AL_GAIN, m_volume);
 	alSourcef(m_alSource, AL_PITCH, m_pitch);
 
+	if(GetState() != SOUND_STATE_PAUSED)
+		alSourceRewind(m_alSource);
+
 	//Play
 	if( m_sample->m_flags & SAMPLE_FLAG_STREAMED )
 	{
@@ -81,6 +84,10 @@ void DkSoundAmbient::Play()
 
 void DkSoundAmbient::Stop()
 {
+	alSourceStop(m_alSource);
+	alSourceRewind(m_alSource);
+	alSourcei(m_alSource, AL_BUFFER, AL_NONE);
+
 	StopStreaming();
 }
 
@@ -281,15 +288,14 @@ void DkSoundAmbient::StopStreaming()
 	if(!m_loaded)
 		return;
 
-	m_playing = false;
 	m_ready = false;
-
-	alSourceStop(m_alSource);
+	m_playing = false;
 
 	EmptyStreamQueue();
 
 	g_fileSystem->Close(m_oggFile);
 	m_oggFile = NULL;
+	m_loaded = false;
 }
 
 bool DkSoundAmbient::UploadStream(ALuint buffer)

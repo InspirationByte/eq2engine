@@ -373,7 +373,6 @@ void CGameWorld::Init()
 
 	//----------------------------------------------------
 
-
 	//
 	// Create vertex format for vehicle EGF models (EGF + EGF)
 	//
@@ -541,7 +540,6 @@ void CGameWorld::Cleanup( bool unloadLevel )
 	m_rainSound = NULL;
 
 	ses->StopAllSounds();
-	ses->Update();
 
 	for(int i = 0; i < m_pGameObjects.numElem(); i++)
 	{

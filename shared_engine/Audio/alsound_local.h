@@ -84,8 +84,6 @@ public:
 	//-----------------------------------------------------------------------------------------
 
 	// emitters
-
-
 	ISoundPlayable*			GetStaticStreamChannel( int channel );
 	int						GetNumStaticStreamChannels();
 

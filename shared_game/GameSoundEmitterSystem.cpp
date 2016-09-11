@@ -305,6 +305,8 @@ void CSoundEmitterSystem::Init(float maxDistance)
 
 void CSoundEmitterSystem::Shutdown()
 {
+	StopAllSounds();
+
 	for(int i = 0; i < m_pSoundControllerList.numElem(); i++)
 	{
 		m_pSoundControllerList[i]->StopSound(true);
@@ -777,14 +779,38 @@ bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &
 
 void CSoundEmitterSystem::StopAllSounds()
 {
+	StopAll2DSounds();
+	StopAllEmitters();
+}
+
+void CSoundEmitterSystem::StopAllEmitters()
+{
+	// stop emitters
 	for(int i = 0; i < m_pCurrentTempEmitters.numElem(); i++)
-	{
-		m_pCurrentTempEmitters[i]->pEmitter->Pause();
 		m_pCurrentTempEmitters[i]->pEmitter->Stop();
+
+	Update(true);
+	soundsystem->Update();
+}
+
+void CSoundEmitterSystem::StopAll2DSounds()
+{
+	// stop static channels
+	int i = 0;
+	while(true)
+	{
+		ISoundPlayable* staticChannel = soundsystem->GetStaticStreamChannel(i);
+
+		i++;
+		if(!staticChannel)
+			break;
+
+		staticChannel->Stop();
+		staticChannel->SetSample(NULL);
 	}
 }
 
-void CSoundEmitterSystem::Update()
+void CSoundEmitterSystem::Update(bool force)
 {
 	PROFILE_CODE(soundsystem->Update());
 
@@ -796,7 +822,7 @@ void CSoundEmitterSystem::Update()
 		musicChannel->SetVolume( snd_musicvolume.GetFloat() );
 
 	// don't update
-	if(soundsystem->GetPauseState())
+	if(!force && soundsystem->GetPauseState())
 		return;
 
 	m_vViewPos = soundsystem->GetListenerPosition();

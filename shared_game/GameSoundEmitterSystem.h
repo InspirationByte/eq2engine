@@ -292,10 +292,12 @@ public:
 	int							EmitSound( EmitSound_t* emit );								// emits sound with specified parameters
 	void						Emit2DSound( EmitSound_t* emit, int channel = -1 );
 
-
 	void						StopAllSounds();
 
-	void						Update();													// updates sound emitter system
+	void						StopAllEmitters();
+	void						StopAll2DSounds();
+
+	void						Update(bool force = false);													// updates sound emitter system
 
 	bool						UpdateEmitter( EmitterData_t* emit, soundParams_t &params, bool bForceNoInterp = false );
 

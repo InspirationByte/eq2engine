@@ -102,6 +102,8 @@ bool DkSoundEmitterLocal::DropChannel()
 
 	// stop the sound
 	alSourceStop(chnl->alSource);
+	alSourceRewind(chnl->alSource);
+	alSourcei(chnl->alSource, AL_BUFFER, AL_NONE);
 
 	chnl->alState = AL_STOPPED;
 	chnl->emitter = NULL;
@@ -157,11 +159,10 @@ void DkSoundEmitterLocal::Play()
 		alSourcef(chnl->alSource,AL_ROLLOFF_FACTOR, m_params.rolloff);
 		alSourcef(chnl->alSource,AL_GAIN, m_params.volume);
 		alSourcef(chnl->alSource, AL_AIR_ABSORPTION_FACTOR, m_params.airAbsorption);
-
 		alSourcef(chnl->alSource,AL_PITCH, m_params.pitch);
-
 		alSourcefv(chnl->alSource,AL_POSITION, vPosition);
 
+		alSourceRewind(chnl->alSource);
 		alSourcePlay(chnl->alSource);
 
 		chnl->alState = AL_PLAYING;

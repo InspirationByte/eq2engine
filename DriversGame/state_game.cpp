@@ -580,8 +580,6 @@ void CState_Game::UnloadGame()
 {
 	g_pGameHUD->Cleanup();
 
-	StopStreams();
-
 	// renderer must be reset
 	g_pShaderAPI->Reset(STATE_RESET_ALL);
 	g_pShaderAPI->Apply();
@@ -626,15 +624,7 @@ void CState_Game::LoadGame()
 
 void CState_Game::StopStreams()
 {
-	// stop any voices
-	ISoundPlayable* voiceChan = soundsystem->GetStaticStreamChannel(CHAN_VOICE);
-	if(voiceChan)
-		voiceChan->Stop();
-
-	// stop music
-	ISoundPlayable* musicChan = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
-	if(musicChan)
-		musicChan->Stop();
+	ses->StopAllSounds();
 }
 
 void CState_Game::QuickRestart(bool replay)
@@ -979,11 +969,11 @@ bool CState_Game::UpdatePauseState()
 		if(m_pauseState != (pauseMode > 0))
 		{
 			ISoundPlayable* musicChan = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
-			if(musicChan)
+			if(musicChan && musicChan->GetState() != SOUND_STATE_PLAYING)
 				musicChan->Play();
 
 			ISoundPlayable* voiceChan = soundsystem->GetStaticStreamChannel(CHAN_VOICE);
-			if(voiceChan)
+			if(voiceChan && voiceChan->GetState() != SOUND_STATE_PLAYING)
 				voiceChan->Play();
 		}
 	}

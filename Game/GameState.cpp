@@ -103,7 +103,6 @@ void GAME_STATE_GameEndSession()
 	//Msg("GameEndSession\n");
 
 	ses->StopAllSounds();
-	ses->Update();
 
 	g_pSoundEffect = NULL;
 	soundsystem->SetListener(vec3_zero, Vector3D(0,0,1), Vector3D(0,1,0), NULL);
