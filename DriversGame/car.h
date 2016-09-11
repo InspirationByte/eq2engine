@@ -14,7 +14,8 @@
 
 const float _oneBy1024 = 1.0f / 1023.0f;
 
-#define SPEEDO_SCALE				(3.0f)
+#define MPS_TO_KPH		(3.6f)
+#define KPH_TO_MPS		(0.27778f)
 
 inline bool IsCar(CGameObject* obj) { return obj->ObjType() >= GO_CAR && obj->ObjType() <= GO_CAR_AI;}
 
@@ -188,6 +189,11 @@ struct carConfigEntry_t
 	EqString					carScript;
 	EqString					m_cleanModelName;
 	EqString					m_damModelName;
+
+	float						GetMixedBrakeTorque() const;
+	float						GetFullBrakeTorque() const;
+	float						GetBrakeIneffectiveness() const;
+	float						GetBrakeEffectPerSecond() const; // returns the vehicle speed (meters per sec) that can be reduced by one second
 };
 
 bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs );

@@ -80,8 +80,8 @@ static Vector3D s_BodyPartDirections[] =
 #define	DAMAGE_VISUAL_SCALE			(0.75f)
 #define DAMAGE_WHEEL_SCALE			(0.5f)
 
-#define DEFAULT_MAX_SPEED			(110.0f)
-#define BURNOUT_MAX_SPEED			(62.0f)
+#define DEFAULT_MAX_SPEED			(150.0f)
+#define BURNOUT_MAX_SPEED			(70.0f)
 
 #define DAMAGE_SOUND_SCALE			(0.25f)
 
@@ -312,6 +312,31 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 	}
 
 	return true;
+}
+
+float carConfigEntry_t::GetMixedBrakeTorque() const
+{
+	return GetFullBrakeTorque() / (float)m_wheels.numElem();
+}
+
+float carConfigEntry_t::GetFullBrakeTorque() const
+{
+	float brakeTorque = 0.0f;
+
+	for(int i = 0; i < m_wheels.numElem(); i++)
+		brakeTorque += m_wheels[i].brakeTorque;
+
+	return brakeTorque;
+}
+
+float carConfigEntry_t::GetBrakeIneffectiveness() const
+{
+	return m_mass / GetFullBrakeTorque();
+}
+
+float carConfigEntry_t::GetBrakeEffectPerSecond() const
+{
+	return GetFullBrakeTorque() / m_mass;
 }
 
 #pragma todo("make better lateral sliding on steering wheels when going backwards")
@@ -1825,9 +1850,10 @@ void CCar::EmitCollisionParticles(const Vector3D& position, const Vector3D& velo
 
 	if(wlen > 6.0 && m_effectTime <= 0.0f )
 	{
-		CPFXAtlasGroup* effgroup = g_additPartcles;
-		TexAtlasEntry_t* entry = effgroup->FindEntry("tracer");
+		Vector3D reflDir = reflect(velocity, normal);
+		MakeSparks(position+normal*0.05f, reflDir, Vector3D(15.0f), 1.0f, numDamageParticles);
 
+		/*
 		for(int i = 0; i < numDamageParticles; i++)
 		{
 			Vector3D reflDir = reflect(velocity, normal);
@@ -1846,7 +1872,7 @@ void CCar::EmitCollisionParticles(const Vector3D& position, const Vector3D& velo
 												RandomFloat(0.5f, 1.2f),// lifetime
 												effgroup, entry);  // group - texture
 			effectrenderer->RegisterEffectForRender(pSpark);
-		}
+		}*/
 
 		m_effectTime = 0.05f;
 	}
@@ -3298,7 +3324,7 @@ float CCar::GetSpeedWheels() const
 		fResult += m_pWheels[i].pitchVel * m_conf->m_wheels[i].radius;
 	}
 
-	return fResult * SPEEDO_SCALE * wheelFac;
+	return fResult * wheelFac * MPS_TO_KPH;
 }
 
 int	CCar::GetWheelCount()
@@ -3308,13 +3334,13 @@ int	CCar::GetWheelCount()
 
 float CCar::GetWheelSpeed(int index)
 {
-	return m_pWheels[index].pitchVel * SPEEDO_SCALE;
+	return m_pWheels[index].pitchVel * MPS_TO_KPH;
 }
 
 float CCar::GetSpeed() const
 {
 	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
-	return length(carBody->GetLinearVelocity().xz()) * SPEEDO_SCALE;
+	return length(carBody->GetLinearVelocity().xz()) * MPS_TO_KPH;
 }
 
 float CCar::GetRPM()

@@ -341,7 +341,7 @@ void CGameSession::Update( float fDt )
 		if( !g_replayData->IsCarPlaying( player_car ) )
 			m_playerCar->SetControlButtons( m_localControls );
 
-		debugoverlay->Text(ColorRGBA(1,1,0,1), "Car speed: %.1f MPH, Gear: %d", player_car->GetSpeed(), player_car->GetGear());
+		debugoverlay->Text(ColorRGBA(1,1,0,1), "Car speed: %.1f KPH (%.1f m/s), Gear: %d", player_car->GetSpeed(), player_car->GetSpeed() * KPH_TO_MPS, player_car->GetGear());
 		debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "Felony: %.2f, pursued by: %d\n", player_car->GetFelony()*100.0f, player_car->GetPursuedCount());
 	}
 

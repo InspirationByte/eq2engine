@@ -248,6 +248,32 @@ bool CSparkLine::DrawEffect(float dTime)
 	return true;
 }
 
+void MakeSparks(const Vector3D& origin, const Vector3D& velocity, const Vector3D& randomAngCone, float lifetime, int count)
+{
+	CPFXAtlasGroup* effgroup = g_additPartcles;
+	TexAtlasEntry_t* entry = effgroup->FindEntry("tracer");
+
+	float wlen = length(velocity);
+
+	for(int i = 0; i < count; i++)
+	{
+		Vector3D rnd_ang = VectorAngles(normalize(velocity)) + Vector3D(RandomFloat(-randomAngCone.x,randomAngCone.x),RandomFloat(-randomAngCone.y,randomAngCone.y),RandomFloat(-randomAngCone.z,randomAngCone.z));
+		Vector3D n;
+		AngleVectors(rnd_ang, &n);
+
+		float rwlen = wlen + RandomFloat(wlen*0.15f, wlen*0.8f);
+
+		CSparkLine* pSpark = new CSparkLine(Vector3D(origin),
+											n*rwlen*0.25f,	// velocity
+											Vector3D(0.0f,RandomFloat(0.4f, -15.0f), 0.0f),		// gravity
+											RandomFloat(50.8, 80.0), // len
+											RandomFloat(0.005f, 0.01f), RandomFloat(0.01f, 0.02f), // sizes
+											RandomFloat(lifetime*0.75f, lifetime*1.25f),// lifetime
+											effgroup, entry);  // group - texture
+		effectrenderer->RegisterEffectForRender(pSpark);
+	}
+}
+
 //--------------------------------------------------------------------------------------------------------------
 
 //

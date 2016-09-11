@@ -8,6 +8,7 @@
 #include "object_static.h"
 #include "materialsystem/IMaterialSystem.h"
 #include "world.h"
+#include "ParticleEffects.h"
 
 #include "Shiny.h"
 
@@ -76,6 +77,8 @@ void CObject_Static::Spawn()
 		g_pPhysics->m_physics.AddStaticObject( m_pPhysicsObject );
 
 		m_bbox = m_pPhysicsObject->m_aabb_transformed;
+
+		m_pPhysicsObject->ConstructRenderMatrix(m_worldMatrix);
 	}
 	else
 	{
@@ -153,15 +156,15 @@ void CObject_Static::Simulate(float fDt)
 			flickerVal = fabs(sin(sin(m_flickerTime*10.0f)*2.5f))*0.5f+0.5f;
 		}
 
-		Matrix4x4 mat;
-		m_pPhysicsObject->ConstructRenderMatrix(mat);
-
-		DrawDefLightData(mat, m_light, flickerVal);
+		DrawDefLightData(m_worldMatrix, m_light, flickerVal);
 	}
 }
 
 void CObject_Static::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy)
 {
+	if(m_killed)
+		return;
+
 	if(pair.bodyA->IsDynamic())
 	{
 		CEqRigidBody* body = (CEqRigidBody*)pair.bodyA;
@@ -169,13 +172,23 @@ void CObject_Static::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameO
 		float impulse = pair.appliedImpulse*body->GetInvMass();
 
 		if(impulse > 5.0f)
-		{
 			m_flicker = true;
-		}
-	
-		if(impulse > 18.0f)
+
+		if(impulse > 15.0f)
 		{
 			m_killed = true;
+
+			if(!(g_pGameWorld->m_envConfig.lightsType & WLIGHTS_LAMPS))
+				return;
+
+			for(int i = 0; i < m_light.m_glows.numElem(); i++)
+			{
+				// transform light position
+				Vector3D lightPos = m_light.m_glows[i].position.xyz();
+				lightPos = (m_worldMatrix*Vector4D(lightPos, 1.0f)).xyz();
+
+				MakeSparks(lightPos, Vector3D(0,-10,0), Vector3D(55.0f), 1.2f ,25);
+			}
 		}
 	}
 }

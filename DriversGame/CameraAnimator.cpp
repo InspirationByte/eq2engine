@@ -58,7 +58,8 @@ CCameraAnimator::CCameraAnimator() :
 	m_dropPos(0.0f),
 	m_rotation(0.0f),
 	m_cameraFOV(DEFAULT_CAMERA_FOV),
-	m_carConfig(NULL)
+	m_carConfig(NULL),
+	m_scriptControl(false)
 {
 
 }
@@ -106,6 +107,7 @@ void CCameraAnimator::Reset()
 	m_fLookAngle = 0.0f;
 	m_fTempCamAngle = 0.0f;
 	m_carConfig = NULL;
+	m_scriptControl = false;
 
 	if(m_mode > CAM_MODE_INCAR)
 		m_mode = CAM_MODE_OUTCAR;

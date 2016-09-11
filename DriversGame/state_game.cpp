@@ -254,12 +254,12 @@ void Game_InitializeSession()
 	if(g_replayData->m_state != REPL_INIT_PLAYBACK)
 		g_replayData->Clear();
 
+	g_pCameraAnimator->Reset();
+
 	g_pGameSession->Init();
 
 	//reset cameras
 	g_nDirectorCameraType = 0;
-
-	g_pCameraAnimator->Reset();
 
 	// reset buttons
 	g_nClientButtons = 0;

@@ -162,7 +162,7 @@ enum ERoadType
 
 enum ERoadFlags
 {
-	ROAD_FLAG_HAS_TRAFFICLIGHT	= (1 << 0),	// this flag can be only set at ROADTYPE_JUNCTION
+	ROAD_FLAG_NONREGULATED		= (1 << 0),	// Junction flag only. Might be a equivalent crossroads
 	ROAD_FLAG_PARKING			= (1 << 1),
 };
 
@@ -171,7 +171,7 @@ struct levroadcell_s
 	uint8	type:4;			// ERoadType
 	uint8	flags:4;		// ERoadFlags
 
-	int8	direction;		// ERoadDir
+	uint8	direction;		// ERoadDir
 
 	// position on region
 	ushort	posX;

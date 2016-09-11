@@ -103,6 +103,8 @@ protected:
 	float		fLength;
 };
 
+void MakeSparks(const Vector3D& origin, const Vector3D& velocity, const Vector3D& randomAngCone, float lifetime, int count);
+
 void DrawLightEffect(const Vector3D& position, const ColorRGBA& color, float size, int type = 0);
 void PoliceSirenEffect(float fCurTime, const ColorRGB& color, const Vector3D& pos, const Vector3D& dir_right, float rDist, float width);
 

@@ -257,20 +257,31 @@ void CObject_TrafficLight::Simulate(float fDt)
 
 void CObject_TrafficLight::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy)
 {
+	if(m_killed)
+		return;
+
 	if(pair.bodyA->IsDynamic())
 	{
 		CEqRigidBody* body = (CEqRigidBody*)pair.bodyA;
 
 		float impulse = pair.appliedImpulse*body->GetInvMass();
 
-		if(impulse > 28.0f)
+		if(impulse > 5.0f)
 		{
 			m_flicker = true;
 		}
 	
-		if(impulse > 48.0f)
+		if(impulse > 15.0f)
 		{
 			m_killed = true;
+
+			for(int i = 0; i < m_lights.numElem(); i++)
+			{
+				// transform light position
+				Vector3D lightPos = m_lights[i].position;
+
+				MakeSparks(lightPos, Vector3D(0,-10,0), Vector3D(75.0f), 1.2f, 7);
+			}
 		}
 	}
 }

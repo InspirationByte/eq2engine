@@ -16,14 +16,32 @@
 
 #pragma todo("Peer2peer network model for AI cars")
 #pragma todo("Teach how to brake to the line strictly - enter 'required speed' parameter")
+
 /*
-carla brake ineffectiveness per mass: 0.2 (14000 x 2800kg), effectiveness = 5
-bus brake ineffectiveness per mass: 0.5 (15500 x 9000kg), effectiveness = 1.72
+dist=spd*t*0.5								- 20m/s*4sec*0.5 = 40m
+t=dist*2.0/spd								- 40m*2/20m = 4sec
 
-so brake distance scale is:
-	brakeDistScale = bodyMass / brakeTorque
+so...
 
-	???
+mustang brake torque = 14000 mid by 4 wheels = 56000
+mustang mass = 2800
+
+mustang brake effectivenes in m/s 56000/2800 = 20 m/s or 72 km/h
+	so car stops in one second when it's speed 72 km/h
+	distance is 20m/s*0.5 = 10m
+	brake ratio is usually 0.4, so 10m/0.4 = 25m from 72 km/h by 1 sec
+
+	car speed is usually 60 km/h so 60/72 = 1.2 faster brake, 0.833 seconds to brake
+	60 km/h brake dist is 6.942 meters
+	so (16.6667*0.833*0.5) / 0.4rat = 17.354 meters to brake
+
+	if our distance to stop line is less than 17.354 + 1 meters
+		do brake
+
+	THAT'S IT!
+
+
+
 */
 
 ConVar g_traffic_maxspeed("g_trafficMaxspeed", "36");
@@ -888,7 +906,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 	float carForwardSpeed = dot(GetForwardVector(), GetVelocity());
 
-	float carSpeed = fabs(carForwardSpeed)*SPEEDO_SCALE;
+	float carSpeed = fabs(carForwardSpeed)*MPS_TO_KPH;
 
 	float accelerator = 1.0f - pow(1.0f - ((maxSpeed - carSpeed) / maxSpeed), 5.5f);	// go forward
 	float brake = 0.0f;
