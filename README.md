@@ -9,7 +9,7 @@ As DarkTech Engine (2009-2010):
 
 As Equilibrium Engine:
 
-* Project Underdome **White Cage** (project frozen, will be like developed on this engine)
+* Project Underdome **White Cage** (project frozen, will be likely developed on this engine)
 * Project BastardPigeon (project frozen, probably will be continued on Unity)
 * Project Drivers **The Driver Syndicate** (current)
 
