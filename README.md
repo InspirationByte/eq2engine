@@ -2,11 +2,13 @@
 
 The game engine/framework developing for these titles (in chronological order):
 
-As DarkTech Engine (2009-2010)
+As DarkTech Engine (2009-2010):
+
 * Project Unost ** TOKAMAK ** (project frozen)
 * Project RoofManiac (project cancelled)
 
-As Equilibrium Engine
+As Equilibrium Engine:
+
 * Project Underdome **White Cage** (project frozen, will be like developed on this engine)
 * Project BastardPigeon (project frozen, probably will be continued on Unity)
 * Project Drivers **The Driver Syndicate** (current)
