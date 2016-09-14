@@ -1,11 +1,17 @@
 ![eqengine_logo.jpg](https://bitbucket.org/repo/BzA5LG/images/960076965-eqengine_logo.jpg)
 
-The game engine/framework developing for these titles:
+The game engine/framework developing for these titles (in chronological order):
 
-* Project Unost ** TOKAMAK **
-* Project RoofManiac
-* Project Underdome **White Cage**
-* Project Drivers **The Driver Syndicate**
+As DarkTech Engine (2009-2010):
+
+* Project Unost ** TOKAMAK ** (project frozen)
+* Project RoofManiac (project cancelled)
+
+As Equilibrium Engine:
+
+* Project Underdome **White Cage** (project frozen, will be likely developed on this engine)
+* Project BastardPigeon (project frozen, probably will be continued on Unity)
+* Project Drivers **The Driver Syndicate** (current)
 
 Folder overview
 -------------
@@ -13,13 +19,13 @@ Folder overview
 * **android_lib_mk**, **jni** - contains makefiles for android
 * **android-project** - Android Studio project
 * **Core** - eqCore, system module including vfs, console command processor, logging, platform stuff like CPU detection
-* **MaterialSystem** - the material system base of EQ Engine
-* MaterialSystem/**Renderers** - RHI API wrapper implementations of Direct3D9, Direct3D10, OpenGL (desktop and ES 2.0)
+* **MaterialSystem** - material system which derives concept of Source Engine material system
+* MaterialSystem/**Renderers** - RHI API wrapper implementations over Direct3D9, Direct3D10, OpenGL (desktop and ES 3.0)
 * MaterialSystem/**EngineShaders** - shader stages/pipeline basic library
 * **public** - public headers and sources
 * public/**math** - the vector math library
-* **shared_engine** - engine shared sources between different games / engine modules
-* **shared_game** - shared game sources
+* **shared_engine** - shared engine modules between different applications and other modules (Audio, Network, UI system, Particle System, Model cache)
+* **shared_game** - shared game sources (Animation system, helpers)
 * **utils** - various SDK-related utilities. Most notable are **egfCa**, **animCa**, **egfMan**, **fcompress**
 * **wxForms** - various wxFormBuilder fbp files for DriversEditor, Editor projects
 
@@ -30,7 +36,7 @@ Games:
 
 * **Engine** - Legacy Equilibrium Engine, the massive and undone part
 * **Editor** - wxWidgets-based Equilibrium World Editor
-* **Game** - Equilibrium Engine Game source files, undone part
+* **Game** - Equilibrium Engine Game source files, undone part. Mostly a **White Cage** source code.
 
 Dependencies
 -------------
