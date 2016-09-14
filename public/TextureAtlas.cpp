@@ -92,6 +92,7 @@ void CTextureAtlas::InitAtlas( kvkeybase_t* kvs, const char* pszMyName )
 		kvkeybase_t* entrySec = kvs->keys[i];
 
 		strcpy(m_entries[i].name, kvs->keys[i]->name);
+		m_entries[i].nameHash = StringToHash(m_entries[i].name, true);
 
 		Rectangle_t rect;
 		rect.vleftTop.x		= KV_GetValueFloat(entrySec, 0);
@@ -127,9 +128,11 @@ TexAtlasEntry_t* CTextureAtlas::FindEntry(const char* pszName) const
 	if(!m_entries)
 		return NULL;
 
+	int nameHash = StringToHash(pszName, true);
+
 	for(int i = 0; i < m_num; i++)
 	{
-		if(!stricmp(m_entries[i].name, pszName))
+		if(m_entries[i].nameHash == nameHash)
 			return &m_entries[i];
 	}
 
@@ -141,9 +144,11 @@ int CTextureAtlas::FindEntryIndex(const char* pszName) const
 	if(!m_entries)
 		return -1;
 
+	int nameHash = StringToHash(pszName, true);
+
 	for(int i = 0; i < m_num; i++)
 	{
-		if(!stricmp(m_entries[i].name, pszName))
+		if(m_entries[i].nameHash == nameHash)
 			return i;
 	}
 

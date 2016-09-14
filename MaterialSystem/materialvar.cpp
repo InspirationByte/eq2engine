@@ -9,21 +9,17 @@
 #include "materialvar.h"
 #include "utils/strtools.h"
 
-CMatVar::CMatVar()
+CMatVar::CMatVar() : m_nameHash(0), m_nValue(0), m_vector(0.0f), m_pAssignedTexture(NULL), m_isDirtyString(0)
 {
-	m_nValue = 0;
-	m_vector = Vector4D(0);
-	m_pAssignedTexture = NULL;
-	m_isDirtyString = 0;
 }
 
 // initializes the material var
-void CMatVar::Init(const char* pszName,const char* pszValue)
+void CMatVar::Init(const char* pszName, const char* pszValue)
 {
-	m_pszVarName = pszName;
-	m_pszValue	 = pszValue;
+	SetName(pszName);
 
-	SetString( pszValue );
+	if(pszValue != NULL)
+		SetString( pszValue );
 }
 
 int CMatVar::GetInt() const
@@ -38,12 +34,14 @@ float CMatVar::GetFloat() const
 
 const char* CMatVar::GetName() const
 {
-	return m_pszVarName.c_str();
+	return m_name.c_str();
 }
+
 // sets new name
 void CMatVar::SetName(const char* szNewName)
 {
-	m_pszVarName = szNewName;
+	m_name = szNewName;
+	m_nameHash = StringToHash(m_name.c_str(), true);
 }
 
 // gives string
@@ -77,11 +75,12 @@ void CMatVar::SetString(const char* szValue)
 {
 	m_pszValue = szValue;
 
-	m_vector.x = (float)atof(m_pszValue.GetData());
-	m_nValue  = (int)m_vector.x;
-	sscanf(szValue,"[%f %f]",&m_vector.x, &m_vector.y);
-	sscanf(szValue,"[%f %f %f]",&m_vector.x, &m_vector.y, &m_vector.z);
-	sscanf(szValue,"[%f %f %f %f]",&m_vector.x, &m_vector.y, &m_vector.z, &m_vector.w);
+	m_vector.x = (float)atof(m_pszValue.c_str());
+	m_nValue  = (int)atoi(m_pszValue.c_str());
+	sscanf(m_pszValue.c_str(),"[%f %f]",&m_vector.x, &m_vector.y);
+	sscanf(m_pszValue.c_str(),"[%f %f %f]",&m_vector.x, &m_vector.y, &m_vector.z);
+	sscanf(m_pszValue.c_str(),"[%f %f %f %f]",&m_vector.x, &m_vector.y, &m_vector.z, &m_vector.w);
+	m_isDirtyString = 0;
 }
 
 void CMatVar::SetFloat(float fValue)

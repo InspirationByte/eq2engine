@@ -34,8 +34,6 @@ public:
 		{
 			CBaseShader::InitParams();
 
-			m_bNoCull = true;
-
 			m_pBumpFrame = m_pAssignedMaterial->GetMaterialVar("bumptextureframe", 0);
 		}
 	}

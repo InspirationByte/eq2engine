@@ -192,7 +192,11 @@ void EqWString::Assign(const EqString &str, int nStart, int len)
 void EqWString::Assign(const wchar_t* pszStr, int len)
 {
 	if(pszStr == NULL)
+	{
+		m_pszString[0] = 0;
+		m_nLength = 0;
 		return;
+	}
 
 	int nLen = wcslen( pszStr );
 

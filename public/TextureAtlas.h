@@ -16,6 +16,7 @@
 struct TexAtlasEntry_t
 {
 	char		name[64];
+	int			nameHash;
 	Rectangle_t rect;
 };
 

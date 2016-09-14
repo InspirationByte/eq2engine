@@ -108,7 +108,7 @@ public:
 			return true;
 
 		bool bDeferredShading = (materials->GetLightingModel() == MATERIAL_LIGHT_DEFERRED);
-		bool bIsModulated = (m_nFlags & MATERIAL_FLAG_MODULATE);
+		bool bIsModulated = (m_nFlags & MATERIAL_FLAG_MODULATE) > 0;
 
 		//------------------------------------------
 		// load another shader params here (because we want to use less memory)

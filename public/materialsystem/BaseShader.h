@@ -246,24 +246,22 @@ protected:
 
 	void						EmptyFunctor() {}
 
-	IMaterial*					m_pAssignedMaterial;
-
-	int							m_nFlags; // shader flags
-
-	bool						m_bNoCull; // Two-sided textures support
-
-	bool						m_bIsError;
-	bool						m_bInitialized;
+	SHADERPARAMFUNC				m_param_functors[SHADERPARAM_COUNT];
 
 	AddressMode_e				m_nAddressMode;
 	Filter_e					m_nTextureFilter;
 
-	SHADERPARAMFUNC				m_param_functors[SHADERPARAM_COUNT];
+	IMaterial*					m_pAssignedMaterial;
+
+	int							m_nFlags; // shader flags
 
 	bool						m_depthwrite : 1;
 	bool						m_depthtest : 1;
 	bool						m_fogenabled : 1;
 	bool						m_msaaEnabled : 1;
+
+	bool						m_bIsError : 1;
+	bool						m_bInitialized : 1;
 
 	IMatVar*					m_pBaseTextureTransformVar;
 	IMatVar*					m_pBaseTextureScaleVar;

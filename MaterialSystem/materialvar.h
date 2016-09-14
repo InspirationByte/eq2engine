@@ -14,6 +14,8 @@
 
 class CMatVar : public IMatVar
 {
+	friend class CMaterial;
+
 public:
 				CMatVar();
 
@@ -51,7 +53,9 @@ public:
 	void		AssignTexture(ITexture* pTexture);
 
 private:
-	EqString	m_pszVarName;
+	EqString	m_name;
+	int			m_nameHash;
+
 	EqString	m_pszValue;
 
 	Vector4D	m_vector;

@@ -44,7 +44,7 @@ mustang brake effectivenes in m/s 56000/2800 = 20 m/s or 72 km/h
 
 */
 
-ConVar g_traffic_maxspeed("g_trafficMaxspeed", "36");
+ConVar g_traffic_maxspeed("g_trafficMaxspeed", "49.0"); // FIXME: DO NOT USE!
 ConVar g_disableTrafficLights("g_disableTrafficLights", "0", NULL, CV_CHEAT);
 
 // here's some signal sequences i've recorded

@@ -81,10 +81,10 @@ public:
 	virtual IMatVar*				FindMaterialVar( const char* pszVarName ) const = 0;	// only searches for existing matvar
 
 	// finds or creates material var
-	virtual IMatVar*				GetMaterialVar( const char* pszVarName, const char* defaultparameter ) = 0;
+	virtual IMatVar*				GetMaterialVar( const char* pszVarName, const char* defaultParam ) = 0;
 
 	// creates or finds existing material vars
-	virtual IMatVar*				CreateMaterialVar( const char* pszVarName ) = 0;
+	virtual IMatVar*				CreateMaterialVar( const char* pszVarName, const char* defaultParam) = 0;
 
 	// removes material var
 	virtual void					RemoveMaterialVar( IMatVar* pVar ) = 0;

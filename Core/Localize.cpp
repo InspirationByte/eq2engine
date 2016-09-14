@@ -59,7 +59,7 @@ CLocToken::CLocToken(const char* tok, const wchar_t* text)
 	m_token = tok;
 	m_text = text;
 
-	m_tokHash = StringToHash(tok);
+	m_tokHash = StringToHash(tok, true);
 }
 
 CLocToken::CLocToken(const char* tok, const char* text)
@@ -67,7 +67,7 @@ CLocToken::CLocToken(const char* tok, const char* text)
 	m_token = tok;
 	m_text = text;
 
-	m_tokHash = StringToHash(tok);
+	m_tokHash = StringToHash(tok, true);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -180,7 +180,7 @@ void CLocalize::AddToken(const char* token, const char* pszTokenString)
 
 const wchar_t* CLocalize::GetTokenString(const char* pszToken,const wchar_t* pszDefaultToken)
 {
-	int tokHash = StringToHash(pszToken);
+	int tokHash = StringToHash(pszToken, true);
 
 	for(int i = 0; i < m_lTokens.numElem();i++)
 	{
@@ -195,7 +195,7 @@ const wchar_t* CLocalize::GetTokenString(const char* pszToken,const wchar_t* psz
 
 ILocToken* CLocalize::GetToken( const char* pszToken )
 {
-	int tokHash = StringToHash(pszToken);
+	int tokHash = StringToHash(pszToken, true);
 
 	for(int i = 0; i < m_lTokens.numElem();i++)
 	{

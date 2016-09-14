@@ -430,7 +430,7 @@ scriptsounddata_t* CSoundEmitterSystem::FindSound(const char* soundName)
 	EqString sname(soundName);
 	sname = sname.LowerCase();
 
-	int snameHash = StringToHash( sname.c_str() );
+	int snameHash = StringToHash( sname.c_str(), true );
 
 	for(int i = 0; i < m_scriptsoundlist.numElem(); i++)
 	{
@@ -907,7 +907,7 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 		EqString sname(scrsoundName);
 		sname = sname.LowerCase();
 
-		pSoundData->namehash = StringToHash( sname.c_str() );
+		pSoundData->namehash = StringToHash( sname.c_str(), true );
 
 		pSoundData->fVolume = KV_GetValueFloat( curSec->FindKeyBase("volume"), 0, 1.0f );
 		pSoundData->fAtten = KV_GetValueFloat( curSec->FindKeyBase("distance"), 0, m_defaultMaxDistance * 0.35f );

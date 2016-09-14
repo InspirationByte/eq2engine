@@ -43,7 +43,7 @@ public:
 // material var operations
 	IMatVar*				FindMaterialVar(const char* pszVarName) const;
 	IMatVar*				GetMaterialVar(const char* pszVarName, const char* defaultParam);
-	IMatVar*				CreateMaterialVar(const char* pszVarName);
+	IMatVar*				CreateMaterialVar(const char* pszVarName, const char* defaultParam);
 	void					RemoveMaterialVar(IMatVar* pVar);
 
 // render-time operations

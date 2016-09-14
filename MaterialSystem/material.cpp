@@ -254,23 +254,21 @@ void CMaterial::WaitForLoading() const
 
 IMatVar *CMaterial::GetMaterialVar(const char* pszVarName, const char* defaultparameter)
 {
-	for(int i = 0;i < m_hMatVars.numElem();i++)
-	{
-		if(!stricmp(m_hMatVars[i]->GetName(),pszVarName))
-			return m_hMatVars[i];
-	}
+	IMatVar* var = FindMaterialVar(pszVarName);
 
-	CMatVar* pNewVar = (CMatVar*)CreateMaterialVar(pszVarName);
-	pNewVar->SetString(defaultparameter);
+	if(!var)
+		var = CreateMaterialVar(pszVarName, defaultparameter);
 
-	return pNewVar;
+	return var;
 }
 
 IMatVar *CMaterial::FindMaterialVar(const char* pszVarName) const
 {
+	int nameHash = StringToHash(pszVarName, true);
+
 	for(int i = 0;i < m_hMatVars.numElem();i++)
 	{
-		if(!stricmp(m_hMatVars[i]->GetName(),pszVarName))
+		if(m_hMatVars[i]->m_nameHash == nameHash)
 			return m_hMatVars[i];
 	}
 
@@ -313,14 +311,14 @@ const char*	CMaterial::GetShaderName() const
 }
 
 // creates or finds existing material vars
-IMatVar* CMaterial::CreateMaterialVar(const char* pszVarName)
+IMatVar* CMaterial::CreateMaterialVar(const char* pszVarName, const char* defaultParam)
 {
 	IMatVar *pMatVar = FindMaterialVar(pszVarName);
 
 	if(!pMatVar)
 	{
 		CMatVar *pVar = new CMatVar;
-		pVar->Init(pszVarName,"0");
+		pVar->Init(pszVarName, defaultParam);
 
 		m_hMatVars.append(pVar);
 

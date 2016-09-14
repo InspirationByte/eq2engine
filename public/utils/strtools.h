@@ -73,7 +73,7 @@ void		StripFileName(char* path);
 void		ExtractFileBase(const char* path, char* dest);
 
 // generates string hash
-int			StringToHash( const char *str );
+int			StringToHash( const char *str, bool caseIns = false );
 
 // Do formatted arguments for string
 char*		varargs(const char* fmt,...);

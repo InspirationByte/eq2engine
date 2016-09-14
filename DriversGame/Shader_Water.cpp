@@ -54,8 +54,6 @@ public:
 		{
 			CBaseShader::InitParams();
 
-			m_bNoCull = true;
-
 			m_pBumpFrame = m_pAssignedMaterial->GetMaterialVar("bumptextureframe", 0);
 			m_pWaterColor = m_pAssignedMaterial->GetMaterialVar("Color", "[0.2 0.7 0.4]" );
 		}
