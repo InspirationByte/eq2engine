@@ -18,6 +18,7 @@ CTexture::CTexture()
 	m_iWidth = 0;
 	m_iHeight = 0;
 	m_mipCount = 1;
+	m_nameHash = 0;
 
 	// default frame is zero
 	m_nAnimatedTextureFrame = 0;
@@ -64,6 +65,7 @@ int CTexture::GetFlags() const
 void CTexture::SetName(const char* pszNewName)
 {
 	m_szTexName = pszNewName;
+	m_nameHash = StringToHash(m_szTexName.c_str(), true);
 }
 
 // Animated texture props

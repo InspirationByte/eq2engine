@@ -13,6 +13,8 @@
 
 class CTexture : public ITexture
 {
+	friend class ShaderAPI_Base;
+
 public:
 
 								CTexture();
@@ -44,6 +46,7 @@ private:
 
 protected:
 	EqString				m_szTexName;
+	int						m_nameHash;
 
 	ushort					m_iFlags;
 	ushort					m_iWidth;

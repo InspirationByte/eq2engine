@@ -309,10 +309,12 @@ ITexture* ShaderAPI_Base::FindTexture(const char* pszName)
 	EqString searchStr(pszName);
 	searchStr.Path_FixSlashes();
 
+	int nameHash = StringToHash(pszName, true);
+
 	CScopedMutex m(m_Mutex);
 	for(int i = 0; i < m_TextureList.numElem();i++)
 	{
-		if(!searchStr.CompareCaseIns( m_TextureList[i]->GetName() ))
+		if(((CTexture*)m_TextureList[i])->m_nameHash == nameHash)
 			return m_TextureList[i];
 	}
 
