@@ -14,6 +14,8 @@
 
 #include "KeyValues.h"
 
+#include "VirtualStream.h"
+
 #ifdef LINUX
 #include <ctype.h>
 #endif
@@ -1228,6 +1230,18 @@ void KV_WriteToStream_r(kvkeybase_t* pKeyBase, IVirtualStream* pStream, int nTab
 		else
 			pStream->Print(";\n");
 	}
+}
+
+// prints section to console
+void KV_PrintSection(kvkeybase_t* base)
+{
+	CMemoryStream stream;
+	stream.Open(NULL, VS_OPEN_WRITE, 2048);
+	KV_WriteToStream_r(base, &stream, 0, false, true);
+	char nullChar = '\0';
+	stream.Write(&nullChar, 1, 1);
+
+	Msg( "%s\n", stream.GetBasePointer() );
 }
 
 // gets value of string type

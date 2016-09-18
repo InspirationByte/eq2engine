@@ -35,69 +35,326 @@ enum EPaddingMode
 	PAD_MIRROR,
 };
 
-#define ROLLING_VALUE(x, max) ((x < 0) ? max+x : ((x >= max) ? x-max : x ))
-
-void CopyPixels(CImage* pSrc, ubyte* pDst, int dst_x, int dst_y, int dst_wide, int padding, EPaddingMode padMode)
+enum EBlendMode
 {
-	ubyte* pSrcData = pSrc->GetPixels(0,0);
+	BLEND_LERP = 0, // OR BLEND_NONE
+	BLEND_NONE = BLEND_LERP,
+	BLEND_ADD,
+	BLEND_SUB,
+	BLEND_MUL,
+	BLEND_DIV,
 
-	int src_w = pSrc->GetWidth(0),
-		src_h = pSrc->GetHeight(0);
+	// TODO: negate
+	BLEND_MODES,
+};
 
-	for(int x = -padding; x < src_w + padding; x++)
+static const char* s_blendModeStr[] = 
+{
+	"lerp",
+	"add",
+	"sub",
+	"mul",
+	"div"
+};
+
+Vector4D fnBlendLerp(const Vector4D& dest, const Vector4D& src, float transparency)
+{
+	return lerp(dest, src, transparency);
+}
+
+Vector4D fnBlendAdd(const Vector4D& dest, const Vector4D& src, float transparency)
+{
+	return dest + src * transparency;
+}
+
+Vector4D fnBlendSub(const Vector4D& dest, const Vector4D& src, float transparency)
+{
+	return dest - src * transparency;
+}
+
+Vector4D fnBlendMul(const Vector4D& dest, const Vector4D& src, float transparency)
+{
+	// do it like photoshop does
+	return fnBlendLerp(dest, dest * src, transparency);
+}
+
+Vector4D fnBlendDiv(const Vector4D& dest, const Vector4D& src, float transparency)
+{
+	// do it like photoshop does
+	return fnBlendLerp(dest, dest / src, transparency);
+}
+
+typedef Vector4D (*BLENDPIXFUNC)(const Vector4D& dest, const Vector4D& src, float transparency);
+
+static BLENDPIXFUNC s_BlendFuncs[] = 
+{
+	fnBlendLerp,
+	fnBlendAdd,
+	fnBlendSub,
+	fnBlendMul,
+	fnBlendDiv
+};
+
+EBlendMode GetBlendmodeByStr(const char* mode)
+{
+	for(int i = 0; i < BLEND_MODES; i++)
 	{
-		for(int y = -padding; y < src_h + padding; y++)
+		if(!stricmp(s_blendModeStr[i], mode))
+			return (EBlendMode)i;
+	}
+
+	return BLEND_NONE;
+}
+
+struct imgLayer_t
+{
+	imgLayer_t()
+	{
+		image = NULL;
+		transparency = 1.0f;
+		color = ColorRGB(1.0f);
+		blendMode = BLEND_ADD;
+	}
+
+	CImage*		image;
+	ColorRGB	color;
+	float		transparency;
+	EBlendMode	blendMode; 
+};
+
+struct imageDesc_t
+{
+	~imageDesc_t()
+	{
+		for(int i = 0; i < layers.numElem(); i++)
+			delete layers[i].image;
+	}
+
+	DkList<imgLayer_t> layers;
+	EqString name;
+};
+
+//
+// Parses image description keybase
+//
+bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, kvkeybase_t* kv)
+{
+	EqString atlas_dir = _Es(atlasPath).Path_Strip_Name();
+	EqString image_name = KV_GetValueString(kv, 0, NULL);
+
+	if(image_name.Length() == 0)
+	{
+		MsgError("No valid image name in atlas '%s' line %d\n", atlasPath, kv->line);
+		return false;
+	}
+
+	// always strip extension
+	dest.name = image_name.Path_Strip_Ext();
+
+	if(!kv->IsSection())
+	{
+		EqString imgName(atlas_dir + image_name);
+
+		CImage* pImg = new CImage();
+		bool isOk = pImg->LoadTGA(imgName.c_str());
+
+		if(!isOk || pImg->Is1D() || pImg->IsCube())
 		{
-			int nDestStride = ((dst_x+x) + (dst_y+y)*dst_wide) * GetChannelCount(FORMAT_RGBA8);
-			int nSrcStride = 0;
+			Msg("Can't open image '%s'\n", imgName.c_str());
 
-			if(x < 0 || y < 0 || x >= src_w || y >= src_h)
+			delete pImg;
+		}
+		else
+		{
+			imgLayer_t layer;
+			layer.image = pImg;
+
+			dest.layers.append(layer);
+		}
+	}	
+	else
+	{
+		// parse blend modes and colors
+
+		// FORMAT IS:
+		// EBlendMode [optional imageName] [optional transparency] [optional R G B]
+
+		for(int i = 0; i < kv->keys.numElem(); i++)
+		{
+			kvkeybase_t* kb = kv->keys[i];
+
+			imgLayer_t layer;
+			layer.blendMode = GetBlendmodeByStr( kb->name );
+			layer.image = NULL;
+
+			EqString image_path = KV_GetValueString(kb,0,NULL);
+
+			bool hasImagePath = image_path.Length() > 0 && (isalpha(*image_path.c_str()) || *image_path.c_str() == '_');
+
+			if(hasImagePath)
 			{
-				switch(padMode)
+				EqString imgName(atlas_dir + image_path);
+				CImage* pImg = new CImage();
+				bool isOk = pImg->LoadTGA(imgName.c_str());
+
+				if(!isOk || pImg->Is1D() || pImg->IsCube())
 				{
-					case PAD_CLAMP:
-					{
-						int nx = clamp(x, 0, src_w-1);
-						int ny = clamp(y, 0, src_h-1);
-						nSrcStride = (nx + ny*src_w) * GetChannelCount(FORMAT_RGBA8);
-						break;
-					}
-					case PAD_REPEAT:
-					{
-						int nx = ROLLING_VALUE(x, src_w);
-						int ny = ROLLING_VALUE(y, src_h);
-						nSrcStride = (nx + ny*src_w) * GetChannelCount(FORMAT_RGBA8);
-						break;
-					}
-					case PAD_MIRROR:
-					{
-						int nx = abs(x);
-						int ny = abs(y);
-
-						if(nx >= src_w)
-							nx = nx-src_w;
-
-						if(ny >= src_h)
-							ny = ny-src_h;
-
-						nSrcStride = (nx + ny*src_w) * GetChannelCount(FORMAT_RGBA8);
-						break;
-					}
-					default:
-						continue;	// skip padding
+					Msg("Can't open image '%s'\n", imgName.c_str());
+					delete pImg;
 				}
+				else
+				{
+					layer.image = pImg;
+				}
+
+				layer.transparency = KV_GetValueFloat(kb, 1, 1.0f);
+				layer.color = KV_GetVector3D(kb, 2, Vector3D(1.0f));
 			}
 			else
-				nSrcStride = (x + y*src_w) * GetChannelCount(FORMAT_RGBA8);
+			{
+				// since imageName is optional, we're parsing transparency from 1 value
+				layer.transparency = KV_GetValueFloat(kb, 0, 1.0f);
+				layer.color = KV_GetVector3D(kb, 1, Vector3D(1.0f));
+			}
 
-			ASSERT(nDestStride >= 0);
-			ASSERT(nSrcStride >= 0);
+			dest.layers.append(layer);
+		}
+	}
 
-			// copy channels individually
-			pDst[nDestStride]	= pSrcData[nSrcStride];
-			pDst[nDestStride+1] = pSrcData[nSrcStride+1];
-			pDst[nDestStride+2] = pSrcData[nSrcStride+2];
-			pDst[nDestStride+3] = pSrcData[nSrcStride+3];
+	//
+	// Convert all images to RGBA
+	//
+	for(int i = 0; i < dest.layers.numElem(); i++)
+	{
+		CImage* img = dest.layers[i].image;
+
+		if(!img)
+			continue;
+
+		bool imageIsOk = true;
+
+		if(img->GetFormat() != FORMAT_RGBA8)
+			imageIsOk = img->Convert(FORMAT_RGBA8);
+
+		if(!imageIsOk)
+		{
+			MsgError("Failed to convert image '%s'\n", dest.name.c_str() );
+			delete dest.layers[i].image;
+			dest.layers[i].image = NULL;
+		}
+
+		if(i == 0 && !dest.layers[i].image)
+		{
+			MsgError("Atlas '%s' image '%s' first entry must have image!\n", atlasPath, dest.name.c_str());
+			return false;
+		}
+	}
+
+	return dest.layers.numElem() > 0;
+}
+
+void BlendPixel(ubyte* destPixels, int destStride, const imgLayer_t& layer, int srcStride)
+{
+	// initial source color is layer color
+	Vector4D srcPixel(layer.color, 1.0f);
+
+	if( layer.image ) // apply source pixel color if we have image
+	{
+		ubyte* srcPixels = layer.image->GetPixels(0,0);
+		srcPixel *= Vector4D((float)srcPixels[srcStride] / 255.0f, 
+							(float)srcPixels[srcStride+1] / 255.0f,
+							(float)srcPixels[srcStride+2] / 255.0f, 
+							(float)srcPixels[srcStride+3] / 255.0f);
+	}
+
+	ASSERT(layer.blendMode >= 0 && layer.blendMode < BLEND_MODES);
+
+	Vector4D destSrcPixel(	(float)destPixels[destStride] / 255.0f, 
+							(float)destPixels[destStride+1] / 255.0f,
+							(float)destPixels[destStride+2] / 255.0f, 
+							(float)destPixels[destStride+3] / 255.0f);
+
+	Vector4D result = s_BlendFuncs[layer.blendMode](destSrcPixel, srcPixel, layer.transparency);
+
+	destPixels[destStride] = result[0] * 255.0f;
+	destPixels[destStride+1] = result[1] * 255.0f;
+	destPixels[destStride+2] = result[2] * 255.0f;
+	destPixels[destStride+3] = result[3] * 255.0f;
+}
+
+#define ROLLING_VALUE(x, max) ((x < 0) ? max+x : ((x >= max) ? x-max : x ))
+
+void BlendAtlasTo(ubyte* pDst, imageDesc_t* srcImage, int dst_x, int dst_y, int dst_wide, int padding, EPaddingMode padMode)
+{
+	for(int i = 0; i < srcImage->layers.numElem(); i++)
+	{
+		const imgLayer_t& layer = srcImage->layers[i];
+
+		int src_w, src_h;
+
+		if(layer.image)
+		{
+			src_w = layer.image->GetWidth(0);
+			src_h = layer.image->GetHeight(0);
+		}
+		else
+		{
+			src_w = srcImage->layers[0].image->GetWidth(0);
+			src_h = srcImage->layers[0].image->GetHeight(0);
+		}
+
+		for(int x = -padding; x < src_w + padding; x++)
+		{
+			for(int y = -padding; y < src_h + padding; y++)
+			{
+				int nDestStride = ((dst_x+x) + (dst_y+y)*dst_wide) * GetChannelCount(FORMAT_RGBA8);
+				int nSrcStride = 0;
+
+				if(x < 0 || y < 0 || x >= src_w || y >= src_h)
+				{
+					switch(padMode)
+					{
+						case PAD_CLAMP:
+						{
+							int nx = clamp(x, 0, src_w-1);
+							int ny = clamp(y, 0, src_h-1);
+							nSrcStride = (nx + ny*src_w) * GetChannelCount(FORMAT_RGBA8);
+							break;
+						}
+						case PAD_REPEAT:
+						{
+							int nx = ROLLING_VALUE(x, src_w);
+							int ny = ROLLING_VALUE(y, src_h);
+							nSrcStride = (nx + ny*src_w) * GetChannelCount(FORMAT_RGBA8);
+							break;
+						}
+						case PAD_MIRROR:
+						{
+							int nx = abs(x);
+							int ny = abs(y);
+
+							if(nx >= src_w)
+								nx = nx-src_w;
+
+							if(ny >= src_h)
+								ny = ny-src_h;
+
+							nSrcStride = (nx + ny*src_w) * GetChannelCount(FORMAT_RGBA8);
+							break;
+						}
+						default:
+							continue;	// skip padding
+					}
+				}
+				else
+					nSrcStride = (x + y*src_w) * GetChannelCount(FORMAT_RGBA8);
+
+				ASSERT(nDestStride >= 0);
+				ASSERT(nSrcStride >= 0);
+
+				// Blend pixel
+				BlendPixel(pDst, nDestStride, layer, nSrcStride);
+			}
 		}
 	}
 }
@@ -107,7 +364,7 @@ inline int AtlasPackComparison(PackerRectangle *const &elem0, PackerRectangle *c
 	return (elem1->width + elem1->height) - (elem0->width + elem0->height);
 }
 
-bool CreateAtlasImage(const DkList<CImage*>& images_list, 
+bool CreateAtlasImage(const DkList<imageDesc_t*>& images_list, 
 						const char* pszOutputImageName, 
 						kvkeybase_t* pParams)
 {
@@ -134,19 +391,10 @@ bool CreateAtlasImage(const DkList<CImage*>& images_list,
 	// add
 	for(int i = 0; i < images_list.numElem(); i++)
 	{
-		CImage* pImg = images_list[i];
+		CImage* pImg = images_list[i]->layers[0].image;
 
-		bool bAccept = true;
-
-		if(pImg->GetFormat() != FORMAT_RGBA8)
-			bAccept = pImg->Convert(FORMAT_RGBA8);
-
-		// add rectangle if it has same format
-		if(bAccept)
-		{
-			Msg("Adding image '%s' (%d %d)\n", pImg->GetName(), pImg->GetWidth(), pImg->GetHeight());
-			packer.AddRectangle( pImg->GetWidth(), pImg->GetHeight(), pImg);
-		}
+		Msg("Adding image set '%s' (%d %d)\n", images_list[i]->name.c_str(), pImg->GetWidth(), pImg->GetHeight());
+		packer.AddRectangle( pImg->GetWidth(), pImg->GetHeight(), images_list[i]);
 	}
 
 	float	wide = 512,
@@ -179,10 +427,10 @@ bool CreateAtlasImage(const DkList<CImage*>& images_list,
 	tall = upper_power_of_two(tall);
 
 	// create new image
-	CImage img;
-	ubyte* pData = img.Create(FORMAT_RGBA8, wide, tall, 1, 1);
+	CImage destImage;
+	ubyte* destData = destImage.Create(FORMAT_RGBA8, wide, tall, 1, 1);
 
-	ASSERT(pData);
+	ASSERT(destData);
 
 	EqString file_name = _Es(pszOutputImageName).Path_Strip_Ext();
 	EqString mat_file_name = file_name + ".mat";
@@ -197,33 +445,29 @@ bool CreateAtlasImage(const DkList<CImage*>& images_list,
 	pShaderEntry->AddKeyBase("BaseTexture", file_name.GetData());
 	pShaderEntry->MergeFrom(shaderBase, true);
 
-
 	// copy pixels
 	for(int i = 0; i < packer.GetRectangleCount(); i++)
 	{
 		PackerRectangle* pRect = packer.GetRectangle(i);
-		CImage* pImage = (CImage*)pRect->userdata;
+		imageDesc_t* imgDesc = (imageDesc_t*)pRect->userdata;
 
 		// rgba8 is pretty simple
-		CopyPixels(pImage, pData, pRect->x, pRect->y, wide, padding, padMode);
-
-		// get file name only
-		char img_file_name_only[MAX_PATH];
-		ExtractFileBase(pImage->GetName(), img_file_name_only);
+		BlendAtlasTo(destData, imgDesc, pRect->x, pRect->y, wide, padding, padMode);
 
 		// add info to keyvalues
-		kvkeybase_t* rect_kv = pAtlasGroup->AddKeyBase(img_file_name_only);
+		kvkeybase_t* rect_kv = pAtlasGroup->AddKeyBase(imgDesc->name.c_str());
 		rect_kv->SetValueByIndex(varargs("%g", pRect->x / wide), 0);
 		rect_kv->SetValueByIndex(varargs("%g", pRect->y / tall), 1);
 		rect_kv->SetValueByIndex(varargs("%g", (pRect->x+pRect->width) / wide), 2);
 		rect_kv->SetValueByIndex(varargs("%g", (pRect->y+pRect->height) / tall), 3);
-
-		// done with it
-		delete pImage;
 	}
 
+	// done with it
+	for(int i = 0; i < images_list.numElem(); i++)
+		delete images_list[i];
+
 	// save image as DDS, or TGA ???
-	if(img.SaveImage(pszOutputImageName))
+	if(destImage.SaveImage(pszOutputImageName))
 	{
 		kvs.SaveToFile((file_name + ".atlas").GetData());
 		kv_material.SaveToFile((file_name + ".mat").GetData());
@@ -237,41 +481,32 @@ bool CreateAtlasImage(const DkList<CImage*>& images_list,
 	return true;
 }
 
-void ProcessNewAtlas(const char* pszAtlasSrcName, const char* pszOutputName)
+void ProcessNewAtlas(const char* atlasPath, const char* pszOutputName)
 {
-	DkList<CImage*> pImages;
+	DkList<imageDesc_t*> imageList;
 
 	KeyValues kvs;
-	if( kvs.LoadFromFile(pszAtlasSrcName) )
+	if( kvs.LoadFromFile(atlasPath) )
 	{
 		// try loading images
 		for(int i = 0; i < kvs.GetRootSection()->keys.numElem(); i++)
 		{
 			if(!stricmp(kvs.GetRootSection()->keys[i]->name, "image"))
 			{
-				CImage* pImg = new CImage();
+				kvkeybase_t* kb = kvs.GetRootSection()->keys[i];
 
-				EqString image_name = KV_GetValueString(kvs.GetRootSection()->keys[i], 0, "no_image");
-				EqString atlas_dir = _Es(pszAtlasSrcName).Path_Strip_Name();
+				imageDesc_t* imgDesc = new imageDesc_t();
 
-				bool isOk = pImg->LoadTGA((atlas_dir + "/" + image_name).GetData());
-
-				if(!isOk || pImg->Is1D() || pImg->IsCube())
-				{
-					Msg("Can't open image '%s'\n", pImg->GetName());
-
-					delete pImg;
-				}
-				else
-					pImages.append(pImg);
+				if(ParseImageDesc(atlasPath, *imgDesc, kb))
+					imageList.append(imgDesc);
 			}
 		}
 
 		// pack atlas
-		CreateAtlasImage(pImages, pszOutputName, kvs.GetRootSection());
+		CreateAtlasImage(imageList, pszOutputName, kvs.GetRootSection());
 	}
 	else
 	{
-		MsgError("Can't open '%s'\n", pszAtlasSrcName);
+		MsgError("Can't open '%s'\n", atlasPath);
 	}
 }

@@ -159,6 +159,8 @@ private:
 kvkeybase_t*	KV_LoadFromFile( const char* pszFileName, int nSearchFlags = -1, kvkeybase_t* pParseTo = NULL );
 kvkeybase_t*	KV_ParseSection( const char* pszBuffer, const char* pszFileName = NULL, kvkeybase_t* pParseTo = NULL, int nLine = 0 );
 
+void			KV_PrintSection(kvkeybase_t* base);
+
 bool			UTIL_StringNeedsQuotes( const char* pszString );
 void			KV_WriteToStream_r(kvkeybase_t* pKeyBase, IVirtualStream* pStream, int nTabs = 0, bool bOldFormat = false, bool pretty = true);
 
