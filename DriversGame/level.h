@@ -69,6 +69,12 @@ struct pathFindResult_t
 
 typedef void (*RegionLoadUnloadCallbackFunc)(CLevelRegion* reg, int regionIdx);
 
+enum ECellClearStateMode
+{
+	NAV_CLEAR_WORKSTATES = 0,
+	NAV_CLEAR_DYNAMIC_OBSTACLES = 1,
+};
+
 //-----------------------------------------------------------------------------------------
 // Game level renderer, utilities
 //-----------------------------------------------------------------------------------------
@@ -166,12 +172,12 @@ public:
 	void					Nav_LocalToGlobalPoint(const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const;
 
 	navcell_t&				Nav_GetCellStateAtGlobalPoint(const IVector2D& point);
-	ubyte&					Nav_GetTileAtGlobalPoint(const IVector2D& point);
+	ubyte&					Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacles = false);
 
 	bool					Nav_FindPath(const Vector3D& start, const Vector3D& end, pathFindResult_t& result, int iterationLimit = 256, bool cellPriority = false);
 	bool					Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pathFindResult_t& result, int iterationLimit = 256, bool cellPriority = false);
 
-	void					Nav_ClearCellStates();
+	void					Nav_ClearCellStates(ECellClearStateMode mode);
 
 	// TODO: render code
 

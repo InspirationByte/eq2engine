@@ -24,16 +24,19 @@ struct DebugTextNode_t
 struct DebugFadingTextNode_t
 {
 	ColorRGBA	color;
-	EqString		pszText;
+	EqString	pszText;
 
 	// It will be set and decremented each frame
-	float		m_fFadeTime;
+	float		lifetime;
+
+	float		initialLifetime;
 };
 
 struct DebugText3DNode_t
 {
 	Vector3D	origin;
 	float		dist;
+	float		lifetime;
 	ColorRGBA	color;
 
 	EqString	pszText;
@@ -82,17 +85,13 @@ public:
 	void							Text(const ColorRGBA &color, char const *fmt,...);
 	void							TextFadeOut(int position, const ColorRGBA &color,float fFadeTime, char const *fmt,...);
 
-	void							Text3D(const Vector3D &origin, const ColorRGBA &color, char const *fmt,...);
-	void							Text3D(const Vector3D &origin, float dist, const ColorRGBA &color, char const *fmt,...);
+	void							Text3D(const Vector3D &origin, float dist, const ColorRGBA &color, float fTime, char const *fmt,...);
 
 	void							Line3D(const Vector3D &start, const Vector3D &end, const ColorRGBA &color1, const ColorRGBA &color2, float fTime = 0.0f);
 	void							Box3D(const Vector3D &mins, const Vector3D &maxs, const ColorRGBA &color1, float fTime = 0.0f);
 	void							Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime = 0.0f);
 
 	void							Draw3DFunc( OnDebugDrawFn func, void* args );
-
-	//void							Line2D(Vector2D &start, Vector2D &end, ColorRGBA &color1, ColorRGBA &color2, float fTime = 0.0f);
-	//void							Box2D(Vector2D &mins, Vector2D &maxs, ColorRGBA &color1, float fTime = 0.0f);
 
 	debugGraphBucket_t*				Graph_AddBucket( const char* pszName, const ColorRGBA &color, float fMaxValue, float fUpdateTime = 0.0f);
 	void							Graph_RemoveBucket(debugGraphBucket_t* pBucket);

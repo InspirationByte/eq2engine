@@ -124,29 +124,7 @@ void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
 	m_TextArray.append(textNode);
 }
 
-void CDebugOverlay::Text3D(const Vector3D &origin, const ColorRGBA &color, char const *fmt,...)
-{
-	if(!r_drawFrameStats.GetBool())
-		return;
-
-	va_list		argptr;
-	static char	string[1024];
-
-	va_start (argptr,fmt);
-	vsnprintf(string,sizeof(string), fmt,argptr);
-	va_end (argptr);
-
-	DebugText3DNode_t textNode;
-	textNode.color = color;
-	textNode.origin = origin;
-	textNode.dist = -1;
-
-	textNode.pszText = string;
-
-	m_Text3DArray.append(textNode);
-}
-
-void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const ColorRGBA &color, char const *fmt,...)
+void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const ColorRGBA &color, float fTime, char const *fmt,...)
 {
 	if(!r_drawFrameStats.GetBool())
 		return;
@@ -162,6 +140,7 @@ void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const ColorRGBA &
 	textNode.color = color;
 	textNode.origin = origin;
 	textNode.dist = dist;
+	textNode.lifetime = fTime;
 
 	textNode.pszText = string;
 
@@ -180,7 +159,8 @@ void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFade
 
 	DebugFadingTextNode_t textNode;
 	textNode.color = color;
-	textNode.m_fFadeTime = fFadeTime;
+	textNode.lifetime = fFadeTime;
+	textNode.initialLifetime = fFadeTime;
 
 	va_list		argptr;
 	static char	string[1024];
@@ -659,31 +639,34 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 
 		do
 		{
-			if(m_LeftTextFadeArray.getCurrent().color.w <= 0)
+			DebugFadingTextNode_t& current = m_LeftTextFadeArray.getCurrentNode()->object;
+
+			if(current.lifetime < 0.0f)
 			{
 				m_LeftTextFadeArray.removeCurrent();
-				idx--;
+
+				if(!m_LeftTextFadeArray.goToPrev()); // get back
+					break;
+
+				continue;
 			}
 
-			DebugFadingTextNode_t current = m_LeftTextFadeArray.getCurrent();
-
-			ColorRGBA color = current.color;
-			color.w *= 5;
-
-			color.w = clamp(color.w,0,1);
+			if(current.initialLifetime > 0.05f)
+				current.color.w = clamp(current.lifetime, 0.0f, 1.0f);
+			else
+				current.color.w = 1.0f;
 
 			eqFontStyleParam_t textStl;
 			textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-			textStl.textColor = color;
+			textStl.textColor = current.color;
 
 			Vector2D textPos = drawFadedTextBoxPosition + Vector2D( 0, (idx*m_pDebugFont->GetLineHeight()) );
 
 			m_pDebugFont->RenderText( current.pszText.GetData(), textPos, textStl);
-			current.color.w -= m_frametime * current.m_fFadeTime;
-
-			m_LeftTextFadeArray.setCurrent(current);
 
 			idx++;
+
+			current.lifetime -= m_frametime;
 
 		}while(m_LeftTextFadeArray.goToNext());
 	}
@@ -695,22 +678,25 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 		eqFontStyleParam_t textStl;
 		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 
-
 		for (int i = 0;i < m_Text3DArray.numElem();i++)
 		{
+			DebugText3DNode_t& current = m_Text3DArray[i];
+
 			Vector3D screen(0);
 
-			bool beh = PointToScreen_Z(m_Text3DArray[i].origin, screen, m_projMat * m_viewMat, Vector2D(winWide, winTall));
+			bool beh = PointToScreen_Z(current.origin, screen, m_projMat * m_viewMat, Vector2D(winWide, winTall));
 
 			bool visible = true;
 
-			if(m_Text3DArray[i].dist > 0)
-				visible = (screen.z < m_Text3DArray[i].dist);
+			if(current.dist > 0)
+				visible = (screen.z < current.dist);
+
+			current.lifetime -= m_frametime;
 
 			if(!beh && visible)
 			{
-				textStl.textColor = m_Text3DArray[i].color;
-				m_pDebugFont->RenderText(m_Text3DArray[i].pszText.GetData(), screen.xy(), textStl);
+				textStl.textColor = current.color;
+				m_pDebugFont->RenderText(current.pszText.GetData(), screen.xy(), textStl);
 			}
 		}
 
@@ -720,11 +706,13 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 
 			for (int i = 0;i < m_TextArray.numElem();i++)
 			{
-				textStl.textColor = m_TextArray[i].color;
+				DebugTextNode_t& current = m_TextArray[i];
+
+				textStl.textColor = current.color;
 
 				Vector2D textPos(drawTextBoxPosition.x,drawTextBoxPosition.y+(i*m_pDebugFont->GetLineHeight()));
 
-				m_pDebugFont->RenderText(m_TextArray[i].pszText.GetData(), textPos, textStl);
+				m_pDebugFont->RenderText(current.pszText.GetData(), textPos, textStl);
 			}
 		}
 
@@ -734,19 +722,21 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 
 		for (int i = 0;i < m_RightTextFadeArray.numElem();i++)
 		{
-			if(m_RightTextFadeArray[i].color.w <= 0)
-			{
-				m_RightTextFadeArray.fastRemoveIndex(i);
-			}
+			DebugFadingTextNode_t& current = m_RightTextFadeArray[i];
 
-			float textLen = m_pDebugFont->GetStringWidth( m_RightTextFadeArray[i].pszText.c_str(), textStl.styleFlag );
+			float textLen = m_pDebugFont->GetStringWidth( current.pszText.c_str(), textStl.styleFlag );
 
-			rTextFadeStyle.textColor = m_RightTextFadeArray[i].color;
+			if(current.initialLifetime > 0.05f)
+				current.color.w = clamp(current.lifetime, 0.0f, 1.0f);
+			else
+				current.color.w = 1.0f;
+
+			rTextFadeStyle.textColor = current.color;
 			Vector2D textPos(winWide - (textLen*m_pDebugFont->GetLineHeight()), 45+(i*m_pDebugFont->GetLineHeight()));
 
-			m_pDebugFont->RenderText( m_RightTextFadeArray[i].pszText.GetData(), textPos, rTextFadeStyle);
+			m_pDebugFont->RenderText( current.pszText.GetData(), textPos, rTextFadeStyle);
 
-			m_RightTextFadeArray[i].color.w -= m_frametime * m_RightTextFadeArray[i].m_fFadeTime;
+			current.lifetime -= m_frametime;
 		}
 	}
 
@@ -787,7 +777,24 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 void CDebugOverlay::CleanOverlays()
 {
 	m_TextArray.clear();
-	m_Text3DArray.clear();
+	
+	for (int i = 0;i < m_Text3DArray.numElem();i++)
+	{
+		if(m_Text3DArray[i].lifetime <= 0)
+		{
+			m_Text3DArray.fastRemoveIndex(i);
+			i--;
+		}
+	}
+
+	for (int i = 0;i < m_RightTextFadeArray.numElem();i++)
+	{
+		if(m_RightTextFadeArray[i].lifetime <= 0)
+		{
+			m_RightTextFadeArray.fastRemoveIndex(i);
+			i--;
+		}
+	}
 
 	for (int i = 0;i < m_LineList.numElem();i++)
 	{

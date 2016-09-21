@@ -401,7 +401,11 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 
 		rep->replayArray.append(con);
 		rep->curr_frame++;
+
+		rep->onEvent = false;
 	}
+
+	
 
 	return true;
 }
@@ -870,9 +874,6 @@ void CReplayData::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject* ob
 
 			vehiclereplay_t& veh = m_vehicles[evt.replayIndex];
 
-			veh.skipFrames = 64;	// skip frames
-			veh.skeptFrames = 0;
-
 			if ( pCar->IsPursuer() )
 			{
 				CAIPursuerCar* pursuer = (CAIPursuerCar*)pCar;
@@ -883,7 +884,12 @@ void CReplayData::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject* ob
 					evt.eventFlags |= REPLAY_FLAG_CAR_GANG_AI;
 			}
 			else
+			{
+				veh.skipFrames = 64;	// skip frames
+				veh.skeptFrames = 0;
 				evt.eventFlags |= REPLAY_FLAG_CAR_AI;
+			}
+				
 
 			object->m_replayID = evt.replayIndex;
 		}

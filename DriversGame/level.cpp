@@ -258,7 +258,7 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 	
 #else
 	// regenerate nav grid
-	Nav_ClearCellStates();
+	Nav_ClearCellStates( NAV_CLEAR_WORKSTATES );
 #endif // EDITOR
 
 	g_fileSystem->Close(pFile);
@@ -1884,7 +1884,7 @@ navcell_t& CGameLevel::Nav_GetCellStateAtGlobalPoint(const IVector2D& point)
 	return emptyCell;
 }
 
-ubyte& CGameLevel::Nav_GetTileAtGlobalPoint(const IVector2D& point)
+ubyte& CGameLevel::Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacles)
 {
 	int navSize = m_cellsSize * AI_NAVIGATION_GRID_SCALE;
 
@@ -1897,7 +1897,10 @@ ubyte& CGameLevel::Nav_GetTileAtGlobalPoint(const IVector2D& point)
 
 	if (reg && reg->m_navGrid.staticObst)
 	{
-		return reg->m_navGrid.staticObst[localPoint.y*navSize + localPoint.x];
+		if(obstacles)
+			return reg->m_navGrid.dynamicObst[localPoint.y*navSize + localPoint.x];
+		else
+			return reg->m_navGrid.staticObst[localPoint.y*navSize + localPoint.x];
 	}
 
 	static ubyte emptyTile = 255;
@@ -1905,7 +1908,7 @@ ubyte& CGameLevel::Nav_GetTileAtGlobalPoint(const IVector2D& point)
 	return emptyTile;
 }
 
-void CGameLevel::Nav_ClearCellStates()
+void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
 {
 	int navSize = (m_cellsSize*AI_NAVIGATION_GRID_SCALE);
 
@@ -1921,7 +1924,15 @@ void CGameLevel::Nav_ClearCellStates()
 
 			if(reg.m_isLoaded) // zero them
 			{
-				memset(reg.m_navGrid.cellStates, 0, navSize*navSize);
+				switch(mode)
+				{
+					case NAV_CLEAR_WORKSTATES:
+						memset(reg.m_navGrid.cellStates, 0, navSize*navSize);
+						break;
+					case NAV_CLEAR_DYNAMIC_OBSTACLES:
+						memset(reg.m_navGrid.dynamicObst, 0x4, navSize*navSize);
+						break;
+				}
 
 				if( reg.m_navGrid.dirty )
 				{
@@ -1957,7 +1968,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 	int dy[] = NEIGHBOR_OFFS_YDY(0, (1));
 
 	// clear states before we proceed
-	Nav_ClearCellStates();
+	Nav_ClearCellStates( NAV_CLEAR_WORKSTATES );
 
 	// check the start and dest points
 	navcell_t& startCheck = Nav_GetCellStateAtGlobalPoint(start);
@@ -1966,7 +1977,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 	if(startCheck.flag == 0x1 || endCheck.flag == 0x1)
 		return false;
 
-	DkList<IVector2D> openSet;	// we don't need closed set
+	DkList<IVector2D> openSet(1024);	// we don't need closed set
 	openSet.append(start);
 
 	bool found = false;
@@ -2039,6 +2050,11 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 			ubyte next = Nav_GetTileAtGlobalPoint(nextPoint);
 
 			if(next == 0 || nextCell.flag == 0x1)	// wall or closed
+				continue;
+
+			ubyte trafficVal = Nav_GetTileAtGlobalPoint(nextPoint, true);
+
+			if(trafficVal == 0)
 				continue;
 
 			totalIterations++;

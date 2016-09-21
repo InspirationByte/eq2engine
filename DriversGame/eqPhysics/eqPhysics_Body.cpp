@@ -242,7 +242,7 @@ void CEqRigidBody::Integrate(float delta)
 
 	if(ph_debug_body.GetBool())
 	{
-		debugoverlay->Text3D(m_position, 50.0f, ColorRGBA(1,1,1,1),
+		debugoverlay->Text3D(m_position, 50.0f, ColorRGBA(1,1,1,1), 0.0f,
 			"Position: [%.2f %.2f %.2f]\n"
 			"Lin. vel: [%.2f %.2f %.2f] (%.2f)\n"
 			"Ang. vel: [%.2f %.2f %.2f]\n"

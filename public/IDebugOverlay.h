@@ -54,8 +54,7 @@ public:
 	virtual void				Text(const ColorRGBA &color, char const *fmt,...) = 0;
 	virtual void				TextFadeOut(int position, const ColorRGBA &color, float fFadeTime, char const *fmt,...) = 0;
 
-	//virtual void				Text3D(const Vector3D &origin, const ColorRGBA &color, char const *fmt,...) = 0;
-	virtual void				Text3D(const Vector3D &origin, float distance, const ColorRGBA &color, char const *fmt,...) = 0;
+	virtual void				Text3D(const Vector3D &origin, float distance, const ColorRGBA &color, float fTime, char const *fmt,...) = 0;
 
 	virtual void				Line3D(const Vector3D &start, const Vector3D &end, const ColorRGBA &color1, const ColorRGBA &color2, float fTime = 0.0f) = 0;
 	virtual void				Box3D(const Vector3D &mins, const Vector3D &maxs, const ColorRGBA &color, float fTime = 0.0f) = 0;

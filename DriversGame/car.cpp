@@ -1004,9 +1004,9 @@ int	CCar::GetControlButtons()
 
 void CCar::SetControlVars(float fAccelRatio, float fBrakeRatio, float fSteering)
 {
-	m_accelRatio = fAccelRatio*1023.0f;
-	m_brakeRatio = fBrakeRatio*1023.0f;
-	m_steerRatio = fSteering*1023.0f;
+	m_accelRatio = min(fAccelRatio, 1.0f)*1023.0f;
+	m_brakeRatio = min(fBrakeRatio, 1.0f)*1023.0f;
+	m_steerRatio = min(fSteering, 1.0f)*1023.0f;
 
 	if(m_accelRatio > 1023)
 		m_accelRatio = 1023;

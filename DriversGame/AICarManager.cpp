@@ -195,6 +195,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 			return NULL;
 
 		CAIPursuerCar* pCopCar = new CAIPursuerCar(conf, PURSUER_TYPE_COP);
+		pCopCar->SetTorqueScale(m_copAccelerationModifier);
 		pNewCar = pCopCar;
 
 		m_copCars.append(pCopCar);

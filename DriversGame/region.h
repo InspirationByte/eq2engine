@@ -55,6 +55,7 @@ struct navGrid_t
 	{
 		staticObst = NULL;
 		cellStates = NULL;
+		dynamicObst = NULL;
 		wide = 0;
 		tall = 0;
 		dirty = false;
@@ -67,7 +68,7 @@ struct navGrid_t
 
 	void Init( int w, int h)
 	{
-		if(staticObst || cellStates )
+		if(staticObst || cellStates || dynamicObst )
 			Cleanup();
 
 		wide = w;
@@ -75,6 +76,9 @@ struct navGrid_t
 
 		staticObst = new ubyte[w*h];
 		memset(staticObst, 0x4, w*h);
+
+		dynamicObst = new ubyte[w*h];
+		memset(dynamicObst, 0x4, w*h);
 
 		cellStates = new navcell_t[w*h];
 		memset(cellStates, 0, w*h);
@@ -90,6 +94,9 @@ struct navGrid_t
 		delete [] cellStates;
 		cellStates = NULL;
 
+		delete [] dynamicObst;
+		dynamicObst = NULL;
+
 		wide = 0;
 		tall = 0;
 
@@ -97,6 +104,7 @@ struct navGrid_t
 	}
 
 	ubyte*		staticObst;		///< A* static navigation grid
+	ubyte*		dynamicObst;
 	navcell_t*	cellStates;		///< A* open/close state list
 
 	ushort		wide;
