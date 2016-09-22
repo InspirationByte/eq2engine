@@ -16,7 +16,7 @@
 #include "platform/Platform.h"
 #include "materialsystem/IMaterialSystem.h"
 #include "material.h"
-#include <map>
+#include <unordered_map>
 
 #include "utils/eqthread.h"
 
@@ -30,9 +30,9 @@ struct shaderoverride_t
 
 class IRenderLibrary;
 
-typedef std::map<ushort,IRenderState*> blendStateMap_t;
-typedef std::map<ubyte,IRenderState*> depthStateMap_t;
-typedef std::map<ubyte,IRenderState*> rasterStateMap_t;
+typedef std::unordered_map<ushort,IRenderState*> blendStateMap_t;
+typedef std::unordered_map<ubyte,IRenderState*> depthStateMap_t;
+typedef std::unordered_map<ubyte,IRenderState*> rasterStateMap_t;
 
 struct DKMODULE;
 

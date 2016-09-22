@@ -25,6 +25,8 @@ struct coreInterface_t
 class CDkCore : public IDkCore
 {
 public:
+	CDkCore();
+
 	bool					Init(const char* pszApplicationName,const char *pszCommandLine);	// Initializes core
 	bool					Init(const char* pszApplicationName,int argc, char **argv);	// Initializes core for tools. This is an console app initializer, and logging will be forced
 
@@ -52,7 +54,7 @@ private:
 	EqString				m_szCurrentSessionUserName;
 	bool					m_bInitialized;
 
-	KeyValues				m_coreConfiguration;
+	KeyValues*				m_coreConfiguration;
 
 	DkList<coreInterface_t> m_interfaces;
 };

@@ -127,6 +127,11 @@ void InitMessageBoxPlatform();
 
 extern void cc_developer_f( DkList<EqString>* args );
 
+CDkCore::CDkCore()
+{
+	m_coreConfiguration = NULL;
+}
+
 // Definition that we can't see or change throught console
 bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 {
@@ -173,26 +178,28 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
 	bLoggingInitialized = true;
 
-	if(!m_coreConfiguration.LoadFromFile("EQ.CONFIG"))
+	m_coreConfiguration = new KeyValues();
+
+	kvkeybase_t* coreConfigRoot = m_coreConfiguration->GetRootSection();
+
+	if(!m_coreConfiguration->LoadFromFile("EQ.CONFIG"))
 	{
 		//Msg("skip: can't open 'eq.config'\n");
 
 		// try create default settings
-		kvkeybase_t* appDebug = m_coreConfiguration.GetRootSection()->AddKeyBase("ApplicationDebug");
-		appDebug->AddKeyBase("ForceLogApplications", pszApplicationName);
+		kvkeybase_t* appDebug = coreConfigRoot->AddKeyBase("ApplicationDebug");
+		appDebug->SetKey("ForceLogApplications", pszApplicationName);
 
-		kvkeybase_t* fsSection = m_coreConfiguration.GetRootSection()->AddKeyBase("FileSystem");
+		kvkeybase_t* fsSection = coreConfigRoot->AddKeyBase("FileSystem");
 
-		fsSection->AddKeyBase("EngineDataDir", "EqBase");
-		fsSection->AddKeyBase("DefaultGameDir", "GameData");
+		fsSection->SetKey("EngineDataDir", "EqBase");
+		fsSection->SetKey("DefaultGameDir", "GameData");
 
-		kvkeybase_t* regionalConfig = m_coreConfiguration.GetRootSection()->AddKeyBase("RegionalSettings");
-		regionalConfig->AddKeyBase("DefaultLanguage", "English");
+		kvkeybase_t* regionalConfig = coreConfigRoot->AddKeyBase("RegionalSettings");
+		regionalConfig->SetKey("DefaultLanguage", "English");
 	}
 
-	KV_PrintSection(m_coreConfiguration.GetRootSection());
-
-	kvkeybase_t* pAppDebug = m_coreConfiguration.FindKeyBase("ApplicationDebug", KV_FLAG_SECTION);
+	kvkeybase_t* pAppDebug = coreConfigRoot->FindKeyBase("ApplicationDebug", KV_FLAG_SECTION);
 	if(pAppDebug)
 	{
 		if(pAppDebug->FindKeyBase("ForceEnableLog", KV_FLAG_NOVALUE))
@@ -322,7 +329,7 @@ void CDkCore::InitSubInterfaces()
 
 KeyValues* CDkCore::GetConfig()
 {
-	return &m_coreConfiguration;
+	return m_coreConfiguration;
 }
 
 void nullspew(SpewType_t type,const char* pMsg) {}
@@ -332,7 +339,8 @@ void CDkCore::Shutdown()
     if (!m_bInitialized)
         return;
 
-	m_coreConfiguration.GetRootSection()->Cleanup();
+	delete m_coreConfiguration;
+	m_coreConfiguration = NULL;
 
 	// remove interface list
 	m_interfaces.clear();

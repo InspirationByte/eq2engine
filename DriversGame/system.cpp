@@ -239,13 +239,8 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	g_pShaderAPI = materials->GetShaderAPI();
 
-	if( !g_fontCache->Init() )
-		return false;
-
 	// Initialize sound system
 	soundsystem->Init();
-
-	debugoverlay->Init();
 
 	Networking::InitNetworking();
 
@@ -271,12 +266,15 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	// make job threads
 	g_parallelJobs->Init( (int)ceil((float)g_cpuCaps->GetCPUCount() / 2.0f) );
 
-	// init console
-	g_pSysConsole->Initialize();
-
-	g_pEqUIManager->Init();
+	if( !g_fontCache->Init() )
+		return false;
 
 	m_pDefaultFont = g_fontCache->GetFont("default",0);
+
+	// init console
+	g_pSysConsole->Initialize();
+	debugoverlay->Init();
+	g_pEqUIManager->Init();
 
 	// init game states and proceed
 	InitRegisterStates();
