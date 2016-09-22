@@ -76,12 +76,13 @@ struct kvpairvalue_t
 
 	EKVPairType	type;
 
-	int		nValue;
-
-	bool	bValue;
-	float	fValue;
-
-	struct kvkeybase_t*	section;
+	union
+	{
+		int		nValue;
+		bool	bValue;
+		float	fValue;
+		struct kvkeybase_t*	section;
+	};
 
 	char*				value;
 
@@ -95,6 +96,8 @@ struct kvpairvalue_t
 // key values base
 struct kvkeybase_t
 {
+	PPMEM_MANAGED_OBJECT()
+
 	kvkeybase_t();
 	~kvkeybase_t();
 

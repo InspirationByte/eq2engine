@@ -179,13 +179,10 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	bLoggingInitialized = true;
 
 	m_coreConfiguration = new KeyValues();
-
 	kvkeybase_t* coreConfigRoot = m_coreConfiguration->GetRootSection();
 
 	if(!m_coreConfiguration->LoadFromFile("EQ.CONFIG"))
 	{
-		//Msg("skip: can't open 'eq.config'\n");
-
 		// try create default settings
 		kvkeybase_t* appDebug = coreConfigRoot->AddKeyBase("ApplicationDebug");
 		appDebug->SetKey("ForceLogApplications", pszApplicationName);
@@ -225,7 +222,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		{
 			for(int i = 0; i < pForceLogged->values.numElem();i++)
 			{
-				if(!stricmp(KV_GetValueString(pForceLogged, i), pszApplicationName))
+				if(!stricmp(KV_GetValueString(pForceLogged, i), m_szApplicationName.c_str()))
 				{
 					bDoLogs = true;
 					break;

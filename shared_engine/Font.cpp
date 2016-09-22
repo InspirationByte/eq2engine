@@ -653,10 +653,10 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				if( g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9 )
 				{
 					// fix half texel on DX9
-					fontChar.x0 -= 0.5f;
-					fontChar.y0 -= 0.5f;
-					fontChar.x1 -= 0.5f;
-					fontChar.y1 -= 0.5f;
+					fontChar.x0 = fontChar.x0 - 0.5f;
+					fontChar.y0 = fontChar.y0 - 0.5f;
+					fontChar.x1 = fontChar.x1 - 0.5f;
+					fontChar.y1 = fontChar.y1 - 0.5f;
 				}
 
 				m_charMap[charIdx] = fontChar;

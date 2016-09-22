@@ -393,7 +393,7 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 
 kvpairvalue_t::~kvpairvalue_t()
 {
-	delete [] value;
+	PPFree(value);
 	delete section;
 }
 
@@ -431,12 +431,12 @@ void kvpairvalue_t::SetStringValue( const char* pszValue )
 {
 	if(value)
 	{
-		delete [] value;
+		PPFree(value);
 		value = NULL;
 	}
 
 	int len = strlen(pszValue);
-	value = new char[len+1];
+	value = (char*)PPAlloc(len+1);
 
 	strcpy(value, pszValue);
 }
@@ -446,6 +446,9 @@ void kvpairvalue_t::SetValueFromString( const char* pszValue )
 	ASSERT(pszValue != NULL);
 
 	SetStringValue( pszValue );
+
+	delete section;
+	section = NULL;
 
 	if(type == KVPAIR_INT)
 	{
@@ -482,36 +485,12 @@ kvkeybase_t* KeyValues::FindKeyBase(const char* pszName, int nFlags)
 // loads from file
 bool KeyValues::LoadFromFile(const char* pszFileName, int nSearchFlags)
 {
-	kvkeybase_t* default_base = m_pKeyBase;
-
-	m_pKeyBase = KV_LoadFromFile(pszFileName, nSearchFlags);
-
-	if(m_pKeyBase)
-	{
-		delete default_base;
-		return true;
-	}
-
-	m_pKeyBase = default_base;
-
-	return false;
+	return KV_LoadFromFile(pszFileName, nSearchFlags, m_pKeyBase) != NULL;
 }
 
 bool KeyValues::LoadFromStream(ubyte* pData)
 {
-	kvkeybase_t* default_base = m_pKeyBase;
-
-	m_pKeyBase = KV_ParseSection( (const char*)pData, NULL, NULL, 0 );
-
-	if(m_pKeyBase)
-	{
-		delete default_base;
-		return true;
-	}
-
-	m_pKeyBase = default_base;
-
-	return false;
+	return KV_ParseSection( (const char*)pData, NULL, m_pKeyBase, 0 ) != NULL;
 }
 
 void KV_WriteToStream_r(kvkeybase_t* pKeyBase, IVirtualStream* pStream, int nTabs, bool bOldFormat, bool pretty);

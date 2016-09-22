@@ -91,7 +91,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			kvkeybase_t* bold = styleTable->FindKeyBase("bld");
 			kvkeybase_t* italic = styleTable->FindKeyBase("itl");
 			kvkeybase_t* bolditalic = styleTable->FindKeyBase("b+i");
-
+			
 			// first we loading a regular font
 			CFont* regFont = new CFont();
 
@@ -107,12 +107,14 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			// now alloc
 			eqFontStyleInfo_t* fontStyleInfo = new eqFontStyleInfo_t;
 			fontStyleInfo->size = entrySize;
-			fontStyleInfo->regularFont = regFont;
 
+			
+			fontStyleInfo->regularFont = regFont;
+			
 			FONT_LOADSTYLE(fontStyleInfo->boldFont, KV_GetValueString(bold, 0, NULL));
 			FONT_LOADSTYLE(fontStyleInfo->italicFont, KV_GetValueString(italic, 0, NULL));
 			FONT_LOADSTYLE(fontStyleInfo->boldItalicFont, KV_GetValueString(bolditalic, 0, NULL));
-
+			
 			// add style/size entry to table
 			familyEntry->sizeTable.append( fontStyleInfo );
 		}

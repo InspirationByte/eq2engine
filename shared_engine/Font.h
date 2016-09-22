@@ -10,7 +10,7 @@
 #define FONT_H
 
 #include "IFont.h"
-#include <map>
+#include <unordered_map>
 
 class CFont : public IEqFont
 {
@@ -83,24 +83,24 @@ protected:
 	//---------------------------------------------------------
 
 	// map of chars
-	std::map<int, eqFontChar_t>	m_charMap;
+	std::unordered_map<ushort, eqFontChar_t>	m_charMap;
 
-	float						m_spacing;
-	float						m_baseline;
-	float						m_lineHeight;
-	Vector2D					m_scale;
+	float							m_spacing;
+	float							m_baseline;
+	float							m_lineHeight;
+	Vector2D						m_scale;
 
-	EqString					m_name;
+	EqString						m_name;
 
-	ITexture*					m_fontTexture;
-	Vector2D					m_invTexSize;
+	ITexture*						m_fontTexture;
+	Vector2D						m_invTexSize;
 
-	ColorRGBA					m_textColor;
+	ColorRGBA						m_textColor;
 
-	Vertex2D_t*					m_vertexBuffer;
-	int							m_numVerts;
+	Vertex2D_t*						m_vertexBuffer;
+	int								m_numVerts;
 
-	bool						m_isSDF;
+	bool							m_isSDF;
 };
 
 #endif //IFONT_H
