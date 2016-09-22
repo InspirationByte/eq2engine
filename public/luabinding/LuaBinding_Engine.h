@@ -71,7 +71,7 @@ OOLUA_PROXY_END
 //
 // keyvalues
 //
-
+/*
 OOLUA_PROXY(kvkeybase_t)
 
 	OOLUA_MFUNC(Cleanup)
@@ -107,7 +107,7 @@ OOLUA_PROXY(KeyValues)
 
 	OOLUA_MEM_FUNC_RENAME(GetRoot, kvkeybase_t*, GetRootSection)
 
-OOLUA_PROXY_END
+OOLUA_PROXY_END*/
 
 
 //----------------------------------------------

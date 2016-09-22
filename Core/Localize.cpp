@@ -139,7 +139,7 @@ void CLocalize::AddTokensFile(const char* pszFilePrefix)
 	{
 		if(!stricmp( kvs.GetRootSection()->keys[i]->name, "#include" ))
 		{
-			AddTokensFile( kvs.GetRootSection()->keys[i]->values[0] );
+			AddTokensFile( KV_GetValueString(kvs.GetRootSection()->keys[i]) );
 			continue;
 		}
 
@@ -150,7 +150,7 @@ void CLocalize::AddTokensFile(const char* pszFilePrefix)
 			continue;
 		}
 
-		AddToken(kvs.GetRootSection()->keys[i]->name, kvs.GetRootSection()->keys[i]->values[0]);
+		AddToken(kvs.GetRootSection()->keys[i]->name, KV_GetValueString(kvs.GetRootSection()->keys[i]));
 	}
 }
 

@@ -887,8 +887,10 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 
 	for(int i = 0; i <  kv.GetRootSection()->keys.numElem(); i++)
 	{
-		if(!stricmp( kv.GetRootSection()->keys[i]->name, "include"))
-			LoadScriptSoundFile( kv.GetRootSection()->keys[i]->values[0]);
+		kvkeybase_t* kb = kv.GetRootSection()->keys[i];
+
+		if(!stricmp( kb->GetName(), "include"))
+			LoadScriptSoundFile( KV_GetValueString(kb) );
 	}
 
 	for(int i = 0; i < kv.GetRootSection()->keys.numElem(); i++)
@@ -944,7 +946,7 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 				if(stricmp(pRndWaveSec->keys[j]->name, "wave"))
 					continue;
 
-				pSoundData->soundFileNames.append(pRndWaveSec->keys[j]->values[0]);
+				pSoundData->soundFileNames.append(KV_GetValueString(pRndWaveSec->keys[j]));
 			}
 		}
 		else
@@ -952,7 +954,7 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 			pKey = curSec->FindKeyBase("wave");
 
 			if(pKey)
-				pSoundData->soundFileNames.append(pKey->values[0]);
+				pSoundData->soundFileNames.append(KV_GetValueString(pKey));
 			else
 				MsgError("There is no any wave file for script sound '%s'!\n", pSoundData->pszName);
 		}

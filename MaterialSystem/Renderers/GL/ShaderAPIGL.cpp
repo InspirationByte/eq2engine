@@ -345,13 +345,13 @@ void ShaderAPIGL::Init( shaderapiinitparams_t &params)
 
 	kvkeybase_t baseMeshBufferParams;
 	kvkeybase_t* attr = baseMeshBufferParams.AddKeyBase("attribute", "input_vPos");
-	attr->AppendValue("0");
+	attr->AddValue(0);
 
 	attr = baseMeshBufferParams.AddKeyBase("attribute", "input_texCoord");
-	attr->AppendValue("1");
+	attr->AddValue(1);
 
 	attr = baseMeshBufferParams.AddKeyBase("attribute", "input_color");
-	attr->AppendValue("3");
+	attr->AddValue(3);
 
 	s_uniformFuncs[CONSTANT_FLOAT]		= (void *) glUniform1fv;
 	s_uniformFuncs[CONSTANT_VECTOR2D]	= (void *) glUniform2fv;

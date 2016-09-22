@@ -45,7 +45,7 @@ public:
 	void UpdateVar(proxyvar_t& var, float fDt);
 
 protected:
-	void ParseVariable(proxyvar_t& var, char* pszVal);
+	void ParseVariable(proxyvar_t& var, const char* pszVal);
 	
 	void mvSetValue(proxyvar_t& var, float value);
 	void mvSetValueInt(proxyvar_t& var, int value);

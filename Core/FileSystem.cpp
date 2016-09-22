@@ -241,7 +241,7 @@ bool CFileSystem::Init(bool bEditorMode)
 	{
 		if(!stricmp(pFilesystem->keys[i]->name, "AddPackage" ))
 		{
-			if(!AddPackage( pFilesystem->keys[i]->values[0], SP_MOD ))
+			if(!AddPackage( KV_GetValueString(pFilesystem->keys[i]), SP_MOD ))
 				return false;
 		}
 	}

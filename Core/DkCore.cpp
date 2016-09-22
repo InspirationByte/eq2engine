@@ -190,6 +190,8 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		regionalConfig->AddKeyBase("DefaultLanguage", "English");
 	}
 
+	KV_PrintSection(m_coreConfiguration.GetRootSection());
+
 	kvkeybase_t* pAppDebug = m_coreConfiguration.FindKeyBase("ApplicationDebug", KV_FLAG_SECTION);
 	if(pAppDebug)
 	{
@@ -205,7 +207,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		if(devModesKv)
 		{
 			for(int i = 0; i < devModesKv->values.numElem();i++)
-				devModeList.append(devModesKv->values[i]);
+				devModeList.append(KV_GetValueString(devModesKv, i));
 
 			if(devModeList.numElem())
 				cc_developer_f( &devModeList );
@@ -216,7 +218,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		{
 			for(int i = 0; i < pForceLogged->values.numElem();i++)
 			{
-				if(!stricmp(pForceLogged->values[i], pszApplicationName))
+				if(!stricmp(KV_GetValueString(pForceLogged, i), pszApplicationName))
 				{
 					bDoLogs = true;
 					break;
@@ -330,6 +332,8 @@ void CDkCore::Shutdown()
     if (!m_bInitialized)
         return;
 
+	m_coreConfiguration.GetRootSection()->Cleanup();
+
 	// remove interface list
 	m_interfaces.clear();
 
@@ -348,9 +352,6 @@ void CDkCore::Shutdown()
 #endif
 
     m_bInitialized = false;
-
-	// shutdown memory
-	PPMemShutdown();
 
     Msg("\n*Destroying core...\n");
 
@@ -375,6 +376,9 @@ void CDkCore::Shutdown()
     strftime(datetime, 80, "%x %H:%M", tminfo);
     Msg("===================================\nLog closed: %s\n",datetime);
 #endif
+
+	// shutdown memory
+	PPMemShutdown();
 }
 
 char* CDkCore::GetApplicationName()

@@ -34,6 +34,22 @@ class IVirtualStream;
 #include "platform/Platform.h"
 #include "utils/DkList.h"
 #include "math/DkMath.h"
+#include "ppmem.h"
+
+//
+enum EKVPairType
+{
+	KVPAIR_STRING = 0,	// default
+	KVPAIR_INT,
+	KVPAIR_FLOAT,
+	KVPAIR_BOOL,
+
+	KVPAIR_SECTION,		// sections
+
+	KVPAIR_TYPES,
+};
+
+const char* GetKVTypeFormatStr(EKVPairType type);
 
 // tune this (depends on size of used memory)
 #define KV_MAX_NAME_LENGTH		128
@@ -43,6 +59,37 @@ enum KVSearchFlags_e
 	KV_FLAG_SECTION = (1 << 0),
 	KV_FLAG_NOVALUE = (1 << 1),
 	KV_FLAG_ARRAY	= (1 << 2)
+};
+
+struct kvpairvalue_t
+{
+	PPMEM_MANAGED_OBJECT()
+
+	kvpairvalue_t()
+	{
+		value = NULL;
+		section = NULL;
+		type = KVPAIR_STRING;
+	}
+
+	~kvpairvalue_t();
+
+	EKVPairType	type;
+
+	int		nValue;
+
+	bool	bValue;
+	float	fValue;
+
+	struct kvkeybase_t*	section;
+
+	char*				value;
+
+	void				SetValueFrom(kvpairvalue_t* from);
+
+	// sets string value
+	void				SetStringValue( const char* pszValue );
+	void				SetValueFromString( const char* pszValue );
 };
 
 // key values base
@@ -56,6 +103,7 @@ struct kvkeybase_t
 
 	// sets keybase name
 	void					SetName(const char* pszName);
+	const char*				GetName() const;
 
 	//----------------------------------------------
 	// The section functions
@@ -65,37 +113,57 @@ struct kvkeybase_t
 	kvkeybase_t*			FindKeyBase(const char* pszName, int nFlags = 0) const;
 
 	// adds new keybase
-	kvkeybase_t*			AddKeyBase(const char* pszName, const char* pszValue = NULL);
+	kvkeybase_t*			AddKeyBase(const char* pszName, const char* pszValue = NULL, EKVPairType pairType = KVPAIR_STRING);
 
-	// sets the key
-	void					SetKey(const char* pszName, const char* pszValue = NULL);
-	void					SetKey(const char* pszName, int value);
-	void					SetKey(const char* pszName, float value);
-	void					SetKey(const char* pszName, const Vector3D& value);
-	void					SetKey(const char* pszName, const Vector4D& value);
+	void					RemoveKeyBaseByName( const char* name );
 
-	// removes key base
-	void					RemoveKeyBase(const char* pszName);
+	//-----------------------------------------------------
+
+
+	kvkeybase_t&			SetKey(const char* name, const char* value);
+	kvkeybase_t&			SetKey(const char* name, int nValue);
+	kvkeybase_t&			SetKey(const char* name, float fValue);
+	kvkeybase_t&			SetKey(const char* name, bool bValue);
+	kvkeybase_t&			SetKey(const char* name, kvkeybase_t* value);
+
+	kvkeybase_t&			AddKey(const char* name, const char* value);
+	kvkeybase_t&			AddKey(const char* name, int nValue);
+	kvkeybase_t&			AddKey(const char* name, float fValue);
+	kvkeybase_t&			AddKey(const char* name, bool bValue);
+	kvkeybase_t&			AddKey(const char* name, kvkeybase_t* value);
 
 	//----------------------------------------------
 	// The self-key functions
 	//----------------------------------------------
 
-	// sets string value array
-	void					SetValue(const char* pszString);
+	void					SetValueFrom( kvkeybase_t* pOther );
 
-	// sets string value to array index
-	void					SetValueByIndex(const char* pszValue, int nIdx = 0);
+	kvpairvalue_t*			CreateValue();
+	kvkeybase_t*			CreateSectionValue();
 
-	// sets array of values
-	void					SetValues(const char** pszStrings, int count);
+	kvkeybase_t*			Clone() const;
+	void					CopyTo(kvkeybase_t* dest) const;
 
-	// adds value to array
-	int						AppendValue(const char* pszValue);
-	int						AppendValue(int value);
-	int						AppendValue(float value);
-	int						AppendValue(const Vector3D& value);
-	int						AppendValue(const Vector4D& value);
+	// adds value to key
+	void					AddValue(const char* value);
+	void					AddValue(int nValue);
+	void					AddValue(float fValue);
+	void					AddValue(bool bValue);
+	void					AddValue(kvkeybase_t* keybase);
+	void					AddValue(kvpairvalue_t* value);
+
+	// adds unique value to key
+	void					AddUniqueValue(const char* value);
+	void					AddUniqueValue(int nValue);
+	void					AddUniqueValue(float fValue);
+	void					AddUniqueValue(bool bValue);
+
+	// sets value
+	void					SetValueAt(const char* value, int idxAt);
+	void					SetValueAt(int nValue, int idxAt);
+	void					SetValueAt(float fValue, int idxAt);
+	void					SetValueAt(bool bValue, int idxAt);
+	void					SetValueAt(kvpairvalue_t* value, int idxAt);
 
 	//----------------------------------------------
 
@@ -111,7 +179,10 @@ struct kvkeybase_t
 	int						line;
 
 	char					name[KV_MAX_NAME_LENGTH];
-	DkList<char*>			values;
+	int						nameHash;
+
+	DkList<kvpairvalue_t*>	values;
+	EKVPairType				type;		// default type of values
 
 	// the nested keys
 	DkList<kvkeybase_t*>	keys;

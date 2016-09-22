@@ -92,7 +92,7 @@ void CMaterial::InitVars(bool flushOnly)
 
 			// Set shader name from API prefs if available
 			if(pPair)
-				m_szShaderName = pPair->values[0];
+				m_szShaderName = KV_GetValueString(pPair);
 		}
 
 		if(materials->GetConfiguration().editormode)
@@ -106,7 +106,7 @@ void CMaterial::InitVars(bool flushOnly)
 
 				// Set shader name from API prefs if available
 				if(pPair)
-					m_szShaderName = pPair->values[0];
+					m_szShaderName = KV_GetValueString(pPair);
 			}
 		}
 
@@ -125,13 +125,13 @@ void CMaterial::InitVars(bool flushOnly)
 				if(pVarToFlush)
 				{
 					// flush variable falue
-					pVarToFlush->SetString(pRootSection->keys[i]->values[0]);
+					pVarToFlush->SetString( KV_GetValueString(pRootSection->keys[i]) );
 				}
 				else
 				{
 					// create if we not found mathing var
 					CMatVar *pVar = new CMatVar;
-					pVar->Init(pRootSection->keys[i]->name, pRootSection->keys[i]->values[0]);
+					pVar->Init(pRootSection->keys[i]->name, KV_GetValueString(pRootSection->keys[i]));
 
 					m_hMatVars.append(pVar);
 				}
@@ -139,7 +139,7 @@ void CMaterial::InitVars(bool flushOnly)
 			else
 			{
 				CMatVar *pVar = new CMatVar;
-				pVar->Init(pRootSection->keys[i]->name,pRootSection->keys[i]->values[0]);
+				pVar->Init(pRootSection->keys[i]->name,KV_GetValueString(pRootSection->keys[i]));
 
 				m_hMatVars.append(pVar);
 			}
@@ -155,10 +155,10 @@ void CMaterial::InitVars(bool flushOnly)
 					continue;
 
 				// make var if no var is present
-				IMatVar* pVar = GetMaterialVar(pCurrentAPIPrefsSection->keys[i]->name, pCurrentAPIPrefsSection->keys[i]->values[0]);
+				IMatVar* pVar = GetMaterialVar(pCurrentAPIPrefsSection->keys[i]->name, KV_GetValueString(pCurrentAPIPrefsSection->keys[i]));
 
 				// set it's value
-				pVar->SetString( pCurrentAPIPrefsSection->keys[i]->values[0] );
+				pVar->SetString( KV_GetValueString(pCurrentAPIPrefsSection->keys[i]) );
 			}
 		}
 

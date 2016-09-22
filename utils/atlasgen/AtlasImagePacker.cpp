@@ -456,10 +456,10 @@ bool CreateAtlasImage(const DkList<imageDesc_t*>& images_list,
 
 		// add info to keyvalues
 		kvkeybase_t* rect_kv = pAtlasGroup->AddKeyBase(imgDesc->name.c_str());
-		rect_kv->SetValueByIndex(varargs("%g", pRect->x / wide), 0);
-		rect_kv->SetValueByIndex(varargs("%g", pRect->y / tall), 1);
-		rect_kv->SetValueByIndex(varargs("%g", (pRect->x+pRect->width) / wide), 2);
-		rect_kv->SetValueByIndex(varargs("%g", (pRect->y+pRect->height) / tall), 3);
+		rect_kv->SetValueAt(pRect->x / wide, 0);
+		rect_kv->SetValueAt(pRect->y / tall, 1);
+		rect_kv->SetValueAt((pRect->x+pRect->width) / wide, 2);
+		rect_kv->SetValueAt((pRect->y+pRect->height) / tall, 3);
 	}
 
 	// done with it

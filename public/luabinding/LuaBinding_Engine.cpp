@@ -92,7 +92,7 @@ OOLUA_EXPORT_FUNCTIONS_CONST(Networking::CNetMessageBuffer, GetMessageLength, Ge
 OOLUA_EXPORT_FUNCTIONS(Networking::CNetworkThread,	SendData, SendEvent, SendWaitDataEvent)
 OOLUA_EXPORT_FUNCTIONS_CONST(Networking::CNetworkThread)
 
-
+/*
 OOLUA_EXPORT_FUNCTIONS(kvkeybase_t,
 	Cleanup,
 	ClearValues,
@@ -121,7 +121,7 @@ OOLUA_CFUNC(KV_GetValueBool, L_KV_GetValueBool)
 OOLUA_CFUNC(KV_GetVector2D, L_KV_GetVector2D)
 OOLUA_CFUNC(KV_GetVector3D, L_KV_GetVector3D)
 OOLUA_CFUNC(KV_GetVector4D, L_KV_GetVector4D)
-
+*/
 OOLUA_CFUNC(VectorAngles, L_VectorAngles)
 
 ILocToken* LocalizedToken( char* pszToken )
@@ -273,9 +273,6 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	OOLUA::register_class<Plane>(state);
 	OOLUA::register_class<IDebugOverlay>(state);
 
-	OOLUA::register_class<kvkeybase_t>(state);
-	OOLUA::register_class<KeyValues>(state);
-
 	OOLUA::register_class<ISoundController>(state);
 	OOLUA::register_class<EmitParams>(state);
 	OOLUA::register_class<CSoundEmitterSystem>(state);
@@ -289,7 +286,11 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 
 	OOLUA::set_global(state, "LocalizedToken", L_LocalizedToken);
 	OOLUA::set_global(state, "AddLanguageFile", L_AddLanguageFile);
+	/*
 
+	OOLUA::register_class<kvkeybase_t>(state);
+	OOLUA::register_class<KeyValues>(state);
+	
 	OOLUA::set_global(state, "KV_GetValueString", L_KV_GetValueString);
 	OOLUA::set_global(state, "KV_GetValueInt", L_KV_GetValueInt);
 	OOLUA::set_global(state, "KV_GetValueFloat", L_KV_GetValueFloat);
@@ -297,7 +298,7 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	OOLUA::set_global(state, "KV_GetVector2D", L_KV_GetVector2D);
 	OOLUA::set_global(state, "KV_GetVector3D", L_KV_GetVector3D);
 	OOLUA::set_global(state, "KV_GetVector4D", L_KV_GetVector4D);
-
+	*/
 	OOLUA::set_global(state, "f_fract", L_fract);
 	OOLUA::set_global(state, "f_lerp", L_lerp);
 	OOLUA::set_global(state, "f_cerp", L_cerp);

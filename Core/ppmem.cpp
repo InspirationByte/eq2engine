@@ -65,13 +65,15 @@ typedef std::map<void*,ppallocinfo_t*>::iterator allocIterator_t;
 // allocation map
 static std::map<void*,ppallocinfo_t*>	s_allocPointerMap;
 static uint								s_allocIdCounter = 0;
-static CEqMutex							s_allocMemMutex;
+CEqMutex*			g_allocMemMutex = NULL;
 
 static ConCommand	ppmem_stats("ppmem_stats",cc_meminfo_f, "Memory info",CV_UNREGISTERED);
 static ConVar		ppmem_break_on_alloc("ppmem_break_on_alloc", "-1", "Helps to catch allocation id at stack trace",CV_UNREGISTERED);
 
 void PPMemInit()
 {
+	g_allocMemMutex = new CEqMutex();
+
     g_sysConsole->RegisterCommand(&ppmem_stats);
     g_sysConsole->RegisterCommand(&ppmem_break_on_alloc);
 
@@ -80,16 +82,16 @@ void PPMemInit()
 
 void PPMemShutdown()
 {
+	delete g_allocMemMutex;
+
     g_sysConsole->UnregisterCommand(&ppmem_stats);
     g_sysConsole->UnregisterCommand(&ppmem_break_on_alloc);
-
-
 }
 
 // Printing the statistics and tracked memory usage
 void PPMemInfo( bool fullStats )
 {
-	CScopedMutex m(s_allocMemMutex);
+	CScopedMutex m(*g_allocMemMutex);
 
 	uint totalUsage = 0;
 	uint numErrors = 0;
@@ -142,7 +144,7 @@ ppallocinfo_t* FindAllocation( void* ptr, bool& isValidInputPtr )
 		return NULL;
 	}
 
-	CScopedMutex m(s_allocMemMutex);
+	CScopedMutex m(*g_allocMemMutex);
 
 	if(s_allocPointerMap.count(ptr) > 0)
 	{
@@ -191,12 +193,12 @@ void* PPDAlloc(uint size, const char* pszFileName, int nLine)
 	alloc->checkMark = PPMEM_CHECKMARK;
 	*checkMark = PPMEM_CHECKMARK;
 
-	s_allocMemMutex.Lock();
+	g_allocMemMutex->Lock();
 
 	// store pointer in global map
 	s_allocPointerMap[actualPtr] = alloc;
 
-	s_allocMemMutex.Unlock();
+	g_allocMemMutex->Unlock();
 
 	if( ppmem_break_on_alloc.GetInt() != -1)
 		ASSERTMSG(alloc->id == (uint)ppmem_break_on_alloc.GetInt(), varargs("PPDAlloc: Break on allocation id=%d", alloc->id));

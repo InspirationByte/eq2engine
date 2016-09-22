@@ -109,6 +109,9 @@ public:
 	// removes the element
 	bool			fastRemove( const T & obj );
 
+	// returns true if index is in range
+	bool			inRange( int index ) const;
+
 	// swap the contents of the lists
 	void			swap( DkList<T> &other );
 
@@ -708,6 +711,15 @@ inline bool DkList<T>::fastRemove( T const & obj )
 		return fastRemoveIndex( index );
 
 	return false;
+}
+
+// -----------------------------------------------------------------
+// Returns true if index is in array range
+// -----------------------------------------------------------------
+template< class T >
+inline bool DkList<T>::inRange( int index ) const
+{
+	return index >= 0 && index < m_nNumElem;
 }
 
 // -----------------------------------------------------------------

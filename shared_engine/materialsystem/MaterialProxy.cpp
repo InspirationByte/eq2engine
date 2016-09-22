@@ -23,7 +23,7 @@ CBaseMaterialProxy::CBaseMaterialProxy()
 	m_pMaterial = NULL;
 }
 
-void CBaseMaterialProxy::ParseVariable(proxyvar_t& var, char* pszVal)
+void CBaseMaterialProxy::ParseVariable(proxyvar_t& var, const char* pszVal)
 {
 	var.value = 0.0f;
 	var.vec_idx = -1;
@@ -33,7 +33,7 @@ void CBaseMaterialProxy::ParseVariable(proxyvar_t& var, char* pszVal)
 	if(!pszVal)
 		return;
 
-	char* pairval = pszVal;
+	char* pairval = (char*)pszVal;
 		
 	char firstSymbol = pairval[0];
 	if(firstSymbol == PAIR_VARIABLE)
@@ -183,15 +183,15 @@ public:
 			return;
 		}
 
-		ParseVariable(in1, pKeyBase->values[0] );
-		ParseVariable(in2, pKeyBase->values[1] );
-		ParseVariable(out, pKeyBase->values[2] );
+		ParseVariable(in1, KV_GetValueString(pKeyBase, 0) );
+		ParseVariable(in2, KV_GetValueString(pKeyBase, 1) );
+		ParseVariable(out, KV_GetValueString(pKeyBase, 2) );
 
 		useFrameTime = false;
 
 		for(int i = 3; i < pKeyBase->values.numElem(); i++)
 		{
-			if(!stricmp(pKeyBase->values[i], "useftime"))
+			if(!stricmp(KV_GetValueString(pKeyBase, i), "useftime"))
 				useFrameTime = true;
 		}
 	}
@@ -230,15 +230,15 @@ public:
 			return;
 		}
 
-		ParseVariable(in1, pKeyBase->values[0] );
-		ParseVariable(in2, pKeyBase->values[1] );
-		ParseVariable(out, pKeyBase->values[2] );
+		ParseVariable(in1, KV_GetValueString(pKeyBase, 0) );
+		ParseVariable(in2, KV_GetValueString(pKeyBase, 1) );
+		ParseVariable(out, KV_GetValueString(pKeyBase, 2) );
 
 		useFrameTime = false;
 
 		for(int i = 3; i < pKeyBase->values.numElem(); i++)
 		{
-			if(!stricmp(pKeyBase->values[i], "useftime"))
+			if(!stricmp(KV_GetValueString(pKeyBase, i), "useftime"))
 				useFrameTime = true;
 		}
 	}
@@ -277,15 +277,15 @@ public:
 			return;
 		}
 
-		ParseVariable(in1, pKeyBase->values[0] );
-		ParseVariable(in2, pKeyBase->values[1] );
-		ParseVariable(out, pKeyBase->values[2] );
+		ParseVariable(in1, KV_GetValueString(pKeyBase, 0) );
+		ParseVariable(in2, KV_GetValueString(pKeyBase, 1) );
+		ParseVariable(out, KV_GetValueString(pKeyBase, 2) );
 
 		useFrameTime = false;
 
 		for(int i = 3; i < pKeyBase->values.numElem(); i++)
 		{
-			if(!stricmp(pKeyBase->values[i], "useftime"))
+			if(!stricmp(KV_GetValueString(pKeyBase, i), "useftime"))
 				useFrameTime = true;
 		}
 	}
@@ -324,15 +324,15 @@ public:
 			return;
 		}
 
-		ParseVariable(in1, pKeyBase->values[0] );
-		ParseVariable(in2, pKeyBase->values[1] );
-		ParseVariable(out, pKeyBase->values[2] );
+		ParseVariable(in1, KV_GetValueString(pKeyBase, 0) );
+		ParseVariable(in2, KV_GetValueString(pKeyBase, 1) );
+		ParseVariable(out, KV_GetValueString(pKeyBase, 2) );
 
 		useFrameTime = false;
 
 		for(int i = 3; i < pKeyBase->values.numElem(); i++)
 		{
-			if(!stricmp(pKeyBase->values[i], "useftime"))
+			if(!stricmp(KV_GetValueString(pKeyBase, i), "useftime"))
 				useFrameTime = true;
 		}
 	}
@@ -369,8 +369,8 @@ public:
 			return;
 		}
 
-		ParseVariable(in, pKeyBase->values[0] );
-		ParseVariable(out, pKeyBase->values[1] );
+		ParseVariable(in, KV_GetValueString(pKeyBase, 0) );
+		ParseVariable(out, KV_GetValueString(pKeyBase, 1) );
 	}
 
 	void UpdateProxy(float dt)
@@ -399,8 +399,8 @@ public:
 			return;
 		}
 
-		ParseVariable(in, pKeyBase->values[0] );
-		ParseVariable(out, pKeyBase->values[1] );
+		ParseVariable(in, KV_GetValueString(pKeyBase, 0) );
+		ParseVariable(out, KV_GetValueString(pKeyBase, 1) );
 	}
 
 	void UpdateProxy(float dt)
