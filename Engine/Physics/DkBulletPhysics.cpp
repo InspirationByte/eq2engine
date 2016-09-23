@@ -355,7 +355,7 @@ class DkPhysicsDebugDrawer : public btIDebugDraw
 	void draw3dText(const btVector3 &vec,const char *text)
 	{
 #ifndef EQLC
-		debugoverlay->Text3D(ConvertPositionToEq((btVector3)vec),-1, color4_white, "%s", text);
+		debugoverlay->Text3D(ConvertPositionToEq((btVector3)vec),-1, color4_white, 0.0f, "%s", text);
 #endif
 	}
 

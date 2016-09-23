@@ -184,8 +184,10 @@ void buildingSource_t::ToKeyValues(kvkeybase_t* kvs)
 	for(DkLLNode<buildSegmentPoint_t>* lln = points.goToFirst(); lln != NULL; lln = points.goToNext())
 	{
 		kvkeybase_t* kvp = kvPoints->AddKeyBase(varargs("%d", lln->object.layerId));
-		kvp->AppendValue(lln->object.position);
-		kvp->AppendValue(lln->object.scale);
+		kvp->AddValue((float)lln->object.position.x);
+		kvp->AddValue((float)lln->object.position.y);
+		kvp->AddValue((float)lln->object.position.z);
+		kvp->AddValue(lln->object.scale);
 	}
 }
 

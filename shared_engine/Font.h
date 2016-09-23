@@ -10,7 +10,7 @@
 #define FONT_H
 
 #include "IFont.h"
-#include <unordered_map>
+#include <map>
 
 class CFont : public IEqFont
 {
@@ -83,7 +83,7 @@ protected:
 	//---------------------------------------------------------
 
 	// map of chars
-	std::unordered_map<ushort, eqFontChar_t>	m_charMap;
+	std::map<ushort, eqFontChar_t>	m_charMap;
 
 	float							m_spacing;
 	float							m_baseline;

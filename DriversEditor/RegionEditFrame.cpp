@@ -446,7 +446,7 @@ void CRegionEditFrame::ReDraw()
 
 		materials->SetupOrtho(-half_w, half_w, -half_h, half_h, -10.0f, 10.0f);
 
-		Vector3D angl = g_pGameWorld->GetCameraParams()->GetAngles();
+		Vector3D angl = g_pGameWorld->GetView()->GetAngles();
 
 		Matrix4x4 orthoRotation = rotateZXY4(DEG2RAD(-90.0f),0.0f,0.0f);
 		orthoRotation.translate(Vector3D(m_viewPos.x,0,m_viewPos.y));

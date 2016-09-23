@@ -195,7 +195,6 @@
     <Library Include="..\libs\CoreLib.lib" />
     <Library Include="..\libs\FrameworkLib.lib" />
     <Library Include="..\Libs\zlib.lib" />
-    <Library Include="..\src_dependency\jemalloc-win32\lib\vc2013\x86\libjemalloc_x86_Release.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

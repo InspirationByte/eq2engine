@@ -593,18 +593,18 @@ void CreateRagdollObjects( DkList<dsmvertex_t>& vertices, DkList<int>& indices, 
 					// check the value for arguments
 					for(int j = 0; j < pKey->values.numElem(); j++)
 					{
-						if( !stricmp(pKey->values[j], "limit" ))
+						if( !stricmp(KV_GetValueString(pKey, j), "limit" ))
 						{
 							// read limits
-							float lo_limit = atof(pKey->values[j+1]);
-							float hi_limit = atof(pKey->values[j+2]);
+							float lo_limit = KV_GetValueFloat(pKey, j+1);
+							float hi_limit = KV_GetValueFloat(pKey, j+2);
 
 							joint.minLimit[axis_idx] = DEG2RAD(lo_limit);
 							joint.maxLimit[axis_idx] = DEG2RAD(hi_limit);
 						}
-						else if( !stricmp(pKey->values[j], "limitoffset" ))
+						else if( !stricmp(KV_GetValueString(pKey, j), "limitoffset" ))
 						{
-							float offs = atof(pKey->values[j+1]);
+							float offs = KV_GetValueFloat(pKey, j+1);
 
 							joint.minLimit[axis_idx] += DEG2RAD(offs);
 							joint.maxLimit[axis_idx] += DEG2RAD(offs);
@@ -701,7 +701,7 @@ void CreateCompoundOrSeparateObjects( DkList<dsmvertex_t>& vertices, DkList<int>
 
 		pair = script->FindKeyBase("MassCenter");
 		if(pair)
-			object.mass_center = UTIL_StringToColor3( pair->values[0] );
+			object.mass_center = KV_GetVector3D( pair );
 		else
 			object.mass_center = (g_modelBoxMins+g_modelBoxMaxs)*0.5f;
 
@@ -795,7 +795,7 @@ void CreateSingleObject( DkList<dsmvertex_t>& vertices, DkList<int>& indices )
 
 	pair = script->FindKeyBase("MassCenter");
 	if(pair)
-		object.mass_center = UTIL_StringToColor3(pair->values[0]);
+		object.mass_center = KV_GetVector3D(pair);
 	else
 		object.mass_center = (g_modelBoxMins+g_modelBoxMaxs)*0.5f;
 

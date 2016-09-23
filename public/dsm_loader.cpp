@@ -108,7 +108,7 @@ bool LoadDSM_Version2(dsmmodel_t* model, kvkeybase_t* pSection)
 			strcpy(pBone->name, pSkeletonSec->keys[i]->name);
 
 			int args = sscanf(
-				pSkeletonSec->keys[i]->values[0], 
+				KV_GetValueString(pSkeletonSec->keys[i]), 
 				"%d %f %f %f %f %f %f %d",
 
 				&pBone->bone_id, 
@@ -158,9 +158,9 @@ skipskeleton:
 			if(!stricmp(pTrianglesSec->keys[i]->name, "texture"))
 			{
 				// if group is changed
-				if(stricmp(curr_texture, pTrianglesSec->keys[i]->values[0]))
+				if(stricmp(curr_texture, KV_GetValueString(pTrianglesSec->keys[i])))
 				{
-					strcpy(curr_texture, pTrianglesSec->keys[i]->values[0]);
+					strcpy(curr_texture, KV_GetValueString(pTrianglesSec->keys[i]));
 
 					// find or create group
 					cur_group = model->FindGroupByName(curr_texture);
@@ -190,7 +190,7 @@ skipskeleton:
 
 				// TODO: NEW DSM: DO NOT USE SSCANF!
 				args = sscanf(
-					pTrianglesSec->keys[i]->values[0], 
+					KV_GetValueString(pTrianglesSec->keys[i]), 
 					"%f " // pos x
 					"%f " // pos y
 					"%f " // pos z

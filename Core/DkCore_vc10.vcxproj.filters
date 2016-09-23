@@ -171,8 +171,5 @@
     <Library Include="..\libs\FrameworkLib.lib">
       <Filter>Libs</Filter>
     </Library>
-    <Library Include="..\src_dependency\jemalloc-win32\lib\vc2013\x86\libjemalloc_x86_Release.lib">
-      <Filter>Libs</Filter>
-    </Library>
   </ItemGroup>
 </Project>

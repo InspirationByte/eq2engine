@@ -968,6 +968,8 @@ kvkeybase_t& kvkeybase_t::AddKey(const char* name, kvkeybase_t* pair)
 // searches for keybase
 kvkeybase_t* kvkeybase_t::FindKeyBase(const char* pszName, int nFlags) const
 {
+	int hash = StringToHash(pszName);
+
 	for(int i = 0; i < keys.numElem(); i++)
 	{
 		if((nFlags & KV_FLAG_SECTION) && keys[i]->keys.numElem() == 0)
@@ -979,6 +981,7 @@ kvkeybase_t* kvkeybase_t::FindKeyBase(const char* pszName, int nFlags) const
 		if((nFlags & KV_FLAG_ARRAY) && keys[i]->values.numElem() <= 1)
 			continue;
 
+		//if(keys[i]->nameHash == hash)
 		if(!stricmp(keys[i]->name, pszName))
 			return keys[i];
 	}
@@ -1001,6 +1004,27 @@ kvkeybase_t* kvkeybase_t::AddKeyBase( const char* pszName, const char* pszValue,
 	}
 
 	return pKeyBase;
+}
+
+// removes key base by name
+void kvkeybase_t::RemoveKeyBaseByName( const char* name, bool removeAll )
+{
+	//int strHash = StringToHash(name, true);
+
+	for(int i = 0; i < keys.numElem(); i++)
+	{
+		//if(keys[i]->nameHash == strHash)
+		if(!stricmp(keys[i]->name, name))
+		{
+			delete keys[i];
+			keys.removeIndex(i);
+
+			if(removeAll)
+				i--;
+			else
+				return;
+		}
+	}
 }
 
 void kvkeybase_t::MergeFrom(const kvkeybase_t* base, bool recursive)
@@ -1074,7 +1098,7 @@ kvkeybase_t* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, kvkeyba
 
 	if(pBase)
 	{
-		strcpy(pBase->name, pszFileName);
+		pBase->SetName(pszFileName);
         pBase->unicode = isUTF8;
 	}
 
@@ -1122,6 +1146,8 @@ kvkeybase_t* KV_ParseSection( const char* pszBuffer, const char* pszFileName, kv
 	int nValueCounter = 0;
 
 	int nLine = nStartLine;
+
+	EqString tempName;
 
 	for ( ; ; ++pData )
 	{
@@ -1256,8 +1282,9 @@ kvkeybase_t* KV_ParseSection( const char* pszBuffer, const char* pszFileName, kv
 			// close token
 			if(nValueCounter <= 0)
 			{
-				strncpy( pCurrentKeyBase->name, pFirstLetter, nLen);
-				pCurrentKeyBase->name[nLen] = '\0';
+				tempName.Assign( pFirstLetter, nLen );
+
+				pCurrentKeyBase->SetName(tempName.c_str());
 			}
 			else
 			{

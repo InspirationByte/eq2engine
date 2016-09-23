@@ -194,7 +194,6 @@
     <ClInclude Include="public\Network\NetMessageBuffer.h" />
     <ClInclude Include="public\Network\NetInterfaces.h" />
     <ClInclude Include="public\Network\net_defs.h" />
-    <ClInclude Include="public\Platform\Platform.h" />
     <ClInclude Include="public\Utils\align.h" />
     <ClInclude Include="public\Utils\CRC32.h" />
     <ClInclude Include="public\Utils\DkLinkedList.h" />

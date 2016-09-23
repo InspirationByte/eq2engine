@@ -1377,7 +1377,7 @@ void CGameWorld::Draw( int nRenderFlags )
 #endif // EDITOR
 
 #ifdef EDITOR
-	m_level.Ed_Prerender(m_CameraParams.GetOrigin());
+	m_level.Ed_Prerender(m_view.GetOrigin());
 #endif // EDITOR
 
 	// below operations started asynchronously

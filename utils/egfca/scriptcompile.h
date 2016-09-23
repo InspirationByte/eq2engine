@@ -61,7 +61,7 @@ struct egfcamodel_t
 
 void FreeEGFCaModel( egfcamodel_t& mod );
 
-int GetMaterialIndex(char* pszName);
+int GetMaterialIndex(const char* pszName);
 int GetReferenceIndex(dsmmodel_t* pRef);
 
 bool CompileESCScript(const char* name);

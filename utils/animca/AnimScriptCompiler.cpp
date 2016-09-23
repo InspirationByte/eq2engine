@@ -134,7 +134,7 @@ void Cleanup()
 //************************************
 // Finds and returns sequence index by name
 //************************************
-int	GetSequenceIndex(char* name)
+int	GetSequenceIndex(const char* name)
 {
 	for(int i = 0; i < g_sequences.numElem(); i++)
 	{
@@ -148,7 +148,7 @@ int	GetSequenceIndex(char* name)
 //************************************
 // Finds and returns animation index by name
 //************************************
-int	GetAnimationIndex(char* name)
+int	GetAnimationIndex(const char* name)
 {
 	for(int i = 0; i < g_animations.numElem(); i++)
 	{
@@ -162,7 +162,7 @@ int	GetAnimationIndex(char* name)
 //************************************
 // Finds and returns pose controller index by name
 //************************************
-int	GetPoseControllerIndex(char* name)
+int	GetPoseControllerIndex(const char* name)
 {
 	for(int i = 0; i < g_posecontrollers.numElem(); i++)
 	{
@@ -741,118 +741,6 @@ int LoadAnimationFromESA(const char* filename)
 	FreeDSM(&tempDSM);
 
 	return g_animations.append(modelAnim);
-
-	/*
-	KeyValues pKV;
-	if( pKV.LoadFromFile(finalFileName))
-	{
-		kvkeybase_t* sec = pKV.GetRootSection();
-
-		if(!sec)
-			return -1;
-
-		// make new model animation
-		modelanimation_t modelAnim;
-
-		memset(&modelAnim, 0, sizeof(modelanimation_t));
-
-		strcpy(modelAnim.name,filename); // set it externally from file name
-
-		kvkeybase_t* boneFrames = sec->FindKeyBase("BoneFrames",KV_FLAG_SECTION);
-
-		if(!boneFrames)
-			return -1;
-
-		int animBoneCount = boneFrames->keys.numElem();
-
-		modelAnim.bones = new boneframe_t[animBoneCount];
-
-		if(g_numbones == 0)
-			g_numbones = animBoneCount;
-
-		if(g_model->numbones < g_numbones)
-		{
-			MsgError("Invalid bones! Please re-export model!\n");
-			return -1;
-		}
-
-		// enum bones
-		for(int i = 0; i < g_numbones; i++)
-		{
-			kvkeybase_t* posSection = boneFrames->keys[i]->FindKeyBase("Positions");
-			kvkeybase_t* rotSection = boneFrames->keys[i]->FindKeyBase("Rotations");
-
-			if(!posSection || !rotSection)
-				return -1;
-
-			int numFrames = 0;
-			float maxPosFrame = 0;
-			float maxRotFrame = 0;
-			float tmp = 0;
-
-			sscanf(posSection->keys[posSection->keys.numElem() - 1]->values[0], "%f %f %f %f",&maxPosFrame,&tmp,&tmp,&tmp);
-			sscanf(rotSection->keys[rotSection->keys.numElem() - 1]->values[0], "%f %f %f %f",&maxRotFrame,&tmp,&tmp,&tmp);
-
-			if(maxRotFrame > maxPosFrame)
-				numFrames = (int)round(maxRotFrame);
-			else
-				numFrames = (int)round(maxPosFrame);
-
-			modelAnim.bones[i].numframes = numFrames;
-			modelAnim.bones[i].keyframes = new animframe_t[numFrames];
-
-			for(int j = 0; j < modelAnim.bones[i].numframes; j++)
-			{
-				modelAnim.bones[i].keyframes[j].angBoneAngles.x = BONE_NOT_SET;
-				modelAnim.bones[i].keyframes[j].vecBonePosition.x = BONE_NOT_SET;
-			}
-
-			for(int j = 0; j < posSection->keys.numElem(); j++)
-			{
-				float fTime;
-				Vector3D vector;
-
-				sscanf(posSection->keys[j]->values[0],"%f %f %f %f",&fTime,&vector.x,&vector.y,&vector.z);
-
-				int nFrame = round(fTime)-1;
-
-				if(nFrame != 0 && j == 0)
-				{
-					MsgError("Animation frame must begin from zero!\n");
-					return -1;
-				}
-
-				modelAnim.bones[i].keyframes[nFrame].vecBonePosition = vector;
-			}
-
-			for(int j = 0; j < rotSection->keys.numElem(); j++)
-			{
-				float fTime;
-				Vector3D vector;
-
-				sscanf(rotSection->keys[j]->values[0],"%f %f %f %f",&fTime,&vector.x,&vector.y,&vector.z);
-
-				int nFrame = round(fTime)-1;
-
-				if(nFrame != 0 && j == 0)
-				{
-					MsgError("Animation frame must begin from zero!\n");
-					return -1;
-				}
-
-				modelAnim.bones[i].keyframes[nFrame].angBoneAngles = vector;
-			}
-
-			InterpolateBoneAnimationFrames( &modelAnim.bones[i] );
-		}
-
-		//
-		int ret_anim_idx = g_animations.append(modelAnim);
-
-		return ret_anim_idx;
-	}*/
-
-	return -1;
 }
 
 //************************************
@@ -869,12 +757,12 @@ void LoadAnimation(kvkeybase_t* section)
 		return;
 	}
 
-	EqString filename = pNameKey->values[0];
+	EqString filename(KV_GetValueString(pNameKey));
 
 	kvkeybase_t* externalpath = section->FindKeyBase("externalfile");
 
 	if(externalpath)
-		filename = externalpath->values[0];
+		filename = KV_GetValueString(externalpath);
 
 	Msg(" loading animation '%s' as '%s'\n", filename.GetData(), pNameKey->values[0]);
 
@@ -954,7 +842,7 @@ void LoadAnimation(kvkeybase_t* section)
 
 	if(subtract_key)
 	{
-		int subtract_by_anim = GetAnimationIndex(subtract_key->values[0]);
+		int subtract_by_anim = GetAnimationIndex( KV_GetValueString(subtract_key) );
 		if(subtract_by_anim != -1)
 		{
 			for(int i = 0; i < g_numbones; i++)
@@ -985,7 +873,7 @@ void LoadAnimation(kvkeybase_t* section)
 	}
 
 	// make final name
-	strcpy(pAnim->name, pNameKey->values[0]);
+	strcpy(pAnim->name, KV_GetValueString(pNameKey));
 }
 
 //************************************
@@ -1014,7 +902,7 @@ void ParsePoseparameters(kvkeybase_t* section)
 		if(!stricmp(section->keys[i]->name, "poseparameter"))
 		{
 			posecontroller_t controller;
-			int validness = sscanf(section->keys[i]->values[0], "%s %f %f", controller.name, &controller.blendRange[0], &controller.blendRange[1]);
+			int validness = sscanf(KV_GetValueString(section->keys[i]), "%s %f %f", controller.name, &controller.blendRange[0], &controller.blendRange[1]);
 
 			if(validness != 3)
 			{
@@ -1045,11 +933,11 @@ void LoadSequence(kvkeybase_t* section, char* seq_name)
 	{
 		if(!stricmp(section->keys[i]->name, "sequencelayer"))
 		{
-			int seq_index = GetSequenceIndex(section->keys[i]->values[0]);
+			int seq_index = GetSequenceIndex(KV_GetValueString(section->keys[i]));
 
 			if(seq_index == -1)
 			{
-				MsgError("No such sequence %s\n", section->keys[i]->values[0]);
+				MsgError("No such sequence %s\n", KV_GetValueString(section->keys[i]));
 				return;
 			}
 
@@ -1092,12 +980,12 @@ void LoadSequence(kvkeybase_t* section, char* seq_name)
 		{
 			if(!stricmp(anim_list->keys[i]->name, "animation"))
 			{
-				int anim_index = GetAnimationIndex(anim_list->keys[i]->values[0]);
+				int anim_index = GetAnimationIndex(KV_GetValueString(anim_list->keys[i]));
 
 				if(anim_index == -1)
 				{
 					// try to load new one if not found
-					anim_index = LoadAnimationFromESA(anim_list->keys[i]->values[0]);
+					anim_index = LoadAnimationFromESA(KV_GetValueString(anim_list->keys[i]));
 				}
 
 				if(anim_index == -1)
@@ -1160,12 +1048,12 @@ void LoadSequence(kvkeybase_t* section, char* seq_name)
 			return;
 		}
 
-		int anim_index = GetAnimationIndex(pKey->values[0]);
+		int anim_index = GetAnimationIndex(KV_GetValueString(pKey));
 
 		if(anim_index == -1)
 		{
 			// try to load new one if not found
-			anim_index = LoadAnimationFromESA(pKey->values[0]);
+			anim_index = LoadAnimationFromESA(KV_GetValueString(pKey));
 		}
 
 		if(anim_index == -1)
@@ -1184,12 +1072,7 @@ void LoadSequence(kvkeybase_t* section, char* seq_name)
 	}
 
 	// parse default parameters
-	kvkeybase_t* pActKey = section->FindKeyBase("activity");
-
-	if(!pActKey)
-		strcpy(desc.activity, "ACT_INVALID");
-	else
-		strcpy(desc.activity, pActKey->values[0]);
+	strcpy(desc.activity, KV_GetValueString(section->FindKeyBase("activity"), 0, "ACT_INVALID"));
 
 	// parse loop flag
 	kvkeybase_t* pLoopKey = section->FindKeyBase("loop");
@@ -1233,8 +1116,8 @@ void LoadSequence(kvkeybase_t* section, char* seq_name)
 				memset(&seq_event,0,sizeof(sequenceevent_t));
 
 				seq_event.frame = ev_frame;
-				strcpy(seq_event.command, pEventCommand->values[0]);
-				strcpy(seq_event.parameter, pEventOptions->values[0]);
+				strcpy(seq_event.command, KV_GetValueString(pEventCommand));
+				strcpy(seq_event.parameter, KV_GetValueString(pEventOptions));
 
 				// add event to list.
 				desc.events[desc.numEvents] = g_events.append(seq_event);
@@ -1247,7 +1130,7 @@ void LoadSequence(kvkeybase_t* section, char* seq_name)
 
 	if(pPoseParamKey)
 	{
-		desc.posecontroller = GetPoseControllerIndex(pPoseParamKey->values[0]);
+		desc.posecontroller = GetPoseControllerIndex(KV_GetValueString(pPoseParamKey));
 	}
 	else
 		desc.posecontroller = -1;
@@ -1365,7 +1248,7 @@ bool CompileScript(const char* filename)
 			if(!g_model_usage)
 				return false;
 
-			g_model = Studio_LoadModel((_Es("models/") + g_model_usage->values[0]).GetData());
+			g_model = Studio_LoadModel((_Es("models/") + KV_GetValueString(g_model_usage)).GetData());
 
 			if(g_model == NULL)
 				return false;
@@ -1496,7 +1379,7 @@ void WriteAnimationPackage()
 	pHdr->numLumps += 3;
 
 
-	DKFILE* file = g_fileSystem->Open(("/models/" + _Es(g_outputfilename->values[0])).GetData(), "wb", SP_MOD);
+	DKFILE* file = g_fileSystem->Open(("/models/" + _Es(KV_GetValueString(g_outputfilename))).GetData(), "wb", SP_MOD);
 	if(!file)
 	{
 		MsgError("Can't create file for writing!\n");

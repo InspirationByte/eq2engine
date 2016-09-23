@@ -766,7 +766,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 							if(pPair)
 							{
-								model_aftercomp_name = pPair->values[0];
+								model_aftercomp_name = KV_GetValueString(pPair);
 								Msg("***Starting egfca for %s\n", fname.GetData());
 
 								EqString cmdLine(varargs("egfca.exe +filename \"%s\"", fname.GetData()));

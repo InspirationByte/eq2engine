@@ -118,7 +118,8 @@ struct kvkeybase_t
 	// adds new keybase
 	kvkeybase_t*			AddKeyBase(const char* pszName, const char* pszValue = NULL, EKVPairType pairType = KVPAIR_STRING);
 
-	void					RemoveKeyBaseByName( const char* name );
+	// removes key base by name
+	void					RemoveKeyBaseByName( const char* name, bool removeAll = false );
 
 	//-----------------------------------------------------
 

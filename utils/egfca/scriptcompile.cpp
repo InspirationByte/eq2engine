@@ -37,7 +37,7 @@ bool g_notextures = false;
 //************************************
 // Finds bone
 //************************************
-cbone_t* FindBoneByName(char* pszName)
+cbone_t* FindBoneByName(const char* pszName)
 {
 	for(int i = 0; i < g_bones.numElem(); i++)
 	{
@@ -50,7 +50,7 @@ cbone_t* FindBoneByName(char* pszName)
 //************************************
 // Finds lod model
 //************************************
-clodmodel_t* FindModelLodGroupByName(char* pszName)
+clodmodel_t* FindModelLodGroupByName(const char* pszName)
 {
 	for(int i = 0; i < g_modellodrefs.numElem(); i++)
 	{
@@ -63,7 +63,7 @@ clodmodel_t* FindModelLodGroupByName(char* pszName)
 //************************************
 // Finds lod model, returns index
 //************************************
-int FindModelLodIdGroupByName(char* pszName)
+int FindModelLodIdGroupByName(const char* pszName)
 {
 	for(int i = 0; i < g_modellodrefs.numElem(); i++)
 	{
@@ -76,7 +76,7 @@ int FindModelLodIdGroupByName(char* pszName)
 //************************************
 // Returns material index
 //************************************
-int GetMaterialIndex(char* pszName)
+int GetMaterialIndex(const char* pszName)
 {
 	for(int i = 0; i < g_materials.numElem(); i++)
 	{
@@ -225,7 +225,7 @@ dsmmodel_t* ParseAndLoadModels(kvkeybase_t* pKeyBase)
 	if(pKeyBase->values.numElem() > 1)
 	{
 		// DRVSYN: vertex order for damaged model
-		if(pKeyBase->values.numElem() > 3 && !stricmp(pKeyBase->values[2], "shapeby"))
+		if(pKeyBase->values.numElem() > 3 && !stricmp(KV_GetValueString(pKeyBase, 2), "shapeby"))
 		{
 			const char* shapekeyName = KV_GetValueString(pKeyBase, 3, "");
 
@@ -237,7 +237,7 @@ dsmmodel_t* ParseAndLoadModels(kvkeybase_t* pKeyBase)
 		else
 			shapeByModels.append("");
 
-		modelfilenames.append( pKeyBase->values[1] );
+		modelfilenames.append( KV_GetValueString(pKeyBase, 1) );
 	}
 
 	// get section data
@@ -500,8 +500,8 @@ bool LoadBodyGroups(kvkeybase_t* pSection)
 
 			if(pSection->keys[i]->values.numElem() > 1)
 			{
-				strcpy(bodygroup.name, pSection->keys[i]->values[0]);
-				strcpy(ref_name, pSection->keys[i]->values[1]);
+				strcpy(bodygroup.name, KV_GetValueString(pSection->keys[i], 0));
+				strcpy(ref_name, KV_GetValueString(pSection->keys[i], 1));
 
 				int lodIndex = FindModelLodIdGroupByName(ref_name);
 
@@ -708,15 +708,17 @@ bool LoadMaterialPaths(kvkeybase_t* pSection)
 		{
 			materialpathdesc_t desc;
 
-			int sp_len = strlen(pSection->keys[i]->values[0])-1;
+			EqString path = KV_GetValueString(pSection->keys[i]);
 
-			if(pSection->keys[i]->values[0][sp_len] != '/' || pSection->keys[i]->values[0][sp_len] != '\\')
+			int sp_len = path.Length()-1;
+
+			if(path.c_str()[sp_len] != '/' || path.c_str()[sp_len] != '\\')
 			{
-				strcpy(desc.m_szSearchPathString, varargs("%s/", pSection->keys[i]->values[0]));
+				strcpy(desc.m_szSearchPathString, varargs("%s/", path.c_str()));
 			}
 			else
 			{
-				strcpy(desc.m_szSearchPathString, pSection->keys[i]->values[0]);
+				strcpy(desc.m_szSearchPathString, path.c_str());
 			}
 			
 			g_matpathes.append(desc);
@@ -751,7 +753,7 @@ bool LoadMotionPackagePatchs(kvkeybase_t* pSection)
 		{
 			motionpackagedesc_t desc;
 
-			strcpy(desc.packagename, pSection->keys[i]->values[0]);
+			strcpy(desc.packagename, KV_GetValueString(pSection->keys[i]));
 			
 			g_motionpacks.append(desc);
 		}
@@ -780,7 +782,7 @@ void ParseIKChain(kvkeybase_t* pSection)
 		return;
 	}
 	
-	int nArg = sscanf(pair->values[0], "%s %s", ikCh.name, effector_name);
+	int nArg = sscanf(KV_GetValueString(pair), "%s %s", ikCh.name, effector_name);
 
 	if(nArg < 2)
 	{
@@ -824,7 +826,7 @@ void ParseIKChain(kvkeybase_t* pSection)
 			char link_name[44];
 			float fDamp = 1.0f;
 
-			int args = sscanf(pSection->keys[i]->values[0], "%s %f\n",link_name, &fDamp);
+			int args = sscanf(KV_GetValueString(pSection->keys[i]), "%s %f\n",link_name, &fDamp);
 			if(args < 2)
 			{
 				MsgError("Too few arguments for ik parameter 'damping'\n");
@@ -847,7 +849,7 @@ void ParseIKChain(kvkeybase_t* pSection)
 			Vector3D mins;
 			Vector3D maxs;
 
-			int args = sscanf(pSection->keys[i]->values[0], "%s %f %f %f %f %f %f\n",link_name, &mins.x,&mins.y,&mins.z, &maxs.x,&maxs.y,&maxs.z);
+			int args = sscanf(KV_GetValueString(pSection->keys[i]), "%s %f %f %f %f %f %f\n",link_name, &mins.x,&mins.y,&mins.z, &maxs.x,&maxs.y,&maxs.z);
 			if(args < 7)
 			{
 				MsgError("Too few arguments for ik parameter 'link_limits'\n");
@@ -909,7 +911,7 @@ void LoadAttachments(kvkeybase_t* pSection)
 			char attach_to_bone[44];
 
 			// parse attachment
-			int sCnt = sscanf(pSection->keys[i]->values[0], "%s %s %f %f %f %f %f %f", attach.name, attach_to_bone,
+			int sCnt = sscanf(KV_GetValueString(pSection->keys[i]), "%s %s %f %f %f %f %f %f", attach.name, attach_to_bone,
 				&attach.position.x,&attach.position.y,&attach.position.z,
 				&attach.angles.x,&attach.angles.y,&attach.angles.z);
 
@@ -943,7 +945,7 @@ void LoadAttachments(kvkeybase_t* pSection)
 //************************************
 // main function of script compilation
 //************************************
-void MakePhysModel(kvkeybase_t* pSection, char* egf_out_name)
+void MakePhysModel(kvkeybase_t* pSection, const char* egf_out_name)
 {
 	EqString podFileName(egf_out_name);
 	podFileName = podFileName.Path_Strip_Ext() + _Es(".pod");
@@ -962,14 +964,14 @@ void MakePhysModel(kvkeybase_t* pSection, char* egf_out_name)
 
 	if(pPair)
 	{
-		clodmodel_t* lodMod = FindModelLodGroupByName( pPair->values[0] );
+		clodmodel_t* lodMod = FindModelLodGroupByName( KV_GetValueString(pPair) );
 
 		if(!lodMod)
 		{
 			char ref_path[256];
 			strcpy(ref_path, g_refspath);
 			strcat(ref_path, "/");
-			strcat(ref_path, pPair->values[0]);
+			strcat(ref_path, KV_GetValueString(pPair));
 
 			physicsmodel = new dsmmodel_t;
 
@@ -986,7 +988,7 @@ void MakePhysModel(kvkeybase_t* pSection, char* egf_out_name)
 			physicsmodel = lodMod->lodmodels[0];
 
 			if(!physicsmodel)
-				MsgError("*ERROR* empty lod reference '%s'\n", pPair->values[0]);
+				MsgError("*ERROR* empty lod reference '%s'\n", KV_GetValueString(pPair));
 		}
 	}
 	else
@@ -1138,13 +1140,13 @@ bool CompileESCScript(const char* filename)
 
 			// build egf model
 			// and save it to file
-			if(!WriteEGF( pPair->values[0] ))
+			if(!WriteEGF( KV_GetValueString(pPair) ))
 				return false;
 
 			//Sleep(5000);
 
 			//make physics model using DSM
-			MakePhysModel( mainsection,  pPair->values[0]);
+			MakePhysModel( mainsection, KV_GetValueString(pPair));
 
 			// clean all after compilation
 			Cleanup();

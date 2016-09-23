@@ -135,9 +135,6 @@
     <ClInclude Include="public\Imaging\ImageLoader.h">
       <Filter>Source Files\Imaging</Filter>
     </ClInclude>
-    <ClInclude Include="public\Platform\Platform.h">
-      <Filter>Source Files\Platform</Filter>
-    </ClInclude>
     <ClInclude Include="public\utils\KeyValues.h">
       <Filter>Source Files\Utils</Filter>
     </ClInclude>

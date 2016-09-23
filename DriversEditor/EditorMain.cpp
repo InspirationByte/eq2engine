@@ -1092,7 +1092,7 @@ void CMainWindow::ReDraw()
 
 		//materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-		g_pGameWorld->SetCameraParams(g_pCameraParams);
+		g_pGameWorld->SetView(g_pCameraParams);
 		g_pGameWorld->BuildViewMatrices(w,h, 0);
 
 		materials->GetMatrix(MATRIXMODE_PROJECTION, g_mProjMat);
