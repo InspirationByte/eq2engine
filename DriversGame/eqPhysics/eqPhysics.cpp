@@ -115,7 +115,7 @@ public:
 			if(obj && obj->GetMesh())
 			{
 				CEqBulletIndexedMesh* mesh = (CEqBulletIndexedMesh*)obj->GetMesh();
-				data.materialIndex = obj->GetMesh()->getSubPartMaterialId(partId1);
+				data.materialIndex = mesh->getSubPartMaterialId(partId1);
 			}
 		}
 
@@ -210,11 +210,28 @@ void CEqPhysics::InitWorld()
 	// broadphase not required
 	m_collisionWorld = new btCollisionWorld(m_collDispatcher, NULL, m_collConfig);
 
-#ifndef EDITOR
-	m_grid.Init(this, PHYSGRID_WORLD_SIZE, Vector3D(-EQPHYS_MAX_WORLDSIZE), Vector3D(EQPHYS_MAX_WORLDSIZE));
-#endif // EDITOR
-
 	InitSurfaceParams( m_physSurfaceParams );
+}
+
+void CEqPhysics::InitGrid()
+{
+	m_grid.Init(this, PHYSGRID_WORLD_SIZE, Vector3D(-EQPHYS_MAX_WORLDSIZE), Vector3D(EQPHYS_MAX_WORLDSIZE));
+
+	// add all objects to the grid
+	for(int i = 0; i < m_dynObjects.numElem(); i++)
+	{
+		SetupBodyOnCell(m_dynObjects[i]);
+	}
+
+	for(int i = 0; i < m_staticObjects.numElem(); i++)
+	{
+		m_grid.AddStaticObjectToGrid(m_staticObjects[i]);
+	}
+
+	for(int i = 0; i < m_ghostObjects.numElem(); i++)
+	{
+		SetupBodyOnCell(m_ghostObjects[i]);
+	}
 }
 
 void CEqPhysics::DestroyWorld()
@@ -241,10 +258,6 @@ void CEqPhysics::DestroyWorld()
 
 	m_ghostObjects.clear();
 
-#ifndef EDITOR
-	m_grid.Destroy();
-#endif // EDITOR
-
 	m_contactPairs.clear();
 
 	for (int i = 0; i < m_physSurfaceParams.numElem(); i++)
@@ -266,6 +279,11 @@ void CEqPhysics::DestroyWorld()
 		delete m_collConfig;
 
 	m_collConfig = NULL;
+}
+
+void CEqPhysics::DestroyGrid()
+{
+	m_grid.Destroy();
 }
 
 eqPhysSurfParam_t* CEqPhysics::FindSurfaceParam(const char* name)
@@ -362,14 +380,15 @@ void CEqPhysics::AddGhostObject( CEqCollisionObject* object )
 
 	m_ghostObjects.append(object);
 
-#ifndef EDITOR
-	if(object->GetMesh() != NULL)
+	if(m_grid.IsInit())
 	{
-		m_grid.AddStaticObjectToGrid( object );
+		if(object->GetMesh() != NULL)
+		{
+			m_grid.AddStaticObjectToGrid( object );
+		}
+		else
+			SetupBodyOnCell( object );
 	}
-	else
-		SetupBodyOnCell( object );
-#endif // EDITOR
 }
 
 void CEqPhysics::DestroyGhostObject( CEqCollisionObject* object )
@@ -379,19 +398,20 @@ void CEqPhysics::DestroyGhostObject( CEqCollisionObject* object )
 
 	Threading::CScopedMutex m(m_mutex);
 
-#ifndef EDITOR
-	if(object->GetMesh() != NULL)
+	if(m_grid.IsInit())
 	{
-		m_grid.RemoveStaticObjectFromGrid(object);
-	}
-	else
-	{
-		collgridcell_t* cell = object->GetCell();
+		if(object->GetMesh() != NULL)
+		{
+			m_grid.RemoveStaticObjectFromGrid(object);
+		}
+		else
+		{
+			collgridcell_t* cell = object->GetCell();
 
-		if(cell)
-			cell->m_dynamicObjs.fastRemove(object);
+			if(cell)
+				cell->m_dynamicObjs.fastRemove(object);
+		}
 	}
-#endif // EDITOR
 
 	m_ghostObjects.fastRemove(object);
 	delete object;
@@ -406,9 +426,8 @@ void CEqPhysics::AddStaticObject( CEqCollisionObject* object )
 
 	m_staticObjects.append(object);
 
-#ifndef EDITOR
-	m_grid.AddStaticObjectToGrid( object );
-#endif // EDITOR
+	if(m_grid.IsInit())
+		m_grid.AddStaticObjectToGrid( object );
 }
 
 void CEqPhysics::RemoveStaticObject( CEqCollisionObject* object )
@@ -416,9 +435,8 @@ void CEqPhysics::RemoveStaticObject( CEqCollisionObject* object )
 	if(!object)
 		return;
 
-#ifndef EDITOR
-	m_grid.RemoveStaticObjectFromGrid(object);
-#endif // EDITOR
+	if(m_grid.IsInit())
+		m_grid.RemoveStaticObjectFromGrid(object);
 
 	if(!m_staticObjects.remove(object))
 		MsgError("CEqPhysics::RemoveStaticObject - INVALID\n");
@@ -431,9 +449,8 @@ void CEqPhysics::DestroyStaticObject( CEqCollisionObject* object )
 
 	Threading::CScopedMutex m(m_mutex);
 
-#ifndef EDITOR
-	m_grid.RemoveStaticObjectFromGrid(object);
-#endif // EDITOR
+	if(m_grid.IsInit())
+		m_grid.RemoveStaticObjectFromGrid(object);
 
 	if(m_staticObjects.remove(object))
 		delete object;
@@ -760,6 +777,8 @@ void CEqPhysics::PrepareSimulateStep()
 void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
 {
 	// check body is in the world
+	if(!m_grid.IsInit())
+		return;
 
 	collgridcell_t* oldCell = body->GetCell();
 

@@ -45,6 +45,11 @@ public:
 	void						SceneInit();
 	void						SceneShutdown();
 
+#ifdef EDITOR
+	void						SceneInitBroadphase();
+	void						SceneDestroyBroadphase();
+#endif // EDITOR
+
 	void						Simulate( float fDt, int numIterations, FNSIMULATECALLBACK preIntegrateFn = NULL );
 
 	// object add/remove functions

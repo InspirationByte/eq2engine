@@ -23,7 +23,9 @@ TODO:
 
 #define REPLAY_NOT_TRACKED (-1)
 
-#define VEHICLEREPLAY_VERSION	2
+#define VEHICLEREPLAY_IDENT MCHAR4('D','S','R','P')
+
+#define VEHICLEREPLAY_VERSION	4
 #define CAMERAREPLAY_VERSION	1
 
 enum EReplayCameraType
@@ -197,11 +199,9 @@ ALIGNED_TYPE(replayevent_file_s,4) replayevent_file_t;
 
 struct replayhdr_s
 {
-	int		version;		// VEHICLEREPLAY_VERSION
+	int		idreplay;		// VEHICLEREPLAY_IDENT
 
-	// preloading regions
-	int		startRegX;
-	int		startRegY;
+	int		version;		// VEHICLEREPLAY_VERSION
 
 	char	levelname[64];
 	char	envname[64];

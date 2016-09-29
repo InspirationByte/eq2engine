@@ -25,6 +25,8 @@
 #include "EditorActionHistory.h"
 #include "materialsystem/MaterialProxy.h"
 
+#include "EditorTestDrive.h"
+
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay *debugoverlay = ( IDebugOverlay * )&g_DebugOverlays;
 
@@ -46,15 +48,6 @@ float				g_fFrametime = 0.0f;
 Vector3D			g_camera_rotation(25,225,0);
 Vector3D			g_camera_target(0);
 float				g_fCamSpeed = 10.0;
-
-void FlushCache()
-{
-	g_pModelCache->ReleaseCache();
-
-	materials->FreeMaterials(true);
-
-	g_pModelCache->PrecacheModel("models/error.egf");
-}
 
 class CEGFViewApp: public wxApp
 {
@@ -96,6 +89,7 @@ enum
 	Event_View_Environments_End = Event_View_Environments_Start + EDITOR_MAX_ENVIRONMENT_LIST,	// max weather types. If you have issues with this - increase
 
 	Event_Level_RebuildRoadTextures,
+	Event_Level_Play,
 
 	Event_Max_Menu_Range,
 };
@@ -223,9 +217,6 @@ void InitMatSystem(HWND window)
 	InitMaterialProxies();
 }
 
-void InitScene();
-
-
 CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) 
 	: wxFrame( parent, id, title, pos, size, style )
 {
@@ -337,6 +328,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_menu_build = new wxMenu();
 	m_pMenu->Append( m_menu_build, wxT("Level") );
 	m_menu_build->Append(Event_Level_RebuildRoadTextures, DKLOC("TOKEN_REBUILDROADTEXTURES", L"Rebuild road textures"));
+	m_menu_build->Append(Event_Level_Play, DKLOC("TOKEN_TESTGAME", L"Do test game"));
 	
 	this->SetMenuBar( m_pMenu );
 	
@@ -407,9 +399,20 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_newLevelDialog = new CNewLevelDialog(this);
 	m_loadleveldialog = new CLoadLevelDialog(this);
 	m_levelsavedialog = new wxTextEntryDialog(this, DKLOC("TOKEN_WORLDNAME", L"World name"), DKLOC("TOKEN_SPECIFYWORLDNAME", L"Specify world name"));
+	m_carNameDialog = new wxTextEntryDialog(this, L"Vehicle entry name", "Enter the vehicle name you want to drive on");
 
-	// create physics scene and add infinite plane
-	InitScene();
+	m_carNameDialog->SetValue("mustang");
+
+	// create physics scene
+	g_pPhysics->SceneInit();
+
+	g_pGameWorld->SetEnvironmentName("day_clear");
+
+	g_pGameWorld->Init();
+	g_pGameWorld->InitEnvironment();
+	g_pGameWorld->m_level.Init(16, 16, 64, true);
+
+	g_editorTestGame->Init();
 
 	m_bNeedsSave = false;
 	m_bSavedOnDisk = false;
@@ -427,17 +430,6 @@ void CMainWindow::OnPageSelectMode( wxNotebookEvent& event )
 		m_selectedTool = tool;
 	else
 		m_selectedTool = m_hmapedit;
-}
-
-void InitScene()
-{
-	g_pPhysics->SceneInit();
-
-	g_pGameWorld->SetEnvironmentName("day_clear");
-
-	g_pGameWorld->Init();
-	g_pGameWorld->InitEnvironment();
-	g_pGameWorld->m_level.Init(16, 16, 64, true);
 }
 
 void CMainWindow::OnIdle(wxIdleEvent &event)
@@ -473,6 +465,8 @@ void CMainWindow::MakeEnvironmentListMenu()
 
 void CMainWindow::OnLevelUnload()
 {
+	g_editorTestGame->EndGame();
+
 	for(int i = 0; i < m_tools.numElem(); i++)
 		m_tools[i]->OnLevelUnload();
 
@@ -503,6 +497,9 @@ void CMainWindow::OpenLevelPrompt()
 	{
 		OnLevelUnload();
 		g_pGameWorld->Cleanup();
+
+		g_pPhysics->SceneShutdown();
+		g_pPhysics->SceneInit();
 
 		g_pGameWorld->SetLevelName( m_loadleveldialog->GetSelectedLevelString() );
 		g_pGameWorld->Init();
@@ -546,13 +543,13 @@ void CMainWindow::NewLevelPrompt()
 		OnLevelUnload();
 		g_pGameWorld->Cleanup();
 
+		g_pPhysics->SceneShutdown();
+		g_pPhysics->SceneInit();
+
 		g_pGameWorld->SetLevelName("unnamed");
 
 		m_bNeedsSave = false;
 		m_bSavedOnDisk = false;
-
-		// init new level
-		g_pPhysics->SceneInit();
 
 		g_pGameWorld->SetEnvironmentName("day_clear");
 
@@ -733,6 +730,18 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 		else
 			return;
 	}
+	else if(event.GetId() == Event_Level_Play)
+	{
+		if(m_carNameDialog->ShowModal() == wxID_OK)
+		{
+			EqString carName = m_carNameDialog->GetValue().c_str().AsChar();
+
+			g_editorTestGame->BeginGame(carName.c_str(), g_camera_target);
+
+			if(!g_editorTestGame->IsGameRunning())
+				wxMessageBox("Not valid vehicle name.", "Error", wxOK | wxCENTRE, this);
+		}
+	}
 	else if(event.GetId() == Event_File_Exit)
 	{
 		Close();
@@ -753,6 +762,14 @@ void CMainWindow::ProcessMouseEvents(wxMouseEvent& event)
 	}*/
 
 	m_pRenderPanel->SetFocus();
+
+	if(g_editorTestGame->IsGameRunning())
+	{
+		m_bIsMoving = false;
+		while(ShowCursor(TRUE) < 0);
+
+		return;
+	}
 
 	Vector3D cam_angles = g_camera_rotation;
 	Vector3D cam_pos = g_camera_target;
@@ -879,6 +896,12 @@ void CMainWindow::ProcessKeyboardDownEvents(wxKeyEvent& event)
 {
 	//m_pRenderPanel->SetFocus();
 
+	if(g_editorTestGame->IsGameRunning())
+	{
+		g_editorTestGame->OnKeyPress(event.GetKeyCode(), true);
+		return;
+	}
+
 	if(m_selectedTool)
 		m_selectedTool->OnKey(event, true);
 }
@@ -886,6 +909,18 @@ void CMainWindow::ProcessKeyboardDownEvents(wxKeyEvent& event)
 void CMainWindow::ProcessKeyboardUpEvents(wxKeyEvent& event)
 {
 	//m_pRenderPanel->SetFocus();
+
+	if(g_editorTestGame->IsGameRunning())
+	{
+		if(event.GetKeyCode() == WXK_ESCAPE)
+		{
+			g_editorTestGame->EndGame();
+			return;
+		}
+
+		g_editorTestGame->OnKeyPress(event.GetKeyCode(), false);
+		return;
+	}
 
 	if(m_selectedTool)
 		m_selectedTool->OnKey(event, false);
@@ -1022,6 +1057,9 @@ void CMainWindow::ReDraw()
 	if(!IsShown())
 		return;
 
+	if(g_editorTestGame->IsGameRunning())
+		m_bDoRefresh = true;
+
 	if(m_bDoRefresh)
 	{
 		//int w, h;
@@ -1054,8 +1092,6 @@ void CMainWindow::ReDraw()
 	// update material system and proxies
 	materials->Update(g_frametime);
 
-
-
 	int w, h;
 	m_pRenderPanel->GetSize(&w, &h);
 
@@ -1068,8 +1104,17 @@ void CMainWindow::ReDraw()
 		Vector3D forward, right;
 		AngleVectors(g_camera_rotation, &forward, &right);
 
-		g_pCameraParams.SetAngles(g_camera_rotation);
-		g_pCameraParams.SetOrigin(g_camera_target + forward);
+		if(g_editorTestGame->IsGameRunning())
+		{
+			g_editorTestGame->Update( g_frametime );
+			g_pCameraParams = g_pCameraAnimator->GetComputedView();
+		}
+		else
+		{
+			g_pCameraParams.SetAngles(g_camera_rotation);
+			g_pCameraParams.SetOrigin(g_camera_target + forward);
+			g_pCameraParams.SetFOV(70.0f);
+		}
 
 		ShowFPS();
 		debugoverlay->Text(color4_white, "Camera position: %g %g %g\n", g_camera_target.x,g_camera_target.y,g_camera_target.z);
@@ -1081,30 +1126,17 @@ void CMainWindow::ReDraw()
 
 		materials->SetFogInfo(fog);
 
-		// setup perspective
-		//g_mProjMat = perspectiveMatrixY(DEG2RAD(g_pCameraParams.GetFOV()), w, h, 1, 5000);
-
-		//g_mViewMat = rotateZXY4(DEG2RAD(-g_pCameraParams.GetAngles().x),DEG2RAD(-g_pCameraParams.GetAngles().y),DEG2RAD(-g_pCameraParams.GetAngles().z));
-		//g_mViewMat.translate(-g_pCameraParams.GetOrigin());
-
-		//materials->SetMatrix(MATRIXMODE_PROJECTION, g_mProjMat);
-		//materials->SetMatrix(MATRIXMODE_VIEW, g_mViewMat);
-
-		//materials->SetMatrix(MATRIXMODE_WORLD, identity4());
-
 		g_pGameWorld->SetView(g_pCameraParams);
 		g_pGameWorld->BuildViewMatrices(w,h, 0);
+
+		effectrenderer->SetViewSortPosition( g_pCameraParams.GetOrigin() );
+		effectrenderer->DrawEffects( g_frametime );
 
 		materials->GetMatrix(MATRIXMODE_PROJECTION, g_mProjMat);
 		materials->GetMatrix(MATRIXMODE_VIEW, g_mViewMat);
 
 		soundsystem->SetListener(g_pCameraParams.GetOrigin(), g_mViewMat.rows[2].xyz(),g_mViewMat.rows[1].xyz(), vec3_zero);
-		soundsystem->Update();
 		ses->Update();
-
-		// Update things
-		// if(g_gameEnabled)
-		//		g_pGameWorld->UpdateWorld(g_frametime);
 
 		g_pGameWorld->UpdateWorld(g_frametime);
 
@@ -1115,17 +1147,15 @@ void CMainWindow::ReDraw()
 		// Now we can draw our model
 		g_pGameWorld->Draw(nRenderFlags);
 
-		// draw tool data
-		m_selectedTool->OnRender();
-
-		// draw floor 1x1 meters
-		//debugoverlay->Polygon3D(Vector3D(-64,0,-64), Vector3D(-64,0,64), Vector3D(64,0,64), ColorRGBA(1,1,0,0.25));
-		//debugoverlay->Polygon3D(Vector3D(64,0,64), Vector3D(64,0,-64), Vector3D(-64,0,-64), ColorRGBA(1,1,0,0.25));
+		if( !g_editorTestGame->IsGameRunning() )
+		{
+			// draw tool data
+			m_selectedTool->OnRender();
+		}
 
 		debugoverlay->Draw(g_mProjMat, g_mViewMat, w,h);
 
 		materials->EndFrame( NULL );
-		//wxYield();
 	}
 }
 
@@ -1145,8 +1175,13 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 	if(!SavePrompt())
 		return;
 
+	g_editorTestGame->Destroy();
+
 	OnLevelUnload();
 	g_pGameWorld->Cleanup();
+
+	g_pPhysics->SceneShutdown();
+	g_pPhysics->SceneInit();
 
 	g_parallelJobs->Wait();
 	g_parallelJobs->Shutdown();
@@ -1154,6 +1189,7 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 	Msg("EXIT CLEANUP...\n");
 
 	m_levelsavedialog->Destroy();
+	m_carNameDialog->Destroy();
 
 	for(int i = 0; i < m_tools.numElem(); i++)
 		m_tools[i]->ShutdownTool();

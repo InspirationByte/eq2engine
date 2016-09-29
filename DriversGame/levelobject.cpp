@@ -305,11 +305,13 @@ bool physModelVertexComparator(const Vector3D &a, const Vector3D &b)
 
 void CLevelModel::GeneratePhysicsData(bool isGround)
 {
-#ifndef EDITOR
-
 	if(!m_verts || !m_indices)
 		return;
 
+	delete m_physicsMesh;
+	m_physicsMesh = NULL;
+
+#ifndef EDITOR
 	lmodel_batch_t* tempBatches = new lmodel_batch_t[m_numBatches];
 
 	// regenerate mesh
@@ -364,6 +366,7 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 			indices.append(tempBatches[i].startVertex + batchindices[j]);
 	}
 
+
 	delete [] m_verts;
 	m_verts = NULL;		// no longer to be used
 
@@ -384,11 +387,12 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 	physVerts.clear();
 	indices.clear();
 
-	delete m_physicsMesh;
-	m_physicsMesh = NULL;
-
 	m_physicsMesh = new CEqBulletIndexedMesh(	(ubyte*)m_physVerts, sizeof(Vector3D),
 												(ubyte*)m_indices, sizeof(uint16), m_numVerts, m_numIndices);
+#else
+	m_physicsMesh = new CEqBulletIndexedMesh(	(ubyte*)m_verts + offsetOf(lmodeldrawvertex_t, position), sizeof(lmodeldrawvertex_t),
+												(ubyte*)m_indices, sizeof(uint16), m_numVerts, m_numIndices);
+#endif // EDITOR
 
 	for(int i = 0; i < m_numBatches; i++)
 	{
@@ -407,9 +411,19 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 		if(param)
 			surfParamId = param->id;
 
-		m_physicsMesh->AddSubpart(tempBatches[i].startIndex, tempBatches[i].numIndices, tempBatches[i].startVertex, tempBatches[i].numVerts, surfParamId);
+		
+
+#ifndef EDITOR
+		lmodel_batch_t& batch = tempBatches[i];
+#else
+		lmodel_batch_t& batch = m_batches[i];
+#endif // EDITOR
+
+		
+		m_physicsMesh->AddSubpart(batch.startIndex, batch.numIndices, batch.startVertex, batch.numVerts, surfParamId);
 	}
 
+#ifndef EDITOR
 	m_numVerts = numOldVerts;
 	delete [] tempBatches;
 #endif // EDITOR

@@ -93,11 +93,29 @@ CPhysicsEngine::CPhysicsEngine()
 void CPhysicsEngine::SceneInit()
 {
 	m_physics.InitWorld();
+
+#ifndef EDITOR
+	m_physics.InitGrid();
+#endif // m_physics
+
 	m_dtAccumulator = 0.0f;
 
 //	m_nextPhysicsUpdate = 0.0f;
 //	m_curTime = 0.0f;
 }
+
+#ifdef EDITOR
+void CPhysicsEngine::SceneInitBroadphase()
+{
+	m_physics.InitGrid();
+}
+
+void CPhysicsEngine::SceneDestroyBroadphase()
+{
+	m_physics.DestroyGrid();
+}
+
+#endif
 
 void CPhysicsEngine::SceneShutdown()
 {

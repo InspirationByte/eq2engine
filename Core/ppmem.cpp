@@ -19,9 +19,10 @@
 
 
 #include <malloc.h>
-#include <map>
+#include <unordered_map>
 #include "DebugInterface.h"
 #include "IConCommandFactory.h"
+#include "ICmdLineParser.h"
 #include "utils/strtools.h"
 #include "utils/eqthread.h"
 
@@ -60,29 +61,42 @@ void cc_meminfo_f(DkList<EqString> *args)
 	PPMemInfo( fullStats );
 }
 
-typedef std::map<void*,ppallocinfo_t*>::iterator allocIterator_t;
+typedef std::unordered_map<void*,ppallocinfo_t*>::iterator allocIterator_t;
 
 // allocation map
-static std::map<void*,ppallocinfo_t*>	s_allocPointerMap;
+static std::unordered_map<void*,ppallocinfo_t*>	s_allocPointerMap;
 static uint								s_allocIdCounter = 0;
 CEqMutex*			g_allocMemMutex = NULL;
+
+bool g_enablePPMem = false;
 
 static ConCommand	ppmem_stats("ppmem_stats",cc_meminfo_f, "Memory info",CV_UNREGISTERED);
 static ConVar		ppmem_break_on_alloc("ppmem_break_on_alloc", "-1", "Helps to catch allocation id at stack trace",CV_UNREGISTERED);
 
 void PPMemInit()
 {
-	g_allocMemMutex = new CEqMutex();
+	int idxEnablePpmem = g_cmdLine->FindArgument("-memdebug");
 
-    g_sysConsole->RegisterCommand(&ppmem_stats);
-    g_sysConsole->RegisterCommand(&ppmem_break_on_alloc);
+	g_enablePPMem = (idxEnablePpmem != -1);
+
+	if(g_enablePPMem)
+	{
+		g_allocMemMutex = new CEqMutex();
+
+		g_sysConsole->RegisterCommand(&ppmem_stats);
+		g_sysConsole->RegisterCommand(&ppmem_break_on_alloc);
+	}
 
 	//PPMemShutdown();
 }
 
 void PPMemShutdown()
 {
+	if(!g_enablePPMem)
+		return;
+
 	delete g_allocMemMutex;
+	g_allocMemMutex = NULL;
 
     g_sysConsole->UnregisterCommand(&ppmem_stats);
     g_sysConsole->UnregisterCommand(&ppmem_break_on_alloc);
@@ -91,6 +105,9 @@ void PPMemShutdown()
 // Printing the statistics and tracked memory usage
 void PPMemInfo( bool fullStats )
 {
+	if(!g_enablePPMem)
+		return;
+
 	CScopedMutex m(*g_allocMemMutex);
 
 	uint totalUsage = 0;
@@ -157,6 +174,9 @@ ppallocinfo_t* FindAllocation( void* ptr, bool& isValidInputPtr )
 
 		for(allocIterator_t iterator = s_allocPointerMap.begin(); iterator != s_allocPointerMap.end(); iterator++)
 		{
+			if(iterator->second == NULL)
+				continue;
+
 			ppallocinfo_t* curAlloc = iterator->second;
 			void* curPtr = iterator->first;
 
@@ -175,6 +195,10 @@ void* PPDAlloc(uint size, const char* pszFileName, int nLine)
 #ifdef PPMEM_DISABLE
 	return malloc(size);
 #else
+
+	if(!g_enablePPMem)
+		return malloc(size);
+
 	// allocate more to store extra information of this
 	ppallocinfo_t* alloc = (ppallocinfo_t*)malloc(sizeof(ppallocinfo_t) + size + sizeof(uint));
 
@@ -213,6 +237,9 @@ void* PPDReAlloc( void* ptr, uint size, const char* pszFileName, int nLine )
 #ifdef PPMEM_DISABLE
 	return realloc(ptr, size);
 #else
+	if(!g_enablePPMem)
+		return realloc(ptr, size);
+
 	bool isValid = false;
 	ppallocinfo_t* alloc = FindAllocation(ptr, isValid);
 
@@ -257,6 +284,9 @@ void PPFree(void* ptr)
 #ifdef PPMEM_DISABLE
 	return free(ptr);
 #else
+	if(!g_enablePPMem)
+		return free(ptr);
+
 	if(ptr == nullptr)
 		return;
 

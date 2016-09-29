@@ -896,7 +896,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	if(lateralSlide > 1.0f && sign(lateralSlideSigned)+sign(fSteeringAngle) < 0.5f)
 	{
-		fSteeringAngle *= lateralSlideSteerFactor;
+		//fSteeringAngle *= lateralSlideSteerFactor;
 		doesHardSteer = false;
 	}
 

@@ -66,6 +66,16 @@ void CEqCollisionBroadphaseGrid::Destroy()
 			for(int x = 0; x < m_gridTall; x++)
 			{
 				int idx = y*m_gridWide+x;
+
+				if(m_gridMap[idx])
+				{
+					for(int i = 0; i < m_gridMap[idx]->m_dynamicObjs.numElem(); i++)
+						m_gridMap[idx]->m_dynamicObjs[i]->SetCell(NULL);
+
+					for(int i = 0; i < m_gridMap[idx]->m_gridObjects.numElem(); i++)
+						m_gridMap[idx]->m_gridObjects[i]->SetCell(NULL);
+				}
+
 				delete m_gridMap[idx];
 			}
 		}

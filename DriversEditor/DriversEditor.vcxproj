@@ -213,6 +213,7 @@
     <ClInclude Include="editaxis.h" />
     <ClInclude Include="EditorLevel.h" />
     <ClInclude Include="EditorPreviewable.h" />
+    <ClInclude Include="EditorTestDrive.h" />
     <ClInclude Include="GenericImageListRenderer.h" />
     <ClInclude Include="IEditorTool.h" />
     <ClInclude Include="EditorMain.h" />
@@ -325,6 +326,7 @@
     <ClCompile Include="..\shared_engine\DebugOverlay.cpp" />
     <ClCompile Include="..\shared_engine\modelloader_shared.cpp" />
     <ClCompile Include="EditorPreviewable.cpp" />
+    <ClCompile Include="EditorTestDrive.cpp" />
     <ClCompile Include="GenericImageListRenderer.cpp" />
     <ClCompile Include="level_generator.cpp" />
     <ClCompile Include="LoadLevDialog.cpp" />

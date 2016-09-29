@@ -31,7 +31,7 @@ ConVar r_lodtest("r_lodtest", "-1", -1.0f, MAX_MODELLODS, "Studio LOD test", CV_
 ConVar r_lodscale("r_lodscale", "1.0","Studio model LOD scale", CV_ARCHIVE);
 ConVar r_lodstart("r_lodstart", "0", 0, MAX_MODELLODS, "Studio LOD start index", CV_ARCHIVE);
 
-ConVar r_notempdecals("r_notempdecals", "0", "Disables temp decals\n", CV_CHEAT);
+ConVar r_notempdecals("r_notempdecals", "0", "Disables temp decals", CV_CHEAT);
 //ConVar r_force_softwareskinning("r_force_softwareskinning", "0", "Forces software skinning", CV_ARCHIVE);
 
 CEngineStudioEGF::CEngineStudioEGF()

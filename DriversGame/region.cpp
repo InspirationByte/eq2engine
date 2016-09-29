@@ -26,15 +26,17 @@ regionObject_t::~regionObject_t()
 
 	if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 	{
+#ifndef EDITOR
+		g_pPhysics->m_physics.DestroyStaticObject( physObject );
+		physObject = NULL;
+#endif // EDITOR
+
 		CLevelModel* mod = def->m_model;
 		mod->Ref_Drop();
 
 		// the model cannot be removed if it's not loaded with region
 		if(mod->Ref_Count() <= 0)
 			delete mod;
-
-		g_pPhysics->m_physics.DestroyStaticObject( physObject );
-		physObject = NULL;
 	}
 	else
 	{
@@ -301,7 +303,6 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 		CLevObjectDef* cont = ref->def;
 
 #ifdef EDITOR
-
 		if(ref->hide)
 			continue;
 
@@ -448,6 +449,7 @@ void CLevelRegion::Cleanup()
 {
 	m_level->m_mutex.Lock();
 
+#ifndef EDITOR
 	for(int i = 0; i < GetNumHFields(); i++)
 	{
 		if(m_heightfield[i])
@@ -455,8 +457,8 @@ void CLevelRegion::Cleanup()
 			g_pPhysics->RemoveHeightField( m_heightfield[i] );
 			m_heightfield[i]->CleanRenderData();
 		}
-
 	}
+#endif // EDITOR
 
 	for(int i = 0; i < m_objects.numElem(); i++)
 		delete m_objects[i];
@@ -573,9 +575,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		newDef->m_info = defInfo;
 		newDef->m_model = modelRef;
 
-#ifndef EDITOR
 		modelRef->GeneratePhysicsData(false);
-#endif // EDITOR
 
 		m_regionDefs.append(newDef);
 	}
@@ -645,7 +645,6 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 #ifndef EDITOR
 		else
 		{
-
 			// create object, spawn in game cycle
 			CGameObject* newObj = g_pGameWorld->CreateGameObject( ref->def->m_defType.c_str(), ref->def->m_defKeyvalues );
 
@@ -680,11 +679,13 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		m_level->m_mutex.Unlock();
 	}
 
+#ifndef EDITOR
 	for(int i = 0; i < GetNumHFields(); i++)
 	{
 		if(m_heightfield[i])
 			g_pPhysics->AddHeightField( m_heightfield[i] );
 	}
+#endif //EDITOR
 
 	Platform_Sleep(1);
 

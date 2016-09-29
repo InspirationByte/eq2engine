@@ -96,6 +96,8 @@ protected:
 	wxTextEntryDialog*	m_levelsavedialog;
 	CRegionEditFrame*	m_regionEditorFrame;
 
+	wxTextEntryDialog*	m_carNameDialog;
+
 	DkList<IEditorTool*>	m_tools;
 
 	DkList<EqString>	m_environmentList;

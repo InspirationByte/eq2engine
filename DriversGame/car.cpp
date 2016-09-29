@@ -1103,10 +1103,6 @@ void CCar::UpdateCarPhysics(float delta)
 	if( m_controlButtons & IN_EXTENDTURN )
 		bExtendTurn = true;
 
-	// do acceleration and burnout
-	if(bBurnout)
-		fAccel = 1;
-
 	if( m_controlButtons & IN_TURNLEFT )
 		fSteerAngle -= (float)((float)m_steerRatio*_oneBy1024);
 	else if( m_controlButtons & IN_TURNRIGHT )
@@ -1120,7 +1116,11 @@ void CCar::UpdateCarPhysics(float delta)
 
 	//------------------------------------------------------------------------------------------
 
-	bool bDoBurnout = bBurnout && (abs(GetSpeed()) < m_conf->m_burnoutMaxSpeed);// && (fHandbrake == 0);
+	// do acceleration and burnout
+	if(bBurnout)
+		fAccel = 1.0f;
+
+	bool bDoBurnout = bBurnout && (GetSpeed() < m_conf->m_burnoutMaxSpeed);// && (fHandbrake == 0);
 
 	FReal accel_scale = 1;
 
@@ -1161,10 +1161,6 @@ void CCar::UpdateCarPhysics(float delta)
 	m_fEngineRPM = clamp(m_fEngineRPM, 0.0f, 8500.0f);
 
 	//--------------------------------------------------------
-
-	// do acceleration and burnout
-	if(bBurnout)
-		fAccel = 1.0f;
 
 	{
 		FReal steer_diff = fSteerAngle-m_steering;
@@ -1334,7 +1330,6 @@ void CCar::UpdateCarPhysics(float delta)
 		fBrake -= fAccel;
 	}
 
-
 	//
 	// Update engine
 	//
@@ -1469,6 +1464,9 @@ void CCar::UpdateCarPhysics(float delta)
 		m_nPrevGear = m_nGear;
 	}
 
+	bool reverseLightsEnabled = (m_nGear == 0) && !bDoBurnout && fBrake > 0.0f;
+	SetLight(CAR_LIGHT_REVERSELIGHT, reverseLightsEnabled);
+
 	if(FPmath::abs(fBreakage) > m_fBreakage)
 	{
 		m_fBreakage += delta * ACCELERATION_CONST;
@@ -1494,12 +1492,8 @@ void CCar::UpdateCarPhysics(float delta)
 	if(m_fBreakage < 0)
 		m_fBreakage = 0;
 
-	bool brakeLightsActive = !bDoBurnout && FPmath::abs(fBreakage) > 0.05f && fabs(car_speed) > 0.01f;
-
-	if(brakeLightsActive)
-		m_lightsEnabled |= CAR_LIGHT_BRAKE;
-	else
-		m_lightsEnabled &= ~CAR_LIGHT_BRAKE;
+	bool brakeLightsActive = !bDoBurnout && FPmath::abs(fBreakage) > 0.0f;
+	SetLight(CAR_LIGHT_BRAKE, brakeLightsActive);
 
 	if(fHandbrake > 0)
 		fAcceleration = 0;
@@ -2243,6 +2237,14 @@ float triangleWave( float pos )
 	return pow(sinVal, 2.0f)*sign(sinVal);
 }
 
+void CCar::UpdateLightsState()
+{
+	bool headLightsEnabled = m_enabled && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS) || g_debug_car_lights.GetBool();
+	
+	SetLight(CAR_LIGHT_HEADLIGHTS, headLightsEnabled);
+	SetLight(CAR_LIGHT_SERVICELIGHTS, m_sirenEnabled);
+}
+
 void CCar::Simulate( float fDt )
 {
 	PROFILE_FUNC();
@@ -2261,26 +2263,8 @@ void CCar::Simulate( float fDt )
 		m_sirenEnabled = !m_sirenEnabled;
 	}
 
-	//
-	// TODO: CALCULATE THIS SOMEWHERE EARLY
-	//
-	bool headLightsEnabled = m_enabled && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS) || g_debug_car_lights.GetBool();
-	bool reverseLightsEnabled = (m_nGear == 0 && (m_controlButtons & IN_BRAKE) && GetSpeedWheels() < 0.0f);
+	UpdateLightsState();
 
-	if(headLightsEnabled)
-		m_lightsEnabled |= CAR_LIGHT_HEADLIGHTS;
-	else
-		m_lightsEnabled &= ~CAR_LIGHT_HEADLIGHTS;
-
-	if(reverseLightsEnabled)
-		m_lightsEnabled |= CAR_LIGHT_REVERSELIGHT;
-	else
-		m_lightsEnabled &= ~CAR_LIGHT_REVERSELIGHT;
-
-	if(m_sirenEnabled)
-		m_lightsEnabled |= CAR_LIGHT_SERVICELIGHTS;
-	else
-		m_lightsEnabled &= ~CAR_LIGHT_SERVICELIGHTS;
 	//
 	//------------------------------------
 	//
@@ -2594,7 +2578,7 @@ void CCar::Simulate( float fDt )
 
 		float fBrakeLightAlpha = clamp((fLightsAlpha < 0.0f ? -fLightsAlpha : 0.0f) + brake_plane.Distance(cam_pos)*0.1f, 0.0f, 1.0f);
 
-		if (((m_lightsEnabled & CAR_LIGHT_BRAKE) || (m_lightsEnabled && CAR_LIGHT_HEADLIGHTS)) && fBrakeLightAlpha > 0)
+		if ((IsLightEnabled(CAR_LIGHT_BRAKE) || IsLightEnabled(CAR_LIGHT_HEADLIGHTS)) && fBrakeLightAlpha > 0)
 		{
 			// draw brake lights
 			float fBrakeLightAlpha2 = fBrakeLightAlpha*0.6f;
@@ -2609,7 +2593,7 @@ void CCar::Simulate( float fDt )
 			{
 				case LIGHTS_SINGLE:
 				{
-					if (m_lightsEnabled & CAR_LIGHT_BRAKE)
+					if (IsLightEnabled(CAR_LIGHT_BRAKE))
 					{
 						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
 							DrawLightEffect(positionL, brakelightColor2, BRAKELIGHT_RADIUS, 2);
@@ -2618,7 +2602,7 @@ void CCar::Simulate( float fDt )
 							DrawLightEffect(positionR, brakelightColor2, BRAKELIGHT_RADIUS, 2);
 					}
 
-					if (m_lightsEnabled && CAR_LIGHT_HEADLIGHTS)
+					if (IsLightEnabled(CAR_LIGHT_HEADLIGHTS))
 					{
 						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
 							DrawLightEffect(positionL, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
@@ -2636,7 +2620,7 @@ void CCar::Simulate( float fDt )
 					if(m_conf->m_headlightType == LIGHTS_DOUBLE_VERTICAL)
 						lDirVec = upVec;
 
-					if (m_lightsEnabled & CAR_LIGHT_BRAKE)
+					if (IsLightEnabled(CAR_LIGHT_BRAKE))
 					{
 						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
 							DrawLightEffect(positionL - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
@@ -2651,7 +2635,7 @@ void CCar::Simulate( float fDt )
 							DrawLightEffect(positionR + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
 					}
 
-					if (m_lightsEnabled && CAR_LIGHT_HEADLIGHTS)
+					if (IsLightEnabled(CAR_LIGHT_HEADLIGHTS))
 					{
 						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
 							DrawLightEffect(positionL - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
@@ -2671,7 +2655,7 @@ void CCar::Simulate( float fDt )
 		}
 
 		// any kind of dimension lights
-		if((m_lightsEnabled & CAR_LIGHT_DIM_LEFT) || (m_lightsEnabled & CAR_LIGHT_DIM_RIGHT))
+		if(IsLightEnabled(CAR_LIGHT_DIM_LEFT) || IsLightEnabled(CAR_LIGHT_DIM_RIGHT))
 		{
 			Vector3D positionFL = frontdimlight_position - rightVec*m_conf->m_frontDimLights.x;
 			Vector3D positionFR = frontdimlight_position + rightVec*m_conf->m_frontDimLights.x;
@@ -2683,7 +2667,7 @@ void CCar::Simulate( float fDt )
 
 			dimLightsColor *= clamp(sin(m_curTime*10.0f)*1.6f, 0.0f, 1.0f);
 
-			if(m_lightsEnabled & CAR_LIGHT_DIM_LEFT)
+			if(IsLightEnabled(CAR_LIGHT_DIM_LEFT))
 			{
 				if (m_bodyParts[CB_FRONT_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
 					DrawLightEffect(positionFL, dimLightsColor*DIMLIGHT_INTENSITY, DIMLIGHT_RADIUS, 1);
@@ -2692,7 +2676,7 @@ void CCar::Simulate( float fDt )
 					DrawLightEffect(positionRL, dimLightsColor*DIMLIGHT_INTENSITY, DIMLIGHT_RADIUS, 1);
 			}
 
-			if(m_lightsEnabled & CAR_LIGHT_DIM_RIGHT)
+			if(IsLightEnabled(CAR_LIGHT_DIM_RIGHT))
 			{
 				if (m_bodyParts[CB_FRONT_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
 					DrawLightEffect(positionFR, dimLightsColor*DIMLIGHT_INTENSITY, DIMLIGHT_RADIUS, 1);
@@ -2703,7 +2687,7 @@ void CCar::Simulate( float fDt )
 		}
 
 		// draw back lights
-		if (m_lightsEnabled & CAR_LIGHT_REVERSELIGHT)
+		if (IsLightEnabled(CAR_LIGHT_REVERSELIGHT))
 		{
 			// draw back lights
 			float fBackLightAlpha2 = fBackLightAlpha * 0.3f;
@@ -3887,6 +3871,24 @@ void CCar::DecrementPursue()
 int CCar::GetPursuedCount() const
 {
 	return m_numPursued;
+}
+
+void CCar::TurnOffLights()
+{
+	m_lightsEnabled = 0;
+}
+
+void CCar::SetLight(int light, bool enabled)
+{
+	if(enabled)
+		m_lightsEnabled |= light;
+	else
+		m_lightsEnabled &= ~light;
+}
+
+bool CCar::IsLightEnabled(int light) const
+{
+	return (m_lightsEnabled & light) > 0;
 }
 
 #ifndef NO_LUA

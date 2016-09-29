@@ -1602,8 +1602,6 @@ void CGameLevel::RespawnAllObjects()
 	}
 }
 
-//#ifdef EDITOR
-
 #define OBSTACLE_STATIC_MAX_HEIGHT	(8.0f)
 #define OBSTACLE_PROP_MAX_HEIGHT	(4.0f)
 
@@ -1766,7 +1764,6 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 		}
 	}
 }
-//#endif // EDITOR
 
 void CGameLevel::Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& maxs, IVector2D& xy1, IVector2D& xy2) const
 {

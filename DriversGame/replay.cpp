@@ -424,13 +424,12 @@ void CReplayData::SaveToFile( const char* filename )
 	if(pFile)
 	{
 		replayhdr_t hdr;
+		hdr.idreplay = VEHICLEREPLAY_IDENT;
 		hdr.version = VEHICLEREPLAY_VERSION;
+
 		strcpy(hdr.levelname, g_pGameWorld->GetLevelName());
 		strcpy(hdr.envname, g_pGameWorld->GetEnvironmentName());
 		strcpy(hdr.missionscript, g_scriptName.c_str());
-
-		hdr.startRegX = -1;
-		hdr.startRegY = -1;	// detect.
 
 		pFile->Write(&hdr, 1, sizeof(replayhdr_t));
 
@@ -732,18 +731,19 @@ void CReplayData::LoadFromFile(const char* filename)
 		replayhdr_t hdr;
 		pFile->Read(&hdr, 1, sizeof(replayhdr_t));
 
-		if(hdr.version != VEHICLEREPLAY_VERSION)
+		if(hdr.idreplay != VEHICLEREPLAY_IDENT)
 		{
-			MsgError("Invalid replay file version!\n");
+			MsgError("Error: '%s' is not a replay file!\n", m_filename.c_str());
 			g_fileSystem->Close(pFile);
 			return;
 		}
 
-		MsgInfo("Replay info:\n");
-
-		MsgInfo("	level: '%s'\n", hdr.levelname);
-		MsgInfo("	env: '%s'\n", hdr.envname);
-		MsgInfo("	mission: '%s'\n", hdr.missionscript);
+		if(hdr.version != VEHICLEREPLAY_VERSION)
+		{
+			MsgError("Error: Replay '%s' has invalid version!\n", m_filename.c_str());
+			g_fileSystem->Close(pFile);
+			return;
+		}
 
 		Clear();
 

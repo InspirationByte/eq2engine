@@ -130,6 +130,9 @@ extern ConVar g_traffic_maxdist;
 #define ROADNEIGHBOUR_OFFS_PX(x)		{x+1, x, x-1, x}		// non-diagonal, perpendicular
 #define ROADNEIGHBOUR_OFFS_PY(y)		{y, y-1, y, y+1}
 
+const float AI_STOPLINE_DIST = 3.0f;
+const float AI_OBSTACLE_DIST = 3.5f;
+
 const float AICAR_THINK_TIME = 0.15f;
 
 const float AI_SIDECHECK_DIST = 4.0f;
@@ -148,7 +151,7 @@ const float AI_TARGET_EXTENDED_DIST = 30.0f;
 
 const float AI_LANE_SWITCH_DELAY = 12.0f;
 
-const float AI_EMERGENCY_ESCAPE_TIME = 1.3f;
+const float AI_EMERGENCY_ESCAPE_TIME = 1.5f;
 
 const float KILL_COLLISION_POWER = 18.0f;
 
@@ -591,10 +594,10 @@ void CAITrafficCar::SwitchLane()
 		if( g_pPhysics->TestConvexSweep(shape, GetOrientation(), GetOrigin(), traceEnd, coll, AI_TRACE_CONTENTS, &collFilter) )
 			return;
 
-		if( randomLane < 0 )
-			m_lightsEnabled |= CAR_LIGHT_DIM_LEFT;
-		else if( randomLane > 0 )
-			m_lightsEnabled |= CAR_LIGHT_DIM_RIGHT;
+		if( randomLane > 0 )
+			SetLight(CAR_LIGHT_DIM_LEFT, true);
+		else if( randomLane < 0 )
+			SetLight(CAR_LIGHT_DIM_RIGHT, true);
 
 		m_switchedLane = true;
 
@@ -908,6 +911,11 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 	float carSpeed = fabs(carForwardSpeed)*MPS_TO_KPH;
 
+	float brakeDistancePerSec = m_conf->GetBrakeEffectPerSecond()*0.5f;
+
+	float brakeToStopTime = carForwardSpeed / brakeDistancePerSec*2.0f;
+	float brakeDistAtCurSpeed = brakeDistancePerSec*brakeToStopTime;
+
 	float accelerator = 1.0f - pow(1.0f - ((maxSpeed - carSpeed) / maxSpeed), 5.5f);	// go forward
 	float brake = 0.0f;
 
@@ -933,18 +941,19 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		{
 			if(carForwardSpeed > 0.5f)
 			{
-				float fBrakeRate = 1.0f - RemapValClamp(distToStop, 0.0f, AI_ROAD_STOP_DIST, 0.0f, 1.0f);
+				float brakeSpeedDiff = brakeDistAtCurSpeed + AI_STOPLINE_DIST - distToStop;
+				brakeSpeedDiff = max(brakeSpeedDiff, 0.0);
 
-				brake = clamp(fBrakeRate + (carForwardSpeed-distToStop)*0.25f, 0.0f, 0.9f);
+				brake = brakeSpeedDiff / AI_ROAD_STOP_DIST;
 
-				accelerator -= brake*1.1f;
-
-				controls |= IN_BRAKE;
+				if(brake > 0.01f)
+				{
+					accelerator = 0.0f;
+					controls |= IN_BRAKE;
+				}
 			}
 			else
 				controls |= IN_HANDBRAKE;
-
-			controls &= ~IN_ACCELERATE;
 		}
 		else
 		{
@@ -957,14 +966,14 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 				straight_t& selRoad = m_nextJuncDetails.foundStraights[m_nextJuncDetails.selectedStraight];
 				int currentDir = m_straights[STRAIGHT_CURRENT].direction;
 
-				m_lightsEnabled &= ~CAR_LIGHT_EMERGENCY;
+				SetLight(CAR_LIGHT_EMERGENCY, false);
 
 				if( CompareDirection(m_straights[STRAIGHT_CURRENT].direction-1, selRoad.direction) )
-					m_lightsEnabled |= CAR_LIGHT_DIM_LEFT;
+					SetLight(CAR_LIGHT_DIM_LEFT, true);
 				else if( CompareDirection(m_straights[STRAIGHT_CURRENT].direction+1, selRoad.direction) )
-					m_lightsEnabled |= CAR_LIGHT_DIM_RIGHT;
+					SetLight(CAR_LIGHT_DIM_RIGHT, true);
 				else
-					m_lightsEnabled &= ~CAR_LIGHT_EMERGENCY;
+					SetLight(CAR_LIGHT_EMERGENCY, false);
 
 				if( carForwardSpeed > 8.0f*trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType] )
 				{
@@ -989,8 +998,6 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 			}
 		}
 	}
-
-	controls |= IN_ANALOGSTEER;
 
 	eqPhysCollisionFilter collFilter;
 	collFilter.type = EQPHYS_FILTER_TYPE_EXCLUDE;
@@ -1018,9 +1025,9 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 			float frontFract = frontObjColl.fract;
 
 			float lineDist = frontFract*fTraceDist;
-			float speedDiff = carForwardSpeed - lineDist;
-				
-			CEqCollisionObject* hitObj = frontObjColl.hitobject;//(coll_lineL.fract < 1.0f) ? coll_lineL.hitobject : ((coll_lineR.fract < 1.0f) ? coll_lineR.hitobject : NULL);
+			float diffForwardSpeed = carForwardSpeed;
+
+			CEqCollisionObject* hitObj = frontObjColl.hitobject;
 
 			//FReal frontCarBrake = 0.0f;
 
@@ -1030,11 +1037,16 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 				{
 					CCar* pCar = (CCar*)hitObj->GetUserData();
 
+					// add the velocity difference
+					float frontCarSpeed = dot(pCar->GetVelocity(), pCar->GetForwardVector());
+
+					if(frontCarSpeed > 8.0f)
+						diffForwardSpeed -= frontCarSpeed*0.5f;
+
 					if(m_prevFract == 0.0f)
 						m_prevFract = 0.05f;
 
 					float fromPrevPercentage = frontFract / m_prevFract;
-					
 
 					if( lineDist < AI_CAR_TRACE_DIST_MIN || (1.0f-fromPrevPercentage) >= 0.45f )
 					{
@@ -1043,40 +1055,28 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 						if( (velDiff > 15.0f || (1.0f-fromPrevPercentage) >= 0.45f) && carForwardSpeed > 0.25f )
 							SignalRandomSequence(0.3f); //m_hornTime.SetIfNot(1.0f, 0.3f);
-
-						// add the velocity difference
-						float velDiff2 = carForwardSpeed - dot(pCar->GetVelocity(), pCar->GetForwardVector());
-						speedDiff += velDiff2;
 					}
-
 				}
 			}
 
-			accelerator = clamp(frontFract - speedDiff, 0.0f, 0.5f);
+			
+			float dbrakeToStopTime = diffForwardSpeed / brakeDistancePerSec*2.0f;
+			float dbrakeDistAtCurSpeed = brakeDistancePerSec*dbrakeToStopTime;
 
-			if( (speedDiff > -2.0f) || 
-				(lineDist < AI_CAR_TRACE_DIST_MIN))
+			float brakeSpeedDiff = dbrakeDistAtCurSpeed + AI_OBSTACLE_DIST - lineDist;
+			brakeSpeedDiff = max(brakeSpeedDiff, 0.0);
+
+			brake = brakeSpeedDiff / 10.0f;
+
+			if(brake > 0.01f)
 			{
-				if( lineDist > AI_CAR_TRACE_DIST_MIN )
+				if(carForwardSpeed > 0.5f )
 				{
-					brake = clamp(speedDiff + (1.0f-frontFract), 0.1f, 0.9f);
-				}
-				else
-				{
-					brake = 0.8f;
 					accelerator = 0.0f;
-				}
-
-				if(carForwardSpeed > 0.25f)
-				{
-					if(frontFract < 0.7f)
-						controls |= IN_BRAKE;
+					controls |= IN_BRAKE;
 				}
 				else
-				{
-					controls &= ~IN_ACCELERATE;
 					controls |= IN_HANDBRAKE;
-				}
 			}
 
 			m_prevFract = frontFract;
@@ -1134,6 +1134,12 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 		} // if(carForwardSpeed > 5.0f)
 	}
+
+	// control method
+	if(m_emergencyEscape)
+		controls |= IN_TURNRIGHT;
+	else
+		controls |= IN_ANALOGSTEER;
 
 	if( m_emergencyEscape && m_emergencyEscapeTime > 0.0f )
 	{

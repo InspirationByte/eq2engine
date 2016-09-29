@@ -223,7 +223,10 @@ public:
 	~CEqPhysics();
 
 	void							InitWorld();										///< initializes world
+	void							InitGrid();											///< initializes broadphase grid
+
 	void							DestroyWorld();										///< destroys world
+	void							DestroyGrid();											///< destroys broadphase grid
 
 	eqPhysSurfParam_t*				FindSurfaceParam(const char* name);
 	eqPhysSurfParam_t*				GetSurfaceParamByID(int id);

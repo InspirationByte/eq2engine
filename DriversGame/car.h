@@ -442,6 +442,12 @@ public:
 	void					DecrementPursue();
 	int						GetPursuedCount() const;
 
+	void					TurnOffLights();
+	void					SetLight(int light, bool enabled);
+	bool					IsLightEnabled(int light) const;
+
+	virtual void			UpdateLightsState();
+
 #ifndef NO_LUA
 	virtual void			L_RegisterEventHandler(const OOLUA::Table& tableRef);
 #endif // NO_LUA
