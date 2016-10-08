@@ -126,7 +126,7 @@ void CKeyCommandBinder::WriteBindings(IFile* cfgFile)
 
 
 // binds a command with arguments to known key
-void CKeyCommandBinder::BindKey( char* pszCommand, char *pszArgs, const char* pszKeyStr )
+void CKeyCommandBinder::BindKey( const char* pszCommand, const char *pszArgs, const char* pszKeyStr )
 {
 	// check if key bound
 
@@ -382,7 +382,7 @@ void CKeyCommandBinder::ExecuteBoundCommands(T* zone, bool bState)
 		if(in_keys_debug.GetBool())
 			MsgWarning("dispatch %s\n", cmd->GetName());
 
-		cmd->DispatchFunc( &args );
+		cmd->DispatchFunc( args );
 	}
 }
 
@@ -393,10 +393,10 @@ DECLARE_CMD(bind,"Binds action to key",0)
 	{
 		EqString agrstr;
 
-		for(int i = 2; i < args->numElem(); i++)
-			agrstr.Append(varargs("%s ",args->ptr()[i].GetData()));
+		for(int i = 2; i < CMD_ARGC; i++)
+			agrstr.Append(varargs("%s ",CMD_ARGV(i).c_str()));
 
-		GetKeyBindings()->BindKey((char*)args->ptr()[1].GetData(),(char*)agrstr.GetData(), (char*)args->ptr()[0].GetData());
+		GetKeyBindings()->BindKey(CMD_ARGV(1).c_str(),(char*)agrstr.GetData(), CMD_ARGV(0).c_str());
 	}
 	else
 		MsgInfo("Usage: bind <key> <command> [args,...]\n");
@@ -436,9 +436,9 @@ DECLARE_CMD(list_touchzones,"Shows bound keys",0)
 
 DECLARE_CMD(unbind,"Unbinds a key",0)
 {
-	if(args && args->numElem() > 0)
+	if(CMD_ARGC > 0)
 	{
-		GetKeyBindings()->RemoveBinding(args->ptr()[0].GetData());
+		GetKeyBindings()->RemoveBinding(CMD_ARGV(0).c_str());
 	}
 }
 

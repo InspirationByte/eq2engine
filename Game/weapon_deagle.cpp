@@ -30,13 +30,13 @@ public:
 
 	const char*	GetFastReloadSound()		{return "de.fastreload";} // reload sound script
 
-	int			GetMaxClip()				{return 16;}
+	int			GetMaxClip()				{return 7;}
 
 	int			GetBulletsPerShot()			{return 1;}
 
 	float		GetSpreadingMultiplier()	{return 1.0f;}
 
-	Vector3D	GetDevationVector()			{return Vector3D(2,5,0);} // view kick
+	Vector3D	GetDevationVector()			{return Vector3D(6,5,0);} // view kick
 
 // get it's slot
 	int			GetSlot() {return WEAPONSLOT_SECONDARY;}

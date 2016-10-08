@@ -68,6 +68,19 @@ void CObject_TrafficLight::Spawn()
 	{
 		physobject_t* obj = &m_pModel->GetHWData()->m_physmodel.objects[0].object;
 
+		// set friction from surface parameters
+		eqPhysSurfParam_t* surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);
+		if(surfParams)
+		{
+			m_pPhysicsObject->SetFriction( surfParams->friction );
+			m_pPhysicsObject->SetRestitution( surfParams->restitution );
+		}
+		else
+		{
+			m_pPhysicsObject->SetFriction( 0.8f );
+			m_pPhysicsObject->SetRestitution( 0.0f );
+		}
+
 		// deny wheel and camera collisions
 		m_pPhysicsObject->m_flags = COLLOBJ_NO_RAYCAST;
 

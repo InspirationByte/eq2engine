@@ -51,11 +51,11 @@
 #endif // PIGEONGAME
 
 #define DEFINE_INPUT_ACTION(localName, bitFlag)											\
-	DECLARE_CMD_STRING(act_##localName##_enable ,"+"#localName, "Control command Enable", CV_CLIENTCONTROLS) \
+	DECLARE_CMD_RENAME(act_##localName##_enable ,"+"#localName, "Control command Enable", CV_CLIENTCONTROLS) \
 	{																				\
 		nClientButtons |= bitFlag;											\
 	}																				\
-	DECLARE_CMD_STRING(act_##localName##_disable ,"-"#localName, "Control command Disable", CV_CLIENTCONTROLS) \
+	DECLARE_CMD_RENAME(act_##localName##_disable ,"-"#localName, "Control command Disable", CV_CLIENTCONTROLS) \
 	{																				\
 		nClientButtons &= ~bitFlag;											\
 	}																				\

@@ -8,12 +8,6 @@
     <Filter Include="Source Files">
       <UniqueIdentifier>{053e1c37-205f-4d72-bfd5-ca8e6b2e9635}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Core">
-      <UniqueIdentifier>{3ad6f75c-0110-4ede-bf2b-b305e9f7bbc7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Core\Console">
-      <UniqueIdentifier>{047645de-4edf-44a9-a1c0-b0e8f6b0119e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Libs">
       <UniqueIdentifier>{fcf14460-b900-4ff1-a096-c27755a9fd56}</UniqueIdentifier>
     </Filter>
@@ -29,18 +23,6 @@
     <Filter Include="Source Files\EngineLib\Renderer\Debug">
       <UniqueIdentifier>{d6ae589e-d53b-451e-b664-b5a10bbb28ce}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\EngineLib\Models">
-      <UniqueIdentifier>{506ebe6a-f085-4b35-8b2d-ad950ee30850}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\EngineLib\Audio">
-      <UniqueIdentifier>{1560a466-e8d8-41c7-8169-01e2531e7d89}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Editor">
-      <UniqueIdentifier>{59f3da8e-4d79-412d-9b8c-0c0918a5fc2f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Common">
-      <UniqueIdentifier>{2122ab27-ea5b-496b-8fe9-541f4b8a89f2}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="windows\resource.h">
@@ -52,9 +34,6 @@
     <ClInclude Include="MainWindow.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\public\TextureAtlas.h">
-      <Filter>Source Files\Common</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="windows\mainicon.ico">
@@ -62,48 +41,39 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\public\ConCommand.cpp">
-      <Filter>Source Files\Core\Console</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\public\ConVar.cpp">
-      <Filter>Source Files\Core\Console</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\public\ConCommandBase.cpp">
-      <Filter>Source Files\Core\Console</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Engine\DebugOverlay.cpp">
-      <Filter>Source Files\EngineLib\Renderer\Debug</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\public\Font.cpp">
-      <Filter>Source Files\EngineLib\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\public\ViewParams.cpp">
       <Filter>Source Files\EngineLib\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="MainWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\public\TextureAtlas.cpp">
-      <Filter>Source Files\Common</Filter>
+    <ClCompile Include="..\..\shared_engine\DebugOverlay.cpp">
+      <Filter>Source Files\EngineLib\Renderer\Debug</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\public\Math\math_util.cpp">
-      <Filter>Source Files\Common</Filter>
+    <ClCompile Include="..\..\shared_engine\Font.cpp">
+      <Filter>Source Files\EngineLib\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\public\Utils\GeomTools.cpp">
-      <Filter>Source Files\Common</Filter>
+    <ClCompile Include="..\..\shared_engine\FontCache.cpp">
+      <Filter>Source Files\EngineLib\Renderer</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\..\Libs\DkCore.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\libs\PrevLib.lib">
-      <Filter>Libs</Filter>
-    </Library>
+    <ClCompile Include="..\..\public\math\math_util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="windows\Resources.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\libs\CoreLib.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\libs\DkCore.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\libs\FrameworkLib.lib">
+      <Filter>Libs</Filter>
+    </Library>
   </ItemGroup>
 </Project>

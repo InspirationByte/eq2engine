@@ -6,6 +6,11 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "MainWindow.h"
+#include "IFileSystem.h"
+#include "ILocalize.h"
+#include "FontCache.h"
+#include "IConCommandFactory.h"
+#include "../../shared_engine/DebugOverlay.h"
 
 #include <wx/settings.h>
 
@@ -13,14 +18,6 @@
 #define LOCALIZED_FILE_PREFIX	"wxAppTest"
 
 #define TITLE_TOKEN				"Equilibrium MatSystem wxApp template"	// you can use hashtag # to use localization token
-
-#if defined(__WXGTK__)
-   #define HIDE_CURSOR wxSetCursor(wxCURSOR_BLANK)
-   #define SHOW_CURSOR wxSetCursor(*wxSTANDARD_CURSOR)
-#elif defined(__WXMSW__)
-   #define HIDE_CURSOR ShowCursor(0)
-   #define SHOW_CURSOR ShowCursor(1)
-#endif
 
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay *debugoverlay = ( IDebugOverlay * )&g_DebugOverlays;
@@ -153,7 +150,7 @@ void InitMatSystem(EQWNDHANDLE window)
 		materials_config.shaderapi_params.nScreenFormat = format;
 
 #ifdef _WIN32
-		bool materialSystemStatus = materials->Init("materials/", "EqShaderAPID3DX9", materials_config);
+		bool materialSystemStatus = materials->Init("materials/", "eqD3D9RHI", materials_config);
 #elif LINUX
         bool materialSystemStatus = materials->Init("materials/", "libeqNullRHI.so", materials_config);
 #endif // _WIN32
@@ -223,6 +220,8 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	Connect(wxEVT_CLOSE_WINDOW, (wxObjectEventFunction)&CMainWindow::OnCloseCmd, NULL, this);
 
 	InitMatSystem( (EQWNDHANDLE)m_renderPanel->GetHandle() );
+
+	g_fontCache->Init();
 
 	debugoverlay->Init();
 
@@ -387,13 +386,11 @@ void CMainWindow::ProcessMouseEvents(wxMouseEvent& event)
 	if(!bAnyMoveButton)
 	{
 		m_bIsMoving = false;
-		SHOW_CURSOR;
 	}
 
 	if(m_bIsMoving)
 	{
-		WarpPointer(m_vLastClientCursorPos.x, m_vLastClientCursorPos.y);
-		HIDE_CURSOR;
+		SetCursorPos(m_vLastClientCursorPos.x, m_vLastClientCursorPos.y);
 	}
 
 	// process zooming
@@ -575,8 +572,6 @@ void CMainWindow::ReDraw()
 
 		materials->SetFogInfo(fog);
 
-		g_pShaderAPI->SetupFog(&fog);
-
 		// setup perspective
 		g_mProjMat = perspectiveMatrixY(DEG2RAD(g_pCameraParams.GetFOV()), w, h, 1, 5000);
 
@@ -627,7 +622,7 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 
 	materials = NULL;
 
-	GetFileSystem()->FreeModule(g_matsysmodule);
+	g_fileSystem->FreeModule(g_matsysmodule);
 
 	// shutdown core
 	GetCore()->Shutdown();
@@ -647,10 +642,8 @@ bool InitCore(const char *pCmdLine)
 	// initialize core
 	GetCore()->Init( APPLICATION_NAME, pCmdLine );
 
-	if(!GetFileSystem()->Init(false))
+	if(!g_fileSystem->Init(false))
 		return false;
-
-	GetCmdLine()->ExecuteCommandLine( true, true );
 
 	return true;
 }
@@ -685,9 +678,9 @@ bool CWXTemplateApplication::OnInit()
 
 	// first, load matsystem module
 #ifdef _WIN32
-	g_matsysmodule = GetFileSystem()->LoadModule("EqMatSystem.dll");
+	g_matsysmodule = g_fileSystem->LoadModule("EqMatSystem.dll");
 #elif LINUX
-    g_matsysmodule = GetFileSystem()->LoadModule("libeqMatSystem.so");
+    g_matsysmodule = g_fileSystem->LoadModule("libeqMatSystem.so");
 #endif
 
 	if(!g_matsysmodule)

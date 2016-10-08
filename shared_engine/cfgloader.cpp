@@ -41,16 +41,12 @@ void WriteCfgFile(const char *pszFilename, bool bWriteKeyConfiguration /*= true*
 	g_fileSystem->Close(cfgfile);
 }
 
-void CC_SaveCfg(DkList<EqString> *args)
+DECLARE_CMD(writecfg,"Saves the confirugation file", 0)
 {
-	if(args)
+	if(CMD_ARGC > 0)
 	{
-		if(args->numElem() > 0)
-			WriteCfgFile(args->ptr()[0].GetData(),true);
-		else
-			WriteCfgFile("config.cfg",true);
+		WriteCfgFile(CMD_ARGV(0).c_str(),true);
 	}
 	else
 		WriteCfgFile("config.cfg",true);
 }
-static ConCommand cc_cfg_save("writecfg",CC_SaveCfg,"Saves the confirugation file");

@@ -146,9 +146,7 @@ public:
 	const char*						GetEnvironmentName() const;
 	void							InitEnvironment();
 
-#ifdef EDITOR
-	void							Ed_FillEnviromentList(DkList<EqString>& list);
-#endif // EDITOR
+	void							FillEnviromentList(DkList<EqString>& list);
 
 	CBillboardList*					FindBillboardList(const char* name) const;
 

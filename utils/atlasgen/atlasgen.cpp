@@ -20,7 +20,7 @@ extern void ProcessNewAtlas(const char* pszAtlasSrcName, const char* pszOutputNa
 
 DECLARE_CMD(makeatlas, "Generates atlas from a key-values file list", 0)
 {
-	if(args && args->numElem())
+	if(CMD_ARGC > 0)
 	{
 		EqString outname = CMD_ARGV(1);
 

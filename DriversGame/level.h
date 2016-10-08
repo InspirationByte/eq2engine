@@ -13,6 +13,8 @@
 #include "region.h"
 #include "levelobject.h"
 
+#include "DrvSynDecals.h"
+
 #include "imaging/ImageLoader.h"
 
 #define AI_NAVIGATION_GRID_SCALE	2
@@ -143,7 +145,6 @@ public:
 	int						GetRoadWidthInLanesAtPoint( const IVector2D& point, int numIterations = 16 );
 	int						GetRoadWidthInLanesAtPos( const Vector3D& pos, int numIterations = 16 );
 
-
 	//---------------------------------
 
 	void					PreloadRegion(int x, int y);
@@ -156,6 +157,8 @@ public:
 
 	int						UpdateRegions( RegionLoadUnloadCallbackFunc func = NULL);
 	void					RespawnAllObjects();
+
+	//---------------------------------
 
 	void					Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref);
 
@@ -178,6 +181,10 @@ public:
 	bool					Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pathFindResult_t& result, int iterationLimit = 256, bool cellPriority = false);
 
 	void					Nav_ClearCellStates(ECellClearStateMode mode);
+
+	//----------------------------------
+
+	void					GetDecalPolygons( decalprimitives_t& polys, const Volume& volume);
 
 	// TODO: render code
 

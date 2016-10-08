@@ -71,7 +71,18 @@ ConVar r_ortho_size("r_ortho_size", "0.5", NULL, CV_ARCHIVE);
 
 #define LIGHT_FADE_DIST (25.0f)
 
-DECLARE_CMD(w_setEnvironment, "Loads new environment parameters", CV_CHEAT)
+DkList<EqString> g_envList;
+void cmd_environment_variants(DkList<EqString>& list, const char* query)
+{
+	if(g_envList.numElem() == 0)
+	{
+		g_pGameWorld->FillEnviromentList(g_envList);
+	}
+
+	list.append(g_envList);
+}
+
+DECLARE_CMD_VARIANTS(w_environment, "Loads new environment parameters", cmd_environment_variants, CV_CHEAT)
 {
 	if(CMD_ARGC == 0)
 	{
@@ -157,8 +168,7 @@ const char* CGameWorld::GetEnvironmentName() const
 	return m_envName.c_str();
 }
 
-#ifdef EDITOR
-void CGameWorld::Ed_FillEnviromentList(DkList<EqString>& list)
+void CGameWorld::FillEnviromentList(DkList<EqString>& list)
 {
 	list.clear();
 
@@ -183,7 +193,6 @@ void CGameWorld::Ed_FillEnviromentList(DkList<EqString>& list)
 		list.append( env->name );
 	}
 }
-#endif // EDITOR
 
 void CGameWorld::InitEnvironment()
 {
@@ -529,6 +538,9 @@ bool CGameWorld::IsValidObject(CGameObject* pObject) const
 
 void CGameWorld::Cleanup( bool unloadLevel )
 {
+	// cvar stuff
+	g_envList.clear();
+
 	m_occludingFrustum.Clear();
 
 	if(!unloadLevel)
@@ -856,35 +868,9 @@ bool CGameWorld::AddLight(const wlight_t& light)
 
 void CGameWorld::BuildViewMatrices(int width, int height, int nRenderFlags)
 {
-	Vector3D vRadianRotation = m_view.GetAngles();
-	vRadianRotation = VDEG2RAD(vRadianRotation);
+	m_view.GetMatrices(m_matrices[MATRIXMODE_PROJECTION], m_matrices[MATRIXMODE_VIEW], width, height, m_sceneinfo.m_fZNear, m_sceneinfo.m_fZFar);
 
-	// this is negated matrix
-	Matrix4x4 viewMatrix;
-	/*
-	if(nRenderFlags & VR_FLAG_CUBEMAP)
-	{
-		m_matrices[MATRIXMODE_PROJECTION] = cubeProjectionMatrixD3D(m_sceneinfo.m_fZNear, m_sceneinfo.m_fZFar);
-		viewMatrix = cubeViewMatrix( m_nCubeFaceId );
-	}
-	else
-	{*/
-
-		if(nRenderFlags & RFLAG_FLIP_VIEWPORT_X)
-			width *= -1;
-
-		m_matrices[MATRIXMODE_PROJECTION]	= perspectiveMatrixY(DEG2RAD(m_view.GetFOV()), width, height, m_sceneinfo.m_fZNear, m_sceneinfo.m_fZFar);
-
-		if(r_ortho.GetBool())
-			m_matrices[MATRIXMODE_PROJECTION]	= orthoMatrixR(width*-r_ortho_size.GetFloat(), width*r_ortho_size.GetFloat(), height*-r_ortho_size.GetFloat(), height*r_ortho_size.GetFloat(), -m_sceneinfo.m_fZFar, m_sceneinfo.m_fZFar);
-
-		viewMatrix = rotateZXY4(-vRadianRotation.x,-vRadianRotation.y,-vRadianRotation.z);
-	//}
-
-	viewMatrix.translate(-m_view.GetOrigin());
-
-	m_matrices[MATRIXMODE_VIEW]			= viewMatrix;
-	m_matrices[MATRIXMODE_WORLD]		= identity4();
+	m_matrices[MATRIXMODE_WORLD] = identity4();
 
 	// store the viewprojection matrix for some purposes
 	m_viewprojection = m_matrices[MATRIXMODE_PROJECTION] * m_matrices[MATRIXMODE_VIEW];
@@ -892,11 +878,8 @@ void CGameWorld::BuildViewMatrices(int width, int height, int nRenderFlags)
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
 	materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
 
-	if(materials->GetLight() && (materials->GetLight()->nType != DLT_OMNIDIRECTIONAL) && (materials->GetLight()->nFlags & LFLAG_MATRIXSET))
-		m_viewprojection = materials->GetLight()->lightWVP;
-
+	// calculate custom projection matrix for additive particles
 	Matrix4x4 customGlowsProj = perspectiveMatrixY(DEG2RAD(m_view.GetFOV()), width, height, m_sceneinfo.m_fZNear+r_glowsProjOffset.GetFloat(), m_sceneinfo.m_fZFar+r_glowsProjOffsetB.GetFloat());
-
 	g_additPartcles->SetCustomProjectionMatrix( customGlowsProj );
 
 	if(!r_freezeFrustum.GetBool())

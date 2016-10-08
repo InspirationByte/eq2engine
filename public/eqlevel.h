@@ -168,7 +168,7 @@ struct eqlevelvertexlm_s;
 struct eqlevelvertex_s
 {
 	eqlevelvertex_s() {}
-	eqlevelvertex_s(Vector3D &pos, Vector2D &tc, Vector3D &nrm)
+	eqlevelvertex_s(const Vector3D &pos, const Vector2D &tc, const Vector3D &nrm)
 	{
 		position = pos;
 		texcoord = tc;
@@ -178,7 +178,7 @@ struct eqlevelvertex_s
 		vertexPaint = ColorRGBA(1,0,0,0);
 	}
 
-	eqlevelvertex_s(eqlevelvertexlm_s &vtx);
+	eqlevelvertex_s(const eqlevelvertexlm_s &vtx);
 
 	Vector3D	position;
 	Vector2D	texcoord; // TODO: lightmap coords in Vector4D
@@ -196,7 +196,7 @@ typedef eqlevelvertex_s eqlevelvertex_t;
 struct eqlevelvertexlm_s
 {
 	eqlevelvertexlm_s() {}
-	eqlevelvertexlm_s(Vector3D &pos, Vector2D &tc, Vector3D &nrm)
+	eqlevelvertexlm_s(const Vector3D &pos, const Vector2D &tc, const Vector3D &nrm)
 	{
 		position = pos;
 		texcoord = Vector4D(tc,0,0);
@@ -206,7 +206,7 @@ struct eqlevelvertexlm_s
 		vertexPaint = ColorRGBA(1,0,0,0);
 	}
 
-	eqlevelvertexlm_s(eqlevelvertex_t &vtx)
+	eqlevelvertexlm_s(const eqlevelvertex_t &vtx)
 	{
 		position = vtx.position;
 		texcoord = Vector4D(vtx.texcoord,0,0);
@@ -231,18 +231,18 @@ struct eqlevelvertexlm_s
 typedef eqlevelvertexlm_s eqlevelvertexlm_t;
 
 // converts normalized vector3D to ubyte
-inline void NormalizedVectorToUbyteVector(Vector3D& n, ubyte* dst)
+inline void NormalizedVectorToUbyteVector(const Vector3D& n, ubyte* dst)
 {
-	dst[0] = (n.x + 1.0) * 255;
-	dst[1] = (n.y + 1.0) * 255;
-	dst[2] = (n.z + 1.0) * 255;
+	dst[0] = (n.x + 1.0f) * 255;
+	dst[1] = (n.y + 1.0f) * 255;
+	dst[2] = (n.z + 1.0f) * 255;
 }
 
 // ready for rendering - level vertex structure (lightmap + color)
 struct eqlevelvertexlit_s
 {
 	eqlevelvertexlit_s() {}
-	eqlevelvertexlit_s(Vector3D &pos, Vector2D &tx, Vector3D &nrm)
+	eqlevelvertexlit_s(const Vector3D &pos, const Vector2D &tx, const Vector3D &nrm)
 	{
 		position = pos;
 		texcoord = Vector4D(tx,0,0);
@@ -287,7 +287,7 @@ struct eqlevelvertexlit_s
 typedef eqlevelvertexlit_s eqlevelvertexlit_t;
 
 // specially
-inline eqlevelvertex_s::eqlevelvertex_s(eqlevelvertexlm_t &vtx)
+inline eqlevelvertex_s::eqlevelvertex_s(const eqlevelvertexlm_t &vtx)
 {
 	position = vtx.position;
 	texcoord = vtx.texcoord.xy();
@@ -303,7 +303,7 @@ inline eqlevelvertex_s::eqlevelvertex_s(eqlevelvertexlm_t &vtx)
 struct eqdetailvertex_s
 {
 	eqdetailvertex_s() {}
-	eqdetailvertex_s(Vector3D &pos, Vector2D &tc, Vector3D &nrm)
+	eqdetailvertex_s(const Vector3D &pos, const Vector2D &tc, const Vector3D &nrm)
 	{
 		position = Vector4D(pos,0);
 		texcoord = Vector4D(tc,0,0);
@@ -335,7 +335,7 @@ struct eqdetailvertex_s
 
 ALIGNED_TYPE(eqdetailvertex_s, 1) eqdetailvertex_t;
 
-inline eqlevelvertex_t InterpolateLevelVertex(eqlevelvertex_t &u, eqlevelvertex_t &v, float fac)
+inline eqlevelvertex_t InterpolateLevelVertex(const eqlevelvertex_t &u, const eqlevelvertex_t &v, float fac)
 {
 	eqlevelvertex_t out;
 	out.position = lerp(u.position, v.position, fac);
@@ -348,7 +348,7 @@ inline eqlevelvertex_t InterpolateLevelVertex(eqlevelvertex_t &u, eqlevelvertex_
 	return out;
 }
 
-inline eqlevelvertexlm_t InterpolateLevelVertex(eqlevelvertexlm_t &u, eqlevelvertexlm_t &v, float fac)
+inline eqlevelvertexlm_t InterpolateLevelVertex(const eqlevelvertexlm_t &u, const eqlevelvertexlm_t &v, float fac)
 {
 	eqlevelvertexlm_t out;
 	out.position = lerp(u.position, v.position, fac);
@@ -383,7 +383,7 @@ inline bool operator == (const eqlevelvertexlm_t &u, const eqlevelvertexlm_t &v)
 struct eqphysicsvertex_s
 {
 	eqphysicsvertex_s() {}
-	eqphysicsvertex_s(eqlevelvertex_s &vert)
+	eqphysicsvertex_s(const eqlevelvertex_s &vert)
 	{
 		position = vert.position;
 	}

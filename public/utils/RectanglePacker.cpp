@@ -139,3 +139,11 @@ bool CRectanglePacker::AssignCoords(float& width, float& height, COMPRECTFUNC co
 
 	return true;
 }
+
+void CRectanglePacker::Cleanup()
+{
+	for(int i = 0; i < m_pRectangles.numElem(); i++)
+		delete m_pRectangles[i];
+
+	m_pRectangles.clear();
+}

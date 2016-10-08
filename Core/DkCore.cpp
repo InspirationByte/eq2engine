@@ -93,7 +93,7 @@ extern ConCommand c_echo;
 bool bDoLogs = false;
 bool bLoggingInitialized = false;
 
-void cc_enable_logging(DkList<EqString>* args)
+DECLARE_CONCOMMAND_FN(enable_logging)
 {
 #ifdef PLAT_POSIX
 	mkdir("logs",S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -105,15 +105,15 @@ void cc_enable_logging(DkList<EqString>* args)
 
 ConCommand *c_enable_log;
 
-void cc_disable_logging(DkList<EqString>* args)
+DECLARE_CONCOMMAND_FN(disable_logging)
 {
 	bDoLogs = false;
 }
 
-void cc_addpackage(DkList<EqString>* args)
+DECLARE_CONCOMMAND_FN(addpackage)
 {
-	if(args->numElem())
-		g_fileSystem->AddPackage(args->ptr()[0].GetData(), SP_ROOT);
+	if(CMD_ARGC)
+		g_fileSystem->AddPackage(CMD_ARGV(0).c_str(), SP_ROOT);
 	else
 		MsgWarning("Usage: fs_addpackage <package name>\n");
 }
@@ -125,7 +125,7 @@ void PPMemInit();
 void PPMemShutdown();
 void InitMessageBoxPlatform();
 
-extern void cc_developer_f( DkList<EqString>* args );
+extern DECLARE_CONCOMMAND_FN(developer);
 
 CDkCore::CDkCore()
 {
@@ -214,7 +214,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 				devModeList.append(KV_GetValueString(devModesKv, i));
 
 			if(devModeList.numElem())
-				cc_developer_f( &devModeList );
+				CONCOMMAND_FN(developer)( devModeList );
 		}
 
 		kvkeybase_t* pForceLogged = pAppDebug->FindKeyBase("ForceLogApplications");
@@ -270,9 +270,9 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
     // Регистрация некоторых комманд.
     ((CConsoleCommands*)g_sysConsole.GetInstancePtr())->RegisterCommands();
 
-	c_enable_log = new ConCommand("enablelog",cc_enable_logging,"Enable logging");
-    c_disable_log = new ConCommand("disablelog",cc_disable_logging,"Disable logging");
-	c_addpackage = new ConCommand("fs_addpackage",cc_addpackage,"Add packages");
+	c_enable_log = new ConCommand("enablelog",CONCOMMAND_FN(enable_logging),"Enable logging");
+    c_disable_log = new ConCommand("disablelog",CONCOMMAND_FN(disable_logging),"Disable logging");
+	c_addpackage = new ConCommand("fs_addpackage",CONCOMMAND_FN(addpackage),"Add packages");
     c_SupressAccessorMessages = new ConVar("c_SupressAccessorMessages","1","Supress command/variable accessing. Dispays errors only",CV_ARCHIVE);
 
     // Install exception handler

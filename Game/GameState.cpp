@@ -141,10 +141,9 @@ void FillEntityParameters(BaseEntity* pEnt, kvkeybase_t* pEntSection)
 	{
 		kvkeybase_t* pKey = pEntSection->keys[j];
 
-		pEnt->SetKey(pKey->name, pKey->values[0]);
+		pEnt->SetKey(pKey->name, KV_GetValueString(pKey));
 	}
 }
-
 
 void GAME_STATE_SpawnEntities( KeyValues* inputKeyValues )
 {
@@ -181,10 +180,10 @@ void GAME_STATE_SpawnEntities( KeyValues* inputKeyValues )
 			{
 				if(!stricmp(pEntSec->keys[j]->name,"classname"))
 				{
-					sClassName = pEntSec->keys[j]->values[0];
+					sClassName = KV_GetValueString(pEntSec->keys[j]);
 					pEntity = (BaseEntity*)entityfactory->CreateEntityByName(sClassName.GetData());
 
-					if(!stricmp(pEntSec->keys[j]->values[0], "worldinfo" ))
+					if(!stricmp(sClassName.c_str(), "worldinfo" ))
 						g_pWorldInfo = (CWorldInfo*)pEntity;
 
 					break;

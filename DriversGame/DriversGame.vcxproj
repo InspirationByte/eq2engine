@@ -115,6 +115,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\public\utils\RectanglePacker.cpp" />
     <ClCompile Include="..\shared_engine\Audio\alsnd_stream.cpp" />
     <ClCompile Include="..\shared_engine\Audio\alsnd_emitter.cpp" />
     <ClCompile Include="..\shared_engine\Audio\alsnd_sample.cpp" />
@@ -157,6 +158,7 @@
     <ClCompile Include="BillboardList.cpp" />
     <ClCompile Include="CameraAnimator.cpp" />
     <ClCompile Include="car.cpp" />
+    <ClCompile Include="DrvSynDecals.cpp" />
     <ClCompile Include="DrvSynHUD.cpp" />
     <ClCompile Include="EventFSM.cpp" />
     <ClCompile Include="levelobject.cpp" />
@@ -164,6 +166,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="ParticleEffects.cpp" />
+    <ClCompile Include="ShadowRenderer.cpp" />
     <ClCompile Include="state_lobby.cpp" />
     <ClCompile Include="object_scripted.cpp" />
     <ClCompile Include="occluderSet.cpp" />
@@ -246,6 +249,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\public\luabinding\LuaBinding_Math.h" />
+    <ClInclude Include="..\public\utils\RectanglePacker.h" />
     <ClInclude Include="..\shared_engine\Audio\alsnd_stream.h" />
     <ClInclude Include="..\shared_engine\Audio\alsnd_emitter.h" />
     <ClInclude Include="..\shared_engine\Audio\alsnd_sample.h" />
@@ -289,6 +293,7 @@
     <ClInclude Include="AITrafficCar.h" />
     <ClInclude Include="BillboardList.h" />
     <ClInclude Include="CameraAnimator.h" />
+    <ClInclude Include="DrvSynDecals.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Constraints.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Joint.h" />
     <ClInclude Include="EventFSM.h" />
@@ -297,6 +302,7 @@
     <ClInclude Include="levelobject.h" />
     <ClInclude Include="LiteHTMLContainer.h" />
     <ClInclude Include="ParticleEffects.h" />
+    <ClInclude Include="ShadowRenderer.h" />
     <ClInclude Include="state_lobby.h" />
     <ClInclude Include="LuaBinding_Drivers.h" />
     <ClInclude Include="object_debris.h" />

@@ -21,17 +21,6 @@
 
 // int argumentType definitions
 #define ARG_TYPE_GENERIC			0
-#define ARG_TYPE_CVARLIST			1
-#define ARG_TYPE_CMDLIST			2
-#define ARG_TYPE_MAPLIST			3
-#define ARG_TYPE_CFGLIST			4
-
-// Comparsion-only definitions
-#define ARG_TYPE_CVARLIST_STRING	"$cvarlist$"
-#define ARG_TYPE_CMDLIST_STRING		"$cmdlist$"
-#define ARG_TYPE_MAPLIST_STRING		"$map_list$"
-#define ARG_TYPE_CFGLIST_STRING		"$cfg_list$"
-
 
 struct AutoCompletionNode_s
 {
@@ -54,6 +43,10 @@ struct AutoCompletionNode_s
 #undef KeyPress
 #endif // KeyPress
 
+typedef bool (*CONSOLE_ALTERNATE_HANDLER)(const char* commandText);
+
+class ConCommandBase;
+
 class CEqSysConsole
 {
 public:
@@ -62,6 +55,9 @@ public:
 			CEqSysConsole();
 
 	void	Initialize();
+
+	// useful for scripts
+	void	SetAlternateHandler( CONSOLE_ALTERNATE_HANDLER handler ) {m_alternateHandler = handler;}
 
 	void	DrawSelf(bool transparent, int width, int height, float curTime);
 
@@ -119,11 +115,11 @@ private:
 
 	int								con_histIndex;
 	int								con_valueindex;
-	int								con_fastfind_selection_index;
-	int								con_fastfind_selection_autocompletion_index;
+	ConCommandBase*					con_fastfind_cmdbase;
+	DkList<EqString>				autocompletionList;
 	int								con_fastfind_selection_autocompletion_val_index;
-	bool							con_fastfind_isbeingselected;
-	bool							con_fastfind_isbeingselected_autoc;
+
+	CONSOLE_ALTERNATE_HANDLER		m_alternateHandler;
 
 	// Current input text
 	EqString						con_Text;

@@ -20,7 +20,7 @@ public:
 						CSpriteBuilder();
 			virtual		~CSpriteBuilder();
 
-	virtual void		Init( bool bCreateOwnVBO = false, int maxQuads = 16384 );
+	virtual void		Init( int maxQuads = 16384 );
 	virtual void		Shutdown();
 
 	void				ClearBuffers();
@@ -60,9 +60,6 @@ protected:
 
 	uint16				m_maxQuadVerts;
 
-	// uses own VBO? (in case if decals or something rendered)
-	bool				m_bHasOwnVBO;
-
 	bool				m_initialized;
 
 	IVertexBuffer*		m_vertexBuffer;
@@ -76,7 +73,6 @@ CSpriteBuilder<VTX_TYPE>::CSpriteBuilder() :
 	m_pIndices(NULL),
 	m_numVertices(0),
 	m_numIndices(0),
-	m_bHasOwnVBO(false),
 	m_initialized(false),
 	m_vertexBuffer(NULL),
 	m_indexBuffer(NULL),
@@ -93,15 +89,8 @@ CSpriteBuilder<VTX_TYPE>::~CSpriteBuilder()
 }
 
 template <class VTX_TYPE>
-void CSpriteBuilder<VTX_TYPE>::Init( bool bCreateOwnVBO, int maxQuads )
+void CSpriteBuilder<VTX_TYPE>::Init( int maxQuads )
 {
-	m_bHasOwnVBO = bCreateOwnVBO;
-
-	if(m_bHasOwnVBO)
-	{
-		// Create VBO, but it needs to submit vertex format before render
-	}
-
 	m_maxQuadVerts = maxQuads;
 
 	DevMsg(DEVMSG_CORE, "[SPRITEVBO] Allocating %d quads (%d bytes VB and %d bytes IB)\n", m_maxQuadVerts, SVBO_MAX_SIZE(m_maxQuadVerts, VTX_TYPE), SIBO_MAX_SIZE(m_maxQuadVerts));
@@ -135,11 +124,6 @@ void CSpriteBuilder<VTX_TYPE>::Shutdown()
 
 	m_pIndices = NULL;
 	m_pVerts = NULL;
-
-	if(m_bHasOwnVBO)
-	{
-
-	}
 }
 
 template <class VTX_TYPE>

@@ -100,6 +100,10 @@ public:
 		static _##classname##Singleton localname IFACE_PRIORITY_EXPORT2;
 
 #else
+
+#ifdef _DKLAUNCHER_
+#	define INTERFACE_SINGLETON(abstractclass, classname, interfacename, localname)
+#else
 // dll import version
 #	define INTERFACE_SINGLETON(abstractclass, classname, interfacename, localname)			\
 		IEXPORTS void*		_GetDkCoreInterface(const char* pszName);\
@@ -118,6 +122,7 @@ public:
 			}	\
 		};	\
 		static _##classname##Singleton localname IFACE_PRIORITY_EXPORT2;
+#endif // _DKLAUNCHER_
 
 #endif
 

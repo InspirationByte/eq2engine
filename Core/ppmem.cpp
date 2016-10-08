@@ -51,7 +51,7 @@ struct ppallocinfo_t
 	uint		checkMark;
 };
 
-void cc_meminfo_f(DkList<EqString> *args)
+DECLARE_CONCOMMAND_FN(ppmemstats)
 {
 	bool fullStats = false;
 
@@ -70,7 +70,7 @@ CEqMutex*			g_allocMemMutex = NULL;
 
 bool g_enablePPMem = false;
 
-static ConCommand	ppmem_stats("ppmem_stats",cc_meminfo_f, "Memory info",CV_UNREGISTERED);
+static ConCommand	ppmem_stats("ppmem_stats",CONCOMMAND_FN(ppmemstats), "Memory info",CV_UNREGISTERED);
 static ConVar		ppmem_break_on_alloc("ppmem_break_on_alloc", "-1", "Helps to catch allocation id at stack trace",CV_UNREGISTERED);
 
 void PPMemInit()

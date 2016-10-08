@@ -30,6 +30,8 @@ public:
 
 	float			GetLODScaledDistFrom( const Vector3D& position );
 
+	void			GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, float height, float zNear, float zFar, bool orthographic = false);
+
 	/*
 	void			BuildViewMatrices(float fNear, float fFar, int width, int height, bool orthographic = false, bool cubemap = false);
 

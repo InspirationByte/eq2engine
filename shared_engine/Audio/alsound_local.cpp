@@ -38,13 +38,10 @@ ISoundSystem* soundsystem = &s_soundSystem;
 
 DECLARE_CMD(snd_play,"Play a sound",0)
 {
-	if(!args)
+	if(CMD_ARGC == 0)
 		return;
 
-	if(args->numElem() <= 0)
-		return;
-
-	ISoundSample* pSample = soundsystem->LoadSample(args->ptr()[0].GetData(), SAMPLE_FLAG_REMOVEWHENSTOPPED);
+	ISoundSample* pSample = soundsystem->LoadSample(CMD_ARGV(0).c_str(), SAMPLE_FLAG_REMOVEWHENSTOPPED);
 	ISoundPlayable* staticChannel = soundsystem->GetStaticStreamChannel(0);
 
 	staticChannel->SetSample(pSample);

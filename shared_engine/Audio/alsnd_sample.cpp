@@ -200,9 +200,10 @@ DkSoundSampleLocal::DkSoundSampleLocal()
 {
 	m_flags = 0;
 	m_loadState = SAMPLE_LOAD_ERROR;
-	m_szName = "null.wav";
+	m_szName = "";
 	m_nChannels = 1;
 	m_loopStart = -1;
+	m_duration = 0.0f;
 }
 
 DkSoundSampleLocal::~DkSoundSampleLocal()
@@ -267,6 +268,29 @@ bool DkSoundSampleLocal::LoadWav(const char *name, unsigned int buffer)
 	g_fileSystem->Close(file);
 
 	LoadWavFromBufferEX( fileBuffer, &format, &data, &size, &freq, m_loopStart, m_loopEnd );
+
+	int sampleSize = 0;
+
+	if(format == AL_FORMAT_MONO8)
+	{
+		sampleSize = 1;
+	}
+	else if(format == AL_FORMAT_MONO16)
+	{
+		sampleSize = 2;
+	}
+	else if(format == AL_FORMAT_STEREO8)
+	{
+		sampleSize = 2;
+	}
+	else if(format == AL_FORMAT_STEREO16)
+	{
+		sampleSize = 4;
+	}
+
+	m_duration = (float)(size / sampleSize) / (float)freq;
+
+	//Msg("WAV %s duration: %g\n", name, m_duration);
 
 	// load buffer data into
 	alBufferData( buffer, format, data, size, freq );
@@ -346,9 +370,6 @@ int eqogg_close(void *datasource)
 
 bool DkSoundSampleLocal::LoadOgg(const char *name, unsigned int buffer)
 {
-	ALenum format;
-	ALsizei freq;
-
 	// Open for binary reading
 	DKFILE* pFile = g_fileSystem->Open((_Es(SOUND_DEFAULT_PATH) + name).GetData(), "rb");
 	if(!pFile)
@@ -376,6 +397,8 @@ bool DkSoundSampleLocal::LoadOgg(const char *name, unsigned int buffer)
 	// Get some information about the OGG file
 	pInfo = ov_info(&oggFile, -1);
 
+	ALenum format;
+
 	// Check the number of channels... always use 16-bit samples
 	if (pInfo->channels == 1)
 		format = AL_FORMAT_MONO16;
@@ -385,12 +408,13 @@ bool DkSoundSampleLocal::LoadOgg(const char *name, unsigned int buffer)
 	m_nChannels = pInfo->channels;
 
 	// The frequency of the sampling rate
-	freq = pInfo->rate;
+	ALsizei frequency = pInfo->rate;
 
-	int nSamples = (uint) ov_pcm_total(&oggFile, -1);
-	int nChannels = pInfo->channels;
+	uint nSamples = (uint)ov_pcm_total(&oggFile, -1);
 
-	int size = nSamples * nChannels * sizeof(short);
+	m_duration = (float)nSamples / pInfo->channels / (float)frequency;
+
+	int size = nSamples * pInfo->channels * sizeof(short);
 	short* soundbuffer = (short*)PPAlloc(size);
 
 	int samplePos = 0;
@@ -407,7 +431,7 @@ bool DkSoundSampleLocal::LoadOgg(const char *name, unsigned int buffer)
 	}
 
 	// Upload sound data to buffer
-	alBufferData(buffer, format, soundbuffer, size, freq);
+	alBufferData(buffer, format, soundbuffer, size, frequency);
 
 	ov_clear( &oggFile );
 
@@ -421,6 +445,11 @@ bool DkSoundSampleLocal::LoadOgg(const char *name, unsigned int buffer)
 void DkSoundSampleLocal::WaitForLoad()
 {
 	while( m_loadState == SAMPLE_LOAD_IN_PROGRESS ) {Threading::Yield();}
+}
+
+float DkSoundSampleLocal::GetDuration() const
+{
+	return m_duration;
 }
 
 //-----------------------------------------------------------------------------------------------------------------

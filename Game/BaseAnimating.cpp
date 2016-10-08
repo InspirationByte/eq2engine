@@ -1257,7 +1257,7 @@ void BaseAnimating::UpdateIkChain( gikchain_t* pIkChain )
 
 				debugoverlay->Line3D(parent_pos, bone_pos, ColorRGBA(1,1,0,1), ColorRGBA(1,1,0,1));
 				debugoverlay->Box3D(bone_pos+Vector3D(1),bone_pos-Vector3D(1), ColorRGBA(1,0,0,1));
-				debugoverlay->Text3D(bone_pos, 200.0f, color4_white, "%s", m_pModel->GetHWData()->joints[pIkChain->links[i].bone_index].name);
+				debugoverlay->Text3D(bone_pos, 200.0f, color4_white, 0.0f, "%s", m_pModel->GetHWData()->joints[pIkChain->links[i].bone_index].name);
 
 				// draw axis
 				debugoverlay->Line3D(bone_pos, bone_pos+dX, ColorRGBA(1,0,0,1), ColorRGBA(1,0,0,1));

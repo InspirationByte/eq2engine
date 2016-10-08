@@ -8,9 +8,15 @@
 #include "platform/MessageBox.h"
 #include <string.h>
 #include <stdarg.h>
+
+#ifndef _DKLAUNCHER_
+
 #include "DebugInterface.h"
 #include "IDkCore.h"
 #include "ConCommand.h"
+
+#endif // _DKLAUNCHER_
+
 #include <time.h>
 
 #ifdef _WIN32
@@ -121,17 +127,17 @@ void DefaultPlatformMessageBoxCallback(const char* messageStr, EMessageBoxType t
 PREERRORMESSAGECALLBACK g_preerror_callback = emptycallback;
 MESSAGECB g_msgBoxCallback = DefaultPlatformMessageBoxCallback;
 
-IEXPORTS void SetPreErrorCallback(PREERRORMESSAGECALLBACK callback)
+IEXPORTS_LAUNCHER void SetPreErrorCallback(PREERRORMESSAGECALLBACK callback)
 {
 	g_preerror_callback = callback;
 }
 
-IEXPORTS void SetMessageBoxCallback(MESSAGECB callback)
+IEXPORTS_LAUNCHER void SetMessageBoxCallback(MESSAGECB callback)
 {
 	g_msgBoxCallback = callback;
 }
 
-IEXPORTS void ErrorMsg(const char* fmt, ...)
+IEXPORTS_LAUNCHER void ErrorMsg(const char* fmt, ...)
 {
 	g_preerror_callback();
 
@@ -147,10 +153,12 @@ IEXPORTS void ErrorMsg(const char* fmt, ...)
 
 	g_msgBoxCallback(string, MSGBOX_CRASH);
 
+#ifndef _DKLAUNCHER_
 	MsgError("FATAL ERROR: %s\n", string);
+#endif // _DKLAUNCHER_
 }
 
-IEXPORTS void CrashMsg(const char* fmt, ...)
+IEXPORTS_LAUNCHER void CrashMsg(const char* fmt, ...)
 {
 	g_preerror_callback();
 
@@ -166,10 +174,12 @@ IEXPORTS void CrashMsg(const char* fmt, ...)
 
 	g_msgBoxCallback(string, MSGBOX_ERROR);
 
+#ifndef _DKLAUNCHER_
 	MsgError("ERROR: %s\n", string);
+#endif // _DKLAUNCHER_
 }
 
-IEXPORTS void WarningMsg(const char* fmt, ...)
+IEXPORTS_LAUNCHER void WarningMsg(const char* fmt, ...)
 {
 	va_list		argptr;
 
@@ -183,10 +193,12 @@ IEXPORTS void WarningMsg(const char* fmt, ...)
 
 	g_msgBoxCallback(string, MSGBOX_WARNING);
 
+#ifndef _DKLAUNCHER_
 	MsgError("WARNING: %s\n", string);
+#endif // _DKLAUNCHER_
 }
 
-IEXPORTS void InfoMsg(const char* fmt, ...)
+IEXPORTS_LAUNCHER void InfoMsg(const char* fmt, ...)
 {
 	va_list		argptr;
 
@@ -199,7 +211,10 @@ IEXPORTS void InfoMsg(const char* fmt, ...)
 	va_end (argptr);
 
 	g_msgBoxCallback(string, MSGBOX_INFO);
+
+#ifndef _DKLAUNCHER_
 	MsgError("INFO: %s\n", string);
+#endif // _DKLAUNCHER_
 }
 
 #ifdef _WIN32
@@ -227,7 +242,7 @@ void AssertLogMsg(const char *fmt,...)
     }
 }
 
-IEXPORTS void _InternalAssert(const char *file, int line, const char *statement)
+IEXPORTS_LAUNCHER void _InternalAssert(const char *file, int line, const char *statement)
 {
     static bool debug = true;
 
@@ -283,7 +298,7 @@ IEXPORTS void _InternalAssert(const char *file, int line, const char *statement)
 
 #include <signal.h>
 
-IEXPORTS void _InternalAssert(const char *file, int line, const char *statement)
+IEXPORTS_LAUNCHER void _InternalAssert(const char *file, int line, const char *statement)
 {
 #ifdef USE_GTK
     char str[1024];
@@ -319,6 +334,7 @@ void InitMessageBoxPlatform()
 #endif // !_WIN32 && USE_GTK
 }
 
+#ifndef _DKLAUNCHER_
 DECLARE_CMD(test_error, "Test error messagebox", 0)
 {
     ErrorMsg("Test error messagebox!");
@@ -328,3 +344,4 @@ DECLARE_CMD(test_assert, "Test assert messagebox", 0)
 {
     ASSERTMSG(false, "Test ASSERT messagebox!");
 }
+#endif //_DKLAUNCHER_

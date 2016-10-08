@@ -506,7 +506,7 @@ void CMainWindow::OpenLevelPrompt()
 
 		g_pGameWorld->LoadLevel();
 
-		g_pGameWorld->Ed_FillEnviromentList(m_environmentList);
+		g_pGameWorld->FillEnviromentList(m_environmentList);
 
 		m_bSavedOnDisk = true;
 		m_bNeedsSave = false;

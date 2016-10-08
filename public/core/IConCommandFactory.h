@@ -48,7 +48,10 @@ public:
     virtual void								ResetCounter() = 0;
 
     // Executes command buffer
-    virtual bool								ExecuteCommandBuffer(unsigned int CmdFilterFlags = -1) = 0;	
+    virtual bool								ExecuteCommandBuffer(unsigned int CmdFilterFlags = -1, bool quiet = false) = 0;	
+
+	// returns failed commands
+	virtual DkList<EqString>&					GetFailedCommands() = 0;	
 };
 
 INTERFACE_SINGLETON( IConsoleCommands, CConsoleCommands, CONSOLE_INTERFACE_VERSION, g_sysConsole )

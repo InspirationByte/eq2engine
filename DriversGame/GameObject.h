@@ -295,7 +295,6 @@ protected:
 #ifndef NO_LUA
 	OOLUA::Table				m_luaEvtHandler;
 
-
 	EqLua::LuaTableFuncRef		m_luaOnCarCollision;
 	EqLua::LuaTableFuncRef		m_luaOnRemove;
 

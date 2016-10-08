@@ -64,7 +64,10 @@ public:
 	void								ResetCounter() {m_nSameCommandsExecuted = 0;}
 
 	// Executes command buffer
-	bool								ExecuteCommandBuffer(unsigned int CmdFilterFlags = -1);
+	bool								ExecuteCommandBuffer(unsigned int CmdFilterFlags = -1, bool quiet = false);
+
+	// returns failed commands
+	DkList<EqString>&					GetFailedCommands();
 
 	void								EnableInitOnlyVarsChangeProtection(bool bEnable);
 
@@ -75,10 +78,7 @@ public:
 private:
 	DkList<ConCommandBase*>	m_pCommandBases;
 
-	DkList<char*>			m_pFailedCommands;
-
-	bool					m_bCanTryExecute;
-	bool					m_bTrying;
+	DkList<EqString>		m_failedCommands;
 
 	char m_pszCommandBuffer[COMMANDBUFFER_SIZE];
 	char m_pszLastCommandBuffer[COMMANDBUFFER_SIZE];

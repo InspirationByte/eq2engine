@@ -311,7 +311,7 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		if( bLookBack )
 			lookAngle = 180.0f;
 
-		euler_angles = EulerMatrixZXY(targetRotation * Quaternion(-DEG2RAD(lookAngle), vec3_up));
+		euler_angles = EulerMatrixZXY(targetRotation * Quaternion(-DEG2RAD(lookAngle), vec3_up) * Quaternion(DEG2RAD(1.5), vec3_right));
 		euler_angles = VRAD2DEG(euler_angles);
 		euler_angles *= Vector3D(-1,1,-1);
 

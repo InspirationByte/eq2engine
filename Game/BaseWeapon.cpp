@@ -293,10 +293,10 @@ void CBaseWeapon::PrimaryAttack()
 		SetActivity( ACT_VM_PRIMARYATTACK );
 
 		Vector3D devation = GetDevationVector();
-		devation = Vector3D(devation.x, RandomFloat(-devation.y,devation.y), RandomFloat(-devation.z,devation.z));
+		devation = Vector3D(-devation.x, RandomFloat(-devation.y,devation.y), RandomFloat(-devation.z,devation.z));
 
 		pActor->ViewPunch(devation + devation*((m_nShotsFired+1)*0.1f), true);
-		pActor->SnapEyeAngles(pActor->GetEyeAngles() + Vector3D(-RandomFloat(0.4,0.1),0,0)*((m_nShotsFired+1)*0.2f));
+		pActor->SnapEyeAngles(pActor->GetEyeAngles() + Vector3D(RandomFloat(0.1,0.5),0,0)*((m_nShotsFired+1)*0.1f));
 
 		m_nShotsFired++;
 		m_fNextIdleTime = gpGlobals->curtime + m_fIdleTime;

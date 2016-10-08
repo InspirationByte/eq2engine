@@ -396,6 +396,7 @@
     <None Include="splashscreen.bmp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Core\platform\MessageBox.cpp" />
     <ClCompile Include="launcher_win.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -403,11 +404,6 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\libs\CoreLib.lib" />
-    <Library Include="..\libs\DkCore.lib" />
-    <Library Include="..\libs\FrameworkLib.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -44,7 +44,6 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 	m_goesFromMenu = false;
 	m_titleTexture = g_pShaderAPI->LoadTexture("ui/title", TEXFILTER_TRILINEAR_ANISO, ADDRESSMODE_CLAMP);
 	m_titleTexture->Ref_Grab();
-	g_pHost->SetCursorShow(false);
 
 	soundsystem->SetPauseState(false);
 	soundsystem->SetVolumeScale(1.0f);

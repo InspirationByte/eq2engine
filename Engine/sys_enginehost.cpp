@@ -849,11 +849,11 @@ bool CEngineHost::Init()
 			{
 				if(!stricmp(pGameInfoSec->keys[i]->name,"AddSearchPath"))
 				{
-					g_fileSystem->AddSearchPath(pGameInfoSec->keys[i]->values[0]);
+					g_fileSystem->AddSearchPath(KV_GetValueString(pGameInfoSec->keys[i]));
 				}
 				else if(!stricmp(pGameInfoSec->keys[i]->name,"AddPackage"))
 				{
-					g_fileSystem->AddPackage(pGameInfoSec->keys[i]->values[0], SP_MOD);
+					g_fileSystem->AddPackage(KV_GetValueString(pGameInfoSec->keys[i]), SP_MOD);
 				}
 			}
 		}
@@ -951,7 +951,7 @@ bool CEngineHost::Init()
 		{
 			if(!stricmp( pGameInfoSec->keys[i]->name,"AddShaderLib"))
 			{
-				materials->LoadShaderLibrary( pGameInfoSec->keys[i]->values[0] );
+				materials->LoadShaderLibrary( KV_GetValueString(pGameInfoSec->keys[i]) );
 			}
 		}
 

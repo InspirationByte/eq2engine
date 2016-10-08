@@ -1045,7 +1045,7 @@ public:
 	{
 		CBaseActor* pActor = (CBaseActor*)UTIL_EntByIndex(1);
 
-		debugoverlay->Text3D(GetAbsOrigin(),m_fRadius, ColorRGBA(1), "%s", m_pText.GetData());
+		debugoverlay->Text3D(GetAbsOrigin(),m_fRadius, ColorRGBA(1), 0.0f, "%s", m_pText.GetData());
 	}
 
 	void Input_SetText(inputdata_t &data)

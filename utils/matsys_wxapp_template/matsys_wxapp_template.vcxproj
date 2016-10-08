@@ -12,9 +12,10 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectName>matsys_wxapp_template</ProjectName>
-    <ProjectGuid>{9045AE07-CA86-4035-B058-45FF6ED382A1}</ProjectGuid>
+    <ProjectGuid>{CADC216A-CA8C-4042-8461-AAF5D6498B72}</ProjectGuid>
     <RootNamespace>DkCore</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -22,6 +23,7 @@
     <CharacterSet>Unicode</CharacterSet>
     <CLRSupport>false</CLRSupport>
     <WholeProgramOptimization>false</WholeProgramOptimization>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -56,13 +58,13 @@
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
     <ReferencePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ReferencePath)</ReferencePath>
-    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\wx\lib\vc_lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\src_dependency\wx\lib\vc_lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\..\FileSystem;..\..\Engine;..\..\public;..\..\public\platform;..\..\utils\wx\include;..\..\utils\wx\include\msvc;..\..\utils\wx\include\msw;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\FileSystem;..\..\Engine;..\..\public;..\..\public\core;..\..\shared_engine;..\..\src_dependency\wx\include;..\..\src_dependency\wx\include\msvc;..\..\src_dependency\wx\include\msw;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;PHYSICS_EXPORT;NO_GAME;NO_ENGINE;NOENGINE;EDITOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
@@ -79,7 +81,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>user32.lib;comctl32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\..\DriversGame\matsys_wxapp_template.exe</OutputFile>
+      <OutputFile>..\..\..\gamebin\matsys_wxapp_template.exe</OutputFile>
       <IgnoreSpecificDefaultLibraries>libc;libcmt;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -92,7 +94,7 @@
       <ImportLibrary>
       </ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
-      <ProgramDatabaseFile>..\..\DriversGame\$(TargetName).pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>..\..\..\gamebin\$(TargetName).pdb</ProgramDatabaseFile>
       <AdditionalLibraryDirectories>..\utils\wx\lib\vc_lib\</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -140,7 +142,6 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\public\TextureAtlas.h" />
     <ClInclude Include="MainWindow.h" />
     <ClInclude Include="wxui_header.h" />
     <ClInclude Include="windows\resource.h" />
@@ -149,23 +150,20 @@
     <None Include="windows\mainicon.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\public\Font.cpp" />
-    <ClCompile Include="..\..\public\Math\math_util.cpp" />
-    <ClCompile Include="..\..\public\TextureAtlas.cpp" />
-    <ClCompile Include="..\..\public\Utils\GeomTools.cpp" />
+    <ClCompile Include="..\..\public\math\math_util.cpp" />
+    <ClCompile Include="..\..\shared_engine\Font.cpp" />
+    <ClCompile Include="..\..\shared_engine\FontCache.cpp" />
     <ClCompile Include="MainWindow.cpp" />
     <ClCompile Include="..\..\public\ViewParams.cpp" />
-    <ClCompile Include="..\..\Engine\DebugOverlay.cpp" />
-    <ClCompile Include="..\..\public\ConCommand.cpp" />
-    <ClCompile Include="..\..\public\ConCommandBase.cpp" />
-    <ClCompile Include="..\..\public\ConVar.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\..\Libs\DkCore.lib" />
-    <Library Include="..\..\libs\PrevLib.lib" />
+    <ClCompile Include="..\..\shared_engine\DebugOverlay.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="windows\Resources.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\libs\CoreLib.lib" />
+    <Library Include="..\..\libs\DkCore.lib" />
+    <Library Include="..\..\libs\FrameworkLib.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

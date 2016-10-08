@@ -27,7 +27,7 @@ DECLARE_CVAR(sys_sleep,0,"Sleep time for every frame",CV_ARCHIVE);
 
 DECLARE_CVAR(screenshotJpegQuality,100,"JPEG Quality",CV_ARCHIVE);
 
-void CC_Screenshot_f(DkList<EqString> *args)
+DECLARE_CMD(screenshot, "Save screenshot", 0)
 {
 	if(materials != NULL)
 	{
@@ -61,7 +61,6 @@ void CC_Screenshot_f(DkList<EqString> *args)
 		return;
 	}
 }
-ConCommand cc_screenshot("screenshot",CC_Screenshot_f,"Save screenshot");
 
 ConVar r_fullscreen("r_fullscreen", "0", "Fullscreen" ,CV_ARCHIVE);
 

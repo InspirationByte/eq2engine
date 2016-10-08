@@ -65,7 +65,7 @@ void CGameHost::HostQuitToDesktop()
 	g_pHost->m_nQuitState = CGameHost::QUIT_TODESKTOP;
 }
 
-void CGameHost::HostExitCmd(DkList<EqString> *args)
+void CGameHost::HostExitCmd(CONCOMMAND_ARGUMENTS)
 {
 	HostQuitToDesktop();
 }
@@ -273,6 +273,9 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	// init console
 	g_pSysConsole->Initialize();
+
+	g_pSysConsole->SetAlternateHandler( LuaBinding_ConsoleHandler );
+
 	debugoverlay->Init();
 	g_pEqUIManager->Init();
 
@@ -551,7 +554,6 @@ void CGameHost::SetCursorShow(bool bShow)
 	if(m_cursorVisible == bShow)
 		return;
 
-
 	if(bShow)
 		SDL_SetCursor(staticDefaultCursor[dc_arrow]);
 
@@ -666,6 +668,8 @@ bool CGameHost::Frame()
 	g_pEqUIManager->Render();
 
 	GetKeyBindings()->DebugDraw(m_winSize);
+
+	SetCursorShow( g_pSysConsole->IsVisible() );
 
 	g_pSysConsole->DrawSelf(true, m_winSize.x, m_winSize.y, m_fCurTime);
 

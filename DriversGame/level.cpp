@@ -2091,3 +2091,39 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 
 	return (result.points.numElem() > 0);
 }
+
+//------------------------------------------------------
+
+void CGameLevel::GetDecalPolygons( decalprimitives_t& polys, const Volume& volume)
+{
+	for (int x = 0; x < m_wide; x++)
+	{
+		for (int y = 0; y < m_tall; y++)
+		{
+			int idx = y*m_wide + x;
+
+			CScopedMutex m(m_mutex);
+
+			CLevelRegion& reg = m_regions[idx];
+
+			if(!reg.m_isLoaded)
+				continue;
+
+			if(!volume.IsBoxInside(reg.m_bbox.minPoint, reg.m_bbox.maxPoint))
+				continue;
+
+			for (int i = 0; i < reg.GetNumHFields(); i++)
+			{
+				CHeightTileField* hfield = reg.GetHField(i);
+
+				if(!hfield)
+					continue;
+
+				hfield->GetDecalPolygons(polys, volume);
+			}
+
+			// TODO: get from ground objects
+		}
+	}
+
+}

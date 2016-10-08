@@ -241,13 +241,10 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	return EqLua::LuaBinding_LoadAndDoFile(state, "scripts/lua/_init.lua", "__init");
 }
 
-DECLARE_CMD(lexec, "Executes Lua string", 0)
+bool LuaBinding_ConsoleHandler(const char* cmdText)
 {
-	if(CMD_ARGC == 0)
-		return;
+	if(!EqLua::LuaBinding_DoBuffer(GetLuaState(), cmdText, strlen(cmdText), "console"))
+		MsgError("Lua error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
 
-	if(!EqLua::LuaBinding_DoBuffer(GetLuaState(), CMD_ARGV(0).c_str(), CMD_ARGV(0).Length(), "lexec"))
-	{
-		MsgError("lua_exec error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
-	}
+	return true;
 }

@@ -14,23 +14,23 @@ DECLARE_ACTION( brake, IN_BRAKE )
 //DECLARE_ACTION(left, (IN_TURNLEFT | (~IN_ANALOGSTEER)))
 //DECLARE_ACTION(right, (IN_TURNRIGHT | (~IN_ANALOGSTEER)))
 
-DECLARE_CMD_STRING(act_left_enable, "+left", "Control command", CV_CLIENTCONTROLS)
+DECLARE_CMD_RENAME(act_left_enable, "+left", "Control command", CV_CLIENTCONTROLS)
 {
 	g_nClientButtons |= IN_TURNLEFT;
 	g_nClientButtons &= ~IN_ANALOGSTEER;
 }
-DECLARE_CMD_STRING(act_left_disable ,"-left", "Control command", CV_CLIENTCONTROLS)
+DECLARE_CMD_RENAME(act_left_disable ,"-left", "Control command", CV_CLIENTCONTROLS)
 {
 	g_nClientButtons &= ~IN_TURNLEFT;
 	g_nClientButtons &= ~IN_ANALOGSTEER;
 }
 
-DECLARE_CMD_STRING(act_right_enable, "+right", "Control command", CV_CLIENTCONTROLS)
+DECLARE_CMD_RENAME(act_right_enable, "+right", "Control command", CV_CLIENTCONTROLS)
 {
 	g_nClientButtons |= IN_TURNRIGHT;
 	g_nClientButtons &= ~IN_ANALOGSTEER;
 }
-DECLARE_CMD_STRING(act_right_disable, "-right", "Control command", CV_CLIENTCONTROLS)
+DECLARE_CMD_RENAME(act_right_disable, "-right", "Control command", CV_CLIENTCONTROLS)
 {
 	g_nClientButtons &= ~IN_TURNRIGHT;
 	g_nClientButtons &= ~IN_ANALOGSTEER;

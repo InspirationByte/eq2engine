@@ -17,6 +17,9 @@
     <ClCompile Include="launcher_win.cpp">
       <Filter>Launcher</Filter>
     </ClCompile>
+    <ClCompile Include="..\Core\platform\MessageBox.cpp">
+      <Filter>Launcher</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -27,10 +30,5 @@
     <ResourceCompile Include="Resources.rc">
       <Filter>Launcher</Filter>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\libs\CoreLib.lib" />
-    <Library Include="..\libs\DkCore.lib" />
-    <Library Include="..\libs\FrameworkLib.lib" />
   </ItemGroup>
 </Project>

@@ -281,6 +281,7 @@ void CGameObject::Draw( int nRenderFlags )
 		//m_pModel->GetInstanceData( sizeof(simpleEGFInstance_t) )->
 	}*/
 
+
 	materials->SetMatrix(MATRIXMODE_WORLD, m_worldMatrix);
 
 	materials->SetCullMode((nRenderFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);

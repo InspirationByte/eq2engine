@@ -233,7 +233,7 @@ public:
 
 	const char*	GetFastReloadSound()		{return "ak74.fastreload";} // reload sound script
 
-	int			GetMaxClip() {return 50;}
+	int			GetMaxClip() {return 30;}
 
 	float		GetSpreadingMultiplier()	{return 0.2f;}
 

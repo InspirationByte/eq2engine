@@ -35,13 +35,13 @@ extern bool bLoggingInitialized;
 
 int g_developerMode = 0;
 
-void cc_developer_f( DkList<EqString>* args )
+DECLARE_CONCOMMAND_FN(developer)
 {
 	int newMode = 0;
 
-	for(int i = 0; i < args->numElem(); i++)
+	for(int i = 0; i < CMD_ARGC; i++)
 	{
-		EqString& str = args->ptr()[i];
+		EqString& str = CMD_ARGV(i);
 
 		if( !str.CompareCaseIns("disable"))
 		{
@@ -90,7 +90,7 @@ void cc_developer_f( DkList<EqString>* args )
 	}
 }
 
-ConCommand c_developer("developer",cc_developer_f,"Sets developer modes",CV_CHEAT | CV_UNREGISTERED);
+ConCommand c_developer("developer",CONCOMMAND_FN(developer),"Sets developer modes",CV_CHEAT | CV_UNREGISTERED);
 
 // Default spew
 void DefaultSpewFunc(SpewType_t type,const char* pMsg)
@@ -106,10 +106,9 @@ IEXPORTS void SetSpewFunction(SpewFunc_fn newfunc)
 	g_fnConSpewFunc = newfunc;
 }
 
-//DECLARE_CMD_NONSTATIC(echo,Displays the entered args,0)
-void cc_echo_f(DkList<EqString>* args)
+DECLARE_CONCOMMAND_FN(echo)
 {
-	if(args->numElem() == 0)
+	if(CMD_ARGC == 0)
 	{
 		MsgWarning("Example: echo <text> [additional text]\n");
 		return;
@@ -117,17 +116,17 @@ void cc_echo_f(DkList<EqString>* args)
 
 	EqString outText;
 
-	for(int i = 0; i < args->numElem(); i++)
+	for(int i = 0; i < CMD_ARGC; i++)
 	{
 		char tmp_path[2048];
-		sprintf(tmp_path, "%s ",args->ptr()[i].GetData());
+		sprintf(tmp_path, "%s ",CMD_ARGV(i).c_str());
 
 		outText.Append(tmp_path);
 	}
 
 	Msg("%s\n", outText.GetData());
 }
-ConCommand c_echo("echo",cc_echo_f,"Displays the entered args",CV_UNREGISTERED);
+ConCommand c_echo("echo",CONCOMMAND_FN(echo),"Displays the entered args",CV_UNREGISTERED);
 
 #ifndef DEBUG_NO_OUTPUT
 

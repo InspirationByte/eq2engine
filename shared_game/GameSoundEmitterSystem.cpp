@@ -28,12 +28,9 @@ CSoundEmitterSystem* ses = &s_ses;
 
 DECLARE_CMD(test_scriptsound, "Test the scripted sound",0)
 {
-	if(args)
+	if(CMD_ARGC > 0)
 	{
-		if(!args->numElem())
-			return;
-
-		ses->PrecacheSound( args->ptr()[0].GetData() );
+		ses->PrecacheSound( CMD_ARGV(0).c_str() );
 
 		EmitSound_t ep;
 		ep.nFlags = (EMITSOUND_FLAG_FORCE_CACHED | EMITSOUND_FLAG_FORCE_2D);
@@ -41,11 +38,11 @@ DECLARE_CMD(test_scriptsound, "Test the scripted sound",0)
 		ep.fRadiusMultiplier = 1.0f;
 		ep.fVolume = 1.0f;
 		ep.origin = Vector3D(0);
-		ep.name = (char*)args->ptr()[0].GetData();
+		ep.name = (char*)CMD_ARGV(0).c_str();
 		ep.pObject = NULL;
 
 		if(ses->EmitSound( &ep ) == CHAN_INVALID)
-			MsgError("not valid sound '%s'\n", args->ptr()[0].GetData());
+			MsgError("Cannot play - not valid sound '%s'\n", CMD_ARGV(0).c_str());
 	}
 }
 

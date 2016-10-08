@@ -79,8 +79,19 @@ void CObject_Debris::Spawn()
 	{
 		physobject_t* obj = &m_pModel->GetHWData()->m_physmodel.objects[0].object;
 
-		body->SetFriction( 0.8f );
-		body->SetRestitution( 0.15f );
+		// set friction from surface parameters
+		eqPhysSurfParam_t* surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);
+		if(surfParams)
+		{
+			body->SetFriction( surfParams->friction );
+			body->SetRestitution( surfParams->restitution );
+		}
+		else
+		{
+			body->SetFriction( 0.8f );
+			body->SetRestitution( 0.15f );
+		}
+
 		body->SetMass(obj->mass);
 		body->SetGravity(body->GetGravity() * 3.5f);
 		body->SetDebugName("hubcap");

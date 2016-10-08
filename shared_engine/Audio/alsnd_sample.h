@@ -41,6 +41,8 @@ public:
 
 	int				GetFlags() const {return m_flags;}
 
+	float			GetDuration() const;
+
 private:
 	EqString		m_szName;
 	unsigned int	m_alBuffer;
@@ -52,6 +54,8 @@ private:
 
 	int				m_loopStart;
 	int				m_loopEnd;
+
+	float			m_duration;
 };
 
 //----------------------------------------------------------------------------------------------------------

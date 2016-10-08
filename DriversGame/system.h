@@ -14,6 +14,8 @@
 #include "IFont.h"
 #include "eqParallelJobs.h"
 
+#include "ConCommand.h"
+
 #include "utils/eqtimer.h"
 
 class CGameHost
@@ -72,7 +74,7 @@ public:
 // static
 
 	static void			HostQuitToDesktop();
-	static void 		HostExitCmd(DkList<EqString> *args);
+	static void 		HostExitCmd(CONCOMMAND_ARGUMENTS);
 
 protected:
 

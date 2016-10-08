@@ -87,6 +87,8 @@ public:
 
 	void						SetPackPadding(float padding) { m_padding = padding; }
 
+	void						Cleanup();
+
 protected:
 	DkList<PackerRectangle *>	m_pRectangles;
 

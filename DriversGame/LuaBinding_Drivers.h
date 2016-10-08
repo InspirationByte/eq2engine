@@ -12,6 +12,7 @@
 #include "luabinding/LuaBinding_Engine.h"
 
 bool LuaBinding_InitDriverSyndicateBindings(lua_State* state);
+bool LuaBinding_ConsoleHandler(const char* cmdText);
 
 OOLUA::Script& GetLuaState();
 

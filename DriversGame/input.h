@@ -37,11 +37,11 @@
 extern int g_nClientButtons;
 
 #define DECLARE_ACTION(localName, bitFlag)											\
-	DECLARE_CMD_STRING(act_##localName##_enable ,"+"#localName, "Control command", CV_CLIENTCONTROLS) \
+	DECLARE_CMD_RENAME(act_##localName##_enable ,"+"#localName, "Control command", CV_CLIENTCONTROLS) \
 	{				\
 		g_nClientButtons |= bitFlag;											\
 	}																				\
-	DECLARE_CMD_STRING(act_##localName##_disable ,"-"#localName, "Control command", CV_CLIENTCONTROLS) \
+	DECLARE_CMD_RENAME(act_##localName##_disable ,"-"#localName, "Control command", CV_CLIENTCONTROLS) \
 	{																				\
 		g_nClientButtons &= ~bitFlag;											\
 	}																				\

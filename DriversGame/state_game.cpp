@@ -1320,7 +1320,6 @@ void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )
 		return;
 
 	g_pHost->SetCenterMouseEnable( g_freecam.GetBool() );
-	g_pHost->SetCursorShow( g_pSysConsole->IsVisible() );
 
 	if( m_showMenu )
 		return;

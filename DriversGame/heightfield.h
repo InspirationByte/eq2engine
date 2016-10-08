@@ -13,6 +13,8 @@
 #include "occluderSet.h"
 #include "TextureAtlas.h"
 
+#include "DrvSynDecals.h"
+
 #include "math/DkMath.h"
 
 #ifdef EDITOR
@@ -136,6 +138,15 @@ struct hfieldbatch_t
 	hfieldmaterial_t*			materialBundle;
 };
 
+class btStridingMeshInterface;
+
+struct hfieldPhysicsData_t
+{
+	DkList<CEqCollisionObject*>			m_collisionObjects;
+	DkList<btStridingMeshInterface*>	m_meshes;
+	DkList<hfieldbatch_t*>				m_batches;
+};
+
 class CHeightTileField
 {
 public:
@@ -176,14 +187,14 @@ public:
 
 	void						DebugRender(bool bDrawTiles, float gridHeight);
 
+	void						GetDecalPolygons( decalprimitives_t& polys, const Volume& volume);
+
 public:
 	Vector3D					m_position;		// translation of heightfield
 	int							m_rotation;		// rotation in degrees
 
 	IVector2D					m_regionPos;	// position in 2D array
 	int							m_fieldIdx;		// the hfield index in region's array
-
-	void*						m_userData;
 
 	int							m_levOffset;
 
@@ -193,6 +204,8 @@ public:
 	int							m_sizeh;
 
 	bool						m_hasTransparentSubsets;
+
+	hfieldPhysicsData_t*		m_physData;
 
 protected:
 

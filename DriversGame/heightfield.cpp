@@ -27,7 +27,7 @@ CHeightTileField::CHeightTileField()
 	m_fieldIdx = 0;
 	m_levOffset = 0;
 
-	m_userData = NULL;
+	m_physData = NULL;
 }
 
 CHeightTileField::~CHeightTileField()
@@ -561,7 +561,7 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 
 			//Msg("tile=%d %d sxsy=%d %d\n", x,y, sx, sy);
 
-			hfieldbatch_t* batch = FindBatchInList( m_materials[point.texture]->material, batches, generate_render, sx, sy);
+			hfieldbatch_t* batch = FindBatchInList( m_materials[point.texture]->material, batches, /*generate_render*/true, sx, sy);
 
 			float fTexelX = 0.0f;
 			float fTexelY = 0.0f;
@@ -1034,6 +1034,41 @@ void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
 	raster.scissor = false;
 
 	materials->DrawPrimitivesFFP(PRIM_TRIANGLES, tile_verts.ptr(), tile_verts.numElem(), NULL, color4_white, &blend, &depth, &raster);
+}
+
+void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, const Volume& volume)
+{
+	// we're getting vertex data from physics here
+	if(m_physData == NULL)
+		return;
+
+	for(int i = 0; i < m_physData->m_batches.numElem(); i++)
+	{
+		hfieldbatch_t* batch = m_physData->m_batches[i];
+
+		for(int p = 0; p < batch->indices.numElem(); p += 3)
+		{
+			int i1 = batch->indices[p];
+			int i2 = batch->indices[p+1];
+			int i3 = batch->indices[p+2];
+
+			// add position because physics polys are not moved
+			Vector3D p1 = batch->physicsVerts[i1]+m_position;
+			Vector3D p2 = batch->physicsVerts[i2]+m_position;
+			Vector3D p3 = batch->physicsVerts[i3]+m_position;
+
+			if(!volume.IsTriangleInside(p1,p2,p3))
+				continue;
+
+			int ii1 = polys.verts.addUnique(PFXVertex_t(p1, vec2_zero, vec4_zero), decalVertComparator);
+			int ii2 = polys.verts.addUnique(PFXVertex_t(p2, vec2_zero, vec4_zero), decalVertComparator);
+			int ii3 = polys.verts.addUnique(PFXVertex_t(p3, vec2_zero, vec4_zero), decalVertComparator);
+
+			polys.indices.append(ii1);
+			polys.indices.append(ii2);
+			polys.indices.append(ii3);
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------

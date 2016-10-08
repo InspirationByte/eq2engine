@@ -44,7 +44,7 @@ public:
 
 	virtual int		GetFlags() const = 0;
 
-	// TODO: float	GetDurationInSeconds() const = 0;
+	virtual float	GetDuration() const = 0;
 };
 
 enum ESampleFlags

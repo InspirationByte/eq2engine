@@ -17,14 +17,14 @@ void CoreMessage()
 #endif
 }
 
-void CC_coreversion_f(DkList<EqString> *args)
+DECLARE_CONCOMMAND_FN(coreversion)
 {
 	MsgInfo("\"%s\" %s v%s build %i\n Compilation date: %s %s\n",ENGINE_NAME,ENGINE_DEVSTATE ,ENGINE_VERSION,BUILD_NUMBER ,COMPILE_DATE,COMPILE_TIME);
 }
-ConCommand cmd_coreversion("coreversion",CC_coreversion_f,"Print out full engine version",CV_UNREGISTERED);
+ConCommand cmd_coreversion("coreversion",CONCOMMAND_FN(coreversion),"Print out full engine version",CV_UNREGISTERED);
 
-void CC_info_f(DkList<EqString> *args)
+DECLARE_CONCOMMAND_FN(info)
 {
 	MsgInfo("\"%s\" by Inspiration Byte\nCopyright (C) 2009-2015 Inspiration Byte L.L.C Kazakhstan. Original engine written by Shurumov Ilia\n",ENGINE_NAME);
 }
-ConCommand cmd_info("info",CC_info_f,"Print out engine info",CV_UNREGISTERED);
+ConCommand cmd_info("info",CONCOMMAND_FN(info),"Print out engine info",CV_UNREGISTERED);

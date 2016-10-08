@@ -36,7 +36,7 @@ void CParticleRenderGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO
 	maxQuads = min(r_particleBufferSize.GetInt(), maxQuads);
 
 	// init sprite stuff
-	CSpriteBuilder::Init(bCreateOwnVBO, maxQuads);
+	CSpriteBuilder::Init(maxQuads);
 
 	m_pMaterial = materials->FindMaterial(pszMaterialName, true);
 	m_pMaterial->Ref_Grab();
@@ -94,7 +94,7 @@ void CParticleRenderGroup::Render(int nViewRenderFlags)
 	if(m_numIndices == 0 || m_numVertices == 0)
 		return;
 
-	if(!m_bHasOwnVBO)
+	//if(!m_bHasOwnVBO)
 	{
 		g_pShaderAPI->Reset(STATE_RESET_VBO);
 		g_pShaderAPI->ApplyBuffers();
@@ -107,10 +107,10 @@ void CParticleRenderGroup::Render(int nViewRenderFlags)
 		g_pShaderAPI->SetVertexBuffer(g_pPFXRenderer->m_vertexBuffer, 0);
 		g_pShaderAPI->SetIndexBuffer(g_pPFXRenderer->m_indexBuffer);
 	}
-	else
-	{
+	//else
+	//{
 		// BLAH
-	}
+	//}
 
 	materials->SetCullMode((nViewRenderFlags & EPRFLAG_INVERT_CULL) ? CULL_BACK : CULL_FRONT);
 

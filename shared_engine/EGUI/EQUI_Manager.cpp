@@ -20,10 +20,10 @@
 
 DECLARE_CMD(equi_showpanel, "Shows panel", CV_CHEAT)
 {
-	if(args->numElem() == 0)
+	if(CMD_ARGC == 0)
 		return;
 
-	CEqUI_Panel* pPanel = g_pEqUIManager->FindPanel( args->ptr()[0].GetData() );
+	CEqUI_Panel* pPanel = g_pEqUIManager->FindPanel( CMD_ARGV(0).c_str() );
 
 	if( g_pEqUIManager->GetRootPanel() && (g_pEqUIManager->GetRootPanel() != pPanel) )
 	{

@@ -357,6 +357,15 @@
     <ClCompile Include="ParticleEffects.cpp">
       <Filter>Файлы исходного кода\Game\Effects</Filter>
     </ClCompile>
+    <ClCompile Include="DrvSynDecals.cpp">
+      <Filter>Файлы исходного кода\Game\World</Filter>
+    </ClCompile>
+    <ClCompile Include="ShadowRenderer.cpp">
+      <Filter>Файлы исходного кода\Particles</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\utils\RectanglePacker.cpp">
+      <Filter>Файлы исходного кода\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">
@@ -693,6 +702,15 @@
     </ClInclude>
     <ClInclude Include="ParticleEffects.h">
       <Filter>Файлы исходного кода\Game\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="DrvSynDecals.h">
+      <Filter>Файлы исходного кода\Game\World</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadowRenderer.h">
+      <Filter>Файлы исходного кода\Particles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\utils\RectanglePacker.h">
+      <Filter>Файлы исходного кода\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

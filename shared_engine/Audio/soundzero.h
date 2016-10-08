@@ -14,7 +14,8 @@
 class DkSoundSampleZero : public ISoundSample
 {
 public:
-	int			GetFlags() const;
+	int			GetFlags() const {return SAMPLE_FLAG_REMOVEWHENSTOPPED;}
+	float		GetDuration() const {return 0.0f;}
 };
 
 class DkSoundEmitterZero : public ISoundEmitter

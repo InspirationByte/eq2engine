@@ -76,6 +76,7 @@ static ColorRGBA s_conSelectedTextColor = ColorRGBA(0.2f,0.2f,0.2f,1);
 static ColorRGBA s_conInputTextColor = ColorRGBA(0.7f,0.7f,0.6f,1);
 static ColorRGBA s_conHelpTextColor = ColorRGBA(0.7f,0.7f,0.8f,1);
 
+/*
 void AutoCompletionCheckExtensionDir(const char* extension, const char *dir, bool stripExtensions, DkList<EqString>* strings)
 {
 	EqString dirname = dir + _Es(extension);
@@ -107,102 +108,25 @@ void AutoCompletionCheckExtensionDir(const char* extension, const char *dir, boo
 	}
 #endif // _WIN32
 }
+*/
 
-void CC_AutoCompletinon_AddCommandBase(DkList<EqString> *args)
+DECLARE_CMD(autocompletion_addcommandbase,"Adds autocompletion variants", CV_INVISIBLE)
 {
-	if(!args)
+	if(CMD_ARGC == 0)
 	{
-		Msg("Usage: autocompletion_addcommandbase <console command/variable> <arguments>\n use $cvarlist$ or $cmdlist$ as arguments");
+		Msg("Usage: autocompletion_addcommandbase <console command/variable> [argument1,argument2,...]\n");
 		return;
 	}
 
-	if(args->numElem() > 1)
-	{
-		AutoCompletionNode_s* pNode = new AutoCompletionNode_s;
-		pNode->cmd_name = args->ptr()[0];
+	AutoCompletionNode_s* pNode = new AutoCompletionNode_s;
+	pNode->cmd_name = CMD_ARGV(0);
 
-		bool isGeneric = true;
+	xstrsplit(CMD_ARGV(1).c_str(),",",pNode->args);
 
-		if(!stricmp(args->ptr()[1].GetData(),ARG_TYPE_CMDLIST_STRING))
-		{
-			pNode->argumentType = ARG_TYPE_CMDLIST;
-			isGeneric = false;
-		}
-
-		if(!stricmp(args->ptr()[1].GetData(), ARG_TYPE_CVARLIST_STRING))
-		{
-			pNode->argumentType = ARG_TYPE_CVARLIST;
-			isGeneric = false;
-		}
-
-#ifdef _WIN32
-
-		if(!stricmp(args->ptr()[1].GetData(), ARG_TYPE_MAPLIST_STRING))
-		{
-			pNode->argumentType = ARG_TYPE_MAPLIST;
-			isGeneric = false;
-
-			EqString dirname = g_fileSystem->GetCurrentGameDirectory() + _Es("/maps/");
-			//AutoCompletionCheckExtensionDir("*.eqbsp",dirname.getData(),true,&pNode->args);
-
-			EqString level_dir(g_fileSystem->GetCurrentGameDirectory());
-			level_dir = level_dir + _Es("/Worlds/*.*");
-
-			WIN32_FIND_DATA wfd;
-			HANDLE hFile;
-
-			hFile = FindFirstFile(level_dir.GetData(), &wfd);
-			if(hFile != NULL)
-			{
-				while(1)
-				{
-					if(!FindNextFile(hFile, &wfd))
-						break;
-
-					EqString filename = wfd.cFileName;
-
-					if((wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && filename != ".." && filename != ".")
-					{
-						// check level compilation
-						if(!g_fileSystem->FileExist(("worlds/" + filename + "/world.build").GetData()))
-							continue;
-
-						pNode->args.append(filename);
-
-					}
-				}
-
-				FindClose(hFile);
-			}
-		}
-#endif // _WIN32
-
-		if(!stricmp(args->ptr()[1].GetData(), ARG_TYPE_CFGLIST_STRING))
-		{
-			pNode->argumentType = ARG_TYPE_CFGLIST;
-			isGeneric = false;
-
-			EqString dirname = g_fileSystem->GetCurrentGameDirectory() + _Es("/cfg/");
-			AutoCompletionCheckExtensionDir("*.cfg",dirname.GetData(), false, &pNode->args);
-
-			dirname = g_fileSystem->GetCurrentDataDirectory() + _Es("/cfg/");
-			AutoCompletionCheckExtensionDir("*.cfg",dirname.GetData(), false, &pNode->args);
-
-			dirname = "cfg/";
-			AutoCompletionCheckExtensionDir("*.cfg",dirname.GetData(), false, &pNode->args);
-		}
-
-		if(isGeneric)
-		{
-			xstrsplit(args->ptr()[1].GetData(),",",pNode->args);
-		}
-
-		g_pSysConsole->AddAutoCompletionNode(pNode);
-	}
+	g_pSysConsole->AddAutoCompletionNode(pNode);
 }
-ConCommand cc_autocompletion_addbase("autocompletion_addcommandbase",CC_AutoCompletinon_AddCommandBase,"Add autocompletion descriptor to cvar/command",CV_INVISIBLE);
 
-void CC_Help_F(DkList<EqString> *args)
+DECLARE_CMD(help,"Display the help", 0)
 {
 	MsgInfo("Type \"cvarlist\" to show available console variables\nType \"cmdlist\" to show aviable console commands\nAlso you can press 'Tab' key to find commands by your typing\n");
 	Msg("Hold Shift and use arrows for selection\n");
@@ -212,7 +136,6 @@ void CC_Help_F(DkList<EqString> *args)
 	Msg("Ctrl + A - Select All\n");
 	Msg(" \nUse 'PageUp', 'PageDown', 'Home' and 'End' keys to navigate in console\n");
 }
-ConCommand cc_help("help",CC_Help_F,"Display the help");
 
 bool IsInRectangle(int posX, int posY,int rectX,int rectY,int rectW,int rectH)
 {
@@ -243,11 +166,10 @@ CEqSysConsole::CEqSysConsole()
 	m_logScrollPosition = 0;
 	con_histIndex = 0;
 	con_valueindex = 0;
-	con_fastfind_selection_index = -1;
-	con_fastfind_selection_autocompletion_index = -1;
+	con_fastfind_cmdbase = NULL;
 	con_fastfind_selection_autocompletion_val_index = -1;
-	con_fastfind_isbeingselected = false;
-	con_fastfind_isbeingselected_autoc = false;
+
+	m_alternateHandler = NULL;
 }
 
 void CEqSysConsole::Initialize()
@@ -317,8 +239,7 @@ void DrawAlphaFilledRectangle(Rectangle_t &rect, ColorRGBA &color1, ColorRGBA &c
 
 void CEqSysConsole::DrawFastFind(float x, float y, float w)
 {
-	con_fastfind_isbeingselected = false;
-	con_fastfind_selection_index = -1;
+	con_fastfind_cmdbase = NULL;
 
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
@@ -330,22 +251,23 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 
 	if(con_Text.Length() > 0 && con_fastfind.GetBool())
 	{
-		const DkList<ConCommandBase*> *base = g_sysConsole->GetAllCommands();
+		const DkList<ConCommandBase*>* baseList = g_sysConsole->GetAllCommands();
 
 		int enumcount = 0;
 		int ff_numelems = 0;
 		int enumcount2 = 0;
 
-		for(int i = 0; i < base->numElem();i++)
+		for(int i = 0; i < baseList->numElem();i++)
 		{
-			EqString conVarName(base->ptr()[i]->GetName());
+			ConCommandBase* cmdBase = baseList->ptr()[i];
+
+			EqString conVarName(cmdBase->GetName());
 
 			if(conVarName.Find(con_Text.c_str()) != -1)
 			{
-				//if(enumcount < con_fastfind_count.GetInt())
-					ff_numelems++;
+				ff_numelems++;
 
-				if(base->ptr()[i]->GetFlags() & CV_INVISIBLE)
+				if(cmdBase->GetFlags() & CV_INVISIBLE)
 					continue;
 
 				enumcount++;
@@ -424,26 +346,20 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 			return;
 		}
 
-		for(int i = 0; i < base->numElem();i++)
+		for(int i = 0; i < baseList->numElem();i++)
 		{
-			EqString conVarName = base->ptr()[i]->GetName();
+			ConCommandBase* cmdBase = baseList->ptr()[i];
+
+			EqString conVarName = cmdBase->GetName();
 
 			if(conVarName.Find( con_Text.GetData() ) != -1)
 			{
-				bool bHasAutocompletion = false;
-				for(int j = 0;j < m_hAutoCompletionNodes.numElem();j++)
-				{
-					if(!stricmp(base->ptr()[i]->GetName(),m_hAutoCompletionNodes[j]->cmd_name.GetData()))
-					{
-						bHasAutocompletion = true;
-						break;
-					}
-				}
+				bool bHasAutocompletion = cmdBase->IsConCommand() ? ((ConCommand*)cmdBase)->HasVariants() : false;
 
 				if(enumcount2 >= con_fastfind_count.GetInt())
 					break;
 
-				if(base->ptr()[i]->GetFlags() & CV_INVISIBLE)
+				if(cmdBase->GetFlags() & CV_INVISIBLE)
 					continue;
 
 				float textYPos = (y + enumcount2 * m_font->GetLineHeight()) + 4;
@@ -452,7 +368,7 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 
 				bool bSelected = false;
 
-				int clen = strlen(base->ptr()[i]->GetName());
+				int clen = strlen(cmdBase->GetName());
 
 				if(IsInRectangle(m_mousePosition.x,m_mousePosition.y,x,textYPos+2,w-x,12))
 				{
@@ -465,14 +381,11 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 
 					bSelected = true;
 
-					con_fastfind_isbeingselected = true;
-					con_fastfind_isbeingselected_autoc = false;
-
-					con_fastfind_selection_index = i;
+					con_fastfind_cmdbase = cmdBase;
 				}
 
 				ColorRGBA text_color = Vector4D(0.7f,0.7f,0,1);
-				if(base->ptr()[i]->IsConCommand())
+				if(cmdBase->IsConCommand())
 					text_color = Vector4D(0.7f,0.7f,0.8f,1);
 
 				Vector4D selTextColor = bSelected ? Vector4D(0.1f,0.1f,0,1) : text_color;
@@ -481,38 +394,49 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 				variantsTextParams.textColor = selTextColor;
 				variantsTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
 
+				// find autocompletion
+				if(!bHasAutocompletion)
+				{
+					for(int j = 0;j < m_hAutoCompletionNodes.numElem();j++)
+					{
+						if(!stricmp(conVarName.c_str(),m_hAutoCompletionNodes[j]->cmd_name.GetData()))
+						{
+							bHasAutocompletion = true;
+							break;
+						}
+					}
+				}
+
 				char* str = NULL;
 
-				if(base->ptr()[i]->IsConVar())
+				if(cmdBase->IsConVar())
 				{
-					ConVar *cv = (ConVar*)base->ptr()[i];
+					ConVar *cv = (ConVar*)cmdBase;
 
 					if(bHasAutocompletion)
 						str = varargs("%s [%s] ->", cv->GetName(), cv->GetString());
 					else
-						str = varargs("%s [%s]",cv->GetName(), cv->GetString());
+						str = varargs("%s [%s]", cv->GetName(), cv->GetString());
 				}
 				else
 				{
 					if(bHasAutocompletion)
-						str = varargs("%s () ->",base->ptr()[i]->GetName());
+						str = varargs("%s () ->",cmdBase->GetName());
 					else
-						str = varargs("%s ()",base->ptr()[i]->GetName());
+						str = varargs("%s ()",cmdBase->GetName());
 				}
 
 				m_font->RenderText( str, Vector2D(x+5, textYPos),variantsTextParams);
 
-				const char* cvarName = base->ptr()[i]->GetName();
-
-				const char* cstr = xstristr(cvarName, con_Text.GetData());
+				const char* cstr = xstristr(conVarName.c_str(), con_Text.GetData());
 
 				if(cstr)
 				{
-					int ofs = cstr - base->ptr()[i]->GetName();
+					int ofs = cstr - conVarName.c_str();
 					int len = con_Text.Length();
 
-					float lookupStrStart = m_font->GetStringWidth(cvarName, variantsTextParams.styleFlag, ofs);
-					float lookupStrEnd = lookupStrStart + m_font->GetStringWidth(cvarName+ofs, variantsTextParams.styleFlag, len);
+					float lookupStrStart = m_font->GetStringWidth(conVarName.c_str(), variantsTextParams.styleFlag, ofs);
+					float lookupStrEnd = lookupStrStart + m_font->GetStringWidth(conVarName.c_str()+ofs, variantsTextParams.styleFlag, len);
 
 					Vertex2D_t rect[] = { MAKETEXQUAD(x+5 + lookupStrStart, textYPos-2, x+5 + lookupStrEnd, textYPos+12, 0) };
 
@@ -528,8 +452,7 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 
 int CEqSysConsole::DrawAutoCompletion(float x, float y, float w)
 {
-	con_fastfind_isbeingselected_autoc = false;
-	con_fastfind_selection_autocompletion_index = -1;
+	autocompletionList.clear();
 	con_fastfind_selection_autocompletion_val_index = -1;
 
 	EqString name(con_Text);
@@ -545,34 +468,47 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w)
 	{
 		int max_string_length = 35;
 
-		const DkList<ConCommandBase*> *base = g_sysConsole->GetAllCommands();
+		const DkList<ConCommandBase*>* baseList = g_sysConsole->GetAllCommands();
 
-		for(int i = 0; i < base->numElem();i++)
+		for(int i = 0; i < baseList->numElem();i++)
 		{
-			if(!stricmp((char*)base->ptr()[i]->GetName(),name.GetData()))
-			{
-				if(enumcount >= con_fastfind_count.GetInt())
-					break;
+			ConCommandBase* cmdBase = baseList->ptr()[i];
 
-				if(base->ptr()[i]->GetFlags() & CV_INVISIBLE)
+			if(!stricmp((char*)cmdBase->GetName(),name.GetData()))
+			{
+				if(cmdBase->GetFlags() & CV_INVISIBLE)
 					continue;
+
+				con_fastfind_cmdbase = cmdBase;
 
 				for(int j = 0;j < m_hAutoCompletionNodes.numElem();j++)
 				{
-					if(stricmp(base->ptr()[i]->GetName(),m_hAutoCompletionNodes[j]->cmd_name.GetData()))
+					AutoCompletionNode_s* node = m_hAutoCompletionNodes[j];
+
+					if(stricmp(cmdBase->GetName(),node->cmd_name.GetData()))
 						continue;
 
-					for(int k = 0;k < m_hAutoCompletionNodes[j]->args.numElem();k++)
-					{
-						enumcount++;
-						int str_l = strlen(m_hAutoCompletionNodes[j]->args[k].GetData());
+					for(int k = 0;k < node->args.numElem();k++)
+						autocompletionList.append(node->args[k]);
 
-						if(max_string_length < str_l)
-							max_string_length = str_l;
-					}
+					break;
 				}
+
+				break;
 			}
 		}
+
+		if( con_fastfind_cmdbase->IsConCommand() && ((ConCommand*)con_fastfind_cmdbase)->HasVariants() )
+		{
+			((ConCommand*)con_fastfind_cmdbase)->GetVariants(autocompletionList, "");
+		}
+
+		for(int i = 0; i < autocompletionList.numElem(); i++)
+			max_string_length = max(max_string_length, autocompletionList[i].Length());
+
+		int displayCount = min(autocompletionList.numElem(), con_fastfind_count.GetInt());
+
+		enumcount = displayCount;
 
 		if(enumcount <= 0)
 			return 0;
@@ -589,56 +525,34 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w)
 
 		m_font->RenderText("Possible variants: ", Vector2D(x+5,y+2), variantsTextParams);
 
-
-
-		for(int i = 0; i < base->numElem();i++)
+		for(int i = 0; i < displayCount; i++)
 		{
-			if(!stricmp((char*)base->ptr()[i]->GetName(),name.GetData()))
+			float textYPos = (y + enumcount2*m_font->GetLineHeight());
+
+			enumcount2++;
+
+			bool bSelected = false;
+
+			if(IsInRectangle(m_mousePosition.x,m_mousePosition.y,
+							x,textYPos,(max_string_length*FONT_WIDE)-x,12))
 			{
-				if(enumcount2 >= con_fastfind_count.GetInt())
-					break;
+				Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos-4,x+max_string_length*FONT_WIDE, textYPos + 14 , 1) };
 
-				if(base->ptr()[i]->GetFlags() & CV_INVISIBLE)
-					continue;
+				// Cancel textures
+				g_pShaderAPI->Reset(STATE_RESET_TEX);
 
-				for(int j = 0;j < m_hAutoCompletionNodes.numElem();j++)
-				{
-					if(stricmp(base->ptr()[i]->GetName(),m_hAutoCompletionNodes[j]->cmd_name.GetData()))
-						continue;
+				// Draw the rectangle
+				materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,selrect,elementsOf(selrect));
 
-					for(int k = 0;k < m_hAutoCompletionNodes[j]->args.numElem();k++)
-					{
-						float textYPos = (y + enumcount2*m_font->GetLineHeight());
+				bSelected = true;
 
-						enumcount2++;
-
-						bool bSelected = false;
-
-						if(IsInRectangle(m_mousePosition.x,m_mousePosition.y,
-										x,textYPos,(max_string_length*FONT_WIDE)-x,12))
-						{
-							Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos-4,x+max_string_length*FONT_WIDE, textYPos + 14 , 1) };
-
-							// Cancel textures
-							g_pShaderAPI->Reset(STATE_RESET_TEX);
-
-							// Draw the rectangle
-							materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,selrect,elementsOf(selrect));
-
-							bSelected = true;
-
-							con_fastfind_isbeingselected_autoc = true;
-							con_fastfind_selection_autocompletion_index = j;
-							con_fastfind_selection_autocompletion_val_index = k;
-						}
-
-						Vector4D selTextColor = bSelected ? s_conSelectedTextColor : s_conTextColor;
-
-						variantsTextParams.textColor = selTextColor;
-						m_font->RenderText(m_hAutoCompletionNodes[j]->args[k].GetData(), Vector2D(x+5,textYPos), variantsTextParams);
-					}
-				}
+				con_fastfind_selection_autocompletion_val_index = i;
 			}
+
+			Vector4D selTextColor = bSelected ? s_conSelectedTextColor : s_conTextColor;
+
+			variantsTextParams.textColor = selTextColor;
+			m_font->RenderText(autocompletionList[i].c_str(), Vector2D(x+5,textYPos), variantsTextParams);
 		}
 	}
 
@@ -856,44 +770,21 @@ bool CEqSysConsole::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 	{
 		if (Button == MOU_B1)
 		{
-			if(m_visible)
+			if(!con_fastfind_cmdbase)
+				return true;
+
+			int autocompletion_sel = con_fastfind_selection_autocompletion_val_index;
+
+			if(autocompletion_sel != -1)
 			{
-				if(con_fastfind_isbeingselected && con_fastfind_selection_index != -1)
-				{
-					const DkList<ConCommandBase*> *base = g_sysConsole->GetAllCommands();
-					if(con_fastfind_selection_index < base->numElem())
-					{
-						bool bHasAutocompletion = false;
-						for(int j = 0;j < m_hAutoCompletionNodes.numElem();j++)
-						{
-							if(!stricmp(base->ptr()[con_fastfind_selection_index]->GetName(),m_hAutoCompletionNodes[j]->cmd_name.GetData()))
-							{
-								bHasAutocompletion = true;
-								break;
-							}
-						}
-
-						con_Text = base->ptr()[con_fastfind_selection_index]->GetName();
-
-						if(!bHasAutocompletion)
-							con_Text = con_Text + _Es(" ");
-
-						m_cursorPos = con_Text.Length();
-					}
-				}
-
-				if(con_fastfind_isbeingselected_autoc)
-				{
-					if(con_fastfind_selection_autocompletion_index < m_hAutoCompletionNodes.numElem())
-					{
-						int ac_ind = con_fastfind_selection_autocompletion_index;
-						int val_ind = con_fastfind_selection_autocompletion_val_index;
-
-						con_Text = m_hAutoCompletionNodes[ac_ind]->cmd_name + _Es(" \"") + m_hAutoCompletionNodes[ac_ind]->args[val_ind] + _Es("\"");
-						m_cursorPos = con_Text.Length();
-					}
-				}
+				con_Text = con_fastfind_cmdbase->GetName() + _Es(" \"") + autocompletionList[autocompletion_sel] + _Es("\"");
 			}
+			else
+			{
+				con_Text = con_fastfind_cmdbase->GetName();
+			}
+
+			m_cursorPos = con_Text.Length();
 		}
 	}
 
@@ -1122,11 +1013,30 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 					MsgInfo("> %s\n",con_Text.GetData());
 
 					g_sysConsole->ResetCounter();
-					g_sysConsole->SetCommandBuffer((char*)con_Text.GetData());
+					g_sysConsole->SetCommandBuffer(con_Text.GetData());
 
-					bool stat = g_sysConsole->ExecuteCommandBuffer();
-					if(!stat)
-						Msg("Unknown command or variable '%s'\n",con_Text.GetData());
+					bool execStatus = g_sysConsole->ExecuteCommandBuffer(-1, m_alternateHandler != NULL);
+
+					DkList<EqString>& failedCmds = g_sysConsole->GetFailedCommands();
+
+					bool hasFailed = failedCmds.numElem() > 0;
+
+					if( (execStatus == false || hasFailed) && m_alternateHandler != NULL)
+					{
+						hasFailed = !(*m_alternateHandler)(con_Text.c_str());
+						execStatus = true;
+					}
+
+					if(!execStatus)
+						MsgError("Failed to execute '%s'\n",con_Text.GetData());
+
+					if(hasFailed)
+					{
+						for(int i = 0; i < failedCmds.numElem(); i++)
+						{
+							MsgError( "Unknown command or variable: '%s'\n", failedCmds[i].c_str() );
+						}
+					}
 
 					// Compare the last command with current and add history if needs
 					if(commandHistory.numElem() > 0)
@@ -1140,6 +1050,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 					{
 						commandHistory.append(con_Text);
 					}
+
 					con_histIndex = commandHistory.numElem() - 1;
 
 				}

@@ -65,6 +65,21 @@ float CViewParams::GetLODScaledDistFrom( const Vector3D& position )
 
 	return fLodDistScale * length(position-m_vecOrigin);
 }
+
+void CViewParams::GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, float height, float zNear, float zFar, bool orthographic)
+{
+	Vector3D vRadianRotation = VDEG2RAD(m_vecAngles);
+
+	if(orthographic)
+		proj = orthoMatrixR(width*-m_fFOV, width*m_fFOV, height*-m_fFOV, height*m_fFOV, zNear, zFar);
+	else
+		proj = perspectiveMatrixY(DEG2RAD(m_fFOV), width, height, zNear, zFar);
+
+	view = rotateZXY4(-vRadianRotation.x,-vRadianRotation.y,-vRadianRotation.z);
+
+	view.translate(-m_vecOrigin);
+}
+
 /*
 void CViewParams::BuildViewMatrices(float fNear, float fFar, int width, int height, bool orthographic, bool cubemap)
 {

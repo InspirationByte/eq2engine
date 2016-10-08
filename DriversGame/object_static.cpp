@@ -74,6 +74,11 @@ void CObject_Static::Spawn()
 		m_pPhysicsObject->SetContents( OBJECTCONTENTS_SOLID_OBJECTS );
 		m_pPhysicsObject->SetCollideMask( 0 );
 
+		// set friction from surface parameters
+		eqPhysSurfParam_t* surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);
+		m_pPhysicsObject->SetFriction( surfParams->friction );
+		m_pPhysicsObject->SetRestitution( surfParams->restitution );
+
 		g_pPhysics->m_physics.AddStaticObject( m_pPhysicsObject );
 
 		m_bbox = m_pPhysicsObject->m_aabb_transformed;

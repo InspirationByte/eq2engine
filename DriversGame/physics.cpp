@@ -26,13 +26,6 @@ ConVar ph_singleiter("ph_singleiter", "0");
 
 using namespace EqBulletUtils;
 
-struct physicshfield_t
-{
-	DkList<CEqCollisionObject*>			m_collisionObjects;
-	DkList<btStridingMeshInterface*>	m_meshes;
-	DkList<hfieldbatch_t*>				m_batches;
-};
-
 #define PH_GRAVITY -9.81
 
 // high frequency object wrapper
@@ -237,13 +230,13 @@ CEqBulletIndexedMesh* CreateBulletTriangleMeshFromBatch(hfieldbatch_t* batch)
 
 void CPhysicsEngine::AddHeightField( CHeightTileField* pField )
 {
-	if(pField->m_userData != NULL)
+	if(pField->m_physData != NULL)
 	{
 		ASSERTMSG(false, "AddHeightField: please remove first");
 		return;
 	}
 
-	physicshfield_t* fieldInfo = new physicshfield_t;
+	hfieldPhysicsData_t* fieldInfo = new hfieldPhysicsData_t;
 
 	pField->Generate(false, fieldInfo->m_batches);
 
@@ -313,7 +306,7 @@ void CPhysicsEngine::AddHeightField( CHeightTileField* pField )
 	}
 
 	// set user data and add
-	pField->m_userData = fieldInfo;
+	pField->m_physData = fieldInfo;
 
 	mutex.Lock();
 	m_heightFields.append(pField);
@@ -341,9 +334,9 @@ void CPhysicsEngine::RemoveHeightField( CHeightTileField* pPhysObject )
 {
     Threading::CEqMutex& mutex = Threading::GetGlobalMutex(Threading::MUTEXPURPOSE_LEVEL_LOADER);
 
-	if( pPhysObject->m_userData )
+	if( pPhysObject->m_physData )
 	{
-		physicshfield_t* fieldInfo = (physicshfield_t*)pPhysObject->m_userData;
+		hfieldPhysicsData_t* fieldInfo = pPhysObject->m_physData;
 
 		mutex.Lock();
 
@@ -367,7 +360,7 @@ void CPhysicsEngine::RemoveHeightField( CHeightTileField* pPhysObject )
 			delete fieldInfo->m_batches[i];
 
 		delete fieldInfo;
-		pPhysObject->m_userData = NULL;
+		pPhysObject->m_physData = NULL;
 	}
 
 	m_heightFields.fastRemove( pPhysObject );

@@ -2492,14 +2492,6 @@ void CViewRenderer::SetDrawMode(ViewDrawMode_e mode)
 			g_pShaderAPI->ChangeRenderTarget(m_pShadowMaps[nLightType][0], m_nCubeFaceId, m_pShadowMapDepth[m_nCubeFaceId]);
 #else
 			SetupShadowDepth(nLightType, 0, m_nCubeFaceId);
-			
-			/*
-			// attach shadowmap texture
-			g_pShaderAPI->ChangeRenderTarget(m_pShadowMaps[nLightType][0], m_nCubeFaceId, m_pShadowMapDepth[nLightType]);
-
-			// clear it
-			g_pShaderAPI->Clear(true,true,false, ColorRGBA(0.0f));
-			*/
 #endif // USE_SINGLE_CUBEMAPRENDER
 		}
 		else
@@ -2510,11 +2502,6 @@ void CViewRenderer::SetDrawMode(ViewDrawMode_e mode)
 			/*
 			// attach shadowmap texture TODO: sun index
 			g_pShaderAPI->ChangeRenderTarget(m_pShadowMaps[nLightType][m_nCubeFaceId], 0, m_pShadowMapDepth[nLightType]);
-
-			ColorRGBA clearColor(0.0f);
-
-			// clear it
-			g_pShaderAPI->Clear(true,true,false, clearColor);
 			*/
 		}
 	}
@@ -2542,16 +2529,19 @@ void CViewRenderer::SetupShadowDepth(int nLightType, int sunIndex, int cubeIndex
 	if(g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
 	{
 		g_pShaderAPI->ChangeRenderTarget(m_pShadowMaps[nLightType][sunIndex], cubeIndex, m_pShadowMapDepth[nLightType]);
+
+		// clear them
+		g_pShaderAPI->Clear(true, true, false, vec4_zero, 1.0f);
 	}
 	else
 	{
 		// attach shadowmap texture
 		g_pShaderAPI->ChangeRenderTargets(NULL, 0, NULL, m_pShadowMaps[nLightType][sunIndex], /*cubeIndex*/POSITIVE_Y);
+
+		// clear it
+		g_pShaderAPI->Clear(false, true, false, vec4_zero, 1.0f);
 	}
 #endif
-
-	// clear it
-	g_pShaderAPI->Clear(false, true, false, vec4_zero, 1.0f);
 }
 
 ViewDrawMode_e CViewRenderer::GetDrawMode()

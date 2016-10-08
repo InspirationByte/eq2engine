@@ -76,7 +76,7 @@ public:
 	void					WriteBindings(IFile* cfgFile);
 
 	// binds a command with arguments to known key
-	void					BindKey( char* pszCommand, char *pszArgs, const char* pszKeyStr );
+	void					BindKey( const char* pszCommand, const char *pszArgs, const char* pszKeyStr );
 
 	// returns binding
 	binding_t*				LookupBinding(uint keyIdent);

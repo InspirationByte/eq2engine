@@ -12,12 +12,6 @@
 #include "soundzero.h"
 
 DkSoundSampleZero zeroSample;
-//DkSoundEmitterZero zeroEmitter;
-
-int DkSoundSampleZero::GetFlags() const
-{
-	return SAMPLE_FLAG_REMOVEWHENSTOPPED;
-}
 
 void DkSoundEmitterZero::SetPosition(Vector3D &position)
 {
