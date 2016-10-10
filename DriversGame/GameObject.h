@@ -231,6 +231,8 @@ public:
 	virtual	bool				CheckVisibility( const occludingFrustum_t& frustum ) const;
 	virtual void				Draw( int nRenderFlags );
 
+	ubyte						GetBodyGroups() const {return m_bodyGroupFlags;}
+
 	void						SetUserData(void* dataPtr);
 	void*						GetUserData() const;
 

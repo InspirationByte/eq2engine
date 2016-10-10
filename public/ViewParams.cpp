@@ -80,6 +80,17 @@ void CViewParams::GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, flo
 	view.translate(-m_vecOrigin);
 }
 
+void CViewParams::GetMatricesOrtho(Matrix4x4& proj, Matrix4x4& view, Rectangle_t rect, float zNear, float zFar)
+{
+	Vector3D vRadianRotation = VDEG2RAD(m_vecAngles);
+
+	proj = orthoMatrixR(rect.vleftTop.x, rect.vrightBottom.x, rect.vleftTop.y, rect.vrightBottom.y , zNear, zFar);
+
+	view = rotateZXY4(-vRadianRotation.x,-vRadianRotation.y,-vRadianRotation.z);
+
+	view.translate(-m_vecOrigin);
+}
+
 /*
 void CViewParams::BuildViewMatrices(float fNear, float fFar, int width, int height, bool orthographic, bool cubemap)
 {

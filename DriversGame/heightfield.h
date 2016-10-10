@@ -130,6 +130,8 @@ struct hfieldbatch_t
 	DkList<Vector3D>			physicsVerts;
 	DkList<uint32>				indices;
 
+	BoundingBox					bbox;
+
 	int							sx;
 	int							sy;
 
@@ -139,6 +141,7 @@ struct hfieldbatch_t
 };
 
 class btStridingMeshInterface;
+class CEqCollisionObject;
 
 struct hfieldPhysicsData_t
 {

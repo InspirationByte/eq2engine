@@ -24,4 +24,6 @@ inline bool decalVertComparator(const PFXVertex_t& a, const PFXVertex_t& b)
 	return a.point == b.point;
 }
 
+void DecalClipAndTexture(decalprimitives_t* decal, const Volume& clipVolume, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, float alpha = 1.0f);
+
 #endif // DRVSYNDECALS_H

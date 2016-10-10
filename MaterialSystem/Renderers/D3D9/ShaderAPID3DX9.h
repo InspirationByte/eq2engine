@@ -135,14 +135,6 @@ public:
 
 	// Unload the texture and free the memory
 	void						FreeTexture(ITexture* pTexture);
-	
-	// Create procedural texture such as error texture, etc.
-	ITexture*					CreateProceduralTexture(const char* pszName,
-														int width, int height, 
-														const unsigned char* data, int nDataSize, 
-														ETextureFormat nFormat, 
-														AddressMode_e textureAddress = ADDRESSMODE_WRAP, 
-														int nFlags = 0);
 
 	// It will add new rendertarget
 	ITexture*					CreateRenderTarget(	int width, int height,
@@ -204,8 +196,8 @@ public:
 	// Copy render target to texture
 	void						CopyFramebufferToTexture(ITexture* pTargetTexture);
 
-	// Copy render target to texture with resizing
-	//void						CopyFramebufferToTextureEx(ITexture* pTargetTexture,int srcX0 = -1, int srcY0 = -1,int srcX1 = -1, int srcY1 = -1,int destX0 = -1, int destY0 = -1,int destX1 = -1, int destY1 = -1);
+	// Copy render target to texture
+	void						CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect = NULL, IRectangle* destRect = NULL);
 
 	// Changes render target (MRT)
 	void						ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, int* nCubemapFaces = NULL, ITexture* pDepthTarget = NULL, int nDepthSlice = 0);

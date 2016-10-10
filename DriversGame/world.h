@@ -20,6 +20,8 @@
 #ifdef EDITOR
 #include "../DriversEditor/level_generator.h"
 #include "../DriversEditor/EditorLevel.h"
+#else
+#include "ShadowRenderer.h"
 #endif // EDITOR
 
 class CBillboardList;
@@ -79,6 +81,7 @@ struct worldEnvConfig_t
 
 	ColorRGB		sunColor;
 	ColorRGB		ambientColor;
+	ColorRGBA		shadowColor;
 
 	float			lensIntensity;
 
@@ -261,6 +264,10 @@ public:
 	Matrix4x4						m_matrices[4];
 
 	Volume							m_frustum;
+
+#ifndef EDITOR
+	CShadowRenderer					m_shadowRenderer;
+#endif // EDITOR
 };
 
 extern CPredictableRandomGenerator	g_replayRandom;

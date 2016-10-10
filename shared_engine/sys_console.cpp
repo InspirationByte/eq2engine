@@ -781,7 +781,7 @@ bool CEqSysConsole::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 			}
 			else
 			{
-				con_Text = con_fastfind_cmdbase->GetName();
+				con_Text = con_fastfind_cmdbase->GetName() + _Es(" ");
 			}
 
 			m_cursorPos = con_Text.Length();

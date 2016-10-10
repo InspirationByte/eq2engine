@@ -166,6 +166,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="ParticleEffects.cpp" />
+    <ClCompile Include="Shader_Shadow.cpp" />
+    <ClCompile Include="Shader_ShadowBuild.cpp" />
     <ClCompile Include="ShadowRenderer.cpp" />
     <ClCompile Include="state_lobby.cpp" />
     <ClCompile Include="object_scripted.cpp" />

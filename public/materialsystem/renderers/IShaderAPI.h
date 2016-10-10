@@ -285,8 +285,8 @@ public:
 	// blits the current framebuffer to texture TODO: need flags such as depth copy, etc
 	virtual void				CopyFramebufferToTexture(ITexture* pTargetTexture) = 0;
 
-	// blits the current framebuffer to texture (OpenGL usage only)
-	//virtual void				CopyFramebufferToTextureEx(ITexture* pTargetTexture,int srcX0 = -1, int srcY0 = -1,int srcX1 = -1, int srcY1 = -1,int destX0 = -1, int destY0 = -1,int destX1 = -1, int destY1 = -1) = 0;
+	// Copy render target to texture
+	virtual void				CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect = NULL, IRectangle* destRect = NULL) = 0;
 
 	// changes the rendertarget
 	virtual void				ChangeRenderTarget( ITexture* pRenderTarget, int nCubemapFace = 0, ITexture* pDepthTarget = NULL, int nDepthSlice = 0 ) = 0;

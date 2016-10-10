@@ -774,6 +774,7 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 						vert.border = 0.0f;
 
 					vindxs[i] = batch->verts.addUnique(vert,hfieldVertexComparator);
+					batch->bbox.AddVertex(vert.position);
 				}
 
 				if(!isEmpty)
@@ -857,13 +858,14 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 							texCoord2 = Vector2D(dxv[tv2]+0.5f, dyv[tv2]+0.5f) + edgeTexDir*fTexY2 + fTexelY*0.5f;
 						}
 
-
-
 						hfielddrawvertex_t vert1 = hfielddrawvertex_t(point_position2 + hfield_offset, Vector3D(0, 1, 0), texCoord2);
 						hfielddrawvertex_t vert2 =	hfielddrawvertex_t(point_position1 + hfield_offset, Vector3D(0, 1, 0), texCoord1);
 
 						vert1.border = 0.0f;
 						vert2.border = 0.0f;
+
+						batch->bbox.AddVertex(vert1.position);
+						batch->bbox.AddVertex(vert2.position);
 
 						eindxs[2] = batch->verts.append(vert1);
 						eindxs[3] = batch->verts.append(vert2);
@@ -1046,6 +1048,13 @@ void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, const Volume&
 	{
 		hfieldbatch_t* batch = m_physData->m_batches[i];
 
+		BoundingBox bbox = batch->bbox;
+		bbox.minPoint += m_position;
+		bbox.maxPoint += m_position;
+
+		if(!volume.IsBoxInside(bbox.minPoint, bbox.maxPoint))
+			continue;
+
 		for(int p = 0; p < batch->indices.numElem(); p += 3)
 		{
 			int i1 = batch->indices[p];
@@ -1060,6 +1069,11 @@ void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, const Volume&
 			if(!volume.IsTriangleInside(p1,p2,p3))
 				continue;
 
+			polys.verts.append(PFXVertex_t(p1, vec2_zero, vec4_zero));
+			polys.verts.append(PFXVertex_t(p2, vec2_zero, vec4_zero));
+			polys.verts.append(PFXVertex_t(p3, vec2_zero, vec4_zero));
+
+			/*
 			int ii1 = polys.verts.addUnique(PFXVertex_t(p1, vec2_zero, vec4_zero), decalVertComparator);
 			int ii2 = polys.verts.addUnique(PFXVertex_t(p2, vec2_zero, vec4_zero), decalVertComparator);
 			int ii3 = polys.verts.addUnique(PFXVertex_t(p3, vec2_zero, vec4_zero), decalVertComparator);
@@ -1067,6 +1081,7 @@ void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, const Volume&
 			polys.indices.append(ii1);
 			polys.indices.append(ii2);
 			polys.indices.append(ii3);
+			*/
 		}
 	}
 }

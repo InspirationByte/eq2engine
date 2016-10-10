@@ -1590,45 +1590,89 @@ void ShaderAPID3DX9::SaveRenderTarget(ITexture* pTargetTexture, const char* pFil
 // Copy render target to texture
 void ShaderAPID3DX9::CopyFramebufferToTexture(ITexture* pTargetTexture)
 {
-	CD3D9Texture* pTexture = (CD3D9Texture*)(pTargetTexture);
-	if(!pTexture)
+	CD3D9Texture* dest = (CD3D9Texture*)(pTargetTexture);
+	if(!dest)
 		return;
 
-	if(pTexture->textures.numElem() <= 0)
+	if(dest->textures.numElem() <= 0)
 		return;
 
-	LPDIRECT3DSURFACE9 pRenderTargetSurface;
-	HRESULT hr = m_pD3DDevice->GetRenderTarget( 0, &pRenderTargetSurface );
+	LPDIRECT3DSURFACE9 srcSurface;
+	HRESULT hr = m_pD3DDevice->GetRenderTarget( 0, &srcSurface );
 
 	if (FAILED(hr))
 		return;
 
-	LPDIRECT3DTEXTURE9 pD3DTexture = ( LPDIRECT3DTEXTURE9 )pTexture->textures[0];
-	ASSERT( pD3DTexture );
+	LPDIRECT3DTEXTURE9 destD3DTex = ( LPDIRECT3DTEXTURE9 )dest->textures[0];
+	ASSERT( destD3DTex );
 
-	LPDIRECT3DSURFACE9 pDstSurf;
-	hr = pD3DTexture->GetSurfaceLevel( 0, &pDstSurf );
+	// get target surface to copy
+	LPDIRECT3DSURFACE9 destSurface;
+	hr = destD3DTex->GetSurfaceLevel( 0, &destSurface );
 
 	ASSERT( !FAILED( hr ) );
 	if( FAILED( hr ) )
 		return;
 
-	// Doing render target blit here
-
-	hr = m_pD3DDevice->StretchRect( pRenderTargetSurface, NULL, pDstSurf, NULL, D3DTEXF_NONE );
+	hr = m_pD3DDevice->StretchRect( srcSurface, NULL, destSurface, NULL, D3DTEXF_NONE );
 	ASSERT( !FAILED( hr ) );
 
-	pDstSurf->Release();
-	pRenderTargetSurface->Release();
+	destSurface->Release();
+	srcSurface->Release();
 }
 
-/*
 // Copy render target to texture with resizing
-void ShaderAPID3DX9::CopyFramebufferToTextureEx(ITexture* pTargetTexture,int srcX0, int srcY0,int srcX1, int srcY1,int destX0, int destY0,int destX1, int destY1)
+void ShaderAPID3DX9::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect, IRectangle* destRect)
 {
+	CD3D9Texture* src = (CD3D9Texture*)(srcTarget);
+	CD3D9Texture* dest = (CD3D9Texture*)(destTex);
 
+	if(!src || !dest)
+		return;
+
+	if(dest->textures.numElem() <= 0)
+		return;
+
+	if(src->surfaces.numElem() <= 0)
+		return;
+
+	LPDIRECT3DSURFACE9 srcSurface = src->surfaces[0];
+
+	LPDIRECT3DTEXTURE9 destD3DTex = ( LPDIRECT3DTEXTURE9 )dest->textures[0];
+	ASSERT( destD3DTex );
+
+	LPDIRECT3DSURFACE9 destSurface;
+	HRESULT hr = destD3DTex->GetSurfaceLevel( 0, &destSurface );
+
+	if (FAILED(hr))
+		return;
+
+	RECT dxSrcRect, dxDestRect;
+
+	if(srcRect)
+	{
+		dxSrcRect.left = srcRect->vleftTop.x;
+		dxSrcRect.top = srcRect->vleftTop.y;
+		dxSrcRect.right = srcRect->vrightBottom.x;
+		dxSrcRect.bottom = srcRect->vrightBottom.y;
+	}
+
+	if(destRect)
+	{
+		dxDestRect.left = destRect->vleftTop.x;
+		dxDestRect.top = destRect->vleftTop.y;
+		dxDestRect.right = destRect->vrightBottom.x;
+		dxDestRect.bottom = destRect->vrightBottom.y;
+	}
+
+	hr = m_pD3DDevice->StretchRect( srcSurface, srcRect ? &dxSrcRect : NULL, destSurface, destRect ? &dxDestRect : NULL, D3DTEXF_NONE );
+	//ASSERT( !FAILED( hr ) );
+
+	//if(FAILED( hr ))
+	//	Msg("CopyRendertargetToTexture error\n");
+
+	destSurface->Release();
 }
-*/
 
 // Changes render target (MRT)
 void ShaderAPID3DX9::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, int* nCubemapFaces, ITexture* pDepthTarget, int nDepthSlice)

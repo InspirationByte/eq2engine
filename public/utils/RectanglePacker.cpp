@@ -145,5 +145,5 @@ void CRectanglePacker::Cleanup()
 	for(int i = 0; i < m_pRectangles.numElem(); i++)
 		delete m_pRectangles[i];
 
-	m_pRectangles.clear();
+	m_pRectangles.clear(false);
 }

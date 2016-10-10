@@ -16,6 +16,7 @@
 template <class VTX_TYPE>
 class CSpriteBuilder
 {
+	friend class CParticleLowLevelRenderer;
 public:
 						CSpriteBuilder();
 			virtual		~CSpriteBuilder();
@@ -61,10 +62,7 @@ protected:
 	uint16				m_maxQuadVerts;
 
 	bool				m_initialized;
-
-	IVertexBuffer*		m_vertexBuffer;
-	IIndexBuffer*		m_indexBuffer;
-	IVertexFormat*		m_vertexFormat;
+	bool				m_triangleMode;
 };
 
 template <class VTX_TYPE>
@@ -74,10 +72,8 @@ CSpriteBuilder<VTX_TYPE>::CSpriteBuilder() :
 	m_numVertices(0),
 	m_numIndices(0),
 	m_initialized(false),
-	m_vertexBuffer(NULL),
-	m_indexBuffer(NULL),
-	m_vertexFormat(NULL),
-	m_maxQuadVerts(0)
+	m_maxQuadVerts(0),
+	m_triangleMode(false)
 {
 
 }
@@ -196,6 +192,9 @@ int CSpriteBuilder<VTX_TYPE>::_AllocateGeom( int nVertices, int nIndices, VTX_TY
 template <class VTX_TYPE>
 void CSpriteBuilder<VTX_TYPE>::_AddParticleStrip(VTX_TYPE* verts, int nVertices)
 {
+	if(m_triangleMode)
+		return;
+
 	if(nVertices == 0)
 		return;
 
@@ -237,6 +236,9 @@ void CSpriteBuilder<VTX_TYPE>::_AddParticleStrip(VTX_TYPE* verts, int nVertices)
 template <class VTX_TYPE>
 void CSpriteBuilder<VTX_TYPE>::AddStripBreak()
 {
+	if(m_triangleMode)
+		return;
+
 	int num_ind = m_numIndices;
 
 	uint16 nIndicesCurr = 0;

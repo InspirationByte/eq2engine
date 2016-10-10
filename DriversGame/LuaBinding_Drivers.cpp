@@ -244,7 +244,7 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 bool LuaBinding_ConsoleHandler(const char* cmdText)
 {
 	if(!EqLua::LuaBinding_DoBuffer(GetLuaState(), cmdText, strlen(cmdText), "console"))
-		MsgError("Lua error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
+		MsgError("%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
 
 	return true;
 }

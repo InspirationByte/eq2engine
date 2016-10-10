@@ -2096,6 +2096,9 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 
 void CGameLevel::GetDecalPolygons( decalprimitives_t& polys, const Volume& volume)
 {
+	polys.indices.setNum(0, false);
+	polys.verts.setNum(0, false);
+
 	for (int x = 0; x < m_wide; x++)
 	{
 		for (int y = 0; y < m_tall; y++)

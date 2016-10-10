@@ -9,6 +9,7 @@
 #define VIEWPARAMS_H
 
 #include "math/DkMath.h"
+#include "math/Rectangle.h"
 
 class CViewParams
 {
@@ -31,6 +32,7 @@ public:
 	float			GetLODScaledDistFrom( const Vector3D& position );
 
 	void			GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, float height, float zNear, float zFar, bool orthographic = false);
+	void			GetMatricesOrtho(Matrix4x4& proj, Matrix4x4& view, Rectangle_t rect, float zNear, float zFar);
 
 	/*
 	void			BuildViewMatrices(float fNear, float fFar, int width, int height, bool orthographic = false, bool cubemap = false);

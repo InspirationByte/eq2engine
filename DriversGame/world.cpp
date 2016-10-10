@@ -227,6 +227,7 @@ void CGameWorld::InitEnvironment()
 		// set defaults
 		m_envConfig.ambientColor = ColorRGB(0.45f, 0.45f, 0.51f);
 		m_envConfig.sunColor = ColorRGB(0.79f, 0.71f, 0.61f);
+		m_envConfig.shadowColor = ColorRGBA(0.01f, 0.01f, 0.05f, 0.45f);
 
 		m_envConfig.sunAngles = Vector3D(-45.0f, -35.0f, 0.0f);
 		m_envConfig.skyboxPath = "sky/sky_day";
@@ -263,6 +264,8 @@ void CGameWorld::InitEnvironment()
 
 	m_envConfig.ambientColor = KV_GetVector3D(envSection->FindKeyBase("ambientColor"));
 	m_envConfig.sunColor = KV_GetVector3D(envSection->FindKeyBase("sunColor"));
+	m_envConfig.shadowColor = KV_GetVector4D(envSection->FindKeyBase("shadowColor"));
+
 	m_envConfig.sunAngles = KV_GetVector3D(envSection->FindKeyBase("sunAngles"));
 	m_envConfig.brightnessModFactor = KV_GetValueFloat(envSection->FindKeyBase("brightModFactor"));
 	m_envConfig.streetLightIntensity = KV_GetValueFloat(envSection->FindKeyBase("streetLightIntensity"), 0, 1.0f);
@@ -415,6 +418,10 @@ void CGameWorld::Init()
 	//-------------------------
 
 	g_pPFXRenderer->Init();
+
+#ifndef EDITOR
+	m_shadowRenderer.Init();
+#endif // EDITOR
 
 	if(!g_vehicleEffects)
 	{
@@ -622,6 +629,9 @@ void CGameWorld::Cleanup( bool unloadLevel )
 		g_treeAtlas = NULL;
 
 		g_pPFXRenderer->Shutdown();
+#ifndef EDITOR
+		m_shadowRenderer.Shutdown();
+#endif // EDITOR
 
 		g_pShaderAPI->DestroyVertexFormat(m_vehicleVertexFormat);
 		m_vehicleVertexFormat = NULL;
@@ -1176,11 +1186,6 @@ void CGameWorld::UpdateOccludingFrustum()
 	m_level.CollectVisibleOccluders( m_occludingFrustum, m_view.GetOrigin() );
 }
 
-void GRJob_UpdateRenderables(void* data)
-{
-	g_pGameWorld->UpdateRenderables( g_pGameWorld->m_occludingFrustum );
-}
-
 void CGameWorld::DrawLensFlare( const Vector2D& screenSize, const Vector2D& screenPos, float intensity )
 {
 	//materials->Setup2D(screenSize.x,screenSize.y);
@@ -1481,6 +1486,11 @@ void CGameWorld::Draw( int nRenderFlags )
 	if(r_drawObjects.GetBool())
 		UpdateRenderables( m_occludingFrustum );
 
+#ifndef EDITOR
+	// cleanup of casters
+	m_shadowRenderer.Clear();
+#endif // EDITOR
+
 	// rendering of instanced objects
 	if( m_renderingObjects.goToFirst() )
 	{
@@ -1489,6 +1499,11 @@ void CGameWorld::Draw( int nRenderFlags )
 		{
 			CGameObject* obj = m_renderingObjects.getCurrent();
 			obj->Draw( nRenderFlags );
+
+#ifndef EDITOR
+			m_shadowRenderer.AddShadowCaster( obj );
+#endif // EDITOR
+
 		}while(m_renderingObjects.goToNext());
 
 		// draw instanced models
@@ -1520,6 +1535,27 @@ void CGameWorld::Draw( int nRenderFlags )
 	//
 	// Draw particles
 	//
+
+#ifndef EDITOR
+	if(m_envConfig.shadowColor.w > 0.01f) // shadow opacity
+	{
+		materials->SetMaterialRenderParamCallback( NULL );
+
+		// render shadows
+		m_shadowRenderer.SetShadowAngles(m_envConfig.sunAngles);
+		m_shadowRenderer.RenderShadowCasters();
+
+		materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
+		materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
+		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+		materials->SetAmbientColor(m_envConfig.shadowColor);
+		m_shadowRenderer.Draw();
+
+		materials->SetMaterialRenderParamCallback( this );
+	}
+#endif // EDITOR
+
 	materials->SetAmbientColor(ColorRGBA(1, 1, 1, 1.0f));
 
 	// restore projection and draw the particles
@@ -1535,7 +1571,6 @@ void CGameWorld::Draw( int nRenderFlags )
 	materials->SetMaterialRenderParamCallback( NULL );
 
 #ifndef EDITOR
-
 	Vector3D virtualSunPos = m_view.GetOrigin() + m_envConfig.sunLensDirection*1000.0f;
 
 	Vector2D lensScreenPos;

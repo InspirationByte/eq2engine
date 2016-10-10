@@ -93,6 +93,10 @@ protected:
 
 	bool				m_useCustomProjMat;
 	Matrix4x4			m_customProjMat;
+
+	IVertexBuffer*		m_vertexBuffer;
+	IIndexBuffer*		m_indexBuffer;
+	IVertexFormat*		m_vertexFormat;
 };
 
 //------------------------------------------------------------------------------------
@@ -111,6 +115,7 @@ public:
 class CParticleLowLevelRenderer
 {
 	friend class CParticleRenderGroup;
+	friend class CShadowRenderer;
 
 public:
 	CParticleLowLevelRenderer();
@@ -132,7 +137,7 @@ public:
 	void							Render(int nRenderFlags);
 	void							ClearBuffers();
 
-	bool							MakeVBOFrom(CParticleRenderGroup* pGroup);
+	bool							MakeVBOFrom(CSpriteBuilder<PFXVertex_t>* pGroup);
 
 	bool							InitBuffers();
 	bool							ShutdownBuffers();

@@ -21,7 +21,10 @@ ConVar r_particleBufferSize("r_particleBufferSize", "16384", "particle buffer si
 
 CParticleRenderGroup::CParticleRenderGroup() :
 	m_pMaterial(NULL),
-	m_useCustomProjMat(false)
+	m_useCustomProjMat(false),
+	m_vertexBuffer(NULL),
+	m_indexBuffer(NULL),
+	m_vertexFormat(NULL)
 {
 
 }
@@ -319,7 +322,7 @@ void CParticleLowLevelRenderer::ClearBuffers()
 	}
 }
 
-bool CParticleLowLevelRenderer::MakeVBOFrom(CParticleRenderGroup* pGroup)
+bool CParticleLowLevelRenderer::MakeVBOFrom(CSpriteBuilder<PFXVertex_t>* pGroup)
 {
 	if(!m_initialized)
 		return false;
@@ -327,14 +330,16 @@ bool CParticleLowLevelRenderer::MakeVBOFrom(CParticleRenderGroup* pGroup)
 	uint16 nVerts	= pGroup->m_numVertices;
 	uint16 nIndices	= pGroup->m_numIndices;
 
-	if(nVerts == 0 || nIndices == 0)
+	if(nVerts == 0)
 		return false;
 
 	if(nVerts > SVBO_MAX_SIZE(m_vbMaxQuads, PFXVertex_t))
 		return false;
 
 	m_vertexBuffer->Update((void*)pGroup->m_pVerts, nVerts, 0, true);
-	m_indexBuffer->Update((void*)pGroup->m_pIndices, nIndices, 0, true);
+
+	if(nIndices)
+		m_indexBuffer->Update((void*)pGroup->m_pIndices, nIndices, 0, true);
 
 	return true;
 }

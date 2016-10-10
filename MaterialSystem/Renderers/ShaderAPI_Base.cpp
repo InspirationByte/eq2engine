@@ -547,6 +547,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, Filter_e texture
 	// Now create the texture
 	pFoundTexture = CreateTexture(pImages, texSamplerParams, nFlags);
 
+	// free images
 	for(int i = 0;i < pImages.numElem();i++)
 		delete pImages[i];
 

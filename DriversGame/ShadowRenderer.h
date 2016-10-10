@@ -28,15 +28,32 @@ public:
 
 	void	Clear();
 
-	void	Render();
+	void	RenderShadowCasters();
+	void	Draw();
+
+	void	SetShadowAngles( const Vector3D& angles );
 
 protected:
+
+	void	RenderShadow(IEqModel* model, ubyte bodyGroups, int mode);
+
 	CRectanglePacker	m_texAtlasPacker;
 
 	Vector2D			m_shadowTextureSize;
 	Vector2D			m_shadowTexelSize; // 1.0 / shadowTextureSize
 
+	Vector3D			m_shadowAngles;
+
 	ITexture*			m_shadowTexture;
+	ITexture*			m_shadowRt;
+
+	IMaterial*			m_matVehicle;
+	IMaterial*			m_matSkinned;
+	IMaterial*			m_matSimple;
+
+	IMaterial*			m_shadowResult;
+
+	bool				m_isInit;
 };
 
 #endif // SHADOWRENDERER_H

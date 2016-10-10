@@ -366,6 +366,12 @@
     <ClCompile Include="..\public\utils\RectanglePacker.cpp">
       <Filter>Файлы исходного кода\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Shader_ShadowBuild.cpp">
+      <Filter>Файлы исходного кода\MatSystem\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader_Shadow.cpp">
+      <Filter>Файлы исходного кода\MatSystem\Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">

@@ -1341,13 +1341,11 @@ void ShaderAPIGL::CopyFramebufferToTexture(ITexture* pTargetTexture)
 	ChangeRenderTargetToBackBuffer();
 }
 
-/*
-// Copy render target to texture with resizing
-void ShaderAPIGL::CopyFramebufferToTextureEx(ITexture* pTargetTexture,int srcX0, int srcY0,int srcX1, int srcY1,int destX0, int destY0,int destX1, int destY1)
+// Copy render target to texture
+void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect, IRectangle* destRect)
 {
 	ASSERT(!"TODO: Implement ShaderAPIGL::CopyFramebufferToTextureEx()");
 }
-*/
 
 // Changes render target (MRT)
 void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, int* nCubemapFaces, ITexture* pDepthTarget, int nDepthSlice)
