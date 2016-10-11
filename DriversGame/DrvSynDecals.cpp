@@ -7,6 +7,7 @@
 
 #include "DrvSynDecals.h"
 #include "math/math_util.h"
+#include "ConVar.h"
 
 inline PFXVertex_t lerpVertex(const PFXVertex_t &u, const PFXVertex_t &v, float fac)
 {
@@ -17,6 +18,9 @@ inline PFXVertex_t lerpVertex(const PFXVertex_t &u, const PFXVertex_t &v, float 
 
 	return out;
 }
+
+ConVar r_clipdecals("r_clipdecals", "1");
+ConVar r_clipdecalplane("r_clipdecalplane", "-1");
 
 void ClipVerts(DkList<PFXVertex_t>& verts, const Plane &plane)
 {
@@ -35,9 +39,11 @@ void ClipVerts(DkList<PFXVertex_t>& verts, const Plane &plane)
 
 		if (d[0] >= 0 && d[1] >= 0 && d[2] >= 0)
 		{
+			
 			new_vertices.append(verts[i]);
 			new_vertices.append(verts[i+1]);
 			new_vertices.append(verts[i+2]);
+			
 		}
 		else if (d[0] < 0 && d[1] < 0 && d[2] < 0)
 		{
@@ -89,8 +95,6 @@ void ClipVerts(DkList<PFXVertex_t>& verts, const Plane &plane)
 
 void DecalClipAndTexture(decalprimitives_t* decal, const Volume& clipVolume, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, float alpha)
 {
-	DkList<PFXVertex_t> vertsToClip;
-
 	for(int i = 0; i < decal->verts.numElem(); i++)
 	{
 		Vector3D pos = decal->verts[i].point;
@@ -107,13 +111,14 @@ void DecalClipAndTexture(decalprimitives_t* decal, const Volume& clipVolume, con
 		decal->verts[i].color.w = alpha;
 	}
 
-	vertsToClip.swap(decal->verts);
-
-	for(int i = 0; i < 6; i++)
+	if(r_clipdecals.GetBool())
 	{
-		const Plane& pl = clipVolume.GetPlane(i);
-		ClipVerts(vertsToClip, pl);
-	}
+		for(int i = 0; i < 6; i++)
+		{
+			const Plane& pl = clipVolume.GetPlane(i);
 
-	decal->verts.swap(vertsToClip);
+			if(r_clipdecalplane.GetInt() == -1 || r_clipdecalplane.GetInt() == i)
+				ClipVerts(decal->verts, pl);
+		}
+	}
 }

@@ -14,6 +14,7 @@ static const char* defaultDescString = "No description";
 // Default constructor
 ConCommandBase::ConCommandBase()
 {
+	m_fnVariantsList = NULL;
 	m_bIsRegistered	= false;
 	m_nFlags = 0;
 
@@ -53,6 +54,17 @@ ConCommandBase::~ConCommandBase()
 
 // registering and unregistering commands must be done more internally without singletons
 IEXPORTS IConsoleCommands* GetCConsoleCommands( void );
+
+bool ConCommandBase::HasVariants() const
+{
+	return m_fnVariantsList != NULL;
+}
+
+void ConCommandBase::GetVariants(DkList<EqString>& list, const char* query) const
+{
+	if(m_fnVariantsList != NULL)
+		( *m_fnVariantsList )(list, query);
+}
 
 // static
 void ConCommandBase::Register( ConCommandBase* pBase )

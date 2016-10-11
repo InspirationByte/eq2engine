@@ -283,19 +283,22 @@ void CAIPursuerCar::EndPursuit(bool death)
 		return;
 	}
 
-	if (m_targInfo.target->GetPursuedCount() == 0)
+	if (g_pGameWorld->IsValidObject(m_targInfo.target))
 	{
-		m_targInfo.target = NULL;
-		return;
-	}
+		if(m_targInfo.target->GetPursuedCount() == 0)
+		{
+			m_targInfo.target = NULL;
+			return;
+		}
 
-	m_targInfo.target->DecrementPursue();
+		m_targInfo.target->DecrementPursue();
 
-	if (m_targInfo.target->GetPursuedCount() == 0 &&
-		g_pGameSession->GetPlayerCar() == m_targInfo.target &&
-		g_State_Game->IsGameRunning())	// only play sound when in game, not unloading or restaring
-	{
-		Speak("cop.lost", true);
+		if (m_targInfo.target->GetPursuedCount() == 0 &&
+			g_pGameSession->GetPlayerCar() == m_targInfo.target &&
+			g_State_Game->IsGameRunning())	// only play sound when in game, not unloading or restaring
+		{
+			Speak("cop.lost", true);
+		}
 	}
 
 	if(m_taunts)
@@ -896,7 +899,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	if(lateralSlide > 1.0f && sign(lateralSlideSigned)+sign(fSteeringAngle) < 0.5f)
 	{
-		//fSteeringAngle *= lateralSlideSteerFactor;
+		fSteeringAngle *= lateralSlideSteerFactor;
 		doesHardSteer = false;
 	}
 
@@ -1002,45 +1005,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		}
 	}
 
-
-	/*
-	if ((distToTargetReal < 6.0f || distFromCollPoint < 10.0f) && m_isColliding)
-	{
-		Plane pl(carForwardDir, dot(carForwardDir, GetOrigin()));
-
-		FReal carForwardSpeed = dot(carForwardDir, GetVelocity());
-
-		if (!m_isColliding)
-			m_blockingTime -= fDt;
-
-		if ( (m_blockingTime < 0.0f || frontColl.fract < 1.0f) )
-		{
-			brake = 1.0f;
-			accelerator = 0.0f;
-			controls |= IN_BRAKE;
-			controls &= ~IN_ACCELERATE;
-		}
-	}
-	else
-		m_blockingTime = AI_COP_BLOCK_DELAY;
-	*/
-
-	/*
-	if( fabs(fSteerTarget) >= 1.0f && carForwardSpeed > 10.0f )
-	{
-		brake = 1.0f;
-		accelerator = 0.0f;
-		controls |= IN_BRAKE;
-		controls &= ~IN_ACCELERATE;
-	}
-	else if(fSpeed > 10.0f)
-	{
-		accelerator -= (FReal)fabs(fSteeringAngle)*0.5f;
-	}
-	*/
-
-	//if(GetSpeedWheels() < -1.0f)
-	//	fSteeringAngle *= -1.0f;
+	if((controls & IN_ACCELERATE) && fSpeed < 50.0f && lateralSlide < 1.0f && accelerator >= 1.0f)
+		controls |= IN_BURNOUT;
 
 	m_autohandbrake = doesHardSteer;
 

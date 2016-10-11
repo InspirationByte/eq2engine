@@ -89,6 +89,11 @@ void ShaderAPI_Base::Init( shaderapiinitparams_t &params )
 	Reset();
 
 	m_pErrorTexture = GenerateErrorTexture();
+
+	ConVar* r_debug_showTexture = (ConVar*)g_sysConsole->FindCvar("r_debug_showTexture");
+
+	if(r_debug_showTexture)
+		r_debug_showTexture->SetVariantsCallback(GetConsoleTextureList);
 }
 
 void ShaderAPI_Base::ThreadLock()
@@ -108,6 +113,11 @@ ETextureFormat ShaderAPI_Base::GetScreenFormat()
 
 void ShaderAPI_Base::Shutdown()
 {
+	ConVar* r_debug_showTexture = (ConVar*)g_sysConsole->FindCvar("r_debug_showTexture");
+
+	if(r_debug_showTexture)
+		r_debug_showTexture->SetVariantsCallback(NULL);
+
 	Reset();
 	Apply();
 
@@ -289,6 +299,29 @@ void ShaderAPI_Base::ApplyBuffers()
 ITexture* ShaderAPI_Base::GetErrorTexture()
 {
 	return m_pErrorTexture;
+}
+
+void ShaderAPI_Base::GetConsoleTextureList(DkList<EqString>& list, const char* query)
+{
+	ShaderAPI_Base* baseApi = ((ShaderAPI_Base*)g_pShaderAPI);
+
+	CScopedMutex m(baseApi->m_Mutex);
+
+	DkList<ITexture*>& texList = ((ShaderAPI_Base*)g_pShaderAPI)->m_TextureList;
+
+	const int LIST_LIMIT = 50;
+
+	for ( int i = 0; i < texList.numElem(); i++ )
+	{
+		if(list.numElem() == LIST_LIMIT)
+		{
+			list.append("...");
+			break;
+		}
+
+		if(*query == 0 || xstristr(texList[i]->GetName(), query))
+			list.append(texList[i]->GetName());
+	}
 }
 
 void ShaderAPI_Base::SetViewport(int x, int y, int w, int h)

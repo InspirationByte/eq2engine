@@ -84,7 +84,7 @@ public:
 
 protected:
 	void	DrawFastFind(float x, float y, float w);
-	int		DrawAutoCompletion(float x, float y, float w);
+	int		DrawAutoCompletion(float x, float y, float w, const char* queryStr);
 
 	void	consoleInsText(char* text,int pos);
 	void	consoleRemTextInRange(int start,int len);
@@ -106,26 +106,26 @@ private:
 
 	int								m_width;
 	int								m_height;
-	bool							fullscreen;
+
+	bool							m_fullscreen;
 
 	uint							m_cursorPos;
 	uint							m_startCursorPos;
 
 	int								m_logScrollPosition;
 
-	int								con_histIndex;
-	int								con_valueindex;
-	ConCommandBase*					con_fastfind_cmdbase;
-	DkList<EqString>				autocompletionList;
-	int								con_fastfind_selection_autocompletion_val_index;
+	int								m_histIndex;
+	ConCommandBase*					m_fastfind_cmdbase;
+	DkList<EqString>				m_autocompletionList;
+	int								m_variantSelection;
 
 	CONSOLE_ALTERNATE_HANDLER		m_alternateHandler;
 
 	// Current input text
-	EqString						con_Text;
+	EqString						m_inputText;
 
 	// Input history
-	DkList<EqString>				commandHistory;
+	DkList<EqString>				m_commandHistory;
 
 	// Autocompletion collection
 	DkList<AutoCompletionNode_s*>	m_hAutoCompletionNodes;

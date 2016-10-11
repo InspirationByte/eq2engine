@@ -9,6 +9,9 @@
 #ifndef CONCOMMANDBASE_H
 #define CONCOMMANDBASE_H
 
+#include "utils/DkList.h"
+#include "utils/eqstring.h"
+
 enum CommandBaseFlags_e
 {
 	CV_UNREGISTERED		= (1 << 0),	// Do not register this console command\cvar to list. So it can't be changed in console.
@@ -22,8 +25,7 @@ enum CommandBaseFlags_e
 	CMDBASE_CONCOMMAND	= (1 << 7) // Is ConCommand
 };
 
-#include <stdio.h>
-#include <stdlib.h>
+typedef void (*CMDBASE_VARIANTS_CALLBACK)(DkList<EqString>&, const char* query);
 
 class ConCommandBase
 {
@@ -47,6 +49,11 @@ public:
     static void		Register( ConCommandBase* pBase );
 	static void		Unregister( ConCommandBase* pBase );
 
+	bool			HasVariants() const;
+	void			GetVariants(DkList<EqString>& list, const char* query) const;
+
+	void			SetVariantsCallback(CMDBASE_VARIANTS_CALLBACK fnVariants) {m_fnVariantsList = fnVariants;}
+
 	virtual void	LuaCleanup();
 
 protected:
@@ -59,6 +66,8 @@ protected:
 	// Name and description
 	const char*	m_szName;
 	const char*	m_szDesc;
+
+	CMDBASE_VARIANTS_CALLBACK m_fnVariantsList;
 };
 
 #endif //CONCOMMANDBASE_H

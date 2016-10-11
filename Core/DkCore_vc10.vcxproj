@@ -62,7 +62,7 @@
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">eqCore</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(SolutionDir)src_dependency\jemalloc-win32\include;$(SolutionDir)src_dependency\zlib;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src_dependency\zlib;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(SolutionDir)src_dependency\zlib;$(IncludePath)</IncludePath>
@@ -113,7 +113,7 @@
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>..\FileSystem;..\Engine\Imaging;..\Engine;..\public;..\public\core;..\public\platform;..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\FileSystem;..\Engine\Imaging;..\Engine;..\public;..\public\core;..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;CORE_EXPORT;DLL_EXPORT;SUPRESS_DEVMESSAGES;USECRTMEMDEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>

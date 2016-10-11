@@ -25,10 +25,14 @@ class ConVar : public ConCommandBase
 public:
 	ConVar();
 	~ConVar();
-	ConVar(char const *name,char const *pszDefaultValue,char const *desc = 0, int flags = 0);
-	ConVar(char const *name,char const *pszDefaultValue,CONVAR_CHANGE_CALLBACK callback,char const *desc = 0, int flags = 0);
-	ConVar(char const *name,char const *pszDefaultValue,float clampmin,float clampmax,char const *desc = 0, int flags = 0);
-	ConVar(char const *name,char const *pszDefaultValue,float clampmin,float clampmax,CONVAR_CHANGE_CALLBACK callback,char const *desc = 0, int flags = 0);
+	ConVar(char const *name,char const *pszDefaultValue, char const *desc = 0, int flags = 0);
+	ConVar(char const *name,char const *pszDefaultValue, CONVAR_CHANGE_CALLBACK callback, char const *desc = 0, int flags = 0);
+
+	ConVar(char const *name,char const *pszDefaultValue, CMDBASE_VARIANTS_CALLBACK variantsList, char const *desc = 0, int flags = 0);
+	ConVar(char const *name,char const *pszDefaultValue, CONVAR_CHANGE_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList, char const *desc = 0, int flags = 0);
+
+	ConVar(char const *name,char const *pszDefaultValue, float clampmin,float clampmax, char const *desc = 0, int flags = 0);
+	ConVar(char const *name,char const *pszDefaultValue, float clampmin,float clampmax, CONVAR_CHANGE_CALLBACK callback,char const *desc = 0, int flags = 0);
 
 	void			RevertToDefaultValue(); //Reverts to default value
 	const char*		GetDefaultValue() const;

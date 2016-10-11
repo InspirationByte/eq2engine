@@ -81,7 +81,7 @@ DECLARE_CONCOMMAND_FN(cmdlist)
 	int iCVCount = 0;
 
 	// Loop through cvars...
-	const DkList<ConCommandBase*> *pCommandBases = g_sysConsole->GetAllCommands();
+	const DkList<ConCommandBase*>* pCommandBases = g_sysConsole->GetAllCommands();
 
 	for ( int i = 0; i < pCommandBases->numElem(); i++ )
 	{
@@ -98,6 +98,35 @@ DECLARE_CONCOMMAND_FN(cmdlist)
 
 	MsgWarning(" %i Total Commands\n",iCVCount);
 	MsgWarning("********Command list ends*********\n");
+}
+
+void cvar_list_collect(DkList<EqString>& list, const char* query)
+{
+	const ConCommandBase* pBase;
+	const DkList<ConCommandBase*>* pCommandBases = g_sysConsole->GetAllCommands();
+
+	const int LIST_LIMIT = 50;
+
+	for ( int i = 0; i < pCommandBases->numElem(); i++ )
+	{
+		if(list.numElem() == LIST_LIMIT)
+		{
+			list.append("...");
+			break;
+		}
+
+		pBase = pCommandBases->ptr()[i];
+
+		if(!pBase->IsConVar())
+			continue;
+
+		if(pBase->GetFlags() & CV_INVISIBLE)
+			continue;
+
+		if(*query == 0 || xstristr(pBase->GetName(), query))
+			list.append(pBase->GetName());
+
+	}
 }
 
 DECLARE_CONCOMMAND_FN(revertcvar)
@@ -222,13 +251,13 @@ DECLARE_CONCOMMAND_FN(seta)
     pConVar->SetValue( pArgs.GetData() );
 }
 
-ConCommand toggle("togglevar",CONCOMMAND_FN(togglecvar),"Toggles ConVar value",CV_UNREGISTERED);
+ConCommand toggle("togglevar",CONCOMMAND_FN(togglecvar), cvar_list_collect,"Toggles ConVar value",CV_UNREGISTERED);
 ConCommand exec("exec",CONCOMMAND_FN(exec),"Execute configuration file",CV_UNREGISTERED);
-ConCommand set("set",CONCOMMAND_FN(set),"Sets cvar value",CV_UNREGISTERED);
-ConCommand seta("seta",CONCOMMAND_FN(seta),"Sets cvar value incl. restricted",CV_UNREGISTERED);
+ConCommand set("set",CONCOMMAND_FN(set), cvar_list_collect,"Sets cvar value",CV_UNREGISTERED);
+ConCommand seta("seta",CONCOMMAND_FN(seta), cvar_list_collect,"Sets cvar value incl. restricted",CV_UNREGISTERED);
 ConCommand cvarlist("cvarlist",CONCOMMAND_FN(cvarlist),"Prints out all aviable cvars",CV_UNREGISTERED);
 ConCommand cmdlist("cmdlist",CONCOMMAND_FN(cmdlist),"Prints out all aviable commands",CV_UNREGISTERED);
-ConCommand revert("revert",CONCOMMAND_FN(revertcvar),"Reverts cvar to it's default value",CV_UNREGISTERED);
+ConCommand revert("revert",CONCOMMAND_FN(revertcvar), cvar_list_collect,"Reverts cvar to it's default value",CV_UNREGISTERED);
 
 void CConsoleCommands::RegisterCommands()
 {

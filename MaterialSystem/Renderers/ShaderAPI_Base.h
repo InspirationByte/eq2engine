@@ -21,6 +21,7 @@ class ShaderAPI_Base : public IShaderAPI
 {
 public:
 										ShaderAPI_Base();
+
 	// Init + Shurdown
 	virtual void						Init( shaderapiinitparams_t &params );
 	virtual void						Shutdown();
@@ -35,6 +36,8 @@ public:
 
 	// default error texture pointer
 	ITexture*							GetErrorTexture();
+
+	static void							GetConsoleTextureList(DkList<EqString>&, const char* query);
 
 //-------------------------------------------------------------
 // Apply/Reset functions

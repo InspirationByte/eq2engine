@@ -127,15 +127,9 @@ inline int AtlasPackComparison(PackerRectangle *const &elem0, PackerRectangle *c
 	return (elem1->width + elem1->height) - (elem0->width + elem0->height);
 }
 
-ConVar r_shadow_test1("r_shadow_test1", "0");
-ConVar r_shadow_test2("r_shadow_test2", "0");
-
 void CShadowRenderer::RenderShadowCasters()
 {
 	if(r_shadows.GetBool() == false)
-		return;
-
-	if(r_shadow_test1.GetBool())
 		return;
 
 	Vector2D neededTexSize = m_shadowTextureSize;
@@ -227,9 +221,6 @@ void CShadowRenderer::RenderShadowCasters()
 void CShadowRenderer::Draw()
 {
 	if(r_shadows.GetBool() == false)
-		return;
-
-	if(r_shadow_test2.GetBool())
 		return;
 
 	// upload to vertex & index buffers

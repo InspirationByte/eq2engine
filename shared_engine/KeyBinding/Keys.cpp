@@ -387,7 +387,33 @@ void CKeyCommandBinder::ExecuteBoundCommands(T* zone, bool bState)
 }
 
 #ifndef DLL_EXPORT
-DECLARE_CMD(bind,"Binds action to key",0)
+
+void con_key_list(DkList<EqString>& list, const char* query)
+{
+	const int LIST_LIMIT = 50;
+
+	keyname_t* names = s_keynames;
+
+	do
+	{
+		keyname_t& name = *names;
+
+		if(name.name == NULL)
+			break;
+
+		if(list.numElem() == LIST_LIMIT)
+		{
+			list.append("...");
+			break;
+		}
+
+		if(*query == 0 || xstristr(name.name, query))
+			list.append(name.name);
+
+	}while(names++);
+}
+
+DECLARE_CMD_VARIANTS(bind,"Binds action to key", con_key_list, 0)
 {
 	if(CMD_ARGC > 1)
 	{
@@ -434,7 +460,7 @@ DECLARE_CMD(list_touchzones,"Shows bound keys",0)
 	MsgInfo("---- %d touch zones ----\n", touchList->numElem());
 }
 
-DECLARE_CMD(unbind,"Unbinds a key",0)
+DECLARE_CMD_VARIANTS(unbind,"Unbinds a key", con_key_list, 0)
 {
 	if(CMD_ARGC > 0)
 	{

@@ -12,30 +12,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ConCommandBase.h"
-#include "utils/DkList.h"
-#include "utils/eqstring.h"
 #include "InterfaceManager.h"
 
 typedef void (*CON_COMMAND_CALLBACK)(DkList<EqString>&);
-typedef void (*CON_COMMAND_VARIANTS_CALLBACK)(DkList<EqString>&, const char* query);
 
 class ConCommand : public ConCommandBase
 {
 public:
 	ConCommand(char const *name,CON_COMMAND_CALLBACK callback,char const *desc = 0, int flags = 0);
-	ConCommand(char const *name,CON_COMMAND_CALLBACK callback, CON_COMMAND_VARIANTS_CALLBACK variantsList,char const *desc = 0, int flags = 0);
+	ConCommand(char const *name,CON_COMMAND_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList,char const *desc = 0, int flags = 0);
 
 	//Command execution
 	void DispatchFunc(DkList<EqString>& args);
 
-	bool HasVariants() const;
-	void GetVariants(DkList<EqString>& list, const char* query);
-
 private:
-	void Create(char const *pszName,CON_COMMAND_CALLBACK callback, CON_COMMAND_VARIANTS_CALLBACK autoComplPopulate,char const *pszHelpString, int nFlags);
+	void Create(char const *pszName,CON_COMMAND_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList,char const *pszHelpString, int nFlags);
 
 	CON_COMMAND_CALLBACK m_fnCallback;
-	CON_COMMAND_VARIANTS_CALLBACK m_fnVariantsList;
 };
 
 #define CONCOMMAND_ARGUMENTS DkList<EqString>& args

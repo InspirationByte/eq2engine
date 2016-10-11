@@ -18,6 +18,9 @@
 
 void EmitHitSoundEffect(CGameObject* obj, const char* prefix, const Vector3D& origin, float power, float maxPower)
 {
+	if(*prefix == 0)
+		return;
+
 	float fSoundPowerPercent = power / maxPower;
 
 	if (fSoundPowerPercent < 0.1)

@@ -317,7 +317,7 @@ void CObject_Debris::Simulate(float fDt)
 		//if (m_collOccured)
 		EmitHitSoundEffect(this, m_smashSound.c_str(), pair.position, pair.impactVelocity, 50.0f);
 
-		if(obj->IsDynamic() && !m_collOccured)
+		if(!m_collOccured && obj->IsDynamic())
 		{
 			m_collOccured = true;
 			g_pPhysics->m_physics.AddToMoveableList(m_physBody);

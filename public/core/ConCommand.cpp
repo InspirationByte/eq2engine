@@ -15,12 +15,12 @@ ConCommand::ConCommand(char const *name,CON_COMMAND_CALLBACK callback,char const
 	Create(name,callback,NULL,desc,flags);
 }
 
-ConCommand::ConCommand(char const *name,CON_COMMAND_CALLBACK callback, CON_COMMAND_VARIANTS_CALLBACK variantsList,char const *desc, int flags)
+ConCommand::ConCommand(char const *name,CON_COMMAND_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList,char const *desc, int flags)
 {
 	Create(name,callback,variantsList,desc,flags);
 }
 
-void ConCommand::Create(char const *pszName,CON_COMMAND_CALLBACK callback, CON_COMMAND_VARIANTS_CALLBACK variantsList, char const *pszHelpString, int nFlags)
+void ConCommand::Create(char const *pszName,CON_COMMAND_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList, char const *pszHelpString, int nFlags)
 {
 	m_fnCallback = callback;
 	m_fnVariantsList = variantsList;
@@ -44,15 +44,4 @@ void ConCommand::DispatchFunc(DkList<EqString>& args)
 
 	if ( m_fnCallback )
 		( *m_fnCallback )(args);
-}
-
-bool ConCommand::HasVariants() const
-{
-	return m_fnVariantsList != NULL;
-}
-
-void ConCommand::GetVariants(DkList<EqString>& list, const char* query)
-{
-	if(m_fnVariantsList != NULL)
-		( *m_fnVariantsList )(list, query);
 }

@@ -61,8 +61,34 @@ ConVar::ConVar(char const *name,char const *pszDefaultValue,CONVAR_CHANGE_CALLBA
 
 	Create(name,pszDefaultValue,desc,flags);
 
-	if(callback)
-		SetCallback(callback);
+	SetCallback(callback);
+}
+
+ConVar::ConVar(char const *name,char const *pszDefaultValue, CMDBASE_VARIANTS_CALLBACK variantsList, char const *desc, int flags)
+{
+	m_szValueString = NULL;
+	m_iStringLength = 0;
+	m_nValue = 0;
+	m_bClamp = false;
+	m_fnChangeCallback = NULL;
+
+	Create(name,pszDefaultValue,desc,flags);
+
+	SetVariantsCallback(variantsList);
+}
+
+ConVar::ConVar(char const *name,char const *pszDefaultValue, CONVAR_CHANGE_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList, char const *desc, int flags)
+{
+	m_szValueString = NULL;
+	m_iStringLength = 0;
+	m_nValue = 0;
+	m_bClamp = false;
+	m_fnChangeCallback = NULL;
+
+	Create(name,pszDefaultValue,desc,flags);
+
+	SetCallback(callback);
+	SetVariantsCallback(variantsList);
 }
 
 ConVar::ConVar(char const *name,char const *pszDefaultValue,float clampmin,float clampmax,char const *desc /*= 0*/, int flags /*= 0*/) : ConCommandBase()
@@ -86,8 +112,7 @@ ConVar::ConVar(char const *name,char const *pszDefaultValue,float clampmin,float
 
 	Create(name,pszDefaultValue,clampmin,clampmax,desc,flags);
 
-	if(callback)
-		SetCallback(callback);
+	SetCallback(callback);
 }
 
 void ConVar::Create(char const *pszName,char const *pszDefaultValue,char const *pszHelpString, int nFlags)
@@ -212,8 +237,10 @@ void ConVar::InternalSetString(char const *value)
 		if (m_szValueString)
 			delete [] m_szValueString; // Sometimes errors
 
-		m_szValueString = new char[len];
-		m_iStringLength = len;
+		// min is 16
+		m_iStringLength = max(16, len);
+		m_szValueString = new char[m_iStringLength];
+		
 	}
 
 	if (m_szValueString)

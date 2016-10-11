@@ -98,7 +98,7 @@
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;NO_ENGINE;NOENGINE;GAME_DRIVERS;EQ_USE_SDL;BIG_REPLAYS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\public\materialsystem;..\public\materialsystem\renderers;..\Physics\bullet\src;..\Physics\bullet\src\BulletSoftBody;..\utils\eq_physgen;..\utils\wx\include;..\utils\wx\include\msvc;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\oolua\include;..\src_dependency\lua\src;..\src_dependency\jpeg;..\src_dependency\shiny\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\public\materialsystem;..\public\materialsystem\renderers;..\Physics\bullet\src;..\Physics\bullet\src\BulletSoftBody;..\utils\eq_physgen;..\utils\wx\include;..\utils\wx\include\msvc;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\oolua\include;..\src_dependency\lua\src;..\src_dependency\jpeg;..\src_dependency\shiny\include;..\src_dependency\OpenALSoftCustom\include;..\src_dependency\libogg\include;..\src_dependency\libvorbis\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
     </ClCompile>
@@ -164,6 +164,7 @@
     <ClCompile Include="levelobject.cpp" />
     <ClCompile Include="LiteHTMLContainer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="ParticleEffects.cpp" />
     <ClCompile Include="Shader_Shadow.cpp" />
@@ -302,7 +303,9 @@
     <ClInclude Include="DrvSynHUD.h" />
     <ClInclude Include="game_singleplayer.h" />
     <ClInclude Include="levelobject.h" />
-    <ClInclude Include="LiteHTMLContainer.h" />
+    <ClInclude Include="LiteHTMLContainer.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="ParticleEffects.h" />
     <ClInclude Include="ShadowRenderer.h" />
     <ClInclude Include="state_lobby.h" />
