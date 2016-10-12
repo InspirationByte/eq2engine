@@ -25,8 +25,8 @@ const float AI_COPVIEW_RADIUS_PURSUIT	= 120.0f;
 const float AI_COPVIEW_RADIUS_ROADBLOCK = 15.0f;
 
 const float AI_COP_DEATHTIME	= 3.5f;
-const float AI_COP_BLOCK_DELAY			= 3.5f;
-const float AI_COP_BLOCK_REALIZE_TIME	= 2.5f;
+const float AI_COP_BLOCK_DELAY			= 1.5f;
+const float AI_COP_BLOCK_REALIZE_TIME	= 1.0f;
 
 const float AI_COP_CHECK_MAXSPEED = 80.0f; // 80 kph and you will be pursued
 
@@ -78,6 +78,7 @@ CAIPursuerCar::CAIPursuerCar(carConfigEntry_t* carConfig, EPursuerAIType type) :
 	m_taunts = NULL;
 	m_type = type;
 	m_isColliding = false;
+	m_blockTimeout = 0.0f;
 	m_blockingTime = 0.0f;
 }
 
@@ -936,12 +937,39 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		controls |= IN_BRAKE;
 	}
 
-	/*
-	if(frontColl.fract < 1.0f)
+	//if(frontColl.fract < 1.0f)
+	//	steeringTargetPos = frontColl.position + carForwardDir*5.0f + frontColl.normal*(1.0f-frontColl.fract)*16.0f;
+
+	if (m_blockTimeout <= 0.0f && (frontColl.fract < 1.0f || m_isColliding) && fSpeed < 5.0f)
 	{
-		steeringTargetPos += frontColl.normal*(1.0f-frontColl.fract)*5.0f;
+		m_blockingTime += fDt;
+
+		if(m_blockingTime > AI_COP_BLOCK_REALIZE_TIME)
+		{
+			m_blockTimeout = AI_COP_BLOCK_DELAY;
+			m_blockingTime = 0.0f;
+		}
 	}
-	*/
+	else
+	{
+		float distFromCollPoint = length(m_lastCollidingPosition-GetOrigin());
+
+		if(distFromCollPoint > 5.0f)
+			m_blockTimeout = 0.0f;
+
+		m_blockTimeout -= fDt;
+
+		if(m_blockTimeout > 0.0f)
+		{
+			brake = 1.0f;
+			accelerator = 0.0f;
+			controls |= IN_BRAKE;
+			controls &= ~IN_ACCELERATE;
+
+			//if(frontColl.fract < 1.0f)
+			//	steeringTargetPos = frontColl.position * frontColl.normal * 5.0f;
+		}
+	}
 
 	if(fSpeed > 1.0f)
 	{
@@ -981,28 +1009,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	if(fSpeed > 10.0f && doesHardSteer)
 	{
 		accelerator -= (FReal)fabs(fSteeringAngle)*0.25f*speedFactor;
-	}
-
-	float distFromCollPoint = length(m_lastCollidingPosition-GetOrigin());
-
-	if (m_blockingTime <= 0.0f && (frontColl.fract < 1.0f || m_isColliding) && fSpeed < 5.0f)
-	{
-		m_blockingTime = AI_COP_BLOCK_DELAY;
-	}
-	else
-	{
-		if(distFromCollPoint > 5.0f)
-			m_blockingTime = 0.0f;
-
-		m_blockingTime -= fDt;
-
-		if(m_blockingTime > 0.0f && m_blockingTime <= AI_COP_BLOCK_REALIZE_TIME)
-		{
-			brake = 1.0f;
-			accelerator = 0.0f;
-			controls |= IN_BRAKE;
-			controls &= ~IN_ACCELERATE;
-		}
 	}
 
 	if((controls & IN_ACCELERATE) && fSpeed < 50.0f && lateralSlide < 1.0f && accelerator >= 1.0f)

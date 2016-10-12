@@ -445,21 +445,29 @@ bool CreateAtlasImage(const DkList<imageDesc_t*>& images_list,
 	pShaderEntry->AddKeyBase("BaseTexture", file_name.GetData());
 	pShaderEntry->MergeFrom(shaderBase, true);
 
+	Vector2D sizeTexels(1.0f / wide, 1.0f / tall);
+
 	// copy pixels
 	for(int i = 0; i < packer.GetRectangleCount(); i++)
 	{
-		PackerRectangle* pRect = packer.GetRectangle(i);
-		imageDesc_t* imgDesc = (imageDesc_t*)pRect->userdata;
+		void* userData;
+		Rectangle_t rect;
+
+		packer.GetRectangle(rect, &userData, i);
+		imageDesc_t* imgDesc = (imageDesc_t*)userData;
 
 		// rgba8 is pretty simple
-		BlendAtlasTo(destData, imgDesc, pRect->x, pRect->y, wide, padding, padMode);
+		BlendAtlasTo(destData, imgDesc, rect.vleftTop.x, rect.vleftTop.y, rect.GetSize().x, padding, padMode);
+
+		rect.vleftTop *= sizeTexels;
+		rect.vrightBottom *= sizeTexels;
 
 		// add info to keyvalues
 		kvkeybase_t* rect_kv = pAtlasGroup->AddKeyBase(imgDesc->name.c_str());
-		rect_kv->SetValueAt(pRect->x / wide, 0);
-		rect_kv->SetValueAt(pRect->y / tall, 1);
-		rect_kv->SetValueAt((pRect->x+pRect->width) / wide, 2);
-		rect_kv->SetValueAt((pRect->y+pRect->height) / tall, 3);
+		rect_kv->SetValueAt(rect.vleftTop.x, 0);
+		rect_kv->SetValueAt(rect.vleftTop.y, 1);
+		rect_kv->SetValueAt(rect.vrightBottom.x, 2);
+		rect_kv->SetValueAt(rect.vrightBottom.y / tall, 3);
 	}
 
 	// done with it

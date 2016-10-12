@@ -32,7 +32,7 @@ struct PackerNode
 			delete rect;
 	}
 
-	bool AssignRectangle_r(PackerRectangle *rect, float padding);
+	bool AssignRectangle_r(PackerRectangle *rect);
 
 	PackerNode*		left;
 	PackerNode*		right;
@@ -40,30 +40,27 @@ struct PackerNode
 	PackerRectangle*	rect;
 };
 
-bool PackerNode::AssignRectangle_r(PackerRectangle *newRect, float padding)
+bool PackerNode::AssignRectangle_r(PackerRectangle *newRect)
 {
 	if (rect == NULL)
 	{
-		if (left->AssignRectangle_r(newRect, padding))
+		if (left->AssignRectangle_r(newRect))
 			return true;
 
-		return right->AssignRectangle_r(newRect, padding);
+		return right->AssignRectangle_r(newRect);
 	}
 	else 
 	{
-		if (newRect->width <= rect->width+padding && newRect->height <= rect->height+padding)
+		if (newRect->width <= rect->width && newRect->height <= rect->height)
 		{
 			float rx = rect->x;
 			float ry = rect->y;
 
-			newRect->x = rx + padding;
-			newRect->y = ry + padding;
+			newRect->x = rx;
+			newRect->y = ry;
 
-			// because we need it on every side
-			float dpadding = padding*2.0f;
-
-			left  = new PackerNode(rx, ry + newRect->height + dpadding, newRect->width + dpadding, rect->height - newRect->height + dpadding, newRect->userdata);
-			right = new PackerNode(rx + newRect->width + dpadding, ry, rect->width - newRect->width + dpadding, rect->height + dpadding, newRect->userdata);
+			left  = new PackerNode(rx, ry + newRect->height, newRect->width, rect->height - newRect->height, newRect->userdata);
+			right = new PackerNode(rx + newRect->width, ry, rect->width - newRect->width, rect->height, newRect->userdata);
 
 			delete rect;
 			rect = NULL;
@@ -94,8 +91,9 @@ int CRectanglePacker::AddRectangle(float width, float height, void* pUserData)
 {
 	PackerRectangle* rect = new PackerRectangle;
 
-	rect->width  = width;
-	rect->height = height;
+	rect->width  = width+m_padding*2.0f;
+	rect->height = height+m_padding*2.0f;
+
 	rect->userdata = pUserData;
 
 	return m_pRectangles.append(rect);
@@ -117,12 +115,12 @@ bool CRectanglePacker::AssignCoords(float& width, float& height, COMPRECTFUNC co
 	// do placement
 	for (int i = 0; i < sortedRects.numElem(); i++)
 	{
-		if (top->AssignRectangle_r( sortedRects[i], m_padding ))
+		if (top->AssignRectangle_r( sortedRects[i] ))
 		{
-			float x = sortedRects[i]->x + sortedRects[i]->width + m_padding;
-			float y = sortedRects[i]->y + sortedRects[i]->height + m_padding;
+			float x = sortedRects[i]->x + sortedRects[i]->width;
+			float y = sortedRects[i]->y + sortedRects[i]->height;
 
-			if (x > width )
+			if (x > width)
 				width = x;
 
 			if (y > height)
@@ -138,6 +136,17 @@ bool CRectanglePacker::AssignCoords(float& width, float& height, COMPRECTFUNC co
 	delete top;
 
 	return true;
+}
+
+void CRectanglePacker::GetRectangle(Rectangle_t& rect, void** userData, uint index) const
+{
+	PackerRectangle* pc = m_pRectangles[index];
+
+	rect.vleftTop = Vector2D(pc->x + m_padding, pc->y + m_padding);
+	rect.vrightBottom = rect.vleftTop + Vector2D(pc->width - m_padding*2.0f, pc->height - m_padding*2.0f);
+	
+	if(userData != NULL)
+		*userData = pc->userdata;
 }
 
 void CRectanglePacker::Cleanup()

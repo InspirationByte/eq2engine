@@ -106,6 +106,7 @@ protected:
 
 	float					m_deathTime;
 	float					m_blockingTime;
+	float					m_blockTimeout;
 
 	bool					m_isColliding;
 	Vector3D				m_lastCollidingPosition;

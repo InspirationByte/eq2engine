@@ -10,6 +10,7 @@
 
 #include "dktypes.h"
 #include "utils/DkList.h"
+#include "math/Rectangle.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4244)
@@ -82,7 +83,7 @@ public:
 	bool						AssignCoords(float& width, float& height, COMPRECTFUNC compRectFunc = OriginalAreaComp);
 
 	// returns rectangle
-	PackerRectangle*			GetRectangle(uint index) const { return m_pRectangles[index]; }
+	void						GetRectangle(Rectangle_t& rect, void** userData, uint index) const;
 	int							GetRectangleCount() const {return m_pRectangles.numElem();}
 
 	void						SetPackPadding(float padding) { m_padding = padding; }

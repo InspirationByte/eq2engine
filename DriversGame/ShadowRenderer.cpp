@@ -28,7 +28,7 @@ enum EShadowModelRenderMode
 
 CShadowRenderer::CShadowRenderer() : m_shadowTexture(NULL), m_shadowAngles(90,0,0), m_matVehicle(NULL), m_matSkinned(NULL), m_matSimple(NULL), m_isInit(false)
 {
-	m_texAtlasPacker.SetPackPadding( 4.0 );
+	m_texAtlasPacker.SetPackPadding( 2.0 );
 }
 
 CShadowRenderer::~CShadowRenderer()
@@ -127,6 +127,8 @@ inline int AtlasPackComparison(PackerRectangle *const &elem0, PackerRectangle *c
 	return (elem1->width + elem1->height) - (elem0->width + elem0->height);
 }
 
+ConVar r_shadows_debugatlas("r_shadows_debugatlas", "0");
+
 void CShadowRenderer::RenderShadowCasters()
 {
 	if(r_shadows.GetBool() == false)
@@ -135,7 +137,7 @@ void CShadowRenderer::RenderShadowCasters()
 	Vector2D neededTexSize = m_shadowTextureSize;
 
 	// process 
-	if(!m_texAtlasPacker.AssignCoords(neededTexSize.x,neededTexSize.y, AtlasPackComparison))
+	if(!m_texAtlasPacker.AssignCoords(neededTexSize.x,neededTexSize.y)) //, AtlasPackComparison))
 	{
 		debugoverlay->Text(ColorRGBA(1,0,0,1), "shadows render overflow");
 		return; // don't render shadows, size overflow
@@ -165,36 +167,42 @@ void CShadowRenderer::RenderShadowCasters()
 
 	for(int i = 0; i < m_texAtlasPacker.GetRectangleCount(); i++)
 	{
-		// render shadow to the rt
-		g_pShaderAPI->Clear( true,false,false, ColorRGBA(1.0f) );
+		void* userData;
+		Rectangle_t shadowRect;
+		m_texAtlasPacker.GetRectangle(shadowRect, &userData, i);
 
-		PackerRectangle* rect = m_texAtlasPacker.GetRectangle(i);
-		CGameObject* object = (CGameObject*)rect->userdata;
+		CGameObject* object = (CGameObject*)userData;
 
 		if(!object) // bad
 			continue;
 
+		// render shadow to the rt
+		if(r_shadows_debugatlas.GetBool())
+			g_pShaderAPI->Clear( true,false,false, ColorRGBA((float)i / (float)m_texAtlasPacker.GetRectangleCount()) );
+		else
+			g_pShaderAPI->Clear( true,false,false, ColorRGBA(1.0f) );
+
 		// calculate view
-		Vector2D shadowPos(rect->x*SHADOW_DESCALING, rect->y*SHADOW_DESCALING);
-		Vector2D shadowSize(rect->width, rect->height);
+		Vector2D shadowPos = shadowRect.vleftTop*SHADOW_DESCALING;
+		Vector2D shadowSize = shadowRect.GetSize();
 
-		IRectangle copyRect(rect->x, rect->y, rect->x+rect->width, rect->y+rect->height);
+		IRectangle copyRect(shadowRect.vleftTop, shadowRect.vrightBottom);
 
-		Rectangle_t shadowRect(rect->x, rect->y, rect->x+rect->width, rect->y+rect->height);
 		shadowRect.vleftTop *= m_shadowTexelSize;
 		shadowRect.vrightBottom *= m_shadowTexelSize;
 
 		// move view to the object origin
 		orthoView.SetOrigin(object->GetOrigin());
-		orthoView.GetMatrices(proj, view, rect->width*SHADOW_DESCALING, rect->height*SHADOW_DESCALING, -shadowSize.x*0.1f, 100.0f, true );
+		orthoView.GetMatrices(proj, view, shadowSize.x*SHADOW_DESCALING, shadowSize.y*SHADOW_DESCALING, -shadowSize.x*0.1f, 100.0f, true );
 
 		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
 		materials->SetMatrix(MATRIXMODE_VIEW, view);
 		materials->SetMatrix(MATRIXMODE_WORLD, object->m_worldMatrix);
 
-		viewProj = proj*view;
+		viewProj = proj * view;
 
-		RenderShadow( object->GetModel(), object->GetBodyGroups(), RSHADOW_STANDARD);
+		if(!r_shadows_debugatlas.GetBool())
+			RenderShadow( object->GetModel(), object->GetBodyGroups(), RSHADOW_STANDARD);
 
 		g_pShaderAPI->CopyRendertargetToTexture(m_shadowRt, m_shadowTexture, NULL, &copyRect);
 		
