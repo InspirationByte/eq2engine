@@ -552,7 +552,7 @@ protected:
 
 	ubyte					m_lightsEnabled;
 
-	bool					m_visible;
+	CNetworkVar(bool,		m_visible);
 
 	CNetworkVar(bool,		m_locked);
 	CNetworkVar(bool,		m_enabled);
@@ -600,6 +600,8 @@ OOLUA_PROXY(CCar, CGameObject)
 	OOLUA_MFUNC_CONST(GetBodyDamage)
 
 	OOLUA_MFUNC(Repair)
+
+	OOLUA_MFUNC(SetLight)
 
 	OOLUA_MFUNC(SetFelony)
 	OOLUA_MFUNC_CONST(GetFelony)

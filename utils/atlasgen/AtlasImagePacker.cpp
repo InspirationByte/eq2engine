@@ -368,7 +368,7 @@ bool CreateAtlasImage(const DkList<imageDesc_t*>& images_list,
 						const char* pszOutputImageName, 
 						kvkeybase_t* pParams)
 {
-	int padding = KV_GetValueInt(pParams->FindKeyBase("padding"), 0, 2);
+	int padding = KV_GetValueInt(pParams->FindKeyBase("padding"), 0, 0);
 	EPaddingMode padMode = PAD_NONE;
 
 	const char* padModeStr = KV_GetValueString(pParams->FindKeyBase("padding"), 1, "none");
@@ -415,7 +415,7 @@ bool CreateAtlasImage(const DkList<imageDesc_t*>& images_list,
 	shader = KV_GetValueString(shaderBase, 0, "BaseParticle");
 
 	// pack
-	if(!packer.AssignCoords(wide, tall, AtlasPackComparison))
+	if(!packer.AssignCoords(wide, tall))//, AtlasPackComparison))
 	{
 		MsgError("Couldn't assign coordinates, too small primary size!!!\n");
 		return false;
@@ -457,17 +457,17 @@ bool CreateAtlasImage(const DkList<imageDesc_t*>& images_list,
 		imageDesc_t* imgDesc = (imageDesc_t*)userData;
 
 		// rgba8 is pretty simple
-		BlendAtlasTo(destData, imgDesc, rect.vleftTop.x, rect.vleftTop.y, rect.GetSize().x, padding, padMode);
+		BlendAtlasTo(destData, imgDesc, (int)rect.vleftTop.x, (int)rect.vleftTop.y, (int)wide, padding, padMode);
 
 		rect.vleftTop *= sizeTexels;
 		rect.vrightBottom *= sizeTexels;
 
 		// add info to keyvalues
 		kvkeybase_t* rect_kv = pAtlasGroup->AddKeyBase(imgDesc->name.c_str());
-		rect_kv->SetValueAt(rect.vleftTop.x, 0);
-		rect_kv->SetValueAt(rect.vleftTop.y, 1);
-		rect_kv->SetValueAt(rect.vrightBottom.x, 2);
-		rect_kv->SetValueAt(rect.vrightBottom.y / tall, 3);
+		rect_kv->AddValue(rect.vleftTop.x);
+		rect_kv->AddValue(rect.vleftTop.y);
+		rect_kv->AddValue(rect.vrightBottom.x);
+		rect_kv->AddValue(rect.vrightBottom.y);
 	}
 
 	// done with it

@@ -261,7 +261,7 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		CollisionData_t back_coll;
 
 		btBoxShape sphere(btVector3(0.5f, 0.5f, 0.5f));
-		g_pPhysics->TestConvexSweep(&sphere, identity(), cam_pos_h, cam_pos, back_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_WATER);
+		g_pPhysics->TestConvexSweep(&sphere, identity(), cam_pos_h, cam_pos, back_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS);
 
 		if( back_coll.fract < 1.0f )
 		{

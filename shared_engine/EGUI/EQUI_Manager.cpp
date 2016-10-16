@@ -18,29 +18,39 @@
 //#include "EqUI_TextureFrame.h"
 //-----
 
-DECLARE_CMD(equi_showpanel, "Shows panel", CV_CHEAT)
+DECLARE_CMD(ui_showpanel, NULL, CV_CHEAT)
 {
 	if(CMD_ARGC == 0)
 		return;
 
 	CEqUI_Panel* pPanel = g_pEqUIManager->FindPanel( CMD_ARGV(0).c_str() );
 
-	if( g_pEqUIManager->GetRootPanel() && (g_pEqUIManager->GetRootPanel() != pPanel) )
-	{
-		g_pEqUIManager->GetRootPanel()->ClearChilds( false );
-
-		g_pEqUIManager->GetRootPanel()->AddChild( pPanel );
-	}
+	if( pPanel )
+		pPanel->Show();
+	else
+		MsgWarning("No such panel '%s'\n", CMD_ARGV(0).c_str());
 }
 
-DECLARE_CMD(equi_listpanels, "Dumps panel names to console", CV_CHEAT)
+DECLARE_CMD(ui_hidepanel, NULL, CV_CHEAT)
+{
+	if(CMD_ARGC == 0)
+		return;
+
+	CEqUI_Panel* pPanel = g_pEqUIManager->FindPanel( CMD_ARGV(0).c_str() );
+
+	if( pPanel )
+		pPanel->Hide();
+	else
+		MsgWarning("No such panel '%s'\n", CMD_ARGV(0).c_str());
+}
+
+DECLARE_CMD(ui_listpanels, NULL, CV_CHEAT)
 {
 	g_pEqUIManager->DumpPanelsToConsole();
 }
 
-CEqUI_Manager::CEqUI_Manager()
+CEqUI_Manager::CEqUI_Manager() : m_focus(NULL), m_rootPanel(NULL)
 {
-	m_rootPanel = NULL;
 }
 
 CEqUI_Manager::~CEqUI_Manager()
@@ -50,19 +60,21 @@ CEqUI_Manager::~CEqUI_Manager()
 
 void CEqUI_Manager::Init()
 {
-	m_rootPanel = NULL;
+	m_rootPanel = (CEqUI_Panel*)g_pEqUIManager->CreateElement("Panel");
+	m_rootPanel->SetName("equi_root");
+	m_rootPanel->Show();
 }
 
 void CEqUI_Manager::Shutdown()
 {
 	m_rootPanel = NULL;
 
-	for(int i = 0; i < m_allocatedPanels.numElem(); i++)
+	for(int i = 0; i < m_panels.numElem(); i++)
 	{
-		delete m_allocatedPanels[i];
+		delete m_panels[i];
 	}
 
-	m_allocatedPanels.clear();
+	m_panels.clear();
 }
 
 CEqUI_Panel* CEqUI_Manager::GetRootPanel() const
@@ -70,15 +82,10 @@ CEqUI_Panel* CEqUI_Manager::GetRootPanel() const
 	return m_rootPanel;
 }
 
-void CEqUI_Manager::SetRootPanel(CEqUI_Panel* pPanel)
-{
-	m_rootPanel = pPanel;
-}
-
 // the element loader
-CEqUI_Panel* CEqUI_Manager::CreateElement( const char* pszTypeName )
+IEqUIControl* CEqUI_Manager::CreateElement( const char* pszTypeName )
 {
-	EqUI_Type_e resolvedType = EqUI_ResolveElementTypeString( pszTypeName );
+	EUIElementType resolvedType = EqUI_ResolveElementTypeString( pszTypeName );
 
 	if(resolvedType == EQUI_INVALID)
 	{
@@ -86,43 +93,49 @@ CEqUI_Panel* CEqUI_Manager::CreateElement( const char* pszTypeName )
 		return NULL;
 	}
 
+	return CreateElement(resolvedType);
+}
+
+IEqUIControl* CEqUI_Manager::CreateElement( EUIElementType type )
+{
 	CEqUI_Panel* pElement = NULL;
 
-	switch(resolvedType)
+	switch(type)
 	{
 		case EQUI_PANEL:
 			pElement = new CEqUI_Panel();
-		case EQUI_BUTTON:
-			pElement = new CEqUI_Panel();	// TODO: button
+		//case EQUI_BUTTON:
+		//	pElement = new CEqUI_Panel();	// TODO: button
 	}
-
-	if(pElement != NULL)
-		m_allocatedPanels.append( pElement );
 
 	return pElement;
 }
 
-void CEqUI_Manager::DestroyPanel( CEqUI_Panel* pPanel )
+void CEqUI_Manager::AddPanel(CEqUI_Panel* panel)
 {
-	if(!pPanel)
+	m_panels.append( panel );
+	m_rootPanel->AddChild(panel);
+}
+
+void CEqUI_Manager::DestroyPanel( CEqUI_Panel* panel )
+{
+	if(!panel)
 		return;
 
-	delete pPanel;
+	m_rootPanel->RemoveChild(panel, false);
+	m_panels.fastRemove(panel);
 
-	m_allocatedPanels.remove(pPanel);
-
-	if(m_rootPanel == pPanel)
-		m_rootPanel = NULL;
+	delete panel;
 }
 
 CEqUI_Panel* CEqUI_Manager::FindPanel( const char* pszPanelName ) const
 {
-	for(int i = 0; i < m_allocatedPanels.numElem(); i++)
+	for(int i = 0; i < m_panels.numElem(); i++)
 	{
-		if(strlen(m_allocatedPanels[i]->GetName()) > 0)
+		if(strlen(m_panels[i]->GetName()) > 0)
 		{
-			if(!stricmp(pszPanelName, m_allocatedPanels[i]->GetName()))
-				return m_allocatedPanels[i];
+			if(!stricmp(pszPanelName, m_panels[i]->GetName()))
+				return m_panels[i];
 		}
 	}
 
@@ -131,11 +144,11 @@ CEqUI_Panel* CEqUI_Manager::FindPanel( const char* pszPanelName ) const
 
 void CEqUI_Manager::DumpPanelsToConsole()
 {
-	for(int i = 0; i < m_allocatedPanels.numElem(); i++)
+	for(int i = 0; i < m_panels.numElem(); i++)
 	{
-		if(strlen(m_allocatedPanels[i]->GetName()) > 0)
+		if(strlen(m_panels[i]->GetName()) > 0)
 		{
-			Msg("%s\n", m_allocatedPanels[i]->GetName());
+			Msg("%s\n", m_panels[i]->GetName());
 		}
 	}
 }
@@ -150,40 +163,66 @@ const IRectangle& CEqUI_Manager::GetViewFrame() const
 	return m_viewFrameRect;
 }
 
+void CEqUI_Manager::SetFocus( IEqUIControl* focusTo )
+{
+	m_focus = focusTo;
+}
+
+IEqUIControl* CEqUI_Manager::GetFocus() const
+{
+	return m_focus;
+}
+
+bool CEqUI_Manager::IsPanelsVisible() const
+{
+	for(int i = 0; i < m_panels.numElem(); i++)
+	{
+		if(m_panels[i]->IsVisible())
+			return true;
+	}
+
+	return false;
+}
+
 void CEqUI_Manager::Render()
 {
 	if(!m_rootPanel)
 		return;
 
+	// begin from the render panel
 	m_rootPanel->SetRectangle( m_viewFrameRect );
-
 	m_rootPanel->Render();
 }
 
-bool CEqUI_Manager::ProcessMouseEvents(float x, float y, int nMouseButtons, int nMouseFlags)
+bool CEqUI_Manager::ProcessMouseEvents(float x, float y, int nMouseButtons, int flags)
 {
 	if(!m_rootPanel)
-		return true;
+		return false;
 
 	if(!m_rootPanel->IsVisible())
-		return true;
+		return false;
 
-	return m_rootPanel->ProcessMouseEvents(x, y, nMouseButtons, nMouseFlags);
+	if(!IsPanelsVisible())
+		return false;
+
+	return m_rootPanel->ProcessMouseEvents(x, y, nMouseButtons, flags);
 }
 
-bool  CEqUI_Manager::ProcessKeyboardEvents(int nKeyButtons, int nKeyFlags)
+bool  CEqUI_Manager::ProcessKeyboardEvents(int nKeyButtons, int flags)
 {
-	if(!m_rootPanel)
-		return true;
+	if( nKeyButtons == KEY_TILDE )
+		return false;
 
-	if(!m_rootPanel->IsVisible())
-		return true;
+	if(!IsPanelsVisible())
+		return false;
 
-	if(nKeyButtons == KEY_TILDE ||
-		nKeyButtons == KEY_ESCAPE)
-		return true;
+	if(!m_focus)
+		return false;
 
-	return m_rootPanel->ProcessKeyboardEvents(nKeyButtons, nKeyFlags);
+	if(!m_focus->IsVisible())
+		return false;
+
+	return m_focus->ProcessKeyboardEvents(nKeyButtons, flags);
 }
 
 static CEqUI_Manager s_eqUIManager;

@@ -47,6 +47,8 @@ public:
 
 	virtual const wchar_t*	GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken = 0) = 0;
 	virtual ILocToken*		GetToken( const char* pszToken ) = 0;
+
+
 };
 
 //--------------------------------------------------------------

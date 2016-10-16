@@ -521,6 +521,13 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 {
 	if(transition == STATE_TRANSITION_PROLOG)
 	{
+
+		if(!IsAlive() || !g_pGameWorld->IsValidObject(m_targInfo.target))
+		{
+			AI_SetState(&CAIPursuerCar::SearchForRoad);
+			return 0;
+		}
+
 		m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
 
 		// restore collision

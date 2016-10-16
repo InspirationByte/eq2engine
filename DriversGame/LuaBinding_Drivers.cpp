@@ -162,9 +162,18 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	LUA_SET_GLOBAL_ENUMCONST(state, GO_LIGHT_TRAFFIC);
 
 
-
 	//-------------------
 	// vehicle stuff
+
+	LUA_SET_GLOBAL_ENUMCONST(state, CAR_LIGHT_HEADLIGHTS);
+	LUA_SET_GLOBAL_ENUMCONST(state, CAR_LIGHT_HEADLIGHTS_FAR);
+	LUA_SET_GLOBAL_ENUMCONST(state, CAR_LIGHT_BRAKE);
+	LUA_SET_GLOBAL_ENUMCONST(state, CAR_LIGHT_REVERSELIGHT);
+	LUA_SET_GLOBAL_ENUMCONST(state, CAR_LIGHT_DIM_LEFT);
+	LUA_SET_GLOBAL_ENUMCONST(state, CAR_LIGHT_DIM_RIGHT);
+	LUA_SET_GLOBAL_ENUMCONST(state, CAR_LIGHT_SERVICELIGHTS);
+
+	LUA_SET_GLOBAL_ENUMCONST(state, CAR_LIGHT_EMERGENCY);
 
 	LUA_SET_GLOBAL_ENUMCONST(state, CAR_TYPE_NORMAL);
 	LUA_SET_GLOBAL_ENUMCONST(state, CAR_TYPE_TRAFFIC_AI);
@@ -243,7 +252,12 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 
 bool LuaBinding_ConsoleHandler(const char* cmdText)
 {
-	if(!EqLua::LuaBinding_DoBuffer(GetLuaState(), cmdText, strlen(cmdText), "console"))
+	EqString cmdFullText( cmdText );
+
+	if(*cmdText == '=')
+		cmdFullText = varargs("ConsolePrint(%s)", cmdText+1);
+
+	if(!EqLua::LuaBinding_DoBuffer(GetLuaState(), cmdFullText.c_str(), cmdFullText.Length(), "console"))
 		MsgError("%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
 
 	return true;

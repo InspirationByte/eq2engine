@@ -718,6 +718,12 @@
     <ClInclude Include="..\public\utils\RectanglePacker.h">
       <Filter>Файлы исходного кода\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\shared_engine\egui\equi_defs.h">
+      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\egui\IEqUIControl.h">
+      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\Resources.rc">

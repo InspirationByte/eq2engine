@@ -14,6 +14,7 @@
 ConVar g_trafficMaxCars("g_trafficMaxCars", "48", "Maximum traffic cars", CV_ARCHIVE);
 ConVar g_traffic_mindist("g_traffic_mindist", "50", "Min traffic car distance to spawn", CV_CHEAT);
 ConVar g_traffic_maxdist("g_traffic_maxdist", "51", "Max traffic car distance, to disappear", CV_CHEAT);
+ConVar g_railroadCops("g_railroadCops", "0", NULL, CV_CHEAT);
 
 const float AI_COP_SPEECH_DELAY = 3.0f;		// delay before next speech
 const float AI_COP_TAUNT_DELAY = 11.0f;		// delay before next taunt
@@ -196,6 +197,8 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 
 		CAIPursuerCar* pCopCar = new CAIPursuerCar(conf, PURSUER_TYPE_COP);
 		pCopCar->SetTorqueScale(m_copAccelerationModifier);
+		pCopCar->SetMaxDamage(m_copMaxDamage);
+		
 		pNewCar = pCopCar;
 
 		m_copCars.append(pCopCar);
@@ -222,6 +225,9 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 
 	pNewCar->Spawn();
 	pNewCar->PlaceOnRoadCell(pReg, roadCell);
+
+	if(pNewCar->IsPursuer())
+		pNewCar->SetInfiniteMass(g_railroadCops.GetBool());
 
 	pNewCar->InitAI( false ); // TODO: chance of stoped, empty and active car on parking lane
 
@@ -421,6 +427,9 @@ IVector2D GetDirectionVec(int dirIdx);
 
 bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 {
+	if (g_replayData->m_state == REPL_PLAYING)
+		return true;
+
 	IVector2D playerCarCell;
 	if (!g_pGameWorld->m_level.GetTileGlobal( car->GetOrigin(), playerCarCell ))
 		return false;
@@ -497,6 +506,9 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 		copBlockCar->Enable(false);
 		copBlockCar->PlaceOnRoadCell(pReg, roadCell);
 		copBlockCar->InitAI(false);
+		copBlockCar->SetTorqueScale(m_copAccelerationModifier);
+		copBlockCar->SetInfiniteMass(g_railroadCops.GetBool());
+		copBlockCar->SetMaxDamage(m_copMaxDamage);
 
 		g_pGameWorld->AddObject(copBlockCar, true);
 
@@ -512,6 +524,33 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 
 	return m_roadBlockCars.numElem() > 0;
 }
+
+void CAICarManager::MakePursued( CCar* car )
+{
+	for(int i = 0; i < m_copCars.numElem(); i++)
+	{
+		CAIPursuerCar* cop = m_copCars[i];
+
+		if(!cop->InPursuit() && cop->IsAlive())
+		{
+			cop->SetPursuitTarget(car);
+			cop->BeginPursuit(0.0f);
+		}
+	}
+}
+
+/*
+void CAICarManager::StopPursuit( CCar* car )
+{
+	for(int i = 0; i < m_copCars.numElem(); i++)
+	{
+		if(!m_copCars[i]->InPursuit() && m_copCars[i]->GetPursuitTarget() == car)
+		{
+			m_copCars[i]->EndPursuit();
+		}
+	}
+}
+*/
 
 bool CAICarManager::IsRoadBlockSpawn() const
 {
@@ -622,6 +661,7 @@ void CAICarManager::GotCopTaunt()
 OOLUA_EXPORT_FUNCTIONS(
 	CAICarManager,
 
+	MakePursued,
 	RemoveAllCars,
 	SetMaxTrafficCars,
 	SetCopsEnabled,

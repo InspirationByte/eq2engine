@@ -16,8 +16,9 @@ ConVar r_shadows("r_shadows", "1", NULL, CV_ARCHIVE);
 
 ConVar r_shadowDist("r_shadowDist", "50", NULL, CV_ARCHIVE);
 
-const float SHADOW_SCALING = 20.0f;
+const float SHADOW_SCALING = 24.0f;
 const float SHADOW_DESCALING = 1.0f / SHADOW_SCALING;
+const float SHADOW_CROP = 4.0f;
 
 enum EShadowModelRenderMode
 {
@@ -165,6 +166,9 @@ void CShadowRenderer::RenderShadowCasters()
 
 	Vector2D halfTexSizeNeg = m_shadowTextureSize*-1.0f*SHADOW_DESCALING;
 
+	const Vector3D& viewPos = g_pGameWorld->GetView()->GetOrigin();
+	float distFac = 1.0f / r_shadowDist.GetFloat();
+
 	for(int i = 0; i < m_texAtlasPacker.GetRectangleCount(); i++)
 	{
 		void* userData;
@@ -184,7 +188,7 @@ void CShadowRenderer::RenderShadowCasters()
 
 		// calculate view
 		Vector2D shadowPos = shadowRect.vleftTop*SHADOW_DESCALING;
-		Vector2D shadowSize = shadowRect.GetSize();
+		Vector2D shadowSize = shadowRect.GetSize()-SHADOW_CROP;
 
 		IRectangle copyRect(shadowRect.vleftTop, shadowRect.vrightBottom);
 
@@ -194,7 +198,7 @@ void CShadowRenderer::RenderShadowCasters()
 		// move view to the object origin
 		orthoView.SetOrigin(object->GetOrigin());
 		orthoView.GetMatrices(proj, view, shadowSize.x*SHADOW_DESCALING, shadowSize.y*SHADOW_DESCALING, -shadowSize.x*0.1f, 100.0f, true );
-
+		
 		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
 		materials->SetMatrix(MATRIXMODE_VIEW, view);
 		materials->SetMatrix(MATRIXMODE_WORLD, object->m_worldMatrix);
@@ -210,8 +214,11 @@ void CShadowRenderer::RenderShadowCasters()
 		shadowVolume.LoadAsFrustum( viewProj );
 		g_pGameWorld->m_level.GetDecalPolygons(shadowDecal, shadowVolume);
 
+		float shadowAlpha = length(orthoView.GetOrigin()-viewPos) * distFac;
+		shadowAlpha = 1.0f - pow(max(0.0f, shadowAlpha), 8.0f);
+
 		// clip decal polygons by volume and apply projection coords
-		DecalClipAndTexture(&shadowDecal, shadowVolume, viewProj, shadowRect);
+		DecalClipAndTexture(&shadowDecal, shadowVolume, viewProj, shadowRect, shadowAlpha);
 
 		// push geometry
 		PFXVertex_t* verts;

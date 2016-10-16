@@ -118,6 +118,9 @@ public:
 	bool						SpawnRoadBlockFor( CCar* car, float directionAngle);
 	bool						IsRoadBlockSpawn() const;
 
+	void						MakePursued( CCar* car );
+	void						StopPursuit( CCar* car );
+
 protected:
 
 	void						RemoveTrafficCar(CCar* car);
@@ -168,6 +171,8 @@ OOLUA_PROXY(CAICarManager)
 	OOLUA_TAGS(Abstract)
 
 	OOLUA_MFUNC(RemoveAllCars)
+
+	OOLUA_MFUNC(MakePursued)
 
 	OOLUA_MFUNC(SetMaxTrafficCars)
 	OOLUA_MFUNC_CONST(GetMaxTrafficCars)

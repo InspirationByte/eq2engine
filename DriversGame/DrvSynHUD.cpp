@@ -240,7 +240,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 				float dist = length(m_mainVehicle->GetOrigin()-pursuerPos);
 
 				Vector3D screenPos;
-				PointToScreen_Z(pursuerPos, screenPos, g_pGameWorld->m_viewprojection, Vector2D(screenSize));
+				PointToScreen_Z(pursuerPos, screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x,(float)screenSize.y));
 
 				if( screenPos.z < 0.0f && dist < 100.0f )
 				{

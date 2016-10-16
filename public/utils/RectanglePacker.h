@@ -84,6 +84,9 @@ public:
 
 	// returns rectangle
 	void						GetRectangle(Rectangle_t& rect, void** userData, uint index) const;
+	void*						GetRectangleUserData(uint index) const				{ return m_pRectangles[index]->userdata; }
+	void						SetRectangleUserData(uint index, void* userData)	{ m_pRectangles[index]->userdata = userData; }
+
 	int							GetRectangleCount() const {return m_pRectangles.numElem();}
 
 	void						SetPackPadding(float padding) { m_padding = padding; }
@@ -92,7 +95,6 @@ public:
 
 protected:
 	DkList<PackerRectangle *>	m_pRectangles;
-
 	float						m_padding;
 };
 

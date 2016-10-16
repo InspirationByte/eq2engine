@@ -119,11 +119,11 @@ struct TAABBox //BoundingBox
 		return minPoint.x > maxPoint.x || minPoint.y > maxPoint.y || minPoint.z > maxPoint.z;
 	}
 
-    bool Contains( const TVec3D<T>& pos ) const
+    bool Contains( const TVec3D<T>& pos, T tolerance = 0 ) const
     {
-        return pos.x >= minPoint.x && pos.x <= maxPoint.x &&
-               pos.y >= minPoint.y && pos.y <= maxPoint.y &&
-               pos.z >= minPoint.z && pos.z <= maxPoint.z;
+        return pos.x >= minPoint.x-tolerance && pos.x <= maxPoint.x+tolerance &&
+               pos.y >= minPoint.y-tolerance && pos.y <= maxPoint.y+tolerance &&
+               pos.z >= minPoint.z-tolerance && pos.z <= maxPoint.z+tolerance;
     }
 
 	float SquaredDistPointAABB( const TVec3D<T>& p ) const
@@ -145,21 +145,21 @@ struct TAABBox //BoundingBox
 		return squaredDistance <= (radius * radius);
 	}
 
-	bool Intersects ( const TAABBox<T, TMAX>& bbox) const
+	bool Intersects ( const TAABBox<T, TMAX>& bbox, T tolerance = 0) const
 	{
 		bool overlap = true;
-		overlap = (minPoint.x > bbox.maxPoint.x || maxPoint.x < bbox.minPoint.x) ? false : overlap;
-		overlap = (minPoint.z > bbox.maxPoint.z || maxPoint.z < bbox.minPoint.z) ? false : overlap;
-		overlap = (minPoint.y > bbox.maxPoint.y || maxPoint.y < bbox.minPoint.y) ? false : overlap;
+		overlap = (minPoint.x-tolerance > bbox.maxPoint.x || maxPoint.x+tolerance < bbox.minPoint.x) ? false : overlap;
+		overlap = (minPoint.z-tolerance > bbox.maxPoint.z || maxPoint.z+tolerance < bbox.minPoint.z) ? false : overlap;
+		overlap = (minPoint.y-tolerance > bbox.maxPoint.y || maxPoint.y+tolerance < bbox.minPoint.y) ? false : overlap;
 
 		return overlap;
 	}
 
 	// warning, this is a size-dependent!
-	bool FullyInside ( const TAABBox<T, TMAX>& box) const
+	bool FullyInside ( const TAABBox<T, TMAX>& box, T tolerance = 0) const
 	{
-		if(	box.minPoint >= minPoint && box.minPoint <= maxPoint &&
-			box.maxPoint <= maxPoint && box.maxPoint >= minPoint)
+		if(	box.minPoint >= minPoint-tolerance && box.minPoint <= maxPoint+tolerance &&
+			box.maxPoint <= maxPoint+tolerance && box.maxPoint >= minPoint-tolerance)
 			return true;
 
 		return false;

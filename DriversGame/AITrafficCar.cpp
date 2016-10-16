@@ -382,6 +382,9 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 
 		if(m_thinkTime <= 0.0f)
 		{
+			if( IsAlive() )
+				UpdateLightsState();
+
 			int res = DoStatesAndEvents( m_refreshTime+fDt );
 			m_thinkTime = m_refreshTime;
 		}
@@ -458,6 +461,8 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 	}
 	else if(!IsAlive())
 		m_refreshTime = 0.0f;
+
+
 
 	GetPhysicsBody()->UpdateBoundingBoxTransform();
 

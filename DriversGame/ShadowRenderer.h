@@ -25,6 +25,7 @@ public:
 	void	Shutdown();
 
 	void	AddShadowCaster( CGameObject* object );
+	//void	AddLight(const Vector3D& position, const Vector3D& angles, float );
 
 	void	Clear();
 

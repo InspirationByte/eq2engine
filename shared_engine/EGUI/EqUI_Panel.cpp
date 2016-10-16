@@ -9,9 +9,18 @@
 #include "EQUI_Manager.h"
 #include "materialsystem/IMaterialSystem.h"
 
-IEqUIControl::IEqUIControl() : m_visible(true), m_enabled(true)
+//-------------------------------------------------------------------
+// Base control
+//-------------------------------------------------------------------
+
+IEqUIControl::IEqUIControl() : m_visible(false), m_enabled(true), m_parent(NULL)
 {
 
+}
+
+IEqUIControl::~IEqUIControl()
+{
+	ClearChilds(true);
 }
 
 void IEqUIControl::SetSize(const IVector2D &size)
@@ -30,6 +39,22 @@ void IEqUIControl::SetRectangle(const IRectangle& rect)
 	m_size = rect.vrightBottom - m_position;
 }
 
+bool IEqUIControl::IsVisible() const
+{
+	if(m_parent)
+		return m_parent->IsVisible() && m_visible;
+
+	return m_visible;
+}
+
+bool IEqUIControl::IsEnabled() const
+{
+	if(m_parent)
+		return m_parent->IsEnabled() && m_enabled;
+
+	return m_enabled;
+}
+
 const IVector2D& IEqUIControl::GetSize() const
 {
 	return m_size;
@@ -41,16 +66,16 @@ const IVector2D& IEqUIControl::GetPosition() const
 }
 
 // clipping rectangle, size position
-IRectangle	IEqUIControl::GetRectangle() const
+IRectangle IEqUIControl::GetRectangle() const
 {
 	return IRectangle(m_position, m_position + m_size);
 }
 
-//
-//
-//
+//-------------------------------------------------------------------
+// Panels
+//-------------------------------------------------------------------
 
-CEqUI_Panel::CEqUI_Panel() : m_parent(NULL), m_currentElement(NULL)
+CEqUI_Panel::CEqUI_Panel() : m_mouseOver(NULL)
 {
 	m_position = IVector2D(0);
 	m_size = IVector2D(32,32);
@@ -71,39 +96,40 @@ void CEqUI_Panel::InitFromKeyValues( kvkeybase_t* pSection )
 
 void CEqUI_Panel::Destroy()
 {
-	ClearChilds();
+	ClearChilds(true);
 }
 
-void CEqUI_Panel::AddChild(CEqUI_Panel* pControl)
+void IEqUIControl::AddChild(IEqUIControl* pControl)
 {
-	m_childPanels.addFirst(pControl);
+	m_childs.addFirst(pControl);
 	pControl->m_parent = this;
 }
 
-void CEqUI_Panel::RemoveChild(CEqUI_Panel* pControl)
+void IEqUIControl::RemoveChild(IEqUIControl* pControl, bool destroy)
 {
-	if(m_childPanels.goToFirst())
+	if(m_childs.goToFirst())
 	{
 		do
 		{
-			if(m_childPanels.getCurrent() == pControl)
+			if(m_childs.getCurrent() == pControl)
 			{
 				pControl->m_parent = NULL;
 
-				g_pEqUIManager->DestroyPanel(pControl);
+				if(destroy)
+					delete pControl;
 
-				m_childPanels.removeCurrent();
+				m_childs.removeCurrent();
 				return;
 			}
 		}
-		while(m_childPanels.goToNext());
+		while(m_childs.goToNext());
 	}
 }
 
 // returns child control
-CEqUI_Panel* CEqUI_Panel::FindChild(const char* pszName)
+IEqUIControl* IEqUIControl::FindChild(const char* pszName)
 {
-	DkLinkedListIterator<CEqUI_Panel*> iter(m_childPanels);
+	DkLinkedListIterator<IEqUIControl*> iter(m_childs);
 
 	if(iter.goToFirst())
 	{
@@ -118,23 +144,23 @@ CEqUI_Panel* CEqUI_Panel::FindChild(const char* pszName)
 	return NULL;
 }
 
-void CEqUI_Panel::ClearChilds(bool bFree)
+void IEqUIControl::ClearChilds(bool destroy)
 {
-	if(m_childPanels.goToFirst())
+	if(m_childs.goToFirst())
 	{
 		do
 		{
-			m_childPanels.getCurrent()->m_parent = NULL;
+			m_childs.getCurrent()->m_parent = NULL;
 
-			if(bFree)
-				g_pEqUIManager->DestroyPanel(m_childPanels.getCurrent());
+			if(destroy)
+				delete m_childs.getCurrent();
 
-			m_childPanels.setCurrent(NULL);
+			m_childs.setCurrent(NULL);
 		}
-		while(m_childPanels.goToNext());
+		while(m_childs.goToNext());
 	}
 
-	m_childPanels.clear();
+	m_childs.clear();
 }
 
 void CEqUI_Panel::SetColor(const ColorRGBA &color)
@@ -195,23 +221,47 @@ void CEqUI_Panel::Render()
 		return;
 
 	// draw self if it has parent
-	if(m_parent)
+	if( m_parent )
 	{
 		IRectangle myRect(m_position, m_position+m_size);
+		g_pShaderAPI->SetScissorRectangle( myRect );
+
 		DrawAlphaFilledRectangle(myRect, m_color, ColorRGBA(m_color.xyz(), 1.0f) );
 	}
 
 	// do it recursively
+	if(m_childs.goToFirst())
+	{
+		do
+		{
+			m_childs.getCurrent()->Render();
+		}
+		while(m_childs.goToNext());
+	}
 }
 
-bool CEqUI_Panel::ProcessMouseEvents(float x, float y, int nMouseButtons, int nMouseFlags)
+bool CEqUI_Panel::ProcessMouseEvents(float x, float y, int nMouseButtons, int flags)
 {
+	if(!m_visible)
+		return false;
 
-	return false;
+	IRectangle rct = GetRectangle();
+
+	if( !rct.IsInRectangle(IVector2D(x,y)) )
+		return false;
+
+	if(flags & UIEVENT_MOUSE_MOVE)
+	{
+		return true;
+	}
+
+	return true;
 }
 
-bool CEqUI_Panel::ProcessKeyboardEvents(int nKeyButtons, int nKeyFlags)
+bool CEqUI_Panel::ProcessKeyboardEvents(int nKeyButtons, int flags)
 {
+	if(!m_visible)
+		return false;
 
 	return true;
 }

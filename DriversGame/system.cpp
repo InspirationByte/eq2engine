@@ -279,6 +279,14 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	debugoverlay->Init();
 	g_pEqUIManager->Init();
 
+	CEqUI_Panel* panel = (CEqUI_Panel*)g_pEqUIManager->CreateElement("panel");
+	panel->SetName("main_menu");
+
+	panel->SetPosition( IVector2D(20,20) );
+	panel->SetSize( IVector2D(800, 600) );
+
+	g_pEqUIManager->AddPanel( panel );
+
 	// init game states and proceed
 	InitRegisterStates();
 
@@ -464,6 +472,8 @@ CGameHost::CGameHost() :
 
 void CGameHost::ShutdownSystems()
 {
+	g_pEqUIManager->Shutdown();
+
 	SDL_DestroyWindow(g_pHost->m_pWindow);
 
 	// calls OnLeave and unloads state
@@ -605,6 +615,11 @@ bool CGameHost::Frame()
 	if( !FilterTime( m_fFrameTime ) )
 		return false;
 
+	// set cursor visible
+	SetCursorShow( g_pSysConsole->IsVisible() || g_pEqUIManager->IsPanelsVisible() );
+
+	//--------------------------------------------
+
 	BeginScene();
 
 	if(r_clear.GetBool())
@@ -665,11 +680,10 @@ bool CGameHost::Frame()
 		m_pDefaultFont->RenderText(varargs("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps), Vector2D(15), params);
 	}
 
-	g_pEqUIManager->Render();
-
 	GetKeyBindings()->DebugDraw(m_winSize);
 
-	SetCursorShow( g_pSysConsole->IsVisible() );
+	g_pEqUIManager->SetViewFrame(IRectangle(0,0,m_winSize.x,m_winSize.y));
+	g_pEqUIManager->Render();
 
 	g_pSysConsole->DrawSelf(true, m_winSize.x, m_winSize.y, m_fCurTime);
 
@@ -747,6 +761,9 @@ void CGameHost::TrapKey_Event( int key, bool down )
 	if(g_pSysConsole->KeyPress( key, down ))
 		return;
 
+	if( g_pEqUIManager->ProcessKeyboardEvents(key, down ? UIEVENT_DOWN : UIEVENT_UP ) )
+		return;
+
 	if(GetCurrentState())
 		GetCurrentState()->HandleKeyPress( key, down );
 }
@@ -764,21 +781,30 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 		return;
 	}
 
-	if(in_mouse_to_touch.GetBool())
-		g_pHost->Touch_Event( x/m_winSize.x, y/m_winSize.y, 0, down);
-
 	if( g_pSysConsole->MouseEvent( Vector2D(x,y), buttons, down ) )
 		return;
+
+	if( g_pEqUIManager->ProcessMouseEvents( x, y, buttons, down ? UIEVENT_DOWN : UIEVENT_UP) )
+		return;
+
+	if(in_mouse_to_touch.GetBool())
+		g_pHost->Touch_Event( x/m_winSize.x, y/m_winSize.y, 0, down);
 
 	GetKeyBindings()->OnMouseEvent(buttons, down);
 }
 
 void CGameHost::TrapMouseMove_Event( int x, int y )
 {
-	if(m_bCenterMouse && s_bActive && !g_pSysConsole->IsVisible())
+	if(m_bCenterMouse && s_bActive && !g_pSysConsole->IsVisible() && !g_pEqUIManager->IsPanelsVisible())
 		SetCursorPosition(m_winSize.x/2,m_winSize.y/2);
 
 	m_mousePos = IVector2D(x,y);
+
+	g_pSysConsole->MousePos( m_mousePos );
+
+	if( g_pEqUIManager->ProcessMouseEvents( x, y, 0, UIEVENT_MOUSE_MOVE) )
+		return;
+
 	Vector2D delta = (Vector2D)m_prevMousePos - (Vector2D)m_mousePos;
 
 	delta.y *= (m_invert.GetBool() ? 1 : -1);
@@ -786,8 +812,6 @@ void CGameHost::TrapMouseMove_Event( int x, int y )
 
 	if(GetCurrentState())
 		GetCurrentState()->HandleMouseMove(x, y, delta.x, delta.y);
-
-	g_pSysConsole->MousePos( m_mousePos );
 }
 
 void CGameHost::TrapMouseWheel_Event(int x, int y, int scroll)

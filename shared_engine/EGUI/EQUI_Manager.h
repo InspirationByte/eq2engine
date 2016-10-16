@@ -8,10 +8,13 @@
 #ifndef EQUI_MANAGER_H
 #define EQUI_MANAGER_H
 
+#include "equi_defs.h"
+
 #include "materialsystem/IMaterialSystem.h"
 #include "math/Rectangle.h"
 #include "utils/DkList.h"
 
+class IEqUIControl;
 class CEqUI_Panel;
 
 class CEqUI_Manager
@@ -24,10 +27,10 @@ public:
 	void				Shutdown();
 
 	CEqUI_Panel*		GetRootPanel() const;
-	void				SetRootPanel(CEqUI_Panel* pPanel);
 
 	// the element loader
-	CEqUI_Panel*		CreateElement( const char* pszTypeName );
+	IEqUIControl*		CreateElement( const char* pszTypeName );
+	IEqUIControl*		CreateElement( EUIElementType type );
 
 	void				AddPanel(CEqUI_Panel* panel);
 	void				DestroyPanel( CEqUI_Panel* pPanel );
@@ -36,19 +39,27 @@ public:
 	void				SetViewFrame(const IRectangle& rect);
 	const IRectangle&	GetViewFrame() const;
 
+	void				SetFocus( IEqUIControl* focusTo );
+	IEqUIControl*		GetFocus() const;
+
+	bool				IsPanelsVisible() const;
+
 	void				Render();
 
-	bool				ProcessMouseEvents(float x, float y, int nMouseButtons, int nMouseFlags);
-	bool				ProcessKeyboardEvents(int nKeyButtons,int nKeyFlags);
+	bool				ProcessMouseEvents(float x, float y, int nMouseButtons, int flags);
+	bool				ProcessKeyboardEvents(int nKeyButtons, int flags);
 
 	void				DumpPanelsToConsole();
+
 private:
-	CEqUI_Panel*		m_rootPanel;
+	CEqUI_Panel*			m_rootPanel;
 
-	DkList<CEqUI_Panel*>	m_allocatedPanels;
+	IEqUIControl*			m_focus;
 
-	IRectangle			m_viewFrameRect;
-	IMaterial*			m_material;
+	DkList<CEqUI_Panel*>	m_panels;
+
+	IRectangle				m_viewFrameRect;
+	IMaterial*				m_material;
 
 };
 

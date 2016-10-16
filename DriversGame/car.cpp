@@ -796,6 +796,8 @@ void CCar::Spawn()
 
 	// TODO: own car shadow texture
 	m_veh_shadow = g_vehicleEffects->FindEntry("carshad");
+
+	UpdateLightsState();
 }
 
 void CCar::AlignToGround()
@@ -2262,8 +2264,6 @@ void CCar::Simulate( float fDt )
 		m_oldSirenState = m_sirenEnabled;
 		m_sirenEnabled = !m_sirenEnabled;
 	}
-
-	UpdateLightsState();
 
 	//
 	//------------------------------------
@@ -3833,9 +3833,12 @@ bool CCar::IsLocked() const
 void CCar::Enable(bool enable)
 {
 	m_enabled = enable;
+
 #ifndef EDITOR
 	g_replayData->PushEvent( REPLAY_EVENT_CAR_ENABLE, m_replayID, (void*)enable );
 #endif // EDITOR
+
+	UpdateLightsState();
 }
 
 bool CCar::IsEnabled() const
@@ -3909,6 +3912,7 @@ OOLUA_EXPORT_FUNCTIONS(
 	SetTorqueScale,
 	SetDamage,
 	Repair,
+	SetLight,
 	SetFelony,
 	Lock,
 	Enable,

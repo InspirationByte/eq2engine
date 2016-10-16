@@ -260,8 +260,10 @@
     <ClInclude Include="..\shared_engine\Audio\soundzero.h" />
     <ClInclude Include="..\shared_engine\DebugOverlay.h" />
     <ClInclude Include="..\shared_engine\EGFInstancer.h" />
+    <ClInclude Include="..\shared_engine\egui\equi_defs.h" />
     <ClInclude Include="..\shared_engine\EGUI\EQUI_Manager.h" />
     <ClInclude Include="..\shared_engine\EGUI\EqUI_Panel.h" />
+    <ClInclude Include="..\shared_engine\egui\IEqUIControl.h" />
     <ClInclude Include="..\shared_engine\FontCache.h" />
     <ClInclude Include="..\shared_engine\FontLayoutBuilders.h" />
     <ClInclude Include="..\shared_engine\KeyBinding\Keys.h" />
