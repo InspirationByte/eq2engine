@@ -148,7 +148,7 @@
 1457289078 /home/soap/Projects/EqEngine/src_main/public/core/DebugInterface.h
 	"InterfaceManager.h"
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public//InterfaceManager.h
+1476719816 /home/soap/Projects/EqEngine/src_main/public//InterfaceManager.h
 	<stdio.h>
 	"utils/singleton.h"
 
@@ -161,65 +161,63 @@
 	"DebugInterface.h"
 	<conio.h>
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public/core/platform/Platform.h
+1457292040 /home/soap/Projects/EqEngine/src_main/public/core/platform/Platform.h
 	"dktypes.h"
 	"InterfaceManager.h"
-	"SDL.h"
-	"SDL_syswm.h"
+	<SDL.h>
+	<SDL_syswm.h>
 	<windows.h>
 	<stdio.h>
 	<X11/keysym.h>
 	<float.h>
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public//dktypes.h
+1461591255 /home/soap/Projects/EqEngine/src_main/public//dktypes.h
 	<stddef.h>
 	<string.h>
 
-1457289078 source:/home/soap/Projects/EqEngine/src_main/public/core/ConCommand.cpp
+1476719816 source:/home/soap/Projects/EqEngine/src_main/public/core/ConCommand.cpp
 	"ConCommand.h"
 	"ConVar.h"
 	"IConCommandFactory.h"
 	"DebugInterface.h"
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ConCommand.h
+1476719816 /home/soap/Projects/EqEngine/src_main/public/core/ConCommand.h
 	<stdio.h>
 	<stdlib.h>
 	"ConCommandBase.h"
-	"utils/DkList.h"
-	"utils/eqstring.h"
 	"InterfaceManager.h"
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ConCommandBase.h
-	<stdio.h>
-	<stdlib.h>
+1476719816 /home/soap/Projects/EqEngine/src_main/public/core/ConCommandBase.h
+	"utils/DkList.h"
+	"utils/eqstring.h"
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public//utils/DkList.h
+1476719816 /home/soap/Projects/EqEngine/src_main/public//utils/DkList.h
+	<functional>
 	"platform/MessageBox.h"
 	"dktypes.h"
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public/core//platform/MessageBox.h
+1476719816 /home/soap/Projects/EqEngine/src_main/public/core//platform/MessageBox.h
 	"InterfaceManager.h"
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public//utils/eqstring.h
+1465324214 /home/soap/Projects/EqEngine/src_main/public//utils/eqstring.h
 	<stdlib.h>
 	<string.h>
 	"dktypes.h"
 	"eqwstring.h"
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public//utils/eqwstring.h
+1465324214 /home/soap/Projects/EqEngine/src_main/public//utils/eqwstring.h
 	<stdlib.h>
 	<string.h>
 	"dktypes.h"
 	"eqstring.h"
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public/core/ConVar.h
+1476719816 /home/soap/Projects/EqEngine/src_main/public/core/ConVar.h
 	<stdio.h>
 	<stdlib.h>
 	"ConCommandBase.h"
 	"InterfaceManager.h"
-	"utils\DkStr.h"
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public/core/IConCommandFactory.h
+1476719816 /home/soap/Projects/EqEngine/src_main/public/core/IConCommandFactory.h
 	<stdio.h>
 	<stdlib.h>
 	"utils/DkList.h"
@@ -228,11 +226,11 @@
 	"ConCommandBase.h"
 	"InterfaceManager.h"
 
-1457289078 source:/home/soap/Projects/EqEngine/src_main/public/core/ConCommandBase.cpp
+1476719816 source:/home/soap/Projects/EqEngine/src_main/public/core/ConCommandBase.cpp
 	"ConCommandBase.h"
 	"IConCommandFactory.h"
 
-1457289078 source:/home/soap/Projects/EqEngine/src_main/public/core/ConVar.cpp
+1476720584 source:/home/soap/Projects/EqEngine/src_main/public/core/ConVar.cpp
 	"ConVar.h"
 	"IConCommandFactory.h"
 	"ICmdLineParser.h"
@@ -247,8 +245,7 @@
 	<stdio.h>
 	"InterfaceManager.h"
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public//utils/strtools.h
-	"utils/DkLinkedList.h"
+1476720751 /home/soap/Projects/EqEngine/src_main/public//utils/strtools.h
 	"utils/DkList.h"
 	"utils/eqstring.h"
 	"utils/eqwstring.h"

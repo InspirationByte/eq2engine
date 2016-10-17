@@ -13,8 +13,6 @@
 #include <float.h>
 
 #include "dktypes.h"
-
-// is here for some veeery useful functions
 #include "math_common.h"
 
 struct half
@@ -132,7 +130,7 @@ bool operator == (const TVec2D<T> &u, const TVec2D<T2> &v);
 /* --------------------------------------------------------------------------------- */
 
 template <class T>
-struct TVec3D 
+struct TVec3D
 {
 	T x, y, z;
 
@@ -260,7 +258,7 @@ bool operator > (const TVec3D<T> &u, const TVec3D<T2> &v);
 /* --------------------------------------------------------------------------------- */
 
 template <class T>
-struct TVec4D 
+struct TVec4D
 {
 	T x, y, z, w;
 

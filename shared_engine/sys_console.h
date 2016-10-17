@@ -10,14 +10,10 @@
 
 #include <stdio.h>
 #include "DebugInterface.h"
-#include "math/Vector.h"
 
-#include "Font.h"
-//#include "IEngineHost.h"
-
-//-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
-//-*-*-*-*-*-*- Autocompletion for fastfind -*-*-*-*-*-*-*-
-//-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+#include "utils/eqstring.h"
+#include "utils/DkList.h"
+#include "IFont.h"
 
 // int argumentType definitions
 #define ARG_TYPE_GENERIC			0
@@ -34,10 +30,6 @@ struct AutoCompletionNode_s
 
 	int argumentType;
 };
-
-//-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
-// Console main class
-//-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
 
 #ifdef KeyPress
 #undef KeyPress

@@ -238,9 +238,9 @@ void ConVar::InternalSetString(char const *value)
 			delete [] m_szValueString; // Sometimes errors
 
 		// min is 16
-		m_iStringLength = max(16, len);
+		m_iStringLength = len > 16 ? len : 16;
 		m_szValueString = new char[m_iStringLength];
-		
+
 	}
 
 	if (m_szValueString)

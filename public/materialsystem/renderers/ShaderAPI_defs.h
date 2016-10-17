@@ -8,14 +8,12 @@
 #ifndef RENDERER_CONSTANTS_H
 #define RENDERER_CONSTANTS_H
 
+#include "textureformats.h"
+
 #include "math/Vector.h"
 #include "math/Matrix.h"
-#include "math/Rectangle.h"
-#include "platform/Platform.h"
-#include "textureformats.h"
 #include "utils/DkList.h"
 #include "utils/eqstring.h"
-#include "ppmem.h"
 
 //---------------------------------------
 //        HIGH LEVEL CONSTANTS

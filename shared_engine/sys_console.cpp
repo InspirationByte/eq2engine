@@ -14,6 +14,7 @@
 #include "EngineSpew.h"
 #include "EngineVersion.h"
 #include "FontCache.h"
+#include "Font.h"
 #include "KeyBinding/Keys.h"
 
 #ifdef _DEBUG
@@ -1070,7 +1071,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 
 					if(m_fastfind_cmdbase != NULL)
 					{
-						
+
 
 						if(m_autocompletionList.numElem() == 1)
 						{

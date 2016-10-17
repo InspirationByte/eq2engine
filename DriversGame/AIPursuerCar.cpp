@@ -709,7 +709,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	Vector3D carForwardDir = GetForwardVector();
 	Vector3D carPos		= GetOrigin() + carForwardDir * m_conf->m_body_size.z;
 	Vector3D targetPos	= m_targInfo.target->GetOrigin() + m_targInfo.target->GetVelocity()*velocityDistOffsetFactor*0.75f;
-	
+
 
 	float fSpeed = GetSpeedWheels();
 	float speedMPS = (fSpeed*KPH_TO_MPS);
@@ -750,7 +750,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 			doesHaveStraightPath = false;
 		}
 	}
-	
+
 	//-------------------------------------------------------------------------------
 	// refresh the navigation path if we don't see the target
 
@@ -813,16 +813,16 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	float frontCollDist = clamp(fSpeed, 1.0f, 8.0f);
 
 	// trace in the front direction
-	g_pPhysics->TestConvexSweep(GetPhysicsBody()->GetBulletShape(), GetOrientation(), 
-		GetOrigin(), GetOrigin()+carForwardDir*frontCollDist, frontColl, 
+	g_pPhysics->TestConvexSweep(GetPhysicsBody()->GetBulletShape(), GetOrientation(),
+		GetOrigin(), GetOrigin()+carForwardDir*frontCollDist, frontColl,
 		OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE, &collFilter);
 
 	// trace the car body in velocity direction
-	g_pPhysics->TestConvexSweep(GetPhysicsBody()->GetBulletShape(), GetOrientation(), 
-		GetOrigin(), GetOrigin()+GetVelocity(), velocityColl, 
-		OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE, 
+	g_pPhysics->TestConvexSweep(GetPhysicsBody()->GetBulletShape(), GetOrientation(),
+		GetOrigin(), GetOrigin()+GetVelocity(), velocityColl,
+		OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE,
 		&collFilter);
-	
+
 	//-------------------------------------------------------------------------------
 	// calculate the steering
 
@@ -924,7 +924,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	{
 		controls |= IN_HORN;
 	}
-	
+
 	float pursuitTargetSpeed = m_targInfo.target->GetSpeed();
 
 	if(	!m_targInfo.isAngry && distToTargetReal < 14.0f)
@@ -1003,7 +1003,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		if(lateralSlideSpd > 1.0f)
 			brake += (FReal)lateralSlideSpd;
 
-		brake *= powf(speedFactor, 0.25f)* 6.0f * brakeDistantFactor * pow(1.0f-min(velocityToTargetFactor, 1.0f), 0.25f)*weatherBrakeDistModifier;
+		brake *= FReal( powf(speedFactor, 0.25f)* 6.0f * brakeDistantFactor * pow(1.0f-min(velocityToTargetFactor, 1.0f), 0.25f)*weatherBrakeDistModifier );
 
 		if(ai_debug_pursuer.GetBool())
 		{

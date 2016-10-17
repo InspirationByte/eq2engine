@@ -754,7 +754,7 @@ void kvkeybase_t::SetValueAt(int nValue, int idxAt)
 	char tempbuf[64];
 
 	// copy value string
-	itoa(nValue, tempbuf, 10);
+	_snprintf(tempbuf, 64, "%d", nValue);
 
 	pairValue->SetStringValue( tempbuf );
 
@@ -818,7 +818,7 @@ void kvkeybase_t::SetValueAt(bool bValue, int idxAt)
 	char tempbuf[64];
 
 	// copy value string
-	itoa(bValue, tempbuf, 10);
+	_snprintf(tempbuf, 64, "%d", bValue ? 1 : 0);
 
 	pairValue->SetStringValue( tempbuf );
 
@@ -871,7 +871,7 @@ kvkeybase_t& kvkeybase_t::SetKey(const char* name, int nValue)
 	pPair->ClearValues();
 	pPair->type = KVPAIR_INT;
 	pPair->AddValue(nValue);
-	
+
 	return *this;
 }
 
@@ -894,7 +894,7 @@ kvkeybase_t& kvkeybase_t::SetKey(const char* name, bool bValue)
 	kvkeybase_t* pPair = (kvkeybase_t*)FindKeyBase( name );
 	if(!pPair)
 		return AddKey(name, bValue);
-	
+
 	// value setup
 	pPair->ClearValues();
 	pPair->type = KVPAIR_BOOL;
@@ -913,7 +913,7 @@ kvkeybase_t& kvkeybase_t::SetKey(const char* name, kvkeybase_t* pair)
 		return AddKey(name, pair);
 
 	pPair->Cleanup();
-	
+
 	pair->CopyTo(pPair);
 
 	return *this;
@@ -1460,7 +1460,7 @@ int KVCountSpecialSymbols(char* pszStr)
 		{
 			specials_count++;
 		}
-	}while(*ptr++ != NULL);
+	}while(*ptr++);
 
 	return specials_count + 1;
 }
@@ -1495,7 +1495,7 @@ char* KVWriteProcessString( char* pszStr, char* pszTemp )
 		else
 			*ptrTemp++ = *ptr;
 
-	}while(*ptr++ != NULL);
+	}while(*ptr++);
 
 	// add NULL
 	*ptrTemp++ = 0;

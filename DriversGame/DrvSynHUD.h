@@ -8,7 +8,6 @@
 #ifndef DRVSYNHUD_H
 #define DRVSYNHUD_H
 
-#include "math/DkMath.h"
 #include "utils/eqwstring.h"
 #include "car.h"
 
@@ -75,7 +74,7 @@ protected:
 	float								m_radarBlank;
 
 	ITexture*							m_mapTexture;
-	
+
 	std::map<int, hudDisplayObject_t>	m_displayObjects;
 	int									m_handleCounter;
 

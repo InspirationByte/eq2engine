@@ -11,6 +11,8 @@
 #include "textureformats.h"
 #include "ShaderAPI_defs.h"
 #include "refcounted.h"
+#include "math/Rectangle.h"
+#include "ppmem.h"
 
 struct texlockdata_t
 {
@@ -64,7 +66,7 @@ public:
 
 	// locks texture for modifications, etc
 	virtual void						Lock(texlockdata_t* pLockData, Rectangle_t* pRect = NULL, bool bDiscard = false, bool bReadOnly = false, int nLevel = 0, int nCubeFaceId = 0) = 0;
-	
+
 	// unlocks texture for modifications, etc
 	virtual void						Unlock() = 0;
 };

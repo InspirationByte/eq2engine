@@ -9,6 +9,8 @@
 #include "DebugInterface.h"
 #include "ConVar.h"
 
+#include "math/math_common.h"
+
 #include <string.h>
 #include <stdlib.h>
 

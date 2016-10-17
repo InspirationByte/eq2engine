@@ -32,15 +32,8 @@
 #include <ctype.h>
 #include <string.h>
 
-#ifndef max
-#define max(a,b)            (((a) > (b)) ? (a) : (b))
-#endif
-
-#ifndef min
-#define min(a,b)            (((a) < (b)) ? (a) : (b))
-#endif
-
 #define _vsnwprintf vswprintf
+#define _snprintf snprintf
 
 #endif // LINUX
 
