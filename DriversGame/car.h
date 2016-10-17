@@ -550,9 +550,9 @@ protected:
 	CNetworkVar(float,		m_gameFelony);	// felony percentage
 	CNetworkVar(short,		m_numPursued);
 
-	ubyte					m_lightsEnabled;
+	CNetworkVar(ubyte,		m_lightsEnabled);
 
-	CNetworkVar(bool,		m_visible);
+	bool					m_visible;
 
 	CNetworkVar(bool,		m_locked);
 	CNetworkVar(bool,		m_enabled);
