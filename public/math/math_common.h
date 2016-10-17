@@ -24,6 +24,16 @@
 #define F_EPS			0.0001f
 #define V_MAX_COORD		393216.0f		// common maximum in the darktech engine
 
+#define roundf(x) floorf((x) + 0.5f)
+
+#ifndef min
+#define min(x, y) ((x < y)? x : y)
+#endif
+
+#ifndef max
+#define max(x, y) ((x > y)? x : y)
+#endif
+
 // Math routines done in optimized assembly math package routines
 inline void SinCos( float radians, float *sine, float *cosine )
 {
@@ -113,16 +123,6 @@ inline float sincf( const float x )
 {
 	return (x == 0)? 1 : sinf(x) / x;
 }
-
-#define roundf(x) floorf((x) + 0.5f)
-
-#ifndef min
-#define min(x, y) ((x < y)? x : y)
-#endif
-
-#ifndef max
-#define max(x, y) ((x > y)? x : y)
-#endif
 
 inline float intAdjustf(const float x, const float diff = 0.01f)
 {

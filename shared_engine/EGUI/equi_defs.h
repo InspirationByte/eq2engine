@@ -42,20 +42,6 @@ static const char* s_equi_typestrings[] =
 	NULL
 };
 
-static EUIElementType EqUI_ResolveElementTypeString(const char* pszTypeName)
-{
-	for(int i = 0; i < EQUI_TYPES; i++)
-	{
-		if(!s_equi_typestrings[i])
-			break;
-
-		if(!stricmp(s_equi_typestrings[i], pszTypeName))
-			return (EUIElementType)i;
-	}
-
-	return EQUI_INVALID;
-}
-
 //--------------------------------------------------------
 
 enum EUIAnchors

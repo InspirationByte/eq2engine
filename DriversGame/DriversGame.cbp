@@ -83,6 +83,8 @@
 		<Unit filename="../public/materialsystem/BaseShader.cpp" />
 		<Unit filename="../public/materialsystem/BaseShader.h" />
 		<Unit filename="../public/physics/IStudioShapeCache.h" />
+		<Unit filename="../public/utils/RectanglePacker.cpp" />
+		<Unit filename="../public/utils/RectanglePacker.h" />
 		<Unit filename="../shared_engine/Audio/alsnd_emitter.cpp" />
 		<Unit filename="../shared_engine/Audio/alsnd_emitter.h" />
 		<Unit filename="../shared_engine/Audio/alsnd_sample.cpp" />
@@ -101,6 +103,8 @@
 		<Unit filename="../shared_engine/EGUI/EQUI_Manager.h" />
 		<Unit filename="../shared_engine/EGUI/EqUI_Panel.cpp" />
 		<Unit filename="../shared_engine/EGUI/EqUI_Panel.h" />
+		<Unit filename="../shared_engine/EGUI/IEqUIControl.h" />
+		<Unit filename="../shared_engine/EGUI/equi_defs.h" />
 		<Unit filename="../shared_engine/EffectRender.cpp" />
 		<Unit filename="../shared_engine/EffectRender.h" />
 		<Unit filename="../shared_engine/EngineSpew.cpp" />
@@ -151,6 +155,8 @@
 		<Unit filename="BillboardList.h" />
 		<Unit filename="CameraAnimator.cpp" />
 		<Unit filename="CameraAnimator.h" />
+		<Unit filename="DrvSynDecals.cpp" />
+		<Unit filename="DrvSynDecals.h" />
 		<Unit filename="DrvSynHUD.cpp" />
 		<Unit filename="DrvSynHUD.h" />
 		<Unit filename="EventFSM.cpp" />
@@ -166,9 +172,13 @@
 		<Unit filename="Rain.cpp" />
 		<Unit filename="Rain.h" />
 		<Unit filename="ShaderOverrides.cpp" />
+		<Unit filename="Shader_Shadow.cpp" />
+		<Unit filename="Shader_ShadowBuild.cpp" />
 		<Unit filename="Shader_StaticObjs.cpp" />
 		<Unit filename="Shader_VehicleBody.cpp" />
 		<Unit filename="Shader_Water.cpp" />
+		<Unit filename="ShadowRenderer.cpp" />
+		<Unit filename="ShadowRenderer.h" />
 		<Unit filename="StateManager.cpp" />
 		<Unit filename="StateManager.h" />
 		<Unit filename="car.cpp" />

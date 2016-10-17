@@ -12,6 +12,7 @@
 
 #include "platform/Platform.h"
 #include "ShaderAPI_defs.h"
+#include "ppmem.h"
 
 class IVertexFormat
 {

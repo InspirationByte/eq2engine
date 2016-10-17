@@ -10,12 +10,13 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "platform/Platform.h"
-#include "utils/strtools.h"
 #include "ConVar.h"
 #include "ConCommand.h"
 
 #include "MaterialSystem.h"
 #include "IDebugOverlay.h"
+
+#include "utils/strtools.h"
 
 #include "Renderers/IRenderLibrary.h"
 #include "imaging/ImageLoader.h"

@@ -12,11 +12,13 @@
 #ifndef CMATERIALSYSTEM_H
 #define CMATERIALSYSTEM_H
 
+#include <unordered_map>
+
+#include "materialsystem/IMaterialSystem.h"
+
 #include "utils/DkList.h"
 #include "platform/Platform.h"
-#include "materialsystem/IMaterialSystem.h"
 #include "material.h"
-#include <unordered_map>
 
 #include "utils/eqthread.h"
 

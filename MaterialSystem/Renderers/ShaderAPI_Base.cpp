@@ -751,8 +751,8 @@ ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
 	Vector4D color2;
 
 	color.x = color.y = color.z = 0; color.w = 128;
-	color2.x = 128;
-	color2.y = 128;
+	color2.x = 255;
+	color2.y = 64;
 	color2.z = 255;
 	color2.w = 0;
 
