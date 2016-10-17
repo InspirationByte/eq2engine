@@ -147,7 +147,7 @@ static int PrimCount_TriangleFanStrip( int numPrimitives )
 
 static int PrimCount_ListList( int numPrimitives )
 {
-	return numPrimitives * 0.5;
+	return numPrimitives / 2;
 }
 
 static int PrimCount_ListStrip( int numPrimitives )
