@@ -33,10 +33,6 @@ LOCAL_SRC_FILES := \
 	DriversGame/object_debris.cpp\
 	DriversGame/object_physics.cpp\
 	DriversGame/eqPhysics/eqBulletIndexedMesh.cpp\
-	DriversGame/ShaderOverrides.cpp\
-	DriversGame/Shader_StaticObjs.cpp\
-	DriversGame/Shader_VehicleBody.cpp\
-	DriversGame/Shader_Water.cpp\
 	DriversGame/StateManager.cpp\
 	DriversGame/car.cpp\
 	DriversGame/eqPhysics/eqCollision_Object.cpp\
@@ -74,6 +70,15 @@ LOCAL_SRC_FILES := \
 	DriversGame/NetPlayer.cpp\
 	DriversGame/Rain.cpp\
 	DriversGame/ParticleEffects.cpp\
+	DriversGame/DrvSynDecals.cpp\
+	DriversGame/ShadowRenderer.cpp\
+	DriversGame/ShaderOverrides.cpp\
+	DriversGame/Shader_ShadowBuild.cpp\
+	DriversGame/Shader_Shadow.cpp\
+	DriversGame/Shader_StaticObjs.cpp\
+	DriversGame/Shader_VehicleBody.cpp\
+	DriversGame/Shader_Water.cpp\
+	shared_game/GameSoundEmitterSystem.cpp\
 	shared_engine/DebugOverlay.cpp\
 	shared_engine/EGFInstancer.cpp\
 	shared_engine/EffectRender.cpp\
@@ -94,7 +99,6 @@ LOCAL_SRC_FILES := \
 	shared_engine/studio_egf.cpp\
 	shared_engine/sys_console.cpp\
 	shared_engine/SpriteBuilder.cpp\
-	shared_game/GameSoundEmitterSystem.cpp\
 	shared_engine/Audio/alsound_local.cpp\
 	shared_engine/Audio/alsnd_emitter.cpp\
 	shared_engine/Audio/alsnd_sample.cpp\
@@ -102,6 +106,7 @@ LOCAL_SRC_FILES := \
 	shared_engine/Audio/soundzero.cpp\
 	shared_engine/EGUI/EQUI_Manager.cpp\
 	shared_engine/EGUI/EqUI_Panel.cpp\
+	public/utils/RectanglePacker.cpp\
 	public/ViewParams.cpp\
 	public/luabinding/LuaBinding.cpp\
 	public/luabinding/LuaBinding_Engine.cpp\
