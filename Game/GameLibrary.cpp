@@ -60,7 +60,6 @@ IDebugOverlay*			debugoverlay	= NULL;
 IProxyFactory*			proxyfactory	= NULL;
 
 // non-engine globals
-CEqUI_Panel*			g_pRootPanel = NULL;
 
 void ImportEngineInterfaces()
 {
@@ -177,10 +176,6 @@ bool CGameLibrary::Init(	ISoundSystem*	pSoundSystem,
 
 	g_pEqUIManager->Init();
 
-	g_pRootPanel = g_pEqUIManager->CreateElement("Panel");
-	g_pRootPanel->SetName("equi_root");
-
-	g_pEqUIManager->SetRootPanel( g_pRootPanel );
 
 	// init scripting system
 	//GetScriptSys()->Init();
@@ -221,14 +216,10 @@ void CGameLibrary::GameStart()
 	// Don't forget to set game state
 	if( strlen(g_pWorldInfo->GetMenuName()) > 0 )
 	{
-		g_pRootPanel->SetVisible( true );
-
 		engine->SetGameState( IEngineGame::GAME_RUNNING_MENU );
 	}
 	else
 	{
-		g_pRootPanel->SetVisible( false );
-
 		g_pEngineHost->SetCursorShow(false);
 
 		engine->SetGameState( IEngineGame::GAME_IDLE );
@@ -393,12 +384,8 @@ void CGameLibrary::PostRender()
 	materials->Setup2D(g_pEngineHost->GetWindowSize().x, g_pEngineHost->GetWindowSize().y);
 
 	// Here draw all 2D stuff
-	if( g_pRootPanel && g_pRootPanel->IsVisible() )
-	{
-		g_pEqUIManager->SetViewFrame(IRectangle(IVector2D(0), g_pEngineHost->GetWindowSize()));
-
-		g_pEqUIManager->Render();
-	}
+	g_pEqUIManager->SetViewFrame(IRectangle(IVector2D(0), g_pEngineHost->GetWindowSize()));
+	g_pEqUIManager->Render();
 
 	if(r_showcamerainfo.GetBool() && g_pViewEntity)
 	{
@@ -630,8 +617,8 @@ bool CGameLibrary::Key_Event( int key, bool down )
 	//if( engine->GetGameState() != IEngineGame::GAME_RUNNING_MENU )
 	//	return true;
 
-	if(g_pRootPanel && g_pRootPanel->IsVisible())
-		return g_pEqUIManager->ProcessKeyboardEvents( key, down);
+	if(g_pEqUIManager->ProcessKeyboardEvents( key, down))
+		return false;
 
 	return true;
 }
@@ -643,8 +630,8 @@ bool CGameLibrary::Mouse_Event( float x, float y, int buttons, bool down )
 	//if( engine->GetGameState() != IEngineGame::GAME_RUNNING_MENU )
 	//	return true;
 
-	if(g_pRootPanel && g_pRootPanel->IsVisible())
-		return g_pEqUIManager->ProcessMouseEvents( x, y, buttons, down);
+	if(g_pEqUIManager->ProcessMouseEvents( x, y, buttons, down))
+		return false;
 
 	return true;
 }

@@ -259,9 +259,9 @@ DECLARE_CMD(timescale, "Sets timescale", CV_CHEAT)
 {
 	g_bChangeTimescale = true;
 
-	if(args && args->numElem() > 0)
+	if(CMD_ARGC)
 	{
-		g_fTimescale_FadeTo = atof(args->ptr()[0].GetData());
+		g_fTimescale_FadeTo = atof(CMD_ARGV(0).c_str());
 	}
 }
 

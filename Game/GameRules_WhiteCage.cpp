@@ -81,14 +81,14 @@ DECLARE_CMD(respawnplayers, "Respawns players", CV_CHEAT)
 
 DECLARE_CMD(give, "gives an item to player", CV_CHEAT)
 {
-	if(!g_pGameRules->GetLocalPlayer() || !args)
+	if(!g_pGameRules->GetLocalPlayer())
 		return;
 
-	if(args->numElem() <= 0)
+	if(CMD_ARGC == 0)
 		return;
 
 	CBaseActor* pActor = (CBaseActor*)g_pGameRules->GetLocalPlayer();
-	pActor->GiveWeapon(args->ptr()[0].GetData());
+	pActor->GiveWeapon(CMD_ARGV(0).c_str());
 }
 
 IGameRules* g_pGameRules = NULL;

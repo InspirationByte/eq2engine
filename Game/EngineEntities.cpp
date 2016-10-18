@@ -233,15 +233,15 @@ DECLARE_CMD(make_light, "Creates light", CV_CHEAT)
 	{
 		pLight->SetAbsOrigin( tr.traceEnd );
 
-		if(args && args->numElem() > 0)
+		if(CMD_ARGC)
 		{
 			int cnt = 0;
-			while(cnt < args->numElem()-1)
+			while(cnt < CMD_ARGC-1)
 			{
-				if(cnt+1 < args->numElem())
+				if(cnt+1 < CMD_ARGC)
 				{
-					Msg("key: %s\n", args->ptr()[cnt].GetData());
-					pLight->SetKey(args->ptr()[cnt].GetData(), args->ptr()[cnt+1].GetData());
+					Msg("key: %s\n", CMD_ARGV(cnt).c_str());
+					pLight->SetKey(CMD_ARGV(cnt).c_str(), CMD_ARGV(cnt+1).GetData());
 				}
 
 				cnt += 2;
@@ -583,15 +583,15 @@ DECLARE_CMD(make_sun, "Creates sun", CV_CHEAT)
 		pSun->SetAbsOrigin( pos );
 		pSun->SetAbsAngles( ang );
 
-		if(args && args->numElem() > 0)
+		if(CMD_ARGC)
 		{
 			int cnt = 0;
-			while(cnt < args->numElem()-1)
+			while(cnt < CMD_ARGC-1)
 			{
-				if(cnt+1 < args->numElem())
+				if(cnt+1 < CMD_ARGC)
 				{
-					Msg("key: %s\n", args->ptr()[cnt].GetData());
-					pSun->SetKey(args->ptr()[cnt].GetData(), args->ptr()[cnt+1].GetData());
+					Msg("key: %s\n", CMD_ARGV(cnt).c_str());
+					pSun->SetKey(CMD_ARGV(cnt).c_str(), CMD_ARGV(cnt+1).c_str());
 				}
 
 				cnt += 2;

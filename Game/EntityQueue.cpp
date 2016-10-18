@@ -17,26 +17,23 @@ DkList<BaseEntity*> *ents = &g_Ents;
 
 DECLARE_CMD(g_ent_by_index,"Shows entity classname by index",CV_CHEAT)
 {
-	if(args && args->numElem() > 0)
+	if(CMD_ARGC)
 	{
-		BaseEntity* pEnt = UTIL_EntByIndex(atoi(args->ptr()[0].GetData()));
+		int idx = atoi(CMD_ARGV(0).c_str());
+
+		BaseEntity* pEnt = UTIL_EntByIndex(idx);
 		if(pEnt)
 		{
-			Msg("g_ent_by_index: %s", pEnt->GetClassname());
+			Msg("Entity %d: %s", idx, pEnt->GetClassname());
 		}
 	}
 }
 
 DECLARE_CMD(g_ent_spawn,"Spawns new entity",CV_CHEAT)
 {
-	if(args)
+	if(CMD_ARGC)
 	{
-		if(args->numElem() == 0)
-		{
-			goto usage;
-		}
-
-		BaseEntity *pEntity = (BaseEntity*)entityfactory->CreateEntityByName(args->ptr()[0].GetData());
+		BaseEntity *pEntity = (BaseEntity*)entityfactory->CreateEntityByName(CMD_ARGV(0).c_str());
 		if(pEntity != NULL)
 		{
 			// sorry, disk, I just need force precaching
@@ -48,8 +45,8 @@ DECLARE_CMD(g_ent_spawn,"Spawns new entity",CV_CHEAT)
 		}
 		return;
 	}
-usage:
-	MsgInfo("Usage: g_spawn <entityname>\n");
+	else
+		MsgInfo("Usage: g_spawn <entityname>\n");
 }
 
 void UniqueRegisterEntityForUpdate(BaseEntity* pEntity)
@@ -205,12 +202,12 @@ void UTIL_DoForEachEntity(DOFOREACH_ENT_FN func, void* pUserData)
 
 DECLARE_CMD(g_ent_remove,"Removes a named entity",CV_CHEAT)
 {
-	if(args->numElem() > 0)
+	if(CMD_ARGC)
 	{
-		BaseEntity* pEnt = UTIL_EntByClassname(args->ptr()[0].GetData());
+		BaseEntity* pEnt = UTIL_EntByClassname(CMD_ARGV(0).c_str());
 
 		if(!pEnt)
-			pEnt = UTIL_EntByName(args->ptr()[0].GetData());
+			pEnt = UTIL_EntByName(CMD_ARGV(0).c_str());
 
 		if(pEnt)
 		{
@@ -222,14 +219,14 @@ DECLARE_CMD(g_ent_remove,"Removes a named entity",CV_CHEAT)
 
 DECLARE_CMD(g_ent_removeall,"Removes a named entity",CV_CHEAT)
 {
-	if(args->numElem() > 0)
+	if(CMD_ARGC)
 	{
 		int counter = 0;
-		counter += UniqueRemoveEntityByClassname(args->ptr()[0].GetData());
-		counter += UniqueRemoveEntityByName(args->ptr()[0].GetData());
+		counter += UniqueRemoveEntityByClassname(CMD_ARGV(0).c_str());
+		counter += UniqueRemoveEntityByName(CMD_ARGV(0).c_str());
 
 		if(counter)
-			MsgInfo("Removed %d %s\n", counter, args->ptr()[0].GetData());
+			MsgInfo("Removed %d %s\n", counter, CMD_ARGV(0).c_str());
 	}
 }
 

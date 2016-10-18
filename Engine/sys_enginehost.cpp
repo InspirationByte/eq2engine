@@ -65,56 +65,21 @@ DECLARE_CVAR		(m_invert,0,"Mouse inversion enabled?",CV_ARCHIVE);
 
 DECLARE_CVAR		(screenshotJpegQuality,100,"JPEG Quality",CV_ARCHIVE);
 
-void CC_Exit_F(DkList<EqString> *args)
+DECLARE_CONCOMMAND_FN(exit)
 {
 	g_pEngineHost->SetQuitting( IEngineHost::QUIT_TODESKTOP );
 }
 
-ConCommand cc_exit("exit",CC_Exit_F,"Closes current instance of engine");
-ConCommand cc_quit("quit",CC_Exit_F,"Closes current instance of engine");
-ConCommand cc_quti("quti",CC_Exit_F,"This made for keyboard writing errors");
+ConCommand cc_exit("exit",CONCOMMAND_FN(exit),"Closes current instance of engine");
+ConCommand cc_quit("quit",CONCOMMAND_FN(exit),"Closes current instance of engine");
+ConCommand cc_quti("quti",CONCOMMAND_FN(exit),"This made for keyboard writing errors");
 
-void cc_printres_f(DkList<EqString> *args)
+DECLARE_CONCOMMAND_FN(printres)
 {
 	materials->PrintLoadedMaterials();
 	g_pModelCache->PrintLoadedModels();
 }
-ConCommand cc_printres("sys_print_resources",cc_printres_f,"Prints all loaded resources to the console");
-
-/*
-ConVar con_enable("con_enable","1","Enable console",CV_ARCHIVE | CV_CHEAT);
-DECLARE_CMD(toggleconsole, "Toggles console", 0)
-{
-	if(g_pSysConsole->IsVisible() && g_pSysConsole->IsShiftPressed())
-	{
-		g_pSysConsole->SetLogVisible(g_pSysConsole->IsLogVisible());
-		return;
-	}
-
-	//if(engine->GetGameState() == IEngineGame::GAME_NOTRUNNING)
-	//	return;
-
-	if(!con_enable.GetBool())
-	{
-		g_pSysConsole->SetVisible(false);
-		g_pEngineHost->SetCursorShow(false, true);
-		return;
-	}
-
-	if(g_pSysConsole->IsVisible())
-	{
-		g_pSysConsole->SetVisible(false);
-		g_pEngineHost->SetCursorShow(false, true);
-	}
-	else
-	{
-		g_pSysConsole->SetVisible(true);
-		g_pEngineHost->SetCursorShow(true, true);
-	}
-
-	g_pEngineHost->SetCursorShow(g_pSysConsole->IsVisible(), true);
-}
-*/
+ConCommand cc_printres("sys_print_resources",CONCOMMAND_FN(printres),"Prints all loaded resources to the console");
 
 static EQCURSOR staticDefaultCursor[20];
 
@@ -326,7 +291,7 @@ IDebugOverlay *debugoverlay = ( IDebugOverlay * )&g_DebugOverlays;
 
 IGameLibrary* gamedll = NULL;
 
-void CC_Screenshot_f(DkList<EqString> *args)
+DECLARE_CONCOMMAND_FN(screenshot)
 {
 	if(materials != NULL)
 	{
@@ -364,7 +329,7 @@ void CC_Screenshot_f(DkList<EqString> *args)
 		return;
 	}
 }
-ConCommand cc_screenshot("screenshot",CC_Screenshot_f,"Save screenshot");
+ConCommand cc_screenshot("screenshot",CONCOMMAND_FN(screenshot),"Save screenshot");
 
 DKMODULE *pMatSystem = NULL;
 DKMODULE *pGameDll = NULL;
@@ -1094,6 +1059,8 @@ int CEngineHost::Frame()
 
 		return 0;
 	}
+
+	SetCursorShow(g_pSysConsole->IsVisible(), true);
 
 	// go back
 	g_pShaderAPI->ChangeRenderTargetToBackBuffer();

@@ -813,41 +813,29 @@ DECLARE_CMD(quickload,"Makes quick load from quick save",0)
 
 DECLARE_CMD(save,"Saves game to specified file",0)
 {
-	if(args)
+	if(CMD_ARGC)
 	{
-		if(args->numElem() == 0)
+		if(!SaveGame_Write(CMD_ARGV(0).c_str()))
 		{
-			goto usage;
-		}
-
-		if(!SaveGame_Write(args->ptr()[0].GetData()))
-		{
-			MsgError("Can't save to %s\n", args->ptr()[0].GetData());
+			MsgError("Can't save to %s\n", CMD_ARGV(0).c_str());
 		}
 		else
 		{
-			MsgInfo("Game saved to %s\n", args->ptr()[0].GetData());
+			MsgInfo("Wrote save game to %s\n", CMD_ARGV(0).c_str());
 		}
-
-		return;
 	}
-usage:
-	MsgInfo("Usage: save <save name>\n");
+	else
+		MsgInfo("Usage: save <save name>\n");
 }
 
 DECLARE_CMD(load,"Loads game from specified file",0)
 {
-	if(args)
+	if(CMD_ARGC)
 	{
-		if(args->numElem() == 0)
-		{
-			goto usage;
-		}
-
-		SaveGame_RestoreFromFile(args->ptr()[0].GetData());
+		SaveGame_RestoreFromFile(CMD_ARGV(0).c_str());
 
 		return;
 	}
-usage:
-	MsgInfo("Usage: load <save name>\n");
+	else
+		MsgInfo("Usage: load <save name>\n");
 }

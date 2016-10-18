@@ -119,8 +119,7 @@ debugGraphBucket_t*	g_pPreRenderGraph	= NULL;
 debugGraphBucket_t*	g_pSceneRenderGraph = NULL;
 debugGraphBucket_t*	g_pPostRenderGraph	= NULL;
 
-
-void CC_Pause_F(DkList<EqString> *args)
+DECLARE_CMD(pause, "Pauses and unpauses the game", 0)
 {
 	if(g_pSysConsole->IsVisible())
 		return;
@@ -134,7 +133,6 @@ void CC_Pause_F(DkList<EqString> *args)
 		engine->SetGameState(IEngineGame::GAME_IDLE);
 	}
 }
-ConCommand cc_pause("pause",CC_Pause_F,"Pauses and unpauses the game");
 
 DECLARE_CMD(unload,"Unload current level",0)
 {
@@ -731,18 +729,11 @@ bool CEngineGame::EngineRunFrame( float dTime )
 
 DECLARE_CMD(start_world,"Loads world and starts new game",0)
 {
-	if(args)
+	if(CMD_ARGC)
 	{
-		if(args->numElem() == 0)
-		{
-			Msg("Usage: start_world <name> <[gamemode]>\n");
-		}
-		else
-		{
-			// Check if level changing is allowed
-			if(engine->SetLevelName(args->ptr()[0].GetData()))
-				engine->SetGameState(IEngineGame::GAME_LEVEL_LOAD);
-		}
+		// Check if level changing is allowed
+		if(engine->SetLevelName( CMD_ARGV(0).c_str() ))
+			engine->SetGameState(IEngineGame::GAME_LEVEL_LOAD);
 	}
 	else
 	{

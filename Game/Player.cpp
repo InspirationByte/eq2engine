@@ -50,12 +50,9 @@ END_DATAMAP()
 
 DECLARE_CMD(impulse, "No description",CV_CLIENTCONTROLS)
 {
-	if(!args)
-		return;
-
-	if(args->numElem() > 0)
+	if(CMD_ARGC)
 	{
-		nImpulseCheat = atoi(args->ptr()[0].GetData());
+		nImpulseCheat = atoi(CMD_ARGV(0).c_str());
 	}
 }
 
