@@ -61,7 +61,7 @@ public:
 	void					ReloadFonts();
 
 	// finds font
-	IEqFont*				GetFont(const char* name, int bestSize, int styleFlags = TEXT_STYLE_REGULAR) const;
+	IEqFont*				GetFont(const char* name, int bestSize, int styleFlags = TEXT_STYLE_REGULAR, bool defaultIfNotFound = true) const;
 	eqFontFamily_t*			GetFamily(const char* name) const;
 
 protected:

@@ -17,7 +17,9 @@
 
 #include "KeyBinding/Keys.h"
 #include "FontCache.h"
+
 #include "EGUI/EQUI_Manager.h"
+#include "EGUI/EqUI_Panel.h"
 
 #include "network/net_defs.h"
 
@@ -82,21 +84,21 @@ bool CGameHost::LoadModules()
 {
 	// first, load matsystem module
 #ifdef _WIN32
-	g_matsysmodule = g_fileSystem->LoadModule("EqMatSystem.dll");
+	g_matsysmodule = g_fileSystem->LoadModule("eqMatSystem.dll");
 #else
     g_matsysmodule = g_fileSystem->LoadModule("libeqMatSystem.so");
 #endif // _WIN32
 
 	if(!g_matsysmodule)
 	{
-		ErrorMsg("FATAL ERROR! Can't load EqMatSystem!");
+		ErrorMsg("FATAL ERROR! Can't load eqMatSystem!");
 		return false;
 	}
 
 	materials = (IMaterialSystem*)GetCore()->GetInterface(MATSYSTEM_INTERFACE_VERSION);
 	if(!materials)
 	{
-		ErrorMsg("ERROR! Couldn't get interface of EqMatSystem!");
+		ErrorMsg("ERROR! Couldn't get interface of eqMatSystem!");
 		return false;
 	}
 
@@ -277,15 +279,18 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	g_pSysConsole->SetAlternateHandler( LuaBinding_ConsoleHandler );
 
 	debugoverlay->Init();
-	g_pEqUIManager->Init();
+	equi::Manager->Init();
 
-	CEqUI_Panel* panel = (CEqUI_Panel*)g_pEqUIManager->CreateElement("panel");
-	panel->SetName("main_menu");
+	equi::Panel* panel = (equi::Panel*)equi::Manager->CreateElement("panel");
+
+	kvkeybase_t kvs;
+	KV_LoadFromFile("resources/ui_testwindow.res", -1, &kvs);
+	panel->InitFromKeyValues(&kvs);
 
 	panel->SetPosition( IVector2D(20,20) );
 	panel->SetSize( IVector2D(800, 600) );
 
-	g_pEqUIManager->AddPanel( panel );
+	equi::Manager->AddPanel( panel );
 
 	// init game states and proceed
 	InitRegisterStates();
@@ -472,7 +477,7 @@ CGameHost::CGameHost() :
 
 void CGameHost::ShutdownSystems()
 {
-	g_pEqUIManager->Shutdown();
+	equi::Manager->Shutdown();
 
 	SDL_DestroyWindow(g_pHost->m_pWindow);
 
@@ -616,7 +621,7 @@ bool CGameHost::Frame()
 		return false;
 
 	// set cursor visible
-	SetCursorShow( g_pSysConsole->IsVisible() || g_pEqUIManager->IsPanelsVisible() );
+	SetCursorShow( g_pSysConsole->IsVisible() || equi::Manager->IsPanelsVisible() );
 
 	//--------------------------------------------
 
@@ -682,8 +687,8 @@ bool CGameHost::Frame()
 
 	GetKeyBindings()->DebugDraw(m_winSize);
 
-	g_pEqUIManager->SetViewFrame(IRectangle(0,0,m_winSize.x,m_winSize.y));
-	g_pEqUIManager->Render();
+	equi::Manager->SetViewFrame(IRectangle(0,0,m_winSize.x,m_winSize.y));
+	equi::Manager->Render();
 
 	g_pSysConsole->DrawSelf(true, m_winSize.x, m_winSize.y, m_fCurTime);
 
@@ -761,7 +766,7 @@ void CGameHost::TrapKey_Event( int key, bool down )
 	if(g_pSysConsole->KeyPress( key, down ))
 		return;
 
-	if( g_pEqUIManager->ProcessKeyboardEvents(key, down ? UIEVENT_DOWN : UIEVENT_UP ) )
+	if( equi::Manager->ProcessKeyboardEvents(key, down ? equi::UIEVENT_DOWN : equi::UIEVENT_UP ) )
 		return;
 
 	if(GetCurrentState())
@@ -784,7 +789,7 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 	if( g_pSysConsole->MouseEvent( Vector2D(x,y), buttons, down ) )
 		return;
 
-	if( g_pEqUIManager->ProcessMouseEvents( x, y, buttons, down ? UIEVENT_DOWN : UIEVENT_UP) )
+	if( equi::Manager->ProcessMouseEvents( x, y, buttons, down ? equi::UIEVENT_DOWN : equi::UIEVENT_UP) )
 		return;
 
 	if(in_mouse_to_touch.GetBool())
@@ -795,14 +800,14 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 
 void CGameHost::TrapMouseMove_Event( int x, int y )
 {
-	if(m_bCenterMouse && s_bActive && !g_pSysConsole->IsVisible() && !g_pEqUIManager->IsPanelsVisible())
+	if(m_bCenterMouse && s_bActive && !g_pSysConsole->IsVisible() && !equi::Manager->IsPanelsVisible())
 		SetCursorPosition(m_winSize.x/2,m_winSize.y/2);
 
 	m_mousePos = IVector2D(x,y);
 
 	g_pSysConsole->MousePos( m_mousePos );
 
-	if( g_pEqUIManager->ProcessMouseEvents( x, y, 0, UIEVENT_MOUSE_MOVE) )
+	if( equi::Manager->ProcessMouseEvents( x, y, 0, equi::UIEVENT_MOUSE_MOVE) )
 		return;
 
 	Vector2D delta = (Vector2D)m_prevMousePos - (Vector2D)m_mousePos;

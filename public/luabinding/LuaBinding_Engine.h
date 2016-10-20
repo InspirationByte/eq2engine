@@ -24,8 +24,6 @@
 #include "network/NetMessageBuffer.h"
 #include "ILocalize.h"
 #include "IConCommandFactory.h"
-#include "EGUI/EQUI_Manager.h"
-#include "EGUI/EqUI_Panel.h"
 
 #ifndef __INTELLISENSE__
 

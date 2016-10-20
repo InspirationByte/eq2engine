@@ -255,12 +255,18 @@ IEqFont* eqFontFamily_t::FindBestSize( int bestSize, int styleFlags )
 }
 
 // finds font
-IEqFont* CEqFontCache::GetFont(const char* name, int bestSize, int styleFlags) const
+IEqFont* CEqFontCache::GetFont(const char* name, int bestSize, int styleFlags, bool defaultIfNotFound) const
 {
 	eqFontFamily_t* family = GetFamily(name);
 
 	if(!family)
-		return GetFont("default", bestSize, styleFlags);
+	{
+		if(defaultIfNotFound)
+			return GetFont("default", bestSize, styleFlags);
+		else
+			return NULL;
+	}
+		
 
 	return family->FindBestSize(bestSize, styleFlags);
 }

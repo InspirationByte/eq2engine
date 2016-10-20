@@ -10,6 +10,9 @@
 
 #include "dktypes.h"
 
+namespace equi
+{
+
 enum EEqUIEventFlags
 {
 	UIEVENT_DOWN			= (1 << 0),
@@ -17,29 +20,11 @@ enum EEqUIEventFlags
 
 	UIEVENT_MOUSE_MOVE		= (1 << 2),
 
-	UIEVENT_MOD_CTRL		= (1 << 3),
-	UIEVENT_MOD_SHIFT		= (1 << 4),
-};
+	UIEVENT_MOUSE_IN		= (1 << 3),
+	UIEVENT_MOUSE_OUT		= (1 << 4),
 
-enum EUIElementType
-{
-	EQUI_INVALID	= -1,
-
-	EQUI_PANEL		= 0,
-	EQUI_BUTTON,
-	EQUI_IMAGE,
-	EQUI_TEXTINPUT,
-
-	EQUI_TYPES,
-};
-
-static const char* s_equi_typestrings[] =
-{
-	"panel",
-	"button",
-	"image",
-	"input",
-	NULL
+	UIEVENT_MOD_CTRL		= (1 << 5),
+	UIEVENT_MOD_SHIFT		= (1 << 6),
 };
 
 //--------------------------------------------------------
@@ -50,6 +35,8 @@ enum EUIAnchors
 	UI_ANCHOR_TOP		= (1 << 1),
 	UI_ANCHOR_RIGHT		= (1 << 2),
 	UI_ANCHOR_BOTTOM	= (1 << 3),
+};
+
 };
 
 #endif // EQUI_H

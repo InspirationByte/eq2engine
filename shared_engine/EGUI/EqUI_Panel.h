@@ -9,23 +9,30 @@
 #define EGUI_PANEL_H
 
 #include "equi_defs.h"
-#include "IEqUIControl.h"
-
+#include "IEqUI_Control.h"
 
 #include "utils/KeyValues.h"
 
+namespace equi
+{
+
+class Button;
+class Label;
 
 // eq panel class
-class CEqUI_Panel : public IEqUIControl
+class Panel : public IUIControl
 {
+	friend class CUIManager;
+
 public:
-	CEqUI_Panel();
-	~CEqUI_Panel();
+	EQUI_CLASS(Panel, IUIControl)
 
-	virtual void			InitFromKeyValues( kvkeybase_t* pSection = NULL );
-	virtual void			Destroy();
+	Panel();
+	~Panel();
 
-	virtual int				GetType() const {return EQUI_PANEL;}
+	virtual void			InitFromKeyValues( kvkeybase_t* sec = NULL );
+
+	virtual void			Hide();
 
 	// apperance
 	virtual void			SetColor(const ColorRGBA &color);
@@ -34,20 +41,24 @@ public:
 	virtual void			SetSelectionColor(const ColorRGBA &color);
 	virtual void			GetSelectionColor(ColorRGBA &color) const;
 
-	// control and render
-	virtual bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags);
-	virtual bool			ProcessKeyboardEvents(int nKeyButtons, int flags);
-	virtual bool			ProcessCommand( const char* pszCommand );
-	virtual bool			ProcessCommandExecute( const char* pszCommand );
-
 	// rendering
 	virtual void			Render();
+	virtual void			DrawSelf(const IRectangle& rect);
+
+	bool					ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags);
 
 protected:
 	ColorRGBA				m_color;
 	ColorRGBA				m_selColor;
 
-	IEqUIControl*			m_mouseOver;	// mouseover element
+	bool					m_windowControls;
+
+	bool					m_grabbed;
+
+	equi::Label*			m_labelCtrl;
+	equi::Button*			m_closeButton;
+};
+
 };
 
 #endif // EGUI_PANEL_H

@@ -8,6 +8,7 @@
 #include "EQUI_Manager.h"
 #include "core_base_header.h"
 #include "in_keys_ident.h"
+#include "FontCache.h"
 
 //-----
 // include all needed elements here
@@ -18,26 +19,12 @@
 //#include "EqUI_TextureFrame.h"
 //-----
 
-static EUIElementType EqUI_ResolveElementTypeString(const char* pszTypeName)
-{
-	for(int i = 0; i < EQUI_TYPES; i++)
-	{
-		if(!s_equi_typestrings[i])
-			break;
-
-		if(!stricmp(s_equi_typestrings[i], pszTypeName))
-			return (EUIElementType)i;
-	}
-
-	return EQUI_INVALID;
-}
-
 DECLARE_CMD(ui_showpanel, NULL, CV_CHEAT)
 {
 	if(CMD_ARGC == 0)
 		return;
 
-	CEqUI_Panel* pPanel = g_pEqUIManager->FindPanel( CMD_ARGV(0).c_str() );
+	equi::Panel* pPanel = equi::Manager->FindPanel( CMD_ARGV(0).c_str() );
 
 	if( pPanel )
 		pPanel->Show();
@@ -50,7 +37,7 @@ DECLARE_CMD(ui_hidepanel, NULL, CV_CHEAT)
 	if(CMD_ARGC == 0)
 		return;
 
-	CEqUI_Panel* pPanel = g_pEqUIManager->FindPanel( CMD_ARGV(0).c_str() );
+	equi::Panel* pPanel = equi::Manager->FindPanel( CMD_ARGV(0).c_str() );
 
 	if( pPanel )
 		pPanel->Hide();
@@ -60,26 +47,37 @@ DECLARE_CMD(ui_hidepanel, NULL, CV_CHEAT)
 
 DECLARE_CMD(ui_listpanels, NULL, CV_CHEAT)
 {
-	g_pEqUIManager->DumpPanelsToConsole();
+	equi::Manager->DumpPanelsToConsole();
 }
 
-CEqUI_Manager::CEqUI_Manager() : m_focus(NULL), m_rootPanel(NULL)
+namespace equi
+{
+
+CUIManager::CUIManager() : m_keyboardFocus(NULL), m_rootPanel(NULL), m_defaultFont(NULL), m_mousePos(0)
 {
 }
 
-CEqUI_Manager::~CEqUI_Manager()
+CUIManager::~CUIManager()
 {
 	Shutdown();
 }
 
-void CEqUI_Manager::Init()
+void CUIManager::Init()
 {
-	m_rootPanel = (CEqUI_Panel*)g_pEqUIManager->CreateElement("Panel");
+	EQUI_REGISTER_CONTROL(panel);
+	EQUI_REGISTER_CONTROL(label);
+	EQUI_REGISTER_CONTROL(button);
+
+	m_rootPanel = (equi::Panel*)CreateElement("Panel");
 	m_rootPanel->SetName("equi_root");
 	m_rootPanel->Show();
+
+	m_defaultFont = g_fontCache->GetFont("default", 22);
+
+	// TODO: EqUIScheme.res
 }
 
-void CEqUI_Manager::Shutdown()
+void CUIManager::Shutdown()
 {
 	m_rootPanel = NULL;
 
@@ -91,47 +89,51 @@ void CEqUI_Manager::Shutdown()
 	m_panels.clear();
 }
 
-CEqUI_Panel* CEqUI_Manager::GetRootPanel() const
+Panel* CUIManager::GetRootPanel() const
 {
 	return m_rootPanel;
 }
 
 // the element loader
-IEqUIControl* CEqUI_Manager::CreateElement( const char* pszTypeName )
+void CUIManager::RegisterFactory(const char* name, EQUICONTROLFACTORYFN factory)
 {
-	EUIElementType resolvedType = EqUI_ResolveElementTypeString( pszTypeName );
-
-	if(resolvedType == EQUI_INVALID)
+	for(int i = 0; i < m_controlFactory.numElem(); i++)
 	{
-		MsgError("EqUI: unknown element type '%s'!!!\n", pszTypeName);
-		return NULL;
+		if(!stricmp(m_controlFactory[i].name, name))
+		{
+			ASSERTMSG(false, varargs("UI factory '%s' was already registered!", name));
+			return;
+		}
 	}
 
-	return CreateElement(resolvedType);
+	ctrlFactory_t fac;
+	fac.factory = factory;
+	fac.name = name;
+
+	m_controlFactory.append(fac);
 }
 
-IEqUIControl* CEqUI_Manager::CreateElement( EUIElementType type )
+// the element loader
+IUIControl* CUIManager::CreateElement( const char* type )
 {
-	CEqUI_Panel* pElement = NULL;
-
-	switch(type)
+	for(int i = 0; i < m_controlFactory.numElem(); i++)
 	{
-		case EQUI_PANEL:
-			pElement = new CEqUI_Panel();
-		//case EQUI_BUTTON:
-		//	pElement = new CEqUI_Panel();	// TODO: button
+		if(!stricmp(m_controlFactory[i].name, type))
+			return (*m_controlFactory[i].factory)();
 	}
 
-	return pElement;
+	MsgError("EqUI: unknown element type '%s'!!!\n", type);
+
+	return NULL;
 }
 
-void CEqUI_Manager::AddPanel(CEqUI_Panel* panel)
+void CUIManager::AddPanel(Panel* panel)
 {
 	m_panels.append( panel );
 	m_rootPanel->AddChild(panel);
 }
 
-void CEqUI_Manager::DestroyPanel( CEqUI_Panel* panel )
+void CUIManager::DestroyPanel( Panel* panel )
 {
 	if(!panel)
 		return;
@@ -142,7 +144,7 @@ void CEqUI_Manager::DestroyPanel( CEqUI_Panel* panel )
 	delete panel;
 }
 
-CEqUI_Panel* CEqUI_Manager::FindPanel( const char* pszPanelName ) const
+Panel* CUIManager::FindPanel( const char* pszPanelName ) const
 {
 	for(int i = 0; i < m_panels.numElem(); i++)
 	{
@@ -156,7 +158,31 @@ CEqUI_Panel* CEqUI_Manager::FindPanel( const char* pszPanelName ) const
 	return NULL;
 }
 
-void CEqUI_Manager::DumpPanelsToConsole()
+void CUIManager::BringToTop( equi::Panel* panel )
+{
+	if(m_rootPanel->m_childs.goToFirst())
+	{
+		do
+		{
+			if(m_rootPanel->m_childs.getCurrent() == panel)
+			{
+				m_rootPanel->m_childs.moveCurrentToTop();
+				return;
+			}
+		}
+		while(m_rootPanel->m_childs.goToNext());
+	}
+}
+
+equi::Panel* CUIManager::GetTopPanel() const
+{
+	if(m_rootPanel->m_childs.goToFirst())
+		return (equi::Panel*)m_rootPanel->m_childs.getCurrent();
+
+	return NULL;
+}
+
+void CUIManager::DumpPanelsToConsole()
 {
 	for(int i = 0; i < m_panels.numElem(); i++)
 	{
@@ -167,27 +193,32 @@ void CEqUI_Manager::DumpPanelsToConsole()
 	}
 }
 
-void CEqUI_Manager::SetViewFrame(const IRectangle& rect)
+void CUIManager::SetViewFrame(const IRectangle& rect)
 {
 	m_viewFrameRect = rect;
 }
 
-const IRectangle& CEqUI_Manager::GetViewFrame() const
+const IRectangle& CUIManager::GetViewFrame() const
 {
 	return m_viewFrameRect;
 }
 
-void CEqUI_Manager::SetFocus( IEqUIControl* focusTo )
+void CUIManager::SetFocus( IUIControl* focusTo )
 {
-	m_focus = focusTo;
+	m_keyboardFocus = focusTo;
 }
 
-IEqUIControl* CEqUI_Manager::GetFocus() const
+IUIControl* CUIManager::GetFocus() const
 {
-	return m_focus;
+	return m_keyboardFocus;
 }
 
-bool CEqUI_Manager::IsPanelsVisible() const
+IUIControl* CUIManager::GetMouseOver() const
+{
+	return m_mouseOver;
+}
+
+bool CUIManager::IsPanelsVisible() const
 {
 	for(int i = 0; i < m_panels.numElem(); i++)
 	{
@@ -198,7 +229,7 @@ bool CEqUI_Manager::IsPanelsVisible() const
 	return false;
 }
 
-void CEqUI_Manager::Render()
+void CUIManager::Render()
 {
 	if(!m_rootPanel)
 		return;
@@ -208,21 +239,69 @@ void CEqUI_Manager::Render()
 	m_rootPanel->Render();
 }
 
-bool CEqUI_Manager::ProcessMouseEvents(float x, float y, int nMouseButtons, int flags)
+equi::Panel* CUIManager::GetPanelByElement(IUIControl* control)
 {
-	if(!m_rootPanel)
-		return false;
+	IUIControl* firstCtrl = control;
 
-	if(!m_rootPanel->IsVisible())
-		return false;
+	while(firstCtrl && m_panels.findIndex((equi::Panel*)firstCtrl) == -1)
+	{
+		firstCtrl = firstCtrl->GetParent();
+	}
 
+	return (equi::Panel*)firstCtrl;
+}
+
+bool CUIManager::ProcessMouseEvents(float x, float y, int nMouseButtons, int flags)
+{
 	if(!IsPanelsVisible())
 		return false;
 
-	return m_rootPanel->ProcessMouseEvents(x, y, nMouseButtons, flags);
+	IVector2D mousePos(x,y);
+
+	bool changeFocus = !(flags & UIEVENT_MOUSE_MOVE);
+
+	IUIControl* oldMouseOver = m_mouseOver;
+	m_mouseOver = m_rootPanel->HitTest(IVector2D(x,y));
+
+	if(nMouseButtons == MOU_B1)
+	{
+		if(flags & UIEVENT_UP)
+			m_keyboardFocus = m_mouseOver;
+		
+		// also set panel focus
+		equi::Panel* panel = GetPanelByElement(m_mouseOver);
+		BringToTop( panel );
+	}
+		
+
+	if(oldMouseOver != m_mouseOver)
+	{
+		if(oldMouseOver)
+			oldMouseOver->ProcessMouseEvents(x, y, 0, UIEVENT_MOUSE_OUT | UIEVENT_MOUSE_MOVE);
+
+		if(m_mouseOver)
+			m_mouseOver->ProcessMouseEvents(x, y, 0, UIEVENT_MOUSE_IN | UIEVENT_MOUSE_MOVE);
+	}
+
+	if( changeFocus ) // focus only when mouse is not moved
+	{
+		if(m_mouseOver == m_rootPanel) // remove focus if we clicked on root panel
+			m_keyboardFocus = NULL;
+		else
+			m_keyboardFocus = m_mouseOver;
+	}
+
+	bool result = false;
+
+	if( m_mouseOver )
+		result = m_mouseOver->ProcessMouseEvents(mousePos, mousePos-m_mousePos, nMouseButtons, flags);
+
+	m_mousePos = mousePos;
+
+	return result;
 }
 
-bool  CEqUI_Manager::ProcessKeyboardEvents(int nKeyButtons, int flags)
+bool CUIManager::ProcessKeyboardEvents(int nKeyButtons, int flags)
 {
 	if( nKeyButtons == KEY_TILDE )
 		return false;
@@ -230,14 +309,17 @@ bool  CEqUI_Manager::ProcessKeyboardEvents(int nKeyButtons, int flags)
 	if(!IsPanelsVisible())
 		return false;
 
-	if(!m_focus)
+	if(!m_keyboardFocus)
 		return false;
 
-	if(!m_focus->IsVisible())
+	if(!m_keyboardFocus->IsVisible())
 		return false;
 
-	return m_focus->ProcessKeyboardEvents(nKeyButtons, flags);
+	return m_keyboardFocus->ProcessKeyboardEvents(nKeyButtons, flags);
 }
 
-static CEqUI_Manager s_eqUIManager;
-CEqUI_Manager*	g_pEqUIManager = &s_eqUIManager;
+static CUIManager s_eqUIManager;
+CUIManager*	Manager = &s_eqUIManager;
+
+
+};

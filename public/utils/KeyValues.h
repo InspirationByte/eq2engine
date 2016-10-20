@@ -246,6 +246,8 @@ float			KV_GetValueFloat( kvkeybase_t* pBase, int nIndex = 0, float fDefault = 0
 bool			KV_GetValueBool( kvkeybase_t* pBase, int nIndex = 0, bool bDefault = false );
 
 Vector2D		KV_GetVector2D( kvkeybase_t* pBase, int nIndex = 0, const Vector2D& vDefault = vec2_zero);
+IVector2D		KV_GetIVector2D( kvkeybase_t* pBase, int nIndex = 0, const IVector2D& vDefault = 0);
+
 Vector3D		KV_GetVector3D( kvkeybase_t* pBase, int nIndex = 0, const Vector3D& vDefault = vec3_zero);
 Vector4D		KV_GetVector4D( kvkeybase_t* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero);
 

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2016
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Eq UI manager
 //////////////////////////////////////////////////////////////////////////////////
@@ -14,33 +14,51 @@
 #include "math/Rectangle.h"
 #include "utils/DkList.h"
 
-class IEqUIControl;
-class CEqUI_Panel;
+class IEqFont;
 
-class CEqUI_Manager
+namespace equi
+{
+
+class IUIControl;
+class Panel;
+
+typedef IUIControl* (*EQUICONTROLFACTORYFN)();
+
+struct ctrlFactory_t
+{
+	const char* name;
+	EQUICONTROLFACTORYFN factory;
+};
+
+class CUIManager
 {
 public:
-						CEqUI_Manager();
-						~CEqUI_Manager();
+						CUIManager();
+						~CUIManager();
 
 	void				Init();
 	void				Shutdown();
 
-	CEqUI_Panel*		GetRootPanel() const;
+	equi::Panel*		GetRootPanel() const;
 
 	// the element loader
-	IEqUIControl*		CreateElement( const char* pszTypeName );
-	IEqUIControl*		CreateElement( EUIElementType type );
+	void				RegisterFactory(const char* name, EQUICONTROLFACTORYFN factory);
 
-	void				AddPanel(CEqUI_Panel* panel);
-	void				DestroyPanel( CEqUI_Panel* pPanel );
-	CEqUI_Panel*		FindPanel( const char* pszPanelName ) const;
+	IUIControl*			CreateElement( const char* pszTypeName );
+
+	void				AddPanel( equi::Panel* panel);
+	void				DestroyPanel( equi::Panel* pPanel );
+	equi::Panel*		FindPanel( const char* pszPanelName ) const;
+
+	void				BringToTop( equi::Panel* panel );
+	equi::Panel*		GetTopPanel() const;
 
 	void				SetViewFrame(const IRectangle& rect);
 	const IRectangle&	GetViewFrame() const;
 
-	void				SetFocus( IEqUIControl* focusTo );
-	IEqUIControl*		GetFocus() const;
+	void				SetFocus( IUIControl* focusTo );
+	IUIControl*			GetFocus() const;
+	IUIControl*			GetMouseOver() const;
 
 	bool				IsPanelsVisible() const;
 
@@ -51,18 +69,40 @@ public:
 
 	void				DumpPanelsToConsole();
 
+	IEqFont*			GetDefaultFont() const {return m_defaultFont;}
+
 private:
-	CEqUI_Panel*			m_rootPanel;
 
-	IEqUIControl*			m_focus;
+	equi::Panel*		GetPanelByElement(IUIControl* control);
 
-	DkList<CEqUI_Panel*>	m_panels;
+	equi::Panel*			m_rootPanel;
+
+	IUIControl*				m_keyboardFocus;
+	IUIControl*				m_mouseOver;
+
+	IVector2D				m_mousePos;
+
+	DkList<equi::Panel*>	m_panels;
 
 	IRectangle				m_viewFrameRect;
 	IMaterial*				m_material;
 
+	IEqFont*				m_defaultFont;
+
+	DkList<ctrlFactory_t>	m_controlFactory;
 };
 
-extern CEqUI_Manager*	g_pEqUIManager;
+extern CUIManager* Manager;
+};
+
+#define DECLARE_EQUI_CONTROL(name, classname) \
+	equi::IUIControl* s_equi_##name##_f() {return new equi::classname();}
+
+#define EQUI_FACTORY(name) \
+	s_equi_##name##_f
+
+#define EQUI_REGISTER_CONTROL(name)				\
+	extern equi::IUIControl* EQUI_FACTORY(name)();	\
+	equi::Manager->RegisterFactory(#name, EQUI_FACTORY(name))
 
 #endif // EQUI_MANAGER_H

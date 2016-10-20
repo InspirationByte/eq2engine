@@ -6,179 +6,111 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "EqUI_Panel.h"
-#include "EQUI_Manager.h"
+#include "EqUI_Button.h"
+#include "EqUI_Label.h"
+
+#include "EqUI_Manager.h"
+
 #include "materialsystem/IMaterialSystem.h"
+
+#include "in_keys_ident.h"
 
 //-------------------------------------------------------------------
 // Base control
 //-------------------------------------------------------------------
 
-IEqUIControl::IEqUIControl() : m_visible(false), m_enabled(true), m_parent(NULL)
+namespace equi
 {
-
-}
-
-IEqUIControl::~IEqUIControl()
-{
-	ClearChilds(true);
-}
-
-void IEqUIControl::SetSize(const IVector2D &size)
-{
-	m_size = size;
-}
-
-void IEqUIControl::SetPosition(const IVector2D &pos)
-{
-	m_position = pos;
-}
-
-void IEqUIControl::SetRectangle(const IRectangle& rect)
-{
-	m_position = rect.vleftTop;
-	m_size = rect.vrightBottom - m_position;
-}
-
-bool IEqUIControl::IsVisible() const
-{
-	if(m_parent)
-		return m_parent->IsVisible() && m_visible;
-
-	return m_visible;
-}
-
-bool IEqUIControl::IsEnabled() const
-{
-	if(m_parent)
-		return m_parent->IsEnabled() && m_enabled;
-
-	return m_enabled;
-}
-
-const IVector2D& IEqUIControl::GetSize() const
-{
-	return m_size;
-}
-
-const IVector2D& IEqUIControl::GetPosition() const
-{
-	return m_position;
-}
-
-// clipping rectangle, size position
-IRectangle IEqUIControl::GetRectangle() const
-{
-	return IRectangle(m_position, m_position + m_size);
-}
 
 //-------------------------------------------------------------------
 // Panels
 //-------------------------------------------------------------------
 
-CEqUI_Panel::CEqUI_Panel() : m_mouseOver(NULL)
+Panel::Panel() : m_windowControls(false), m_labelCtrl(NULL), m_closeButton(NULL), m_grabbed(false)
 {
 	m_position = IVector2D(0);
 	m_size = IVector2D(32,32);
 
-	m_color = ColorRGBA(0,0,0, 0.5f);
+	m_color = ColorRGBA(0.7,0.7,0.7,0.9f);
 	m_selColor = ColorRGBA(0.25f);
 }
 
-CEqUI_Panel::~CEqUI_Panel()
+Panel::~Panel()
 {
-	Destroy();
+
 }
 
-void CEqUI_Panel::InitFromKeyValues( kvkeybase_t* pSection )
+void Panel::InitFromKeyValues( kvkeybase_t* sec )
 {
-	// TODO: initialize scheme of GUIs
-}
+	// initialize from scheme
+	kvkeybase_t* mainSec = sec->FindKeyBase("panel");
 
-void CEqUI_Panel::Destroy()
-{
-	ClearChilds(true);
-}
+	if(mainSec == NULL)
+		mainSec = sec->FindKeyBase("child");
 
-void IEqUIControl::AddChild(IEqUIControl* pControl)
-{
-	m_childs.addFirst(pControl);
-	pControl->m_parent = this;
-}
+	BaseClass::InitFromKeyValues(mainSec);
 
-void IEqUIControl::RemoveChild(IEqUIControl* pControl, bool destroy)
-{
-	if(m_childs.goToFirst())
+	m_windowControls = KV_GetValueBool(mainSec->FindKeyBase("window"), 0, false);
+	m_visible = KV_GetValueBool(mainSec->FindKeyBase("visible"), 0, !m_windowControls);
+
+	if(m_windowControls)
 	{
-		do
+		kvkeybase_t winRes;
+		KV_LoadFromFile("resources/WindowControls.res", -1, &winRes);
+
+		// create additional controls
+		for(int i = 0; i < winRes.keys.numElem(); i++)
 		{
-			if(m_childs.getCurrent() == pControl)
+			kvkeybase_t* csec = winRes.keys[i];
+			if(!csec->IsSection())
+				continue;
+
+			if(!stricmp(csec->GetName(), "child"))
 			{
-				pControl->m_parent = NULL;
+				const char* controlClass = KV_GetValueString(csec, 0, "");
 
-				if(destroy)
-					delete pControl;
+				IUIControl* control = equi::Manager->CreateElement( controlClass );
 
-				m_childs.removeCurrent();
-				return;
+				if(!control)
+					continue;
+
+				control->InitFromKeyValues(csec);
+				AddChild( control );
 			}
 		}
-		while(m_childs.goToNext());
+
+		m_labelCtrl = (equi::Label*)FindChild("WindowLabel");
+		m_closeButton = (equi::Button*)FindChild("WindowCloseBtn");
+
+		if(m_labelCtrl)
+			m_labelCtrl->SetLabel( m_label.c_str() );
 	}
 }
 
-// returns child control
-IEqUIControl* IEqUIControl::FindChild(const char* pszName)
+void Panel::Hide()
 {
-	DkLinkedListIterator<IEqUIControl*> iter(m_childs);
+	if(equi::Manager->GetTopPanel() == this)
+		equi::Manager->SetFocus( NULL );
 
-	if(iter.goToFirst())
-	{
-		do
-		{
-			if(!strcmp(iter.getCurrent()->GetName(), pszName))
-				return iter.getCurrent();
-		}
-		while(iter.goToNext());
-	}
-
-	return NULL;
+	BaseClass::Hide();
 }
 
-void IEqUIControl::ClearChilds(bool destroy)
-{
-	if(m_childs.goToFirst())
-	{
-		do
-		{
-			m_childs.getCurrent()->m_parent = NULL;
-
-			if(destroy)
-				delete m_childs.getCurrent();
-
-			m_childs.setCurrent(NULL);
-		}
-		while(m_childs.goToNext());
-	}
-
-	m_childs.clear();
-}
-
-void CEqUI_Panel::SetColor(const ColorRGBA &color)
+void Panel::SetColor(const ColorRGBA &color)
 {
 	m_color = color;
 }
 
-void CEqUI_Panel::GetColor(ColorRGBA &color) const
+void Panel::GetColor(ColorRGBA &color) const
 {
 	color = m_color;
 }
 
-void CEqUI_Panel::SetSelectionColor(const ColorRGBA &color)
+void Panel::SetSelectionColor(const ColorRGBA &color)
 {
 	m_selColor = color;
 }
 
-void CEqUI_Panel::GetSelectionColor(ColorRGBA &color) const
+void Panel::GetSelectionColor(ColorRGBA &color) const
 {
 	color = m_selColor;
 }
@@ -214,75 +146,42 @@ void DrawAlphaFilledRectangle(const IRectangle &rect, const ColorRGBA &color1, c
 	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,r3,elementsOf(r3), NULL, color2, &blending);
 }
 
-// rendering function
-void CEqUI_Panel::Render()
+void Panel::Render()
 {
-	if(!m_visible)
-		return;
-
-	// draw self if it has parent
-	if( m_parent )
+	// move window controls
+	if(m_closeButton)
 	{
-		IRectangle myRect(m_position, m_position+m_size);
-		g_pShaderAPI->SetScissorRectangle( myRect );
+		IVector2D closePos = IVector2D(m_size.x-m_closeButton->GetSize().x - 5, 5);
 
-		DrawAlphaFilledRectangle(myRect, m_color, ColorRGBA(m_color.xyz(), 1.0f) );
+		m_closeButton->SetPosition(closePos);
 	}
 
-	// do it recursively
-	if(m_childs.goToFirst())
-	{
-		do
-		{
-			m_childs.getCurrent()->Render();
-		}
-		while(m_childs.goToNext());
-	}
+	BaseClass::Render();
 }
 
-bool CEqUI_Panel::ProcessMouseEvents(float x, float y, int nMouseButtons, int flags)
+void Panel::DrawSelf(const IRectangle& rect)
 {
-	if(!m_visible)
-		return false;
+	DrawAlphaFilledRectangle(rect, m_color, ColorRGBA(m_color.xyz()*0.25f, 1.0f) );
+}
 
-	IRectangle rct = GetRectangle();
-
-	if( !rct.IsInRectangle(IVector2D(x,y)) )
-		return false;
-
-	if(flags & UIEVENT_MOUSE_MOVE)
+bool Panel::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags)
+{
+	if(nMouseButtons == MOU_B1)
 	{
-		return true;
+		m_grabbed = (flags & UIEVENT_UP) ? false : true;
+	}
+
+	if((flags & UIEVENT_MOUSE_OUT) && m_grabbed)
+		m_grabbed = false;
+
+	if(m_grabbed && (flags & UIEVENT_MOUSE_MOVE))
+	{
+		m_position += mouseDelta;
 	}
 
 	return true;
 }
 
-bool CEqUI_Panel::ProcessKeyboardEvents(int nKeyButtons, int flags)
-{
-	if(!m_visible)
-		return false;
+};
 
-	return true;
-}
-
-bool CEqUI_Panel::ProcessCommand(const char* pszCommand)
-{
-	/*
-	if(m_pParent && m_pParent->ProcessCommand(pszCommand))
-		return true;
-
-	return ProcessCommandExecute(pszCommand);
-	*/
-
-	// TODO: make it better
-
-	return false;
-}
-
-bool CEqUI_Panel::ProcessCommandExecute( const char* pszCommand )
-{
-	// no commands
-
-	return false;
-}
+DECLARE_EQUI_CONTROL(panel, Panel)
