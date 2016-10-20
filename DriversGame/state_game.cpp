@@ -1056,7 +1056,7 @@ void CState_Game::DrawMenu( float fDt )
 
 CCar* CState_Game::GetViewCar() const
 {
-	CCar* viewedCar = g_pGameSession->GetViewCar();
+	CCar* viewedCar = g_pGameSession ? g_pGameSession->GetViewCar() : NULL;
 
 	if(g_replayData->m_state == REPL_PLAYING && g_replayData->m_cameras.numElem() > 0)
 	{

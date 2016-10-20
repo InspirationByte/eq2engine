@@ -616,7 +616,7 @@ void CGameWorld::Cleanup( bool unloadLevel )
 			delete g_vehicleEffects;
 		g_vehicleEffects = NULL;
 
-		if(g_additPartcles)
+		if(g_translParticles)
 			delete g_translParticles;
 		g_translParticles = NULL;
 

@@ -32,6 +32,8 @@
 CBaseStateHandler*	g_states[GAME_STATE_COUNT];
 
 CBaseStateHandler* g_currentState = NULL;
+CBaseStateHandler* g_nextState = NULL;
+bool g_stateChanging = false;
 
 // forces the current state
 void SetCurrentState( CBaseStateHandler* state, bool force )
@@ -39,25 +41,23 @@ void SetCurrentState( CBaseStateHandler* state, bool force )
 	if(!force && g_currentState == state)
 		return;
 
-	if( g_currentState )
-		g_currentState->OnLeave( state );
-
-	// call the set of callbacks provided by states
-	if( state )
-		state->OnEnter( g_currentState );
-
-	g_currentState = state;
+	// to be changed while update
+	g_nextState = state;
+	g_stateChanging = true;
 }
 
 // returns the current state
 CBaseStateHandler* GetCurrentState()
 {
-	return g_currentState;
+	return g_nextState ? g_nextState : g_currentState;
 }
 
 // returns the current state type
 int	GetCurrentStateType()
 {
+	if(g_nextState)
+		return g_nextState->GetType();
+
 	if(g_currentState)
 		return g_currentState->GetType();
 
@@ -85,6 +85,24 @@ void SheduleNextStateType( int stateType )
 // updates and manages the states
 bool UpdateStates( float fDt )
 {
+	// perform state transition
+	if(g_nextState)
+	{
+		if( g_currentState )
+			g_currentState->OnLeave( g_nextState );
+
+		// call the set of callbacks provided by states
+		if( g_nextState )
+			g_nextState->OnEnter( g_currentState );
+
+		g_currentState = g_nextState;
+		g_nextState = NULL;
+	}
+	else if(g_stateChanging)
+		g_currentState = NULL;
+
+	g_stateChanging = false;
+
 	if(!g_currentState)
 	{
 		Msg("--------------------------------------------\nNo current state set, exiting loop...\n--------------------------------------------\n");
@@ -97,7 +115,8 @@ bool UpdateStates( float fDt )
 		bool forced;
 		CBaseStateHandler* nextState = g_currentState->GetNextState( &forced );
 		g_currentState->SetNextState(NULL);
-		SetCurrentState( nextState, forced);
+
+		SetCurrentState( nextState, forced );
 	}
 
 	return true;
