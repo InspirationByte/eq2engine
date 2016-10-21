@@ -704,6 +704,17 @@ void RegionCallbackFunc(CLevelRegion* reg, int regIdx)
 #endif // NO_LUA
 }
 
+void CGameWorld::SimulateObjects( float fDt )
+{
+	for(int i = 0; i < m_pGameObjects.numElem(); i++)
+	{
+		CGameObject* obj = m_pGameObjects[i];
+
+		if(obj->m_state == GO_STATE_IDLE)
+			obj->Simulate( fDt );
+	}
+}
+
 void CGameWorld::UpdateWorld(float fDt)
 {
 	PROFILE_FUNC();
@@ -809,29 +820,18 @@ void CGameWorld::UpdateWorld(float fDt)
 
 	PROFILE_END();
 
-	m_renderingObjects.clear();
-
-	PROFILE_BEGIN(SimulateWorldObjects);
-
 	// simulate objects of world
-	for(int i = 0; i < g_pGameWorld->m_pGameObjects.numElem(); i++)
-	{
-		CGameObject* obj = g_pGameWorld->m_pGameObjects[i];
 
-		if(obj->m_state == GO_STATE_IDLE)
-			obj->Simulate( fDt );
-	}
-
-	PROFILE_END();
+	PROFILE_CODE( SimulateObjects(fDt) );
 
 	m_frameTime = fDt;
 	m_curTime += m_frameTime;
-
-	//g_parallelJobs->Wait();
 }
 
 void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 {
+	m_renderingObjects.clear();
+
 	// simulate objects of world
 	for(int i = 0; i < g_pGameWorld->m_pGameObjects.numElem(); i++)
 	{

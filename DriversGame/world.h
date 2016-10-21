@@ -129,14 +129,14 @@ public:
 	DECLARE_NETWORK_TABLE()
 	DECLARE_CLASS( CGameWorld, CBaseNetworkedObject )
 
-									CGameWorld();
+	CGameWorld();
+	virtual ~CGameWorld() {}
 
 	void							Init();
 	void							Cleanup( bool unloadLevel = true );
 
 	//-------------------------------------------------------------------------
-
-
+	
 	void							SetLevelName(const char* name);
 	const char*						GetLevelName() const;
 
@@ -145,16 +145,6 @@ public:
 	bool							SaveLevel();
 #endif // EDITOR
 
-	void							SetEnvironmentName(const char* name);
-	const char*						GetEnvironmentName() const;
-	void							InitEnvironment();
-
-	void							FillEnviromentList(DkList<EqString>& list);
-
-	CBillboardList*					FindBillboardList(const char* name) const;
-
-	void							QueryNearestRegions(const Vector3D& pos, bool waitLoad = false);
-
 	//-------------------------------------------------------------------------
 	// objects
 
@@ -162,27 +152,27 @@ public:
 	void							RemoveObject(CGameObject* pObject);
 	bool							IsValidObject(CGameObject* pObject) const;
 
-	void							UpdateWorld(float fDt);
-	void							UpdateTrafficLightState(float fDt);
-
-	//-------------------------------------------------------------------------
-
 	CGameObject*					CreateGameObject( const char* typeName, kvkeybase_t* kvdata ) const;
 	CGameObject*					CreateObject( const char* objectDefName ) const;
 	CGameObject*					FindObjectByName( const char* objectName ) const;
 
 	//-------------------------------------------------------------------------
-	// render stuff
+	// world simulation
+
+	void							UpdateWorld( float fDt );
+	void							UpdateTrafficLightState( float fDt );
+
+	// queries nearest regions and loads them in separate thread
+	// you can wait for load if needed
+	void							QueryNearestRegions(const Vector3D& pos, bool waitLoad = false);
+
+	//-------------------------------------------------------------------------
+	// world rendering
 
 	void							BuildViewMatrices(int width, int height, int nRenderFlags);
 	void							UpdateOccludingFrustum();
 
 	void							Draw( int nRenderFlags );
-	void							DrawFakeReflections();
-	void							DrawLensFlare( const Vector2D& screenSize, const Vector2D& screenPos, float intensity );
-
-	void							UpdateRenderables( const occludingFrustum_t& frustum );
-	void							UpdateLightTexture();
 
 	bool							AddLight(const wlight_t& light);
 	int								GetLightIndexList(const BoundingBox& bbox, int* lights, int maxLights = MAX_LIGHTS_INST) const;
@@ -191,9 +181,15 @@ public:
 	void							SetView(const CViewParams& params);
 	CViewParams*					GetView();
 
-	//--------------------------------------------------------------------------
+	//-------------------------------------------------------------------------
+	// visual settings presets
 
-	void							OnPreApplyMaterial( IMaterial* pMaterial );
+	void							SetEnvironmentName(const char* name);
+	const char*						GetEnvironmentName() const;
+	void							InitEnvironment();
+
+	void							FillEnviromentList(DkList<EqString>& list);
+	CBillboardList*					FindBillboardList(const char* name) const;
 
 public:
 	CViewParams						m_view;
@@ -209,8 +205,6 @@ public:
 	worldinfo_t						m_info;
 	worldEnvConfig_t				m_envConfig;
 
-	DkList<CBillboardList*>			m_billboardModels;
-
 	IVertexFormat*					m_vehicleVertexFormat;
 	IVertexFormat*					m_objectInstVertexFormat;
 	IVertexBuffer*					m_objectInstVertexBuffer;
@@ -219,6 +213,19 @@ public:
 	CNetworkVar(int,				m_globalTrafficLightDirection);
 
 protected:
+	// matsystem callback
+	void							OnPreApplyMaterial( IMaterial* pMaterial );
+
+	void							SimulateObjects( float fDt );
+	void							DrawFakeReflections();
+	void							DrawLensFlare( const Vector2D& screenSize, const Vector2D& screenPos, float intensity );
+
+	void							UpdateRenderables( const occludingFrustum_t& frustum );
+	void							UpdateLightTexture();
+
+	//--------------------------------------
+
+	DkList<CBillboardList*>			m_billboardModels;
 
 	lensFlareTable_t				m_lensTable[LENSFLARE_TABLE_SIZE];
 	float							m_lensIntensityTiming;
