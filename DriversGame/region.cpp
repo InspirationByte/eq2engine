@@ -707,7 +707,7 @@ void CLevelRegion::RespawnObjects()
 		{
 			//g_pGameWorld->RemoveObject(ref->object);
 
-			if(g_pGameWorld->m_pGameObjects.remove(ref->game_object))
+			if(g_pGameWorld->m_gameObjects.remove(ref->game_object))
 			{
 				ref->game_object->SetUserData(NULL);
 				ref->game_object->OnRemove();

@@ -79,12 +79,9 @@ void CUIManager::Init()
 
 void CUIManager::Shutdown()
 {
+	// all childs will be cleaned up
+	delete m_rootPanel;
 	m_rootPanel = NULL;
-
-	for(int i = 0; i < m_panels.numElem(); i++)
-	{
-		delete m_panels[i];
-	}
 
 	m_panels.clear();
 }

@@ -8,7 +8,11 @@
 #include "EngineSpew.h"
 #include "DebugInterface.h"
 #include "IDebugOverlay.h"
-//#include "sys_console.h"
+
+#include "utils/DkLinkedList.h"
+
+#define DEFAULT_MAX_CONSOLE_LINES 256
+int g_maxConsoleLines = DEFAULT_MAX_CONSOLE_LINES;
 
 static DkList<connode_t*> s_Messages;
 DkList<connode_t*> *s_pMessages = &s_Messages;
@@ -74,5 +78,13 @@ void EngineSpewFunc(SpewType_t type,const char* pMsg)
 
 void InstallEngineSpewFunction()
 {
+	kvkeybase_t* consoleSettings = GetCore()->GetConfig()->FindKeyBase("Console");
+	if(consoleSettings)
+	{
+		g_maxConsoleLines = KV_GetValueInt(consoleSettings->FindKeyBase("MaxLines"), 0, DEFAULT_MAX_CONSOLE_LINES);
+	}
+
+	// init list
+
 	SetSpewFunction(EngineSpewFunc);
 }

@@ -128,6 +128,9 @@ DECLARE_CMD(connect, "connects to server/game/lobby", 0)
 
 DECLARE_CMD(disconnect, "shutdown game", 0)
 {
+	if(!g_pGameSession)
+		return;
+
 	if(g_pGameSession->GetSessionType() == SESSION_NETWORK)
 	{
 		CNetGameSession* ses = (CNetGameSession*)g_pGameSession;
@@ -370,7 +373,7 @@ bool CNetGameSession::Create_Client()
 
 CGameObject* CNetGameSession::FindNetworkObjectById( int id ) const
 {
-	DkList<CGameObject*>& objList = g_pGameWorld->m_pGameObjects;
+	DkList<CGameObject*>& objList = g_pGameWorld->m_gameObjects;
 
 	for(int i = 0; i < objList.numElem(); i++)
 	{
@@ -396,7 +399,7 @@ int	CNetGameSession::FindUniqueNetworkObjectId()
 	// copy list of objects
 	static DkList<CGameObject*> objList;
 	objList.clear(false);
-	objList.append(g_pGameWorld->m_pGameObjects);
+	objList.append(g_pGameWorld->m_gameObjects);
 
 	objList.sort(SortObjectsById);
 
@@ -468,9 +471,9 @@ void CNetGameSession::Net_SendObjectData( CGameObject* obj, int nClientID )
 
 void CNetGameSession::SendObjectSpawns( int clientID )
 {
-	for(int j = 0; j < g_pGameWorld->m_pGameObjects.numElem(); j++)
+	for(int j = 0; j < g_pGameWorld->m_gameObjects.numElem(); j++)
 	{
-		CGameObject* obj = g_pGameWorld->m_pGameObjects[j];
+		CGameObject* obj = g_pGameWorld->m_gameObjects[j];
 
 		if(obj->m_networkID == NETWORK_ID_OFFLINE)
 			continue;
@@ -633,9 +636,9 @@ void CNetGameSession::Update(float fDt)
 		g_svclientInfo.tickInterval = fRateMs;
 
 	// simulate objects of world
-	for(int i = 0; i < g_pGameWorld->m_pGameObjects.numElem(); i++)
+	for(int i = 0; i < g_pGameWorld->m_gameObjects.numElem(); i++)
 	{
-		CGameObject* obj = g_pGameWorld->m_pGameObjects[i];
+		CGameObject* obj = g_pGameWorld->m_gameObjects[i];
 
 		//obj->Simulate( fDt );
 

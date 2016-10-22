@@ -21,7 +21,7 @@ struct collgridcell_t
 	//PPMEM_MANAGED_OBJECT()
 
 	short	x,y;
-	float	cellBoundUsed;	// unsigned z of usage
+	float	cellBoundUsed;	// unsigned z of usage by static objects
 
 	DkList<CEqCollisionObject*>		m_gridObjects;
 	DkList<CEqCollisionObject*>		m_dynamicObjs;

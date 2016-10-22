@@ -116,12 +116,9 @@ void CBulletStudioShapeCache::InitStudioCache( physmodeldata_t* studioData )
 			studioData->objects[i].shapeCache[j] = shape;
 
 			m_mutex.Lock();
-
-			int shapeIdx = m_collisionShapes.append(shape);
-
+			m_collisionShapes.append(shape);
 			m_mutex.Unlock();
 
-			studioData->shapes[nShape].physics_shape_index = shapeIdx;
 			studioData->shapes[nShape].cachedata = shape;
 		}
 	}
@@ -156,14 +153,11 @@ void CBulletStudioShapeCache::Cleanup_Invalidate()
 		if( m_collisionShapes[i]->getUserPointer() )
 		{
 			btTriangleIndexVertexArray* mesh = (btTriangleIndexVertexArray*)m_collisionShapes[i]->getUserPointer();
-
 			delete mesh;
 		}
 
 		delete m_collisionShapes[i];
 	}
-
-
 
 	m_collisionShapes.clear();
 }

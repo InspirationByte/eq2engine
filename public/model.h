@@ -155,8 +155,6 @@ struct EGFHwVertex_t
 struct physmodelshapecache_t
 {
 	physgeominfo_t	shape_info;
-	int				physics_shape_index; // physics engine shape index
-
 	void*			cachedata;
 };
 

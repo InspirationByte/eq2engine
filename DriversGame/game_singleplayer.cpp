@@ -244,7 +244,7 @@ int	CGameSession::GenScriptID()
 
 CGameObject* CGameSession::FindScriptObjectById(int scriptID)
 {
-	const DkList<CGameObject*>& objList = g_pGameWorld->m_pGameObjects;
+	const DkList<CGameObject*>& objList = g_pGameWorld->m_gameObjects;
 
 	for(int i = 0; i < objList.numElem(); i++)
 	{

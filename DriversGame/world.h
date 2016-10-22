@@ -34,10 +34,12 @@ enum ERenderFlags
 };
 
 // 2 regs, 52 lights, 128 regs (PS/VS), can be reduced to 48
-#define MAX_LIGHTS			16
-#define MAX_LIGHTS_INST		6
-#define MAX_LIGHTS_QUEUE	128
-#define MAX_LIGHTS_TEXTURE	32
+#define MAX_LIGHTS				16
+#define MAX_LIGHTS_INST			6
+#define MAX_LIGHTS_QUEUE		128
+#define MAX_LIGHTS_TEXTURE		32
+
+#define MAX_RENDERABLE_LIST		256		// maximum objects drawn
 
 struct worldinfo_t
 {
@@ -239,10 +241,11 @@ protected:
 
 	ISoundController*				m_rainSound;
 
-	DkList<CGameObject*>			m_pGameObjects;
+	DkList<CGameObject*>			m_gameObjects;
 	DkList<CGameObject*>			m_nonSpawnedObjects;
 
-	DkLinkedList<CGameObject*>		m_renderingObjects;
+	DkFixedLinkedList<CGameObject*, MAX_RENDERABLE_LIST>	
+									m_renderingObjects;
 
 	EqString						m_levelname;
 

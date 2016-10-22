@@ -4,7 +4,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine string base
 //
-//				Some things was lovely hardcoded (like m_nLength)//////////////////////////////////////////////////////////////////////////////////
+//				Some things was lovely hardcoded (like m_nLength)
+//////////////////////////////////////////////////////////////////////////////////
 
 #include "eqstring.h"
 
@@ -31,8 +32,6 @@ EqString::EqString()
 	m_nLength = 0;
 	m_nAllocated = 0;
 	m_pszString = NULL;
-
-	Resize( BASE_BUFFER );
 }
 
 EqString::~EqString()
@@ -62,7 +61,7 @@ EqString::EqString(const EqString &str, int nStart, int len)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = 0;
+	m_pszString = NULL;
 
 	Assign( str, nStart, len );
 }
@@ -80,7 +79,7 @@ EqString::EqString(const EqWString &str, int nStart, int len)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = 0;
+	m_pszString = NULL;
 
 	Assign( str, nStart, len );
 }
@@ -115,13 +114,10 @@ uint EqString::GetSize() const
 // erases and deallocates data
 void EqString::Clear()
 {
-	if(m_pszString)
-	{
-		delete [] m_pszString;
-		m_pszString = NULL;
-		m_nLength = 0;
-		m_nAllocated = 0;
-	}
+	delete [] m_pszString;
+	m_pszString = NULL;
+	m_nLength = 0;
+	m_nAllocated = 0;
 }
 
 // empty the string, but do not deallocate

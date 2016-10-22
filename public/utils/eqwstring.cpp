@@ -25,8 +25,6 @@ EqWString::EqWString()
 	m_nLength = 0;
 	m_nAllocated = 0;
 	m_pszString = NULL;
-
-	Resize( BASE_BUFFER );
 }
 
 EqWString::~EqWString()
@@ -75,7 +73,7 @@ EqWString::EqWString(const EqWString &str, int nStart, int len)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = 0;
+	m_pszString = NULL;
 
 	Assign( str, nStart, len );
 }
@@ -104,13 +102,10 @@ uint EqWString::GetSize() const
 // erases and deallocates data
 void EqWString::Clear()
 {
-	if(m_pszString)
-	{
-		delete [] m_pszString;
-		m_pszString = NULL;
-		m_nLength = 0;
-		m_nAllocated = 0;
-	}
+	delete [] m_pszString;
+	m_pszString = NULL;
+	m_nLength = 0;
+	m_nAllocated = 0;
 }
 
 // empty the string, but do not deallocate

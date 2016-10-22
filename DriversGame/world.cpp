@@ -519,7 +519,7 @@ void CGameWorld::AddObject(CGameObject* pObject, bool spawned)
 	}
 	else
 	{
-		m_pGameObjects.append( pObject );
+		m_gameObjects.append( pObject );
 		pObject->Ref_Grab();
 	}
 }
@@ -534,9 +534,9 @@ bool CGameWorld::IsValidObject(CGameObject* pObject) const
 	if(!pObject)
 		return false;
 
-	for (int i = 0; i < m_pGameObjects.numElem(); i++)
+	for (int i = 0; i < m_gameObjects.numElem(); i++)
 	{
-		if (m_pGameObjects[i] == pObject)
+		if (m_gameObjects[i] == pObject)
 			return true;
 	}
 
@@ -560,11 +560,11 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 	ses->StopAllSounds();
 
-	for(int i = 0; i < m_pGameObjects.numElem(); i++)
+	for(int i = 0; i < m_gameObjects.numElem(); i++)
 	{
-		CGameObject* obj = m_pGameObjects[i];
+		CGameObject* obj = m_gameObjects[i];
 
-		if(m_pGameObjects.fastRemove(obj))
+		if(m_gameObjects.fastRemove(obj))
 		{
 			obj->OnRemove();
 
@@ -575,7 +575,7 @@ void CGameWorld::Cleanup( bool unloadLevel )
 			i--;
 		}
 	}
-	m_pGameObjects.clear();
+	m_gameObjects.clear();
 
 	// non-spawned objects are deleted in UpdateRegions()
 
@@ -594,6 +594,8 @@ void CGameWorld::Cleanup( bool unloadLevel )
 		// regions must be unloaded
 		m_level.UpdateRegions();
 	}
+
+	m_renderingObjects.clear();
 
 	if(unloadLevel)
 	{
@@ -706,9 +708,9 @@ void RegionCallbackFunc(CLevelRegion* reg, int regIdx)
 
 void CGameWorld::SimulateObjects( float fDt )
 {
-	for(int i = 0; i < m_pGameObjects.numElem(); i++)
+	for(int i = 0; i < m_gameObjects.numElem(); i++)
 	{
-		CGameObject* obj = m_pGameObjects[i];
+		CGameObject* obj = m_gameObjects[i];
 
 		if(obj->m_state == GO_STATE_IDLE)
 			obj->Simulate( fDt );
@@ -781,22 +783,22 @@ void CGameWorld::UpdateWorld(float fDt)
 
 			m_nonSpawnedObjects[i]->Ref_Grab();
 
-			m_pGameObjects.append(m_nonSpawnedObjects[i]);
+			m_gameObjects.append(m_nonSpawnedObjects[i]);
 			m_nonSpawnedObjects.fastRemoveIndex(i);
 			i--;
 		}
 		m_level.m_mutex.Unlock();
 
 		// remove objects
-		for(int i = 0; i < m_pGameObjects.numElem(); i++)
+		for(int i = 0; i < m_gameObjects.numElem(); i++)
 		{
-			CGameObject* obj = m_pGameObjects[i];
+			CGameObject* obj = m_gameObjects[i];
 
 			if(IsRemoveState(obj->m_state))
 			{
 				m_level.m_mutex.Lock();
 
-				if(m_pGameObjects.fastRemove(obj))
+				if(m_gameObjects.fastRemove(obj))
 				{
 					obj->OnRemove();
 
@@ -833,9 +835,9 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 	m_renderingObjects.clear();
 
 	// simulate objects of world
-	for(int i = 0; i < g_pGameWorld->m_pGameObjects.numElem(); i++)
+	for(int i = 0; i < g_pGameWorld->m_gameObjects.numElem(); i++)
 	{
-		CGameObject* obj = g_pGameWorld->m_pGameObjects[i];
+		CGameObject* obj = g_pGameWorld->m_gameObjects[i];
 
 		if(obj->m_state != GO_STATE_IDLE)
 			continue;
@@ -1848,7 +1850,7 @@ CGameObject* CGameWorld::CreateObject( const char* objectDefName ) const
 
 CGameObject* CGameWorld::FindObjectByName( const char* objectName ) const
 {
-	const DkList<CGameObject*>& objList = m_pGameObjects;
+	const DkList<CGameObject*>& objList = m_gameObjects;
 
 	for(int i = 0; i < objList.numElem(); i++)
 	{

@@ -41,6 +41,9 @@ void CShadowRenderer::Init()
 	if(m_isInit)
 		return;
 
+	if(!r_shadows.GetBool())
+		return; // don't init shadows
+
 	m_shadowTextureSize = r_shadowAtlasSize.GetFloat();
 	m_shadowTexelSize = 1.0f / m_shadowTextureSize;
 
@@ -97,7 +100,7 @@ void CShadowRenderer::Shutdown()
 
 void CShadowRenderer::AddShadowCaster( CGameObject* object )
 {
-	if(r_shadows.GetBool() == false)
+	if(!m_isInit)
 		return;
 
 	if(object->GetModel() == NULL) // egf model required
@@ -119,6 +122,9 @@ void CShadowRenderer::AddShadowCaster( CGameObject* object )
 
 void CShadowRenderer::Clear()
 {
+	if(!m_isInit)
+		return;
+
 	m_texAtlasPacker.Cleanup();
 	CSpriteBuilder::ClearBuffers();
 }
@@ -132,7 +138,7 @@ ConVar r_shadows_debugatlas("r_shadows_debugatlas", "0");
 
 void CShadowRenderer::RenderShadowCasters()
 {
-	if(r_shadows.GetBool() == false)
+	if(!m_isInit || !r_shadows.GetBool())
 		return;
 
 	Vector2D neededTexSize = m_shadowTextureSize;
@@ -235,7 +241,7 @@ void CShadowRenderer::RenderShadowCasters()
 
 void CShadowRenderer::Draw()
 {
-	if(r_shadows.GetBool() == false)
+	if(!m_isInit || !r_shadows.GetBool())
 		return;
 
 	// upload to vertex & index buffers

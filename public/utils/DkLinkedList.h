@@ -33,73 +33,70 @@ public:
 		del   = NULL;
 	}
 
-	~DkLinkedList()
+	virtual ~DkLinkedList()
 	{
 		clear();
 	}
 
 	int getCount() const { return count; }
 
-	void addFirst(const T& object)
+	virtual bool addFirst(const T& object)
 	{
 		DkLLNode <T> *node = new DkLLNode <T>;
 		node->object = object;
 		insertNodeFirst(node);
 		count++;
+		return true;
 	}
 
-	void addLast(const T& object)
+	virtual bool addLast(const T& object)
 	{
 		DkLLNode <T> *node = new DkLLNode <T>;
 		node->object = object;
 		insertNodeLast(node);
 		count++;
+		return true;
 	}
 
-	void insertBeforeCurrent(const T& object)
+	virtual bool insertBeforeCurrent(const T& object)
 	{
 		DkLLNode <T> *node = new DkLLNode <T>;
 		node->object = object;
 		insertNodeBefore(curr, node);
 		count++;
+		return true;
 	}
 
-	void insertAfterCurrent(const T& object)
+	virtual bool insertAfterCurrent(const T& object)
 	{
 		DkLLNode <T> *node = new DkLLNode <T>;
 		node->object = object;
 		insertNodeAfter(curr, node);
 		count++;
+		return true;
 	}
 
-	void insertSorted(const T& object, int (* comparator )(const T &a, const T &b) )
+	virtual bool insertSorted(const T& object, int (* comparator )(const T &a, const T &b) )
 	{
 		DkLLNode <T>* newnode = new DkLLNode <T>;
 		newnode->object = object;
 
-		// Special case for the head end
-		//if(last && (comparator)(last->object, object) >= 0 )
-		//{
-		//	insertNodeLast(newnode);
-		//}
-		//else
+		DkLLNode <T>* curr = first;
+		while (curr != NULL && (comparator)(curr->object, object) <= 0)
 		{
-			DkLLNode <T>* curr = first;
-			while (curr != NULL && (comparator)(curr->object, object) <= 0)
-			{
-				curr = curr->next;
-			}
-
-			if(curr)
-				insertNodeBefore(curr, newnode);
-			else
-				insertNodeLast(newnode);
+			curr = curr->next;
 		}
 
+		if(curr)
+			insertNodeBefore(curr, newnode);
+		else
+			insertNodeLast(newnode);
+
 		count++;
+		return true;
 	}
 
-	bool removeCurrent()
+	virtual bool removeCurrent()
 	{
 		if (curr != NULL)
 		{
@@ -164,7 +161,7 @@ public:
 		return ((curr->next != NULL)? curr->next : first)->object;
 	}
 
-	void clear()
+	virtual void clear()
 	{
 		delete del;
 		del = NULL;
@@ -191,13 +188,10 @@ protected:
 	void insertNodeFirst(DkLLNode <T> *node)
 	{
 		if (first != NULL)
-		{
 			first->prev = node;
-		}
 		else
-		{
 			last = node;
-		}
+
 		node->next = first;
 		node->prev = NULL;
 
@@ -207,13 +201,10 @@ protected:
 	void insertNodeLast(DkLLNode <T> *node)
 	{
 		if (last != NULL)
-		{
 			last->next = node;
-		}
 		else
-		{
 			first = node;
-		}
+
 		node->prev = last;
 		node->next = NULL;
 
@@ -224,11 +215,11 @@ protected:
 	{
 		DkLLNode <T> *prev = at->prev;
 		at->prev = node;
-		if (prev){
+		if (prev)
 			prev->next = node;
-		} else {
+		else
 			first = node;
-		}
+
 		node->next = at;
 		node->prev = prev;
 	}
@@ -237,46 +228,167 @@ protected:
 	{
 		DkLLNode <T> *next = at->next;
 		at->next = node;
-		if (next){
+		if (next)
 			next->prev = node;
-		} else {
+		else
 			last = node;
-		}
+
 		node->prev = at;
 		node->next = next;
 	}
 
-	void releaseNode(const DkLLNode <T> *node)
+	virtual void releaseNode(DkLLNode <T> *node)
 	{
 		if (node->prev == NULL)
-		{
 			first = node->next;
-		}
 		else
-		{
 			node->prev->next = node->next;
-		}
+
 		if (node->next == NULL)
-		{
 			last = node->prev;
-		}
 		else
-		{
 			node->next->prev = node->prev;
-		}
 	}
 
 	DkLLNode <T> *first, *last, *curr, *del;
 	int count;
 };
 
+//--------------------------------------------------------------------------------------
+
+template <class T, int MAXSIZE>
+class DkFixedLinkedList : public DkLinkedList<T>
+{
+public:
+	bool addFirst(const T& object)
+	{
+		DkLLNode <T> *node = getFreeNode();
+		if(!node)
+			return false;
+		node->object = object;
+		insertNodeFirst(node);
+		count++;
+		return true;
+	}
+
+	bool addLast(const T& object)
+	{
+		DkLLNode <T> *node = getFreeNode();
+		if(!node)
+			return false;
+		node->object = object;
+		insertNodeLast(node);
+		count++;
+		return true;
+	}
+
+	bool insertBeforeCurrent(const T& object)
+	{
+		DkLLNode <T> *node = getFreeNode();
+		if(!node)
+			return false;
+		node->object = object;
+		insertNodeBefore(curr, node);
+		count++;
+		return true;
+	}
+
+	bool insertAfterCurrent(const T& object)
+	{
+		DkLLNode <T> *node = getFreeNode();
+		if(!node)
+			return false;
+
+		node->object = object;
+		insertNodeAfter(curr, node);
+		count++;
+		return true;
+	}
+
+	bool insertSorted(const T& object, int (* comparator )(const T &a, const T &b) )
+	{
+		DkLLNode <T>* newnode = getFreeNode();
+		if(!newnode)
+			return false;
+		newnode->object = object;
+
+		DkLLNode <T>* curr = first;
+		while (curr != NULL && (comparator)(curr->object, object) <= 0)
+			curr = curr->next;
+
+		if(curr)
+			insertNodeBefore(curr, newnode);
+		else
+			insertNodeLast(newnode);
+
+		count++;
+		return true;
+	}
+
+	bool removeCurrent()
+	{
+		if (curr != NULL)
+		{
+			releaseNode(curr);
+			count--;
+		}
+		return (curr != NULL);
+	}
+
+	void clear()
+	{
+		while (first)
+		{
+			curr = first;
+			first = first->next;
+			curr->next = NULL;
+			curr->prev = NULL;
+		}
+
+		last = curr = NULL;
+		count = 0;
+	}
+
+protected:
+	void releaseNode(DkLLNode <T> *node)
+	{
+		if (node->prev == NULL)
+			first = node->next;
+		else
+			node->prev->next = node->next;
+
+		if (node->next == NULL)
+			last = node->prev;
+		else
+			node->next->prev = node->prev;
+
+		node->next = NULL;
+		node->prev = NULL;
+	}
+
+	DkLLNode<T>* getFreeNode()
+	{
+		for(int i = 0; i < MAXSIZE; i++)
+		{
+			if(m_fixedarr[i].prev || m_fixedarr[i].next || first == &m_fixedarr[i])
+				continue;
+
+			return &m_fixedarr[i];
+		}
+
+		return NULL;
+	}
+
+	DkLLNode<T> m_fixedarr[MAXSIZE];
+};
+
+//--------------------------------------------------------------------------------------
+
 template <class T>
 class DkLinkedListIterator
 {
 public:
 	template <class> friend class DkLinkedList;
-
-	DkLinkedListIterator();
 
 	DkLinkedListIterator(DkLinkedList<T> &list)
 	{

@@ -140,15 +140,13 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	InitMessageBoxPlatform();
 #endif // _WIN32
 
+	// Командная строка
+    if (pszCommandLine && strlen(pszCommandLine) > 0)
+        g_cmdLine->Init(pszCommandLine);
+
 	InitSubInterfaces();
 
     ASSERT(strlen(pszApplicationName) > 0);
-
-	// Командная строка
-    if (pszCommandLine && strlen(pszCommandLine) > 0)
-	{
-        g_cmdLine->Init(pszCommandLine);
-	}
 
 	int nNoLogIndex = g_cmdLine->FindArgument("-nolog");
 
