@@ -68,6 +68,8 @@ private:
 // forces the current state
 void					SetCurrentState( CBaseStateHandler* state, bool force = false );
 
+void					ChangeState(CBaseStateHandler* state);
+
 // returns the current state
 CBaseStateHandler*		GetCurrentState();
 

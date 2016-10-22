@@ -477,31 +477,30 @@ CGameHost::CGameHost() :
 
 void CGameHost::ShutdownSystems()
 {
-	equi::Manager->Shutdown();
-
-	SDL_DestroyWindow(g_pHost->m_pWindow);
+	Msg("---------  ShutdownSystems ---------\n");
 
 	// calls OnLeave and unloads state
-	SetCurrentState( NULL );
-
-	g_parallelJobs->Shutdown();
+	ChangeState( NULL );
 
 	// Save configuration before full unload
 	WriteCfgFile("cfg/config.cfg",true);
 
+	g_parallelJobs->Shutdown();
+
+	equi::Manager->Shutdown();
+
+	ses->Shutdown();
+	soundsystem->Shutdown();
+
 	GetKeyBindings()->Shutdown();
 
 	// shutdown systems...
-
 	Networking::ShutdownNetworking();
 
-	ses->Shutdown();
-
-	soundsystem->Shutdown();
-
 	materials->Shutdown();
-
 	g_fileSystem->FreeModule( g_matsysmodule );
+
+	SDL_DestroyWindow(g_pHost->m_pWindow);
 }
 
 ConVar sys_maxfps("sys_maxfps", "0", "Frame rate limit", CV_CHEAT);

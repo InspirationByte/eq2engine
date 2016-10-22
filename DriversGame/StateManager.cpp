@@ -46,6 +46,19 @@ void SetCurrentState( CBaseStateHandler* state, bool force )
 	g_stateChanging = true;
 }
 
+void ChangeState(CBaseStateHandler* state)
+{
+	// perform state transition
+	if( g_currentState )
+		g_currentState->OnLeave( state );
+
+	// call the set of callbacks provided by states
+	if( state )
+		state->OnEnter( g_currentState );
+
+	g_currentState = state;
+}
+
 // returns the current state
 CBaseStateHandler* GetCurrentState()
 {
@@ -88,14 +101,7 @@ bool UpdateStates( float fDt )
 	// perform state transition
 	if(g_nextState)
 	{
-		if( g_currentState )
-			g_currentState->OnLeave( g_nextState );
-
-		// call the set of callbacks provided by states
-		if( g_nextState )
-			g_nextState->OnEnter( g_currentState );
-
-		g_currentState = g_nextState;
+		ChangeState(g_nextState);
 		g_nextState = NULL;
 	}
 	else if(g_stateChanging)
