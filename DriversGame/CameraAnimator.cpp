@@ -32,7 +32,7 @@
 #define END_FOV						10.0f
 
 ConVar cam_velocity_accel("cam_velocity_accel", "0.5");
-ConVar cam_velocity_mindiff("cam_velocity_mindiff", "0.8");
+ConVar cam_velocity_mindiff("cam_velocity_mindiff", "0.25");
 
 #define CAR_ACCEL_VEL_FACTOR	cam_velocity_accel.GetFloat() //0.15f
 #define CAR_DECEL_VEL_MINDIFF		cam_velocity_mindiff.GetFloat() //5.0f
@@ -44,7 +44,7 @@ ConVar cam_velocityeffects("cam_velocityeffects", "1", "Enable velocity effects"
 
 ConVar cam_velocity_forwardmod("cam_velocity_forwardmod", "1.0");
 ConVar cam_velocity_sidemod("cam_velocity_sidemod", "0.0");
-ConVar cam_velocity_upmod("cam_velocity_upmod", "1.0");
+ConVar cam_velocity_upmod("cam_velocity_upmod", "2.0");
 
 //---------------------------------------------------------------------------------------------------------------
 

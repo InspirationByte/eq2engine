@@ -40,7 +40,9 @@ using namespace Threading;
 
 ConVar ph_showcontacts("ph_showcontacts", "0", NULL, CV_CHEAT);
 ConVar ph_erp("ph_erp", "0.05", "Error correction", CV_CHEAT);
-ConVar ph_centerCollisionPos("ph_centerCollisionPos", "1", NULL, CV_CHEAT);
+
+// cvar value mostly depends on velocity
+ConVar ph_grid_tolerance("ph_grid_tolerance", "0.05", NULL, CV_CHEAT);
 
 const int collisionList_Max = 16;
 
@@ -849,7 +851,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body, DkList<ContactPair_t
 		BoundingBox& aabb = body->m_aabb_transformed;
 
 		IVector2D crMin, crMax;
-		m_grid.FindBoxRange(aabb.minPoint, aabb.maxPoint, crMin, crMax, 0.0f );
+		m_grid.FindBoxRange(aabb.minPoint, aabb.maxPoint, crMin, crMax, ph_grid_tolerance.GetFloat() );
 
 		// in this range do all collision checks
 		// might be slow

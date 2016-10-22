@@ -411,7 +411,7 @@ void Game_UpdateFreeCamera(float fDt)
 		g_freeCamProps.velocity = vec3_zero;
 	}
 
-	
+	/*
 	g_pPhysics->m_physics.SetDebugRaycast(true);
 
 	// test code, must be removed after fixing raycast broadphase
@@ -422,6 +422,7 @@ void Game_UpdateFreeCamera(float fDt)
 	debugoverlay->Line3D(coll.position, coll.position + coll.normal, ColorRGBA(0,0,1,0.25f), ColorRGBA(0,0,1,0.25f) );
 	
 	g_pPhysics->m_physics.SetDebugRaycast(false);
+	*/
 
 	g_freeCamProps.position += g_freeCamProps.velocity * fDt;
 }
