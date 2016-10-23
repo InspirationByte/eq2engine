@@ -96,13 +96,11 @@ char*		xstrdup(const char*  s);
 bool		xisspace(const uint32 c);
 
 // converts string to lower case
-#ifdef PLAT_POSIX
-char* strupr(char* s1);
-char* strlwr(char* s1);
+char*		xstrupr(char* s1);
+char*		xstrlwr(char* s1);
 
-wchar_t* wcslwr(wchar_t* str);
-wchar_t* wcsupr(wchar_t* str);
-#endif
+wchar_t*	xwcslwr(wchar_t* str);
+wchar_t*	xwcsupr(wchar_t* str);
 
 //------------------------------------------------------
 // wide string

@@ -19,7 +19,7 @@ ConVar hud_mapSize("hud_mapSize", "250", NULL, CV_ARCHIVE);
 
 DECLARE_CMD(hud_showLastMessage, NULL, 0)
 {
-	g_pGameHUD->ShowLastScreenMessage();
+	g_pGameHUD->ShowLastMessage();
 }
 
 //----------------------------------------------------------------------------------
@@ -34,7 +34,8 @@ float ScreenScaler_GetBestFontSize( const IVector2D& screenSize,  float initialF
 */
 //----------------------------------------------------------------------------------
 
-CDrvSynHUDManager::CDrvSynHUDManager() : m_handleCounter(0), m_mainVehicle(NULL), m_curTime(0.0f), m_mapTexture(NULL), m_showMap(true)
+CDrvSynHUDManager::CDrvSynHUDManager() 
+	: m_handleCounter(0), m_mainVehicle(NULL), m_curTime(0.0f), m_mapTexture(NULL), m_showMap(true), m_screenAlertTime(0.0f), m_screenMessageTime(0.0f)
 {
 }
 
@@ -63,6 +64,10 @@ void CDrvSynHUDManager::Init()
 	m_screenMessageTime = 0.0f;
 	m_screenMessageText.Clear();
 
+	m_screenAlertTime = 0.0f;
+	m_screenAlertInTime = 0.0f;
+	m_screenAlertText.Clear();
+
 	m_timeDisplayEnable = false;
 	m_timeDisplayValue = 0.0;
 
@@ -89,7 +94,7 @@ void CDrvSynHUDManager::Cleanup()
 	SetDisplayMainVehicle(NULL);
 }
 
-void CDrvSynHUDManager::ShowScreenMessage( const char* token, float time )
+void CDrvSynHUDManager::ShowMessage( const char* token, float time )
 {
 	m_screenMessageText = LocalizedString(token);
 
@@ -99,9 +104,20 @@ void CDrvSynHUDManager::ShowScreenMessage( const char* token, float time )
 		m_screenMessageTime += 0.5f;
 }
 
-void CDrvSynHUDManager::ShowLastScreenMessage()
+void CDrvSynHUDManager::ShowLastMessage()
 {
 	m_screenMessageTime = 2.0f;
+}
+
+void CDrvSynHUDManager::ShowAlert( const char* token, float time, int type )
+{
+	m_screenAlertText = LocalizedString(token);
+	m_screenAlertText = m_screenAlertText.UpperCase();
+
+	m_screenAlertTime = time;
+	m_screenAlertInTime = 1.0f;
+
+	m_screenAlertType = (EScreenAlertType)type;
 }
 
 void CDrvSynHUDManager::SetTimeDisplay(bool enabled, double time)
@@ -139,6 +155,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 	static IEqFont* roboto30 = g_fontCache->GetFont("Roboto", 30);
 	static IEqFont* roboto30b = g_fontCache->GetFont("Roboto", 30, TEXT_STYLE_BOLD);
 	static IEqFont* robotocon30b = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD);
+	static IEqFont* robotocon30bi = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD | TEXT_STYLE_ITALIC);
 	static IEqFont* defFont = g_fontCache->GetFont("default", 0);
 		
 	eqFontStyleParam_t fontParams;
@@ -148,6 +165,14 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+
+	BlendStateParam_t additiveBlend;
+	additiveBlend.srcFactor = BLENDFACTOR_ONE;
+	additiveBlend.dstFactor = BLENDFACTOR_ONE;
+
+	RasterizerStateParams_t raster;
+	raster.scissor = true;
+	raster.cullMode = CULL_FRONT;
 
 	if(m_enable)
 	{
@@ -304,19 +329,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		// display radar and map
 		if( m_showMap )
 		{
-			BlendStateParam_t mapBlending;
-			mapBlending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-			mapBlending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-			BlendStateParam_t additiveBlend;
-			additiveBlend.srcFactor = BLENDFACTOR_ONE;
-			additiveBlend.dstFactor = BLENDFACTOR_ONE;
-			
-
-			RasterizerStateParams_t raster;
-			raster.scissor = true;
-			raster.cullMode = CULL_FRONT;
-
 			IVector2D mapSize(hud_mapSize.GetInt());
 			IVector2D mapPos = screenSize-mapSize-IVector2D(55);
 
@@ -523,11 +535,66 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 	}
 
+	// show screen alert
+	if( m_screenAlertTime > 0 && fDt > 0.0f )
+	{
+		m_screenAlertTime -= fDt;
+		m_screenAlertInTime -= fDt;
+		m_screenAlertInTime = max(m_screenAlertInTime, 0.0f);
+
+		Vector2D screenMessagePos(screenSize.x / 2, screenSize.y / 2.8);
+
+		Vertex2D_t verts[6];
+
+		const float messageSizeY = 50.0f;
+
+		Vertex2D_t baseVerts[] = {MAKETEXQUAD(0.0f, screenMessagePos.y, screenSize.x, screenMessagePos.y + messageSizeY, 0.0f)};
+
+		baseVerts[0].m_vColor.w = 0.0f;
+		baseVerts[1].m_vColor.w = 0.0f;
+		baseVerts[2].m_vColor.w = 0.0f;
+		baseVerts[3].m_vColor.w = 0.0f;
+
+		verts[0] = baseVerts[0];
+		verts[1] = baseVerts[1];
+
+		verts[4] = baseVerts[2];
+		verts[5] = baseVerts[3];
+
+		verts[2] = Vertex2D_t::Interpolate(verts[0], verts[4], 0.5f);
+		verts[3] = Vertex2D_t::Interpolate(verts[1], verts[5], 0.5f);
+
+		verts[2].m_vColor.w = 1.0f;
+		verts[3].m_vColor.w = 1.0f;
+
+		float clampedAlertTime = clamp(m_screenAlertTime, 0.0f, 1.0f);
+
+		float alpha = clampedAlertTime;
+
+		ColorRGBA alertColor(1.0f, 0.7f, 0.0f, alpha);
+
+		if(m_screenAlertType == HUD_ALERT_SUCCESS)
+			alertColor = ColorRGBA(0.25f, 0.6f, 0.25f, alpha);
+		else if(m_screenAlertType == HUD_ALERT_DANGER)
+			alertColor = ColorRGBA(1.0f, 0.15f, 0.0f, alpha);
+
+		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,verts,elementsOf(verts), NULL, alertColor, &blending);
+
+		eqFontStyleParam_t scrMsgParams;
+		scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
+		scrMsgParams.align = TEXT_ALIGN_HCENTER;
+		scrMsgParams.textColor = ColorRGBA(1,1,1,alpha);
+
+		// ok for 3 seconds
+		
+		float textXPos = -2000.0f * pow(m_screenAlertInTime, 4.0f) + (2000.0f * pow(1.0f - clampedAlertTime, 4.0f));
+
+		robotocon30bi->RenderText(m_screenAlertText.c_str(), screenMessagePos + Vector2D(textXPos, messageSizeY*0.7f), scrMsgParams);
+	}
+
 	// show message on screen
 	if( m_screenMessageTime > 0 && fDt > 0.0f )
 	{
-		m_screenMessageTime -= fDt;
-
 		float textYOffs = 0.0f;
 		float textAlpha = 1.0f;
 
@@ -543,9 +610,11 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		scrMsgParams.align = TEXT_ALIGN_HCENTER;
 		scrMsgParams.textColor = ColorRGBA(1,1,0.25f,textAlpha);
 
-		Vector2D screenMessagePos(screenSize.x / 2, screenSize.y / 3 - textYOffs);
+		Vector2D screenMessagePos(screenSize.x / 2, (float)screenSize.y / 3 - textYOffs);
 
 		roboto30b->RenderText(m_screenMessageText.c_str(), screenMessagePos, scrMsgParams);
+
+		m_screenMessageTime -= fDt;
 	}
 
 	if(g_showCameraPosition.GetBool())
@@ -642,7 +711,8 @@ OOLUA_EXPORT_FUNCTIONS(
 	AddTrackingObject, 
 	AddMapTargetPoint,
 	RemoveTrackingObject,
-	ShowScreenMessage, 
+	ShowMessage, 
+	ShowAlert,
 	SetTimeDisplay,
 	Enable,
 	ShowMap,

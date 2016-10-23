@@ -20,6 +20,13 @@ enum EHUDDisplayObjectFlags
 	//HUDTARGET_FLAG_PLAYERINFO	= (1 << 2), // show player info if assigned to this car on top or on side of screen
 };
 
+enum EScreenAlertType
+{
+	HUD_ALERT_NORMAL = 0,
+	HUD_ALERT_SUCCESS,
+	HUD_ALERT_DANGER,
+};
+
 struct hudDisplayObject_t
 {
 	int				flags;		// flags or type
@@ -52,8 +59,10 @@ public:
 	int							AddMapTargetPoint( const Vector3D& position );
 	void						RemoveTrackingObject( int handle );
 
-	void						ShowScreenMessage( const char* token, float time );
-	void						ShowLastScreenMessage();
+	void						ShowMessage( const char* token, float time );
+	void						ShowLastMessage();
+
+	void						ShowAlert( const char* token, float time, int type); // EScreenAlertType
 
 	void						SetTimeDisplay(bool enabled, double time);
 
@@ -84,6 +93,13 @@ protected:
 	float								m_screenMessageTime;
 	EqWString							m_screenMessageText;
 
+	EqWString							m_screenAlertText;
+
+	float								m_screenAlertTime;
+	float								m_screenAlertInTime;
+
+	EScreenAlertType					m_screenAlertType;
+
 	bool								m_timeDisplayEnable;
 	double								m_timeDisplayValue;
 
@@ -100,7 +116,10 @@ OOLUA_PROXY( CDrvSynHUDManager )
 	OOLUA_MFUNC( AddTrackingObject )
 	OOLUA_MFUNC( AddMapTargetPoint )
 	OOLUA_MFUNC( RemoveTrackingObject )
-	OOLUA_MFUNC( ShowScreenMessage )
+
+	OOLUA_MFUNC( ShowMessage )
+	OOLUA_MFUNC( ShowAlert )
+
 	OOLUA_MFUNC( SetTimeDisplay )
 
 	OOLUA_MFUNC( Enable )

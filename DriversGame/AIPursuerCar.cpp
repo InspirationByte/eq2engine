@@ -264,6 +264,8 @@ void CAIPursuerCar::BeginPursuit( float delay )
 	if (!m_targInfo.target)
 		return;
 
+	SetLight(CAR_LIGHT_EMERGENCY, false);
+
 	AI_SetNextState(&CAIPursuerCar::PursueTarget, delay);
 }
 
@@ -273,7 +275,10 @@ void CAIPursuerCar::EndPursuit(bool death)
 		return;
 
 	if (!death)
+	{
 		m_sirenEnabled = false;
+		SetLight(CAR_LIGHT_SERVICELIGHTS, false);
+	}
 
 	m_autohandbrake = false;
 	m_frameSkip = true;
@@ -1037,7 +1042,10 @@ int	CAIPursuerCar::DeadState( float fDt, EStateTransition transition )
 		m_deathTime -= fDt;
 
 		if(m_deathTime <= 0.0f)
+		{
 			m_sirenEnabled = false;
+			SetLight(CAR_LIGHT_SERVICELIGHTS, false);
+		}
 	}
 
 	int buttons = IN_ANALOGSTEER;

@@ -84,6 +84,11 @@ typedef struct Vertex2D
 		m_vColor = color;
 	}
 
+	static Vertex2D Interpolate(const Vertex2D& a, const Vertex2D& b, float fac)
+	{
+		return Vertex2D(lerp(a.m_vPosition, b.m_vPosition, fac), lerp(a.m_vTexCoord, b.m_vTexCoord, fac), lerp(a.m_vColor, b.m_vColor, fac));
+	}
+
     Vector2D		m_vPosition;
     Vector2D		m_vTexCoord;
 	Vector4D		m_vColor;

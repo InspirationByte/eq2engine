@@ -406,7 +406,7 @@ EqString EqString::Mid(int nStart, int nCount) const
 EqString EqString::LowerCase() const
 {
 	EqString str(*this);
-	strlwr(str.m_pszString);
+	xstrlwr(str.m_pszString);
 
 	return str;
 }
@@ -415,7 +415,7 @@ EqString EqString::LowerCase() const
 EqString EqString::UpperCase() const
 {
 	EqString str(*this);
-	strupr(str.m_pszString);
+	xstrupr(str.m_pszString);
 
 	return str;
 }

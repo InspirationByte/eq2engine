@@ -1688,14 +1688,13 @@ void CCar::UpdateCarPhysics(float delta)
 				// contact surface modifier (perpendicularness to ground)
 				{
 					const float SURFACE_GRIP_SCALE = 1.0f;
-					const float SURFACE_GRIP_DEDZONE = 0.02f;
+					const float SURFACE_GRIP_DEADZONE = 0.1f;
 
 					float surfaceForceMod = dot( wheel_right, wheel.collisionInfo.normal );
 					surfaceForceMod = 1.0f - fabs ( surfaceForceMod );
 
 					float fGrip = surfaceForceMod;
-
-					fGrip = clamp( (fGrip * SURFACE_GRIP_SCALE) + SURFACE_GRIP_DEDZONE, 0.0f , 1.0f );
+					fGrip = clamp( (fGrip * SURFACE_GRIP_SCALE) + SURFACE_GRIP_DEADZONE, 0.0f , 1.0f );
 
 					wheelSlipOppositeForce *= fGrip;
 				}
@@ -3276,7 +3275,7 @@ void CCar::UpdateSounds( float fDt )
 			m_oldSirenState = m_sirenEnabled;
 		}
 
-		if(m_sirenEnabled)
+		if( m_sirenEnabled && IsAlive() )
 		{
 			int sampleId = m_pSirenSound->GetEmitParams().sampleId;
 

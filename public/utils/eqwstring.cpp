@@ -396,7 +396,7 @@ EqWString EqWString::Mid(int nStart, int nCount)
 EqWString EqWString::LowerCase()
 {
 	EqWString str(*this);
-	wcslwr(str.m_pszString);
+	xwcslwr(str.m_pszString);
 
 	return str;
 }
@@ -405,9 +405,10 @@ EqWString EqWString::LowerCase()
 EqWString EqWString::UpperCase()
 {
 	EqWString str(*this);
-	wcsupr(str.m_pszString);
 
-	return str;
+	xwcsupr(str.m_pszString);
+
+    return str;
 }
 
 // search, returns char index

@@ -11,13 +11,11 @@
 #include "strtools.h"
 #include "DebugInterface.h"
 
-#ifdef PLAT_POSIX
-
 #include <wchar.h>
 #include <wctype.h>
 #include <stdarg.h>
 
-char* strupr(char* str)
+char* xstrupr(char* str)
 {
     char* it = str;
 
@@ -26,7 +24,7 @@ char* strupr(char* str)
     return str;
 }
 
-char* strlwr(char* str)
+char* xstrlwr(char* str)
 {
     char* it = str;
 
@@ -35,25 +33,32 @@ char* strlwr(char* str)
     return str;
 }
 
-wchar_t* wcslwr(wchar_t* str)
+wchar_t* xwcslwr(wchar_t* str)
 {
     wchar_t* it = str;
 
+#ifdef _WIN32
+    while (*it != 0) { *it = *CharLowerW(&(*it)); ++it; }
+#else
     while (*it != 0) { *it = towlower(*it); ++it; }
+#endif // _WIN32
 
     return str;
 }
 
-wchar_t* wcsupr(wchar_t* str)
+wchar_t* xwcsupr(wchar_t* str)
 {
     wchar_t* it = str;
 
+#ifdef _WIN32
+    while (*it != 0) { *it = *CharUpperW(&(*it)); ++it; }
+#else
     while (*it != 0) { *it = towupper(*it); ++it; }
+#endif // _WIN32
 
     return str;
 }
 
-#endif
 
 #ifdef PLAT_DROID/*
 wchar_t* wcsncpy(wchar_t * __restrict dst, const wchar_t * __restrict src, size_t n)
