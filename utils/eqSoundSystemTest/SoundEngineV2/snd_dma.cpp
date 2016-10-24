@@ -158,7 +158,7 @@ void CSoundEngine::Update ()
     if ( !pAudioDevice )
         return;
 
-    info = pAudioDevice->GetBufferInfo( );
+    info = pAudioDevice->GetBufferInfo();
 
     nSamples = snd_mixahead.GetFloat() * info.frequency;
     pBuffer = GetPaintBuffer( nSamples * info.channels * PAINTBUFFER_BYTES );
@@ -179,7 +179,7 @@ void CSoundEngine::Update ()
     if ( nSamples < 0 )
         return;
 
-    m_mixChannels( pBuffer, nSamples );
+    MixChannels( pBuffer, nSamples );
 
     nBytes = nSamples * info.channels * info.bitwidth / 8;
 
@@ -378,7 +378,7 @@ void CSoundEngine::FreeChannel( ISoundChannel* pChan )
     pChannel->SetReserved(false);
 }
 
-void CSoundEngine::m_mixChannels( paintbuffer_t *pBuffer, int nSamples )
+void CSoundEngine::MixChannels( paintbuffer_t *pBuffer, int nSamples )
 {
     for (int i = 0; i < MAX_CHANNELS; i++ )
 	{

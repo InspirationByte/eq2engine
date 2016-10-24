@@ -68,39 +68,40 @@ public:
 	} m_listener;
 
 private:
-    bool					m_bInitialized;
+	void					MixChannels(paintbuffer_t *pBuffer, int nSamples);
 
-    ISoundDevice*			pAudioDevice;
+	bool					m_bInitialized;
+
+	ISoundDevice*			pAudioDevice;
     
-    paintbuffer_t*			GetPaintBuffer(int nBytes);
-    paintbuffer_t			m_paintBuffer;
-    paintbuffer_t			m_channelBuffer;
+	paintbuffer_t*			GetPaintBuffer(int nBytes);
+	paintbuffer_t			m_paintBuffer;
+	paintbuffer_t			m_channelBuffer;
 
-    //
-    //  memory
-    //
+	//
+	//  memory
+	//
 
-    void*					m_hHeap;
-    void*					alloc (unsigned int size);
-    void					free (void *ptr);
+	void*					m_hHeap;
+	void*					alloc (unsigned int size);
+	void					free (void *ptr);
 
-    //
-    //  sounds
-    //
+	//
+	//  sounds
+	//
 
-    snd_link_t				m_Chain;
-    snd_link_t*				m_Sounds[MAX_SOUNDS];
+	snd_link_t				m_Chain;
+	snd_link_t*				m_Sounds[MAX_SOUNDS];
 
-    snd_link_t*				Create(const char *szFilename);
-    snd_link_t*				Find(const char *szFilename);
-    void					Delete(snd_link_t *pLink);
+	snd_link_t*				Create(const char *szFilename);
+	snd_link_t*				Find(const char *szFilename);
+	void					Delete(snd_link_t *pLink);
 
-    //
-    //  channels
-    //
+	//
+	//  channels
+	//
 
-    void					m_mixChannels(paintbuffer_t *pBuffer, int nSamples);
-    CSoundChannel			m_Channels[MAX_CHANNELS];
+	CSoundChannel			m_Channels[MAX_CHANNELS];
 };
 
 extern CSoundEngine* gSound;
