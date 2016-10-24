@@ -146,7 +146,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	materials_config.enableBumpmapping = false;
 	materials_config.enableSpecular = true;
-	materials_config.enableShadows = false;
+	materials_config.enableShadows = true;
 	materials_config.wireframeMode = false;
 	materials_config.threadedloader = !useOpenGLRender;
 

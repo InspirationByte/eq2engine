@@ -15,8 +15,14 @@
 
 struct decalprimitives_t
 {
+	decalprimitives_t()
+	{
+		avoidMaterialFlags = MATERIAL_FLAG_RECEIVESHADOWS;
+	}
+
 	DkList<PFXVertex_t>	verts;
 	DkList<int16>		indices;
+	int					avoidMaterialFlags;
 };
 
 inline bool decalVertComparator(const PFXVertex_t& a, const PFXVertex_t& b)

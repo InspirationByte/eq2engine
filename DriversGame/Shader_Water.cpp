@@ -30,8 +30,6 @@ public:
 
 		SHADER_PASS(Ambient) = NULL;
 		SHADER_FOGPASS(Ambient) = NULL;
-
-		m_nFlags = (MATERIAL_FLAG_WATER);
 	}
 
 	void InitTextures()
@@ -53,6 +51,10 @@ public:
 		if(!m_bInitialized && !m_bIsError)
 		{
 			CBaseShader::InitParams();
+
+			// disable shadows
+			m_nFlags |= MATERIAL_FLAG_WATER;
+			m_nFlags &= ~MATERIAL_FLAG_RECEIVESHADOWS;
 
 			m_pBumpFrame = m_pAssignedMaterial->GetMaterialVar("bumptextureframe", 0);
 			m_pWaterColor = m_pAssignedMaterial->GetMaterialVar("Color", "[0.2 0.7 0.4]" );

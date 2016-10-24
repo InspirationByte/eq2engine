@@ -1048,6 +1048,11 @@ void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, const Volume&
 	{
 		hfieldbatch_t* batch = m_physData->m_batches[i];
 
+		IMaterial* mat = batch->materialBundle->material;
+
+		if(mat && (mat->GetFlags() & polys.avoidMaterialFlags))
+			continue;
+
 		BoundingBox bbox = batch->bbox;
 		bbox.minPoint += m_position;
 		bbox.maxPoint += m_position;

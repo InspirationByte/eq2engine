@@ -151,7 +151,10 @@ void CShadowRenderer::RenderShadowCasters()
 	}
 
 	Matrix4x4 proj, view, viewProj;
+
 	decalprimitives_t shadowDecal;
+	shadowDecal.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
+
 	Volume shadowVolume;
 	CViewParams orthoView;
 
