@@ -10,15 +10,20 @@
 
 #include "snd_defs_public.h"
 
-class ISoundChannel;
+class CSoundChannel;
 
-typedef float (*MIXFUNC)(void* in, int numInSamples, void* out, int numOutSamples, float sampleRate, int* volume);
+typedef float	(*S_MIXFUNC)(void* in, int numInSamples, void* out, int numOutSamples, float sampleRate, int volume[]);
+typedef void	(*S_SPATIALFUNC)(CSoundChannel* chan, const ListenerInfo& listener, int in, int out[]);
 
-float	S_MixMono16(void* in, int numInSamples, void* out, int numOutSamples, float sampleRate, int* volume);
-float	S_MixStereo16(void* in, int numInSamples, void* out, int numOutSamples, float sampleRate, int* volume);
+// mix
+float	S_MixMono8(void* in, int numInSamples, void* out, int numOutSamples, float sampleRate, int volume[]);
+float	S_MixMono16(void* in, int numInSamples, void* out, int numOutSamples, float sampleRate, int volume[]);
+float	S_MixStereo16(void* in, int numInSamples, void* out, int numOutSamples, float sampleRate, int volume[]);
+float	S_MixStereoToMono16(void* in, int numInSamples, void* out, int numOutSamples, float sampleRate, int volume[]);
 
-void	S_SpatializeMono(ISoundChannel* chan, const ListenerInfo& listener, int in, int *out);
-void	S_SpatializeStereo(ISoundChannel* chan, const ListenerInfo& listener, int in, int out[]);
+// spatial methods
+void	S_SpatializeMono(CSoundChannel* chan, const ListenerInfo& listener, int in, int out[]);
+void	S_SpatializeStereo(CSoundChannel* chan, const ListenerInfo& listener, int in, int out[]);
 
 
 #endif // SND_MIX_H

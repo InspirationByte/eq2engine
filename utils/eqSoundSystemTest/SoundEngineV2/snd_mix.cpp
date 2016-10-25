@@ -13,9 +13,35 @@
 #define SAMPLE_M(a,b,c)   ( (float)(a[b]*(1-c))+(float)(a[b+1]*(c)) )
 #define SAMPLE_S(a,b,c,d) ( (float)(a[c].b*(1-d))+(float)(a[c+1].b*(d)) )
 
-#define ATTN_LEN        1000.0f
+// 8 bit mono sound
+float S_MixMono8(void* in, int numInSamples, void* out, int numOutSamples, float sampleRate, int volume[])
+{
+	char* input = (char*)in;
+	samplepair_t* output = (samplepair_t*)out;
 
-float S_MixMono16(void* in, int numInSamples, void* out, int numOutSamples, float sampleRate, int* volume)
+	float nSamplePos = 0.0f;
+	float sampleFrac = 0.0f;
+
+	int i = 0;
+	int srcSample;
+
+	while( i < numOutSamples && nSamplePos < numInSamples )  // don't overdo sample count
+	{
+		srcSample = floor( nSamplePos );
+		sampleFrac = nSamplePos-srcSample;
+
+		output[i].left += (int)(volume[0] * SAMPLE_M(input,srcSample,sampleFrac));
+		output[i].right += (int)(volume[1] * SAMPLE_M(input,srcSample,sampleFrac));
+
+		nSamplePos += sampleRate;
+		i++;
+	}
+
+	return nSamplePos;
+}
+
+// 16 bit mono sound
+float S_MixMono16(void* in, int numInSamples, void* out, int numOutSamples, float sampleRate, int volume[])
 {
 	short* input = (short*)in;
 	samplepair_t* output = (samplepair_t*)out;
@@ -41,7 +67,8 @@ float S_MixMono16(void* in, int numInSamples, void* out, int numOutSamples, floa
 	return nSamplePos;
 }
 
-float S_MixStereo16(void* in, int numInSamples, void* out, int numOutSamples, float sampleRate, int* volume)
+// 16 bit stereo sound
+float S_MixStereo16(void* in, int numInSamples, void* out, int numOutSamples, float sampleRate, int volume[])
 {
 	stereo16_t* input = (stereo16_t*)in;
 	samplepair_t* output = (samplepair_t*)out;
@@ -66,9 +93,37 @@ float S_MixStereo16(void* in, int numInSamples, void* out, int numOutSamples, fl
 	return nSamplePos;
 }
 
+// 16 bit stereo converted to mono
+float S_MixStereoToMono16(void* in, int numInSamples, void* out, int numOutSamples, float sampleRate, int volume[])
+{
+	stereo16_t* input = (stereo16_t*)in;
+	samplepair_t* output = (samplepair_t*)out;
+
+	float nSamplePos = 0.0f;
+	float sampleFrac = 0.0f;
+
+	int i = 0;
+	int srcSample;
+	while( i < numOutSamples && nSamplePos < numInSamples ) // don't overdo sample count
+	{
+		srcSample = floor( nSamplePos );
+		sampleFrac = nSamplePos-srcSample;
+
+		float sample =(SAMPLE_S(input,left,srcSample,sampleFrac) + SAMPLE_S(input,right,srcSample,sampleFrac)) * 0.5f;
+
+		output[i].left += (int)((float)volume[0] * sample) >> 8;
+		output[i].right += (int)((float)volume[1] * sample) >> 8;
+
+		nSamplePos += sampleRate;
+		i++;
+	}
+
+	return nSamplePos;
+}
+
 //----------------------------------------------------------------
 
-void S_SpatializeMono(ISoundChannel* chan, const ListenerInfo& listener, int in, int *out)
+void S_SpatializeMono(CSoundChannel* chan, const ListenerInfo& listener, int in, int out[])
 {
 	float atten = chan->GetAttenuation();
 
@@ -81,12 +136,12 @@ void S_SpatializeMono(ISoundChannel* chan, const ListenerInfo& listener, int in,
 		Vector3D vDir = listener.origin - chan->GetOrigin();
 		float len = lengthSqr(vDir);
 
-		float attn = clamp( powf(ATTN_LEN / len, atten), 0.0f, 1.0f );
-		out[0] = out[1] = in * attn;
+		float gain = 1.0f / ( 1.0f + (len / (atten*atten)));
+		out[0] = out[1] = in * gain;
 	}
 }
 
-void S_SpatializeStereo(ISoundChannel* chan, const ListenerInfo& listener, int in, int out[])
+void S_SpatializeStereo(CSoundChannel* chan, const ListenerInfo& listener, int in, int out[])
 {
 	float atten = chan->GetAttenuation();
 
@@ -104,9 +159,9 @@ void S_SpatializeStereo(ISoundChannel* chan, const ListenerInfo& listener, int i
 
 		float dotRight = dot(vDir, listener.right );
 
-		float attn = clamp( powf(ATTN_LEN / len, atten), 0.0f, 1.0f );
+		float gain = 1.0f / ( 1.0f + (len / (atten*atten)));
 
-		out[0] = in * (0.5f * (1.0f + dotRight) * attn);
-		out[1] = in * (0.5f * (1.0f - dotRight) * attn);
+		out[0] = in * (0.5f * (1.0f + dotRight) * gain);
+		out[1] = in * (0.5f * (1.0f - dotRight) * gain);
 	}
 }

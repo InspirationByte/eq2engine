@@ -464,7 +464,7 @@ void CMainWindow::ProcessKeyboardUpEvents(wxKeyEvent& event)
 	{
 		Vector3D randomPos(RandomFloat(-10.0f, 10.0f), RandomFloat(-10.0f, 10.0f), RandomFloat(-10.0f, 10.0f));
 
-		gSound->PlaySound(g_staticSound, randomPos, 1.0f, 30.0f);
+		gSound->PlaySound(g_staticSound, randomPos, 1.0f, 10.0f);
 		
 		debugoverlay->Box3D(randomPos-1.0f, randomPos+1.0f, ColorRGBA(1,1,0,1), 1.0f);
 	}

@@ -56,7 +56,8 @@ private:
 	float				m_nSamplePos;
 	bool				m_bReserved;
 
-	MIXFUNC				m_sourceMixer;
+	S_MIXFUNC			m_sourceMixer;
+	S_SPATIALFUNC		m_spatialize;
 };
 
 #endif // SND_CHANNEL_H

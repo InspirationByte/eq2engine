@@ -35,6 +35,9 @@
     <Filter Include="Source Files\SoundEngine\device">
       <UniqueIdentifier>{ae1e46a0-997c-448a-9788-d14dc0939630}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\SoundEngine\dsp">
+      <UniqueIdentifier>{cd103b1b-635e-4448-81b6-26c24eae8c3f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="windows\resource.h">

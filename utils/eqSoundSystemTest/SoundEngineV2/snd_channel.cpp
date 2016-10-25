@@ -21,7 +21,8 @@ CSoundChannel::CSoundChannel() :
 	m_flVolume(1.0f),
 	m_vOrigin(0.0f),
 	m_flAttenuation(ATTN_STATIC),
-	m_sourceMixer(NULL)
+	m_sourceMixer(NULL),
+	m_spatialize(S_SpatializeStereo)
 {
 	
 }
@@ -39,17 +40,28 @@ int CSoundChannel::PlaySound( int nSound, bool bLooping )
 		return -1;
 	}
 
-	// select the mixer function
+	m_nSamplePos = 0.0f;
+
+	// select proper mix format
 	soundFormat_t* format = m_pSound->GetFormat();
 
-	if ( format->channels == 1 && format->bitwidth == 16 )
+	m_sourceMixer = NULL; // reset before proceed
+
+	if ( format->channels == 1 && format->bitwidth == 8 )
+		m_sourceMixer = S_MixMono8;
+	else if ( format->channels == 1 && format->bitwidth == 16 )
 		m_sourceMixer = S_MixMono16;
 	else if ( format->channels == 2 && format->bitwidth == 16 )
 		m_sourceMixer = S_MixStereo16;
 
-	m_nSamplePos = 0;
 	m_bPlaying = true;
 	m_bLooping = bLooping;
+
+	if(!m_sourceMixer)
+	{
+		MsgError("Unsupported sound format for '%s'\n", m_pSound->GetFilename());
+		m_bPlaying = false;
+	}
 
 	return 0;
 }
@@ -86,7 +98,7 @@ void CSoundChannel::MixChannel(paintbuffer_t* input, paintbuffer_t* output, int 
 
 	// spatialize sound
 	int spatial_vol[2];
-	S_SpatializeStereo(this, gSound->GetListener(), volume, spatial_vol);
+	(*m_spatialize)(this, gSound->GetListener(), volume, spatial_vol);
 
 	// mix them into given output buffer
 	float sampleOffset = (*m_sourceMixer)( input->pData, readSamples, output->pData, numSamples, sampleRate, spatial_vol );
