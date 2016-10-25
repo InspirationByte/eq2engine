@@ -29,17 +29,16 @@ bool CSoundSource_WaveCache::Load(const char* szFilename)
 
 void CSoundSource_WaveCache::Unload ()
 {
-    gSound->HeapFree( m_dataCache );
-    
-    m_dataCache = NULL;
-    m_cacheSize = 0;
+	PPFree(m_dataCache);
+	m_dataCache = NULL;
+	m_cacheSize = 0;
 }
 
 void CSoundSource_WaveCache::ParseData(CRIFF_Parser &chunk)
 {
     int sample;
 
-    m_dataCache = (ubyte *)gSound->HeapAlloc( chunk.GetSize( ) );
+    m_dataCache = (ubyte *)PPAlloc( chunk.GetSize( ) );
     m_cacheSize = chunk.GetSize( );
 
     m_numSamples = m_cacheSize / (m_format.channels * m_format.bitwidth / 8);

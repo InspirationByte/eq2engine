@@ -29,8 +29,8 @@ public:
 
     virtual void Destroy ( );
 
-    virtual ESoundDeviceState	GetState()		{ return m_State; }
-    virtual buffer_info_t		GetBufferInfo();
+    virtual ESoundDeviceState	GetState() { return m_State; }
+    virtual void				GetBufferInfo(buffer_info_t& outBufInfo);
     virtual void				WriteToBuffer(ubyte *pAudioData, int nBytes);
 
 private:

@@ -10,6 +10,7 @@
 
 #include "soundinterface.h"
 #include "snd_defs.h"
+#include "snd_mix.h"
 
 class ISoundSource;
 
@@ -18,24 +19,29 @@ class CSoundChannel : public ISoundChannel
 public:
 	CSoundChannel();
 
-	virtual bool        IsPlaying () { return m_bPlaying; }
-	virtual bool        IsLooping () { return m_bLooping; }
+	bool				IsPlaying () { return m_bPlaying; }
+	bool				IsLooping () { return m_bLooping; }
 
-	virtual int         PlaySound(int nSound, bool bLooping);
-	virtual int         PlaySound(int nSound);
-	virtual int         PlayLoop(int nSound);
+	int					PlaySound(int nSound, bool bLooping);
+	int					PlaySound(int nSound);
+	int					PlayLoop(int nSound);
 
-	virtual void        StopSound ();
+	void				StopSound();
 
-	virtual void        SetOrigin (const Vector3D& vOrigin)		{ m_vOrigin = vOrigin; }
-	virtual void        SetVolume (float flVolume)				{ m_flVolume = flVolume; }
-	virtual void        SetPitch(float flPitch)					{ m_flPitch = flPitch; }
-	virtual void        SetAttenuation (float flAttn)			{ m_flAttenuation = flAttn; }
+	void				SetOrigin(const Vector3D& vOrigin)		{ m_vOrigin = vOrigin; }
+	void				SetVolume(float flVolume)				{ m_flVolume = flVolume; }
+	void				SetPitch(float flPitch)					{ m_flPitch = flPitch; }
+	void				SetAttenuation (float flAttn)			{ m_flAttenuation = flAttn; }
 
-	void				SetReserved (bool b) { m_bReserved = b; }
-	bool				IsReserved () { return m_bReserved; }
+	const Vector3D&		GetOrigin() const {return m_vOrigin;}
+	float				GetVolume() const {return m_flVolume;}
+	float				GetPitch() const {return m_flPitch;}
+	float				GetAttenuation() const {return m_flAttenuation;}
 
-	void				MixChannel(paintbuffer_t *pBuffer, int nSamples);
+	void				SetReserved(bool b) { m_bReserved = b; }
+	bool				IsReserved() { return m_bReserved; }
+
+	void				MixChannel(paintbuffer_t* input, paintbuffer_t* output, int numSamples);
 private:
     ISoundSource*		m_pSound;
 
@@ -50,14 +56,7 @@ private:
     float				m_nSamplePos;
     bool				m_bReserved;
 
-	typedef void (CSoundChannel::*MIXFUNC)(void *pBuffer, float flRate, int nVolume, int nSamples);
 	MIXFUNC				m_sourceMixer;
-
-    void				m_mixMono16(void *pBuffer, float flRate, int nVolume, int nSamples);
-    void				m_mixStereo16(void *pBuffer, float flRate, int nVolume, int nSamples);
-
-    void				m_SpatializeMono(int in, int *out);
-    void				m_SpatializeStereo(int in, int out[2]);
 };
 
 #endif // SND_CHANNEL_H

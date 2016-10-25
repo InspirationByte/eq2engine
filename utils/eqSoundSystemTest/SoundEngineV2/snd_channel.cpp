@@ -11,14 +11,10 @@
 
 #include "DebugInterface.h"
 
+
 #pragma warning(disable:4244)
 
-#define SAMPLE_M(a,b,c)   ( (float)(a[b]*(1-c))+(float)(a[b+1]*(c)) )
-#define SAMPLE_S(a,b,c,d) ( (float)(a[c].b*(1-d))+(float)(a[c+1].b*(d)) )
-
 #define SAMPLES_THRESH	8		// read some extra samples
-
-#define ATTN_LEN        1000.0f
 
 CSoundChannel::CSoundChannel() : 
 	m_flPitch(1.0f),
@@ -47,9 +43,9 @@ int CSoundChannel::PlaySound( int nSound, bool bLooping )
 	soundFormat_t* format = m_pSound->GetFormat();
 
     if ( format->channels == 1 && format->bitwidth == 16 )
-        m_sourceMixer = &CSoundChannel::m_mixMono16;
+        m_sourceMixer = S_MixMono16;
     else if ( format->channels == 2 && format->bitwidth == 16 )
-        m_sourceMixer = &CSoundChannel::m_mixStereo16;
+        m_sourceMixer = S_MixStereo16;
 
     m_nSamplePos = 0;
     m_bPlaying = true;
@@ -76,127 +72,28 @@ void CSoundChannel::StopSound ()
 
 //----------------------------------------------------------------
 
-void CSoundChannel::MixChannel(paintbuffer_t *pBuffer, int nSamples)
+void CSoundChannel::MixChannel(paintbuffer_t* input, paintbuffer_t* output, int numSamples)
 {
-    int volume = (int)(m_flVolume * pBuffer->nVolume * 255) >> 8;
-
 	soundFormat_t* format = m_pSound->GetFormat();
 
-	float sampleRate = m_flPitch * (float)format->frequency / (float)pBuffer->nFrequency;
+	float sampleRate = m_flPitch * (float)format->frequency / (float)output->nFrequency;
 
-	// mix
-	(this->*m_sourceMixer)( pBuffer->pData, sampleRate, volume, nSamples );
-}
+	// read needed samples
+	int readSampleCount = numSamples*sampleRate;
+	int readSamples = m_pSound->GetSamples( (ubyte *)input->pData, readSampleCount + SAMPLES_THRESH, floor(m_nSamplePos), m_bLooping );
 
-void CSoundChannel::m_mixMono16(void *pBuffer, float flRate, int nVolume, int nSamples)
-{
-    samplepair_t* output = (samplepair_t*)pBuffer;
-    short* input = (short *)gSound->GetChannelBuffer( )->pData;
+	int volume = (int)(m_flVolume * output->nVolume * 255) >> 8;
 
-    float sampleFrac = 0.0f;
+	// spatialize sound
+	int spatial_vol[2];
+	S_SpatializeStereo(this, gSound->GetListener(), volume, spatial_vol);
 
-    int spatial_vol[2];
-    m_SpatializeStereo( nVolume, spatial_vol );
+	// mix them into given output buffer
+	float sampleOffset = (*m_sourceMixer)( input->pData, readSamples, output->pData, numSamples, sampleRate, spatial_vol );
 
-	int readSampleCount = nSamples*flRate;
+	if ( readSamples < readSampleCount ) // stop sound if we read less samples than we wanted
+		m_bPlaying = false;
 
-    int nSamplesRead = m_pSound->GetSamples( (ubyte *)input, readSampleCount + SAMPLES_THRESH, m_nSamplePos, m_bLooping );
-    float nSamplePos = m_nSamplePos - floor( m_nSamplePos );
-
-	int i = 0;
-	int srcSample;
-	while( i < nSamples && nSamplePos < nSamplesRead )  // don't overdo sample count
-    {
-        srcSample = floor( nSamplePos );
-        sampleFrac = nSamplePos-srcSample;
-
-        output[i].left += (int)(spatial_vol[0] * SAMPLE_M(input,srcSample,sampleFrac)) >> 8;
-        output[i].right += (int)(spatial_vol[1] * SAMPLE_M(input,srcSample,sampleFrac)) >> 8;
-
-        m_nSamplePos += flRate;
-        nSamplePos += flRate;
-		i++;
-    }
-
-    if ( nSamplesRead < readSampleCount )
-        m_bPlaying = false;
-
-    m_nSamplePos = m_pSound->GetLoopPosition( m_nSamplePos );
-}
-
-void CSoundChannel::m_mixStereo16(void *pBuffer, float flRate, int nVolume, int nSamples)
-{
-    samplepair_t* output = (samplepair_t*)pBuffer;
-    stereo16_t* input = (stereo16_t*)gSound->GetChannelBuffer()->pData;
-
-    int spatial_vol[2];
-    m_SpatializeStereo( nVolume, spatial_vol );
-
-	int readSampleCount = nSamples*flRate;
-
-    int nSamplesRead = m_pSound->GetSamples( (ubyte *)input, readSampleCount + SAMPLES_THRESH, m_nSamplePos, m_bLooping );
-
-    float nSamplePos = m_nSamplePos - floor( m_nSamplePos );
-	float sampleFrac = 0.0f;
-
-	int i = 0;
-	int srcSample;
-	while( i < nSamples && nSamplePos < nSamplesRead ) // don't overdo sample count
-    {
-        srcSample = floor( nSamplePos );
-        sampleFrac = nSamplePos-srcSample;
-
-        output[i].left += (int)((float)spatial_vol[0] * SAMPLE_S(input,left,srcSample,sampleFrac)) >> 8;
-        output[i].right += (int)((float)spatial_vol[1] * SAMPLE_S(input,right,srcSample,sampleFrac)) >> 8;
-
-        m_nSamplePos += flRate;
-        nSamplePos += flRate;
-		i++;
-    }
-
-    if ( nSamplesRead < readSampleCount )
-        m_bPlaying = false;
-
-    m_nSamplePos = m_pSound->GetLoopPosition( m_nSamplePos );
-}
-
-//----------------------------------------------------------------
-
-void CSoundChannel::m_SpatializeMono (int in, int *out)
-{
-    if ( m_flAttenuation == ATTN_STATIC )
-        out[0] = in;
-    else
-    {
-        Vector3D vDir = gSound->m_listener.origin-m_vOrigin;
-        float len = lengthSqr(vDir);
-
-		// BUG_WARNING
-
-        float attn = clamp( powf(ATTN_LEN / len, m_flAttenuation), 0, 1 );
-        out[0] = in * attn;
-    }
-}
-
-void CSoundChannel::m_SpatializeStereo (int in, int out[])
-{
-    if ( m_flAttenuation == ATTN_STATIC )
-    {
-        out[0] = in;
-        out[1] = in;
-    }
-    else
-    {
-        Vector3D vDir = gSound->m_listener.origin-m_vOrigin;
-        float len = lengthSqr(vDir);
-
-		vDir = normalize(vDir);
-
-		float dotRight = dot(vDir, gSound->m_listener.right );
-
-        float attn = clamp( powf(ATTN_LEN / len, m_flAttenuation), 0, 1 );
-
-        out[0] = in * (0.5f * (1 + dotRight) * attn);
-        out[1] = in * (0.5f * (1 - dotRight) * attn);
-    }
+	// advance playback
+	m_nSamplePos = m_pSound->GetLoopPosition( m_nSamplePos+sampleOffset );
 }

@@ -130,6 +130,12 @@
     <ClInclude Include="SoundEngineV2\snd_dev_dsound.h">
       <Filter>Source Files\SoundEngine\device</Filter>
     </ClInclude>
+    <ClInclude Include="SoundEngineV2\snd_mix.h">
+      <Filter>Source Files\SoundEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundEngineV2\snd_defs_public.h">
+      <Filter>Source Files\SoundEngine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="windows\mainicon.ico">
@@ -214,6 +220,9 @@
     </ClCompile>
     <ClCompile Include="SoundEngineV2\snd_dev_dsound.cpp">
       <Filter>Source Files\SoundEngine\device</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundEngineV2\snd_mix.cpp">
+      <Filter>Source Files\SoundEngine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

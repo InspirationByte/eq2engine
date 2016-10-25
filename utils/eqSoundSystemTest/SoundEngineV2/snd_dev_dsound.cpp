@@ -227,20 +227,16 @@ void CDirectSoundDevice::DestroyBuffers ( )
     }
 }
 
-buffer_info_t CDirectSoundDevice::GetBufferInfo ()
+void CDirectSoundDevice::GetBufferInfo( buffer_info_t& outBufInfo )
 {
-    buffer_info_t info;
-
-    info.channels = m_BufferFormat.nChannels;
-    info.bitwidth = m_BufferFormat.wBitsPerSample;
-    info.frequency = m_BufferFormat.nSamplesPerSec;
-    info.size = m_BufferCaps.dwBufferBytes;
+    outBufInfo.channels = m_BufferFormat.nChannels;
+    outBufInfo.bitwidth = m_BufferFormat.wBitsPerSample;
+    outBufInfo.frequency = m_BufferFormat.nSamplesPerSec;
+    outBufInfo.size = m_BufferCaps.dwBufferBytes;
     
-    pSoundBuffer->GetCurrentPosition( (LPDWORD )&info.read, (LPDWORD )&info.write );
+    pSoundBuffer->GetCurrentPosition( (LPDWORD )&outBufInfo.read, (LPDWORD )&outBufInfo.write );
 
-    info.write = m_nOffset;
-
-    return info;
+    outBufInfo.write = m_nOffset;
 }
 
 void CDirectSoundDevice::WriteToBuffer(ubyte *pAudioData, int nBytes)
@@ -263,8 +259,8 @@ void CDirectSoundDevice::WriteToBuffer(ubyte *pAudioData, int nBytes)
     nSamples1 = nBytes1 / (m_BufferFormat.nChannels * m_BufferFormat.wBitsPerSample / 8);
     nSamples2 = nBytes2 / (m_BufferFormat.nChannels * m_BufferFormat.wBitsPerSample / 8);
 
-    gSound->MixStereo16( (samplepair_t *)pAudioData, (stereo16_t *)pBuffer1, nSamples1, 255 );
-    gSound->MixStereo16( (samplepair_t *)(pAudioData+nBytes1*2), (stereo16_t *)pBuffer2, nSamples2, 255 );
+    MixStereo16( (samplepair_t *)pAudioData, (stereo16_t *)pBuffer1, nSamples1, 255 );
+    MixStereo16( (samplepair_t *)(pAudioData+nBytes1*2), (stereo16_t *)pBuffer2, nSamples2, 255 );
 
     pSoundBuffer->Unlock( pBuffer1, nBytes1, pBuffer2, nBytes2 );
 

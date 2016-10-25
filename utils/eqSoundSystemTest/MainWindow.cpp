@@ -67,8 +67,6 @@ ISoundChannel* g_musicChan = NULL;
 void InitSoundSystem( EQWNDHANDLE wnd )
 {
 	ISoundEngine::Create();
-	gSound->Init();
-
 	gSound->InitDevice(wnd);
 
 	//g_musicSound = gSound->PrecacheSound("sounds/SoundTest/Sine.wav");//

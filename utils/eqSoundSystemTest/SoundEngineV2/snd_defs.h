@@ -9,25 +9,26 @@
 #define SND_DEFS_H
 
 #include "dktypes.h"
+#include "math/Vector.h"
 
 //----------------------------------------------------------
 
 typedef struct samplepair_s
 {
-    int     left;
-    int     right;
+	int     left;
+	int     right;
 } samplepair_t;
 
 typedef struct stereo16_s
 {
-    short   left;
-    short   right;
+	short   left;
+	short   right;
 } stereo16_t;
 
 typedef struct stereo8_s
 {
-    ubyte    left;
-    ubyte    right;
+	ubyte    left;
+	ubyte    right;
 } stereo8_t;
 
 //----------------------------------------------------------
@@ -36,11 +37,11 @@ typedef struct stereo8_s
 
 typedef struct paintbuffer_s
 {
-    int		nFrequency;
-    int		nChannels;
-    int		nVolume;
-    int		nSize;
-    ubyte*	pData;
+	int		nFrequency;
+	int		nChannels;
+	int		nVolume;
+	int		nSize;
+	ubyte*	pData;
 } paintbuffer_t;
 
 #endif // SND_DEFS_H

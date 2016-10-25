@@ -9,6 +9,7 @@
 #define SND_DEVICE_H
 
 #include "soundinterface.h"
+#include "snd_defs.h"
 
 //--------------------------------------------------------
 
@@ -32,15 +33,18 @@ enum ESoundDeviceState
 class ISoundDevice
 {
 public:
-    static ISoundDevice*		Create(void* winhandle);
-    static void					Destroy(ISoundDevice *pDevice);
+	static ISoundDevice*		Create(void* winhandle);
+	static void					Destroy(ISoundDevice* device);
 
-    virtual void				Destroy() = 0;
+	virtual void				Destroy() = 0;
 
-    virtual ESoundDeviceState	GetState() = 0;
-    virtual buffer_info_t		GetBufferInfo() = 0;
+	virtual ESoundDeviceState	GetState() = 0;
+	virtual void				GetBufferInfo( buffer_info_t& outInfo ) = 0;
 
-    virtual void				WriteToBuffer(ubyte *pAudioData, int nBytes) = 0;
+	virtual void				WriteToBuffer( ubyte* sampleData, int sizeInBytes ) = 0;
+
+protected:
+	void						MixStereo16(samplepair_t *pInput, stereo16_t *pOutput, int nSamples, int nVolume);
 };
 
 #endif //SND_DEVICE_H

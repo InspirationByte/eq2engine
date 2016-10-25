@@ -2,7 +2,7 @@
 // Copyright © Inspiration Byte
 // 2009-2017
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Eq sound engine
+// Description: main control for any streaming sound output device
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "snd_dma.h"
@@ -10,12 +10,11 @@
 
 #include "ConVar.h"
 #include "DebugInterface.h"
+#include "ppmem.h"
 
-
-CSoundEngine* gSound = NULL;
+ISoundEngine* gSound = NULL;
 
 #pragma warning(disable:4244)
-#pragma warning(disable:4310)
 
 ConVar snd_disable("snd_disable", "0", "disables sound playback", CV_ARCHIVE);
 
@@ -38,297 +37,278 @@ void ISoundEngine::Destroy()
 
 //----------------------------------------------------------
 
+CSoundEngine::CSoundEngine() : m_initialized(false)
+{
+	m_sampleChain.pNext = m_sampleChain.pPrev = &m_sampleChain; 
+	Init();
+}
+
+CSoundEngine::~CSoundEngine()
+{
+	Shutdown();
+}
+
 int CSoundEngine::Init()
 {
-    m_bInitialized = false;
+	m_initialized = false;
 
-    m_paintBuffer.pData = NULL;
-    m_paintBuffer.nSize = 0;
+	m_paintBuffer.pData = NULL;
+	m_paintBuffer.nSize = 0;
 
-    m_channelBuffer.pData = NULL;
-    m_channelBuffer.nSize = 0;
+	m_channelBuffer.pData = NULL;
+	m_channelBuffer.nSize = 0;
 
-    memset( m_Sounds, 0, sizeof(m_Sounds) );
+	memset( m_samples, 0, sizeof(m_samples) );
 	memset( &m_listener, 0, sizeof(m_listener) );
 
-    for(int i = 0; i < MAX_CHANNELS; i++)
-    {
-        m_Channels[i].SetReserved( false );
-        m_Channels[i].StopSound( );
-    }
+	for(int i = 0; i < MAX_CHANNELS; i++)
+	{
+		m_channels[i].SetReserved( false );
+		m_channels[i].StopSound();
+	}
 
-    if( !snd_disable.GetBool() )
-    {
-		/*
-        SYSTEM_INFO sysinfo;
-
-        GetSystemInfo( &sysinfo );
-
-        if ( (m_hHeap = HeapCreate( 0, sysinfo.dwPageSize, 0 )) == NULL )
-            pMain->Message( "sound heap allocation failed\n" );
-		*/
-    }
-    else
-        m_hHeap = false;
-
-    return 0;
+	return 0;
 }
 
 int CSoundEngine::Shutdown()
 {
-    if ( m_hHeap )
-    {
-        //HeapDestroy( m_hHeap );
-        m_hHeap = NULL;
-    }
+	StopAllSounds();
+	m_initialized = false;
 
-    return 0;
+	return 0;
 }
 
 //----------------------------------------------------------
 
 void CSoundEngine::InitDevice (void* wndhandle)
 {
-    if ( snd_disable.GetBool( ) )
-        return;
+	if ( snd_disable.GetBool( ) )
+		return;
 
-    pAudioDevice = ISoundDevice::Create( wndhandle );
+	m_device = ISoundDevice::Create( wndhandle );
 
-	m_bInitialized = true;
+	m_initialized = true;
 }
 
 void CSoundEngine::DestroyDevice()
 {
-    // clear sound chain
-    while ( m_Chain.pNext != &m_Chain )
-        Delete( m_Chain.pNext );
+	// clear sound chain
+	while ( m_sampleChain.pNext != &m_sampleChain )
+		DeleteSample( m_sampleChain.pNext );
 
-    if ( m_paintBuffer.pData )
-    {
-        free( m_paintBuffer.pData );
-        free( m_channelBuffer.pData );
+	if ( m_paintBuffer.pData )
+	{
+		free( m_paintBuffer.pData );
+		free( m_channelBuffer.pData );
 
-        m_paintBuffer.pData = NULL;
-        m_paintBuffer.nSize = 0;
+		m_paintBuffer.pData = NULL;
+		m_paintBuffer.nSize = 0;
 
-        m_channelBuffer.pData = NULL;
-        m_channelBuffer.nSize = 0;
-    }
+		m_channelBuffer.pData = NULL;
+		m_channelBuffer.nSize = 0;
+	}
 
-    for(int i = 0; i < MAX_CHANNELS; i++)
-        FreeChannel( m_Channels + i );
+	for(int i = 0; i < MAX_CHANNELS; i++)
+		FreeChannel( &m_channels[i] );
 
-    ISoundDevice::Destroy( pAudioDevice );
-    pAudioDevice = NULL;
-}
-
-void CSoundEngine::MixStereo16(samplepair_t *pInput, stereo16_t *pOutput, int nSamples, int nVolume)
-{
-    int i, val;
-
-    for ( i=0 ; i<nSamples ; i++ )
-    {
-        val = (pInput[i].left * nVolume) >> 8;
-
-        if ( val > 0x7fff )
-            pOutput[i].left = 0x7fff;
-        else if ( val < (short)0x8000 )
-            pOutput[i].left = (short)0x8000;
-        else
-            pOutput[i].left = (short)val;
-
-        val = (pInput[i].right * nVolume) >> 8;
-
-        if ( val > 0x7fff )
-            pOutput[i].right = 0x7fff;
-        else if ( val < (short)0x8000 )
-            pOutput[i].right = (short)0x8000;
-        else
-            pOutput[i].right = (short)val;
-    }
+	ISoundDevice::Destroy( m_device );
+	m_device = NULL;
 }
 
 void CSoundEngine::Update ()
 {
-    paintbuffer_t   *pBuffer;
-    int             nBytes;
-    buffer_info_t   info;
-    int             nSamples, nWritten;
+	if (!m_device)
+		return;
 
-    if ( !pAudioDevice )
-        return;
+	buffer_info_t devBufInfo;
+	m_device->GetBufferInfo( devBufInfo );
 
-    info = pAudioDevice->GetBufferInfo();
+	int mixSamples = snd_mixahead.GetFloat() * devBufInfo.frequency;
+	paintbuffer_t* paintBuf = GetPaintBuffer( mixSamples * devBufInfo.channels * PAINTBUFFER_BYTES );
 
-    nSamples = snd_mixahead.GetFloat() * info.frequency;
-    pBuffer = GetPaintBuffer( nSamples * info.channels * PAINTBUFFER_BYTES );
+	paintBuf->nFrequency = devBufInfo.frequency;
+	paintBuf->nChannels = devBufInfo.channels;
+	paintBuf->nVolume = snd_volume.GetFloat() * 255;
 
-    pBuffer->nFrequency = info.frequency;
-    pBuffer->nChannels = info.channels;
-    pBuffer->nVolume = snd_volume.GetFloat() * 255;
+	int written = devBufInfo.write - devBufInfo.read;
 
-    nWritten = info.write - info.read;
-    if ( nWritten < 0 )
-        nWritten += info.size;
+	if ( written < 0 )
+		written += devBufInfo.size;
 
-    if ( nSamples > info.size )
-        nSamples = info.size;
+	if ( mixSamples > devBufInfo.size )
+		mixSamples = devBufInfo.size;
 
-    nSamples -= nWritten / (info.channels * info.bitwidth / 8);
+	mixSamples -= written / (devBufInfo.channels * devBufInfo.bitwidth / 8);
 
-    if ( nSamples < 0 )
-        return;
+	if ( mixSamples < 0 )
+		return;
 
-    MixChannels( pBuffer, nSamples );
+	// mix all the channels which currently playing
+	MixChannels( paintBuf, mixSamples );
 
-    nBytes = nSamples * info.channels * info.bitwidth / 8;
-
-    pAudioDevice->WriteToBuffer( pBuffer->pData, nBytes );
+	// write out to the device
+	int sizeInBytes = mixSamples * devBufInfo.channels * devBufInfo.bitwidth / 8;
+	m_device->WriteToBuffer( paintBuf->pData, sizeInBytes );
 }
 
+// returns paint buffer for writing purposes
 paintbuffer_t* CSoundEngine::GetPaintBuffer(int nBytes)
 {
-    if ( !m_paintBuffer.pData )
-    {
-        m_paintBuffer.pData = (ubyte *)alloc( nBytes );
-        m_paintBuffer.nSize = nBytes;
+	if ( !m_paintBuffer.pData )
+	{
+		m_paintBuffer.pData = (ubyte *)PPAlloc( nBytes );
+		m_paintBuffer.nSize = nBytes;
 
-        m_channelBuffer.pData = (ubyte *)alloc( nBytes );
-        m_channelBuffer.nSize = nBytes;
-    }
-    else if ( nBytes != m_paintBuffer.nSize )
-    {
-        free( m_paintBuffer.pData );
-        free( m_channelBuffer.pData );
+		// make channel buffer same as the output paint buffer
+		m_channelBuffer.pData = (ubyte *)PPAlloc( nBytes );
+		m_channelBuffer.nSize = nBytes;
+	}
+	else if ( nBytes != m_paintBuffer.nSize )
+	{
+		PPFree( m_paintBuffer.pData );
+		PPFree( m_channelBuffer.pData );
 
-        m_paintBuffer.pData = (ubyte *)alloc( nBytes );
-        m_paintBuffer.nSize = nBytes;
+		m_paintBuffer.pData = (ubyte *)PPAlloc( nBytes );
+		m_paintBuffer.nSize = nBytes;
 
-        m_channelBuffer.pData = (ubyte *)alloc( nBytes );
-        m_channelBuffer.nSize = nBytes;
-    }
+		// make channel buffer same as the output paint buffer
+		m_channelBuffer.pData = (ubyte *)PPAlloc( nBytes );
+		m_channelBuffer.nSize = nBytes;
+	}
 
-    memset( m_paintBuffer.pData, 0, m_paintBuffer.nSize );
-    return &m_paintBuffer;
+	memset( m_paintBuffer.pData, 0, m_paintBuffer.nSize );
+
+	return &m_paintBuffer;
 }
 
 //----------------------------------------------------------
 
 void CSoundEngine::SetListener(const Vector3D& vOrigin, const Vector3D& vForward, const Vector3D& vRight, const Vector3D& vUp)
 {
-    m_listener.origin = vOrigin;
-    m_listener.forward = vForward;
-    m_listener.right = vRight;
-    m_listener.up = vUp;
+	m_listener.origin = vOrigin;
+	m_listener.forward = vForward;
+	m_listener.right = vRight;
+	m_listener.up = vUp;
+}
+
+const ListenerInfo&	CSoundEngine::GetListener() const
+{
+	return m_listener;
 }
 
 //----------------------------------------------------------
 
-void* CSoundEngine::alloc(unsigned int size)
+snd_link_t* CSoundEngine::CreateSample(const char *szFilename)
 {
-	return malloc( size );
+	int i;
+
+	snd_link_t      *pLink, *next;
+	ISoundSource    *pSource;
+
+	pSource = ISoundSource::CreateSound( szFilename );
+	if ( !pSource )
+		return NULL;
+
+	pLink = new snd_link_t;
+
+	// alphabetize
+	for ( next = m_sampleChain.pNext; (next != &m_sampleChain) && (stricmp(next->szFilename,szFilename) < 0); next = next->pNext );
+
+	pLink->pNext = next;
+	pLink->pPrev = next->pPrev;
+
+	pLink->pNext->pPrev = pLink;
+	pLink->pPrev->pNext = pLink;
+
+	for( i = 0; i < MAX_SOUNDS; i++ )
+	{
+		if ( m_samples[i] == NULL )
+		{
+			m_samples[i] = pLink;
+
+			pLink->nNumber = i;
+			break;
+		}
+	}
+
+	if ( i == MAX_SOUNDS )
+	{
+		pLink->nNumber = MAX_SOUNDS;
+		DeleteSample( pLink );
+
+		MsgError( "could not load %s: exceeded MAX_SOUNDS (%d)\n", szFilename, MAX_SOUNDS );
+		return NULL;
+	}
+
+	strcpy( pLink->szFilename, szFilename );
+	pLink->nSequence = 0;
+
+	pLink->pSource = pSource;
+
+	return pLink;
 }
 
-void CSoundEngine::free(void *ptr)
+ISoundSource* CSoundEngine::GetSound(int nSound)
 {
-	::free( ptr );
+	if(m_samples[nSound])
+		return m_samples[nSound]->pSource;
+
+	return NULL;
 }
 
-//----------------------------------------------------------
-
-snd_link_t* CSoundEngine::Create(const char *szFilename)
+snd_link_t* CSoundEngine::FindSample(const char *szFilename)
 {
-    int i;
+	int cmp;
 
-    snd_link_t      *pLink, *next;
-    ISoundSource    *pSource;
+	for ( snd_link_t* pLink = m_sampleChain.pNext; pLink != &m_sampleChain; pLink = pLink->pNext )
+	{
+		cmp = strcmp( szFilename, pLink->szFilename );
+		if ( cmp == 0 )
+			return pLink;
+		else if ( cmp < 0 ) // passed it, does not exit
+			return NULL;
+	}
 
-    pSource = ISoundSource::CreateSound( szFilename );
-    if ( !pSource )
-        return NULL;
-
-    pLink = (snd_link_t *)alloc( sizeof(snd_link_t) );
-
-    // alphabetize
-    for ( next = m_Chain.pNext ; (next != &m_Chain) && (stricmp(next->szFilename,szFilename)<0) ; next = next->pNext );
-
-    pLink->pNext = next;
-    pLink->pPrev = next->pPrev;
-
-    pLink->pNext->pPrev = pLink;
-    pLink->pPrev->pNext = pLink;
-
-    for ( i = 0 ; i<MAX_SOUNDS ; i++ )
-    {
-        if ( m_Sounds[i] == NULL )
-        {
-            m_Sounds[i] = pLink;
-            pLink->nNumber = i;
-            break;
-        }
-    }
-    if ( i == MAX_SOUNDS )
-    {
-        pLink->nNumber = MAX_SOUNDS;
-        Delete( pLink );
-
-		MsgError( "could not load %s: out of room\n", szFilename );
-        return NULL;
-    }
-
-    strcpy( pLink->szFilename, szFilename );
-    pLink->nSequence = 0;
-
-    pLink->pSource = pSource;
-
-    return pLink;
-}
-
-
-snd_link_t* CSoundEngine::Find(const char *szFilename)
-{
-    snd_link_t  *pLink;
-    int         cmp;
-
-    for ( pLink = m_Chain.pNext ; pLink != &m_Chain ; pLink = pLink->pNext )
-    {
-        cmp = strcmp( szFilename, pLink->szFilename );
-        if ( cmp == 0 )
-            return pLink;
-        else if ( cmp < 0 ) // passed it, does not exit
-            return NULL;
-    }
-
-    return NULL;
+	return NULL;
 }
 
 
-void CSoundEngine::Delete(snd_link_t *pLink)
+void CSoundEngine::DeleteSample(snd_link_t *pLink)
 {
     pLink->pNext->pPrev = pLink->pPrev;
     pLink->pPrev->pNext = pLink->pNext;
 
     if ( pLink->nNumber < MAX_SOUNDS )
-        m_Sounds[pLink->nNumber] = NULL;
+        m_samples[pLink->nNumber] = NULL;
 
     ISoundSource::DestroySound( pLink->pSource );
 
-    free( pLink );
+    delete pLink;
 }
 
-int CSoundEngine::PrecacheSound(const char *szFilename)
+int CSoundEngine::PrecacheSound(const char* fileName)
 {
-    snd_link_t* pLink = Find( szFilename );
+    snd_link_t* link = FindSample( fileName );
 
-    if( pLink )
-        pLink->nSequence = 0;
+    if( link )
+        link->nSequence = 0;
     else
-        pLink = Create( szFilename );
+        link = CreateSample( fileName );
 
-    if ( pLink )
-        return pLink->nNumber;
+    if( link )
+        return link->nNumber;
 
     return -1;
+}
+
+ISoundSource* CSoundEngine::FindSound(const char* fileName)
+{
+	snd_link_t* link = FindSample( fileName );
+
+	if(link)
+		return link->pSource;
+
+	return NULL;
 }
 
 void CSoundEngine::PlaySound(int nIndex, const Vector3D& vOrigin, float flVolume, float flAttenuation)
@@ -348,41 +328,52 @@ void CSoundEngine::PlaySound(int nIndex, const Vector3D& vOrigin, float flVolume
 
 //----------------------------------------------------------
 
-ISoundChannel* CSoundEngine::AllocChannel(bool bReserve)
+ISoundChannel* CSoundEngine::AllocChannel(bool reserve)
 {
-    if ( !pAudioDevice )
-        return NULL;
+	if ( !m_device )
+		return NULL;
 
-    for(int i = 0; i < MAX_CHANNELS; i++)
-    {
-        if ( m_Channels[i].IsPlaying() )
-            continue;
-
-        if ( m_Channels[i].IsReserved() )
-            continue;
-
-        if ( bReserve )
-            m_Channels[i].SetReserved( true );
-
-        return (ISoundChannel*)&m_Channels[i];
-    }
-
-    return NULL;
-}
-
-void CSoundEngine::FreeChannel( ISoundChannel* pChan )
-{
-    CSoundChannel* pChannel = (CSoundChannel*)pChan;
-
-    pChannel->StopSound();
-    pChannel->SetReserved(false);
-}
-
-void CSoundEngine::MixChannels( paintbuffer_t *pBuffer, int nSamples )
-{
-    for (int i = 0; i < MAX_CHANNELS; i++ )
+	for(int i = 0; i < MAX_CHANNELS; i++)
 	{
-		if ( m_Channels[i].IsPlaying( ) )
-			m_Channels[i].MixChannel( pBuffer, nSamples );
+		if ( m_channels[i].IsPlaying() || m_channels[i].IsReserved() )
+			continue;
+
+		if ( reserve )
+			m_channels[i].SetReserved( true );
+
+		return &m_channels[i];
+	}
+
+	return NULL;
+}
+
+void CSoundEngine::FreeChannel( ISoundChannel* chan )
+{
+	if(!chan)
+		return;
+
+	CSoundChannel* channel = (CSoundChannel*)chan;
+
+	channel->StopSound();
+	channel->SetReserved(false);
+}
+
+void CSoundEngine::StopAllSounds()
+{
+	for (int i = 0; i < MAX_CHANNELS; i++ )
+	{
+		if(m_channels[i].IsPlaying())
+			m_channels[i].StopSound();
+	}
+}
+
+void CSoundEngine::MixChannels( paintbuffer_t* output, int numSamples )
+{
+	paintbuffer_t* chanBuffer = GetChannelBuffer();
+
+	for (int i = 0; i < MAX_CHANNELS; i++ )
+	{
+		if(m_channels[i].IsPlaying())
+			m_channels[i].MixChannel(chanBuffer, output, numSamples );
 	}
 }

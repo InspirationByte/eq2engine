@@ -2,7 +2,7 @@
 // Copyright © Inspiration Byte
 // 2009-2017
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Eq sound engine
+// Description: main control for any streaming sound output device
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "math/Vector.h"
@@ -28,80 +28,64 @@ typedef struct snd_link_s
 class CSoundEngine : public ISoundEngine
 {
 public:
-    CSoundEngine ()		{ m_Chain.pNext = m_Chain.pPrev = &m_Chain; Init( ); }
-    ~CSoundEngine ()	{ Shutdown( ); }
+	CSoundEngine();
+	~CSoundEngine();
 
-    int						Init();
-    int						Shutdown();
+	int					Init();
+	int					Shutdown();
 
-    virtual void			InitDevice(void* wndhandle);
-    virtual void			DestroyDevice();
+	void				InitDevice(void* wndhandle);
+	void				DestroyDevice();
 
-    virtual void			Update();
+	void				Update();
 
-    virtual void			SetListener(const Vector3D& vOrigin, const Vector3D& vForward, const Vector3D& vRight, const Vector3D& vUp);
+	void				SetListener(const Vector3D& vOrigin, const Vector3D& vForward, const Vector3D& vRight, const Vector3D& vUp);
+	const ListenerInfo&	GetListener() const;
 
-    virtual void			PlaySound(int nIndex, const Vector3D& vOrigin, float flVolume, float flAttenuation);
+	void				PlaySound(int nIndex, const Vector3D& vOrigin, float flVolume, float flAttenuation);
 
-    virtual ISoundChannel*	AllocChannel(bool reserve = false);
-    virtual void			FreeChannel(ISoundChannel *pChan);
+	ISoundChannel*		AllocChannel(bool reserve = false);
+	void				FreeChannel(ISoundChannel *pChan);
 
-    //  memory
+	void				StopAllSounds();
 
-    void*					HeapAlloc (unsigned int size)	{ return alloc(size); }
-    void					HeapFree (void *ptr)			{ free(ptr); }
+	//  registration
 
-    //  registration
-
-    int						PrecacheSound(const char *szFilename);
-    ISoundSource*			GetSound(int nSound) { if (m_Sounds[nSound]) return m_Sounds[nSound]->pSource; return NULL; }
-
-    //  mixing
-
-    void					MixStereo16 (samplepair_t *pInput, stereo16_t *pOutput, int nSamples, int nVolume);
-    paintbuffer_t*			GetChannelBuffer () { return &m_channelBuffer; }
-
-    //  spatialization
-
-	struct ListenerData {
-		Vector3D			origin, forward, right, up;
-	} m_listener;
-
+	int					PrecacheSound(const char* fileName);
+	ISoundSource*		GetSound(int nSound);
+	ISoundSource*		FindSound(const char* fileName);
 private:
-	void					MixChannels(paintbuffer_t *pBuffer, int nSamples);
+	//  mixing
+	paintbuffer_t*			GetChannelBuffer() { return &m_channelBuffer; }
 
-	bool					m_bInitialized;
+	void					MixChannels(paintbuffer_t* buffer, int numSamples);
+	paintbuffer_t*			GetPaintBuffer(int size);
 
-	ISoundDevice*			pAudioDevice;
+	//  spatialization
+	ListenerInfo			m_listener;
+
+	bool					m_initialized;
+	ISoundDevice*			m_device;
     
-	paintbuffer_t*			GetPaintBuffer(int nBytes);
 	paintbuffer_t			m_paintBuffer;
 	paintbuffer_t			m_channelBuffer;
-
-	//
-	//  memory
-	//
-
-	void*					m_hHeap;
-	void*					alloc (unsigned int size);
-	void					free (void *ptr);
 
 	//
 	//  sounds
 	//
 
-	snd_link_t				m_Chain;
-	snd_link_t*				m_Sounds[MAX_SOUNDS];
+	snd_link_t				m_sampleChain;
+	snd_link_t*				m_samples[MAX_SOUNDS];
 
-	snd_link_t*				Create(const char *szFilename);
-	snd_link_t*				Find(const char *szFilename);
-	void					Delete(snd_link_t *pLink);
+	snd_link_t*				CreateSample(const char* fileName);
+	snd_link_t*				FindSample(const char* fileName);
+	void					DeleteSample(snd_link_t* link);
 
 	//
 	//  channels
 	//
 
-	CSoundChannel			m_Channels[MAX_CHANNELS];
+	CSoundChannel			m_channels[MAX_CHANNELS];
 };
 
-extern CSoundEngine* gSound;
+extern ISoundEngine* gSound;
