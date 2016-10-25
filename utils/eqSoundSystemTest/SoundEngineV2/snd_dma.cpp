@@ -275,30 +275,30 @@ snd_link_t* CSoundEngine::FindSample(const char *szFilename)
 
 void CSoundEngine::DeleteSample(snd_link_t *pLink)
 {
-    pLink->pNext->pPrev = pLink->pPrev;
-    pLink->pPrev->pNext = pLink->pNext;
+	pLink->pNext->pPrev = pLink->pPrev;
+	pLink->pPrev->pNext = pLink->pNext;
 
-    if ( pLink->nNumber < MAX_SOUNDS )
-        m_samples[pLink->nNumber] = NULL;
+	if ( pLink->nNumber < MAX_SOUNDS )
+		m_samples[pLink->nNumber] = NULL;
 
-    ISoundSource::DestroySound( pLink->pSource );
+	ISoundSource::DestroySound( pLink->pSource );
 
-    delete pLink;
+	delete pLink;
 }
 
 int CSoundEngine::PrecacheSound(const char* fileName)
 {
-    snd_link_t* link = FindSample( fileName );
+	snd_link_t* link = FindSample( fileName );
 
-    if( link )
-        link->nSequence = 0;
-    else
-        link = CreateSample( fileName );
+	if( link )
+		link->nSequence = 0;
+	else
+		link = CreateSample( fileName );
 
-    if( link )
-        return link->nNumber;
+	if( link )
+		return link->nNumber;
 
-    return -1;
+	return -1;
 }
 
 ISoundSource* CSoundEngine::FindSound(const char* fileName)
@@ -313,17 +313,17 @@ ISoundSource* CSoundEngine::FindSound(const char* fileName)
 
 void CSoundEngine::PlaySound(int nIndex, const Vector3D& vOrigin, float flVolume, float flAttenuation)
 {
-    ISoundChannel* pChannel = AllocChannel( false );
+	ISoundChannel* pChannel = AllocChannel( false );
 
-    if ( pChannel )
-    {
-        pChannel->SetVolume( flVolume );
-        pChannel->SetOrigin( vOrigin );
-        pChannel->SetPitch( 1.0f );
-        pChannel->SetAttenuation( flAttenuation );
+	if ( pChannel )
+	{
+		pChannel->SetVolume( flVolume );
+		pChannel->SetOrigin( vOrigin );
+		pChannel->SetPitch( 1.0f );
+		pChannel->SetAttenuation( flAttenuation );
         
-        pChannel->PlaySound( nIndex );
-    }
+		pChannel->PlaySound( nIndex );
+	}
 }
 
 //----------------------------------------------------------

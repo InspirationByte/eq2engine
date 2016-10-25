@@ -47,23 +47,23 @@ public:
 class ISoundEngine
 {
 public:
-    static void					Create();
-    static void					Destroy();
+	static void					Create();
+	static void					Destroy();
 
-    virtual void				InitDevice(void* winhandle) = 0;
-    virtual void				DestroyDevice() = 0;
+	virtual void				InitDevice(void* winhandle) = 0;
+	virtual void				DestroyDevice() = 0;
 
-    virtual void				Update() = 0;
+	virtual void				Update() = 0;
 
-    virtual void				SetListener(const Vector3D& vOrigin, const Vector3D& vForward, const Vector3D& vRight, const Vector3D& vUp) = 0;
+	virtual void				SetListener(const Vector3D& vOrigin, const Vector3D& vForward, const Vector3D& vRight, const Vector3D& vUp) = 0;
 	virtual const ListenerInfo&	GetListener() const = 0;
 
-    virtual void				PlaySound(int nIndex, const Vector3D& vOrigin, float flVolume, float flAttenuation) = 0;
+	virtual void				PlaySound(int nIndex, const Vector3D& vOrigin, float flVolume, float flAttenuation) = 0;
 
-    virtual ISoundChannel*		AllocChannel(bool reserve = false) = 0;
-    virtual void				FreeChannel(ISoundChannel *pChan) = 0;
+	virtual ISoundChannel*		AllocChannel(bool reserve = false) = 0;
+	virtual void				FreeChannel(ISoundChannel *pChan) = 0;
 
-    virtual int					PrecacheSound(const char* fileName) = 0;
+	virtual int					PrecacheSound(const char* fileName) = 0;
 	virtual ISoundSource*		GetSound(int nSound) = 0;
 	virtual ISoundSource*		FindSound(const char* fileName) = 0;
 };

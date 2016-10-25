@@ -12,10 +12,10 @@
 class CSoundSource_WaveCache : public CSoundSource_Wave
 {
 public:
-    virtual int     GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping);
+	virtual int     GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping);
 
-    virtual bool	Load(const char *szFilename);
-    virtual void	Unload();
+	virtual bool	Load(const char *szFilename);
+	virtual void	Unload();
 
 protected:
 	virtual void    ParseData(CRIFF_Parser &chunk);

@@ -63,7 +63,6 @@ typedef struct // CHUNK_SAMPLE
 		uint Fraction;
 		uint Count;
 	}Loop[1];
-
 }wavsamplehdr_t;
 
 typedef struct // CHUNK_CUE
@@ -81,32 +80,32 @@ typedef struct // CHUNK_CUE
 class CRIFF_Parser
 {
 public:
-    CRIFF_Parser(const char *szFilename);
-    CRIFF_Parser(ubyte* pChunkData, int nChunkSize);
+	CRIFF_Parser(const char *szFilename);
+	CRIFF_Parser(ubyte* pChunkData, int nChunkSize);
 
-    void			ChunkClose();
-    bool			ChunkNext();
+	void			ChunkClose();
+	bool			ChunkNext();
 
-    unsigned int    GetName();
-    int             GetSize();
+	uint			GetName();
+	int             GetSize();
 
-    int             GetPos();
-    int             SetPos(int pos);
+	int             GetPos();
+	int             SetPos(int pos);
 
-    int				ReadChunk(void* dest);
-    int				ReadData(void* dest, int len);
-    int				ReadInt();
+	int				ReadChunk(void* dest);
+	int				ReadData(void* dest, int len);
+	int				ReadInt();
 
 private:
-    bool			ChunkSet();
+	bool			ChunkSet();
 
-    int				m_start;
-    int				m_pos;
+	int				m_start;
+	int				m_pos;
 
 	RIFFchunk_t		m_curChunk;
 
-    DKFILE*			m_riff;
-    ubyte*			m_riffData;
+	DKFILE*			m_riff;
+	ubyte*			m_riffData;
 };
 
 #endif // SND_RIFF_H

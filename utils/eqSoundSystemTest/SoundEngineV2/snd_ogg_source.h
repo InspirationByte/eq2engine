@@ -23,11 +23,11 @@ public:
 	virtual float			GetLoopPosition(float flPosition);
 
 protected:
-    soundFormat_t			m_format;
-    EqString				m_filename;
+	soundFormat_t			m_format;
+	EqString				m_filename;
 
-    int						m_numSamples;
-    int						m_loopStart;
+	int						m_numSamples;
+	int						m_loopStart;
 };
 
 #endif // SND_OGG_SOURCE_H

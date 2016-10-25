@@ -17,12 +17,12 @@
 
 typedef struct snd_link_s
 {
-    snd_link_s		*pNext, *pPrev;
-    int				nSequence;      // registration sequence
-    char			szFilename[128];
-    int				nNumber;
+	snd_link_s		*pNext, *pPrev;
+	int				nSequence;      // registration sequence
+	char			szFilename[128];
+	int				nNumber;
 
-    ISoundSource*	pSource;
+	ISoundSource*	pSource;
 } snd_link_t;
 
 class CSoundEngine : public ISoundEngine

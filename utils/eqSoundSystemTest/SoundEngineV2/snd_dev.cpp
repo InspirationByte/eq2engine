@@ -16,10 +16,10 @@
 
 ISoundDevice* ISoundDevice::Create(void* winhandle)
 {
-    ISoundDevice* pDevice;
-    ESoundDeviceState  devState = SNDDEV_FAIL;
+	ISoundDevice* pDevice;
+	ESoundDeviceState  devState = SNDDEV_FAIL;
 
-    MsgInfo( "\n------ Initializing Sound ------\n" );
+	MsgInfo( "\n------ Initializing Sound ------\n" );
 
 #ifdef _WIN32
 	pDevice = new CDirectSoundDevice((HWND)winhandle);
@@ -27,32 +27,32 @@ ISoundDevice* ISoundDevice::Create(void* winhandle)
 	// do others on other platforms
 #endif //
 
-    //  try directsound
-    if(pDevice)
-    {
-        if ( (devState = pDevice->GetState()) == SNDDEV_READY )
-            return pDevice;
+	//  try directsound
+	if(pDevice)
+	{
+		if ( (devState = pDevice->GetState()) == SNDDEV_READY )
+			return pDevice;
 
-        pDevice->Destroy( );
-        delete pDevice;
-    }
+		pDevice->Destroy( );
+		delete pDevice;
+	}
 
-    return NULL;
+	return NULL;
 }
 
 //---------------------------------------------------------------
 
 void ISoundDevice::Destroy(ISoundDevice *pDevice)
 {
-    MsgInfo( "------ shutting down sound ------" );
+	MsgInfo( "------ shutting down sound ------" );
 
-    if ( pDevice )
-    {
-        pDevice->Destroy();
-        delete pDevice;
-    }
+	if ( pDevice )
+	{
+		pDevice->Destroy();
+		delete pDevice;
+	}
 
-    return;
+	return;
 }
 
 void ISoundDevice::MixStereo16(samplepair_t *pInput, stereo16_t *pOutput, int nSamples, int nVolume)

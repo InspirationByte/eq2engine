@@ -28,46 +28,46 @@ CSoundChannel::CSoundChannel() :
 
 int CSoundChannel::PlaySound( int nSound, bool bLooping )
 {
-    if ( nSound < 0 )
-        return -1;
+	if ( nSound < 0 )
+		return -1;
 
-    m_pSound = gSound->GetSound( nSound );
+	m_pSound = gSound->GetSound( nSound );
 
-    if ( !m_pSound )
-    {
+	if ( !m_pSound )
+	{
 		MsgError( "could not play sound %i: does not exist\n", nSound );
-        return -1;
-    }
+		return -1;
+	}
 
 	// select the mixer function
 	soundFormat_t* format = m_pSound->GetFormat();
 
-    if ( format->channels == 1 && format->bitwidth == 16 )
-        m_sourceMixer = S_MixMono16;
-    else if ( format->channels == 2 && format->bitwidth == 16 )
-        m_sourceMixer = S_MixStereo16;
+	if ( format->channels == 1 && format->bitwidth == 16 )
+		m_sourceMixer = S_MixMono16;
+	else if ( format->channels == 2 && format->bitwidth == 16 )
+		m_sourceMixer = S_MixStereo16;
 
-    m_nSamplePos = 0;
-    m_bPlaying = true;
-    m_bLooping = bLooping;
+	m_nSamplePos = 0;
+	m_bPlaying = true;
+	m_bLooping = bLooping;
 
-    return 0;
+	return 0;
 }
 
 int CSoundChannel::PlaySound(int nSound)
 {
-    return PlaySound( nSound, false );
+	return PlaySound( nSound, false );
 }
 
 int CSoundChannel::PlayLoop(int nSound)
 {
-    return PlaySound( nSound, true );
+	return PlaySound( nSound, true );
 }
 
 void CSoundChannel::StopSound ()
 {
-    m_bPlaying = false;
-    m_bLooping = false;
+	m_bPlaying = false;
+	m_bLooping = false;
 }
 
 //----------------------------------------------------------------

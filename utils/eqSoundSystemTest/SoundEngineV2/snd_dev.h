@@ -15,19 +15,19 @@
 
 typedef struct buffer_info_s
 {
-    int     channels;
-    int     bitwidth;
-    int     frequency;
+	int channels;
+	int bitwidth;
+	int frequency;
 
-    int     read, write;
-    int     size;
+	int read, write;
+	int size;
 } buffer_info_t;
 
 enum ESoundDeviceState
 {
-    SNDDEV_READY = 0,
-    SNDDEV_FAIL,
-    SNDDEV_ABORT
+	SNDDEV_READY = 0,
+	SNDDEV_FAIL,
+	SNDDEV_ABORT
 };
 
 class ISoundDevice

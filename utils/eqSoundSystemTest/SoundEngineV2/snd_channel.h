@@ -43,18 +43,18 @@ public:
 
 	void				MixChannel(paintbuffer_t* input, paintbuffer_t* output, int numSamples);
 private:
-    ISoundSource*		m_pSound;
+	ISoundSource*		m_pSound;
 
-    Vector3D			m_vOrigin;
+	Vector3D			m_vOrigin;
     
-    bool				m_bPlaying;
-    bool				m_bLooping;
-    float				m_flAttenuation;
-    float				m_flPitch;
-    float				m_flVolume;
+	bool				m_bPlaying;
+	bool				m_bLooping;
+	float				m_flAttenuation;
+	float				m_flPitch;
+	float				m_flVolume;
 
-    float				m_nSamplePos;
-    bool				m_bReserved;
+	float				m_nSamplePos;
+	bool				m_bReserved;
 
 	MIXFUNC				m_sourceMixer;
 };
