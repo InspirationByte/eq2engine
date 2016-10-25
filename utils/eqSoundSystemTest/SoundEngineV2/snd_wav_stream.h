@@ -10,10 +10,10 @@
 class CSoundSource_WaveStream : public CSoundSource_Wave
 {
 public:
-	virtual int     GetSamples (ubyte *pOutput, int nSamples, int nOffset, bool bLooping);
+	int				GetSamples (ubyte *pOutput, int nSamples, int nOffset, bool bLooping);
 
-	virtual bool	Load(const char *szFilename);
-	virtual void    Unload();
+	bool			Load(const char *szFilename);
+	void			Unload();
 
 private:
 	virtual void    ParseData(CRIFF_Parser &chunk);

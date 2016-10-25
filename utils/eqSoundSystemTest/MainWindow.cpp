@@ -21,7 +21,7 @@
 #include "SoundEngine/listener.h"
 */
 
-#include "SoundEngineV2/snd_dma.h"
+#include "SoundEngineV2/soundinterface.h"
 
 #include <wx/settings.h>
 
@@ -62,18 +62,20 @@ TSound*				g_hitSound = NULL;
 int g_musicSound = -1;
 int g_staticSound = -1;
 
+ISoundEngine* g_soundEngine = NULL;
 ISoundChannel* g_musicChan = NULL;
 
 void InitSoundSystem( EQWNDHANDLE wnd )
 {
-	ISoundEngine::Create();
-	gSound->InitDevice(wnd);
+	g_soundEngine = ISoundEngine::Create();
+	g_soundEngine->Initialize( wnd );
 
-	//g_musicSound = gSound->PrecacheSound("sounds/SoundTest/Sine.wav");//
-	g_musicSound = gSound->PrecacheSound("sounds/SoundTest/StreamingStereo.wav");
-	g_staticSound = gSound->PrecacheSound("sounds/SoundTest/StaticTest.wav");
+	//g_musicSound = g_soundEngine->PrecacheSound("sounds/SoundTest/Sine.wav");
+	g_musicSound = g_soundEngine->PrecacheSound("sounds/SoundTest/StreamingStereo.wav");
+	//g_musicSound = g_soundEngine->PrecacheSound("sounds/SoundTest/VorbisTest.ogg");
+	g_staticSound = g_soundEngine->PrecacheSound("sounds/SoundTest/StaticTest.wav");
 
-	g_musicChan = gSound->AllocChannel();
+	g_musicChan = g_soundEngine->AllocChannel();
 
 	if(g_musicChan)
 	{
@@ -464,7 +466,7 @@ void CMainWindow::ProcessKeyboardUpEvents(wxKeyEvent& event)
 	{
 		Vector3D randomPos(RandomFloat(-10.0f, 10.0f), RandomFloat(-10.0f, 10.0f), RandomFloat(-10.0f, 10.0f));
 
-		gSound->PlaySound(g_staticSound, randomPos, 1.0f, 10.0f);
+		g_soundEngine->PlaySound(g_staticSound, randomPos, 1.0f, 10.0f);
 		
 		debugoverlay->Box3D(randomPos-1.0f, randomPos+1.0f, ColorRGBA(1,1,0,1), 1.0f);
 	}
@@ -552,7 +554,7 @@ void ShowFPS()
 
 // PERFORMANCE INFO
 #define MIN_FPS         0.1         // Host minimum fps value for maxfps.
-#define MAX_FPS         5000.0      // Upper limit for maxfps.
+#define MAX_FPS         1000.0      // Upper limit for maxfps.
 
 #define MAX_FRAMETIME	0.3
 #define MIN_FRAMETIME	0.00001
@@ -615,8 +617,8 @@ void CMainWindow::ReDraw()
 		g_pCameraParams.SetAngles(g_camera_rotation);
 		g_pCameraParams.SetOrigin(g_camera_target);
 
-		gSound->SetListener(g_camera_target, forward,right,up);
-		gSound->Update();
+		g_soundEngine->SetListener(g_camera_target, forward,right,up);
+		g_soundEngine->Update();
 
 		debugoverlay->Box3D(-1.0f, 1.0f, ColorRGBA(1,1,1,1), 1.0f);
 
@@ -673,10 +675,8 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 {
 	Msg("EXIT CLEANUP...\n");
 
-	gSound->DestroyDevice();
-	ISoundEngine::Destroy();
-
-	//Msg( "Sound engine allocated memory after exit: %d bytes\n", SW_Memory_GetAllocated());
+	g_soundEngine->Shutdown();
+	ISoundEngine::Destroy(g_soundEngine);
 
 	Destroy();
 

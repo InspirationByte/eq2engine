@@ -148,7 +148,9 @@
     <ClInclude Include="SoundEngineV2\riff.h" />
     <ClInclude Include="SoundEngineV2\snd_defs_public.h" />
     <ClInclude Include="SoundEngineV2\snd_mix.h" />
+    <ClInclude Include="SoundEngineV2\snd_ogg_cache.h" />
     <ClInclude Include="SoundEngineV2\snd_ogg_source.h" />
+    <ClInclude Include="SoundEngineV2\snd_ogg_stream.h" />
     <ClInclude Include="SoundEngineV2\soundinterface.h" />
     <ClInclude Include="SoundEngineV2\snd_dev.h" />
     <ClInclude Include="SoundEngineV2\snd_dev_dsound.h" />
@@ -223,6 +225,10 @@
     <ClCompile Include="SoundEngineV2\snd_dev_dsound.cpp" />
     <ClCompile Include="SoundEngineV2\snd_dma.cpp" />
     <ClCompile Include="SoundEngineV2\snd_mix.cpp" />
+    <ClCompile Include="SoundEngineV2\snd_ogg_cache.cpp" />
+    <ClCompile Include="SoundEngineV2\snd_ogg_source.cpp" />
+    <ClCompile Include="SoundEngineV2\snd_ogg_stream.cpp" />
+    <ClCompile Include="SoundEngineV2\snd_source.cpp" />
     <ClCompile Include="SoundEngineV2\snd_wav_cache.cpp" />
     <ClCompile Include="SoundEngineV2\riff.cpp" />
     <ClCompile Include="SoundEngineV2\snd_wav_source.cpp" />

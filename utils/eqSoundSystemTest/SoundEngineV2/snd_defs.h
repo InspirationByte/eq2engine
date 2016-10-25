@@ -37,11 +37,11 @@ typedef struct stereo8_s
 
 typedef struct paintbuffer_s
 {
-	int		nFrequency;
-	int		nChannels;
-	int		nVolume;
-	int		nSize;
-	ubyte*	pData;
+	int		frequency;
+	int		channels;
+	int		volume;
+	int		size;
+	ubyte*	data;
 } paintbuffer_t;
 
 #endif // SND_DEFS_H

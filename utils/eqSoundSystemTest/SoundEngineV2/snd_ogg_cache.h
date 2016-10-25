@@ -2,27 +2,28 @@
 // Copyright © Inspiration Byte
 // 2009-2017
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Cached WAVe data
+// Description: Ogg Vorbis source cache
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SND_WAV_CACHE_H
-#define SND_WAV_CACHE_H
+#ifndef SND_OGG_CACHE_H
+#define SND_OGG_CACHE_H
 
-#include "snd_wav_source.h"
+#include "snd_ogg_source.h"
 
-class CSoundSource_WaveCache : public CSoundSource_Wave
+class CSoundSource_OggCache : public CSoundSource_Ogg
 {
 public:
 	virtual int     GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping);
 
-	virtual bool	Load(const char *szFilename);
+	virtual bool	Load(const char* filename);
 	virtual void	Unload();
 
 protected:
-	virtual void    ParseData(CRIFF_Parser &chunk);
+	virtual void	ParseData(OggVorbis_File* file);
 
 	ubyte*			m_dataCache;   // data chunk
 	int				m_cacheSize;    // in bytes
 };
 
-#endif // SND_WAV_CACHE_H
+
+#endif // SND_OGG_CACHE_H

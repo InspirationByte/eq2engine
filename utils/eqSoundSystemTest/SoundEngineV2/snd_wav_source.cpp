@@ -7,61 +7,6 @@
 
 #include "snd_wav_source.h"
 
-#include "snd_wav_cache.h"
-#include "snd_wav_stream.h"
-
-#include "utils/eqstring.h"
-
-#include "DebugInterface.h"
-
-//-----------------------------------------------------------------
-
-ISoundSource* ISoundSource::CreateSound( const char* szFilename )
-{
-	EqString fileExt = _Es(szFilename).Path_Extract_Ext();
-
-	ISoundSource* pSource = NULL;
-
-    if ( !fileExt.CompareCaseIns("wav"))
-    {
-		int filelen = g_fileSystem->GetFileSize( szFilename );
-
-		if ( filelen > STREAM_THRESHOLD )
-			pSource = (ISoundSource*)new CSoundSource_WaveStream;
-		else
-			pSource = (ISoundSource*)new CSoundSource_WaveCache;
-    }
-    else
-		MsgError( "unknown sound format: %s\n", szFilename );
-
-
-    if ( pSource )
-	{
-		if(!pSource->Load( szFilename ))
-		{
-			MsgError( "Cannot load sound '%s'\n", szFilename );
-			delete pSource;
-		}
-
-        return pSource;
-	}
-    else if ( pSource )
-        delete pSource;
-    
-	Msg("Almost fucked up\n");
-
-    return NULL;
-}
-
-void ISoundSource::DestroySound(ISoundSource *pSound)
-{
-    if ( pSound )
-    {
-        pSound->Unload( );
-        delete pSound;
-    }
-}
-
 //---------------------------------------------------------------------
 
 void CSoundSource_Wave::ParseChunk(CRIFF_Parser &chunk)

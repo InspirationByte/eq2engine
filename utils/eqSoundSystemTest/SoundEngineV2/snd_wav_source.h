@@ -13,8 +13,6 @@
 
 #include "riff.h"
 
-#define STREAM_THRESHOLD    0x10000     // 65k
-
 //---------------------------------------------------------------------
 
 class CSoundSource_Wave : public ISoundSource

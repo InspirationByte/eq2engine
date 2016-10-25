@@ -371,7 +371,7 @@ int eqogg_close(void *datasource)
 bool DkSoundSampleLocal::LoadOgg(const char *name, unsigned int buffer)
 {
 	// Open for binary reading
-	DKFILE* pFile = g_fileSystem->Open((_Es(SOUND_DEFAULT_PATH) + name).GetData(), "rb");
+	IFile* pFile = g_fileSystem->Open((_Es(SOUND_DEFAULT_PATH) + name).GetData(), "rb");
 	if(!pFile)
 		return false;
 

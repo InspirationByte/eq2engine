@@ -17,51 +17,39 @@
 #define SAMPLES_THRESH	8		// read some extra samples
 
 CSoundChannel::CSoundChannel() : 
-	m_flPitch(1.0f),
-	m_flVolume(1.0f),
-	m_vOrigin(0.0f),
-	m_flAttenuation(ATTN_STATIC),
+	m_pitch(1.0f),
+	m_volume(1.0f),
+	m_origin(0.0f),
+	m_attenuation(ATTN_STATIC),
 	m_sourceMixer(NULL),
-	m_spatialize(S_SpatializeStereo)
+	m_spatialize(S_SpatializeStereo),
+	m_playbackState(false),
+	m_looping(false),
+	m_reserved(false)
 {
 	
 }
 
-int CSoundChannel::PlaySound( int nSound, bool bLooping )
+int CSoundChannel::PlaySound( int soundId, bool loop )
 {
-	if ( nSound < 0 )
+	if ( soundId < 0 )
 		return -1;
 
-	m_pSound = gSound->GetSound( nSound );
+	ISoundSource* source = m_owner->GetSound( soundId );
 
-	if ( !m_pSound )
+	if ( !source )
 	{
-		MsgError( "could not play sound %i: does not exist\n", nSound );
+		MsgError( "could not play sound %i: does not exist\n", soundId );
 		return -1;
 	}
 
-	m_nSamplePos = 0.0f;
-
-	// select proper mix format
-	soundFormat_t* format = m_pSound->GetFormat();
-
-	m_sourceMixer = NULL; // reset before proceed
-
-	if ( format->channels == 1 && format->bitwidth == 8 )
-		m_sourceMixer = S_MixMono8;
-	else if ( format->channels == 1 && format->bitwidth == 16 )
-		m_sourceMixer = S_MixMono16;
-	else if ( format->channels == 2 && format->bitwidth == 16 )
-		m_sourceMixer = S_MixStereo16;
-
-	m_bPlaying = true;
-	m_bLooping = bLooping;
-
-	if(!m_sourceMixer)
+	if(SetupSource(source))
 	{
-		MsgError("Unsupported sound format for '%s'\n", m_pSound->GetFilename());
-		m_bPlaying = false;
+		m_playbackState = true;
+		m_looping = loop;
 	}
+	else
+		m_playbackState = false;
 
 	return 0;
 }
@@ -76,36 +64,71 @@ int CSoundChannel::PlayLoop(int nSound)
 	return PlaySound( nSound, true );
 }
 
-void CSoundChannel::StopSound ()
+void CSoundChannel::StopSound()
 {
-	m_bPlaying = false;
-	m_bLooping = false;
+	m_playbackState = false;
+	m_looping = false;
+	m_source = NULL;
 }
 
 //----------------------------------------------------------------
 
+bool CSoundChannel::SetupSource(ISoundSource* source)
+{
+	m_playbackSamplePos = 0.0f;
+
+	m_source = source;
+
+	// select proper mix format
+	soundFormat_t* format = m_source->GetFormat();
+
+	m_sourceMixer = NULL; // reset before proceed
+
+	if ( format->channels == 1 && format->bitwidth == 8 )
+		m_sourceMixer = S_MixMono8;
+	else if ( format->channels == 1 && format->bitwidth == 16 )
+		m_sourceMixer = S_MixMono16;
+	else if ( format->channels == 2 && format->bitwidth == 16 )
+		m_sourceMixer = S_MixStereo16;
+
+	if(!m_sourceMixer)
+	{
+		MsgError("Unsupported sound format for '%s'\n", m_source->GetFilename());
+		m_source = NULL;
+		return false;
+	}
+
+	return true;
+}
+
 void CSoundChannel::MixChannel(paintbuffer_t* input, paintbuffer_t* output, int numSamples)
 {
-	soundFormat_t* format = m_pSound->GetFormat();
+	soundFormat_t* format = m_source->GetFormat();
 
-	float sampleRate = m_flPitch * (float)format->frequency / (float)output->nFrequency;
+	float sampleRate = m_pitch * (float)format->frequency / (float)output->frequency;
 
 	// read needed samples
 	int readSampleCount = numSamples*sampleRate;
-	int readSamples = m_pSound->GetSamples( (ubyte *)input->pData, readSampleCount + SAMPLES_THRESH, floor(m_nSamplePos), m_bLooping );
 
-	int volume = (int)(m_flVolume * output->nVolume * 255) >> 8;
+	// get rid of clicks if pitch is not uniform
+	// FIXME: not properly working with streaming Ogg
+	if(sampleRate != m_pitch)
+		readSampleCount += SAMPLES_THRESH;
+
+	int readSamples = m_source->GetSamples( (ubyte *)input->data, readSampleCount, floor(m_playbackSamplePos), m_looping );
+
+	int volume = (int)(m_volume * output->volume * 255) >> 8;
 
 	// spatialize sound
 	int spatial_vol[2];
-	(*m_spatialize)(this, gSound->GetListener(), volume, spatial_vol);
+	(*m_spatialize)(this, m_owner->GetListener(), volume, spatial_vol);
 
 	// mix them into given output buffer
-	float sampleOffset = (*m_sourceMixer)( input->pData, readSamples, output->pData, numSamples, sampleRate, spatial_vol );
+	float sampleOffset = (*m_sourceMixer)( input->data, readSamples, output->data, numSamples, sampleRate, spatial_vol );
 
 	if ( readSamples < readSampleCount ) // stop sound if we read less samples than we wanted
-		m_bPlaying = false;
+		m_playbackState = false;
 
 	// advance playback
-	m_nSamplePos = m_pSound->GetLoopPosition( m_nSamplePos+sampleOffset );
+	m_playbackSamplePos = m_source->GetLoopPosition( m_playbackSamplePos+sampleOffset );
 }

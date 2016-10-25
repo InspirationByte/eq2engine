@@ -139,6 +139,12 @@
     <ClInclude Include="SoundEngineV2\snd_defs_public.h">
       <Filter>Source Files\SoundEngine</Filter>
     </ClInclude>
+    <ClInclude Include="SoundEngineV2\snd_ogg_cache.h">
+      <Filter>Source Files\SoundEngine\sources</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundEngineV2\snd_ogg_stream.h">
+      <Filter>Source Files\SoundEngine\sources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="windows\mainicon.ico">
@@ -226,6 +232,18 @@
     </ClCompile>
     <ClCompile Include="SoundEngineV2\snd_mix.cpp">
       <Filter>Source Files\SoundEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundEngineV2\snd_ogg_source.cpp">
+      <Filter>Source Files\SoundEngine\sources</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundEngineV2\snd_ogg_cache.cpp">
+      <Filter>Source Files\SoundEngine\sources</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundEngineV2\snd_source.cpp">
+      <Filter>Source Files\SoundEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundEngineV2\snd_ogg_stream.cpp">
+      <Filter>Source Files\SoundEngine\sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

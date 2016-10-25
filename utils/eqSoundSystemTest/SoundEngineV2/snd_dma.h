@@ -31,61 +31,57 @@ public:
 	CSoundEngine();
 	~CSoundEngine();
 
-	int					Init();
-	int					Shutdown();
-
-	void				InitDevice(void* wndhandle);
-	void				DestroyDevice();
+	void				Initialize(void* wndhandle);
+	void				Shutdown();
 
 	void				Update();
 
-	void				SetListener(const Vector3D& vOrigin, const Vector3D& vForward, const Vector3D& vRight, const Vector3D& vUp);
+	void				SetListener(const Vector3D& origin, const Vector3D& forward, const Vector3D& right, const Vector3D& up);
 	const ListenerInfo&	GetListener() const;
 
-	void				PlaySound(int nIndex, const Vector3D& vOrigin, float flVolume, float flAttenuation);
+	void				PlaySound(int soundId, const Vector3D& origin, float volume, float attenuation);
 
 	ISoundChannel*		AllocChannel(bool reserve = false);
 	void				FreeChannel(ISoundChannel *pChan);
 
 	void				StopAllSounds();
+	void				ReleaseCache();
 
 	//  registration
-
 	int					PrecacheSound(const char* fileName);
-	ISoundSource*		GetSound(int nSound);
+	ISoundSource*		GetSound(int soundId);
 	ISoundSource*		FindSound(const char* fileName);
+
 private:
 	//  mixing
-	paintbuffer_t*			GetChannelBuffer() { return &m_channelBuffer; }
+	paintbuffer_t*		GetChannelBuffer() { return &m_channelBuffer; }
 
-	void					MixChannels(paintbuffer_t* buffer, int numSamples);
-	paintbuffer_t*			GetPaintBuffer(int size);
+	void				MixChannels(paintbuffer_t* buffer, int numSamples);
+	paintbuffer_t*		GetPaintBuffer(int size);
 
 	//  spatialization
-	ListenerInfo			m_listener;
+	ListenerInfo		m_listener;
 
-	bool					m_initialized;
-	ISoundDevice*			m_device;
+	bool				m_initialized;
+	ISoundDevice*		m_device;
     
-	paintbuffer_t			m_paintBuffer;
-	paintbuffer_t			m_channelBuffer;
+	paintbuffer_t		m_paintBuffer;
+	paintbuffer_t		m_channelBuffer;
 
 	//
 	//  sounds
 	//
 
-	snd_link_t				m_sampleChain;
-	snd_link_t*				m_samples[MAX_SOUNDS];
+	snd_link_t			m_sampleChain;
+	snd_link_t*			m_samples[MAX_SOUNDS];
 
-	snd_link_t*				CreateSample(const char* fileName);
-	snd_link_t*				FindSample(const char* fileName);
-	void					DeleteSample(snd_link_t* link);
+	snd_link_t*			CreateSample(const char* fileName);
+	snd_link_t*			FindSample(const char* fileName);
+	void				DeleteSample(snd_link_t* link);
 
 	//
 	//  channels
 	//
 
-	CSoundChannel			m_channels[MAX_CHANNELS];
+	CSoundChannel		m_channels[MAX_CHANNELS];
 };
-
-extern ISoundEngine* gSound;

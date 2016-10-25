@@ -12,8 +12,6 @@
 #include "DebugInterface.h"
 #include "ppmem.h"
 
-ISoundEngine* gSound = NULL;
-
 #pragma warning(disable:4244)
 
 ConVar snd_disable("snd_disable", "0", "disables sound playback", CV_ARCHIVE);
@@ -25,14 +23,14 @@ ConVar snd_primary("snd_primary", "0", "use primary sound buffer", CV_ARCHIVE);
 
 //----------------------------------------------------------
 
-void ISoundEngine::Create()
+ISoundEngine* ISoundEngine::Create()
 {
-	gSound = new CSoundEngine();
+	return new CSoundEngine();
 }
 
-void ISoundEngine::Destroy()
+void ISoundEngine::Destroy(ISoundEngine* soundSys)
 {
-	delete gSound;
+	delete soundSys;
 }
 
 //----------------------------------------------------------
@@ -40,7 +38,18 @@ void ISoundEngine::Destroy()
 CSoundEngine::CSoundEngine() : m_initialized(false)
 {
 	m_sampleChain.pNext = m_sampleChain.pPrev = &m_sampleChain; 
-	Init();
+
+	m_paintBuffer.data = NULL;
+	m_paintBuffer.size = 0;
+
+	m_channelBuffer.data = NULL;
+	m_channelBuffer.size = 0;
+
+	memset( m_samples, 0, sizeof(m_samples) );
+	memset( &m_listener, 0, sizeof(m_listener) );
+
+	for(int i = 0; i < MAX_CHANNELS; i++)
+		m_channels[i].m_owner = this;
 }
 
 CSoundEngine::~CSoundEngine()
@@ -48,74 +57,49 @@ CSoundEngine::~CSoundEngine()
 	Shutdown();
 }
 
-int CSoundEngine::Init()
-{
-	m_initialized = false;
-
-	m_paintBuffer.pData = NULL;
-	m_paintBuffer.nSize = 0;
-
-	m_channelBuffer.pData = NULL;
-	m_channelBuffer.nSize = 0;
-
-	memset( m_samples, 0, sizeof(m_samples) );
-	memset( &m_listener, 0, sizeof(m_listener) );
-
-	for(int i = 0; i < MAX_CHANNELS; i++)
-	{
-		m_channels[i].SetReserved( false );
-		m_channels[i].StopSound();
-	}
-
-	return 0;
-}
-
-int CSoundEngine::Shutdown()
-{
-	StopAllSounds();
-	m_initialized = false;
-
-	return 0;
-}
-
 //----------------------------------------------------------
 
-void CSoundEngine::InitDevice (void* wndhandle)
+void CSoundEngine::Initialize(void* wndhandle)
 {
 	if ( snd_disable.GetBool( ) )
 		return;
 
+	if(m_initialized)
+		return;
+
 	m_device = ISoundDevice::Create( wndhandle );
 
-	m_initialized = true;
+	if(m_device)
+		m_initialized = true;
 }
 
-void CSoundEngine::DestroyDevice()
+void CSoundEngine::Shutdown()
 {
-	// clear sound chain
-	while ( m_sampleChain.pNext != &m_sampleChain )
-		DeleteSample( m_sampleChain.pNext );
+	if(!m_initialized)
+		return;
 
-	if ( m_paintBuffer.pData )
+	m_initialized = false;
+
+	// stop all sources and release cache
+	ReleaseCache();
+
+	if ( m_paintBuffer.data )
 	{
-		free( m_paintBuffer.pData );
-		free( m_channelBuffer.pData );
+		PPFree( m_paintBuffer.data );
+		PPFree( m_channelBuffer.data );
 
-		m_paintBuffer.pData = NULL;
-		m_paintBuffer.nSize = 0;
+		m_paintBuffer.data = NULL;
+		m_paintBuffer.size = 0;
 
-		m_channelBuffer.pData = NULL;
-		m_channelBuffer.nSize = 0;
+		m_channelBuffer.data = NULL;
+		m_channelBuffer.size = 0;
 	}
-
-	for(int i = 0; i < MAX_CHANNELS; i++)
-		FreeChannel( &m_channels[i] );
 
 	ISoundDevice::Destroy( m_device );
 	m_device = NULL;
 }
 
-void CSoundEngine::Update ()
+void CSoundEngine::Update()
 {
 	if (!m_device)
 		return;
@@ -126,9 +110,9 @@ void CSoundEngine::Update ()
 	int mixSamples = snd_mixahead.GetFloat() * devBufInfo.frequency;
 	paintbuffer_t* paintBuf = GetPaintBuffer( mixSamples * devBufInfo.channels * PAINTBUFFER_BYTES );
 
-	paintBuf->nFrequency = devBufInfo.frequency;
-	paintBuf->nChannels = devBufInfo.channels;
-	paintBuf->nVolume = snd_volume.GetFloat() * 255;
+	paintBuf->frequency = devBufInfo.frequency;
+	paintBuf->channels = devBufInfo.channels;
+	paintBuf->volume = snd_volume.GetFloat() * 255;
 
 	int written = devBufInfo.write - devBufInfo.read;
 
@@ -148,35 +132,35 @@ void CSoundEngine::Update ()
 
 	// write out to the device
 	int sizeInBytes = mixSamples * devBufInfo.channels * devBufInfo.bitwidth / 8;
-	m_device->WriteToBuffer( paintBuf->pData, sizeInBytes );
+	m_device->WriteToBuffer( paintBuf->data, sizeInBytes );
 }
 
 // returns paint buffer for writing purposes
 paintbuffer_t* CSoundEngine::GetPaintBuffer(int nBytes)
 {
-	if ( !m_paintBuffer.pData )
+	if ( !m_paintBuffer.data )
 	{
-		m_paintBuffer.pData = (ubyte *)PPAlloc( nBytes );
-		m_paintBuffer.nSize = nBytes;
+		m_paintBuffer.data = (ubyte *)PPAlloc( nBytes );
+		m_paintBuffer.size = nBytes;
 
 		// make channel buffer same as the output paint buffer
-		m_channelBuffer.pData = (ubyte *)PPAlloc( nBytes );
-		m_channelBuffer.nSize = nBytes;
+		m_channelBuffer.data = (ubyte *)PPAlloc( nBytes );
+		m_channelBuffer.size = nBytes;
 	}
-	else if ( nBytes != m_paintBuffer.nSize )
+	else if ( nBytes != m_paintBuffer.size )
 	{
-		PPFree( m_paintBuffer.pData );
-		PPFree( m_channelBuffer.pData );
+		PPFree( m_paintBuffer.data );
+		PPFree( m_channelBuffer.data );
 
-		m_paintBuffer.pData = (ubyte *)PPAlloc( nBytes );
-		m_paintBuffer.nSize = nBytes;
+		m_paintBuffer.data = (ubyte *)PPAlloc( nBytes );
+		m_paintBuffer.size = nBytes;
 
 		// make channel buffer same as the output paint buffer
-		m_channelBuffer.pData = (ubyte *)PPAlloc( nBytes );
-		m_channelBuffer.nSize = nBytes;
+		m_channelBuffer.data = (ubyte *)PPAlloc( nBytes );
+		m_channelBuffer.size = nBytes;
 	}
 
-	memset( m_paintBuffer.pData, 0, m_paintBuffer.nSize );
+	memset( m_paintBuffer.data, 0, m_paintBuffer.size );
 
 	return &m_paintBuffer;
 }
@@ -324,6 +308,16 @@ void CSoundEngine::PlaySound(int nIndex, const Vector3D& vOrigin, float flVolume
         
 		pChannel->PlaySound( nIndex );
 	}
+}
+
+void CSoundEngine::ReleaseCache()
+{
+	for(int i = 0; i < MAX_CHANNELS; i++)
+		FreeChannel( &m_channels[i] );
+
+	// clear sound chain
+	while ( m_sampleChain.pNext != &m_sampleChain )
+		DeleteSample( m_sampleChain.pNext );
 }
 
 //----------------------------------------------------------

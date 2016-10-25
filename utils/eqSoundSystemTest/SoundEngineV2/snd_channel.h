@@ -16,11 +16,13 @@ class ISoundSource;
 
 class CSoundChannel : public ISoundChannel
 {
+	friend class CSoundEngine;
+
 public:
 	CSoundChannel();
 
-	bool				IsPlaying () { return m_bPlaying; }
-	bool				IsLooping () { return m_bLooping; }
+	bool				IsPlaying () { return m_playbackState; }
+	bool				IsLooping () { return m_looping; }
 
 	int					PlaySound(int nSound, bool bLooping);
 	int					PlaySound(int nSound);
@@ -28,33 +30,37 @@ public:
 
 	void				StopSound();
 
-	void				SetOrigin(const Vector3D& vOrigin)		{ m_vOrigin = vOrigin; }
-	void				SetVolume(float flVolume)				{ m_flVolume = flVolume; }
-	void				SetPitch(float flPitch)					{ m_flPitch = flPitch; }
-	void				SetAttenuation (float flAttn)			{ m_flAttenuation = flAttn; }
+	void				SetOrigin(const Vector3D& vOrigin)		{ m_origin = vOrigin; }
+	void				SetVolume(float flVolume)				{ m_volume = flVolume; }
+	void				SetPitch(float flPitch)					{ m_pitch = flPitch; }
+	void				SetAttenuation (float flAttn)			{ m_attenuation = flAttn; }
 
-	const Vector3D&		GetOrigin() const {return m_vOrigin;}
-	float				GetVolume() const {return m_flVolume;}
-	float				GetPitch() const {return m_flPitch;}
-	float				GetAttenuation() const {return m_flAttenuation;}
+	const Vector3D&		GetOrigin() const {return m_origin;}
+	float				GetVolume() const {return m_volume;}
+	float				GetPitch() const {return m_pitch;}
+	float				GetAttenuation() const {return m_attenuation;}
 
-	void				SetReserved(bool b) { m_bReserved = b; }
-	bool				IsReserved() { return m_bReserved; }
+	void				SetReserved(bool b) { m_reserved = b; }
+	bool				IsReserved() { return m_reserved; }
 
 	void				MixChannel(paintbuffer_t* input, paintbuffer_t* output, int numSamples);
 private:
-	ISoundSource*		m_pSound;
+	bool				SetupSource(ISoundSource* source);
 
-	Vector3D			m_vOrigin;
+	ISoundSource*		m_source;
+
+	ISoundEngine*		m_owner;
+
+	Vector3D			m_origin;
     
-	bool				m_bPlaying;
-	bool				m_bLooping;
-	float				m_flAttenuation;
-	float				m_flPitch;
-	float				m_flVolume;
+	bool				m_playbackState;
+	bool				m_looping;
+	float				m_attenuation;
+	float				m_pitch;
+	float				m_volume;
 
-	float				m_nSamplePos;
-	bool				m_bReserved;
+	float				m_playbackSamplePos;
+	bool				m_reserved;
 
 	S_MIXFUNC			m_sourceMixer;
 	S_SPATIALFUNC		m_spatialize;
