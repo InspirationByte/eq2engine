@@ -12,13 +12,15 @@
 #include "DebugInterface.h"
 #include "ppmem.h"
 
+#include "IDebugOverlay.h"
+
 #pragma warning(disable:4244)
 
 ConVar snd_disable("snd_disable", "0", "disables sound playback", CV_ARCHIVE);
 
 ConVar snd_volume("snd_volume", "0.5", "sound volume", CV_ARCHIVE);
 ConVar snd_frequency("snd_frequency", "44100", "sound playback speed", CV_ARCHIVE);
-ConVar snd_mixahead("snd_mixahead", "0.05", "sound mix ahead time, in seconds", CV_ARCHIVE);
+ConVar snd_mixahead("snd_mixahead", "0.1", "sound mix ahead time, in seconds", CV_ARCHIVE);
 ConVar snd_primary("snd_primary", "0", "use primary sound buffer", CV_ARCHIVE);
 
 //----------------------------------------------------------
@@ -365,9 +367,16 @@ void CSoundEngine::MixChannels( paintbuffer_t* output, int numSamples )
 {
 	paintbuffer_t* chanBuffer = GetChannelBuffer();
 
-	for (int i = 0; i < MAX_CHANNELS; i++ )
+	int channelsActive = 0;
+
+	for(int i = 0; i < MAX_CHANNELS; i++ )
 	{
-		if(m_channels[i].IsPlaying())
-			m_channels[i].MixChannel(chanBuffer, output, numSamples );
+		if(!m_channels[i].IsPlaying())
+			continue;
+
+		m_channels[i].MixChannel(chanBuffer, output, numSamples );
+		channelsActive++;
 	}
+
+	debugoverlay->Text(color4_white, "Sound channels active: %d / %d", channelsActive, MAX_CHANNELS);
 }

@@ -80,7 +80,7 @@ Matrix4x4 orthoMatrix(const float left, const float right, const float top, cons
 
 	mat.rows[0][3] = (right + left) / (left - right);
 	mat.rows[1][3] = (top + bottom) / (bottom - top);
-	mat.rows[2][3] = (zFar + zNear) / (zNear - zFar);
+	mat.rows[2][3] = (zFar + zNear) / (zFar - zNear);
 
 	return mat;
 }

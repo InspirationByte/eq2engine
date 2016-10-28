@@ -54,7 +54,7 @@ protected:
 	wxMenuBar*		m_pMenu;
 
 	wxMenu*			m_menu_file;
-	wxMenu*			m_menu_edit;
+	wxMenu*			m_menu_sound;
 	wxMenu*			m_menu_view;
 
 	bool			m_bDoRefresh;

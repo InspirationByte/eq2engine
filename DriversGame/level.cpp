@@ -2094,7 +2094,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 
 //------------------------------------------------------
 
-void CGameLevel::GetDecalPolygons( decalprimitives_t& polys, const Volume& volume)
+void CGameLevel::GetDecalPolygons(decalprimitives_t& polys, const Volume& volume)
 {
 	polys.indices.setNum(0, false);
 	polys.verts.setNum(0, false);
@@ -2115,17 +2115,7 @@ void CGameLevel::GetDecalPolygons( decalprimitives_t& polys, const Volume& volum
 			if(!volume.IsBoxInside(reg.m_bbox.minPoint, reg.m_bbox.maxPoint))
 				continue;
 
-			for (int i = 0; i < reg.GetNumHFields(); i++)
-			{
-				CHeightTileField* hfield = reg.GetHField(i);
-
-				if(!hfield)
-					continue;
-
-				hfield->GetDecalPolygons(polys, volume);
-			}
-
-			// TODO: get from ground objects
+			reg.GetDecalPolygons(polys, volume);
 		}
 	}
 

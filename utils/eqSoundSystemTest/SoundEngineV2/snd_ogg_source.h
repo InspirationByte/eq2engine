@@ -14,8 +14,6 @@
 #include "utils/eqstring.h"
 #include <vorbis/vorbisfile.h>
 
-#define STREAM_THRESHOLD    0x10000     // 65k
-
 namespace eqVorbisFile
 {
 	size_t	fread(void *ptr, size_t size, size_t nmemb, void *datasource);

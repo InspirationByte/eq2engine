@@ -83,8 +83,9 @@ public:
 		SetupDefaultParameter(SHADERPARAM_RASTERSETUP);
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 		SetupDefaultParameter(SHADERPARAM_FOG);
-	}
 
+		g_pShaderAPI->SetDepthRange(0.0f - 0.00008f, 1.0f - 0.00001f);
+	}
 
 	void SetColorModulation()
 	{
@@ -124,6 +125,8 @@ public:
 private:
 
 	ITexture*			m_pBaseTexture;
+
+	IRenderState*		m_depthBiasState;
 
 	SHADER_DECLARE_PASS(Unlit);
 	SHADER_DECLARE_FOGPASS(Unlit);

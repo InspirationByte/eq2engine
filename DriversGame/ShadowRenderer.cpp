@@ -206,8 +206,10 @@ void CShadowRenderer::RenderShadowCasters()
 
 		// move view to the object origin
 		orthoView.SetOrigin(object->GetOrigin());
-		orthoView.GetMatrices(proj, view, shadowSize.x*SHADOW_DESCALING, shadowSize.y*SHADOW_DESCALING, -shadowSize.x*0.1f, 100.0f, true );
+		orthoView.GetMatrices(proj, view, shadowSize.x*SHADOW_DESCALING, shadowSize.y*SHADOW_DESCALING, -2.5f, 100.0f, true );
 		
+		shadowDecal.shadowDir = view.rows[2].xyz();
+
 		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
 		materials->SetMatrix(MATRIXMODE_VIEW, view);
 		materials->SetMatrix(MATRIXMODE_WORLD, object->m_worldMatrix);
@@ -234,9 +236,7 @@ void CShadowRenderer::RenderShadowCasters()
 		int startIdx = AllocateGeom(shadowDecal.verts.numElem(), 0, &verts, NULL, false);
 
 		if(startIdx != -1)
-		{
 			memcpy(verts, shadowDecal.verts.ptr(), shadowDecal.verts.numElem()*sizeof(PFXVertex_t));
-		}
 	}
 
 	g_pShaderAPI->ChangeRenderTargetToBackBuffer();

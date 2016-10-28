@@ -1074,6 +1074,9 @@ void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, const Volume&
 			if(!volume.IsTriangleInside(p1,p2,p3))
 				continue;
 
+			if(dot(NormalOfTriangle(p1,p2,p3), polys.shadowDir) < 0.0f)
+				continue;
+
 			polys.verts.append(PFXVertex_t(p1, vec2_zero, vec4_zero));
 			polys.verts.append(PFXVertex_t(p2, vec2_zero, vec4_zero));
 			polys.verts.append(PFXVertex_t(p3, vec2_zero, vec4_zero));

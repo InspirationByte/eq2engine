@@ -13,6 +13,7 @@ using namespace Threading;
 
 #include "math/Vector.h"
 #include "occluderSet.h"
+#include "DrvSynDecals.h"
 
 #include "utils/strtools.h"
 
@@ -203,6 +204,8 @@ public:
 	CHeightTileFieldRenderable*		GetHField( int idx = 0 ) const;
 	int								GetNumHFields() const;
 	int								GetNumNomEmptyHFields() const;
+
+	void							GetDecalPolygons(decalprimitives_t& polys, const Volume& volume);
 
 	//----------------------------------------------------
 

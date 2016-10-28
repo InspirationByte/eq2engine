@@ -76,7 +76,7 @@ protected:
 										float fDt,
 										const Vector3D& addRot);
 
-	carCameraConfig_t*		m_carConfig;
+	carCameraConfig_t		m_carConfig;
 	float					m_cameraDistVar;
 	float					m_cameraFOV;
 

@@ -13,6 +13,8 @@
 #include "refcounted.h"
 #include "ppmem.h"
 
+#include "DrvSynDecals.h"
+
 #ifdef EDITOR
 #include "../DriversEditor/EditorPreviewable.h"
 #endif // EDITOR
@@ -105,19 +107,18 @@ public:
 	void					Cleanup();		// cleans up all including render data
 	void					ReleaseData();	// releases data but keeps batchs and VBO
 
+	void					GetDecalPolygons( decalprimitives_t& polys, const Volume& volume, const Matrix4x4& transform );
+
 	void					Render(int nDrawFlags, const BoundingBox& aabb);
 
 	bool					CreateFrom(dsmmodel_t* pModel);
-
 	bool					GenereateRenderData();
-
 	void					PreloadTextures();
 
 	void					Load(IVirtualStream* stream);
 	void					Save(IVirtualStream* stream) const;
 
 	const BoundingBox&		GetAABB() const {return m_bbox;}
-
 protected:
 
 	void					CreateCollisionObject( regionObject_t* ref );
@@ -137,6 +138,7 @@ protected:
 	int						m_level;	// editor parameter - model layer location (0 - ground, 1 - sand, 2 - trees, 3 - others)
 
 	lmodel_batch_t*			m_batches;
+	lmodel_batch_t*			m_phybatches;
 	int						m_numBatches;
 
 	lmodeldrawvertex_t*		m_verts;		// this is NULL after GeneratePhysicsData

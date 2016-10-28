@@ -234,7 +234,8 @@ ALIGNED_TYPE(lmodelhdr_s, 1) lmodelhdr_t;
 
 CLevelModel::CLevelModel() :
 	m_batches (NULL),
-	m_numBatches (0),
+	m_phybatches(NULL),
+	m_numBatches(0),
 	m_verts (NULL),
 	m_physVerts(NULL),
 	m_indices (NULL),
@@ -273,7 +274,9 @@ void CLevelModel::Cleanup()
 		materials->FreeMaterial(m_batches[i].pMaterial);
 
 	delete [] m_batches;
+	delete [] m_phybatches;
 
+	m_phybatches = NULL;
 	m_batches = NULL;
 	m_numBatches = 0;
 
@@ -311,8 +314,11 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 	delete m_physicsMesh;
 	m_physicsMesh = NULL;
 
+	delete [] m_phybatches;
+	m_phybatches = NULL;
+
 #ifndef EDITOR
-	lmodel_batch_t* tempBatches = new lmodel_batch_t[m_numBatches];
+	m_phybatches = new lmodel_batch_t[m_numBatches];
 
 	// regenerate mesh
 	DkList<Vector3D>	physVerts;
@@ -320,22 +326,23 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 
 	for(int i = 0; i < m_numBatches; i++)
 	{
-		tempBatches[i].startVertex = m_batches[i].startVertex;
-		tempBatches[i].startIndex = m_batches[i].startIndex;
-		tempBatches[i].numVerts = m_batches[i].numVerts;
-		tempBatches[i].numIndices = m_batches[i].numIndices;
+		lmodel_batch_t& rendBatch = m_batches[i];
+		lmodel_batch_t& phyBatch = m_phybatches[i];
+
+		// don't forget about material
+		phyBatch.pMaterial = rendBatch.pMaterial;
 
 		DkList<Vector3D>	batchverts;
 		DkList<uint32>		batchindices;
 
-		batchverts.resize(m_batches[i].numVerts);
-		batchindices.resize(m_batches[i].numIndices);
+		batchverts.resize(rendBatch.numVerts);
+		batchindices.resize(rendBatch.numIndices);
 
-		for(uint32 j = 0; j < m_batches[i].numIndices; j += 3)
+		for(uint32 j = 0; j < rendBatch.numIndices; j += 3)
 		{
-			uint16 vtxId0 = m_indices[m_batches[i].startIndex+j];
-			uint16 vtxId1 = m_indices[m_batches[i].startIndex+j+1];
-			uint16 vtxId2 = m_indices[m_batches[i].startIndex+j+2];
+			uint16 vtxId0 = m_indices[rendBatch.startIndex+j];
+			uint16 vtxId1 = m_indices[rendBatch.startIndex+j+1];
+			uint16 vtxId2 = m_indices[rendBatch.startIndex+j+2];
 
 			if(isGround)
 			{
@@ -354,18 +361,17 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 			batchindices.append(idx2);
 		}
 
-		tempBatches[i].startVertex = physVerts.numElem();
-		tempBatches[i].startIndex = indices.numElem();
+		phyBatch.startVertex = physVerts.numElem();
+		phyBatch.startIndex = indices.numElem();
 
-		tempBatches[i].numVerts = batchverts.numElem();
-		tempBatches[i].numIndices = batchindices.numElem();
+		phyBatch.numVerts = batchverts.numElem();
+		phyBatch.numIndices = batchindices.numElem();
 
 		physVerts.append(batchverts);
 
 		for(int j = 0; j < batchindices.numElem(); j++)
-			indices.append(tempBatches[i].startVertex + batchindices[j]);
+			indices.append(phyBatch.startVertex + batchindices[j]);
 	}
-
 
 	delete [] m_verts;
 	m_verts = NULL;		// no longer to be used
@@ -414,18 +420,16 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 		
 
 #ifndef EDITOR
-		lmodel_batch_t& batch = tempBatches[i];
+		lmodel_batch_t& batch = m_phybatches[i];
 #else
 		lmodel_batch_t& batch = m_batches[i];
 #endif // EDITOR
 
-		
 		m_physicsMesh->AddSubpart(batch.startIndex, batch.numIndices, batch.startVertex, batch.numVerts, surfParamId);
 	}
 
 #ifndef EDITOR
 	m_numVerts = numOldVerts;
-	delete [] tempBatches;
 #endif // EDITOR
 }
 
@@ -570,10 +574,60 @@ void CLevelModel::ReleaseData()
 		delete [] m_indices;
 
 	m_indices = NULL;
-
-	//m_numVerts = 0;
-	//m_numIndices = 0;
 }
+
+//----------------------------------------------------------------
+//
+//----------------------------------------------------------------
+
+void CLevelModel::GetDecalPolygons( decalprimitives_t& polys, const Volume& volume, const Matrix4x4& transform )
+{
+	// transform volume (optimization)
+	// BUG: wrong rotation
+	//Volume tVolume = transform * volume;
+
+	// in game only physics verts are available
+	for(int i = 0; i < m_numBatches; i++)
+	{
+		lmodel_batch_t& batch = m_phybatches[i];
+
+		if(batch.pMaterial && (batch.pMaterial->GetFlags() & polys.avoidMaterialFlags))
+			continue;
+
+		for(int p = 0; p < batch.numIndices; p += 3)
+		{
+			int si = batch.startIndex + p;
+
+			int i1 = m_indices[si];
+			int i2 = m_indices[si+1];
+			int i3 = m_indices[si+2];
+
+			Vector3D p1 = m_physVerts[i1];
+			Vector3D p2 = m_physVerts[i2];
+			Vector3D p3 = m_physVerts[i3];
+
+			// check it using transformed plane, do not transform every vertex of model
+			//if(!tVolume.IsTriangleInside(p1,p2,p3))
+			//	continue;
+
+			// transform verts
+			p1 = (transform * Vector4D(p1, 1.0f)).xyz();
+			p2 = (transform * Vector4D(p2, 1.0f)).xyz();
+			p3 = (transform * Vector4D(p3, 1.0f)).xyz();
+
+			if(dot(NormalOfTriangle(p1,p2,p3), polys.shadowDir) < 0.0f)
+				continue;
+
+			if(!volume.IsTriangleInside(p1,p2,p3)) // slow version
+				continue;
+
+			polys.verts.append(PFXVertex_t(p1, vec2_zero, vec4_zero));
+			polys.verts.append(PFXVertex_t(p2, vec2_zero, vec4_zero));
+			polys.verts.append(PFXVertex_t(p3, vec2_zero, vec4_zero));
+		}
+	}
+}
+
 
 bool CLevelModel::CreateFrom(dsmmodel_t* pModel)
 {

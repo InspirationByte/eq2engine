@@ -17,7 +17,7 @@
 #include "DebugInterface.h"
 #include "utils/eqstring.h"
 
-#define STREAM_THRESHOLD    0x10000     // 65k
+#define STREAM_THRESHOLD    (1024*1024)     // 1mb
 
 //-----------------------------------------------------------------
 

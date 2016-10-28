@@ -106,7 +106,6 @@ void DecalClipAndTexture(decalprimitives_t* decal, const Volume& clipVolume, con
 		Vector4D proj 		= projCoords + projCoords.w;
 		Vector2D texCoord	= proj.xy() / proj.w;
 
-		decal->verts[i].point.y += 0.01f;;
 		decal->verts[i].texcoord = lerp(atlasRect.vrightBottom, atlasRect.vleftTop, texCoord);
 		decal->verts[i].color.w = alpha;
 	}

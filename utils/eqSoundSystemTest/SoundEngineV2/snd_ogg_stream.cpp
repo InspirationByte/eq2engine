@@ -52,6 +52,12 @@ void CSoundSource_OggStream::Unload()
 	}
 }
 
+void CSoundSource_OggStream::Rewind()
+{
+	ov_time_seek( &m_oggStream, 0.0f );
+	m_eof = false;
+}
+
 void CSoundSource_OggStream::ParseData(OggVorbis_File* file)
 {
 	// only get number of samples
@@ -75,10 +81,7 @@ int CSoundSource_OggStream::GetSamples(ubyte* pOutput, int nSamples, int nOffset
 		nBytes = m_dataSize - nStart;
 
 	if(bLooping && m_eof)
-	{
-		ov_time_seek( &m_oggStream, 0.0f );
-		m_eof = false;
-	}
+		Rewind();
 
 	ReadData( pOutput, nStart, nBytes );
 	nRemaining -= nBytes;

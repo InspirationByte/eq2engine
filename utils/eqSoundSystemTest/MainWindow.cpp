@@ -48,7 +48,7 @@ float				g_fOldrealtime = 0.0f;
 float				g_fFrametime = 0.0f;
 
 Vector3D			g_camera_rotation(25,225,0);
-Vector3D			g_camera_target(0);
+Vector3D			g_camera_target(-4,2.65,4);
 float				g_fCamSpeed = 10.0;
 
 #define SOUND_COUNT_TEST 4
@@ -59,7 +59,9 @@ TSound*				g_musicSound = NULL;
 TSound*				g_hitSound = NULL;
 */
 
-int g_musicSound = -1;
+#define MAX_LOOP_SOUNDS 5
+
+int g_loopingSound[MAX_LOOP_SOUNDS] = {-1};
 int g_staticSound = -1;
 
 ISoundEngine* g_soundEngine = NULL;
@@ -70,9 +72,12 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 	g_soundEngine = ISoundEngine::Create();
 	g_soundEngine->Initialize( wnd );
 
-	//g_musicSound = g_soundEngine->PrecacheSound("sounds/SoundTest/Sine.wav");
-	g_musicSound = g_soundEngine->PrecacheSound("sounds/SoundTest/StreamingStereo.wav");
-	//g_musicSound = g_soundEngine->PrecacheSound("sounds/SoundTest/VorbisTest.ogg");
+	g_loopingSound[0] = g_soundEngine->PrecacheSound("sounds/SoundTest/StreamingStereo.wav");
+	g_loopingSound[1] = g_soundEngine->PrecacheSound("sounds/SoundTest/StreamingStereo.ogg");
+	g_loopingSound[2] = g_soundEngine->PrecacheSound("sounds/SoundTest/Sine22.wav");
+	g_loopingSound[3] = g_soundEngine->PrecacheSound("sounds/SoundTest/Sine44.wav");
+	g_loopingSound[4] = -1;
+
 	g_staticSound = g_soundEngine->PrecacheSound("sounds/SoundTest/StaticTest.wav");
 
 	g_musicChan = g_soundEngine->AllocChannel();
@@ -80,7 +85,7 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 	if(g_musicChan)
 	{
 		g_musicChan->SetPitch(1.0f);
-		g_musicChan->PlayLoop(g_musicSound);
+		g_musicChan->PlayLoop(g_loopingSound[0]);
 	}
 }
 
@@ -105,22 +110,14 @@ enum
 	Event_File_Save,
 	Event_File_Exit,
 
-	Event_Max_Menu_Range,
-
 	Event_View_ResetView,
 
 	// combobox
-	Event_Sequence_Changed,
-	Event_PoseCont_Changed,
+	Event_LoopSounds_Sound,
+	Event_LoopSounds_End = Event_LoopSounds_Sound + MAX_LOOP_SOUNDS,
 
-	// buttons
-	Event_Sequence_Play,
-	Event_Sequence_Stop,
-	Event_Physics_SimulateToggle,
+	Event_Max_Menu_Range,
 
-	// slider
-	Event_Timeline_Set,
-	Event_PoseCont_ValueChanged,
 };
 
 BEGIN_EVENT_TABLE(CMainWindow, wxFrame)
@@ -251,8 +248,13 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	m_menu_file->Append( Event_File_Exit, DKLOC("TOKEN_EXIT", L"Exit") );
 
-	m_menu_edit = new wxMenu();
-	m_pMenu->Append( m_menu_edit, wxT("Edit") );
+	m_menu_sound = new wxMenu();
+	m_pMenu->Append( m_menu_sound, wxT("Sounds") );
+
+	for(int i = 0; i < MAX_LOOP_SOUNDS; i++)
+	{
+		m_menu_sound->Append(Event_LoopSounds_Sound+i, varargs("Loop sound %d", i), NULL);
+	}
 
 	m_menu_view = new wxMenu();
 	m_pMenu->Append( m_menu_view, wxT("View") );
@@ -323,6 +325,18 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 		g_camera_rotation = Vector3D(25,225,0);
 		g_camera_target = vec3_zero;
 		g_fCamSpeed = 10.0f;
+	}
+	else if(event.GetId() >= Event_LoopSounds_Sound && event.GetId() <= Event_LoopSounds_End)
+	{
+		int soundId = event.GetId()-Event_LoopSounds_Sound;
+
+		if(g_loopingSound[soundId] != -1)
+		{
+			g_musicChan->SetAttenuation(0.0f);
+			g_musicChan->PlayLoop(g_loopingSound[soundId]);
+		}
+		else
+			g_musicChan->StopSound();
 	}
 }
 

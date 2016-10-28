@@ -32,6 +32,9 @@ public:
 
 	virtual float           GetLoopPosition(float flPosition) = 0;
 
+	// function to rewind stream
+	virtual void			Rewind() {}
+
 private:
 	virtual bool			Load(const char *szFilename) = 0;
 	virtual void			Unload () = 0;

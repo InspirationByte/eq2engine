@@ -46,6 +46,12 @@ ConVar cam_velocity_forwardmod("cam_velocity_forwardmod", "1.0");
 ConVar cam_velocity_sidemod("cam_velocity_sidemod", "0.0");
 ConVar cam_velocity_upmod("cam_velocity_upmod", "2.0");
 
+ConVar cam_custom("cam_custom", "0", NULL, CV_CHEAT);
+ConVar cam_custom_height("cam_custom_height", "1.3", NULL, CV_ARCHIVE);
+ConVar cam_custom_dist("cam_custom_dist", "7", NULL, CV_ARCHIVE);
+ConVar cam_custom_fov("cam_custom_fov", "52", NULL, CV_ARCHIVE);
+
+
 //---------------------------------------------------------------------------------------------------------------
 
 CCameraAnimator::CCameraAnimator() :
@@ -58,15 +64,26 @@ CCameraAnimator::CCameraAnimator() :
 	m_dropPos(0.0f),
 	m_rotation(0.0f),
 	m_cameraFOV(DEFAULT_CAMERA_FOV),
-	m_carConfig(NULL),
 	m_scriptControl(false)
 {
-
+	m_carConfig.dist = 7.0f;
+	m_carConfig.distInCar = 7.0f;
+	m_carConfig.height = 1.3f;
+	m_carConfig.heightInCar = 0.5f;
+	m_carConfig.widthInCar = 0.7f;
+	m_carConfig.fov = DEFAULT_CAMERA_FOV;
 }
 
 void CCameraAnimator::SetCameraProps( const carCameraConfig_t& conf )
 {
-	m_carConfig = (carCameraConfig_t*)&conf;
+	m_carConfig = conf;
+
+	if(cam_custom.GetBool())
+	{
+		m_carConfig.dist = cam_custom_dist.GetFloat();
+		m_carConfig.height = cam_custom_height.GetFloat();
+		m_carConfig.fov = cam_custom_fov.GetFloat();
+	}
 }
 
 void CCameraAnimator::SetFOV(float fFOV)
@@ -106,7 +123,6 @@ void CCameraAnimator::Reset()
 	m_vecCameraSpringVel = vec3_zero;
 	m_fLookAngle = 0.0f;
 	m_fTempCamAngle = 0.0f;
-	m_carConfig = NULL;
 	m_scriptControl = false;
 
 	if(m_mode > CAM_MODE_INCAR)
@@ -242,7 +258,7 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 	m_fTempCamAngle += fAngDiff * fDt * CAM_TURN_SPEED;
 
-	if(mode == CAM_MODE_OUTCAR && m_carConfig)
+	if(mode == CAM_MODE_OUTCAR)
 	{
 		Vector3D cam_angles = Vector3D(0, m_fTempCamAngle - m_fLookAngle, 0) + addRot;
 
@@ -252,9 +268,9 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		Vector3D forward;
 		AngleVectors(cam_angles, &forward);
 
-		Vector3D cam_target = pos + Vector3D(0, m_carConfig->height, 0);
+		Vector3D cam_target = pos + Vector3D(0, m_carConfig.height, 0);
 
-		Vector3D cam_pos_h = pos + Vector3D(0,m_carConfig->height,0);
+		Vector3D cam_pos_h = pos + Vector3D(0,m_carConfig.height,0);
 		Vector3D cam_pos = cam_pos_h - forward*m_cameraDistVar;
 		Vector3D cam_pos_low = pos + Vector3D(0,CAM_HEIGHT_TRACE,0) - forward*m_cameraDistVar;
 
@@ -270,13 +286,12 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 		m_cameraDistVar += fDt*2.0f;
 
-		if(m_cameraDistVar > m_carConfig->dist)
-			m_cameraDistVar = m_carConfig->dist;
+		m_cameraDistVar = min(m_cameraDistVar, m_carConfig.dist);
 
 		cam_pos = cam_pos_h - forward*(m_cameraDistVar-0.1f);
 
 		CollisionData_t coll;
-		g_pPhysics->TestLine(cam_pos + Vector3D(0,m_carConfig->height,0), cam_pos_low, coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_WATER);
+		g_pPhysics->TestLine(cam_pos + Vector3D(0,m_carConfig.height,0), cam_pos_low, coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_WATER);
 
 		FReal fCamDot = fabs(dot(coll.normal, Vector3D(0,1,0)));
 
@@ -284,27 +299,27 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		{
 			FReal height = coll.position.y;
 
-			cam_pos.y = m_carConfig->height + height - CAM_HEIGHT_TRACE;
+			cam_pos.y = m_carConfig.height + height - CAM_HEIGHT_TRACE;
 		}
 
 		cam_angles = VectorAngles(normalize(cam_target - cam_pos));
 
 		m_computedView.SetOrigin(cam_pos);
 		m_computedView.SetAngles(cam_angles);
-		m_computedView.SetFOV(m_carConfig->fov);
+		m_computedView.SetFOV(m_carConfig.fov);
 	}
-	else if(mode == CAM_MODE_OUTCAR_FIXED && m_carConfig)
+	else if(mode == CAM_MODE_OUTCAR_FIXED)
 	{
 		euler_angles += addRot + m_rotation;
 
 		Vector3D forward;
 		AngleVectors(euler_angles, &forward);
 
-		m_computedView.SetOrigin( pos - forward * m_carConfig->dist);
+		m_computedView.SetOrigin( pos - forward * m_carConfig.dist);
 		m_computedView.SetAngles( euler_angles );
 		m_computedView.SetFOV( m_cameraFOV );
 	}
-	else if(mode == CAM_MODE_INCAR && m_carConfig)
+	else if(mode == CAM_MODE_INCAR)
 	{
 		float lookAngle = m_fLookAngle;
 
@@ -318,19 +333,19 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		Vector3D forward, up, right;
 		AngleVectors(euler_angles, &forward, &right, &up);
 
-		Vector3D vecDir = forward*m_carConfig->distInCar;
+		Vector3D vecDir = forward*m_carConfig.distInCar;
 
 		if( !bLookBack )
 		{
 			float dist_multipler = (m_fLookAngle / 90.0f);
-			vecDir = lerp(forward * m_carConfig->distInCar, right*m_carConfig->widthInCar*sign(dist_multipler), fabs(dist_multipler));
+			vecDir = lerp(forward * m_carConfig.distInCar, right*m_carConfig.widthInCar*sign(dist_multipler), fabs(dist_multipler));
 		}
 
-		Vector3D camPos = pos + vecDir + up * m_carConfig->heightInCar;
+		Vector3D camPos = pos + vecDir + up * m_carConfig.heightInCar;
 
 		m_computedView.SetOrigin(camPos);
 		m_computedView.SetAngles(euler_angles);
-		m_computedView.SetFOV(m_carConfig->fov);
+		m_computedView.SetFOV(m_carConfig.fov);
 	}
 	else if(mode == CAM_MODE_TRIPOD_ZOOM || mode == CAM_MODE_TRIPOD_FIXEDZOOM)
 	{

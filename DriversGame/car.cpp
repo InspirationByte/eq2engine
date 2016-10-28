@@ -2490,7 +2490,7 @@ void CCar::Simulate( float fDt )
 		const float BACKLIGHT_RADIUS = 0.125f;
 		const float DIMLIGHT_RADIUS = 0.17f;
 
-		const float BRAKEBACKLIGHT_INTENSITY = 0.7f;
+		const float BRAKEBACKLIGHT_INTENSITY = 0.5f;
 		const float BACKLIGHT_INTENSITY = 0.7f;
 		const float DIMLIGHT_INTENSITY = 0.7f;
 

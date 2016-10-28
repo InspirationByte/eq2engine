@@ -14,7 +14,7 @@
 
 #pragma warning(disable:4244)
 
-#define SAMPLES_THRESH	8		// read some extra samples
+#define SAMPLECORRECT_THRESH	2
 
 CSoundChannel::CSoundChannel() : 
 	m_pitch(1.0f),
@@ -77,29 +77,37 @@ bool CSoundChannel::SetupSource(ISoundSource* source)
 {
 	m_playbackSamplePos = 0.0f;
 
-	m_source = source;
-
-	// select proper mix format
-	soundFormat_t* format = m_source->GetFormat();
-
-	m_sourceMixer = NULL; // reset before proceed
-
-	if ( format->channels == 1 && format->bitwidth == 8 )
-		m_sourceMixer = S_MixMono8;
-	else if ( format->channels == 1 && format->bitwidth == 16 )
-		m_sourceMixer = S_MixMono16;
-	else if ( format->channels == 2 && format->bitwidth == 16 )
-		m_sourceMixer = S_MixStereo16;
-
-	if(!m_sourceMixer)
+	if(m_source != source)
 	{
-		MsgError("Unsupported sound format for '%s'\n", m_source->GetFilename());
-		m_source = NULL;
-		return false;
+		m_source = source;
+
+		// select proper mix format
+		soundFormat_t* format = m_source->GetFormat();
+
+		m_sourceMixer = NULL; // reset before proceed
+
+		if ( format->channels == 1 && format->bitwidth == 8 )
+			m_sourceMixer = S_MixMono8;
+		else if ( format->channels == 1 && format->bitwidth == 16 )
+			m_sourceMixer = S_MixMono16;
+		else if ( format->channels == 2 && format->bitwidth == 16 )
+			m_sourceMixer = S_MixStereo16;
+
+		if(!m_sourceMixer)
+		{
+			MsgError("Unsupported sound format for '%s'\n", m_source->GetFilename());
+			m_source = NULL;
+			return false;
+		}
 	}
+
+	if(m_source)
+		m_source->Rewind(); // Necessary for Ogg streams
 
 	return true;
 }
+
+#include "IDebugOverlay.h"
 
 void CSoundChannel::MixChannel(paintbuffer_t* input, paintbuffer_t* output, int numSamples)
 {
@@ -110,11 +118,6 @@ void CSoundChannel::MixChannel(paintbuffer_t* input, paintbuffer_t* output, int 
 	// read needed samples
 	int readSampleCount = numSamples*sampleRate;
 
-	// get rid of clicks if pitch is not uniform
-	// FIXME: not properly working with streaming Ogg
-	if(sampleRate != m_pitch)
-		readSampleCount += SAMPLES_THRESH;
-
 	int readSamples = m_source->GetSamples( (ubyte *)input->data, readSampleCount, floor(m_playbackSamplePos), m_looping );
 
 	int volume = (int)(m_volume * output->volume * 255) >> 8;
@@ -123,12 +126,19 @@ void CSoundChannel::MixChannel(paintbuffer_t* input, paintbuffer_t* output, int 
 	int spatial_vol[2];
 	(*m_spatialize)(this, m_owner->GetListener(), volume, spatial_vol);
 
-	// mix them into given output buffer
-	float sampleOffset = (*m_sourceMixer)( input->data, readSamples, output->data, numSamples, sampleRate, spatial_vol );
+	// calculate correct sample rate for the playback so we can get rid of clicks
+	// and mix them into given output buffer
+	float correctSampleRate = sampleRate;
+	
+	if(readSampleCount < numSamples) // sample rate must be corrected if we doing resampling
+		correctSampleRate = (float)readSampleCount / (float)(numSamples+SAMPLECORRECT_THRESH);
+
+	float playedSamples = (*m_sourceMixer)( input->data, readSamples, output->data, numSamples, correctSampleRate, spatial_vol );
 
 	if ( readSamples < readSampleCount ) // stop sound if we read less samples than we wanted
 		m_playbackState = false;
 
-	// advance playback
-	m_playbackSamplePos = m_source->GetLoopPosition( m_playbackSamplePos+sampleOffset );
+	// advance playback and correct
+	m_playbackSamplePos = m_source->GetLoopPosition( m_playbackSamplePos+playedSamples );
+	m_playbackSamplePos = floor(m_playbackSamplePos);
 }

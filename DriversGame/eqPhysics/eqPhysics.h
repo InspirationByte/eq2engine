@@ -150,7 +150,7 @@ struct eqPhysSurfParam_t
 
 //----------------------------------------------
 
-#define MAX_COLLISION_FILTER_OBJECTS 4
+#define MAX_COLLISION_FILTER_OBJECTS 8
 
 struct eqPhysCollisionFilter
 {

@@ -523,6 +523,37 @@ int	CLevelRegion::GetNumNomEmptyHFields() const
 	return nCount;
 }
 
+void CLevelRegion::GetDecalPolygons(decalprimitives_t& polys, const Volume& volume)
+{
+	for (int i = 0; i < GetNumHFields(); i++)
+	{
+		CHeightTileField* hfield = GetHField(i);
+
+		if(!hfield)
+			continue;
+
+		hfield->GetDecalPolygons(polys, volume);
+	}
+
+	// get model polygons
+	for (int i = 0; i < m_objects.numElem(); i++)
+	{
+		regionObject_t* ref = m_objects[i];
+		CLevObjectDef* def = m_objects[i]->def;
+
+		if(!def)
+			continue;
+
+		if(def->m_info.type != LOBJ_TYPE_INTERNAL_STATIC)
+			continue;
+
+		if( !volume.IsBoxInside(ref->bbox.minPoint, ref->bbox.maxPoint) )
+			continue;
+
+		def->m_model->GetDecalPolygons(polys, volume, ref->transform);
+	}
+}
+
 ConVar w_pregeneratedhfields("w_pregeneratedhfields", "1");
 
 void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>& levelmodels)

@@ -18,6 +18,8 @@ public:
 	virtual bool	Load(const char* filename);
 	virtual void	Unload();
 
+	void			Rewind();
+
 protected:
 	void			ParseData(OggVorbis_File* file);
 

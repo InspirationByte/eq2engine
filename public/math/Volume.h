@@ -156,6 +156,18 @@ struct Plane_t
 	T			offset;
 };
 
+template <typename T>
+inline Plane_t<T> operator * (const TMat4<T> &m, const Plane_t<T> &v)
+{
+	TVec4D<T> o(v.normal * v.offset, 1.0);
+	TVec3D<T> n(v.normal);
+
+	o = m * o;
+	n = m * n;
+
+	return Plane_t<T>(n, dot(o.xyz(), n));
+}
+
 typedef Plane_t<float> Plane;
 
 #define VOLUME_PLANE_LEFT   0
@@ -195,5 +207,15 @@ protected:
 	Plane			m_planes[6];
 };
 
+inline Volume operator * (const Matrix4x4 &m, const Volume &v)
+{
+	Volume out;
+	for(int i = 0; i < 6; i++)
+	{
+		Plane pl = m * v.GetPlane(i);
+		out.SetupPlane(pl, i);
+	}
+	return out;
+}
 
 #endif // VOLUME_H

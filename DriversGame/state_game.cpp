@@ -390,20 +390,33 @@ void Game_UpdateFreeCamera(float fDt)
 		g_freeCamProps.velocity *= speedDiffScale;
 	}
 
-	btSphereShape collShape(0.5f);
+	btSphereShape collShape(1.0f);
 
 	// update camera collision
 	if(camSpeed > 1.0f)
 	{
 		g_freeCamProps.velocity -= normalize(g_freeCamProps.velocity) * 90.0f * fDt;
 
-		CollisionData_t coll;
-		g_pPhysics->TestConvexSweep(&collShape, Quaternion(0,0,0,0), g_freeCamProps.position, g_freeCamProps.position+g_freeCamProps.velocity, coll, 0xFFFFFFFF);
+		eqPhysCollisionFilter filter;
+		filter.type = EQPHYS_FILTER_TYPE_EXCLUDE;
+		filter.flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS | EQPHYS_FILTER_FLAG_STATICOBJECTS;
 
-		if(coll.fract == 0.0f)
+		int cycle = 0;
+
+		CollisionData_t coll;
+		while(g_pPhysics->TestConvexSweep(&collShape, Quaternion(0,0,0,0), g_freeCamProps.position, g_freeCamProps.position+g_freeCamProps.velocity, coll, 0xFFFFFFFF, &filter))
 		{
-			float nDot = dot(coll.normal, g_freeCamProps.velocity);
-			g_freeCamProps.velocity -= coll.normal*nDot;
+			if(coll.fract == 0.0f)
+			{
+				float nDot = dot(coll.normal, g_freeCamProps.velocity);
+				g_freeCamProps.velocity -= coll.normal*nDot;
+			}
+
+			filter.AddObject( coll.hitobject );
+
+			cycle++;
+			if(cycle > MAX_COLLISION_FILTER_OBJECTS)
+				break;
 		}
 	}
 	else
