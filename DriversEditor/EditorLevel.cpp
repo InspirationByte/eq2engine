@@ -1323,7 +1323,7 @@ void CEditorLevelRegion::PostprocessCellObject(regionObject_t* obj)
 					IVector2D lanePos = roadPos-rightDir*i;
 
 					Vector3D bestCellPos = g_pGameWorld->m_level.GlobalTilePointToPosition(lanePos);
-					debugoverlay->Box3D(bestCellPos-2,bestCellPos+2, ColorRGBA(0,1,1,1), 10000.0f);
+					debugoverlay->Box3D(bestCellPos-2,bestCellPos+2, ColorRGBA(0,1,1,1), 25.0f);
 
 					levroadcell_t* rcell = m_level->GetGlobalRoadTileAt(lanePos);
 					if(rcell)

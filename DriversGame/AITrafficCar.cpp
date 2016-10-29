@@ -864,7 +864,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 		int curDir = m_straights[STRAIGHT_CURRENT].direction % 2;
 
-		bool isAllowedToMove = m_straights[STRAIGHT_CURRENT].hasTrafficLight ? (trafficLightDir == curDir) : true;
+		bool isAllowedToMove = m_straights[STRAIGHT_CURRENT].hasTrafficLight ? (trafficLightDir%2 == curDir%2) : true;
 
 		if( !g_disableTrafficLights.GetBool() && (!isAllowedToMove || (g_pGameWorld->m_globalTrafficLightTime < 2.0f)) )
 		{
