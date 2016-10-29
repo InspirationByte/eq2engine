@@ -133,24 +133,6 @@ void CUI_RoadEditor::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, 
 	}
 }
 
-int GetDirectionIndex(const IVector2D& vec)
-{
-	int rX[4] = ROADNEIGHBOUR_OFFS_X(0);
-	int rY[4] = ROADNEIGHBOUR_OFFS_Y(0);
-
-	IVector2D v = clamp(vec, IVector2D(-1,-1),IVector2D(1,1));
-
-	for(int i = 0; i < 4; i++)
-	{
-		IVector2D r(rX[i], rY[i]);
-
-		if(r == v)
-			return i;
-	}
-
-	return 0;
-}
-
 void CUI_RoadEditor::PaintLine(int x0, int y0, int x1, int y1)
 {
     float dX,dY,iSteps;

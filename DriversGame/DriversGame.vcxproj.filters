@@ -742,6 +742,9 @@
     <ClInclude Include="..\shared_engine\egui\IEqUI_Control.h">
       <Filter>Файлы исходного кода\EngineLib\UI</Filter>
     </ClInclude>
+    <ClInclude Include="road_defs.h">
+      <Filter>Файлы исходного кода\Game\World</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\Resources.rc">

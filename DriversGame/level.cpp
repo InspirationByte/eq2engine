@@ -897,32 +897,22 @@ void CGameLevel::LocalToGlobalPoint( const IVector2D& point, const CLevelRegion*
 
 //------------------------------------------------------------------------------------------------------------------------------------
 
-bool IsOppositeDirectionTo(int dirA, int dirB)
-{
-	int dx[4] = ROADNEIGHBOUR_OFFS_X(0);
-	int dy[4] = ROADNEIGHBOUR_OFFS_Y(0);
-
-	if( (dx[dirA] != dx[dirB] && (dx[dirA] + dx[dirB] == 0)) ||
-		(dy[dirA] != dy[dirB] && (dy[dirA] + dy[dirB] == 0)))
-		return true;
-
-	return false;
-}
 
 straight_t CGameLevel::GetStraightAtPoint( const IVector2D& point, int numIterations ) const
 {
 	CLevelRegion* pRegion = NULL;
 
 	straight_t straight;
-	straight.direction = -1;
-
 	IVector2D localPos;
 
 	if( GetRegionAndTileAt(point, &pRegion, localPos ) && pRegion->m_roads )
 	{
 		int tileIdx = localPos.y * m_cellsSize + localPos.x;
 
-		if(	pRegion->m_roads[tileIdx].type != ROADTYPE_STRAIGHT )
+		levroadcell_t& startCell = pRegion->m_roads[tileIdx];
+
+		if(	startCell.type != ROADTYPE_STRAIGHT &&
+			startCell.type != ROADTYPE_PARKINGLOT )
 			return straight;
 
 		int dx[4] = ROADNEIGHBOUR_OFFS_X(0);
@@ -934,7 +924,7 @@ straight_t CGameLevel::GetStraightAtPoint( const IVector2D& point, int numIterat
 
 		LocalToGlobalPoint(localPos, pRegion, straight.start);
 
-		int roadDir = pRegion->m_roads[tileIdx].direction;
+		int roadDir = startCell.direction;
 
 		int checkRoadDir = roadDir;
 
@@ -958,19 +948,25 @@ straight_t CGameLevel::GetStraightAtPoint( const IVector2D& point, int numIterat
 			if(!pNextRegion->m_roads)
 				continue;
 
-			if(	pNextRegion->m_roads[nextTileIdx].type != ROADTYPE_STRAIGHT )
+			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
+
+			if( roadCell.type != ROADTYPE_STRAIGHT &&
+				roadCell.type != ROADTYPE_PARKINGLOT )
 				break;
 
-			if( IsOppositeDirectionTo(pNextRegion->m_roads[nextTileIdx].direction, checkRoadDir) )
+			if( IsOppositeDirectionTo(roadCell.direction, checkRoadDir) )
 				continue;
 
-			if(	pNextRegion->m_roads[nextTileIdx].direction != checkRoadDir &&
+			if(roadCell.flags & ROAD_FLAG_TRAFFICLIGHT)
+				straight.hasTrafficLight = true;
+
+			if(	roadCell.direction != checkRoadDir &&
 				i < straight.dirChangeIter)
 			{
 				straight.dirChangeIter = i;
 			}
 
-			checkRoadDir = pNextRegion->m_roads[nextTileIdx].direction;
+			checkRoadDir = roadCell.direction;
 
 			// set the original direction
 			straight.direction = roadDir;
@@ -1011,7 +1007,9 @@ roadJunction_t CGameLevel::GetJunctionAtPoint( const IVector2D& point, int numIt
 	{
 		int tileIdx = localPos.y * m_cellsSize + localPos.x;
 
-		if(	pRegion->m_roads[tileIdx].type == ROADTYPE_NOROAD )
+		levroadcell_t& startCell = pRegion->m_roads[tileIdx];
+
+		if(	startCell.type == ROADTYPE_NOROAD )
 		{
 			return junction;
 		}
@@ -1022,15 +1020,16 @@ roadJunction_t CGameLevel::GetJunctionAtPoint( const IVector2D& point, int numIt
 		junction.start = localPos;
 		junction.end = localPos;
 
+
 		// if we already on junction
-		if(pRegion->m_roads[tileIdx].type == ROADTYPE_JUNCTION)
+		if(startCell.type == ROADTYPE_JUNCTION)
 		{
 			return junction;
 		}
 
 		LocalToGlobalPoint(localPos, pRegion, junction.start);
 
-		int roadDir = pRegion->m_roads[tileIdx].direction;
+		int roadDir = startCell.direction;
 
 		int checkRoadDir = roadDir;
 
@@ -1051,13 +1050,15 @@ roadJunction_t CGameLevel::GetJunctionAtPoint( const IVector2D& point, int numIt
 			if(!pNextRegion->m_roads)
 				continue;
 
-			if( pNextRegion->m_roads[nextTileIdx].type != ROADTYPE_JUNCTION && junction.startIter != -1 )
+			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
+
+			if( roadCell.type != ROADTYPE_JUNCTION && junction.startIter != -1 )
 				break;
 
-			if(	pNextRegion->m_roads[nextTileIdx].type == ROADTYPE_NOROAD )
+			if(	roadCell.type == ROADTYPE_NOROAD )
 				break;
 
-			if(pNextRegion->m_roads[nextTileIdx].type == ROADTYPE_JUNCTION && junction.startIter == -1)
+			if(roadCell.type == ROADTYPE_JUNCTION && junction.startIter == -1)
 			{
 				junction.startIter = i;
 			}
@@ -1078,16 +1079,6 @@ roadJunction_t CGameLevel::GetJunctionAtPos( const Vector3D& pos, int numIterati
 	return GetJunctionAtPoint(globPos, numIterations);
 }
 
-int GetPerpendicularDir(int dir)
-{
-	int nDir = dir+1;
-
-	if(nDir > 3)
-		nDir -= 4;
-
-	return nDir;
-}
-
 int	CGameLevel::GetLaneIndexAtPoint( const IVector2D& point, int numIterations)
 {
 	CLevelRegion* pRegion = NULL;
@@ -1100,14 +1091,17 @@ int	CGameLevel::GetLaneIndexAtPoint( const IVector2D& point, int numIterations)
 	{
 		int tileIdx = localPos.y * m_cellsSize + localPos.x;
 
-		if(	pRegion->m_roads[tileIdx].type != ROADTYPE_STRAIGHT )
+		levroadcell_t& startCell = pRegion->m_roads[tileIdx];
+
+		if(	startCell.type != ROADTYPE_STRAIGHT &&
+			startCell.type != ROADTYPE_PARKINGLOT )
 			return -1;
 
 		int dx[4] = ROADNEIGHBOUR_OFFS_X(0);
 		int dy[4] = ROADNEIGHBOUR_OFFS_Y(0);
 
-		int laneDir = pRegion->m_roads[tileIdx].direction;
-		int laneRowDir = GetPerpendicularDir(pRegion->m_roads[tileIdx].direction);
+		int laneDir = startCell.direction;
+		int laneRowDir = GetPerpendicularDir(startCell.direction);
 
 		for(int i = 0; i < numIterations; i++)
 		{
@@ -1121,10 +1115,13 @@ int	CGameLevel::GetLaneIndexAtPoint( const IVector2D& point, int numIterations)
 			if(!pNextRegion->m_roads)
 				continue;
 
-			if(	pNextRegion->m_roads[nextTileIdx].type != ROADTYPE_STRAIGHT )
+			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
+
+			if(	roadCell.type != ROADTYPE_STRAIGHT &&
+				roadCell.type != ROADTYPE_PARKINGLOT )
 				break;
 
-			if( pNextRegion->m_roads[nextTileIdx].direction != laneDir)
+			if( roadCell.direction != laneDir)
 				break;
 
 			nLane++;
@@ -1158,14 +1155,17 @@ int	CGameLevel::GetRoadWidthInLanesAtPoint( const IVector2D& point, int numItera
 	{
 		int tileIdx = localPos.y * m_cellsSize + localPos.x;
 
-		if(	pRegion->m_roads[tileIdx].type != ROADTYPE_STRAIGHT )
+		levroadcell_t& startCell = pRegion->m_roads[tileIdx];
+
+		if(	startCell.type != ROADTYPE_STRAIGHT &&
+			startCell.type != ROADTYPE_PARKINGLOT )
 			return -1;
 
 		int dx[4] = ROADNEIGHBOUR_OFFS_X(0);
 		int dy[4] = ROADNEIGHBOUR_OFFS_Y(0);
 
-		int laneDir = pRegion->m_roads[tileIdx].direction;
-		int laneRowDir = GetPerpendicularDir(pRegion->m_roads[tileIdx].direction);
+		int laneDir = startCell.direction;
+		int laneRowDir = GetPerpendicularDir(startCell.direction);
 
 		for(int i = 1; i < numIterations; i++)
 		{
@@ -1179,11 +1179,14 @@ int	CGameLevel::GetRoadWidthInLanesAtPoint( const IVector2D& point, int numItera
 			if(!pNextRegion->m_roads)
 				continue;
 
-			if(	pNextRegion->m_roads[nextTileIdx].type != ROADTYPE_STRAIGHT )
+			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
+
+			if(	roadCell.type != ROADTYPE_STRAIGHT &&
+				roadCell.type != ROADTYPE_PARKINGLOT )
 				break;
 
 			// only parallels
-			if( (pNextRegion->m_roads[nextTileIdx].direction % 2) != (laneDir % 2))
+			if( (roadCell.direction % 2) != (laneDir % 2))
 				break;
 
 			nLanes++;
@@ -1215,7 +1218,10 @@ int	CGameLevel::GetNumLanesAtPoint( const IVector2D& point, int numIterations )
 	{
 		int tileIdx = localPos.y * m_cellsSize + localPos.x;
 
-		if(	pRegion->m_roads[tileIdx].type != ROADTYPE_STRAIGHT )
+		levroadcell_t& startCell = pRegion->m_roads[tileIdx];
+
+		if(	startCell.type != ROADTYPE_STRAIGHT &&
+			startCell.type != ROADTYPE_PARKINGLOT )
 			return 0;
 
 		IVector2D lastPos = localPos;
@@ -1223,8 +1229,8 @@ int	CGameLevel::GetNumLanesAtPoint( const IVector2D& point, int numIterations )
 		int dx[4] = ROADNEIGHBOUR_OFFS_X(0);
 		int dy[4] = ROADNEIGHBOUR_OFFS_Y(0);
 
-		int laneDir = pRegion->m_roads[tileIdx].direction;
-		int laneRowDir = GetPerpendicularDir(pRegion->m_roads[tileIdx].direction);
+		int laneDir = startCell.direction;
+		int laneRowDir = GetPerpendicularDir(startCell.direction);
 
 		for(int i = 1; i < numIterations; i++)
 		{
@@ -1240,10 +1246,13 @@ int	CGameLevel::GetNumLanesAtPoint( const IVector2D& point, int numIterations )
 			if(!pNextRegion->m_roads)
 				continue;
 
-			if(	pNextRegion->m_roads[nextTileIdx].type != ROADTYPE_STRAIGHT )
+			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
+
+			if(	roadCell.type != ROADTYPE_STRAIGHT &&
+				roadCell.type != ROADTYPE_PARKINGLOT )
 				break;
 
-			if( pNextRegion->m_roads[nextTileIdx].direction != laneDir)
+			if( roadCell.direction != laneDir)
 				break;
 
 			nLanes++;
@@ -1287,6 +1296,98 @@ levroadcell_t* CGameLevel::GetGlobalRoadTileAt(const IVector2D& point, CLevelReg
 	}
 
 	return NULL;
+}
+
+bool CGameLevel::FindBestRoadCellForTrafficLight( IVector2D& out, const Vector3D& origin, int trafficDir, int juncIterations )
+{
+	IVector2D cellPos = PositionToGlobalTilePoint(origin);
+	int laneRowDir = GetPerpendicularDir(trafficDir);
+
+	int dx[4] = ROADNEIGHBOUR_OFFS_X(0);
+	int dy[4] = ROADNEIGHBOUR_OFFS_Y(0);
+
+	IVector2D forwardDir = IVector2D(dx[trafficDir],dy[trafficDir]);
+	IVector2D rightDir = IVector2D(dx[laneRowDir],dy[laneRowDir]);
+
+	levroadcell_t* roadTile = NULL;
+	
+	/*
+	first method
+		Find passing straight from left and back one step
+	*/
+
+	IVector2D roadTilePos = cellPos - rightDir - forwardDir;
+
+	roadTile = GetGlobalRoadTileAt(roadTilePos);
+
+	if(	roadTile && 
+		(roadTile->type == ROADTYPE_STRAIGHT || roadTile->type == ROADTYPE_PARKINGLOT) && 
+		roadTile->direction == trafficDir)
+	{
+		out = roadTilePos;
+		return true;
+	}
+
+
+	/*
+	second method
+		Find passing straight from left, but iterate through junction
+		Break on first occurence
+	*/
+
+	for(int i = 0; i < juncIterations; i++)
+	{
+		IVector2D checkTilePos = roadTilePos - forwardDir*i;
+
+		roadTile = GetGlobalRoadTileAt( checkTilePos );
+
+		if(	roadTile && 
+			(roadTile->type == ROADTYPE_STRAIGHT || roadTile->type == ROADTYPE_PARKINGLOT) && 
+			roadTile->direction == trafficDir)
+		{
+			out = checkTilePos;
+			return true;
+		}
+
+	}
+
+	/*
+	third method
+		Find passing straight using only backwards iteration through junctions
+		If we have found straight in wrong direction (not perpendicular), just try searching to right
+	*/
+
+	IVector2D checkTilePos = cellPos;
+
+	for(int i = 0; i < juncIterations; i++)
+	{
+		checkTilePos -= forwardDir;
+
+		roadTile = GetGlobalRoadTileAt( checkTilePos );
+
+		if(	roadTile && (roadTile->type == ROADTYPE_STRAIGHT || roadTile->type == ROADTYPE_PARKINGLOT))
+		{
+			// it's just beautiful we've found it
+			if(roadTile->direction == trafficDir)
+			{
+				out = checkTilePos;
+				return true;
+			}
+
+			// but what if we have wrong direction???
+			if((roadTile->direction % 2) == (trafficDir % 2))
+			{
+				// search to the right
+				checkTilePos += rightDir;
+				continue;
+			}
+
+			// has to break here
+			break;
+		}
+	}
+
+	return false;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------
@@ -2119,4 +2220,148 @@ void CGameLevel::GetDecalPolygons(decalprimitives_t& polys, const Volume& volume
 		}
 	}
 
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------
+
+
+bool IsStraightsOnSameLane( const straight_t& a, const straight_t& b )
+{
+	int dira = a.direction;
+	int dirb = b.direction;
+
+	if(dira > 2)
+		dira -= 2;
+
+	if(dirb > 2)
+		dirb -= 2;
+
+	return a.start[dira] == b.start[dirb];
+}
+
+IVector2D GetDirectionVecBy(const IVector2D& posA, const IVector2D& posB)
+{
+	return clamp(posB-posA, IVector2D(-1,-1),IVector2D(1,1));
+}
+
+IVector2D GetDirectionVec(int dirIdx)
+{
+	if(dirIdx > 3)
+		dirIdx -= 4;
+
+	int rX[4] = ROADNEIGHBOUR_OFFS_X(0);
+	int rY[4] = ROADNEIGHBOUR_OFFS_Y(0);
+
+	return IVector2D(rX[dirIdx], rY[dirIdx]);
+}
+
+bool IsPointOnStraight(const IVector2D& pos, const straight_t& straight)
+{
+	// make them floats
+	float posOnLine = lineProjection((Vector2D)straight.start, (Vector2D)straight.end, (Vector2D)pos);
+
+	IVector2D perpDirVec = GetDirectionVec( straight.direction+1 );
+
+	IVector2D posComp = pos * perpDirVec;
+	IVector2D strComp = straight.start * perpDirVec;
+
+	if( posComp == strComp )
+		return (posOnLine >= 0.0f && posOnLine <= 1.0f);
+
+	return false;
+}
+
+int GetCellsBeforeStraight(const IVector2D& pos, const straight_t& straight)
+{
+	if(straight.direction == -1)
+		return 1000;
+
+	int dirV = 1 - (straight.direction % 2);
+
+	int cmpA = min(pos[dirV], straight.start[dirV]);
+	int cmpB = max(pos[dirV], straight.start[dirV]);
+
+	return cmpB-cmpA;
+}
+
+int GetDirectionIndex(const IVector2D& vec)
+{
+	int rX[4] = ROADNEIGHBOUR_OFFS_X(0);
+	int rY[4] = ROADNEIGHBOUR_OFFS_Y(0);
+
+	IVector2D v = clamp(vec, IVector2D(-1,-1),IVector2D(1,1));
+
+	for(int i = 0; i < 4; i++)
+	{
+		IVector2D r(rX[i], rY[i]);
+
+		if(r == v)
+			return i;
+	}
+
+	return 0;
+}
+
+int	GetDirectionIndexByAngles(const Vector3D& angles)
+{
+	Quaternion quat(DEG2RAD(angles.x),DEG2RAD(angles.y),DEG2RAD(angles.z));
+
+	Vector3D dirForward = rotateVector(-vec3_forward, quat);
+	float Yangle = RAD2DEG(atan2f(dirForward.z, dirForward.x));
+
+	if (Yangle < 0.0) Yangle += 360.0f;
+	Yangle = 360 - Yangle;
+
+	int trafficDir = floor(Yangle / 90.0f);
+
+	if(trafficDir > 3) 
+		trafficDir -= 4;
+
+	return trafficDir;
+}
+
+bool CompareDirection(int dirA, int dirB)
+{
+	int dA = dirA;
+	if(dA < 0)
+		dA += 4;
+
+	if(dA > 3)
+		dA -= 4;
+
+	int dB = dirB;
+	if(dB < 0)
+		dB += 4;
+
+	if(dB > 3)
+		dB -= 4;
+
+	return dA == dB;
+}
+
+bool IsOppositeDirectionTo(int dirA, int dirB)
+{
+	int dx[4] = ROADNEIGHBOUR_OFFS_X(0);
+	int dy[4] = ROADNEIGHBOUR_OFFS_Y(0);
+
+	if( (dx[dirA] != dx[dirB] && (dx[dirA] + dx[dirB] == 0)) ||
+		(dy[dirA] != dy[dirB] && (dy[dirA] + dy[dirB] == 0)))
+		return true;
+
+	return false;
+}
+
+int GetPerpendicularDir(int dir)
+{
+	int nDir = dir+1;
+
+	if(nDir > 3)
+		nDir -= 4;
+
+	return nDir;
+}
+
+IVector2D GetPerpendicularDirVec(const IVector2D& vec)
+{
+	return IVector2D(vec.y,vec.x);
 }

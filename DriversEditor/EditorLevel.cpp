@@ -1209,6 +1209,9 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 		regionObject_t* robj = regObjects[i];
 		CLevObjectDef* def = robj->def;
 
+		// post process cell objects
+		PostprocessCellObject(robj);
+
 		levCellObject_t object;
 
 		// copy name
@@ -1284,6 +1287,50 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 	{
 		delete tempObjects[i]->def;
 		delete tempObjects[i];
+	}
+}
+
+void CEditorLevelRegion::PostprocessCellObject(regionObject_t* obj)
+{
+	if(!obj->def)
+		return;
+
+	if(obj->def->m_info.type == LOBJ_TYPE_OBJECT_CFG)
+	{
+		// process traffic lights
+		if(!obj->def->m_defType.CompareCaseIns("trafficlight"))
+		{
+			int trafficDir = GetDirectionIndexByAngles( obj->rotation );
+			int laneRowDir = GetPerpendicularDir(trafficDir);
+
+			int dx[4] = ROADNEIGHBOUR_OFFS_X(0);
+			int dy[4] = ROADNEIGHBOUR_OFFS_Y(0);
+
+			IVector2D forwardDir = IVector2D(dx[trafficDir],dy[trafficDir]);
+			IVector2D rightDir = IVector2D(dx[laneRowDir],dy[laneRowDir]);
+
+			IVector2D roadPos;
+			if(m_level->FindBestRoadCellForTrafficLight(roadPos, obj->position, trafficDir, 24))
+			{
+				// move to first lane
+				int laneIndex = m_level->GetLaneIndexAtPoint( roadPos )-1;
+				roadPos += rightDir*laneIndex;
+
+				int roadWidth = m_level->GetNumLanesAtPoint( roadPos );
+
+				for(int i = 0; i < roadWidth; i++)
+				{
+					IVector2D lanePos = roadPos-rightDir*i;
+
+					Vector3D bestCellPos = g_pGameWorld->m_level.GlobalTilePointToPosition(lanePos);
+					debugoverlay->Box3D(bestCellPos-2,bestCellPos+2, ColorRGBA(0,1,1,1), 10000.0f);
+
+					levroadcell_t* rcell = m_level->GetGlobalRoadTileAt(lanePos);
+					if(rcell)
+						rcell->flags |= ROAD_FLAG_TRAFFICLIGHT;
+				}
+			}
+		}
 	}
 }
 

@@ -35,7 +35,7 @@ public:
 
 	void				Simulate(float fDt);
 
-	int					ObjType() const		{return GO_LIGHT_TRAFFIC;}
+	int					ObjType() const	{return GO_LIGHT_TRAFFIC;}
 
 	void				OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy);
 

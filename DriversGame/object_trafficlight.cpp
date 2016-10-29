@@ -11,6 +11,8 @@
 
 #include "Shiny.h"
 
+ConVar g_debugTrafficLight("g_debug_trafficlight", "0", NULL, CV_CHEAT);
+
 static ColorRGB lightColorTypes[] = 
 {
 	ColorRGB(1.0f, 0.145f, 0.13f),	// red
@@ -143,26 +145,7 @@ void CObject_TrafficLight::SetAngles(const Vector3D& angles)
 
 	m_vecAngles = angles;
 
-	m_trafficDir = 0;
-
-	float fAng = m_vecAngles.y;
-
-	if(fAng > 0)
-	{
-		while(fAng > 89.0f)
-		{
-			m_trafficDir++;
-			fAng -= 90.0f;
-		}
-	}
-	else
-	{
-		while(fAng < -89.0f)
-		{
-			m_trafficDir++;
-			fAng += 90.0f;
-		}
-	}
+	m_trafficDir = GetDirectionIndexByAngles(m_vecAngles);
 }
 
 void CObject_TrafficLight::SetVelocity(const Vector3D& vel)
@@ -176,6 +159,38 @@ void CObject_TrafficLight::Draw( int nRenderFlags )
 {
 	//if(!g_pGameWorld->m_frustum.IsSphereInside(GetOrigin(), length(m_pModel->GetBBoxMaxs())))
 	//	return;
+	
+	if( g_debugTrafficLight.GetBool() )
+	{
+		IVector2D cellPos = g_pGameWorld->m_level.PositionToGlobalTilePoint(GetOrigin());
+		int laneRowDir = GetPerpendicularDir(m_trafficDir);
+
+		int dx[4] = ROADNEIGHBOUR_OFFS_X(0);
+		int dy[4] = ROADNEIGHBOUR_OFFS_Y(0);
+
+		IVector2D forwardDir = IVector2D(dx[m_trafficDir],dy[m_trafficDir]);
+		IVector2D rightDir = IVector2D(dx[laneRowDir],dy[laneRowDir]);
+
+		Vector3D cellOrigin = g_pGameWorld->m_level.GlobalTilePointToPosition(cellPos);
+
+		debugoverlay->Box3D(cellOrigin-1,cellOrigin+1, ColorRGBA(1,1,0,1));
+
+		Vector3D cellDirOrigin = g_pGameWorld->m_level.GlobalTilePointToPosition(cellPos + forwardDir);
+		Vector3D cellLeftOrigin = g_pGameWorld->m_level.GlobalTilePointToPosition(cellPos + rightDir);
+
+		debugoverlay->Box3D(cellDirOrigin-0.25f,cellDirOrigin+0.25f, ColorRGBA(0,0,1,1));
+		debugoverlay->Box3D(cellLeftOrigin-0.25f,cellLeftOrigin+0.25f, ColorRGBA(1,0,0,1));
+
+		IVector2D bestCell;
+		if(g_pGameWorld->m_level.FindBestRoadCellForTrafficLight(bestCell, GetOrigin(), m_trafficDir))
+		{
+			Vector3D bestCellPos = g_pGameWorld->m_level.GlobalTilePointToPosition(bestCell);
+
+			debugoverlay->Box3D(bestCellPos-2,bestCellPos+2, ColorRGBA(0,1,1,1));
+		}
+	}
+
+	//-------------------------------------------
 
 	m_pPhysicsObject->ConstructRenderMatrix(m_worldMatrix);
 
@@ -214,9 +229,6 @@ void CObject_TrafficLight::Simulate(float fDt)
 		}
 
 		int trafDir = m_trafficDir % 2;
-
-		//if(trafDir > 2)
-		//	trafDir -= 2;
 
 		Vector3D dir;
 		AngleVectors(m_vecAngles-Vector3D(0.0f,90.0f,0.0f), &dir);

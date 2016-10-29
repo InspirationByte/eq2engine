@@ -315,6 +315,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="ParticleEffects.h" />
+    <ClInclude Include="road_defs.h" />
     <ClInclude Include="ShadowRenderer.h" />
     <ClInclude Include="state_lobby.h" />
     <ClInclude Include="LuaBinding_Drivers.h" />

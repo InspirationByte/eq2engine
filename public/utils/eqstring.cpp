@@ -32,6 +32,7 @@ EqString::EqString()
 	m_nLength = 0;
 	m_nAllocated = 0;
 	m_pszString = NULL;
+	Empty();
 }
 
 EqString::~EqString()

@@ -695,6 +695,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 
 				ref->game_object = newObj;
 
+				// let the game objects to be spawned on game frame
 				m_level->m_mutex.Lock();
 				g_pGameWorld->AddObject( newObj, false );
 				m_level->m_mutex.Unlock();
@@ -793,12 +794,16 @@ void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 			levroadcell_t tmpCell;
 			stream->Read(&tmpCell, 1, sizeof(levroadcell_t));
 
+#ifdef EDITOR
+			tmpCell.flags &= ~ROAD_FLAG_TRAFFICLIGHT;
+#endif // EDITOR
+
 			int idx = tmpCell.posY*m_heightfield[0]->m_sizew + tmpCell.posX;
 			m_roads[idx] = tmpCell;
 
 #define NAVGRIDSCALE_HALF	int(AI_NAVIGATION_GRID_SCALE/2)
 
-			if(tmpCell.type == ERoadType::ROADTYPE_PARKINGLOT)
+			if(tmpCell.type == ROADTYPE_PARKINGLOT)
 				continue;
 
 			// higher the priority of road nodes

@@ -45,6 +45,7 @@ CAICarManager::CAICarManager()
 {
 	m_trafficUpdateTime = 0.0f;
 	m_enableCops = true;
+	m_enableTrafficCars = true;
 
 	m_copMaxDamage = COP_DEFAULT_DAMAGE;
 	m_copAccelerationModifier = 1.0f;
@@ -52,6 +53,7 @@ CAICarManager::CAICarManager()
 	m_numMaxCops = 2;
 	m_copRespawnInterval = 20;	// spawn on every 20th traffic car
 	m_numMaxTrafficCars = 32;
+	
 	m_copSpawnIntervalCounter = 0;
 
 	m_leadVelocity = vec3_zero;
@@ -72,6 +74,8 @@ void CAICarManager::Init()
 
 	m_trafficUpdateTime = 0.0f;
 	m_copSpawnIntervalCounter = 0;
+	m_enableTrafficCars = true;
+	m_enableCops = true;
 
 	for (int i = 0; i < COP_NUMTYPES; i++)
 		m_copCarName[i] = "";
@@ -94,7 +98,7 @@ void CAICarManager::Shutdown()
 
 CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 {
-	if (m_trafficCars.numElem() >= m_numMaxTrafficCars)
+	if (m_trafficCars.numElem() >= GetMaxTrafficCars())
 		return NULL;
 
 	CLevelRegion* pReg = NULL;
@@ -565,7 +569,17 @@ void CAICarManager::SetMaxTrafficCars(int count)
 
 int CAICarManager::GetMaxTrafficCars() const
 {
-	return m_numMaxTrafficCars;
+	return m_enableTrafficCars ? m_numMaxTrafficCars : 0;
+}
+
+void CAICarManager::SetTrafficCarsEnabled(bool enable)
+{
+	m_enableTrafficCars = enable;
+}
+
+bool CAICarManager::IsTrafficCarsEnabled() const
+{
+	return m_enableTrafficCars;
 }
 
 // ----- COPS ------
@@ -664,6 +678,7 @@ OOLUA_EXPORT_FUNCTIONS(
 	MakePursued,
 	RemoveAllCars,
 	SetMaxTrafficCars,
+	SetTrafficCarsEnabled,
 	SetCopsEnabled,
 	SetCopCarConfig,
 	SetCopMaxDamage,
@@ -678,6 +693,7 @@ OOLUA_EXPORT_FUNCTIONS_CONST(
 	CAICarManager,
 
 	GetMaxTrafficCars,
+	IsTrafficCarsEnabled,
 	IsCopsEnabled,
 	GetCopMaxDamage,
 	GetCopAccelerationModifier,

@@ -89,6 +89,9 @@ public:
 	// ----- TRAFFIC ------
 	void						SetMaxTrafficCars(int count);
 	int							GetMaxTrafficCars() const;		
+
+	void						SetTrafficCarsEnabled(bool enable);
+	bool						IsTrafficCarsEnabled() const;
 	
 	CCar*						SpawnTrafficCar( const IVector2D& globalCell );
 
@@ -136,6 +139,8 @@ protected:
 	EqString					m_copCarName[COP_NUMTYPES];
 	bool						m_enableCops;
 
+	bool						m_enableTrafficCars;
+
 	int							m_numMaxTrafficCars;
 
 	float						m_copMaxDamage;
@@ -176,6 +181,9 @@ OOLUA_PROXY(CAICarManager)
 
 	OOLUA_MFUNC(SetMaxTrafficCars)
 	OOLUA_MFUNC_CONST(GetMaxTrafficCars)
+
+	OOLUA_MFUNC(SetTrafficCarsEnabled)
+	OOLUA_MFUNC_CONST(IsTrafficCarsEnabled)
 
 	OOLUA_MFUNC(SetCopsEnabled)
 	OOLUA_MFUNC_CONST(IsCopsEnabled)

@@ -376,7 +376,7 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 			return INFRACTION_HIT;
 	}
 
-	straight_t straight = g_pGameWorld->m_level.GetStraightAtPos(car->GetOrigin());
+	straight_t straight = g_pGameWorld->m_level.GetStraightAtPos(car->GetOrigin(), 2);
 
 	// Check wrong direction
 	if ( straight.direction != -1)
@@ -417,7 +417,9 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 
 		float distToStop = roadEndPlane.Distance(car->GetOrigin());
 
-		if (distToStop < 0 && (trafficLightDir == curDir))
+		bool isAllowedToMove = straight_checkRed.hasTrafficLight ? (trafficLightDir == curDir) : true;
+
+		if (distToStop < 0 && !isAllowedToMove)
 			return INFRACTION_RED_LIGHT;
 	}
 

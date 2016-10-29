@@ -162,7 +162,7 @@ enum ERoadType
 
 enum ERoadFlags
 {
-	ROAD_FLAG_NONREGULATED		= (1 << 0),	// Junction flag only. Might be a equivalent crossroads
+	ROAD_FLAG_TRAFFICLIGHT		= (1 << 0),	// regulated straight by traffic light
 	ROAD_FLAG_PARKING			= (1 << 1),
 };
 

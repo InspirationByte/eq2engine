@@ -138,15 +138,11 @@ protected:
 	int					SearchForRoad( float fDt, EStateTransition transition );
 	virtual int			TrafficDrive( float fDt, EStateTransition transition );
 
-	int					Event_TrafficLight( float fDt, EStateTransition transition );
-	int					Event_FrontObjHasMoved( float fDt, EStateTransition transition );
-
-	int					BrakeToTheLine( float fDt, EStateTransition transition );
-	int					BrakeToObject( float fDt, EStateTransition transition );
-
 	virtual int			DeadState( float fDt, EStateTransition transition );
 
 	//------------------------------------------------
+
+	int					m_condition;
 
 	float				m_speedModifier;
 	bool				m_hasDamage;

@@ -13,53 +13,13 @@
 #include "region.h"
 #include "levelobject.h"
 
+#include "road_defs.h"
+
 #include "DrvSynDecals.h"
 
 #include "imaging/ImageLoader.h"
 
 #define AI_NAVIGATION_GRID_SCALE	2
-
-#define ROADNEIGHBOUR_OFFS_X(x)		{x, x-1, x, x+1}		// non-diagonal
-#define ROADNEIGHBOUR_OFFS_Y(y)		{y-1, y, y+1, y}
-
-//
-// Helper struct for road straight
-//
-struct straight_t
-{
-	straight_t()
-	{
-		breakIter = 0;
-		dirChangeIter = 0;
-		direction = -1;
-		lane = -1;
-	}
-
-	IVector2D	start;
-	IVector2D	end;
-
-	int			breakIter;
-	int			dirChangeIter;
-	int			direction;
-	int			lane;
-};
-
-struct roadJunction_t
-{
-	roadJunction_t()
-	{
-		startIter = 0;
-		breakIter = 0;
-	}
-
-	IVector2D	start;
-	IVector2D	end;
-
-	int			startIter;
-	int			breakIter;
-};
-
-bool IsOppositeDirectionTo(int dirA, int dirB);
 
 struct pathFindResult_t
 {
@@ -157,6 +117,8 @@ public:
 
 	int								GetRoadWidthInLanesAtPoint( const IVector2D& point, int numIterations = 16 );	// calculates road width in lanes from road at global tile 2D point
 	int								GetRoadWidthInLanesAtPos( const Vector3D& pos, int numIterations = 16 );		// calculates road width in lanes from road at 3D position
+
+	bool							FindBestRoadCellForTrafficLight( IVector2D& out, const Vector3D& origin, int trafficDir, int juncIterations = 16 );
 
 	//-------------------------------------------------------------------------
 	// navigation

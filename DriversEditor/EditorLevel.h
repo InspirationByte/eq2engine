@@ -132,25 +132,24 @@ class CEditorLevel : public CGameLevel
 	friend class CEditorLevelRegion;
 public:
 
-	bool	Load(const char* levelname, kvkeybase_t* kvDefs);
+	bool			Load(const char* levelname, kvkeybase_t* kvDefs);
+	bool			Save(const char* levelname, bool isfinal = false);
 
-	bool	Save(const char* levelname, bool isfinal = false);
+	void			Ed_Prerender(const Vector3D& cameraPosition);
 
-	void	Ed_Prerender(const Vector3D& cameraPosition);
+	int				Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CEditorLevelRegion** reg, float& dist);
+	int				Ed_SelectBuildingAndReg(const Vector3D& start, const Vector3D& dir, CEditorLevelRegion** reg, float& dist);
 
-	int		Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CEditorLevelRegion** reg, float& dist);
-	int		Ed_SelectBuildingAndReg(const Vector3D& start, const Vector3D& dir, CEditorLevelRegion** reg, float& dist);
+	bool			Ed_GenerateMap(LevelGenParams_t& genParams, const CImage* img);
 
-	bool	Ed_GenerateMap(LevelGenParams_t& genParams, const CImage* img);
+	void			WriteLevelRegions(IVirtualStream* stream, bool isFinal);
+	void			WriteObjectDefsLump(IVirtualStream* stream);
+	void			WriteHeightfieldsLump(IVirtualStream* stream);
 
-	void	WriteLevelRegions(IVirtualStream* stream, bool isFinal);
-	void	WriteObjectDefsLump(IVirtualStream* stream);
-	void	WriteHeightfieldsLump(IVirtualStream* stream);
+	void			SaveEditorBuildings( const char* levelName );
+	void			LoadEditorBuildings( const char* levelName );
 
-	void	SaveEditorBuildings( const char* levelName );
-	void	LoadEditorBuildings( const char* levelName );
-
-	void	PostLoadEditorBuildings( DkList<buildLayerColl_t*>& buildingTemplates );
+	void			PostLoadEditorBuildings( DkList<buildLayerColl_t*>& buildingTemplates );
 };
 
 //-----------------------------------------------------------------------------------
@@ -170,6 +169,8 @@ public:
 		
 	void						ReadRegionBuildings( IVirtualStream* stream );
 	void						WriteRegionBuildings( IVirtualStream* stream );
+
+	void						PostprocessCellObject(regionObject_t* obj);
 
 	int							Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float& dist);
 	int							Ed_SelectBuilding(const Vector3D& start, const Vector3D& dir, float& dist);

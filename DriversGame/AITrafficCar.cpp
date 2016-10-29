@@ -17,35 +17,15 @@
 #pragma todo("Peer2peer network model for AI cars")
 #pragma todo("Teach how to brake to the line strictly - enter 'required speed' parameter")
 
-/*
-dist=spd*t*0.5								- 20m/s*4sec*0.5 = 40m
-t=dist*2.0/spd								- 40m*2/20m = 4sec
-
-so...
-
-mustang brake torque = 14000 mid by 4 wheels = 56000
-mustang mass = 2800
-
-mustang brake effectivenes in m/s 56000/2800 = 20 m/s or 72 km/h
-	so car stops in one second when it's speed 72 km/h
-	distance is 20m/s*0.5 = 10m
-	brake ratio is usually 0.4, so 10m/0.4 = 25m from 72 km/h by 1 sec
-
-	car speed is usually 60 km/h so 60/72 = 1.2 faster brake, 0.833 seconds to brake
-	60 km/h brake dist is 6.942 meters
-	so (16.6667*0.833*0.5) / 0.4rat = 17.354 meters to brake
-
-	if our distance to stop line is less than 17.354 + 1 meters
-		do brake
-
-	THAT'S IT!
-
-
-
-*/
-
-ConVar g_traffic_maxspeed("g_trafficMaxspeed", "49.0"); // FIXME: DO NOT USE!
+ConVar g_traffic_maxspeed("g_trafficMaxspeed", "49.0", NULL, CV_CHEAT); // FIXME: DO NOT USE!
 ConVar g_disableTrafficLights("g_disableTrafficLights", "0", NULL, CV_CHEAT);
+
+ConVar ai_traffic_debug_steering("ai_traffic_debug_steering", "0", NULL, CV_CHEAT);
+ConVar ai_traffic_debug_junctions("ai_traffic_debug_junctions", "0", NULL, CV_CHEAT);
+
+ConVar ai_changelane("ai_changelane", "0", NULL, CV_CHEAT);
+ConVar ai_changelane_dir("ai_changelane_dir", "-1", NULL, CV_CHEAT);
+
 
 // here's some signal sequences i've recorded
 
@@ -135,7 +115,7 @@ const float AI_OBSTACLE_DIST = 3.5f;
 
 const float AICAR_THINK_TIME = 0.15f;
 
-const float AI_SIDECHECK_DIST = 4.0f;
+const float AI_SIDECHECK_DIST = 8.0f;
 
 const float AI_ROAD_STOP_DIST = 18.0f;
 
@@ -143,7 +123,7 @@ const float AI_CAR_TRACE_DIST_MIN = 6.0f;
 const float AI_CAR_TRACE_DIST_MAX = 25.0f;
 
 const float AI_ROAD_TRACE_DIST = 30.0f;
-const float AI_MIN_LANE_CHANGE_DIST = 40.0f;
+const float AI_MIN_LANE_CHANGE_DIST = 20.0f;
 
 const float AI_TARGET_DIST_NOLANE = 5.0f;
 const float AI_TARGET_DIST = 10.0f;
@@ -159,102 +139,6 @@ const float KILL_COLLISION_POWER = 18.0f;
 #define STRAIGHT_PREV		1
 
 //-------------------------------------------------------------------------------
-
-bool IsStraightsOnSameLane( const straight_t& a, const straight_t& b )
-{
-	int dira = a.direction;
-	int dirb = b.direction;
-
-	if(dira > 2)
-		dira -= 2;
-
-	if(dirb > 2)
-		dirb -= 2;
-
-	return a.start[dira] == b.start[dirb];
-}
-
-IVector2D GetDirectionVecBy(const IVector2D& posA, const IVector2D& posB)
-{
-	return clamp(posB-posA, IVector2D(-1,-1),IVector2D(1,1));
-}
-
-IVector2D GetDirectionVec(int dirIdx)
-{
-	if(dirIdx > 3)
-		dirIdx -= 4;
-
-	int rX[4] = ROADNEIGHBOUR_OFFS_X(0);
-	int rY[4] = ROADNEIGHBOUR_OFFS_Y(0);
-
-	return IVector2D(rX[dirIdx], rY[dirIdx]);
-}
-
-bool IsPointOnStraight(const IVector2D& pos, const straight_t& straight)
-{
-	// make them floats
-	float posOnLine = lineProjection((Vector2D)straight.start, (Vector2D)straight.end, (Vector2D)pos);
-
-	IVector2D perpDirVec = GetDirectionVec( straight.direction+1 );
-
-	IVector2D posComp = pos * perpDirVec;
-	IVector2D strComp = straight.start * perpDirVec;
-
-	if( posComp == strComp )
-		return (posOnLine >= 0.0f && posOnLine <= 1.0f);
-
-	return false;
-}
-
-int GetCellsBeforeStraight(const IVector2D& pos, const straight_t& straight)
-{
-	if(straight.direction == -1)
-		return 1000;
-
-	int dirV = 1 - (straight.direction % 2);
-
-	int cmpA = min(pos[dirV], straight.start[dirV]);
-	int cmpB = max(pos[dirV], straight.start[dirV]);
-
-	return cmpB-cmpA;
-}
-
-int GetDirectionIndex(const IVector2D& vec)
-{
-	int rX[4] = ROADNEIGHBOUR_OFFS_X(0);
-	int rY[4] = ROADNEIGHBOUR_OFFS_Y(0);
-
-	IVector2D v = clamp(vec, IVector2D(-1,-1),IVector2D(1,1));
-
-	for(int i = 0; i < 4; i++)
-	{
-		IVector2D r(rX[i], rY[i]);
-
-		if(r == v)
-			return i;
-	}
-
-	return 0;
-}
-
-bool CompareDirection(int dirA, int dirB)
-{
-	int dA = dirA;
-	if(dA < 0)
-		dA += 4;
-
-	if(dA > 3)
-		dA -= 4;
-
-	int dB = dirB;
-	if(dB < 0)
-		dB += 4;
-
-	if(dB > 3)
-		dB -= 4;
-
-	return dA == dB;
-}
 
 // remember: first lane is rightmost!
 bool SolveLaneTrafficLaws(int curDirection, int destDirection, int curRoadWidthLanes, int curLane, int destRoadWidth, int& destLane)
@@ -308,11 +192,6 @@ bool SolveLaneTrafficLaws(int curDirection, int destDirection, int curRoadWidthL
 	return true;
 }
 
-IVector2D GetPerpendicularDirVec(const IVector2D& vec)
-{
-	return IVector2D(vec.y,vec.x);
-}
-
 //----------------------------------------------------------------------------------------------------------------
 
 CAITrafficCar::CAITrafficCar( carConfigEntry_t* carConfig ) : CCar(carConfig), CFSM_Base()
@@ -332,6 +211,8 @@ CAITrafficCar::CAITrafficCar( carConfigEntry_t* carConfig ) : CCar(carConfig), C
 
 	m_signalSeq = NULL;
 	m_signalSeqFrame = 0;
+
+	m_condition = 0;
 }
 
 CAITrafficCar::~CAITrafficCar()
@@ -547,14 +428,23 @@ void CAITrafficCar::SwitchLane()
 	if(m_straights[STRAIGHT_CURRENT].direction == -1)
 		return;
 
-	int numLanes = g_pGameWorld->m_level.GetNumLanesAtPoint( m_straights[STRAIGHT_CURRENT].end );
+	IVector2D carPosOnCell = g_pGameWorld->m_level.PositionToGlobalTilePoint( GetOrigin() );
+
+	int numLanes = g_pGameWorld->m_level.GetNumLanesAtPoint( carPosOnCell );
+
+	if(ai_traffic_debug_steering.GetBool())
+		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "SwitchLane() lanes on my side: %d\n", numLanes);
 
 	if(numLanes == 1)
 		return;
 
+	IVector2D forwardDir = GetDirectionVec( m_straights[STRAIGHT_CURRENT].direction );
 	IVector2D rightPerpDir = GetDirectionVec( m_straights[STRAIGHT_CURRENT].direction+1 );
 
 	int randomLane = g_replayRandom.Get(0, 1);
+
+	if(ai_changelane_dir.GetInt() != -1)
+		randomLane = ai_changelane_dir.GetInt();
 
 	if(randomLane == 0)
 		randomLane = -1;
@@ -564,9 +454,13 @@ void CAITrafficCar::SwitchLane()
 	if( m_straights[STRAIGHT_CURRENT].lane == newLane )
 		return;
 
-	int laneOfs = newLane-m_straights[STRAIGHT_CURRENT].lane;
+	int laneOfs = m_straights[STRAIGHT_CURRENT].lane-newLane;
 
-	IVector2D laneTile = m_straights[STRAIGHT_CURRENT].start - rightPerpDir*laneOfs;
+	IVector2D laneTile = carPosOnCell + (forwardDir*4) + rightPerpDir*laneOfs;
+	Vector3D lanePos = g_pGameWorld->m_level.GlobalTilePointToPosition(laneTile);
+
+	if( ai_traffic_debug_steering.GetBool() )
+		debugoverlay->Box3D(lanePos - 0.5f, lanePos + 0.5f, ColorRGBA(0,0,1,1), 5.0f);
 
 	straight_t newStraight = g_pGameWorld->m_level.GetStraightAtPoint( laneTile, 16 );
 
@@ -576,8 +470,6 @@ void CAITrafficCar::SwitchLane()
 		IVector2D dir = GetDirectionVec(newStraight.direction);
 
 		Vector3D laneDir(dir.x,0,dir.y);
-
-		Vector3D lanePos = g_pGameWorld->m_level.GlobalTilePointToPosition(laneTile);
 
 		Vector3D traceStart = lanePos - laneDir*AI_SIDECHECK_DIST;
 		Vector3D traceEnd = lanePos + laneDir*AI_SIDECHECK_DIST;
@@ -592,21 +484,32 @@ void CAITrafficCar::SwitchLane()
 
 		btConvexShape* shape = (btConvexShape*)GetPhysicsBody()->GetBulletShape();
 
-		// if has any collision then deny
-		if( g_pPhysics->TestConvexSweep(shape, GetOrientation(), traceStart, traceEnd, coll, AI_TRACE_CONTENTS, &collFilter) )
-			return;
+		g_pPhysics->TestConvexSweep(shape, GetOrientation(), traceStart, traceEnd, coll, AI_TRACE_CONTENTS, &collFilter);
 
-		if( g_pPhysics->TestConvexSweep(shape, GetOrientation(), GetOrigin(), traceEnd, coll, AI_TRACE_CONTENTS, &collFilter) )
-			return;
+		m_switchedLane = (coll.fract == 1.0f);
 
-		if( randomLane > 0 )
-			SetLight(CAR_LIGHT_DIM_LEFT, true);
-		else if( randomLane < 0 )
-			SetLight(CAR_LIGHT_DIM_RIGHT, true);
+		if(m_switchedLane)
+		{
+			SetLight(laneOfs < 0 ? CAR_LIGHT_DIM_LEFT : CAR_LIGHT_DIM_RIGHT, true);
 
-		m_switchedLane = true;
+			ChangeRoad( newStraight );
+		}
 
-		ChangeRoad( newStraight );
+		if(ai_traffic_debug_steering.GetBool())
+		{
+			ColorRGBA col(0,0,0,1);
+
+			col[m_switchedLane ? 1 : 0] = 1.0f;
+
+			debugoverlay->Box3D(traceStart-0.5f, traceStart+0.5f, col, 5.0f);
+			debugoverlay->Box3D(traceEnd-0.5f, traceEnd+0.5f, col, 5.0f);
+			debugoverlay->Line3D(traceStart, traceEnd, col, col, 5.0f);
+		}
+	}
+	else
+	{
+		if(ai_traffic_debug_steering.GetBool())
+			debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "SwitchLane(): no parallel lane found\n");
 	}
 }
 
@@ -681,8 +584,6 @@ void CAITrafficCar::SearchJunctionAndStraight()
 			// calc steering dir
 			straight_t road = g_pGameWorld->m_level.GetStraightAtPoint(checkStraightPos, 16);
 
-			
-
 			if(	road.direction != -1 && 
 				road.direction == dirIdx &&
 				(road.end != m_straights[STRAIGHT_CURRENT].end) && 
@@ -701,7 +602,6 @@ void CAITrafficCar::SearchJunctionAndStraight()
 			m_currEnd = checkPos;
 	}
 }
-
 
 int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 {
@@ -743,6 +643,10 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 	Vector3D	roadDir = fastNormalize(startPos-endPos);
 
+	//if(ai_traffic_debug.GetBool())
+	//{
+	//}
+
 	// road end
 	Plane		roadEndPlane(roadDir, -dot(roadDir,endPos));
 	float		distToStop = roadEndPlane.Distance(carPos);
@@ -759,26 +663,18 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	{
 		targetOfsOnLine = projWay + AI_TARGET_DIST_NOLANE*invStraightDist;
 	}
-	
-	if( m_switchedLane )
+
+	bool isOnPrevRoad = IsPointOnStraight(carPosOnCell, m_straights[STRAIGHT_PREV]);
+	bool isOnCurrRoad = IsPointOnStraight(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
+
+	if( !isOnPrevRoad && isOnCurrRoad )
 	{
-		bool isOnPrevRoad = IsPointOnStraight(carPosOnCell, m_straights[STRAIGHT_PREV]);
-
-		if( m_laneSwitchTimeout > 0 || isOnPrevRoad )
-		{
-			targetOfsOnLine = projWay + AI_TARGET_EXTENDED_DIST*invStraightDist;
-
-			if( isOnPrevRoad )
-				m_laneSwitchTimeout = 5.0f;
-			else
-				m_laneSwitchTimeout -= fDt;
-		}
-		else
-		{
-			m_switchedLane = false;
-			m_lightsEnabled &= ~CAR_LIGHT_EMERGENCY;
-		}
+		SetLight(CAR_LIGHT_EMERGENCY, false);
+		m_switchedLane = false;
 	}
+
+	if( m_switchedLane )
+		targetOfsOnLine = projWay + AI_TARGET_EXTENDED_DIST*invStraightDist;
 
 	IVector2D dir2D = GetDirectionVec( m_straights[STRAIGHT_CURRENT].direction);
 	straight_t newStraight = g_pGameWorld->m_level.GetStraightAtPoint( m_straights[STRAIGHT_CURRENT].end + dir2D, 16 );
@@ -801,15 +697,25 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		{
 			if( newStraight.direction == -1 )
 			{
-				//debugoverlay->Text3D(carPos, ColorRGBA(1,1,1,1), "Reached straight end, next straight ID: %d\n", m_nextJuncDetails.selectedStraight);
+				if(ai_traffic_debug_junctions.GetBool())
+				{
+					debugoverlay->TextFadeOut(0, ColorRGBA(1), 5.0f, "Reached straight end, next straight ID: %d", m_nextJuncDetails.selectedStraight);
+					
+				}
 
 				// change state?
 				if( m_nextJuncDetails.selectedStraight != -1 )
+				{
 					ChangeRoad( m_nextJuncDetails.foundStraights[ m_nextJuncDetails.selectedStraight ] );
+					m_switchedLane = false;
+				}
 			}
 			else
 			{
-				//debugoverlay->Text3D(carPos, ColorRGBA(1,1,1,1), "Search for new straight\n");
+				if(ai_traffic_debug_junctions.GetBool())
+				{
+					debugoverlay->TextFadeOut(0, ColorRGBA(1), 5.0f, "eached straight end, search for new straight");
+				}
 
 				// continue way
 				if( m_straights[STRAIGHT_CURRENT].direction == newStraight.direction )
@@ -830,8 +736,11 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		}
 		else if(distToChange > AI_MIN_LANE_CHANGE_DIST)
 		{
-			if(	m_nextSwitchLaneTime < 0)
+			if(	m_nextSwitchLaneTime < 0 || ai_changelane.GetBool())
 			{
+				if(ai_changelane.GetBool())
+					ai_changelane.SetBool(false);
+
 				m_nextSwitchLaneTime = AI_LANE_SWITCH_DELAY;
 
 				if(IsPointOnStraight(carPosOnCell, m_straights[STRAIGHT_CURRENT]))
@@ -843,22 +752,29 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		}
 	}
 
-	/*
-	// draw
-	for(int i = 0; i < m_nextJuncDetails.foundStraights.numElem(); i++)
+	if(ai_traffic_debug_junctions.GetBool())
 	{
-		straight_t& road = m_nextJuncDetails.foundStraights[i];
+		// draw
+		for(int i = 0; i < m_nextJuncDetails.foundStraights.numElem(); i++)
+		{
+			straight_t& road = m_nextJuncDetails.foundStraights[i];
 
-		Vector3D start = g_pGameWorld->m_level.GlobalTilePointToPosition(road.start);
-		Vector3D end = g_pGameWorld->m_level.GlobalTilePointToPosition(road.end);
+			Vector3D start = g_pGameWorld->m_level.GlobalTilePointToPosition(road.start);
+			Vector3D end = g_pGameWorld->m_level.GlobalTilePointToPosition(road.end);
 
-		debugoverlay->Box3D(start-0.85f, start+0.85f, ColorRGBA(1,1,0,1));
-		debugoverlay->Box3D(end-0.5f, end+0.5f, ColorRGBA(0.5,1,0,1));
-	}*/
+			debugoverlay->Box3D(start-0.85f, start+0.85f, ColorRGBA(1,1,0,1), AICAR_THINK_TIME);
+			debugoverlay->Box3D(end-0.5f, end+0.5f, ColorRGBA(0.5,1,0,1), AICAR_THINK_TIME);
+		}
 
-	if( m_nextJuncDetails.selectedStraight == -1 &&
-		m_nextJuncDetails.foundStraights.numElem() > 0 )
+	}
+
+	if( m_nextJuncDetails.selectedStraight == -1 && m_nextJuncDetails.foundStraights.numElem() > 0 )
 	{
+		if(ai_traffic_debug_junctions.GetBool())
+		{
+			debugoverlay->TextFadeOut(0, ColorRGBA(1), 5.0f, "--- Has no selected straight ---");
+		}
+
 		DkList<int> allowedStraightIds;
 		int curNumLanes = g_pGameWorld->m_level.GetNumLanesAtPoint( m_straights[STRAIGHT_CURRENT].start );
 
@@ -880,7 +796,11 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		{
 			int rndIdx = g_replayRandom.Get(0, allowedStraightIds.numElem() - 1);
 			m_nextJuncDetails.selectedStraight = allowedStraightIds[rndIdx];
-			//Msg("Selected allowed straight earlier\n");
+
+			if(ai_traffic_debug_junctions.GetBool())
+			{
+				debugoverlay->TextFadeOut(0, ColorRGBA(1), 5.0f, "Selected allowed straight earlier");
+			}
 		}
 		else
 		{
@@ -908,7 +828,9 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 	// steering target
 	Vector3D steeringTargetPos = lerp(startPos, endPos, targetOfsOnLine);
-	//debugoverlay->Box3D(steeringTargetPos-1,steeringTargetPos+1, ColorRGBA(1,1,0,1));
+
+	if(ai_traffic_debug_steering.GetBool())
+		debugoverlay->Box3D(steeringTargetPos-0.25f,steeringTargetPos+0.25f, ColorRGBA(1,1,0,1), AICAR_THINK_TIME);
 
 	float maxSpeed = g_traffic_maxspeed.GetFloat() * trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType] + m_speedModifier;
 
@@ -942,7 +864,9 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 		int curDir = m_straights[STRAIGHT_CURRENT].direction % 2;
 
-		if( !g_disableTrafficLights.GetBool() && ((trafficLightDir == curDir) || (g_pGameWorld->m_globalTrafficLightTime < 2.0f)) )
+		bool isAllowedToMove = m_straights[STRAIGHT_CURRENT].hasTrafficLight ? (trafficLightDir == curDir) : true;
+
+		if( !g_disableTrafficLights.GetBool() && (!isAllowedToMove || (g_pGameWorld->m_globalTrafficLightTime < 2.0f)) )
 		{
 			if(carForwardSpeed > 0.5f)
 			{
@@ -984,6 +908,8 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 				{
 					if( m_straights[STRAIGHT_CURRENT].direction != selRoad.direction )
 					{
+						// FIXME: calculate acceleration more gentle
+
 						float distToNextStraight = distToStop;
 
 						float fBrakeRate = 1.0f - RemapValClamp(distToNextStraight, 0.0f, AI_ROAD_STOP_DIST, 0.0f, 1.0f);
@@ -1023,7 +949,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		Vector3D carTraceEndPos = carTracePos+GetForwardVector()*fTraceDist;
 
 		btConvexShape* carShape = (btConvexShape*)GetPhysicsBody()->GetBulletShape();
-		btBoxShape carBoxShape(btVector3(m_conf->m_body_size.x-0.15f, m_conf->m_body_size.y, 0.25f));
+		btBoxShape carBoxShape(btVector3(m_conf->m_body_size.x, m_conf->m_body_size.y, 0.25f));
 
 		if( g_pPhysics->TestConvexSweep(&carBoxShape, GetOrientation(), carTracePos, carTraceEndPos, frontObjColl, AI_TRACE_CONTENTS, &collFilter) )
 		{
