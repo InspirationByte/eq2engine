@@ -741,10 +741,10 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 				if(ai_changelane.GetBool())
 					ai_changelane.SetBool(false);
 
-				m_nextSwitchLaneTime = AI_LANE_SWITCH_DELAY;
-
 				if(IsPointOnStraight(carPosOnCell, m_straights[STRAIGHT_CURRENT]))
 				{
+					m_nextSwitchLaneTime = AI_LANE_SWITCH_DELAY;
+
 					SwitchLane();
 					return 0;
 				}

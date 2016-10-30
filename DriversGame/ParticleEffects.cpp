@@ -129,7 +129,7 @@ bool CSmokeEffect::DrawEffect(float dTime)
 
 	m_vOrigin += m_vVelocity*dTime;
 
-	m_vCurrColor = (g_pGameWorld->m_info.ambientColor.xyz()+g_pGameWorld->m_info.sunColor.xyz());
+	ColorRGB lightColor(g_pGameWorld->m_info.ambientColor.xyz()+g_pGameWorld->m_info.sunColor.xyz());
 
 	float lifeTimePerc = GetLifetimePercent();
 
@@ -144,7 +144,7 @@ bool CSmokeEffect::DrawEffect(float dTime)
 	PFXBillboard_t effect;
 
 	effect.vOrigin = m_vOrigin;
-	effect.vColor = Vector4D(m_vCurrColor * col_lerp, lifeTimePerc*m_alpha*fStartAlpha);
+	effect.vColor = Vector4D(lightColor * col_lerp, lifeTimePerc*m_alpha*fStartAlpha);
 	effect.group = m_atlGroup;
 	effect.tex = m_atlEntry;
 	effect.nFlags = EFFECT_FLAG_NO_FRUSTUM_CHECK;
@@ -248,6 +248,98 @@ bool CSparkLine::DrawEffect(float dTime)
 	return true;
 }
 
+//-----------------------------------------------------------------------------------------------
+// Particle particle
+//-----------------------------------------------------------------------------------------------
+CParticleLine::CParticleLine(const Vector3D &position, const Vector3D &velocity, const Vector3D &gravity, 
+							float StartSize, float EndSize, 
+							float lifetime, 
+							float lengthScale,
+							CPFXAtlasGroup* group, TexAtlasEntry_t* entry,
+							const Vector3D &color, float alpha)
+{
+	InternalInit(position, lifetime, group, entry);
+
+	fCurSize = StartSize;
+	fStartSize = StartSize;
+	fEndSize = EndSize;
+
+	m_vVelocity = velocity;
+
+	vGravity = gravity;
+
+	m_color = color;
+	m_alpha = alpha;
+
+	fLengthScale = lengthScale;
+}
+
+bool CParticleLine::DrawEffect(float dTime)
+{
+	m_fLifeTime -= dTime;
+
+	if(m_fLifeTime <= 0)
+		return false;
+
+	PFXVertex_t* verts;
+	if(m_atlGroup->AllocateGeom( 4, 4, &verts, NULL, true ) < 0)
+		return false;
+
+	m_vOrigin += m_vVelocity*dTime*2.0f;
+
+	SetSortOrigin(m_vOrigin);
+
+	float lifeTimePerc = GetLifetimePercent();
+
+	Vector3D viewDir = fastNormalize(m_vOrigin - effectrenderer->GetViewSortPosition());
+	Vector3D lineDir = m_vVelocity;
+
+	float partLength = fEndSize*length(lineDir)*fLengthScale;
+	partLength = max(fEndSize, partLength);
+
+	Vector3D vEnd = m_vOrigin + fastNormalize(lineDir)*partLength;
+
+	Vector3D ccross = fastNormalize(cross(lineDir, viewDir));
+
+	float scale = lerp(fStartSize, fEndSize, 1.0f-lifeTimePerc);
+
+	Vector3D temp;
+	VectorMA( vEnd, scale, ccross, temp );
+
+	ColorRGB lightColor(g_pGameWorld->m_info.ambientColor.xyz()+g_pGameWorld->m_info.sunColor.xyz());
+
+	ColorRGBA color(m_color*lightColor, pow(m_alpha*lifeTimePerc, 0.5f));
+
+	verts[0].point = temp;
+	verts[0].texcoord = m_atlEntry->rect.GetLeftTop();
+	verts[0].color = color;
+
+	VectorMA( vEnd, -scale, ccross, temp );
+
+	verts[1].point = temp;
+	verts[1].texcoord = m_atlEntry->rect.GetLeftBottom();
+	verts[1].color = color;
+
+	VectorMA( m_vOrigin, scale, ccross, temp );
+
+	verts[2].point = temp;
+	verts[2].texcoord = m_atlEntry->rect.GetRightTop();
+	verts[2].color = color;
+
+	VectorMA( m_vOrigin, -scale, ccross, temp );
+
+	verts[3].point = temp;
+	verts[3].texcoord = m_atlEntry->rect.GetRightBottom();
+	verts[3].color = color;
+
+	m_vVelocity += vGravity*dTime*2.0f;
+
+	return true;
+}
+
+
+//--------------------------------------------------------------------------------------------
+
 void MakeSparks(const Vector3D& origin, const Vector3D& velocity, const Vector3D& randomAngCone, float lifetime, int count)
 {
 	CPFXAtlasGroup* effgroup = g_additPartcles;
@@ -263,13 +355,51 @@ void MakeSparks(const Vector3D& origin, const Vector3D& velocity, const Vector3D
 
 		float rwlen = wlen + RandomFloat(wlen*0.15f, wlen*0.8f);
 
-		CSparkLine* pSpark = new CSparkLine(Vector3D(origin),
+		CSparkLine* pSpark = new CSparkLine(origin,
 											n*rwlen*0.25f,	// velocity
 											Vector3D(0.0f,RandomFloat(0.4f, -15.0f), 0.0f),		// gravity
 											RandomFloat(50.8, 80.0), // len
 											RandomFloat(0.005f, 0.01f), RandomFloat(0.01f, 0.02f), // sizes
 											RandomFloat(lifetime*0.75f, lifetime*1.25f),// lifetime
 											effgroup, entry);  // group - texture
+		effectrenderer->RegisterEffectForRender(pSpark);
+	}
+}
+
+void MakeWaterSplash(const Vector3D& origin, const Vector3D& velocity, const Vector3D& randomAngCone, float lifetime, int count)
+{
+	CPFXAtlasGroup* effgroup = g_translParticles;
+	TexAtlasEntry_t* entry = effgroup->FindEntry("rain_ripple");
+
+	float wlen = length(velocity);
+
+	for(int i = 0; i < count; i++)
+	{
+		Vector3D rnd_ang = VectorAngles(normalize(velocity)) + Vector3D(RandomFloat(-randomAngCone.x,randomAngCone.x),RandomFloat(-randomAngCone.y,randomAngCone.y),RandomFloat(-randomAngCone.z,randomAngCone.z));
+		Vector3D n;
+		AngleVectors(rnd_ang, &n);
+
+		float rwlen = wlen + RandomFloat(wlen*0.15f, wlen*0.8f);
+
+		Vector3D rndPos(RandomFloat(0.5f), RandomFloat(0.5f), RandomFloat(0.5f));
+		rndPos += origin;
+		
+		CSmokeEffect* pSmoke = new CSmokeEffect(rndPos, n*rwlen,
+												RandomFloat(0.5, 0.8), RandomFloat(2.5, 3.0),
+												RandomFloat(lifetime*0.5f, lifetime),
+												effgroup, entry,
+												RandomFloat(5, 35), Vector3D(0,RandomFloat(-3.9, -8.2) , 0),
+												ColorRGB(1), ColorRGB(1));
+
+		effectrenderer->RegisterEffectForRender(pSmoke);
+		
+		CParticleLine* pSpark = new CParticleLine(rndPos,
+											n*rwlen*0.8f,	// velocity
+											Vector3D(0.0f,RandomFloat(-0.5f, -5.0f), 0.0f),		// gravity
+											RandomFloat(0.25f, 0.5f), RandomFloat(1.2f, 1.8f), // sizes
+											RandomFloat(1.0f, 1.5f),// lifetime
+											0.5f,
+											effgroup, entry, ColorRGB(1.0f), 1.0f);  // group - texture
 		effectrenderer->RegisterEffectForRender(pSpark);
 	}
 }

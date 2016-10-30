@@ -66,8 +66,6 @@ protected:
 
 	Vector3D	m_vVelocity;
 
-	Vector3D	m_vCurrColor;
-
 	float		fCurSize;
 
 	float		fStartSize;
@@ -103,7 +101,39 @@ protected:
 	float		fLength;
 };
 
+class CParticleLine : public IEffect
+{
+public:
+	CParticleLine(const Vector3D &position, const Vector3D &velocity, const Vector3D &gravity, 
+					float StartSize, float EndSize, 
+					float lifetime, 
+					float fLengthScale,
+					CPFXAtlasGroup* group, TexAtlasEntry_t* entry,
+					const Vector3D &color1, float alpha = 1.0f);
+
+	bool DrawEffect(float dTime);
+
+protected:
+	Vector3D	tangent;
+	Vector3D	binormal;
+	Vector3D	normal;
+
+	Vector3D	vGravity;
+	Vector3D	m_vVelocity;
+
+	float		fCurSize;
+
+	float		fLengthScale;
+
+	float		fStartSize;
+	float		fEndSize;
+
+	Vector3D	m_color;
+	float		m_alpha;
+};
+
 void MakeSparks(const Vector3D& origin, const Vector3D& velocity, const Vector3D& randomAngCone, float lifetime, int count);
+void MakeWaterSplash(const Vector3D& origin, const Vector3D& velocity, const Vector3D& randomAngCone, float lifetime, int count);
 
 void DrawLightEffect(const Vector3D& position, const ColorRGBA& color, float size, int type = 0);
 void PoliceSirenEffect(float fCurTime, const ColorRGB& color, const Vector3D& pos, const Vector3D& dir_right, float rDist, float width);

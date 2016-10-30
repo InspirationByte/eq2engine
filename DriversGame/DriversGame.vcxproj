@@ -75,6 +75,7 @@
       <MinimalRebuild>true</MinimalRebuild>
       <FloatingPointExceptions>false</FloatingPointExceptions>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <ShowIncludes>false</ShowIncludes>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

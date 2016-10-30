@@ -5,19 +5,20 @@
 // Description: Units
 //////////////////////////////////////////////////////////////////////////////////
 
-#if !defined(DRIVERS_COORD_H) && !defined(METERS_PER_UNIT)
+#ifndef DRIVERS_COORD_H
 #define DRIVERS_COORD_H
 
-#define METERS_PER_UNIT					(0.5f)
-#define CUBIC_METERS_PER_CUBIC_UNIT		(METERS_PER_UNIT*METERS_PER_UNIT*METERS_PER_UNIT)
-#define METERS_PER_UNIT_INV				(1.0f/05)
+namespace DrvSynUnits
+{
+	const float UnitsPerMeter				= 1.0f;
+	const float MetersPerUnit				= 1.0f;
 
-// Maximum world size
-#define MAX_COORD_UNITS 32768
-#define MIN_COORD_UNITS (-MAX_COORD_UNITS)
-#define WORLD_SIZE (MAX_COORD_UNITS*2) // 13,1 km
+	// Maximum world size
+	const float MaxCoordInUnits				= 32768.0f;
+	const float MinCoordInUnits				= -MaxCoordInUnits;
+	const float WorldSize					= MaxCoordInUnits*2.0;
 
-#define MAX_COORD_METERS (MAX_COORD_UNITS * METERS_PER_UNIT)
-
+	const float MaxCoordInMeters			= MaxCoordInUnits * MetersPerUnit;
+};
 
 #endif // DRIVERS_COORD_H

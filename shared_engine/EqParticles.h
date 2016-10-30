@@ -68,11 +68,13 @@ public:
 
 	//-------------------------------------------------------------------
 
+#ifndef NO_ENGINE
 	// min bbox dimensions
 	Vector3D			GetBBoxMins() {return Vector3D(MAX_COORD_UNITS);}
 
 	// max bbox dimensions
 	Vector3D			GetBBoxMaxs() {return Vector3D(-MAX_COORD_UNITS);}
+#endif // NO_ENGINE
 
 	// renders this buffer
 	void				Render(int nViewRenderFlags);

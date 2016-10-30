@@ -895,6 +895,44 @@ void CGameLevel::LocalToGlobalPoint( const IVector2D& point, const CLevelRegion*
 	outGlobalPoint = pRegion->m_heightfield[0]->m_regionPos * m_cellsSize + point;
 }
 
+float CGameLevel::GetWaterLevel(const Vector3D& pos) const
+{
+	IVector2D tile = PositionToGlobalTilePoint(pos);
+	return GetWaterLevelAt(tile);
+}
+
+float CGameLevel::GetWaterLevelAt(const IVector2D& tilePos) const
+{
+	// check tiles of all heightfields at this position
+	CLevelRegion* pRegion = NULL;
+	IVector2D localTile;
+	GlobalToLocalPoint(tilePos, localTile, &pRegion);
+
+	if(pRegion)
+	{
+		for(int i = 0; i < pRegion->GetNumHFields(); i++)
+		{
+			CHeightTileField* field = pRegion->GetHField(i);
+			if(!field)
+				continue;
+
+			hfieldtile_t* tile = field->GetTile(localTile.x, localTile.y);
+
+			if(tile->texture == -1)
+				continue;
+
+			hfieldmaterial_t* mat = field->m_materials[tile->texture];
+			if(!mat->material)
+				continue;
+
+			if(mat->material->GetFlags() & MATERIAL_FLAG_WATER)
+				return (float)tile->height * HFIELD_HEIGHT_STEP;
+		}
+	}
+
+	return -DrvSynUnits::MaxCoordInUnits;
+}
+
 //------------------------------------------------------------------------------------------------------------------------------------
 
 

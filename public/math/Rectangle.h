@@ -10,7 +10,6 @@
 
 #include "Vector.h"
 #include "math_util.h"
-#include "coord.h"
 
 template <class T, uint32 TMAX>
 struct TRectangle

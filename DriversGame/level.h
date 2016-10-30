@@ -86,6 +86,9 @@ public:
 	bool							GetRegionAndTile(const Vector3D& pos, CLevelRegion** outReg, IVector2D& outLocalXYPos) const;	// returns a tile XYPos and region which belongs to 3D position
 	bool							GetRegionAndTileAt(const IVector2D& tilePos, CLevelRegion** outReg, IVector2D& outLocalXYPos) const; // returns a tile at region 
 
+	float							GetWaterLevel(const Vector3D& pos) const;
+	float							GetWaterLevelAt(const IVector2D& tilePos) const;
+
 	//
 	// conversions
 	//
@@ -95,11 +98,11 @@ public:
 	void							GlobalToLocalPoint( const IVector2D& globalPoint, IVector2D& outLocalPoint, CLevelRegion** outReg ) const;		// converts global tile 2D point to region and local tile
 	void							LocalToGlobalPoint( const IVector2D& localPoint, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const;	// converts local point at region to global tile 2D point
 
-	levroadcell_t*					GetGlobalRoadTile(const Vector3D& pos, CLevelRegion** pRegion = NULL) const;		// returns road cell which belongs to 3D position
-	levroadcell_t*					GetGlobalRoadTileAt(const IVector2D& point, CLevelRegion** pRegion = NULL) const;	// returns road cell by global tile 2D point
-
 	//-------------------------------------------------------------------------
 	// roads
+
+	levroadcell_t*					GetGlobalRoadTile(const Vector3D& pos, CLevelRegion** pRegion = NULL) const;		// returns road cell which belongs to 3D position
+	levroadcell_t*					GetGlobalRoadTileAt(const IVector2D& point, CLevelRegion** pRegion = NULL) const;	// returns road cell by global tile 2D point
 
 	straight_t						GetStraightAtPoint( const IVector2D& point, int numIterations = 4 ) const;		// calculates straight starting from global tile 2D point
 	straight_t						GetStraightAtPos( const Vector3D& pos, int numIterations = 4 ) const;			// calculates straight starting from 3D position

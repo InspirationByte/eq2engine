@@ -1848,27 +1848,6 @@ void CCar::EmitCollisionParticles(const Vector3D& position, const Vector3D& velo
 		Vector3D reflDir = reflect(velocity, normal);
 		MakeSparks(position+normal*0.05f, reflDir, Vector3D(15.0f), 1.0f, numDamageParticles);
 
-		/*
-		for(int i = 0; i < numDamageParticles; i++)
-		{
-			Vector3D reflDir = reflect(velocity, normal);
-
-			Vector3D rnd_ang = VectorAngles(reflDir) + Vector3D(RandomFloat(-15,15),RandomFloat(-15,15),RandomFloat(-15,15));
-			Vector3D n;
-			AngleVectors(rnd_ang, &n);
-
-			float rwlen = wlen + RandomFloat(wlen*0.15f, wlen*0.8f);
-
-			CSparkLine* pSpark = new CSparkLine(Vector3D(position+normal*0.05f),
-												n*rwlen*0.25f,	// velocity
-												Vector3D(0.0f,RandomFloat(0.4f, -15.0f), 0.0f),		// gravity
-												RandomFloat(50.8, 80.0), // len
-												RandomFloat(0.005f, 0.01f), RandomFloat(0.01f, 0.02f), // sizes
-												RandomFloat(0.5f, 1.2f),// lifetime
-												effgroup, entry);  // group - texture
-			effectrenderer->RegisterEffectForRender(pSpark);
-		}*/
-
 		m_effectTime = 0.05f;
 	}
 
@@ -1918,6 +1897,45 @@ void CCar::OnPrePhysicsFrame(float fDt)
 	}
 }
 
+bool CCar::UpdateWaterState( float fDt, bool hasCollidedWater )
+{
+	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
+	Vector3D carPos = carBody->GetPosition();
+
+	Vector3D waterNormal = vec3_up; // FIXME: calculate like I do in shader
+
+	float waterLevel = g_pGameWorld->m_level.GetWaterLevel( carPos );
+
+	if((carBody->m_aabb_transformed.minPoint.y < waterLevel && hasCollidedWater) || (carPos.y < waterLevel))
+	{
+		// take damage from water
+		if( carPos.y < waterLevel )
+		{
+			SetDamage( GetDamage() + DAMAGE_WATERDAMAGE_RATE * fDt );
+
+			if(!IsAlive()) // lock the car and disable
+			{
+				m_enabled = false;
+				m_locked = true;
+				m_sirenEnabled = false;
+			}
+		}
+
+		Vector3D newVelocity = carBody->GetLinearVelocity();
+
+		newVelocity.x *= 0.98f;
+		newVelocity.z *= 0.98f;
+
+		newVelocity.y *= 0.98f;
+
+		carBody->SetLinearVelocity( newVelocity );
+
+		return true;
+	}
+
+	return false;
+}
+
 void CCar::OnPhysicsFrame( float fDt )
 {
 	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
@@ -1929,16 +1947,15 @@ void CCar::OnPhysicsFrame( float fDt )
 	// update car collision sounds
 	//
 
-	float		fHitImpulse = 0;
-	int			numHitTimes = 0;
-	Vector3D	hitPos = GetOrigin();
+	float		fHitImpulse = 0.0f;
+	int			numHitTimes = 0.0f;
+	Vector3D	carPos = carBody->GetPosition();
+	Vector3D	hitPos = carPos;
 	Vector3D	hitNormal = Vector3D(0,0,1);
+	float		collSpeed = 0.0f;
 
-	bool doImpulseSound = false;
-
-	bool isInWater = false;
-
-	bool velocitySet = false;
+	bool		doImpulseSound = false;
+	bool		hasHitWater = false;
 
 	for(int i = 0; i < carBody->m_collisionList.numElem(); i++)
 	{
@@ -1947,68 +1964,18 @@ void CCar::OnPhysicsFrame( float fDt )
 		// we went underwater
 		if( coll.bodyB->GetContents() & OBJECTCONTENTS_WATER )
 		{
-			if(coll.position.y > GetOrigin().y+0.25f)
-				SetDamage( GetDamage() + DAMAGE_WATERDAMAGE_RATE * fDt );
+			hasHitWater = true;
 
 			// apply 25% impulse
 			ApplyImpulseResponseTo(carBody, coll.position, coll.normal, 0.0f, 0.0f, 0.0f, 0.05f);
 
-			if(!velocitySet)
-			{
-				Vector3D newVelocity = carBody->GetLinearVelocity()*0.992f;
-				newVelocity.y = carBody->GetLinearVelocity().y;
-				carBody->SetLinearVelocity( newVelocity );
-			}
-
-			carBody->TryWake();
-
-			velocitySet = true;
-
-			if(!IsAlive())
-			{
-				m_enabled = false;
-				m_locked = true;
-				m_sirenEnabled = false;
-			}
-
 			// make particles
 			Vector3D collVelocity = carBody->GetVelocityAtWorldPoint(coll.position);
-
-			isInWater = true;
-
-			if(!m_inWater)
-			{
-				if(length(collVelocity) > 5.5f)
-				{
-					EmitSound_t ep;
-					ep.name = "generic.waterHit";
-					ep.fPitch = RandomFloat(0.92f, 1.08f);
-					ep.fVolume = 1.0f;
-					ep.origin = GetOrigin();
-
-					EmitSoundWithParams(&ep);
-				}
-				m_inWater = isInWater;
-			}
-
-			// spawn smoke
-			if(length(collVelocity) > 2.5f && m_effectTime == 0.0f)
-			{
-				Vector3D waterPos = coll.position;
-
-				Vector3D vel = collVelocity*0.85f;
-
-				CSmokeEffect* pSmoke = new CSmokeEffect(waterPos, vel,
-														RandomFloat(0.3, 0.44), RandomFloat(1.1, 1.2),
-														RandomFloat(0.15f),
-														g_translParticles, m_trans_raindrops,
-														RandomFloat(5, 35), Vector3D(0,RandomFloat(-3.9, -5.2) , 0),
-														ColorRGB(1), ColorRGB(1));
-
-				effectrenderer->RegisterEffectForRender(pSmoke);
-			}
+			collSpeed = length(collVelocity);
 		}
 
+
+		// don't apply collision damage if this is a trigger or water
 		if (coll.flags & COLLPAIRFLAG_OBJECTB_NO_RESPONSE)
 			continue;
 
@@ -2094,6 +2061,29 @@ void CCar::OnPhysicsFrame( float fDt )
 		numHitTimes++;
 	}
 
+	// spawn smoke
+	if(hasHitWater && collSpeed > 5.0f)// && m_effectTime <= 0.0f)
+	{
+		Vector3D waterPos = carPos + GetVelocity()*0.1f - vec3_up*1.0f;
+		Vector3D particleVelocity = reflect(GetVelocity(), vec3_up)*0.15f;
+
+		MakeWaterSplash(waterPos, particleVelocity, Vector3D(30.0f), 4.0f, 8 );
+	}
+
+	if(hasHitWater && !m_inWater && collSpeed > 5.0f)
+	{
+		EmitSound_t ep;
+		ep.name = "generic.waterHit";
+		ep.fPitch = RandomFloat(0.92f, 1.08f);
+		ep.fVolume = 1.0f;
+		ep.origin = GetOrigin();
+
+		EmitSoundWithParams(&ep);
+	}
+
+	// set water state
+	m_inWater = UpdateWaterState(fDt, hasHitWater);
+
 #ifndef NO_LUA
 	if(numHitTimes > 0)
 	{
@@ -2155,9 +2145,6 @@ void CCar::OnPhysicsFrame( float fDt )
 			ReleaseHubcap(i);
 		}
 	}
-
-	if(IsAlive() || isInWater)	// if car goes underwater and dies here, we need to keep underwater state
-		m_inWater = isInWater;
 
 	m_effectTime -= fDt;
 
@@ -3076,13 +3063,14 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 					Vector3D n;
 					AngleVectors(rnd_ang, &n);
 
-					CSparkLine* pSpark = new CSparkLine(grass_pos,
+					CParticleLine* pSpark = new CParticleLine(grass_pos,
 														n*len,	// velocity
 														Vector3D(0.0f,-3.0f, 0.0f),		// gravity
-														RandomFloat(90.0, 100.0), // len
 														RandomFloat(0.01f, 0.02f), RandomFloat(0.01f, 0.02f), // sizes
 														RandomFloat(0.35f, 0.45f),// lifetime
-														g_translParticles, m_trans_grasspart);  // group - texture
+														8.0f,
+														g_translParticles, m_trans_grasspart, // group - texture
+														ColorRGB(1.0f,0.8f,0.0f), 1.0f);  
 					effectrenderer->RegisterEffectForRender(pSpark);
 				}
 			} // traction slide

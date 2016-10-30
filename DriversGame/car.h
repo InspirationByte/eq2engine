@@ -472,6 +472,7 @@ protected:
 
 	virtual void			OnPrePhysicsFrame( float fDt );
 	virtual void			OnPhysicsFrame( float fDt );
+	bool					UpdateWaterState( float fDt, bool hasCollidedWater );
 
 	void					DrawBody( int nRenderFlags );
 
