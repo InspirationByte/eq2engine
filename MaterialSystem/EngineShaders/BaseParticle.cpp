@@ -51,6 +51,12 @@ public:
 
 	void SetupBaseTexture0();
 
+	void DepthRangeRasterSetup()
+	{
+		g_pShaderAPI->SetDepthRange(0.0f - 0.00008f, 1.0f - 0.00001f);
+		CBaseShader::ParamSetup_RasterState();
+	}
+
 	void SetColorModulation()
 	{
 		//g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", materials->GetAmbientColor()*ColorRGBA(color,1));
@@ -111,37 +117,21 @@ void SH_BaseParticle::InitParams()
 {
 	if(!IsInitialized() && !IsError())
 	{
-		IMatVar *m_HasAlpha			= GetAssignedMaterial()->FindMaterialVar("translucent");
-		//IMatVar *m_AlphaTest		= GetAssignedMaterial()->FindMaterialVar("alphatest");
-		IMatVar *mvAdditive			= GetAssignedMaterial()->FindMaterialVar("additive");
-		IMatVar *mv_color			= GetAssignedMaterial()->FindMaterialVar("color");
-
-		/*
-		if(mvAdditive)
-		{
-			m_bAdditive = mvAdditive->GetInt() > 0;
-		}
-
-		if(m_AlphaTest)
-		{
-			m_bAlphaTest = m_AlphaTest->GetInt() > 0;
-		}
-
-		if(m_HasAlpha)
-		{
-			bHasAlpha = m_HasAlpha->GetInt() > 0;
-		}
-
-		if(bHasAlpha)
-			m_nFlags |= MATERIAL_FLAG_TRANSPARENT;
-			*/
+		IMatVar* mv_color			= GetAssignedMaterial()->FindMaterialVar("color");
+		IMatVar* mv_depthSetup		= GetAssignedMaterial()->FindMaterialVar("depthRangeSetup");
 
 		if(mv_color)
 			color = mv_color->GetVector3();
 
 		// Call base classinitialization
 		CBaseShader::InitParams();
+
+		if(mv_depthSetup && mv_depthSetup->GetInt() > 0)
+		{
+			SetParameterFunctor(SHADERPARAM_RASTERSETUP, &SH_BaseParticle::DepthRangeRasterSetup);
+		}
 		
+		/*
 		if(m_nFlags & MATERIAL_FLAG_ADDITIVE)
 		{
 			SetParameterFunctor(SHADERPARAM_COLOR, &SH_BaseParticle::SetAdditiveColorModulation);
@@ -149,10 +139,10 @@ void SH_BaseParticle::InitParams()
 			SetParameterFunctor(SHADERPARAM_RASTERSETUP, &SH_BaseParticle::AdditiveRasterSetup);
 		}
 		else
-		{
+		{*/
 			SetParameterFunctor(SHADERPARAM_COLOR, &SH_BaseParticle::SetColorModulation);
-			SetParameterFunctor(SHADERPARAM_DEPTHSETUP, &SH_BaseParticle::DefaultDepthSetup);
-		}
+			//SetParameterFunctor(SHADERPARAM_DEPTHSETUP, &SH_BaseParticle::DefaultDepthSetup);
+		//}
 			
 	}
 }

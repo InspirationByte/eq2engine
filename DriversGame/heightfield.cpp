@@ -1038,7 +1038,7 @@ void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
 	materials->DrawPrimitivesFFP(PRIM_TRIANGLES, tile_verts.ptr(), tile_verts.numElem(), NULL, color4_white, &blend, &depth, &raster);
 }
 
-void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, const Volume& volume)
+void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, const Volume& volume, occludingFrustum_t* frustum)
 {
 	// we're getting vertex data from physics here
 	if(m_physData == NULL)
@@ -1060,6 +1060,9 @@ void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, const Volume&
 		if(!volume.IsBoxInside(bbox.minPoint, bbox.maxPoint))
 			continue;
 
+		if(frustum && !frustum->IsBoxVisible(bbox))
+			continue;
+
 		for(int p = 0; p < batch->indices.numElem(); p += 3)
 		{
 			int i1 = batch->indices[p];
@@ -1074,22 +1077,16 @@ void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, const Volume&
 			if(!volume.IsTriangleInside(p1,p2,p3))
 				continue;
 
-			if(dot(NormalOfTriangle(p1,p2,p3), polys.shadowDir) < 0.0f)
+			if(dot(NormalOfTriangle(p1,p2,p3), polys.projectDir) < 0.0f)
 				continue;
 
 			polys.verts.append(PFXVertex_t(p1, vec2_zero, vec4_zero));
 			polys.verts.append(PFXVertex_t(p2, vec2_zero, vec4_zero));
 			polys.verts.append(PFXVertex_t(p3, vec2_zero, vec4_zero));
 
-			/*
-			int ii1 = polys.verts.addUnique(PFXVertex_t(p1, vec2_zero, vec4_zero), decalVertComparator);
-			int ii2 = polys.verts.addUnique(PFXVertex_t(p2, vec2_zero, vec4_zero), decalVertComparator);
-			int ii3 = polys.verts.addUnique(PFXVertex_t(p3, vec2_zero, vec4_zero), decalVertComparator);
-
-			polys.indices.append(ii1);
-			polys.indices.append(ii2);
-			polys.indices.append(ii3);
-			*/
+			polys.indices.append(i1);
+			polys.indices.append(i2);
+			polys.indices.append(i3);
 		}
 	}
 }

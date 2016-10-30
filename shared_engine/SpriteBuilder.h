@@ -24,6 +24,8 @@ public:
 	virtual void		Init( int maxQuads = 16384 );
 	virtual void		Shutdown();
 
+	void				SetTriangleListMode(bool enable) {m_triangleListMode = enable;}
+
 	void				ClearBuffers();
 
 	// adds triangle strip break indices
@@ -62,7 +64,7 @@ protected:
 	uint16				m_maxQuadVerts;
 
 	bool				m_initialized;
-	bool				m_triangleMode;
+	bool				m_triangleListMode;
 };
 
 template <class VTX_TYPE>
@@ -73,7 +75,7 @@ CSpriteBuilder<VTX_TYPE>::CSpriteBuilder() :
 	m_numIndices(0),
 	m_initialized(false),
 	m_maxQuadVerts(0),
-	m_triangleMode(false)
+	m_triangleListMode(false)
 {
 
 }
@@ -162,6 +164,9 @@ int CSpriteBuilder<VTX_TYPE>::_AllocateGeom( int nVertices, int nIndices, VTX_TY
 		return -1;
 	}
 
+	if(nVertices == 0)
+		return -1;
+
 	AddStripBreak();
 
 	int startVertex = m_numVertices;
@@ -192,7 +197,7 @@ int CSpriteBuilder<VTX_TYPE>::_AllocateGeom( int nVertices, int nIndices, VTX_TY
 template <class VTX_TYPE>
 void CSpriteBuilder<VTX_TYPE>::_AddParticleStrip(VTX_TYPE* verts, int nVertices)
 {
-	if(m_triangleMode)
+	if(m_triangleListMode)
 		return;
 
 	if(nVertices == 0)
@@ -236,7 +241,7 @@ void CSpriteBuilder<VTX_TYPE>::_AddParticleStrip(VTX_TYPE* verts, int nVertices)
 template <class VTX_TYPE>
 void CSpriteBuilder<VTX_TYPE>::AddStripBreak()
 {
-	if(m_triangleMode)
+	if(m_triangleListMode)
 		return;
 
 	int num_ind = m_numIndices;

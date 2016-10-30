@@ -112,6 +112,10 @@ void CObject_Sheets::Simulate( float fDt )
 
 	CEqRigidBody* body = NULL;
 
+	bool canRender = g_pGameWorld->m_occludingFrustum.IsBoxVisible(m_bbox);
+
+	m_bbox.Reset();
+
 	if(m_ghostObject->m_collisionList.numElem() > 0 && m_ghostObject->m_collisionList[0].bodyB)
 	{
 		CEqCollisionObject* obj = m_ghostObject->m_collisionList[0].bodyB;
@@ -184,10 +188,14 @@ void CObject_Sheets::Simulate( float fDt )
 
 		featherAngle += sin(featherAngle);
 
+		Vector3D sheetPos = sheet.origin + Vector3D(sin(sheet.angle)*1.5f, 0.015f, -cos(sheet.angle)*1.5f);
+		m_bbox.AddVertex( sheetPos );
+
+		if(!canRender)
+			continue;
+
 		Vector3D vRight, vUp;
 		Vector3D sheetAngle(-90.0f+featherAngle*45.0f, sheet.angle*5.0f, sheet.angle+featherAngle*25.0f);
-
-		Vector3D sheetPos = sheet.origin + Vector3D(sin(sheet.angle)*1.5f, 0.015f, -cos(sheet.angle)*1.5f);
 
 		AngleVectors(sheetAngle, NULL, &vUp, &vRight);
 

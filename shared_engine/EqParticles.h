@@ -89,6 +89,7 @@ public:
 
 	void				AddParticleStrip(PFXVertex_t* verts, int nVertices);
 
+	void				SetCullInverted(bool invert) {m_invertCull = invert;}
 protected:
 
 	IMaterial*			m_pMaterial;
@@ -99,6 +100,8 @@ protected:
 	IVertexBuffer*		m_vertexBuffer;
 	IIndexBuffer*		m_indexBuffer;
 	IVertexFormat*		m_vertexFormat;
+
+	bool				m_invertCull;
 };
 
 //------------------------------------------------------------------------------------

@@ -24,7 +24,8 @@ CParticleRenderGroup::CParticleRenderGroup() :
 	m_useCustomProjMat(false),
 	m_vertexBuffer(NULL),
 	m_indexBuffer(NULL),
-	m_vertexFormat(NULL)
+	m_vertexFormat(NULL),
+	m_invertCull(false)
 {
 
 }
@@ -94,7 +95,7 @@ void CParticleRenderGroup::Render(int nViewRenderFlags)
 		return;
 	}
 
-	if(m_numIndices == 0 || m_numVertices == 0)
+	if(m_numVertices == 0 || (!m_triangleListMode && m_numIndices == 0))
 		return;
 
 	//if(!m_bHasOwnVBO)
@@ -108,14 +109,18 @@ void CParticleRenderGroup::Render(int nViewRenderFlags)
 
 		g_pShaderAPI->SetVertexFormat(g_pPFXRenderer->m_vertexFormat);
 		g_pShaderAPI->SetVertexBuffer(g_pPFXRenderer->m_vertexBuffer, 0);
-		g_pShaderAPI->SetIndexBuffer(g_pPFXRenderer->m_indexBuffer);
+
+		if(m_numIndices)
+			g_pShaderAPI->SetIndexBuffer(g_pPFXRenderer->m_indexBuffer);
 	}
 	//else
 	//{
 		// BLAH
 	//}
 
-	materials->SetCullMode((nViewRenderFlags & EPRFLAG_INVERT_CULL) ? CULL_BACK : CULL_FRONT);
+	bool invertCull = m_invertCull || (nViewRenderFlags & EPRFLAG_INVERT_CULL);
+
+	materials->SetCullMode(invertCull ? CULL_BACK : CULL_FRONT);
 
 	if(m_useCustomProjMat)
 		materials->SetMatrix(MATRIXMODE_PROJECTION, m_customProjMat);
@@ -125,8 +130,13 @@ void CParticleRenderGroup::Render(int nViewRenderFlags)
 	materials->BindMaterial(m_pMaterial, false);
 	materials->Apply();
 
+	//ASSERTMSG(!m_triangleListMode, "Shadow rederer, %d verts");
+
 	// draw
-	g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLE_STRIP, 0, m_numIndices, 0, m_numVertices);
+	if(m_numIndices)
+		g_pShaderAPI->DrawIndexedPrimitives(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, 0, m_numIndices, 0, m_numVertices);
+	else
+		g_pShaderAPI->DrawNonIndexedPrimitives(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, 0, m_numVertices);
 
 	HOOK_TO_CVAR(r_wireframe)
 
@@ -142,7 +152,10 @@ void CParticleRenderGroup::Render(int nViewRenderFlags)
 		g_pShaderAPI->SetShader(flat);
 		g_pShaderAPI->Apply();
 
-		g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLE_STRIP, 0, m_numIndices, 0, m_numVertices);
+		if(m_numIndices)
+			g_pShaderAPI->DrawIndexedPrimitives(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, 0, m_numIndices, 0, m_numVertices);
+		else
+			g_pShaderAPI->DrawNonIndexedPrimitives(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, 0, m_numVertices);
 	}
 
 	if(!(nViewRenderFlags & EPRFLAG_DONT_FLUSHBUFFERS))
@@ -164,6 +177,8 @@ void CPFXAtlasGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO, int 
 {
 	if( CTextureAtlas::Load(pszMaterialName, pszMaterialName) )
 		CParticleRenderGroup::Init( m_material.GetData(), bCreateOwnVBO, maxQuads);
+	else
+		CParticleRenderGroup::Init( "error", bCreateOwnVBO, maxQuads);
 }
 
 void CPFXAtlasGroup::Shutdown()

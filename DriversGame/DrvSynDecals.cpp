@@ -9,6 +9,8 @@
 #include "math/math_util.h"
 #include "ConVar.h"
 
+#include "world.h"
+
 inline PFXVertex_t lerpVertex(const PFXVertex_t &u, const PFXVertex_t &v, float fac)
 {
 	PFXVertex_t out;
@@ -93,7 +95,7 @@ void ClipVerts(DkList<PFXVertex_t>& verts, const Plane &plane)
 	new_vertices.swap(verts);
 }
 
-void DecalClipAndTexture(decalprimitives_t* decal, const Volume& clipVolume, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, float alpha)
+void DecalClipAndTexture(decalprimitives_t* decal, const Volume& clipVolume, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, const ColorRGBA& color)
 {
 	for(int i = 0; i < decal->verts.numElem(); i++)
 	{
@@ -107,7 +109,7 @@ void DecalClipAndTexture(decalprimitives_t* decal, const Volume& clipVolume, con
 		Vector2D texCoord	= proj.xy() / proj.w;
 
 		decal->verts[i].texcoord = lerp(atlasRect.vrightBottom, atlasRect.vleftTop, texCoord);
-		decal->verts[i].color.w = alpha;
+		decal->verts[i].color = color;
 	}
 
 	if(r_clipdecals.GetBool())
@@ -119,5 +121,29 @@ void DecalClipAndTexture(decalprimitives_t* decal, const Volume& clipVolume, con
 			if(r_clipdecalplane.GetInt() == -1 || r_clipdecalplane.GetInt() == i)
 				ClipVerts(decal->verts, pl);
 		}
+	}
+}
+
+void ProjectDecalToSpriteBuilder(decalprimitives_t& decal, CSpriteBuilder<PFXVertex_t>* group, const Rectangle_t& rect, const Matrix4x4& viewProj, const ColorRGBA& color)
+{
+	Volume volume;
+
+	// make shadow volume and get our shadow polygons from world
+	volume.LoadAsFrustum( viewProj );
+	g_pGameWorld->m_level.GetDecalPolygons(decal, volume, &g_pGameWorld->m_occludingFrustum);
+
+	if(!decal.verts.numElem())
+		return;
+
+	// clip decal polygons by volume and apply projection coords
+	DecalClipAndTexture(&decal, volume, viewProj, rect, color);
+
+	// push geometry
+	PFXVertex_t* verts;
+	int startIdx = group->AllocateGeom(decal.verts.numElem(), 0, &verts, NULL, false);
+
+	if(startIdx != -1)
+	{
+		memcpy(verts, decal.verts.ptr(), decal.verts.numElem()*sizeof(PFXVertex_t));
 	}
 }

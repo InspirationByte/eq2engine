@@ -357,6 +357,7 @@ ConVar r_drawSkidMarks("r_drawSkidMarks", "1", "Draw skidmarks, 1 - player, 2 - 
 extern CPFXAtlasGroup* g_vehicleEffects;
 extern CPFXAtlasGroup* g_translParticles;
 extern CPFXAtlasGroup* g_additPartcles;
+extern CPFXAtlasGroup* g_vehicleLights;
 
 float DBTorqueCurveFromRPM( float fRPM )
 {
@@ -2233,6 +2234,9 @@ void CCar::UpdateLightsState()
 	SetLight(CAR_LIGHT_SERVICELIGHTS, m_sirenEnabled);
 }
 
+ConVar r_carLights("r_carLights", "1", "Car light rendering type", CV_ARCHIVE);
+ConVar r_carLights_dist("r_carLights_dist", "50.0", NULL, CV_ARCHIVE);
+
 void CCar::Simulate( float fDt )
 {
 	PROFILE_FUNC();
@@ -2255,8 +2259,7 @@ void CCar::Simulate( float fDt )
 	//------------------------------------
 	//
 
-	if( (m_lightsEnabled & CAR_LIGHT_HEADLIGHTS) && m_isLocalCar &&
-		(m_bodyParts[CB_FRONT_LEFT].damage < 1.0f || m_bodyParts[CB_FRONT_RIGHT].damage < 1.0f) )
+	if( r_carLights.GetBool() && IsLightEnabled(CAR_LIGHT_HEADLIGHTS) && (m_bodyParts[CB_FRONT_LEFT].damage < 1.0f || m_bodyParts[CB_FRONT_RIGHT].damage < 1.0f) )
 	{
 		float lightIntensity = 1.0f;
 
@@ -2278,19 +2281,54 @@ void CCar::Simulate( float fDt )
 
 		Vector3D startLightPos = GetOrigin() + GetForwardVector()*m_conf->m_headlightPosition.z;
 
-		Vector3D lightPos = startLightPos + GetForwardVector()*12.0f;
+		ColorRGBA lightColor(0.7, 0.6, 0.5, lightIntensity);
 
-		CollisionData_t light_coll;
+		if(m_isLocalCar && r_carLights.GetInt() == 2)
+		{
+			Vector3D lightPos = startLightPos + GetForwardVector()*12.0f;
+			CollisionData_t light_coll;
 
-		btSphereShape sphere(0.35f);
-		g_pPhysics->TestConvexSweep(&sphere, identity(), startLightPos, lightPos, light_coll, OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT);
+			btSphereShape sphere(0.35f);
+			g_pPhysics->TestConvexSweep(&sphere, identity(), startLightPos, lightPos, light_coll, OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT);
 
-		wlight_t light;
-		light.position = Vector4D(lerp(startLightPos, lightPos + Vector3D(0,2,0), light_coll.fract), 18.0f*(light_coll.fract+0.15f));
+			wlight_t light;
+			light.position = Vector4D(lerp(startLightPos, lightPos + Vector3D(0,2,0), light_coll.fract), 18.0f*(light_coll.fract+0.15f));
 
-		light.color = ColorRGBA(0.7, 0.6, 0.5, lightIntensity);
+			light.color = lightColor;
 
-		g_pGameWorld->AddLight(light);
+			g_pGameWorld->AddLight(light);
+		}
+		else
+		{
+			float distToCam = length(g_pGameWorld->GetView()->GetOrigin()-carBody->GetPosition());
+
+			if(distToCam < r_carLights_dist.GetFloat())
+			{
+				Vector3D lightPos = startLightPos + GetForwardVector()*13.0f;
+
+				// project from top
+				Matrix4x4 proj, view, viewProj;
+				proj = orthoMatrix(-2.0f, 2.0f, 0.0f, 14.0f, -1.5f, 0.4f);
+				view = Matrix4x4( rotateX3(DEG2RAD(-90)) * !m_worldMatrix.getRotationComponent());
+				view.translate(-lightPos);
+
+				viewProj = proj*view;
+
+				float intensityMod = 1.0f - (distToCam / r_carLights_dist.GetFloat());
+
+				lightColor *= Vector4D(lightColor.w) * pow(intensityMod, 0.8f) * 0.6f;
+				lightColor.w = 1.0f;
+
+				TexAtlasEntry_t* entry = g_vehicleLights->FindEntry("light1");
+				Rectangle_t flipRect = entry ? entry->rect : Rectangle_t(0,0,1,1);
+
+				decalprimitives_t lightDecal;
+				lightDecal.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
+				lightDecal.projectDir = normalize(vec3_up - GetForwardVector());
+
+				ProjectDecalToSpriteBuilder(lightDecal, g_vehicleLights, flipRect, viewProj, lightColor);
+			}
+		}
 	}
 
 	UpdateSounds(fDt);

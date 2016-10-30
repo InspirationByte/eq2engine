@@ -8,6 +8,7 @@
 #include "ShadowRenderer.h"
 #include "ConVar.h"
 #include "world.h"
+#include "ParticleEffects.h"
 
 ConVar r_shadowAtlasSize("r_shadowAtlasSize", "1024", 256.0f,  1024.0f, NULL, CV_ARCHIVE);
 ConVar r_shadowLod("r_shadowLod", "0", NULL, CV_ARCHIVE);
@@ -70,7 +71,7 @@ void CShadowRenderer::Init()
 	CSpriteBuilder::Init();
 
 	// sprite builder to triangle mode
-	m_triangleMode = true;
+	m_triangleListMode = true;
 
 	m_isInit = true;
 }
@@ -155,7 +156,6 @@ void CShadowRenderer::RenderShadowCasters()
 	decalprimitives_t shadowDecal;
 	shadowDecal.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
 
-	Volume shadowVolume;
 	CViewParams orthoView;
 
 	orthoView.SetFOV(0.5f);
@@ -208,7 +208,7 @@ void CShadowRenderer::RenderShadowCasters()
 		orthoView.SetOrigin(object->GetOrigin());
 		orthoView.GetMatrices(proj, view, shadowSize.x*SHADOW_DESCALING, shadowSize.y*SHADOW_DESCALING, -2.5f, 100.0f, true );
 		
-		shadowDecal.shadowDir = view.rows[2].xyz();
+		shadowDecal.projectDir = view.rows[2].xyz();
 
 		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
 		materials->SetMatrix(MATRIXMODE_VIEW, view);
@@ -220,23 +220,12 @@ void CShadowRenderer::RenderShadowCasters()
 			RenderShadow( object->GetModel(), object->GetBodyGroups(), RSHADOW_STANDARD);
 
 		g_pShaderAPI->CopyRendertargetToTexture(m_shadowRt, m_shadowTexture, NULL, &copyRect);
-		
-		// make shadow volume and get our shadow polygons from world
-		shadowVolume.LoadAsFrustum( viewProj );
-		g_pGameWorld->m_level.GetDecalPolygons(shadowDecal, shadowVolume);
 
+		// project our decal to sprite builder
 		float shadowAlpha = length(orthoView.GetOrigin()-viewPos) * distFac;
 		shadowAlpha = 1.0f - pow(max(0.0f, shadowAlpha), 8.0f);
 
-		// clip decal polygons by volume and apply projection coords
-		DecalClipAndTexture(&shadowDecal, shadowVolume, viewProj, shadowRect, shadowAlpha);
-
-		// push geometry
-		PFXVertex_t* verts;
-		int startIdx = AllocateGeom(shadowDecal.verts.numElem(), 0, &verts, NULL, false);
-
-		if(startIdx != -1)
-			memcpy(verts, shadowDecal.verts.ptr(), shadowDecal.verts.numElem()*sizeof(PFXVertex_t));
+		ProjectDecalToSpriteBuilder( shadowDecal, this, shadowRect, viewProj, ColorRGBA(1,1,1,shadowAlpha) );
 	}
 
 	g_pShaderAPI->ChangeRenderTargetToBackBuffer();

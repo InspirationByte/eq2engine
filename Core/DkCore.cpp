@@ -179,7 +179,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	m_coreConfiguration = new KeyValues();
 	kvkeybase_t* coreConfigRoot = m_coreConfiguration->GetRootSection();
 
-	if(!m_coreConfiguration->LoadFromFile("EQ.CONFIG"))
+	if(!m_coreConfiguration->LoadFromFile("EQ.CONFIG", SP_ROOT))
 	{
 		// try create default settings
 		kvkeybase_t* appDebug = coreConfigRoot->AddKeyBase("ApplicationDebug");

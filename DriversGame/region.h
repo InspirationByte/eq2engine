@@ -205,7 +205,7 @@ public:
 	int								GetNumHFields() const;
 	int								GetNumNomEmptyHFields() const;
 
-	void							GetDecalPolygons(decalprimitives_t& polys, const Volume& volume);
+	void							GetDecalPolygons(decalprimitives_t& polys, const Volume& volume, occludingFrustum_t* frustum);
 
 	//----------------------------------------------------
 

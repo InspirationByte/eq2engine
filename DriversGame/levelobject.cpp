@@ -615,7 +615,7 @@ void CLevelModel::GetDecalPolygons( decalprimitives_t& polys, const Volume& volu
 			p2 = (transform * Vector4D(p2, 1.0f)).xyz();
 			p3 = (transform * Vector4D(p3, 1.0f)).xyz();
 
-			if(dot(NormalOfTriangle(p1,p2,p3), polys.shadowDir) < 0.0f)
+			if(dot(NormalOfTriangle(p1,p2,p3), polys.projectDir) < 0.0f)
 				continue;
 
 			if(!volume.IsTriangleInside(p1,p2,p3)) // slow version

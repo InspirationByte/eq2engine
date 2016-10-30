@@ -2242,7 +2242,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 
 //------------------------------------------------------
 
-void CGameLevel::GetDecalPolygons(decalprimitives_t& polys, const Volume& volume)
+void CGameLevel::GetDecalPolygons(decalprimitives_t& polys, const Volume& volume, occludingFrustum_t* frustum)
 {
 	polys.indices.setNum(0, false);
 	polys.verts.setNum(0, false);
@@ -2263,7 +2263,10 @@ void CGameLevel::GetDecalPolygons(decalprimitives_t& polys, const Volume& volume
 			if(!volume.IsBoxInside(reg.m_bbox.minPoint, reg.m_bbox.maxPoint))
 				continue;
 
-			reg.GetDecalPolygons(polys, volume);
+			if(frustum && !frustum->IsBoxVisible(reg.m_bbox))
+				continue;
+
+			reg.GetDecalPolygons(polys, volume, frustum);
 		}
 	}
 
