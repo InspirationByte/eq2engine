@@ -918,7 +918,7 @@ float CGameLevel::GetWaterLevelAt(const IVector2D& tilePos) const
 
 			hfieldtile_t* tile = field->GetTile(localTile.x, localTile.y);
 
-			if(tile->texture == -1)
+			if(!field->m_materials.inRange(tile->texture))
 				continue;
 
 			hfieldmaterial_t* mat = field->m_materials[tile->texture];

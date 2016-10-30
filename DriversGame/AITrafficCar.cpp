@@ -580,6 +580,18 @@ void CAITrafficCar::SearchJunctionAndStraight()
 
 			IVector2D checkStraightPos = checkPos+dirCheckVec*checkDir;
 
+			levroadcell_t* rcell = g_pGameWorld->m_level.GetGlobalRoadTileAt(checkStraightPos);
+
+			if(rcell && rcell->type == ROADTYPE_NOROAD)
+			{
+				if(j >= 7)
+					break;
+				else
+					j = 7;
+
+				continue;
+			}
+
 			int dirIdx = GetDirectionIndex(dirCheckVec*sign(checkDir));
 
 			// calc steering dir
@@ -883,7 +895,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 				brake = brakeSpeedDiff / AI_ROAD_STOP_DIST;
 
-				if(brake > 0.01f) // don't brake extremely
+				if(brake > 0.01f && brake < 0.9f) // don't brake extremely
 				{
 					accelerator = 0.0f;
 					controls |= IN_BRAKE;
