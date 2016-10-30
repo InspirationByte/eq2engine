@@ -163,7 +163,6 @@ protected:
 
 	float				m_thinkTime;
 	float				m_nextSwitchLaneTime;
-	float				m_laneSwitchTimeout;
 
 	bool				m_emergencyEscape;
 	float				m_emergencyEscapeTime;

@@ -203,7 +203,6 @@ CAITrafficCar::CAITrafficCar( carConfigEntry_t* carConfig ) : CCar(carConfig), C
 	m_thinkTime = 0.0f;
 	m_nextSwitchLaneTime = AI_LANE_SWITCH_DELAY;
 	m_refreshTime = AICAR_THINK_TIME;
-	m_laneSwitchTimeout = 0.0f;
 	m_emergencyEscape = false;
 	m_emergencyEscapeTime = 0.0f;
 	m_emergencyEscapeSteer = 1.0f;
@@ -372,6 +371,8 @@ void CAITrafficCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 			m_hornTime.Set(0);
 
 			AI_SetState( &CAITrafficCar::DeadState );
+
+			SetLight(CAR_LIGHT_EMERGENCY, true);
 
 			int buttons = GetControlButtons();
 			buttons &= ~(IN_HORN | IN_ACCELERATE | IN_BRAKE);
@@ -857,14 +858,21 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	//
 	// Breakage on red light
 	//
-	if( distToStop < AI_ROAD_STOP_DIST*trafficBrakeDistModifier[g_pGameWorld->m_envConfig.weatherType] )
+	if( distToStop < AI_ROAD_STOP_DIST && distToStop > 0.0f )
 	{
 		// brake on global traffic light value
 		int trafficLightDir = g_pGameWorld->m_globalTrafficLightDirection;
 
-		int curDir = m_straights[STRAIGHT_CURRENT].direction % 2;
+		int curDir = m_straights[STRAIGHT_CURRENT].direction;
 
-		bool isAllowedToMove = m_straights[STRAIGHT_CURRENT].hasTrafficLight ? (trafficLightDir%2 == curDir%2) : true;
+		// also check previous straight
+		bool hasTrafficLight = m_straights[STRAIGHT_CURRENT].hasTrafficLight;
+		
+		if(m_straights[STRAIGHT_PREV].hasTrafficLight &&
+			m_straights[STRAIGHT_CURRENT].direction == m_straights[STRAIGHT_PREV].direction )
+			hasTrafficLight = true;
+
+		bool isAllowedToMove = hasTrafficLight ? (trafficLightDir%2 == curDir%2) : true;
 
 		if( !g_disableTrafficLights.GetBool() && (!isAllowedToMove || (g_pGameWorld->m_globalTrafficLightTime < 2.0f)) )
 		{
@@ -875,14 +883,18 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 				brake = brakeSpeedDiff / AI_ROAD_STOP_DIST;
 
-				if(brake > 0.01f)
+				if(brake > 0.01f) // don't brake extremely
 				{
 					accelerator = 0.0f;
 					controls |= IN_BRAKE;
 				}
 			}
 			else
+			{
 				controls |= IN_HANDBRAKE;
+				controls &= ~IN_BRAKE;
+				controls &= ~IN_ACCELERATE;
+			}
 		}
 		else
 		{
@@ -893,7 +905,6 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 			if(m_nextJuncDetails.selectedStraight != -1)
 			{
 				straight_t& selRoad = m_nextJuncDetails.foundStraights[m_nextJuncDetails.selectedStraight];
-				int currentDir = m_straights[STRAIGHT_CURRENT].direction;
 
 				SetLight(CAR_LIGHT_EMERGENCY, false);
 
@@ -904,9 +915,9 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 				else
 					SetLight(CAR_LIGHT_EMERGENCY, false);
 
-				if( carForwardSpeed > 8.0f*trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType] )
+				if( m_straights[STRAIGHT_CURRENT].direction != selRoad.direction)
 				{
-					if( m_straights[STRAIGHT_CURRENT].direction != selRoad.direction )
+					if( carForwardSpeed > 8.0f*trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType] )
 					{
 						// FIXME: calculate acceleration more gentle
 
@@ -922,12 +933,13 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 							controls |= IN_BRAKE;
 					}
 				}
-				else if(carForwardSpeed > 3.0f*trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType])
-				{
-					accelerator *= 0.25f;
-				}
 			}
 		}
+	}
+	else if(m_straights[STRAIGHT_PREV].direction != m_straights[STRAIGHT_CURRENT].direction && !isOnCurrRoad)
+	{
+		// don't accelerate too much if we're going to steer to another road
+		accelerator *= 0.25f;
 	}
 
 	eqPhysCollisionFilter collFilter;

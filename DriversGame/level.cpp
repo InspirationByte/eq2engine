@@ -988,6 +988,10 @@ straight_t CGameLevel::GetStraightAtPoint( const IVector2D& point, int numIterat
 
 			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
 
+			// don't iterate through non-road surfaces
+			if(roadCell.type == ROADTYPE_NOROAD)
+				break;
+
 			if( roadCell.type != ROADTYPE_STRAIGHT &&
 				roadCell.type != ROADTYPE_PARKINGLOT )
 				break;
@@ -1375,18 +1379,23 @@ bool CGameLevel::FindBestRoadCellForTrafficLight( IVector2D& out, const Vector3D
 
 	for(int i = 0; i < juncIterations; i++)
 	{
-		IVector2D checkTilePos = roadTilePos - forwardDir*i;
+		IVector2D checkTilePos = roadTilePos - forwardDir*(i+1);
 
 		roadTile = GetGlobalRoadTileAt( checkTilePos );
 
-		if(	roadTile && 
-			(roadTile->type == ROADTYPE_STRAIGHT || roadTile->type == ROADTYPE_PARKINGLOT) && 
-			roadTile->direction == trafficDir)
+		if(roadTile)
 		{
-			out = checkTilePos;
-			return true;
-		}
+			// don't iterate through non-road surfaces
+			if( roadTile->type == ROADTYPE_NOROAD )
+				break;
 
+			if(	(roadTile->type == ROADTYPE_STRAIGHT || roadTile->type == ROADTYPE_PARKINGLOT) && 
+				roadTile->direction == trafficDir)
+			{
+				out = checkTilePos;
+				return true;
+			}
+		}
 	}
 
 	/*
