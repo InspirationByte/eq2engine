@@ -348,6 +348,8 @@ void CNetPlayer::Update(float fDt)
 			SetControls(finSnap.in.controls);
 	}
 
+	m_ownCar->UpdateLightsState();
+
 	m_interpTime += fDt;
 	m_fCurTime += fDt;
 }

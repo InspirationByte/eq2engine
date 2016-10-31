@@ -1919,6 +1919,7 @@ bool CCar::UpdateWaterState( float fDt, bool hasCollidedWater )
 				m_enabled = false;
 				m_locked = true;
 				m_sirenEnabled = false;
+				m_lightsEnabled = 0;
 			}
 		}
 
