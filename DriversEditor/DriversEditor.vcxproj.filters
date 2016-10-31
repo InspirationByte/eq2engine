@@ -415,6 +415,9 @@
     <ClInclude Include="EditorTestDrive.h">
       <Filter>Source Files\Editor</Filter>
     </ClInclude>
+    <ClInclude Include="..\DriversGame\DrvSynDecals.h">
+      <Filter>Source Files\Game\Effects</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Notes.txt" />
@@ -614,6 +617,9 @@
     </ClCompile>
     <ClCompile Include="EditorTestDrive.cpp">
       <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\DrvSynDecals.cpp">
+      <Filter>Source Files\Game\Effects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
