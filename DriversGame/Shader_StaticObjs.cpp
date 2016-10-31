@@ -7,10 +7,9 @@
 
 #include "BaseShader.h"
 
-class CBaseSingle : public CBaseShader
-{
-public:
-	CBaseSingle()
+BEGIN_SHADER_CLASS(BaseStatic)
+
+	SHADER_INIT_PARAMS()
 	{
 		m_pBaseTexture			= NULL;
 		m_pNightLightTexture	= NULL;
@@ -25,7 +24,7 @@ public:
 		m_fSpecularScale = 1.0f;
 	}
 
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 		// load textures from parameters
 		SHADER_PARAM_TEXTURE(BaseTexture, m_pBaseTexture);
@@ -37,12 +36,12 @@ public:
 			SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_pCubemap);
 
 		// set texture setup
-		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &CBaseSingle::SetupBaseTexture);
+		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture);
 
-		SetParameterFunctor(SHADERPARAM_COLOR, &CBaseSingle::SetColorModulation);
+		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
 
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
 		if(SHADER_PASS(Ambient))
 			return true;
@@ -100,9 +99,6 @@ public:
 
 	void SetupShader()
 	{
-		if(IsError())
-			return;
-
 		if(!materials->IsInstancingEnabled())
 			SHADER_BIND_PASS_FOGSELECT(Ambient)
 		else
@@ -111,9 +107,6 @@ public:
 
 	void SetupConstants()
 	{
-		if(IsError())
-			return;
-
 		SetupDefaultParameter( SHADERPARAM_TRANSFORM );
 
 		SetupDefaultParameter( SHADERPARAM_BASETEXTURE );
@@ -151,11 +144,6 @@ public:
 		g_pShaderAPI->SetTexture(m_pNightLightTexture, "NightLightSampler", 1);
 	}
 
-	const char* GetName()
-	{
-		return "BaseStatic";
-	}
-
 	ITexture*	GetBaseTexture(int stage)
 	{
 		return m_pBaseTexture;
@@ -164,12 +152,6 @@ public:
 	ITexture*	GetBumpTexture(int stage)
 	{
 		return NULL;
-	}
-
-	// returns main shader program
-	IShaderProgram*	GetProgram()
-	{
-		return SHADER_PASS(Ambient);
 	}
 
 private:
@@ -185,6 +167,5 @@ private:
 	SHADER_DECLARE_FOGPASS(AmbientInst);
 
 	float				m_fSpecularScale;
-};
 
-DEFINE_SHADER(BaseStatic, CBaseSingle)
+END_SHADER_CLASS

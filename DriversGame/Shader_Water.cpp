@@ -7,32 +7,23 @@
 
 #include "BaseShader.h"
 
-class CShader_Water : public CBaseShader
-{
-private:
-	ITexture*			m_pBumpTexture;
-	ITexture*			m_pCubemap;
-
-	IMatVar*			m_pWaterColor;
-	IMatVar*			m_pBumpFrame;
-
-	float				m_fSpecularScale;
-
-	SHADER_DECLARE_PASS(Ambient);
-	SHADER_DECLARE_FOGPASS(Ambient);
-
-public:
-	CShader_Water()
+BEGIN_SHADER_CLASS(DrvSynWater)
+	SHADER_INIT_PARAMS()
 	{
 		m_pBumpTexture	= NULL;
-
 		m_fSpecularScale = 0.0f;
-
 		SHADER_PASS(Ambient) = NULL;
 		SHADER_FOGPASS(Ambient) = NULL;
+
+		// disable shadows
+		m_nFlags |= MATERIAL_FLAG_WATER;
+		m_nFlags &= ~MATERIAL_FLAG_RECEIVESHADOWS;
+
+		m_pBumpFrame = m_pAssignedMaterial->GetMaterialVar("bumptextureframe", 0);
+		m_pWaterColor = m_pAssignedMaterial->GetMaterialVar("Color", "[0.2 0.7 0.4]" );
 	}
 
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 		// load textures from parameters
 		SHADER_PARAM_TEXTURE(BumpMap, m_pBumpTexture);
@@ -42,30 +33,14 @@ public:
 			SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_pCubemap);
 
 		// set texture setup
-		SetParameterFunctor(SHADERPARAM_BUMPMAP, &CShader_Water::SetupBumpTexture);
-		SetParameterFunctor(SHADERPARAM_COLOR, &CShader_Water::SetColorModulation);
+		SetParameterFunctor(SHADERPARAM_BUMPMAP, &ThisShaderClass::SetupBumpTexture);
+		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
 
-	void InitParams()
-	{
-		if(!m_bInitialized && !m_bIsError)
-		{
-			CBaseShader::InitParams();
-
-			// disable shadows
-			m_nFlags |= MATERIAL_FLAG_WATER;
-			m_nFlags &= ~MATERIAL_FLAG_RECEIVESHADOWS;
-
-			m_pBumpFrame = m_pAssignedMaterial->GetMaterialVar("bumptextureframe", 0);
-			m_pWaterColor = m_pAssignedMaterial->GetMaterialVar("Color", "[0.2 0.7 0.4]" );
-		}
-	}
-
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
 		if(SHADER_PASS(Ambient))
 			return true;
-
 
 		//------------------------------------------
 		// load another shader params here (because we want to use less memory)
@@ -103,17 +78,11 @@ public:
 
 	void SetupShader()
 	{
-		if(IsError())
-			return;
-
 		SHADER_BIND_PASS_FOGSELECT( Ambient );
 	}
 
 	void SetupConstants()
 	{
-		if(IsError())
-			return;
-
 		SetupDefaultParameter( SHADERPARAM_TRANSFORM );
 		SetupDefaultParameter( SHADERPARAM_ANIMFRAME );
 		SetupDefaultParameter( SHADERPARAM_BUMPMAP );
@@ -157,11 +126,6 @@ public:
 		g_pShaderAPI->SetTexture(m_pBumpTexture, "BumpTextureSampler", 0);
 	}
 
-	const char* GetName()
-	{
-		return "DrvSynWater";
-	}
-
 	ITexture*	GetBaseTexture(int stage)
 	{
 		return NULL;
@@ -172,11 +136,14 @@ public:
 		return m_pBumpTexture;
 	}
 
-	// returns main shader program
-	IShaderProgram*	GetProgram()
-	{
-		return SHADER_PASS(Ambient);
-	}
-};
+	ITexture*			m_pBumpTexture;
+	ITexture*			m_pCubemap;
 
-DEFINE_SHADER(DrvSynWater, CShader_Water)
+	IMatVar*			m_pWaterColor;
+	IMatVar*			m_pBumpFrame;
+
+	float				m_fSpecularScale;
+
+	SHADER_DECLARE_PASS(Ambient);
+	SHADER_DECLARE_FOGPASS(Ambient);
+END_SHADER_CLASS

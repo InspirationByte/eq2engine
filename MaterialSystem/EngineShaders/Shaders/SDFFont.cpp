@@ -7,28 +7,18 @@
 
 #include "BaseShader.h"
 
-class CSDFFontShader : public CBaseShader
-{
-public:
-	CSDFFontShader()
+BEGIN_SHADER_CLASS(SDFFont)
+	SHADER_INIT_PARAMS()
 	{
 		SHADER_PASS(Unlit) = NULL;
 	}
 
-	void InitParams()
-	{
-		if(!m_pAssignedMaterial->IsError() && !m_bInitialized && !m_bIsError)
-		{
-			CBaseShader::InitParams();
-		}
-	}
-
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 
 	}
 
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
 		if(SHADER_PASS(Unlit))
 			return true;
@@ -47,18 +37,12 @@ public:
 
 	void SetupShader()
 	{
-		if(IsError())
-			return;
 
 		SHADER_BIND_PASS_SIMPLE(Unlit);
 	}
 
-
 	void SetupConstants()
 	{
-		if(IsError())
-			return;
-
 		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
 
 		SetupDefaultParameter(SHADERPARAM_ALPHASETUP);
@@ -76,29 +60,11 @@ public:
 
 	}
 
-	const char* GetName()
-	{
-		return "SDFFont";
-	}
+	ITexture*	GetBaseTexture(int stage) {return NULL;}
+	ITexture*	GetBumpTexture(int stage) {return NULL;}
 
-	ITexture*	GetBaseTexture(int stage)
-	{
-		return NULL;
-	}
 
-	ITexture*	GetBumpTexture(int stage)
-	{
-		return NULL;
-	}
-
-	// returns main shader program
-	IShaderProgram*	GetProgram()
-	{
-		return SHADER_PASS(Unlit);
-	}
-
-private:
 	SHADER_DECLARE_PASS(Unlit);
-};
 
-DEFINE_SHADER(SDFFont, CSDFFontShader)
+
+END_SHADER_CLASS

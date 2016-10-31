@@ -7,39 +7,32 @@
 
 #include "BaseShader.h"
 
-class CBaseUnlit : public CBaseShader
-{
-public:
-	CBaseUnlit()
+BEGIN_SHADER_CLASS(BaseUnlit)
+
+	SHADER_INIT_PARAMS()
 	{
 		m_pBaseTexture = NULL;
 
 		SHADER_PASS(Unlit) = NULL;
 		SHADER_FOGPASS(Unlit) = NULL;
+
+		CBaseShader::InitParams();
+		m_pColorVar = m_pAssignedMaterial->GetMaterialVar("color", "[1 1 1 1]");
 	}
 
-	void InitParams()
-	{
-		if(!m_bInitialized && !m_bIsError)
-		{
-			CBaseShader::InitParams();
-			m_pColorVar = m_pAssignedMaterial->GetMaterialVar("color", "[1 1 1 1]");
-		}
-	}
-
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 		// parse material variables
 		SHADER_PARAM_TEXTURE_NOERROR(BaseTexture, m_pBaseTexture);
 
 		// set texture setup
 		if(m_pBaseTexture)
-			SetParameterFunctor(SHADERPARAM_BASETEXTURE, &CBaseUnlit::SetupBaseTexture0);
+			SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture0);
 
-		SetParameterFunctor(SHADERPARAM_COLOR, &CBaseUnlit::SetColorModulation);
+		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
 
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
 		if(SHADER_PASS(Unlit))
 			return true;
@@ -64,17 +57,11 @@ public:
 
 	void SetupShader()
 	{
-		if(IsError())
-			return;
-
 		SHADER_BIND_PASS_FOGSELECT(Unlit);
 	}
 
 	void SetupConstants()
 	{
-		if(IsError())
-			return;
-
 		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
 
 		SetupDefaultParameter(SHADERPARAM_BASETEXTURE);
@@ -100,34 +87,13 @@ public:
 		g_pShaderAPI->SetTexture(pSetupTexture, "BaseTextureSampler", 0);
 	}
 
-	const char* GetName()
-	{
-		return "BaseUnlit";
-	}
-
-	ITexture*	GetBaseTexture(int stage)
-	{
-		return m_pBaseTexture;
-	}
-
-	ITexture*	GetBumpTexture(int stage)
-	{
-		return NULL;
-	}
-
-	// returns main shader program
-	IShaderProgram*	GetProgram()
-	{
-		return SHADER_PASS(Unlit);
-	}
-
-private:
+	ITexture*	GetBaseTexture(int stage) {return m_pBaseTexture;}
+	ITexture*	GetBumpTexture(int stage) {return NULL;}
 
 	ITexture*			m_pBaseTexture;
 	IMatVar*			m_pColorVar;
 
 	SHADER_DECLARE_PASS(Unlit);
 	SHADER_DECLARE_FOGPASS(Unlit);
-};
 
-DEFINE_SHADER(BaseUnlit, CBaseUnlit)
+END_SHADER_CLASS

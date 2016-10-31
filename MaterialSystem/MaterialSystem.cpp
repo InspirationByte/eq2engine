@@ -1355,13 +1355,13 @@ void CMaterialSystem::PrintLoadedMaterials()
 {
 	CScopedMutex m(m_Mutex);
 
-	Msg("---MATERIALS---\n");
+	Msg("*** Material list begin ***\n");
 	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
 	{
 		if(m_pLoadedMaterials[i])
-			Msg("%s (%d)\n", m_pLoadedMaterials[i]->GetName(), m_pLoadedMaterials[i]->Ref_Count());
+			MsgInfo("%s - %s (%d)\n", m_pLoadedMaterials[i]->GetShaderName(), m_pLoadedMaterials[i]->GetName(), m_pLoadedMaterials[i]->Ref_Count());
 	}
-	Msg("---END MATERIALS---\n");
+	Msg("Total loaded materials: %d\n", m_pLoadedMaterials.numElem());
 }
 
 // removes callbacks from list
@@ -1373,13 +1373,13 @@ void CMaterialSystem::RemoveLostRestoreCallbacks(DEVLICELOSTRESTORE destroy, DEV
 
 DECLARE_CMD(r_reloadallmaterials,"Reloads all materials",0)
 {
-	MsgInfo("*** Reloading materials...\n \n");
+	MsgInfo("Reloading materials...\n\n");
 	materials->ReloadAllMaterials();
 }
 
 DECLARE_CMD(r_unloadmaterialtextures,"Frees all textures",0)
 {
-	MsgInfo("*** Unloading textures...\n \n");
+	MsgInfo("Unloading textures...\n\n");
 	materials->FreeAllTextures();
 }
 

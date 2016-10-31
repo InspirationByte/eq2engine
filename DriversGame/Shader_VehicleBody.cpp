@@ -7,10 +7,9 @@
 
 #include "BaseShader.h"
 
-class CShader_VehicleBody : public CBaseShader
-{
-public:
-	CShader_VehicleBody()
+BEGIN_SHADER_CLASS(DrvSynVehicle)
+
+	SHADER_INIT_PARAMS()
 	{
 		m_pBaseTexture	= NULL;
 		m_pCubemap		= NULL;
@@ -22,10 +21,10 @@ public:
 		SHADER_PASS(Ambient) = NULL;
 		SHADER_FOGPASS(Ambient) = NULL;
 
-		m_nFlags = MATERIAL_FLAG_SKINNED;
+		m_nFlags |= MATERIAL_FLAG_SKINNED;
 	}
 
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 		// load textures from parameters
 		SHADER_PARAM_TEXTURE(BaseTexture, m_pBaseTexture);
@@ -37,12 +36,12 @@ public:
 			SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_pCubemap);
 
 		// set texture setup
-		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &CShader_VehicleBody::SetupBaseTexture);
+		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture);
 
-		SetParameterFunctor(SHADERPARAM_COLOR, &CShader_VehicleBody::SetColorModulation);
+		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
 
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
 		if(SHADER_PASS(Ambient))
 			return true;
@@ -116,17 +115,11 @@ public:
 
 	void SetupShader()
 	{
-		if(IsError())
-			return;
-
 		SHADER_BIND_PASS_FOGSELECT( Ambient );
 	}
 
 	void SetupConstants()
 	{
-		if(IsError())
-			return;
-
 		SetupDefaultParameter( SHADERPARAM_TRANSFORM );
 
 		SetupDefaultParameter( SHADERPARAM_BASETEXTURE );
@@ -169,11 +162,6 @@ public:
 		g_pShaderAPI->SetTexture(m_pColorMap, "ColormapSampler", 2);
 	}
 
-	const char* GetName()
-	{
-		return "VehicleBody";
-	}
-
 	ITexture*	GetBaseTexture(int stage)
 	{
 		return m_pBaseTexture;
@@ -182,12 +170,6 @@ public:
 	ITexture*	GetBumpTexture(int stage)
 	{
 		return NULL;
-	}
-
-	// returns main shader program
-	IShaderProgram*	GetProgram()
-	{
-		return SHADER_PASS(Ambient);
 	}
 
 private:
@@ -202,6 +184,5 @@ private:
 
 	SHADER_DECLARE_PASS(Ambient);
 	SHADER_DECLARE_FOGPASS(Ambient);
-};
 
-DEFINE_SHADER(DrvSynVehicle, CShader_VehicleBody)
+END_SHADER_CLASS

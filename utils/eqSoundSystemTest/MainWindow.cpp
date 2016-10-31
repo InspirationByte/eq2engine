@@ -11,15 +11,7 @@
 #include "FontCache.h"
 #include "IConCommandFactory.h"
 #include "DebugOverlay.h"
-/*
-#include "SoundEngine/sndwrk.h"
-#include "SoundEngine/decoder_ogg.h"
-#include "SoundEngine/mixer.h"
-#include "SoundEngine/buffer.h"
-#include "SoundEngine/sound.h"
-#include "SoundEngine/dsp.h"
-#include "SoundEngine/listener.h"
-*/
+#include "coord.h"
 
 #include "SoundEngineV2/soundinterface.h"
 
@@ -52,13 +44,6 @@ Vector3D			g_camera_target(-4,2.65,4);
 float				g_fCamSpeed = 10.0;
 
 #define SOUND_COUNT_TEST 4
-/*
-TOutputDevice*		g_soundDevice = NULL;
-TMixer*				g_soundMixer = NULL;
-TSound*				g_musicSound = NULL;
-TSound*				g_hitSound = NULL;
-*/
-
 #define MAX_LOOP_SOUNDS 5
 
 int g_loopingSound[MAX_LOOP_SOUNDS] = {-1};

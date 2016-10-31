@@ -7,16 +7,15 @@
 
 #include "BaseShader.h"
 
-class CErrorShader : public CBaseShader
-{
-public:
-	CErrorShader()
+BEGIN_SHADER_CLASS(Error)
+
+	SHADER_INIT_PARAMS()
 	{
 		m_pProgram = NULL;
 		m_pBaseTexture = NULL;
 	}
 
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 		if(m_pBaseTexture)
 			return;
@@ -36,7 +35,7 @@ public:
 		SetParameterFunctor(SHADERPARAM_COLOR, &CErrorShader::SetColorModulation);
 	}
 
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
 		if(m_pProgram)
 			return true;
@@ -53,17 +52,11 @@ public:
 
 	void SetupShader()
 	{
-		if(IsError())
-			return;
-
 		g_pShaderAPI->SetShader(m_pProgram);
 	}
 
 	void SetupConstants()
 	{
-		if(IsError())
-			return;
-
 		g_pShaderAPI->SetShader(m_pProgram);
 
 		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
@@ -88,31 +81,10 @@ public:
 		g_pShaderAPI->SetTexture(pSetupTexture, "BaseTextureSampler", 0);
 	}
 
-	const char* GetName()
-	{
-		return "Error";
-	}
-
-	ITexture*	GetBaseTexture(int stage)
-	{
-		return m_pBaseTexture;
-	}
-
-	ITexture*	GetBumpTexture(int stage)
-	{
-		return NULL;
-	}
-
-	// returns main shader program
-	IShaderProgram*	GetProgram()
-	{
-		return m_pProgram;
-	}
-
-private:
+	ITexture*	GetBaseTexture(int stage) {return m_pBaseTexture;}
+	ITexture*	GetBumpTexture(int stage) {return NULL;}
 
 	ITexture*			m_pBaseTexture;
 	IShaderProgram*		m_pProgram;
-};
 
-DEFINE_SHADER(Error,CErrorShader)
+END_SHADER_CLASS

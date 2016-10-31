@@ -89,120 +89,110 @@ CBaseShader::CBaseShader()
 void CBaseShader::InitParams()
 {
 	// The basic setup of the shader parameters
-	if(	!m_bInitialized && !m_bIsError )
+	IMatVar *RecShadowed			= m_pAssignedMaterial->GetMaterialVar("ReceiveShadows", "1");
+	IMatVar *CastShadows			= m_pAssignedMaterial->GetMaterialVar("CastShadows", "1");
+	IMatVar *NoCull					= m_pAssignedMaterial->GetMaterialVar("NoCull", "0");
+
+	IMatVar *pAddressMode			= m_pAssignedMaterial->FindMaterialVar("Address");
+	IMatVar *pFilterType			= m_pAssignedMaterial->FindMaterialVar("Filtering");
+
+	IMatVar *pAlphaTest				= m_pAssignedMaterial->GetMaterialVar("AlphaTest", "0");
+	IMatVar *pTranslucent			= m_pAssignedMaterial->GetMaterialVar("Translucent", "0");
+	IMatVar *pAdditive				= m_pAssignedMaterial->GetMaterialVar("Additive", "0");
+	IMatVar *pModulate				= m_pAssignedMaterial->GetMaterialVar("Modulate", "0");
+
+	IMatVar *pNoFog					= m_pAssignedMaterial->GetMaterialVar("nofog", "0");
+
+	IMatVar* pDepthTest				= m_pAssignedMaterial->GetMaterialVar("ztest", "1");
+	IMatVar* pDepthWrite			= m_pAssignedMaterial->GetMaterialVar("zwrite", "1");
+
+	IMatVar* pNoMSAA			= m_pAssignedMaterial->GetMaterialVar("NoMSAA", "0");
+
+	m_depthtest = (pDepthTest->GetInt() > 0);
+	m_depthwrite = (pDepthWrite->GetInt() > 0);
+
+	m_fogenabled = !(pNoFog->GetInt() > 0);
+
+	m_msaaEnabled = !(pNoMSAA->GetInt() > 0);
+
+	// required
+	m_pBaseTextureTransformVar	= GetAssignedMaterial()->GetMaterialVar("BaseTextureTransform", "[0 0]");
+	m_pBaseTextureScaleVar		= GetAssignedMaterial()->GetMaterialVar("BaseTextureScale", "[1 1]");
+	m_pBaseTextureFrame			= GetAssignedMaterial()->GetMaterialVar("BaseTextureFrame", "0");
+
+	// resolve address type and filter type
+	if( pAddressMode )
+		m_nAddressMode = ResolveAddressType(pAddressMode->GetString());
+
+	if( pFilterType )
+		m_nTextureFilter = ResolveFilterType(pFilterType->GetString());
+
+	// setup shadowing parameters
+	m_nFlags |= (RecShadowed->GetInt() > 0) ? MATERIAL_FLAG_RECEIVESHADOWS : 0;
+	m_nFlags |= (CastShadows->GetInt() > 0) ? MATERIAL_FLAG_CASTSHADOWS : 0;
+
+	// setup base rendering params
+	m_nFlags |= (NoCull->GetInt() > 0) ? MATERIAL_FLAG_NOCULL : 0;
+
+	// transparency
+	m_nFlags |= (pAlphaTest->GetInt() > 0) ? MATERIAL_FLAG_ALPHATESTED : 0;
+
+	m_nFlags |= (pTranslucent->GetInt() > 0) ? MATERIAL_FLAG_TRANSPARENT : 0;
+	m_nFlags |= (pAdditive->GetInt() > 0) ? MATERIAL_FLAG_ADDITIVE : 0;
+	m_nFlags |= (pModulate->GetInt() > 0) ? MATERIAL_FLAG_MODULATE : 0;
+
+	if (materials->GetConfiguration().enableSpecular)
 	{
-		IMatVar *RecShadowed			= m_pAssignedMaterial->GetMaterialVar("ReceiveShadows", "1");
-		IMatVar *CastShadows			= m_pAssignedMaterial->GetMaterialVar("CastShadows", "1");
-		IMatVar *NoCull					= m_pAssignedMaterial->GetMaterialVar("NoCull", "0");
+		EqString cubemapStr;
+		SHADER_PARAM_STRING(Cubemap, cubemapStr);
 
-		IMatVar *pAddressMode			= m_pAssignedMaterial->FindMaterialVar("Address");
-		IMatVar *pFilterType			= m_pAssignedMaterial->FindMaterialVar("Filtering");
-
-		IMatVar *pAlphaTest				= m_pAssignedMaterial->GetMaterialVar("AlphaTest", "0");
-		IMatVar *pTranslucent			= m_pAssignedMaterial->GetMaterialVar("Translucent", "0");
-		IMatVar *pAdditive				= m_pAssignedMaterial->GetMaterialVar("Additive", "0");
-		IMatVar *pModulate				= m_pAssignedMaterial->GetMaterialVar("Modulate", "0");
-
-		IMatVar *pNoFog					= m_pAssignedMaterial->GetMaterialVar("nofog", "0");
-
-		IMatVar* pDepthTest				= m_pAssignedMaterial->GetMaterialVar("ztest", "1");
-		IMatVar* pDepthWrite			= m_pAssignedMaterial->GetMaterialVar("zwrite", "1");
-
-		IMatVar* pNoMSAA			= m_pAssignedMaterial->GetMaterialVar("NoMSAA", "0");
-
-		m_depthtest = (pDepthTest->GetInt() > 0);
-		m_depthwrite = (pDepthWrite->GetInt() > 0);
-
-		m_fogenabled = !(pNoFog->GetInt() > 0);
-
-		m_msaaEnabled = !(pNoMSAA->GetInt() > 0);
-
-		// required
-		m_pBaseTextureTransformVar	= GetAssignedMaterial()->GetMaterialVar("BaseTextureTransform", "[0 0]");
-		m_pBaseTextureScaleVar		= GetAssignedMaterial()->GetMaterialVar("BaseTextureScale", "[1 1]");
-		m_pBaseTextureFrame			= GetAssignedMaterial()->GetMaterialVar("BaseTextureFrame", "0");
-
-		// resolve address type and filter type
-		if( pAddressMode )
-			m_nAddressMode = ResolveAddressType(pAddressMode->GetString());
-
-		if( pFilterType )
-			m_nTextureFilter = ResolveFilterType(pFilterType->GetString());
-
-		// setup shadowing parameters
-		m_nFlags |= (RecShadowed->GetInt() > 0) ? MATERIAL_FLAG_RECEIVESHADOWS : 0;
-		m_nFlags |= (CastShadows->GetInt() > 0) ? MATERIAL_FLAG_CASTSHADOWS : 0;
-
-		// setup base rendering params
-		m_nFlags |= (NoCull->GetInt() > 0) ? MATERIAL_FLAG_NOCULL : 0;
-
-		// transparency
-		m_nFlags |= (pAlphaTest->GetInt() > 0) ? MATERIAL_FLAG_ALPHATESTED : 0;
-
-		m_nFlags |= (pTranslucent->GetInt() > 0) ? MATERIAL_FLAG_TRANSPARENT : 0;
-		m_nFlags |= (pAdditive->GetInt() > 0) ? MATERIAL_FLAG_ADDITIVE : 0;
-		m_nFlags |= (pModulate->GetInt() > 0) ? MATERIAL_FLAG_MODULATE : 0;
-
-		if (materials->GetConfiguration().enableSpecular)
+		// detect ENV_CUBEMAP
+		if (cubemapStr.c_str()[0] == '$')
 		{
-			EqString cubemapStr;
-			SHADER_PARAM_STRING(Cubemap, cubemapStr);
-
-			// detect ENV_CUBEMAP
-			if (cubemapStr.c_str()[0] == '$')
-			{
-				char* specialString = (char*)cubemapStr.c_str() + 1;
-				if (!stricmp(specialString, "env_cubemap"))
-					m_nFlags |= MATERIAL_FLAG_USE_ENVCUBEMAP;
-			}
+			char* specialString = (char*)cubemapStr.c_str() + 1;
+			if (!stricmp(specialString, "env_cubemap"))
+				m_nFlags |= MATERIAL_FLAG_USE_ENVCUBEMAP;
 		}
+	}
 
-		// first set solid alpha mode
-		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Solid);
+	// first set solid alpha mode
+	SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Solid);
 
-		// setup functors for transparency
-		//if(m_nFlags & MATERIAL_FLAG_ALPHATESTED)
-		//	SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Alphatest);
+	// setup functors for transparency
+	//if(m_nFlags & MATERIAL_FLAG_ALPHATESTED)
+	//	SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Alphatest);
 
-		if(m_nFlags & MATERIAL_FLAG_TRANSPARENT)
-			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Translucent);
+	if(m_nFlags & MATERIAL_FLAG_TRANSPARENT)
+		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Translucent);
 
-		if(m_nFlags & MATERIAL_FLAG_ADDITIVE)
-			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Additive);
+	if(m_nFlags & MATERIAL_FLAG_ADDITIVE)
+		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Additive);
 
-		if(m_nFlags & MATERIAL_FLAG_MODULATE)
-			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Modulate);
+	if(m_nFlags & MATERIAL_FLAG_MODULATE)
+		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Modulate);
 
-		// setup functors
-		SetParameterFunctor(SHADERPARAM_TRANSFORM, &CBaseShader::ParamSetup_Transform);
-		SetParameterFunctor(SHADERPARAM_ANIMFRAME, &CBaseShader::ParamSetup_TextureFrames);
-		SetParameterFunctor(SHADERPARAM_RASTERSETUP, &CBaseShader::ParamSetup_RasterState);
-		SetParameterFunctor(SHADERPARAM_DEPTHSETUP, &CBaseShader::ParamSetup_DepthSetup);
-		SetParameterFunctor(SHADERPARAM_FOG, &CBaseShader::ParamSetup_Fog);
+	// setup functors
+	SetParameterFunctor(SHADERPARAM_TRANSFORM, &CBaseShader::ParamSetup_Transform);
+	SetParameterFunctor(SHADERPARAM_ANIMFRAME, &CBaseShader::ParamSetup_TextureFrames);
+	SetParameterFunctor(SHADERPARAM_RASTERSETUP, &CBaseShader::ParamSetup_RasterState);
+	SetParameterFunctor(SHADERPARAM_DEPTHSETUP, &CBaseShader::ParamSetup_DepthSetup);
+	SetParameterFunctor(SHADERPARAM_FOG, &CBaseShader::ParamSetup_Fog);
 
-		if(!materials->GetConfiguration().enableShadows)
-		{
-			m_nFlags &= ~MATERIAL_FLAG_RECEIVESHADOWS;
-			m_nFlags &= ~MATERIAL_FLAG_CASTSHADOWS;
-		}
-
-		// Load textures
-		InitTextures();
-
-		if(materials->GetConfiguration().ffp_mode)
-		{
-			m_bInitialized = true;
-			return;
-		}
-
-		// And then init shaders
-		if( InitShaders() )
-			m_bInitialized = true;
-		else
-			m_bIsError = true;
+	if(!materials->GetConfiguration().enableShadows)
+	{
+		m_nFlags &= ~MATERIAL_FLAG_RECEIVESHADOWS;
+		m_nFlags &= ~MATERIAL_FLAG_CASTSHADOWS;
 	}
 }
 
+void CBaseShader::InitShader()
+{
+	// And then init shaders
+	if( _ShaderInitRHI() )
+		m_bInitialized = true;
+	else
+		m_bIsError = true;
+}
 
 // Unload shaders, textures
 void CBaseShader::Unload(bool bUnloadShaders, bool bUnloadTextures)

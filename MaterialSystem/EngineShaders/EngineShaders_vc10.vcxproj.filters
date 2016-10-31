@@ -5,9 +5,6 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Source Files\Shaders">
-      <UniqueIdentifier>{dc5f7854-7125-4d41-addb-90ae82d9bc00}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
@@ -22,79 +19,16 @@
     <Filter Include="Source Files\EngineLib">
       <UniqueIdentifier>{29ebd15a-3083-49f7-bbff-4d9013a0bd08}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Shaders">
+      <UniqueIdentifier>{de6a9b68-c5b7-4986-ba94-b48d24b60e4d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Shaders_EqEngine">
+      <UniqueIdentifier>{dc5f7854-7125-4d41-addb-90ae82d9bc00}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ShadersMain.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="shaders\InternalShaders.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="ShadersOverride.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="BaseDecal.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="SkinnedModel.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="BaseParticle.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="BaseSingle.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="shaders\BaseUnlit.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="BaseVertexTransDecal4.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="BaseVertexTransition4.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="BleachBypass.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="Shaders\DeferredAmbient.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="DeferredPointlight.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="DeferredSpotLight.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="DeferredSunLight.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="DepthWriteLighting.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="ErrorShader.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="shaders\SkyBox.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="HDRBlur.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="HDRBloom.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="TestShader.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="FlashlightReflector.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="Blur.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="Water.cpp">
-      <Filter>Source Files\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\public\ViewParams.cpp">
       <Filter>Source Files\EngineLib</Filter>
@@ -102,8 +36,83 @@
     <ClCompile Include="..\..\public\materialsystem\BaseShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SDFFont.cpp">
+    <ClCompile Include="ShadersOverride.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\BaseParticle.cpp">
       <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\BaseUnlit.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\BlurFilter.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\Error.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\SDFFont.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\Sky.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\BaseDecal.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\BaseSingle.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\BaseVertexTransDecal4.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\BaseVertexTransition4.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\BleachBypass.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\DeferredAmbient.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\DeferredPointlight.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\DeferredSpotLight.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\DeferredSunLight.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\DepthWriteLighting.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\FlashlightReflector.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\HDRBloom.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\HDRBlur.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\InternalShaders.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\SkinnedRope.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\TestShader.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\Water.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseSkinned.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\BaseSkinned.cpp">
+      <Filter>Source Files\Shaders_EqEngine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

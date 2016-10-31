@@ -163,34 +163,69 @@
   <ItemGroup>
     <ClCompile Include="..\..\public\materialsystem\BaseShader.cpp" />
     <ClCompile Include="..\..\public\ViewParams.cpp" />
-    <ClCompile Include="BaseDecal.cpp" />
-    <ClCompile Include="BaseSingle.cpp" />
-    <ClCompile Include="BaseVertexTransDecal4.cpp" />
-    <ClCompile Include="BaseVertexTransition4.cpp" />
-    <ClCompile Include="BleachBypass.cpp" />
-    <ClCompile Include="Blur.cpp" />
-    <ClCompile Include="DeferredPointlight.cpp" />
-    <ClCompile Include="DeferredSpotLight.cpp" />
-    <ClCompile Include="DeferredSunLight.cpp" />
-    <ClCompile Include="DepthWriteLighting.cpp" />
-    <ClCompile Include="ErrorShader.cpp" />
-    <ClCompile Include="FlashlightReflector.cpp" />
-    <ClCompile Include="HDRBloom.cpp" />
-    <ClCompile Include="HDRBlur.cpp" />
-    <ClCompile Include="SDFFont.cpp" />
+    <ClCompile Include="BaseSkinned.cpp" />
     <ClCompile Include="ShadersMain.cpp" />
-    <ClCompile Include="BaseParticle.cpp" />
-    <ClCompile Include="shaders\BaseUnlit.cpp" />
-    <ClCompile Include="Shaders\DeferredAmbient.cpp" />
-    <ClCompile Include="shaders\InternalShaders.cpp" />
     <ClCompile Include="ShadersOverride.cpp" />
-    <ClCompile Include="shaders\SkyBox.cpp" />
-    <ClCompile Include="SkinnedModel.cpp" />
-    <ClCompile Include="TestShader.cpp">
+    <ClCompile Include="Shaders\BaseParticle.cpp" />
+    <ClCompile Include="Shaders\BaseUnlit.cpp" />
+    <ClCompile Include="Shaders\BlurFilter.cpp" />
+    <ClCompile Include="Shaders\Error.cpp" />
+    <ClCompile Include="Shaders\SDFFont.cpp" />
+    <ClCompile Include="Shaders\Sky.cpp" />
+    <ClCompile Include="Shaders_EqEngine\BaseDecal.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Water.cpp" />
+    <ClCompile Include="Shaders_EqEngine\BaseSingle.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\BaseSkinned.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\BaseVertexTransDecal4.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\BaseVertexTransition4.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\BleachBypass.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\DeferredAmbient.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\DeferredPointlight.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\DeferredSpotLight.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\DeferredSunLight.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\DepthWriteLighting.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\FlashlightReflector.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\HDRBloom.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\HDRBlur.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\InternalShaders.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\SkinnedRope.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\TestShader.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders_EqEngine\Water.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\public\materialsystem\BaseShader.h" />

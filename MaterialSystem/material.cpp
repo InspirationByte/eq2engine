@@ -217,6 +217,10 @@ void CMaterial::InitVars(bool flushOnly)
 		}
 
 		((CBaseShader*)m_pShader)->m_pAssignedMaterial = this;
+
+		// init material parameters
+		m_pShader->InitParams();
+
 		m_state = MATERIAL_LOAD_NEED_LOAD;
 	}
 }
@@ -231,7 +235,12 @@ bool CMaterial::LoadShaderAndTextures()
 	{
 		m_state = MATERIAL_LOAD_INQUEUE;
 
-		m_pShader->InitParams();
+		// try init
+		if(!m_pShader->IsInitialized() && !m_pShader->IsError())
+		{
+			m_pShader->InitTextures();
+			m_pShader->InitShader();
+		}
 
 		if( m_pShader->IsInitialized() )
 			m_state = MATERIAL_LOAD_OK;

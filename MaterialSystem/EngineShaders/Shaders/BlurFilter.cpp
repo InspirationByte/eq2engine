@@ -7,27 +7,22 @@
 
 #include "BaseShader.h"
 
-class CBlurFilter : public CBaseShader
-{
-public:
-	CBlurFilter()
+BEGIN_SHADER_CLASS(BlurFilter)
+
+	SHADER_INIT_PARAMS()
 	{
 		m_pBaseTexture = NULL;
 		m_blurAxes = 0;
 		m_blurModes = 0;
-		SHADER_PASS(Unlit) = NULL;
 		m_texSize = vec4_zero;
+
+		SHADER_PASS(Unlit) = NULL;
+
+		// set texture setup
+		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture0);
 	}
 
-	void InitParams()
-	{
-		if(!m_pAssignedMaterial->IsError() && !m_bInitialized && !m_bIsError)
-		{
-			CBaseShader::InitParams();
-		}
-	}
-
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 		// parse material variables
 		SHADER_PARAM_RENDERTARGET_FIND(BaseTexture, m_pBaseTexture);
@@ -62,12 +57,9 @@ public:
 		m_blurModes |= blurYLow ? 0x2 : 0;
 		m_blurModes |= blurXHigh ? 0x4 : 0;
 		m_blurModes |= blurYHigh ? 0x8 : 0;
-
-		// set texture setup
-		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &CBlurFilter::SetupBaseTexture0);
 	}
 
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
 		if(SHADER_PASS(Unlit))
 			return true;
@@ -94,18 +86,11 @@ public:
 
 	void SetupShader()
 	{
-		if(IsError())
-			return;
-
 		SHADER_BIND_PASS_SIMPLE(Unlit);
 	}
 
-
 	void SetupConstants()
 	{
-		if(IsError())
-			return;
-
 		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
 
 		SetupDefaultParameter(SHADERPARAM_BASETEXTURE);
@@ -129,27 +114,8 @@ public:
 		g_pShaderAPI->SetTexture(pSetupTexture, "BaseTextureSampler", 0);
 	}
 
-	const char* GetName()
-	{
-		return "BlurFilter";
-	}
-
-	ITexture*	GetBaseTexture(int stage)
-	{
-		return m_pBaseTexture;
-	}
-
-	ITexture*	GetBumpTexture(int stage)
-	{
-		return NULL;
-	}
-
-	// returns main shader program
-	IShaderProgram*	GetProgram()
-	{
-		return SHADER_PASS(Unlit);
-	}
-private:
+	ITexture*	GetBaseTexture(int stage) {return m_pBaseTexture;}
+	ITexture*	GetBumpTexture(int stage) {return NULL;}
 
 	ITexture*			m_pBaseTexture;
 	int					m_blurAxes;
@@ -158,6 +124,5 @@ private:
 	Vector4D			m_texSize;
 
 	SHADER_DECLARE_PASS(Unlit);
-};
 
-DEFINE_SHADER(BlurFilter, CBlurFilter)
+END_SHADER_CLASS

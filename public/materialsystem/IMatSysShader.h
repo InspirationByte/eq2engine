@@ -61,7 +61,7 @@ public:
 	virtual void			InitTextures() = 0;
 
 	// initializes shader(s)
-	virtual bool			InitShaders() = 0;
+	virtual void			InitShader() = 0;
 
 	// sets up shader
 	virtual void			SetupShader() = 0;
@@ -98,9 +98,6 @@ public:
 
 	// returns bump stage count
 	virtual int				GetBumpStageCount() = 0;
-
-	// returns main shader program
-	virtual IShaderProgram*	GetProgram() = 0;
 };
 
 #endif // ISHADER_H

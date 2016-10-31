@@ -474,43 +474,43 @@ extern IMaterialSystem* materials;
 
 #ifdef EQSHADER_LIBRARY
 
-#define DEFINE_SHADER(localName,className)											\
+#define DEFINE_SHADER(stringName, className)											\
 	static IMaterialSystemShader* C##className##Factory( void )						\
 	{																				\
 		IMaterialSystemShader *pShader = static_cast< IMaterialSystemShader * >(new className()); 	\
 		return pShader;																\
 	}																				\
-	class C_Shader##localName##Foo													\
+	class C_ShaderClassFactoryFoo													\
 	{																				\
 	public:																			\
-		C_Shader##localName##Foo( void )											\
+		C_ShaderClassFactoryFoo( void )											\
 		{																			\
 			static IMaterialSystem* matSystem =	(IMaterialSystem *)GetCore()->GetInterface(MATSYSTEM_INTERFACE_VERSION);	\
-			matSystem->RegisterShader( #localName, &C##className##Factory );		\
+			matSystem->RegisterShader( stringName, &C##className##Factory );		\
 		}																			\
 	};																				\
-	static C_Shader##localName##Foo g_CShader##localName##Foo;
+	static C_ShaderClassFactoryFoo g_CShaderClassFactoryFoo;
 #else
 
-#define DEFINE_SHADER(localName,className)											\
+#define DEFINE_SHADER(stringName, className)								\
 	static IMaterialSystemShader* C##className##Factory( void )						\
 	{																				\
 		IMaterialSystemShader *pShader = static_cast< IMaterialSystemShader * >(new className()); 	\
 		return pShader;																\
 	}																				\
-	class C_Shader##localName##Foo													\
+	class C_ShaderClassFactoryFoo													\
 	{																				\
 	public:																			\
-		C_Shader##localName##Foo( void )											\
+		C_ShaderClassFactoryFoo( void )											\
 		{																			\
 			extern DkList<shaderfactory_t>& _InternalShaderList();					\
 			shaderfactory_t factory;												\
 			factory.dispatcher = &C##className##Factory;							\
-			factory.shader_name = #localName;										\
+			factory.shader_name = stringName;										\
 			int idx = _InternalShaderList().append(factory);						\
 		}																			\
 	};																				\
-	static C_Shader##localName##Foo g_CShader##localName##Foo;
+	static C_ShaderClassFactoryFoo g_CShaderClassFactoryFoo;
 
 #endif
 

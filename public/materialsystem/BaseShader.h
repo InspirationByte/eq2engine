@@ -8,11 +8,24 @@
 #include "materialsystem/IMaterialSystem.h"
 #include "utils/strtools.h"
 
-#define DECLARE_SHADER(classname)	\
-	class C##classname##Shader : public CBaseShader
-
-#define REGISTER_SHADER(classname) \
-	DEFINE_SHADER(classname, C##classname##Shader)
+#define BEGIN_SHADER_CLASS(name)								\
+	namespace C##name##ShaderLocalNamespace						\
+	{															\
+		class C##name##Shader;									\
+		typedef C##name##Shader ThisShaderClass;				\
+		static char* ThisClassNameStr = #name;					\
+		class C##name##Shader : public CBaseShader				\
+		{														\
+		public:																	\
+			const char* GetName() { return ThisClassNameStr; }					\
+			void InitParams() { CBaseShader::InitParams(); _ShaderInitParams(); }
+			
+			
+#define SHADER_INIT_PARAMS()	void _ShaderInitParams()
+#define SHADER_INIT_RHI()		bool _ShaderInitRHI()
+#define SHADER_INIT_TEXTURES()	void InitTextures()
+		
+#define END_SHADER_CLASS }; DEFINE_SHADER(ThisClassNameStr, ThisShaderClass) }
 
 #define SHADER_DEFINE_VAR(type, name)	\
 	type name;
@@ -197,6 +210,7 @@ public:
 
 	// Sets parameters
 	virtual void				InitParams();
+	void						InitShader();
 
 	// Unload shaders, textures
 	virtual void				Unload(bool bUnloadShaders = true, bool bUnloadTextures = true);
@@ -238,6 +252,8 @@ public:
 
 // changed from private to do less recalls
 protected:
+
+	virtual bool				_ShaderInitRHI() = 0;
 
 	void						AddShaderToAutoremover(IShaderProgram** pShader);
 	void						AddTextureToAutoremover(ITexture** pShader);
