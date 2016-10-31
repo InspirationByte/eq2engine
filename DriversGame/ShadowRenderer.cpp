@@ -154,7 +154,7 @@ void CShadowRenderer::RenderShadowCasters()
 	Matrix4x4 proj, view, viewProj;
 
 	decalprimitives_t shadowDecal;
-	shadowDecal.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
+	shadowDecal.settings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
 
 	CViewParams orthoView;
 
@@ -208,7 +208,7 @@ void CShadowRenderer::RenderShadowCasters()
 		orthoView.SetOrigin(object->GetOrigin());
 		orthoView.GetMatrices(proj, view, shadowSize.x*SHADOW_DESCALING, shadowSize.y*SHADOW_DESCALING, -2.5f, 100.0f, true );
 		
-		shadowDecal.projectDir = view.rows[2].xyz();
+		shadowDecal.settings.facingDir = view.rows[2].xyz();
 
 		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
 		materials->SetMatrix(MATRIXMODE_VIEW, view);

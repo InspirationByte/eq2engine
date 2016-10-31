@@ -11,6 +11,69 @@
 
 #include "world.h"
 
+ConVar r_clipdecals("r_clipdecals", "1");
+ConVar r_clipdecalplane("r_clipdecalplane", "-1");
+
+bool DefaultDecalTriangleProcessFunc(struct decalsettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
+{
+	if(dot(NormalOfTriangle(v1.point,v2.point,v3.point), settings.facingDir) < 0.0f)
+		return false;
+
+	return true;
+}
+
+bool LightDecalTriangleProcessFunc(struct decalsettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
+{
+	if(dot(NormalOfTriangle(v1.point,v2.point,v3.point), settings.facingDir) < 0.0f)
+		return false;
+
+	const Plane& pl1 = settings.clipVolume.GetPlane( VOLUME_PLANE_NEAR );
+	const Plane& pl2 = settings.clipVolume.GetPlane( VOLUME_PLANE_FAR );
+
+	float scaleN1 = pl1.Distance(v1.point);
+	float scaleN2 = pl1.Distance(v2.point);
+	float scaleN3 = pl1.Distance(v3.point);
+
+	float scaleT1 = pl2.Distance(v1.point);
+	float scaleT2 = pl2.Distance(v2.point);
+	float scaleT3 = pl2.Distance(v3.point);
+
+	scaleN1 = min(scaleN1, 1.0f);
+	scaleN2 = min(scaleN2, 1.0f);
+	scaleN3 = min(scaleN3, 1.0f);
+
+	scaleT1 = min(scaleT1, 1.0f);
+	scaleT2 = min(scaleT2, 1.0f);
+	scaleT3 = min(scaleT3, 1.0f);
+
+	v1.color = ColorRGBA(scaleN1*scaleT1);
+	v2.color = ColorRGBA(scaleN2*scaleT2);
+	v3.color = ColorRGBA(scaleN3*scaleT3);
+
+	return true;
+}
+
+decalprimitives_t::decalprimitives_t()
+{
+	processFunc = DefaultDecalTriangleProcessFunc;
+}
+
+void decalprimitives_t::AddTriangle(const Vector3D& p1, const Vector3D& p2, const Vector3D& p3)
+{
+	PFXVertex_t v1(p1, vec2_zero, color4_white);
+	PFXVertex_t v2(p2, vec2_zero, color4_white);
+	PFXVertex_t v3(p3, vec2_zero, color4_white);
+
+	if((*processFunc)(settings, v1, v2, v3) == false)
+		return;
+
+	verts.append(v1);
+	verts.append(v2);
+	verts.append(v3);
+}
+
+//-------------------------------------------------------------------------------------
+
 inline PFXVertex_t lerpVertex(const PFXVertex_t &u, const PFXVertex_t &v, float fac)
 {
 	PFXVertex_t out;
@@ -20,9 +83,6 @@ inline PFXVertex_t lerpVertex(const PFXVertex_t &u, const PFXVertex_t &v, float 
 
 	return out;
 }
-
-ConVar r_clipdecals("r_clipdecals", "1");
-ConVar r_clipdecalplane("r_clipdecalplane", "-1");
 
 void ClipVerts(DkList<PFXVertex_t>& verts, const Plane &plane)
 {
@@ -95,11 +155,15 @@ void ClipVerts(DkList<PFXVertex_t>& verts, const Plane &plane)
 	new_vertices.swap(verts);
 }
 
-void DecalClipAndTexture(decalprimitives_t* decal, const Volume& clipVolume, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, const ColorRGBA& color)
+//--------------------------------------------------------------------------------------------------------------
+
+void DecalClipAndTexture(decalprimitives_t& decal, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, const ColorRGBA& color)
 {
-	for(int i = 0; i < decal->verts.numElem(); i++)
+	for(int i = 0; i < decal.verts.numElem(); i++)
 	{
-		Vector3D pos = decal->verts[i].point;
+		PFXVertex_t& vert = decal.verts[i];
+
+		Vector3D pos = vert.point;
 
 		Vector4D projCoords = texCoordProj*Vector4D(pos,1.0f)*1.0f;
 
@@ -108,35 +172,34 @@ void DecalClipAndTexture(decalprimitives_t* decal, const Volume& clipVolume, con
 		Vector4D proj 		= projCoords + projCoords.w;
 		Vector2D texCoord	= proj.xy() / proj.w;
 
-		decal->verts[i].texcoord = lerp(atlasRect.vrightBottom, atlasRect.vleftTop, texCoord);
-		decal->verts[i].color = color;
+		vert.texcoord = lerp(atlasRect.vrightBottom, atlasRect.vleftTop, texCoord);
+		vert.color = ColorRGBA(decal.verts[i].color) * color; // multiply
 	}
 
 	if(r_clipdecals.GetBool())
 	{
 		for(int i = 0; i < 6; i++)
 		{
-			const Plane& pl = clipVolume.GetPlane(i);
+			const Plane& pl = decal.settings.clipVolume.GetPlane(i);
 
 			if(r_clipdecalplane.GetInt() == -1 || r_clipdecalplane.GetInt() == i)
-				ClipVerts(decal->verts, pl);
+				ClipVerts(decal.verts, pl);
 		}
 	}
 }
 
 void ProjectDecalToSpriteBuilder(decalprimitives_t& decal, CSpriteBuilder<PFXVertex_t>* group, const Rectangle_t& rect, const Matrix4x4& viewProj, const ColorRGBA& color)
 {
-	Volume volume;
-
 	// make shadow volume and get our shadow polygons from world
-	volume.LoadAsFrustum( viewProj );
-	g_pGameWorld->m_level.GetDecalPolygons(decal, volume, &g_pGameWorld->m_occludingFrustum);
+	decal.settings.clipVolume.LoadAsFrustum( viewProj );
+
+	g_pGameWorld->m_level.GetDecalPolygons(decal, &g_pGameWorld->m_occludingFrustum);
 
 	if(!decal.verts.numElem())
 		return;
 
 	// clip decal polygons by volume and apply projection coords
-	DecalClipAndTexture(&decal, volume, viewProj, rect, color);
+	DecalClipAndTexture(decal, viewProj, rect, color);
 
 	// push geometry
 	PFXVertex_t* verts;

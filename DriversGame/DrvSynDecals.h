@@ -13,19 +13,35 @@
 #include "IMaterialSystem.h"
 #include "EqParticles.h"
 
-struct decalprimitives_t
+struct decalsettings_t
 {
-	decalprimitives_t()
+	decalsettings_t()
 	{
-		avoidMaterialFlags = MATERIAL_FLAG_RECEIVESHADOWS;
+		avoidMaterialFlags = 0;
+		facingDir = vec3_up;
 	}
 
-	DkList<PFXVertex_t>	verts;
-	DkList<int16>		indices;
-	int					avoidMaterialFlags;
+	int			avoidMaterialFlags;
+	Vector3D	facingDir;
+	Volume		clipVolume;
+};
 
-	Vector3D			projectDir;
+typedef bool (*DECALPROCESSTRIANGLEFN)(struct decalsettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3);
 
+bool DefaultDecalTriangleProcessFunc(struct decalsettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3);
+bool LightDecalTriangleProcessFunc(struct decalsettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3);
+
+struct decalprimitives_t
+{
+	decalprimitives_t();
+
+	void AddTriangle(const Vector3D& p1, const Vector3D& p2, const Vector3D& p3);
+
+	DkList<PFXVertex_t>		verts;
+	DkList<int16>			indices;
+
+	decalsettings_t			settings;
+	DECALPROCESSTRIANGLEFN	processFunc;
 };
 
 inline bool decalVertComparator(const PFXVertex_t& a, const PFXVertex_t& b)
@@ -33,7 +49,7 @@ inline bool decalVertComparator(const PFXVertex_t& a, const PFXVertex_t& b)
 	return a.point == b.point;
 }
 
-void DecalClipAndTexture(decalprimitives_t* decal, const Volume& clipVolume, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, const ColorRGBA& color);
+void DecalClipAndTexture(decalprimitives_t& decal, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, const ColorRGBA& color);
 void ProjectDecalToSpriteBuilder( decalprimitives_t& emptyDecal, CSpriteBuilder<PFXVertex_t>* group, const Rectangle_t& rect, const Matrix4x4& viewProj, const ColorRGBA& color);
 
 #endif // DRVSYNDECALS_H

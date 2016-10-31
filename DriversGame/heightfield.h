@@ -190,7 +190,7 @@ public:
 
 	void						DebugRender(bool bDrawTiles, float gridHeight);
 
-	void						GetDecalPolygons( decalprimitives_t& polys, const Volume& volume, occludingFrustum_t* frustum);
+	void						GetDecalPolygons( decalprimitives_t& polys, occludingFrustum_t* frustum);
 
 public:
 	Vector3D					m_position;		// translation of heightfield

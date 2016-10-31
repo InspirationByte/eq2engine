@@ -523,7 +523,7 @@ int	CLevelRegion::GetNumNomEmptyHFields() const
 	return nCount;
 }
 
-void CLevelRegion::GetDecalPolygons(decalprimitives_t& polys, const Volume& volume, occludingFrustum_t* frustum)
+void CLevelRegion::GetDecalPolygons(decalprimitives_t& polys, occludingFrustum_t* frustum)
 {
 	for (int i = 0; i < GetNumHFields(); i++)
 	{
@@ -532,7 +532,7 @@ void CLevelRegion::GetDecalPolygons(decalprimitives_t& polys, const Volume& volu
 		if(!hfield)
 			continue;
 
-		hfield->GetDecalPolygons(polys, volume, frustum);
+		hfield->GetDecalPolygons(polys, frustum);
 	}
 
 	// get model polygons
@@ -547,13 +547,13 @@ void CLevelRegion::GetDecalPolygons(decalprimitives_t& polys, const Volume& volu
 		if(def->m_info.type != LOBJ_TYPE_INTERNAL_STATIC)
 			continue;
 
-		if( !volume.IsBoxInside(ref->bbox.minPoint, ref->bbox.maxPoint) )
+		if( !polys.settings.clipVolume.IsBoxInside(ref->bbox.minPoint, ref->bbox.maxPoint) )
 			continue;
 
 		if(frustum && !frustum->IsBoxVisible(ref->bbox))
 			continue;
 
-		def->m_model->GetDecalPolygons(polys, volume, ref->transform);
+		def->m_model->GetDecalPolygons(polys, ref->transform);
 	}
 }
 

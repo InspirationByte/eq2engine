@@ -142,7 +142,7 @@ public:
 
 	//----------------------------------
 
-	void							GetDecalPolygons( decalprimitives_t& polys, const Volume& volume, occludingFrustum_t* frustum = NULL);
+	void							GetDecalPolygons( decalprimitives_t& polys, occludingFrustum_t* frustum = NULL);
 
 	// TODO: render code
 

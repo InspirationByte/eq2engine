@@ -1038,7 +1038,7 @@ void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
 	materials->DrawPrimitivesFFP(PRIM_TRIANGLES, tile_verts.ptr(), tile_verts.numElem(), NULL, color4_white, &blend, &depth, &raster);
 }
 
-void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, const Volume& volume, occludingFrustum_t* frustum)
+void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, occludingFrustum_t* frustum)
 {
 	// we're getting vertex data from physics here
 	if(m_physData == NULL)
@@ -1050,14 +1050,14 @@ void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, const Volume&
 
 		IMaterial* mat = batch->materialBundle->material;
 
-		if(mat && (mat->GetFlags() & polys.avoidMaterialFlags))
+		if(mat && (mat->GetFlags() & polys.settings.avoidMaterialFlags))
 			continue;
 
 		BoundingBox bbox = batch->bbox;
 		bbox.minPoint += m_position;
 		bbox.maxPoint += m_position;
 
-		if(!volume.IsBoxInside(bbox.minPoint, bbox.maxPoint))
+		if(!polys.settings.clipVolume.IsBoxInside(bbox.minPoint, bbox.maxPoint))
 			continue;
 
 		if(frustum && !frustum->IsBoxVisible(bbox))
@@ -1074,19 +1074,10 @@ void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, const Volume&
 			Vector3D p2 = batch->physicsVerts[i2]+m_position;
 			Vector3D p3 = batch->physicsVerts[i3]+m_position;
 
-			if(!volume.IsTriangleInside(p1,p2,p3))
+			if(!polys.settings.clipVolume.IsTriangleInside(p1,p2,p3))
 				continue;
 
-			if(dot(NormalOfTriangle(p1,p2,p3), polys.projectDir) < 0.0f)
-				continue;
-
-			polys.verts.append(PFXVertex_t(p1, vec2_zero, vec4_zero));
-			polys.verts.append(PFXVertex_t(p2, vec2_zero, vec4_zero));
-			polys.verts.append(PFXVertex_t(p3, vec2_zero, vec4_zero));
-
-			polys.indices.append(i1);
-			polys.indices.append(i2);
-			polys.indices.append(i3);
+			polys.AddTriangle(p1,p2,p3);
 		}
 	}
 }

@@ -580,7 +580,7 @@ void CLevelModel::ReleaseData()
 //
 //----------------------------------------------------------------
 
-void CLevelModel::GetDecalPolygons( decalprimitives_t& polys, const Volume& volume, const Matrix4x4& transform )
+void CLevelModel::GetDecalPolygons( decalprimitives_t& polys, const Matrix4x4& transform )
 {
 	// transform volume (optimization)
 	// BUG: wrong rotation
@@ -591,7 +591,7 @@ void CLevelModel::GetDecalPolygons( decalprimitives_t& polys, const Volume& volu
 	{
 		lmodel_batch_t& batch = m_phybatches[i];
 
-		if(batch.pMaterial && (batch.pMaterial->GetFlags() & polys.avoidMaterialFlags))
+		if(batch.pMaterial && (batch.pMaterial->GetFlags() & polys.settings.avoidMaterialFlags))
 			continue;
 
 		for(int p = 0; p < batch.numIndices; p += 3)
@@ -615,15 +615,10 @@ void CLevelModel::GetDecalPolygons( decalprimitives_t& polys, const Volume& volu
 			p2 = (transform * Vector4D(p2, 1.0f)).xyz();
 			p3 = (transform * Vector4D(p3, 1.0f)).xyz();
 
-			if(dot(NormalOfTriangle(p1,p2,p3), polys.projectDir) < 0.0f)
+			if(!polys.settings.clipVolume.IsTriangleInside(p1,p2,p3)) // slow version
 				continue;
 
-			if(!volume.IsTriangleInside(p1,p2,p3)) // slow version
-				continue;
-
-			polys.verts.append(PFXVertex_t(p1, vec2_zero, vec4_zero));
-			polys.verts.append(PFXVertex_t(p2, vec2_zero, vec4_zero));
-			polys.verts.append(PFXVertex_t(p3, vec2_zero, vec4_zero));
+			polys.AddTriangle(p1,p2,p3);
 		}
 	}
 }

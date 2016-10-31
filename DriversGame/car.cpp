@@ -2279,27 +2279,12 @@ void CCar::Simulate( float fDt )
 				lightIntensity -= 0.25f;
 		}
 
-		Vector3D startLightPos = GetOrigin() + GetForwardVector()*m_conf->m_headlightPosition.z;
-
-		ColorRGBA lightColor(0.7, 0.6, 0.5, lightIntensity);
-
-		if(m_isLocalCar && r_carLights.GetInt() == 2)
+		if(lightIntensity > 0.0f)
 		{
-			Vector3D lightPos = startLightPos + GetForwardVector()*12.0f;
-			CollisionData_t light_coll;
+			Vector3D startLightPos = GetOrigin() + GetForwardVector()*m_conf->m_headlightPosition.z;
+			ColorRGBA lightColor(0.7, 0.6, 0.5, lightIntensity*0.7f);
 
-			btSphereShape sphere(0.35f);
-			g_pPhysics->TestConvexSweep(&sphere, identity(), startLightPos, lightPos, light_coll, OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT);
-
-			wlight_t light;
-			light.position = Vector4D(lerp(startLightPos, lightPos + Vector3D(0,2,0), light_coll.fract), 18.0f*(light_coll.fract+0.15f));
-
-			light.color = lightColor;
-
-			g_pGameWorld->AddLight(light);
-		}
-		else
-		{
+			// show the light decal
 			float distToCam = length(g_pGameWorld->GetView()->GetOrigin()-carBody->GetPosition());
 
 			if(distToCam < r_carLights_dist.GetFloat())
@@ -2308,7 +2293,7 @@ void CCar::Simulate( float fDt )
 
 				// project from top
 				Matrix4x4 proj, view, viewProj;
-				proj = orthoMatrix(-2.0f, 2.0f, 0.0f, 14.0f, -1.5f, 0.4f);
+				proj = orthoMatrix(-2.0f, 2.0f, 0.0f, 14.0f, -1.5f, 0.5f);
 				view = Matrix4x4( rotateX3(DEG2RAD(-90)) * !m_worldMatrix.getRotationComponent());
 				view.translate(-lightPos);
 
@@ -2316,17 +2301,36 @@ void CCar::Simulate( float fDt )
 
 				float intensityMod = 1.0f - (distToCam / r_carLights_dist.GetFloat());
 
-				lightColor *= Vector4D(lightColor.w) * pow(intensityMod, 0.8f) * 0.6f;
-				lightColor.w = 1.0f;
+				Vector4D lightDecalColor = lightColor * pow(intensityMod, 0.8f) * lightIntensity * 0.5f;
+				lightDecalColor.w = 1.0f;
 
 				TexAtlasEntry_t* entry = g_vehicleLights->FindEntry("light1");
 				Rectangle_t flipRect = entry ? entry->rect : Rectangle_t(0,0,1,1);
 
 				decalprimitives_t lightDecal;
-				lightDecal.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
-				lightDecal.projectDir = normalize(vec3_up - GetForwardVector());
+				lightDecal.settings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
+				lightDecal.settings.facingDir = normalize(vec3_up - GetForwardVector());
 
-				ProjectDecalToSpriteBuilder(lightDecal, g_vehicleLights, flipRect, viewProj, lightColor);
+				// might be slow on mobile device
+				lightDecal.processFunc = LightDecalTriangleProcessFunc;
+
+				ProjectDecalToSpriteBuilder(lightDecal, g_vehicleLights, flipRect, viewProj, lightDecalColor);
+			}
+
+			if(m_isLocalCar && r_carLights.GetInt() == 2)
+			{
+				Vector3D lightPos = startLightPos + GetForwardVector()*10.0f;
+				CollisionData_t light_coll;
+
+				btSphereShape sphere(0.35f);
+				g_pPhysics->TestConvexSweep(&sphere, identity(), startLightPos, lightPos, light_coll, OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT);
+
+				wlight_t light;
+				light.position = Vector4D(lerp(startLightPos, lightPos + Vector3D(0,2,0), light_coll.fract), 12.0f*(light_coll.fract+0.15f));
+
+				light.color = lightColor;
+
+				g_pGameWorld->AddLight(light);
 			}
 		}
 	}

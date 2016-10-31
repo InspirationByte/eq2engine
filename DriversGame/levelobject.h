@@ -107,7 +107,7 @@ public:
 	void					Cleanup();		// cleans up all including render data
 	void					ReleaseData();	// releases data but keeps batchs and VBO
 
-	void					GetDecalPolygons( decalprimitives_t& polys, const Volume& volume, const Matrix4x4& transform );
+	void					GetDecalPolygons( decalprimitives_t& polys, const Matrix4x4& transform );
 
 	void					Render(int nDrawFlags, const BoundingBox& aabb);
 
