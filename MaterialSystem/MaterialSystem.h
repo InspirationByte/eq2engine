@@ -331,7 +331,7 @@ private:
 	CEqMutex						m_Mutex;
 
 	bool							m_bPreloadingMarker;
-	uint32							m_frame;
+	uint8							m_frame;
 };
 
 #endif //CMATERIALSYSTEM_H

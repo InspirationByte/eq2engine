@@ -705,6 +705,13 @@ PFNMATERIALBINDCALLBACK materialstate_callbacks[] =
 	Callback_BindNormalMaterial				// binds normal material.
 };
 
+enum EMaterialRenderSubroutine
+{
+	MATERIAL_SUBROUTINE_ERROR = 0,
+	MATERIAL_SUBROUTINE_FFPMATERIAL,
+	MATERIAL_SUBROUTINE_NORMAL,
+};
+
 // loads material or sends it to loader thread
 void CMaterialSystem::PutMaterialToLoadingQueue(IMaterial* pMaterial)
 {
@@ -734,7 +741,7 @@ int CMaterialSystem::GetLoadingQueue() const
 	return g_threadedMaterialLoader.GetCount();
 }
 
-bool CMaterialSystem::BindMaterial(IMaterial *pMaterial, bool doApply/* = true*/)
+bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, bool doApply/* = true*/)
 {
 	if(!pMaterial)
 		return false;
@@ -747,45 +754,40 @@ bool CMaterialSystem::BindMaterial(IMaterial *pMaterial, bool doApply/* = true*/
 	// set bound frame
 	pSetupMaterial->m_frameBound = m_frame;
 
-	// preload shader and textures
+	// it's now a more critical section to the material
 	PutMaterialToLoadingQueue( pMaterial );
 
 	// set the current material
 	m_pCurrentMaterial = pMaterial;
 	m_nMaterialChanges++;
 
-	int state = 2;
+	EMaterialRenderSubroutine subRoutineId = MATERIAL_SUBROUTINE_NORMAL;
 
 	if(m_config.ffp_mode)
-		state = 1;
+		subRoutineId = MATERIAL_SUBROUTINE_FFPMATERIAL;
 
 	if( pMaterial->GetState() == MATERIAL_LOAD_ERROR )
-		state = 0;
+		subRoutineId = MATERIAL_SUBROUTINE_ERROR;
 
 	// if material is still loading, use the default material for a while
 	if( pMaterial->GetState() == MATERIAL_LOAD_INQUEUE )
 	{
-		// first do that
 		InitDefaultMaterial();
-
-		// set to default material first, wait for loading
 		m_pCurrentMaterial = m_pDefaultMaterial;
-
-		state = 2;
+		subRoutineId = MATERIAL_SUBROUTINE_NORMAL;
 	}
 
 	bool success = false;
 
 	if( r_overdraw.GetBool() )
 	{
-		// do that too
-		InitDefaultMaterial();
+		InitDefaultMaterial();	// do that too
 
-		materials->SetAmbientColor(ColorRGBA(0.045, 0.02, 0.02, 1.0));
-		success = (materialstate_callbacks[state])(m_pOverdrawMaterial);
+		materials->SetAmbientColor(ColorRGBA(0.045f, 0.02f, 0.02f, 1.0f));
+		success = (*materialstate_callbacks[subRoutineId])(m_pOverdrawMaterial);
 	}
 	else
-		success = (materialstate_callbacks[state])(m_pCurrentMaterial);
+		success = (*materialstate_callbacks[subRoutineId])(m_pCurrentMaterial);
 
 	if(doApply)
 		Apply();
