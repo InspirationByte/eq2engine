@@ -59,8 +59,8 @@ void CGameLevel::Cleanup()
 
 	Msg("Unloading level...\n");
 
-	DevMsg(DEVMSG_CORE, "Stopping loader thread...\n");
-	StopThread();
+	//DevMsg(DEVMSG_CORE, "Stopping loader thread...\n");
+	//StopThread();
 
 	// remove regions first
 	int num = m_wide*m_tall;
@@ -254,8 +254,8 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 	}while(true);
 
 #ifndef EDITOR
-	StartWorkerThread( "LevelLoaderThread" );
-	
+	if(!IsRunning())
+		StartWorkerThread( "LevelLoaderThread" );
 #else
 	// regenerate nav grid
 	Nav_ClearCellStates( NAV_CLEAR_WORKSTATES );

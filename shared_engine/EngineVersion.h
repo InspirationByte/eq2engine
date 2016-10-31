@@ -15,7 +15,7 @@
 #define ENGINE_NAME			"Equilibrium"
 #define ENGINE_NAME_SHORT	"Eq"
 
-#define ENGINE_VERSION	"4"
+#define ENGINE_VERSION	"5"
 
 #define COMPILE_DATE __DATE__
 #define COMPILE_TIME __TIME__
