@@ -1716,18 +1716,18 @@ bool KV_GetValueBool( kvkeybase_t* pBase, int nIndex, bool bDefault)
 
 Vector2D KV_GetVector2D( kvkeybase_t* pBase, int nIndex, const Vector2D& vDefault)
 {
-	IVector2D retVal = vDefault;
-	retVal.x = KV_GetValueInt(pBase, nIndex, vDefault.x);
-	retVal.y = KV_GetValueInt(pBase, nIndex+1, vDefault.y);
+	Vector2D retVal = vDefault;
+	retVal.x = KV_GetValueFloat(pBase, nIndex, vDefault.x);
+	retVal.y = KV_GetValueFloat(pBase, nIndex+1, vDefault.y);
 
 	return retVal;
 }
 
 IVector2D KV_GetIVector2D( kvkeybase_t* pBase, int nIndex, const IVector2D& vDefault)
 {
-	Vector2D retVal = vDefault;
-	retVal.x = KV_GetValueFloat(pBase, nIndex, vDefault.x);
-	retVal.y = KV_GetValueFloat(pBase, nIndex+1, vDefault.y);
+	IVector2D retVal = vDefault;
+	retVal.x = KV_GetValueInt(pBase, nIndex, vDefault.x);
+	retVal.y = KV_GetValueInt(pBase, nIndex+1, vDefault.y);
 
 	return retVal;
 }

@@ -16,7 +16,6 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		SHADER_PASS(Unlit) = NULL;
 		SHADER_FOGPASS(Unlit) = NULL;
 
-		CBaseShader::InitParams();
 		m_pColorVar = m_pAssignedMaterial->GetMaterialVar("color", "[1 1 1 1]");
 	}
 
@@ -76,7 +75,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 	void SetColorModulation()
 	{
 		ColorRGBA setColor = m_pColorVar->GetVector4();//materials->GetAmbientColor();
-		
+
 		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", setColor);
 	}
 

@@ -104,8 +104,11 @@ LOCAL_SRC_FILES := \
 	shared_engine/Audio/alsnd_sample.cpp\
 	shared_engine/Audio/alsnd_stream.cpp\
 	shared_engine/Audio/soundzero.cpp\
-	shared_engine/EGUI/EQUI_Manager.cpp\
+	shared_engine/EGUI/EqUI_Manager.cpp\
 	shared_engine/EGUI/EqUI_Panel.cpp\
+	shared_engine/EGUI/EqUI_Label.cpp\
+	shared_engine/EGUI/EqUI_Button.cpp\
+	shared_engine/EGUI/IEqUI_Control.cpp\
 	public/utils/RectanglePacker.cpp\
 	public/ViewParams.cpp\
 	public/luabinding/LuaBinding.cpp\

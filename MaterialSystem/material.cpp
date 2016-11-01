@@ -34,6 +34,10 @@ void CMaterial::Init(const char* szFileName_noExt, bool flushMatVarsOnly)
 	DevMsg(DEVMSG_MATSYSTEM, "Loading material '%s'\n",szFileName_noExt);
 
 	InitVars();
+
+    // init material parameters
+    if(m_pShader)
+        m_pShader->InitParams();
 }
 
 void CMaterial::InitMaterialProxy(kvkeybase_t* pProxyData)
@@ -217,9 +221,6 @@ void CMaterial::InitVars(bool flushOnly)
 		}
 
 		((CBaseShader*)m_pShader)->m_pAssignedMaterial = this;
-
-		// init material parameters
-		m_pShader->InitParams();
 
 		m_state = MATERIAL_LOAD_NEED_LOAD;
 	}

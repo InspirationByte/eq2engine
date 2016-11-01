@@ -16,30 +16,16 @@ LOCAL_C_INCLUDES:= \
 	$(LOCAL_PATH)/public/materialsystem\
 
 LOCAL_SRC_FILES := \
-	MaterialSystem/EngineShaders/SkinnedModel.cpp				\
-	MaterialSystem/EngineShaders/ShadersOverride.cpp			\
-	MaterialSystem/EngineShaders/ShadersMain.cpp				\
-	MaterialSystem/EngineShaders/Shaders/SkyBox.cpp				\
-	MaterialSystem/EngineShaders/Shaders/InternalShaders.cpp	\
-	MaterialSystem/EngineShaders/Shaders/DeferredAmbient.cpp	\
-	MaterialSystem/EngineShaders/Shaders/BaseUnlit.cpp			\
-	MaterialSystem/EngineShaders/FlashlightReflector.cpp		\
-	MaterialSystem/EngineShaders/ErrorShader.cpp				\
-	MaterialSystem/EngineShaders/DeferredSunLight.cpp			\
-	MaterialSystem/EngineShaders/DeferredSpotLight.cpp			\
-	MaterialSystem/EngineShaders/DeferredPointlight.cpp			\
-	MaterialSystem/EngineShaders/BleachBypass.cpp				\
-	MaterialSystem/EngineShaders/BaseVertexTransition4.cpp		\
-	MaterialSystem/EngineShaders/BaseVertexTransDecal4.cpp		\
-	MaterialSystem/EngineShaders/BaseSingle.cpp					\
-	MaterialSystem/EngineShaders/BaseParticle.cpp				\
-	MaterialSystem/EngineShaders/BaseDecal.cpp					\
-	MaterialSystem/EngineShaders/DepthWriteLighting.cpp			\
-	MaterialSystem/EngineShaders/Blur.cpp						\
-	MaterialSystem/EngineShaders/Water.cpp						\
-	MaterialSystem/EngineShaders/HDRBlur.cpp					\
-	MaterialSystem/EngineShaders/HDRBloom.cpp					\
-	public/materialsystem/BaseShader.cpp						\
+	MaterialSystem/EngineShaders/Shaders/BaseParticle.cpp	\
+	MaterialSystem/EngineShaders/Shaders/BaseSkinned.cpp	\
+	MaterialSystem/EngineShaders/Shaders/BaseUnlit.cpp	\
+	MaterialSystem/EngineShaders/Shaders/BlurFilter.cpp	\
+	MaterialSystem/EngineShaders/Shaders/Error.cpp	\
+	MaterialSystem/EngineShaders/Shaders/SDFFont.cpp	\
+	MaterialSystem/EngineShaders/Shaders/Sky.cpp	\
+	MaterialSystem/EngineShaders/ShadersOverride.cpp	\
+	MaterialSystem/EngineShaders/ShadersMain.cpp	\
+	public/materialsystem/BaseShader.cpp		\
 	public/ViewParams.cpp
 
 LOCAL_STATIC_LIBRARIES := coreLib prevLib jpeg eqCore

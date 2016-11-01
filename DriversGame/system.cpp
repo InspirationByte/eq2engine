@@ -281,6 +281,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	debugoverlay->Init();
 	equi::Manager->Init();
 
+	/*
 	equi::Panel* panel = (equi::Panel*)equi::Manager->CreateElement("panel");
 
 	kvkeybase_t kvs;
@@ -291,7 +292,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	panel->SetSize( IVector2D(800, 600) );
 
 	equi::Manager->AddPanel( panel );
-
+    */
 	// init game states and proceed
 	InitRegisterStates();
 
