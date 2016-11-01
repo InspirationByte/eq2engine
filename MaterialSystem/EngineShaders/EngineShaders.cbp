@@ -47,29 +47,15 @@
 		<Unit filename="../../public/ViewParams.h" />
 		<Unit filename="../../public/materialsystem/BaseShader.cpp" />
 		<Unit filename="../../public/materialsystem/BaseShader.h" />
-		<Unit filename="BaseDecal.cpp" />
-		<Unit filename="BaseParticle.cpp" />
-		<Unit filename="BaseSingle.cpp" />
-		<Unit filename="BaseVertexTransDecal4.cpp" />
-		<Unit filename="BaseVertexTransition4.cpp" />
-		<Unit filename="BleachBypass.cpp" />
-		<Unit filename="Blur.cpp" />
-		<Unit filename="DeferredPointlight.cpp" />
-		<Unit filename="DeferredSpotLight.cpp" />
-		<Unit filename="DeferredSunLight.cpp" />
-		<Unit filename="DepthWriteLighting.cpp" />
-		<Unit filename="ErrorShader.cpp" />
-		<Unit filename="FlashlightReflector.cpp" />
-		<Unit filename="HDRBloom.cpp" />
-		<Unit filename="HDRBlur.cpp" />
+		<Unit filename="Shaders/BaseParticle.cpp" />
+		<Unit filename="Shaders/BaseSkinned.cpp" />
 		<Unit filename="Shaders/BaseUnlit.cpp" />
-		<Unit filename="Shaders/DeferredAmbient.cpp" />
-		<Unit filename="Shaders/InternalShaders.cpp" />
-		<Unit filename="Shaders/SkyBox.cpp" />
+		<Unit filename="Shaders/BlurFilter.cpp" />
+		<Unit filename="Shaders/Error.cpp" />
+		<Unit filename="Shaders/SDFFont.cpp" />
+		<Unit filename="Shaders/Sky.cpp" />
 		<Unit filename="ShadersMain.cpp" />
 		<Unit filename="ShadersOverride.cpp" />
-		<Unit filename="SkinnedModel.cpp" />
-		<Unit filename="Water.cpp" />
 		<Unit filename="vars_generic.h" />
 		<Extensions>
 			<code_completion />
