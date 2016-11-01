@@ -13,18 +13,18 @@
 	{															\
 		class C##name##Shader;									\
 		typedef C##name##Shader ThisShaderClass;				\
-		static char* ThisClassNameStr = #name;					\
+		static const char* ThisClassNameStr = #name;					\
 		class C##name##Shader : public CBaseShader				\
 		{														\
 		public:																	\
 			const char* GetName() { return ThisClassNameStr; }					\
 			void InitParams() { CBaseShader::InitParams(); _ShaderInitParams(); }
-			
-			
+
+
 #define SHADER_INIT_PARAMS()	void _ShaderInitParams()
 #define SHADER_INIT_RHI()		bool _ShaderInitRHI()
 #define SHADER_INIT_TEXTURES()	void InitTextures()
-		
+
 #define END_SHADER_CLASS }; DEFINE_SHADER(ThisClassNameStr, ThisShaderClass) }
 
 #define SHADER_DEFINE_VAR(type, name)	\

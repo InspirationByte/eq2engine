@@ -87,7 +87,7 @@ int	CDPKFileReader::FindFileIndex(const char* filename)
 	char* pszNewString = (char*)stackalloc(strlen(filename)+1);
 	RebuildFilePath((char*)filename, pszNewString);
 	FixSlashes(pszNewString);
-	strlwr(pszNewString);
+	xstrlwr(pszNewString);
 
 	int strHash = StringToHash(pszNewString, true);
 

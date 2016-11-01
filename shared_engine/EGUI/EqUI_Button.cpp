@@ -8,7 +8,7 @@
 #include "EqUI_Button.h"
 #include "in_keys_ident.h"
 
-#include "EQUI_Manager.h"
+#include "EqUI_Manager.h"
 #include "IFont.h"
 
 namespace equi
@@ -32,7 +32,7 @@ void Button::DrawSelf( const IRectangle& rect )
 	DrawAlphaFilledRectangle(rect, btnColor, ColorRGBA(0.5,0.5,0.5,0.5));
 
 	// TODO: GetFontStyle
-	
+
 	style.styleFlag |= TEXT_STYLE_SHADOW;
 
 	IVector2D pos = rect.GetLeftTop() + IVector2D(0,25);

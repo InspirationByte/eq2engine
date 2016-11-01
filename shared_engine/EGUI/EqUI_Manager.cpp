@@ -5,7 +5,7 @@
 // Description: Eq UI manager
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "EQUI_Manager.h"
+#include "EqUI_Manager.h"
 #include "core_base_header.h"
 #include "in_keys_ident.h"
 #include "FontCache.h"
@@ -264,12 +264,12 @@ bool CUIManager::ProcessMouseEvents(float x, float y, int nMouseButtons, int fla
 	{
 		if(flags & UIEVENT_UP)
 			m_keyboardFocus = m_mouseOver;
-		
+
 		// also set panel focus
 		equi::Panel* panel = GetPanelByElement(m_mouseOver);
 		BringToTop( panel );
 	}
-		
+
 
 	if(oldMouseOver != m_mouseOver)
 	{

@@ -462,11 +462,13 @@ public:
 	virtual void							PrintLoadedMaterials() = 0;
 };
 
+typedef DkList<shaderfactory_t> FactoryList;
+
 extern IMaterialSystem* materials;
 
 #define DECLARE_INTERNAL_SHADERS()       \
-	DkList<shaderfactory_t>* s_internalShaderReg = NULL;                            \
-	DkList<shaderfactory_t>& _InternalShaderList() { if(!s_internalShaderReg) s_internalShaderReg = new DkList<shaderfactory_t>(); return *s_internalShaderReg; }
+	FactoryList* s_internalShaderReg = NULL;                            \
+	FactoryList& _InternalShaderList() { if(!s_internalShaderReg) s_internalShaderReg = new FactoryList(); return *s_internalShaderReg; }
 
 #define REGISTER_INTERNAL_SHADERS()								\
 	for(int i = 0; i < _InternalShaderList().numElem(); i++)	\
@@ -492,6 +494,8 @@ extern IMaterialSystem* materials;
 	static C_ShaderClassFactoryFoo g_CShaderClassFactoryFoo;
 #else
 
+extern FactoryList& _InternalShaderList();
+
 #define DEFINE_SHADER(stringName, className)								\
 	static IMaterialSystemShader* C##className##Factory( void )						\
 	{																				\
@@ -503,7 +507,6 @@ extern IMaterialSystem* materials;
 	public:																			\
 		C_ShaderClassFactoryFoo( void )											\
 		{																			\
-			extern DkList<shaderfactory_t>& _InternalShaderList();					\
 			shaderfactory_t factory;												\
 			factory.dispatcher = &C##className##Factory;							\
 			factory.shader_name = stringName;										\

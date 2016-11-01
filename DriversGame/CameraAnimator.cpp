@@ -11,10 +11,8 @@
 //			add director features HERE
 //
 
-#include "CameraAnimator.h"
-#include "ConVar.h"
-#include "math/math_util.h"
 #include "car.h"
+#include "CameraAnimator.h"
 
 #define DEFAULT_CAMERA_FOV			(52.0f)
 
@@ -111,7 +109,7 @@ const Vector3D&	CCameraAnimator::GetAngles() const
 	return m_rotation;
 }
 
-float CCameraAnimator::GetFOV() const 
+float CCameraAnimator::GetFOV() const
 {
 	return m_cameraFOV;
 }

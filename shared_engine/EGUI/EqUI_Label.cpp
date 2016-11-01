@@ -7,7 +7,7 @@
 
 #include "EqUI_Label.h"
 
-#include "EQUI_Manager.h"
+#include "EqUI_Manager.h"
 #include "IFont.h"
 
 namespace equi

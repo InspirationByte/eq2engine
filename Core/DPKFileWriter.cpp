@@ -31,7 +31,7 @@ CDPKFileWriter::~CDPKFileWriter()
 	// Write file infos
 	for(int i = 0; i < m_files.numElem();i++)
 		delete m_files[i];
-	
+
 	m_files.clear();
 }
 
@@ -116,7 +116,7 @@ void CDPKFileWriter::SetMountPath( const char* path )
 {
 	strncpy(m_mountPath, path, DPK_MAX_FILENAME_LENGTH);
 	FixSlashes(m_mountPath);
-	strlwr( m_mountPath );
+	xstrlwr( m_mountPath );
 }
 
 bool FileExists( const char* szPath )
@@ -124,7 +124,7 @@ bool FileExists( const char* szPath )
 #ifdef _WIN32
 	DWORD dwAttrib = GetFileAttributes(szPath);
 
-	return (dwAttrib != INVALID_FILE_ATTRIBUTES && 
+	return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
 			!(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 #endif // _WIN32
 }
@@ -143,7 +143,7 @@ bool CDPKFileWriter::AddFile( const char* fileName )
 	{
 		strncpy(newInfo->filename, fileName, DPK_MAX_FILENAME_LENGTH);
 		FixSlashes(newInfo->filename);
-		strlwr( newInfo->filename );
+		xstrlwr( newInfo->filename );
 
 		char fillMountedFilename[DPK_MAX_FILENAME_LENGTH];
 		strcpy(fillMountedFilename, m_mountPath);
@@ -323,7 +323,7 @@ bool CDPKFileWriter::SavePackage()
 					pkInfo->flags |= DPKFILE_FLAG_COMPRESSED;
 
 					m_header.fileInfoOffset += compressed_size;
-					
+
 					// free loaded file
 					free( _compressedData );
 					free( _filedata );
@@ -376,7 +376,7 @@ bool CDPKFileWriter::SavePackage()
 	EndPacifier();
 	Msg("OK\n");
 
-	m_header.numFiles = m_files.numElem(); 
+	m_header.numFiles = m_files.numElem();
 
 	// Write header
 	fwrite(&m_header,sizeof(m_header),1,m_file);

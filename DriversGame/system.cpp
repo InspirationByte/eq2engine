@@ -18,7 +18,7 @@
 #include "KeyBinding/Keys.h"
 #include "FontCache.h"
 
-#include "EGUI/EQUI_Manager.h"
+#include "EGUI/EqUI_Manager.h"
 #include "EGUI/EqUI_Panel.h"
 
 #include "network/net_defs.h"

@@ -1078,7 +1078,7 @@
 
 1457289078 /home/soap/Projects/EqEngine/src_main/public/textureformats.h
 
-1476721192 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/ShaderAPI_defs.h
+1478009493 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/ShaderAPI_defs.h
 	"textureformats.h"
 	"math/Vector.h"
 	"math/Matrix.h"
@@ -1115,10 +1115,9 @@
 
 1457289078 /home/soap/Projects/EqEngine/src_main/public/refcounted.h
 
-1465324214 /home/soap/Projects/EqEngine/src_main/public/math/Rectangle.h
+1478009493 /home/soap/Projects/EqEngine/src_main/public/math/Rectangle.h
 	"Vector.h"
 	"math_util.h"
-	"coord.h"
 
 1465324214 /home/soap/Projects/EqEngine/src_main/public/math/math_util.h
 	"Matrix.h"
@@ -1137,7 +1136,7 @@
 	"dktypes.h"
 	"eqstring.h"
 
-1476720751 /home/soap/Projects/EqEngine/src_main/public/utils/strtools.h
+1478009493 /home/soap/Projects/EqEngine/src_main/public/utils/strtools.h
 	"utils/DkList.h"
 	"utils/eqstring.h"
 	"utils/eqwstring.h"
@@ -1197,8 +1196,9 @@
 	"platform/Platform.h"
 	"InterfaceManager.h"
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IVertexBuffer.h
+1478009493 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IVertexBuffer.h
 	"ShaderAPI_defs.h"
+	"ppmem.h"
 
 1476721229 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IVertexFormat.h
 	"platform/Platform.h"

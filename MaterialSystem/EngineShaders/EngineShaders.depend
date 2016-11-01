@@ -1239,14 +1239,14 @@
 1456748937 /home/soap/Projects/EqEngine/src_all/public/core/platform/MessageBox.h
 	"InterfaceManager.h"
 
-1465324214 source:/home/soap/Projects/EqEngine/src_main/public/materialsystem/BaseShader.cpp
+1478009493 source:/home/soap/Projects/EqEngine/src_main/public/materialsystem/BaseShader.cpp
 	"BaseShader.h"
 
-1474555571 /home/soap/Projects/EqEngine/src_main/public/materialsystem/BaseShader.h
+1478014153 /home/soap/Projects/EqEngine/src_main/public/materialsystem/BaseShader.h
 	"materialsystem/IMaterialSystem.h"
 	"utils/strtools.h"
 
-1465324214 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMaterialSystem.h
+1478014578 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMaterialSystem.h
 	"DebugInterface.h"
 	"IDkCore.h"
 	"renderers/IShaderAPI.h"
@@ -1312,7 +1312,7 @@
 
 1457289078 /home/soap/Projects/EqEngine/src_main/public/textureformats.h
 
-1476721192 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/ShaderAPI_defs.h
+1478009493 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/ShaderAPI_defs.h
 	"textureformats.h"
 	"math/Vector.h"
 	"math/Matrix.h"
@@ -1343,10 +1343,9 @@
 
 1465324214 /home/soap/Projects/EqEngine/src_main/public/math/Matrix_Inline.h
 
-1465324214 /home/soap/Projects/EqEngine/src_main/public/math/Rectangle.h
+1478009493 /home/soap/Projects/EqEngine/src_main/public/math/Rectangle.h
 	"Vector.h"
 	"math_util.h"
-	"coord.h"
 
 1465324214 /home/soap/Projects/EqEngine/src_main/public/math/math_util.h
 	"Matrix.h"
@@ -1376,8 +1375,9 @@
 
 1457289078 /home/soap/Projects/EqEngine/src_main/public/refcounted.h
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IVertexBuffer.h
+1478009493 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IVertexBuffer.h
 	"ShaderAPI_defs.h"
+	"ppmem.h"
 
 1476721229 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IVertexFormat.h
 	"platform/Platform.h"
@@ -1416,7 +1416,7 @@
 	"IMaterialVar.h"
 	"IMaterialProxy.h"
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMatSysShader.h
+1478009493 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMatSysShader.h
 	"IMaterial.h"
 	"math/DkMath.h"
 
@@ -1452,7 +1452,7 @@
 	<emmintrin.h>
 	<mm3dnow.h>
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public/math/Volume.h
+1478009493 /home/soap/Projects/EqEngine/src_main/public/math/Volume.h
 	"Matrix.h"
 	"Vector.h"
 	"math_common.h"
@@ -1470,7 +1470,7 @@
 	"IMaterial.h"
 	"utils/KeyValues.h"
 
-1476719816 /home/soap/Projects/EqEngine/src_main/public/utils/KeyValues.h
+1478009493 /home/soap/Projects/EqEngine/src_main/public/utils/KeyValues.h
 	"platform/Platform.h"
 	"utils/DkList.h"
 	"math/DkMath.h"
@@ -1484,14 +1484,14 @@
 	"dktypes.h"
 	"math/DkMath.h"
 
-1476720751 /home/soap/Projects/EqEngine/src_main/public/utils/strtools.h
+1478009493 /home/soap/Projects/EqEngine/src_main/public/utils/strtools.h
 	"utils/DkList.h"
 	"utils/eqstring.h"
 	"utils/eqwstring.h"
 	<ctype.h>
 	<string.h>
 
-1476719816 source:/home/soap/Projects/EqEngine/src_main/public/ViewParams.cpp
+1478009493 source:/home/soap/Projects/EqEngine/src_main/public/ViewParams.cpp
 	"ViewParams.h"
 
 1474555571 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/BaseDecal.cpp
@@ -1604,6 +1604,24 @@
 	"BaseShader.h"
 	"vars_generic.h"
 
-1473019974 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/BaseUnlit.cpp
+1478009493 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/BaseUnlit.cpp
+	"BaseShader.h"
+
+1478009493 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/BaseParticle.cpp
+	"BaseShader.h"
+
+1478009493 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/BlurFilter.cpp
+	"BaseShader.h"
+
+1478009493 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/Error.cpp
+	"BaseShader.h"
+
+1478009493 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/SDFFont.cpp
+	"BaseShader.h"
+
+1478009493 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/Sky.cpp
+	"BaseShader.h"
+
+1478009493 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/BaseSkinned.cpp
 	"BaseShader.h"
 

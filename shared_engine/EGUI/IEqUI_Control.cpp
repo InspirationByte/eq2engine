@@ -7,7 +7,7 @@
 
 #include "IEqUI_Control.h"
 
-#include "EQUI_Manager.h"
+#include "EqUI_Manager.h"
 #include "EqUI_Panel.h"
 
 #include "IFileSystem.h"
@@ -18,7 +18,7 @@
 namespace equi
 {
 
-IUIControl::IUIControl() 
+IUIControl::IUIControl()
 	: m_visible(false), m_enabled(true), m_parent(NULL), m_font(NULL)
 {
 

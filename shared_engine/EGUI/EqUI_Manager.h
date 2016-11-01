@@ -96,7 +96,9 @@ extern CUIManager* Manager;
 };
 
 #define DECLARE_EQUI_CONTROL(name, classname) \
-	equi::IUIControl* s_equi_##name##_f() {return new equi::classname();}
+namespace equi{\
+	equi::IUIControl* s_equi_##name##_f() {return new equi::classname();} \
+	}
 
 #define EQUI_FACTORY(name) \
 	s_equi_##name##_f

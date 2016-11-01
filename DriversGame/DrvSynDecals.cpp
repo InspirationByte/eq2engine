@@ -5,11 +5,8 @@
 // Description: Driver Syndicate decal generator code
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DrvSynDecals.h"
-#include "math/math_util.h"
-#include "ConVar.h"
-
 #include "world.h"
+#include "DrvSynDecals.h"
 
 ConVar r_clipdecals("r_clipdecals", "1");
 ConVar r_clipdecalplane("r_clipdecalplane", "-1");
@@ -101,16 +98,16 @@ void ClipVerts(DkList<PFXVertex_t>& verts, const Plane &plane)
 
 		if (d[0] >= 0 && d[1] >= 0 && d[2] >= 0)
 		{
-			
+
 			new_vertices.append(verts[i]);
 			new_vertices.append(verts[i+1]);
 			new_vertices.append(verts[i+2]);
-			
+
 		}
 		else if (d[0] < 0 && d[1] < 0 && d[2] < 0)
 		{
 		}
-		else 
+		else
 		{
 			int front0 = 0;
 			int prev = 2;
@@ -138,8 +135,8 @@ void ClipVerts(DkList<PFXVertex_t>& verts, const Plane &plane)
 				new_vertices.append(verts[i+front0]);
 				new_vertices.append(lerpVertex(verts[i+front1], verts[i+front2], x0));
 				new_vertices.append(lerpVertex(verts[i+front0], verts[i+front2], x1));
-			} 
-			else 
+			}
+			else
 			{
 				float x0 = d[front0] / dot(plane.normal, v[front0].point - v[front1].point);
 				float x1 = d[front0] / dot(plane.normal, v[front0].point - v[front2].point);
