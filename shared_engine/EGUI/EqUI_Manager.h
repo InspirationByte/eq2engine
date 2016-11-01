@@ -95,10 +95,15 @@ private:
 extern CUIManager* Manager;
 };
 
+#ifdef _MSC_VER
 #define DECLARE_EQUI_CONTROL(name, classname) \
-namespace equi{\
-	equi::IUIControl* s_equi_##name##_f() {return new equi::classname();} \
-	}
+		equi::IUIControl* s_equi_##name##_f() {return new equi::classname();}
+#else
+#define DECLARE_EQUI_CONTROL(name, classname) \
+	namespace equi{\
+		equi::IUIControl* s_equi_##name##_f() {return new equi::classname();} \
+		}
+#endif // _MSC_VER
 
 #define EQUI_FACTORY(name) \
 	s_equi_##name##_f

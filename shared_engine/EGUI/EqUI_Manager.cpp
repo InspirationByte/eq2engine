@@ -13,11 +13,6 @@
 //-----
 // include all needed elements here
 #include "EqUI_Panel.h"
-//#include "EqUI_Label.h"
-//#include "EqUI_Button.h"
-//#include "EqUI_Slider.h"
-//#include "EqUI_TextureFrame.h"
-//-----
 
 DECLARE_CMD(ui_showpanel, NULL, CV_CHEAT)
 {

@@ -163,10 +163,10 @@
   <ItemGroup>
     <ClCompile Include="..\..\public\materialsystem\BaseShader.cpp" />
     <ClCompile Include="..\..\public\ViewParams.cpp" />
-    <ClCompile Include="BaseSkinned.cpp" />
     <ClCompile Include="ShadersMain.cpp" />
     <ClCompile Include="ShadersOverride.cpp" />
     <ClCompile Include="Shaders\BaseParticle.cpp" />
+    <ClCompile Include="Shaders\BaseSkinned.cpp" />
     <ClCompile Include="Shaders\BaseUnlit.cpp" />
     <ClCompile Include="Shaders\BlurFilter.cpp" />
     <ClCompile Include="Shaders\Error.cpp" />
