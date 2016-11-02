@@ -341,7 +341,7 @@ protected:
 																	F func,
 																	void* args = NULL);
 
-	void							SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& pairs);
+	void							SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt);
 	void							SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& contactPairs);
 
 	CEqCollisionBroadphaseGrid		m_grid;

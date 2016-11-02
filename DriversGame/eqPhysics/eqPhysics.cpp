@@ -471,7 +471,7 @@ bool CEqPhysics::IsValidBody( CEqRigidBody* obj )
 */
 extern ConVar ph_margin;
 
-void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& pairs)
+void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt)
 {
 	PROFILE_FUNC();
 
@@ -497,12 +497,17 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 	if(distBetweenObjects > lenA+lenB)
 		return;
 
+	DkList<ContactPair_t>& pairs = bodyA->m_contactPairs;
+	
+	// check the contact pairs of bodyB (because it has been already processed by the order)
+	// if we had any contact pair with bodyA we should discard this collision
 	{
+		DkList<ContactPair_t>& pairsB = bodyB->m_contactPairs;
+
 		// don't process collisions again
-		for (int i = 0; i < pairs.numElem(); i++)
+		for (int i = 0; i < pairsB.numElem(); i++)
 		{
-			if ((pairs[i].bodyA == bodyA && pairs[i].bodyB == bodyB) ||
-				(pairs[i].bodyA == bodyB && pairs[i].bodyB == bodyA))
+			if (pairsB[i].bodyA == bodyB && pairsB[i].bodyB == bodyA)
 				return;
 		}
 	}
@@ -589,6 +594,7 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 			continue;
 
 		int idx = pairs.append(ContactPair_t());
+
 		ContactPair_t& newPair = pairs[idx];
 		newPair.normal = hitNormal;
 		newPair.flags = 0;
@@ -604,8 +610,6 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 			debugoverlay->Line3D(hitPos, hitPos+hitNormal, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1), 1.0f);
 			debugoverlay->Text3D(hitPos, 50.0f, ColorRGBA(1,1,0,1), 0.0f, "penetration depth: %f", hitDepth);
 		}
-
-		//ProcessContactPair(newPair, fDt);
 	}
 }
 
@@ -764,8 +768,6 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 			debugoverlay->Line3D(hitPos, hitPos+hitNormal, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1), 1.0f);
 			debugoverlay->Text3D(hitPos, 50.0f, ColorRGBA(1,1,0,1), 0.0f, "penetration depth: %f", hitDepth);
 		}
-
-		//ProcessContactPair(newPair, fDt);
 	}
 }
 
@@ -874,7 +876,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 							continue;
 
 						if(collObj->IsDynamic())
-							SolveBodyCollisions(body, (CEqRigidBody*)ncell->m_dynamicObjs[j], body->GetLastFrameTime(), body->m_contactPairs);
+							SolveBodyCollisions(body, (CEqRigidBody*)ncell->m_dynamicObjs[j], body->GetLastFrameTime());
 						else
 							SolveStaticVsBodyCollision(ncell->m_dynamicObjs[j], body, body->GetLastFrameTime(), body->m_contactPairs);
 					}
@@ -955,11 +957,8 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 
 	// All objects have collision list
 	if ((pair.bodyA->m_flags & COLLOBJ_COLLISIONLIST) &&
-		pairsA.numElem() < collisionList_Max
-		/*!(bodyB->m_flags & BODY_DISABLE_RESPONSE)*/)
+		pairsA.numElem() < collisionList_Max)
 	{
-
-
 		int oldNum = pairsA.numElem();
 		pairsA.setNum(oldNum+1);
 
@@ -975,14 +974,10 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 
 		if ((bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE))
 			collData.flags |= COLLPAIRFLAG_OBJECTB_NO_RESPONSE;
-
-		//pair.bodyA->m_collisionList.append(collData);
-
 	}
-
+	
 	if ((bodyB->m_flags & COLLOBJ_COLLISIONLIST) &&
-		pairsB.numElem() < collisionList_Max
-		/*!bodyADisableResponse*/)
+		pairsB.numElem() < collisionList_Max)
 	{
 		int oldNum = pairsB.numElem();
 		pairsB.setNum(oldNum+1);
@@ -1002,9 +997,6 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 
 		if (bodyADisableResponse)
 			collData.flags |= COLLPAIRFLAG_OBJECTB_NO_RESPONSE;
-
-		//bodyB->m_collisionList.append(collData);
-
 	}
 }
 
@@ -1033,6 +1025,8 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 		if(body->m_callbacks)
 			body->m_callbacks->PreSimulate( m_fDt );
 
+		// clear contact pairs and results
+		body->m_contactPairs.clear(false);
 		body->m_collisionList.clear( false );
 
 		IntegrateSingle(body);
@@ -1057,9 +1051,6 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	for (int i = 0; i < m_moveable.numElem(); i++)
 	{
 		CEqRigidBody* body = m_moveable[i];
-
-		// clear contact pairs
-		body->m_contactPairs.clear(false);
 
 		if(body->m_callbacks)
 			body->m_callbacks->PostSimulate(m_fDt);
