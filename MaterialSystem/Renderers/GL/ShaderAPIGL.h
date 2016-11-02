@@ -370,6 +370,9 @@ private:
 	int						m_nCurrentDstFactor;
 	int						m_nCurrentBlendFunc;
 
+	float					m_fCurrentDepthBias;
+	float					m_fCurrentSlopeDepthBias;
+
 	int						m_nCurrentDepthFunc;
 	bool					m_bCurrentDepthTestEnable;
 	bool					m_bCurrentDepthWriteEnable;

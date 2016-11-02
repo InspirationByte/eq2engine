@@ -610,13 +610,6 @@ bool CEngineGame::EngineRunFrame( float dTime )
 		m_nGameState == GAME_LEVEL_UNLOAD || 
 		m_nGameState == GAME_LEVEL_LOAD)
 	{
-
-		float measure_matsys = MEASURE_TIME_BEGIN();
-
-		// matsystem updates before any rendering
-		materials->Update( frametime );
-		debugoverlay->Text(Vector4D(1), " matsystem: %.2f ms",abs(MEASURE_TIME_STATS(measure_matsys)));
-
 		float measure_postrender = MEASURE_TIME_BEGIN();
 
 		// Render frame. It must handle loading screen render
@@ -697,11 +690,6 @@ bool CEngineGame::EngineRunFrame( float dTime )
 	}
 
 	debugoverlay->Text(Vector4D(1), " game update: %.2f ms",abs(MEASURE_TIME_STATS(measure_gamedll)));
-
-	float measure_matsys = MEASURE_TIME_BEGIN();
-	// matsystem updates before any rendering
-	materials->Update( frametime );
-	debugoverlay->Text(Vector4D(1), " matsystem: %.2f ms",abs(MEASURE_TIME_STATS(measure_matsys)));
 
 	float measure_prerender = MEASURE_TIME_BEGIN();
 	// Render frame in game

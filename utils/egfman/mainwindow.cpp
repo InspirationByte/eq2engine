@@ -817,7 +817,7 @@ void Rad_CreateWindow()
 		materials_config.wireframeMode = false;
 
 		materials_config.ffp_mode = false;
-		materials_config.lighting_model = MATERIAL_LIGHT_FORWARD;
+		materials_config.lighting_model = MATERIAL_LIGHT_UNLIT;
 		materials_config.stubMode = false;
 		materials_config.editormode = true;
 
@@ -835,7 +835,6 @@ void Rad_CreateWindow()
 			return;
 	}
 
-	materials->SetLightingModel(MATERIAL_LIGHT_UNLIT);
 	materials->LoadShaderLibrary("Shaders_Engine.dll");
 
 	g_pModelCache->PrecacheModel("models/error.egf");

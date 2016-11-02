@@ -71,12 +71,6 @@ public:
 		SetParameterFunctor(SHADERPARAM_COLOR, &CBaseDecal::SetColorModulation);
 	}
 
-	void ParamSetup_DepthSetup()
-	{
-		materials->SetDepthStates(m_depthtest, m_depthwrite, COMP_LEQUAL);//, r_decals_depthbias.GetFloat(), r_decals_slopedepthbias.GetFloat());
-		g_pShaderAPI->SetDepthRange(0.0f - /*r_decals_depthbias.GetFloat()*/-0.00001f, 1.0f - 0.000005f);
-	}
-
 	void ParamSetup_AlphaModel_Solid()
 	{
 		// setup default alphatesting from shaderapi

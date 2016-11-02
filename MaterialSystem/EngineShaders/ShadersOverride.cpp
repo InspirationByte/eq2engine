@@ -9,7 +9,7 @@
 
 const char* OverrideShader_Base()
 {
-	switch(materials->GetLightingModel())
+	switch(materials->GetConfiguration().lighting_model)
 	{
 		case MATERIAL_LIGHT_UNLIT:
 			return "BaseUnlit";
@@ -24,7 +24,7 @@ const char* OverrideShader_Base()
 
 const char* OverrideShader_BaseSkinned()
 {
-	switch(materials->GetLightingModel())
+	switch(materials->GetConfiguration().lighting_model)
 	{
 		case MATERIAL_LIGHT_UNLIT:
 			return "BaseSkinned";
@@ -51,7 +51,7 @@ const char* OverrideShader_BaseParticle()
 
 const char* OverrideShader_Error()
 {
-	switch(materials->GetLightingModel())
+	switch(materials->GetConfiguration().lighting_model)
 	{
 		case MATERIAL_LIGHT_UNLIT:
 			return "Error";
@@ -64,10 +64,17 @@ const char* OverrideShader_Error()
 	return "Error";
 }
 
+
+const char* OverrideShader_Sky()
+{
+	return "Skybox";
+}
+
 void InitShaderOverrides()
 {
 	materials->RegisterShaderOverrideFunction("Base", OverrideShader_Base);
 	materials->RegisterShaderOverrideFunction("BaseSkinned", OverrideShader_BaseSkinned);
 	materials->RegisterShaderOverrideFunction("BaseParticle", OverrideShader_BaseParticle);
 	materials->RegisterShaderOverrideFunction("Error", OverrideShader_Error);
+	materials->RegisterShaderOverrideFunction("Sky", OverrideShader_Sky);
 }

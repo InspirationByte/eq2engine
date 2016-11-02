@@ -648,11 +648,6 @@ void DrawParticleMaterialGroups(bool dsCheck)
 			else
 				materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
 
-			if(s_ParticleOptimizedGroups[i].isDecal)
-				g_pShaderAPI->SetDepthRange(0.0f,0.99999f);
-			else
-				g_pShaderAPI->SetDepthRange(0.0f,1.0f);
-
 			g_pShaderAPI->Apply();
 
 			int nVerts = s_ParticleOptimizedGroups[i].nVertices;
@@ -730,13 +725,6 @@ void DrawParticleMaterialGroups(bool dsCheck)
 				materials->SetRasterizerStates(CULL_BACK, FILL_SOLID);
 			else
 				materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
-				
-
-			if(s_ParticleOptimizedGroups[i].isDecal)
-				g_pShaderAPI->SetDepthRange(0.0f,0.99999f);
-			else
-				g_pShaderAPI->SetDepthRange(0.0f,1.0f);
-				
 
 			g_pShaderAPI->Apply();
 

@@ -72,7 +72,7 @@ void SH_BlockLight::InitParams()
 {
 	if(!IsInitialized() && !IsError())
 	{
-		m_nFlags |= MATERIAL_FLAG_BLOCKLIGHT | MATERIAL_FLAG_CASTSHADOWS;
+		m_nFlags |= MATERIAL_FLAG_CASTSHADOWS | MATERIAL_FLAG_INVISIBLE;
 
 		// Call base classinitialization
 		CBaseShader::InitParams();

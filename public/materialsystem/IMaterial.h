@@ -20,33 +20,31 @@
 enum MaterialFlags_e
 {
 	MATERIAL_FLAG_ISSKY				= (1 << 1),		// used for skybox
-	MATERIAL_FLAG_UNLIT				= (1 << 2),		// has no lighting, and also it will be discared in MATERIAL_LIGHT_FORWARD and better
-	MATERIAL_FLAG_BLOCKLIGHT		= (1 << 3),		// occludes light only. Invisible and not collideable
-	MATERIAL_FLAG_INVISIBLE			= (1 << 4),		// is fully invisible
+	MATERIAL_FLAG_INVISIBLE			= (1 << 2),		// invisible in standart scene mode. Shadows can be casted if MATERIAL_FLAG_CASTSHADOWS set
 
-	MATERIAL_FLAG_ALPHATESTED		= (1 << 5),		// uses alpha test transparency mode
+	MATERIAL_FLAG_ALPHATESTED		= (1 << 3),		// has alphatesting along with other transparency modes
 
-	MATERIAL_FLAG_TRANSPARENT		= (1 << 6),		// has transparency
-	MATERIAL_FLAG_ADDITIVE			= (1 << 7),		// additive transparency
-	MATERIAL_FLAG_MODULATE			= (1 << 8),		// additive transparency
+	MATERIAL_FLAG_TRANSPARENT		= (1 << 4),		// has transparency
+	MATERIAL_FLAG_ADDITIVE			= (1 << 5),		// additive transparency
+	MATERIAL_FLAG_MODULATE			= (1 << 6),		// additive transparency
 
-	MATERIAL_FLAG_NOCULL			= (1 << 9),		// no culling (two sided)
+	MATERIAL_FLAG_NOCULL			= (1 << 7),		// no culling (two sided)
 
-	MATERIAL_FLAG_NODECALS			= (1 << 10),	// it can't have decals. Used for grass
+	MATERIAL_FLAG_DECAL				= (1 << 8),		// is decal shader (also enables polygon offset feature)
 
-	MATERIAL_FLAG_SKINNED			= (1 << 11),	// this material is applies on skinned mesh, using hardware.
-	MATERIAL_FLAG_STATIC_ONLY		= (1 << 12),	// this material is used for static level geometry (you can use it on skinned mesh, but with perfomance slowdown)
-	
-	MATERIAL_FLAG_CASTSHADOWS		= (1 << 13),	// this material occludes light
-	MATERIAL_FLAG_RECEIVESHADOWS	= (1 << 14),	// this material receives shadows
+	MATERIAL_FLAG_SKINNED			= (1 << 9),		// this material is applies on skinned mesh, using vertex shaders
+	MATERIAL_FLAG_VERTEXBLEND		= (1 << 10),	// this material is uses vertex blending
 
-	MATERIAL_FLAG_ISTEXTRANSITION	= (1 << 15),	// transits textures to create painting effect (vertex transition)
-	MATERIAL_FLAG_HASBUMPTEXTURE	= (1 << 16),	// has bumpmap texture
-	MATERIAL_FLAG_HASCUBEMAP		= (1 << 17),	// has cubemap texture
+	MATERIAL_FLAG_CASTSHADOWS		= (1 << 11),	// this material occludes light
+	MATERIAL_FLAG_RECEIVESHADOWS	= (1 << 12),	// this material receives shadows
 
-	MATERIAL_FLAG_USE_ENVCUBEMAP	= (1 << 18),	// cubemap is $env_cubemap
+	MATERIAL_FLAG_ISTEXTRANSITION	= (1 << 13),	// transits textures to create painting effect (vertex transition)
+	MATERIAL_FLAG_HASBUMPTEXTURE	= (1 << 14),	// has bumpmap texture
+	MATERIAL_FLAG_HASCUBEMAP		= (1 << 15),	// has cubemap texture
 
-	MATERIAL_FLAG_WATER				= (1 << 19),	// this is water material
+	MATERIAL_FLAG_USE_ENVCUBEMAP	= (1 << 16),	// cubemap is $env_cubemap
+
+	MATERIAL_FLAG_WATER				= (1 << 17),	// this is water material
 };
 
 enum EMaterialLoadingState

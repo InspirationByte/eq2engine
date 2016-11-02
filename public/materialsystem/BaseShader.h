@@ -18,7 +18,7 @@
 		{														\
 		public:																	\
 			const char* GetName() { return ThisClassNameStr; }					\
-			void InitParams() { CBaseShader::InitParams(); _ShaderInitParams(); }
+			void InitParams() { _ShaderInitParams();CBaseShader::InitParams(); }
 
 
 #define SHADER_INIT_PARAMS()	void _ShaderInitParams()
@@ -60,25 +60,33 @@
 	g_pShaderAPI->DestroyShaderProgram(m_pShader##shader##_fog);\
 	m_pShader##shader##_fog = NULL;
 
-#define SHADER_PARAM_STRING(param, variable) \
+#define SHADER_PARAM_FLAG(param, variable, flag, def) \
 	IMatVar *mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
-	if(mv_##param) variable = mv_##param->GetString();
+	if(mv_##param) variable |= (mv_##param->GetInt() > 0) ? flag : 0; else variable |= def ? flag : 0;
 
-#define SHADER_PARAM_BOOL(param, variable) \
+#define SHADER_PARAM_STRING(param, variable, def) \
 	IMatVar *mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
-	if(mv_##param) variable = (mv_##param->GetInt() > 0);
+	if(mv_##param) variable = mv_##param->GetString(); else variable = def;
 
-#define SHADER_PARAM_INT(param, variable) \
+#define SHADER_PARAM_BOOL(param, variable, def) \
 	IMatVar *mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
-	if(mv_##param) variable = mv_##param->GetInt();
+	if(mv_##param) variable = (mv_##param->GetInt() > 0); else variable = def;
 
-#define SHADER_PARAM_FLOAT(param, variable) \
+#define SHADER_PARAM_BOOL_NEG(param, variable, def) \
 	IMatVar *mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
-	if(mv_##param) variable = mv_##param->GetFloat();
+	if(mv_##param) variable = !(mv_##param->GetInt() > 0); else variable = !def;
 
-#define SHADER_PARAM_VECTOR3(param, variable) \
+#define SHADER_PARAM_INT(param, variable, def) \
 	IMatVar *mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
-	if(mv_##param) variable = mv_##param->GetVector();
+	if(mv_##param) variable = mv_##param->GetInt(); else variable = def;
+
+#define SHADER_PARAM_FLOAT(param, variable, def) \
+	IMatVar *mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
+	if(mv_##param) variable = mv_##param->GetFloat(); else variable = def;
+
+#define SHADER_PARAM_VECTOR3(param, variable, def) \
+	IMatVar *mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
+	if(mv_##param) variable = mv_##param->GetVector(); else variable = def;
 
 #define SHADER_PARAM_TEXTURE(param, variable) \
 	{\
@@ -234,6 +242,8 @@ public:
 	int							GetBaseTextureStageCount()	{return 1;}
 	int							GetBumpStageCount()			{return 0;}
 
+protected:
+
 	virtual void				ParamSetup_AlphaModel_Solid();
 	virtual void				ParamSetup_AlphaModel_Alphatest();
 	virtual void				ParamSetup_AlphaModel_Translucent();
@@ -247,11 +257,6 @@ public:
 	virtual void				ParamSetup_TextureFrames();
 	virtual void				ParamSetup_Fog();
 	virtual void				ParamSetup_Cubemap() {}
-
-	//virtual void				SetConstant();
-
-// changed from private to do less recalls
-protected:
 
 	virtual bool				_ShaderInitRHI() = 0;
 
@@ -275,6 +280,7 @@ protected:
 	bool						m_depthtest : 1;
 	bool						m_fogenabled : 1;
 	bool						m_msaaEnabled : 1;
+	bool						m_polyOffset : 1;
 
 	bool						m_bIsError : 1;
 	bool						m_bInitialized : 1;

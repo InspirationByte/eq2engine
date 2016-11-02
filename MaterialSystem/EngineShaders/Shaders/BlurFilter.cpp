@@ -37,8 +37,8 @@ BEGIN_SHADER_CLASS(BlurFilter)
 
 		bool blurX = false;
 		bool blurY = false;
-		SHADER_PARAM_BOOL(BlurX, blurX);
-		SHADER_PARAM_BOOL(BlurY, blurY);
+		SHADER_PARAM_BOOL(BlurX, blurX, false);
+		SHADER_PARAM_BOOL(BlurY, blurY, false);
 
 		m_blurAxes |= blurX ? 0x1 : 0;
 		m_blurAxes |= blurY ? 0x2 : 0;
@@ -48,10 +48,10 @@ BEGIN_SHADER_CLASS(BlurFilter)
 		bool blurYLow = false;
 		bool blurXHigh = false;
 		bool blurYHigh = false;
-		SHADER_PARAM_BOOL(XLow, blurXLow);
-		SHADER_PARAM_BOOL(YLow, blurYLow);
-		SHADER_PARAM_BOOL(XHigh, blurXHigh);
-		SHADER_PARAM_BOOL(YHigh, blurYHigh);
+		SHADER_PARAM_BOOL(XLow, blurXLow, false);
+		SHADER_PARAM_BOOL(YLow, blurYLow, false);
+		SHADER_PARAM_BOOL(XHigh, blurXHigh, false);
+		SHADER_PARAM_BOOL(YHigh, blurYHigh, false);
 
 		m_blurModes |= blurXLow ? 0x1 : 0;
 		m_blurModes |= blurYLow ? 0x2 : 0;

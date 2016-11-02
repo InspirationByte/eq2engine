@@ -1094,7 +1094,8 @@ void CGameWorld::OnPreApplyMaterial( IMaterial* pMaterial )
 	if( pMaterial->GetState() != MATERIAL_LOAD_OK )
 		return;
 
-
+	// update material proxy
+	pMaterial->UpdateProxy( m_frameTime );
 
 	int numRTs;
 	int cubeTarg[MAX_MRTS];
@@ -1111,7 +1112,6 @@ void CGameWorld::OnPreApplyMaterial( IMaterial* pMaterial )
 	g_pShaderAPI->SetShaderConstantVector4D("SunColor", m_info.sunColor*r_lightscale->GetFloat());
 	g_pShaderAPI->SetShaderConstantVector3D("SunDir", m_info.sunDir);
 
-	pMaterial->UpdateProxy( m_frameTime );
 	g_pShaderAPI->SetShaderConstantFloat("GameTime", m_curTime);
 
 	Vector2D envParams;

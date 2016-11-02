@@ -197,24 +197,26 @@ public:
 	virtual matsystem_render_config_t&		GetConfiguration() = 0;
 
 	// returns material path
-	virtual char*							GetMaterialPath() = 0;
+	virtual const char*						GetMaterialPath() const = 0;
 
 	//-----------------------------
-	// Material/Shader operations
+	// Resource operations
 	//-----------------------------
 
-	// Finds or loads material (if findExisting option specified, or not found in cache)
+	// returns white texture (used for wireframe of shaders that can't use FFP modes,notexture modes, etc.)
+	virtual	ITexture*						GetWhiteTexture() = 0;
+
+	// returns luxel test texture (used for lightmap test)
+	virtual	ITexture*						GetLuxelTestTexture() = 0;
+
+	// Finds or loads material (if findExisting is false then it will be loaded as new material instance)
 	virtual IMaterial*						FindMaterial(const char* szMaterialName, bool findExisting = true) = 0;
-
-	// Creates material system shader
-	virtual IMaterialSystemShader*			CreateShaderInstance(const char* szShaderName) = 0;
 
 	// checks material for existence
 	virtual bool							IsMaterialExist(const char* szMaterialName) = 0;
 
-	//-----------------------------
-	// Loading operations
-	//-----------------------------
+	// Creates material system shader
+	virtual IMaterialSystemShader*			CreateShaderInstance(const char* szShaderName) = 0;
 
 	// Loads textures, compiles shaders. Called after level loading
 	virtual void							PreloadNewMaterials() = 0;
@@ -225,44 +227,27 @@ public:
 	// ends preloading zone of materials when FindMaterial calls
 	virtual void							EndPreloadMarker() = 0;
 
+	// waits for material loader thread is finished
+	virtual void							Wait() = 0;
+
 	// loads material or sends it to loader thread
 	virtual void							PutMaterialToLoadingQueue(IMaterial* pMaterial) = 0;
+
+	// returns material count which is currently loading or awaiting for load
 	virtual int								GetLoadingQueue() const = 0;
 
-	// Reloads materials, flushes shaders, textures without touching a material pointers.
-	virtual void							ReloadAllMaterials(bool bTouchTextures = true,bool bTouchShaders = true, bool wait = false) = 0;
+	// Reloads material vars, shaders and textures without touching a material pointers.
+	virtual void							ReloadAllMaterials(bool textures = true, bool shaders = true, bool wait = false) = 0;
 
-	// Reloads all textures loaded by materials
+	// Reloads all textures loaded by materials (useful if r_loadmiplevel changed)
 	virtual void							ReloadAllTextures() = 0;
-
-	//-----------------------------
-	// Free operations
-	//-----------------------------
-
-	// Unloads all textures
-	virtual void							FreeAllTextures() = 0;
-
-	// Frees all materials (if bFreeAll is true, will free locked)
-	virtual void							FreeMaterials(bool bFreeAll = false) = 0;
 
 	// Frees materials or decrements it's reference count
 	virtual void							FreeMaterial(IMaterial *pMaterial) = 0;
 
 	//-----------------------------
-	// Helper operations
-	//-----------------------------
-
-	// sets up a 2D mode (also sets up view and world matrix)
-	virtual void							Setup2D(float wide, float tall) = 0;
-
-	// sets up 3D mode, projection
-	virtual void							SetupProjection(float wide, float tall, float fFOV, float zNear, float zFar) = 0;
-
-	// sets up 3D mode, orthogonal
-	virtual void							SetupOrtho(float left, float right, float top, float bottom, float zNear, float zFar) = 0;
-
-	//-----------------------------
 	// Helper rendering operations (warning, may be slow)
+	// FIXME: replace by MatSystem mesh builder
 	//-----------------------------
 
 	// draws primitives
@@ -278,112 +263,40 @@ public:
 																	RasterizerStateParams_t* rasterParams = NULL) = 0;
 
 	//-----------------------------
-	// Pre-render operations
+	// Shader dynamic states
 	//-----------------------------
 
-	// returns white texture (used for wireframe of shaders that can't use FFP modes,notexture modes, etc.)
-	virtual	ITexture*						GetWhiteTexture() = 0;
-
-	// returns luxel test texture (used for lightmap test)
-	virtual	ITexture*						GetLuxelTestTexture() = 0;
-
-	// Returns current cull mode
 	virtual CullMode_e						GetCurrentCullMode() = 0;
-
-	// Sets new cull mode
 	virtual void							SetCullMode(CullMode_e cullMode) = 0;
 
-	//-------------------
-
-	// skinning mode (dynamic, for egf, etc)
 	virtual void							SetSkinningEnabled( bool bEnable ) = 0;
-
-	// is skinning enabled?
 	virtual bool							IsSkinningEnabled() = 0;
 
-	//------------------
-
-	// instancing
 	virtual void							SetInstancingEnabled( bool bEnable ) = 0;
-
-	// is instancing enabled?
 	virtual bool							IsInstancingEnabled() = 0;
 
-	//------------------
 
-
-	// Binds the material. All shader constants will be set up with it
-	virtual bool							BindMaterial( IMaterial *pMaterial, bool preApply = true ) = 0;
-
-	// Applies current material
-	virtual void							Apply() = 0;
-
-	// returns bound material
-	virtual IMaterial*						GetBoundMaterial() = 0;
-
-	// non-realtime Lighting model setup, requries ReloadAllMaterials call
-	virtual void							SetLightingModel(MaterialLightingMode_e lightingModel) = 0;
-
-	// Lighting model (e.g shadow maps or light maps)
-	virtual MaterialLightingMode_e			GetLightingModel() = 0;
-
-	// sets a fog info
 	virtual void							SetFogInfo(const FogInfo_t &info) = 0;
-	// returns fog info
 	virtual void							GetFogInfo(FogInfo_t &info) = 0;
 
-	// updates all materials and proxies. Also provides reloading of materials
-	virtual	void							Update(float dt) = 0;
-
-	// waits for material loader thread is finished
-	virtual void							Wait() = 0;
-
-//-----------------------------
-// transform operations
-//-----------------------------
-
-	// sets up a matrix, projection, view, and world
-	virtual void							SetMatrix(MatrixMode_e mode, const Matrix4x4 &matrix) = 0;
-
-	// returns a typed matrix
-	virtual void							GetMatrix(MatrixMode_e mode, Matrix4x4 &matrix) = 0;
-
-	// retunrs multiplied matrix
-	virtual void							GetWorldViewProjection(Matrix4x4 &matrix) = 0;
-
-	// sets an ambient light. Also used as main color
 	virtual void							SetAmbientColor(const ColorRGBA &color) = 0;
-
-	// returns current ambient color
 	virtual ColorRGBA						GetAmbientColor() = 0;
 
-	// sets current light for processing in shaders (only lighting shader. Non-lighing shaders will ignore it.)
 	virtual void							SetLight(dlight_t* pLight) = 0;
-
-	// returns current light.
 	virtual dlight_t*						GetLight() = 0;
 
-	// sets current lighting model as realtime state
+	// lighting/shading model selection
 	virtual void							SetCurrentLightingModel(MaterialLightingMode_e lightingModel) = 0;
-
-	// returns current lighting model realtime state
 	virtual MaterialLightingMode_e			GetCurrentLightingModel() = 0;
 
-	// sets pre-apply callback
-	virtual void							SetMaterialRenderParamCallback( IMaterialRenderParamCallbacks* callback ) = 0;
-
-	// returns current pre-apply callback
-	virtual IMaterialRenderParamCallbacks*	GetMaterialRenderParamCallback() = 0;
-
-	// sets $env_cubemap texture for use in shaders
+	//---------------------------
+	// $env_cubemap texture for use in shaders
 	virtual void							SetEnvironmentMapTexture( ITexture* pEnvMapTexture ) = 0;
-
-	// returns $env_cubemap texture used in shaders
 	virtual ITexture*						GetEnvironmentMapTexture() = 0;
 
-//-----------------------------
-// State setup
-//-----------------------------
+	//-----------------------------
+	// RHI render states setup
+	//-----------------------------
 
 	// sets blending
 	virtual void							SetBlendingStates(const BlendStateParam_t& blend) = 0;
@@ -411,11 +324,46 @@ public:
 	virtual void							SetRasterizerStates(	CullMode_e nCullMode,
 																	FillMode_e nFillMode = FILL_SOLID,
 																	bool bMultiSample = true,
-																	bool bScissor = false
+																	bool bScissor = false,
+																	bool bPolyOffset = false
 																	) = 0;
 
+	//------------------
+	// Materials or shader static states
+
+	virtual IMaterial*						GetBoundMaterial() = 0;
+
+	virtual bool							BindMaterial( IMaterial *pMaterial, bool preApply = true ) = 0;
+	virtual void							Apply() = 0;
+
+	// sets the custom rendering callbacks
+	// useful for proxy updates, setting up constants that shader objects can't access by themselves
+	virtual void							SetMaterialRenderParamCallback( IMaterialRenderParamCallbacks* callback ) = 0;
+	virtual IMaterialRenderParamCallbacks*	GetMaterialRenderParamCallback() = 0;
+
 	//-----------------------------
-	// Frame operations
+	// Rendering projection helper operations
+
+	// sets up a 2D mode (also sets up view and world matrix)
+	virtual void							Setup2D(float wide, float tall) = 0;
+
+	// sets up 3D mode, projection
+	virtual void							SetupProjection(float wide, float tall, float fFOV, float zNear, float zFar) = 0;
+
+	// sets up 3D mode, orthogonal
+	virtual void							SetupOrtho(float left, float right, float top, float bottom, float zNear, float zFar) = 0;
+
+	// sets up a matrix, projection, view, and world
+	virtual void							SetMatrix(MatrixMode_e mode, const Matrix4x4 &matrix) = 0;
+
+	// returns a typed matrix
+	virtual void							GetMatrix(MatrixMode_e mode, Matrix4x4 &matrix) = 0;
+
+	// retunrs multiplied matrix
+	virtual void							GetWorldViewProjection(Matrix4x4 &matrix) = 0;
+
+	//-----------------------------
+	// Swap chains
 	//-----------------------------
 
 	// tells device to begin frame
@@ -429,36 +377,30 @@ public:
 
 	// creates additional swap chain
 	virtual IEqSwapChain*					CreateSwapChain(void* windowHandle) = 0;
+	virtual void							DestroySwapChain(IEqSwapChain* chain) = 0;
+
+	// captures screenshot to CImage data
+	virtual bool							CaptureScreenshot( CImage &img ) = 0;
 
 	//-----------------------------
 	// Internal operations
 	//-----------------------------
 
-	// returns proxy factory interface (material parameter controller)
-	virtual IProxyFactory*					GetProxyFactory() = 0;
-
-	// returns shader interface of this material system (shader render api)
+	// returns RHI device interface
 	virtual IShaderAPI*						GetShaderAPI() = 0;
 
-	// captures screenshot to CImage data
-	virtual bool							CaptureScreenshot( CImage &img ) = 0;
+	virtual IProxyFactory*					GetProxyFactory() = 0;
 
-	// Registers new shader.
 	virtual void							RegisterShader(const char* pszShaderName,DISPATCH_CREATE_SHADER dispatcher_creation) = 0;
-
-	// registers overrider for shaders
 	virtual void							RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function) = 0;
 
 	// use this if you want to reduce "frametime jumps" when matsystem loads textures
 	virtual void							SetResourceBeginEndLoadCallback(RESOURCELOADCALLBACK begin, RESOURCELOADCALLBACK end) = 0;
 
-	// use this if you have objects that must be destroyed when device is lost
+	// device lost/restore callbacks
 	virtual void							AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore) = 0;
-
-	// removes callbacks from list
 	virtual void							RemoveLostRestoreCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore) = 0;
 
-	// prints loaded materials to console
 	virtual void							PrintLoadedMaterials() = 0;
 };
 
@@ -473,26 +415,6 @@ extern IMaterialSystem* materials;
 #define REGISTER_INTERNAL_SHADERS()								\
 	for(int i = 0; i < _InternalShaderList().numElem(); i++)	\
 		materials->RegisterShader( _InternalShaderList()[i].shader_name, _InternalShaderList()[i].dispatcher );
-
-#ifdef EQSHADER_LIBRARY
-
-#define DEFINE_SHADER(stringName, className)											\
-	static IMaterialSystemShader* C##className##Factory( void )						\
-	{																				\
-		IMaterialSystemShader *pShader = static_cast< IMaterialSystemShader * >(new className()); 	\
-		return pShader;																\
-	}																				\
-	class C_ShaderClassFactoryFoo													\
-	{																				\
-	public:																			\
-		C_ShaderClassFactoryFoo( void )											\
-		{																			\
-			static IMaterialSystem* matSystem =	(IMaterialSystem *)GetCore()->GetInterface(MATSYSTEM_INTERFACE_VERSION);	\
-			matSystem->RegisterShader( stringName, &C##className##Factory );		\
-		}																			\
-	};																				\
-	static C_ShaderClassFactoryFoo g_CShaderClassFactoryFoo;
-#else
 
 extern FactoryList& _InternalShaderList();
 
@@ -514,8 +436,6 @@ extern FactoryList& _InternalShaderList();
 		}																			\
 	};																				\
 	static C_ShaderClassFactoryFoo g_CShaderClassFactoryFoo;
-
-#endif
 
 
 #endif //IMATERIALSYSTEM_H

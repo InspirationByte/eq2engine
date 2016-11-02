@@ -58,6 +58,8 @@ AddressMode_e ResolveAddressType(const char* string)
 
 CBaseShader::CBaseShader()
 {
+	m_nFlags			= 0;
+
 	m_bIsError			= false;
 	m_bInitialized		= false;
 
@@ -67,7 +69,7 @@ CBaseShader::CBaseShader()
 	m_fogenabled		= true;
 	m_msaaEnabled		= true;
 
-	m_nFlags			= 0;
+	m_polyOffset		= false;
 
 	m_pBaseTextureTransformVar = NULL;
 	m_pBaseTextureScaleVar = NULL;
@@ -88,63 +90,41 @@ CBaseShader::CBaseShader()
 
 void CBaseShader::InitParams()
 {
-	// The basic setup of the shader parameters
-	IMatVar *RecShadowed			= m_pAssignedMaterial->GetMaterialVar("ReceiveShadows", "1");
-	IMatVar *CastShadows			= m_pAssignedMaterial->GetMaterialVar("CastShadows", "1");
-	IMatVar *NoCull					= m_pAssignedMaterial->GetMaterialVar("NoCull", "0");
+	IMatVar* addressMode	= m_pAssignedMaterial->FindMaterialVar("Address");
+	IMatVar* texFilter		= m_pAssignedMaterial->FindMaterialVar("Filtering");
 
-	IMatVar *pAddressMode			= m_pAssignedMaterial->FindMaterialVar("Address");
-	IMatVar *pFilterType			= m_pAssignedMaterial->FindMaterialVar("Filtering");
+	SHADER_PARAM_BOOL(ztest, m_depthtest, true)
+	SHADER_PARAM_BOOL(zwrite, m_depthwrite, true)
 
-	IMatVar *pAlphaTest				= m_pAssignedMaterial->GetMaterialVar("AlphaTest", "0");
-	IMatVar *pTranslucent			= m_pAssignedMaterial->GetMaterialVar("Translucent", "0");
-	IMatVar *pAdditive				= m_pAssignedMaterial->GetMaterialVar("Additive", "0");
-	IMatVar *pModulate				= m_pAssignedMaterial->GetMaterialVar("Modulate", "0");
-
-	IMatVar *pNoFog					= m_pAssignedMaterial->GetMaterialVar("nofog", "0");
-
-	IMatVar* pDepthTest				= m_pAssignedMaterial->GetMaterialVar("ztest", "1");
-	IMatVar* pDepthWrite			= m_pAssignedMaterial->GetMaterialVar("zwrite", "1");
-
-	IMatVar* pNoMSAA			= m_pAssignedMaterial->GetMaterialVar("NoMSAA", "0");
-
-	m_depthtest = (pDepthTest->GetInt() > 0);
-	m_depthwrite = (pDepthWrite->GetInt() > 0);
-
-	m_fogenabled = !(pNoFog->GetInt() > 0);
-
-	m_msaaEnabled = !(pNoMSAA->GetInt() > 0);
+	SHADER_PARAM_BOOL_NEG(NoFog, m_fogenabled, false)
+	SHADER_PARAM_BOOL_NEG(NoMSAA, m_msaaEnabled, false)
 
 	// required
 	m_pBaseTextureTransformVar	= GetAssignedMaterial()->GetMaterialVar("BaseTextureTransform", "[0 0]");
 	m_pBaseTextureScaleVar		= GetAssignedMaterial()->GetMaterialVar("BaseTextureScale", "[1 1]");
 	m_pBaseTextureFrame			= GetAssignedMaterial()->GetMaterialVar("BaseTextureFrame", "0");
 
-	// resolve address type and filter type
-	if( pAddressMode )
-		m_nAddressMode = ResolveAddressType(pAddressMode->GetString());
-
-	if( pFilterType )
-		m_nTextureFilter = ResolveFilterType(pFilterType->GetString());
+	// resolve address type and filtering mode
+	if( addressMode ) m_nAddressMode = ResolveAddressType(addressMode->GetString());
+	if( texFilter ) m_nTextureFilter = ResolveFilterType(texFilter->GetString());
 
 	// setup shadowing parameters
-	m_nFlags |= (RecShadowed->GetInt() > 0) ? MATERIAL_FLAG_RECEIVESHADOWS : 0;
-	m_nFlags |= (CastShadows->GetInt() > 0) ? MATERIAL_FLAG_CASTSHADOWS : 0;
+	SHADER_PARAM_FLAG(ReceiveShadows, m_nFlags, MATERIAL_FLAG_RECEIVESHADOWS, true)
+	SHADER_PARAM_FLAG(CastShadows, m_nFlags, MATERIAL_FLAG_CASTSHADOWS, true)
 
-	// setup base rendering params
-	m_nFlags |= (NoCull->GetInt() > 0) ? MATERIAL_FLAG_NOCULL : 0;
+	SHADER_PARAM_FLAG(Decal, m_nFlags, MATERIAL_FLAG_DECAL, false)
 
-	// transparency
-	m_nFlags |= (pAlphaTest->GetInt() > 0) ? MATERIAL_FLAG_ALPHATESTED : 0;
+	SHADER_PARAM_FLAG(NoCull, m_nFlags, MATERIAL_FLAG_NOCULL, false)
 
-	m_nFlags |= (pTranslucent->GetInt() > 0) ? MATERIAL_FLAG_TRANSPARENT : 0;
-	m_nFlags |= (pAdditive->GetInt() > 0) ? MATERIAL_FLAG_ADDITIVE : 0;
-	m_nFlags |= (pModulate->GetInt() > 0) ? MATERIAL_FLAG_MODULATE : 0;
+	SHADER_PARAM_FLAG(AlphaTest, m_nFlags, MATERIAL_FLAG_ALPHATESTED, false)
+	SHADER_PARAM_FLAG(Translucent, m_nFlags, MATERIAL_FLAG_TRANSPARENT, false)
+	SHADER_PARAM_FLAG(Additive, m_nFlags, MATERIAL_FLAG_ADDITIVE, false)
+	SHADER_PARAM_FLAG(Modulate, m_nFlags, MATERIAL_FLAG_MODULATE, false)
 
 	if (materials->GetConfiguration().enableSpecular)
 	{
 		EqString cubemapStr;
-		SHADER_PARAM_STRING(Cubemap, cubemapStr);
+		SHADER_PARAM_STRING(Cubemap, cubemapStr, "");
 
 		// detect ENV_CUBEMAP
 		if (cubemapStr.c_str()[0] == '$')
@@ -170,6 +150,9 @@ void CBaseShader::InitParams()
 
 	if(m_nFlags & MATERIAL_FLAG_MODULATE)
 		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Modulate);
+
+	if(m_nFlags & MATERIAL_FLAG_DECAL)
+		m_polyOffset = true;
 
 	// setup functors
 	SetParameterFunctor(SHADERPARAM_TRANSFORM, &CBaseShader::ParamSetup_Transform);
@@ -289,8 +272,9 @@ void CBaseShader::ParamSetup_RasterState()
 	if(materials->GetConfiguration().wireframeMode && materials->GetConfiguration().editormode)
 		cull_mode = CULL_NONE;
 
-	materials->SetRasterizerStates(cull_mode, (FillMode_e)materials->GetConfiguration().wireframeMode, m_msaaEnabled);
+	materials->SetRasterizerStates(cull_mode, (FillMode_e)materials->GetConfiguration().wireframeMode, m_msaaEnabled, false, m_polyOffset);
 }
+
 
 void CBaseShader::ParamSetup_Transform()
 {

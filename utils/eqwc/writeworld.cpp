@@ -164,7 +164,7 @@ void WCSurfaceToFile(cwlitsurface_t* pCompilerSurf, eqlevelsurf_t* pEngineSurf, 
 		if(	(pCompilerSurf->pMaterial->GetFlags() & MATERIAL_FLAG_ISSKY))
 			pEngineSurf->flags |= EQSURF_FLAG_SKY;
 
-		if(	(pCompilerSurf->pMaterial->GetFlags() & MATERIAL_FLAG_BLOCKLIGHT))
+		if(	(pCompilerSurf->pMaterial->GetFlags() & MATERIAL_FLAG_CASTSHADOWS) && (pCompilerSurf->pMaterial->GetFlags() & MATERIAL_FLAG_INVISIBLE))
 			pEngineSurf->flags |= EQSURF_FLAG_BLOCKLIGHT;
 
 		if(	(pCompilerSurf->pMaterial->GetFlags() & MATERIAL_FLAG_WATER))

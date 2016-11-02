@@ -46,17 +46,16 @@ BEGIN_SHADER_CLASS(BaseStatic)
 		if(SHADER_PASS(Ambient))
 			return true;
 
-		bool bDeferredShading = (materials->GetLightingModel() == MATERIAL_LIGHT_DEFERRED);
 		bool bHasAnyTranslucency = (m_nFlags & MATERIAL_FLAG_TRANSPARENT) || (m_nFlags & MATERIAL_FLAG_ADDITIVE) || (m_nFlags & MATERIAL_FLAG_MODULATE);
 
 		//------------------------------------------
 		// load another shader params here (because we want to use less memory)
 		//------------------------------------------
 
-		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale);
+		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale, 0.0f);
 
 		bool bBaseTextureSpecularAlpha;
-		SHADER_PARAM_BOOL(BaseTextureSpecularAlpha, bBaseTextureSpecularAlpha);
+		SHADER_PARAM_BOOL(BaseTextureSpecularAlpha, bBaseTextureSpecularAlpha, false);
 
 		//------------------------------------------
 		// begin shader definitions
@@ -81,7 +80,7 @@ BEGIN_SHADER_CLASS(BaseStatic)
 		SHADER_DECLARE_SIMPLE_DEFINITION((m_nFlags & MATERIAL_FLAG_ALPHATESTED), "ALPHATEST");
 
 		bool bUseLightmaps = (!materials->GetConfiguration().editormode);
-		SHADER_DECLARE_SIMPLE_DEFINITION(bDeferredShading || bUseLightmaps, "LIGHTMAP");
+		SHADER_DECLARE_SIMPLE_DEFINITION(bUseLightmaps, "LIGHTMAP");
 
 		// compile without fog
 		SHADER_FIND_OR_COMPILE(Ambient, "BaseSingle_Ambient");

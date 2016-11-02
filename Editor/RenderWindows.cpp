@@ -601,9 +601,6 @@ void CViewWindow::Redraw()
 	g_frametime = g_realtime - g_oldrealtime;
 	g_oldrealtime = g_realtime;
 
-	// update material system and proxies
-	materials->Update(g_frametime);
-
 	m_mustupdate = false;
 
 	g_pShaderAPI->SetViewport( 0, 0, w, h );

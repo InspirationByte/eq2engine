@@ -151,7 +151,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	materials_config.threadedloader = !useOpenGLRender;
 
 	materials_config.ffp_mode = false;
-	materials_config.lighting_model = MATERIAL_LIGHT_FORWARD;
+	materials_config.lighting_model = MATERIAL_LIGHT_UNLIT;
 	materials_config.stubMode = false;
 	materials_config.editormode = false;
 	materials_config.lowShaderQuality = false;

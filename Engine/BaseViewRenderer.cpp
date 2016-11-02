@@ -46,7 +46,7 @@ void lighting_callback(ConVar* pVar,char const* pszOldValue)
 	{
 		viewrenderer->ShutdownResources();
 		
-		materials->SetLightingModel(newModel);
+		materials->GetConfiguration().lighting_model = newModel;
 
 		// reload materials
 		materials->ReloadAllMaterials();

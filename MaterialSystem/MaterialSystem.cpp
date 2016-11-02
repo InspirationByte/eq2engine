@@ -48,6 +48,28 @@ ConVar				r_lightscale("r_lightscale", "1.0f", "Global light scale", CV_ARCHIVE)
 ConVar				r_shaderCompilerShowLogs("r_shaderCompilerShowLogs", "0","Show warnings of shader compilation",CV_ARCHIVE);
 ConVar				r_wireframe("r_wireframe","0","Enables wireframe rendering",0);
 
+ConVar				r_noffp("r_noffp","0","No FFP emulated primitives", CV_CHEAT);
+
+ConVar				r_depthBias("r_depthBias", "-0.000001", NULL, CV_CHEAT);
+ConVar				r_slopeDepthBias("r_slopeDepthBias", "-1.5", NULL, CV_CHEAT);
+
+DECLARE_CMD(r_reloadallmaterials, "Reloads all materials",0)
+{
+	MsgInfo("Reloading materials...\n\n");
+	materials->ReloadAllMaterials();
+}
+
+DECLARE_CMD(r_materials_print, "Print MatSystem info and loaded material list",0)
+{
+	materials->PrintLoadedMaterials();
+}
+
+DECLARE_CMD(r_refreshstates, "Refresh render states",0)
+{
+	((CMaterialSystem*)materials)->ClearRenderStates();
+}
+
+
 //
 // Threaded material loader
 //
@@ -109,6 +131,8 @@ protected:
 
 CEqMatSystemThreadedLoader g_threadedMaterialLoader;
 
+//---------------------------------------------------------------------------
+
 CMaterialSystem::CMaterialSystem()
 {
 	m_nCurrentCullMode = CULL_BACK;
@@ -116,12 +140,9 @@ CMaterialSystem::CMaterialSystem()
 
 	m_bPreloadingMarker = false;
 
-	m_fCurrFrameTime = 0.0f;
-
 	m_pCurrentMaterial = NULL;
 	m_pOverdrawMaterial = NULL;
 
-	m_nMaterialChanges = 0;
 	m_frame = 0;
 
 	m_nCurrentLightingShaderModel = MATERIAL_LIGHT_UNLIT;
@@ -195,7 +216,6 @@ bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderA
 	debugoverlay = (IDebugOverlay*)GetCore()->GetInterface(DBGOVERLAY_INTERFACE_VERSION);
 
 	m_szMaterialsdir = materialsDirectory;
-	m_nMaterialChanges = 0;
 
 	// render library initialization
 	// collect all needed data for use in shaderapi initialization
@@ -237,6 +257,40 @@ bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderA
 	CreateWhiteTexture();
 
 	return true;
+}
+
+
+void CMaterialSystem::Shutdown()
+{
+	if(m_pRenderLib && m_rendermodule && g_pShaderAPI)
+	{
+		Msg("MatSystem shutdown...\n");
+
+		ClearRenderStates();
+
+		// shutdown thread first
+		g_threadedMaterialLoader.StopThread(true);
+
+		if(m_pWhiteTexture)
+			g_pShaderAPI->FreeTexture(m_pWhiteTexture);
+
+		if(m_pLuxelTestTexture)
+			g_pShaderAPI->FreeTexture(m_pLuxelTestTexture);
+
+		for(int i = 0; i < m_ShaderOverrideList.numElem(); i++)
+			delete [] m_ShaderOverrideList[i].shadername;
+
+		m_ShaderOverrideList.clear();
+
+		FreeMaterials();
+
+		m_pRenderLib->ReleaseSwapChains();
+		g_pShaderAPI->Shutdown();
+		m_pRenderLib->ExitAPI();
+
+		// shutdown render libraries, all shaders and other
+		g_fileSystem->FreeModule( m_rendermodule );
+	}
 }
 
 void CMaterialSystem::CreateWhiteTexture()
@@ -339,44 +393,15 @@ bool CMaterialSystem::IsInStubMode()
 	return m_config.stubMode;
 }
 
-void CMaterialSystem::Shutdown()
-{
-	if(m_pRenderLib && m_rendermodule && g_pShaderAPI)
-	{
-		Msg("MatSystem shutdown...\n");
-
-		for (blendStateMap_t::iterator i = m_blendStates.begin(); i != m_blendStates.end(); ++i)
-			g_pShaderAPI->DestroyRenderState(i->second);
-
-		for (depthStateMap_t::iterator i = m_depthStates.begin(); i != m_depthStates.end(); ++i)
-			g_pShaderAPI->DestroyRenderState(i->second);
-
-		for (rasterStateMap_t::iterator i = m_rasterStates.begin(); i != m_rasterStates.end(); ++i)
-			g_pShaderAPI->DestroyRenderState(i->second);
-
-		// shutdown thread first
-		g_threadedMaterialLoader.StopThread(true);
-
-		if(m_pWhiteTexture)
-			g_pShaderAPI->FreeTexture(m_pWhiteTexture);
-
-		if(m_pLuxelTestTexture)
-			g_pShaderAPI->FreeTexture(m_pLuxelTestTexture);
-
-		FreeMaterials(true);
-
-		m_pRenderLib->ReleaseSwapChains();
-		g_pShaderAPI->Shutdown();
-		m_pRenderLib->ExitAPI();
-
-		// shutdown render libraries, all shaders and other
-		g_fileSystem->FreeModule( m_rendermodule );
-	}
-}
-
 matsystem_render_config_t& CMaterialSystem::GetConfiguration()
 {
 	return m_config;
+}
+
+// returns material path
+const char* CMaterialSystem::GetMaterialPath() const
+{
+	return m_szMaterialsdir.c_str();
 }
 
 void CMaterialSystem::SetResourceBeginEndLoadCallback(RESOURCELOADCALLBACK begin, RESOURCELOADCALLBACK end)
@@ -385,8 +410,6 @@ void CMaterialSystem::SetResourceBeginEndLoadCallback(RESOURCELOADCALLBACK begin
 	g_pLoadEndCallback = end;
 }
 
-typedef int (*InitShaderLibraryFunction)(IMaterialSystem* pMatSystem);
-
 // Adds new shader library
 bool CMaterialSystem::LoadShaderLibrary(const char* libname)
 {
@@ -394,6 +417,8 @@ bool CMaterialSystem::LoadShaderLibrary(const char* libname)
 
 	if(!shaderlib)
 		return false;
+
+	typedef int (*InitShaderLibraryFunction)(IMaterialSystem* pMatSystem);
 
 	InitShaderLibraryFunction functionPtr = (InitShaderLibraryFunction)g_fileSystem->GetProcedureAddress(shaderlib, "InitShaderLibrary");
 
@@ -409,6 +434,8 @@ bool CMaterialSystem::LoadShaderLibrary(const char* libname)
 
 	return true;
 }
+
+//------------------------------------------------------------------------------------------------
 
 bool CMaterialSystem::IsMaterialExist(const char* szMaterialName)
 {
@@ -518,22 +545,6 @@ void CMaterialSystem::ReloadAllTextures()
 	ReloadAllMaterials(true,false);
 }
 
-// Frees all textures
-void CMaterialSystem::FreeAllTextures()
-{
-	CScopedMutex m(m_Mutex);
-
-	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
-	{
-		if(m_pLoadedMaterials[i] != NULL)
-		{
-			EqString old_name(m_pLoadedMaterials[i]->GetName());
-
-			((CMaterial*)m_pLoadedMaterials[i])->Cleanup(false, true);
-		}
-	}
-}
-
 // Reloads materials
 void CMaterialSystem::ReloadAllMaterials(bool bTouchTextures,bool bTouchShaders, bool wait)
 {
@@ -564,8 +575,8 @@ void CMaterialSystem::ReloadAllMaterials(bool bTouchTextures,bool bTouchShaders,
 	g_pLoadEndCallback();
 }
 
-// frees all materials (if bFreeAll is positive, will free locked)
-void CMaterialSystem::FreeMaterials(bool bFreeAll)
+// frees all materials
+void CMaterialSystem::FreeMaterials()
 {
 	CScopedMutex m(m_Mutex);
 
@@ -577,6 +588,21 @@ void CMaterialSystem::FreeMaterials(bool bFreeAll)
 		CMaterial* pMaterial = (CMaterial*)m_pLoadedMaterials[i];
 		delete ((CMaterial*)pMaterial);
 	}
+}
+
+void CMaterialSystem::ClearRenderStates()
+{
+	for (blendStateMap_t::iterator i = m_blendStates.begin(); i != m_blendStates.end(); ++i)
+		g_pShaderAPI->DestroyRenderState(i->second);
+	m_blendStates.clear();
+
+	for (depthStateMap_t::iterator i = m_depthStates.begin(); i != m_depthStates.end(); ++i)
+		g_pShaderAPI->DestroyRenderState(i->second);
+	m_depthStates.clear();
+
+	for (rasterStateMap_t::iterator i = m_rasterStates.begin(); i != m_rasterStates.end(); ++i)
+		g_pShaderAPI->DestroyRenderState(i->second);
+	m_rasterStates.clear();
 }
 
 // frees single material
@@ -642,7 +668,9 @@ IMaterialSystemShader* CMaterialSystem::CreateShaderInstance(const char* szShade
 		if(!stricmp(szShaderName,m_ShaderOverrideList[i].shadername))
 		{
 			shaderName = m_ShaderOverrideList[i].function();
-			break;
+
+			if(shaderName.Length() > 0) // only if we have shader name
+				break;
 		}
 	}
 
@@ -650,17 +678,13 @@ IMaterialSystemShader* CMaterialSystem::CreateShaderInstance(const char* szShade
 	for(int i = 0; i < m_hShaders.numElem(); i++)
 	{
 		if(!shaderName.CompareCaseIns( m_hShaders[i].shader_name ))
-		{
-			IMaterialSystemShader* pShader = (m_hShaders[i].dispatcher)();
-
-			ASSERT(pShader);
-
-			return pShader;
-		}
+			return (m_hShaders[i].dispatcher)();
 	}
 
 	return NULL;
 }
+
+//------------------------------------------------------------------------------------------------
 
 typedef bool (*PFNMATERIALBINDCALLBACK)(IMaterial* pMaterial);
 
@@ -748,10 +772,8 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, bool doApply/* = true*/
 
 	CMaterial* pSetupMaterial = (CMaterial*)pMaterial;
 
-	// set proxy is dirty
+	// proxy update is dirty if material was not bound to this frame
 	pSetupMaterial->m_proxyIsDirty = (pSetupMaterial->m_frameBound != m_frame);
-
-	// set bound frame
 	pSetupMaterial->m_frameBound = m_frame;
 
 	// it's now a more critical section to the material
@@ -759,7 +781,6 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, bool doApply/* = true*/
 
 	// set the current material
 	m_pCurrentMaterial = pMaterial;
-	m_nMaterialChanges++;
 
 	EMaterialRenderSubroutine subRoutineId = MATERIAL_SUBROUTINE_NORMAL;
 
@@ -798,6 +819,14 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, bool doApply/* = true*/
 // Applies current material
 void CMaterialSystem::Apply()
 {
+	if(!m_pCurrentMaterial)
+	{
+		g_pShaderAPI->Apply();
+		return;
+	}
+
+	//m_pCurrentMaterial->UpdateProxy( m_fCurrFrameTime );
+
 	if(m_preApplyCallback)
 		m_preApplyCallback->OnPreApplyMaterial( m_pCurrentMaterial );
 
@@ -808,23 +837,6 @@ void CMaterialSystem::Apply()
 IMaterial* CMaterialSystem::GetBoundMaterial()
 {
 	return m_pCurrentMaterial;
-}
-
-// captures screenshot to CImage data
-bool CMaterialSystem::CaptureScreenshot(CImage &img)
-{
-	return m_pRenderLib->CaptureScreenshot( img );
-}
-
-// update all materials and proxies
-void CMaterialSystem::Update(float dt)
-{
-	if(debugoverlay)
-		debugoverlay->Graph_AddValue(0, m_nMaterialChanges);
-
-	m_fCurrFrameTime = dt;
-
-	m_nMaterialChanges = 0;
 }
 
 // waits for material loader thread is finished
@@ -936,9 +948,15 @@ bool CMaterialSystem::EndFrame(IEqSwapChain* swapChain)
 	if(m_pRenderLib)
 		m_pRenderLib->EndFrame(swapChain);
 
-	m_frame++;;
+	m_frame++;
 
 	return true;
+}
+
+// captures screenshot to CImage data
+bool CMaterialSystem::CaptureScreenshot(CImage &img)
+{
+	return m_pRenderLib->CaptureScreenshot( img );
 }
 
 // resizes device back buffer. Must be called if window resized
@@ -961,6 +979,20 @@ void CMaterialSystem::DestroySwapChain(IEqSwapChain* swapChain)
 	if(m_pRenderLib)
 		m_pRenderLib->DestroySwapChain(swapChain);
 }
+
+// returns RHI device interface
+IShaderAPI* CMaterialSystem::GetShaderAPI()
+{
+	return m_pShaderAPI;
+}
+
+IProxyFactory* CMaterialSystem::GetProxyFactory()
+{
+	return proxyfactory;
+}
+
+//--------------------------------------------------------------------------------------
+// Shader dynamic states
 
 // sets a fog info
 void CMaterialSystem::SetFogInfo(const FogInfo_t &info)
@@ -989,21 +1021,9 @@ void CMaterialSystem::SetCurrentLightingModel(MaterialLightingMode_e lightingMod
 	m_nCurrentLightingShaderModel = lightingModel;
 }
 
-// Lighting model (e.g shadow maps or light maps)
-void CMaterialSystem::SetLightingModel(MaterialLightingMode_e lightingModel)
-{
-	m_config.lighting_model = lightingModel;
-}
-
 MaterialLightingMode_e CMaterialSystem::GetCurrentLightingModel()
 {
 	return m_nCurrentLightingShaderModel;
-}
-
-// Lighting model (e.g shadow maps or light maps)
-MaterialLightingMode_e CMaterialSystem::GetLightingModel()
-{
-	return m_config.lighting_model;
 }
 
 // sets pre-apply callback
@@ -1036,6 +1056,16 @@ ITexture* CMaterialSystem::GetEnvironmentMapTexture()
 	return m_pEnvmapTexture;
 }
 
+CullMode_e CMaterialSystem::GetCurrentCullMode()
+{
+	return m_nCurrentCullMode;
+}
+
+void CMaterialSystem::SetCullMode(CullMode_e cullMode)
+{
+	m_nCurrentCullMode = cullMode;
+}
+
 // skinning mode
 void CMaterialSystem::SetSkinningEnabled( bool bEnable )
 {
@@ -1057,10 +1087,6 @@ bool CMaterialSystem::IsInstancingEnabled()
 {
 	return m_instancingEnabled;
 }
-
-//-----------------------------
-// Helper operations
-//-----------------------------
 
 // sets up a 2D mode
 void CMaterialSystem::Setup2D(float wide, float tall)
@@ -1086,8 +1112,6 @@ void CMaterialSystem::SetupOrtho(float left, float right, float top, float botto
 //-----------------------------
 // Helper rendering operations (warning, slow)
 //-----------------------------
-
-ConVar r_noffp("r_noffp","0","No FFP emulated primitives", CV_CHEAT);
 
 // draws 2D primitives
 void CMaterialSystem::DrawPrimitivesFFP(PrimitiveType_e type, Vertex3D_t *pVerts, int nVerts,
@@ -1200,7 +1224,7 @@ void CMaterialSystem::DrawPrimitives2DFFP(	PrimitiveType_e type, Vertex2D_t *pVe
 
 
 //-----------------------------
-// State setup
+// RHI render states setup
 //-----------------------------
 
 // sets blending
@@ -1218,7 +1242,7 @@ void CMaterialSystem::SetDepthStates(const DepthStencilStateParams_t& depth)
 // sets rasterizer extended mode
 void CMaterialSystem::SetRasterizerStates(const RasterizerStateParams_t& raster)
 {
-	SetRasterizerStates(raster.cullMode, raster.fillMode, raster.multiSample, raster.scissor);
+	SetRasterizerStates(raster.cullMode, raster.fillMode, raster.multiSample, raster.scissor, raster.useDepthBias);
 }
 
 // pack blending function to ushort
@@ -1307,8 +1331,8 @@ void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, Comp
 // pack blending function to ushort
 struct rasterStateIndex_t
 {
-	rasterStateIndex_t( CullMode_e nCullMode, FillMode_e nFillMode, bool bMultiSample,bool bScissor )
-		: cullMode(nCullMode), fillMode(nFillMode), multisample(bMultiSample), scissor(bScissor)
+	rasterStateIndex_t( CullMode_e nCullMode, FillMode_e nFillMode, bool bMultiSample,bool bScissor, bool bPolyOffset )
+		: cullMode(nCullMode), fillMode(nFillMode), multisample(bMultiSample), scissor(bScissor), polyoffset(bPolyOffset)
 	{
 	}
 
@@ -1316,14 +1340,15 @@ struct rasterStateIndex_t
 	ubyte fillMode : 2;
 	ubyte multisample : 1;
 	ubyte scissor : 1;
+	ubyte polyoffset: 1;
 };
 
 assert_sizeof(rasterStateIndex_t,1);
 
 // sets rasterizer extended mode
-void CMaterialSystem::SetRasterizerStates(CullMode_e nCullMode, FillMode_e nFillMode,bool bMultiSample,bool bScissor)
+void CMaterialSystem::SetRasterizerStates(CullMode_e nCullMode, FillMode_e nFillMode,bool bMultiSample,bool bScissor,bool bPolyOffset)
 {
-	rasterStateIndex_t idx(nCullMode, nFillMode, bMultiSample, bScissor);
+	rasterStateIndex_t idx(nCullMode, nFillMode, bMultiSample, bScissor,bPolyOffset);
 	ubyte stateIndex = *(ushort*)&idx;
 
 	IRenderState* state = nullptr;
@@ -1335,6 +1360,13 @@ void CMaterialSystem::SetRasterizerStates(CullMode_e nCullMode, FillMode_e nFill
 		desc.fillMode = nFillMode;
 		desc.multiSample = bMultiSample;
 		desc.scissor = bScissor;
+		desc.useDepthBias = bPolyOffset;
+
+		if(desc.useDepthBias)
+		{
+			desc.depthBias = r_depthBias.GetFloat();
+			desc.slopeDepthBias = r_slopeDepthBias.GetFloat();
+		}
 
 		state = g_pShaderAPI->CreateRasterizerState(desc);
 		m_rasterStates[stateIndex] = state;
@@ -1371,21 +1403,4 @@ void CMaterialSystem::RemoveLostRestoreCallbacks(DEVLICELOSTRESTORE destroy, DEV
 {
 	m_pDeviceLostCb.remove(destroy);
 	m_pDeviceRestoreCb.remove(restore);
-}
-
-DECLARE_CMD(r_reloadallmaterials,"Reloads all materials",0)
-{
-	MsgInfo("Reloading materials...\n\n");
-	materials->ReloadAllMaterials();
-}
-
-DECLARE_CMD(r_unloadmaterialtextures,"Frees all textures",0)
-{
-	MsgInfo("Unloading textures...\n\n");
-	materials->FreeAllTextures();
-}
-
-DECLARE_CMD(r_materialsInfo,"Matsystem info",0)
-{
-	materials->PrintLoadedMaterials();
 }

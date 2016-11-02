@@ -82,10 +82,6 @@ public:
 
 			// set needed cull mode
 			materials->SetRasterizerStates(materials->GetCurrentCullMode(), FILL_SOLID);
-		
-			// set depth state
-			//materials->SetDepthStates(false, false);
-			//g_pShaderAPI->SetDepthRange(0.0f, 0.9f);
 
 			// Apply the samplers 0, 1, 2, 3 as albedo, normals, depth, material map
 			g_pShaderAPI->SetTexture(m_pRTAlbedo, "Albedo", 0);

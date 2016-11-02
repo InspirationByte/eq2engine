@@ -260,8 +260,6 @@ void CEqPhysics::DestroyWorld()
 
 	m_ghostObjects.clear();
 
-	m_contactPairs.clear();
-
 	for (int i = 0; i < m_physSurfaceParams.numElem(); i++)
 		delete m_physSurfaceParams[i];
 
@@ -485,16 +483,6 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 		!(bodyB->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK))
 		return;
 
-	{
-		// don't process collisions again
-		for (int i = 0; i < pairs.numElem(); i++)
-		{
-			if ((pairs[i].bodyA == bodyA && pairs[i].bodyB == bodyB) ||
-				(pairs[i].bodyA == bodyB && pairs[i].bodyB == bodyA))
-				return;
-		}
-	}
-
 	// test radius between bodies
 	float lenA = lengthSqr(bodyA->m_aabb.GetSize());
 	float lenB = lengthSqr(bodyB->m_aabb.GetSize());
@@ -508,6 +496,16 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 	// yep, center is a length also...
 	if(distBetweenObjects > lenA+lenB)
 		return;
+
+	{
+		// don't process collisions again
+		for (int i = 0; i < pairs.numElem(); i++)
+		{
+			if ((pairs[i].bodyA == bodyA && pairs[i].bodyB == bodyB) ||
+				(pairs[i].bodyA == bodyB && pairs[i].bodyB == bodyA))
+				return;
+		}
+	}
 
 	//bool isCarCollidingWithCar = (bodyA->m_flags & BODY_ISCAR) && (bodyB->m_flags & BODY_ISCAR);
 
@@ -834,7 +832,7 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 
 ConVar ph_test1("ph_test1", "0");
 
-void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body, DkList<ContactPair_t>& pairs)
+void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 {
 	PROFILE_FUNC();
 
@@ -865,7 +863,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body, DkList<ContactPair_t
 				{
 					// check for static objects
 					for (int j = 0; j < ncell->m_gridObjects.numElem(); j++)
-						SolveStaticVsBodyCollision(ncell->m_gridObjects[j], body, body->GetLastFrameTime(), pairs);
+						SolveStaticVsBodyCollision(ncell->m_gridObjects[j], body, body->GetLastFrameTime(), body->m_contactPairs);
 
 					// check for dynamic objects in cell
 					for (int j = 0; j < ncell->m_dynamicObjs.numElem(); j++)
@@ -876,9 +874,9 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body, DkList<ContactPair_t
 							continue;
 
 						if(collObj->IsDynamic())
-							SolveBodyCollisions(body, (CEqRigidBody*)ncell->m_dynamicObjs[j], body->GetLastFrameTime(), pairs);
+							SolveBodyCollisions(body, (CEqRigidBody*)ncell->m_dynamicObjs[j], body->GetLastFrameTime(), body->m_contactPairs);
 						else
-							SolveStaticVsBodyCollision(ncell->m_dynamicObjs[j], body, body->GetLastFrameTime(), pairs);
+							SolveStaticVsBodyCollision(ncell->m_dynamicObjs[j], body, body->GetLastFrameTime(), body->m_contactPairs);
 					}
 				}
 			}
@@ -1045,17 +1043,23 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 
 	// calculate collisions
 	for (int i = 0; i < m_moveable.numElem(); i++)
-		DetectCollisionsSingle(m_moveable[i], m_contactPairs);
+		DetectCollisionsSingle( m_moveable[i] );
 
 	// process generated contact pairs
-	for (int i = 0; i < m_contactPairs.numElem(); i++)
-		ProcessContactPair(m_contactPairs[i]);
+	for (int i = 0; i < m_moveable.numElem(); i++)
+	{
+		CEqRigidBody* body = m_moveable[i];
 
-	m_contactPairs.clear(false);
+		for (int j = 0; j < body->m_contactPairs.numElem(); j++)
+			ProcessContactPair(body->m_contactPairs[j]);
+	}
 
 	for (int i = 0; i < m_moveable.numElem(); i++)
 	{
 		CEqRigidBody* body = m_moveable[i];
+
+		// clear contact pairs
+		body->m_contactPairs.clear(false);
 
 		if(body->m_callbacks)
 			body->m_callbacks->PostSimulate(m_fDt);
@@ -1067,7 +1071,7 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 void CEqPhysics::PerformCollisionDetectionJob(void* thisPhys, int i)
 {
 	CEqPhysics* thisPhysics = (CEqPhysics*)thisPhys;
-	thisPhysics->DetectCollisionsSingle(thisPhysics->m_moveable[i], thisPhysics->m_contactPairs);
+	thisPhysics->DetectCollisionsSingle(thisPhysics->m_moveable[i]);
 }
 
 //----------------------------------------------------------------------------------------------------

@@ -431,9 +431,6 @@ public:
 		// reset scene renderer
 		g_pShaderAPI->Reset();
 
-		// update material system and proxies
-		materials->Update(g_frametime);
-
 		// setup scene info
 		scinfo.m_fZNear = 1;
 		scinfo.m_fZFar = 1000;
@@ -835,7 +832,6 @@ void Rad_CreateWindow()
 			return;
 	}
 
-	materials->SetLightingModel(MATERIAL_LIGHT_UNLIT);
 	materials->LoadShaderLibrary("Shaders_Engine.dll");
 
 	g_pModelCache->PrecacheModel("models/error.egf");

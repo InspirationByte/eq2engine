@@ -47,7 +47,7 @@ BEGIN_SHADER_CLASS(DrvSynWater)
 		//------------------------------------------
 
 		// parallax scale
-		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale);
+		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale, 0.0f);
 
 		//------------------------------------------
 		// begin shader definitions

@@ -544,9 +544,6 @@ void CMainWindow::ReDraw()
 	g_frametime = g_realtime - g_oldrealtime;
 	g_oldrealtime = g_realtime;
 
-	// update material system and proxies
-	materials->Update(g_frametime);
-
 	int w, h;
 	m_renderPanel->GetSize(&w, &h);
 

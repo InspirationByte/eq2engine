@@ -40,37 +40,56 @@ struct DKMODULE;
 
 class CMaterialSystem : public IMaterialSystem
 {
-public:
-	CMaterialSystem();
-
-	~CMaterialSystem();
-
 	friend class CMaterial;
 
-	bool							Init(	const char* materialsDirectory,
-											const char* szShaderAPI,
-											matsystem_render_config_t &config
-									);			// Initializes material system
+public:
+	CMaterialSystem();
+	~CMaterialSystem();
 
+	// Initialize material system
+	// materialsDirectory - you can determine a full path on hard disk
+	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)
+	// config - material system configuration. Must be fully filled
+	bool							Init(	const char* materialsDirectory,
+													const char* szShaderAPI,
+													matsystem_render_config_t &config
+													);
+
+	// shutdowns material system, unloading all.
 	void							Shutdown();
 
+	// Loads and adds new shader library.
+	bool							LoadShaderLibrary(const char* libname);
+
+	// is matsystem in stub mode? (no rendering)
+	bool							IsInStubMode();
+
+	// returns configuration that can be modified in realtime (shaderapi settings can't be modified)
 	matsystem_render_config_t&		GetConfiguration();
 
-	bool							IsInStubMode();							// is matsystem in stub mode?
-
 	// returns material path
-	char*							GetMaterialPath() {return (char*)m_szMaterialsdir.GetData();}
+	const char*						GetMaterialPath() const;
 
-	bool							LoadShaderLibrary(const char* libname);	// Adds new shader library
+	//-----------------------------
+	// Resource operations
+	//-----------------------------
 
-	IMaterial*						FindMaterial(const char* szMaterialName,bool findExisting = false);	// Finds material
+	// returns white texture (used for wireframe of shaders that can't use FFP modes,notexture modes, etc.)
+	ITexture*						GetWhiteTexture();
 
+	// returns luxel test texture (used for lightmap test)
+	ITexture*						GetLuxelTestTexture();
+
+	// Finds or loads material (if findExisting is false then it will be loaded as new material instance)
+	IMaterial*						FindMaterial(const char* szMaterialName, bool findExisting = true);
+
+	// checks material for existence
 	bool							IsMaterialExist(const char* szMaterialName);
 
-	// Finds shader
+	// Creates material system shader
 	IMaterialSystemShader*			CreateShaderInstance(const char* szShaderName);
 
-	// Preload materials that loaded, but not initialized
+	// Loads textures, compiles shaders. Called after level loading
 	void							PreloadNewMaterials();
 
 	// begins preloading zone of materials when FindMaterial calls
@@ -79,134 +98,79 @@ public:
 	// ends preloading zone of materials when FindMaterial calls
 	void							EndPreloadMarker();
 
+	// waits for material loader thread is finished
+	void							Wait();
+
 	// loads material or sends it to loader thread
 	void							PutMaterialToLoadingQueue(IMaterial* pMaterial);
 
+	// returns material count which is currently loading or awaiting for load
 	int								GetLoadingQueue() const;
 
-	// Reloads materials
-	void							ReloadAllMaterials(bool bTouchTextures = true,bool bTouchShaders = true, bool wait = false);
+	// Reloads material vars, shaders and textures without touching a material pointers.
+	void							ReloadAllMaterials(bool textures = true, bool shaders = true, bool wait = false);
 
-	// Reloads textures
+	// Reloads all textures loaded by materials (useful if r_loadmiplevel changed)
 	void							ReloadAllTextures();
 
-	// Frees all textures
-	void							FreeAllTextures();
-
-	// Frees all materials (if bFreeAll is positive, will free locked)
-	void							FreeMaterials(bool bFreeAll = false);
-
-	// Frees material
+	// Frees materials or decrements it's reference count
 	void							FreeMaterial(IMaterial *pMaterial);
 
-	// Setting rendering material. Applies shader constants and more needed things
-	// NOTENOTE: Do reset() though renderer.
-	bool							BindMaterial(IMaterial *pMaterial,bool doApply = true);
+	void							FreeMaterials();
+	void							ClearRenderStates();
 
-	// Applies current material
-	void							Apply();
+	//-----------------------------
+	// Helper rendering operations (warning, may be slow)
+	// FIXME: replace by MatSystem mesh builder
+	//-----------------------------
 
-	// returns bound material
-	IMaterial*						GetBoundMaterial();
+	// draws primitives
+	void							DrawPrimitivesFFP(	PrimitiveType_e type, Vertex3D_t *pVerts, int nVerts,
+																ITexture* pTexture = NULL, const ColorRGBA &color = color4_white,
+																BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
+																RasterizerStateParams_t* rasterParams = NULL);
 
-	// Registers new shader
-	void							RegisterShader(const char* pszShaderName,DISPATCH_CREATE_SHADER dispatcher_creation);
+	// draws primitives for 2D
+	void							DrawPrimitives2DFFP(	PrimitiveType_e type, Vertex2D_t *pVerts, int nVerts,
+																	ITexture* pTexture = NULL, const ColorRGBA &color = color4_white,
+																	BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
+																	RasterizerStateParams_t* rasterParams = NULL);
 
-	// registers overrider for shaders
-	void							RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function);
+	//-----------------------------
+	// Shader dynamic states
+	//-----------------------------
 
-	// Culling mode for model
-	CullMode_e						GetCurrentCullMode()				{return m_nCurrentCullMode;}
-	void							SetCullMode(CullMode_e cullMode)	{m_nCurrentCullMode = cullMode;}
+	CullMode_e						GetCurrentCullMode();
+	void							SetCullMode(CullMode_e cullMode);
 
-	// skinning mode
 	void							SetSkinningEnabled( bool bEnable );
 	bool							IsSkinningEnabled();
 
-	// instancing mode
 	void							SetInstancingEnabled( bool bEnable );
 	bool							IsInstancingEnabled();
 
-	// Lighting model (e.g shadow maps or light maps)
-	void							SetLightingModel(MaterialLightingMode_e lightingModel);
 
-	// Lighting model (e.g shadow maps or light maps)
-	MaterialLightingMode_e			GetLightingModel();
+	void							SetFogInfo(const FogInfo_t &info);
+	void							GetFogInfo(FogInfo_t &info);
 
-	// transform operations
-	void							SetMatrix(MatrixMode_e mode, const Matrix4x4 &matrix);							// sets up a matrix, projection, view, and world
-	void							GetMatrix(MatrixMode_e mode, Matrix4x4 &matrix);							// returns a typed matrix
-
-	void							GetWorldViewProjection(Matrix4x4 &matrix);									// retunrs multiplied matrix
-
-	void							SetAmbientColor(const ColorRGBA &color);											// sets an ambient light
+	void							SetAmbientColor(const ColorRGBA &color);
 	ColorRGBA						GetAmbientColor();
 
-	void							SetLight(dlight_t* pLight);													// sets current light for processing in shaders
+	void							SetLight(dlight_t* pLight);
 	dlight_t*						GetLight();
 
-	void							SetCurrentLightingModel(MaterialLightingMode_e lightingModel);				// sets current lighting model as state
-	MaterialLightingMode_e			GetCurrentLightingModel();													// returns current lighting model state
+	// lighting/shading model selection
+	void							SetCurrentLightingModel(MaterialLightingMode_e lightingModel);
+	MaterialLightingMode_e			GetCurrentLightingModel();
 
-	// sets pre-apply callback
-	void							SetMaterialRenderParamCallback( IMaterialRenderParamCallbacks* callback );
-
-	// returns current pre-apply callback
-	IMaterialRenderParamCallbacks*	GetMaterialRenderParamCallback();
-
-	// sets $env_cubemap texture for use in shaders
+	//---------------------------
+	// $env_cubemap texture for use in shaders
 	void							SetEnvironmentMapTexture( ITexture* pEnvMapTexture );
-
-	// returns $env_cubemap texture used in shaders
 	ITexture*						GetEnvironmentMapTexture();
 
-	ITexture*						GetWhiteTexture();
-	ITexture*						GetLuxelTestTexture();
-
-
 	//-----------------------------
-	// Frame operations
+	// RHI render states setup
 	//-----------------------------
-
-	bool							BeginFrame();																// tells 3d device to begin frame
-	bool							EndFrame(IEqSwapChain* swapChain = NULL);																	// tells 3d device to end and present frame
-
-	void							SetDeviceBackbufferSize(int wide, int tall);								// resizes device back buffer. Must be called if window resized
-
-	// creates additional swap chain
-	IEqSwapChain*					CreateSwapChain(void* windowHandle);
-	void							DestroySwapChain(IEqSwapChain* swapChain);
-
-	//-----------------------------
-
-	void							SetFogInfo(const FogInfo_t &info);												// sets a fog info
-	void							GetFogInfo(FogInfo_t &info);												// returns fog info
-
-	//-----------------------------
-	// Helper operations
-	//-----------------------------
-
-	void							Setup2D(float wide, float tall);														// sets up a 2D mode
-	void							SetupProjection(float wide, float tall, float fFOV, float zNear, float zFar);			// sets up 3D mode, projection
-	void							SetupOrtho(float left, float right, float top, float bottom, float zNear, float zFar);	// sets up 3D mode, orthogonal
-
-	//-----------------------------
-	// Helper rendering operations (warning, slow)
-	//-----------------------------
-
-	void							DrawPrimitivesFFP(PrimitiveType_e type, Vertex3D_t *pVerts, int nVerts,
-												ITexture* pTexture = NULL, const ColorRGBA &color = color4_white,
-												BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
-												RasterizerStateParams_t* rasterParams = NULL);			// draws 3D primitives
-
-	void							DrawPrimitives2DFFP(PrimitiveType_e type, Vertex2D_t *pVerts, int nVerts,
-												ITexture* pTexture = NULL, const ColorRGBA &color = color4_white,
-												BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
-												RasterizerStateParams_t* rasterParams = NULL);			// draws 2D primitives
-
-//-----------------------------
-// State setup
-//-----------------------------
 
 	// sets blending
 	void							SetBlendingStates(const BlendStateParam_t& blend);
@@ -217,53 +181,101 @@ public:
 	// sets rasterizer extended mode
 	void							SetRasterizerStates(const RasterizerStateParams_t& raster);
 
+
 	// sets blending
 	void							SetBlendingStates(	BlendingFactor_e nSrcFactor,
-														BlendingFactor_e nDestFactor,
-														BlendingFunction_e nBlendingFunc,
-														int colormask = COLORMASK_ALL
-														);
+																BlendingFactor_e nDestFactor,
+																BlendingFunction_e nBlendingFunc = BLENDFUNC_ADD,
+																int colormask = COLORMASK_ALL
+																);
 
 	// sets depth stencil state
 	void							SetDepthStates(	bool bDoDepthTest,
-													bool bDoDepthWrite,
-													CompareFunc_e depthCompFunc = COMP_LEQUAL);
+															bool bDoDepthWrite,
+															CompareFunc_e depthCompFunc = COMP_LEQUAL);
 
 	// sets rasterizer extended mode
-	void							SetRasterizerStates(CullMode_e nCullMode,
-														FillMode_e nFillMode = FILL_SOLID,
-														bool bMultiSample = true,
-														bool bScissor = false
-														);
+	void							SetRasterizerStates(	CullMode_e nCullMode,
+																	FillMode_e nFillMode = FILL_SOLID,
+																	bool bMultiSample = true,
+																	bool bScissor = false,
+																	bool bPolyOffset = false
+																	);
 
-//**********************************
-// Material system draw*() functions
-//**********************************
+	//------------------
+	// Materials or shader static states
 
-	// return proxy factory interface
-	IProxyFactory*					GetProxyFactory() {return proxyfactory;}
+	IMaterial*						GetBoundMaterial();
 
-	// returns shader interface of this material system
-	IShaderAPI*						GetShaderAPI() {return m_pShaderAPI;}
+	bool							BindMaterial( IMaterial *pMaterial, bool preApply = true );
+	void							Apply();
+
+	// sets the custom rendering callbacks
+	// useful for proxy updates, setting up constants that shader objects can't access by themselves
+	void							SetMaterialRenderParamCallback( IMaterialRenderParamCallbacks* callback );
+	IMaterialRenderParamCallbacks*	GetMaterialRenderParamCallback();
+
+	//-----------------------------
+	// Rendering projection helper operations
+
+	// sets up a 2D mode (also sets up view and world matrix)
+	void							Setup2D(float wide, float tall);
+
+	// sets up 3D mode, projection
+	void							SetupProjection(float wide, float tall, float fFOV, float zNear, float zFar);
+
+	// sets up 3D mode, orthogonal
+	void							SetupOrtho(float left, float right, float top, float bottom, float zNear, float zFar);
+
+	// sets up a matrix, projection, view, and world
+	void							SetMatrix(MatrixMode_e mode, const Matrix4x4 &matrix);
+
+	// returns a typed matrix
+	void							GetMatrix(MatrixMode_e mode, Matrix4x4 &matrix);
+
+	// retunrs multiplied matrix
+	void							GetWorldViewProjection(Matrix4x4 &matrix);
+
+	//-----------------------------
+	// Swap chains
+	//-----------------------------
+
+	// tells device to begin frame
+	bool							BeginFrame();
+
+	// tells device to end and present frame. Also swapchain can be overriden.
+	bool							EndFrame(IEqSwapChain* swapChain);
+
+	// resizes device back buffer. Must be called if window resized, etc
+	void							SetDeviceBackbufferSize(int wide, int tall);
+
+	// creates additional swap chain
+	IEqSwapChain*					CreateSwapChain(void* windowHandle);
+
+	void							DestroySwapChain(IEqSwapChain* chain);
 
 	// captures screenshot to CImage data
 	bool							CaptureScreenshot( CImage &img );
 
-	// update all materials and proxies
-	void							Update( float dt );
+	//-----------------------------
+	// Internal operations
+	//-----------------------------
 
-	// waits for material loader thread is finished
-	void							Wait();
+	// returns RHI device interface
+	IShaderAPI*						GetShaderAPI();
 
+	IProxyFactory*					GetProxyFactory();
+
+	void							RegisterShader(const char* pszShaderName,DISPATCH_CREATE_SHADER dispatcher_creation);
+	void							RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function);
+
+	// use this if you want to reduce "frametime jumps" when matsystem loads textures
 	void							SetResourceBeginEndLoadCallback(RESOURCELOADCALLBACK begin, RESOURCELOADCALLBACK end);
 
-	// use this if you have objects that must be destroyed when device is lost
+	// device lost/restore callbacks
 	void							AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore);
-
-	// removes callbacks from list
 	void							RemoveLostRestoreCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore);
 
-	// prints loaded materials to console
 	void							PrintLoadedMaterials();
 
 	bool							IsInitialized() const {return (m_pRenderLib != NULL);}
@@ -309,8 +321,6 @@ private:
 
 	ITexture*						m_pEnvmapTexture;
 
-	int								m_nMaterialChanges;				// material binds per frame count
-
 	DkList<DEVLICELOSTRESTORE>		m_pDeviceLostCb;
 	DkList<DEVLICELOSTRESTORE>		m_pDeviceRestoreCb;
 
@@ -326,12 +336,10 @@ private:
 
 	bool							m_bDeviceState;
 
-	float							m_fCurrFrameTime;
-
 	CEqMutex						m_Mutex;
 
 	bool							m_bPreloadingMarker;
-	uint8							m_frame;
+	uint							m_frame;
 };
 
 #endif //CMATERIALSYSTEM_H

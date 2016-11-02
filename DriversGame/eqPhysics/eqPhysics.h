@@ -305,7 +305,7 @@ public:
 	void							IntegrateSingle(CEqRigidBody* body);
 
 	///< detects body collisions
-	void							DetectCollisionsSingle(CEqRigidBody* body, DkList<ContactPair_t>& pairs);
+	void							DetectCollisionsSingle(CEqRigidBody* body);
 
 	///< processes contact pairs
 	void							ProcessContactPair(const ContactPair_t& pair);
@@ -357,8 +357,6 @@ protected:
 	DkList<CEqCollisionObject*>		m_staticObjects;
 
 	DkList<CEqCollisionObject*>		m_ghostObjects;
-
-	DkList<ContactPair_t>			m_contactPairs;
 
 	btCollisionWorld*				m_collisionWorld;
 	btCollisionConfiguration*		m_collConfig;

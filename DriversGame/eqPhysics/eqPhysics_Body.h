@@ -99,6 +99,8 @@ public:
 ///
 class CEqRigidBody : public CEqCollisionObject
 {
+	friend class CEqPhysics;
+
 public:
 						CEqRigidBody();
 
@@ -190,6 +192,8 @@ protected:
 	float				m_minFrameTime;
 	float				m_frameTimeAccumulator;
 	float				m_lastFrameTime;
+
+	DkList<ContactPair_t>	m_contactPairs; // contact pair list in single frame
 
 public:
 	FVector3D			m_centerOfMassTrans;

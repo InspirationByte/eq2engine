@@ -11,7 +11,7 @@
 // Basic cubemap skybox shader
 //--------------------------------------
 
-BEGIN_SHADER_CLASS(Sky)
+BEGIN_SHADER_CLASS(Skybox)
 
 	SHADER_INIT_PARAMS()
 	{

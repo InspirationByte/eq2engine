@@ -18,12 +18,6 @@ BEGIN_SHADER_CLASS(BaseParticle)
 		SHADER_FOGPASS(Particle) = NULL;
 
 		m_pBaseTexture			= NULL;
-
-		//IMatVar* mv_color			= GetAssignedMaterial()->GetMaterialVar("color", "[1,1,1,1]");
-		IMatVar* mv_depthSetup		= GetAssignedMaterial()->FindMaterialVar("depthRangeSetup");
-
-		if(mv_depthSetup && mv_depthSetup->GetInt() > 0)
-			SetParameterFunctor(SHADERPARAM_RASTERSETUP, &ThisShaderClass::DepthRangeRasterSetup);
 		
 		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
@@ -45,7 +39,7 @@ BEGIN_SHADER_CLASS(BaseParticle)
 
 		bool useAdvLighting = false;
 
-		SHADER_PARAM_BOOL(AdvancedLighting, useAdvLighting);
+		SHADER_PARAM_BOOL(AdvancedLighting, useAdvLighting, false);
 
 		SHADERDEFINES_BEGIN
 
@@ -113,12 +107,6 @@ BEGIN_SHADER_CLASS(BaseParticle)
 	{
 		ColorRGBA setColor = materials->GetAmbientColor();
 		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", setColor);
-	}
-
-	void DepthRangeRasterSetup()
-	{
-		g_pShaderAPI->SetDepthRange(0.0f - 0.00008f, 1.0f - 0.00001f);
-		CBaseShader::ParamSetup_RasterState();
 	}
 
 	ITexture*	GetBaseTexture(int stage) {return m_pBaseTexture;}

@@ -211,6 +211,9 @@ ShaderAPIGL::ShaderAPIGL() : ShaderAPI_Base()
 	m_nCurrentCullMode = CULL_BACK;
 	m_nCurrentFillMode = FILL_SOLID;
 
+	m_fCurrentDepthBias = 0.0f;
+	m_fCurrentSlopeDepthBias = 0.0f;
+
 	m_nCurrentMask = COLORMASK_ALL;
 	m_bCurrentBlendEnable = false;
 
@@ -659,7 +662,14 @@ void ShaderAPIGL::ApplyRasterizerState()
 				m_bCurrentScissorEnable = false;
 			}
 
-#pragma todo("GL: depth bias")
+			if(m_fCurrentDepthBias != 0.0f || m_fCurrentSlopeDepthBias != 0.0f)
+			{
+				glDisable(GL_POLYGON_OFFSET_FILL);
+				glPolygonOffset(0.0f, 0.0f);
+
+				m_fCurrentDepthBias = 0.0f;
+				m_fCurrentSlopeDepthBias = 0.0f;
+			}			
 		}
 		else
 		{
@@ -712,6 +722,29 @@ void ShaderAPIGL::ApplyRasterizerState()
 					glDisable(GL_SCISSOR_TEST);
 				}
 				m_bCurrentScissorEnable = pSelectedState->m_params.scissor;
+			}
+
+			if (pSelectedState->m_params.useDepthBias != false)
+			{
+				if(m_fCurrentDepthBias != pSelectedState->m_params.depthBias || m_fCurrentSlopeDepthBias != pSelectedState->m_params.slopeDepthBias)
+				{
+					m_fCurrentDepthBias = pSelectedState->m_params.depthBias;
+					m_fCurrentSlopeDepthBias = pSelectedState->m_params.slopeDepthBias;
+
+					glPolygonOffset(m_fCurrentDepthBias, m_fCurrentSlopeDepthBias);
+					glEnable(GL_POLYGON_OFFSET_FILL);
+				}
+			}
+			else
+			{
+				if(m_fCurrentDepthBias != 0.0f || m_fCurrentSlopeDepthBias != 0.0f)
+				{
+					glDisable(GL_POLYGON_OFFSET_FILL);
+					glPolygonOffset(0.0f, 0.0f);
+
+					m_fCurrentDepthBias = 0.0f;
+					m_fCurrentSlopeDepthBias = 0.0f;
+				}
 			}
 
 		}

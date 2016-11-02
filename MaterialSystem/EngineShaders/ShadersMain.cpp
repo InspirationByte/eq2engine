@@ -12,6 +12,8 @@
 IShaderAPI*			g_pShaderAPI	= (IShaderAPI*)GetCore()->GetInterface(MATSYSTEM_INTERFACE_VERSION);
 IMaterialSystem*	materials		= NULL;
 
+DECLARE_INTERNAL_SHADERS()
+
 #ifdef _WIN32
 
 #include <crtdbg.h>
@@ -50,7 +52,8 @@ ONLY_EXPORTS int InitShaderLibrary(IMaterialSystem* pMatSystem)
 	g_pShaderAPI	= pMatSystem->GetShaderAPI();
 	materials		= pMatSystem;
 
-	// Material system already connected, continue
+	// register all shaders
+	REGISTER_INTERNAL_SHADERS();
 
 	// initialize override functions for matsystem shaders
 	InitShaderOverrides();

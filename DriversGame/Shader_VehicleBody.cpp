@@ -46,7 +46,6 @@ BEGIN_SHADER_CLASS(DrvSynVehicle)
 		if(SHADER_PASS(Ambient))
 			return true;
 
-		bool bDeferredShading = (materials->GetLightingModel() == MATERIAL_LIGHT_DEFERRED);
 		bool bHasAnyTranslucency = (m_nFlags & MATERIAL_FLAG_TRANSPARENT) || (m_nFlags & MATERIAL_FLAG_ADDITIVE) || (m_nFlags & MATERIAL_FLAG_MODULATE);
 
 		//------------------------------------------
@@ -54,10 +53,10 @@ BEGIN_SHADER_CLASS(DrvSynVehicle)
 		//------------------------------------------
 
 		bool bBaseTextureSpecularAlpha;
-		SHADER_PARAM_BOOL(BaseTextureSpecularAlpha, bBaseTextureSpecularAlpha);
+		SHADER_PARAM_BOOL(BaseTextureSpecularAlpha, bBaseTextureSpecularAlpha, false);
 
 		// parallax scale
-		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale);
+		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale, 0.0f);
 
 		//------------------------------------------
 		// begin shader definitions
@@ -80,35 +79,17 @@ BEGIN_SHADER_CLASS(DrvSynVehicle)
 			SHADER_DECLARE_SIMPLE_DEFINITION(true, "USE_SPECULAR");
 		SHADER_END_DEFINITION;
 
-		
 		// alphatesting
 		SHADER_DECLARE_SIMPLE_DEFINITION((m_nFlags & MATERIAL_FLAG_ALPHATESTED), "ALPHATEST");
 
-		if(bDeferredShading && !bHasAnyTranslucency)
-		{
-			// disable FFP alphatesting, let use the shader for better perfomance
-			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Solid);
+		// compile without fog
+		SHADER_FIND_OR_COMPILE(Ambient, "VehicleBody");
 
-			// compile without fog
-			SHADER_FIND_OR_COMPILE(Ambient, "VehicleBody_Deferred");
-
-			// define fog parameter.
-			SHADER_DECLARE_SIMPLE_DEFINITION(m_fogenabled, "DOFOG");
+		// define fog parameter.
+		SHADER_DECLARE_SIMPLE_DEFINITION(m_fogenabled, "DOFOG");
 		
-			// compile with fog
-			SHADER_FIND_OR_COMPILE(Ambient_fog, "VehicleBody_Deferred");
-		}
-		else
-		{
-			// compile without fog
-			SHADER_FIND_OR_COMPILE(Ambient, "VehicleBody");
-
-			// define fog parameter.
-			SHADER_DECLARE_SIMPLE_DEFINITION(m_fogenabled, "DOFOG");
-		
-			// compile with fog
-			SHADER_FIND_OR_COMPILE(Ambient_fog, "VehicleBody");
-		}
+		// compile with fog
+		SHADER_FIND_OR_COMPILE(Ambient_fog, "VehicleBody");
 
 		return true;
 	}

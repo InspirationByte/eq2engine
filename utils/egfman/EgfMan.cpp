@@ -1074,9 +1074,6 @@ void CEGFViewFrame::ReDraw()
 	g_frametime = g_realtime - g_oldrealtime;
 	g_oldrealtime = g_realtime;
 
-	// update material system and proxies
-	materials->Update(g_frametime);
-
 	//m_bDoRefresh = false;
 
 	int w, h;
