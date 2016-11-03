@@ -1125,6 +1125,8 @@ IDynamicMesh* CMaterialSystem::GetDynamicMesh() const
 	return (IDynamicMesh*)&m_dynamicMesh;
 }
 
+#include "../shared_engine/materialsystem/MeshBuilder.h"
+
 // draws 2D primitives
 void CMaterialSystem::DrawPrimitivesFFP(PrimitiveType_e type, Vertex3D_t *pVerts, int nVerts,
 										ITexture* pTexture, const ColorRGBA &color,
@@ -1155,32 +1157,25 @@ void CMaterialSystem::DrawPrimitivesFFP(PrimitiveType_e type, Vertex3D_t *pVerts
 
 	g_pShaderAPI->Apply();
 
-	IMeshBuilder* pMB = m_pShaderAPI->CreateMeshBuilder();
+	CMeshBuilder meshBuilder(&m_dynamicMesh);
 
-	if(pMB)
+	meshBuilder.Begin(type);
+
+	for(int i = 0; i < nVerts; i++)
 	{
-		pMB->Begin(type);
+		meshBuilder.Color4fv(pVerts[i].m_vColor * color);
+		meshBuilder.TexCoord2fv(pVerts[i].m_vTexCoord);
+		meshBuilder.Position3fv(pVerts[i].m_vPosition);
 
-		for(int i = 0; i < nVerts; i++)
-		{
-			pMB->Color4fv(pVerts[i].m_vColor * color);
-			pMB->TexCoord2fv(pVerts[i].m_vTexCoord);
-			pMB->Position3fv(pVerts[i].m_vPosition);
-
-			pMB->AdvanceVertex();
-		}
-
-		pMB->End();
+		meshBuilder.AdvanceVertex();
 	}
 
-	m_pShaderAPI->DestroyMeshBuilder(pMB);
+	meshBuilder.End();
 
 	g_pShaderAPI->SetBlendingState(NULL);
 	g_pShaderAPI->SetRasterizerState(NULL);
 	g_pShaderAPI->SetDepthStencilState(NULL);
 }
-
-#include "../shared_engine/materialsystem/MeshBuilder.h"
 
 void CMaterialSystem::DrawPrimitives2DFFP(	PrimitiveType_e type, Vertex2D_t *pVerts, int nVerts,
 											ITexture* pTexture, const ColorRGBA &color,
@@ -1213,25 +1208,18 @@ void CMaterialSystem::DrawPrimitives2DFFP(	PrimitiveType_e type, Vertex2D_t *pVe
 
 	CMeshBuilder meshBuilder(&m_dynamicMesh);
 
-	//IMeshBuilder* pMB = m_pShaderAPI->CreateMeshBuilder();
+	meshBuilder.Begin(type);
 
-	//if(pMB)
-	//{
-		meshBuilder.Begin(type);
+	for(int i = 0; i < nVerts; i++)
+	{
+		meshBuilder.Color4fv(pVerts[i].m_vColor * color);
+		meshBuilder.TexCoord2f(pVerts[i].m_vTexCoord.x,pVerts[i].m_vTexCoord.y);
+		meshBuilder.Position3f(pVerts[i].m_vPosition.x, pVerts[i].m_vPosition.y, 0);
 
-		for(int i = 0; i < nVerts; i++)
-		{
-			meshBuilder.Color4fv(pVerts[i].m_vColor * color);
-			meshBuilder.TexCoord2f(pVerts[i].m_vTexCoord.x,pVerts[i].m_vTexCoord.y);
-			meshBuilder.Position3f(pVerts[i].m_vPosition.x, pVerts[i].m_vPosition.y, 0);
+		meshBuilder.AdvanceVertex();
+	}
 
-			meshBuilder.AdvanceVertex();
-		}
-
-		meshBuilder.End();
-	//}
-
-	//m_pShaderAPI->DestroyMeshBuilder(pMB);
+	meshBuilder.End();
 
 	g_pShaderAPI->SetBlendingState(NULL);
 	g_pShaderAPI->SetRasterizerState(NULL);

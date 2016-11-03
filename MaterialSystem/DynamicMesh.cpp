@@ -158,9 +158,16 @@ int CDynamicMesh::AllocateGeom( int nVertices, int nIndices, void** verts, uint1
 	// give the pointers
 	*verts = (ubyte*)m_vertices + startVertex * m_vertexStride;
 
+	memset(*verts, 0, m_vertexStride*nVertices);
+
 	// indices are optional
 	if(indices && nIndices)
+	{
 		*indices = &m_indices[startIndex];
+		memset(*indices, 0, sizeof(uint16)*nIndices);
+	}
+
+	memset(*verts, 0, m_vertexStride*nVertices);
 
 	return startVertex;
 }
@@ -202,7 +209,6 @@ void CDynamicMesh::Render()
 
 	// get resource back
 	Unlock();
-	g_pShaderAPI->Flush();
 
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
 

@@ -12,8 +12,7 @@ CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh) :
 	m_mesh(NULL),
 	m_curVertex(NULL),
 	m_formatDesc(NULL),
-	m_begun(false),
-	m_gotoNext(false)
+	m_begun(false)
 {
 	m_mesh = mesh;
 
@@ -24,7 +23,6 @@ CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh) :
 	int vertexSize = 0;
 	for(int i = 0; i < numAttribs; i++)
 	{
-		//int stream = m_formatDesc[i].m_nStream;
 		AttributeFormat_e format = m_formatDesc[i].m_nFormat;
 		VertexType_e type = m_formatDesc[i].m_nType;
 		int vecCount = m_formatDesc[i].m_nSize;
@@ -32,31 +30,30 @@ CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh) :
 
 		if(type == VERTEXTYPE_VERTEX)
 		{
-			m_fmtPosition.offset = vertexSize;
-			m_fmtPosition.count = vecCount;
-			m_fmtPosition.format = format;
+			m_position.offset = vertexSize;
+			m_position.count = vecCount;
+			m_position.format = format;
 		}
 		else if(type == VERTEXTYPE_NORMAL)
 		{
-			m_fmtNormal.offset = vertexSize;
-			m_fmtNormal.count = vecCount;
-			m_fmtNormal.format = format;
+			m_normal.offset = vertexSize;
+			m_normal.count = vecCount;
+			m_normal.format = format;
 		}
 		else if(type == VERTEXTYPE_TEXCOORD)
 		{
-			m_fmtTexcoord.offset = vertexSize;
-			m_fmtTexcoord.count = vecCount;
-			m_fmtTexcoord.format = format;
+			m_texcoord.offset = vertexSize;
+			m_texcoord.count = vecCount;
+			m_texcoord.format = format;
 		}
 		else if(type == VERTEXTYPE_COLOR)
 		{
-			m_fmtColor.offset = vertexSize;
-			m_fmtColor.count = vecCount;
-			m_fmtColor.format = format;
+			m_color.offset = vertexSize;
+			m_color.count = vecCount;
+			m_color.format = format;
 		}
 
 		// TODO: add Tangent and Binormal
-
 		vertexSize += attribSize;
 	}
 }
@@ -72,8 +69,12 @@ void CMeshBuilder::Begin(PrimitiveType_e type)
 	m_mesh->Reset();
 	m_mesh->SetPrimitiveType(type);
 
+	m_position.value = Vector4D(0,0,0,1.0f);
+	m_texcoord.value = vec4_zero;
+	m_normal.value = Vector4D(0,1,0,0);
+	m_color.value = color4_white;
+
 	m_begun = true;
-	m_gotoNext = true;
 }
 
 // ends building and renders the mesh
@@ -86,35 +87,10 @@ void CMeshBuilder::End()
 // position setup
 void CMeshBuilder::Position3f(float x, float y, float z)
 {
-	GotoNextVertex();
-
-	if(!m_begun || m_fmtPosition.offset < 0|| m_fmtPosition.count < 3)
-		return;
-
-	ubyte* dest = (ubyte*)m_curVertex + m_fmtPosition.offset;
-
-	switch(m_fmtPosition.format)
-	{
-		case ATTRIBUTEFORMAT_FLOAT:
-		{
-			float* val = (float*)dest;
-			*val++ = x;
-			*val++ = y;
-			*val++ = z;
-			break;
-		}
-		case ATTRIBUTEFORMAT_HALF:
-		{
-			half* val = (half*)dest;
-			*val++ = x;
-			*val++ = y;
-			*val++ = z;
-			break;
-		}
-		default:
-			// unsupported
-			break;
-	}
+	m_position.value.x = x;
+	m_position.value.y = y;
+	m_position.value.z = z;
+	m_position.value.w = 1.0f;
 }
 
 void CMeshBuilder::Position3fv(const float *v)
@@ -125,40 +101,10 @@ void CMeshBuilder::Position3fv(const float *v)
 // normal setup
 void CMeshBuilder::Normal3f(float nx, float ny, float nz)
 {
-	GotoNextVertex();
-
-	if(!m_begun || m_fmtNormal.offset < 0 || m_fmtNormal.count < 3)
-		return;
-
-	ubyte* dest = (ubyte*)m_curVertex + m_fmtNormal.offset;
-
-	switch(m_fmtNormal.format)
-	{
-		case ATTRIBUTEFORMAT_FLOAT:
-		{
-			float* val = (float*)dest;
-			*val++ = nx;
-			*val++ = ny;
-			*val++ = nz;
-			break;
-		}
-		case ATTRIBUTEFORMAT_HALF:
-		{
-			half* val = (half*)dest;
-			*val++ = nx;
-			*val++ = ny;
-			*val++ = nz;
-			break;
-		}
-		case ATTRIBUTEFORMAT_UBYTE:
-		{
-			ubyte* val = (ubyte*)dest;
-			*val++ = nx / 255.0f;
-			*val++ = ny / 255.0f;
-			*val++ = nz / 255.0f;
-			break;
-		}
-	}
+	m_normal.value.x = nx;
+	m_normal.value.y = ny;
+	m_normal.value.z = nz;
+	m_normal.value.w = 0.0f;
 }
 
 void CMeshBuilder::Normal3fv(const float *v)
@@ -168,37 +114,10 @@ void CMeshBuilder::Normal3fv(const float *v)
 
 void CMeshBuilder::TexCoord2f(float s, float t)
 {
-	GotoNextVertex();
-
-	if(!m_begun || m_fmtTexcoord.offset < 0 || m_fmtTexcoord.count < 2)
-		return;
-
-	ubyte* dest = (ubyte*)m_curVertex + m_fmtTexcoord.offset;
-
-	switch(m_fmtTexcoord.format)
-	{
-		case ATTRIBUTEFORMAT_FLOAT:
-		{
-			float* val = (float*)dest;
-			*val++ = s;
-			*val++ = t;
-			break;
-		}
-		case ATTRIBUTEFORMAT_HALF:
-		{
-			half* val = (half*)dest;
-			*val++ = s;
-			*val++ = t;
-			break;
-		}
-		case ATTRIBUTEFORMAT_UBYTE:
-		{
-			ubyte* val = (ubyte*)dest;
-			*val++ = s / 255.0f;
-			*val++ = t / 255.0f;
-			break;
-		}
-	}
+	m_texcoord.value.x = s;
+	m_texcoord.value.y = t;
+	m_texcoord.value.z = 0.0f;
+	m_texcoord.value.w = 0.0f;
 }
 
 void CMeshBuilder::TexCoord2fv(const float *v)
@@ -208,40 +127,10 @@ void CMeshBuilder::TexCoord2fv(const float *v)
 
 void CMeshBuilder::TexCoord3f(float s, float t, float r)
 {
-	GotoNextVertex();
-
-	if(!m_begun || m_fmtTexcoord.offset < 0 || m_fmtTexcoord.count < 3)
-		return;
-
-	ubyte* dest = (ubyte*)m_curVertex + m_fmtTexcoord.offset;
-
-	switch(m_fmtTexcoord.format)
-	{
-		case ATTRIBUTEFORMAT_FLOAT:
-		{
-			float* val = (float*)dest;
-			*val++ = s;
-			*val++ = t;
-			*val++ = r;
-			break;
-		}
-		case ATTRIBUTEFORMAT_HALF:
-		{
-			half* val = (half*)dest;
-			*val++ = s;
-			*val++ = t;
-			*val++ = r;
-			break;
-		}
-		case ATTRIBUTEFORMAT_UBYTE:
-		{
-			ubyte* val = (ubyte*)dest;
-			*val++ = s / 255.0f;
-			*val++ = t / 255.0f;
-			*val++ = r / 255.0f;
-			break;
-		}
-	}
+	m_texcoord.value.x = s;
+	m_texcoord.value.y = t;
+	m_texcoord.value.z = r;
+	m_texcoord.value.w = 0.0f;
 }
 
 void CMeshBuilder::TexCoord3fv(const float *v)
@@ -252,40 +141,10 @@ void CMeshBuilder::TexCoord3fv(const float *v)
 // color setup
 void CMeshBuilder::Color3f( float r, float g, float b )
 {
-	GotoNextVertex();
-
-	if(!m_begun || m_fmtColor.offset < 0 || m_fmtColor.count < 3)
-		return;
-
-	ubyte* dest = (ubyte*)m_curVertex + m_fmtColor.offset;
-
-	switch(m_fmtColor.format)
-	{
-		case ATTRIBUTEFORMAT_FLOAT:
-		{
-			float* val = (float*)dest;
-			*val++ = r;
-			*val++ = g;
-			*val++ = b;
-			break;
-		}
-		case ATTRIBUTEFORMAT_HALF:
-		{
-			half* val = (half*)dest;
-			*val++ = r;
-			*val++ = g;
-			*val++ = b;
-			break;
-		}
-		case ATTRIBUTEFORMAT_UBYTE:
-		{
-			ubyte* val = (ubyte*)dest;
-			*val++ = r / 255.0f;
-			*val++ = g / 255.0f;
-			*val++ = b / 255.0f;
-			break;
-		}
-	}
+	m_color.value.x = r;
+	m_color.value.y = g;
+	m_color.value.z = b;
+	m_color.value.w = 1.0f;
 }
 
 void CMeshBuilder::Color3fv( float const *rgb )
@@ -297,41 +156,10 @@ void CMeshBuilder::Color4f( float r, float g, float b, float a )
 {
 	GotoNextVertex();
 
-	if(!m_begun || m_fmtColor.offset < 0 || m_fmtColor.count < 4)
-		return;
-
-	ubyte* dest = (ubyte*)m_curVertex + m_fmtColor.offset;
-
-	switch(m_fmtColor.format)
-	{
-		case ATTRIBUTEFORMAT_FLOAT:
-		{
-			float* val = (float*)dest;
-			*val++ = r;
-			*val++ = g;
-			*val++ = b;
-			*val++ = a;
-			break;
-		}
-		case ATTRIBUTEFORMAT_HALF:
-		{
-			half* val = (half*)dest;
-			*val++ = r;
-			*val++ = g;
-			*val++ = b;
-			*val++ = a;
-			break;
-		}
-		case ATTRIBUTEFORMAT_UBYTE:
-		{
-			ubyte* val = (ubyte*)dest;
-			*val++ = r / 255.0f;
-			*val++ = g / 255.0f;
-			*val++ = b / 255.0f;
-			*val++ = a / 255.0f;
-			break;
-		}
-	}
+	m_color.value.x = r;
+	m_color.value.y = g;
+	m_color.value.z = b;
+	m_color.value.w = a;
 }
 
 void CMeshBuilder::Color4fv( float const *rgba )
@@ -341,16 +169,7 @@ void CMeshBuilder::Color4fv( float const *rgba )
 
 void CMeshBuilder::GotoNextVertex()
 {
-	if(!m_gotoNext)
-		return;
 
-	m_gotoNext = false;
-
-	if(m_mesh->AllocateGeom(1, 0, &m_curVertex, NULL, false) == -1)
-	{
-		MsgError("AdvanceVertex failed\n");
-		return;
-	}
 }
 
 // advances vertex
@@ -359,5 +178,45 @@ void CMeshBuilder::AdvanceVertex()
 	if(!m_begun)
 		return;
 
-	m_gotoNext = true;
+	if(m_mesh->AllocateGeom(1, 0, &m_curVertex, NULL, false) == -1)
+	{
+		MsgError("AdvanceVertex failed\n");
+		return;
+	}
+
+	CopyVertData(m_position);
+	CopyVertData(m_texcoord);
+	CopyVertData(m_normal);
+	CopyVertData(m_color);
+}
+
+void CMeshBuilder::CopyVertData(vertdata_t& vert)
+{
+	if(!vert.count)
+		return;
+
+	ubyte* dest = (ubyte*)m_curVertex + vert.offset;
+
+	int size = min(vert.count, 4) * attributeFormatSize[vert.format];
+
+	switch(vert.format)
+	{
+		case ATTRIBUTEFORMAT_FLOAT:
+		{
+			memcpy(dest, &vert.value, size);
+			break;
+		}
+		case ATTRIBUTEFORMAT_HALF:
+		{
+			TVec4D<half> val(vert.value);
+			memcpy(dest, &val, size);
+			break;
+		}
+		case ATTRIBUTEFORMAT_UBYTE:
+		{
+			TVec4D<ubyte> val(vert.value / 255.0f);
+			memcpy(dest, &val, size);
+			break;
+		}
+	}
 }

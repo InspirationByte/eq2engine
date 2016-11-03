@@ -1004,7 +1004,6 @@ void DrawSkyBox(IMaterial* pSkyMaterial, int renderFlags)
 
 	materials->BindMaterial( pSkyMaterial, false );
 	//materials->SetRasterizerStates((renderFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_BACK : CULL_FRONT, FILL_SOLID);
-	materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
 
 	//materials->Apply();
 
@@ -1051,7 +1050,7 @@ void DrawSkyBox(IMaterial* pSkyMaterial, int renderFlags)
 		meshBuilder.AdvanceVertex();
 
 		// second part
-
+		
 		meshBuilder.TexCoord3f(-1,1,1);
 		meshBuilder.Position3f(-skySize,  skySize,  skySize);
 		meshBuilder.AdvanceVertex();
@@ -1079,7 +1078,7 @@ void DrawSkyBox(IMaterial* pSkyMaterial, int renderFlags)
 		meshBuilder.TexCoord3f(1,-2.85,1);
 		meshBuilder.Position3f( skySize, -skySize,  skySize);
 		meshBuilder.AdvanceVertex();
-
+		
 	meshBuilder.End();
 }
 

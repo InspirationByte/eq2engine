@@ -47,15 +47,15 @@ public:
 protected:
 
 	void		GotoNextVertex();
-
+	
 	IDynamicMesh*		m_mesh;
 	VertexFormatDesc_t* m_formatDesc;
 
 	void*				m_curVertex;
 
-	struct vFmtDesc_t
+	struct vertdata_t
 	{
-		vFmtDesc_t(){
+		vertdata_t(){
 			offset = -1;
 			count = 0;
 		}
@@ -63,15 +63,17 @@ protected:
 		int8				offset;
 		int8				count;
 		AttributeFormat_e	format;
+		Vector4D			value;
 	};
 
-	vFmtDesc_t			m_fmtPosition;
-	vFmtDesc_t			m_fmtNormal;
-	vFmtDesc_t			m_fmtTexcoord;
-	vFmtDesc_t			m_fmtColor;
+	void				CopyVertData(vertdata_t& vert);
+
+	vertdata_t			m_position;
+	vertdata_t			m_normal;
+	vertdata_t			m_texcoord;
+	vertdata_t			m_color;
 
 	bool				m_begun;
-	bool				m_gotoNext;
 };
 
 #endif // MESHBUILDER_H

@@ -20,7 +20,7 @@ struct StdDynMeshVertex_t
 	TVec4D<half>	color;		// FIXME: can be compressed
 };
 
-assert_sizeof(StdDynMeshVertex_t, 40); // 1.1 MB of VRAM needed for this
+//assert_sizeof(StdDynMeshVertex_t, 40); // 1.1 MB of VRAM needed for this
 
 static VertexFormatDesc_t g_standardVertexFormatDesc[] = {
 	0, 4, VERTEXTYPE_VERTEX,	ATTRIBUTEFORMAT_FLOAT,
