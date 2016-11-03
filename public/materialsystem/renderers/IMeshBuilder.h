@@ -5,8 +5,8 @@
 // Description: Mesh builder for fonts
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MESHBUILDER_H
-#define MESHBUILDER_H
+#ifndef IMESHBUILDER_H
+#define IMESHBUILDER_H
 
 #include <stdio.h>
 #include "platform/Platform.h"
@@ -45,4 +45,4 @@ public:
 	virtual void		AdvanceVertex() = 0;	// advances vertex
 };
 
-#endif //MESHBUILDER_H
+#endif //IMESHBUILDER_H

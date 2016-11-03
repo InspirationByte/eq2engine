@@ -381,6 +381,9 @@
     <ClCompile Include="..\shared_engine\EGUI\IEqUI_Control.cpp">
       <Filter>Файлы исходного кода\EngineLib\UI</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared_engine\materialsystem\MeshBuilder.cpp">
+      <Filter>Файлы исходного кода\MatSystem</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">
@@ -744,6 +747,9 @@
     </ClInclude>
     <ClInclude Include="road_defs.h">
       <Filter>Файлы исходного кода\Game\World</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\materialsystem\MeshBuilder.h">
+      <Filter>Файлы исходного кода\MatSystem</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

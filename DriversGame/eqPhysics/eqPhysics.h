@@ -239,11 +239,6 @@ public:
 
 	void							SetupBodyOnCell( CEqCollisionObject* body );		///< only rigid body and ghost objects
 
-	/*
-	bool							IsValidStaticObject( CEqCollisionObject* obj );		///< checks is valid static object or not
-	bool							IsValidBody( CEqRigidBody* obj );					///< checks is valid body object or not
-	*/
-
 	void							AddGhostObject( CEqCollisionObject* object );		///< adds ghost object
 	void							DestroyGhostObject( CEqCollisionObject* object );	///< removes ghost object
 
@@ -291,9 +286,6 @@ public:
 
 	///< Simulates physics
 	void							SimulateStep( float deltaTime, int iteration, FNSIMULATECALLBACK preIntegrFunc);	///< simulates physics
-
-	///< Prepares dynamic objects to simulation. Must be called before SimulateStep
-	void							PrepareSimulateStep();
 
 	static void						PerformCollisionDetectionJob(void* thisPhys, int i);
 

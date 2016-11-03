@@ -3151,7 +3151,7 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(VertexFormatDesc_s *formatDes
 			vertexShaderString.Append(str);
 		}
 
-		pFormat->m_nVertexSize[stream] += size * formatSize[formatDesc[i].m_nFormat];
+		pFormat->m_nVertexSize[stream] += size * attributeFormatSize[formatDesc[i].m_nFormat];
 	}
 
 	vertexShaderString.Append("};\n\n");

@@ -14,7 +14,8 @@
 
 #include <unordered_map>
 
-#include "materialsystem/IMaterialSystem.h"
+#include "IMaterialSystem.h"
+#include "DynamicMesh.h"
 
 #include "utils/DkList.h"
 #include "platform/Platform.h"
@@ -123,6 +124,8 @@ public:
 	// Helper rendering operations (warning, may be slow)
 	// FIXME: replace by MatSystem mesh builder
 	//-----------------------------
+
+	IDynamicMesh*					GetDynamicMesh() const;
 
 	// draws primitives
 	void							DrawPrimitivesFFP(	PrimitiveType_e type, Vertex3D_t *pVerts, int nVerts,
@@ -301,6 +304,8 @@ private:
 
 	DkList<IMaterial*>				m_pLoadedMaterials;				// loaded material list
 	CullMode_e						m_nCurrentCullMode;				// culling mode. For shaders. TODO: remove, and check matrix handedness.
+
+	CDynamicMesh					m_dynamicMesh;
 
 	//-------------------------------------------------------------------------
 

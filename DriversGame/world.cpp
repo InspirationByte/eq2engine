@@ -996,88 +996,91 @@ void DrawGrid(int size, ColorRGBA &color, bool for2D)
 	materials->DrawPrimitivesFFP(PRIM_LINES, grid_vertices.ptr(), grid_vertices.numElem(), NULL, color, NULL, &depth, &raster);
 }
 
+#include "materialsystem/MeshBuilder.h"
+
 void DrawSkyBox(IMaterial* pSkyMaterial, int renderFlags)
 {
 	g_pShaderAPI->Reset( STATE_RESET_VBO );
 
 	materials->BindMaterial( pSkyMaterial, false );
+	//materials->SetRasterizerStates((renderFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_BACK : CULL_FRONT, FILL_SOLID);
+	materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
 
-	materials->SetRasterizerStates((renderFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_BACK : CULL_FRONT, FILL_SOLID);
+	//materials->Apply();
 
-	IMeshBuilder* pMeshBuilder = g_pShaderAPI->CreateMeshBuilder();
+	g_pShaderAPI->Apply();
+
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+
+	//IMeshBuilder* pMeshBuilder = g_pShaderAPI->CreateMeshBuilder();
 
 	const float skySize = 5000.0f;
 
-	pMeshBuilder->Begin(PRIM_TRIANGLE_STRIP);
-		pMeshBuilder->TexCoord3f(-1,1,-1);
-		pMeshBuilder->Position3f(-skySize,  skySize, -skySize);
-		pMeshBuilder->AdvanceVertex();
-		pMeshBuilder->TexCoord3f(-1,-2.85,-1);
-		pMeshBuilder->Position3f(-skySize, -skySize, -skySize);
-		pMeshBuilder->AdvanceVertex();
+	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+		meshBuilder.TexCoord3f(-1,1,-1);
+		meshBuilder.Position3f(-skySize,  skySize, -skySize);
+		meshBuilder.AdvanceVertex();
+		meshBuilder.TexCoord3f(-1,-2.85,-1);
+		meshBuilder.Position3f(-skySize, -skySize, -skySize);
+		meshBuilder.AdvanceVertex();
 
-		pMeshBuilder->TexCoord3f(-1,1,1);
-		pMeshBuilder->Position3f(-skySize,  skySize,  skySize);
-		pMeshBuilder->AdvanceVertex();
-		pMeshBuilder->TexCoord3f(-1,-2.85,1);
-		pMeshBuilder->Position3f(-skySize, -skySize,  skySize);
-		pMeshBuilder->AdvanceVertex();
+		meshBuilder.TexCoord3f(-1,1,1);
+		meshBuilder.Position3f(-skySize,  skySize,  skySize);
+		meshBuilder.AdvanceVertex();
+		meshBuilder.TexCoord3f(-1,-2.85,1);
+		meshBuilder.Position3f(-skySize, -skySize,  skySize);
+		meshBuilder.AdvanceVertex();
 
-		pMeshBuilder->TexCoord3f(1,1,1);
-		pMeshBuilder->Position3f( skySize,  skySize,  skySize);
-		pMeshBuilder->AdvanceVertex();
-		pMeshBuilder->TexCoord3f(1,-2.85,1);
-		pMeshBuilder->Position3f( skySize, -skySize,  skySize);
-		pMeshBuilder->AdvanceVertex();
+		meshBuilder.TexCoord3f(1,1,1);
+		meshBuilder.Position3f( skySize,  skySize,  skySize);
+		meshBuilder.AdvanceVertex();
+		meshBuilder.TexCoord3f(1,-2.85,1);
+		meshBuilder.Position3f( skySize, -skySize,  skySize);
+		meshBuilder.AdvanceVertex();
 
-		pMeshBuilder->TexCoord3f(1,1,-1);
-		pMeshBuilder->Position3f( skySize,  skySize, -skySize);
-		pMeshBuilder->AdvanceVertex();
-		pMeshBuilder->TexCoord3f(1,-2.85,-1);
-		pMeshBuilder->Position3f( skySize, -skySize, -skySize);
-		pMeshBuilder->AdvanceVertex();
+		meshBuilder.TexCoord3f(1,1,-1);
+		meshBuilder.Position3f( skySize,  skySize, -skySize);
+		meshBuilder.AdvanceVertex();
+		meshBuilder.TexCoord3f(1,-2.85,-1);
+		meshBuilder.Position3f( skySize, -skySize, -skySize);
+		meshBuilder.AdvanceVertex();
 
-		pMeshBuilder->Position3f(skySize,  -skySize,  -skySize);
-		pMeshBuilder->AdvanceVertex();
-		pMeshBuilder->Position3f(-skySize,  skySize,  skySize);
-		pMeshBuilder->AdvanceVertex();
-	//pMeshBuilder->End();
+		meshBuilder.Position3f(skySize,  -skySize,  -skySize);
+		meshBuilder.AdvanceVertex();
+		meshBuilder.Position3f(-skySize,  skySize,  skySize);
+		meshBuilder.AdvanceVertex();
 
-	//pMeshBuilder->Begin(PRIM_TRIANGLE_STRIP);
-		pMeshBuilder->TexCoord3f(-1,1,1);
-		pMeshBuilder->Position3f(-skySize,  skySize,  skySize);
-		pMeshBuilder->AdvanceVertex();
-		pMeshBuilder->TexCoord3f(1,1,1);
-		pMeshBuilder->Position3f( skySize,  skySize,  skySize);
-		pMeshBuilder->AdvanceVertex();
+		// second part
 
-		pMeshBuilder->TexCoord3f(-1,1,-1);
-		pMeshBuilder->Position3f(-skySize,  skySize, -skySize);
-		pMeshBuilder->AdvanceVertex();
-		pMeshBuilder->TexCoord3f(1,1,-1);
-		pMeshBuilder->Position3f( skySize,  skySize, -skySize);
-		pMeshBuilder->AdvanceVertex();
+		meshBuilder.TexCoord3f(-1,1,1);
+		meshBuilder.Position3f(-skySize,  skySize,  skySize);
+		meshBuilder.AdvanceVertex();
+		meshBuilder.TexCoord3f(1,1,1);
+		meshBuilder.Position3f( skySize,  skySize,  skySize);
+		meshBuilder.AdvanceVertex();
 
-		pMeshBuilder->TexCoord3f(-1,-2.85,-1);
-		pMeshBuilder->Position3f(-skySize, -skySize, -skySize);
-		pMeshBuilder->AdvanceVertex();
-		pMeshBuilder->TexCoord3f(1,-2.85,-1);
-		pMeshBuilder->Position3f( skySize, -skySize, -skySize);
-		pMeshBuilder->AdvanceVertex();
+		meshBuilder.TexCoord3f(-1,1,-1);
+		meshBuilder.Position3f(-skySize,  skySize, -skySize);
+		meshBuilder.AdvanceVertex();
+		meshBuilder.TexCoord3f(1,1,-1);
+		meshBuilder.Position3f( skySize,  skySize, -skySize);
+		meshBuilder.AdvanceVertex();
 
-		pMeshBuilder->TexCoord3f(-1,-2.85,1);
-		pMeshBuilder->Position3f(-skySize, -skySize,  skySize);
-		pMeshBuilder->AdvanceVertex();
-		pMeshBuilder->TexCoord3f(1,-2.85,1);
-		pMeshBuilder->Position3f( skySize, -skySize,  skySize);
-		pMeshBuilder->AdvanceVertex();
+		meshBuilder.TexCoord3f(-1,-2.85,-1);
+		meshBuilder.Position3f(-skySize, -skySize, -skySize);
+		meshBuilder.AdvanceVertex();
+		meshBuilder.TexCoord3f(1,-2.85,-1);
+		meshBuilder.Position3f( skySize, -skySize, -skySize);
+		meshBuilder.AdvanceVertex();
 
-		g_pShaderAPI->Apply();
-	pMeshBuilder->End();
+		meshBuilder.TexCoord3f(-1,-2.85,1);
+		meshBuilder.Position3f(-skySize, -skySize,  skySize);
+		meshBuilder.AdvanceVertex();
+		meshBuilder.TexCoord3f(1,-2.85,1);
+		meshBuilder.Position3f( skySize, -skySize,  skySize);
+		meshBuilder.AdvanceVertex();
 
-	g_pShaderAPI->DestroyMeshBuilder(pMeshBuilder);
-
-	//g_pShaderAPI->Flush();
+	meshBuilder.End();
 }
 
 const float wetnessLevels[WEATHER_COUNT] =

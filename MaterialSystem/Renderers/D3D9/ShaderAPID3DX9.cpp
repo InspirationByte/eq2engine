@@ -2915,7 +2915,7 @@ IVertexFormat* ShaderAPID3DX9::CreateVertexFormat(VertexFormatDesc_s *formatDesc
 			numRealAttribs++;
 		}*/
 	
-		pFormat->m_nVertexSize[stream] += size * formatSize[formatDesc[i].m_nFormat];
+		pFormat->m_nVertexSize[stream] += size * attributeFormatSize[formatDesc[i].m_nFormat];
 	}
 
 	// Terminating element
@@ -2972,15 +2972,12 @@ IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(BufferAccessType_e nBufAccess,
 		return NULL;
 	}
 
-	// Copy data if it's aviable
-	if (pData != NULL)
+	// make first transfer operation
+	void *dest;
+	if (pData && pBuffer->m_pVertexBuffer->Lock(0, pBuffer->m_nSize, &dest, dynamic? D3DLOCK_DISCARD : 0) == D3D_OK)
 	{
-		void *dest;
-		if (pBuffer->m_pVertexBuffer->Lock(0, pBuffer->m_nSize, &dest, dynamic? D3DLOCK_DISCARD : 0) == D3D_OK)
-		{
-			memcpy(dest, pData, pBuffer->m_nSize);
-			pBuffer->m_pVertexBuffer->Unlock();
-		}
+		memcpy(dest, pData, pBuffer->m_nSize);
+		pBuffer->m_pVertexBuffer->Unlock();
 	}
 
 	m_VBList.append(pBuffer);
@@ -3020,20 +3017,13 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, Bu
 		return NULL;
 	}
 
-	// Upload the provided index data if any
-	if (pData != NULL)
+	// make first transfer operation
+	void *dest;
+	if (pData && pBuffer->m_pIndexBuffer->Lock(0, pBuffer->m_nInitialSize, &dest, dynamic? D3DLOCK_DISCARD : 0) == D3D_OK)
 	{
-		void *dest;
-		if (pBuffer->m_pIndexBuffer->Lock(0, pBuffer->m_nInitialSize, &dest, dynamic? D3DLOCK_DISCARD : 0) == D3D_OK)
-		{
-			memcpy(dest, pData, pBuffer->m_nInitialSize);
-			pBuffer->m_pIndexBuffer->Unlock();
-		} 
-		else 
-		{
-            ASSERT(!"Direct3D Error: Couldn't lock index buffer");
-		}
-	}
+		memcpy(dest, pData, pBuffer->m_nInitialSize);
+		pBuffer->m_pIndexBuffer->Unlock();
+	} 
 
 	m_IBList.append(pBuffer);
 

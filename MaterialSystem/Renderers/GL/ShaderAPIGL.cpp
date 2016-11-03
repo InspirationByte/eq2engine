@@ -2423,7 +2423,7 @@ IVertexFormat* ShaderAPIGL::CreateVertexFormat(VertexFormatDesc_s *formatDesc, i
 #endif // GL_NO_DEPRECATED_ATTRIBUTES
 		}
 
-		pVertexFormat->m_nVertexSize[stream] += formatDesc[i].m_nSize * formatSize[formatDesc[i].m_nFormat];
+		pVertexFormat->m_nVertexSize[stream] += formatDesc[i].m_nSize * attributeFormatSize[formatDesc[i].m_nFormat];
 	}
 
 	pVertexFormat->m_nMaxGeneric = nGeneric;

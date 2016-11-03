@@ -157,7 +157,6 @@ void CPhysicsEngine::Simulate( float fDt, int numIterations, FNSIMULATECALLBACK 
 		// do real iteration count
 		for(int i = 0; i < numIterations; i++)
 		{
-			m_physics.PrepareSimulateStep();
 			m_physics.SimulateStep(timestep, i, preIntegrateFn);
 		}
 

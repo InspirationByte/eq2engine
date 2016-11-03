@@ -14,7 +14,6 @@
 #include "ConCommand.h"
 
 #include "MaterialSystem.h"
-#include "IDebugOverlay.h"
 
 #include "utils/strtools.h"
 
@@ -25,7 +24,7 @@
 #pragma fixme("add push/pop renderstates and make regression tests?")
 
 IShaderAPI*				g_pShaderAPI = NULL;
-IDebugOverlay*			debugoverlay = NULL;
+//IDebugOverlay*			debugoverlay = NULL;
 
 // register material system
 static CMaterialSystem s_matsystem;
@@ -213,7 +212,7 @@ bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderA
 	}
 
 	// initialize debug overlay interface
-	debugoverlay = (IDebugOverlay*)GetCore()->GetInterface(DBGOVERLAY_INTERFACE_VERSION);
+	//debugoverlay = (IDebugOverlay*)GetCore()->GetInterface(DBGOVERLAY_INTERFACE_VERSION);
 
 	m_szMaterialsdir = materialsDirectory;
 
@@ -251,10 +250,17 @@ bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderA
 
 	g_pShaderAPI = m_pShaderAPI;
 
-	if(debugoverlay)
-		debugoverlay->Graph_AddBucket("Material change count per update", ColorRGBA(1,1,0,1), 100, 0.25f);
+	//if(debugoverlay)
+	//	debugoverlay->Graph_AddBucket("Material change count per update", ColorRGBA(1,1,0,1), 100, 0.25f);
 
+	// initialize some resources
 	CreateWhiteTexture();
+
+	if(!m_dynamicMesh.Init( g_standardVertexFormatDesc, elementsOf(g_standardVertexFormatDesc)))
+	{
+		ErrorMsg("Couldn't init DynamicMesh!\n");
+		return false;
+	}
 
 	return true;
 }
@@ -267,6 +273,7 @@ void CMaterialSystem::Shutdown()
 		Msg("MatSystem shutdown...\n");
 
 		ClearRenderStates();
+		m_dynamicMesh.Destroy();
 
 		// shutdown thread first
 		g_threadedMaterialLoader.StopThread(true);
@@ -1113,6 +1120,11 @@ void CMaterialSystem::SetupOrtho(float left, float right, float top, float botto
 // Helper rendering operations (warning, slow)
 //-----------------------------
 
+IDynamicMesh* CMaterialSystem::GetDynamicMesh() const
+{
+	return (IDynamicMesh*)&m_dynamicMesh;
+}
+
 // draws 2D primitives
 void CMaterialSystem::DrawPrimitivesFFP(PrimitiveType_e type, Vertex3D_t *pVerts, int nVerts,
 										ITexture* pTexture, const ColorRGBA &color,
@@ -1168,6 +1180,8 @@ void CMaterialSystem::DrawPrimitivesFFP(PrimitiveType_e type, Vertex3D_t *pVerts
 	g_pShaderAPI->SetDepthStencilState(NULL);
 }
 
+#include "../shared_engine/materialsystem/MeshBuilder.h"
+
 void CMaterialSystem::DrawPrimitives2DFFP(	PrimitiveType_e type, Vertex2D_t *pVerts, int nVerts,
 											ITexture* pTexture, const ColorRGBA &color,
 											BlendStateParam_t* blendParams, DepthStencilStateParams_t* depthParams,
@@ -1197,25 +1211,27 @@ void CMaterialSystem::DrawPrimitives2DFFP(	PrimitiveType_e type, Vertex2D_t *pVe
 
 	g_pShaderAPI->Apply();
 
-	IMeshBuilder* pMB = m_pShaderAPI->CreateMeshBuilder();
+	CMeshBuilder meshBuilder(&m_dynamicMesh);
 
-	if(pMB)
-	{
-		pMB->Begin(type);
+	//IMeshBuilder* pMB = m_pShaderAPI->CreateMeshBuilder();
+
+	//if(pMB)
+	//{
+		meshBuilder.Begin(type);
 
 		for(int i = 0; i < nVerts; i++)
 		{
-			pMB->Color4fv(pVerts[i].m_vColor * color);
-			pMB->TexCoord2f(pVerts[i].m_vTexCoord.x,pVerts[i].m_vTexCoord.y);
-			pMB->Position3f(pVerts[i].m_vPosition.x, pVerts[i].m_vPosition.y, 0);
+			meshBuilder.Color4fv(pVerts[i].m_vColor * color);
+			meshBuilder.TexCoord2f(pVerts[i].m_vTexCoord.x,pVerts[i].m_vTexCoord.y);
+			meshBuilder.Position3f(pVerts[i].m_vPosition.x, pVerts[i].m_vPosition.y, 0);
 
-			pMB->AdvanceVertex();
+			meshBuilder.AdvanceVertex();
 		}
 
-		pMB->End();
-	}
+		meshBuilder.End();
+	//}
 
-	m_pShaderAPI->DestroyMeshBuilder(pMB);
+	//m_pShaderAPI->DestroyMeshBuilder(pMB);
 
 	g_pShaderAPI->SetBlendingState(NULL);
 	g_pShaderAPI->SetRasterizerState(NULL);

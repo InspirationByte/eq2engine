@@ -38,6 +38,8 @@ using namespace Threading;
 
 #define PHYSGRID_WORLD_SIZE 24	// compromised betwen memory usage and performance
 
+extern ConVar ph_margin;
+
 ConVar ph_showcontacts("ph_showcontacts", "0", NULL, CV_CHEAT);
 ConVar ph_erp("ph_erp", "0.05", "Error correction", CV_CHEAT);
 
@@ -458,18 +460,6 @@ void CEqPhysics::DestroyStaticObject( CEqCollisionObject* object )
 		MsgError("CEqPhysics::DestroyStaticObject - INVALID\n");
 }
 
-/*
-bool CEqPhysics::IsValidStaticObject( CEqCollisionObject* obj )
-{
-
-}
-
-bool CEqPhysics::IsValidBody( CEqRigidBody* obj )
-{
-
-}
-*/
-extern ConVar ph_margin;
 
 void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt)
 {
@@ -512,8 +502,6 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 		}
 	}
 
-	//bool isCarCollidingWithCar = (bodyA->m_flags & BODY_ISCAR) && (bodyB->m_flags & BODY_ISCAR);
-
 	// trasform collision objects and test
 
 	PROFILE_BEGIN(shapeOperations);
@@ -541,13 +529,6 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 
 	if(bodyB->m_flags & BODY_BOXVSDYNAMIC)
 		objB = &boxObjectB;
-
-	/*
-	if(isCarCollidingWithCar)
-	{
-		objA = &boxObjectA;
-		objB = &boxObjectB;
-	}*/
 
 	PROFILE_BEGIN(matrixOperations);
 
@@ -613,8 +594,6 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 	}
 }
 
-//ConVar ph_checkMethod("ph_checkMethod", "0", "0 - sphere vs sphere, 1 - sphere vs box, 3 - box vs box");
-
 void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& contactPairs)
 {
 	PROFILE_FUNC();
@@ -624,32 +603,6 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 
 	if(!staticObj->CheckCanCollideWith(bodyB))
 		return;
-
-	// test radius between bodies
-	//float lenB = lengthSqr(bodyB->m_aabb.GetSize());
-
-	/*
-	switch(ph_checkMethod.GetInt())
-	{
-		case 0: // sphere vs sphere
-		{
-			if( !(staticObj->m_aabb_transformed.SquaredDistPointAABB(bodyB->GetPosition()) <= lenB))
-				return;
-			break;
-		}
-		case 1: // shere vs box
-		{
-			if(!staticObj->m_aabb_transformed.IntersectsSphere(bodyB->GetPosition(), lenB))
-				return;
-			break;
-		}
-		case 2: // box vs box
-		{
-			if( !staticObj->m_aabb_transformed.Intersects(bodyB->m_aabb_transformed))
-				return;
-			break;
-		}
-	}*/
 
 	if( !staticObj->m_aabb_transformed.Intersects(bodyB->m_aabb_transformed))
 		return;
@@ -769,11 +722,6 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 			debugoverlay->Text3D(hitPos, 50.0f, ColorRGBA(1,1,0,1), 0.0f, "penetration depth: %f", hitDepth);
 		}
 	}
-}
-
-void CEqPhysics::PrepareSimulateStep()
-{
-
 }
 
 void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )

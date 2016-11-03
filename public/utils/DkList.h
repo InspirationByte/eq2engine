@@ -66,6 +66,9 @@ public:
 	// appends another list
 	int				append( const DkList<T> &other );
 
+	// appends another array
+	int				append( const T *other, int count );
+
 	// appends another list with transformation
 	// return false to not add the element
 	template< class T2, typename TRANSFORMFUNC >
@@ -433,6 +436,41 @@ inline int DkList<T>::append( const DkList<T> &other )
 
 	// append the elements
 	for (int i = 0; i < nOtherElems; i++)
+		append(other[i]);
+
+	return numElem();
+}
+
+// -----------------------------------------------------------------
+// adds the other list to this one
+// Returns the size of the new combined list
+// -----------------------------------------------------------------
+template< class T >
+inline int DkList<T>::append( const T *other, int count )
+{
+	if ( !m_pListPtr )
+	{
+		if ( m_nGranularity == 0 )	// this is a hack to fix our memset classes
+			m_nGranularity = 16;
+
+		// pre-allocate for a bigger list to do less memory resize access
+		int newSize = count+m_nGranularity;
+
+		resize( newSize - (newSize % m_nGranularity) );
+	}
+	else
+	{
+		// pre-allocate for a bigger list to do less memory resize access
+		if ( m_nNumElem+count >= m_nSize )
+		{
+			int newSize = count+m_nNumElem+m_nGranularity;
+
+			resize( newSize - (newSize % m_nGranularity) );
+		}
+	}
+
+	// append the elements
+	for (int i = 0; i < count; i++)
 		append(other[i]);
 
 	return numElem();

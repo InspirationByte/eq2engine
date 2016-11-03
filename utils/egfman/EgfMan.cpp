@@ -66,9 +66,6 @@ void SetOptimalCameraDistance()
 void FlushCache()
 {
 	g_pModelCache->ReleaseCache();
-
-	materials->FreeMaterials(true);
-
 	g_pModelCache->PrecacheModel("models/error.egf");
 }
 

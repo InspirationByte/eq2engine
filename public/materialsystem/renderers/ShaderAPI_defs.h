@@ -186,7 +186,7 @@ enum AttributeFormat_e
 	ATTRIBUTEFORMAT_UBYTE,
 };
 
-static int formatSize[] =
+static int attributeFormatSize[] =
 {
 	sizeof(float),
 	sizeof(half),

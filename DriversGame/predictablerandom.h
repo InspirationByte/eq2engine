@@ -8,7 +8,7 @@
 #ifndef PREDICTABLERANDOM_H
 #define PREDICTABLERANDOM_H
 
-#include "math/DkMath.h"
+#include "dktypes.h"
 
 // Predictable random generator for replays
 class CPredictableRandomGenerator

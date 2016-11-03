@@ -26,6 +26,8 @@ enum EMutexPurpose
 	MUTEXPURPOSE_USED,
 };
 
+// TODO: interface
+
 Threading::CEqMutex&	GetGlobalMutex( EMutexPurpose purpose );
 
 };

@@ -17,6 +17,7 @@
 
 #include "renderers/IShaderAPI.h"
 
+#include "IDynamicMesh.h"
 #include "IMaterial.h"
 #include "IMatSysShader.h"
 #include "ViewParams.h"
@@ -249,6 +250,8 @@ public:
 	// Helper rendering operations (warning, may be slow)
 	// FIXME: replace by MatSystem mesh builder
 	//-----------------------------
+
+	virtual IDynamicMesh*					GetDynamicMesh() const = 0;
 
 	// draws primitives
 	virtual void							DrawPrimitivesFFP(	PrimitiveType_e type, Vertex3D_t *pVerts, int nVerts,

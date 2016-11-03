@@ -13,12 +13,11 @@ This is the diferrent conception of jobs
 	g_parallelJobList->Submit() ----
 									\
 									 \
-							for( each job in jobs )
-								m_threads[threadId++]->AddJob( job )
-
 							// each thread is signalled for work
 							for( each thread in m_threads )
 								thread->SignalWork()
+
+	Threads are searching for their jobs by calling CEqParallelJobThreads::AssignFreeJob
 
 */
 
