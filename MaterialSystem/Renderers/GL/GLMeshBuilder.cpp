@@ -20,25 +20,25 @@ static VertexFormatDesc_t g_meshBuilder_format[] = {
 	0, 4, VERTEXTYPE_COLOR,		ATTRIBUTEFORMAT_HALF,
 };
 
-CGLMeshBuilder::CGLMeshBuilder() : m_vertList(1024)
+CGLMeshBuilder::CGLMeshBuilder()
 {
 	m_renderBegun = false;
 	m_vertexBuffer	= NULL;
 	m_indexBuffer	= NULL;
 	m_vertexFormat	= NULL;
 
-	m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_VBO_VERTS, sizeof(ListVertex_t), NULL);
+	//m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_VBO_VERTS, sizeof(ListVertex_t), NULL);
 	//m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(MAX_VBO_VERTS*3, sizeof(int), BUFFER_DYNAMIC, NULL);
-	m_vertexFormat = g_pShaderAPI->CreateVertexFormat(g_meshBuilder_format, elementsOf(g_meshBuilder_format));
+	//m_vertexFormat = g_pShaderAPI->CreateVertexFormat(g_meshBuilder_format, elementsOf(g_meshBuilder_format));
 }
 
 CGLMeshBuilder::~CGLMeshBuilder()
 {
 	m_vertList.clear();
 
-	g_pShaderAPI->DestroyVertexBuffer(m_vertexBuffer);
-	g_pShaderAPI->DestroyIndexBuffer(m_indexBuffer);
-	g_pShaderAPI->DestroyVertexFormat(m_vertexFormat);
+	//g_pShaderAPI->DestroyVertexBuffer(m_vertexBuffer);
+	//g_pShaderAPI->DestroyIndexBuffer(m_indexBuffer);
+	//g_pShaderAPI->DestroyVertexFormat(m_vertexFormat);
 }
 
 //-----------------------------------------------------------------------------

@@ -2777,7 +2777,7 @@ void CCar::DrawEffects(int lod)
 		Vector3D wheelRightDir = cross(wheelDir, wheel.collisionInfo.normal);
 
 		Vector3D skidmarkPos = ( wheel.collisionInfo.position - wheelMat.rows[0]*wheelConf.width*sign(wheelConf.suspensionTop.x)*0.5f ) + wheelDir*0.05f;
-		skidmarkPos += velAtWheel*0.0065f;
+		skidmarkPos += velAtWheel*0.0065f + wheel.collisionInfo.normal*0.015f;
 
 		PFXVertexPair_t skidmarkPair;
 		skidmarkPair.v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
@@ -3659,7 +3659,7 @@ void CCar::Draw( int nRenderFlags )
 
 					g_pPhysics->TestLine(traceFrom, traceTo, shadowcoll, OBJECTCONTENTS_SOLID_GROUND, &collFilter);
 
-					verts[i].point = lerp(traceFrom, traceTo, shadowcoll.fract);
+					verts[i].point = lerp(traceFrom, traceTo+Vector3D(0,0.01f,0), shadowcoll.fract);
 
 					verts[i].color = ColorRGBA(1.0f, 1.0f, 1.0f, clamp(0.8f + 1.0f-(shadowcoll.fract*8.0f), 0.0f, 1.0f));
 				}
