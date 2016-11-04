@@ -48,7 +48,7 @@ void CMaterial::InitMaterialProxy(kvkeybase_t* pProxyData)
 	// try any kind of proxy
 	for(int i = 0; i < pProxyData->keys.numElem();i++)
 	{
-		IMaterialProxy* pProxy = proxyfactory->CreateProxyByName( pProxyData->keys[i]->name );
+		IMaterialProxy* pProxy = materials->CreateProxyByName( pProxyData->keys[i]->name );
 
 		if(pProxy)
 		{
@@ -406,7 +406,11 @@ void CMaterial::UpdateProxy(float fDt)
 void CMaterial::Setup()
 {
 	// shaders and textures needs to be reset
-	g_pShaderAPI->Reset( STATE_RESET_SHADER | STATE_RESET_TEX );
+
+	if(GetFlags() & MATERIAL_FLAG_BASETEXTURE_CUR)
+		g_pShaderAPI->Reset( STATE_RESET_SHADER );
+	else
+		g_pShaderAPI->Reset( STATE_RESET_SHADER | STATE_RESET_TEX );
 
 	m_pShader->SetupShader();
 	m_pShader->SetupConstants();

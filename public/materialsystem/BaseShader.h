@@ -244,6 +244,8 @@ public:
 
 protected:
 
+	void						ParamSetup_CurrentAsBaseTexture();
+
 	virtual void				ParamSetup_AlphaModel_Solid();
 	virtual void				ParamSetup_AlphaModel_Alphatest();
 	virtual void				ParamSetup_AlphaModel_Translucent();

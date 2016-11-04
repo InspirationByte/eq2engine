@@ -5,10 +5,80 @@
 // Description: a mesh builder designed for dynamic meshes (material system)
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "MeshBuilder.h"
-#include "DebugInterface.h"
+#ifndef MESHBUILDER_H
+#define MESHBUILDER_H
 
-CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh) :
+#include "IDynamicMesh.h"
+
+class CMeshBuilder
+{
+public:
+	CMeshBuilder(IDynamicMesh* mesh);
+	~CMeshBuilder();
+
+	// begins the mesh
+	void		Begin(PrimitiveType_e type);
+
+	// ends building and renders the mesh
+	void		End();
+
+	// position setup
+	void		Position3f(float x, float y, float z);
+	void		Position3fv(const float *v);
+
+	// normal setup
+	void		Normal3f(float nx, float ny, float nz);
+	void		Normal3fv(const float *v);
+
+	void		TexCoord2f(float s, float t);
+	void		TexCoord2fv(const float *v);
+	void		TexCoord3f(float s, float t, float r);
+	void		TexCoord3fv(const float *v);
+
+	// color setup
+	void		Color3f( float r, float g, float b );
+	void		Color3fv( float const *rgb );
+	void		Color4f( float r, float g, float b, float a );
+	void		Color4fv( float const *rgba );
+
+	// advances vertex
+	void		AdvanceVertex();
+
+protected:
+
+	void		GotoNextVertex();
+	
+	IDynamicMesh*		m_mesh;
+	VertexFormatDesc_t* m_formatDesc;
+
+	void*				m_curVertex;
+
+	struct vertdata_t
+	{
+		vertdata_t(){
+			offset = -1;
+			count = 0;
+		}
+
+		int8				offset;
+		int8				count;
+		AttributeFormat_e	format;
+		Vector4D			value;
+	};
+
+	void				CopyVertData(vertdata_t& vert);
+
+	vertdata_t			m_position;
+	vertdata_t			m_normal;
+	vertdata_t			m_texcoord;
+	vertdata_t			m_color;
+
+	bool				m_begun;
+};
+
+//----------------------------------------------------------
+
+inline CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh) :
 	m_mesh(NULL),
 	m_curVertex(NULL),
 	m_formatDesc(NULL),
@@ -58,13 +128,13 @@ CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh) :
 	}
 }
 
-CMeshBuilder::~CMeshBuilder()
+inline CMeshBuilder::~CMeshBuilder()
 {
 
 }
 
 // begins the mesh
-void CMeshBuilder::Begin(PrimitiveType_e type)
+inline void CMeshBuilder::Begin(PrimitiveType_e type)
 {
 	m_mesh->Reset();
 	m_mesh->SetPrimitiveType(type);
@@ -78,14 +148,14 @@ void CMeshBuilder::Begin(PrimitiveType_e type)
 }
 
 // ends building and renders the mesh
-void CMeshBuilder::End()
+inline void CMeshBuilder::End()
 {
 	m_mesh->Render();
 	m_begun = false;
 }
 
 // position setup
-void CMeshBuilder::Position3f(float x, float y, float z)
+inline void CMeshBuilder::Position3f(float x, float y, float z)
 {
 	m_position.value.x = x;
 	m_position.value.y = y;
@@ -93,13 +163,13 @@ void CMeshBuilder::Position3f(float x, float y, float z)
 	m_position.value.w = 1.0f;
 }
 
-void CMeshBuilder::Position3fv(const float *v)
+inline void CMeshBuilder::Position3fv(const float *v)
 {
 	Position3f(v[0], v[1], v[2]);
 }
 
 // normal setup
-void CMeshBuilder::Normal3f(float nx, float ny, float nz)
+inline void CMeshBuilder::Normal3f(float nx, float ny, float nz)
 {
 	m_normal.value.x = nx;
 	m_normal.value.y = ny;
@@ -107,12 +177,12 @@ void CMeshBuilder::Normal3f(float nx, float ny, float nz)
 	m_normal.value.w = 0.0f;
 }
 
-void CMeshBuilder::Normal3fv(const float *v)
+inline void CMeshBuilder::Normal3fv(const float *v)
 {
 	Normal3f(v[0], v[1], v[2]);
 }
 
-void CMeshBuilder::TexCoord2f(float s, float t)
+inline void CMeshBuilder::TexCoord2f(float s, float t)
 {
 	m_texcoord.value.x = s;
 	m_texcoord.value.y = t;
@@ -120,12 +190,12 @@ void CMeshBuilder::TexCoord2f(float s, float t)
 	m_texcoord.value.w = 0.0f;
 }
 
-void CMeshBuilder::TexCoord2fv(const float *v)
+inline void CMeshBuilder::TexCoord2fv(const float *v)
 {
 	TexCoord2f(v[0],v[1]);
 }
 
-void CMeshBuilder::TexCoord3f(float s, float t, float r)
+inline void CMeshBuilder::TexCoord3f(float s, float t, float r)
 {
 	m_texcoord.value.x = s;
 	m_texcoord.value.y = t;
@@ -133,13 +203,13 @@ void CMeshBuilder::TexCoord3f(float s, float t, float r)
 	m_texcoord.value.w = 0.0f;
 }
 
-void CMeshBuilder::TexCoord3fv(const float *v)
+inline void CMeshBuilder::TexCoord3fv(const float *v)
 {
 	TexCoord3f(v[0], v[1], v[2]);
 }
 
 // color setup
-void CMeshBuilder::Color3f( float r, float g, float b )
+inline void CMeshBuilder::Color3f( float r, float g, float b )
 {
 	m_color.value.x = r;
 	m_color.value.y = g;
@@ -147,12 +217,12 @@ void CMeshBuilder::Color3f( float r, float g, float b )
 	m_color.value.w = 1.0f;
 }
 
-void CMeshBuilder::Color3fv( float const *rgb )
+inline void CMeshBuilder::Color3fv( float const *rgb )
 {
 	Color3f(rgb[0], rgb[1], rgb[2]);
 }
 
-void CMeshBuilder::Color4f( float r, float g, float b, float a )
+inline void CMeshBuilder::Color4f( float r, float g, float b, float a )
 {
 	GotoNextVertex();
 
@@ -162,27 +232,24 @@ void CMeshBuilder::Color4f( float r, float g, float b, float a )
 	m_color.value.w = a;
 }
 
-void CMeshBuilder::Color4fv( float const *rgba )
+inline void CMeshBuilder::Color4fv( float const *rgba )
 {
 	Color4f(rgba[0], rgba[1], rgba[2], rgba[3]);
 }
 
-void CMeshBuilder::GotoNextVertex()
+inline void CMeshBuilder::GotoNextVertex()
 {
 
 }
 
 // advances vertex
-void CMeshBuilder::AdvanceVertex()
+inline void CMeshBuilder::AdvanceVertex()
 {
 	if(!m_begun)
 		return;
 
 	if(m_mesh->AllocateGeom(1, 0, &m_curVertex, NULL, false) == -1)
-	{
-		MsgError("AdvanceVertex failed\n");
 		return;
-	}
 
 	CopyVertData(m_position);
 	CopyVertData(m_texcoord);
@@ -190,7 +257,7 @@ void CMeshBuilder::AdvanceVertex()
 	CopyVertData(m_color);
 }
 
-void CMeshBuilder::CopyVertData(vertdata_t& vert)
+inline void CMeshBuilder::CopyVertData(vertdata_t& vert)
 {
 	if(!vert.count)
 		return;
@@ -220,3 +287,5 @@ void CMeshBuilder::CopyVertData(vertdata_t& vert)
 		}
 	}
 }
+
+#endif // MESHBUILDER_H

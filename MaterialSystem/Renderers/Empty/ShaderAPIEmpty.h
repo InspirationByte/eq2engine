@@ -9,6 +9,7 @@
 #define SHADERAPIEMPTY_H
 
 #include "../ShaderAPI_Base.h"
+#include "IMeshBuilder.h"
 
 #include "CEmptyTexture.h"
 #include "imaging/ImageLoader.h"
@@ -334,10 +335,6 @@ public:
 
 	// Destroy index buffer
 	void						DestroyIndexBuffer(IIndexBuffer* pIndexBuffer) {if(pIndexBuffer) delete pIndexBuffer;}
-
-	// Creates new mesh builder
-	IMeshBuilder*				CreateMeshBuilder(){return &g_emptyMeshBuilder;}
-	void						DestroyMeshBuilder(IMeshBuilder* pBuilder){}
 
 //-------------------------------------------------------------
 // State manipulation

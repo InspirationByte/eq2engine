@@ -169,6 +169,7 @@
     <ClCompile Include="Shaders\BaseSkinned.cpp" />
     <ClCompile Include="Shaders\BaseUnlit.cpp" />
     <ClCompile Include="Shaders\BlurFilter.cpp" />
+    <ClCompile Include="Shaders\DefaultShader.cpp" />
     <ClCompile Include="Shaders\Error.cpp" />
     <ClCompile Include="Shaders\SDFFont.cpp" />
     <ClCompile Include="Shaders\Sky.cpp" />

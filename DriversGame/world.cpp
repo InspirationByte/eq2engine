@@ -1000,18 +1000,9 @@ void DrawGrid(int size, ColorRGBA &color, bool for2D)
 
 void DrawSkyBox(IMaterial* pSkyMaterial, int renderFlags)
 {
-	g_pShaderAPI->Reset( STATE_RESET_VBO );
-
-	materials->BindMaterial( pSkyMaterial, false );
-	//materials->SetRasterizerStates((renderFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_BACK : CULL_FRONT, FILL_SOLID);
-
-	//materials->Apply();
-
-	g_pShaderAPI->Apply();
+	materials->BindMaterial( pSkyMaterial );
 
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
-
-	//IMeshBuilder* pMeshBuilder = g_pShaderAPI->CreateMeshBuilder();
 
 	const float skySize = 5000.0f;
 
@@ -1345,8 +1336,6 @@ void CGameWorld::DrawFakeReflections()
 	{
 		g_pShaderAPI->ChangeRenderTarget( m_reflectionTex );
 
-		g_pShaderAPI->Reset( STATE_RESET_VBO );
-
 		// setup 2D here
 		materials->Setup2D(512, 512);
 
@@ -1355,18 +1344,16 @@ void CGameWorld::DrawFakeReflections()
 		const float bufHalfTexel = (1.0f / 512.0f)*0.5f;
 		Vertex2D_t screenQuad[] = {MAKETEXQUAD(0,0,512,512,0)};
 
-		IMeshBuilder* pMeshBuilder = g_pShaderAPI->CreateMeshBuilder();
+		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
-		pMeshBuilder->Begin(PRIM_TRIANGLE_STRIP);
+		meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 			for(int i = 0; i < 4; i++)
 			{
-				pMeshBuilder->Position3fv(Vector3D(screenQuad[i].m_vPosition - Vector2D(bufHalfTexel),0));
-				pMeshBuilder->TexCoord2fv( screenQuad[i].m_vTexCoord );
-				pMeshBuilder->AdvanceVertex();
+				meshBuilder.Position3fv(Vector3D(screenQuad[i].m_vPosition - Vector2D(bufHalfTexel),0));
+				meshBuilder.TexCoord2fv( screenQuad[i].m_vTexCoord );
+				meshBuilder.AdvanceVertex();
 			}
-		pMeshBuilder->End();
-
-		g_pShaderAPI->DestroyMeshBuilder(pMeshBuilder);
+		meshBuilder.End();
 	}
 
 	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
@@ -1636,17 +1623,15 @@ void CGameWorld::Draw( int nRenderFlags )
 											lensScreenPos.x,
 											lensScreenPos.y, -LENS_PIXELS_HALFSIZE)};
 
-				IMeshBuilder* pMeshBuilder = g_pShaderAPI->CreateMeshBuilder();
+				CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
-				pMeshBuilder->Begin(PRIM_TRIANGLE_STRIP);
+				meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 					for(int i = 0; i < 4; i++)
 					{
-						pMeshBuilder->Position3fv(Vector3D(screenQuad[i],1.0f));
-						pMeshBuilder->AdvanceVertex();
+						meshBuilder.Position3fv(Vector3D(screenQuad[i],1.0f));
+						meshBuilder.AdvanceVertex();
 					}
-				pMeshBuilder->End();
-
-				g_pShaderAPI->DestroyMeshBuilder(pMeshBuilder);
+				meshBuilder.End();
 			}
 			m_sunGlowOccQuery->End();
 		}

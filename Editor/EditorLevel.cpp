@@ -1286,9 +1286,6 @@ void CEditorLevel::Render(int nViewRenderFlags, void* userdata)
 
 	if(userdata && drawOptions->bWireframe)
 	{
-		//IMeshBuilder* pBuilder = g_pShaderAPI->CreateMeshBuilder();
-		//pBuilder->Begin(PRIM_LINES);
-
 		for(int i = 0; i < m_ObjectList.numElem(); i++)
 		{
 			CBaseEditableObject* pObject = (CBaseEditableObject*)m_ObjectList[i];
@@ -1319,34 +1316,7 @@ void CEditorLevel::Render(int nViewRenderFlags, void* userdata)
 			Vector2D center2D;
 
 			PointToScreen(center3D, center2D, viewProj, drawOptions->pViewRender->Get2DDimensions());
-
-			/*
-			pBuilder->Color3f(0.65f,0.65f,0.65f);
-
-			pBuilder->Position3fv(Vector3D(center2D + Vector2D(-3), 0));
-			pBuilder->AdvanceVertex();
-			pBuilder->Position3fv(Vector3D(center2D + Vector2D(3), 0));
-			pBuilder->AdvanceVertex();
-
-			pBuilder->Position3fv(Vector3D(center2D + Vector2D(3,-3), 0));
-			pBuilder->AdvanceVertex();
-			pBuilder->Position3fv(Vector3D(center2D + Vector2D(-3,3), 0));
-			pBuilder->AdvanceVertex();
-			*/
 		}
-
-		/*
-		g_pShaderAPI->Reset();
-
-		materials->SetAmbientColor(ColorRGBA(1,1,1,1));
-		materials->Setup2D(drawOptions.pViewRender->Get2DDimensions().x, drawOptions.pViewRender->Get2DDimensions().y);
-		materials->BindMaterial(GetFlatMaterial(),false);
-
-		g_pShaderAPI->Apply();
-		
-		pBuilder->End();
-		g_pShaderAPI->DestroyMeshBuilder(pBuilder);
-		*/
 
 		materials->Setup2D(drawOptions->pViewRender->Get2DDimensions().x, drawOptions->pViewRender->Get2DDimensions().y);
 

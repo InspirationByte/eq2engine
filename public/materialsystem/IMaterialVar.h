@@ -18,38 +18,38 @@ public:
 	PPMEM_MANAGED_OBJECT();
 
 	// get material var name
-	virtual const char*	GetName() const	= 0;
+	virtual const char*		GetName() const	= 0;
 
 	//set material var name
-	virtual void		SetName(const char* szNewName)	= 0;
+	virtual void			SetName(const char* szNewName)	= 0;
 
 	// get material var string value
-	virtual const char*	GetString()	= 0;
+	virtual const char*		GetString()	= 0;
 
 	// get material var integer value
-	virtual int			GetInt() const	= 0;
+	virtual int				GetInt() const	= 0;
 
 	// get material var float value
-	virtual float		GetFloat() const	= 0;
+	virtual float			GetFloat() const	= 0;
 
 	// get vector value
-	virtual Vector2D	GetVector2() const	= 0;
-	virtual Vector3D	GetVector3() const	= 0;
-	virtual Vector4D	GetVector4() const	= 0;
+	virtual const Vector2D&	GetVector2() const	= 0;
+	virtual const Vector3D&	GetVector3() const	= 0;
+	virtual const Vector4D&	GetVector4() const	= 0;
 
 	// texture pointer
-	virtual ITexture*	GetTexture() const = 0;
+	virtual ITexture*		GetTexture() const = 0;
 
 	// assign texture
-	virtual void		AssignTexture(ITexture* pTexture) = 0;
+	virtual void			AssignTexture(ITexture* pTexture) = 0;
 
 	// Value setup
-	virtual void		SetString(const char* szValue) = 0;
-	virtual void		SetFloat(float fValue) = 0;
-	virtual void		SetInt(int nValue) = 0;
-	virtual void		SetVector2(Vector2D &vector)	= 0;
-	virtual void		SetVector3(Vector3D &vector)	= 0;
-	virtual void		SetVector4(Vector4D &vector)	= 0;
+	virtual void			SetString(const char* szValue) = 0;
+	virtual void			SetFloat(float fValue) = 0;
+	virtual void			SetInt(int nValue) = 0;
+	virtual void			SetVector2(const Vector2D& vector)	= 0;
+	virtual void			SetVector3(const Vector3D& vector)	= 0;
+	virtual void			SetVector4(const Vector4D& vector)	= 0;
 };
 
 #endif //IMATERIALVAR_H

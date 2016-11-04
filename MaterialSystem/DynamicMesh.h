@@ -50,6 +50,9 @@ protected:
 
 	uint16			m_numVertices;
 	uint16			m_numIndices;
+
+	void*			m_lockVertices;
+	uint16*			m_lockIndices;
 	
 	IVertexFormat*	m_vertexFormat;
 	IVertexBuffer*	m_vertexBuffer;
@@ -59,6 +62,7 @@ protected:
 	int					m_vertexFormatAttribs;
 	int					m_vertexStride;
 
+	bool			m_vboAqquired;
 	bool			m_vboDirty;
 };
 

@@ -14,6 +14,9 @@
 #include "utils/DkList.h"
 #include "utils/eqstring.h"
 
+struct kvkeybase_t;
+class IMaterialProxy;
+
 class CMaterial : public IMaterial
 {
 public:

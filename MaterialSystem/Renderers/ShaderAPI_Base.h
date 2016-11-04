@@ -127,6 +127,9 @@ public:
 	// internal texture setup
 	void								SetTextureOnIndex( ITexture* pTexture, int level = 0 );
 
+	// returns the currently set textre at level
+	ITexture*							GetTextureAt( int level ) const;
+
 //-------------------------------------------------------------
 // Vertex buffer object handling
 //-------------------------------------------------------------

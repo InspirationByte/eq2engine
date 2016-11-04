@@ -11,6 +11,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DkBulletPhysics.h"
+#include "materialsystem/IMaterialVar.h"
 
 #ifndef EQLC
 #include "IDebugOverlay.h"

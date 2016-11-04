@@ -97,7 +97,7 @@ void CMatVar::SetInt(int nValue)
 	m_isDirtyString = 2;
 }
 
-void CMatVar::SetVector2(Vector2D &vector)
+void CMatVar::SetVector2(const Vector2D& vector)
 {
 	m_vector.x = vector.x;
 	m_vector.y = vector.y;
@@ -107,7 +107,7 @@ void CMatVar::SetVector2(Vector2D &vector)
 	m_isDirtyString = 3;
 }
 
-void CMatVar::SetVector3(Vector3D &vector)
+void CMatVar::SetVector3(const Vector3D& vector)
 {
 	m_vector.x = vector.x;
 	m_vector.y = vector.y;
@@ -117,23 +117,23 @@ void CMatVar::SetVector3(Vector3D &vector)
 	m_isDirtyString = 4;
 }
 
-void CMatVar::SetVector4(Vector4D &vector)
+void CMatVar::SetVector4(const Vector4D& vector)
 {
 	m_vector = vector;
 	m_isDirtyString = 5;
 }
 
-Vector2D CMatVar::GetVector2() const
+const Vector2D& CMatVar::GetVector2() const
 {
 	return m_vector.xy();
 }
 
-Vector3D CMatVar::GetVector3() const
+const Vector3D& CMatVar::GetVector3() const
 {
 	return m_vector.xyz();
 }
 
-Vector4D CMatVar::GetVector4() const
+const Vector4D& CMatVar::GetVector4() const
 {
 	return m_vector;
 }

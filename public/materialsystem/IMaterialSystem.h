@@ -17,9 +17,15 @@
 
 #include "renderers/IShaderAPI.h"
 
-#include "IDynamicMesh.h"
 #include "IMaterial.h"
 #include "IMatSysShader.h"
+#include "IMaterialVar.h"
+#include "IMaterialProxy.h"
+
+#include "IDynamicMesh.h"
+
+
+
 #include "ViewParams.h"
 #include "scene_def.h"
 
@@ -204,11 +210,14 @@ public:
 	// Resource operations
 	//-----------------------------
 
+	// returns the default material capable to use with MatSystem's GetDynamicMesh()
+	virtual IMaterial*						GetDefaultMaterial() const = 0;
+
 	// returns white texture (used for wireframe of shaders that can't use FFP modes,notexture modes, etc.)
-	virtual	ITexture*						GetWhiteTexture() = 0;
+	virtual	ITexture*						GetWhiteTexture() const = 0;
 
 	// returns luxel test texture (used for lightmap test)
-	virtual	ITexture*						GetLuxelTestTexture() = 0;
+	virtual	ITexture*						GetLuxelTestTexture() const = 0;
 
 	// Finds or loads material (if findExisting is false then it will be loaded as new material instance)
 	virtual IMaterial*						FindMaterial(const char* szMaterialName, bool findExisting = true) = 0;
@@ -392,7 +401,8 @@ public:
 	// returns RHI device interface
 	virtual IShaderAPI*						GetShaderAPI() = 0;
 
-	virtual IProxyFactory*					GetProxyFactory() = 0;
+	virtual void							RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName) = 0;
+	virtual IMaterialProxy*					CreateProxyByName(const char* pszName) = 0;
 
 	virtual void							RegisterShader(const char* pszShaderName,DISPATCH_CREATE_SHADER dispatcher_creation) = 0;
 	virtual void							RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function) = 0;

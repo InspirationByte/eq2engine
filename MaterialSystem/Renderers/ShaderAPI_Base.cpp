@@ -883,14 +883,26 @@ void ShaderAPI_Base::SetTextureOnIndex(ITexture* pTexture,int level /* = 0*/)
 	if(level < 0)
 	{
 		int vLevel = level+(MAX_VERTEXTEXTURES+1);
-
-		//Msg("tex index: %d\n", level);
-		//Msg("out index: %d\n---\n", vLevel);
-
 		m_pSelectedVertexTextures[vLevel] = pTexture;
 	}
 	else
 		m_pSelectedTextures[level] = pTexture;
+}
+
+// returns the currently set textre at level
+ITexture* ShaderAPI_Base::GetTextureAt( int level ) const
+{
+	// Setup for FFP
+	if(m_caps.maxTextureUnits <= 1 && level > 0)
+		return NULL; // If multitexturing is not supported
+
+	if(level < 0)
+	{
+		int vLevel = level+(MAX_VERTEXTEXTURES+1);
+		return m_pSelectedVertexTextures[vLevel];
+	}
+
+	return m_pSelectedTextures[level];
 }
 
 // VBO

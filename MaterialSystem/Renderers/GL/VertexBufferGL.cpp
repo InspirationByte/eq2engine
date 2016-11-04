@@ -121,8 +121,8 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 	glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
 
 	GLbitfield mapFlags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | (discard ? GL_MAP_INVALIDATE_RANGE_BIT : 0);
-	m_lockPtr = (ubyte*)glMapBufferRange(GL_ARRAY_BUFFER, 0, m_numVerts*m_strideSize, mapFlags );
-	(*outdata) = m_lockPtr + m_lockOffs*m_strideSize;
+	m_lockPtr = (ubyte*)glMapBufferRange(GL_ARRAY_BUFFER, m_lockOffs*m_strideSize, m_numVerts*m_strideSize, mapFlags );
+	(*outdata) = m_lockPtr;// + m_lockOffs*m_strideSize;
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -142,10 +142,10 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 		glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
 
 		// lock whole buffer
-		glGetBufferSubData(GL_ARRAY_BUFFER, 0, m_numVerts*m_strideSize, m_lockPtr);
+		glGetBufferSubData(GL_ARRAY_BUFFER, m_lockOffs*m_strideSize, nLockByteCount, m_lockPtr);
 
 		// give user buffer with offset
-		(*outdata) = m_lockPtr + m_lockOffs*m_strideSize;
+		(*outdata) = m_lockPtr;// + m_lockOffs*m_strideSize;
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
@@ -175,7 +175,7 @@ void CVertexBufferGL::Unlock()
 #ifdef USE_GLES2
 			glUnmapBuffer(GL_ARRAY_BUFFER);
 #else
-			glBufferSubData(GL_ARRAY_BUFFER, 0, m_lockSize*m_strideSize, m_lockPtr);
+			glBufferSubData(GL_ARRAY_BUFFER, m_lockOffs*m_strideSize, m_lockSize*m_strideSize, m_lockPtr);
 #endif // USE_GLES2
 
 			// check if bound

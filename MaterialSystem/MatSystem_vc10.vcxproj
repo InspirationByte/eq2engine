@@ -168,19 +168,19 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\shared_engine\materialsystem\MeshBuilder.cpp" />
-    <ClCompile Include="CMatProxyFactory.cpp" />
+    <ClCompile Include="..\public\materialsystem\BaseShader.cpp" />
     <ClCompile Include="DynamicMesh.cpp" />
     <ClCompile Include="material.cpp" />
+    <ClCompile Include="MaterialProxy.cpp" />
     <ClCompile Include="MaterialSystem.cpp" />
     <ClCompile Include="materialvar.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\public\MaterialSystem\IDynamicMesh.h" />
     <ClInclude Include="..\public\materialsystem\IMaterialSystem.h" />
-    <ClInclude Include="..\shared_engine\materialsystem\MeshBuilder.h" />
     <ClInclude Include="DynamicMesh.h" />
     <ClInclude Include="material.h" />
+    <ClInclude Include="MaterialProxy.h" />
     <ClInclude Include="MaterialSystem.h" />
     <ClInclude Include="materialvar.h" />
     <ClInclude Include="resource.h" />

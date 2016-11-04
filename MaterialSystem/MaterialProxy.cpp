@@ -7,169 +7,11 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "MaterialProxy.h"
+#include "IMaterialSystem.h"
 
-#define PAIR_VARIABLE	'$'
-#define PAIR_CONSTANT	'#'
-
-#define VAR_ELEM_OPEN	'['
-#define VAR_ELEM_CLOSE	']'
-
-#define CONST_NAME_FRAMETIME	"frametime"
-#define CONST_NAME_GAMETIME		"gametime"
-
-
-CBaseMaterialProxy::CBaseMaterialProxy()
-{
-	m_pMaterial = NULL;
-}
-
-void CBaseMaterialProxy::ParseVariable(proxyvar_t& var, const char* pszVal)
-{
-	var.value = 0.0f;
-	var.vec_idx = -1;
-	var.type = PV_CONSTANT;
-	var.mv = NULL;
-
-	if(!pszVal)
-		return;
-
-	char* pairval = (char*)pszVal;
-		
-	char firstSymbol = pairval[0];
-	if(firstSymbol == PAIR_VARIABLE)
-	{
-		char* varName = pairval+1;
-		int len = 0;
-
-		while(1)
-		{
-			if(varName[len] == '\0' || varName[len] == VAR_ELEM_OPEN)
-				break;
-
-			len++;
-		}
-
-		char varNameStr[128];
-		memcpy(varNameStr, varName, len);
-		varNameStr[len] = '\0';
-
-		var.mv = m_pMaterial->GetMaterialVar(varNameStr, "0");
-
-		if(!var.mv)
-		{
-			MsgWarning("Proxy error: variable '%s' not found in '%s'\n", varNameStr, m_pMaterial->GetName());
-			return;
-		}
-
-		char* varExt = varName + len;
-
-		// got array
-		if(*varExt == VAR_ELEM_OPEN)
-		{
-			varExt += 1;
-				
-			char varIndexstr[2];
-			varIndexstr[0] = *varExt;
-			varIndexstr[1] = '\0';
-
-			var.vec_idx = atoi(varIndexstr);
-		}
-
-		if(var.vec_idx == -1)
-			var.value = var.mv->GetFloat();
-		else
-			var.value = var.mv->GetVector4()[(int)var.vec_idx];
-
-		var.type = PV_VARIABLE;
-	}
-	else if(firstSymbol == PAIR_CONSTANT)
-	{
-		char *constString = pairval+1;
-		float value = (float)atof(constString);
-
-		var.value = value;
-		var.vec_idx = -1;
-		var.type = PV_CONSTANT;
-	}
-	else if(!stricmp(pairval, CONST_NAME_FRAMETIME))
-	{
-		var.value = 0.0f;
-		var.vec_idx = -1;
-		var.type = PV_FRAMETIME;
-	}
-	else if(!stricmp(pairval, CONST_NAME_GAMETIME))
-	{
-		var.value = 0.0f;
-		var.vec_idx = -1;
-		var.type = PV_GAMETIME;
-	}
-}
-
-void CBaseMaterialProxy::UpdateVar(proxyvar_t& var, float fDt)
-{
-	if(!var.mv)
-		return;
-
-	switch(var.type)
-	{
-		case PV_VARIABLE:
-		{
-			if(var.vec_idx == -1)
-				var.value = var.mv->GetFloat();
-			else
-				var.value = var.mv->GetVector4()[(int)var.vec_idx];
-
-			break;
-		}
-		case PV_GAMETIME:
-			var.value = 0.0f; // + game time
-			break;
-		case PV_FRAMETIME:
-			var.value = fDt;
-			break;
-	}
-}
-
-void CBaseMaterialProxy::mvSetValue(proxyvar_t& var, float value)
-{
-	if(!var.mv || var.type != PV_VARIABLE)
-		return;
-
-	var.value = value;
-
-	if(var.vec_idx >= 0)
-	{
-		Vector4D outval = var.mv->GetVector4();
-		outval[(int)var.vec_idx] = value;
-		var.mv->SetVector4(outval);
-	}
-	else
-		var.mv->SetFloat(value);
-}
-
-void CBaseMaterialProxy::mvSetValueInt(proxyvar_t& var, int value)
-{
-	if(!var.mv || var.type != PV_VARIABLE)
-		return;
-
-	var.value = value;
-
-	if(var.vec_idx >= 0)
-	{
-		Vector4D outval = var.mv->GetVector4();
-		outval[(int)var.vec_idx] = value;
-		var.mv->SetVector4(outval);
-	}
-	else
-		var.mv->SetInt(value);
-}
-
-//-------------------------------------------------------------------------------------------------------
-//	Make some default proxies for user
-//-------------------------------------------------------------------------------------------------------
-
-// add proxy
-
+//---------------------------------------------------------------------
+// ADD proxy
+//---------------------------------------------------------------------
 class CAddProxy : public CBaseMaterialProxy
 {
 public:
@@ -215,8 +57,11 @@ private:
 	bool useFrameTime;
 };
 
-// subtract proxy
+DECLARE_PROXY(add, CAddProxy)
 
+//---------------------------------------------------------------------
+// SUBTRACT proxy
+//---------------------------------------------------------------------
 class CSubProxy : public CBaseMaterialProxy
 {
 public:
@@ -262,8 +107,11 @@ private:
 	bool useFrameTime;
 };
 
-// multiply proxy
+DECLARE_PROXY(subtract, CSubProxy)
 
+//---------------------------------------------------------------------
+// MULTIPLY proxy
+//---------------------------------------------------------------------
 class CMulProxy : public CBaseMaterialProxy
 {
 public:
@@ -309,8 +157,12 @@ private:
 	bool useFrameTime;
 };
 
-// divide proxy
+DECLARE_PROXY(multiply, CMulProxy)
 
+
+//---------------------------------------------------------------------
+// DIVIDE proxy
+//---------------------------------------------------------------------
 class CDivProxy : public CBaseMaterialProxy
 {
 public:
@@ -355,8 +207,12 @@ private:
 
 	bool useFrameTime;
 };
+DECLARE_PROXY(divide, CDivProxy)
 
-// sine proxy
+
+//---------------------------------------------------------------------
+// SINE proxy
+//---------------------------------------------------------------------
 class CSinProxy : public CBaseMaterialProxy
 {
 public:
@@ -385,8 +241,11 @@ private:
 	proxyvar_t out;
 };
 
+DECLARE_PROXY(sin, CSinProxy)
 
-// saturate proxy
+//---------------------------------------------------------------------
+// ABS proxy
+//---------------------------------------------------------------------
 class CAbsProxy : public CBaseMaterialProxy
 {
 public:
@@ -415,7 +274,11 @@ private:
 	proxyvar_t out;
 };
 
-// sinus proxy
+DECLARE_PROXY(abs, CAbsProxy)
+
+//---------------------------------------------------------------------
+// ANIMATEDTEXTURE proxy
+//---------------------------------------------------------------------
 class CAnimatedTextureProxy : public CBaseMaterialProxy
 {
 public:
@@ -457,16 +320,12 @@ private:
 	proxyvar_t	out;
 };
 
-// declare proxies
-DECLARE_PROXY(add, CAddProxy);
-DECLARE_PROXY(subtract, CSubProxy);
-DECLARE_PROXY(multiply, CMulProxy);
-DECLARE_PROXY(divide, CDivProxy);
-DECLARE_PROXY(sin, CSinProxy);
-DECLARE_PROXY(abs, CAbsProxy);
-DECLARE_PROXY(animatedtexture, CAnimatedTextureProxy);
+DECLARE_PROXY(animatedtexture, CAnimatedTextureProxy)
 
-void InitMaterialProxies()
+//---------------------------------------------------------------------
+// standard proxy initialization
+//---------------------------------------------------------------------
+void InitStandardMaterialProxies()
 {
 	REGISTER_PROXY(add, CAddProxy);
 	REGISTER_PROXY(subtract, CSubProxy);

@@ -114,6 +114,9 @@
     <ClCompile Include="Shaders\BaseSkinned.cpp">
       <Filter>Source Files\Shaders</Filter>
     </ClCompile>
+    <ClCompile Include="Shaders\DefaultShader.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vars_generic.h">

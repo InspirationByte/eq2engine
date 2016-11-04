@@ -121,6 +121,17 @@ void CBaseShader::InitParams()
 	SHADER_PARAM_FLAG(Additive, m_nFlags, MATERIAL_FLAG_ADDITIVE, false)
 	SHADER_PARAM_FLAG(Modulate, m_nFlags, MATERIAL_FLAG_MODULATE, false)
 
+	EqString baseTextureStr;
+	SHADER_PARAM_STRING(BaseTexture, baseTextureStr, "");
+	if (baseTextureStr.c_str()[0] == '$')
+	{
+		if(!baseTextureStr.CompareCaseIns("$basetexture"))
+		{
+			m_nFlags |= MATERIAL_FLAG_BASETEXTURE_CUR;
+			SetParameterFunctor(SHADERPARAM_BASETEXTURE, &CBaseShader::ParamSetup_CurrentAsBaseTexture);
+		}
+	}
+
 	if (materials->GetConfiguration().enableSpecular)
 	{
 		EqString cubemapStr;
@@ -129,8 +140,7 @@ void CBaseShader::InitParams()
 		// detect ENV_CUBEMAP
 		if (cubemapStr.c_str()[0] == '$')
 		{
-			char* specialString = (char*)cubemapStr.c_str() + 1;
-			if (!stricmp(specialString, "env_cubemap"))
+			if (!cubemapStr.CompareCaseIns("$env_cubemap"))
 				m_nFlags |= MATERIAL_FLAG_USE_ENVCUBEMAP;
 		}
 	}
@@ -218,6 +228,17 @@ void CBaseShader::SetupDefaultParameter(ShaderDefaultParams_e paramtype)
 {
 	// call it from this
 	(this->*m_param_functors[paramtype]) ();
+}
+
+void CBaseShader::ParamSetup_CurrentAsBaseTexture()
+{
+	ITexture* currentTexture = g_pShaderAPI->GetTextureAt(0);
+
+	if(currentTexture == NULL)
+		currentTexture = materials->GetWhiteTexture();
+
+	g_pShaderAPI->SetTexture(currentTexture, "BaseTextureSampler", 0);
+
 }
 
 void CBaseShader::ParamSetup_AlphaModel_Solid()

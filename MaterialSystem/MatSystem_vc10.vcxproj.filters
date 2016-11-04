@@ -14,9 +14,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CMatProxyFactory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="material.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -29,7 +26,10 @@
     <ClCompile Include="DynamicMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\materialsystem\MeshBuilder.cpp">
+    <ClCompile Include="MaterialProxy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\materialsystem\BaseShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -103,7 +103,7 @@
     <ClInclude Include="..\public\MaterialSystem\IDynamicMesh.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared_engine\materialsystem\MeshBuilder.h">
+    <ClInclude Include="MaterialProxy.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

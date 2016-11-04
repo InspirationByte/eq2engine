@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "CAnimatedModel.h"
+#include "materialsystem/MeshBuilder.h"
 
 #define INITIAL_TIME 0.0f
 
@@ -1076,12 +1077,12 @@ void RenderPhysModel(IEqModel* pModel)
 	if(pModel->GetHWData()->m_physmodel.numshapes == 0)
 		return;
 
-	g_pShaderAPI->Reset();
+	
 	materials->SetDepthStates(true,false);
 	materials->SetRasterizerStates(CULL_BACK,FILL_WIREFRAME);
-	materials->Apply();
+	materials->BindMaterial(materials->GetDefaultMaterial());
 
-	IMeshBuilder* mesh = g_pShaderAPI->CreateMeshBuilder();
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
 	physmodeldata_t& phys_data = pModel->GetHWData()->m_physmodel;
 
@@ -1099,19 +1100,17 @@ void RenderPhysModel(IEqModel* pModel)
 			int startIndex = phys_data.shapes[nShape].shape_info.startIndices;
 			int moveToIndex = startIndex + phys_data.shapes[nShape].shape_info.numIndices;
 
-			mesh->Begin(PRIM_TRIANGLES);
+			meshBuilder.Begin(PRIM_TRIANGLES);
 			for(int k = startIndex; k < moveToIndex; k++)
 			{
-				mesh->Color4f(0,1,1,1);
-				mesh->Position3fv(phys_data.vertices[phys_data.indices[k]] + phys_data.objects[i].object.offset);
+				meshBuilder.Color4f(0,1,1,1);
+				meshBuilder.Position3fv(phys_data.vertices[phys_data.indices[k]] + phys_data.objects[i].object.offset);
 
-				mesh->AdvanceVertex();
+				meshBuilder.AdvanceVertex();
 			}
-			mesh->End();
+			meshBuilder.End();
 		}
 	}
-
-	g_pShaderAPI->DestroyMeshBuilder(mesh);
 }
 
 

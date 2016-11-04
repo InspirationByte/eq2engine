@@ -14,6 +14,8 @@
 #include "ConCommand.h"
 
 #include "MaterialSystem.h"
+#include "MeshBuilder.h"
+#include "MaterialProxy.h"
 
 #include "utils/strtools.h"
 
@@ -24,7 +26,6 @@
 #pragma fixme("add push/pop renderstates and make regression tests?")
 
 IShaderAPI*				g_pShaderAPI = NULL;
-//IDebugOverlay*			debugoverlay = NULL;
 
 // register material system
 static CMaterialSystem s_matsystem;
@@ -261,6 +262,8 @@ bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderA
 		ErrorMsg("Couldn't init DynamicMesh!\n");
 		return false;
 	}
+
+	InitStandardMaterialProxies();
 
 	return true;
 }
@@ -633,6 +636,28 @@ void CMaterialSystem::FreeMaterial(IMaterial *pMaterial)
 	}
 }
 
+void CMaterialSystem::RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName)
+{
+	proxyfactory_t factory;
+	factory.name = strdup(pszName);
+	factory.disp = dispfunc;
+
+	m_ProxyList.append(factory);
+}
+
+IMaterialProxy* CMaterialSystem::CreateProxyByName(const char* pszName)
+{
+	for(int i = 0; i < m_ProxyList.numElem(); i++)
+	{
+		if(!stricmp(m_ProxyList[i].name, pszName))
+		{
+			return (m_ProxyList[i].disp)();
+		}
+	}
+
+	return NULL;
+}
+
 void CMaterialSystem::RegisterShader(const char* pszShaderName, DISPATCH_CREATE_SHADER dispatcher_creation)
 {
 	for(int i = 0; i < m_hShaders.numElem(); i++)
@@ -775,7 +800,10 @@ int CMaterialSystem::GetLoadingQueue() const
 bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, bool doApply/* = true*/)
 {
 	if(!pMaterial)
-		return false;
+	{
+		InitDefaultMaterial();
+		pMaterial = m_pDefaultMaterial;
+	}
 
 	CMaterial* pSetupMaterial = (CMaterial*)pMaterial;
 
@@ -809,8 +837,6 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, bool doApply/* = true*/
 
 	if( r_overdraw.GetBool() )
 	{
-		InitDefaultMaterial();	// do that too
-
 		materials->SetAmbientColor(ColorRGBA(0.045f, 0.02f, 0.02f, 1.0f));
 		success = (*materialstate_callbacks[subRoutineId])(m_pOverdrawMaterial);
 	}
@@ -900,12 +926,17 @@ dlight_t* CMaterialSystem::GetLight()
 	return m_pCurrentLight;
 }
 
-ITexture* CMaterialSystem::GetWhiteTexture()
+IMaterial* CMaterialSystem::GetDefaultMaterial() const
+{
+	return m_pDefaultMaterial;
+}
+
+ITexture* CMaterialSystem::GetWhiteTexture() const
 {
 	return m_pWhiteTexture;
 }
 
-ITexture* CMaterialSystem::GetLuxelTestTexture()
+ITexture* CMaterialSystem::GetLuxelTestTexture() const
 {
 	return m_pLuxelTestTexture;
 }
@@ -991,11 +1022,6 @@ void CMaterialSystem::DestroySwapChain(IEqSwapChain* swapChain)
 IShaderAPI* CMaterialSystem::GetShaderAPI()
 {
 	return m_pShaderAPI;
-}
-
-IProxyFactory* CMaterialSystem::GetProxyFactory()
-{
-	return proxyfactory;
 }
 
 //--------------------------------------------------------------------------------------
@@ -1125,8 +1151,6 @@ IDynamicMesh* CMaterialSystem::GetDynamicMesh() const
 	return (IDynamicMesh*)&m_dynamicMesh;
 }
 
-#include "../shared_engine/materialsystem/MeshBuilder.h"
-
 // draws 2D primitives
 void CMaterialSystem::DrawPrimitivesFFP(PrimitiveType_e type, Vertex3D_t *pVerts, int nVerts,
 										ITexture* pTexture, const ColorRGBA &color,
@@ -1135,8 +1159,6 @@ void CMaterialSystem::DrawPrimitivesFFP(PrimitiveType_e type, Vertex3D_t *pVerts
 {
 	if(r_noffp.GetBool())
 		return;
-
-	g_pShaderAPI->Reset();
 
 	g_pShaderAPI->SetTexture(pTexture, NULL, 0);
 
@@ -1155,7 +1177,7 @@ void CMaterialSystem::DrawPrimitivesFFP(PrimitiveType_e type, Vertex3D_t *pVerts
 	else
 		SetDepthStates(*depthParams);
 
-	g_pShaderAPI->Apply();
+	BindMaterial(GetDefaultMaterial());
 
 	CMeshBuilder meshBuilder(&m_dynamicMesh);
 
@@ -1185,10 +1207,8 @@ void CMaterialSystem::DrawPrimitives2DFFP(	PrimitiveType_e type, Vertex2D_t *pVe
 	if(r_noffp.GetBool())
 		return;
 
-	g_pShaderAPI->Reset();
-
-	g_pShaderAPI->SetTexture(pTexture,0);
-
+	g_pShaderAPI->SetTexture(pTexture, NULL, 0);
+	
 	if(!blendParams)
 		SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO,BLENDFUNC_ADD);
 	else
@@ -1204,7 +1224,7 @@ void CMaterialSystem::DrawPrimitives2DFFP(	PrimitiveType_e type, Vertex2D_t *pVe
 	else
 		SetDepthStates(*depthParams);
 
-	g_pShaderAPI->Apply();
+	BindMaterial(GetDefaultMaterial());
 
 	CMeshBuilder meshBuilder(&m_dynamicMesh);
 

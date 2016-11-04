@@ -13,7 +13,6 @@
 #include "state_game.h"
 
 #include "StateManager.h"
-#include "materialsystem/MaterialProxy.h"
 
 #include "KeyBinding/Keys.h"
 #include "FontCache.h"
@@ -55,7 +54,6 @@ DKMODULE*			g_matsysmodule = NULL;
 
 IMaterialSystem*	materials = NULL;
 IShaderAPI*			g_pShaderAPI = NULL;
-IProxyFactory*		proxyfactory	= NULL;
 
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay* debugoverlay = ( IDebugOverlay * )&g_DebugOverlays;
@@ -101,11 +99,6 @@ bool CGameHost::LoadModules()
 		ErrorMsg("ERROR! Couldn't get interface of eqMatSystem!");
 		return false;
 	}
-
-	if(!proxyfactory)
-		proxyfactory = materials->GetProxyFactory();
-
-	InitMaterialProxies();
 
 	return true;
 }

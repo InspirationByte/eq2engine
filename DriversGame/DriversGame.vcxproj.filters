@@ -312,9 +312,6 @@
     <ClCompile Include="Shader_Water.cpp">
       <Filter>Файлы исходного кода\MatSystem\Shaders</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\materialsystem\MaterialProxy.cpp">
-      <Filter>Файлы исходного кода\MatSystem</Filter>
-    </ClCompile>
     <ClCompile Include="LiteHTMLContainer.cpp">
       <Filter>Файлы исходного кода\Game\UI</Filter>
     </ClCompile>
@@ -380,9 +377,6 @@
     </ClCompile>
     <ClCompile Include="..\shared_engine\EGUI\IEqUI_Control.cpp">
       <Filter>Файлы исходного кода\EngineLib\UI</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_engine\materialsystem\MeshBuilder.cpp">
-      <Filter>Файлы исходного кода\MatSystem</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -670,9 +664,6 @@
     <ClInclude Include="NetPlayer.h">
       <Filter>Файлы исходного кода\Game\Sessions</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared_engine\materialsystem\MaterialProxy.h">
-      <Filter>Файлы исходного кода\MatSystem</Filter>
-    </ClInclude>
     <ClInclude Include="LiteHTMLContainer.h">
       <Filter>Файлы исходного кода\Game\UI</Filter>
     </ClInclude>
@@ -747,9 +738,6 @@
     </ClInclude>
     <ClInclude Include="road_defs.h">
       <Filter>Файлы исходного кода\Game\World</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared_engine\materialsystem\MeshBuilder.h">
-      <Filter>Файлы исходного кода\MatSystem</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

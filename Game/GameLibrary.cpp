@@ -57,7 +57,6 @@ ISoundSystem*			soundsystem		= NULL;
 IPhysics*				physics			= NULL;
 IEngineSceneRenderer*	scenerenderer	= NULL;
 IDebugOverlay*			debugoverlay	= NULL;
-IProxyFactory*			proxyfactory	= NULL;
 
 // non-engine globals
 
@@ -74,9 +73,6 @@ void ImportEngineInterfaces()
 
 	if(!materials)
 		materials = (IMaterialSystem*)GetCore()->GetInterface( MATSYSTEM_INTERFACE_VERSION );
-
-	if(!proxyfactory)
-		proxyfactory = materials->GetProxyFactory();
 
 	if(!eqlevel)
 		eqlevel	= (IEqLevel*)GetCore()->GetInterface( IEQLEVEL_INTERFACE_VERSION );

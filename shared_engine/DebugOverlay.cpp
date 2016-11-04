@@ -14,6 +14,8 @@
 #include "utils/strtools.h"
 
 #include "materialsystem/IMaterialSystem.h"
+#include "materialsystem/MeshBuilder.h"
+
 
 #ifndef _WIN32
 #include <stdarg.h>
@@ -261,44 +263,38 @@ void DrawLineArray(DkList<DebugLineNode_t>* pNodes, float frametime)
 {
 	if(r_debugdrawlines.GetBool())
 	{
-		IMeshBuilder* pMB = g_pShaderAPI->CreateMeshBuilder();
+		g_pShaderAPI->SetTexture(NULL,NULL, 0);
 
-		if(pMB)
-		{
+		materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
+		materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
+		materials->SetDepthStates(true, false);
+
+		materials->Apply();
+
+		// bind the default material as we're emulating an FFP
+		materials->BindMaterial(materials->GetDefaultMaterial());
+
+		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+		meshBuilder.Begin(PRIM_LINES);
+
 			DebugLineNode_t* nodes = pNodes->ptr();
-
-			g_pShaderAPI->Reset();
-
-
-			materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
-			materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
-			materials->SetDepthStates(true, false);
-
-
-			g_pShaderAPI->Apply();
-
-			pMB->Begin(PRIM_LINES);
-
 			for(int i = 0; i < pNodes->numElem(); i++)
 			{
-				pMB->Color4fv(nodes->color1);
-				pMB->Position3fv(nodes->start);
+				meshBuilder.Color4fv(nodes->color1);
+				meshBuilder.Position3fv(nodes->start);
 
-				pMB->AdvanceVertex();
+				meshBuilder.AdvanceVertex();
 
-				pMB->Color4fv(nodes->color2);
-				pMB->Position3fv(nodes->end);
+				meshBuilder.Color4fv(nodes->color2);
+				meshBuilder.Position3fv(nodes->end);
 
-				pMB->AdvanceVertex();
+				meshBuilder.AdvanceVertex();
 
 				nodes->lifetime -= frametime;
 				nodes++;
 			}
 
-			pMB->End();
-		}
-
-		g_pShaderAPI->DestroyMeshBuilder(pMB);
+		meshBuilder.End();
 	}
 }
 
@@ -306,94 +302,90 @@ void DrawBoxArray(DkList<DebugBoxNode_t>* pNodes, float frametime)
 {
 	if(r_debugdrawboxes.GetBool())
 	{
-		IMeshBuilder* pMB = g_pShaderAPI->CreateMeshBuilder();
+		g_pShaderAPI->SetTexture(NULL,NULL, 0);
 
-		if(pMB)
-		{
+		materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
+		materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
+		materials->SetDepthStates(true,false);
+
+		materials->Apply();
+
+		// bind the default material as we're emulating an FFP
+		materials->BindMaterial(materials->GetDefaultMaterial());
+
+		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+		meshBuilder.Begin(PRIM_LINES);
+
 			DebugBoxNode_t* nodes = pNodes->ptr();
-
-			g_pShaderAPI->Reset();
-
-			materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
-			materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
-			materials->SetDepthStates(true,false);
-
-			g_pShaderAPI->Apply();
-
-			pMB->Begin(PRIM_LINES);
-
 			for(int i = 0; i < pNodes->numElem(); i++)
 			{
-				pMB->Color4fv(nodes->color);
+				meshBuilder.Color4fv(nodes->color);
 
-				pMB->Position3f(nodes->mins.x, nodes->maxs.y, nodes->mins.z);
-				pMB->AdvanceVertex();
-				pMB->Position3f(nodes->mins.x, nodes->maxs.y, nodes->maxs.z);
-				pMB->AdvanceVertex();
+				meshBuilder.Position3f(nodes->mins.x, nodes->maxs.y, nodes->mins.z);
+				meshBuilder.AdvanceVertex();
+				meshBuilder.Position3f(nodes->mins.x, nodes->maxs.y, nodes->maxs.z);
+				meshBuilder.AdvanceVertex();
 
-				pMB->Position3f(nodes->maxs.x, nodes->maxs.y, nodes->maxs.z);
-				pMB->AdvanceVertex();
-				pMB->Position3f(nodes->maxs.x, nodes->maxs.y, nodes->mins.z);
-				pMB->AdvanceVertex();
+				meshBuilder.Position3f(nodes->maxs.x, nodes->maxs.y, nodes->maxs.z);
+				meshBuilder.AdvanceVertex();
+				meshBuilder.Position3f(nodes->maxs.x, nodes->maxs.y, nodes->mins.z);
+				meshBuilder.AdvanceVertex();
 
-				pMB->Position3f(nodes->maxs.x, nodes->mins.y, nodes->mins.z);
-				pMB->AdvanceVertex();
-				pMB->Position3f(nodes->maxs.x, nodes->mins.y, nodes->maxs.z);
-				pMB->AdvanceVertex();
+				meshBuilder.Position3f(nodes->maxs.x, nodes->mins.y, nodes->mins.z);
+				meshBuilder.AdvanceVertex();
+				meshBuilder.Position3f(nodes->maxs.x, nodes->mins.y, nodes->maxs.z);
+				meshBuilder.AdvanceVertex();
 
-				pMB->Position3f(nodes->mins.x, nodes->mins.y, nodes->maxs.z);
-				pMB->AdvanceVertex();
-				pMB->Position3f(nodes->mins.x, nodes->mins.y, nodes->mins.z);
-				pMB->AdvanceVertex();
+				meshBuilder.Position3f(nodes->mins.x, nodes->mins.y, nodes->maxs.z);
+				meshBuilder.AdvanceVertex();
+				meshBuilder.Position3f(nodes->mins.x, nodes->mins.y, nodes->mins.z);
+				meshBuilder.AdvanceVertex();
 
-				pMB->Position3f(nodes->mins.x, nodes->mins.y, nodes->maxs.z);
-				pMB->AdvanceVertex();
-				pMB->Position3f(nodes->mins.x, nodes->maxs.y, nodes->maxs.z);
-				pMB->AdvanceVertex();
+				meshBuilder.Position3f(nodes->mins.x, nodes->mins.y, nodes->maxs.z);
+				meshBuilder.AdvanceVertex();
+				meshBuilder.Position3f(nodes->mins.x, nodes->maxs.y, nodes->maxs.z);
+				meshBuilder.AdvanceVertex();
 
-				pMB->Position3f(nodes->maxs.x, nodes->mins.y, nodes->maxs.z);
-				pMB->AdvanceVertex();
-				pMB->Position3f(nodes->maxs.x, nodes->maxs.y, nodes->maxs.z);
-				pMB->AdvanceVertex();
+				meshBuilder.Position3f(nodes->maxs.x, nodes->mins.y, nodes->maxs.z);
+				meshBuilder.AdvanceVertex();
+				meshBuilder.Position3f(nodes->maxs.x, nodes->maxs.y, nodes->maxs.z);
+				meshBuilder.AdvanceVertex();
 
-				pMB->Position3f(nodes->mins.x, nodes->mins.y, nodes->mins.z);
-				pMB->AdvanceVertex();
-				pMB->Position3f(nodes->mins.x, nodes->maxs.y, nodes->mins.z);
-				pMB->AdvanceVertex();
+				meshBuilder.Position3f(nodes->mins.x, nodes->mins.y, nodes->mins.z);
+				meshBuilder.AdvanceVertex();
+				meshBuilder.Position3f(nodes->mins.x, nodes->maxs.y, nodes->mins.z);
+				meshBuilder.AdvanceVertex();
 
-				pMB->Position3f(nodes->maxs.x, nodes->mins.y, nodes->mins.z);
-				pMB->AdvanceVertex();
-				pMB->Position3f(nodes->maxs.x, nodes->maxs.y, nodes->mins.z);
-				pMB->AdvanceVertex();
+				meshBuilder.Position3f(nodes->maxs.x, nodes->mins.y, nodes->mins.z);
+				meshBuilder.AdvanceVertex();
+				meshBuilder.Position3f(nodes->maxs.x, nodes->maxs.y, nodes->mins.z);
+				meshBuilder.AdvanceVertex();
 
-				pMB->Position3f(nodes->mins.x, nodes->maxs.y, nodes->mins.z);
-				pMB->AdvanceVertex();
-				pMB->Position3f(nodes->maxs.x, nodes->maxs.y, nodes->mins.z);
-				pMB->AdvanceVertex();
+				meshBuilder.Position3f(nodes->mins.x, nodes->maxs.y, nodes->mins.z);
+				meshBuilder.AdvanceVertex();
+				meshBuilder.Position3f(nodes->maxs.x, nodes->maxs.y, nodes->mins.z);
+				meshBuilder.AdvanceVertex();
 
-				pMB->Position3f(nodes->mins.x, nodes->maxs.y, nodes->maxs.z);
-				pMB->AdvanceVertex();
-				pMB->Position3f(nodes->maxs.x, nodes->maxs.y, nodes->maxs.z);
-				pMB->AdvanceVertex();
+				meshBuilder.Position3f(nodes->mins.x, nodes->maxs.y, nodes->maxs.z);
+				meshBuilder.AdvanceVertex();
+				meshBuilder.Position3f(nodes->maxs.x, nodes->maxs.y, nodes->maxs.z);
+				meshBuilder.AdvanceVertex();
 
-				pMB->Position3f(nodes->mins.x, nodes->mins.y, nodes->mins.z);
-				pMB->AdvanceVertex();
-				pMB->Position3f(nodes->maxs.x, nodes->mins.y, nodes->mins.z);
-				pMB->AdvanceVertex();
+				meshBuilder.Position3f(nodes->mins.x, nodes->mins.y, nodes->mins.z);
+				meshBuilder.AdvanceVertex();
+				meshBuilder.Position3f(nodes->maxs.x, nodes->mins.y, nodes->mins.z);
+				meshBuilder.AdvanceVertex();
 
-				pMB->Position3f(nodes->mins.x, nodes->mins.y, nodes->maxs.z);
-				pMB->AdvanceVertex();
-				pMB->Position3f(nodes->maxs.x, nodes->mins.y, nodes->maxs.z);
-				pMB->AdvanceVertex();
+				meshBuilder.Position3f(nodes->mins.x, nodes->mins.y, nodes->maxs.z);
+				meshBuilder.AdvanceVertex();
+				meshBuilder.Position3f(nodes->maxs.x, nodes->mins.y, nodes->maxs.z);
+				meshBuilder.AdvanceVertex();
 
 				nodes->lifetime -= frametime;
 				nodes++;
 			}
 
-			pMB->End();
-		}
-
-		g_pShaderAPI->DestroyMeshBuilder(pMB);
+		meshBuilder.End();
 
 	}
 }
@@ -512,69 +504,60 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 
 void DrawPolygons(DebugPolyNode_t* polygons, int numPolys, float frameTime)
 {
-	IMeshBuilder* pMB = g_pShaderAPI->CreateMeshBuilder();
+	g_pShaderAPI->SetTexture(NULL,NULL, 0);
 
-	if(pMB)
-	{
-		g_pShaderAPI->Reset();
+	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
+	materials->SetRasterizerStates(CULL_BACK,FILL_SOLID);
+	materials->SetDepthStates(true, true);
 
-		materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
-		materials->SetRasterizerStates(CULL_BACK,FILL_SOLID);
-		materials->SetDepthStates(true, true);
+	// bind the default material as we're emulating an FFP
+	materials->BindMaterial(materials->GetDefaultMaterial());
 
-		g_pShaderAPI->Apply();
-
-		pMB->Begin(PRIM_TRIANGLES);
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	meshBuilder.Begin(PRIM_TRIANGLES);
 
 		for(int i = 0; i < numPolys; i++)
 		{
-			pMB->Color4fv(polygons[i].color);
+			meshBuilder.Color4fv(polygons[i].color);
 
-			pMB->Position3fv(polygons[i].v0);
-			pMB->AdvanceVertex();
+			meshBuilder.Position3fv(polygons[i].v0);
+			meshBuilder.AdvanceVertex();
 
-			pMB->Position3fv(polygons[i].v1);
-			pMB->AdvanceVertex();
+			meshBuilder.Position3fv(polygons[i].v1);
+			meshBuilder.AdvanceVertex();
 
-			pMB->Position3fv(polygons[i].v2);
-			pMB->AdvanceVertex();
+			meshBuilder.Position3fv(polygons[i].v2);
+			meshBuilder.AdvanceVertex();
 
 			polygons[i].lifetime -= frameTime;
 		}
 
-		pMB->End();
+	meshBuilder.End();
 
-
-		pMB->Begin(PRIM_LINES);
-
+	meshBuilder.Begin(PRIM_LINES);
 		for(int i = 0; i < numPolys; i++)
 		{
-			pMB->Color4fv(polygons[i].color);
+			meshBuilder.Color4fv(polygons[i].color);
 
-			pMB->Position3fv(polygons[i].v0);
-			pMB->AdvanceVertex();
+			meshBuilder.Position3fv(polygons[i].v0);
+			meshBuilder.AdvanceVertex();
 
-			pMB->Position3fv(polygons[i].v1);
-			pMB->AdvanceVertex();
+			meshBuilder.Position3fv(polygons[i].v1);
+			meshBuilder.AdvanceVertex();
 
-			pMB->Position3fv(polygons[i].v1);
-			pMB->AdvanceVertex();
+			meshBuilder.Position3fv(polygons[i].v1);
+			meshBuilder.AdvanceVertex();
 
-			pMB->Position3fv(polygons[i].v2);
-			pMB->AdvanceVertex();
+			meshBuilder.Position3fv(polygons[i].v2);
+			meshBuilder.AdvanceVertex();
 
-			pMB->Position3fv(polygons[i].v2);
-			pMB->AdvanceVertex();
+			meshBuilder.Position3fv(polygons[i].v2);
+			meshBuilder.AdvanceVertex();
 
-			pMB->Position3fv(polygons[i].v0);
-			pMB->AdvanceVertex();
+			meshBuilder.Position3fv(polygons[i].v0);
+			meshBuilder.AdvanceVertex();
 		}
-
-		pMB->End();
-
-	}
-
-	g_pShaderAPI->DestroyMeshBuilder(pMB);
+	meshBuilder.End();
 }
 
 void CDebugOverlay::SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view )

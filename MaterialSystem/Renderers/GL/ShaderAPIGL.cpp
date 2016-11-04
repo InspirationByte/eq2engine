@@ -2587,16 +2587,6 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 IVertexFormat* pPlainFormat = NULL;
 
-// Creates new mesh builder
-IMeshBuilder* ShaderAPIGL::CreateMeshBuilder()
-{
-	return m_meshBuilder;
-}
-
-void ShaderAPIGL::DestroyMeshBuilder(IMeshBuilder* pBuilder)
-{
-
-}
 
 PRIMCOUNTER g_pGLPrimCounterCallbacks[] =
 {
@@ -2907,7 +2897,7 @@ void ShaderAPIGL::SetScissorRectangle( const IRectangle &rect )
 
 int ShaderAPIGL::GetSamplerUnit(CGLShaderProgram* prog, const char* samplerName)
 {
-	if(!prog)
+	if(!prog || !samplerName)
 		return -1;
 
 	GLShaderSampler_t* samplers = prog->m_samplers;

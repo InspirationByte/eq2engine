@@ -12,13 +12,11 @@
 #include "ppmem.h"
 #include "refcounted.h"
 
-#include "IMatSysShader.h"
-#include "IMaterialVar.h"
-#include "IMaterialProxy.h"
-
 // WARNING: modifying this you must recompile all engine!
 enum MaterialFlags_e
 {
+	MATERIAL_FLAG_BASETEXTURE_CUR	= (1 << 0),		// use the currently set up texture in ShaderAPI as baseTexture
+
 	MATERIAL_FLAG_ISSKY				= (1 << 1),		// used for skybox
 	MATERIAL_FLAG_INVISIBLE			= (1 << 2),		// invisible in standart scene mode. Shadows can be casted if MATERIAL_FLAG_CASTSHADOWS set
 
@@ -56,6 +54,11 @@ enum EMaterialLoadingState
 };
 
 //---------------------------------------------------------------------------------
+
+class IMatVar;
+class IMatProxy;
+class IMaterialSystemShader;
+class ITexture;
 
 class IMaterial : public RefCountedObject
 {

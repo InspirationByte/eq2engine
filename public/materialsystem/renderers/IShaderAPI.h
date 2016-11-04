@@ -25,7 +25,6 @@
 #include "IVertexBuffer.h"
 #include "IVertexFormat.h"
 #include "IIndexBuffer.h"
-#include "IMeshBuilder.h"
 
 // Textures
 #include "ITexture.h"
@@ -381,6 +380,9 @@ public:
 	// Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
 	virtual void				SetTexture( ITexture* pTexture, const char* pszName = NULL, int index = 0) = 0;
 
+	// returns the currently set textre at level
+	virtual ITexture*			GetTextureAt( int level ) const = 0;
+
 //-------------------------------------------------------------
 // Vertex buffer object handling
 //-------------------------------------------------------------
@@ -478,11 +480,6 @@ public:
 	virtual void				DestroyVertexFormat(IVertexFormat* pFormat) = 0;
 	virtual void				DestroyVertexBuffer(IVertexBuffer* pVertexBuffer) = 0;
 	virtual void				DestroyIndexBuffer(IIndexBuffer* pIndexBuffer) = 0;
-
-	// Creates new mesh builder
-	// Mesh builder used for fast access rendering operations that doesn't requries Vertex Buffer
-	virtual IMeshBuilder*		CreateMeshBuilder() = 0;
-	virtual void				DestroyMeshBuilder(IMeshBuilder* pBuilder) = 0;
 
 //-------------------------------------------------------------
 // Primitive drawing

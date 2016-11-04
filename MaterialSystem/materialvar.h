@@ -17,53 +17,53 @@ class CMatVar : public IMatVar
 	friend class CMaterial;
 
 public:
-				CMatVar();
+					CMatVar();
 
 	// initializes the material var
-	void		Init(const char* pszName,const char* pszValue);
+	void			Init(const char* pszName,const char* pszValue);
 
 	// returns name
-	const char* GetName() const;
+	const char*		GetName() const;
 
 	// sets new name
-	void		SetName(const char* szNewName);
+	void			SetName(const char* szNewName);
 
 	// Value returners
-	const char* GetString();
-	int			GetInt() const;
-	float		GetFloat() const;
+	const char*		GetString();
+	int				GetInt() const;
+	float			GetFloat() const;
 
-	Vector2D	GetVector2() const;
-	Vector3D	GetVector3() const;
-	Vector4D	GetVector4() const;
+	const Vector2D&	GetVector2() const;
+	const Vector3D&	GetVector3() const;
+	const Vector4D&	GetVector4() const;
 
 	// Value setup
-	void		SetString(const char* szValue);
-	void		SetFloat(float fValue);
-	void		SetInt(int nValue);
+	void			SetString(const char* szValue);
+	void			SetFloat(float fValue);
+	void			SetInt(int nValue);
 
-	void		SetVector2(Vector2D &vector);
-	void		SetVector3(Vector3D &vector);
-	void		SetVector4(Vector4D &vector);
+	void			SetVector2(const Vector2D& vector);
+	void			SetVector3(const Vector3D& vector);
+	void			SetVector4(const Vector4D& vector);
 
 	// texture pointer
-	ITexture*	GetTexture() const;
+	ITexture*		GetTexture() const;
 
 	// assigns texture
-	void		AssignTexture(ITexture* pTexture);
+	void			AssignTexture(ITexture* pTexture);
 
 private:
-	EqString	m_name;
-	int			m_nameHash;
+	EqString		m_name;
+	int				m_nameHash;
 
-	EqString	m_pszValue;
+	EqString		m_pszValue;
 
-	Vector4D	m_vector;
+	Vector4D		m_vector;
 
-	int			m_nValue;
-	int			m_isDirtyString;
+	int				m_nValue;
+	int				m_isDirtyString;
 
-	ITexture*	m_pAssignedTexture;
+	ITexture*		m_pAssignedTexture;
 };
 
 #endif //CMATVAR_H

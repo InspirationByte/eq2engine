@@ -25,6 +25,12 @@
 
 using namespace Threading;
 
+struct proxyfactory_t
+{
+	char* name;
+	PROXY_DISPATCHER disp;
+};
+
 struct shaderoverride_t
 {
 	char* shadername;
@@ -75,11 +81,14 @@ public:
 	// Resource operations
 	//-----------------------------
 
+	// returns the default material capable to use with MatSystem's GetDynamicMesh()
+	IMaterial*						GetDefaultMaterial() const;
+
 	// returns white texture (used for wireframe of shaders that can't use FFP modes,notexture modes, etc.)
-	ITexture*						GetWhiteTexture();
+	ITexture*						GetWhiteTexture() const;
 
 	// returns luxel test texture (used for lightmap test)
-	ITexture*						GetLuxelTestTexture();
+	ITexture*						GetLuxelTestTexture() const;
 
 	// Finds or loads material (if findExisting is false then it will be loaded as new material instance)
 	IMaterial*						FindMaterial(const char* szMaterialName, bool findExisting = true);
@@ -267,7 +276,8 @@ public:
 	// returns RHI device interface
 	IShaderAPI*						GetShaderAPI();
 
-	IProxyFactory*					GetProxyFactory();
+	void							RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName);
+	IMaterialProxy*					CreateProxyByName(const char* pszName);
 
 	void							RegisterShader(const char* pszShaderName,DISPATCH_CREATE_SHADER dispatcher_creation);
 	void							RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function);
@@ -301,6 +311,7 @@ private:
 
 	DkList<shaderfactory_t>			m_hShaders;						// registered shaders
 	DkList<shaderoverride_t>		m_ShaderOverrideList;			// shader override functors
+	DkList<proxyfactory_t>			m_ProxyList;
 
 	DkList<IMaterial*>				m_pLoadedMaterials;				// loaded material list
 	CullMode_e						m_nCurrentCullMode;				// culling mode. For shaders. TODO: remove, and check matrix handedness.

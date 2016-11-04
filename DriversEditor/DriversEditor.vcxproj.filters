@@ -394,9 +394,6 @@
     <ClInclude Include="EditorPreviewable.h">
       <Filter>Source Files\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared_engine\materialsystem\MaterialProxy.h">
-      <Filter>Source Files\MatSystem</Filter>
-    </ClInclude>
     <ClInclude Include="..\DriversGame\region.h">
       <Filter>Source Files\Game\World</Filter>
     </ClInclude>
@@ -593,9 +590,6 @@
     </ClCompile>
     <ClCompile Include="EditorPreviewable.cpp">
       <Filter>Source Files\Editor</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_engine\materialsystem\MaterialProxy.cpp">
-      <Filter>Source Files\MatSystem</Filter>
     </ClCompile>
     <ClCompile Include="..\DriversGame\region.cpp">
       <Filter>Source Files\Game\World</Filter>
