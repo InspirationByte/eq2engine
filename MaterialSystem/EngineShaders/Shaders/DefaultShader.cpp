@@ -14,11 +14,13 @@ BEGIN_SHADER_CLASS(Default)
 	{
 		SHADER_PASS(Unlit) = NULL;
 		SHADER_FOGPASS(Unlit) = NULL;
+
+		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
 
 	SHADER_INIT_TEXTURES()
 	{
-		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
+		
 	}
 
 	SHADER_INIT_RHI()

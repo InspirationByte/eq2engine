@@ -12,6 +12,8 @@
 #include "IFont.h"
 #include <map>
 
+class CMeshBuilder;
+
 class CFont : public IEqFont
 {
 	friend class			CEngineHost;
@@ -48,7 +50,7 @@ protected:
 
 	// builds vertex buffer for characters
 	template <typename CHAR_T>
-	int						BuildCharVertexBuffer(	Vertex2D_t* dest, 
+	void					BuildCharVertexBuffer(	CMeshBuilder& builder, 
 													const CHAR_T* str, 
 													const Vector2D& startPos, 
 													const eqFontStyleParam_t& params);
@@ -97,8 +99,8 @@ protected:
 
 	ColorRGBA						m_textColor;
 
-	Vertex2D_t*						m_vertexBuffer;
-	int								m_numVerts;
+	//Vertex2D_t*						m_vertexBuffer;
+	//int								m_numVerts;
 
 	bool							m_isSDF;
 };

@@ -143,6 +143,8 @@ void CDynamicMesh::AddStripBreak()
 		memcpy(&m_indices[m_numIndices], degenerate, sizeof(uint16) * 2);
 		m_numIndices += 2;
 	}
+
+	m_vboDirty = true;
 }
 
 // allocates geometry chunk. Returns the start index. Will return -1 if failed
@@ -151,9 +153,6 @@ int CDynamicMesh::AllocateGeom( int nVertices, int nIndices, void** verts, uint1
 {
 	if(nVertices == 0)
 		return -1;
-
-	//if(!Lock())
-	//	return -1;
 
 	if(addStripBreak)
 		AddStripBreak();
@@ -180,6 +179,8 @@ int CDynamicMesh::AllocateGeom( int nVertices, int nIndices, void** verts, uint1
 	}
 
 	memset(*verts, 0, m_vertexStride*nVertices);
+
+	m_vboDirty = true;
 
 	return startVertex;
 }
@@ -219,10 +220,15 @@ void CDynamicMesh::Render()
 
 	bool drawIndexed = m_numIndices > 0;
 
-	m_vertexBuffer->Update(m_vertices, m_numVertices, 0, true);
+	if(m_vboDirty)
+	{
+		m_vertexBuffer->Update(m_vertices, m_numVertices, 0, true);
 
-	if(drawIndexed)
-		m_indexBuffer->Update(m_indices, m_numIndices, 0, true);
+		if(drawIndexed)
+			m_indexBuffer->Update(m_indices, m_numIndices, 0, true);
+
+		m_vboDirty = false;
+	}
 
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
 
@@ -245,4 +251,6 @@ void CDynamicMesh::Reset()
 {
 	m_numVertices = 0;
 	m_numIndices = 0;
+	m_vboDirty = false;
+	Unlock();
 }

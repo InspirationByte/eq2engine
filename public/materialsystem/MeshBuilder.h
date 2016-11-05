@@ -20,38 +20,49 @@ public:
 	void		Begin(PrimitiveType_e type);
 
 	// ends building and renders the mesh
-	void		End();
+	void		End(bool render = true);
 
 	// position setup
 	void		Position3f(float x, float y, float z);
-	void		Position3fv(const float *v);
+	void		Position3fv(const Vector3D& v);
+	void		Position2f(float x, float y);
+	void		Position2fv(const Vector2D& v);
 
 	// normal setup
 	void		Normal3f(float nx, float ny, float nz);
-	void		Normal3fv(const float *v);
+	void		Normal3fv(const Vector3D& v);
 
+	// texcoord setup
 	void		TexCoord2f(float s, float t);
-	void		TexCoord2fv(const float *v);
+	void		TexCoord2fv(const Vector2D& v);
 	void		TexCoord3f(float s, float t, float r);
-	void		TexCoord3fv(const float *v);
+	void		TexCoord3fv(const Vector3D& v);
 
 	// color setup
 	void		Color3f( float r, float g, float b );
-	void		Color3fv( float const *rgb );
+	void		Color3fv( const ColorRGB& rgb );
 	void		Color4f( float r, float g, float b, float a );
-	void		Color4fv( float const *rgba );
+	void		Color4fv( const ColorRGBA& rgba );
+
+	//
+	// complex primitives (using index buffer)
+	//
+
+	// Makes textured quad
+	// to set quad color use Color3*/Color4* operators
+	void		TexturedQuad2(	const Vector2D& v_tl, const Vector2D& v_tr, const Vector2D& v_bl, const Vector2D& v_br,
+								const Vector2D& t_tl, const Vector2D& t_tr, const Vector2D& t_bl,const Vector2D& t_br);
 
 	// advances vertex
 	void		AdvanceVertex();
 
 protected:
 
-	void		GotoNextVertex();
-	
 	IDynamicMesh*		m_mesh;
 	VertexFormatDesc_t* m_formatDesc;
 
 	void*				m_curVertex;
+	int					m_stride;
 
 	struct vertdata_t
 	{
@@ -67,6 +78,7 @@ protected:
 	};
 
 	void				CopyVertData(vertdata_t& vert);
+	void				AdvanceVertexPtr();
 
 	vertdata_t			m_position;
 	vertdata_t			m_normal;
@@ -82,6 +94,7 @@ inline CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh) :
 	m_mesh(NULL),
 	m_curVertex(NULL),
 	m_formatDesc(NULL),
+	m_stride(0),
 	m_begun(false)
 {
 	m_mesh = mesh;
@@ -126,6 +139,8 @@ inline CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh) :
 		// TODO: add Tangent and Binormal
 		vertexSize += attribSize;
 	}
+
+	m_stride = vertexSize;
 }
 
 inline CMeshBuilder::~CMeshBuilder()
@@ -144,13 +159,17 @@ inline void CMeshBuilder::Begin(PrimitiveType_e type)
 	m_normal.value = Vector4D(0,1,0,0);
 	m_color.value = color4_white;
 
+	m_curVertex = NULL;
+
 	m_begun = true;
 }
 
 // ends building and renders the mesh
-inline void CMeshBuilder::End()
+inline void CMeshBuilder::End(bool render/* = true*/)
 {
-	m_mesh->Render();
+	if(render)
+		m_mesh->Render();
+
 	m_begun = false;
 }
 
@@ -163,9 +182,22 @@ inline void CMeshBuilder::Position3f(float x, float y, float z)
 	m_position.value.w = 1.0f;
 }
 
-inline void CMeshBuilder::Position3fv(const float *v)
+inline void CMeshBuilder::Position3fv(const Vector3D& v)
 {
 	Position3f(v[0], v[1], v[2]);
+}
+
+inline void CMeshBuilder::Position2f(float x, float y)
+{
+	m_position.value.x = x;
+	m_position.value.y = y;
+	m_position.value.z = 0.0f;
+	m_position.value.w = 1.0f;
+}
+
+inline void CMeshBuilder::Position2fv(const Vector2D& v)
+{
+	Position2f(v[0], v[1]);
 }
 
 // normal setup
@@ -177,7 +209,7 @@ inline void CMeshBuilder::Normal3f(float nx, float ny, float nz)
 	m_normal.value.w = 0.0f;
 }
 
-inline void CMeshBuilder::Normal3fv(const float *v)
+inline void CMeshBuilder::Normal3fv(const Vector3D& v)
 {
 	Normal3f(v[0], v[1], v[2]);
 }
@@ -190,7 +222,7 @@ inline void CMeshBuilder::TexCoord2f(float s, float t)
 	m_texcoord.value.w = 0.0f;
 }
 
-inline void CMeshBuilder::TexCoord2fv(const float *v)
+inline void CMeshBuilder::TexCoord2fv(const Vector2D& v)
 {
 	TexCoord2f(v[0],v[1]);
 }
@@ -203,7 +235,7 @@ inline void CMeshBuilder::TexCoord3f(float s, float t, float r)
 	m_texcoord.value.w = 0.0f;
 }
 
-inline void CMeshBuilder::TexCoord3fv(const float *v)
+inline void CMeshBuilder::TexCoord3fv(const Vector3D& v)
 {
 	TexCoord3f(v[0], v[1], v[2]);
 }
@@ -217,29 +249,22 @@ inline void CMeshBuilder::Color3f( float r, float g, float b )
 	m_color.value.w = 1.0f;
 }
 
-inline void CMeshBuilder::Color3fv( float const *rgb )
+inline void CMeshBuilder::Color3fv( const ColorRGB& rgb )
 {
 	Color3f(rgb[0], rgb[1], rgb[2]);
 }
 
 inline void CMeshBuilder::Color4f( float r, float g, float b, float a )
 {
-	GotoNextVertex();
-
 	m_color.value.x = r;
 	m_color.value.y = g;
 	m_color.value.z = b;
 	m_color.value.w = a;
 }
 
-inline void CMeshBuilder::Color4fv( float const *rgba )
+inline void CMeshBuilder::Color4fv( const ColorRGBA& rgba )
 {
 	Color4f(rgba[0], rgba[1], rgba[2], rgba[3]);
-}
-
-inline void CMeshBuilder::GotoNextVertex()
-{
-
 }
 
 // advances vertex
@@ -255,6 +280,74 @@ inline void CMeshBuilder::AdvanceVertex()
 	CopyVertData(m_texcoord);
 	CopyVertData(m_normal);
 	CopyVertData(m_color);
+}
+
+inline void CMeshBuilder::AdvanceVertexPtr()
+{
+	if(!m_curVertex) // first it needs to be allocated
+		return;
+
+	CopyVertData(m_position);
+	CopyVertData(m_texcoord);
+	CopyVertData(m_normal);
+	CopyVertData(m_color);
+
+	m_curVertex = (ubyte*)m_curVertex + m_stride;
+}
+
+// Makes textured quad
+// to set quad color use Color3*/Color4* operators
+inline void CMeshBuilder::TexturedQuad2(const Vector2D& v1, const Vector2D& v2, const Vector2D& v3, const Vector2D& v4,
+										const Vector2D& t1, const Vector2D& t2, const Vector2D& t3,const Vector2D& t4)
+{
+	PrimitiveType_e primType = m_mesh->GetPrimitiveType();
+	uint16* indices = NULL;
+
+	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
+
+	int startIndex = m_mesh->AllocateGeom(4, quadIndices, &m_curVertex, &indices);
+
+	if(startIndex == -1)
+		return;
+
+	// top left 0
+	Position2fv(v1);
+	TexCoord2fv(t1);
+	AdvanceVertexPtr();
+
+	// top right 1
+	Position2fv(v2);
+	TexCoord2fv(t2);
+	AdvanceVertexPtr();
+
+	// bottom left 2
+	Position2fv(v3);
+	TexCoord2fv(t3);
+	AdvanceVertexPtr();
+
+	// bottom right 3
+	Position2fv(v4);
+	TexCoord2fv(t4);
+	AdvanceVertexPtr();
+	
+	// make indices working
+	if(primType == PRIM_TRIANGLES)
+	{
+		indices[0] = startIndex;
+		indices[1] = startIndex+1;
+		indices[2] = startIndex+2;
+
+		indices[3] = startIndex+2;
+		indices[4] = startIndex+1;
+		indices[5] = startIndex+3;
+	}
+	else // more linear
+	{
+		indices[0] = startIndex;
+		indices[1] = startIndex+1;
+		indices[2] = startIndex+2;
+		indices[3] = startIndex+3;
+	}
 }
 
 inline void CMeshBuilder::CopyVertData(vertdata_t& vert)

@@ -16,6 +16,7 @@ TODO:
 #include "DebugInterface.h"
 #include "math/Rectangle.h"
 #include "materialsystem/IMaterialSystem.h"
+#include "materialsystem/MeshBuilder.h"
 #include "Font.h"
 #include "utils/DkList.h"
 #include "utils/strtools.h"
@@ -118,9 +119,10 @@ static CPlainTextLayoutBuilder s_defaultTextLayout;
 //-----------------------------------------------------------------------------------------
 CFont::CFont()
 {
-	m_vertexBuffer = NULL;
 	m_fontTexture = NULL;
-	m_numVerts = 0;
+
+	//m_vertexBuffer = NULL;
+	//m_numVerts = 0;
 
 	m_textColor = color4_white;
 	m_spacing = 0.0f;
@@ -134,8 +136,8 @@ CFont::CFont()
 
 CFont::~CFont()
 {
-	if( m_vertexBuffer )
-		free( m_vertexBuffer );
+	//if( m_vertexBuffer )
+	//	free( m_vertexBuffer );
 }
 
 const char*	CFont::GetName() const
@@ -209,7 +211,7 @@ float CFont::_GetStringWidth( const CHAR_T* str, int styleFlags, int charCount, 
 // Fills text buffer and processes tags
 //
 template <typename CHAR_T>
-int CFont::BuildCharVertexBuffer(Vertex2D_t *dest, const CHAR_T* str, const Vector2D& textPos, const eqFontStyleParam_t& params)
+void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, const Vector2D& textPos, const eqFontStyleParam_t& params)
 {
 	const bool isWideChar = std::is_same<CHAR_T,wchar_t>::value;
 
@@ -234,6 +236,7 @@ int CFont::BuildCharVertexBuffer(Vertex2D_t *dest, const CHAR_T* str, const Vect
 
 	int charMode = CHARMODE_NORMAL;
 	int tagType = TEXT_TAG_NONE;
+
 
     while( *str )
 	{
@@ -357,6 +360,17 @@ int CFont::BuildCharVertexBuffer(Vertex2D_t *dest, const CHAR_T* str, const Vect
 		if(stateParams.styleFlag & TEXT_STYLE_FROM_CAP)
 			cPos.y = startPos.y - (cSize.y-m_baseline) + chr.ofsY;
 
+		Rectangle_t charRect(cPos, cPos+cSize);
+		Rectangle_t charTexCoord(chr.x0*m_invTexSize.x, chr.y0*m_invTexSize.y,chr.x1*m_invTexSize.x, chr.y1*m_invTexSize.y);
+
+		// set character color
+		builder.Color4fv(stateParams.textColor);
+
+		// use meshbuilder's index buffer optimization feature
+		builder.TexturedQuad2(	charRect.GetLeftTop(), charRect.GetRightTop(), charRect.GetLeftBottom(), charRect.GetRightBottom(),
+								charTexCoord.GetLeftTop(), charTexCoord.GetRightTop(), charTexCoord.GetLeftBottom(), charTexCoord.GetRightBottom());
+
+		/*
 		dest[0].m_vPosition = Vector2D(cPos.x, cPos.y);
 		dest[0].m_vTexCoord = Vector2D(chr.x0, chr.y0)*m_invTexSize;
 		dest[1].m_vPosition = Vector2D(cPos.x + cSize.x, cPos.y);
@@ -377,15 +391,16 @@ int CFont::BuildCharVertexBuffer(Vertex2D_t *dest, const CHAR_T* str, const Vect
 		dest[3].m_vColor = stateParams.textColor;
 		dest[4].m_vColor = stateParams.textColor;
 		dest[5].m_vColor = stateParams.textColor;
-
+		
 		numVertsToDraw	+= 6;
 		dest			+= 6;
+		*/
 
 		str++;
 	
     } //while
 
-	return numVertsToDraw;
+	//return numVertsToDraw;
 }
 
 //
@@ -397,67 +412,45 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 	if (vertCount == 0)
 		return;
 
-	// realloc buffer if needed
-	if (vertCount > m_numVerts)
-	{
-		Vertex2D_t* newBuf = (Vertex2D_t *) realloc(m_vertexBuffer, vertCount * sizeof(Vertex2D_t));
-
-		if(newBuf)
-		{
-			m_vertexBuffer = newBuf;
-			m_numVerts = vertCount;
-		}
-	}
+	IDynamicMesh* dynMesh = materials->GetDynamicMesh();
+	CMeshBuilder meshBuilder(dynMesh);
 
 	// first we building vertex buffer
-	int numVertsToDraw = BuildCharVertexBuffer(m_vertexBuffer, pszText, start, params);
-
-	ASSERTMSG(numVertsToDraw <= m_numVerts, varargs("Font:RenderText error: numVertsToDraw > m_numVerts (%d > %d)", numVertsToDraw, m_numVerts));
+	meshBuilder.Begin( PRIM_TRIANGLE_STRIP );
+	BuildCharVertexBuffer(meshBuilder, pszText, start, params);
+	meshBuilder.End(false);
 
 	//
-	// render part
+	// render
 	//
+	RasterizerStateParams_t raster;
 	BlendStateParam_t blending;
+
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+
+	materials->SetDepthStates(false,false);
+	materials->SetBlendingStates(blending);
+	materials->SetRasterizerStates(raster);
+
+	g_pShaderAPI->SetTexture(m_fontTexture, NULL, 0);
 	
-	/*
-	IVertexBuffer* vb = g_fontCache->m_fontVB;
-	vb->Update(m_vertexBuffer, numVertsToDraw, 0, true);
-
-	g_pShaderAPI->SetVertexFormat(g_fontCache->m_fontFmt);
-	g_pShaderAPI->SetVertexBuffer(vb, 0);
-	g_pShaderAPI->SetIndexBuffer(NULL);
-
-	materials->SetAmbientColor(params.textColor);
-
-	materials->BindMaterial( g_fontCache->m_simpleMat, false );
-	g_pShaderAPI->SetTexture(m_fontTexture, "BaseTexture", 0);
-
 	// draw shadow
 	if(params.styleFlag & TEXT_STYLE_SHADOW)
 	{
 		materials->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));
-		//g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_TRIANGLES, 0, numVertsToDraw);
+		materials->SetAmbientColor(ColorRGBA(0,0,0,params.shadowAlpha));
+
+		materials->BindMaterial(materials->GetDefaultMaterial());
+
+		dynMesh->Render();
 	}
 
+	materials->SetAmbientColor(color4_white);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+	materials->BindMaterial(materials->GetDefaultMaterial());
 
-	materials->Apply();
-
-	g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_TRIANGLES, 0, numVertsToDraw);
-	*/
-
-	// draw shadow
-	if(params.styleFlag & TEXT_STYLE_SHADOW)
-	{
-		materials->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));
-		materials->DrawPrimitives2DFFP(PRIM_TRIANGLES, m_vertexBuffer, numVertsToDraw, m_fontTexture, ColorRGBA(0,0,0,params.shadowAlpha), &blending);
-	}
-
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
-
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLES, m_vertexBuffer, numVertsToDraw, m_fontTexture, color4_white, &blending);
+	dynMesh->Render();
 }
 
 //
@@ -469,65 +462,45 @@ void CFont::RenderText(const char* pszText, const Vector2D& start, const eqFontS
 	if (vertCount == 0)
 		return;
 
-	// realloc buffer if needed
-	if (vertCount > m_numVerts)
-	{
-		Vertex2D_t* newBuf = (Vertex2D_t *) realloc(m_vertexBuffer, vertCount * sizeof(Vertex2D_t));
-
-		if(newBuf)
-		{
-			m_vertexBuffer = newBuf;
-			m_numVerts = vertCount;
-		}
-	}
+	IDynamicMesh* dynMesh = materials->GetDynamicMesh();
+	CMeshBuilder meshBuilder(dynMesh);
 
 	// first we building vertex buffer
-	int numVertsToDraw = BuildCharVertexBuffer(m_vertexBuffer, pszText, start, params);
-
-	ASSERTMSG(numVertsToDraw <= m_numVerts, varargs("Font:RenderText error: numVertsToDraw > m_numVerts (%d > %d)", numVertsToDraw, m_numVerts));
+	meshBuilder.Begin( PRIM_TRIANGLE_STRIP );
+	BuildCharVertexBuffer(meshBuilder, pszText, start, params);
+	meshBuilder.End(false);
 
 	//
-	// render part
+	// render
 	//
+	RasterizerStateParams_t raster;
 	BlendStateParam_t blending;
+
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-	/*
-	IVertexBuffer* vb = g_fontCache->m_fontVB;
-	vb->Update(m_vertexBuffer, numVertsToDraw, 0, true);
 
-	g_pShaderAPI->SetVertexFormat(g_fontCache->m_fontFmt);
-	g_pShaderAPI->SetVertexBuffer(vb, 0);
-	g_pShaderAPI->SetIndexBuffer(NULL);
+	materials->SetDepthStates(false,false);
+	materials->SetBlendingStates(blending);
+	materials->SetRasterizerStates(raster);
 
-	materials->SetAmbientColor(params.textColor);
-
-	materials->BindMaterial( g_fontCache->m_simpleMat, false );
-	g_pShaderAPI->SetTexture(m_fontTexture, "BaseTexture", 0);
-
+	g_pShaderAPI->SetTexture(m_fontTexture, NULL, 0);
+	
 	// draw shadow
 	if(params.styleFlag & TEXT_STYLE_SHADOW)
 	{
 		materials->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));
-		//g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_TRIANGLES, 0, numVertsToDraw);
+		materials->SetAmbientColor(ColorRGBA(0,0,0,params.shadowAlpha));
+		materials->BindMaterial(materials->GetDefaultMaterial());
+
+		dynMesh->Render();
 	}
 
+	materials->SetAmbientColor(color4_white);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	materials->Apply();
+	materials->BindMaterial(materials->GetDefaultMaterial());
 
-	g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_TRIANGLES, 0, numVertsToDraw);*/
-
-	// draw shadow
-	if(params.styleFlag & TEXT_STYLE_SHADOW)
-	{
-		materials->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));
-		materials->DrawPrimitives2DFFP(PRIM_TRIANGLES, m_vertexBuffer, numVertsToDraw, m_fontTexture, ColorRGBA(0,0,0,params.shadowAlpha), &blending);
-	}
-
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
-
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLES, m_vertexBuffer, numVertsToDraw, m_fontTexture, color4_white, &blending);
+	dynMesh->Render();
 }
 
 //

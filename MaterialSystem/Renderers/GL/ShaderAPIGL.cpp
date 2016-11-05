@@ -217,8 +217,6 @@ ShaderAPIGL::ShaderAPIGL() : ShaderAPI_Base()
 	m_nCurrentMask = COLORMASK_ALL;
 	m_bCurrentBlendEnable = false;
 
-	m_nCurrentVBO = 0;
-
 	m_frameBuffer = 0;
 	m_depthBuffer = 0;
 
@@ -1696,13 +1694,23 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 
 		for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 		{
-			if (!pSelectedFormat->m_hGeneric[i].m_nSize && pCurrentFormat->m_hGeneric[i].m_nSize)
+			eqGLVertAttrDesc_t& selDesc = pSelectedFormat->m_hGeneric[i];
+			eqGLVertAttrDesc_t& curDesc = pCurrentFormat->m_hGeneric[i];
+
+			CVertexBufferGL* glVB = (CVertexBufferGL*)m_pCurrentVertexBuffers[selDesc.m_nStream];
+
+			if(glVB)
+				glBindBuffer(GL_ARRAY_BUFFER, glVB->m_nGL_VB_Index);
+
+			if (!selDesc.m_nSize && curDesc.m_nSize)
 			{
 				glDisableVertexAttribArray(i);
 				GLCheckError("disable vtx attrib");
 			}
 
-			if(pSelectedFormat->m_hGeneric[i].m_nSize && !pCurrentFormat->m_hGeneric[i].m_nSize)
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+			if(selDesc.m_nSize && !curDesc.m_nSize)
 			{
 				glEnableVertexAttribArray(i);
 				GLCheckError("enable vtx attrib");
@@ -1739,12 +1747,13 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 	if (pSelectedBuffer != NULL)
 		vbo = pSelectedBuffer->m_nGL_VB_Index;
 
+	bool boundHere = false;
+	
 	if( m_pCurrentVertexBuffers[nStream] != pVertexBuffer )
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		GLCheckError("bind array");
-
-		m_nCurrentVBO = vbo;
+		boundHere = true;
 	}
 
 	bool instanceBuffer = (nStream > 0) && pSelectedBuffer != NULL && (pSelectedBuffer->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
@@ -1803,6 +1812,12 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 		}
 	}
 
+	if(boundHere)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		GLCheckError("unbind array after vattrib");
+	}
+
 	if(pVertexBuffer)
 	{
 		if(!instanceBuffer && m_boundInstanceStream != -1)
@@ -1837,7 +1852,6 @@ void ShaderAPIGL::ChangeIndexBuffer(IIndexBuffer *pIndexBuffer)
 		if (pIndexBuffer == NULL)
 		{
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
 			GLCheckError("bind elem array 0");
 		}
 		else
@@ -2456,6 +2470,7 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(BufferAccessType_e nBufAccess, in
 		return NULL;
 	}
 
+
 	glBindBuffer(GL_ARRAY_BUFFER, pGLVertexBuffer->m_nGL_VB_Index);
 	glBufferData(GL_ARRAY_BUFFER, pGLVertexBuffer->GetSizeInBytes(), pData, glBufferUsages[nBufAccess]);
 
@@ -2609,7 +2624,6 @@ void ShaderAPIGL::DrawIndexedPrimitives(PrimitiveType_e nType, int nFirstIndex, 
 
 	int nTris = g_pGLPrimCounterCallbacks[nType](nIndices);
 
-	//m_pCurrentVertexFormat->GetVertexSizePerStream();
 	uint indexSize = m_pCurrentIndexBuffer->GetIndexSize();
 
 	int numInstances = 0;

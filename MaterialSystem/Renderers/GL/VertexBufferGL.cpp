@@ -17,6 +17,8 @@
 #include "glad.h"
 #endif
 
+extern bool GLCheckError(const char* op);
+
 CVertexBufferGL::CVertexBufferGL()
 {
 	m_nGL_VB_Index = 0;
@@ -71,7 +73,10 @@ void CVertexBufferGL::Update(void* data, int size, int offset, bool discard /*= 
 	pGLRHI->GL_CRITICAL();
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
+
 	glBufferSubData(GL_ARRAY_BUFFER, offset*m_strideSize, size*m_strideSize, data);
+	GLCheckError("vertexbuffer update");
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	if(dynamic && discard && offset == 0)
@@ -118,10 +123,12 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 #ifdef USE_GLES2
 	// map buffer
 	pGLRHI->GL_CRITICAL();
+
 	glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
 
 	GLbitfield mapFlags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | (discard ? GL_MAP_INVALIDATE_RANGE_BIT : 0);
-	m_lockPtr = (ubyte*)glMapBufferRange(GL_ARRAY_BUFFER, m_lockOffs*m_strideSize, m_numVerts*m_strideSize, mapFlags );
+	GLCheckError("vertexbuffer map");
+	m_lockPtr = (ubyte*)glMapBufferRange(GL_ARRAY_BUFFER, m_lockOffs*m_strideSize, m_lockSize*m_strideSize, mapFlags );
 	(*outdata) = m_lockPtr;// + m_lockOffs*m_strideSize;
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -143,6 +150,7 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 
 		// lock whole buffer
 		glGetBufferSubData(GL_ARRAY_BUFFER, m_lockOffs*m_strideSize, nLockByteCount, m_lockPtr);
+		GLCheckError("vertexbuffer get data");
 
 		// give user buffer with offset
 		(*outdata) = m_lockPtr;// + m_lockOffs*m_strideSize;
@@ -167,9 +175,9 @@ void CVertexBufferGL::Unlock()
 		if( !m_lockReadOnly )
 		{
 			ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
+
 			pGLRHI->GL_CRITICAL();
 
-			//if( m_boundStream == -1 )
 			glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
 
 #ifdef USE_GLES2
@@ -177,8 +185,8 @@ void CVertexBufferGL::Unlock()
 #else
 			glBufferSubData(GL_ARRAY_BUFFER, m_lockOffs*m_strideSize, m_lockSize*m_strideSize, m_lockPtr);
 #endif // USE_GLES2
+			GLCheckError("vertexbuffer unmap");
 
-			// check if bound
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 		}
 

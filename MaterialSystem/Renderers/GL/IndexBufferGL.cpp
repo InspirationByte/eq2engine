@@ -17,6 +17,8 @@
 #include "glad.h"
 #endif
 
+extern bool GLCheckError(const char* op);
+
 CIndexBufferGL::CIndexBufferGL()
 {
 	m_nIndices = 0;
@@ -58,7 +60,10 @@ void CIndexBufferGL::Update(void* data, int size, int offset, bool discard /*= t
 	pGLRHI->GL_CRITICAL();
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset*m_nIndexSize, size*m_nIndexSize, data);
+	GLCheckError("indexbuffer update");
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	if(dynamic && discard && offset == 0)
@@ -106,11 +111,13 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 #ifdef USE_GLES2
 	// map buffer
 	pGLRHI->GL_CRITICAL();
+	
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
 
 	GLbitfield mapFlags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | (discard ? GL_MAP_INVALIDATE_RANGE_BIT : 0);
-	m_lockPtr = (ubyte*)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, m_nIndices*m_nIndexSize, mapFlags );
-	(*outdata) = m_lockPtr + m_lockOffs*m_nIndexSize;
+	GLCheckError("indexbuffer map");
+	m_lockPtr = (ubyte*)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, m_lockOffs*m_nIndexSize, m_lockSize*m_nIndexSize, mapFlags );
+	(*outdata) = m_lockPtr;// + m_lockOffs*m_nIndexSize;
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
@@ -130,10 +137,11 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
 
 		// lock whole buffer
-		glGetBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, m_nIndices*m_nIndexSize, m_lockPtr);
+		glGetBufferSubData(GL_ELEMENT_ARRAY_BUFFER, m_lockOffs*m_nIndexSize, m_lockSize*m_nIndexSize, m_lockPtr);
+		GLCheckError("indexbuffer get data");
 
 		// give user buffer with offset
-		(*outdata) = m_lockPtr + m_lockOffs*m_nIndexSize;
+		(*outdata) = m_lockPtr;// + m_lockOffs*m_nIndexSize;
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
@@ -163,8 +171,9 @@ void CIndexBufferGL::Unlock()
 #ifdef USE_GLES2
 			glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 #else
-			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, m_lockSize*m_nIndexSize, m_lockPtr);
+			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, m_lockOffs*m_nIndexSize, m_lockSize*m_nIndexSize, m_lockPtr);
 #endif // USE_GLES2
+			GLCheckError("indexbuffer unmap");
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		}
