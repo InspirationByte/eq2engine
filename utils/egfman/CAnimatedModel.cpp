@@ -1077,7 +1077,7 @@ void RenderPhysModel(IEqModel* pModel)
 	if(pModel->GetHWData()->m_physmodel.numshapes == 0)
 		return;
 
-	
+	materials->SetAmbientColor(1.0f);
 	materials->SetDepthStates(true,false);
 	materials->SetRasterizerStates(CULL_BACK,FILL_WIREFRAME);
 	materials->BindMaterial(materials->GetDefaultMaterial());

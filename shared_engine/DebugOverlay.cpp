@@ -16,7 +16,6 @@
 #include "materialsystem/IMaterialSystem.h"
 #include "materialsystem/MeshBuilder.h"
 
-
 #ifndef _WIN32
 #include <stdarg.h>
 #endif
@@ -26,6 +25,10 @@
 #else
 #define DEBUG_DEFAULT_VALUE "1"
 #endif // !EDITOR && !NO_GAME
+
+#define BOXES_DRAW_SUBDIV (64)
+#define LINES_DRAW_SUBDIV (128)
+#define POLYS_DRAW_SUBDIV (64)
 
 static ConVar r_drawFrameStats("r_frameStats", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
 static ConVar r_debugdrawgraphs("r_debugDrawGraphs", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
@@ -113,7 +116,6 @@ void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
 	DebugTextNode_t textNode;
 	textNode.color = color;
 
-
 	va_list		argptr;
 	static char	string[1024];
 
@@ -129,6 +131,9 @@ void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
 void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const ColorRGBA &color, float fTime, char const *fmt,...)
 {
 	if(!r_drawFrameStats.GetBool())
+		return;
+
+	if(!m_frustum.IsSphereInside(origin, 1.0f))
 		return;
 
 	va_list		argptr;
@@ -191,12 +196,14 @@ void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const Colo
 	if(!r_debugdrawboxes.GetBool())
 		return;
 
+	if(!m_frustum.IsBoxInside(mins,maxs))
+		return;
+
 	DebugBoxNode_t box;
 	box.mins = mins;
 	box.maxs = maxs;
 	box.color = color;
 	box.lifetime = fTime;
-
 
 	if(fTime == 0.0f)
 		m_FastBoxList.append(box);
@@ -209,6 +216,9 @@ void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const Col
 	Threading::CScopedMutex m(m_mutex);
 
 	if(!r_debugdrawlines.GetBool())
+		return;
+
+	if(!m_frustum.IsBoxInside(start,end))
 		return;
 
 	DebugLineNode_t line;
@@ -227,6 +237,9 @@ void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const Col
 void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime)
 {
 	Threading::CScopedMutex m(m_mutex);
+
+	if(!m_frustum.IsTriangleInside(v0,v1,v2))
+		return;
 
 	DebugPolyNode_t poly;
 	poly.v0 = v0;
@@ -247,19 +260,7 @@ void CDebugOverlay::Draw3DFunc( OnDebugDrawFn func, void* args )
 	m_drawFuncs.append(fn);
 }
 
-/*
-void CDebugOverlay::Line2D(Vector2D &start, Vector2D &end, ColorRGBA &color1, ColorRGBA &color2, float fTime = 0.0f)
-{
-
-}
-
-void CDebugOverlay::Box2D(Vector2D &mins, Vector2D &maxs, ColorRGBA &color1, float fTime = 0.0f)
-{
-
-}
-*/
-
-void DrawLineArray(DkList<DebugLineNode_t>* pNodes, float frametime)
+void DrawLineArray(DkList<DebugLineNode_t>& lines, float frametime)
 {
 	if(r_debugdrawlines.GetBool())
 	{
@@ -277,28 +278,28 @@ void DrawLineArray(DkList<DebugLineNode_t>* pNodes, float frametime)
 		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 		meshBuilder.Begin(PRIM_LINES);
 
-			DebugLineNode_t* nodes = pNodes->ptr();
-			for(int i = 0; i < pNodes->numElem(); i++)
+			for(int i = 0; i < lines.numElem(); i++)
 			{
-				meshBuilder.Color4fv(nodes->color1);
-				meshBuilder.Position3fv(nodes->start);
+				DebugLineNode_t& line = lines[i];
+
+				meshBuilder.Color4fv(line.color1);
+				meshBuilder.Position3fv(line.start);
 
 				meshBuilder.AdvanceVertex();
 
-				meshBuilder.Color4fv(nodes->color2);
-				meshBuilder.Position3fv(nodes->end);
+				meshBuilder.Color4fv(line.color2);
+				meshBuilder.Position3fv(line.end);
 
 				meshBuilder.AdvanceVertex();
 
-				nodes->lifetime -= frametime;
-				nodes++;
+				line.lifetime -= frametime;
 			}
 
 		meshBuilder.End();
 	}
 }
 
-void DrawBoxArray(DkList<DebugBoxNode_t>* pNodes, float frametime)
+void DrawBoxArray(DkList<DebugBoxNode_t>& boxes, float frametime)
 {
 	if(r_debugdrawboxes.GetBool())
 	{
@@ -316,73 +317,55 @@ void DrawBoxArray(DkList<DebugBoxNode_t>* pNodes, float frametime)
 		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 		meshBuilder.Begin(PRIM_LINES);
 
-			DebugBoxNode_t* nodes = pNodes->ptr();
-			for(int i = 0; i < pNodes->numElem(); i++)
+			for(int i = 0; i < boxes.numElem(); i++)
 			{
-				meshBuilder.Color4fv(nodes->color);
+				DebugBoxNode_t& node = boxes[i];
 
-				meshBuilder.Position3f(nodes->mins.x, nodes->maxs.y, nodes->mins.z);
-				meshBuilder.AdvanceVertex();
-				meshBuilder.Position3f(nodes->mins.x, nodes->maxs.y, nodes->maxs.z);
-				meshBuilder.AdvanceVertex();
+				meshBuilder.Color4fv(node.color);
 
-				meshBuilder.Position3f(nodes->maxs.x, nodes->maxs.y, nodes->maxs.z);
-				meshBuilder.AdvanceVertex();
-				meshBuilder.Position3f(nodes->maxs.x, nodes->maxs.y, nodes->mins.z);
-				meshBuilder.AdvanceVertex();
+				meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.mins.z),
+									Vector3D(node.mins.x, node.maxs.y, node.maxs.z));
 
-				meshBuilder.Position3f(nodes->maxs.x, nodes->mins.y, nodes->mins.z);
-				meshBuilder.AdvanceVertex();
-				meshBuilder.Position3f(nodes->maxs.x, nodes->mins.y, nodes->maxs.z);
-				meshBuilder.AdvanceVertex();
+				meshBuilder.Line3fv(Vector3D(node.maxs.x, node.maxs.y, node.maxs.z),
+									Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
 
-				meshBuilder.Position3f(nodes->mins.x, nodes->mins.y, nodes->maxs.z);
-				meshBuilder.AdvanceVertex();
-				meshBuilder.Position3f(nodes->mins.x, nodes->mins.y, nodes->mins.z);
-				meshBuilder.AdvanceVertex();
+				meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.mins.z),
+									Vector3D(node.maxs.x, node.mins.y, node.maxs.z));
 
-				meshBuilder.Position3f(nodes->mins.x, nodes->mins.y, nodes->maxs.z);
-				meshBuilder.AdvanceVertex();
-				meshBuilder.Position3f(nodes->mins.x, nodes->maxs.y, nodes->maxs.z);
-				meshBuilder.AdvanceVertex();
+				meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
+									Vector3D(node.mins.x, node.mins.y, node.mins.z));
 
-				meshBuilder.Position3f(nodes->maxs.x, nodes->mins.y, nodes->maxs.z);
-				meshBuilder.AdvanceVertex();
-				meshBuilder.Position3f(nodes->maxs.x, nodes->maxs.y, nodes->maxs.z);
-				meshBuilder.AdvanceVertex();
+				meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
+									Vector3D(node.mins.x, node.maxs.y, node.maxs.z));
 
-				meshBuilder.Position3f(nodes->mins.x, nodes->mins.y, nodes->mins.z);
-				meshBuilder.AdvanceVertex();
-				meshBuilder.Position3f(nodes->mins.x, nodes->maxs.y, nodes->mins.z);
-				meshBuilder.AdvanceVertex();
+				meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.maxs.z),
+									Vector3D(node.maxs.x, node.maxs.y, node.maxs.z));
 
-				meshBuilder.Position3f(nodes->maxs.x, nodes->mins.y, nodes->mins.z);
-				meshBuilder.AdvanceVertex();
-				meshBuilder.Position3f(nodes->maxs.x, nodes->maxs.y, nodes->mins.z);
-				meshBuilder.AdvanceVertex();
+				meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.mins.z),
+									Vector3D(node.mins.x, node.maxs.y, node.mins.z));
 
-				meshBuilder.Position3f(nodes->mins.x, nodes->maxs.y, nodes->mins.z);
-				meshBuilder.AdvanceVertex();
-				meshBuilder.Position3f(nodes->maxs.x, nodes->maxs.y, nodes->mins.z);
-				meshBuilder.AdvanceVertex();
+				meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.mins.z),
+									Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
 
-				meshBuilder.Position3f(nodes->mins.x, nodes->maxs.y, nodes->maxs.z);
-				meshBuilder.AdvanceVertex();
-				meshBuilder.Position3f(nodes->maxs.x, nodes->maxs.y, nodes->maxs.z);
-				meshBuilder.AdvanceVertex();
+				meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.mins.z),
+									Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
 
-				meshBuilder.Position3f(nodes->mins.x, nodes->mins.y, nodes->mins.z);
-				meshBuilder.AdvanceVertex();
-				meshBuilder.Position3f(nodes->maxs.x, nodes->mins.y, nodes->mins.z);
-				meshBuilder.AdvanceVertex();
+				meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.maxs.z),
+									Vector3D(node.maxs.x, node.maxs.y, node.maxs.z));
 
-				meshBuilder.Position3f(nodes->mins.x, nodes->mins.y, nodes->maxs.z);
-				meshBuilder.AdvanceVertex();
-				meshBuilder.Position3f(nodes->maxs.x, nodes->mins.y, nodes->maxs.z);
-				meshBuilder.AdvanceVertex();
+				meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.mins.z),
+									Vector3D(node.maxs.x, node.mins.y, node.mins.z));
 
-				nodes->lifetime -= frametime;
-				nodes++;
+				meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
+									Vector3D(node.maxs.x, node.mins.y, node.maxs.z));
+
+				node.lifetime -= frametime;
+
+				if((i % BOXES_DRAW_SUBDIV) == 0)
+				{
+					meshBuilder.End();
+					meshBuilder.Begin(PRIM_LINES);
+				}
 			}
 
 		meshBuilder.End();
@@ -502,7 +485,7 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 
 }
 
-void DrawPolygons(DebugPolyNode_t* polygons, int numPolys, float frameTime)
+void DrawPolygons(DkList<DebugPolyNode_t>& polygons, float frameTime)
 {
 	g_pShaderAPI->SetTexture(NULL,NULL, 0);
 
@@ -516,7 +499,7 @@ void DrawPolygons(DebugPolyNode_t* polygons, int numPolys, float frameTime)
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_TRIANGLES);
 
-		for(int i = 0; i < numPolys; i++)
+		for(int i = 0; i < polygons.numElem(); i++)
 		{
 			meshBuilder.Color4fv(polygons[i].color);
 
@@ -530,12 +513,18 @@ void DrawPolygons(DebugPolyNode_t* polygons, int numPolys, float frameTime)
 			meshBuilder.AdvanceVertex();
 
 			polygons[i].lifetime -= frameTime;
+
+			if((i % POLYS_DRAW_SUBDIV) == 0)
+			{
+				meshBuilder.End();
+				meshBuilder.Begin(PRIM_TRIANGLES);
+			}
 		}
 
 	meshBuilder.End();
 
 	meshBuilder.Begin(PRIM_LINES);
-		for(int i = 0; i < numPolys; i++)
+		for(int i = 0; i < polygons.numElem(); i++)
 		{
 			meshBuilder.Color4fv(polygons[i].color);
 
@@ -556,6 +545,12 @@ void DrawPolygons(DebugPolyNode_t* polygons, int numPolys, float frameTime)
 
 			meshBuilder.Position3fv(polygons[i].v0);
 			meshBuilder.AdvanceVertex();
+
+			if((i % LINES_DRAW_SUBDIV) == 0)
+			{
+				meshBuilder.End();
+				meshBuilder.Begin(PRIM_LINES);
+			}
 		}
 	meshBuilder.End();
 }
@@ -564,6 +559,9 @@ void CDebugOverlay::SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view )
 {
 	m_projMat = proj;
 	m_viewMat = view;
+
+	Matrix4x4 viewProj = m_projMat*m_viewMat;
+	m_frustum.LoadAsFrustum(viewProj);
 }
 
 void CDebugOverlay::Draw(int winWide, int winTall)
@@ -577,6 +575,8 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	materials->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+	materials->SetAmbientColor(1.0f);
 
 	// draw custom stuff
 	{
@@ -594,13 +594,13 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 	{
 		Threading::CScopedMutex m(m_mutex);
 
-		DrawBoxArray(&m_BoxList, m_frametime);
-		DrawBoxArray(&m_FastBoxList, m_frametime);
+		DrawBoxArray(m_BoxList, m_frametime);
+		DrawBoxArray(m_FastBoxList, m_frametime);
 
-		DrawLineArray(&m_LineList, m_frametime);
-		DrawLineArray(&m_FastLineList, m_frametime);
+		DrawLineArray(m_LineList, m_frametime);
+		DrawLineArray(m_FastLineList, m_frametime);
 
-		DrawPolygons(m_polygons.ptr(), m_polygons.numElem(), m_frametime);
+		DrawPolygons(m_polygons, m_frametime);
 	}
 
 	// now rendering 2D stuff

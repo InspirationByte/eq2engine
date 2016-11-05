@@ -9,6 +9,7 @@
 #define EDITAXIS_H
 
 #include "materialsystem/IMaterialSystem.h"
+#include "materialsystem/MeshBuilder.h"
 #include "IDebugOverlay.h"
 
 #define EDAXIS_SCALE 0.15f
@@ -25,8 +26,6 @@ enum EAxisSelectionFlags
 class CEditAxisXYZ
 {
 public:
-
-
 	CEditAxisXYZ() {}
 
 	CEditAxisXYZ(const Matrix3x3& rotate, const Vector3D& pos)
@@ -42,7 +41,6 @@ public:
 
 	void Draw(float camDist)
 	{
-
 		float fLength = camDist*EDAXIS_SCALE;
 		float fLengthHalf = fLength*0.5f;
 
@@ -54,42 +52,44 @@ public:
 		v_y = m_rotation*vec3_up;
 		v_z = m_rotation*vec3_forward;
 
-		Vertex3D_t axis_verts[] = 
-		{
-			Vertex3D_t(m_position, vec2_zero, ColorRGBA(1,0,0,1)), Vertex3D_t(m_position+v_x*fLength, vec2_zero, ColorRGBA(1,0,0,1)),
-			Vertex3D_t(m_position, vec2_zero, ColorRGBA(0,1,0,1)), Vertex3D_t(m_position+v_y*fLength, vec2_zero, ColorRGBA(0,1,0,1)),
-			Vertex3D_t(m_position, vec2_zero, ColorRGBA(0,0,1,1)), Vertex3D_t(m_position+v_z*fLength, vec2_zero, ColorRGBA(0,0,1,1)),
-		};
+		materials->SetAmbientColor(1.0f);
 
-		DepthStencilStateParams_t depthParams;
-		depthParams.depthWrite = false;
-		depthParams.depthTest = false;
+		materials->SetDepthStates(false,false);
+		materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA,BLENDFACTOR_ONE_MINUS_SRC_ALPHA);
+		materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
 
-		BlendStateParam_t blendParams;
-		blendParams.blendEnable = true;
-		blendParams.srcFactor = BLENDFACTOR_SRC_ALPHA;
-		blendParams.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+		g_pShaderAPI->SetTexture(NULL, NULL, 0);
+		materials->BindMaterial(materials->GetDefaultMaterial());
 
-		g_pShaderAPI->Reset(STATE_RESET_VBO);
+		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
-		materials->DrawPrimitivesFFP(PRIM_LINES, axis_verts, 6, NULL, ColorRGBA(1), NULL, &depthParams);
+		meshBuilder.Begin(PRIM_LINES);
+			meshBuilder.Color3f(1,0,0);
+			meshBuilder.Line3fv(m_position, m_position+v_x*fLength);
 
-		Vertex3D_t poly_verts[] = 
-		{
-			Vertex3D_t(m_position, vec2_zero, ColorRGBA(1,0,1,1)), 
-			Vertex3D_t(m_position+v_z*fLengthHalf, vec2_zero, ColorRGBA(1,0,1,1)),
-			Vertex3D_t(m_position+v_x*fLengthHalf, vec2_zero, ColorRGBA(1,0,1,1)),
+			meshBuilder.Color3f(0,1,0);
+			meshBuilder.Line3fv(m_position, m_position+v_y*fLength);
 
-			Vertex3D_t(m_position, vec2_zero, ColorRGBA(0,1,1,1)), 
-			Vertex3D_t(m_position+v_y*fLengthHalf, vec2_zero, ColorRGBA(0,1,1,1)),
-			Vertex3D_t(m_position+v_z*fLengthHalf, vec2_zero, ColorRGBA(0,1,1,1)),
+			meshBuilder.Color3f(0,0,1);
+			meshBuilder.Line3fv(m_position, m_position+v_z*fLength);
+		meshBuilder.End();
 
-			Vertex3D_t(m_position, vec2_zero, ColorRGBA(1,0,0,1)), 
-			Vertex3D_t(m_position+v_x*fLengthHalf, vec2_zero, ColorRGBA(1,0,0,1)),
-			Vertex3D_t(m_position+v_y*fLengthHalf, vec2_zero, ColorRGBA(1,0,0,1)),
-		};
+		meshBuilder.Begin(PRIM_TRIANGLES);
+			meshBuilder.Color4f(1,0,1,0.5f);
+			meshBuilder.Position3fv(m_position); meshBuilder.AdvanceVertex();
+			meshBuilder.Position3fv(m_position+v_z*fLengthHalf); meshBuilder.AdvanceVertex();
+			meshBuilder.Position3fv(m_position+v_x*fLengthHalf); meshBuilder.AdvanceVertex();
 
-		materials->DrawPrimitivesFFP(PRIM_TRIANGLES, poly_verts, 9, NULL, ColorRGBA(1, 1, 1, 0.25f), NULL, &depthParams);
+			meshBuilder.Color4f(0,1,1,0.5f);
+			meshBuilder.Position3fv(m_position); meshBuilder.AdvanceVertex();
+			meshBuilder.Position3fv(m_position+v_y*fLengthHalf); meshBuilder.AdvanceVertex();
+			meshBuilder.Position3fv(m_position+v_z*fLengthHalf); meshBuilder.AdvanceVertex();
+
+			meshBuilder.Color4f(1,0,0,0.5f);
+			meshBuilder.Position3fv(m_position); meshBuilder.AdvanceVertex();
+			meshBuilder.Position3fv(m_position+v_x*fLengthHalf); meshBuilder.AdvanceVertex();
+			meshBuilder.Position3fv(m_position+v_y*fLengthHalf); meshBuilder.AdvanceVertex();
+		meshBuilder.End();
 
 		/*
 		debugoverlay->Box3D(m_position+v_x*fLength - fBoxSize, m_position+v_x*fLength + fBoxSize, ColorRGBA(1,0,0,1), 0);

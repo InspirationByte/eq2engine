@@ -34,7 +34,8 @@
 #define NEIGHBOR_OFFS_X(x)		{x-1, x, x+1, x}		// non-diagonal
 #define NEIGHBOR_OFFS_Y(y)		{y, y-1, y, y+1}
 
-#define NEIGHBOR_OFFS_DX(x, f)	{x-f, x+f, x+f, x-f}	// diagonal
+// bottom left, bottom right, top right, top left
+#define NEIGHBOR_OFFS_DX(x, f)	{x-f, x+f, x+f, x-f}	// diagonal (used to generate vertices)
 #define NEIGHBOR_OFFS_DY(y, f)	{y-f, y-f, y+f, y+f}
 
 #define ROLLING_VALUE(x, max) ((x < 0) ? max+x : ((x >= max) ? x-max : x ))

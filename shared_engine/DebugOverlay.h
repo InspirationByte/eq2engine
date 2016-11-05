@@ -14,6 +14,7 @@
 #include "utils/eqstring.h"
 #include "utils/eqthread.h"
 #include "math/Vector.h"
+#include "math/Volume.h"
 
 struct DebugTextNode_t
 {
@@ -109,6 +110,8 @@ private:
 
 	Matrix4x4						m_projMat;
 	Matrix4x4						m_viewMat;
+
+	Volume							m_frustum;
 
 	DkList<DebugTextNode_t>			m_TextArray;
 	DkList<DebugText3DNode_t>		m_Text3DArray;

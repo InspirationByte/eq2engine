@@ -8,20 +8,9 @@
 #ifndef IDYNAMICMESH_H
 #define IDYNAMICMESH_H
 
-#include "materialsystem/renderers/IShaderAPI.h"
+#include "renderers/ShaderAPI_defs.h"
 
-// the standard dynamic mesh vertex
-// please don't change unless you recompile the materialsystem dll
-struct StdDynMeshVertex_t
-{
-	TVec4D<float>	position;
-	TVec4D<half>	texCoord;
-	TVec4D<half>	normal;		// FIXME: can be compressed
-	TVec4D<half>	color;		// FIXME: can be compressed
-};
-
-//assert_sizeof(StdDynMeshVertex_t, 40); // 1.1 MB of VRAM needed for this
-
+// standard vertex format used by the material system's dynamic mesh instance
 static VertexFormatDesc_t g_standardVertexFormatDesc[] = {
 	0, 4, VERTEXTYPE_VERTEX,	ATTRIBUTEFORMAT_FLOAT,
 	0, 4, VERTEXTYPE_TEXCOORD,	ATTRIBUTEFORMAT_HALF,

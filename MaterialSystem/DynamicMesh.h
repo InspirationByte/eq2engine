@@ -9,6 +9,7 @@
 #define DYNAMICMESH_H
 
 #include "IDynamicMesh.h"
+#include "Renderers/IShaderAPI.h"
 #include "utils/DkList.h"
 
 class CDynamicMesh : public IDynamicMesh

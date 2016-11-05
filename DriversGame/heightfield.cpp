@@ -8,6 +8,9 @@
 #include "world.h"
 
 #include "heightfield.h"
+
+#include "materialsystem/MeshBuilder.h"
+
 #include "VirtualStream.h"
 #include "IDebugOverlay.h"
 #include "math/math_util.h"
@@ -905,12 +908,6 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 	}
 }
 
-inline void ListLine(const Vector3D &from, const Vector3D &to, DkList<Vertex3D_t> &verts)
-{
-	verts.append(Vertex3D_t(from, vec2_zero));
-	verts.append(Vertex3D_t(to, vec2_zero));
-}
-
 void ListQuad(const Vector3D &v1, const Vector3D &v2, const Vector3D& v3, const Vector3D& v4, const ColorRGBA &color, DkList<Vertex3D_t> &verts)
 {
 	verts.append(Vertex3D_t(v3, vec2_zero, color));
@@ -926,42 +923,38 @@ void DrawGridH(int size, int count, const Vector3D& pos, const ColorRGBA &color,
 {
 	int grid_lines = count;
 
-	DkList<Vertex3D_t> grid_vertices(grid_lines / size);
+	g_pShaderAPI->SetTexture(NULL,NULL, 0);
+	materials->SetDepthStates(!for2D,!for2D);
+	materials->SetRasterizerStates(CULL_BACK,FILL_SOLID);
+	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA);
 
-	for(int i = 0; i <= grid_lines / size;i++)
-	{
-		int max_grid_size = grid_lines;
-		int grid_step = size*i;
+	materials->BindMaterial(materials->GetDefaultMaterial());
 
-		ListLine(pos + Vector3D(0,0,grid_step),pos + Vector3D(max_grid_size,0,grid_step), grid_vertices);
-		ListLine(pos + Vector3D(grid_step,0,0),pos + Vector3D(grid_step,0,max_grid_size), grid_vertices);
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	meshBuilder.Begin(PRIM_LINES);
 
-		ListLine(pos + Vector3D(0,0,-grid_step),pos + Vector3D(-max_grid_size,0,-grid_step), grid_vertices);
-		ListLine(pos + Vector3D(-grid_step,0,0),pos + Vector3D(-grid_step,0,-max_grid_size), grid_vertices);
+		for(int i = 0; i <= grid_lines / size;i++)
+		{
+			int max_grid_size = grid_lines;
+			int grid_step = size*i;
 
-		// draw another part
+			meshBuilder.Color4fv(color);
 
-		ListLine(pos + Vector3D(0,0,-grid_step),pos + Vector3D(max_grid_size,0,-grid_step), grid_vertices);
-		ListLine(pos + Vector3D(-grid_step,0,0),pos + Vector3D(-grid_step,0,max_grid_size), grid_vertices);
+			meshBuilder.Line3fv(pos + Vector3D(0,0,grid_step),pos + Vector3D(max_grid_size,0,grid_step));
+			meshBuilder.Line3fv(pos + Vector3D(grid_step,0,0),pos + Vector3D(grid_step,0,max_grid_size));
 
-		ListLine(pos + Vector3D(0,0,grid_step),pos + Vector3D(-max_grid_size,0,grid_step), grid_vertices);
-		ListLine(pos + Vector3D(grid_step,0,0),pos + Vector3D(grid_step,0,-max_grid_size), grid_vertices);
-	}
+			meshBuilder.Line3fv(pos + Vector3D(0,0,-grid_step),pos + Vector3D(-max_grid_size,0,-grid_step));
+			meshBuilder.Line3fv(pos + Vector3D(-grid_step,0,0),pos + Vector3D(-grid_step,0,-max_grid_size));
 
-	DepthStencilStateParams_t depth;
+			// draw another part
+			meshBuilder.Line3fv(pos + Vector3D(0,0,-grid_step),pos + Vector3D(max_grid_size,0,-grid_step));
+			meshBuilder.Line3fv(pos + Vector3D(-grid_step,0,0),pos + Vector3D(-grid_step,0,max_grid_size));
 
-	depth.depthTest = !for2D;
-	depth.depthWrite = !for2D;
-	depth.depthFunc = COMP_LEQUAL;
+			meshBuilder.Line3fv(pos + Vector3D(0,0,grid_step),pos + Vector3D(-max_grid_size,0,grid_step));
+			meshBuilder.Line3fv(pos + Vector3D(grid_step,0,0),pos + Vector3D(grid_step,0,-max_grid_size));
+		}
 
-	RasterizerStateParams_t raster;
-
-	raster.cullMode = CULL_BACK;
-	raster.fillMode = FILL_SOLID;
-	raster.multiSample = true;
-	raster.scissor = false;
-
-	materials->DrawPrimitivesFFP(PRIM_LINES, grid_vertices.ptr(), grid_vertices.numElem(), NULL, color, NULL, &depth, &raster);
+	meshBuilder.End();
 }
 
 void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
@@ -969,14 +962,25 @@ void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
 	if(!m_sizew || !m_sizeh)
 		return;
 
+	materials->SetAmbientColor(1.0f);
+
 	Vector3D halfsize = Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
-	DrawGridH(HFIELD_POINT_SIZE, m_sizew*2, m_position + Vector3D(m_sizew*HFIELD_POINT_SIZE*0.5f, gridHeight, m_sizew*HFIELD_POINT_SIZE*0.5f) - halfsize, ColorRGBA(1,1,1,0.1), false);
+	DrawGridH(HFIELD_POINT_SIZE, m_sizew*2, 
+				m_position + Vector3D(m_sizew*HFIELD_POINT_SIZE*0.5f, gridHeight, m_sizew*HFIELD_POINT_SIZE*0.5f) - halfsize, 
+				ColorRGBA(1,1,1,0.1), false);
 
 	if(!bDrawTiles)
 		return;
 
-	DkList<Vertex3D_t> tile_verts(64);
-	tile_verts.resize(m_sizew*m_sizeh*6);
+	g_pShaderAPI->SetTexture(NULL,NULL, 0);
+	materials->SetDepthStates(true, false);
+	materials->SetRasterizerStates(CULL_BACK,FILL_SOLID);
+	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA);
+
+	materials->BindMaterial(materials->GetDefaultMaterial());
+
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	meshBuilder.Begin(PRIM_TRIANGLES);
 
 	for(int x = 0; x < m_sizew; x++)
 	{
@@ -987,8 +991,6 @@ void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
 
 			int pt_idx = y*m_sizew + x;
 			hfieldtile_t& tile = m_points[pt_idx];
-
-			//int vindxs[4];
 
 			Vector3D p1(dxv[0] * HFIELD_POINT_SIZE, float(tile.height)*HFIELD_HEIGHT_STEP+0.1f, dyv[0] * HFIELD_POINT_SIZE);
 			Vector3D p2(dxv[1] * HFIELD_POINT_SIZE, float(tile.height)*HFIELD_HEIGHT_STEP+0.1f, dyv[1] * HFIELD_POINT_SIZE);
@@ -1012,30 +1014,14 @@ void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
 				tileColor = color4_white-tileColor;
 			}
 
-			ListQuad(p1, p2, p3, p4, tileColor, tile_verts);
+			meshBuilder.Color4fv(tileColor);
+
+			// in this order because it's counter-clockwise
+			meshBuilder.TexturedQuad3(p4,p3,p1,p2, vec2_zero, vec2_zero,vec2_zero,vec2_zero);
 		}
 	}
 
-	DepthStencilStateParams_t depth;
-
-	depth.depthTest = true;
-	depth.depthWrite = false;
-	depth.depthFunc = COMP_LEQUAL;
-
-	BlendStateParam_t blend;
-
-	blend.blendEnable = true;
-	blend.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blend.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	RasterizerStateParams_t raster;
-
-	raster.cullMode = CULL_BACK;
-	raster.fillMode = FILL_SOLID;
-	raster.multiSample = true;
-	raster.scissor = false;
-
-	materials->DrawPrimitivesFFP(PRIM_TRIANGLES, tile_verts.ptr(), tile_verts.numElem(), NULL, color4_white, &blend, &depth, &raster);
+	meshBuilder.End();
 }
 
 void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, occludingFrustum_t* frustum)

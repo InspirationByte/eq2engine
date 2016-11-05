@@ -134,6 +134,7 @@ public:
 	// FIXME: replace by MatSystem mesh builder
 	//-----------------------------
 
+	// returns the dynamic mesh
 	IDynamicMesh*					GetDynamicMesh() const;
 
 	// draws primitives

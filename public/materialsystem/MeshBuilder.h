@@ -45,12 +45,21 @@ public:
 	void		Color4fv( const ColorRGBA& rgba );
 
 	//
-	// complex primitives (using index buffer)
+	// complex primitives (also using index buffer)
 	//
 
-	// Makes textured quad
+	// lines
+	void		Line2fv(const Vector2D& v1, const Vector2D& v2);
+	void		Line3fv(const Vector3D& v1, const Vector3D& v2);
+
+	// Makes 2D textured quad
 	// to set quad color use Color3*/Color4* operators
 	void		TexturedQuad2(	const Vector2D& v_tl, const Vector2D& v_tr, const Vector2D& v_bl, const Vector2D& v_br,
+								const Vector2D& t_tl, const Vector2D& t_tr, const Vector2D& t_bl,const Vector2D& t_br);
+
+	// Makes 3D textured quad
+	// to set quad color use Color3*/Color4* operators
+	void		TexturedQuad3(	const Vector3D& v_tl, const Vector3D& v_tr, const Vector3D& v_bl, const Vector3D& v_br,
 								const Vector2D& t_tl, const Vector2D& t_tr, const Vector2D& t_bl,const Vector2D& t_br);
 
 	// advances vertex
@@ -295,6 +304,23 @@ inline void CMeshBuilder::AdvanceVertexPtr()
 	m_curVertex = (ubyte*)m_curVertex + m_stride;
 }
 
+//-------------------------------------------------------------------------------
+// Complex primitives
+//-------------------------------------------------------------------------------
+
+// lines
+inline void CMeshBuilder::Line2fv(const Vector2D& v1, const Vector2D& v2)
+{
+	Position2fv(v1); AdvanceVertex();
+	Position2fv(v2); AdvanceVertex();
+}
+
+inline void CMeshBuilder::Line3fv(const Vector3D& v1, const Vector3D& v2)
+{
+	Position3fv(v1); AdvanceVertex();
+	Position3fv(v2); AdvanceVertex();
+}
+
 // Makes textured quad
 // to set quad color use Color3*/Color4* operators
 inline void CMeshBuilder::TexturedQuad2(const Vector2D& v1, const Vector2D& v2, const Vector2D& v3, const Vector2D& v4,
@@ -327,6 +353,61 @@ inline void CMeshBuilder::TexturedQuad2(const Vector2D& v1, const Vector2D& v2, 
 
 	// bottom right 3
 	Position2fv(v4);
+	TexCoord2fv(t4);
+	AdvanceVertexPtr();
+	
+	// make indices working
+	if(primType == PRIM_TRIANGLES)
+	{
+		indices[0] = startIndex;
+		indices[1] = startIndex+1;
+		indices[2] = startIndex+2;
+
+		indices[3] = startIndex+2;
+		indices[4] = startIndex+1;
+		indices[5] = startIndex+3;
+	}
+	else // more linear
+	{
+		indices[0] = startIndex;
+		indices[1] = startIndex+1;
+		indices[2] = startIndex+2;
+		indices[3] = startIndex+3;
+	}
+}
+
+// Makes textured quad
+// to set quad color use Color3*/Color4* operators
+inline void CMeshBuilder::TexturedQuad3(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3, const Vector3D& v4,
+										const Vector2D& t1, const Vector2D& t2, const Vector2D& t3,const Vector2D& t4)
+{
+	PrimitiveType_e primType = m_mesh->GetPrimitiveType();
+	uint16* indices = NULL;
+
+	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
+
+	int startIndex = m_mesh->AllocateGeom(4, quadIndices, &m_curVertex, &indices);
+
+	if(startIndex == -1)
+		return;
+
+	// top left 0
+	Position3fv(v1);
+	TexCoord2fv(t1);
+	AdvanceVertexPtr();
+
+	// top right 1
+	Position3fv(v2);
+	TexCoord2fv(t2);
+	AdvanceVertexPtr();
+
+	// bottom left 2
+	Position3fv(v3);
+	TexCoord2fv(t3);
+	AdvanceVertexPtr();
+
+	// bottom right 3
+	Position3fv(v4);
 	TexCoord2fv(t4);
 	AdvanceVertexPtr();
 	

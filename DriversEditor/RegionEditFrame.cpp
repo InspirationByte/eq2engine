@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "RegionEditFrame.h"
+#include "materialsystem/MeshBuilder.h"
 
 #include "world.h"
 #include "imaging/ImageLoader.h"
@@ -513,7 +514,20 @@ void CRegionEditFrame::ReDraw()
 
 				ITexture* showTexture = m_showsNavGrid ? rm->aiMapImage : rm->image;
 
-				materials->DrawPrimitivesFFP(PRIM_TRIANGLE_STRIP, verts, elementsOf(verts), showTexture, color4_white, &params, &depthparams);
+				g_pShaderAPI->SetTexture(showTexture, NULL, 0);
+				materials->SetDepthStates(depthparams);
+				materials->SetBlendingStates(params);
+				materials->SetAmbientColor(1.0f);
+
+				materials->BindMaterial(materials->GetDefaultMaterial());
+
+				IDynamicMesh* mesh = materials->GetDynamicMesh();
+
+				CMeshBuilder meshBuilder(mesh);
+
+				meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+					meshBuilder.TexturedQuad3(v1,v2,v3,v4,Vector2D(0,0), Vector2D(0,1), Vector2D(1,0), Vector2D(1,1));
+				meshBuilder.End();
 
 				if(m_mouseoverRegion == regIdx)
 				{
@@ -525,8 +539,21 @@ void CRegionEditFrame::ReDraw()
 						Vertex3D_t(v1, Vector2D(1,1), color4_white),
 					};
 
-					materials->DrawPrimitivesFFP(PRIM_LINE_STRIP, lverts, elementsOf(lverts), NULL, ColorRGBA(0,1,0,1), &params, &depthparams);
-					materials->DrawPrimitivesFFP(PRIM_TRIANGLE_STRIP, verts, elementsOf(verts), NULL, ColorRGBA(0.15f), &params, &depthparams);
+					g_pShaderAPI->SetTexture(showTexture, NULL, 0);
+					materials->SetAmbientColor(ColorRGBA(0.5f));
+					materials->BindMaterial(materials->GetDefaultMaterial());
+
+					// reuse
+					mesh->Render();
+
+					// render the contour
+					meshBuilder.Begin(PRIM_LINE_STRIP);
+						meshBuilder.Position3fv(v1); meshBuilder.AdvanceVertex();
+						meshBuilder.Position3fv(v2); meshBuilder.AdvanceVertex();
+						meshBuilder.Position3fv(v4); meshBuilder.AdvanceVertex();
+						meshBuilder.Position3fv(v3); meshBuilder.AdvanceVertex();
+						meshBuilder.Position3fv(v1); meshBuilder.AdvanceVertex();
+					meshBuilder.End();
 				}
 
 				//

@@ -222,8 +222,6 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 
 	layoutBuilder->Reset( this );
 
-	int numVertsToDraw = 0;
-
 	Vector2D startPos = textPos;
 
 	bool hasNewLine = true;
@@ -236,7 +234,6 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 
 	int charMode = CHARMODE_NORMAL;
 	int tagType = TEXT_TAG_NONE;
-
 
     while( *str )
 	{
