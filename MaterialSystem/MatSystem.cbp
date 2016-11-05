@@ -63,8 +63,13 @@
 		<Unit filename="../public/ViewParams.h" />
 		<Unit filename="../public/consolenode.h" />
 		<Unit filename="../public/core_base_header.h" />
+		<Unit filename="../public/materialsystem/BaseShader.cpp" />
 		<Unit filename="../public/materialsystem/IMaterialSystem.h" />
-		<Unit filename="CMatProxyFactory.cpp" />
+		<Unit filename="DefaultShader.cpp" />
+		<Unit filename="DynamicMesh.cpp" />
+		<Unit filename="DynamicMesh.h" />
+		<Unit filename="MaterialProxy.cpp" />
+		<Unit filename="MaterialProxy.h" />
 		<Unit filename="MaterialSystem.cpp" />
 		<Unit filename="MaterialSystem.h" />
 		<Unit filename="material.cpp" />

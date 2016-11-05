@@ -18,8 +18,6 @@
 
 #include "math/Vector.h"
 
-#include <map>
-
 // binding
 class binding_t
 {

@@ -14,6 +14,7 @@
 // Platform definitions
 #include "platform/Platform.h"
 #include "utils/DkList.h"
+#include <stdint.h>
 
 // Various declarations
 #include "ShaderAPICaps.h"

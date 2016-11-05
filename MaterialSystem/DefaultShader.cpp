@@ -20,7 +20,7 @@ BEGIN_SHADER_CLASS(Default)
 
 	SHADER_INIT_TEXTURES()
 	{
-		
+
 	}
 
 	SHADER_INIT_RHI()

@@ -10,6 +10,7 @@
 
 #include "DebugInterface.h"
 #include "utils/KeyValues.h"
+#include <stdlib.h>
 
 #include "IMaterial.h"
 #include "IMaterialVar.h"
@@ -68,9 +69,9 @@ public:
 
 protected:
 	void UpdateVar(proxyvar_t& var, float fDt);
-	
+
 	void ParseVariable(proxyvar_t& var, const char* pszVal);
-	
+
 	void mvSetValue(proxyvar_t& var, float value);
 	void mvSetValueInt(proxyvar_t& var, int value);
 
@@ -97,7 +98,7 @@ inline void CBaseMaterialProxy::ParseVariable(proxyvar_t& var, const char* pszVa
 		return;
 
 	char* pairval = (char*)pszVal;
-		
+
 	char firstSymbol = pairval[0];
 	if(firstSymbol == PAIR_VARIABLE)
 	{
@@ -130,7 +131,7 @@ inline void CBaseMaterialProxy::ParseVariable(proxyvar_t& var, const char* pszVa
 		if(*varExt == VAR_ELEM_OPEN)
 		{
 			varExt += 1;
-				
+
 			char varIndexstr[2];
 			varIndexstr[0] = *varExt;
 			varIndexstr[1] = '\0';

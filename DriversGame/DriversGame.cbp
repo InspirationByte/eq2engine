@@ -138,7 +138,6 @@
 		<Unit filename="../shared_engine/eqGlobalMutex.h" />
 		<Unit filename="../shared_engine/eqParallelJobs.cpp" />
 		<Unit filename="../shared_engine/eqParallelJobs.h" />
-		<Unit filename="../shared_engine/materialsystem/MaterialProxy.cpp" />
 		<Unit filename="../shared_engine/materialsystem/MaterialProxy.h" />
 		<Unit filename="../shared_engine/modelloader_shared.cpp" />
 		<Unit filename="../shared_engine/modelloader_shared.h" />

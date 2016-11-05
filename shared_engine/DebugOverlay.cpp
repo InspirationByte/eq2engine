@@ -5,12 +5,13 @@
 // Description: Debug text drawer system
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DebugOverlay.h"
-#include "FontCache.h"
 
+#include "DebugOverlay.h"
 #include "DebugInterface.h"
-#include "math/math_util.h"
 #include "ConVar.h"
+
+#include "FontCache.h"
+#include "math/math_util.h"
 #include "utils/strtools.h"
 
 #include "materialsystem/IMaterialSystem.h"
@@ -760,7 +761,7 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 void CDebugOverlay::CleanOverlays()
 {
 	m_TextArray.clear();
-	
+
 	for (int i = 0;i < m_Text3DArray.numElem();i++)
 	{
 		if(m_Text3DArray[i].lifetime <= 0)

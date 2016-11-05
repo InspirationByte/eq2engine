@@ -93,7 +93,6 @@ LOCAL_SRC_FILES := \
 	shared_engine/cfgloader.cpp\
 	shared_engine/eqGlobalMutex.cpp\
 	shared_engine/eqParallelJobs.cpp\
-	shared_engine/materialsystem/MaterialProxy.cpp\
 	shared_engine/modelloader_shared.cpp\
 	shared_engine/physics/BulletShapeCache.cpp\
 	shared_engine/studio_egf.cpp\

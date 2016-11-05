@@ -1078,7 +1078,7 @@
 
 1457289078 /home/soap/Projects/EqEngine/src_main/public/textureformats.h
 
-1478009493 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/ShaderAPI_defs.h
+1478373308 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/ShaderAPI_defs.h
 	"textureformats.h"
 	"math/Vector.h"
 	"math/Matrix.h"
@@ -1143,8 +1143,7 @@
 	<ctype.h>
 	<string.h>
 
-1476719816 /home/soap/Projects/EqEngine/src_main/public/utils/DkList.h
-	<functional>
+1478374126 /home/soap/Projects/EqEngine/src_main/public/utils/DkList.h
 	"platform/MessageBox.h"
 	"dktypes.h"
 
@@ -1160,15 +1159,15 @@
 1457289078 /home/soap/Projects/EqEngine/src_main/public/core/DebugInterface.h
 	"InterfaceManager.h"
 
-1476719816 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IShaderAPI.h
+1478374250 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IShaderAPI.h
 	"platform/Platform.h"
 	"utils/DkList.h"
+	<stdint.h>
 	"ShaderAPICaps.h"
 	"IShaderProgram.h"
 	"IVertexBuffer.h"
 	"IVertexFormat.h"
 	"IIndexBuffer.h"
-	"IMeshBuilder.h"
 	"ITexture.h"
 	"IOcclusionQuery.h"
 	"IRenderState.h"
@@ -1209,7 +1208,7 @@
 	"ShaderAPI_defs.h"
 	"ppmem.h"
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IMeshBuilder.h
+1478373308 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IMeshBuilder.h
 	<stdio.h>
 	"platform/Platform.h"
 	"math/Vector.h"
@@ -1243,12 +1242,13 @@
 1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IEqSwapChain.h
 	"ITexture.h"
 
-1476719816 /home/soap/Projects/EqEngine/src_main/MaterialSystem/Renderers/Empty/ShaderAPIEmpty.h
+1478373308 /home/soap/Projects/EqEngine/src_main/MaterialSystem/Renderers/Empty/ShaderAPIEmpty.h
 	"../ShaderAPI_Base.h"
+	"IMeshBuilder.h"
 	"CEmptyTexture.h"
 	"imaging/ImageLoader.h"
 
-1476719816 /home/soap/Projects/EqEngine/src_main/MaterialSystem/Renderers/ShaderAPI_Base.h
+1478373308 /home/soap/Projects/EqEngine/src_main/MaterialSystem/Renderers/ShaderAPI_Base.h
 	"IShaderAPI.h"
 	"utils/DkList.h"
 	"utils/eqthread.h"

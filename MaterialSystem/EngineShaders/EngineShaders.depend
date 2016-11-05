@@ -1239,19 +1239,22 @@
 1456748937 /home/soap/Projects/EqEngine/src_all/public/core/platform/MessageBox.h
 	"InterfaceManager.h"
 
-1478009493 source:/home/soap/Projects/EqEngine/src_main/public/materialsystem/BaseShader.cpp
+1478373308 source:/home/soap/Projects/EqEngine/src_main/public/materialsystem/BaseShader.cpp
 	"BaseShader.h"
 
-1478014153 /home/soap/Projects/EqEngine/src_main/public/materialsystem/BaseShader.h
+1478373308 /home/soap/Projects/EqEngine/src_main/public/materialsystem/BaseShader.h
 	"materialsystem/IMaterialSystem.h"
 	"utils/strtools.h"
 
-1478014578 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMaterialSystem.h
+1478373308 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMaterialSystem.h
 	"DebugInterface.h"
 	"IDkCore.h"
 	"renderers/IShaderAPI.h"
 	"IMaterial.h"
 	"IMatSysShader.h"
+	"IMaterialVar.h"
+	"IMaterialProxy.h"
+	"IDynamicMesh.h"
 	"ViewParams.h"
 	"scene_def.h"
 
@@ -1271,15 +1274,15 @@
 	<stdio.h>
 	"InterfaceManager.h"
 
-1476719816 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IShaderAPI.h
+1478374250 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/IShaderAPI.h
 	"platform/Platform.h"
 	"utils/DkList.h"
+	<stdint.h>
 	"ShaderAPICaps.h"
 	"IShaderProgram.h"
 	"IVertexBuffer.h"
 	"IVertexFormat.h"
 	"IIndexBuffer.h"
-	"IMeshBuilder.h"
 	"ITexture.h"
 	"IOcclusionQuery.h"
 	"IRenderState.h"
@@ -1298,8 +1301,7 @@
 	<stddef.h>
 	<string.h>
 
-1476719816 /home/soap/Projects/EqEngine/src_main/public/utils/DkList.h
-	<functional>
+1478374126 /home/soap/Projects/EqEngine/src_main/public/utils/DkList.h
 	"platform/MessageBox.h"
 	"dktypes.h"
 
@@ -1312,7 +1314,7 @@
 
 1457289078 /home/soap/Projects/EqEngine/src_main/public/textureformats.h
 
-1478009493 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/ShaderAPI_defs.h
+1478373308 /home/soap/Projects/EqEngine/src_main/public/materialsystem/renderers/ShaderAPI_defs.h
 	"textureformats.h"
 	"math/Vector.h"
 	"math/Matrix.h"
@@ -1409,12 +1411,9 @@
 	"ShaderAPI_defs.h"
 	"ppmem.h"
 
-1474555571 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMaterial.h
+1478373308 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMaterial.h
 	"ppmem.h"
 	"refcounted.h"
-	"IMatSysShader.h"
-	"IMaterialVar.h"
-	"IMaterialProxy.h"
 
 1478009493 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMatSysShader.h
 	"IMaterial.h"
@@ -1462,13 +1461,16 @@
 	"Matrix.h"
 	"Volume.h"
 
-1465324214 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMaterialVar.h
+1478373308 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMaterialVar.h
 	"math/Vector.h"
 	"ppmem.h"
 
-1457289078 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMaterialProxy.h
-	"IMaterial.h"
+1478374306 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IMaterialProxy.h
+	"DebugInterface.h"
 	"utils/KeyValues.h"
+	<stdlib.h>
+	"IMaterial.h"
+	"IMaterialVar.h"
 
 1478009493 /home/soap/Projects/EqEngine/src_main/public/utils/KeyValues.h
 	"platform/Platform.h"
@@ -1587,13 +1589,13 @@
 1457289078 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/SkyBox.cpp
 	"BaseShader.h"
 
-1457289078 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/ShadersMain.cpp
+1478373308 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/ShadersMain.cpp
 	"DebugInterface.h"
 	"renderers/IShaderAPI.h"
 	"materialsystem/IMaterialSystem.h"
 	<crtdbg.h>
 
-1457289078 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/ShadersOverride.cpp
+1478373308 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/ShadersOverride.cpp
 	"materialsystem/IMaterialSystem.h"
 
 1457289078 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/SkinnedModel.cpp
@@ -1604,13 +1606,13 @@
 	"BaseShader.h"
 	"vars_generic.h"
 
-1478009493 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/BaseUnlit.cpp
+1478018324 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/BaseUnlit.cpp
 	"BaseShader.h"
 
-1478009493 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/BaseParticle.cpp
+1478373308 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/BaseParticle.cpp
 	"BaseShader.h"
 
-1478009493 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/BlurFilter.cpp
+1478373308 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/BlurFilter.cpp
 	"BaseShader.h"
 
 1478009493 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/Error.cpp
@@ -1619,9 +1621,12 @@
 1478009493 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/SDFFont.cpp
 	"BaseShader.h"
 
-1478009493 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/Sky.cpp
+1478373308 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/Sky.cpp
 	"BaseShader.h"
 
 1478009493 source:/home/soap/Projects/EqEngine/src_main/MaterialSystem/EngineShaders/Shaders/BaseSkinned.cpp
 	"BaseShader.h"
+
+1478373308 /home/soap/Projects/EqEngine/src_main/public/materialsystem/IDynamicMesh.h
+	"renderers/ShaderAPI_defs.h"
 

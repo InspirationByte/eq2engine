@@ -9,7 +9,7 @@
 #define DYNAMICMESH_H
 
 #include "IDynamicMesh.h"
-#include "Renderers/IShaderAPI.h"
+#include "renderers/IShaderAPI.h"
 #include "utils/DkList.h"
 
 class CDynamicMesh : public IDynamicMesh
@@ -54,7 +54,7 @@ protected:
 
 	void*			m_lockVertices;
 	uint16*			m_lockIndices;
-	
+
 	IVertexFormat*	m_vertexFormat;
 	IVertexBuffer*	m_vertexBuffer;
 	IIndexBuffer*	m_indexBuffer;

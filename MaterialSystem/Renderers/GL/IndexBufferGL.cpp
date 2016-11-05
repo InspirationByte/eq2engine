@@ -56,15 +56,17 @@ void CIndexBufferGL::Update(void* data, int size, int offset, bool discard /*= t
 	}
 
 	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
+	CIndexBufferGL* currIB = (CIndexBufferGL*)pGLRHI->m_pCurrentIndexBuffer;
 
 	pGLRHI->GL_CRITICAL();
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+	if(currIB != this)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
 
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset*m_nIndexSize, size*m_nIndexSize, data);
 	GLCheckError("indexbuffer update");
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, currIB ? currIB->m_nGL_IB_Index : 0);
 
 	if(dynamic && discard && offset == 0)
 		m_nIndices = size;
@@ -107,19 +109,21 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 	m_lockReadOnly = readOnly;
 
 	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
+	CIndexBufferGL* currIB = (CIndexBufferGL*)pGLRHI->m_pCurrentIndexBuffer;
 
 #ifdef USE_GLES2
 	// map buffer
 	pGLRHI->GL_CRITICAL();
-	
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+
+	if(currIB != this)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
 
 	GLbitfield mapFlags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | (discard ? GL_MAP_INVALIDATE_RANGE_BIT : 0);
 	GLCheckError("indexbuffer map");
 	m_lockPtr = (ubyte*)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, m_lockOffs*m_nIndexSize, m_lockSize*m_nIndexSize, mapFlags );
 	(*outdata) = m_lockPtr;// + m_lockOffs*m_nIndexSize;
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, currIB ? currIB->m_nGL_IB_Index : 0);
 
 	if(m_lockPtr == NULL)
 		ASSERTMSG(false, "Failed to map index buffer!");
@@ -134,7 +138,8 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 	{
 		pGLRHI->GL_CRITICAL();
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+		if(currIB != this)
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
 
 		// lock whole buffer
 		glGetBufferSubData(GL_ELEMENT_ARRAY_BUFFER, m_lockOffs*m_nIndexSize, m_lockSize*m_nIndexSize, m_lockPtr);
@@ -143,7 +148,7 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 		// give user buffer with offset
 		(*outdata) = m_lockPtr;// + m_lockOffs*m_nIndexSize;
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, currIB ? currIB->m_nGL_IB_Index : 0);
 	}
 #endif // USE_GLES2
 
@@ -163,10 +168,12 @@ void CIndexBufferGL::Unlock()
 		if( !m_lockReadOnly )
 		{
 			ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
+			CIndexBufferGL* currIB = (CIndexBufferGL*)pGLRHI->m_pCurrentIndexBuffer;
 
 			pGLRHI->GL_CRITICAL();
 
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+			if(currIB != this)
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
 
 #ifdef USE_GLES2
 			glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
@@ -175,7 +182,7 @@ void CIndexBufferGL::Unlock()
 #endif // USE_GLES2
 			GLCheckError("indexbuffer unmap");
 
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, currIB ? currIB->m_nGL_IB_Index : 0);
 		}
 
 #ifndef USE_GLES2 // don't do dis...

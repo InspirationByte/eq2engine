@@ -355,7 +355,7 @@ inline void CMeshBuilder::TexturedQuad2(const Vector2D& v1, const Vector2D& v2, 
 	Position2fv(v4);
 	TexCoord2fv(t4);
 	AdvanceVertexPtr();
-	
+
 	// make indices working
 	if(primType == PRIM_TRIANGLES)
 	{
@@ -410,7 +410,7 @@ inline void CMeshBuilder::TexturedQuad3(const Vector3D& v1, const Vector3D& v2, 
 	Position3fv(v4);
 	TexCoord2fv(t4);
 	AdvanceVertexPtr();
-	
+
 	// make indices working
 	if(primType == PRIM_TRIANGLES)
 	{

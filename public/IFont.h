@@ -80,7 +80,7 @@ public:
 	virtual void	Reset( IEqFont* font ) { m_font = font; }
 
 	// controls the newline. For different text orientations
-	virtual void	OnNewLine(	const eqFontStyleParam_t& params, 
+	virtual void	OnNewLine(	const eqFontStyleParam_t& params,
 								void* strCurPos, bool isWideChar,
 								int lineNumber,
 								const Vector2D& textStart,
@@ -88,7 +88,7 @@ public:
 
 	// for special layouts like rectangles
 	// if false then stops output, and don't render this char
-	virtual bool	LayoutChar( const eqFontStyleParam_t& params, 
+	virtual bool	LayoutChar( const eqFontStyleParam_t& params,
 								void* strCurPos, bool isWideChar,
 								const eqFontChar_t& chr,
 								Vector2D& curTextPos,
@@ -146,6 +146,8 @@ public:
 
 	// returns font baseline offset in pixels
 	virtual float				GetBaselineOffs() const = 0;
+
+	virtual const eqFontChar_t&	GetFontCharById( const int chrId ) const = 0;
 
 	// renders text
 	virtual void				RenderText(	const wchar_t* pszText,

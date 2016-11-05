@@ -191,8 +191,7 @@
 	"utils/DkList.h"
 	"utils/eqstring.h"
 
-1476719816 /home/soap/Projects/EqEngine/src_main/public//utils/DkList.h
-	<functional>
+1478374126 /home/soap/Projects/EqEngine/src_main/public//utils/DkList.h
 	"platform/MessageBox.h"
 	"dktypes.h"
 

@@ -174,8 +174,6 @@ CMaterialSystem::CMaterialSystem()
 	// register when the DLL is connected
 	GetCore()->RegisterInterface(MATSYSTEM_INTERFACE_VERSION, this);
 
-	// register all shaders
-	REGISTER_INTERNAL_SHADERS();
 }
 
 CMaterialSystem::~CMaterialSystem()
@@ -269,6 +267,7 @@ bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderA
 	}
 
 	InitStandardMaterialProxies();
+	REGISTER_INTERNAL_SHADERS();
 
 	return true;
 }
@@ -1213,7 +1212,7 @@ void CMaterialSystem::DrawPrimitives2DFFP(	PrimitiveType_e type, Vertex2D_t *pVe
 		return;
 
 	g_pShaderAPI->SetTexture(pTexture, NULL, 0);
-	
+
 	if(!blendParams)
 		SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO,BLENDFUNC_ADD);
 	else

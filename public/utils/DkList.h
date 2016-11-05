@@ -8,8 +8,6 @@
 #ifndef DKLIST_H
 #define DKLIST_H
 
-#include <functional>
-
 #include "platform/MessageBox.h"
 #include "dktypes.h"
 
@@ -495,7 +493,7 @@ inline int DkList<T>::append( const DkList<T2> &other, TRANSFORMFUNC transform )
 		if(transform(newObj, other[i]))
 			append(other[i]);
 	}
-		
+
 
 	return numElem();
 }

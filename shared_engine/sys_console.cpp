@@ -14,7 +14,7 @@
 #include "EngineSpew.h"
 #include "EngineVersion.h"
 #include "FontCache.h"
-#include "Font.h"
+
 #include "KeyBinding/Keys.h"
 
 #ifdef _DEBUG
@@ -739,10 +739,10 @@ bool CEqSysConsole::KeyChar(int ch)
 	if(ch == '~')
 		return false;
 
-	CFont* cFont = (CFont*)m_font;
+	//CFont* cFont = (CFont*)m_font;
 
 	// THis is a weird thing
-	if(cFont->GetFontCharById(ch).advX > 0.0f && ch != '`')
+	if(m_font->GetFontCharById(ch).advX > 0.0f && ch != '`')
 	{
 		char text[2];
 		text[0] = ch;

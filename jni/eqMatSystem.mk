@@ -19,9 +19,12 @@ LOCAL_C_INCLUDES:= \
 
 LOCAL_SRC_FILES := \
 	MaterialSystem/materialvar.cpp		\
-	MaterialSystem/material.cpp			\
+	MaterialSystem/material.cpp		\
 	MaterialSystem/MaterialSystem.cpp	\
-	MaterialSystem/CMatProxyFactory.cpp	\
+	MaterialSystem/DynamicMesh.cpp		\
+	MaterialSystem/MaterialProxy.cpp	\
+	MaterialSystem/DefaultShader.cpp	\
+	public/materialsystem/BaseShader.cpp	\
 
 LOCAL_STATIC_LIBRARIES := coreLib prevLib jpeg eqCore
 
