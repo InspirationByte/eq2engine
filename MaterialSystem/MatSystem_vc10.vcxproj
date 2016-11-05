@@ -169,6 +169,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\public\materialsystem\BaseShader.cpp" />
+    <ClCompile Include="DefaultShader.cpp" />
     <ClCompile Include="DynamicMesh.cpp" />
     <ClCompile Include="material.cpp" />
     <ClCompile Include="MaterialProxy.cpp" />

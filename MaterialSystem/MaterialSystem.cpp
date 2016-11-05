@@ -25,6 +25,8 @@
 
 #pragma fixme("add push/pop renderstates and make regression tests?")
 
+DECLARE_INTERNAL_SHADERS()
+
 IShaderAPI*				g_pShaderAPI = NULL;
 
 // register material system
@@ -171,6 +173,9 @@ CMaterialSystem::CMaterialSystem()
 
 	// register when the DLL is connected
 	GetCore()->RegisterInterface(MATSYSTEM_INTERFACE_VERSION, this);
+
+	// register all shaders
+	REGISTER_INTERNAL_SHADERS();
 }
 
 CMaterialSystem::~CMaterialSystem()
