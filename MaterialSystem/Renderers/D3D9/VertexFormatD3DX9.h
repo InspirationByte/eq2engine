@@ -16,16 +16,25 @@
 
 class CVertexFormatD3DX9 : public IVertexFormat
 {
+	friend class		ShaderAPID3DX9;
 public:
-	
-	friend class					ShaderAPID3DX9;
+	CVertexFormatD3DX9(VertexFormatDesc_t* desc, int numAttribs);
+	~CVertexFormatD3DX9();
 
-									CVertexFormatD3DX9();
-	int8							GetVertexSizePerStream(int16 nStream);
+	int					GetVertexSize(int stream);
+	void				GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs);
+
+	//----------------------
+
+	void				GenVertexElement(D3DVERTEXELEMENT9* elems);
 
 protected:
+	int					m_streamStride[MAX_VERTEXSTREAM];
+	VertexFormatDesc_t*	m_vertexDesc;
+	int					m_numAttribs;
+
 	LPDIRECT3DVERTEXDECLARATION9	m_pVertexDecl;
-	int8							m_nVertexSize[MAX_VERTEXSTREAM];
+
 };
 
 #endif // VERTEXFORMATD3DX9_H

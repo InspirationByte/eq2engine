@@ -59,9 +59,7 @@ protected:
 	IVertexBuffer*	m_vertexBuffer;
 	IIndexBuffer*	m_indexBuffer;
 
-	VertexFormatDesc_t* m_vertexFormatDesc;
-	int					m_vertexFormatAttribs;
-	int					m_vertexStride;
+	int				m_vertexStride;
 
 	bool			m_vboAqquired;
 	bool			m_vboDirty;

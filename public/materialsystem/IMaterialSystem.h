@@ -256,11 +256,13 @@ public:
 	virtual void							FreeMaterial(IMaterial *pMaterial) = 0;
 
 	//-----------------------------
-	// Helper rendering operations (warning, may be slow)
-	// FIXME: replace by MatSystem mesh builder
-	//-----------------------------
 
 	virtual IDynamicMesh*					GetDynamicMesh() const = 0;
+
+	//-----------------------------
+	// Helper rendering operations
+	// TODO: remove this
+	//-----------------------------
 
 	// draws primitives
 	virtual void							DrawPrimitivesFFP(	PrimitiveType_e type, Vertex3D_t *pVerts, int nVerts,

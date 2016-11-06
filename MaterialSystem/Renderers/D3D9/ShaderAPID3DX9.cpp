@@ -1871,13 +1871,10 @@ void ShaderAPID3DX9::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 			CVertexFormatD3DX9* pCurrentFormat = (CVertexFormatD3DX9*)m_pCurrentVertexFormat;
 			if (pCurrentFormat != NULL)
 			{
-				for (register uint8 i = 0; i < MAX_VERTEXSTREAM; i++)
+				for (int i = 0; i < MAX_VERTEXSTREAM; i++)
 				{
-					if (pFormat->m_nVertexSize[i] != pCurrentFormat->m_nVertexSize[i])
-					{
-						//MsgError("Programming error! the IShaderAPI::ChangeVertexFormat() must be called after Reset(), but not after Apply()\n");
+					if (pFormat->m_streamStride[i] != pCurrentFormat->m_streamStride[i])
 						m_pCurrentVertexBuffers[i] = NULL;
-					}
 				}
 			}
 		}
@@ -2445,7 +2442,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		UINT count = 1;
 		pShader->m_pVSConstants->GetConstantDesc(pShader->m_pVSConstants->GetConstant(NULL, i), &cDesc, &count);
 
-		size_t length = strlen(cDesc.Name);
+		//size_t length = strlen(cDesc.Name);
 		if (cDesc.Type >= D3DXPT_SAMPLER && cDesc.Type <= D3DXPT_SAMPLERCUBE)
 		{
 			// TODO: Vertex samplers not yet supported ...
@@ -2469,7 +2466,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		UINT count = 1;
 		pShader->m_pPSConstants->GetConstantDesc(pShader->m_pPSConstants->GetConstant(NULL, i), &cDesc, &count);
 
-		size_t length = strlen(cDesc.Name);
+		//size_t length = strlen(cDesc.Name);
 		if (cDesc.Type >= D3DXPT_SAMPLER && cDesc.Type <= D3DXPT_SAMPLERCUBE)
 		{
 			//samplers[nSamplers].name = new char[length + 1];
@@ -2725,209 +2722,21 @@ int ShaderAPID3DX9::SetShaderConstantRaw(const char *pszName, const void *data, 
 	return -1;
 }
 
-//-----------------------------------------------------
-// Advanced shader programming
-//-----------------------------------------------------
-/*
-// Pixel Shader constants setup (by register number)
-void ShaderAPID3DX9::SetPixelShaderConstantInt(int reg, const int constant)
-{
-	int val[4];
-
-	val[0] = val[1] = val[2] = val[3] = constant;
-
-	m_pD3DDevice->SetPixelShaderConstantI(reg, val, 1);
-}
-
-void ShaderAPID3DX9::SetPixelShaderConstantFloat(int reg, const float constant)
-{
-	float val[4];
-
-	val[0] = val[1] = val[2] = val[3] = constant;
-
-	m_pD3DDevice->SetPixelShaderConstantF(reg, val, 1);
-}
-
-void ShaderAPID3DX9::SetPixelShaderConstantVector2D(int reg, const Vector2D &constant)
-{
-	SetPixelShaderConstantRaw(reg, &constant);
-}
-
-void ShaderAPID3DX9::SetPixelShaderConstantVector3D(int reg, const Vector3D &constant)
-{
-	SetPixelShaderConstantRaw(reg, &constant);
-}
-
-void ShaderAPID3DX9::SetPixelShaderConstantVector4D(int reg, const Vector4D &constant)
-{
-	SetPixelShaderConstantRaw(reg, &constant);
-}
-
-void ShaderAPID3DX9::SetPixelShaderConstantMatrix4(int reg, const Matrix4x4 &constant)
-{
-	SetPixelShaderConstantRaw(reg, &constant, 4);
-}
-
-void ShaderAPID3DX9::SetPixelShaderConstantFloatArray(int reg, const float *constant, int count)
-{
-	SetPixelShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX9::SetPixelShaderConstantVector2DArray(int reg, const Vector2D *constant, int count)
-{
-	SetPixelShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX9::SetPixelShaderConstantVector3DArray(int reg, const Vector3D *constant, int count)
-{
-	SetPixelShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX9::SetPixelShaderConstantVector4DArray(int reg, const Vector4D *constant, int count)
-{
-	SetPixelShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX9::SetPixelShaderConstantMatrix4Array(int reg, const Matrix4x4 *constant, int count)
-{
-	SetPixelShaderConstantRaw(reg, constant, count * 4);
-}
-
-// Vertex Shader constants setup (by register number)
-void ShaderAPID3DX9::SetVertexShaderConstantInt(int reg, const int constant)
-{
-	int val[4];
-
-	val[0] = val[1] = val[2] = val[3] = constant;
-
-	m_pD3DDevice->SetVertexShaderConstantI(reg, val, 1);
-}
-
-void ShaderAPID3DX9::SetVertexShaderConstantFloat(int reg, const float constant)
-{
-	float val[4];
-
-	val[0] = val[1] = val[2] = val[3] = constant;
-
-	m_pD3DDevice->SetVertexShaderConstantF(reg, val, 1);
-}
-
-void ShaderAPID3DX9::SetVertexShaderConstantVector2D(int reg, const Vector2D &constant)
-{
-	SetVertexShaderConstantRaw(reg, &constant);
-}
-
-void ShaderAPID3DX9::SetVertexShaderConstantVector3D(int reg, const Vector3D &constant)
-{
-	SetVertexShaderConstantRaw(reg, &constant);
-}
-
-void ShaderAPID3DX9::SetVertexShaderConstantVector4D(int reg, const Vector4D &constant)
-{
-	SetVertexShaderConstantRaw(reg, &constant);
-}
-
-void ShaderAPID3DX9::SetVertexShaderConstantMatrix4(int reg, const Matrix4x4 &constant)
-{
-	SetVertexShaderConstantRaw(reg, &constant, 4);
-}
-
-void ShaderAPID3DX9::SetVertexShaderConstantFloatArray(int reg, const float *constant, int count)
-{
-	SetVertexShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX9::SetVertexShaderConstantVector2DArray(int reg, const Vector2D *constant, int count)
-{
-	SetVertexShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX9::SetVertexShaderConstantVector3DArray(int reg, const Vector3D *constant, int count)
-{
-	SetVertexShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX9::SetVertexShaderConstantVector4DArray(int reg, const Vector4D *constant, int count)
-{
-	SetVertexShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX9::SetVertexShaderConstantMatrix4Array(int reg, const Matrix4x4 *constant, int count)
-{
-	SetVertexShaderConstantRaw(reg, constant, count * 4);
-}
-
-
-// RAW Constant
-void ShaderAPID3DX9::SetPixelShaderConstantRaw(int reg, const void *data, int nVectors)
-{
-	m_pD3DDevice->SetPixelShaderConstantF(reg, (float*)data, nVectors);
-}
-
-void ShaderAPID3DX9::SetVertexShaderConstantRaw(int reg, const void *data, int nVectors)
-{
-	m_pD3DDevice->SetVertexShaderConstantF(reg, (float*)data, nVectors);
-}*/
-
 //-------------------------------------------------------------
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-IVertexFormat* ShaderAPID3DX9::CreateVertexFormat(VertexFormatDesc_s *formatDesc, int nAttribs)
+IVertexFormat* ShaderAPID3DX9::CreateVertexFormat(VertexFormatDesc_s* formatDesc, int nAttribs)
 {
-	int index[8];
-	memset(index, 0, sizeof(index));
+	CVertexFormatD3DX9* pFormat = new CVertexFormatD3DX9(formatDesc, nAttribs);
 
-	CVertexFormatD3DX9* pFormat = new CVertexFormatD3DX9();
-
-	D3DVERTEXELEMENT9 *vElem = new D3DVERTEXELEMENT9[nAttribs + 1];
-
-	int numRealAttribs = 0;
-
-	// Fill the vertex element array
-	for (int i = 0; i < nAttribs; i++)
-	{
-		int stream = formatDesc[i].m_nStream;
-		int size = formatDesc[i].m_nSize;
-
-		// if not unused
-		if(formatDesc[i].m_nType != VERTEXTYPE_NONE)
-		{
-			vElem[numRealAttribs].Stream = stream;
-			vElem[numRealAttribs].Offset = pFormat->m_nVertexSize[stream];
-			vElem[numRealAttribs].Type = d3ddecltypes[formatDesc[i].m_nFormat][size - 1];
-			vElem[numRealAttribs].Method = D3DDECLMETHOD_DEFAULT;
-			vElem[numRealAttribs].Usage = d3dvertexusage[formatDesc[i].m_nType];
-			vElem[numRealAttribs].UsageIndex = index[formatDesc[i].m_nType]++;
-
-			numRealAttribs++;
-		}
-		/*
-		else
-		{
-			vElem[numRealAttribs].Stream = stream;
-			vElem[numRealAttribs].Offset = pFormat->m_nVertexSize[stream];
-			vElem[numRealAttribs].Type = d3ddecltypes[formatDesc[i].m_nFormat][size - 1];
-			vElem[numRealAttribs].Method = D3DDECLMETHOD_DEFAULT;
-			vElem[numRealAttribs].Usage = d3dvertexusage[formatDesc[i].m_nType];
-			vElem[numRealAttribs].UsageIndex = 0xFF;
-
-			numRealAttribs++;
-		}*/
-	
-		pFormat->m_nVertexSize[stream] += size * attributeFormatSize[formatDesc[i].m_nFormat];
-	}
-
-	// Terminating element
-	memset(vElem + numRealAttribs, 0, sizeof(D3DVERTEXELEMENT9));
-
-	vElem[numRealAttribs].Stream = 0xFF;
-	vElem[numRealAttribs].Type = D3DDECLTYPE_UNUSED;
+	D3DVERTEXELEMENT9* vertexElements = new D3DVERTEXELEMENT9[nAttribs + 1];
+	pFormat->GenVertexElement( vertexElements );
 
 	CScopedMutex scoped(m_Mutex);
 
-	HRESULT hr = m_pD3DDevice->CreateVertexDeclaration(vElem, &pFormat->m_pVertexDecl);
-	delete [] vElem;
+	HRESULT hr = m_pD3DDevice->CreateVertexDeclaration(vertexElements, &pFormat->m_pVertexDecl);
+	delete [] vertexElements;
 
 	if (hr != D3D_OK)
 	{

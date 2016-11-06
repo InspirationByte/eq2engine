@@ -8,6 +8,48 @@
 #include "DynamicMesh.h"
 #include "DebugInterface.h"
 
+// pack vertex format description to uint16
+struct vertexFormatId_t
+{
+	// position is default
+	ushort types			: 5;		// HAS_TEXCOORD, HAS_COLOR, HAS_NORMAL, HAS_TANGENT, HAS_BINORMAL
+
+	ushort cnt_vertex		: 1;		// 0 - 2D, 1 - 3D
+	ushort cnt_color		: 1;		// 0 - RGB, 1 - RGBA
+	ushort cnt_tbn			: 1;		// 0 - 2D, 1 - 3D
+
+	ushort fmt_vertex		: 1;		// 0 - float, 1 - half
+	ushort fmt_texcoord		: 1;		// 0 - float, 1 - half
+	ushort fmt_color		: 1;		// 0 - half, 1 - ubyte
+	ushort fmt_tbn			: 1;		// 0 - half, 1 - ubyte
+};
+
+assert_sizeof(vertexFormatId_t, 2);
+
+/*
+Vertex data order:
+	VERTEXTYPE_VERTEX		// default, 2D or 3D (+ 1 comp padding)
+	VERTEXTYPE_TEXCOORD		// 2D only
+	VERTEXTYPE_COLOR		// 3D (alpha used or padding)
+
+	VERTEXTYPE_TANGENT		// 2D or 3D (+ 1 comp padding)
+	VERTEXTYPE_BINORMAL		// 2D or 3D (+ 1 comp padding)
+	VERTEXTYPE_NORMAL		// 2D or 3D (+ 1 comp padding)
+
+Sort:
+	Bigger to smaller
+	Combine two small to 1 big if their size is equal
+
+Sizes:
+	All halfs (3D): 
+		vertex		- 8 bytes
+		texcoord	- 4 bytes
+		color		- 8 bytes
+		tangent		- 8 bytes
+		binormal	- 8 bytes
+		normal		- 8 bytes
+*/
+
 // FIXME: subdivide on streams???
 
 #define MAX_DYNAMIC_VERTICES	32767
@@ -25,9 +67,7 @@ CDynamicMesh::CDynamicMesh() :
 	m_lockVertices(NULL),
 	m_lockIndices(NULL),
 	m_vboDirty(false),
-	m_vboAqquired(false),
-	m_vertexFormatAttribs(0),
-	m_vertexFormatDesc(NULL)
+	m_vboAqquired(false)
 {
 
 }
@@ -43,15 +83,10 @@ bool CDynamicMesh::Init( VertexFormatDesc_t* desc, int numAttribs )
 
 	ASSERTMSG(numAttribs > 0, "CDynamicMesh::Init - numAttribs is ZERO!\n");
 
-	m_vertexFormatAttribs = numAttribs;
-	m_vertexFormatDesc = new VertexFormatDesc_t[numAttribs];
-
 	int vertexSize = 0;
 
 	for(int i = 0; i < numAttribs; i++)
 	{
-		m_vertexFormatDesc[i] = desc[i];
-
 		int stream = desc[i].m_nStream;
 		int vecCount = desc[i].m_nSize;
 
@@ -64,7 +99,7 @@ bool CDynamicMesh::Init( VertexFormatDesc_t* desc, int numAttribs )
 
 	m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_DYNAMIC_VERTICES, m_vertexStride, NULL);
 	m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(MAX_DYNAMIC_INDICES, sizeof(uint16), BUFFER_DYNAMIC, NULL);
-	m_vertexFormat = g_pShaderAPI->CreateVertexFormat(m_vertexFormatDesc, m_vertexFormatAttribs);
+	m_vertexFormat = g_pShaderAPI->CreateVertexFormat(desc, numAttribs);
 
 	m_vertices = PPAlloc(MAX_DYNAMIC_VERTICES*m_vertexStride);
 	m_indices = (uint16*)PPAlloc(MAX_DYNAMIC_INDICES*sizeof(uint16));
@@ -93,18 +128,15 @@ void CDynamicMesh::Destroy()
 
 	m_vertices = NULL;
 	m_indices = NULL;
-
-	delete [] m_vertexFormatDesc;
-	m_vertexFormatDesc = NULL;
-
-	m_vertexFormatAttribs = 0;
 }
 
 // returns a pointer to vertex format description
 void CDynamicMesh::GetVertexFormatDesc(VertexFormatDesc_t** desc, int& numAttribs)
 {
-	*desc = m_vertexFormatDesc;
-	numAttribs = m_vertexFormatAttribs;
+	if(m_vertexFormat)
+		m_vertexFormat->GetFormatDesc(desc, numAttribs);
+	else
+		numAttribs = 0;
 }
 
 // sets the primitive type (chooses the way how to allocate geometry parts)

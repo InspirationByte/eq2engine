@@ -32,8 +32,6 @@ HOOK_TO_CVAR(r_loadmiplevel);
 #include "glx_caps.hpp"
 #endif // PLAT_LINUX
 
-#define GL_NO_DEPRECATED_ATTRIBUTES
-
 #ifdef USE_GLES2
 
 static char s_FFPMeshBuilder_VertexProgram[] =
@@ -307,6 +305,9 @@ void ShaderAPIGL::Init( shaderapiinitparams_t &params)
 	m_caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
 
 	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &m_caps.maxVertexGenericAttributes);
+
+	// limit by the MAX_GL_GENERIC_ATTRIB defined by ShaderAPI
+	m_caps.maxVertexGenericAttributes = min(MAX_GL_GENERIC_ATTRIB, m_caps.maxVertexGenericAttributes);
 
 #ifdef USE_GLES2
 	// ES 2.0 supports shaders
@@ -1364,7 +1365,6 @@ void ShaderAPIGL::CopyFramebufferToTexture(ITexture* pTargetTexture)
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_frameBuffer);
 
 	glBlitFramebuffer(0, 0,m_nViewportWidth, m_nViewportHeight,0,pTargetTexture->GetHeight(),pTargetTexture->GetWidth(), 0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-	//if(textures[rt].)
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -1375,7 +1375,11 @@ void ShaderAPIGL::CopyFramebufferToTexture(ITexture* pTargetTexture)
 // Copy render target to texture
 void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect, IRectangle* destRect)
 {
-	ASSERT(!"TODO: Implement ShaderAPIGL::CopyFramebufferToTextureEx()");
+	// 1. preserve old render targets
+	// 2. set shader
+	// 3. render to texture
+
+	ASSERT(!"TODO: Implement ShaderAPIGL::CopyRendertargetToTexture()");
 }
 
 // Changes render target (MRT)
@@ -1412,8 +1416,6 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 
 		m_pCurrentColorRenderTargets[i] = colorRT;
 	}
-
-
 
 	if (nNumRTs != m_nCurrentRenderTargets)
 	{
@@ -1642,7 +1644,7 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 
 	if( pVertexFormat != m_pCurrentVertexFormat )
 	{
-		static CVertexFormatGL* zero = new CVertexFormatGL();
+		static CVertexFormatGL* zero = new CVertexFormatGL(NULL, 0);
 
 		pCurrentFormat = zero;
 		pSelectedFormat = zero;
@@ -1652,45 +1654,6 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 
 		if (pVertexFormat != NULL)
 			pSelectedFormat = (CVertexFormatGL*)pVertexFormat;
-
-#ifndef GL_NO_DEPRECATED_ATTRIBUTES
-		// Change array enables as needed
-		if ( pSelectedFormat->m_hVertex.m_nSize && !pCurrentFormat->m_hVertex.m_nSize)
-			GL_EnableClientState (GL_VERTEX_ARRAY);
-
-		if (!pSelectedFormat->m_hVertex.m_nSize &&  pCurrentFormat->m_hVertex.m_nSize)
-			glDisableClientState(GL_VERTEX_ARRAY);
-
-		if ( pSelectedFormat->m_hNormal.m_nSize && !pCurrentFormat->m_hNormal.m_nSize)
-			GL_EnableClientState (GL_NORMAL_ARRAY);
-
-		if (!pSelectedFormat->m_hNormal.m_nSize &&  pCurrentFormat->m_hNormal.m_nSize)
-			glDisableClientState(GL_NORMAL_ARRAY);
-
-		if ( pSelectedFormat->m_hColor.m_nSize && !pCurrentFormat->m_hColor.m_nSize)
-			GL_EnableClientState (GL_COLOR_ARRAY);
-
-		if (!pSelectedFormat->m_hColor.m_nSize &&  pCurrentFormat->m_hColor.m_nSize)
-			glDisableClientState(GL_COLOR_ARRAY);
-
-		for (int i = 0; i < MAX_TEXCOORD_ATTRIB; i++)
-		{
-			if ((pSelectedFormat->m_hTexCoord[i].m_nSize > 0) ^ (pCurrentFormat->m_hTexCoord[i].m_nSize > 0))
-			{
-				glClientActiveTexture(GL_TEXTURE0 + i);
-
-				if (pSelectedFormat->m_hTexCoord[i].m_nSize > 0)
-				{
-					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-				}
-				else
-				{
-		            glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-				}
-			}
-		}
-#endif // GL_NO_DEPRECATED_ATTRIBUTES
-
 
 		for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 		{
@@ -1718,8 +1681,6 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 		}
 
 		m_pCurrentVertexFormat = pVertexFormat;
-
-
 	}
 }
 
@@ -1766,27 +1727,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 			CVertexFormatGL* cvf = (CVertexFormatGL*)m_pCurrentVertexFormat;
 
-			int vertexSize = cvf->m_nVertexSize[nStream];
-
-#ifndef GL_NO_DEPRECATED_ATTRIBUTES
-			if (cvf->m_hVertex.m_nStream == nStream && cvf->m_hVertex.m_nSize)
-				glVertexPointer(cvf->m_hVertex.m_nSize, glTypes[cvf->m_hVertex.m_nFormat], vertexSize, base + cvf->m_hVertex.m_nOffset);
-
-			if (cvf->m_hNormal.m_nStream == nStream && cvf->m_hNormal.m_nSize)
-				glNormalPointer(glTypes[cvf->m_hNormal.m_nFormat], vertexSize, base + cvf->m_hNormal.m_nOffset);
-
-			for (int i = 0; i < MAX_TEXCOORD_ATTRIB; i++)
-			{
-				if (cvf->m_hTexCoord[i].m_nStream == nStream && cvf->m_hTexCoord[i].m_nSize)
-				{
-					glClientActiveTexture(GL_TEXTURE0 + i);
-					glTexCoordPointer(cvf->m_hTexCoord[i].m_nSize, glTypes[cvf->m_hTexCoord[i].m_nFormat], vertexSize, base + cvf->m_hTexCoord[i].m_nOffset);
-				}
-			}
-
-			if (cvf->m_hColor.m_nStream == nStream && cvf->m_hColor.m_nSize)
-				glColorPointer(cvf->m_hColor.m_nSize, glTypes[cvf->m_hColor.m_nFormat], vertexSize, base + cvf->m_hColor.m_nOffset);
-#endif // GL_NO_DEPRECATED_ATTRIBUTES
+			int vertexSize = cvf->m_streamStride[nStream];
 
 			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 			{
@@ -1797,7 +1738,6 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 						glVertexAttribPointer(i, cvf->m_hGeneric[i].m_nSize, glTypes[cvf->m_hGeneric[i].m_nFormat], GL_TRUE, vertexSize, base + cvf->m_hGeneric[i].m_nOffset);
 						GLCheckError("attribpointer");
 					}
-
 
 					// instance vertex attrib divisor
 					int selStreamParam = instanceBuffer ? 1 : 0;
@@ -2361,89 +2301,11 @@ int ShaderAPIGL::SetShaderConstantRaw(const char *pszName, const void *data, int
 
 IVertexFormat* ShaderAPIGL::CreateVertexFormat(VertexFormatDesc_s *formatDesc, int nAttribs)
 {
-	CVertexFormatGL *pVertexFormat = new CVertexFormatGL();
+	CVertexFormatGL *pVertexFormat = new CVertexFormatGL(formatDesc, nAttribs);
 
-	int nGeneric  = 0;
-	int nTexCoord = 0;
-
-#ifndef GL_NO_DEPRECATED_ATTRIBUTES
-	// IT ALREADY DOES
-	for (int i = 0; i < nAttribs; i++)
-	{
-		// Generic attribute 0 aliases with GL_Vertex
-		if (formatDesc[i].m_nType == VERTEXTYPE_VERTEX)
-		{
-			nGeneric = 1;
-			break;
-		}
-	}
-#endif // GL_NO_DEPRECATED_ATTRIBUTES
-
-	for (int i = 0; i < nAttribs; i++)
-	{
-		int stream = formatDesc[i].m_nStream;
-
-		switch (formatDesc[i].m_nType)
-		{
-#ifndef GL_NO_DEPRECATED_ATTRIBUTES
-			case VERTEXTYPE_NONE:
-			case VERTEXTYPE_TANGENT:
-			case VERTEXTYPE_BINORMAL:
-				pVertexFormat->m_hGeneric[nGeneric].m_nStream = stream;
-				pVertexFormat->m_hGeneric[nGeneric].m_nSize   = formatDesc[i].m_nSize;
-				pVertexFormat->m_hGeneric[nGeneric].m_nOffset = pVertexFormat->m_nVertexSize[stream];
-				pVertexFormat->m_hGeneric[nGeneric].m_nFormat = formatDesc[i].m_nFormat;
-				nGeneric++;
-				break;
-			case VERTEXTYPE_VERTEX:
-				pVertexFormat->m_hVertex.m_nStream = stream;
-				pVertexFormat->m_hVertex.m_nSize   = formatDesc[i].m_nSize;
-				pVertexFormat->m_hVertex.m_nOffset = pVertexFormat->m_nVertexSize[stream];
-				pVertexFormat->m_hVertex.m_nFormat = formatDesc[i].m_nFormat;
-				break;
-			case VERTEXTYPE_NORMAL:
-				pVertexFormat->m_hNormal.m_nStream = stream;
-				pVertexFormat->m_hNormal.m_nSize   = formatDesc[i].m_nSize;
-				pVertexFormat->m_hNormal.m_nOffset = pVertexFormat->m_nVertexSize[stream];
-				pVertexFormat->m_hNormal.m_nFormat = formatDesc[i].m_nFormat;
-				break;
-			case VERTEXTYPE_TEXCOORD:
-				pVertexFormat->m_hTexCoord[nTexCoord].m_nStream = stream;
-				pVertexFormat->m_hTexCoord[nTexCoord].m_nSize   = formatDesc[i].m_nSize;
-				pVertexFormat->m_hTexCoord[nTexCoord].m_nOffset = pVertexFormat->m_nVertexSize[stream];
-				pVertexFormat->m_hTexCoord[nTexCoord].m_nFormat	= formatDesc[i].m_nFormat;
-				nTexCoord++;
-				break;
-			case VERTEXTYPE_COLOR:
-				pVertexFormat->m_hColor.m_nStream = stream;
-				pVertexFormat->m_hColor.m_nSize   = formatDesc[i].m_nSize;
-				pVertexFormat->m_hColor.m_nOffset = pVertexFormat->m_nVertexSize[stream];
-				pVertexFormat->m_hColor.m_nFormat = formatDesc[i].m_nFormat;
-				break;
-#else
-			case VERTEXTYPE_NONE:
-			case VERTEXTYPE_TANGENT:
-			case VERTEXTYPE_BINORMAL:
-			case VERTEXTYPE_VERTEX:
-			case VERTEXTYPE_NORMAL:
-			case VERTEXTYPE_TEXCOORD:
-			case VERTEXTYPE_COLOR:
-				pVertexFormat->m_hGeneric[nGeneric].m_nStream = stream;
-				pVertexFormat->m_hGeneric[nGeneric].m_nSize   = formatDesc[i].m_nSize;
-				pVertexFormat->m_hGeneric[nGeneric].m_nOffset = pVertexFormat->m_nVertexSize[stream];
-				pVertexFormat->m_hGeneric[nGeneric].m_nFormat = formatDesc[i].m_nFormat;
-				nGeneric++;
-				break;
-#endif // GL_NO_DEPRECATED_ATTRIBUTES
-		}
-
-		pVertexFormat->m_nVertexSize[stream] += formatDesc[i].m_nSize * attributeFormatSize[formatDesc[i].m_nFormat];
-	}
-
-	pVertexFormat->m_nMaxGeneric = nGeneric;
-	pVertexFormat->m_nMaxTexCoord = nTexCoord;
-
+	m_Mutex.Lock();
 	m_VFList.append(pVertexFormat);
+	m_Mutex.Unlock();
 
 	return pVertexFormat;
 }

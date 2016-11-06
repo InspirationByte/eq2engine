@@ -160,7 +160,7 @@ static int PrimCount_Points( int numPrimitives )
 	return numPrimitives;
 }
 
-static int PrimCount_None( int numPrimitives )
+static int PrimCount_None( int )
 {
 	return 0;
 }

@@ -17,11 +17,13 @@
 class IVertexFormat
 {
 public:
-	virtual ~IVertexFormat() {}
-
 	PPMEM_MANAGED_OBJECT();
 
-	virtual int8 GetVertexSizePerStream(int16 nStream) = 0;
+	virtual	~IVertexFormat() {}
+
+
+	virtual int		GetVertexSize(int stream) = 0;
+	virtual void	GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs) = 0;
 };
 
 #endif // IVERTEXFORMAT_H

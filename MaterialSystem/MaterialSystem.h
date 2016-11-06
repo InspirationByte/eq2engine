@@ -130,12 +130,14 @@ public:
 	void							ClearRenderStates();
 
 	//-----------------------------
-	// Helper rendering operations (warning, may be slow)
-	// FIXME: replace by MatSystem mesh builder
-	//-----------------------------
 
 	// returns the dynamic mesh
 	IDynamicMesh*					GetDynamicMesh() const;
+
+	//-----------------------------
+	// Helper rendering operations
+	// TODO: remove this
+	//-----------------------------
 
 	// draws primitives
 	void							DrawPrimitivesFFP(	PrimitiveType_e type, Vertex3D_t *pVerts, int nVerts,

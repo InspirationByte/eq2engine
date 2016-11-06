@@ -8,8 +8,10 @@
 #ifdef GAME_DRIVERS
 #include "world.h"
 #endif // GAME_DRIVERS
-
 #include "BillboardList.h"
+
+#include "ConVar.h"
+
 #include "IFileSystem.h"
 #include "utils/strtools.h"
 #include "utils/Tokenizer.h"
@@ -192,17 +194,17 @@ void CBillboardList::SaveBlb( const char* filename )
 #ifdef TREEGEN
 	KeyValues kvs;
 
-	kvs.GetRootSection()->AddKeyBase("model", g_pModel->GetHWData()->pStudioHdr->modelname);
+	kvs.GetRootSection()->AddKeyBase("model", g_pModel->GetName());
 	kvs.GetRootSection()->AddKeyBase("atlas", "scripts/billboard_trees.atlas");
 
 	for(int i = 0; i < m_sprites.numElem(); i++)
 	{
 		kvkeybase_t* kvb = kvs.GetRootSection()->AddKeyBase("blb");
-		kvb->AppendValue(m_sprites[i].entry->name);
-		kvb->AppendValue(varargs("%g", m_sprites[i].position.x));
-		kvb->AppendValue(varargs("%g", m_sprites[i].position.y));
-		kvb->AppendValue(varargs("%g", m_sprites[i].position.z));
-		kvb->AppendValue(varargs("%g", m_sprites[i].scale));
+		kvb->AddValue(m_sprites[i].entry->name);
+		kvb->AddValue(varargs("%g", m_sprites[i].position.x));
+		kvb->AddValue(varargs("%g", m_sprites[i].position.y));
+		kvb->AddValue(varargs("%g", m_sprites[i].position.z));
+		kvb->AddValue(varargs("%g", m_sprites[i].scale));
 	}
 
 	kvs.SaveToFile(filename);

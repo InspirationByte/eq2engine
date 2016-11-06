@@ -91,7 +91,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <AdditionalIncludeDirectories>..\..\FileSystem;..\..\Engine;..\..\public;..\..\public\core;..\..\public\platform;..\..\public\materialsystem\renderers;..\..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;CORE_EXPORT;DLL_EXPORT;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;RENDER_EXPORT;IS_OPENGL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;CORE_EXPORT;DLL_EXPORT;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;RENDER_EXPORT;IS_OPENGL;GL_NO_DEPRECATED_ATTRIBUTES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <PrecompiledHeader>

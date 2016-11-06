@@ -33,23 +33,28 @@ struct eqGLVertAttrDesc_t
 
 class CVertexFormatGL : public IVertexFormat
 {
-public:
-	
 	friend class		ShaderAPIGL;
+public:
+	CVertexFormatGL(VertexFormatDesc_t* desc, int numAttribs);
+	~CVertexFormatGL();
 
-						CVertexFormatGL();
-	int8				GetVertexSizePerStream(int16 nStream);
+	int					GetVertexSize(int stream);
+	void				GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs);
 
 protected:
+	int					m_streamStride[MAX_VERTEXSTREAM];
+	VertexFormatDesc_t*	m_vertexDesc;
+	int					m_numAttribs;
+
 	eqGLVertAttrDesc_t	m_hGeneric[MAX_GL_GENERIC_ATTRIB];
+
+#ifndef GL_NO_DEPRECATED_ATTRIBUTES
 	eqGLVertAttrDesc_t	m_hTexCoord[MAX_TEXCOORD_ATTRIB];
 	eqGLVertAttrDesc_t	m_hVertex;
 	eqGLVertAttrDesc_t	m_hNormal;
 	eqGLVertAttrDesc_t	m_hColor;
+#endif // GL_NO_DEPRECATED_ATTRIBUTES
 
-	int16				m_nVertexSize[MAX_VERTEXSTREAM];
-	int16				m_nMaxGeneric;
-	int16				m_nMaxTexCoord;
 };
 
 #endif // VERTEXFORMATGL_H

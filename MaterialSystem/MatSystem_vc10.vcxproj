@@ -179,6 +179,7 @@
   <ItemGroup>
     <ClInclude Include="..\public\MaterialSystem\IDynamicMesh.h" />
     <ClInclude Include="..\public\materialsystem\IMaterialSystem.h" />
+    <ClInclude Include="..\public\materialsystem\MeshBuilder.h" />
     <ClInclude Include="DynamicMesh.h" />
     <ClInclude Include="material.h" />
     <ClInclude Include="MaterialProxy.h" />

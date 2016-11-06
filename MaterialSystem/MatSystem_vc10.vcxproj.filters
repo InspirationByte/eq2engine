@@ -109,6 +109,9 @@
     <ClInclude Include="MaterialProxy.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\materialsystem\MeshBuilder.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\zlib.lib">

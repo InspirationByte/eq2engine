@@ -58,10 +58,6 @@ float				g_fCamSpeed = 10.0;
 void FlushCache()
 {
 	g_pModelCache->ReleaseCache();
-
-	materials->FreeMaterials(true);
-
-	//g_pModelCache->PrecacheModel("models/error.egf");
 }
 
 IEqModel*			g_pModel = NULL;

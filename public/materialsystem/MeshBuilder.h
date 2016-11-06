@@ -86,7 +86,7 @@ protected:
 		Vector4D			value;
 	};
 
-	void				CopyVertData(vertdata_t& vert);
+	void				CopyVertData(vertdata_t& vert, bool isNormal = false);
 	void				AdvanceVertexPtr();
 
 	vertdata_t			m_position;
@@ -287,7 +287,7 @@ inline void CMeshBuilder::AdvanceVertex()
 
 	CopyVertData(m_position);
 	CopyVertData(m_texcoord);
-	CopyVertData(m_normal);
+	CopyVertData(m_normal, true);
 	CopyVertData(m_color);
 }
 
@@ -298,7 +298,7 @@ inline void CMeshBuilder::AdvanceVertexPtr()
 
 	CopyVertData(m_position);
 	CopyVertData(m_texcoord);
-	CopyVertData(m_normal);
+	CopyVertData(m_normal, true);
 	CopyVertData(m_color);
 
 	m_curVertex = (ubyte*)m_curVertex + m_stride;
@@ -431,7 +431,7 @@ inline void CMeshBuilder::TexturedQuad3(const Vector3D& v1, const Vector3D& v2, 
 	}
 }
 
-inline void CMeshBuilder::CopyVertData(vertdata_t& vert)
+inline void CMeshBuilder::CopyVertData(vertdata_t& vert, bool isNormal)
 {
 	if(!vert.count)
 		return;
@@ -455,8 +455,9 @@ inline void CMeshBuilder::CopyVertData(vertdata_t& vert)
 		}
 		case ATTRIBUTEFORMAT_UBYTE:
 		{
-			TVec4D<ubyte> val(vert.value / 255.0f);
+			TVec4D<ubyte> val((isNormal ? (vert.value * 0.5f + 0.5f) : vert.value) / 255.0f);
 			memcpy(dest, &val, size);
+
 			break;
 		}
 	}

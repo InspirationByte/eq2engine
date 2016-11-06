@@ -504,13 +504,6 @@ void CRegionEditFrame::ReDraw()
 				Vector3D v2(regBoxMins.x, 0, regBoxMaxs.y);
 				Vector3D v3(regBoxMaxs.x, 0, regBoxMins.y);
 				Vector3D v4(regBoxMaxs.x, 0, regBoxMaxs.y);
-	
-				Vertex3D_t verts[] = {
-					Vertex3D_t(v1, Vector2D(0,0), color4_white),
-					Vertex3D_t(v2, Vector2D(0,1), color4_white),
-					Vertex3D_t(v3, Vector2D(1,0), color4_white),
-					Vertex3D_t(v4, Vector2D(1,1), color4_white),
-				};
 
 				ITexture* showTexture = m_showsNavGrid ? rm->aiMapImage : rm->image;
 
@@ -531,14 +524,6 @@ void CRegionEditFrame::ReDraw()
 
 				if(m_mouseoverRegion == regIdx)
 				{
-					Vertex3D_t lverts[] = {
-						Vertex3D_t(v1, Vector2D(0,0), color4_white),
-						Vertex3D_t(v2, Vector2D(0,1), color4_white),
-						Vertex3D_t(v4, Vector2D(1,0), color4_white),
-						Vertex3D_t(v3, Vector2D(1,1), color4_white),
-						Vertex3D_t(v1, Vector2D(1,1), color4_white),
-					};
-
 					g_pShaderAPI->SetTexture(showTexture, NULL, 0);
 					materials->SetAmbientColor(ColorRGBA(0.5f));
 					materials->BindMaterial(materials->GetDefaultMaterial());
