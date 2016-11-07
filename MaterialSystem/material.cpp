@@ -31,13 +31,16 @@ CMaterial::~CMaterial()
 //
 void CMaterial::Init(const char* materialPath)
 {
-	m_szMaterialName = materialPath;
-	m_szMaterialName.Path_FixSlashes();
+	if(materialPath != NULL)
+	{
+		m_szMaterialName = materialPath;
+		m_szMaterialName.Path_FixSlashes();
 
-	if( m_szMaterialName.c_str()[0] == CORRECT_PATH_SEPARATOR )
-		m_szMaterialName = m_szMaterialName.c_str()+1;
+		if( m_szMaterialName.c_str()[0] == CORRECT_PATH_SEPARATOR )
+			m_szMaterialName = m_szMaterialName.c_str()+1;
+	}
 
-	DevMsg(DEVMSG_MATSYSTEM, "Loading material '%s'\n", materialPath);
+	DevMsg(DEVMSG_MATSYSTEM, "Loading material '%s'\n", m_szMaterialName.c_str());
 
 	//
 	// load a material file

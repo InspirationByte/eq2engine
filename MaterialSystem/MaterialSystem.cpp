@@ -588,6 +588,8 @@ void CMaterialSystem::ReloadAllMaterials()
 
 	g_pLoadBeginCallback();
 
+	DkList<IMaterial*> loadingList;
+
 	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
 	{
 		CMaterial* material = (CMaterial*)m_pLoadedMaterials[i];
@@ -596,18 +598,21 @@ void CMaterialSystem::ReloadAllMaterials()
 		if(!stricmp(material->GetName(), "Default"))
 			continue;
 
-		EqString old_name(material->GetName());
-
-		// Flush materials
+		// release vars, shader and reinitialize material vars
 		material->Cleanup();
-		material->Init( old_name.c_str() );
+		material->Init( NULL );
 
 		int framesDiff = (material->m_frameBound - m_frame);
 
 		// preload material if it was ever used before
 		if(framesDiff >= -1)
-			PutMaterialToLoadingQueue( material );
+			loadingList.append(material);
 	}
+
+	// issue loading after all materials were freed
+	// - this is a guarantee to shader recompilation
+	for(int i = 0; i < loadingList.numElem(); i++)
+		PutMaterialToLoadingQueue( loadingList[i] );
 
 	g_pLoadEndCallback();
 }
