@@ -18,6 +18,7 @@ class CMatVar : public IMatVar
 
 public:
 					CMatVar();
+					~CMatVar();
 
 	// initializes the material var
 	void			Init(const char* pszName,const char* pszValue);

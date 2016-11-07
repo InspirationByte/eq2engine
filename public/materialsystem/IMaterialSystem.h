@@ -134,6 +134,22 @@ typedef struct Vertex3D
 
 struct matsystem_render_config_t
 {
+	matsystem_render_config_t()
+	{
+		lighting_model = MATERIAL_LIGHT_UNLIT;
+		ffp_mode = false;
+		stubMode = false;
+		lowShaderQuality = false;
+		editormode = false;
+		threadedloader = true;
+		flushThresh = 1000;
+		enableShadows = true;
+		enableSpecular = true;
+		enableBumpmapping = true;
+
+		wireframeMode = false;
+	}
+
 	// rendering api parameters
 	shaderapiinitparams_t shaderapi_params;
 
@@ -145,11 +161,12 @@ struct matsystem_render_config_t
 	// enable fixed-function mode
 	bool	ffp_mode;					// use FFP if possible (don't apply any shaders, DEBUG only)
 
-	bool	stubMode;					// run matsystem in stub mode (deny material usage)?
+	bool	stubMode;					// run matsystem in stub mode (don't render anything)
 
 	bool	lowShaderQuality;
 	bool	editormode;					// enable editor mode
 	bool	threadedloader;
+	int		flushThresh;				// flush (unload) threshold in frames
 
 	// options that can be changed in real time
 	bool	enableShadows;				// enable shadows?
@@ -247,10 +264,10 @@ public:
 	virtual int								GetLoadingQueue() const = 0;
 
 	// Reloads material vars, shaders and textures without touching a material pointers.
-	virtual void							ReloadAllMaterials(bool textures = true, bool shaders = true, bool wait = false) = 0;
+	virtual void							ReloadAllMaterials() = 0;
 
-	// Reloads all textures loaded by materials (useful if r_loadmiplevel changed)
-	virtual void							ReloadAllTextures() = 0;
+	// releases non-used materials
+	virtual void							ReleaseUnusedMaterials() = 0;
 
 	// Frees materials or decrements it's reference count
 	virtual void							FreeMaterial(IMaterial *pMaterial) = 0;

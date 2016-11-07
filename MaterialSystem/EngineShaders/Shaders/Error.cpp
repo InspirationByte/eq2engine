@@ -11,7 +11,7 @@ BEGIN_SHADER_CLASS(Error)
 
 	SHADER_INIT_PARAMS()
 	{
-		m_pProgram = NULL;
+		SHADER_PASS(Unlit) = NULL;
 		m_pBaseTexture = NULL;
 	}
 
@@ -20,15 +20,7 @@ BEGIN_SHADER_CLASS(Error)
 		if(m_pBaseTexture)
 			return;
 
-		// parse material variables
-		IMatVar *m_BaseTextureName = GetAssignedMaterial()->FindMaterialVar("BaseTexture");
-
-		if(m_BaseTextureName)
-			m_pBaseTexture = g_pShaderAPI->LoadTexture(m_BaseTextureName->GetString(),m_nTextureFilter,m_nAddressMode);
-		else
-			m_pBaseTexture = g_pShaderAPI->GenerateErrorTexture();
-
-		AddTextureToAutoremover(&m_pBaseTexture);
+		SHADER_PARAM_TEXTURE(BaseTexture, m_pBaseTexture)
 
 		// set texture setup
 		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &CErrorShader::SetupBaseTexture0);
@@ -37,28 +29,22 @@ BEGIN_SHADER_CLASS(Error)
 
 	SHADER_INIT_RHI()
 	{
-		if(m_pProgram)
-			return true;
+		// begin shader definitions
+		SHADERDEFINES_BEGIN;
 
-		EqString defines;
+		// compile without fog
+		SHADER_FIND_OR_COMPILE(Unlit, "BaseUnlit");
 
-		// Download shader from disk (shaders\*.shader)
-		m_pProgram = g_pShaderAPI->CreateNewShaderProgram("BaseUnlit");
-
-		AddShaderToAutoremover(&m_pProgram);
-
-		return g_pShaderAPI->LoadShadersFromFile(m_pProgram,"BaseUnlit", defines.GetData());
+		return true;
 	}
 
 	void SetupShader()
 	{
-		g_pShaderAPI->SetShader(m_pProgram);
+		SHADER_BIND_PASS_SIMPLE(Unlit);
 	}
 
 	void SetupConstants()
 	{
-		g_pShaderAPI->SetShader(m_pProgram);
-
 		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
 
 		SetupDefaultParameter(SHADERPARAM_BASETEXTURE);
@@ -85,6 +71,7 @@ BEGIN_SHADER_CLASS(Error)
 	ITexture*	GetBumpTexture(int stage) {return NULL;}
 
 	ITexture*			m_pBaseTexture;
-	IShaderProgram*		m_pProgram;
+
+	SHADER_DECLARE_PASS(Unlit);
 
 END_SHADER_CLASS

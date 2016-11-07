@@ -34,14 +34,17 @@ public:
 	int						GetFlags() const;
 
 // init + shutdown
-	void					Init(const char* szFileName_noExt, bool flushMatVarsOnly = false);
-	void					Cleanup(bool bUnloadShaders = true, bool bUnloadTextures = true, bool keepMaterialVars = false);
+
+	// initializes material from file
+	void					Init(const char* matFileName);
+	
+	// initializes material from keyvalues
+	void					Init(const char* materialName, kvkeybase_t* shader_root);
+
+	void					Cleanup(bool dropVars = true, bool dropShader = true);
 
 	bool					LoadShaderAndTextures();
 	void					WaitForLoading() const;
-
-	void					InitVars(bool flushOnly = false);
-	void					InitMaterialProxy(kvkeybase_t* pProxyData);
 
 // material var operations
 	IMatVar*				FindMaterialVar(const char* pszVarName) const;
@@ -55,6 +58,12 @@ public:
 
 	void					Setup();
 private:
+
+	void					InitVars(kvkeybase_t* kvs);
+
+	void					InitShader();
+	void					InitMaterialVars(kvkeybase_t* kvs);
+	void					InitMaterialProxy(kvkeybase_t* kvs);
 
 	virtual void			Ref_DeleteObject(); // empty for now
 

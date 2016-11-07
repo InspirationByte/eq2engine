@@ -240,11 +240,8 @@ void InitMatSystem(HWND window)
 		materials_config.wireframeMode = false;
 		materials_config.editormode = true;
 
-		materials_config.ffp_mode = false;
 		materials_config.lighting_model = MATERIAL_LIGHT_FORWARD;
-		materials_config.stubMode = false;
 
-		DefaultShaderAPIParameters(&materials_config.shaderapi_params);
 		materials_config.shaderapi_params.bIsWindowed = true;
 		materials_config.shaderapi_params.hWindow = window;
 		materials_config.shaderapi_params.nScreenFormat = format;

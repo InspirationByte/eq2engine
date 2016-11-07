@@ -23,8 +23,6 @@
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
 
-#pragma fixme("add push/pop renderstates and make regression tests?")
-
 DECLARE_INTERNAL_SHADERS()
 
 IShaderAPI*				g_pShaderAPI = NULL;
@@ -55,22 +53,27 @@ ConVar				r_noffp("r_noffp","0","No FFP emulated primitives", CV_CHEAT);
 ConVar				r_depthBias("r_depthBias", "-0.000001", NULL, CV_CHEAT);
 ConVar				r_slopeDepthBias("r_slopeDepthBias", "-1.5", NULL, CV_CHEAT);
 
-DECLARE_CMD(r_reloadallmaterials, "Reloads all materials",0)
+DECLARE_CMD(mat_reload, "Reloads all materials",0)
 {
 	MsgInfo("Reloading materials...\n\n");
 	materials->ReloadAllMaterials();
+	materials->Wait();
 }
 
-DECLARE_CMD(r_materials_print, "Print MatSystem info and loaded material list",0)
+DECLARE_CMD(mat_print, "Print MatSystem info and loaded material list",0)
 {
 	materials->PrintLoadedMaterials();
 }
 
-DECLARE_CMD(r_refreshstates, "Refresh render states",0)
+DECLARE_CMD(mat_releaseStates, "Releases all render states",0)
 {
 	((CMaterialSystem*)materials)->ClearRenderStates();
 }
 
+DECLARE_CMD(mat_releaseUnused, "Releases unused materials",0)
+{
+	((CMaterialSystem*)materials)->ReleaseUnusedMaterials();
+}
 
 //
 // Threaded material loader
@@ -219,6 +222,10 @@ bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderA
 	//debugoverlay = (IDebugOverlay*)GetCore()->GetInterface(DBGOVERLAY_INTERFACE_VERSION);
 
 	m_szMaterialsdir = materialsDirectory;
+	m_szMaterialsdir.Path_FixSlashes();
+
+	if(m_szMaterialsdir.c_str()[m_szMaterialsdir.Length()-1] != CORRECT_PATH_SEPARATOR)
+		m_szMaterialsdir.Append(CORRECT_PATH_SEPARATOR);
 
 	// render library initialization
 	// collect all needed data for use in shaderapi initialization
@@ -553,14 +560,29 @@ void CMaterialSystem::EndPreloadMarker()
 	}
 }
 
-// Reloads materials
-void CMaterialSystem::ReloadAllTextures()
+// releases non-used materials
+void CMaterialSystem::ReleaseUnusedMaterials()
 {
-	ReloadAllMaterials(true,false);
+	CScopedMutex m(m_Mutex);
+
+	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
+	{
+		CMaterial* material = (CMaterial*)m_pLoadedMaterials[i];
+
+		// don't unload default material
+		if(!stricmp(material->GetName(), "Default"))
+			continue;
+
+		int framesDiff = (material->m_frameBound - m_frame);
+
+		// Flush materials
+		if(framesDiff >= m_config.flushThresh - 1)
+			material->Cleanup(false, true);
+	}
 }
 
 // Reloads materials
-void CMaterialSystem::ReloadAllMaterials(bool bTouchTextures,bool bTouchShaders, bool wait)
+void CMaterialSystem::ReloadAllMaterials()
 {
 	CScopedMutex m(m_Mutex);
 
@@ -568,23 +590,24 @@ void CMaterialSystem::ReloadAllMaterials(bool bTouchTextures,bool bTouchShaders,
 
 	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
 	{
-		EqString old_name(m_pLoadedMaterials[i]->GetName());
+		CMaterial* material = (CMaterial*)m_pLoadedMaterials[i];
 
-		CMaterial* mat = (CMaterial*)m_pLoadedMaterials[i];
+		// don't unload default material
+		if(!stricmp(material->GetName(), "Default"))
+			continue;
+
+		EqString old_name(material->GetName());
 
 		// Flush materials
-		mat->Cleanup(bTouchShaders, bTouchTextures, false);
-		mat->Init( old_name.GetData(), false );
+		material->Cleanup();
+		material->Init( old_name.c_str() );
 
-		// preload material if it was visible
-		if(mat->m_frameBound == m_frame-1 || mat->m_frameBound == m_frame)
-			PutMaterialToLoadingQueue(mat);
+		int framesDiff = (material->m_frameBound - m_frame);
+
+		// preload material if it was ever used before
+		if(framesDiff >= -1)
+			PutMaterialToLoadingQueue( material );
 	}
-
-	PreloadNewMaterials();
-
-	if( wait )
-		Wait();
 
 	g_pLoadEndCallback();
 }
@@ -1420,8 +1443,9 @@ void CMaterialSystem::PrintLoadedMaterials()
 	Msg("*** Material list begin ***\n");
 	for(int i = 0; i < m_pLoadedMaterials.numElem(); i++)
 	{
-		if(m_pLoadedMaterials[i])
-			MsgInfo("%s - %s (%d)\n", m_pLoadedMaterials[i]->GetShaderName(), m_pLoadedMaterials[i]->GetName(), m_pLoadedMaterials[i]->Ref_Count());
+		CMaterial* material = (CMaterial*)m_pLoadedMaterials[i];
+
+		MsgInfo("%s - %s (%d refs) %s\n", material->GetShaderName(), material->GetName(), material->Ref_Count(), (material->m_state == MATERIAL_LOAD_NEED_LOAD) ? "(not loaded)" : "");
 	}
 	Msg("Total loaded materials: %d\n", m_pLoadedMaterials.numElem());
 }

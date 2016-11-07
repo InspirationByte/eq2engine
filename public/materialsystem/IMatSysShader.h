@@ -55,7 +55,7 @@ public:
 	virtual ~IMaterialSystemShader() {}
 
 	// Initializes parameters
-	virtual void			InitParams() = 0;
+	virtual void			Init(IMaterial* assignee) = 0;
 
 	// loads textures
 	virtual void			InitTextures() = 0;
@@ -70,7 +70,7 @@ public:
 	virtual void			SetupConstants() = 0;
 
 	// unloads shader
-	virtual void			Unload(bool bUnloadShaders = true, bool bUnloadTextures = true) = 0;
+	virtual void			Unload() = 0;
 
 	// returns real shader name
 	virtual const char*		GetName() = 0;

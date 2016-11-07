@@ -137,19 +137,11 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	matsystem_render_config_t materials_config;
 
-	materials_config.enableBumpmapping = false;
+	materials_config.enableBumpmapping = true;
 	materials_config.enableSpecular = true;
 	materials_config.enableShadows = true;
-	materials_config.wireframeMode = false;
 	materials_config.threadedloader = !useOpenGLRender;
 
-	materials_config.ffp_mode = false;
-	materials_config.lighting_model = MATERIAL_LIGHT_UNLIT;
-	materials_config.stubMode = false;
-	materials_config.editormode = false;
-	materials_config.lowShaderQuality = false;
-
-	DefaultShaderAPIParameters(&materials_config.shaderapi_params);
 	materials_config.shaderapi_params.bIsWindowed = bWindowed;
 	materials_config.shaderapi_params.hWindow = pWindow;
 	materials_config.shaderapi_params.nMultisample = r_antialiasing.GetInt();

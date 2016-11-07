@@ -8,9 +8,15 @@
 #include "DebugInterface.h"
 #include "materialvar.h"
 #include "utils/strtools.h"
+#include "renderers/IShaderAPI.h"
 
 CMatVar::CMatVar() : m_nameHash(0), m_nValue(0), m_vector(0.0f), m_pAssignedTexture(NULL), m_isDirtyString(0)
 {
+}
+
+CMatVar::~CMatVar()
+{
+	AssignTexture(NULL);
 }
 
 // initializes the material var
@@ -147,5 +153,11 @@ ITexture* CMatVar::GetTexture() const
 // assigns texture
 void CMatVar::AssignTexture(ITexture* pTexture)
 {
+	if(m_pAssignedTexture)
+		g_pShaderAPI->FreeTexture(m_pAssignedTexture);
+
 	m_pAssignedTexture = pTexture;
+
+	if(m_pAssignedTexture)
+		m_pAssignedTexture->Ref_Grab();
 }

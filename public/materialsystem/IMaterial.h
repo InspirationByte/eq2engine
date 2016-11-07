@@ -84,9 +84,6 @@ public:
 	// finds or creates material var
 	virtual IMatVar*				GetMaterialVar( const char* pszVarName, const char* defaultParam ) = 0;
 
-	// creates or finds existing material vars
-	virtual IMatVar*				CreateMaterialVar( const char* pszVarName, const char* defaultParam) = 0;
-
 	// removes material var
 	virtual void					RemoveMaterialVar( IMatVar* pVar ) = 0;
 
@@ -99,9 +96,6 @@ public:
 
 	// updates material proxies
 	virtual void					UpdateProxy(float fDt) = 0;
-
-	// returns pointer to material system shader
-	//virtual IMaterialSystemShader*	GetShader() const = 0;
 
 	// retrieves the base texture on specified stage
 	virtual ITexture*				GetBaseTexture(int stage = 0) = 0;

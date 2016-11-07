@@ -149,15 +149,11 @@ void InitMatSystem(EQWNDHANDLE window)
 		materials_config.enableBumpmapping = false;
 		materials_config.enableSpecular = true; // specular for cubemaps
 		materials_config.enableShadows = false;
-		materials_config.wireframeMode = false;
 		materials_config.editormode = false;
 
-		materials_config.ffp_mode = false;
 		materials_config.lighting_model = MATERIAL_LIGHT_FORWARD;
-		materials_config.stubMode = false;
 		materials_config.threadedloader = true;
 
-		DefaultShaderAPIParameters(&materials_config.shaderapi_params);
 		materials_config.shaderapi_params.bIsWindowed = true;
 		materials_config.shaderapi_params.hWindow = window;
 		materials_config.shaderapi_params.nScreenFormat = format;

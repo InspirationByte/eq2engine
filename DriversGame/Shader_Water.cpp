@@ -101,7 +101,8 @@ BEGIN_SHADER_CLASS(DrvSynWater)
 
 	void ParamSetup_TextureFrames()
 	{
-		m_pBumpTexture->SetAnimatedTextureFrame(m_pBumpFrame->GetInt());
+		if(m_pBumpTexture)
+			m_pBumpTexture->SetAnimatedTextureFrame(m_pBumpFrame->GetInt());
 	}
 
 	void ParamSetup_Cubemap()

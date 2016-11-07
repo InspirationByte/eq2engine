@@ -34,7 +34,7 @@ BEGIN_SHADER_CLASS(Skybox)
 		// compile without fog
 		SHADER_FIND_OR_COMPILE(Unlit, "SkyBox");
 
-		return true;	
+		return true;
 	}
 
 	ITexture* GetBaseTexture(int stage) {return m_nBaseTexture;}

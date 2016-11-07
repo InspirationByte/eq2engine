@@ -188,36 +188,34 @@ void CBaseShader::InitShader()
 }
 
 // Unload shaders, textures
-void CBaseShader::Unload(bool bUnloadShaders, bool bUnloadTextures)
+void CBaseShader::Unload()
 {
-	if(bUnloadShaders)
+	for(int i = 0; i < m_UsedPrograms.numElem(); i++)
 	{
-		for(int i = 0; i < m_UsedPrograms.numElem(); i++)
-		{
-			g_pShaderAPI->DestroyShaderProgram(*m_UsedPrograms[i]);
-			*m_UsedPrograms[i] = NULL;
-		}
-		m_UsedPrograms.clear();
+		g_pShaderAPI->DestroyShaderProgram(*m_UsedPrograms[i]);
+		*m_UsedPrograms[i] = NULL;
+	}
+	m_UsedPrograms.clear();
 
-		for(int i = 0; i < m_UsedRenderStates.numElem(); i++)
-		{
-			g_pShaderAPI->DestroyRenderState(*m_UsedRenderStates[i]);
-			*m_UsedRenderStates[i] = NULL;
-		}
-
-		m_UsedRenderStates.clear();
+	for(int i = 0; i < m_UsedRenderStates.numElem(); i++)
+	{
+		g_pShaderAPI->DestroyRenderState(*m_UsedRenderStates[i]);
+		*m_UsedRenderStates[i] = NULL;
 	}
 
-	if(bUnloadTextures)
-	{
-		for(int i = 0; i < m_UsedTextures.numElem(); i++)
-		{
-			g_pShaderAPI->FreeTexture(*m_UsedTextures[i]);
- 			*m_UsedTextures[i] = g_pShaderAPI->GetErrorTexture();
-		}
+	m_UsedRenderStates.clear();
 
-		m_UsedTextures.clear();
+	for(int i = 0; i < m_UsedTextures.numElem(); i++)
+	{
+		// unassign texture from a material var
+		// will also ref_drop
+		m_UsedTextures[i].var->AssignTexture(NULL);
+
+		ITexture** texPtr = m_UsedTextures[i].texture;
+ 		*texPtr = g_pShaderAPI->GetErrorTexture();
 	}
+
+	m_UsedTextures.clear();
 
 	m_bInitialized = false;
 	m_bIsError = false;
@@ -376,14 +374,27 @@ int CBaseShader::GetFlags()
 	return m_nFlags;
 }
 
-void CBaseShader::AddShaderToAutoremover(IShaderProgram** pShader)
+void CBaseShader::AddManagedShader(IShaderProgram** pShader)
 {
-	if(*pShader)
-		m_UsedPrograms.append(pShader);
+	if(!*pShader)
+		return;
+
+	(*pShader)->Ref_Grab();
+	m_UsedPrograms.append(pShader);
 }
 
-void CBaseShader::AddTextureToAutoremover(ITexture** pShader)
+void CBaseShader::AddManagedTexture(IMatVar* var, ITexture** tex)
 {
-	if(*pShader)
-		m_UsedTextures.append(pShader);
+	if(!*tex)
+		return;
+
+	var->AssignTexture(*tex);
+
+	// no ref_grab needed because already did in AssignTexture
+
+	mvUseTexture_t mvtex;
+	mvtex.texture = tex;
+	mvtex.var = var; 
+
+	m_UsedTextures.append(mvtex);
 }

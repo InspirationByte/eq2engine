@@ -118,10 +118,10 @@ public:
 	int								GetLoadingQueue() const;
 
 	// Reloads material vars, shaders and textures without touching a material pointers.
-	void							ReloadAllMaterials(bool textures = true, bool shaders = true, bool wait = false);
+	void							ReloadAllMaterials();
 
-	// Reloads all textures loaded by materials (useful if r_loadmiplevel changed)
-	void							ReloadAllTextures();
+	// releases non-used materials
+	void							ReleaseUnusedMaterials();
 
 	// Frees materials or decrements it's reference count
 	void							FreeMaterial(IMaterial *pMaterial);

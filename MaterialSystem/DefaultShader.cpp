@@ -13,8 +13,6 @@ BEGIN_SHADER_CLASS(Default)
 	SHADER_INIT_PARAMS()
 	{
 		SHADER_PASS(Unlit) = NULL;
-		SHADER_FOGPASS(Unlit) = NULL;
-
 		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
 
@@ -34,18 +32,12 @@ BEGIN_SHADER_CLASS(Default)
 		// compile without fog
 		SHADER_FIND_OR_COMPILE(Unlit, "Default");
 
-		// define fog parameter.
-		SHADER_DECLARE_SIMPLE_DEFINITION(m_fogenabled, "DOFOG");
-
-		// compile with fog
-		SHADER_FIND_OR_COMPILE(Unlit_fog, "Default");
-
 		return true;
 	}
 
 	void SetupShader()
 	{
-		SHADER_BIND_PASS_FOGSELECT(Unlit);
+		SHADER_BIND_PASS_SIMPLE(Unlit);
 	}
 
 	void SetupConstants()
@@ -54,7 +46,6 @@ BEGIN_SHADER_CLASS(Default)
 		SetupDefaultParameter(SHADERPARAM_BASETEXTURE);
 
 		SetupDefaultParameter(SHADERPARAM_COLOR);
-		SetupDefaultParameter(SHADERPARAM_FOG);
 	}
 
 	void SetColorModulation()
@@ -67,6 +58,5 @@ BEGIN_SHADER_CLASS(Default)
 	ITexture*	GetBumpTexture(int stage) {return NULL;}
 
 	SHADER_DECLARE_PASS(Unlit);
-	SHADER_DECLARE_FOGPASS(Unlit);
 
 END_SHADER_CLASS

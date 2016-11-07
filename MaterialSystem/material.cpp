@@ -14,6 +14,9 @@
 #include "utils/strtools.h"
 #include "utils/eqthread.h"
 #include "BaseShader.h"
+#include "IFileSystem.h"
+
+#define MATERIAL_FILE_EXTENSION		".mat"
 
 CMaterial::CMaterial() : m_state(MATERIAL_LOAD_ERROR), m_pShader(nullptr), m_proxyIsDirty(true), m_frameBound(0)
 {
@@ -23,233 +26,229 @@ CMaterial::~CMaterial()
 {
 }
 
-void CMaterial::Init(const char* szFileName_noExt, bool flushMatVarsOnly)
+//
+// Initializes the shader
+//
+void CMaterial::Init(const char* materialPath)
 {
-	m_szMaterialName = szFileName_noExt;
+	m_szMaterialName = materialPath;
 	m_szMaterialName.Path_FixSlashes();
 
-	if( m_szMaterialName.c_str()[0] == '/' ||  m_szMaterialName.c_str()[0] == '\\' )
+	if( m_szMaterialName.c_str()[0] == CORRECT_PATH_SEPARATOR )
 		m_szMaterialName = m_szMaterialName.c_str()+1;
 
-	DevMsg(DEVMSG_MATSYSTEM, "Loading material '%s'\n",szFileName_noExt);
+	DevMsg(DEVMSG_MATSYSTEM, "Loading material '%s'\n", materialPath);
 
-	InitVars();
+	//
+	// load a material file
+	//
+	EqString materialKVSFilename(materials->GetMaterialPath() + m_szMaterialName + MATERIAL_FILE_EXTENSION);
 
-    // init material parameters
-    if(m_pShader)
-        m_pShader->InitParams();
+	kvkeybase_t root;
+	if( !KV_LoadFromFile(materialKVSFilename.c_str(), (SP_DATA | SP_MOD), &root))
+	{
+		MsgError("Can't load material '%s'\n", m_szMaterialName.c_str());
+		m_szShaderName = "Error";
+
+		m_state = MATERIAL_LOAD_NEED_LOAD;
+		return;
+	}
+
+	kvkeybase_t* shader_root = root.keys.numElem() ? root.keys[0] : NULL;
+
+	if(!shader_root)
+	{
+		MsgError("Material '%s' does not have a shader root section!\n",m_szMaterialName.c_str());
+		m_state = MATERIAL_LOAD_ERROR;
+		return;
+	}
+
+	// section name is used as shader name
+	m_szShaderName = shader_root->name;
+
+	// begin initialization
+	InitVars( shader_root );
+
+	InitShader();
 }
 
-void CMaterial::InitMaterialProxy(kvkeybase_t* pProxyData)
+// initializes material from keyvalues
+void CMaterial::Init(const char* materialName, kvkeybase_t* shader_root)
 {
-	if(!pProxyData)
+	m_szMaterialName = materialName;
+
+	// section name is used as shader name
+	m_szShaderName = shader_root->name;
+
+	// begin initialization
+	InitVars( shader_root );
+
+	InitShader();
+}
+
+//
+// Initializes the proxy data from section
+//
+void CMaterial::InitMaterialProxy(kvkeybase_t* proxySec)
+{
+	if(!proxySec)
 		return;
 
 	// try any kind of proxy
-	for(int i = 0; i < pProxyData->keys.numElem();i++)
+	for(int i = 0; i < proxySec->keys.numElem();i++)
 	{
-		IMaterialProxy* pProxy = materials->CreateProxyByName( pProxyData->keys[i]->name );
+		IMaterialProxy* pProxy = materials->CreateProxyByName( proxySec->keys[i]->name );
 
 		if(pProxy)
 		{
 			// initialize proxy
-			pProxy->InitProxy( this, pProxyData->keys[i] );
+			pProxy->InitProxy( this, proxySec->keys[i] );
 
 			// add to list
 			m_hMatProxies.append( pProxy );
 		}
 		else
 		{
-			MsgWarning("Unknown proxy '%s' for material %s!\n", pProxyData->keys[i]->name, m_szMaterialName.GetData());
+			MsgWarning("Unknown proxy '%s' for material %s!\n", proxySec->keys[i]->name, m_szMaterialName.GetData());
 		}
 	}
 }
 
-void CMaterial::InitVars(bool flushOnly)
+//
+// Initializes the material vars from the keyvalues section
+//
+void CMaterial::InitMaterialVars(kvkeybase_t* kvs)
 {
-	KeyValues pKV;
-
-	if( pKV.LoadFromFile((materials->GetMaterialPath() + m_szMaterialName + _Es(".mat")).GetData()) )
+	// init material vars
+	for(int i = 0; i < kvs->keys.numElem();i++)
 	{
-		kvkeybase_t* pRootSection = NULL;
+		// ignore sections
+		if( kvs->keys[i]->IsSection() )
+			continue;
 
-		if(pKV.GetRootSection()->keys.numElem() > 0)
-			pRootSection = pKV.GetRootSection()->keys[0];
+		// ignore some preserved vars
+		if( !stricmp(kvs->keys[i]->GetName(), "Shader") )
+			continue;
 
-		if(!pRootSection)
-		{
-			MsgError("Invalid file %s for materials\n",m_szMaterialName.GetData());
-			m_state = MATERIAL_LOAD_ERROR;
-			return;
-		}
+		kvkeybase_t* materialVar = kvs->keys[i];
 
-		// Get shader name as section name (VALVE's analogy)
-		m_szShaderName = pRootSection->name;
+		// initialize material var by this
+		GetMaterialVar(materialVar->GetName(), KV_GetValueString(materialVar));
+	}
+}
 
-		// Rendering API preferences in shader
-		kvkeybase_t* pCurrentAPIPrefsSection = pRootSection->FindKeyBase(varargs("API_%s", g_pShaderAPI->GetRendererName()), KV_FLAG_SECTION);
+//
+// Initializes the shader
+//
+void CMaterial::InitShader()
+{
+	if( m_pShader != NULL )
+		return;
+
+	// don't need to do anything if NODRAW
+	if( !m_szShaderName.CompareCaseIns("NODRAW") )
+	{
+		m_state = MATERIAL_LOAD_OK;
+		return;
+	}
+
+	m_pShader = materials->CreateShaderInstance( m_szShaderName.GetData() );
+
+	// if not found - try make Error shader
+	if(!m_pShader || (m_pShader && !stricmp(m_pShader->GetName(), "Error")))
+	{
+		MsgError("Invalid shader '%s' specified for material %s!\n",m_szShaderName.GetData(),m_szMaterialName.GetData());
+		m_pShader = materials->CreateShaderInstance("Error");
+	}
+
+	if(m_pShader)
+	{
+		// just init the parameters
+		m_pShader->Init( this );
+		m_state = MATERIAL_LOAD_NEED_LOAD;
+	}
+	else
+		m_state = MATERIAL_LOAD_ERROR;
+}
+
+//
+// Initializes material vars and shader name
+//
+void CMaterial::InitVars(kvkeybase_t* shader_root)
+{
+	// Get an API preferences
+	kvkeybase_t* apiPrefs = shader_root->FindKeyBase(varargs("API_%s", g_pShaderAPI->GetRendererName()), KV_FLAG_SECTION);
+
+	// init root material vars
+	InitMaterialVars( shader_root );
+
+	//
+	// API preference lookup
+	//
+	if(apiPrefs)
+	{
+		kvkeybase_t* pPair = apiPrefs->FindKeyBase("Shader");
+
+		// Set shader name from API prefs if available
+		if(pPair)
+			m_szShaderName = KV_GetValueString(pPair);
+
+		// init material vars from api preferences if have some
+		InitMaterialVars( apiPrefs );
+	}
+
+	//
+	// if shader has an editor section we should override it here
+	//
+	if(materials->GetConfiguration().editormode)
+	{
+		kvkeybase_t* editorPrefs = shader_root->FindKeyBase("editor", KV_FLAG_SECTION);
 
 		// API preference lookup
-		if(pCurrentAPIPrefsSection)
+		if(editorPrefs)
 		{
-			kvkeybase_t* pPair = pCurrentAPIPrefsSection->FindKeyBase("Shader");
+			kvkeybase_t* pPair = editorPrefs->FindKeyBase("Shader");
 
 			// Set shader name from API prefs if available
 			if(pPair)
 				m_szShaderName = KV_GetValueString(pPair);
-		}
 
-		if(materials->GetConfiguration().editormode)
-		{
-			pCurrentAPIPrefsSection = pRootSection->FindKeyBase("editor", KV_FLAG_SECTION);
-
-			// API preference lookup
-			if(pCurrentAPIPrefsSection)
-			{
-				kvkeybase_t* pPair = pCurrentAPIPrefsSection->FindKeyBase("Shader");
-
-				// Set shader name from API prefs if available
-				if(pPair)
-					m_szShaderName = KV_GetValueString(pPair);
-			}
-		}
-
-		for(int i = 0; i < pRootSection->keys.numElem();i++)
-		{
-			// ignore sections
-			if( pRootSection->keys[i]->keys.numElem() )
-				continue;
-
-			if(flushOnly)
-			{
-				// variable name lookup
-				char* var_name = pRootSection->keys[i]->name;
-
-				IMatVar* pVarToFlush = FindMaterialVar(var_name);
-				if(pVarToFlush)
-				{
-					// flush variable falue
-					pVarToFlush->SetString( KV_GetValueString(pRootSection->keys[i]) );
-				}
-				else
-				{
-					// create if we not found mathing var
-					CMatVar *pVar = new CMatVar;
-					pVar->Init(pRootSection->keys[i]->name, KV_GetValueString(pRootSection->keys[i]));
-
-					m_hMatVars.append(pVar);
-				}
-			}
-			else
-			{
-				CMatVar *pVar = new CMatVar;
-				pVar->Init(pRootSection->keys[i]->name,KV_GetValueString(pRootSection->keys[i]));
-
-				m_hMatVars.append(pVar);
-			}
-		}
-
-		if(pCurrentAPIPrefsSection)
-		{
-			// API-specified parameters
-			for(int i = 0; i < pCurrentAPIPrefsSection->keys.numElem();i++)
-			{
-				// ignore sections
-				if( pCurrentAPIPrefsSection->keys[i]->keys.numElem() )
-					continue;
-
-				// make var if no var is present
-				IMatVar* pVar = GetMaterialVar(pCurrentAPIPrefsSection->keys[i]->name, KV_GetValueString(pCurrentAPIPrefsSection->keys[i]));
-
-				// set it's value
-				pVar->SetString( KV_GetValueString(pCurrentAPIPrefsSection->keys[i]) );
-			}
-		}
-
-		// load default proxies
-		kvkeybase_t* proxy_sec = pRootSection->FindKeyBase("MaterialProxy", KV_FLAG_SECTION);
-		InitMaterialProxy(proxy_sec);
-
-		// load API-specified proxies
-		if(pCurrentAPIPrefsSection)
-		{
-			proxy_sec = pCurrentAPIPrefsSection->FindKeyBase("MaterialProxy");
-			InitMaterialProxy(proxy_sec);
+			// init material vars from editor overrides if have some
+			InitMaterialVars( editorPrefs );
 		}
 	}
-	else
-	{
-		MsgError("Can't load material '%s' from file\n", m_szMaterialName.GetData());
 
-		// make error shader and init
-		m_pShader = materials->CreateShaderInstance("Error");
-
-		if(m_pShader)
-			((CBaseShader*)m_pShader)->m_pAssignedMaterial = this;
-
-		m_state = MATERIAL_LOAD_NEED_LOAD;
-		return;
-	}
-
-	// do i need to load shader?
-	// this is a case when material is ok
-	if( m_pShader == NULL )
-	{
-		if(!m_szShaderName.CompareCaseIns("nodraw"))
-		{
-			m_state = MATERIAL_LOAD_OK;
-			return;
-		}
-
-		m_pShader = materials->CreateShaderInstance( m_szShaderName.GetData() );
-
-		if(!m_pShader || (m_pShader && !stricmp(m_pShader->GetName(), "error")))
-		{
-			MsgError("Invalid shader '%s' specified for material %s!\n",m_szShaderName.GetData(),m_szMaterialName.GetData());
-
-			m_pShader = materials->CreateShaderInstance("Error");
-
-			if(m_pShader)
-			{
-				((CBaseShader*)m_pShader)->m_pAssignedMaterial = this;	// assign material to shader
-				m_state = MATERIAL_LOAD_NEED_LOAD;
-			}
-			else
-				m_state = MATERIAL_LOAD_ERROR;
-
-			return;
-		}
-
-		((CBaseShader*)m_pShader)->m_pAssignedMaterial = this;
-
-		m_state = MATERIAL_LOAD_NEED_LOAD;
-	}
+	// init material proxies
+	kvkeybase_t* proxy_sec = shader_root->FindKeyBase("MaterialProxy", KV_FLAG_SECTION);
+	InitMaterialProxy( proxy_sec );
 }
 
 
 bool CMaterial::LoadShaderAndTextures()
 {
+	InitShader();
+
 	if(m_state != MATERIAL_LOAD_NEED_LOAD)
 		return false;
 
-	if(m_pShader)
+	if(!m_pShader)
+		return true;
+
+	m_state = MATERIAL_LOAD_INQUEUE;
+
+	// try init
+	if(!m_pShader->IsInitialized() && !m_pShader->IsError())
 	{
-		m_state = MATERIAL_LOAD_INQUEUE;
-
-		// try init
-		if(!m_pShader->IsInitialized() && !m_pShader->IsError())
-		{
-			m_pShader->InitTextures();
-			m_pShader->InitShader();
-		}
-
-		if( m_pShader->IsInitialized() )
-			m_state = MATERIAL_LOAD_OK;
-		else if( m_pShader->IsError() )
-			m_state = MATERIAL_LOAD_ERROR;
-		else
-			ASSERTMSG(false, varargs("please check shader '%s' (%s) for initialization (not error, not initialized)", m_szShaderName.c_str(), m_pShader->GetName()));
+		m_pShader->InitTextures();
+		m_pShader->InitShader();
 	}
+
+	if( m_pShader->IsInitialized() )
+		m_state = MATERIAL_LOAD_OK;
+	else if( m_pShader->IsError() )
+		m_state = MATERIAL_LOAD_ERROR;
+	else
+		ASSERTMSG(false, varargs("please check shader '%s' (%s) for initialization (not error, not initialized)", m_szShaderName.c_str(), m_pShader->GetName()));
 
 	return true;
 }
@@ -264,12 +263,7 @@ void CMaterial::WaitForLoading() const
 
 IMatVar *CMaterial::GetMaterialVar(const char* pszVarName, const char* defaultparameter)
 {
-	IMatVar* var = FindMaterialVar(pszVarName);
-
-	if(!var)
-		var = CreateMaterialVar(pszVarName, defaultparameter);
-
-	return var;
+	return CreateMaterialVar(pszVarName, defaultparameter);
 }
 
 IMatVar *CMaterial::FindMaterialVar(const char* pszVarName) const
@@ -315,7 +309,7 @@ int CMaterial::GetFlags() const
 const char*	CMaterial::GetShaderName() const
 {
 	if(!m_pShader)
-		return "Error";
+		return m_szShaderName.c_str();
 
 	return m_pShader->GetName();
 }
@@ -354,39 +348,30 @@ void CMaterial::RemoveMaterialVar(IMatVar* pVar)
 
 void CMaterial::Ref_DeleteObject()
 {
-	// TODO: this must be done
-	//materials->FreeMaterial(this);
 }
 
-void CMaterial::Cleanup(bool bUnloadShaders, bool bUnloadTextures, bool keepMaterialVars)
+void CMaterial::Cleanup(bool dropVars, bool dropShader)
 {
-	// first unload shader
-	if(m_pShader)
+	// drop shader if we need
+	if(dropShader && m_pShader)
 	{
-		m_pShader->Unload( bUnloadShaders, bUnloadTextures );
+		m_pShader->Unload();
 
-		if(bUnloadShaders && bUnloadTextures)
-		{
-			delete m_pShader;
-			m_pShader = NULL;
-		}
+		delete m_pShader;
+		m_pShader = NULL;
 	}
 
-	if(!keepMaterialVars)
+	if(dropVars)
 	{
-		for(int i = 0; i < m_hMatVars.numElem();i++)
-		{
-			delete m_hMatVars[i];
-			m_hMatVars.removeIndex(i);
-			i--;
-		}
-
 		for(int i = 0; i < m_hMatProxies.numElem();i++)
-		{
 			delete m_hMatProxies[i];
-			m_hMatProxies.removeIndex(i);
-			i--;
-		}
+
+		m_hMatProxies.clear();
+
+		for(int i = 0; i < m_hMatVars.numElem();i++)
+			delete m_hMatVars[i];
+
+		m_hMatVars.clear();
 	}
 
 	m_state = MATERIAL_LOAD_NEED_LOAD;
@@ -406,7 +391,6 @@ void CMaterial::UpdateProxy(float fDt)
 void CMaterial::Setup()
 {
 	// shaders and textures needs to be reset
-
 	if(GetFlags() & MATERIAL_FLAG_BASETEXTURE_CUR)
 		g_pShaderAPI->Reset( STATE_RESET_SHADER );
 	else

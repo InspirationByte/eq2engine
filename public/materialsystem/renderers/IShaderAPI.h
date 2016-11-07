@@ -49,6 +49,19 @@ struct externalWindowDisplayParams_t
 // shader api initializer
 struct shaderapiinitparams_t
 {
+	shaderapiinitparams_t()
+	{
+		hWindow					= NULL;
+		bIsWindowed				= false;
+		nScreenFormat			= FORMAT_RGB8;
+		nRefreshRateHZ			= 60;
+		nMultisample			= 0;
+		nDepthBits				= 24;
+		bEnableVerticalSync		= false;
+
+		memset(textures_path, 0, sizeof(textures_path));
+	}
+
 	// basic parameters for shader API initialization
 	void*			hWindow;				// OS window handle or externalWindowDisplayParams_t
 
@@ -65,20 +78,6 @@ struct shaderapiinitparams_t
 
 	char			textures_path[64];		// texture path
 };
-
-// sets default parameters of shader api
-static void DefaultShaderAPIParameters(shaderapiinitparams_t* params)
-{
-	params->hWindow					= NULL;
-	params->bIsWindowed				= false;
-	params->nScreenFormat			= FORMAT_RGB8;
-	params->nRefreshRateHZ			= 60;
-	params->nMultisample			= 0;
-	params->nDepthBits				= 24;
-	params->bEnableVerticalSync		= false;
-
-	memset(params->textures_path, 0, sizeof(params->textures_path));
-}
 
 class CImage;
 typedef int OcclusionHandle_t;

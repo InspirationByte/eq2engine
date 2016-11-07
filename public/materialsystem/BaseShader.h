@@ -106,9 +106,7 @@
 	if(mv_##param) {\
 		variable = g_pShaderAPI->LoadTexture(mv_##param->GetString(),m_nTextureFilter,m_nAddressMode);	\
 		if(variable){\
-			mv_##param->AssignTexture(variable);\
-			variable->Ref_Grab();\
-			AddTextureToAutoremover(&variable);\
+			AddManagedTexture(mv_##param, &variable);\
 		}else{\
 			variable = g_pShaderAPI->GetErrorTexture();\
 		}\
@@ -148,9 +146,7 @@
 	if(mv_##param) {\
 		variable = g_pShaderAPI->LoadTexture(mv_##param->GetString(),m_nTextureFilter,m_nAddressMode, TEXFLAG_NULL_ON_ERROR);	\
 		if(variable){ \
-			mv_##param->AssignTexture(variable);\
-			variable->Ref_Grab();	\
-			AddTextureToAutoremover(&variable);\
+			AddManagedTexture(mv_##param, &variable);\
 	}}\
 	}
 
@@ -199,8 +195,7 @@
 			return false;																				\
 		}																								\
 	}																									\
-	m_pShader##shader->Ref_Grab();																		\
-	AddShaderToAutoremover(&m_pShader##shader);															\
+	AddManagedShader(&m_pShader##shader);															\
 	}
 
 class CBaseShader;
@@ -208,20 +203,26 @@ class CBaseShader;
 // this is a special callback for shader parameter binding
 typedef void (CBaseShader::*SHADERPARAMFUNC)(void);
 
+struct mvUseTexture_t
+{
+	ITexture**	texture;
+	IMatVar*	var;
+};
+
 // base shader class
 class CBaseShader : public IMaterialSystemShader
 {
 public:
-	friend class				CMaterial;
-
 								CBaseShader();
 
 	// Sets parameters
+	void						Init(IMaterial* assignee) {m_pAssignedMaterial = assignee; InitParams();}
+
 	virtual void				InitParams();
 	void						InitShader();
 
 	// Unload shaders, textures
-	virtual void				Unload(bool bUnloadShaders = true, bool bUnloadTextures = true);
+	virtual void				Unload();
 
 	// Get real shader name
 	const char*					GetName() = 0;
@@ -262,8 +263,8 @@ protected:
 
 	virtual bool				_ShaderInitRHI() = 0;
 
-	void						AddShaderToAutoremover(IShaderProgram** pShader);
-	void						AddTextureToAutoremover(ITexture** pShader);
+	void						AddManagedShader(IShaderProgram** pShader);
+	void						AddManagedTexture(IMatVar* var, ITexture** tex);
 
 	void						SetupDefaultParameter(ShaderDefaultParams_e paramtype);
 
@@ -291,7 +292,8 @@ protected:
 	IMatVar*					m_pBaseTextureScaleVar;
 	IMatVar*					m_pBaseTextureFrame;
 
-	DkList<ITexture**>			m_UsedTextures;
+	DkList<mvUseTexture_t>		m_UsedTextures;
+
 	DkList<IShaderProgram**>	m_UsedPrograms;
 	DkList<IRenderState**>		m_UsedRenderStates;
 };

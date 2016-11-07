@@ -17,6 +17,8 @@ class IMatVar
 public:
 	PPMEM_MANAGED_OBJECT();
 
+	virtual ~IMatVar() {}
+
 	// get material var name
 	virtual const char*		GetName() const	= 0;
 
