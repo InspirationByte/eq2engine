@@ -112,6 +112,8 @@ struct eqFontStyleParam_t
 		shadowColor = ColorRGB(0.0f);
 		shadowAlpha = 0.7f;
 
+		scale		= 1.0f;
+
 		layoutBuilder = NULL;
 	}
 
@@ -125,6 +127,9 @@ struct eqFontStyleParam_t
 	float				shadowAlpha;
 
 	ColorRGBA			textColor;
+
+	// SDF font size scaling
+	Vector2D			scale;
 };
 
 //-------------------------------------------------------------------------
@@ -136,18 +141,22 @@ public:
 	virtual ~IEqFont() {}
 
 	// returns string width in pixels
-	virtual float				GetStringWidth( const wchar_t* str, int styleFlags, int charCount = -1, int breakOnChar = -1) const = 0;
+	virtual float				GetStringWidth( const wchar_t* str, const eqFontStyleParam_t& params, int charCount = -1, int breakOnChar = -1) const = 0;
 
 	// returns string width in pixels
-	virtual float				GetStringWidth( const char* str, int styleFlags, int charCount = -1, int breakOnChar = -1) const = 0;
+	virtual float				GetStringWidth( const char* str, const eqFontStyleParam_t& params, int charCount = -1, int breakOnChar = -1) const = 0;
 
 	// returns font line height in pixels
-	virtual float				GetLineHeight() const = 0;
+	virtual float				GetLineHeight(const eqFontStyleParam_t& params) const = 0;
 
 	// returns font baseline offset in pixels
-	virtual float				GetBaselineOffs() const = 0;
+	virtual float				GetBaselineOffs(const eqFontStyleParam_t& params) const = 0;
 
+	// returns the character data
 	virtual const eqFontChar_t&	GetFontCharById( const int chrId ) const = 0;
+
+	// returns the scaled character
+	virtual void				GetScaledCharacter( eqFontChar_t& chr, const int chrId, const Vector2D& scale = 1.0f ) const = 0;
 
 	// renders text
 	virtual void				RenderText(	const wchar_t* pszText,

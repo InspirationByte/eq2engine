@@ -1015,6 +1015,7 @@ void CState_Game::DrawMenu( float fDt )
 	fontParam.align = TEXT_ALIGN_HCENTER;
 	fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParam.textColor = color4_white;
+	fontParam.scale = 20.0f;
 
 	{
 		lua_State* state = GetLuaState();
@@ -1027,7 +1028,7 @@ void CState_Game::DrawMenu( float fDt )
 			numElems++;
 		oolua_ipairs_end()
 
-		int menuPosY = halfScreen.y - numElems*font->GetLineHeight()*0.5f;
+		int menuPosY = halfScreen.y - numElems*font->GetLineHeight(fontParam)*0.5f;
 
 		Vector2D mTextPos(halfScreen.x, menuPosY);
 
@@ -1060,7 +1061,7 @@ void CState_Game::DrawMenu( float fDt )
 			else
 				fontParam.textColor = ColorRGBA(1,1,1,1.0f);
 
-			Vector2D eTextPos(halfScreen.x, menuPosY+_i_index_*font->GetLineHeight());
+			Vector2D eTextPos(halfScreen.x, menuPosY+_i_index_*font->GetLineHeight(fontParam));
 
 			font->RenderText(token ? token : L"No token", eTextPos, fontParam);
 		oolua_ipairs_end()

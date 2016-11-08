@@ -40,7 +40,6 @@ struct eqFontFamily_t
 	DkList<eqFontsInternal::eqFontStyleInfo_t*>		sizeTable;
 
 	IEqFont*	FindBestSize(int bestSize, int styleFlags = TEXT_STYLE_REGULAR);
-
 };
 
 //-------------------------------------------------------------------------------------
@@ -64,6 +63,8 @@ public:
 	IEqFont*				GetFont(const char* name, int bestSize, int styleFlags = TEXT_STYLE_REGULAR, bool defaultIfNotFound = true) const;
 	eqFontFamily_t*			GetFamily(const char* name) const;
 
+	IMaterial*				GetSDFMaterial() const {return m_sdfRegular;}
+
 protected:
 
 	bool					LoadFontDescriptionFile( const char* filename );
@@ -71,11 +72,7 @@ protected:
 	DkList<eqFontFamily_t*>	m_fonts;
 	eqFontFamily_t*			m_defaultFont;
 
-	IMaterial*				m_simpleMat;
-	IMaterial*				m_sdfMatReg;
-	
-	IVertexFormat*			m_fontFmt;
-	IVertexBuffer*			m_fontVB;
+	IMaterial*				m_sdfRegular;
 };
 
 extern CEqFontCache* g_fontCache;

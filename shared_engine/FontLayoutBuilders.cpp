@@ -18,16 +18,16 @@ void CRectangleTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params,
 										Vector2D& curTextPos )
 {
 	if(lineNumber > 0)
-		curTextPos.y += m_font->GetLineHeight();
+		curTextPos.y += m_font->GetLineHeight(params);
 
 	m_linesProduced++;
 
 	float newlineStringWidth;
 
 	if(isWideChar)
-		newlineStringWidth = m_font->GetStringWidth( (wchar_t*)strCurPos, params.styleFlag, -1, '\n' );
+		newlineStringWidth = m_font->GetStringWidth( (wchar_t*)strCurPos, params, -1, '\n' );
 	else
-		newlineStringWidth = m_font->GetStringWidth( (char*)strCurPos, params.styleFlag, -1, '\n' );
+		newlineStringWidth = m_font->GetStringWidth( (char*)strCurPos, params, -1, '\n' );
 
 	curTextPos.x = m_rectangle.vleftTop.x;
 
@@ -71,9 +71,9 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 		if( wordWrap ) // per-word wrapping
 		{
 			if(isWideChar)
-				wordSize = m_font->GetStringWidth( (wchar_t*)strCurPos, params.styleFlag, -1, ' ' );
+				wordSize = m_font->GetStringWidth( (wchar_t*)strCurPos, params, -1, ' ' );
 			else
-				wordSize = m_font->GetStringWidth( (char*)strCurPos, params.styleFlag, -1, ' ' );
+				wordSize = m_font->GetStringWidth( (char*)strCurPos, params, -1, ' ' );
 		}
 
 		// if word can't be wrapped, we switch to character wrapping
@@ -94,9 +94,9 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 				float newlineStringWidth;
 
 				if(isWideChar) // TODO: must be calculated until next word wrap
-					newlineStringWidth = m_font->GetStringWidth( (wchar_t*)strCurPos, params.styleFlag, -1, '\n' );
+					newlineStringWidth = m_font->GetStringWidth( (wchar_t*)strCurPos, params, -1, '\n' );
 				else
-					newlineStringWidth = m_font->GetStringWidth( (char*)strCurPos, params.styleFlag, -1, '\n' );
+					newlineStringWidth = m_font->GetStringWidth( (char*)strCurPos, params, -1, '\n' );
 
 				if(params.align & TEXT_ALIGN_HCENTER)
 				{
@@ -114,8 +114,8 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 
 			curTextPos.x = cPos.x = xPos;
 
-			curTextPos.y += m_font->GetLineHeight();
-			cPos.y += m_font->GetLineHeight();
+			curTextPos.y += m_font->GetLineHeight(params);
+			cPos.y += m_font->GetLineHeight(params);
 
 			m_linesProduced++;
 

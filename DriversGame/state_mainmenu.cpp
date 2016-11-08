@@ -140,6 +140,7 @@ bool CState_MainMenu::Update( float fDt )
 	fontParam.align = TEXT_ALIGN_LEFT;
 	fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParam.textColor = color4_white;
+	fontParam.scale = 16.0f;
 
 	{
 		EqLua::LuaStackGuard g(GetLuaState());
@@ -183,7 +184,7 @@ bool CState_MainMenu::Update( float fDt )
 				}
 			}
 
-			Vector2D elemPos(halfScreen.x-500, menuPosY+idx*font->GetLineHeight());
+			Vector2D elemPos(halfScreen.x-500, menuPosY+idx*font->GetLineHeight(fontParam));
 
 			font->RenderText(tok ? tok->GetText() : L"Undefined token", elemPos, fontParam);
 		oolua_ipairs_end()

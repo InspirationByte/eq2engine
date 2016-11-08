@@ -76,16 +76,59 @@ const char* CMatVar::GetString()
 	return m_pszValue.GetData();
 }
 
+#define VAR_ELEM_OPEN	'['
+#define VAR_ELEM_CLOSE	']'
+
 // Value setup
 void CMatVar::SetString(const char* szValue)
 {
 	m_pszValue = szValue;
+	
+	char* vchar = (char*)m_pszValue.c_str();
 
-	m_vector.x = (float)atof(m_pszValue.c_str());
-	m_nValue  = (int)atoi(m_pszValue.c_str());
-	sscanf(m_pszValue.c_str(),"[%f %f]",&m_vector.x, &m_vector.y);
-	sscanf(m_pszValue.c_str(),"[%f %f %f]",&m_vector.x, &m_vector.y, &m_vector.z);
-	sscanf(m_pszValue.c_str(),"[%f %f %f %f]",&m_vector.x, &m_vector.y, &m_vector.z, &m_vector.w);
+	m_vector = 0.0f;
+
+	if(*vchar == VAR_ELEM_OPEN)
+	{
+		int vec_count = 0;
+		char temp[32];
+
+		char* start = ++vchar;
+
+		do
+		{
+			if(*vchar == 0)
+				break;
+
+			if(!start && !isspace(*vchar) && *vchar != VAR_ELEM_CLOSE)
+				start = vchar;
+			else if(start && (isspace(*vchar) || *vchar == VAR_ELEM_CLOSE))
+			{
+				if(vec_count == 4)
+				{
+					start = NULL;
+					continue; // too many elements
+				}
+
+				int len = vchar-start;
+				strncpy(temp, start, min(len, sizeof(temp)-1));
+
+				m_vector[vec_count] = (float)atof(start);
+				vec_count++;
+
+				start = NULL;
+			}
+		}
+		while(vchar++);
+
+		m_nValue = m_vector.x;
+	}
+	else
+	{
+		m_nValue  = (int)atoi(m_pszValue.c_str());
+		m_vector.x = (float)atof(m_pszValue.c_str());
+	}
+
 	m_isDirtyString = 0;
 }
 

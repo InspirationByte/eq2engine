@@ -8,8 +8,6 @@
 
 /*
 TODO:
-		- Make in-engine font generator
-		- Text rendering services
 		- Text rendering shaders and effects
 */
 
@@ -22,8 +20,9 @@ TODO:
 #include "utils/strtools.h"
 #include "utils/DkLinkedList.h"
 #include "FontCache.h"
-
 #include <stdlib.h>
+
+#include "ConVar.h"
 
 #pragma todo("Rework font system - Add generator, better rotation support, effects, and text alignment/bounding")
 
@@ -75,16 +74,16 @@ void CPlainTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params,
 										Vector2D& curTextPos )
 {
 	if(lineNumber > 0)
-		curTextPos.y += m_font->GetLineHeight();
+		curTextPos.y += m_font->GetLineHeight(params);
 
 	curTextPos.x = textStart.x;
 
 	float newlineStringWidth;
 	
 	if(isWideChar)
-		newlineStringWidth = m_font->GetStringWidth( (wchar_t*)strCurPos, params.styleFlag, -1, '\n' );
+		newlineStringWidth = m_font->GetStringWidth( (wchar_t*)strCurPos, params, -1, '\n' );
 	else
-		newlineStringWidth = m_font->GetStringWidth( (char*)strCurPos, params.styleFlag, -1, '\n' );
+		newlineStringWidth = m_font->GetStringWidth( (char*)strCurPos, params, -1, '\n' );
 
 	// calc start position for first time
 	if( params.align != TEXT_ALIGN_LEFT )
@@ -126,10 +125,10 @@ CFont::CFont()
 
 	m_textColor = color4_white;
 	m_spacing = 0.0f;
+	m_scale = 1.0f;
 
 	m_baseline = 0.0f;
 	m_lineHeight = 0.0f;
-	m_scale = Vector2D(1.0f);
 
 	m_isSDF = false;
 }
@@ -145,24 +144,40 @@ const char*	CFont::GetName() const
 	return m_name.c_str();
 }
 
-float CFont::GetStringWidth( const char* str, int fontStyleFlags, int charCount, int breakOnChar) const
+float CFont::GetStringWidth( const char* str, const eqFontStyleParam_t& params, int charCount, int breakOnChar) const
 {
     if (charCount < 0)
 		charCount = strlen(str);
 
-	return _GetStringWidth(str, fontStyleFlags, charCount, breakOnChar);
+	return _GetStringWidth(str, params, charCount, breakOnChar);
 }
 
-float CFont::GetStringWidth( const wchar_t* str, int fontStyleFlags, int charCount, int breakOnChar) const
+float CFont::GetStringWidth( const wchar_t* str, const eqFontStyleParam_t& params, int charCount, int breakOnChar) const
 {
     if (charCount < 0)
 		charCount = wcslen(str);
 
-	return _GetStringWidth(str, fontStyleFlags, charCount, breakOnChar);
+	return _GetStringWidth(str, params, charCount, breakOnChar);
+}
+
+float CFont::GetLineHeight( const eqFontStyleParam_t& params ) const
+{
+	if(m_isSDF) // only scale SDF characters
+		return m_lineHeight * params.scale.y;
+
+	return m_lineHeight;
+}
+
+float CFont::GetBaselineOffs( const eqFontStyleParam_t& params ) const
+{
+	if(m_isSDF) // only scale SDF characters
+		return m_baseline * params.scale.y;
+
+	return m_baseline;
 }
 
 template <typename CHAR_T>
-float CFont::_GetStringWidth( const CHAR_T* str, int styleFlags, int charCount, int breakOnChar) const
+float CFont::_GetStringWidth( const CHAR_T* str, const eqFontStyleParam_t& params, int charCount, int breakOnChar) const
 {
     float totalWidth = 0.0f;
 
@@ -174,7 +189,7 @@ float CFont::_GetStringWidth( const CHAR_T* str, int styleFlags, int charCount, 
 		int charIdx = str[i];
 
 		// skip fasttags
-		if( (styleFlags & TEXT_STYLE_USE_TAGS) &&
+		if( (params.styleFlag & TEXT_STYLE_USE_TAGS) &&
 			charMode == CHARMODE_NORMAL &&
 			charIdx == '&')
 		{
@@ -196,9 +211,10 @@ float CFont::_GetStringWidth( const CHAR_T* str, int styleFlags, int charCount, 
 		if(!IsVisibleChar(charIdx))
 			continue;
 
-		const eqFontChar_t& chr = GetFontCharById( charIdx );
+		eqFontChar_t chr;
+		GetScaledCharacter( chr, charIdx, params.scale );
 
-		if( styleFlags & TEXT_STYLE_MONOSPACE)
+		if( params.styleFlag & TEXT_STYLE_MONOSPACE)
 			totalWidth += chr.x1-chr.x0;
 		else
 			totalWidth += chr.advX; // chr.x1-chr.x0;
@@ -230,10 +246,10 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 	DkLinkedList<eqFontStyleParam_t> states;
 	states.addLast( params );	// push this param
 
-	eqFontStyleParam_t parsedParams = params;
-
 	int charMode = CHARMODE_NORMAL;
 	int tagType = TEXT_TAG_NONE;
+
+	eqFontStyleParam_t parsedParams;
 
     while( *str )
 	{
@@ -334,28 +350,34 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 			continue;
 		}
 
+		float baseLine = GetBaselineOffs(stateParams);
+
 		//
 		// Render part - text filling
 		//
-		const eqFontChar_t& chr = GetFontCharById(charIdx);
+		eqFontChar_t chr;
+		GetScaledCharacter( chr, charIdx, stateParams.scale );
 
 		// build default character pos and size
 		Vector2D cPos(
 			startPos.x + chr.ofsX, 
-			startPos.y - m_baseline + chr.ofsY);
+			startPos.y - baseLine + chr.ofsY);
 
 		Vector2D cSize(
 			chr.x1-chr.x0,
 			chr.y1-chr.y0);
 
+		if(m_isSDF) // only scale SDF characters
+			cSize *= m_scale * stateParams.scale;
+
 		//if(stateParams.styleFlag & TEXT_STYLE_FROM_CAP)
-		//	cPos.y = startPos.y - (cSize.y-m_baseline) + chr.ofsY;
+		//	cPos.y = startPos.y - (cSize.y-baseLine) + chr.ofsY;
 
 		if(!layoutBuilder->LayoutChar(stateParams, (void*)str, isWideChar, chr, startPos, cPos, cSize))
 			break;
 
 		if(stateParams.styleFlag & TEXT_STYLE_FROM_CAP)
-			cPos.y = startPos.y - (cSize.y-m_baseline) + chr.ofsY;
+			cPos.y = startPos.y - (cSize.y-baseLine) + chr.ofsY;
 
 		Rectangle_t charRect(cPos, cPos+cSize);
 		Rectangle_t charTexCoord(chr.x0*m_invTexSize.x, chr.y0*m_invTexSize.y,chr.x1*m_invTexSize.x, chr.y1*m_invTexSize.y);
@@ -367,37 +389,9 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 		builder.TexturedQuad2(	charRect.GetLeftTop(), charRect.GetRightTop(), charRect.GetLeftBottom(), charRect.GetRightBottom(),
 								charTexCoord.GetLeftTop(), charTexCoord.GetRightTop(), charTexCoord.GetLeftBottom(), charTexCoord.GetRightBottom());
 
-		/*
-		dest[0].m_vPosition = Vector2D(cPos.x, cPos.y);
-		dest[0].m_vTexCoord = Vector2D(chr.x0, chr.y0)*m_invTexSize;
-		dest[1].m_vPosition = Vector2D(cPos.x + cSize.x, cPos.y);
-		dest[1].m_vTexCoord = Vector2D(chr.x1, chr.y0)*m_invTexSize;
-		dest[2].m_vPosition = Vector2D(cPos.x, cPos.y + cSize.y);
-		dest[2].m_vTexCoord = Vector2D(chr.x0, chr.y1)*m_invTexSize;
-
-		dest[3].m_vPosition = Vector2D(cPos.x, cPos.y + cSize.y);
-		dest[3].m_vTexCoord = Vector2D(chr.x0, chr.y1)*m_invTexSize;
-		dest[4].m_vPosition = Vector2D(cPos.x + cSize.x, cPos.y);
-		dest[4].m_vTexCoord = Vector2D(chr.x1, chr.y0)*m_invTexSize;
-		dest[5].m_vPosition = Vector2D(cPos.x + cSize.x, cPos.y + cSize.y);
-		dest[5].m_vTexCoord = Vector2D(chr.x1, chr.y1)*m_invTexSize;
-
-		dest[0].m_vColor = stateParams.textColor;
-		dest[1].m_vColor = stateParams.textColor;
-		dest[2].m_vColor = stateParams.textColor;
-		dest[3].m_vColor = stateParams.textColor;
-		dest[4].m_vColor = stateParams.textColor;
-		dest[5].m_vColor = stateParams.textColor;
-		
-		numVertsToDraw	+= 6;
-		dest			+= 6;
-		*/
-
 		str++;
 	
     } //while
-
-	//return numVertsToDraw;
 }
 
 //
@@ -405,7 +399,7 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 //
 void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFontStyleParam_t& params)
 {
-	int vertCount = GetTextQuadsCount(pszText, params.styleFlag) * 6;
+	int vertCount = GetTextQuadsCount(pszText, params) * 6;
 	if (vertCount == 0)
 		return;
 
@@ -431,6 +425,8 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 	materials->SetRasterizerStates(raster);
 
 	g_pShaderAPI->SetTexture(m_fontTexture, NULL, 0);
+
+	IMaterial* fontMaterial = m_isSDF ? g_fontCache->GetSDFMaterial() : materials->GetDefaultMaterial();
 	
 	// draw shadow
 	if(params.styleFlag & TEXT_STYLE_SHADOW)
@@ -438,14 +434,16 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 		materials->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));
 		materials->SetAmbientColor(ColorRGBA(0,0,0,params.shadowAlpha));
 
-		materials->BindMaterial(materials->GetDefaultMaterial());
+		materials->BindMaterial(fontMaterial);
 
 		dynMesh->Render();
 	}
 
 	materials->SetAmbientColor(color4_white);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
-	materials->BindMaterial(materials->GetDefaultMaterial());
+
+	
+	materials->BindMaterial(fontMaterial);
 
 	dynMesh->Render();
 }
@@ -455,7 +453,7 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 //
 void CFont::RenderText(const char* pszText, const Vector2D& start, const eqFontStyleParam_t& params)
 {
-	int vertCount = GetTextQuadsCount(pszText, params.styleFlag) * 6;
+	int vertCount = GetTextQuadsCount(pszText, params) * 6;
 	if (vertCount == 0)
 		return;
 
@@ -503,22 +501,36 @@ void CFont::RenderText(const char* pszText, const Vector2D& start, const eqFontS
 //
 // returns font character information
 //
-const eqFontChar_t& CFont::GetFontCharById( const int chrId ) const
+const eqFontChar_t&	CFont::GetFontCharById( const int chrId ) const
 {
 	static eqFontChar_t null_default;
 
 	if(m_charMap.count(chrId) == 0)
 		return null_default;
-	
-	// Presonally, I hate exceptions bullshit
+
 	return m_charMap.at(chrId);
+}
+
+//
+// returns the scaled character
+//
+void CFont::GetScaledCharacter( eqFontChar_t& chr, const int chrId, const Vector2D& scale) const
+{
+	chr = GetFontCharById(chrId);
+
+	if(m_isSDF) // only scale SDF characters
+	{
+		chr.advX = chr.advX*scale.x;
+		chr.ofsX = chr.ofsX*scale.x;
+		chr.ofsY = chr.ofsY*scale.y;
+	}
 }
 
 //
 // returns maximum of possible quads to be allocated
 //
 template <typename CHAR_T>
-int CFont::GetTextQuadsCount(const CHAR_T* str, int styleFlags) const
+int CFont::GetTextQuadsCount(const CHAR_T* str, const eqFontStyleParam_t& params) const
 {
 	int n = 0;
 
@@ -528,7 +540,7 @@ int CFont::GetTextQuadsCount(const CHAR_T* str, int styleFlags) const
 		int charIdx = *str;
 
 		// skip fasttags
-		if( (styleFlags & TEXT_STYLE_USE_TAGS) &&
+		if( (params.styleFlag & TEXT_STYLE_USE_TAGS) &&
 			charMode == CHARMODE_NORMAL &&
 			charIdx == '&')
 		{
@@ -577,17 +589,20 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				return false;
 			}
 
-			bool filter_font = KV_GetValueBool( fontSec->FindKeyBase("filter") );
+			m_isSDF = KV_GetValueBool( fontSec->FindKeyBase("isSDF") );
+
+			bool filter_font = KV_GetValueBool( fontSec->FindKeyBase("filter") ) || m_isSDF;
 
 			m_spacing = 0.0f;
 			m_fontTexture = g_pShaderAPI->LoadTexture(KV_GetValueString(fontSec->FindKeyBase("texture")), filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST,ADDRESSMODE_WRAP, TEXFLAG_NOQUALITYLOD);
 
-			m_baseline = KV_GetValueFloat( fontSec->FindKeyBase("baseline") );
-			m_lineHeight = KV_GetValueFloat( fontSec->FindKeyBase("lineheight") );
-			m_scale = KV_GetVector2D( fontSec->FindKeyBase("scale") );
-			m_isSDF = KV_GetValueBool( fontSec->FindKeyBase("isSDF") );
+			if(m_isSDF)
+				m_scale = KV_GetVector2D( fontSec->FindKeyBase("scale") );
 
-			m_invTexSize = Vector2D(1.0f, 1.0f);
+			m_baseline = KV_GetValueFloat( fontSec->FindKeyBase("baseline") ) * m_scale.y;
+			m_lineHeight = KV_GetValueFloat( fontSec->FindKeyBase("lineheight") ) * m_scale.y;
+
+			m_invTexSize = 1.0f;
 			
 			if(m_fontTexture != NULL)
 			{
@@ -616,9 +631,9 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				fontChar.x1 = fontChar.x0 + KV_GetValueFloat(k, 2);
 				fontChar.y1 = fontChar.y0 + KV_GetValueFloat(k, 3);
 
-				fontChar.ofsX = KV_GetValueFloat(k, 4);
-				fontChar.ofsY = KV_GetValueFloat(k, 5);
-				fontChar.advX = KV_GetValueFloat(k, 6);
+				fontChar.ofsX = KV_GetValueFloat(k, 4)*m_scale.x;
+				fontChar.ofsY = KV_GetValueFloat(k, 5)*m_scale.y;
+				fontChar.advX = KV_GetValueFloat(k, 6)*m_scale.x;
 				
 				if( g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9 )
 				{

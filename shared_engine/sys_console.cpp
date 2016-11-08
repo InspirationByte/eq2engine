@@ -317,7 +317,7 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 			}
 
 			// draw as autocompletion
-			Rectangle_t rect(x,y,w,y+numLines*m_font->GetLineHeight()+2);
+			Rectangle_t rect(x,y,w,y+numLines*m_font->GetLineHeight(helpTextParams)+2);
 			DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor);
 
 			m_font->RenderText(string_to_draw.GetData(), rect.GetLeftTop() + Vector2D(5,4), helpTextParams);
@@ -336,9 +336,9 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 		if(ff_numelems <= 0)
 			return;
 
-		y += m_font->GetLineHeight()*commandinfo_size;
+		y += m_font->GetLineHeight(helpTextParams)*commandinfo_size;
 
-		Rectangle_t rect(x,y,w,y+enumcount*m_font->GetLineHeight()+2);
+		Rectangle_t rect(x,y,w,y+enumcount*m_font->GetLineHeight(helpTextParams)+2);
 		DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor);
 
 		if(ff_numelems >= con_fastfind_count.GetInt()-1)
@@ -366,7 +366,7 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 				if(cmdBase->GetFlags() & CV_INVISIBLE)
 					continue;
 
-				float textYPos = (y + enumcount2 * m_font->GetLineHeight()) + 4;
+				float textYPos = (y + enumcount2 * m_font->GetLineHeight(helpTextParams)) + 4;
 
 				enumcount2++;
 
@@ -439,8 +439,8 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 					int ofs = cstr - conVarName.c_str();
 					int len = m_inputText.Length();
 
-					float lookupStrStart = m_font->GetStringWidth(conVarName.c_str(), variantsTextParams.styleFlag, ofs);
-					float lookupStrEnd = lookupStrStart + m_font->GetStringWidth(conVarName.c_str()+ofs, variantsTextParams.styleFlag, len);
+					float lookupStrStart = m_font->GetStringWidth(conVarName.c_str(), variantsTextParams, ofs);
+					float lookupStrEnd = lookupStrStart + m_font->GetStringWidth(conVarName.c_str()+ofs, variantsTextParams, len);
 
 					Vertex2D_t rect[] = { MAKETEXQUAD(x+5 + lookupStrStart, textYPos-2, x+5 + lookupStrEnd, textYPos+12, 0) };
 
@@ -514,14 +514,14 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w, const char* que
 		enumcount++;
 
 		// draw as autocompletion
-		Rectangle_t rect(x,y,x+max_string_length*FONT_WIDE,y+enumcount*m_font->GetLineHeight());
+		Rectangle_t rect(x,y,x+max_string_length*FONT_WIDE,y+enumcount*m_font->GetLineHeight(variantsTextParams));
 		DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor);
 
 		m_font->RenderText("Possible variants: ", Vector2D(x+5,y+2), variantsTextParams);
 
 		for(int i = 0; i < displayCount; i++)
 		{
-			float textYPos = (y + enumcount2*m_font->GetLineHeight());
+			float textYPos = (y + enumcount2*m_font->GetLineHeight(variantsTextParams));
 
 			enumcount2++;
 
@@ -575,6 +575,8 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, float curTim
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
+	eqFontStyleParam_t fontStyle;
+
 	m_fullscreen = transparent;
 
 	int drawstart = m_logScrollPosition;
@@ -585,12 +587,12 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, float curTim
 	if(!m_visible)
 		return;
 
-	m_maxLines = floor(height / m_font->GetLineHeight()) - 2;
+	m_maxLines = floor(height / m_font->GetLineHeight(fontStyle)) - 2;
 
 	if(m_maxLines < -4)
 		return;
 
-	int drawending = (-drawstart*m_font->GetLineHeight()) + m_font->GetLineHeight() * (m_maxLines+drawstart);
+	int drawending = (-drawstart*m_font->GetLineHeight(fontStyle)) + m_font->GetLineHeight(fontStyle) * (m_maxLines+drawstart);
 
 	int draws = 0;
 
@@ -628,7 +630,7 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, float curTim
 
 		int numRenderLines = GetAllMessages()->numElem();
 
-		m_maxLines = (con_outputRectangle.GetSize().y / m_font->GetLineHeight())-1;
+		m_maxLines = (con_outputRectangle.GetSize().y / m_font->GetLineHeight(fontStyle))-1;
 
 		int numDrawn = 0;
 
@@ -638,7 +640,7 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, float curTim
 		hasLinesStyle.textColor = ColorRGBA(0.5f,0.5f,1.0f,1.0f);
 
 		con_outputRectangle.vleftTop.x += 5.0f;
-		con_outputRectangle.vleftTop.y += m_font->GetLineHeight();
+		con_outputRectangle.vleftTop.y += m_font->GetLineHeight(fontStyle);
 
 		static CRectangleTextLayoutBuilder rectLayout;
 		rectLayout.SetRectangle( con_outputRectangle );
@@ -651,7 +653,7 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, float curTim
 
 			m_font->RenderText(GetAllMessages()->ptr()[i]->text, con_outputRectangle.vleftTop, outputTextStyle);
 
-			con_outputRectangle.vleftTop.y += m_font->GetLineHeight()*rectLayout.GetProducedLines();//cnumLines;
+			con_outputRectangle.vleftTop.y += m_font->GetLineHeight(fontStyle)*rectLayout.GetProducedLines();//cnumLines;
 
 			if(rectLayout.HasNotDrawnLines() || i-drawstart >= m_maxLines)
 			{
@@ -683,13 +685,13 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, float curTim
 	// render input text
 	m_font->RenderText(conInputStr.c_str(), inputTextPos, inputTextStyle);
 
-	float inputGfxOfs = m_font->GetStringWidth(CONSOLE_INPUT_STARTSTR, inputTextStyle.styleFlag);
-	float cursorPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText.c_str(), inputTextStyle.styleFlag, m_cursorPos);
+	float inputGfxOfs = m_font->GetStringWidth(CONSOLE_INPUT_STARTSTR, inputTextStyle);
+	float cursorPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText.c_str(), inputTextStyle, m_cursorPos);
 
 	// render selection
 	if(m_startCursorPos != -1)
 	{
-		float selStartPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText.c_str(), inputTextStyle.styleFlag, m_startCursorPos);
+		float selStartPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText.c_str(), inputTextStyle, m_startCursorPos);
 
 		Vertex2D_t rect[] = { MAKETEXQUAD(	inputTextPos.x + selStartPosition,
 											inputTextPos.y - 10,
@@ -739,7 +741,6 @@ bool CEqSysConsole::KeyChar(int ch)
 	if(ch == '~')
 		return false;
 
-	//CFont* cFont = (CFont*)m_font;
 
 	// THis is a weird thing
 	if(m_font->GetFontCharById(ch).advX > 0.0f && ch != '`')

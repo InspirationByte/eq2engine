@@ -650,7 +650,6 @@ void CMaterialSystem::ClearRenderStates()
 // frees single material
 void CMaterialSystem::FreeMaterial(IMaterial *pMaterial)
 {
-	// if already freed.
 	if(pMaterial == NULL)
 		return;
 

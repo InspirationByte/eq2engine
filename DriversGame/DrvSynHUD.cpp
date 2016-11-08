@@ -312,10 +312,10 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 			wchar_t* str = varargs_w(L"%.2i:%.2i", mins, secs);
 		
-			float minSecWidth = numbers50->GetStringWidth(str, numFontParams.styleFlag);
+			float minSecWidth = numbers50->GetStringWidth(str, numFontParams);
 			numbers50->RenderText(str, timeDisplayTextPos, numFontParams);
 
-			float size = numbers50->GetStringWidth(varargs("%.2i:%.2i", mins, secs), numFontParams.styleFlag);
+			float size = numbers50->GetStringWidth(varargs("%.2i:%.2i", mins, secs), numFontParams);
 
 			numFontParams.align = 0;
 

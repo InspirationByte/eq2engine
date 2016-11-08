@@ -10,6 +10,9 @@
 BEGIN_SHADER_CLASS(SDFFont)
 	SHADER_INIT_PARAMS()
 	{
+		m_rangeVar = GetAssignedMaterial()->GetMaterialVar("Range", "[0.94 0.95]");
+		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
+
 		SHADER_PASS(Unlit) = NULL;
 	}
 
@@ -37,34 +40,29 @@ BEGIN_SHADER_CLASS(SDFFont)
 
 	void SetupShader()
 	{
-
 		SHADER_BIND_PASS_SIMPLE(Unlit);
 	}
 
 	void SetupConstants()
 	{
 		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
+		SetupDefaultParameter(SHADERPARAM_BASETEXTURE);
 
-		SetupDefaultParameter(SHADERPARAM_ALPHASETUP);
-		SetupDefaultParameter(SHADERPARAM_DEPTHSETUP);
-		SetupDefaultParameter(SHADERPARAM_RASTERSETUP);
+		SetupDefaultParameter(SHADERPARAM_COLOR);
+
+		g_pShaderAPI->SetShaderConstantVector2D("SDFRange", m_rangeVar->GetVector2());
 	}
 
 	void SetColorModulation()
 	{
-
-	}
-
-	void SetupBaseTexture0()
-	{
-
+		ColorRGBA setColor = materials->GetAmbientColor();
+		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", setColor);
 	}
 
 	ITexture*	GetBaseTexture(int stage) {return NULL;}
 	ITexture*	GetBumpTexture(int stage) {return NULL;}
 
-
 	SHADER_DECLARE_PASS(Unlit);
 
-
+	IMatVar*	m_rangeVar;
 END_SHADER_CLASS

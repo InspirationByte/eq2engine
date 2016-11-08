@@ -644,7 +644,7 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 			textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 			textStl.textColor = current.color;
 
-			Vector2D textPos = drawFadedTextBoxPosition + Vector2D( 0, (idx*m_pDebugFont->GetLineHeight()) );
+			Vector2D textPos = drawFadedTextBoxPosition + Vector2D( 0, (idx*m_pDebugFont->GetLineHeight(textStl)) );
 
 			m_pDebugFont->RenderText( current.pszText.GetData(), textPos, textStl);
 
@@ -686,7 +686,7 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 
 		if(m_TextArray.numElem())
 		{
-			GUIDrawWindow(Rectangle_t(drawTextBoxPosition.x,drawTextBoxPosition.y,drawTextBoxPosition.x+380,drawTextBoxPosition.y+(m_TextArray.numElem()*m_pDebugFont->GetLineHeight())),ColorRGBA(0.5f,0.5f,0.5f,0.5f));
+			GUIDrawWindow(Rectangle_t(drawTextBoxPosition.x,drawTextBoxPosition.y,drawTextBoxPosition.x+380,drawTextBoxPosition.y+(m_TextArray.numElem()*m_pDebugFont->GetLineHeight(textStl))),ColorRGBA(0.5f,0.5f,0.5f,0.5f));
 
 			for (int i = 0;i < m_TextArray.numElem();i++)
 			{
@@ -694,7 +694,7 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 
 				textStl.textColor = current.color;
 
-				Vector2D textPos(drawTextBoxPosition.x,drawTextBoxPosition.y+(i*m_pDebugFont->GetLineHeight()));
+				Vector2D textPos(drawTextBoxPosition.x,drawTextBoxPosition.y+(i*m_pDebugFont->GetLineHeight(textStl)));
 
 				m_pDebugFont->RenderText(current.pszText.GetData(), textPos, textStl);
 			}
@@ -708,7 +708,7 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 		{
 			DebugFadingTextNode_t& current = m_RightTextFadeArray[i];
 
-			float textLen = m_pDebugFont->GetStringWidth( current.pszText.c_str(), textStl.styleFlag );
+			float textLen = m_pDebugFont->GetStringWidth( current.pszText.c_str(), textStl );
 
 			if(current.initialLifetime > 0.05f)
 				current.color.w = clamp(current.lifetime, 0.0f, 1.0f);
@@ -716,7 +716,7 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 				current.color.w = 1.0f;
 
 			rTextFadeStyle.textColor = current.color;
-			Vector2D textPos(winWide - (textLen*m_pDebugFont->GetLineHeight()), 45+(i*m_pDebugFont->GetLineHeight()));
+			Vector2D textPos(winWide - (textLen*m_pDebugFont->GetLineHeight(textStl)), 45+(i*m_pDebugFont->GetLineHeight(textStl)));
 
 			m_pDebugFont->RenderText( current.pszText.GetData(), textPos, rTextFadeStyle);
 
