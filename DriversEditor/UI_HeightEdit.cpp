@@ -970,6 +970,9 @@ void CUI_HeightEdit::PaintHeightfieldGlobal(int gx, int gy, TILEPAINTFUNC func, 
 	IVector2D local;
 	g_pGameWorld->m_level.GlobalToLocalPoint(IVector2D(gx,gy), local, &pReg);
 
+	int neighbour_x[8] = NEIGHBOR_OFFS_XDX(0, 1);
+	int neighbour_y[8] = NEIGHBOR_OFFS_YDY(0, 1);
+
 	if(pReg)
 	{
 		CHeightTileFieldRenderable* hfield = pReg->GetHField(m_selectedHField);
@@ -1008,10 +1011,26 @@ void CUI_HeightEdit::PaintHeightfieldGlobal(int gx, int gy, TILEPAINTFUNC func, 
 					int ix = ROLLING_VALUE(prx, field->m_sizew);
 					int iy = ROLLING_VALUE(pry, field->m_sizeh);
 
-					if(WRAP_PaintFieldModify(rx, ry, ix, iy, this, field, tile, func, GetEditorPaintFlags(), percent))
+					bool hasChanges = WRAP_PaintFieldModify(rx, ry, ix, iy, this, field, tile, func, GetEditorPaintFlags(), percent);
+
+					if( hasChanges )
+					{
 						field->SetChanged();
-					//else
-					//	g_pEditorActionObserver->CancelModify();
+
+						/*
+						// TODO: push it to the change list
+
+						// check if neighbour needs change too
+						for(int i = 0; i < 8; i++)
+						{
+							CHeightTileFieldRenderable* neighbour = field;
+							hfieldtile_t* ntile = field->GetTileAndNeighbourField(ix+neighbour_x[i], iy+neighbour_y[i], (CHeightTileField**)&neighbour);
+
+							if(neighbour && neighbour != field)
+								neighbour->SetChanged();
+						}
+						*/
+					}
 				}
 			}
 		}
@@ -1020,16 +1039,17 @@ void CUI_HeightEdit::PaintHeightfieldGlobal(int gx, int gy, TILEPAINTFUNC func, 
 
 void CUI_HeightEdit::PaintHeightfieldRadius(int px, int py, TILEPAINTFUNC func)
 {
-	//int p_x = m_selectedRegion->GetHField(m_selectedHField)->m_posidx_x;
-	//int p_y = m_selectedRegion->GetHField(m_selectedHField)->m_posidx_y;
-
-	// update neighbours
-	//int fields_offs_x[8] = NEIGHBOR_OFFS_XDX(p_x, 1);
-	//int fields_offs_y[8] = NEIGHBOR_OFFS_YDY(p_y, 1);
+	int neighbour_x[8] = NEIGHBOR_OFFS_XDX(0, 1);
+	int neighbour_y[8] = NEIGHBOR_OFFS_YDY(0, 1);
 
 	bool quadraticRadius = m_quadratic->GetValue();
 
 	int radius = GetRadius();
+
+	CHeightTileFieldRenderable* startField = m_selectedRegion->GetHField(m_selectedHField);
+
+	if(!startField)
+		return;
 
 	// paint every tile in radius
 	for(int x = 0; x < radius*2; x++)
@@ -1048,11 +1068,7 @@ void CUI_HeightEdit::PaintHeightfieldRadius(int px, int py, TILEPAINTFUNC func)
 
 			if(doPaint)
 			{
-				CHeightTileFieldRenderable* field = m_selectedRegion->GetHField(m_selectedHField);
-
-				if(!field)
-					continue;
-
+				CHeightTileFieldRenderable* field = startField;
 				hfieldtile_t* tile = field->GetTileAndNeighbourField(px+rx, py+ry, (CHeightTileField**)&field);
 
 				if(!tile)
@@ -1065,8 +1081,26 @@ void CUI_HeightEdit::PaintHeightfieldRadius(int px, int py, TILEPAINTFUNC func)
 				int ix = ROLLING_VALUE(prx, field->m_sizew);
 				int iy = ROLLING_VALUE(pry, field->m_sizeh);
 
-				if(WRAP_PaintFieldModify(rx, ry, ix, iy, this, field, tile, func, GetEditorPaintFlags(), 1.0f))
+				bool hasChanges = WRAP_PaintFieldModify(rx, ry, ix, iy, this, field, tile, func, GetEditorPaintFlags(), 1.0f);
+
+				if( hasChanges )
+				{
 					field->SetChanged();
+
+					/*
+					// TODO: push it to the change list
+
+					// check if neighbour needs change too
+					for(int i = 0; i < 8; i++)
+					{
+						CHeightTileFieldRenderable* neighbour = field;
+						hfieldtile_t* ntile = field->GetTileAndNeighbourField(ix+neighbour_x[i], iy+neighbour_y[i], (CHeightTileField**)&neighbour);
+
+						if(neighbour && neighbour != field)
+							neighbour->SetChanged();
+					}
+					*/
+				}
 			}
 		}
 	}
@@ -1108,20 +1142,6 @@ bool TexPaintFunc(int rx, int ry, int px, int py, CUI_HeightEdit* edit, CHeightT
 	return true;
 }
 
-/*
-bool FlagPaintFunc(int rx, int ry, int px, int py, CUI_HeightEdit* edit, CHeightTileField* field, hfieldtile_t* tile, int flags)
-{
-	if(	edit->GetRotation() == tile->rotatetex &&
-		tile->flags == edit->GetHeightfieldFlags())
-		return false;
-
-	tile->flags = edit->GetHeightfieldFlags();
-
-	g_pMainFrame->NotifyUpdate();
-
-	return true;
-}
-*/
 
 bool NullTexPaintFunc(int rx, int ry, int px, int py, CUI_HeightEdit* edit, CHeightTileField* field, hfieldtile_t* tile, int flags, float percent)
 {
@@ -1246,50 +1266,6 @@ void CUI_HeightEdit::PaintHeightfieldLine(int x0, int y0, int x1, int y1, TILEPA
 
     return;
 }
-
-/*
-void CUI_HeightEdit::PaintHeightfieldLine(int x0, int y0, int x1, int y1, TILEPAINTFUNC func)
-{
-	int cx0 = x0;
-	int cy0 = y0;
-
-	// direction
-	int dx = abs(x1-x0);
-	int dy = abs(y1-y0);
-
-	int sx = x0<x1 ? 1 : -1;
-	int sy = y0<y1 ? 1 : -1; 
-
-	int err = (dx>dy ? dx : -dy) / 2;
-	int e2;
-
-	for(;;)
-	{
-		float interp = / dx;
-
-		// paint using global points
-		PaintHeightfieldGlobal(cx0, cy0, func);
-
-		if (cx0==x1 && cy0==y1)
-			break;
-
-		
-		
-		e2 = err;
-
-		if (e2 >-dx)
-		{
-			err -= dy;
-			cx0 += sx;
-		}
-		if (e2 < dy)
-		{
-			err += dx;
-			cy0 += sy; 
-		}
-	}
-}
-*/
 
 void CUI_HeightEdit::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos  )
 {

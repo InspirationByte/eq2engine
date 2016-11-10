@@ -123,6 +123,7 @@ int CDirectSoundDevice::CreateBuffers ()
     wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
     wfx.cbSize = 0;
 
+
     memset( &dsbd, 0, sizeof(DSBUFFERDESC) );
     dsbd.dwSize = sizeof(DSBUFFERDESC);
     dsbd.dwFlags = DSBCAPS_PRIMARYBUFFER;
@@ -151,7 +152,7 @@ int CDirectSoundDevice::CreateBuffers ()
 
 		memset( &dsbd, 0, sizeof(DSBUFFERDESC) );
 		dsbd.dwSize = sizeof(DSBUFFERDESC);
-		dsbd.dwFlags = DSBCAPS_CTRLFREQUENCY|DSBCAPS_LOCSOFTWARE;
+		dsbd.dwFlags = DSBCAPS_CTRLFREQUENCY|DSBCAPS_LOCSOFTWARE|DSBCAPS_GLOBALFOCUS;
 		dsbd.dwBufferBytes = DEFAULT_BUFFER_SIZE;
 		dsbd.lpwfxFormat = &m_BufferFormat;
 

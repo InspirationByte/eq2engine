@@ -18,7 +18,7 @@
 #include "Mmsystem.h"
 #endif
 
-#define GAME_WINDOW_TITLE varargs("Driver Syndicate Alpha [%s] build %d", __DATE__, GetEngineBuildNumber())
+#define GAME_WINDOW_TITLE "The Driver Syndicate" //varargs("Driver Syndicate Alpha [%s] build %d", __DATE__, GetEngineBuildNumber())
 
 // Renderer
 DECLARE_CVAR(r_mode,1024x768,"Screen Resoulution. Resolution string format: WIDTHxHEIGHT" ,CV_ARCHIVE);
@@ -29,36 +29,35 @@ DECLARE_CVAR(screenshotJpegQuality,100,"JPEG Quality",CV_ARCHIVE);
 
 DECLARE_CMD(screenshot, "Save screenshot", 0)
 {
-	if(materials != NULL)
-	{
-		FILE *file = NULL;
+	if(materials == NULL)
+		return;
 
+	CImage img;
+	if( !materials->CaptureScreenshot(img) )
+		return;
+
+	// pick the best filename
+	if(CMD_ARGC == 0)
+	{
 		int i = 0;
 		do
 		{
 			g_fileSystem->MakeDir("screenshots", SP_ROOT);
-			EqString path = _Es(varargs("screenshots/screenshot_%04d.jpg", i));
+			EqString path(varargs("screenshots/screenshot_%04d.jpg", i));
 
-			if ((file = fopen(path.GetData(), "r")) != NULL)
-			{
-				fclose(file);
-			}
-			else
-			{
-				CImage img;
-				if (materials->CaptureScreenshot(img))
-				{
-					MsgInfo("Saving screenshot to: %s\n",path.GetData());
-					img.SaveJPEG(path.GetData(), screenshotJpegQuality.GetInt());
-				}
+			if(g_fileSystem->FileExist(path.c_str(), SP_ROOT))
+				continue;
 
-				return;
-			}
-			i++;
+			MsgInfo("Writing screenshot to '%s'\n", path.c_str());
+			img.SaveJPEG(path.c_str(), screenshotJpegQuality.GetInt());
+			break;
 		}
-		while (i < 9999);
-
-		return;
+		while (i++ < 9999);
+	}
+	else
+	{
+		EqString path(CMD_ARGV(0) + ".jpg");
+		img.SaveJPEG(path.c_str(), screenshotJpegQuality.GetInt());
 	}
 }
 

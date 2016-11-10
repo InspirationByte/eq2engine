@@ -354,11 +354,12 @@ void CD3DRenderLib::SetBackbufferSize(const int w, const int h)
 
 bool CD3DRenderLib::CaptureScreenshot(CImage& img)
 {
+	/*
 	if(m_Renderer->m_params->bIsWindowed)
 	{
 		MsgWarning("Go to fullscreen mode to capture screenshots\n");
 		return false;
-	}
+	}*/
 
 	POINT topLeft = { 0, 0 };
 	ClientToScreen(hwnd, &topLeft);
@@ -366,7 +367,6 @@ bool CD3DRenderLib::CaptureScreenshot(CImage& img)
 	bool result = false;
 
 	LPDIRECT3DSURFACE9 surface;
-
 	if (m_rhi->CreateOffscreenPlainSurface(m_d3dMode.Width, m_d3dMode.Height, D3DFMT_A8R8G8B8, D3DPOOL_SCRATCH, &surface, NULL) == D3D_OK)
 	{
 		if (m_rhi->GetFrontBufferData(0, surface) == D3D_OK)
@@ -375,7 +375,7 @@ bool CD3DRenderLib::CaptureScreenshot(CImage& img)
 
 			if (surface->LockRect(&lockedRect, NULL, D3DLOCK_READONLY) == D3D_OK)
 			{
-				ubyte *dst = img.Create(FORMAT_RGB8, m_width, m_height, 1, 1);
+				ubyte* dst = img.Create(FORMAT_RGB8, m_width, m_height, 1, 1);
 
 				for (int y = 0; y < m_height; y++)
 				{

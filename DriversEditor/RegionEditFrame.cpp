@@ -540,14 +540,6 @@ void CRegionEditFrame::ReDraw()
 						meshBuilder.Position3fv(v1); meshBuilder.AdvanceVertex();
 					meshBuilder.End();
 				}
-
-				//
-				// set the texture 
-				// make the rectangle that fits on screen
-				// select mouseover
-				// render
-
-
 			}
 		}
 
@@ -558,7 +550,7 @@ void CRegionEditFrame::ReDraw()
 		fontParam.textColor = ColorRGBA(1,1,1,1);
 
 		Vector2D baseTextPos(15);
-		float lineHeight = debugoverlay->GetFont()->GetLineHeight();
+		float lineHeight = debugoverlay->GetFont()->GetLineHeight(fontParam);
 
 		debugoverlay->GetFont()->RenderText(varargs("ZOOM: %g", m_zoomLevel), baseTextPos, fontParam);
 		debugoverlay->GetFont()->RenderText(varargs("displayed regions: %d", displayed), baseTextPos + Vector2D(0,lineHeight), fontParam);
