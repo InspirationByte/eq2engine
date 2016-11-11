@@ -79,6 +79,12 @@ enum ECarLightTypeFlags
 	CAR_LIGHT_EMERGENCY			= (CAR_LIGHT_DIM_LEFT | CAR_LIGHT_DIM_RIGHT),	// emergency light flags (dim. left and right)
 };
 
+enum EEngineType
+{
+	CAR_ENGINE_PETROL = 0,
+	CAR_ENGINE_DIESEL,
+};
+
 // wheel flags
 enum EWheelFlags
 {
@@ -141,6 +147,7 @@ struct carConfigEntry_t
 	Vector3D					m_virtualMassCenter;
 	float						m_mass;
 	
+	EEngineType					m_engineType;
 	float						m_differentialRatio;
 	float						m_torqueMult;
 	float						m_transmissionRate;
@@ -301,6 +308,8 @@ public:
 	void			SetModelPtr(IEqModel* modelPtr);
 	void			Draw( int nRenderFlags );
 };
+
+typedef float (*TORQUECURVEFUNC)( float rpm );
 
 //-----------------------------------------------------------------------
 // The vehicle itself

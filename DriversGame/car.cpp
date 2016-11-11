@@ -92,6 +92,8 @@ static Vector3D s_BodyPartDirections[] =
 #define SKIDMARK_MAX_LENGTH			(256)
 #define SKIDMARK_MIN_INTERVAL		(0.25f)
 
+#define GEARBOX_DECEL_SHIFTDOWN_FACTOR	(0.7f)
+
 #define WHELL_ROLL_RESISTANCE_CONST		(150)
 #define WHELL_ROLL_RESISTANCE_HALF		(WHELL_ROLL_RESISTANCE_CONST * 0.5f)
 
@@ -105,7 +107,6 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 
 	kvkeybase_t* wheelModelType = kvs->FindKeyBase("wheelBodyGroup");
 
-
 	const char* defaultWheelName = KV_GetValueString(wheelModelType, 0, "wheel1");
 	const char* defaultHubcapWheelName = KV_GetValueString(wheelModelType, 1, "");
 	const char* defaultHubcapName = KV_GetValueString(wheelModelType, 2, "");
@@ -114,6 +115,7 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 	conf->m_body_center = KV_GetVector3D(kvs->FindKeyBase("center"));
 	conf->m_virtualMassCenter = KV_GetVector3D(kvs->FindKeyBase("gravityCenter"));
 
+	conf->m_engineType = (EEngineType)KV_GetValueInt(kvs->FindKeyBase("engineType"), 0, CAR_ENGINE_PETROL);
 	conf->m_differentialRatio = KV_GetValueFloat(kvs->FindKeyBase("differential"));
 	conf->m_torqueMult = KV_GetValueFloat(kvs->FindKeyBase("torqueMultipler"));
 	conf->m_transmissionRate = KV_GetValueFloat(kvs->FindKeyBase("transmissionRate"));
@@ -359,22 +361,46 @@ extern CPFXAtlasGroup* g_translParticles;
 extern CPFXAtlasGroup* g_additPartcles;
 extern CPFXAtlasGroup* g_vehicleLights;
 
-float DBTorqueCurveFromRPM( float fRPM )
+#define PETROL_ENGINE_CURVE				(1.4f)
+#define PETROL_MINIMAL_TORQUE_FACTOR	(6.4f)
+
+#define DIESEL_ENGINE_CURVE				(0.8f)
+#define DIESEL_MINIMAL_TORQUE_FACTOR	(6.0f)
+
+#define PEAK_TORQUE_FACTOR				(90.0f)
+
+float PetrolEngineTorqueByRPM( float rpm )
 {
-	float fTorque = ( fRPM * ( 0.225f * 0.001f ) );
+	float fTorque = ( rpm * ( 0.245f * 0.001f ) );
 
 	fTorque *= fTorque;
-	fTorque -= 0.8f;
+	fTorque -= PETROL_ENGINE_CURVE;
 	fTorque *= fTorque;
 
-	return ( 6.4f - fTorque ) * 90.0f;
+	return ( PETROL_MINIMAL_TORQUE_FACTOR - fTorque ) * PEAK_TORQUE_FACTOR;
 }
 
-static float DBTorqueCurve ( float radsPerSec )
+float DieselEngineTorqueByRPM( float rpm )
 {
-	float fRPM = radsPerSec * 60.0f / ( 2.0f * PI_F );
+	float fTorque = ( rpm * ( 0.225f * 0.001f ) );
 
-	return DBTorqueCurveFromRPM( fRPM );
+	fTorque *= fTorque;
+	fTorque -= DIESEL_ENGINE_CURVE;
+	fTorque *= fTorque;
+
+	return ( DIESEL_MINIMAL_TORQUE_FACTOR - fTorque ) * PEAK_TORQUE_FACTOR;
+}
+
+static TORQUECURVEFUNC s_torqueFuncs[] = 
+{
+	PetrolEngineTorqueByRPM,
+	DieselEngineTorqueByRPM,
+};
+
+static float CalcTorqueCurve( float radsPerSec, int type )
+{
+	float rpm = radsPerSec * 60.0f / ( 2.0f * PI_F );
+	return s_torqueFuncs[type]( rpm );
 }
 
 float DBSlipAngleToLateralForce(float fSlipAngle, float fLongitudinalForce, eqPhysSurfParam_t* surfParam)
@@ -1337,14 +1363,16 @@ void CCar::UpdateCarPhysics(float delta)
 	// Update engine
 	//
 
+	int engineType =m_conf->m_engineType;
+
 	FReal differentialRatio = m_conf->m_differentialRatio;
 	FReal transmissionRate = m_conf->m_transmissionRate;
 
 	FReal torqueConvert = differentialRatio * m_conf->m_gears[m_nGear];
 	m_radsPerSec = (float)fabs(wheelsSpeed)*torqueConvert;
-	FReal torque = DBTorqueCurve( m_radsPerSec ) * m_conf->m_torqueMult;
+	FReal torque = CalcTorqueCurve(m_radsPerSec, engineType) * m_conf->m_torqueMult;
 
-	float gbxDecelRate = 1.0f - clamp(1.0f-(float)m_fAcceleration, 0.0f, 0.0f);
+	float gbxDecelRate = max(m_fAcceleration, GEARBOX_DECEL_SHIFTDOWN_FACTOR);
 
  	if(torque < 0)
 		torque = 0.0f;
@@ -1372,7 +1400,7 @@ void CCar::UpdateCarPhysics(float delta)
 			torqueConvert = differentialRatio * m_conf->m_gears[m_nGear];
 			FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
 			m_radsPerSec = gearRadsPerSecond;
-			torque = DBTorqueCurve(gearRadsPerSecond) * m_conf->m_torqueMult;
+			torque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->m_torqueMult;
 
 			torque *= torqueConvert * transmissionRate;
 
@@ -1416,7 +1444,7 @@ void CCar::UpdateCarPhysics(float delta)
 				torqueConvert = differentialRatio * m_conf->m_gears[nGear];
 				FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
 
-				FReal gearTorque = DBTorqueCurve(gearRadsPerSecond) * m_conf->m_torqueMult;
+				FReal gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->m_torqueMult;
  				if(gearTorque < 0)
 					gearTorque = 0.0f;
 
@@ -1435,7 +1463,7 @@ void CCar::UpdateCarPhysics(float delta)
 				torqueConvert = differentialRatio * m_conf->m_gears[nGear];
 				FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
 
-				FReal gearTorque = DBTorqueCurve(gearRadsPerSecond) * m_conf->m_torqueMult;
+				FReal gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->m_torqueMult;
  				if(gearTorque < 0)
 					gearTorque = 0.0f;
 
