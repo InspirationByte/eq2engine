@@ -73,7 +73,7 @@ enum EPhysCollisionContents
 	OBJECTCONTENTS_OBJECT			= (1 << 4),
 	OBJECTCONTENTS_VEHICLE			= (1 << 5),
 
-	OBJECTCONTENTS_CUSTOM_START		= (1 << 8),
+	OBJECTCONTENTS_CUSTOM_START		= (1 << 16),
 };
 
 #define COLLIDEMASK_VEHICLE (OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_DEBRIS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE | OBJECTCONTENTS_WATER)
@@ -332,11 +332,11 @@ OOLUA_PROXY(CGameObject)
 
 	OOLUA_MEM_FUNC_RENAME(Spawn, void, L_Activate)
 
-	OOLUA_MEM_FUNC_RENAME(SetContents, void, L_SetContents, int)
-	OOLUA_MEM_FUNC_RENAME(SetCollideMask, void, L_SetCollideMask, int)
-
 	OOLUA_MEM_FUNC_RENAME(SetEventHandler, void, L_RegisterEventHandler, const OOLUA::Table&)
 	OOLUA_MEM_FUNC_RENAME(GetEventHandler, OOLUA::Table&, L_GetEventHandler)
+	
+	OOLUA_MEM_FUNC_RENAME(SetContents, void, L_SetContents, int)
+	OOLUA_MEM_FUNC_RENAME(SetCollideMask, void, L_SetCollideMask, int)
 
 	OOLUA_MEM_FUNC_CONST_RENAME(GetContents, int, L_GetContents)
 	OOLUA_MEM_FUNC_CONST_RENAME(GetCollideMask, int, L_GetCollideMask)

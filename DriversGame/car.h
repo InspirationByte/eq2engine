@@ -392,8 +392,8 @@ public:
 	void					L_SetContents(int contents);
 	void					L_SetCollideMask(int contents);
 
-	int						L_GetContents();
-	int						L_GetCollideMask();
+	int						L_GetContents() const;
+	int						L_GetCollideMask() const;
 
 	void					RefreshWindowDamageEffects();
 
@@ -639,6 +639,13 @@ OOLUA_PROXY(CCar, CGameObject)
 
 	OOLUA_MEM_FUNC_RENAME(GetLateralSliding, float, GetLateralSlidingAtBody)
 	OOLUA_MFUNC(GetTractionSliding)
+	/*
+	OOLUA_MEM_FUNC_RENAME(SetContents, void, L_SetContents, int)
+	OOLUA_MEM_FUNC_RENAME(SetCollideMask, void, L_SetCollideMask, int)
+
+	OOLUA_MEM_FUNC_CONST_RENAME(GetContents, int, L_GetContents)
+	OOLUA_MEM_FUNC_CONST_RENAME(GetCollideMask, int, L_GetCollideMask)
+	*/
 OOLUA_PROXY_END
 #endif // #ifndef __INTELLISENSE__
 #endif // NO_LUA

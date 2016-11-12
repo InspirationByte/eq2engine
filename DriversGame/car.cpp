@@ -1002,15 +1002,15 @@ void CCar::L_SetCollideMask(int contents)
 	m_pPhysicsObject->m_object->SetCollideMask(contents);
 }
 
-int	CCar::L_GetContents()
+int	CCar::L_GetContents() const
 {
 	if (!m_pPhysicsObject)
 		return 0;
 
-	return m_pPhysicsObject->m_object->GetCollideMask();
+	return m_pPhysicsObject->m_object->GetContents();
 }
 
-int	CCar::L_GetCollideMask()
+int	CCar::L_GetCollideMask() const
 {
 	if (!m_pPhysicsObject)
 		return 0;

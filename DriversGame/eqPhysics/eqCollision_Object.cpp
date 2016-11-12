@@ -307,18 +307,18 @@ void CEqCollisionObject::SetCollideMask(int maskContents)
 	m_collMask = maskContents;
 }
 
-int	CEqCollisionObject::GetContents()
+int	CEqCollisionObject::GetContents() const
 {
 	return m_contents;
 }
 
-int CEqCollisionObject::GetCollideMask()
+int CEqCollisionObject::GetCollideMask() const
 {
 	return m_collMask;
 }
 
 // logical check, pre-broadphase
-bool CEqCollisionObject::CheckCanCollideWith( CEqCollisionObject* object )
+bool CEqCollisionObject::CheckCanCollideWith( CEqCollisionObject* object ) const
 {
 	if((GetContents() & object->GetCollideMask()) || (GetCollideMask() & object->GetContents()))
 	{

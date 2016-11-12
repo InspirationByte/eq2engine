@@ -61,6 +61,25 @@ DECLARE_CMD(screenshot, "Save screenshot", 0)
 	}
 }
 
+DECLARE_CMD(kv3test, "Test", 0)
+{
+	kvkeybase_t destSec;
+	long fileSize = 0;
+	char* dataStr = g_fileSystem->GetFileBuffer("kv3test.txt", &fileSize, SP_ROOT);
+
+	if(dataStr)
+	{
+		KV_ParseSectionV3(dataStr, fileSize, "test", &destSec);
+
+		// look how it's been parsed
+		KV_PrintSection( &destSec );
+
+		PPFree(dataStr);
+	}
+	else
+		MsgError("Can't open kv3test.txt\n");
+}
+
 ConVar r_fullscreen("r_fullscreen", "0", "Fullscreen" ,CV_ARCHIVE);
 
 EQWNDHANDLE Sys_CreateWindow()

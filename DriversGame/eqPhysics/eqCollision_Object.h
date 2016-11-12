@@ -93,10 +93,10 @@ public:
 	void						SetContents(int contents);											///< sets this object collision contents accessory
 	void						SetCollideMask(int maskContents);									///< sets what collision object contents can collide with this
 
-	int							GetContents();
-	int							GetCollideMask();
+	int							GetContents() const;
+	int							GetCollideMask() const;
 
-	bool						CheckCanCollideWith( CEqCollisionObject* object );					///< just checks possibility of collision, pre-broadphase
+	bool						CheckCanCollideWith( CEqCollisionObject* object ) const;					///< just checks possibility of collision, pre-broadphase
 
 	//--------------------
 
