@@ -2236,12 +2236,17 @@ void CCar::ReleaseHubcap(int wheel)
 
 	Vector3D wheelPos = wheelTranslation.getTranslationComponent();
 
+	float angularVel = wdata.pitchVel * PI_F * 2.0f;
+
+	if(wdata.flags.isBurningOut)
+		angularVel += (15.0f/wheelConf.radius) * PI_F * 0.5f;
+
 	CObject_Debris* hubcapObj = new CObject_Debris(NULL);
 	hubcapObj->SpawnAsHubcap(wdata.pWheelObject->GetModel(), wdata.hubcapBodygroup);
 	hubcapObj->SetOrigin( wheelPos );
 	hubcapObj->m_physBody->SetOrientation( Quaternion(wheelTranslation.getRotationComponent()) );
 	hubcapObj->m_physBody->SetLinearVelocity( wdata.velocityVec );
-	hubcapObj->m_physBody->SetAngularVelocity( wheelTranslation.rows[0].xyz() * sign(wheelConf.suspensionTop.x) * -wdata.pitchVel * PI_F );
+	hubcapObj->m_physBody->SetAngularVelocity( wheelTranslation.rows[0].xyz() * -sign(wheelConf.suspensionTop.x) * angularVel );
 	g_pGameWorld->AddObject(hubcapObj, true);
 
 	wdata.flags.lostHubcap = true;
