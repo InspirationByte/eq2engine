@@ -49,8 +49,6 @@ enum EKVPairType
 	KVPAIR_TYPES,
 };
 
-const char* GetKVTypeFormatStr(EKVPairType type);
-
 // tune this (depends on size of used memory)
 #define KV_MAX_NAME_LENGTH		128
 
@@ -61,6 +59,9 @@ enum KVSearchFlags_e
 	KV_FLAG_ARRAY	= (1 << 2)
 };
 
+//
+// KeyValues typed value holder
+//
 struct kvpairvalue_t
 {
 	PPMEM_MANAGED_OBJECT()
@@ -81,8 +82,9 @@ struct kvpairvalue_t
 		int		nValue;
 		bool	bValue;
 		float	fValue;
-		struct kvkeybase_t*	section;
 	};
+
+	struct kvkeybase_t*	section;
 
 	char*				value;
 
@@ -93,7 +95,9 @@ struct kvpairvalue_t
 	void				SetValueFromString( const char* pszValue );
 };
 
+//
 // key values base
+//
 struct kvkeybase_t
 {
 	PPMEM_MANAGED_OBJECT()
@@ -198,59 +202,53 @@ struct kvkeybase_t
 class KeyValues
 {
 public:
-	KeyValues()
-	{
-		m_pKeyBase = new kvkeybase_t;
-	}
+	KeyValues();
+	~KeyValues();
 
-	~KeyValues()
-	{
-		delete m_pKeyBase;
-	}
-
-	void Reset()
-	{
-		delete m_pKeyBase;
-		m_pKeyBase = NULL;
-	}
+	void			Reset();
 
 	// searches for keybase
-	kvkeybase_t*		FindKeyBase(const char* pszName, int nFlags = 0);
+	kvkeybase_t*	FindKeyBase(const char* pszName, int nFlags = 0);
 
 	// loads from file
-	bool				LoadFromFile(const char* pszFileName, int nSearchFlags = -1);
-	bool				LoadFromStream( ubyte* pData);
+	bool			LoadFromFile(const char* pszFileName, int nSearchFlags = -1);
+	bool			LoadFromStream(ubyte* pData);
 
-	void				SaveToFile(const char* pszFileName, int nSearchFlags = -1);
+	void			SaveToFile(const char* pszFileName, int nSearchFlags = -1);
 
-	kvkeybase_t*		GetRootSection() {return m_pKeyBase;}
+	kvkeybase_t*	GetRootSection() {return m_pKeyBase;}
 
 private:
-	kvkeybase_t*		m_pKeyBase;
+	kvkeybase_t*	m_pKeyBase;
 };
 
-// KVAPI functions
+//---------------------------------------------------------------------------------------------------------
+// KEYVALUES API Functions
+//---------------------------------------------------------------------------------------------------------
 
-kvkeybase_t*	KV_LoadFromFile( const char* pszFileName, int nSearchFlags = -1, kvkeybase_t* pParseTo = NULL );
-kvkeybase_t*	KV_ParseSection( const char* pszBuffer, const char* pszFileName = NULL, kvkeybase_t* pParseTo = NULL, int nLine = 0 );
+kvkeybase_t*		KV_LoadFromFile( const char* pszFileName, int nSearchFlags = -1, kvkeybase_t* pParseTo = NULL );
 
-kvkeybase_t*	KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char* pszFileName, kvkeybase_t* pParseTo, int nStartLine = 0 );
+kvkeybase_t*		KV_ParseSection( const char* pszBuffer, const char* pszFileName = NULL, kvkeybase_t* pParseTo = NULL, int nLine = 0 );
 
-void			KV_PrintSection(kvkeybase_t* base);
+kvkeybase_t*		KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char* pszFileName, kvkeybase_t* pParseTo, int nStartLine = 0 );
 
-bool			UTIL_StringNeedsQuotes( const char* pszString );
-void			KV_WriteToStream_r(kvkeybase_t* pKeyBase, IVirtualStream* pStream, int nTabs = 0, bool bOldFormat = false, bool pretty = true);
+void				KV_PrintSection(kvkeybase_t* base);
 
-// safe and fast value returner
-const char*		KV_GetValueString( kvkeybase_t* pBase, int nIndex = 0, const char* pszDefault = "no key" );
-int				KV_GetValueInt( kvkeybase_t* pBase, int nIndex = 0, int nDefault = 0 );
-float			KV_GetValueFloat( kvkeybase_t* pBase, int nIndex = 0, float fDefault = 0.0f );
-bool			KV_GetValueBool( kvkeybase_t* pBase, int nIndex = 0, bool bDefault = false );
+void				KV_WriteToStream(IVirtualStream* outStream, kvkeybase_t* section, int nTabs = 0, bool pretty = true);
 
-Vector2D		KV_GetVector2D( kvkeybase_t* pBase, int nIndex = 0, const Vector2D& vDefault = vec2_zero);
-IVector2D		KV_GetIVector2D( kvkeybase_t* pBase, int nIndex = 0, const IVector2D& vDefault = 0);
+//-----------------------------------------------------------------------------------------------------
+// KeyValues value helpers
+//-----------------------------------------------------------------------------------------------------
 
-Vector3D		KV_GetVector3D( kvkeybase_t* pBase, int nIndex = 0, const Vector3D& vDefault = vec3_zero);
-Vector4D		KV_GetVector4D( kvkeybase_t* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero);
+const char*			KV_GetValueString( kvkeybase_t* pBase, int nIndex = 0, const char* pszDefault = "no key" );
+int					KV_GetValueInt( kvkeybase_t* pBase, int nIndex = 0, int nDefault = 0 );
+float				KV_GetValueFloat( kvkeybase_t* pBase, int nIndex = 0, float fDefault = 0.0f );
+bool				KV_GetValueBool( kvkeybase_t* pBase, int nIndex = 0, bool bDefault = false );
+
+Vector2D			KV_GetVector2D( kvkeybase_t* pBase, int nIndex = 0, const Vector2D& vDefault = vec2_zero);
+IVector2D			KV_GetIVector2D( kvkeybase_t* pBase, int nIndex = 0, const IVector2D& vDefault = 0);
+
+Vector3D			KV_GetVector3D( kvkeybase_t* pBase, int nIndex = 0, const Vector3D& vDefault = vec3_zero);
+Vector4D			KV_GetVector4D( kvkeybase_t* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero);
 
 #endif //KEYVALUES_H

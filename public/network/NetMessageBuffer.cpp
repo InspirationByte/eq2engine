@@ -192,16 +192,13 @@ void CNetMessageBuffer::WriteKeyValues(kvkeybase_t* kbase)
 {
 	CMemoryStream stream;
 	stream.Open(NULL, VS_OPEN_WRITE, 2048);
-	KV_WriteToStream_r(kbase, &stream, 0, false, false);
+	KV_WriteToStream(&stream, kbase, 0, false);
 
 	char zerochar = '\0';
 	stream.Write(&zerochar, 1, 1);
 
-	int len = stream.Tell()+1;
-
-	WriteInt(len);
-
-	WriteData(stream.GetBasePointer(), len);
+	WriteInt(stream.Tell()+1);
+	WriteData(stream.GetBasePointer(), stream.Tell()+1);
 }
 
 void CNetMessageBuffer::ReadKeyValues(kvkeybase_t* kbase)

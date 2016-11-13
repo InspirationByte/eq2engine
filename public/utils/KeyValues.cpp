@@ -33,7 +33,7 @@ static const char* s_szkKVValueTypes[KVPAIR_TYPES] =
 };
 
 
-EKVPairType KVResolvePairType( const char* string )
+EKVPairType KV_ResolvePairType( const char* string )
 {
 	char* typeName = (char*)string;
 
@@ -41,17 +41,14 @@ EKVPairType KVResolvePairType( const char* string )
 	for(int i = 0; i < KVPAIR_TYPES; i++)
 	{
 		if(!stricmp(typeName, s_szkKVValueTypes[i]))
-		{
 			return (EKVPairType)i;
-		}
 	}
 
 	MsgError("invalid kvpair type '%s'\n", typeName);
-
 	return KVPAIR_STRING;
 }
 
-char* KVReadProcessString( char* pszStr )
+char* KV_ReadProcessString( char* pszStr )
 {
 	char* ptr = pszStr;
 	// convert some symbols to special ones
@@ -106,18 +103,19 @@ char* KVReadProcessString( char* pszStr )
 // string symbols
 #define KV_STRING_BEGIN_END			'\"'
 #define KV_STRING_NEWLINE			'\n'
+#define KV_STRING_CARRIAGERETURN	'\r'
 
 // commnent symbols
 #define KV_COMMENT_SYMBOL			'/'
 #define KV_RANGECOMMENT_BEGIN_END	'*'
 
-#define KV_TYPE_SYMBOL				'&'
 #define KV_TYPE_VALUESYMBOL			':'
 
 #define KV_BREAK					';'
 
+#define IsKVBufferEOF()			((pData - pszBuffer) > bufferSize-1)
 #define IsKVArraySeparator(c)	(c == KV_ARRAY_SEPARATOR || c == KV_ARRAY_END)
-#define IsKVWhitespace(c)		(isspace(c) || c == '\0' || c == KV_STRING_NEWLINE)
+#define IsKVWhitespace(c)		(isspace(c) || c == '\0' || c == KV_STRING_NEWLINE || c == KV_STRING_CARRIAGERETURN)
 
 //-----------------------------------------------------------------------------------------
 
@@ -133,352 +131,6 @@ enum EQuoteMode
 
 	QM_SECTION,			// section or array
 };
-
-#pragma todo("KV_ParseSectionV3 - MBCS isspace issues.")
-
-// V3 is backward compatible with V1
-kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char* pszFileName, kvkeybase_t* pParseTo, int nStartLine )
-{
-	kvkeybase_t* pKeyBase = pParseTo;
-
-	if(!pKeyBase)
-		pKeyBase = new kvkeybase_t;
-
-	const char* pData = (char*)pszBuffer;
-	const char* pLast = pData;
-	char c = *pData;
-
-	const char* pFirstLetter = NULL;
-
-	EQuoteMode quoteMode = QM_NONE;
-	bool valueArray = false;
-	int valueArrayStartLine = -1;
-
-	int sectionDepth = 0;
-
-	int nValCounter = 0;
-
-	int nLine = nStartLine;
-	int nModeStartLine = -1;
-
-	// allocate 129 b in stack
-	char* key = (char*)stackalloc(KV_MAX_NAME_LENGTH+1);
-	strcpy(key, "unnamed");
-
-	kvkeybase_t* curpair = NULL;
-
-	do
-	{
-		c = *pData;
-
-		pLast = pData;
-
-		if(c == '\n')
-			nLine++;
-
-		// skip non-single character white spaces, tabs, carriage returns, and newlines
-		if(c == '\\' && (*(pData+1) == 'n' || *(pData+1) == 't' || *(pData+1) == '\"'))
-		{
-			pData++;
-			continue;
-		}
-
-		// check for comment mode enabling
-		if ( c == KV_COMMENT_SYMBOL && quoteMode == QM_NONE)
-		{
-			char commentend = *(pData+1);
-
-			if(commentend == KV_COMMENT_SYMBOL)
-			{
-				quoteMode = QM_COMMENT_LINE;
-				nModeStartLine = nLine;
-				continue;
-			}
-			else if(commentend == KV_RANGECOMMENT_BEGIN_END)
-			{
-				quoteMode = QM_COMMENT_RANGE;
-				nModeStartLine = nLine;
-				continue;
-			}
-		}
-		else if ( c == KV_STRING_NEWLINE && quoteMode == QM_COMMENT_LINE ) // check comment mode disabling
-		{
-			// Stop commentary mode after new line
-			quoteMode = QM_NONE;
-			continue;
-		}
-		else if ( c == KV_RANGECOMMENT_BEGIN_END && quoteMode == QM_COMMENT_RANGE )
-		{
-			char commentend = *(pData+1);
-			if(commentend == KV_COMMENT_SYMBOL)
-			{
-				quoteMode = QM_NONE;
-				pData++;
-				continue;
-			}
-		}
-
-		// skip chars when in comment mode
-		if(quoteMode == QM_COMMENT_RANGE || quoteMode == QM_COMMENT_LINE)
-			continue;
-
-		// reading a key/value characters
-		if(quoteMode == QM_STRING || quoteMode == QM_STRING_QUOTED)
-		{
-			// check for reading array
-
-			// read type name
-			if((quoteMode == QM_STRING) && (c == KV_TYPE_VALUESYMBOL))
-			{
-				{
-					int nLen = (pLast - pFirstLetter);
-					char* pTempStr = (char*)malloc(nLen + 1);
-
-					strncpy(pTempStr, pFirstLetter, nLen);
-					pTempStr[nLen] = '\0';
-
-					// set the type
-					curpair->type = KVResolvePairType(pTempStr);
-
-					free(pTempStr);
-				}
-
-				// parse value type and reset
-				//pFirstLetter = pData+1;
-				quoteMode = QM_NONE;
-				//nValCounter--;
-			}
-			else if((quoteMode == QM_STRING_QUOTED && (c == KV_STRING_BEGIN_END)) || 
-					(quoteMode == QM_STRING && (IsKVWhitespace(c) || (valueArray && IsKVArraySeparator(c)))))
-			{
-				// complete the key and add
-				if(!valueArray)
-					nValCounter++;
-				else if(quoteMode == QM_STRING && IsKVArraySeparator(c))
-					pData--; // get back by ]
-
-				{
-					int nLen = (pLast - pFirstLetter);
-
-					if(nValCounter == 1)
-					{
-						// set key name
-						strncpy_s(key, KV_MAX_NAME_LENGTH, pFirstLetter, nLen);
-					}
-					else if(nValCounter == 2)
-					{
-						char* pTempStr = (char*)malloc(nLen + 1);
-
-						strncpy_s(pTempStr, nLen+1, pFirstLetter, nLen);
-						pTempStr[nLen] = '\0';
-
-						// pre-process string
-						char* valueString = KVReadProcessString(pTempStr);
-						free(pTempStr);
-
-						if(valueArray)
-						{
-							// make it parsed if the type is different
-							kvpairvalue_t* value = curpair->CreateValue();
-							value->SetValueFromString(valueString);
-						}
-						else
-						{
-							// set or create a single value
-							kvpairvalue_t* value = curpair->values.numElem() ? curpair->values[0] : curpair->CreateValue();
-							value->SetValueFromString(valueString);
-						}
-
-						// free processed string
-						free(valueString);
-
-						curpair->SetName(key);
-						pParseTo->keys.addUnique(curpair);
-					}
-				}
-
-				if(nValCounter == 2 && !valueArray)
-				{
-					nValCounter = 0;
-					//*key = 0;
-					//curpair = NULL;
-				}
-
-				quoteMode = QM_NONE;
-				pFirstLetter = NULL;
-			}
-		}
-		else if(quoteMode == QM_NONE) // test for begin read keys/sections
-		{
-			// skip whitespaces
-			if(isspace(c))
-				continue;
-
-			// begin section mode
-			if( c == KV_SECTION_BEGIN )
-			{
-				//Msg("start section\n");
-				if(curpair == NULL)
-				{
-					MsgError("'%s' error 5 (%d): unexpected anonymous section\n", pszFileName, nModeStartLine);
-					break;
-				}
-
-				quoteMode = QM_SECTION;
-				nModeStartLine = nLine;
-				pFirstLetter = pData+1;
-
-				sectionDepth++;
-			}
-			else if( c == KV_STRING_BEGIN_END )
-			{
-				quoteMode = QM_STRING_QUOTED;
-				nModeStartLine = nLine;
-				pFirstLetter = pData+1;
-
-				if(nValCounter == 0)
-				{
-					curpair = new kvkeybase_t();
-					curpair->line = nModeStartLine;
-				}
-
-				//if(!valueArray) nValCounter++;
-			}
-			else if(c == KV_ARRAY_BEGIN && nValCounter == 1) // enable array parsing
-			{
-				//Msg("BEGIN ARRAY\n");
-				valueArray = true;
-				valueArrayStartLine = nLine;
-				nValCounter++;
-				continue;
-			}
-			else if(IsKVArraySeparator(c) && valueArray)
-			{
-				// add last value after separator or closing
-
-				if(c == KV_ARRAY_END)
-				{
-					valueArray = false;
-
-					// complete the key and add
-					nValCounter = 0;
-				}
-
-				continue;
-			}
-			else
-			{
-				quoteMode = QM_STRING;
-				nModeStartLine = nLine;
-				pFirstLetter = pData;
-
-				if(nValCounter == 0)
-				{
-					curpair = new kvkeybase_t();
-					curpair->line = nModeStartLine;
-				}
-
-				//if(!valueArray) nValCounter++;
-			}
-		}
-		else if(quoteMode == QM_SECTION) // section skipper and processor
-		{
-			// skip the next section openning but increment the depths
-			if( c == KV_SECTION_BEGIN )
-			{
-				if(sectionDepth == 0)
-					pFirstLetter = pData+1;
-
-				sectionDepth++;
-			}
-			else if( c == KV_SECTION_END )
-			{
-				if(sectionDepth > 0)
-					sectionDepth--;
-
-				if(sectionDepth == 0)
-				{
-					// read buffer
-					int nLen = (pLast - pFirstLetter);
-
-					if(valueArray)
-					{
-						kvkeybase_t* newsec = new kvkeybase_t();
-						bool success = KV_ParseSectionV3(pFirstLetter, nLen, pszFileName, curpair, nModeStartLine) != NULL;
-
-						if(success)
-						{
-							curpair->AddValue(newsec);
-
-							curpair->SetName(key);
-							pParseTo->keys.addUnique(curpair);
-						}
-						else
-							delete newsec;
-					}
-					else
-					{
-						bool success = KV_ParseSectionV3(pFirstLetter, nLen, pszFileName, curpair, nModeStartLine) != NULL;
-
-						if(success)
-						{
-							curpair->SetName(key);
-							pParseTo->keys.addUnique(curpair);
-
-							curpair = NULL; // i'ts finally done
-							*key = 0;
-						}
-							
-					}
-
-					// disable
-					nValCounter = 0;
-					quoteMode = QM_NONE;
-					pFirstLetter = NULL;
-				} // depth
-			} // KV_SECTION_END
-		} // QM_SECTION
-	}
-	while(*pData++ && (pData - pszBuffer) < bufferSize);
-
-	// check for errors
-	bool isError = false;
-
-	// if mode is not none, then is error
-	if(quoteMode != QM_NONE)
-	{
-		if(quoteMode == QM_COMMENT_RANGE)
-		{
-			MsgError("'%s' error 1 (%d): unexpected EOF, did you forgot '*/'?\n", pszFileName, nModeStartLine);
-			isError = true;
-		}
-		else if(quoteMode == QM_SECTION)
-		{
-			MsgError("'%s' error 2 (%d): missing '}'\n", pszFileName, nModeStartLine);
-			isError = true;
-		}
-		else if(quoteMode == QM_STRING_QUOTED)
-		{
-			MsgError("'%s' error 3 (%d): missing '\"'\n", pszFileName, nModeStartLine);
-			isError = true;
-		}
-	}
-
-	if(valueArray)
-	{
-		MsgError("'%s' error 4 (%d): array - missing ']'\n", pszFileName, valueArrayStartLine);
-		isError = true;
-	}
-
-	if(isError)
-	{
-		if(pParseTo != pKeyBase)
-			delete pKeyBase;
-		return NULL;
-	}
-
-	return pKeyBase;
-}
 
 //------------------------------------------------------
 
@@ -499,21 +151,18 @@ void kvpairvalue_t::SetValueFrom(kvpairvalue_t* from)
 	if(type == KVPAIR_INT)
 	{
 		nValue = from->nValue;
-
-		fValue = nValue;
-		bValue = nValue > 0;
 	}
 	else if(type == KVPAIR_FLOAT)
 	{
 		fValue = from->fValue;
-		nValue = fValue;
-		bValue = nValue > 0;
 	}
 	else if(type == KVPAIR_BOOL)
 	{
 		bValue = from->bValue;
-		fValue = bValue;
-		nValue = bValue;
+	}
+	else if(type == KVPAIR_SECTION)
+	{
+		#pragma todo("clone the section")
 	}
 }
 
@@ -544,25 +193,34 @@ void kvpairvalue_t::SetValueFromString( const char* pszValue )
 	if(type == KVPAIR_INT)
 	{
 		nValue = atoi( pszValue );
-
-		fValue = nValue;
-		bValue = nValue > 0;
 	}
 	else if(type == KVPAIR_FLOAT)
 	{
 		fValue = (float)atof( pszValue );
-		nValue = fValue;
-		bValue = nValue > 0;
 	}
 	else if(type == KVPAIR_BOOL)
 	{
 		bValue = atoi( pszValue ) > 0;
-		fValue = bValue;
-		nValue = bValue;
 	}
 }
 
 //-----------------------------------------------------------------------------------------
+
+KeyValues::KeyValues()
+{
+	m_pKeyBase = new kvkeybase_t;
+}
+
+KeyValues::~KeyValues()
+{
+	delete m_pKeyBase;
+}
+
+void KeyValues::Reset()
+{
+	delete m_pKeyBase;
+	m_pKeyBase = NULL;
+}
 
 // searches for keybase
 kvkeybase_t* KeyValues::FindKeyBase(const char* pszName, int nFlags)
@@ -584,18 +242,13 @@ bool KeyValues::LoadFromStream(ubyte* pData)
 	return KV_ParseSection( (const char*)pData, NULL, m_pKeyBase, 0 ) != NULL;
 }
 
-void KV_WriteToStream_r(kvkeybase_t* pKeyBase, IVirtualStream* pStream, int nTabs, bool bOldFormat, bool pretty);
-
 void KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
 {
 	IFile* pStream = g_fileSystem->Open(pszFileName, "wt", nSearchFlags);
 
 	if(pStream)
 	{
-		KV_WriteToStream_r(m_pKeyBase, pStream, 0, false, true);
-
-		//PPMemInfo();
-
+		KV_WriteToStream(pStream, m_pKeyBase);
 		g_fileSystem->Close(pStream);
 	}
 	else
@@ -604,6 +257,9 @@ void KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
 	}
 }
 
+//----------------------------------------------------------------------------------------------
+// KEY (PAIR) BASE
+//----------------------------------------------------------------------------------------------
 
 kvkeybase_t::kvkeybase_t()
 {
@@ -731,8 +387,6 @@ void kvkeybase_t::AddValue(bool bValue)
 
 void kvkeybase_t::AddValue(kvkeybase_t* keybase)
 {
-	type = KVPAIR_SECTION;
-
 	int numVal = values.numElem();
 
 	kvpairvalue_t* val = CreateValue();
@@ -1152,8 +806,398 @@ bool kvkeybase_t::IsDefinition() const
 	return values.numElem() == 0;
 }
 
-// API functions
+//---------------------------------------------------------------------------------------------------------
+// KEYVALUES API Functions
+//---------------------------------------------------------------------------------------------------------
 
+#pragma todo("KV_ParseSectionV3 - MBCS isspace issues.")
+
+//
+// Parses the V3 format of KeyValues into pParseTo
+//
+kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char* pszFileName, kvkeybase_t* pParseTo, int nStartLine )
+{
+	kvkeybase_t* pKeyBase = pParseTo;
+
+	if(!pKeyBase)
+		pKeyBase = new kvkeybase_t;
+
+	const char* pData = (char*)pszBuffer;
+	const char* pLast = pData;
+	char c = *pData;
+
+	const char* pFirstLetter = NULL;
+
+	EQuoteMode quoteMode = QM_NONE;
+	bool valueArray = false;
+	int valueArrayStartLine = -1;
+
+	int sectionDepth = 0;
+
+	int nValCounter = 0;
+
+	int nLine = nStartLine+1;
+	int nModeStartLine = -1;
+
+	// allocate 129 b in stack
+	char* key = (char*)stackalloc(KV_MAX_NAME_LENGTH+1);
+	strcpy(key, "unnamed");
+
+	kvkeybase_t* curpair = NULL;
+
+	do
+	{
+		c = *pData;
+
+		pLast = pData;
+
+		if(c == '\n')
+			nLine++;
+
+		// skip non-single character white spaces, tabs, carriage returns, and newlines
+		if(c == '\\' && (*(pData+1) == 'n' || *(pData+1) == 't' || *(pData+1) == '\"'))
+		{
+			pData++;
+			continue;
+		}
+
+		// check for comment mode enabling
+		// only when nothing is parsed or unquoted strings
+		if ( c == KV_COMMENT_SYMBOL && quoteMode == QM_NONE)
+		{
+			char commentend = *(pData+1);
+
+			if(commentend == KV_COMMENT_SYMBOL)
+			{
+				quoteMode = QM_COMMENT_LINE;
+				nModeStartLine = nLine;
+				continue;
+			}
+			else if(commentend == KV_RANGECOMMENT_BEGIN_END)
+			{
+				quoteMode = QM_COMMENT_RANGE;
+				nModeStartLine = nLine;
+				continue;
+			}
+		}
+		else if ( c == KV_STRING_NEWLINE && quoteMode == QM_COMMENT_LINE ) // check comment mode disabling
+		{
+			// Stop commentary mode after new line
+			quoteMode = QM_NONE;
+			continue;
+		}
+		else if ( c == KV_RANGECOMMENT_BEGIN_END && quoteMode == QM_COMMENT_RANGE )
+		{
+			char commentend = *(pData+1);
+			if(commentend == KV_COMMENT_SYMBOL)
+			{
+				quoteMode = QM_NONE;
+				pData++;
+				continue;
+			}
+		}
+
+		// skip chars when in comment mode
+		if(quoteMode == QM_COMMENT_RANGE || quoteMode == QM_COMMENT_LINE)
+			continue;
+
+		// reading a key/value characters
+		if(quoteMode == QM_STRING || quoteMode == QM_STRING_QUOTED)
+		{
+			// check for reading array
+
+			// read type name
+			if((quoteMode == QM_STRING) && (c == KV_TYPE_VALUESYMBOL))
+			{
+				if( nValCounter == 0 )
+				{
+					MsgError("'%s':%d error - unexpected type definition\n", pszFileName, nModeStartLine);
+					break;
+				}
+
+				{
+					int nLen = (pLast - pFirstLetter);
+					char* pTempStr = (char*)malloc(nLen + 1);
+
+					strncpy(pTempStr, pFirstLetter, nLen);
+					pTempStr[nLen] = '\0';
+
+					// set the type
+					curpair->type = KV_ResolvePairType(pTempStr);
+
+					free(pTempStr);
+				}
+
+				// parse value type and reset
+				//pFirstLetter = pData+1;
+				quoteMode = QM_NONE;
+			}
+			else if((quoteMode == QM_STRING_QUOTED && (c == KV_STRING_BEGIN_END)) || 
+					(quoteMode == QM_STRING && ( c == KV_COMMENT_SYMBOL || c == KV_BREAK || IsKVBufferEOF() || IsKVWhitespace(c) || (valueArray && IsKVArraySeparator(c)))))
+			{
+				// complete the key and add
+				if(!valueArray)
+					nValCounter++;
+				else if(quoteMode == QM_STRING && IsKVArraySeparator(c))
+					pData--; // get back by ]
+
+				bool typeIsOk = (curpair->type != KVPAIR_SECTION);
+
+				if(!typeIsOk)
+				{
+					MsgError("'%s':%d error KV6: type mismatch, expected 'section'\n", pszFileName, nModeStartLine);
+					break;
+				}
+
+				{
+					int nLen = (pLast - pFirstLetter);
+
+					if(nValCounter == 1)
+					{
+						// set key name
+						strncpy_s(key, KV_MAX_NAME_LENGTH, pFirstLetter, nLen);
+
+						if(c == KV_BREAK)
+						{
+							MsgError("'%s':%d error - unexpected break\n", pszFileName, nModeStartLine);
+							break;
+						}
+						
+					}
+					else if(nValCounter == 2)
+					{
+						char* pTempStr = (char*)malloc(nLen + 1);
+
+						strncpy_s(pTempStr, nLen+1, pFirstLetter, nLen);
+						pTempStr[nLen] = '\0';
+
+						// pre-process string
+						char* valueString = KV_ReadProcessString(pTempStr);
+						free(pTempStr);
+
+						if(valueArray)
+						{
+							// make it parsed if the type is different
+							kvpairvalue_t* value = curpair->CreateValue();
+							value->SetValueFromString(valueString);
+						}
+						else
+						{
+							// set or create a single value
+							kvpairvalue_t* value = curpair->values.numElem() ? curpair->values[0] : curpair->CreateValue();
+							value->SetValueFromString(valueString);
+						}
+
+						// free processed string
+						free(valueString);
+
+						curpair->SetName(key);
+						pParseTo->keys.addUnique(curpair);
+					}
+				}
+
+				if(nValCounter == 2 && !valueArray)
+					nValCounter = 0;
+
+				// force to begin commenting mode
+				if(quoteMode == QM_STRING && ( c == KV_COMMENT_SYMBOL))
+				{
+					quoteMode = QM_NONE;
+					pFirstLetter = NULL;
+
+					pData--;
+					continue;
+				}
+
+				quoteMode = QM_NONE;
+				pFirstLetter = NULL;
+			}
+		}
+		else if(quoteMode == QM_NONE) // test for begin read keys/sections
+		{
+			// skip whitespaces
+			if(isspace(c))
+				continue;
+
+			if(c == KV_BREAK) // skip old-style breaks
+				continue;
+
+			// begin section mode
+			if( c == KV_SECTION_BEGIN )
+			{
+				//Msg("start section\n");
+				if(curpair == NULL)
+				{
+					MsgError("'%s':%d error - unexpected anonymous section\n", pszFileName, nModeStartLine);
+					break;
+				}
+
+				quoteMode = QM_SECTION;
+				nModeStartLine = nLine;
+				pFirstLetter = pData+1;
+
+				sectionDepth++;
+			}
+			else if( c == KV_STRING_BEGIN_END )
+			{
+				quoteMode = QM_STRING_QUOTED;
+				nModeStartLine = nLine;
+				pFirstLetter = pData+1;
+
+				if(nValCounter == 0)
+				{
+					curpair = new kvkeybase_t();
+					curpair->line = nModeStartLine;
+				}
+			}
+			else if(c == KV_ARRAY_BEGIN && nValCounter == 1) // enable array parsing
+			{
+				valueArray = true;
+				valueArrayStartLine = nLine;
+				nValCounter++;
+				continue;
+			}
+			else if(IsKVArraySeparator(c) && valueArray)
+			{
+				// add last value after separator or closing
+
+				if(c == KV_ARRAY_END)
+				{
+					valueArray = false;
+
+					// complete the key and add
+					nValCounter = 0;
+				}
+
+				continue;
+			}
+			else
+			{
+				quoteMode = QM_STRING;
+				nModeStartLine = nLine;
+				pFirstLetter = pData;
+
+				if(nValCounter == 0)
+				{
+					curpair = new kvkeybase_t();
+					curpair->line = nModeStartLine;
+				}
+			}
+		}
+		else if(quoteMode == QM_SECTION) // section skipper and processor
+		{
+			// skip the next section openning but increment the depths
+			if( c == KV_SECTION_BEGIN )
+			{
+				if(sectionDepth == 0)
+					pFirstLetter = pData+1;
+
+				sectionDepth++;
+			}
+			else if( c == KV_SECTION_END )
+			{
+				if(sectionDepth > 0)
+					sectionDepth--;
+
+				if(sectionDepth == 0)
+				{
+					// read buffer
+					int nLen = (pLast - pFirstLetter);
+
+					if( valueArray )
+					{
+						kvkeybase_t* newsec = new kvkeybase_t();
+						bool success = KV_ParseSectionV3(pFirstLetter, nLen, pszFileName, newsec, nModeStartLine-1) != NULL;
+
+						bool typeIsOk = ((curpair->values.numElem() == 0) || curpair->type == KVPAIR_SECTION);
+
+						if(success && typeIsOk)
+						{
+							// force the pair value type to SECTION
+							curpair->type = KVPAIR_SECTION;
+							curpair->AddValue(newsec);
+
+							curpair->SetName(key);
+							pParseTo->keys.addUnique(curpair);
+						}
+						else
+						{
+							delete newsec;
+
+							if(!typeIsOk)
+							{
+								MsgError("'%s':%d error - type mismatch, expected 'section'\n", pszFileName, nModeStartLine);
+								break;
+							}
+						}
+							
+					}
+					else
+					{
+						bool success = KV_ParseSectionV3(pFirstLetter, nLen, pszFileName, curpair, nModeStartLine-1) != NULL;
+
+						if(success)
+						{
+							curpair->SetName(key);
+							pParseTo->keys.addUnique(curpair);
+
+							curpair = NULL; // i'ts finally done
+							*key = 0;
+						}
+					}
+
+					// disable
+					nValCounter = 0;
+					quoteMode = QM_NONE;
+					pFirstLetter = NULL;
+				} // depth
+			} // KV_SECTION_END
+		} // QM_SECTION
+	}
+	while(*pData++ && (pData - pszBuffer) <= bufferSize);
+
+	// check for errors
+	bool isError = false;
+
+	// if mode is not none, then is error
+	if(quoteMode != QM_NONE)
+	{
+		if(quoteMode == QM_COMMENT_RANGE)
+		{
+			MsgError("'%s':%d error - unexpected EOF, did you forgot '*/'?\n", pszFileName, nModeStartLine);
+			isError = true;
+		}
+		else if(quoteMode == QM_SECTION)
+		{
+			MsgError("'%s':%d error - missing '}'\n", pszFileName, nModeStartLine);
+			isError = true;
+		}
+		else if(quoteMode == QM_STRING_QUOTED)
+		{
+			MsgError("'%s':%d error - missing '\"'\n", pszFileName, nModeStartLine);
+			isError = true;
+		}
+	}
+
+	if(valueArray)
+	{
+		MsgError("'%s':%d error - missing ']'\n", pszFileName, valueArrayStartLine);
+		isError = true;
+	}
+
+	if(isError)
+	{
+		if(pParseTo != pKeyBase)
+			delete pKeyBase;
+		return NULL;
+	}
+
+	return pKeyBase;
+}
+
+//
+// Loads file and parses it as KeyValues into the 'pParseTo'
+//
 kvkeybase_t* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, kvkeybase_t* pParseTo )
 {
 	long lSize = 0;
@@ -1203,7 +1247,9 @@ kvkeybase_t* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, kvkeyba
 #define LINECOMMENT		1
 #define RANGECOMMENT	2
 
-// version V2
+//
+// Parses the KeyValues section string buffer to the 'pParseTo'
+//
 kvkeybase_t* KV_ParseSection( const char* pszBuffer, const char* pszFileName, kvkeybase_t* pParseTo, int nStartLine )
 {
 	const char* pData = (char*)pszBuffer;
@@ -1477,6 +1523,11 @@ kvkeybase_t* KV_ParseSection( const char* pszBuffer, const char* pszFileName, kv
 	return pKeyBase;
 }
 
+//----------------------------------------------------------------------------------------------
+
+//
+// Detects the need for string quoting (very necessary for keys)
+//
 bool UTIL_StringNeedsQuotes( const char* pszString )
 {
 	char const* pLetter = pszString;
@@ -1515,23 +1566,22 @@ bool UTIL_StringNeedsQuotes( const char* pszString )
 	return false;
 }
 
-void WriteSelectQuotedString(const char* pszString, IVirtualStream* pStream)
+//
+// If string does need quotes it will be written with them
+//
+void KV_WriteSelectQuotedString(IVirtualStream* out, const char* pszString)
 {
 	if( UTIL_StringNeedsQuotes( pszString ) )
-		pStream->Print("\"%s\"", pszString);
+		out->Print("\"%s\"", pszString);
 	else
-		pStream->Print("%s", pszString);
+		out->Print("%s", pszString);
 }
 
-void WriteFileSelectQuotedString(const char* pszString, DKFILE* pFile)
-{
-	if( UTIL_StringNeedsQuotes( pszString ) )
-		pFile->Print("\"%s\"", pszString);
-	else
-		pFile->Print("%s", pszString);
-}
-
-int KVCountSpecialSymbols(char* pszStr)
+//
+// counts the special characters
+// used for KV_PreProcessStringValue to detect extra length of buffer
+//
+int KV_CountSpecialSymbols(char* pszStr)
 {
 	char* ptr = pszStr;
 
@@ -1556,131 +1606,90 @@ int KVCountSpecialSymbols(char* pszStr)
 	return specials_count + 1;
 }
 
-char* KVWriteProcessString( char* pszStr, char* pszTemp )
+//
+// converts some symbols to special ones
+//
+void KV_PreProcessStringValue( char* out, char* pszStr )
 {
 	char* ptr = pszStr;
-	// convert some symbols to special ones
-
 	int sLen = strlen( pszStr );
 
-	char* temp = pszTemp; // (char*)malloc( sLen*2 );
-	char* ptrTemp = temp;
+	char* temp = out;
 
 	do
 	{
 		if(*ptr == '"')
 		{
-			*ptrTemp++ = '\\';
-			*ptrTemp++ = *ptr;
+			*temp++ = '\\';
+			*temp++ = *ptr;
 		}
 		else if(*ptr == '\n')
 		{
-			*ptrTemp++ = '\\';
-			*ptrTemp++ = 'n';
+			*temp++ = '\\';
+			*temp++ = 'n';
 		}
 		else if(*ptr == '\t')
 		{
-			*ptrTemp++ = '\\';
-			*ptrTemp++ = 't';
+			*temp++ = '\\';
+			*temp++ = 't';
 		}
 		else
-			*ptrTemp++ = *ptr;
+			*temp++ = *ptr;
 
 	}while(*ptr++);
 
 	// add NULL
-	*ptrTemp++ = 0;
-
-	// copy string
-	return temp;
+	*temp++ = 0;
 }
 
-void KVWritePairValue(kvpairvalue_t* val, IVirtualStream* stream, int depth)
+void KV_WriteToStreamV3(IVirtualStream* outStream, kvkeybase_t* section, int nTabs, bool pretty);
+
+//
+// Writes the pair value
+//
+void KV_WritePairValue(IVirtualStream* out, kvpairvalue_t* val, int depth)
 {
 	// write typed data
 	if(val->type == KVPAIR_STRING)
 	{
 		if(val->value == NULL)
 		{
-			stream->Print("\"%s\"", "VALUE_MISSING");
+			out->Print("\"%s\"", "VALUE_MISSING");
 			return;
 		}
 
-		int numSpecial = KVCountSpecialSymbols(val->value);
+		int numSpecial = KV_CountSpecialSymbols(val->value);
 
-		char* pszValueString = (char*)malloc(strlen(val->value) + numSpecial + 1);
-		KVWriteProcessString( val->value, pszValueString );
+		char* outValueString = (char*)malloc(strlen(val->value) + numSpecial + 1);
+		KV_PreProcessStringValue( outValueString, val->value );
+		out->Print("\"%s\"", outValueString);
 
-		stream->Print("\"%s\"", pszValueString);
-
-		free( pszValueString );
+		free( outValueString );
 	}
 	else if(val->type == KVPAIR_INT)
 	{
-		stream->Print("%d", val->nValue);
+		out->Print("%d", val->nValue);
 	}
 	else if(val->type == KVPAIR_FLOAT)
 	{
-		stream->Print("%g", val->fValue);
+		out->Print("%g", val->fValue);
 	}
 	else if(val->type == KVPAIR_BOOL)
 	{
-		stream->Print("%d", val->bValue);
+		out->Print("%d", val->bValue);
 	}
 	else if(val->type == KVPAIR_SECTION)
 	{
-		KV_WriteToStream_r(val->section, stream, depth+1, false, false);
+		out->Print("%c", KV_SECTION_BEGIN);
+		KV_WriteToStreamV3(out, val->section, depth+1, false);
+		out->Print("%c", KV_SECTION_END);
 	}
 }
 
-// writes key-values section.
-void KV_WriteToFile_r(kvkeybase_t* pKeyBase, DKFILE* pFile, int nTabs, bool bOldFormat)
-{
-	char* tabs = (char*)stackalloc(nTabs);
-	memset(tabs, 0, nTabs);
-
-	int nTab = 0;
-
-	while(nTab < nTabs)
-		tabs[nTab++] = '\t';
-
-	for(int i = 0; i < pKeyBase->keys.numElem(); i++)
-	{
-		kvkeybase_t* pKey = pKeyBase->keys[i];
-
-		// add tabs
-		pFile->Write(tabs, 1, nTabs);
-
-		WriteFileSelectQuotedString( pKey->name, pFile);
-
-		for(int j = 0; j < pKey->values.numElem(); j++)
-		{
-			pFile->Print(" ");
-			KVWritePairValue( pKey->values[j], pFile, nTabs);
-		}
-
-		// write subsection
-
-		if( pKey->keys.numElem() )
-		{
-			pFile->Print("\n");
-			pFile->Write(tabs, 1, nTabs);
-			pFile->Print("{\n");
-
-			KV_WriteToFile_r(pKey, pFile, nTabs + 1, bOldFormat);
-
-			pFile->Write(tabs, 1, nTabs);
-			pFile->Print("}");
-		}
-
-		if(bOldFormat)
-			pFile->Print("\n");
-		else
-			pFile->Print(";\n");
-	}
-}
-
-void KV_WriteToStream_r(kvkeybase_t* pKeyBase, IVirtualStream* pStream, int nTabs, bool bOldFormat, bool pretty)
+//
+// Writes the pairbase recursively to the virtual stream
+//
+void KV_WriteToStream(IVirtualStream* outStream, kvkeybase_t* section, int nTabs, bool pretty)
 {
 	char* tabs = (char*)stackalloc(nTabs);
 	memset(tabs, 0, nTabs);
@@ -1693,65 +1702,174 @@ void KV_WriteToStream_r(kvkeybase_t* pKeyBase, IVirtualStream* pStream, int nTab
 			tabs[nTab++] = '\t';
 	}
 
-	for(int i = 0; i < pKeyBase->keys.numElem(); i++)
+	for(int i = 0; i < section->keys.numElem(); i++)
 	{
-		kvkeybase_t* pKey = pKeyBase->keys[i];
+		kvkeybase_t* pKey = section->keys[i];
 
 		// add tabs
 		if(pretty)
+			outStream->Write(tabs, 1, nTabs);
+
+		bool hasWroteValue = false;
+
+		//
+		// write key/value
+		//
 		{
-			pStream->Write(tabs, 1, nTabs);
+			KV_WriteSelectQuotedString(outStream, pKey->name);
+
+			if(pKey->type != KVPAIR_SECTION)
+			{
+				for(int j = 0; j < pKey->values.numElem(); j++)
+				{
+					outStream->Print(" ");
+					KV_WritePairValue(outStream, pKey->values[j], nTabs);
+				}
+				hasWroteValue = true;
+			}
+			else
+				outStream->Print("; // section arrays not supported in V2\n");
 		}
 
-		WriteSelectQuotedString( pKey->name, pStream);
-
-		for(int j = 0; j < pKey->values.numElem(); j++)
-		{
-			pStream->Print(" ");
-			KVWritePairValue( pKey->values[j], pStream, nTabs);
-		}
-
+		//
 		// write subsection
-
+		//
 		if( pKey->keys.numElem() )
 		{
 			if(pretty)
 			{
-				pStream->Print("\n");
-				pStream->Write(tabs, 1, nTabs);
+				outStream->Print("\n");
+				outStream->Write(tabs, 1, nTabs);
 			}
-			pStream->Print("{\n");
+			outStream->Print("%c\n", KV_SECTION_BEGIN);
 
-			KV_WriteToStream_r(pKey, pStream, nTabs + 1, bOldFormat, pretty);
+			KV_WriteToStream(outStream, pKey, nTabs + 1, pretty);
 
 			if(pretty)
-			{
-				pStream->Write(tabs, 1, nTabs);
-			}
+				outStream->Write(tabs, 1, nTabs);
 
-			pStream->Print("}");
+			outStream->Print("%c", KV_SECTION_END);
 		}
 
-		if(bOldFormat)
-			pStream->Print("\n");
-		else
-			pStream->Print(";\n");
+		if(pretty && hasWroteValue)
+			outStream->Print("%c\n", KV_BREAK);
 	}
 }
 
-// prints section to console
+//
+// Writes the pairbase values
+//
+void KV_WriteValueV3( IVirtualStream* outStream, kvkeybase_t* key, int nTabs)
+{
+	int numValues = key->values.numElem();
+	bool isValueArray = numValues > 1;
+
+	if(key->type != KVPAIR_STRING && key->type != KVPAIR_SECTION)
+		outStream->Print(" %s%c ", s_szkKVValueTypes[key->type], KV_TYPE_VALUESYMBOL);
+	else
+		outStream->Print(" ");
+
+	if(isValueArray)
+		outStream->Print("%c ", KV_ARRAY_BEGIN);
+
+	for(int j = 0; j < numValues; j++)
+	{
+		KV_WritePairValue(outStream, key->values[j], nTabs);
+
+		// while array sepearator is not required, always add it
+		if(j < numValues-1)
+			outStream->Print("%c ", KV_ARRAY_SEPARATOR);
+	}
+
+	if(isValueArray)
+		outStream->Print(" %c", KV_ARRAY_END);
+}
+
+//
+// Writes the pairbase recursively to the virtual stream
+//
+void KV_WriteToStreamV3(IVirtualStream* outStream, kvkeybase_t* section, int nTabs, bool pretty)
+{
+	char* tabs = (char*)stackalloc(nTabs);
+	memset(tabs, 0, nTabs);
+
+	int nTab = 0;
+
+	if(pretty)
+	{
+		while(nTab < nTabs)
+			tabs[nTab++] = '\t';
+	}
+
+	int numKeys = section->keys.numElem();
+
+	for(int i = 0; i < numKeys; i++)
+	{
+		kvkeybase_t* pKey = section->keys[i];
+
+		// add tabs
+		if(pretty)
+			outStream->Write(tabs, 1, nTabs);
+
+		//
+		// write key/value
+		//
+		{
+			KV_WriteSelectQuotedString(outStream, pKey->name);
+			KV_WriteValueV3(outStream, pKey, nTabs);
+		}
+
+		//
+		// write subsection
+		//
+		if( pKey->IsSection() )
+		{
+			if(pretty)
+			{
+				outStream->Print("\n");
+				outStream->Write(tabs, 1, nTabs);
+			}
+			
+			outStream->Print("%c\n", KV_SECTION_BEGIN);
+
+			KV_WriteToStreamV3(outStream, pKey, nTabs + 1, pretty);
+
+			if(pretty)
+				outStream->Write(tabs, 1, nTabs);
+
+			outStream->Print("%c", KV_SECTION_END);
+		}
+
+		if(pretty)
+			outStream->Print("\n");
+		else if(i < numKeys-1)
+			outStream->Print(" ");
+	}
+}
+
+//
+// Prints the pairbase to console
+//
 void KV_PrintSection(kvkeybase_t* base)
 {
 	CMemoryStream stream;
 	stream.Open(NULL, VS_OPEN_WRITE, 2048);
-	KV_WriteToStream_r(base, &stream, 0, false, true);
+
+	KV_WriteToStream(&stream, base, 0, true);
+
 	char nullChar = '\0';
 	stream.Write(&nullChar, 1, 1);
 
 	Msg( "%s\n", stream.GetBasePointer() );
 }
 
-// gets value of string type
+//-----------------------------------------------------------------------------------------------------
+// KeyValues value helpers
+//-----------------------------------------------------------------------------------------------------
+
+//
+// Returns the string value of pairbase
+//
 const char* KV_GetValueString( kvkeybase_t* pBase, int nIndex, const char* pszDefault )
 {
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
@@ -1760,6 +1878,11 @@ const char* KV_GetValueString( kvkeybase_t* pBase, int nIndex, const char* pszDe
 	return pBase->values[nIndex]->value;
 }
 
+
+//
+// Returns integer value
+// Converts the best precise value if type differs
+//
 int	KV_GetValueInt( kvkeybase_t* pBase, int nIndex, int nDefault )
 {
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
@@ -1775,6 +1898,10 @@ int	KV_GetValueInt( kvkeybase_t* pBase, int nIndex, int nDefault )
 	return atoi(pBase->values[nIndex]->value);
 }
 
+//
+// Returns float value
+// Converts the best precise value if type differs
+//
 float KV_GetValueFloat( kvkeybase_t* pBase, int nIndex, float fDefault )
 {
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
@@ -1790,6 +1917,10 @@ float KV_GetValueFloat( kvkeybase_t* pBase, int nIndex, float fDefault )
 	return atof(pBase->values[nIndex]->value);
 }
 
+//
+// Returns boolean value
+// Converts the best precise value if type differs
+//
 bool KV_GetValueBool( kvkeybase_t* pBase, int nIndex, bool bDefault)
 {
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
@@ -1803,6 +1934,9 @@ bool KV_GetValueBool( kvkeybase_t* pBase, int nIndex, bool bDefault)
 	return atoi(pBase->values[nIndex]->value) > 0;
 }
 
+//
+// Returns Vector2D value
+//
 Vector2D KV_GetVector2D( kvkeybase_t* pBase, int nIndex, const Vector2D& vDefault)
 {
 	Vector2D retVal = vDefault;
@@ -1812,6 +1946,9 @@ Vector2D KV_GetVector2D( kvkeybase_t* pBase, int nIndex, const Vector2D& vDefaul
 	return retVal;
 }
 
+//
+// Returns IVector2D value
+//
 IVector2D KV_GetIVector2D( kvkeybase_t* pBase, int nIndex, const IVector2D& vDefault)
 {
 	IVector2D retVal = vDefault;
@@ -1821,6 +1958,9 @@ IVector2D KV_GetIVector2D( kvkeybase_t* pBase, int nIndex, const IVector2D& vDef
 	return retVal;
 }
 
+//
+// Returns Vector3D value
+//
 Vector3D KV_GetVector3D( kvkeybase_t* pBase, int nIndex, const Vector3D& vDefault)
 {
 	Vector3D retVal = vDefault;
@@ -1831,6 +1971,9 @@ Vector3D KV_GetVector3D( kvkeybase_t* pBase, int nIndex, const Vector3D& vDefaul
 	return retVal;
 }
 
+//
+// Returns Vector4D value
+//
 Vector4D KV_GetVector4D( kvkeybase_t* pBase, int nIndex, const Vector4D& vDefault)
 {
 	Vector4D retVal = vDefault;
