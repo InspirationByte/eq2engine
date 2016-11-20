@@ -114,6 +114,34 @@ public:
 	int			m_stride;
 };
 
+class CEmptyVertexFormat : public IVertexFormat
+{
+public:
+	CEmptyVertexFormat(VertexFormatDesc_s *desc, int nAttribs) : m_numAttribs(nAttribs)
+	{
+		m_vertexDesc = new VertexFormatDesc_t[m_numAttribs];
+		memset(m_streamStride, 0, sizeof(m_streamStride));
+
+		for(int i = 0; i < m_numAttribs; i++)
+			m_vertexDesc[i] = desc[i];
+	}
+
+	int	GetVertexSize(int stream)
+	{
+		return 0;
+	}
+
+	void GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs)
+	{
+		*desc = m_vertexDesc;
+		numAttribs = m_numAttribs;
+	}
+
+protected:
+	int					m_streamStride[MAX_VERTEXSTREAM];
+	VertexFormatDesc_t*	m_vertexDesc;
+	int					m_numAttribs;
+};
 
 class ShaderAPIEmpty : public ShaderAPI_Base
 {
@@ -328,7 +356,7 @@ public:
 	void						ChangeIndexBuffer(IIndexBuffer* pIndexBuffer){}
 
 	// Destroy vertex format
-	void						DestroyVertexFormat(IVertexFormat* pFormat){}
+	void						DestroyVertexFormat(IVertexFormat* pFormat){ if(pFormat) delete pFormat;}
 
 	// Destroy vertex buffer
 	void						DestroyVertexBuffer(IVertexBuffer* pVertexBuffer) {if(pVertexBuffer) delete pVertexBuffer;}
@@ -418,7 +446,7 @@ public:
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-	IVertexFormat*				CreateVertexFormat(VertexFormatDesc_s *formatDesc, int nAttribs){return NULL;}
+	IVertexFormat*				CreateVertexFormat(VertexFormatDesc_s *formatDesc, int nAttribs){return new CEmptyVertexFormat(formatDesc, nAttribs);}
 	IVertexBuffer*				CreateVertexBuffer(BufferAccessType_e nBufAccess, int nNumVerts, int strideSize, void *pData = NULL){return new CEmptyVertexBuffer(strideSize);}
 	IIndexBuffer*				CreateIndexBuffer(int nIndices, int nIndexSize, BufferAccessType_e nBufAccess, void *pData = NULL){return new CEmptyIndexBuffer(nIndexSize);}
 

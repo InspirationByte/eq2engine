@@ -86,14 +86,11 @@ char*		xstristr( char* pStr, char const* pSearch );
 // Strips string for tabs and spaces
 char*		xstreatwhite(char* str);
 
-// Trims string from spaces, tabs, newlines
-char*		xstrtrim(const char*  s);
-
 // fast duplicate c string
 char*		xstrdup(const char*  s);
 
 // is space?
-bool		xisspace(const uint32 c);
+bool		xisspace(int c);
 
 // converts string to lower case
 char*		xstrupr(char* s1);

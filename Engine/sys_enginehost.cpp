@@ -831,9 +831,9 @@ bool CEngineHost::Init()
 	g_fileSystem->MakeDir("Screenshots", SP_MOD);
 	
 	// Parse the rs_renderer from configuration files
-	g_sysConsole->ClearCommandBuffer();
-	g_sysConsole->ParseFileToCommandBuffer("cfg/config_default.cfg","r_renderer");
-	g_sysConsole->ExecuteCommandBuffer();
+	//g_sysConsole->ClearCommandBuffer();
+	//g_sysConsole->ParseFileToCommandBuffer("cfg/config_default.cfg");
+	//g_sysConsole->ExecuteCommandBuffer();
 	
 	// register our host
 	GetCore()->RegisterInterface( IENGINEHOST_INTERFACE_VERSION, this );

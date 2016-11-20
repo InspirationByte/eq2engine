@@ -17,6 +17,8 @@
 
 EXPORTED_INTERFACE(IConsoleCommands, CConsoleCommands);
 
+#define CON_SEPARATOR ';'
+
 #ifdef _DEBUG
 #	define _CRTDBG_MAP_ALLOC
 #	include <malloc.h>
@@ -180,15 +182,8 @@ DECLARE_CONCOMMAND_FN(exec)
         return;
     }
 
-    g_sysConsole->ClearCommandBuffer();
-
-	if(CMD_ARGC > 1)
-		g_sysConsole->ParseFileToCommandBuffer((char*)CMD_ARGV(0).c_str(),CMD_ARGV(1).c_str());
-	else
-		g_sysConsole->ParseFileToCommandBuffer((char*)CMD_ARGV(0).c_str());
-
-	((CConsoleCommands*)g_sysConsole.GetInstancePtr())->EnableInitOnlyVarsChangeProtection(false);
-	g_sysConsole->ExecuteCommandBuffer();
+	g_sysConsole->ParseFileToCommandBuffer( CMD_ARGV(0).c_str() );
+	//((CConsoleCommands*)g_sysConsole.GetInstancePtr())->EnableInitOnlyVarsChangeProtection(false);
 }
 
 DECLARE_CONCOMMAND_FN(set)
@@ -360,14 +355,7 @@ void CConsoleCommands::UnregisterCommand(ConCommandBase *pCmd)
 	if ( !pCmd->IsRegistered() )
 		return;
 
-	for ( int i = 0; i < m_pCommandBases.numElem(); i++ )
-	{
-		if ( !stricmp( pCmd->GetName(), m_pCommandBases[i]->GetName() ) )
-		{
-			m_pCommandBases.removeIndex(i);
-			return;
-		}
-	}
+	m_pCommandBases.remove(pCmd);
 }
 
 void CConsoleCommands::DeInit()
@@ -378,7 +366,7 @@ void CConsoleCommands::DeInit()
 	m_pCommandBases.clear();
 }
 
-int splitstring_singlecharseparator(char* str, char separator, DkList<EqString> &outStrings)
+void CConsoleCommands::ForEachSeparated(char* str, char separator, FUNC fn, void* extra)
 {
 	char c = str[0];
 
@@ -398,22 +386,31 @@ int splitstring_singlecharseparator(char* str, char separator, DkList<EqString> 
 			int char_count = pLast - pFirst;
 
 			if(char_count > 0)
-			{
-				// add new string
-				outStrings.append(_Es(pFirst, char_count));
-			}
+				(this->*fn)(pFirst, char_count, extra);
 
 			pFirst = iterator+1;
 		}
 
 		iterator++;
 	}
+}
 
-	return outStrings.numElem();
+void CConsoleCommands::ParseAndAppend(char* str, int len, void* extra)
+{
+	EqString tmpStr(str, len);
+	int commentIdx = tmpStr.Find("//");
+
+	if(commentIdx != -1)
+		tmpStr = tmpStr.Left(commentIdx);
+
+	tmpStr = tmpStr.TrimSpaces();
+
+	if(tmpStr.Length() > 0)
+		AppendToCommandBuffer( tmpStr.TrimSpaces().c_str() );
 }
 
 // Executes file
-void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename, const char* lookupForCommand)
+void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename)
 {
 	EqString cfgFileName(pszFilename);
 
@@ -427,8 +424,6 @@ void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename, const c
 
 	if(!g_fileSystem->FileExist(cfgFileName.c_str()))
 		cfgFileName = "cfg/" + cfgFileName;
-
-	bool doCommandLookup = (lookupForCommand != NULL);
 
 	char *buf = g_fileSystem->GetFileBuffer(cfgFileName.c_str(), NULL, -1, true);
 
@@ -444,52 +439,7 @@ void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename, const c
 		return; //Don't parse me about empty file
 	}
 
-	DkList<EqString> cmds;
-
-	//xstrsplit(buf,"\n",cmds);
-
-	if(splitstring_singlecharseparator(buf, '\n', cmds) <= 0)
-	{
-		PPFree(buf);
-		return;
-	}
-
-	for(int i = 0;i < cmds.numElem();i++)
-	{
-		int index;
-
-		EqString tmpStr(cmds[i]);
-
-		index = tmpStr.Find("//");
-
-		if(index != -1)
-		{
-			//int delStrLen = strlen(cmds[i]);
-			tmpStr = tmpStr.Left(index);//,delStrLen - (index+1)); //Clear comments
-		}
-		else
-			tmpStr = xstrtrim(cmds[i].GetData());
-
-		if(tmpStr.Length() > 0)
-		{
-			if(doCommandLookup)
-			{
-				// Handle 'exec' commands
-				if(tmpStr.Find("exec") != -1)
-					tmpStr.Append(varargs(" %s",lookupForCommand));
-
-				if(tmpStr.Find(lookupForCommand) == -1)
-					continue;
-
-				AppendToCommandBuffer((char*)tmpStr.GetData());
-			}
-			else
-			{
-				AppendToCommandBuffer((char*)tmpStr.GetData());
-			}
-		}
-	}
-
+	ForEachSeparated(buf, '\n', &CConsoleCommands::ParseAndAppend, NULL);
 	PPFree(buf);
 }
 
@@ -522,7 +472,7 @@ void CConsoleCommands::ClearCommandBuffer()
 	memset(m_pszCommandBuffer, 0, sizeof(m_pszCommandBuffer));
 }
 
-void SplitCommandForValidArguments(const char* command, DkList<EqString> *commands)
+void SplitCommandForValidArguments(const char* command, DkList<EqString>& commands)
 {
 	const char *pChar = command;
 	while ( *pChar && isspace(static_cast<unsigned char>(*pChar)) )
@@ -541,7 +491,7 @@ void SplitCommandForValidArguments(const char* command, DkList<EqString> *comman
 
 			int nLen = (int)(pChar - pFirstLetter);
 
-			commands->append(_Es(pFirstLetter,nLen));
+			commands.append(_Es(pFirstLetter,nLen));
 
 			pFirstLetter = NULL;
 			bInQuotes = false;
@@ -569,7 +519,7 @@ void SplitCommandForValidArguments(const char* command, DkList<EqString> *comman
 		if ( isspace( *pChar ) )
 		{
 			int nLen = (int)(pChar - pFirstLetter);
-			commands->append(_Es(pFirstLetter,nLen));
+			commands.append(_Es(pFirstLetter,nLen));
 			pFirstLetter = NULL;
 		}
 	}
@@ -577,7 +527,92 @@ void SplitCommandForValidArguments(const char* command, DkList<EqString> *comman
 	if ( pFirstLetter )
 	{
 		int nLen = (int)(pChar - pFirstLetter);
-		commands->append(_Es(pFirstLetter,nLen));
+		commands.append(_Es(pFirstLetter,nLen));
+	}
+}
+
+struct execOptions_t
+{
+	int filterFlags;
+	bool quiet;
+};
+
+void CConsoleCommands::SplitOnArgsAndExec(char* str, int len, void* extra)
+{
+	execOptions_t* options = (execOptions_t*)extra;
+
+	EqString commandStr(str,len);
+
+	DkList<EqString> cmdArgs;
+
+	// split it
+	SplitCommandForValidArguments(commandStr.c_str(), cmdArgs);
+
+	if(cmdArgs.numElem() == 0)
+		return;
+
+	ConCommandBase *pBase = (ConCommandBase*)FindBase( cmdArgs[0].GetData() );
+
+	if(!pBase) //Failed?
+	{
+		if(!options->quiet)
+			MsgError("Unknown command or variable '%s'\n", cmdArgs[0].GetData());
+
+		m_failedCommands.append(commandStr);
+		return;
+	}
+
+	if(options->filterFlags != -1)
+	{
+		if(!(pBase->GetFlags() & options->filterFlags))
+			return;
+	}
+
+	// remove cmd name
+	cmdArgs.removeIndex(0);
+
+	static ConVar* cheats = (ConVar*)FindCvar("__cheats");
+
+	bool is_cheat = (pBase->GetFlags() & CV_CHEAT) > 0;
+
+	if(cheats)
+	{
+		if(is_cheat && !cheats->GetBool())
+		{
+			MsgWarning("Cannot access to %s command/variable during cheats is off\n",pBase->GetName());
+			return;
+		}
+	}
+	else if(is_cheat)
+	{
+		MsgWarning("Cannot access to %s command/variable during cheats is off\n",pBase->GetName());
+		return;
+	}
+
+	if((pBase->GetFlags() & CV_INITONLY) && !m_bEnableInitOnlyChange)
+	{
+		MsgWarning("Cannot access to %s command/variable from console\n",pBase->GetName());
+		return;
+	}
+
+	if(pBase->IsConVar())
+	{
+		ConVar *pConVar = (ConVar*) pBase;
+
+		// Primitive executor tries to find optional arguments
+		if(cmdArgs.numElem() == 0)
+		{
+			MsgInfo("%s is '%s' (default value is '%s')\n",pConVar->GetName(),pConVar->GetString(), pConVar->GetDefaultValue());
+			return;
+		}
+
+		pConVar->SetValue(cmdArgs[0].GetData());
+		Msg("%s set to '%s'\n", pConVar->GetName(), pConVar->GetString());
+	}
+	else
+	{
+		ConCommand *pConCommand = (ConCommand*)pBase;
+		pConCommand->DispatchFunc(cmdArgs);
 	}
 }
 
@@ -604,87 +639,11 @@ bool CConsoleCommands::ExecuteCommandBuffer(unsigned int CmdFilterFlags/* = -1*/
 	if(strlen(m_pszCommandBuffer) <= 0)
 		return false;
 
-	DkList<EqString> szCommands;
+	execOptions_t options;
+	options.filterFlags = CmdFilterFlags;
+	options.quiet = quiet;
 
-	// separate on commands
-	if(splitstring_singlecharseparator(m_pszCommandBuffer, ';', szCommands) <= 0)
-		return false;
-
-	for(int i = 0; i < szCommands.numElem();i++)
-	{
-		DkList<EqString> cmdArgs;
-
-		// split it
-		SplitCommandForValidArguments(szCommands[i].GetData(), &cmdArgs);
-
-		if(cmdArgs.numElem() == 0)
-			continue;
-
-		ConCommandBase *pBase = (ConCommandBase*)FindBase( cmdArgs[0].GetData() );
-
-		if(!pBase) //Failed?
-		{
-			if(!quiet)
-				MsgError("Unknown command or variable '%s'\n", cmdArgs[0].GetData());
-
-			m_failedCommands.append(szCommands[i]);
-
-			continue;
-		}
-
-		if(CmdFilterFlags != -1)
-		{
-			if(!(pBase->GetFlags() & CmdFilterFlags))
-				continue;
-		}
-
-		// remove cmd name
-		cmdArgs.removeIndex(0);
-
-		static ConVar* cheats = (ConVar*)FindCvar("__cheats");
-
-		bool is_cheat = (pBase->GetFlags() & CV_CHEAT) > 0;
-
-		if(cheats)
-		{
-			if(is_cheat && !cheats->GetBool())
-			{
-				MsgWarning("Cannot access to %s command/variable during cheats is off\n",pBase->GetName());
-				continue;
-			}
-		}
-		else if(is_cheat)
-		{
-			MsgWarning("Cannot access to %s command/variable during cheats is off\n",pBase->GetName());
-			continue;
-		}
-
-		if((pBase->GetFlags() & CV_INITONLY) && !m_bEnableInitOnlyChange)
-		{
-			MsgWarning("Cannot access to %s command/variable from console\n",pBase->GetName());
-			continue;
-		}
-
-		if(pBase->IsConVar())
-		{
-			ConVar *pConVar = (ConVar*) pBase;
-
-			// Primitive executor tries to find optional arguments
-			if(cmdArgs.numElem() == 0)
-			{
-				MsgInfo("%s is '%s' (default value is '%s')\n",pConVar->GetName(),pConVar->GetString(), pConVar->GetDefaultValue());
-				continue;
-			}
-
-			pConVar->SetValue(cmdArgs[0].GetData());
-			Msg("%s set to '%s'\n", pConVar->GetName(), pConVar->GetString());
-		}
-		else
-		{
-			ConCommand *pConCommand = (ConCommand*)pBase;
-			pConCommand->DispatchFunc(cmdArgs);
-		}
-	}
+	ForEachSeparated(m_pszCommandBuffer, CON_SEPARATOR, &CConsoleCommands::SplitOnArgsAndExec,  &options);
 
 	return true;
 }

@@ -252,13 +252,14 @@ char* xstrdup(const char*  s)
     return t;
 }
 
+#include "DebugInterface.h"
 
 // is space?
 //------------------------------------------
-bool xisspace(const uint32 c)
+bool xisspace(int c)
 {
-	// according to windows documentation
-	return (c == 0x20) || (0x09 <= c <= 0x0d);
+	// P.S. Don't look for the code in Windows documentation, it has BUG
+	return (c == 0x20) || (c >= 0x09 && c <= 0x0d);
 }
 
 //------------------------------------------
@@ -303,36 +304,6 @@ wchar_t* varargs_w(const wchar_t *fmt,...)
 	return buf;
 }
 
-//------------------------------------------
-// Trims string
-//------------------------------------------
-char* xstrtrim(const char*  s)
-{
-	ASSERT(s);
-
-	int srcLen = strlen(s)+1;
-	char* newString = new char[srcLen];
-
-	// find beginning if there whitespaces
-	while(isspace((int)(ubyte)*s) && *s) s++;
-
-	strcpy(newString, s);
-	char* last = newString + strlen(newString);
-
-	//
-	while (last > newString)
-	{
-		if (!isspace((int)(ubyte)*(last-1)))
-			break ;
-		last--;
-	}
-
-	*last = '\0';
-	return (char*)newString;
-}
-
-
-
 char* xstrstr(  const char* s1, const char* search )
 {
 	AssertValidStringPtr( s1 );
@@ -369,8 +340,8 @@ int xstrfind(char* str, char* search)
 // Finds a string in another string with a case insensitive test
 char const* xstristr( char const* pStr, char const* pSearch )
 {
-	AssertValidStringPtr(pStr);
-	AssertValidStringPtr(pSearch);
+	//AssertValidStringPtr(pStr);
+	//AssertValidStringPtr(pSearch);
 
 	if (!pStr || !pSearch)
 		return 0;
@@ -412,9 +383,6 @@ char const* xstristr( char const* pStr, char const* pSearch )
 
 char* xstristr( char* pStr, char const* pSearch )
 {
-	AssertValidStringPtr( pStr );
-	AssertValidStringPtr( pSearch );
-
 	return (char*)xstristr( (char const*)pStr, pSearch );
 }
 

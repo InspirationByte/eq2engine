@@ -195,6 +195,9 @@ protected:
 	EqString				m_levelName;
 
 	IVertexBuffer*			m_instanceBuffer;
+
+	DkList<IVector2D>		m_navOpenSet;
+	ubyte					m_defaultNavTile;
 };
 
 #endif // LEVEL_H

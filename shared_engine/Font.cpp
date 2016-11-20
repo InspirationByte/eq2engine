@@ -722,7 +722,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 	}
 	else
 	{
-		MsgError("ERROR: Can't open font file '%s'\n", finalFileName.c_str());
+		MsgError("ERROR: Can't open font file '%s' (%s)\n", finalFileName.c_str(), filenamePrefix);
 	}
 
 	return false;

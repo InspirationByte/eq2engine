@@ -218,10 +218,7 @@ void* PPDAlloc(uint size, const char* pszFileName, int nLine)
 	*checkMark = PPMEM_CHECKMARK;
 
 	g_allocMemMutex->Lock();
-
-	// store pointer in global map
-	s_allocPointerMap[actualPtr] = alloc;
-
+	s_allocPointerMap[actualPtr] = alloc;	// store pointer in global map
 	g_allocMemMutex->Unlock();
 
 	if( ppmem_break_on_alloc.GetInt() != -1)
@@ -249,7 +246,10 @@ void* PPDReAlloc( void* ptr, uint size, const char* pszFileName, int nLine )
 		ASSERTMSG(isValid, varargs("PPDReAlloc: Given pointer is invalid but allocation was found in the range.\nOffset is %d bytes.", ptrDiff));
 
 		void* oldPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
+
+		g_allocMemMutex->Lock();
 		s_allocPointerMap.erase(oldPtr);
+		g_allocMemMutex->Unlock();
 
 		alloc = (ppallocinfo_t*)realloc(alloc, sizeof(ppallocinfo_t) + size + sizeof(uint));
 
@@ -267,7 +267,9 @@ void* PPDReAlloc( void* ptr, uint size, const char* pszFileName, int nLine )
 		uint* checkMark = (uint*)((ubyte*)actualPtr + size);
 
 		// store pointer in global map
+		g_allocMemMutex->Lock();
 		s_allocPointerMap[actualPtr] = alloc;
+		g_allocMemMutex->Unlock();
 
 		// reset end mark for checking
 		*checkMark = PPMEM_CHECKMARK;
@@ -309,7 +311,9 @@ void PPFree(void* ptr)
 
 		free(alloc);
 
+		g_allocMemMutex->Lock();
 		s_allocPointerMap.erase(actualPtr);
+		g_allocMemMutex->Unlock();
 	}
 #endif // PPMEM_DISABLE
 }

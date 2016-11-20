@@ -33,7 +33,7 @@ public:
     virtual	const	DkList<ConCommandBase*>*	GetAllCommands() = 0;
 
     // Executes file
-    virtual void								ParseFileToCommandBuffer(const char* pszFilename, const char* lookupForCommand = NULL) = 0;
+    virtual void								ParseFileToCommandBuffer(const char* pszFilename) = 0;
 
     // Sets command buffer
     virtual void								SetCommandBuffer(const char* pszBuffer) = 0;

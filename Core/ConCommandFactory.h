@@ -24,6 +24,8 @@
 #define COM_TOKEN_MAX_LENGTH 1024
 #define	MAX_ARGS 80
 
+typedef void (CConsoleCommands::*FUNC)(char* str, int len, void* extra);
+
 class CConsoleCommands : public IConsoleCommands
 {
 public:
@@ -49,7 +51,7 @@ public:
 	const DkList<ConCommandBase*>*		GetAllCommands() { return &m_pCommandBases; }
 
 	// Executes file
-	void								ParseFileToCommandBuffer(const char* pszFilename, const char* lookupForCommand = NULL);
+	void								ParseFileToCommandBuffer(const char* pszFilename);
 
 	// Sets command buffer
 	void								SetCommandBuffer(const char* pszBuffer);
@@ -76,6 +78,10 @@ public:
 	const char*							GetInterfaceName() const	{return CONSOLE_INTERFACE_VERSION;}
 
 private:
+	void								ForEachSeparated(char* str, char separator, FUNC fn, void* extra);
+	void								ParseAndAppend(char* str, int len, void* extra);
+	void								SplitOnArgsAndExec(char* str, int len, void* extra);
+
 	DkList<ConCommandBase*>	m_pCommandBases;
 
 	DkList<EqString>		m_failedCommands;

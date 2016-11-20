@@ -14,6 +14,8 @@
 
 // TODO: make these constants initialized from Lua
 
+#define DOVERLAY_DELAY (0.15f)
+
 const float AI_COPVIEW_FOV			= 85.0f;
 const float AI_COPVIEW_FOV_WANTED	= 90.0f;
 
@@ -263,8 +265,6 @@ void CAIPursuerCar::BeginPursuit( float delay )
 {
 	if (!m_targInfo.target)
 		return;
-
-	SetLight(CAR_LIGHT_EMERGENCY, false);
 
 	AI_SetNextState(&CAIPursuerCar::PursueTarget, delay);
 }
@@ -528,7 +528,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 {
 	if(transition == STATE_TRANSITION_PROLOG)
 	{
-
 		if(!IsAlive() || !g_pGameWorld->IsValidObject(m_targInfo.target))
 		{
 			AI_SetState(&CAIPursuerCar::SearchForRoad);
@@ -536,6 +535,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		}
 
 		m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
+
+		SetLight(CAR_LIGHT_EMERGENCY, false);
 
 		// restore collision
 		GetPhysicsBody()->SetCollideMask(COLLIDEMASK_VEHICLE);
@@ -575,6 +576,14 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	// do nothing
 	if(transition != STATE_TRANSITION_NONE)
 		return 0;
+
+	// don't control the car
+	if(IsFlippedOver())
+	{
+		// keep only the analog steering
+		SetControlButtons( IN_ANALOGSTEER );
+		return 0;
+	}
 
 	// dead?
 	if(!IsAlive())
@@ -710,16 +719,21 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	collFilter.AddObject( GetPhysicsBody() );
 	collFilter.AddObject( m_targInfo.target->GetPhysicsBody() );
 
-	float velocityDistOffsetFactor = clamp(length(GetOrigin() - m_targInfo.target->GetOrigin()), 0.0f, 20.0f) * 0.05f;
+	// movement prediction factor is distant
+	float velocityDistOffsetFactor = length(GetOrigin() - m_targInfo.target->GetOrigin());
+	velocityDistOffsetFactor = RemapValClamp(velocityDistOffsetFactor, 0.0f, 6.0f, 0.0f, 1.0f);
 	velocityDistOffsetFactor = 1.0f - pow(velocityDistOffsetFactor, 2.0f);
 
 	Vector3D carForwardDir = GetForwardVector();
 	Vector3D carPos		= GetOrigin() + carForwardDir * m_conf->m_body_size.z;
-	Vector3D targetPos	= m_targInfo.target->GetOrigin() + m_targInfo.target->GetVelocity()*velocityDistOffsetFactor*0.75f;
-
+	Vector3D targetVelocity = m_targInfo.target->GetVelocity();
+	Vector3D targetPos	= m_targInfo.target->GetOrigin() + targetVelocity*velocityDistOffsetFactor*0.75f;
+	Vector3D targetForward = m_targInfo.target->GetForwardVector();
 
 	float fSpeed = GetSpeedWheels();
 	float speedMPS = (fSpeed*KPH_TO_MPS);
+
+	float velocity = GetSpeed();
 
 	float distToPursueTarget = length(m_targInfo.target->GetOrigin() - GetOrigin());
 
@@ -744,9 +758,9 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 			Vector3D traceTarget = GetOrigin()+targetDir*min(distToPursueTarget, AI_COPVIEW_FAR_WANTED);
 
 			// so the obstacle forces us to use NAV grid path
-			if(g_pPhysics->TestConvexSweep(GetPhysicsBody()->GetBulletShape(), GetOrientation(), carPos, traceTarget, coll, OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE, &collFilter))
+			if(g_pPhysics->TestConvexSweep(GetPhysicsBody()->GetBulletShape(), GetOrientation(), carPos, traceTarget, coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE, &collFilter))
 			{
-				if(coll.fract < 0.85f)
+				if(coll.fract < 1.0f)
 					doesHaveStraightPath = false;
 			}
 
@@ -812,7 +826,18 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	// Introduce steering target and brake position
 	//
 	Vector3D steeringTargetPos = targetPos;
-	Vector3D brakeTargetPos = targetPos + carForwardDir*5.0f;
+
+	Vector3D steeringTargetPosB = carPos + targetForward*targetVelocity*velocityDistOffsetFactor;
+	Vector3D brakeTargetPos = targetPos + targetForward*targetVelocity*velocityDistOffsetFactor;//carForwardDir*5.0f;
+	/*
+	if(dot(carForwardDir, targetVelocity) < 0.0f)
+	{
+		brakeTargetPos = targetPos + carForwardDir*5.0f;
+		steeringTargetPosB = carPos;
+	}*/
+
+	if(m_targInfo.isAngry)
+		brakeTargetPos = targetPos+targetVelocity*5.0f;
 
 	CollisionData_t velocityColl;
 	CollisionData_t frontColl;
@@ -840,9 +865,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	float lateralSlideSteerFactor = 1.0f - RemapValClamp(lateralSlide, 0.0f, 10.0f, 0.0f, 1.0f);
 
-	Vector3D steeringTargetPosB = carPos;
-
-	float speedFactor = RemapValClamp(fSpeed, 0.0f, 60.0f, 0.0f, 1.0f);
+	float speedFactor = RemapValClamp(fSpeed, 0.0f, 50.0f, 0.0f, 1.0f);
 
 	if( !doesHaveStraightPath &&
 		m_targInfo.path.points.numElem() > 0 &&
@@ -871,6 +894,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		Vector3D steerDirHard = fastNormalize(hardSteerPosEnd-hardSteerPosStart);
 
 		float cosHardSteerAngle = dot(steerDirHard, fastNormalize(GetVelocity()));
+
 		float distanceToSteer = length(hardSteerPosStart - carPos);
 
 		if(fSpeed > 20.0f && cosHardSteerAngle < 0.65f)
@@ -891,15 +915,19 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 		if(ai_debug_pursuer.GetBool())
 		{
-			#define DOVERLAY_DELAY (0.15f)
-
-			debugoverlay->Box3D(steeringTargetPos - 0.25f, steeringTargetPos + 0.25f, ColorRGBA(1, 0, 1, 1.0f), DOVERLAY_DELAY);
-			debugoverlay->Box3D(brakeTargetPos - 0.25f, brakeTargetPos + 0.25f, ColorRGBA(0, 1, 0, 1.0f), DOVERLAY_DELAY);
-
 			debugoverlay->Box3D(hardSteerPosStart - 0.25f, hardSteerPosStart + 0.25f, ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
 			debugoverlay->Line3D(hardSteerPosStart, hardSteerPosEnd, ColorRGBA(1, 0, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
 			debugoverlay->Box3D(hardSteerPosEnd - 0.25f, hardSteerPosEnd + 0.25f, ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
 		}
+	}
+
+	if(ai_debug_pursuer.GetBool())
+	{
+		debugoverlay->Line3D(carPos, carPos+GetVelocity(), ColorRGBA(1, 1, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
+		debugoverlay->Line3D(carPos, carPos+carForwardDir*10.0f, ColorRGBA(1, 1, 0, 1.0f), ColorRGBA(1, 0, 1, 1.0f), DOVERLAY_DELAY);
+		debugoverlay->Box3D(steeringTargetPos - 0.25f, steeringTargetPos + 0.25f, ColorRGBA(1, 0, 1, 1.0f), DOVERLAY_DELAY);
+		debugoverlay->Box3D(steeringTargetPosB - 0.25f, steeringTargetPosB + 0.25f, ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
+		debugoverlay->Box3D(brakeTargetPos - 0.25f, brakeTargetPos + 0.25f, ColorRGBA(0, 1, 0, 1.0f), DOVERLAY_DELAY);
 	}
 
 	GetPhysicsBody()->TryWake(false);
@@ -912,9 +940,15 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	FReal fSteerTarget = atan2(steerDir.x, steerDir.z);
 	FReal fSteeringAngle = clamp(fSteerTarget , FReal(-1.0f), FReal(1.0f));
 
+	if(lateralSlide < 1.0f)
+		fSteeringAngle = sign(fSteeringAngle) * powf(fabs(fSteeringAngle), 1.25f);
+
+	if(fSpeed < -0.1f)
+		fSteeringAngle *= -1.0f;
+
 	if(lateralSlide > 1.0f && sign(lateralSlideSigned)+sign(fSteeringAngle) < 0.5f)
 	{
-		fSteeringAngle *= lateralSlideSteerFactor;
+		//fSteeringAngle *= lateralSlideSteerFactor;
 		doesHardSteer = false;
 	}
 
@@ -932,12 +966,13 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		controls |= IN_HORN;
 	}
 
+	/*
 	float pursuitTargetSpeed = m_targInfo.target->GetSpeed();
-
+	
 	if(	!m_targInfo.isAngry && distToTargetReal < 14.0f)
 	{
 		float distFactor = float(distToTarget) / 14.0f;
-
+		
 		if(pursuitTargetSpeed > 10.0f)
 		{
 			accelerator -= distFactor;
@@ -945,11 +980,11 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		}
 		else
 			accelerator *= 0.2f;
-
+			
 		accelerator = max(FReal(0),accelerator);
 
 		controls |= IN_BRAKE;
-	}
+	}*/
 
 	//if(frontColl.fract < 1.0f)
 	//	steeringTargetPos = frontColl.position + carForwardDir*5.0f + frontColl.normal*(1.0f-frontColl.fract)*16.0f;
@@ -990,14 +1025,16 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		Vector3D segmentDir = fastNormalize(steeringTargetPos-steeringTargetPosB);
 
 		float velocityToTargetFactor = dot(segmentDir, fastNormalize(GetVelocity()));
+		velocityToTargetFactor = pow(fabs(velocityToTargetFactor), 0.5f);
+
 		float lateralSlideSpd = lateralSlide*speedFactor;
 
 		float distToTargetDiff = fSpeed*KPH_TO_MPS * 2.0f - distToBrakeTarget;
 		float brakeDistantFactor = RemapValClamp(distToTargetDiff, 0.0f, 10.0f, 0.0f, 1.0f) * weatherBrakeDistModifier;
-
-		if( doesHardSteer || speedFactor > 0.05f && (velocityToTargetFactor < 0.85f || speedFactor >= 0.5f && brakeDistantFactor > 0.0f) )
+	
+		if((doesHardSteer || speedFactor > 0.05f && (velocityToTargetFactor < 0.85f || speedFactor >= 0.5f && brakeDistantFactor > 0.0f)) )
 		{
-			//brake = 1.0f - clamp(velocityToTargetFactor, 0.0f, 0.5f);
+			//brake = (1.0f - velocityToTargetFactor)*4.0f;
 
 			controls |= IN_BRAKE;
 			controls &= ~IN_ACCELERATE;
@@ -1020,7 +1057,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		}
 	}
 
-	if(fSpeed > 10.0f && doesHardSteer)
+	if(fSpeed > 10.0f)
 	{
 		accelerator -= (FReal)fabs(fSteeringAngle)*0.25f*speedFactor;
 	}

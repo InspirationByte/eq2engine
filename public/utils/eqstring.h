@@ -60,7 +60,7 @@ public:
 	void		Empty();
 
 	// an internal operation of allocation/extend
-	bool		ExtendAlloc(uint nSize);
+	bool		ExtendAlloc(uint nSize, bool bCopy = true);
 
 	// just a resize
 	bool		Resize(uint nSize, bool bCopy = true);
@@ -117,6 +117,7 @@ public:
 	EqString	Path_Extract_Path() const;
 
 	EqString	EatWhiteSpaces() const;
+	EqString	TrimSpaces(bool left = true, bool right = true) const;
 
 	void		Path_FixSlashes() const;
 
@@ -201,6 +202,7 @@ public:
 
 protected:
 	char*		m_pszString;
+	char		m_baseBuffer[64];
 
 	uint16		m_nLength;			// length of string
 	uint16		m_nAllocated;		// allocation size

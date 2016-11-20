@@ -417,6 +417,8 @@ public:
 	float					GetSpeed() const;
 
 	bool					IsAlive() const;
+	bool					IsFlippedOver( bool checkWheels = false ) const;
+	bool					IsInWater() const;
 
 	void					SetMaxDamage( float fDamage );
 	float					GetMaxDamage() const;
@@ -444,8 +446,6 @@ public:
 
 	void					Enable(bool enable = true);	// disables or enables car
 	bool					IsEnabled() const;
-
-	bool					IsInWater() const;
 
 	void					IncrementPursue();
 	void					DecrementPursue();
@@ -594,6 +594,7 @@ OOLUA_PROXY(CCar, CGameObject)
 
 	OOLUA_MFUNC_CONST(IsAlive)
 	OOLUA_MFUNC_CONST(IsInWater)
+	OOLUA_MFUNC_CONST(IsFlippedOver)
 
 	OOLUA_MFUNC(SetMaxDamage)
 	OOLUA_MFUNC_CONST(GetMaxDamage)

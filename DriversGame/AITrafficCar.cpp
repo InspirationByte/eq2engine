@@ -123,7 +123,7 @@ const float AI_CAR_TRACE_DIST_MIN = 6.0f;
 const float AI_CAR_TRACE_DIST_MAX = 25.0f;
 
 const float AI_ROAD_TRACE_DIST = 30.0f;
-const float AI_MIN_LANE_CHANGE_DIST = 20.0f;
+const float AI_MIN_LANE_CHANGE_DIST = 30.0f;
 
 const float AI_TARGET_DIST_NOLANE = 5.0f;
 const float AI_TARGET_DIST = 10.0f;
@@ -147,8 +147,6 @@ bool SolveLaneTrafficLaws(int curDirection, int destDirection, int curRoadWidthL
 	if( IsOppositeDirectionTo(curDirection, destDirection) )
 		return false;
 
-	// if we have to turn other direction, check
-
 	if( curLane == curRoadWidthLanes )	// last left lane
 	{
 		// don't allow turn right from this lane
@@ -156,9 +154,9 @@ bool SolveLaneTrafficLaws(int curDirection, int destDirection, int curRoadWidthL
 			return false;
 
 		// only allowed to turn left, or go forward
-		if(	(curRoadWidthLanes == 2 && curDirection==destDirection) || CompareDirection(curDirection, destDirection+1) )
+		if(	(curRoadWidthLanes > 2 && curDirection==destDirection) || CompareDirection(curDirection, destDirection+1) )
 		{
-			destLane = destRoadWidth; // move to last left lanes
+			destLane = -1; // any lane
 			return true;
 		}
 	}
@@ -240,6 +238,9 @@ void CAITrafficCar::Spawn()
 		int col_idx = g_replayRandom.Get(0, m_conf->m_colors.numElem() - 1);
 		SetColorScheme(col_idx);
 	}
+
+	// also randomize lane switching
+	//m_nextSwitchLaneTime = g_replayRandom.Get(0, AI_LANE_SWITCH_DELAY);
 }
 
 int CAITrafficCar::DeadState( float fDt, EStateTransition transition )
@@ -371,8 +372,6 @@ void CAITrafficCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 			m_hornTime.Set(0);
 
 			AI_SetState( &CAITrafficCar::DeadState );
-
-			SetLight(CAR_LIGHT_EMERGENCY, true);
 
 			int buttons = GetControlButtons();
 			buttons &= ~(IN_HORN | IN_ACCELERATE | IN_BRAKE);
@@ -621,6 +620,19 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	if(!m_enabled)
 		return 0;
 
+	if(transition != EStateTransition::STATE_TRANSITION_NONE)
+		return 0;
+
+	// if this car was flipped, so put it to death state
+	// but only if it's not a pursuer type
+	if(!IsPursuer() && IsFlippedOver())
+	{
+		AI_SetState( &CAITrafficCar::DeadState );
+		SetLight(CAR_LIGHT_EMERGENCY, true);
+		SetControlButtons(0);
+		return 0;
+	}
+
 	// 1. Build a line (A-B) from cell grid to 3D positions
 	// 2. Make middle (or near) point (C), lerp(a,b,0.25f)
 	//		A---C------------B
@@ -655,10 +667,6 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	Vector3D	realEndPos		= g_pGameWorld->m_level.GlobalTilePointToPosition( m_currEnd );
 
 	Vector3D	roadDir = fastNormalize(startPos-endPos);
-
-	//if(ai_traffic_debug.GetBool())
-	//{
-	//}
 
 	// road end
 	Plane		roadEndPlane(roadDir, -dot(roadDir,endPos));
@@ -706,7 +714,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	// try change straight
 	if(m_straights[STRAIGHT_CURRENT].direction != -1)
 	{
-		if(	distToChange < 0.0f ) // && projWay > 1.0f)
+		if(	distToChange < 2.0f ) // && projWay > 1.0f)
 		{
 			if( newStraight.direction == -1 )
 			{
@@ -749,18 +757,15 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		}
 		else if(distToChange > AI_MIN_LANE_CHANGE_DIST)
 		{
-			if(	m_nextSwitchLaneTime < 0 || ai_changelane.GetBool())
+			if(	(m_nextSwitchLaneTime < 0 && isOnCurrRoad) || ai_changelane.GetBool())
 			{
 				if(ai_changelane.GetBool())
 					ai_changelane.SetBool(false);
 
-				if(IsPointOnStraight(carPosOnCell, m_straights[STRAIGHT_CURRENT]))
-				{
-					m_nextSwitchLaneTime = AI_LANE_SWITCH_DELAY;
+				m_nextSwitchLaneTime = AI_LANE_SWITCH_DELAY;
 
-					SwitchLane();
-					return 0;
-				}
+				SwitchLane();
+				return 0;
 			}
 		}
 	}
@@ -801,7 +806,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 			bool result = SolveLaneTrafficLaws(m_straights[STRAIGHT_CURRENT].direction, road.direction, curNumLanes, m_straights[STRAIGHT_CURRENT].lane, destRoadWidth, destLane);
 
 			// check simple laws
-			if( result && destLane == road.lane)
+			if( result && (destLane == -1 || destLane == road.lane))
 				allowedStraightIds.append(i);
 		}
 
@@ -860,10 +865,13 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	float brake = 0.0f;
 
 	Vector3D steerDir = fastNormalize((!bodyMat.getRotationComponent()) * fastNormalize(steeringTargetPos-carPos));
+
 	float fSteeringAngle = clamp(atan2(steerDir.x, steerDir.z), -1.0f, 1.0f);
+	fSteeringAngle = sign(fSteeringAngle) * powf(fabs(fSteeringAngle), 1.25f);
 
 	// modifier by steering
-	accelerator *= clamp(0.45f+(1.0f-fabs(fSteeringAngle))*0.55f, 0.0f, 1.0f) * trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType];
+	accelerator *= trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType];
+	accelerator -= fabs(fSteeringAngle*0.25f);
 
 	int controls = IN_ACCELERATE | IN_EXTENDTURN;
 
@@ -1119,7 +1127,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 	accelerator = clamp(accelerator, 0.0f, 0.6f);
 
-	SetControlVars(accelerator, brake, clamp(fSteeringAngle, -1.0f, 1.0f));
+	SetControlVars(accelerator, brake, fSteeringAngle);
 
 	return 0;
 }

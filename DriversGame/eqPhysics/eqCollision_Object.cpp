@@ -122,6 +122,8 @@ bool CEqCollisionObject::Initialize( physmodeldata_t* data, int nObject )
 		m_hasStudioShape = true;
 	}
 
+	ASSERTMSG(m_shape, "No valid shape!");
+
 	m_shape->setMargin(ph_margin.GetFloat());
 
 	InitAABB();

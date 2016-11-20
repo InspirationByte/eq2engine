@@ -25,6 +25,6 @@
 void CoreMessage();
 
 //Don't Change! The BuildNumberIncreator will done this!
-#define BUILD_NUMBER 5071
+#define BUILD_NUMBER 5204
 
 #endif // COREVERSION_H

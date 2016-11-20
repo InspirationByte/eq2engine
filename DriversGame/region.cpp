@@ -579,8 +579,8 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 	levRegionDataInfo_t		regdatahdr;
 	stream->Read(&regdatahdr, 1, sizeof(levRegionDataInfo_t));
 
-	m_regionDefs.resize( regdatahdr.numObjectDefs );
-	m_objects.resize( regdatahdr.numCellObjects );
+	//m_regionDefs.resize( regdatahdr.numObjectDefs );
+	//m_objects.resize( regdatahdr.numCellObjects );
 
 	//
 	// Load models (object definitions)
@@ -630,8 +630,6 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 
 		// Init basics
 		regionObject_t* ref = new regionObject_t;
-
-		ASSERT(ref);
 
 		ref->name = cellObj.name;
 
@@ -709,6 +707,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		// finally add that object
 		m_level->m_mutex.Lock();
 
+		ASSERT(ref);
 		m_objects.append(ref);
 
 		m_level->m_mutex.Unlock();
@@ -784,6 +783,9 @@ void CLevelRegion::RespawnObjects()
 
 void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 {
+	if(m_heightfield[0]->IsEmpty()) // don't init roads, navigation if there is no main heightfield
+		return;
+
 	InitRoads();
 
 	int numRoadCells = 0;

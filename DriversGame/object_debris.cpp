@@ -63,6 +63,8 @@ void CObject_Debris::Spawn()
 		m_pModel->SetInstancer( instancer );
 	}
 
+	ASSERT(m_pModel);
+
 	m_smashSound = KV_GetValueString(m_keyValues->FindKeyBase("smashsound"), 0, "");
 
 	if(m_smashSound.Length() > 0)

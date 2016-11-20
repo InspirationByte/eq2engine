@@ -47,7 +47,8 @@ CGameLevel::CGameLevel() :
 	m_occluderDataLumpOffset(0),
 	m_levelName("Unnamed"),
 	m_instanceBuffer(NULL),
-	m_mutex(GetGlobalMutex(MUTEXPURPOSE_LEVEL_LOADER))
+	m_mutex(GetGlobalMutex(MUTEXPURPOSE_LEVEL_LOADER)),
+	m_navOpenSet(1024)
 {
 
 }
@@ -918,7 +919,7 @@ float CGameLevel::GetWaterLevelAt(const IVector2D& tilePos) const
 
 			hfieldtile_t* tile = field->GetTile(localTile.x, localTile.y);
 
-			if(!field->m_materials.inRange(tile->texture))
+			if(tile == NULL || tile && !field->m_materials.inRange(tile->texture))
 				continue;
 
 			hfieldmaterial_t* mat = field->m_materials[tile->texture];
@@ -1755,6 +1756,12 @@ void CGameLevel::RespawnAllObjects()
 
 void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 {
+	if(ref == NULL)
+	{
+		MsgError("NULL reference of object found in region %d\n", reg->m_regionIndex);
+		return;
+	}
+
 	/*
 		transformedModel = transformModelRef(ref)
 		foreach triangle in transformedModel
@@ -1915,8 +1922,8 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 
 void CGameLevel::Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& maxs, IVector2D& xy1, IVector2D& xy2) const
 {
-	xy1 = Nav_PositionToGlobalNavPoint(mins)-2;
-	xy2 = Nav_PositionToGlobalNavPoint(maxs)+2;
+	xy1 = Nav_PositionToGlobalNavPoint(mins-1.5f);
+	xy2 = Nav_PositionToGlobalNavPoint(maxs+1.5f);
 }
 
 void CGameLevel::Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion) const
@@ -2036,11 +2043,12 @@ ubyte& CGameLevel::Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacl
 	IVector2D localPoint;
 	CLevelRegion* reg;
 
+	CScopedMutex m(m_mutex);
 	Nav_GlobalToLocalPoint(point, localPoint, &reg);
 
-	CScopedMutex m(m_mutex);
-
-	if (reg && reg->m_navGrid.staticObst)
+	if (reg && reg->m_navGrid.staticObst && 
+		localPoint.x >= 0 && localPoint.y >= 0 &&
+		localPoint.x < navSize && localPoint.y < navSize)
 	{
 		if(obstacles)
 			return reg->m_navGrid.dynamicObst[localPoint.y*navSize + localPoint.x];
@@ -2048,9 +2056,7 @@ ubyte& CGameLevel::Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacl
 			return reg->m_navGrid.staticObst[localPoint.y*navSize + localPoint.x];
 	}
 
-	static ubyte emptyTile = 255;
-
-	return emptyTile;
+	return m_defaultNavTile;
 }
 
 void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
@@ -2067,7 +2073,7 @@ void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
 
 			CLevelRegion& reg = m_regions[idx];
 
-			if(reg.m_isLoaded) // zero them
+			if(reg.m_isLoaded && reg.m_navGrid.staticObst != NULL) // zero them
 			{
 				switch(mode)
 				{
@@ -2079,6 +2085,7 @@ void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
 						break;
 				}
 
+				
 				if( reg.m_navGrid.dirty )
 				{
 					for (int i = 0; i < reg.m_objects.numElem(); i++)
@@ -2086,6 +2093,7 @@ void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
 
 					reg.m_navGrid.dirty = false;
 				}
+				
 			}
 
 			m_mutex.Unlock();
@@ -2122,8 +2130,8 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 	if(startCheck.flag == 0x1 || endCheck.flag == 0x1)
 		return false;
 
-	DkList<IVector2D> openSet(1024);	// we don't need closed set
-	openSet.append(start);
+	m_navOpenSet.setNum(0, false);
+	m_navOpenSet.append(start);
 
 	bool found = false;
 
@@ -2132,29 +2140,29 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 	IVector2D dir = end-start;
 
 	// go through all open pos
-	while (openSet.numElem() > 0)
+	while (m_navOpenSet.numElem() > 0)
 	{
-		int bestOpenSetIdx = openSet.numElem() == 1 ? 0 : -1;
+		int bestOpenSetIdx = m_navOpenSet.numElem() == 1 ? 0 : -1;
 
 		if(bestOpenSetIdx == -1)
 		{
 			float minCost = 10000.0f;
 
 			// search for best costless point
-			for (int i = 0; i < openSet.numElem(); i++)
+			for (int i = 0; i < m_navOpenSet.numElem(); i++)
 			{
-				if(openSet[i] == end)
+				if(m_navOpenSet[i] == end)
 				{
 					found = true;
 					break;
 				}
 
-				navcell_t& cell = Nav_GetCellStateAtGlobalPoint(openSet[i]);
-				ubyte val = Nav_GetTileAtGlobalPoint(openSet[i]);
+				navcell_t& cell = Nav_GetCellStateAtGlobalPoint(m_navOpenSet[i]);
+				ubyte val = Nav_GetTileAtGlobalPoint(m_navOpenSet[i]);
 
 				// calc cost and check
-				float g = estimateDist(end, openSet[i]);
-				float h = estimateDist(openSet[i] - IVector2D(dx[cell.pdir], dy[cell.pdir]), openSet[i]);
+				float g = estimateDist(end, m_navOpenSet[i]);
+				float h = estimateDist(m_navOpenSet[i] - IVector2D(dx[cell.pdir], dy[cell.pdir]), m_navOpenSet[i]);
 				float cost = g + h;	// regulate by cell priority
 
 				if(cellPriority)
@@ -2176,11 +2184,11 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 		if (bestOpenSetIdx == -1)
 			break;
 
-		IVector2D curPoint = openSet[bestOpenSetIdx];
+		IVector2D curPoint = m_navOpenSet[bestOpenSetIdx];
 		navcell_t& curCell = Nav_GetCellStateAtGlobalPoint(curPoint);
 
 		// remove from open set
-		openSet.fastRemoveIndex(bestOpenSetIdx);
+		m_navOpenSet.fastRemoveIndex(bestOpenSetIdx);
 		curCell.flag = 0x1;	// closed
 
 		// STOP IF WE START FAILS
@@ -2207,7 +2215,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 			nextCell.flag = 0;
 			nextCell.pdir = i;
 
-			openSet.append( nextPoint );
+			m_navOpenSet.append( nextPoint );
 		}
 	}
 

@@ -2230,7 +2230,6 @@ void CCar::ReleaseHubcap(int wheel)
 	Vector3D wheelCenterPos = lerp(wheelConf.suspensionTop, wheelConf.suspensionBottom, wheelVisualPosFactor) + wheelSuspDir*wheelConf.radius;
 
 	Quaternion wheelRotation = Quaternion(wdata.wheelOrient) * Quaternion(-wdata.pitch, leftWheel ? PI_F : 0.0f, 0.0f);
-	//wheelRotation.normalize();
 
 	Matrix4x4 wheelTranslation = transpose(m_worldMatrix*(translate(wheelCenterPos) * Matrix4x4(wheelRotation)));
 
@@ -3800,6 +3799,21 @@ bool CCar::IsAlive() const
 	return m_gameDamage < m_gameMaxDamage;
 }
 
+bool CCar::IsInWater() const
+{
+	return m_inWater;
+}
+
+#define FLIPPED_TOLERANCE_COSINE (0.15f)
+
+bool CCar::IsFlippedOver( bool checkWheels ) const
+{
+	if(checkWheels)
+		return !IsAnyWheelOnGround() || dot(vec3_up, GetUpVector()) < FLIPPED_TOLERANCE_COSINE;
+
+	return dot(vec3_up, GetUpVector()) < FLIPPED_TOLERANCE_COSINE;
+}
+
 void CCar::SetMaxDamage( float fDamage )
 {
 	m_gameMaxDamage = fDamage;
@@ -3911,11 +3925,6 @@ bool CCar::IsEnabled() const
 	return m_enabled;
 }
 
-bool CCar::IsInWater() const
-{
-	return m_inWater;
-}
-
 void CCar::SetFelony(float percentage)
 {
 	m_gameFelony = percentage;
@@ -3990,6 +3999,7 @@ OOLUA_EXPORT_FUNCTIONS_CONST(
 	CCar,
 	IsAlive,
 	IsInWater,
+	IsFlippedOver,
 	IsAnyWheelOnGround,
 	GetMaxDamage,
 	GetMaxSpeed,

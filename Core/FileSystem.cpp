@@ -15,9 +15,13 @@
 
 
 #ifdef _WIN32 // Not in linux
+
 #include <direct.h>	// mkdir()
+#include <io.h> // _access()
+#define access		_access
+#define F_OK		0       // Test for existence.
 #else
-#include <unistd.h> // rmdir()
+#include <unistd.h> // rmdir(), access()
 #include <stdarg.h> // va_*
 #include <dlfcn.h>
 #endif
@@ -289,37 +293,33 @@ void CFileSystem::Close( IFile* fp )
 	if(!fp)
 		return;
 
-	m_FSMutex.Lock();
+	VirtStreamType_e vsType = fp->GetType();
 
-	if(fp->GetType() == VS_TYPE_FILE)
+	if(vsType == VS_TYPE_FILE)
 	{
 		CFile* pFile = (CFile*)fp;
-
-		// close file
-		if(pFile->m_pFilePtr)
-			 fclose(pFile->m_pFilePtr);
-
-		delete pFile;
+		fclose(pFile->m_pFilePtr);
 	}
-	else if(fp->GetType() == VS_TYPE_FILE_PACKAGE)
+	else if(vsType == VS_TYPE_FILE_PACKAGE)
 	{
 		CVirtualDPKFile* pFile = (CVirtualDPKFile*)fp;
+		ASSERT(pFile->m_pDKPReader);
 
-		// close file
-		if(pFile->m_pFilePtr)
-			 pFile->m_pDKPReader->Close(pFile->m_pFilePtr);
-
-		delete pFile;
+		pFile->m_pDKPReader->Close(pFile->m_pFilePtr);
 	}
 
-	// remove it from opened file list
-	m_pOpenFiles.remove( fp );
+	delete fp;
 
+	m_FSMutex.Lock();
+	m_pOpenFiles.fastRemove( fp );
 	m_FSMutex.Unlock();
 }
 
 char* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, int searchFlags/* = -1*/, bool useHunk/* = false*/)
 {
+	if(!FileExist(filename, searchFlags))
+		return NULL;
+
 	IFile* pFile = Open(filename,"rb",searchFlags);
 
     if (!pFile)
@@ -456,14 +456,75 @@ bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool ove
 
 bool CFileSystem::FileExist(const char* filename, int searchFlags)
 {
-	IFile* pFile = GetFileHandle(filename,"rb",searchFlags);
+    int flags = searchFlags;
+    if (flags == -1)
+        flags |= SP_MOD | SP_DATA | SP_ROOT;
 
-    if (!pFile)
-        return false;
+    char pFilePath[ MAX_PATH ];
+    strcpy( pFilePath, filename );
+    FixSlashes(pFilePath);
 
-	Close(pFile);
+	char tmp_path[2048];
 
-	return true;
+	EqString basePath = m_basePath;
+	if(basePath.Length() > 0)
+		basePath.Append( CORRECT_PATH_SEPARATOR );
+
+    //First we checking mod directory
+    if (flags & SP_MOD)
+    {
+		for(int i = 0; i < m_directories.numElem(); i++)
+		{
+			sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_directories[i].c_str(), pFilePath);
+			if (access(tmp_path, F_OK ) != -1)
+				return true;
+		}
+    }
+
+    //Then we checking data directory
+    if (flags & SP_DATA)
+    {
+		sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_pszDataDir.c_str(), pFilePath);
+		if (access(tmp_path, F_OK ) != -1)
+			return true;
+    }
+
+    // And checking root.
+    // not adding basepath to this
+    if (flags & SP_ROOT)
+    {
+		if (access(pFilePath, F_OK ) != -1)
+			return true;
+    }
+
+	// check packages
+    for (int i = m_pPackages.numElem()-1; i >= 0;i--)
+    {
+        CDPKFileReader* pPackageReader = m_pPackages[i];
+
+        if (flags & SP_MOD)
+        {
+			for(int j = 0; j < m_directories.numElem(); j++)
+			{
+				sprintf(tmp_path, "%s/%s", m_directories[j].GetData(),pFilePath);
+				if (pPackageReader->FindFileIndex( tmp_path ) != -1)
+					return true;
+			}
+        }
+        if (flags & SP_DATA)
+        {
+			sprintf(tmp_path, "%s/%s",m_pszDataDir.GetData(),pFilePath);
+			if (pPackageReader->FindFileIndex( tmp_path ) != -1)
+				return true;
+        }
+        if (flags & SP_ROOT)
+        {
+			if (pPackageReader->FindFileIndex( pFilePath ) != -1)
+				return true;
+        }
+    }
+
+	return false;
 }
 
 void CFileSystem::RemoveFile(const char* filename, SearchPath_e search )
@@ -557,18 +618,14 @@ void CFileSystem::RemoveDir(const char* dirname, SearchPath_e search )
 }
 
 //Filesystem's check and open file
-IFile* CFileSystem::GetFileHandle(const char* file_name_to_check,const char* options, int searchFlags )
+IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int searchFlags )
 {
-	CScopedMutex mutex(m_FSMutex);
-
-	//m_pOpenFiles.append(pFile);
-
     int flags = searchFlags;
     if (flags == -1)
         flags |= SP_MOD | SP_DATA | SP_ROOT;
 
     char pFilePath[ MAX_PATH ];
-    strcpy( pFilePath, file_name_to_check );
+    strcpy( pFilePath, filename );
     FixSlashes(pFilePath);
 
 	char tmp_path[2048];
@@ -588,7 +645,10 @@ IFile* CFileSystem::GetFileHandle(const char* file_name_to_check,const char* opt
 			if (tmpFile)
 			{
 				CFile* pFileHandle = new CFile(tmpFile);
+
+				m_FSMutex.Lock();
 				m_pOpenFiles.append(pFileHandle);
+				m_FSMutex.Unlock();
 
 				return pFileHandle;
 			}
@@ -604,7 +664,9 @@ IFile* CFileSystem::GetFileHandle(const char* file_name_to_check,const char* opt
         if (tmpFile)
         {
 			CFile* pFileHandle = new CFile(tmpFile);
+			m_FSMutex.Lock();
 			m_pOpenFiles.append(pFileHandle);
+			m_FSMutex.Unlock();
 
 			return pFileHandle;
         }
@@ -643,7 +705,9 @@ IFile* CFileSystem::GetFileHandle(const char* file_name_to_check,const char* opt
 					pPackedFile->packageId = i;
 
 					CVirtualDPKFile* pFileHandle = new CVirtualDPKFile(pPackedFile, pPackageReader);
+					m_FSMutex.Lock();
 					m_pOpenFiles.append(pFileHandle);
+					m_FSMutex.Unlock();
 
 					return pFileHandle;
 				}
@@ -660,7 +724,9 @@ IFile* CFileSystem::GetFileHandle(const char* file_name_to_check,const char* opt
                 pPackedFile->packageId = i;
 
 				CVirtualDPKFile* pFileHandle = new CVirtualDPKFile(pPackedFile, pPackageReader);
+				m_FSMutex.Lock();
 				m_pOpenFiles.append(pFileHandle);
+				m_FSMutex.Unlock();
 
 				return pFileHandle;
             }
@@ -674,7 +740,9 @@ IFile* CFileSystem::GetFileHandle(const char* file_name_to_check,const char* opt
                 pPackedFile->packageId = i;
 
 				CVirtualDPKFile* pFileHandle = new CVirtualDPKFile(pPackedFile, pPackageReader);
+				m_FSMutex.Lock();
 				m_pOpenFiles.append(pFileHandle);
+				m_FSMutex.Unlock();
 
 				return pFileHandle;
             }
@@ -687,13 +755,11 @@ IFile* CFileSystem::GetFileHandle(const char* file_name_to_check,const char* opt
 
 bool CFileSystem::AddPackage(const char* packageName,SearchPath_e type)
 {
-	m_FSMutex.Lock();
 	for(int i = 0; i < m_pPackages.numElem();i++)
 	{
 		if(!stricmp(m_pPackages[i]->GetPackageFilename(), packageName))
 			return false;
 	}
-	m_FSMutex.Unlock();
 
     CDPKFileReader* pPackageReader = new CDPKFileReader;
 
@@ -704,9 +770,7 @@ bool CFileSystem::AddPackage(const char* packageName,SearchPath_e type)
         pPackageReader->SetSearchPath(type);
 		//pPackageReader->SetKey("SdkwIuO4");
 
-		m_FSMutex.Lock();
         m_pPackages.append(pPackageReader);
-		m_FSMutex.Unlock();
         return true;
     }
     else
@@ -723,10 +787,7 @@ bool CFileSystem::AddPackage(const char* packageName,SearchPath_e type)
 void CFileSystem::AddSearchPath(const char* pszDir)
 {
 	DevMsg(DEVMSG_FS, "Adding search patch '%s'\n", pszDir);
-
-	m_FSMutex.Lock();
 	m_directories.append(_Es(pszDir));
-	m_FSMutex.Unlock();
 }
 
 // Returns current game path

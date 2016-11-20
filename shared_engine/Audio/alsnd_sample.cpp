@@ -256,18 +256,13 @@ bool DkSoundSampleLocal::LoadWav(const char *name, unsigned int buffer)
 	ALsizei size;
 	ALsizei freq;
 
-	DKFILE* file = g_fileSystem->Open((_Es(SOUND_DEFAULT_PATH) + name).GetData(), "rb");
+	long fileSize = 0;
+	char* fileBuffer = g_fileSystem->GetFileBuffer((_Es(SOUND_DEFAULT_PATH) + name).GetData(), &fileSize);
 
-	if(!file)
+	if(!fileBuffer)
 		return false;
 
-	int fSize = file->GetSize();
-
-	ubyte* fileBuffer = (ubyte*)malloc( fSize );
-	file->Read(fileBuffer, 1, fSize);
-	g_fileSystem->Close(file);
-
-	LoadWavFromBufferEX( fileBuffer, &format, &data, &size, &freq, m_loopStart, m_loopEnd );
+	LoadWavFromBufferEX( (ubyte*)fileBuffer, &format, &data, &size, &freq, m_loopStart, m_loopEnd );
 
 	int sampleSize = 0;
 
@@ -319,7 +314,7 @@ bool DkSoundSampleLocal::LoadWav(const char *name, unsigned int buffer)
 	free( data );
 
 	// free hunk
-	free( fileBuffer );
+	PPFree( fileBuffer );
 
 	return true;
 }

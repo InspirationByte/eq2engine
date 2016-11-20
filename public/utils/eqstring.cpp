@@ -18,7 +18,6 @@
 #include <string.h>
 #endif // PLAT_POSIX
 
-#define BASE_BUFFER		32	// 32 characters initial buffer
 #define EXTEND_CHARS	32	// 32 characters for extending
 
 #ifdef _WIN32
@@ -31,20 +30,29 @@ EqString::EqString()
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = NULL;
+	m_pszString = m_baseBuffer;
+	m_baseBuffer[0] = 0;
 	Empty();
 }
 
 EqString::~EqString()
 {
-	Clear();
+	if(m_pszString != m_baseBuffer)
+		delete [] m_pszString;
+
+	m_pszString = m_baseBuffer;
+	m_baseBuffer[0] = 0;
+
+	m_nLength = 0;
+	m_nAllocated = 0;
 }
 
 EqString::EqString(const char c)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = NULL;
+	m_pszString = m_baseBuffer;
+	m_baseBuffer[0] = 0;
 
 	Assign( &c, 1 );
 }
@@ -53,7 +61,8 @@ EqString::EqString(const char* pszString, int len)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = NULL;
+	m_pszString = m_baseBuffer;
+	m_baseBuffer[0] = 0;
 
 	Assign( pszString, len );
 }
@@ -62,7 +71,8 @@ EqString::EqString(const EqString &str, int nStart, int len)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = NULL;
+	m_pszString = m_baseBuffer;
+	m_baseBuffer[0] = 0;
 
 	Assign( str, nStart, len );
 }
@@ -71,7 +81,8 @@ EqString::EqString(const wchar_t* pszString, int len)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = NULL;
+	m_pszString = m_baseBuffer;
+	m_baseBuffer[0] = 0;
 
 	Assign( pszString, len );
 }
@@ -80,7 +91,8 @@ EqString::EqString(const EqWString &str, int nStart, int len)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = NULL;
+	m_pszString = m_baseBuffer;
+	m_baseBuffer[0] = 0;
 
 	Assign( str, nStart, len );
 }
@@ -115,8 +127,12 @@ uint EqString::GetSize() const
 // erases and deallocates data
 void EqString::Clear()
 {
-	delete [] m_pszString;
-	m_pszString = NULL;
+	if(m_pszString != m_baseBuffer)
+		delete [] m_pszString;
+
+	m_pszString = m_baseBuffer;
+	m_baseBuffer[0] = 0;
+
 	m_nLength = 0;
 	m_nAllocated = 0;
 }
@@ -124,15 +140,18 @@ void EqString::Clear()
 // empty the string, but do not deallocate
 void EqString::Empty()
 {
-	Resize(BASE_BUFFER, false);
+	m_pszString[0] = 0;
+	m_nLength = 0;
 }
 
 // an internal operation of allocation/extend
-bool EqString::ExtendAlloc(uint nSize)
+bool EqString::ExtendAlloc(uint nSize, bool bCopy)
 {
-	if(nSize+1 > m_nAllocated)
+	if(nSize > m_nAllocated)
 	{
-		if(!Resize( nSize + EXTEND_CHARS ))
+		nSize += EXTEND_CHARS;
+
+		if(!Resize( nSize - nSize % EXTEND_CHARS, bCopy ))
 			return false;
 	}
 
@@ -142,29 +161,34 @@ bool EqString::ExtendAlloc(uint nSize)
 // just a resize
 bool EqString::Resize(uint nSize, bool bCopy)
 {
-	uint newSize = nSize+1;
+	uint newSize = nSize;
 
-	// make new and copy
-	char* pszNewBuffer = new char[ newSize ];
+	// use base buffer we requesting size less than base buffer
+	char* pszNewBuffer = m_baseBuffer;
+	
+	if(nSize > sizeof(m_baseBuffer))
+	{
+		pszNewBuffer = new char[ newSize ]; // make new
+		pszNewBuffer[0] = 0;
+	}
 
-	pszNewBuffer[0] = 0;
+	bool isSameBaseBuffer = m_baseBuffer == pszNewBuffer && m_baseBuffer == m_pszString;
 
-	// copy and remove old if available
 	if( m_pszString )
 	{
-		// if we have to copy
-		if(bCopy && m_nLength)
+		// copy contents to the new buffer
+		if(bCopy && m_nLength && !isSameBaseBuffer)
 		{
-			// if string length if bigger, that the new alloc, cut off
-			// for safety
-			if(m_nLength > newSize)
-				m_pszString[newSize] = 0;
+			int minLength = min(newSize, m_nLength);
 
-			strcpy( pszNewBuffer, m_pszString );
+			strncpy( pszNewBuffer, m_pszString, minLength);
+			pszNewBuffer[minLength] = 0;
 		}
+		else if(!bCopy)
+			pszNewBuffer[0] = 0;
 
-		// now it's not needed
-		delete [] m_pszString;
+		if(m_baseBuffer != m_pszString)
+			delete [] m_pszString;
 
 		m_pszString = NULL;
 	}
@@ -175,6 +199,7 @@ bool EqString::Resize(uint nSize, bool bCopy)
 
 	// update length
 	m_nLength = strlen( m_pszString );
+	
 
 	return true;
 }
@@ -196,7 +221,7 @@ void EqString::Assign(const char* pszStr, int len)
 	if(len != -1)
 		nLen = len;
 
-	if( ExtendAlloc( nLen ) )
+	if( ExtendAlloc( nLen+1, false ) )
 	{
 		strncpy( m_pszString, pszStr, nLen );
 		m_pszString[nLen] = 0;
@@ -215,7 +240,7 @@ void EqString::Assign(const EqString &str, int nStart, int len)
 	if(len != -1)
 		nLen = len;
 
-	if( ExtendAlloc( nLen ) )
+	if( ExtendAlloc( nLen+1, false ) )
 	{
 		strcpy( m_pszString+nStart, str.GetData() );
 		m_pszString[nLen] = 0;
@@ -265,7 +290,7 @@ void EqString::Append(const char* pszStr, int nCount)
 
 	int nNewLen = m_nLength + nLen;
 
-	if( ExtendAlloc( nNewLen ) )
+	if( ExtendAlloc( nNewLen+1 ) )
 	{
 		strncpy( (m_pszString + m_nLength), pszStr, nLen);
 		m_pszString[nNewLen] = 0;
@@ -277,7 +302,7 @@ void EqString::Append(const EqString &str)
 {
 	int nNewLen = m_nLength + str.Length();
 
-	if( ExtendAlloc( nNewLen ) )
+	if( ExtendAlloc( nNewLen+1 ) )
 	{
 		strcpy( (m_pszString + m_nLength), str.GetData() );
 		m_pszString[nNewLen] = 0;
@@ -295,7 +320,7 @@ void EqString::Insert(const char* pszStr, int nInsertPos)
 
 	int nNewLen = m_nLength + nInsertCount;
 
-	if( ExtendAlloc( nNewLen ) )
+	if( ExtendAlloc( nNewLen+1 ) )
 	{
 		char* tmp = (char*)stackalloc(m_nLength - nInsertPos);
 		strcpy(tmp, &m_pszString[nInsertPos]);
@@ -315,7 +340,7 @@ void EqString::Insert(const EqString &str, int nInsertPos)
 {
 	int nNewLen = m_nLength + str.Length();
 
-	if( ExtendAlloc( nNewLen ) )
+	if( ExtendAlloc( nNewLen+1 ) )
 	{
 		char* tmp = (char*)stackalloc(m_nLength - nInsertPos);
 		strcpy(tmp, &m_pszString[nInsertPos]);
@@ -350,7 +375,7 @@ void EqString::Remove(uint nStart, uint nCount)
 	}
 	*pStr = 0;
 
-	int newLen = m_nLength-nCount;
+	int newLen = m_nLength-nCount+1;
 
 	Resize( newLen );
 }
@@ -398,7 +423,7 @@ EqString EqString::Mid(int nStart, int nCount) const
 	if( uint(nStart+nCount) >= m_nLength )
 		nCount = n-nStart;
 
-	result.Append( &m_pszString[nStart], nCount );
+	result.Assign( &m_pszString[nStart], nCount );
 
 	return result;
 }
@@ -514,11 +539,31 @@ EqString EqString::EatWhiteSpaces() const
 
 	while(cc)
 	{
-		if( xisspace(*cc) )
+		if( !isspace(*cc) )
 			out.Append(*cc++);
 	}
 
 	return out;
+}
+
+#include "DebugInterface.h"
+
+EqString EqString::TrimSpaces(bool left, bool right) const
+{
+	const char* begin = m_pszString;
+
+	// trim whitespace from left
+	while(*begin && xisspace(*begin))begin++;
+
+	if(*begin == NULL)
+		return EqString();
+
+	const char* end = begin + strlen(begin) - 1;
+
+	// trim whitespace from right
+	while(end > begin && xisspace(*end))end--;
+
+	return Mid(begin-m_pszString, end-begin+1);
 }
 
 void EqString::Path_FixSlashes() const
