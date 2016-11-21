@@ -743,7 +743,13 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 				if(!stricmp(ext.GetData(), "asc"))
 				{
-					EqString cmdLine(varargs("bin32\\animca.exe +filename \"%s\"", fname.GetData()));
+					EqString cmdLine(varargs("animca.exe +filename \"%s\"", fname.GetData()));
+
+					if( g_fileSystem->FileExist("bin32\\egfca.exe") )
+					{
+						cmdLine = "bin32\\" + cmdLine;
+					}
+
 					Msg("***Command line: %s\n", cmdLine.GetData());
 
 					system( cmdLine.GetData() );

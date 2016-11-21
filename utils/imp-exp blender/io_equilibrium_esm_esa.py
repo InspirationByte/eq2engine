@@ -98,7 +98,6 @@ class ESM_info:
 		self.materials_used = set() # printed to the console for users' benefit
 		self.boneAbsMatrices = []
 
-		# DMX stuff
 		self.attachments = []
 		self.meshes = []
 		self.parent_chain = []
@@ -2074,12 +2073,14 @@ def writeESM( context, object, groupIndex, filepath, ESM_type = None, quiet = Fa
 		ESM.file.write("ESX1\n")
 	else:
 		ESM.file.write("ESM1\n")
+		
+	# these write empty blocks if no armature is found. Required!
+	if ESM.jobType in [REF,PHYS,ANIM]:
+		writeBones(quiet = ESM.jobType == FLEX)
+		writeFrames()
 	
 	if ESM.m:
 		if ESM.jobType in [REF,PHYS]:
-			writeBones(quiet = ESM.jobType == FLEX)
-			writeFrames()
-		
 			writePolys()
 			print("- Exported {} materials".format(len(ESM.materials_used)))
 			for mat in ESM.materials_used:
