@@ -97,6 +97,9 @@ static Vector3D s_BodyPartDirections[] =
 #define WHELL_ROLL_RESISTANCE_CONST		(150)
 #define WHELL_ROLL_RESISTANCE_HALF		(WHELL_ROLL_RESISTANCE_CONST * 0.5f)
 
+#define WHEEL_MIN_SKIDTIME			(2.5f)
+#define WHEEL_SKIDTIME_EFFICIENCY	(0.25f)
+#define WHEEL_SKID_COOLDOWNTIME		(10.0f)
 
 bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 {
@@ -2151,13 +2154,13 @@ void CCar::OnPhysicsFrame( float fDt )
 
 		// skidding can do this
 		if(lateralSliding > 2.0f)
-			wheel.damage += lateralSliding * fDt * 0.0025f;
+			wheel.damage += lateralSliding * fDt * 0.0035f;
 
 		float tractionSliding = GetTractionSlidingAtWheel(i);
 
 		// if you burnout too much, or brake
 		if(tractionSliding > 4.0f)
-			wheel.damage += tractionSliding * fDt * 0.0015f;
+			wheel.damage += tractionSliding * fDt * 0.001f ;
 
 		// if vehicle landing on ground hubcaps may go away
 		if(wheel.flags.onGround && !wheel.flags.lastOnGround)
@@ -3009,6 +3012,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 	{
 		wheel.flags.doSkidmarks = false;
 		wheel.flags.onGround = false;
+		wheel.skidTime -= fDt;
 		return;
 	}
 
@@ -3016,6 +3020,13 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 	wheel.flags.doSkidmarks = (GetTractionSlidingAtWheel(nWheel) > 3.0f || fabs(GetLateralSlidingAtWheel(nWheel)) > 2.0f);
 
 	wheel.smokeTime -= fDt;
+
+	if(wheel.flags.doSkidmarks)
+		wheel.skidTime += fDt;
+	else
+		wheel.skidTime -= fDt;
+
+	wheel.skidTime = clamp(wheel.skidTime, 0.0f, WHEEL_SKID_COOLDOWNTIME);
 
 	if( wheel.flags.onGround && wheel.surfparam != NULL )
 	{
@@ -3065,14 +3076,17 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 			}
 			else
 			{
+				float skidFactor = (wheel.skidTime-WHEEL_MIN_SKIDTIME)*WHEEL_SKIDTIME_EFFICIENCY;
+				skidFactor = clamp(skidFactor, 0.0f, 1.0f);
+
 				ColorRGB smokeCol(0.86f, 0.9f, 0.97f);
 
 				CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, wheel.velocityVec*0.25f+Vector3D(0,1,1),
-							RandomFloat(0.1, 0.3)*efficency, RandomFloat(1.0, 1.8)*timeScale,
-							RandomFloat(1.2f)*timeScale,
+							RandomFloat(0.1, 0.3)*efficency, RandomFloat(1.0, 1.8)*timeScale+skidFactor*2.0f,
+							RandomFloat(1.2f)*timeScale+skidFactor,
 							g_translParticles, m_trans_smoke2,
 							RandomFloat(25, 85), Vector3D(1,RandomFloat(-0.7, 0.2) , 1),
-							smokeCol, smokeCol);
+							smokeCol, smokeCol, max(skidFactor, 0.45f));
 					
 				effectrenderer->RegisterEffectForRender(pSmoke);
 

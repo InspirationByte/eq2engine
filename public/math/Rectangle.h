@@ -21,20 +21,31 @@ struct TRectangle
 		Reset();
 	}
 
-	TRectangle( T fX1, T fY1, T fX2, T fY2)
+	template <class T2, uint32 TMAX2>
+	TRectangle( const TRectangle<T2,TMAX2>& rect)
 	{
-		vleftTop.x = fX1;
-		vleftTop.y = fY1;
-		vrightBottom.x = fX2;
-		vrightBottom.y = fY2;
+		vleftTop.x = (T)rect.vleftTop.x;
+		vleftTop.y = (T)rect.vleftTop.y;
+		vrightBottom.x = (T)rect.vrightBottom.x;
+		vrightBottom.y = (T)rect.vrightBottom.y;
 	}
 
-	TRectangle( const TVec2D<T>& leftTop, const TVec2D<T>& rightBottom )
+	template <class T2>
+	TRectangle( T2 fX1, T2 fY1, T2 fX2, T2 fY2)
 	{
-		vleftTop.x = leftTop.x;
-		vleftTop.y = leftTop.y;
-		vrightBottom.x = rightBottom.x;
-		vrightBottom.y = rightBottom.y;
+		vleftTop.x = (T)fX1;
+		vleftTop.y = (T)fY1;
+		vrightBottom.x = (T)fX2;
+		vrightBottom.y = (T)fY2;
+	}
+
+	template <class T2>
+	TRectangle( const TVec2D<T2>& leftTop, const TVec2D<T2>& rightBottom )
+	{
+		vleftTop.x = (T)leftTop.x;
+		vleftTop.y = (T)leftTop.y;
+		vrightBottom.x = (T)rightBottom.x;
+		vrightBottom.y = (T)rightBottom.y;
 	}
 
 	void AddVertex(const TVec2D<T> &p)

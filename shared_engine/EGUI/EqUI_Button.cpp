@@ -14,7 +14,7 @@
 namespace equi
 {
 
-void DrawAlphaFilledRectangle(const IRectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2);
+void DrawWindowRectangle(const Rectangle_t &rect, const ColorRGBA &color1, const ColorRGBA &color2);
 
 Button::Button() : m_state(false)
 {
@@ -29,7 +29,7 @@ void Button::DrawSelf( const IRectangle& rect )
 	if(m_state && equi::Manager->GetMouseOver() == this)
 		btnColor = ColorRGBA(0.6,0.6,0.6,0.8);
 
-	DrawAlphaFilledRectangle(rect, btnColor, ColorRGBA(0.5,0.5,0.5,0.5));
+	DrawWindowRectangle(rect, btnColor, ColorRGBA(0.5,0.5,0.5,0.5));
 
 	// TODO: GetFontStyle
 

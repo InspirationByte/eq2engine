@@ -12,6 +12,7 @@
 #include "EqUI_Manager.h"
 
 #include "materialsystem/IMaterialSystem.h"
+#include "materialsystem/MeshBuilder.h"
 
 #include "in_keys_ident.h"
 
@@ -115,35 +116,38 @@ void Panel::GetSelectionColor(ColorRGBA &color) const
 	color = m_selColor;
 }
 
-void DrawAlphaFilledRectangle(const IRectangle &rect, const ColorRGBA &color1, const ColorRGBA &color2)
+void DrawWindowRectangle(const Rectangle_t &rect, const ColorRGBA &color1, const ColorRGBA &color2)
 {
-	Vertex2D_t tmprect[] = { MAKETEXQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vrightBottom.y, 0) };
-
-	// Cancel textures
-	g_pShaderAPI->Reset(STATE_RESET_TEX);
-
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect,elementsOf(tmprect), NULL, color1, &blending);
+	g_pShaderAPI->SetTexture(NULL,0,0);
+	materials->SetBlendingStates(blending);
+	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+	materials->SetDepthStates(false,false);
 
-	// Set color
+	materials->BindMaterial(materials->GetDefaultMaterial());
 
-	// Draw 4 solid rectangles
-	Vertex2D_t r0[] = { MAKETEXQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vleftTop.x, rect.vrightBottom.y, -1) };
-	Vertex2D_t r1[] = { MAKETEXQUAD(rect.vrightBottom.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vrightBottom.y, -1) };
-	Vertex2D_t r2[] = { MAKETEXQUAD(rect.vleftTop.x, rect.vrightBottom.y,rect.vrightBottom.x, rect.vrightBottom.y, -1) };
-	Vertex2D_t r3[] = { MAKETEXQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vleftTop.y, -1) };
+	Vector2D r0[] = { MAKEQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vleftTop.x, rect.vrightBottom.y, -1) };
+	Vector2D r1[] = { MAKEQUAD(rect.vrightBottom.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vrightBottom.y, -1) };
+	Vector2D r2[] = { MAKEQUAD(rect.vleftTop.x, rect.vrightBottom.y,rect.vrightBottom.x, rect.vrightBottom.y, -1) };
+	Vector2D r3[] = { MAKEQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vleftTop.y, -1) };
 
-	// Set alpha,rasterizer and depth parameters
-	//g_pShaderAPI->SetBlendingStateFromParams(NULL);
-	//g_pShaderAPI->ChangeRasterStateEx(CULL_FRONT,FILL_SOLID);
+	// draw all rectangles with just single draw call
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+		// put main rectangle
+		meshBuilder.Color4fv(color1);
+		meshBuilder.Quad2(rect.GetLeftBottom(), rect.GetRightBottom(), rect.GetLeftTop(), rect.GetRightTop());
 
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,r0,elementsOf(r0), NULL, color2, &blending);
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,r1,elementsOf(r1), NULL, color2, &blending);
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,r2,elementsOf(r2), NULL, color2, &blending);
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,r3,elementsOf(r3), NULL, color2, &blending);
+		// put borders
+		meshBuilder.Color4fv(color2);
+		meshBuilder.Quad2(r0[0], r0[1], r0[2], r0[3]);
+		meshBuilder.Quad2(r1[0], r1[1], r1[2], r1[3]);
+		meshBuilder.Quad2(r2[0], r2[1], r2[2], r2[3]);
+		meshBuilder.Quad2(r3[0], r3[1], r3[2], r3[3]);
+	meshBuilder.End();
 }
 
 void Panel::Render()
@@ -161,7 +165,7 @@ void Panel::Render()
 
 void Panel::DrawSelf(const IRectangle& rect)
 {
-	DrawAlphaFilledRectangle(rect, m_color, ColorRGBA(m_color.xyz()*0.25f, 1.0f) );
+	DrawWindowRectangle(rect, m_color, ColorRGBA(m_color.xyz()*0.25f, 1.0f) );
 }
 
 bool Panel::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags)

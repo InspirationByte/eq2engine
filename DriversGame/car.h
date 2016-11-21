@@ -233,6 +233,7 @@ struct wheelData_t
 		flags.lastDoSkidmarks = false;
 
 		smokeTime = 0.0f;
+		skidTime = 0.0f;
 		surfparam = NULL;
 		damage = 0.0f;
 		hubcapBodygroup = -1;
@@ -258,6 +259,7 @@ struct wheelData_t
 	float					pitchVel;
 
 	float					smokeTime;
+	float					skidTime;
 	float					damage;				// this parameter affects hubcaps
 
 	// 1 byte

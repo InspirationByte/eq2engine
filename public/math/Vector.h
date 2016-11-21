@@ -33,7 +33,7 @@ struct TVec2D
 	TVec2D<T>() {}
 
 	template <class T2>
-	TVec2D(const TVec2D<T2>& other) : x(other.x), y(other.y) {}
+	TVec2D(const TVec2D<T2>& other) : x((T)other.x), y((T)other.y) {}
 
 	TVec2D<T>(const T ixy)
 	{
@@ -265,7 +265,7 @@ struct TVec4D
 	TVec4D<T>() {}
 
 	template <class T2>
-	TVec4D(const TVec4D<T2>& other) : x(other.x), y(other.y), z(other.z), w(other.w) {}
+	TVec4D(const TVec4D<T2>& other) : x((T)other.x), y((T)other.y), z((T)other.z), w((T)other.w) {}
 
 	TVec4D<T>(const T ixyzw)
 	{
