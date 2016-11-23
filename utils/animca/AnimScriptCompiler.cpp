@@ -590,6 +590,7 @@ bool ReadFramesForBone(Tokenizer& tok, DkList<animCaBoneFrames_t>& bones)
 			frame.angBoneAngles.y = readFloat(tok);
 			frame.angBoneAngles.z = readFloat(tok);
 
+			/*
 			// convert from absolute local positioning
 			Matrix4x4 boneMatrix = identity4();
 			boneMatrix.setRotation(frame.angBoneAngles);
@@ -599,7 +600,7 @@ bool ReadFramesForBone(Tokenizer& tok, DkList<animCaBoneFrames_t>& bones)
 
 			frame.vecBonePosition = boneMatrix.rows[3].xyz();
 			frame.angBoneAngles = EulerMatrixXYZ(boneMatrix.getRotationComponent());
-
+			*/
 			bones[nBone].frames.append( frame );
 			// next bone
 		}
@@ -918,7 +919,7 @@ void ParsePoseparameters(kvkeybase_t* section)
 //************************************
 // Loads sequence parameters
 //************************************
-void LoadSequence(kvkeybase_t* section, char* seq_name)
+void LoadSequence(kvkeybase_t* section, const char* seq_name)
 {
 	sequencedesc_t desc;
 	memset(&desc,0,sizeof(sequencedesc_t));
@@ -1146,19 +1147,12 @@ void ParseSequences(kvkeybase_t* section)
 {
 	for(int i = 0; i < section->keys.numElem(); i++)
 	{
-		char seq_id[44];
-		char seq_name[44];
+		kvkeybase_t* seqSec = section->keys[i];
 
-		int validness = sscanf(section->keys[i]->name, "%s %s", seq_id, seq_name);
-
-		if(validness < 2)
-			continue;
-
-		if(!stricmp(seq_id, "sequence"))
+		if(!stricmp(seqSec->GetName(), "sequence"))
 		{
-			Msg("  Adding sequence %s\n", seq_name);
-
-			LoadSequence(section->keys[i], seq_name);
+			Msg("  Adding sequence %s\n", seqSec->GetName());
+			LoadSequence(seqSec, KV_GetValueString(seqSec, 0, "no_name"));
 		}
 	}
 }

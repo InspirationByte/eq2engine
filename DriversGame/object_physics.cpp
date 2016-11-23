@@ -7,6 +7,7 @@
 
 #include "object_physics.h"
 #include "session_stuff.h"
+#include "ParticleEffects.h"
 
 #include "world.h"
 
@@ -65,7 +66,7 @@ CObject_Physics::CObject_Physics( kvkeybase_t* kvdata )
 {
 	m_keyValues = kvdata;
 	m_physBody = NULL;
-
+	m_surfParams = NULL;
 }
 
 CObject_Physics::~CObject_Physics()
@@ -120,11 +121,11 @@ void CObject_Physics::Spawn()
 		physobject_t* obj = &m_pModel->GetHWData()->m_physmodel.objects[0].object;
 
 		// set friction from surface parameters
-		eqPhysSurfParam_t* surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);
-		if(surfParams)
+		m_surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);
+		if(m_surfParams)
 		{
-			body->SetFriction( surfParams->friction );
-			body->SetRestitution( surfParams->restitution );
+			body->SetFriction( m_surfParams->friction );
+			body->SetRestitution( m_surfParams->restitution );
 		}
 		else
 		{
@@ -143,7 +144,7 @@ void CObject_Physics::Spawn()
 
 		//body->SetCenterOfMass( obj->mass_center);
 
-		body->m_flags = BODY_COLLISIONLIST | BODY_FROZEN;
+		body->m_flags = COLLOBJ_COLLISIONLIST | BODY_FROZEN;
 
 		m_physBody = body;
 
@@ -247,8 +248,14 @@ void CObject_Physics::Simulate(float fDt)
 	for(int i = 0; i < m_physBody->m_collisionList.numElem(); i++)
 	{
 		CollisionPairData_t& pair = m_physBody->m_collisionList[i];
-
 		m_physBody->SetMinFrameTime(0.0f);
+
+		if(m_surfParams && m_surfParams->word == 'M' && pair.impactVelocity > 4.0f)
+		{
+			Vector3D wVelocity = m_physBody->GetVelocityAtWorldPoint( pair.position );
+			Vector3D reflDir = reflect(wVelocity, pair.normal);
+			MakeSparks(pair.position+pair.normal*0.05f, reflDir, Vector3D(5.0f), 1.0f, 8);
+		}
 	}
 
 	if(	!m_physBody->IsFrozen() &&

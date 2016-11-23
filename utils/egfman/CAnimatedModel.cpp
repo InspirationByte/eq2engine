@@ -8,6 +8,8 @@
 #include "CAnimatedModel.h"
 #include "materialsystem/MeshBuilder.h"
 
+#include "IDebugOverlay.h"
+
 #define INITIAL_TIME 0.0f
 
 CAnimatedModel::CAnimatedModel()
@@ -1039,8 +1041,6 @@ void CAnimatedModel::UpdateBones()
 		{
 			// multiply by parent transform
 			m_BoneMatrixList[i] = m_BoneMatrixList[i] * m_BoneMatrixList[m_nParentIndexList[i]];
-
-			//debugoverlay->Line3D(m_BoneMatrixList[i].rows[3].xyz(),m_BoneMatrixList[m_nParentIndexList[i]].rows[3].xyz(), color4_white, color4_white);
 		}
 	}
 
@@ -1189,8 +1189,39 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist)
 		}
 	}
 
-	if(nViewRenderFlags & 1)
+	if(nViewRenderFlags & RFLAG_PHYSICS)
 		RenderPhysModel(m_pModel);
+
+	if( nViewRenderFlags & RFLAG_BONES )
+		VisualizeBones();
+}
+
+void CAnimatedModel::VisualizeBones()
+{
+	Matrix4x4 m_matWorldTransform = identity4();
+
+	// setup each bone's transformation
+	for(int i = 0; i < m_numBones; i++)
+	{
+		Vector3D pos = (m_matWorldTransform*Vector4D(m_BoneMatrixList[i].rows[3].xyz(), 1.0f)).xyz();
+
+		if(m_nParentIndexList[i] != -1)
+		{
+			Vector3D parent_pos = (m_matWorldTransform*Vector4D(m_BoneMatrixList[m_nParentIndexList[i]].rows[3].xyz(), 1.0f)).xyz();
+			debugoverlay->Line3D(pos,parent_pos, color4_white, color4_white);
+		}
+
+		Vector3D dX = m_matWorldTransform.getRotationComponent()*m_BoneMatrixList[i].rows[0].xyz();
+		Vector3D dY = m_matWorldTransform.getRotationComponent()*m_BoneMatrixList[i].rows[1].xyz();
+		Vector3D dZ = m_matWorldTransform.getRotationComponent()*m_BoneMatrixList[i].rows[2].xyz();
+
+		// draw axis
+		debugoverlay->Line3D(pos, pos+dX*0.1f, ColorRGBA(1,0,0,1), ColorRGBA(1,0,0,1));
+		debugoverlay->Line3D(pos, pos+dY*0.1f, ColorRGBA(0,1,0,1), ColorRGBA(0,1,0,1));
+		debugoverlay->Line3D(pos, pos+dZ*0.1f, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1));
+
+		Vector3D frameAng = m_pLastBoneFrames[i].angBoneAngles;
+	}
 }
 
 // updates inverse kinematics

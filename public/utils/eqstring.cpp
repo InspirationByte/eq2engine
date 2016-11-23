@@ -179,7 +179,7 @@ bool EqString::Resize(uint nSize, bool bCopy)
 		// copy contents to the new buffer
 		if(bCopy && m_nLength && !isSameBaseBuffer)
 		{
-			int minLength = min(newSize, m_nLength);
+			int minLength = min(newSize-1, m_nLength);
 
 			strncpy( pszNewBuffer, m_pszString, minLength);
 			pszNewBuffer[minLength] = 0;

@@ -643,7 +643,8 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	Matrix4x4 bodyMat;
 	GetPhysicsBody()->ConstructRenderMatrix( bodyMat );
 
-	Vector3D	carPos			= GetOrigin() + GetForwardVector()*m_conf->m_body_size.z*0.5f;
+	Vector3D	carForward		= GetForwardVector();
+	Vector3D	carPos			= GetOrigin() + carForward*m_conf->m_body_size.z*0.5f;
 
 	Vector3D	carTracePos		= GetOrigin();
 
@@ -666,7 +667,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	
 	Vector3D	realEndPos		= g_pGameWorld->m_level.GlobalTilePointToPosition( m_currEnd );
 
-	Vector3D	roadDir = fastNormalize(startPos-endPos);
+	Vector3D	roadDir			= fastNormalize(startPos-endPos);
 
 	// road end
 	Plane		roadEndPlane(roadDir, -dot(roadDir,endPos));
@@ -688,11 +689,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	bool isOnPrevRoad = IsPointOnStraight(carPosOnCell, m_straights[STRAIGHT_PREV]);
 	bool isOnCurrRoad = IsPointOnStraight(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
 
-	if( !isOnPrevRoad && isOnCurrRoad )
-	{
-		SetLight(CAR_LIGHT_EMERGENCY, false);
-		m_switchedLane = false;
-	}
+	bool nextStraightIsSame = m_straights[STRAIGHT_PREV].direction == m_straights[STRAIGHT_CURRENT].direction;
 
 	if( m_switchedLane )
 		targetOfsOnLine = projWay + AI_TARGET_EXTENDED_DIST*invStraightDist;
@@ -721,7 +718,6 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 				if(ai_traffic_debug_junctions.GetBool())
 				{
 					debugoverlay->TextFadeOut(0, ColorRGBA(1), 5.0f, "Reached straight end, next straight ID: %d", m_nextJuncDetails.selectedStraight);
-					
 				}
 
 				// change state?
@@ -874,6 +870,13 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	accelerator -= fabs(fSteeringAngle*0.25f);
 
 	int controls = IN_ACCELERATE | IN_EXTENDTURN;
+
+	// disable lights
+	if( !isOnPrevRoad && isOnCurrRoad && (!nextStraightIsSame && fabs(dot(roadDir, carForward)) > 0.9f || nextStraightIsSame && m_switchedLane ) )
+	{
+		SetLight(CAR_LIGHT_EMERGENCY, false);
+		m_switchedLane = false;
+	}
 
 	//
 	// Breakage on red light

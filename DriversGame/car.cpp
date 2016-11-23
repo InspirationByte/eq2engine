@@ -1875,43 +1875,46 @@ void CCar::EmitCollisionParticles(const Vector3D& position, const Vector3D& velo
 
 	float wlen = length(velocity);
 
-	if(wlen > 6.0 && m_effectTime <= 0.0f )
+	if(m_effectTime <= 0.0f)
 	{
-		Vector3D reflDir = reflect(velocity, normal);
-		MakeSparks(position+normal*0.05f, reflDir, Vector3D(15.0f), 1.0f, numDamageParticles);
+		if(wlen > 5.0)
+		{
+			Vector3D reflDir = reflect(velocity, normal);
+			MakeSparks(position+normal*0.05f, reflDir, Vector3D(10.0f), 1.0f, 2);
+		}
+
+		if(wlen > 10.5f && fCollImpulse > 150)
+		{
+			const float FLECK_SCALE = 0.8f;
+			const int FLECK_COUNT = 2;
+
+			for(int j = 0; j < numDamageParticles*FLECK_COUNT; j++)
+			{
+				ColorRGB randColor = m_carColor.col1.xyz() * RandomFloat(0.7f, 1.0f);
+
+				Vector3D fleckPos = Vector3D(position) + Vector3D(RandomFloat(-0.05,0.05),RandomFloat(-0.05,0.05),RandomFloat(-0.05,0.05));
+
+				CPFXAtlasGroup* feffgroup = g_translParticles;
+				TexAtlasEntry_t* fentry = m_trans_fleck;
+
+				Vector3D rnd_ang = VectorAngles(fastNormalize(normal)) + Vector3D(RandomFloat(-55,55),RandomFloat(-55,55),RandomFloat(-55,55));
+				Vector3D n;
+				AngleVectors(rnd_ang, &n);
+
+				float rwlen = wlen + RandomFloat(-wlen*0.15f, wlen*0.8f);
+
+				float fleckPower = clamp(rwlen, 3.0f, 5.0f);
+
+				CFleckEffect* fleck = new CFleckEffect(fleckPos, n*fleckPower + Vector3D(0.0f,2.0f,0.0f),
+														Vector3D(0,-16.0f,0),
+														RandomFloat(0.04, 0.07)*FLECK_SCALE, RandomFloat(0.4, 0.8), RandomFloat(120, 300),
+														randColor, feffgroup, fentry);
+
+				effectrenderer->RegisterEffectForRender(fleck);
+			}
+		}
 
 		m_effectTime = 0.05f;
-	}
-
-	if(wlen > 10.5f && fCollImpulse > 150 )
-	{
-		const float FLECK_SCALE = 0.8f;
-		const int FLECK_COUNT = 2;
-
-		for(int j = 0; j < numDamageParticles*FLECK_COUNT; j++)
-		{
-			ColorRGB randColor = m_carColor.col1.xyz() * RandomFloat(0.7f, 1.0f);
-
-			Vector3D fleckPos = Vector3D(position) + Vector3D(RandomFloat(-0.05,0.05),RandomFloat(-0.05,0.05),RandomFloat(-0.05,0.05));
-
-			CPFXAtlasGroup* feffgroup = g_translParticles;
-			TexAtlasEntry_t* fentry = m_trans_fleck;
-
-			Vector3D rnd_ang = VectorAngles(fastNormalize(normal)) + Vector3D(RandomFloat(-55,55),RandomFloat(-55,55),RandomFloat(-55,55));
-			Vector3D n;
-			AngleVectors(rnd_ang, &n);
-
-			float rwlen = wlen + RandomFloat(-wlen*0.15f, wlen*0.8f);
-
-			float fleckPower = clamp(rwlen, 3.0f, 5.0f);
-
-			CFleckEffect* fleck = new CFleckEffect(fleckPos, n*fleckPower + Vector3D(0.0f,2.0f,0.0f),
-													Vector3D(0,-16.0f,0),
-													RandomFloat(0.04, 0.07)*FLECK_SCALE, RandomFloat(0.4, 0.8), RandomFloat(120, 300),
-													randColor, feffgroup, fentry);
-
-			effectrenderer->RegisterEffectForRender(fleck);
-		}
 	}
 }
 
@@ -2009,7 +2012,7 @@ void CCar::OnPhysicsFrame( float fDt )
 
 
 		// don't apply collision damage if this is a trigger or water
-		if (coll.flags & COLLPAIRFLAG_OBJECTB_NO_RESPONSE)
+		if ((coll.flags & COLLPAIRFLAG_OBJECTA_NO_RESPONSE) || (coll.flags & COLLPAIRFLAG_OBJECTB_NO_RESPONSE))
 			continue;
 
 		Vector3D wVelocity = carBody->GetVelocityAtWorldPoint( coll.position );
@@ -2020,7 +2023,6 @@ void CCar::OnPhysicsFrame( float fDt )
 		if(coll.bodyB->IsDynamic())
 		{
 			CEqRigidBody* body = (CEqRigidBody*)coll.bodyB;
-
 			wVelocity -= body->GetVelocityAtWorldPoint( coll.position );
 		}
 
@@ -2034,7 +2036,7 @@ void CCar::OnPhysicsFrame( float fDt )
 			obj->OnCarCollisionEvent( coll, this );
 		}
 
-		EmitCollisionParticles(coll.position, wVelocity, coll.normal, coll.appliedImpulse/3500.0f, coll.appliedImpulse);
+		EmitCollisionParticles(coll.position, wVelocity, coll.normal, (coll.appliedImpulse/3500.0f)+1, coll.appliedImpulse);
 
 		float fDotUp = clamp(1.0f-fabs(dot(vec3_up, coll.normal)), 0.5f, 1.0f);
 		float invMassA = carBody->GetInvMass();

@@ -9,6 +9,7 @@
 #include "materialsystem/IMaterialSystem.h"
 #include "world.h"
 #include "car.h"
+#include "ParticleEffects.h"
 
 #include "Shiny.h"
 
@@ -23,6 +24,7 @@ CObject_Debris::CObject_Debris( kvkeybase_t* kvdata )
 	m_physBody = NULL;
 	m_collOccured = false;
 	m_fTimeToRemove = 0.0f;
+	m_surfParams = NULL;
 }
 
 CObject_Debris::~CObject_Debris()
@@ -82,11 +84,11 @@ void CObject_Debris::Spawn()
 		physobject_t* obj = &m_pModel->GetHWData()->m_physmodel.objects[0].object;
 
 		// set friction from surface parameters
-		eqPhysSurfParam_t* surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);
-		if(surfParams)
+		m_surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);
+		if(m_surfParams)
 		{
-			body->SetFriction( surfParams->friction );
-			body->SetRestitution( surfParams->restitution );
+			body->SetFriction( m_surfParams->friction );
+			body->SetRestitution( m_surfParams->restitution );
 		}
 		else
 		{
@@ -314,6 +316,13 @@ void CObject_Debris::Simulate(float fDt)
 				m_bodyGroupFlags = (1 << 1);
 		}
 
+		if(m_surfParams && m_surfParams->word == 'M' && pair.impactVelocity > 3.0f)
+		{
+			Vector3D wVelocity = m_physBody->GetVelocityAtWorldPoint( pair.position );
+			Vector3D reflDir = reflect(wVelocity, pair.normal);
+			MakeSparks(pair.position+pair.normal*0.05f, reflDir, Vector3D(5.0f), 1.0f, 10);
+		}
+
 		CEqCollisionObject* obj = pair.GetOppositeTo(m_physBody);
 		
 		//if (m_collOccured)
@@ -324,6 +333,7 @@ void CObject_Debris::Simulate(float fDt)
 			m_collOccured = true;
 			g_pPhysics->m_physics.AddToMoveableList(m_physBody);
 			m_physBody->Wake();
+
 
 			CEqRigidBody* body = (CEqRigidBody*)obj;
 			if(body->m_flags & BODY_ISCAR)
@@ -354,7 +364,7 @@ void CObject_Debris::Simulate(float fDt)
 
 					m_physBody->ApplyWorldImpulse(pair.position, impulse * 1.5f);
 
-					pCar->EmitCollisionParticles(randPos, body->GetLinearVelocity(), pair.normal, 6, pair.appliedImpulse);
+					//pCar->EmitCollisionParticles(randPos, body->GetLinearVelocity(), pair.normal, 6, pair.appliedImpulse);
 				}
 				else
 				{

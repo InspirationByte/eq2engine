@@ -19,7 +19,7 @@
 bl_info = {
 	"name": "Equilibrium Engine ESM/ESA",
 	"author": "Shurumov Ilya",
-	"version": (0, 0, 5),
+	"version": (0, 5, 0),
 	"blender": (2, 68, 4),
 	"category": "Import-Export",
 	"location": "File > Import/Export, Scene properties, Armature properties",
@@ -46,20 +46,14 @@ rx90n = Matrix.Rotation(radians(-90),4,'X')
 ry90n = Matrix.Rotation(radians(-90),4,'Y')
 rz90n = Matrix.Rotation(radians(-90),4,'Z')
 
-# mat_BlenderToESM = Matrix.Identity(4) #ry90 * rz90 # for legacy support only
-
-mat_BlenderToESM = ry90 * rz90 # for legacy support only
-
-# Note: ALL needs TO BE SCALED UP because Eqilibrium's meter equals 64 units
-val_BlenderToESMScale = 1 # TODO: variable in menus
-
 mat_BlenderToESMMirror = Matrix.Scale(-1, 4, Vector((0, 1, 0)))
 
+val_BlenderToESMScale = 1 # TODO: variable in menus
 sclX = Matrix.Scale(val_BlenderToESMScale, 4, Vector((1, 0, 0)))
 sclY = Matrix.Scale(val_BlenderToESMScale, 4, Vector((0, 1, 0)))
 sclZ = Matrix.Scale(val_BlenderToESMScale, 4, Vector((0, 0, 1)))
 
-mat_BlenderToESMScale = Matrix.Identity(4) #sclX * sclY * sclZ
+mat_BlenderToESMScale = sclX * sclY * sclZ
 
 # ESM types
 REF = 0x1 # $body, $model, $bodygroup->studio (if before a $body or $model)
@@ -96,7 +90,7 @@ class ESM_info:
 		self.truncMaterialNames = []
 		self.rotMode = 'EULER' # for creating keyframes during import
 		self.materials_used = set() # printed to the console for users' benefit
-		self.boneAbsMatrices = []
+		self.restPoseMatrices = []
 
 		self.attachments = []
 		self.meshes = []
@@ -325,7 +319,7 @@ except:
 		pass
 	def printColour(colour,*string):
 		print(*string)
-
+		
 def getUpAxisMat(axis):
 	if axis.upper() == 'X':
 		return Matrix.Rotation(pi/2,4,'Y')
@@ -766,13 +760,9 @@ def applyFrames(bone_mats,num_frames,action, dmx_key_sets = None): # this is cal
 					if not bone_mats[bone][f]:
 						continue
 					
-					# Transform
-					if ESM.a.data.ESM_legacy_rotation:
-						bone_mats[bone][f] *= mat_BlenderToESM.inverted()
-					
+					# Transform		
 					if bone.parent:
-						if ESM.a.data.ESM_legacy_rotation: parentMat = bone.parent.matrix * mat_BlenderToESM
-						else: parentMat = bone.parent.matrix
+						parentMat = bone.parent.matrix
 						bone.matrix = parentMat * bone_mats[bone][f]
 					else:
 						bone.matrix = getUpAxisMat(ESM.upAxis) * bone_mats[bone][f]
@@ -950,7 +940,6 @@ def readPolys():
 			values = line.split()
 			vertexCount+= 1
 			co = []
-			#norm = []
 
 			# Read co-ordinates and normals
 			for i in range(1,4): # 0 is the deprecated bone weight value
@@ -1251,8 +1240,7 @@ def writeBones(quiet=False):
 	bpy.ops.object.mode_set(mode='POSE')
 	
 	armatureWorld = ESM.a.matrix_world
-	#armatureWorld = mat_BlenderToESMScale
-	
+
 	for posebone in ESM.a.pose.bones:
 		if not posebone.bone.use_deform: continue
 
@@ -1264,40 +1252,30 @@ def writeBones(quiet=False):
 			parent = parent.parent
 
 		# Get the bone's Matrix from the current pose
-		PoseMatrix = posebone.matrix
-		
-		if ESM.a.data.ESM_legacy_rotation:
-			PoseMatrix *= mat_BlenderToESM
-		
-		if parent:
-			if ESM.a.data.ESM_legacy_rotation: parentMat = parent.matrix * mat_BlenderToESM 
-			else: parentMat = parent.matrix
-			PoseMatrix = parentMat.inverted() * PoseMatrix
-		else:
-			PoseMatrix = getUpAxisMat(bpy.context.scene.ESM_up_axis).inverted() * armatureWorld * PoseMatrix
-			
-		# Need to collect absolute bone matrices for frame conversion to local
-		ESM.boneAbsMatrices.append(PoseMatrix)
+		localBoneMatrix = posebone.matrix
 
+		if parent:
+			parentMat = parent.matrix
+			localBoneMatrix = parentMat.inverted() * localBoneMatrix
+		else:
+			localBoneMatrix = armatureWorld * localBoneMatrix
+
+
+		ESM.restPoseMatrices.append(localBoneMatrix)
+
+			
 		# Get position
-		pos = PoseMatrix.to_translation()
+		pos = localBoneMatrix.to_translation()
 
 		# Apply armature scale
-		if posebone.parent: # already applied to root bones
-			scale = armatureWorld.to_scale()
-			for j in range(3):
-				pos[j] *= scale[j]
+		#if posebone.parent: # already applied to root bones
+		#	scale = armatureWorld.to_scale()
+		#	for j in range(3):
+		#		pos[j] *= scale[j]
 
 		# Get Rotation
-		rot = PoseMatrix.to_euler()
+		rot = localBoneMatrix.to_euler()
 		
-		# invert position
-		pos[0] *= -1;
-		
-		# Convert angles to EQ
-		rot[1] *= -1;
-		rot[2] *= -1;
-
 		# Construct the string
 		pos_str = rot_str = ""
 		for j in [0,1,2]:
@@ -1380,8 +1358,7 @@ def writeFrames():
 	bpy.ops.object.mode_set(mode='POSE')
 	
 	armatureWorld = ESM.a.matrix_world
-	#armatureWorld = mat_BlenderToESMScale
-	
+
 	# Start writing out the animation
 	for i in range(num_frames):
 		ESM.file.write("{}\n".format(i)) # write time
@@ -1400,43 +1377,34 @@ def writeFrames():
 				parent = parent.parent
 
 			# Get the bone's Matrix from the current pose
-			PoseMatrix = posebone.matrix
+			localBoneMatrix = posebone.matrix
 			
-			if ESM.a.data.ESM_legacy_rotation:
-				PoseMatrix *= mat_BlenderToESM
-
 			if parent:
-				if ESM.a.data.ESM_legacy_rotation: parentMat = parent.matrix * mat_BlenderToESM 
-				else: parentMat = parent.matrix
-				PoseMatrix = parentMat.inverted() * PoseMatrix
+				parentMat = parent.matrix
+				localBoneMatrix = parentMat.inverted() * localBoneMatrix
 			else:
-				PoseMatrix = getUpAxisMat(bpy.context.scene.ESM_up_axis).inverted() * armatureWorld * PoseMatrix
-	
-			# Don't fucking do that!
-			#PoseMatrix = ESM.boneAbsMatrices[boneId].inverted() * PoseMatrix
-
+				localBoneMatrix = armatureWorld * localBoneMatrix
+				
+			# convert to local transformation
+			localBoneMatrix = ESM.restPoseMatrices[boneId].inverted() * localBoneMatrix
+				
 			boneId += 1
 
 			# Get position
-			pos = PoseMatrix.to_translation()
+			pos = localBoneMatrix.to_translation()
 
 			# Apply armature scale
-			if posebone.parent: # already applied to root bones
-				scale = armatureWorld.to_scale()
-				for j in range(3):
-					pos[j] *= scale[j]
+			#if posebone.parent: # already applied to root bones
+			#	scale = armatureWorld.to_scale()
+			#	for j in range(3):
+			#		pos[j] *= scale[j]
 
 			# Get Rotation
-			rot = PoseMatrix.to_euler()
+			rot = localBoneMatrix.to_euler()
 			
-			# invert position
-			pos[0] *= -1;
-			
-			# Convert angles to EQ
-			rot[1] *= -1;
-			rot[2] *= -1;
-			
-			# should finally think about absolute frames...
+			# HACK: this is a weird rotation fix and you should get rid of it
+			rot[1] = -rot[1]
+			rot[2] = -rot[2]
 
 			# Construct the string
 			pos_str = rot_str = ""
@@ -1459,7 +1427,7 @@ def writeFrames():
 		ESM.a.animation_data.action.use_fake_user = True
 	bpy.ops.object.mode_set(mode='OBJECT')
 	
-	print("- Exported {} frames{}".format(num_frames," (legacy rotation)" if ESM.a.data.ESM_legacy_rotation else ""))
+	print("- Exported {} frames".format(num_frames))
 	return
 
 # triangles block
@@ -1556,12 +1524,8 @@ def writePolys(internal=False):
 
 			norm = v.normal if poly.use_smooth else poly.normal
 			
-			# May be I need to transform normal?
-			# for now it's broken.
-			#norm[0] = -norm[0];
-			
 			norm = (getUpAxisMat(bpy.context.scene.ESM_up_axis).inverted() * mat_BlenderToESMMirror * Matrix.Translation(norm)).to_translation();
-			
+
 			for j in range(3):
 				loc += " " + getESMFloat(pos[j] * val_BlenderToESMScale)
 				norms += " " + getESMFloat(norm[j])
@@ -1687,6 +1651,7 @@ def writeShapes(cur_shape = 0):
 				if cur_shape == 0 or (shape_vert.co != mesh_vert.co or shape_vert.normal != mesh_vert.normal):
 					cos = norms = ""
 					
+					norm = shape_vert.normal
 					norm = (getUpAxisMat(bpy.context.scene.ESM_up_axis).inverted() * mat_BlenderToESMMirror * Matrix.Translation(shape_vert.normal)).to_translation();
 					
 					for i in range(3):
@@ -1800,8 +1765,7 @@ def bakeObj(in_object):
 				print("- Skipping muted shape \"{}\"".format(cur_shape.name))
 				continue
 
-			baked = obj.copy()	
-			
+			baked = obj.copy()
 			if not bi.get('baked'):
 				bi['baked'] = baked
 				
@@ -1829,6 +1793,11 @@ def bakeObj(in_object):
 	
 			if obj.type == 'ARMATURE':
 				baked.data = baked.data.copy()
+				for posebone in baked.pose.bones: posebone.matrix_basis.identity()
+
+				bpy.ops.object.transform_apply(location=True,scale=True,rotation=True)
+				baked.data.transform(getUpAxisMat(bpy.context.scene.ESM_up_axis).inverted() * mat_BlenderToESMMirror)
+				
 			elif obj.type in mesh_compatible:
 				has_edge_split = False
 				for mod in obj.modifiers:
@@ -1943,25 +1912,18 @@ def bakeObj(in_object):
 			bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
 			baked.location -= top_parent.location # undo location of topmost parent
 			bpy.context.scene.update() # another rare case where this actually does something
-
+				
 			if baked.type == 'MESH': # don't apply to armatures (until/unless actions are baked too)
 				bpy.ops.object.transform_apply(location=True,scale=True,rotation=True)
-				baked.data.transform(getUpAxisMat(bpy.context.scene.ESM_up_axis).inverted() * mat_BlenderToESMMirror * mat_BlenderToESMScale)
-				#bpy.ops.object.mode_set(mode='EDIT')
-				#bpy.ops.mesh.select_all(action='SELECT')
-				#bpy.ops.mesh.normals_make_consistent()
-				#bpy.ops.object.mode_set(mode='OBJECT')
-	
+				baked.data.transform(getUpAxisMat(bpy.context.scene.ESM_up_axis).inverted() * mat_BlenderToESMMirror)
 		if ESM.jobType == FLEX:
 			removeObject(obj)
 		return baked
 		# END _ObjectCopy()
 
 	if in_object.type == 'ARMATURE':
-		#_ObjectCopy(in_object)
-		#ESM.a = bi['baked']
-		_ApplyVisualTransform(in_object)
-		ESM.a = in_object
+		_ObjectCopy(in_object)
+		ESM.a = bi['baked']
 	elif in_object.type in mesh_compatible:
 		# hide all metaballs that we don't want
 		metaballs = []
@@ -2409,7 +2371,6 @@ class ESM_PT_Data(bpy.types.Panel):
 
 		row = l.row()
 		row.prop(arm.data,"ESM_implicit_zero_bone")
-		row.prop(arm.data,"ESM_legacy_rotation")
 
 		self.embed_arm = l.row()
 		ESM_MT_ExportChoice.draw(self,context)
@@ -2824,7 +2785,6 @@ def register():
 	('FILTERED',"Action Filter","All actions that match the armature's filter term")
 	)
 	bpy.types.Armature.ESM_action_selection = EnumProperty(name="Action Selection", items=arm_modes,description="How actions are selected for export",default='CURRENT')
-	bpy.types.Armature.ESM_legacy_rotation = BoolProperty(name="Legacy rotation",description="Remaps the Y axis of bones in this armature to Z, for backwards compatibility with old imports",default=False)
 
 	bpy.types.Group.ESM_export = BoolProperty(name="ESM Export Combined",description="Export the members of this group to a single ESM",default=True)
 	bpy.types.Group.ESM_subdir = StringProperty(name="ESM Subfolder",description="Location, relative to scene root, for ESMs from this group")
@@ -2857,7 +2817,6 @@ def unregister():
 
 	del bpy.types.Armature.ESM_implicit_zero_bone
 	del bpy.types.Armature.ESM_action_selection
-	del bpy.types.Armature.ESM_legacy_rotation
 
 	del bpy.types.Group.ESM_export
 	del bpy.types.Group.ESM_subdir

@@ -124,8 +124,8 @@ struct sequencetimer_t
 
 inline Matrix4x4 CalculateLocalBonematrix(animframe_t &frame)
 {
-	Matrix4x4 bonetransform = identity4();
-	bonetransform.setRotation(frame.angBoneAngles);
+	Matrix4x4 bonetransform(Quaternion(frame.angBoneAngles.x,frame.angBoneAngles.y,frame.angBoneAngles.z));
+	//bonetransform.setRotation();
 	bonetransform.setTranslation(frame.vecBonePosition);
 
 	return bonetransform;

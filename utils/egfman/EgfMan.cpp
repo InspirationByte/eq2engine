@@ -92,6 +92,8 @@ enum
 
 	Event_View_ResetView,
 	Event_View_ShowPhysModel,
+	Event_View_ShowBones,
+	Event_View_Wireframe,
 
 	Event_Max_Menu_Range,
 
@@ -169,7 +171,9 @@ protected:
 	wxComboBox*		m_pIkLinkSel;
 
 	wxMenuBar*		m_pMenu;
-	wxMenuItem*		m_pDrawPhysModel;
+	wxMenuItem*		m_drawPhysModel;
+	wxMenuItem*		m_drawBones;
+	wxMenuItem*		m_wireframe;
 
 	bool			m_bDoRefresh;
 	bool			m_bIsMoving;
@@ -502,7 +506,9 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 	
 	menuView->Append( Event_View_ResetView, DKLOC("TOKEN_RESETVIEW", L"Reset View\tR") );
 
-	m_pDrawPhysModel = menuView->Append( Event_View_ShowPhysModel, DKLOC("TOKEN_SHOWPHYSICSMODEL", L"Show physics model"), wxEmptyString, wxITEM_CHECK );
+	m_drawPhysModel = menuView->Append( Event_View_ShowPhysModel, DKLOC("TOKEN_SHOWPHYSICSMODEL", L"Show physics model"), wxEmptyString, wxITEM_CHECK );
+	m_drawBones = menuView->Append( Event_View_ShowBones, DKLOC("TOKEN_SHOWBONES", L"Show bones"), wxEmptyString, wxITEM_CHECK );
+	m_wireframe = menuView->Append( Event_View_Wireframe, DKLOC("TOKEN_WIREFRAME", L"Wireframe"), wxEmptyString, wxITEM_CHECK );
 
 	m_pMenu->Append( menuFile, DKLOC("TOKEN_FILE", L"File") );
 	m_pMenu->Append( menuView, DKLOC("TOKEN_VIEW", L"View") );
@@ -702,8 +708,8 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 		{
 			EqString fname(file->GetPath().wchar_str());
 
-			FlushCache();
 			g_pModel->SetModel( NULL );
+			FlushCache();
 
 			int cache_index = g_pModelCache->PrecacheModel( fname.GetData() );
 			if(cache_index == 0)
@@ -786,10 +792,10 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 						}
 					}
 
-					if(paths.size() == 1)
+					if(paths.size() == 1 && model_aftercomp_name.Length())
 					{
-						FlushCache();
 						g_pModel->SetModel( NULL );
+						FlushCache();
 
 						int cache_index = g_pModelCache->PrecacheModel( model_aftercomp_name.GetData() );
 						if(cache_index == 0)
@@ -1133,8 +1139,19 @@ void CEGFViewFrame::ReDraw()
 
 		g_pShaderAPI->ResetCounters();
 
+		// Setup render falgs
+		int renderFlags = 0;
+		
+		if(m_drawPhysModel->IsChecked())
+			renderFlags |= RFLAG_PHYSICS;
+
+		if(m_drawBones->IsChecked())
+			renderFlags |= RFLAG_BONES;
+
+		materials->GetConfiguration().wireframeMode = m_wireframe->IsChecked();
+
 		// Now we can draw our model
-		g_pModel->Render((int)m_pDrawPhysModel->IsChecked(), g_fCamDistance);
+		g_pModel->Render(renderFlags, g_fCamDistance);
 
 		debugoverlay->Text(color4_white, "polygon count: %d\n", g_pShaderAPI->GetTrianglesCount());
 

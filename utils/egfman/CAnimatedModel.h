@@ -19,6 +19,13 @@
 #define IK_ATTACH_LOCAL				1
 #define IK_ATTACH_GROUND			2
 
+enum ViewerRenderFlags
+{
+	RFLAG_PHYSICS	= (1 << 0),
+	RFLAG_BONES		= (1 << 1),
+	RFLAG_WIREFRAME	= (1 << 2),
+};
+
 // basic animating class
 // for ragdoll use baseragdollanimating
 class CAnimatedModel
@@ -106,6 +113,8 @@ protected:
 
 	// updates bones
 	void						UpdateBones();
+
+	void						VisualizeBones();
 
 	void						UpdateRagdollBones();
 

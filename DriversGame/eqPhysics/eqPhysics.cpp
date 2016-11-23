@@ -868,6 +868,8 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 			// apply response
 			appliedImpulse = ApplyImpulseResponseTo(bodyB, pair.position, pair.normal, positionalError, pair.restitutionA, pair.frictionA);
 		}
+
+		bodyADisableResponse = (bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE) > 0;
 	}
 	else
 	{
@@ -920,7 +922,10 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		collData.impactVelocity = impactVelocity;
 		collData.flags = 0;
 
-		if ((bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE))
+		if (pair.bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE)
+			collData.flags |= COLLPAIRFLAG_OBJECTA_NO_RESPONSE;
+
+		if (bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE)
 			collData.flags |= COLLPAIRFLAG_OBJECTB_NO_RESPONSE;
 	}
 	
@@ -945,6 +950,9 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 
 		if (bodyADisableResponse)
 			collData.flags |= COLLPAIRFLAG_OBJECTB_NO_RESPONSE;
+
+		if (bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE)
+			collData.flags |= COLLPAIRFLAG_OBJECTA_NO_RESPONSE;
 	}
 }
 

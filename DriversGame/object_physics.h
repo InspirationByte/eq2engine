@@ -52,6 +52,7 @@ protected:
 	EqString				m_smashSound;
 
 	CEqRigidBody*			m_physBody;
+	eqPhysSurfParam_t*		m_surfParams;
 	
 };
 

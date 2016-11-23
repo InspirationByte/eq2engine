@@ -578,6 +578,9 @@ namespace EqStringConv
 
 	wchar_to_utf8::wchar_to_utf8(const wchar_t* val)
 	{
+		// to not call too many allocations
+		m_str.ExtendAlloc( wcslen(val)*4 );
+
 		uint32 code;
 		for (int i = 0; val[i]; i++)
 		{

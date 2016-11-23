@@ -52,6 +52,7 @@ protected:
 	bool				m_collOccured;
 	float				m_fTimeToRemove;
 	EqString			m_smashSound;
+	eqPhysSurfParam_t*	m_surfParams;
 };
 
 #endif // OBJECT_DEBRIS_H

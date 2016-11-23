@@ -32,7 +32,7 @@ void sequencetimer_t::AdvanceFrame(float fDt)
 	float new_seq_time = sequence_time+frame_time;
 	SetTime(new_seq_time);
 
-	int curNumFrames = base_sequence->animations[0]->bones[0].numframes;
+	int curNumFrames = base_sequence->animations[0]->bones[0].numframes-1;
 
 	// stop non-looping
 	if(!(base_sequence->flags & SEQFLAG_LOOP))
@@ -42,12 +42,12 @@ void sequencetimer_t::AdvanceFrame(float fDt)
 	}
 	else
 	{
-		if(sequence_time >= curNumFrames)
+		if(sequence_time >= curNumFrames-1)
 		{
 			ResetPlayback();
 
 			if(curNumFrames > 0)
-				nextFrame++;
+				nextFrame = 1;
 		}
 	}
 
@@ -75,29 +75,27 @@ void sequencetimer_t::SetTime(float time)
 	currFrame = floor(sequence_time);
 	nextFrame = currFrame+1;
 
-	int curNumFrames = base_sequence->animations[0]->bones[0].numframes;
+	int curNumFrames = base_sequence->animations[0]->bones[0].numframes-1;
 
 	// check max frame bounds
 	if(base_sequence->flags & SEQFLAG_LOOP)
 	{
-		if(nextFrame >= curNumFrames)
+		if(nextFrame >= curNumFrames-1)
+		{
 			nextFrame = 0;
-
-		// check min frame bounds
-		if(currFrame > curNumFrames-2)
 			currFrame = curNumFrames-1;
+		}
 	}
 	else
 	{
-		if(nextFrame >= curNumFrames)
+		if(nextFrame >= curNumFrames-1)
+		{
 			nextFrame = curNumFrames-1;
-
-		// check min frame bounds
-		if(currFrame > curNumFrames-2)
 			currFrame = curNumFrames-2;
+		}
 	}
 
-	sequence_time = clamp(sequence_time, 0, curNumFrames); // clamp time to last one frame
+	sequence_time = clamp(sequence_time, 0, curNumFrames-1); // clamp time to last one frame
 
 	if(currFrame < 0)
 		currFrame = 0;
@@ -109,8 +107,6 @@ void sequencetimer_t::SetTime(float time)
 void sequencetimer_t::ResetPlayback(bool frame_reset )
 {
 	ignore_events.clear();
-
-	playbackSpeedScale = 1.0f;
 
 	sequence_time = 0;
 
