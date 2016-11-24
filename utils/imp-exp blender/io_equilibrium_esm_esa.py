@@ -17,15 +17,15 @@
 # ##### END GPL LICENSE BLOCK #####
 
 bl_info = {
-	"name": "Equilibrium Engine ESM/ESA",
+	"name": "Equilibrium Shared Model Utility",
 	"author": "Shurumov Ilya",
-	"version": (0, 5, 0),
+	"version": (0, 6, 1),
 	"blender": (2, 68, 4),
 	"category": "Import-Export",
 	"location": "File > Import/Export, Scene properties, Armature properties",
-	"wiki_url": "http://code.google.com/p/blender-ESM/",
-	"tracker_url": "http://code.google.com/p/blender-ESM/issues/list",
-	"description": "Importer and exporter for Equilibrium Engine by Damage Byte. Supports ESM/ESA. Thanks for Blender ESM tools."}
+	"wiki_url": "http://bitbucket.org/InspirationByte/eqengine/",
+	"tracker_url": "http://bitbucket.org/InspirationByte/eqengine/issues",
+	"description": "Mesh and animation export utility for Equilibrium Engine models"}
 
 import math, os, time, bpy, bmesh, random, mathutils, re, struct, subprocess, io
 from bpy import ops
@@ -56,12 +56,12 @@ sclZ = Matrix.Scale(val_BlenderToESMScale, 4, Vector((0, 0, 1)))
 mat_BlenderToESMScale = sclX * sclY * sclZ
 
 # ESM types
-REF = 0x1 # $body, $model, $bodygroup->studio (if before a $body or $model)
-REF_ADD = 0x2 # $bodygroup, $lod->replacemodel
-PHYS = 0x3 # $collisionmesh, $collisionjoints
-ANIM = 0x4 # $sequence, $animation
+REF = 0x1 		# body, model
+REF_ADD = 0x2 	# bodygroup, lod model
+PHYS = 0x3 		# physics->model
+ANIM = 0x4 		# sequence, animation
 ANIM_SOLO = 0x5 # for importing animations to scenes without an existing armature
-FLEX = 0x6 # $model ESX
+FLEX = 0x6 		# esx - vertex animation
 
 mesh_compatible = [ 'MESH', 'TEXT', 'FONT', 'SURFACE', 'META', 'CURVE' ]
 exportable_types = mesh_compatible[:]
@@ -70,43 +70,38 @@ shape_types = ['MESH' , 'SURFACE']
 
 
 # I hate Python's var redefinition habits
-class ESM_info:
+class EqModel_Info:
 	def __init__(self):
 		self.a = None # Armature object
-		self.amod = None # Original armature modifier
 		self.m = None # Mesh datablock
-		self.shapes = None
 		self.g = None # Group being exported
 		self.file = None
 		self.jobName = None
 		self.jobType = None
 		self.startTime = 0
 		self.uiTime = 0
-		self.started_in_editmode = None
-		self.append = False
-		self.in_block_comment = False
-		self.upAxis = 'Y'
-		self.upAxisMat = 1 # vec * 1 == vec
-		self.truncMaterialNames = []
-		self.rotMode = 'EULER' # for creating keyframes during import
-		self.materials_used = set() # printed to the console for users' benefit
-		self.restPoseMatrices = []
-
-		self.attachments = []
-		self.meshes = []
-		self.parent_chain = []
-
-		self.frameData = []
-
+		
+		# export props
+		self.amod = None # Original armature modifier
+		self.shapes = None
 		self.bakeInfo = []
+		self.restPoseMatrices = [] # used to export local animation frames
+		self.materials_used = set() # printed to the console for users' benefit
 
+		# import props
+		
 		# boneIDs contains the ID-to-name mapping of *this* ESM's bones.
 		# - Key: integer ID
 		# - Value: bone name (storing object itself is not safe)
 		self.boneIDs = {}
 		self.boneNameToID = {} # for convenience during export
 		self.phantomParentIDs = {} # for bones in animation ESMs but not the ref skeleton
-
+		self.append = False
+		self.in_block_comment = False
+		self.upAxis = 'Y'
+		self.upAxisMat = 1 # vec * 1 == vec
+		self.truncMaterialNames = []
+		self.rotMode = 'EULER' # for creating keyframes during import
 
 # error reporting
 class logger:
@@ -132,16 +127,6 @@ class logger:
 
 		if len(self.errors) or len(self.warnings):
 			message += " with {} errors and {} warnings:".format(len(self.errors),len(self.warnings))
-
-			# like it or not, Blender automatically prints operator reports to the console these days
-			'''print(message)
-			stdOutColour(STD_RED)
-			for msg in self.errors:
-				print("  " + msg)
-			stdOutColour(STD_YELLOW)
-			for msg in self.warnings:
-				print("  " + msg)
-			stdOutReset()'''
 
 			for err in self.errors:
 				message += "\nERROR: " + err
@@ -270,7 +255,7 @@ def parseQuoteBlockedLine(line,lower=True):
 	return words
 
 def appendExt(path,ext):
-	if not path.lower().endswith("." + ext) and not path.lower().endswith(".dmx"):
+	if not path.lower().endswith("." + ext):
 		path += "." + ext
 	return path
 
@@ -403,15 +388,14 @@ def getBoneByESMName(bones,name):
 		return bones.get(name)
 	for bone in bones:
 		if bone.get("ESM_name") == name:
-			return bone
+			return bone#
 
 def shouldExportGroup(group):
 	return group.ESM_export and not group.ESM_mute
 	
-
-########################
-#        Import        #
-########################
+#----------------------------------------------------------------------------------------------------
+#	Import
+#----------------------------------------------------------------------------------------------------
 
 # Identifies what type of ESM this is. Cannot tell between reference/lod/collision meshes!
 def scanESM():
@@ -512,7 +496,7 @@ def readNodes():
 
 		values = parseQuoteBlockedLine(line,lower=False)
 	
-		safeName = values[1].replace("ValveBiped.","")
+		safeName = values[1]
 		bone = ESM.a.data.edit_bones.new(safeName[:29]) # avoid Blender hang
 		bone.tail = 0,5,0 # Blender removes zero-length bones
 
@@ -672,7 +656,7 @@ def readFrames():
 					
 	applyFrames(bone_mats,num_frames,act)
 
-def applyFrames(bone_mats,num_frames,action, dmx_key_sets = None): # this is called during DMX import too
+def applyFrames(bone_mats,num_frames,action):
 	if ESM.jobType in [REF,ANIM_SOLO]:	
 		# Apply the reference pose
 		for bone in ESM.a.pose.bones:
@@ -768,21 +752,19 @@ def applyFrames(bone_mats,num_frames,action, dmx_key_sets = None): # this is cal
 						bone.matrix = getUpAxisMat(ESM.upAxis) * bone_mats[bone][f]
 						
 					# Key location					
-					if not dmx_key_sets or dmx_key_sets[bone][f]['p']:
-						for i in range(3):
-							curvesLoc[i].keyframe_points.add(1)
-							curvesLoc[i].keyframe_points[-1].co = [f, bone.location[i]]
+					for i in range(3):
+						curvesLoc[i].keyframe_points.add(1)
+						curvesLoc[i].keyframe_points[-1].co = [f, bone.location[i]]
 					
 					# Key rotation
-					if not dmx_key_sets or dmx_key_sets[bone][f]['o']:
-						if ESM.rotMode == 'XYZ':							
-							for i in range(3):
-								curvesRot[i].keyframe_points.add(1)
-								curvesRot[i].keyframe_points[-1].co = [f, bone.rotation_euler[i]]								
-						else:
-							for i in range(4):
-								curvesRot[i].keyframe_points.add(1)
-								curvesRot[i].keyframe_points[-1].co = [f, bone.rotation_quaternion[i]]
+					if ESM.rotMode == 'XYZ':							
+						for i in range(3):
+							curvesRot[i].keyframe_points.add(1)
+							curvesRot[i].keyframe_points[-1].co = [f, bone.rotation_euler[i]]								
+					else:
+						for i in range(4):
+							curvesRot[i].keyframe_points.add(1)
+							curvesRot[i].keyframe_points[-1].co = [f, bone.rotation_quaternion[i]]
 
 			# Recurse
 			for child in bone.children:
@@ -1086,7 +1068,7 @@ def readShapes():
 
 def initESM(filepath,ESM_type,append,upAxis,rotMode,from_qc,target_layer):
 	global ESM
-	ESM	= ESM_info()
+	ESM	= EqModel_Info()
 	ESM.jobName = getFilename(filepath)
 	ESM.jobType = ESM_type
 	ESM.append = append
@@ -1206,9 +1188,9 @@ class ESMImporter(bpy.types.Operator):
 		bpy.context.window_manager.fileselect_add(self)
 		return {'RUNNING_MODAL'}
 
-########################
-#        Export        #
-########################
+#----------------------------------------------------------------------------------------------------
+#	Export routines
+#----------------------------------------------------------------------------------------------------
 
 # nodes block
 def writeBones(quiet=False):
@@ -1403,8 +1385,8 @@ def writeFrames():
 			rot = localBoneMatrix.to_euler()
 			
 			# HACK: this is a weird rotation fix and you should get rid of it
-			rot[1] = -rot[1]
-			rot[2] = -rot[2]
+			rot[1] = -rot[1] # Y
+			rot[2] = -rot[2] # Z
 
 			# Construct the string
 			pos_str = rot_str = ""
@@ -1978,7 +1960,7 @@ def unBake():
 def writeESM( context, object, groupIndex, filepath, ESM_type = None, quiet = False ):
 
 	global ESM
-	ESM	= ESM_info()
+	ESM	= EqModel_Info()
 	ESM.jobType = ESM_type
 	if groupIndex != -1:
 		ESM.g = object.users_group[groupIndex]
@@ -2057,7 +2039,7 @@ def writeESM( context, object, groupIndex, filepath, ESM_type = None, quiet = Fa
 	return True
 
 class ESM_MT_ExportChoice(bpy.types.Menu):
-	bl_label = "ESM export mode"
+	bl_label = "Choose which needs to be exported to Eq Shared Model/Animation"
 
 	# returns an icon, a label, and the number of valid actions
 	# supports single actions, NLA tracks, or nothing
@@ -2138,7 +2120,6 @@ class ESM_MT_ExportChoice(bpy.types.Menu):
 			else:
 				label = ""
 
-
 			if ob.type in mesh_compatible:
 				want_single_export = True
 				# Groups
@@ -2206,7 +2187,7 @@ def getValidObs():
 	return validObs
 
 class ESM_PT_Scene(bpy.types.Panel):
-	bl_label = "ESM Export"
+	bl_label = "Equilibrium Engine Tools"
 	bl_space_type = "PROPERTIES"
 	bl_region_type = "WINDOW"
 	bl_context = "scene"
@@ -2336,7 +2317,7 @@ class ESM_PT_Scene(bpy.types.Panel):
 		l.row()
 
 class ESM_PT_Data(bpy.types.Panel):
-	bl_label = "ESM Export"
+	bl_label = "Equilibrium Engine Tools"
 	bl_space_type = "PROPERTIES"
 	bl_region_type = "WINDOW"
 	bl_context = "data"
@@ -2382,7 +2363,7 @@ class ESM_PT_Data(bpy.types.Panel):
 		l.operator(ESMClean.bl_idname,text="Clean ESM names/IDs from bones",icon='BONE_DATA').mode = 'ARMATURE'
 
 class ESMExporter(bpy.types.Operator):
-	'''Export egfCA/animCA Data files'''
+	'''Export to egfCa / animCA source files'''
 	bl_idname = "export_scene.esm"
 	bl_label = "Export ESM/ESA"
 	bl_options = { 'UNDO', 'REGISTER' }
@@ -2634,7 +2615,7 @@ class ESMExporter(bpy.types.Operator):
 
 			if writeESM(context, object, groupIndex, path + getFileExt(REF)):
 				self.countESMs += 1
-			if bpy.context.scene.ESM_format == 'ESM' and hasShapes(object,groupIndex): # DMX will export mesh and shapes to the same file
+			if bpy.context.scene.ESM_format == 'ESM' and hasShapes(object,groupIndex):
 				if writeESM(context, object, groupIndex, path + getFileExt(FLEX), FLEX):
 					self.countESMs += 1
 		elif object.type == 'ARMATURE':
@@ -2735,15 +2716,15 @@ class ESMClean(bpy.types.Operator):
 		self.report({'INFO'},"Deleted {} ESM properties".format(self.numPropsRemoved))
 		return {'FINISHED'}
 
-#####################################
-#        Shared registration        #
-#####################################
+#----------------------------------------------------------------------------------------------------
+#	Shared registration for UI elements
+#----------------------------------------------------------------------------------------------------
 
 def menu_func_import(self, context):
-	self.layout.operator(ESMImporter.bl_idname, text="Equilibrium Engine (.ESM, .ESA)")
+	self.layout.operator(ESMImporter.bl_idname, text="Equilibrium Engine (.esm, .esa)")
 
 def menu_func_export(self, context):
-	self.layout.operator(ESMExporter.bl_idname, text="Equilibrium Engine (.ESM, .ESA)")
+	self.layout.operator(ESMExporter.bl_idname, text="Equilibrium Engine (.esm, .esa)")
 
 def panel_func_group_mute(self,context):
 	# This is crap
@@ -2756,11 +2737,9 @@ def panel_func_group_mute(self,context):
 	
 def register():
 	bpy.utils.register_module(__name__)
-	bpy.types.INFO_MT_file_import.append(menu_func_import)
+	#bpy.types.INFO_MT_file_import.append(menu_func_import) ### TEMPORARILY DISABLE
 	bpy.types.INFO_MT_file_export.append(menu_func_export)
 	bpy.types.OBJECT_PT_groups.append(panel_func_group_mute)
-	
-	
 
 	global cached_action_filter_list
 	cached_action_filter_list = 0
@@ -2768,8 +2747,8 @@ def register():
 	bpy.types.Scene.ESM_path = StringProperty(name="ESM Export Root",description="The root folder into which ESMs from this scene are written", subtype='DIR_PATH')
 	bpy.types.Scene.ESM_up_axis = EnumProperty(name="ESM Target Up Axis",items=axes,default='Y',description="Use for compatibility with existing ESMs")
 	formats = (
-	('ESM', "ESM", "egfCA model" ),
-	('ESA', "ESA", "animCA animation" ),
+		('ESM', "ESM", "equilibrium shared model" ),
+		('ESA', "ESA", "equilibrium shared animation" ),
 	)
 	bpy.types.Scene.ESM_format = EnumProperty(name="ESM Export Format",items=formats,default='ESM',description="Currently unused")
 	bpy.types.Scene.ESM_use_image_names = BoolProperty(name="ESM Ignore Materials",description="Only export face-assigned image filenames",default=True)
@@ -2781,8 +2760,8 @@ def register():
 
 	bpy.types.Armature.ESM_implicit_zero_bone = BoolProperty(name="Implicit motionless bone",default=True,description="Start bone IDs at one, allowing egfCA to put any unweighted vertices on bone zero. Emulates Blender's behaviour, but may break compatibility with existing ESMs")
 	arm_modes = (
-	('CURRENT',"Current / NLA","The armature's assigned action, or everything in an NLA track"),
-	('FILTERED',"Action Filter","All actions that match the armature's filter term")
+		('CURRENT',"Current / NLA","The armature's assigned action, or everything in an NLA track"),
+		('FILTERED',"Action Filter","All actions that match the armature's filter term")
 	)
 	bpy.types.Armature.ESM_action_selection = EnumProperty(name="Action Selection", items=arm_modes,description="How actions are selected for export",default='CURRENT')
 
@@ -2792,9 +2771,9 @@ def register():
 	bpy.types.Group.ESM_mute = BoolProperty(name="ESM ignore",description="Prevents the ESM exporter from merging the objects in this group together",default=False)
 	
 	bpy.types.Curve.ESM_faces = EnumProperty(name="ESM export which faces",items=(
-	('LEFT', 'Left side', 'Generate polygons on the left side'),
-	('RIGHT', 'Right side', 'Generate polygons on the right side'),
-	('BOTH', 'Both  sides', 'Generate polygons on both sides'),
+		('LEFT', 'Left side', 'Generate polygons on the left side'),
+		('RIGHT', 'Right side', 'Generate polygons on the right side'),
+		('BOTH', 'Both  sides', 'Generate polygons on both sides'),
 	), description="Determines which sides of the mesh resulting from this curve will have polygons",default='LEFT')
 
 def unregister():
