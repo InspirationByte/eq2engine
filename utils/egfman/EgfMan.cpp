@@ -88,6 +88,7 @@ enum
 
 	Event_File_OpenModel = 100,
 	Event_File_CompileModel,
+	Event_File_ReloadModel,
 	Event_File_Save,
 
 	Event_View_ResetView,
@@ -321,9 +322,9 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 	m_pAnimFramerate = new wxTextCtrl( m_pMotionPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 35,-1 ), 0 );
 	fgSizer1->Add( m_pAnimFramerate, 0, wxALL, 5 );
 	
-	fgSizer1->Add( new wxStaticText( m_pMotionPanel, Event_Timeline_Set, wxT("Timeline:"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
+	fgSizer1->Add( new wxStaticText( m_pMotionPanel, wxID_ANY, wxT("Timeline:"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
 	
-	m_pTimeline = new wxSlider( m_pMotionPanel, wxID_ANY, 0, 0, 25, wxDefaultPosition, wxSize( 200,42 ), wxSL_AUTOTICKS|wxSL_HORIZONTAL|wxSL_LABELS );
+	m_pTimeline = new wxSlider( m_pMotionPanel, Event_Timeline_Set, 0, 0, 25, wxDefaultPosition, wxSize( 200,42 ), wxSL_AUTOTICKS|wxSL_HORIZONTAL|wxSL_LABELS );
 	fgSizer1->Add( m_pTimeline, 1, wxALL, 5 );
 	
 	fgSizer1->Add( new wxButton( m_pMotionPanel, Event_Sequence_Play, wxT("Play"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT ), 0, wxTOP|wxBOTTOM|wxLEFT, 5 );
@@ -499,16 +500,20 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 	
 	menuFile->Append( Event_File_OpenModel, DKLOC("TOKEN_OPEN", L"Open\tCtrl+O") );
 	menuFile->AppendSeparator();
-	menuFile->Append( Event_File_CompileModel, DKLOC("TOKEN_COMPILEMODEL", L"Compile ESC/ASC") );
+	menuFile->Append( Event_File_ReloadModel, DKLOC("TOKEN_RELOADMODEL", L"Reload model") );
 	menuFile->Append( Event_File_Save, DKLOC("TOKEN_SAVE", L"Save") );
+	menuFile->AppendSeparator();
+	menuFile->Append( Event_File_CompileModel, DKLOC("TOKEN_COMPILEMODEL", L"Compile scripts...") );
+	
+	
 
 	wxMenu *menuView = new wxMenu;
 	
 	menuView->Append( Event_View_ResetView, DKLOC("TOKEN_RESETVIEW", L"Reset View\tR") );
 
-	m_drawPhysModel = menuView->Append( Event_View_ShowPhysModel, DKLOC("TOKEN_SHOWPHYSICSMODEL", L"Show physics model"), wxEmptyString, wxITEM_CHECK );
-	m_drawBones = menuView->Append( Event_View_ShowBones, DKLOC("TOKEN_SHOWBONES", L"Show bones"), wxEmptyString, wxITEM_CHECK );
-	m_wireframe = menuView->Append( Event_View_Wireframe, DKLOC("TOKEN_WIREFRAME", L"Wireframe"), wxEmptyString, wxITEM_CHECK );
+	m_drawPhysModel = menuView->Append( Event_View_ShowPhysModel, DKLOC("TOKEN_SHOWPHYSICSMODEL", L"Show physics objects\tP"), wxEmptyString, wxITEM_CHECK );
+	m_drawBones = menuView->Append( Event_View_ShowBones, DKLOC("TOKEN_SHOWBONES", L"Show bones\tB"), wxEmptyString, wxITEM_CHECK );
+	m_wireframe = menuView->Append( Event_View_Wireframe, DKLOC("TOKEN_WIREFRAME", L"Wireframe\tW"), wxEmptyString, wxITEM_CHECK );
 
 	m_pMenu->Append( menuFile, DKLOC("TOKEN_FILE", L"File") );
 	m_pMenu->Append( menuView, DKLOC("TOKEN_VIEW", L"View") );
@@ -706,16 +711,14 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 		if(file && file->ShowModal() == wxID_OK)
 		{
-			EqString fname(file->GetPath().wchar_str());
+			EqString model_path(file->GetPath().wchar_str());
 
 			g_pModel->SetModel( NULL );
 			FlushCache();
 
-			int cache_index = g_pModelCache->PrecacheModel( fname.GetData() );
-			if(cache_index == 0)
-			{
-				ErrorMsg("Can't open %s\n", fname.GetData());
-			}
+			int cache_index = g_pModelCache->PrecacheModel( model_path.c_str() );
+			if(cache_index == CACHE_INVALID_MODEL)
+				wxMessageBox(varargs("Can't open %s\n", model_path.c_str()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 
 			g_pModel->SetModel( g_pModelCache->GetModel(cache_index) );
 		}
@@ -724,6 +727,24 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 		RefreshGUI();
 
 		delete file;
+	}
+	else if(event.GetId() == Event_File_ReloadModel)
+	{
+		IEqModel* model = g_pModel->m_pModel;
+
+		if(!model)
+			return;
+
+		EqString model_path(model->GetName());
+
+		g_pModel->SetModel( NULL );
+		FlushCache();
+
+		int cache_index = g_pModelCache->PrecacheModel( model_path.c_str() );
+		if(cache_index == CACHE_INVALID_MODEL)
+			wxMessageBox(varargs("Can't open %s\n", model_path.c_str()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
+
+		g_pModel->SetModel( g_pModelCache->GetModel(cache_index) );
 	}
 	else if(event.GetId() == Event_File_CompileModel)
 	{
@@ -740,7 +761,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 			for(size_t i = 0; i < paths.size(); i++)
 			{
-				EqString model_aftercomp_name;
+				EqString model_path;
 
 				KeyValues script;
 
@@ -772,7 +793,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 							if(pPair)
 							{
-								model_aftercomp_name = KV_GetValueString(pPair);
+								model_path = KV_GetValueString(pPair);
 								Msg("***Starting egfca for %s\n", fname.GetData());
 
 								EqString cmdLine(varargs("egfca.exe +filename \"%s\"", fname.GetData()));
@@ -787,26 +808,23 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 							}
 							else
 							{
-								ErrorMsg("ERROR! 'modelfilename' isn't specified in the script!!!\n");
+								wxMessageBox("ERROR! 'modelfilename' is not specified in the script!", "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 							}
 						}
 					}
 
-					if(paths.size() == 1 && model_aftercomp_name.Length())
+					if(paths.size() == 1 && model_path.Length())
 					{
 						g_pModel->SetModel( NULL );
 						FlushCache();
 
-						int cache_index = g_pModelCache->PrecacheModel( model_aftercomp_name.GetData() );
-						if(cache_index == 0)
-						{
-							ErrorMsg("Can't open %s\n", model_aftercomp_name.GetData());
-						}
+						int cache_index = g_pModelCache->PrecacheModel( model_path.c_str() );
+						if(cache_index == CACHE_INVALID_MODEL)
+							wxMessageBox(varargs("Can't open %s\n", model_path.c_str()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 
 						g_pModel->SetModel( g_pModelCache->GetModel(cache_index) );
 
 						SetOptimalCameraDistance();
-
 						materials->PreloadNewMaterials();
 					}
 				}
@@ -1135,7 +1153,11 @@ void CEGFViewFrame::ReDraw()
 		}
 
 		physics->Simulate( g_frametime, 1 );
+
 		g_pModel->Update( g_frametime );
+
+		if( g_pModel->m_sequenceTimers[0].bPlaying )
+			m_pTimeline->SetValue( g_pModel->GetCurrentAnimationFrame() );
 
 		g_pShaderAPI->ResetCounters();
 
@@ -1211,6 +1233,10 @@ void CEGFViewFrame::OnComboboxChanged(wxCommandEvent& event)
 		{
 			g_pModel->SetSequence( nSeq, 0 );
 			g_pModel->ResetAnimationTime(0);
+
+			int maxFrames = g_pModel->GetCurrentAnimationDurationInFrames();
+
+			m_pTimeline->SetMax( maxFrames );
 		}
 	}
 	else if(event.GetId() == Event_PoseCont_Changed)
@@ -1233,41 +1259,27 @@ void CEGFViewFrame::OnButtons(wxCommandEvent& event)
 
 	if(event.GetId() == Event_Sequence_Play)
 	{
-		if(g_pModel)
-		{
-			g_pModel->ResetAnimationTime(0);
-			g_pModel->PlayAnimation( 0 );
-		}
+		g_pModel->ResetAnimationTime(0);
+		g_pModel->PlayAnimation(0);
 	}
 	else if(event.GetId() == Event_Sequence_Stop)
 	{
-		if(g_pModel)
-		{
-			g_pModel->StopAnimation( 0 );
-		}
+		g_pModel->StopAnimation(0);
 	}
 	else if(event.GetId() == Event_Timeline_Set)
 	{
-		if(g_pModel)
-		{
-			
-		}
+		g_pModel->m_sequenceTimers[0].SetTime( m_pTimeline->GetValue() );
 	}
 	else if(event.GetId() == Event_PoseCont_ValueChanged)
 	{
 		int nPoseContr = m_pPoseController->GetSelection();
 
-		if(g_pModel && nPoseContr != -1)
-		{
+		if(nPoseContr != -1)
 			g_pModel->m_poseControllers[nPoseContr].value = float(m_pPoseValue->GetValue()) * 0.1;
-		}
 	}
 	else if(event.GetId() == Event_Physics_SimulateToggle)
 	{
-		if(g_pModel)
-		{
-			g_pModel->TogglePhysicsState();
-		}
+		g_pModel->TogglePhysicsState();
 	}
 }
 

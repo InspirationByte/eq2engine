@@ -634,6 +634,19 @@ float CAnimatedModel::GetCurrentAnimationDuration()
 	return (m_sequenceTimers[0].base_sequence->animations[0]->bones[0].numframes - 1) / m_sequenceTimers[0].base_sequence->framerate;
 }
 
+int CAnimatedModel::GetCurrentAnimationFrame()
+{
+	return m_sequenceTimers[0].currFrame;
+}
+
+int CAnimatedModel::GetCurrentAnimationDurationInFrames()
+{
+	if(!m_sequenceTimers[0].base_sequence)
+		return 1;
+
+	return m_sequenceTimers[0].base_sequence->animations[0]->bones[0].numframes - 1;
+}
+
 // returns duration time of the specific animation
 float CAnimatedModel::GetAnimationDuration(int animIndex)
 {

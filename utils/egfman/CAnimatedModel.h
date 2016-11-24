@@ -71,9 +71,11 @@ public:
 
 	virtual void				SetAnimationTime(float newTime, int slot = 0);	// sets new animation time
 
+	virtual int					GetCurrentAnimationFrame();
 	virtual float				GetCurrentAnimationDuration();				// returns duration time of the current animation
+	virtual int					GetCurrentAnimationDurationInFrames();		// returns duration in frame count of the current animation
 
-	virtual float				GetAnimationDuration(int animIndex);		// returns duration time of the specific animation
+	virtual float				GetAnimationDuration(int seqIndex);			// returns duration time of the specific animation
 
 	virtual float				GetCurrentRemainingAnimationDuration();		// returns remaining duration time of the current animation
 	virtual void				PlayAnimation(int slot = 0);				// plays/resumes animation
