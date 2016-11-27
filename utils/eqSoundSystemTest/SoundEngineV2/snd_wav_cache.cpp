@@ -13,21 +13,20 @@
 bool CSoundSource_WaveCache::Load(const char* szFilename)
 {
 	m_filename = szFilename;
-	CRIFF_Parser* pReader = new CRIFF_Parser( szFilename );
+	CRIFF_Parser reader( szFilename );
 
-	while ( pReader->GetName( ) )
+	while ( reader.GetName( ) )
 	{
-		ParseChunk( *pReader );
-		pReader->ChunkNext( );
+		ParseChunk( reader );
+		reader.ChunkNext();
 	}
 
-	pReader->ChunkClose( );
-	delete pReader;
+	reader.ChunkClose();
 
 	return m_numSamples > 0;
 }
 
-void CSoundSource_WaveCache::Unload ()
+void CSoundSource_WaveCache::Unload()
 {
 	PPFree(m_dataCache);
 	m_dataCache = NULL;

@@ -9,6 +9,11 @@
 
 //---------------------------------------------------------------------
 
+CSoundSource_Wave::CSoundSource_Wave() : m_loopStart(0), m_numSamples(0)
+{
+
+}
+
 void CSoundSource_Wave::ParseChunk(CRIFF_Parser &chunk)
 {
 	int nameId = chunk.GetName();

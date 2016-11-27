@@ -18,6 +18,8 @@
 class CSoundSource_Wave : public ISoundSource
 {
 public:
+	CSoundSource_Wave();
+
 	virtual soundFormat_t*	GetFormat()						{ return &m_format; }
 	virtual const char*		GetFilename() const				{ return m_filename.c_str(); }
 	virtual float			GetLoopPosition(float flPosition);

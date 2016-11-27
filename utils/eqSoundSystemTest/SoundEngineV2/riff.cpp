@@ -35,8 +35,6 @@ CRIFF_Parser::CRIFF_Parser(const char* szFilename)
 	}
 	else
 	{
-		m_start = m_pos;
-
 		if ( header.Type != WAVE_ID )
 		{
 			MsgError("LoadRIFF: '%s' not valid WAVE file\n", szFilename);
@@ -74,8 +72,6 @@ CRIFF_Parser::CRIFF_Parser(ubyte* pChunkData, int nChunkSize)
 	}
 	else
 	{
-		m_start = m_pos;
-
 		if ( header.Type != WAVE_ID )
 		{
 			header.Id = 0;
@@ -104,7 +100,7 @@ int CRIFF_Parser::ReadData(void* dest, int len)
 {
 	if( m_riff )
 	{
-		int read = m_riff->Read( dest, 1, len );
+		int read = m_riff->Read( dest, len, 1 );
 		m_pos += read;
 		return read;
 	}

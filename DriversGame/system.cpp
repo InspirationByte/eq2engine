@@ -471,6 +471,9 @@ void CGameHost::ShutdownSystems()
 	// Save configuration before full unload
 	WriteCfgFile("cfg/config.cfg",true);
 
+	// shutdown any dependent bindings to avoid crashes
+	LuaBinding_ShutdownEngineBindings();
+
 	g_parallelJobs->Shutdown();
 
 	equi::Manager->Shutdown();

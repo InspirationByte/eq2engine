@@ -67,6 +67,8 @@ CAICarManager::~CAICarManager()
 
 void CAICarManager::Init()
 {
+	PrecacheObject(CAIPursuerCar);
+
 	// reset variables
 	m_copMaxDamage = COP_DEFAULT_DAMAGE;
 	m_copAccelerationModifier = 1.0f;

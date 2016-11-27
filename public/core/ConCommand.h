@@ -14,24 +14,7 @@
 #include "ConCommandBase.h"
 #include "InterfaceManager.h"
 
-typedef void (*CON_COMMAND_CALLBACK)(DkList<EqString>&);
-
-class ConCommand : public ConCommandBase
-{
-public:
-	ConCommand(char const *name,CON_COMMAND_CALLBACK callback,char const *desc = 0, int flags = 0);
-	ConCommand(char const *name,CON_COMMAND_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList,char const *desc = 0, int flags = 0);
-
-	//Command execution
-	void DispatchFunc(DkList<EqString>& args);
-
-private:
-	void Create(char const *pszName,CON_COMMAND_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList,char const *pszHelpString, int nFlags);
-
-	CON_COMMAND_CALLBACK m_fnCallback;
-};
-
-#define CONCOMMAND_ARGUMENTS DkList<EqString>& args
+#define CONCOMMAND_ARGUMENTS ConCommand* cmd, DkList<EqString>& args
 
 #define CONCOMMAND_FN(name) CC_##name##_f
 
@@ -55,5 +38,24 @@ private:
 	DECLARE_CONCOMMAND_FN(name);					\
 	static ConCommand cmd_##name(#name,CONCOMMAND_FN(name), variantsfn,desc,flags); \
 	DECLARE_CONCOMMAND_FN(name)
+
+typedef void (*CON_COMMAND_CALLBACK)(CONCOMMAND_ARGUMENTS);
+
+class ConCommand : public ConCommandBase
+{
+public:
+	ConCommand(char const *name,CON_COMMAND_CALLBACK callback,char const *desc = 0, int flags = 0);
+	ConCommand(char const *name,CON_COMMAND_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList,char const *desc = 0, int flags = 0);
+
+	//Command execution
+	void DispatchFunc(DkList<EqString>& args);
+
+	void LuaCleanup();
+
+private:
+	void Create(char const *pszName,CON_COMMAND_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList,char const *pszHelpString, int nFlags);
+
+	CON_COMMAND_CALLBACK m_fnCallback;
+};
 
 #endif //CONCOMMAND_H

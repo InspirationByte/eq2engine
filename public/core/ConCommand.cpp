@@ -43,5 +43,11 @@ void ConCommand::DispatchFunc(DkList<EqString>& args)
 	}
 
 	if ( m_fnCallback )
-		( *m_fnCallback )(args);
+		( *m_fnCallback )(this, args);
+}
+
+void ConCommand::LuaCleanup()
+{
+	// do something???
+	ConCommandBase::LuaCleanup();
 }

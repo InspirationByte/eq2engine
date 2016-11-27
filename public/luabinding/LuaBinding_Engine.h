@@ -28,19 +28,44 @@
 #ifndef __INTELLISENSE__
 
 //
-// Console variable
+// Console command/variable base
 //
-OOLUA_PROXY( ConVar )
+OOLUA_PROXY( ConCommandBase )
 
 	OOLUA_TAGS(
 		No_default_constructor
 	)
 
-	/*
-	OOLUA_CTORS(
-		OOLUA_CTOR(char const *,char const *,char const *, int)
+	// Names, descs, flags
+	OOLUA_MFUNC_CONST(GetName)
+	OOLUA_MFUNC_CONST(GetDesc)
+	OOLUA_MFUNC_CONST(GetFlags)
+
+	OOLUA_MFUNC_CONST(IsConVar)
+	OOLUA_MFUNC_CONST(IsConCommand)
+	OOLUA_MFUNC_CONST(IsRegistered)
+
+OOLUA_PROXY_END
+
+//
+// Console command
+//
+OOLUA_PROXY( ConCommand, ConCommandBase )
+
+	OOLUA_TAGS(
+		No_default_constructor
 	)
-	*/
+
+OOLUA_PROXY_END
+
+//
+// Console variable
+//
+OOLUA_PROXY( ConVar, ConCommandBase )
+
+	OOLUA_TAGS(
+		No_default_constructor
+	)
 
 	OOLUA_MFUNC(RevertToDefaultValue)
 
@@ -58,8 +83,6 @@ OOLUA_PROXY( ConVar )
 	OOLUA_MFUNC_CONST(GetString)
 	OOLUA_MFUNC_CONST(GetInt)
 	OOLUA_MFUNC_CONST(GetBool)
-
-	OOLUA_MFUNC_CONST(GetName)
 
 OOLUA_PROXY_END
 
@@ -261,5 +284,6 @@ OOLUA_PROXY_END
 //----------------------------------------------------------------------------------------
 
 bool LuaBinding_InitEngineBindings(lua_State* state);
+void LuaBinding_ShutdownEngineBindings();
 
 #endif // LUABINDING_ENGINE

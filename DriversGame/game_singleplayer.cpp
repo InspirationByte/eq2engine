@@ -86,10 +86,7 @@ CGameSession::~CGameSession()
 
 void CGameSession::Init()
 {
-	PrecacheObject(CAIPursuerCar);
-
 	OOLUA::Script& state = GetLuaState();
-
 	EqLua::LuaStackGuard g(state);
 
 	// init mission manager pointers
@@ -106,6 +103,11 @@ void CGameSession::Init()
 	if(!m_lua_misman_Update.Get(m_missionManagerTable, "Update"))
 	{
 		MsgError("CGameSession::Init Error - cannot get missionmanager's Update() function!\n");
+	}
+
+	if(!m_lua_misman_Finalize.Get(m_missionManagerTable, "Finalize"))
+	{
+		MsgError("CGameSession::Init Error - cannot get missionmanager's Finalize() function!\n");
 	}
 
 	g.Release();
@@ -182,6 +184,18 @@ float CGameSession::LoadCarReplay(CCar* pCar, const char* filename)
 	float fixedTicksDelta = 1.0f / (sys_maxfps.GetFloat()*PHYSICS_ITERATION_COUNT);
 
 	return numTicks * fixedTicksDelta;
+}
+
+void CGameSession::FinalizeMissionManager()
+{
+	OOLUA::Script& state = GetLuaState();
+	EqLua::LuaStackGuard g(state);
+
+	m_lua_misman_Finalize.Push();
+	if(!m_lua_misman_Finalize.Call(0, 0))
+	{
+		Msg("CGameSession::Init, :CMissionManager_Finalize() error:\n %s\n", OOLUA::get_last_error(state).c_str());
+	}
 }
 
 void CGameSession::Shutdown()

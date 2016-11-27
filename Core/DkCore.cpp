@@ -212,7 +212,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 				devModeList.append(KV_GetValueString(devModesKv, i));
 
 			if(devModeList.numElem())
-				CONCOMMAND_FN(developer)( devModeList );
+				CONCOMMAND_FN(developer)( nullptr, devModeList );
 		}
 
 		kvkeybase_t* pForceLogged = pAppDebug->FindKeyBase("ForceLogApplications");

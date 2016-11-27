@@ -43,8 +43,14 @@ OOLUA_CFUNC( WMsgAccept, LMsgAccept)
 
 //--------------------------------------------------------------------------
 
+OOLUA_EXPORT_FUNCTIONS(ConCommandBase)
+OOLUA_EXPORT_FUNCTIONS_CONST(ConCommandBase, GetName, GetDesc, GetFlags, IsConVar, IsConCommand, IsRegistered)
+
+OOLUA_EXPORT_FUNCTIONS(ConCommand)
+OOLUA_EXPORT_FUNCTIONS_CONST(ConCommand)
+
 OOLUA_EXPORT_FUNCTIONS(ConVar, RevertToDefaultValue, SetString,SetFloat,SetInt,SetBool)
-OOLUA_EXPORT_FUNCTIONS_CONST(ConVar, GetName, HasClamp, GetMinClamp, GetMaxClamp, GetFloat, GetString, GetInt, GetBool)
+OOLUA_EXPORT_FUNCTIONS_CONST(ConVar, HasClamp, GetMinClamp, GetMaxClamp, GetFloat, GetString, GetInt, GetBool)
 
 OOLUA_EXPORT_FUNCTIONS(Vector2D, set_x, set_y)
 OOLUA_EXPORT_FUNCTIONS_CONST(Vector2D, get_x, get_y)
@@ -147,9 +153,6 @@ OOLUA_CFUNC(NormalizeAngles360,L_NormalizeAngles360)
 OOLUA_CFUNC(AngleDiff,L_AngleDiff)
 OOLUA_CFUNC(AnglesDiff,L_AnglesDiff)
 
-
-
-
 // FLOAT
 int L_fract( lua_State* vm )			{ OOLUA_C_FUNCTION(float,fract,float) }
 
@@ -205,15 +208,79 @@ ConVar* Lua_Console_FindCvar(const char* name)
 	return (ConVar*)g_sysConsole->FindCvar(name);
 }
 
+ConCommand* Lua_Console_FindCommand(const char* name)
+{
+	return (ConCommand*)g_sysConsole->FindCommand(name);
+}
+
 void Lua_Console_ExecuteString(const char* cmd)
 {
 	g_sysConsole->SetCommandBuffer(cmd);
 	g_sysConsole->ExecuteCommandBuffer();
 }
 
-int LLua_Console_FindCvar(lua_State* vm)
+struct luaCmdFuncRef_t
 {
-	OOLUA_C_FUNCTION(OOLUA::maybe_null<ConVar*>, Lua_Console_FindCvar, const char* )
+	const char* name;
+	OOLUA::Lua_func_ref funcRef;
+};
+
+DkList<luaCmdFuncRef_t> g_luaCmdFuncRefs;
+
+int FindCmdFunc( const char* cmdName )
+{
+	for(int i = 0; i < g_luaCmdFuncRefs.numElem(); i++)
+	{
+		if(g_luaCmdFuncRefs[i].name == cmdName) // because I already adjusted same addresses
+			return i;
+	}
+
+	return -1;
+}
+
+DECLARE_CONCOMMAND_FN(luaConCommandHandler)
+{
+	int funcIdx = FindCmdFunc(cmd->GetName());
+	ASSERT(funcIdx >= 0);
+
+	luaCmdFuncRef_t& ref = g_luaCmdFuncRefs[funcIdx];
+	
+	OOLUA::Script& state = GetLuaState();
+	EqLua::LuaStackGuard g(state);
+
+	// make argument table
+	OOLUA::Table argTable = OOLUA::new_table(state);
+
+	for(int i = 0; i < CMD_ARGC; i++)
+		argTable.set(i+1, CMD_ARGV(i).c_str());
+
+	if(!ref.funcRef.push(state))
+		return;
+
+	if(!argTable.push_on_stack(state))
+		MsgError("luaConCommandHandler can't push table on stack\n");
+
+	int res = lua_pcall(state, 1, 0, 0);
+
+	if(res != 0)
+	{
+		OOLUA::INTERNAL::set_error_from_top_of_stack_and_pop_the_error( state );
+		MsgError(":%s (ConCommand) error:\n %s\n", cmd->GetName(), OOLUA::get_last_error(state).c_str());
+	}
+}
+
+ConCommand* Lua_Console_CreateCommand(char const* name, OOLUA::Lua_func_ref cmdFunc, char const* desc, int flags)
+{
+	// register con. command function reference
+	ASSERTMSG(cmdFunc.valid() == true, varargs("Not valid function for Lua ConCommand %s", name));
+
+	luaCmdFuncRef_t ref;
+	ref.name = xstrdup(name);
+	ref.funcRef = cmdFunc;
+
+	g_luaCmdFuncRefs.append(ref);
+
+	return new ConCommand(ref.name, CONCOMMAND_FN(luaConCommandHandler), xstrdup(desc),flags);
 }
 
 ConVar* Lua_Console_CreateCvar(char const* name,char const* value,char const* desc, int flags)
@@ -221,17 +288,36 @@ ConVar* Lua_Console_CreateCvar(char const* name,char const* value,char const* de
 	return new ConVar(xstrdup(name),xstrdup(value),xstrdup(desc),flags);
 }
 
-void Lua_Console_RemoveCvar(ConVar* cvar)
+void Lua_Console_RemoveCommandBase(ConCommandBase* cmdbase)
 {
-	g_sysConsole->UnregisterCommand(cvar);
-	cvar->LuaCleanup();
+	if(cmdbase->IsConCommand())
+	{
+		int funcIdx = FindCmdFunc(cmdbase->GetName());
+		ASSERT(funcIdx >= 0);
 
-	delete cvar;
+		g_luaCmdFuncRefs.fastRemoveIndex(funcIdx);
+	}
+
+	g_sysConsole->UnregisterCommand(cmdbase);
+	cmdbase->LuaCleanup();
+
+	delete cmdbase;
+}
+
+int LLua_Console_FindCvar(lua_State* vm)
+{
+	OOLUA_C_FUNCTION(OOLUA::maybe_null<ConVar*>, Lua_Console_FindCvar, const char* )
+}
+
+int LLua_Console_FindCommand(lua_State* vm)
+{
+	OOLUA_C_FUNCTION(OOLUA::maybe_null<ConCommand*>, Lua_Console_FindCommand, const char* )
 }
 
 OOLUA_CFUNC(Lua_Console_ExecuteString, LLua_Console_ExecuteString)
+OOLUA_CFUNC(Lua_Console_CreateCommand, LLua_Console_CreateCommand)
 OOLUA_CFUNC(Lua_Console_CreateCvar, LLua_Console_CreateCvar)
-OOLUA_CFUNC(Lua_Console_RemoveCvar, LLua_Console_RemoveCvar)
+OOLUA_CFUNC(Lua_Console_RemoveCommandBase, LLua_Console_RemoveCommandBase)
 
 
 //---------------------------------------------------------------------------------------
@@ -347,11 +433,19 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 
 	OOLUA::Table consoleTab = OOLUA::new_table(state);
 	consoleTab.set("FindCvar", LLua_Console_FindCvar);
+	consoleTab.set("FindCommand", LLua_Console_FindCommand);
 	consoleTab.set("ExecuteString", LLua_Console_ExecuteString);
+
+	consoleTab.set("CreateCommand", LLua_Console_CreateCommand);
 	consoleTab.set("CreateCvar", LLua_Console_CreateCvar);
-	consoleTab.set("RemoveCvar", LLua_Console_RemoveCvar);
+	consoleTab.set("RemoveCommandbase", LLua_Console_RemoveCommandBase);
 
 	OOLUA::set_global(state, "console", consoleTab);
 
 	return true;
+}
+
+void LuaBinding_ShutdownEngineBindings()
+{
+	g_luaCmdFuncRefs.clear();
 }

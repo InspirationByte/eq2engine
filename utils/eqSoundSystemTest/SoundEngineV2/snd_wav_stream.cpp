@@ -23,9 +23,9 @@ bool CSoundSource_WaveStream::Load(const char *szFilename)
 	return m_numSamples > 0;
 }
 
-void CSoundSource_WaveStream::Unload ()
+void CSoundSource_WaveStream::Unload()
 {
-	m_reader->ChunkClose( );
+	m_reader->ChunkClose();
 	delete m_reader;
 }
 

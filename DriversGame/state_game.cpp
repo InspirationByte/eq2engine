@@ -69,7 +69,7 @@ struct freeCameraProps_t
 } g_freeCamProps;
 
 
-void Game_ShutdownSession();
+void Game_ShutdownSession(bool restart = false);
 void Game_InitializeSession();
 
 void Game_QuickRestart(bool demo)
@@ -185,13 +185,18 @@ DECLARE_CMD(start, "loads a level or starts mission", 0)
 		return;
 	}
 
+	// unload game
+	if(GetCurrentStateType() == GAME_STATE_GAME)
+	{
+		g_State_Game->UnloadGame();
+	}
+
 	// always set level name
 	g_pGameWorld->SetLevelName( CMD_ARGV(0).c_str() );
 
 	if( !LoadMissionScript(CMD_ARGV(0).c_str()) )
 	{
 		// fail-safe mode
-
 	}
 
 	SetCurrentState( g_states[GAME_STATE_GAME], true);
@@ -265,15 +270,20 @@ void Game_InitializeSession()
 	g_nClientButtons = 0;
 }
 
-void Game_ShutdownSession()
+void Game_ShutdownSession(bool restart)
 {
-	Msg("-- ShutdownSession --\n");
+	Msg("-- ShutdownSession%s --\n", restart ? "Restart" : "");
 	g_parallelJobs->Wait();
 
 	effectrenderer->RemoveAllEffects();
 
 	if(g_pGameSession)
+	{
+		if(!restart)
+			g_pGameSession->FinalizeMissionManager();
+
 		g_pGameSession->Shutdown();
+	}
 
 	g_pGameSession = NULL;
 }
@@ -592,6 +602,7 @@ CState_Game::~CState_Game()
 
 void CState_Game::UnloadGame()
 {
+	m_isGameRunning = false;
 	g_pGameHUD->Cleanup();
 
 	// renderer must be reset
@@ -657,7 +668,7 @@ void CState_Game::QuickRestart(bool replay)
 
 	g_pGameWorld->Cleanup(false);
 
-	Game_ShutdownSession();
+	Game_ShutdownSession(true);
 
 	g_pGameWorld->LoadLevel();
 
@@ -781,11 +792,6 @@ void CState_Game::OnLeave( CBaseStateHandler* to )
 		return;
 
 	UnloadGame();
-
-	if(	m_isGameRunning )
-	{
-		m_isGameRunning = false;
-	}
 }
 
 int CState_Game::GetPauseMode() const

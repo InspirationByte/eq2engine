@@ -40,6 +40,8 @@ public:
 	virtual void				Init();
 	virtual void				Shutdown();
 
+	void						FinalizeMissionManager();
+
 	virtual void				Update( float fDt );
 
 	virtual void				UpdateLocalControls( int nControls );
@@ -101,6 +103,7 @@ protected:
 	OOLUA::Table				m_missionManagerTable;		// missionmanager
 	EqLua::LuaTableFuncRef		m_lua_misman_InitMission;	// lua CMissionManager:InitMission
 	EqLua::LuaTableFuncRef		m_lua_misman_Update;		// lua CMissionManager:Update
+	EqLua::LuaTableFuncRef		m_lua_misman_Finalize;		// lua CMissionManager:Finalize
 };
 
 #ifndef NO_LUA

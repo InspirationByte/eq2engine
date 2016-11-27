@@ -98,8 +98,6 @@ public:
 
 private:
 	bool			ChunkSet();
-
-	int				m_start;
 	int				m_pos;
 
 	RIFFchunk_t		m_curChunk;
