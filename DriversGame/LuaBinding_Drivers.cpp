@@ -49,6 +49,7 @@ public:
 
 OOLUA_PROXY(CLCollisionData)
 	OOLUA_TAGS(No_public_constructors)
+
 	OOLUA_MFUNC_CONST(GetPosition)
 	OOLUA_MFUNC_CONST(GetNormal)
 	OOLUA_MFUNC_CONST(GetLineFract)

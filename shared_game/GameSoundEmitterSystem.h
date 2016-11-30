@@ -197,10 +197,11 @@ public:
 	virtual ~ISoundController() {}
 
 	virtual bool			IsStopped() const = 0;
+	virtual void			StartSound( const char* newSoundName ) = 0; // starts sound
 
-	virtual void			StartSound( const char* newSoundName = NULL ) = 0; // starts sound
-	virtual void			PauseSound() = 0; // pauses sound
-	virtual void			StopSound(bool force = false) = 0; // stops sound and detach channel
+	virtual void			Play() = 0;
+	virtual void			Pause() = 0; // pauses sound
+	virtual void			Stop(bool force = false) = 0; // stops sound and detach channel
 	virtual void			StopLoop() = 0; // stops sound loop
 
 	virtual EmitSound_t&	GetEmitParams() = 0;
@@ -252,11 +253,11 @@ public:
 
 	bool			IsStopped() const;
 
-	void			StartSound(const char* newSoundName = NULL); // starts sound
+	void			StartSound(const char* newSoundName); // starts sound
 
-	void			PauseSound(); // pauses sound
-
-	void			StopSound(bool force = false); // stops sound
+	void			Play(); // starts sound
+	void			Pause(); // pauses sound
+	void			Stop(bool force = false); // stops sound
 
 	void			StopLoop(); // stops sound loop
 

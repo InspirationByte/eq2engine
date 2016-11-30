@@ -33,7 +33,8 @@
 OOLUA_PROXY( ConCommandBase )
 
 	OOLUA_TAGS(
-		No_default_constructor
+		No_default_constructor,
+		Abstract
 	)
 
 	// Names, descs, flags
@@ -53,7 +54,8 @@ OOLUA_PROXY_END
 OOLUA_PROXY( ConCommand, ConCommandBase )
 
 	OOLUA_TAGS(
-		No_default_constructor
+		No_default_constructor,
+		Abstract
 	)
 
 OOLUA_PROXY_END
@@ -64,7 +66,8 @@ OOLUA_PROXY_END
 OOLUA_PROXY( ConVar, ConCommandBase )
 
 	OOLUA_TAGS(
-		No_default_constructor
+		No_default_constructor,
+		Abstract
 	)
 
 	OOLUA_MFUNC(RevertToDefaultValue)
@@ -159,9 +162,11 @@ OOLUA_PROXY( ISoundController )
 
 	OOLUA_MFUNC_CONST( IsStopped )
 
-	OOLUA_MEM_FUNC_RENAME( Start, void, StartSound, const char* )
-	OOLUA_MEM_FUNC_RENAME( Pause, void, PauseSound )
-	OOLUA_MEM_FUNC_RENAME( Stop, void, StopSound, bool )
+	OOLUA_MFUNC( StartSound )
+
+	OOLUA_MFUNC( Play )
+	OOLUA_MFUNC( Pause )
+	OOLUA_MFUNC( Stop )
 
 	OOLUA_MFUNC( SetPitch )
 	OOLUA_MFUNC( SetVolume )
@@ -225,6 +230,8 @@ OOLUA_PROXY_END
 //
 /*
 OOLUA_PROXY(IEqUIControl)
+	OOLUA_TAGS( Abstract )
+
 	OOLUA_MFUNC_CONST( GetName )
 	OOLUA_MFUNC( SetName )
 
@@ -246,6 +253,8 @@ OOLUA_PROXY(IEqUIControl)
 OOLUA_PROXY_END
 
 OOLUA_PROXY(CEqUI_Panel, IEqUIControl)
+	OOLUA_TAGS( Abstract )
+
 	OOLUA_MFUNC( AddChild )
 	OOLUA_MFUNC( RemoveChild )
 	OOLUA_MFUNC( FindChild )

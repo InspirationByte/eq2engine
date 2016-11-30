@@ -69,7 +69,7 @@ OOLUA_EXPORT_FUNCTIONS_CONST(IDebugOverlay)
 
 //----------
 
-OOLUA_EXPORT_FUNCTIONS(ISoundController, Start, Pause, Stop, SetPitch, SetVolume, SetOrigin, SetVelocity)
+OOLUA_EXPORT_FUNCTIONS(ISoundController, StartSound, Play, Pause, Stop, SetPitch, SetVolume, SetOrigin, SetVelocity)
 OOLUA_EXPORT_FUNCTIONS_CONST(ISoundController, IsStopped)
 
 OOLUA_EXPORT_FUNCTIONS(EmitParams)

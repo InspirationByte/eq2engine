@@ -174,8 +174,8 @@ void CAIPursuerCar::TrySayTaunt()
 
 	if (g_pAIManager->IsCopCanSayTaunt())
 	{
-		m_taunts->StopSound();
-		m_taunts->StartSound();
+		m_taunts->Stop();
+		m_taunts->Play();
 
 		g_pAIManager->GotCopTaunt();
 	}
@@ -308,7 +308,7 @@ void CAIPursuerCar::EndPursuit(bool death)
 	}
 
 	if(m_taunts)
-		m_taunts->StopSound();
+		m_taunts->Stop();
 
 	m_targInfo.target = NULL;
 

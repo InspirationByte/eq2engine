@@ -106,7 +106,12 @@ void CSoundController::StartSound(const char* newSoundName)
 	m_emitData->pEmitter->Play();
 }
 
-void CSoundController::PauseSound()
+void CSoundController::Play()
+{
+	StartSound(NULL);
+}
+
+void CSoundController::Pause()
 {
 	if(!m_emitData)
 		return;
@@ -119,7 +124,7 @@ void CSoundController::PauseSound()
 	m_emitData->pEmitter->Pause();
 }
 
-void CSoundController::StopSound(bool force)
+void CSoundController::Stop(bool force)
 {
 	if(!m_emitData)
 	{
@@ -306,7 +311,7 @@ void CSoundEmitterSystem::Shutdown()
 
 	for(int i = 0; i < m_pSoundControllerList.numElem(); i++)
 	{
-		m_pSoundControllerList[i]->StopSound(true);
+		m_pSoundControllerList[i]->Stop(true);
 
 		delete m_pSoundControllerList[i];
 	}
@@ -380,7 +385,7 @@ void CSoundEmitterSystem::RemoveSoundController(ISoundController* cont)
 	if(!cont)
 		return;
 
-	cont->StopSound();
+	cont->Stop();
 
 	delete cont;
 
@@ -503,7 +508,7 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 
 					// if index is valid, shut up this sound
 					if(substEmitter->pController)
-						substEmitter->pController->StopSound();
+						substEmitter->pController->Stop();
 					else
 						substEmitter->pEmitter->Stop();
 
@@ -858,7 +863,7 @@ void CSoundEmitterSystem::Update(bool force)
 		if( remove )
 		{
 			if(emitter->pController)
-				emitter->pController->StopSound(true);
+				emitter->pController->Stop(true);
 
 			soundsystem->FreeEmitter( emitter->pEmitter );
 

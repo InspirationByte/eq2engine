@@ -299,6 +299,8 @@ OOLUA_PROXY(CViewParams)
 OOLUA_PROXY_END
 
 OOLUA_PROXY(CGameWorld)
+	OOLUA_TAGS( Abstract )
+
 	OOLUA_MFUNC(SetEnvironmentName)
 	OOLUA_MFUNC_CONST(GetEnvironmentName)
 

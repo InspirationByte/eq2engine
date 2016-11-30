@@ -774,7 +774,7 @@ void CGameWorld::UpdateWorld(float fDt)
 			m_rainSound->SetOrigin(m_view.GetOrigin());
 
 			if(m_rainSound->IsStopped())
-				m_rainSound->StartSound();
+				m_rainSound->Play();
 		}
 	}
 

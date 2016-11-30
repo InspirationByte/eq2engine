@@ -3210,14 +3210,14 @@ void CCar::UpdateSounds( float fDt )
 	if(fSkidVol > 0.08 && g_pGameWorld->m_envConfig.weatherType == WEATHER_TYPE_CLEAR)
 	{
 		if(m_pSkidSound->IsStopped())
-			m_pSkidSound->StartSound();
+			m_pSkidSound->Play();
 
 		if(!m_pSurfSound->IsStopped())
-			m_pSurfSound->StopSound();
+			m_pSurfSound->Stop();
 	}
 	else
 	{
-		m_pSkidSound->StopSound();
+		m_pSkidSound->Stop();
 
 		bool anyWheelOnGround = false;
 
@@ -3232,11 +3232,11 @@ void CCar::UpdateSounds( float fDt )
 
 		if(anyWheelOnGround && m_pSurfSound->IsStopped() && g_pGameWorld->m_envConfig.weatherType != WEATHER_TYPE_CLEAR && m_isLocalCar)
 		{
-			m_pSurfSound->StartSound();
+			m_pSurfSound->Play();
 		}
 		else if(!anyWheelOnGround && !m_pSurfSound->IsStopped())
 		{
-			m_pSurfSound->StopSound();
+			m_pSurfSound->Stop();
 		}
 
 		float fSpeedMod = clamp(GetSpeed()/90.0f + fTractionLevel*0.25f, 0.0f, 1.0f);
@@ -3273,22 +3273,22 @@ void CCar::UpdateSounds( float fDt )
 	{
 		if((m_controlButtons & IN_HORN) && !(m_oldControlButtons & IN_HORN) && m_pHornSound->IsStopped())
 		{
-			m_pHornSound->StartSound();
+			m_pHornSound->Play();
 		}
 		else if(!(m_controlButtons & IN_HORN) && (m_oldControlButtons & IN_HORN))
 		{
-			m_pHornSound->StopSound();
+			m_pHornSound->Stop();
 		}
 	}
 
 	if(!m_enabled)
 	{
-		m_pEngineSound->StopSound();
-		m_pEngineSoundLow->StopSound();
-		m_pIdleSound->StopSound();
+		m_pEngineSound->Stop();
+		m_pEngineSoundLow->Stop();
+		m_pIdleSound->Stop();
 
 		if(m_pSirenSound)
-			m_pSirenSound->StopSound();
+			m_pSirenSound->Stop();
 
 		return;
 	}
@@ -3299,10 +3299,10 @@ void CCar::UpdateSounds( float fDt )
 	m_pIdleSound->SetPitch(1.0f + m_fEngineRPM / 4000.0f);
 
 	if(m_pEngineSound->IsStopped())
-		m_pEngineSound->StartSound();
+		m_pEngineSound->Play();
 
 	if(m_isLocalCar && m_pEngineSoundLow->IsStopped())
-		m_pEngineSoundLow->StartSound();
+		m_pEngineSoundLow->Play();
 
 	//float fAccelOrBrake = ((m_controlButtons & IN_ACCELERATE) || (m_controlButtons & IN_BRAKE)) && !(m_controlButtons & IN_HANDBRAKE);
 
@@ -3332,11 +3332,11 @@ void CCar::UpdateSounds( float fDt )
 
 	if(m_engineIdleFactor <= 0.05f && !m_pIdleSound->IsStopped())
 	{
-		m_pIdleSound->StopSound();
+		m_pIdleSound->Stop();
 	}
 	else if(m_engineIdleFactor > 0.05f && m_pIdleSound->IsStopped())
 	{
-		m_pIdleSound->StartSound();
+		m_pIdleSound->Play();
 	}
 
 	m_pIdleSound->SetVolume(m_engineIdleFactor);
@@ -3347,11 +3347,11 @@ void CCar::UpdateSounds( float fDt )
 		{
 			if(m_sirenEnabled)
 			{
-				m_pHornSound->StopSound();
-				m_pSirenSound->StartSound();
+				m_pHornSound->Stop();
+				m_pSirenSound->Play();
 			}
 			else
-				m_pSirenSound->StopSound();
+				m_pSirenSound->Stop();
 
 			m_oldSirenState = m_sirenEnabled;
 		}
@@ -3367,9 +3367,9 @@ void CCar::UpdateSounds( float fDt )
 
 			if( m_pSirenSound->GetEmitParams().sampleId != sampleId )
 			{
-				m_pSirenSound->StopSound();
+				m_pSirenSound->Stop();
 				m_pSirenSound->GetEmitParams().sampleId = sampleId;
-				m_pSirenSound->StartSound();
+				m_pSirenSound->Play();
 			}
 		}
 	}
