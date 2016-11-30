@@ -8,13 +8,10 @@
 #ifndef FONTCACHE_H
 #define FONTCACHE_H
 
-#include "IFont.h"
-
-//-------------------------------------------------------------------------------------
+#include "IFontCache.h"
 
 namespace eqFontsInternal
 {
-
 struct eqFontStyleInfo_t
 {
 	eqFontStyleInfo_t() : 
@@ -43,16 +40,16 @@ struct eqFontFamily_t
 };
 
 //-------------------------------------------------------------------------------------
-// equilibrium font cache implementation
-//-------------------------------------------------------------------------------------
 
-class CEqFontCache
+class CEqFontCache : public IEqFontCache
 {
 	friend class CFont;
-
 public:
 	CEqFontCache();
-	virtual					~CEqFontCache() {}
+	~CEqFontCache();
+
+	bool					IsInitialized() const {return true;}
+	const char*				GetInterfaceName() const { return ""; }
 
 	bool					Init();
 	void					Shutdown();
@@ -74,7 +71,5 @@ protected:
 
 	IMaterial*				m_sdfRegular;
 };
-
-extern CEqFontCache* g_fontCache;
 
 #endif // FONTCACHE_H

@@ -21,12 +21,6 @@
     <Filter Include="Source Files\EngineLib\Math">
       <UniqueIdentifier>{1abc7d55-23ba-4a31-8884-6540ae8de38a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\EngineLib\MaterialSystem">
-      <UniqueIdentifier>{f23f576c-3ed9-4eaf-8a0f-d66163b1ba3e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\EngineLib\MaterialSystem\Shaders">
-      <UniqueIdentifier>{a5ba741c-da4d-456d-a0bc-3a7be8c9e88b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\EngineLib\Scene">
       <UniqueIdentifier>{eb8b9e15-3c4b-400e-950c-c19604b25627}</UniqueIdentifier>
     </Filter>
@@ -184,9 +178,6 @@
     </ClInclude>
     <ClInclude Include="..\public\Math\math_util.h">
       <Filter>Source Files\EngineLib\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\BaseShader.h">
-      <Filter>Source Files\EngineLib\MaterialSystem\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BaseRenderableObject.h">
       <Filter>Source Files\EngineLib\Scene</Filter>
@@ -491,6 +482,24 @@
     <ClInclude Include="EntityQueue.h">
       <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
     </ClInclude>
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Button.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EGUI\equi_defs.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Label.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Manager.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Panel.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EGUI\IEqUI_Control.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\Libs\DkCore.lib">
@@ -539,9 +548,6 @@
     </ClCompile>
     <ClCompile Include="..\public\Math\math_util.cpp">
       <Filter>Source Files\EngineLib\Math</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\BaseShader.cpp">
-      <Filter>Source Files\EngineLib\MaterialSystem\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="..\public\BaseRenderableObject.cpp">
       <Filter>Source Files\EngineLib\Scene</Filter>
@@ -891,11 +897,17 @@
     <ClCompile Include="..\shared_engine\EffectRender.cpp">
       <Filter>Source Files\GameLib\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\materialsystem\MaterialProxy.cpp">
-      <Filter>Source Files\EngineLib\MaterialSystem</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp">
       <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EGUI\EqUI_Button.cpp">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EGUI\EqUI_Label.cpp">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EGUI\IEqUI_Control.cpp">
+      <Filter>Source Files\GameLib\EqUI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

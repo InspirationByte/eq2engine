@@ -717,12 +717,9 @@ bool CEngineHost::InitSubSystems()
 	}
 
 	materials_config.lighting_model = lightingModel;
-	materials_config.stubMode = false;
-	materials_config.editormode = false;
 	materials_config.lowShaderQuality = r_shaderquality.GetBool();
 	materials_config.threadedloader = sys_threadedmatsystem.GetBool();
 
-	DefaultShaderAPIParameters(&materials_config.shaderapi_params);
 	materials_config.shaderapi_params.bIsWindowed = isWindowed;
 
 	// set window
@@ -855,17 +852,20 @@ bool CEngineHost::Init()
 	initStatus = LoadGameLibrary();
 	if(!initStatus)
 		return initStatus;
-		
+
+	g_cmdLine->ExecuteCommandLine(true,true);
+
 	// execute configuration files and command line after all libraries are loaded.
 	g_sysConsole->ClearCommandBuffer();
 	g_sysConsole->ParseFileToCommandBuffer("cfg/config_default.cfg");
 	g_sysConsole->ExecuteCommandBuffer();
 
-	g_cmdLine->ExecuteCommandLine(true,true);
-
 	// initialize subsystems
 	if(!InitSubSystems())
 		return false;
+
+	// exec again
+	g_sysConsole->ExecuteCommandBuffer();
 	
 #ifdef PLAT_SDL
 

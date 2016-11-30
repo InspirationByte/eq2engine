@@ -70,6 +70,9 @@
     <Filter Include="Source Files\System">
       <UniqueIdentifier>{34488533-2144-455e-9124-05a5b85a9f7e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\UI">
+      <UniqueIdentifier>{17ddfd4f-5266-4174-ae20-ddb2b043b6cd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\public\Math\math_util.cpp">
@@ -177,12 +180,6 @@
     <ClCompile Include="..\shared_engine\EngineSpew.cpp">
       <Filter>Source Files\System</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\Font.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_engine\FontCache.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -191,6 +188,12 @@
     </ClCompile>
     <ClCompile Include="..\shared_engine\eqParallelJobs.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Font.cpp">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\FontCache.cpp">
+      <Filter>Source Files\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -392,17 +395,11 @@
     <ClInclude Include="Audio\IEqSoundSystem.h">
       <Filter>Source Files\Audio\NEW</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Font.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared_engine\physics\BulletConvert.h">
       <Filter>Source Files\Physics\Bullet</Filter>
     </ClInclude>
     <ClInclude Include="..\shared_engine\physics\BulletShapeCache.h">
       <Filter>Source Files\Physics\Bullet</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared_engine\FontCache.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\shared_engine\FontLayoutBuilders.h">
       <Filter>Source Files</Filter>
@@ -412,6 +409,12 @@
     </ClInclude>
     <ClInclude Include="..\shared_engine\eqParallelJobs.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Font.h">
+      <Filter>Source Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\FontCache.h">
+      <Filter>Source Files\UI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

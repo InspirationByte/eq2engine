@@ -24,6 +24,7 @@
 #include "IEngineWorld.h"
 #include "materialsystem/IMaterialSystem.h"
 #include "IDebugOverlay.h"
+#include "IFontCache.h"
 
 // sound system
 #include "ISoundSystem.h"

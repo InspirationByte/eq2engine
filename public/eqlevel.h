@@ -233,9 +233,9 @@ typedef eqlevelvertexlm_s eqlevelvertexlm_t;
 // converts normalized vector3D to ubyte
 inline void NormalizedVectorToUbyteVector(const Vector3D& n, ubyte* dst)
 {
-	dst[0] = (n.x + 1.0f) * 255;
-	dst[1] = (n.y + 1.0f) * 255;
-	dst[2] = (n.z + 1.0f) * 255;
+	dst[0] = (n.x + 1.0f) * 255.0f;
+	dst[1] = (n.y + 1.0f) * 255.0f;
+	dst[2] = (n.z + 1.0f) * 255.0f;
 }
 
 // ready for rendering - level vertex structure (lightmap + color)

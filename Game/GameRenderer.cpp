@@ -7,6 +7,7 @@
 
 #include "GameRenderer.h"
 #include "BaseEngineHeader.h"
+#include "materialsystem/MeshBuilder.h"
 
 #include "ParticleRenderer.h"
 
@@ -984,21 +985,17 @@ reshot:
 
 			Vertex2D_t* quad_sub = viewrenderer->GetViewSpaceMesh( &vCount );
 
-			IMeshBuilder* pMeshBuilder = g_pShaderAPI->CreateMeshBuilder();
+			CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
-			pMeshBuilder->Begin(PRIM_TRIANGLES);
+			meshBuilder.Begin(PRIM_TRIANGLES);
 				for(int i = 0; i < vCount; i++)
 				{
-					pMeshBuilder->Position3fv(Vector3D(quad_sub[i].m_vPosition * (size-1.0f),0));
-					pMeshBuilder->TexCoord2fv(quad_sub[i].m_vTexCoord);
-					pMeshBuilder->Color4f(1.0,1.0,1.0,1.0);
-					pMeshBuilder->AdvanceVertex();
+					meshBuilder.Position3fv(Vector3D(quad_sub[i].m_vPosition * (size-1.0f),0));
+					meshBuilder.TexCoord2fv(quad_sub[i].m_vTexCoord);
+					meshBuilder.Color4f(1.0,1.0,1.0,1.0);
+					meshBuilder.AdvanceVertex();
 				}
-			pMeshBuilder->End();
-
-			g_pShaderAPI->DestroyMeshBuilder(pMeshBuilder);
-
-			//materials->DrawPrimitives2DFFP(PRIM_TRIANGLES, quad_sub, vCount, g_pTransparentLighting, color4_white, &blend);
+			meshBuilder.End();
 		}
 	}
 	else
@@ -1349,18 +1346,16 @@ void GR_Draw2DMaterial(IMaterial* pMaterial)
 
 	Vector2D screen_size(g_pEngineHost->GetWindowSize().x, g_pEngineHost->GetWindowSize().y);
 
-	IMeshBuilder* pMeshBuilder = g_pShaderAPI->CreateMeshBuilder();
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
-	pMeshBuilder->Begin(PRIM_TRIANGLES);
+	meshBuilder.Begin(PRIM_TRIANGLES);
 		for(int i = 0; i < vCount; i++)
 		{
-			pMeshBuilder->Position3fv(Vector3D(quad_sub[i].m_vPosition * (screen_size-1.0f),0));
-			pMeshBuilder->TexCoord2fv(quad_sub[i].m_vTexCoord);
-			pMeshBuilder->AdvanceVertex();
+			meshBuilder.Position3fv(Vector3D(quad_sub[i].m_vPosition * (screen_size-1.0f),0));
+			meshBuilder.TexCoord2fv(quad_sub[i].m_vTexCoord);
+			meshBuilder.AdvanceVertex();
 		}
-	pMeshBuilder->End();
-
-	g_pShaderAPI->DestroyMeshBuilder(pMeshBuilder);
+	meshBuilder.End();
 }
 
 void GR_DrawFilters()

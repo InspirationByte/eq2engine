@@ -426,7 +426,7 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 
 	g_pShaderAPI->SetTexture(m_fontTexture, NULL, 0);
 
-	IMaterial* fontMaterial = m_isSDF ? g_fontCache->GetSDFMaterial() : materials->GetDefaultMaterial();
+	IMaterial* fontMaterial = m_isSDF ? ((CEqFontCache*)g_fontCache)->GetSDFMaterial() : materials->GetDefaultMaterial();
 	
 	// draw shadow
 	if(params.styleFlag & TEXT_STYLE_SHADOW)

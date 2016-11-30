@@ -9,6 +9,7 @@
 
 #include "ViewRenderer.h"
 #include "BaseRenderableObject.h"
+#include "materialsystem/MeshBuilder.h"
 
 #ifndef EDITOR
 #include "EqGameLevel.h"
@@ -57,7 +58,7 @@ void lighting_callback(ConVar* pVar,char const* pszOldValue)
 			newModel = MATERIAL_LIGHT_DEFERRED;
 	}
 
-	bool bIsChanged = materials->GetLightingModel() != newModel;
+	bool bIsChanged = materials->GetConfiguration().lighting_model != newModel;
 
 	if(bIsChanged)
 	{
@@ -220,7 +221,7 @@ void CViewRenderer::InitializeResources()
 	m_OcclusionRasterizer.SetAdditiveColor(false);
 	m_OcclusionRasterizer.Clear(1.0f); // clear to white
 
-	if(materials->GetLightingModel() == MATERIAL_LIGHT_DEFERRED && !m_bDSInit)
+	if(materials->GetConfiguration().lighting_model == MATERIAL_LIGHT_DEFERRED && !m_bDSInit)
 	{
 		int nDSLightModel = g_pModelCache->PrecacheModel("models/sphere_1x1.egf");
 
@@ -377,7 +378,7 @@ void CViewRenderer::InitializeResources()
 	}
 
 	// init shadowmapping textures and materials
-	if(materials->GetConfiguration().enableShadows && (materials->GetLightingModel() != MATERIAL_LIGHT_UNLIT) && !m_bShadowsInit)
+	if(materials->GetConfiguration().enableShadows && (materials->GetConfiguration().lighting_model != MATERIAL_LIGHT_UNLIT) && !m_bShadowsInit)
 	{
 		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][0]	= materials->FindMaterial("engine/pointdepth");
 		m_pShadowmapDepthwrite[DLT_SPOT][0]				= materials->FindMaterial("engine/spotdepth");
@@ -1820,7 +1821,7 @@ dlight_t* CViewRenderer::AllocLight()
 // adds light to current frame
 void CViewRenderer::AddLight(dlight_t* pLight)
 {
-	if(materials->GetLightingModel() == MATERIAL_LIGHT_UNLIT)
+	if(materials->GetConfiguration().lighting_model == MATERIAL_LIGHT_UNLIT)
 	{
 		PPFree( pLight );
 		return;
@@ -2012,21 +2013,19 @@ void CViewRenderer::DrawDeferredAmbient()
 	int nVerts = 0;
 	Vertex2D_t* amb_quad_sub = GetViewSpaceMesh(&nVerts);
 
-	IMeshBuilder* pMeshBuilder = g_pShaderAPI->CreateMeshBuilder();
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
 	float wTexel = 1.0f;//1.0f / float(m_nViewportW);
 	float hTexel = 1.0f;//1.0f / float(m_nViewportH);
 
-	pMeshBuilder->Begin(PRIM_TRIANGLES);
+	meshBuilder.Begin(PRIM_TRIANGLES);
 		for(int i = 0; i < nVerts; i++)
 		{
-			pMeshBuilder->Position3fv(Vector3D((amb_quad_sub[i].m_vPosition * Vector2D((float)m_nViewportW+wTexel,(float)m_nViewportH+hTexel) - Vector2D(wTexel, hTexel)),0));
-			pMeshBuilder->TexCoord2fv( amb_quad_sub[i].m_vTexCoord );
-			pMeshBuilder->AdvanceVertex();
+			meshBuilder.Position3fv(Vector3D((amb_quad_sub[i].m_vPosition * Vector2D((float)m_nViewportW+wTexel,(float)m_nViewportH+hTexel) - Vector2D(wTexel, hTexel)),0));
+			meshBuilder.TexCoord2fv( amb_quad_sub[i].m_vTexCoord );
+			meshBuilder.AdvanceVertex();
 		}
-	pMeshBuilder->End();
-
-	g_pShaderAPI->DestroyMeshBuilder(pMeshBuilder);
+	meshBuilder.End();
 }
 
 ConVar r_ds_debug("r_ds_debug", "-1", "Debug deferred shading target", CV_CHEAT);
@@ -2238,26 +2237,20 @@ void CViewRenderer::DrawDeferredCurrentLighting(bool bShadowLight)
 		int nVerts = 0;
 		Vertex2D_t* amb_quad_sub = GetViewSpaceMesh(&nVerts);
 
-		IMeshBuilder* pMeshBuilder = g_pShaderAPI->CreateMeshBuilder();
+		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
 		float wTexel = 1.0f;//1.0f / float(m_nViewportW);
 		float hTexel = 1.0f;//1.0f / float(m_nViewportH);
 
-		pMeshBuilder->Begin(PRIM_TRIANGLES);
+		meshBuilder.Begin(PRIM_TRIANGLES);
 			for(int i = 0; i < nVerts; i++)
 			{
-				pMeshBuilder->Position3fv(Vector3D((amb_quad_sub[i].m_vPosition * Vector2D((float)m_nViewportW+wTexel,(float)m_nViewportH+hTexel) - Vector2D(wTexel, hTexel)),0));
-				pMeshBuilder->TexCoord2fv( amb_quad_sub[i].m_vTexCoord );
-				pMeshBuilder->AdvanceVertex();
+				meshBuilder.Position3fv(Vector3D((amb_quad_sub[i].m_vPosition * Vector2D((float)m_nViewportW+wTexel,(float)m_nViewportH+hTexel) - Vector2D(wTexel, hTexel)),0));
+				meshBuilder.TexCoord2fv( amb_quad_sub[i].m_vTexCoord );
+				meshBuilder.AdvanceVertex();
 			}
-		pMeshBuilder->End();
+		meshBuilder.End();
 
-		g_pShaderAPI->DestroyMeshBuilder(pMeshBuilder);
-		/*
-		materials->Setup2D(m_nViewportW, m_nViewportH);
-		Vertex2D_t tmprect[] = { MAKETEXQUAD(0, 0,(float) 512, (float)512, 0) };
-		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect,elementsOf(tmprect), m_pShadowMaps[nLightType][0]);
-		*/
 		return;
 	}
 

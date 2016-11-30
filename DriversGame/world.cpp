@@ -693,23 +693,19 @@ void GWJob_UpdateWorldAndEffects(void* data, int i)
 {
 	float fDt = *(float*)data;
 	g_pRainEmitter->Update_Draw(fDt, g_pGameWorld->m_envConfig.rainDensity, 200.0f);
-
-	//if (fDt > 0)
-	//	g_pGameWorld->m_level.UpdateRegions();
 }
 
 void CGameWorld::UpdateTrafficLightState(float fDt)
 {
-	if( fDt > 0 )
+	if( fDt <= 0.0f )
+		return;
+
+	m_globalTrafficLightTime -= fDt;
+
+	if(m_globalTrafficLightTime <= 0.0f)
 	{
-		m_globalTrafficLightTime -= fDt;
-
-		if(m_globalTrafficLightTime <= 0.0f)
-		{
-			m_globalTrafficLightTime = TRAFFICLIGHT_TIME;
-
-			m_globalTrafficLightDirection = !m_globalTrafficLightDirection;
-		}
+		m_globalTrafficLightTime = TRAFFICLIGHT_TIME;
+		m_globalTrafficLightDirection = !m_globalTrafficLightDirection;
 	}
 }
 
@@ -835,12 +831,6 @@ void CGameWorld::UpdateWorld(float fDt)
 				m_level.m_mutex.Unlock();
 			}
 		}
-
-		//CLevelRegion* pReg = m_level.GetRegionAtPosition(g_pGameWorld->m_CameraParams.GetOrigin());
-
-		//if( !pReg->m_isLoaded )
-		//	m_level.WaitForThread();
-
 	}
 
 	PROFILE_END();
@@ -890,8 +880,6 @@ bool CGameWorld::AddLight(const wlight_t& light)
 	const float fadeDistVal = 1.0f / LIGHT_FADE_DIST;
 
 	float fLightBrightness = clamp(fDistance*fadeDistVal, 0.0f, 1.0f);
-
-	// TODO: if not clipped by visibility
 
 	m_lights[m_numLights] = light;
 
@@ -1001,7 +989,7 @@ void DrawSkyBox(IMaterial* pSkyMaterial, int renderFlags)
 	meshBuilder.End();
 }
 
-const float wetnessLevels[WEATHER_COUNT] =
+const float g_visualWetnessTable[WEATHER_COUNT] =
 {
 	0.0f,
 	0.55f,
@@ -1038,7 +1026,7 @@ void CGameWorld::OnPreApplyMaterial( IMaterial* pMaterial )
 	Vector2D envParams;
 
 	// wetness
-	envParams.x = wetnessLevels[m_envConfig.weatherType];
+	envParams.x = g_visualWetnessTable[m_envConfig.weatherType];
 
 	// texture lights
 	envParams.y = (m_envConfig.lightsType & WLIGHTS_CITY) > 0 ? 1.0f : 0.0f;
@@ -1132,8 +1120,6 @@ void CGameWorld::UpdateOccludingFrustum()
 
 void CGameWorld::DrawLensFlare( const Vector2D& screenSize, const Vector2D& screenPos, float intensity )
 {
-	//materials->Setup2D(screenSize.x,screenSize.y);
-
 	Vector2D halfScreen(screenSize * 0.5f);
 
 	Vector2D lensDir = halfScreen-screenPos;
@@ -1142,8 +1128,6 @@ void CGameWorld::DrawLensFlare( const Vector2D& screenSize, const Vector2D& scre
 	float lensScale = lensDist*3.0f;
 
 	lensDir = normalize(lensDir);
-
-	//Vertex2D_t verts[LENSFLARE_TABLE_SIZE*6];
 
 	float invTableSize = 1.0f / float(LENSFLARE_TABLE_SIZE-2);
 	const int halfTable = (LENSFLARE_TABLE_SIZE-2)/2;
@@ -1311,8 +1295,6 @@ void CGameWorld::Draw( int nRenderFlags )
 	// below operations started asynchronously
 	UpdateLightTexture();
 	DrawFakeReflections();
-
-	//g_pShaderAPI->Flush();
 
 	ColorRGB ambColor = lerp(m_envConfig.ambientColor, m_envConfig.ambientColor*r_nightBrightness.GetFloat(), m_envConfig.brightnessModFactor);
 
@@ -1752,7 +1734,7 @@ CGameObject* CGameWorld::CreateGameObject( const char* typeName, kvkeybase_t* kv
 		return new CObject_Scripted(kvdata);
 	}
 
-	MsgError("CGameWorld::CreateGameObject error: Invalid object type '%s'\n", typeName);
+	MsgError("CGameWorld::CreateGameObject error: Invalid type '%s'\n", typeName);
 #endif // EDITOR
 	return NULL;
 }
@@ -1778,7 +1760,7 @@ CGameObject* CGameWorld::CreateObject( const char* objectDefName ) const
 		}
 	}
 
-	MsgError("CGameWorld::CreateObject error: Invalid object def '%s', check <levelname>_objects.txt\n", objectDefName);
+	MsgError("CGameWorld::CreateObject error: Invalid def '%s', check <levelname>_objects.txt\n", objectDefName);
 
 	return NULL;
 }

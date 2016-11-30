@@ -57,6 +57,7 @@ ISoundSystem*			soundsystem		= NULL;
 IPhysics*				physics			= NULL;
 IEngineSceneRenderer*	scenerenderer	= NULL;
 IDebugOverlay*			debugoverlay	= NULL;
+IEqFontCache*			g_fontCache		= NULL;
 
 // non-engine globals
 
@@ -76,6 +77,9 @@ void ImportEngineInterfaces()
 
 	if(!eqlevel)
 		eqlevel	= (IEqLevel*)GetCore()->GetInterface( IEQLEVEL_INTERFACE_VERSION );
+
+	if(!g_fontCache)
+		g_fontCache = (IEqFontCache*)GetCore()->GetInterface(FONTCACHE_INTERFACE_VERSION);
 }
 
 class CGameLibrary : public IGameLibrary
@@ -170,7 +174,7 @@ bool CGameLibrary::Init(	ISoundSystem*	pSoundSystem,
 
 	materials->AddDestroyLostCallbacks( ShutdownParticleBuffers, InitParticleBuffers );
 
-	g_pEqUIManager->Init();
+	equi::Manager->Init();
 
 
 	// init scripting system
@@ -380,8 +384,8 @@ void CGameLibrary::PostRender()
 	materials->Setup2D(g_pEngineHost->GetWindowSize().x, g_pEngineHost->GetWindowSize().y);
 
 	// Here draw all 2D stuff
-	g_pEqUIManager->SetViewFrame(IRectangle(IVector2D(0), g_pEngineHost->GetWindowSize()));
-	g_pEqUIManager->Render();
+	equi::Manager->SetViewFrame(IRectangle(IVector2D(0), g_pEngineHost->GetWindowSize()));
+	equi::Manager->Render();
 
 	if(r_showcamerainfo.GetBool() && g_pViewEntity)
 	{
@@ -613,7 +617,7 @@ bool CGameLibrary::Key_Event( int key, bool down )
 	//if( engine->GetGameState() != IEngineGame::GAME_RUNNING_MENU )
 	//	return true;
 
-	if(g_pEqUIManager->ProcessKeyboardEvents( key, down))
+	if(equi::Manager->ProcessKeyboardEvents( key, down))
 		return false;
 
 	return true;
@@ -626,7 +630,7 @@ bool CGameLibrary::Mouse_Event( float x, float y, int buttons, bool down )
 	//if( engine->GetGameState() != IEngineGame::GAME_RUNNING_MENU )
 	//	return true;
 
-	if(g_pEqUIManager->ProcessMouseEvents( x, y, buttons, down))
+	if(equi::Manager->ProcessMouseEvents( x, y, buttons, down))
 		return false;
 
 	return true;

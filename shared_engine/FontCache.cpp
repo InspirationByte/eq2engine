@@ -13,7 +13,7 @@
 using namespace eqFontsInternal;
 
 static CEqFontCache s_fontCache;
-CEqFontCache* g_fontCache = &s_fontCache;
+IEqFontCache* g_fontCache = &s_fontCache;
 
 #define FONT_DEFAULT_LIST_FILENAME "resources/fonts.res"
 
@@ -46,6 +46,12 @@ CEqFontCache::CEqFontCache() :
 	m_defaultFont(nullptr),
 	m_sdfRegular(nullptr)
 {
+	GetCore()->RegisterInterface(FONTCACHE_INTERFACE_VERSION, this);
+}
+
+CEqFontCache::~CEqFontCache()
+{
+	GetCore()->UnregisterInterface(FONTCACHE_INTERFACE_VERSION);
 }
 
 bool CEqFontCache::LoadFontDescriptionFile( const char* filename )

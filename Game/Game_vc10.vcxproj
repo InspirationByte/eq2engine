@@ -291,6 +291,12 @@
     <ClInclude Include="..\public\RenderList.h" />
     <ClInclude Include="..\public\Utils\Align.h" />
     <ClInclude Include="..\public\CharSet.h" />
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Button.h" />
+    <ClInclude Include="..\shared_engine\EGUI\equi_defs.h" />
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Label.h" />
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Manager.h" />
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Panel.h" />
+    <ClInclude Include="..\shared_engine\EGUI\IEqUI_Control.h" />
     <ClInclude Include="AI\AIBaseNPC.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClInclude>
@@ -549,12 +555,6 @@
     <ClInclude Include="..\public\ViewParams.h" />
     <ClInclude Include="..\public\Utils\GeomTools.h" />
     <ClInclude Include="..\public\Math\math_util.h" />
-    <ClInclude Include="..\public\BaseShader.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\CoreLib.lib" />
@@ -570,8 +570,10 @@
     <ClCompile Include="..\public\dsm_esm_loader.cpp" />
     <ClCompile Include="..\public\dsm_loader.cpp" />
     <ClCompile Include="..\public\dsm_obj_loader.cpp" />
+    <ClCompile Include="..\shared_engine\EGUI\EqUI_Button.cpp" />
+    <ClCompile Include="..\shared_engine\EGUI\EqUI_Label.cpp" />
+    <ClCompile Include="..\shared_engine\EGUI\IEqUI_Control.cpp" />
     <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp" />
-    <ClCompile Include="..\shared_engine\materialsystem\MaterialProxy.cpp" />
     <ClCompile Include="..\shared_game\GameSoundEmitterSystem.cpp" />
     <ClCompile Include="..\public\ragdoll.cpp" />
     <ClCompile Include="..\public\RenderList.cpp" />
@@ -819,12 +821,6 @@
     <ClCompile Include="..\public\ViewParams.cpp" />
     <ClCompile Include="..\public\Utils\GeomTools.cpp" />
     <ClCompile Include="..\public\Math\math_util.cpp" />
-    <ClCompile Include="..\public\BaseShader.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="weapon_wiremine.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
