@@ -13,6 +13,7 @@
 #include <malloc.h>
 #include "platform/Platform.h"
 #include "utils/strtools.h"
+#include "math/math_common.h"
 
 #ifdef PLAT_POSIX
 #include <string.h>
@@ -165,7 +166,7 @@ bool EqString::Resize(uint nSize, bool bCopy)
 
 	// use base buffer we requesting size less than base buffer
 	char* pszNewBuffer = m_baseBuffer;
-	
+
 	if(nSize > sizeof(m_baseBuffer))
 	{
 		pszNewBuffer = new char[ newSize ]; // make new
@@ -199,7 +200,7 @@ bool EqString::Resize(uint nSize, bool bCopy)
 
 	// update length
 	m_nLength = strlen( m_pszString );
-	
+
 
 	return true;
 }
@@ -555,7 +556,7 @@ EqString EqString::TrimSpaces(bool left, bool right) const
 	// trim whitespace from left
 	while(*begin && xisspace(*begin))begin++;
 
-	if(*begin == NULL)
+	if(*begin == '\0')
 		return EqString();
 
 	const char* end = begin + strlen(begin) - 1;

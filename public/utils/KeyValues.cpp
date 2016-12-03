@@ -62,7 +62,7 @@ char* KV_ReadProcessString( const char* pszStr )
 	{
 		if(*ptr == '\\')
 		{
-			if(*(ptr+1) == '"') 
+			if(*(ptr+1) == '"')
 			{
 				*ptrTemp++ = '"';
 				ptr++;
@@ -933,7 +933,7 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 				//pFirstLetter = pData+1;
 				quoteMode = QM_NONE;
 			}
-			else if((quoteMode == QM_STRING_QUOTED && (c == KV_STRING_BEGIN_END)) || 
+			else if((quoteMode == QM_STRING_QUOTED && (c == KV_STRING_BEGIN_END)) ||
 					(quoteMode == QM_STRING && ( c == KV_COMMENT_SYMBOL || c == KV_BREAK || IsKVBufferEOF() || IsKVWhitespace(c) || (valueArray && IsKVArraySeparator(c)))))
 			{
 				// complete the key and add
@@ -956,14 +956,14 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 					if(nValCounter == 1)
 					{
 						// set key name
-						strncpy_s(key, KV_MAX_NAME_LENGTH, pFirstLetter, nLen);
+						strncpy(key, pFirstLetter, min(KV_MAX_NAME_LENGTH, nLen));
 
 						if(c == KV_BREAK)
 						{
 							MsgError("'%s':%d error - unexpected break\n", pszFileName, nModeStartLine);
 							break;
 						}
-						
+
 					}
 					else if(nValCounter == 2)
 					{
@@ -1131,7 +1131,7 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 								break;
 							}
 						}
-							
+
 					}
 					else
 					{
@@ -1833,7 +1833,7 @@ void KV_WriteToStreamV3(IVirtualStream* outStream, kvkeybase_t* section, int nTa
 				outStream->Print("\n");
 				outStream->Write(tabs, 1, nTabs);
 			}
-			
+
 			outStream->Print("%c\n", KV_SECTION_BEGIN);
 
 			KV_WriteToStreamV3(outStream, pKey, nTabs + 1, pretty);

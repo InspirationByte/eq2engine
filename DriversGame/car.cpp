@@ -394,7 +394,7 @@ float DieselEngineTorqueByRPM( float rpm )
 	return ( DIESEL_MINIMAL_TORQUE_FACTOR - fTorque ) * PEAK_TORQUE_FACTOR;
 }
 
-static TORQUECURVEFUNC s_torqueFuncs[] = 
+static TORQUECURVEFUNC s_torqueFuncs[] =
 {
 	PetrolEngineTorqueByRPM,
 	DieselEngineTorqueByRPM,
@@ -963,7 +963,7 @@ const Vector3D CCar::GetForwardVector() const
 
 const Vector3D CCar::GetUpVector() const
 {
-	return rotateVector(vec3_up,GetOrientation()); 
+	return rotateVector(vec3_up,GetOrientation());
 }
 
 const Vector3D CCar::GetRightVector() const
@@ -1375,7 +1375,7 @@ void CCar::UpdateCarPhysics(float delta)
 	m_radsPerSec = (float)fabs(wheelsSpeed)*torqueConvert;
 	FReal torque = CalcTorqueCurve(m_radsPerSec, engineType) * m_conf->m_torqueMult;
 
-	float gbxDecelRate = max(m_fAcceleration, GEARBOX_DECEL_SHIFTDOWN_FACTOR);
+	float gbxDecelRate = max((float)m_fAcceleration, GEARBOX_DECEL_SHIFTDOWN_FACTOR);
 
  	if(torque < 0)
 		torque = 0.0f;
@@ -2132,7 +2132,7 @@ void CCar::OnPhysicsFrame( float fDt )
 			tab.set("impulse", fHitImpulse);
 
 			OOLUA::push(state, tab);
-	
+
 			if(!m_luaOnCollision.Call(1, 0, 0))
 			{
 				MsgError("CGameObject:OnCollide error:\n %s\n", OOLUA::get_last_error(state).c_str());
@@ -2267,7 +2267,7 @@ float triangleWave( float pos )
 void CCar::UpdateLightsState()
 {
 	bool headLightsEnabled = m_enabled && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS) || g_debug_car_lights.GetBool();
-	
+
 	SetLight(CAR_LIGHT_HEADLIGHTS, headLightsEnabled);
 	SetLight(CAR_LIGHT_SERVICELIGHTS, m_sirenEnabled);
 }
@@ -2384,7 +2384,7 @@ void CCar::Simulate( float fDt )
 	m_engineSmokeTime += fDt;
 
 	m_visible = g_pGameWorld->m_occludingFrustum.IsSphereVisible(GetOrigin(), length(m_conf->m_body_size));
-	
+
 #ifndef EDITOR
 	// don't render car
 	if(	g_pCameraAnimator->GetRealMode() == CAM_MODE_INCAR &&
@@ -3089,7 +3089,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 							g_translParticles, m_trans_smoke2,
 							RandomFloat(25, 85), Vector3D(1,RandomFloat(-0.7, 0.2) , 1),
 							smokeCol, smokeCol, max(skidFactor, 0.45f));
-					
+
 				effectrenderer->RegisterEffectForRender(pSmoke);
 
 				wheel.smokeTime = 0.1f;
@@ -3163,7 +3163,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 														RandomFloat(0.35f, 0.45f),// lifetime
 														8.0f,
 														g_translParticles, m_trans_grasspart, // group - texture
-														ColorRGB(1.0f,0.8f,0.0f), 1.0f);  
+														ColorRGB(1.0f,0.8f,0.0f), 1.0f);
 					effectrenderer->RegisterEffectForRender(pSpark);
 				}
 			} // traction slide

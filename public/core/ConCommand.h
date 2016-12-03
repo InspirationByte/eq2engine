@@ -39,6 +39,8 @@
 	static ConCommand cmd_##name(#name,CONCOMMAND_FN(name), variantsfn,desc,flags); \
 	DECLARE_CONCOMMAND_FN(name)
 
+class ConCommand;
+
 typedef void (*CON_COMMAND_CALLBACK)(CONCOMMAND_ARGUMENTS);
 
 class ConCommand : public ConCommandBase

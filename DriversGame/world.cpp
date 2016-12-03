@@ -799,7 +799,6 @@ void CGameWorld::UpdateWorld(float fDt)
 		for(int i = 0; i < m_nonSpawnedObjects.numElem(); i++)
 		{
 			m_nonSpawnedObjects[i]->Spawn();
-
 			m_nonSpawnedObjects[i]->Ref_Grab();
 
 			m_gameObjects.append(m_nonSpawnedObjects[i]);
@@ -807,37 +806,40 @@ void CGameWorld::UpdateWorld(float fDt)
 			i--;
 		}
 		m_level.m_mutex.Unlock();
-
-		// remove objects
-		for(int i = 0; i < m_gameObjects.numElem(); i++)
-		{
-			CGameObject* obj = m_gameObjects[i];
-
-			if(IsRemoveState(obj->m_state))
-			{
-				m_level.m_mutex.Lock();
-
-				if(m_gameObjects.fastRemove(obj))
-				{
-					obj->OnRemove();
-
-					if (obj->m_state != GO_STATE_REMOVED)
-						ASSERTMSG(false, "PROGRAMMER ERROR - your object doesn't fully called OnRemove (not GO_STATE_REMOVED)");
-
-					obj->Ref_Drop();
-					i--;
-				}
-
-				m_level.m_mutex.Unlock();
-			}
-		}
 	}
 
 	PROFILE_END();
 
 	// simulate objects of world
-
 	PROFILE_CODE( SimulateObjects(fDt) );
+
+	// remove marked objects after simulation
+    if( fDt > 0 )
+	{
+		// remove objects
+		for(int i = 0; i < m_gameObjects.numElem(); i++)
+		{
+			CGameObject* obj = m_gameObjects[i];
+
+			if(!IsRemoveState(obj->m_state))
+                continue;
+
+            m_level.m_mutex.Lock();
+
+            if( m_gameObjects.fastRemove(obj) )
+            {
+                obj->OnRemove();
+
+                if (obj->m_state != GO_STATE_REMOVED)
+                    ASSERTMSG(false, "PROGRAMMER ERROR - your object doesn't fully called OnRemove (not GO_STATE_REMOVED)");
+
+                obj->Ref_Drop();
+                i--;
+            }
+
+            m_level.m_mutex.Unlock();
+		}
+	}
 
 	m_frameTime = fDt;
 	m_curTime += m_frameTime;
@@ -957,7 +959,7 @@ void DrawSkyBox(IMaterial* pSkyMaterial, int renderFlags)
 		meshBuilder.AdvanceVertex();
 
 		// second part
-		
+
 		meshBuilder.TexCoord3f(-1,1,1);
 		meshBuilder.Position3f(-skySize,  skySize,  skySize);
 		meshBuilder.AdvanceVertex();
@@ -985,7 +987,7 @@ void DrawSkyBox(IMaterial* pSkyMaterial, int renderFlags)
 		meshBuilder.TexCoord3f(1,-2.85,1);
 		meshBuilder.Position3f( skySize, -skySize,  skySize);
 		meshBuilder.AdvanceVertex();
-		
+
 	meshBuilder.End();
 }
 

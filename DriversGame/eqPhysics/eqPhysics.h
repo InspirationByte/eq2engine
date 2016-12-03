@@ -200,7 +200,7 @@ struct eqPhysCollisionFilter
 
 //--------------------------------------------------------------------------------------------------------------
 
-typedef bool (CEqPhysics::*fnSingleObjectLineCollisionCheck)(	CEqCollisionObject* object, 
+typedef bool (CEqPhysics::*fnSingleObjectLineCollisionCheck)(	CEqCollisionObject* object,
 																const FVector3D& start,
 																const FVector3D& end,
 																const BoundingBox& raybox,
@@ -250,6 +250,9 @@ public:
 	void							RemoveStaticObject( CEqCollisionObject* object );	///< removes static object
 	void							DestroyStaticObject( CEqCollisionObject* object );	///< destroys static object
 
+    bool                            IsValidStaticObject( CEqCollisionObject* obj ) const;
+	bool                            IsValidBody( CEqCollisionObject* body ) const;
+
 	//< Performs a line test in the world
 	bool							TestLineCollision(	const FVector3D& start,
 														const FVector3D& end,
@@ -265,7 +268,7 @@ public:
 																int rayMask = COLLISION_MASK_ALL, eqPhysCollisionFilter* filterParams = NULL);
 	///< Performs a line test for a single object.
 	///< start, end are world coordinates
-	bool							TestLineSingleObject(	CEqCollisionObject* object, 
+	bool							TestLineSingleObject(	CEqCollisionObject* object,
 															const FVector3D& start,
 															const FVector3D& end,
 															const BoundingBox& raybox,
@@ -276,7 +279,7 @@ public:
 
 	// Pushes a convex sweep for closest collision for a single object.
 	///< start, end are world coordinates
-	bool							TestConvexSweepSingleObject(CEqCollisionObject* object, 
+	bool							TestConvexSweepSingleObject(CEqCollisionObject* object,
 																const FVector3D& start,
 																const FVector3D& end,
 																const BoundingBox& raybox,
@@ -294,7 +297,7 @@ public:
 	static void						PerformCollisionDetectionJob(void* thisPhys, int i);
 
 	//------------------------------------------------------
-	
+
 	//------------------------------------------------------
 
 	///< Integrates single body without collision detection
@@ -320,11 +323,11 @@ protected:
 															const FVector3D& end,
 															const BoundingBox& rayBox,
 															CollisionData_t& coll,
-															int rayMask, 
+															int rayMask,
 															eqPhysCollisionFilter* filterParams,
-															F func, 
+															F func,
 															void* args = NULL);
-	
+
 	///< Performs collision tests in broadphase grid
 	template <typename F>
 	void							InternalTestLineCollisionCells(	int y1, int x1, int y2, int x2,
@@ -332,7 +335,7 @@ protected:
 																	const FVector3D& end,
 																	const BoundingBox& rayBox,
 																	CollisionData_t& coll,
-																	int rayMask, 
+																	int rayMask,
 																	eqPhysCollisionFilter* filterParams,
 																	F func,
 																	void* args = NULL);

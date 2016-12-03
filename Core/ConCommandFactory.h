@@ -24,6 +24,8 @@
 #define COM_TOKEN_MAX_LENGTH 1024
 #define	MAX_ARGS 80
 
+class CConsoleCommands;
+
 typedef void (CConsoleCommands::*FUNC)(char* str, int len, void* extra);
 
 class CConsoleCommands : public IConsoleCommands

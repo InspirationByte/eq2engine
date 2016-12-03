@@ -200,9 +200,7 @@ void CObject_Sheets::Simulate( float fDt )
 		AngleVectors(sheetAngle, NULL, &vUp, &vRight);
 
 		Rectangle_t texCoords(0,0,1,1);
-
 		texCoords = sheet.entry->rect;
-
 		if(sheet.atlas->AllocateGeom(4,4, &sheetQuad, NULL, true) != -1)
 		{
 			sheetQuad[0].point = sheetPos + (vUp * sheetScale) + (sheetScale * vRight);

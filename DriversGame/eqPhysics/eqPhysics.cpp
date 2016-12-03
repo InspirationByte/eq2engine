@@ -460,6 +460,21 @@ void CEqPhysics::DestroyStaticObject( CEqCollisionObject* object )
 		MsgError("CEqPhysics::DestroyStaticObject - INVALID\n");
 }
 
+bool CEqPhysics::IsValidStaticObject( CEqCollisionObject* obj ) const
+{
+    if(obj->IsDynamic())
+        return false;
+
+    return m_staticObjects.findIndex( obj ) != -1;
+}
+
+bool CEqPhysics::IsValidBody( CEqCollisionObject* body ) const
+{
+    if(!body->IsDynamic())
+        return false;
+
+    return m_dynObjects.findIndex( (CEqRigidBody*)body ) != -1;
+}
 
 void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt)
 {
@@ -488,7 +503,7 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 		return;
 
 	DkList<ContactPair_t>& pairs = bodyA->m_contactPairs;
-	
+
 	// check the contact pairs of bodyB (because it has been already processed by the order)
 	// if we had any contact pair with bodyA we should discard this collision
 	{
@@ -928,7 +943,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		if (bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE)
 			collData.flags |= COLLPAIRFLAG_OBJECTB_NO_RESPONSE;
 	}
-	
+
 	if ((bodyB->m_flags & COLLOBJ_COLLISIONLIST) &&
 		pairsB.numElem() < collisionList_Max)
 	{
@@ -1056,7 +1071,7 @@ void CEqPhysics::InternalTestLineCollisionCells(int y1, int x1, int y2, int x2,
 
         // EITHER horizontal OR vertical step (but not both!)
         if (e2 > dy)
-		{ 
+		{
             err += dy;
             x1 += sx;
         }

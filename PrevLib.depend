@@ -4088,7 +4088,7 @@
 
 1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/singleton.h
 
-1465324214 /home/soap/Projects/EqEngine/src_main/public/utils/eqstring.h
+1480776975 /home/soap/Projects/EqEngine/src_main/public/utils/eqstring.h
 	<stdlib.h>
 	<string.h>
 	"dktypes.h"
@@ -4127,7 +4127,7 @@
 1457289078 /home/soap/Projects/EqEngine/src_main/public/core/DebugInterface.h
 	"InterfaceManager.h"
 
-1476721677 /home/soap/Projects/EqEngine/src_main/public/math/Vector.h
+1480776975 /home/soap/Projects/EqEngine/src_main/public/math/Vector.h
 	<limits.h>
 	<float.h>
 	"dktypes.h"
@@ -4277,7 +4277,7 @@
 	"IFileSystem.h"
 	"DebugInterface.h"
 
-1478009493 /home/soap/Projects/EqEngine/src_main/public/utils/strtools.h
+1480776975 /home/soap/Projects/EqEngine/src_main/public/utils/strtools.h
 	"utils/DkList.h"
 	"utils/eqstring.h"
 	"utils/eqwstring.h"
@@ -4290,7 +4290,7 @@
 1457289078 /home/soap/Projects/EqEngine/src_main/public/utils/CRC32.h
 	"platform/Platform.h"
 
-1478009493 /home/soap/Projects/EqEngine/src_main/public/utils/KeyValues.h
+1480776975 /home/soap/Projects/EqEngine/src_main/public/utils/KeyValues.h
 	"platform/Platform.h"
 	"utils/DkList.h"
 	"math/DkMath.h"
@@ -4323,7 +4323,7 @@
 	"utils/DkList.h"
 	"utils/eqstring.h"
 
-1476719816 /home/soap/Projects/EqEngine/src_main/public/core/IConCommandFactory.h
+1480776975 /home/soap/Projects/EqEngine/src_main/public/core/IConCommandFactory.h
 	<stdio.h>
 	<stdlib.h>
 	"utils/DkList.h"
@@ -4332,13 +4332,13 @@
 	"ConCommandBase.h"
 	"InterfaceManager.h"
 
-1476719816 /home/soap/Projects/EqEngine/src_main/public/core/ConCommand.h
+1480777180 /home/soap/Projects/EqEngine/src_main/public/core/ConCommand.h
 	<stdio.h>
 	<stdlib.h>
 	"ConCommandBase.h"
 	"InterfaceManager.h"
 
-1465324214 source:/home/soap/Projects/EqEngine/src_main/public/network/NetMessageBuffer.cpp
+1480776975 source:/home/soap/Projects/EqEngine/src_main/public/network/NetMessageBuffer.cpp
 	"NetMessageBuffer.h"
 	"utils/strtools.h"
 	"utils/KeyValues.h"
@@ -4706,13 +4706,15 @@
 1457289078 source:/home/soap/Projects/EqEngine/src_main/public/utils/CRC32.cpp
 	"CRC32.h"
 
-1478009493 source:/home/soap/Projects/EqEngine/src_main/public/utils/eqstring.cpp
+1480777237 source:/home/soap/Projects/EqEngine/src_main/public/utils/eqstring.cpp
 	"eqstring.h"
 	<stdio.h>
 	<malloc.h>
 	"platform/Platform.h"
 	"utils/strtools.h"
+	"math/math_common.h"
 	<string.h>
+	"DebugInterface.h"
 
 1465324214 source:/home/soap/Projects/EqEngine/src_main/public/utils/eqthread.cpp
 	"eqthread.h"
@@ -4737,7 +4739,7 @@
 	"utils/strtools.h"
 	<wchar.h>
 
-1478017437 source:/home/soap/Projects/EqEngine/src_main/public/utils/KeyValues.cpp
+1480777296 source:/home/soap/Projects/EqEngine/src_main/public/utils/KeyValues.cpp
 	<stdarg.h>
 	"core_base_header.h"
 	"DebugInterface.h"
@@ -4780,7 +4782,7 @@
 	"utils/strtools.h"
 	<wchar.h>
 
-1478009493 source:/home/soap/Projects/EqEngine/src_main/public/utils/strtools.cpp
+1480776975 source:/home/soap/Projects/EqEngine/src_main/public/utils/strtools.cpp
 	<stdarg.h>
 	<stdio.h>
 	"platform/Platform.h"
@@ -4789,6 +4791,7 @@
 	<wchar.h>
 	<wctype.h>
 	<stdarg.h>
+	"DebugInterface.h"
 
 1457289078 source:/home/soap/Projects/EqEngine/src_main/public/utils/Tokenizer.cpp
 	"Tokenizer.h"
