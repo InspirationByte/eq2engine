@@ -119,7 +119,6 @@ void ShaderAPI_Base::Shutdown()
 		r_debug_showTexture->SetVariantsCallback(NULL);
 
 	Reset();
-	Apply();
 
 	for(int i = 0; i < m_TextureList.numElem();i++)
 	{

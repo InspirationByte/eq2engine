@@ -457,7 +457,7 @@ void ShaderAPID3DX9::Init( shaderapiinitparams_t &params )
 
 	m_pD3DDevice->CreateQuery(D3DQUERYTYPE_EVENT, &m_pEventQuery);
 
-	m_meshBuilder = new CD3D9MeshBuilder(m_pD3DDevice);
+	//m_meshBuilder = new CD3D9MeshBuilder(m_pD3DDevice);
 
 	// set the anisotropic level
 	if (m_caps.maxTextureAnisotropicLevel > 1)
@@ -575,8 +575,8 @@ void ShaderAPID3DX9::Shutdown()
 
 	m_pEventQuery = NULL;
 
-	delete m_meshBuilder;
-	m_meshBuilder = NULL;
+	//delete m_meshBuilder;
+	//m_meshBuilder = NULL;
 }
 
 //-------------------------------------------------------------
@@ -1967,8 +1967,8 @@ void ShaderAPID3DX9::DestroyVertexFormat(IVertexFormat* pFormat)
 		// reset if in use
 		if(m_pCurrentVertexFormat == pVF)
 		{
-			Reset(STATE_RESET_VF);
-			Apply();
+			Reset(STATE_RESET_VBO);
+			ApplyBuffers();
 		}
 
 		DevMsg(DEVMSG_SHADERAPI,"Destroying vertex format\n");
@@ -1993,7 +1993,7 @@ void ShaderAPID3DX9::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 	{
 		// reset if in use
 		Reset(STATE_RESET_VBO);
-		Apply();
+		ApplyBuffers();
 
 		DevMsg(DEVMSG_SHADERAPI,"Destroying vertex buffer\n");
 
@@ -2018,7 +2018,7 @@ void ShaderAPID3DX9::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 	{
 		// reset if in use
 		Reset(STATE_RESET_VBO);
-		Apply();
+		ApplyBuffers();
 
 		DevMsg(DEVMSG_SHADERAPI,"Destroying index buffer\n");
 
@@ -2028,17 +2028,6 @@ void ShaderAPID3DX9::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 	
 		delete pIB;
 	}
-}
-
-// Creates new mesh builder
-IMeshBuilder* ShaderAPID3DX9::CreateMeshBuilder()
-{
-	return m_meshBuilder;
-}
-
-void ShaderAPID3DX9::DestroyMeshBuilder(IMeshBuilder* pBuilder)
-{
-
 }
 
 //-------------------------------------------------------------
@@ -2100,7 +2089,7 @@ void ShaderAPID3DX9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 		if(m_pCurrentShader == pShaderProgram)
 		{
 			Reset(STATE_RESET_SHADER);
-			Apply();
+			ApplyShaderProgram();
 		}
 
 		m_ShaderList.remove(pShader);

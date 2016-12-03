@@ -103,7 +103,10 @@ static SpewFunc_fn g_fnConSpewFunc = DefaultSpewFunc;
 
 IEXPORTS void SetSpewFunction(SpewFunc_fn newfunc)
 {
-	g_fnConSpewFunc = newfunc;
+	if(newfunc == nullptr)
+		g_fnConSpewFunc = DefaultSpewFunc;
+	else
+		g_fnConSpewFunc = newfunc;
 }
 
 DECLARE_CONCOMMAND_FN(echo)

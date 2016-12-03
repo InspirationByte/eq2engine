@@ -844,13 +844,15 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	float frontCollDist = clamp(fSpeed, 1.0f, 8.0f);
 
+	btBoxShape carBoxShape(btVector3(m_conf->m_body_size.x, m_conf->m_body_size.y, 0.25f));
+
 	// trace in the front direction
-	g_pPhysics->TestConvexSweep(GetPhysicsBody()->GetBulletShape(), GetOrientation(),
+	g_pPhysics->TestConvexSweep(&carBoxShape, GetOrientation(),
 		GetOrigin(), GetOrigin()+carForwardDir*frontCollDist, frontColl,
 		OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE, &collFilter);
 
 	// trace the car body in velocity direction
-	g_pPhysics->TestConvexSweep(GetPhysicsBody()->GetBulletShape(), GetOrientation(),
+	g_pPhysics->TestConvexSweep(&carBoxShape, GetOrientation(),
 		GetOrigin(), GetOrigin()+GetVelocity(), velocityColl,
 		OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE,
 		&collFilter);

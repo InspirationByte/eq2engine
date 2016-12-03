@@ -48,9 +48,9 @@ EKVPairType KV_ResolvePairType( const char* string )
 	return KVPAIR_STRING;
 }
 
-char* KV_ReadProcessString( char* pszStr )
+char* KV_ReadProcessString( const char* pszStr )
 {
-	char* ptr = pszStr;
+	const char* ptr = pszStr;
 	// convert some symbols to special ones
 
 	int sLen = strlen( pszStr );
@@ -917,15 +917,16 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 
 				{
 					int nLen = (pLast - pFirstLetter);
-					char* pTempStr = (char*)malloc(nLen + 1);
 
-					strncpy(pTempStr, pFirstLetter, nLen);
-					pTempStr[nLen] = '\0';
+					char* endChar = (char*)pFirstLetter+nLen;
+
+					char oldChr = *endChar;
+					*endChar = '\0';
 
 					// set the type
-					curpair->type = KV_ResolvePairType(pTempStr);
+					curpair->type = KV_ResolvePairType(pFirstLetter);
 
-					free(pTempStr);
+					*endChar = oldChr;
 				}
 
 				// parse value type and reset
@@ -966,14 +967,14 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 					}
 					else if(nValCounter == 2)
 					{
-						char* pTempStr = (char*)malloc(nLen + 1);
+						char* endChar = (char*)pFirstLetter + nLen;
 
-						strncpy_s(pTempStr, nLen+1, pFirstLetter, nLen);
-						pTempStr[nLen] = '\0';
+						char oldChr = *endChar;
+						*endChar = '\0';
 
 						// pre-process string
-						char* valueString = KV_ReadProcessString(pTempStr);
-						free(pTempStr);
+						char* valueString = KV_ReadProcessString(pFirstLetter);
+						*endChar = oldChr;
 
 						if(valueArray)
 						{
@@ -1377,23 +1378,23 @@ kvkeybase_t* KV_ParseSection( const char* pszBuffer, const char* pszFileName, kv
 				if(nSectionRecursionSkip == 0)
 				{
 					int nLen = (int)(pLast - pFirstLetter);
-					char* pszTemp = (char*)malloc(nLen+1);
-					memcpy(pszTemp, pFirstLetter, nLen);
-					pszTemp[nLen] = 0;
+
+					char* endChar = (char*)pFirstLetter+nLen;
+
+					char oldChr = *endChar;
+					*endChar = '\0';
 
 					// recurse
-					kvkeybase_t* pBase = KV_ParseSection( pszTemp, pszFileName, pCurrentKeyBase, nSectionLetterLine );
+					kvkeybase_t* pBase = KV_ParseSection( pFirstLetter, pszFileName, pCurrentKeyBase, nSectionLetterLine );
+
+					*endChar = oldChr;
 
 					// if it got all killed
 					if(!pBase)
 					{
-						free( pszTemp );
 						//delete pKeyBase;
-
 						return NULL;
 					}
-
-					free( pszTemp );
 
 					bInSection = false;
 					pFirstLetter = NULL;
@@ -1425,11 +1426,14 @@ kvkeybase_t* KV_ParseSection( const char* pszBuffer, const char* pszFileName, kv
 			}
 			else
 			{
-				char* pszString = (char*)malloc(strlen(pFirstLetter) + 1);
-				strncpy( pszString, pFirstLetter, nLen);
-				pszString[nLen] = '\0';
+				char* endChar = (char*)pFirstLetter+nLen;
 
-				pCurrentKeyBase->AddValue(pszString);
+				char oldChr = *endChar;
+				*endChar = '\0';
+
+				pCurrentKeyBase->AddValue(pFirstLetter);
+
+				*endChar = oldChr;
 			}
 
 			pFirstLetter = NULL;

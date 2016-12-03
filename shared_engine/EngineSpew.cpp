@@ -21,13 +21,7 @@ DkList<connode_t*> *GetAllMessages( void ) {return s_pMessages;}
 
 DECLARE_CMD(clear,NULL,0)
 {
-	for(int i = 0;i < s_Messages.numElem();i++)
-	{
-		delete [] s_Messages[i]->text;
-		delete s_Messages[i];
-	}
-
-	s_Messages.clear();
+	EngineSpewClear();
 }
 
 static ConVar con_minicon("con_minicon","0",NULL,CV_ARCHIVE);
@@ -41,6 +35,17 @@ ColorRGBA console_spew_colors[] =
 	Vector4D(0.8f,0,0,1),
 	Vector4D(0.2f,1,0.2f,1)
 };
+
+void EngineSpewClear()
+{
+	for(int i = 0;i < s_Messages.numElem();i++)
+	{
+		delete [] s_Messages[i]->text;
+		delete s_Messages[i];
+	}
+
+	s_Messages.clear();
+}
 
 void EngineSpewFunc(SpewType_t type,const char* pMsg)
 {
@@ -87,4 +92,10 @@ void InstallEngineSpewFunction()
 	// init list
 
 	SetSpewFunction(EngineSpewFunc);
+}
+
+void UninstallEngineSpewFunction()
+{
+	EngineSpewClear();
+	SetSpewFunction(NULL);
 }

@@ -243,7 +243,7 @@ void DrawAlphaFilledRectangle(const Rectangle_t &rect, const ColorRGBA &color1, 
 void CEqSysConsole::DrawFastFind(float x, float y, float w)
 {
 	m_fastfind_cmdbase = NULL;
-	m_autocompletionList.clear();
+	m_autocompletionList.clear(false);
 	m_variantSelection = -1;
 
 	BlendStateParam_t blending;

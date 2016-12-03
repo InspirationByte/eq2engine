@@ -126,6 +126,8 @@ int main(int argc, char** argv)
 
 	Host_GameLoop();
 
+	UninstallEngineSpewFunction();
+
 	Host_Terminate();
 
 	// shutdown

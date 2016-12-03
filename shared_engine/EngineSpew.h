@@ -18,6 +18,10 @@ struct connode_t
 };
 
 DkList<connode_t*> *GetAllMessages( void );
+
 void InstallEngineSpewFunction();
+void UninstallEngineSpewFunction();
+
+void EngineSpewClear();
 
 #endif // ENGINESPEW_H

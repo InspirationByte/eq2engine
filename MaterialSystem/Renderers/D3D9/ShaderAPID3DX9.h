@@ -275,12 +275,6 @@ public:
 	// Destroy index buffer
 	void						DestroyIndexBuffer(IIndexBuffer* pIndexBuffer);
 
-	// Creates new mesh builder
-	IMeshBuilder*				CreateMeshBuilder();
-
-	// destroys mesh builder
-	void						DestroyMeshBuilder(IMeshBuilder* pBuilder);
-
 //-------------------------------------------------------------
 // Shaders and it's operations
 //-------------------------------------------------------------

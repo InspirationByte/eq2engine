@@ -353,6 +353,7 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	LUA_SET_GLOBAL_ENUMCONST(state, EMITSOUND_FLAG_START_ON_UPDATE);
 
 	OOLUA::register_class<ConVar>(state);
+	OOLUA::register_class<ConCommand>(state);
 	OOLUA::register_class<Vector2D>(state);
 	OOLUA::register_class<Vector3D>(state);
 	OOLUA::register_class<Vector4D>(state);
