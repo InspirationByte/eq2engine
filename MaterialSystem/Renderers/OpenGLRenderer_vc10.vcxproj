@@ -163,7 +163,7 @@
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
       <AdditionalIncludeDirectories>..\..\FileSystem;..\..\Engine;..\..\public;..\..\public\core;..\..\public\platform;..\..\public\materialsystem\renderers;..\..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;CORE_EXPORT;DLL_EXPORT;_CRT_SECURE_NO_DEPRECATE;SUPRESS_DEVMESSAGES;USECRTMEMDEBUG;RENDER_EXPORT;IS_OPENGL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;CORE_EXPORT;DLL_EXPORT;_CRT_SECURE_NO_DEPRECATE;SUPRESS_DEVMESSAGES;USECRTMEMDEBUG;RENDER_EXPORT;IS_OPENGL;_CRTDBG_MAP_ALLOC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>

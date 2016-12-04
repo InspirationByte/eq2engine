@@ -126,6 +126,11 @@ public:
 			m_vertexDesc[i] = desc[i];
 	}
 
+	~CEmptyVertexFormat()
+	{
+		delete [] m_vertexDesc;
+	}
+
 	int	GetVertexSize(int stream)
 	{
 		return 0;

@@ -72,16 +72,6 @@ CLocToken::CLocToken(const char* tok, const char* text)
 
 //-------------------------------------------------------------------------------------------------
 
-CLocalize::CLocalize()
-{
-
-}
-
-CLocalize::~CLocalize()
-{
-
-}
-
 void CLocalize::Init()
 {
 	kvkeybase_t* pRegional = GetCore()->GetConfig()->FindKeyBase("RegionalSettings", KV_FLAG_SECTION);
@@ -109,6 +99,16 @@ void CLocalize::Init()
 	}
 
 	AddTokensFile("core");
+}
+
+void CLocalize::Shutdown()
+{
+	for(int i = 0; i < m_lTokens.numElem(); i++)
+	{
+		delete m_lTokens[i];
+	}
+
+	m_lTokens.clear();
 }
 
 const char* CLocalize::GetLanguageName()

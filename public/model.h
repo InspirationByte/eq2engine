@@ -19,6 +19,8 @@
 
 #include "physmodel.h"
 
+#include "ppmem.h"
+
 // some definitions
 
 enum EGFPrimType_e
@@ -73,6 +75,8 @@ ALIGNED_TYPE(motionpackagedesc_s, 4) motionpackagedesc_t;
 // this structure holds in transformation
 struct joint_t
 {
+	PPMEM_MANAGED_OBJECT();
+
 	char				name[44]; // bone name
 
 	int					bone_id; // index of this bone
@@ -160,6 +164,8 @@ struct physmodelshapecache_t
 
 struct physobjectdata_t
 {
+	PPMEM_MANAGED_OBJECT();
+
 	physobject_t	object;
 	void*			shapeCache[MAX_GEOM_PER_OBJECT];		// indexes of geomdata
 };
@@ -167,6 +173,28 @@ struct physobjectdata_t
 // physics model data from POD
 struct physmodeldata_t
 {
+	PPMEM_MANAGED_OBJECT();
+
+	physmodeldata_t()
+	{
+		modeltype = 0;
+
+		objects = nullptr;
+		numobjects = 0;
+
+		joints = nullptr;
+		numjoints = 0;
+
+		shapes = nullptr;
+		numshapes = 0;
+
+		vertices = nullptr;
+		numVertices = 0;
+
+		indices = nullptr;
+		numIndices = 0;
+	}
+
 	int modeltype;
 
 	physobjectdata_t* objects;	// array, because it may be dynamic or ragdoll.
@@ -222,6 +250,16 @@ struct studiomotiondata_t
 // hardware data for the MOD_STUDIO
 struct studiohwdata_t
 {
+	PPMEM_MANAGED_OBJECT();
+
+	studiohwdata_t()
+	{
+		pStudioHdr = nullptr;
+		modelrefs = nullptr;
+		joints = nullptr;
+		numMotionPackages = 0;
+	}
+
 	// loaded/cached studio model
 	studiohdr_t*		pStudioHdr;
 

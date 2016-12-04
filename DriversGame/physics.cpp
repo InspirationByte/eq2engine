@@ -92,9 +92,6 @@ void CPhysicsEngine::SceneInit()
 #endif // m_physics
 
 	m_dtAccumulator = 0.0f;
-
-//	m_nextPhysicsUpdate = 0.0f;
-//	m_curTime = 0.0f;
 }
 
 #ifdef EDITOR
@@ -107,7 +104,6 @@ void CPhysicsEngine::SceneDestroyBroadphase()
 {
 	m_physics.DestroyGrid();
 }
-
 #endif
 
 void CPhysicsEngine::SceneShutdown()
@@ -122,8 +118,11 @@ void CPhysicsEngine::SceneShutdown()
 
 	m_heightFields.clear();
 
-
 	m_physics.DestroyWorld();
+
+#ifndef EDITOR
+	m_physics.DestroyGrid();
+#endif // m_physics
 }
 
 
@@ -368,17 +367,4 @@ void CPhysicsEngine::RemoveHeightField( CHeightTileField* pPhysObject )
 
 //-------------------------------------------------------------------------------------------------------
 
-static CPhysicsEngine s_Physics;
-CPhysicsEngine* g_pPhysics = &s_Physics;
-
-//-------------------------------------------------------------------------------------------------------
-/*
-Vector3D TAtoEqVector3D(const TA::Vec3& vec)
-{
-	return Vector3D(vec.x, vec.y, vec.z);
-}
-
-TA::Vec3 EqtoTAVector3D(const Vector3D& vec)
-{
-	return TA::Vec3(vec.x, vec.y, vec.z);
-}*/
+CPhysicsEngine* g_pPhysics = nullptr;

@@ -24,8 +24,6 @@
 
 #include "IDynamicMesh.h"
 
-
-
 #include "ViewParams.h"
 #include "scene_def.h"
 

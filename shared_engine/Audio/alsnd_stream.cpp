@@ -165,6 +165,7 @@ void DkSoundAmbient::OpenStreamFile(const char *name)
 	{
 		ov_clear(&m_oggStream);
 		g_fileSystem->Close(m_oggFile);
+
 		m_oggFile = NULL;
 		m_loaded = false;
 		m_ready = false;
@@ -190,7 +191,9 @@ void DkSoundAmbient::OpenStreamFile(const char *name)
 
 	if(ovResult < 0)
 	{
+		ov_clear(&m_oggStream);
 		g_fileSystem->Close(m_oggFile);
+
 		MsgError("Can't open sound '%s', is not an ogg file (%d)\n", name, ovResult);
 		return;
 	}
@@ -293,7 +296,9 @@ void DkSoundAmbient::StopStreaming()
 
 	EmptyStreamQueue();
 
+	ov_clear(&m_oggStream);
 	g_fileSystem->Close(m_oggFile);
+
 	m_oggFile = NULL;
 	m_loaded = false;
 }

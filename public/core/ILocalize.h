@@ -38,6 +38,7 @@ class ILocalize : public ICoreModuleInterface
 public:
 							~ILocalize() {}
 	virtual void			Init() = 0;
+	virtual void			Shutdown() = 0;
 
 	virtual const char*		GetLanguageName() = 0;
 

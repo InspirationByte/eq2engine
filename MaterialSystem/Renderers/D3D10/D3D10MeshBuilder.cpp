@@ -221,10 +221,8 @@ void CD3D10MeshBuilder::End()
 
 	if(!s_pBuffer)
 	{
-		//ubyte* pTemp = (ubyte*)malloc(MAX_VBO_VERTS*sizeof(ListVertex));
-
-		s_pBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_VBO_VERTS, sizeof(ListVertex), NULL);
-		s_pIndexBuffer = g_pShaderAPI->CreateIndexBuffer(MAX_VBO_VERTS*3, sizeof(int), BUFFER_DYNAMIC, NULL);
+		s_pBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_VBO_VERTS, sizeof(ListVertex), nullptr);
+		s_pIndexBuffer = g_pShaderAPI->CreateIndexBuffer(MAX_VBO_VERTS*3, sizeof(int), BUFFER_DYNAMIC, nullptr);
 
 		s_pVertexFormat = g_pShaderAPI->CreateVertexFormat(g_meshBuilder_format, elementsOf(g_meshBuilder_format));
 	}

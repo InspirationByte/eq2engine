@@ -242,20 +242,10 @@ bool CParticleLowLevelRenderer::InitBuffers()
 	m_vbMaxQuads = r_particleBufferSize.GetInt();
 
 	if(!m_vertexBuffer)
-	{
-		void* tmpVert = malloc(SVBO_MAX_SIZE(m_vbMaxQuads, PFXVertex_t));
-
-		m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, m_vbMaxQuads*4, sizeof(PFXVertex_t), tmpVert);
-		free(tmpVert);
-	}
+		m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, m_vbMaxQuads*4, sizeof(PFXVertex_t), nullptr);
 
 	if(!m_indexBuffer)
-	{
-		void* tmpIdx = malloc(SIBO_MAX_SIZE(m_vbMaxQuads));
-
-		m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(m_vbMaxQuads*6, sizeof(int16), BUFFER_DYNAMIC, tmpIdx);
-		free(tmpIdx);
-	}
+		m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(m_vbMaxQuads*6, sizeof(int16), BUFFER_DYNAMIC, nullptr);
 
 	if(!m_vertexFormat)
 	{

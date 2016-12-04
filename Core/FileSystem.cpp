@@ -204,7 +204,7 @@ CFileSystem::CFileSystem() : m_isInit(false), m_bEditorMode(false)
 
 CFileSystem::~CFileSystem()
 {
-	Shutdown();
+
 }
 
 bool CFileSystem::Init(bool bEditorMode)
@@ -281,6 +281,8 @@ void CFileSystem::Shutdown()
 	}
 
 	m_pPackages.clear();
+
+	g_localizer->Shutdown();
 }
 
 IFile* CFileSystem::Open(const char* filename,const char* options, int searchFlags/* = -1*/ )
@@ -913,8 +915,8 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 void CFileSystem::FreeModule( DKMODULE* pModule )
 {
 	// don't unload any modules if we prining a leaklog
-	if( g_bPrintLeaksOnShutdown )
-		return;
+	//if( g_bPrintLeaksOnShutdown )
+	//	return;
 
 #ifdef _WIN32
 	FreeLibrary(pModule->module);

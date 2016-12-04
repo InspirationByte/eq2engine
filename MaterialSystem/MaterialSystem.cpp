@@ -292,6 +292,8 @@ void CMaterialSystem::Shutdown()
 		// shutdown thread first
 		g_threadedMaterialLoader.StopThread(true);
 
+		FreeMaterials();
+
 		if(m_pWhiteTexture)
 			g_pShaderAPI->FreeTexture(m_pWhiteTexture);
 
@@ -303,7 +305,10 @@ void CMaterialSystem::Shutdown()
 
 		m_ShaderOverrideList.clear();
 
-		FreeMaterials();
+		for(int i = 0; i < m_ProxyList.numElem(); i++)
+			delete [] m_ProxyList[i].name;
+
+		m_ProxyList.clear();
 
 		m_pRenderLib->ReleaseSwapChains();
 		g_pShaderAPI->Shutdown();
@@ -630,6 +635,7 @@ void CMaterialSystem::FreeMaterials()
 		CMaterial* pMaterial = (CMaterial*)m_pLoadedMaterials[i];
 		delete ((CMaterial*)pMaterial);
 	}
+	m_pLoadedMaterials.clear();
 }
 
 void CMaterialSystem::ClearRenderStates()
@@ -670,7 +676,7 @@ void CMaterialSystem::FreeMaterial(IMaterial *pMaterial)
 void CMaterialSystem::RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName)
 {
 	proxyfactory_t factory;
-	factory.name = strdup(pszName);
+	factory.name = xstrdup(pszName);
 	factory.disp = dispfunc;
 
 	m_ProxyList.append(factory);

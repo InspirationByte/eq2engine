@@ -142,7 +142,7 @@ void LoadWavFromBufferEX(ubyte *memory, ALenum *format, ALvoid **data,ALsizei *s
 					if (FmtHdr.Format==0x0001)
 					{
 						*size = ChunkHdr.Size;
-						*data = malloc(ChunkHdr.Size + 31);
+						*data = PPAllocTAG(ChunkHdr.Size + 31, "WAV_DATA");
 
 						if (*data)
 						{
@@ -311,9 +311,7 @@ bool DkSoundSampleLocal::LoadWav(const char *name, unsigned int buffer)
 	else if((format == AL_FORMAT_STEREO8) || (format == AL_FORMAT_STEREO16))
 		m_nChannels = 2;
 
-	free( data );
-
-	// free hunk
+	PPFree( data );
 	PPFree( fileBuffer );
 
 	return true;

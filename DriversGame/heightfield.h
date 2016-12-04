@@ -146,6 +146,8 @@ class CEqCollisionObject;
 
 struct hfieldPhysicsData_t
 {
+	PPMEM_MANAGED_OBJECT_TAG("hfieldPhysData")
+
 	DkList<CEqCollisionObject*>			m_collisionObjects;
 	DkList<btStridingMeshInterface*>	m_meshes;
 	DkList<hfieldbatch_t*>				m_batches;

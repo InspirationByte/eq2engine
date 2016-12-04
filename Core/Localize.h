@@ -40,10 +40,12 @@ private:
 class CLocalize : public ILocalize
 {
 public:
-						CLocalize();
-						~CLocalize();
+						CLocalize() {}
+						~CLocalize() {}
 
 	void				Init();
+	void				Shutdown();
+
 	const char*			GetLanguageName();
 
 	void				AddTokensFile(const char* pszFilePrefix);

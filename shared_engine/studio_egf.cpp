@@ -191,7 +191,7 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 	{
 		m_bSoftwareSkinChanged = true;
 
-		Matrix4x4 tempMatrixArray[128];// = PPAllocStructArray(Matrix4x4, m_pHardwareData->pStudioHdr->numbones);
+		Matrix4x4 tempMatrixArray[128];
 
 		// Send all matrices as 4x3
 		for(int i = 0; i < m_pHardwareData->pStudioHdr->numbones; i++)
@@ -214,8 +214,6 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 				bufferData[i] = vert;
 
 			}
-
-			//PPFree( tempMatrixArray );
 
 			m_pVB->Unlock();
 
@@ -263,13 +261,13 @@ void CEngineStudioEGF::DestroyModel()
 		hwmodelref_t* pLodModels = m_pHardwareData->modelrefs;
 
 		for(int i = 0; i < m_pHardwareData->pStudioHdr->nummodels; i++)
-			PPFree(pLodModels[i].groupdescs);
+			delete [] pLodModels[i].groupdescs;
 
-		PPFree(m_pHardwareData->modelrefs);
-		PPFree(m_pHardwareData->joints);
-		PPFree(m_pHardwareData->pStudioHdr);
+		delete [] m_pHardwareData->modelrefs;
+		delete [] m_pHardwareData->joints;
+		delete [] m_pHardwareData->pStudioHdr;
 
-		PPFree(m_pHardwareData);
+		delete m_pHardwareData;
 	}
 
 	m_pHardwareData = NULL;
@@ -418,7 +416,7 @@ bool CEngineStudioEGF::LoadFromFile()
 		return false; // get out, nothing to load
 
 	// allocate hardware data
-	m_pHardwareData = (studiohwdata_t*)PPAlloc(sizeof(studiohwdata_t));
+	m_pHardwareData = new studiohwdata_t;
 	memset(m_pHardwareData, 0, sizeof(studiohwdata_t));
 
 	m_pHardwareData->pStudioHdr = pHdr;
@@ -433,7 +431,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 
 	studiohdr_t* pHdr = m_pHardwareData->pStudioHdr;
 
-	m_pHardwareData->modelrefs = (hwmodelref_t*)PPAlloc(sizeof(hwmodelref_t)*pHdr->nummodels);
+	m_pHardwareData->modelrefs = new hwmodelref_t[pHdr->nummodels];
 	hwmodelref_t* pLodModels = m_pHardwareData->modelrefs;
 
 	{
@@ -450,7 +448,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		{
 			studiomodeldesc_t* pModelDesc = pHdr->pModelDesc(i);
 
-			pLodModels[i].groupdescs = (hwgroup_desc_t*)PPAlloc( sizeof(hwgroup_desc_t) * pModelDesc->numgroups );
+			pLodModels[i].groupdescs = new hwgroup_desc_t[pModelDesc->numgroups];
 
 			for(int j = 0; j < pModelDesc->numgroups; j++)
 			{
@@ -485,7 +483,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		m_numIndices = loadedindices.numElem();
 
 		// Initialize HW data joints
-		m_pHardwareData->joints = (joint_t*)PPAlloc(sizeof(joint_t)*pHdr->numbones);
+		m_pHardwareData->joints = new joint_t[pHdr->numbones];
 
 		// parse bones
 		for(int i = 0; i < pHdr->numbones; i++)

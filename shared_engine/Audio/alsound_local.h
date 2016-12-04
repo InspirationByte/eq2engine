@@ -98,6 +98,8 @@ public:
 	void					ReleaseEmitters();
 	void					ReleaseSamples();
 
+	void					PrintInfo();
+
 public:
 
 	void					ReloadEffects();

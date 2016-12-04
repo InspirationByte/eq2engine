@@ -19,7 +19,7 @@ void CEntityFactory::AddEntity(const char *classname, DISPATCH_ENTFUNC dispatch 
 {
 	Entfactory_t factory;
 	factory.entdispatch = dispatch;
-	factory.classname = strdup(classname);
+	factory.classname = xstrdup(classname);
 
 	bool bCanAdd = true;
 	if (m_hEntities.goToFirst()){

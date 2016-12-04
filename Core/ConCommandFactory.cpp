@@ -19,12 +19,6 @@ EXPORTED_INTERFACE(IConsoleCommands, CConsoleCommands);
 
 #define CON_SEPARATOR ';'
 
-#ifdef _DEBUG
-#	define _CRTDBG_MAP_ALLOC
-#	include <malloc.h>
-#	include <crtdbg.h>
-#endif
-
 CConsoleCommands::CConsoleCommands()
 {
 	memset(m_pszCommandBuffer, 0, sizeof(m_pszCommandBuffer));

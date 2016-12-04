@@ -607,10 +607,13 @@ void DkSoundSystemLocal::ReleaseSample(ISoundSample *pSample)
 	// channels
 	for(int i = 0; i < m_pChannels.numElem(); i++)
 	{
-		if(m_pChannels[i]->emitter != NULL)
+		sndChannel_t* chan = m_pChannels[i];
+		DkSoundEmitterLocal* emitter = chan->emitter;
+
+		if(emitter != NULL)
 		{
 			// Break if we found used sample
-			if(m_pChannels[i]->emitter->m_sample == pSample)
+			if(emitter->m_sample == pSample)
 			{
 				MsgError("Programming error! You need to free sound emitter first!\n");
 				return;
@@ -629,7 +632,7 @@ void DkSoundSystemLocal::ReleaseSample(ISoundSample *pSample)
 	}
 
 	// Remove sample
-	if(m_pSoundSamples.remove( pSample ))
+	if(m_pSoundSamples.fastRemove( pSample ))
 	{
 		// deallocate sample
 		DkSoundSampleLocal* pSamp = (DkSoundSampleLocal*)pSample;
@@ -649,7 +652,7 @@ void DkSoundSystemLocal::FreeEmitter(ISoundEmitter* pEmitter)
 		pEmitter->Stop();
 
 	// Remove sample
-	m_pSoundEmitters.remove(pEmitter);
+	m_pSoundEmitters.fastRemove(pEmitter);
 	DkSoundEmitterLocal* pEmit = (DkSoundEmitterLocal*)pEmitter;
 
 	delete pEmit;
@@ -789,4 +792,19 @@ int	DkSoundSystemLocal::RequestChannel(DkSoundEmitterLocal *emitter)
 	}
 
 	return -1;
+}
+
+void DkSoundSystemLocal::PrintInfo()
+{
+	Msg("---- sound system info ----\n");
+	MsgInfo("    3d channels: %d\n", m_pChannels.numElem());
+	MsgInfo("    stream channels: %d\n", m_pAmbients.numElem());
+	MsgInfo("    registered effects: %d\n", m_effects.numElem());
+	MsgInfo("    emitters: %d\n", m_pSoundEmitters.numElem());
+	MsgInfo("    samples loaded: %d\n", m_pSoundSamples.numElem());
+}
+
+DECLARE_CMD(snd_info, "Print info about sound system", 0)
+{
+	((DkSoundSystemLocal*)soundsystem)->PrintInfo();
 }

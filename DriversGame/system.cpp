@@ -477,6 +477,7 @@ void CGameHost::ShutdownSystems()
 	g_parallelJobs->Shutdown();
 
 	equi::Manager->Shutdown();
+	g_fontCache->Shutdown();
 
 	ses->Shutdown();
 	soundsystem->Shutdown();
@@ -490,6 +491,8 @@ void CGameHost::ShutdownSystems()
 	g_fileSystem->FreeModule( g_matsysmodule );
 
 	SDL_DestroyWindow(g_pHost->m_pWindow);
+
+	PROFILE_DESTROY();
 }
 
 ConVar sys_maxfps("sys_maxfps", "0", "Frame rate limit", CV_CHEAT);

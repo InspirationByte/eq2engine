@@ -10,6 +10,7 @@
 
 #include "TextureAtlas.h"
 #include "utils/eqthread.h"
+#include "ppmem.h"
 
 #include "math/DkMath.h"
 
@@ -18,6 +19,8 @@ class CPFXAtlasGroup;
 class IEffect
 {
 public:
+	PPMEM_MANAGED_OBJECT_TAG("ParticleEffect")
+
 					IEffect();
 	virtual			~IEffect() {}
 

@@ -285,6 +285,7 @@ void Game_ShutdownSession(bool restart)
 		g_pGameSession->Shutdown();
 	}
 
+	delete g_pGameSession;
 	g_pGameSession = NULL;
 }
 
@@ -602,6 +603,9 @@ CState_Game::~CState_Game()
 
 void CState_Game::UnloadGame()
 {
+	if(!g_pPhysics)
+		return;
+
 	m_isGameRunning = false;
 	g_pGameHUD->Cleanup();
 
@@ -618,6 +622,9 @@ void CState_Game::UnloadGame()
 	g_pModelCache->ReleaseCache();
 
 	ses->Shutdown();
+
+	delete g_pPhysics;
+	g_pPhysics = NULL;
 }
 
 void CState_Game::LoadGame()
@@ -632,8 +639,9 @@ void CState_Game::LoadGame()
 	PrecacheScriptSound( "menu.back" );
 	PrecacheScriptSound( "menu.roll" );
 
-	g_pPhysics->SceneInit();
+	g_pPhysics = new CPhysicsEngine();
 
+	g_pPhysics->SceneInit();
 	g_pGameHUD->Init();
 
 	if( Game_LoadWorld() )
@@ -796,6 +804,9 @@ void CState_Game::OnLeave( CBaseStateHandler* to )
 
 int CState_Game::GetPauseMode() const
 {
+	if(!g_pGameSession)
+		return PAUSEMODE_PAUSE;
+
 	if(g_pGameSession->IsGameDone())
 		return g_pGameSession->GetMissionStatus() == MIS_STATUS_SUCCESS ? PAUSEMODE_COMPLETE : PAUSEMODE_GAMEOVER;
 

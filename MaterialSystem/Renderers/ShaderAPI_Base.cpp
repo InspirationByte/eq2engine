@@ -573,7 +573,10 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, Filter_e texture
 				MsgInfo("Texture loaded: %s\n",pszFileName);
 		}
 		else
+		{
 			MsgError("Can't open texture \"%s\"\n",pszFileName);
+			delete pImage;
+		}
 	}
 
 	// Now create the texture
@@ -724,7 +727,10 @@ bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 		pImages.append(pImage);
 	}
 	else
+	{
 		MsgError("Can't open texture \"%s\"\n", pTexture->GetName());
+		delete pImage;
+	}
 
 	CreateTextureInternal(&pTexture, pImages, pTexture->GetSamplerState(),pTexture->GetFlags());
 
@@ -757,16 +763,16 @@ ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
 
 	int m_nCheckerSize = 4;
 
-	CImage* image = new CImage();
-	ubyte *dest = image->Create(FORMAT_RGBA8,32,32,1,1);
+	CImage image;
+	ubyte *dest = image.Create(FORMAT_RGBA8,32,32,1,1);
 
-	image->SetName("error");
+	image.SetName("error");
 
 	PixelWriter pixelWriter;
 	pixelWriter.SetPixelMemory(FORMAT_RGBA8,dest,0);
 
-	int nWidth = image->GetWidth();
-	int nHeight = image->GetHeight();
+	int nWidth = image.GetWidth();
+	int nHeight = image.GetHeight();
 
 	for (int y = 0; y < nHeight; ++y)
 	{
@@ -787,14 +793,12 @@ ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
 	//if(nFlags & TEXTURE_FLAG_NORMALMAP)
 	//	pImage->toNormalMap(FORMAT_RGBA8);
 
-	image->CreateMipMaps();
+	image.CreateMipMaps();
 
 	DkList<CImage*> images;
-	images.append(image);
+	images.append(&image);
 
 	ITexture* pOutTexture = CreateTexture(images, texSamplerParams, nFlags);
-
-	delete image;
 
 	return pOutTexture;
 }

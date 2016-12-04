@@ -17,8 +17,8 @@
 
 #include "ppmem.h"
 
-
 #include <malloc.h>
+
 #include <unordered_map>
 #include "DebugInterface.h"
 #include "IConCommandFactory.h"
@@ -28,17 +28,33 @@
 
 #include <stdio.h>
 
+#if defined(_DEBUG) && defined(_WIN32)
+#define pp_internal_malloc(s)	_malloc_dbg(s, _NORMAL_BLOCK, pszFileName, nLine)
+#else
+#define pp_internal_malloc(s)	malloc(s)
+#endif // defined(_DEBUG) && defined(_WIN32)
+
 using namespace Threading;
 
 //#define PPMEM_DISABLE
 #define PPMEM_EXTRA_DEBUGINFO
 #define PPMEM_CHECKMARK			(0x1df001ed)	// i'd fooled :D
+#define PPMEM_DEBUG_TAG_MAX		32
+
+#ifdef _DEBUG
+#define PPMEM_DEBUG_TAGS
+#endif // _DEBUG
 
 struct ppallocinfo_t
 {
 	ppallocinfo_t()
 	{
 	}
+
+#ifdef PPMEM_DEBUG_TAGS
+	// extra visibility via CRT debug output
+	char		tag[PPMEM_DEBUG_TAG_MAX];
+#endif // PPMEM_DEBUG_TAGS
 
 #ifdef PPMEM_EXTRA_DEBUGINFO
 	const char*	src;
@@ -73,6 +89,31 @@ bool g_enablePPMem = false;
 static ConCommand	ppmem_stats("ppmem_stats",CONCOMMAND_FN(ppmemstats), "Memory info",CV_UNREGISTERED);
 static ConVar		ppmem_break_on_alloc("ppmem_break_on_alloc", "-1", "Helps to catch allocation id at stack trace",CV_UNREGISTERED);
 
+#if defined(_DEBUG) && defined(_WIN32)
+
+DECLARE_CMD(crtdebug_break_alloc, "Sets allocation ID to catch allocation", CV_UNREGISTERED)
+{
+	if(CMD_ARGC == 0)
+	{
+		Msg("now: %d\n", _crtBreakAlloc);
+		return;
+	}
+
+	// don't print any message to console
+	_crtBreakAlloc = atoi(CMD_ARGV(0).c_str());
+}
+
+size_t _crtBreakAllocSize = -1;
+
+int EqAllocHook( int allocType, void *userData, size_t size, int blockType, long requestNumber, const unsigned char *filename, int lineNumber)
+{
+	bool cond = (_crtBreakAlloc == requestNumber && _crtBreakAllocSize == size);
+
+	return cond ? FALSE : TRUE;
+}
+
+#endif // defined(_DEBUG) && defined(_WIN32)
+
 void PPMemInit()
 {
 	int idxEnablePpmem = g_cmdLine->FindArgument("-memdebug");
@@ -87,6 +128,15 @@ void PPMemInit()
 		g_sysConsole->RegisterCommand(&ppmem_break_on_alloc);
 	}
 
+#if defined(_DEBUG) && defined(_WIN32)
+	g_sysConsole->RegisterCommand(&cmd_crtdebug_break_alloc);
+
+	//_crtBreakAlloc = 21657;
+	//_crtBreakAllocSize = 64;
+
+	_CrtSetAllocHook(EqAllocHook);
+#endif // defined(_DEBUG) && defined(_WIN32)
+
 	//PPMemShutdown();
 }
 
@@ -100,6 +150,10 @@ void PPMemShutdown()
 
     g_sysConsole->UnregisterCommand(&ppmem_stats);
     g_sysConsole->UnregisterCommand(&ppmem_break_on_alloc);
+
+#if defined(_DEBUG) && defined(_WIN32)
+	g_sysConsole->UnregisterCommand(&cmd_crtdebug_break_alloc);
+#endif // defined(_DEBUG) && defined(_WIN32)
 }
 
 // Printing the statistics and tracked memory usage
@@ -122,11 +176,26 @@ void PPMemInfo( bool fullStats )
 	
 		if(fullStats)
 		{
-#ifdef PPMEM_EXTRA_DEBUGINFO
-			MsgInfo("alloc id=%d, src='%s' (%d), ptr=%p, size=%d\n", alloc->id, alloc->src, alloc->line, curPtr, alloc->size);
+
+#ifdef PPMEM_DEBUG_TAGS
+
+#	ifdef PPMEM_EXTRA_DEBUGINFO
+			MsgInfo("alloc '%s' id=%d, src='%s' (%d), ptr=%p, size=%d\n", alloc->tag, alloc->id, alloc->src, alloc->line, curPtr, alloc->size);
+#	else
+			MsgInfo("alloc '%s' id=%d, ptr=%p, size=%d\n", alloc->tag, alloc->id, curPtr, alloc->size);
+#	endif
+
 #else
+
+#	ifdef PPMEM_EXTRA_DEBUGINFO
+			MsgInfo("alloc id=%d, src='%s' (%d), ptr=%p, size=%d\n", alloc->id, alloc->src, alloc->line, curPtr, alloc->size);
+#	else
 			MsgInfo("alloc id=%d, ptr=%p, size=%d\n", alloc->id, curPtr, alloc->size);
-#endif
+#	endif
+
+#endif // PPMEM_DEBUG_TAGS
+
+
 
 			uint* checkMark = (uint*)((ubyte*)curPtr + alloc->size);
 
@@ -190,23 +259,31 @@ ppallocinfo_t* FindAllocation( void* ptr, bool& isValidInputPtr )
 }
 
 // allocated debuggable memory block
-void* PPDAlloc(uint size, const char* pszFileName, int nLine)
+void* PPDAlloc(uint size, const char* pszFileName, int nLine, const char* debugTAG)
 {
 #ifdef PPMEM_DISABLE
-	return malloc(size);
+	return pp_internal_malloc(size);
 #else
 
 	if(!g_enablePPMem)
-		return malloc(size);
+		return pp_internal_malloc(size);
 
 	// allocate more to store extra information of this
-	ppallocinfo_t* alloc = (ppallocinfo_t*)malloc(sizeof(ppallocinfo_t) + size + sizeof(uint));
+	ppallocinfo_t* alloc = (ppallocinfo_t*)pp_internal_malloc(sizeof(ppallocinfo_t) + size + sizeof(uint));
 
 	alloc->src = pszFileName;
 	alloc->line = nLine;
 
 	alloc->size = size;
 	alloc->id = s_allocIdCounter++;
+
+#ifdef PPMEM_DEBUG_TAGS
+	// extra visibility via CRT debug output
+	if(!debugTAG)
+		strncpy(alloc->tag, varargs("ppalloc_%d", s_allocIdCounter), PPMEM_DEBUG_TAG_MAX);
+	else
+		strncpy(alloc->tag, debugTAG, PPMEM_DEBUG_TAG_MAX);
+#endif // PPMEM_DEBUG_TAGS
 
 	// actual pointer address
 	void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
@@ -229,7 +306,7 @@ void* PPDAlloc(uint size, const char* pszFileName, int nLine)
 }
 
 // reallocates memory block
-void* PPDReAlloc( void* ptr, uint size, const char* pszFileName, int nLine )
+void* PPDReAlloc( void* ptr, uint size, const char* pszFileName, int nLine, const char* debugTAG )
 {
 #ifdef PPMEM_DISABLE
 	return realloc(ptr, size);
@@ -277,7 +354,7 @@ void* PPDReAlloc( void* ptr, uint size, const char* pszFileName, int nLine )
 		return actualPtr;
 	}
 	else
-		return PPDAlloc(size, pszFileName, nLine);
+		return PPDAlloc(size, pszFileName, nLine, debugTAG);
 #endif // PPMEM_DISABLE
 }
 

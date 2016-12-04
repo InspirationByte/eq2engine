@@ -16,11 +16,6 @@
 #include "platform/Platform.h"
 #include <malloc.h> // alloca
 
-#if defined(_DEBUG) && defined(_WIN32)
-#	define _CRTDBG_MAP_ALLOC
-#	include <crtdbg.h>
-#endif
-
 // Default constructor
 ConVar::ConVar() : ConCommandBase()
 {

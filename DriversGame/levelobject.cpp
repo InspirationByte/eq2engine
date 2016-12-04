@@ -26,14 +26,17 @@ CLevObjectDef::CLevObjectDef() :
 
 CLevObjectDef::~CLevObjectDef()
 {
-	if(m_info.type == LOBJ_TYPE_INTERNAL_STATIC && m_model)
+	if(m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 	{
 		delete m_instData;
 
-		m_model->Ref_Drop();
+		if(m_model)
+		{
+			m_model->Ref_Drop();
 
-		if(m_model->Ref_Count() <= 0)
-			delete m_model;
+			if(m_model->Ref_Count() <= 0)
+				delete m_model;
+		}
 	}
 	else
 	{

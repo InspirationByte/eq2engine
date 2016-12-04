@@ -334,6 +334,8 @@ void CDkCore::Shutdown()
     if (!m_bInitialized)
         return;
 
+	g_fileSystem->Shutdown();
+
 	delete m_coreConfiguration;
 	m_coreConfiguration = NULL;
 

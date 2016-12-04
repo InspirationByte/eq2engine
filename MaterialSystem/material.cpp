@@ -24,6 +24,7 @@ CMaterial::CMaterial() : m_state(MATERIAL_LOAD_ERROR), m_pShader(nullptr), m_pro
 
 CMaterial::~CMaterial()
 {
+
 }
 
 //
@@ -161,7 +162,9 @@ void CMaterial::InitShader()
 	if(!m_pShader || (m_pShader && !stricmp(m_pShader->GetName(), "Error")))
 	{
 		MsgError("Invalid shader '%s' specified for material %s!\n",m_szShaderName.GetData(),m_szMaterialName.GetData());
-		m_pShader = materials->CreateShaderInstance("Error");
+
+		if(!m_pShader)
+			m_pShader = materials->CreateShaderInstance("Error");
 	}
 
 	if(m_pShader)

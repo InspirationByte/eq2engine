@@ -69,6 +69,10 @@
 #  endif
 #  include <windows.h>
 
+#if defined(_DEBUG)
+#	include <crtdbg.h>
+#endif
+
 #elif defined(PLAT_LINUX) || defined(PLAT_ANDROID)
 #  include <stdio.h>
 

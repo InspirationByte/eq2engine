@@ -98,7 +98,7 @@
       <Optimization>Disabled</Optimization>
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <IntrinsicFunctions>false</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;NO_ENGINE;NOENGINE;GAME_DRIVERS;EQ_USE_SDL;BIG_REPLAYS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;NO_ENGINE;NOENGINE;GAME_DRIVERS;EQ_USE_SDL;BIG_REPLAYS;_CRTDBG_MAP_ALLOC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\public\materialsystem;..\public\materialsystem\renderers;..\Physics\bullet\src;..\Physics\bullet\src\BulletSoftBody;..\utils\eq_physgen;..\utils\wx\include;..\utils\wx\include\msvc;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\oolua\include;..\src_dependency\lua\src;..\src_dependency\jpeg;..\src_dependency\shiny\include;..\src_dependency\OpenALSoftCustom\include;..\src_dependency\libogg\include;..\src_dependency\libvorbis\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>

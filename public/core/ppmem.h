@@ -31,8 +31,8 @@
 
 IEXPORTS void	PPMemInfo( bool fullStats = true );
 
-IEXPORTS void*	PPDAlloc( uint size, const char* pszFileName, int nLine );
-IEXPORTS void*	PPDReAlloc( void* ptr, uint size, const char* pszFileName, int nLine );
+IEXPORTS void*	PPDAlloc( uint size, const char* pszFileName, int nLine, const char* debugTAG = nullptr );
+IEXPORTS void*	PPDReAlloc( void* ptr, uint size, const char* pszFileName, int nLine, const char* debugTAG = nullptr );
 
 IEXPORTS void	PPFree( void* ptr );
 
@@ -40,16 +40,21 @@ IEXPORTS void	PPFree( void* ptr );
 #define			PPAllocStructArray(type, count)		(type*)	PPDAlloc(count*sizeof(type), __FILE__, __LINE__)
 #define			PPReAlloc(ptr, size)				PPDReAlloc(ptr, size, __FILE__, __LINE__)
 
+#define			PPAllocTAG(size, tagSTR)						PPDAlloc(size, __FILE__, __LINE__, tagSTR)
+#define			PPAllocStructArrayTAG(type, count, tagSTR)		(type*)	PPDAlloc(count*sizeof(type), __FILE__, __LINE__, tagSTR)
+#define			PPReAllocTAG(ptr, size, tagSTR)					PPDReAlloc(ptr, size, __FILE__, __LINE__, tagSTR)
+
 // special macro to control your class allocations
 // or if you want fast allocator
-#define PPMEM_MANAGED_OBJECT()					\
+
+#define PPMEM_MANAGED_OBJECT_TAG( tagStr )		\
 	static void* operator new (size_t size)		\
 	{											\
-		return PPAlloc( size );					\
+		return PPAllocTAG( size, tagStr );		\
 	}											\
 	static void* operator new [] (size_t size)	\
 	{											\
-		return PPAlloc( size );					\
+		return PPAllocTAG( size, tagStr );		\
 	}											\
 	void operator delete (void *p)				\
 	{											\
@@ -60,11 +65,6 @@ IEXPORTS void	PPFree( void* ptr );
 		PPFree(p);								\
 	}
 
-/*
-class CMemPoolPage
-{
-
-};
-*/
+#define PPMEM_MANAGED_OBJECT()	PPMEM_MANAGED_OBJECT_TAG(nullptr)
 
 #endif // PPMEM_H
