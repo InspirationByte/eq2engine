@@ -392,6 +392,8 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	m_carNameDialog->SetValue("mustang");
 
+	g_pPhysics = new CPhysicsEngine();
+
 	// create physics scene
 	g_pPhysics->SceneInit();
 
@@ -1167,7 +1169,8 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 	g_pGameWorld->Cleanup();
 
 	g_pPhysics->SceneShutdown();
-	g_pPhysics->SceneInit();
+	delete g_pPhysics;
+	g_pPhysics = NULL;
 
 	g_parallelJobs->Wait();
 	g_parallelJobs->Shutdown();

@@ -130,7 +130,7 @@ void CObject_Sheets::Simulate( float fDt )
 	PFXVertex_t* sheetQuad;
 
 	const float sheetScale = 0.2f;
-	ColorRGBA color = (g_pGameWorld->m_info.ambientColor+g_pGameWorld->m_info.sunColor);
+	ColorRGBA color(g_pGameWorld->m_info.ambientColor+g_pGameWorld->m_info.sunColor);
 
 	for( int i = 0; i < m_sheets.numElem(); i++ )
 	{

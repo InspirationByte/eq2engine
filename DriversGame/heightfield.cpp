@@ -183,8 +183,54 @@ bool CHeightTileField::IsEmpty()
 	return true;
 }
 
+#ifdef EDITOR
+void CHeightTileField::FreeUnusedMaterials()
+{
+	DkList<hfieldmaterial_t*> usedMaterials;
+
+	for(int i = 0; i < m_materials.numElem(); i++)
+		m_materials[i]->used = false;
+	
+	// mark materials used or not
+	// and remap the cell materials
+	for(int y = 0; y < m_sizeh; y++)
+	{
+		for(int x = 0; x < m_sizew; x++)
+		{
+			int matId = m_points[y*m_sizew+x].texture;
+
+			if(matId == -1)
+				continue;
+
+			int newTexId = usedMaterials.addUnique( m_materials[matId] );
+			m_materials[matId]->used = true;
+
+			m_points[y*m_sizew+x].texture = newTexId;
+		}
+	}
+
+	// free unused materials
+	for(int i = 0; i < m_materials.numElem(); i++)
+	{
+		if(m_materials[i]->used)
+			continue;
+
+		materials->FreeMaterial(m_materials[i]->material);
+		delete m_materials[i];
+	}
+
+	m_materials.clear();
+	m_materials.append( usedMaterials);
+}
+#endif // EDITOR
+
 int CHeightTileField::WriteToStream( IVirtualStream* stream )
 {
+#ifdef EDITOR
+	// first of all we freeing unused materials
+	FreeUnusedMaterials();
+#endif // EDITOR
+
 	long fpos = stream->Tell();
 
 	// write heightfield data

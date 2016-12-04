@@ -107,6 +107,9 @@ struct hfieldmaterial_t
 	hfieldmaterial_t()
 	{
 		atlas = NULL;
+#ifdef EDITOR
+		used = false;
+#endif // EDITOR
 	}
 
 	~hfieldmaterial_t()
@@ -117,6 +120,10 @@ struct hfieldmaterial_t
 
 	CTextureAtlas*	atlas;
 	IMaterial*		material;
+
+#ifdef EDITOR
+	bool			used;
+#endif // EDITOR
 };
 
 struct hfieldbatch_t
@@ -194,6 +201,10 @@ public:
 	void						DebugRender(bool bDrawTiles, float gridHeight);
 
 	void						GetDecalPolygons( decalprimitives_t& polys, occludingFrustum_t* frustum);
+
+#ifdef EDITOR
+	void						FreeUnusedMaterials();
+#endif // EDITOR
 
 public:
 	Vector3D					m_position;		// translation of heightfield
