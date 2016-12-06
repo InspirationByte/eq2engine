@@ -724,7 +724,8 @@ bool LoadMaterialPaths(kvkeybase_t* pSection)
 			g_matpathes.append(desc);
 		}
 
-		if(!stricmp(pSection->keys[i]->name, "notextures"))
+		if(	!stricmp(pSection->keys[i]->name, "notextures") || 
+			!stricmp(pSection->keys[i]->name, "nomaterials"))
 		{
 			g_notextures = KV_GetValueBool(pSection->keys[i]);
 		}

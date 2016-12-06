@@ -134,6 +134,9 @@ CGameWorld::CGameWorld()
 	m_rainSound = NULL;
 	m_vehicleVertexFormat = NULL;
 
+	m_skyColor = NULL;
+	m_skyModel = NULL;
+
 	m_sceneinfo.m_fZNear = 0.25f;
 #ifdef EDITOR
 	m_sceneinfo.m_fZFar = 8000.0f;
@@ -151,15 +154,17 @@ CGameWorld::CGameWorld()
 	m_reflectionTex = NULL;
 	m_tempReflTex = NULL;
 	m_blurYMaterial = NULL;
+	m_envMap = NULL;
+	m_fogEnvMap = NULL;
 
 	m_globalTrafficLightTime = 0.0f;
 	m_globalTrafficLightDirection = 0;
 
-	m_skyMaterial = NULL;
 	m_levelLoaded = false;
 
 	m_objectInstVertexFormat = NULL;
 	m_objectInstVertexBuffer = NULL;
+	m_envMapsDirty = true;
 }
 
 void CGameWorld::SetEnvironmentName(const char* name)
@@ -206,6 +211,8 @@ void CGameWorld::InitEnvironment()
 		return;
 #endif // EDITOR
 
+	m_envMapsDirty = true;
+
 	materials->SetEnvironmentMapTexture(NULL);
 
 	KeyValues envKvs;
@@ -240,6 +247,8 @@ void CGameWorld::InitEnvironment()
 		m_envConfig.skyboxMaterial = materials->FindMaterial(m_envConfig.skyboxPath.c_str());
 		m_envConfig.skyboxMaterial->Ref_Grab();
 
+		m_skyColor = m_envConfig.skyboxMaterial->GetMaterialVar("color", "[1 1 1 1]");
+
 		materials->PutMaterialToLoadingQueue(m_envConfig.skyboxMaterial);
 
 		AngleVectors(m_envConfig.sunAngles, &m_info.sunDir);
@@ -259,6 +268,8 @@ void CGameWorld::InitEnvironment()
 		m_envConfig.lensIntensity = 1.0f;
 		m_envConfig.skyboxMaterial = materials->FindMaterial(m_envConfig.skyboxPath.c_str());
 		m_envConfig.skyboxMaterial->Ref_Grab();
+
+		m_skyColor = m_envConfig.skyboxMaterial->GetMaterialVar("color", "[1 1 1 1]");
 
 		materials->PutMaterialToLoadingQueue(m_envConfig.skyboxMaterial);
 
@@ -290,6 +301,8 @@ void CGameWorld::InitEnvironment()
 
 	m_envConfig.skyboxMaterial = materials->FindMaterial(m_envConfig.skyboxPath.c_str());
 	m_envConfig.skyboxMaterial->Ref_Grab();
+
+	m_skyColor = m_envConfig.skyboxMaterial->GetMaterialVar("color", "[1 1 1 1]");
 
 	AngleVectors(m_envConfig.sunAngles, &m_info.sunDir);
 
@@ -426,6 +439,12 @@ void CGameWorld::Init()
 #ifndef EDITOR
 	m_shadowRenderer.Init();
 #endif // EDITOR
+
+	if(!m_skyModel)
+	{
+		int cacheIdx = g_pModelCache->PrecacheModel("models/engine/sky.egf");
+		m_skyModel = g_pModelCache->GetModel(cacheIdx);
+	}
 
 	if(!g_vehicleLights)
 	{
@@ -673,6 +692,12 @@ void CGameWorld::Cleanup( bool unloadLevel )
 		materials->FreeMaterial(m_blurYMaterial);
 		m_blurYMaterial = NULL;
 
+		g_pShaderAPI->FreeTexture(m_envMap);
+		m_envMap = NULL;
+
+		g_pShaderAPI->FreeTexture(m_fogEnvMap);
+		m_fogEnvMap = NULL;
+
 		g_pShaderAPI->DestroyVertexFormat(m_objectInstVertexFormat);
 		m_objectInstVertexFormat = NULL;
 
@@ -684,6 +709,9 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 		materials->FreeMaterial(m_depthTestMat);
 		m_depthTestMat = NULL;
+
+		m_skyColor = NULL;
+		m_skyModel = NULL;
 	}
 }
 
@@ -916,79 +944,144 @@ void CGameWorld::BuildViewMatrices(int width, int height, int nRenderFlags)
 	materials->SetFogInfo(fog);
 }
 
-void DrawSkyBox(IMaterial* pSkyMaterial, int renderFlags)
+void CGameWorld::DrawSkyBox(int renderFlags)
 {
-	materials->BindMaterial( pSkyMaterial );
+	if(!m_skyModel)
+		return;
 
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	FogInfo_t noFog;
+	noFog.enableFog = false;
 
-	const float skySize = 5000.0f;
+	materials->SetFogInfo(noFog);
 
-	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
-		meshBuilder.TexCoord3f(-1,1,-1);
-		meshBuilder.Position3f(-skySize,  skySize, -skySize);
-		meshBuilder.AdvanceVertex();
-		meshBuilder.TexCoord3f(-1,-2.85,-1);
-		meshBuilder.Position3f(-skySize, -skySize, -skySize);
-		meshBuilder.AdvanceVertex();
+	materials->SetCullMode(CULL_BACK);
+	materials->BindMaterial( m_envConfig.skyboxMaterial, false );
 
-		meshBuilder.TexCoord3f(-1,1,1);
-		meshBuilder.Position3f(-skySize,  skySize,  skySize);
-		meshBuilder.AdvanceVertex();
-		meshBuilder.TexCoord3f(-1,-2.85,1);
-		meshBuilder.Position3f(-skySize, -skySize,  skySize);
-		meshBuilder.AdvanceVertex();
+	studiohdr_t* pHdr = m_skyModel->GetHWData()->pStudioHdr;
+	int nLOD = 0;
 
-		meshBuilder.TexCoord3f(1,1,1);
-		meshBuilder.Position3f( skySize,  skySize,  skySize);
-		meshBuilder.AdvanceVertex();
-		meshBuilder.TexCoord3f(1,-2.85,1);
-		meshBuilder.Position3f( skySize, -skySize,  skySize);
-		meshBuilder.AdvanceVertex();
+	// draw skydome body groups
+	for(int i = 0; i < pHdr->numbodygroups; i++)
+	{
+		//if(!(m_bodyGroupFlags & (1 << i)))
+		//	continue;
 
-		meshBuilder.TexCoord3f(1,1,-1);
-		meshBuilder.Position3f( skySize,  skySize, -skySize);
-		meshBuilder.AdvanceVertex();
-		meshBuilder.TexCoord3f(1,-2.85,-1);
-		meshBuilder.Position3f( skySize, -skySize, -skySize);
-		meshBuilder.AdvanceVertex();
+		int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
+		int nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ nLOD ];
 
-		meshBuilder.Position3f(skySize,  -skySize,  -skySize);
-		meshBuilder.AdvanceVertex();
-		meshBuilder.Position3f(-skySize,  skySize,  skySize);
-		meshBuilder.AdvanceVertex();
+		if(nModDescId == -1)
+			continue;
 
-		// second part
+		studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
 
-		meshBuilder.TexCoord3f(-1,1,1);
-		meshBuilder.Position3f(-skySize,  skySize,  skySize);
-		meshBuilder.AdvanceVertex();
-		meshBuilder.TexCoord3f(1,1,1);
-		meshBuilder.Position3f( skySize,  skySize,  skySize);
-		meshBuilder.AdvanceVertex();
+		// render model groups that in this body group
+		for(int j = 0; j < modDesc->numgroups; j++)
+			m_skyModel->DrawGroup( nModDescId, j );
+	}
+}
 
-		meshBuilder.TexCoord3f(-1,1,-1);
-		meshBuilder.Position3f(-skySize,  skySize, -skySize);
-		meshBuilder.AdvanceVertex();
-		meshBuilder.TexCoord3f(1,1,-1);
-		meshBuilder.Position3f( skySize,  skySize, -skySize);
-		meshBuilder.AdvanceVertex();
+void CopyPixels(int* src, int* dest, int w1, int h1, int w2, int h2) 
+{
+    int x_ratio = (int)((w1<<16)/w2) +1;
+    int y_ratio = (int)((h1<<16)/h2) +1;
 
-		meshBuilder.TexCoord3f(-1,-2.85,-1);
-		meshBuilder.Position3f(-skySize, -skySize, -skySize);
-		meshBuilder.AdvanceVertex();
-		meshBuilder.TexCoord3f(1,-2.85,-1);
-		meshBuilder.Position3f( skySize, -skySize, -skySize);
-		meshBuilder.AdvanceVertex();
+    int x2, y2 ;
+    for (int i=0;i<h2;i++) 
+	{
+        for (int j=0;j<w2;j++) 
+		{
+            x2 = ((j*x_ratio)>>16);
+            y2 = ((i*y_ratio)>>16);
 
-		meshBuilder.TexCoord3f(-1,-2.85,1);
-		meshBuilder.Position3f(-skySize, -skySize,  skySize);
-		meshBuilder.AdvanceVertex();
-		meshBuilder.TexCoord3f(1,-2.85,1);
-		meshBuilder.Position3f( skySize, -skySize,  skySize);
-		meshBuilder.AdvanceVertex();
+            dest[(i*w2)+j] = src[(y2*w1)+x2] ;
+        }                
+    }                
+}
 
-	meshBuilder.End();
+void CGameWorld::GenerateEnvmapAndFogTextures()
+{
+	if(!m_envMapsDirty)
+		return;
+
+	materials->Wait();
+
+	m_envMapsDirty = false;
+
+	ITexture* tempRenderTarget = g_pShaderAPI->CreateNamedRenderTarget("_tempSkyboxRender", 512, 512, FORMAT_RGBA8, 
+										TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
+
+	tempRenderTarget->Ref_Grab();
+
+	materials->SetMaterialRenderParamCallback(this);
+
+	// render the skybox into textures
+	for(int i = 0; i < 6; i++)
+	{
+		g_pShaderAPI->ChangeRenderTarget(tempRenderTarget, i);
+
+		// Draw sky
+		materials->SetMatrix(MATRIXMODE_PROJECTION, cubeProjectionMatrixD3D(0.1f, 1000.0f));
+		materials->SetMatrix(MATRIXMODE_VIEW, cubeViewMatrix(i));
+		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+		m_skyColor->SetVector4( 1.0f );
+		DrawSkyBox(0);
+	}
+
+	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
+	g_pShaderAPI->Finish();
+
+	texlockdata_t tempLock;
+	CImage envMap, fogEnvMap;
+	envMap.Create(FORMAT_RGBA8, 256, 256, 0, 1);
+	fogEnvMap.Create(FORMAT_RGBA8, 64, 64, 0, 1);
+
+	ubyte* envMapData = envMap.GetPixels(0);
+	ubyte* fogEnvMapData = fogEnvMap.GetPixels(0);
+
+	int envMapFace = envMap.GetMipMappedSize(0,1) / 6;
+	int fogEnvMapFace = fogEnvMap.GetMipMappedSize(0,1) / 6;
+	
+	// do resize by software
+	for(int i = 0; i < 6; i++)
+	{
+		tempRenderTarget->Lock(&tempLock, NULL, false, true, 0, i );
+		if(tempLock.pData)
+		{
+			CopyPixels((int*)tempLock.pData, (int*)envMapData, tempRenderTarget->GetWidth(), tempRenderTarget->GetHeight(), envMap.GetWidth(), envMap.GetHeight());
+			envMapData += envMapFace;
+
+			CopyPixels((int*)tempLock.pData, (int*)fogEnvMapData, tempRenderTarget->GetWidth(), tempRenderTarget->GetHeight(), fogEnvMap.GetWidth(), fogEnvMap.GetHeight());
+			fogEnvMapData += fogEnvMapFace;
+
+			tempRenderTarget->Unlock();
+		}
+	}
+
+	envMap.SwapChannels(0, 2);
+	fogEnvMap.SwapChannels(0, 2);
+	
+	DkList<CImage*> envMapImg;
+	envMapImg.append(&envMap);
+
+	DkList<CImage*> fogEnvMapImg;
+	fogEnvMapImg.append(&fogEnvMap);
+
+	envMap.SetName("_skyEnvMap");
+	fogEnvMap.SetName("_fogEnvMap");
+
+	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(TEXFILTER_LINEAR, ADDRESSMODE_CLAMP, ADDRESSMODE_CLAMP, ADDRESSMODE_CLAMP);
+
+	// DEPTH == 0 is cubemap
+	g_pShaderAPI->FreeTexture(m_envMap);
+	m_envMap = g_pShaderAPI->CreateTexture(envMapImg, sampler);
+	m_envMap->Ref_Grab();
+
+	g_pShaderAPI->FreeTexture(m_fogEnvMap);
+	m_fogEnvMap = g_pShaderAPI->CreateTexture(fogEnvMapImg, sampler);
+	m_fogEnvMap->Ref_Grab();
+
+	g_pShaderAPI->FreeTexture( tempRenderTarget );
 }
 
 const float g_visualWetnessTable[WEATHER_COUNT] =
@@ -1024,6 +1117,8 @@ void CGameWorld::OnPreApplyMaterial( IMaterial* pMaterial )
 	g_pShaderAPI->SetShaderConstantVector3D("SunDir", m_info.sunDir);
 
 	g_pShaderAPI->SetShaderConstantFloat("GameTime", m_curTime);
+
+	g_pShaderAPI->SetTexture(m_fogEnvMap, "FogEnvMap", 6);
 
 	Vector2D envParams;
 
@@ -1284,6 +1379,9 @@ void CGameWorld::Draw( int nRenderFlags )
 		return;
 	}
 
+	// we need to regenerate cubemap for reflections and pretty texture for the fog
+	GenerateEnvmapAndFogTextures();
+
 #ifndef EDITOR
 	const Vector2D& screenSize = g_pHost->GetWindowSize();
 #else
@@ -1312,13 +1410,22 @@ void CGameWorld::Draw( int nRenderFlags )
 		float fThunderLight = saturate(sin((m_fThunderTime - m_fNextThunderTime)*30.0f))*0.5f;
 		fThunderLight += saturate(sin((m_fThunderTime - m_fNextThunderTime)*70.0f));
 
-		fSkyBrightness = 1.0f + (1.0 - fThunderLight)*0.35f;
+		fSkyBrightness = 1.0f + (1.0 - fThunderLight)*0.85f;
 		m_info.rainBrightness += fThunderLight*0.5f;
 
 		m_info.sunColor = ColorRGBA(m_envConfig.sunColor + 0.9f * fThunderLight, 1.0f);
 	}
 
-	m_skyMaterial = m_envConfig.skyboxMaterial;
+	if(r_drawsky.GetBool())
+	{
+		// Draw sky
+		materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
+		materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
+		materials->SetMatrix(MATRIXMODE_WORLD, translate(m_view.GetOrigin()));
+
+		m_skyColor->SetVector4( fSkyBrightness );
+		DrawSkyBox(nRenderFlags);
+	}
 
 	// calculate fog parameters
 	if (fog_override.GetBool())
@@ -1372,39 +1479,13 @@ void CGameWorld::Draw( int nRenderFlags )
 	// set global pre-apply callback
 	materials->SetMaterialRenderParamCallback(this);
 
-	if(m_skyMaterial && m_skyMaterial->GetState() == MATERIAL_LOAD_OK)	// setup the $env_cubemap texture
-		materials->SetEnvironmentMapTexture( m_skyMaterial->GetBaseTexture() );
-	else
-		materials->SetEnvironmentMapTexture( g_pShaderAPI->GetErrorTexture() );
+	materials->SetEnvironmentMapTexture( m_envMap );
 
 	// world rendering
 	if(r_drawWorld.GetBool())
 	{
 		// DRAW ONLY OPAQUE OBJECTS
 		m_level.Render(m_view.GetOrigin(), m_viewprojection, m_occludingFrustum, nRenderFlags);
-	}
-
-	if(r_drawsky.GetBool())
-	{
-		//
-		// Draw sky
-		//
-#ifndef EDITOR
-		Matrix4x4 skyProj = perspectiveMatrixY(DEG2RAD(m_view.GetFOV()), screenSize.x, screenSize.y, 1.0f, 10000.0f);
-		materials->SetMatrix(MATRIXMODE_PROJECTION, skyProj);
-#endif // EDITOR
-
-		materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
-		materials->SetMatrix(MATRIXMODE_WORLD, translate(m_view.GetOrigin()));
-
-		materials->SetAmbientColor(fSkyBrightness);
-		DrawSkyBox(m_skyMaterial, nRenderFlags);
-
-		// restore state
-		materials->SetAmbientColor(m_info.ambientColor * r_ambientScale.GetFloat());
-		materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
-		materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
-		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 	}
 
 	if(r_drawObjects.GetBool())

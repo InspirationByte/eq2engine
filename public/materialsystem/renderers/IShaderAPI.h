@@ -88,7 +88,6 @@ typedef int OcclusionHandle_t;
 class IShaderAPI
 {
 public:
-
 	virtual ~IShaderAPI() {}
 
 	// initializes shader api.

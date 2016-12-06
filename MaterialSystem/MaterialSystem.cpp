@@ -603,8 +603,8 @@ void CMaterialSystem::ReloadAllMaterials()
 		if(!stricmp(material->GetName(), "Default"))
 			continue;
 
-		// release vars, shader and reinitialize material vars
-		material->Cleanup();
+		// don't drop variables, just reload shader
+		material->Cleanup(false, true);
 		material->Init( NULL );
 
 		int framesDiff = (material->m_frameBound - m_frame);

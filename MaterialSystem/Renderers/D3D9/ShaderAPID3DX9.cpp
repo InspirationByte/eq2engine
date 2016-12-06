@@ -1636,16 +1636,9 @@ void ShaderAPID3DX9::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* de
 	if(src->surfaces.numElem() <= 0)
 		return;
 
-	LPDIRECT3DSURFACE9 srcSurface = src->surfaces[0];
+	int numLevels = src->surfaces.numElem();
 
 	LPDIRECT3DTEXTURE9 destD3DTex = ( LPDIRECT3DTEXTURE9 )dest->textures[0];
-	ASSERT( destD3DTex );
-
-	LPDIRECT3DSURFACE9 destSurface;
-	HRESULT hr = destD3DTex->GetSurfaceLevel( 0, &destSurface );
-
-	if (FAILED(hr))
-		return;
 
 	RECT dxSrcRect, dxDestRect;
 
@@ -1665,13 +1658,34 @@ void ShaderAPID3DX9::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* de
 		dxDestRect.bottom = destRect->vrightBottom.y;
 	}
 
-	hr = m_pD3DDevice->StretchRect( srcSurface, srcRect ? &dxSrcRect : NULL, destSurface, destRect ? &dxDestRect : NULL, D3DTEXF_NONE );
-	//ASSERT( !FAILED( hr ) );
+	for(int i = 0; i < numLevels; i++)
+	{
+		LPDIRECT3DSURFACE9 srcSurface = src->surfaces[i];
 
-	//if(FAILED( hr ))
-	//	Msg("CopyRendertargetToTexture error\n");
+		LPDIRECT3DSURFACE9 destSurface;
+		HRESULT hr;
+		
+		if (dest->GetFlags() & TEXFLAG_CUBEMAP)
+			hr = ((LPDIRECT3DCUBETEXTURE9) destD3DTex)->GetCubeMapSurface((D3DCUBEMAP_FACES) i, 0, &destSurface);
+		else
+			hr = destD3DTex->GetSurfaceLevel( i, &destSurface );
 
-	destSurface->Release();
+		if (FAILED(hr))
+		{
+			Msg("CopyRendertargetToTexture failed to GetSurfaceLevel\n");
+			return;
+		}
+
+		ASSERT(destSurface);
+
+		hr = m_pD3DDevice->StretchRect( srcSurface, srcRect ? &dxSrcRect : NULL, destSurface, destRect ? &dxDestRect : NULL, D3DTEXF_NONE );
+		//ASSERT( !FAILED( hr ) );
+
+		//if(FAILED( hr ))
+		//	Msg("CopyRendertargetToTexture error\n");
+
+		destSurface->Release();
+	}
 }
 
 // Changes render target (MRT)

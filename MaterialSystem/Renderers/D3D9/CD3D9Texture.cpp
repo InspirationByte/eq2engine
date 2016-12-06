@@ -57,12 +57,18 @@ LPDIRECT3DBASETEXTURE9 CD3D9Texture::GetCurrentTexture()
 // locks texture for modifications, etc
 void CD3D9Texture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscard, bool bReadOnly, int nLevel, int nCubeFaceId)
 {
+	ASSERTMSG(!m_bIsLocked, "CD3D9Texture: already locked");
+	
+	if(m_bIsLocked)
+		return;
+
 	if(textures.numElem() > 1)
 		ASSERT(!"Couldn't handle locking of animated texture! Please tell to programmer!");
 
 	ASSERT( !m_bIsLocked );
 
 	m_nLockLevel = nLevel;
+	m_nLockCube = nCubeFaceId;
 	m_bIsLocked = true;
 
 	D3DLOCKED_RECT rect;
@@ -84,9 +90,11 @@ void CD3D9Texture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDisc
 	// try lock surface if exist
 	if( surfaces.numElem() )
 	{
+		ASSERT(nCubeFaceId < surfaces.numElem());
+
 		if(m_pool != D3DPOOL_DEFAULT)
 		{
-			HRESULT r = ((LPDIRECT3DSURFACE9) surfaces[0])->LockRect(&rect, (pRect ? &lock_rect : NULL), lock_flags);
+			HRESULT r = ((LPDIRECT3DSURFACE9) surfaces[nCubeFaceId])->LockRect(&rect, (pRect ? &lock_rect : NULL), lock_flags);
 
 			if(r == D3D_OK)
 			{
@@ -105,7 +113,7 @@ void CD3D9Texture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDisc
 
 			if (pDev->CreateOffscreenPlainSurface(m_iWidth, m_iHeight, formats[m_iFormat], D3DPOOL_SYSTEMMEM, &m_pLockSurface, NULL) == D3D_OK)
 			{
-				HRESULT r = ((ShaderAPID3DX9*)g_pShaderAPI)->m_pD3DDevice->GetRenderTargetData(((LPDIRECT3DSURFACE9) surfaces[0]), m_pLockSurface);
+				HRESULT r = ((ShaderAPID3DX9*)g_pShaderAPI)->m_pD3DDevice->GetRenderTargetData(((LPDIRECT3DSURFACE9) surfaces[nCubeFaceId]), m_pLockSurface);
 
 				if(r != D3D_OK)
 					ASSERT(!"Couldn't lock surface: failed to copy surface to m_pLockSurface!");
@@ -133,7 +141,16 @@ void CD3D9Texture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDisc
 	}
 	else // lock texture data
 	{
-		HRESULT r = ((LPDIRECT3DTEXTURE9) textures[0])->LockRect(nLevel, &rect, (pRect ? &lock_rect : NULL), lock_flags);
+		HRESULT r;
+
+		if(m_iFlags & TEXFLAG_CUBEMAP)
+		{
+			r = ((LPDIRECT3DCUBETEXTURE9) textures[0])->LockRect((D3DCUBEMAP_FACES)m_nLockCube, 0, &rect, (pRect ? &lock_rect : NULL), lock_flags);
+		}
+		else
+		{
+			r = ((LPDIRECT3DTEXTURE9) textures[0])->LockRect(nLevel, &rect, (pRect ? &lock_rect : NULL), lock_flags);
+		}
 
 		if(r == D3D_OK)
 		{
@@ -173,7 +190,13 @@ void CD3D9Texture::Unlock()
 		}
 	}
 	else
-		((LPDIRECT3DTEXTURE9) textures[0])->UnlockRect( m_nLockLevel );
+	{
+		if(m_iFlags & TEXFLAG_CUBEMAP)
+			((LPDIRECT3DCUBETEXTURE9) textures[0])->UnlockRect( (D3DCUBEMAP_FACES)m_nLockCube, m_nLockLevel );
+		else
+			((LPDIRECT3DTEXTURE9) textures[0])->UnlockRect( m_nLockLevel );
+	}
+		
 
 	m_bIsLocked = false;
 }

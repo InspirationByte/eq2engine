@@ -45,6 +45,7 @@ public:
 
 	bool					m_bIsLocked;
 	ushort					m_nLockLevel;
+	ushort					m_nLockCube;
 	LPDIRECT3DSURFACE9		m_pLockSurface;
 };
 

@@ -225,6 +225,10 @@ protected:
 	void							UpdateRenderables( const occludingFrustum_t& frustum );
 	void							UpdateLightTexture();
 
+	void							DrawSkyBox(int nRenderFlags);
+
+	void							GenerateEnvmapAndFogTextures();
+
 	//--------------------------------------
 
 	DkList<CBillboardList*>			m_billboardModels;
@@ -249,7 +253,12 @@ protected:
 
 	EqString						m_levelname;
 
-	IMaterial*						m_skyMaterial;
+	ITexture*						m_envMap;
+	ITexture*						m_fogEnvMap;
+	bool							m_envMapsDirty;
+
+	IMatVar*						m_skyColor;
+	IEqModel*						m_skyModel;
 
 	EqString						m_envName;
 
