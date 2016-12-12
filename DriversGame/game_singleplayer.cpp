@@ -72,6 +72,8 @@ CGameSession::CGameSession()
 	m_missionStatus = MIS_STATUS_INGAME;
 
 	m_localControls = 0;
+	m_localSteeringValue = 0.0f;
+	m_localAccelBrakeValue = 0.0f;
 	m_playerCar = NULL;
 	m_leadCar = NULL;
 
@@ -214,8 +216,11 @@ void CGameSession::Shutdown()
 	m_carEntries.clear();
 
 	m_playerCar = NULL;
-	m_localControls = 0;
 	m_leadCar = NULL;
+
+	m_localControls = 0;
+	m_localSteeringValue = 0.0f;
+	m_localAccelBrakeValue = 0.0f;
 }
 
 bool CGameSession::IsGameDone(bool checkTime /*= true*/) const
@@ -355,18 +360,12 @@ void CGameSession::Update( float fDt )
 		if( !g_replayData->IsCarPlaying( player_car ) )
 		{
 			m_playerCar->SetControlButtons( m_localControls );
+			m_playerCar->SetControlVars((m_localControls & IN_ACCELERATE) ? m_localAccelBrakeValue : 0.0f, 
+										(m_localControls & IN_BRAKE) ? m_localAccelBrakeValue : 0.0f, 
+										m_localSteeringValue);
 			m_playerCar->UpdateLightsState();
 		}
-
-		//debugoverlay->Text(ColorRGBA(1,1,0,1), "Car speed: %.1f KPH (%.1f m/s), Gear: %d", player_car->GetSpeed(), player_car->GetSpeed() * KPH_TO_MPS, player_car->GetGear());
-		//debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "Felony: %.2f, pursued by: %d\n", player_car->GetFelony()*100.0f, player_car->GetPursuedCount());
 	}
-
-	//static float jobFrametime = fDt;
-	//jobFrametime = fDt;
-
-	//g_parallelJobs->AddJob(GameJob_UpdatePhysics, &jobFrametime);
-	//g_parallelJobs->Submit();
 
 	float phys_begin = MEASURE_TIME_BEGIN();
 	g_pPhysics->Simulate( fDt, PHYSICS_ITERATION_COUNT, Game_OnPhysicsUpdate );
@@ -394,21 +393,11 @@ void CGameSession::Update( float fDt )
 	}
 }
 
-void CGameSession::UpdateLocalControls( int nControls )
+void CGameSession::UpdateLocalControls( int nControls, float steering, float accel_brake )
 {
-	CCar* playerCar = GetPlayerCar();
-
-	/*
-	// filter
-	if(	playerCar &&
-		(playerCar->m_conf->m_sirenType != SIREN_NONE &&
-		playerCar->m_sirenEnabled &&
-		(nControls & IN_HORN)))
-	{
-		nControls &= ~IN_HORN;
-	}*/
-
 	m_localControls = nControls;
+	m_localSteeringValue = steering;
+	m_localAccelBrakeValue = accel_brake;
 }
 
 CCar* CGameSession::CreateCar(const char* name, int carType)

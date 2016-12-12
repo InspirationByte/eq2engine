@@ -267,7 +267,7 @@ void Game_InitializeSession()
 	g_nDirectorCameraType = 0;
 
 	// reset buttons
-	g_nClientButtons = 0;
+	ZeroInputControls();
 }
 
 void Game_ShutdownSession(bool restart)
@@ -293,104 +293,8 @@ void Game_DirectorControlKeys(int key, bool down);
 
 void Game_HandleKeys(int key, bool down)
 {
-	if( g_pGameSession && g_pGameSession->GetPlayerCar() )
-	{
-		CCar* playerCar = g_pGameSession->GetPlayerCar();
-
-		if((g_nClientButtons & IN_ACCELERATE) != (g_nOldControlButtons & IN_ACCELERATE))
-		{
-			playerCar->m_accelRatio = 1023;
-			playerCar->m_brakeRatio = 1023;
-		}
-		else if((g_nClientButtons & IN_BRAKE) != (g_nOldControlButtons & IN_BRAKE))
-		{
-			playerCar->m_accelRatio = 1023;
-			playerCar->m_brakeRatio = 1023;
-		}
-		else if((g_nClientButtons & IN_TURNLEFT) != (g_nOldControlButtons & IN_TURNLEFT) ||
-				(g_nClientButtons & IN_TURNRIGHT) != (g_nOldControlButtons & IN_TURNRIGHT))
-		{
-			playerCar->m_steerRatio = 1024;
-			g_nClientButtons &= ~IN_ANALOGSTEER;
-		}
-	}
-
 	if(g_director.GetBool())
 		Game_DirectorControlKeys(key, down);
-}
-
-ConVar in_joy_deadzone("in_joy_deadzone", "0.02", "Joystick dead zone", CV_ARCHIVE);
-ConVar in_joy_steer_linear("in_joy_steer_linear", "1.0", "Joystick steering linearity", CV_ARCHIVE);
-ConVar in_joy_accel_linear("in_joy_accel_linear", "1.0", "Joystick acceleration linearity", CV_ARCHIVE);
-ConVar in_joy_brake_linear("in_joy_brake_linear", "1.0", "Joystick acceleration linearity", CV_ARCHIVE);
-
-void Game_JoyAxis( short axis, short value )
-{
-	if( g_pGameSession && g_pGameSession->GetPlayerCar() )
-	{
-		CCar* playerCar = g_pGameSession->GetPlayerCar();
-
-		int buttons = g_nClientButtons;
-
-		float accelRatio = 0.0f;
-		float brakeRatio = 0.0f;
-		float steerRatio = 0.0f;
-
-		playerCar->GetControlVars(accelRatio, brakeRatio, steerRatio);
-
-		if( axis == 3 )
-		{
-			if(value == 0)
-			{
-				buttons &= ~IN_ACCELERATE;
-				buttons &= ~IN_BRAKE;
-
-				accelRatio = 1.0f;
-				brakeRatio = 1.0f;
-			}
-			else if(value > 0)
-			{
-				float val = (float)value / (float)SHRT_MAX;
-				brakeRatio = pow(val, in_joy_brake_linear.GetFloat());
-				buttons |= IN_BRAKE;
-				buttons &= ~IN_ACCELERATE;
-			}
-			else
-			{
-				float val = fabs((float)value / (float)SHRT_MAX);
-				accelRatio = pow(val, in_joy_accel_linear.GetFloat());
-				buttons |= IN_ACCELERATE;
-				buttons &= ~IN_BRAKE;
-			}
-		}
-		else if( axis == 0 )
-		{
-			float val = (float)value / (float)SHRT_MAX;
-
-			steerRatio = sign(val) * pow(fabs(val), in_joy_steer_linear.GetFloat());
-
-			buttons |= IN_TURNRIGHT;
-			buttons &= ~IN_TURNLEFT;
-			//buttons &= ~IN_TURNRIGHT;
-
-			//if(value == 0)
-			//	buttons &= ~IN_ANALOGSTEER;
-		}
-
-		if(fabs(accelRatio) < in_joy_deadzone.GetFloat())
-			accelRatio = 0.0f;
-
-		if(fabs(brakeRatio) < in_joy_deadzone.GetFloat())
-			brakeRatio = 0.0f;
-
-		if(fabs(steerRatio) < in_joy_deadzone.GetFloat())
-			steerRatio = 0.0f;
-
-		playerCar->SetControlVars(accelRatio, brakeRatio, steerRatio);
-		playerCar->GetPhysicsBody()->TryWake(false);
-
-		g_nClientButtons = buttons;
-	}
 }
 
 void Game_UpdateFreeCamera(float fDt)
@@ -614,6 +518,8 @@ CState_Game::CState_Game() : CBaseStateHandler()
 	m_isGameRunning = false;
 	m_fade = 1.0f;
 	m_doLoadingFrames = 0;
+
+	RegisterInputJoysticEssentials();
 }
 
 CState_Game::~CState_Game()
@@ -936,7 +842,7 @@ bool CState_Game::Update( float fDt )
 
 	// reset buttons
 	if(m_showMenu)
-		g_nClientButtons = 0;
+		ZeroInputControls();
 
 	//
 	// Update, Render, etc
@@ -1196,7 +1102,7 @@ void CState_Game::DoGameFrame(float fDt)
 	PROFILE_FUNC();
 
 	// session update
-	g_pGameSession->UpdateLocalControls( g_nClientButtons );
+	g_pGameSession->UpdateLocalControls( g_nClientButtons, g_joySteeringValue, g_joyAccelBrakeValue );
 	g_pGameSession->Update(fDt);
 
 	//Game_UpdateCamera(fDt);
@@ -1393,8 +1299,5 @@ void CState_Game::HandleMouseWheel(int x,int y,int scroll)
 
 void CState_Game::HandleJoyAxis( short axis, short value )
 {
-	if(!m_isGameRunning)
-		return;
 
-	Game_JoyAxis(axis,value);
 }

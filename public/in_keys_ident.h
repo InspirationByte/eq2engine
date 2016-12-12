@@ -122,6 +122,9 @@
 #define KEY_Z			SDL_SCANCODE_Z
 
 #define JOYSTICK_START_KEYS		SDL_NUM_SCANCODES
+#define JOYSTICK_MAX_BUTTONS	32
+
+#define JOYSTICK_START_AXES		(JOYSTICK_START_KEYS+JOYSTICK_MAX_BUTTONS)
 
 #elif PLAT_WIN
 
@@ -417,13 +420,13 @@
 #endif // JOYSTICK_START_KEYS
 
 // the name associations
-struct keyname_t
+struct keyNameMap_t
 {
 	const char	*name;
 	int		    keynum;
 };
 
-static keyname_t s_keynames[] =
+static keyNameMap_t s_keyMapList[] =
 {
 	//{"MOUSE_MOVE", MOU_MOVE},
 
@@ -558,6 +561,17 @@ static keyname_t s_keynames[] =
 	{"JOY31", JOYSTICK_START_KEYS+30},
 	{"JOY32", JOYSTICK_START_KEYS+31},
 
+	{"JOYAXIS1", JOYSTICK_START_AXES},
+	{"JOYAXIS2", JOYSTICK_START_AXES+1},
+	{"JOYAXIS3", JOYSTICK_START_AXES+2},
+	{"JOYAXIS4", JOYSTICK_START_AXES+3},
+	{"JOYAXIS5", JOYSTICK_START_AXES+4},
+	{"JOYAXIS6", JOYSTICK_START_AXES+5},
+	{"JOYAXIS7", JOYSTICK_START_AXES+6},
+	{"JOYAXIS8", JOYSTICK_START_AXES+7},
+	{"JOYAXIS9", JOYSTICK_START_AXES+8},
+	{"JOYAXIS10", JOYSTICK_START_AXES+9},
+
 	{NULL,0}
 };
 
@@ -567,10 +581,10 @@ static int KeyStringToKeyIndex(const char *str)
 	if (!str)
 		return -1;
 
-	keyname_t	*kn = NULL;
+	keyNameMap_t	*kn = NULL;
 
 	int keyind = 0;
-	for( kn = s_keynames ; kn->name ; kn++)
+	for( kn = s_keyMapList ; kn->name ; kn++)
 	{
 		if (!stricmp(str,kn->name))
 			return keyind;
@@ -583,10 +597,10 @@ static int KeyStringToKeyIndex(const char *str)
 
 static const char* KeyIndexToString(int key)
 {
-	keyname_t	*kn = NULL;
+	keyNameMap_t	*kn = NULL;
 
 	int keyind = 0;
-	for( kn = s_keynames ; kn->name ; kn++)
+	for( kn = s_keyMapList ; kn->name ; kn++)
 	{
 		if (kn->keynum == key)
 			return kn->name;

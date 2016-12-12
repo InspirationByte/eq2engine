@@ -44,7 +44,7 @@ public:
 
 	virtual void				Update( float fDt );
 
-	virtual void				UpdateLocalControls( int nControls );
+	virtual void				UpdateLocalControls( int nControls, float steering, float accel_brake );
 
 	CCar*						CreateCar(const char* name, int type = CAR_TYPE_NORMAL);
 
@@ -96,6 +96,9 @@ protected:
 	DkList<carConfigEntry_t*>	m_carEntries;
 
 	int							m_localControls;
+	float						m_localSteeringValue;
+	float						m_localAccelBrakeValue;
+
 	CCar*						m_playerCar;
 
 	CCar*						m_leadCar;

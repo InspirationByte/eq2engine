@@ -16,33 +16,42 @@
 #include "in_keys_ident.h"
 #include "IFileSystem.h"
 
+#include <map>
+
 #include "math/Vector.h"
 
 // binding
-class binding_t
+
+struct axisAction_t;
+
+class in_binding_t
 {
 public:
-	binding_t()
+	in_binding_t()
 	{
 		key_index = -1;
-		isMouse = false;
+		boundCommand1 = nullptr;
+		boundCommand2 = nullptr;
+		boundAction = nullptr;
 	}
 
-	EqString	argumentString;
-	EqString	commandString;	// safe for writing
+	EqString		argumentString;
+	EqString		commandString;	// safe for writing
 
-	ConCommand*	boundCommand1;	// 'plus' command
-	ConCommand*	boundCommand2;	// 'minus' command
+	ConCommand*		boundCommand1;	// 'plus' command
+	ConCommand*		boundCommand2;	// 'minus' command
+	axisAction_t*	boundAction;
 
-	int		key_index;
-	bool	isMouse;
+	int			key_index;
 };
 
-struct touchzone_t
+struct in_touchzone_t
 {
-	touchzone_t()
+	in_touchzone_t()
 	{
 		finger = -1;
+		boundCommand1 = nullptr;
+		boundCommand2 = nullptr;
 	}
 
 	Vector2D position;
@@ -85,7 +94,7 @@ public:
 	void					BindKey( const char* pszCommand, const char *pszArgs, const char* pszKeyStr );
 
 	// returns binding
-	binding_t*				LookupBinding(uint keyIdent);
+	in_binding_t*			LookupBinding(uint keyIdent);
 
 	// removes single binding on specified keychar
 	void					RemoveBinding( const char* pszKeyStr);
@@ -95,15 +104,16 @@ public:
 	void					UnbindAll_Joystick();
 
 	// searches for binding
-	binding_t*				FindBinding(const char* pszKeyStr);
+	in_binding_t*			FindBinding(const char* pszKeyStr);
 
 	// registers axis action
-	void					RegisterJoyAxisAction( int axis, const char* name, JOYAXISFUNC axisFunc );
-	void					BindJoyAxis( int axis, const char* actionName );
+	// they will be prefixed as "j_" + name
+	void					RegisterJoyAxisAction( const char* name, JOYAXISFUNC axisFunc );
 
 	// binding list
-	DkList<binding_t*>*		GetBindingList() {return &m_pBindings;}
-	DkList<touchzone_t>*	GetTouchZoneList() {return &m_touchZones;}
+	DkList<in_binding_t*>*	GetBindingList() {return &m_bindings;}
+	DkList<in_touchzone_t>*	GetTouchZoneList() {return &m_touchZones;}
+	DkList<axisAction_t>*	GetAxisActionList() {return &m_axisActs;}
 
 	// debug render
 	void					DebugDraw(const Vector2D& screenSize);
@@ -116,18 +126,23 @@ public:
 	void					OnMouseWheel( const int scroll );
 
 	void					OnTouchEvent( const Vector2D& pos, int finger, bool down );
+	void					OnJoyAxisEvent( short axis, short value );
 
 	// executes binding with selected state
-	void					ExecuteBinding( binding_t* pBinding, bool bState );
-	void					ExecuteTouchZone( touchzone_t* zone, bool bState );
+	void					ExecuteBinding( in_binding_t* pBinding, bool bState );
+	void					ExecuteTouchZone( in_touchzone_t* zone, bool bState );
 
 	template <typename T>
 	void					ExecuteBoundCommands(T* zone, bool bState);
 
-private:
-	DkList<binding_t*>		m_pBindings;
-	DkList<touchzone_t>		m_touchZones;
-	DkList<axisAction_t>	m_axisActs;
+protected:
+	axisAction_t*			FindAxisAction(const char* name);	
+
+	DkList<in_binding_t*>			m_bindings;
+	std::map<int, in_binding_t*>	m_axisBindings;
+
+	DkList<in_touchzone_t>			m_touchZones;
+	DkList<axisAction_t>			m_axisActs;
 };
 
 extern CInputCommandBinder* g_inputCommandBinder;

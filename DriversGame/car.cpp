@@ -1091,11 +1091,7 @@ void CCar::UpdateCarPhysics(float delta)
 	carBody->ConstructRenderMatrix(m_worldMatrix);
 
 	if(m_locked) // TODO: cvar option to lock or not
-	{
-		m_oldControlButtons = m_controlButtons;
 		m_controlButtons = IN_HANDBRAKE;
-		m_controlButtons &= ~IN_HORN;
-	}
 
 	//
 	// Update controls first

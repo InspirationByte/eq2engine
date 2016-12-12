@@ -388,7 +388,7 @@ void InputCommands_SDL(SDL_Event* event)
 			{
 				Msg("Joystick %d axis %d value: %d\n",
 							event->jaxis.which,
-							event->jaxis.axis, event->jaxis.value);
+							event->jaxis.axis+1, event->jaxis.value);
 			}
 
 			g_pHost->TrapJoyAxis_Event(event->jaxis.axis, event->jaxis.value);
@@ -399,7 +399,7 @@ void InputCommands_SDL(SDL_Event* event)
 			if(in_joy_debug.GetBool())
 			{
 				Msg("Joystick %d hat %d value:",
-					event->jhat.which, event->jhat.hat);
+					event->jhat.which, event->jhat.hat+1);
 			}
 
 			if (event->jhat.value == SDL_HAT_CENTERED)
@@ -421,7 +421,7 @@ void InputCommands_SDL(SDL_Event* event)
 			{
 				Msg("Joystick %d ball %d delta: (%d,%d)\n",
 					event->jball.which,
-					event->jball.ball, event->jball.xrel, event->jball.yrel);
+					event->jball.ball+1, event->jball.xrel, event->jball.yrel);
 			}
 
 			g_pHost->TrapJoyBall_Event(event->jball.ball, event->jball.xrel, event->jball.yrel);
@@ -816,6 +816,8 @@ void CGameHost::TrapMouseWheel_Event(int x, int y, int scroll)
 
 void CGameHost::TrapJoyAxis_Event( short axis, short value )
 {
+	g_inputCommandBinder->OnJoyAxisEvent( axis, value );
+
 	if(GetCurrentState())
 		GetCurrentState()->HandleJoyAxis( axis, value );
 }

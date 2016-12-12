@@ -793,7 +793,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 {
 	if( pressed ) // catch "DOWN" event
 	{
-		binding_t* tgBind = g_inputCommandBinder->LookupBinding(key);
+		in_binding_t* tgBind = g_inputCommandBinder->LookupBinding(key);
 
 		if(tgBind && !stricmp(tgBind->commandString.c_str(), "toggleconsole"))
 		{

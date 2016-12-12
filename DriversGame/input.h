@@ -34,7 +34,12 @@
 
 #define IN_MISC				(IN_LOOKLEFT | IN_LOOKRIGHT | IN_CHANGECAM | IN_FORWARD | IN_BACKWARD | IN_LEFT | IN_RIGHT)
 
-extern int g_nClientButtons;
+extern int		g_nClientButtons;
+extern float	g_joySteeringValue;
+extern float	g_joyAccelBrakeValue;
+
+void ZeroInputControls();
+void RegisterInputJoysticEssentials();
 
 #define DECLARE_ACTION(localName, bitFlag)											\
 	DECLARE_CMD_RENAME(act_##localName##_enable ,"+"#localName, "Control command", CV_CLIENTCONTROLS) \

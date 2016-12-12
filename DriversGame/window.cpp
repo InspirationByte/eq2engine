@@ -215,6 +215,14 @@ void EQHandleSDLEvents(SDL_Event* event)
 			{
 				s_bActive = false;
 			}
+			else if(event->window.event == SDL_JOYDEVICEADDED)
+			{
+				Msg("TODO: add new joystick\n");
+			}
+			else if(event->window.event == SDL_JOYDEVICEREMOVED)
+			{
+				Msg("TODO: remove joystick\n");
+			}
 
 			break;
 		}
