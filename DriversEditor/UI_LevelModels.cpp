@@ -1408,6 +1408,11 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 			// absolute
 			edAxis *= sign(edAxis);
 
+
+
+			g_pMainFrame->NotifyUpdate();
+
+			/*
 			// movement plane
 			Plane pl(plane_dir, -dot(plane_dir, m_editAxis.m_position));
 
@@ -1462,6 +1467,7 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 
 				g_pMainFrame->NotifyUpdate();
 			}
+			*/
 		}
 	}
 

@@ -17,7 +17,7 @@
 
 #include "materialsystem/MeshBuilder.h"
 
-#include "KeyBinding/Keys.h"
+#include "KeyBinding/InputCommandBinder.h"
 
 #ifdef _DEBUG
 #define CONSOLE_ENGINEVERSION_STR varargs(ENGINE_NAME " Engine " ENGINE_VERSION " DEBUG build %d (" COMPILE_DATE ")", BUILD_NUMBER_ENGINE)
@@ -793,7 +793,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 {
 	if( pressed ) // catch "DOWN" event
 	{
-		binding_t* tgBind = GetKeyBindings()->LookupBinding(key);
+		binding_t* tgBind = g_inputCommandBinder->LookupBinding(key);
 
 		if(tgBind && !stricmp(tgBind->commandString.c_str(), "toggleconsole"))
 		{

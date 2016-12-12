@@ -10,7 +10,7 @@
 #include "IDebugOverlay.h"
 #include "IGameLibrary.h"
 #include "GlobalVarsBase.h"
-#include "KeyBinding\Keys.h"
+#include "KeyBinding/InputCommandBinder.h"
 #include "sys_console.h"
 #include "EqGameLevel.h"
 #include "studio_egf.h"
@@ -192,13 +192,13 @@ void  CEngineGame::Shutdown( void )
 void CEngineGame::Key_Event( int key, bool down )
 {
 	if( gamedll->Key_Event( key, down) )
-		GetKeyBindings()->OnKeyEvent(key,down);
+		g_inputCommandBinder->OnKeyEvent(key,down);
 }
 
 void CEngineGame::Mouse_Event( float x, float y, int buttons, bool down )
 {
 	if(gamedll->Mouse_Event( x, y, buttons, down ))
-		GetKeyBindings()->OnMouseEvent(buttons,down);
+		g_inputCommandBinder->OnMouseEvent(buttons,down);
 }
 
 void CEngineGame::MouseMove_Event( int x, int y, float deltaX, float deltaY )
@@ -210,7 +210,7 @@ void CEngineGame::MouseMove_Event( int x, int y, float deltaX, float deltaY )
 void CEngineGame::MouseWheel_Event(int x, int y, int scroll)
 {
 	if(gamedll->MouseWheel_Event(x, y, scroll))
-		GetKeyBindings()->OnMouseWheel(scroll);
+		g_inputCommandBinder->OnMouseWheel(scroll);
 }
 
 void CEngineGame::ProcessKeyChar( ubyte ch )

@@ -20,7 +20,7 @@
 #include "session_stuff.h"
 #include "Rain.h"
 
-#include "KeyBinding/Keys.h"
+#include "KeyBinding/InputCommandBinder.h"
 
 #include "sys_console.h"
 
@@ -319,6 +319,11 @@ void Game_HandleKeys(int key, bool down)
 		Game_DirectorControlKeys(key, down);
 }
 
+ConVar in_joy_deadzone("in_joy_deadzone", "0.02", "Joystick dead zone", CV_ARCHIVE);
+ConVar in_joy_steer_linear("in_joy_steer_linear", "1.0", "Joystick steering linearity", CV_ARCHIVE);
+ConVar in_joy_accel_linear("in_joy_accel_linear", "1.0", "Joystick acceleration linearity", CV_ARCHIVE);
+ConVar in_joy_brake_linear("in_joy_brake_linear", "1.0", "Joystick acceleration linearity", CV_ARCHIVE);
+
 void Game_JoyAxis( short axis, short value )
 {
 	if( g_pGameSession && g_pGameSession->GetPlayerCar() )
@@ -327,6 +332,12 @@ void Game_JoyAxis( short axis, short value )
 
 		int buttons = g_nClientButtons;
 
+		float accelRatio = 0.0f;
+		float brakeRatio = 0.0f;
+		float steerRatio = 0.0f;
+
+		playerCar->GetControlVars(accelRatio, brakeRatio, steerRatio);
+
 		if( axis == 3 )
 		{
 			if(value == 0)
@@ -334,20 +345,20 @@ void Game_JoyAxis( short axis, short value )
 				buttons &= ~IN_ACCELERATE;
 				buttons &= ~IN_BRAKE;
 
-				playerCar->m_accelRatio = 1023;
-				playerCar->m_brakeRatio = 1023;
+				accelRatio = 1.0f;
+				brakeRatio = 1.0f;
 			}
 			else if(value > 0)
 			{
 				float val = (float)value / (float)SHRT_MAX;
-				playerCar->m_brakeRatio = val*1023.0f;
+				brakeRatio = pow(val, in_joy_brake_linear.GetFloat());
 				buttons |= IN_BRAKE;
 				buttons &= ~IN_ACCELERATE;
 			}
 			else
 			{
-				float val = (float)value / (float)SHRT_MAX;
-				playerCar->m_accelRatio = val*-1023.0f;
+				float val = fabs((float)value / (float)SHRT_MAX);
+				accelRatio = pow(val, in_joy_accel_linear.GetFloat());
 				buttons |= IN_ACCELERATE;
 				buttons &= ~IN_BRAKE;
 			}
@@ -356,18 +367,27 @@ void Game_JoyAxis( short axis, short value )
 		{
 			float val = (float)value / (float)SHRT_MAX;
 
-			if(!(buttons & IN_EXTENDTURN))
-				val *= 0.6f;
+			steerRatio = sign(val) * pow(fabs(val), in_joy_steer_linear.GetFloat());
 
-			playerCar->m_steerRatio = val*1023.0f;
-
-			buttons |= IN_ANALOGSTEER;
+			buttons |= IN_TURNRIGHT;
 			buttons &= ~IN_TURNLEFT;
-			buttons &= ~IN_TURNRIGHT;
+			//buttons &= ~IN_TURNRIGHT;
 
 			//if(value == 0)
 			//	buttons &= ~IN_ANALOGSTEER;
 		}
+
+		if(fabs(accelRatio) < in_joy_deadzone.GetFloat())
+			accelRatio = 0.0f;
+
+		if(fabs(brakeRatio) < in_joy_deadzone.GetFloat())
+			brakeRatio = 0.0f;
+
+		if(fabs(steerRatio) < in_joy_deadzone.GetFloat())
+			steerRatio = 0.0f;
+
+		playerCar->SetControlVars(accelRatio, brakeRatio, steerRatio);
+		playerCar->GetPhysicsBody()->TryWake(false);
 
 		g_nClientButtons = buttons;
 	}
@@ -1342,7 +1362,7 @@ reincrement:
 		Game_HandleKeys(key, down);
 
 		//if(!MenuKeys( key, down ))
-			GetKeyBindings()->OnKeyEvent( key, down );
+			g_inputCommandBinder->OnKeyEvent( key, down );
 	}
 }
 

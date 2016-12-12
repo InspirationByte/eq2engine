@@ -369,16 +369,17 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 
 	if(dropVars)
 	{
-		for(int i = 0; i < m_hMatProxies.numElem();i++)
-			delete m_hMatProxies[i];
-
-		m_hMatProxies.clear();
-
 		for(int i = 0; i < m_hMatVars.numElem();i++)
 			delete m_hMatVars[i];
 
 		m_hMatVars.clear();
 	}
+
+	// always drop proxies
+	for(int i = 0; i < m_hMatProxies.numElem();i++)
+		delete m_hMatProxies[i];
+
+	m_hMatProxies.clear();
 
 	m_state = MATERIAL_LOAD_NEED_LOAD;
 }

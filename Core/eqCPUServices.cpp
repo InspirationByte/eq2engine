@@ -291,7 +291,7 @@ void CEqCPUCaps::Init()
 				}
 			}
 		}
-		MsgInfo("[CPU] Vendor: %s\n", m_cpuBrandName);
+		MsgInfo("[CPU] %s %s\n", m_cpuVendor, m_cpuBrandName);
 
 		MsgInfo("[CPU] Features: %s%s%s%s%s%s%s%s%s%s%s\n",
 			m_cpuCMOV ? "CMOV " : "",

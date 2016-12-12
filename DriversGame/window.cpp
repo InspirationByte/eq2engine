@@ -165,9 +165,8 @@ bool s_bProcessInput = true;
 static CGameHost s_Host;
 CGameHost* g_pHost = &s_Host;
 
-/*
 
-TODO: always query joystick count
+// TODO: always query joystick count
 
 SDL_Joystick* g_mainJoystick = NULL;
 
@@ -182,7 +181,7 @@ void InitSDLJoysticks()
 	{
 		g_mainJoystick = SDL_JoystickOpen(0);
 	}
-}*/
+}
 
 void InputCommands_SDL(SDL_Event* event);
 
@@ -253,7 +252,7 @@ bool Host_Init()
 
 	g_cmdLine->ExecuteCommandLine(true, true);
 
-	// InitSDLJoysticks();
+	InitSDLJoysticks();
 
 	return true;
 }

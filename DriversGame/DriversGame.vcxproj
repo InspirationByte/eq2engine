@@ -134,7 +134,7 @@
     <ClCompile Include="..\shared_engine\eqParallelJobs.cpp" />
     <ClCompile Include="..\shared_engine\FontCache.cpp" />
     <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp" />
-    <ClCompile Include="..\shared_engine\KeyBinding\Keys.cpp" />
+    <ClCompile Include="..\shared_engine\KeyBinding\InputCommandBinder.cpp" />
     <ClCompile Include="..\shared_engine\modelloader_shared.cpp" />
     <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp" />
     <ClCompile Include="..\shared_engine\Network\NETThread.cpp" />
@@ -273,7 +273,7 @@
     <ClInclude Include="..\shared_engine\EqUI_Scheme.h" />
     <ClInclude Include="..\shared_engine\FontCache.h" />
     <ClInclude Include="..\shared_engine\FontLayoutBuilders.h" />
-    <ClInclude Include="..\shared_engine\KeyBinding\Keys.h" />
+    <ClInclude Include="..\shared_engine\KeyBinding\InputCommandBinder.h" />
     <ClInclude Include="..\Engine\modelloader_shared.h" />
     <ClInclude Include="..\shared_engine\eqGlobalMutex.h" />
     <ClInclude Include="..\shared_engine\Network\NETThread.h" />

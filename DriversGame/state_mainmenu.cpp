@@ -12,7 +12,7 @@
 #include "system.h"
 #include "FontCache.h"
 
-#include "KeyBinding/Keys.h"
+#include "KeyBinding/InputCommandBinder.h"
 
 enum
 {
@@ -286,7 +286,7 @@ void CState_MainMenu::HandleKeyPress( int key, bool down )
 		}
 	}
 
-	GetKeyBindings()->OnKeyEvent( key, down );
+	g_inputCommandBinder->OnKeyEvent( key, down );
 }
 
 CState_MainMenu* g_State_MainMenu = new CState_MainMenu();

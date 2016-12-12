@@ -198,9 +198,6 @@
     <ClCompile Include="..\shared_engine\EngineVersion.cpp">
       <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\KeyBinding\Keys.cpp">
-      <Filter>Файлы исходного кода\EngineLib</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared_engine\modelloader_shared.cpp">
       <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClCompile>
@@ -377,6 +374,9 @@
     </ClCompile>
     <ClCompile Include="..\shared_engine\EGUI\IEqUI_Control.cpp">
       <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\KeyBinding\InputCommandBinder.cpp">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -562,9 +562,6 @@
     <ClInclude Include="..\shared_engine\cfgloader.h">
       <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared_engine\KeyBinding\Keys.h">
-      <Filter>Файлы исходного кода\EngineLib</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared_engine\studio_egf.h">
       <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClInclude>
@@ -741,6 +738,9 @@
     </ClInclude>
     <ClInclude Include="..\public\IFontCache.h">
       <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\KeyBinding\InputCommandBinder.h">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

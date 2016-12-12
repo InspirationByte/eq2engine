@@ -2,12 +2,12 @@
 // Copyright © Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
-// Description: KeyBinding list
+// Description: Input command binder and host
 //////////////////////////////////////////////////////////////////////////////////
 
 
-#ifndef KEYS_H
-#define KEYS_H
+#ifndef INPUTCOMMANDBINDER_H
+#define INPUTCOMMANDBINDER_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,11 +59,19 @@ struct touchzone_t
 	int			finger;
 };
 
+typedef void (*JOYAXISFUNC)( short value );
+
+struct axisAction_t
+{
+	EqString		name;
+	JOYAXISFUNC		func;
+};
+
 //
-class CKeyCommandBinder
+class CInputCommandBinder
 {
 public:
-							CKeyCommandBinder();
+							CInputCommandBinder();
 
 	void					Init();
 	void					Shutdown();
@@ -84,13 +92,18 @@ public:
 
 	// clears and removes all key bindings
 	void					UnbindAll();
+	void					UnbindAll_Joystick();
 
 	// searches for binding
 	binding_t*				FindBinding(const char* pszKeyStr);
 
+	// registers axis action
+	void					RegisterJoyAxisAction( int axis, const char* name, JOYAXISFUNC axisFunc );
+	void					BindJoyAxis( int axis, const char* actionName );
+
 	// binding list
 	DkList<binding_t*>*		GetBindingList() {return &m_pBindings;}
-	DkList<touchzone_t*>*	GetTouchZoneList() {return &m_touchZones;}
+	DkList<touchzone_t>*	GetTouchZoneList() {return &m_touchZones;}
 
 	// debug render
 	void					DebugDraw(const Vector2D& screenSize);
@@ -113,9 +126,10 @@ public:
 
 private:
 	DkList<binding_t*>		m_pBindings;
-	DkList<touchzone_t*>	m_touchZones;
+	DkList<touchzone_t>		m_touchZones;
+	DkList<axisAction_t>	m_axisActs;
 };
 
-CKeyCommandBinder* GetKeyBindings( void );
+extern CInputCommandBinder* g_inputCommandBinder;
 
-#endif //KEYS_H
+#endif //INPUTCOMMANDBINDER_H

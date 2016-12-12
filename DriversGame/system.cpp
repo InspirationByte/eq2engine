@@ -14,7 +14,7 @@
 
 #include "StateManager.h"
 
-#include "KeyBinding/Keys.h"
+#include "KeyBinding/InputCommandBinder.h"
 #include "FontCache.h"
 
 #include "EGUI/EqUI_Manager.h"
@@ -248,7 +248,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	// Set default cursor
 	SDL_SetCursor( staticDefaultCursor[dc_arrow] );
 
-	GetKeyBindings()->Init();
+	g_inputCommandBinder->Init();
 
 	// make job threads
 	g_parallelJobs->Init( (int)ceil((float)g_cpuCaps->GetCPUCount() / 2.0f) );
@@ -436,10 +436,8 @@ void InputCommands_SDL(SDL_Event* event)
 			if(in_joy_debug.GetBool())
 			{
 				Msg("Joystick %d button %d %s\n",
-					event->jbutton.which, event->jbutton.button, down ? "down" : "up");
+					event->jbutton.which, event->jbutton.button+1, down ? "down" : "up");
 			}
-
-
 
 			g_pHost->TrapJoyButton_Event(event->jbutton.button, down);
             break;
@@ -482,7 +480,7 @@ void CGameHost::ShutdownSystems()
 	ses->Shutdown();
 	soundsystem->Shutdown();
 
-	GetKeyBindings()->Shutdown();
+	g_inputCommandBinder->Shutdown();
 
 	// shutdown systems...
 	Networking::ShutdownNetworking();
@@ -676,7 +674,7 @@ bool CGameHost::Frame()
 		m_pDefaultFont->RenderText(varargs("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps), Vector2D(15), params);
 	}
 
-	GetKeyBindings()->DebugDraw(m_winSize);
+	g_inputCommandBinder->DebugDraw(m_winSize);
 
 	equi::Manager->SetViewFrame(IRectangle(0,0,m_winSize.x,m_winSize.y));
 	equi::Manager->Render();
@@ -786,7 +784,7 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 	if(in_mouse_to_touch.GetBool())
 		g_pHost->Touch_Event( x/m_winSize.x, y/m_winSize.y, 0, down);
 
-	GetKeyBindings()->OnMouseEvent(buttons, down);
+	g_inputCommandBinder->OnMouseEvent(buttons, down);
 }
 
 void CGameHost::TrapMouseMove_Event( int x, int y )
@@ -829,7 +827,7 @@ void CGameHost::TrapJoyBall_Event( short ball, short xrel, short yrel )
 
 void CGameHost::TrapJoyButton_Event( short button, bool down)
 {
-	GetKeyBindings()->OnKeyEvent( JOYSTICK_START_KEYS + button, down );
+	g_inputCommandBinder->OnKeyEvent( JOYSTICK_START_KEYS + button, down );
 
 	if(GetCurrentState())
 		GetCurrentState()->HandleKeyPress( JOYSTICK_START_KEYS + button, down );
@@ -842,7 +840,7 @@ void CGameHost::TouchMotion_Event( float x, float y, int finger )
 
 void CGameHost::Touch_Event( float x, float y, int finger, bool down )
 {
-	GetKeyBindings()->OnTouchEvent( Vector2D(x,y), finger, down );
+	g_inputCommandBinder->OnTouchEvent( Vector2D(x,y), finger, down );
 }
 
 void CGameHost::ProcessKeyChar( int chr )

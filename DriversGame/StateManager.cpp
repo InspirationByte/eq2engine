@@ -25,7 +25,7 @@
 #include "physics.h"
 #include "world.h"
 
-#include "KeyBinding/Keys.h"
+#include "KeyBinding/InputCommandBinder.h"
 
 #include "IDebugOverlay.h"
 

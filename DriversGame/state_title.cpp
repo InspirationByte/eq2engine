@@ -14,7 +14,7 @@
 #include "FontCache.h"
 #include "replay.h"
 
-#include "KeyBinding/Keys.h"
+#include "KeyBinding/InputCommandBinder.h"
 
 CState_Title::CState_Title()
 {
@@ -235,7 +235,7 @@ void CState_Title::HandleKeyPress( int key, bool down )
 		}
 	}
 
-	GetKeyBindings()->OnKeyEvent( key, down );
+	g_inputCommandBinder->OnKeyEvent( key, down );
 }
 
 CState_Title* g_State_Title = new CState_Title();
