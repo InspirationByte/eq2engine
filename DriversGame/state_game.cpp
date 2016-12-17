@@ -1289,6 +1289,17 @@ void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )
 	}
 }
 
+void CState_Game::HandleMouseClick( int x, int y, int buttons, bool down )
+{
+	if(!m_isGameRunning)
+		return;
+
+	if( m_showMenu )
+		return;
+
+	g_inputCommandBinder->OnMouseEvent(buttons, down);
+}
+
 void CState_Game::HandleMouseWheel(int x,int y,int scroll)
 {
 	if(!m_isGameRunning)

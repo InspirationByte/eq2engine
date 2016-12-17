@@ -1371,7 +1371,7 @@ void CCar::UpdateCarPhysics(float delta)
 	m_radsPerSec = (float)fabs(wheelsSpeed)*torqueConvert;
 	FReal torque = CalcTorqueCurve(m_radsPerSec, engineType) * m_conf->m_torqueMult;
 
-	float gbxDecelRate = max((float)m_fAcceleration, GEARBOX_DECEL_SHIFTDOWN_FACTOR);
+	float gbxDecelRate = max((float)fAccel, GEARBOX_DECEL_SHIFTDOWN_FACTOR);
 
  	if(torque < 0)
 		torque = 0.0f;
@@ -1402,7 +1402,6 @@ void CCar::UpdateCarPhysics(float delta)
 			torque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->m_torqueMult;
 
 			torque *= torqueConvert * transmissionRate;
-
 
 			// swap brake and acceleration
 			swap(fAcceleration, fBreakage);
@@ -1437,6 +1436,7 @@ void CCar::UpdateCarPhysics(float delta)
 		{
 			int newGear = m_nGear;
 
+			// shift down
 			for ( int nGear = 1; nGear < m_nGear; nGear++ )
 			{
 				// find gear to diffential
@@ -1456,6 +1456,7 @@ void CCar::UpdateCarPhysics(float delta)
 				}
 			}
 
+			// shuft up
 			for ( int nGear = newGear; nGear < m_conf->m_gears.numElem(); nGear++ )
 			{
 				// find gear to diffential

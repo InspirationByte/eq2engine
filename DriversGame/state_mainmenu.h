@@ -27,10 +27,19 @@ public:
 
 	void		HandleKeyPress( int key, bool down );
 
-	void		HandleMouseMove( int x, int y, float deltaX, float deltaY ) {}
+	void		Event_SelectionEnter();
+	void		Event_BackToPrevious();
+	void		Event_SelectionUp();
+	void		Event_SelectionDown();
+	void		Event_SelectMenuItem(int index);
+
+	void		HandleMouseMove( int x, int y, float deltaX, float deltaY );
+	void		HandleMouseClick( int x, int y, int buttons, bool down );
 	void		HandleMouseWheel(int x,int y,int scroll) {}
 
 	void		HandleJoyAxis( short axis, short value ) {}
+
+	bool		IsMouseCursorVisible() {return true;}
 
 	//------------------------------------------------------
 

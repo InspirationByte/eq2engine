@@ -220,73 +220,167 @@ void CState_MainMenu::HandleKeyPress( int key, bool down )
 	if(m_goesFromMenu)
 		return;
 
-	if(key == KEY_ENTER && down == true && m_fade == 1.0f)
+	if(down)
 	{
-		EmitSound_t es("menu.click");
-		ses->EmitSound( &es );
-
-		m_changesMenu = MENU_ENTER;
-		m_textEffect = 1.0f;
-		m_textFade = 1.0f;
-
-		PreEnterSelection();
-	}
-	else if(down)
-	{
-		if(key == KEY_ESCAPE)
+		if(key == KEY_ENTER)
 		{
-			EmitSound_t es("menu.back");
-			ses->EmitSound( &es );
-
-			if(IsCanPopMenu())
-			{
-				m_changesMenu = MENU_BACK;
-				m_textEffect = 1.0f;
-				m_textFade = 1.0f;
-			}
-			else
-			{
-				m_changesMenu = MENU_BACK;
-				m_goesFromMenu = true;
-				//m_textEffect = 1.0f;
-				//m_textFade = 1.0f;
-				SetNextState(g_states[GAME_STATE_TITLESCREEN]);
-			}
+			Event_SelectionEnter();
+		}
+		else if(key == KEY_ESCAPE)
+		{
+			Event_BackToPrevious();
 		}
 		else if(key == KEY_UP)
 		{
-	redecrement:
-			m_selection--;
-
-			if(m_selection < 0)
-			{
-				int nItem = 0;
-				m_selection = m_numElems-1;
-			}
-
-			//if(pItem->type == MIT_SPACER)
-			//	goto redecrement;
-
-			EmitSound_t ep("menu.roll");
-			ses->EmitSound(&ep);
+			Event_SelectionUp();
 		}
 		else if(key == KEY_DOWN)
 		{
-	reincrement:
-			m_selection++;
-
-			if(m_selection > m_numElems-1)
-				m_selection = 0;
-
-			//if(pItem->type == MIT_SPACER)
-			//	goto reincrement;
-
-			EmitSound_t ep("menu.roll");
-			ses->EmitSound(&ep);
+			Event_SelectionDown();
 		}
 	}
 
 	g_inputCommandBinder->OnKeyEvent( key, down );
+}
+
+void CState_MainMenu::HandleMouseMove( int x, int y, float deltaX, float deltaY )
+{
+	// perform a hit test
+	const IVector2D& screenSize = g_pHost->GetWindowSize();
+	IVector2D halfScreen(screenSize.x/2, screenSize.y/2);
+
+	IEqFont* font = g_fontCache->GetFont("Roboto", 30, TEXT_STYLE_ITALIC);
+
+	eqFontStyleParam_t fontParam;
+	fontParam.align = TEXT_ALIGN_LEFT;
+	fontParam.styleFlag |= TEXT_STYLE_SHADOW;
+	fontParam.textColor = color4_white;
+	fontParam.scale = 16.0f;
+
+	{
+		EqLua::LuaStackGuard g(GetLuaState());
+
+		int menuPosY = halfScreen.y+100;
+
+		oolua_ipairs(m_menuElems)
+			int idx = _i_index_-1;
+
+			OOLUA::Table elem;
+			m_menuElems.safe_at(_i_index_, elem);
+
+			float lineWidth = 400;
+			float lineHeight = font->GetLineHeight(fontParam);
+
+			Vector2D elemPos(halfScreen.x-500, menuPosY+idx*lineHeight);
+
+			Rectangle_t rect(elemPos - Vector2D(0, lineHeight), elemPos + Vector2D(lineWidth, 0));
+
+			if(rect.IsInRectangle(Vector2D(x,y)))
+				Event_SelectMenuItem( idx );
+
+		oolua_ipairs_end()
+	}
+}
+
+void CState_MainMenu::HandleMouseClick( int x, int y, int buttons, bool down )
+{
+	if(buttons == MOU_B1 && !down)
+		Event_SelectionEnter();
+}
+
+void CState_MainMenu::Event_BackToPrevious()
+{
+	EmitSound_t es("menu.back");
+	ses->EmitSound( &es );
+
+	if(IsCanPopMenu())
+	{
+		m_changesMenu = MENU_BACK;
+		m_textEffect = 1.0f;
+		m_textFade = 1.0f;
+	}
+	else
+	{
+		m_changesMenu = MENU_BACK;
+		m_goesFromMenu = true;
+		//m_textEffect = 1.0f;
+		//m_textFade = 1.0f;
+		SetNextState(g_states[GAME_STATE_TITLESCREEN]);
+	}
+}
+
+void CState_MainMenu::Event_SelectionEnter()
+{
+	if(m_changesMenu > 0)
+		return;
+
+	if(m_selection == -1)
+		return;
+
+	EmitSound_t es("menu.click");
+	ses->EmitSound( &es );
+
+	m_changesMenu = MENU_ENTER;
+	m_textEffect = 1.0f;
+	m_textFade = 1.0f;
+
+	PreEnterSelection();
+}
+
+void CState_MainMenu::Event_SelectionUp()
+{
+	if(m_goesFromMenu || m_changesMenu > 0)
+		return;
+
+redecrement:
+	m_selection--;
+
+	if(m_selection < 0)
+	{
+		int nItem = 0;
+		m_selection = m_numElems-1;
+	}
+
+	//if(pItem->type == MIT_SPACER)
+	//	goto redecrement;
+
+	EmitSound_t ep("menu.roll");
+	ses->EmitSound(&ep);
+}
+
+void CState_MainMenu::Event_SelectionDown()
+{
+	if(m_goesFromMenu || m_changesMenu > 0)
+		return;
+
+reincrement:
+	m_selection++;
+
+	if(m_selection > m_numElems-1)
+		m_selection = 0;
+
+	//if(pItem->type == MIT_SPACER)
+	//	goto reincrement;
+
+	EmitSound_t ep("menu.roll");
+	ses->EmitSound(&ep);
+}
+
+void CState_MainMenu::Event_SelectMenuItem(int index)
+{
+	if(m_goesFromMenu || m_changesMenu > 0)
+		return;
+
+	if(index > m_numElems-1)
+		return;
+
+	if(m_selection == index)
+		return;
+
+	m_selection = index;
+
+	EmitSound_t ep("menu.roll");
+	ses->EmitSound(&ep);
 }
 
 CState_MainMenu* g_State_MainMenu = new CState_MainMenu();

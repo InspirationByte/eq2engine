@@ -50,10 +50,13 @@ public:
 	virtual bool		Update( float fDt ) = 0;
 
 	virtual void		HandleKeyPress( int key, bool down ) {}
+	virtual void		HandleMouseClick( int x, int y, int buttons, bool down ) {}
 	virtual void		HandleMouseMove( int x, int y, float deltaX, float deltaY ) {}
-	virtual void		HandleMouseWheel(int x,int y,int scroll) {}
+	virtual void		HandleMouseWheel( int x,int y,int scroll ) {}
 
 	virtual void		HandleJoyAxis( short axis, short value ) {}
+
+	virtual bool		IsMouseCursorVisible() {return false;}
 
 	void				SetNextState(CBaseStateHandler* state, bool force = false)	{m_nextState = state;m_forceNextState = force;}
 	CBaseStateHandler*	GetNextState(bool* force = NULL) const						{if(force)*force = m_forceNextState; return m_nextState;}
@@ -82,6 +85,7 @@ void					SheduleNextStateType( int stateType );
 
 // updates and manages the states
 bool					UpdateStates( float fDt );
+bool					GetStateMouseCursorVisibility();
 
 void					InitRegisterStates();
 

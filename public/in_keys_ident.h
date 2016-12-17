@@ -28,17 +28,6 @@
 #define KEY_8			SDL_SCANCODE_8
 #define KEY_9			SDL_SCANCODE_9
 
-// Mouse definitions
-#define MOU_B1			1000
-#define MOU_B2			1001
-#define MOU_B3			1002
-
-#define MOU_B4			1003
-#define MOU_B5			1004
-
-#define MOU_WHUP		1005
-#define MOU_WHDN		1006
-
 #define KEY_LEFT		SDL_SCANCODE_LEFT
 #define KEY_RIGHT		SDL_SCANCODE_RIGHT
 #define KEY_UP			SDL_SCANCODE_UP
@@ -125,6 +114,19 @@
 #define JOYSTICK_MAX_BUTTONS	32
 
 #define JOYSTICK_START_AXES		(JOYSTICK_START_KEYS+JOYSTICK_MAX_BUTTONS)
+#define JOYSTICK_MAX_AXES		32
+
+// Mouse definitions
+enum EMouseCodes
+{
+	MOU_B1		= JOYSTICK_START_AXES+JOYSTICK_MAX_AXES,
+	MOU_B2,
+	MOU_B3,
+	MOU_B4,
+	MOU_B5,
+	MOU_WHUP,
+	MOU_WHDN,
+};
 
 #elif PLAT_WIN
 

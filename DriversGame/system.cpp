@@ -610,7 +610,7 @@ bool CGameHost::Frame()
 		return false;
 
 	// set cursor visible
-	SetCursorShow( g_pSysConsole->IsVisible() || equi::Manager->IsPanelsVisible() );
+	SetCursorShow( g_pSysConsole->IsVisible() || equi::Manager->IsPanelsVisible() || GetStateMouseCursorVisibility() );
 
 	//--------------------------------------------
 
@@ -784,7 +784,8 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 	if(in_mouse_to_touch.GetBool())
 		g_pHost->Touch_Event( x/m_winSize.x, y/m_winSize.y, 0, down);
 
-	g_inputCommandBinder->OnMouseEvent(buttons, down);
+	if(GetCurrentState())
+		GetCurrentState()->HandleMouseClick( x, y, buttons, down );
 }
 
 void CGameHost::TrapMouseMove_Event( int x, int y )

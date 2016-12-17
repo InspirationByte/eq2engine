@@ -272,7 +272,9 @@ void CInputCommandBinder::UnbindAll_Joystick()
 	{
 		in_binding_t* binding = m_bindings[i];
 
-		if(s_keyMapList[binding->key_index].keynum >= JOYSTICK_START_KEYS)
+		int keyNum = s_keyMapList[binding->key_index].keynum;
+
+		if(keyNum >= JOYSTICK_START_KEYS && keyNum < MOU_B1)
 		{
 			delete binding;
 			m_bindings.removeIndex(i);

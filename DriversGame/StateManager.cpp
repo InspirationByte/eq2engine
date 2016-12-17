@@ -128,6 +128,14 @@ bool UpdateStates( float fDt )
 	return true;
 }
 
+bool GetStateMouseCursorVisibility()
+{
+	if(!g_currentState)
+		return false;
+
+	return g_currentState->IsMouseCursorVisible();
+}
+
 void InitRegisterStates()
 {
 	for(int i = 0; i < GAME_STATE_COUNT; i++)
