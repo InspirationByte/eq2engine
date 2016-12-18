@@ -1066,7 +1066,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 
 			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
 
-			carConfigEntry_t* conf = rep.obj_car->m_conf;
+			vehicleConfig_t* conf = rep.obj_car->m_conf;
 
 			if( conf->m_colors.numElem() > 0 )
 			{

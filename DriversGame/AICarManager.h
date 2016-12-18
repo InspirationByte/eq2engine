@@ -32,7 +32,7 @@ enum ECarType
 	CAR_TYPE_GETAWAY_AI
 };
 
-struct	carConfigEntry_t;
+struct	vehicleConfig_t;
 class	CAITrafficCar;
 class	CAIPursuerCar;
 
@@ -60,7 +60,7 @@ struct civCarEntry_t
 		return -1; // don't spawn
 	}
 
-	carConfigEntry_t*		config;
+	vehicleConfig_t*		config;
 	int						nextSpawn;
 
 	DkList<carZoneInfo_t>	zoneList;

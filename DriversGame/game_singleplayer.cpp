@@ -526,7 +526,7 @@ void CGameSession::LoadCarData()
 			kvkeybase_t* key = vehicleRegistry->keys[i];
 			if(!key->IsSection() && !key->IsDefinition())
 			{
-				carConfigEntry_t* carent = new carConfigEntry_t();
+				vehicleConfig_t* carent = new vehicleConfig_t();
 				carent->carName = key->name;
 				carent->carScript = KV_GetValueString(key);
 
@@ -543,7 +543,7 @@ void CGameSession::LoadCarData()
 						return;
 					}
 
-					if(!ParseCarConfig(carent, &kvs))
+					if(!ParseVehicleConfig(carent, &kvs))
 					{
 						MsgError("Car configuration '%s' is invalid!\n", carent->carScript.c_str());
 						delete carent;
@@ -571,7 +571,7 @@ void CGameSession::LoadCarData()
 				// thru vehicles in zone preset
 				for (int i = 0; i < zone_kv->keys.numElem(); i++)
 				{
-					carConfigEntry_t* carConfig = FindCarEntryByName( zone_kv->keys[i]->name );
+					vehicleConfig_t* carConfig = FindCarEntryByName( zone_kv->keys[i]->name );
 
 					if(!carConfig)
 					{
@@ -622,7 +622,7 @@ void CGameSession::LoadCarData()
 	}
 }
 
-carConfigEntry_t* CGameSession::FindCarEntryByName(const char* name)
+vehicleConfig_t* CGameSession::FindCarEntryByName(const char* name)
 {
 	for (int i = 0; i < m_carEntries.numElem(); i++)
 	{

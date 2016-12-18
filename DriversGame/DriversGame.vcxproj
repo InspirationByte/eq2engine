@@ -163,6 +163,11 @@
     <ClCompile Include="car.cpp" />
     <ClCompile Include="DrvSynDecals.cpp" />
     <ClCompile Include="DrvSynHUD.cpp" />
+    <ClCompile Include="eqPhysics\eqPhysics_HingeJoint.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="eqPhysics\eqPhysics_MaxDistConstraint.cpp" />
+    <ClCompile Include="eqPhysics\eqPhysics_PointConstraint.cpp" />
     <ClCompile Include="EventFSM.cpp" />
     <ClCompile Include="levelobject.cpp" />
     <ClCompile Include="LiteHTMLContainer.cpp">
@@ -305,8 +310,11 @@
     <ClInclude Include="BillboardList.h" />
     <ClInclude Include="CameraAnimator.h" />
     <ClInclude Include="DrvSynDecals.h" />
-    <ClInclude Include="eqPhysics\eqPhysics_Constraints.h" />
-    <ClInclude Include="eqPhysics\eqPhysics_Joint.h" />
+    <ClInclude Include="eqPhysics\eqPhysics_Controller.h" />
+    <ClInclude Include="eqPhysics\eqPhysics_Contstraint.h" />
+    <ClInclude Include="eqPhysics\eqPhysics_HingeJoint.h" />
+    <ClInclude Include="eqPhysics\eqPhysics_MaxDistConstraint.h" />
+    <ClInclude Include="eqPhysics\eqPhysics_PointConstraint.h" />
     <ClInclude Include="EventFSM.h" />
     <ClInclude Include="DrvSynHUD.h" />
     <ClInclude Include="game_singleplayer.h" />

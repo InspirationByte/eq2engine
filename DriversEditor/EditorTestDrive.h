@@ -37,7 +37,7 @@ protected:
 	CCar*				CreateCar(const char* name) const;
 
 	EqString					m_carName;
-	DkList<carConfigEntry_t*>	m_carEntries;
+	DkList<vehicleConfig_t*>	m_carEntries;
 
 	CCar*						m_car;
 

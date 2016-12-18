@@ -378,6 +378,15 @@
     <ClCompile Include="..\shared_engine\KeyBinding\InputCommandBinder.cpp">
       <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClCompile>
+    <ClCompile Include="eqPhysics\eqPhysics_HingeJoint.cpp">
+      <Filter>Файлы исходного кода\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="eqPhysics\eqPhysics_PointConstraint.cpp">
+      <Filter>Файлы исходного кода\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="eqPhysics\eqPhysics_MaxDistConstraint.cpp">
+      <Filter>Файлы исходного кода\Physics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">
@@ -549,12 +558,6 @@
     </ClInclude>
     <ClInclude Include="StateManager.h">
       <Filter>Файлы исходного кода\Game\States</Filter>
-    </ClInclude>
-    <ClInclude Include="eqPhysics\eqPhysics_Constraints.h">
-      <Filter>Файлы исходного кода\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="eqPhysics\eqPhysics_Joint.h">
-      <Filter>Файлы исходного кода\Physics</Filter>
     </ClInclude>
     <ClInclude Include="..\shared_engine\physics\BulletShapeCache.h">
       <Filter>Файлы исходного кода\Physics\Bullet</Filter>
@@ -741,6 +744,21 @@
     </ClInclude>
     <ClInclude Include="..\shared_engine\KeyBinding\InputCommandBinder.h">
       <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="eqPhysics\eqPhysics_Controller.h">
+      <Filter>Файлы исходного кода\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="eqPhysics\eqPhysics_HingeJoint.h">
+      <Filter>Файлы исходного кода\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="eqPhysics\eqPhysics_Contstraint.h">
+      <Filter>Файлы исходного кода\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="eqPhysics\eqPhysics_PointConstraint.h">
+      <Filter>Файлы исходного кода\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="eqPhysics\eqPhysics_MaxDistConstraint.h">
+      <Filter>Файлы исходного кода\Physics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

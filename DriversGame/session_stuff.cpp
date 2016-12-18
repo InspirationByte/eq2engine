@@ -10,7 +10,7 @@
 static CReplayData		s_replayData;
 CReplayData*			g_replayData = &s_replayData;
 
-bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs );
+bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs );
 
 DECLARE_CMD(car_loosehubcaps, "looses hubcaps on current car", 0)
 {
@@ -28,7 +28,7 @@ DECLARE_CMD(car_reload, "reload current car", 0)
 	if(g_pGameSession && g_pGameSession->GetPlayerCar())
 	{
 		EqString& fileName = g_pGameSession->GetPlayerCar()->m_conf->carScript;
-		carConfigEntry_t* conf = g_pGameSession->GetPlayerCar()->m_conf;
+		vehicleConfig_t* conf = g_pGameSession->GetPlayerCar()->m_conf;
 
 		conf->scriptCRC = g_fileSystem->GetFileCRC32(fileName.c_str(), SP_MOD);
 
@@ -47,7 +47,7 @@ DECLARE_CMD(car_reload, "reload current car", 0)
 			conf->m_colors.clear();
 			conf->m_gears.clear();
 
-			if(!ParseCarConfig(conf, &kvs))
+			if(!ParseVehicleConfig(conf, &kvs))
 			{
 				ASSERTMSG(false, varargs("Car configuration '%s' is invalid!\n", conf->carScript.c_str()));
 				return;

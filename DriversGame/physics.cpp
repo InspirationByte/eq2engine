@@ -43,7 +43,7 @@ void CPhysicsHFObject::PreSimulate( float fDt )
 {
 	PROFILE_FUNC();
 
-	if (!m_object->IsCanIterate(true))
+	if (!m_object->IsCanIntegrate(true))
 		return;
 
 	if (m_owner->m_state == GO_STATE_IDLE)
@@ -61,7 +61,7 @@ void CPhysicsHFObject::PostSimulate( float fDt )
 {
 	PROFILE_FUNC();
 
-	if (!m_object->IsCanIterate(true))
+	if (!m_object->IsCanIntegrate(true))
 		return;
 
 	if (m_owner->m_state == GO_STATE_IDLE)

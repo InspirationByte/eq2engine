@@ -192,7 +192,7 @@ bool SolveLaneTrafficLaws(int curDirection, int destDirection, int curRoadWidthL
 
 //----------------------------------------------------------------------------------------------------------------
 
-CAITrafficCar::CAITrafficCar( carConfigEntry_t* carConfig ) : CCar(carConfig), CFSM_Base()
+CAITrafficCar::CAITrafficCar( vehicleConfig_t* carConfig ) : CCar(carConfig), CFSM_Base()
 {
 	m_frameSkip = false;
 	m_switchedLane = false;

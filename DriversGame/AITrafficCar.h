@@ -112,7 +112,7 @@ class CAITrafficCar :	public CFSM_Base,
 public:
 	DECLARE_CLASS(CAITrafficCar, CCar);
 
-	CAITrafficCar( carConfigEntry_t* carConfig );
+	CAITrafficCar( vehicleConfig_t* carConfig );
 	~CAITrafficCar();
 
 	virtual void		InitAI( bool isParked );

@@ -12,6 +12,8 @@
 #include "../shared_engine/physics/BulletConvert.h"
 using namespace EqBulletUtils;
 
+#include "eqPhysics_Contstraint.h"
+
 #include "ConVar.h"
 #include "DebugInterface.h"
 
@@ -76,22 +78,38 @@ CEqRigidBody::CEqRigidBody()
 	m_minFrameTimeIgnoreMotion = false;
 }
 
+CEqRigidBody::~CEqRigidBody()
+{
+	RemoveAllConstraints();
+}
+
+// constraints
+void CEqRigidBody::AddConstraint( IEqPhysicsConstraint* constraint )
+{
+	m_constraints.append(constraint);
+}
+
+void CEqRigidBody::RemoveConstraint( IEqPhysicsConstraint* constraint )
+{
+	m_constraints.fastRemove(constraint);
+}
+
+void CEqRigidBody::RemoveAllConstraints()
+{
+	for(int i = 0; i < m_constraints.numElem(); i++)
+		m_constraints[i]->SetEnabled(false);
+
+	m_constraints.clear();
+}
+
+void CEqRigidBody::SetConstraintsUnsatisfied()
+{
+	for(int i = 0; i < m_constraints.numElem(); i++)
+		m_constraints[i]->m_satisfied = false;
+}
+
 void CEqRigidBody::ComputeInertia()
 {
-	/*
-	FVector3D boxSize = m_mins-m_maxs;
-
-	// compute inertia
-	FReal lx = boxSize.x*2.0f;
-	FReal ly = boxSize.y*2.0f;
-	FReal lz = boxSize.z*2.0f;
-
-
-	m_inertia = FVector3D(	m_mass/FReal(12.0f) * (ly*ly + lz*lz),
-							m_mass/FReal(12.0f) * (lx*lx + lz*lz),
-							m_mass/FReal(12.0f) * (lx*lx + ly*ly));
-	*/
-
 	ASSERTMSG(m_shape != NULL, "CEqRigidBody(CEqCollisionObject) - did you forgot to call Initialize()?");
 
 	btVector3 inertia;
@@ -158,7 +176,7 @@ bool CEqRigidBody::IsFrozen()
 	return ((m_flags & BODY_FROZEN) || (m_flags & BODY_FORCE_FREEZE));
 }
 
-bool CEqRigidBody::IsCanIterate(bool checkIgnore)
+bool CEqRigidBody::IsCanIntegrate(bool checkIgnore)
 {
 	if(m_frameTimeAccumulator == 0.0f || (checkIgnore == m_minFrameTimeIgnoreMotion))
 		return true;
@@ -369,7 +387,7 @@ void CEqRigidBody::ApplyLinearForce(const Vector3D& force)
 void CEqRigidBody::ApplyWorldImpulse(const FVector3D& position, const Vector3D& impulse)
 {
 	m_linearVelocity += impulse*m_invMass;
-	m_angularVelocity += m_invInertiaTensor*cross(Vector3D(m_position-position+m_centerOfMassTrans), impulse);
+	m_angularVelocity += m_invInertiaTensor*cross(Vector3D((m_position-position)+m_centerOfMassTrans), impulse);
 }
 
 // applies world impulse
@@ -377,7 +395,7 @@ void CEqRigidBody::ApplyWorldForce(const FVector3D& position, const Vector3D& fo
 {
 	m_totalForce += force;
 
-	Vector3D torqueAdd = cross(Vector3D(m_position-position+m_centerOfMassTrans), force);
+	Vector3D torqueAdd = cross(Vector3D((m_position-position)+m_centerOfMassTrans), force);
 
 	m_totalTorque += torqueAdd;
 }
@@ -409,11 +427,13 @@ const Vector3D& CEqRigidBody::GetAngularVelocity() const
 
 Vector3D CEqRigidBody::GetVelocityAtLocalPoint(const FVector3D& point) const
 {
+	// THIS IS WRONG
 	return m_linearVelocity + cross(m_angularVelocity, Vector3D(point));
 }
 
 Vector3D CEqRigidBody::GetVelocityAtWorldPoint(const FVector3D& point) const
 {
+	// THIS IS WRONG
 	return m_linearVelocity + cross(m_angularVelocity, Vector3D(m_position-point));
 }
 
@@ -464,44 +484,21 @@ void CEqRigidBody::SetGravity(float value)
 	m_gravity = value;
 }
 
-/*
-void CEqRigidBody::SetPosition(const FVector3D& position)
+const Matrix3x3& CEqRigidBody::GetWorldInvInertiaTensor() const
 {
-	m_position = position;
-	m_cachedTransformDirty = true;
+	return m_invInertiaTensor;
 }
-
-FVector3D CEqRigidBody::GetPosition() const
-{
-	return m_position;
-}
-
-void CEqRigidBody::ConstructRenderMatrix( Matrix4x4& outMatrix, const FVector3D& addPos )
-{
-	outMatrix = Matrix4x4(m_orientation);
-	outMatrix = translate(Vector3D(m_position+addPos)) * outMatrix;
-}
-
-#ifndef FLOAT_AS_FREAL
-void CEqRigidBody::ConstructRenderMatrix( FMatrix4x4& outMatrix, const FVector3D& addPos )
-{
-	if( m_orientation.isNan() )
-		m_orientation = identity();
-
-	outMatrix = FMatrix4x4(m_orientation);
-	outMatrix = translate(m_position+addPos) * outMatrix;
-}
-#endif // FLOAT_AS_FREAL
-*/
 
 //--------------------------------------------------------------------------------------------------------------------
 
-
-Vector3D ComputeFrictionVelocity(	const FVector3D& pos,
-									const Vector3D& collNormal,
-									const Vector3D& collPointVelocity,
-									float normalImpulse, float denominator,
-									float staticFriction, float dynamicFriction)
+//
+// STATIC
+//
+Vector3D CEqRigidBody::ComputeFrictionVelocity(	const FVector3D& pos,
+												const Vector3D& collNormal,
+												const Vector3D& collPointVelocity,
+												float normalImpulse, float denominator,
+												float staticFriction, float dynamicFriction)
 {
 	Vector3D tangent_vel = collPointVelocity - dot(collPointVelocity, collNormal)  * collNormal;
 
@@ -532,11 +529,14 @@ Vector3D ComputeFrictionVelocity(	const FVector3D& pos,
 	return vec3_zero;
 }
 
-Vector3D ComputeFrictionVelocity2(	const FVector3D& pos,
-									const Vector3D& collNormal,
-									const Vector3D& collPointVelocityA, const Vector3D& collPointVelocityB,
-									float normalImpulse, float denominator,
-									float staticFriction, float dynamicFriction)
+//
+// STATIC
+//
+Vector3D CEqRigidBody::ComputeFrictionVelocity2(const FVector3D& pos,
+												const Vector3D& collNormal,
+												const Vector3D& collPointVelocityA, const Vector3D& collPointVelocityB,
+												float normalImpulse, float denominator,
+												float staticFriction, float dynamicFriction)
 {
 	Vector3D subVelocities = collPointVelocityA-collPointVelocityB;
 
@@ -571,7 +571,10 @@ Vector3D ComputeFrictionVelocity2(	const FVector3D& pos,
 
 ConVar ph_showcollisionresponses("ph_showcollisionresponses", "0");
 
-float ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& point, const Vector3D& normal, float posError, float restitutionA, float frictionA, float percentage)
+//
+// STATIC
+//
+float CEqRigidBody::ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& point, const Vector3D& normal, float posError, float restitutionA, float frictionA, float percentage)
 {
 	if(!body)
 		return 0.0f;
@@ -619,8 +622,10 @@ float ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& point, const V
 	return normalImpulse*percentage;
 }
 
-
-float ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* bodyB, const FVector3D& point, const Vector3D& normal, float posError)
+//
+// STATIC
+//
+float CEqRigidBody::ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* bodyB, const FVector3D& point, const Vector3D& normal, float posError)
 {
 	if(!bodyA || !bodyB)
 		return 0.0f;

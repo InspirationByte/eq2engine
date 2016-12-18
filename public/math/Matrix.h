@@ -303,6 +303,10 @@ TMat3<T> rotateZXY3(const T angleX, const T angleY, const T angleZ);
 template <typename T>
 TMat3<T> rotateYZX3(const T angleX, const T angleY, const T angleZ);
 
+// maxtrix3 axis angle rotation
+template <typename T>
+TMat3<T> rotateAxis3(const TVec3D<T>& axis, T angle);
+
 //----------------------------------------------------------------------------------
 
 // matrix4 x rotation

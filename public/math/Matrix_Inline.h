@@ -565,6 +565,22 @@ inline TMat3<T> rotateYZX3(const T angleX, const T angleY, const T angleZ)
 		sinZ * sinY*sinX + cosY*cosX);
 }
 
+// maxtrix3 axis angle rotation
+template <typename T>
+inline TMat3<T> rotateAxis3(const TVec3D<T>& axis, T angle)
+{
+	// from page 32(45) of glspec.dvi
+	TMat3<T> uut(	axis[0]*axis[0], axis[0]*axis[1], axis[0]*axis[2],
+					axis[1]*axis[0], axis[1]*axis[1], axis[1]*axis[2],
+					axis[2]*axis[0], axis[2]*axis[1], axis[2]*axis[2]);
+  
+	TMat3<T> s(	0,			-axis[2],	axis[1],
+				axis[2],	0,			-axis[0],
+				-axis[1],	axis[0],	0);
+  
+	return (uut + cos(angle) * (_identity3<T>() - uut) + sin(angle) * s);
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 template <typename T>

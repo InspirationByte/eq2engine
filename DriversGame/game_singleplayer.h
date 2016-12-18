@@ -76,7 +76,7 @@ public:
 	CGameObject*				FindScriptObjectById( int scriptID );
 
 	void						LoadCarData();
-	carConfigEntry_t*			FindCarEntryByName(const char* name);
+	vehicleConfig_t*			FindCarEntryByName(const char* name);
 
 	//-------------------------------------------------------------------------
 	// functions only used by Lua
@@ -93,7 +93,7 @@ protected:
 
 	int							m_scriptIDReplayCounter;
 
-	DkList<carConfigEntry_t*>	m_carEntries;
+	DkList<vehicleConfig_t*>	m_carEntries;
 
 	int							m_localControls;
 	float						m_localSteeringValue;

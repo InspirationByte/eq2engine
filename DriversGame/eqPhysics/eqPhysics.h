@@ -214,6 +214,9 @@ typedef bool (CEqPhysics::*fnSingleObjectLineCollisionCheck)(	CEqCollisionObject
 
 typedef void (*FNSIMULATECALLBACK)(float fDt, int iterNum);
 
+class IEqPhysicsConstraint;
+class IEqPhysicsController;
+
 class CEqPhysics
 {
 	struct sweptTestParams_t
@@ -252,6 +255,13 @@ public:
 
     bool                            IsValidStaticObject( CEqCollisionObject* obj ) const;
 	bool                            IsValidBody( CEqCollisionObject* body ) const;
+
+	void							AddConstraint( IEqPhysicsConstraint* constraint );		///< adds constraint to the world
+	void							RemoveConstraint( IEqPhysicsConstraint* constraint );	///< removes constraint from the world
+
+	void							AddController( IEqPhysicsController* controller );		///< adds controller to the world
+	void							RemoveController( IEqPhysicsController* controller );	///< removes controller from the world
+	void							DestroyController( IEqPhysicsController* controlelr );	///< destroys controller
 
 	//< Performs a line test in the world
 	bool							TestLineCollision(	const FVector3D& start,
@@ -356,6 +366,9 @@ protected:
 	DkList<CEqCollisionObject*>		m_staticObjects;
 
 	DkList<CEqCollisionObject*>		m_ghostObjects;
+
+	DkList<IEqPhysicsConstraint*>	m_constraints;
+	DkList<IEqPhysicsController*>	m_controllers;
 
 	btCollisionWorld*				m_collisionWorld;
 	btCollisionConfiguration*		m_collConfig;

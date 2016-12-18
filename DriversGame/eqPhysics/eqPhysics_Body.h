@@ -94,106 +94,128 @@ public:
 	CEqRigidBody*	m_object;
 };
 
+class IEqPhysicsConstraint;
+
 ///
 /// Eq Rigid body
 ///
 class CEqRigidBody : public CEqCollisionObject
 {
 	friend class CEqPhysics;
-
 public:
-						CEqRigidBody();
 
-	bool				IsDynamic() const {return true;}
+	/// Computes friction velocity to apply
+	static Vector3D		ComputeFrictionVelocity( const FVector3D& position, const Vector3D& collNormal, const Vector3D& collVelocity, float normalImpulse, float denominator, float staticFriction, float dynamicFriction);
+	static Vector3D		ComputeFrictionVelocity2( const FVector3D& position, const Vector3D& collNormal, const Vector3D& collVelocityA, const Vector3D& collVelocityB, float normalImpulse, float denominator, float staticFriction, float dynamicFriction);
 
-	void				ComputeInertia();
+	/// Simply applies impulse response to single body
+	static float		ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& point, const Vector3D& normal, float posError, float restitutionA, float frictionA, float percentage = 1.0f);
 
-	void				SetMass(float mass);
-	float				GetMass() const;
-	float				GetInvMass() const;
+	/// Simply applies impulse response to two bodies
+	static float		ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* bodyB, const FVector3D& point, const Vector3D& normal, float posError);
 
-	void				UpdateInertiaTensor();		///< updates inertia tensor
+	//---------------------------------------------------------------
 
-	void				ApplyImpulse(const FVector3D& rel_pos, const Vector3D& impulse);			///< apply impulse at relative position
-	void				ApplyForce(const FVector3D& rel_pos, const Vector3D& force);				///< apply force at relative position
+							CEqRigidBody();
+							~CEqRigidBody();
 
-	void				ApplyAngularImpulse( const Vector3D& impulse );
-	void				ApplyAngularImpulseAt(const FVector3D& rel_pos, const Vector3D& impulse);
+	bool					IsDynamic() const {return true;}
 
-	void				ApplyAngularForce(const Vector3D& force);
-	void				ApplyAngularForceAt(const FVector3D& rel_pos, const Vector3D& force);
+	void					SetMass(float mass);
+	float					GetMass() const;
+	float					GetInvMass() const;
 
-	void				ApplyLinearImpulse(const Vector3D& impulse);
-	void				ApplyLinearForce(const Vector3D& force);
+	void					ApplyImpulse(const FVector3D& rel_pos, const Vector3D& impulse);			///< apply impulse at relative position
+	void					ApplyForce(const FVector3D& rel_pos, const Vector3D& force);				///< apply force at relative position
 
-	void				ApplyWorldImpulse(const FVector3D& position, const Vector3D& impulse);		///< apply impulse at world position
-	void				ApplyWorldForce(const FVector3D& position, const Vector3D& force);			///< apply impulse at world position
+	void					ApplyAngularImpulse( const Vector3D& impulse );
+	void					ApplyAngularImpulseAt(const FVector3D& rel_pos, const Vector3D& impulse);
 
-	void				SetOrientation(const Quaternion& orient);									///< sets new orientation and updates inertia tensor
+	void					ApplyAngularForce(const Vector3D& force);
+	void					ApplyAngularForceAt(const FVector3D& rel_pos, const Vector3D& force);
 
-	void				SetCenterOfMass(const FVector3D& center);									///< sets new center of mass
-	const FVector3D&	GetCenterOfMass() const;													///< returns body center of mass
+	void					ApplyLinearImpulse(const Vector3D& impulse);
+	void					ApplyLinearForce(const Vector3D& force);
 
-	Vector3D			GetVelocityAtLocalPoint(const FVector3D& point) const;						///< returns velocity at specified local point
-	Vector3D			GetVelocityAtWorldPoint(const FVector3D& point) const;						///< returns velocity at specified world point
+	void					ApplyWorldImpulse(const FVector3D& position, const Vector3D& impulse);		///< apply impulse at world position
+	void					ApplyWorldForce(const FVector3D& position, const Vector3D& force);			///< apply impulse at world position
 
-	const Vector3D&		GetLinearVelocity() const;													///< returns linear velocity											///< returns linear momentum of body
-	const Vector3D&		GetAngularVelocity() const;													///< returns angular velocity
+	void					SetOrientation(const Quaternion& orient);									///< sets new orientation and updates inertia tensor
 
-	void				SetLinearVelocity(const Vector3D& velocity);								///< sets new linear velocity (momentum / invMass)
-	void				SetAngularVelocity(const Vector3D& velocity);								///< sets new angular velocity
+	void					SetCenterOfMass(const FVector3D& center);									///< sets new center of mass
+	const FVector3D&		GetCenterOfMass() const;													///< returns body center of mass
 
-	void				SetLinearFactor(const Vector3D& fac);										///< sets new linear factor
-	void				SetAngularFactor(const Vector3D& fac);										///< sets new angular factor
+	Vector3D				GetVelocityAtLocalPoint(const FVector3D& point) const;						///< returns velocity at specified local point
+	Vector3D				GetVelocityAtWorldPoint(const FVector3D& point) const;						///< returns velocity at specified world point
 
-	float				GetGravity() const;
-	void				SetGravity(float value);
+	const Vector3D&			GetLinearVelocity() const;													///< returns linear velocity
+	const Vector3D&			GetAngularVelocity() const;													///< returns angular velocity
 
-	float				ComputeImpulseDenominator(const FVector3D& pos, const Vector3D& normal) const;
+	void					SetLinearVelocity(const Vector3D& velocity);								///< sets new linear velocity (momentum / invMass)
+	void					SetAngularVelocity(const Vector3D& velocity);								///< sets new angular velocity
 
-	bool				IsCanIterate( bool checkIgnore = false);					
+	void					SetLinearFactor(const Vector3D& fac);										///< sets new linear factor
+	void					SetAngularFactor(const Vector3D& fac);										///< sets new angular factor
 
-	void				SetMinFrameTime( float time, bool ignoreMotion = true );	///< sets minimal frame time for collision detections
-	float				GetMinFrametime();
+	float					GetGravity() const;
+	void					SetGravity(float value);													///< sets new gravity force
 
-	float				GetLastFrameTime();				///< returns last frame time (used if min frame time set)
+	const Matrix3x3&		GetWorldInvInertiaTensor() const;											///< returns world transformed inverse inertia tensor
 
-	virtual void		Integrate(float time);			///< called when physics takes timestep
-	virtual void		AccumulateForces(float time);	///< accumulates forces
+	void					TryWake( bool velocityCheck = true );										///< tries to wake the body up
+	void					Wake();																		///< unfreezes the body even if it was forced to freeze
+	void					Freeze();																	///< force freezes body and external powers will not wake it up
+	bool					IsFrozen();																	///< indicates that body has been frozen (forced or timed out)
 
-	void				TryWake( bool velocityCheck = true );
-	void				Wake();
-	void				Freeze();
+	void					SetMinFrameTime( float time, bool ignoreMotion = true );					///< sets minimal frame time for collision detections
+	float					GetMinFrametime();
+	float					GetLastFrameTime();															///< returns last frame time (used if min frame time set)
+	bool					IsCanIntegrate( bool checkIgnore = false);
 
-	bool				IsFrozen();
+	void					Integrate( float time );													///< called when physics takes timestep
+
+	// constraints
+	void					AddConstraint( IEqPhysicsConstraint* constraint );
+	void					RemoveConstraint( IEqPhysicsConstraint* constraint );
+	void					RemoveAllConstraints();
+
+	void					SetConstraintsUnsatisfied();
 
 protected:
 
-	Vector3D			m_linearVelocity;	// linear velocity - IS READ ONLY! To set: linearMomentum * mass
-	Vector3D			m_angularVelocity;
+	float					ComputeImpulseDenominator(const FVector3D& pos, const Vector3D& normal) const;
 
-	Vector3D			m_linearFactor;
-	Vector3D			m_angularFactor;
+	void					ComputeInertia();
+	void					UpdateInertiaTensor();		///< updates inertia tensor
+	void					AccumulateForces(float time);	///< accumulates forces
 
-	Vector3D			m_totalTorque;
-	Vector3D			m_totalForce;
 
-	Matrix3x3			m_invInertiaTensor;
+	Vector3D						m_linearVelocity;	// linear velocity - IS READ ONLY! To set: linearMomentum * mass
+	Vector3D						m_angularVelocity;
+
+	Vector3D						m_linearFactor;
+	Vector3D						m_angularFactor;
+
+	Vector3D						m_totalTorque;
+	Vector3D						m_totalForce;
+
+	Matrix3x3						m_invInertiaTensor;
 
 	// constant params
-	Vector3D			m_inertia;
-	Vector3D			m_invInertia;
+	Vector3D						m_inertia;
+	Vector3D						m_invInertia;
 
-	FVector3D			m_centerOfMass;
+	FVector3D						m_centerOfMass;
 
-	float				m_freezeTime;
+	float							m_freezeTime;
 
-	bool				m_minFrameTimeIgnoreMotion;
-	float				m_minFrameTime;
-	float				m_frameTimeAccumulator;
-	float				m_lastFrameTime;
+	bool							m_minFrameTimeIgnoreMotion;
+	float							m_minFrameTime;
+	float							m_frameTimeAccumulator;
+	float							m_lastFrameTime;
 
-	DkList<ContactPair_t>	m_contactPairs; // contact pair list in single frame
+	DkList<ContactPair_t>			m_contactPairs; // contact pair list in single frame
+	DkList<IEqPhysicsConstraint*>	m_constraints;
 
 public:
 	FVector3D			m_centerOfMassTrans;
@@ -207,22 +229,5 @@ protected:
 	float				m_mass;
 	float				m_invMass;
 };
-
-///
-/// Computes friction velocity to apply
-///
-Vector3D	ComputeFrictionVelocity( const FVector3D& position, const Vector3D& collNormal, const Vector3D& collVelocity, float normalImpulse, float denominator, float staticFriction, float dynamicFriction);
-
-Vector3D	ComputeFrictionVelocity2( const FVector3D& position, const Vector3D& collNormal, const Vector3D& collVelocityA, const Vector3D& collVelocityB, float normalImpulse, float denominator, float staticFriction, float dynamicFriction);
-
-///
-/// Simply applies impulse response to single body
-///
-float		ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& point, const Vector3D& normal, float posError, float restitutionA, float frictionA, float percentage = 1.0f);
-
-///
-/// Simply applies impulse response to two bodies
-///
-float		ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* bodyB, const FVector3D& point, const Vector3D& normal, float posError);
 
 #endif // EQRIGIDBODY_H

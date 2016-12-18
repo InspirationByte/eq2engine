@@ -20,6 +20,8 @@
 
 #include "eqPhysics.h"
 #include "eqPhysics_Body.h"
+#include "eqPhysics_Contstraint.h"
+#include "eqPhysics_Controller.h"
 
 #include "BulletCollision/CollisionShapes/btTriangleShape.h"
 #include "BulletCollision/CollisionDispatch/btInternalEdgeUtility.h"
@@ -244,7 +246,6 @@ void CEqPhysics::DestroyWorld()
 	{
 		delete m_dynObjects[i];
 	}
-
 	m_dynObjects.clear();
 	m_moveable.clear();
 
@@ -252,19 +253,26 @@ void CEqPhysics::DestroyWorld()
 	{
 		delete m_staticObjects[i];
 	}
-
 	m_staticObjects.clear();
 
 	for(int i = 0; i < m_ghostObjects.numElem(); i++)
 	{
 		delete m_ghostObjects[i];
 	}
-
 	m_ghostObjects.clear();
 
-	for (int i = 0; i < m_physSurfaceParams.numElem(); i++)
-		delete m_physSurfaceParams[i];
+	// update the controllers
+	for (int i = 0; i < m_controllers.numElem(); i++)
+	{
+		m_controllers[i]->SetEnabled(false);
+	}
+	m_controllers.clear();
+	m_constraints.clear();
 
+	for (int i = 0; i < m_physSurfaceParams.numElem(); i++)
+	{
+		delete m_physSurfaceParams[i];
+	}
 	m_physSurfaceParams.clear();
 
 	if(m_collisionWorld)
@@ -475,6 +483,65 @@ bool CEqPhysics::IsValidBody( CEqCollisionObject* body ) const
 
     return m_dynObjects.findIndex( (CEqRigidBody*)body ) != -1;
 }
+
+void CEqPhysics::AddConstraint( IEqPhysicsConstraint* constraint )
+{
+	if(!constraint)
+		return;
+
+	Threading::CScopedMutex m(m_mutex);
+	m_constraints.append( constraint );
+}
+
+void CEqPhysics::RemoveConstraint( IEqPhysicsConstraint* constraint )
+{
+	if(!constraint)
+		return;
+
+	Threading::CScopedMutex m(m_mutex);
+	m_constraints.fastRemove( constraint );
+}
+
+void CEqPhysics::AddController( IEqPhysicsController* controller )
+{
+	if(!controller)
+		return;
+
+	Threading::CScopedMutex m(m_mutex);
+	m_controllers.append( controller );
+
+	controller->AddedToWorld( this );
+}
+
+void CEqPhysics::RemoveController( IEqPhysicsController* controller )
+{
+	if(!controller)
+		return;
+
+	Threading::CScopedMutex m(m_mutex);
+	m_controllers.fastRemove( controller );
+
+	controller->RemovedFromWorld( this );
+}
+
+void CEqPhysics::DestroyController( IEqPhysicsController* controller )
+{
+	if(!controller)
+		return;
+
+	Threading::CScopedMutex m(m_mutex);
+
+	if(m_controllers.remove(controller))
+	{
+		controller->RemovedFromWorld( this );
+		delete controller;
+	}
+		
+	else
+		MsgError("CEqPhysics::DestroyController - INVALID\n");
+}
+
+//-----------------------------------------------------------------------------------------------
 
 void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt)
 {
@@ -775,7 +842,7 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 	// move object
 	body->Integrate( m_fDt );
 
-	if(body->IsCanIterate(true))
+	if(body->IsCanIntegrate(true))
 	{
 		// get new cell
 		collgridcell_t* newCell = m_grid.GetCellAtPos( body->GetPosition() );
@@ -806,7 +873,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 		return;
 
 	// skip collision detection on iteration
-	if (!body->IsCanIterate())
+	if (!body->IsCanIntegrate())
 		return;
 
 	//if(ph_test1.GetBool())
@@ -881,7 +948,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 				impactVelocity = 0.0f;
 
 			// apply response
-			appliedImpulse = ApplyImpulseResponseTo(bodyB, pair.position, pair.normal, positionalError, pair.restitutionA, pair.frictionA);
+			appliedImpulse = CEqRigidBody::ApplyImpulseResponseTo(bodyB, pair.position, pair.normal, positionalError, pair.restitutionA, pair.frictionA);
 		}
 
 		bodyADisableResponse = (bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE) > 0;
@@ -912,7 +979,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 			impactVelocity = 0.0f;
 
 		// apply response
-		appliedImpulse = 2.0f*ApplyImpulseResponseTo2(bodyA, bodyB, pair.position, pair.normal, positionalError);
+		appliedImpulse = 2.0f * CEqRigidBody::ApplyImpulseResponseTo2(bodyA, bodyB, pair.position, pair.normal, positionalError);
 
 		bodyADisableResponse = (bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE) > 0;
 	}
@@ -987,6 +1054,15 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	m_fDt = deltaTime;
 
 	PROFILE_FUNC();
+	
+	// prepare all the constraints
+	for (int i = 0; i < m_constraints.numElem(); i++)
+	{
+		if(m_constraints[i]->IsEnabled())
+		{
+			m_constraints[i]->PreApply( m_fDt );
+		}		
+	}
 
 	// move all bodies
 	for (int i = 0; i < m_moveable.numElem(); i++)
@@ -1002,6 +1078,26 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 
 		IntegrateSingle(body);
 	}
+
+	// update the controllers
+	for (int i = 0; i < m_controllers.numElem(); i++)
+	{
+		if(m_controllers[i]->IsEnabled())
+		{
+			m_controllers[i]->Update( m_fDt );
+		}
+	}
+
+	// update all constraints
+	for (int i = 0; i < m_constraints.numElem(); i++)
+	{
+		if(m_constraints[i]->IsEnabled())
+		{
+			m_constraints[i]->Apply( m_fDt );
+		}
+	}
+
+	m_fDt = deltaTime;
 
 	if(preIntegrFunc)
 		preIntegrFunc(m_fDt, iteration);

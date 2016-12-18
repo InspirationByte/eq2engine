@@ -73,7 +73,7 @@ CAIPursuerCar::CAIPursuerCar() : CAITrafficCar(NULL)
 	memset(&m_targInfo, 0, sizeof(m_targInfo));
 }
 
-CAIPursuerCar::CAIPursuerCar(carConfigEntry_t* carConfig, EPursuerAIType type) : CAITrafficCar(carConfig)
+CAIPursuerCar::CAIPursuerCar(vehicleConfig_t* carConfig, EPursuerAIType type) : CAITrafficCar(carConfig)
 {
 	memset(&m_targInfo, 0, sizeof(m_targInfo));
 

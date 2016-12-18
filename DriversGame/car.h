@@ -11,6 +11,7 @@
 #include "world.h"
 #include "CameraAnimator.h"
 #include "EqParticles.h"
+#include "eqPhysics/eqPhysics_HingeJoint.h"
 
 const float _oneBy1024 = 1.0f / 1023.0f;
 
@@ -134,9 +135,11 @@ struct carColorScheme_t
 	TVec4D<half> col2;
 };
 
-struct carConfigEntry_t
+struct vehicleConfig_t
 {
 	uint						scriptCRC;	// for network and replays
+
+	bool						m_isCar;
 
 	Vector3D					m_body_size;
 	float						m_antiRoll;
@@ -177,6 +180,8 @@ struct carConfigEntry_t
 	Vector3D					m_exhaustPosition;
 	int							m_exhaustDir;		// 0 - back, 1 - left, 2 - up
 
+	Vector3D					m_hingePoints[2];
+
 	bool						m_useBodyColor;
 
 	DkList<carWheelConfig_t>	m_wheels;
@@ -203,7 +208,7 @@ struct carConfigEntry_t
 	float						GetBrakeEffectPerSecond() const; // returns the vehicle speed (meters per sec) that can be reduced by one second
 };
 
-bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs );
+bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs );
 
 //------------------------------------
 
@@ -327,7 +332,7 @@ public:
 	DECLARE_CLASS( CCar, CGameObject )
 
 	CCar();
-	CCar( carConfigEntry_t* config );
+	CCar( vehicleConfig_t* config );
 	~CCar(){}
 
 	virtual void			Precache();
@@ -379,6 +384,11 @@ public:
 
 	void					SetVelocity(const Vector3D& vel);
 	void					SetAngularVelocity(const Vector3D& vel);
+
+	void					HingeVehicle(int thisHingePoint, CCar* otherVehicle, int otherHingePoint);
+	void					ReleaseHingedVehicle();
+
+	CCar*					GetHingedVehicle() const;
 
 	const Quaternion&		GetOrientation() const;
 
@@ -464,7 +474,7 @@ public:
 #endif // NO_LUA
 
 public:
-	carConfigEntry_t*		m_conf;
+	vehicleConfig_t*		m_conf;
 
 	bool					m_isLocalCar;
 
@@ -489,11 +499,12 @@ protected:
 
 	void					UpdateSounds( float fDt );
 	void					UpdateWheelEffect(int nWheel, float fDt);
-	void					UpdateCarPhysics(float fDt);
+	void					UpdateVehiclePhysics(float fDt);
 
 	CPhysicsHFObject*		m_pPhysicsObject;
-
 	CEqCollisionObject*		m_lastCollidingObject;
+
+	CEqPhysicsHingeJoint*	m_trailerHinge;
 
 	bool					m_enablePhysics;
 	
@@ -639,6 +650,9 @@ OOLUA_PROXY(CCar, CGameObject)
 	OOLUA_MFUNC_CONST(IsLocked)
 
 	OOLUA_MFUNC(SetInfiniteMass)
+
+	OOLUA_MFUNC(HingeVehicle);
+	OOLUA_MFUNC(ReleaseHingedVehicle)
 
 	OOLUA_MEM_FUNC_RENAME(GetLateralSliding, float, GetLateralSlidingAtBody)
 	OOLUA_MFUNC(GetTractionSliding)

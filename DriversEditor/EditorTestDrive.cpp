@@ -43,7 +43,7 @@ void CEditorTestGame::Init()
 			kvkeybase_t* key = vehicleRegistry->keys[i];
 			if(!key->IsSection() && !key->IsDefinition())
 			{
-				carConfigEntry_t* carent = new carConfigEntry_t();
+				vehicleConfig_t* carent = new vehicleConfig_t();
 				carent->carName = key->name;
 				carent->carScript = KV_GetValueString(key);
 
@@ -56,7 +56,7 @@ void CEditorTestGame::Init()
 					return;
 				}
 
-				if(!ParseCarConfig(carent, &kvs))
+				if(!ParseVehicleConfig(carent, &kvs))
 				{
 					MsgError("Car configuration '%s' is invalid!\n", carent->carScript.c_str());
 					delete carent;

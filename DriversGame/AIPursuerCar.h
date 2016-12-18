@@ -44,7 +44,7 @@ public:
 
 	CAIPursuerCar();
 
-	CAIPursuerCar(carConfigEntry_t* carConfig, EPursuerAIType type);
+	CAIPursuerCar(vehicleConfig_t* carConfig, EPursuerAIType type);
 	~CAIPursuerCar();
 
 	virtual void		Spawn();

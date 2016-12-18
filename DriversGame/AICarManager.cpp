@@ -156,7 +156,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 
 		int randCar = g_replayRandom.Get(0, m_civCarEntries.numElem() - 1);
 
-		carConfigEntry_t* conf = m_civCarEntries[randCar].config;
+		vehicleConfig_t* conf = m_civCarEntries[randCar].config;
 
 		newCar = new CCar(conf);
 		
@@ -196,7 +196,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 		if (m_copCars.numElem() >= GetMaxCops())
 			return NULL;
 
-		carConfigEntry_t* conf = g_pGameSession->FindCarEntryByName(m_copCarName[COP_LIGHT].c_str());
+		vehicleConfig_t* conf = g_pGameSession->FindCarEntryByName(m_copCarName[COP_LIGHT].c_str());
 
 		if (!conf)
 			return NULL;
@@ -465,7 +465,7 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 
 	int nCars = 0;
 
-	carConfigEntry_t* conf = g_pGameSession->FindCarEntryByName(m_copCarName[COP_LIGHT].c_str());
+	vehicleConfig_t* conf = g_pGameSession->FindCarEntryByName(m_copCarName[COP_LIGHT].c_str());
 
 	if (!conf)
 		return 0;

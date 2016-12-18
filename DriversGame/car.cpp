@@ -101,12 +101,16 @@ static Vector3D s_BodyPartDirections[] =
 #define WHEEL_SKIDTIME_EFFICIENCY	(0.25f)
 #define WHEEL_SKID_COOLDOWNTIME		(10.0f)
 
-bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
+#define HINGE_INIT_DISTANCE_THRESH	(4.0)
+
+bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 {
 	conf->m_cleanModelName = KV_GetValueString(kvs->FindKeyBase("cleanModel"), 0, "");
 	conf->m_damModelName = KV_GetValueString(kvs->FindKeyBase("damagedModel"), 0, conf->m_cleanModelName.c_str());
 
-	ASSERTMSG(conf->m_cleanModelName.Length(), "ParseCarConfig - missing cleanModel!\n");
+	conf->m_isCar = KV_GetValueBool(kvs->FindKeyBase("isCar"), 0, true);
+
+	ASSERTMSG(conf->m_cleanModelName.Length(), "ParseVehicleConfig - missing cleanModel!\n");
 
 	kvkeybase_t* wheelModelType = kvs->FindKeyBase("wheelBodyGroup");
 
@@ -250,6 +254,15 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 		conf->m_exhaustDir = KV_GetValueInt(visuals->FindKeyBase("exhaust"), 3, -1);
 	}
 
+	kvkeybase_t* hingePoints = kvs->FindKeyBase("hingePoints");
+	conf->m_hingePoints[0] = 0.0f;
+	conf->m_hingePoints[1] = 0.0f;
+
+	if(hingePoints)
+	{
+		conf->m_hingePoints[0] = KV_GetVector3D(hingePoints->FindKeyBase("front"), 0, vec3_zero);
+		conf->m_hingePoints[1] = KV_GetVector3D(hingePoints->FindKeyBase("back"), 0, vec3_zero);
+	}
 
 	kvkeybase_t* colors = kvs->FindKeyBase("colors");
 
@@ -319,12 +332,12 @@ bool ParseCarConfig( carConfigEntry_t* conf, const kvkeybase_t* kvs )
 	return true;
 }
 
-float carConfigEntry_t::GetMixedBrakeTorque() const
+float vehicleConfig_t::GetMixedBrakeTorque() const
 {
 	return GetFullBrakeTorque() / (float)m_wheels.numElem();
 }
 
-float carConfigEntry_t::GetFullBrakeTorque() const
+float vehicleConfig_t::GetFullBrakeTorque() const
 {
 	float brakeTorque = 0.0f;
 
@@ -334,12 +347,12 @@ float carConfigEntry_t::GetFullBrakeTorque() const
 	return brakeTorque;
 }
 
-float carConfigEntry_t::GetBrakeIneffectiveness() const
+float vehicleConfig_t::GetBrakeIneffectiveness() const
 {
 	return m_mass / GetFullBrakeTorque();
 }
 
-float carConfigEntry_t::GetBrakeEffectPerSecond() const
+float vehicleConfig_t::GetBrakeEffectPerSecond() const
 {
 	return GetFullBrakeTorque() / m_mass;
 }
@@ -513,14 +526,19 @@ CCar::CCar()
 
 }
 
-CCar::CCar( carConfigEntry_t* config ) :
+CCar::CCar( vehicleConfig_t* config ) :
+	m_pPhysicsObject(NULL),
+	m_trailerHinge(NULL),
+
 	m_pSkidSound(NULL),
+	m_pSurfSound(NULL),
+
+	m_pIdleSound(NULL),
 	m_pEngineSound(NULL),
 	m_pEngineSoundLow(NULL),
-	m_pPhysicsObject(NULL),
 	m_pHornSound(NULL),
 	m_pSirenSound(NULL),
-	m_pSurfSound(NULL),
+	
 	m_fEngineRPM(0.0f),
 	m_nPrevGear(-1),
 	m_steering(0.0f),
@@ -712,6 +730,12 @@ void CCar::InitCarSound()
 
 	m_pSurfSound = ses->CreateSoundController(&skid_ep);
 
+	//
+	// Don't initialize sounds if this is not a car
+	//
+	if(!m_conf->m_isCar)
+		return;
+
 	EmitSound_t ep;
 
 	ep.name = m_conf->m_sndEngineRPMHigh.c_str();
@@ -859,18 +883,22 @@ void CCar::OnRemove()
 {
 	CGameObject::OnRemove();
 
+	ReleaseHingedVehicle();
+
 #ifndef EDITOR
 	if(m_replayID != REPLAY_NOT_TRACKED)
 		g_replayData->PushSpawnOrRemoveEvent( REPLAY_EVENT_REMOVE, this, (m_state == GO_STATE_REMOVE_BY_SCRIPT) ? REPLAY_FLAG_SCRIPT_CALL : 0 );
 #endif // EDITOR
 
+	ses->RemoveSoundController(m_pSkidSound);
+	ses->RemoveSoundController(m_pSurfSound);
+
 	ses->RemoveSoundController(m_pIdleSound);
 	ses->RemoveSoundController(m_pEngineSound);
 	ses->RemoveSoundController(m_pEngineSoundLow);
-	ses->RemoveSoundController(m_pSkidSound);
 	ses->RemoveSoundController(m_pHornSound);
 	ses->RemoveSoundController(m_pSirenSound);
-	ses->RemoveSoundController(m_pSurfSound);
+	
 
 	for(int i = 0; i < m_pWheels.numElem(); i++)
 	{
@@ -1081,7 +1109,45 @@ void CCar::AnalogSetControls(float accel_brake, float steering, bool extendSteer
 	SetControlVars(accelRatio, brakeRatio, steering);
 }
 
-void CCar::UpdateCarPhysics(float delta)
+void CCar::HingeVehicle(int thisHingePoint, CCar* otherVehicle, int otherHingePoint)
+{
+	// get the global positions of hinge points and check
+
+	// don't hinge if too far (because it messes physics somehow)
+	// if(dist < HINGE_INIT_DISTANCE_THRESH)
+	//	return;
+
+	//
+	if(m_trailerHinge)
+		ReleaseHingedVehicle();
+
+	otherVehicle->m_isLocalCar = m_isLocalCar;
+
+	m_trailerHinge = new CEqPhysicsHingeJoint();
+	m_trailerHinge->Init(GetPhysicsBody(), otherVehicle->GetPhysicsBody(), vec3_up, 
+		m_conf->m_hingePoints[thisHingePoint], 0.2f, DEG2RAD(90.0f), DEG2RAD(5.0f), 0.3f);
+
+	m_trailerHinge->SetEnabled(true);
+
+	g_pPhysics->m_physics.AddController( m_trailerHinge );
+}
+
+void CCar::ReleaseHingedVehicle()
+{
+	if(m_trailerHinge)
+	{
+		g_pPhysics->m_physics.DestroyController(m_trailerHinge);
+	}
+
+	m_trailerHinge = nullptr;
+}
+
+CCar* CCar::GetHingedVehicle() const
+{
+	return NULL;
+}
+
+void CCar::UpdateVehiclePhysics(float delta)
 {
 	PROFILE_FUNC();
 
@@ -1092,6 +1158,8 @@ void CCar::UpdateCarPhysics(float delta)
 
 	if(m_locked) // TODO: cvar option to lock or not
 		m_controlButtons = IN_HANDBRAKE;
+
+	bool isCar = m_conf->m_isCar;
 
 	//
 	// Update controls first
@@ -1107,17 +1175,21 @@ void CCar::UpdateCarPhysics(float delta)
 
 	if( m_enabled )
 	{
-		if( m_controlButtons & IN_ACCELERATE )
-			fAccel = (float)((float)m_accelRatio*_oneBy1024);
+		if( isCar )
+		{
+			if(m_controlButtons & IN_ACCELERATE)
+				fAccel = (float)((float)m_accelRatio*_oneBy1024);
 
+			if( m_controlButtons & IN_BURNOUT )
+				bBurnout = true;
+
+			if( m_controlButtons & IN_HANDBRAKE )
+				fHandbrake = 1;
+		}
+		
+		// non-car vehicles still can brake
 		if( m_controlButtons & IN_BRAKE )
 			fBrake = (float)((float)m_brakeRatio*_oneBy1024);
-
-		if( m_controlButtons & IN_BURNOUT )
-			bBurnout = true;
-
-		if( m_controlButtons & IN_HANDBRAKE )
-			fHandbrake = 1;
 	}
 	else
 		fHandbrake = 1;
@@ -1358,145 +1430,149 @@ void CCar::UpdateCarPhysics(float delta)
 		fBrake -= fAccel;
 	}
 
-	//
-	// Update engine
-	//
-
-	int engineType =m_conf->m_engineType;
-
-	FReal differentialRatio = m_conf->m_differentialRatio;
-	FReal transmissionRate = m_conf->m_transmissionRate;
-
-	FReal torqueConvert = differentialRatio * m_conf->m_gears[m_nGear];
-	m_radsPerSec = (float)fabs(wheelsSpeed)*torqueConvert;
-	FReal torque = CalcTorqueCurve(m_radsPerSec, engineType) * m_conf->m_torqueMult;
-
-	float gbxDecelRate = max((float)fAccel, GEARBOX_DECEL_SHIFTDOWN_FACTOR);
-
- 	if(torque < 0)
-		torque = 0.0f;
-
-	torque *= torqueConvert * transmissionRate;
-
-	float car_speed = wheelsSpeed;
-
 	FReal fAcceleration = m_fAcceleration;
 	FReal fBreakage = fBrake;
 
-	// check neutral zone
-	if( !bDoBurnout && (fsimilar(car_speed, 0.0f, 0.1f) || !numDriveWheelsOnGround))
+	FReal torque = 0;
+
+	//
+	// Update engine
+	//
+	if( isCar )
 	{
-		if(fBrake > 0)
-			m_nGear = 0;
-		else if(fAcceleration > 0)
-			m_nGear = 1;
+		int engineType = m_conf->m_engineType;
 
-		m_nPrevGear = m_nGear;
+		FReal differentialRatio = m_conf->m_differentialRatio;
+		FReal transmissionRate = m_conf->m_transmissionRate;
 
-		if(m_nGear == 0)
+		FReal torqueConvert = differentialRatio * m_conf->m_gears[m_nGear];
+		m_radsPerSec = (float)fabs(wheelsSpeed)*torqueConvert;
+		torque = CalcTorqueCurve(m_radsPerSec, engineType) * m_conf->m_torqueMult;
+
+		float gbxDecelRate = max((float)fAccel, GEARBOX_DECEL_SHIFTDOWN_FACTOR);
+
+ 		if(torque < 0)
+			torque = 0.0f;
+
+		torque *= torqueConvert * transmissionRate;
+
+		float car_speed = wheelsSpeed;
+
+		// check neutral zone
+		if( !bDoBurnout && (fsimilar(car_speed, 0.0f, 0.1f) || !numDriveWheelsOnGround))
 		{
-			// find gear to diffential
-			torqueConvert = differentialRatio * m_conf->m_gears[m_nGear];
-			FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
-			m_radsPerSec = gearRadsPerSecond;
-			torque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->m_torqueMult;
+			if(fBrake > 0)
+				m_nGear = 0;
+			else if(fAcceleration > 0)
+				m_nGear = 1;
 
-			torque *= torqueConvert * transmissionRate;
+			m_nPrevGear = m_nGear;
 
-			// swap brake and acceleration
-			swap(fAcceleration, fBreakage);
-			fBreakage.raw *= -1;
-		}
-	}
-	else
-	{
-		// switch gears quickly if we move in wrong direction
-		if(car_speed < 0.0f && m_nGear > 0)
-			m_nGear = 0;
-		else if(car_speed > 0.0f && m_nGear == 0)
-			m_nGear = 1;
+			if(m_nGear == 0)
+			{
+				// find gear to diffential
+				torqueConvert = differentialRatio * m_conf->m_gears[m_nGear];
+				FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
+				m_radsPerSec = gearRadsPerSecond;
+				torque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->m_torqueMult;
 
-		m_nPrevGear = m_nGear;
+				torque *= torqueConvert * transmissionRate;
 
-
-		//
-		// update gearbox
-		//
-
-		if(m_nGear == 0 && !bDoBurnout)
-		{
-			// Use next physics frame to calculate torque
-
-
-			// swap brake and acceleration
-			swap(fAcceleration, fBreakage);
-			fBreakage.raw *= -1;
+				// swap brake and acceleration
+				swap(fAcceleration, fBreakage);
+				fBreakage.raw *= -1;
+			}
 		}
 		else
 		{
-			int newGear = m_nGear;
+			// switch gears quickly if we move in wrong direction
+			if(car_speed < 0.0f && m_nGear > 0)
+				m_nGear = 0;
+			else if(car_speed > 0.0f && m_nGear == 0)
+				m_nGear = 1;
 
-			// shift down
-			for ( int nGear = 1; nGear < m_nGear; nGear++ )
+			m_nPrevGear = m_nGear;
+
+
+			//
+			// update gearbox
+			//
+
+			if(m_nGear == 0 && !bDoBurnout)
 			{
-				// find gear to diffential
-				torqueConvert = differentialRatio * m_conf->m_gears[nGear];
-				FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
+				// Use next physics frame to calculate torque
 
-				FReal gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->m_torqueMult;
- 				if(gearTorque < 0)
-					gearTorque = 0.0f;
 
-				gearTorque *= torqueConvert * transmissionRate;
+				// swap brake and acceleration
+				swap(fAcceleration, fBreakage);
+				fBreakage.raw *= -1;
+			}
+			else
+			{
+				int newGear = m_nGear;
 
-				// gear torque check
-				if ( gearTorque*gbxDecelRate > torque )
+				// shift down
+				for ( int nGear = 1; nGear < m_nGear; nGear++ )
 				{
-					newGear = nGear;
+					// find gear to diffential
+					torqueConvert = differentialRatio * m_conf->m_gears[nGear];
+					FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
+
+					FReal gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->m_torqueMult;
+ 					if(gearTorque < 0)
+						gearTorque = 0.0f;
+
+					gearTorque *= torqueConvert * transmissionRate;
+
+					// gear torque check
+					if ( gearTorque*gbxDecelRate > torque )
+					{
+						newGear = nGear;
+					}
 				}
+
+				// shuft up
+				for ( int nGear = newGear; nGear < m_conf->m_gears.numElem(); nGear++ )
+				{
+					// find gear to diffential
+					torqueConvert = differentialRatio * m_conf->m_gears[nGear];
+					FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
+
+					FReal gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->m_torqueMult;
+ 					if(gearTorque < 0)
+						gearTorque = 0.0f;
+
+					gearTorque *= torqueConvert * transmissionRate;
+
+					// gear torque check
+					if ( gearTorque > torque && numDriveWheelsOnGround )
+					{
+						newGear = nGear;
+						torque = gearTorque;
+
+						m_radsPerSec = gearRadsPerSecond;
+					}
+				}
+
+				m_nGear = newGear;
 			}
 
-			// shuft up
-			for ( int nGear = newGear; nGear < m_conf->m_gears.numElem(); nGear++ )
+			// if shifted up, reduce gas since we pressed clutch
+			if(	m_nGear > 0 &&
+				m_nGear > m_nPrevGear &&
+				m_fAcceleration >= 0.9f &&
+				!bDoBurnout &&
+				numDriveWheelsOnGround)
 			{
-				// find gear to diffential
-				torqueConvert = differentialRatio * m_conf->m_gears[nGear];
-				FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
-
-				FReal gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->m_torqueMult;
- 				if(gearTorque < 0)
-					gearTorque = 0.0f;
-
-				gearTorque *= torqueConvert * transmissionRate;
-
-				// gear torque check
-				if ( gearTorque > torque && numDriveWheelsOnGround )
-				{
-					newGear = nGear;
-					torque = gearTorque;
-
-					m_radsPerSec = gearRadsPerSecond;
-				}
+				m_fAcceleration *= 0.25f;
 			}
 
-			m_nGear = newGear;
+			m_nPrevGear = m_nGear;
 		}
 
-		// if shifted up, reduce gas since we pressed clutch
-		if(	m_nGear > 0 &&
-			m_nGear > m_nPrevGear &&
-			m_fAcceleration >= 0.9f &&
-			!bDoBurnout &&
-			numDriveWheelsOnGround)
-		{
-			m_fAcceleration *= 0.25f;
-		}
-
-		m_nPrevGear = m_nGear;
+		bool reverseLightsEnabled = (m_nGear == 0) && !bDoBurnout && fBrake > 0.0f;
+		SetLight(CAR_LIGHT_REVERSELIGHT, reverseLightsEnabled);
 	}
-
-	bool reverseLightsEnabled = (m_nGear == 0) && !bDoBurnout && fBrake > 0.0f;
-	SetLight(CAR_LIGHT_REVERSELIGHT, reverseLightsEnabled);
 
 	if(FPmath::abs(fBreakage) > m_fBreakage)
 	{
@@ -1792,11 +1868,14 @@ void CCar::UpdateCarPhysics(float delta)
 			springForce += wheelSlipForceDir * wheelSlipOppositeForce;
 			springForce += wheelTractionForceDir * wheelTractionForce;
 
-
 			float fVelDamp = sign(wheelPitchSpeed)*clamp(fabs(wheelPitchSpeed), 0.0f, 1.0f);
 
-			springForce -= wheelTractionForceDir * fVelDamp * (1.0f-dampingFactor) * WHELL_ROLL_RESISTANCE_CONST;
-			springForce -= wheelTractionForceDir * wheelPitchSpeed * (1.0f-dampingFactor)*(8.0f + (1.0f-clamp((float)fAccel+(float)fabs(fBrake), 0.0f, 1.0f))*WHELL_ROLL_RESISTANCE_CONST);
+			// apply roll resistance if it's a car
+			if(isCar)
+			{
+				springForce -= wheelTractionForceDir * fVelDamp * (1.0f-dampingFactor) * WHELL_ROLL_RESISTANCE_CONST;
+				springForce -= wheelTractionForceDir * wheelPitchSpeed * (1.0f-dampingFactor)*(8.0f + (1.0f-clamp((float)fAccel+(float)fabs(fBrake), 0.0f, 1.0f))*WHELL_ROLL_RESISTANCE_CONST);
+			}
 
 			// spring force position in a couple with antiroll
 			Vector3D springForcePos = wheel.collisionInfo.position;
@@ -1925,7 +2004,7 @@ void CCar::OnPrePhysicsFrame(float fDt)
 	if( m_enablePhysics )
 	{
 		// update vehicle wheels, suspension, engine
-		UpdateCarPhysics(fDt);
+		UpdateVehiclePhysics(fDt);
 	}
 }
 
@@ -2000,7 +2079,7 @@ void CCar::OnPhysicsFrame( float fDt )
 			hasHitWater = true;
 
 			// apply 25% impulse
-			ApplyImpulseResponseTo(carBody, coll.position, coll.normal, 0.0f, 0.0f, 0.0f, 0.05f);
+			CEqRigidBody::ApplyImpulseResponseTo(carBody, coll.position, coll.normal, 0.0f, 0.0f, 0.0f, 0.05f);
 
 			// make particles
 			Vector3D collVelocity = carBody->GetVelocityAtWorldPoint(coll.position);
@@ -2284,6 +2363,8 @@ void CCar::Simulate( float fDt )
 	if(!carBody)
 		return;
 
+	bool isCar = m_conf->m_isCar;
+
 	if(	m_conf->m_sirenType > SERVICE_LIGHTS_NONE && (m_controlButtons & IN_SIREN) && !(m_oldControlButtons & IN_SIREN))
 	{
 		m_oldSirenState = m_sirenEnabled;
@@ -2294,7 +2375,7 @@ void CCar::Simulate( float fDt )
 	//------------------------------------
 	//
 
-	if( r_carLights.GetBool() && IsLightEnabled(CAR_LIGHT_HEADLIGHTS) && (m_bodyParts[CB_FRONT_LEFT].damage < 1.0f || m_bodyParts[CB_FRONT_RIGHT].damage < 1.0f) )
+	if( isCar && r_carLights.GetBool() && IsLightEnabled(CAR_LIGHT_HEADLIGHTS) && (m_bodyParts[CB_FRONT_LEFT].damage < 1.0f || m_bodyParts[CB_FRONT_RIGHT].damage < 1.0f) )
 	{
 		float lightIntensity = 1.0f;
 
@@ -2377,7 +2458,6 @@ void CCar::Simulate( float fDt )
 	m_oldControlButtons = m_controlButtons;
 
 	m_curTime += fDt;
-
 	m_engineSmokeTime += fDt;
 
 	m_visible = g_pGameWorld->m_occludingFrustum.IsSphereVisible(GetOrigin(), length(m_conf->m_body_size));
@@ -2391,7 +2471,7 @@ void CCar::Simulate( float fDt )
 
 	float frontDamageSum = m_bodyParts[CB_FRONT_LEFT].damage+m_bodyParts[CB_FRONT_RIGHT].damage;
 
-	if(	m_visible &&
+	if(	isCar && m_visible &&
 		(!m_inWater || IsAlive()) &&
 		m_engineSmokeTime > 0.1f &&
 		GetSpeed() < 80.0f)
@@ -2461,7 +2541,7 @@ void CCar::Simulate( float fDt )
 
 	// Draw light flares
 	// render siren lights
-	if ( m_lightsEnabled & CAR_LIGHT_SERVICELIGHTS )
+	if ( isCar && (m_lightsEnabled & CAR_LIGHT_SERVICELIGHTS) )
 	{
 		Vector3D siren_pos_noX(0.0f, m_conf->m_sirenPositionWidth.y, m_conf->m_sirenPositionWidth.z);
 
@@ -2566,7 +2646,7 @@ void CCar::Simulate( float fDt )
 		float fBackLightAlpha = clamp((fLightsAlpha < 0.0f ? -fLightsAlpha : 0.0f) + back_plane.Distance(cam_pos)*0.1f, 0.0f, 1.0f);
 
 		// render some lights
-		if ((m_lightsEnabled & CAR_LIGHT_HEADLIGHTS) && fHeadlightsAlpha > 0.0f)
+		if (isCar && (m_lightsEnabled & CAR_LIGHT_HEADLIGHTS) && fHeadlightsAlpha > 0.0f)
 		{
 			float frontSizeScale = fHeadlightsAlpha;
 			float frontGlowSizeScale = fHeadlightsAlpha*0.28f;
@@ -3173,29 +3253,35 @@ void CCar::UpdateSounds( float fDt )
 	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
 
 	Vector3D pos = carBody->GetPosition();
-	//float fAngVelocity = length(carBody->GetAngularVelocity());
-
-	m_pEngineSound->SetOrigin(pos);
-	m_pEngineSoundLow->SetOrigin(pos);
-	m_pSkidSound->SetOrigin(pos);
-	m_pIdleSound->SetOrigin(pos);
-	m_pHornSound->SetOrigin(pos);
-	m_pSurfSound->SetOrigin(pos);
-
-	if(m_pSirenSound)
-		m_pSirenSound->SetOrigin(pos);
-
 	Vector3D velocity = carBody->GetLinearVelocity();
 
-	m_pEngineSound->SetVelocity(velocity);
-	m_pEngineSoundLow->SetVelocity(velocity);
+	m_pSkidSound->SetOrigin(pos);
 	m_pSkidSound->SetVelocity(velocity);
-	m_pIdleSound->SetVelocity(velocity);
-	m_pHornSound->SetVelocity(velocity);
+
+	m_pSurfSound->SetOrigin(pos);
 	m_pSurfSound->SetVelocity(velocity);
 
-	if(m_pSirenSound)
-		m_pSirenSound->SetVelocity(velocity);
+	bool isCar = m_conf->m_isCar;
+
+	if(isCar)
+	{
+		m_pEngineSound->SetOrigin(pos);
+		m_pEngineSoundLow->SetOrigin(pos);
+		m_pIdleSound->SetOrigin(pos);
+		m_pHornSound->SetOrigin(pos);
+		
+		if(m_pSirenSound)
+			m_pSirenSound->SetOrigin(pos);
+
+		m_pEngineSound->SetVelocity(velocity);
+		m_pEngineSoundLow->SetVelocity(velocity);
+	
+		m_pIdleSound->SetVelocity(velocity);
+		m_pHornSound->SetVelocity(velocity);
+		
+		if(m_pSirenSound)
+			m_pSirenSound->SetVelocity(velocity);
+	}
 
 	float fTractionLevel = GetTractionSliding(true)*0.2f;
 	float fSlideLevel = fabs(GetLateralSlidingAtWheels(true)*0.5f) - 0.25;
@@ -3256,15 +3342,16 @@ void CCar::UpdateSounds( float fDt )
 	const float SKID_RADIAL_SOUNDPITCH_SCALE = 0.68f;
 
 	float wheelSkidPitchModifier = IDEAL_WHEEL_RADIUS - fWheelRad;
-
-	m_pSkidSound->SetVolume(fSkidVol);
-
 	float fSkidPitch = clamp(0.7f*fSkid+0.25f, 0.35f, 1.0f) - 0.15f*saturate(sin(m_curTime*1.25f)*8.0f - fTractionLevel);
 
+	m_pSkidSound->SetVolume( fSkidVol );
 	m_pSkidSound->SetPitch( fSkidPitch + wheelSkidPitchModifier*SKID_RADIAL_SOUNDPITCH_SCALE );
 
-	// update engine sound
-	float fRpmC = (m_fEngineRPM + 1300.0f) / 3300.0f;
+	//
+	// skip other sounds if that's not a car
+	//
+	if(!isCar)
+		return;
 
 	if(!m_sirenEnabled)
 	{
@@ -3290,6 +3377,9 @@ void CCar::UpdateSounds( float fDt )
 		return;
 	}
 
+	// update engine sound pitch by RPM value
+	float fRpmC = (m_fEngineRPM + 1300.0f) / 3300.0f;
+
 	m_pEngineSound->SetPitch(fRpmC);
 	m_pEngineSoundLow->SetPitch(fRpmC);
 
@@ -3300,8 +3390,6 @@ void CCar::UpdateSounds( float fDt )
 
 	if(m_isLocalCar && m_pEngineSoundLow->IsStopped())
 		m_pEngineSoundLow->Play();
-
-	//float fAccelOrBrake = ((m_controlButtons & IN_ACCELERATE) || (m_controlButtons & IN_BRAKE)) && !(m_controlButtons & IN_HANDBRAKE);
 
 	m_engineIdleFactor = (clamp(2200.0f-m_fEngineRPM, 0.0f,2200.0f)/2200.0f);
 
@@ -4005,7 +4093,9 @@ OOLUA_EXPORT_FUNCTIONS(
 	Enable,
 	GetLateralSliding,
 	GetTractionSliding,
-	SetInfiniteMass
+	SetInfiniteMass,
+	HingeVehicle,
+	ReleaseHingedVehicle
 )
 
 OOLUA_EXPORT_FUNCTIONS_CONST(
