@@ -389,6 +389,7 @@ public:
 	void					ReleaseHingedVehicle();
 
 	CCar*					GetHingedVehicle() const;
+	CEqRigidBody*			GetHingedBody() const;
 
 	const Quaternion&		GetOrientation() const;
 

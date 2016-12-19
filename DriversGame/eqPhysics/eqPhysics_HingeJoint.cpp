@@ -23,7 +23,7 @@ CEqPhysicsHingeJoint::~CEqPhysicsHingeJoint()
 void CEqPhysicsHingeJoint::AddedToWorld( CEqPhysics* physics )
 {
 	physics->AddConstraint(&m_midPointConstraint);
-	//physics->AddConstraint(&m_maxDistanceConstraint);
+	physics->AddConstraint(&m_maxDistanceConstraint);
 	//physics->AddConstraint(&m_sidePointConstraints[0]);
 	//physics->AddConstraint(&m_sidePointConstraints[1]);
 }
@@ -31,7 +31,7 @@ void CEqPhysicsHingeJoint::AddedToWorld( CEqPhysics* physics )
 void CEqPhysicsHingeJoint::RemovedFromWorld( CEqPhysics* physics )
 {
 	physics->RemoveConstraint(&m_midPointConstraint);
-	//physics->RemoveConstraint(&m_maxDistanceConstraint);
+	physics->RemoveConstraint(&m_maxDistanceConstraint);
 	//physics->RemoveConstraint(&m_sidePointConstraints[0]);
 	//physics->RemoveConstraint(&m_sidePointConstraints[1]);
 }

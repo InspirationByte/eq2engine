@@ -332,15 +332,20 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 	if (checkSpeeding && car->GetSpeed() > AI_COP_CHECK_MAXSPEED)
 		return INFRACTION_SPEEDING;
 
+	DkList<CollisionPairData_t>& collisionList = car->GetPhysicsBody()->m_collisionList;
+
 	// check collision
-	for(int i = 0; i < car->GetPhysicsBody()->m_collisionList.numElem(); i++)
+	for(int i = 0; i < collisionList.numElem(); i++)
 	{
-		CollisionPairData_t& pair = car->GetPhysicsBody()->m_collisionList[i];
+		CollisionPairData_t& pair = collisionList[i];
 
 		if(car->m_lastCollidingObject == pair.bodyB)
 			continue;
 
 		if(pair.bodyB->m_flags & COLLOBJ_ISGHOST)
+			continue;
+
+		if(pair.bodyB == car->GetHingedBody())
 			continue;
 
 		car->m_lastCollidingObject = pair.bodyB;

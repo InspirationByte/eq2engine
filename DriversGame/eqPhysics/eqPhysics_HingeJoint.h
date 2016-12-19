@@ -13,9 +13,11 @@
 #include "eqPhysics_PointConstraint.h"
 #include "eqPhysics_MaxDistConstraint.h"
 
+#include "math/DkMath.h"
+
 class CEqRigidBody;
 
-const float MAX_HINGE_ANGLE_LIMIT = 150.0f;
+const float MAX_HINGE_ANGLE_LIMIT = DEG2RAD(150.0f);
 
 class CEqPhysicsHingeJoint : public IEqPhysicsController
 {
@@ -37,8 +39,11 @@ public:
     void				Break();		/// Just remove the limit constraint
     void				Restore();		/// Just enable the limit constraint
 
-    bool				IsBroken() const				{return m_broken;}
-    const FVector3D&	GetHingePosRel0() const			{ return m_hingePosRel0; }
+    bool				IsBroken() const				{ return m_broken; }
+    const FVector3D&	GetHingePosRelA() const			{ return m_hingePosRel0; }
+
+	CEqRigidBody*		GetBodyA() const				{ return m_body0; }
+	CEqRigidBody*		GetBodyB() const				{ return m_body1; }
 
     /// We can be asked to apply an extra torque to body0 (and
     /// opposite to body1) each time step.

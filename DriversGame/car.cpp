@@ -1124,8 +1124,9 @@ void CCar::HingeVehicle(int thisHingePoint, CCar* otherVehicle, int otherHingePo
 	otherVehicle->m_isLocalCar = m_isLocalCar;
 
 	m_trailerHinge = new CEqPhysicsHingeJoint();
-	m_trailerHinge->Init(GetPhysicsBody(), otherVehicle->GetPhysicsBody(), vec3_up, 
-		m_conf->m_hingePoints[thisHingePoint], 0.2f, DEG2RAD(90.0f), DEG2RAD(5.0f), 0.3f);
+	m_trailerHinge->Init(GetPhysicsBody(), otherVehicle->GetPhysicsBody(), vec3_forward, 
+											m_conf->m_hingePoints[thisHingePoint],
+											0.2f, DEG2RAD(95.0f), DEG2RAD(95.0f), 0.1f, 0.005f);
 
 	m_trailerHinge->SetEnabled(true);
 
@@ -1144,7 +1145,22 @@ void CCar::ReleaseHingedVehicle()
 
 CCar* CCar::GetHingedVehicle() const
 {
+	if(!m_trailerHinge)
+		return NULL;
+
+	CEqRigidBody* body = m_trailerHinge->GetBodyB();
+	if(body)
+		return (CCar*)body->GetUserData();
+
 	return NULL;
+}
+
+CEqRigidBody* CCar::GetHingedBody() const
+{
+	if(!m_trailerHinge)
+		return NULL;
+
+	return m_trailerHinge->GetBodyB();
 }
 
 void CCar::UpdateVehiclePhysics(float delta)

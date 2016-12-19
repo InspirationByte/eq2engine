@@ -8,6 +8,8 @@
 #include "eqPhysics_MaxDistConstraint.h"
 #include "eqPhysics_Body.h"
 
+#include "DebugInterface.h"
+
 const float MaxVelocityMagnitude = 20.0f;
 const float minVelForProcessing = 0.01f;
 
@@ -77,7 +79,7 @@ bool CEqPhysicsMaxDistConstraint::Apply(float dt)
 	Vector3D clampedRelPos0 = predRelPos0;
 
 	float clampedRelPos0Mag = length(clampedRelPos0);
-	if (clampedRelPos0Mag <= 0.00001f)
+	if (clampedRelPos0Mag <= 0.0001f)
 		return false;
 
 	if (clampedRelPos0Mag > m_maxDistance)
@@ -109,12 +111,12 @@ bool CEqPhysicsMaxDistConstraint::Apply(float dt)
 						dot(N, cross(m_body0->GetWorldInvInertiaTensor() * (cross(m_R0, N)), m_R0)) + 
 						dot(N, cross(m_body1->GetWorldInvInertiaTensor() * (cross(m_R1, N)), m_R1));
 
-	if (denominator < 0.00001f)
+	if (denominator < 0.0001f)
 		return false;
 
 	float normalImpulse = -normalVel / denominator;
 
-	m_body1->ApplyWorldImpulse(m_worldPos, normalImpulse * N);
+	m_body0->ApplyWorldImpulse(m_worldPos, normalImpulse * N);
 	m_body1->ApplyWorldImpulse(m_worldPos, -normalImpulse * N);
 
 	m_body0->TryWake();

@@ -10,7 +10,9 @@
 #include "session_stuff.h"
 #include "IDebugOverlay.h"
 
-#define CONTROL_DETAILS_STEP (0.0025f)
+#define CONTROL_DETAILS_STEP	(0.0025f)
+#define CORRECTION_TICK			128
+#define COLLISION_MIN_IMPULSE	(0.1f)
 
 // sort events in right order
 int _sortEventsFunc(const replayevent_t& a, const replayevent_t& b)
@@ -49,10 +51,12 @@ int CReplayData::Record(CCar* pCar, bool onlyCollisions)
 	veh.obj_car = pCar;
 	veh.recordOnlyCollisions = onlyCollisions;
 
-	veh.car_initial_pos = pCar->GetPhysicsBody()->GetPosition();
-	veh.car_initial_rot = pCar->GetPhysicsBody()->GetOrientation();
-	veh.car_initial_vel = pCar->GetPhysicsBody()->GetLinearVelocity();
-	veh.car_initial_angvel = pCar->GetPhysicsBody()->GetAngularVelocity();
+	CEqRigidBody* body = pCar->GetPhysicsBody();
+
+	veh.car_initial_pos = body->GetPosition();
+	veh.car_initial_rot = body->GetOrientation();
+	veh.car_initial_vel = body->GetLinearVelocity();
+	veh.car_initial_angvel = body->GetAngularVelocity();
 
 	veh.scriptObjectId = pCar->GetScriptID();
 
@@ -279,11 +283,13 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 
 	if(!rep->obj_car->IsLocked())
 	{
+		CEqRigidBody* body = rep->obj_car->GetPhysicsBody();
+
 		// correct whole frame
-		rep->obj_car->GetPhysicsBody()->SetPosition(frame.car_origin);
-		rep->obj_car->GetPhysicsBody()->SetOrientation(Quaternion(frame.car_rot.w, frame.car_rot.x, frame.car_rot.y, frame.car_rot.z));
-		rep->obj_car->GetPhysicsBody()->SetLinearVelocity(frame.car_vel);
-		rep->obj_car->GetPhysicsBody()->SetAngularVelocity(frame.car_angvel);
+		body->SetPosition(frame.car_origin);
+		body->SetOrientation(Quaternion(frame.car_rot.w, frame.car_rot.x, frame.car_rot.y, frame.car_rot.z));
+		body->SetLinearVelocity(frame.car_vel);
+		body->SetAngularVelocity(frame.car_angvel);
 	}
 
 	// unpack
@@ -310,6 +316,8 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 		rep->obj_car->SetDamage(frame.car_damage);
 }
 
+ConVar replay_everyCorrectFrameAt("replay_everyCorrectFrameAt", "64");
+
 // records vehicle frame
 bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 {
@@ -319,15 +327,17 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 	if( rep->done || rep->curr_frame < rep->replayArray.numElem() )
 		return false; // done or has future frames
 
+	CEqRigidBody* body = rep->obj_car->GetPhysicsBody();
+
 	// position must be set
 	if(nFrame == 0)
 	{
-		Quaternion orient = rep->obj_car->GetPhysicsBody()->GetOrientation();
+		Quaternion orient = body->GetOrientation();
 
-		rep->car_initial_pos = rep->obj_car->GetPhysicsBody()->GetPosition();
+		rep->car_initial_pos = body->GetPosition();
 		rep->car_initial_rot = orient;
-		rep->car_initial_vel = rep->obj_car->GetPhysicsBody()->GetLinearVelocity();
-		rep->car_initial_angvel = rep->obj_car->GetPhysicsBody()->GetAngularVelocity();
+		rep->car_initial_vel = body->GetLinearVelocity();
+		rep->car_initial_angvel = body->GetAngularVelocity();
 	}
 
 	bool addControls = false;
@@ -342,6 +352,8 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 
 	rep->skeptFrames++;
 
+	bool forceCorrection = m_tick % CORRECTION_TICK == 0;
+	
 	// decide to discard frames or not depending on events
 	// or record only frames where collision ocurred
 	if(!rep->recordOnlyCollisions && !rep->onEvent)
@@ -366,22 +378,30 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 		if( control_flags & IN_ANALOGSTEER )
 			prevSteerRatio = prevsteerControl * prevSteerSign;
 
-		addControls = (prevControl.button_flags != control_flags) || (accelControl != prevAccelControl) || (brakeControl != prevbrakeControl) || (steerControl != prevsteerControl);
+		addControls =	(prevControl.button_flags != control_flags) || 
+						(accelControl != prevAccelControl) || 
+						(brakeControl != prevbrakeControl) || 
+						(steerControl != prevsteerControl) || 
+						forceCorrection;
 	}
+
+	
+	DkList<CollisionPairData_t>& collisionList = body->m_collisionList;
+	bool satisfiesCollisions = collisionList.numElem([=](CollisionPairData_t& pair){ return pair.appliedImpulse > COLLISION_MIN_IMPULSE; });;
 
 	// add replay frame if car has collision with objects
 
-	if( rep->onEvent || addControls || rep->obj_car->GetPhysicsBody()->m_collisionList.numElem() > 0 )
+	if( rep->onEvent || addControls || satisfiesCollisions )
 	{
 		replaycontrol_t con;
 		con.button_flags = control_flags;
 
-		Quaternion orient = rep->obj_car->GetPhysicsBody()->GetOrientation();
+		Quaternion orient = body->GetOrientation();
 
-		con.car_origin = rep->obj_car->GetPhysicsBody()->GetPosition();
+		con.car_origin = body->GetPosition();
 		con.car_rot = TVec4D<half>(orient.x, orient.y, orient.z, orient.w);
-		con.car_vel = rep->obj_car->GetPhysicsBody()->GetLinearVelocity();
-		con.car_angvel = rep->obj_car->GetPhysicsBody()->GetAngularVelocity();
+		con.car_vel = body->GetLinearVelocity();
+		con.car_angvel = body->GetAngularVelocity();
 		con.car_damage = rep->obj_car->GetDamage();
 
 		int steerBit = 0;
@@ -404,8 +424,6 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 
 		rep->onEvent = false;
 	}
-
-	
 
 	return true;
 }
