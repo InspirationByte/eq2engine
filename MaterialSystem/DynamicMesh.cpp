@@ -183,7 +183,7 @@ void CDynamicMesh::AddStripBreak()
 // addStripBreak is for PRIM_TRIANGLE_STRIP. Set it false to work with current strip
 int CDynamicMesh::AllocateGeom( int nVertices, int nIndices, void** verts, uint16** indices, bool addStripBreak /*= true*/ )
 {
-	if(nVertices == 0)
+	if(nVertices == 0 && nIndices == 0)
 		return -1;
 
 	if(addStripBreak)

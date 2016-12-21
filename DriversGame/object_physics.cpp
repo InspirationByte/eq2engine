@@ -245,6 +245,9 @@ void CObject_Physics::Simulate(float fDt)
 {
 	PROFILE_FUNC();
 
+	if(fDt <= 0.0f)
+		return;
+
 	for(int i = 0; i < m_physBody->m_collisionList.numElem(); i++)
 	{
 		CollisionPairData_t& pair = m_physBody->m_collisionList[i];

@@ -52,7 +52,11 @@ public:
 	void		Line2fv(const Vector2D& v1, const Vector2D& v2);
 	void		Line3fv(const Vector3D& v1, const Vector3D& v2);
 
-	// Makes 2D textured quad
+	// Makes 2D triangle
+	// to set quad color use Color3*/Color4* operators
+	void		Triangle2(	const Vector2D& v1, const Vector2D& v2, const Vector2D& v3);
+
+	// Makes 2D quad
 	// to set quad color use Color3*/Color4* operators
 	void		Quad2(	const Vector2D& v_tl, const Vector2D& v_tr, const Vector2D& v_bl, const Vector2D& v_br);
 
@@ -66,8 +70,14 @@ public:
 	void		TexturedQuad3(	const Vector3D& v_tl, const Vector3D& v_tr, const Vector3D& v_bl, const Vector3D& v_br,
 								const Vector2D& t_tl, const Vector2D& t_tr, const Vector2D& t_bl,const Vector2D& t_br);
 
-	// advances vertex
+	// advances vertex, no indexing issued
 	void		AdvanceVertex();
+
+	// advances index with current index
+	int			AdvanceVertexIndex();
+
+	// advances index with custom index
+	int			AdvanceVertexIndex(uint16 index);
 
 protected:
 
@@ -97,6 +107,8 @@ protected:
 	vertdata_t			m_normal;
 	vertdata_t			m_texcoord;
 	vertdata_t			m_color;
+
+	bool				m_pushedVert;
 
 	bool				m_begun;
 };
@@ -175,6 +187,7 @@ inline void CMeshBuilder::Begin(PrimitiveType_e type)
 	m_curVertex = NULL;
 
 	m_begun = true;
+	m_pushedVert = false;
 }
 
 // ends building and renders the mesh
@@ -193,6 +206,7 @@ inline void CMeshBuilder::Position3f(float x, float y, float z)
 	m_position.value.y = y;
 	m_position.value.z = z;
 	m_position.value.w = 1.0f;
+	m_pushedVert =  true;
 }
 
 inline void CMeshBuilder::Position3fv(const Vector3D& v)
@@ -206,6 +220,7 @@ inline void CMeshBuilder::Position2f(float x, float y)
 	m_position.value.y = y;
 	m_position.value.z = 0.0f;
 	m_position.value.w = 1.0f;
+	m_pushedVert =  true;
 }
 
 inline void CMeshBuilder::Position2fv(const Vector2D& v)
@@ -280,11 +295,17 @@ inline void CMeshBuilder::Color4fv( const ColorRGBA& rgba )
 	Color4f(rgba[0], rgba[1], rgba[2], rgba[3]);
 }
 
+
 // advances vertex
 inline void CMeshBuilder::AdvanceVertex()
 {
 	if(!m_begun)
 		return;
+
+	if(!m_pushedVert)
+		return;
+
+	m_pushedVert = false;
 
 	if(m_mesh->AllocateGeom(1, 0, &m_curVertex, NULL, false) == -1)
 		return;
@@ -295,10 +316,76 @@ inline void CMeshBuilder::AdvanceVertex()
 	CopyVertData(m_color);
 }
 
+// advances index with current index
+inline int CMeshBuilder::AdvanceVertexIndex()
+{
+	if(!m_begun)
+		return -1;
+
+	if(!m_pushedVert)
+		return -1;
+
+	m_pushedVert = false;
+
+	uint16* inputIdx;
+
+	int curVertex = m_mesh->AllocateGeom(1, 1, &m_curVertex, &inputIdx, false);
+	if(curVertex == -1)
+		return -1;
+
+	CopyVertData(m_position);
+	CopyVertData(m_texcoord);
+	CopyVertData(m_normal, true);
+	CopyVertData(m_color);
+
+	*inputIdx = curVertex;
+	return curVertex;
+}
+
+// advances index with custom index
+inline int CMeshBuilder::AdvanceVertexIndex(uint16 index)
+{
+	if(!m_begun)
+		return -1;
+
+	if(index == 0xFFFF)
+	{
+		m_mesh->AddStripBreak();
+		return -1;
+	}
+
+	uint16* inputIdx;
+
+	int curVertex = m_mesh->AllocateGeom(m_pushedVert ? 1 : 0, 1, &m_curVertex, &inputIdx, false);
+	if(curVertex == -1)
+	{
+		m_pushedVert = false;
+		return -1;
+	}
+
+	if(m_pushedVert)
+	{
+		CopyVertData(m_position);
+		CopyVertData(m_texcoord);
+		CopyVertData(m_normal, true);
+		CopyVertData(m_color);
+
+		m_pushedVert = false;
+	}
+
+	*inputIdx = index;
+	return curVertex;
+}
+
 inline void CMeshBuilder::AdvanceVertexPtr()
 {
 	if(!m_curVertex) // first it needs to be allocated
 		return;
+
+	if(!m_pushedVert)
+		return;
+
+	m_pushedVert = false;
 
 	CopyVertData(m_position);
 	CopyVertData(m_texcoord);
@@ -325,7 +412,43 @@ inline void CMeshBuilder::Line3fv(const Vector3D& v1, const Vector3D& v2)
 	Position3fv(v2); AdvanceVertex();
 }
 
-// Makes 2D textured quad
+// Makes 2D triangle
+// to set quad color use Color3*/Color4* operators
+inline void CMeshBuilder::Triangle2( const Vector2D& v1, const Vector2D& v2, const Vector2D& v3 )
+{
+	PrimitiveType_e primType = m_mesh->GetPrimitiveType();
+	uint16* indices = NULL;
+
+	int startIndex = m_mesh->AllocateGeom(3, 3, &m_curVertex, &indices);
+
+	if(startIndex == -1)
+		return;
+
+	Position2fv(v1);
+	AdvanceVertexPtr();
+
+	Position2fv(v2);
+	AdvanceVertexPtr();
+
+	Position2fv(v3);
+	AdvanceVertexPtr();
+
+	// make indices working
+	if(primType == PRIM_TRIANGLES)
+	{
+		indices[0] = startIndex;
+		indices[1] = startIndex+1;
+		indices[2] = startIndex+2;
+	}
+	else // more linear
+	{
+		indices[0] = startIndex;
+		indices[1] = startIndex+1;
+		indices[2] = startIndex+2;
+	}
+}
+
+// Makes 2D quad
 // to set quad color use Color3*/Color4* operators
 inline void CMeshBuilder::Quad2(const Vector2D& v_tl, const Vector2D& v_tr, const Vector2D& v_bl, const Vector2D& v_br)
 {

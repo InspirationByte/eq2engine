@@ -149,9 +149,8 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 			conf->m_gears.append(fRatio);
 		}
 	}
-	else
-		MsgError("no gears found in file!");
-
+	else if(conf->m_isCar)
+		MsgError("no gears found in config for '%s'!", conf->carName.c_str());
 
 	kvkeybase_t* pWheels = kvs->FindKeyBase("wheels");
 
@@ -1126,7 +1125,7 @@ void CCar::HingeVehicle(int thisHingePoint, CCar* otherVehicle, int otherHingePo
 	m_trailerHinge = new CEqPhysicsHingeJoint();
 	m_trailerHinge->Init(GetPhysicsBody(), otherVehicle->GetPhysicsBody(), vec3_forward, 
 											m_conf->m_hingePoints[thisHingePoint],
-											0.2f, DEG2RAD(95.0f), DEG2RAD(95.0f), 0.1f, 0.005f);
+											0.2f, 10.0f, 10.0f, 0.1f, 0.005f);
 
 	m_trailerHinge->SetEnabled(true);
 

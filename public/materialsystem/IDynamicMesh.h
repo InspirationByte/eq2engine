@@ -40,6 +40,7 @@ public:
 	//
 	// FIXME: subdivide on streams???
 	virtual int				AllocateGeom( int nVertices, int nIndices, void** verts, uint16** indices, bool addStripBreak = true ) = 0;
+	virtual void			AddStripBreak() = 0;
 
 	// uploads buffers and renders the mesh. Note that you has been set material and adjusted RTs
 	virtual void			Render() = 0;

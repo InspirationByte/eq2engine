@@ -38,8 +38,9 @@ public:
 	// resets the dynamic mesh
 	void			Reset();
 
-protected:
 	void			AddStripBreak();
+
+protected:
 
 	bool			Lock();
 	void			Unlock();

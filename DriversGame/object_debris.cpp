@@ -280,6 +280,9 @@ void CObject_Debris::Simulate(float fDt)
 {
 	PROFILE_FUNC();
 
+	if(fDt <= 0.0f)
+		return;
+
 	if(m_collOccured)
 		m_fTimeToRemove -= fDt;
 
