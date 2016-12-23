@@ -550,8 +550,8 @@ void CGameSession::LoadCarData()
 						return;
 					}
 
-					PrecacheStudioModel( carent->m_cleanModelName.c_str() );
-					PrecacheStudioModel( carent->m_damModelName.c_str() );
+					PrecacheStudioModel( carent->visual.cleanModelName.c_str() );
+					PrecacheStudioModel( carent->visual.damModelName.c_str() );
 					m_carEntries.append(carent);
 				}
 				else

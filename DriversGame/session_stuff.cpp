@@ -43,9 +43,7 @@ DECLARE_CMD(car_reload, "reload current car", 0)
 				return;
 			}
 
-			conf->m_wheels.clear();
-			conf->m_colors.clear();
-			conf->m_gears.clear();
+			conf->DestroyCleanup();
 
 			if(!ParseVehicleConfig(conf, &kvs))
 			{
@@ -55,7 +53,7 @@ DECLARE_CMD(car_reload, "reload current car", 0)
 		}
 
 		g_pGameSession->GetPlayerCar()->DebugReloadCar();
-		g_pGameSession->GetPlayerCar()->SetColorScheme(RandomInt(0,conf->m_colors.numElem()-1));
+		g_pGameSession->GetPlayerCar()->SetColorScheme(RandomInt(0,conf->numColors-1));
 	}
 }
 

@@ -233,9 +233,9 @@ void CAITrafficCar::Spawn()
 	// perform lazy collision checks
 	GetPhysicsBody()->SetMinFrameTime(1.0f / 30.0f);
 
-	if( m_conf->m_colors.numElem() > 0 )
+	if( m_conf->numColors )
 	{
-		int col_idx = g_replayRandom.Get(0, m_conf->m_colors.numElem() - 1);
+		int col_idx = g_replayRandom.Get(0, m_conf->numColors - 1);
 		SetColorScheme(col_idx);
 	}
 
@@ -644,11 +644,11 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	GetPhysicsBody()->ConstructRenderMatrix( bodyMat );
 
 	Vector3D	carForward		= GetForwardVector();
-	Vector3D	carPos			= GetOrigin() + carForward*m_conf->m_body_size.z*0.5f;
+	Vector3D	carPos			= GetOrigin() + carForward*m_conf->physics.body_size.z*0.5f;
 
 	Vector3D	carTracePos		= GetOrigin();
 
-	Vector3D	carBodySide		= GetRightVector()*m_conf->m_body_size.x*0.75f;
+	Vector3D	carBodySide		= GetRightVector()*m_conf->physics.body_size.x*0.75f;
 
 	IVector2D	carPosOnCell	= g_pGameWorld->m_level.PositionToGlobalTilePoint(carPos);
 
@@ -979,12 +979,12 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		CollisionData_t frontObjColl;
 
 		// FIXME: detect steering wheels?
-		Matrix3x3 wrotation = m_pWheels[0].wheelOrient*transpose(bodyMat).getRotationComponent();
+		Matrix3x3 wrotation = m_wheels[0].m_wheelOrient*transpose(bodyMat).getRotationComponent();
 
 		Vector3D carTraceEndPos = carTracePos+GetForwardVector()*fTraceDist;
 
 		btConvexShape* carShape = (btConvexShape*)GetPhysicsBody()->GetBulletShape();
-		btBoxShape carBoxShape(btVector3(m_conf->m_body_size.x, m_conf->m_body_size.y, 0.25f));
+		btBoxShape carBoxShape(btVector3(m_conf->physics.body_size.x, m_conf->physics.body_size.y, 0.25f));
 
 		if( g_pPhysics->TestConvexSweep(&carBoxShape, GetOrientation(), carTracePos, carTraceEndPos, frontObjColl, AI_TRACE_CONTENTS, &collFilter) )
 		{

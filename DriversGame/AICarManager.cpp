@@ -168,9 +168,9 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 		newCar->Enable(false);
 		newCar->PlaceOnRoadCell(pReg, roadCell);
 
-		if( conf->m_colors.numElem() > 0 )
+		if( conf->numColors )
 		{
-			int col_idx = g_replayRandom.Get(0, conf->m_colors.numElem() - 1);
+			int col_idx = g_replayRandom.Get(0, conf->numColors - 1);
 			newCar->SetColorScheme(col_idx);
 
 			// car random color

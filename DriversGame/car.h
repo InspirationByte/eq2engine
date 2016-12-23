@@ -137,70 +137,100 @@ struct carColorScheme_t
 
 struct vehicleConfig_t
 {
+	vehicleConfig_t()
+	{
+		colors = nullptr;
+		physics.wheels = nullptr;
+		physics.gears = nullptr;
+
+		numColors = 0;
+		physics.numWheels = 0;
+		physics.numGears = 0;
+	}
+
+	~vehicleConfig_t()
+	{
+		DestroyCleanup();
+	}
+
+	void DestroyCleanup()
+	{
+		delete colors;
+		delete physics.wheels;
+		delete physics.gears;
+	}
+
 	uint						scriptCRC;	// for network and replays
-
-	bool						m_isCar;
-
-	Vector3D					m_body_size;
-	float						m_antiRoll;
-
-	Vector3D					m_body_center;
-	float						m_handbrakeScale;
-
-	Vector3D					m_virtualMassCenter;
-	float						m_mass;
-	
-	EEngineType					m_engineType;
-	float						m_differentialRatio;
-	float						m_torqueMult;
-	float						m_transmissionRate;
-	float						m_maxSpeed;
-
-	float						m_burnoutMaxSpeed;
-	float						m_steeringSpeed;
-
-	carCameraConfig_t			m_cameraConf;
-
-	Vector4D					m_sirenPositionWidth;
-	int							m_sirenType;
-
-	Vector4D					m_headlightPosition;
-	int							m_headlightType;
-
-	Vector4D					m_backlightPosition;
-
-	Vector4D					m_brakelightPosition;
-	int							m_brakelightType;
-
-	Vector4D					m_frontDimLights;
-	Vector4D					m_backDimLights;
-
-	Vector3D					m_enginePosition;
-
-	Vector3D					m_exhaustPosition;
-	int							m_exhaustDir;		// 0 - back, 1 - left, 2 - up
-
-	Vector3D					m_hingePoints[2];
-
-	bool						m_useBodyColor;
-
-	DkList<carWheelConfig_t>	m_wheels;
-	DkList<float>				m_gears;
-	DkList<carColorScheme_t>	m_colors;
-
-	//--------------------------------------------
-
-	EqString					m_sndEngineIdle;
-	EqString					m_sndEngineRPMLow;
-	EqString					m_sndEngineRPMHigh;
-	EqString					m_sndHornSignal;
-	EqString					m_sndSiren;
-	EqString					m_sndBrakeRelease;
 
 	EqString					carName;
 	EqString					carScript;
-	EqString					m_cleanModelName;
-	EqString					m_damModelName;
+
+	bool						isCar;			// for hinged only vehicle it must be 'true'
+
+	struct {
+		Vector3D					body_size;
+		float						antiRoll;
+
+		Vector3D					body_center;
+		float						handbrakeScale;
+
+		Vector3D					virtualMassCenter;
+		float						mass;
+
+		Vector3D					hingePoints[2];
+
+		EEngineType					engineType;
+		float						differentialRatio;
+		float						torqueMult;
+		float						transmissionRate;
+		float						maxSpeed;
+
+		float						burnoutMaxSpeed;
+
+		float*						gears;
+		int8						numGears;
+
+		carWheelConfig_t*			wheels;
+		int8						numWheels;
+
+		float						steeringSpeed;
+	} physics;
+
+	struct {
+		EqString					cleanModelName;
+		EqString					damModelName;
+
+		Vector4D					sirenPositionWidth;
+		Vector4D					headlightPosition;
+		Vector4D					backlightPosition;
+		Vector4D					brakelightPosition;
+		Vector4D					frontDimLights;
+		Vector4D					backDimLights;
+		Vector3D					enginePosition;
+		Vector3D					exhaustPosition;
+
+		int8						sirenType;
+		int8						headlightType;
+		int8						brakelightType;
+		int8						exhaustDir;		// 0 - back, 1 - left, 2 - up
+	} visual;
+
+	struct{
+		EqString					engineIdle;
+		EqString					engineRPMLow;
+		EqString					engineRPMHigh;
+		EqString					hornSignal;
+		EqString					siren;
+		EqString					brakeRelease;
+	} sounds;
+
+	carColorScheme_t*			colors;
+	int8						numColors;
+	bool						useBodyColor;
+
+	carCameraConfig_t			cameraConf;
+
+	// calculations
 
 	float						GetMixedBrakeTorque() const;
 	float						GetFullBrakeTorque() const;
@@ -218,65 +248,6 @@ struct PFXVertexPair_t
 {
 	PFXVertex_t v0;
 	PFXVertex_t v1;
-};
-
-class CCarWheelModel;
-
-struct wheelData_t
-{
-	wheelData_t()
-	{
-		pWheelObject = NULL;
-		pitch = 0.0f;
-		pitchVel = 0.0f;
-
-		flags.isBurningOut = false;
-		flags.onGround = true;
-		flags.lastOnGround = true;
-		flags.lostHubcap = false;
-		flags.doSkidmarks = false;
-		flags.lastDoSkidmarks = false;
-
-		smokeTime = 0.0f;
-		skidTime = 0.0f;
-		surfparam = NULL;
-		damage = 0.0f;
-		hubcapBodygroup = -1;
-		damagedWheelBodygroup = -1;
-		velocityVec = vec3_zero;
-	}
-
-	DkList<PFXVertexPair_t>	skidMarks;
-
-	CCarWheelModel*			pWheelObject;
-
-	eqPhysSurfParam_t*		surfparam;
-
-	CollisionData_t			collisionInfo;
-	Matrix3x3				wheelOrient;
-
-	Vector3D				velocityVec;
-
-	int8					hubcapBodygroup;	// loose hubcaps
-	int8					damagedWheelBodygroup;
-
-	float					pitch;
-	float					pitchVel;
-
-	float					smokeTime;
-	float					skidTime;
-	float					damage;				// this parameter affects hubcaps
-
-	// 1 byte
-	struct
-	{
-		bool					isBurningOut : 1;
-		bool					onGround : 1;
-		bool					lastOnGround : 1;
-		bool					doSkidmarks : 1;
-		bool					lastDoSkidmarks : 1;
-		bool					lostHubcap : 1;
-	} flags;
 };
 
 // bodypart
@@ -307,13 +278,51 @@ struct carHandlingInput_t
 //-----------------------------------------------------------------------
 // wheel model that does instancing
 //-----------------------------------------------------------------------
-class CCarWheelModel : public CGameObject
+class CCarWheel : public CGameObject
 {
+	friend class CCar;
+	friend class CAITrafficCar;
+	friend class CAIPursuerCar;
 public:
-	DECLARE_CLASS( CCarWheelModel, CGameObject )
+	DECLARE_CLASS( CCarWheel, CGameObject )
 
-	void			SetModelPtr(IEqModel* modelPtr);
-	void			Draw( int nRenderFlags );
+	CCarWheel();
+	~CCarWheel() { OnRemove(); }
+
+	void					SetModelPtr(IEqModel* modelPtr);
+	void					Draw( int nRenderFlags );
+
+protected:
+	DkList<PFXVertexPair_t>	m_skidMarks;
+
+	eqPhysSurfParam_t*		m_surfparam;
+
+	CollisionData_t			m_collisionInfo;
+	Matrix3x3				m_wheelOrient;
+
+	Vector3D				m_velocityVec;
+
+	int8					m_defaultBodyGroup;
+	int8					m_hubcapBodygroup;	// loose hubcaps
+	int8					m_damagedBodygroup;
+
+	// 1 byte
+	struct
+	{
+		bool					isBurningOut : 1;
+		bool					onGround : 1;
+		bool					lastOnGround : 1;
+		bool					doSkidmarks : 1;
+		bool					lastDoSkidmarks : 1;
+		bool					lostHubcap : 1;
+	} m_flags;
+
+	float					m_pitch;
+	float					m_pitchVel;
+
+	float					m_smokeTime;
+	float					m_skidTime;
+	float					m_damage;				// this parameter affects hubcaps
 };
 
 typedef float (*TORQUECURVEFUNC)( float rpm );
@@ -351,18 +360,18 @@ public:
 
 	//-----------------------------------
 
-	float					GetRPM();
-	int						GetGear();
+	float					GetRPM() const;
+	int						GetGear() const;
 
-	int						GetWheelCount();
-	float					GetWheelSpeed(int index);
+	int						GetWheelCount() const;
+	float					GetWheelSpeed(int index) const;
 
-	float					GetLateralSlidingAtBody();						// returns non-absolute lateral (side) sliding from body
-	float					GetLateralSlidingAtWheels(bool surfCheck);		// returns non-absolute lateral (side) sliding from all wheels
-	float					GetLateralSlidingAtWheel(int wheel);			// returns non-absolute lateral (side) sliding
+	float					GetLateralSlidingAtBody() const;					// returns non-absolute lateral (side) sliding from body
+	float					GetLateralSlidingAtWheels(bool surfCheck) const;	// returns non-absolute lateral (side) sliding from all wheels
+	float					GetLateralSlidingAtWheel(int wheel) const;			// returns non-absolute lateral (side) sliding
 
-	float					GetTractionSliding(bool surfCheck);		// returns absolute traction sliding
-	float					GetTractionSlidingAtWheel(int wheel);	// returns absolute traction sliding from all wheels
+	float					GetTractionSliding(bool surfCheck) const;			// returns absolute traction sliding
+	float					GetTractionSlidingAtWheel(int wheel) const;			// returns absolute traction sliding from all wheels
 
 	void					ReleaseHubcap(int wheel);
 
@@ -513,7 +522,7 @@ protected:
 	// realtime values
 	//
 
-	DkList<wheelData_t>		m_pWheels;
+	CCarWheel*				m_wheels;
 
 	carBodyPart_t			m_bodyParts[CB_PART_WINDOW_PARTS];
 
@@ -654,9 +663,10 @@ OOLUA_PROXY(CCar, CGameObject)
 
 	OOLUA_MFUNC(HingeVehicle);
 	OOLUA_MFUNC(ReleaseHingedVehicle)
+	OOLUA_MEM_FUNC_CONST(OOLUA::maybe_null<CCar*>, GetHingedVehicle)
 
-	OOLUA_MEM_FUNC_RENAME(GetLateralSliding, float, GetLateralSlidingAtBody)
-	OOLUA_MFUNC(GetTractionSliding)
+	OOLUA_MEM_FUNC_CONST_RENAME(GetLateralSliding, float, GetLateralSlidingAtBody)
+	OOLUA_MFUNC_CONST(GetTractionSliding)
 	/*
 	OOLUA_MEM_FUNC_RENAME(SetContents, void, L_SetContents, int)
 	OOLUA_MEM_FUNC_RENAME(SetCollideMask, void, L_SetCollideMask, int)

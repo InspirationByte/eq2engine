@@ -137,7 +137,7 @@ void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
 		if(newMode == CAM_MODE_TRIPOD_ZOOM)
 		{
 			// compute drop  position
-			Vector3D dropPos = target->GetOrigin() + Vector3D(0,target->m_conf->m_body_size.y,0) - target->GetForwardVector()*target->m_conf->m_body_size.z*1.1f;
+			Vector3D dropPos = target->GetOrigin() + Vector3D(0,target->m_conf->physics.body_size.y,0) - target->GetForwardVector()*target->m_conf->physics.body_size.z*1.1f;
 
 			SetOrigin( dropPos );
 		}
@@ -158,7 +158,7 @@ void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
 		if( target->IsInWater() && camMode == CAM_MODE_INCAR )
 			camMode = CAM_MODE_OUTCAR;
 
-		SetCameraProps( target->m_conf->m_cameraConf );
+		SetCameraProps( target->m_conf->cameraConf );
 
 		Animate(camMode, nButtons, target->GetOrigin(), target->GetOrientation(), target->GetVelocity(), fDt, vec3_zero);
 	}
@@ -177,7 +177,7 @@ void CCameraAnimator::L_Update( float fDt, CCar* target )
 		if( target->IsInWater() && camMode == CAM_MODE_INCAR )
 			camMode = CAM_MODE_OUTCAR;
 
-		SetCameraProps( target->m_conf->m_cameraConf );
+		SetCameraProps( target->m_conf->cameraConf );
 
 		Animate(camMode, 0, target->GetOrigin(), target->GetOrientation(), target->GetVelocity(), fDt, vec3_zero);
 	}

@@ -552,7 +552,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 		if(m_type == PURSUER_TYPE_COP)
 		{
-			if (m_conf->m_sirenType != SERVICE_LIGHTS_NONE)
+			if (m_conf->visual.sirenType != SERVICE_LIGHTS_NONE)
 				m_sirenEnabled = true;
 
 			if (m_targInfo.target->GetPursuedCount() == 0 &&
@@ -730,7 +730,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	velocityDistOffsetFactor = 1.0f - pow(velocityDistOffsetFactor, 2.0f);
 
 	Vector3D carForwardDir = GetForwardVector();
-	Vector3D carPos		= GetOrigin() + carForwardDir * m_conf->m_body_size.z;
+	Vector3D carPos		= GetOrigin() + carForwardDir * m_conf->physics.body_size.z;
 	Vector3D targetVelocity = m_targInfo.target->GetVelocity();
 	Vector3D targetPos	= m_targInfo.target->GetOrigin() + targetVelocity*velocityDistOffsetFactor*0.75f;
 	Vector3D targetForward = m_targInfo.target->GetForwardVector();
@@ -849,7 +849,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	float frontCollDist = clamp(fSpeed, 1.0f, 8.0f);
 
-	btBoxShape carBoxShape(btVector3(m_conf->m_body_size.x, m_conf->m_body_size.y, 0.25f));
+	btBoxShape carBoxShape(btVector3(m_conf->physics.body_size.x, m_conf->physics.body_size.y, 0.25f));
 
 	// trace in the front direction
 	g_pPhysics->TestConvexSweep(&carBoxShape, GetOrientation(),
@@ -1082,7 +1082,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 int	CAIPursuerCar::DeadState( float fDt, EStateTransition transition )
 {
-	if( m_deathTime > 0 && m_conf->m_sirenType != SERVICE_LIGHTS_NONE && m_pSirenSound )
+	if( m_deathTime > 0 && m_conf->visual.sirenType != SERVICE_LIGHTS_NONE && m_pSirenSound )
 	{
 		m_pSirenSound->SetPitch( m_deathTime / AI_COP_DEATHTIME );
 		m_deathTime -= fDt;

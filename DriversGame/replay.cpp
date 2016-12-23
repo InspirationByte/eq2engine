@@ -1086,9 +1086,9 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 
 			vehicleConfig_t* conf = rep.obj_car->m_conf;
 
-			if( conf->m_colors.numElem() > 0 )
+			if( conf->numColors > 0 )
 			{
-				int col_idx = g_replayRandom.Get(0, conf->m_colors.numElem() - 1);
+				int col_idx = g_replayRandom.Get(0, conf->numColors - 1);
 				rep.obj_car->SetColorScheme(col_idx);
 			}
 			break;

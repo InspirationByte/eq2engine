@@ -105,12 +105,12 @@ static Vector3D s_BodyPartDirections[] =
 
 bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 {
-	conf->m_cleanModelName = KV_GetValueString(kvs->FindKeyBase("cleanModel"), 0, "");
-	conf->m_damModelName = KV_GetValueString(kvs->FindKeyBase("damagedModel"), 0, conf->m_cleanModelName.c_str());
+	conf->visual.cleanModelName = KV_GetValueString(kvs->FindKeyBase("cleanModel"), 0, "");
+	conf->visual.damModelName = KV_GetValueString(kvs->FindKeyBase("damagedModel"), 0, conf->visual.cleanModelName.c_str());
 
-	conf->m_isCar = KV_GetValueBool(kvs->FindKeyBase("isCar"), 0, true);
+	conf->isCar = KV_GetValueBool(kvs->FindKeyBase("isCar"), 0, true);
 
-	ASSERTMSG(conf->m_cleanModelName.Length(), "ParseVehicleConfig - missing cleanModel!\n");
+	ASSERTMSG(conf->visual.cleanModelName.Length(), "ParseVehicleConfig - missing cleanModel!\n");
 
 	kvkeybase_t* wheelModelType = kvs->FindKeyBase("wheelBodyGroup");
 
@@ -118,24 +118,32 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 	const char* defaultHubcapWheelName = KV_GetValueString(wheelModelType, 1, "");
 	const char* defaultHubcapName = KV_GetValueString(wheelModelType, 2, "");
 
-	conf->m_body_size = KV_GetVector3D(kvs->FindKeyBase("bodySize"));
-	conf->m_body_center = KV_GetVector3D(kvs->FindKeyBase("center"));
-	conf->m_virtualMassCenter = KV_GetVector3D(kvs->FindKeyBase("gravityCenter"));
+	conf->physics.body_size = KV_GetVector3D(kvs->FindKeyBase("bodySize"));
+	conf->physics.body_center = KV_GetVector3D(kvs->FindKeyBase("center"));
+	conf->physics.virtualMassCenter = KV_GetVector3D(kvs->FindKeyBase("gravityCenter"));
 
-	conf->m_engineType = (EEngineType)KV_GetValueInt(kvs->FindKeyBase("engineType"), 0, CAR_ENGINE_PETROL);
-	conf->m_differentialRatio = KV_GetValueFloat(kvs->FindKeyBase("differential"));
-	conf->m_torqueMult = KV_GetValueFloat(kvs->FindKeyBase("torqueMultipler"));
-	conf->m_transmissionRate = KV_GetValueFloat(kvs->FindKeyBase("transmissionRate"));
+	conf->physics.engineType = (EEngineType)KV_GetValueInt(kvs->FindKeyBase("engineType"), 0, CAR_ENGINE_PETROL);
+	conf->physics.differentialRatio = KV_GetValueFloat(kvs->FindKeyBase("differential"));
+	conf->physics.torqueMult = KV_GetValueFloat(kvs->FindKeyBase("torqueMultipler"));
+	conf->physics.transmissionRate = KV_GetValueFloat(kvs->FindKeyBase("transmissionRate"));
+	conf->physics.mass = KV_GetValueFloat(kvs->FindKeyBase("mass"));
+	conf->physics.antiRoll = KV_GetValueFloat(kvs->FindKeyBase("antiRoll"));
 
-	conf->m_maxSpeed = KV_GetValueFloat(kvs->FindKeyBase("maxSpeed"), 0, DEFAULT_MAX_SPEED);
-	conf->m_burnoutMaxSpeed = KV_GetValueFloat(kvs->FindKeyBase("burnoutMaxSpeed"), 0, BURNOUT_MAX_SPEED);
+	conf->physics.maxSpeed = KV_GetValueFloat(kvs->FindKeyBase("maxSpeed"), 0, DEFAULT_MAX_SPEED);
+	conf->physics.burnoutMaxSpeed = KV_GetValueFloat(kvs->FindKeyBase("burnoutMaxSpeed"), 0, BURNOUT_MAX_SPEED);
 
-	conf->m_steeringSpeed = KV_GetValueFloat(kvs->FindKeyBase("steerSpeed"), 0, STEERING_CONST);
-	conf->m_handbrakeScale = KV_GetValueFloat(kvs->FindKeyBase("handbrakeScale"), 0, 1.0f);
+	conf->physics.steeringSpeed = KV_GetValueFloat(kvs->FindKeyBase("steerSpeed"), 0, STEERING_CONST);
+	conf->physics.handbrakeScale = KV_GetValueFloat(kvs->FindKeyBase("handbrakeScale"), 0, 1.0f);
 
-	conf->m_mass = KV_GetValueFloat(kvs->FindKeyBase("mass"));
+	kvkeybase_t* hingePoints = kvs->FindKeyBase("hingePoints");
+	conf->physics.hingePoints[0] = 0.0f;
+	conf->physics.hingePoints[1] = 0.0f;
 
-	conf->m_antiRoll = KV_GetValueFloat(kvs->FindKeyBase("antiRoll"));
+	if(hingePoints)
+	{
+		conf->physics.hingePoints[0] = KV_GetVector3D(hingePoints->FindKeyBase("front"), 0, vec3_zero);
+		conf->physics.hingePoints[1] = KV_GetVector3D(hingePoints->FindKeyBase("back"), 0, vec3_zero);
+	}
 
 	float suspensionLift = KV_GetValueFloat(kvs->FindKeyBase("suspensionLift"));
 
@@ -143,24 +151,38 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 
 	if(pGears)
 	{
-		for(int i = 0; i < pGears->keys.numElem(); i++)
-		{
-			float fRatio = KV_GetValueFloat( pGears->keys[i]);
-			conf->m_gears.append(fRatio);
-		}
+		conf->physics.numGears = pGears->keys.numElem();
+		conf->physics.gears = new float[conf->physics.numGears];
+
+		for(int i = 0; i < conf->physics.numGears; i++)
+			conf->physics.gears[i] = KV_GetValueFloat( pGears->keys[i]);
 	}
-	else if(conf->m_isCar)
+	else if(conf->isCar)
 		MsgError("no gears found in config for '%s'!", conf->carName.c_str());
 
 	kvkeybase_t* pWheels = kvs->FindKeyBase("wheels");
 
 	if( pWheels )
 	{
+		conf->physics.numWheels = 0;
+
+		for(int i = 0; i < pWheels->keys.numElem(); i++)
+		{
+			if(!pWheels->keys[i]->IsSection())
+				continue;
+
+			conf->physics.numWheels++;
+		}
+
+		conf->physics.wheels = new carWheelConfig_t[conf->physics.numWheels];
+
 		// time for wheels
 		for(int i = 0; i < pWheels->keys.numElem(); i++)
 		{
 			if(!pWheels->keys[i]->IsSection())
 				continue;
+
+			carWheelConfig_t& wconf = conf->physics.wheels[i];
 
 			kvkeybase_t* pWheelKv = pWheels->keys[i];
 
@@ -174,14 +196,11 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 
 			suspensiontop.x += widthAdd;
 			suspensionbottom.x += widthAdd;
-			//suspensiontop.y += suspensionLift;
 			suspensionbottom.y += suspensionLift;
 
 			bool bDriveWheel = KV_GetValueBool(pWheelKv->FindKeyBase("drive"));
 			bool bHandbrakeWheel = KV_GetValueBool(pWheelKv->FindKeyBase("handbrake"));
 			bool bSteerWheel = fabs( KV_GetValueFloat(pWheelKv->FindKeyBase("steer")) ) > 0.0f;
-
-			carWheelConfig_t wconf;
 
 			wconf.radius = KV_GetValueFloat(pWheelKv->FindKeyBase("radius"), 0, 1.0f);
 			wconf.width = wheel_width;
@@ -216,62 +235,46 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 			wconf.brakeTorque = KV_GetValueFloat(pWheelKv->FindKeyBase("BrakeTorque"), 0, 100.0f);
 			wconf.visualTop = KV_GetValueFloat(pWheelKv->FindKeyBase("visualTop"), 0, 0.7);
 			wconf.steerMultipler = KV_GetValueFloat(pWheelKv->FindKeyBase("steer"));
-
-			conf->m_wheels.append(wconf);
 		}
 	}
-
-	conf->m_cameraConf.dist = KV_GetValueFloat(kvs->FindKeyBase("camera_distance"), 0, 7.0f);
-	conf->m_cameraConf.distInCar = KV_GetValueFloat(kvs->FindKeyBase("camera_distance_in"), 0, conf->m_body_size.z - CAMERA_DISTANCE_BIAS);
-	conf->m_cameraConf.height = KV_GetValueFloat(kvs->FindKeyBase("camera_height"), 0, 1.3f);
-	conf->m_cameraConf.heightInCar = KV_GetValueFloat(kvs->FindKeyBase("camera_height_in"), 0, conf->m_body_center.y);
-	conf->m_cameraConf.widthInCar = KV_GetValueFloat(kvs->FindKeyBase("camera_side_in"), 0, conf->m_body_size.x - CAMERA_DISTANCE_BIAS);
-	conf->m_cameraConf.fov = KV_GetValueFloat(kvs->FindKeyBase("camera_fov"), 0, DEFAULT_CAMERA_FOV);
 
 	// parse visuals
 	kvkeybase_t* visuals = kvs->FindKeyBase("visuals");
 
 	if(visuals)
 	{
-		conf->m_sirenType = KV_GetValueInt(visuals->FindKeyBase("siren_lights"), 0, SERVICE_LIGHTS_NONE);
-		conf->m_sirenPositionWidth = KV_GetVector4D(visuals->FindKeyBase("siren_lights"), 1, vec4_zero);
+		conf->visual.sirenType = KV_GetValueInt(visuals->FindKeyBase("siren_lights"), 0, SERVICE_LIGHTS_NONE);
+		conf->visual.sirenPositionWidth = KV_GetVector4D(visuals->FindKeyBase("siren_lights"), 1, vec4_zero);
 
-		conf->m_headlightType = KV_GetValueInt(visuals->FindKeyBase("headlights"), 0, LIGHTS_SINGLE);
-		conf->m_headlightPosition = KV_GetVector4D(visuals->FindKeyBase("headlights"), 1, vec4_zero);
+		conf->visual.headlightType = KV_GetValueInt(visuals->FindKeyBase("headlights"), 0, LIGHTS_SINGLE);
+		conf->visual.headlightPosition = KV_GetVector4D(visuals->FindKeyBase("headlights"), 1, vec4_zero);
 
-		conf->m_backlightPosition = KV_GetVector4D(visuals->FindKeyBase("backlights"), 0, vec4_zero);
+		conf->visual.backlightPosition = KV_GetVector4D(visuals->FindKeyBase("backlights"), 0, vec4_zero);
 
-		conf->m_brakelightType = KV_GetValueInt(visuals->FindKeyBase("brakelights"), 0, LIGHTS_SINGLE);
-		conf->m_brakelightPosition = KV_GetVector4D(visuals->FindKeyBase("brakelights"), 1, vec4_zero);
+		conf->visual.brakelightType = KV_GetValueInt(visuals->FindKeyBase("brakelights"), 0, LIGHTS_SINGLE);
+		conf->visual.brakelightPosition = KV_GetVector4D(visuals->FindKeyBase("brakelights"), 1, vec4_zero);
 
-		conf->m_frontDimLights = KV_GetVector4D(visuals->FindKeyBase("frontdimlights"), 0, vec4_zero);
-		conf->m_backDimLights = KV_GetVector4D(visuals->FindKeyBase("backdimlights"), 0, vec4_zero);
+		conf->visual.frontDimLights = KV_GetVector4D(visuals->FindKeyBase("frontdimlights"), 0, vec4_zero);
+		conf->visual.backDimLights = KV_GetVector4D(visuals->FindKeyBase("backdimlights"), 0, vec4_zero);
 
-		conf->m_enginePosition = KV_GetVector3D(visuals->FindKeyBase("engine"), 0, vec3_zero);
+		conf->visual.enginePosition = KV_GetVector3D(visuals->FindKeyBase("engine"), 0, vec3_zero);
 
-		conf->m_exhaustPosition = KV_GetVector3D(visuals->FindKeyBase("exhaust"), 0, vec3_zero);
-		conf->m_exhaustDir = KV_GetValueInt(visuals->FindKeyBase("exhaust"), 3, -1);
-	}
-
-	kvkeybase_t* hingePoints = kvs->FindKeyBase("hingePoints");
-	conf->m_hingePoints[0] = 0.0f;
-	conf->m_hingePoints[1] = 0.0f;
-
-	if(hingePoints)
-	{
-		conf->m_hingePoints[0] = KV_GetVector3D(hingePoints->FindKeyBase("front"), 0, vec3_zero);
-		conf->m_hingePoints[1] = KV_GetVector3D(hingePoints->FindKeyBase("back"), 0, vec3_zero);
+		conf->visual.exhaustPosition = KV_GetVector3D(visuals->FindKeyBase("exhaust"), 0, vec3_zero);
+		conf->visual.exhaustDir = KV_GetValueInt(visuals->FindKeyBase("exhaust"), 3, -1);
 	}
 
 	kvkeybase_t* colors = kvs->FindKeyBase("colors");
 
 	if(colors)
 	{
+		conf->numColors = colors->keys.numElem();
+		conf->colors = new carColorScheme_t[conf->numColors];
+
 		for(int i = 0; i < colors->keys.numElem(); i++)
 		{
-			kvkeybase_t* colKey = colors->keys[i];
+			carColorScheme_t& colScheme = conf->colors[i];
 
-			carColorScheme_t colScheme;
+			kvkeybase_t* colKey = colors->keys[i];
 
 			if(colKey->IsSection())
 			{	// multiple colors
@@ -286,8 +289,6 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 
 				colScheme.col1 = c1;
 				colScheme.col2 = c2;
-
-				conf->m_colors.append(colScheme);
 			}
 			else
 			{	// simple colors
@@ -298,62 +299,67 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 
 				colScheme.col1 = c1;
 				colScheme.col2 = colScheme.col1;
-
-				conf->m_colors.append(colScheme);
 			}
 		}
 	}
 
-	conf->m_useBodyColor = KV_GetValueBool(kvs->FindKeyBase("useBodyColor"), 0, true) && (conf->m_colors.numElem() > 0);
+	conf->useBodyColor = KV_GetValueBool(kvs->FindKeyBase("useBodyColor"), 0, true) && (conf->numColors > 0);
 
 	kvkeybase_t* pSoundSec = kvs->FindKeyBase("sounds", KV_FLAG_SECTION);
 
 	if(pSoundSec)
 	{
-		conf->m_sndEngineIdle = KV_GetValueString(pSoundSec->FindKeyBase("engine_idle"), 0, "defaultcar.engine_idle");
+		conf->sounds.engineIdle = KV_GetValueString(pSoundSec->FindKeyBase("engine_idle"), 0, "defaultcar.engine_idle");
 
-		conf->m_sndEngineRPMLow = KV_GetValueString(pSoundSec->FindKeyBase("engine_low"), 0, "defaultcar.engine_low");
-		conf->m_sndEngineRPMHigh = KV_GetValueString(pSoundSec->FindKeyBase("engine"), 0, "defaultcar.engine");
+		conf->sounds.engineRPMLow = KV_GetValueString(pSoundSec->FindKeyBase("engine_low"), 0, "defaultcar.engine_low");
+		conf->sounds.engineRPMHigh = KV_GetValueString(pSoundSec->FindKeyBase("engine"), 0, "defaultcar.engine");
 
-		conf->m_sndHornSignal = KV_GetValueString(pSoundSec->FindKeyBase("horn"), 0, "generic.horn1");
-		conf->m_sndSiren = KV_GetValueString(pSoundSec->FindKeyBase("siren"), 0, "generic.copsiren1");
+		conf->sounds.hornSignal = KV_GetValueString(pSoundSec->FindKeyBase("horn"), 0, "generic.horn1");
+		conf->sounds.siren = KV_GetValueString(pSoundSec->FindKeyBase("siren"), 0, "generic.copsiren1");
 
-		conf->m_sndBrakeRelease = KV_GetValueString(pSoundSec->FindKeyBase("brake_release"), 0, "");
+		conf->sounds.brakeRelease = KV_GetValueString(pSoundSec->FindKeyBase("brake_release"), 0, "");
 
-		PrecacheScriptSound( conf->m_sndEngineIdle.c_str() );
-		PrecacheScriptSound( conf->m_sndEngineRPMLow.c_str() );
-		PrecacheScriptSound( conf->m_sndEngineRPMHigh.c_str() );
-		PrecacheScriptSound( conf->m_sndHornSignal.c_str() );
-		PrecacheScriptSound( conf->m_sndSiren.c_str() );
-		PrecacheScriptSound( conf->m_sndBrakeRelease.c_str() );
+		PrecacheScriptSound( conf->sounds.engineIdle.c_str() );
+		PrecacheScriptSound( conf->sounds.engineRPMLow.c_str() );
+		PrecacheScriptSound( conf->sounds.engineRPMHigh.c_str() );
+		PrecacheScriptSound( conf->sounds.hornSignal.c_str() );
+		PrecacheScriptSound( conf->sounds.siren.c_str() );
+		PrecacheScriptSound( conf->sounds.brakeRelease.c_str() );
 	}
+
+	conf->cameraConf.dist = KV_GetValueFloat(kvs->FindKeyBase("camera_distance"), 0, 7.0f);
+	conf->cameraConf.distInCar = KV_GetValueFloat(kvs->FindKeyBase("camera_distance_in"), 0, conf->physics.body_size.z - CAMERA_DISTANCE_BIAS);
+	conf->cameraConf.height = KV_GetValueFloat(kvs->FindKeyBase("camera_height"), 0, 1.3f);
+	conf->cameraConf.heightInCar = KV_GetValueFloat(kvs->FindKeyBase("camera_height_in"), 0, conf->physics.body_center.y);
+	conf->cameraConf.widthInCar = KV_GetValueFloat(kvs->FindKeyBase("camera_side_in"), 0, conf->physics.body_size.x - CAMERA_DISTANCE_BIAS);
+	conf->cameraConf.fov = KV_GetValueFloat(kvs->FindKeyBase("camera_fov"), 0, DEFAULT_CAMERA_FOV);
 
 	return true;
 }
 
 float vehicleConfig_t::GetMixedBrakeTorque() const
 {
-	return GetFullBrakeTorque() / (float)m_wheels.numElem();
+	return GetFullBrakeTorque() / (float)physics.numWheels;
 }
 
 float vehicleConfig_t::GetFullBrakeTorque() const
 {
 	float brakeTorque = 0.0f;
 
-	for(int i = 0; i < m_wheels.numElem(); i++)
-		brakeTorque += m_wheels[i].brakeTorque;
+	for(int i = 0; i < physics.numWheels; i++)
+		brakeTorque += physics.wheels[i].brakeTorque;
 
 	return brakeTorque;
 }
 
 float vehicleConfig_t::GetBrakeIneffectiveness() const
 {
-	return m_mass / GetFullBrakeTorque();
+	return physics.mass / GetFullBrakeTorque();
 }
 
 float vehicleConfig_t::GetBrakeEffectPerSecond() const
 {
-	return GetFullBrakeTorque() / m_mass;
+	return GetFullBrakeTorque() / physics.mass;
 }
 
 #pragma todo("make better lateral sliding on steering wheels when going backwards")
@@ -473,8 +479,29 @@ float DBSlipAngleToLateralForce(float fSlipAngle, float fLongitudinalForce, eqPh
 //
 //-------------------------------------------------------------------------------------------------------------------------
 
+CCarWheel::CCarWheel()
+{
+	m_pitch = 0.0f;
+	m_pitchVel = 0.0f;
 
-void CCarWheelModel::SetModelPtr(IEqModel* modelPtr)
+	m_flags.isBurningOut = false;
+	m_flags.onGround = true;
+	m_flags.lastOnGround = true;
+	m_flags.lostHubcap = false;
+	m_flags.doSkidmarks = false;
+	m_flags.lastDoSkidmarks = false;
+
+	m_smokeTime = 0.0f;
+	m_skidTime = 0.0f;
+	m_surfparam = NULL;
+	m_damage = 0.0f;
+	m_defaultBodyGroup = 0;
+	m_hubcapBodygroup = -1;
+	m_damagedBodygroup = -1;
+	m_velocityVec = vec3_zero;
+}
+
+void CCarWheel::SetModelPtr(IEqModel* modelPtr)
 {
 	BaseClass::SetModelPtr( modelPtr );
 
@@ -492,7 +519,7 @@ void CCarWheelModel::SetModelPtr(IEqModel* modelPtr)
 
 extern ConVar r_enableObjectsInstancing;
 
-void CCarWheelModel::Draw( int nRenderFlags )
+void CCarWheel::Draw( int nRenderFlags )
 {
 	if(r_enableObjectsInstancing.GetBool() && m_pModel->GetInstancer())
 	{
@@ -582,7 +609,7 @@ CCar::CCar( vehicleConfig_t* config ) :
 	if(m_conf)
 	{
 		SetColorScheme(0);
-		m_maxSpeed = m_conf->m_maxSpeed;
+		m_maxSpeed = m_conf->physics.maxSpeed;
 	}
 
 }
@@ -631,46 +658,41 @@ void CCar::CreateCarPhysics()
 	int wheelCacheId = g_pModelCache->PrecacheModel( "models/vehicles/wheel.egf" );
 	IEqModel* wheelModel = g_pModelCache->GetModel( wheelCacheId );
 
-	for(int i = 0; i < m_conf->m_wheels.numElem(); i++)
+	m_wheels = new CCarWheel[m_conf->physics.numWheels]();
+
+	for(int i = 0; i < m_conf->physics.numWheels; i++)
 	{
-		carWheelConfig_t& wconf = m_conf->m_wheels[i];
+		carWheelConfig_t& wconf = m_conf->physics.wheels[i];
 
-		CCarWheelModel* pWheelObject = new CCarWheelModel();
+		CCarWheel& winfo = m_wheels[i];
 
-		wheelData_t winfo;
+		winfo.SetModelPtr( wheelModel );
 
-		winfo.pWheelObject = pWheelObject;
-		pWheelObject->SetModelPtr( wheelModel );
+		winfo.m_defaultBodyGroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->pStudioHdr, wconf.hubcapWheelName);
+		winfo.m_damagedBodygroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->pStudioHdr, wconf.wheelName);
+		winfo.m_hubcapBodygroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->pStudioHdr, wconf.hubcapName);
 
-		int hubcappedWheelBodygroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->pStudioHdr, wconf.hubcapWheelName);
-		winfo.damagedWheelBodygroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->pStudioHdr, wconf.wheelName);
-		winfo.hubcapBodygroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->pStudioHdr, wconf.hubcapName);
-
-		int bestDefaultWheelBodyGroup = hubcappedWheelBodygroup;
-
-		if(hubcappedWheelBodygroup == -1)
+		if(winfo.m_defaultBodyGroup == -1)
 		{
-			bestDefaultWheelBodyGroup = winfo.damagedWheelBodygroup;
+			winfo.m_defaultBodyGroup = winfo.m_damagedBodygroup;
 
 			// if hubcapped model not available
-			winfo.flags.lostHubcap = true;
+			winfo.m_flags.lostHubcap = true;
 		}
 
-		if(bestDefaultWheelBodyGroup == -1)
+		if(winfo.m_defaultBodyGroup == -1)
 		{
 			MsgWarning("Wheel submodel (%s) not found!!!\n", wconf.wheelName);
 		}
 
-		pWheelObject->m_bodyGroupFlags = (1 << bestDefaultWheelBodyGroup);
-
-		m_pWheels.append(winfo);
+		winfo.m_bodyGroupFlags = (1 << winfo.m_defaultBodyGroup);
 	}
 
 	body->m_flags |= BODY_COLLISIONLIST | BODY_ISCAR | (g_infinitemass.GetBool() ? BODY_INFINITEMASS : 0);
 
 	// CREATE BODY
-	Vector3D body_mins = m_conf->m_body_center - m_conf->m_body_size;
-	Vector3D body_maxs = m_conf->m_body_center + m_conf->m_body_size;
+	Vector3D body_mins = m_conf->physics.body_center - m_conf->physics.body_size;
+	Vector3D body_maxs = m_conf->physics.body_center + m_conf->physics.body_size;
 
 
 	if(m_pModel->GetHWData()->m_physmodel.numobjects)
@@ -681,14 +703,15 @@ void CCar::CreateCarPhysics()
 		body->Initialize(body_mins, body_maxs);
 
 	// CREATE BODY
-	body->m_aabb.minPoint = m_conf->m_body_center - m_conf->m_body_size;
-	body->m_aabb.maxPoint = m_conf->m_body_center + m_conf->m_body_size;
+	body->m_aabb.minPoint = m_conf->physics.body_center - m_conf->physics.body_size;
+	body->m_aabb.maxPoint = m_conf->physics.body_center + m_conf->physics.body_size;
 
+	// TODO: custom friction and restitution
 	body->SetFriction( 0.4f );
 	body->SetRestitution( 0.5f );
 
-	body->SetMass( m_conf->m_mass );
-	body->SetCenterOfMass( m_conf->m_virtualMassCenter );
+	body->SetMass( m_conf->physics.mass );
+	body->SetCenterOfMass( m_conf->physics.virtualMassCenter );
 
 	// don't forget about contents!
 	body->SetContents( OBJECTCONTENTS_VEHICLE );
@@ -732,12 +755,12 @@ void CCar::InitCarSound()
 	//
 	// Don't initialize sounds if this is not a car
 	//
-	if(!m_conf->m_isCar)
+	if(!m_conf->isCar)
 		return;
 
 	EmitSound_t ep;
 
-	ep.name = m_conf->m_sndEngineRPMHigh.c_str();
+	ep.name = m_conf->sounds.engineRPMHigh.c_str();
 
 	ep.fPitch = 1.0f;
 	ep.fVolume = 1.0f;
@@ -747,13 +770,13 @@ void CCar::InitCarSound()
 
 	m_pEngineSound = ses->CreateSoundController(&ep);
 
-	ep.name = m_conf->m_sndEngineRPMLow.c_str();
+	ep.name = m_conf->sounds.engineRPMLow.c_str();
 
 	m_pEngineSoundLow = ses->CreateSoundController(&ep);
 
 	EmitSound_t idle_ep;
 
-	idle_ep.name = m_conf->m_sndEngineIdle.c_str();
+	idle_ep.name = m_conf->sounds.engineIdle.c_str();
 
 	idle_ep.fPitch = 1.0f;
 	idle_ep.fVolume = 1.0f;
@@ -765,7 +788,7 @@ void CCar::InitCarSound()
 
 	EmitSound_t horn_ep;
 
-	horn_ep.name = m_conf->m_sndHornSignal.c_str();
+	horn_ep.name = m_conf->sounds.hornSignal.c_str();
 
 	horn_ep.fPitch = 1.0f;
 	horn_ep.fVolume = 1.0f;
@@ -775,11 +798,11 @@ void CCar::InitCarSound()
 
 	m_pHornSound = ses->CreateSoundController(&horn_ep);
 
-	if(m_conf->m_sirenType != SERVICE_LIGHTS_NONE)
+	if(m_conf->visual.sirenType != SERVICE_LIGHTS_NONE)
 	{
 		EmitSound_t siren_ep;
 
-		siren_ep.name = m_conf->m_sndSiren.c_str();
+		siren_ep.name = m_conf->sounds.siren.c_str();
 
 		siren_ep.fPitch = 1.0f;
 		siren_ep.fVolume = 1.0f;
@@ -797,7 +820,7 @@ void CCar::Spawn()
 {
 	// init default vehicle
 	// load visuals
-	SetModel( m_conf->m_cleanModelName.c_str() );
+	SetModel( m_conf->visual.cleanModelName.c_str() );
 	/*
 	// create instancer for lod models only
 	if(g_pShaderAPI->GetCaps().isInstancingSupported &&
@@ -811,7 +834,7 @@ void CCar::Spawn()
 		m_pModel->SetInstancer( instancer );
 	}*/
 
-	int nDamModelIndex = g_pModelCache->PrecacheModel( m_conf->m_damModelName.c_str() );
+	int nDamModelIndex = g_pModelCache->PrecacheModel( m_conf->visual.damModelName.c_str() );
 
 	if(nDamModelIndex != -1)
 		m_pDamagedModel = g_pModelCache->GetModel( nDamModelIndex );
@@ -871,7 +894,7 @@ void CCar::AlignToGround()
 		SetOrientation( Quaternion( transpose(finalAngle) ) );
 	*/
 
-	float suspLowPos = lerp(m_conf->m_wheels[0].suspensionTop.y, m_conf->m_wheels[0].suspensionBottom.y, 0.85f);
+	float suspLowPos = lerp(m_conf->physics.wheels[0].suspensionTop.y, m_conf->physics.wheels[0].suspensionBottom.y, 0.85f);
 
 	pos = Vector3D(m_vecOrigin.x, pos.y - suspLowPos, m_vecOrigin.z);
 
@@ -898,14 +921,8 @@ void CCar::OnRemove()
 	ses->RemoveSoundController(m_pHornSound);
 	ses->RemoveSoundController(m_pSirenSound);
 	
-
-	for(int i = 0; i < m_pWheels.numElem(); i++)
-	{
-		m_pWheels[i].pWheelObject->OnRemove();
-		delete m_pWheels[i].pWheelObject;
-	}
-
-	m_pWheels.clear();
+	delete [] m_wheels;
+	m_wheels = NULL;
 
 	g_pPhysics->RemoveObject(m_pPhysicsObject);
 
@@ -934,7 +951,7 @@ void CCar::PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell)
 	Matrix3x3 cellAngle(b,n,t);
 	Matrix3x3 finalAngle = !cellAngle*rotateY3(DEG2RAD(roadCellAngle) );
 
-	SetOrigin(pos - Vector3D(0.0f, m_conf->m_wheels[0].suspensionBottom.y, 0.0f));
+	SetOrigin(pos - Vector3D(0.0f, m_conf->physics.wheels[0].suspensionBottom.y, 0.0f));
 
 	Quaternion rotation( finalAngle );
 	renormalize(rotation);
@@ -1124,7 +1141,7 @@ void CCar::HingeVehicle(int thisHingePoint, CCar* otherVehicle, int otherHingePo
 
 	m_trailerHinge = new CEqPhysicsHingeJoint();
 	m_trailerHinge->Init(GetPhysicsBody(), otherVehicle->GetPhysicsBody(), vec3_forward, 
-											m_conf->m_hingePoints[thisHingePoint],
+											m_conf->physics.hingePoints[thisHingePoint],
 											0.2f, 10.0f, 10.0f, 0.1f, 0.005f);
 
 	m_trailerHinge->SetEnabled(true);
@@ -1174,7 +1191,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	if(m_locked) // TODO: cvar option to lock or not
 		m_controlButtons = IN_HANDBRAKE;
 
-	bool isCar = m_conf->m_isCar;
+	bool isCar = m_conf->isCar;
 
 	//
 	// Update controls first
@@ -1235,7 +1252,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	if(bBurnout)
 		fAccel = 1.0f;
 
-	bool bDoBurnout = bBurnout && (GetSpeed() < m_conf->m_burnoutMaxSpeed);// && (fHandbrake == 0);
+	bool bDoBurnout = bBurnout && (GetSpeed() < m_conf->physics.burnoutMaxSpeed);// && (fHandbrake == 0);
 
 	FReal accel_scale = 1;
 
@@ -1281,7 +1298,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		FReal steer_diff = fSteerAngle-m_steering;
 
 		if(FPmath::abs(steer_diff) > 0.1f)
-			m_steering += FPmath::sign(steer_diff) * m_conf->m_steeringSpeed * delta;
+			m_steering += FPmath::sign(steer_diff) * m_conf->physics.steeringSpeed * delta;
 		else
 			m_steering = fSteerAngle;
 	}
@@ -1325,23 +1342,24 @@ void CCar::UpdateVehiclePhysics(float delta)
 	collFilter.flags = EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC;
 	collFilter.AddObject(carBody);
 
+	int wheelCount = GetWheelCount();
+
 	// Raycast the wheels and do some simple calculations
-	for(int i = 0; i < GetWheelCount(); i++)
+	for(int i = 0; i < wheelCount; i++)
 	{
-		wheelData_t& wheel = m_pWheels[i];
-		carWheelConfig_t& wheelConf = m_conf->m_wheels[i];
+		CCarWheel& wheel = m_wheels[i];
+		carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
 
 		// Test rays of wheels
 		Vector3D line_start = (m_worldMatrix*Vector4D(wheelConf.suspensionTop, 1)).xyz();
 		Vector3D line_end = (m_worldMatrix*Vector4D(wheelConf.suspensionBottom, 1)).xyz();
 
-		float fractionOld = wheel.collisionInfo.fract;
+		float fractionOld = wheel.m_collisionInfo.fract;
 
 		// trace solid ground only
-		g_pPhysics->TestLine(line_start, line_end, wheel.collisionInfo, OBJECTCONTENTS_SOLID_GROUND, &collFilter);
+		g_pPhysics->TestLine(line_start, line_end, wheel.m_collisionInfo, OBJECTCONTENTS_SOLID_GROUND, &collFilter);
 
-		if(m_isLocalCar &&
-			(wheel.collisionInfo.fract - fractionOld) >= 0.08f)
+		if(m_isLocalCar && (wheel.m_collisionInfo.fract - fractionOld) >= 0.08f)
 		{
 			EmitSound_t ep;
 
@@ -1354,13 +1372,13 @@ void CCar::UpdateVehiclePhysics(float delta)
 		if(wheelConf.flags & WHEEL_FLAG_DRIVE)
 		{
 			numDriveWheels++;
-			wheelsSpeed += wheel.pitchVel;
+			wheelsSpeed += wheel.m_pitchVel;
 		}
 
 		if(wheelConf.flags & WHEEL_FLAG_STEER)
 			numSteerWheels++;
 
-		if(wheel.collisionInfo.fract < 1.0f)
+		if(wheel.m_collisionInfo.fract < 1.0f)
 		{
 			numWheelsOnGround++;
 
@@ -1370,16 +1388,14 @@ void CCar::UpdateVehiclePhysics(float delta)
 			if(wheelConf.flags & WHEEL_FLAG_HANDBRAKE)
 				numHandbrakeWheelsOnGround++;
 
-			eqPhysSurfParam_t* surfparam = g_pPhysics->GetSurfaceParamByID( wheel.collisionInfo.materialIndex );
-
-			wheel.surfparam = surfparam;
+			wheel.m_surfparam = g_pPhysics->GetSurfaceParamByID( wheel.m_collisionInfo.materialIndex );
 
 			if(wheelConf.flags & WHEEL_FLAG_STEER)
 			{
 				numSteerWheelsOnGround++;
 
-				if(wheel.surfparam)
-					steerwheelsFriction += wheel.surfparam->tirefriction;
+				if(wheel.m_surfparam)
+					steerwheelsFriction += wheel.m_surfparam->tirefriction;
 			}
 		}
 		else
@@ -1455,14 +1471,14 @@ void CCar::UpdateVehiclePhysics(float delta)
 	//
 	if( isCar )
 	{
-		int engineType = m_conf->m_engineType;
+		int engineType = m_conf->physics.engineType;
 
-		FReal differentialRatio = m_conf->m_differentialRatio;
-		FReal transmissionRate = m_conf->m_transmissionRate;
+		FReal differentialRatio = m_conf->physics.differentialRatio;
+		FReal transmissionRate = m_conf->physics.transmissionRate;
 
-		FReal torqueConvert = differentialRatio * m_conf->m_gears[m_nGear];
+		FReal torqueConvert = differentialRatio * m_conf->physics.gears[m_nGear];
 		m_radsPerSec = (float)fabs(wheelsSpeed)*torqueConvert;
-		torque = CalcTorqueCurve(m_radsPerSec, engineType) * m_conf->m_torqueMult;
+		torque = CalcTorqueCurve(m_radsPerSec, engineType) * m_conf->physics.torqueMult;
 
 		float gbxDecelRate = max((float)fAccel, GEARBOX_DECEL_SHIFTDOWN_FACTOR);
 
@@ -1486,10 +1502,10 @@ void CCar::UpdateVehiclePhysics(float delta)
 			if(m_nGear == 0)
 			{
 				// find gear to diffential
-				torqueConvert = differentialRatio * m_conf->m_gears[m_nGear];
+				torqueConvert = differentialRatio * m_conf->physics.gears[m_nGear];
 				FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
 				m_radsPerSec = gearRadsPerSecond;
-				torque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->m_torqueMult;
+				torque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
 
 				torque *= torqueConvert * transmissionRate;
 
@@ -1530,10 +1546,10 @@ void CCar::UpdateVehiclePhysics(float delta)
 				for ( int nGear = 1; nGear < m_nGear; nGear++ )
 				{
 					// find gear to diffential
-					torqueConvert = differentialRatio * m_conf->m_gears[nGear];
+					torqueConvert = differentialRatio * m_conf->physics.gears[nGear];
 					FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
 
-					FReal gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->m_torqueMult;
+					FReal gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
  					if(gearTorque < 0)
 						gearTorque = 0.0f;
 
@@ -1547,13 +1563,13 @@ void CCar::UpdateVehiclePhysics(float delta)
 				}
 
 				// shuft up
-				for ( int nGear = newGear; nGear < m_conf->m_gears.numElem(); nGear++ )
+				for ( int nGear = newGear; nGear < m_conf->physics.numGears; nGear++ )
 				{
 					// find gear to diffential
-					torqueConvert = differentialRatio * m_conf->m_gears[nGear];
+					torqueConvert = differentialRatio * m_conf->physics.gears[nGear];
 					FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
 
-					FReal gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->m_torqueMult;
+					FReal gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
  					if(gearTorque < 0)
 						gearTorque = 0.0f;
 
@@ -1595,11 +1611,12 @@ void CCar::UpdateVehiclePhysics(float delta)
 	}
 	else
 	{
-		if(m_fBreakage > 0.4f && fabs(fBreakage) < 0.01f && m_conf->m_sndBrakeRelease.Length() > 0)
+		if(	m_fBreakage > 0.4f && fabs(fBreakage) < 0.01f && 
+			m_conf->sounds.brakeRelease.Length() > 0)
 		{
 			// m_fBreakage is volume
 			EmitSound_t ep;
-			ep.name = m_conf->m_sndBrakeRelease.c_str();
+			ep.name = m_conf->sounds.brakeRelease.c_str();
 			ep.fVolume = m_fBreakage;
 			ep.fPitch = 1.0f+(1.0f-m_fBreakage);
 			ep.origin = GetOrigin();
@@ -1644,19 +1661,19 @@ void CCar::UpdateVehiclePhysics(float delta)
 		fAccelerator = 0;
 
 	// springs for wheels
-	for(int i = 0; i < GetWheelCount(); i++)
+	for(int i = 0; i < wheelCount; i++)
 	{
-		wheelData_t& wheel = m_pWheels[i];
-		carWheelConfig_t& wheelConf = m_conf->m_wheels[i];
+		CCarWheel& wheel = m_wheels[i];
+		carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
 
-		wheel.wheelOrient = identity3();
+		wheel.m_wheelOrient = identity3();
 
 		float fWheelSteerAngle = 0.0f;
 
 		if(wheelConf.flags & WHEEL_FLAG_STEER)
 		{
 			fWheelSteerAngle = DEG2RAD(m_steering*40) * wheelConf.steerMultipler;
-			wheel.wheelOrient = rotateY3( fWheelSteerAngle );
+			wheel.m_wheelOrient = rotateY3( fWheelSteerAngle );
 		}
 
 		// apply car rays
@@ -1664,20 +1681,20 @@ void CCar::UpdateVehiclePhysics(float delta)
 		Vector3D line_end = (m_worldMatrix*Vector4D(wheelConf.suspensionBottom, 1)).xyz();
 
 		// compute wheel world rotation (turn + body rotation)
-		Matrix3x3 wrotation = wheel.wheelOrient*transpose(m_worldMatrix).getRotationComponent();
+		Matrix3x3 wrotation = wheel.m_wheelOrient*transpose(m_worldMatrix).getRotationComponent();
 
 		// get wheel vectors
 		Vector3D wheel_right = wrotation.rows[0];
 		Vector3D wheel_forward = wrotation.rows[2];
 
-		float fPitchFac = RemapVal(m_conf->m_burnoutMaxSpeed - GetSpeed(), 0.0f, 70.0f, 0.0f, 1.0f);
+		float fPitchFac = RemapVal(m_conf->physics.burnoutMaxSpeed - GetSpeed(), 0.0f, 70.0f, 0.0f, 1.0f);
 
-		if(wheel.collisionInfo.fract < 1.0f)
+		if(wheel.m_collisionInfo.fract < 1.0f)
 		{
 			float wheelTractionFrictionScale = 0.2f;
 
-			if(wheel.surfparam)
-				wheelTractionFrictionScale = wheel.surfparam->tirefriction;
+			if(wheel.m_surfparam)
+				wheelTractionFrictionScale = wheel.m_surfparam->tirefriction;
 
 			wheelTractionFrictionScale *= weatherTireFrictionMod[g_pGameWorld->m_envConfig.weatherType];
 
@@ -1686,23 +1703,23 @@ void CCar::UpdateVehiclePhysics(float delta)
 			float suspLength = length(line_start-line_end);
 
 			Vector3D ray_dir = (line_start-line_end) / suspLength;
-			Vector3D wheelVelAtPoint = carBody->GetVelocityAtWorldPoint(wheel.collisionInfo.position);
+			Vector3D wheelVelAtPoint = carBody->GetVelocityAtWorldPoint(wheel.m_collisionInfo.position);
 
-			wheel.velocityVec = wheelVelAtPoint;
+			wheel.m_velocityVec = wheelVelAtPoint;
 
 			// use some waving for dirt
-			if(wheel.surfparam && wheel.surfparam->word == 'G') // wheel on grass
+			if(wheel.m_surfparam && wheel.m_surfparam->word == 'G') // wheel on grass
 			{
-				float fac1 = wheel.collisionInfo.position.x*0.65f;
-				float fac2 = wheel.collisionInfo.position.z*0.65f;
+				float fac1 = wheel.m_collisionInfo.position.x*0.65f;
+				float fac2 = wheel.m_collisionInfo.position.z*0.65f;
 
-				wheel.collisionInfo.fract += ((0.5f-sin(fac1))+(0.5f-sin(fac2+0.5f)))*wheelConf.radius*0.11f;
+				wheel.m_collisionInfo.fract += ((0.5f-sin(fac1))+(0.5f-sin(fac2+0.5f)))*wheelConf.radius*0.11f;
 			}
 
-			float springPowerFac = 1.0f-wheel.collisionInfo.fract;
+			float springPowerFac = 1.0f-wheel.m_collisionInfo.fract;
 
 			float springPower = springPowerFac*wheelConf.springConst;
-			float dampingFactor = dot(wheel.collisionInfo.normal, wheelVelAtPoint);
+			float dampingFactor = dot(wheel.m_collisionInfo.normal, wheelVelAtPoint);
 
 			if ( fabs( dampingFactor ) > 1.0f )
 				dampingFactor = sign( dampingFactor ) * 1.0f;
@@ -1713,7 +1730,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 			if(springPower <= 0.0f)
 				continue;
 
-			Vector3D springForce = wheel.collisionInfo.normal*springPower;
+			Vector3D springForce = wheel.m_collisionInfo.normal*springPower;
 
 			//
 			// processing slip
@@ -1721,7 +1738,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 			Vector3D wheelForward = wheel_forward;
 
 			// apply velocity
-			wheelForward -= wheel.collisionInfo.normal * dot( wheel.collisionInfo.normal, wheelVelAtPoint );
+			wheelForward -= wheel.m_collisionInfo.normal * dot( wheel.m_collisionInfo.normal, wheelVelAtPoint );
 
 			// normalize
 			float fwdLength = length(wheelForward);
@@ -1733,7 +1750,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 			//---------------------------------------------------------------------------------
 
 			// get direction vectors based on surface normal
-			Vector3D wheelTractionForceDir = cross(wheel_right, wheel.collisionInfo.normal);
+			Vector3D wheelTractionForceDir = cross(wheel_right, wheel.m_collisionInfo.normal);
 
 			// determine wheel pitch speed applied from the ground
 			float wheelPitchSpeed		= dot(wheelVelAtPoint, wheelTractionForceDir);
@@ -1767,12 +1784,12 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 				if((wheelConf.flags & WHEEL_FLAG_HANDBRAKE) && handbrakes > 0.0f)
 				{
-					fLongitudinalForce += handbrakes*m_conf->m_handbrakeScale;
+					fLongitudinalForce += handbrakes*m_conf->physics.handbrakeScale;
 				}
 			}
 
 
-			Vector3D wheelSlipForceDir	= cross(wheel.collisionInfo.normal, wheelForward);
+			Vector3D wheelSlipForceDir	= cross(wheel.m_collisionInfo.normal, wheelForward);
 
 			// get wheel slip force based on
 			//float wheelSlipVelocity = dot(wheelSlipForceDir, wheelVelAtPoint);
@@ -1796,7 +1813,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 					if(wheelPitchSpeed > 0.1f)
 						fSlipAngle += fWheelSteerAngle*0.5f;
 
-					wheelSlipOppositeForce = DBSlipAngleToLateralForce( fSlipAngle, fLongitudinalForce, wheel.surfparam);// , wheelSurfaceAttrib ) ;
+					wheelSlipOppositeForce = DBSlipAngleToLateralForce( fSlipAngle, fLongitudinalForce, wheel.m_surfparam);// , wheelSurfaceAttrib ) ;
 				}
 				else
 				{
@@ -1810,7 +1827,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 					const float SURFACE_GRIP_SCALE = 1.0f;
 					const float SURFACE_GRIP_DEADZONE = 0.1f;
 
-					float surfaceForceMod = dot( wheel_right, wheel.collisionInfo.normal );
+					float surfaceForceMod = dot( wheel_right, wheel.m_collisionInfo.normal );
 					surfaceForceMod = 1.0f - fabs ( surfaceForceMod );
 
 					float fGrip = surfaceForceMod;
@@ -1875,7 +1892,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 			{
 				// set wheel velocity, add pitch radians
-				wheel.pitchVel = wheelPitchSpeed;
+				wheel.m_pitchVel = wheelPitchSpeed;
 			}
 
 			wheelSlipOppositeForce *= springPower;
@@ -1893,14 +1910,14 @@ void CCar::UpdateVehiclePhysics(float delta)
 			}
 
 			// spring force position in a couple with antiroll
-			Vector3D springForcePos = wheel.collisionInfo.position;
+			Vector3D springForcePos = wheel.m_collisionInfo.position;
 
 			// TODO: dependency on other wheels
 			float fAntiRollFac = springPowerFac+ANTIROLL_FACTOR_DEADZONE;
 
 			if(fAntiRollFac > ANTIROLL_FACTOR_MAX) fAntiRollFac = ANTIROLL_FACTOR_MAX;
 
-			springForcePos += m_worldMatrix.rows[1].xyz() * fAntiRollFac * m_conf->m_antiRoll * ANTIROLL_SCALE;
+			springForcePos += m_worldMatrix.rows[1].xyz() * fAntiRollFac * m_conf->physics.antiRoll * ANTIROLL_SCALE;
 
 			// apply force of wheel
 			carBody->ApplyWorldForce(springForcePos, springForce);
@@ -1908,32 +1925,32 @@ void CCar::UpdateVehiclePhysics(float delta)
 		else if(!numDriveWheelsOnGround)
 		{
 			if(fAccel > 0 || fabs(fBrake) > 0)
-				wheel.pitchVel += torque*carBody->GetInvMass();
+				wheel.m_pitchVel += torque*carBody->GetInvMass();
 			else
-				wheel.pitchVel = 0.0f;
+				wheel.m_pitchVel = 0.0f;
 		}
 		else
 		{
-			wheel.pitchVel = dot(wheel_forward, carBody->GetLinearVelocity());
+			wheel.m_pitchVel = dot(wheel_forward, carBody->GetLinearVelocity());
 		}
 
 		bool burnout = bDoBurnout && (wheelConf.flags & WHEEL_FLAG_DRIVE);
 		if(burnout)
 		{
 			if((wheelConf.flags & WHEEL_FLAG_DRIVE)
-				&& wheel.pitchVel < 0
+				&& wheel.m_pitchVel < 0
 				&& bDoBurnout)
 				fPitchFac = 1.0f;
 
-			wheel.pitch += (15.0f/wheelConf.radius) * fPitchFac * delta;
+			wheel.m_pitch += (15.0f/wheelConf.radius) * fPitchFac * delta;
 		}
 
-		wheel.flags.isBurningOut = burnout;
+		wheel.m_flags.isBurningOut = burnout;
 
-		wheel.pitch += (wheel.pitchVel/wheelConf.radius)*delta;
+		wheel.m_pitch += (wheel.m_pitchVel/wheelConf.radius)*delta;
 
 		// normalize
-		wheel.pitch = DEG2RAD(ConstrainAngle180(RAD2DEG(wheel.pitch)));
+		wheel.m_pitch = DEG2RAD(ConstrainAngle180(RAD2DEG(wheel.m_pitch)));
 	}
 }
 
@@ -2164,16 +2181,18 @@ void CCar::OnPhysicsFrame( float fDt )
 				OnNetworkStateChanged(NULL);
 			}
 
+			int wheelCount = GetWheelCount();
+
 			// make damage to wheels
 			// hubcap effects
-			for(int i = 0; i < m_pWheels.numElem(); i++)
+			for(int i = 0; i < wheelCount; i++)
 			{
-				Vector3D pos = m_pWheels[i].pWheelObject->GetOrigin()-Vector3D(coll.position);
+				Vector3D pos = m_wheels[i].GetOrigin()-Vector3D(coll.position);
 
 				float dmgDist = length(pos);
 
 				if(dmgDist < 1.0f)
-					m_pWheels[i].damage += (1.0f-dmgDist)*fDamageImpact * DAMAGE_WHEEL_SCALE;
+					m_wheels[i].m_damage += (1.0f-dmgDist)*fDamageImpact * DAMAGE_WHEEL_SCALE;
 			}
 
 			RefreshWindowDamageEffects();
@@ -2232,41 +2251,43 @@ void CCar::OnPhysicsFrame( float fDt )
 	}
 #endif // NO_LUA
 
+	int wheelCount = GetWheelCount();
+
 	// wheel damage and hubcaps
-	for(int i = 0; i < m_pWheels.numElem(); i++)
+	for(int i = 0; i < wheelCount; i++)
 	{
-		wheelData_t& wheel = m_pWheels[i];
+		CCarWheel& wheel = m_wheels[i];
 
 		//debugoverlay->Text3D(wheel.pWheelObject->GetOrigin(), 10.0f, color4_white, "damage: %.2f", wheel.damage);
 
-		if(wheel.flags.lostHubcap)
+		if(wheel.m_flags.lostHubcap)
 			continue;
 
-		float lateralSliding = GetLateralSlidingAtWheel(i) * -sign(m_conf->m_wheels[i].suspensionTop.x);
+		float lateralSliding = GetLateralSlidingAtWheel(i) * -sign(m_conf->physics.wheels[i].suspensionTop.x);
 		lateralSliding = max(0.0f,lateralSliding);
 
 		// skidding can do this
 		if(lateralSliding > 2.0f)
-			wheel.damage += lateralSliding * fDt * 0.0035f;
+			wheel.m_damage += lateralSliding * fDt * 0.0035f;
 
 		float tractionSliding = GetTractionSlidingAtWheel(i);
 
 		// if you burnout too much, or brake
 		if(tractionSliding > 4.0f)
-			wheel.damage += tractionSliding * fDt * 0.001f ;
+			wheel.m_damage += tractionSliding * fDt * 0.001f ;
 
 		// if vehicle landing on ground hubcaps may go away
-		if(wheel.flags.onGround && !wheel.flags.lastOnGround)
+		if(wheel.m_flags.onGround && !wheel.m_flags.lastOnGround)
 		{
-			float wheelLandingVelocity = (-dot(wheel.collisionInfo.normal, wheel.velocityVec)) - 4.0f;
+			float wheelLandingVelocity = (-dot(wheel.m_collisionInfo.normal, wheel.m_velocityVec)) - 4.0f;
 
 			if(wheelLandingVelocity > 0.0f)
-				wheel.damage += pow(wheelLandingVelocity, 2.0f) * 0.05f;
+				wheel.m_damage += pow(wheelLandingVelocity, 2.0f) * 0.05f;
 		}
 
-		if(wheel.damage >= 1.0f)
+		if(wheel.m_damage >= 1.0f)
 		{
-			wheel.damage = 1.0f;
+			wheel.m_damage = 1.0f;
 
 			ReleaseHubcap(i);
 		}
@@ -2309,13 +2330,13 @@ void CCar::OnPhysicsFrame( float fDt )
 void CCar::ReleaseHubcap(int wheel)
 {
 #ifndef EDITOR
-	wheelData_t& wdata = m_pWheels[wheel];
-	carWheelConfig_t& wheelConf = m_conf->m_wheels[wheel];
+	CCarWheel& wdata = m_wheels[wheel];
+	carWheelConfig_t& wheelConf = m_conf->physics.wheels[wheel];
 
-	if(wdata.flags.lostHubcap || wdata.hubcapBodygroup == -1)
+	if(wdata.m_flags.lostHubcap || wdata.m_hubcapBodygroup == -1)
 		return;
 
-	float wheelVisualPosFactor = wdata.collisionInfo.fract;
+	float wheelVisualPosFactor = wdata.m_collisionInfo.fract;
 
 	if(wheelVisualPosFactor < wheelConf.visualTop)
 		wheelVisualPosFactor = wheelConf.visualTop;
@@ -2325,27 +2346,27 @@ void CCar::ReleaseHubcap(int wheel)
 	Vector3D wheelSuspDir = fastNormalize(wheelConf.suspensionTop - wheelConf.suspensionBottom);
 	Vector3D wheelCenterPos = lerp(wheelConf.suspensionTop, wheelConf.suspensionBottom, wheelVisualPosFactor) + wheelSuspDir*wheelConf.radius;
 
-	Quaternion wheelRotation = Quaternion(wdata.wheelOrient) * Quaternion(-wdata.pitch, leftWheel ? PI_F : 0.0f, 0.0f);
+	Quaternion wheelRotation = Quaternion(wdata.m_wheelOrient) * Quaternion(-wdata.m_pitch, leftWheel ? PI_F : 0.0f, 0.0f);
 
 	Matrix4x4 wheelTranslation = transpose(m_worldMatrix*(translate(wheelCenterPos) * Matrix4x4(wheelRotation)));
 
 	Vector3D wheelPos = wheelTranslation.getTranslationComponent();
 
-	float angularVel = wdata.pitchVel * PI_F * 2.0f;
+	float angularVel = wdata.m_pitchVel * PI_F * 2.0f;
 
-	if(wdata.flags.isBurningOut)
+	if(wdata.m_flags.isBurningOut)
 		angularVel += (15.0f/wheelConf.radius) * PI_F * 0.5f;
 
 	CObject_Debris* hubcapObj = new CObject_Debris(NULL);
-	hubcapObj->SpawnAsHubcap(wdata.pWheelObject->GetModel(), wdata.hubcapBodygroup);
+	hubcapObj->SpawnAsHubcap(wdata.GetModel(), wdata.m_hubcapBodygroup);
 	hubcapObj->SetOrigin( wheelPos );
 	hubcapObj->m_physBody->SetOrientation( Quaternion(wheelTranslation.getRotationComponent()) );
-	hubcapObj->m_physBody->SetLinearVelocity( wdata.velocityVec );
+	hubcapObj->m_physBody->SetLinearVelocity( wdata.m_velocityVec );
 	hubcapObj->m_physBody->SetAngularVelocity( wheelTranslation.rows[0].xyz() * -sign(wheelConf.suspensionTop.x) * angularVel );
 	g_pGameWorld->AddObject(hubcapObj, true);
 
-	wdata.flags.lostHubcap = true;
-	wdata.pWheelObject->m_bodyGroupFlags = (1 << wdata.damagedWheelBodygroup);
+	wdata.m_flags.lostHubcap = true;
+	wdata.m_bodyGroupFlags = (1 << wdata.m_damagedBodygroup);
 #endif // EDITOR
 }
 
@@ -2378,9 +2399,9 @@ void CCar::Simulate( float fDt )
 	if(!carBody)
 		return;
 
-	bool isCar = m_conf->m_isCar;
+	bool isCar = m_conf->isCar;
 
-	if(	m_conf->m_sirenType > SERVICE_LIGHTS_NONE && (m_controlButtons & IN_SIREN) && !(m_oldControlButtons & IN_SIREN))
+	if(	m_conf->visual.sirenType > SERVICE_LIGHTS_NONE && (m_controlButtons & IN_SIREN) && !(m_oldControlButtons & IN_SIREN))
 	{
 		m_oldSirenState = m_sirenEnabled;
 		m_sirenEnabled = !m_sirenEnabled;
@@ -2412,7 +2433,7 @@ void CCar::Simulate( float fDt )
 
 		if(lightIntensity > 0.0f)
 		{
-			Vector3D startLightPos = GetOrigin() + GetForwardVector()*m_conf->m_headlightPosition.z;
+			Vector3D startLightPos = GetOrigin() + GetForwardVector()*m_conf->visual.headlightPosition.z;
 			ColorRGBA lightColor(0.7, 0.6, 0.5, lightIntensity*0.7f);
 
 #ifndef EDITOR
@@ -2475,7 +2496,7 @@ void CCar::Simulate( float fDt )
 	m_curTime += fDt;
 	m_engineSmokeTime += fDt;
 
-	m_visible = g_pGameWorld->m_occludingFrustum.IsSphereVisible(GetOrigin(), length(m_conf->m_body_size));
+	m_visible = g_pGameWorld->m_occludingFrustum.IsSphereVisible(GetOrigin(), length(m_conf->physics.body_size));
 
 #ifndef EDITOR
 	// don't render car
@@ -2498,11 +2519,11 @@ void CCar::Simulate( float fDt )
 			if(frontDamageSum > 1.35f)
 				smokeCol = ColorRGB(0.0);
 
-			float rand_size = RandomFloat(-m_conf->m_body_size.x*0.5f,m_conf->m_body_size.x*0.5f);
+			float rand_size = RandomFloat(-m_conf->physics.body_size.x*0.5f,m_conf->physics.body_size.x*0.5f);
 
 			float alphaModifier = 1.0f - RemapValClamp(GetSpeed(), 0.0f, 80.0f, 0.0f, 1.0f);
 
-			Vector3D smokePos = (m_worldMatrix * Vector4D(m_conf->m_enginePosition + Vector3D(rand_size,0,0), 1.0f)).xyz();
+			Vector3D smokePos = (m_worldMatrix * Vector4D(m_conf->visual.enginePosition + Vector3D(rand_size,0,0), 1.0f)).xyz();
 
 			CSmokeEffect* pSmoke = new CSmokeEffect(smokePos, Vector3D(0,1, 1),
 													RandomFloat(0.1, 0.3), RandomFloat(1.0, 1.8),
@@ -2515,16 +2536,16 @@ void CCar::Simulate( float fDt )
 
 		// make exhaust light smoke
 		if(	m_enabled && m_isLocalCar &&
-			m_conf->m_exhaustDir != -1 &&
+			m_conf->visual.exhaustDir != -1 &&
 			GetSpeed() < 15.0f)
 		{
-			Vector3D smokePos = (m_worldMatrix * Vector4D(m_conf->m_exhaustPosition, 1.0f)).xyz();
+			Vector3D smokePos = (m_worldMatrix * Vector4D(m_conf->visual.exhaustPosition, 1.0f)).xyz();
 			Vector3D smokeDir(0);
 
-			smokeDir[m_conf->m_exhaustDir] = 1.0f;
+			smokeDir[m_conf->visual.exhaustDir] = 1.0f;
 
-			if(m_conf->m_exhaustDir == 1)
-				smokeDir[m_conf->m_exhaustDir] *= -1.0f;
+			if(m_conf->visual.exhaustDir == 1)
+				smokeDir[m_conf->visual.exhaustDir] *= -1.0f;
 
 			smokeDir = m_worldMatrix.getRotationComponent() * smokeDir;
 
@@ -2558,21 +2579,21 @@ void CCar::Simulate( float fDt )
 	// render siren lights
 	if ( isCar && (m_lightsEnabled & CAR_LIGHT_SERVICELIGHTS) )
 	{
-		Vector3D siren_pos_noX(0.0f, m_conf->m_sirenPositionWidth.y, m_conf->m_sirenPositionWidth.z);
+		Vector3D siren_pos_noX(0.0f, m_conf->visual.sirenPositionWidth.y, m_conf->visual.sirenPositionWidth.z);
 
 		Vector3D siren_position = (m_worldMatrix * Vector4D(siren_pos_noX, 1.0f)).xyz();
 
 		Vector3D rightVec = GetRightVector();
 
-		switch(m_conf->m_sirenType)
+		switch(m_conf->visual.sirenType)
 		{
 			case SERVICE_LIGHTS_DOUBLE:
 			{
 				ColorRGB col1(1,0.25,0);
 				ColorRGB col2(0,0.25,1);
 
-				PoliceSirenEffect(m_curTime, col1, siren_position, rightVec, -m_conf->m_sirenPositionWidth.x, m_conf->m_sirenPositionWidth.w);
-				PoliceSirenEffect(-m_curTime, col2, siren_position, rightVec, m_conf->m_sirenPositionWidth.x, m_conf->m_sirenPositionWidth.w);
+				PoliceSirenEffect(m_curTime, col1, siren_position, rightVec, -m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
+				PoliceSirenEffect(-m_curTime, col2, siren_position, rightVec, m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
 
 				float fSin = fabs(sinf(m_curTime*16.0f));
 				float fSinFactor = clamp(fSin, 0.5f, 1.0f);
@@ -2587,15 +2608,15 @@ void CCar::Simulate( float fDt )
 			}
 			case SERVICE_LIGHTS_DOUBLE_SINGLECOLOR:
 			{
-				PoliceSirenEffect(m_curTime, ColorRGB(0,0.2,1), siren_position, rightVec, -m_conf->m_sirenPositionWidth.x, m_conf->m_sirenPositionWidth.w);
-				PoliceSirenEffect(m_curTime+PI_F, ColorRGB(0,0.2,1), siren_position, rightVec, m_conf->m_sirenPositionWidth.x, m_conf->m_sirenPositionWidth.w);
+				PoliceSirenEffect(m_curTime, ColorRGB(0,0.2,1), siren_position, rightVec, -m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
+				PoliceSirenEffect(m_curTime+PI_F, ColorRGB(0,0.2,1), siren_position, rightVec, m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
 
 				break;
 			}
 			case SERVICE_LIGHTS_DOUBLE_SINGLECOLOR_RED:
 			{
-				PoliceSirenEffect(m_curTime, ColorRGB(1,0.2,0), siren_position, rightVec, -m_conf->m_sirenPositionWidth.x, m_conf->m_sirenPositionWidth.w);
-				PoliceSirenEffect(m_curTime+PI_F, ColorRGB(1,0.2,0), siren_position, rightVec, m_conf->m_sirenPositionWidth.x, m_conf->m_sirenPositionWidth.w);
+				PoliceSirenEffect(m_curTime, ColorRGB(1,0.2,0), siren_position, rightVec, -m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
+				PoliceSirenEffect(m_curTime+PI_F, ColorRGB(1,0.2,0), siren_position, rightVec, m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
 
 				float fSinFactor = clamp(fabs(sinf(m_curTime*16.0f)), 0.5f, 1.0f);
 
@@ -2623,17 +2644,17 @@ void CCar::Simulate( float fDt )
 		Vector3D cam_forward;
 		AngleVectors(g_pGameWorld->m_view.GetAngles(), &cam_forward);
 
-		Vector3D headlight_pos_noX(0.0f, m_conf->m_headlightPosition.y, m_conf->m_headlightPosition.z);
+		Vector3D headlight_pos_noX(0.0f, m_conf->visual.headlightPosition.y, m_conf->visual.headlightPosition.z);
 		Vector3D headlight_position = (m_worldMatrix * Vector4D(headlight_pos_noX, 1.0f)).xyz();
 
-		Vector3D brakelight_pos_noX(0.0f, m_conf->m_brakelightPosition.y, m_conf->m_brakelightPosition.z);
+		Vector3D brakelight_pos_noX(0.0f, m_conf->visual.brakelightPosition.y, m_conf->visual.brakelightPosition.z);
 		Vector3D brakelight_position = (m_worldMatrix * Vector4D(brakelight_pos_noX, 1.0f)).xyz();
 
-		Vector3D backlight_pos_noX(0.0f, m_conf->m_backlightPosition.y, m_conf->m_backlightPosition.z);
+		Vector3D backlight_pos_noX(0.0f, m_conf->visual.backlightPosition.y, m_conf->visual.backlightPosition.z);
 		Vector3D backlight_position = (m_worldMatrix * Vector4D(backlight_pos_noX, 1.0f)).xyz();
 
-		Vector3D frontdimlight_pos_noX(0.0f, m_conf->m_frontDimLights.y, m_conf->m_frontDimLights.z);
-		Vector3D backdimlight_pos_noX(0.0f, m_conf->m_backDimLights.y, m_conf->m_backDimLights.z);
+		Vector3D frontdimlight_pos_noX(0.0f, m_conf->visual.frontDimLights.y, m_conf->visual.frontDimLights.z);
+		Vector3D backdimlight_pos_noX(0.0f, m_conf->visual.backDimLights.y, m_conf->visual.backDimLights.z);
 
 		Vector3D frontdimlight_position = (m_worldMatrix * Vector4D(frontdimlight_pos_noX, 1.0f)).xyz();
 		Vector3D backdimlight_position = (m_worldMatrix * Vector4D(backdimlight_pos_noX, 1.0f)).xyz();
@@ -2668,20 +2689,20 @@ void CCar::Simulate( float fDt )
 
 			float fHeadlightsGlowAlpha = fHeadlightsAlpha;
 
-			if(	m_conf->m_headlightType > LIGHTS_SINGLE)
+			if(	m_conf->visual.headlightType > LIGHTS_SINGLE)
 				fHeadlightsAlpha *= 0.65f;
 
 			float lightLensPercentage = clamp((100.0f-headlightDistance) * 0.025f, 0.0f, 1.0f);
 			fHeadlightsAlpha *= lightLensPercentage;
 			fHeadlightsGlowAlpha *= clamp(1.0f - lightLensPercentage, 0.25f, 1.0f);
 
-			Vector3D positionL = headlight_position - rightVec*m_conf->m_headlightPosition.x;
-			Vector3D positionR = headlight_position + rightVec*m_conf->m_headlightPosition.x;
+			Vector3D positionL = headlight_position - rightVec*m_conf->visual.headlightPosition.x;
+			Vector3D positionR = headlight_position + rightVec*m_conf->visual.headlightPosition.x;
 
 			ColorRGBA headlightColor(fHeadlightsAlpha, fHeadlightsAlpha, fHeadlightsAlpha, 0.6f);
 			ColorRGBA headlightGlowColor(fHeadlightsGlowAlpha, fHeadlightsGlowAlpha, fHeadlightsGlowAlpha, 1);
 
-			switch (m_conf->m_headlightType)
+			switch (m_conf->visual.headlightType)
 			{
 				case LIGHTS_SINGLE:
 				{
@@ -2704,31 +2725,31 @@ void CCar::Simulate( float fDt )
 				{
 					Vector3D lDirVec = rightVec;
 
-					if(m_conf->m_headlightType == LIGHTS_DOUBLE_VERTICAL)
+					if(m_conf->visual.headlightType == LIGHTS_DOUBLE_VERTICAL)
 						lDirVec = upVec;
 
 					if (m_bodyParts[CB_FRONT_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
 					{
-						DrawLightEffect(positionL - lDirVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
-						DrawLightEffect(positionL - lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontGlowSizeScale, 1);
+						DrawLightEffect(positionL - lDirVec*m_conf->visual.headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
+						DrawLightEffect(positionL - lDirVec*m_conf->visual.headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontGlowSizeScale, 1);
 					}
 
 					if (m_bodyParts[CB_FRONT_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
 					{
-						DrawLightEffect(positionL + lDirVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
-						DrawLightEffect(positionL + lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontGlowSizeScale, 1);
+						DrawLightEffect(positionL + lDirVec*m_conf->visual.headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
+						DrawLightEffect(positionL + lDirVec*m_conf->visual.headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontGlowSizeScale, 1);
 					}
 
 					if (m_bodyParts[CB_FRONT_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
 					{
-						DrawLightEffect(positionR - lDirVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
-						DrawLightEffect(positionR - lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontGlowSizeScale, 1);
+						DrawLightEffect(positionR - lDirVec*m_conf->visual.headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
+						DrawLightEffect(positionR - lDirVec*m_conf->visual.headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontGlowSizeScale, 1);
 					}
 
 					if (m_bodyParts[CB_FRONT_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
 					{
-						DrawLightEffect(positionR + lDirVec*m_conf->m_headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
-						DrawLightEffect(positionR + lDirVec*m_conf->m_headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontGlowSizeScale, 1);
+						DrawLightEffect(positionR + lDirVec*m_conf->visual.headlightPosition.w, headlightColor, HEADLIGHT_RADIUS*frontSizeScale, 0);
+						DrawLightEffect(positionR + lDirVec*m_conf->visual.headlightPosition.w, headlightGlowColor, HEADLIGHTGLOW_RADIUS*frontGlowSizeScale, 1);
 					}
 
 					break;
@@ -2743,13 +2764,13 @@ void CCar::Simulate( float fDt )
 			// draw brake lights
 			float fBrakeLightAlpha2 = fBrakeLightAlpha*0.6f;
 
-			Vector3D positionL = brakelight_position - rightVec*m_conf->m_brakelightPosition.x;
-			Vector3D positionR = brakelight_position + rightVec*m_conf->m_brakelightPosition.x;
+			Vector3D positionL = brakelight_position - rightVec*m_conf->visual.brakelightPosition.x;
+			Vector3D positionR = brakelight_position + rightVec*m_conf->visual.brakelightPosition.x;
 
 			ColorRGBA brakelightColor(fBrakeLightAlpha, 0.15*fBrakeLightAlpha, 0, 1);
 			ColorRGBA brakelightColor2(fBrakeLightAlpha2, 0.15*fBrakeLightAlpha2, 0, 1);
 
-			switch (m_conf->m_brakelightType)
+			switch (m_conf->visual.brakelightType)
 			{
 				case LIGHTS_SINGLE:
 				{
@@ -2777,37 +2798,37 @@ void CCar::Simulate( float fDt )
 				{
 					Vector3D lDirVec = rightVec;
 
-					if(m_conf->m_headlightType == LIGHTS_DOUBLE_VERTICAL)
+					if(m_conf->visual.headlightType == LIGHTS_DOUBLE_VERTICAL)
 						lDirVec = upVec;
 
 					if (IsLightEnabled(CAR_LIGHT_BRAKE))
 					{
 						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
-							DrawLightEffect(positionL - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
+							DrawLightEffect(positionL - lDirVec*m_conf->visual.brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
 
 						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-							DrawLightEffect(positionL + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
+							DrawLightEffect(positionL + lDirVec*m_conf->visual.brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
 
 						if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-							DrawLightEffect(positionR - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
+							DrawLightEffect(positionR - lDirVec*m_conf->visual.brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
 
 						if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
-							DrawLightEffect(positionR + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
+							DrawLightEffect(positionR + lDirVec*m_conf->visual.brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
 					}
 
 					if (IsLightEnabled(CAR_LIGHT_HEADLIGHTS))
 					{
 						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
-							DrawLightEffect(positionL - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+							DrawLightEffect(positionL - lDirVec*m_conf->visual.brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
 
 						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-							DrawLightEffect(positionL + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+							DrawLightEffect(positionL + lDirVec*m_conf->visual.brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
 
 						if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE)
-							DrawLightEffect(positionR - lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+							DrawLightEffect(positionR - lDirVec*m_conf->visual.brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
 
 						if (m_bodyParts[CB_BACK_RIGHT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
-							DrawLightEffect(positionR + lDirVec*m_conf->m_brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
+							DrawLightEffect(positionR + lDirVec*m_conf->visual.brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
 					}
 					break;
 				}
@@ -2817,11 +2838,11 @@ void CCar::Simulate( float fDt )
 		// any kind of dimension lights
 		if(IsLightEnabled(CAR_LIGHT_DIM_LEFT) || IsLightEnabled(CAR_LIGHT_DIM_RIGHT))
 		{
-			Vector3D positionFL = frontdimlight_position - rightVec*m_conf->m_frontDimLights.x;
-			Vector3D positionFR = frontdimlight_position + rightVec*m_conf->m_frontDimLights.x;
+			Vector3D positionFL = frontdimlight_position - rightVec*m_conf->visual.frontDimLights.x;
+			Vector3D positionFR = frontdimlight_position + rightVec*m_conf->visual.frontDimLights.x;
 
-			Vector3D positionRL = backdimlight_position - rightVec*m_conf->m_backDimLights.x;
-			Vector3D positionRR = backdimlight_position + rightVec*m_conf->m_backDimLights.x;
+			Vector3D positionRL = backdimlight_position - rightVec*m_conf->visual.backDimLights.x;
+			Vector3D positionRR = backdimlight_position + rightVec*m_conf->visual.backDimLights.x;
 
 			ColorRGBA dimLightsColor(1,0.8,0.0f, 1.0f);
 
@@ -2852,8 +2873,8 @@ void CCar::Simulate( float fDt )
 			// draw back lights
 			float fBackLightAlpha2 = fBackLightAlpha * 0.3f;
 
-			Vector3D positionL = backlight_position - rightVec*m_conf->m_backlightPosition.x;
-			Vector3D positionR = backlight_position + rightVec*m_conf->m_backlightPosition.x;
+			Vector3D positionL = backlight_position - rightVec*m_conf->visual.backlightPosition.x;
+			Vector3D positionR = backlight_position + rightVec*m_conf->visual.backlightPosition.x;
 
 			ColorRGBA backlightColor(fBackLightAlpha, fBackLightAlpha, fBackLightAlpha, 1);
 			ColorRGBA backlightColor2(fBackLightAlpha2, fBackLightAlpha2, fBackLightAlpha2, 1);
@@ -2882,31 +2903,33 @@ void CCar::DrawEffects(int lod)
 	ColorRGB ambientAndSund = g_pGameWorld->m_info.rainBrightness;
 	TexAtlasEntry_t* skidmarkEntry = m_veh_skidmark_asphalt;
 
-	for(int i = 0; i < m_pWheels.numElem(); i++)
-	{
-		wheelData_t& wheel = m_pWheels[i];
-		carWheelConfig_t& wheelConf = m_conf->m_wheels[i];
+	int numWheels = GetWheelCount();
 
-		if(!wheel.flags.onGround)
+	for(int i = 0; i < numWheels; i++)
+	{
+		CCarWheel& wheel = m_wheels[i];
+		carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
+
+		if(!wheel.m_flags.onGround)
 		{
-			if(!wheel.flags.doSkidmarks)
-				wheel.flags.lastDoSkidmarks = wheel.flags.doSkidmarks;
+			if(!wheel.m_flags.doSkidmarks)
+				wheel.m_flags.lastDoSkidmarks = wheel.m_flags.doSkidmarks;
 
 			continue;
 		}
 
 		float minimumSkid = 0.05f;
 
-		Matrix3x3 wheelMat = transpose(m_worldMatrix.getRotationComponent() * wheel.wheelOrient);
+		Matrix3x3 wheelMat = transpose(m_worldMatrix.getRotationComponent() * wheel.m_wheelOrient);
 
-		Vector3D velAtWheel = wheel.velocityVec;
+		Vector3D velAtWheel = wheel.m_velocityVec;
 		velAtWheel.y = 0.0f;
 
 		Vector3D wheelDir = fastNormalize(velAtWheel);
-		Vector3D wheelRightDir = cross(wheelDir, wheel.collisionInfo.normal);
+		Vector3D wheelRightDir = cross(wheelDir, wheel.m_collisionInfo.normal);
 
-		Vector3D skidmarkPos = ( wheel.collisionInfo.position - wheelMat.rows[0]*wheelConf.width*sign(wheelConf.suspensionTop.x)*0.5f ) + wheelDir*0.05f;
-		skidmarkPos += velAtWheel*0.0065f + wheel.collisionInfo.normal*0.015f;
+		Vector3D skidmarkPos = ( wheel.m_collisionInfo.position - wheelMat.rows[0]*wheelConf.width*sign(wheelConf.suspensionTop.x)*0.5f ) + wheelDir*0.05f;
+		skidmarkPos += velAtWheel*0.0065f + wheel.m_collisionInfo.normal*0.015f;
 
 		PFXVertexPair_t skidmarkPair;
 		skidmarkPair.v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
@@ -2914,11 +2937,11 @@ void CCar::DrawEffects(int lod)
 
 		float fSkid = (GetTractionSlidingAtWheel(i)+fabs(GetLateralSlidingAtWheel(i)))*0.15f - minimumSkid;
 
-		float skidPitchVel = wheel.pitchVel + fSkid*2.0f;
+		float skidPitchVel = wheel.m_pitchVel + fSkid*2.0f;
 
 		// make some trails
-		if(	lod == 0 && wheel.surfparam != NULL &&
-			wheel.surfparam->word == 'C' &&
+		if(	lod == 0 && wheel.m_surfparam != NULL &&
+			wheel.m_surfparam->word == 'C' &&
 			g_pGameWorld->m_envConfig.weatherType > WEATHER_TYPE_CLEAR &&
 			fabs(skidPitchVel) > 2.0f )
 		{
@@ -2945,7 +2968,7 @@ void CCar::DrawEffects(int lod)
 			trailPair[1].v1.point -= velVecOffs;
 
 			Rectangle_t rect(m_veh_raintrail->rect.GetTopVertical(0.25f));
-			Vector2D offset(0, fabs(triangleWave(wheel.pitch))*rect.GetSize().y*3.0f);
+			Vector2D offset(0, fabs(triangleWave(wheel.m_pitch))*rect.GetSize().y*3.0f);
 
 			trailPair[0].v0.texcoord = rect.GetLeftTop() + offset;
 			trailPair[0].v1.texcoord = rect.GetRightTop() + offset;
@@ -2975,27 +2998,27 @@ void CCar::DrawEffects(int lod)
 
 		if( drawOnLocal || drawOnOther )
 		{
-			if(!wheel.flags.doSkidmarks)
+			if(!wheel.m_flags.doSkidmarks)
 			{
-				wheel.flags.lastDoSkidmarks = wheel.flags.doSkidmarks;
+				wheel.m_flags.lastDoSkidmarks = wheel.m_flags.doSkidmarks;
 				continue;
 			}
 
 			// remove skidmarks
-			if(wheel.skidMarks.numElem() > SKIDMARK_MAX_LENGTH)
-				wheel.skidMarks.removeIndex(0); // this is slow
+			if(wheel.m_skidMarks.numElem() > SKIDMARK_MAX_LENGTH)
+				wheel.m_skidMarks.removeIndex(0); // this is slow
 
-			if(!wheel.flags.lastDoSkidmarks && wheel.flags.doSkidmarks && (wheel.skidMarks.numElem() > 0))
+			if(!wheel.m_flags.lastDoSkidmarks && wheel.m_flags.doSkidmarks && (wheel.m_skidMarks.numElem() > 0))
 			{
-				int nLast = wheel.skidMarks.numElem()-1;
+				int nLast = wheel.m_skidMarks.numElem()-1;
 
-				if(wheel.skidMarks[nLast].v0.color.x < -10.0f && nLast > 0 )
+				if(wheel.m_skidMarks[nLast].v0.color.x < -10.0f && nLast > 0 )
 					nLast -= 1;
 
-				PFXVertexPair_t lastPair = wheel.skidMarks[nLast];
+				PFXVertexPair_t lastPair = wheel.m_skidMarks[nLast];
 				lastPair.v0.color.x = -100.0f;
 
-				wheel.skidMarks.append(lastPair);
+				wheel.m_skidMarks.append(lastPair);
 			}
 
 			float fSkid = (GetTractionSlidingAtWheel(i)+fabs(GetLateralSlidingAtWheel(i)))*0.15f - minimumSkid;
@@ -3007,35 +3030,35 @@ void CCar::DrawEffects(int lod)
 				skidmarkPair.v0.color.w = fAlpha;
 				skidmarkPair.v1.color.w = fAlpha;
 
-				int numMarkVertexPairs = wheel.skidMarks.numElem();
+				int numMarkVertexPairs = wheel.m_skidMarks.numElem();
 
-				if( wheel.skidMarks.numElem() > 1 )
+				if( wheel.m_skidMarks.numElem() > 1 )
 				{
-					float pointDist = length(wheel.skidMarks[numMarkVertexPairs - 2].v0.point-skidmarkPair.v0.point);
+					float pointDist = length(wheel.m_skidMarks[numMarkVertexPairs - 2].v0.point-skidmarkPair.v0.point);
 
 					if( pointDist > SKIDMARK_MIN_INTERVAL )
 					{
-						wheel.skidMarks.append(skidmarkPair);
+						wheel.m_skidMarks.append(skidmarkPair);
 					}
-					else if(wheel.skidMarks.numElem() > 2 &&
-							wheel.skidMarks[wheel.skidMarks.numElem()-1].v0.color.x >= 0.0f)
+					else if(wheel.m_skidMarks.numElem() > 2 &&
+							wheel.m_skidMarks[wheel.m_skidMarks.numElem()-1].v0.color.x >= 0.0f)
 					{
-						wheel.skidMarks[wheel.skidMarks.numElem()-1] = skidmarkPair;
+						wheel.m_skidMarks[wheel.m_skidMarks.numElem()-1] = skidmarkPair;
 					}
 				}
 				else
-					wheel.skidMarks.append(skidmarkPair);
+					wheel.m_skidMarks.append(skidmarkPair);
 			}
 
-			wheel.flags.lastDoSkidmarks = wheel.flags.doSkidmarks;
+			wheel.m_flags.lastDoSkidmarks = wheel.m_flags.doSkidmarks;
 		}
 	}
 
 	if( drawOnLocal || drawOnOther )
 	{
-		for(int i = 0; i < m_pWheels.numElem(); i++)
+		for(int i = 0; i < numWheels; i++)
 		{
-			wheelData_t& wheel = m_pWheels[i];
+			CCarWheel& wheel = m_wheels[i];
 
 			// add skidmark particle strip
 			int numSkidMarks = 0;
@@ -3043,9 +3066,9 @@ void CCar::DrawEffects(int lod)
 
 			int vtxCounter = 0;
 
-			for(int mark = 0; mark < wheel.skidMarks.numElem(); mark++)
+			for(int mark = 0; mark < wheel.m_skidMarks.numElem(); mark++)
 			{
-				PFXVertexPair_t& pair = wheel.skidMarks[mark];
+				PFXVertexPair_t& pair = wheel.m_skidMarks[mark];
 
 				Vector2D coordV0 = (vtxCounter & 1) ? skidmarkEntry->rect.GetLeftBottom() : skidmarkEntry->rect.GetLeftTop();
 				Vector2D coordV1 = (vtxCounter & 1) ? skidmarkEntry->rect.GetRightBottom() : skidmarkEntry->rect.GetRightTop();
@@ -3058,8 +3081,8 @@ void CCar::DrawEffects(int lod)
 				if(pair.v0.color.x < -10.0f)
 				{
 					// make them smooth
-					wheel.skidMarks[nStartMark].v0.color.w = 0.0f;
-					wheel.skidMarks[nStartMark].v1.color.w = 0.0f;
+					wheel.m_skidMarks[nStartMark].v0.color.w = 0.0f;
+					wheel.m_skidMarks[nStartMark].v1.color.w = 0.0f;
 
 					//pair.v0.color.w = 0.0f;
 					//pair.v1.color.w = 0.0f;
@@ -3067,24 +3090,24 @@ void CCar::DrawEffects(int lod)
 					numSkidMarks = mark-nStartMark;
 					//numSkidMarks = min(numSkidMarks, 4);
 
-					g_vehicleEffects->AddParticleStrip(&wheel.skidMarks[nStartMark].v0, numSkidMarks*2);
+					g_vehicleEffects->AddParticleStrip(&wheel.m_skidMarks[nStartMark].v0, numSkidMarks*2);
 
 					nStartMark = mark+1;
 					vtxCounter = 0;
 				}
 
-				if(mark == wheel.skidMarks.numElem()-1 && nStartMark < wheel.skidMarks.numElem())
+				if(mark == wheel.m_skidMarks.numElem()-1 && nStartMark < wheel.m_skidMarks.numElem())
 				{
-					wheel.skidMarks[nStartMark].v0.color.w = 0.0f;
-					wheel.skidMarks[nStartMark].v1.color.w = 0.0f;
+					wheel.m_skidMarks[nStartMark].v0.color.w = 0.0f;
+					wheel.m_skidMarks[nStartMark].v1.color.w = 0.0f;
 
 					//pair.v0.color.w = 0.0f;
 					//pair.v1.color.w = 0.0f;
 
-					numSkidMarks = wheel.skidMarks.numElem()-nStartMark;
+					numSkidMarks = wheel.m_skidMarks.numElem()-nStartMark;
 					//numSkidMarks = min(numSkidMarks, 4);
 
-					g_vehicleEffects->AddParticleStrip(&wheel.skidMarks[nStartMark].v0, numSkidMarks*2);
+					g_vehicleEffects->AddParticleStrip(&wheel.m_skidMarks[nStartMark].v0, numSkidMarks*2);
 
 					vtxCounter = 0;
 				}
@@ -3095,38 +3118,38 @@ void CCar::DrawEffects(int lod)
 
 void CCar::UpdateWheelEffect(int nWheel, float fDt)
 {
-	wheelData_t& wheel = m_pWheels[nWheel];
-	carWheelConfig_t& wheelConf = m_conf->m_wheels[nWheel];
+	CCarWheel& wheel = m_wheels[nWheel];
+	carWheelConfig_t& wheelConf = m_conf->physics.wheels[nWheel];
 
-	Matrix3x3 wheelMat = transpose(m_worldMatrix.getRotationComponent() * wheel.wheelOrient);
+	Matrix3x3 wheelMat = transpose(m_worldMatrix.getRotationComponent() * wheel.m_wheelOrient);
 
-	wheel.flags.lastOnGround = wheel.flags.onGround;
+	wheel.m_flags.lastOnGround = wheel.m_flags.onGround;
 
-	if( wheel.collisionInfo.fract >= 1.0f )
+	if( wheel.m_collisionInfo.fract >= 1.0f )
 	{
-		wheel.flags.doSkidmarks = false;
-		wheel.flags.onGround = false;
-		wheel.skidTime -= fDt;
+		wheel.m_flags.doSkidmarks = false;
+		wheel.m_flags.onGround = false;
+		wheel.m_skidTime -= fDt;
 		return;
 	}
 
-	wheel.flags.onGround = true;
-	wheel.flags.doSkidmarks = (GetTractionSlidingAtWheel(nWheel) > 3.0f || fabs(GetLateralSlidingAtWheel(nWheel)) > 2.0f);
+	wheel.m_flags.onGround = true;
+	wheel.m_flags.doSkidmarks = (GetTractionSlidingAtWheel(nWheel) > 3.0f || fabs(GetLateralSlidingAtWheel(nWheel)) > 2.0f);
 
-	wheel.smokeTime -= fDt;
+	wheel.m_smokeTime -= fDt;
 
-	if(wheel.flags.doSkidmarks)
-		wheel.skidTime += fDt;
+	if(wheel.m_flags.doSkidmarks)
+		wheel.m_skidTime += fDt;
 	else
-		wheel.skidTime -= fDt;
+		wheel.m_skidTime -= fDt;
 
-	wheel.skidTime = clamp(wheel.skidTime, 0.0f, WHEEL_SKID_COOLDOWNTIME);
+	wheel.m_skidTime = clamp(wheel.m_skidTime, 0.0f, WHEEL_SKID_COOLDOWNTIME);
 
-	if( wheel.flags.onGround && wheel.surfparam != NULL )
+	if( wheel.m_flags.onGround && wheel.m_surfparam != NULL )
 	{
-		Vector3D smoke_pos = wheel.collisionInfo.position + wheel.collisionInfo.normal * wheelConf.radius*0.5f;
+		Vector3D smoke_pos = wheel.m_collisionInfo.position + wheel.m_collisionInfo.normal * wheelConf.radius*0.5f;
 
-		if(wheel.surfparam->word == 'C')	// concrete/asphalt
+		if(wheel.m_surfparam->word == 'C')	// concrete/asphalt
 		{
 			float fSliding = GetTractionSlidingAtWheel(nWheel)+fabs(GetLateralSlidingAtWheel(nWheel));
 
@@ -3134,7 +3157,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 				return;
 
 			// spawn smoke
-			if(wheel.smokeTime > 0.0)
+			if(wheel.m_smokeTime > 0.0)
 				return;
 
 			float efficency = RemapValClamp(fSliding, 5.0f, 40.0f, 0.4f, 1.0f);
@@ -3145,9 +3168,9 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 				ColorRGB rippleColor(0.8f, 0.8f, 0.8f);
 
 				Vector3D rightDir = wheelMat.rows[0] * 0.7f;
-				Vector3D particleVel = wheel.velocityVec*0.35f + Vector3D(0.0f,1.2f,1.0f);
+				Vector3D particleVel = wheel.m_velocityVec*0.35f + Vector3D(0.0f,1.2f,1.0f);
 
-				CSmokeEffect* pSmoke = new CSmokeEffect(wheel.collisionInfo.position, particleVel + rightDir,
+				CSmokeEffect* pSmoke = new CSmokeEffect(wheel.m_collisionInfo.position, particleVel + rightDir,
 						RandomFloat(0.1f, 0.2f), RandomFloat(0.9f, 1.1f),
 						RandomFloat(0.1f)*efficency,
 						g_translParticles, m_trans_raindrops,
@@ -3156,7 +3179,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 
 				effectrenderer->RegisterEffectForRender(pSmoke);
 
-				pSmoke = new CSmokeEffect(wheel.collisionInfo.position, particleVel - rightDir,
+				pSmoke = new CSmokeEffect(wheel.m_collisionInfo.position, particleVel - rightDir,
 						RandomFloat(0.1f, 0.2f), RandomFloat(0.9f, 1.1f),
 						RandomFloat(0.1f),
 						g_translParticles, m_trans_raindrops,
@@ -3166,16 +3189,16 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 				effectrenderer->RegisterEffectForRender(pSmoke);
 
 
-				wheel.smokeTime = 0.07f;
+				wheel.m_smokeTime = 0.07f;
 			}
 			else
 			{
-				float skidFactor = (wheel.skidTime-WHEEL_MIN_SKIDTIME)*WHEEL_SKIDTIME_EFFICIENCY;
+				float skidFactor = (wheel.m_skidTime-WHEEL_MIN_SKIDTIME)*WHEEL_SKIDTIME_EFFICIENCY;
 				skidFactor = clamp(skidFactor, 0.0f, 1.0f);
 
 				ColorRGB smokeCol(0.86f, 0.9f, 0.97f);
 
-				CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, wheel.velocityVec*0.25f+Vector3D(0,1,1),
+				CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, wheel.m_velocityVec*0.25f+Vector3D(0,1,1),
 							RandomFloat(0.1, 0.3)*efficency, RandomFloat(1.0, 1.8)*timeScale+skidFactor*2.0f,
 							RandomFloat(1.2f)*timeScale+skidFactor,
 							g_translParticles, m_trans_smoke2,
@@ -3184,18 +3207,18 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 
 				effectrenderer->RegisterEffectForRender(pSmoke);
 
-				wheel.smokeTime = 0.1f;
+				wheel.m_smokeTime = 0.1f;
 			}
 		}
-		else if(wheel.surfparam->word == 'S')	// sand
+		else if(wheel.m_surfparam->word == 'S')	// sand
 		{
 			if(GetTractionSlidingAtWheel(nWheel) > 5.0f || fabs(GetLateralSlidingAtWheel(nWheel)) > 2.5f)
 			{
 				// spawn smoke
-				if(wheel.smokeTime > 0.0)
+				if(wheel.m_smokeTime > 0.0)
 					return;
 
-				wheel.smokeTime = 0.08f;
+				wheel.m_smokeTime = 0.08f;
 
 				Vector3D vel = -wheelMat.rows[2]*GetTractionSlidingAtWheel(nWheel) * 0.025f;
 				vel += wheelMat.rows[0]*GetLateralSlidingAtWheel(nWheel) * 0.025f;
@@ -3210,15 +3233,15 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 				effectrenderer->RegisterEffectForRender(pSmoke);
 			}
 		}
-		else if(wheel.surfparam->word == 'G' || wheel.surfparam->word == 'D')	// grass or dirt
+		else if(wheel.m_surfparam->word == 'G' || wheel.m_surfparam->word == 'D')	// grass or dirt
 		{
 			if(GetTractionSlidingAtWheel(nWheel) > 5.0f || fabs(GetLateralSlidingAtWheel(nWheel)) > 2.5f)
 			{
 				// spawn smoke
-				if(wheel.smokeTime > 0.0f)
+				if(wheel.m_smokeTime > 0.0f)
 					return;
 
-				wheel.smokeTime = 0.08f;
+				wheel.m_smokeTime = 0.08f;
 
 				Vector3D vel = -wheelMat.rows[2]*GetTractionSlidingAtWheel(nWheel) * 0.025f;
 				vel += wheelMat.rows[0]*GetLateralSlidingAtWheel(nWheel) * 0.025f;
@@ -3232,14 +3255,14 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 
 				effectrenderer->RegisterEffectForRender(pSmoke);
 
-				if(wheel.surfparam->word != 'G')
+				if(wheel.m_surfparam->word != 'G')
 					return;
 
 				vel += Vector3D(0, 1.5f, 0);
 
 				float len = length(vel);
 
-				Vector3D grass_pos = wheel.collisionInfo.position;
+				Vector3D grass_pos = wheel.m_collisionInfo.position;
 
 
 				for(int i = 0; i < 4; i++)
@@ -3276,7 +3299,7 @@ void CCar::UpdateSounds( float fDt )
 	m_pSurfSound->SetOrigin(pos);
 	m_pSurfSound->SetVelocity(velocity);
 
-	bool isCar = m_conf->m_isCar;
+	bool isCar = m_conf->isCar;
 
 	if(isCar)
 	{
@@ -3305,6 +3328,8 @@ void CCar::UpdateSounds( float fDt )
 
 	float fSkidVol = clamp((fSkid-0.5)*1.0f, 0.0, 1.0);
 
+	int wheelCount = GetWheelCount();
+
 	if(fSkidVol > 0.08 && g_pGameWorld->m_envConfig.weatherType == WEATHER_TYPE_CLEAR)
 	{
 		if(m_pSkidSound->IsStopped())
@@ -3319,9 +3344,9 @@ void CCar::UpdateSounds( float fDt )
 
 		bool anyWheelOnGround = false;
 
-		for(int i = 0; i < m_pWheels.numElem(); i++)
+		for(int i = 0; i < wheelCount; i++)
 		{
-			if(m_pWheels[i].collisionInfo.fract < 1.0f)
+			if(m_wheels[i].m_collisionInfo.fract < 1.0f)
 			{
 				anyWheelOnGround = true;
 				break;
@@ -3346,10 +3371,10 @@ void CCar::UpdateSounds( float fDt )
 
 	float fWheelRad = 0.0f;
 
-	float inv_wheelCount = 1.0f / m_pWheels.numElem();
+	float inv_wheelCount = 1.0f / wheelCount;
 
-	for(int i = 0; i < m_pWheels.numElem(); i++)
-		fWheelRad += m_conf->m_wheels[i].radius;
+	for(int i = 0; i < wheelCount; i++)
+		fWheelRad += m_conf->physics.wheels[i].radius;
 
 	fWheelRad *= inv_wheelCount;
 
@@ -3480,25 +3505,27 @@ float CCar::GetSpeedWheels() const
 	if(!m_conf)
 		return 0.0f;
 
-	float wheelFac = 1.0f / m_pWheels.numElem();
+	int wheelCount = GetWheelCount();
+
+	float wheelFac = 1.0f / (float)wheelCount;
 	float fResult = 0.0f;
 
-	for(int i = 0; i < m_pWheels.numElem(); i++)
+	for(int i = 0; i < wheelCount; i++)
 	{
-		fResult += m_pWheels[i].pitchVel * m_conf->m_wheels[i].radius;
+		fResult += m_wheels[i].m_pitchVel * m_conf->physics.wheels[i].radius;
 	}
 
 	return fResult * wheelFac * MPS_TO_KPH;
 }
 
-int	CCar::GetWheelCount()
+int	CCar::GetWheelCount() const
 {
-	return m_pWheels.numElem();
+	return m_conf->physics.numWheels;
 }
 
-float CCar::GetWheelSpeed(int index)
+float CCar::GetWheelSpeed(int index) const
 {
-	return m_pWheels[index].pitchVel * MPS_TO_KPH;
+	return m_wheels[index].m_pitchVel * MPS_TO_KPH;
 }
 
 float CCar::GetSpeed() const
@@ -3507,17 +3534,17 @@ float CCar::GetSpeed() const
 	return length(carBody->GetLinearVelocity().xz()) * MPS_TO_KPH;
 }
 
-float CCar::GetRPM()
+float CCar::GetRPM() const
 {
 	return fabs(m_radsPerSec * ( 60.0f / ( 2.0f * PI_F ) ) );
 }
 
-int CCar::GetGear()
+int CCar::GetGear() const
 {
 	return m_nGear;
 }
 
-float CCar::GetLateralSlidingAtBody()
+float CCar::GetLateralSlidingAtBody() const
 {
 	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
 
@@ -3527,17 +3554,19 @@ float CCar::GetLateralSlidingAtBody()
 	return slip;
 }
 
-float CCar::GetLateralSlidingAtWheels(bool surfCheck)
+float CCar::GetLateralSlidingAtWheels(bool surfCheck) const
 {
 	float val = 0.0f;
 
 	int nCount = 0;
 
-	for(int i = 0; i < m_pWheels.numElem(); i++)
+	int wheelCount = GetWheelCount();
+
+	for(int i = 0; i < wheelCount; i++)
 	{
 		if(surfCheck)
 		{
-			if(m_pWheels[i].surfparam && m_pWheels[i].surfparam->word == 'C')
+			if(m_wheels[i].m_surfparam && m_wheels[i].m_surfparam->word == 'C')
 			{
 				val += fabs(GetLateralSlidingAtWheel(i));
 				nCount++;
@@ -3558,15 +3587,15 @@ float CCar::GetLateralSlidingAtWheels(bool surfCheck)
 	return val * inv_count;
 }
 
-float CCar::GetLateralSlidingAtWheel(int wheel)
+float CCar::GetLateralSlidingAtWheel(int wheel) const
 {
 	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
 
-	if(m_pWheels[wheel].collisionInfo.fract >= 1.0f)
+	if(m_wheels[wheel].m_collisionInfo.fract >= 1.0f)
 		return 0.0f;
 
 	// compute wheel world rotation (turn + body rotation)
-	Matrix4x4 wheelTransform = Matrix4x4(m_pWheels[wheel].wheelOrient) * transpose(m_worldMatrix);
+	Matrix4x4 wheelTransform = Matrix4x4(m_wheels[wheel].m_wheelOrient) * transpose(m_worldMatrix);
 
 	Vector3D wheel_pos = wheelTransform.rows[3].xyz();
 
@@ -3577,17 +3606,19 @@ float CCar::GetLateralSlidingAtWheel(int wheel)
 	return slip;
 }
 
-float CCar::GetTractionSliding(bool surfCheck)
+float CCar::GetTractionSliding(bool surfCheck) const
 {
 	float val = 0.0f;
 
 	int nCount = 0;
 
-	for(int i = 0; i < m_pWheels.numElem(); i++)
+	int wheelCount = GetWheelCount();
+
+	for(int i = 0; i < wheelCount; i++)
 	{
 		if(surfCheck)
 		{
-			if(m_pWheels[i].surfparam && m_pWheels[i].surfparam->word == 'C')
+			if(m_wheels[i].m_surfparam && m_wheels[i].m_surfparam->word == 'C')
 			{
 				val += fabs(GetTractionSlidingAtWheel(i));
 				nCount++;
@@ -3608,19 +3639,21 @@ float CCar::GetTractionSliding(bool surfCheck)
 	return val * inv_count;
 }
 
-float CCar::GetTractionSlidingAtWheel(int wheel)
+float CCar::GetTractionSlidingAtWheel(int wheel) const
 {
-	if(!m_pWheels[wheel].flags.onGround)
+	if(!m_wheels[wheel].m_flags.onGround)
 		return 0.0f;
 
-	return abs(GetSpeed() - abs(GetWheelSpeed(wheel))) + m_pWheels[wheel].flags.isBurningOut*100.0f;
+	return abs(GetSpeed() - abs(GetWheelSpeed(wheel))) + m_wheels[wheel].m_flags.isBurningOut*100.0f;
 }
 
 bool CCar::IsAnyWheelOnGround() const
 {
-	for(int i = 0; i < m_pWheels.numElem(); i++)
+	int numWheels = GetWheelCount();
+
+	for(int i = 0; i < numWheels; i++)
 	{
-		if(m_pWheels[i].collisionInfo.fract < 1.0f)
+		if(m_wheels[i].m_collisionInfo.fract < 1.0f)
 			return true;
 	}
 
@@ -3719,7 +3752,7 @@ void CCar::DrawBody( int nRenderFlags )
 
 			ColorRGBA colors[2];
 
-			if(m_conf->m_useBodyColor)
+			if(m_conf->useBodyColor)
 			{
 				colors[0] = m_carColor.col1;
 				colors[1] = m_carColor.col2;
@@ -3784,7 +3817,7 @@ void CCar::Draw( int nRenderFlags )
 			PFXVertex_t* verts;
 			if(carShadow && g_vehicleEffects->AllocateGeom(4,4, &verts, NULL, true) != -1)
 			{
-				Vector3D shadow_size = m_conf->m_body_size + Vector3D(0.35f,0,0.25f);
+				Vector3D shadow_size = m_conf->physics.body_size + Vector3D(0.35f,0,0.25f);
 
 				verts[0].point = GetOrigin() + shadow_size.z*GetForwardVector() + shadow_size.x*GetRightVector();
 				verts[1].point = GetOrigin() + shadow_size.z*GetForwardVector() + shadow_size.x*-GetRightVector();
@@ -3814,13 +3847,15 @@ void CCar::Draw( int nRenderFlags )
 			}
 		}
 
-		for(int i = 0; i < m_pWheels.numElem(); i++)
+		int numWheels = GetWheelCount();
+
+		for(int i = 0; i < numWheels; i++)
 		{
 			//Matrix4x4 w = m;
-			wheelData_t& wheel = m_pWheels[i];
-			carWheelConfig_t& wheelConf = m_conf->m_wheels[i];
+			CCarWheel& wheel = m_wheels[i];
+			carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
 
-			float wheelVisualPosFactor = wheel.collisionInfo.fract;
+			float wheelVisualPosFactor = wheel.m_collisionInfo.fract;
 
 			if(wheelVisualPosFactor < wheelConf.visualTop)
 				wheelVisualPosFactor = wheelConf.visualTop;
@@ -3830,7 +3865,7 @@ void CCar::Draw( int nRenderFlags )
 			Vector3D wheelSuspDir = fastNormalize(wheelConf.suspensionTop - wheelConf.suspensionBottom);
 			Vector3D wheelCenterPos = lerp(wheelConf.suspensionTop, wheelConf.suspensionBottom, wheelVisualPosFactor) + wheelSuspDir*wheelConf.radius;
 
-			Quaternion wheelRotation = Quaternion(wheel.wheelOrient) * Quaternion(-wheel.pitch, leftWheel ? PI_F : 0.0f, 0.0f);
+			Quaternion wheelRotation = Quaternion(wheel.m_wheelOrient) * Quaternion(-wheel.m_pitch, leftWheel ? PI_F : 0.0f, 0.0f);
 			//wheelRotation.normalize();
 
 			Matrix4x4 wheelScale = scale4(wheelConf.width,wheelConf.radius*2,wheelConf.radius*2);
@@ -3846,12 +3881,12 @@ void CCar::Draw( int nRenderFlags )
 
 			if(bDraw)
 			{
-				wheel.pWheelObject->SetOrigin(transpose(wheelTranslation).getTranslationComponent());
+				wheel.SetOrigin(transpose(wheelTranslation).getTranslationComponent());
 
-				wheel.pWheelObject->m_bbox = m_bbox;
-				wheel.pWheelObject->m_worldMatrix = wheelTranslation;
+				wheel.m_bbox = m_bbox;
+				wheel.m_worldMatrix = wheelTranslation;
 
-				wheel.pWheelObject->Draw(nRenderFlags);
+				wheel.Draw(nRenderFlags);
 			}
 
 		}
@@ -3987,8 +4022,17 @@ void CCar::Repair(bool unlock)
 {
 	m_gameDamage = 0.0f;
 
+	// visual damage
 	for(int i = 0; i < CB_PART_COUNT; i++)
 		m_bodyParts[i].damage = 0.0f;
+
+	// restore hubcaps
+	for(int i = 0; i < GetWheelCount(); i++)
+	{
+		m_wheels[i].m_damage = 0.0f;
+		m_wheels[i].m_flags.lostHubcap = false;
+		m_wheels[i].m_bodyGroupFlags = (1 << m_wheels[i].m_defaultBodyGroup);
+	}
 
 	if(unlock)
 		m_locked = false;
@@ -3998,8 +4042,8 @@ void CCar::Repair(bool unlock)
 
 void CCar::SetColorScheme( int colorIdx )
 {
-	if(colorIdx >= 0 && colorIdx < m_conf->m_colors.numElem())
-		m_carColor = m_conf->m_colors[colorIdx];
+	if(colorIdx >= 0 && colorIdx < m_conf->numColors)
+		m_carColor = m_conf->colors[colorIdx];
 	else
 		m_carColor = ColorRGBA(1,1,1,1);
 }
@@ -4106,8 +4150,6 @@ OOLUA_EXPORT_FUNCTIONS(
 	SetFelony,
 	Lock,
 	Enable,
-	GetLateralSliding,
-	GetTractionSliding,
 	SetInfiniteMass,
 	HingeVehicle,
 	ReleaseHingedVehicle
@@ -4131,9 +4173,12 @@ OOLUA_EXPORT_FUNCTIONS_CONST(
 	GetUpVector,
 	GetSpeed,
 	GetSpeedWheels,
+	GetLateralSliding,
+	GetTractionSliding,
 	IsLocked,
 	IsEnabled,
-	GetPursuedCount
+	GetPursuedCount,
+	GetHingedVehicle
 )
 
 #endif // NO_LUA
