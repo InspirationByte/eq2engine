@@ -25,6 +25,7 @@ CObject_Debris::CObject_Debris( kvkeybase_t* kvdata )
 	m_collOccured = false;
 	m_fTimeToRemove = 0.0f;
 	m_surfParams = NULL;
+	m_userData = NULL;
 }
 
 CObject_Debris::~CObject_Debris()
@@ -47,6 +48,7 @@ void CObject_Debris::OnRemove()
 	{
 		regionObject_t* ref = (regionObject_t*)m_userData;
 		ref->game_object = NULL;
+		m_userData = NULL;
 	}
 }
 

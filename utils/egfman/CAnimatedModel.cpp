@@ -1168,37 +1168,42 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist)
 
 	materials->SetAmbientColor( color4_white );
 
-	int nLOD = m_pModel->SelectLod( fDist ); // lod distance check
-
+	int nStartLOD = m_pModel->SelectLod( fDist ); // lod distance check
 	for(int i = 0; i < pHdr->numbodygroups; i++)
 	{
-		int bodyGroupLOD = nLOD;
+		// check bodygroups for rendering
+		//if(!(m_bodyGroupFlags & (1 << i)))
+		//	continue;
 
-		// TODO: check bodygroups for rendering
-
+		int bodyGroupLOD = nStartLOD;
 		int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
-		int nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
+		studiolodmodel_t* lodModel = pHdr->pLodModel(nLodModelIdx);
+
+		int nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
 
 		// get the right LOD model number
 		while(nModDescId == -1 && bodyGroupLOD > 0)
 		{
 			bodyGroupLOD--;
-			nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
+			nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
 		}
 
 		if(nModDescId == -1)
 			continue;
+	
+		studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
 
 		// render model groups that in this body group
-		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+		for(int j = 0; j < modDesc->numgroups; j++)
 		{
 			materials->SetSkinningEnabled(true);
 
-			IMaterial* pMaterial = m_pModel->GetMaterial(nModDescId, j);
-			materials->BindMaterial(pMaterial, false);
+			materials->BindMaterial( m_pModel->GetMaterial( modDesc->pGroup(j)->materialIndex ) , false);
 
 			m_pModel->PrepareForSkinning( m_BoneMatrixList );
 			m_pModel->DrawGroup( nModDescId, j );
+
+			materials->SetSkinningEnabled(false);
 		}
 	}
 

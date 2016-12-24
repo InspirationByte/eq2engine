@@ -132,50 +132,41 @@ void CLevObjectDef::Render( float lodDistance, const BoundingBox& bbox, bool pre
 
 		materials->SetCullMode((nRenderFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
 
+		int nStartLOD = m_defModel->SelectLod( lodDistance ); // lod distance check
+
 		studiohdr_t* pHdr = m_defModel->GetHWData()->pStudioHdr;
-
-		int nLOD = m_defModel->SelectLod( lodDistance ); // lod distance check
-
 		for(int i = 0; i < pHdr->numbodygroups; i++)
 		{
-			int bodyGroupLOD = nLOD;
-
-			// TODO: check bodygroups for rendering
-
+			int bodyGroupLOD = nStartLOD;
 			int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
-			int nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
+			studiolodmodel_t* lodModel = pHdr->pLodModel(nLodModelIdx);
+
+			int nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
 
 			// get the right LOD model number
 			while(nModDescId == -1 && bodyGroupLOD > 0)
 			{
 				bodyGroupLOD--;
-				nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
+				nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
 			}
 
 			if(nModDescId == -1)
 				continue;
+	
+			studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
 
 			// render model groups that in this body group
-			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+			for(int j = 0; j < modDesc->numgroups; j++)
 			{
 				//materials->SetSkinningEnabled(true);
-				IMaterial* pMaterial = m_defModel->GetMaterial(nModDescId, j);
 
-				bool isTransparent = (pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT) > 0;
-
-				if(isTransparent != renderTranslucency)
-					continue;
-
-				if(preloadMaterials)
-				{
-					materials->PutMaterialToLoadingQueue(pMaterial);
-					materials->Wait();
-				}
-
-				materials->BindMaterial(pMaterial, false);
+				int materialIndex = modDesc->pGroup(j)->materialIndex;
+				materials->BindMaterial( m_defModel->GetMaterial(materialIndex) , false);
 
 				//m_pModel->PrepareForSkinning( m_BoneMatrixList );
 				m_defModel->DrawGroup( nModDescId, j );
+
+				//materials->SetSkinningEnabled(false);
 			}
 		}
 	}

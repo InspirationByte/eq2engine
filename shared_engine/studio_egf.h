@@ -64,7 +64,7 @@ public:
 
 	bool				PrepareForSkinning(Matrix4x4* jointMatrices);
 
-	IMaterial*			GetMaterial(int nModel, int nTexGroup);
+	IMaterial*			GetMaterial(int materialIdx);
 
 	// loads materials for studio
 	void				LoadMaterials();

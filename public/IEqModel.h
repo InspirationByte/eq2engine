@@ -121,7 +121,8 @@ public:
 	virtual bool				PrepareForSkinning( Matrix4x4* jointMatrices ) = 0;
 
 	// returns material assigned to the group
-	virtual IMaterial*			GetMaterial(int nModel, int nTexGroup) = 0;
+	// materialIndex = <studiohwdata_t>->pStudioHdr->pModelDesc(nModel)->pGroup(nTexGroup)->materialIndex;
+	virtual IMaterial*			GetMaterial(int materialIdx) = 0;
 
 	// loads materials for studio
 	virtual	void				LoadMaterials() = 0;

@@ -623,9 +623,9 @@ void CCar::DebugReloadCar()
 
 	OnRemove();
 
-	Repair();
-
 	Spawn();
+
+	Repair();
 
 	SetVelocity(vel);
 	SetOrigin(pos);
@@ -3720,6 +3720,77 @@ void CCar::DrawBody( int nRenderFlags )
 
 	for(int i = 0; i < pHdr->numbodygroups; i++)
 	{
+		// check bodygroups for rendering
+		if(!(m_bodyGroupFlags & (1 << i)))
+			continue;
+
+		int bodyGroupLOD = nLOD;
+		int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
+		studiolodmodel_t* lodModel = pHdr->pLodModel(nLodModelIdx);
+
+		int nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
+
+		// get the right LOD model number
+		while(nModDescId == -1 && bodyGroupLOD > 0)
+		{
+			bodyGroupLOD--;
+			nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
+		}
+
+		if(nModDescId == -1)
+			continue;
+	
+		studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
+
+		// render model groups that in this body group
+		for(int j = 0; j < modDesc->numgroups; j++)
+		{
+			//materials->SetSkinningEnabled(true);
+
+			// reset shader constants (required)
+			g_pShaderAPI->Reset(STATE_RESET_SHADERCONST);
+
+			int materialIndex = modDesc->pGroup(j)->materialIndex;
+			materials->BindMaterial( m_pModel->GetMaterial(materialIndex) , false);
+
+			g_pShaderAPI->SetShaderConstantArrayFloat("BodyDamage", bodyDamages, 16);
+
+			ColorRGBA colors[2];
+
+			if(m_conf->useBodyColor)
+			{
+				colors[0] = m_carColor.col1;
+				colors[1] = m_carColor.col2;
+			}
+			else
+			{
+				colors[0] = color4_white;
+				colors[1] = color4_white;
+			}
+
+			g_pShaderAPI->SetShaderConstantArrayVector4D("CarColor", colors, 2);
+
+			// setup our brand new vertex format
+			g_pShaderAPI->SetVertexFormat( g_pGameWorld->m_vehicleVertexFormat );
+
+			// bind
+			m_pModel->SetupVBOStream( 0 );
+
+			if( m_pDamagedModel && bApplyDamage )
+				m_pDamagedModel->SetupVBOStream( 1 );
+			else
+				m_pModel->SetupVBOStream( 1 );
+
+			//m_pModel->PrepareForSkinning( m_BoneMatrixList );
+			m_pModel->DrawGroup( nModDescId, j, false );
+
+			//materials->SetSkinningEnabled(false);
+		}
+	}
+
+	/*
+	for(int i = 0; i < pHdr->numbodygroups; i++)
+	{
 		int bodyGroupLOD = nLOD;
 
 		// TODO: check bodygroups for rendering
@@ -3781,6 +3852,7 @@ void CCar::DrawBody( int nRenderFlags )
 			m_pModel->DrawGroup( nModDescId, j, false );
 		}
 	}
+	*/
 }
 
 void CCar::Draw( int nRenderFlags )

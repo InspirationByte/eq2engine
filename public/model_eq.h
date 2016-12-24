@@ -138,7 +138,7 @@ struct egf_ohd_data_t
 struct modelgroupdesc_s
 {
 	// Don't keep the group name, use material name only
-	uint8				materialIndex;
+	int8				materialIndex;
 
 	// Vertices stream
 	int32				numvertices;

@@ -208,28 +208,33 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 			// upload instance buffer
 			m_instanceBuf->Update(m_instances[i][lod], numInst, 0, true);
 
-			int bodyGroupLOD = lod;	// TODO: select lods or instance them
-
+			int bodyGroupLOD = lod;
 			int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
-			int nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
+			studiolodmodel_t* lodModel = pHdr->pLodModel(nLodModelIdx);
+
+			int nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
 
 			// get the right LOD model number
 			while(nModDescId == -1 && bodyGroupLOD > 0)
 			{
 				bodyGroupLOD--;
-				nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
+				nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
 			}
 
 			if(nModDescId == -1)
 				continue;
-			
+	
+			studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
+
 			// render model groups that in this body group
-			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+			for(int j = 0; j < modDesc->numgroups; j++)
 			{
 				//materials->SetSkinningEnabled(true);
 
-				IMaterial* pMaterial = model->GetMaterial(nModDescId, j);
-				materials->BindMaterial(pMaterial, false);
+				int materialIndex = modDesc->pGroup(j)->materialIndex;
+				materials->BindMaterial( model->GetMaterial(materialIndex) , false);
+
+				//m_pModel->PrepareForSkinning( m_BoneMatrixList );
 
 				g_pShaderAPI->SetVertexFormat(m_vertFormat);
 
@@ -240,8 +245,6 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 
 				//materials->SetSkinningEnabled(false);
 			}
-
-			g_pShaderAPI->SetVertexBuffer(NULL, 2);
 		}
 	}
 

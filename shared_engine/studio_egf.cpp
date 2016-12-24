@@ -636,14 +636,12 @@ void CEngineStudioEGF::LoadMaterials()
 		materials->PutMaterialToLoadingQueue( m_pMaterials[i] );
 }
 
-IMaterial* CEngineStudioEGF::GetMaterial(int nModel, int nTexGroup)
+IMaterial* CEngineStudioEGF::GetMaterial(int materialIdx)
 {
-	int material_index = m_pHardwareData->pStudioHdr->pModelDesc(nModel)->pGroup(nTexGroup)->materialIndex;
+	if(materialIdx == -1)
+		return materials->GetDefaultMaterial();
 
-	if(material_index != -1)
-		return m_pMaterials[material_index];
-
-	return NULL;
+	return m_pMaterials[materialIdx];
 }
 
 void CEngineStudioEGF::SetupBones()
