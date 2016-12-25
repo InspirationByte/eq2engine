@@ -244,6 +244,7 @@ enum EMouseCodes
 #define KEY_Y			int('Y')
 #define KEY_Z			int('Z')
 
+#define	JOYSTICK_START_AXES	512
 
 #elif defined(LINUX)
 

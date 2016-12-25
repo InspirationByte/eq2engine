@@ -1127,6 +1127,7 @@ void CCar::AnalogSetControls(float accel_brake, float steering, bool extendSteer
 
 void CCar::HingeVehicle(int thisHingePoint, CCar* otherVehicle, int otherHingePoint)
 {
+#ifndef EDITOR
 	// get the global positions of hinge points and check
 
 	// don't hinge if too far (because it messes physics somehow)
@@ -1147,16 +1148,19 @@ void CCar::HingeVehicle(int thisHingePoint, CCar* otherVehicle, int otherHingePo
 	m_trailerHinge->SetEnabled(true);
 
 	g_pPhysics->m_physics.AddController( m_trailerHinge );
+#endif // EDITOR
 }
 
 void CCar::ReleaseHingedVehicle()
 {
+#ifndef EDITOR
 	if(m_trailerHinge)
 	{
 		g_pPhysics->m_physics.DestroyController(m_trailerHinge);
 	}
 
 	m_trailerHinge = nullptr;
+#endif // EDITOR
 }
 
 CCar* CCar::GetHingedVehicle() const
