@@ -1101,9 +1101,7 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 	glBindTexture( gltarget, textureID );
 
 	// Setup the sampler state
-	InternalSetupSampler(gltarget, sampler);
-
-	//Msg("Gen texture target=%d id=%d dim=%dx%d\n", gltarget, textureID, pSrc->GetWidth(nQuality), pSrc->GetHeight(nQuality));
+	InternalSetupSampler(gltarget, sampler, pSrc->GetMipMapCount()-nQuality);
 
 	// Upload it all
 	ubyte *src;
@@ -1315,10 +1313,8 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& 
 	*pTex = pTexture;
 }
 
-void ShaderAPIGL::InternalSetupSampler(uint texTarget, const SamplerStateParam_t& sampler)
+void ShaderAPIGL::InternalSetupSampler(uint texTarget, const SamplerStateParam_t& sampler, int mipMapCount)
 {
-	//GL_CRITICAL();
-
 	// Set requested wrapping modes
 	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, (sampler.wrapS == ADDRESSMODE_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 
@@ -1334,6 +1330,8 @@ void ShaderAPIGL::InternalSetupSampler(uint texTarget, const SamplerStateParam_t
 	glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, minFilters[sampler.magFilter]);
 	glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, minFilters[sampler.minFilter]);
 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipMapCount-1);
+
 #ifdef USE_GLES2
 	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 #else
@@ -1348,8 +1346,6 @@ void ShaderAPIGL::InternalSetupSampler(uint texTarget, const SamplerStateParam_t
 		glTexParameteri(texTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, sampler.aniso);
 	}
 #endif // USE_GLES2
-
-	//
 }
 
 //-------------------------------------------------------------
@@ -1442,8 +1438,6 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		}
 
 		m_nCurrentRenderTargets = nNumRTs;
-
-
 	}
 
 	CGLTexture* pDepth = (CGLTexture*)pDepthTarget;
@@ -1478,25 +1472,22 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		}
 
 		m_pCurrentDepthRenderTarget = pDepth;
-
-
 	}
-
 
 	if (m_nCurrentRenderTargets > 0 &&
 		m_pCurrentColorRenderTargets[0] != NULL)
 	{
 		// I still don't know why GL decided to be like that... damn
-		if (m_pCurrentColorRenderTargets[0]->GetFlags() & TEXFLAG_CUBEMAP)
-			InternalChangeFrontFace(GL_CCW);
-		else
-			InternalChangeFrontFace(GL_CW);
+		//if (m_pCurrentColorRenderTargets[0]->GetFlags() & TEXFLAG_CUBEMAP)
+		//	InternalChangeFrontFace(GL_CCW);
+		//else
+		//	InternalChangeFrontFace(GL_CW);
 
 		glViewport(0, 0, m_pCurrentColorRenderTargets[0]->GetWidth(), m_pCurrentColorRenderTargets[0]->GetHeight());
 	}
 	else if(m_pCurrentDepthRenderTarget != NULL)
 	{
-		InternalChangeFrontFace(GL_CW);
+		//InternalChangeFrontFace(GL_CW);
 		glViewport(0, 0, m_pCurrentDepthRenderTarget->GetWidth(), m_pCurrentDepthRenderTarget->GetHeight());
 	}
 }

@@ -29,7 +29,7 @@ CEqPhysicsPointConstraint::~CEqPhysicsPointConstraint()
 void CEqPhysicsPointConstraint::Init(CEqRigidBody* body0, const FVector3D& body0Pos,
 									CEqRigidBody* body1, const FVector3D& body1Pos,
 									float allowedDistance,
-									float timescale)
+									float timescale, int flags)
 {
 	m_body0Pos = body0Pos;
 	m_body1Pos = body1Pos;
@@ -37,6 +37,7 @@ void CEqPhysicsPointConstraint::Init(CEqRigidBody* body0, const FVector3D& body0
 	m_body1 = body1;
 	m_allowedDistance = allowedDistance;
 	m_timescale = timescale;
+	m_flags = flags;
 
 	if (m_body0)
 		m_body0->AddConstraint(this);
@@ -109,8 +110,11 @@ bool CEqPhysicsPointConstraint::Apply(float dt)
 
 	const Vector3D normalImpulse = (numerator / denominator) * N;
 
-	m_body0->ApplyWorldImpulse(m_worldPos, normalImpulse);
-	m_body1->ApplyWorldImpulse(m_worldPos, -normalImpulse);
+	if(!(m_flags & CONSTRAINT_FLAG_BODYA_NOIMPULSE))
+		m_body0->ApplyWorldImpulse(m_worldPos, normalImpulse);
+
+	if(!(m_flags & CONSTRAINT_FLAG_BODYB_NOIMPULSE))
+		m_body1->ApplyWorldImpulse(m_worldPos, -normalImpulse);
 
 	m_body0->TryWake();
 	m_body1->TryWake();

@@ -60,12 +60,15 @@ struct freeCameraProps_t
 		position = vec3_zero;
 		angles = vec3_zero;
 		velocity = vec3_zero;
+		zAxisMove = false;
 	}
 
 	Vector3D	position;
 	Vector3D	angles;
 	Vector3D	velocity;
 	float		fov;
+
+	bool		zAxisMove;
 } g_freeCamProps;
 
 
@@ -1284,8 +1287,15 @@ void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )
 
 	if(g_freecam.GetBool() && !g_pSysConsole->IsVisible()) // && g_pHost->m_hasWindowFocus)
 	{
-		g_freeCamProps.angles.x += deltaY * g_mouse_sens.GetFloat();
-		g_freeCamProps.angles.y += deltaX * g_mouse_sens.GetFloat();
+		if(g_freeCamProps.zAxisMove)
+		{
+			g_freeCamProps.angles.z += deltaX * g_mouse_sens.GetFloat();
+		}
+		else
+		{
+			g_freeCamProps.angles.x += deltaY * g_mouse_sens.GetFloat();
+			g_freeCamProps.angles.y += deltaX * g_mouse_sens.GetFloat();
+		}
 	}
 }
 
@@ -1296,6 +1306,11 @@ void CState_Game::HandleMouseClick( int x, int y, int buttons, bool down )
 
 	if( m_showMenu )
 		return;
+
+	if(buttons == MOU_B2)
+	{
+		g_freeCamProps.zAxisMove = down;
+	}
 
 	g_inputCommandBinder->OnMouseEvent(buttons, down);
 }

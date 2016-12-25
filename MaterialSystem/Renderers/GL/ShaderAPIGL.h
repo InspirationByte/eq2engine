@@ -346,7 +346,7 @@ protected:
 
 private:
 	//OpenGL - Specific
-	void					InternalSetupSampler(uint texTarget, const SamplerStateParam_t& sSamplingParams);
+	void					InternalSetupSampler(uint texTarget, const SamplerStateParam_t& sSamplingParams, int mipMapCount = 1);
 	void					InternalChangeFrontFace(int nCullFaceMode);
 
 	GLuint					m_frameBuffer;

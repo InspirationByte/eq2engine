@@ -2414,21 +2414,37 @@ void CCar::Simulate( float fDt )
 	if( isCar && r_carLights.GetBool() && IsLightEnabled(CAR_LIGHT_HEADLIGHTS) && (m_bodyParts[CB_FRONT_LEFT].damage < 1.0f || m_bodyParts[CB_FRONT_RIGHT].damage < 1.0f) )
 	{
 		float lightIntensity = 1.0f;
+		float decalIntensity = 1.0f;
+
+		int lightSide = 0;
 
 		if( m_bodyParts[CB_FRONT_LEFT].damage > MIN_VISUAL_BODYPART_DAMAGE*0.5f )
 		{
 			if(m_bodyParts[CB_FRONT_LEFT].damage > MIN_VISUAL_BODYPART_DAMAGE)
+			{
+				lightSide += 1;
 				lightIntensity -= 0.5f;
+			}
 			else
+			{
+				decalIntensity -= 0.5f;
 				lightIntensity -= 0.25f;
+			}
+				
 		}
 
 		if( m_bodyParts[CB_FRONT_RIGHT].damage > MIN_VISUAL_BODYPART_DAMAGE*0.5f )
 		{
 			if(m_bodyParts[CB_FRONT_RIGHT].damage > MIN_VISUAL_BODYPART_DAMAGE)
+			{
+				lightSide -= 1;
 				lightIntensity -= 0.5f;
+			}
 			else
+			{
+				decalIntensity -= 0.5f;
 				lightIntensity -= 0.25f;
+			}
 		}
 
 		if(lightIntensity > 0.0f)
@@ -2442,11 +2458,13 @@ void CCar::Simulate( float fDt )
 
 			if(distToCam < r_carLights_dist.GetFloat())
 			{
-				Vector3D lightPos = startLightPos + GetForwardVector()*13.0f;
+				Vector3D lightPos = startLightPos + GetForwardVector()*13.8f + (GetRightVector()*lightSide*m_conf->visual.headlightPosition.x);
+
+				float headlightsWidth = m_conf->visual.headlightPosition.x*3.5f;
 
 				// project from top
 				Matrix4x4 proj, view, viewProj;
-				proj = orthoMatrix(-2.0f, 2.0f, 0.0f, 14.0f, -1.5f, 0.5f);
+				proj = orthoMatrix(-headlightsWidth, headlightsWidth, 0.0f, 14.0f, -1.5f, 0.5f);
 				view = Matrix4x4( rotateX3(DEG2RAD(-90)) * !m_worldMatrix.getRotationComponent());
 				view.translate(-lightPos);
 
@@ -2454,10 +2472,10 @@ void CCar::Simulate( float fDt )
 
 				float intensityMod = 1.0f - (distToCam / r_carLights_dist.GetFloat());
 
-				Vector4D lightDecalColor = lightColor * pow(intensityMod, 0.8f) * lightIntensity * 0.5f;
+				Vector4D lightDecalColor = lightColor * pow(intensityMod, 0.8f) * decalIntensity * 0.5f;
 				lightDecalColor.w = 1.0f;
 
-				TexAtlasEntry_t* entry = g_vehicleLights->FindEntry("light1");
+				TexAtlasEntry_t* entry = lightSide == 0 ? g_vehicleLights->FindEntry("light1_d") : g_vehicleLights->FindEntry("light1_s");
 				Rectangle_t flipRect = entry ? entry->rect : Rectangle_t(0,0,1,1);
 
 				decalprimitives_t lightDecal;

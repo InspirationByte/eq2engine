@@ -8,12 +8,19 @@
 #ifndef EQPHYSICS_CONSTRAINT_H
 #define EQPHYSICS_CONSTRAINT_H
 
+enum EConstraintFlags
+{
+	CONSTRAINT_FLAG_BODYA_NOIMPULSE		= (1 << 0),
+	CONSTRAINT_FLAG_BODYB_NOIMPULSE		= (1 << 1),
+	CONSTRAINT_FLAG_SKIP_INTERCOLLISION = (1 << 2),
+};
+
 class IEqPhysicsConstraint
 {
 	friend class CEqRigidBody;
 
 public:
-					IEqPhysicsConstraint() : m_enabled(false), m_satisfied(true) {}
+					IEqPhysicsConstraint() : m_enabled(false), m_satisfied(true), m_flags(0) {}
 	virtual			~IEqPhysicsConstraint() {}
 
 	void			SetEnabled(bool enable) { m_enabled = enable; }
@@ -37,6 +44,7 @@ public:
 protected:
 	bool			m_enabled;
 	bool			m_satisfied;
+	int				m_flags;
 };
 
 #endif // EQPHYSICS_CONSTRAINT_H

@@ -998,15 +998,20 @@ void CopyPixels(int* src, int* dest, int w1, int h1, int w2, int h2)
     }                
 }
 
+ConVar r_skyToCubemap("r_skyToCubemap", "1");
+
 void CGameWorld::GenerateEnvmapAndFogTextures()
 {
 	if(!m_envMapsDirty)
 		return;
 
+	if(!r_skyToCubemap.GetBool())
+		return;
+
 	materials->Wait();
-
+	
 	m_envMapsDirty = false;
-
+	
 	ITexture* tempRenderTarget = g_pShaderAPI->CreateNamedRenderTarget("_tempSkyboxRender", 512, 512, FORMAT_RGBA8, 
 										TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
 
@@ -1032,6 +1037,8 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	g_pShaderAPI->Finish();
 
 	texlockdata_t tempLock;
+	
+
 	CImage envMap, fogEnvMap;
 	envMap.Create(FORMAT_RGBA8, 256, 256, 0, 1);
 	fogEnvMap.Create(FORMAT_RGBA8, 64, 64, 0, 1);
@@ -1057,7 +1064,7 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 			tempRenderTarget->Unlock();
 		}
 	}
-
+	
 	envMap.SwapChannels(0, 2);
 	fogEnvMap.SwapChannels(0, 2);
 	
@@ -1081,7 +1088,7 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	m_fogEnvMap = g_pShaderAPI->CreateTexture(fogEnvMapImg, sampler);
 	m_fogEnvMap->Ref_Grab();
 
-	g_pShaderAPI->FreeTexture( tempRenderTarget );
+	//g_pShaderAPI->FreeTexture( tempRenderTarget );
 }
 
 const float g_visualWetnessTable[WEATHER_COUNT] =
@@ -1313,13 +1320,17 @@ void CGameWorld::DrawFakeReflections()
 	materials->SetMatrix(MATRIXMODE_VIEW, view);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	/*
+	
 	Matrix4x4 viewProj = proj*view;
 	// TEMPORARILY DISABLED, NEEDS DEPTH BUFFER
 	// and prettier look
 
 	if(r_drawFakeReflections.GetInt() > 1)
 	{
+		FogInfo_t noFog;
+		noFog.enableFog = fog_enable.GetBool();
+		materials->SetFogInfo(noFog);
+
 		worldEnvConfig_t conf = m_envConfig;
 
 		m_envConfig.ambientColor *= 0.25f;
@@ -1336,7 +1347,7 @@ void CGameWorld::DrawFakeReflections()
 		materials->SetAmbientColor(ColorRGBA(1.0f));
 		materials->SetMaterialRenderParamCallback(NULL);
 		m_envConfig = conf;
-	}*/
+	}
 
 	// draw only additive particles
 	g_additPartcles->Render( EPRFLAG_DONT_FLUSHBUFFERS );

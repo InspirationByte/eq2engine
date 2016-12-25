@@ -116,12 +116,15 @@ void CObject_Sheets::Simulate( float fDt )
 
 	m_bbox.Reset();
 
-	if(m_ghostObject->m_collisionList.numElem() > 0 && m_ghostObject->m_collisionList[0].bodyB)
+	if(g_pGameWorld->m_envConfig.rainDensity < 5.0f)
 	{
-		CEqCollisionObject* obj = m_ghostObject->m_collisionList[0].bodyB;
+		if(m_ghostObject->m_collisionList.numElem() > 0 && m_ghostObject->m_collisionList[0].bodyB)
+		{
+			CEqCollisionObject* obj = m_ghostObject->m_collisionList[0].bodyB;
 
-		if(obj->m_flags & BODY_ISCAR)
-			body = (CEqRigidBody*)obj;
+			if(obj->m_flags & BODY_ISCAR)
+				body = (CEqRigidBody*)obj;
+		}
 	}
 
 	// we have to deal with cleaning up collision list

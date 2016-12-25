@@ -8,9 +8,15 @@
 #include "eqPhysics_HingeJoint.h"
 #include "eqPhysics_Body.h"
 
+enum EHingeFlags
+{
+	HINGE_FLAG_USELIMITS	= (1 << 15),
+	HINGE_FLAG_BROKEN		= (1 << 16),		// state flag only
+	HINGE_FLAG_ENABLED		= (1 << 17),		// state flag only
+};
+
 CEqPhysicsHingeJoint::CEqPhysicsHingeJoint() :
-	m_body0(nullptr), m_body1(nullptr), m_hingeEnabled(false), m_usingLimit(false), 
-	m_broken(false), m_extraTorque(0.0f), m_damping(0.0f)
+	m_body0(nullptr), m_body1(nullptr), m_extraTorque(0.0f), m_damping(0.0f), m_flags(0)
 {
 
 }
@@ -43,14 +49,15 @@ void CEqPhysicsHingeJoint::Init(CEqRigidBody* body0, CEqRigidBody* body1,
 								const float hingeFwdAngle,
 								const float hingeBckAngle,
 								const float sidewaysSlack,
-								const float damping)
+								const float damping,
+								int flags)
 {
 	m_body0 = body0;
 	m_body1 = body1;
 	m_hingeAxis = hingeAxis;
 	m_hingePosRel0 = hingePosRel0;
-	m_usingLimit = false;
 	m_damping = damping;
+	m_flags = flags;
 
 	m_hingeAxis = normalize(m_hingeAxis);
 
@@ -67,10 +74,10 @@ void CEqPhysicsHingeJoint::Init(CEqRigidBody* body0, CEqRigidBody* body1,
 	float allowedDistanceMid = 0.05f;
 	float allowedDistanceSide = sidewaysSlack * hingeHalfWidth;
 
-	m_sidePointConstraints[0].Init(body0, relPos0a, body1, relPos1a, allowedDistanceSide);
-	m_sidePointConstraints[1].Init(body0, relPos0b, body1, relPos1b, allowedDistanceSide);
+	m_sidePointConstraints[0].Init(body0, relPos0a, body1, relPos1a, allowedDistanceSide, flags);
+	m_sidePointConstraints[1].Init(body0, relPos0b, body1, relPos1b, allowedDistanceSide, flags);
 
-	m_midPointConstraint.Init(body0, hingePosRel0, body1, hingePosRel1, allowedDistanceMid, timescale);
+	m_midPointConstraint.Init(body0, hingePosRel0, body1, hingePosRel1, allowedDistanceMid, timescale, flags);
 
 	if (hingeFwdAngle <= MAX_HINGE_ANGLE_LIMIT)
 	{
@@ -107,8 +114,8 @@ void CEqPhysicsHingeJoint::Init(CEqRigidBody* body0, CEqRigidBody* body1,
 
 		m_maxDistanceConstraint.Init(	body0, relPos0c, 
 										body1, relPos1c,
-										allowedDistance);
-		m_usingLimit = true;
+										allowedDistance, flags);
+		m_flags |= HINGE_FLAG_USELIMITS;
 	}
 
 	if (m_damping <= 0.0f)
@@ -127,7 +134,7 @@ void CEqPhysicsHingeJoint::SetEnabled(bool enable)
 			m_sidePointConstraints[0].SetEnabled(true);
 			m_sidePointConstraints[1].SetEnabled(true);
 
-			if (m_usingLimit && !m_broken)
+			if ((m_flags & HINGE_FLAG_USELIMITS) && !(m_flags & HINGE_FLAG_BROKEN))
 				m_maxDistanceConstraint.SetEnabled(true);
 		}
 	}
@@ -138,7 +145,8 @@ void CEqPhysicsHingeJoint::SetEnabled(bool enable)
 			m_midPointConstraint.SetEnabled(false);
 			m_sidePointConstraints[0].SetEnabled(false);
 			m_sidePointConstraints[1].SetEnabled(false);
-			if (m_usingLimit && !m_broken)
+
+			if ((m_flags & HINGE_FLAG_USELIMITS) && !(m_flags & HINGE_FLAG_BROKEN))
 				m_maxDistanceConstraint.SetEnabled(false);
 		}
 	}
@@ -148,25 +156,30 @@ void CEqPhysicsHingeJoint::SetEnabled(bool enable)
 
 void CEqPhysicsHingeJoint::Break()
 {
-	if (m_broken)
+	if(IsBroken())
 		return;
 
-	if (m_usingLimit)
+	if(m_flags & HINGE_FLAG_USELIMITS)
 		m_maxDistanceConstraint.SetEnabled(false);
 
-	m_broken = true;
+	m_flags |= HINGE_FLAG_BROKEN;
 }
 
 void CEqPhysicsHingeJoint::Restore()
 {
-	if (!m_broken)
+	if(!IsBroken())
 		return;
 
-	if (m_usingLimit)
+	if(m_flags & HINGE_FLAG_USELIMITS)
 		m_maxDistanceConstraint.SetEnabled(true);
 
-	m_broken = false;
+	m_flags &= ~HINGE_FLAG_BROKEN;
 }
+
+ bool CEqPhysicsHingeJoint::IsBroken() const
+ {
+	return (m_flags & HINGE_FLAG_BROKEN) > 0;
+ }
 
 void CEqPhysicsHingeJoint::Update(float dt)
 {
@@ -194,8 +207,11 @@ void CEqPhysicsHingeJoint::Update(float dt)
 		const Vector3D newAngVel2 = 
 			m_body1->GetAngularVelocity() + (newAngRot2 - angRot2) * hingeAxis;
 
-		m_body0->SetAngularVelocity(newAngVel1);
-		m_body1->SetAngularVelocity(newAngVel2);
+		if(!(m_flags & CONSTRAINT_FLAG_BODYA_NOIMPULSE))
+			m_body0->SetAngularVelocity(newAngVel1);
+
+		if(!(m_flags & CONSTRAINT_FLAG_BODYB_NOIMPULSE))
+			m_body1->SetAngularVelocity(newAngVel2);
 	}
 	/*
 	// the extra torque

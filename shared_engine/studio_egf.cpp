@@ -64,8 +64,6 @@ CEngineStudioEGF::~CEngineStudioEGF()
 	DestroyModel();
 }
 
-//ConVar r_animtrasnformskipframes("r_animtrasnformskipframes", "10", "Frame skip for animation transforms (huge speedup!)",CV_ARCHIVE);
-
 struct bonequaternion_t
 {
 	Vector4D	quat;
@@ -85,9 +83,9 @@ Vector4D quatMul ( Vector4D &q1, Vector4D &q2 )
 // vector rotation
 Vector4D quatRotate (Vector3D &p, Vector4D &q )
 {
-    Quaternion temp = Quaternion(q)*Quaternion(0.0f, p.x,p.y,p.z);//quatMul( q, Vector4D ( p, 0.0 ) );
+    Quaternion temp = Quaternion(q)*Quaternion(0.0f, p.x,p.y,p.z);
 
-    return (temp * Quaternion( q.w, -q.x, -q.y, -q.z )).asVector4D();//quatMul ( temp, Vector4D ( -q.x, -q.y, -q.z, q.w ) );
+    return (temp * Quaternion( q.w, -q.x, -q.y, -q.z )).asVector4D();
 }
 
 // transforms bone
@@ -684,12 +682,14 @@ int CEngineStudioEGF::SelectLod(float dist_to_camera)
 	if(r_lodtest.GetInt() != -1)
 		return r_lodtest.GetInt();
 
-	if( m_pHardwareData->pStudioHdr->numlodparams < 2)
+	int numLods = m_pHardwareData->pStudioHdr->numlodparams;
+
+	if( numLods < 2)
 		return 0;
 
 	int idealLOD = 0;
 
-	for(int i = r_lodstart.GetInt(); i < m_pHardwareData->pStudioHdr->numlodparams; i++)
+	for(int i = r_lodstart.GetInt(); i < numLods; i++)
 	{
 		if(dist_to_camera > m_pHardwareData->pStudioHdr->pLodParams(i)->distance * r_lodscale.GetFloat())
 			idealLOD = i;

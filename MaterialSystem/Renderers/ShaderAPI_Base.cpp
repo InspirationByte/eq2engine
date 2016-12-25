@@ -23,6 +23,7 @@
 #include "utils/KeyValues.h"
 
 static ConVar rs_echo_texture_loading("r_echo_texture_loading","0","Echo textrue loading");
+static ConVar r_nomip("r_nomip", "0");
 
 ShaderAPI_Base::ShaderAPI_Base()
 {
@@ -599,6 +600,13 @@ ITexture* ShaderAPI_Base::CreateTexture(const DkList<CImage*>& pImages, const Sa
 {
 	if(!pImages.numElem())
 		return NULL;
+
+	
+	if(r_nomip.GetBool())
+	{
+		for(int i = 0; i < pImages.numElem(); i++)
+			pImages[i]->RemoveMipMaps(0,1);
+	}
 
 	// create texture
 	ITexture* pTexture = NULL;

@@ -153,6 +153,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 	materials->Setup2D(screenSize.x,screenSize.y);
 
+	static IEqFont* roboto10 = g_fontCache->GetFont("Roboto", 10);
 	static IEqFont* roboto30 = g_fontCache->GetFont("Roboto", 30);
 	static IEqFont* roboto30b = g_fontCache->GetFont("Roboto", 30, TEXT_STYLE_BOLD);
 	static IEqFont* robotocon30b = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD);
@@ -178,8 +179,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 	if(m_enable)
 	{
 		bool inPursuit = (m_mainVehicle ? m_mainVehicle->GetPursuedCount() > 0 : false);
-
-		
 
 		//Vertex2D_t dmgrect[] = { MAKETEXQUAD(damageRect.vleftTop.x, damageRect.vleftTop.y,damageRect.vrightBottom.x, damageRect.vrightBottom.y, 0) };
 
@@ -485,7 +484,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 						meshBuilder.AdvanceVertexIndex(0xFFFF);
 					}
 				}
-
 
 				for(hudDisplayObjIterator_t iterator = m_displayObjects.begin(); iterator != m_displayObjects.end(); iterator++)
 				{

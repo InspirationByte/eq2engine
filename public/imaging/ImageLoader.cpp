@@ -1290,19 +1290,22 @@ bool CImage::RemoveMipMaps(const int firstMipMap, int mipMapsToSave)
 	if (m_nArraySize > 1) return false;
 	if (firstMipMap > m_nMipMaps) return false;
 
-	int mipMapCount = min(firstMipMap + mipMapsToSave, m_nMipMaps) - firstMipMap;
+	int newMipCount = min(firstMipMap + mipMapsToSave, m_nMipMaps) - firstMipMap;
 
-	int size = GetMipMappedSize(firstMipMap, mipMapCount);
-	ubyte *newPixels = new ubyte[size];
+	int size = GetMipMappedSize(firstMipMap, newMipCount);
+	ubyte* newPixels = new ubyte[size];
 
 	memcpy(newPixels, GetPixels(firstMipMap), size);
+	int newWidth = GetWidth(firstMipMap);
+	int newHeight = GetHeight(firstMipMap);
+	int newDepth = m_nDepth? GetDepth(firstMipMap) : 0;
 
 	delete [] m_pPixels;
 	m_pPixels = newPixels;
-	m_nWidth = GetWidth(firstMipMap);
-	m_nHeight = GetHeight(firstMipMap);
-	m_nDepth = m_nDepth? GetDepth(firstMipMap) : 0;
-	m_nMipMaps = mipMapCount;
+	m_nWidth = newWidth;
+	m_nHeight = newHeight;
+	m_nDepth = newDepth;
+	m_nMipMaps = newMipCount;
 
 	return true;
 }

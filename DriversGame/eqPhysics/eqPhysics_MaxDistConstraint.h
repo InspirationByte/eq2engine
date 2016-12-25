@@ -27,7 +27,8 @@ public:
 	// if @timescale < 0 then the value indicates the number of dts
 	void			Init(	CEqRigidBody* body0, const FVector3D& body0Pos,
 							CEqRigidBody* body1, const FVector3D& body1Pos,
-							float maxDistance);
+							float maxDistance,
+							int flags = 0);
 
 	void			PreApply(float dt);
 	bool			Apply(float dt);

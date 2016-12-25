@@ -32,14 +32,15 @@ public:
 				const float hingeFwdAngle,	// angles are in radians
 				const float hingeBckAngle,	// angles are in radians
 				const float sidewaysSlack,
-				const float damping = -1.0f);
+				const float damping = -1.0f,
+				int flags = 0);				// constraint flags
 
 	void				SetEnabled(bool enable);
 
     void				Break();		/// Just remove the limit constraint
     void				Restore();		/// Just enable the limit constraint
 
-    bool				IsBroken() const				{ return m_broken; }
+    bool				IsBroken() const;
     const FVector3D&	GetHingePosRelA() const			{ return m_hingePosRel0; }
 
 	CEqRigidBody*		GetBodyA() const				{ return m_body0; }
@@ -60,11 +61,9 @@ protected:
 	CEqRigidBody*		m_body0;
 	CEqRigidBody*		m_body1;
 
-	bool				m_usingLimit;
-	bool				m_hingeEnabled;
-	bool				m_broken;
 	float				m_damping;
 	float				m_extraTorque; // allow extra torque applied per update
+	int					m_flags;
 
 	CEqPhysicsPointConstraint		m_midPointConstraint;
 	CEqPhysicsMaxDistConstraint		m_sidePointConstraints[2];

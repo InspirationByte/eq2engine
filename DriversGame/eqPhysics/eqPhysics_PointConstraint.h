@@ -28,7 +28,8 @@ public:
 	void			Init(	CEqRigidBody* body0, const FVector3D& body0Pos,
 							CEqRigidBody* body1, const FVector3D& body1Pos,
 							float allowedDistance,
-							float timescale = 1.0f);
+							float timescale = 1.0f,
+							int flags = 0);
 
 	void			PreApply(float dt);
 	bool			Apply(float dt);

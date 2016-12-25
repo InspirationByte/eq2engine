@@ -30,13 +30,14 @@ CEqPhysicsMaxDistConstraint::~CEqPhysicsMaxDistConstraint()
 
 void CEqPhysicsMaxDistConstraint::Init(CEqRigidBody* body0, const FVector3D& body0Pos,
 										CEqRigidBody* body1, const FVector3D& body1Pos,
-										float maxDistance)
+										float maxDistance, int flags)
 {
 	m_body0Pos = body0Pos;
 	m_body1Pos = body1Pos;
 	m_body0 = body0;
 	m_body1 = body1;
 	m_maxDistance = maxDistance;
+	m_flags = flags;
 
 	if (m_body0)
 		m_body0->AddConstraint(this);
@@ -116,8 +117,11 @@ bool CEqPhysicsMaxDistConstraint::Apply(float dt)
 
 	float normalImpulse = -normalVel / denominator;
 
-	m_body0->ApplyWorldImpulse(m_worldPos, normalImpulse * N);
-	m_body1->ApplyWorldImpulse(m_worldPos, -normalImpulse * N);
+	if(!(m_flags & CONSTRAINT_FLAG_BODYA_NOIMPULSE))
+		m_body0->ApplyWorldImpulse(m_worldPos, normalImpulse * N);
+
+	if(!(m_flags & CONSTRAINT_FLAG_BODYB_NOIMPULSE))
+		m_body1->ApplyWorldImpulse(m_worldPos, -normalImpulse * N);
 
 	m_body0->TryWake();
 	m_body1->TryWake();
