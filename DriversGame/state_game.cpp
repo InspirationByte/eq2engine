@@ -835,11 +835,16 @@ void CState_Game::OnMenuCommand( const char* command )
 
 		m_scheduledRestart = true;
 	}
-	else if(!stricmp(command, "quickReplay"))
+	else if(!stricmp(command, "quickReplay") || !stricmp(command, "goToDirector"))
 	{
 		m_showMenu = false;
 		m_exitGame = false;
 		m_fade = 0.0f;
+
+		if(!stricmp(command, "goToDirector"))
+			g_director.SetBool(true);
+		else
+			g_director.SetBool(false);
 
 		if(g_pGameSession->GetMissionStatus() == MIS_STATUS_INGAME)
 		{
@@ -848,10 +853,6 @@ void CState_Game::OnMenuCommand( const char* command )
 		}
 
 		m_scheduledQuickReplay = true;
-	}
-	else if(!stricmp(command, "goToDirector"))
-	{
-		Msg("TODO: go to the director\n");
 	}
 }
 

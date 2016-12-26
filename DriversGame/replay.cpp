@@ -261,8 +261,6 @@ bool CReplayData::IsCarPlaying( CCar* pCar )
 	return false;
 }
 
-ConVar replay_framecorrect("replay_framecorrect", "1", "Correct replay frames", CV_CHEAT);
-
 void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 {
 	if(rep->obj_car == NULL)
@@ -318,8 +316,6 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 	else if(m_state == REPL_PLAYING)	// replay the damage
 		rep->obj_car->SetDamage(frame.car_damage);
 }
-
-ConVar replay_everyCorrectFrameAt("replay_everyCorrectFrameAt", "64");
 
 // records vehicle frame
 bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
