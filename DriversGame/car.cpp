@@ -2419,6 +2419,7 @@ void CCar::Simulate( float fDt )
 	{
 		float lightIntensity = 1.0f;
 		float decalIntensity = 1.0f;
+		float decalScale = 1.0f;
 
 		int lightSide = 0;
 
@@ -2428,6 +2429,7 @@ void CCar::Simulate( float fDt )
 			{
 				lightSide += 1;
 				lightIntensity -= 0.5f;
+				decalScale -= 0.5f;
 			}
 			else
 			{
@@ -2443,6 +2445,7 @@ void CCar::Simulate( float fDt )
 			{
 				lightSide -= 1;
 				lightIntensity -= 0.5f;
+				decalScale -= 0.5f;
 			}
 			else
 			{
@@ -2464,7 +2467,7 @@ void CCar::Simulate( float fDt )
 			{
 				Vector3D lightPos = startLightPos + GetForwardVector()*13.8f + (GetRightVector()*lightSide*m_conf->visual.headlightPosition.x);
 
-				float headlightsWidth = m_conf->visual.headlightPosition.x*3.5f;
+				float headlightsWidth = m_conf->visual.headlightPosition.x * 5.0f * decalScale;
 
 				// project from top
 				Matrix4x4 proj, view, viewProj;

@@ -26,7 +26,7 @@ CReplayData::CReplayData()
 	m_filename = "";
 	m_currentEvent = 0;
 	m_numFrames = 0;
-	m_currentCamera = 0;
+	m_currentCamera = -1;
 }
 
 CReplayData::~CReplayData() {}
@@ -95,7 +95,7 @@ void CReplayData::StartPlay()
 {
 	m_tick = 0;
 	m_currentEvent = 0;
-	m_currentCamera = 0;
+	m_currentCamera = -1;
 
 	ResetEvents();
 
@@ -129,7 +129,7 @@ void CReplayData::Stop()
 
 	m_currentEvent = 0;
 	m_tick = 0;
-	m_currentCamera = 0;
+	m_currentCamera = -1;
 	m_state = REPL_NONE;
 }
 
@@ -163,6 +163,9 @@ void CReplayData::UpdatePlayback( float fDt )
 replaycamera_t* CReplayData::GetCurrentCamera()
 {
 	if(m_cameras.numElem() == 0)
+		return NULL;
+
+	if(m_currentCamera == -1)
 		return NULL;
 
 	return &m_cameras[m_currentCamera];
@@ -526,6 +529,20 @@ void CReplayData::WriteEvents( IVirtualStream* stream, int onlyEvent )
 		numEvents = nEvents;
 	}
 
+	bool hasEndEvent = false;
+	int lastEventFrame = m_numFrames > 0 ? m_numFrames : m_tick;
+	for(int i = 0; i < m_events.numElem(); i++)
+	{
+		replayevent_t& evt = m_events[i];
+
+		if(evt.eventType == REPLAY_EVENT_END)
+			hasEndEvent = true;
+	}
+
+	if(!hasEndEvent)
+		numEvents++;
+
+	// to write end event
 	stream->Write(&numEvents, 1, sizeof(int));
 
 	CMemoryStream eventData;
@@ -534,8 +551,6 @@ void CReplayData::WriteEvents( IVirtualStream* stream, int onlyEvent )
 	for(int i = 0; i < m_events.numElem(); i++)
 	{
 		replayevent_t& evt = m_events[i];
-
-		eventData.Open(NULL, VS_OPEN_WRITE, 128);
 
 		// if set, do only specific events
 		if( onlyEvent != -1 )
@@ -547,8 +562,10 @@ void CReplayData::WriteEvents( IVirtualStream* stream, int onlyEvent )
 		replayevent_file_t fevent( evt );
 
 		// make replay event data
-		if( evt.eventData != NULL )
+		if( evt.eventData != NULL && fevent.eventDataSize > 0 )
 		{
+			eventData.Open(NULL, VS_OPEN_WRITE, 128);
+
 			switch( evt.eventType )
 			{
 				// boolean event
@@ -563,14 +580,26 @@ void CReplayData::WriteEvents( IVirtualStream* stream, int onlyEvent )
 				}
 			}
 		}
+		else
+			fevent.eventDataSize = 0;
 
 		stream->Write(&fevent, 1, sizeof(replayevent_file_t));
 
 		if( fevent.eventDataSize > 0 )
-		{
-			Msg("Write event data size=%d\n", fevent.eventDataSize);
 			stream->Write(eventData.GetBasePointer(), 1, fevent.eventDataSize);
-		}
+	}
+
+	// write end event
+	if(!hasEndEvent)
+	{
+		replayevent_file_t endEvent;
+		endEvent.frameIndex = lastEventFrame+1;
+		endEvent.replayIndex = REPLAY_NOT_TRACKED;
+		endEvent.eventType = REPLAY_EVENT_END;
+		endEvent.eventFlags = 0;
+		endEvent.eventDataSize = 0;
+		
+		stream->Write(&endEvent, 1, sizeof(replayevent_file_t));
 	}
 }
 
@@ -953,6 +982,9 @@ void CReplayData::PushEvent(EReplayEventType type, int replayId, void* eventData
 	evt.eventData = eventData;
 	evt.eventFlags = REPLAY_FLAG_IS_PUSHED | eventFlags;
 
+	if(type == REPLAY_EVENT_END)
+		m_numFrames = m_tick;
+
 	if(evt.replayIndex != REPLAY_NOT_TRACKED)
 		m_vehicles[evt.replayIndex].onEvent = true;
 
@@ -1068,7 +1100,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 		case REPLAY_EVENT_END:
 		{
 			g_pGameSession->SignalMissionStatus(MIS_STATUS_SUCCESS, 0.0f);
-			Stop();
+			//Stop();
 			break;
 		}
 		case REPLAY_EVENT_FORCE_RANDOM:

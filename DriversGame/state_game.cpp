@@ -16,6 +16,7 @@
 
 #include "state_game.h"
 #include "CameraAnimator.h"
+#include "materialsystem/MeshBuilder.h"
 
 #include "session_stuff.h"
 #include "Rain.h"
@@ -328,7 +329,7 @@ void Game_UpdateFreeCamera(float fDt)
 		g_freeCamProps.velocity *= speedDiffScale;
 	}
 
-	btSphereShape collShape(1.0f);
+	btSphereShape collShape(0.5f);
 
 	// update camera collision
 	if(camSpeed > 1.0f)
@@ -386,13 +387,45 @@ static const wchar_t* cameraTypeStrings[] = {
 	L"Static",
 };
 
+static const ColorRGB cameraColors[] = {
+	ColorRGB(1.0f,0.25f,0.25f),
+	ColorRGB(0.0f,0.25f,0.65f),
+	ColorRGB(0.2f,0.7f,0.2f),
+	ColorRGB(0.5f,0.2f,0.7f),
+	ColorRGB(0.8f,0.8f,0.2f),
+};
+
+bool g_director_ShiftKey = false;
+const float DIRECTOR_FASTFORWARD_TIMESCALE = 4.0f;
+
+extern ConVar sys_timescale;
+
 void Game_DirectorControlKeys(int key, bool down)
 {
 	CCar* viewedCar = g_pGameSession->GetViewCar();
 
+	if(key == KEY_SHIFT)
+	{
+		g_director_ShiftKey = down;
+	}
+	else if(key == KEY_BACKSPACE)
+	{
+		//sys_timescale.GetFloat();
+		sys_timescale.SetFloat( down ? DIRECTOR_FASTFORWARD_TIMESCALE : 1.0f );
+	}
+
 	if(down)
 	{
 		//Msg("Director mode keypress: %d\n", key);
+
+		int replayCamera = g_replayData->m_currentCamera;
+		replaycamera_t* currentCamera = g_replayData->GetCurrentCamera();
+		replaycamera_t* prevCamera = g_replayData->m_cameras.inRange(replayCamera-1) ? &g_replayData->m_cameras[replayCamera-1] : NULL;
+		replaycamera_t* nextCamera = g_replayData->m_cameras.inRange(replayCamera+1) ? &g_replayData->m_cameras[replayCamera+1] : NULL;
+		int totalTicks = g_replayData->m_numFrames;
+
+		int highTick = nextCamera ? nextCamera->startTick : totalTicks;
+		int lowTick = prevCamera ? prevCamera->startTick : 0;
 
 		if(key == KEY_ADD)
 		{
@@ -415,23 +448,64 @@ void Game_DirectorControlKeys(int key, bool down)
 		}
 		else if(key == KEY_KP_ENTER)
 		{
-			Msg("Set camera\n");
+			if(currentCamera && g_pause.GetBool())
+			{
+				Msg("Set camera\n");
+				currentCamera->fov = g_freeCamProps.fov;
+				currentCamera->origin = g_freeCamProps.position;
+				currentCamera->rotation = g_freeCamProps.angles;
+				currentCamera->targetIdx = viewedCar->m_replayID;
+				currentCamera->type = g_nDirectorCameraType;
+
+				g_freecam.SetBool(false);
+			}
+		}
+		else if(key == KEY_DELETE)
+		{
+			if(replayCamera >= 0 && g_replayData->m_cameras.numElem())
+			{
+				g_replayData->m_cameras.removeIndex(replayCamera);
+				g_replayData->m_currentCamera--;
+			}
 		}
 		else if(key == KEY_SPACE)
 		{
-			Msg("Add camera keyframe\n");
+			//Msg("Add camera keyframe\n");
 		}
 		else if(key >= KEY_1 && key <= KEY_5)
 		{
 			g_nDirectorCameraType = key - KEY_1;
 		}
+		else if(key == KEY_PGUP)
+		{
+			if(g_replayData->m_cameras.inRange(replayCamera+1) && g_pause.GetBool())
+				g_replayData->m_currentCamera++;
+		}
+		else if(key == KEY_PGDN)
+		{
+			if(g_replayData->m_cameras.inRange(replayCamera-1) && g_pause.GetBool())
+				g_replayData->m_currentCamera--;
+		}
 		else if(key == KEY_LEFT)
 		{
-
+			if(currentCamera && g_pause.GetBool())
+			{
+				currentCamera->startTick -= g_director_ShiftKey ? 10 : 1;
+				
+				if(currentCamera->startTick < lowTick)
+					currentCamera->startTick = lowTick;
+			}
+				
 		}
 		else if(key == KEY_RIGHT)
 		{
-
+			if(currentCamera && g_pause.GetBool())
+			{
+				currentCamera->startTick += g_director_ShiftKey ? 10 : 1;
+				
+				if(currentCamera->startTick > highTick)
+					currentCamera->startTick = highTick;
+			}
 		}
 	}
 }
@@ -465,15 +539,30 @@ void Game_DrawDirectorUI( float fDt )
 
 	materials->Setup2D(screenSize.x,screenSize.y);
 
-	wchar_t* str = varargs_w(L"INSERT NEW CAMERA = &#FFFF00;KP_PLUS&;\n"
-		L"SET CAMERA = &#FFFF00;KP_ENTER&;\n"
-		L"SET CAMERA KEYFRAME = &#FFFF00;SPACE&;\n"
-		L"CHANGE CAMERA TYPE = &#FFFF00;1-5&; (Current is &#FFFF00;'%s'&;)\n"
+	wchar_t* controlsText = varargs_w(
+		L"PLAY = &#FFFF00;O&;\n"
+		L"TOGGLE FREE CAMERA = &#FFFF00;F&;\n\n"
+
+		L"NEXT CAMERA = &#FFFF00;PAGE UP&;\n"
+		L"PREV CAMERA = &#FFFF00;PAGE DOWN&;\n\n"
+
+		L"INSERT NEW CAMERA = &#FFFF00;KP_PLUS&;\n"
+		L"UPDATE CAMERA = &#FFFF00;KP_ENTER&;\n"
+		L"DELETE CAMERA = &#FFFF00;DEL&;\n"
+
+		L"MOVE CAMERA START = &#FFFF00;LEFT ARROW&; and &#FFFF00;RIGHT ARROW&;\n\n"
+
+		//L"SET CAMERA KEYFRAME = &#FFFF00;SPACE&;\n\n"
+
+		L"CAMERA TYPE = &#FFFF00;1-5&; (Current is &#FFFF00;'%s'&;)\n"
 		L"CAMERA ZOOM = &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
-		L"SET TARGET OBJECT = &#FFFF00;LEFT MOUSE CLICK ON OBJECT&;\n"
-		L"PLAY/PAUSE = &#FFFF00;O&;\n"
-		L"FREE CAMERA = &#FFFF00;I&;\n"
+		L"TARGET VEHICLE = &#FFFF00;LEFT MOUSE CLICK ON OBJECT&;\n"
+		
 		L"SEEK = &#FFFF00;fastseek <frame>&; (in console)\n", cameraTypeStrings[g_nDirectorCameraType], g_freeCamProps.fov);
+
+	wchar_t* shortText =	L"PAUSE = &#FFFF00;O&;\n"
+							L"TOGGLE FREE CAMERA = &#FFFF00;F&;\n"
+							L"FAST FORWARD 4x = &#FFFF00;BACKSPACE&;\n";
 
 	eqFontStyleParam_t params;
 	params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
@@ -481,11 +570,93 @@ void Game_DrawDirectorUI( float fDt )
 
 	Vector2D directorTextPos(15, screenSize.y/3);
 
-	g_pHost->GetDefaultFont()->RenderText(str, directorTextPos, params);
+	if(g_pause.GetBool())
+		g_pHost->GetDefaultFont()->RenderText(controlsText, directorTextPos, params);
+	else
+		g_pHost->GetDefaultFont()->RenderText(shortText, directorTextPos, params);
 
-	replaycamera_t* cam = g_replayData->GetCurrentCamera();
+	replaycamera_t* currentCamera = g_replayData->GetCurrentCamera();
+	int replayCamera = g_replayData->m_currentCamera;
+	int currentTick = g_replayData->m_tick;
+	int totalTicks = g_replayData->m_numFrames;
 
-	wchar_t* framesStr = varargs_w(L"FRAME: &#FFFF00;%d / %d&;\nCAMERA: &#FFFF00;%d&; (%d) / &#FFFF00;%d&;", g_replayData->m_tick, g_replayData->m_numFrames, g_replayData->m_currentCamera+1, cam ? cam->startTick : 0, g_replayData->m_cameras.numElem());
+	int totalCameras = g_replayData->m_cameras.numElem();
+
+	wchar_t* framesStr = varargs_w(L"FRAME: &#FFFF00;%d / %d&;\nCAMERA: &#FFFF00;%d&; (frame %d) / &#FFFF00;%d&;", currentTick, totalTicks, replayCamera+1, currentCamera ? currentCamera->startTick : 0, totalCameras);
+
+	Rectangle_t timelineRect(0,screenSize.y-100, screenSize.x, screenSize.y-70);
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+
+	BlendStateParam_t blending;
+	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
+	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+
+	g_pShaderAPI->SetTexture(0,0,0);
+	materials->SetRasterizerStates(CULL_BACK);
+	materials->SetDepthStates(false,false);
+	materials->SetBlendingStates(blending);
+	materials->BindMaterial(materials->GetDefaultMaterial());
+
+	const float pixelsPerTick = 1.0f / 4.0f;
+	const float currentTickOffset = currentTick*pixelsPerTick;
+	const float lastTickOffset = totalTicks*pixelsPerTick;
+
+	float timelineCenterPos = timelineRect.GetCenter().x;
+
+	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+		float ticksOffset = lastTickOffset-currentTickOffset;
+
+		Rectangle_t drawnTimeline(timelineRect.GetCenter().x - currentTickOffset, screenSize.y-100.0f, timelineRect.GetCenter().x + ticksOffset , screenSize.y-70.0f);
+		drawnTimeline.vleftTop.x = clamp(drawnTimeline.vleftTop.x,0.0f,timelineRect.vrightBottom.x);
+		drawnTimeline.vrightBottom.x = clamp(drawnTimeline.vrightBottom.x,0.0f,timelineRect.vrightBottom.x);
+
+		meshBuilder.Color4f(1,1,1, 0.25f);
+		meshBuilder.Quad2(drawnTimeline.GetLeftTop(), drawnTimeline.GetRightTop(), drawnTimeline.GetLeftBottom(), drawnTimeline.GetRightBottom());
+
+		for(int i = 0; i < totalCameras; i++)
+		{
+			replaycamera_t* camera = &g_replayData->m_cameras[i];
+
+			float cameraTickPos = (camera->startTick-currentTick) * pixelsPerTick;
+
+			replaycamera_t* nextCamera = i+1 <g_replayData->m_cameras.numElem() ? &g_replayData->m_cameras[i+1] : NULL;
+			float nextTickPos = ((nextCamera ? nextCamera->startTick : totalTicks)-currentTick) * pixelsPerTick;
+
+			// draw colored rectangle
+			Rectangle_t cameraColorRect(timelineRect.GetCenter().x + cameraTickPos, screenSize.y-95.0f, timelineRect.GetCenter().x + nextTickPos, screenSize.y-75.0f);
+
+			ColorRGB camRectColor(cameraColors[camera->type]);
+
+			if(currentCamera == camera && g_pause.GetBool())
+			{
+				camRectColor *= fabs(sin(g_pHost->GetCurTime()*2.0f));
+
+				// draw start tick position
+				Rectangle_t currentTickRect(timelineRect.GetCenter() - Vector2D(2, 25) + Vector2D(cameraTickPos,0), timelineRect.GetCenter() + Vector2D(2, 0) + Vector2D(cameraTickPos,0));
+				meshBuilder.Color4f(1.0f,0.0f,0.0f,0.8f);
+				meshBuilder.Quad2(currentTickRect.GetLeftTop(), currentTickRect.GetRightTop(), currentTickRect.GetLeftBottom(), currentTickRect.GetRightBottom());
+			}
+
+			meshBuilder.Color4fv(ColorRGBA(camRectColor, 0.7f));
+			meshBuilder.Quad2(cameraColorRect.GetLeftTop(), cameraColorRect.GetRightTop(), cameraColorRect.GetLeftBottom(), cameraColorRect.GetRightBottom());
+
+			// draw start tick position
+			Rectangle_t currentTickRect(timelineRect.GetCenter() - Vector2D(2, 15) + Vector2D(cameraTickPos,0), timelineRect.GetCenter() + Vector2D(2, 15) + Vector2D(cameraTickPos,0));
+			meshBuilder.Color4f(0.9f,0.9f,0.9f,0.8f);
+			meshBuilder.Quad2(currentTickRect.GetLeftTop(), currentTickRect.GetRightTop(), currentTickRect.GetLeftBottom(), currentTickRect.GetRightBottom());
+		}
+
+		// current tick
+		Rectangle_t currentTickRect(timelineRect.GetCenter() - Vector2D(2, 20), timelineRect.GetCenter() + Vector2D(2, 20));
+		meshBuilder.Color4f(0,0,0,1.0f);
+		meshBuilder.Quad2(currentTickRect.GetLeftTop(), currentTickRect.GetRightTop(), currentTickRect.GetLeftBottom(), currentTickRect.GetRightBottom());
+
+		// end tick
+		Rectangle_t lastTickRect(timelineRect.GetCenter() - Vector2D(2, 20) + Vector2D(ticksOffset,0), timelineRect.GetCenter() + Vector2D(2, 20) + Vector2D(ticksOffset,0));
+		meshBuilder.Color4f(1,0.05f,0,1.0f);
+		meshBuilder.Quad2(lastTickRect.GetLeftTop(), lastTickRect.GetRightTop(), lastTickRect.GetLeftBottom(), lastTickRect.GetRightBottom());
+
+	meshBuilder.End();
 
 	params.align = TEXT_ALIGN_HCENTER;
 
@@ -576,6 +747,7 @@ void CState_Game::LoadGame()
 	if( Game_LoadWorld() )
 	{
 		Game_InitializeSession();
+		g_pause.SetBool(false);
 	}
 	else
 	{
@@ -614,6 +786,8 @@ void CState_Game::QuickRestart(bool replay)
 	g_pGameWorld->Init();
 
 	Game_InitializeSession();
+
+	g_pause.SetBool(false);
 
 	//-------------------------
 
@@ -737,7 +911,9 @@ int CState_Game::GetPauseMode() const
 		return PAUSEMODE_PAUSE;
 
 	if(g_pGameSession->IsGameDone())
+	{
 		return g_pGameSession->GetMissionStatus() == MIS_STATUS_SUCCESS ? PAUSEMODE_COMPLETE : PAUSEMODE_GAMEOVER;
+	}
 
 	if((g_pause.GetBool() || m_showMenu) && g_pGameSession->GetSessionType() == SESSION_SINGLE)
 		return PAUSEMODE_PAUSE;
@@ -810,6 +986,8 @@ bool CState_Game::Update( float fDt )
 
 	float fGameFrameDt = fDt;
 
+	bool replayDirectorMode = (g_replayData->m_state == REPL_PLAYING && g_director.GetBool());
+
 	bool gameDone = g_pGameSession->IsGameDone(false);
 	bool gameDoneTimedOut = g_pGameSession->IsGameDone();
 
@@ -830,7 +1008,7 @@ bool CState_Game::Update( float fDt )
 			m_fade = 0.0f;
 			SetNextState(g_states[GAME_STATE_TITLESCREEN]);
 		}
-		else if(!m_showMenu)
+		else if(!m_showMenu && !replayDirectorMode)
 		{
 			// set other menu
 			m_showMenu = !m_scheduledRestart && !m_scheduledQuickReplay;

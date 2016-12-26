@@ -67,6 +67,7 @@ CObject_Physics::CObject_Physics( kvkeybase_t* kvdata )
 	m_keyValues = kvdata;
 	m_physBody = NULL;
 	m_surfParams = NULL;
+	m_userData = NULL;
 }
 
 CObject_Physics::~CObject_Physics()
@@ -89,6 +90,7 @@ void CObject_Physics::OnRemove()
 	{
 		regionObject_t* ref = (regionObject_t*)m_userData;
 		ref->game_object = NULL;
+		m_userData = NULL;
 	}
 }
 

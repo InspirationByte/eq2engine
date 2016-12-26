@@ -363,8 +363,9 @@ void CGameSession::Update( float fDt )
 			m_playerCar->SetControlVars((m_localControls & IN_ACCELERATE) ? m_localAccelBrakeValue : 0.0f, 
 										(m_localControls & IN_BRAKE) ? m_localAccelBrakeValue : 0.0f, 
 										m_localSteeringValue);
-			m_playerCar->UpdateLightsState();
 		}
+
+		m_playerCar->UpdateLightsState();
 	}
 
 	float phys_begin = MEASURE_TIME_BEGIN();
