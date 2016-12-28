@@ -84,6 +84,7 @@ public:
 	CCar*						Lua_CreateCar(const char* name, int type = CAR_TYPE_NORMAL);
 	CAIPursuerCar*				Lua_CreatePursuerCar(const char* name, int type = PURSUER_TYPE_COP);
 
+
 protected:
 
 	float						m_waitForExitTime;

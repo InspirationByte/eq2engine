@@ -10,6 +10,7 @@
 
 #include "utils/eqwstring.h"
 #include "car.h"
+#include "materialsystem/MeshBuilder.h"
 
 enum EHUDDisplayObjectFlags
 {
@@ -76,6 +77,8 @@ public:
 	void						FadeOut();
 
 protected:
+
+	void						DrawDamageRectangle(CMeshBuilder& meshBuilder, Rectangle_t& rect, float percentage, float alpha = 1.0f);
 
 	bool								m_enable;
 	bool								m_showMap;

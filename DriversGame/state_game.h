@@ -54,6 +54,9 @@ public:
 	void		UnloadGame();
 	void		LoadGame();
 
+	bool		LoadMissionScript( const char* name );
+	const char*	GetMissionScriptName() const;
+
 	void		StopStreams();
 
 	void		QuickRestart(bool replay);
@@ -86,7 +89,6 @@ protected:
 	CCar*		GetViewCar() const;
 
 	//----------------------------------------------
-
 	int			m_doLoadingFrames;
 
 	bool		m_isGameRunning;
@@ -104,6 +106,8 @@ protected:
 	bool		m_scheduledQuickReplay;
 
 	EqString	m_gameMenuName;
+
+	EqString	m_missionScriptName;
 };
 
 //--------------------------------------------------------------------------------------
@@ -114,7 +118,5 @@ extern CGameSession* g_pGameSession;
 extern CState_Game* g_State_Game;
 
 //--------------------------------------------------------------------------------------
-
-bool	LoadMissionScript( const char* name );
 
 #endif // STATE_GAME_H

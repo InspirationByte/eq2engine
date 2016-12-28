@@ -39,14 +39,13 @@ CGameSession*			g_pGameSession = NULL;
 
 extern ConVar			net_server;
 
-ConVar					g_pause("g_pause", "0", "Pauses the game");
-
-ConVar					g_freecam("g_freecam", "0", "Enable free camera");
-ConVar					g_freecam_speed("g_freecam_speed", "10", "free camera speed", CV_ARCHIVE);
-
+ConVar					g_pause("g_pause", "0");
+ConVar					g_director("g_director", "0");
+ConVar					g_freecam("g_freecam", "0");
+ConVar					g_freecam_speed("g_freecam_speed", "10", NULL, CV_ARCHIVE);
 ConVar					g_mouse_sens("g_mouse_sens", "1.0", "mouse sensitivity", CV_ARCHIVE);
 
-ConVar					g_director("g_director", "0", "Enable director mode when replay playing");
+ConVar					director_timeline_zoom("director_timeline_zoom", "1.0", 0.1, 10.0, "Timeline scale", CV_ARCHIVE);
 
 int						g_nOldControlButtons	= 0;
 int						g_nDirectorCameraType	= CAM_MODE_TRIPOD_ZOOM;
@@ -198,14 +197,14 @@ DECLARE_CMD(start, "loads a level or starts mission", 0)
 	// always set level name
 	g_pGameWorld->SetLevelName( CMD_ARGV(0).c_str() );
 
-	if( !LoadMissionScript(CMD_ARGV(0).c_str()) )
+	// first try load mission script
+	if( !g_State_Game->LoadMissionScript(CMD_ARGV(0).c_str()) )
 	{
 		// fail-safe mode
 	}
 
 	SetCurrentState( g_states[GAME_STATE_GAME], true);
 }
-
 
 //------------------------------------------------------------------------------
 
@@ -597,7 +596,7 @@ void Game_DrawDirectorUI( float fDt )
 	materials->SetBlendingStates(blending);
 	materials->BindMaterial(materials->GetDefaultMaterial());
 
-	const float pixelsPerTick = 1.0f / 4.0f;
+	const float pixelsPerTick = 1.0f / 4.0f * director_timeline_zoom.GetFloat();
 	const float currentTickOffset = currentTick*pixelsPerTick;
 	const float lastTickOffset = totalTicks*pixelsPerTick;
 
@@ -629,7 +628,7 @@ void Game_DrawDirectorUI( float fDt )
 
 			if(currentCamera == camera && g_pause.GetBool())
 			{
-				camRectColor *= fabs(sin(g_pHost->GetCurTime()*2.0f));
+				camRectColor *= fabs(sinf((float)g_pHost->GetCurTime()*2.0f));
 
 				// draw start tick position
 				Rectangle_t currentTickRect(timelineRect.GetCenter() - Vector2D(2, 25) + Vector2D(cameraTickPos,0), timelineRect.GetCenter() + Vector2D(2, 0) + Vector2D(cameraTickPos,0));
@@ -692,6 +691,7 @@ CState_Game::CState_Game() : CBaseStateHandler()
 	m_isGameRunning = false;
 	m_fade = 1.0f;
 	m_doLoadingFrames = 0;
+	m_missionScriptName = "defaultmission";
 
 	RegisterInputJoysticEssentials();
 }
@@ -754,6 +754,38 @@ void CState_Game::LoadGame()
 		SetNextState(g_states[GAME_STATE_TITLESCREEN]);
 		m_loadingError = true;
 	}
+}
+
+bool CState_Game::LoadMissionScript( const char* name )
+{
+	m_missionScriptName = name;
+
+	// don't start both times
+	EqString scriptFileName(varargs("scripts/missions/%s.lua", name));
+
+	// then we load custom script
+	if( !EqLua::LuaBinding_LoadAndDoFile( GetLuaState(), scriptFileName.c_str(), "MissionLoader" ) )
+	{
+		MsgError("mission script init error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
+
+		m_missionScriptName = name;
+
+		// okay, try reinitialize with default mission script
+		if( !EqLua::LuaBinding_LoadAndDoFile( GetLuaState(), "scripts/missions/defaultmission.lua", "MissionLoader"))
+		{
+			MsgError("default mission script init error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
+			return false;
+		}
+
+		return false;
+	}
+
+	return true;
+}
+
+const char* CState_Game::GetMissionScriptName() const
+{
+	return m_missionScriptName.c_str();
 }
 
 void CState_Game::StopStreams()
@@ -936,9 +968,8 @@ void CState_Game::SetPauseState( bool state )
 
 void CState_Game::StartReplay( const char* path )
 {
-	g_replayData->LoadFromFile( path );
-
-	SetCurrentState( this, true );
+	if(g_replayData->LoadFromFile( path ))
+		SetCurrentState( this, true );
 }
 
 void CState_Game::DrawLoadingScreen()

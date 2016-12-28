@@ -13,6 +13,7 @@
 #include "StateManager.h"
 #include "DrvSynHUD.h"
 #include "system.h"
+#include "state_game.h"
 
 static OOLUA::Script g_luastate;
 OOLUA::Script& GetLuaState()
@@ -111,9 +112,15 @@ CLCollisionData Lua_Util_TestLine(const Vector3D& start, const Vector3D& end, in
 	return coll;
 }
 
+bool Lua_LoadMissionScript(const char* name)
+{
+	return g_State_Game->LoadMissionScript(name);
+}
+
 OOLUA_CFUNC(SetCurrentStateType, L_SetCurrentStateType)
 OOLUA_CFUNC(GetCurrentStateType, L_GetCurrentStateType)
 OOLUA_CFUNC(SheduleNextStateType, L_SheduleNextStateType)
+OOLUA_CFUNC(Lua_LoadMissionScript, L_LoadMissionScript)
 
 //OOLUA_CFUNC(SetCurrentState, L_SetCurrentState)
 //OOLUA_CFUNC(GetCurrentState, L_GetCurrentState)
@@ -226,6 +233,8 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	OOLUA::set_global(state, "SetCurrentStateType", L_SetCurrentStateType);
 	OOLUA::set_global(state, "GetCurrentStateType", L_GetCurrentStateType);
 	OOLUA::set_global(state, "SheduleNextStateType", L_SheduleNextStateType);
+	OOLUA::set_global(state, "LoadMissionScript", L_LoadMissionScript);
+	
 
 
 	//OOLUA::set_global(state, "SetCurrentState", L_SetCurrentState);

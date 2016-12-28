@@ -262,7 +262,7 @@ public:
 	void					SaveToFile( const char* filename );
 	bool					SaveVehicleReplay( CCar* target, const char* filename );
 
-	void					LoadFromFile(const char* filename);
+	bool					LoadFromFile(const char* filename);
 	bool					LoadVehicleReplay( CCar* target, const char* filename, int& tickCount );
 
 	//------------------------------------------------------

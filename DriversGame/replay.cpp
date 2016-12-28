@@ -431,6 +431,9 @@ extern EqString g_scriptName;
 
 void CReplayData::SaveToFile( const char* filename )
 {
+	if(g_pGameSession == NULL)
+		return;
+
 	m_filename = filename;
 
 	if(m_filename.Path_Extract_Ext().Length() == 0)
@@ -446,7 +449,7 @@ void CReplayData::SaveToFile( const char* filename )
 
 		strcpy(hdr.levelname, g_pGameWorld->GetLevelName());
 		strcpy(hdr.envname, g_pGameWorld->GetEnvironmentName());
-		strcpy(hdr.missionscript, g_scriptName.c_str());
+		strcpy(hdr.missionscript, g_State_Game->GetMissionScriptName());
 
 		pFile->Write(&hdr, 1, sizeof(replayhdr_t));
 
@@ -760,7 +763,7 @@ bool CReplayData::LoadVehicleReplay( CCar* target, const char* filename, int& ti
 	return false;
 }
 
-void CReplayData::LoadFromFile(const char* filename)
+bool CReplayData::LoadFromFile(const char* filename)
 {
 	m_filename = filename;
 
@@ -769,124 +772,132 @@ void CReplayData::LoadFromFile(const char* filename)
 
 	IFile* pFile = g_fileSystem->Open(m_filename.c_str(), "rb", SP_MOD);
 
+	if(!pFile)
+	{
+		MsgError("Demo '%s' not found!\n", m_filename.c_str());
+		return false;
+	}
+
+	replayhdr_t hdr;
+	pFile->Read(&hdr, 1, sizeof(replayhdr_t));
+
+	if(hdr.idreplay != VEHICLEREPLAY_IDENT)
+	{
+		MsgError("Error: '%s' is not a valid replay file!\n", m_filename.c_str());
+		g_fileSystem->Close(pFile);
+		return false;
+	}
+
+	if(hdr.version != VEHICLEREPLAY_VERSION)
+	{
+		MsgError("Error: Replay '%s' has invalid version!\n", m_filename.c_str());
+		g_fileSystem->Close(pFile);
+		return false;
+	}
+
+	Clear();
+
+	int veh_count = 0;
+	pFile->Read(&veh_count, 1, sizeof(int));
+
+	// read vehicle names
+	for(int i = 0; i < veh_count; i++)
+	{
+		vehiclereplay_file_t data;
+
+		pFile->Read(&data, 1, sizeof(vehiclereplay_file_t));
+
+		vehiclereplay_t veh;
+
+		// event will spawn this car
+		veh.obj_car = NULL;
+
+		veh.car_initial_pos = data.car_initial_pos;
+		veh.car_initial_rot = Quaternion(data.car_initial_rot.w, data.car_initial_rot.x, data.car_initial_rot.y, data.car_initial_rot.z);
+		veh.car_initial_vel = data.car_initial_vel;
+		veh.car_initial_angvel = data.car_initial_angvel;
+		veh.scriptObjectId = data.scriptObjectId;
+
+		veh.name = data.name;
+
+		veh.curr_frame = 0;
+		veh.done = true;
+		veh.onEvent = false;
+
+		for(int j = 0; j < data.numFrames; j++)
+		{
+			replaycontrol_t control;
+			pFile->Read(&control, 1, sizeof(replaycontrol_t));
+
+			veh.replayArray.append(control);
+		}
+
+		m_vehicles.append(veh);
+	}
+
+	// read events
+	int numEvents = 0;
+	pFile->Read(&numEvents, 1, sizeof(int));
+
+	for(int i = 0; i < numEvents; i++)
+	{
+		replayevent_t evt;
+		ReadEvent(evt, pFile);
+
+		// set frame count
+		if(evt.eventType == REPLAY_EVENT_END)
+			m_numFrames = evt.frameIndex;
+
+		m_events.append( evt );
+	}
+
+	MsgAccept("Replay file '%s' loaded successfully\n", filename);
+
+	g_fileSystem->Close(pFile);
+
+	// try loading camera file
+	EqString camsFilename = m_filename.Path_Strip_Ext() + ".rcam";
+	pFile = g_fileSystem->Open(camsFilename.c_str(), "rb", SP_MOD);
+
 	if(pFile)
 	{
-		replayhdr_t hdr;
-		pFile->Read(&hdr, 1, sizeof(replayhdr_t));
+		replaycamerahdr_t camhdr;
+		pFile->Read( &camhdr,1,sizeof(replaycamerahdr_t) );
 
-		if(hdr.idreplay != VEHICLEREPLAY_IDENT)
+		if(camhdr.version == CAMERAREPLAY_VERSION)
 		{
-			MsgError("Error: '%s' is not a replay file!\n", m_filename.c_str());
-			g_fileSystem->Close(pFile);
-			return;
-		}
+			m_currentCamera = 0;
 
-		if(hdr.version != VEHICLEREPLAY_VERSION)
-		{
-			MsgError("Error: Replay '%s' has invalid version!\n", m_filename.c_str());
-			g_fileSystem->Close(pFile);
-			return;
-		}
+			replaycamera_t cam;
 
-		Clear();
-
-		int veh_count = 0;
-		pFile->Read(&veh_count, 1, sizeof(int));
-
-		// read vehicle names
-		for(int i = 0; i < veh_count; i++)
-		{
-			vehiclereplay_file_t data;
-
-			pFile->Read(&data, 1, sizeof(vehiclereplay_file_t));
-
-			vehiclereplay_t veh;
-
-			// event will spawn this car
-			veh.obj_car = NULL;
-
-			veh.car_initial_pos = data.car_initial_pos;
-			veh.car_initial_rot = Quaternion(data.car_initial_rot.w, data.car_initial_rot.x, data.car_initial_rot.y, data.car_initial_rot.z);
-			veh.car_initial_vel = data.car_initial_vel;
-			veh.car_initial_angvel = data.car_initial_angvel;
-			veh.scriptObjectId = data.scriptObjectId;
-
-			veh.name = data.name;
-
-			veh.curr_frame = 0;
-			veh.done = true;
-			veh.onEvent = false;
-
-			for(int j = 0; j < data.numFrames; j++)
+			for(int i = 0; i < camhdr.numCameras; i++)
 			{
-				replaycontrol_t control;
-				pFile->Read(&control, 1, sizeof(replaycontrol_t));
+				pFile->Read( &cam,1,sizeof(replaycamera_t) );
 
-				veh.replayArray.append(control);
+				m_cameras.append(cam);
 			}
-
-			m_vehicles.append(veh);
 		}
-
-		// read events
-		int numEvents = 0;
-		pFile->Read(&numEvents, 1, sizeof(int));
-
-		for(int i = 0; i < numEvents; i++)
+		else
 		{
-			replayevent_t evt;
-			ReadEvent(evt, pFile);
-
-			// set frame count
-			if(evt.eventType == REPLAY_EVENT_END)
-				m_numFrames = evt.frameIndex;
-
-			m_events.append( evt );
+			MsgError("Unsupported camera replay file version!\n");
 		}
-
-		Msg("Replay %s loaded\n", filename);
 
 		g_fileSystem->Close(pFile);
-
-		// try loading camera file
-		EqString camsFilename = m_filename.Path_Strip_Ext() + ".rcam";
-		pFile = g_fileSystem->Open(camsFilename.c_str(), "rb", SP_MOD);
-		if(pFile)
-		{
-			replaycamerahdr_t camhdr;
-			pFile->Read( &camhdr,1,sizeof(replaycamerahdr_t) );
-
-			if(camhdr.version == CAMERAREPLAY_VERSION)
-			{
-				m_currentCamera = 0;
-
-				replaycamera_t cam;
-
-				for(int i = 0; i < camhdr.numCameras; i++)
-				{
-					pFile->Read( &cam,1,sizeof(replaycamera_t) );
-
-					m_cameras.append(cam);
-				}
-			}
-			else
-			{
-				MsgError("Unsupported camera replay file version!\n");
-			}
-
-			g_fileSystem->Close(pFile);
-		}
-
-		// load mission, level, set environment
-		m_state = REPL_INIT_PLAYBACK;
-
-		if(!LoadMissionScript( hdr.missionscript ))
-		{
-			g_pGameWorld->SetLevelName(hdr.levelname);
-		}
-
-		g_pGameWorld->SetEnvironmentName(hdr.envname);
 	}
+
+	// load mission, level, set environment
+	m_state = REPL_INIT_PLAYBACK;
+
+	if(!g_State_Game->LoadMissionScript( hdr.missionscript ))
+	{
+		MsgError("ERROR - Mission script '%s' for replay '%s'\n", hdr.missionscript, filename);
+		return false;
+	}
+
+	g_pGameWorld->SetLevelName(hdr.levelname);
+	g_pGameWorld->SetEnvironmentName(hdr.envname);
+
+	return true;
 }
 
 void CReplayData::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject* object, int eventFlags)

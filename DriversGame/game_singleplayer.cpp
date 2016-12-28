@@ -16,7 +16,6 @@
 
 extern CGameSession* g_pGameSession;
 
-EqString	g_scriptName = "defaultmission";
 ConVar		g_car("g_car", "rollo", "player car", CV_ARCHIVE);
 
 bool		g_bIsServer = true;
@@ -30,38 +29,6 @@ bool IsClient()
 bool IsServer()
 {
 	return g_bIsServer;
-}
-
-bool LoadMissionScript( const char* name )
-{
-	g_scriptName = name;
-
-	// first of all we reinitialize default mission script
-	if( !EqLua::LuaBinding_LoadAndDoFile( GetLuaState(), varargs("scripts/missions/defaultmission.lua"), "defaultmission" ) )
-	{
-		MsgError("default mission script init error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
-		return false;
-	}
-
-	// don't start both times
-	if(g_scriptName != "defaultmission")
-	{
-		EqString scriptFileName(varargs("scripts/missions/%s.lua", g_scriptName.c_str()));
-
-		// then we load custom script
-		if( !EqLua::LuaBinding_LoadAndDoFile( GetLuaState(), scriptFileName.c_str(), g_scriptName.c_str() ) )
-		{
-			MsgError("mission script init error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
-			g_scriptName = "defaultmission";
-			return false;
-		}
-	}
-	else
-	{
-		return false;
-	}
-
-	return true;
 }
 
 //---------------------------------------------------------------------------------------------
@@ -205,7 +172,9 @@ void CGameSession::Shutdown()
 	if( g_replayData->m_state == REPL_RECORDING )
 	{
 		g_replayData->Stop();
-		g_replayData->SaveToFile("last.rdat");
+
+		g_fileSystem->MakeDir("UserReplays", SP_MOD);
+		g_replayData->SaveToFile("UserReplays/_lastSession.rdat");
 	}
 
 	g_pAIManager->Shutdown();

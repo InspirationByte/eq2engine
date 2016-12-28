@@ -8,7 +8,6 @@
 #include "DrvSynHUD.h"
 #include "AICarManager.h"
 #include "heightfield.h"
-#include "materialsystem/MeshBuilder.h"
 
 static CDrvSynHUDManager s_drvSynHUDManager;
 CDrvSynHUDManager* g_pGameHUD = &s_drvSynHUDManager;
@@ -142,6 +141,25 @@ ConVar hud_map_pos("hud_map_pos", "0", "Map position (0 - bottom, 1 - top)", CV_
 ConVar g_showCameraPosition("g_showCameraPosition", "0", NULL, CV_CHEAT);
 ConVar g_showCarPosition("g_showCarPosition", "0", NULL, CV_CHEAT);
 
+void CDrvSynHUDManager::DrawDamageRectangle(CMeshBuilder& meshBuilder, Rectangle_t& rect, float percentage, float alpha)
+{
+	meshBuilder.Color4f(0.435, 0.435, 0.435, 0.35f*alpha);
+	meshBuilder.Quad2(rect.GetLeftTop(), rect.GetRightTop(), rect.GetLeftBottom(), rect.GetRightBottom());
+
+	if(percentage > 0)
+	{
+		Rectangle_t fillRect(rect.vleftTop, Vector2D(lerp(rect.vleftTop.x, rect.vrightBottom.x, percentage), rect.vrightBottom.y));
+
+		ColorRGBA damageColor = lerp(ColorRGBA(0,0.6f,0,alpha), ColorRGBA(0.6f,0,0,alpha), percentage) * 1.5f;
+
+		if(percentage > 0.85f)
+			damageColor = lerp(ColorRGBA(0.1f,0,0,alpha), ColorRGBA(0.8f,0,0,alpha), fabs(sin(m_curTime*3.0f))) * 1.5f;
+
+		// draw damage bar foreground
+		meshBuilder.Color4fv(damageColor);
+		meshBuilder.Quad2(fillRect.GetLeftTop(), fillRect.GetRightTop(), fillRect.GetLeftBottom(), fillRect.GetRightBottom());
+	}
+}
 
 // render the screen with maps and shit
 void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , const Matrix4x4& projMatrix, const Matrix4x4& viewMatrix )
@@ -192,27 +210,14 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 		meshBuilder.Begin(PRIM_TRIANGLES);
 
-			// Draw damage bar background
 			Rectangle_t damageRect(35,65,410, 92);
-
-			meshBuilder.Color4f(0.435, 0.435, 0.435, 0.35f);
-			meshBuilder.Quad2(damageRect.GetLeftTop(), damageRect.GetRightTop(), damageRect.GetLeftBottom(), damageRect.GetRightBottom());
 
 			if( m_mainVehicle )
 			{
 				// fill the damage bar
 				float fDamage = m_mainVehicle->GetDamage() / m_mainVehicle->GetMaxDamage();
 
-				Rectangle_t fillRect(damageRect.vleftTop, Vector2D(lerp(damageRect.vleftTop.x, damageRect.vrightBottom.x, fDamage), damageRect.vrightBottom.y));
-
-				ColorRGBA damageColor = lerp(ColorRGBA(0,0.6f,0,0.5f), ColorRGBA(0.6f,0,0,0.5f), fDamage) * 1.5f;
-
-				if(fDamage > 0.85f)
-					damageColor = lerp(ColorRGBA(0.1f,0,0,0.5f), ColorRGBA(0.8f,0,0,0.5f), fabs(sin(m_curTime*3.0f))) * 1.5f;
-
-				// draw damage bar foreground
-				meshBuilder.Color4fv(damageColor);
-				meshBuilder.Quad2(fillRect.GetLeftTop(), fillRect.GetRightTop(), fillRect.GetLeftBottom(), fillRect.GetRightBottom());
+				DrawDamageRectangle(meshBuilder, damageRect, fDamage);
 
 				// draw pursuit cop "triangles" on screen
 				if( inPursuit )
@@ -244,8 +249,71 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 						}
 					}
 				}
-			}
 
+				// draw target car damage, proximity and other bars
+				for(hudDisplayObjIterator_t iterator = m_displayObjects.begin(); iterator != m_displayObjects.end(); iterator++)
+				{
+					hudDisplayObject_t& obj = iterator->second;
+
+					obj.flashValue -= fDt;
+
+					if(obj.flashValue < 0.0f)
+						obj.flashValue = 1.0f;
+
+					if(	(obj.flags & HUD_DOBJ_CAR_DAMAGE) || (obj.flags & HUD_DOBJ_IS_TARGET))
+					{
+						CGameObject* gameObj = obj.object;
+
+						float fDamage = 0.0f;
+						Vector3D markPos = obj.point;
+
+						float maxVisibleDistance = 150.0f;
+
+						if(gameObj && (gameObj->ObjType() == GO_CAR || gameObj->ObjType() == GO_CAR_AI))
+						{
+							CCar* car = (CCar*)gameObj;
+
+							fDamage = car->GetDamage() / car->GetMaxDamage();
+							markPos = car->GetOrigin() + vec3_up*car->m_conf->cameraConf.height;
+							maxVisibleDistance = 50.0f;
+						}
+
+						Vector3D screenPos;
+						PointToScreen_Z(markPos, screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x,(float)screenSize.y));
+
+						float dist = length(m_mainVehicle->GetOrigin() - markPos);
+
+						if( screenPos.z > 0.0f && dist < maxVisibleDistance)
+						{
+							CollisionData_t trace;
+							bool visible = !g_pPhysics->TestLine(g_pGameWorld->GetView()->GetOrigin(), markPos, trace, OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT);
+
+							if(!visible)
+								continue;
+
+							float targetAlpha = 1.0f - (dist / maxVisibleDistance);
+
+							if(obj.flags & HUD_DOBJ_IS_TARGET)
+							{
+								Vector2D targetScreenPos = screenPos.xy() - Vector2D(0, obj.flashValue*30.0f);
+
+								meshBuilder.Color4f( 1.0f, 0.0f, 0.0f, pow(targetAlpha, 0.5f) );
+								meshBuilder.Triangle2(targetScreenPos, targetScreenPos+Vector2D(-20, -20), targetScreenPos+Vector2D(20, -20));
+							}
+
+							if( (obj.flags & HUD_DOBJ_CAR_DAMAGE) )
+							{
+								Rectangle_t targetDamageRect(-40, 0, 40, 8 );
+
+								targetDamageRect.vleftTop += screenPos.xy();
+								targetDamageRect.vrightBottom += screenPos.xy();
+
+								DrawDamageRectangle(meshBuilder, targetDamageRect, fDamage, targetAlpha);
+							}
+						}
+					}
+				}
+			}
 		meshBuilder.End();
 
 		Vector2D damageTextPos( damageRect.vleftTop.x+5, damageRect.vleftTop.y+15);
@@ -543,10 +611,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 					}
 
 					meshBuilder.AdvanceVertexIndex(0xFFFF);
-
-					obj.flashValue -= fDt;
-					if(obj.flashValue < 0.0f)
-						obj.flashValue = 1.0f;
 				}
 
 				// draw player car dot

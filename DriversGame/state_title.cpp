@@ -71,12 +71,18 @@ bool CState_Title::Update( float fDt )
 
 		if(m_actionTimeout <= 0.0f && m_fade <= 0.0f)
 		{
-			g_replayData->LoadFromFile( "demoreplays/demo1" );
-
-			g_State_Game->SetDemoMode(true);
-
-			SetNextState(g_State_Game);
-			return false;
+			if(g_replayData->LoadFromFile( "demoreplays/demo1" ))
+			{
+				g_State_Game->SetDemoMode(true);
+				SetNextState(g_State_Game);
+				return false;
+			}
+			else
+			{
+				m_actionTimeout = 10.0f;
+				m_fade = 0.0f;
+				m_goesFromTitle = false;
+			}
 		}
 	}
 	else
