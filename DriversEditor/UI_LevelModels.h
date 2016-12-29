@@ -124,6 +124,9 @@ public:
 	void						OnLevelUnload();
 	void						OnLevelLoad();
 
+	void						OnSwitchedTo();
+	void						OnSwitchedFrom();
+
 	void						Update_Refresh();
 
 	void						RecalcSelectionCenter();

@@ -106,6 +106,7 @@ public:
 	void					ReloadList();
 
 	buildLayerColl_t*		GetSelectedLayerColl() const;
+	void					SetSelectedLayerColl(buildLayerColl_t* layerColl);
 
 	void					Redraw();
 
@@ -176,6 +177,8 @@ public:
 
 	void		EditSelectedBuilding();
 
+	void		DuplicateSelection();
+
 	void		Update_Refresh();
 
 	void		OnKey(wxKeyEvent& event, bool bDown);
@@ -192,6 +195,9 @@ public:
 	void		OnLevelLoad();
 	void		OnLevelSave();
 	void		OnLevelUnload();
+
+	void		OnSwitchedTo();
+	void		OnSwitchedFrom();
 	
 protected:
 

@@ -51,6 +51,25 @@ regionObject_t::~regionObject_t()
 	}
 }
 
+void regionObject_t::CalcBoundingBox()
+{
+	BoundingBox tbbox;
+	BoundingBox modelBBox;
+
+	if(this->def->m_model)
+		modelBBox = this->def->m_model->GetAABB();
+	else if(this->def->m_defModel)
+		modelBBox = this->def->m_defModel->GetAABB();
+
+	for(int i = 0; i < 8; i++)
+	{
+		tbbox.AddVertex((transform*Vector4D(modelBBox.GetVertex(i), 1.0f)).xyz());
+	}
+
+	// set reference bbox for light testing
+	bbox = tbbox;
+}
+
 //-----------------------------------------------------------------------------------------
 
 CLevelRegion::CLevelRegion()
@@ -665,14 +684,6 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 
 			if(model->m_hasTransparentSubsets)
 				m_hasTransparentSubsets = true;
-
-			BoundingBox tbbox;
-
-			for(int i = 0; i < 8; i++)
-				tbbox.AddVertex((ref->transform*Vector4D(model->m_bbox.GetVertex(i), 1.0f)).xyz());
-
-			// set reference bbox for light testing
-			ref->bbox = tbbox;
 		}
 #ifndef EDITOR
 		else
@@ -703,6 +714,9 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 			}
 		}
 #endif
+
+		// calculate ref aabb
+		ref->CalcBoundingBox();
 
 		// finally add that object
 		m_level->m_mutex.Lock();

@@ -132,6 +132,8 @@ struct regionObject_t
 
 	~regionObject_t();
 
+	void CalcBoundingBox();
+
 	CLevObjectDef*			def;
 	CGameObject*			game_object;
 	CEqCollisionObject*		physObject;

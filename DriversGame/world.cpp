@@ -585,9 +585,6 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 	m_occludingFrustum.Clear();
 
-	if(!unloadLevel)
-		m_level.UpdateRegions();
-
 	g_pRainEmitter->Clear();
 
 	ses->RemoveSoundController(m_rainSound);

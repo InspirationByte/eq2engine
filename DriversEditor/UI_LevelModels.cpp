@@ -1157,6 +1157,10 @@ void CUI_LevelModels::RecalcSelectionCenter()
 
 	for(int i = 0; i < m_selRefs.numElem(); i++)
 	{
+		// calculate the transformation
+		m_selRefs[i].selRef->transform = GetModelRefRenderMatrix( m_selRefs[i].selRegion, m_selRefs[i].selRef );
+		m_selRefs[i].selRef->CalcBoundingBox();
+
 		bbox.AddVertex( m_selRefs[i].selRef->position );
 	}
 
@@ -1222,23 +1226,28 @@ void CUI_LevelModels::DuplicateSelection()
 	for(int i = 0; i < m_selRefs.numElem(); i++)
 	{
 		regionObject_t* modelref = new regionObject_t;
-		m_selectedRegion->m_objects.append( modelref );
+		
+		modelref->def = m_selRefs[i].selRef->def;
+		modelref->position = m_selRefs[i].selRef->position;
+		modelref->rotation = m_selRefs[i].selRef->rotation;
+		modelref->tile_x = 0xFFFF;//m_selRefs[i].selRef->tile_x;
+		modelref->tile_y = 0xFFFF;//m_selRefs[i].selRef->tile_y;
 
-		*modelref = *m_selRefs[i].selRef;
-
-		CLevObjectDef* cont = m_selRefs[i].selRef->def;
+		CLevObjectDef* cont = modelref->def;
 
 		// remove and invalidate
 		if(cont->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 			cont->m_model->Ref_Grab();
 
-		modelref->tile_x += 1;
-		modelref->tile_y += 1;
+		//modelref->tile_x += 1;
+		//modelref->tile_y += 1;
 		modelref->position += Vector3D(1,0,1);
+
+		m_selectedRegion->m_objects.append( modelref );
 
 		newObjects.append(modelref);
 	}
-
+	
 	ClearSelection();
 
 	for(int i = 0; i < newObjects.numElem(); i++)
@@ -1249,6 +1258,8 @@ void CUI_LevelModels::DuplicateSelection()
 
 		ToggleSelection(sel);
 	}
+
+	g_pMainFrame->NotifyUpdate();
 }
 
 void CUI_LevelModels::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos )
@@ -1372,6 +1383,8 @@ void CUI_LevelModels::MouseTranslateEvents( wxMouseEvent& event, const Vector3D&
 	{
 		m_draggedAxes = 0;
 		m_dragOffs = vec3_zero;
+
+		RecalcSelectionCenter();
 	}
 }
 
@@ -1496,8 +1509,6 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 
 			regionObject_t* modelref = NULL;
 
-			int pick_Idx = -1;
-
 			// prevent placement on this tile again
 			for(int i = 0; i < m_selectedRegion->m_objects.numElem(); i++)
 			{
@@ -1508,18 +1519,14 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 					(obj->tile_x == tx) && 
 					(obj->tile_y == ty))
 				{
-					pick_Idx = i;
 					modelref = obj;
 				}
 			}
 
 			if(!modelref)
 			{
-				regionObject_t* ref = new regionObject_t;
-
-				pick_Idx = m_selectedRegion->m_objects.append( ref );
-
-				modelref = m_selectedRegion->m_objects[pick_Idx];
+				modelref = new regionObject_t;
+				m_selectedRegion->m_objects.append( modelref );
 			}
 			else if(modelref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 			{
@@ -1544,7 +1551,7 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 
 			modelref->tile_x = m_tiledPlacement->GetValue() ? tx : 0xFFFF;
 			modelref->tile_y = ty;
-			
+
 			ClearSelection();
 
 			// autoselect placed model
@@ -1552,7 +1559,7 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 			{
 				refselectioninfo_t sel;
 				sel.selRegion = m_selectedRegion;
-				sel.selRef = sel.selRegion->m_objects[pick_Idx];
+				sel.selRef = modelref;
 
 				ToggleSelection(sel);
 			}
@@ -1737,10 +1744,13 @@ void CUI_LevelModels::OnRender()
 		}
 
 		// display selection
+		BoundingBox bbox;
 
 		for(int i = 0; i < m_selRefs.numElem(); i++)
 		{
 			regionObject_t* selectionRef = m_selRefs[i].selRef;
+
+			bbox.Merge(selectionRef->bbox);
 
 			Matrix4x4 wmatrix = GetModelRefRenderMatrix(m_selRefs[i].selRegion, selectionRef);
 
@@ -1752,7 +1762,6 @@ void CUI_LevelModels::OnRender()
 			materials->SetAmbientColor(ColorRGBA(1,0.5,0.5,1));
 
 			selectionRef->def->Render(0.0f, tref.bbox, false, 0);
-			//selectionRef->model->Render(0);
 
 			materials->SetAmbientColor(oldcol);
 
@@ -1761,6 +1770,9 @@ void CUI_LevelModels::OnRender()
 			if(m_selRefs.numElem() == 1)
 				m_editAxis.SetProps(wmatrix.getRotationComponent(), selectionRef->position);
 		}
+
+		// draw selection bbox
+		debugoverlay->Box3D(bbox.minPoint, bbox.maxPoint, ColorRGBA(1,1,1, 0.75f));
 
 		if( m_selRefs.numElem() > 0 )
 		{
@@ -1796,6 +1808,24 @@ void CUI_LevelModels::OnLevelLoad()
 {
 	m_modelPicker->RefreshLevelModels();
 	RefreshModelReplacement();
+}
+
+void CUI_LevelModels::OnSwitchedTo()
+{
+	// if we switched to this tool, hide selected refs again
+	for(int i = 0; i < m_selRefs.numElem(); i++)
+	{
+		m_selRefs[i].selRef->hide = true;
+	}
+}
+
+void CUI_LevelModels::OnSwitchedFrom()
+{
+	// if we switched from this tool, show selected hidden refs
+	for(int i = 0; i < m_selRefs.numElem(); i++)
+	{
+		m_selRefs[i].selRef->hide = false;
+	}
 }
 
 void CUI_LevelModels::Update_Refresh()

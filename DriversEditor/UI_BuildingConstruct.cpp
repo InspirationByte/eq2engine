@@ -709,6 +709,15 @@ buildLayerColl_t* CBuildingLayerList::GetSelectedLayerColl() const
 	return m_filteredList[m_selection];
 }
 
+void CBuildingLayerList::SetSelectedLayerColl(buildLayerColl_t* layerColl)
+{
+	for(int i = 0; i < m_filteredList.numElem(); i++)
+	{
+		if(m_filteredList[i] == layerColl)
+			m_selection = i;
+	}
+}
+
 void CBuildingLayerList::ChangeFilter(const wxString& filter)
 {
 	if(!IsShown())
@@ -1145,6 +1154,12 @@ void CUI_BuildingConstruct::OnKey(wxKeyEvent& event, bool bDown)
 		}
 		else if(event.m_keyCode == WXK_SPACE)
 		{
+			if(event.ControlDown())
+			{
+				DuplicateSelection();
+				return;
+			}
+
 			if(m_editingBuilding)
 				m_editingBuilding->order = m_editingBuilding->order > 0 ? -1 : 1;
 		}
@@ -1194,6 +1209,24 @@ void CUI_BuildingConstruct::OnLevelUnload()
 	CBaseTilebasedEditor::OnLevelUnload();
 
 	m_layerCollList->RemoveAllLayerCollections();
+}
+
+void CUI_BuildingConstruct::OnSwitchedTo()
+{
+	// if we switched from this tool, show selected hidden refs
+	for(int i = 0; i < m_selBuildings.numElem(); i++)
+	{
+		m_selBuildings[i].selBuild->hide = true;
+	}
+}
+
+void CUI_BuildingConstruct::OnSwitchedFrom()
+{
+	// if we switched from this tool, show selected hidden refs
+	for(int i = 0; i < m_selBuildings.numElem(); i++)
+	{
+		m_selBuildings[i].selBuild->hide = false;
+	}
 }
 
 //------------------------------------------------------------------------
@@ -1271,7 +1304,6 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 
 	if(event.ControlDown())
 	{
-
 		m_isSelecting = true;
 		
 		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
@@ -1296,17 +1328,18 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 
 		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging())
 		{
-			if( !m_layerCollList->GetSelectedLayerColl() && m_mode == ED_BUILD_READY )
-			{
-				wxMessageBox("Please select template to begin", "Can't do it!", wxOK | wxCENTRE, g_pMainFrame);
-				return;
-			}
-
 			if(m_mode == ED_BUILD_READY)
 				m_mode = ED_BUILD_BEGUN;	// make to the point 1
 
 			if(m_mode == ED_BUILD_BEGUN)
 			{
+				if( !m_layerCollList->GetSelectedLayerColl())
+				{
+					m_mode = ED_BUILD_READY;
+					wxMessageBox("Please select template to begin", "Can't do it!", wxOK | wxCENTRE, g_pMainFrame);
+					return;
+				}
+
 				buildSegmentPoint_t segment;
 				segment.layerId = m_curLayerId;
 				segment.position = m_mousePoint;
@@ -1326,6 +1359,12 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 			}
 			else if(m_mode == ED_BUILD_SELECTEDPOINT)
 			{
+				if(!m_editingBuilding)
+				{
+					m_mode = ED_BUILD_READY;
+					return;
+				}
+
 				if(m_placeError)
 					return;
 
@@ -1360,6 +1399,11 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				return;
 			}
 		}
+		else if(m_selBuildings.numElem() > 0)
+		{
+			// try move selection
+
+		}
 	}
 }
 
@@ -1368,7 +1412,7 @@ void CUI_BuildingConstruct::EditSelectedBuilding()
 	if(m_selBuildings.numElem() != 1)
 	{
 		if(m_selBuildings.numElem() > 1)
-			wxMessageBox("You need to select ONE building to begin editing", "Can't do it!", wxOK | wxCENTRE, g_pMainFrame);
+			wxMessageBox("You have to select ONE building to begin editing", "Can't do it!", wxOK | wxCENTRE, g_pMainFrame);
 
 		return;
 	}
@@ -1376,6 +1420,16 @@ void CUI_BuildingConstruct::EditSelectedBuilding()
 	// don't forget to copy
 	buildingSource_t* selBuilding = m_selBuildings[0].selBuild;
 	m_editingCopy.InitFrom(*selBuilding);
+
+	m_editingBuilding = selBuilding;
+	m_isEditingNewBuilding = false;
+	m_mode = ED_BUILD_SELECTEDPOINT;
+
+	m_layerCollList->SetSelectedLayerColl( m_editingBuilding->layerColl );
+	m_curLayerId = 0;
+	m_curSegmentScale = 1.0f;
+
+	//ClearSelection();
 }
 
 void CUI_BuildingConstruct::CancelBuilding()
@@ -1409,6 +1463,9 @@ void CUI_BuildingConstruct::CancelBuilding()
 
 void CUI_BuildingConstruct::CompleteBuilding()
 {
+	if(!m_editingBuilding)
+		return;
+
 	// generate building model for region:
 	if(!m_selectedRegion || m_editingBuilding->points.getCount() == 0 || m_editingBuilding->layerColl == NULL)
 		return;
@@ -1419,18 +1476,6 @@ void CUI_BuildingConstruct::CompleteBuilding()
 		return;
 	}
 
-	if( !m_isEditingNewBuilding )
-		return;
-
-	// if not ex
-	CEditorLevelRegion* region = (CEditorLevelRegion*)g_pGameWorld->m_level.GetRegionAtPosition(m_editingBuilding->modelPosition);
-
-	if( !region )
-		region = (CEditorLevelRegion*)m_selectedRegion;
-
-	// add building to the region
-	region->m_buildings.append( m_editingBuilding );
-
 	m_editingBuilding = NULL;
 
 	m_curLayerId = 0;
@@ -1439,6 +1484,23 @@ void CUI_BuildingConstruct::CompleteBuilding()
 	m_mode = ED_BUILD_READY;
 
 	g_pMainFrame->NotifyUpdate();
+
+	if(m_isEditingNewBuilding)
+	{
+		CEditorLevelRegion* region = (CEditorLevelRegion*)g_pGameWorld->m_level.GetRegionAtPosition(m_editingBuilding->modelPosition);
+
+		if( !region )
+			region = (CEditorLevelRegion*)m_selectedRegion;
+
+		// add building to the region
+		region->m_buildings.append( m_editingBuilding );
+	}
+}
+
+void CUI_BuildingConstruct::DuplicateSelection()
+{
+
+	ClearSelection();
 }
 
 void CUI_BuildingConstruct::ClearSelection()
@@ -1541,6 +1603,9 @@ void CUI_BuildingConstruct::OnRender()
 	{
 		for(int i = 0; i < m_selBuildings.numElem(); i++)
 		{
+			if(m_selBuildings[i].selBuild == m_editingBuilding)
+				continue;
+
 			Matrix4x4 wmatrix = identity4() * translate(m_selBuildings[i].selBuild->modelPosition);
 
 			// render

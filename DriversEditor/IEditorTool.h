@@ -25,6 +25,9 @@ public:
 	virtual void		OnLevelUnload() {};
 	virtual void		OnLevelLoad() {};
 	virtual void		OnLevelSave() {};
+
+	virtual void		OnSwitchedTo() {};
+	virtual void		OnSwitchedFrom() {};
 };
 
 #endif // EDITINTERFACE_H

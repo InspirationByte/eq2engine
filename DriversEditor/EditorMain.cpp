@@ -383,6 +383,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 		m_tools[i]->InitTool();
 	}
 
+	// set default tool
 	m_selectedTool = m_hmapedit;
 
 	m_newLevelDialog = new CNewLevelDialog(this);
@@ -418,7 +419,11 @@ void CMainWindow::OnPageSelectMode( wxNotebookEvent& event )
 	IEditorTool* tool = dynamic_cast<IEditorTool*>(m_notebook1->GetPage(sel_id));
 
 	if(tool)
+	{
+		m_selectedTool->OnSwitchedFrom();
 		m_selectedTool = tool;
+		m_selectedTool->OnSwitchedTo();
+	}
 	else
 		m_selectedTool = m_hmapedit;
 }

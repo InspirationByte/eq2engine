@@ -270,7 +270,7 @@ float GetSegmentLength( buildLayer_t& layer )
 //
 void RenderBuilding( buildingSource_t* building, buildSegmentPoint_t* extraSegment )
 {
-	if(building->model != NULL)
+	if(building->model != NULL && !extraSegment)
 	{
 		Matrix4x4 transform = translate(building->modelPosition) * identity4();
 		
@@ -532,6 +532,15 @@ bool GenerateBuildingModel( buildingSource_t* building )
 		else
 		{
 		
+		}
+	}
+
+	if(building->model != NULL)
+	{
+		if(building->model->Ref_Drop())
+		{
+			delete building->model;
+			building->model = NULL;
 		}
 	}
 	
