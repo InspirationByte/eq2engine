@@ -16,6 +16,7 @@
 
 #ifdef _WIN32
 #include "Mmsystem.h"
+#include "Resources/resource.h"
 #endif
 
 #define GAME_WINDOW_TITLE "The Driver Syndicate" //varargs("Driver Syndicate Alpha [%s] build %d", __DATE__, GetEngineBuildNumber())
@@ -119,6 +120,21 @@ EQWNDHANDLE Sys_CreateWindow()
 		ErrorMsg("Can't create window!\n%s\n",SDL_GetError());
 		return NULL;
 	}
+
+#ifdef _WIN32
+	SDL_SysWMinfo wminfo;
+	SDL_VERSION(&wminfo.version)
+	if (SDL_GetWindowWMInfo(handle, &wminfo) == 0)
+	{
+		HINSTANCE modHandle = ::GetModuleHandle(NULL);
+		HICON icon = ::LoadIcon(modHandle, MAKEINTRESOURCE(IDI_MAINICON));
+
+		::SetClassLong(wminfo.info.win.window, GCL_HICON, (LONG) icon);
+	}
+#else
+
+	//SDL_Surface* icon = IMG_Load("drvsyn_icon.png");
+#endif // _WIN32
 
 #elif PLAT_WIN
 

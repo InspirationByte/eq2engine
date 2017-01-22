@@ -1269,20 +1269,18 @@ void CCar::UpdateVehiclePhysics(float delta)
 		fRPM = 5800.0f;
 	}
 
-	if(m_nGear > 1)
+	if(fAccel > m_fAcceleration)
 	{
-		if(fAccel > m_fAcceleration)
+		if(m_nGear > 1)
 			m_fAcceleration += delta * ACCELERATION_CONST * accel_scale;
 		else
-			m_fAcceleration -= delta * ACCELERATION_CONST;
-
-		if(m_fAcceleration < 0)
-			m_fAcceleration = 0;
+			m_fAcceleration = fAccel;
 	}
 	else
-	{
-		m_fAcceleration = fAccel;
-	}
+		m_fAcceleration -= delta * ACCELERATION_CONST;
+
+	if(m_fAcceleration < 0)
+		m_fAcceleration = 0;
 
 	#define RPM_REFRESH_TIMES 16
 
@@ -1929,7 +1927,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		else if(!numDriveWheelsOnGround)
 		{
 			if(fAccel > 0 || fabs(fBrake) > 0)
-				wheel.m_pitchVel += torque*carBody->GetInvMass();
+				wheel.m_pitchVel += fAccelerator * carBody->GetInvMass();
 			else
 				wheel.m_pitchVel = 0.0f;
 		}
@@ -3460,10 +3458,14 @@ void CCar::UpdateSounds( float fDt )
 
 	float fEngineSoundVol = clamp((1.0f - m_engineIdleFactor), 0.45f, 1.0f);
 
-	float fRPMDiff = clamp( RemapVal(fabs(GetRPM() - m_fEngineRPM), 0, 50.0f, 0.0f, 1.0f) + (float)m_fAccelEffect, 0.0f, 1.0f);
+	float fRPMDiff = 1.0f;
 
-	if(!m_isLocalCar)
-		fRPMDiff = 1.0f;
+	if(m_isLocalCar)
+	{
+		fRPMDiff = (GetRPM() - m_fEngineRPM);
+		fRPMDiff = RemapValClamp(fRPMDiff, 0.0f, 100.0f, 0.0f, 1.0f) + pow(fabs(m_fAccelEffect), 2.0f);
+		fRPMDiff = min(fRPMDiff, 1.0f);
+	}
 
 #ifndef EDITOR
 	if(g_pCameraAnimator->GetRealMode() == CAM_MODE_INCAR &&

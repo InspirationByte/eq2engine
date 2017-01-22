@@ -360,7 +360,6 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_pRenderPanel->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&CMainWindow::ProcessKeyboardDownEvents, NULL, this);
 	m_pRenderPanel->Connect(wxEVT_KEY_UP, (wxObjectEventFunction)&CMainWindow::ProcessKeyboardUpEvents, NULL, this);
 
-	
 
 	/*
 	m_pRenderPanel->Connect(wxEVT_ENTER_WINDOW, (wxObjectEventFunction)&CMainWindow::ProcessMouseEnter, NULL, this);
@@ -392,6 +391,8 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_carNameDialog = new wxTextEntryDialog(this, L"Vehicle entry name", "Enter the vehicle name you want to drive on");
 
 	m_carNameDialog->SetValue("mustang");
+
+	g_fileSystem->MakeDir("levels/editor_prefabs", SP_MOD);
 
 	g_pPhysics = new CPhysicsEngine();
 

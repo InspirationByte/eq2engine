@@ -415,6 +415,9 @@
     <ClInclude Include="..\DriversGame\DrvSynDecals.h">
       <Filter>Source Files\Game\Effects</Filter>
     </ClInclude>
+    <ClInclude Include="UI_PrefabMgr.h">
+      <Filter>Source Files\Editor\Modes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Notes.txt" />
@@ -614,6 +617,9 @@
     </ClCompile>
     <ClCompile Include="..\DriversGame\DrvSynDecals.cpp">
       <Filter>Source Files\Game\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="UI_PrefabMgr.cpp">
+      <Filter>Source Files\Editor\Modes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

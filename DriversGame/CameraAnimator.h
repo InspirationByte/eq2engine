@@ -54,6 +54,8 @@ public:
 
 	void					Reset();
 
+	void					ViewShake(float fMagnutude, float fTime);
+
 	const CViewParams&		GetComputedView() const;
 
 	int						GetRealMode() const				{return m_realMode;}
@@ -67,7 +69,10 @@ public:
 
 	void					L_Update( float fDt, CCar* target );
 
+
 protected:
+
+	Vector3D				ShakeView( float fDt );
 
 	void					Animate(	ECameraMode mode, int nButtons,
 										const Vector3D& targetOrigin,
@@ -90,6 +95,11 @@ protected:
 
 	Vector3D				m_dropPos;
 	Vector3D				m_rotation;
+
+	float					m_shakeDecayCurTime;
+	float					m_shakeMagnitude;
+
+	float					m_targetForwardSpeedModifier;
 
 	CViewParams				m_computedView;
 

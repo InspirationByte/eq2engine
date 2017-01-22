@@ -537,7 +537,7 @@ protected:
 	FReal					m_fAcceleration;
 	FReal					m_fBreakage;
 
-	FReal					m_fAccelEffect;
+	float					m_fAccelEffect;
 	FReal					m_steeringHelper;
 	FReal					m_steering;
 

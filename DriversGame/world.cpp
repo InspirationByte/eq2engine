@@ -59,7 +59,7 @@ ConVar r_drawFakeReflections("r_drawFakeReflections", "1", NULL, CV_ARCHIVE);
 ConVar r_nightBrightness("r_nightBrightness", "1.0", NULL, CV_ARCHIVE);
 ConVar r_drawLensFlare("r_drawLensFlare", "2", "Draw lens flare\n\t1 - query by physics\n\t2 - query by occlusion", CV_ARCHIVE);
 
-ConVar r_lightDistanceScale("r_lightDistanceScale", "0.3", "Light distance scale cutoff", CV_ARCHIVE);
+ConVar r_lightDistance("r_lightDistance", "150", "Light distance scale cutoff", CV_ARCHIVE);
 
 ConVar r_ambientScale("r_ambientScale", "1.0f", NULL, CV_ARCHIVE);
 
@@ -73,7 +73,7 @@ ConVar r_drawsky("r_drawsky", "1", NULL, CV_CHEAT);
 ConVar r_ortho("r_ortho", "0", NULL, CV_CHEAT);
 ConVar r_ortho_size("r_ortho_size", "0.5", NULL, CV_ARCHIVE);
 
-#define LIGHT_FADE_DIST (25.0f)
+#define TRAFFICLIGHT_TIME 15.0f
 
 DkList<EqString> g_envList;
 void cmd_environment_variants(DkList<EqString>& list, const char* query)
@@ -712,8 +712,6 @@ void CGameWorld::Cleanup( bool unloadLevel )
 	}
 }
 
-#define TRAFFICLIGHT_TIME 15.0f
-
 void GWJob_UpdateWorldAndEffects(void* data, int i)
 {
 	float fDt = *(float*)data;
@@ -899,14 +897,14 @@ bool CGameWorld::AddLight(const wlight_t& light)
 	if( !m_occludingFrustum.IsSphereVisible(light.position.xyz(), light.position.w) )
 		return false;
 
-	float fDistance = m_sceneinfo.m_fZFar*r_lightDistanceScale.GetFloat() - m_frustum.GetPlane(VOLUME_PLANE_NEAR).Distance(light.position.xyz());
+	float fDistance = length(light.position.xyz() - m_view.GetOrigin());
 
-	if(fDistance < 0)
-		return true;	// don't add this light
+	if(fDistance > r_lightDistance.GetFloat())
+		return true;
 
-	const float fadeDistVal = 1.0f / LIGHT_FADE_DIST;
+	const float fadeDistVal = 1.0f / r_lightDistance.GetFloat();
 
-	float fLightBrightness = clamp(fDistance*fadeDistVal, 0.0f, 1.0f);
+	float fLightBrightness = 1.0f - pow(clamp(fDistance*fadeDistVal, 0.0f, 1.0f), 4.0f);
 
 	m_lights[m_numLights] = light;
 

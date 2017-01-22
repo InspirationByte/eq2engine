@@ -49,6 +49,16 @@ ConVar cam_custom_height("cam_custom_height", "1.3", NULL, CV_ARCHIVE);
 ConVar cam_custom_dist("cam_custom_dist", "7", NULL, CV_ARCHIVE);
 ConVar cam_custom_fov("cam_custom_fov", "52", NULL, CV_ARCHIVE);
 
+DECLARE_CMD(v_shake, "shakes view", 0)
+{
+	if(CMD_ARGC < 1)
+		return;
+
+	float shakeMagnitude = atof(CMD_ARGV(0).c_str());
+	float shakeTime = CMD_ARGC > 1 ? atof(CMD_ARGV(1).c_str()) : 1.0f;
+
+	g_pCameraAnimator->ViewShake(shakeMagnitude, shakeTime);
+}
 
 //---------------------------------------------------------------------------------------------------------------
 
@@ -62,7 +72,10 @@ CCameraAnimator::CCameraAnimator() :
 	m_dropPos(0.0f),
 	m_rotation(0.0f),
 	m_cameraFOV(DEFAULT_CAMERA_FOV),
-	m_scriptControl(false)
+	m_scriptControl(false),
+	m_shakeDecayCurTime(0.0f),
+	m_shakeMagnitude(0.0f),
+	m_targetForwardSpeedModifier(1.0f)
 {
 	m_carConfig.dist = 7.0f;
 	m_carConfig.distInCar = 7.0f;
@@ -123,6 +136,11 @@ void CCameraAnimator::Reset()
 	m_fTempCamAngle = 0.0f;
 	m_scriptControl = false;
 
+	m_shakeDecayCurTime = 0.0f;
+	m_shakeMagnitude = 0.0f;
+
+	m_targetForwardSpeedModifier = 1.0f;
+
 	if(m_mode > CAM_MODE_INCAR)
 		m_mode = CAM_MODE_OUTCAR;
 }
@@ -168,6 +186,38 @@ void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
 	m_oldBtns = nButtons;
 }
 
+Vector3D CCameraAnimator::ShakeView( float fDt )
+{
+	if(m_shakeDecayCurTime <= 0.0f)
+	{
+		m_shakeMagnitude = 0.0f;
+		m_shakeDecayCurTime = 0.0f;
+		return vec3_zero;
+	}
+
+	// maximum for 3 seconds shake, heavier is more
+	float fShakeRate = m_shakeDecayCurTime / 3.0f;
+
+	m_shakeMagnitude -= m_shakeMagnitude*(1.0f-fShakeRate)*fDt;
+	m_shakeDecayCurTime -= fDt;
+
+	return fShakeRate * m_shakeMagnitude * Vector3D(
+		sin(cos(fShakeRate+m_shakeDecayCurTime*44.0f)), 
+		sin(cos(fShakeRate+m_shakeDecayCurTime*115.0f)), 
+		sin(cos(fShakeRate+m_shakeDecayCurTime*77.0f)));
+}
+
+void CCameraAnimator::ViewShake(float fMagnutude, float fTime)
+{
+	m_shakeDecayCurTime += fTime;
+
+	// 1 sec only
+	if(m_shakeDecayCurTime > 1.0f)
+		m_shakeDecayCurTime = 1.0f;
+
+	m_shakeMagnitude += fMagnutude;
+}
+
 void CCameraAnimator::L_Update( float fDt, CCar* target )
 {
 	if( target )
@@ -193,6 +243,8 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 {
 	m_realMode = mode;
 
+	Vector3D shakeVec = ShakeView( fDt );
+
 	Vector3D pos = targetOrigin;
 
 	Vector3D car_forward = rotateVector(vec3_forward,targetRotation);
@@ -201,6 +253,10 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 	Vector3D euler_angles = EulerMatrixZXY(targetRotation); //eulers(targetRotation);
 	euler_angles = VRAD2DEG(euler_angles);
 	euler_angles *= Vector3D(-1,1,-1);
+
+	float targetForwardSpeed = pow(1.0f - clamp(fabs(dot(m_vecCameraVel, car_forward)), 0.0f, 20.0f)*0.05f, 2.0f);
+
+	m_targetForwardSpeedModifier = lerp(m_targetForwardSpeedModifier, targetForwardSpeed, fDt*5.0f);
 
 	if(mode == CAM_MODE_OUTCAR || mode == CAM_MODE_OUTCAR_FIXED)
 	{
@@ -258,6 +314,9 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 	if(mode == CAM_MODE_OUTCAR)
 	{
+		float desiredHeight = m_carConfig.height - m_targetForwardSpeedModifier*0.15f;
+		float desiredDist = m_carConfig.dist - m_targetForwardSpeedModifier*0.9f;
+
 		Vector3D cam_angles = Vector3D(0, m_fTempCamAngle - m_fLookAngle, 0) + addRot;
 
 		if( bLookBack )
@@ -266,9 +325,9 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		Vector3D forward;
 		AngleVectors(cam_angles, &forward);
 
-		Vector3D cam_target = pos + Vector3D(0, m_carConfig.height, 0);
+		Vector3D cam_target = pos + Vector3D(0, desiredHeight, 0);
 
-		Vector3D cam_pos_h = pos + Vector3D(0,m_carConfig.height,0);
+		Vector3D cam_pos_h = pos + Vector3D(0,desiredHeight,0);
 		Vector3D cam_pos = cam_pos_h - forward*m_cameraDistVar;
 		Vector3D cam_pos_low = pos + Vector3D(0,CAM_HEIGHT_TRACE,0) - forward*m_cameraDistVar;
 
@@ -284,12 +343,12 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 		m_cameraDistVar += fDt*2.0f;
 
-		m_cameraDistVar = min(m_cameraDistVar, m_carConfig.dist);
+		m_cameraDistVar = min(m_cameraDistVar, desiredDist);
 
 		cam_pos = cam_pos_h - forward*(m_cameraDistVar-0.1f);
 
 		CollisionData_t coll;
-		g_pPhysics->TestLine(cam_pos + Vector3D(0,m_carConfig.height,0), cam_pos_low, coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_WATER);
+		g_pPhysics->TestLine(cam_pos + Vector3D(0,desiredHeight,0), cam_pos_low, coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_WATER);
 
 		FReal fCamDot = fabs(dot(coll.normal, Vector3D(0,1,0)));
 
@@ -297,13 +356,13 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		{
 			FReal height = coll.position.y;
 
-			cam_pos.y = m_carConfig.height + height - CAM_HEIGHT_TRACE;
+			cam_pos.y = desiredHeight + height - CAM_HEIGHT_TRACE;
 		}
 
 		cam_angles = VectorAngles(normalize(cam_target - cam_pos));
 
 		m_computedView.SetOrigin(cam_pos);
-		m_computedView.SetAngles(cam_angles);
+		m_computedView.SetAngles(cam_angles + shakeVec);
 		m_computedView.SetFOV(m_carConfig.fov);
 	}
 	else if(mode == CAM_MODE_OUTCAR_FIXED)
@@ -314,7 +373,7 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		AngleVectors(euler_angles, &forward);
 
 		m_computedView.SetOrigin( pos - forward * m_carConfig.dist);
-		m_computedView.SetAngles( euler_angles );
+		m_computedView.SetAngles( euler_angles + shakeVec );
 		m_computedView.SetFOV( m_cameraFOV );
 	}
 	else if(mode == CAM_MODE_INCAR)
@@ -342,7 +401,7 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		Vector3D camPos = pos + vecDir + up * m_carConfig.heightInCar;
 
 		m_computedView.SetOrigin(camPos);
-		m_computedView.SetAngles(euler_angles);
+		m_computedView.SetAngles(euler_angles + shakeVec);
 		m_computedView.SetFOV(m_carConfig.fov);
 	}
 	else if(mode == CAM_MODE_TRIPOD_ZOOM || mode == CAM_MODE_TRIPOD_FIXEDZOOM)
@@ -352,7 +411,7 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 		Vector3D cam_angles = VectorAngles(normalize(cam_target - cam_pos));
 
-		m_computedView.SetAngles(cam_angles);
+		m_computedView.SetAngles(cam_angles + shakeVec);
 		m_computedView.SetOrigin(m_dropPos);
 
 		if(mode == CAM_MODE_TRIPOD_ZOOM)
@@ -381,7 +440,7 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 	}
 	else if(mode == CAM_MODE_TRIPOD_STATIC)
 	{
-		m_computedView.SetAngles(m_rotation);
+		m_computedView.SetAngles(m_rotation + shakeVec);
 		m_computedView.SetOrigin(m_dropPos);
 		m_computedView.SetFOV(m_cameraFOV);
 	}

@@ -9,8 +9,6 @@
 // TODO:
 //		- General code refactoring from C-style to better C++ style
 //		- Move replay director to separate source files and as a state
-//		- Finally make CDrvSynHUDManager useful in native and Lua code
-//		- Cleanup from unused/junk/bad code
 //		- Make CState_Game state object initialized from here as g_pState_Game to make it more accessible
 //
 
@@ -1368,6 +1366,28 @@ void CState_Game::DoCameraUpdates( float fDt )
 					g_pCameraAnimator->Update(fDt, 0, viewedCar);
 				}
 			}
+
+			/*
+			if( viewedCar && viewedCar->GetPhysicsBody() )
+			{
+				DkList<CollisionPairData_t>& pairs = viewedCar->GetPhysicsBody()->m_collisionList;
+
+				if(pairs.numElem())
+				{
+					float powScale = 1.0f / (float)pairs.numElem();
+
+					float invMassA = viewedCar->GetPhysicsBody()->GetInvMass();
+
+					for(int i = 0; i < pairs.numElem(); i++)
+					{
+						float appliedImpulse = fabs(pairs[i].appliedImpulse) * invMassA * powScale;
+
+						if(pairs[i].impactVelocity > 1.5f)
+							g_pCameraAnimator->ViewShake(min(appliedImpulse*0.5f, 5.0f), min(appliedImpulse*0.5f, 0.25f));
+					}
+				}
+			}
+			*/
 
 			g_pCameraAnimator->Update(fDt, camControls, viewedCar);
 		}

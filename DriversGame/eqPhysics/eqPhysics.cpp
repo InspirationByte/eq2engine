@@ -942,7 +942,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 
 			bodyB->SetPosition(bodyB->GetPosition() + pair.normal*positionalError);
 
-			impactVelocity = -dot(pair.normal, bodyB->GetVelocityAtWorldPoint(pair.position));
+			impactVelocity = fabs(dot(pair.normal, bodyB->GetVelocityAtWorldPoint(pair.position)));
 
 			if (impactVelocity < 0)
 				impactVelocity = 0.0f;
@@ -973,10 +973,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		if (!(bodyB->m_flags & BODY_INFINITEMASS) && !(bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
 			bodyB->SetPosition(bodyB->GetPosition() - pair.normal*positionalError);
 
-		impactVelocity = -dot(pair.normal, bodyA->GetVelocityAtWorldPoint(pair.position) - bodyB->GetVelocityAtWorldPoint(pair.position));
-
-		if (impactVelocity < 0)
-			impactVelocity = 0.0f;
+		impactVelocity = fabs( dot(pair.normal, bodyA->GetVelocityAtWorldPoint(pair.position) - bodyB->GetVelocityAtWorldPoint(pair.position)) );
 
 		// apply response
 		appliedImpulse = 2.0f * CEqRigidBody::ApplyImpulseResponseTo2(bodyA, bodyB, pair.position, pair.normal, positionalError);
