@@ -90,6 +90,7 @@ protected:
 	IEditorTool*	m_roadedit;
 	IEditorTool*	m_missionedit;
 	IEditorTool*	m_occluderEditor;
+	IEditorTool*	m_prefabmgr;
 
 	CNewLevelDialog*	m_newLevelDialog;
 	CLoadLevelDialog*	m_loadleveldialog;

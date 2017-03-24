@@ -267,19 +267,11 @@ void CGameObject::Draw( int nRenderFlags )
 		return;
 
 	// if model has any instance - just don't render it in that way
-	if(g_pShaderAPI->GetCaps().isInstancingSupported && m_pModel->GetInstancer())
+	if(!(nRenderFlags & RFLAG_NOINSTANCE) && g_pShaderAPI->GetCaps().isInstancingSupported && m_pModel->GetInstancer())
 	{
 		if( m_pModel->GetInstancer()->HasInstances() )
 			return;
 	}
-
-	/*
-	if((nRenderFlags & RFLAG_INSTANCE) && g_pShaderAPI->GetCaps().isInstancingSupported)
-	{
-		studioinstancelist_t* instaceList;
-		
-		//m_pModel->GetInstanceData( sizeof(simpleEGFInstance_t) )->
-	}*/
 
 	materials->SetMatrix(MATRIXMODE_WORLD, m_worldMatrix);
 	materials->SetCullMode((nRenderFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
@@ -326,6 +318,16 @@ void CGameObject::Draw( int nRenderFlags )
 			//materials->SetSkinningEnabled(false);
 		}
 	}
+}
+
+CGameObject* CGameObject::GetChildShadowCaster(int idx) const
+{
+	return NULL;
+}
+
+int CGameObject::GetChildCasterCount() const
+{
+	return 0;
 }
 
 void CGameObject::SetUserData(void* dataPtr)

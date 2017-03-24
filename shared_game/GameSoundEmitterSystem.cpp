@@ -415,6 +415,7 @@ void CSoundEmitterSystem::PrecacheSound(const char* pszName)
 		int flags = (pSound->extraStreaming ? SAMPLE_FLAG_STREAMED : 0) | (pSound->loop ? SAMPLE_FLAG_LOOPING : 0);
 
 		ISoundSample* pCachedSample = soundsystem->LoadSample(pSound->soundFileNames[i].GetData(), flags);
+
 		if(pCachedSample)
 			pSound->pSamples.append(pCachedSample);
 	}
@@ -524,6 +525,23 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 			}
 		}
 
+		ISoundSample* bestSample = NULL;
+
+		if(emit->sampleId > pScriptSound->pSamples.numElem()-1)
+			emit->sampleId = -1;
+
+		if(emit->sampleId < 0)
+		{
+			if(pScriptSound->pSamples.numElem() == 1 )
+				bestSample = pScriptSound->pSamples[0];
+			else
+				bestSample = pScriptSound->pSamples[RandomInt(0,pScriptSound->pSamples.numElem()-1)];
+		}
+		else
+		{
+			bestSample = pScriptSound->pSamples[ emit->sampleId ];
+		}
+
 		// alloc SoundEmitterSystem emitter data
 		EmitterData_t* edata = new EmitterData_t();
 
@@ -566,26 +584,9 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 			MsgInfo("started sound '%s' ref=%g max=%g\n", pScriptSound->pszName, sParams.referenceDistance, sParams.maxDistance);
 		}
 
-		ISoundSample* bestSample;
-
 #pragma todo("randomization flag for sounding pitch")
 		//if(!pScriptSound->loop)
 		//	sParams.pitch += RandomFloat(-0.05f,0.05f);
-
-		if(emit->sampleId > pScriptSound->pSamples.numElem()-1)
-			emit->sampleId = -1;
-
-		if(emit->sampleId < 0)
-		{
-			if(pScriptSound->pSamples.numElem() == 1 )
-				bestSample = pScriptSound->pSamples[0];
-			else
-				bestSample = pScriptSound->pSamples[RandomInt(0,pScriptSound->pSamples.numElem()-1)];
-		}
-		else
-		{
-			bestSample = pScriptSound->pSamples[ emit->sampleId ];
-		}
 
 		edata->pEmitter->SetSample(bestSample);
 		edata->pEmitter->SetParams(&sParams);

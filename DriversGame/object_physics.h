@@ -10,6 +10,8 @@
 
 #include "GameObject.h"
 
+class CEqPhysicsHingeJoint;
+
 class CObject_Physics : public CGameObject
 {
 public:
@@ -53,6 +55,9 @@ protected:
 
 	CEqRigidBody*			m_physBody;
 	eqPhysSurfParam_t*		m_surfParams;
+
+	CEqRigidBody*			m_hingeDummy;
+	CEqPhysicsHingeJoint*	m_hinge;
 	
 };
 

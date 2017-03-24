@@ -1942,7 +1942,8 @@ void ShaderAPID3DX9::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer,int nStream
 				m_nSelectedStreamParam[nStream] = nStreamParam2;
 			}
 			
-			m_pD3DDevice->SetStreamSource(nStream, pVB->m_pVertexBuffer, (UINT) offset, pVB->GetStrideSize());
+			// bind stream with offset
+			m_pD3DDevice->SetStreamSource(nStream, pVB->m_pVertexBuffer, (UINT)offset*pVB->GetStrideSize(), pVB->GetStrideSize());
 		}
 
 		m_pCurrentVertexBuffers[nStream] = pVertexBuffer;

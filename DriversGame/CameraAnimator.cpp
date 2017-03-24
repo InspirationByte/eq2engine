@@ -30,7 +30,7 @@
 #define END_FOV						10.0f
 
 ConVar cam_velocity_accel("cam_velocity_accel", "0.5");
-ConVar cam_velocity_mindiff("cam_velocity_mindiff", "0.25");
+ConVar cam_velocity_mindiff("cam_velocity_mindiff", "0.15");
 
 #define CAR_ACCEL_VEL_FACTOR	cam_velocity_accel.GetFloat() //0.15f
 #define CAR_DECEL_VEL_MINDIFF		cam_velocity_mindiff.GetFloat() //5.0f
@@ -39,10 +39,15 @@ ConVar cam_velocity_springconst("cam_velocity_springconst", "15");
 ConVar cam_velocity_springdamp("cam_velocity_springdamp", "8");
 
 ConVar cam_velocityeffects("cam_velocityeffects", "1", "Enable velocity effects", CV_ARCHIVE);
-
+/*
 ConVar cam_velocity_forwardmod("cam_velocity_forwardmod", "1.0");
 ConVar cam_velocity_sidemod("cam_velocity_sidemod", "0.0");
 ConVar cam_velocity_upmod("cam_velocity_upmod", "2.0");
+*/
+
+ConVar cam_velocity_forwardmod("cam_velocity_forwardmod", "1.0");
+ConVar cam_velocity_sidemod("cam_velocity_sidemod", "-0.5");
+ConVar cam_velocity_upmod("cam_velocity_upmod", "-1.0");
 
 ConVar cam_custom("cam_custom", "0", NULL, CV_CHEAT);
 ConVar cam_custom_height("cam_custom_height", "1.3", NULL, CV_ARCHIVE);
@@ -74,8 +79,8 @@ CCameraAnimator::CCameraAnimator() :
 	m_cameraFOV(DEFAULT_CAMERA_FOV),
 	m_scriptControl(false),
 	m_shakeDecayCurTime(0.0f),
-	m_shakeMagnitude(0.0f),
-	m_targetForwardSpeedModifier(1.0f)
+	m_shakeMagnitude(0.0f)
+	//m_targetForwardSpeedModifier(1.0f)
 {
 	m_carConfig.dist = 7.0f;
 	m_carConfig.distInCar = 7.0f;
@@ -139,7 +144,7 @@ void CCameraAnimator::Reset()
 	m_shakeDecayCurTime = 0.0f;
 	m_shakeMagnitude = 0.0f;
 
-	m_targetForwardSpeedModifier = 1.0f;
+	//m_targetForwardSpeedModifier = 1.0f;
 
 	if(m_mode > CAM_MODE_INCAR)
 		m_mode = CAM_MODE_OUTCAR;
@@ -254,9 +259,9 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 	euler_angles = VRAD2DEG(euler_angles);
 	euler_angles *= Vector3D(-1,1,-1);
 
-	float targetForwardSpeed = pow(1.0f - clamp(fabs(dot(m_vecCameraVel, car_forward)), 0.0f, 20.0f)*0.05f, 2.0f);
+	//float targetForwardSpeed = pow(1.0f - clamp(fabs(dot(m_vecCameraVel, car_forward)), 0.0f, 20.0f)*0.05f, 2.0f);
 
-	m_targetForwardSpeedModifier = lerp(m_targetForwardSpeedModifier, targetForwardSpeed, fDt*5.0f);
+	//m_targetForwardSpeedModifier = lerp(m_targetForwardSpeedModifier, targetForwardSpeed, fDt*5.0f);
 
 	if(mode == CAM_MODE_OUTCAR || mode == CAM_MODE_OUTCAR_FIXED)
 	{
@@ -314,8 +319,8 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 	if(mode == CAM_MODE_OUTCAR)
 	{
-		float desiredHeight = m_carConfig.height - m_targetForwardSpeedModifier*0.15f;
-		float desiredDist = m_carConfig.dist - m_targetForwardSpeedModifier*0.9f;
+		float desiredHeight = m_carConfig.height;// - m_targetForwardSpeedModifier*0.15f;
+		float desiredDist = m_carConfig.dist;// - m_targetForwardSpeedModifier*0.9f;
 
 		Vector3D cam_angles = Vector3D(0, m_fTempCamAngle - m_fLookAngle, 0) + addRot;
 

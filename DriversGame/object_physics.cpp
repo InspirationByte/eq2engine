@@ -68,6 +68,8 @@ CObject_Physics::CObject_Physics( kvkeybase_t* kvdata )
 	m_physBody = NULL;
 	m_surfParams = NULL;
 	m_userData = NULL;
+	m_hinge = NULL;
+	m_hingeDummy = NULL;
 }
 
 CObject_Physics::~CObject_Physics()
@@ -78,6 +80,14 @@ CObject_Physics::~CObject_Physics()
 void CObject_Physics::OnRemove()
 {
 	CGameObject::OnRemove();
+
+	if(m_hingeDummy)
+	{
+		g_pPhysics->m_physics.DestroyController(m_hinge);
+
+		g_pPhysics->m_physics.DestroyBody(m_hingeDummy);
+		m_hingeDummy = NULL;
+	}
 
 	if(m_physBody)
 	{
@@ -151,6 +161,28 @@ void CObject_Physics::Spawn()
 		m_physBody = body;
 
 		g_pPhysics->m_physics.AddToWorld( m_physBody );
+
+		kvkeybase_t* hingeKvs = m_keyValues->FindKeyBase("hinge");
+		if(hingeKvs)
+		{
+			Vector3D hingePoint = KV_GetVector3D(hingeKvs);
+
+			m_hingeDummy = new CEqRigidBody();
+			m_hingeDummy->Initialize(1.0f);
+			m_hingeDummy->SetMass( 32000.0f );
+			m_hingeDummy->Freeze();
+			m_hingeDummy->SetPosition(GetOrigin() + hingePoint + vec3_up*0.15f);
+			m_hingeDummy->SetContents(0);
+			m_hingeDummy->SetCollideMask(0);
+
+			g_pPhysics->m_physics.AddToWorld(m_hingeDummy);
+
+			m_hinge = new CEqPhysicsHingeJoint();
+
+			m_hinge->Init(body, m_hingeDummy, vec3_up, hingePoint, 0.2f, 10.0f, 10.0f, 0.1f, 0.005f);
+
+			g_pPhysics->m_physics.AddController( m_hinge );
+		}
 	}
 	else
 	{
@@ -250,6 +282,8 @@ void CObject_Physics::Simulate(float fDt)
 	if(fDt <= 0.0f)
 		return;
 
+	float maxImpactVelocity = 0.0f;
+
 	for(int i = 0; i < m_physBody->m_collisionList.numElem(); i++)
 	{
 		CollisionPairData_t& pair = m_physBody->m_collisionList[i];
@@ -261,11 +295,24 @@ void CObject_Physics::Simulate(float fDt)
 			Vector3D reflDir = reflect(wVelocity, pair.normal);
 			MakeSparks(pair.position+pair.normal*0.05f, reflDir, Vector3D(5.0f), 1.0f, 8);
 		}
+
+		CEqCollisionObject* collidingObject = pair.GetOppositeTo(m_physBody);
+
+		// hinge is only broken if car collision force was greateer
+		if(m_hinge && (collidingObject->m_flags & BODY_ISCAR))
+		{
+			maxImpactVelocity = max(maxImpactVelocity, pair.impactVelocity);
+		}
 	}
 
 	if(	!m_physBody->IsFrozen() &&
 		g_pGameSession->IsServer())
 	{
+		if(m_hinge && maxImpactVelocity > 0.0f && maxImpactVelocity < 1.0f)
+		{
+			m_hinge->SetEnabled(true);
+		}
+
 		m_netPos.Set(m_physBody->GetPosition());
 		m_netAngles.Set(GetAngles());
 

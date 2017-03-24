@@ -81,7 +81,7 @@ struct hfielddrawvertex_s
 		position = vec3_zero;
 		normal = vec3_up;
 		texcoord = vec2_zero;
-		border = 1.0f;
+		lighting = 1.0f;
 	}
 
 	hfielddrawvertex_s(const Vector3D& p, const Vector3D& n, const Vector2D& t )
@@ -89,14 +89,14 @@ struct hfielddrawvertex_s
 		position = p;
 		normal = n;
 		texcoord = t;
-		border = 1.0f;
+		lighting = 1.0f;
 	}
 
 	Vector3D		position;
 	TVec2D<half>	texcoord;
 
 	TVec3D<half>	normal;
-	half			border;
+	half			lighting;
 	//Matrix3x3	tbn;
 };
 

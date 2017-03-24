@@ -819,9 +819,6 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 
 					hfielddrawvertex_t vert(point_position + hfield_offset, Vector3D(0.0f, 1.0f, 0.0f), texCoord);
 
-					if (verts_stripped[i])
-						vert.border = 0.0f;
-
 					vindxs[i] = batch->verts.addUnique(vert,hfieldVertexComparator);
 					batch->bbox.AddVertex(vert.position);
 				}
@@ -910,8 +907,6 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 						hfielddrawvertex_t vert1 = hfielddrawvertex_t(point_position2 + hfield_offset, Vector3D(0, 1, 0), texCoord2);
 						hfielddrawvertex_t vert2 =	hfielddrawvertex_t(point_position1 + hfield_offset, Vector3D(0, 1, 0), texCoord1);
 
-						vert1.border = 0.0f;
-						vert2.border = 0.0f;
 
 						batch->bbox.AddVertex(vert1.position);
 						batch->bbox.AddVertex(vert2.position);

@@ -13,6 +13,13 @@
 #include "BaseTilebasedEditor.h"
 #include "Font.h"
 
+enum EPrefabManagerMode
+{
+	EPREFAB_READY = 0,
+	EPREFAB_PLACEMENT,		// placing the prefab
+	EPREFAB_TILESELECTION,	// selecting the tiles which gonna be saved to prefab lev file
+};
+
 class CUI_PrefabManager : public wxPanel, public CBaseTilebasedEditor
 {	
 public:	
@@ -23,7 +30,6 @@ public:
 
 	void						MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos  );
 
-	void						ProcessMouseEvents( wxMouseEvent& event );
 	void						OnKey(wxKeyEvent& event, bool bDown);
 	void						OnRender();
 
@@ -33,7 +39,21 @@ public:
 	void						Update_Refresh();
 
 protected:
+	IRectangle					m_tileSelection;
+	EPrefabManagerMode			m_mode;
 
+	wxListBox* m_prefabList;
+	wxTextCtrl* m_filtertext;
+	wxButton* m_newbtn;
+	wxButton* m_editbtn;
+	wxButton* m_delbtn;
+		
+	// Virtual event handlers, overide them in your derived class
+	virtual void OnBeginPrefabPlacement( wxCommandEvent& event );
+	virtual void OnFilterChange( wxCommandEvent& event );
+	virtual void OnNewPrefabClick( wxCommandEvent& event) ;
+	virtual void OnEditPrefabClick( wxCommandEvent& event );
+	virtual void OnDeletePrefabClick( wxCommandEvent& event );
 };
 
 #endif // UI_PREFABMGR

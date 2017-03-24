@@ -165,7 +165,11 @@ struct vehicleConfig_t
 	EqString					carName;
 	EqString					carScript;
 
-	bool						isCar;			// for hinged only vehicle it must be 'true'
+	struct{
+		bool						isCar : 1;			// for hinged only vehicle it must be 'true'
+		bool						isCop : 1;
+		bool						allowParked : 1;
+	} flags;
 
 	struct {
 		Vector3D					body_size;
@@ -353,6 +357,8 @@ public:
 	virtual void			PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell);
 
 	void					Draw( int nRenderFlags );
+	CGameObject*			GetChildShadowCaster(int idx) const;
+	int						GetChildCasterCount() const;
 
 	void					DrawEffects( int lod );
 

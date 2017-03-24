@@ -193,11 +193,6 @@ void CUI_RoadEditor::PaintPointGlobal(int x, int y, int direction)
 	roadCell->flags = 0;
 }
 
-void CUI_RoadEditor::ProcessMouseEvents( wxMouseEvent& event )
-{
-	CBaseTilebasedEditor::ProcessMouseEvents(event);
-}
-
 void CUI_RoadEditor::OnKey(wxKeyEvent& event, bool bDown)
 {
 	// hotkeys

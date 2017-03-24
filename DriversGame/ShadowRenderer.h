@@ -24,7 +24,7 @@ public:
 	void	Init();
 	void	Shutdown();
 
-	void	AddShadowCaster( CGameObject* object );
+	void	AddShadowCaster( CGameObject* object, struct shadowListObject_t* addTo = NULL );
 
 	void	Clear();
 
@@ -35,7 +35,7 @@ public:
 
 protected:
 
-	void	RenderShadow(IEqModel* model, ubyte bodyGroups, int mode);
+	void	RenderShadow(CGameObject* object, ubyte bodyGroups, int mode);
 
 	CRectanglePacker	m_texAtlasPacker;
 

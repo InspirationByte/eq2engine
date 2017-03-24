@@ -14,6 +14,7 @@
 #include "UI_RoadEditor.h"
 #include "UI_OccluderEditor.h"
 #include "UI_BuildingConstruct.h"
+#include "UI_PrefabMgr.h"
 
 #include "NewLevelDialog.h"
 #include "LoadLevDialog.h"
@@ -241,6 +242,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	bSizer4 = new wxBoxSizer( wxVERTICAL );
 	
 	m_notebook1 = new wxNotebook( m_nbPanel, wxID_ANY, wxDefaultPosition, wxSize( -1,300 ), wxNB_FIXEDWIDTH );
+
 	m_hmapedit = new CUI_HeightEdit( m_notebook1 );
 	m_notebook1->AddPage( (CUI_HeightEdit*)m_hmapedit, wxT("Height field"), true );
 
@@ -265,6 +267,12 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_notebook1->AddPage( (CUI_RoadEditor*)m_roadedit, wxT("Road editor"), false );
 
 	m_tools.append(m_roadedit);
+
+	m_prefabmgr = new CUI_PrefabManager( m_notebook1 );
+	m_notebook1->AddPage( (CUI_PrefabManager*)m_prefabmgr, wxT("Prefab manager"), false );
+
+	m_tools.append(m_prefabmgr);
+
 
 	m_regionEditorFrame = new CRegionEditFrame(this);
 

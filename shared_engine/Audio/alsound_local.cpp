@@ -721,7 +721,7 @@ ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, int nFlags)
 	if(!g_fileSystem->FileExist((_Es(SOUND_DEFAULT_PATH) + name).GetData()))
 	{
 		MsgError("Can't open sound file '%s', file is probably missing on disk\n",name);
-		return (ISoundSample*) &zeroSample;
+		return NULL;
 	}
 
 #ifndef NO_ENGINE

@@ -28,6 +28,17 @@ enum EShadowModelRenderMode
 	RSHADOW_SKIN,
 };
 
+struct shadowListObject_t
+{
+	shadowListObject_t()
+	{
+		next = NULL;
+	}
+
+	CGameObject*		object;
+	shadowListObject_t*	next;
+};
+
 CShadowRenderer::CShadowRenderer() : m_shadowTexture(NULL), m_shadowAngles(90,0,0), m_matVehicle(NULL), m_matSkinned(NULL), m_matSimple(NULL), m_isInit(false)
 {
 	m_texAtlasPacker.SetPackPadding( 2.0 );
@@ -83,6 +94,20 @@ void CShadowRenderer::Shutdown()
 
 	Clear();
 
+	// destroy the unreleased lists as well
+	for(int i = 0; i < m_texAtlasPacker.GetRectangleCount(); i++)
+	{
+		void* userData = m_texAtlasPacker.GetRectangleUserData(i);
+		shadowListObject_t* objectGroup = (shadowListObject_t*)userData;
+
+		while(objectGroup)
+		{
+			shadowListObject_t* prev = objectGroup;
+			objectGroup = objectGroup->next;
+			delete prev;
+		};
+	}
+
 	g_pShaderAPI->FreeTexture(m_shadowTexture);
 	m_shadowTexture = NULL;
 
@@ -99,7 +124,7 @@ void CShadowRenderer::Shutdown()
 	m_isInit = false;
 }
 
-void CShadowRenderer::AddShadowCaster( CGameObject* object )
+void CShadowRenderer::AddShadowCaster( CGameObject* object, struct shadowListObject_t* addTo )
 {
 	if(!m_isInit)
 		return;
@@ -108,17 +133,36 @@ void CShadowRenderer::AddShadowCaster( CGameObject* object )
 		return;
 
 	// only cars, and physics (incl debris)
-	if(!(object->ObjType() == GO_CAR || object->ObjType() == GO_CAR_AI || object->ObjType() == GO_PHYSICS || object->ObjType() == GO_DEBRIS))
-	//if(!(object->ObjType() == GO_LIGHT_TRAFFIC))
-		return;
+	if(!addTo)
+	{
+		int objectType = object->ObjType();
 
-	Vector3D viewPos = g_pGameWorld->GetView()->GetOrigin();
-	if(length(viewPos-object->GetOrigin()) > r_shadowDist.GetFloat())
-		return;
+		if(!(objectType == GO_CAR || objectType == GO_CAR_AI || objectType == GO_PHYSICS || objectType == GO_DEBRIS))
+			return;
 
-	float shadowSize = length(object->GetModel()->GetAABB().GetSize()) * SHADOW_SCALING;
+		Vector3D viewPos = g_pGameWorld->GetView()->GetOrigin();
+		if(length(viewPos-object->GetOrigin()) > r_shadowDist.GetFloat())
+			return;
+	}
 
-	m_texAtlasPacker.AddRectangle(shadowSize, shadowSize, object);
+	shadowListObject_t* casterObject = new shadowListObject_t;
+	casterObject->object = object;
+
+	int numShadowCasterObjects = object->GetChildCasterCount();
+
+	for(int i = 0; i < numShadowCasterObjects; i++)
+		AddShadowCaster(object->GetChildShadowCaster(i), casterObject);
+
+	if(addTo)
+	{
+		casterObject->next = addTo->next;
+		addTo->next = casterObject;
+	}
+	else
+	{
+		float shadowSize = length(object->GetModel()->GetAABB().GetSize()) * SHADOW_SCALING;
+		m_texAtlasPacker.AddRectangle(shadowSize, shadowSize, casterObject);
+	}
 }
 
 void CShadowRenderer::Clear()
@@ -184,10 +228,8 @@ void CShadowRenderer::RenderShadowCasters()
 		Rectangle_t shadowRect;
 		m_texAtlasPacker.GetRectangle(shadowRect, &userData, i);
 
-		CGameObject* object = (CGameObject*)userData;
-
-		if(!object) // bad
-			continue;
+		shadowListObject_t* objectGroup = (shadowListObject_t*)userData;
+		CGameObject* firstObject = objectGroup->object;
 
 		// render shadow to the rt
 		if(r_shadows_debugatlas.GetBool())
@@ -205,19 +247,30 @@ void CShadowRenderer::RenderShadowCasters()
 		shadowRect.vrightBottom *= m_shadowTexelSize;
 
 		// move view to the object origin
-		orthoView.SetOrigin(object->GetOrigin());
+		orthoView.SetOrigin(firstObject->GetOrigin());
 		orthoView.GetMatrices(proj, view, shadowSize.x*SHADOW_DESCALING, shadowSize.y*SHADOW_DESCALING, -2.5f, 100.0f, true );
 		
 		shadowDecal.settings.facingDir = view.rows[2].xyz();
 
 		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
 		materials->SetMatrix(MATRIXMODE_VIEW, view);
-		materials->SetMatrix(MATRIXMODE_WORLD, object->m_worldMatrix);
-
 		viewProj = proj * view;
 
-		if(!r_shadows_debugatlas.GetBool())
-			RenderShadow( object->GetModel(), object->GetBodyGroups(), RSHADOW_STANDARD);
+		// draw all grouped objects as single shadow
+		while(objectGroup)
+		{
+			CGameObject* curObject = objectGroup->object;
+
+			materials->SetMatrix(MATRIXMODE_WORLD, curObject->m_worldMatrix);
+
+			if(!r_shadows_debugatlas.GetBool())
+				RenderShadow( curObject, curObject->GetBodyGroups(), RSHADOW_STANDARD);
+
+			shadowListObject_t* prev = objectGroup;
+
+			objectGroup = objectGroup->next;
+			delete prev;
+		};
 
 		g_pShaderAPI->CopyRendertargetToTexture(m_shadowRt, m_shadowTexture, NULL, &copyRect);
 
@@ -280,8 +333,10 @@ void CShadowRenderer::SetShadowAngles( const Vector3D& angles )
 	m_shadowAngles = angles;
 }
 
-void CShadowRenderer::RenderShadow(IEqModel* model, ubyte bodyGroups, int mode)
+void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mode)
 {
+	IEqModel* model = object->GetModel();
+	
 	IMaterial* rtMaterial = m_matSimple;
 
 	if(mode == RSHADOW_CAR)
@@ -329,4 +384,5 @@ void CShadowRenderer::RenderShadow(IEqModel* model, ubyte bodyGroups, int mode)
 			model->DrawGroup( nModDescId, j );
 		}
 	}
+	
 }

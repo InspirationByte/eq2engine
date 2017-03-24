@@ -467,7 +467,7 @@ void CMaterialAtlasList::UpdateAndFilterList()
 
 int CMaterialAtlasList::GetSelectedAtlas() const
 {
-	if(m_selection == 0)
+	if(m_selection == -1)
 		return NULL;
 
 	return m_filteredList[m_selection].entryIdx;
@@ -830,6 +830,8 @@ CUI_HeightEdit::CUI_HeightEdit(wxWindow* parent) : wxPanel( parent, -1, wxDefaul
 
 	m_rotation = 0;
 	m_selectedHField = 0;
+
+	m_isLineMode = false;
 }
 
 void CUI_HeightEdit::OnLayerSpinChanged(wxCommandEvent& event)
@@ -913,9 +915,38 @@ void CUI_HeightEdit::SetHeightfieldFlags(int flags)
 	m_noCollide->SetValue((flags & EHTILE_NOCOLLIDE) > 0);
 }
 
-int	CUI_HeightEdit::GetAddHeight()
+int	CUI_HeightEdit::GetAddHeight() const
 {
 	return m_height->GetValue();
+}
+
+int CUI_HeightEdit::GetStartHeight() const
+{
+	CLevelRegion* reg;
+	IVector2D tilePos;
+
+	if(!g_pGameWorld->m_level.GetRegionAndTileAt(m_globalTile_lineStart, &reg, tilePos))
+		return GetAddHeight();
+
+	hfieldtile_t* tile = reg->GetHField(0)->GetTile(tilePos.x,tilePos.y);
+	return tile->height;
+}
+
+int	CUI_HeightEdit::GetEndHeight() const
+{
+	CLevelRegion* reg;
+	IVector2D tilePos;
+
+	if(!g_pGameWorld->m_level.GetRegionAndTileAt(m_globalTile_lineEnd, &reg, tilePos))
+		return GetStartHeight();
+
+	hfieldtile_t* tile = reg->GetHField(0)->GetTile(tilePos.x,tilePos.y);
+	return tile->height;
+}
+
+bool CUI_HeightEdit::IsLineMode() const
+{
+	return m_isLineMode;
 }
 
 int	CUI_HeightEdit::GetRadius()
@@ -933,12 +964,12 @@ void CUI_HeightEdit::SetHeight(int height)
 	m_height->SetValue(height);
 }
 
-EEditMode CUI_HeightEdit::GetEditMode()
+EEditMode CUI_HeightEdit::GetEditMode() const
 {
 	return (EEditMode)m_heightPaintMode->GetSelection();
 }
 
-int CUI_HeightEdit::GetEditorPaintFlags()
+int CUI_HeightEdit::GetEditorPaintFlags() const
 {
 	int flags = 0;
 	flags |= m_paintMaterial->GetValue() ? HEDIT_PAINT_MATERIAL : 0;
@@ -962,6 +993,45 @@ bool WRAP_PaintFieldModify(int rx, int ry, int px, int py, CUI_HeightEdit* edit,
 		return true;
 
 	return result;
+}
+
+void CUI_HeightEdit::PaintHeightfieldPointGlobal(int gx, int gy, TILEPAINTFUNC func, float percent)
+{
+	CLevelRegion* pReg = NULL;
+	IVector2D local;
+	g_pGameWorld->m_level.GlobalToLocalPoint(IVector2D(gx,gy), local, &pReg);
+
+	if(pReg)
+	{
+		CHeightTileFieldRenderable* hfield = pReg->GetHField(m_selectedHField);
+
+		CHeightTileFieldRenderable* field = hfield;
+		hfieldtile_t* tile = hfield->GetTileAndNeighbourField(local.x, local.y, (CHeightTileField**)&field);
+
+		if(!tile)
+			return;
+
+		bool hasChanges = WRAP_PaintFieldModify(local.x, local.y, local.x, local.y, this, field, tile, func, GetEditorPaintFlags(), percent);
+
+		if( hasChanges )
+		{
+			field->SetChanged();
+
+			/*
+			// TODO: push it to the change list
+
+			// check if neighbour needs change too
+			for(int i = 0; i < 8; i++)
+			{
+				CHeightTileFieldRenderable* neighbour = field;
+				hfieldtile_t* ntile = field->GetTileAndNeighbourField(ix+neighbour_x[i], iy+neighbour_y[i], (CHeightTileField**)&neighbour);
+
+				if(neighbour && neighbour != field)
+					neighbour->SetChanged();
+			}
+			*/
+		}
+	}
 }
 
 void CUI_HeightEdit::PaintHeightfieldGlobal(int gx, int gy, TILEPAINTFUNC func, float percent)
@@ -1037,73 +1107,20 @@ void CUI_HeightEdit::PaintHeightfieldGlobal(int gx, int gy, TILEPAINTFUNC func, 
 	}
 }
 
-void CUI_HeightEdit::PaintHeightfieldRadius(int px, int py, TILEPAINTFUNC func)
+void CUI_HeightEdit::PaintHeightfieldLocal(int px, int py, TILEPAINTFUNC func, float percent)
 {
-	int neighbour_x[8] = NEIGHBOR_OFFS_XDX(0, 1);
-	int neighbour_y[8] = NEIGHBOR_OFFS_YDY(0, 1);
+	IVector2D globalPoint;
+	g_pGameWorld->m_level.LocalToGlobalPoint(IVector2D(px,py), m_selectedRegion, globalPoint);
 
-	bool quadraticRadius = m_quadratic->GetValue();
+	PaintHeightfieldGlobal(globalPoint.x,globalPoint.y,func,percent);
+}
 
-	int radius = GetRadius();
+void CUI_HeightEdit::PaintHeightfieldPointLocal(int px, int py, TILEPAINTFUNC func, float percent)
+{
+	IVector2D globalPoint;
+	g_pGameWorld->m_level.LocalToGlobalPoint(IVector2D(px,py), m_selectedRegion, globalPoint);
 
-	CHeightTileFieldRenderable* startField = m_selectedRegion->GetHField(m_selectedHField);
-
-	if(!startField)
-		return;
-
-	// paint every tile in radius
-	for(int x = 0; x < radius*2; x++)
-	{
-		for(int y = 0; y < radius*2; y++)
-		{
-			int rx = x-radius;
-			int ry = y-radius;
-
-			Vector2D rvec(rx, ry);
-
-			bool doPaint = abs(rx) < radius && abs(ry) < radius;
-
-			if(!quadraticRadius)
-				doPaint = length(rvec) < radius;
-
-			if(doPaint)
-			{
-				CHeightTileFieldRenderable* field = startField;
-				hfieldtile_t* tile = field->GetTileAndNeighbourField(px+rx, py+ry, (CHeightTileField**)&field);
-
-				if(!tile)
-					continue;
-				
-				int prx = px+rx;
-				int pry = py+ry;
-
-				// calculate tile address
-				int ix = ROLLING_VALUE(prx, field->m_sizew);
-				int iy = ROLLING_VALUE(pry, field->m_sizeh);
-
-				bool hasChanges = WRAP_PaintFieldModify(rx, ry, ix, iy, this, field, tile, func, GetEditorPaintFlags(), 1.0f);
-
-				if( hasChanges )
-				{
-					field->SetChanged();
-
-					/*
-					// TODO: push it to the change list
-
-					// check if neighbour needs change too
-					for(int i = 0; i < 8; i++)
-					{
-						CHeightTileFieldRenderable* neighbour = field;
-						hfieldtile_t* ntile = field->GetTileAndNeighbourField(ix+neighbour_x[i], iy+neighbour_y[i], (CHeightTileField**)&neighbour);
-
-						if(neighbour && neighbour != field)
-							neighbour->SetChanged();
-					}
-					*/
-				}
-			}
-		}
-	}
+	PaintHeightfieldPointGlobal(globalPoint.x,globalPoint.y,func,percent);
 }
 
 bool TexPaintFunc(int rx, int ry, int px, int py, CUI_HeightEdit* edit, CHeightTileField* field, hfieldtile_t* tile, int flags, float percent)
@@ -1167,19 +1184,31 @@ bool HeightPaintUpFunc(int rx, int ry, int px, int py, CUI_HeightEdit* edit, CHe
 	{
 		tile->height += (float)edit->GetAddHeight()*rVal;
 	}
-	else if(mode == HEDIT_SMOOTH)
+	else
 	{
-		float move = ((float)tile->height - (float)edit->GetAddHeight())*HFIELD_HEIGHT_STEP*rVal;
+		if(edit->IsLineMode())
+		{
+			short newHeight = floor(lerp((float)edit->GetStartHeight(), (float)edit->GetEndHeight(), percent));
 
-		if(move != 0.0f)
-			tile->height -= sign(move);
-	}
-	else if(mode == HEDIT_SET)
-	{
-		if(tile->height == edit->GetAddHeight())
-			return false;
+			tile->height = lerp(newHeight, tile->height, rVal);
+		}
+		else
+		{
+			if(mode == HEDIT_SMOOTH)
+			{
+				float move = ((float)tile->height - (float)edit->GetAddHeight())*HFIELD_HEIGHT_STEP*rVal;
 
-		tile->height = edit->GetAddHeight();
+				if(move != 0.0f)
+					tile->height -= sign(move);
+			}
+			else if(mode == HEDIT_SET)
+			{
+				if(tile->height == edit->GetAddHeight())
+					return false;
+
+				tile->height = edit->GetAddHeight();
+			}
+		}
 	}
 
 	g_pMainFrame->NotifyUpdate();
@@ -1231,7 +1260,7 @@ void CUI_HeightEdit::ProcessMouseEvents( wxMouseEvent& event )
 	}
 }
 
-void CUI_HeightEdit::PaintHeightfieldLine(int x0, int y0, int x1, int y1, TILEPAINTFUNC func)
+void CUI_HeightEdit::PaintHeightfieldLine(int x0, int y0, int x1, int y1, TILEPAINTFUNC func, ELineMode mode)
 {
     float dX,dY,iSteps;
     float xInc,yInc,iCount,x,y;
@@ -1258,7 +1287,20 @@ void CUI_HeightEdit::PaintHeightfieldLine(int x0, int y0, int x1, int y1, TILEPA
     {
 		float percentage = (float)iCount/(float)iSteps;
 
-		PaintHeightfieldGlobal(floor(x),floor(y), func, percentage);
+		if(mode == HEDIT_LINEMODE_RADIUS)
+			PaintHeightfieldGlobal(floor(x),floor(y), func, percentage);
+		else
+		{
+			Vector2D widthDir(dY,dX);
+			widthDir = normalize(widthDir);
+
+			int radius = GetRadius();
+
+			for(int rd = -(GetRadius()-1); rd < radius; rd++)
+			{
+				PaintHeightfieldPointGlobal(floor(x)+widthDir.x*rd,floor(y)+widthDir.y*rd, func, percentage);
+			}
+		}
 
         x += xInc;
         y += yInc;
@@ -1277,18 +1319,22 @@ void CUI_HeightEdit::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, 
 			if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
 			{
 				m_globalTile_pointSet = false;
-				PaintHeightfieldRadius(tx, ty, HeightPaintUpFunc);
+				PaintHeightfieldLocal(tx, ty, HeightPaintUpFunc);
 			}
 			else if(event.ButtonIsDown(wxMOUSE_BTN_RIGHT))
 			{
 				m_globalTile_pointSet = false;
-				PaintHeightfieldRadius(tx, ty, HeightPaintDnFunc);
+				PaintHeightfieldLocal(tx, ty, HeightPaintDnFunc);
 			}
 			else if(event.ButtonUp(wxMOUSE_BTN_MIDDLE))
 			{
+				m_isLineMode = true;
+
 				PaintHeightfieldLine(	m_globalTile_lineStart.x,m_globalTile_lineStart.y,
 										m_globalTile_lineEnd.x, m_globalTile_lineEnd.y,
-										HeightPaintUpFunc);
+										HeightPaintUpFunc, HEDIT_LINEMODE_WIDTH);
+
+				m_isLineMode = false;
 			}
 		}
 		else if(event.AltDown())
@@ -1327,19 +1373,23 @@ void CUI_HeightEdit::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, 
 		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
 		{
 			m_globalTile_pointSet = false;
-			PaintHeightfieldRadius(tx, ty, TexPaintFunc);
+			PaintHeightfieldLocal(tx, ty, TexPaintFunc);
 		}
 		else if(event.ButtonUp(wxMOUSE_BTN_MIDDLE))
 		{
+			m_isLineMode = true;
+
 			// line
 			PaintHeightfieldLine(	m_globalTile_lineStart.x,m_globalTile_lineStart.y,
 									m_globalTile_lineEnd.x, m_globalTile_lineEnd.y, 
-									TexPaintFunc);
+									TexPaintFunc, HEDIT_LINEMODE_RADIUS);
+
+			m_isLineMode = false;
 		}
 		else if(event.ButtonIsDown(wxMOUSE_BTN_RIGHT))
 		{
 			m_globalTile_pointSet = false;
-			PaintHeightfieldRadius(tx, ty, NullTexPaintFunc);
+			PaintHeightfieldLocal(tx, ty, NullTexPaintFunc);
 		}
 	}
 

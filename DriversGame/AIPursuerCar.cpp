@@ -731,6 +731,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	Vector3D carForwardDir = GetForwardVector();
 	Vector3D carPos		= GetOrigin() + carForwardDir * m_conf->physics.body_size.z;
+	Vector3D carLinearVel = GetVelocity();
+
 	Vector3D targetVelocity = m_targInfo.target->GetVelocity();
 	Vector3D targetPos	= m_targInfo.target->GetOrigin() + targetVelocity*velocityDistOffsetFactor*0.75f;
 	Vector3D targetForward = m_targInfo.target->GetForwardVector();
@@ -858,7 +860,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	// trace the car body in velocity direction
 	g_pPhysics->TestConvexSweep(&carBoxShape, GetOrientation(),
-		GetOrigin(), GetOrigin()+GetVelocity(), velocityColl,
+		GetOrigin(), GetOrigin()+carLinearVel, velocityColl,
 		OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE,
 		&collFilter);
 
@@ -869,8 +871,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	float lateralSlideSigned = GetLateralSlidingAtBody();
 	float lateralSlide = fabs(lateralSlideSigned);
-
-	float lateralSlideSteerFactor = 1.0f - RemapValClamp(lateralSlide, 0.0f, 10.0f, 0.0f, 1.0f);
 
 	float speedFactor = RemapValClamp(fSpeed, 0.0f, 50.0f, 0.0f, 1.0f);
 
@@ -900,7 +900,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 		Vector3D steerDirHard = fastNormalize(hardSteerPosEnd-hardSteerPosStart);
 
-		float cosHardSteerAngle = dot(steerDirHard, fastNormalize(GetVelocity()));
+		float cosHardSteerAngle = dot(steerDirHard, fastNormalize(carLinearVel));
 
 		float distanceToSteer = length(hardSteerPosStart - carPos);
 
@@ -930,7 +930,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	if(ai_debug_pursuer.GetBool())
 	{
-		debugoverlay->Line3D(carPos, carPos+GetVelocity(), ColorRGBA(1, 1, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
+		debugoverlay->Line3D(carPos, carPos+carLinearVel, ColorRGBA(1, 1, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
 		debugoverlay->Line3D(carPos, carPos+carForwardDir*10.0f, ColorRGBA(1, 1, 0, 1.0f), ColorRGBA(1, 0, 1, 1.0f), DOVERLAY_DELAY);
 		debugoverlay->Box3D(steeringTargetPos - 0.25f, steeringTargetPos + 0.25f, ColorRGBA(1, 0, 1, 1.0f), DOVERLAY_DELAY);
 		debugoverlay->Box3D(steeringTargetPosB - 0.25f, steeringTargetPosB + 0.25f, ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
@@ -952,10 +952,14 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	if(fSpeed < -0.1f)
 		fSteeringAngle *= -1.0f;
-
-	if(lateralSlide > 1.0f && sign(lateralSlideSigned)+sign(fSteeringAngle) < 0.5f)
+	
+	if(lateralSlide > 4.0f && sign(lateralSlideSigned)+sign(fSteeringAngle) < 0.5f)
 	{
-		//fSteeringAngle *= lateralSlideSteerFactor;
+		float lateralSlideSpeedSteerModifier = 1.0f - fabs(dot(steerDir, fastNormalize(carLinearVel)));
+		float lateralSlideCorrectionSpeedModifier = RemapValClamp(fSpeed, 0, 40, 0.0f, 1.0f);
+		float lateralSlideSteerFactor = 1.0f - RemapValClamp(lateralSlide, 0.0f, 10.0f, 0.0f, 1.0f);
+
+		fSteeringAngle *= lateralSlideSpeedSteerModifier * lateralSlideCorrectionSpeedModifier;
 		doesHardSteer = false;
 	}
 
@@ -1031,7 +1035,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	{
 		Vector3D segmentDir = fastNormalize(steeringTargetPos-steeringTargetPosB);
 
-		float velocityToTargetFactor = dot(segmentDir, fastNormalize(GetVelocity()));
+		float velocityToTargetFactor = dot(segmentDir, fastNormalize(carLinearVel));
 		velocityToTargetFactor = pow(fabs(velocityToTargetFactor), 0.5f);
 
 		float lateralSlideSpd = lateralSlide*speedFactor;

@@ -158,30 +158,43 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 
 		vehicleConfig_t* conf = m_civCarEntries[randCar].config;
 
-		newCar = new CCar(conf);
-		
-		// car will be spawn, regenerate random
-		g_replayRandom.Regenerate();
-		g_replayData->PushEvent( REPLAY_EVENT_FORCE_RANDOM );
+		// don't spawn if not allowed
+		if(conf->flags.allowParked == false)
+			return NULL;
 
-		newCar->Spawn();
-		newCar->Enable(false);
-		newCar->PlaceOnRoadCell(pReg, roadCell);
+		m_civCarEntries[randCar].nextSpawn--;
 
-		if( conf->numColors )
+		if(m_civCarEntries[randCar].nextSpawn <= 0)
 		{
-			int col_idx = g_replayRandom.Get(0, conf->numColors - 1);
-			newCar->SetColorScheme(col_idx);
+			newCar = new CCar(conf);
+		
+			// car will be spawn, regenerate random
+			g_replayRandom.Regenerate();
+			g_replayData->PushEvent( REPLAY_EVENT_FORCE_RANDOM );
 
-			// car random color
-			g_replayData->PushEvent(REPLAY_EVENT_CAR_RANDOMCOLOR, newCar->m_replayID);
+			newCar->Spawn();
+			newCar->Enable(false);
+			newCar->PlaceOnRoadCell(pReg, roadCell);
+
+			if( conf->numColors )
+			{
+				int col_idx = g_replayRandom.Get(0, conf->numColors - 1);
+				newCar->SetColorScheme(col_idx);
+
+				// car random color
+				g_replayData->PushEvent(REPLAY_EVENT_CAR_RANDOMCOLOR, newCar->m_replayID);
+			}
+
+			g_pGameWorld->AddObject(newCar, true);
+
+			m_trafficCars.append(newCar);
+
+			m_civCarEntries[randCar].nextSpawn = m_civCarEntries[randCar].GetZoneSpawnInterval("default");
+
+			return newCar;
 		}
 
-		g_pGameWorld->AddObject(newCar, true);
-
-		m_trafficCars.append(newCar);
-
-		return newCar;
+		return NULL;
 	}
 
 	CAITrafficCar* pNewCar = NULL;
@@ -212,6 +225,12 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 	else
 	{
 		int randCar = g_replayRandom.Get(0, m_civCarEntries.numElem() - 1);
+
+		vehicleConfig_t* conf = m_civCarEntries[randCar].config;
+
+		// don't spawn cop usual way
+		if(conf->flags.isCop)
+			return NULL;
 
 		m_civCarEntries[randCar].nextSpawn--;
 

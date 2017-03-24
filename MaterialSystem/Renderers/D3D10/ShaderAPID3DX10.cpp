@@ -1209,7 +1209,7 @@ void ShaderAPID3DX10::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer,int nStrea
 		else
 		{
 			strides[0] = pVertexBuffer->GetStrideSize();//pCurrentFormat->m_nVertexSize[nStream];
-			offsets[0] = (UINT)offset;
+			offsets[0] = (UINT)offset*strides[0];
 			m_pD3DDevice->IASetVertexBuffers(nStream, 1, &pVB->m_pVertexBuffer, strides, offsets);
 		}
 

@@ -114,7 +114,6 @@ public:
 	void						MouseTranslateEvents( wxMouseEvent& event, const Vector3D& ray_start, const Vector3D& ray_dir );
 	void						MouseRotateEvents( wxMouseEvent& event, const Vector3D& ray_start, const Vector3D& ray_dir );
 
-	void						ProcessMouseEvents( wxMouseEvent& event );
 	void						OnKey(wxKeyEvent& event, bool bDown);
 	void						OnRender();
 

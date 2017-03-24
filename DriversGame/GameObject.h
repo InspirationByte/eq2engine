@@ -231,6 +231,9 @@ public:
 	virtual	bool				CheckVisibility( const occludingFrustum_t& frustum ) const;
 	virtual void				Draw( int nRenderFlags );
 
+	virtual CGameObject*		GetChildShadowCaster(int idx) const;
+	virtual int					GetChildCasterCount() const;
+
 	ubyte						GetBodyGroups() const {return m_bodyGroupFlags;}
 
 	void						SetUserData(void* dataPtr);

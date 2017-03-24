@@ -1678,7 +1678,7 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 // Changes the vertex buffer
 void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, const intptr offset)
 {
-	CVertexBufferGL* pSelectedBuffer = (CVertexBufferGL*)pVertexBuffer;
+	CVertexBufferGL* pVB = (CVertexBufferGL*)pVertexBuffer;
 
 #ifdef USE_GLES2
 	const GLsizei glTypes[] = {
@@ -1696,8 +1696,8 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 	GLuint vbo = 0;
 
-	if (pSelectedBuffer != NULL)
-		vbo = pSelectedBuffer->m_nGL_VB_Index;
+	if (pVB != NULL)
+		vbo = pVB->m_nGL_VB_Index;
 
 	bool boundHere = false;
 	
@@ -1708,13 +1708,13 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 		boundHere = true;
 	}
 
-	bool instanceBuffer = (nStream > 0) && pSelectedBuffer != NULL && (pSelectedBuffer->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
+	bool instanceBuffer = (nStream > 0) && pVB != NULL && (pVB->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
 
-	if (pSelectedBuffer != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream] || m_pCurrentVertexFormat != m_pActiveVertexFormat[nStream])
+	if (pVB != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream] || m_pCurrentVertexFormat != m_pActiveVertexFormat[nStream])
 	{
 		if (m_pCurrentVertexFormat != NULL)
 		{
-			char *base = (char *) offset;
+			char* base = (char *)(offset + pVertexBuffer->GetStrideSize());
 
 			CVertexFormatGL* cvf = (CVertexFormatGL*)m_pCurrentVertexFormat;
 

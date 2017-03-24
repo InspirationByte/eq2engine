@@ -128,6 +128,12 @@ enum EWhatPaintFlags
 	HEDIT_PAINT_FLAGS		= ( 1 << 2 ),
 };
 
+enum ELineMode
+{
+	HEDIT_LINEMODE_RADIUS = 0,
+	HEDIT_LINEMODE_WIDTH,
+};
+
 // rx, ry are real in processing
 typedef bool (*TILEPAINTFUNC)(int rx, int ry, int px, int py, CUI_HeightEdit* edit, CHeightTileField* field, hfieldtile_t* tile, int flags, float percent);
 
@@ -171,11 +177,16 @@ public:
 	int							GetHeightfieldFlags();
 	void						SetHeightfieldFlags(int flags);
 
-	int							GetAddHeight();
+	int							GetAddHeight() const;
 	void						SetHeight(int height);
 
-	EEditMode					GetEditMode();
-	int							GetEditorPaintFlags();
+	bool						IsLineMode() const;
+
+	int							GetStartHeight() const;
+	int							GetEndHeight() const;
+
+	EEditMode					GetEditMode() const;
+	int							GetEditorPaintFlags() const;
 
 	int							GetSelectedAtlasIndex() const;
 
@@ -193,11 +204,12 @@ public:
 
 	void						Update_Refresh();
 
-	void						PaintHeightfieldRadius(int px, int py, TILEPAINTFUNC func);
-
+	void						PaintHeightfieldLocal(int px, int py, TILEPAINTFUNC func, float percent = 1.0f);
 	void						PaintHeightfieldGlobal(int px, int py, TILEPAINTFUNC func, float percent = 1.0f);
+	void						PaintHeightfieldPointLocal(int px, int py, TILEPAINTFUNC func, float percent = 1.0f);
+	void						PaintHeightfieldPointGlobal(int px, int py, TILEPAINTFUNC func, float percent = 1.0f);
 
-	void						PaintHeightfieldLine(int x0, int y0, int x1, int y1, TILEPAINTFUNC func);
+	void						PaintHeightfieldLine(int x0, int y0, int x1, int y1, TILEPAINTFUNC func, ELineMode mode);
 
 	DECLARE_EVENT_TABLE()
 protected:
@@ -238,6 +250,8 @@ protected:
 	wxCheckBox*					m_pAspectCorrection;
 
 	int							m_rotation;
+
+	bool						m_isLineMode;
 
 	//int							m_radiusVal;
 	//int							m_heightVal;

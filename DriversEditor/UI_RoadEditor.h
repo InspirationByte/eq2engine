@@ -31,7 +31,6 @@ public:
 
 	void						MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos  );
 
-	void						ProcessMouseEvents( wxMouseEvent& event );
 	void						OnKey(wxKeyEvent& event, bool bDown);
 	void						OnRender();
 

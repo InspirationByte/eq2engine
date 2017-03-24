@@ -1146,11 +1146,6 @@ int CUI_LevelModels::GetRotation()
 
 // IEditorTool stuff
 
-void CUI_LevelModels::ProcessMouseEvents( wxMouseEvent& event )
-{
-	CBaseTilebasedEditor::ProcessMouseEvents(event);
-}
-
 void CUI_LevelModels::RecalcSelectionCenter()
 {
 	BoundingBox bbox;

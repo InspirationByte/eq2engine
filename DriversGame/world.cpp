@@ -1062,6 +1062,8 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	
 	envMap.SwapChannels(0, 2);
 	fogEnvMap.SwapChannels(0, 2);
+
+	envMap.CreateMipMaps(7);
 	
 	DkList<CImage*> envMapImg;
 	envMapImg.append(&envMap);
@@ -1501,6 +1503,9 @@ void CGameWorld::Draw( int nRenderFlags )
 	// cleanup of casters
 	m_shadowRenderer.Clear();
 #endif // EDITOR
+
+	// setup culling
+	materials->SetCullMode((nRenderFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
 
 	// rendering of instanced objects
 	if( m_renderingObjects.goToFirst() )

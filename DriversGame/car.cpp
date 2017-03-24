@@ -108,7 +108,9 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 	conf->visual.cleanModelName = KV_GetValueString(kvs->FindKeyBase("cleanModel"), 0, "");
 	conf->visual.damModelName = KV_GetValueString(kvs->FindKeyBase("damagedModel"), 0, conf->visual.cleanModelName.c_str());
 
-	conf->isCar = KV_GetValueBool(kvs->FindKeyBase("isCar"), 0, true);
+	conf->flags.isCar = KV_GetValueBool(kvs->FindKeyBase("isCar"), 0, true);
+	conf->flags.allowParked = KV_GetValueBool(kvs->FindKeyBase("allowParked"), 0, true);
+	conf->flags.isCop = KV_GetValueBool(kvs->FindKeyBase("isCop"), 0, false);
 
 	ASSERTMSG(conf->visual.cleanModelName.Length(), "ParseVehicleConfig - missing cleanModel!\n");
 
@@ -157,7 +159,7 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 		for(int i = 0; i < conf->physics.numGears; i++)
 			conf->physics.gears[i] = KV_GetValueFloat( pGears->keys[i]);
 	}
-	else if(conf->isCar)
+	else if(conf->flags.isCar)
 		MsgError("no gears found in config for '%s'!", conf->carName.c_str());
 
 	kvkeybase_t* pWheels = kvs->FindKeyBase("wheels");
@@ -755,7 +757,7 @@ void CCar::InitCarSound()
 	//
 	// Don't initialize sounds if this is not a car
 	//
-	if(!m_conf->isCar)
+	if(!m_conf->flags.isCar)
 		return;
 
 	EmitSound_t ep;
@@ -823,7 +825,7 @@ void CCar::Spawn()
 	SetModel( m_conf->visual.cleanModelName.c_str() );
 	/*
 	// create instancer for lod models only
-	if(g_pShaderAPI->GetCaps().isInstancingSupported &&
+	if(!(nRenderFlags & RFLAG_NOINSTANCE) && g_pShaderAPI->GetCaps().isInstancingSupported &&
 		m_pModel && m_pModel->GetInstancer() == NULL)
 	{
 		CGameObjectInstancer* instancer = new CGameObjectInstancer();
@@ -1195,7 +1197,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	if(m_locked) // TODO: cvar option to lock or not
 		m_controlButtons = IN_HANDBRAKE;
 
-	bool isCar = m_conf->isCar;
+	bool isCar = m_conf->flags.isCar;
 
 	//
 	// Update controls first
@@ -1457,6 +1459,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 		autoHandbrakeHelper = clamp(autoHandbrakeHelper,FReal(0),AUTOHANDBRAKE_MAX_FACTOR);
 	}
 
+	m_fAccelEffect += ((m_fAcceleration+fBrake)-m_fAccelEffect) * delta * ACCELERATION_SOUND_CONST * accel_scale;
+	m_fAccelEffect = clamp(m_fAccelEffect, FReal(-1.0f), FReal(1.0f));
+
 	if( GetSpeed() <= 0.25f )
 	{
 		m_fAcceleration -= fBrake;
@@ -1630,17 +1635,14 @@ void CCar::UpdateVehiclePhysics(float delta)
 		m_fBreakage -= delta * ACCELERATION_CONST;
 	}
 
-	if(m_fBreakage < 0)
-		m_fBreakage = 0;
-
 	bool brakeLightsActive = !bDoBurnout && FPmath::abs(fBreakage) > 0.0f;
 	SetLight(CAR_LIGHT_BRAKE, brakeLightsActive);
 
+	if(m_fBreakage < 0)
+		m_fBreakage = 0;
+
 	if(fHandbrake > 0)
 		fAcceleration = 0;
-
-	m_fAccelEffect += ((fAcceleration-FPmath::abs(fBreakage))-m_fAccelEffect) * delta * ACCELERATION_SOUND_CONST * accel_scale;
-	m_fAccelEffect = clamp(m_fAccelEffect, FReal(-1.0f), FReal(1.0f));
 
 	float fRpm = m_radsPerSec * ( 60.0f / ( 2.0f * PI_F ));
 
@@ -2401,7 +2403,7 @@ void CCar::Simulate( float fDt )
 	if(!carBody)
 		return;
 
-	bool isCar = m_conf->isCar;
+	bool isCar = m_conf->flags.isCar;
 
 	if(	m_conf->visual.sirenType > SERVICE_LIGHTS_NONE && (m_controlButtons & IN_SIREN) && !(m_oldControlButtons & IN_SIREN))
 	{
@@ -3322,7 +3324,7 @@ void CCar::UpdateSounds( float fDt )
 	m_pSurfSound->SetOrigin(pos);
 	m_pSurfSound->SetVelocity(velocity);
 
-	bool isCar = m_conf->isCar;
+	bool isCar = m_conf->flags.isCar;
 
 	if(isCar)
 	{
@@ -3743,8 +3745,6 @@ void CCar::DrawBody( int nRenderFlags )
 			bApplyDamage = true;
 	}
 
-	materials->SetCullMode((nRenderFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
-
 	for(int i = 0; i < pHdr->numbodygroups; i++)
 	{
 		// check bodygroups for rendering
@@ -3814,72 +3814,6 @@ void CCar::DrawBody( int nRenderFlags )
 			//materials->SetSkinningEnabled(false);
 		}
 	}
-
-	/*
-	for(int i = 0; i < pHdr->numbodygroups; i++)
-	{
-		int bodyGroupLOD = nLOD;
-
-		// TODO: check bodygroups for rendering
-
-		int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
-		int nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
-
-		// get the right LOD model number
-		while(nModDescId == -1 && bodyGroupLOD > 0)
-		{
-			bodyGroupLOD--;
-			nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
-		}
-
-		if(nModDescId == -1)
-			continue;
-
-		// render model groups that in this body group
-		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
-		{
-			//materials->SetSkinningEnabled(true);
-
-			// reset shader constants (required)
-			g_pShaderAPI->Reset(STATE_RESET_SHADERCONST);
-
-			IMaterial* pMaterial = m_pModel->GetMaterial(nModDescId, j);
-			materials->BindMaterial(pMaterial, false);
-
-			g_pShaderAPI->SetShaderConstantArrayFloat("BodyDamage", bodyDamages, 16);
-
-			ColorRGBA colors[2];
-
-			if(m_conf->useBodyColor)
-			{
-				colors[0] = m_carColor.col1;
-				colors[1] = m_carColor.col2;
-			}
-			else
-			{
-				colors[0] = color4_white;
-				colors[1] = color4_white;
-			}
-
-			g_pShaderAPI->SetShaderConstantArrayVector4D("CarColor", colors, 2);
-
-			// setup our brand new vertex format
-			g_pShaderAPI->SetVertexFormat( g_pGameWorld->m_vehicleVertexFormat );
-
-			// bind
-			m_pModel->SetupVBOStream( 0 );
-
-			if( m_pDamagedModel && bApplyDamage )
-				m_pDamagedModel->SetupVBOStream( 1 );
-			else
-				m_pModel->SetupVBOStream( 1 );
-
-			//m_pModel->PrepareForSkinning( m_BoneMatrixList );
-
-			m_pModel->DrawGroup( nModDescId, j, false );
-		}
-	}
-	*/
 }
 
 void CCar::Draw( int nRenderFlags )
@@ -3904,7 +3838,7 @@ void CCar::Draw( int nRenderFlags )
 	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
 	int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
-	if(nLOD == 0)
+	if(nLOD == 0 && !(nRenderFlags & RFLAG_SHADOW))
 	{
 		//
 		// SHADOW TEST CODE
@@ -3991,7 +3925,8 @@ void CCar::Draw( int nRenderFlags )
 		}
 	}
 
-	DrawEffects( nLOD );
+	if(!(nRenderFlags & RFLAG_SHADOW))
+		DrawEffects( nLOD );
 
 	if (bDraw)
 	{
@@ -4002,6 +3937,15 @@ void CCar::Draw( int nRenderFlags )
 	}
 }
 
+CGameObject*  CCar::GetChildShadowCaster(int idx) const
+{
+	return &m_wheels[idx];
+}
+
+int CCar::GetChildCasterCount() const
+{
+	return m_conf->physics.numWheels;
+}
 
 void CCar::OnPackMessage( CNetMessageBuffer* buffer )
 {

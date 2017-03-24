@@ -99,7 +99,7 @@ protected:
 	float					m_shakeDecayCurTime;
 	float					m_shakeMagnitude;
 
-	float					m_targetForwardSpeedModifier;
+	//float					m_targetForwardSpeedModifier;
 
 	CViewParams				m_computedView;
 
