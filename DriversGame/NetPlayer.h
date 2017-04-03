@@ -50,6 +50,7 @@ public:
 						CNetPlayer( int clientID, const char* name );
 						~CNetPlayer();
 
+	const char*			GetName() const;
 	const char*			GetCarName() const;
 	void				SetControls(int controls);
 	CCar*				GetCar();

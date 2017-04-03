@@ -145,6 +145,32 @@ DECLARE_CMD(disconnect, "shutdown game", 0)
 		SetCurrentState(g_states[GAME_STATE_MAINMENU]);
 }
 
+DECLARE_CMD(ping, "shows ping of the clients", 0)
+{
+	if(!g_pGameSession)
+		return;
+
+	if(g_pGameSession->GetSessionType() != SESSION_NETWORK)
+	{
+		MsgError("No network game running\n");
+		return;
+	}
+
+	CNetGameSession* ses = (CNetGameSession*)g_pGameSession;
+	int numPlayers = ses->GetMaxPlayers();
+
+	MsgInfo("--- Players ping on the server ---");
+	for(int i = 0; i < numPlayers;i ++)
+	{
+		CNetPlayer* player = ses->GetPlayerByID(i);
+
+		if(!player)
+			continue;
+
+		Msg("%s: %.1f ms\n", player->GetName(), player->GetLatency()*500.0f);
+	}
+}
+
 //------------------------------------------------------------------------------------------------------------------------------
 
 // intervention protection
@@ -343,8 +369,6 @@ bool CNetGameSession::Create_Client()
 	for(int i = 0; i < m_players.numElem(); i++)
 		m_players[i] = NULL;
 
-	Msg("DEBUGINFO: playerid is %d\n", g_svclientInfo.playerID);
-
 	CNetMessageBuffer buffer;
 
     MsgInfo("Retrieving client info...\n");
@@ -446,7 +470,7 @@ void CNetGameSession::Net_SpawnObject( CGameObject* obj )
 
 	if(netId != NETWORK_ID_OFFLINE)
 	{
-		Msg("Emit_NetSpawnObject - make object id %d\n", netId);
+		//Msg("Emit_NetSpawnObject - make object id %d\n", netId);
 
 		// send spawn for existing clients
 		m_netThread.SendEvent(new CNetSpawnInfo(obj, NETOBJ_SPAWN), CMSG_OBJECT_SPAWN, NM_SENDTOALL, 0);
@@ -495,7 +519,7 @@ void CNetGameSession::SendPlayerInfoList( int clientID )
 		//if( !m_players[i]->IsReady() )
 		//	continue;
 
-		Msg("[SERVER] sending player info %s %s %d\n", m_players[i]->m_carName.c_str(), m_players[i]->m_name.c_str(), m_players[i]->m_id);
+		//Msg("[SERVER] sending player info %s %s %d\n", m_players[i]->m_carName.c_str(), m_players[i]->m_name.c_str(), m_players[i]->m_id);
 
 		m_netThread.SendEvent( new CNetServerPlayerInfo( m_players[i] ), CMSG_SERVERPLAYER_INFO, NM_SENDTOALL, CDPSEND_GUARANTEED );
 	}
@@ -560,6 +584,8 @@ void CNetGameSession::Shutdown()
 		{
 			m_netThread.StopWork();
 			m_netThread.SetNetworkInterface(NULL);
+
+			g_pClientInterface->Shutdown();
 		}
 	}
 
@@ -752,7 +778,7 @@ CNetPlayer* CNetGameSession::CreatePlayer(netPlayerSpawnInfo_t* spawnInfo, int c
 		}
 	}
 
-	Msg("Created player slot (%d)\n", playerID);
+	Msg("[SERVER] Player slot %d created\n", playerID);
 
 	if(playerID == -1)
 		return NULL;

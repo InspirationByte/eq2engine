@@ -1755,7 +1755,7 @@ void KV_WriteToStream(IVirtualStream* outStream, kvkeybase_t* section, int nTabs
 			outStream->Print("%c", KV_SECTION_END);
 		}
 
-		if(pretty && hasWroteValue)
+		if(hasWroteValue)
 			outStream->Print("%c\n", KV_BREAK);
 	}
 }

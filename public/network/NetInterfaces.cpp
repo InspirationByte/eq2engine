@@ -133,12 +133,12 @@ void CNetworkServer::Shutdown()
 	m_pSocket = NULL;
 }
 
-svclient_t* CNetworkServer::GetLastClient()
+netPeer_t* CNetworkServer::GetLastClient()
 {
 	return &m_lastclient;
 }
 
-svclient_t* CNetworkServer::GetClientByAddr(sockaddr_in* addr)
+netPeer_t* CNetworkServer::GetClientByAddr(sockaddr_in* addr)
 {
 	for(int i = 0; i < m_clients.numElem(); i++)
 	{
@@ -152,7 +152,7 @@ svclient_t* CNetworkServer::GetClientByAddr(sockaddr_in* addr)
 	return NULL;
 }
 
-svclient_t* CNetworkServer::GetClientById(int id)
+netPeer_t* CNetworkServer::GetClientById(int id)
 {
 	for(int i = 0; i < m_clients.numElem(); i++)
 	{
@@ -179,6 +179,19 @@ void CNetworkServer::RemoveClientById(int id)
 			m_clients[i] = NULL;
 		}
 	}
+}
+
+bool CNetworkServer::HasPeersToSend() const
+{
+	for(int i = 0; i < m_clients.numElem(); i++)
+	{
+		if(!m_clients[i])
+			continue;
+
+		return true;
+	}
+
+	return false;
 }
 
 bool CNetworkServer::OnRecieved( netMessage_t* msg, const sockaddr_in& from )
@@ -217,7 +230,7 @@ bool CNetworkServer::OnRecieved( netMessage_t* msg, const sockaddr_in& from )
 
 bool CNetworkServer::InternalSend( netMessage_t* msg, int msg_size, short& msg_id, int flags)
 {
-	svclient_t* pClient;
+	netPeer_t* pClient;
 
 	if(msg->header.clientid == NM_SENDTOALL)
 	{
@@ -276,7 +289,7 @@ bool CNetworkServer::InternalSend( netMessage_t* msg, int msg_size, short& msg_i
 	return true;
 }
 
-int CNetworkServer::AddClient( svclient_t* client_from_msg )
+int CNetworkServer::AddClient( netPeer_t* client_from_msg )
 {
 	// try find free slot
 	for(int i = 0; i < m_clients.numElem(); i++)

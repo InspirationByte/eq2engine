@@ -101,6 +101,11 @@ CNetPlayer::~CNetPlayer()
 
 }
 
+const char* CNetPlayer::GetName() const
+{
+	return m_name.c_str();
+}
+
 const char* CNetPlayer::GetCarName() const
 {
 	return m_carName.c_str();
@@ -192,7 +197,7 @@ void CNetPlayer::NETSpawn()
 	if(netSes->IsClient())
 		m_ownCar->m_networkID = m_spawnInfo->m_netCarID;
 
-	Msg("[PLAYER] NETSpawn - car netID=%d\n", m_ownCar->m_networkID);
+	Msg("[SERVER] %s spawn\n", m_name.c_str());
 
 	delete m_spawnInfo;
 	m_spawnInfo = NULL;
@@ -502,7 +507,7 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 		return;
 	}
 
-	svclient_t* pClient = new svclient_t;
+	netPeer_t* pClient = new netPeer_t;
 	pClient->client_addr = m_clientAddr;
 	pClient->client_id = -1;
 
@@ -521,7 +526,7 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 	if(!newPlayer)
 		return;
 
-	Msg("player '%s' joining (id=%d)\n", m_playerName.c_str(), newPlayer->m_id);
+	MsgInfo("Player '%s' joining the game...\n", m_playerName.c_str(), newPlayer->m_id);
 
 	CNetMessageBuffer buffer;
 	kvkeybase_t kvs;
@@ -601,8 +606,6 @@ void CNetClientPlayerInfo::Process( CNetworkThread* pNetThread )
 {
 	// add player to list and send back message
 	CNetGameSession* netSes = (CNetGameSession*)g_pGameSession;
-
-	Msg("client info recieved...\n");
 
 	if(netSes == NULL)
 		return;
@@ -684,7 +687,7 @@ void CNetServerPlayerInfo::Process( CNetworkThread* pNetThread )
 
 	CNetworkClient* client = (CNetworkClient*)pNetThread->GetNetworkInterface();
 
-	Msg("[CLIENT] recieved player info %s %s %d (time = %g)\n", m_carName.c_str(), m_playerName.c_str(), m_playerID, m_sync_time);
+	Msg("[SYNC] got player info %s (time: %.2fs)\n", m_playerName.c_str(), m_sync_time);
 
 	netPlayerSpawnInfo_t* spawn = new netPlayerSpawnInfo_t;
 	spawn->m_spawnPos = m_position;

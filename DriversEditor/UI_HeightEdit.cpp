@@ -377,6 +377,8 @@ void CMaterialAtlasList::ReloadMaterialList()
 	KeyValues kv;
 	if( kv.LoadFromFile("EqEditProjectSettings.cfg") )
 	{
+		Msg("Adding material ignore filters from 'EqEditProjectSettings.cfg'\n");
+
 		kvkeybase_t* pSection = kv.GetRootSection();
 		for(int i = 0; i < pSection->keys.numElem(); i++)
 		{
@@ -384,8 +386,6 @@ void CMaterialAtlasList::ReloadMaterialList()
 			{
 				EqString pathStr(KV_GetValueString(pSection->keys[i]));
 				pathStr.Path_FixSlashes();
-
-				Msg("Add ignore filter: '%s'\n", pathStr.c_str());
 
 				m_loadfilter.append( pathStr.c_str() );
 			}
@@ -1332,7 +1332,7 @@ void CUI_HeightEdit::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, 
 
 				PaintHeightfieldLine(	m_globalTile_lineStart.x,m_globalTile_lineStart.y,
 										m_globalTile_lineEnd.x, m_globalTile_lineEnd.y,
-										HeightPaintUpFunc, HEDIT_LINEMODE_WIDTH);
+										HeightPaintUpFunc, GetEditMode() == HEDIT_SET ? HEDIT_LINEMODE_WIDTH : HEDIT_LINEMODE_RADIUS);
 
 				m_isLineMode = false;
 			}
@@ -1382,7 +1382,7 @@ void CUI_HeightEdit::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, 
 			// line
 			PaintHeightfieldLine(	m_globalTile_lineStart.x,m_globalTile_lineStart.y,
 									m_globalTile_lineEnd.x, m_globalTile_lineEnd.y, 
-									TexPaintFunc, HEDIT_LINEMODE_RADIUS);
+									TexPaintFunc, GetEditMode() == HEDIT_SET ? HEDIT_LINEMODE_WIDTH : HEDIT_LINEMODE_RADIUS);
 
 			m_isLineMode = false;
 		}

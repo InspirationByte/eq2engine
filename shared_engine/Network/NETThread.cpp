@@ -520,6 +520,10 @@ int CNetworkThread::DispatchEvents()
 
 EEventMessageStatus CNetworkThread::DispatchEvent( sendEvent_t& evt )
 {
+	// don't send event if we have no peers
+	if(evt.client_id == NM_SENDTOALL && !m_netInterface->HasPeersToSend())
+		return EVTMSGSTATUS_ERROR;
+
 	if( evt.flags & CDPSEND_IMMEDIATE )
 	{
 		// if interface fails, run down immediately!

@@ -43,7 +43,7 @@ ALIGNED_TYPE(netMessage_s,2) netMessage_t;
 #define NM_SERVER		(-3)
 
 // client info for server
-struct svclient_t
+struct netPeer_t
 {
 	int				client_id;
 	sockaddr_in		client_addr;
@@ -68,6 +68,8 @@ public:
 
 	CEqRDPSocket*		GetSocket() const {return m_pSocket;}
 	sockaddr_in			GetAddress() const {return m_pSocket->GetAddress();}
+
+	virtual bool		HasPeersToSend() const = 0;
 
 protected:
 
@@ -98,17 +100,19 @@ public:
 
 	int					GetClientCount();
 
-	int					AddClient( svclient_t* client_from_msg );
-	svclient_t*			GetLastClient();
+	int					AddClient( netPeer_t* client_from_msg );
+	netPeer_t*			GetLastClient();
 
-	svclient_t*			GetClientByAddr(sockaddr_in* addr);
-	svclient_t*			GetClientById(int id);
+	netPeer_t*			GetClientByAddr(sockaddr_in* addr);
+	netPeer_t*			GetClientById(int id);
 	void				RemoveClientById(int id);
 
-private:
-	svclient_t			m_lastclient;
+	bool				HasPeersToSend() const;
 
-	DkList<svclient_t*>	m_clients;
+private:
+	netPeer_t			m_lastclient;
+
+	DkList<netPeer_t*>	m_clients;
 };
 
 //-------------------------------------------------------------------------------------------------------
@@ -129,12 +133,17 @@ public:
 	void			SetClientID(int nID);
 	int				GetClientID();
 
+	bool			HasPeersToSend() const {return true;}
 
 private:
 	sockaddr_in		m_Server;
 
 	int				m_nClientID;
 };
+
+//-------------------------------------------------------------------------------------------------------
+
+//					TODO: CNetworkPeerClient
 
 }; // namespace Networking
 
