@@ -900,16 +900,21 @@ void ParsePoseparameters(kvkeybase_t* section)
 {
 	for(int i = 0; i < section->keys.numElem(); i++)
 	{
-		if(!stricmp(section->keys[i]->name, "poseparameter"))
-		{
-			posecontroller_t controller;
-			int validness = sscanf(KV_GetValueString(section->keys[i]), "%s %f %f", controller.name, &controller.blendRange[0], &controller.blendRange[1]);
+		kvkeybase_t* poseParamKey = section->keys[i];
 
-			if(validness != 3)
+		if(!stricmp(poseParamKey->name, "poseparameter"))
+		{
+			if(poseParamKey->values.numElem() < 3)
 			{
-				MsgError("Invalid string of poseparameter. format is: <poseparam name> <min range> <max range>");
+				MsgError("Invalid poseparameter definition. Valid format is: <poseparam name> <min range> <max range>");
 				continue;
 			}
+
+			posecontroller_t controller;
+
+			strcpy(controller.name, KV_GetValueString(poseParamKey, 0));
+			controller.blendRange[0] = KV_GetValueFloat(poseParamKey, 1);
+			controller.blendRange[1] = KV_GetValueFloat(poseParamKey, 2);
 
 			g_posecontrollers.append(controller);
 		}
