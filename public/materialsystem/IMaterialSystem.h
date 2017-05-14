@@ -24,12 +24,12 @@
 
 #include "IDynamicMesh.h"
 
-#include "ViewParams.h"
-#include "scene_def.h"
-
 class CImage;
 class IEqSwapChain;
 class IShaderAPI;
+struct FogInfo_t;
+struct dlight_t;
+class CViewParams;
 
 // interface version for Shaders_*** dlls
 #define MATSYSTEM_INTERFACE_VERSION "MaterialSystem_008"

@@ -500,7 +500,7 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w, const char* que
 				continue;
 			}
 
-			max_string_length = max(max_string_length, m_autocompletionList[i].Length());
+			max_string_length = max((uint)max_string_length, m_autocompletionList[i].Length());
 		}
 
 		int displayCount = min(m_autocompletionList.numElem(), con_fastfind_count.GetInt());

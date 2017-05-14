@@ -15,6 +15,8 @@
 #include "math/math_util.h"
 #include "TextureView.h"
 
+#include "MeshBuilder.h"
+
 #include "DragDropObjects.h"
 
 #include "world.h"
@@ -1473,6 +1475,44 @@ void CUI_HeightEdit::OnRender()
 			box_pos += m_selectedRegion->GetHField(m_selectedHField)->m_position - Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
 
 			debugoverlay->Text3D(box_pos, -1, ColorRGBA(1,1,1,1), 0.0f, "layer: %d", m_selectedHField);
+
+			ColorRGBA color2(0.2,0.2,0.2,0.8);
+
+			BlendStateParam_t blending;
+			blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
+			blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+
+			g_pShaderAPI->SetTexture(NULL,0,0);
+			materials->SetBlendingStates(blending);
+			materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+			materials->SetDepthStates(false,false);
+
+			// draw a radius circle
+			CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+
+			box_pos += Vector3D(0.5f,0,0.5f) * HFIELD_POINT_SIZE;
+
+			meshBuilder.Begin(PRIM_LINE_STRIP);
+
+				meshBuilder.Color4f(1.0f, 1.0f, 0.0f, 0.8f);
+				for(int i = 0; i < 33; i++)
+				{
+					float angle = 360.0f*(float)i/32.0f;
+
+					float si,co;
+					SinCos(DEG2RAD(angle), &si, &co);
+
+					Vector3D circleAngleVec = Vector3D(si,0,co)*GetRadius()*HFIELD_POINT_SIZE;
+
+					circleAngleVec.y = HFIELD_HEIGHT_STEP;
+
+					meshBuilder.Position3fv(box_pos + circleAngleVec);
+					meshBuilder.AdvanceVertex();
+				}
+
+				
+			meshBuilder.End();
+			
 		}
 	}
 }

@@ -8,6 +8,7 @@
 #include "EqParticles.h"
 #include "eqGlobalMutex.h"
 #include "IConCommandFactory.h"
+#include "ViewParams.h"
 
 using namespace Threading;
 

@@ -7,6 +7,8 @@
 
 #include "materialsystem/IMaterialSystem.h"
 #include "utils/strtools.h"
+#include "scene_def.h"
+#include "ViewParams.h"
 
 #define BEGIN_SHADER_CLASS(name)								\
 	namespace C##name##ShaderLocalNamespace						\

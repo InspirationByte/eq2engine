@@ -142,7 +142,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="MainWindow.h" />
+    <ClInclude Include="eqSoundSystemTest.h" />
     <ClInclude Include="SoundEngineV2\snd_channel.h" />
     <ClInclude Include="SoundEngineV2\snd_defs.h" />
     <ClInclude Include="SoundEngineV2\riff.h" />
@@ -217,7 +217,7 @@
     <ClCompile Include="..\..\public\math\math_util.cpp" />
     <ClCompile Include="..\..\shared_engine\Font.cpp" />
     <ClCompile Include="..\..\shared_engine\FontCache.cpp" />
-    <ClCompile Include="MainWindow.cpp" />
+    <ClCompile Include="eqSoundSystemTest.cpp" />
     <ClCompile Include="..\..\public\ViewParams.cpp" />
     <ClCompile Include="..\..\shared_engine\DebugOverlay.cpp" />
     <ClCompile Include="SoundEngineV2\snd_channel.cpp" />

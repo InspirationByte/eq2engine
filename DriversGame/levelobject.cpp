@@ -588,7 +588,7 @@ void CLevelModel::GetDecalPolygons( decalprimitives_t& polys, const Matrix4x4& t
 		if(batch.pMaterial && (batch.pMaterial->GetFlags() & polys.settings.avoidMaterialFlags))
 			continue;
 
-		for(int p = 0; p < batch.numIndices; p += 3)
+		for(uint32 p = 0; p < batch.numIndices; p += 3)
 		{
 			int si = batch.startIndex + p;
 

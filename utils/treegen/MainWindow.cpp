@@ -14,6 +14,9 @@
 
 #include "IFileSystem.h"
 
+#include "scene_def.h"
+#include "ViewParams.h"
+
 #include <wx/settings.h>
 
 #define APPLICATION_NAME		"maketree"
@@ -659,12 +662,14 @@ void RenderModel()
 		if(nModDescId == -1)
 			continue;
 
+		studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
+
 		// render model groups that in this body group
-		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+		for(int j = 0; j < modDesc->numgroups; j++)
 		{
 			materials->SetSkinningEnabled(true);
 
-			IMaterial* pMaterial = g_pModel->GetMaterial(nModDescId, j);
+			IMaterial* pMaterial = g_pModel->GetMaterial(modDesc->pGroup(j)->materialIndex);
 			materials->BindMaterial(pMaterial, false);
 			materials->SetSkinningEnabled(false);
 

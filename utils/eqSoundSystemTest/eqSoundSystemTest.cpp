@@ -5,13 +5,17 @@
 // Description: MaterialSystem wxWidgets template application
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "MainWindow.h"
+#include "eqSoundSystemTest.h"
+
 #include "IFileSystem.h"
 #include "ILocalize.h"
 #include "FontCache.h"
 #include "IConCommandFactory.h"
 #include "DebugOverlay.h"
 #include "coord.h"
+
+#include "scene_def.h"
+#include "ViewParams.h"
 
 #include "SoundEngineV2/soundinterface.h"
 

@@ -400,7 +400,8 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	m_carNameDialog->SetValue("mustang");
 
-	g_fileSystem->MakeDir("levels/editor_prefabs", SP_MOD);
+	g_fileSystem->MakeDir("editor_prefabs", SP_MOD);
+	g_fileSystem->MakeDir("levels", SP_MOD);
 
 	g_pPhysics = new CPhysicsEngine();
 

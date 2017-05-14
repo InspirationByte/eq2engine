@@ -36,7 +36,11 @@ public:
 	void						InitTool();
 	void						ReloadTool();
 
+	void						OnLevelUnload();
+	void						OnLevelLoad();
+
 	void						Update_Refresh();
+
 
 protected:
 	IRectangle					m_tileSelection;
@@ -47,6 +51,8 @@ protected:
 	wxButton* m_newbtn;
 	wxButton* m_editbtn;
 	wxButton* m_delbtn;
+
+	CGameLevel m_selPrefab;
 		
 	// Virtual event handlers, overide them in your derived class
 	virtual void OnBeginPrefabPlacement( wxCommandEvent& event );

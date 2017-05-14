@@ -17,6 +17,9 @@
 
 #include "predictablerandom.h"
 
+#include "ViewParams.h"
+#include "scene_def.h"
+
 #ifdef EDITOR
 #include "../DriversEditor/level_generator.h"
 #include "../DriversEditor/EditorLevel.h"

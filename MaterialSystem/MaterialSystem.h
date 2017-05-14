@@ -21,6 +21,8 @@
 #include "platform/Platform.h"
 #include "material.h"
 
+#include "scene_def.h"
+
 #include "utils/eqthread.h"
 
 using namespace Threading;

@@ -19,11 +19,13 @@
 #include "EditorHeader.h"
 #include "FontCache.h"
 
-
 #include "DebugOverlay.h"
 #include "CAnimatedModel.h"
 #include "math/math_util.h"
 #include "Physics/DkBulletPhysics.h"
+
+#include "scene_def.h"
+#include "ViewParams.h"
 
 ConVar cheats("__cheats", "1");
 

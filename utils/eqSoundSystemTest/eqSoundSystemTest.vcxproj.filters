@@ -46,9 +46,6 @@
     <ClInclude Include="wxui_header.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="MainWindow.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="SoundEngine\buffer.h">
       <Filter>Source Files\SoundWorks</Filter>
     </ClInclude>
@@ -145,6 +142,9 @@
     <ClInclude Include="SoundEngineV2\snd_ogg_stream.h">
       <Filter>Source Files\SoundEngine\sources</Filter>
     </ClInclude>
+    <ClInclude Include="eqSoundSystemTest.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="windows\mainicon.ico">
@@ -154,9 +154,6 @@
   <ItemGroup>
     <ClCompile Include="..\..\public\ViewParams.cpp">
       <Filter>Source Files\EngineLib\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="MainWindow.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\shared_engine\DebugOverlay.cpp">
       <Filter>Source Files\EngineLib\Renderer\Debug</Filter>
@@ -244,6 +241,9 @@
     </ClCompile>
     <ClCompile Include="SoundEngineV2\snd_ogg_stream.cpp">
       <Filter>Source Files\SoundEngine\sources</Filter>
+    </ClCompile>
+    <ClCompile Include="eqSoundSystemTest.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

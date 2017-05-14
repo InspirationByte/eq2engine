@@ -129,14 +129,23 @@ void CUI_PrefabManager::OnRender()
 
 		field->DebugRender(false, m_mouseOverTileHeight);
 	}
-	
 
 	CBaseTilebasedEditor::OnRender();
 }
 
-void CUI_PrefabManager::InitTool()
+void CUI_PrefabManager::OnLevelUnload()
 {
 
+}
+
+void CUI_PrefabManager::OnLevelLoad()
+{
+
+}
+
+void CUI_PrefabManager::InitTool()
+{
+	
 }
 
 void CUI_PrefabManager::ReloadTool()
