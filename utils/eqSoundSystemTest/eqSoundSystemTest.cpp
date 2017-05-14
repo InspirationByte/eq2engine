@@ -58,6 +58,10 @@ ISoundChannel* g_musicChan = NULL;
 
 void InitSoundSystem( EQWNDHANDLE wnd )
 {
+	g_sysConsole->ClearCommandBuffer();
+	g_sysConsole->ParseFileToCommandBuffer("eqSoundSystemTest.cfg");
+	g_sysConsole->ExecuteCommandBuffer();
+
 	g_soundEngine = ISoundEngine::Create();
 	g_soundEngine->Initialize( wnd );
 
@@ -75,7 +79,7 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 	{
 		g_musicChan->SetPitch(1.0f);
 		g_musicChan->PlayLoop(g_loopingSound[0]);
-	}
+	}	
 }
 
 class CWXTemplateApplication: public wxApp
