@@ -448,31 +448,6 @@ void ParseLods(kvkeybase_t* pSection)
 
 			Msg("Added lod %d, distance: %2f\n", lodIdx, lod_dist);
 		}
-
-		/*
-		char	lod_str[44];
-		float	lod_distance;
-
-		int nArgs = sscanf(pSection->keys[i]->name, "%s %f", lod_str, &lod_distance);
-
-		if(nArgs > 1 && !stricmp(lod_str, "lod"))
-		{
-			ParseLodData( pSection->keys[i], lod_distance );
-
-			studiolodparams_t lod;
-			lod.distance = lod_distance;
-			lod.flags = 0;
-
-			// add new lod parameters
-			g_lodparams.append(lod);
-
-			Msg("Added lod %d, distance: %2f\n", g_lodparams.numElem(), lod_distance);
-		}
-		else
-		{
-			//MsgError("Invalid lod section name string! usage: lod (distance)");
-		}
-		*/
 	}
 }
 
@@ -771,25 +746,19 @@ bool LoadMotionPackagePatchs(kvkeybase_t* pSection)
 //************************************
 void ParseIKChain(kvkeybase_t* pSection)
 {
+	if(pSection->values.numElem() < 2)
+	{
+		MsgError("Too few arguments for 'ikchain'\n");
+		MsgWarning("usage: ikchain (bone name) (effector bone name)\n");
+		return;
+	}
+
 	ikchain_t ikCh;
 
 	char effector_name[44];
-
-	kvkeybase_t *pair = pSection->FindKeyBase("chain");
-	if(!pair)
-	{
-		MsgError("ikchain error: 'chain' key not found\n");
-		MsgWarning("usage: chain (name) (effector bone)\n");
-		return;
-	}
 	
-	int nArg = sscanf(KV_GetValueString(pair), "%s %s", ikCh.name, effector_name);
-
-	if(nArg < 2)
-	{
-		MsgError("Invalid ikchain 'chain' write format\n");
-		MsgWarning("usage: chain (name) (effector bone)\n");
-	}
+	strcpy(ikCh.name, KV_GetValueString(pSection, 0));
+	strcpy(effector_name, KV_GetValueString(pSection, 1));
 
 	cbone_t* effector_chain = FindBoneByName(effector_name);
 
@@ -822,17 +791,22 @@ void ParseIKChain(kvkeybase_t* pSection)
 
 	for(int i = 0; i < pSection->keys.numElem(); i++)
 	{
-		if(!stricmp(pSection->keys[i]->name, "damping"))
-		{
-			char link_name[44];
-			float fDamp = 1.0f;
+		kvkeybase_t* sec = pSection->keys[i];
 
-			int args = sscanf(KV_GetValueString(pSection->keys[i]), "%s %f\n",link_name, &fDamp);
-			if(args < 2)
+		if(!stricmp(sec->name, "damping"))
+		{
+			if(sec->values.numElem() < 2)
 			{
 				MsgError("Too few arguments for ik parameter 'damping'\n");
 				MsgWarning("usage: damping (bone name) (damping)\n");
+				continue;
 			}
+
+			char link_name[44];
+			float fDamp = 1.0f;
+
+			strcpy(link_name, KV_GetValueString(sec, 0));
+			fDamp = KV_GetValueFloat(sec, 1);
 
 			// search for link and apply parameter if found
 			for(int j = 0; j < ikCh.link_list.numElem(); j++)
@@ -844,18 +818,21 @@ void ParseIKChain(kvkeybase_t* pSection)
 				}
 			}
 		}
-		else if(!stricmp(pSection->keys[i]->name, "link_limits"))
+		else if(!stricmp(sec->name, "link_limits"))
 		{
+			if(sec->values.numElem() < 7)
+			{
+				MsgError("Too few arguments for ik parameter 'link_limits'\n");
+				MsgWarning("usage: link_limits (bone name) (MinX MinY MinZ) (MaxX MaxY MaxZ)\n");
+			}
+
 			char link_name[44];
 			Vector3D mins;
 			Vector3D maxs;
 
-			int args = sscanf(KV_GetValueString(pSection->keys[i]), "%s %f %f %f %f %f %f\n",link_name, &mins.x,&mins.y,&mins.z, &maxs.x,&maxs.y,&maxs.z);
-			if(args < 7)
-			{
-				MsgError("Too few arguments for ik parameter 'link_limits'\n");
-				MsgWarning("usage: link_limits (bone name) (min limits vector3) (max limits vector3)\n");
-			}
+			strcpy(link_name, KV_GetValueString(sec, 0));
+			mins = KV_GetVector3D(sec, 1);
+			maxs = KV_GetVector3D(sec, 4);
 
 			bool bFound = false;
 
@@ -905,23 +882,26 @@ void LoadAttachments(kvkeybase_t* pSection)
 {
 	for(int i = 0; i < pSection->keys.numElem(); i++)
 	{
-		if(!stricmp(pSection->keys[i]->name, "attachment"))
+		kvkeybase_t* attachSec = pSection->keys[i];
+
+		if(!stricmp(attachSec->name, "attachment"))
 		{
+			if(attachSec->values.numElem() < 8)
+			{
+				MsgError("Invalid attachment definition\n");
+				MsgWarning("usage: attachment (name) (bone name) (position x y z) (rotation x y z)\n");
+				continue;
+			}
+
 			studioattachment_t attach;
 
 			char attach_to_bone[44];
 
-			// parse attachment
-			int sCnt = sscanf(KV_GetValueString(pSection->keys[i]), "%s %s %f %f %f %f %f %f", attach.name, attach_to_bone,
-				&attach.position.x,&attach.position.y,&attach.position.z,
-				&attach.angles.x,&attach.angles.y,&attach.angles.z);
+			strcpy(attach.name, KV_GetValueString(attachSec, 0));
+			strcpy(attach_to_bone, KV_GetValueString(attachSec, 1));
 
-			if(sCnt < 8)
-			{
-				MsgError("Invalid attachment definition\n");
-				MsgWarning("usage: attachment \"(name) (bone name) (position x y z) (rotation x y z)\"");
-				continue;
-			}
+			attach.position = KV_GetVector3D(attachSec, 2);
+			attach.angles = KV_GetVector3D(attachSec, 5);
 
 			cbone_t* pBone = FindBoneByName(attach_to_bone);
 
