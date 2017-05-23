@@ -608,7 +608,7 @@ BEGIN_EVENT_TABLE(CBuildingLayerList, wxPanel)
 	EVT_SIZE(CBuildingLayerList::OnSizeEvent)
 END_EVENT_TABLE()
 
-CBuildingLayerList::CBuildingLayerList(CUI_BuildingConstruct* parent) : wxPanel( parent, 0,0,640,480 )
+CBuildingLayerList::CBuildingLayerList(CUI_BuildingConstruct* parent) : wxPanel( parent, -1, wxPoint(0, 0), wxSize(640, 480))
 {
 	m_swapChain = NULL;
 

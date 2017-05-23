@@ -379,7 +379,7 @@ BEGIN_EVENT_TABLE(CModelListRenderPanel, wxPanel)
 	EVT_MENU_RANGE(MODCONTEXT_PROPERTIES, MODCONTEXT_COUNT-1, CModelListRenderPanel::OnContextEvent)
 END_EVENT_TABLE()
 
-CModelListRenderPanel::CModelListRenderPanel(wxWindow* parent) : wxPanel( parent, 0,0,640,480 )
+CModelListRenderPanel::CModelListRenderPanel(wxWindow* parent) : wxPanel( parent, -1, wxPoint(0, 0), wxSize(640, 480))
 {
 	m_swapChain = NULL;
 

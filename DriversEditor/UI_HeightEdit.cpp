@@ -140,7 +140,7 @@ END_EVENT_TABLE()
 
 bool g_bTexturesInit = false;
 
-CMaterialAtlasList::CMaterialAtlasList(CUI_HeightEdit* parent) : wxPanel( parent, 0,0,640,480 )
+CMaterialAtlasList::CMaterialAtlasList(CUI_HeightEdit* parent) : wxPanel( parent, -1, wxPoint(0,0), wxSize(640,480) )
 {
 	m_swapChain = NULL;
 
