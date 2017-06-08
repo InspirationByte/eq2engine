@@ -1754,6 +1754,11 @@ void CGameLevel::RespawnAllObjects()
 #define OBSTACLE_STATIC_MAX_HEIGHT	(8.0f)
 #define OBSTACLE_PROP_MAX_HEIGHT	(4.0f)
 
+void CGameLevel::Nav_ClearDynamicObstacleMap()
+{
+	Nav_ClearCellStates(NAV_CLEAR_DYNAMIC_OBSTACLES);
+}
+
 void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 {
 	if(ref == NULL)
@@ -2248,6 +2253,62 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 	return (result.points.numElem() > 0);
 }
 
+float CGameLevel::Nav_TestLine(const Vector3D& start, const Vector3D& end, bool obstacles)
+{
+	IVector2D startPoint = g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(start);
+	IVector2D endPoint = g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(end);
+
+	return Nav_TestLine2D(startPoint, endPoint, obstacles);
+}
+
+float CGameLevel::Nav_TestLine2D(const IVector2D& start, const IVector2D& end, bool obstacles)
+{
+	int x1,y1,x2,y2;
+
+	x1 = start.x;
+	y1 = start.y;
+	x2 = end.x;
+	y2 = end.y;
+
+    int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
+    int dy = -abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
+    int err = dx + dy, e2;
+
+	bool initializedInObstacle = Nav_GetTileAtGlobalPoint(start, obstacles) == 0;
+
+    for (;;)
+	{
+		ubyte& navCellValue = Nav_GetTileAtGlobalPoint(IVector2D(x1,y1), obstacles);
+
+		if(navCellValue == 0)
+		{
+			if(!initializedInObstacle)
+				break;
+		}
+		else
+			initializedInObstacle = false;
+
+        if (x1 == x2 && y1 == y2)
+			break;
+
+        e2 = 2 * err;
+
+        // EITHER horizontal OR vertical step (but not both!)
+        if (e2 > dy)
+		{
+            err += dy;
+            x1 += sx;
+        }
+		else if (e2 < dx)
+		{
+            err += dx;
+            y1 += sy;
+        }
+    }
+
+	return clamp(lineProjection((Vector2D)start, (Vector2D)end, Vector2D(x1,y1)), 0.0f, 1.0f);
+}
+
 //------------------------------------------------------
 
 void CGameLevel::GetDecalPolygons(decalprimitives_t& polys, occludingFrustum_t* frustum)
@@ -2329,7 +2390,7 @@ bool IsPointOnStraight(const IVector2D& pos, const straight_t& straight)
 	return false;
 }
 
-int GetCellsBeforeStraight(const IVector2D& pos, const straight_t& straight)
+int GetCellsBeforeStraightStart(const IVector2D& pos, const straight_t& straight)
 {
 	if(straight.direction == -1)
 		return 1000;
@@ -2338,6 +2399,19 @@ int GetCellsBeforeStraight(const IVector2D& pos, const straight_t& straight)
 
 	int cmpA = min(pos[dirV], straight.start[dirV]);
 	int cmpB = max(pos[dirV], straight.start[dirV]);
+
+	return cmpB-cmpA;
+}
+
+int GetCellsBeforeStraightEnd(const IVector2D& pos, const straight_t& straight)
+{
+	if(straight.direction == -1)
+		return 1000;
+
+	int dirV = 1 - (straight.direction % 2);
+
+	int cmpA = min(pos[dirV], straight.end[dirV]);
+	int cmpB = max(pos[dirV], straight.end[dirV]);
 
 	return cmpB-cmpA;
 }

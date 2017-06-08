@@ -603,7 +603,8 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_inWater(false),
 	m_autohandbrake(true),
 	m_torqueScale(1.0f),
-	m_maxSpeed(125.0f)
+	m_maxSpeed(125.0f),
+	m_gearboxShiftThreshold(1.0f)
 {
 	m_conf = config;
 	memset(m_bodyParts, 0,sizeof(m_bodyParts));
@@ -1563,7 +1564,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 					gearTorque *= torqueConvert * transmissionRate;
 
 					// gear torque check
-					if ( gearTorque*gbxDecelRate > torque )
+					if ( gearTorque*gbxDecelRate*m_gearboxShiftThreshold > torque )
 					{
 						newGear = nGear;
 					}
@@ -1583,7 +1584,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 					gearTorque *= torqueConvert * transmissionRate;
 
 					// gear torque check
-					if ( gearTorque > torque && numDriveWheelsOnGround )
+					if ( gearTorque > torque*m_gearboxShiftThreshold && numDriveWheelsOnGround )
 					{
 						newGear = nGear;
 						torque = gearTorque;
@@ -2415,6 +2416,12 @@ void CCar::Simulate( float fDt )
 	//------------------------------------
 	//
 
+	Vector3D cam_pos = g_pGameWorld->m_view.GetOrigin();
+
+	Vector3D rightVec = GetRightVector();
+	Vector3D forwardVec = GetForwardVector();
+	Vector3D upVec = GetUpVector();
+
 	if( isCar && r_carLights.GetBool() && IsLightEnabled(CAR_LIGHT_HEADLIGHTS) && (m_bodyParts[CB_FRONT_LEFT].damage < 1.0f || m_bodyParts[CB_FRONT_RIGHT].damage < 1.0f) )
 	{
 		float lightIntensity = 1.0f;
@@ -2454,18 +2461,23 @@ void CCar::Simulate( float fDt )
 			}
 		}
 
+		float worldIntensityMod = g_pGameWorld->m_envConfig.headLightIntensity;
+
+		lightIntensity *= max(0.7f, worldIntensityMod);
+		decalIntensity *= worldIntensityMod;
+
 		if(lightIntensity > 0.0f)
 		{
-			Vector3D startLightPos = GetOrigin() + GetForwardVector()*m_conf->visual.headlightPosition.z;
+			Vector3D startLightPos = GetOrigin() + forwardVec*m_conf->visual.headlightPosition.z;
 			ColorRGBA lightColor(0.7, 0.6, 0.5, lightIntensity*0.7f);
 
 #ifndef EDITOR
 			// show the light decal
-			float distToCam = length(g_pGameWorld->GetView()->GetOrigin()-carBody->GetPosition());
+			float distToCam = length(cam_pos-GetOrigin());
 
 			if(distToCam < r_carLights_dist.GetFloat())
 			{
-				Vector3D lightPos = startLightPos + GetForwardVector()*13.8f + (GetRightVector()*lightSide*m_conf->visual.headlightPosition.x);
+				Vector3D lightPos = startLightPos + forwardVec*13.8f + (rightVec*lightSide*m_conf->visual.headlightPosition.x);
 
 				float headlightsWidth = m_conf->visual.headlightPosition.x * 5.0f * decalScale;
 
@@ -2477,7 +2489,7 @@ void CCar::Simulate( float fDt )
 
 				viewProj = proj*view;
 
-				float intensityMod = 1.0f - (distToCam / r_carLights_dist.GetFloat());
+				float intensityMod = (1.0f - (distToCam / r_carLights_dist.GetFloat()));
 
 				Vector4D lightDecalColor = lightColor * pow(intensityMod, 0.8f) * decalIntensity * 0.5f;
 				lightDecalColor.w = 1.0f;
@@ -2487,7 +2499,7 @@ void CCar::Simulate( float fDt )
 
 				decalprimitives_t lightDecal;
 				lightDecal.settings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
-				lightDecal.settings.facingDir = normalize(vec3_up - GetForwardVector());
+				lightDecal.settings.facingDir = normalize(vec3_up - forwardVec);
 
 				// might be slow on mobile device
 				lightDecal.processFunc = LightDecalTriangleProcessFunc;
@@ -2498,7 +2510,7 @@ void CCar::Simulate( float fDt )
 
 			if(m_isLocalCar && r_carLights.GetInt() == 2)
 			{
-				Vector3D lightPos = startLightPos + GetForwardVector()*10.0f;
+				Vector3D lightPos = startLightPos + forwardVec*10.0f;
 				CollisionData_t light_coll;
 
 				btSphereShape sphere(0.35f);
@@ -2608,8 +2620,6 @@ void CCar::Simulate( float fDt )
 
 		Vector3D siren_position = (m_worldMatrix * Vector4D(siren_pos_noX, 1.0f)).xyz();
 
-		Vector3D rightVec = GetRightVector();
-
 		switch(m_conf->visual.sirenType)
 		{
 			case SERVICE_LIGHTS_DOUBLE:
@@ -2659,13 +2669,6 @@ void CCar::Simulate( float fDt )
 
 	if (m_visible)
 	{
-		// draw effects
-		Vector3D rightVec = GetRightVector();
-		Vector3D forward = GetForwardVector();
-		Vector3D upVec = GetUpVector();
-
-		Vector3D cam_pos = g_pGameWorld->m_view.GetOrigin();
-
 		Vector3D cam_forward;
 		AngleVectors(g_pGameWorld->m_view.GetAngles(), &cam_forward);
 
@@ -2684,11 +2687,11 @@ void CCar::Simulate( float fDt )
 		Vector3D frontdimlight_position = (m_worldMatrix * Vector4D(frontdimlight_pos_noX, 1.0f)).xyz();
 		Vector3D backdimlight_position = (m_worldMatrix * Vector4D(backdimlight_pos_noX, 1.0f)).xyz();
 
-		Plane front_plane(forward, -dot(forward, headlight_position));
-		Plane brake_plane(-forward, -dot(-forward, brakelight_position));
-		Plane back_plane(-forward, -dot(-forward, backlight_position));
+		Plane front_plane(forwardVec, -dot(forwardVec, headlight_position));
+		Plane brake_plane(-forwardVec, -dot(-forwardVec, brakelight_position));
+		Plane back_plane(-forwardVec, -dot(-forwardVec, backlight_position));
 
-		float fLightsAlpha = dot(-cam_forward, forward);
+		float fLightsAlpha = dot(-cam_forward, forwardVec);
 
 		const float HEADLIGHT_RADIUS = 0.96f;
 		const float HEADLIGHTGLOW_RADIUS = 0.86f;
@@ -2960,11 +2963,14 @@ void CCar::DrawEffects(int lod)
 		skidmarkPair.v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
 		skidmarkPair.v1 = PFXVertex_t(skidmarkPos + wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
 
-		float fSkid = (GetTractionSlidingAtWheel(i)+fabs(GetLateralSlidingAtWheel(i)))*0.15f - minimumSkid;
+		float tractionSlide = GetTractionSlidingAtWheel(i);
+		float lateralSlide = GetLateralSlidingAtWheel(i);
+
+		float fSkid = (tractionSlide+fabs(tractionSlide))*0.15f - minimumSkid;
 
 		float skidPitchVel = wheel.m_pitchVel + fSkid*2.0f;
 
-		// make some trails
+		// make some trails on wet surfaces
 		if(	lod == 0 && wheel.m_surfparam != NULL &&
 			wheel.m_surfparam->word == 'C' &&
 			g_pGameWorld->m_envConfig.weatherType > WEATHER_TYPE_CLEAR &&
@@ -2987,12 +2993,15 @@ void CCar::DrawEffects(int lod)
 			trailPair[1].v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.75f, vec2_zero, ColorRGBA(ambientAndSund,0.0f));
 			trailPair[1].v1 = PFXVertex_t(skidmarkPos + wheelRightDir*wheelConf.width*0.75f, vec2_zero, ColorRGBA(ambientAndSund,0.0f));
 
+			// calculate trail velocity
 			Vector3D velVecOffs = wheelDir * wheelTrailFac*0.25f;
 
 			trailPair[1].v0.point -= velVecOffs;
 			trailPair[1].v1.point -= velVecOffs;
 
 			Rectangle_t rect(m_veh_raintrail->rect.GetTopVertical(0.25f));
+
+			// animate the texture coordinates
 			Vector2D offset(0, fabs(triangleWave(wheel.m_pitch))*rect.GetSize().y*3.0f);
 
 			trailPair[0].v0.texcoord = rect.GetLeftTop() + offset;
@@ -3046,7 +3055,7 @@ void CCar::DrawEffects(int lod)
 				wheel.m_skidMarks.append(lastPair);
 			}
 
-			float fSkid = (GetTractionSlidingAtWheel(i)+fabs(GetLateralSlidingAtWheel(i)))*0.15f - minimumSkid;
+			float fSkid = (tractionSlide+fabs(lateralSlide))*0.15f - minimumSkid;
 
 			if( fSkid > 0.0f )
 			{
@@ -3158,8 +3167,11 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 		return;
 	}
 
+	float tractionSlide = GetTractionSlidingAtWheel(nWheel);
+	float lateralSlide = GetLateralSlidingAtWheel(nWheel);
+
 	wheel.m_flags.onGround = true;
-	wheel.m_flags.doSkidmarks = (GetTractionSlidingAtWheel(nWheel) > 3.0f || fabs(GetLateralSlidingAtWheel(nWheel)) > 2.0f);
+	wheel.m_flags.doSkidmarks = (tractionSlide > 3.0f || fabs(lateralSlide) > 2.0f);
 
 	wheel.m_smokeTime -= fDt;
 
@@ -3176,7 +3188,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 
 		if(wheel.m_surfparam->word == 'C')	// concrete/asphalt
 		{
-			float fSliding = GetTractionSlidingAtWheel(nWheel)+fabs(GetLateralSlidingAtWheel(nWheel));
+			float fSliding = tractionSlide+fabs(lateralSlide);
 
 			if(fSliding < 5.0f)
 				return;
@@ -3190,6 +3202,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 
 			if(g_pGameWorld->m_envConfig.weatherType >= WEATHER_TYPE_RAIN)
 			{
+				// add the splashing on wet surfaces
 				ColorRGB rippleColor(0.8f, 0.8f, 0.8f);
 
 				Vector3D rightDir = wheelMat.rows[0] * 0.7f;
@@ -3213,11 +3226,11 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 
 				effectrenderer->RegisterEffectForRender(pSmoke);
 
-
 				wheel.m_smokeTime = 0.07f;
 			}
 			else
 			{
+				// generate smoke
 				float skidFactor = (wheel.m_skidTime-WHEEL_MIN_SKIDTIME)*WHEEL_SKIDTIME_EFFICIENCY;
 				skidFactor = clamp(skidFactor, 0.0f, 1.0f);
 
@@ -3237,7 +3250,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 		}
 		else if(wheel.m_surfparam->word == 'S')	// sand
 		{
-			if(GetTractionSlidingAtWheel(nWheel) > 5.0f || fabs(GetLateralSlidingAtWheel(nWheel)) > 2.5f)
+			if(tractionSlide > 5.0f || fabs(lateralSlide) > 2.5f)
 			{
 				// spawn smoke
 				if(wheel.m_smokeTime > 0.0)
@@ -3245,8 +3258,8 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 
 				wheel.m_smokeTime = 0.08f;
 
-				Vector3D vel = -wheelMat.rows[2]*GetTractionSlidingAtWheel(nWheel) * 0.025f;
-				vel += wheelMat.rows[0]*GetLateralSlidingAtWheel(nWheel) * 0.025f;
+				Vector3D vel = -wheelMat.rows[2]*tractionSlide * 0.025f;
+				vel += wheelMat.rows[0]*lateralSlide * 0.025f;
 
 				CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, vel,
 														RandomFloat(0.11, 0.14), RandomFloat(1.1, 1.5),
@@ -3260,7 +3273,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 		}
 		else if(wheel.m_surfparam->word == 'G' || wheel.m_surfparam->word == 'D')	// grass or dirt
 		{
-			if(GetTractionSlidingAtWheel(nWheel) > 5.0f || fabs(GetLateralSlidingAtWheel(nWheel)) > 2.5f)
+			if(tractionSlide > 5.0f || fabs(lateralSlide) > 2.5f)
 			{
 				// spawn smoke
 				if(wheel.m_smokeTime > 0.0f)
@@ -3268,8 +3281,8 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 
 				wheel.m_smokeTime = 0.08f;
 
-				Vector3D vel = -wheelMat.rows[2]*GetTractionSlidingAtWheel(nWheel) * 0.025f;
-				vel += wheelMat.rows[0]*GetLateralSlidingAtWheel(nWheel) * 0.025f;
+				Vector3D vel = -wheelMat.rows[2]*tractionSlide * 0.025f;
+				vel += wheelMat.rows[0]*lateralSlide * 0.025f;
 
 				CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, vel,
 														RandomFloat(0.11, 0.14), RandomFloat(1.5, 1.7),
@@ -3838,6 +3851,9 @@ void CCar::Draw( int nRenderFlags )
 	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
 	int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
+	Vector3D rightVec = GetRightVector();
+	Vector3D forwardVec = GetForwardVector();
+
 	if(nLOD == 0 && !(nRenderFlags & RFLAG_SHADOW))
 	{
 		//
@@ -3852,10 +3868,10 @@ void CCar::Draw( int nRenderFlags )
 			{
 				Vector3D shadow_size = m_conf->physics.body_size + Vector3D(0.35f,0,0.25f);
 
-				verts[0].point = GetOrigin() + shadow_size.z*GetForwardVector() + shadow_size.x*GetRightVector();
-				verts[1].point = GetOrigin() + shadow_size.z*GetForwardVector() + shadow_size.x*-GetRightVector();
-				verts[2].point = GetOrigin() + shadow_size.z*-GetForwardVector() + shadow_size.x*GetRightVector();
-				verts[3].point = GetOrigin() + shadow_size.z*-GetForwardVector() + shadow_size.x*-GetRightVector();
+				verts[0].point = GetOrigin() + shadow_size.z*forwardVec + shadow_size.x*rightVec;
+				verts[1].point = GetOrigin() + shadow_size.z*forwardVec + shadow_size.x*-rightVec;
+				verts[2].point = GetOrigin() + shadow_size.z*-forwardVec + shadow_size.x*rightVec;
+				verts[3].point = GetOrigin() + shadow_size.z*-forwardVec + shadow_size.x*-rightVec;
 
 				verts[0].texcoord = carShadow->rect.GetRightTop();
 				verts[1].texcoord = carShadow->rect.GetLeftTop();
@@ -3899,18 +3915,9 @@ void CCar::Draw( int nRenderFlags )
 			Vector3D wheelCenterPos = lerp(wheelConf.suspensionTop, wheelConf.suspensionBottom, wheelVisualPosFactor) + wheelSuspDir*wheelConf.radius;
 
 			Quaternion wheelRotation = Quaternion(wheel.m_wheelOrient) * Quaternion(-wheel.m_pitch, leftWheel ? PI_F : 0.0f, 0.0f);
-			//wheelRotation.normalize();
 
 			Matrix4x4 wheelScale = scale4(wheelConf.width,wheelConf.radius*2,wheelConf.radius*2);
 			Matrix4x4 wheelTranslation = m_worldMatrix*(translate(Vector3D(wheelCenterPos - Vector3D(wheelConf.woffset, 0, 0))) * Matrix4x4(wheelRotation) * wheelScale);
-
-			/*
-			Matrix3x3 wheelRotation = transpose(wheel.wheelOrient)*rotateXY3(wheel.pitch, leftWheel ? PI_F : 0.0f);
-
-			Matrix4x4 wheelTranslation = m_worldMatrix*(translate(Vector3D(wheelCenterPos - Vector3D(wheelConf.woffset, 0, 0)))*Matrix4x4(wheelRotation) * wheelScale);
-
-			wheel.pWheelObject->SetOrigin(transpose(wheelTranslation).getTranslationComponent());
-			*/
 
 			if(bDraw)
 			{

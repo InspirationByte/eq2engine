@@ -391,6 +391,80 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 	CircularSpawnTrafficCars(spawnCenterCell.x, spawnCenterCell.y, g_traffic_mindist.GetInt());
 }
 
+void CAICarManager::UpdateNavigationVelocityMap()
+{
+	// clear navgrid dynamic obstacle
+	g_pGameWorld->m_level.Nav_ClearDynamicObstacleMap();
+
+	// draw all car velocities on dynamic obstacle
+	for (int i = 0; i < m_trafficCars.numElem(); i++)
+	{
+		PaintVelocityMapFrom(m_trafficCars[i]);
+	}
+}
+
+void CAICarManager::PaintVelocityMapFrom(CCar* car)
+{
+	int dx[8] = NEIGHBOR_OFFS_XDX(0,1);
+	int dy[8] = NEIGHBOR_OFFS_YDY(0,1);
+
+	Vector3D carPos = car->GetOrigin();
+	Vector3D velocity = car->GetVelocity();
+
+	IVector2D navCellStartPos = g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(carPos);
+	IVector2D navCellEndPos = g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(carPos+velocity);
+
+	// do the line
+	PaintNavigationLine(navCellStartPos, navCellEndPos);
+
+	/*
+	for (int n = 0; n < 8; n++)
+	{
+		IVector2D nCellPos = navCellPos+IVector2D(dx[n], dy[n]);
+
+		
+		navCellValue = 0;
+	}
+	*/
+}
+
+void CAICarManager::PaintNavigationLine(const IVector2D& start, const IVector2D& end)
+{
+	int x1,y1,x2,y2;
+
+	x1 = start.x;
+	y1 = start.y;
+	x2 = end.x;
+	y2 = end.y;
+
+    int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
+    int dy = -abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
+    int err = dx + dy, e2;
+
+    for (;;)
+	{
+		ubyte& navCellValue = g_pGameWorld->m_level.Nav_GetTileAtGlobalPoint(IVector2D(x1,y1), true);
+		navCellValue = 0;
+
+        if (x1 == x2 && y1 == y2)
+			break;
+
+        e2 = 2 * err;
+
+        // EITHER horizontal OR vertical step (but not both!)
+        if (e2 > dy)
+		{
+            err += dy;
+            x1 += sx;
+        }
+		else if (e2 < dx)
+		{
+            err += dx;
+            y1 += sy;
+        }
+    }
+}
+
 //-----------------------------------------------------------------------------------------
 
 void CAICarManager::UpdateCopStuff(float fDt)

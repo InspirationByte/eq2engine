@@ -126,6 +126,8 @@ public:
 	//-------------------------------------------------------------------------
 	// navigation
 
+	void							Nav_ClearDynamicObstacleMap();
+
 	void							Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref);						// adds navigation obstacle
 
 	//
@@ -139,6 +141,12 @@ public:
 
 	bool							Nav_FindPath(const Vector3D& start, const Vector3D& end, pathFindResult_t& result, int iterationLimit = 256, bool cellPriority = false);
 	bool							Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pathFindResult_t& result, int iterationLimit = 256, bool cellPriority = false);
+
+	float							Nav_TestLine(const Vector3D& start, const Vector3D& end, bool obstacles = false);
+	float							Nav_TestLine2D(const IVector2D& start, const IVector2D& end, bool obstacles = false);
+
+	navcell_t&						Nav_GetCellStateAtGlobalPoint(const IVector2D& point);
+	ubyte&							Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacles = false);
 
 	//----------------------------------
 
@@ -159,9 +167,6 @@ protected:
 
 	void					Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion) const;
 	void					Nav_LocalToGlobalPoint(const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const;
-
-	navcell_t&				Nav_GetCellStateAtGlobalPoint(const IVector2D& point);
-	ubyte&					Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacles = false);
 
 	void					Nav_ClearCellStates(ECellClearStateMode mode);
 

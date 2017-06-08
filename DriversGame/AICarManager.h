@@ -124,8 +124,13 @@ public:
 	void						MakePursued( CCar* car );
 	void						StopPursuit( CCar* car );
 
+	void						UpdateNavigationVelocityMap();
+
 protected:
 
+	void						PaintVelocityMapFrom(CCar* car);
+	void						PaintNavigationLine(const IVector2D& start, const IVector2D& end);
+	
 	void						RemoveTrafficCar(CCar* car);
 
 	void						CircularSpawnTrafficCars( int x0, int y0, int radius );

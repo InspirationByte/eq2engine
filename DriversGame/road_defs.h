@@ -66,7 +66,8 @@ int			GetDirectionIndex(const IVector2D& vec);
 int			GetDirectionIndexByAngles(const Vector3D& angles);
 
 bool		IsPointOnStraight(const IVector2D& pos, const straight_t& straight);
-int			GetCellsBeforeStraight(const IVector2D& pos, const straight_t& straight);
+int			GetCellsBeforeStraightStart(const IVector2D& pos, const straight_t& straight);
+int			GetCellsBeforeStraightEnd(const IVector2D& pos, const straight_t& straight);
 bool		IsStraightsOnSameLane( const straight_t& a, const straight_t& b );
 
 #endif // ROAD_DEFS_H

@@ -281,7 +281,6 @@ void CAIPursuerCar::EndPursuit(bool death)
 	}
 
 	m_autohandbrake = false;
-	m_frameSkip = true;
 
 	if (GetCurrentStateType() != GAME_STATE_GAME)
 	{
@@ -533,6 +532,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 {
 	if(transition == STATE_TRANSITION_PROLOG)
 	{
+		m_gearboxShiftThreshold = 1.0f;
+
 		if(!IsAlive() || !g_pGameWorld->IsValidObject(m_targInfo.target))
 		{
 			AI_SetState(&CAIPursuerCar::SearchForRoad);
@@ -547,8 +548,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		GetPhysicsBody()->SetCollideMask(COLLIDEMASK_VEHICLE);
 		GetPhysicsBody()->SetMinFrameTime(0.0f);
 		GetPhysicsBody()->Wake();
-
-		m_frameSkip = false;
 
 		if(m_type == PURSUER_TYPE_COP)
 		{
@@ -576,6 +575,10 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		m_enabled = true;
 
 		return 0;
+	}
+	else if(transition == STATE_TRANSITION_EPILOG)
+	{
+		m_gearboxShiftThreshold = 0.6f;
 	}
 
 	// do nothing
@@ -729,9 +732,9 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	velocityDistOffsetFactor = RemapValClamp(velocityDistOffsetFactor, 0.0f, 6.0f, 0.0f, 1.0f);
 	velocityDistOffsetFactor = 1.0f - pow(velocityDistOffsetFactor, 2.0f);
 
-	Vector3D carForwardDir = GetForwardVector();
-	Vector3D carPos		= GetOrigin() + carForwardDir * m_conf->physics.body_size.z;
-	Vector3D carLinearVel = GetVelocity();
+	Vector3D carForwardDir	= GetForwardVector();
+	Vector3D carPos			= GetOrigin() + carForwardDir * m_conf->physics.body_size.z;
+	Vector3D carLinearVel	= GetVelocity();
 
 	Vector3D targetVelocity = m_targInfo.target->GetVelocity();
 	Vector3D targetPos	= m_targInfo.target->GetOrigin() + targetVelocity*velocityDistOffsetFactor*0.75f;
@@ -764,12 +767,12 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 			Vector3D traceTarget = GetOrigin()+targetDir*min(distToPursueTarget, AI_COPVIEW_FAR_WANTED);
 
+
 			// so the obstacle forces us to use NAV grid path
-			if(g_pPhysics->TestConvexSweep(GetPhysicsBody()->GetBulletShape(), GetOrientation(), carPos, traceTarget, coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE, &collFilter))
-			{
-				if(coll.fract < 1.0f)
-					doesHaveStraightPath = false;
-			}
+			g_pPhysics->TestConvexSweep(GetPhysicsBody()->GetBulletShape(), GetOrientation(), GetOrigin(), traceTarget, coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE, &collFilter);
+
+			if(coll.fract < 1.0f)
+				doesHaveStraightPath = false;
 
 			debugoverlay->Line3D(GetOrigin(), lerp(GetOrigin(),traceTarget,coll.fract), ColorRGBA(1), ColorRGBA(1));
 		}

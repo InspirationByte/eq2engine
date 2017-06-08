@@ -538,6 +538,8 @@ protected:
 	short					m_nGear;
 	short					m_nPrevGear;
 
+	FReal					m_gearboxShiftThreshold;
+
 	FReal					m_radsPerSec;	// current rotations per sec
 
 	FReal					m_fAcceleration;

@@ -243,6 +243,7 @@ void CGameWorld::InitEnvironment()
 		m_envConfig.sunAngles = Vector3D(-45.0f, -35.0f, 0.0f);
 		m_envConfig.skyboxPath = "sky/sky_day";
 		m_envConfig.lensIntensity = 1.0f;
+		m_envConfig.headLightIntensity = 1.0f;
 
 		m_envConfig.skyboxMaterial = materials->FindMaterial(m_envConfig.skyboxPath.c_str());
 		m_envConfig.skyboxMaterial->Ref_Grab();
@@ -286,6 +287,7 @@ void CGameWorld::InitEnvironment()
 	m_envConfig.streetLightIntensity = KV_GetValueFloat(envSection->FindKeyBase("streetLightIntensity"), 0, 1.0f);
 	m_envConfig.lensIntensity = KV_GetValueFloat(envSection->FindKeyBase("sunLensItensity"), 0, 1.0f);
 	m_envConfig.skyboxPath = KV_GetValueString(envSection->FindKeyBase("skybox"), 0, "sky/sky_day");
+	m_envConfig.headLightIntensity = KV_GetValueFloat(envSection->FindKeyBase("headlightIntensity"), 0, 1.0f);
 
 	kvkeybase_t* sunLensAngles = envSection->FindKeyBase("sunLensAngles");
 

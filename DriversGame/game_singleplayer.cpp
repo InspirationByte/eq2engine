@@ -266,19 +266,24 @@ void Game_OnPhysicsUpdate(float fDt, int iterNum)
 		g_pGameWorld->UpdateTrafficLightState(fDt);
 
 		// update traffic car spawn/remove from here
-		if(iterNum == 0 && leadCar)
+		if(iterNum == 0)
 		{
-			CCar* plrCar = g_pGameSession->GetPlayerCar();
+			if(leadCar)
+			{
+				CCar* plrCar = g_pGameSession->GetPlayerCar();
 
-			Vector3D spawnPos, removePos;
-			
-			spawnPos = removePos = leadCar->GetOrigin();
+				Vector3D spawnPos, removePos;
 
-			if( plrCar )
-				removePos = plrCar->GetOrigin();
+				spawnPos = removePos = leadCar->GetOrigin();
 
-			// vehicle respawn is oriented on the lead car, but removal is always depends on player
-			g_pAIManager->UpdateCarRespawn(fDt, spawnPos, removePos, leadCar->GetVelocity());
+				if (plrCar)
+					removePos = plrCar->GetOrigin();
+
+				// vehicle respawn is oriented on the lead car, but removal is always depends on player
+				g_pAIManager->UpdateCarRespawn(fDt, spawnPos, removePos, leadCar->GetVelocity());
+			}
+
+			g_pAIManager->UpdateNavigationVelocityMap();
 		}
 	}
 

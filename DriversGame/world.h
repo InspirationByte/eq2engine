@@ -93,6 +93,7 @@ struct worldEnvConfig_t
 
 	float			brightnessModFactor;
 	float			streetLightIntensity;
+	float			headLightIntensity;
 
 	float			rainBrightness;
 	float			rainDensity;
