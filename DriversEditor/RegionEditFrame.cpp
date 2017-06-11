@@ -305,7 +305,7 @@ void CRegionEditFrame::RegenerateRegionImage(regionMap_t* regMap)
 
 	if(!regMap->aiMapImage)
 	{
-		regMap->aiMapImage = g_pShaderAPI->CreateProceduralTexture("aiMapTex_%d", FORMAT_RGBA8, navGrid.wide, navGrid.tall, 1, 1,TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, TEXFLAG_NOQUALITYLOD);
+		regMap->aiMapImage = g_pShaderAPI->CreateProceduralTexture(varargs("navgrid_%d", regMap->region->m_regionIndex), FORMAT_RGBA8, navGrid.wide, navGrid.tall, 1, 1,TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, TEXFLAG_NOQUALITYLOD);
 		regMap->aiMapImage->Ref_Grab();
 	}
 
@@ -324,10 +324,6 @@ void CRegionEditFrame::RegenerateRegionImage(regionMap_t* regMap)
 
 				TVec4D<ubyte> color(0);
 				color.z = 255-navGrid.staticObst[pixIdx] * 32;
-				//color.x = regMap->region->m_roads[pixIdx].type == ROADTYPE_JUNCTION ? 128 : 0;
-				//color.z = regMap->region->m_roads[pixIdx].type == ROADTYPE_STRAIGHT ? 128 : 0;
-				//color.y = 32;
-				//color.w = 255;
 
 				imgData[pixIdx] = color;
 			}

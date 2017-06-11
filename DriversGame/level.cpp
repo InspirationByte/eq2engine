@@ -1749,10 +1749,28 @@ void CGameLevel::RespawnAllObjects()
 			m_regions[idx].RespawnObjects();
 		}
 	}
+
 }
 
-#define OBSTACLE_STATIC_MAX_HEIGHT	(8.0f)
-#define OBSTACLE_PROP_MAX_HEIGHT	(4.0f)
+extern ConVar nav_debug_map;
+
+void CGameLevel::UpdateDebugMaps()
+{
+	if(!nav_debug_map.GetBool())
+		return;
+
+	for(int x = 0; x < m_wide; x++)
+	{
+		for(int y = 0; y < m_tall; y++)
+		{
+			int idx = y*m_wide+x;
+			m_regions[idx].UpdateDebugMaps();
+		}
+	}
+}
+
+#define OBSTACLE_STATIC_MAX_HEIGHT	(6.0f)
+#define OBSTACLE_PROP_MAX_HEIGHT	(6.0f)
 
 void CGameLevel::Nav_ClearDynamicObstacleMap()
 {
@@ -1822,6 +1840,9 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 				p2 = model->m_verts[model->m_indices[i + 2]].position;
 			}
 
+			if(p0.y > OBSTACLE_STATIC_MAX_HEIGHT && p1.y > OBSTACLE_STATIC_MAX_HEIGHT && p2.y > OBSTACLE_STATIC_MAX_HEIGHT)
+				continue;
+
 			v0 = (refTransform*Vector4D(p0, 1.0f)).xyz();
 			v1 = (refTransform*Vector4D(p1, 1.0f)).xyz();
 			v2 = (refTransform*Vector4D(p2, 1.0f)).xyz();
@@ -1831,9 +1852,6 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 
 			//if(fabs(dot(normal,vec3_up)) > 0.8f)
 			//	continue;
-
-			if(p0.y > OBSTACLE_STATIC_MAX_HEIGHT || p1.y > OBSTACLE_STATIC_MAX_HEIGHT || p2.y > OBSTACLE_STATIC_MAX_HEIGHT)
-				continue;
 
 			//debugoverlay->Polygon3D(v0, v1, v2, ColorRGBA(1, 0, 1, 0.25f), 100.0f);
 
@@ -1865,7 +1883,8 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 	{
 		if(	def->m_defType == "debris" ||
 			def->m_defType == "sheets" ||
-			def->m_defType == "misc")
+			def->m_defType == "misc" ||
+			def->m_defType == "scripted")
 			return;
 
 		// studio model
@@ -1885,6 +1904,9 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			p1 = physData->vertices[physData->indices[i + 1]];
 			p2 = physData->vertices[physData->indices[i + 2]];
 
+			if (p0.y > OBSTACLE_PROP_MAX_HEIGHT && p1.y > OBSTACLE_PROP_MAX_HEIGHT && p2.y > OBSTACLE_PROP_MAX_HEIGHT)
+				continue;
+
 			v0 = (ref->transform*Vector4D(p0, 1.0f)).xyz();
 			v1 = (ref->transform*Vector4D(p1, 1.0f)).xyz();
 			v2 = (ref->transform*Vector4D(p2, 1.0f)).xyz();
@@ -1895,9 +1917,6 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			//if (fabs(dot(normal, vec3_up)) > 0.8f)
 			//	continue;
 
-			if (p0.y > OBSTACLE_PROP_MAX_HEIGHT || p1.y > OBSTACLE_PROP_MAX_HEIGHT || p2.y > OBSTACLE_PROP_MAX_HEIGHT)
-				continue;
-
 			//debugoverlay->Polygon3D(v0,v1,v2, ColorRGBA(1,1,0,0.25f), 100.0f);
 
 			BoundingBox vertbox;
@@ -1907,7 +1926,7 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 
 			// get a cell range
 			IVector2D min, max;
-			Nav_GetCellRangeFromAABB(vertbox.minPoint, vertbox.maxPoint, min, max);
+			Nav_GetCellRangeFromAABB(vertbox.minPoint, vertbox.maxPoint, min, max, 2.0f);
 
 			// in this range do...
 			for (int y = min.y; y < max.y; y++)
@@ -1925,10 +1944,10 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 	}
 }
 
-void CGameLevel::Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& maxs, IVector2D& xy1, IVector2D& xy2) const
+void CGameLevel::Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& maxs, IVector2D& xy1, IVector2D& xy2, float offs) const
 {
-	xy1 = Nav_PositionToGlobalNavPoint(mins-1.5f);
-	xy2 = Nav_PositionToGlobalNavPoint(maxs+1.5f);
+	xy1 = Nav_PositionToGlobalNavPoint(mins-offs);
+	xy2 = Nav_PositionToGlobalNavPoint(maxs+offs);
 }
 
 void CGameLevel::Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion) const
@@ -2250,7 +2269,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 		while(true);
 	}
 
-	return (result.points.numElem() > 0);
+	return (result.points.numElem() > 1);
 }
 
 float CGameLevel::Nav_TestLine(const Vector3D& start, const Vector3D& end, bool obstacles)

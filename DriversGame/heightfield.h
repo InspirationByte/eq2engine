@@ -160,6 +160,13 @@ struct hfieldPhysicsData_t
 	DkList<hfieldbatch_t*>				m_batches;
 };
 
+enum EHFieldGeometryGenerateMode
+{
+	HFIELD_GEOM_RENDER = 0,
+	HFIELD_GEOM_PHYSICS,
+	HFIELD_GEOM_DEBUG		// same as render, but texture coordinates are ok
+};
+
 class CHeightTileField
 {
 public:
@@ -194,7 +201,7 @@ public:
 	// returns face at position
 	bool						PointAtPos(const Vector3D& pos, int& x, int& y) const;
 
-	void						Generate( bool render, DkList<hfieldbatch_t*>& batches );
+	void						Generate( EHFieldGeometryGenerateMode mode, DkList<hfieldbatch_t*>& batches );
 
 	bool						IsEmpty();
 
@@ -271,12 +278,13 @@ public:
 
 	void					CleanRenderData(bool deleteVBO = true);
 
-	void					GenereateRenderData();
+	void					GenereateRenderData(bool debug = false);
 
 	void					SetChanged() {m_isChanged = true;}
 	bool					IsChanged() const {return m_isChanged;}
 
 	void					Render(int nDrawFlags, const occludingFrustum_t& occlSet);
+	void					RenderDebug(ITexture* debugTexture, int nDrawFlags, const occludingFrustum_t& occlSet);
 
 #ifdef EDITOR
 protected:

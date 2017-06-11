@@ -588,11 +588,14 @@ bool hfieldVertexComparator(const hfielddrawvertex_t& a, const hfielddrawvertex_
 	return false;
 }
 
-void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& batches )
+void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldbatch_t*>& batches )
 {
-	Vector3D hfield_offset = generate_render ? m_position : vec3_zero;//Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
+	Vector3D hfield_offset = (mode == HFIELD_GEOM_PHYSICS) ? vec3_zero : m_position;
 
 	m_hasTransparentSubsets = false;
+
+	float hfieldSizeW = m_sizew*HFIELD_POINT_SIZE;
+	float hfieldSizeH = m_sizeh*HFIELD_POINT_SIZE;
 
 	// generate polys
 	for(int x = 0; x < m_sizew; x++)
@@ -638,7 +641,7 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 				if(rotatable)
 					nBatchFlags |= rotatable->GetInt() ? EHTILE_ROTATABLE : 0;
 
-				if(!generate_render && (nBatchFlags & EHTILE_NOCOLLIDE))
+				if((mode == HFIELD_GEOM_PHYSICS) && (nBatchFlags & EHTILE_NOCOLLIDE))
 					continue;
 
 				batch = new hfieldbatch_t;
@@ -677,11 +680,11 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 			int pointFlags = (point.flags | batch->flags);
 
 			bool isDetached = (pointFlags & EHTILE_DETACHED) > 0;
-			bool addWallOnEdges = ((pointFlags & EHTILE_ADDWALL) && generate_render) || ((pointFlags & EHTILE_ADDWALL) && (pointFlags & EHTILE_COLLIDE_WALL));
+			bool addWallOnEdges = ((pointFlags & EHTILE_ADDWALL) && (mode != HFIELD_GEOM_PHYSICS)) || ((pointFlags & EHTILE_ADDWALL) && (pointFlags & EHTILE_COLLIDE_WALL));
 			bool isEmpty = (pointFlags & EHTILE_EMPTY) > 0;
 			bool rotatable = (pointFlags & EHTILE_ROTATABLE) > 0;
 
-			if(!generate_render && (pointFlags & EHTILE_NOCOLLIDE))
+			if((mode == HFIELD_GEOM_PHYSICS) && (pointFlags & EHTILE_NOCOLLIDE))
 				continue;
 
 			bool verts_stripped[4] = { false, false, false, false };
@@ -787,32 +790,40 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 					float tc_x = 0;
 					float tc_y = 0;
 
-					if( batchAtlas )
+					if(mode == HFIELD_GEOM_RENDER)
 					{
-						TexAtlasEntry_t* atlEntry = batchAtlas->GetEntry(point.atlasIdx);
-
-						Vector2D size = atlEntry->rect.GetSize();
-						Vector2D center = atlEntry->rect.GetCenter();
-
-						Vector2D tcd(drxv[rIndex],dryv[rIndex]);
-
-						tcd = center + tcd*size;
-
-						tc_x = tcd.x + fTexelX*0.5f;
-						tc_y = tcd.y + fTexelY*0.5f;
-					}
-					else
-					{
-						if(rotatable)
+						if( batchAtlas )
 						{
-							tc_x = (drxv[rIndex] + 0.5f) + fTexelX*0.5f;
-							tc_y = (dryv[rIndex] + 0.5f) + fTexelY*0.5f;
+							TexAtlasEntry_t* atlEntry = batchAtlas->GetEntry(point.atlasIdx);
+
+							Vector2D size = atlEntry->rect.GetSize();
+							Vector2D center = atlEntry->rect.GetCenter();
+
+							Vector2D tcd(drxv[rIndex],dryv[rIndex]);
+
+							tcd = center + tcd*size;
+
+							tc_x = tcd.x + fTexelX*0.5f;
+							tc_y = tcd.y + fTexelY*0.5f;
 						}
 						else
 						{
-							tc_x = dxv[rIndex] + 0.5f;
-							tc_y = dyv[rIndex] + 0.5f;
+							if(rotatable)
+							{
+								tc_x = (drxv[rIndex] + 0.5f) + fTexelX*0.5f;
+								tc_y = (dryv[rIndex] + 0.5f) + fTexelY*0.5f;
+							}
+							else
+							{
+								tc_x = dxv[rIndex] + 0.5f;
+								tc_y = dyv[rIndex] + 0.5f;
+							}
 						}
+					}
+					else if(mode == HFIELD_GEOM_DEBUG)
+					{
+						tc_x = (point_position.x + HFIELD_POINT_SIZE*0.5f) / hfieldSizeW;
+						tc_y = (point_position.z + HFIELD_POINT_SIZE*0.5f) / hfieldSizeH;
 					}
 
 					Vector2D texCoord = Vector2D(tc_x,tc_y);
@@ -830,7 +841,7 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 					//									batch->verts[vindxs[1]].position,
 					//									batch->verts[vindxs[0]].position);
 
-					if(generate_render)
+					if(mode != HFIELD_GEOM_PHYSICS)
 					{
 						Vector3D t,b,n;
 						GetTileTBN( x, y, t,b,n );
@@ -863,7 +874,7 @@ void CHeightTileField::Generate(bool generate_render, DkList<hfieldbatch_t*>& ba
 						int v1, v2;
 						EdgeIndexToVertex(i, v1, v2);
 
-						if(generate_render)
+						if(mode != HFIELD_GEOM_PHYSICS)
 						{
 							eindxs[0] = batch->verts.append( batch->verts[vindxs[v1]] );
 							eindxs[1] = batch->verts.append( batch->verts[vindxs[v2]] );
@@ -1184,7 +1195,7 @@ void CHeightTileFieldRenderable::CleanRenderData(bool deleteVBO)
 	m_isChanged = true;
 }
 
-void CHeightTileFieldRenderable::GenereateRenderData()
+void CHeightTileFieldRenderable::GenereateRenderData(bool debug)
 {
 	if(!m_isChanged)
 		return;
@@ -1201,7 +1212,7 @@ void CHeightTileFieldRenderable::GenereateRenderData()
 		materials->PutMaterialToLoadingQueue( m_materials[i]->material );
 
 	// сгенерить, полученные батчи соединить и распределить по материалам
-	Generate(true, batches);
+	Generate(debug ? HFIELD_GEOM_DEBUG : HFIELD_GEOM_RENDER, batches);
 
 	if(batches.numElem() == 0)
 	{
@@ -1326,6 +1337,40 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 		g_pShaderAPI->SetIndexBuffer(m_indexbuffer);
 
 		materials->BindMaterial(batch.pMaterial, true);
+
+		g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLES, batch.startIndex, batch.numIndices, batch.startVertex, batch.numVerts);
+	}
+}
+
+
+void CHeightTileFieldRenderable::RenderDebug(ITexture* debugTexture, int nDrawFlags, const occludingFrustum_t& occlSet)
+{
+	bool renderTranslucency = (nDrawFlags & RFLAG_TRANSLUCENCY) > 0;
+
+	for(int i = 0; i < m_numBatches; i++)
+	{
+		hfielddrawbatch_t& batch = m_batches[i];
+
+		if(!occlSet.IsBoxVisible(batch.bbox))
+			continue;
+
+		bool isTransparent = (batch.pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT) > 0;
+
+		if(isTransparent != renderTranslucency)
+			continue;
+
+		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+		materials->SetCullMode((nDrawFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
+
+		g_pShaderAPI->SetVertexFormat(m_format);
+		g_pShaderAPI->SetVertexBuffer(m_vertexbuffer, 0);
+		g_pShaderAPI->SetIndexBuffer(m_indexbuffer);
+
+		materials->BindMaterial(batch.pMaterial, false);
+
+		g_pShaderAPI->SetTexture(debugTexture,0,0);
+
+		materials->Apply();
 
 		g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLES, batch.startIndex, batch.numIndices, batch.startVertex, batch.numVerts);
 	}

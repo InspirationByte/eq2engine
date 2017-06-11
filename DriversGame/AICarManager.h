@@ -124,7 +124,7 @@ public:
 	void						MakePursued( CCar* car );
 	void						StopPursuit( CCar* car );
 
-	void						UpdateNavigationVelocityMap();
+	void						UpdateNavigationVelocityMap(float fDt);
 
 protected:
 
@@ -164,6 +164,7 @@ protected:
 	//---------------------------------------------------------
 
 	float						m_trafficUpdateTime;
+	float						m_velocityMapUpdateTime;
 
 	DkList<CCar*>				m_trafficCars;
 

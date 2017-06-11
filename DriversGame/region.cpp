@@ -15,6 +15,8 @@
 #define AI_NAVIGATION_ROAD_PRIORITY (1)
 
 extern ConVar r_enableLevelInstancing;
+ConVar w_pregeneratedhfields("w_pregeneratedhfields", "1");
+ConVar nav_debug_map("nav_debug_map", "0", nullptr, CV_CHEAT);
 
 //-----------------------------------------------------------------------------------------
 
@@ -411,10 +413,21 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	for(int i = 0; i < GetNumHFields(); i++)
+	if(nav_debug_map.GetBool())
 	{
-		if(m_heightfield[i])
-			m_heightfield[i]->Render( nRenderFlags, occlFrustum );
+		for(int i = 0; i < GetNumHFields(); i++)
+		{
+			if(m_heightfield[i])
+				m_heightfield[i]->RenderDebug(m_navGrid.debugObstacleMap, nRenderFlags, occlFrustum );
+		}
+	}
+	else
+	{
+		for(int i = 0; i < GetNumHFields(); i++)
+		{
+			if(m_heightfield[i])
+				m_heightfield[i]->Render( nRenderFlags, occlFrustum );
+		}
 	}
 }
 
@@ -462,6 +475,55 @@ void CLevelRegion::InitRoads()
 
 	m_navGrid.Init( defField.m_sizew*AI_NAVIGATION_GRID_SCALE,
 					defField.m_sizeh*AI_NAVIGATION_GRID_SCALE);
+
+	// init debug maps
+	if(nav_debug_map.GetInt() > 0)
+	{
+		m_navGrid.debugObstacleMap = g_pShaderAPI->CreateProceduralTexture(varargs("navgrid_%d", m_regionIndex), FORMAT_RGBA8, m_navGrid.wide, m_navGrid.tall, 1, 1,TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, TEXFLAG_NOQUALITYLOD);
+		m_navGrid.debugObstacleMap->Ref_Grab();
+	}
+}
+
+void CLevelRegion::UpdateDebugMaps()
+{
+	// update navigation debug map
+	if(m_navGrid.debugObstacleMap != NULL)
+	{
+		texlockdata_t lockData;
+
+		m_navGrid.debugObstacleMap->Lock(&lockData, NULL, true);
+		if(lockData.pData)
+		{
+			memset(lockData.pData, 0, m_navGrid.wide*m_navGrid.tall*sizeof(TVec4D<ubyte>));
+
+			TVec4D<ubyte>* imgData = (TVec4D<ubyte>*)lockData.pData;
+
+			for(int y = 0; y < m_navGrid.tall; y++)
+			{
+				for(int x = 0; x < m_navGrid.wide; x++)
+				{
+					int pixIdx = y*m_navGrid.tall+x;
+
+					TVec4D<ubyte> color(0);
+
+					if(nav_debug_map.GetInt() > 1)
+					{
+						color.z = 255-m_navGrid.dynamicObst[pixIdx] * 48;
+					}
+					else
+					{
+						color.z = 255-m_navGrid.staticObst[pixIdx] * 48;
+					}
+
+					
+
+					imgData[pixIdx] = color;
+				}
+			}
+
+			m_navGrid.debugObstacleMap->Unlock();
+		}
+	}
 }
 
 void CLevelRegion::Cleanup()
@@ -498,6 +560,9 @@ void CLevelRegion::Cleanup()
 
 	delete [] m_roads;
 	m_roads = NULL;
+
+	g_pShaderAPI->FreeTexture(m_navGrid.debugObstacleMap);
+	m_navGrid.debugObstacleMap = NULL;
 
 	m_navGrid.Cleanup();
 
@@ -576,8 +641,6 @@ void CLevelRegion::GetDecalPolygons(decalprimitives_t& polys, occludingFrustum_t
 	}
 }
 
-ConVar w_pregeneratedhfields("w_pregeneratedhfields", "1");
-
 void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>& levelmodels)
 {
 	if(m_isLoaded)
@@ -589,17 +652,14 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 			continue;
 
         if(w_pregeneratedhfields.GetBool())
-            m_heightfield[i]->GenereateRenderData();
+            m_heightfield[i]->GenereateRenderData( nav_debug_map.GetBool() );
 
 		if(m_heightfield[i]->m_hasTransparentSubsets)
 			m_hasTransparentSubsets = true;
 	}
 
-	levRegionDataInfo_t		regdatahdr;
+	levRegionDataInfo_t	regdatahdr;
 	stream->Read(&regdatahdr, 1, sizeof(levRegionDataInfo_t));
-
-	//m_regionDefs.resize( regdatahdr.numObjectDefs );
-	//m_objects.resize( regdatahdr.numCellObjects );
 
 	//
 	// Load models (object definitions)

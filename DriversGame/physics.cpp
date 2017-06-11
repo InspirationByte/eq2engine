@@ -236,7 +236,7 @@ void CPhysicsEngine::AddHeightField( CHeightTileField* pField )
 
 	hfieldPhysicsData_t* fieldInfo = new hfieldPhysicsData_t;
 
-	pField->Generate(false, fieldInfo->m_batches);
+	pField->Generate(HFIELD_GEOM_PHYSICS, fieldInfo->m_batches);
 
 	if(fieldInfo->m_batches.numElem() == 0)
 	{

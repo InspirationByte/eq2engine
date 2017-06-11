@@ -45,7 +45,7 @@ const float AI_COP_TIME_FELONY = 0.001f;	// 0.1 percent per second
 
 const float AI_COP_TIME_TO_LOST_TARGET = 30.0f;
 
-const float AI_COP_TIME_TO_UPDATE_PATH = 6.0f;	// every 2 seconds
+const float AI_COP_TIME_TO_UPDATE_PATH = 3.0f;	// every 6 seconds
 
 // wheel friction modifier on diferrent weathers
 static float pursuerSpeedModifier[WEATHER_COUNT] =
@@ -753,42 +753,42 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	float weatherBrakeDistModifier = pursuerBrakeDistModifier[g_pGameWorld->m_envConfig.weatherType];
 
-	bool doesHaveStraightPath = !ai_debug_pursuer_nav.GetBool();
+	bool doesHaveStraightPath = true;
 
 	// test for the straight path and visibility
-	if(!ai_debug_pursuer_nav.GetBool())
+	if(distToPursueTarget < AI_COPVIEW_FAR_WANTED)
 	{
-		if(distToPursueTarget < AI_COPVIEW_FAR_WANTED)
-		{
-			// Trace convex car
-			CollisionData_t coll;
+		// Trace convex car
+		CollisionData_t coll;
 
-			Vector3D targetDir = normalize(m_targInfo.target->GetOrigin()-GetOrigin());
+		Vector3D targetDir = normalize(m_targInfo.target->GetOrigin()-GetOrigin());
 
-			Vector3D traceTarget = GetOrigin()+targetDir*min(distToPursueTarget, AI_COPVIEW_FAR_WANTED);
+		Vector3D traceTarget = GetOrigin()+targetDir*min(distToPursueTarget, AI_COPVIEW_FAR_WANTED);
 
+		// so the obstacle forces us to use NAV grid path
+		//g_pPhysics->TestConvexSweep(GetPhysicsBody()->GetBulletShape(), GetOrientation(), GetOrigin(), traceTarget, coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE, &collFilter);
 
-			// so the obstacle forces us to use NAV grid path
-			g_pPhysics->TestConvexSweep(GetPhysicsBody()->GetBulletShape(), GetOrientation(), GetOrigin(), traceTarget, coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE, &collFilter);
+		//if(coll.fract < 1.0f)
 
-			if(coll.fract < 1.0f)
-				doesHaveStraightPath = false;
+		float tracePercentage = g_pGameWorld->m_level.Nav_TestLine(GetOrigin(), m_targInfo.target->GetOrigin(), false);
 
-			debugoverlay->Line3D(GetOrigin(), lerp(GetOrigin(),traceTarget,coll.fract), ColorRGBA(1), ColorRGBA(1));
-		}
-		else
-		{
+		if(ai_debug_pursuer_nav.GetBool())
+			debugoverlay->TextFadeOut(0, color4_white, 10.0f, "path trace percentage: %d", (int)(tracePercentage*100.0f));
+
+		if(tracePercentage < 1.0f)
 			doesHaveStraightPath = false;
-		}
 	}
+	else
+	{
+		doesHaveStraightPath = false;
+	}
+
+
+	if(ai_debug_pursuer_nav.GetBool())
+		debugoverlay->TextFadeOut(0, color4_white, 10.0f, "has straight path: %d", doesHaveStraightPath);
 
 	//-------------------------------------------------------------------------------
 	// refresh the navigation path if we don't see the target
-
-	if(doesHaveStraightPath)
-		m_targInfo.nextPathUpdateTime = 0.0f;
-	else
-		m_targInfo.nextPathUpdateTime -= fDt;
 
 	//
 	// only if we have made most of the path
@@ -801,20 +801,31 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		int lastPoint = m_targInfo.path.points.numElem()-1;
 		Vector3D pathTarget = (lastPoint != -1) ? g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[lastPoint]) : targetPos;
 
-		float pathCompletionPercentage = lastPoint ? (30.0f - length(pathTarget-carPos)) : 30.0f;
-		pathCompletionPercentage = RemapValClamp(pathCompletionPercentage, 0.0f, 30.0f, 0.0f, 1.0f);
+		float pathCompletionPercentage = (float)lastPoint / (float)m_targInfo.path.points.numElem();//lastPoint ? (30.0f - length(pathTarget-carPos)) : 30.0f;
+		//pathCompletionPercentage = RemapValClamp(pathCompletionPercentage, 0.0f, 30.0f, 0.0f, 1.0f);
 
-		if( pathCompletionPercentage > 0.1f || m_targInfo.nextPathUpdateTime < 0)
+		// if we have old path, try continue moving
+		if(pathCompletionPercentage < 80.0f && m_targInfo.path.points.numElem() > 1)
+			m_targInfo.nextPathUpdateTime -= fDt;
+		else
+			m_targInfo.nextPathUpdateTime = -1.0f;
+
+		if(ai_debug_pursuer_nav.GetBool())
 		{
-			m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
+			debugoverlay->TextFadeOut(0, color4_white, 10.0f, "pathCompletionPercentage: %d (length=%d)", (int)(doesHaveStraightPath*100.0f), m_targInfo.path.points.numElem());
+			debugoverlay->TextFadeOut(0, color4_white, 10.0f, "nextPathUpdateTime: %g", m_targInfo.nextPathUpdateTime);
+		}
 
+		if( pathCompletionPercentage > 0.1f || m_targInfo.nextPathUpdateTime <= 0.0f)
+		{
 			pathFindResult_t newPath;
-			if( g_pGameWorld->m_level.Nav_FindPath(targetPos, carPos, newPath, 1024, true) && newPath.points.numElem() > 1 )
+			if( g_pGameWorld->m_level.Nav_FindPath(targetPos, carPos, newPath, 1024, true))
 			{
 				m_targInfo.path = newPath;
 				m_targInfo.pathTargetIdx = 0;
+				m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
 
-				if(ai_debug_pursuer.GetBool())
+				if(ai_debug_pursuer_nav.GetBool())
 				{
 					Vector3D lastLinePos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[0]);
 
@@ -829,7 +840,15 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 					}
 				}
 			}
+
+			if(ai_debug_pursuer_nav.GetBool())
+				debugoverlay->TextFadeOut(0, color4_white, 10.0f, "path search result: %d", newPath.points.numElem() > 1);
 		}
+	}
+	else
+	{
+		// cancel the path by setting target index to the last
+		m_targInfo.pathTargetIdx = m_targInfo.path.points.numElem()-1;
 	}
 
 	//
@@ -923,15 +942,47 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 			}
 		}
 
-		if(ai_debug_pursuer.GetBool())
+		if(ai_debug_pursuer_nav.GetBool())
 		{
 			debugoverlay->Box3D(hardSteerPosStart - 0.25f, hardSteerPosStart + 0.25f, ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
 			debugoverlay->Line3D(hardSteerPosStart, hardSteerPosEnd, ColorRGBA(1, 0, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
 			debugoverlay->Box3D(hardSteerPosEnd - 0.25f, hardSteerPosEnd + 0.25f, ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
 		}
 	}
+	/*
+	float traceShapeRadius = 2.0f + fSpeed*0.02f;
 
-	if(ai_debug_pursuer.GetBool())
+	CollisionData_t steeringTargetColl;
+	btSphereShape sphereTraceShape(traceShapeRadius);
+
+	// trace the car body in velocity direction
+	g_pPhysics->TestConvexSweep(&sphereTraceShape, GetOrientation(),
+		carPos, steeringTargetPos, steeringTargetColl,
+		OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE,
+		&collFilter);
+
+	debugoverlay->Line3D(carPos, steeringTargetColl.position, ColorRGBA(0, 1, 0, 1.0f), ColorRGBA(1, 1, 0, 1.0f), DOVERLAY_DELAY);
+	
+	// correct the steering to prevent car damage if we moving towards obstacle
+	if(steeringTargetColl.fract < 1.0f)
+	{
+		Vector3D newSteeringTargetPos = steeringTargetColl.position + steeringTargetColl.normal*3.0f; // 4 meters is enough to be safe
+		
+		if(dot(normalize(newSteeringTargetPos-carPos), normalize(carForwardDir)) > 0.5f)
+		{
+			steeringTargetPosB = carPos;
+			steeringTargetPos = newSteeringTargetPos;
+
+			//if(ai_debug_pursuer_nav.GetBool())
+			{
+				debugoverlay->Box3D(steeringTargetColl.position - traceShapeRadius, steeringTargetColl.position + traceShapeRadius, ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
+				debugoverlay->Line3D(steeringTargetColl.position, steeringTargetPos, ColorRGBA(1, 1, 0, 1.0f), ColorRGBA(1, 1, 0, 1.0f), DOVERLAY_DELAY);
+				debugoverlay->Box3D(steeringTargetPos - traceShapeRadius, steeringTargetPos + traceShapeRadius, ColorRGBA(0, 1, 0, 1.0f), DOVERLAY_DELAY);
+			}
+		}
+	}*/
+
+	if(ai_debug_pursuer_nav.GetBool())
 	{
 		debugoverlay->Line3D(carPos, carPos+carLinearVel, ColorRGBA(1, 1, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
 		debugoverlay->Line3D(carPos, carPos+carForwardDir*10.0f, ColorRGBA(1, 1, 0, 1.0f), ColorRGBA(1, 0, 1, 1.0f), DOVERLAY_DELAY);

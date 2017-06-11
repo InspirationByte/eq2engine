@@ -68,6 +68,7 @@ public:
 
 	int								UpdateRegions( RegionLoadUnloadCallbackFunc func = NULL);
 	void							RespawnAllObjects();
+	void							UpdateDebugMaps();
 
 	//-------------------------------------------------------------------------
 	// 2D grid stuff
@@ -133,7 +134,7 @@ public:
 	//
 	// conversions
 	//
-	void							Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& maxs, IVector2D& xy1, IVector2D& xy2) const;		// calculates bounds
+	void							Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& maxs, IVector2D& xy1, IVector2D& xy2, float offs = 1.5f) const;		// calculates bounds
 
 	IVector2D						Nav_PositionToGlobalNavPoint(const Vector3D& pos) const;	// converts 3D position to navigation grid 2D point
 

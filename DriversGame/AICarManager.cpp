@@ -44,6 +44,8 @@ DECLARE_CMD(aezakmi, "", CV_CHEAT)
 CAICarManager::CAICarManager()
 {
 	m_trafficUpdateTime = 0.0f;
+	m_velocityMapUpdateTime = 0.0f;
+
 	m_enableCops = true;
 	m_enableTrafficCars = true;
 
@@ -75,6 +77,7 @@ void CAICarManager::Init()
 	m_numMaxTrafficCars = g_trafficMaxCars.GetInt();
 
 	m_trafficUpdateTime = 0.0f;
+	m_velocityMapUpdateTime = 0.0f;
 	m_copSpawnIntervalCounter = 0;
 	m_enableTrafficCars = true;
 	m_enableCops = true;
@@ -391,8 +394,15 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 	CircularSpawnTrafficCars(spawnCenterCell.x, spawnCenterCell.y, g_traffic_mindist.GetInt());
 }
 
-void CAICarManager::UpdateNavigationVelocityMap()
+void CAICarManager::UpdateNavigationVelocityMap(float fDt)
 {
+	m_velocityMapUpdateTime += fDt;
+
+	if(m_velocityMapUpdateTime > 0.5f)
+		m_velocityMapUpdateTime = 0.0f;
+	else
+		return;
+
 	// clear navgrid dynamic obstacle
 	g_pGameWorld->m_level.Nav_ClearDynamicObstacleMap();
 
@@ -401,6 +411,9 @@ void CAICarManager::UpdateNavigationVelocityMap()
 	{
 		PaintVelocityMapFrom(m_trafficCars[i]);
 	}
+
+	// update debugging of navigation maps here
+	g_pGameWorld->m_level.UpdateDebugMaps();
 }
 
 void CAICarManager::PaintVelocityMapFrom(CCar* car)
@@ -408,24 +421,24 @@ void CAICarManager::PaintVelocityMapFrom(CCar* car)
 	int dx[8] = NEIGHBOR_OFFS_XDX(0,1);
 	int dy[8] = NEIGHBOR_OFFS_YDY(0,1);
 
-	Vector3D carPos = car->GetOrigin();
-	Vector3D velocity = car->GetVelocity();
+	Vector3D carForward = car->GetForwardVector();
+	Vector3D bodySizeOffset = carForward*car->m_conf->physics.body_size.z;
 
-	IVector2D navCellStartPos = g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(carPos);
-	IVector2D navCellEndPos = g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(carPos+velocity);
+	Vector3D carPos = car->GetOrigin() - bodySizeOffset;
+
+	Vector3D velocity = bodySizeOffset*2.0f + car->GetVelocity();
+
+	Vector3D rightVec = cross( normalize(velocity+carForward), vec3_up);
+
+	IVector2D navCellStartPos1 = g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(carPos - rightVec*0.5f);
+	IVector2D navCellEndPos1 = g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(carPos+velocity - rightVec*0.5f);
+
+	IVector2D navCellStartPos2 = g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(carPos + rightVec*0.5f);
+	IVector2D navCellEndPos2 = g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(carPos+velocity + rightVec*0.5f);
 
 	// do the line
-	PaintNavigationLine(navCellStartPos, navCellEndPos);
-
-	/*
-	for (int n = 0; n < 8; n++)
-	{
-		IVector2D nCellPos = navCellPos+IVector2D(dx[n], dy[n]);
-
-		
-		navCellValue = 0;
-	}
-	*/
+	PaintNavigationLine(navCellStartPos1, navCellEndPos1);
+	PaintNavigationLine(navCellStartPos2, navCellEndPos2);
 }
 
 void CAICarManager::PaintNavigationLine(const IVector2D& start, const IVector2D& end)

@@ -57,6 +57,7 @@ struct navGrid_t
 		staticObst = NULL;
 		cellStates = NULL;
 		dynamicObst = NULL;
+		debugObstacleMap = NULL;
 		wide = 0;
 		tall = 0;
 		dirty = false;
@@ -107,6 +108,8 @@ struct navGrid_t
 	ubyte*		staticObst;		///< A* static navigation grid
 	ubyte*		dynamicObst;
 	navcell_t*	cellStates;		///< A* open/close state list
+
+	ITexture*	debugObstacleMap;
 
 	ushort		wide;
 	ushort		tall;
@@ -208,6 +211,8 @@ public:
 	int								GetNumNomEmptyHFields() const;
 
 	void							GetDecalPolygons(decalprimitives_t& polys, occludingFrustum_t* frustum);
+
+	void							UpdateDebugMaps();
 
 	//----------------------------------------------------
 
