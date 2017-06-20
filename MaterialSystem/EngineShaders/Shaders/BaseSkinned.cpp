@@ -71,7 +71,7 @@ BEGIN_SHADER_CLASS(BaseSkinned)
 		return true;
 	}
 
-	void SetupShader()
+	SHADER_SETUP_STAGE()
 	{
 		if(materials->IsSkinningEnabled())
 		{
@@ -89,7 +89,7 @@ BEGIN_SHADER_CLASS(BaseSkinned)
 		}
 	}
 
-	void SetupConstants()
+	SHADER_SETUP_CONSTANTS()
 	{
 		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
 

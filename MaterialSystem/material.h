@@ -56,7 +56,7 @@ public:
 	void					UpdateProxy(float fDt);					
 	ITexture*				GetBaseTexture(int stage = 0);
 
-	void					Setup();
+	void					Setup(int paramMask);
 private:
 
 	void					InitVars(kvkeybase_t* kvs);

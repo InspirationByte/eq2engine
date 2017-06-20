@@ -224,6 +224,8 @@ public:
 
 	IMaterial*						GetBoundMaterial();
 
+	void							SetShaderParameterOverriden(ShaderDefaultParams_e param, bool set = true);
+
 	bool							BindMaterial( IMaterial *pMaterial, bool preApply = true );
 	void							Apply();
 
@@ -338,6 +340,9 @@ private:
 	Matrix4x4						m_matrices[4];					// matrix modes
 
 	IMaterial*						m_pCurrentMaterial;				// currently binded material
+	int								m_paramOverrideMask;			// parameter setup mask for overrides
+
+
 	IMaterial*						m_pOverdrawMaterial;
 
 	ITexture*						m_pEnvmapTexture;

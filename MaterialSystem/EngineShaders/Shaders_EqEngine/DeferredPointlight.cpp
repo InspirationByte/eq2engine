@@ -61,7 +61,7 @@ public:
 		return "DeferredPointLight";
 	}
 
-	void SetupShader()
+	SHADER_SETUP_STAGE()
 	{
 		if(IsError())
 			return;
@@ -70,7 +70,7 @@ public:
 	}
 
 	// Sets constants
-	void SetupConstants()
+	SHADER_SETUP_CONSTANTS()
 	{
 		// If we has shader
 		if(!IsError())

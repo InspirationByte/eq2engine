@@ -918,7 +918,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		Vector3D hardSteerPosStart = GetAdvancedPointByDist(pathIdx, currPosPerc*len + 4.0f + brakeDistAtCurSpeed*2.0f*speedFactor*weatherBrakeDistModifier);
 
 		pathIdx = m_targInfo.pathTargetIdx;
-		Vector3D hardSteerPosEnd = GetAdvancedPointByDist(pathIdx, currPosPerc*len + 12.0f + brakeDistAtCurSpeed*2.0f*speedFactor*weatherBrakeDistModifier);
+		Vector3D hardSteerPosEnd = GetAdvancedPointByDist(pathIdx, currPosPerc*len + 5.0f + brakeDistAtCurSpeed*2.0f*speedFactor*weatherBrakeDistModifier);
 
 		Vector3D steerDirHard = fastNormalize(hardSteerPosEnd-hardSteerPosStart);
 
@@ -982,7 +982,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		}
 	}*/
 
-	if(ai_debug_pursuer_nav.GetBool())
+	if(ai_debug_pursuer_nav.GetBool() || ai_debug_pursuer.GetBool())
 	{
 		debugoverlay->Line3D(carPos, carPos+carLinearVel, ColorRGBA(1, 1, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
 		debugoverlay->Line3D(carPos, carPos+carForwardDir*10.0f, ColorRGBA(1, 1, 0, 1.0f), ColorRGBA(1, 0, 1, 1.0f), DOVERLAY_DELAY);
@@ -1014,7 +1014,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		float lateralSlideSteerFactor = 1.0f - RemapValClamp(lateralSlide, 0.0f, 10.0f, 0.0f, 1.0f);
 
 		fSteeringAngle *= lateralSlideSpeedSteerModifier * lateralSlideCorrectionSpeedModifier;
-		doesHardSteer = false;
+		doesHardSteer = true;
 	}
 
 	FReal accelerator = 1.0f;

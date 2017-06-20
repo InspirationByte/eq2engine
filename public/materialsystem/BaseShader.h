@@ -23,9 +23,11 @@
 			void InitParams() { _ShaderInitParams();CBaseShader::InitParams(); }
 
 
-#define SHADER_INIT_PARAMS()	void _ShaderInitParams()
-#define SHADER_INIT_RHI()		bool _ShaderInitRHI()
-#define SHADER_INIT_TEXTURES()	void InitTextures()
+#define SHADER_INIT_PARAMS()		void _ShaderInitParams()
+#define SHADER_INIT_RHI()			bool _ShaderInitRHI()
+#define SHADER_INIT_TEXTURES()		void InitTextures()
+#define SHADER_SETUP_STAGE()		void SetupShader()
+#define SHADER_SETUP_CONSTANTS()	void SetupConstants(int paramMask)
 
 #define END_SHADER_CLASS }; DEFINE_SHADER(ThisClassNameStr, ThisShaderClass) }
 
@@ -268,7 +270,7 @@ protected:
 	void						AddManagedShader(IShaderProgram** pShader);
 	void						AddManagedTexture(IMatVar* var, ITexture** tex);
 
-	void						SetupDefaultParameter(ShaderDefaultParams_e paramtype);
+	void						SetupParameter(int mask, ShaderDefaultParams_e param);
 
 	void						EmptyFunctor() {}
 
@@ -301,3 +303,4 @@ protected:
 };
 
 #define SetParameterFunctor( type, a) m_param_functors[type] = (static_cast <SHADERPARAMFUNC>(a))
+#define SetupDefaultParameter( type ) SetupParameter(paramMask, type)

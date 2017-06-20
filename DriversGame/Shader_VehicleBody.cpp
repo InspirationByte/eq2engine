@@ -94,12 +94,12 @@ BEGIN_SHADER_CLASS(DrvSynVehicle)
 		return true;
 	}
 
-	void SetupShader()
+	SHADER_SETUP_STAGE()
 	{
 		SHADER_BIND_PASS_FOGSELECT( Ambient );
 	}
 
-	void SetupConstants()
+	SHADER_SETUP_CONSTANTS()
 	{
 		SetupDefaultParameter( SHADERPARAM_TRANSFORM );
 

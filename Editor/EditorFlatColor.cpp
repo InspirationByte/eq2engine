@@ -36,7 +36,7 @@ public:
 		return g_pShaderAPI->LoadShadersFromFile(m_pProgram,"EditorFlatColor", defines.GetData(), NULL);
 	}
 
-	void SetupShader()
+	SHADER_SETUP_STAGE()
 	{
 		if(IsError())
 			return;
@@ -44,7 +44,7 @@ public:
 		g_pShaderAPI->SetShader(m_pProgram);
 	}
 
-	void SetupConstants()
+	SHADER_SETUP_CONSTANTS()
 	{
 		if(IsError())
 			return;

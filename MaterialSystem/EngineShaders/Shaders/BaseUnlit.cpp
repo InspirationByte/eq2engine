@@ -54,12 +54,12 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		return true;
 	}
 
-	void SetupShader()
+	SHADER_SETUP_STAGE()
 	{
 		SHADER_BIND_PASS_FOGSELECT(Unlit);
 	}
 
-	void SetupConstants()
+	SHADER_SETUP_CONSTANTS()
 	{
 		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
 

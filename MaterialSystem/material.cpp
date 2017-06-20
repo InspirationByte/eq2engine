@@ -395,7 +395,7 @@ void CMaterial::UpdateProxy(float fDt)
 	m_proxyIsDirty = false;
 }
 
-void CMaterial::Setup()
+void CMaterial::Setup(int paramMask)
 {
 	// shaders and textures needs to be reset
 	if(GetFlags() & MATERIAL_FLAG_BASETEXTURE_CUR)
@@ -404,5 +404,5 @@ void CMaterial::Setup()
 		g_pShaderAPI->Reset( STATE_RESET_SHADER | STATE_RESET_TEX );
 
 	m_pShader->SetupShader();
-	m_pShader->SetupConstants();
+	m_pShader->SetupConstants( paramMask );
 }

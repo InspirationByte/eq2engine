@@ -56,7 +56,7 @@ public:
 		materials->SetRasterizerStates(CULL_NONE, (FillMode_e)materials->GetConfiguration().wireframeMode);
 	}
 
-	void SetupShader()
+	SHADER_SETUP_STAGE()
 	{
 		if(IsError())
 			return;
@@ -64,7 +64,7 @@ public:
 		SHADER_BIND_PASS_SIMPLE(Program);
 	}
 
-	void SetupConstants()
+	SHADER_SETUP_CONSTANTS()
 	{
 		if(IsError())
 			return;

@@ -40,13 +40,13 @@ BEGIN_SHADER_CLASS(Skybox)
 	ITexture* GetBaseTexture(int stage) {return m_nBaseTexture;}
 	ITexture* GetBumpTexture(int stage) {return NULL;}
 
-	void SetupShader()
+	SHADER_SETUP_STAGE()
 	{
 		SHADER_BIND_PASS_SIMPLE(Unlit);
 	}
 
 	// Sets constants
-	void SetupConstants()
+	SHADER_SETUP_CONSTANTS()
 	{
 		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
 

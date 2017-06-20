@@ -149,6 +149,7 @@ CMaterialSystem::CMaterialSystem()
 	m_pOverdrawMaterial = NULL;
 
 	m_frame = 0;
+	m_paramOverrideMask = 0xFFFFFFFF;
 
 	m_nCurrentLightingShaderModel = MATERIAL_LIGHT_UNLIT;
 
@@ -755,9 +756,9 @@ IMaterialSystemShader* CMaterialSystem::CreateShaderInstance(const char* szShade
 
 //------------------------------------------------------------------------------------------------
 
-typedef bool (*PFNMATERIALBINDCALLBACK)(IMaterial* pMaterial);
+typedef bool (*PFNMATERIALBINDCALLBACK)(IMaterial* pMaterial, int paramMask);
 
-void BindFFPMaterial(IMaterial* pMaterial)
+void BindFFPMaterial(IMaterial* pMaterial, int paramMask)
 {
 	g_pShaderAPI->SetShader(NULL);
 
@@ -766,17 +767,17 @@ void BindFFPMaterial(IMaterial* pMaterial)
 	g_pShaderAPI->SetDepthStencilState(NULL);
 }
 
-bool Callback_BindErrorTextureFFPMaterial(IMaterial* pMaterial)
+bool Callback_BindErrorTextureFFPMaterial(IMaterial* pMaterial, int paramMask)
 {
-	BindFFPMaterial(pMaterial);
+	BindFFPMaterial(pMaterial, paramMask);
 	g_pShaderAPI->SetTexture(g_pShaderAPI->GetErrorTexture());
 
 	return false;
 }
 
-bool Callback_BindFFPMaterial(IMaterial* pMaterial)
+bool Callback_BindFFPMaterial(IMaterial* pMaterial, int paramMask)
 {
-	BindFFPMaterial(pMaterial);
+	BindFFPMaterial(pMaterial, paramMask);
 
 	// bind same, but with base texture
 	g_pShaderAPI->SetTexture(pMaterial->GetBaseTexture());
@@ -784,9 +785,9 @@ bool Callback_BindFFPMaterial(IMaterial* pMaterial)
 	return false;
 }
 
-bool Callback_BindNormalMaterial(IMaterial* pMaterial)
+bool Callback_BindNormalMaterial(IMaterial* pMaterial, int paramMask)
 {
-	((CMaterial*)pMaterial)->Setup();
+	((CMaterial*)pMaterial)->Setup(paramMask);
 
 	return true;
 }
@@ -834,6 +835,14 @@ int CMaterialSystem::GetLoadingQueue() const
 	return g_threadedMaterialLoader.GetCount();
 }
 
+void CMaterialSystem::SetShaderParameterOverriden(ShaderDefaultParams_e param, bool set)
+{
+	if(set)
+		m_paramOverrideMask &= ~(1 << param+1);
+	else
+		m_paramOverrideMask |= (1 << param+1);
+}
+
 bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, bool doApply/* = true*/)
 {
 	if(!pMaterial)
@@ -875,13 +884,16 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, bool doApply/* = true*/
 	if( r_overdraw.GetBool() )
 	{
 		materials->SetAmbientColor(ColorRGBA(0.045f, 0.02f, 0.02f, 1.0f));
-		success = (*materialstate_callbacks[subRoutineId])(m_pOverdrawMaterial);
+		success = (*materialstate_callbacks[subRoutineId])(m_pOverdrawMaterial, 0xFFFFFFFF);
 	}
 	else
-		success = (*materialstate_callbacks[subRoutineId])(m_pCurrentMaterial);
+		success = (*materialstate_callbacks[subRoutineId])(m_pCurrentMaterial, m_paramOverrideMask);
 
 	if(doApply)
 		Apply();
+
+	// reset override mask shortly after we bind material
+	m_paramOverrideMask = 0xFFFFFFFF;
 
 	return success;
 }

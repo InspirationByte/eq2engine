@@ -222,10 +222,11 @@ void CBaseShader::Unload()
 }
 
 
-void CBaseShader::SetupDefaultParameter(ShaderDefaultParams_e paramtype)
+void CBaseShader::SetupParameter(int mask, ShaderDefaultParams_e type)
 {
 	// call it from this
-	(this->*m_param_functors[paramtype]) ();
+	if(mask & (1 << type+1) > 0)
+		(this->*m_param_functors[type]) ();
 }
 
 void CBaseShader::ParamSetup_CurrentAsBaseTexture()

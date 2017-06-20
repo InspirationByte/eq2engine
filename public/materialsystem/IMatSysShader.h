@@ -67,7 +67,7 @@ public:
 	virtual void			SetupShader() = 0;
 
 	// sets up constants
-	virtual void			SetupConstants() = 0;
+	virtual void			SetupConstants(int paramMask) = 0;
 
 	// unloads shader
 	virtual void			Unload() = 0;

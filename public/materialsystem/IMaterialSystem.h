@@ -362,6 +362,8 @@ public:
 
 	virtual IMaterial*						GetBoundMaterial() = 0;
 
+	virtual void							SetShaderParameterOverriden(ShaderDefaultParams_e param, bool set = true) = 0;
+
 	virtual bool							BindMaterial( IMaterial *pMaterial, bool preApply = true ) = 0;
 	virtual void							Apply() = 0;
 

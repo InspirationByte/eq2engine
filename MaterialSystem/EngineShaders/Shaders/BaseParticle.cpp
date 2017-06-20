@@ -58,7 +58,7 @@ BEGIN_SHADER_CLASS(BaseParticle)
 		return true;
 	}
 
-	void SetupShader()
+	SHADER_SETUP_STAGE()
 	{
 		FogInfo_t fg;
 		materials->GetFogInfo(fg);
@@ -66,7 +66,7 @@ BEGIN_SHADER_CLASS(BaseParticle)
 		SHADER_BIND_PASS_FOGSELECT(Particle);
 	}
 
-	void SetupConstants()
+	SHADER_SETUP_CONSTANTS()
 	{
 		// If we has shader
 		if(!IsError())

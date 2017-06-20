@@ -34,7 +34,7 @@ public:
 		return true;
 	}
 
-	void SetupShader()
+	SHADER_SETUP_STAGE()
 	{
 		if(IsError())
 			return;
@@ -42,7 +42,7 @@ public:
 		SHADER_BIND_PASS_SIMPLE(Filter);
 	}
 
-	void SetupConstants()
+	SHADER_SETUP_CONSTANTS()
 	{
 		if(IsError())
 			return;
@@ -110,7 +110,7 @@ public:
 		return true;
 	}
 
-	void SetupShader()
+	SHADER_SETUP_STAGE()
 	{
 		if(IsError())
 			return;
@@ -118,7 +118,7 @@ public:
 		SHADER_BIND_PASS_SIMPLE(Filter);
 	}
 
-	void SetupConstants()
+	SHADER_SETUP_CONSTANTS()
 	{
 		if(IsError())
 			return;
