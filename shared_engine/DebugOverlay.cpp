@@ -631,10 +631,6 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 			if(current.lifetime < 0.0f)
 			{
 				m_LeftTextFadeArray.removeCurrent();
-
-				if(!m_LeftTextFadeArray.goToPrev()) // get back
-					break;
-
 				continue;
 			}
 

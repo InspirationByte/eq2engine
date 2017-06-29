@@ -12,6 +12,9 @@
 
 #include "AICarManager.h"
 
+ConVar ai_debug_pursuer_nav("ai_debug_pursuer_nav", "0", NULL, CV_CHEAT);
+ConVar ai_debug_pursuer("ai_debug_pursuer", "0", NULL, CV_CHEAT);
+
 // TODO: make these constants initialized from Lua
 
 #define DOVERLAY_DELAY (0.15f)
@@ -45,7 +48,10 @@ const float AI_COP_TIME_FELONY = 0.001f;	// 0.1 percent per second
 
 const float AI_COP_TIME_TO_LOST_TARGET = 30.0f;
 
-const float AI_COP_TIME_TO_UPDATE_PATH = 3.0f;	// every 6 seconds
+const float AI_COP_TIME_TO_UPDATE_PATH = 10.0f;			// every 5 seconds
+const float AI_COP_TIME_TO_UPDATE_PATH_FORCE = 0.5f;
+
+const float AI_MAX_DISTANCE_TO_PATH = 10.0f;
 
 // wheel friction modifier on diferrent weathers
 static float pursuerSpeedModifier[WEATHER_COUNT] =
@@ -496,6 +502,38 @@ bool CAIPursuerCar::CheckObjectVisibility(CCar* obj)
 	return false;
 }
 
+void DebugDisplayPath(pathFindResult_t& path, float time = -1.0f)
+{
+	if(ai_debug_pursuer_nav.GetBool() && path.points.numElem())
+	{
+		Vector3D lastLinePos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.points[0]);
+
+		for (int i = 1; i < path.points.numElem(); i++)
+		{
+			Vector3D pointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.points[i]);
+
+			float dispalyTime = time > 0 ? time : float(i) * 0.1f;
+
+			debugoverlay->Box3D(pointPos - 0.15f, pointPos + 0.15f, ColorRGBA(1, 1, 0, 1.0f), dispalyTime);
+			debugoverlay->Line3D(lastLinePos, pointPos, ColorRGBA(1, 1, 0, 1), ColorRGBA(1, 1, 0, 1), dispalyTime);
+
+			lastLinePos = pointPos;
+		}
+	}
+}
+
+void CAIPursuerCar::SetPath(pathFindResult_t& newPath, const Vector3D& searchPos)
+{
+	m_targInfo.path = newPath;
+	m_targInfo.pathTargetIdx = 0;
+	m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
+
+	m_targInfo.lastSuccessfulSearchPos = searchPos;
+	m_targInfo.searchFails = 0;
+
+	DebugDisplayPath(m_targInfo.path);
+}
+
 Vector3D CAIPursuerCar::GetAdvancedPointByDist(int& startSeg, float distFromSegment)
 {
 	Vector3D currPointPos;
@@ -524,9 +562,6 @@ Vector3D CAIPursuerCar::GetAdvancedPointByDist(int& startSeg, float distFromSegm
 
 	return currPointPos + dir*distFromSegment;
 }
-
-ConVar ai_debug_pursuer_nav("ai_debug_pursuer_nav", "0", NULL, CV_CHEAT);
-ConVar ai_debug_pursuer("ai_debug_pursuer", "0", NULL, CV_CHEAT);
 
 int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 {
@@ -756,14 +791,14 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	bool doesHaveStraightPath = true;
 
 	// test for the straight path and visibility
-	if(distToPursueTarget < AI_COPVIEW_FAR_WANTED)
+	if(distToPursueTarget < AI_COPVIEW_FAR_HASSTRAIGHTPATH)
 	{
 		// Trace convex car
 		CollisionData_t coll;
 
-		Vector3D targetDir = normalize(m_targInfo.target->GetOrigin()-GetOrigin());
+		//Vector3D targetDir = normalize(m_targInfo.target->GetOrigin()-GetOrigin());
 
-		Vector3D traceTarget = GetOrigin()+targetDir*min(distToPursueTarget, AI_COPVIEW_FAR_WANTED);
+		//Vector3D traceTarget = GetOrigin()+targetDir*min(distToPursueTarget, AI_COPVIEW_FAR_HASSTRAIGHTPATH);
 
 		// so the obstacle forces us to use NAV grid path
 		//g_pPhysics->TestConvexSweep(GetPhysicsBody()->GetBulletShape(), GetOrientation(), GetOrigin(), traceTarget, coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE, &collFilter);
@@ -790,6 +825,12 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	//-------------------------------------------------------------------------------
 	// refresh the navigation path if we don't see the target
 
+	// update last successful position by checking cell which at carPos 
+	ubyte navPoint = g_pGameWorld->m_level.Nav_GetTileAtPosition(GetOrigin());
+
+	if(navPoint >= 0x4)
+		m_targInfo.lastSuccessfulSearchPos = GetOrigin();
+
 	//
 	// only if we have made most of the path
 	//
@@ -798,58 +839,69 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		//
 		// Get the last point on the path
 		//
-		int lastPoint = m_targInfo.path.points.numElem()-1;
+		int lastPoint = m_targInfo.pathTargetIdx;
 		Vector3D pathTarget = (lastPoint != -1) ? g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[lastPoint]) : targetPos;
 
-		float pathCompletionPercentage = (float)lastPoint / (float)m_targInfo.path.points.numElem();//lastPoint ? (30.0f - length(pathTarget-carPos)) : 30.0f;
-		//pathCompletionPercentage = RemapValClamp(pathCompletionPercentage, 0.0f, 30.0f, 0.0f, 1.0f);
+		float pathCompletionPercentage = (float)lastPoint / (float)m_targInfo.path.points.numElem();
+
+		if(length(pathTarget-carPos) > AI_MAX_DISTANCE_TO_PATH)
+			pathCompletionPercentage = 1.0f;
 
 		// if we have old path, try continue moving
-		if(pathCompletionPercentage < 80.0f && m_targInfo.path.points.numElem() > 1)
+		if(pathCompletionPercentage < 0.5f && m_targInfo.path.points.numElem() > 1)
+		{
 			m_targInfo.nextPathUpdateTime -= fDt;
+		}
 		else
-			m_targInfo.nextPathUpdateTime = -1.0f;
+		{
+			if(m_targInfo.nextPathUpdateTime > AI_COP_TIME_TO_UPDATE_PATH_FORCE )
+				m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH_FORCE;
+
+			m_targInfo.nextPathUpdateTime -= fDt;
+		}
+
+		DebugDisplayPath(m_targInfo.path, m_refreshTime);
 
 		if(ai_debug_pursuer_nav.GetBool())
 		{
-			debugoverlay->TextFadeOut(0, color4_white, 10.0f, "pathCompletionPercentage: %d (length=%d)", (int)(doesHaveStraightPath*100.0f), m_targInfo.path.points.numElem());
+			debugoverlay->TextFadeOut(0, color4_white, 10.0f, "pathCompletionPercentage: %d (length=%d)", (int)(pathCompletionPercentage*100.0f), m_targInfo.path.points.numElem());
 			debugoverlay->TextFadeOut(0, color4_white, 10.0f, "nextPathUpdateTime: %g", m_targInfo.nextPathUpdateTime);
 		}
 
-		if( pathCompletionPercentage > 0.1f || m_targInfo.nextPathUpdateTime <= 0.0f)
+		if( m_targInfo.nextPathUpdateTime <= 0.0f)
 		{
-			pathFindResult_t newPath;
-			if( g_pGameWorld->m_level.Nav_FindPath(targetPos, carPos, newPath, 1024, true))
+			Vector3D searchStart(carPos);
+
+			int trials = m_targInfo.searchFails;
+
+			if(m_targInfo.searchFails > 0)
 			{
-				m_targInfo.path = newPath;
-				m_targInfo.pathTargetIdx = 0;
-				m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
+				searchStart = m_targInfo.lastSuccessfulSearchPos;
+			}
 
-				if(ai_debug_pursuer_nav.GetBool())
-				{
-					Vector3D lastLinePos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[0]);
+			pathFindResult_t newPath;
+			if( g_pGameWorld->m_level.Nav_FindPath(targetPos, searchStart, newPath, 1024, false))
+			{
+				SetPath(newPath, carPos);
+			}
+			else
+			{
+				m_targInfo.searchFails++;
 
-					for (int i = 1; i < m_targInfo.path.points.numElem(); i++)
-					{
-						Vector3D pointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[i]);
+				if(m_targInfo.searchFails > 1)
+					m_targInfo.searchFails = 0;
 
-						debugoverlay->Box3D(pointPos - 0.15f, pointPos + 0.15f, ColorRGBA(1, 1, 0, 1.0f), AI_COP_TIME_TO_UPDATE_PATH);
-						debugoverlay->Line3D(lastLinePos, pointPos, ColorRGBA(1, 1, 0, 1), ColorRGBA(1, 1, 0, 1), AI_COP_TIME_TO_UPDATE_PATH);
+				//debugoverlay->Box3D(m_targInfo.lastSuccessfulSearchPos-1.0f,m_targInfo.lastSuccessfulSearchPos+1.0f, color4_white, 1.0f);
 
-						lastLinePos = pointPos;
-					}
-				}
+				m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH_FORCE;
 			}
 
 			if(ai_debug_pursuer_nav.GetBool())
-				debugoverlay->TextFadeOut(0, color4_white, 10.0f, "path search result: %d", newPath.points.numElem() > 1);
+				debugoverlay->TextFadeOut(0, color4_white, 10.0f, "path search result: %d points, tries: %d", newPath.points.numElem(), trials);
 		}
 	}
 	else
-	{
-		// cancel the path by setting target index to the last
-		m_targInfo.pathTargetIdx = m_targInfo.path.points.numElem()-1;
-	}
+		m_targInfo.pathTargetIdx = -1;
 
 	//
 	// Introduce steering target and brake position
@@ -1171,6 +1223,9 @@ void CAIPursuerCar::SetPursuitTarget(CCar* obj)
 	m_targInfo.pathTargetIdx = -1;
 	m_targInfo.nextCheckImpactTime = AI_COP_COLLISION_CHECKTIME;
 	m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
+
+	m_targInfo.lastSuccessfulSearchPos = GetOrigin();
+	m_targInfo.searchFails = 0;
 
 	if(obj)
 		m_targInfo.isAngry = (obj->GetFelony() > 0.6f) || m_type == PURSUER_TYPE_GANG;

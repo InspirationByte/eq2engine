@@ -1087,7 +1087,7 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	m_fogEnvMap = g_pShaderAPI->CreateTexture(fogEnvMapImg, sampler);
 	m_fogEnvMap->Ref_Grab();
 
-	//g_pShaderAPI->FreeTexture( tempRenderTarget );
+	g_pShaderAPI->FreeTexture( tempRenderTarget );
 }
 
 const float g_visualWetnessTable[WEATHER_COUNT] =

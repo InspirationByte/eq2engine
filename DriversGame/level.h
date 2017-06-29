@@ -147,7 +147,11 @@ public:
 	float							Nav_TestLine2D(const IVector2D& start, const IVector2D& end, bool obstacles = false);
 
 	navcell_t&						Nav_GetCellStateAtGlobalPoint(const IVector2D& point);
+
 	ubyte&							Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacles = false);
+	ubyte&							Nav_GetTileAtPosition(const Vector3D& position, bool obstacles = false);
+
+	navcell_t&							Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, ubyte& tile);
 
 	//----------------------------------
 

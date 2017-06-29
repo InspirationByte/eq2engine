@@ -33,8 +33,9 @@ enum EInfractionType
 	INFRACTION_HIT_VEHICLE,		// hit the vehicle
 };
 
-const float AI_COPVIEW_FAR			= 60.0f;
-const float AI_COPVIEW_FAR_WANTED	= 100.0f;
+const float AI_COPVIEW_FAR					= 60.0f;
+const float AI_COPVIEW_FAR_WANTED			= 100.0f;
+const float AI_COPVIEW_FAR_HASSTRAIGHTPATH	= 40.0f;
 
 class CAIPursuerCar : public CAITrafficCar
 {
@@ -76,7 +77,9 @@ protected:
 	bool				Speak( const char* soundName, bool force = false );
 	void				TrySayTaunt();
 
-	Vector3D			GetAdvancedPointByDist(int& startSeg, float distFromSegment);
+	void				SetPath(pathFindResult_t& path, const Vector3D& searchPos);
+
+	Vector3D 			GetAdvancedPointByDist(int& startSeg, float distFromSegment);
 
 	// states
 	int					TrafficDrive( float fDt, EStateTransition transition );
@@ -92,6 +95,9 @@ protected:
 		CCar*				target;
 		int					direction;	// swne
 		float				notSeeingTime;
+
+		Vector3D			lastSuccessfulSearchPos;
+		int					searchFails;
 
 		pathFindResult_t	path;
 		int					pathTargetIdx;

@@ -212,6 +212,7 @@ struct vehicleConfig_t
 		Vector4D					backDimLights;
 		Vector3D					enginePosition;
 		Vector3D					exhaustPosition;
+		Vector3D					driverPosition;
 
 		int8						sirenType;
 		int8						headlightType;
@@ -528,6 +529,8 @@ protected:
 	// realtime values
 	//
 
+	CGameObject				m_driverModel;
+
 	CCarWheel*				m_wheels;
 
 	carBodyPart_t			m_bodyParts[CB_PART_WINDOW_PARTS];
@@ -599,6 +602,8 @@ protected:
 	CNetworkVar(bool,		m_enabled);
 	CNetworkVar(bool,		m_autohandbrake);
 	CNetworkVar(bool,		m_inWater);
+
+	CNetworkVar(bool,		m_hasDriver);
 
 #ifndef NO_LUA
 	EqLua::LuaTableFuncRef	m_luaOnCollision;

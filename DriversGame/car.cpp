@@ -263,6 +263,8 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 
 		conf->visual.exhaustPosition = KV_GetVector3D(visuals->FindKeyBase("exhaust"), 0, vec3_zero);
 		conf->visual.exhaustDir = KV_GetValueInt(visuals->FindKeyBase("exhaust"), 3, -1);
+
+		conf->visual.driverPosition = KV_GetVector3D(visuals->FindKeyBase("driver"), 0, vec3_zero);
 	}
 
 	kvkeybase_t* colors = kvs->FindKeyBase("colors");
@@ -601,6 +603,7 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_locked(false),
 	m_enabled(true),
 	m_inWater(false),
+	m_hasDriver(false),
 	m_autohandbrake(true),
 	m_torqueScale(1.0f),
 	m_maxSpeed(125.0f),
@@ -652,6 +655,7 @@ void CCar::Precache()
 	PrecacheScriptSound("generic.wheelOnGround");
 	PrecacheScriptSound("generic.waterHit");
 
+	PrecacheStudioModel("models/characters/driver_bust.egf");
 }
 
 void CCar::CreateCarPhysics()
@@ -877,6 +881,20 @@ void CCar::Spawn()
 	m_veh_shadow = g_vehicleEffects->FindEntry("carshad");
 
 	UpdateLightsState();
+
+	// init driver model and instancer for it
+	m_driverModel.SetModel("models/characters/driver_bust.egf");
+
+	if(g_pShaderAPI->GetCaps().isInstancingSupported &&
+		m_driverModel.GetModel() && m_driverModel.GetModel()->GetInstancer() == NULL)
+	{
+		CGameObjectInstancer* instancer = new CGameObjectInstancer();
+
+		// init with this preallocated buffer and format
+		instancer->Init( g_pGameWorld->m_objectInstVertexFormat, g_pGameWorld->m_objectInstVertexBuffer );
+
+		m_driverModel.GetModel()->SetInstancer( instancer );
+	}
 }
 
 void CCar::AlignToGround()
@@ -1074,6 +1092,9 @@ void CCar::SetControlButtons(int flags)
 	flags &= ~IN_MISC;
 
 	m_controlButtons = flags;
+
+	// make car automatically has driver
+	m_hasDriver = true;
 }
 
 int	CCar::GetControlButtons()
@@ -3933,7 +3954,15 @@ void CCar::Draw( int nRenderFlags )
 	}
 
 	if(!(nRenderFlags & RFLAG_SHADOW))
+	{
 		DrawEffects( nLOD );
+
+		if(m_hasDriver && nLOD == 0)
+		{
+			m_driverModel.m_worldMatrix = m_worldMatrix * translate(m_conf->visual.driverPosition);
+			m_driverModel.Draw( nRenderFlags );
+		}
+	}
 
 	if (bDraw)
 	{
