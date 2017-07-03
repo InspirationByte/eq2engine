@@ -119,7 +119,7 @@ public:
 	int								GetNumLanesAtPoint( const IVector2D& point, int numIterations = 8 );			// calculates lane count from lane at global tile 2D point
 	int								GetNumLanesAtPos( const Vector3D& pos, int numIterations = 8 );					// calculates lane count from lane at 3D position
 
-	int								GetRoadWidthInLanesAtPoint( const IVector2D& point, int numIterations = 16 );	// calculates road width in lanes from road at global tile 2D point
+	int								GetRoadWidthInLanesAtPoint( const IVector2D& point, int numIterations = 16, int iterationsOnEmpty = 0 );	// calculates road width in lanes from road at global tile 2D point
 	int								GetRoadWidthInLanesAtPos( const Vector3D& pos, int numIterations = 16 );		// calculates road width in lanes from road at 3D position
 
 	bool							FindBestRoadCellForTrafficLight( IVector2D& out, const Vector3D& origin, int trafficDir, int juncIterations = 16 );

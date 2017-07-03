@@ -559,15 +559,20 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 	int radius = g_traffic_mindist.GetInt();
 
 	IVector2D carDir = GetDirectionVec(targetDir);
-
 	IVector2D placementVec = playerCarCell - carDir*radius;
-	IVector2D perpendicular = GetDirectionVec(targetDir+1);
+
+	levroadcell_t* startCellPlacement = g_pGameWorld->m_level.GetGlobalRoadTileAt(placementVec);
+
+	if(!startCellPlacement || (startCellPlacement && !(startCellPlacement->type == ERoadType::ROADTYPE_STRAIGHT || startCellPlacement->type == ERoadType::ROADTYPE_PARKINGLOT)))
+		return false;
+
+	IVector2D perpendicular = GetDirectionVec(startCellPlacement->direction-1);
 
 	int curLane = g_pGameWorld->m_level.GetLaneIndexAtPoint(placementVec, 16)-1;
 
 	placementVec -= perpendicular*curLane;
 
-	int numLanes = g_pGameWorld->m_level.GetRoadWidthInLanesAtPoint(placementVec, 32);
+	int numLanes = g_pGameWorld->m_level.GetRoadWidthInLanesAtPoint(placementVec, 32, 1);
 
 	int nCars = 0;
 
@@ -603,12 +608,12 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 		Vector3D gPos = g_pGameWorld->m_level.GlobalTilePointToPosition(blockPoint);
 
 		debugoverlay->Box3D(gPos-0.5f, gPos+0.5f, ColorRGBA(1,1,0,0.5f), 1000.0f);
-
+		/*
 		if (roadCell->type != ROADTYPE_STRAIGHT)
 		{
-			MsgError( "Can't spawn whene no straight road (%d)\n", roadCell->type);
+			MsgError( "Can't spawn where no straight road (%d)\n", roadCell->type);
 			continue;
-		}
+		}*/
 
 		CAIPursuerCar* copBlockCar = new CAIPursuerCar(conf, PURSUER_TYPE_COP);
 

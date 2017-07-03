@@ -1181,7 +1181,7 @@ int	CGameLevel::GetLaneIndexAtPos( const Vector3D& pos, int numIterations)
 	return GetLaneIndexAtPoint(globPos, numIterations);
 }
 
-int	CGameLevel::GetRoadWidthInLanesAtPoint( const IVector2D& point, int numIterations )
+int	CGameLevel::GetRoadWidthInLanesAtPoint( const IVector2D& point, int numIterations, int iterationsOnEmpty )
 {
 	CLevelRegion* pRegion = NULL;
 
@@ -1226,7 +1226,17 @@ int	CGameLevel::GetRoadWidthInLanesAtPoint( const IVector2D& point, int numItera
 
 			if(	roadCell.type != ROADTYPE_STRAIGHT &&
 				roadCell.type != ROADTYPE_PARKINGLOT )
-				break;
+			{
+				iterationsOnEmpty--;
+
+				if(iterationsOnEmpty >= 0)
+				{
+					nLanes++;
+					continue;
+				}
+				else
+					break;
+			}
 
 			// only parallels
 			if( (roadCell.direction % 2) != (laneDir % 2))

@@ -105,6 +105,7 @@ protected:
 		float				nextPathUpdateTime;
 		float				nextCheckImpactTime;
 		int					lastInfraction;
+
 		bool				isAngry;
 	};
 
@@ -117,7 +118,7 @@ protected:
 	bool					m_isColliding;
 	Vector3D				m_lastCollidingPosition;
 
-	ISoundController*		m_taunts;
+	ISoundController*		m_loudhailer;
 };
 
 #ifndef NO_LUA
