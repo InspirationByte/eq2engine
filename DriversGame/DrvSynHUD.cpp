@@ -303,7 +303,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 							if( (obj.flags & HUD_DOBJ_CAR_DAMAGE) )
 							{
-								Rectangle_t targetDamageRect(-40, 0, 40, 8 );
+								Rectangle_t targetDamageRect(-10, 0, 10, 4 );
 
 								targetDamageRect.vleftTop += screenPos.xy();
 								targetDamageRect.vrightBottom += screenPos.xy();

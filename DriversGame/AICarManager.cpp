@@ -51,6 +51,7 @@ CAICarManager::CAICarManager()
 
 	m_copMaxDamage = COP_DEFAULT_DAMAGE;
 	m_copAccelerationModifier = 1.0f;
+	m_copMaxSpeed = 160.0f;
 
 	m_numMaxCops = 2;
 	m_copRespawnInterval = 20;	// spawn on every 20th traffic car
@@ -146,9 +147,14 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 
 	Vector3D newSpawnPos = g_pGameWorld->m_level.GlobalTilePointToPosition(globalCell);
 
-	// if velocity is negative to new spawn origin, cancel spawning
-	if( dot(newSpawnPos-m_leadPosition, m_leadVelocity) < 0 )
-		return NULL;
+	float velocity = length(m_leadVelocity.xz());
+
+	if(velocity > 3.0f)
+	{
+		// if velocity is negative to new spawn origin, cancel spawning
+		if( dot(newSpawnPos.xz()-m_leadPosition.xz(), m_leadVelocity.xz()) < 0 )
+			return NULL;
+	}
 
 	// if this is a parking straight, the cars might start here stopped or even empty
 	bool isParkingStraight = (roadCell->flags & ROAD_FLAG_PARKING) > 0;
@@ -220,6 +226,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 		CAIPursuerCar* pCopCar = new CAIPursuerCar(conf, PURSUER_TYPE_COP);
 		pCopCar->SetTorqueScale(m_copAccelerationModifier);
 		pCopCar->SetMaxDamage(m_copMaxDamage);
+		pCopCar->SetMaxSpeed(m_copMaxSpeed);
 		
 		pNewCar = pCopCar;
 
@@ -751,6 +758,17 @@ float CAICarManager::GetCopMaxDamage() const
 	return m_copMaxDamage;
 }
 
+// sets the maximum hitpoints for cop cars
+void CAICarManager::SetCopMaxSpeed(float maxSpeed)
+{
+	m_copMaxSpeed = maxSpeed;
+}
+					
+float CAICarManager::GetCopMaxSpeed() const
+{
+	return m_copMaxSpeed;
+}
+
 // sets cop car configuration
 void CAICarManager::SetCopCarConfig(const char* car_name, int type )
 {
@@ -796,6 +814,7 @@ OOLUA_EXPORT_FUNCTIONS(
 	SetCopCarConfig,
 	SetCopMaxDamage,
 	SetCopAccelerationModifier,
+	SetCopMaxSpeed,
 	SetMaxCops,
 	SetCopRespawnInterval,
 	MakeCopSpeech,
@@ -810,6 +829,7 @@ OOLUA_EXPORT_FUNCTIONS_CONST(
 	IsCopsEnabled,
 	GetCopMaxDamage,
 	GetCopAccelerationModifier,
+	GetCopMaxSpeed,
 	GetMaxCops,
 	GetCopRespawnInterval,
 	IsRoadBlockSpawn

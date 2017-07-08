@@ -271,17 +271,12 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 			m_thinkTime = m_refreshTime;
 		}
 
-		if(m_straights[STRAIGHT_CURRENT].direction != -1)
+		if(m_straights[STRAIGHT_CURRENT].direction == -1)
 		{
-			//Vector3D start = g_pGameWorld->m_level.GlobalTilePointToPosition( m_straights[STRAIGHT_CURRENT].start );
-			//Vector3D target = g_pGameWorld->m_level.GlobalTilePointToPosition( m_straights[STRAIGHT_CURRENT].end );
-
-			//debugoverlay->Box3D(start-1.5f, start+1.5f, ColorRGBA(1,0,1,0.25f));
-			//debugoverlay->Box3D(target-1.5f, target+1.5f, ColorRGBA(0,1,1,0.25f));
-		}
-		else if(FSMGetCurrentState() == &CAITrafficCar::TrafficDrive)
-		{
-			AI_SetState( &CAITrafficCar::SearchForRoad );
+			if(FSMGetCurrentState() == &CAITrafficCar::TrafficDrive)
+			{
+				AI_SetState( &CAITrafficCar::SearchForRoad );
+			}
 		}
 
 		int controls = m_controlButtons;
@@ -395,16 +390,13 @@ int	CAITrafficCar::SearchForRoad(float fDt, EStateTransition transition)
 	// calc steering dir
 	straight_t road = g_pGameWorld->m_level.GetStraightAtPos(carPos, 32);
 
-	if( m_straights[STRAIGHT_CURRENT].direction == -1 )
+	if(road.direction != -1)
 	{
-		if(road.direction != -1)
-		{
-			road.lane = g_pGameWorld->m_level.GetLaneIndexAtPoint(road.start);
+		road.lane = g_pGameWorld->m_level.GetLaneIndexAtPoint(road.start);
 
-			ChangeRoad( road );
+		ChangeRoad( road );
 
-			AI_SetState( &CAITrafficCar::TrafficDrive );
-		}
+		AI_SetState( &CAITrafficCar::TrafficDrive );
 	}
 
 	SetControlButtons( 0 );

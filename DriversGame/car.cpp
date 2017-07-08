@@ -2944,230 +2944,267 @@ void CCar::Simulate( float fDt )
 	}
 }
 
+void CCar::AddWheelWaterTrail(const CCarWheel& wheel, const carWheelConfig_t& wheelConf,
+						const Vector3D& skidmarkPos, 
+						const PFXVertexPair_t& skidmarkPair, 
+						const Rectangle_t& trailCoords, 
+						const ColorRGB& ambientAndSun, 
+						float skidPitchVel,
+						const Vector3D& wheelDir,
+						const Vector3D& wheelRightDir)
+{
+	PFXVertexPair_t* trailPair;
+
+	// begin horizontal
+	if(g_vehicleEffects->AllocateGeom(4,4, (PFXVertex_t**)&trailPair, NULL, true) == -1)
+		return;
+
+	float wheelTrailFac = pow(fabs(skidPitchVel) - 2.0f, 0.5f);
+
+	trailPair[0] = skidmarkPair;
+
+	trailPair[0].v0.color = ColorRGBA(ambientAndSun,1.0f);
+	trailPair[0].v1.color = ColorRGBA(ambientAndSun,1.0f);
+
+	trailPair[1].v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.75f, vec2_zero, ColorRGBA(ambientAndSun,0.0f));
+	trailPair[1].v1 = PFXVertex_t(skidmarkPos + wheelRightDir*wheelConf.width*0.75f, vec2_zero, ColorRGBA(ambientAndSun,0.0f));
+
+	// calculate trail velocity
+	Vector3D velVecOffs = wheelDir * wheelTrailFac*0.25f;
+
+	trailPair[1].v0.point -= velVecOffs;
+	trailPair[1].v1.point -= velVecOffs;
+
+	Rectangle_t rect(trailCoords.GetTopVertical(0.25f));
+
+	// animate the texture coordinates
+	Vector2D offset(0, fabs(triangleWave(wheel.m_pitch))*rect.GetSize().y*3.0f);
+
+	trailPair[0].v0.texcoord = rect.GetLeftTop() + offset;
+	trailPair[0].v1.texcoord = rect.GetRightTop() + offset;
+
+	trailPair[1].v0.texcoord = rect.GetLeftBottom() + offset;
+	trailPair[1].v1.texcoord = rect.GetRightBottom() + offset;
+
+	// begin vertical
+	if(g_vehicleEffects->AllocateGeom(4,4, (PFXVertex_t**)&trailPair, NULL, true) == -1)
+		return;
+
+	rect = rect.GetLeftHorizontal(0.35f);
+
+	trailPair[0].v0 = PFXVertex_t(skidmarkPos + vec3_up*wheelConf.radius*0.5f, vec2_zero, ColorRGBA(ambientAndSun,1.0f));
+	trailPair[0].v1 = PFXVertex_t(skidmarkPos, vec2_zero, ColorRGBA(ambientAndSun,1.0f));
+	trailPair[1].v0 = PFXVertex_t(skidmarkPos + vec3_up*wheelConf.radius*0.5f, vec2_zero, ColorRGBA(ambientAndSun,0.0f));
+	trailPair[1].v1 = PFXVertex_t(skidmarkPos, vec2_zero, ColorRGBA(ambientAndSun,0.0f));
+
+	trailPair[1].v0.point -= velVecOffs;
+	trailPair[1].v1.point -= velVecOffs;
+
+	trailPair[0].v0.texcoord = rect.GetLeftTop() + offset;
+	trailPair[0].v1.texcoord = rect.GetRightTop() + offset;
+	trailPair[1].v0.texcoord = rect.GetLeftBottom() + offset;
+	trailPair[1].v1.texcoord = rect.GetRightBottom() + offset;
+}
+
+void CCar::DrawWheelEffects(int wheelIdx, int lod, bool drawSkidMarks)
+{
+	CCarWheel& wheel = m_wheels[wheelIdx];
+	carWheelConfig_t& wheelConf = m_conf->physics.wheels[wheelIdx];
+
+	if(!wheel.m_flags.onGround)
+	{
+		if(!wheel.m_flags.doSkidmarks)
+			wheel.m_flags.lastDoSkidmarks = wheel.m_flags.doSkidmarks;
+
+		return;
+	}
+
+	ColorRGB ambientAndSun = g_pGameWorld->m_info.rainBrightness;
+
+	Matrix3x3 wheelMat = transpose(m_worldMatrix.getRotationComponent() * wheel.m_wheelOrient);
+
+	Vector3D velAtWheel = wheel.m_velocityVec;
+	velAtWheel.y = 0.0f;
+
+	Vector3D wheelDir = fastNormalize(velAtWheel);
+	Vector3D wheelRightDir = cross(wheelDir, wheel.m_collisionInfo.normal);
+
+	Vector3D skidmarkPos = ( wheel.m_collisionInfo.position - wheelMat.rows[0]*wheelConf.width*sign(wheelConf.suspensionTop.x)*0.5f ) + wheelDir*0.05f;
+	skidmarkPos += velAtWheel*0.0065f + wheel.m_collisionInfo.normal*0.015f;
+
+	PFXVertexPair_t skidmarkPair;
+	skidmarkPair.v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
+	skidmarkPair.v1 = PFXVertex_t(skidmarkPos + wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
+
+	float tractionSlide = GetTractionSlidingAtWheel(wheelIdx);
+	float lateralSlide = GetLateralSlidingAtWheel(wheelIdx);
+
+	if(lod == 0 && g_pGameWorld->m_envConfig.weatherType > WEATHER_TYPE_CLEAR)
+	{
+		// make some trails on wet surfaces
+		if(	wheel.m_surfparam != NULL && wheel.m_surfparam->word == 'C')
+		{
+			float skidPitchVel = length(velAtWheel)*1.5f;
+
+			if(skidPitchVel > 2.0f )
+			{
+				AddWheelWaterTrail(	wheel, wheelConf, 
+									skidmarkPos, 
+									skidmarkPair, 
+									m_veh_raintrail->rect,
+									ambientAndSun,
+									skidPitchVel,
+									wheelDir,
+									wheelRightDir);
+			}
+			
+			if(fabs(tractionSlide*wheel.m_pitchVel) > skidPitchVel)
+			{
+				Vector3D wheelTractionDir = wheelMat.rows[2];
+				Vector3D wheelTractionRightDir = cross(wheelTractionDir, wheel.m_collisionInfo.normal);
+
+				AddWheelWaterTrail(	wheel, wheelConf, 
+									skidmarkPos, 
+									skidmarkPair, 
+									m_veh_raintrail->rect,
+									ambientAndSun,
+									tractionSlide*0.5f,
+									wheelTractionDir,
+									wheelTractionRightDir);
+			}
+
+		}
+	}
+
+	if( drawSkidMarks )
+	{
+		if(!wheel.m_flags.doSkidmarks)
+		{
+			wheel.m_flags.lastDoSkidmarks = wheel.m_flags.doSkidmarks;
+			return;
+		}
+
+		// remove skidmarks
+		if(wheel.m_skidMarks.numElem() > SKIDMARK_MAX_LENGTH)
+			wheel.m_skidMarks.removeIndex(0); // this is slow
+
+		if(!wheel.m_flags.lastDoSkidmarks && wheel.m_flags.doSkidmarks && (wheel.m_skidMarks.numElem() > 0))
+		{
+			int nLast = wheel.m_skidMarks.numElem()-1;
+
+			if(wheel.m_skidMarks[nLast].v0.color.x < -10.0f && nLast > 0 )
+				nLast -= 1;
+
+			PFXVertexPair_t lastPair = wheel.m_skidMarks[nLast];
+			lastPair.v0.color.x = -100.0f;
+
+			wheel.m_skidMarks.append(lastPair);
+		}
+
+		float fSkid = (tractionSlide+fabs(lateralSlide))*0.15f - 0.45f;
+
+		if( fSkid > 0.0f )
+		{
+			float fAlpha = clamp(0.32f*fSkid, 0.0f, 0.32f);
+
+			skidmarkPair.v0.color.w = fAlpha;
+			skidmarkPair.v1.color.w = fAlpha;
+
+			int numMarkVertexPairs = wheel.m_skidMarks.numElem();
+
+			if( wheel.m_skidMarks.numElem() > 1 )
+			{
+				float pointDist = length(wheel.m_skidMarks[numMarkVertexPairs - 2].v0.point-skidmarkPair.v0.point);
+
+				if( pointDist > SKIDMARK_MIN_INTERVAL )
+				{
+					wheel.m_skidMarks.append(skidmarkPair);
+				}
+				else if(wheel.m_skidMarks.numElem() > 2 &&
+						wheel.m_skidMarks[wheel.m_skidMarks.numElem()-1].v0.color.x >= 0.0f)
+				{
+					wheel.m_skidMarks[wheel.m_skidMarks.numElem()-1] = skidmarkPair;
+				}
+			}
+			else
+				wheel.m_skidMarks.append(skidmarkPair);
+		}
+
+		wheel.m_flags.lastDoSkidmarks = wheel.m_flags.doSkidmarks;
+	}
+}
+
+void  CCar::DrawSkidmarkTrails(int wheelIdx)
+{
+	CCarWheel& wheel = m_wheels[wheelIdx];
+	TexAtlasEntry_t* skidmarkEntry = m_veh_skidmark_asphalt;
+
+	//
+	// add skidmark particle strips to the renderer
+	//
+	int numSkidMarks = 0;
+	int nStartMark = 0;
+
+	int vtxCounter = 0;
+
+	for(int mark = 0; mark < wheel.m_skidMarks.numElem(); mark++)
+	{
+		PFXVertexPair_t& pair = wheel.m_skidMarks[mark];
+
+		Vector2D coordV0 = (vtxCounter & 1) ? skidmarkEntry->rect.GetLeftBottom() : skidmarkEntry->rect.GetLeftTop();
+		Vector2D coordV1 = (vtxCounter & 1) ? skidmarkEntry->rect.GetRightBottom() : skidmarkEntry->rect.GetRightTop();
+
+		pair.v0.texcoord = coordV0;
+		pair.v1.texcoord = coordV1;
+
+		vtxCounter++;
+
+		if(pair.v0.color.x < -10.0f)
+		{
+			// make them smooth
+			wheel.m_skidMarks[nStartMark].v0.color.w = 0.0f;
+			wheel.m_skidMarks[nStartMark].v1.color.w = 0.0f;
+
+			//pair.v0.color.w = 0.0f;
+			//pair.v1.color.w = 0.0f;
+
+			numSkidMarks = mark-nStartMark;
+
+			g_vehicleEffects->AddParticleStrip(&wheel.m_skidMarks[nStartMark].v0, numSkidMarks*2);
+
+			nStartMark = mark+1;
+			vtxCounter = 0;
+		}
+
+		if(mark == wheel.m_skidMarks.numElem()-1 && nStartMark < wheel.m_skidMarks.numElem())
+		{
+			wheel.m_skidMarks[nStartMark].v0.color.w = 0.0f;
+			wheel.m_skidMarks[nStartMark].v1.color.w = 0.0f;
+
+			numSkidMarks = wheel.m_skidMarks.numElem()-nStartMark;
+
+			g_vehicleEffects->AddParticleStrip(&wheel.m_skidMarks[nStartMark].v0, numSkidMarks*2);
+
+			vtxCounter = 0;
+		}
+	}
+}
+
 void CCar::DrawEffects(int lod)
 {
 	bool drawOnLocal = m_isLocalCar && (r_drawSkidMarks.GetInt() != 0);
 	bool drawOnOther = !m_isLocalCar && (r_drawSkidMarks.GetInt() == 2);
 
-	ColorRGB ambientAndSund = g_pGameWorld->m_info.rainBrightness;
-	TexAtlasEntry_t* skidmarkEntry = m_veh_skidmark_asphalt;
+	bool doSkidMarks = drawOnLocal || drawOnOther;
 
 	int numWheels = GetWheelCount();
 
 	for(int i = 0; i < numWheels; i++)
 	{
-		CCarWheel& wheel = m_wheels[i];
-		carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
+		DrawWheelEffects(i, lod, doSkidMarks);
 
-		if(!wheel.m_flags.onGround)
-		{
-			if(!wheel.m_flags.doSkidmarks)
-				wheel.m_flags.lastDoSkidmarks = wheel.m_flags.doSkidmarks;
-
-			continue;
-		}
-
-		float minimumSkid = 0.05f;
-
-		Matrix3x3 wheelMat = transpose(m_worldMatrix.getRotationComponent() * wheel.m_wheelOrient);
-
-		Vector3D velAtWheel = wheel.m_velocityVec;
-		velAtWheel.y = 0.0f;
-
-		Vector3D wheelDir = fastNormalize(velAtWheel);
-		Vector3D wheelRightDir = cross(wheelDir, wheel.m_collisionInfo.normal);
-
-		Vector3D skidmarkPos = ( wheel.m_collisionInfo.position - wheelMat.rows[0]*wheelConf.width*sign(wheelConf.suspensionTop.x)*0.5f ) + wheelDir*0.05f;
-		skidmarkPos += velAtWheel*0.0065f + wheel.m_collisionInfo.normal*0.015f;
-
-		PFXVertexPair_t skidmarkPair;
-		skidmarkPair.v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
-		skidmarkPair.v1 = PFXVertex_t(skidmarkPos + wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
-
-		float tractionSlide = GetTractionSlidingAtWheel(i);
-		float lateralSlide = GetLateralSlidingAtWheel(i);
-
-		float fSkid = (tractionSlide+fabs(tractionSlide))*0.15f - minimumSkid;
-
-		float skidPitchVel = wheel.m_pitchVel + fSkid*2.0f;
-
-		// make some trails on wet surfaces
-		if(	lod == 0 && wheel.m_surfparam != NULL &&
-			wheel.m_surfparam->word == 'C' &&
-			g_pGameWorld->m_envConfig.weatherType > WEATHER_TYPE_CLEAR &&
-			fabs(skidPitchVel) > 2.0f )
-		{
-			minimumSkid = 0.45f;
-			float wheelTrailFac = pow(fabs(skidPitchVel) - 2.0f, 0.5f);
-
-			PFXVertexPair_t* trailPair;
-
-			// begin horizontal
-			if(g_vehicleEffects->AllocateGeom(4,4, (PFXVertex_t**)&trailPair, NULL, true) == -1)
-				continue;
-
-			trailPair[0] = skidmarkPair;
-
-			trailPair[0].v0.color = ColorRGBA(ambientAndSund,1.0f);
-			trailPair[0].v1.color = ColorRGBA(ambientAndSund,1.0f);
-
-			trailPair[1].v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.75f, vec2_zero, ColorRGBA(ambientAndSund,0.0f));
-			trailPair[1].v1 = PFXVertex_t(skidmarkPos + wheelRightDir*wheelConf.width*0.75f, vec2_zero, ColorRGBA(ambientAndSund,0.0f));
-
-			// calculate trail velocity
-			Vector3D velVecOffs = wheelDir * wheelTrailFac*0.25f;
-
-			trailPair[1].v0.point -= velVecOffs;
-			trailPair[1].v1.point -= velVecOffs;
-
-			Rectangle_t rect(m_veh_raintrail->rect.GetTopVertical(0.25f));
-
-			// animate the texture coordinates
-			Vector2D offset(0, fabs(triangleWave(wheel.m_pitch))*rect.GetSize().y*3.0f);
-
-			trailPair[0].v0.texcoord = rect.GetLeftTop() + offset;
-			trailPair[0].v1.texcoord = rect.GetRightTop() + offset;
-
-			trailPair[1].v0.texcoord = rect.GetLeftBottom() + offset;
-			trailPair[1].v1.texcoord = rect.GetRightBottom() + offset;
-
-			// begin vertical
-			if(g_vehicleEffects->AllocateGeom(4,4, (PFXVertex_t**)&trailPair, NULL, true) == -1)
-				continue;
-
-			rect = rect.GetLeftHorizontal(0.35f);
-
-			trailPair[0].v0 = PFXVertex_t(skidmarkPos + vec3_up*wheelConf.radius*0.5f, vec2_zero, ColorRGBA(ambientAndSund,1.0f));
-			trailPair[0].v1 = PFXVertex_t(skidmarkPos, vec2_zero, ColorRGBA(ambientAndSund,1.0f));
-			trailPair[1].v0 = PFXVertex_t(skidmarkPos + vec3_up*wheelConf.radius*0.5f, vec2_zero, ColorRGBA(ambientAndSund,0.0f));
-			trailPair[1].v1 = PFXVertex_t(skidmarkPos, vec2_zero, ColorRGBA(ambientAndSund,0.0f));
-
-			trailPair[1].v0.point -= velVecOffs;
-			trailPair[1].v1.point -= velVecOffs;
-
-			trailPair[0].v0.texcoord = rect.GetLeftTop() + offset;
-			trailPair[0].v1.texcoord = rect.GetRightTop() + offset;
-			trailPair[1].v0.texcoord = rect.GetLeftBottom() + offset;
-			trailPair[1].v1.texcoord = rect.GetRightBottom() + offset;
-		}
-
-		if( drawOnLocal || drawOnOther )
-		{
-			if(!wheel.m_flags.doSkidmarks)
-			{
-				wheel.m_flags.lastDoSkidmarks = wheel.m_flags.doSkidmarks;
-				continue;
-			}
-
-			// remove skidmarks
-			if(wheel.m_skidMarks.numElem() > SKIDMARK_MAX_LENGTH)
-				wheel.m_skidMarks.removeIndex(0); // this is slow
-
-			if(!wheel.m_flags.lastDoSkidmarks && wheel.m_flags.doSkidmarks && (wheel.m_skidMarks.numElem() > 0))
-			{
-				int nLast = wheel.m_skidMarks.numElem()-1;
-
-				if(wheel.m_skidMarks[nLast].v0.color.x < -10.0f && nLast > 0 )
-					nLast -= 1;
-
-				PFXVertexPair_t lastPair = wheel.m_skidMarks[nLast];
-				lastPair.v0.color.x = -100.0f;
-
-				wheel.m_skidMarks.append(lastPair);
-			}
-
-			float fSkid = (tractionSlide+fabs(lateralSlide))*0.15f - minimumSkid;
-
-			if( fSkid > 0.0f )
-			{
-				float fAlpha = clamp(0.32f*fSkid, 0.0f, 0.32f);
-
-				skidmarkPair.v0.color.w = fAlpha;
-				skidmarkPair.v1.color.w = fAlpha;
-
-				int numMarkVertexPairs = wheel.m_skidMarks.numElem();
-
-				if( wheel.m_skidMarks.numElem() > 1 )
-				{
-					float pointDist = length(wheel.m_skidMarks[numMarkVertexPairs - 2].v0.point-skidmarkPair.v0.point);
-
-					if( pointDist > SKIDMARK_MIN_INTERVAL )
-					{
-						wheel.m_skidMarks.append(skidmarkPair);
-					}
-					else if(wheel.m_skidMarks.numElem() > 2 &&
-							wheel.m_skidMarks[wheel.m_skidMarks.numElem()-1].v0.color.x >= 0.0f)
-					{
-						wheel.m_skidMarks[wheel.m_skidMarks.numElem()-1] = skidmarkPair;
-					}
-				}
-				else
-					wheel.m_skidMarks.append(skidmarkPair);
-			}
-
-			wheel.m_flags.lastDoSkidmarks = wheel.m_flags.doSkidmarks;
-		}
-	}
-
-	if( drawOnLocal || drawOnOther )
-	{
-		for(int i = 0; i < numWheels; i++)
-		{
-			CCarWheel& wheel = m_wheels[i];
-
-			// add skidmark particle strip
-			int numSkidMarks = 0;
-			int nStartMark = 0;
-
-			int vtxCounter = 0;
-
-			for(int mark = 0; mark < wheel.m_skidMarks.numElem(); mark++)
-			{
-				PFXVertexPair_t& pair = wheel.m_skidMarks[mark];
-
-				Vector2D coordV0 = (vtxCounter & 1) ? skidmarkEntry->rect.GetLeftBottom() : skidmarkEntry->rect.GetLeftTop();
-				Vector2D coordV1 = (vtxCounter & 1) ? skidmarkEntry->rect.GetRightBottom() : skidmarkEntry->rect.GetRightTop();
-
-				pair.v0.texcoord = coordV0;
-				pair.v1.texcoord = coordV1;
-
-				vtxCounter++;
-
-				if(pair.v0.color.x < -10.0f)
-				{
-					// make them smooth
-					wheel.m_skidMarks[nStartMark].v0.color.w = 0.0f;
-					wheel.m_skidMarks[nStartMark].v1.color.w = 0.0f;
-
-					//pair.v0.color.w = 0.0f;
-					//pair.v1.color.w = 0.0f;
-
-					numSkidMarks = mark-nStartMark;
-					//numSkidMarks = min(numSkidMarks, 4);
-
-					g_vehicleEffects->AddParticleStrip(&wheel.m_skidMarks[nStartMark].v0, numSkidMarks*2);
-
-					nStartMark = mark+1;
-					vtxCounter = 0;
-				}
-
-				if(mark == wheel.m_skidMarks.numElem()-1 && nStartMark < wheel.m_skidMarks.numElem())
-				{
-					wheel.m_skidMarks[nStartMark].v0.color.w = 0.0f;
-					wheel.m_skidMarks[nStartMark].v1.color.w = 0.0f;
-
-					//pair.v0.color.w = 0.0f;
-					//pair.v1.color.w = 0.0f;
-
-					numSkidMarks = wheel.m_skidMarks.numElem()-nStartMark;
-					//numSkidMarks = min(numSkidMarks, 4);
-
-					g_vehicleEffects->AddParticleStrip(&wheel.m_skidMarks[nStartMark].v0, numSkidMarks*2);
-
-					vtxCounter = 0;
-				}
-			}
-		}
+		if(doSkidMarks)
+			DrawSkidmarkTrails(i);
 	}
 }
 
@@ -3707,7 +3744,7 @@ float CCar::GetTractionSlidingAtWheel(int wheel) const
 	if(!m_wheels[wheel].m_flags.onGround)
 		return 0.0f;
 
-	return abs(GetSpeed() - abs(GetWheelSpeed(wheel))) + m_wheels[wheel].m_flags.isBurningOut*100.0f;
+	return abs(GetSpeed() - abs(GetWheelSpeed(wheel))) + m_wheels[wheel].m_flags.isBurningOut*m_conf->physics.burnoutMaxSpeed;
 }
 
 bool CCar::IsAnyWheelOnGround() const

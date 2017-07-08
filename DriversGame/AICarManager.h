@@ -111,6 +111,9 @@ public:
 	void						SetCopMaxDamage(float maxHitPoints);							// sets the maximum hitpoints for cop cars
 	float						GetCopMaxDamage() const;
 
+	void						SetCopMaxSpeed(float maxSpeed);							// sets the maximum hitpoints for cop cars
+	float						GetCopMaxSpeed() const;
+
 	bool						MakeCopSpeech(const char* soundScriptName, bool force);			// shedules a cop speech
 	bool						IsCopCanSayTaunt() const;
 
@@ -150,6 +153,7 @@ protected:
 
 	float						m_copMaxDamage;
 	float						m_copAccelerationModifier;
+	float						m_copMaxSpeed;
 
 	int							m_numMaxCops;
 
@@ -201,6 +205,9 @@ OOLUA_PROXY(CAICarManager)
 
 	OOLUA_MFUNC(SetCopAccelerationModifier)
 	OOLUA_MFUNC_CONST(GetCopAccelerationModifier)
+
+	OOLUA_MFUNC(SetCopMaxSpeed)
+	OOLUA_MFUNC_CONST(GetCopMaxSpeed)
 
 	OOLUA_MFUNC(SetMaxCops)
 	OOLUA_MFUNC_CONST(GetMaxCops)

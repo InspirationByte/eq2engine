@@ -19,6 +19,9 @@ ConVar ai_debug_pursuer("ai_debug_pursuer", "0", NULL, CV_CHEAT);
 
 #define DOVERLAY_DELAY (0.15f)
 
+const float AI_COP_BEGINPURSUIT_ARMED_DELAY		= 0.25f;
+const float AI_COP_BEGINPURSUIT_PASSIVE_DELAY	= 1.0f;
+
 const float AI_COPVIEW_FOV			= 85.0f;
 const float AI_COPVIEW_FOV_WANTED	= 90.0f;
 
@@ -53,9 +56,11 @@ const float AI_COP_TIME_TO_UPDATE_PATH_FORCE = 0.5f;
 
 const float AI_COP_BRAKEDISTANCE_SCALE = 8.0f;
 
-const float AI_COP_ANGRY_RAMMING_DISTANCE = 10.0f;
+const float AI_COP_ANGRY_RAMMING_DISTANCE = 5.0f;
 
 const float AI_MAX_DISTANCE_TO_PATH = 10.0f;
+
+const float AI_OSTACLE_STEERINGCORRECTION_DIST = 4.0f;
 
 // wheel friction modifier on diferrent weathers
 static float pursuerSpeedModifier[WEATHER_COUNT] =
@@ -164,7 +169,7 @@ void CAIPursuerCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 			(pair.impactVelocity > 1.0f) && hitBy == playerCar)
 		{
 			SetPursuitTarget(playerCar);
-			BeginPursuit();
+			BeginPursuit( AI_COP_BEGINPURSUIT_PASSIVE_DELAY );
 		}
 	}
 }
@@ -213,26 +218,32 @@ void CAIPursuerCar::OnPhysicsFrame( float fDt )
 {
 	BaseClass::OnPhysicsFrame(fDt);
 
-	// death by water?
-	if(!IsAlive() && m_inWater)
+	if(IsAlive())
 	{
-		EndPursuit(true);
-		AI_SetState( &CAIPursuerCar::DeadState );
+		// update blocking
+		m_isColliding = GetPhysicsBody()->m_collisionList.numElem() > 0;
+
+		if(m_isColliding)
+			m_lastCollidingPosition = GetPhysicsBody()->m_collisionList[0].position;
+
+		// update target infraction
+		if(m_targInfo.target)
+		{
+			int infraction = CheckTrafficInfraction(m_targInfo.target, false,false);
+
+			if(infraction > INFRACTION_HAS_FELONY)
+				m_targInfo.lastInfraction = infraction;
+		}
+		else // do passive state
+		{
+			PassiveCopState( fDt, STATE_TRANSITION_NONE );
+		}
 	}
-
-	m_isColliding = GetPhysicsBody()->m_collisionList.numElem() > 0;
-
-	if(m_isColliding)
-		m_lastCollidingPosition = GetPhysicsBody()->m_collisionList[0].position;
-
-	PassiveCopState( fDt, STATE_TRANSITION_NONE );
-
-	if(IsAlive() && m_targInfo.target)
+	else
 	{
-		int infraction = CheckTrafficInfraction(m_targInfo.target, false,false);
-
-		if(infraction > INFRACTION_HAS_FELONY)
-			m_targInfo.lastInfraction = infraction;
+		// death by water?
+		if(m_inWater)
+			EndPursuit(true);
 	}
 
 }
@@ -246,12 +257,11 @@ int	CAIPursuerCar::TrafficDrive( float fDt, EStateTransition transition )
 
 int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 {
+	// TODO: add other player cars, not just one
 	CCar* playerCar = g_pGameSession->GetPlayerCar();
 
 	// check infraction in visible range
-	if( m_targInfo.target == NULL &&
-		m_gameDamage < m_gameMaxDamage &&
-		CheckObjectVisibility(playerCar))
+	if( CheckObjectVisibility(playerCar) )
 	{
 		int infraction = CheckTrafficInfraction(playerCar);
 
@@ -265,7 +275,9 @@ int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 		}
 
 		SetPursuitTarget(playerCar);
-		BeginPursuit();
+
+		float delay = playerCar->GetFelony() > AI_COP_MINFELONY ? AI_COP_BEGINPURSUIT_ARMED_DELAY : AI_COP_BEGINPURSUIT_PASSIVE_DELAY;
+		BeginPursuit( delay );
 	}
 
 	return 0;
@@ -276,6 +288,12 @@ void CAIPursuerCar::BeginPursuit( float delay )
 	if (!m_targInfo.target)
 		return;
 
+	if(!IsAlive())
+	{
+		m_targInfo.target = NULL;
+		return;
+	}
+
 	AI_SetNextState(&CAIPursuerCar::PursueTarget, delay);
 }
 
@@ -284,19 +302,25 @@ void CAIPursuerCar::EndPursuit(bool death)
 	if (!m_targInfo.target)
 		return;
 
-	if (!death)
-	{
-		m_sirenEnabled = false;
-		SetLight(CAR_LIGHT_SERVICELIGHTS, false);
-	}
-
-	m_autohandbrake = false;
-
+	// HACK: just kill
 	if (GetCurrentStateType() != GAME_STATE_GAME)
 	{
 		m_targInfo.target = NULL;
 		return;
 	}
+
+	if (!death)
+	{
+		m_autohandbrake = false;
+		m_sirenEnabled = false;
+		SetLight(CAR_LIGHT_SERVICELIGHTS, false);
+
+		Msg("Make cop start seaching for road");
+		AI_SetState(&CAIPursuerCar::SearchForRoad);
+	}
+	else
+		AI_SetState( &CAIPursuerCar::DeadState );
+
 
 	if (g_pGameWorld->IsValidObject(m_targInfo.target))
 	{
@@ -309,8 +333,8 @@ void CAIPursuerCar::EndPursuit(bool death)
 		m_targInfo.target->DecrementPursue();
 
 		if (m_targInfo.target->GetPursuedCount() == 0 &&
-			g_pGameSession->GetPlayerCar() == m_targInfo.target &&
-			g_State_Game->IsGameRunning())	// only play sound when in game, not unloading or restaring
+			g_pGameSession->GetPlayerCar() == m_targInfo.target)	// only play sound when in game, not unloading or restaring
+			// g_State_Game->IsGameRunning())
 		{
 			Speak("cop.lost", true);
 		}
@@ -320,8 +344,6 @@ void CAIPursuerCar::EndPursuit(bool death)
 		m_loudhailer->Stop();
 
 	m_targInfo.target = NULL;
-
-	AI_SetState(&CAIPursuerCar::SearchForRoad);
 }
 
 bool CAIPursuerCar::InPursuit() const
@@ -334,14 +356,20 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 	if (!car)
 		return INFRACTION_NONE;
 
+	float carSpeed = car->GetSpeed();
+
 	// ho!
 	if (checkFelony && car->GetFelony() >= AI_COP_MINFELONY)
 		return INFRACTION_HAS_FELONY;
 
-	if (checkSpeeding && car->GetSpeed() > AI_COP_CHECK_MAXSPEED)
+	if (checkSpeeding && carSpeed > AI_COP_CHECK_MAXSPEED)
 		return INFRACTION_SPEEDING;
 
 	DkList<CollisionPairData_t>& collisionList = car->GetPhysicsBody()->m_collisionList;
+
+	// don't register other infractions if speed less than 5 km/h
+	if(carSpeed < 5.0f)
+		return INFRACTION_NONE;
 
 	// check collision
 	for(int i = 0; i < collisionList.numElem(); i++)
@@ -418,7 +446,8 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 		Vector3D	startPos = g_pGameWorld->m_level.GlobalTilePointToPosition(straight_checkRed.start);
 		Vector3D	endPos = g_pGameWorld->m_level.GlobalTilePointToPosition(straight_checkRed.end);
 
-		debugoverlay->Box3D(endPos - 2, endPos + Vector3D(2,100,2), ColorRGBA(1,1,0,1), 0.1f);
+		if(ai_debug_pursuer.GetBool())
+			debugoverlay->Box3D(endPos - 2, endPos + Vector3D(2,100,2), ColorRGBA(1,1,0,1), 0.1f);
 
 		Vector3D	roadDir = fastNormalize(startPos - endPos);
 
@@ -573,7 +602,9 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	{
 		m_gearboxShiftThreshold = 1.0f;
 
-		if(!IsAlive() || !g_pGameWorld->IsValidObject(m_targInfo.target))
+		bool targetIsValid = g_pGameWorld->IsValidObject(m_targInfo.target);
+
+		if(!targetIsValid)
 		{
 			AI_SetState(&CAIPursuerCar::SearchForRoad);
 			return 0;
@@ -581,6 +612,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 		m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
 
+		// reset the emergency lights
 		SetLight(CAR_LIGHT_EMERGENCY, false);
 
 		// restore collision
@@ -801,18 +833,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	// test for the straight path and visibility
 	if(distToPursueTarget < AI_COPVIEW_FAR_HASSTRAIGHTPATH)
 	{
-		// Trace convex car
-		CollisionData_t coll;
-
-		//Vector3D targetDir = normalize(m_targInfo.target->GetOrigin()-GetOrigin());
-
-		//Vector3D traceTarget = GetOrigin()+targetDir*min(distToPursueTarget, AI_COPVIEW_FAR_HASSTRAIGHTPATH);
-
-		// so the obstacle forces us to use NAV grid path
-		//g_pPhysics->TestConvexSweep(GetPhysicsBody()->GetBulletShape(), GetOrientation(), GetOrigin(), traceTarget, coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE, &collFilter);
-
-		//if(coll.fract < 1.0f)
-
 		float tracePercentage = g_pGameWorld->m_level.Nav_TestLine(GetOrigin(), m_targInfo.target->GetOrigin(), false);
 
 		if(ai_debug_pursuer_nav.GetBool())
@@ -922,8 +942,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	if(m_targInfo.isAngry)
 	{
 		// FIXME: should be this more careful and timed?
-		if(distToPursueTarget < AI_COP_ANGRY_RAMMING_DISTANCE)
-			brakeTargetPos = targetOrigin+targetVelocity*5.0f;
+		if(distToPursueTarget > AI_COP_ANGRY_RAMMING_DISTANCE)
+			brakeTargetPos = targetOrigin + targetVelocity*10.0f;
 	}
 
 	CollisionData_t velocityColl;
@@ -1015,7 +1035,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	
 	// get rid of obstacles by tracing sphere forwards
 	{
-		float traceShapeRadius = 2.0f + fSpeed*0.02f;
+		float traceShapeRadius = 1.0f + fSpeed*0.01f;
 
 		CollisionData_t steeringTargetColl;
 		btSphereShape sphereTraceShape(traceShapeRadius);
@@ -1031,9 +1051,16 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		// correct the steering to prevent car damage if we moving towards obstacle
 		if(steeringTargetColl.fract < 1.0f)
 		{
-			Vector3D newSteeringTargetPos = steeringTargetColl.position + steeringTargetColl.normal*3.0f; // 4 meters is enough to be safe
+			float distanceScale = (1.0f-steeringTargetColl.fract);
+
+			float newPositionDist = distanceScale * AI_OSTACLE_STEERINGCORRECTION_DIST + FPmath::abs(speedMPS)* distanceScale * 0.25f;
+
+			Vector3D newSteeringTargetPos = steeringTargetColl.position + steeringTargetColl.normal * newPositionDist; // 4 meters is enough to be safe
 		
-			if(dot(normalize(newSteeringTargetPos-carPos), normalize(carForwardDir)) > 0.5f)
+			Vector3D checkSteeringDir = fastNormalize(steeringTargetPos-steeringTargetPosB);
+
+			//if(dot(normalize(newSteeringTargetPos-carPos), normalize(carForwardDir)) > 0.5f)
+			if(fabs(dot(checkSteeringDir, carForwardDir)) > 0.5f)
 			{
 				steeringTargetPosB = carPos;
 				steeringTargetPos = newSteeringTargetPos;
@@ -1062,9 +1089,10 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	Matrix4x4 bodyMat;
 	GetPhysicsBody()->ConstructRenderMatrix( bodyMat );
 
-	Vector3D steerDir = fastNormalize((!bodyMat.getRotationComponent()) * fastNormalize(steeringTargetPos-steeringTargetPosB));
+	Vector3D steeringTargetDir = fastNormalize(steeringTargetPos-steeringTargetPosB);
+	Vector3D relateiveSteeringDir = fastNormalize((!bodyMat.getRotationComponent()) * steeringTargetDir);
 
-	FReal fSteerTarget = atan2(steerDir.x, steerDir.z);
+	FReal fSteerTarget = atan2(relateiveSteeringDir.x, relateiveSteeringDir.z);
 	FReal fSteeringAngle = clamp(fSteerTarget , FReal(-1.0f), FReal(1.0f)) * steeringSpeedFactor;
 
 	//if(lateralSlide < 1.0f)
@@ -1076,15 +1104,13 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	
 	if(lateralSlide > 4.0f && sign(lateralSlideSigned)+sign(fSteeringAngle) < 0.5f)
 	{
-		FReal lateralSlideSpeedSteerModifier = 1.0f - fabs(dot(steerDir, fastNormalize(carLinearVel)));
-		FReal lateralSlideCorrectionSpeedModifier = RemapValClamp(fSpeed, 0, 40, 0.0f, 1.0f);
-		//float lateralSlideSteerFactor = 1.0f - RemapValClamp(lateralSlide, 0.0f, 10.0f, 0.0f, 1.0f);
+		//FReal lateralSlideSpeedSteerModifier = 1.0f - fabs(dot(relateiveSteeringDir, fastNormalize(carLinearVel)));
+		//FReal lateralSlideCorrectionSpeedModifier = RemapValClamp(fSpeed, 0, 40, 0.0f, 1.0f);
 
-		fSteeringAngle *= lateralSlideSpeedSteerModifier * lateralSlideCorrectionSpeedModifier;
+		//fSteeringAngle *= lateralSlideSpeedSteerModifier * lateralSlideCorrectionSpeedModifier;
 		doesHardSteer = false;
 	}
 
-	Vector3D steeringTargetDir = fastNormalize(steeringTargetPos-steeringTargetPosB);
 	Vector3D velocityDir = fastNormalize(carLinearVel+carForwardDir);
 
 	FReal steeringToTargetDot = dot(steeringTargetDir, velocityDir);

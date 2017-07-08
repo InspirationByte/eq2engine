@@ -361,8 +361,6 @@ public:
 	CGameObject*			GetChildShadowCaster(int idx) const;
 	int						GetChildCasterCount() const;
 
-	void					DrawEffects( int lod );
-
 	void					AlignToGround();	// align car to ground
 
 	//-----------------------------------
@@ -513,6 +511,18 @@ protected:
 	bool					UpdateWaterState( float fDt, bool hasCollidedWater );
 
 	void					DrawBody( int nRenderFlags );
+	void					DrawEffects( int lod );
+	void					DrawWheelEffects(int wheelIdx, int lod, bool drawSkidMarks);
+	void					DrawSkidmarkTrails(int wheelIdx);
+
+	void					AddWheelWaterTrail(const CCarWheel& wheel, const carWheelConfig_t& wheelConf,
+												const Vector3D& skidmarkPos, 
+												const PFXVertexPair_t& skidmarkPair, 
+												const Rectangle_t& trailCoords, 
+												const ColorRGB& ambientAndSun, 
+												float skidPitchVel,
+												const Vector3D& wheelDir,
+												const Vector3D& wheelRightDir);
 
 	void					UpdateSounds( float fDt );
 	void					UpdateWheelEffect(int nWheel, float fDt);
