@@ -517,7 +517,6 @@ protected:
 
 	void					AddWheelWaterTrail(const CCarWheel& wheel, const carWheelConfig_t& wheelConf,
 												const Vector3D& skidmarkPos, 
-												const PFXVertexPair_t& skidmarkPair, 
 												const Rectangle_t& trailCoords, 
 												const ColorRGB& ambientAndSun, 
 												float skidPitchVel,

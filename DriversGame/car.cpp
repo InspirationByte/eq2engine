@@ -2946,7 +2946,6 @@ void CCar::Simulate( float fDt )
 
 void CCar::AddWheelWaterTrail(const CCarWheel& wheel, const carWheelConfig_t& wheelConf,
 						const Vector3D& skidmarkPos, 
-						const PFXVertexPair_t& skidmarkPair, 
 						const Rectangle_t& trailCoords, 
 						const ColorRGB& ambientAndSun, 
 						float skidPitchVel,
@@ -2958,6 +2957,10 @@ void CCar::AddWheelWaterTrail(const CCarWheel& wheel, const carWheelConfig_t& wh
 	// begin horizontal
 	if(g_vehicleEffects->AllocateGeom(4,4, (PFXVertex_t**)&trailPair, NULL, true) == -1)
 		return;
+
+	PFXVertexPair_t skidmarkPair;
+	skidmarkPair.v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
+	skidmarkPair.v1 = PFXVertex_t(skidmarkPos + wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
 
 	float wheelTrailFac = pow(fabs(skidPitchVel) - 2.0f, 0.5f);
 
@@ -3032,9 +3035,7 @@ void CCar::DrawWheelEffects(int wheelIdx, int lod, bool drawSkidMarks)
 	Vector3D skidmarkPos = ( wheel.m_collisionInfo.position - wheelMat.rows[0]*wheelConf.width*sign(wheelConf.suspensionTop.x)*0.5f ) + wheelDir*0.05f;
 	skidmarkPos += velAtWheel*0.0065f + wheel.m_collisionInfo.normal*0.015f;
 
-	PFXVertexPair_t skidmarkPair;
-	skidmarkPair.v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
-	skidmarkPair.v1 = PFXVertex_t(skidmarkPos + wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
+
 
 	float tractionSlide = GetTractionSlidingAtWheel(wheelIdx);
 	float lateralSlide = GetLateralSlidingAtWheel(wheelIdx);
@@ -3050,7 +3051,6 @@ void CCar::DrawWheelEffects(int wheelIdx, int lod, bool drawSkidMarks)
 			{
 				AddWheelWaterTrail(	wheel, wheelConf, 
 									skidmarkPos, 
-									skidmarkPair, 
 									m_veh_raintrail->rect,
 									ambientAndSun,
 									skidPitchVel,
@@ -3065,7 +3065,6 @@ void CCar::DrawWheelEffects(int wheelIdx, int lod, bool drawSkidMarks)
 
 				AddWheelWaterTrail(	wheel, wheelConf, 
 									skidmarkPos, 
-									skidmarkPair, 
 									m_veh_raintrail->rect,
 									ambientAndSun,
 									tractionSlide*0.5f,
@@ -3083,6 +3082,10 @@ void CCar::DrawWheelEffects(int wheelIdx, int lod, bool drawSkidMarks)
 			wheel.m_flags.lastDoSkidmarks = wheel.m_flags.doSkidmarks;
 			return;
 		}
+
+		PFXVertexPair_t skidmarkPair;
+		skidmarkPair.v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
+		skidmarkPair.v1 = PFXVertex_t(skidmarkPos + wheelRightDir*wheelConf.width*0.5f, vec2_zero, 0.0f);
 
 		// remove skidmarks
 		if(wheel.m_skidMarks.numElem() > SKIDMARK_MAX_LENGTH)
