@@ -1476,15 +1476,6 @@ void CUI_BuildingConstruct::CompleteBuilding()
 		return;
 	}
 
-	m_editingBuilding = NULL;
-
-	m_curLayerId = 0;
-	m_curSegmentScale = 1.0f;
-
-	m_mode = ED_BUILD_READY;
-
-	g_pMainFrame->NotifyUpdate();
-
 	if(m_isEditingNewBuilding)
 	{
 		CEditorLevelRegion* region = (CEditorLevelRegion*)g_pGameWorld->m_level.GetRegionAtPosition(m_editingBuilding->modelPosition);
@@ -1495,6 +1486,15 @@ void CUI_BuildingConstruct::CompleteBuilding()
 		// add building to the region
 		region->m_buildings.append( m_editingBuilding );
 	}
+
+	m_editingBuilding = NULL;
+
+	m_curLayerId = 0;
+	m_curSegmentScale = 1.0f;
+
+	m_mode = ED_BUILD_READY;
+
+	g_pMainFrame->NotifyUpdate();
 }
 
 void CUI_BuildingConstruct::DuplicateSelection()
