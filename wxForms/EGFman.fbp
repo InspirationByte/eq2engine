@@ -10,7 +10,7 @@
         <property name="disconnect_python_events">0</property>
         <property name="embedded_files_path">res</property>
         <property name="encoding">UTF-8</property>
-        <property name="event_generation">connect</property>
+        <property name="event_generation">table</property>
         <property name="file"></property>
         <property name="first_id">1000</property>
         <property name="help_provider">none</property>
@@ -494,7 +494,7 @@
                                                     <event name="OnChar"></event>
                                                     <event name="OnCheckListBox"></event>
                                                     <event name="OnCheckListBoxDClick"></event>
-                                                    <event name="OnCheckListBoxToggled"></event>
+                                                    <event name="OnCheckListBoxToggled">OnBodyGroupToggled</event>
                                                     <event name="OnEnterWindow"></event>
                                                     <event name="OnEraseBackground"></event>
                                                     <event name="OnKeyDown"></event>
