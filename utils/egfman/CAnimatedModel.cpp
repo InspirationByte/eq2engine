@@ -42,6 +42,8 @@ CAnimatedModel::CAnimatedModel()
 	m_pRagdoll = NULL;
 	m_pPhysicsObject = NULL;
 	m_bPhysicsEnable = false;
+
+	m_bodyGroupFlags = 0xFFFFFFF;
 }
 
 // sets model for this entity
@@ -1128,7 +1130,7 @@ void RenderPhysModel(IEqModel* pModel)
 
 
 // renders model
-void CAnimatedModel::Render(int nViewRenderFlags, float fDist)
+void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, bool overrideLod)
 {
 	if(!m_pModel)
 		return;
@@ -1169,11 +1171,17 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist)
 	materials->SetAmbientColor( color4_white );
 
 	int nStartLOD = m_pModel->SelectLod( fDist ); // lod distance check
+
+	if(!overrideLod)
+		nStartLOD += startLod;
+	else
+		nStartLOD = startLod;
+
 	for(int i = 0; i < pHdr->numbodygroups; i++)
 	{
 		// check bodygroups for rendering
-		//if(!(m_bodyGroupFlags & (1 << i)))
-		//	continue;
+		if(!(m_bodyGroupFlags & (1 << i)))
+			continue;
 
 		int bodyGroupLOD = nStartLOD;
 		int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;

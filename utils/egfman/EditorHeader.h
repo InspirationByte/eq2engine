@@ -46,6 +46,7 @@
 	#include "wx/pen.h"
 	#include "wx/brush.h"
 	#include "wx/dcclient.h"
+	#include "wx/checklst.h"
 #endif
 
 #include "wx/sysopt.h"

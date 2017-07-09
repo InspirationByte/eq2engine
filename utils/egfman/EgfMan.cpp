@@ -138,6 +138,7 @@ public:
 
 	void			OnComboboxChanged(wxCommandEvent& event);
 	void			OnButtons(wxCommandEvent& event);
+	void			OnBodyGroupToggled( wxCommandEvent& event );
 
 	void			RefreshGUI();
 
@@ -152,6 +153,12 @@ protected:
 	wxPanel*		m_pModelPanel;
 	wxPanel*		m_pMotionPanel;
 
+	// model tab
+	wxCheckListBox*	m_enabledBodyParts;
+	wxSpinCtrl*		m_lodSpin;
+	wxCheckBox*		m_lodOverride;
+
+	// motion tab
 	wxComboBox*		m_pMotionSelection;
 	wxTextCtrl*		m_pAnimFramerate;
 	wxSlider*		m_pTimeline;
@@ -195,9 +202,10 @@ BEGIN_EVENT_TABLE(CEGFViewFrame, wxFrame)
 	EVT_COMBOBOX(-1, OnComboboxChanged)
 	EVT_BUTTON(-1, OnButtons)
 	EVT_SLIDER(-1, OnButtons)
+	EVT_CHECKLISTBOX( -1, OnBodyGroupToggled )
 
-	EVT_MENU_RANGE(Event_File_OpenModel, Event_Max_Menu_Range, ProcessAllMenuCommands)
-
+	EVT_MENU_RANGE( Event_File_OpenModel, Event_Max_Menu_Range, ProcessAllMenuCommands)
+	
 	EVT_SIZE(OnSize)
 
 	/*
@@ -304,6 +312,35 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 	
 	m_notebook1 = new wxNotebook( this, wxID_ANY, wxDefaultPosition, wxSize( -1,180 ), wxNB_FIXEDWIDTH );
 	m_pModelPanel = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+
+	wxBoxSizer* bSizer4;
+	bSizer4 = new wxBoxSizer( wxVERTICAL );
+	
+	wxBoxSizer* bSizer5;
+	bSizer5 = new wxBoxSizer( wxHORIZONTAL );
+	
+	bSizer5->Add( new wxStaticText( m_pModelPanel, wxID_ANY, wxT("Body groups"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
+	
+	wxArrayString m_enabledBodyPartsChoices;
+	m_enabledBodyParts = new wxCheckListBox( m_pModelPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_enabledBodyPartsChoices, 0 );
+	bSizer5->Add( m_enabledBodyParts, 0, wxALL|wxEXPAND, 5 );
+	
+	bSizer5->Add( new wxStaticText( m_pModelPanel, wxID_ANY, wxT("LODs"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
+	
+	m_lodSpin = new wxSpinCtrl( m_pModelPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 10, 0 );
+	bSizer5->Add( m_lodSpin, 0, wxALL, 5 );
+	
+	m_lodOverride = new wxCheckBox( m_pModelPanel, wxID_ANY, wxT("override"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer5->Add( m_lodOverride, 0, wxALL, 5 );
+	
+	
+	bSizer4->Add( bSizer5, 1, wxEXPAND, 5 );
+	
+	
+	m_pModelPanel->SetSizer( bSizer4 );
+	m_pModelPanel->Layout();
+
+
 	m_notebook1->AddPage( m_pModelPanel, wxT("Model"), false );
 	m_pMotionPanel = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer3;
@@ -531,6 +568,7 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 
 	debugoverlay->Init();
 
+	// Connect Events
 	m_pRenderPanel->Connect(wxEVT_LEFT_DOWN, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, NULL, this);
 	m_pRenderPanel->Connect(wxEVT_LEFT_UP, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, NULL, this);
 	m_pRenderPanel->Connect(wxEVT_LEFT_DCLICK, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, NULL, this);
@@ -1159,7 +1197,20 @@ void CEGFViewFrame::ReDraw()
 		g_pModel->Update( g_frametime );
 
 		if( g_pModel->m_sequenceTimers[0].bPlaying )
+		{
+			int nSeq = m_pMotionSelection->GetSelection();
+			gsequence_t& seq = g_pModel->m_pSequences[nSeq];
+
+			float setFrameRate = atoi(m_pAnimFramerate->GetValue());
+
+			if(setFrameRate > 0)
+			{
+				float framerateScale = setFrameRate / seq.framerate;
+				g_pModel->SetPlaybackSpeedScale(framerateScale, 0);
+			}
+
 			m_pTimeline->SetValue( g_pModel->GetCurrentAnimationFrame() );
+		}
 
 		g_pShaderAPI->ResetCounters();
 
@@ -1175,7 +1226,7 @@ void CEGFViewFrame::ReDraw()
 		materials->GetConfiguration().wireframeMode = m_wireframe->IsChecked();
 
 		// Now we can draw our model
-		g_pModel->Render(renderFlags, g_fCamDistance);
+		g_pModel->Render(renderFlags, g_fCamDistance, m_lodSpin->GetValue(), m_lodOverride->GetValue());
 
 		debugoverlay->Text(color4_white, "polygon count: %d\n", g_pShaderAPI->GetTrianglesCount());
 
@@ -1192,12 +1243,22 @@ void CEGFViewFrame::ReDraw()
 
 void CEGFViewFrame::RefreshGUI()
 {
+	m_enabledBodyParts->Clear();
 	m_pMotionSelection->Clear();
 	m_pPoseController->Clear();
+	g_pModel->m_bodyGroupFlags = 0xFFFFFFFF;
 
 	// populate all lists
-	if(g_pModel)
+	if(g_pModel && g_pModel->m_pModel != NULL)
 	{
+		studiohdr_t* modelHdr = g_pModel->m_pModel->GetHWData()->pStudioHdr;
+
+		for(int i = 0; i < modelHdr->numbodygroups; i++)
+		{
+			int idx = m_enabledBodyParts->Append( modelHdr->pBodyGroups(i)->name );
+			m_enabledBodyParts->Check(idx, true);
+		}
+
 		// sequences
 		if(m_pAnimMode->GetSelection() == 0)
 		{
@@ -1236,9 +1297,13 @@ void CEGFViewFrame::OnComboboxChanged(wxCommandEvent& event)
 			g_pModel->SetSequence( nSeq, 0 );
 			g_pModel->ResetAnimationTime(0);
 
+			gsequence_t& seq = g_pModel->m_pSequences[nSeq];
+			m_pAnimFramerate->SetValue( varargs("%g", seq.framerate) );
+
 			int maxFrames = g_pModel->GetCurrentAnimationDurationInFrames();
 
 			m_pTimeline->SetMax( maxFrames );
+			g_pModel->SetPlaybackSpeedScale(1.0f, 0);
 		}
 	}
 	else if(event.GetId() == Event_PoseCont_Changed)
@@ -1253,6 +1318,17 @@ void CEGFViewFrame::OnComboboxChanged(wxCommandEvent& event)
 			m_pPoseValue->SetValue( g_pModel->m_poseControllers[nPoseContr].value*10 );
 		}
 	}
+}
+
+void CEGFViewFrame::OnBodyGroupToggled( wxCommandEvent& event )
+{
+	int itemId = event.GetInt();
+	bool isChecked = m_enabledBodyParts->IsChecked(itemId);
+
+	if(isChecked)
+		g_pModel->m_bodyGroupFlags |= (1 << itemId);
+	else
+		g_pModel->m_bodyGroupFlags &= ~(1 << itemId);
 }
 
 void CEGFViewFrame::OnButtons(wxCommandEvent& event)

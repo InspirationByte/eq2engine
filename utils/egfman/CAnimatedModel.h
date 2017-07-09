@@ -34,7 +34,7 @@ public:
 								CAnimatedModel();
 
 	// renders model
-	virtual void				Render(int nViewRenderFlags, float fDist);
+	virtual void				Render(int nViewRenderFlags, float fDist, int startLod, bool overrideLod);
 	virtual void				Update(float dt);
 
 // standard stuff
@@ -182,8 +182,10 @@ public:
 	DkList<gposecontroller_t>	m_poseControllers; // pose controllers
 	DkList<gikchain_t*>			m_IkChains;
 
-	IEqModel*				m_pModel;
+	IEqModel*					m_pModel;
 	IPhysicsObject*				m_pPhysicsObject;
 	ragdoll_t*					m_pRagdoll;
 	bool						m_bPhysicsEnable;
+
+	int							m_bodyGroupFlags;
 };
