@@ -24,6 +24,8 @@
 #include "math/math_util.h"
 #include "Physics/DkBulletPhysics.h"
 
+#include "materialsystem/MeshBuilder.h"
+
 #include "scene_def.h"
 #include "ViewParams.h"
 
@@ -111,6 +113,7 @@ enum
 	Event_Sequence_Play,
 	Event_Sequence_Stop,
 	Event_Physics_SimulateToggle,
+	Event_Physics_Reset,
 
 	// slider
 	Event_Timeline_Set,
@@ -495,7 +498,7 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 	
 	fgSizer9->Add( new wxButton( m_pPhysicsPanel, Event_Physics_SimulateToggle, wxT("Run/Pause"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
 	
-	fgSizer9->Add( new wxButton( m_pPhysicsPanel, wxID_ANY, wxT("Reset"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
+	fgSizer9->Add( new wxButton( m_pPhysicsPanel, Event_Physics_Reset, wxT("Reset"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
 	
 	
 	sbSizer4->Add( fgSizer9, 1, wxEXPAND, 5 );
@@ -1002,7 +1005,7 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 				internaltrace_t tr;
 				physics->InternalTraceLine(ray_start, ray_start+ray_dir, COLLISION_GROUP_ALL, &tr);
 
-				debugoverlay->Line3D(ray_start, tr.traceEnd, ColorRGBA(1,0,0,1), ColorRGBA(0,1,0,1), 10);
+				//debugoverlay->Line3D(ray_start, tr.traceEnd, ColorRGBA(1,0,0,1), ColorRGBA(0,1,0,1), 10);
 
 				if(tr.hitObj)
 				{
@@ -1102,6 +1105,36 @@ void ShowFPS()
 
 #define MAX_FRAMETIME	0.3
 #define MIN_FRAMETIME	0.00001
+
+void RenderFloor()
+{
+	BlendStateParam_t blending;
+	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
+	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+
+	materials->SetAmbientColor(ColorRGBA(1,1,0,0.25f));
+	materials->SetDepthStates(true,true);
+	materials->SetRasterizerStates(CULL_FRONT,FILL_SOLID);
+	materials->SetBlendingStates(blending);
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+	g_pShaderAPI->SetTexture(NULL, NULL, 0);
+
+	materials->BindMaterial(materials->GetDefaultMaterial());
+
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+
+	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+
+	meshBuilder.TexturedQuad3(
+		Vector3D(-64, 0, -64), 
+		Vector3D(64, 0, -64), 
+		Vector3D(-64, 0, 64), 
+		Vector3D(64, 0, 64), 
+		vec2_zero, vec2_zero, vec2_zero, vec2_zero);
+
+	meshBuilder.End();
+}
 
 void CEGFViewFrame::ReDraw()
 {
@@ -1231,8 +1264,7 @@ void CEGFViewFrame::ReDraw()
 		debugoverlay->Text(color4_white, "polygon count: %d\n", g_pShaderAPI->GetTrianglesCount());
 
 		// draw floor 1x1 meters
-		debugoverlay->Polygon3D(Vector3D(-64,0,-64), Vector3D(-64,0,64), Vector3D(64,0,64), ColorRGBA(1,1,0,0.25));
-		debugoverlay->Polygon3D(Vector3D(64,0,64), Vector3D(64,0,-64), Vector3D(-64,0,-64), ColorRGBA(1,1,0,0.25));
+		RenderFloor();
 
 		debugoverlay->Draw(g_mProjMat, g_mViewMat, w,h);
 
@@ -1359,6 +1391,11 @@ void CEGFViewFrame::OnButtons(wxCommandEvent& event)
 	{
 		g_pModel->TogglePhysicsState();
 	}
+	else if(event.GetId() == Event_Physics_Reset)
+	{
+		g_pModel->ResetPhysics();
+	}
+	
 }
 
 #undef IMPLEMENT_WXWIN_MAIN

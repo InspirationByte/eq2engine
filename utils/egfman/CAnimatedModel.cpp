@@ -101,38 +101,7 @@ void CAnimatedModel::TogglePhysicsState()
 
 		if(m_bPhysicsEnable)
 		{
-			if(m_pRagdoll)
-			{
-				UpdateBones();
-				m_pRagdoll->SetBoneTransform( m_BoneMatrixList, identity4() );
-
-				for(int i = 0; i< m_pRagdoll->m_numParts; i++)
-				{
-					if(m_pRagdoll->m_pParts[i])
-					{
-						m_pRagdoll->m_pParts[i]->SetContents( COLLISION_GROUP_DEBRIS );
-						m_pRagdoll->m_pParts[i]->SetCollisionMask( COLLIDE_DEBRIS );
-
-						m_pRagdoll->m_pParts[i]->SetActivationState(PS_ACTIVE);
-						//m_pRagdoll->m_pParts[i]->SetVelocity( m_vPrevPhysicsVelocity );
-						m_pRagdoll->m_pParts[i]->SetCollisionResponseEnabled( true );
-						//m_pRagdoll->m_pParts[i]->SetFriction(100.0f);
-					}
-				}
-
-				m_pRagdoll->Wake();
-			}
-			else if(m_pPhysicsObject)
-			{
-				m_pPhysicsObject->SetPosition(Vector3D(0,m_pModel->GetAABB().maxPoint.y,0));
-				m_pPhysicsObject->SetAngles(vec3_zero);
-				//m_pPhysicsObject->SetFriction();
-				m_pPhysicsObject->SetActivationState(PS_ACTIVE);
-				m_pPhysicsObject->SetCollisionResponseEnabled( true );
-				m_pPhysicsObject->SetContents(COLLISION_GROUP_OBJECTS);
-				m_pPhysicsObject->SetCollisionMask(COLLIDE_OBJECT);
-				m_pPhysicsObject->WakeUp();
-			}
+			ResetPhysics();
 		}
 		else
 		{
@@ -163,6 +132,42 @@ void CAnimatedModel::TogglePhysicsState()
 			//UpdateBones();
 			//m_pRagdoll->SetBoneTransform( m_BoneMatrixList, identity4() );
 		}
+	}
+}
+
+void CAnimatedModel::ResetPhysics()
+{
+	if(m_pRagdoll)
+	{
+		UpdateBones();
+		m_pRagdoll->SetBoneTransform( m_BoneMatrixList, identity4() );
+
+		for(int i = 0; i< m_pRagdoll->m_numParts; i++)
+		{
+			if(m_pRagdoll->m_pParts[i])
+			{
+				m_pRagdoll->m_pParts[i]->SetContents( COLLISION_GROUP_DEBRIS );
+				m_pRagdoll->m_pParts[i]->SetCollisionMask( COLLIDE_DEBRIS );
+
+				m_pRagdoll->m_pParts[i]->SetActivationState(PS_ACTIVE);
+				m_pRagdoll->m_pParts[i]->SetVelocity( vec3_zero );
+				m_pRagdoll->m_pParts[i]->SetAngularVelocity( vec3_zero, 0.0f );
+				m_pRagdoll->m_pParts[i]->SetCollisionResponseEnabled( true );
+			}
+		}
+
+		m_pRagdoll->Wake();
+	}
+	else if(m_pPhysicsObject)
+	{
+		m_pPhysicsObject->SetPosition(Vector3D(0,m_pModel->GetAABB().maxPoint.y,0));
+		m_pPhysicsObject->SetAngles(vec3_zero);
+		//m_pPhysicsObject->SetFriction();
+		m_pPhysicsObject->SetActivationState(PS_ACTIVE);
+		m_pPhysicsObject->SetCollisionResponseEnabled( true );
+		m_pPhysicsObject->SetContents(COLLISION_GROUP_OBJECTS);
+		m_pPhysicsObject->SetCollisionMask(COLLIDE_OBJECT);
+		m_pPhysicsObject->WakeUp();
 	}
 }
 
@@ -1078,34 +1083,43 @@ void CAnimatedModel::UpdateRagdollBones()
 	}
 }
 
-void RenderPhysModel(IEqModel* pModel)
+void CAnimatedModel::RenderPhysModel()
 {
-	if(!pModel)
+	if(!m_pModel)
 		return;
 
-	if(!pModel->GetHWData())
+	if(!m_pModel->GetHWData())
 		return;
 
-	if(pModel->GetHWData()->m_physmodel.numobjects == 0)
+	const physmodeldata_t& phys_data = m_pModel->GetHWData()->m_physmodel;
+
+	if(phys_data.numobjects == 0)
 		return;
 
-	if(pModel->GetHWData()->m_physmodel.numshapes == 0)
+	if(phys_data.numshapes == 0)
 		return;
 
-	materials->SetAmbientColor(1.0f);
+	BlendStateParam_t blending;
+	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
+	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+
+	materials->SetAmbientColor(ColorRGBA(1,0,1,1));
 	materials->SetDepthStates(true,false);
 	materials->SetRasterizerStates(CULL_BACK,FILL_WIREFRAME);
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	materials->SetBlendingStates(blending);
+	g_pShaderAPI->SetTexture(NULL, NULL, 0);
 
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
-	physmodeldata_t& phys_data = pModel->GetHWData()->m_physmodel;
+	Matrix4x4 worldPosMatrix;
+	materials->GetMatrix(MATRIXMODE_WORLD, worldPosMatrix);
+
+	materials->BindMaterial(materials->GetDefaultMaterial());
 
 	for(int i = 0; i < phys_data.numobjects; i++)
 	{
 		for(int j = 0; j < phys_data.objects[i].object.numShapes; j++)
 		{
-
 			int nShape = phys_data.objects[i].object.shape_indexes[j];
 			if(nShape < 0 || nShape > phys_data.numshapes)
 			{
@@ -1115,11 +1129,20 @@ void RenderPhysModel(IEqModel* pModel)
 			int startIndex = phys_data.shapes[nShape].shape_info.startIndices;
 			int moveToIndex = startIndex + phys_data.shapes[nShape].shape_info.numIndices;
 
+			if(m_BoneMatrixList != NULL && m_pRagdoll)
+			{
+				int visualMatrixIdx = m_pRagdoll->m_pBoneToVisualIndices[i];
+				Matrix4x4 boneFrame = m_pRagdoll->m_pJoints[i]->GetFrameTransformA();
+
+				materials->SetMatrix(MATRIXMODE_WORLD, worldPosMatrix*transpose(!boneFrame*m_BoneMatrixList[visualMatrixIdx]));
+				materials->BindMaterial(materials->GetDefaultMaterial());
+			}
+
 			meshBuilder.Begin(PRIM_TRIANGLES);
 			for(int k = startIndex; k < moveToIndex; k++)
 			{
-				meshBuilder.Color4f(0,1,1,1);
-				meshBuilder.Position3fv(phys_data.vertices[phys_data.indices[k]] + phys_data.objects[i].object.offset);
+				meshBuilder.Color4f(1,0,1,1);
+				meshBuilder.Position3fv(phys_data.vertices[phys_data.indices[k]]);// + phys_data.objects[i].object.offset);
 
 				meshBuilder.AdvanceVertex();
 			}
@@ -1216,7 +1239,7 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 	}
 
 	if(nViewRenderFlags & RFLAG_PHYSICS)
-		RenderPhysModel(m_pModel);
+		RenderPhysModel();
 
 	if( nViewRenderFlags & RFLAG_BONES )
 		VisualizeBones();
@@ -1224,22 +1247,30 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 
 void CAnimatedModel::VisualizeBones()
 {
-	Matrix4x4 m_matWorldTransform = identity4();
+	Matrix4x4 posMatrix = identity4();
+
+	if(m_bPhysicsEnable)
+	{
+		if(m_pRagdoll)
+			posMatrix.translate(m_pRagdoll->GetPosition());
+		else if(m_pPhysicsObject)
+			posMatrix = m_pPhysicsObject->GetTransformMatrix();
+	}
 
 	// setup each bone's transformation
 	for(int i = 0; i < m_numBones; i++)
 	{
-		Vector3D pos = (m_matWorldTransform*Vector4D(m_BoneMatrixList[i].rows[3].xyz(), 1.0f)).xyz();
+		Vector3D pos = (posMatrix*Vector4D(m_BoneMatrixList[i].rows[3].xyz(), 1.0f)).xyz();
 
 		if(m_nParentIndexList[i] != -1)
 		{
-			Vector3D parent_pos = (m_matWorldTransform*Vector4D(m_BoneMatrixList[m_nParentIndexList[i]].rows[3].xyz(), 1.0f)).xyz();
+			Vector3D parent_pos = (posMatrix*Vector4D(m_BoneMatrixList[m_nParentIndexList[i]].rows[3].xyz(), 1.0f)).xyz();
 			debugoverlay->Line3D(pos,parent_pos, color4_white, color4_white);
 		}
 
-		Vector3D dX = m_matWorldTransform.getRotationComponent()*m_BoneMatrixList[i].rows[0].xyz();
-		Vector3D dY = m_matWorldTransform.getRotationComponent()*m_BoneMatrixList[i].rows[1].xyz();
-		Vector3D dZ = m_matWorldTransform.getRotationComponent()*m_BoneMatrixList[i].rows[2].xyz();
+		Vector3D dX = posMatrix.getRotationComponent() * m_BoneMatrixList[i].rows[0].xyz();
+		Vector3D dY = posMatrix.getRotationComponent() * m_BoneMatrixList[i].rows[1].xyz();
+		Vector3D dZ = posMatrix.getRotationComponent() * m_BoneMatrixList[i].rows[2].xyz();
 
 		// draw axis
 		debugoverlay->Line3D(pos, pos+dX*0.1f, ColorRGBA(1,0,0,1), ColorRGBA(1,0,0,1));

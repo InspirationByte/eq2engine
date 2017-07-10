@@ -41,7 +41,11 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 	if(!pModel)
 		return NULL;
 
-	int type = pModel->GetHWData()->m_physmodel.modeltype;
+	studiohwdata_t* hwdata = pModel->GetHWData();
+	physmodeldata_t& physModel = hwdata->m_physmodel;
+	studiohdr_t* studio = hwdata->pStudioHdr;
+
+	int type = physModel.modeltype;
 
 	if(type == PHYSMODEL_USAGE_RAGDOLL)
 	{
@@ -50,18 +54,18 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 
 		newRagdoll->m_pReferenceModel = pModel;
 
-		int numPhysJoints = pModel->GetHWData()->m_physmodel.numjoints;
+		int numPhysJoints = physModel.numjoints;
 		newRagdoll->m_numBones = numPhysJoints;
 
-		int numParts = pModel->GetHWData()->m_physmodel.numobjects;
+		int numParts = physModel.numobjects;
 		newRagdoll->m_numParts = numParts;
 
 		// build joint remap table
 		for(int i = 0; i < numPhysJoints; i++)
 		{
-			for(int j = 0; j < pModel->GetHWData()->pStudioHdr->numbones; j++)
+			for(int j = 0; j < studio->numbones; j++)
 			{
-				if(!stricmp(pModel->GetHWData()->joints[j].name, pModel->GetHWData()->m_physmodel.joints[i].name))
+				if(!stricmp(hwdata->joints[j].name, physModel.joints[i].name))
 				{
 					// assign index
 					newRagdoll->m_pBoneToVisualIndices[i] = j;
@@ -74,7 +78,7 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 		}
 
 		// build far parental table
-		for(int i = 0; i < pModel->GetHWData()->pStudioHdr->numbones; i++)
+		for(int i = 0; i < studio->numbones; i++)
 		{
 			newRagdoll->m_pBoneMerge_far_parents[i] = newRagdoll->ComputeAndGetFarParentOf(i);
 
@@ -85,7 +89,7 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 
 			if(real_parent != -1)
 			{
-				transform = pModel->GetHWData()->joints[i].absTrans * !pModel->GetHWData()->joints[real_parent].absTrans;
+				transform = hwdata->joints[i].absTrans * !hwdata->joints[real_parent].absTrans;
 			}
 
 			newRagdoll->m_pBoneMerge_Transformations[i] = transform;
@@ -94,7 +98,7 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 		// create objects of ragdoll
 		for(int i = 0; i < numParts; i++)
 		{
-			newRagdoll->m_pParts[i] = physics->CreateObject( &pModel->GetHWData()->m_physmodel, i);
+			newRagdoll->m_pParts[i] = physics->CreateObject( &physModel, i);
 
 			newRagdoll->m_pParts[i]->SetContents( COLLISION_GROUP_DEBRIS );
 			newRagdoll->m_pParts[i]->SetCollisionMask( COLLIDE_RAGDOLL | COLLISION_GROUP_DEBRIS );
@@ -103,7 +107,7 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 			newRagdoll->m_pParts[i]->SetDamping(0.01f,0.05f);
 			newRagdoll->m_pParts[i]->SetActivationState(PS_ACTIVE);
 
-			newRagdoll->m_nBodyParts[i] = (EBodyPart)pModel->GetHWData()->m_physmodel.objects[i].object.body_part;
+			newRagdoll->m_nBodyParts[i] = (EBodyPart)physModel.objects[i].object.body_part;
 
 			newRagdoll->m_pParts[i]->SetUserData((void*)newRagdoll->m_nBodyParts[i]);
 		}
@@ -111,14 +115,14 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 		// create joints
 		for(int i = 0; i < numPhysJoints; i++)
 		{
-			int object_partindexA = pModel->GetHWData()->m_physmodel.joints[i].object_indexA;
-			int object_partindexB = pModel->GetHWData()->m_physmodel.joints[i].object_indexB;
+			int object_partindexA = physModel.joints[i].object_indexA;
+			int object_partindexB = physModel.joints[i].object_indexB;
 
 			IPhysicsObject* partA = newRagdoll->m_pParts[object_partindexA];
 			IPhysicsObject*	partB = newRagdoll->m_pParts[object_partindexB];
 
 			// get a bone transformation
-			Matrix4x4 bone_transform = pModel->GetHWData()->joints[newRagdoll->m_pBoneToVisualIndices[i]].absTrans;
+			Matrix4x4 bone_transform = hwdata->joints[newRagdoll->m_pBoneToVisualIndices[i]].absTrans;
 
 			Vector3D linkA_pos = bone_transform.rows[3].xyz() - newRagdoll->m_pParts[object_partindexA]->GetPosition();
 			Vector3D linkB_pos = bone_transform.rows[3].xyz() - newRagdoll->m_pParts[object_partindexB]->GetPosition();
@@ -133,8 +137,8 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 			newRagdoll->m_pJoints[i] = physics->CreateJoint(partA, partB, local_a, local_b, true);
 
 			// set limits
-			newRagdoll->m_pJoints[i]->SetAngularLowerLimit(pModel->GetHWData()->m_physmodel.joints[i].minLimit);
-			newRagdoll->m_pJoints[i]->SetAngularUpperLimit(pModel->GetHWData()->m_physmodel.joints[i].maxLimit);
+			newRagdoll->m_pJoints[i]->SetAngularLowerLimit(physModel.joints[i].minLimit);
+			newRagdoll->m_pJoints[i]->SetAngularUpperLimit(physModel.joints[i].maxLimit);
 
 			newRagdoll->m_pJoints[i]->SetLinearLowerLimit( Vector3D(-RAGDOLL_LINEAR_LIMIT) );
 			newRagdoll->m_pJoints[i]->SetLinearUpperLimit( Vector3D(RAGDOLL_LINEAR_LIMIT) );
@@ -187,7 +191,9 @@ void ragdoll_t::GetVisualBonesTransforms(Matrix4x4 *bones)
 	Matrix4x4 offsetTranslate = identity4();
 	offsetTranslate.setTranslation(-GetPosition());
 
-	for(int i = 0; i < m_pReferenceModel->GetHWData()->pStudioHdr->numbones; i++)
+	studiohdr_t* studio = m_pReferenceModel->GetHWData()->pStudioHdr;
+
+	for(int i = 0; i < studio->numbones; i++)
 	{
 		int ragdoll_joint_index = m_pBoneToRagdollIndices[i];
 

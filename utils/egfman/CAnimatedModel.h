@@ -35,6 +35,7 @@ public:
 
 	// renders model
 	virtual void				Render(int nViewRenderFlags, float fDist, int startLod, bool overrideLod);
+	virtual void				RenderPhysModel();
 	virtual void				Update(float dt);
 
 // standard stuff
@@ -108,6 +109,7 @@ public:
 	void						SetModel(IEqModel* pModel);
 
 	void						TogglePhysicsState();
+	void						ResetPhysics();
 
 protected:
 	// advances frame (and computes interpolation between all blended animations)
