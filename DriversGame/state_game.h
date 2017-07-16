@@ -49,6 +49,8 @@ public:
 
 	void		StartReplay( const char* path );
 
+	void		GetMouseCursorProperties(bool &visible, bool& centered);
+
 	//---------------------------------------------
 
 	void		UnloadGame();

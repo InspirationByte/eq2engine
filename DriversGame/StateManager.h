@@ -56,7 +56,7 @@ public:
 
 	virtual void		HandleJoyAxis( short axis, short value ) {}
 
-	virtual bool		IsMouseCursorVisible() {return false;}
+	virtual void		GetMouseCursorProperties(bool& visible, bool& centered) {visible = false; centered = false;}
 
 	void				SetNextState(CBaseStateHandler* state, bool force = false)	{m_nextState = state;m_forceNextState = force;}
 	CBaseStateHandler*	GetNextState(bool* force = NULL) const						{if(force)*force = m_forceNextState; return m_nextState;}
@@ -85,7 +85,7 @@ void					SheduleNextStateType( int stateType );
 
 // updates and manages the states
 bool					UpdateStates( float fDt );
-bool					GetStateMouseCursorVisibility();
+void					GetStateMouseCursorProperties(bool& visible, bool& centered);
 
 void					InitRegisterStates();
 

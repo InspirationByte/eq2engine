@@ -1505,12 +1505,16 @@ reincrement:
 	}
 }
 
+void CState_Game::GetMouseCursorProperties(bool &visible, bool& centered)
+{
+	visible = GetPauseMode() > PAUSEMODE_NONE;
+	centered = g_freecam.GetBool();
+}
+
 void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )
 {
 	if(!m_isGameRunning)
 		return;
-
-	g_pHost->SetCenterMouseEnable( g_freecam.GetBool() );
 
 	if( m_showMenu )
 		return;

@@ -128,12 +128,16 @@ bool UpdateStates( float fDt )
 	return true;
 }
 
-bool GetStateMouseCursorVisibility()
+void GetStateMouseCursorProperties(bool& visible, bool& centered)
 {
 	if(!g_currentState)
-		return false;
+	{
+		visible = true;
+		centered = false;
+		return;
+	}
 
-	return g_currentState->IsMouseCursorVisible();
+	return g_currentState->GetMouseCursorProperties(visible, centered);
 }
 
 void InitRegisterStates()

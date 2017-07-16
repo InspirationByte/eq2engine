@@ -186,14 +186,14 @@ void ApplyShapeKeyOnVertex( esmshapekey_t* modShapeKey, const dsmvertex_t& vert,
 	}
 }
 
-void ReverseStrip(int* indices, int memb)
+void ReverseStrip(int* indices, int len)
 {
    unsigned int i;
-   int* original = new int[memb];
-   memcpy(original, indices, memb*sizeof(int));
+   int* original = new int[len];
+   memcpy(original, indices, len*sizeof(int));
 
-   for (i = 0; i != memb; ++i)
-      indices[i] = original[memb-1-i];
+   for (i = 0; i != len; ++i)
+      indices[i] = original[len-1-i];
 
    delete [] original;
 }
@@ -358,9 +358,8 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 
 	int nTriangleResults = 0;
 
-	int length = 0;
+	int stripLength = 0;
 	int primCount = 0;
-	int flipStart = 0;
 
 	int evenPrimitives = 0;
 
@@ -382,9 +381,8 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 			gOptIndexList.append( v1 );
 		}
 
-		length = 0;
-
-		int flipStart = gOptIndexList.numElem();
+		// reset
+		stripLength = 2;
 
 		gOptIndexList.append( v1 );
 		gOptIndexList.append( v2 );
@@ -393,16 +391,13 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 		while(actcGetNextVert(tc, &v3) != ACTC_PRIM_COMPLETE)
 		{
 			gOptIndexList.append( v3 );
-			length++;
+			stripLength++;
 			nTriangleResults++;
 		}
 
-		if(length & 1)
+		if(stripLength & 1)
 		{
-			// TODO: reverse instead of adding extra index
-			//ReverseStrip(&gOptIndexList[flipStart], gOptIndexList.numElem()-flipStart);
-
-			// flip
+			// add degenerate vertex
 			gOptIndexList.append( v3 );
 		}
 			

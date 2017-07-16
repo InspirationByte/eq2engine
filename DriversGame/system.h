@@ -59,9 +59,6 @@ public:
 	bool				CheckDoneTrapping( int& buttons, int& key );
 
 	void				SetCursorPosition(int x, int y);
-	void				SetCursorShow(bool bShow);
-
-	void				SetCenterMouseEnable(bool center);
 
 	double				GetCurTime() const {return m_fCurTime;}
 	double				GetFrameTime() const {return m_fGameFrameTime;}
@@ -78,6 +75,8 @@ public:
 
 protected:
 
+	void				SetCursorShow(bool bShow);
+
 	void				BeginScene();
 	void				EndScene();
 	bool				FilterTime( double fDt );
@@ -91,7 +90,6 @@ protected:
 
 	int			m_nQuitState;
 
-	bool		m_bCenterMouse;
 	bool		m_cursorVisible;
 
 	bool		m_bTrapMode;

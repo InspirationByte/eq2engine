@@ -39,7 +39,7 @@ public:
 
 	void		HandleJoyAxis( short axis, short value ) {}
 
-	bool		IsMouseCursorVisible() {return true;}
+	void		GetMouseCursorProperties(bool &visible, bool& centered) {visible = true, centered = false;}
 
 	//------------------------------------------------------
 

@@ -447,7 +447,7 @@ void InputCommands_SDL(SDL_Event* event)
 
 CGameHost::CGameHost() :
 	m_winSize(0), m_prevMousePos(0), m_mousePos(0), m_pWindow(NULL), m_nQuitState(QUIT_NOTQUITTING),
-	m_bTrapMode(false), m_bDoneTrapping(false), m_nTrapKey(0), m_nTrapButtons(0), m_bCenterMouse(false),
+	m_bTrapMode(false), m_bDoneTrapping(false), m_nTrapKey(0), m_nTrapButtons(0),
 	m_cursorVisible(true), m_pDefaultFont(NULL)
 {
 	m_fCurTime = 0;
@@ -548,8 +548,9 @@ void CGameHost::SetCursorPosition(int x, int y)
 
 	IVector2D realpos;
 
-	//SDL_GetMouseState(&realpos.x, &realpos.y);
-	//m_mousePos = realpos;
+	SDL_GetMouseState(&realpos.x, &realpos.y);
+	m_mousePos = realpos;
+
 	//m_prevMousePos = m_mousePos;
 }
 
@@ -563,12 +564,6 @@ void CGameHost::SetCursorShow(bool bShow)
 
 	SDL_ShowCursor(bShow);
 	m_cursorVisible = bShow;
-}
-
-void CGameHost::SetCenterMouseEnable(bool center)
-{
-	m_bCenterMouse = center;
-	SetCursorShow( !m_bCenterMouse );
 }
 
 extern bool s_bActive;
@@ -608,9 +603,6 @@ bool CGameHost::Frame()
 
 	if( !FilterTime( m_fFrameTime ) )
 		return false;
-
-	// set cursor visible
-	SetCursorShow( g_pSysConsole->IsVisible() || equi::Manager->IsPanelsVisible() || GetStateMouseCursorVisibility() );
 
 	//--------------------------------------------
 
@@ -790,10 +782,24 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 
 void CGameHost::TrapMouseMove_Event( int x, int y )
 {
-	if(m_bCenterMouse && s_bActive && !g_pSysConsole->IsVisible() && !equi::Manager->IsPanelsVisible())
-		SetCursorPosition(m_winSize.x/2,m_winSize.y/2);
+	bool cursorVisible = false;
+	bool cursorCentered = false;
+
+	GetStateMouseCursorProperties(cursorVisible, cursorCentered);
+
+	cursorVisible = cursorVisible || g_pSysConsole->IsVisible() || equi::Manager->IsPanelsVisible();
+	cursorCentered = cursorCentered && !(g_pSysConsole->IsVisible() || equi::Manager->IsPanelsVisible());
+
+	// set cursor visible
+	SetCursorShow( cursorVisible );
 
 	m_mousePos = IVector2D(x,y);
+
+	if(cursorCentered)
+	{
+		m_mousePos = IVector2D(m_winSize.x/2,m_winSize.y/2);
+		SetCursorPosition(m_mousePos.x, m_mousePos.y);
+	}
 
 	g_pSysConsole->MousePos( m_mousePos );
 
