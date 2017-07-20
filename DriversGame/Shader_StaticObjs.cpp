@@ -22,6 +22,7 @@ BEGIN_SHADER_CLASS(BaseStatic)
 		SHADER_FOGPASS(AmbientInst) = NULL;
 
 		m_fSpecularScale = 1.0f;
+		m_phong = 0.0f;
 	}
 
 	SHADER_INIT_TEXTURES()
@@ -53,6 +54,7 @@ BEGIN_SHADER_CLASS(BaseStatic)
 		//------------------------------------------
 
 		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale, 0.0f);
+		SHADER_PARAM_FLOAT(Phong, m_phong, 0.0f);
 
 		bool bBaseTextureSpecularAlpha;
 		SHADER_PARAM_BOOL(BaseTextureSpecularAlpha, bBaseTextureSpecularAlpha, false);
@@ -70,10 +72,10 @@ BEGIN_SHADER_CLASS(BaseStatic)
 		// define cubemap parameter.
 		SHADER_DECLARE_SIMPLE_DEFINITION(useCubemap, "CUBEMAP")
 
-		SHADER_BEGIN_DEFINITION(bBaseTextureSpecularAlpha, "USE_BASETEXTUREALPHA_SPECULAR")
-			SHADER_DECLARE_SIMPLE_DEFINITION(true, "USE_SPECULAR");
-		SHADER_END_DEFINITION;
-		
+		SHADER_DECLARE_SIMPLE_DEFINITION(bBaseTextureSpecularAlpha, "USE_BASETEXTUREALPHA_SPECULAR");
+
+		SHADER_DECLARE_SIMPLE_DEFINITION(m_phong > 0, "USE_PHONG");
+	
 		SHADER_DECLARE_SIMPLE_DEFINITION((m_pNightLightTexture != NULL), "HAS_NIGHTLIGHT_TEXTURE");
 
 		// alphatesting
@@ -121,6 +123,7 @@ BEGIN_SHADER_CLASS(BaseStatic)
 		SetupDefaultParameter( SHADERPARAM_FOG );
 
 		g_pShaderAPI->SetShaderConstantFloat("SPECULAR_SCALE", m_fSpecularScale);
+		g_pShaderAPI->SetShaderConstantFloat("PHONG", m_phong);
 	}
 
 	void ParamSetup_Cubemap()
@@ -166,5 +169,6 @@ private:
 	SHADER_DECLARE_FOGPASS(AmbientInst);
 
 	float				m_fSpecularScale;
+	float				m_phong;
 
 END_SHADER_CLASS

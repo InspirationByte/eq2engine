@@ -3024,7 +3024,7 @@ void CCar::DrawWheelEffects(int wheelIdx, int lod, bool drawSkidMarks)
 
 	ColorRGB ambientAndSun = g_pGameWorld->m_info.rainBrightness;
 
-	Matrix3x3 wheelMat = transpose(m_worldMatrix.getRotationComponent() * wheel.m_wheelOrient);
+	Matrix3x3 wheelMat = wheel.m_wheelOrient * transpose(m_worldMatrix.getRotationComponent());
 
 	Vector3D velAtWheel = wheel.m_velocityVec;
 	velAtWheel.y = 0.0f;
@@ -3216,7 +3216,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 	CCarWheel& wheel = m_wheels[nWheel];
 	carWheelConfig_t& wheelConf = m_conf->physics.wheels[nWheel];
 
-	Matrix3x3 wheelMat = transpose(m_worldMatrix.getRotationComponent() * wheel.m_wheelOrient);
+	Matrix3x3 wheelMat = wheel.m_wheelOrient * transpose(m_worldMatrix.getRotationComponent());
 
 	wheel.m_flags.lastOnGround = wheel.m_flags.onGround;
 
