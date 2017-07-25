@@ -279,12 +279,18 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 	if(m_tick < frame.tick)
 		return;
 
+	CCar* car = rep->obj_car;
+
+	// don't play dead car
+	if(!car->IsAlive())
+		return;
+
 	// advance frame
 	rep->curr_frame++;
 
-	if(!rep->obj_car->IsLocked())
+	if(!car->IsLocked())
 	{
-		CEqRigidBody* body = rep->obj_car->GetPhysicsBody();
+		CEqRigidBody* body = car->GetPhysicsBody();
 
 		// correct whole frame
 		body->SetPosition(frame.car_origin);
@@ -302,19 +308,14 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 	int control_flags = frame.button_flags;
 
 	if(control_flags & IN_ANALOGSTEER)
-		rep->obj_car->m_steerRatio = steerControl * steerSign;
+		car->m_steerRatio = steerControl * steerSign;
 	else
-		rep->obj_car->m_steerRatio = 1023;
+		car->m_steerRatio = 1023;
 
-	rep->obj_car->m_accelRatio = accelControl;
-	rep->obj_car->m_brakeRatio = brakeControl;
+	car->m_accelRatio = accelControl;
+	car->m_brakeRatio = brakeControl;
 	
-	rep->obj_car->SetControlButtons(control_flags);
-
-	if(m_state == REPL_RECORDING)		// overwrite the vehicle damage (in case of mission that has pre-recorded vehicle frames)
-		frame.car_damage = rep->obj_car->GetDamage();
-	else if(m_state == REPL_PLAYING)	// replay the damage
-		rep->obj_car->SetDamage(frame.car_damage);
+	car->SetControlButtons(control_flags);
 }
 
 // records vehicle frame
@@ -401,7 +402,6 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 		con.car_rot = TVec4D<half>(orient.x, orient.y, orient.z, orient.w);
 		con.car_vel = body->GetLinearVelocity();
 		con.car_angvel = body->GetAngularVelocity();
-		con.car_damage = rep->obj_car->GetDamage();
 
 		int steerBit = 0;
 
@@ -1162,8 +1162,10 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 
 			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
 
-			if(rep.obj_car)
-				rep.obj_car->SetDamage( *(float *)&evt.eventData );
+			float damage = *(float *)&evt.eventData;
+
+			if(rep.obj_car && rep.obj_car->IsAlive())
+				rep.obj_car->SetDamage( damage );
 
 			break;
 		}
@@ -1176,6 +1178,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 
 			if(rep.obj_car)
 			{
+				// set car damage to maximum and fire event
 				rep.obj_car->SetDamage( rep.obj_car->GetMaxDamage() );
 
 				int deathByReplayIdx = (int)evt.eventData;

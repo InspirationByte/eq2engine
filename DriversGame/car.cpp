@@ -2193,7 +2193,7 @@ void CCar::OnPhysicsFrame( float fDt )
 
 		if(fDamageImpact > DAMAGE_MINIMPACT
 #ifndef EDITOR
-			&& g_pGameSession->IsServer()			// process damage model only on server
+			&& g_pGameSession->IsServer()				// process damage model only on server
 #endif // EDITOR
 			)
 		{
@@ -2208,15 +2208,21 @@ void CCar::OnPhysicsFrame( float fDt )
 				float fDamageToApply = pow(fDot, 2.0f) * fDamageImpact*DAMAGE_SCALE;
 				m_bodyParts[i].damage += fDamageToApply * DAMAGE_VISUAL_SCALE;
 
-				bool isWasAlive = IsAlive();
-				SetDamage(GetDamage() + fDamageToApply);
-				bool isStillAlive = IsAlive();
-
-				if(isWasAlive && !isStillAlive)
+#ifndef EDITOR
+				// process damage and death only when not playing replays
+				if(g_replayData->m_state != REPL_PLAYING)
 				{
-					// trigger death
-					OnDeath( hitGameObject );
+					bool isWasAlive = IsAlive();
+					SetDamage(GetDamage() + fDamageToApply);
+					bool isStillAlive = IsAlive();
+
+					if(isWasAlive && !isStillAlive)
+					{
+						// trigger death
+						OnDeath( hitGameObject );
+					}
 				}
+#endif // EDITOR
 
 				// clamp
 				m_bodyParts[i].damage = min(m_bodyParts[i].damage, 1.0f);
@@ -4182,9 +4188,12 @@ float CCar::GetTorqueScale() const
 
 void CCar::SetDamage( float damage )
 {
+	bool wasAlive = IsAlive();
+
 	m_gameDamage = damage;
 
-	g_replayData->PushEvent( REPLAY_EVENT_CAR_DAMAGE, m_replayID, *(void**)&m_gameDamage.m_value );
+	if(wasAlive)
+		g_replayData->PushEvent( REPLAY_EVENT_CAR_DAMAGE, m_replayID, *(void**)&m_gameDamage.m_value );
 
 	if(m_gameDamage > m_gameMaxDamage)
 		m_gameDamage = m_gameMaxDamage;

@@ -94,8 +94,6 @@ struct replaycontrol_s
 	TVec3D<half>	car_vel;
 	TVec3D<half>	car_angvel;
 	short			button_flags;
-
-	float			car_damage;
 };
 
 ALIGNED_TYPE(replaycontrol_s,4) replaycontrol_t;
