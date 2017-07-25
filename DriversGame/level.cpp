@@ -891,6 +891,25 @@ void CGameLevel::GlobalToLocalPoint( const IVector2D& point, IVector2D& outLocal
 	(*pRegion) = GetRegionAt(regPos);
 }
 
+void CGameLevel::GlobalToLocalPointWithinRegion( const IVector2D& point, IVector2D& outLocalPoint, int regionIdx ) const
+{
+	// calculate region position
+	IVector2D regPos;
+	regPos.x = regionIdx % m_wide;
+	regPos.y = (regionIdx - regPos.x) / m_wide;
+
+	// get cell start
+	IVector2D globalStart;
+	globalStart = regPos * m_cellsSize;
+
+	// get cell end
+	IVector2D globalEnd = globalStart + IVector2D(m_cellsSize);
+
+	// clamp
+	outLocalPoint = clamp(point, globalStart, globalEnd) - globalStart;
+}
+
+
 void CGameLevel::LocalToGlobalPoint( const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const
 {
 	outGlobalPoint = pRegion->m_heightfield[0]->m_regionPos * m_cellsSize + point;

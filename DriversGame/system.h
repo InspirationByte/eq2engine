@@ -75,6 +75,7 @@ public:
 
 protected:
 
+	void				UpdateCursorState();
 	void				SetCursorShow(bool bShow);
 
 	void				BeginScene();
@@ -90,12 +91,12 @@ protected:
 
 	int			m_nQuitState;
 
-	bool		m_cursorVisible;
-
 	bool		m_bTrapMode;
 	bool		m_bDoneTrapping;
 	int			m_nTrapKey;
 	int			m_nTrapButtons;
+
+	bool		m_cursorCentered;
 
 	IEqFont*	m_pDefaultFont;
 

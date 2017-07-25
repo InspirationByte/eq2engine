@@ -1155,6 +1155,42 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 
 			break;
 		}
+		case REPLAY_EVENT_CAR_DAMAGE:
+		{
+			if( evt.replayIndex == REPLAY_NOT_TRACKED )
+				break;
+
+			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+
+			if(rep.obj_car)
+				rep.obj_car->SetDamage( *(float *)&evt.eventData );
+
+			break;
+		}
+		case REPLAY_EVENT_CAR_DEATH:
+		{
+			if( evt.replayIndex == REPLAY_NOT_TRACKED )
+				break;
+
+			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+
+			if(rep.obj_car)
+			{
+				rep.obj_car->SetDamage( rep.obj_car->GetMaxDamage() );
+
+				int deathByReplayIdx = (int)evt.eventData;
+
+				if(deathByReplayIdx != REPLAY_NOT_TRACKED)
+				{
+					vehiclereplay_t& deathByRep = m_vehicles[(int)evt.eventData];
+					rep.obj_car->OnDeath( deathByRep.obj_car );
+				}
+				else
+					rep.obj_car->OnDeath( NULL );
+			}
+
+			break;
+		}
 	}
 }
 

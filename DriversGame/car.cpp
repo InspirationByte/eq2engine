@@ -84,6 +84,7 @@ static Vector3D s_BodyPartDirections[] =
 #define BURNOUT_MAX_SPEED			(70.0f)
 
 #define DAMAGE_SOUND_SCALE			(0.25f)
+#define SIREN_SOUND_DEATHTIME		(3.5f)
 
 #define	DAMAGE_WATERDAMAGE_RATE		(5.5f)
 
@@ -2080,7 +2081,13 @@ bool CCar::UpdateWaterState( float fDt, bool hasCollidedWater )
 		// take damage from water
 		if( carPos.y < waterLevel )
 		{
-			SetDamage( GetDamage() + DAMAGE_WATERDAMAGE_RATE * fDt );
+			bool wasAlive = IsAlive();
+
+			// set damage here to not trigger replay writes
+			m_gameDamage = m_gameDamage + DAMAGE_WATERDAMAGE_RATE * fDt;
+
+			if(m_gameDamage > m_gameMaxDamage)
+				m_gameDamage = m_gameMaxDamage;
 
 			if(!IsAlive()) // lock the car and disable
 			{
@@ -2088,6 +2095,10 @@ bool CCar::UpdateWaterState( float fDt, bool hasCollidedWater )
 				m_locked = true;
 				m_sirenEnabled = false;
 				m_lightsEnabled = 0;
+
+				// trigger death
+				if(wasAlive)
+					OnDeath(NULL);
 			}
 		}
 
@@ -2154,20 +2165,21 @@ void CCar::OnPhysicsFrame( float fDt )
 		if(!(coll.flags & COLLPAIRFLAG_NO_SOUND))
 			doImpulseSound = true;
 
-		if(coll.bodyB->IsDynamic())
+		if( coll.bodyB->IsDynamic() )
 		{
 			CEqRigidBody* body = (CEqRigidBody*)coll.bodyB;
 			wVelocity -= body->GetVelocityAtWorldPoint( coll.position );
 		}
+
+		CGameObject* hitGameObject = NULL;
 
 		// TODO: make it safe
 		if( !(coll.bodyB->GetContents() & OBJECTCONTENTS_SOLID_GROUND) &&
 			coll.bodyB->GetUserData() != NULL &&
 			coll.appliedImpulse != 0.0f)
 		{
-			CGameObject* obj = (CGameObject*)coll.bodyB->GetUserData();
-
-			obj->OnCarCollisionEvent( coll, this );
+			hitGameObject = (CGameObject*)coll.bodyB->GetUserData();
+			hitGameObject->OnCarCollisionEvent( coll, this );
 		}
 
 		EmitCollisionParticles(coll.position, wVelocity, coll.normal, (coll.appliedImpulse/3500.0f)+1, coll.appliedImpulse);
@@ -2194,15 +2206,20 @@ void CCar::OnPhysicsFrame( float fDt )
 					continue;
 
 				float fDamageToApply = pow(fDot, 2.0f) * fDamageImpact*DAMAGE_SCALE;
-
 				m_bodyParts[i].damage += fDamageToApply * DAMAGE_VISUAL_SCALE;
-				m_gameDamage += fDamageToApply;
 
-				if(m_gameDamage > m_gameMaxDamage)
-					m_gameDamage = m_gameMaxDamage;
+				bool isWasAlive = IsAlive();
+				SetDamage(GetDamage() + fDamageToApply);
+				bool isStillAlive = IsAlive();
 
-				if(m_bodyParts[i].damage > 1.0f)
-					m_bodyParts[i].damage = 1.0f;
+				if(isWasAlive && !isStillAlive)
+				{
+					// trigger death
+					OnDeath( hitGameObject );
+				}
+
+				// clamp
+				m_bodyParts[i].damage = min(m_bodyParts[i].damage, 1.0f);
 
 				OnNetworkStateChanged(NULL);
 			}
@@ -3417,7 +3434,20 @@ void CCar::UpdateSounds( float fDt )
 		m_pHornSound->SetVelocity(velocity);
 		
 		if(m_pSirenSound)
+		{
 			m_pSirenSound->SetVelocity(velocity);
+
+			if( !IsAlive() && m_sirenDeathTime > 0 && m_conf->visual.sirenType != SERVICE_LIGHTS_NONE )
+			{
+				m_pSirenSound->SetPitch( m_sirenDeathTime / SIREN_SOUND_DEATHTIME );
+				m_sirenDeathTime -= fDt;
+
+				if(m_sirenDeathTime <= 0.0f)
+					m_sirenEnabled = false;
+			}
+			else if(IsAlive())
+				m_sirenDeathTime = SIREN_SOUND_DEATHTIME;
+		}
 	}
 
 	float fTractionLevel = GetTractionSliding(true)*0.2f;
@@ -3479,7 +3509,7 @@ void CCar::UpdateSounds( float fDt )
 
 	const float IDEAL_WHEEL_RADIUS = 0.35f;
 	const float SKID_RADIAL_SOUNDPITCH_SCALE = 0.68f;
-
+	
 	float wheelSkidPitchModifier = IDEAL_WHEEL_RADIUS - fWheelRad;
 	float fSkidPitch = clamp(0.7f*fSkid+0.25f, 0.35f, 1.0f) - 0.15f*saturate(sin(m_curTime*1.25f)*8.0f - fTractionLevel);
 
@@ -4064,6 +4094,42 @@ void CCar::OnUnpackMessage( CNetMessageBuffer* buffer )
 // Gameplay-related
 //---------------------------------------------------------------------------
 
+void CCar::OnDeath( CGameObject* deathBy )
+{
+	// TODO: set engine on fire
+
+#ifndef EDITOR
+	int deathByReplayId = deathBy ? deathBy->m_replayID : REPLAY_NOT_TRACKED;
+	g_replayData->PushEvent( REPLAY_EVENT_CAR_DEATH, m_replayID, (void*)deathByReplayId );
+#endif // EDITOR
+
+#ifndef NO_LUA
+	OOLUA::Script& state = GetLuaState();
+	EqLua::LuaStackGuard g(state);
+
+	if( m_luaOnDeath.Push() )
+	{
+		if(deathBy != NULL)
+		{
+			switch(deathBy->ObjType())
+			{
+				case GO_CAR:
+					OOLUA::push(state, (CCar*)deathBy);
+					break;
+				default:
+					OOLUA::push(state, deathBy);
+					break;
+			}
+		}
+	
+		if(!m_luaOnDeath.Call(deathBy ? 1 : 0, 0, 0))
+		{
+			MsgError("CGameObject:OnDeath error:\n %s\n", OOLUA::get_last_error(state).c_str());
+		}
+	}
+#endif // NO_LUA
+}
+
 bool CCar::IsAlive() const
 {
 	return m_gameDamage < m_gameMaxDamage;
@@ -4118,6 +4184,8 @@ void CCar::SetDamage( float damage )
 {
 	m_gameDamage = damage;
 
+	g_replayData->PushEvent( REPLAY_EVENT_CAR_DAMAGE, m_replayID, *(void**)&m_gameDamage.m_value );
+
 	if(m_gameDamage > m_gameMaxDamage)
 		m_gameDamage = m_gameMaxDamage;
 }
@@ -4139,7 +4207,7 @@ float CCar::GetBodyDamage() const // max. 6.0f
 
 void CCar::Repair(bool unlock)
 {
-	m_gameDamage = 0.0f;
+	SetDamage(0.0f);
 
 	// visual damage
 	for(int i = 0; i < CB_PART_COUNT; i++)
@@ -4252,6 +4320,7 @@ void CCar::L_RegisterEventHandler(const OOLUA::Table& tableRef)
 {
 	BaseClass::L_RegisterEventHandler(tableRef);
 	m_luaOnCollision.Get(m_luaEvtHandler, "OnCollide", true);
+	m_luaOnDeath.Get(m_luaEvtHandler, "OnDeath", true);
 }
 #endif // NO_LUA
 

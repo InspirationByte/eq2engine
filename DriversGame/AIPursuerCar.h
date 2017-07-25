@@ -111,7 +111,6 @@ protected:
 
 	pursuitTargetInfo_t		m_targInfo;
 
-	float					m_deathTime;
 	float					m_blockingTime;
 	float					m_blockTimeout;
 

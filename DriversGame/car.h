@@ -527,6 +527,8 @@ protected:
 	void					UpdateWheelEffect(int nWheel, float fDt);
 	void					UpdateVehiclePhysics(float fDt);
 
+	virtual void			OnDeath( CGameObject* deathBy );
+
 	CPhysicsHFObject*		m_pPhysicsObject;
 	CEqCollisionObject*		m_lastCollidingObject;
 
@@ -596,6 +598,8 @@ protected:
 	float					m_effectTime;
 	float					m_engineSmokeTime;
 
+	float					m_sirenDeathTime;
+
 	// gameplay
 	CNetworkVar(float,		m_gameDamage);
 	CNetworkVar(float,		m_gameMaxDamage);
@@ -616,6 +620,7 @@ protected:
 
 #ifndef NO_LUA
 	EqLua::LuaTableFuncRef	m_luaOnCollision;
+	EqLua::LuaTableFuncRef	m_luaOnDeath;
 #endif // NO_LUA
 
 	TexAtlasEntry_t*		m_trans_grasspart;

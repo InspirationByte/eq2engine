@@ -99,6 +99,8 @@ public:
 	void							GlobalToLocalPoint( const IVector2D& globalPoint, IVector2D& outLocalPoint, CLevelRegion** outReg ) const;		// converts global tile 2D point to region and local tile
 	void							LocalToGlobalPoint( const IVector2D& localPoint, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const;	// converts local point at region to global tile 2D point
 
+	void							GlobalToLocalPointWithinRegion( const IVector2D& point, IVector2D& outLocalPoint, int regionIdx ) const;// converts global tile 2D point to local tile within specified region (clamped)
+
 	//-------------------------------------------------------------------------
 	// roads
 

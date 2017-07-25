@@ -32,7 +32,6 @@ const float AI_COPVIEW_RADIUS_WANTED	= 25.0f;
 const float AI_COPVIEW_RADIUS_PURSUIT	= 120.0f;
 const float AI_COPVIEW_RADIUS_ROADBLOCK = 15.0f;
 
-const float AI_COP_DEATHTIME	= 3.5f;
 const float AI_COP_BLOCK_DELAY			= 1.5f;
 const float AI_COP_BLOCK_REALIZE_TIME	= 0.8f;
 
@@ -226,6 +225,9 @@ void CAIPursuerCar::OnPhysicsFrame( float fDt )
 		if(m_isColliding)
 			m_lastCollidingPosition = GetPhysicsBody()->m_collisionList[0].position;
 
+		if(!g_pGameWorld->IsValidObject(m_targInfo.target))
+			m_targInfo.target = NULL;
+
 		// update target infraction
 		if(m_targInfo.target)
 		{
@@ -322,7 +324,7 @@ void CAIPursuerCar::EndPursuit(bool death)
 		AI_SetState( &CAIPursuerCar::DeadState );
 
 
-	if (g_pGameWorld->IsValidObject(m_targInfo.target))
+	if (m_targInfo.target != NULL)
 	{
 		if(m_targInfo.target->GetPursuedCount() == 0)
 		{
@@ -598,11 +600,11 @@ Vector3D CAIPursuerCar::GetAdvancedPointByDist(int& startSeg, float distFromSegm
 
 int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 {
+	bool targetIsValid = (m_targInfo.target != NULL);
+
 	if(transition == STATE_TRANSITION_PROLOG)
 	{
 		m_gearboxShiftThreshold = 1.0f;
-
-		bool targetIsValid = g_pGameWorld->IsValidObject(m_targInfo.target);
 
 		if(!targetIsValid)
 		{
@@ -651,6 +653,14 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	{
 		m_gearboxShiftThreshold = 0.6f;
 	}
+	else
+	{
+		if(!targetIsValid)
+		{
+			EndPursuit(!IsAlive());
+			return 0;
+		}
+	}
 
 	// do nothing
 	if(transition != STATE_TRANSITION_NONE)
@@ -670,7 +680,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		EndPursuit(true);
 
 		AI_SetState( &CAIPursuerCar::DeadState );
-		m_deathTime = AI_COP_DEATHTIME;
 		m_refreshTime = 0.0f;
 		return 0;
 	}
@@ -1210,23 +1219,10 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 int	CAIPursuerCar::DeadState( float fDt, EStateTransition transition )
 {
-	if( m_deathTime > 0 && m_conf->visual.sirenType != SERVICE_LIGHTS_NONE && m_pSirenSound )
-	{
-		m_pSirenSound->SetPitch( m_deathTime / AI_COP_DEATHTIME );
-		m_deathTime -= fDt;
-
-		if(m_deathTime <= 0.0f)
-		{
-			m_sirenEnabled = false;
-			SetLight(CAR_LIGHT_SERVICELIGHTS, false);
-		}
-	}
-
 	int buttons = IN_ANALOGSTEER;
 	SetControlButtons( buttons );
 
-	//m_refreshTime = 0.0f;
-	//m_thinkTime = 0.0f;
+	SetLight(CAR_LIGHT_SERVICELIGHTS, m_sirenEnabled);
 
 	return 0;
 }

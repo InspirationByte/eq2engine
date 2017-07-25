@@ -80,6 +80,7 @@ enum EReplayEventType
 	REPLAY_EVENT_CAR_ENABLE,
 	REPLAY_EVENT_CAR_LOCK,
 	REPLAY_EVENT_CAR_DAMAGE,
+	REPLAY_EVENT_CAR_DEATH,
 };
 
 struct replaycontrol_s

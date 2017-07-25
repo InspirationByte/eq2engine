@@ -447,8 +447,8 @@ void InputCommands_SDL(SDL_Event* event)
 
 CGameHost::CGameHost() :
 	m_winSize(0), m_prevMousePos(0), m_mousePos(0), m_pWindow(NULL), m_nQuitState(QUIT_NOTQUITTING),
-	m_bTrapMode(false), m_bDoneTrapping(false), m_nTrapKey(0), m_nTrapButtons(0),
-	m_cursorVisible(true), m_pDefaultFont(NULL)
+	m_bTrapMode(false), m_bDoneTrapping(false), m_nTrapKey(0), m_nTrapButtons(0), m_cursorCentered(false),
+	m_pDefaultFont(NULL)
 {
 	m_fCurTime = 0;
 	m_fFrameTime = 0;
@@ -540,7 +540,18 @@ bool CGameHost::FilterTime( double dTime )
 	return true;
 }
 
+void CGameHost::UpdateCursorState()
+{
+	bool cursorVisible = false;
 
+	GetStateMouseCursorProperties(cursorVisible, m_cursorCentered);
+
+	cursorVisible = cursorVisible || g_pSysConsole->IsVisible() || equi::Manager->IsPanelsVisible();
+	m_cursorCentered = m_cursorCentered && !(g_pSysConsole->IsVisible() || equi::Manager->IsPanelsVisible());
+
+	// update cursor visibility state
+	SetCursorShow( cursorVisible );
+}
 
 void CGameHost::SetCursorPosition(int x, int y)
 {
@@ -556,14 +567,15 @@ void CGameHost::SetCursorPosition(int x, int y)
 
 void CGameHost::SetCursorShow(bool bShow)
 {
-	if(m_cursorVisible == bShow)
+	bool state = SDL_ShowCursor(-1) > 0;
+
+	if(state == bShow)
 		return;
 
 	if(bShow)
 		SDL_SetCursor(staticDefaultCursor[dc_arrow]);
 
 	SDL_ShowCursor(bShow);
-	m_cursorVisible = bShow;
 }
 
 extern bool s_bActive;
@@ -603,6 +615,8 @@ bool CGameHost::Frame()
 
 	if( !FilterTime( m_fFrameTime ) )
 		return false;
+
+	UpdateCursorState();
 
 	//--------------------------------------------
 
@@ -782,20 +796,9 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 
 void CGameHost::TrapMouseMove_Event( int x, int y )
 {
-	bool cursorVisible = false;
-	bool cursorCentered = false;
-
-	GetStateMouseCursorProperties(cursorVisible, cursorCentered);
-
-	cursorVisible = cursorVisible || g_pSysConsole->IsVisible() || equi::Manager->IsPanelsVisible();
-	cursorCentered = cursorCentered && !(g_pSysConsole->IsVisible() || equi::Manager->IsPanelsVisible());
-
-	// set cursor visible
-	SetCursorShow( cursorVisible );
-
 	m_mousePos = IVector2D(x,y);
 
-	if(cursorCentered)
+	if(m_cursorCentered)
 	{
 		m_mousePos = IVector2D(m_winSize.x/2,m_winSize.y/2);
 		SetCursorPosition(m_mousePos.x, m_mousePos.y);
@@ -808,7 +811,7 @@ void CGameHost::TrapMouseMove_Event( int x, int y )
 
 	Vector2D delta = (Vector2D)m_prevMousePos - (Vector2D)m_mousePos;
 
-	delta.y *= (m_invert.GetBool() ? 1 : -1);
+	delta.y *= (m_invert.GetBool() ? 1.0f : -1.0f);
 	delta *= 0.05f;
 
 	if(GetCurrentState())
