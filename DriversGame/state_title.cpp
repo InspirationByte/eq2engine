@@ -102,7 +102,7 @@ bool CState_Title::Update( float fDt )
 		return false;
 
 	m_fade = clamp(m_fade, 0.0f, 1.0f);
-	m_actionTimeout = max(0,m_actionTimeout);
+	m_actionTimeout = max(0.0f, m_actionTimeout);
 
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
@@ -155,7 +155,7 @@ bool CState_Title::Update( float fDt )
 
 	if( m_goesFromTitle )
 	{
-		float sqAlphaValue = clamp(sin(m_textEffect*32.0f)*16,0.0f,1.0f); //sin(g_pHost->m_fGameCurTime*8.0f);
+		float sqAlphaValue = clamp(sinf(m_textEffect*32.0f)*16,0.0f,1.0f); //sin(g_pHost->m_fGameCurTime*8.0f);
 
 		if(m_textEffect > 0.75f)
 			fontParam.textColor.w = sqAlphaValue;

@@ -98,7 +98,7 @@ void CGameSession::Init()
 
 	if( g_replayData->m_state == REPL_INIT_PLAYBACK ) // make scripted cars work first
 		g_replayData->StartPlay();
-	
+
 	//
 	// MISSION SCRIPT INITIALIZER CALL
 	// also will spawn mission objects, if not in replay.
@@ -312,7 +312,7 @@ void CGameSession::Update( float fDt )
 	{
 		m_waitForExitTime -= fDt;
 
-		m_waitForExitTime = max(0,m_waitForExitTime);
+		m_waitForExitTime = max(0.0f,m_waitForExitTime);
 	}
 
 	if(fDt <= 0.0f)
@@ -334,8 +334,8 @@ void CGameSession::Update( float fDt )
 		if( !g_replayData->IsCarPlaying( player_car ) )
 		{
 			m_playerCar->SetControlButtons( m_localControls );
-			m_playerCar->SetControlVars((m_localControls & IN_ACCELERATE) ? m_localAccelBrakeValue : 0.0f, 
-										(m_localControls & IN_BRAKE) ? m_localAccelBrakeValue : 0.0f, 
+			m_playerCar->SetControlVars((m_localControls & IN_ACCELERATE) ? m_localAccelBrakeValue : 0.0f,
+										(m_localControls & IN_BRAKE) ? m_localAccelBrakeValue : 0.0f,
 										m_localSteeringValue);
 		}
 

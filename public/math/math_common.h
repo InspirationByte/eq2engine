@@ -26,13 +26,36 @@
 
 #define roundf(x) floorf((x) + 0.5f)
 
+#define NOMINMAX
+#undef min
+#undef max
+/*
 #ifndef min
 #define min(x, y) ((x < y)? x : y)
 #endif
 
 #ifndef max
 #define max(x, y) ((x > y)? x : y)
-#endif
+#endif*/
+
+#define MAKE_MINMAX_FOR( type )	\
+	inline type min(type x, type y) {return (x < y)? x : y;} \
+	inline type max(type x, type y) {return (x > y)? x : y;}
+
+MAKE_MINMAX_FOR(float)
+MAKE_MINMAX_FOR(double)
+
+MAKE_MINMAX_FOR(int8)
+MAKE_MINMAX_FOR(uint8)
+
+MAKE_MINMAX_FOR(int16)
+MAKE_MINMAX_FOR(uint16)
+
+MAKE_MINMAX_FOR(int32)
+MAKE_MINMAX_FOR(uint32)
+
+MAKE_MINMAX_FOR(int64)
+MAKE_MINMAX_FOR(uint64)
 
 // Math routines done in optimized assembly math package routines
 inline void SinCos( float radians, float *sine, float *cosine )

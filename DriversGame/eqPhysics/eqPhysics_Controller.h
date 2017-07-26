@@ -8,6 +8,8 @@
 #ifndef EQPHYSICS_CONTROLLER_H
 #define EQPHYSICS_CONTROLLER_H
 
+class CEqPhysics;
+
 class IEqPhysicsController
 {
 	friend class CEqPhysics;

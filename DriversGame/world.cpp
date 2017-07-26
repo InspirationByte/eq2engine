@@ -977,22 +977,22 @@ void CGameWorld::DrawSkyBox(int renderFlags)
 	}
 }
 
-void CopyPixels(int* src, int* dest, int w1, int h1, int w2, int h2) 
+void CopyPixels(int* src, int* dest, int w1, int h1, int w2, int h2)
 {
     int x_ratio = (int)((w1<<16)/w2) +1;
     int y_ratio = (int)((h1<<16)/h2) +1;
 
     int x2, y2 ;
-    for (int i=0;i<h2;i++) 
+    for (int i=0;i<h2;i++)
 	{
-        for (int j=0;j<w2;j++) 
+        for (int j=0;j<w2;j++)
 		{
             x2 = ((j*x_ratio)>>16);
             y2 = ((i*y_ratio)>>16);
 
             dest[(i*w2)+j] = src[(y2*w1)+x2] ;
-        }                
-    }                
+        }
+    }
 }
 
 ConVar r_skyToCubemap("r_skyToCubemap", "1");
@@ -1006,10 +1006,10 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 		return;
 
 	materials->Wait();
-	
+
 	m_envMapsDirty = false;
-	
-	ITexture* tempRenderTarget = g_pShaderAPI->CreateNamedRenderTarget("_tempSkyboxRender", 512, 512, FORMAT_RGBA8, 
+
+	ITexture* tempRenderTarget = g_pShaderAPI->CreateNamedRenderTarget("_tempSkyboxRender", 512, 512, FORMAT_RGBA8,
 										TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
 
 	tempRenderTarget->Ref_Grab();
@@ -1034,7 +1034,7 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	g_pShaderAPI->Finish();
 
 	texlockdata_t tempLock;
-	
+
 
 	CImage envMap, fogEnvMap;
 	envMap.Create(FORMAT_RGBA8, 256, 256, 0, 1);
@@ -1045,7 +1045,7 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 
 	int envMapFace = envMap.GetMipMappedSize(0,1) / 6;
 	int fogEnvMapFace = fogEnvMap.GetMipMappedSize(0,1) / 6;
-	
+
 	// do resize by software
 	for(int i = 0; i < 6; i++)
 	{
@@ -1061,12 +1061,12 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 			tempRenderTarget->Unlock();
 		}
 	}
-	
+
 	envMap.SwapChannels(0, 2);
 	fogEnvMap.SwapChannels(0, 2);
 
 	envMap.CreateMipMaps(7);
-	
+
 	DkList<CImage*> envMapImg;
 	envMapImg.append(&envMap);
 
@@ -1319,7 +1319,7 @@ void CGameWorld::DrawFakeReflections()
 	materials->SetMatrix(MATRIXMODE_VIEW, view);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	
+
 	Matrix4x4 viewProj = proj*view;
 	// TEMPORARILY DISABLED, NEEDS DEPTH BUFFER
 	// and prettier look
@@ -1417,8 +1417,8 @@ void CGameWorld::Draw( int nRenderFlags )
 	// calculate ambient, sun and sky colors
 	if (m_fNextThunderTime > 0 && m_fNextThunderTime < m_fThunderTime)
 	{
-		float fThunderLight = saturate(sin((m_fThunderTime - m_fNextThunderTime)*30.0f))*0.5f;
-		fThunderLight += saturate(sin((m_fThunderTime - m_fNextThunderTime)*70.0f));
+		float fThunderLight = saturate(sinf((m_fThunderTime - m_fNextThunderTime)*30.0f))*0.5f;
+		fThunderLight += saturate(sinf((m_fThunderTime - m_fNextThunderTime)*70.0f));
 
 		fSkyBrightness = 1.0f + (1.0 - fThunderLight)*0.85f;
 		m_info.rainBrightness += fThunderLight*0.5f;

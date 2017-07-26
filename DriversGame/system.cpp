@@ -499,7 +499,7 @@ ConVar sys_timescale("sys_timescale", "1.0f", "Time scale", CV_CHEAT);
 #define GAME_MAX_FRAMERATE (sys_maxfps.GetFloat()) // 60 fps limit
 
 #define MIN_FPS 0.01
-#define MAX_FPS 10000
+#define MAX_FPS 10000.0
 
 #define MAX_FRAMETIME	0.1
 #define MIN_FRAMETIME	0.001

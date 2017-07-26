@@ -817,8 +817,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	// movement prediction factor is distant
 	FReal velocityDistOffsetFactor = length(GetOrigin() - targetOrigin);
-	velocityDistOffsetFactor = RemapValClamp(velocityDistOffsetFactor, 0.0f, 6.0f, 0.0f, 1.0f);
-	velocityDistOffsetFactor = 1.0f - pow(velocityDistOffsetFactor, 2.0f);
+	velocityDistOffsetFactor = RemapValClamp(velocityDistOffsetFactor, FReal(0.0f), FReal(6.0f), FReal(0.0f), FReal(1.0f));
+	velocityDistOffsetFactor = FReal(1.0f - pow((float)velocityDistOffsetFactor, 2.0f));
 
 	Vector3D carForwardDir	= GetForwardVector();
 	Vector3D carPos			= GetOrigin() + carForwardDir * m_conf->physics.body_size.z;
@@ -862,7 +862,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	//-------------------------------------------------------------------------------
 	// refresh the navigation path if we don't see the target
 
-	// update last successful position by checking cell which at carPos 
+	// update last successful position by checking cell which at carPos
 	ubyte navPoint = g_pGameWorld->m_level.Nav_GetTileAtPosition(GetOrigin());
 
 	if(navPoint >= 0x4)
@@ -958,7 +958,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	CollisionData_t velocityColl;
 	CollisionData_t frontColl;
 
-	float frontCollDist = clamp(fSpeed, 1.0f, 8.0f);
+	float frontCollDist = clamp((float)fSpeed, 1.0f, 8.0f);
 
 	btBoxShape carBoxShape(btVector3(m_conf->physics.body_size.x, m_conf->physics.body_size.y, 0.25f));
 
@@ -981,10 +981,10 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	FReal lateralSlideSigned = GetLateralSlidingAtBody();
 	FReal lateralSlide = FPmath::abs(lateralSlideSigned);
 
-	FReal speedFactor = RemapValClamp(fSpeed, 0.0f, 50.0f, 0.0f, 1.0f);
+	FReal speedFactor = RemapValClamp(fSpeed, FReal(0.0f), FReal(50.0f), FReal(0.0f), FReal(1.0f));
 
 	FReal speedToSteering = fSpeed - lateralSlideSigned*10.0f;
-	FReal steeringSpeedFactor = pow( (float)RemapValClamp(speedToSteering, 0.0f, 180.0f, 1.0f, 0.45f), 0.5f);
+	FReal steeringSpeedFactor = pow( (float)RemapValClamp(speedToSteering, FReal(0.0f), FReal(180.0f), FReal(1.0f), FReal(0.45f)), 0.5f);
 
 	if( !doesHaveStraightPath &&
 		m_targInfo.path.points.numElem() > 0 &&
@@ -998,7 +998,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 		FReal len = length(currPointPos - nextPointPos);
 
-		FReal speedModifier = RemapValClamp(FReal(60.0f) - fSpeed, 0.0f, 60.0f, 4.0f, 8.0f);
+		FReal speedModifier = RemapValClamp(FReal(60.0f) - fSpeed, FReal(0.0f), FReal(60.0f), FReal(4.0f), FReal(8.0f));
 
 		int pathIdx = m_targInfo.pathTargetIdx;
 
@@ -1041,7 +1041,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 			debugoverlay->Box3D(hardSteerPosEnd - 0.25f, hardSteerPosEnd + 0.25f, ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
 		}
 	}
-	
+
 	// get rid of obstacles by tracing sphere forwards
 	{
 		float traceShapeRadius = 1.0f + fSpeed*0.01f;
@@ -1056,7 +1056,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 			&collFilter);
 
 		debugoverlay->Line3D(carPos, steeringTargetColl.position, ColorRGBA(0, 1, 0, 1.0f), ColorRGBA(1, 1, 0, 1.0f), DOVERLAY_DELAY);
-	
+
 		// correct the steering to prevent car damage if we moving towards obstacle
 		if(steeringTargetColl.fract < 1.0f)
 		{
@@ -1065,7 +1065,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 			float newPositionDist = distanceScale * AI_OSTACLE_STEERINGCORRECTION_DIST + FPmath::abs(speedMPS)* distanceScale * 0.25f;
 
 			Vector3D newSteeringTargetPos = steeringTargetColl.position + steeringTargetColl.normal * newPositionDist; // 4 meters is enough to be safe
-		
+
 			Vector3D checkSteeringDir = fastNormalize(steeringTargetPos-steeringTargetPosB);
 
 			//if(dot(normalize(newSteeringTargetPos-carPos), normalize(carForwardDir)) > 0.5f)
@@ -1110,7 +1110,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	// inverese steering angle if we're going backwards
 	if(fSpeed < -0.1f)
 		fSteeringAngle *= -1.0f;
-	
+
 	if(lateralSlide > 4.0f && sign(lateralSlideSigned)+sign(fSteeringAngle) < 0.5f)
 	{
 		//FReal lateralSlideSpeedSteerModifier = 1.0f - fabs(dot(relateiveSteeringDir, fastNormalize(carLinearVel)));
@@ -1123,7 +1123,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	Vector3D velocityDir = fastNormalize(carLinearVel+carForwardDir);
 
 	FReal steeringToTargetDot = dot(steeringTargetDir, velocityDir);
-	FReal steeringBrakeFactor = pow(1.0f - max(0.0f, steeringToTargetDot), 2.0f);
+	FReal steeringBrakeFactor = pow(1.0f - max(FReal(0.0f), steeringToTargetDot), 2.0f);
 
 	FReal accelerator = 1.0f;
 	FReal brake = 0.0f;
@@ -1171,13 +1171,13 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	if(fSpeed > 1.0f)
 	{
-		FReal velocityToTargetFactor = pow(max(0.0f, steeringToTargetDot), 0.5f);
+		FReal velocityToTargetFactor = pow(max(FReal(0.0f), steeringToTargetDot), 0.5f);
 
 		FReal lateralSlideSpd = lateralSlide*speedFactor;
 
 		FReal distToTargetDiff = fSpeed*KPH_TO_MPS * 2.0f - distToBrakeTarget;
-		FReal brakeDistantFactor = RemapValClamp(distToTargetDiff, 0.0f, AI_COP_BRAKEDISTANCE_SCALE, 0.0f, 1.0f) * weatherBrakeDistModifier;
-	
+		FReal brakeDistantFactor = RemapValClamp(distToTargetDiff, FReal(0.0f), FReal(AI_COP_BRAKEDISTANCE_SCALE), FReal(0.0f), FReal(1.0f)) * weatherBrakeDistModifier;
+
 		if(doesHardSteer || velocityColl.fract < 0.5f || speedFactor > 0.05f && (steeringToTargetDot < 0.85f || speedFactor >= 0.5f && brakeDistantFactor > 0.0f) )
 		{
 			controls |= IN_BRAKE;
