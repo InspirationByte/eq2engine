@@ -16,9 +16,9 @@
 #include "in_keys_ident.h"
 #include "IFileSystem.h"
 
-#include <map>
-
 #include "math/Vector.h"
+
+#include <map>
 
 // binding
 
@@ -136,7 +136,7 @@ public:
 	void					ExecuteBoundCommands(T* zone, bool bState);
 
 protected:
-	axisAction_t*			FindAxisAction(const char* name);	
+	axisAction_t*			FindAxisAction(const char* name);
 
 	DkList<in_binding_t*>			m_bindings;
 	std::map<int, in_binding_t*>	m_axisBindings;

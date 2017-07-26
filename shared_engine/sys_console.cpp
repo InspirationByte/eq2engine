@@ -16,7 +16,6 @@
 #include "FontCache.h"
 
 #include "materialsystem/MeshBuilder.h"
-
 #include "KeyBinding/InputCommandBinder.h"
 
 #ifdef _DEBUG

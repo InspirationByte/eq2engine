@@ -207,8 +207,8 @@ Vector3D CCameraAnimator::ShakeView( float fDt )
 	m_shakeDecayCurTime -= fDt;
 
 	return fShakeRate * m_shakeMagnitude * Vector3D(
-		sin(cos(fShakeRate+m_shakeDecayCurTime*44.0f)), 
-		sin(cos(fShakeRate+m_shakeDecayCurTime*115.0f)), 
+		sin(cos(fShakeRate+m_shakeDecayCurTime*44.0f)),
+		sin(cos(fShakeRate+m_shakeDecayCurTime*115.0f)),
 		sin(cos(fShakeRate+m_shakeDecayCurTime*77.0f)));
 }
 
@@ -433,7 +433,7 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 			float distance_factor = 1.0f - (fDistance / ZOOM_END_DIST);
 
-			float fFov = lerp(START_FOV, END_FOV, clamp(2.5f+log(1.0f-distance_factor), 0.0f, 1.0f));
+			float fFov = lerp(START_FOV, END_FOV, clamp(2.5f+logf(1.0f-distance_factor), 0.0f, 1.0f));
 
 			m_computedView.SetFOV(fFov);
 		}

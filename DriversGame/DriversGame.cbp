@@ -69,7 +69,7 @@
 			<Add library="vorbisfile" />
 			<Add library="openal" />
 			<Add directory="../libs" />
-			<Add directory="../src_dependency/openal-soft/build_linux" />
+			<Add directory="../src_dependency/openal-soft" />
 		</Linker>
 		<Unit filename="../public/TextureAtlas.cpp" />
 		<Unit filename="../public/TextureAtlas.h" />
@@ -126,7 +126,8 @@
 		<Unit filename="../shared_engine/FontCache.h" />
 		<Unit filename="../shared_engine/FontLayoutBuilders.cpp" />
 		<Unit filename="../shared_engine/FontLayoutBuilders.h" />
-		<Unit filename="../shared_engine/KeyBinding/Keys.cpp" />
+		<Unit filename="../shared_engine/KeyBinding/InputCommandBinder.cpp" />
+		<Unit filename="../shared_engine/KeyBinding/InputCommandBinder.h" />
 		<Unit filename="../shared_engine/KeyBinding/Keys.h" />
 		<Unit filename="../shared_engine/Network/NETThread.cpp" />
 		<Unit filename="../shared_engine/Network/NETThread.h" />
@@ -202,7 +203,15 @@
 		<Unit filename="eqPhysics/eqPhysics_Body.cpp" />
 		<Unit filename="eqPhysics/eqPhysics_Body.h" />
 		<Unit filename="eqPhysics/eqPhysics_Constraints.h" />
+		<Unit filename="eqPhysics/eqPhysics_Controller.h" />
+		<Unit filename="eqPhysics/eqPhysics_Contstraint.h" />
+		<Unit filename="eqPhysics/eqPhysics_HingeJoint.cpp" />
+		<Unit filename="eqPhysics/eqPhysics_HingeJoint.h" />
 		<Unit filename="eqPhysics/eqPhysics_Joint.h" />
+		<Unit filename="eqPhysics/eqPhysics_MaxDistConstraint.cpp" />
+		<Unit filename="eqPhysics/eqPhysics_MaxDistConstraint.h" />
+		<Unit filename="eqPhysics/eqPhysics_PointConstraint.cpp" />
+		<Unit filename="eqPhysics/eqPhysics_PointConstraint.h" />
 		<Unit filename="eqphysics/eqBulletIndexedMesh.h" />
 		<Unit filename="eqphysics/eqCollision_ObjectGrid.h" />
 		<Unit filename="game_multiplayer.cpp" />

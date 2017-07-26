@@ -163,7 +163,7 @@ void CObject_Sheets::Simulate( float fDt )
 				sheet.angle += sheet.velocity*fDt;
 			}
 
-			featherAngle *= clamp(fabs(sheet.velocity)*0.5f, 0.0f, 1.0f);
+			featherAngle *= clamp((float)fabs(sheet.velocity)*0.5f, 0.0f, 1.0f);
 		}
 
 		if(!appliedForce && sheet.velocity != 0.0f)
@@ -189,7 +189,7 @@ void CObject_Sheets::Simulate( float fDt )
 		else if(sheet.velocity == 0.0f)
 			featherAngle = 0.0f;
 
-		featherAngle += sin(featherAngle);
+		featherAngle += sinf(featherAngle);
 
 		Vector3D sheetPos = sheet.origin + Vector3D(sin(sheet.angle)*1.5f, 0.015f, -cos(sheet.angle)*1.5f);
 		m_bbox.AddVertex( sheetPos );

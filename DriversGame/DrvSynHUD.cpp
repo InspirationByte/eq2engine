@@ -29,12 +29,12 @@ DECLARE_CMD(hud_showLastMessage, NULL, 0)
 
 float ScreenScaler_GetBestFontSize( const IVector2D& screenSize,  float initialFontSize )
 {
-	
+
 }
 */
 //----------------------------------------------------------------------------------
 
-CDrvSynHUDManager::CDrvSynHUDManager() 
+CDrvSynHUDManager::CDrvSynHUDManager()
 	: m_handleCounter(0), m_mainVehicle(NULL), m_curTime(0.0f), m_mapTexture(NULL), m_showMap(true), m_screenAlertTime(0.0f), m_screenMessageTime(0.0f)
 {
 }
@@ -177,7 +177,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 	static IEqFont* robotocon30b = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD);
 	static IEqFont* robotocon30bi = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD | TEXT_STYLE_ITALIC);
 	static IEqFont* defFont = g_fontCache->GetFont("default", 0);
-		
+
 	eqFontStyleParam_t fontParams;
 	fontParams.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParams.textColor = color4_white;
@@ -333,10 +333,10 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 			// if cars pursues me
 			if(felonyPercent >= 10.0f && inPursuit)
 			{
-				float colorValue = clamp(sin(m_curTime*16.0)*16,-1,1); //sin(g_pHost->m_fGameCurTime*8.0f);
+				float colorValue = clamp(sinf(m_curTime*16.0)*16,-1.0f,1.0f); //sin(g_pHost->m_fGameCurTime*8.0f);
 
-				float v1 = pow(-min(0,colorValue), 2.0f);
-				float v2 = pow(max(0,colorValue), 2.0f);
+				float v1 = pow(-min(0.0f,colorValue), 2.0f);
+				float v2 = pow(max(0.0f,colorValue), 2.0f);
 
 				fontParams.textColor = lerp(ColorRGBA(v1,0,v2,1), color4_white, 0.25f);
 			}
@@ -377,7 +377,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 			Vector2D timeDisplayTextPos(screenSize.x / 2, 80);
 
 			wchar_t* str = varargs_w(L"%.2i:%.2i", mins, secs);
-		
+
 			float minSecWidth = numbers50->GetStringWidth(str, numFontParams);
 			numbers50->RenderText(str, timeDisplayTextPos, numFontParams);
 
@@ -402,7 +402,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 			{
 				mapPos.y = 55;
 			}
-			
+
 			float viewRotation = DEG2RAD( camera.GetAngles().y + 180);
 			Vector3D viewPos = Vector3D(camera.GetOrigin().xz() * Vector2D(1.0f,-1.0f), 0.0f);
 			Vector2D playerPos(0);
@@ -429,18 +429,18 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 				playerPos = m_mainVehicle->GetOrigin().xz() * Vector2D(-1.0f,1.0f);
 			}
-			
+
 			Matrix4x4 mapTransform = rotateZ4(viewRotation);// * rotateX4(DEG2RAD(25));
-			
+
 			//materials->SetMatrix(MATRIXMODE_PROJECTION, perspectiveMatrixY(mapSize.x,mapSize.y, 90.0f, 0.0f, 1000.0f));
 			//materials->SetMatrix(MATRIXMODE_VIEW, rotateZXY4(DEG2RAD(40.0f), DEG2RAD(180.0f), DEG2RAD(180.0f)) * translate(0.0f, 200.0f, -500.0f));
 			//materials->SetMatrix(MATRIXMODE_WORLD, mapTransform * translate(viewPos));
-			
+
 			materials->SetMatrix(MATRIXMODE_VIEW, translate(mapCenter.x,mapCenter.y, 0.0f) * scale4(mapZoom, mapZoom, 1.0f));
 			materials->SetMatrix(MATRIXMODE_WORLD, mapTransform * translate(viewPos));
 
 			Vector2D imgSize(1.0f);
-			
+
 			if( m_mapTexture )
 				imgSize = Vector2D(m_mapTexture->GetWidth(),m_mapTexture->GetHeight());
 
@@ -646,8 +646,8 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 					{
 						float colorValue = sin(m_curTime*16.0);
 
-						float v1 = pow(-min(0,colorValue), 2.0f);
-						float v2 = pow(max(0,colorValue), 2.0f);
+						float v1 = pow(-min(0.0f,colorValue), 2.0f);
+						float v2 = pow(max(0.0f,colorValue), 2.0f);
 
 						m_radarBlank = 1.0f;
 
@@ -721,7 +721,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		scrMsgParams.textColor = ColorRGBA(1,1,1,alpha);
 
 		// ok for 3 seconds
-		
+
 		float textXPos = -2000.0f * pow(m_screenAlertInTime, 4.0f) + (2000.0f * pow(1.0f - clampedAlertTime, 4.0f));
 
 		robotocon30bi->RenderText(m_screenAlertText.c_str(), screenMessagePos + Vector2D(textXPos, messageSizeY*0.7f), scrMsgParams);
@@ -842,11 +842,11 @@ void CDrvSynHUDManager::RemoveTrackingObject( int handle )
 
 #ifndef __INTELLISENSE__
 OOLUA_EXPORT_FUNCTIONS(
-	CDrvSynHUDManager, 
-	AddTrackingObject, 
+	CDrvSynHUDManager,
+	AddTrackingObject,
 	AddMapTargetPoint,
 	RemoveTrackingObject,
-	ShowMessage, 
+	ShowMessage,
 	ShowAlert,
 	SetTimeDisplay,
 	Enable,

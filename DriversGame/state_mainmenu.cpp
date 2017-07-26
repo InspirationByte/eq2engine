@@ -165,7 +165,7 @@ bool CState_MainMenu::Update( float fDt )
 			{
 				if(m_selection == idx)
 				{
-					float sqAlphaValue = clamp(sin(m_textEffect*32.0f)*16,0.0f,1.0f); //sin(g_pHost->m_fGameCurTime*8.0f);
+					float sqAlphaValue = clamp(sinf(m_textEffect*32.0f)*16,0.0f,1.0f); //sin(g_pHost->m_fGameCurTime*8.0f);
 
 					if(m_textEffect > 0.75f)
 						fontParam.textColor.w = sqAlphaValue;

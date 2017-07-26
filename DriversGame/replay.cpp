@@ -314,7 +314,7 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 
 	car->m_accelRatio = accelControl;
 	car->m_brakeRatio = brakeControl;
-	
+
 	car->SetControlButtons(control_flags);
 }
 
@@ -353,7 +353,7 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 	rep->skeptFrames++;
 
 	bool forceCorrection = m_tick % CORRECTION_TICK == 0;
-	
+
 	// decide to discard frames or not depending on events
 	// or record only frames where collision ocurred
 	if(!rep->recordOnlyCollisions && !rep->onEvent)
@@ -378,14 +378,14 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 		if( control_flags & IN_ANALOGSTEER )
 			prevSteerRatio = prevsteerControl * prevSteerSign;
 
-		addControls =	(prevControl.button_flags != control_flags) || 
-						(accelControl != prevAccelControl) || 
-						(brakeControl != prevbrakeControl) || 
-						(steerControl != prevsteerControl) || 
+		addControls =	(prevControl.button_flags != control_flags) ||
+						(accelControl != prevAccelControl) ||
+						(brakeControl != prevbrakeControl) ||
+						(steerControl != prevsteerControl) ||
 						forceCorrection;
 	}
 
-	
+
 	DkList<CollisionPairData_t>& collisionList = body->m_collisionList;
 	bool satisfiesCollisions = collisionList.numElem([=](CollisionPairData_t& pair){ return pair.appliedImpulse > COLLISION_MIN_IMPULSE; });;
 
@@ -455,7 +455,7 @@ void CReplayData::SaveToFile( const char* filename )
 
 		int count = m_vehicles.numElem();
 		pFile->Write(&count, 1, sizeof(int));
-		
+
 		// write vehicles
 		for(int i = 0; i < m_vehicles.numElem(); i++)
 			WriteVehicleAndFrames(&m_vehicles[i], pFile);
@@ -574,7 +574,7 @@ void CReplayData::WriteEvents( IVirtualStream* stream, int onlyEvent )
 					eventData.Write( evt.eventData, 1, fevent.eventDataSize );
 
 					fevent.eventDataSize = eventData.Tell();
-					
+
 					break;
 				}
 			}
@@ -597,7 +597,7 @@ void CReplayData::WriteEvents( IVirtualStream* stream, int onlyEvent )
 		endEvent.eventType = REPLAY_EVENT_END;
 		endEvent.eventFlags = 0;
 		endEvent.eventDataSize = 0;
-		
+
 		stream->Write(&endEvent, 1, sizeof(replayevent_file_t));
 	}
 }
@@ -943,7 +943,7 @@ void CReplayData::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject* ob
 				veh.skeptFrames = 0;
 				evt.eventFlags |= REPLAY_FLAG_CAR_AI;
 			}
-				
+
 
 			object->m_replayID = evt.replayIndex;
 		}
@@ -1059,16 +1059,16 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 
 			// assign the replay index so it can play self
 			rep.obj_car->m_replayID = evt.replayIndex;
-			
+
 			ASSERTMSG(rep.obj_car, varargs("ERROR! Cannot find car '%s'", rep.name.c_str()));
-			
+
 			// temp
 			if(g_pGameSession->GetPlayerCar() == NULL)
 			{
 				g_pGameSession->SetPlayerCar(rep.obj_car);
 				g_pGameWorld->m_level.QueryNearestRegions(rep.car_initial_pos, true);
 			}
-			
+
 			// spawn
 			rep.obj_car->Spawn();
 
@@ -1181,11 +1181,11 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 				// set car damage to maximum and fire event
 				rep.obj_car->SetDamage( rep.obj_car->GetMaxDamage() );
 
-				int deathByReplayIdx = (int)evt.eventData;
+				int deathByReplayIdx = (int)(intptr_t)evt.eventData;
 
 				if(deathByReplayIdx != REPLAY_NOT_TRACKED)
 				{
-					vehiclereplay_t& deathByRep = m_vehicles[(int)evt.eventData];
+					vehiclereplay_t& deathByRep = m_vehicles[(int)(intptr_t)evt.eventData];
 					rep.obj_car->OnDeath( deathByRep.obj_car );
 				}
 				else

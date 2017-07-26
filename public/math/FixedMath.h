@@ -231,6 +231,9 @@ extern inline bool operator >(int x, const FReal& y)		{ return FReal(x)>y; }
 extern inline bool operator >(short x, const FReal& y)		{ return FReal(x)>y; }
 extern inline bool operator >(float x, const FReal& y)		{ return FReal(x)>y; }
 
+inline FReal min(FReal x, FReal y) {return (x < y)? x : y;}
+inline FReal max(FReal x, FReal y) {return (x > y)? x : y;}
+
 namespace FPmath
 {
 const static FReal PI = 3.141592654f;

@@ -108,7 +108,7 @@ inline void SpringFunction(T& value, T& velocity, float spring_const, float spri
 
 	// torsional spring
 	float springForceMagnitude = spring_const * fDt;
-	springForceMagnitude = clamp(springForceMagnitude, 0, 2 );
+	springForceMagnitude = clamp(springForceMagnitude, 0.0f, 2.0f );
 	velocity -= value * springForceMagnitude;
 }
 

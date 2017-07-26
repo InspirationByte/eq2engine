@@ -569,7 +569,7 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_pEngineSoundLow(NULL),
 	m_pHornSound(NULL),
 	m_pSirenSound(NULL),
-	
+
 	m_fEngineRPM(0.0f),
 	m_nPrevGear(-1),
 	m_steering(0.0f),
@@ -942,7 +942,7 @@ void CCar::OnRemove()
 	ses->RemoveSoundController(m_pEngineSoundLow);
 	ses->RemoveSoundController(m_pHornSound);
 	ses->RemoveSoundController(m_pSirenSound);
-	
+
 	delete [] m_wheels;
 	m_wheels = NULL;
 
@@ -1166,7 +1166,7 @@ void CCar::HingeVehicle(int thisHingePoint, CCar* otherVehicle, int otherHingePo
 	otherVehicle->m_isLocalCar = m_isLocalCar;
 
 	m_trailerHinge = new CEqPhysicsHingeJoint();
-	m_trailerHinge->Init(GetPhysicsBody(), otherVehicle->GetPhysicsBody(), vec3_forward, 
+	m_trailerHinge->Init(GetPhysicsBody(), otherVehicle->GetPhysicsBody(), vec3_forward,
 											m_conf->physics.hingePoints[thisHingePoint],
 											0.2f, 10.0f, 10.0f, 0.1f, 0.005f);
 
@@ -1247,7 +1247,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 			if( m_controlButtons & IN_HANDBRAKE )
 				fHandbrake = 1;
 		}
-		
+
 		// non-car vehicles still can brake
 		if( m_controlButtons & IN_BRAKE )
 			fBrake = (float)((float)m_brakeRatio*_oneBy1024);
@@ -1483,7 +1483,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	}
 
 	m_fAccelEffect += ((m_fAcceleration+fBrake)-m_fAccelEffect) * delta * ACCELERATION_SOUND_CONST * accel_scale;
-	m_fAccelEffect = clamp(m_fAccelEffect, FReal(-1.0f), FReal(1.0f));
+	m_fAccelEffect = clamp(m_fAccelEffect, -1.0f, 1.0f);
 
 	if( GetSpeed() <= 0.25f )
 	{
@@ -1641,7 +1641,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	}
 	else
 	{
-		if(	m_fBreakage > 0.4f && fabs(fBreakage) < 0.01f && 
+		if(	m_fBreakage > 0.4f && fabs(fBreakage) < 0.01f &&
 			m_conf->sounds.brakeRelease.Length() > 0)
 		{
 			// m_fBreakage is volume
@@ -1927,7 +1927,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 			springForce += wheelSlipForceDir * wheelSlipOppositeForce;
 			springForce += wheelTractionForceDir * wheelTractionForce;
 
-			float fVelDamp = sign(wheelPitchSpeed)*clamp(fabs(wheelPitchSpeed), 0.0f, 1.0f);
+			float fVelDamp = sign(wheelPitchSpeed)*clamp((float)fabs(wheelPitchSpeed), 0.0f, 1.0f);
 
 			// apply roll resistance if it's a car
 			if(isCar)
@@ -2184,7 +2184,7 @@ void CCar::OnPhysicsFrame( float fDt )
 
 		EmitCollisionParticles(coll.position, wVelocity, coll.normal, (coll.appliedImpulse/3500.0f)+1, coll.appliedImpulse);
 
-		float fDotUp = clamp(1.0f-fabs(dot(vec3_up, coll.normal)), 0.5f, 1.0f);
+		float fDotUp = clamp(1.0f-(float)fabs(dot(vec3_up, coll.normal)), 0.5f, 1.0f);
 		float invMassA = carBody->GetInvMass();
 
 		float fDamageImpact = (coll.appliedImpulse * fDotUp) * invMassA * 0.5f;
@@ -2487,7 +2487,7 @@ void CCar::Simulate( float fDt )
 				decalIntensity -= 0.5f;
 				lightIntensity -= 0.25f;
 			}
-				
+
 		}
 
 		if( m_bodyParts[CB_FRONT_RIGHT].damage > MIN_VISUAL_BODYPART_DAMAGE*0.5f )
@@ -2697,7 +2697,7 @@ void CCar::Simulate( float fDt )
 				PoliceSirenEffect(m_curTime, ColorRGB(1,0.2,0), siren_position, rightVec, -m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
 				PoliceSirenEffect(m_curTime+PI_F, ColorRGB(1,0.2,0), siren_position, rightVec, m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
 
-				float fSinFactor = clamp(fabs(sinf(m_curTime*16.0f)), 0.5f, 1.0f);
+				float fSinFactor = clamp((float)fabs(sinf(m_curTime*16.0f)), 0.5f, 1.0f);
 
 				wlight_t light;
 				light.position = Vector4D(siren_position, 20.0f);
@@ -2918,7 +2918,7 @@ void CCar::Simulate( float fDt )
 
 			ColorRGBA dimLightsColor(1,0.8,0.0f, 1.0f);
 
-			dimLightsColor *= clamp(sin(m_curTime*10.0f)*1.6f, 0.0f, 1.0f);
+			dimLightsColor *= clamp(sinf(m_curTime*10.0f)*1.6f, 0.0f, 1.0f);
 
 			if(IsLightEnabled(CAR_LIGHT_DIM_LEFT))
 			{
@@ -2968,9 +2968,9 @@ void CCar::Simulate( float fDt )
 }
 
 void CCar::AddWheelWaterTrail(const CCarWheel& wheel, const carWheelConfig_t& wheelConf,
-						const Vector3D& skidmarkPos, 
-						const Rectangle_t& trailCoords, 
-						const ColorRGB& ambientAndSun, 
+						const Vector3D& skidmarkPos,
+						const Rectangle_t& trailCoords,
+						const ColorRGB& ambientAndSun,
 						float skidPitchVel,
 						const Vector3D& wheelDir,
 						const Vector3D& wheelRightDir)
@@ -3072,22 +3072,22 @@ void CCar::DrawWheelEffects(int wheelIdx, int lod, bool drawSkidMarks)
 
 			if(skidPitchVel > 2.0f )
 			{
-				AddWheelWaterTrail(	wheel, wheelConf, 
-									skidmarkPos, 
+				AddWheelWaterTrail(	wheel, wheelConf,
+									skidmarkPos,
 									m_veh_raintrail->rect,
 									ambientAndSun,
 									skidPitchVel,
 									wheelDir,
 									wheelRightDir);
 			}
-			
+
 			if(fabs(tractionSlide*wheel.m_pitchVel) > skidPitchVel)
 			{
 				Vector3D wheelTractionDir = wheelMat.rows[2];
 				Vector3D wheelTractionRightDir = cross(wheelTractionDir, wheel.m_collisionInfo.normal);
 
-				AddWheelWaterTrail(	wheel, wheelConf, 
-									skidmarkPos, 
+				AddWheelWaterTrail(	wheel, wheelConf,
+									skidmarkPos,
 									m_veh_raintrail->rect,
 									ambientAndSun,
 									tractionSlide*0.5f,
@@ -3429,16 +3429,16 @@ void CCar::UpdateSounds( float fDt )
 		m_pEngineSoundLow->SetOrigin(pos);
 		m_pIdleSound->SetOrigin(pos);
 		m_pHornSound->SetOrigin(pos);
-		
+
 		if(m_pSirenSound)
 			m_pSirenSound->SetOrigin(pos);
 
 		m_pEngineSound->SetVelocity(velocity);
 		m_pEngineSoundLow->SetVelocity(velocity);
-	
+
 		m_pIdleSound->SetVelocity(velocity);
 		m_pHornSound->SetVelocity(velocity);
-		
+
 		if(m_pSirenSound)
 		{
 			m_pSirenSound->SetVelocity(velocity);
@@ -3515,9 +3515,9 @@ void CCar::UpdateSounds( float fDt )
 
 	const float IDEAL_WHEEL_RADIUS = 0.35f;
 	const float SKID_RADIAL_SOUNDPITCH_SCALE = 0.68f;
-	
+
 	float wheelSkidPitchModifier = IDEAL_WHEEL_RADIUS - fWheelRad;
-	float fSkidPitch = clamp(0.7f*fSkid+0.25f, 0.35f, 1.0f) - 0.15f*saturate(sin(m_curTime*1.25f)*8.0f - fTractionLevel);
+	float fSkidPitch = clamp(0.7f*fSkid+0.25f, 0.35f, 1.0f) - 0.15f*saturate(sinf(m_curTime*1.25f)*8.0f - fTractionLevel);
 
 	m_pSkidSound->SetVolume( fSkidVol );
 	m_pSkidSound->SetPitch( fSkidPitch + wheelSkidPitchModifier*SKID_RADIAL_SOUNDPITCH_SCALE );
@@ -3876,7 +3876,7 @@ void CCar::DrawBody( int nRenderFlags )
 
 		if(nModDescId == -1)
 			continue;
-	
+
 		studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
 
 		// render model groups that in this body group
@@ -4106,7 +4106,7 @@ void CCar::OnDeath( CGameObject* deathBy )
 
 #ifndef EDITOR
 	int deathByReplayId = deathBy ? deathBy->m_replayID : REPLAY_NOT_TRACKED;
-	g_replayData->PushEvent( REPLAY_EVENT_CAR_DEATH, m_replayID, (void*)deathByReplayId );
+	g_replayData->PushEvent( REPLAY_EVENT_CAR_DEATH, m_replayID, (void*)(intptr_t)deathByReplayId );
 #endif // EDITOR
 
 #ifndef NO_LUA
@@ -4127,7 +4127,7 @@ void CCar::OnDeath( CGameObject* deathBy )
 					break;
 			}
 		}
-	
+
 		if(!m_luaOnDeath.Call(deathBy ? 1 : 0, 0, 0))
 		{
 			MsgError("CGameObject:OnDeath error:\n %s\n", OOLUA::get_last_error(state).c_str());
