@@ -43,6 +43,8 @@ protected:
 
 	int			m_codePos;
 	int			m_codeKeysEntered[16];
+
+	int			m_demoId;
 };
 
 extern CState_Title* g_State_Title;

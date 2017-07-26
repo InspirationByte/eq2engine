@@ -1095,7 +1095,8 @@ void CCar::SetControlButtons(int flags)
 	m_controlButtons = flags;
 
 	// make car automatically has driver
-	m_hasDriver = true;
+	if(IsAlive() && IsEnabled())
+		m_hasDriver = true;
 }
 
 int	CCar::GetControlButtons()

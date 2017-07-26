@@ -16,11 +16,14 @@
 
 #include "KeyBinding/InputCommandBinder.h"
 
+#define NUM_DEMO_REPLAYS 2
+
 CState_Title::CState_Title()
 {
 	m_titleTexture = NULL;
 	memset(m_codeKeysEntered, 0, sizeof(m_codeKeysEntered));
 	m_codePos = 0;
+	m_demoId = 0;
 }
 
 CState_Title::~CState_Title()
@@ -37,6 +40,7 @@ void CState_Title::OnEnter( CBaseStateHandler* from )
 
 	memset(m_codeKeysEntered, 0, sizeof(m_codeKeysEntered));
 	m_codePos = 0;
+	
 
 	m_actionTimeout = 10.0f;
 	m_fade = 0.0f;
@@ -70,8 +74,13 @@ bool CState_Title::Update( float fDt )
 
 		if(m_actionTimeout <= 0.0f && m_fade <= 0.0f)
 		{
-			if(g_replayData->LoadFromFile( "demoreplays/demo1" ))
+			if(g_replayData->LoadFromFile( varargs("demoReplays/demo%d", m_demoId+1) ))
 			{
+				m_demoId++;
+
+				if(m_demoId >= NUM_DEMO_REPLAYS)
+					m_demoId = 0;
+
 				g_State_Game->SetDemoMode(true);
 				SetNextState(g_State_Game);
 				return false;
