@@ -1714,7 +1714,8 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 	{
 		if (m_pCurrentVertexFormat != NULL)
 		{
-			char* base = (char *)(offset + pVertexBuffer->GetStrideSize());
+			char* base = (char *)(offset * (pVB ? pVB->GetStrideSize() : 0));
+			//char* base = (char *)(offset);
 
 			CVertexFormatGL* cvf = (CVertexFormatGL*)m_pCurrentVertexFormat;
 
@@ -1738,8 +1739,6 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 					GLCheckError("divisor");
 				}
 			}
-
-
 		}
 	}
 

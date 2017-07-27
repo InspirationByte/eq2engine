@@ -952,7 +952,7 @@ void CGameWorld::DrawSkyBox(int renderFlags)
 	materials->SetFogInfo(noFog);
 
 	materials->SetCullMode(CULL_BACK);
-	materials->BindMaterial( m_envConfig.skyboxMaterial, false );
+	materials->BindMaterial( m_envConfig.skyboxMaterial );
 
 	studiohdr_t* pHdr = m_skyModel->GetHWData()->pStudioHdr;
 	int nLOD = 0;
@@ -1014,6 +1014,8 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 
 	tempRenderTarget->Ref_Grab();
 
+	g_pShaderAPI->Finish();
+
 	materials->SetMaterialRenderParamCallback(this);
 
 	// render the skybox into textures
@@ -1061,6 +1063,8 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 			tempRenderTarget->Unlock();
 		}
 	}
+
+	g_pShaderAPI->Finish();
 
 	envMap.SwapChannels(0, 2);
 	fogEnvMap.SwapChannels(0, 2);

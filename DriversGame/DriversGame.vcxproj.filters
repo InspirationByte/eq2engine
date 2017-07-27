@@ -387,6 +387,9 @@
     <ClCompile Include="eqPhysics\eqPhysics_MaxDistConstraint.cpp">
       <Filter>Файлы исходного кода\Physics</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared_engine\EGUI\EqUI_Image.cpp">
+      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">
@@ -759,6 +762,9 @@
     </ClInclude>
     <ClInclude Include="eqPhysics\eqPhysics_MaxDistConstraint.h">
       <Filter>Файлы исходного кода\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EGUI\EQUI_Image.h">
+      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

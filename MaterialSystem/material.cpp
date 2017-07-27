@@ -159,7 +159,7 @@ void CMaterial::InitShader()
 	m_pShader = materials->CreateShaderInstance( m_szShaderName.GetData() );
 
 	// if not found - try make Error shader
-	if(!m_pShader || (m_pShader && !stricmp(m_pShader->GetName(), "Error")))
+	if(!m_pShader)// || (m_pShader && !stricmp(m_pShader->GetName(), "Error")))
 	{
 		MsgError("Invalid shader '%s' specified for material %s!\n",m_szShaderName.GetData(),m_szMaterialName.GetData());
 
@@ -395,7 +395,7 @@ void CMaterial::UpdateProxy(float fDt)
 	m_proxyIsDirty = false;
 }
 
-void CMaterial::Setup(int paramMask)
+void CMaterial::Setup(uint paramMask)
 {
 	// shaders and textures needs to be reset
 	if(GetFlags() & MATERIAL_FLAG_BASETEXTURE_CUR)

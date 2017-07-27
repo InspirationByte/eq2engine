@@ -756,7 +756,7 @@ IMaterialSystemShader* CMaterialSystem::CreateShaderInstance(const char* szShade
 
 //------------------------------------------------------------------------------------------------
 
-typedef bool (*PFNMATERIALBINDCALLBACK)(IMaterial* pMaterial, int paramMask);
+typedef bool (*PFNMATERIALBINDCALLBACK)(IMaterial* pMaterial, uint paramMask);
 
 void BindFFPMaterial(IMaterial* pMaterial, int paramMask)
 {
@@ -767,7 +767,7 @@ void BindFFPMaterial(IMaterial* pMaterial, int paramMask)
 	g_pShaderAPI->SetDepthStencilState(NULL);
 }
 
-bool Callback_BindErrorTextureFFPMaterial(IMaterial* pMaterial, int paramMask)
+bool Callback_BindErrorTextureFFPMaterial(IMaterial* pMaterial, uint paramMask)
 {
 	BindFFPMaterial(pMaterial, paramMask);
 	g_pShaderAPI->SetTexture(g_pShaderAPI->GetErrorTexture());
@@ -775,7 +775,7 @@ bool Callback_BindErrorTextureFFPMaterial(IMaterial* pMaterial, int paramMask)
 	return false;
 }
 
-bool Callback_BindFFPMaterial(IMaterial* pMaterial, int paramMask)
+bool Callback_BindFFPMaterial(IMaterial* pMaterial, uint paramMask)
 {
 	BindFFPMaterial(pMaterial, paramMask);
 
@@ -785,7 +785,7 @@ bool Callback_BindFFPMaterial(IMaterial* pMaterial, int paramMask)
 	return false;
 }
 
-bool Callback_BindNormalMaterial(IMaterial* pMaterial, int paramMask)
+bool Callback_BindNormalMaterial(IMaterial* pMaterial, uint paramMask)
 {
 	((CMaterial*)pMaterial)->Setup(paramMask);
 
@@ -838,9 +838,9 @@ int CMaterialSystem::GetLoadingQueue() const
 void CMaterialSystem::SetShaderParameterOverriden(ShaderDefaultParams_e param, bool set)
 {
 	if(set)
-		m_paramOverrideMask &= ~(1 << param+1);
+		m_paramOverrideMask &= ~(1 << (uint)param);
 	else
-		m_paramOverrideMask |= (1 << param+1);
+		m_paramOverrideMask |= (1 << (uint)param);
 }
 
 bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, bool doApply/* = true*/)
@@ -868,7 +868,7 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, bool doApply/* = true*/
 	if(m_config.ffp_mode)
 		subRoutineId = MATERIAL_SUBROUTINE_FFPMATERIAL;
 
-	if( pMaterial->GetState() == MATERIAL_LOAD_ERROR )
+	if( pMaterial->GetState() == MATERIAL_LOAD_ERROR || pMaterial->GetState() == MATERIAL_LOAD_NEED_LOAD )
 		subRoutineId = MATERIAL_SUBROUTINE_ERROR;
 
 	// if material is still loading, use the default material for a while

@@ -60,7 +60,7 @@ public:
 	IUIControl*			GetFocus() const;
 	IUIControl*			GetMouseOver() const;
 
-	bool				IsPanelsVisible() const;
+	bool				IsWindowsVisible() const;
 
 	void				Render();
 

@@ -62,6 +62,7 @@ void CUIManager::Init()
 	EQUI_REGISTER_CONTROL(panel);
 	EQUI_REGISTER_CONTROL(label);
 	EQUI_REGISTER_CONTROL(button);
+	EQUI_REGISTER_CONTROL(image);
 
 	m_rootPanel = (equi::Panel*)CreateElement("Panel");
 	m_rootPanel->SetName("equi_root");
@@ -176,11 +177,13 @@ equi::Panel* CUIManager::GetTopPanel() const
 
 void CUIManager::DumpPanelsToConsole()
 {
+	MsgInfo("Available UI panels/windows:\n");
+
 	for(int i = 0; i < m_panels.numElem(); i++)
 	{
 		if(strlen(m_panels[i]->GetName()) > 0)
 		{
-			Msg("%s\n", m_panels[i]->GetName());
+			Msg("%s (%s)\n", m_panels[i]->GetName(), m_panels[i]->IsVisible() ? "visible" : "hidden");
 		}
 	}
 }
@@ -210,11 +213,11 @@ IUIControl* CUIManager::GetMouseOver() const
 	return m_mouseOver;
 }
 
-bool CUIManager::IsPanelsVisible() const
+bool CUIManager::IsWindowsVisible() const
 {
 	for(int i = 0; i < m_panels.numElem(); i++)
 	{
-		if(m_panels[i]->IsVisible())
+		if(m_panels[i]->IsVisible() && m_panels[i]->m_windowControls)
 			return true;
 	}
 
@@ -245,7 +248,7 @@ equi::Panel* CUIManager::GetPanelByElement(IUIControl* control)
 
 bool CUIManager::ProcessMouseEvents(float x, float y, int nMouseButtons, int flags)
 {
-	if(!IsPanelsVisible())
+	if(!IsWindowsVisible())
 		return false;
 
 	IVector2D mousePos(x,y);
@@ -298,7 +301,7 @@ bool CUIManager::ProcessKeyboardEvents(int nKeyButtons, int flags)
 	if( nKeyButtons == KEY_TILDE )
 		return false;
 
-	if(!IsPanelsVisible())
+	if(!IsWindowsVisible())
 		return false;
 
 	if(!m_keyboardFocus)

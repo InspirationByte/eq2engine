@@ -231,8 +231,10 @@ extern inline bool operator >(int x, const FReal& y)		{ return FReal(x)>y; }
 extern inline bool operator >(short x, const FReal& y)		{ return FReal(x)>y; }
 extern inline bool operator >(float x, const FReal& y)		{ return FReal(x)>y; }
 
+#ifndef _MSC_VER
 inline FReal min(FReal x, FReal y) {return (x < y)? x : y;}
 inline FReal max(FReal x, FReal y) {return (x > y)? x : y;}
+#endif // _MSC_VER
 
 namespace FPmath
 {

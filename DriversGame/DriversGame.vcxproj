@@ -125,6 +125,7 @@
     <ClCompile Include="..\shared_engine\DebugOverlay.cpp" />
     <ClCompile Include="..\shared_engine\EGFInstancer.cpp" />
     <ClCompile Include="..\shared_engine\EGUI\EqUI_Button.cpp" />
+    <ClCompile Include="..\shared_engine\EGUI\EqUI_Image.cpp" />
     <ClCompile Include="..\shared_engine\EGUI\EqUI_Label.cpp" />
     <ClCompile Include="..\shared_engine\EGUI\EqUI_Manager.cpp" />
     <ClCompile Include="..\shared_engine\EGUI\EqUI_Panel.cpp" />
@@ -271,6 +272,7 @@
     <ClInclude Include="..\shared_engine\EGFInstancer.h" />
     <ClInclude Include="..\shared_engine\EGUI\EqUI_Button.h" />
     <ClInclude Include="..\shared_engine\egui\equi_defs.h" />
+    <ClInclude Include="..\shared_engine\EGUI\EQUI_Image.h" />
     <ClInclude Include="..\shared_engine\EGUI\EqUI_Label.h" />
     <ClInclude Include="..\shared_engine\EGUI\EqUI_Manager.h" />
     <ClInclude Include="..\shared_engine\EGUI\EqUI_Panel.h" />

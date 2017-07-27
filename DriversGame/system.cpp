@@ -266,18 +266,18 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	debugoverlay->Init();
 	equi::Manager->Init();
 
-	/*
+	//*
 	equi::Panel* panel = (equi::Panel*)equi::Manager->CreateElement("panel");
 
 	kvkeybase_t kvs;
-	KV_LoadFromFile("resources/ui_testwindow.res", -1, &kvs);
+	KV_LoadFromFile("resources/ui_iview.res", -1, &kvs);
 	panel->InitFromKeyValues(&kvs);
 
 	panel->SetPosition( IVector2D(20,20) );
-	panel->SetSize( IVector2D(800, 600) );
+	//panel->SetSize( IVector2D(800, 600) );
 
 	equi::Manager->AddPanel( panel );
-    */
+    /**/
 	// init game states and proceed
 	InitRegisterStates();
 
@@ -546,8 +546,8 @@ void CGameHost::UpdateCursorState()
 
 	GetStateMouseCursorProperties(cursorVisible, m_cursorCentered);
 
-	cursorVisible = cursorVisible || g_pSysConsole->IsVisible() || equi::Manager->IsPanelsVisible();
-	m_cursorCentered = m_cursorCentered && !(g_pSysConsole->IsVisible() || equi::Manager->IsPanelsVisible());
+	cursorVisible = cursorVisible || g_pSysConsole->IsVisible() || equi::Manager->IsWindowsVisible();
+	m_cursorCentered = m_cursorCentered && !(g_pSysConsole->IsVisible() || equi::Manager->IsWindowsVisible());
 
 	// update cursor visibility state
 	SetCursorShow( cursorVisible );

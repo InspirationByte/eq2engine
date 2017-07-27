@@ -721,8 +721,10 @@ void CEngineStudioEGF::DrawGroup(int nModel, int nGroup, bool preSetVBO)
 
 	materials->Apply();
 
-	int nFirstIndex = m_pHardwareData->modelrefs[nModel].groupdescs[nGroup].firstindex;
-	int nIndexCount = m_pHardwareData->modelrefs[nModel].groupdescs[nGroup].indexcount;
+	hwgroup_desc_t& desc = m_pHardwareData->modelrefs[nModel].groupdescs[nGroup];
+
+	int nFirstIndex = desc.firstindex;
+	int nIndexCount = desc.indexcount;
 
 	// get primitive type
 	int8 nPrimType = m_pHardwareData->pStudioHdr->pModelDesc( nModel )->pGroup( nGroup )->primitiveType;

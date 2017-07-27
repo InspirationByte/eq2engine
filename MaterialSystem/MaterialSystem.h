@@ -340,7 +340,7 @@ private:
 	Matrix4x4						m_matrices[4];					// matrix modes
 
 	IMaterial*						m_pCurrentMaterial;				// currently binded material
-	int								m_paramOverrideMask;			// parameter setup mask for overrides
+	uint							m_paramOverrideMask;			// parameter setup mask for overrides
 
 
 	IMaterial*						m_pOverdrawMaterial;

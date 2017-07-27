@@ -19,7 +19,7 @@ namespace equi
 {
 
 IUIControl::IUIControl()
-	: m_visible(false), m_enabled(true), m_parent(NULL), m_font(NULL)
+	: m_visible(false), m_selfVisible(true), m_enabled(true), m_parent(NULL), m_font(NULL)
 {
 
 }
@@ -41,6 +41,7 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 	m_size = KV_GetIVector2D(sec->FindKeyBase("size"), 0, 128);
 
 	m_visible = KV_GetValueBool(sec->FindKeyBase("visible"), 0, true);
+	m_selfVisible = KV_GetValueBool(sec->FindKeyBase("selfvisible"), 0, true);
 
 	kvkeybase_t* font = sec->FindKeyBase("font");
 
@@ -163,13 +164,20 @@ void IUIControl::Render()
 	if(!m_visible)
 		return;
 
-	// draw self if it has parent
-	if( m_parent )
-	{
-		// set clipping
-		IRectangle clientRectRender = GetClientRectangle();
-		g_pShaderAPI->SetScissorRectangle( clientRectRender );
+	RasterizerStateParams_t rasterState;
+	rasterState.fillMode = FILL_SOLID;
+	rasterState.cullMode = CULL_NONE;
+	rasterState.scissor = true;
 
+	IRectangle clientRectRender = GetClientRectangle();
+
+	// force rasterizer state
+	// other states are pretty useless
+	materials->SetRasterizerStates(rasterState);
+	materials->SetShaderParameterOverriden(SHADERPARAM_RASTERSETUP, true);
+
+	if( m_parent && m_selfVisible )
+	{
 		// paint control itself
 		DrawSelf( clientRectRender );
 	}
@@ -179,6 +187,9 @@ void IUIControl::Render()
 	{
 		do
 		{
+			// set scissor rect before childs are rendered
+			g_pShaderAPI->SetScissorRectangle( clientRectRender );
+
 			m_childs.getCurrent()->Render();
 		}
 		while(m_childs.goToPrev());

@@ -222,10 +222,10 @@ void CBaseShader::Unload()
 }
 
 
-void CBaseShader::SetupParameter(int mask, ShaderDefaultParams_e type)
+void CBaseShader::SetupParameter(uint mask, ShaderDefaultParams_e type)
 {
 	// call it from this
-	if(mask & (1 << type+1) > 0)
+	if(mask & (1 << (uint)type))
 		(this->*m_param_functors[type]) ();
 }
 

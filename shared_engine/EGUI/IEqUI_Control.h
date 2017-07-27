@@ -68,6 +68,9 @@ public:
 	virtual void				SetVisible(bool bVisible)			{m_visible = bVisible;}
 	virtual bool				IsVisible() const;
 
+	virtual void				SetSelfVisible(bool bVisible)		{m_selfVisible = bVisible;}
+	virtual bool				IsSelfVisible() const				{return m_selfVisible;}
+
 	// activation
 	virtual void				Enable(bool value)					{m_enabled = value;}
 	virtual bool				IsEnabled() const;
@@ -123,6 +126,8 @@ protected:
 
 	bool						m_visible;
 	bool						m_enabled;
+
+	bool						m_selfVisible;
 
 	EqString					m_name;
 	EqWString					m_label;

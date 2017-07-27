@@ -11,7 +11,6 @@
 
 #include "EqUI_Manager.h"
 
-#include "materialsystem/IMaterialSystem.h"
 #include "materialsystem/MeshBuilder.h"
 
 #include "in_keys_ident.h"
