@@ -43,6 +43,7 @@ CGameSession::CGameSession()
 	m_localAccelBrakeValue = 0.0f;
 	m_playerCar = NULL;
 	m_leadCar = NULL;
+	m_viewCar = NULL;
 
 	m_scriptIDCounter = 0;
 	m_scriptIDReplayCounter = 0;
@@ -625,7 +626,19 @@ CCar* CGameSession::GetViewCar() const
 			return g_replayData->GetCarByReplayIndex( cam->targetIdx );
 	}
 
-	return GetPlayerCar();
+	if(m_viewCar)
+		return m_viewCar;
+
+	if(m_viewCar == NULL)
+		return GetPlayerCar();
+}
+
+void CGameSession::SetViewCar(CCar* pCar)
+{
+	if(m_viewCar == GetPlayerCar())
+		m_viewCar = NULL;
+	else
+		m_viewCar = pCar;
 }
 
 void CGameSession::SetPlayerCar(CCar* pCar)

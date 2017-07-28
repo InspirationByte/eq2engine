@@ -54,6 +54,7 @@ public:
 	void						SetPlayerCar(CCar* pCar);
 
 	virtual CCar*				GetViewCar() const;
+	void						SetViewCar(CCar* pCar);
 
 	CCar*						GetLeadCar() const;
 	void						SetLeadCar(CCar* pCar);
@@ -101,7 +102,7 @@ protected:
 	float						m_localAccelBrakeValue;
 
 	CCar*						m_playerCar;
-
+	CCar*						m_viewCar;
 	CCar*						m_leadCar;
 
 	OOLUA::Table				m_missionManagerTable;		// missionmanager

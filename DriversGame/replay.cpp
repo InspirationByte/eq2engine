@@ -888,6 +888,8 @@ bool CReplayData::LoadFromFile(const char* filename)
 	// load mission, level, set environment
 	m_state = REPL_INIT_PLAYBACK;
 
+	g_State_Game->UnloadGame();
+
 	if(!g_State_Game->LoadMissionScript( hdr.missionscript ))
 	{
 		MsgError("ERROR - Mission script '%s' for replay '%s'\n", hdr.missionscript, filename);

@@ -1714,12 +1714,10 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 	{
 		if (m_pCurrentVertexFormat != NULL)
 		{
-			char* base = (char *)(offset * (pVB ? pVB->GetStrideSize() : 0));
-			//char* base = (char *)(offset);
-
 			CVertexFormatGL* cvf = (CVertexFormatGL*)m_pCurrentVertexFormat;
-
 			int vertexSize = cvf->m_streamStride[nStream];
+
+			char* base = (char *)(offset * vertexSize);			
 
 			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 			{

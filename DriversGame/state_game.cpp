@@ -507,11 +507,8 @@ void Game_DirectorControlKeys(int key, bool down)
 	}
 }
 
-DECLARE_CMD(director_pick_ray, "Director mode - picks object with ray", 0)
+CCar* Director_GetCarOnCrosshair(bool queryImportantOnly = true)
 {
-	if(!g_director.GetBool())
-		return;
-
 	Vector3D start = g_freeCamProps.position;
 	Vector3D dir;
 	AngleVectors(g_freeCamProps.angles, &dir);
@@ -523,10 +520,34 @@ DECLARE_CMD(director_pick_ray, "Director mode - picks object with ray", 0)
 
 	if(coll.hitobject != NULL && (coll.hitobject->m_flags & BODY_ISCAR))
 	{
-		CCar* car = (CCar*)coll.hitobject->GetUserData();
+		CCar* pickedCar = (CCar*)coll.hitobject->GetUserData();
 
-		if(car)
-			g_pGameSession->SetPlayerCar( car );
+		bool isPursuer = false;
+		if(pickedCar->ObjType() == GO_CAR_AI)
+		{
+			CAITrafficCar* potentialPursuer = (CAITrafficCar*)pickedCar;
+			isPursuer = potentialPursuer->IsPursuer();
+		}
+
+		if((isPursuer || (pickedCar->GetScriptID() != SCRIPT_ID_NOTSCRIPTED)) != queryImportantOnly)
+			return NULL;
+
+		return pickedCar;
+	}
+
+	return NULL;
+}
+
+DECLARE_CMD(director_pick_ray, "Director mode - picks object with ray", 0)
+{
+	if(!g_director.GetBool() && g_replayData->m_state != REPL_PLAYING)
+		return;
+
+	CCar* pickedCar = Director_GetCarOnCrosshair();
+
+	if(pickedCar != nullptr)
+	{
+		g_pGameSession->SetViewCar( pickedCar );
 	}
 }
 
@@ -600,6 +621,15 @@ void Game_DrawDirectorUI( float fDt )
 
 	float timelineCenterPos = timelineRect.GetCenter().x;
 
+	CCar* viewedCar = g_pGameSession->GetViewCar();
+
+	// if car is no longer valid, resetthe viewed car
+	if(!g_pGameWorld->IsValidObject(viewedCar))
+	{
+		g_pGameSession->SetViewCar(NULL);
+		viewedCar = g_pGameSession->GetViewCar();
+	}
+
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		float ticksOffset = lastTickOffset-currentTickOffset;
 
@@ -643,6 +673,20 @@ void Game_DrawDirectorUI( float fDt )
 			meshBuilder.Quad2(currentTickRect.GetLeftTop(), currentTickRect.GetRightTop(), currentTickRect.GetLeftBottom(), currentTickRect.GetRightBottom());
 		}
 
+		if(g_freecam.GetBool())
+		{
+			if(viewedCar)
+			{
+				Vector3D screenPos;
+				PointToScreen_Z(viewedCar->GetOrigin() + Vector3D(0,1.0f,0), screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x,(float)screenSize.y));
+
+				meshBuilder.Color4f( 0.0f, 0.7f, 0.0f, 0.5f );
+
+				if(screenPos.z > 0.0f)
+					meshBuilder.Triangle2(screenPos.xy(), screenPos.xy()+Vector2D(-20, -20), screenPos.xy()+Vector2D(20, -20));
+			}
+		}
+
 		// current tick
 		Rectangle_t currentTickRect(timelineRect.GetCenter() - Vector2D(2, 20), timelineRect.GetCenter() + Vector2D(2, 20));
 		meshBuilder.Color4f(0,0,0,1.0f);
@@ -656,6 +700,19 @@ void Game_DrawDirectorUI( float fDt )
 	meshBuilder.End();
 
 	params.align = TEXT_ALIGN_HCENTER;
+
+	if(g_freecam.GetBool())
+	{
+		CCar* carOnCrosshair = Director_GetCarOnCrosshair();
+
+		if(carOnCrosshair && carOnCrosshair != viewedCar)
+		{
+			Vector3D screenPos;
+			PointToScreen_Z(carOnCrosshair->GetOrigin() + Vector3D(0,1.0f,0), screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x,(float)screenSize.y));
+
+			g_pHost->GetDefaultFont()->RenderText(L"Click to set as current", screenPos.xy(), params);
+		}
+	}
 
 	Vector2D frameInfoTextPos(screenSize.x/2, screenSize.y - (screenSize.y/6));
 	g_pHost->GetDefaultFont()->RenderText(framesStr, frameInfoTextPos, params);
@@ -746,6 +803,18 @@ void CState_Game::LoadGame()
 	{
 		Game_InitializeSession();
 		g_pause.SetBool(false);
+
+		if(m_scheduledQuickReplay)
+		{
+			m_gameMenuName = "ReplayEndMenuStack";
+		}
+		else
+		{
+			if(g_pGameSession->GetSessionType() == SESSION_SINGLE)
+				m_gameMenuName = "GameMenuStack";
+			else if(g_pGameSession->GetSessionType() == SESSION_NETWORK)
+				m_gameMenuName = "MPGameMenuStack";
+		}
 	}
 	else
 	{
@@ -756,8 +825,6 @@ void CState_Game::LoadGame()
 
 bool CState_Game::LoadMissionScript( const char* name )
 {
-	m_missionScriptName = name;
-
 	// don't start both times
 	EqString scriptFileName(varargs("scripts/missions/%s.lua", name));
 
@@ -766,8 +833,6 @@ bool CState_Game::LoadMissionScript( const char* name )
 	{
 		MsgError("mission script init error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
 
-		m_missionScriptName = name;
-
 		// okay, try reinitialize with default mission script
 		if( !EqLua::LuaBinding_LoadAndDoFile( GetLuaState(), "scripts/missions/defaultmission.lua", "MissionLoader"))
 		{
@@ -775,8 +840,12 @@ bool CState_Game::LoadMissionScript( const char* name )
 			return false;
 		}
 
+		m_missionScriptName = "defaultmission";
+
 		return false;
 	}
+
+	m_missionScriptName = name;
 
 	return true;
 }
@@ -837,6 +906,8 @@ void CState_Game::OnEnterSelection( bool isFinal )
 
 void CState_Game::SetupMenuStack( const char* name )
 {
+	Msg("CState_Game::SetupMenuStack: %s\n", name);
+
 	OOLUA::Table mainMenuStack;
 	if(!OOLUA::get_global(GetLuaState(), name, mainMenuStack))
 		WarningMsg("Failed to get %s table (DrvSynMenus.lua ???)!\n", name);
@@ -876,7 +947,7 @@ void CState_Game::OnMenuCommand( const char* command )
 		else
 			g_director.SetBool(false);
 
-		if(g_pGameSession->GetMissionStatus() == MIS_STATUS_INGAME)
+		if(g_pGameSession->GetMissionStatus() == MIS_STATUS_INGAME && (g_replayData->m_state != REPL_PLAYING))
 		{
 			SetupMenuStack("MissionEndMenuStack");
 			g_pGameSession->SignalMissionStatus(MIS_STATUS_FAILED, 0.0f);
@@ -913,11 +984,6 @@ bool CState_Game::DoLoadingFrame()
 
     if(!g_pGameSession)
         return false;	// no game session causes a real problem
-
-	if(g_pGameSession->GetSessionType() == SESSION_SINGLE)
-		m_gameMenuName = "GameMenuStack";
-	else if(g_pGameSession->GetSessionType() == SESSION_NETWORK)
-		m_gameMenuName = "MPGameMenuStack";
 
 	SetupMenuStack( m_gameMenuName.c_str() );
 
@@ -967,7 +1033,10 @@ void CState_Game::SetPauseState( bool state )
 void CState_Game::StartReplay( const char* path )
 {
 	if(g_replayData->LoadFromFile( path ))
-		SetCurrentState( this, true );
+	{
+		ChangeState( this );
+		m_scheduledQuickReplay = true;
+	}
 }
 
 void CState_Game::DrawLoadingScreen()
@@ -1059,6 +1128,22 @@ bool CState_Game::Update( float fDt )
 	// Update, Render, etc
 	//
 	DoGameFrame( fGameFrameDt );
+
+	if(m_demoMode)
+	{
+		materials->Setup2D(screenSize.x,screenSize.y);
+
+		IEqFont* font = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD | TEXT_STYLE_ITALIC);
+
+		eqFontStyleParam_t fontParam;
+		fontParam.styleFlag |= TEXT_STYLE_SHADOW;
+		fontParam.align = TEXT_ALIGN_HCENTER;
+		fontParam.textColor = color4_white;
+		fontParam.scale = 20.0f;
+
+		fontParam.textColor = ColorRGBA(fabs(sinf(g_pHost->GetCurTime()*2.0f)),0.0f,0.0f,1.0f);
+		font->RenderText("Demo", Vector2D(screenSize.x/2,screenSize.y - 100), fontParam);
+	}
 
 	if(m_exitGame || m_scheduledRestart || m_scheduledQuickReplay)
 	{
@@ -1233,7 +1318,13 @@ CCar* CState_Game::GetViewCar() const
 		replaycamera_t* replCamera = g_replayData->GetCurrentCamera();
 
 		if(replCamera)
-			viewedCar = g_replayData->GetCarByReplayIndex( replCamera->targetIdx );
+		{
+			CCar* cameraCar = g_replayData->GetCarByReplayIndex( replCamera->targetIdx );
+
+			// only if it's valid
+			if(g_pGameWorld->IsValidObject(cameraCar))
+				viewedCar = cameraCar;
+		}
 	}
 
 	return viewedCar;
@@ -1348,6 +1439,12 @@ void CState_Game::DoCameraUpdates( float fDt )
 		{
 			CCar* viewedCar = g_pGameSession->GetViewCar();
 
+			if(!g_pGameWorld->IsValidObject(viewedCar))
+			{
+				g_pGameSession->SetViewCar(NULL);
+				viewedCar = g_pGameSession->GetViewCar();
+			}
+
 			if(g_replayData->m_state == REPL_PLAYING && g_replayData->m_cameras.numElem() > 0)
 			{
 				// replay controls camera
@@ -1355,15 +1452,20 @@ void CState_Game::DoCameraUpdates( float fDt )
 
 				if(replCamera)
 				{
-					// Process camera
-					viewedCar = g_replayData->GetCarByReplayIndex( replCamera->targetIdx );
+					CCar* cameraCar = g_replayData->GetCarByReplayIndex( replCamera->targetIdx );
 
-					g_pCameraAnimator->SetMode( (ECameraMode)replCamera->type );
-					g_pCameraAnimator->SetOrigin( replCamera->origin );
-					g_pCameraAnimator->SetAngles( replCamera->rotation );
-					g_pCameraAnimator->SetFOV( replCamera->fov );
+					// only if it's valid
+					if(g_pGameWorld->IsValidObject(cameraCar))
+					{
+						viewedCar = cameraCar;
 
-					g_pCameraAnimator->Update(fDt, 0, viewedCar);
+						g_pCameraAnimator->SetMode( (ECameraMode)replCamera->type );
+						g_pCameraAnimator->SetOrigin( replCamera->origin );
+						g_pCameraAnimator->SetAngles( replCamera->rotation );
+						g_pCameraAnimator->SetFOV( replCamera->fov );
+
+						g_pCameraAnimator->Update(fDt, 0, viewedCar);
+					}
 				}
 			}
 
@@ -1507,7 +1609,7 @@ reincrement:
 
 void CState_Game::GetMouseCursorProperties(bool &visible, bool& centered)
 {
-	visible = GetPauseMode() > PAUSEMODE_NONE;
+	visible = (GetPauseMode() > PAUSEMODE_NONE) && !g_freecam.GetBool();
 	centered = g_freecam.GetBool();
 }
 
