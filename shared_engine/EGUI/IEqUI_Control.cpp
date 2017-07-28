@@ -171,11 +171,6 @@ void IUIControl::Render()
 
 	IRectangle clientRectRender = GetClientRectangle();
 
-	// force rasterizer state
-	// other states are pretty useless
-	materials->SetRasterizerStates(rasterState);
-	materials->SetShaderParameterOverriden(SHADERPARAM_RASTERSETUP, true);
-
 	if( m_parent && m_selfVisible )
 	{
 		// paint control itself
@@ -187,6 +182,11 @@ void IUIControl::Render()
 	{
 		do
 		{
+			// force rasterizer state
+			// other states are pretty useless
+			materials->SetRasterizerStates(rasterState);
+			materials->SetShaderParameterOverriden(SHADERPARAM_RASTERSETUP, true);
+
 			// set scissor rect before childs are rendered
 			g_pShaderAPI->SetScissorRectangle( clientRectRender );
 

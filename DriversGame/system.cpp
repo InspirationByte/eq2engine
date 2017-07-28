@@ -622,8 +622,9 @@ bool CGameHost::Frame()
 
 	BeginScene();
 
-	if(r_clear.GetBool())
-		g_pShaderAPI->Clear(true,true,false, ColorRGBA(0.1f,0.1f,0.1f,1.0f));
+	// always reset scissor rectangle before we start rendering
+	g_pShaderAPI->SetScissorRectangle( IRectangle(0,0,m_winSize.x, m_winSize.y) );
+	g_pShaderAPI->Clear(r_clear.GetBool(),true,false, ColorRGBA(0.1f,0.1f,0.1f,1.0f));
 
 	HOOK_TO_CVAR(r_wireframe)
 	materials->GetConfiguration().wireframeMode = r_wireframe->GetBool();
