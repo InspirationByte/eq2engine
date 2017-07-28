@@ -102,7 +102,8 @@ static Vector3D s_BodyPartDirections[] =
 #define WHEEL_SKIDTIME_EFFICIENCY	(0.25f)
 #define WHEEL_SKID_COOLDOWNTIME		(10.0f)
 
-#define HINGE_INIT_DISTANCE_THRESH	(4.0)
+#define HINGE_INIT_DISTANCE_THRESH	(4.0f)
+#define HINGE_DISCONNECT_COS_ANGLE	(0.2f)
 
 bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 {
@@ -1095,7 +1096,7 @@ void CCar::SetControlButtons(int flags)
 	m_controlButtons = flags;
 
 	// make car automatically has driver
-	if(IsAlive() && IsEnabled())
+	if(IsAlive() && IsEnabled() && m_conf->flags.isCar)
 		m_hasDriver = true;
 }
 
@@ -1182,6 +1183,11 @@ void CCar::ReleaseHingedVehicle()
 #ifndef EDITOR
 	if(m_trailerHinge)
 	{
+		CCar* hingedCar = GetHingedVehicle();
+
+		if(hingedCar)	// kill lights
+			hingedCar->m_lightsEnabled = 0;
+
 		g_pPhysics->m_physics.DestroyController(m_trailerHinge);
 	}
 
@@ -1979,6 +1985,17 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		// normalize
 		wheel.m_pitch = DEG2RAD(ConstrainAngle180(RAD2DEG(wheel.m_pitch)));
+	}
+
+	CCar* hingedCar = GetHingedVehicle();
+
+	if(hingedCar)
+	{
+		// if it was seriously damaged or it flips over it will be disconnected
+		if(!hingedCar->IsAlive() || dot(hingedCar->GetUpVector(), GetUpVector()) < HINGE_DISCONNECT_COS_ANGLE)
+		{
+			ReleaseHingedVehicle();
+		}
 	}
 }
 
@@ -2965,6 +2982,17 @@ void CCar::Simulate( float fDt )
 			}
 
 		}
+	}
+
+	CCar* hingedCar = GetHingedVehicle();
+
+	if(hingedCar)
+	{
+		hingedCar->SetLight(CAR_LIGHT_REVERSELIGHT, IsLightEnabled(CAR_LIGHT_REVERSELIGHT));
+		hingedCar->SetLight(CAR_LIGHT_BRAKE, IsLightEnabled(CAR_LIGHT_BRAKE));
+		hingedCar->SetLight(CAR_LIGHT_DIM_LEFT, IsLightEnabled(CAR_LIGHT_DIM_LEFT));
+		hingedCar->SetLight(CAR_LIGHT_DIM_RIGHT, IsLightEnabled(CAR_LIGHT_DIM_RIGHT));
+		hingedCar->SetLight(CAR_LIGHT_HEADLIGHTS, IsLightEnabled(CAR_LIGHT_HEADLIGHTS));
 	}
 }
 
