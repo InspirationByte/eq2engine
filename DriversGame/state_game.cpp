@@ -906,8 +906,6 @@ void CState_Game::OnEnterSelection( bool isFinal )
 
 void CState_Game::SetupMenuStack( const char* name )
 {
-	Msg("CState_Game::SetupMenuStack: %s\n", name);
-
 	OOLUA::Table mainMenuStack;
 	if(!OOLUA::get_global(GetLuaState(), name, mainMenuStack))
 		WarningMsg("Failed to get %s table (DrvSynMenus.lua ???)!\n", name);

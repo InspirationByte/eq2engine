@@ -1415,6 +1415,13 @@ kvkeybase_t* KV_ParseSection( const char* pszBuffer, const char* pszFileName, kv
 			((!bInQuotes && (isspace(c) || (c == KV_BREAK))) ||
 			(bInQuotes && (c == KV_STRING_BEGIN_END))))
 		{
+			char prevSymbol = *(pData-1);
+
+			if(bInQuotes && prevSymbol == '\\')
+			{
+				continue;
+			}
+
 			int nLen = (int)(pLast - pFirstLetter);
 
 			// close token
@@ -1431,7 +1438,11 @@ kvkeybase_t* KV_ParseSection( const char* pszBuffer, const char* pszFileName, kv
 				char oldChr = *endChar;
 				*endChar = '\0';
 
-				pCurrentKeyBase->AddValue(pFirstLetter);
+				char* processedValue = KV_ReadProcessString(pFirstLetter);
+
+				pCurrentKeyBase->AddValue(processedValue);
+
+				free(processedValue);
 
 				*endChar = oldChr;
 			}
