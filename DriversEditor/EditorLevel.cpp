@@ -1082,6 +1082,8 @@ CEditorLevel* CEditorLevel::CreatePrefab(const IVector2D& minCell, const IVector
 				PrefabRoads(newLevel, minCell, regionIdx, regionMinCell, regionMaxCell);
 		}
 	}
+
+	return newLevel;
 }
 
 void CEditorLevel::PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& globalStart, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell)

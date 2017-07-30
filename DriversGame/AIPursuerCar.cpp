@@ -1042,6 +1042,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		}
 	}
 
+	bool hasCarObstacleInFront = false;
+
 	// get rid of obstacles by tracing sphere forwards
 	{
 		float traceShapeRadius = 1.0f + fSpeed*0.01f;
@@ -1080,6 +1082,16 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 					debugoverlay->Line3D(steeringTargetColl.position, steeringTargetPos, ColorRGBA(1, 1, 0, 1.0f), ColorRGBA(1, 1, 0, 1.0f), DOVERLAY_DELAY);
 					debugoverlay->Box3D(steeringTargetPos - traceShapeRadius, steeringTargetPos + traceShapeRadius, ColorRGBA(0, 1, 0, 1.0f), DOVERLAY_DELAY);
 				}
+			}
+		}
+
+		if(!m_sirenEnabled && frontColl.fract < 1.0f && frontColl.hitobject)
+		{
+			if(frontColl.hitobject->m_flags & BODY_ISCAR)
+			{
+				CCar* car = (CCar*)frontColl.hitobject->GetUserData();
+
+				hasCarObstacleInFront = car->IsAlive() && car->IsEnabled() && !(car->GetPursuedCount() > 0);
 			}
 		}
 	}
@@ -1135,7 +1147,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	int controls = IN_ACCELERATE | IN_ANALOGSTEER | IN_EXTENDTURN;
 
 	// make fast siren sound
-	if(m_sirenEnabled && fabs(fSpeed) > 20)
+	if(	m_sirenEnabled && fabs(fSpeed) > 20 || 
+		!m_sirenEnabled && hasCarObstacleInFront)
 		controls |= IN_HORN;
 
 	//if(frontColl.fract < 1.0f)

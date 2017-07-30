@@ -1197,6 +1197,7 @@ void CCar::ReleaseHingedVehicle()
 
 CCar* CCar::GetHingedVehicle() const
 {
+#ifndef EDITOR
 	if(!m_trailerHinge)
 		return NULL;
 
@@ -1204,15 +1205,18 @@ CCar* CCar::GetHingedVehicle() const
 	if(body)
 		return (CCar*)body->GetUserData();
 
+#endif // EDITOR
 	return NULL;
 }
 
 CEqRigidBody* CCar::GetHingedBody() const
 {
-	if(!m_trailerHinge)
-		return NULL;
+#ifndef EDITOR
+	if(m_trailerHinge)
+		m_trailerHinge->GetBodyB();
+#endif // EDITOR
 
-	return m_trailerHinge->GetBodyB();
+	return NULL;
 }
 
 void CCar::UpdateVehiclePhysics(float delta)
@@ -1292,15 +1296,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 	FReal accel_scale = 1;
 
-	float fRPM = GetRPM();
-
-	if(bDoBurnout)
-	{
-		m_engineIdleFactor = 0.0f;
-		accel_scale = 5;
-		fRPM = 5800.0f;
-	}
-
 	if(fAccel > m_fAcceleration)
 	{
 		if(m_nGear > 1)
@@ -1313,18 +1308,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 	if(m_fAcceleration < 0)
 		m_fAcceleration = 0;
-
-	#define RPM_REFRESH_TIMES 16
-
-	float fDeltaRpm = delta / RPM_REFRESH_TIMES;
-
-	for(int i = 0; i < RPM_REFRESH_TIMES; i++)
-	{
-		if(fabs(fRPM - m_fEngineRPM) > 0.02f)
-			m_fEngineRPM += sign(fRPM - m_fEngineRPM) * 12000.0f * fDeltaRpm;
-	}
-
-	m_fEngineRPM = clamp(m_fEngineRPM, 0.0f, 8500.0f);
 
 	//--------------------------------------------------------
 
@@ -1460,6 +1443,45 @@ void CCar::UpdateVehiclePhysics(float delta)
 		carBody->m_flags &= ~BODY_DISABLE_DAMPING;
 	}
 
+	//-------------------------------------------------------
+	// Sound update - m_fEngineRPM
+	//-------------------------------------------------------
+
+	float accelEffect = m_fAcceleration+fBrake * -sign(wheelsSpeed);
+	m_fAccelEffect += (accelEffect-m_fAccelEffect) * delta * ACCELERATION_SOUND_CONST * accel_scale;
+	m_fAccelEffect = clamp(m_fAccelEffect, -1.0f, 1.0f);
+
+	#define RPM_REFRESH_TIMES 16
+
+	float fRPM = GetRPM();
+
+	if(bDoBurnout)
+	{
+		m_engineIdleFactor = 0.0f;
+		accel_scale = 5;
+		fRPM = 5800.0f;
+	}
+
+	float absWheelsSpeed = fabs(wheelsSpeed);
+	if(absWheelsSpeed < 3.5f && m_fAccelEffect > 0.0f && !bDoBurnout)
+	{
+		float optimalRpmLoad = RemapValClamp(m_fAccelEffect*absWheelsSpeed, 0.0f, 2.0f, 0.0f, 1.0f);
+
+		fRPM = lerp(fRPM, 3500.0f, optimalRpmLoad) - 1200.0f * m_fAccelEffect * RemapValClamp(absWheelsSpeed,0.0f, 3.5f, 0.0f, 1.0f);
+	}
+
+	float fDeltaRpm = delta / RPM_REFRESH_TIMES;
+
+	for(int i = 0; i < RPM_REFRESH_TIMES; i++)
+	{
+		if(fabs(fRPM - m_fEngineRPM) > 0.02f)
+			m_fEngineRPM += sign(fRPM - m_fEngineRPM) * 12000.0f * fDeltaRpm;
+	}
+
+	m_fEngineRPM = clamp(m_fEngineRPM, 0.0f, 8500.0f);
+
+	//-------------------------------------------------------
+
 	//
 	// Some steering stuff from Driver 1
 	//
@@ -1488,9 +1510,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		autoHandbrakeHelper = clamp(autoHandbrakeHelper,FReal(0),AUTOHANDBRAKE_MAX_FACTOR);
 	}
-
-	m_fAccelEffect += ((m_fAcceleration+fBrake)-m_fAccelEffect) * delta * ACCELERATION_SOUND_CONST * accel_scale;
-	m_fAccelEffect = clamp(m_fAccelEffect, -1.0f, 1.0f);
 
 	if( GetSpeed() <= 0.25f )
 	{
@@ -4221,9 +4240,10 @@ void CCar::SetDamage( float damage )
 
 	m_gameDamage = damage;
 
+#ifndef EDITOR
 	if(wasAlive)
 		g_replayData->PushEvent( REPLAY_EVENT_CAR_DAMAGE, m_replayID, *(void**)&m_gameDamage.m_value );
-
+#endif // EDITOR
 	if(m_gameDamage > m_gameMaxDamage)
 		m_gameDamage = m_gameMaxDamage;
 }
