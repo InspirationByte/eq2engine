@@ -9,7 +9,8 @@
 TODO:
 		- [ok] Record all cars
 		- [ok] Record car spawns
-		- Cameras
+		- [ok] Cameras
+		- Camera keyframes ()
 		- [ok] Record spawn params
 		- [ok] Stream recording of the controls and events
 		- Record networked cars
@@ -28,19 +29,10 @@ TODO:
 #define VEHICLEREPLAY_VERSION	4
 #define CAMERAREPLAY_VERSION	1
 
-enum EReplayCameraType
-{
-	REPLAY_CAMERA_INCAR = 0,
-	REPLAY_CAMERA_FOLLOW_CAR,
-	REPLAY_CAMERA_TRIPOD,
-	REPLAY_CAMERA_TRIPOD_TARGET,	// targeted tripod
-	REPLAY_CAMERA_DOLLY,			// dolly or crane, dynamic camera
-};
-
 struct replaycamera_s
 {
 	int				startTick;	// camera start tick
-	int8			type;		// EReplayCameraType
+	int8			type;		// ECameraMode
 
 	int				targetIdx;	// target replay index. Used to target at object
 

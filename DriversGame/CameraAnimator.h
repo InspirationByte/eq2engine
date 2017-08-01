@@ -21,6 +21,11 @@ enum ECameraMode
 
 	CAM_MODE_OUTCAR_FIXED,
 
+	CAM_MODE_OUTCAR_WHEEL_FL,	// front left
+	CAM_MODE_OUTCAR_WHEEL_FR,	// front right
+	CAM_MODE_OUTCAR_WHEEL_RL,	// rear left
+	CAM_MODE_OUTCAR_WHEEL_RR,	// rear right
+
 	CAM_MODES,
 };
 

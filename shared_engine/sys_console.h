@@ -55,9 +55,9 @@ public:
 
 	void	SetLastLine();
 	void	AddToLinePos(int num);
-	void	SetText( const char* text );
+	void	SetText( const char* text, bool quiet = false );
 
-	void	SetVisible(bool bVisible)		{ m_visible = bVisible; }
+	void	SetVisible(bool bVisible);
 	bool	IsVisible() const				{return m_visible;}
 
 	void	SetLogVisible( bool bVisible )	{ m_logVisible = bVisible; }
@@ -76,10 +76,14 @@ public:
 
 protected:
 	void	DrawFastFind(float x, float y, float w);
-	int		DrawAutoCompletion(float x, float y, float w, const char* queryStr);
+	int		DrawAutoCompletion(float x, float y, float w);
 
 	void	consoleInsText(char* text,int pos);
 	void	consoleRemTextInRange(int start,int len);
+
+	void	UpdateCommandAutocompletionList();
+	void	UpdateVariantsList( const EqString& queryStr );
+	void	OnTextUpdate();
 
 private:
 
@@ -106,18 +110,21 @@ private:
 
 	int								m_logScrollPosition;
 
+	// Input history
+	DkList<EqString>				m_commandHistory;
 	int								m_histIndex;
+
+	DkList<ConCommandBase*>			m_foundCmdList;
+	int								m_cmdSelection;
+
 	ConCommandBase*					m_fastfind_cmdbase;
-	DkList<EqString>				m_autocompletionList;
+	DkList<EqString>				m_variantList;
 	int								m_variantSelection;
 
 	CONSOLE_ALTERNATE_HANDLER		m_alternateHandler;
 
 	// Current input text
 	EqString						m_inputText;
-
-	// Input history
-	DkList<EqString>				m_commandHistory;
 
 	// Autocompletion collection
 	DkList<AutoCompletionNode_s*>	m_hAutoCompletionNodes;
