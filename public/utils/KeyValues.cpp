@@ -772,6 +772,19 @@ void kvkeybase_t::RemoveKeyBaseByName( const char* name, bool removeAll )
 	}
 }
 
+void kvkeybase_t::RemoveKeyBase(kvkeybase_t* base)
+{
+	for(int i = 0; i < keys.numElem(); i++)
+	{
+		if(keys[i] == base)
+		{
+			delete keys[i];
+			keys.removeIndex(i);
+			return;
+		}
+	}
+}
+
 void kvkeybase_t::MergeFrom(const kvkeybase_t* base, bool recursive)
 {
 	if(base == NULL)
@@ -804,6 +817,37 @@ bool kvkeybase_t::IsArray() const
 bool kvkeybase_t::IsDefinition() const
 {
 	return values.numElem() == 0;
+}
+
+// counters and accessors
+int	kvkeybase_t::KeyCount() const
+{
+	return keys.numElem();
+}
+
+kvkeybase_t* kvkeybase_t::KeyAt(int idx) const
+{
+	return keys[idx];
+}
+
+int	kvkeybase_t::ValueCount() const
+{
+	return values.numElem();
+}
+
+kvpairvalue_t* kvkeybase_t::ValueAt(int idx)  const
+{
+	return values[idx];
+}
+
+void kvkeybase_t::L_SetType(int newType)
+{
+	type = (EKVPairType)newType;
+}
+
+int	kvkeybase_t::L_GetType() const
+{
+	return type;
 }
 
 //---------------------------------------------------------------------------------------------------------

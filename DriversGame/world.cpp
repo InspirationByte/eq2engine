@@ -582,6 +582,14 @@ bool CGameWorld::IsValidObject(CGameObject* pObject) const
 
 void CGameWorld::Cleanup( bool unloadLevel )
 {
+	{
+		OOLUA::Script& state = GetLuaState();
+		EqLua::LuaStackGuard g(state);
+
+		OOLUA::Table tab = OOLUA::new_table(state);
+		EqLua::LuaCallUserdataCallback(g_pGameWorld, "OnLevelUnload", tab);
+	}
+
 	// cvar stuff
 	g_envList.clear();
 
@@ -1763,6 +1771,14 @@ bool CGameWorld::LoadLevel()
 	{
 		m_levelLoaded = true;
 		InitEnvironment();
+	}
+
+	{
+		OOLUA::Script& state = GetLuaState();
+		EqLua::LuaStackGuard g(state);
+
+		OOLUA::Table tab = OOLUA::new_table(state);
+		EqLua::LuaCallUserdataCallback(g_pGameWorld, "OnLevelLoad", tab);
 	}
 
 	return result;

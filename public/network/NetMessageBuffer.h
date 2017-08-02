@@ -125,8 +125,9 @@ public:
 	void				ReadData(void* pDst, int nBytes);
 
 	void				WriteNetBuffer(CNetMessageBuffer* pMsg, bool fromCurPos = false, int nLength = -1);
-
 protected:
+	
+
 	void				TryExtendSubMsg();
 
 	bool				WriteToCurrentSubMsg(ubyte* pData, int nBytes);
@@ -147,50 +148,5 @@ protected:
 };
 
 }; // namespace Networking
-
-#ifndef NO_LUA
-#ifndef __INTELLISENSE__
-OOLUA_PROXY( Networking::CNetMessageBuffer )
-
-	OOLUA_MFUNC( WriteByte )
-	OOLUA_MFUNC( WriteUByte )
-	OOLUA_MFUNC( WriteInt16 )
-	OOLUA_MFUNC( WriteUInt16 )
-	OOLUA_MFUNC( WriteInt )
-	OOLUA_MFUNC( WriteUInt )
-	OOLUA_MFUNC( WriteBool )
-	OOLUA_MFUNC( WriteFloat )
-
-	OOLUA_MFUNC( WriteVector2D )
-	OOLUA_MFUNC( WriteVector3D )
-	OOLUA_MFUNC( WriteVector4D )
-
-	OOLUA_MFUNC( ReadByte )
-	OOLUA_MFUNC( ReadUByte )
-	OOLUA_MFUNC( ReadInt16 )
-	OOLUA_MFUNC( ReadUInt16 )
-	OOLUA_MFUNC( ReadInt )
-	OOLUA_MFUNC( ReadUInt )
-	OOLUA_MFUNC( ReadBool )
-	OOLUA_MFUNC( ReadFloat )
-
-	OOLUA_MFUNC( ReadVector2D )
-	OOLUA_MFUNC( ReadVector3D )
-	OOLUA_MFUNC( ReadVector4D )
-
-	//OOLUA_MFUNC( WriteString )
-	//OOLUA_MEM_FUNC( std::string, ReadString )
-
-	OOLUA_MFUNC( WriteNetBuffer )
-
-	//OOLUA_MFUNC( WriteKeyValues )
-	//OOLUA_MFUNC( ReadKeyValues )
-
-	OOLUA_MFUNC_CONST( GetMessageLength )
-	OOLUA_MFUNC_CONST( GetClientID )
-
-OOLUA_PROXY_END
-#endif // __INTELLISENSE__
-#endif // NO_LUA
 
 #endif // MESSAGES_H

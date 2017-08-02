@@ -91,31 +91,76 @@ OOLUA_EXPORT_FUNCTIONS(Networking::CNetMessageBuffer,
 										WriteByte, WriteUByte, WriteInt16, WriteUInt16, WriteInt, WriteUInt, WriteBool, WriteFloat, WriteVector2D,
 										WriteVector3D, WriteVector4D,
 										ReadByte, ReadUByte, ReadInt16, ReadUInt16, ReadInt, ReadUInt, ReadBool, ReadFloat, ReadVector2D,
-										ReadVector3D, ReadVector4D, /*WriteString, ReadString,*/ WriteNetBuffer/*, WriteKeyValues, ReadKeyValues*/)
+										ReadVector3D, ReadVector4D, WriteString, ReadString, WriteNetBuffer, WriteKeyValues, ReadKeyValues)
 
 OOLUA_EXPORT_FUNCTIONS_CONST(Networking::CNetMessageBuffer, GetMessageLength, GetClientID)
 
 OOLUA_EXPORT_FUNCTIONS(Networking::CNetworkThread,	SendData, SendEvent, SendWaitDataEvent)
 OOLUA_EXPORT_FUNCTIONS_CONST(Networking::CNetworkThread)
 
-/*
+OOLUA_EXPORT_FUNCTIONS(kvpairvalue_t, SetValueFrom, SetStringValue, SetValueFromString)
+OOLUA_EXPORT_FUNCTIONS_CONST(kvpairvalue_t, get_type, get_value, get_nValue, get_bValue, get_fValue)
+
 OOLUA_EXPORT_FUNCTIONS(kvkeybase_t,
 	Cleanup,
 	ClearValues,
+
 	SetName,
+
 	AddKeyBase,
-	SetKey,
+	RemoveKeyBaseByName,
 	RemoveKeyBase,
-	SetValue,
-	SetValueByIndex,
-	AppendValue,
-	MergeFrom
+
+	SetKeyString,
+	SetKeyInt,
+	SetKeyFloat,
+	SetKeyBool,
+	SetKeySection,
+
+	AddKeyString,
+	AddKeyInt,
+	AddKeyFloat,
+	AddKeyBool,
+	//AddKeySection,
+
+	AddValueString,
+	AddValueInt,
+	AddValueFloat,
+	AddValueBool,
+	//AddValueSection,
+	//AddValuePair,
+
+	AddUniqueValueString,
+	AddUniqueValueInt,
+	AddUniqueValueFloat,
+	AddUniqueValueBool,
+
+	SetValueStringAt,
+	SetValueIntAt,
+	SetValueFloatAt,
+	SetValueBoolAt,
+	//SetValuePairAt,
+
+	MergeFrom,
+	SetType
 )
 
-OOLUA_EXPORT_FUNCTIONS_CONST(kvkeybase_t, FindKeyBase, IsSection, IsArray, IsDefinition)
+OOLUA_EXPORT_FUNCTIONS_CONST(kvkeybase_t, 
+	GetName,
+	FindKeyBase, 
+	Clone,
+	CopyTo,
+	IsSection, 
+	IsArray, 
+	IsDefinition,
+	KeyCount,
+	KeyAt,
+	ValueCount,
+	ValueAt,
+	GetType
+)
 
-OOLUA_EXPORT_FUNCTIONS(KeyValues, LoadFile, SaveFile, GetRoot)
-
+OOLUA_EXPORT_FUNCTIONS(KeyValues, LoadFile, SaveFile, GetRoot, Reset)
 OOLUA_EXPORT_FUNCTIONS_CONST(KeyValues)
 
 // safe and fast value returner
@@ -127,7 +172,7 @@ OOLUA_CFUNC(KV_GetValueBool, L_KV_GetValueBool)
 OOLUA_CFUNC(KV_GetVector2D, L_KV_GetVector2D)
 OOLUA_CFUNC(KV_GetVector3D, L_KV_GetVector3D)
 OOLUA_CFUNC(KV_GetVector4D, L_KV_GetVector4D)
-*/
+
 OOLUA_CFUNC(VectorAngles, L_VectorAngles)
 
 ILocToken* LocalizedToken( char* pszToken )
@@ -352,6 +397,12 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	LUA_SET_GLOBAL_ENUMCONST(state, EMITSOUND_FLAG_STARTSILENT);
 	LUA_SET_GLOBAL_ENUMCONST(state, EMITSOUND_FLAG_START_ON_UPDATE);
 
+	LUA_SET_GLOBAL_ENUMCONST(state, KVPAIR_STRING);
+	LUA_SET_GLOBAL_ENUMCONST(state, KVPAIR_INT);
+	LUA_SET_GLOBAL_ENUMCONST(state, KVPAIR_FLOAT);
+	LUA_SET_GLOBAL_ENUMCONST(state, KVPAIR_BOOL);
+	LUA_SET_GLOBAL_ENUMCONST(state, KVPAIR_SECTION);
+
 	OOLUA::register_class<ConVar>(state);
 	OOLUA::register_class<ConCommand>(state);
 	OOLUA::register_class<Vector2D>(state);
@@ -373,8 +424,8 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 
 	OOLUA::set_global(state, "LocalizedToken", L_LocalizedToken);
 	OOLUA::set_global(state, "AddLanguageFile", L_AddLanguageFile);
-	/*
-
+	
+	OOLUA::register_class<kvpairvalue_t>(state);
 	OOLUA::register_class<kvkeybase_t>(state);
 	OOLUA::register_class<KeyValues>(state);
 	
@@ -385,7 +436,7 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	OOLUA::set_global(state, "KV_GetVector2D", L_KV_GetVector2D);
 	OOLUA::set_global(state, "KV_GetVector3D", L_KV_GetVector3D);
 	OOLUA::set_global(state, "KV_GetVector4D", L_KV_GetVector4D);
-	*/
+	
 	OOLUA::set_global(state, "f_fract", L_fract);
 	OOLUA::set_global(state, "f_lerp", L_lerp);
 	OOLUA::set_global(state, "f_cerp", L_cerp);

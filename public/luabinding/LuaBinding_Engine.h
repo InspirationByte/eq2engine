@@ -25,7 +25,7 @@
 #include "ILocalize.h"
 #include "IConCommandFactory.h"
 
-#ifndef __INTELLISENSE__
+//#ifndef __INTELLISENSE__
 
 //
 // Console command/variable base
@@ -95,28 +95,93 @@ OOLUA_PROXY_END
 //
 // keyvalues
 //
-/*
+
+OOLUA_PROXY(kvpairvalue_t)
+
+	OOLUA_TAGS(
+		No_default_constructor,
+		Abstract
+	)
+
+	OOLUA_MGET(type)
+	//OOLUA_MSET(type)
+
+	OOLUA_MGET(value)
+
+	OOLUA_MGET(nValue)
+	//OOLUA_MSET(nValue)
+
+	OOLUA_MGET(bValue)
+	//OOLUA_MSET(bValue)
+
+	OOLUA_MGET(fValue)
+	//OOLUA_MSET(fValue)
+
+	OOLUA_MFUNC(SetValueFrom)
+
+	OOLUA_MFUNC(SetStringValue)
+	OOLUA_MFUNC(SetValueFromString)
+OOLUA_PROXY_END
+
 OOLUA_PROXY(kvkeybase_t)
 
 	OOLUA_MFUNC(Cleanup)
 	OOLUA_MFUNC(ClearValues)
-	OOLUA_MFUNC(SetName)
 
+	OOLUA_MFUNC(SetName)
+	OOLUA_MFUNC_CONST(GetName)
 
 	OOLUA_MFUNC(AddKeyBase)
-	OOLUA_MEM_FUNC(void, SetKey, const char*, const char*)
-	OOLUA_MFUNC(RemoveKeyBase)
+	OOLUA_MFUNC(RemoveKeyBaseByName)
+	OOLUA_MEM_FUNC(void, RemoveKeyBase, cpp_in_p<kvkeybase_t*>)
 
-	OOLUA_MFUNC(SetValue)
-	OOLUA_MFUNC(SetValueByIndex)
-	OOLUA_MEM_FUNC(int, AppendValue, const char*)
+	OOLUA_MEM_FUNC_RENAME(SetKeyString, kvkeybase_t&, SetKey, const char*, const char*)
+	OOLUA_MEM_FUNC_RENAME(SetKeyInt, kvkeybase_t&, SetKey, const char*, int)
+	OOLUA_MEM_FUNC_RENAME(SetKeyFloat, kvkeybase_t&, SetKey, const char*, float)
+	OOLUA_MEM_FUNC_RENAME(SetKeyBool, kvkeybase_t&, SetKey, const char*, bool)
+	OOLUA_MEM_FUNC_RENAME(SetKeySection, kvkeybase_t&, SetKey, const char*, kvkeybase_t*)
+
+	OOLUA_MEM_FUNC_RENAME(AddKeyString, kvkeybase_t&, AddKey, const char*, const char*)
+	OOLUA_MEM_FUNC_RENAME(AddKeyInt, kvkeybase_t&, AddKey, const char*, int)
+	OOLUA_MEM_FUNC_RENAME(AddKeyFloat, kvkeybase_t&, AddKey, const char*, float)
+	OOLUA_MEM_FUNC_RENAME(AddKeyBool, kvkeybase_t&, AddKey, const char*, bool)
+	OOLUA_MEM_FUNC_RENAME(AddKeySection, kvkeybase_t&, AddKey, const char*, kvkeybase_t*)
+
+	OOLUA_MEM_FUNC_RENAME(AddValueString, void, AddValue, const char*)
+	OOLUA_MEM_FUNC_RENAME(AddValueInt, void, AddValue, int)
+	OOLUA_MEM_FUNC_RENAME(AddValueFloat, void, AddValue, float)
+	OOLUA_MEM_FUNC_RENAME(AddValueBool, void, AddValue, bool)
+	OOLUA_MEM_FUNC_RENAME(AddValueSection, void, AddValue, kvkeybase_t*)
+	//OOLUA_MEM_FUNC_RENAME(AddValuePair, void, AddValue, kvpairvalue_t*)
+
+	OOLUA_MEM_FUNC_RENAME(AddUniqueValueString, void, AddUniqueValue, const char*)
+	OOLUA_MEM_FUNC_RENAME(AddUniqueValueInt, void, AddUniqueValue, int)
+	OOLUA_MEM_FUNC_RENAME(AddUniqueValueFloat, void, AddUniqueValue, float)
+	OOLUA_MEM_FUNC_RENAME(AddUniqueValueBool, void, AddUniqueValue, bool)
+
+	OOLUA_MEM_FUNC_RENAME(SetValueStringAt, void, SetValueAt, const char*, int)
+	OOLUA_MEM_FUNC_RENAME(SetValueIntAt, void, SetValueAt, int, int)
+	OOLUA_MEM_FUNC_RENAME(SetValueFloatAt, void, SetValueAt, float, int)
+	OOLUA_MEM_FUNC_RENAME(SetValueBoolAt, void, SetValueAt, bool, int)
+	//OOLUA_MEM_FUNC_RENAME(SetValuePairAt, void, SetValueAt, kvpairvalue_t*, int)
+
 	OOLUA_MEM_FUNC(void, MergeFrom, const kvkeybase_t*, bool)
+	OOLUA_MEM_FUNC_CONST(lua_return<kvkeybase_t*>, Clone)
+	OOLUA_MEM_FUNC_CONST(void, CopyTo, kvkeybase_t*)
 
 	OOLUA_MEM_FUNC_CONST(maybe_null<kvkeybase_t*>, FindKeyBase, const char*, int)
 
 	OOLUA_MFUNC_CONST(IsSection)
 	OOLUA_MFUNC_CONST(IsArray)
 	OOLUA_MFUNC_CONST(IsDefinition)
+
+	OOLUA_MFUNC_CONST(KeyCount)
+	OOLUA_MFUNC_CONST(KeyAt)
+	OOLUA_MFUNC_CONST(ValueCount)
+	OOLUA_MFUNC_CONST(ValueAt)
+
+	OOLUA_MEM_FUNC_CONST_RENAME(GetType, int, L_GetType)
+	OOLUA_MEM_FUNC_RENAME(SetType, void, L_SetType, int)
 
 OOLUA_PROXY_END
 
@@ -131,8 +196,9 @@ OOLUA_PROXY(KeyValues)
 
 	OOLUA_MEM_FUNC_RENAME(GetRoot, kvkeybase_t*, GetRootSection)
 
-OOLUA_PROXY_END*/
+	OOLUA_MFUNC(Reset)
 
+OOLUA_PROXY_END
 
 //----------------------------------------------
 
@@ -284,7 +350,7 @@ OOLUA_PROXY_END
 */
 
 
-#endif // __INTELLISENSE__
+//#endif // __INTELLISENSE__
 
 #define LUA_SET_GLOBAL_ENUMCONST(state, constName)	\
 		auto l_##constName = constName;			\

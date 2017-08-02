@@ -125,6 +125,9 @@ struct kvkeybase_t
 	// removes key base by name
 	void					RemoveKeyBaseByName( const char* name, bool removeAll = false );
 
+	// removes key base
+	void					RemoveKeyBase(kvkeybase_t* base);
+
 	//-----------------------------------------------------
 
 
@@ -182,6 +185,15 @@ struct kvkeybase_t
 	bool					IsSection() const;
 	bool					IsArray() const;
 	bool					IsDefinition() const;
+
+	int						KeyCount() const;
+	kvkeybase_t*			KeyAt(int idx) const;
+
+	int						ValueCount() const;
+	kvpairvalue_t*			ValueAt(int idx) const;
+
+	void					L_SetType(int newType);
+	int						L_GetType() const;
 
 	// the line that the key is on
 	int						line;
