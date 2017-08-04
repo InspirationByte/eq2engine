@@ -42,6 +42,13 @@ extern ConVar			net_server;
 ConVar					g_pause("g_pause", "0");
 int						g_nOldControlButtons	= 0;
 
+enum EReplayScheduleType
+{
+	REPLAY_SCHEDULE_NONE = 0,
+	REPLAY_SCHEDULE_REPLAY,
+	REPLAY_SCHEDULE_DIRECTOR
+};
+
 void Game_ShutdownSession(bool restart = false);
 void Game_InitializeSession();
 
@@ -375,7 +382,7 @@ void CState_Game::LoadGame()
 		Game_InitializeSession();
 		g_pause.SetBool(false);
 
-		if(m_scheduledQuickReplay)
+		if(m_scheduledQuickReplay > 0)
 		{
 			m_gameMenuName = "ReplayEndMenuStack";
 		}
@@ -511,15 +518,13 @@ void CState_Game::OnMenuCommand( const char* command )
 		m_exitGame = false;
 		m_fade = 0.0f;
 
-		Director_Enable(!stricmp(command, "goToDirector"));
-
 		if(g_pGameSession->GetMissionStatus() == MIS_STATUS_INGAME && (g_replayData->m_state != REPL_PLAYING))
 		{
 			SetupMenuStack("MissionEndMenuStack");
 			g_pGameSession->SignalMissionStatus(MIS_STATUS_FAILED, 0.0f);
 		}
 
-		m_scheduledQuickReplay = true;
+		m_scheduledQuickReplay = !stricmp(command, "goToDirector") ? REPLAY_SCHEDULE_DIRECTOR : REPLAY_SCHEDULE_REPLAY;
 	}
 }
 
@@ -535,7 +540,7 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 	m_showMenu = false;
 
 	m_scheduledRestart = false;
-	m_scheduledQuickReplay = false;
+	m_scheduledQuickReplay = REPLAY_SCHEDULE_NONE;
 
 	m_doLoadingFrames = 2;
 
@@ -601,7 +606,7 @@ void CState_Game::StartReplay( const char* path )
 	if(g_replayData->LoadFromFile( path ))
 	{
 		ChangeState( this );
-		m_scheduledQuickReplay = true;
+		m_scheduledQuickReplay = REPLAY_SCHEDULE_REPLAY;
 	}
 }
 
@@ -732,11 +737,14 @@ bool CState_Game::Update( float fDt )
 			if(m_scheduledRestart)
 				Game_QuickRestart(false);
 
-			if(m_scheduledQuickReplay)
+			if(m_scheduledQuickReplay > 0)
+			{
 				Game_InstantReplay(0);
+				Director_Enable(m_scheduledQuickReplay==REPLAY_SCHEDULE_DIRECTOR);
+			}
 
 			m_scheduledRestart = false;
-			m_scheduledQuickReplay = false;
+			m_scheduledQuickReplay = REPLAY_SCHEDULE_NONE;
 
 			return !m_exitGame;
 		}

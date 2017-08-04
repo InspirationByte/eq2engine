@@ -105,7 +105,7 @@ protected:
 	bool		m_showMenu;
 
 	bool		m_scheduledRestart;
-	bool		m_scheduledQuickReplay;
+	int			m_scheduledQuickReplay;
 
 	EqString	m_gameMenuName;
 
