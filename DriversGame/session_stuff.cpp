@@ -86,25 +86,6 @@ DECLARE_CMD(save, "Saves current replay", 0)
 	}
 }
 
-DECLARE_CMD(car_spawn, "spawns new car", 0)
-{
-	if(CMD_ARGC > 0 && g_pGameSession->GetPlayerCar())
-	{
-		CCar* pCar = g_pGameSession->CreateCar(CMD_ARGV(0).c_str());
-
-		if(pCar)
-		{
-			pCar->SetOrigin(g_pGameSession->GetPlayerCar()->GetOrigin() + g_pGameSession->GetPlayerCar()->GetRightVector()*2.0f);
-
-			pCar->Spawn();
-
-			g_pGameWorld->AddObject( pCar );
-
-			pCar->SetControlButtons(IN_ACCELERATE | IN_TURNLEFT);
-		}
-	}
-}
-
 DECLARE_CMD(replay, "starts specified replay", 0)
 {
 	if(CMD_ARGC > 0)

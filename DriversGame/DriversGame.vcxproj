@@ -162,6 +162,7 @@
     <ClCompile Include="BillboardList.cpp" />
     <ClCompile Include="CameraAnimator.cpp" />
     <ClCompile Include="car.cpp" />
+    <ClCompile Include="director.cpp" />
     <ClCompile Include="DrvSynDecals.cpp" />
     <ClCompile Include="DrvSynHUD.cpp" />
     <ClCompile Include="eqPhysics\eqPhysics_HingeJoint.cpp">
@@ -311,6 +312,7 @@
     <ClInclude Include="AITrafficCar.h" />
     <ClInclude Include="BillboardList.h" />
     <ClInclude Include="CameraAnimator.h" />
+    <ClInclude Include="director.h" />
     <ClInclude Include="DrvSynDecals.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Controller.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Contstraint.h" />

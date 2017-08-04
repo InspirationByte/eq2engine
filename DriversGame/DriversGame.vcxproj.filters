@@ -390,6 +390,9 @@
     <ClCompile Include="..\shared_engine\EGUI\EqUI_Image.cpp">
       <Filter>Файлы исходного кода\EngineLib\UI</Filter>
     </ClCompile>
+    <ClCompile Include="director.cpp">
+      <Filter>Файлы исходного кода\Game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">
@@ -765,6 +768,9 @@
     </ClInclude>
     <ClInclude Include="..\shared_engine\EGUI\EQUI_Image.h">
       <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="director.h">
+      <Filter>Файлы исходного кода\Game</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
