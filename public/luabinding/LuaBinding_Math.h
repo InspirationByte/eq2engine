@@ -21,6 +21,29 @@
 //
 // Vector2D
 //
+OOLUA_PROXY( IVector2D )
+	OOLUA_TAGS(
+        Equal_op
+        , Less_op
+        , Less_equal_op
+        , Add_op
+        , Sub_op
+        , Mul_op
+        , Div_op
+		, No_shared
+    )
+	OOLUA_CTORS(
+		OOLUA_CTOR(int)
+		OOLUA_CTOR(int, int)
+		OOLUA_CTOR( IVector2D )
+	)
+	OOLUA_MGET_MSET(x)
+	OOLUA_MGET_MSET(y)
+OOLUA_PROXY_END
+
+//
+// Vector2D
+//
 OOLUA_PROXY( Vector2D )
 	OOLUA_TAGS(
         Equal_op

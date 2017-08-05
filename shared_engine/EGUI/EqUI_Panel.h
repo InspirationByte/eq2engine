@@ -41,13 +41,14 @@ public:
 	virtual void			SetSelectionColor(const ColorRGBA &color);
 	virtual void			GetSelectionColor(ColorRGBA &color) const;
 
+protected:
+
 	// rendering
 	virtual void			Render();
 	virtual void			DrawSelf(const IRectangle& rect);
 
 	bool					ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags);
 
-protected:
 	ColorRGBA				m_color;
 	ColorRGBA				m_selColor;
 

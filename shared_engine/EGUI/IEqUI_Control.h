@@ -17,6 +17,10 @@
 
 #include "ppmem.h"
 
+#ifdef GetParent
+#undef GetParent
+#endif //GetParent
+
 struct kvkeybase_t;
 class IEqFont;
 
@@ -36,14 +40,16 @@ struct eqUIEventCmd_t
 #endif
 
 // a helper macro for baseclass defintion
-#define EQUI_CLASS( className, baseClassName )	\
-	typedef className ThisClass;				\
-	typedef baseClassName BaseClass;			\
-	const char*	GetClassname() const { return #className; }
-	
+#define EQUI_CLASS( className, baseClassName )					\
+	typedef className ThisClass;								\
+	typedef baseClassName BaseClass;							\
+	const char*	GetClassname() const { return ThisClass::Classname(); }		\
+	static const char* Classname() { return #className; }		\
 
 class IUIControl
 {
+	friend class CUIManager;
+
 public:
 	PPMEM_MANAGED_OBJECT();
 
@@ -65,7 +71,7 @@ public:
 	virtual void				Show()								{m_visible = true;}
 	virtual void				Hide()								{m_visible = false;}
 
-	virtual void				SetVisible(bool bVisible)			{m_visible = bVisible;}
+	virtual void				SetVisible(bool bVisible)			{bVisible ? Show() : Hide();}
 	virtual bool				IsVisible() const;
 
 	virtual void				SetSelfVisible(bool bVisible)		{m_selfVisible = bVisible;}
@@ -98,8 +104,16 @@ public:
 
 	virtual IEqFont*			GetFont() const;
 
+	// PURE VIRTUAL
+	virtual const char*			GetClassname() const = 0;
+
+protected:
+
 	// rendering
 	virtual void				Render();
+	virtual void				DrawSelf(const IRectangle& rect) = 0;
+
+	bool						ProcessCommand(DkList<EqString>& args);
 
 	virtual IUIControl*			HitTest(const IVector2D& point);
 
@@ -107,14 +121,6 @@ public:
 	virtual bool				ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags);
 	virtual bool				ProcessKeyboardEvents(int nKeyButtons, int flags);
 
-	bool						ProcessCommand(DkList<EqString>& args);
-
-	virtual void				DrawSelf(const IRectangle& rect) = 0;
-
-	// PURE VIRTUAL
-	virtual const char*			GetClassname() const = 0;
-
-protected:
 	IUIControl*					m_parent;
 
 	DkLinkedList<IUIControl*>	m_childs;		// child panels
@@ -134,6 +140,20 @@ protected:
 
 	IEqFont*					m_font;
 };
+
+template <class T> 
+T* DynamicCast(IUIControl* control)
+{
+	if(control == nullptr)
+		return nullptr;
+
+	if(!stricmp(T::Classname(), control->GetClassname())) 
+	{
+		return (T*)control;
+	}
+	return nullptr;
+}
+
 };
 
 #endif // IEQUICONTROL_H

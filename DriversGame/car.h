@@ -511,6 +511,7 @@ protected:
 	bool					UpdateWaterState( float fDt, bool hasCollidedWater );
 
 	void					DrawBody( int nRenderFlags );
+	void					DrawShadow( float distance );
 	void					DrawEffects( int lod );
 	void					DrawWheelEffects(int wheelIdx, int lod, bool drawSkidMarks);
 	void					DrawSkidmarkTrails(int wheelIdx);

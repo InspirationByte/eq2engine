@@ -25,6 +25,10 @@
 #include "ILocalize.h"
 #include "IConCommandFactory.h"
 
+#include "EGUI/IEqUI_Control.h"
+#include "EGUI/EqUI_Manager.h"
+#include "EGUI/EqUI_Panel.h"
+
 //#ifndef __INTELLISENSE__
 
 //
@@ -294,14 +298,17 @@ OOLUA_PROXY_END
 //
 // UI panel
 //
-/*
-OOLUA_PROXY(IEqUIControl)
+
+OOLUA_PROXY(equi::IUIControl)
 	OOLUA_TAGS( Abstract )
+
+	OOLUA_MFUNC( InitFromKeyValues )
 
 	OOLUA_MFUNC_CONST( GetName )
 	OOLUA_MFUNC( SetName )
 
-	OOLUA_MFUNC_CONST( GetType )
+	//OOLUA_MFUNC_CONST( GetLabel )
+	//OOLUA_MFUNC( SetLabel )
 
 	OOLUA_MFUNC( Show )
 	OOLUA_MFUNC( Hide )
@@ -309,22 +316,38 @@ OOLUA_PROXY(IEqUIControl)
 	OOLUA_MFUNC( SetVisible )
 	OOLUA_MFUNC_CONST( IsVisible )
 
+	OOLUA_MFUNC( SetSelfVisible )
+	OOLUA_MFUNC_CONST( IsSelfVisible )
+
 	OOLUA_MFUNC( Enable )
 	OOLUA_MFUNC_CONST( IsEnabled )
+
 	OOLUA_MFUNC( SetSize )
 	OOLUA_MFUNC( SetPosition )
 
 	OOLUA_MFUNC_CONST( GetSize )
 	OOLUA_MFUNC_CONST( GetPosition )
-OOLUA_PROXY_END
 
-OOLUA_PROXY(CEqUI_Panel, IEqUIControl)
-	OOLUA_TAGS( Abstract )
+	//OOLUA_MFUNC( SetRectangle )
+	//OOLUA_MFUNC_CONST( GetRectangle )
 
+	//OOLUA_MFUNC_CONST( GetClientRectangle )
+
+	// child controls
 	OOLUA_MFUNC( AddChild )
 	OOLUA_MFUNC( RemoveChild )
-	OOLUA_MFUNC( FindChild )
+	OOLUA_MEM_FUNC( maybe_null<equi::IUIControl*>, FindChild, const char* )
 	OOLUA_MFUNC( ClearChilds )
+
+	OOLUA_MEM_FUNC_CONST( maybe_null<equi::IUIControl*>, GetParent )
+
+	//OOLUA_MFUNC_CONST( GetFont )
+	OOLUA_MFUNC_CONST( GetClassname )
+
+OOLUA_PROXY_END
+
+OOLUA_PROXY(equi::Panel, equi::IUIControl)
+	OOLUA_TAGS( Abstract )
 
 	OOLUA_MFUNC( SetColor )
 	OOLUA_MFUNC_CONST( GetColor )
@@ -337,18 +360,33 @@ OOLUA_PROXY_END
 // UI panel manager
 //
 
-OOLUA_PROXY(CEqUI_Manager)
+OOLUA_PROXY(equi::CUIManager)
 	OOLUA_TAGS( Abstract )
 
-	OOLUA_MFUNC_CONST( GetRootPanel )
-	OOLUA_MFUNC( SetRootPanel )
+	OOLUA_MEM_FUNC_CONST( maybe_null<equi::Panel*>, GetRootPanel )
 
-	OOLUA_MFUNC( AddPanel );
-	OOLUA_MFUNC( DestroyPanel );
-	OOLUA_MFUNC_CONST( FindPanel )
+	//OOLUA_MFUNC( RegisterFactory )
+
+	OOLUA_MEM_FUNC( maybe_null<equi::IUIControl*>, CreateElement, const char* )
+
+	OOLUA_MFUNC( AddPanel )
+	OOLUA_MFUNC( DestroyPanel )
+	OOLUA_MEM_FUNC_CONST( maybe_null<equi::Panel*>, FindPanel, const char* )
+
+	OOLUA_MFUNC( BringToTop )
+	OOLUA_MEM_FUNC_CONST( maybe_null<equi::Panel*>, GetTopPanel )
+
+	//OOLUA_MFUNC( SetViewFrame )
+	//OOLUA_MFUNC_CONST( GetViewFrame )
+
+	OOLUA_MFUNC( SetFocus )
+	OOLUA_MEM_FUNC_CONST( maybe_null<equi::IUIControl*>, GetFocus )
+	OOLUA_MFUNC_CONST( GetMouseOver )
+
+	OOLUA_MFUNC_CONST( IsWindowsVisible )
+
+	OOLUA_MFUNC_CONST( GetDefaultFont )
 OOLUA_PROXY_END
-*/
-
 
 //#endif // __INTELLISENSE__
 

@@ -30,6 +30,7 @@
 CPredictableRandomGenerator	g_replayRandom;
 
 CPFXAtlasGroup* g_vehicleEffects = NULL;
+CPFXAtlasGroup* g_vehicleShadows = NULL;
 
 CPFXAtlasGroup* g_vehicleLights = NULL;
 
@@ -460,6 +461,18 @@ void CGameWorld::Init()
 		g_pPFXRenderer->AddRenderGroup( g_vehicleLights );
 	}
 
+	if(!g_vehicleShadows)
+	{
+		g_vehicleShadows = new CPFXAtlasGroup();
+		g_vehicleShadows->Init("scripts/effects_vehicles_shadows.atlas", false);
+
+		// triangle list mode
+		g_vehicleShadows->SetTriangleListMode(true);
+		g_vehicleLights->SetCullInverted(true);
+
+		g_pPFXRenderer->AddRenderGroup( g_vehicleShadows );
+	}
+
 	if(!g_vehicleEffects)
 	{
 		g_vehicleEffects = new CPFXAtlasGroup();
@@ -657,6 +670,7 @@ void CGameWorld::Cleanup( bool unloadLevel )
 		g_pPFXRenderer->RemoveRenderGroup(g_treeAtlas);
 
 		g_pPFXRenderer->RemoveRenderGroup(g_vehicleLights);
+		g_pPFXRenderer->RemoveRenderGroup(g_vehicleShadows);
 
 		if(g_vehicleEffects)
 			delete g_vehicleEffects;
@@ -677,6 +691,10 @@ void CGameWorld::Cleanup( bool unloadLevel )
 		if(g_vehicleLights)
 			delete g_vehicleLights;
 		g_vehicleLights = NULL;
+
+		if(g_vehicleShadows)
+			delete g_vehicleShadows;
+		g_vehicleShadows = NULL;
 
 #ifndef EDITOR
 		m_shadowRenderer.Shutdown();

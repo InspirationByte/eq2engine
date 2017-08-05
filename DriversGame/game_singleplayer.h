@@ -116,8 +116,8 @@ protected:
 OOLUA_PROXY(CGameSession)
 	OOLUA_TAGS( Abstract )
 
-	OOLUA_MEM_FUNC_RENAME(CreateCar, CCar*, Lua_CreateCar, const char*, int)
-	OOLUA_MEM_FUNC_RENAME(CreatePursuerCar, CAIPursuerCar*, Lua_CreatePursuerCar, const char*, int)
+	OOLUA_MEM_FUNC_RENAME(CreateCar, maybe_null<CCar*>, Lua_CreateCar, const char*, int)
+	OOLUA_MEM_FUNC_RENAME(CreatePursuerCar, maybe_null<CAIPursuerCar*>, Lua_CreatePursuerCar, const char*, int)
 
 	OOLUA_MFUNC(LoadCarReplay)
 

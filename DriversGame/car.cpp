@@ -382,11 +382,13 @@ ConVar g_debug_car_lights("g_debug_car_lights", "0");
 ConVar g_autohandbrake("g_autohandbrake", "1", "Auto handbrake steering helper", CV_CHEAT);
 
 ConVar r_drawSkidMarks("r_drawSkidMarks", "1", "Draw skidmarks, 1 - player, 2 - all cars", CV_ARCHIVE);
+ConVar r_carShadowDetailDistance("r_carShadowDetailDistance", "50.0", "Detailed shadow distance", CV_ARCHIVE);
 
 extern CPFXAtlasGroup* g_vehicleEffects;
 extern CPFXAtlasGroup* g_translParticles;
 extern CPFXAtlasGroup* g_additPartcles;
 extern CPFXAtlasGroup* g_vehicleLights;
+extern CPFXAtlasGroup* g_vehicleShadows;
 
 #define PETROL_ENGINE_CURVE				(1.4f)
 #define PETROL_MINIMAL_TORQUE_FACTOR	(6.4f)
@@ -880,7 +882,7 @@ void CCar::Spawn()
 	m_veh_raintrail = g_vehicleEffects->FindEntry("rain_trail");
 
 	// TODO: own car shadow texture
-	m_veh_shadow = g_vehicleEffects->FindEntry("carshad");
+	m_veh_shadow = g_vehicleShadows->FindEntry("carshad");
 
 	UpdateLightsState();
 
@@ -3974,6 +3976,71 @@ void CCar::DrawBody( int nRenderFlags )
 	}
 }
 
+void CCar::DrawShadow(float distance)
+{
+	Vector3D rightVec = GetRightVector();
+	Vector3D forwardVec = GetForwardVector();
+	TexAtlasEntry_t* carShadow = m_veh_shadow;
+
+	Vector2D shadowSize(m_conf->physics.body_size.x+0.35f, m_conf->physics.body_size.z+0.25f);
+
+	if(distance < r_carShadowDetailDistance.GetFloat())
+	{
+		Rectangle_t flipRect = carShadow ? carShadow->rect : Rectangle_t(0,0,1,1);
+
+		// project from top
+		Matrix4x4 proj, view, viewProj;
+		proj = orthoMatrix(-shadowSize.x, shadowSize.x, -shadowSize.y, shadowSize.y, -1.5f, 1.0f);
+		view = Matrix4x4( rotateX3(DEG2RAD(-90)) * !m_worldMatrix.getRotationComponent());
+		view.translate(-GetOrigin());
+
+		viewProj = proj*view;
+
+		decalprimitives_t shadowDecal;
+		shadowDecal.settings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
+		shadowDecal.settings.facingDir = vec3_up;
+
+		// might be slow on mobile device
+		shadowDecal.processFunc = LightDecalTriangleProcessFunc;
+
+		//ColorRGBA(1.0f, 1.0f, 1.0f, clamp(0.8f + 1.0f-(shadowcoll.fract*8.0f), 0.0f, 1.0f));
+
+		ProjectDecalToSpriteBuilder(shadowDecal, g_vehicleShadows, flipRect, viewProj, ColorRGBA(1.0f,1.0f,1.0f,1.0f));
+	}
+	else
+	{
+		PFXVertex_t* verts;
+		if(carShadow && g_vehicleEffects->AllocateGeom(4,4, &verts, NULL, true) != -1)
+		{
+			verts[0].point = GetOrigin() + shadowSize.y*forwardVec + shadowSize.x*rightVec;
+			verts[1].point = GetOrigin() + shadowSize.y*forwardVec + shadowSize.x*-rightVec;
+			verts[2].point = GetOrigin() + shadowSize.y*-forwardVec + shadowSize.x*rightVec;
+			verts[3].point = GetOrigin() + shadowSize.y*-forwardVec + shadowSize.x*-rightVec;
+
+			verts[0].texcoord = carShadow->rect.GetRightTop();
+			verts[1].texcoord = carShadow->rect.GetLeftTop();
+			verts[2].texcoord = carShadow->rect.GetRightBottom();
+			verts[3].texcoord = carShadow->rect.GetLeftBottom();
+
+			eqPhysCollisionFilter collFilter;
+			collFilter.flags = EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC;
+
+			CollisionData_t shadowcoll;
+			for(int i = 0; i < 4; i++)
+			{
+				Vector3D traceFrom = verts[i].point;
+				Vector3D traceTo = traceFrom - Vector3D(0.0f,5.0f,0.0f);
+
+				g_pPhysics->TestLine(traceFrom, traceTo, shadowcoll, OBJECTCONTENTS_SOLID_GROUND, &collFilter);
+
+				verts[i].point = lerp(traceFrom, traceTo+Vector3D(0,0.01f,0), shadowcoll.fract);
+
+				verts[i].color = ColorRGBA(1.0f, 1.0f, 1.0f, clamp(0.8f + 1.0f-(shadowcoll.fract*8.0f), 0.0f, 1.0f));
+			}
+		}
+	}
+}
+
 void CCar::Draw( int nRenderFlags )
 {
 	if(!r_drawCars.GetBool())
@@ -3996,50 +4063,13 @@ void CCar::Draw( int nRenderFlags )
 	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
 	int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
-	Vector3D rightVec = GetRightVector();
-	Vector3D forwardVec = GetForwardVector();
-
 	if(nLOD == 0 && !(nRenderFlags & RFLAG_SHADOW))
 	{
 		//
 		// SHADOW TEST CODE
 		//
 		if(bDraw)
-		{
-			TexAtlasEntry_t* carShadow = m_veh_shadow;
-
-			PFXVertex_t* verts;
-			if(carShadow && g_vehicleEffects->AllocateGeom(4,4, &verts, NULL, true) != -1)
-			{
-				Vector3D shadow_size = m_conf->physics.body_size + Vector3D(0.35f,0,0.25f);
-
-				verts[0].point = GetOrigin() + shadow_size.z*forwardVec + shadow_size.x*rightVec;
-				verts[1].point = GetOrigin() + shadow_size.z*forwardVec + shadow_size.x*-rightVec;
-				verts[2].point = GetOrigin() + shadow_size.z*-forwardVec + shadow_size.x*rightVec;
-				verts[3].point = GetOrigin() + shadow_size.z*-forwardVec + shadow_size.x*-rightVec;
-
-				verts[0].texcoord = carShadow->rect.GetRightTop();
-				verts[1].texcoord = carShadow->rect.GetLeftTop();
-				verts[2].texcoord = carShadow->rect.GetRightBottom();
-				verts[3].texcoord = carShadow->rect.GetLeftBottom();
-
-				eqPhysCollisionFilter collFilter;
-				collFilter.flags = EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC;
-
-				CollisionData_t shadowcoll;
-				for(int i = 0; i < 4; i++)
-				{
-					Vector3D traceFrom = verts[i].point;
-					Vector3D traceTo = traceFrom - Vector3D(0.0f,5.0f,0.0f);
-
-					g_pPhysics->TestLine(traceFrom, traceTo, shadowcoll, OBJECTCONTENTS_SOLID_GROUND, &collFilter);
-
-					verts[i].point = lerp(traceFrom, traceTo+Vector3D(0,0.01f,0), shadowcoll.fract);
-
-					verts[i].color = ColorRGBA(1.0f, 1.0f, 1.0f, clamp(0.8f + 1.0f-(shadowcoll.fract*8.0f), 0.0f, 1.0f));
-				}
-			}
-		}
+			DrawShadow(camDist);
 
 		int numWheels = GetWheelCount();
 

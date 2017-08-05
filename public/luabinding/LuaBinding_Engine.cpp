@@ -52,6 +52,9 @@ OOLUA_EXPORT_FUNCTIONS_CONST(ConCommand)
 OOLUA_EXPORT_FUNCTIONS(ConVar, RevertToDefaultValue, SetString,SetFloat,SetInt,SetBool)
 OOLUA_EXPORT_FUNCTIONS_CONST(ConVar, HasClamp, GetMinClamp, GetMaxClamp, GetFloat, GetString, GetInt, GetBool)
 
+OOLUA_EXPORT_FUNCTIONS(IVector2D, set_x, set_y)
+OOLUA_EXPORT_FUNCTIONS_CONST(IVector2D, get_x, get_y)
+
 OOLUA_EXPORT_FUNCTIONS(Vector2D, set_x, set_y)
 OOLUA_EXPORT_FUNCTIONS_CONST(Vector2D, get_x, get_y)
 
@@ -173,6 +176,74 @@ OOLUA_CFUNC(KV_GetVector2D, L_KV_GetVector2D)
 OOLUA_CFUNC(KV_GetVector3D, L_KV_GetVector3D)
 OOLUA_CFUNC(KV_GetVector4D, L_KV_GetVector4D)
 
+//--------------------------------------------------------------------------------------
+
+OOLUA_EXPORT_FUNCTIONS(equi::IUIControl, 
+
+	InitFromKeyValues,
+	SetName,
+	//SetLabel,
+	Show,
+	Hide,
+	SetVisible,
+	SetSelfVisible,
+	Enable,
+	SetSize,
+	SetPosition,
+	//SetRectangle,
+	AddChild,
+	RemoveChild,
+	FindChild,
+	ClearChilds
+)
+
+OOLUA_EXPORT_FUNCTIONS_CONST(equi::IUIControl, 
+	GetName,
+	//GetLabel,
+	IsVisible,
+	IsSelfVisible,
+	IsEnabled,
+	GetSize,
+	GetPosition,
+	//GetRectangle,
+	//GetClientRectangle,
+	GetClassname,
+	GetParent
+	//GetFont
+)
+
+OOLUA_EXPORT_FUNCTIONS(equi::Panel)
+OOLUA_EXPORT_FUNCTIONS_CONST(equi::Panel)
+
+OOLUA_EXPORT_FUNCTIONS(equi::CUIManager,
+
+	//RegisterFactory,
+	CreateElement,
+	AddPanel,
+	DestroyPanel,
+	BringToTop,
+	//SetViewFrame,
+	SetFocus
+
+)
+OOLUA_EXPORT_FUNCTIONS_CONST(equi::CUIManager,
+	GetRootPanel,
+	FindPanel,
+	GetTopPanel,
+	// GetViewFrame,
+	GetFocus,
+	GetMouseOver,
+	IsWindowsVisible,
+	GetDefaultFont
+)
+
+// Cast functions
+int L_equi_castto_panel( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<equi::Panel*>, equi::DynamicCast, equi::IUIControl*) }
+//int L_equi_castto_label( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<equi::Label*>, equi::DynamicCast, equi::IUIControl*) }
+//int L_equi_castto_image( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<equi::Image*>, equi::DynamicCast, equi::IUIControl*) }
+
+//--------------------------------------------------------------------------------------
+
 OOLUA_CFUNC(VectorAngles, L_VectorAngles)
 
 ILocToken* LocalizedToken( char* pszToken )
@@ -205,6 +276,11 @@ int L_lerp( lua_State* vm )				{ OOLUA_C_FUNCTION(float,lerp,const float, const 
 int L_cerp( lua_State* vm )				{ OOLUA_C_FUNCTION(float,cerp,const float,const float,const float,const float, float) }
 int L_sign( lua_State* vm )				{ OOLUA_C_FUNCTION(float,sign,const float) }
 int L_clamp( lua_State* vm )			{ OOLUA_C_FUNCTION(float,clamp,const float, const float, const float) }
+
+// IVECTOR2D
+
+int L_iv2d_sign( lua_State* vm )			{ OOLUA_C_FUNCTION(IVector2D,sign,const IVector2D&) }
+int L_iv2d_clamp( lua_State* vm )			{ OOLUA_C_FUNCTION(IVector2D,clamp,const IVector2D&, const IVector2D&, const IVector2D&) }
 
 // VECTOR2D
 
@@ -406,6 +482,7 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	OOLUA::register_class<ConVar>(state);
 	OOLUA::register_class<ConCommand>(state);
 	OOLUA::register_class<Vector2D>(state);
+	OOLUA::register_class<IVector2D>(state);
 	OOLUA::register_class<Vector3D>(state);
 	OOLUA::register_class<Vector4D>(state);
 	OOLUA::register_class<Plane>(state);
@@ -436,6 +513,18 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	OOLUA::set_global(state, "KV_GetVector2D", L_KV_GetVector2D);
 	OOLUA::set_global(state, "KV_GetVector3D", L_KV_GetVector3D);
 	OOLUA::set_global(state, "KV_GetVector4D", L_KV_GetVector4D);
+
+	OOLUA::register_class<equi::IUIControl>(state);
+	OOLUA::register_class<equi::Panel>(state);
+	OOLUA::register_class<equi::CUIManager>(state);
+
+	OOLUA::Table equiCastFuncsTab = OOLUA::new_table(state);
+	equiCastFuncsTab.set("panel", L_equi_castto_panel);
+	//equiCastFuncsTab.set("label", L_equi_castto_label);
+	//equiCastFuncsTab.set("image", L_equi_castto_image);
+
+	OOLUA::set_global(state, "equi_cast", equiCastFuncsTab);
+	OOLUA::set_global(state, "equi", equi::Manager);
 	
 	OOLUA::set_global(state, "f_fract", L_fract);
 	OOLUA::set_global(state, "f_lerp", L_lerp);
@@ -446,6 +535,9 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	OOLUA::set_global(state, "v2d_cerp", L_v2d_cerp);
 	OOLUA::set_global(state, "v2d_sign", L_v2d_sign);
 	OOLUA::set_global(state, "v2d_clamp", L_v2d_clamp);
+
+	OOLUA::set_global(state, "iv2d_sign", L_iv2d_sign);
+	OOLUA::set_global(state, "iv2d_clamp", L_iv2d_clamp);
 
 	OOLUA::set_global(state, "v2d_distance", L_v2d_distance);
 	OOLUA::set_global(state, "v2d_length", L_v2d_length);

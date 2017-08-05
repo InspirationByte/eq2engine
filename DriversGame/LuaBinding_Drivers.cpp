@@ -235,12 +235,8 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	OOLUA::set_global(state, "SheduleNextStateType", L_SheduleNextStateType);
 	OOLUA::set_global(state, "LoadMissionScript", L_LoadMissionScript);
 	
-
-
 	//OOLUA::set_global(state, "SetCurrentState", L_SetCurrentState);
 	//OOLUA::set_global(state, "GetCurrentState", L_GetCurrentState);
-
-	CCar* CCarNULLPointer = NULL;
 
 	// init object classes
 	OOLUA::register_class<CCar>(state);
