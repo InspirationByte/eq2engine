@@ -45,9 +45,6 @@
     <Filter Include="Libs\shiny">
       <UniqueIdentifier>{5972cf29-554f-41f4-b8c9-4616ffa66406}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы исходного кода\EngineLib\UI">
-      <UniqueIdentifier>{b9517efe-da1e-4b94-9da3-4b2d32e70fb0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Файлы исходного кода\EngineLib\Audio">
       <UniqueIdentifier>{ed8a2a13-f024-4f53-8c1b-74b1d695572d}</UniqueIdentifier>
     </Filter>
@@ -90,6 +87,12 @@
     </Filter>
     <Filter Include="Файлы исходного кода\Game\Effects">
       <UniqueIdentifier>{24900d55-c6ae-47b2-bbbc-a55e149f284f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\EngineLib\EqUI">
+      <UniqueIdentifier>{c9e6c7ef-b7c5-4eb4-8f43-eda1fa89b548}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\EngineLib\SharedUI">
+      <UniqueIdentifier>{b9517efe-da1e-4b94-9da3-4b2d32e70fb0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -253,19 +256,16 @@
       <Filter>Файлы исходного кода\MatSystem\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="..\shared_engine\Font.cpp">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+      <Filter>Файлы исходного кода\EngineLib\SharedUI</Filter>
     </ClCompile>
     <ClCompile Include="..\shared_engine\FontCache.cpp">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+      <Filter>Файлы исходного кода\EngineLib\SharedUI</Filter>
     </ClCompile>
     <ClCompile Include="AICarManager.cpp">
       <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClCompile>
     <ClCompile Include="..\shared_engine\Audio\alsnd_stream.cpp">
       <Filter>Файлы исходного кода\EngineLib\Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_engine\EGUI\EqUI_Panel.cpp">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
     </ClCompile>
     <ClCompile Include="session_stuff.cpp">
       <Filter>Файлы исходного кода\Game\States</Filter>
@@ -316,7 +316,7 @@
       <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClCompile>
     <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+      <Filter>Файлы исходного кода\EngineLib\SharedUI</Filter>
     </ClCompile>
     <ClCompile Include="object_scripted.cpp">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
@@ -363,15 +363,6 @@
     <ClCompile Include="Shader_Shadow.cpp">
       <Filter>Файлы исходного кода\MatSystem\Shaders</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\EGUI\EqUI_Label.cpp">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_engine\EGUI\EqUI_Button.cpp">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_engine\EGUI\IEqUI_Control.cpp">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared_engine\KeyBinding\InputCommandBinder.cpp">
       <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClCompile>
@@ -384,14 +375,26 @@
     <ClCompile Include="eqPhysics\eqPhysics_MaxDistConstraint.cpp">
       <Filter>Файлы исходного кода\Physics</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\EGUI\EqUI_Image.cpp">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
-    </ClCompile>
     <ClCompile Include="director.cpp">
       <Filter>Файлы исходного кода\Game</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\EGUI\EqUI_Manager.cpp">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+    <ClCompile Include="..\shared_engine\EqUI\EqUI_Button.cpp">
+      <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EqUI\EqUI_Image.cpp">
+      <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EqUI\EqUI_Label.cpp">
+      <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EqUI\EqUI_Manager.cpp">
+      <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EqUI\EqUI_Panel.cpp">
+      <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EqUI\IEqUI_Control.cpp">
+      <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -617,19 +620,16 @@
       <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClInclude>
     <ClInclude Include="..\shared_engine\Font.h">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+      <Filter>Файлы исходного кода\EngineLib\SharedUI</Filter>
     </ClInclude>
     <ClInclude Include="..\shared_engine\FontCache.h">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+      <Filter>Файлы исходного кода\EngineLib\SharedUI</Filter>
     </ClInclude>
     <ClInclude Include="AICarManager.h">
       <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClInclude>
     <ClInclude Include="..\shared_engine\Audio\alsnd_stream.h">
       <Filter>Файлы исходного кода\EngineLib\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared_engine\EGUI\EqUI_Panel.h">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
     </ClInclude>
     <ClInclude Include="DrvSynHUD.h">
       <Filter>Файлы исходного кода\Game\UI</Filter>
@@ -680,7 +680,7 @@
       <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClInclude>
     <ClInclude Include="..\shared_engine\FontLayoutBuilders.h">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+      <Filter>Файлы исходного кода\EngineLib\SharedUI</Filter>
     </ClInclude>
     <ClInclude Include="object_scripted.h">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
@@ -724,29 +724,11 @@
     <ClInclude Include="..\public\utils\RectanglePacker.h">
       <Filter>Файлы исходного кода\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared_engine\egui\equi_defs.h">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared_engine\EGUI\EqUI_Label.h">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared_engine\EGUI\EqUI_Button.h">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared_engine\EGUI\EqUI_Manager.h">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared_engine\EqUI_Scheme.h">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared_engine\egui\IEqUI_Control.h">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
-    </ClInclude>
     <ClInclude Include="road_defs.h">
       <Filter>Файлы исходного кода\Game\World</Filter>
     </ClInclude>
     <ClInclude Include="..\public\IFontCache.h">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+      <Filter>Файлы исходного кода\EngineLib\SharedUI</Filter>
     </ClInclude>
     <ClInclude Include="..\shared_engine\KeyBinding\InputCommandBinder.h">
       <Filter>Файлы исходного кода\EngineLib</Filter>
@@ -769,8 +751,29 @@
     <ClInclude Include="director.h">
       <Filter>Файлы исходного кода\Game</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared_engine\EGUI\EqUI_Image.h">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Button.h">
+      <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\equi\equi_defs.h">
+      <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Image.h">
+      <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Label.h">
+      <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Manager.h">
+      <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Panel.h">
+      <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Scheme.h">
+      <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EqUI\IEqUI_Control.h">
+      <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

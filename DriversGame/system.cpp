@@ -17,8 +17,8 @@
 #include "KeyBinding/InputCommandBinder.h"
 #include "FontCache.h"
 
-#include "EGUI/EqUI_Manager.h"
-#include "EGUI/EqUI_Panel.h"
+#include "EqUI/EqUI_Manager.h"
+#include "EqUI/EqUI_Panel.h"
 
 #include "network/net_defs.h"
 

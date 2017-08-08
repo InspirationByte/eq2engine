@@ -19,7 +19,7 @@ namespace equi
 {
 
 IUIControl::IUIControl()
-	: m_visible(false), m_selfVisible(true), m_enabled(true), m_parent(NULL), m_font(NULL)
+	: m_visible(false), m_selfVisible(true), m_enabled(true), m_parent(NULL), m_font(NULL), m_anchors(0)
 {
 
 }
@@ -39,6 +39,7 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 	m_label = KV_GetValueString(sec->FindKeyBase("label"), 0, "Control");
 	m_position = KV_GetIVector2D(sec->FindKeyBase("position"), 0, 25);
 	m_size = KV_GetIVector2D(sec->FindKeyBase("size"), 0, 128);
+	m_initSize = m_size;
 
 	m_visible = KV_GetValueBool(sec->FindKeyBase("visible"), 0, true);
 	m_selfVisible = KV_GetValueBool(sec->FindKeyBase("selfvisible"), 0, true);
@@ -58,6 +59,31 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 		for(int i = 0; i < command->values.numElem(); i++)
 		{
 			m_commandEvent.args.append( KV_GetValueString(command, i) );
+		}
+	}
+
+	kvkeybase_t* anchors = sec->FindKeyBase("anchors");
+
+	if(anchors)
+	{
+		for(int i = 0; i < anchors->values.numElem(); i++)
+		{
+			const char* anchorVal = KV_GetValueString(command, i);
+
+			if(!stricmp("left", anchorVal))
+				m_anchors |= UI_ANCHOR_LEFT;
+			else if(!stricmp("right", anchorVal))
+				m_anchors |= UI_ANCHOR_RIGHT;
+			else if(!stricmp("top", anchorVal))
+				m_anchors |= UI_ANCHOR_TOP;
+			else if(!stricmp("bottom", anchorVal))
+				m_anchors |= UI_ANCHOR_BOTTOM;
+			else if(!stricmp("sw", anchorVal))
+				m_anchors |= UI_ANCHOR_SCALING_WIDE;
+			else if(!stricmp("sh", anchorVal))
+				m_anchors |= UI_ANCHOR_SCALING_TALL;
+			else if(!stricmp("aspect", anchorVal))
+				m_anchors |= UI_ANCHOR_SCALING_ASPECT;
 		}
 	}
 
@@ -85,6 +111,9 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 void IUIControl::SetSize(const IVector2D &size)
 {
 	m_size = size;
+
+	// calculate child control position and size that affected with specified anchor
+
 }
 
 void IUIControl::SetPosition(const IVector2D &pos)

@@ -27,6 +27,8 @@ public:
 
 	void			InitFromKeyValues( kvkeybase_t* sec );
 
+	void			SetMaterial(const char* materialName);
+
 	// events
 	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) {return true;}
 	bool			ProcessKeyboardEvents(int nKeyButtons, int flags) {return true;}

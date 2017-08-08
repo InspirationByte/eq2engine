@@ -29,7 +29,14 @@ void Image::InitFromKeyValues( kvkeybase_t* sec )
 {
 	BaseClass::InitFromKeyValues(sec);
 
-	m_material = materials->FindMaterial(KV_GetValueString(sec->FindKeyBase("path"), 0, "ui/default"));
+	SetMaterial(KV_GetValueString(sec->FindKeyBase("path"), 0, "ui/default"));
+}
+
+void Image::SetMaterial(const char* materialName)
+{
+	materials->FreeMaterial(m_material);
+
+	m_material = materials->FindMaterial(materialName);
 	m_material->Ref_Grab();
 }
 

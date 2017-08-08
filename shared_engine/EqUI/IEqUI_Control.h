@@ -88,6 +88,9 @@ public:
 	const IVector2D&			GetSize() const;
 	const IVector2D&			GetPosition() const;
 
+	void						SetAchors(int anchor)			{ m_anchors = anchor; }
+	int							GetAchors() const				{ return m_anchors; }
+
 	// clipping rectangle, size position
 	void						SetRectangle(const IRectangle& rect);
 	virtual IRectangle			GetRectangle() const;
@@ -130,10 +133,14 @@ protected:
 	IVector2D					m_position;
 	IVector2D					m_size;
 
+	IVector2D					m_initSize;	// for anchors
+
 	bool						m_visible;
 	bool						m_enabled;
 
 	bool						m_selfVisible;
+
+	int							m_anchors;
 
 	EqString					m_name;
 	EqWString					m_label;

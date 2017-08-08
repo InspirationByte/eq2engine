@@ -25,9 +25,9 @@
 #include "ILocalize.h"
 #include "IConCommandFactory.h"
 
-#include "EGUI/IEqUI_Control.h"
-#include "EGUI/EqUI_Manager.h"
-#include "EGUI/EqUI_Panel.h"
+#include "EqUI/IEqUI_Control.h"
+#include "EqUI/EqUI_Manager.h"
+#include "EqUI/EqUI_Panel.h"
 
 //#ifndef __INTELLISENSE__
 

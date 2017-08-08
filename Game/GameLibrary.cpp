@@ -31,8 +31,8 @@
 #include "GameInput.h"
 #include "ParticleRenderer.h"
 
-#include "EGUI/EQUI_Manager.h"
-#include "EGUI/EqUI_Panel.h"
+#include "EqUI/EqUI_Manager.h"
+#include "EqUI/EqUI_Panel.h"
 
 using namespace Threading;
 
