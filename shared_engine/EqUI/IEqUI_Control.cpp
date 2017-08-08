@@ -62,20 +62,21 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 		}
 	}
 
+	m_anchors = 0;
 	kvkeybase_t* anchors = sec->FindKeyBase("anchors");
 
 	if(anchors)
 	{
 		for(int i = 0; i < anchors->values.numElem(); i++)
 		{
-			const char* anchorVal = KV_GetValueString(command, i);
+			const char* anchorVal = KV_GetValueString(anchors, i);
 
-			if(!stricmp("left", anchorVal))
-				m_anchors |= UI_ANCHOR_LEFT;
-			else if(!stricmp("right", anchorVal))
+			//if(!stricmp("left", anchorVal))
+			//	m_anchors |= UI_ANCHOR_LEFT;
+			//else if(!stricmp("top", anchorVal))
+			//	m_anchors |= UI_ANCHOR_TOP;
+			if(!stricmp("right", anchorVal))
 				m_anchors |= UI_ANCHOR_RIGHT;
-			else if(!stricmp("top", anchorVal))
-				m_anchors |= UI_ANCHOR_TOP;
 			else if(!stricmp("bottom", anchorVal))
 				m_anchors |= UI_ANCHOR_BOTTOM;
 			else if(!stricmp("sw", anchorVal))
@@ -110,10 +111,36 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 
 void IUIControl::SetSize(const IVector2D &size)
 {
+	IVector2D oldSize = m_size;
 	m_size = size;
 
-	// calculate child control position and size that affected with specified anchor
+	IVector2D sizeDiff = m_size-oldSize;
+	Vector2D sizeDiffPercent = Vector2D(m_size)/Vector2D(oldSize);
 
+	// calculate child control position and size that affected with specified anchor
+	if(m_childs.goToFirst())
+	{
+		do
+		{
+			IUIControl* child = m_childs.getCurrent();
+			int anchors = child->GetAchors();
+			if(anchors == 0)
+				continue;
+
+			IVector2D sizeDiffAnchor(sizeDiff*IVector2D((anchors & UI_ANCHOR_RIGHT) ? 1 : 0, (anchors & UI_ANCHOR_BOTTOM) ? 1 : 0));
+
+			float aspectCorrection = (anchors & UI_ANCHOR_SCALING_ASPECT) ? sizeDiffPercent.y / sizeDiffPercent.x : 1.0f;
+
+			IVector2D newSize(child->GetSize()*Vector2D((anchors & UI_ANCHOR_SCALING_WIDE) ? sizeDiffPercent.x : 1.0f, (anchors & UI_ANCHOR_SCALING_TALL) ? sizeDiffPercent.y : 1.0f));
+			newSize.x *= aspectCorrection;
+
+			IVector2D newSizeDiff(newSize-child->GetSize());
+
+			child->SetPosition(child->GetPosition() + sizeDiffAnchor - newSizeDiff*IVector2D((anchors & UI_ANCHOR_RIGHT) ? 1 : 0, (anchors & UI_ANCHOR_BOTTOM) ? 1 : 0));
+			child->SetSize(newSize);
+		}
+		while(m_childs.goToNext());
+	}
 }
 
 void IUIControl::SetPosition(const IVector2D &pos)

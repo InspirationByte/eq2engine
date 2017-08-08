@@ -56,6 +56,8 @@ public:
 	void				SetViewFrame(const IRectangle& rect);
 	const IRectangle&	GetViewFrame() const;
 
+	IVector2D			GetScreenSize() const;
+
 	void				SetFocus( IUIControl* focusTo );
 	IUIControl*			GetFocus() const;
 	IUIControl*			GetMouseOver() const;

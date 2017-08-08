@@ -378,6 +378,7 @@ OOLUA_PROXY(equi::CUIManager)
 
 	//OOLUA_MFUNC( SetViewFrame )
 	//OOLUA_MFUNC_CONST( GetViewFrame )
+	OOLUA_MFUNC_CONST(GetScreenSize)
 
 	OOLUA_MFUNC( SetFocus )
 	OOLUA_MEM_FUNC_CONST( maybe_null<equi::IUIControl*>, GetFocus )

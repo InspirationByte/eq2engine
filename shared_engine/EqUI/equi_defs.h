@@ -32,8 +32,8 @@ enum EEqUIEventFlags
 // attaching to the parent box sides
 enum EUIAnchors
 {
-	UI_ANCHOR_LEFT				= (1 << 0),
-	UI_ANCHOR_TOP				= (1 << 1),
+	//UI_ANCHOR_LEFT				= (1 << 0),
+	//UI_ANCHOR_TOP				= (1 << 1),
 	UI_ANCHOR_RIGHT				= (1 << 2),
 	UI_ANCHOR_BOTTOM			= (1 << 3),
 

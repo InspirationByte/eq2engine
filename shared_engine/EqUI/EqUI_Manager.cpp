@@ -198,6 +198,11 @@ const IRectangle& CUIManager::GetViewFrame() const
 	return m_viewFrameRect;
 }
 
+IVector2D CUIManager::GetScreenSize() const
+{
+	return m_viewFrameRect.GetSize();
+}
+
 void CUIManager::SetFocus( IUIControl* focusTo )
 {
 	m_keyboardFocus = focusTo;
