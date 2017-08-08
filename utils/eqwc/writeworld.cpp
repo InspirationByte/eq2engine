@@ -7,7 +7,7 @@
 
 #include "eqwc.h"
 
-void AddLump(int nLump, ubyte *pData, int nDataSize, eqworldhdr_t* pHdr, DKFILE* pFile)
+void AddLump(int nLump, ubyte *pData, int nDataSize, eqworldhdr_t* pHdr, IFile* pFile)
 {
 	eqworldlump_t lump;
 	lump.data_type = nLump;
@@ -24,9 +24,9 @@ void AddLump(int nLump, ubyte *pData, int nDataSize, eqworldhdr_t* pHdr, DKFILE*
 
 
 // writes key-values section.
-void KV_WriteToFile_r(kvkeybase_t* pKeyBase, DKFILE* pFile, int nTabs, bool bOldFormat);
+void KV_WriteToFile_r(kvkeybase_t* pKeyBase, IFile* pFile, int nTabs, bool bOldFormat);
 
-void AddKVLump(int nLump, KeyValues &kv, eqworldhdr_t* pHdr, DKFILE* pFile)
+void AddKVLump(int nLump, KeyValues &kv, eqworldhdr_t* pHdr, IFile* pFile)
 {
 	int begin_offset = g_fileSystem->Tell(pFile);
 
@@ -87,7 +87,7 @@ void WriteOcclusionGeometry()
 
 	if(g_occlusionsurfaces.numElem() == 0)
 	{
-		g_fileSystem->RemoveFile(world_geom_path.GetData(), SP_MOD);
+		g_fileSystem->FileRemove(world_geom_path.GetData(), SP_MOD);
 		Msg("No occlusion surfaces found\n");
 		return;
 	}
@@ -98,7 +98,7 @@ void WriteOcclusionGeometry()
 
 	geomhdr.num_lumps = 0;
 
-	DKFILE* pFile = g_fileSystem->Open(world_geom_path.GetData(), "wb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open(world_geom_path.GetData(), "wb", SP_MOD);
 
 	if(pFile)
 	{
@@ -193,7 +193,7 @@ void WCSurfaceToFile(cwlitsurface_t* pCompilerSurf, eqlevelsurf_t* pEngineSurf, 
 
 extern int sort_by_material( cwlitsurface_t* const &a, cwlitsurface_t* const &b );
 
-void GenerateVolumeGeomLumps(cwroomvolume_t* roomvolume, eqworldhdr_t* pHdr, DKFILE* pFile, DkList<eqlevelvertexlm_t> &vertices, DkList<int> &indices)
+void GenerateVolumeGeomLumps(cwroomvolume_t* roomvolume, eqworldhdr_t* pHdr, IFile* pFile, DkList<eqlevelvertexlm_t> &vertices, DkList<int> &indices)
 {
 	DkList<eqlevelsurf_t>	surfaces;
 
@@ -211,13 +211,13 @@ void GenerateVolumeGeomLumps(cwroomvolume_t* roomvolume, eqworldhdr_t* pHdr, DKF
 	AddLump(EQWLUMP_SURFACES, (ubyte*)surfaces.ptr(), surfaces.numElem()*sizeof(eqlevelsurf_t), pHdr, pFile);
 }
 
-void WriteRooms(eqworldhdr_t* pHdr, DKFILE* pFile);
-void WriteWater(eqworldhdr_t* pHdr, DKFILE* pFile);
+void WriteRooms(eqworldhdr_t* pHdr, IFile* pFile);
+void WriteWater(eqworldhdr_t* pHdr, IFile* pFile);
 
 void WriteDecals()
 {
 	// remove old decal file
-	g_fileSystem->RemoveFile(varargs("worlds/%s/decals.build", worldGlobals.worldName.GetData()), SP_MOD);
+	g_fileSystem->FileRemove(varargs("worlds/%s/decals.build", worldGlobals.worldName.GetData()), SP_MOD);
 
 	eqworldhdr_t geomhdr;
 	geomhdr.ident = EQWF_IDENT;
@@ -227,7 +227,7 @@ void WriteDecals()
 
 	EqString world_geom_path(varargs("worlds/%s/geometry.build", worldGlobals.worldName.GetData()));
 
-	DKFILE* pFile = g_fileSystem->Open(world_geom_path.GetData(), "wb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open(world_geom_path.GetData(), "wb", SP_MOD);
 
 	if(pFile)
 	{
@@ -268,7 +268,7 @@ void WriteRenderGeometry()
 {
 	// remove all lightmaps because we rebuilded the level
 	for(int i = 0; i < 32; i++)
-		g_fileSystem->RemoveFile(varargs("worlds/%s/lm#%d.dds", worldGlobals.worldName.GetData(), i), SP_MOD);
+		g_fileSystem->FileRemove(varargs("worlds/%s/lm#%d.dds", worldGlobals.worldName.GetData(), i), SP_MOD);
 
 	eqworldhdr_t geomhdr;
 	geomhdr.ident = EQWF_IDENT;
@@ -278,7 +278,7 @@ void WriteRenderGeometry()
 
 	EqString world_geom_path(varargs("worlds/%s/geometry.build", worldGlobals.worldName.GetData()));
 
-	DKFILE* pFile = g_fileSystem->Open(world_geom_path.GetData(), "wb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open(world_geom_path.GetData(), "wb", SP_MOD);
 
 	if(pFile)
 	{
@@ -329,7 +329,7 @@ void WritePhysics()
 
 	EqString world_geom_path(varargs("worlds/%s/physics.build", worldGlobals.worldName.GetData()));
 
-	DKFILE* pFile = g_fileSystem->Open(world_geom_path.GetData(), "wb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open(world_geom_path.GetData(), "wb", SP_MOD);
 
 	if(pFile)
 	{
@@ -355,7 +355,7 @@ void WritePhysics()
 	}	
 }
 
-void WriteEntities(DKFILE* pFile, eqworldhdr_t* pHdr)
+void WriteEntities(IFile* pFile, eqworldhdr_t* pHdr)
 {
 	KeyValues entity_data;
 
@@ -393,12 +393,12 @@ void WriteNavMesh()
 
 	if(!worldGlobals.bOnlyEnts)
 	{
-		g_fileSystem->RemoveFile(navmesh_geom_path.GetData(), SP_MOD);
+		g_fileSystem->FileRemove(navmesh_geom_path.GetData(), SP_MOD);
 		return;
 	}
 }
 
-void WriteRooms(eqworldhdr_t* pHdr, DKFILE* pFile)
+void WriteRooms(eqworldhdr_t* pHdr, IFile* pFile)
 {
 	/*
 	DkList<eqroom_t> sectors_infos;
@@ -537,7 +537,7 @@ void WriteRooms(eqworldhdr_t* pHdr, DKFILE* pFile)
 	AddLump( EQWLUMP_ROOMVOLUMES, (ubyte*)volumes.ptr(), volumes.numElem()*sizeof(eqroomvolume_t),pHdr, pFile);
 }
 
-void WriteWater(eqworldhdr_t* pHdr, DKFILE* pFile)
+void WriteWater(eqworldhdr_t* pHdr, IFile* pFile)
 {
 	if(g_waterInfos.numElem() == 0)
 		return;
@@ -679,7 +679,7 @@ void WriteWorld()
 			pLump += sizeof(eqworldlump_t)+data_size;
 		}
 
-		DKFILE* pFile = g_fileSystem->Open(world_data_path.GetData(), "wb", SP_MOD);
+		IFile* pFile = g_fileSystem->Open(world_data_path.GetData(), "wb", SP_MOD);
 
 		if(pFile)
 		{
@@ -711,7 +711,7 @@ void WriteWorld()
 		return;
 	}
 
-	DKFILE* pFile = g_fileSystem->Open(world_data_path.GetData(), "wb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open(world_data_path.GetData(), "wb", SP_MOD);
 
 	if(pFile)
 	{

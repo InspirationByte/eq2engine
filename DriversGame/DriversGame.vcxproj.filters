@@ -369,9 +369,6 @@
     <ClCompile Include="..\shared_engine\EGUI\EqUI_Button.cpp">
       <Filter>Файлы исходного кода\EngineLib\UI</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\EGUI\EQUI_Manager.cpp">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared_engine\EGUI\IEqUI_Control.cpp">
       <Filter>Файлы исходного кода\EngineLib\UI</Filter>
     </ClCompile>
@@ -392,6 +389,9 @@
     </ClCompile>
     <ClCompile Include="director.cpp">
       <Filter>Файлы исходного кода\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EGUI\EqUI_Manager.cpp">
+      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -766,11 +766,11 @@
     <ClInclude Include="eqPhysics\eqPhysics_MaxDistConstraint.h">
       <Filter>Файлы исходного кода\Physics</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared_engine\EGUI\EQUI_Image.h">
-      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
-    </ClInclude>
     <ClInclude Include="director.h">
       <Filter>Файлы исходного кода\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Image.h">
+      <Filter>Файлы исходного кода\EngineLib\UI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

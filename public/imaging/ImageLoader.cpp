@@ -403,7 +403,7 @@ int CImage::GetDepth(const int mipMapLevel) const
 
 bool CImage::LoadDDS(const char *fileName, uint flags)
 {
-	DKFILE *file;
+	IFile *file;
 	if ((file = g_fileSystem->Open(fileName, "rb")) == NULL) return false;
 
 	SetName(fileName);
@@ -414,7 +414,7 @@ bool CImage::LoadDDS(const char *fileName, uint flags)
 #ifndef NO_JPEG
 bool CImage::LoadJPEG(const char *fileName)
 {
-	DKFILE *file;
+	IFile *file;
 	if ((file = g_fileSystem->Open(fileName, "rb")) == NULL) return false;
 
 	SetName(fileName);
@@ -426,7 +426,7 @@ bool CImage::LoadJPEG(const char *fileName)
 #ifndef NO_TGA
 bool CImage::LoadTGA(const char *fileName)
 {
-	DKFILE *file;
+	IFile *file;
 	if ((file = g_fileSystem->Open(fileName, "rb")) == NULL) return false;
 
 	SetName(fileName);
@@ -435,11 +435,11 @@ bool CImage::LoadTGA(const char *fileName)
 }
 #endif
 
-bool CImage::LoadDDSfromHandle(DKFILE *fileHandle, uint flags)
+bool CImage::LoadDDSfromHandle(IFile *fileHandle, uint flags)
 {
 	DDSHeader header;
 
-	DKFILE *file = fileHandle;
+	IFile *file = fileHandle;
 
 	if(!file)
 		return false;
@@ -578,7 +578,7 @@ bool CImage::LoadDDSfromHandle(DKFILE *fileHandle, uint flags)
 }
 
 #ifndef NO_JPEG
-bool CImage::LoadJPEGfromHandle(DKFILE *fileHandle)
+bool CImage::LoadJPEGfromHandle(IFile *fileHandle)
 {
 	jpeg_decompress_struct cinfo;
 	jpeg_error_mgr jerr;
@@ -586,9 +586,9 @@ bool CImage::LoadJPEGfromHandle(DKFILE *fileHandle)
 	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_decompress(&cinfo);
 
-	DKFILE *file = fileHandle;
+	IFile *file = fileHandle;
 
-	// HACK: the DKFILE has FILE pointer at beginning. JPEGs can't be open from packages.
+	// HACK: the IFile has FILE pointer at beginning. JPEGs can't be open from packages.
 	FILE* pFile = *(FILE**)(void*)fileHandle;
 
 	jpeg_stdio_src(&cinfo, pFile);
@@ -638,7 +638,7 @@ bool CImage::LoadJPEGfromHandle(DKFILE *fileHandle)
 #endif // NO_JPEG
 
 #ifndef NO_TGA
-bool CImage::LoadTGAfromHandle(DKFILE *fileHandle)
+bool CImage::LoadTGAfromHandle(IFile *fileHandle)
 {
 	TGAHeader header;
 
@@ -646,7 +646,7 @@ bool CImage::LoadTGAfromHandle(DKFILE *fileHandle)
 	ubyte *tempBuffer, *fBuffer, *dest, *src;
 	uint tempPixel;
 	ubyte palette[768];
-	DKFILE *file = fileHandle;
+	IFile *file = fileHandle;
 
 
 	// Find file size
@@ -843,7 +843,7 @@ bool CImage::LoadImage(const char *fileName, uint flags)
 	return true;
 }
 
-bool CImage::LoadFromHandle(DKFILE *fileHandle,const char *fileName, uint flags)
+bool CImage::LoadFromHandle(IFile *fileHandle,const char *fileName, uint flags)
 {
 	const char *extension = strrchr(fileName, '.');
 

@@ -273,7 +273,7 @@
     <ClInclude Include="..\shared_engine\EGFInstancer.h" />
     <ClInclude Include="..\shared_engine\EGUI\EqUI_Button.h" />
     <ClInclude Include="..\shared_engine\egui\equi_defs.h" />
-    <ClInclude Include="..\shared_engine\EGUI\EQUI_Image.h" />
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Image.h" />
     <ClInclude Include="..\shared_engine\EGUI\EqUI_Label.h" />
     <ClInclude Include="..\shared_engine\EGUI\EqUI_Manager.h" />
     <ClInclude Include="..\shared_engine\EGUI\EqUI_Panel.h" />

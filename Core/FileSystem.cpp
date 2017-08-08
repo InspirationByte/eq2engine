@@ -13,6 +13,7 @@
 #include "IDkCore.h"
 #include "ILocalize.h"
 
+#include "tinydir.h"
 
 #ifdef _WIN32 // Not in linux
 
@@ -192,14 +193,17 @@ struct DKMODULE
 	HMODULE module;
 };
 
+struct DKFINDDATA
+{
+
+};
+
 extern bool g_bPrintLeaksOnShutdown;
 
-CFileSystem::CFileSystem() : m_isInit(false), m_bEditorMode(false)
+CFileSystem::CFileSystem() : m_isInit(false), m_editorMode(false)
 {
 	// required by mobile port
 	GetCore()->RegisterInterface( FILESYSTEM_INTERFACE_VERSION, this);
-
-    m_bEditorMode = false;
 }
 
 CFileSystem::~CFileSystem()
@@ -211,7 +215,7 @@ bool CFileSystem::Init(bool bEditorMode)
 {
     Msg("\n-------- Filesystem Init --------\n\n");
 
-    m_bEditorMode = bEditorMode;
+    m_editorMode = bEditorMode;
 
 	kvkeybase_t* pFilesystem = GetCore()->GetConfig()->FindKeyBase("FileSystem", KV_FLAG_SECTION);
 
@@ -224,19 +228,19 @@ bool CFileSystem::Init(bool bEditorMode)
 	if(m_basePath.Length() > 0)
 		MsgInfo("* FS Init with basePath=%s\n", m_basePath.GetData());
 
-	m_pszDataDir = KV_GetValueString(pFilesystem->FindKeyBase("EngineDataDir"), 0, "EngineBase" );
+	m_dataDir = KV_GetValueString(pFilesystem->FindKeyBase("EngineDataDir"), 0, "EngineBase" );
 
-	MsgInfo("* Engine Data directory: %s\n", m_pszDataDir.GetData());
+	MsgInfo("* Engine Data directory: %s\n", m_dataDir.GetData());
 
 	// Change mod path?
     int iModPathArg = g_cmdLine->FindArgument("-game");
 
-	if(!m_bEditorMode)
+	if(!m_editorMode)
 	{
 		if (iModPathArg == -1)
-			AddSearchPath((const char*)KV_GetValueString(pFilesystem->FindKeyBase("DefaultGameDir"), 0, "DefaultGameDir_MISSING" ));
+			AddSearchPath("$GAME$", (const char*)KV_GetValueString(pFilesystem->FindKeyBase("DefaultGameDir"), 0, "DefaultGameDir_MISSING" ));
 		else
-			AddSearchPath( g_cmdLine->GetArgumentString(iModPathArg+1) );
+			AddSearchPath("$GAME$",  g_cmdLine->GetArgumentString(iModPathArg+1) );
 
 		 MsgInfo("* Game Data directory: %s\n", GetCurrentGameDirectory());
 	}
@@ -261,9 +265,9 @@ void CFileSystem::Shutdown()
 {
 	m_isInit = false;
 
-	for(int i = 0; i < m_pLoadedModules.numElem(); i++)
+	for(int i = 0; i < m_modules.numElem(); i++)
 	{
-		FreeModule(m_pLoadedModules[i]);
+		FreeModule(m_modules[i]);
 		i--;
 	}
 
@@ -275,12 +279,10 @@ void CFileSystem::Shutdown()
 	}
 	*/
 
-	for(int i = 0; i < m_pPackages.numElem(); i++)
-	{
-		delete m_pPackages[i];
-	}
+	for(int i = 0; i < m_packages.numElem(); i++)
+		delete m_packages[i];
 
-	m_pPackages.clear();
+	m_packages.clear();
 
 	g_localizer->Shutdown();
 }
@@ -313,7 +315,7 @@ void CFileSystem::Close( IFile* fp )
 	delete fp;
 
 	m_FSMutex.Lock();
-	m_pOpenFiles.fastRemove( fp );
+	m_openFiles.fastRemove( fp );
 	m_FSMutex.Unlock();
 }
 
@@ -477,7 +479,7 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags)
     {
 		for(int i = 0; i < m_directories.numElem(); i++)
 		{
-			sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_directories[i].c_str(), pFilePath);
+			sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_directories[i].path.c_str(), pFilePath);
 			if (access(tmp_path, F_OK ) != -1)
 				return true;
 		}
@@ -486,7 +488,7 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags)
     //Then we checking data directory
     if (flags & SP_DATA)
     {
-		sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_pszDataDir.c_str(), pFilePath);
+		sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_dataDir.c_str(), pFilePath);
 		if (access(tmp_path, F_OK ) != -1)
 			return true;
     }
@@ -500,22 +502,22 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags)
     }
 
 	// check packages
-    for (int i = m_pPackages.numElem()-1; i >= 0;i--)
+    for (int i = m_packages.numElem()-1; i >= 0;i--)
     {
-        CDPKFileReader* pPackageReader = m_pPackages[i];
+        CDPKFileReader* pPackageReader = m_packages[i];
 
         if (flags & SP_MOD)
         {
 			for(int j = 0; j < m_directories.numElem(); j++)
 			{
-				sprintf(tmp_path, "%s/%s", m_directories[j].GetData(),pFilePath);
+				sprintf(tmp_path, "%s/%s", m_directories[j].path.c_str(),pFilePath);
 				if (pPackageReader->FindFileIndex( tmp_path ) != -1)
 					return true;
 			}
         }
         if (flags & SP_DATA)
         {
-			sprintf(tmp_path, "%s/%s",m_pszDataDir.GetData(),pFilePath);
+			sprintf(tmp_path, "%s/%s",m_dataDir.GetData(),pFilePath);
 			if (pPackageReader->FindFileIndex( tmp_path ) != -1)
 				return true;
         }
@@ -529,14 +531,14 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags)
 	return false;
 }
 
-void CFileSystem::RemoveFile(const char* filename, SearchPath_e search )
+void CFileSystem::FileRemove(const char* filename, SearchPath_e search )
 {
 	EqString searchPath;
 
     switch (search)
     {
 		case SP_DATA:
-			searchPath = m_pszDataDir;
+			searchPath = m_dataDir;
 			break;
 		case SP_MOD:
 			searchPath = GetCurrentGameDirectory(); // Temporary set to data
@@ -563,7 +565,7 @@ void CFileSystem::MakeDir(const char* dirname, SearchPath_e search )
     switch (search)
     {
     case SP_DATA:
-        searchPath = m_pszDataDir;
+        searchPath = m_dataDir;
         break;
     case SP_MOD:
         searchPath = GetCurrentGameDirectory(); // Temporary set to data
@@ -601,7 +603,7 @@ void CFileSystem::RemoveDir(const char* dirname, SearchPath_e search )
     switch (search)
     {
 		case SP_DATA:
-			searchPath = m_pszDataDir;
+			searchPath = m_dataDir;
 			break;
 		case SP_MOD:
 			searchPath = GetCurrentGameDirectory(); // Temporary set to data
@@ -641,7 +643,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
     {
 		for(int i = 0; i < m_directories.numElem(); i++)
 		{
-			sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_directories[i].c_str(), pFilePath);
+			sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_directories[i].path.c_str(), pFilePath);
 
 			FILE *tmpFile = fopen(tmp_path,options);
 			if (tmpFile)
@@ -649,7 +651,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 				CFile* pFileHandle = new CFile(tmpFile);
 
 				m_FSMutex.Lock();
-				m_pOpenFiles.append(pFileHandle);
+				m_openFiles.append(pFileHandle);
 				m_FSMutex.Unlock();
 
 				return pFileHandle;
@@ -660,14 +662,14 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
     //Then we checking data directory
     if (flags & SP_DATA)
     {
-		sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_pszDataDir.c_str(), pFilePath);
+		sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_dataDir.c_str(), pFilePath);
 
         FILE *tmpFile = fopen(tmp_path,options);
         if (tmpFile)
         {
 			CFile* pFileHandle = new CFile(tmpFile);
 			m_FSMutex.Lock();
-			m_pOpenFiles.append(pFileHandle);
+			m_openFiles.append(pFileHandle);
 			m_FSMutex.Unlock();
 
 			return pFileHandle;
@@ -682,7 +684,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
         if (tmpFile)
         {
 			CFile* pFileHandle = new CFile(tmpFile);
-			m_pOpenFiles.append(pFileHandle);
+			m_openFiles.append(pFileHandle);
 
 			return pFileHandle;
         }
@@ -690,15 +692,15 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 
     // If failed to load directly, load it from package, in backward order
     // NOTE: basepath is not added to DPK paths
-    for (int i = m_pPackages.numElem()-1; i >= 0;i--)
+    for (int i = m_packages.numElem()-1; i >= 0;i--)
     {
-        CDPKFileReader* pPackageReader = m_pPackages[i];
+        CDPKFileReader* pPackageReader = m_packages[i];
 		//DkStr temp;
         if (flags & SP_MOD)
         {
 			for(int j = 0; j < m_directories.numElem(); j++)
 			{
-				sprintf(tmp_path, "%s/%s", m_directories[j].GetData(),pFilePath);
+				sprintf(tmp_path, "%s/%s", m_directories[j].path.c_str(),pFilePath);
 
 				DPKFILE* pPackedFile = pPackageReader->Open(tmp_path, options);
 
@@ -708,7 +710,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 
 					CVirtualDPKFile* pFileHandle = new CVirtualDPKFile(pPackedFile, pPackageReader);
 					m_FSMutex.Lock();
-					m_pOpenFiles.append(pFileHandle);
+					m_openFiles.append(pFileHandle);
 					m_FSMutex.Unlock();
 
 					return pFileHandle;
@@ -717,7 +719,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
         }
         if (flags & SP_DATA)
         {
-			sprintf(tmp_path, "%s/%s",m_pszDataDir.GetData(),pFilePath);
+			sprintf(tmp_path, "%s/%s",m_dataDir.GetData(),pFilePath);
 
             DPKFILE* pPackedFile = pPackageReader->Open(tmp_path,options);
 
@@ -727,7 +729,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 
 				CVirtualDPKFile* pFileHandle = new CVirtualDPKFile(pPackedFile, pPackageReader);
 				m_FSMutex.Lock();
-				m_pOpenFiles.append(pFileHandle);
+				m_openFiles.append(pFileHandle);
 				m_FSMutex.Unlock();
 
 				return pFileHandle;
@@ -743,7 +745,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 
 				CVirtualDPKFile* pFileHandle = new CVirtualDPKFile(pPackedFile, pPackageReader);
 				m_FSMutex.Lock();
-				m_pOpenFiles.append(pFileHandle);
+				m_openFiles.append(pFileHandle);
 				m_FSMutex.Unlock();
 
 				return pFileHandle;
@@ -757,9 +759,9 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 
 bool CFileSystem::AddPackage(const char* packageName,SearchPath_e type)
 {
-	for(int i = 0; i < m_pPackages.numElem();i++)
+	for(int i = 0; i < m_packages.numElem();i++)
 	{
-		if(!stricmp(m_pPackages[i]->GetPackageFilename(), packageName))
+		if(!stricmp(m_packages[i]->GetPackageFilename(), packageName))
 			return false;
 	}
 
@@ -772,7 +774,7 @@ bool CFileSystem::AddPackage(const char* packageName,SearchPath_e type)
         pPackageReader->SetSearchPath(type);
 		//pPackageReader->SetKey("SdkwIuO4");
 
-        m_pPackages.append(pPackageReader);
+        m_packages.append(pPackageReader);
         return true;
     }
     else
@@ -786,25 +788,52 @@ bool CFileSystem::AddPackage(const char* packageName,SearchPath_e type)
 }
 
 // sets fallback directory for mod
-void CFileSystem::AddSearchPath(const char* pszDir)
+void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 {
-	DevMsg(DEVMSG_FS, "Adding search patch '%s'\n", pszDir);
-	m_directories.append(_Es(pszDir));
+	for(int i = 0; i < m_directories.numElem(); i++)
+	{
+		if(m_directories[i].id == pathId)
+		{
+			ErrorMsg("AddSearchPath Error: pathId %s already added", pathId);
+			return;
+		}
+	}
+
+	DevMsg(DEVMSG_FS, "Adding search patch '%s' at '%s'\n", pathId, pszDir);
+
+	SearchPath_t pathInfo;
+	pathInfo.id = pathId;
+	pathInfo.path = pszDir;
+
+	m_directories.append(pathInfo);
+}
+
+void CFileSystem::RemoveSearchPath(const char* pathId)
+{
+	for(int i = 0; i < m_directories.numElem(); i++)
+	{
+		if(m_directories[i].id == pathId)
+		{
+			DevMsg(DEVMSG_FS, "Removing search patch '%s'\n", pathId);
+			m_directories.removeIndex(i);
+			break;
+		}
+	}
 }
 
 // Returns current game path
 const char* CFileSystem::GetCurrentGameDirectory()
 {
 	if(m_directories.numElem())
-		return m_directories[0].GetData(); // return first directory.
+		return m_directories[0].path.c_str(); // return first directory.
 
-    return m_pszDataDir.GetData();
+    return m_dataDir.GetData();
 }
 
 // Returns current engine data path
 const char* CFileSystem::GetCurrentDataDirectory()
 {
-    return m_pszDataDir.GetData();
+    return m_dataDir.GetData();
 }
 
 // extracts single file from package
@@ -821,21 +850,21 @@ void CFileSystem::ExtractFile(const char* filename, bool onlyNonExist)
 	}
 
 	// do it from last package
-    for (int i = m_pPackages.numElem()-1; i >= 0;i--)
+    for (int i = m_packages.numElem()-1; i >= 0;i--)
 	{
-		int file_id = m_pPackages[i]->FindFileIndex( filename );
+		int file_id = m_packages[i]->FindFileIndex( filename );
 		if( file_id != -1 )
 		{
-			DPKFILE* pFile = m_pPackages[i]->Open(filename, "rb");
+			DPKFILE* pFile = m_packages[i]->Open(filename, "rb");
 
-			m_pPackages[i]->Seek(pFile, 0, SEEK_END);
-			long file_size = m_pPackages[i]->Tell(pFile);
-			m_pPackages[i]->Seek(pFile, 0, SEEK_SET);
+			m_packages[i]->Seek(pFile, 0, SEEK_END);
+			long file_size = m_packages[i]->Tell(pFile);
+			m_packages[i]->Seek(pFile, 0, SEEK_SET);
 
 			ubyte* file_buffer = new ubyte[file_size];
 
-			m_pPackages[i]->Read(file_buffer, 1, file_size, pFile);
-			m_pPackages[i]->Close(pFile);
+			m_packages[i]->Read(file_buffer, 1, file_size, pFile);
+			m_packages[i]->Close(pFile);
 
 			FILE* pSavedFile = fopen(filename, "wb");
 
@@ -853,6 +882,22 @@ void CFileSystem::ExtractFile(const char* filename, bool onlyNonExist)
 			return;
 		}
 	}
+}
+
+// opens directory for search props
+const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPath)
+{
+	return nullptr;
+}
+
+const char* CFileSystem::FindNext(DKFINDDATA* findData)
+{
+	return nullptr;
+}
+
+void CFileSystem::FindClose(DKFINDDATA* findData)
+{
+
 }
 
 // loads module
@@ -925,7 +970,7 @@ void CFileSystem::FreeModule( DKMODULE* pModule )
 #endif // _WIN32 && MEMDLL
 
 	delete pModule;
-	m_pLoadedModules.remove(pModule);
+	m_modules.remove(pModule);
 }
 
 // returns procedure address of the loaded module

@@ -42,7 +42,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 {
 	long len = 0;
 
-	DKFILE* file = g_fileSystem->Open(pszPath, "rb");
+	IFile* file = g_fileSystem->Open(pszPath, "rb");
 
 	if(!file)
 	{

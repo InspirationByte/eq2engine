@@ -925,7 +925,7 @@ void WritePODFile(const char* filename)
 
 	pHdr->num_lumps = 6;
 
-	DKFILE* pFile = g_fileSystem->Open(filename, "wb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open(filename, "wb", SP_MOD);
 
 	if(pFile)
 	{

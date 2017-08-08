@@ -188,7 +188,7 @@ void CAINavigator::InitNavigationMesh()
 	{
 		Msg("Loading AI navigation mesh from '%s'\n", nav_file_name.GetData());
 
-		DKFILE* pFile = g_fileSystem->Open( nav_file_name.GetData(), "rb", SP_MOD );
+		IFile* pFile = g_fileSystem->Open( nav_file_name.GetData(), "rb", SP_MOD );
 		if(pFile)
 		{
 			navmesh_hdr_t hdr;
@@ -528,7 +528,7 @@ void CAINavigator::InitNavigationMesh()
 		}
 
 		// save generated navigation mesh
-		DKFILE* pFile = g_fileSystem->Open( nav_file_name.GetData() , "wb", SP_MOD);
+		IFile* pFile = g_fileSystem->Open( nav_file_name.GetData() , "wb", SP_MOD);
 		if(pFile)
 		{
 			navmesh_hdr_t hdr;

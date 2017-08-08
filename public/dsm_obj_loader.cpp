@@ -462,7 +462,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 
 bool SaveOBJ(dsmmodel_t* model, const char* filename)
 {
-	DKFILE* pFile = g_fileSystem->Open(filename, "wt");
+	IFile* pFile = g_fileSystem->Open(filename, "wt");
 	if(!pFile)
 	{
 		MsgError("Failed to open for write '%s'!\n", filename);

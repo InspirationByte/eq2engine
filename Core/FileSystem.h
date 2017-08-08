@@ -9,6 +9,7 @@
 #define CFILESYSTEM_H
 
 #include "IFileSystem.h"
+#include "tinydir.h"
 #include "DPKFileReader.h"
 #include "utils/eqthread.h"
 
@@ -111,7 +112,8 @@ public:
     const char*					GetCurrentDataDirectory();
 
 	// adds directory for file search
-	void						AddSearchPath(const char* pszDir);
+	void						AddSearchPath(const char* pathId, const char* pszDir);
+	void						RemoveSearchPath(const char* pathId);
 
     //Directory operations
     void						MakeDir(const char* dirname, SearchPath_e search );
@@ -126,7 +128,7 @@ public:
 
 	bool						FileCopy(const char* filename, const char* dest_file, bool overWrite, SearchPath_e search);
 	bool						FileExist(const char* filename, int searchFlags = -1);
-	void						RemoveFile(const char* filename, SearchPath_e search );
+	void						FileRemove(const char* filename, SearchPath_e search );
 
 	// The next ones are deprecated and will be removed
 
@@ -139,6 +141,15 @@ public:
 
 	// extracts single file from package
 	void						ExtractFile(const char* filename, bool onlyNonExist = false);
+
+	//------------------------------------------------------------
+	// Locator
+	//------------------------------------------------------------
+
+	// opens directory for search props
+	const char*					FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPath);
+	const char*					FindNext(DKFINDDATA* findData);
+	void						FindClose(DKFINDDATA* findData);
 
 	//------------------------------------------------------------
 	// Dynamic library stuff
@@ -166,17 +177,23 @@ private:
 
 	EqString					m_basePath;			// base prepended path
 
-    EqString					m_pszDataDir;		// Used to load engine data
-	DkList<EqString>			m_directories;		// mod data, for fall back
+    EqString					m_dataDir;		// Used to load engine data
+
+	struct SearchPath_t
+	{
+		EqString id;
+		EqString path;
+	};
+
+	DkList<SearchPath_t>		m_directories;		// mod data, for fall back
 
     // Packages currently loaded
-    DkList<CDPKFileReader*>		m_pPackages;
+    DkList<CDPKFileReader*>		m_packages;
+    DkList<IFile*>				m_openFiles;
+	DkList<DKFINDDATA*>			m_findDatas;
+	DkList<DKMODULE*>			m_modules;
 
-    DkList<IFile*>				m_pOpenFiles;
-
-	DkList<DKMODULE*>			m_pLoadedModules;
-
-    bool						m_bEditorMode;
+    bool						m_editorMode;
 	bool						m_isInit;
 
 	CEqMutex					m_FSMutex;

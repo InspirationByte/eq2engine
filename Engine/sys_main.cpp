@@ -57,7 +57,7 @@ ONLY_EXPORTS int CreateEngineFn(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR 
 
 	// if executable compiled especially for game, we start named mod
 	if(shouldUseExeName)
-		g_fileSystem->AddSearchPath( modNamefromExe );
+		g_fileSystem->AddSearchPath( "$GAME$", modNamefromExe );
 
 	Msg("Initializing Engine...\n \n");
 

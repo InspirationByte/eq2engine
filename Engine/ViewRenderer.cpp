@@ -861,7 +861,7 @@ void CViewRenderer::RenderOccluders()
 	{
 		r_vis_occlusiondump.SetBool(false);
 
-		DKFILE* pFile = g_fileSystem->Open("occ_dump.raw", "wb", SP_ROOT);
+		IFile* pFile = g_fileSystem->Open("occ_dump.raw", "wb", SP_ROOT);
 		ubyte* pConv = (ubyte*)malloc(m_nOcclusionBufferSize*m_nOcclusionBufferSize);
 
 		for(int i = 0; i < m_nOcclusionBufferSize*m_nOcclusionBufferSize; i++)

@@ -85,12 +85,12 @@ public:
 	bool			LoadTGA(const char *fileName);
 #endif // NO_TGA
 
-	bool			LoadDDSfromHandle(DKFILE *fileHandle, uint flags = 0);
+	bool			LoadDDSfromHandle(IFile *fileHandle, uint flags = 0);
 #ifndef NO_JPEG
-	bool			LoadJPEGfromHandle(DKFILE *fileHandle);
+	bool			LoadJPEGfromHandle(IFile *fileHandle);
 #endif // NO_JPEG
 #ifndef NO_TGA
-	bool			LoadTGAfromHandle(DKFILE *fileHandle);
+	bool			LoadTGAfromHandle(IFile *fileHandle);
 #endif // NO_TGA
 
 	bool			SaveDDS(const char *fileName);
@@ -102,7 +102,7 @@ public:
 #endif // NO_TGA
 
 	bool			LoadImage(const char *fileName, uint flags = 0);
-	bool			LoadFromHandle(DKFILE *fileHandle,const char *fileName, uint flags = 0);
+	bool			LoadFromHandle(IFile *fileHandle,const char *fileName, uint flags = 0);
 
 	bool			SaveImage(const char *fileName);
 

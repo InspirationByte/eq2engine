@@ -22,6 +22,7 @@ BEGIN_SHADER_CLASS(BaseStatic)
 		SHADER_FOGPASS(AmbientInst) = NULL;
 
 		m_fSpecularScale = 1.0f;
+		m_fWetScale = 1.0f;
 		m_phong = 0.0f;
 	}
 
@@ -53,6 +54,8 @@ BEGIN_SHADER_CLASS(BaseStatic)
 		// load another shader params here (because we want to use less memory)
 		//------------------------------------------
 
+		
+		SHADER_PARAM_FLOAT(WetScale, m_fWetScale, 1.0f);
 		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale, 0.0f);
 		SHADER_PARAM_FLOAT(Phong, m_phong, 0.0f);
 
@@ -122,6 +125,8 @@ BEGIN_SHADER_CLASS(BaseStatic)
 		SetupDefaultParameter( SHADERPARAM_COLOR );
 		SetupDefaultParameter( SHADERPARAM_FOG );
 
+		
+		g_pShaderAPI->SetShaderConstantFloat("WET_SCALE", m_fWetScale);
 		g_pShaderAPI->SetShaderConstantFloat("SPECULAR_SCALE", m_fSpecularScale);
 		g_pShaderAPI->SetShaderConstantFloat("PHONG", m_phong);
 	}
@@ -169,6 +174,7 @@ private:
 	SHADER_DECLARE_FOGPASS(AmbientInst);
 
 	float				m_fSpecularScale;
+	float				m_fWetScale;
 	float				m_phong;
 
 END_SHADER_CLASS

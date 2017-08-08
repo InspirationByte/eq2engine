@@ -807,16 +807,13 @@ bool CEngineHost::Init()
 		{
 			gameName = KV_GetValueString(pGameInfoSec->FindKeyBase( "GameName" ), 0, "Equilibrium Engine");
 
+			int numPaths = 0;
 			for(int i = 0; i < pGameInfoSec->keys.numElem(); i++)
 			{
 				if(!stricmp(pGameInfoSec->keys[i]->name,"AddSearchPath"))
-				{
-					g_fileSystem->AddSearchPath(KV_GetValueString(pGameInfoSec->keys[i]));
-				}
+					g_fileSystem->AddSearchPath(varargs("$SPATH_%d$", numPaths++), KV_GetValueString(pGameInfoSec->keys[i]));
 				else if(!stricmp(pGameInfoSec->keys[i]->name,"AddPackage"))
-				{
 					g_fileSystem->AddPackage(KV_GetValueString(pGameInfoSec->keys[i]), SP_MOD);
-				}
 			}
 		}
 	}

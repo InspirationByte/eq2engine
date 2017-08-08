@@ -102,7 +102,7 @@ private:
 
 	RIFFchunk_t		m_curChunk;
 
-	DKFILE*			m_riff;
+	IFile*			m_riff;
 	ubyte*			m_riffData;
 };
 

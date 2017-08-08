@@ -571,7 +571,7 @@ void InitLightingShaders()
 	//g_pTempLightmap2->Ref_Grab();
 }
 
-void AddLump(int nLump, ubyte *pData, int nDataSize, eqworldhdr_t* pHdr, DKFILE* pFile)
+void AddLump(int nLump, ubyte *pData, int nDataSize, eqworldhdr_t* pHdr, IFile* pFile)
 {
 	eqworldlump_t lump;
 	lump.data_type = nLump;
@@ -590,9 +590,9 @@ void AddLump(int nLump, ubyte *pData, int nDataSize, eqworldhdr_t* pHdr, DKFILE*
 
 
 // writes key-values section.
-void KV_WriteToFile_r(kvkeybase_t* pKeyBase, DKFILE* pFile, int nTabs = 0, bool bOldFormat = false);
+void KV_WriteToFile_r(kvkeybase_t* pKeyBase, IFile* pFile, int nTabs = 0, bool bOldFormat = false);
 
-void AddKVLump(int nLump, KeyValues &kv, eqworldhdr_t* pHdr, DKFILE* pFile)
+void AddKVLump(int nLump, KeyValues &kv, eqworldhdr_t* pHdr, IFile* pFile)
 {
 	int begin_offset = g_fileSystem->Tell(pFile);
 
@@ -684,7 +684,7 @@ void SaveWorld()
 
 	worldhdr.num_lumps = 0;
 
-	DKFILE* pFile = g_fileSystem->Open(world_geom_path.GetData(), "wb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open(world_geom_path.GetData(), "wb", SP_MOD);
 
 	if(pFile)
 	{

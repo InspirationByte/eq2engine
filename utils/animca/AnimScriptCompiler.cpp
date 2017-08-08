@@ -1378,7 +1378,7 @@ void WriteAnimationPackage()
 	pHdr->numLumps += 3;
 
 
-	DKFILE* file = g_fileSystem->Open(("/models/" + _Es(KV_GetValueString(g_outputfilename))).GetData(), "wb", SP_MOD);
+	IFile* file = g_fileSystem->Open(("/models/" + _Es(KV_GetValueString(g_outputfilename))).GetData(), "wb", SP_MOD);
 	if(!file)
 	{
 		MsgError("Can't create file for writing!\n");

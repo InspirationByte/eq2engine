@@ -339,44 +339,34 @@ void CObject_Debris::Simulate(float fDt)
 			g_pPhysics->m_physics.AddToMoveableList(m_physBody);
 			m_physBody->Wake();
 
-
 			CEqRigidBody* body = (CEqRigidBody*)obj;
-			if(body->m_flags & BODY_ISCAR)
+			bool isCar = (body->m_flags & BODY_ISCAR) > 0;
+
+			if(isCar)
 			{
 				CCar* pCar = (CCar*)body->GetUserData();
 
-				if( !g_debris_as_physics.GetBool() )
-				{
-					EmitSound_t ep;
+				EmitSound_t ep;
 
-					ep.name = (char*)m_smashSound.c_str();
+				ep.name = (char*)m_smashSound.c_str();
 
-					ep.fPitch = RandomFloat(1.0f, 1.1f);
-					ep.fVolume = 1.0f;
-					ep.origin = pair.position;
+				ep.fPitch = RandomFloat(1.0f, 1.1f);
+				ep.fVolume = 1.0f;
+				ep.origin = pair.position;
 
-					EmitSoundWithParams( &ep );
+				EmitSoundWithParams( &ep );
+			}
 
-					m_fTimeToRemove = 0;//DEBRIS_COLLISION_RELAY;
-
-					float fCarVel = length(body->GetLinearVelocity());
-
-					float fImpUpVel = clamp(fCarVel*0.6f, 0.5f, 7.0f);
-
-					FVector3D randPos = pair.position + Vector3D(RandomFloat(-0.18,0.18),RandomFloat(-0.18,0.18), RandomFloat(-0.18,0.18));
-
-					Vector3D impulse = body->GetLinearVelocity();
-
-					m_physBody->ApplyWorldImpulse(pair.position, impulse * 1.5f);
-
-					//pCar->EmitCollisionParticles(randPos, body->GetLinearVelocity(), pair.normal, 6, pair.appliedImpulse);
-				}
-				else
-				{
-					m_physBody->m_flags = BODY_COLLISIONLIST;
-					m_physBody->SetContents(OBJECTCONTENTS_OBJECT);
-					m_physBody->SetCollideMask(COLLIDEMASK_OBJECT);
-				}
+			if( !g_debris_as_physics.GetBool() )
+			{
+				m_fTimeToRemove = 0;//DEBRIS_COLLISION_RELAY;
+				Vector3D impulse = body->GetLinearVelocity();
+				m_physBody->ApplyWorldImpulse(pair.position, impulse * 1.5f);
+			}
+			else
+			{
+				m_physBody->SetContents(OBJECTCONTENTS_OBJECT);
+				m_physBody->SetCollideMask(COLLIDEMASK_OBJECT);
 			}
 		}
 	}

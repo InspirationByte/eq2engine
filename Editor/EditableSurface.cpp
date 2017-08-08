@@ -1367,7 +1367,7 @@ void CEditableSurface::SaveToKeyValues(kvkeybase_t* pSection)
 	EqString object_full_filename(leveldir + modelFileName);
 
 	// remove it
-	g_fileSystem->RemoveFile(object_full_filename.GetData(), SP_MOD);
+	g_fileSystem->FileRemove(object_full_filename.GetData(), SP_MOD);
 
 	IFile* pStream = g_fileSystem->Open(object_full_filename.GetData(), "wb");
 

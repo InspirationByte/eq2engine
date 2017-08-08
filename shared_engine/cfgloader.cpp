@@ -13,7 +13,7 @@
 
 void WriteCfgFile(const char *pszFilename, bool bWriteKeyConfiguration /*= true*/)
 {
-	DKFILE *cfgfile = g_fileSystem->Open(pszFilename,"w");
+	IFile *cfgfile = g_fileSystem->Open(pszFilename,"w");
 	if(!cfgfile)
 	{
 		return;

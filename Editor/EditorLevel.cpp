@@ -120,7 +120,7 @@ bool CEditorLevel::Save()
 
 	EqString leveleditordata(leveldir + "/surfdata");
 
-	//DKFILE* pFile = g_fileSystem->Open( editor_level_file.getData(), "wb");
+	//IFile* pFile = g_fileSystem->Open( editor_level_file.getData(), "wb");
 
 	g_editormainframe->SetStatusText(varargs("Saving level '%s'\n", editor_level_file_new.GetData()));
 	Msg("Saving...\n");
@@ -1411,7 +1411,7 @@ void CEditorLevel::UnhideAll()
 }
 
 /*
-void AddSectorLump(int nLump, ubyte *pData, int nDataSize, eqworldhdr_t* pHdr, DKFILE* pFile)
+void AddSectorLump(int nLump, ubyte *pData, int nDataSize, eqworldhdr_t* pHdr, IFile* pFile)
 {
 	pHdr->lumps[nLump].data_offset = g_fileSystem->Tell(pFile);
 	pHdr->lumps[nLump].data_size = nDataSize;
@@ -1420,7 +1420,7 @@ void AddSectorLump(int nLump, ubyte *pData, int nDataSize, eqworldhdr_t* pHdr, D
 }
 
 // writes key-values section.
-extern void	KVWriteSection_r(kvsection_t* sec, DKFILE* pFile, int depth, bool useDepthTabs = true);
+extern void	KVWriteSection_r(kvsection_t* sec, IFile* pFile, int depth, bool useDepthTabs = true);
 
 void AddKeyValuesSectorLump(int nLump, KeyValues &kv, eqworldhdr_t* pHdr, DKFILE* pFile)
 {

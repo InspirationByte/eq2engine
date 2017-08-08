@@ -519,7 +519,7 @@ public:
 	{
 		if(event.GetId() == wxID_OK)
 		{
-			g_fileSystem->AddSearchPath( m_pGamesList->GetValue() );
+			g_fileSystem->AddSearchPath( "$GAME$", m_pGamesList->GetValue() );
 
 			// get the default game name
 			KeyValues kv;
@@ -565,7 +565,7 @@ bool EqEditorApplication::OnInit()
 
 	delete pGameSelDialog;
 	
-	g_fileSystem->AddSearchPath("EqEditor");
+	g_fileSystem->AddSearchPath("$EQEDIT$", "EqEditor");
 
 	LoadEditorConfig();
 
@@ -746,10 +746,10 @@ CEditorFrame::CEditorFrame(const wxString& title, const wxPoint& pos, const wxSi
 	KeyValues kvGameInfo;
 	if(kvGameInfo.LoadFromFile("GameInfo.txt"))
 	{
-		kvkeybase_t* pSec = kvGameInfo.GetRootSection()->FindKeyBase("GameInfo", KV_FLAG_SECTION);
-		if(pSec)
+		kvkeybase_t* pGameInfoSec = kvGameInfo.GetRootSection()->FindKeyBase("GameInfo", KV_FLAG_SECTION);
+		if(pGameInfoSec)
 		{
-			kvkeybase_t* pair = pSec->FindKeyBase("EditorEntities");
+			kvkeybase_t* pair = pGameInfoSec->FindKeyBase("EditorEntities");
 
 			if(pair)
 			{
@@ -764,16 +764,13 @@ CEditorFrame::CEditorFrame(const wxString& title, const wxPoint& pos, const wxSi
 				EDef_Load("eqengine_base.edf");
 			}
 
-			for(int i = 0; i < pSec->keys.numElem(); i++)
+			int numPaths = 0;
+			for(int i = 0; i < pGameInfoSec->keys.numElem(); i++)
 			{
-				if(!stricmp(pSec->keys[i]->name,"AddSearchPath"))
-				{
-					g_fileSystem->AddSearchPath(pSec->keys[i]->values[0]);
-				}
-				else if(!stricmp(pSec->keys[i]->name,"AddPackage"))
-				{
-					g_fileSystem->AddPackage(pSec->keys[i]->values[0], SP_MOD);
-				}
+				if(!stricmp(pGameInfoSec->keys[i]->name,"AddSearchPath"))
+					g_fileSystem->AddSearchPath(varargs("$SPATH_%d$", numPaths++), KV_GetValueString(pGameInfoSec->keys[i]));
+				else if(!stricmp(pGameInfoSec->keys[i]->name,"AddPackage"))
+					g_fileSystem->AddPackage(KV_GetValueString(pGameInfoSec->keys[i]), SP_MOD);
 			}
 		}
 		else

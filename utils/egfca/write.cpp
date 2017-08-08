@@ -737,7 +737,7 @@ bool WriteEGF(const char* filename)
 	g_hdr->length = WRITE_OFS;
 
 	// open model file
-	DKFILE *file = g_fileSystem->Open(filename, "wb");
+	IFile *file = g_fileSystem->Open(filename, "wb");
 	if(file)
 	{
 		// write model
