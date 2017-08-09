@@ -19,7 +19,9 @@ namespace equi
 {
 
 IUIControl::IUIControl()
-	: m_visible(false), m_selfVisible(true), m_enabled(true), m_parent(NULL), m_font(NULL), m_anchors(0)
+	: m_visible(false), m_selfVisible(true), m_enabled(true), m_parent(NULL), 
+	m_font(NULL), m_sizeDiff(0), m_sizeDiffPerc(1.0f), 
+	m_scaling(UI_SCALING_NONE), m_anchors(0), m_alignment(UI_BORDER_LEFT | UI_BORDER_TOP)
 {
 
 }
@@ -39,7 +41,6 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 	m_label = KV_GetValueString(sec->FindKeyBase("label"), 0, "Control");
 	m_position = KV_GetIVector2D(sec->FindKeyBase("position"), 0, 25);
 	m_size = KV_GetIVector2D(sec->FindKeyBase("size"), 0, 128);
-	m_initSize = m_size;
 
 	m_visible = KV_GetValueBool(sec->FindKeyBase("visible"), 0, true);
 	m_selfVisible = KV_GetValueBool(sec->FindKeyBase("selfvisible"), 0, true);
@@ -62,11 +63,13 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 		}
 	}
 
-	m_anchors = 0;
+	//------------------------------------------------------------------------------
 	kvkeybase_t* anchors = sec->FindKeyBase("anchors");
 
 	if(anchors)
 	{
+		m_anchors = 0;
+
 		for(int i = 0; i < anchors->values.numElem(); i++)
 		{
 			const char* anchorVal = KV_GetValueString(anchors, i);
@@ -76,17 +79,46 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 			//else if(!stricmp("top", anchorVal))
 			//	m_anchors |= UI_ANCHOR_TOP;
 			if(!stricmp("right", anchorVal))
-				m_anchors |= UI_ANCHOR_RIGHT;
+				m_anchors |= UI_BORDER_RIGHT;
 			else if(!stricmp("bottom", anchorVal))
-				m_anchors |= UI_ANCHOR_BOTTOM;
-			else if(!stricmp("sw", anchorVal))
-				m_anchors |= UI_ANCHOR_SCALING_WIDE;
-			else if(!stricmp("sh", anchorVal))
-				m_anchors |= UI_ANCHOR_SCALING_TALL;
-			else if(!stricmp("aspect", anchorVal))
-				m_anchors |= UI_ANCHOR_SCALING_ASPECT;
+				m_anchors |= UI_BORDER_BOTTOM;
 		}
 	}
+
+	//------------------------------------------------------------------------------
+	kvkeybase_t* align = sec->FindKeyBase("align");
+
+	if(align)
+	{
+		m_alignment = 0;
+
+		for(int i = 0; i < align->values.numElem(); i++)
+		{
+			const char* alignVal = KV_GetValueString(align, i);
+
+			if(!stricmp("left", alignVal))
+				m_alignment |= UI_BORDER_LEFT;
+			else if(!stricmp("top", alignVal))
+				m_alignment |= UI_BORDER_TOP;
+			else if(!stricmp("right", alignVal))
+				m_alignment |= UI_BORDER_RIGHT;
+			else if(!stricmp("bottom", alignVal))
+				m_alignment |= UI_BORDER_BOTTOM;
+		}
+	}
+
+	//------------------------------------------------------------------------------
+	kvkeybase_t* scaling = sec->FindKeyBase("scaling");
+	const char* scalingValue = KV_GetValueString(scaling, 0, "none");
+
+	if(!stricmp("width", scalingValue))
+		m_scaling = UI_SCALING_WIDTH;
+	else if(!stricmp("height", scalingValue))
+		m_scaling = UI_SCALING_HEIGHT;
+	else if(!stricmp("uniform", scalingValue))
+		m_scaling = UI_SCALING_BOTH_UNIFORM;
+	else if(!stricmp("inherit", scalingValue))
+		m_scaling = UI_SCALING_BOTH_INHERIT;
 
 	for(int i = 0; i < sec->keys.numElem(); i++)
 	{
@@ -114,33 +146,8 @@ void IUIControl::SetSize(const IVector2D &size)
 	IVector2D oldSize = m_size;
 	m_size = size;
 
-	IVector2D sizeDiff = m_size-oldSize;
-	Vector2D sizeDiffPercent = Vector2D(m_size)/Vector2D(oldSize);
-
-	// calculate child control position and size that affected with specified anchor
-	if(m_childs.goToFirst())
-	{
-		do
-		{
-			IUIControl* child = m_childs.getCurrent();
-			int anchors = child->GetAchors();
-			if(anchors == 0)
-				continue;
-
-			IVector2D sizeDiffAnchor(sizeDiff*IVector2D((anchors & UI_ANCHOR_RIGHT) ? 1 : 0, (anchors & UI_ANCHOR_BOTTOM) ? 1 : 0));
-
-			float aspectCorrection = (anchors & UI_ANCHOR_SCALING_ASPECT) ? sizeDiffPercent.y / sizeDiffPercent.x : 1.0f;
-
-			IVector2D newSize(child->GetSize()*Vector2D((anchors & UI_ANCHOR_SCALING_WIDE) ? sizeDiffPercent.x : 1.0f, (anchors & UI_ANCHOR_SCALING_TALL) ? sizeDiffPercent.y : 1.0f));
-			newSize.x *= aspectCorrection;
-
-			IVector2D newSizeDiff(newSize-child->GetSize());
-
-			child->SetPosition(child->GetPosition() + sizeDiffAnchor - newSizeDiff*IVector2D((anchors & UI_ANCHOR_RIGHT) ? 1 : 0, (anchors & UI_ANCHOR_BOTTOM) ? 1 : 0));
-			child->SetSize(newSize);
-		}
-		while(m_childs.goToNext());
-	}
+	m_sizeDiff += m_size-oldSize;
+	m_sizeDiffPerc *= Vector2D(m_size)/Vector2D(oldSize);
 }
 
 void IUIControl::SetPosition(const IVector2D &pos)
@@ -150,8 +157,8 @@ void IUIControl::SetPosition(const IVector2D &pos)
 
 void IUIControl::SetRectangle(const IRectangle& rect)
 {
-	m_position = rect.vleftTop;
-	m_size = rect.vrightBottom - m_position;
+	SetPosition(rect.vleftTop);
+	SetSize(rect.vrightBottom - m_position);
 }
 
 bool IUIControl::IsVisible() const
@@ -180,22 +187,95 @@ const IVector2D& IUIControl::GetPosition() const
 	return m_position;
 }
 
-// clipping rectangle, size position
 IRectangle IUIControl::GetRectangle() const
 {
 	return IRectangle(m_position, m_position + m_size);
 }
 
+void IUIControl::ResetSizeDiffs()
+{
+	m_sizeDiff = 0;
+	m_sizeDiffPerc = 1.0f;
+}
+
+Vector2D IUIControl::CalcScaling() const
+{
+	if(!m_parent || m_scaling == UI_SCALING_NONE)
+		return Vector2D(1.0f, 1.0f);
+
+	Vector2D scale(m_parent->m_sizeDiffPerc);
+
+	if(m_scaling >= UI_SCALING_BOTH_INHERIT)
+	{
+		if(Manager->GetRootPanel() != m_parent)
+		{
+			if(m_scaling == UI_SCALING_BOTH_UNIFORM)
+			{
+				float aspectCorrection = scale.y / scale.x;
+				scale.x *= aspectCorrection;
+			}
+
+			return scale * m_parent->CalcScaling();
+		}
+		else
+			return Vector2D(1.0f, 1.0f);
+	}
+	else
+	{
+		
+	}
+
+	return Vector2D(1.0f, 1.0f);
+}
+
 IRectangle IUIControl::GetClientRectangle() const
 {
-	IRectangle thisRect(m_position, m_position + m_size);
+	Vector2D scale = CalcScaling();
+
+	IVector2D scaledSize(m_size*scale);
+	IVector2D scaledPos(m_position*scale);
+
+	IRectangle thisRect(scaledPos, scaledPos + scaledSize);
 
 	if(m_parent)
 	{
 		IRectangle parentRect = m_parent->GetClientRectangle();
 
-		thisRect.vleftTop += parentRect.vleftTop;
-		thisRect.vrightBottom += parentRect.vleftTop;
+		// align
+		if(m_alignment & UI_BORDER_LEFT)
+		{
+			thisRect.vleftTop.x += parentRect.vleftTop.x;
+			thisRect.vrightBottom.x += parentRect.vleftTop.x;
+		}
+
+		if(m_alignment & UI_BORDER_TOP)
+		{
+			thisRect.vleftTop.y += parentRect.vleftTop.y;
+			thisRect.vrightBottom.y += parentRect.vleftTop.y;
+		}
+
+		if(m_alignment & UI_BORDER_RIGHT)
+		{
+			thisRect.vleftTop.x += parentRect.vrightBottom.x - scaledPos.x - scaledSize.x;
+			thisRect.vrightBottom.x += parentRect.vrightBottom.x - scaledPos.x - scaledSize.x;
+		}
+
+		if(m_alignment & UI_BORDER_BOTTOM)
+		{
+			thisRect.vleftTop.y += parentRect.vrightBottom.y - scaledPos.y - scaledSize.y;
+			thisRect.vrightBottom.y += parentRect.vrightBottom.y - scaledPos.y - scaledSize.y;
+		}
+
+		// move by anchor border
+		if(m_anchors > 0)
+		{
+			IVector2D parentSizeDiff = m_parent->m_sizeDiff;
+			IVector2D offsetAnchors((m_anchors & UI_BORDER_RIGHT) ? 1 : 0, (m_anchors & UI_BORDER_BOTTOM) ? 1 : 0);
+
+			// apply offset
+			thisRect.vleftTop += parentSizeDiff*offsetAnchors;
+			thisRect.vrightBottom += parentSizeDiff*offsetAnchors;
+		}
 	}
 
 	return thisRect;

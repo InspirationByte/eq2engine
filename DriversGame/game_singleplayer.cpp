@@ -629,14 +629,16 @@ CCar* CGameSession::GetViewCar() const
 	if(m_viewCar)
 		return m_viewCar;
 
-	if(m_viewCar == NULL)
+	if(m_viewCar == nullptr)
 		return GetPlayerCar();
+
+	return nullptr;
 }
 
 void CGameSession::SetViewCar(CCar* pCar)
 {
 	if(m_viewCar == GetPlayerCar())
-		m_viewCar = NULL;
+		m_viewCar = nullptr;
 	else
 		m_viewCar = pCar;
 }

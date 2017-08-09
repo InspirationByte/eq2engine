@@ -91,10 +91,11 @@ public:
 	void						SetAchors(int anchor)			{ m_anchors = anchor; }
 	int							GetAchors() const				{ return m_anchors; }
 
-	// clipping rectangle, size position
+	// real rectangle, size position
 	void						SetRectangle(const IRectangle& rect);
 	virtual IRectangle			GetRectangle() const;
 
+	// drawn rectangle
 	virtual IRectangle			GetClientRectangle() const;
 
 	// child controls
@@ -111,6 +112,8 @@ public:
 	virtual const char*			GetClassname() const = 0;
 
 protected:
+	Vector2D					CalcScaling() const;
+	void						ResetSizeDiffs();
 
 	// rendering
 	virtual void				Render();
@@ -133,14 +136,18 @@ protected:
 	IVector2D					m_position;
 	IVector2D					m_size;
 
-	IVector2D					m_initSize;	// for anchors
+	// for anchors
+	IVector2D					m_sizeDiff;	
+	Vector2D					m_sizeDiffPerc;
 
 	bool						m_visible;
 	bool						m_enabled;
 
 	bool						m_selfVisible;
 
+	int							m_alignment;
 	int							m_anchors;
+	int							m_scaling;
 
 	EqString					m_name;
 	EqWString					m_label;

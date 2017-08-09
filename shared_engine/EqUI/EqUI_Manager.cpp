@@ -234,8 +234,18 @@ void CUIManager::Render()
 	if(!m_rootPanel)
 		return;
 
+	for(int i = 0; i < m_panels.numElem(); i++)
+	{
+		if(m_panels[i]->m_screenOverlay)
+		{
+			m_panels[i]->SetPosition(0);
+			m_panels[i]->SetSize(m_viewFrameRect.GetSize());
+		}
+	}
+
 	// begin from the render panel
 	m_rootPanel->SetRectangle( m_viewFrameRect );
+	m_rootPanel->ResetSizeDiffs();
 	m_rootPanel->Render();
 }
 

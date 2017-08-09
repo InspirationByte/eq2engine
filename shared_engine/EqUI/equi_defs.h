@@ -30,16 +30,23 @@ enum EEqUIEventFlags
 //--------------------------------------------------------
 
 // attaching to the parent box sides
-enum EUIAnchors
+enum EUIBorders
 {
-	//UI_ANCHOR_LEFT				= (1 << 0),
-	//UI_ANCHOR_TOP				= (1 << 1),
-	UI_ANCHOR_RIGHT				= (1 << 2),
-	UI_ANCHOR_BOTTOM			= (1 << 3),
+	UI_BORDER_LEFT				= (1 << 0),
+	UI_BORDER_TOP				= (1 << 1),
+	UI_BORDER_RIGHT				= (1 << 2),
+	UI_BORDER_BOTTOM			= (1 << 3),
+};
 
-	UI_ANCHOR_SCALING_WIDE		= (1 << 4),
-	UI_ANCHOR_SCALING_TALL		= (1 << 5),
-	UI_ANCHOR_SCALING_ASPECT	= (1 << 6),		// controls are scaled with aspect ratio (box scaled as box)
+enum EUIScalingMode
+{
+	UI_SCALING_NONE = 0,
+
+	UI_SCALING_WIDTH,
+	UI_SCALING_HEIGHT,
+
+	UI_SCALING_BOTH_INHERIT,
+	UI_SCALING_BOTH_UNIFORM,
 };
 
 };

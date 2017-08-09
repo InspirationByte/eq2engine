@@ -26,7 +26,7 @@ namespace equi
 // Panels
 //-------------------------------------------------------------------
 
-Panel::Panel() : m_windowControls(false), m_labelCtrl(NULL), m_closeButton(NULL), m_grabbed(false)
+Panel::Panel() : m_windowControls(false), m_labelCtrl(NULL), m_closeButton(NULL), m_grabbed(false), m_screenOverlay(false)
 {
 	m_position = IVector2D(0);
 	m_size = IVector2D(32,32);
@@ -52,6 +52,7 @@ void Panel::InitFromKeyValues( kvkeybase_t* sec )
 
 	m_windowControls = KV_GetValueBool(mainSec->FindKeyBase("window"), 0, false);
 	m_visible = KV_GetValueBool(mainSec->FindKeyBase("visible"), 0, !m_windowControls);
+	m_screenOverlay = KV_GetValueBool(mainSec->FindKeyBase("screenoverlay"), 0, false);
 
 	if(m_windowControls)
 	{

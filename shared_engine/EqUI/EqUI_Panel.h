@@ -53,8 +53,8 @@ protected:
 	ColorRGBA				m_selColor;
 
 	bool					m_windowControls;
-
 	bool					m_grabbed;
+	bool					m_screenOverlay;
 
 	equi::Label*			m_labelCtrl;
 	equi::Button*			m_closeButton;
