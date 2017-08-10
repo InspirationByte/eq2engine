@@ -125,7 +125,7 @@ void CAIPursuerCar::OnRemove()
 		ses->RemoveSoundController(m_loudhailer);
 
 	m_loudhailer = NULL;
-
+	
 	BaseClass::OnRemove();
 }
 
@@ -304,6 +304,9 @@ void CAIPursuerCar::EndPursuit(bool death)
 	if (!m_targInfo.target)
 		return;
 
+	if(m_loudhailer)
+		m_loudhailer->Stop();
+
 	// HACK: just kill
 	if (GetCurrentStateType() != GAME_STATE_GAME)
 	{
@@ -323,9 +326,15 @@ void CAIPursuerCar::EndPursuit(bool death)
 	else
 		AI_SetState( &CAIPursuerCar::DeadState );
 
-
 	if (m_targInfo.target != NULL)
 	{
+		// validate
+		if(!g_pGameWorld->IsValidObject(m_targInfo.target))
+		{
+			m_targInfo.target = NULL;
+			return;
+		}
+
 		if(m_targInfo.target->GetPursuedCount() == 0)
 		{
 			m_targInfo.target = NULL;
@@ -341,9 +350,6 @@ void CAIPursuerCar::EndPursuit(bool death)
 			Speak("cop.lost", true);
 		}
 	}
-
-	if(m_loudhailer)
-		m_loudhailer->Stop();
 
 	m_targInfo.target = NULL;
 }

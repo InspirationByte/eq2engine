@@ -911,7 +911,7 @@ Vector3D CState_Game::GetViewVelocity() const
 	Vector3D cam_velocity = vec3_zero;
 
 	// animate the camera if car is present
-	if( viewedCar && g_pCameraAnimator->GetMode() <= CAM_MODE_INCAR )
+	if( viewedCar && g_pCameraAnimator->GetMode() <= CAM_MODE_INCAR && !Director_FreeCameraActive() )
 		cam_velocity = viewedCar->GetVelocity();
 
 	return cam_velocity;

@@ -528,6 +528,9 @@ void CLevelRegion::UpdateDebugMaps()
 
 void CLevelRegion::Cleanup()
 {
+	if(!m_isLoaded)
+		return;
+
 	m_level->m_mutex.Lock();
 
 #ifndef EDITOR

@@ -605,17 +605,7 @@ void CGameWorld::Cleanup( bool unloadLevel )
 	}
 #endif // EDITOR
 
-	// cvar stuff
-	g_envList.clear();
-
-	m_occludingFrustum.Clear();
-
-	g_pRainEmitter->Clear();
-
-	ses->RemoveSoundController(m_rainSound);
-	m_rainSound = NULL;
-
-	ses->StopAllSounds();
+	m_renderingObjects.clear();
 
 	for(int i = 0; i < m_gameObjects.numElem(); i++)
 	{
@@ -634,6 +624,18 @@ void CGameWorld::Cleanup( bool unloadLevel )
 	}
 	m_gameObjects.clear();
 
+	// cvar stuff
+	g_envList.clear();
+
+	m_occludingFrustum.Clear();
+
+	g_pRainEmitter->Clear();
+
+	ses->RemoveSoundController(m_rainSound);
+	m_rainSound = NULL;
+
+	ses->StopAllSounds();
+
 	// non-spawned objects are deleted in UpdateRegions()
 
 	if(unloadLevel)
@@ -651,8 +653,6 @@ void CGameWorld::Cleanup( bool unloadLevel )
 		// regions must be unloaded
 		m_level.UpdateRegions();
 	}
-
-	m_renderingObjects.clear();
 
 	if(unloadLevel)
 	{

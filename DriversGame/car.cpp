@@ -721,7 +721,6 @@ void CCar::CreateCarPhysics()
 	body->SetOrientation(Quaternion(DEG2RAD(m_vecAngles.x),DEG2RAD(m_vecAngles.y),DEG2RAD(m_vecAngles.z)));
 
 	m_pPhysicsObject = new CPhysicsHFObject( body, this );
-
 	g_pPhysics->AddObject( m_pPhysicsObject );
 }
 
@@ -895,12 +894,12 @@ void CCar::OnRemove()
 		ses->RemoveSoundController(m_sounds[i]);
 		m_sounds[i] = nullptr;
 	}
-
+	
 	delete [] m_wheels;
 	m_wheels = NULL;
 
 	g_pPhysics->RemoveObject(m_pPhysicsObject);
-	m_pPhysicsObject = NULL;
+	m_pPhysicsObject = nullptr;
 }
 
 void CCar::PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell)
