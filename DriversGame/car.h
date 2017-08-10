@@ -80,6 +80,25 @@ enum ECarLightTypeFlags
 	CAR_LIGHT_EMERGENCY			= (CAR_LIGHT_DIM_LEFT | CAR_LIGHT_DIM_RIGHT),	// emergency light flags (dim. left and right)
 };
 
+enum ECarSound
+{
+	CAR_SOUND_ENGINE = 0,
+	CAR_SOUND_ENGINE_LOW,
+	CAR_SOUND_ENGINE_IDLE,
+
+	CAR_SOUND_HORN,
+	CAR_SOUND_SIREN,
+
+	CAR_SOUND_BRAKERELEASE,
+
+	CAR_SOUND_WHINE,
+	CAR_SOUND_SKID,
+	CAR_SOUND_SURFACE,
+
+	CAR_SOUND_COUNT,
+	CAR_SOUND_CONFIGURABLE = CAR_SOUND_BRAKERELEASE+1,
+};
+
 enum EEngineType
 {
 	CAR_ENGINE_PETROL = 0,
@@ -169,6 +188,7 @@ struct vehicleConfig_t
 		bool						isCar : 1;			// for hinged only vehicle it must be 'true'
 		bool						isCop : 1;
 		bool						allowParked : 1;
+		bool						reverseWhine: 1;
 	} flags;
 
 	struct {
@@ -220,6 +240,7 @@ struct vehicleConfig_t
 		int8						exhaustDir;		// 0 - back, 1 - left, 2 - up
 	} visual;
 
+	/*
 	struct{
 		EqString					engineIdle;
 		EqString					engineRPMLow;
@@ -227,7 +248,9 @@ struct vehicleConfig_t
 		EqString					hornSignal;
 		EqString					siren;
 		EqString					brakeRelease;
-	} sounds;
+	} sounds;*/
+
+	EqString					sounds[CAR_SOUND_CONFIGURABLE];
 
 	carColorScheme_t*			colors;
 	int8						numColors;
@@ -504,6 +527,8 @@ protected:
 	void					CreateCarPhysics();
 	void					InitCarSound();
 
+	ISoundController*		CreateCarSound(const char* name, float radiusMult);
+
 	virtual void			Simulate( float fDt );
 
 	virtual void			OnPrePhysicsFrame( float fDt );
@@ -581,15 +606,7 @@ protected:
 
 	//---------------------------------------------
 
-	ISoundController*		m_pSkidSound;
-	ISoundController*		m_pSurfSound;
-
-	ISoundController*		m_pEngineSound;
-	ISoundController*		m_pEngineSoundLow;
-
-	ISoundController*		m_pIdleSound;
-	ISoundController*		m_pHornSound;
-	ISoundController*		m_pSirenSound;
+	ISoundController*		m_sounds[CAR_SOUND_COUNT];
 
 	short					m_controlButtons;
 	short					m_oldControlButtons;

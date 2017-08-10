@@ -113,6 +113,7 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 	conf->flags.isCar = KV_GetValueBool(kvs->FindKeyBase("isCar"), 0, true);
 	conf->flags.allowParked = KV_GetValueBool(kvs->FindKeyBase("allowParked"), 0, true);
 	conf->flags.isCop = KV_GetValueBool(kvs->FindKeyBase("isCop"), 0, false);
+	conf->flags.reverseWhine = KV_GetValueBool(kvs->FindKeyBase("reverseWhine"), 0, true);
 
 	ASSERTMSG(conf->visual.cleanModelName.Length(), "ParseVehicleConfig - missing cleanModel!\n");
 
@@ -315,22 +316,15 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 
 	if(pSoundSec)
 	{
-		conf->sounds.engineIdle = KV_GetValueString(pSoundSec->FindKeyBase("engine_idle"), 0, "defaultcar.engine_idle");
+		conf->sounds[CAR_SOUND_ENGINE_IDLE] = KV_GetValueString(pSoundSec->FindKeyBase("engine_idle"), 0, "defaultcar.engine_idle");
+		conf->sounds[CAR_SOUND_ENGINE_LOW] = KV_GetValueString(pSoundSec->FindKeyBase("engine_low"), 0, "defaultcar.engine_low");
+		conf->sounds[CAR_SOUND_ENGINE] = KV_GetValueString(pSoundSec->FindKeyBase("engine"), 0, "defaultcar.engine");
+		conf->sounds[CAR_SOUND_HORN] = KV_GetValueString(pSoundSec->FindKeyBase("horn"), 0, "generic.horn1");
+		conf->sounds[CAR_SOUND_SIREN] = KV_GetValueString(pSoundSec->FindKeyBase("siren"), 0, "generic.copsiren1");
+		conf->sounds[CAR_SOUND_BRAKERELEASE] = KV_GetValueString(pSoundSec->FindKeyBase("brake_release"), 0, "");
 
-		conf->sounds.engineRPMLow = KV_GetValueString(pSoundSec->FindKeyBase("engine_low"), 0, "defaultcar.engine_low");
-		conf->sounds.engineRPMHigh = KV_GetValueString(pSoundSec->FindKeyBase("engine"), 0, "defaultcar.engine");
-
-		conf->sounds.hornSignal = KV_GetValueString(pSoundSec->FindKeyBase("horn"), 0, "generic.horn1");
-		conf->sounds.siren = KV_GetValueString(pSoundSec->FindKeyBase("siren"), 0, "generic.copsiren1");
-
-		conf->sounds.brakeRelease = KV_GetValueString(pSoundSec->FindKeyBase("brake_release"), 0, "");
-
-		PrecacheScriptSound( conf->sounds.engineIdle.c_str() );
-		PrecacheScriptSound( conf->sounds.engineRPMLow.c_str() );
-		PrecacheScriptSound( conf->sounds.engineRPMHigh.c_str() );
-		PrecacheScriptSound( conf->sounds.hornSignal.c_str() );
-		PrecacheScriptSound( conf->sounds.siren.c_str() );
-		PrecacheScriptSound( conf->sounds.brakeRelease.c_str() );
+		for(int i = 0; i < CAR_SOUND_CONFIGURABLE; i++)
+			PrecacheScriptSound( conf->sounds[i].c_str() );
 	}
 
 	conf->cameraConf.dist = KV_GetValueFloat(kvs->FindKeyBase("camera_distance"), 0, 7.0f);
@@ -563,16 +557,6 @@ CCar::CCar()
 CCar::CCar( vehicleConfig_t* config ) :
 	m_pPhysicsObject(NULL),
 	m_trailerHinge(NULL),
-
-	m_pSkidSound(NULL),
-	m_pSurfSound(NULL),
-
-	m_pIdleSound(NULL),
-	m_pEngineSound(NULL),
-	m_pEngineSoundLow(NULL),
-	m_pHornSound(NULL),
-	m_pSirenSound(NULL),
-
 	m_fEngineRPM(0.0f),
 	m_nPrevGear(-1),
 	m_steering(0.0f),
@@ -615,6 +599,7 @@ CCar::CCar( vehicleConfig_t* config ) :
 {
 	m_conf = config;
 	memset(m_bodyParts, 0,sizeof(m_bodyParts));
+	memset(m_sounds, 0,sizeof(m_sounds));
 
 	if(m_conf)
 	{
@@ -658,6 +643,7 @@ void CCar::Precache()
 	PrecacheScriptSound("generic.crash");
 	PrecacheScriptSound("generic.wheelOnGround");
 	PrecacheScriptSound("generic.waterHit");
+	PrecacheScriptSound("generic.whine");
 
 	PrecacheStudioModel("models/characters/driver_bust.egf");
 }
@@ -739,29 +725,24 @@ void CCar::CreateCarPhysics()
 	g_pPhysics->AddObject( m_pPhysicsObject );
 }
 
+ISoundController* CCar::CreateCarSound(const char* name, float radiusMult)
+{
+	EmitSound_t soundEp;
+
+	soundEp.name = name;
+	soundEp.fPitch = 1.0f;
+	soundEp.fVolume = 1.0f;
+	soundEp.fRadiusMultiplier = radiusMult;
+	soundEp.origin = m_vecOrigin;
+	soundEp.pObject = this;
+
+	return ses->CreateSoundController(&soundEp);
+}
+
 void CCar::InitCarSound()
 {
-	EmitSound_t skid_ep;
-
-	skid_ep.name = "tarmac.skid";
-
-	skid_ep.fPitch = 1.0f;
-	skid_ep.fVolume = 1.0f;
-	skid_ep.fRadiusMultiplier = 0.55f;
-	skid_ep.origin = m_vecOrigin;
-	skid_ep.pObject = this;
-
-	m_pSkidSound = ses->CreateSoundController(&skid_ep);
-
-	skid_ep.name = "tarmac.wetnoise";
-
-	skid_ep.fPitch = 1.0f;
-	skid_ep.fVolume = 1.0f;
-	skid_ep.fRadiusMultiplier = 0.55f;
-	skid_ep.origin = m_vecOrigin;
-	skid_ep.pObject = this;
-
-	m_pSurfSound = ses->CreateSoundController(&skid_ep);
+	m_sounds[CAR_SOUND_SKID] = CreateCarSound("tarmac.skid", 0.55f);
+	m_sounds[CAR_SOUND_SURFACE] = CreateCarSound("tarmac.wetnoise", 0.55f);
 
 	//
 	// Don't initialize sounds if this is not a car
@@ -769,51 +750,23 @@ void CCar::InitCarSound()
 	if(!m_conf->flags.isCar)
 		return;
 
-	EmitSound_t ep;
+	if(m_conf->flags.reverseWhine)
+		m_sounds[CAR_SOUND_WHINE] = CreateCarSound("generic.whine", 0.45f);
 
-	ep.name = m_conf->sounds.engineRPMHigh.c_str();
+	m_sounds[CAR_SOUND_ENGINE_IDLE] = CreateCarSound(m_conf->sounds[CAR_SOUND_ENGINE_IDLE].c_str(), 0.45f);
+	m_sounds[CAR_SOUND_ENGINE] = CreateCarSound(m_conf->sounds[CAR_SOUND_ENGINE].c_str(), 0.45f);
+	m_sounds[CAR_SOUND_ENGINE_LOW] = CreateCarSound(m_conf->sounds[CAR_SOUND_ENGINE_LOW].c_str(), 0.45f);
 
-	ep.fPitch = 1.0f;
-	ep.fVolume = 1.0f;
-	ep.fRadiusMultiplier = 0.45f;
-	ep.origin = m_vecOrigin;
-	ep.pObject = this;
+	m_sounds[CAR_SOUND_HORN] = CreateCarSound(m_conf->sounds[CAR_SOUND_HORN].c_str(), 1.0f);
 
-	m_pEngineSound = ses->CreateSoundController(&ep);
-
-	ep.name = m_conf->sounds.engineRPMLow.c_str();
-
-	m_pEngineSoundLow = ses->CreateSoundController(&ep);
-
-	EmitSound_t idle_ep;
-
-	idle_ep.name = m_conf->sounds.engineIdle.c_str();
-
-	idle_ep.fPitch = 1.0f;
-	idle_ep.fVolume = 1.0f;
-	idle_ep.fRadiusMultiplier = 0.45f;
-	idle_ep.origin = m_vecOrigin;
-	idle_ep.pObject = this;
-
-	m_pIdleSound = ses->CreateSoundController(&idle_ep);
-
-	EmitSound_t horn_ep;
-
-	horn_ep.name = m_conf->sounds.hornSignal.c_str();
-
-	horn_ep.fPitch = 1.0f;
-	horn_ep.fVolume = 1.0f;
-	horn_ep.fRadiusMultiplier = 1.0f;
-	horn_ep.origin = m_vecOrigin;
-	horn_ep.pObject = this;
-
-	m_pHornSound = ses->CreateSoundController(&horn_ep);
+	if(m_conf->sounds[CAR_SOUND_BRAKERELEASE].Length() > 0)
+		m_sounds[CAR_SOUND_BRAKERELEASE] = CreateCarSound(m_conf->sounds[CAR_SOUND_BRAKERELEASE].c_str(), 1.0f);
 
 	if(m_conf->visual.sirenType != SERVICE_LIGHTS_NONE)
 	{
 		EmitSound_t siren_ep;
 
-		siren_ep.name = m_conf->sounds.siren.c_str();
+		siren_ep.name = m_conf->sounds[CAR_SOUND_SIREN].c_str();
 
 		siren_ep.fPitch = 1.0f;
 		siren_ep.fVolume = 1.0f;
@@ -823,7 +776,7 @@ void CCar::InitCarSound()
 		siren_ep.sampleId = 0;
 		siren_ep.pObject = this;
 
-		m_pSirenSound = ses->CreateSoundController(&siren_ep);
+		m_sounds[CAR_SOUND_SIREN] = ses->CreateSoundController(&siren_ep);
 	}
 }
 
@@ -937,29 +890,17 @@ void CCar::OnRemove()
 		g_replayData->PushSpawnOrRemoveEvent( REPLAY_EVENT_REMOVE, this, (m_state == GO_STATE_REMOVE_BY_SCRIPT) ? REPLAY_FLAG_SCRIPT_CALL : 0 );
 #endif // EDITOR
 
-	ses->RemoveSoundController(m_pSkidSound);
-	ses->RemoveSoundController(m_pSurfSound);
-
-	ses->RemoveSoundController(m_pIdleSound);
-	ses->RemoveSoundController(m_pEngineSound);
-	ses->RemoveSoundController(m_pEngineSoundLow);
-	ses->RemoveSoundController(m_pHornSound);
-	ses->RemoveSoundController(m_pSirenSound);
+	for(int i = 0; i < CAR_SOUND_COUNT; i++)
+	{
+		ses->RemoveSoundController(m_sounds[i]);
+		m_sounds[i] = nullptr;
+	}
 
 	delete [] m_wheels;
 	m_wheels = NULL;
 
 	g_pPhysics->RemoveObject(m_pPhysicsObject);
-
 	m_pPhysicsObject = NULL;
-	m_pIdleSound = NULL;
-	m_pEngineSound = NULL;
-	m_pEngineSoundLow = NULL;
-	m_pSkidSound = NULL;
-	m_pPhysicsObject = NULL;
-	m_pHornSound = NULL;
-	m_pSirenSound = NULL;
-	m_pSurfSound = NULL;
 }
 
 void CCar::PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell)
@@ -1669,12 +1610,12 @@ void CCar::UpdateVehiclePhysics(float delta)
 	}
 	else
 	{
-		if(	m_fBreakage > 0.4f && fabs(fBreakage) < 0.01f &&
-			m_conf->sounds.brakeRelease.Length() > 0)
+		if(m_conf->sounds[CAR_SOUND_BRAKERELEASE].Length() > 0 &&
+			m_fBreakage > 0.4f && fabs(fBreakage) < 0.01f)
 		{
 			// m_fBreakage is volume
 			EmitSound_t ep;
-			ep.name = m_conf->sounds.brakeRelease.c_str();
+			ep.name = m_conf->sounds[CAR_SOUND_BRAKERELEASE].c_str();
 			ep.fVolume = m_fBreakage;
 			ep.fPitch = 1.0f+(1.0f-m_fBreakage);
 			ep.origin = GetOrigin();
@@ -3108,8 +3049,6 @@ void CCar::DrawWheelEffects(int wheelIdx, int lod, bool drawSkidMarks)
 	Vector3D skidmarkPos = ( wheel.m_collisionInfo.position - wheelMat.rows[0]*wheelConf.width*sign(wheelConf.suspensionTop.x)*0.5f ) + wheelDir*0.05f;
 	skidmarkPos += velAtWheel*0.0065f + wheel.m_collisionInfo.normal*0.015f;
 
-
-
 	float tractionSlide = GetTractionSlidingAtWheel(wheelIdx);
 	float lateralSlide = GetLateralSlidingAtWheel(wheelIdx);
 
@@ -3210,7 +3149,7 @@ void CCar::DrawWheelEffects(int wheelIdx, int lod, bool drawSkidMarks)
 	}
 }
 
-void  CCar::DrawSkidmarkTrails(int wheelIdx)
+void CCar::DrawSkidmarkTrails(int wheelIdx)
 {
 	CCarWheel& wheel = m_wheels[wheelIdx];
 	TexAtlasEntry_t* skidmarkEntry = m_veh_skidmark_asphalt;
@@ -3465,45 +3404,29 @@ void CCar::UpdateSounds( float fDt )
 	Vector3D pos = carBody->GetPosition();
 	Vector3D velocity = carBody->GetLinearVelocity();
 
-	m_pSkidSound->SetOrigin(pos);
-	m_pSkidSound->SetVelocity(velocity);
+	for(int i = 0; i < CAR_SOUND_COUNT; i++)
+	{
+		if(!m_sounds[i])
+			continue;
 
-	m_pSurfSound->SetOrigin(pos);
-	m_pSurfSound->SetVelocity(velocity);
+		m_sounds[i]->SetOrigin(pos);
+		m_sounds[i]->SetVelocity(velocity);
+	}
 
 	bool isCar = m_conf->flags.isCar;
 
-	if(isCar)
+	if(isCar && m_sounds[CAR_SOUND_SIREN])
 	{
-		m_pEngineSound->SetOrigin(pos);
-		m_pEngineSoundLow->SetOrigin(pos);
-		m_pIdleSound->SetOrigin(pos);
-		m_pHornSound->SetOrigin(pos);
-
-		if(m_pSirenSound)
-			m_pSirenSound->SetOrigin(pos);
-
-		m_pEngineSound->SetVelocity(velocity);
-		m_pEngineSoundLow->SetVelocity(velocity);
-
-		m_pIdleSound->SetVelocity(velocity);
-		m_pHornSound->SetVelocity(velocity);
-
-		if(m_pSirenSound)
+		if( !IsAlive() && m_sirenDeathTime > 0 && m_conf->visual.sirenType != SERVICE_LIGHTS_NONE )
 		{
-			m_pSirenSound->SetVelocity(velocity);
+			m_sounds[CAR_SOUND_SIREN]->SetPitch( m_sirenDeathTime / SIREN_SOUND_DEATHTIME );
+			m_sirenDeathTime -= fDt;
 
-			if( !IsAlive() && m_sirenDeathTime > 0 && m_conf->visual.sirenType != SERVICE_LIGHTS_NONE )
-			{
-				m_pSirenSound->SetPitch( m_sirenDeathTime / SIREN_SOUND_DEATHTIME );
-				m_sirenDeathTime -= fDt;
-
-				if(m_sirenDeathTime <= 0.0f)
-					m_sirenEnabled = false;
-			}
-			else if(IsAlive())
-				m_sirenDeathTime = SIREN_SOUND_DEATHTIME;
+			if(m_sirenDeathTime <= 0.0f)
+				m_sirenEnabled = false;
 		}
+		else if(IsAlive())
+			m_sirenDeathTime = SIREN_SOUND_DEATHTIME;
 	}
 
 	float fTractionLevel = GetTractionSliding(true)*0.2f;
@@ -3517,15 +3440,15 @@ void CCar::UpdateSounds( float fDt )
 
 	if(fSkidVol > 0.08 && g_pGameWorld->m_envConfig.weatherType == WEATHER_TYPE_CLEAR)
 	{
-		if(m_pSkidSound->IsStopped())
-			m_pSkidSound->Play();
+		if(m_sounds[CAR_SOUND_SKID]->IsStopped())
+			m_sounds[CAR_SOUND_SKID]->Play();
 
-		if(!m_pSurfSound->IsStopped())
-			m_pSurfSound->Stop();
+		if(!m_sounds[CAR_SOUND_SURFACE]->IsStopped())
+			m_sounds[CAR_SOUND_SURFACE]->Stop();
 	}
 	else
 	{
-		m_pSkidSound->Stop();
+		m_sounds[CAR_SOUND_SKID]->Stop();
 
 		bool anyWheelOnGround = false;
 
@@ -3538,20 +3461,20 @@ void CCar::UpdateSounds( float fDt )
 			}
 		}
 
-		if(anyWheelOnGround && m_pSurfSound->IsStopped() && g_pGameWorld->m_envConfig.weatherType != WEATHER_TYPE_CLEAR && m_isLocalCar)
+		if(anyWheelOnGround && m_sounds[CAR_SOUND_SURFACE]->IsStopped() && g_pGameWorld->m_envConfig.weatherType != WEATHER_TYPE_CLEAR && m_isLocalCar)
 		{
-			m_pSurfSound->Play();
+			m_sounds[CAR_SOUND_SURFACE]->Play();
 		}
-		else if(!anyWheelOnGround && !m_pSurfSound->IsStopped())
+		else if(!anyWheelOnGround && !m_sounds[CAR_SOUND_SURFACE]->IsStopped())
 		{
-			m_pSurfSound->Stop();
+			m_sounds[CAR_SOUND_SURFACE]->Stop();
 		}
 
 		float fSpeedMod = clamp(GetSpeed()/90.0f + fTractionLevel*0.25f, 0.0f, 1.0f);
 		float fSpeedModVol = clamp(GetSpeed()/20.0f + fTractionLevel*0.25f, 0.0f, 1.0f);
 
-		m_pSurfSound->SetPitch(fSpeedMod);
-		m_pSurfSound->SetVolume(fSpeedModVol);
+		m_sounds[CAR_SOUND_SURFACE]->SetPitch(fSpeedMod);
+		m_sounds[CAR_SOUND_SURFACE]->SetVolume(fSpeedModVol);
 	}
 
 	float fWheelRad = 0.0f;
@@ -3569,8 +3492,8 @@ void CCar::UpdateSounds( float fDt )
 	float wheelSkidPitchModifier = IDEAL_WHEEL_RADIUS - fWheelRad;
 	float fSkidPitch = clamp(0.7f*fSkid+0.25f, 0.35f, 1.0f) - 0.15f*saturate(sinf(m_curTime*1.25f)*8.0f - fTractionLevel);
 
-	m_pSkidSound->SetVolume( fSkidVol );
-	m_pSkidSound->SetPitch( fSkidPitch + wheelSkidPitchModifier*SKID_RADIAL_SOUNDPITCH_SCALE );
+	m_sounds[CAR_SOUND_SKID]->SetVolume( fSkidVol );
+	m_sounds[CAR_SOUND_SKID]->SetPitch( fSkidPitch + wheelSkidPitchModifier*SKID_RADIAL_SOUNDPITCH_SCALE );
 
 	//
 	// skip other sounds if that's not a car
@@ -3580,24 +3503,24 @@ void CCar::UpdateSounds( float fDt )
 
 	if(!m_sirenEnabled)
 	{
-		if((m_controlButtons & IN_HORN) && !(m_oldControlButtons & IN_HORN) && m_pHornSound->IsStopped())
+		if((m_controlButtons & IN_HORN) && !(m_oldControlButtons & IN_HORN) && m_sounds[CAR_SOUND_HORN]->IsStopped())
 		{
-			m_pHornSound->Play();
+			m_sounds[CAR_SOUND_HORN]->Play();
 		}
 		else if(!(m_controlButtons & IN_HORN) && (m_oldControlButtons & IN_HORN))
 		{
-			m_pHornSound->Stop();
+			m_sounds[CAR_SOUND_HORN]->Stop();
 		}
 	}
 
 	if(!m_enabled)
 	{
-		m_pEngineSound->Stop();
-		m_pEngineSoundLow->Stop();
-		m_pIdleSound->Stop();
+		m_sounds[CAR_SOUND_ENGINE_IDLE]->Stop();
+		m_sounds[CAR_SOUND_ENGINE]->Stop();
+		m_sounds[CAR_SOUND_ENGINE_LOW]->Stop();
 
-		if(m_pSirenSound)
-			m_pSirenSound->Stop();
+		if(m_sounds[CAR_SOUND_SIREN])
+			m_sounds[CAR_SOUND_SIREN]->Stop();
 
 		return;
 	}
@@ -3605,16 +3528,35 @@ void CCar::UpdateSounds( float fDt )
 	// update engine sound pitch by RPM value
 	float fRpmC = (m_fEngineRPM + 1300.0f) / 3300.0f;
 
-	m_pEngineSound->SetPitch(fRpmC);
-	m_pEngineSoundLow->SetPitch(fRpmC);
+	m_sounds[CAR_SOUND_ENGINE]->SetPitch(fRpmC);
+	m_sounds[CAR_SOUND_ENGINE_LOW]->SetPitch(fRpmC);
 
-	m_pIdleSound->SetPitch(1.0f + m_fEngineRPM / 4000.0f);
+	m_sounds[CAR_SOUND_ENGINE_IDLE]->SetPitch(1.0f + m_fEngineRPM / 4000.0f);
 
-	if(m_pEngineSound->IsStopped())
-		m_pEngineSound->Play();
+	if(m_sounds[CAR_SOUND_WHINE] != nullptr)
+	{
+		if(m_nGear == 0 )
+		{
+			if(m_sounds[CAR_SOUND_WHINE]->IsStopped())
+				m_sounds[CAR_SOUND_WHINE]->Play();
 
-	if(m_isLocalCar && m_pEngineSoundLow->IsStopped())
-		m_pEngineSoundLow->Play();
+			float wheelSpeedFac = -GetSpeedWheels()*0.2f;
+
+			m_sounds[CAR_SOUND_WHINE]->SetVolume(clamp(wheelSpeedFac*m_fAccelEffect, 0.0f, 1.0f));
+			m_sounds[CAR_SOUND_WHINE]->SetPitch(wheelSpeedFac);
+		}
+		else
+		{
+			if(!m_sounds[CAR_SOUND_WHINE]->IsStopped())
+				m_sounds[CAR_SOUND_WHINE]->Stop();
+		}
+	}
+
+	if(m_sounds[CAR_SOUND_ENGINE]->IsStopped())
+		m_sounds[CAR_SOUND_ENGINE]->Play();
+
+	if(m_isLocalCar && m_sounds[CAR_SOUND_ENGINE_LOW]->IsStopped())
+		m_sounds[CAR_SOUND_ENGINE_LOW]->Play();
 
 	m_engineIdleFactor = (clamp(2200.0f-m_fEngineRPM, 0.0f,2200.0f)/2200.0f);
 
@@ -3639,51 +3581,51 @@ void CCar::UpdateSounds( float fDt )
 		SetSoundVolumeScale(1.0f);
 #endif // EDITOR
 
-	m_pEngineSound->SetVolume(fEngineSoundVol * fRPMDiff);
+	m_sounds[CAR_SOUND_ENGINE]->SetVolume(fEngineSoundVol * fRPMDiff);
 
 	if(m_isLocalCar)
-		m_pEngineSoundLow->SetVolume(fEngineSoundVol * (1.0f-fRPMDiff));
+		m_sounds[CAR_SOUND_ENGINE_LOW]->SetVolume(fEngineSoundVol * (1.0f-fRPMDiff));
 
-	if(m_engineIdleFactor <= 0.05f && !m_pIdleSound->IsStopped())
+	if(m_engineIdleFactor <= 0.05f && !m_sounds[CAR_SOUND_ENGINE_IDLE]->IsStopped())
 	{
-		m_pIdleSound->Stop();
+		m_sounds[CAR_SOUND_ENGINE_IDLE]->Stop();
 	}
-	else if(m_engineIdleFactor > 0.05f && m_pIdleSound->IsStopped())
+	else if(m_engineIdleFactor > 0.05f && m_sounds[CAR_SOUND_ENGINE_IDLE]->IsStopped())
 	{
-		m_pIdleSound->Play();
+		m_sounds[CAR_SOUND_ENGINE_IDLE]->Play();
 	}
 
-	m_pIdleSound->SetVolume(m_engineIdleFactor);
+	m_sounds[CAR_SOUND_ENGINE_IDLE]->SetVolume(m_engineIdleFactor);
 
-	if( m_pSirenSound )
+	if( m_sounds[CAR_SOUND_SIREN] )
 	{
 		if(m_sirenEnabled != m_oldSirenState)
 		{
 			if(m_sirenEnabled)
 			{
-				m_pHornSound->Stop();
-				m_pSirenSound->Play();
+				m_sounds[CAR_SOUND_HORN]->Stop();
+				m_sounds[CAR_SOUND_SIREN]->Play();
 			}
 			else
-				m_pSirenSound->Stop();
+				m_sounds[CAR_SOUND_SIREN]->Stop();
 
 			m_oldSirenState = m_sirenEnabled;
 		}
 
 		if( m_sirenEnabled && IsAlive() )
 		{
-			int sampleId = m_pSirenSound->GetEmitParams().sampleId;
+			int sampleId = m_sounds[CAR_SOUND_SIREN]->GetEmitParams().sampleId;
 
 			if((m_controlButtons & IN_HORN) && sampleId == 0)
 				sampleId = 1;
 			else if(!(m_controlButtons & IN_HORN) && sampleId == 1)
 				sampleId = 0;
 
-			if( m_pSirenSound->GetEmitParams().sampleId != sampleId )
+			if( m_sounds[CAR_SOUND_SIREN]->GetEmitParams().sampleId != sampleId )
 			{
-				m_pSirenSound->Stop();
-				m_pSirenSound->GetEmitParams().sampleId = sampleId;
-				m_pSirenSound->Play();
+				m_sounds[CAR_SOUND_SIREN]->Stop();
+				m_sounds[CAR_SOUND_SIREN]->GetEmitParams().sampleId = sampleId;
+				m_sounds[CAR_SOUND_SIREN]->Play();
 			}
 		}
 	}
@@ -4046,79 +3988,78 @@ void CCar::Draw( int nRenderFlags )
 	if(!r_drawCars.GetBool())
 		return;
 
-	bool bDraw = true;
+	bool isBodyDrawn = true;
 
 #ifndef EDITOR
 	// don't render car
 	if(	g_pCameraAnimator->GetRealMode() == CAM_MODE_INCAR &&
 		g_pGameSession->GetViewCar() == this)
-		bDraw = false;
+		isBodyDrawn = false;
 #endif // EDITOR
-
-	CEqRigidBody* pCarBody = m_pPhysicsObject->m_object;
-
-	pCarBody->UpdateBoundingBoxTransform();
-	m_bbox = pCarBody->m_aabb_transformed;
 
 	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
 	int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
-	if(nLOD == 0 && !(nRenderFlags & RFLAG_SHADOW))
+	bool isShadowPass = (nRenderFlags & RFLAG_SHADOW);
+
+	if(!isShadowPass)
 	{
-		//
-		// SHADOW TEST CODE
-		//
-		if(bDraw)
-			DrawShadow(camDist);
+		CEqRigidBody* pCarBody = m_pPhysicsObject->m_object;
 
-		int numWheels = GetWheelCount();
+		pCarBody->UpdateBoundingBoxTransform();
+		m_bbox = pCarBody->m_aabb_transformed;
 
-		for(int i = 0; i < numWheels; i++)
+		if(nLOD == 0)
 		{
-			//Matrix4x4 w = m;
-			CCarWheel& wheel = m_wheels[i];
-			carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
+			int numWheels = GetWheelCount();
 
-			float wheelVisualPosFactor = wheel.m_collisionInfo.fract;
-
-			if(wheelVisualPosFactor < wheelConf.visualTop)
-				wheelVisualPosFactor = wheelConf.visualTop;
-
-			bool leftWheel = wheelConf.suspensionTop.x < 0.0f;
-
-			Vector3D wheelSuspDir = fastNormalize(wheelConf.suspensionTop - wheelConf.suspensionBottom);
-			Vector3D wheelCenterPos = lerp(wheelConf.suspensionTop, wheelConf.suspensionBottom, wheelVisualPosFactor) + wheelSuspDir*wheelConf.radius;
-
-			Quaternion wheelRotation = Quaternion(wheel.m_wheelOrient) * Quaternion(-wheel.m_pitch, leftWheel ? PI_F : 0.0f, 0.0f);
-
-			Matrix4x4 wheelScale = scale4(wheelConf.width,wheelConf.radius*2,wheelConf.radius*2);
-			Matrix4x4 wheelTranslation = m_worldMatrix*(translate(Vector3D(wheelCenterPos - Vector3D(wheelConf.woffset, 0, 0))) * Matrix4x4(wheelRotation) * wheelScale);
-
-			if(bDraw)
+			for(int i = 0; i < numWheels; i++)
 			{
-				wheel.SetOrigin(transpose(wheelTranslation).getTranslationComponent());
+				//Matrix4x4 w = m;
+				CCarWheel& wheel = m_wheels[i];
+				carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
 
+				float wheelVisualPosFactor = wheel.m_collisionInfo.fract;
+
+				if(wheelVisualPosFactor < wheelConf.visualTop)
+					wheelVisualPosFactor = wheelConf.visualTop;
+
+				bool leftWheel = wheelConf.suspensionTop.x < 0.0f;
+
+				Vector3D wheelSuspDir = fastNormalize(wheelConf.suspensionTop - wheelConf.suspensionBottom);
+				Vector3D wheelCenterPos = lerp(wheelConf.suspensionTop, wheelConf.suspensionBottom, wheelVisualPosFactor) + wheelSuspDir*wheelConf.radius;
+
+				Quaternion wheelRotation = Quaternion(wheel.m_wheelOrient) * Quaternion(-wheel.m_pitch, leftWheel ? PI_F : 0.0f, 0.0f);
+
+				Matrix4x4 wheelScale = scale4(wheelConf.width,wheelConf.radius*2,wheelConf.radius*2);
+				Matrix4x4 wheelTranslation = m_worldMatrix*(translate(Vector3D(wheelCenterPos - Vector3D(wheelConf.woffset, 0, 0))) * Matrix4x4(wheelRotation) * wheelScale);
+
+				wheel.SetOrigin(transpose(wheelTranslation).getTranslationComponent());
 				wheel.m_bbox = m_bbox;
 				wheel.m_worldMatrix = wheelTranslation;
 
-				wheel.Draw(nRenderFlags);
+				if(isBodyDrawn)
+				{
+					wheel.Draw(nRenderFlags);
+				}
 			}
 
-		}
-	}
+			if(isBodyDrawn)
+			{
+				DrawShadow(camDist);
 
-	if(!(nRenderFlags & RFLAG_SHADOW))
-	{
+				if(m_hasDriver)
+				{
+					m_driverModel.m_worldMatrix = m_worldMatrix * translate(m_conf->visual.driverPosition);
+					m_driverModel.Draw( nRenderFlags );
+				}
+			}
+		}
+
 		DrawEffects( nLOD );
-
-		if(m_hasDriver && nLOD == 0)
-		{
-			m_driverModel.m_worldMatrix = m_worldMatrix * translate(m_conf->visual.driverPosition);
-			m_driverModel.Draw( nRenderFlags );
-		}
 	}
 
-	if (bDraw)
+	if (isBodyDrawn)
 	{
 		materials->SetMatrix( MATRIXMODE_WORLD, m_worldMatrix);
 
@@ -4127,13 +4068,20 @@ void CCar::Draw( int nRenderFlags )
 	}
 }
 
-CGameObject*  CCar::GetChildShadowCaster(int idx) const
+CGameObject* CCar::GetChildShadowCaster(int idx) const
 {
 	return &m_wheels[idx];
 }
 
 int CCar::GetChildCasterCount() const
 {
+#ifndef EDITOR
+	// don't render car
+	if(	g_pCameraAnimator->GetRealMode() == CAM_MODE_INCAR &&
+		g_pGameSession->GetViewCar() == this)
+		return 0;
+#endif // EDITOR
+
 	return m_conf->physics.numWheels;
 }
 
