@@ -434,7 +434,10 @@ void DkSoundSystemLocal::Update()
 		sndChannel_t* chnl = m_pChannels[i];
 
 		if(!chnl->emitter)
+		{
+			alSourceRewind(chnl->alSource);
 			continue;
+		}
 
 		nChannelsInUse++;
 
@@ -464,6 +467,7 @@ void DkSoundSystemLocal::Update()
 			// and if it was stopped it drops channel
 			if(chnl->alState == AL_STOPPED)
 			{
+				alSourceRewind(chnl->alSource);
 				chnl->alState = AL_STOPPED;
 				chnl->emitter->m_nChannel = -1;
 				chnl->emitter = NULL;

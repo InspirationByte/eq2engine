@@ -243,7 +243,7 @@ public:
 	CGameLevel*						m_level;
 };
 
-Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regionObject_t* ref);
+Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regionObject_t* ref, const Vector3D& addRotation = vec3_zero);
 
 
 #endif // REGION_H

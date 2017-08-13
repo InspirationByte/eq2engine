@@ -20,7 +20,7 @@ namespace equi
 
 IUIControl::IUIControl()
 	: m_visible(false), m_selfVisible(true), m_enabled(true), m_parent(NULL), 
-	m_font(NULL), m_sizeDiff(0), m_sizeDiffPerc(1.0f), 
+	m_font(nullptr), m_sizeDiff(0), m_sizeDiffPerc(1.0f), 
 	m_scaling(UI_SCALING_NONE), m_anchors(0), m_alignment(UI_BORDER_LEFT | UI_BORDER_TOP)
 {
 
@@ -33,6 +33,8 @@ IUIControl::~IUIControl()
 
 void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 {
+	ClearChilds(true);
+
 	if(!stricmp(sec->GetName(), "child"))
 		SetName(KV_GetValueString(sec, 1, ""));
 	else
@@ -44,6 +46,13 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 
 	m_visible = KV_GetValueBool(sec->FindKeyBase("visible"), 0, true);
 	m_selfVisible = KV_GetValueBool(sec->FindKeyBase("selfvisible"), 0, true);
+
+	m_font = nullptr;
+	m_sizeDiff = 0;
+	m_sizeDiffPerc = 1.0f;
+	m_scaling = UI_SCALING_NONE;
+	m_anchors = 0;
+	m_alignment = (UI_BORDER_LEFT | UI_BORDER_TOP);
 
 	kvkeybase_t* font = sec->FindKeyBase("font");
 

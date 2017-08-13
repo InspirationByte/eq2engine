@@ -53,6 +53,9 @@ void Panel::InitFromKeyValues( kvkeybase_t* sec )
 	m_windowControls = KV_GetValueBool(mainSec->FindKeyBase("window"), 0, false);
 	m_visible = KV_GetValueBool(mainSec->FindKeyBase("visible"), 0, !m_windowControls);
 	m_screenOverlay = KV_GetValueBool(mainSec->FindKeyBase("screenoverlay"), 0, false);
+	m_grabbed = false;
+	m_closeButton = nullptr;
+	m_labelCtrl = nullptr;
 
 	if(m_windowControls)
 	{

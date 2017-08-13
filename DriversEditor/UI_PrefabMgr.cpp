@@ -8,6 +8,8 @@
 #include "UI_PrefabMgr.h"
 #include "EditorLevel.h"
 
+#include "world.h"
+
 CUI_PrefabManager::CUI_PrefabManager( wxWindow* parent ) : wxPanel( parent, -1, wxDefaultPosition, wxDefaultSize )
 {
 	wxBoxSizer* bSizer10;
@@ -68,7 +70,7 @@ CUI_PrefabManager::CUI_PrefabManager( wxWindow* parent ) : wxPanel( parent, -1, 
 	m_editbtn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CUI_PrefabManager::OnEditPrefabClick ), NULL, this );
 	m_delbtn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CUI_PrefabManager::OnDeletePrefabClick ), NULL, this );
 
-	m_mode = EPREFAB_READY;
+	m_mode = PREFAB_READY;
 }
 
 CUI_PrefabManager::~CUI_PrefabManager()
@@ -109,9 +111,39 @@ void CUI_PrefabManager::OnDeletePrefabClick( wxCommandEvent& event )
 }
 
 // IEditorTool stuff
-void CUI_PrefabManager::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos  )
+void CUI_PrefabManager::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos )
 {
+	IVector2D globalTile;
+	g_pGameWorld->m_level.LocalToGlobalPoint(IVector2D(tx,ty), m_selectedRegion, globalTile);
 
+	if(m_mode == PREFAB_TILESELECTION && event.Dragging())
+	{
+		m_tileSelection.Reset();
+		m_tileSelection.AddVertex(globalTile);
+		m_tileSelection.AddVertex(m_startPoint);
+	}
+
+	if(event.ButtonDown(wxMOUSE_BTN_LEFT))
+	{
+		if(m_mode == PREFAB_READY)
+		{
+			m_tileSelection.Reset();
+
+			m_mode = PREFAB_TILESELECTION;
+			m_startPoint = globalTile;
+		}
+	}
+	else if(event.ButtonUp(wxMOUSE_BTN_LEFT))
+	{
+		if(m_mode == PREFAB_TILESELECTION)
+		{
+			m_tileSelection.Reset();
+			m_tileSelection.AddVertex(globalTile);
+			m_tileSelection.AddVertex(m_startPoint);
+
+			m_mode = PREFAB_READY;
+		}
+	}
 }
 
 void CUI_PrefabManager::OnKey(wxKeyEvent& event, bool bDown)
@@ -130,6 +162,15 @@ void CUI_PrefabManager::OnRender()
 		field->DebugRender(false, m_mouseOverTileHeight);
 	}
 
+	Vector3D bboxMin = g_pGameWorld->m_level.GlobalTilePointToPosition(m_tileSelection.vleftTop);
+	Vector3D bboxMax = g_pGameWorld->m_level.GlobalTilePointToPosition(m_tileSelection.vrightBottom);
+
+	BoundingBox bbox;
+	bbox.AddVertex(bboxMin);
+	bbox.AddVertex(bboxMax);
+
+	debugoverlay->Box3D(bbox.minPoint-HFIELD_POINT_SIZE*0.5f, bbox.maxPoint+HFIELD_POINT_SIZE*0.5f, ColorRGBA(1,1,0,1), 0.0f);
+
 	CBaseTilebasedEditor::OnRender();
 }
 
@@ -140,7 +181,7 @@ void CUI_PrefabManager::OnLevelUnload()
 
 void CUI_PrefabManager::OnLevelLoad()
 {
-
+	m_mode = PREFAB_READY;
 }
 
 void CUI_PrefabManager::InitTool()

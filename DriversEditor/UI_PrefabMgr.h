@@ -15,9 +15,9 @@
 
 enum EPrefabManagerMode
 {
-	EPREFAB_READY = 0,
-	EPREFAB_PLACEMENT,		// placing the prefab
-	EPREFAB_TILESELECTION,	// selecting the tiles which gonna be saved to prefab lev file
+	PREFAB_READY = 0,
+	PREFAB_PLACEMENT,		// placing the prefab
+	PREFAB_TILESELECTION,	// selecting the tiles which gonna be saved to prefab lev file
 };
 
 class CUI_PrefabManager : public wxPanel, public CBaseTilebasedEditor
@@ -46,13 +46,15 @@ protected:
 	IRectangle					m_tileSelection;
 	EPrefabManagerMode			m_mode;
 
+	IVector2D					m_startPoint;
+
 	wxListBox* m_prefabList;
 	wxTextCtrl* m_filtertext;
 	wxButton* m_newbtn;
 	wxButton* m_editbtn;
 	wxButton* m_delbtn;
 
-	CGameLevel m_selPrefab;
+	CGameLevel* m_selPrefab;
 		
 	// Virtual event handlers, overide them in your derived class
 	virtual void OnBeginPrefabPlacement( wxCommandEvent& event );

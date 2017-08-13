@@ -1006,6 +1006,7 @@ CUI_LevelModels::CUI_LevelModels( wxWindow* parent ) : wxPanel( parent, -1, wxDe
 
 	m_rotation = 0;
 	m_isSelecting = false;
+	m_draggedAxes = 0;
 
 	m_last_tx = 0;
 	m_last_ty = 0;
@@ -1013,6 +1014,7 @@ CUI_LevelModels::CUI_LevelModels( wxWindow* parent ) : wxPanel( parent, -1, wxDe
 	m_editMode = MEDIT_PLACEMENT;
 
 	m_dragOffs = vec3_zero;
+	m_dragRot = vec3_zero;
 	m_dragPrevMove = 0.0f;
 }
 
@@ -1378,9 +1380,16 @@ void CUI_LevelModels::MouseTranslateEvents( wxMouseEvent& event, const Vector3D&
 	{
 		m_draggedAxes = 0;
 		m_dragOffs = vec3_zero;
+		m_dragRot = vec3_zero;
 
 		RecalcSelectionCenter();
 	}
+}
+
+int wrapIndex(int i, int l)
+{
+	const int m = i % l;
+	return m < 0 ? m + l : m;
 }
 
 void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ray_start, const Vector3D& ray_dir )
@@ -1391,7 +1400,7 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 	// display selection
 	float clength = length(m_editAxis.m_position-g_camera_target);
 
-	Vector3D plane_dir = normalize(m_editAxis.m_position-g_camera_target);
+	//Vector3D plane_dir = normalize(m_editAxis.m_position-g_camera_target);
 
 	if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
 	{
@@ -1399,10 +1408,15 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 
 		if(m_draggedAxes == 0)
 		{
-			m_draggedAxes = m_editAxis.TestRay(ray_start, ray_dir, clength);
+			m_draggedAxes = m_editAxis.TestRay(ray_start, ray_dir, clength, false);
 			isSet = true;
 		}
 
+		int axisId =	(m_draggedAxes & AXIS_X) ? 0 : 
+						(m_draggedAxes & AXIS_Y) ? 1 : 
+						(m_draggedAxes & AXIS_Z) ? 2 : -1;
+
+		if(axisId != -1)
 		{
 			// process movement
 			Vector3D axsMod((m_draggedAxes & AXIS_X) ? 1.0f : 0.0f,
@@ -1414,76 +1428,51 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 										dot(m_editAxis.m_rotation.rows[2],axsMod));
 
 			// absolute
-			edAxis *= sign(edAxis);
+			Vector3D planeEdAxis = edAxis*sign(edAxis);
 
-
-
-			g_pMainFrame->NotifyUpdate();
-
-			/*
 			// movement plane
-			Plane pl(plane_dir, -dot(plane_dir, m_editAxis.m_position));
+			Plane pl(planeEdAxis, -dot(planeEdAxis, m_editAxis.m_position));
 
 			Vector3D point;
 
 			if( pl.GetIntersectionWithRay(ray_start, ray_dir, point) )
 			{
-				if(isSet)
-				{
-					m_dragOffs = m_editAxis.m_position-point;
-					m_dragPos = m_dragOffs;
-				}
+				Vector3D dirVec = normalize(m_editAxis.m_position-point);
+				Vector3D rDirVec = cross(planeEdAxis, dirVec);
 
-				m_dragPos = m_editAxis.m_position-point;
+				Matrix3x3 rotation(rDirVec, planeEdAxis, dirVec);
 
-				Vector3D movement = (point-m_editAxis.m_position) + m_dragOffs;
+				axisId+=2;
+				Matrix3x3 counterRotation(m_editAxis.m_rotation.rows[wrapIndex(axisId, 3)], m_editAxis.m_rotation.rows[wrapIndex(axisId+1, 3)], m_editAxis.m_rotation.rows[wrapIndex(axisId+2, 3)]);
 
-				movement *= edAxis;
-
-				float diffMove = m_dragPrevMove - length(movement);
-
-				m_dragPrevMove = length(movement);
-
-				m_dragPos += movement;
-
-				Matrix3x3 addRot;
-
-				if(m_draggedAxes & AXIS_X)
-					addRot = rotateX3( DEG2RAD(diffMove) );
-				else if(m_draggedAxes & AXIS_Y)
-					addRot = rotateY3( DEG2RAD(diffMove) );
-				else if(m_draggedAxes & AXIS_Z)
-					addRot = rotateZ3( DEG2RAD(diffMove) );
-
-				m_editAxis.m_rotation = m_editAxis.m_rotation*addRot;
-
-				for(int i = 0; i < m_selRefs.numElem(); i++)
-				{
-					Vector3D eulRot = m_selRefs[i].selRef->rotation;
-					eulRot = VDEG2RAD(eulRot);
-
-					// move all
-					Matrix3x3 rot = rotateXYZ3(eulRot.x,eulRot.y,eulRot.z);
-
-					rot = rot * addRot;
-
-					eulRot = EulerMatrixXYZ(rot);
-					m_selRefs[i].selRef->rotation = VRAD2DEG(eulRot);
-
-#pragma todo("Relocate model in a level regions after movement (or left mouse UP)")
-				}
-
-				g_pMainFrame->NotifyUpdate();
+				Vector3D eulerAngles = EulerMatrixXYZ(!counterRotation*rotation);
+				m_dragRot = -VRAD2DEG(eulerAngles);
+				m_dragRot.z *= -1.0f;
 			}
-			*/
+			
 		}
 	}
 
 	if(event.ButtonUp(wxMOUSE_BTN_LEFT))
 	{
+		for(int i = 0; i < m_selRefs.numElem(); i++)
+		{
+			regionObject_t* ref = m_selRefs[i].selRef;
+
+			Matrix3x3 m = rotateXYZ3(DEG2RAD(ref->rotation.x), DEG2RAD(ref->rotation.y), DEG2RAD(ref->rotation.z));
+			m = rotateXYZ3(DEG2RAD(m_dragRot.x), DEG2RAD(m_dragRot.y), DEG2RAD(m_dragRot.z))*m;
+
+			ref->rotation = EulerMatrixXYZ(m);
+			ref->rotation = VRAD2DEG(ref->rotation);
+		}
+
 		m_draggedAxes = 0;
 		m_dragOffs = vec3_zero;
 		m_dragPrevMove = 0.0f;
+		m_dragRot = vec3_zero;
+
+		RecalcSelectionCenter();
+		g_pMainFrame->NotifyUpdate();
 	}
 }
 
@@ -1747,7 +1736,7 @@ void CUI_LevelModels::OnRender()
 
 			bbox.Merge(selectionRef->bbox);
 
-			Matrix4x4 wmatrix = GetModelRefRenderMatrix(m_selRefs[i].selRegion, selectionRef);
+			Matrix4x4 wmatrix = GetModelRefRenderMatrix(m_selRefs[i].selRegion, selectionRef, m_dragRot);
 
 			// render
 			materials->SetCullMode(CULL_BACK);

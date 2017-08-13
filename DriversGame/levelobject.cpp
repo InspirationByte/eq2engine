@@ -134,9 +134,19 @@ void CLevObjectDef::Render( float lodDistance, const BoundingBox& bbox, bool pre
 
 		int nStartLOD = m_defModel->SelectLod( lodDistance ); // lod distance check
 
+#ifdef EDITOR
+		int m_bodyGroupFlags = 0x1;
+#else
+		int m_bodyGroupFlags = 0xFFFFFFFf;
+#endif // EDITOR
+
 		studiohdr_t* pHdr = m_defModel->GetHWData()->pStudioHdr;
 		for(int i = 0; i < pHdr->numbodygroups; i++)
 		{
+			// check bodygroups for rendering
+			if(!(m_bodyGroupFlags & (1 << i)))
+				continue;
+
 			int bodyGroupLOD = nStartLOD;
 			int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
 			studiolodmodel_t* lodModel = pHdr->pLodModel(nLodModelIdx);

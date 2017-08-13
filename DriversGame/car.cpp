@@ -3532,7 +3532,7 @@ void CCar::UpdateSounds( float fDt )
 
 	m_sounds[CAR_SOUND_ENGINE_IDLE]->SetPitch(1.0f + m_fEngineRPM / 4000.0f);
 
-	if(m_sounds[CAR_SOUND_WHINE] != nullptr)
+	if(m_sounds[CAR_SOUND_WHINE] != nullptr && IsDriveWheelsOnGround())
 	{
 		if(m_nGear == 0 )
 		{
@@ -3789,6 +3789,23 @@ bool CCar::IsAnyWheelOnGround() const
 
 	return false;
 }
+
+bool CCar::IsDriveWheelsOnGround() const
+{
+	int numWheels = GetWheelCount();
+
+	for(int i = 0; i < numWheels; i++)
+	{
+		if(!(m_conf->physics.wheels[i].flags & WHEEL_FLAG_DRIVE))
+			continue;
+
+		if(m_wheels[i].m_collisionInfo.fract < 1.0f)
+			return true;
+	}
+
+	return false;
+}
+
 
 ConVar r_drawCars("r_drawCars", "1", "Render vehicles", CV_CHEAT);
 

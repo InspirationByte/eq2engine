@@ -620,13 +620,34 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 
 				def->m_defKeyvalues = new kvkeybase_t();
 				def->m_defKeyvalues->MergeFrom( foundDef, true );
+
+				
+
 #ifdef EDITOR
 				LoadDefLightData(def->m_lightData, foundDef);
-#endif // EDITOR
 
-				// try precache model
-				int modelIdx = g_pModelCache->PrecacheModel( KV_GetValueString(foundDef->FindKeyBase("model"), 0, "models/error.egf"));
-				def->m_defModel = g_pModelCache->GetModel(modelIdx);
+				kvkeybase_t* editorModelKey = foundDef->FindKeyBase("editormodel");
+
+				// use editor model
+				if(editorModelKey)
+				{
+					// try precache model
+					int modelIdx = g_pModelCache->PrecacheModel( KV_GetValueString(editorModelKey));
+					def->m_defModel = g_pModelCache->GetModel(modelIdx);
+				}
+				else
+#endif // EDITOR
+				{
+					kvkeybase_t* modelKey = foundDef->FindKeyBase("model");
+
+					// try precache model
+					if(modelKey)
+					{
+						// try precache model
+						int modelIdx = g_pModelCache->PrecacheModel( KV_GetValueString(modelKey));
+						def->m_defModel = g_pModelCache->GetModel(modelIdx);
+					}
+				}
 			}
 			else
 			{

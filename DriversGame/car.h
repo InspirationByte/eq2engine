@@ -462,6 +462,7 @@ public:
 	void					SetColorScheme( int colorIdx );
 
 	bool					IsAnyWheelOnGround() const;
+	bool					IsDriveWheelsOnGround() const;
 
 	float					GetSpeedWheels() const;
 	float					GetSpeed() const;

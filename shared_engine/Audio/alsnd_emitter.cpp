@@ -106,8 +106,8 @@ bool DkSoundEmitterLocal::DropChannel()
 	sndChannel_t *chnl = pSoundSystem->m_pChannels[m_nChannel];
 
 	// stop the sound
-	alSourceStop(chnl->alSource);
 	alSourceRewind(chnl->alSource);
+	alSourceStop(chnl->alSource);
 	alSourcei(chnl->alSource, AL_BUFFER, AL_NONE);
 
 	chnl->alState = AL_STOPPED;
