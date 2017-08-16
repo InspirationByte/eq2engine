@@ -88,7 +88,7 @@ private:
 	IIndexBuffer*		m_pIB;
 
 	// array of material index for each group
-	IMaterial*			m_pMaterials[MAX_STUDIOGROUPS];
+	IMaterial*			m_pMaterials[MAX_STUDIOMATERIALS];
 
 	bool				m_bSoftwareSkinned;
 	bool				m_bSoftwareSkinChanged;

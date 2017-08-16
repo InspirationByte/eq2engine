@@ -93,5 +93,4 @@ void FreeDSMBones(dsmmodel_t* model);
 
 int GetTotalVertsOfDSM(dsmmodel_t* model);
 
-
 #endif // DSM_LOADER_H

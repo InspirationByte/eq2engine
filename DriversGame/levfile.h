@@ -109,7 +109,7 @@ ALIGNED_TYPE(levObjectDefInfo_s,4) levObjectDefInfo_t;
 enum ECellObjectFlags
 {
 	CELLOBJ_REGION_DEF		= (1 << 0),	// region def
-	CELLOBJ_GENERATED		= (1 << 0),	// could be regenerated in editor
+	CELLOBJ_GENERATED		= (1 << 1),	// could be regenerated in editor
 };
 
 // region cell model object

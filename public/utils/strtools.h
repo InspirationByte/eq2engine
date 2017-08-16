@@ -27,6 +27,9 @@
 
 #endif // _WIN32
 
+static const char CORRECT_PATH_SEPARATOR_STR[2] = {CORRECT_PATH_SEPARATOR, '\0'};
+static const char INCORRECT_PATH_SEPARATOR_STR[2] = {INCORRECT_PATH_SEPARATOR, '\0'};
+
 #ifdef PLAT_POSIX
 
 #include <ctype.h>

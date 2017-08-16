@@ -217,9 +217,9 @@ Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regionObject_t* ref, const 
 
 	Vector3D addHeight(0.0f);
 
-	CLevObjectDef* objectDef = ref->def;;
+	CLevObjectDef* objectDef = ref->def;
 
-	if(objectDef != NULL && objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG)
+	if(objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG && objectDef->m_defModel != NULL)
 		addHeight.y = -objectDef->m_defModel->GetAABB().minPoint.y;
 
 	if(ref->tile_x!= 0xFFFF)

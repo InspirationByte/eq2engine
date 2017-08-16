@@ -18,7 +18,8 @@
 #include "IFileSystem.h"
 #include <iostream>
 #include <malloc.h>
-#include "model.h"
+
+#include "EGFGenerator.h"
 
 #ifdef _WIN32
 #include <tchar.h>
@@ -30,7 +31,24 @@
 
 ConVar cv_cheats("__cheats","1","Enable cheats",CV_INITONLY | CV_INVISIBLE);
 
-extern bool CompileESCScript(const char* name);
+bool CompileESCScript(const char* filename)
+{
+	CEGFGenerator generator;
+
+	// preprocess scripts
+	if(!generator.InitFromKeyValues(filename))
+		return false;
+
+	// generate EGF file
+	if(!generator.GenerateEGF())
+		return false;
+
+	// generate POD file
+	if(!generator.GeneratePOD())
+		return false;
+
+	return true;
+}
 
 ConVar c_filename("filename","none","script file name", 0);
 //ConVar c_convert("convert","0","converts to the latest model version", 0);
@@ -81,7 +99,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			MsgError("Compilation failed\n  Please run with +developer 1\n");
+			MsgError("Compilation failed\n  Please run with +developer 1 for additional information\n");
 		}
 	}
 

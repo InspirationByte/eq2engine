@@ -2049,6 +2049,11 @@ void CCar::OnPrePhysicsFrame(float fDt)
 bool CCar::UpdateWaterState( float fDt, bool hasCollidedWater )
 {
 	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
+	
+	// if body frozen, return previous state
+	if(carBody->IsFrozen())
+		return m_inWater;
+
 	Vector3D carPos = carBody->GetPosition();
 
 	Vector3D waterNormal = vec3_up; // FIXME: calculate like I do in shader

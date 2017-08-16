@@ -23,7 +23,7 @@
 
 // some definitions
 
-enum EGFPrimType_e
+enum EEGFPrimType
 {
 	EGFPRIM_INVALID			= -1,
 	EGFPRIM_TRIANGLES		= PRIM_TRIANGLES,
@@ -37,13 +37,13 @@ enum EGFPrimType_e
 
 // LIMITS for all model formats
 
-#define MAX_IKCHAIN_BONES	32		// tweak this if your "tail" longer than 32 bones
-
-#define MAX_MODELLODS		8		// maximum lods per model
-
-#define MAX_MOTIONPACKAGES	8		// maximum allowed motion packages to be used in model
-
-#define MAX_STUDIOGROUPS	32		// maximum allowed materials in model
+enum EEGFLimits
+{
+	MAX_IKCHAIN_BONES	=	32,		// tweak this if your "tail" longer than 32 bones
+	MAX_MODELLODS		=	8,		// maximum lods per model
+	MAX_MOTIONPACKAGES	=	8,		// maximum allowed motion packages to be used in model
+	MAX_STUDIOMATERIALS	=	32,		// maximum allowed materials in model
+};
 
 // Base model header
 struct basemodelheader_s

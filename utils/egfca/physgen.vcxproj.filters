@@ -4,47 +4,74 @@
     <Filter Include="Libs">
       <UniqueIdentifier>{54b96b2f-ae9c-4b2b-a658-830aa6b004a4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="utils">
+    <Filter Include="actc">
+      <UniqueIdentifier>{88bda2d0-6f19-4236-a77c-c9386fd8769f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public">
+      <UniqueIdentifier>{cf09eb75-0b9c-4313-861f-5460454ea677}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\math">
+      <UniqueIdentifier>{7f5300e2-131c-4731-8216-9e4214a328cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\utils">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>
       </Extensions>
     </Filter>
-    <Filter Include="actc">
-      <UniqueIdentifier>{88bda2d0-6f19-4236-a77c-c9386fd8769f}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="physgen_process.cpp" />
     <ClCompile Include="egfca_main.cpp" />
-    <ClCompile Include="scriptcompile.cpp" />
-    <ClCompile Include="write.cpp" />
-    <ClCompile Include="..\..\public\dsm_loader.cpp" />
-    <ClCompile Include="..\..\public\dsm_obj_loader.cpp" />
     <ClCompile Include="..\..\public\mtriangle_framework.cpp">
-      <Filter>utils</Filter>
+      <Filter>public\utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\public\dsm_esm_loader.cpp" />
     <ClCompile Include="..\..\public\Utils\GeomTools.cpp">
-      <Filter>utils</Filter>
+      <Filter>public\utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\public\math\math_util.cpp" />
-    <ClCompile Include="..\actc\tc.c">
+    <ClCompile Include="..\..\public\math\math_util.cpp">
+      <Filter>public\math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\dsm_esm_loader.cpp">
+      <Filter>public</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\dsm_loader.cpp">
+      <Filter>public</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\dsm_obj_loader.cpp">
+      <Filter>public</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\EGFGenerator.cpp">
+      <Filter>public</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\EGFGenerator_Write.cpp">
+      <Filter>public</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\EGFPhysicsGenerator.cpp">
+      <Filter>public</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src_dependency\actc\tc.c">
       <Filter>actc</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="physgen_process.h" />
-    <ClInclude Include="..\..\public\physmodel.h" />
-    <ClInclude Include="scriptcompile.h" />
-    <ClInclude Include="..\..\public\eqmodel.h" />
-    <ClInclude Include="..\..\public\model.h" />
-    <ClInclude Include="..\..\public\dsm_loader.h" />
-    <ClInclude Include="..\..\public\dsm_obj_loader.h" />
-    <ClInclude Include="..\..\public\dsm_esm_loader.h" />
     <ClInclude Include="..\..\public\Utils\GeomTools.h">
-      <Filter>utils</Filter>
+      <Filter>public\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\actc\tc.h">
+    <ClInclude Include="..\..\public\dsm_esm_loader.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\dsm_loader.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\dsm_obj_loader.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\EGFGenerator.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\EGFPhysicsGenerator.h">
+      <Filter>public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src_dependency\actc\tc.h">
       <Filter>actc</Filter>
     </ClInclude>
   </ItemGroup>

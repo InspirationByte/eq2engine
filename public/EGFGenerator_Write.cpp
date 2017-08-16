@@ -10,36 +10,22 @@
 #ifdef USE_ACTC
 extern "C"
 {
-#	include "../actc/tc.h"
+#	include "tc.h"
 }
 #endif // USE_ACTC
 
 #include "core_base_header.h"
 
-#include "scriptcompile.h"
+#include "EGFGenerator.h"
+
 #include "utils/geomtools.h"
+#include "VirtualStream.h"
 
 #include "dsm_esm_loader.h"
 
 #include "mtriangle_framework.h"
 
-// extern compilation-time data
-extern DkList<egfcamodel_t>			g_modelrefs;	// all loaded model references
-extern DkList<clodmodel_t>			g_modellodrefs;	// all LOD reference models including main LOD
-extern DkList<studiolodparams_t>	g_lodparams;	// lod parameters
-extern DkList<materialpathdesc_t>	g_matpathes;	// material paths
-extern DkList<ikchain_t>			g_ikchains;		// ik chain list
-extern DkList<cbone_t>				g_bones;		// bone list
-extern DkList<studioattachment_t>	g_attachments;	// attachment list
-extern DkList<studiobodygroup_t>	g_bodygroups;	// body group list
-extern DkList<studiomaterialdesc_t>	g_materials;	// materials that this model uses
-extern DkList<motionpackagedesc_t>	g_motionpacks;
-
-extern bool g_notextures;
-
-// EGF file buffer
-#define FILEBUFFER_EQGF (16 * 1024 * 1024)
-
+/*
 // data pointers
 static ubyte *pData;
 static ubyte *pStart;
@@ -63,7 +49,16 @@ void WriteAdvance(void* data, int size)
 	pData += size;
 
 	g_hdr->length = (pData - pStart);
-}
+}*/
+
+// EGF file buffer
+#define FILEBUFFER_EQGF (16 * 1024 * 1024)
+
+#define WTYPE_ADVANCE(type)				stream->Seek(sizeof(type), VS_SEEK_CUR)
+#define WTYPE_ADVANCE_NUM(type, num)	stream->Seek(sizeof(type)*num, VS_SEEK_CUR)
+
+#define WRITE_OFS						stream->Tell()		// write offset over header
+#define OBJ_WRITE_OFS(obj)				(stream->Tell() - ((ubyte*)obj - stream->GetBasePointer()))	// write offset over object
 
 //---------------------------------------------------------------------------------------
 
@@ -188,22 +183,21 @@ void ApplyShapeKeyOnVertex( esmshapekey_t* modShapeKey, const dsmvertex_t& vert,
 
 void ReverseStrip(int* indices, int len)
 {
-   unsigned int i;
-   int* original = new int[len];
-   memcpy(original, indices, len*sizeof(int));
+	int* original = new int[len];
+	memcpy(original, indices, len*sizeof(int));
 
-   for (i = 0; i != len; ++i)
-      indices[i] = original[len-1-i];
+	for (int i = 0; i != len; ++i)
+		indices[i] = original[len-1-i];
 
-   delete [] original;
+	delete [] original;
 }
 
 // writes group
-void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc_t* dstGroup)
+void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc_t* dstGroup)
 {
 	int material_index = -1;
 	
-	if(g_notextures == false)
+	if(m_notextures == false)
 		material_index = GetMaterialIndex( srcGroup->texture );
 
 	// DSM groups to be generated indices and optimized here
@@ -215,8 +209,6 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 
 	dstGroup->numindices = 0;
 	dstGroup->numvertices = srcGroup->verts.numElem();
-
-
 
 	DkList<studiovertexdesc_t>	gVertexList;
 	DkList<studiovertexdesc_t>	gVertexList2;
@@ -346,7 +338,7 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 	MsgInfo("phase 1: adding triangles to optimizer\n");
 
 	// input all indices
-	for(uint32 i = 0; i < gIndexList.numElem(); i+=3)
+	for(int i = 0; i < gIndexList.numElem(); i+=3)
 		actcAddTriangle(tc, gIndexList[i], gIndexList[i+1], gIndexList[i+2]);
 
 	actcEndInput(tc);
@@ -361,7 +353,7 @@ void WriteGroup(dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc
 	int stripLength = 0;
 	int primCount = 0;
 
-	int evenPrimitives = 0;
+	//int evenPrimitives = 0;
 
 	actcBeginOutput(tc);
 	while(prim = actcStartNextPrim(tc, &v1, &v2) != ACTC_DATABASE_EMPTY)
@@ -452,45 +444,47 @@ skipOptimize:
 //************************************
 // Writes models
 //************************************
-void WriteModels()
+void CEGFGenerator::WriteModels(CMemoryStream* stream)
 {
+	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
+
 	// Write models
-	g_hdr->modelsoffset = WRITE_OFS;
-	g_hdr->nummodels = g_modelrefs.numElem();
+	header->modelsoffset = WRITE_OFS;
+	header->nummodels = m_modelrefs.numElem();
 
 	// move offset forward, to not overwrite the studiomodeldescs
-	WTYPE_ADVANCE_NUM( studiomodeldesc_t, g_modelrefs.numElem() );
+	WTYPE_ADVANCE_NUM( studiomodeldesc_t, m_modelrefs.numElem() );
 
 	//WRT_TEXT("MODELS OFFSET");
 
-	for(int i = 0; i < g_modelrefs.numElem(); i++)
+	for(int i = 0; i < m_modelrefs.numElem(); i++)
 	{
-		studiomodeldesc_t* pDesc = g_hdr->pModelDesc(i);
+		studiomodeldesc_t* pDesc = header->pModelDesc(i);
 
-		pDesc->numgroups = g_modelrefs[i].model->groups.numElem();
+		pDesc->numgroups = m_modelrefs[i].model->groups.numElem();
 		pDesc->groupsoffset = OBJ_WRITE_OFS( pDesc );
 
 		//Msg("Write offset: %d, structure offset: %d\n", WRITE_OFS, ((ubyte*)pDesc - pStart));
 
 		// skip headers
-		WTYPE_ADVANCE_NUM( modelgroupdesc_t, g_hdr->pModelDesc(i)->numgroups );
+		WTYPE_ADVANCE_NUM( modelgroupdesc_t, header->pModelDesc(i)->numgroups );
 	}
 
 	//WRT_TEXT("MODEL GROUPS OFFSET");
 
-	for(int i = 0; i < g_modelrefs.numElem(); i++)
+	for(int i = 0; i < m_modelrefs.numElem(); i++)
 	{
-		studiomodeldesc_t* pDesc = g_hdr->pModelDesc(i);
+		studiomodeldesc_t* pDesc = header->pModelDesc(i);
 
 		// write groups
 		for(int j = 0; j < pDesc->numgroups; j++)
 		{
-			modelgroupdesc_t* pDesc = g_hdr->pModelDesc(i)->pGroup(j);
+			modelgroupdesc_t* groupDesc = header->pModelDesc(i)->pGroup(j);
 
 			// shape key modifier (if available)
-			esmshapekey_t* key = (g_modelrefs[i].shapeBy != -1) ? g_modelrefs[i].shapeData->shapes[g_modelrefs[i].shapeBy] : NULL;
+			esmshapekey_t* key = (m_modelrefs[i].shapeBy != -1) ? m_modelrefs[i].shapeData->shapes[m_modelrefs[i].shapeBy] : NULL;
 
-			WriteGroup(g_modelrefs[i].model->groups[j], key, pDesc);
+			WriteGroup(stream, m_modelrefs[i].model->groups[j], key, groupDesc);
 		}
 	}
 }
@@ -498,33 +492,35 @@ void WriteModels()
 //************************************
 // Writes LODs
 //************************************
-void WriteLods()
+void CEGFGenerator::WriteLods(CMemoryStream* stream)
 {
-	g_hdr->lodsoffset = WRITE_OFS;
-	g_hdr->numlods = g_modellodrefs.numElem();
+	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
-	for(int i = 0; i < g_modellodrefs.numElem(); i++)
+	header->lodsoffset = WRITE_OFS;
+	header->numlods = m_modellodrefs.numElem();
+
+	for(int i = 0; i < m_modellodrefs.numElem(); i++)
 	{
 		for(int j = 0; j < MAX_MODELLODS; j++)
 		{
-			int refId = GetReferenceIndex( g_modellodrefs[i].lodmodels[j] );
+			int refId = GetReferenceIndex( m_modellodrefs[i].lodmodels[j] );
 
-			g_hdr->pLodModel(i)->lodmodels[j] = refId;
+			header->pLodModel(i)->lodmodels[j] = refId;
 
 			if(refId != -1)
-				g_hdr->pModelDesc(i)->lod_index = j;
+				header->pModelDesc(i)->lod_index = j;
 
 			WTYPE_ADVANCE(studiolodmodel_t);
 		}
 	}
 
-	g_hdr->lodparamsoffset = WRITE_OFS;
-	g_hdr->numlodparams = g_lodparams.numElem();
+	header->lodparamsoffset = WRITE_OFS;
+	header->numlodparams = m_lodparams.numElem();
 
-	for(int i = 0; i < g_lodparams.numElem(); i++)
+	for(int i = 0; i < m_lodparams.numElem(); i++)
 	{
-		g_hdr->pLodParams(i)->distance = g_lodparams[i].distance;
-		g_hdr->pLodParams(i)->flags = g_lodparams[i].flags;
+		header->pLodParams(i)->distance = m_lodparams[i].distance;
+		header->pLodParams(i)->flags = m_lodparams[i].flags;
 
 		WTYPE_ADVANCE(studiolodparams_t);
 	}
@@ -533,14 +529,16 @@ void WriteLods()
 //************************************
 // Writes body groups
 //************************************
-void WriteBodyGroups()
+void CEGFGenerator::WriteBodyGroups(CMemoryStream* stream)
 {
-	g_hdr->bodygroupsoffset = WRITE_OFS;
-	g_hdr->numbodygroups = g_bodygroups.numElem();
+	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
-	for(int i = 0; i <  g_bodygroups.numElem(); i++)
+	header->bodygroupsoffset = WRITE_OFS;
+	header->numbodygroups = m_bodygroups.numElem();
+
+	for(int i = 0; i <  m_bodygroups.numElem(); i++)
 	{
-		*g_hdr->pBodyGroups(i) = g_bodygroups[i];
+		*header->pBodyGroups(i) = m_bodygroups[i];
 		WTYPE_ADVANCE(studiobodygroup_t);
 	}
 }
@@ -548,14 +546,16 @@ void WriteBodyGroups()
 //************************************
 // Writes attachments
 //************************************
-void WriteAttachments()
+void CEGFGenerator::WriteAttachments(CMemoryStream* stream)
 {
-	g_hdr->attachmentsoffset = WRITE_OFS;
-	g_hdr->numattachments = g_attachments.numElem();
+	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
-	for(int i = 0; i < g_attachments.numElem(); i++)
+	header->attachmentsoffset = WRITE_OFS;
+	header->numattachments = m_attachments.numElem();
+
+	for(int i = 0; i < m_attachments.numElem(); i++)
 	{
-		*g_hdr->pAttachment(i) = g_attachments[i];
+		*header->pAttachment(i) = m_attachments[i];
 		WTYPE_ADVANCE(studioattachment_t);
 	}
 }
@@ -563,34 +563,40 @@ void WriteAttachments()
 //************************************
 // Writes IK chainns
 //************************************
-void WriteIkChains()
+void CEGFGenerator::WriteIkChains(CMemoryStream* stream)
 {
-	g_hdr->ikchainsoffset = WRITE_OFS;
-	g_hdr->numikchains = g_ikchains.numElem();
+	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
+
+	header->ikchainsoffset = WRITE_OFS;
+	header->numikchains = m_ikchains.numElem();
 
 	// advance n times to give more space
-	WTYPE_ADVANCE_NUM(studioikchain_t, g_ikchains.numElem());
+	WTYPE_ADVANCE_NUM(studioikchain_t, m_ikchains.numElem());
 
-	for(int i = 0; i < g_ikchains.numElem(); i++)
+	for(int i = 0; i < m_ikchains.numElem(); i++)
 	{
-		g_hdr->pIkChain(i)->numlinks = g_ikchains[i].link_list.numElem();
+		studioikchain_t* chain = header->pIkChain(i);
 
-		strcpy(g_hdr->pIkChain(i)->name, g_ikchains[i].name);
+		chain->numlinks = m_ikchains[i].link_list.numElem();
 
-		g_hdr->pIkChain(i)->linksoffset = OBJ_WRITE_OFS(g_hdr->pIkChain(i));
+		strcpy(chain->name, m_ikchains[i].name);
+
+		chain->linksoffset = OBJ_WRITE_OFS(header->pIkChain(i));
 
 		// write link list flipped
 		//for(int j = g_ikchains[i].link_list.numElem()-1; j > -1; j--)
-		for(int j = 0; j < g_ikchains[i].link_list.numElem(); j++)
+		for(int j = 0; j < m_ikchains[i].link_list.numElem(); j++)
 		{
-			int link_id = (g_ikchains[i].link_list.numElem() - 1) - j;
+			int link_id = (m_ikchains[i].link_list.numElem() - 1) - j;
 
-			Msg("IK chain bone id: %d\n", g_ikchains[i].link_list[link_id].bone->referencebone->bone_id);
+			ciklink_t& link = m_ikchains[i].link_list[link_id];
 
-			g_hdr->pIkChain(i)->pLink(j)->bone = g_ikchains[i].link_list[link_id].bone->referencebone->bone_id;
-			g_hdr->pIkChain(i)->pLink(j)->mins = g_ikchains[i].link_list[link_id].mins;
-			g_hdr->pIkChain(i)->pLink(j)->maxs = g_ikchains[i].link_list[link_id].maxs;
-			g_hdr->pIkChain(i)->pLink(j)->damping = g_ikchains[i].link_list[link_id].damping;
+			Msg("IK chain bone id: %d\n", link.bone->referencebone->bone_id);
+
+			chain->pLink(j)->bone = link.bone->referencebone->bone_id;
+			chain->pLink(j)->mins = link.mins;
+			chain->pLink(j)->maxs = link.maxs;
+			chain->pLink(j)->damping = link.damping;
 
 			WTYPE_ADVANCE(studioiklink_t);
 		}
@@ -601,21 +607,23 @@ void WriteIkChains()
 //************************************
 // Writes material descs
 //************************************
-void WriteMaterialDescs()
+void CEGFGenerator::WriteMaterialDescs(CMemoryStream* stream)
 {
-	g_hdr->materialsoffset = WRITE_OFS;
-	g_hdr->nummaterials = g_materials.numElem();
+	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
-	for(int i = 0; i < g_materials.numElem(); i++)
+	header->materialsoffset = WRITE_OFS;
+	header->nummaterials = m_materials.numElem();
+
+	for(int i = 0; i < m_materials.numElem(); i++)
 	{
-		EqString mat_no_ext = g_materials[i].materialname;
+		EqString mat_no_ext = m_materials[i].materialname;
 		mat_no_ext = mat_no_ext.Path_Strip_Ext();
 
-		strcpy(g_materials[i].materialname, mat_no_ext.c_str());
+		strcpy(m_materials[i].materialname, mat_no_ext.c_str());
 
-		Msg("Material used: %s\n", g_materials[i].materialname);
+		Msg("Material used: %s\n", m_materials[i].materialname);
 
-		*g_hdr->pMaterial(i) = g_materials[i];
+		*header->pMaterial(i) = m_materials[i];
 		WTYPE_ADVANCE(studiomaterialdesc_t);
 	}
 }
@@ -623,14 +631,16 @@ void WriteMaterialDescs()
 //************************************
 // Writes material change-dirs
 //************************************
-void WriteMaterialCDs()
+void CEGFGenerator::WriteMaterialPaths(CMemoryStream* stream)
 {
-	g_hdr->searchpathdescsoffset = WRITE_OFS;
-	g_hdr->numsearchpathdescs = g_matpathes.numElem();
+	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
-	for(int i = 0; i < g_matpathes.numElem(); i++)
+	header->searchpathdescsoffset = WRITE_OFS;
+	header->numsearchpathdescs = m_matpathes.numElem();
+
+	for(int i = 0; i < m_matpathes.numElem(); i++)
 	{
-		*g_hdr->pMaterialSearchPath(i) = g_matpathes[i];
+		*header->pMaterialSearchPath(i) = m_matpathes[i];
 		WTYPE_ADVANCE(materialpathdesc_t);
 	}
 }
@@ -638,14 +648,16 @@ void WriteMaterialCDs()
 //************************************
 // Writes Motion package paths
 //************************************
-void WriteMotionPackages()
+void CEGFGenerator::WriteMotionPackageList(CMemoryStream* stream)
 {
-	g_hdr->packagesoffset = WRITE_OFS;
-	g_hdr->nummotionpackages = g_motionpacks.numElem();
+	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
-	for(int i = 0; i < g_motionpacks.numElem(); i++)
+	header->packagesoffset = WRITE_OFS;
+	header->nummotionpackages = m_motionpacks.numElem();
+
+	for(int i = 0; i < m_motionpacks.numElem(); i++)
 	{
-		*g_hdr->pPackage(i) = g_motionpacks[i];
+		*header->pPackage(i) = m_motionpacks[i];
 		WTYPE_ADVANCE(motionpackagedesc_t);
 	}
 }
@@ -653,18 +665,23 @@ void WriteMotionPackages()
 //************************************
 // Writes bones
 //************************************
-void WriteBones()
+void CEGFGenerator::WriteBones(CMemoryStream* stream)
 {
-	g_hdr->bonesoffset = WRITE_OFS;
-	g_hdr->numbones = g_bones.numElem();
+	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
-	for(int i = 0; i < g_bones.numElem(); i++)
+	header->bonesoffset = WRITE_OFS;
+	header->numbones = m_bones.numElem();
+
+	for(int i = 0; i < m_bones.numElem(); i++)
 	{
-		strcpy(g_hdr->pBone(i)->name, g_bones[i].referencebone->name);
+		dsmskelbone_t* srcBone = m_bones[i].referencebone;
+		bonedesc_t* destBone = header->pBone(i);
 
-		g_hdr->pBone(i)->parent = g_bones[i].referencebone->parent_id;
-		g_hdr->pBone(i)->position = g_bones[i].referencebone->position;
-		g_hdr->pBone(i)->rotation = g_bones[i].referencebone->angles;
+		strcpy(destBone->name, srcBone->name);
+
+		destBone->parent = srcBone->parent_id;
+		destBone->position = srcBone->position;
+		destBone->rotation = srcBone->angles;
 
 		WTYPE_ADVANCE(bonedesc_t);
 	}
@@ -673,96 +690,91 @@ void WriteBones()
 //************************************
 // Writes EGF model
 //************************************
-bool WriteEGF(const char* filename)
+bool CEGFGenerator::GenerateEGF()
 {
-	MsgWarning("\nWriting EGF '%s'\n", filename);
-
-	// Allocate data
-	pStart	= (ubyte*)calloc( 1, FILEBUFFER_EQGF );
-
-	memset(pStart, 0xFF, FILEBUFFER_EQGF);
-
-	pData = pStart;
+	CMemoryStream memStream;
+	if(!memStream.Open(NULL, VS_OPEN_WRITE, FILEBUFFER_EQGF))
+	{
+		MsgError("Failed to allocate memory stream!\n");
+		return false;
+	}
 
 	// Make header
-	g_hdr = (studiohdr_t*)pStart;
-
-	// initialize header
-	memset(g_hdr, 0, sizeof(studiohdr_t));
+	studiohdr_t header;
+	memset(&header, 0, sizeof(studiohdr_t));
 
 	// Basic header data
-	g_hdr->ident = EQUILIBRIUM_MODEL_SIGNATURE;
-	g_hdr->version = EQUILIBRIUM_MODEL_VERSION;
-	g_hdr->flags = 0;
-	g_hdr->length = sizeof(studiohdr_t);
+	header.ident = EQUILIBRIUM_MODEL_SIGNATURE;
+	header.version = EQUILIBRIUM_MODEL_VERSION;
+	header.flags = 0;
+	header.length = sizeof(studiohdr_t);
 
 	// set model name
-	strcpy( g_hdr->modelname, filename );
+	strcpy( header.modelname, m_outputFilename.c_str() );
 
-	FixSlashes( g_hdr->modelname );
+	FixSlashes( header.modelname );
 
-	// Advance header
-	WTYPE_ADVANCE( studiohdr_t );
+	memStream.Write(&header, 1, sizeof(header));
+
+	studiohdr_t* pHdr = (studiohdr_t*)memStream.GetBasePointer();
 
 	// write models
-	WriteModels();
+	WriteModels(&memStream);
 	
 	// write lod info and data
-	WriteLods();
+	WriteLods(&memStream);
 	
 	// write body groups
-	WriteBodyGroups();
+	WriteBodyGroups(&memStream);
 
 	// write attachments
-	WriteAttachments();
+	WriteAttachments(&memStream);
 
 	// write ik chains
-	WriteIkChains();
+	WriteIkChains(&memStream);
 	
-	if(g_notextures == false)
+	if(m_notextures == false)
 	{
-		// write material descs
-		WriteMaterialDescs();
-
-		// write search pathes
-		WriteMaterialCDs();
+		// write material descs and paths
+		WriteMaterialDescs(&memStream);
+		WriteMaterialPaths(&memStream);
 	}
 
 	// write motion packages
-	WriteMotionPackages();
+	WriteMotionPackageList(&memStream);
 
 	// write bones
-	WriteBones();
+	WriteBones(&memStream);
 
-	g_hdr->length = WRITE_OFS;
+	// set the size of file (size with header), for validation purposes
+	pHdr->length = memStream.Tell();
+
+	Msg(" models: %d\n", pHdr->nummodels);
+	Msg(" body groups: %d\n", pHdr->numbodygroups);
+	Msg(" bones: %d\n", pHdr->numbones);
+	Msg(" lods: %d\n", pHdr->numlods);
+	Msg(" materials: %d\n", pHdr->nummaterials);
+	Msg(" ik chains: %d\n", pHdr->numikchains);
+	Msg(" search paths: %d\n", pHdr->numsearchpathdescs);
+	Msg("   Wrote %d bytes:\n", pHdr->length);
 
 	// open model file
-	IFile *file = g_fileSystem->Open(filename, "wb");
+	IFile *file = g_fileSystem->Open(m_outputFilename.c_str(), "wb");
 	if(file)
 	{
+		MsgWarning("\nWriting EGF '%s'\n", m_outputFilename.c_str());
+
 		// write model
-		file->Write(pStart,g_hdr->length,1);
+		memStream.WriteToFileStream(file);
 
 		g_fileSystem->Close(file);
 
 		file = NULL;
-
-		Msg(" models: %d\n", g_hdr->nummodels);
-		Msg(" body groups: %d\n", g_hdr->numbodygroups);
-		Msg(" bones: %d\n", g_hdr->numbones);
-		Msg(" lods: %d\n", g_hdr->numlods);
-		Msg(" materials: %d\n", g_hdr->nummaterials);
-		Msg(" ik chains: %d\n", g_hdr->numikchains);
-		Msg(" search paths: %d\n", g_hdr->numsearchpathdescs);
-		Msg("   Wrote %d bytes:\n", g_hdr->length);
 	}
 	else
 	{
 		MsgError("File creation denined, can't save compiled model\n");
 	}
-
-	// free writeable data
-	free(pStart);
 
 	return true;
 }
