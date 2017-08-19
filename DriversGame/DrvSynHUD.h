@@ -49,6 +49,8 @@ public:
 	void						Init();
 	void						Cleanup();
 
+	void						SetHudScheme(const char* name);
+
 	// render the screen with maps and shit
 	void						Render( float fDt, const IVector2D& screenSize); //, const Matrix4x4& projMatrix, const Matrix4x4& viewMatrix );
 
@@ -75,6 +77,8 @@ public:
 
 	void						FadeIn( bool useCurtains = false );
 	void						FadeOut();
+
+	equi::IUIControl*			FindChildElement(const char* name) const;
 
 protected:
 
@@ -108,13 +112,20 @@ protected:
 
 	ILocToken*							m_damageTok;
 	ILocToken*							m_felonyTok;
-};
 
+	equi::IUIControl*					m_hudLayout;
+
+	equi::IUIControl*					m_hudDamageBar;
+	equi::IUIControl*					m_hudFelonyBar;
+	equi::IUIControl*					m_hudMap;
+};
 
 #ifndef __INTELLISENSE__
 
 OOLUA_PROXY( CDrvSynHUDManager )
 	OOLUA_TAGS(Abstract)
+
+	OOLUA_MFUNC( SetHudScheme )
 
 	OOLUA_MFUNC( AddTrackingObject )
 	OOLUA_MFUNC( AddMapTargetPoint )
@@ -130,6 +141,8 @@ OOLUA_PROXY( CDrvSynHUDManager )
 
 	OOLUA_MFUNC( ShowMap )
 	OOLUA_MFUNC_CONST( IsMapShown )
+
+	OOLUA_MFUNC_CONST( FindChildElement )
 
 	OOLUA_MFUNC( FadeIn )
 	OOLUA_MFUNC( FadeOut )

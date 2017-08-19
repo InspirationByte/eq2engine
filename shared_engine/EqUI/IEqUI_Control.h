@@ -62,7 +62,6 @@ public:
 	const char*					GetName() const						{return m_name.c_str();}
 	void						SetName(const char* pszName)		{m_name = pszName;}
 
-
 	// name and type
 	const wchar_t*				GetLabel() const					{return m_label.c_str();}
 	void						SetLabel(const wchar_t* pszLabel)	{m_label = pszLabel;}
@@ -98,6 +97,9 @@ public:
 	// drawn rectangle
 	virtual IRectangle			GetClientRectangle() const;
 
+	// returns the scaling of element
+	Vector2D					CalcScaling() const;
+
 	// child controls
 	void						AddChild(IUIControl* pControl);
 	void						RemoveChild(IUIControl* pControl, bool destroy = true);
@@ -111,12 +113,12 @@ public:
 	// PURE VIRTUAL
 	virtual const char*			GetClassname() const = 0;
 
-protected:
-	Vector2D					CalcScaling() const;
-	void						ResetSizeDiffs();
-
 	// rendering
 	virtual void				Render();
+
+protected:
+	
+	void						ResetSizeDiffs();
 	virtual void				DrawSelf(const IRectangle& rect) = 0;
 
 	bool						ProcessCommand(DkList<EqString>& args);
@@ -153,6 +155,7 @@ protected:
 	EqWString					m_label;
 
 	IEqFont*					m_font;
+	Vector2D					m_fontScale;
 };
 
 template <class T> 

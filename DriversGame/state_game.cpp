@@ -375,10 +375,11 @@ void CState_Game::LoadGame()
 	g_pPhysics = new CPhysicsEngine();
 
 	g_pPhysics->SceneInit();
-	g_pGameHUD->Init();
 
 	if( Game_LoadWorld() )
 	{
+		g_pGameHUD->Init();
+
 		Game_InitializeSession();
 		g_pause.SetBool(false);
 
@@ -458,9 +459,9 @@ void CState_Game::QuickRestart(bool replay)
 
 	g_pGameWorld->LoadLevel();
 
-	g_pGameHUD->Init();
-
 	g_pGameWorld->Init();
+
+	g_pGameHUD->Init();
 
 	Game_InitializeSession();
 

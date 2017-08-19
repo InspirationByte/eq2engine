@@ -20,7 +20,7 @@ namespace equi
 
 IUIControl::IUIControl()
 	: m_visible(false), m_selfVisible(true), m_enabled(true), m_parent(NULL), 
-	m_font(nullptr), m_sizeDiff(0), m_sizeDiffPerc(1.0f), 
+	m_font(nullptr), m_fontScale(1.0f), m_sizeDiff(0), m_sizeDiffPerc(1.0f), 
 	m_scaling(UI_SCALING_NONE), m_anchors(0), m_alignment(UI_BORDER_LEFT | UI_BORDER_TOP)
 {
 
@@ -61,6 +61,8 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 		// TODO: styles
 		m_font = g_fontCache->GetFont(KV_GetValueString(font), KV_GetValueInt(font, 1, 20), 0, false);
 	}
+
+	m_fontScale = KV_GetVector2D(sec->FindKeyBase("fontScale"));
 
 	kvkeybase_t* command = sec->FindKeyBase("command");
 
@@ -265,14 +267,14 @@ IRectangle IUIControl::GetClientRectangle() const
 
 		if(m_alignment & UI_BORDER_RIGHT)
 		{
-			thisRect.vleftTop.x += parentRect.vrightBottom.x - scaledPos.x - scaledSize.x;
-			thisRect.vrightBottom.x += parentRect.vrightBottom.x - scaledPos.x - scaledSize.x;
+			thisRect.vleftTop.x += parentRect.vrightBottom.x - scaledSize.x - scaledPos.x*2;
+			thisRect.vrightBottom.x += parentRect.vrightBottom.x - scaledSize.x - scaledPos.x*2;
 		}
 
 		if(m_alignment & UI_BORDER_BOTTOM)
 		{
-			thisRect.vleftTop.y += parentRect.vrightBottom.y - scaledPos.y - scaledSize.y;
-			thisRect.vrightBottom.y += parentRect.vrightBottom.y - scaledPos.y - scaledSize.y;
+			thisRect.vleftTop.y += parentRect.vrightBottom.y - scaledSize.y - scaledPos.y*2;
+			thisRect.vrightBottom.y += parentRect.vrightBottom.y - scaledSize.y - scaledPos.y*2;
 		}
 
 		// move by anchor border

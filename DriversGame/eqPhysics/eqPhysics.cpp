@@ -43,7 +43,7 @@ using namespace Threading;
 extern ConVar ph_margin;
 
 ConVar ph_showcontacts("ph_showcontacts", "0", NULL, CV_CHEAT);
-ConVar ph_erp("ph_erp", "0.015", "Error correction", CV_CHEAT);
+ConVar ph_erp("ph_erp", "0.05", "Error correction", CV_CHEAT);
 
 // cvar value mostly depends on velocity
 ConVar ph_grid_tolerance("ph_grid_tolerance", "0.05", NULL, CV_CHEAT);

@@ -189,6 +189,22 @@ bool Panel::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouse
 	return true;
 }
 
+class HudDummyElement : public IUIControl
+{
+public:
+	EQUI_CLASS(HudDummyElement, IUIControl)
+
+	HudDummyElement() : IUIControl() {}
+	~HudDummyElement() {}
+
+	// events
+	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags)	{return true;}
+	bool			ProcessKeyboardEvents(int nKeyButtons, int flags)					{return true;}
+
+	void			DrawSelf( const IRectangle& rect ) {}
+};
+
 };
 
 DECLARE_EQUI_CONTROL(panel, Panel)
+DECLARE_EQUI_CONTROL(HudElement, HudDummyElement)

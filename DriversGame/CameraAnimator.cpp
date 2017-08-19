@@ -39,15 +39,10 @@ ConVar cam_velocity_springconst("cam_velocity_springconst", "15");
 ConVar cam_velocity_springdamp("cam_velocity_springdamp", "8");
 
 ConVar cam_velocityeffects("cam_velocityeffects", "1", "Enable velocity effects", CV_ARCHIVE);
-/*
-ConVar cam_velocity_forwardmod("cam_velocity_forwardmod", "1.0");
-ConVar cam_velocity_sidemod("cam_velocity_sidemod", "0.0");
-ConVar cam_velocity_upmod("cam_velocity_upmod", "2.0");
-*/
 
 ConVar cam_velocity_forwardmod("cam_velocity_forwardmod", "1.0");
 ConVar cam_velocity_sidemod("cam_velocity_sidemod", "-0.5");
-ConVar cam_velocity_upmod("cam_velocity_upmod", "-1.0");
+ConVar cam_velocity_upmod("cam_velocity_upmod", "1.0");
 
 ConVar cam_custom("cam_custom", "0", NULL, CV_CHEAT);
 ConVar cam_custom_height("cam_custom_height", "1.3", NULL, CV_ARCHIVE);

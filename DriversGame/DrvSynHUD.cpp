@@ -23,19 +23,10 @@ DECLARE_CMD(hud_showLastMessage, NULL, 0)
 }
 
 //----------------------------------------------------------------------------------
-/*
-#define SCREEN_MIN_WIDTH	1280
-#define SCREEN_MIN_HEIGHT	768
-
-float ScreenScaler_GetBestFontSize( const IVector2D& screenSize,  float initialFontSize )
-{
-
-}
-*/
-//----------------------------------------------------------------------------------
 
 CDrvSynHUDManager::CDrvSynHUDManager()
-	: m_handleCounter(0), m_mainVehicle(NULL), m_curTime(0.0f), m_mapTexture(NULL), m_showMap(true), m_screenAlertTime(0.0f), m_screenMessageTime(0.0f)
+	: m_handleCounter(0), m_mainVehicle(nullptr), m_curTime(0.0f), m_mapTexture(nullptr), m_showMap(true), m_screenAlertTime(0.0f), m_screenMessageTime(0.0f), 
+		m_hudLayout(nullptr), m_hudDamageBar(nullptr), 	m_hudFelonyBar(nullptr), m_hudMap(nullptr)
 {
 }
 
@@ -75,6 +66,21 @@ void CDrvSynHUDManager::Init()
 
 	m_damageTok = g_localizer->GetToken("HUD_DAMAGE_TITLE");
 	m_felonyTok = g_localizer->GetToken("HUD_FELONY_TITLE");
+
+	// init hud layout
+	m_hudLayout = equi::Manager->CreateElement("HudElement");
+}
+
+void CDrvSynHUDManager::SetHudScheme(const char* name)
+{
+	KeyValues gameHudKvs;
+
+	if(gameHudKvs.LoadFromFile(name, SP_MOD))
+		m_hudLayout->InitFromKeyValues(gameHudKvs.GetRootSection());
+
+	m_hudDamageBar = m_hudLayout->FindChild("damageBar");
+	m_hudFelonyBar = m_hudLayout->FindChild("felonyLabel");
+	m_hudMap = m_hudLayout->FindChild("map");
 }
 
 void CDrvSynHUDManager::Cleanup()
@@ -91,7 +97,10 @@ void CDrvSynHUDManager::Cleanup()
 	*/
 
 	m_displayObjects.clear();
-	SetDisplayMainVehicle(NULL);
+	SetDisplayMainVehicle(nullptr);
+
+	delete m_hudLayout;
+	m_hudLayout = nullptr;
 }
 
 void CDrvSynHUDManager::ShowMessage( const char* token, float time )
@@ -136,6 +145,11 @@ void CDrvSynHUDManager::FadeOut()
 
 }
 
+equi::IUIControl* CDrvSynHUDManager::FindChildElement(const char* name) const
+{
+	return m_hudLayout->FindChild(name);
+}
+
 ConVar hud_map_pos("hud_map_pos", "0", "Map position (0 - bottom, 1 - top)", CV_ARCHIVE);
 
 ConVar g_showCameraPosition("g_showCameraPosition", "0", NULL, CV_CHEAT);
@@ -164,12 +178,17 @@ void CDrvSynHUDManager::DrawDamageRectangle(CMeshBuilder& meshBuilder, Rectangle
 // render the screen with maps and shit
 void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , const Matrix4x4& projMatrix, const Matrix4x4& viewMatrix )
 {
+	m_hudLayout->SetVisible(m_enable && r_drawHUD.GetBool());
+
 	if( !r_drawHUD.GetBool() )
 		return;
 
 	m_curTime += fDt;
 
 	materials->Setup2D(screenSize.x,screenSize.y);
+
+	m_hudLayout->SetSize(screenSize);
+	m_hudLayout->Render();
 
 	static IEqFont* roboto10 = g_fontCache->GetFont("Roboto", 10);
 	static IEqFont* roboto30 = g_fontCache->GetFont("Roboto", 30);
@@ -194,9 +213,14 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 	raster.scissor = true;
 	raster.cullMode = CULL_FRONT;
 
+
+
 	if(m_enable)
 	{
 		bool inPursuit = (m_mainVehicle ? m_mainVehicle->GetPursuedCount() > 0 : false);
+		bool damageBarVisible = m_hudDamageBar->IsVisible();
+		bool felonyBarVisible = m_hudFelonyBar->IsVisible();
+		bool mapVisible = m_hudMap->IsVisible() && m_showMap;
 
 		//Vertex2D_t dmgrect[] = { MAKETEXQUAD(damageRect.vleftTop.x, damageRect.vleftTop.y,damageRect.vrightBottom.x, damageRect.vrightBottom.y, 0) };
 
@@ -210,42 +234,45 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 		meshBuilder.Begin(PRIM_TRIANGLES);
 
-			Rectangle_t damageRect(35,65,410, 92);
+			Rectangle_t damageRect = m_hudDamageBar->GetClientRectangle();//(35,65,410, 92);
 
 			if( m_mainVehicle )
 			{
-				// fill the damage bar
-				float fDamage = m_mainVehicle->GetDamage() / m_mainVehicle->GetMaxDamage();
-
-				DrawDamageRectangle(meshBuilder, damageRect, fDamage);
-
-				// draw pursuit cop "triangles" on screen
-				if( inPursuit )
+				if(damageBarVisible)
 				{
-					for(int i = 0; i < g_pAIManager->m_copCars.numElem(); i++)
+					// fill the damage bar
+					float fDamage = m_mainVehicle->GetDamage() / m_mainVehicle->GetMaxDamage();
+
+					DrawDamageRectangle(meshBuilder, damageRect, fDamage);
+
+					// draw pursuit cop "triangles" on screen
+					if( inPursuit )
 					{
-						CAIPursuerCar* pursuer = g_pAIManager->m_copCars[i];
-
-						if(!pursuer->InPursuit())
-							continue;
-
-						Vector3D pursuerPos = pursuer->GetOrigin();
-
-						float dist = length(m_mainVehicle->GetOrigin()-pursuerPos);
-
-						Vector3D screenPos;
-						PointToScreen_Z(pursuerPos, screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x,(float)screenSize.y));
-
-						if( screenPos.z < 0.0f && dist < 100.0f )
+						for(int i = 0; i < g_pAIManager->m_copCars.numElem(); i++)
 						{
-							float distFadeFac = (100.0f - dist) / 100.0f;
+							CAIPursuerCar* pursuer = g_pAIManager->m_copCars[i];
 
-							float height = (1.0f-clamp((10.0f - dist) / 10.0f, 0.0f, 1.0f)) * 90.0f;
+							if(!pursuer->InPursuit())
+								continue;
 
-							meshBuilder.Color4f(1, 0, 0, distFadeFac);
-							meshBuilder.Triangle2(	Vector2D(screenSize.x-(screenPos.x-40.0f), screenSize.y),
-													Vector2D(screenSize.x-(screenPos.x+40.0f), screenSize.y),
-													Vector2D(screenSize.x-screenPos.x, screenSize.y - height));
+							Vector3D pursuerPos = pursuer->GetOrigin();
+
+							float dist = length(m_mainVehicle->GetOrigin()-pursuerPos);
+
+							Vector3D screenPos;
+							PointToScreen_Z(pursuerPos, screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x,(float)screenSize.y));
+
+							if( screenPos.z < 0.0f && dist < 100.0f )
+							{
+								float distFadeFac = (100.0f - dist) / 100.0f;
+
+								float height = (1.0f-clamp((10.0f - dist) / 10.0f, 0.0f, 1.0f)) * 90.0f;
+
+								meshBuilder.Color4f(1, 0, 0, distFadeFac);
+								meshBuilder.Triangle2(	Vector2D(screenSize.x-(screenPos.x-40.0f), screenSize.y),
+														Vector2D(screenSize.x-(screenPos.x+40.0f), screenSize.y),
+														Vector2D(screenSize.x-screenPos.x, screenSize.y - height));
+							}
 						}
 					}
 				}
@@ -316,10 +343,13 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 			}
 		meshBuilder.End();
 
-		Vector2D damageTextPos( damageRect.vleftTop.x+5, damageRect.vleftTop.y+15);
-		robotocon30b->RenderText(m_damageTok ? m_damageTok->GetText() : L"Undefined", damageTextPos, fontParams);
+		if(damageBarVisible)
+		{
+			Vector2D damageTextPos( damageRect.vleftTop.x+5, damageRect.vleftTop.y+15);
+			robotocon30b->RenderText(m_damageTok ? m_damageTok->GetText() : L"Undefined", damageTextPos, fontParams);
+		}
 
-		// Draw felony text
+		// get felony
 		float felonyPercent = 0.0f;
 
 		bool hasFelony = false;
@@ -350,11 +380,14 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 			}
 		}
 
-		Vector2D felonyTextPos(damageRect.vleftTop.x, damageRect.vrightBottom.y+25);
+		if(felonyBarVisible)
+		{
+			Vector2D felonyTextPos(damageRect.vleftTop.x, damageRect.vrightBottom.y+25);
 
-		fontParams.styleFlag |= TEXT_STYLE_FROM_CAP;
-		fontParams.scale = 24.0f;
-		roboto30b->RenderText(varargs_w(m_felonyTok ? m_felonyTok->GetText() : L"Undefined", (int)felonyPercent), felonyTextPos, fontParams);
+			fontParams.styleFlag |= TEXT_STYLE_FROM_CAP;
+			fontParams.scale = 24.0f;
+			roboto30b->RenderText(varargs_w(m_felonyTok ? m_felonyTok->GetText() : L"Undefined", (int)felonyPercent), felonyTextPos, fontParams);
+		}
 
 		if(m_timeDisplayEnable)
 		{
@@ -394,7 +427,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		CViewParams& camera = *g_pGameWorld->GetView();
 
 		// display radar and map
-		if( m_showMap )
+		if( mapVisible )
 		{
 			IVector2D mapSize(hud_mapSize.GetInt());
 			IVector2D mapPos = screenSize-mapSize-IVector2D(55);
@@ -408,9 +441,9 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 			Vector3D viewPos = Vector3D(camera.GetOrigin().xz() * Vector2D(1.0f,-1.0f), 0.0f);
 			Vector2D playerPos(0);
 
-			float mapZoom = hud_mapZoom.GetFloat() / HFIELD_POINT_SIZE;
+			float mapZoom = (hud_mapZoom.GetFloat() / HFIELD_POINT_SIZE) * m_hudMap->CalcScaling().y;
 
-			IRectangle mapRectangle(mapPos, mapPos+mapSize);
+			IRectangle mapRectangle = m_hudMap->GetClientRectangle(); //(mapPos, mapPos+mapSize);
 
 			g_pShaderAPI->SetScissorRectangle(mapRectangle);
 
@@ -745,6 +778,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
 		scrMsgParams.align = TEXT_ALIGN_HCENTER;
 		scrMsgParams.textColor = ColorRGBA(1,1,0.25f,textAlpha);
+		scrMsgParams.scale = 30.0f;
 
 		Vector2D screenMessagePos(screenSize.x / 2, (float)screenSize.y / 3 - textYOffs);
 
@@ -841,9 +875,12 @@ void CDrvSynHUDManager::RemoveTrackingObject( int handle )
 	}
 }
 
+//-------------------------------------------------------
+
 #ifndef __INTELLISENSE__
 OOLUA_EXPORT_FUNCTIONS(
 	CDrvSynHUDManager,
+	SetHudScheme,
 	AddTrackingObject,
 	AddMapTargetPoint,
 	RemoveTrackingObject,
@@ -859,7 +896,8 @@ OOLUA_EXPORT_FUNCTIONS(
 OOLUA_EXPORT_FUNCTIONS_CONST(
 	CDrvSynHUDManager,
 	IsEnabled,
-	IsMapShown
+	IsMapShown,
+	FindChildElement
 )
 
 

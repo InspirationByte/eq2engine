@@ -2358,7 +2358,7 @@ void CCar::OnPhysicsFrame( float fDt )
 			}
 		}
 	}
-}
+} 
 
 void CCar::ReleaseHubcap(int wheel)
 {
@@ -4174,8 +4174,10 @@ void CCar::OnDeath( CGameObject* deathBy )
 					break;
 			}
 		}
+		else
+			lua_pushnil(state);
 
-		if(!m_luaOnDeath.Call(deathBy ? 1 : 0, 0, 0))
+		if(!m_luaOnDeath.Call(1, 0, 0))
 		{
 			MsgError("CGameObject:OnDeath error:\n %s\n", OOLUA::get_last_error(state).c_str());
 		}

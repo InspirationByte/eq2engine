@@ -154,6 +154,8 @@ void CObject_Physics::Spawn()
 		body->SetContents( OBJECTCONTENTS_OBJECT );
 		body->SetCollideMask( COLLIDEMASK_OBJECT );
 
+		body->SetUserData(this);
+
 		//body->SetCenterOfMass( obj->mass_center);
 
 		body->m_flags = COLLOBJ_COLLISIONLIST | BODY_FROZEN;

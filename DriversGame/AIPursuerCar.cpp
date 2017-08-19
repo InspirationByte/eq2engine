@@ -1210,9 +1210,11 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		brake += (1.0f-velocityColl.fract) * directionBrakeFac + steeringBrakeFactor*brakeDistantFactor*0.5f;
 
 		if(lateralSlideSpd > 1.0f)
-			brake += (FReal)lateralSlideSpd;
-
-		//brake *= FReal( powf(speedFactor, 0.25f)* 6.0f * brakeDistantFactor * pow(1.0f-min(velocityToTargetFactor, 1.0f), 0.25f)*weatherBrakeDistModifier );
+		{
+			brake += lateralSlideSpd*0.5f;
+		}
+		else
+			fSteeringAngle -= sign(fSteeringAngle)*lateralSlideSpd*0.05f;
 
 		if(ai_debug_pursuer.GetBool())
 		{
