@@ -188,7 +188,8 @@ void DecalClipAndTexture(decalprimitives_t& decal, const Matrix4x4& texCoordProj
 void ProjectDecalToSpriteBuilder(decalprimitives_t& decal, CSpriteBuilder<PFXVertex_t>* group, const Rectangle_t& rect, const Matrix4x4& viewProj, const ColorRGBA& color)
 {
 	// make shadow volume and get our shadow polygons from world
-	decal.settings.clipVolume.LoadAsFrustum( viewProj );
+	if(!decal.settings.customClipVolume)
+		decal.settings.clipVolume.LoadAsFrustum( viewProj );
 
 	g_pGameWorld->m_level.GetDecalPolygons(decal, &g_pGameWorld->m_occludingFrustum);
 

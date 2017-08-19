@@ -81,7 +81,12 @@ protected:
 
 	ColorRGBA						m_textColor;
 
-	bool							m_isSDF;
+	struct flags_t
+	{
+		bool	sdf		: 1;
+		bool	bold	: 2;
+	} m_flags;
+	
 };
 
 #endif //IFONT_H

@@ -44,7 +44,8 @@ eqFontStyleInfo_t::~eqFontStyleInfo_t()
 
 CEqFontCache::CEqFontCache() : 
 	m_defaultFont(nullptr),
-	m_sdfRegular(nullptr)
+	m_sdfRegular(nullptr),
+	m_sdfBold(nullptr)
 {
 	GetCore()->RegisterInterface(FONTCACHE_INTERFACE_VERSION, this);
 }
@@ -168,6 +169,9 @@ bool CEqFontCache::Init()
 
 	m_sdfRegular = materials->FindMaterial("ui/text_sdf_regular");
 	m_sdfRegular->Ref_Grab();
+
+	m_sdfBold = materials->FindMaterial("ui/text_sdf_bold");
+	m_sdfBold->Ref_Grab();
 	
 	return true;	
 }
@@ -188,8 +192,10 @@ void CEqFontCache::Shutdown()
 	m_defaultFont = nullptr;
 
 	materials->FreeMaterial( m_sdfRegular );
-
 	m_sdfRegular = nullptr;
+
+	materials->FreeMaterial( m_sdfBold );
+	m_sdfBold = nullptr;
 }
 
 void CEqFontCache::ReloadFonts()

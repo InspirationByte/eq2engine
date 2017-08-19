@@ -710,7 +710,7 @@ bool CState_Game::Update( float fDt )
 		fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 		fontParam.align = TEXT_ALIGN_HCENTER;
 		fontParam.textColor = color4_white;
-		fontParam.scale = 20.0f;
+		fontParam.scale = 30.0f;
 
 		fontParam.textColor = ColorRGBA(fabs(sinf(g_pHost->GetCurTime()*2.0f)),0.0f,0.0f,1.0f);
 		font->RenderText("Demo", Vector2D(screenSize.x/2,screenSize.y - 100), fontParam);
@@ -828,7 +828,7 @@ void CState_Game::DrawMenu( float fDt )
 	fontParam.align = TEXT_ALIGN_HCENTER;
 	fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParam.textColor = color4_white;
-	fontParam.scale = 20.0f;
+	fontParam.scale = 30.0f;
 
 	{
 		lua_State* state = GetLuaState();

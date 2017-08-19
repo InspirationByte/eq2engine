@@ -353,6 +353,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		Vector2D felonyTextPos(damageRect.vleftTop.x, damageRect.vrightBottom.y+25);
 
 		fontParams.styleFlag |= TEXT_STYLE_FROM_CAP;
+		fontParams.scale = 24.0f;
 		roboto30b->RenderText(varargs_w(m_felonyTok ? m_felonyTok->GetText() : L"Undefined", (int)felonyPercent), felonyTextPos, fontParams);
 
 		if(m_timeDisplayEnable)

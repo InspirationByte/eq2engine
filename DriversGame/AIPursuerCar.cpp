@@ -1205,7 +1205,9 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 		doesHardSteer = doesHardSteer || speedFactor >= 0.25f && lateralSlideSpd < 2.2f;
 
-		brake += (1.0f-velocityColl.fract) + steeringBrakeFactor*brakeDistantFactor*0.5f;
+		float directionBrakeFac = fabs(dot(velocityColl.normal, carForwardDir));
+
+		brake += (1.0f-velocityColl.fract) * directionBrakeFac + steeringBrakeFactor*brakeDistantFactor*0.5f;
 
 		if(lateralSlideSpd > 1.0f)
 			brake += (FReal)lateralSlideSpd;

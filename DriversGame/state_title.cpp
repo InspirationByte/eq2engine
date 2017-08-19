@@ -143,7 +143,7 @@ bool CState_Title::Update( float fDt )
 	fontParam.align = TEXT_ALIGN_HCENTER;
 	fontParam.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
 	fontParam.textColor = color4_white;
-	fontParam.scale = 8.0f;
+	fontParam.scale = 10.0f;
 
 	float textPos = pow(1.0f-m_fade, 4.0f)*(float)screenSize.x*-1.0f;
 
@@ -181,7 +181,7 @@ bool CState_Title::Update( float fDt )
 
 	Vector2D helloWorldPos(halfScreen.x + textPos, halfScreen.y+150 - textYOffs);
 
-	fontParam.scale = 20.0f;
+	fontParam.scale = 30.0f;
 	font->RenderText(str, helloWorldPos, fontParam);
 
 	return !(m_goesFromTitle && m_fade == 0.0f);

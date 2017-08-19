@@ -60,7 +60,7 @@ public:
 	IEqFont*				GetFont(const char* name, int bestSize, int styleFlags = TEXT_STYLE_REGULAR, bool defaultIfNotFound = true) const;
 	eqFontFamily_t*			GetFamily(const char* name) const;
 
-	IMaterial*				GetSDFMaterial() const {return m_sdfRegular;}
+	IMaterial*				GetSDFMaterial(bool bold = false) const {return m_sdfRegular;}
 
 protected:
 
@@ -70,6 +70,7 @@ protected:
 	eqFontFamily_t*			m_defaultFont;
 
 	IMaterial*				m_sdfRegular;
+	IMaterial*				m_sdfBold;
 };
 
 #endif // FONTCACHE_H

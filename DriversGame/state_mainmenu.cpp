@@ -140,7 +140,7 @@ bool CState_MainMenu::Update( float fDt )
 	fontParam.align = TEXT_ALIGN_LEFT;
 	fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParam.textColor = color4_white;
-	fontParam.scale = 16.0f;
+	fontParam.scale = 30.0f;
 
 	{
 		EqLua::LuaStackGuard g(GetLuaState());
@@ -255,7 +255,7 @@ void CState_MainMenu::HandleMouseMove( int x, int y, float deltaX, float deltaY 
 	fontParam.align = TEXT_ALIGN_LEFT;
 	fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParam.textColor = color4_white;
-	fontParam.scale = 16.0f;
+	fontParam.scale = 30.0f;
 
 	{
 		EqLua::LuaStackGuard g(GetLuaState());

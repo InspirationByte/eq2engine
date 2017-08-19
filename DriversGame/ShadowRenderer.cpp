@@ -251,6 +251,7 @@ void CShadowRenderer::RenderShadowCasters()
 		orthoView.GetMatrices(proj, view, shadowSize.x*SHADOW_DESCALING, shadowSize.y*SHADOW_DESCALING, -2.5f, 100.0f, true );
 		
 		shadowDecal.settings.facingDir = view.rows[2].xyz();
+		
 
 		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
 		materials->SetMatrix(MATRIXMODE_VIEW, view);
@@ -277,6 +278,9 @@ void CShadowRenderer::RenderShadowCasters()
 		// project our decal to sprite builder
 		float shadowAlpha = length(orthoView.GetOrigin()-viewPos) * distFac;
 		shadowAlpha = 1.0f - pow(max(0.0f, shadowAlpha), 8.0f);
+
+		shadowDecal.settings.clipVolume.LoadAsFrustum(viewProj);
+		shadowDecal.settings.customClipVolume = true;
 
 		ProjectDecalToSpriteBuilder( shadowDecal, this, shadowRect, viewProj, ColorRGBA(1,1,1,shadowAlpha) );
 	}

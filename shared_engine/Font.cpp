@@ -130,7 +130,7 @@ CFont::CFont()
 	m_baseline = 0.0f;
 	m_lineHeight = 0.0f;
 
-	m_isSDF = false;
+	memset(&m_flags, 1, sizeof(m_flags));
 }
 
 CFont::~CFont()
@@ -162,7 +162,7 @@ float CFont::GetStringWidth( const wchar_t* str, const eqFontStyleParam_t& param
 
 float CFont::GetLineHeight( const eqFontStyleParam_t& params ) const
 {
-	if(m_isSDF) // only scale SDF characters
+	if(m_flags.sdf) // only scale SDF characters
 		return m_lineHeight * params.scale.y;
 
 	return m_lineHeight;
@@ -170,7 +170,7 @@ float CFont::GetLineHeight( const eqFontStyleParam_t& params ) const
 
 float CFont::GetBaselineOffs( const eqFontStyleParam_t& params ) const
 {
-	if(m_isSDF) // only scale SDF characters
+	if(m_flags.sdf) // only scale SDF characters
 		return m_baseline * params.scale.y;
 
 	return m_baseline;
@@ -367,7 +367,7 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 			chr.x1-chr.x0,
 			chr.y1-chr.y0);
 
-		if(m_isSDF) // only scale SDF characters
+		if(m_flags.sdf) // only scale SDF characters
 			cSize *= m_scale * stateParams.scale;
 
 		//if(stateParams.styleFlag & TEXT_STYLE_FROM_CAP)
@@ -426,7 +426,7 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 
 	g_pShaderAPI->SetTexture(m_fontTexture, NULL, 0);
 
-	IMaterial* fontMaterial = m_isSDF ? ((CEqFontCache*)g_fontCache)->GetSDFMaterial() : materials->GetDefaultMaterial();
+	IMaterial* fontMaterial = m_flags.sdf ? ((CEqFontCache*)g_fontCache)->GetSDFMaterial(m_flags.bold) : materials->GetDefaultMaterial();
 	
 	// draw shadow
 	if(params.styleFlag & TEXT_STYLE_SHADOW)
@@ -518,7 +518,7 @@ void CFont::GetScaledCharacter( eqFontChar_t& chr, const int chrId, const Vector
 {
 	chr = GetFontCharById(chrId);
 
-	if(m_isSDF) // only scale SDF characters
+	if(m_flags.sdf) // only scale SDF characters
 	{
 		chr.advX = chr.advX*scale.x;
 		chr.ofsX = chr.ofsX*scale.x;
@@ -589,14 +589,15 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				return false;
 			}
 
-			m_isSDF = KV_GetValueBool( fontSec->FindKeyBase("isSDF") );
+			m_flags.sdf = KV_GetValueBool( fontSec->FindKeyBase("isSDF") );
+			m_flags.bold = KV_GetValueBool( fontSec->FindKeyBase("bold") );
 
-			bool filter_font = KV_GetValueBool( fontSec->FindKeyBase("filter") ) || m_isSDF;
+			bool filter_font = KV_GetValueBool( fontSec->FindKeyBase("filter") ) || m_flags.sdf;
 
 			m_spacing = 0.0f;
 			m_fontTexture = g_pShaderAPI->LoadTexture(KV_GetValueString(fontSec->FindKeyBase("texture")), filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST,ADDRESSMODE_WRAP, TEXFLAG_NOQUALITYLOD);
 
-			if(m_isSDF)
+			if(m_flags.sdf)
 				m_scale = KV_GetVector2D( fontSec->FindKeyBase("scale") );
 
 			m_baseline = KV_GetValueFloat( fontSec->FindKeyBase("baseline") ) * m_scale.y;
