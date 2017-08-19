@@ -13,8 +13,6 @@
 #include "IDkCore.h"
 #include "ILocalize.h"
 
-#include "tinydir.h"
-
 #ifdef _WIN32 // Not in linux
 
 #include <direct.h>	// mkdir()

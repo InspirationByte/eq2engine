@@ -406,7 +406,6 @@ EqWString EqWString::LowerCase()
 EqWString EqWString::UpperCase()
 {
 	EqWString str(*this);
-
 	xwcsupr(str.m_pszString);
 
     return str;
