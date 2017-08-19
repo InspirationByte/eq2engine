@@ -9,7 +9,6 @@
 #define CFILESYSTEM_H
 
 #include "IFileSystem.h"
-#include "tinydir.h"
 #include "DPKFileReader.h"
 #include "utils/eqthread.h"
 

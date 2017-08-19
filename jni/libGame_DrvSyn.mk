@@ -45,6 +45,7 @@ LOCAL_SRC_FILES := \
 	DriversGame/state_lobby.cpp\
 	DriversGame/state_mainmenu.cpp\
 	DriversGame/replay.cpp\
+	DriversGame/director.cpp\
 	DriversGame/system.cpp\
 	DriversGame/ui_luaMenu.cpp\
 	DriversGame/window.cpp\
