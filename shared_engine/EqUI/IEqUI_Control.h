@@ -62,9 +62,9 @@ public:
 	const char*					GetName() const						{return m_name.c_str();}
 	void						SetName(const char* pszName)		{m_name = pszName;}
 
-	// name and type
-	const wchar_t*				GetLabel() const					{return m_label.c_str();}
-	void						SetLabel(const wchar_t* pszLabel)	{m_label = pszLabel;}
+	// label (UTF-8)
+	const char*					GetLabel() const;
+	void						SetLabel(const char* pszLabel);
 
 	// visibility
 	virtual void				Show()								{m_visible = true;}

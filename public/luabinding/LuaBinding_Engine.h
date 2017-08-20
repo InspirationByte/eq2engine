@@ -307,8 +307,8 @@ OOLUA_PROXY(equi::IUIControl)
 	OOLUA_MFUNC_CONST( GetName )
 	OOLUA_MFUNC( SetName )
 
-	//OOLUA_MFUNC_CONST( GetLabel )
-	//OOLUA_MFUNC( SetLabel )
+	OOLUA_MFUNC_CONST( GetLabel )
+	OOLUA_MFUNC( SetLabel )
 
 	OOLUA_MFUNC( Show )
 	OOLUA_MFUNC( Hide )

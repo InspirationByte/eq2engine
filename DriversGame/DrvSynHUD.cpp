@@ -9,6 +9,8 @@
 #include "AICarManager.h"
 #include "heightfield.h"
 
+#define DEFAULT_HUD_SCHEME "resources/hud/defaulthud.res"
+
 static CDrvSynHUDManager s_drvSynHUDManager;
 CDrvSynHUDManager* g_pGameHUD = &s_drvSynHUDManager;
 
@@ -69,14 +71,25 @@ void CDrvSynHUDManager::Init()
 
 	// init hud layout
 	m_hudLayout = equi::Manager->CreateElement("HudElement");
+
+	//SetHudScheme( DEFAULT_HUD_SCHEME );
 }
 
 void CDrvSynHUDManager::SetHudScheme(const char* name)
 {
+	if(!m_schemeName.CompareCaseIns(name))
+		return;
+
+	MsgInfo("Loading HUD scheme '%s'...\n", name);
+
+	m_schemeName = name;
+
 	KeyValues gameHudKvs;
 
-	if(gameHudKvs.LoadFromFile(name, SP_MOD))
+	if(gameHudKvs.LoadFromFile(m_schemeName.c_str(), SP_MOD))
 		m_hudLayout->InitFromKeyValues(gameHudKvs.GetRootSection());
+	else
+		MsgError("Failed to load HUD scheme\n", name);
 
 	m_hudDamageBar = m_hudLayout->FindChild("damageBar");
 	m_hudFelonyBar = m_hudLayout->FindChild("felonyLabel");
@@ -101,6 +114,8 @@ void CDrvSynHUDManager::Cleanup()
 
 	delete m_hudLayout;
 	m_hudLayout = nullptr;
+
+	m_schemeName.Empty();
 }
 
 void CDrvSynHUDManager::ShowMessage( const char* token, float time )

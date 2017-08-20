@@ -15,6 +15,8 @@
 
 #include "IConCommandFactory.h"
 
+#include "ILocalize.h"
+
 namespace equi
 {
 
@@ -31,6 +33,16 @@ IUIControl::~IUIControl()
 	ClearChilds(true);
 }
 
+const char*	IUIControl::GetLabel() const
+{
+	return _Es(m_label).c_str();
+}
+
+void IUIControl::SetLabel(const char* pszLabel)
+{
+	m_label = LocalizedString(pszLabel);
+}
+
 void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 {
 	ClearChilds(true);
@@ -40,7 +52,9 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 	else
 		SetName(KV_GetValueString(sec, 0, ""));
 
-	m_label = KV_GetValueString(sec->FindKeyBase("label"), 0, "Control");
+
+	SetLabel(KV_GetValueString(sec->FindKeyBase("label"), 0, "Control"));
+
 	m_position = KV_GetIVector2D(sec->FindKeyBase("position"), 0, 25);
 	m_size = KV_GetIVector2D(sec->FindKeyBase("size"), 0, 128);
 

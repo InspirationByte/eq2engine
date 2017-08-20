@@ -113,6 +113,7 @@ protected:
 	ILocToken*							m_damageTok;
 	ILocToken*							m_felonyTok;
 
+	EqString							m_schemeName;
 	equi::IUIControl*					m_hudLayout;
 
 	equi::IUIControl*					m_hudDamageBar;

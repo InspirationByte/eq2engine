@@ -38,6 +38,8 @@ void Image::SetMaterial(const char* materialName)
 
 	m_material = materials->FindMaterial(materialName);
 	m_material->Ref_Grab();
+
+	materials->PutMaterialToLoadingQueue(m_material);
 }
 
 void Image::DrawSelf( const IRectangle& rect )

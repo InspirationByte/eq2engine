@@ -87,7 +87,7 @@ void Panel::InitFromKeyValues( kvkeybase_t* sec )
 		m_closeButton = (equi::Button*)FindChild("WindowCloseBtn");
 
 		if(m_labelCtrl)
-			m_labelCtrl->SetLabel( m_label.c_str() );
+			m_labelCtrl->SetLabel( GetLabel() );
 	}
 }
 
