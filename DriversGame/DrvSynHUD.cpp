@@ -86,6 +86,10 @@ void CDrvSynHUDManager::SetHudScheme(const char* name)
 
 	KeyValues gameHudKvs;
 
+	m_hudDamageBar = nullptr;
+	m_hudFelonyBar = nullptr;
+	m_hudMap = nullptr;
+
 	if(gameHudKvs.LoadFromFile(m_schemeName.c_str(), SP_MOD))
 		m_hudLayout->InitFromKeyValues(gameHudKvs.GetRootSection());
 	else
@@ -233,9 +237,9 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 	if(m_enable)
 	{
 		bool inPursuit = (m_mainVehicle ? m_mainVehicle->GetPursuedCount() > 0 : false);
-		bool damageBarVisible = m_hudDamageBar->IsVisible();
-		bool felonyBarVisible = m_hudFelonyBar->IsVisible();
-		bool mapVisible = m_hudMap->IsVisible() && m_showMap;
+		bool damageBarVisible = m_hudDamageBar && m_hudDamageBar->IsVisible();
+		bool felonyBarVisible = m_hudFelonyBar && m_hudFelonyBar->IsVisible();
+		bool mapVisible = m_hudMap && m_hudMap->IsVisible() && m_showMap;
 
 		//Vertex2D_t dmgrect[] = { MAKETEXQUAD(damageRect.vleftTop.x, damageRect.vleftTop.y,damageRect.vrightBottom.x, damageRect.vrightBottom.y, 0) };
 
@@ -249,12 +253,14 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 		meshBuilder.Begin(PRIM_TRIANGLES);
 
-			Rectangle_t damageRect = m_hudDamageBar->GetClientRectangle();//(35,65,410, 92);
+			Rectangle_t damageRect(35,65,410, 92);
 
 			if( m_mainVehicle )
 			{
 				if(damageBarVisible)
 				{
+					damageRect = m_hudDamageBar->GetClientRectangle();
+
 					// fill the damage bar
 					float fDamage = m_mainVehicle->GetDamage() / m_mainVehicle->GetMaxDamage();
 
