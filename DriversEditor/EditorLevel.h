@@ -129,10 +129,12 @@ bool GenerateBuildingModel( buildingSource_t* building );
 
 enum EPrefabCreationFlags
 {
-	PREFAB_HEIGHTFIELDS,
-	PREFAB_OBJECTS,			// including buildings
-	PREFAB_ROADS,
-	PREFAB_OCCLUDERS,
+	PREFAB_HEIGHTFIELDS		= (1 << 0),
+	PREFAB_OBJECTS			= (1 << 1),			// including buildings
+	PREFAB_ROADS			= (1 << 2),
+	PREFAB_OCCLUDERS		= (1 << 3),
+
+	PREFAB_ALL	 = 0xFFFFFFFF,
 };
 
 class CEditorLevel : public CGameLevel
@@ -142,6 +144,8 @@ public:
 
 	bool			Load(const char* levelname, kvkeybase_t* kvDefs);
 	bool			Save(const char* levelname, bool isfinal = false);
+
+	void			Ed_Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj);
 
 	void			Ed_Prerender(const Vector3D& cameraPosition);
 

@@ -33,6 +33,9 @@ IEqPhysCallback::~IEqPhysCallback()
 
 //-----------------------------------------------------------------------------------------
 
+ConVar ph_showcollisionresponses("ph_showcollisionresponses", "0");
+#define COLLRESPONSE_DEBUG_SCALE 0.005f
+
 ConVar ph_debug_body("ph_debug_body", "0", "Print debug body information in screen");
 
 const float frictionTimeScale = 10.0f;
@@ -569,8 +572,6 @@ Vector3D CEqRigidBody::ComputeFrictionVelocity2(const FVector3D& pos,
 	return vec3_zero;
 }
 
-ConVar ph_showcollisionresponses("ph_showcollisionresponses", "0");
-
 //
 // STATIC
 //
@@ -607,7 +608,7 @@ float CEqRigidBody::ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& 
 	Vector3D impactVel = normal*normalImpulseRest;
 
 	if(ph_showcollisionresponses.GetBool())
-		debugoverlay->Line3D(point, point+impactVel*0.25f, ColorRGBA(1,0,0,1), ColorRGBA(1,1,0,1), 3.0f);
+		debugoverlay->Line3D(point, point+impactVel*COLLRESPONSE_DEBUG_SCALE, ColorRGBA(1,0,0,1), ColorRGBA(1,1,0,1), 3.0f);
 
 	float combined_friction = (frictionA + body->GetFriction())*0.5f;
 
@@ -673,8 +674,8 @@ float CEqRigidBody::ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* 
 
 	if(ph_showcollisionresponses.GetBool())
 	{
-		debugoverlay->Line3D(point, point+impactVelA*0.25f, ColorRGBA(1,0,0,1), ColorRGBA(1,1,0,1), 3.0f);
-		debugoverlay->Line3D(point, point+impactVelB*0.25f, ColorRGBA(1,0,0,1), ColorRGBA(1,1,0,1), 3.0f);
+		debugoverlay->Line3D(point, point+impactVelA*COLLRESPONSE_DEBUG_SCALE, ColorRGBA(1,0,0,1), ColorRGBA(1,1,0,1), 3.0f);
+		debugoverlay->Line3D(point, point+impactVelB*COLLRESPONSE_DEBUG_SCALE, ColorRGBA(1,0,0,1), ColorRGBA(1,1,0,1), 3.0f);
 
 		debugoverlay->Box3D(point-0.01f, point+0.01f, ColorRGBA(1,1,0,1), 3.0f);
 	}

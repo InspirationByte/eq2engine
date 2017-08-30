@@ -36,4 +36,11 @@ protected:
 	EqLua::LuaTableFuncRef	m_simulate;
 };
 
+
+#ifndef __INTELLISENSE__
+OOLUA_PROXY(CObject_Scripted, CGameObject)
+
+OOLUA_PROXY_END
+#endif //  __INTELLISENSE__
+
 #endif // OBJECT_PHYSICS_H

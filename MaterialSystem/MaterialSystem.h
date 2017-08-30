@@ -337,7 +337,7 @@ private:
 	bool							m_bIsSkinningEnabled;
 	bool							m_instancingEnabled;
 
-	Matrix4x4						m_matrices[4];					// matrix modes
+	Matrix4x4						m_matrices[5];					// matrix modes
 
 	IMaterial*						m_pCurrentMaterial;				// currently binded material
 	uint							m_paramOverrideMask;			// parameter setup mask for overrides

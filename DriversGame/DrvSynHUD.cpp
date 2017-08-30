@@ -436,8 +436,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 			float minSecWidth = numbers50->GetStringWidth(str, numFontParams);
 			numbers50->RenderText(str, timeDisplayTextPos, numFontParams);
 
-			float size = numbers50->GetStringWidth(varargs("%.2i:%.2i", mins, secs), numFontParams);
-
 			numFontParams.align = 0;
 
 			Vector2D millisDisplayTextPos = timeDisplayTextPos + Vector2D(floor(minSecWidth*0.5f), 0.0f);

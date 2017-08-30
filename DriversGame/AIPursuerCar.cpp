@@ -672,14 +672,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	if(transition != STATE_TRANSITION_NONE)
 		return 0;
 
-	// don't control the car
-	if(IsFlippedOver())
-	{
-		// keep only the analog steering
-		SetControlButtons( IN_ANALOGSTEER );
-		return 0;
-	}
-
 	// dead?
 	if(!IsAlive())
 	{
@@ -810,6 +802,14 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	if(g_replayData->m_state == REPL_PLAYING)
 		return 0;
+
+	// don't try to control the car
+	if(IsFlippedOver())
+	{
+		// keep only the analog steering
+		SetControlButtons( IN_ANALOGSTEER );
+		return 0;
+	}
 
 	//--------------------------------------------------------------------------------------------------
 

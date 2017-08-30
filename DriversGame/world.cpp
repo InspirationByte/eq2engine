@@ -719,6 +719,7 @@ void CGameWorld::Cleanup( bool unloadLevel )
 		materials->FreeMaterial(m_blurYMaterial);
 		m_blurYMaterial = NULL;
 
+		materials->SetEnvironmentMapTexture(NULL);
 		g_pShaderAPI->FreeTexture(m_envMap);
 		m_envMap = NULL;
 
@@ -1111,7 +1112,9 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(TEXFILTER_LINEAR, ADDRESSMODE_CLAMP, ADDRESSMODE_CLAMP, ADDRESSMODE_CLAMP);
 
 	// DEPTH == 0 is cubemap
+	materials->SetEnvironmentMapTexture(NULL);
 	g_pShaderAPI->FreeTexture(m_envMap);
+
 	m_envMap = g_pShaderAPI->CreateTexture(envMapImg, sampler);
 	m_envMap->Ref_Grab();
 

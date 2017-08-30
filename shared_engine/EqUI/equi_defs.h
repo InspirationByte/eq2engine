@@ -49,6 +49,12 @@ enum EUIScalingMode
 	UI_SCALING_BOTH_UNIFORM,
 };
 
+class IEvent
+{
+public:
+	virtual ~IEvent() {}
+};
+
 };
 
 #endif // EQUI_H

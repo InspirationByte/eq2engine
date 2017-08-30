@@ -335,6 +335,7 @@ static const int matrixModeConst[] = {
 	GL_MODELVIEW,
 	GL_PROJECTION,
 	GL_MODELVIEW,
+	GL_MODELVIEW,
 	GL_TEXTURE,
 };
 #endif // USE_GLES2

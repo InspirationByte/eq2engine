@@ -10,6 +10,8 @@
 
 #include "world.h"
 
+extern CViewParams			g_pCameraParams;
+
 CUI_PrefabManager::CUI_PrefabManager( wxWindow* parent ) : wxPanel( parent, -1, wxDefaultPosition, wxDefaultSize )
 {
 	wxBoxSizer* bSizer10;
@@ -62,6 +64,8 @@ CUI_PrefabManager::CUI_PrefabManager( wxWindow* parent ) : wxPanel( parent, -1, 
 	
 	this->SetSizer( bSizer10 );
 	this->Layout();
+
+	m_prefabNameDialog = new wxTextEntryDialog(this, DKLOC("TOKEN_PREFABNAME", L"Prefab name"), DKLOC("TOKEN_SPECIFYPREFAB NAME", L"Specify prefab name"));
 	
 	// Connect Events
 	m_prefabList->Connect( wxEVT_COMMAND_LISTBOX_DOUBLECLICKED, wxCommandEventHandler( CUI_PrefabManager::OnBeginPrefabPlacement ), NULL, this );
@@ -70,11 +74,14 @@ CUI_PrefabManager::CUI_PrefabManager( wxWindow* parent ) : wxPanel( parent, -1, 
 	m_editbtn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CUI_PrefabManager::OnEditPrefabClick ), NULL, this );
 	m_delbtn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CUI_PrefabManager::OnDeletePrefabClick ), NULL, this );
 
-	m_mode = PREFAB_READY;
+	m_mode = PREFABMODE_READY;
+	m_selPrefab = nullptr;
 }
 
 CUI_PrefabManager::~CUI_PrefabManager()
 {
+	m_prefabNameDialog->Destroy();
+
 	// Disconnect Events
 	m_prefabList->Disconnect( wxEVT_COMMAND_LISTBOX_DOUBLECLICKED, wxCommandEventHandler( CUI_PrefabManager::OnBeginPrefabPlacement ), NULL, this );
 	m_filtertext->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( CUI_PrefabManager::OnFilterChange ), NULL, this );
@@ -116,7 +123,7 @@ void CUI_PrefabManager::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* til
 	IVector2D globalTile;
 	g_pGameWorld->m_level.LocalToGlobalPoint(IVector2D(tx,ty), m_selectedRegion, globalTile);
 
-	if(m_mode == PREFAB_TILESELECTION && event.Dragging())
+	if(m_mode == PREFABMODE_TILESELECTION && event.Dragging())
 	{
 		m_tileSelection.Reset();
 		m_tileSelection.AddVertex(globalTile);
@@ -125,30 +132,64 @@ void CUI_PrefabManager::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* til
 
 	if(event.ButtonDown(wxMOUSE_BTN_LEFT))
 	{
-		if(m_mode == PREFAB_READY)
+		if(m_mode == PREFABMODE_READY || m_mode == PREFABMODE_CREATE_READY)
 		{
 			m_tileSelection.Reset();
 
-			m_mode = PREFAB_TILESELECTION;
+			m_mode = PREFABMODE_TILESELECTION;
 			m_startPoint = globalTile;
 		}
 	}
 	else if(event.ButtonUp(wxMOUSE_BTN_LEFT))
 	{
-		if(m_mode == PREFAB_TILESELECTION)
+		if(m_mode == PREFABMODE_TILESELECTION)
 		{
 			m_tileSelection.Reset();
 			m_tileSelection.AddVertex(globalTile);
 			m_tileSelection.AddVertex(m_startPoint);
 
-			m_mode = PREFAB_READY;
+			m_mode = PREFABMODE_CREATE_READY;
 		}
 	}
 }
 
 void CUI_PrefabManager::OnKey(wxKeyEvent& event, bool bDown)
 {
+	if(m_mode == PREFABMODE_CREATE_READY)
+	{
+		if(event.m_keyCode == WXK_RETURN)
+		{
+			/*
+			// get prefab name
+			m_prefabNameDialog->SetValue("");
 
+			if(m_prefabNameDialog->ShowModal() == wxID_OK)
+			{
+				EqString nameVal(m_prefabNameDialog->GetValue().mbc_str());
+
+				if(nameVal.Length() == 0)
+				{
+					wxMessageBox("Name cannot be empty.", "Warning", wxOK | wxICON_EXCLAMATION | wxCENTRE, this);
+					return;
+				}
+
+				// generate prefab
+				CEditorLevel* generatedFromSel = g_pGameWorld->m_level.CreatePrefab(m_tileSelection.vleftTop, m_tileSelection.vrightBottom, PREFAB_ALL);
+
+				m_mode = PREFABMODE_READY;
+			}*/
+
+			wxMessageBox("Making prefab.", "Warning", wxOK | wxICON_EXCLAMATION | wxCENTRE, this);
+
+			if(m_selPrefab)
+			{
+				m_selPrefab->Cleanup();
+				delete m_selPrefab;
+			}
+
+			m_selPrefab = g_pGameWorld->m_level.CreatePrefab(m_tileSelection.vleftTop, m_tileSelection.vrightBottom, PREFAB_ALL);
+		}
+	}
 }
 
 void CUI_PrefabManager::OnRender()
@@ -171,6 +212,15 @@ void CUI_PrefabManager::OnRender()
 
 	debugoverlay->Box3D(bbox.minPoint-HFIELD_POINT_SIZE*0.5f, bbox.maxPoint+HFIELD_POINT_SIZE*0.5f, ColorRGBA(1,1,0,1), 0.0f);
 
+	if(m_selPrefab)
+	{
+		materials->SetMatrix(MATRIXMODE_WORLD2, translate(0.0f,1.0f,0.0f));
+
+		m_selPrefab->Ed_Render(g_pCameraParams.GetOrigin(), g_pGameWorld->m_viewprojection);
+
+		materials->SetMatrix(MATRIXMODE_WORLD2, identity4());
+	}
+
 	CBaseTilebasedEditor::OnRender();
 }
 
@@ -181,7 +231,7 @@ void CUI_PrefabManager::OnLevelUnload()
 
 void CUI_PrefabManager::OnLevelLoad()
 {
-	m_mode = PREFAB_READY;
+	m_mode = PREFABMODE_READY;
 }
 
 void CUI_PrefabManager::InitTool()

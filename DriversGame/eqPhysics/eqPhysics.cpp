@@ -862,8 +862,6 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 
 }
 
-ConVar ph_test1("ph_test1", "0");
-
 void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 {
 	PROFILE_FUNC();
@@ -876,7 +874,6 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 	if (!body->IsCanIntegrate())
 		return;
 
-	//if(ph_test1.GetBool())
 	{
 		BoundingBox& aabb = body->m_aabb_transformed;
 

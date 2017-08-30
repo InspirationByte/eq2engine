@@ -1032,10 +1032,30 @@ void CEditorLevel::PostLoadEditorBuildings( DkList<buildLayerColl_t*>& buildingT
 	}
 }
 
+void CEditorLevel::Ed_Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj)
+{
+	occludingFrustum_t bypassFrustum;
+	bypassFrustum.bypass = true;
+
+	for(int x = 0; x < m_wide; x++)
+	{
+		for(int y = 0; y < m_tall; y++)
+		{
+			int idx = y*m_wide+x;
+
+			if(m_regions[idx].m_isLoaded)
+			{
+				m_regions[idx].Render(cameraPosition,viewProj, bypassFrustum, 0);
+				m_regions[idx].m_render = true;
+			}
+		}
+	}
+}
+
 CEditorLevel* CEditorLevel::CreatePrefab(const IVector2D& minCell, const IVector2D& maxCell, int flags)
 {
-	const int wide = minCell.x-maxCell.x;
-	const int tall = minCell.y-maxCell.y;
+	const int wide = maxCell.x-minCell.x;
+	const int tall = maxCell.y-minCell.y;
 
 	const float halfTile = HFIELD_POINT_SIZE*0.5f;
 
@@ -1053,12 +1073,15 @@ CEditorLevel* CEditorLevel::CreatePrefab(const IVector2D& minCell, const IVector
 	GetPointAt(prefabBounds.minPoint, regionsMin);
 	GetPointAt(prefabBounds.maxPoint, regionsMax);
 
+	Msg("Generating prefab [%d %d] to [%d %d]\n", minCell.x,minCell.y, maxCell.x, maxCell.y);
+	Msg("	prefab regions [%d %d] to [%d %d]\n", regionsMin.x,regionsMin.y, regionsMax.x, regionsMax.y);
+
 	//
 	// process work zones by regions
 	//
-	for(int x = regionsMin.x; x < regionsMax.x; x++)
+	for(int x = regionsMin.x; x <= regionsMax.x; x++)
 	{
-		for(int y = regionsMin.y; y < regionsMax.y; y++)
+		for(int y = regionsMin.y; y <= regionsMax.y; y++)
 		{
 			int regionIdx = y*regionsMax.x+x;
 
@@ -1066,8 +1089,12 @@ CEditorLevel* CEditorLevel::CreatePrefab(const IVector2D& minCell, const IVector
 			IVector2D regionMinCell;
 			IVector2D regionMaxCell;
 
+			Msg("Cloning from region %d-%d\n", x,y);
+
 			GlobalToLocalPointWithinRegion(minCell, regionMinCell, regionIdx);
 			GlobalToLocalPointWithinRegion(maxCell, regionMaxCell, regionIdx);
+
+			Msg("    cloning bounds: [%d %d] [%d %d]\n", regionMinCell.x, regionMinCell.y, regionMaxCell.x, regionMaxCell.y);
 
 			if(flags & PREFAB_HEIGHTFIELDS)
 				PrefabHeightfields(newLevel, minCell, regionIdx, regionMinCell, regionMaxCell);
@@ -1094,20 +1121,58 @@ void CEditorLevel::PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& 
 	regPos.y = (regionIdx - regPos.x) / m_wide;
 
 	// get cell start
-	IVector2D regionStart;
-	regionStart = regPos * m_cellsSize;
+	IVector2D offsetStart;
+	offsetStart = (regPos * m_cellsSize) - globalStart;
 
 	CEditorLevelRegion* region = &m_regions[regionIdx];
 
-	CLevelRegion* destRegion = &destLevel->m_regions[0];
+	CLevelRegion& destRegion = destLevel->m_regions[0];
 
 	for(int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
 	{
 		CHeightTileField* srcField = region->GetHField(i);
-		CHeightTileField* destField = destRegion->GetHField(i);
+		CHeightTileFieldRenderable* destField = destRegion.GetHField(i);
+
+		bool hasTiles = false;
 
 		// copy regions
-		
+		for(int x = regionMinCell.x; x < regionMaxCell.x; x++)
+		{
+			for(int y = regionMinCell.y; y < regionMaxCell.y; y++)
+			{
+				IVector2D srcTileOfs(IVector2D(x,y));
+				IVector2D destTileOfs(IVector2D(x,y)+offsetStart);
+
+				hfieldtile_t* srcTile = srcField->GetTile(srcTileOfs.x, srcTileOfs.y);
+
+				if(!srcTile)
+					continue;
+
+				hfieldtile_t* destTile = destField->GetTile(destTileOfs.x, destTileOfs.y);
+
+				//*destTile = *srcTile;
+				destTile->height = srcTile->height;
+				destTile->flags = srcTile->flags;
+				destTile->rotatetex = srcTile->rotatetex;
+				destTile->transition = srcTile->transition;
+
+				if(srcTile->texture != -1)
+				{
+					IMaterial* material = srcField->m_materials[srcTile->texture]->material;
+
+					destField->SetPointMaterial(x,y, material, srcTile->atlasIdx);
+					hasTiles = true;
+					//Msg("Set tile %d %d (%s)\n", x,y, material->GetName());
+				}
+			}
+		}
+
+		if(hasTiles)
+		{
+			Msg("Generating HFIELD render data for preview...\n");
+			destField->SetChanged();
+			destField->GenereateRenderData();
+		}
 	}
 }
 

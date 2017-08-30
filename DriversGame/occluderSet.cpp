@@ -103,6 +103,9 @@ bool occludingVolume_t::IsBeingOccluded( const Vector3D& pos, float radius) cons
 
 bool occludingFrustum_t::IsBoxVisible( const BoundingBox& bbox) const
 {
+	if(bypass)
+		return true;
+
 	if(!frustum.IsBoxInside(bbox.minPoint, bbox.maxPoint))
 		return false;
 
@@ -121,6 +124,9 @@ bool occludingFrustum_t::IsBoxVisible( const BoundingBox& bbox) const
 
 bool occludingFrustum_t::IsSphereVisible( const Vector3D& pos, float radius ) const
 {
+	if(bypass)
+		return true;
+
 	if(!frustum.IsSphereInside(pos, radius))
 		return false;
 
@@ -142,6 +148,9 @@ bool occludingFrustum_t::IsBoxVisibleThruOcc( const BoundingBox& bbox) const
 	if(!r_occlusion.GetBool())
 		return true;
 
+	if(bypass)
+		return true;
+
 	// here is negated
 	for(int i = 0; i < occluderSets.numElem(); i++)
 	{
@@ -155,6 +164,9 @@ bool occludingFrustum_t::IsBoxVisibleThruOcc( const BoundingBox& bbox) const
 bool occludingFrustum_t::IsSphereVisibleThruOcc( const Vector3D& pos, float radius ) const
 {
 	if(!r_occlusion.GetBool())
+		return true;
+
+	if(bypass)
 		return true;
 
 	// here is negated

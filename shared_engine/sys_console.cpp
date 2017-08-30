@@ -657,29 +657,7 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, float curTim
 	int drawending = (-drawstart*m_font->GetLineHeight(fontStyle)) + m_font->GetLineHeight(fontStyle) * (m_maxLines+drawstart);
 
 	int draws = 0;
-
-	Vector4D color(0.75f, 0.75f, 0.75f, 1);
-
-	static ITexture* pConsoleFrame = g_pShaderAPI->LoadTexture("ui/ui_console", TEXFILTER_TRILINEAR_ANISO,ADDRESSMODE_WRAP, TEXFLAG_NOQUALITYLOD);
-
-	if(!transparent)
-	{
-		Vertex2D_t tmprect[] = { MAKETEXQUAD(0, 0,(float) width, (float)height, 0) };
-
-		// Cancel textures
-		g_pShaderAPI->Reset();
-
-		// Set alpha,rasterizer and depth parameters
-		materials->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO);
-		materials->SetRasterizerStates(CULL_FRONT,FILL_SOLID);
-		materials->SetDepthStates(false,false);
-		g_pShaderAPI->SetTexture( pConsoleFrame );
-
-		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect,elementsOf(tmprect), pConsoleFrame, color, &blending);
-
-		// render slider
-	}
-
+	
 	Rectangle_t inputTextEntryRect(64, 26, width-64,46);
 
 	Rectangle_t con_outputRectangle(64.0f,inputTextEntryRect.vrightBottom.y+26, width - 64.0f, height-inputTextEntryRect.vleftTop.y);

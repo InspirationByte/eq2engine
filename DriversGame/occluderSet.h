@@ -32,7 +32,7 @@ struct occludingVolume_t
 // occluding frustum
 struct occludingFrustum_t
 {
-	occludingFrustum_t() : occluderSets(32)
+	occludingFrustum_t() : occluderSets(32), bypass(false)
 	{
 	}
 
@@ -57,6 +57,7 @@ struct occludingFrustum_t
 
 	Volume						frustum;
 	DkList<occludingVolume_t*>	occluderSets;
+	bool						bypass;
 };
 
 #endif // OCCLUDERSET_H

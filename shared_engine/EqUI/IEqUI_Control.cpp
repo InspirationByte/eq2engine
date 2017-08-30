@@ -64,7 +64,6 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 	m_font = nullptr;
 	m_sizeDiff = 0;
 	m_sizeDiffPerc = 1.0f;
-	m_scaling = UI_SCALING_NONE;
 	m_anchors = 0;
 	m_alignment = (UI_BORDER_LEFT | UI_BORDER_TOP);
 
@@ -136,6 +135,8 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 	kvkeybase_t* scaling = sec->FindKeyBase("scaling");
 	const char* scalingValue = KV_GetValueString(scaling, 0, "none");
 
+	m_scaling = UI_SCALING_NONE;
+
 	if(!stricmp("width", scalingValue))
 		m_scaling = UI_SCALING_WIDTH;
 	else if(!stricmp("height", scalingValue))
@@ -145,6 +146,7 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 	else if(!stricmp("inherit", scalingValue))
 		m_scaling = UI_SCALING_BOTH_INHERIT;
 
+	// walk for childs
 	for(int i = 0; i < sec->keys.numElem(); i++)
 	{
 		kvkeybase_t* csec = sec->keys[i];
@@ -474,23 +476,20 @@ bool IUIControl::ProcessCommand(DkList<EqString>& args)
 		if(m_parent)
 			m_parent->Hide();
 	}
-
-	if(!stricmp("engine", UICMD_ARGV(0).c_str()))
+	else if(!stricmp("engine", UICMD_ARGV(0).c_str()))
 	{
 		// execute console commands
 		g_sysConsole->SetCommandBuffer(UICMD_ARGV(1).c_str());
 		g_sysConsole->ExecuteCommandBuffer();
 		g_sysConsole->ClearCommandBuffer();
 	}
-
-	if(!stricmp("showpanel", UICMD_ARGV(0).c_str()))
+	else if(!stricmp("showpanel", UICMD_ARGV(0).c_str()))
 	{
 		// show panel
 		equi::Panel* panel = equi::Manager->FindPanel(UICMD_ARGV(1).c_str());
 		panel->Show();
 	}
-
-	if(!stricmp("hidepanel", UICMD_ARGV(0).c_str()))
+	else if(!stricmp("hidepanel", UICMD_ARGV(0).c_str()))
 	{
 		// hide panel
 		equi::Panel* panel = equi::Manager->FindPanel(UICMD_ARGV(1).c_str());

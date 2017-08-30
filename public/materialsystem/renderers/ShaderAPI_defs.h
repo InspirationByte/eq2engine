@@ -104,7 +104,10 @@ enum MatrixMode_e
 {
 	MATRIXMODE_VIEW	= 0,			// view tranformation matrix
 	MATRIXMODE_PROJECTION,			// projection mode matrix
+
 	MATRIXMODE_WORLD,				// world transformation matrix
+	MATRIXMODE_WORLD2,				// world transformation - used as offset for MATRIXMODE_WORLD
+
 	MATRIXMODE_TEXTURE,
 };
 

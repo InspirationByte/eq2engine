@@ -30,6 +30,14 @@ struct ctrlFactory_t
 	EQUICONTROLFACTORYFN factory;
 };
 
+typedef bool (*EQUICOMMANDPROCESSOR)(DkList<EqString>& args);
+
+struct commandProcFn_t
+{
+	const char* name;
+	EQUICOMMANDPROCESSOR func;
+};
+
 class CUIManager
 {
 public:
