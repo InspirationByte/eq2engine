@@ -1054,14 +1054,13 @@ void CEditorLevel::Ed_Render(const Vector3D& cameraPosition, const Matrix4x4& vi
 
 CEditorLevel* CEditorLevel::CreatePrefab(const IVector2D& minCell, const IVector2D& maxCell, int flags)
 {
-	const int wide = maxCell.x-minCell.x;
-	const int tall = maxCell.y-minCell.y;
+	IVector2D prefabSize(maxCell-minCell + 1);
 
 	const float halfTile = HFIELD_POINT_SIZE*0.5f;
 
 	// make level with single region
 	CEditorLevel* newLevel = new CEditorLevel();
-	newLevel->Init(1,1, max(wide,tall), true);
+	newLevel->Init(1,1, max(prefabSize.x, prefabSize.y), true);
 
 	// make bounds for copying objects
 	BoundingBox prefabBounds;
@@ -1070,11 +1069,16 @@ CEditorLevel* CEditorLevel::CreatePrefab(const IVector2D& minCell, const IVector
 
 	// region bounds
 	IVector2D regionsMin, regionsMax;
-	GetPointAt(prefabBounds.minPoint, regionsMin);
-	GetPointAt(prefabBounds.maxPoint, regionsMax);
+	regionsMin = GlobalPointToRegionPosition(minCell);
+	regionsMax = GlobalPointToRegionPosition(maxCell);
 
+	//GetPointAt(prefabBounds.minPoint, regionsMin);
+	//GetPointAt(prefabBounds.maxPoint, regionsMax);
+	
+	Msg("---------------------\n");
+	Msg("Prefab cells size: [%d %d], using biggest one\n", prefabSize.x, prefabSize.y);
 	Msg("Generating prefab [%d %d] to [%d %d]\n", minCell.x,minCell.y, maxCell.x, maxCell.y);
-	Msg("	prefab regions [%d %d] to [%d %d]\n", regionsMin.x,regionsMin.y, regionsMax.x, regionsMax.y);
+	Msg("	prefab regions [%d %d] to [%d %d]\n", regionsMin.x, regionsMin.y, regionsMax.x, regionsMax.y);
 
 	//
 	// process work zones by regions
@@ -1083,50 +1087,50 @@ CEditorLevel* CEditorLevel::CreatePrefab(const IVector2D& minCell, const IVector
 	{
 		for(int y = regionsMin.y; y <= regionsMax.y; y++)
 		{
-			int regionIdx = y*regionsMax.x+x;
+			int regionIdx = y*m_wide+x;
+
+			IVector2D regionStart = IVector2D(x,y)*m_cellsSize;
+			IVector2D regionEnd = regionStart + m_cellsSize;
 
 			// calculate the tile bounds
 			IVector2D regionMinCell;
 			IVector2D regionMaxCell;
 
-			Msg("Cloning from region %d-%d\n", x,y);
+			Msg("Cloning region [%d %d] (idx=%d)\n", x,y, regionIdx);
 
-			GlobalToLocalPointWithinRegion(minCell, regionMinCell, regionIdx);
-			GlobalToLocalPointWithinRegion(maxCell, regionMaxCell, regionIdx);
+			regionMinCell = clamp(minCell, regionStart, regionEnd)-regionStart;
+			regionMaxCell = clamp(maxCell, regionStart, regionEnd)-regionStart;
 
-			Msg("    cloning bounds: [%d %d] [%d %d]\n", regionMinCell.x, regionMinCell.y, regionMaxCell.x, regionMaxCell.y);
+			regionMaxCell += 1;
+			regionMaxCell = clamp(regionMaxCell, 0, m_cellsSize);
+
+			IVector2D regionSelSize(regionMaxCell-regionMinCell);
+			Msg("    cloning bounds: [%d %d] [%d %d] size=[%d %d]\n", regionMinCell.x, regionMinCell.y, regionMaxCell.x, regionMaxCell.y, regionSelSize.x, regionSelSize.y);
 
 			if(flags & PREFAB_HEIGHTFIELDS)
-				PrefabHeightfields(newLevel, minCell, regionIdx, regionMinCell, regionMaxCell);
+				PrefabHeightfields(newLevel, regionStart-minCell, regionIdx, regionMinCell, regionMaxCell);
 
 			if(flags & PREFAB_OBJECTS)
-				PrefabObjects(newLevel, minCell, regionIdx, prefabBounds);
+				PrefabObjects(newLevel, regionStart-minCell, regionIdx, prefabBounds);
 
 			if(flags & PREFAB_OCCLUDERS)
-				PrefabOccluders(newLevel, minCell, regionIdx, prefabBounds);
+				PrefabOccluders(newLevel, regionStart-minCell, regionIdx, prefabBounds);
 
 			if(flags & PREFAB_ROADS)
-				PrefabRoads(newLevel, minCell, regionIdx, regionMinCell, regionMaxCell);
+				PrefabRoads(newLevel, regionStart-minCell, regionIdx, regionMinCell, regionMaxCell);
 		}
 	}
 
 	return newLevel;
 }
 
-void CEditorLevel::PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& globalStart, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell)
+void CEditorLevel::PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell)
 {
-	// calculate region position
-	IVector2D regPos;
-	regPos.x = regionIdx % m_wide;
-	regPos.y = (regionIdx - regPos.x) / m_wide;
-
-	// get cell start
-	IVector2D offsetStart;
-	offsetStart = (regPos * m_cellsSize) - globalStart;
-
 	CEditorLevelRegion* region = &m_regions[regionIdx];
 
 	CLevelRegion& destRegion = destLevel->m_regions[0];
+
+	//Msg("	Dest offset: [%d %d] on region %d\n", prefabOffset.x, prefabOffset.y, regionIdx);
 
 	for(int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
 	{
@@ -1141,7 +1145,7 @@ void CEditorLevel::PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& 
 			for(int y = regionMinCell.y; y < regionMaxCell.y; y++)
 			{
 				IVector2D srcTileOfs(IVector2D(x,y));
-				IVector2D destTileOfs(IVector2D(x,y)+offsetStart);
+				IVector2D destTileOfs(IVector2D(x,y)+prefabOffset);
 
 				hfieldtile_t* srcTile = srcField->GetTile(srcTileOfs.x, srcTileOfs.y);
 
@@ -1160,7 +1164,7 @@ void CEditorLevel::PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& 
 				{
 					IMaterial* material = srcField->m_materials[srcTile->texture]->material;
 
-					destField->SetPointMaterial(x,y, material, srcTile->atlasIdx);
+					destField->SetPointMaterial(destTileOfs.x, destTileOfs.y, material, srcTile->atlasIdx);
 					hasTiles = true;
 					//Msg("Set tile %d %d (%s)\n", x,y, material->GetName());
 				}
@@ -1169,50 +1173,24 @@ void CEditorLevel::PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& 
 
 		if(hasTiles)
 		{
-			Msg("Generating HFIELD render data for preview...\n");
 			destField->SetChanged();
 			destField->GenereateRenderData();
 		}
 	}
 }
 
-void CEditorLevel::PrefabObjects(CEditorLevel* destLevel, const IVector2D& globalStart, int regionIdx, const BoundingBox& prefabBounds)
+void CEditorLevel::PrefabObjects(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const BoundingBox& prefabBounds)
 {
-	// calculate region position
-	IVector2D regPos;
-	regPos.x = regionIdx % m_wide;
-	regPos.y = (regionIdx - regPos.x) / m_wide;
-
-	// get cell start
-	IVector2D regionStart;
-	regionStart = regPos * m_cellsSize;
-
 	CEditorLevelRegion* region = &m_regions[regionIdx];
 }
 
-void CEditorLevel::PrefabOccluders(CEditorLevel* destLevel, const IVector2D& globalStart, int regionIdx, const BoundingBox& prefabBounds)
+void CEditorLevel::PrefabOccluders(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const BoundingBox& prefabBounds)
 {
-	// calculate region position
-	IVector2D regPos;
-	regPos.x = regionIdx % m_wide;
-	regPos.y = (regionIdx - regPos.x) / m_wide;
 
-	// get cell start
-	IVector2D regionStart;
-	regionStart = regPos * m_cellsSize;
 }
 
-void CEditorLevel::PrefabRoads(CEditorLevel* destLevel, const IVector2D& globalStart, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell)
+void CEditorLevel::PrefabRoads(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell)
 {
-	// calculate region position
-	IVector2D regPos;
-	regPos.x = regionIdx % m_wide;
-	regPos.y = (regionIdx - regPos.x) / m_wide;
-
-	// get cell start
-	IVector2D regionStart;
-	regionStart = regPos * m_cellsSize;
-
 	CEditorLevelRegion* region = &m_regions[regionIdx];
 }
 

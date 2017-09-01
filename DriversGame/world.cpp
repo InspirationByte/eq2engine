@@ -314,6 +314,8 @@ void CGameWorld::InitEnvironment()
 	m_envConfig.rainBrightness = KV_GetValueFloat(envSection->FindKeyBase("rainBrightness"));
 	m_envConfig.rainDensity = KV_GetValueFloat(envSection->FindKeyBase("rainDensity"));
 
+	float rainVolume = powf(m_envConfig.rainDensity/100.0f, 0.25f);
+
 	m_envConfig.lightsType = (EWorldLights)KV_GetValueInt(envSection->FindKeyBase("lights"));
 
 	const char* weatherName = KV_GetValueString(envSection->FindKeyBase("weather"));
@@ -337,7 +339,7 @@ void CGameWorld::InitEnvironment()
 		EmitSound_t snd;
 		snd.name = "rain.rain";
 		snd.fPitch = 1.0;
-		snd.fVolume = 0.45f;
+		snd.fVolume = rainVolume;
 
 		m_rainSound = ses->CreateSoundController(&snd);
 	}
@@ -351,7 +353,7 @@ void CGameWorld::InitEnvironment()
 		EmitSound_t snd;
 		snd.name = "rain.rain";
 		snd.fPitch = 1.0;
-		snd.fVolume = 0.6f;
+		snd.fVolume = rainVolume;
 
 		m_rainSound = ses->CreateSoundController(&snd);
 
@@ -825,7 +827,10 @@ void CGameWorld::UpdateWorld(float fDt)
 
 		if(m_envConfig.weatherType >= WEATHER_TYPE_RAIN && m_rainSound)
 		{
-			m_rainSound->SetOrigin(m_view.GetOrigin());
+			CollisionData_t coll;
+			g_pPhysics->TestLine(m_view.GetOrigin()+Vector3D(0, 100, 0), m_view.GetOrigin()-Vector3D(0, 40, 0), coll, (OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS));
+
+			m_rainSound->SetOrigin( coll.position );
 
 			if(m_rainSound->IsStopped())
 				m_rainSound->Play();

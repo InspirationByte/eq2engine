@@ -166,10 +166,10 @@ public:
 	CEditorLevel*	CreatePrefab(const IVector2D& minCell, const IVector2D& maxCell, int flags /*EPrefabCreationFlags*/);
 protected:
 
-	void			PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& globalStart, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell);
-	void			PrefabObjects(CEditorLevel* destLevel, const IVector2D& globalStart, int regionIdx, const BoundingBox& prefabBounds);
-	void			PrefabOccluders(CEditorLevel* destLevel, const IVector2D& globalStart, int regionIdx, const BoundingBox& prefabBounds);
-	void			PrefabRoads(CEditorLevel* destLevel, const IVector2D& globalStart, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell);
+	void			PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell);
+	void			PrefabObjects(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const BoundingBox& prefabBounds);
+	void			PrefabOccluders(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const BoundingBox& prefabBounds);
+	void			PrefabRoads(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell);
 };
 
 //-----------------------------------------------------------------------------------

@@ -206,6 +206,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 	materials->Setup2D(screenSize.x,screenSize.y);
 
+	materials->SetAmbientColor(ColorRGBA(1,1,1,1));
 	m_hudLayout->SetSize(screenSize);
 	m_hudLayout->Render();
 

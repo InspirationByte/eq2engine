@@ -898,11 +898,18 @@ bool CGameLevel::GetTileGlobal(const Vector3D& pos, IVector2D& outGlobalXYPos) c
 	return true;
 }
 
-void CGameLevel::GlobalToLocalPoint( const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion ) const
+IVector2D CGameLevel::GlobalPointToRegionPosition(const IVector2D& point) const
 {
 	IVector2D regPos;
 	regPos.x = floor((float)point.x / (float)(m_cellsSize));
 	regPos.y = floor((float)point.y / (float)(m_cellsSize));
+
+	return regPos;
+}
+
+void CGameLevel::GlobalToLocalPoint( const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion ) const
+{
+	IVector2D regPos = GlobalPointToRegionPosition(point);
 
 	IVector2D globalStart;
 	globalStart = regPos * m_cellsSize;
@@ -911,25 +918,6 @@ void CGameLevel::GlobalToLocalPoint( const IVector2D& point, IVector2D& outLocal
 
 	(*pRegion) = GetRegionAt(regPos);
 }
-
-void CGameLevel::GlobalToLocalPointWithinRegion( const IVector2D& point, IVector2D& outLocalPoint, int regionIdx ) const
-{
-	// calculate region position
-	IVector2D regPos;
-	regPos.x = regionIdx % m_wide;
-	regPos.y = (regionIdx - regPos.x) / m_wide;
-
-	// get cell start
-	IVector2D globalStart;
-	globalStart = regPos * m_cellsSize;
-
-	// get cell end
-	IVector2D globalEnd = globalStart + IVector2D(m_cellsSize);
-
-	// clamp
-	outLocalPoint = clamp(point, globalStart, globalEnd) - globalStart;
-}
-
 
 void CGameLevel::LocalToGlobalPoint( const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const
 {
