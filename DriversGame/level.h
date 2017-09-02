@@ -50,7 +50,7 @@ public:
 	void							Init(int wide, int tall, int cells, bool isCleanLevel);	
 	void							Cleanup(); // unloads level
 
-	virtual bool					Load(const char* levelname, kvkeybase_t* kvDefs);
+	bool							Load(const char* levelname, kvkeybase_t* kvDefs);
 
 	//-------------------------------------------------------------------------
 	// region spooling
@@ -171,6 +171,8 @@ public:
 	CEqMutex&						m_mutex;
 
 protected:
+
+	bool					_Load(IFile* levFile, kvkeybase_t* kvDefs);
 
 	void					Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion) const;
 	void					Nav_LocalToGlobalPoint(const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const;

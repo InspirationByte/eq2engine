@@ -658,6 +658,8 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 	if(unloadLevel)
 	{
+		Msg("Unloading level...\n");
+
 		m_levelLoaded = false;
 		m_level.Cleanup();
 
@@ -1815,11 +1817,22 @@ bool CGameWorld::LoadLevel()
 }
 
 #ifdef EDITOR
-bool CGameWorld::SaveLevel()
+bool CGameWorld::LoadPrefabLevel()
 {
-	// save editor data
+	bool result = true;
 
-	return m_level.Save( m_levelname.c_str() );
+	if(!m_levelLoaded)
+	{
+		result = m_level.LoadPrefab( m_levelname.GetData() );
+	}
+
+	if(result)
+	{
+		m_levelLoaded = true;
+		InitEnvironment();
+	}
+
+	return result;
 }
 #endif // EDITOR
 

@@ -303,8 +303,10 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_menu_file->Append( Event_File_New, DKLOC("TOKEN_NEW", L"New\tCtrl+N") );
 	m_menu_file->AppendSeparator();
 	m_menu_file->Append( Event_File_Load, DKLOC("TOKEN_LOAD", L"Load level\tCtrl+O") );
+
 	m_menu_file->Append( Event_File_Save, DKLOC("TOKEN_SAVE", L"Save level\tCtrl+S") );
-	m_menu_file->Append( Event_File_SaveAs, DKLOC("TOKEN_SAVE", L"Save as...\tCtrl+S") );
+	m_menu_file->Append( Event_File_SaveAs, DKLOC("TOKEN_SAVEAS", L"Save as...\tCtrl+S") );
+
 	//m_menu_file->AppendSeparator();
 #pragma todo("previous loaded list")
 	m_menu_file->AppendSeparator();
@@ -410,6 +412,8 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	g_pGameWorld->SetEnvironmentName("day_clear");
 
+	m_editingPrefab = false;
+
 	g_pGameWorld->Init();
 	g_pGameWorld->InitEnvironment();
 	g_pGameWorld->m_level.Init(16, 16, 64, true);
@@ -491,6 +495,41 @@ void CMainWindow::OnLevelLoad()
 	m_regionEditorFrame->OnLevelLoad();
 }
 
+void CMainWindow::LoadEditPrefab(const char* name)
+{
+	if(!SavePrompt())
+		return;
+
+	OnLevelUnload();
+	g_pGameWorld->Cleanup();
+
+	g_pPhysics->SceneShutdown();
+	g_pPhysics->SceneInit();
+
+	g_pGameWorld->SetLevelName( name );
+	g_pGameWorld->Init();
+
+	if(!g_pGameWorld->LoadPrefabLevel())
+	{
+		wxMessageBox("Invalid level file, or not found", "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
+		return;
+	}
+
+	m_editingPrefab = true;
+
+	g_pGameWorld->FillEnviromentList(m_environmentList);
+
+	m_bSavedOnDisk = true;
+	m_bNeedsSave = false;
+
+	OnLevelLoad();
+
+	//ResetViews();
+	//UpdateAllWindows();
+
+	MakeEnvironmentListMenu();
+}
+
 void CMainWindow::OpenLevelPrompt()
 {
 	if(!SavePrompt())
@@ -510,7 +549,13 @@ void CMainWindow::OpenLevelPrompt()
 		g_pGameWorld->SetLevelName( m_loadleveldialog->GetSelectedLevelString() );
 		g_pGameWorld->Init();
 
-		g_pGameWorld->LoadLevel();
+		if(!g_pGameWorld->LoadLevel())
+		{
+			wxMessageBox("Invalid level file, or not found", "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
+			return;
+		}
+
+		m_editingPrefab = false;
 
 		g_pGameWorld->FillEnviromentList(m_environmentList);
 
@@ -558,6 +603,8 @@ void CMainWindow::NewLevelPrompt()
 		m_bSavedOnDisk = false;
 
 		g_pGameWorld->SetEnvironmentName("day_clear");
+
+		m_editingPrefab = false;
 
 		g_pGameWorld->Init();
 		g_pGameWorld->InitEnvironment();
@@ -614,8 +661,14 @@ bool CMainWindow::SavePrompt(bool showQuestion, bool changeLevelName, bool bForc
 		// if it's already on disk, save it
 		if(IsSavedOnDisk() && bForceSave)
 		{
-			g_pGameWorld->SaveLevel();
-			
+			if(m_editingPrefab)
+				g_pGameWorld->m_level.SavePrefab(g_pGameWorld->GetLevelName());
+			else
+				g_pGameWorld->m_level.Save(g_pGameWorld->GetLevelName(), false);
+
+			for(int i = 0; i < m_tools.numElem(); i++)
+				m_tools[i]->OnLevelSave();
+
 			m_bSavedOnDisk = true;
 			m_bNeedsSave = false;
 		}
@@ -641,7 +694,11 @@ bool CMainWindow::SavePrompt(bool showQuestion, bool changeLevelName, bool bForc
 		if(m_levelsavedialog->ShowModal() == wxID_OK)
 		{
 			g_pGameWorld->SetLevelName(m_levelsavedialog->GetValue());
-			g_pGameWorld->SaveLevel();
+
+			if(m_editingPrefab)
+				g_pGameWorld->m_level.SavePrefab(g_pGameWorld->GetLevelName());
+			else
+				g_pGameWorld->m_level.Save(g_pGameWorld->GetLevelName(), false);
 
 			m_bSavedOnDisk = true;
 			m_bNeedsSave = false;
@@ -652,7 +709,10 @@ bool CMainWindow::SavePrompt(bool showQuestion, bool changeLevelName, bool bForc
 	}
 	else
 	{
-		g_pGameWorld->SaveLevel();
+		if(m_editingPrefab)
+			g_pGameWorld->m_level.SavePrefab(g_pGameWorld->GetLevelName());
+		else
+			g_pGameWorld->m_level.Save(g_pGameWorld->GetLevelName(), false);
 
 		for(int i = 0; i < m_tools.numElem(); i++)
 			m_tools[i]->OnLevelSave();
@@ -1286,6 +1346,14 @@ bool CEGFViewApp::OnInit()
 	SetTopWindow(g_pMainFrame);
 
 	g_parallelJobs->Init(1);
+
+	int pfbCmdIdx = g_cmdLine->FindArgument("-editprefab");
+
+	if(pfbCmdIdx != -1)
+	{
+		EqString prefabName(g_cmdLine->GetArgumentsOf(pfbCmdIdx));
+		g_pMainFrame->LoadEditPrefab( prefabName.c_str() );
+	}
 
     return true;
 }

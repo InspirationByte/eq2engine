@@ -63,6 +63,8 @@ public:
 	//void			OnContextMenu(wxContextMenuEvent& event);
 	//void			OnFocus(wxFocusEvent& event);
 
+	void			LoadEditPrefab(const char* name);
+
 	void			OpenLevelPrompt();
 	void			NewLevelPrompt();
 	bool			SavePrompt(bool showQuestion = true, bool changeLevelName = false, bool bForceSave = false);
@@ -112,8 +114,13 @@ protected:
 	wxMenu*			m_menu_environment;
 	wxMenuItem*		m_menu_environment_itm;
 
+	wxMenuItem*		m_menu_savepfb;
+	wxMenuItem*		m_menu_savepfbAs;
+
 	bool			m_bDoRefresh;
 	bool			m_bIsMoving;
+
+	bool			m_editingPrefab;
 
 	wxPoint			m_vLastCursorPos;
 	wxPoint			m_vLastClientCursorPos;

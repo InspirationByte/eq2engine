@@ -7,6 +7,7 @@
 
 #include "UI_PrefabMgr.h"
 #include "EditorLevel.h"
+#include "EditorMain.h"
 
 #include "world.h"
 
@@ -104,12 +105,17 @@ void CUI_PrefabManager::OnFilterChange( wxCommandEvent& event )
 
 void CUI_PrefabManager::OnNewPrefabClick( wxCommandEvent& event )
 {
-
+	MakePrefabFromSelection();
 }
 
 void CUI_PrefabManager::OnEditPrefabClick( wxCommandEvent& event )
 {
+	int idx = m_prefabList->GetSelection();
 
+	if(idx != -1)
+	{
+		g_pMainFrame->LoadEditPrefab( m_prefabList->GetString(idx) );
+	}
 }
 
 void CUI_PrefabManager::OnDeletePrefabClick( wxCommandEvent& event )
@@ -155,40 +161,52 @@ void CUI_PrefabManager::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* til
 
 void CUI_PrefabManager::OnKey(wxKeyEvent& event, bool bDown)
 {
-	if(m_mode == PREFABMODE_CREATE_READY)
+	if(event.m_keyCode == WXK_RETURN)
 	{
-		if(event.m_keyCode == WXK_RETURN)
+		MakePrefabFromSelection();
+	}
+}
+
+
+void CUI_PrefabManager::MakePrefabFromSelection()
+{
+	if(m_mode != PREFABMODE_CREATE_READY)
+	{
+		wxMessageBox("You have to select some region.", "Warning", wxOK | wxICON_EXCLAMATION | wxCENTRE, this);
+		return;
+	}
+
+	IVector2D size = m_tileSelection.GetSize();
+
+	if(size.x <= 1 || size.y <= 1)
+	{
+		wxMessageBox("Select more cells, don't get lazy.", "Warning", wxOK | wxICON_EXCLAMATION | wxCENTRE, this);
+		return;
+	}
+
+	// get prefab name
+	m_prefabNameDialog->SetValue("");
+
+	if(m_prefabNameDialog->ShowModal() == wxID_OK)
+	{
+		EqString nameVal(m_prefabNameDialog->GetValue().mbc_str());
+
+		if(nameVal.Length() == 0)
 		{
-			/*
-			// get prefab name
-			m_prefabNameDialog->SetValue("");
-
-			if(m_prefabNameDialog->ShowModal() == wxID_OK)
-			{
-				EqString nameVal(m_prefabNameDialog->GetValue().mbc_str());
-
-				if(nameVal.Length() == 0)
-				{
-					wxMessageBox("Name cannot be empty.", "Warning", wxOK | wxICON_EXCLAMATION | wxCENTRE, this);
-					return;
-				}
-
-				// generate prefab
-				CEditorLevel* generatedFromSel = g_pGameWorld->m_level.CreatePrefab(m_tileSelection.vleftTop, m_tileSelection.vrightBottom, PREFAB_ALL);
-
-				m_mode = PREFABMODE_READY;
-			}*/
-
-			wxMessageBox("Making prefab.", "Warning", wxOK | wxICON_EXCLAMATION | wxCENTRE, this);
-
-			if(m_selPrefab)
-			{
-				m_selPrefab->Cleanup();
-				delete m_selPrefab;
-			}
-
-			m_selPrefab = g_pGameWorld->m_level.CreatePrefab(m_tileSelection.vleftTop, m_tileSelection.vrightBottom, PREFAB_ALL);
+			wxMessageBox("Name cannot be empty.", "Warning", wxOK | wxICON_EXCLAMATION | wxCENTRE, this);
+			return;
 		}
+
+		// generate prefab
+		CEditorLevel* generatedFromSel = g_pGameWorld->m_level.CreatePrefab(m_tileSelection.vleftTop, m_tileSelection.vrightBottom, PREFAB_ALL);
+		generatedFromSel->SavePrefab(nameVal.c_str());
+
+		generatedFromSel->Cleanup();
+		delete generatedFromSel;
+
+		RefreshPrefabList();
+
+		m_mode = PREFABMODE_READY;
 	}
 }
 
@@ -203,14 +221,23 @@ void CUI_PrefabManager::OnRender()
 		field->DebugRender(false, m_mouseOverTileHeight);
 	}
 
-	Vector3D bboxMin = g_pGameWorld->m_level.GlobalTilePointToPosition(m_tileSelection.vleftTop);
-	Vector3D bboxMax = g_pGameWorld->m_level.GlobalTilePointToPosition(m_tileSelection.vrightBottom);
+	if(m_mode == PREFABMODE_TILESELECTION || m_mode == PREFABMODE_CREATE_READY)
+	{
+		Vector3D bboxMin = g_pGameWorld->m_level.GlobalTilePointToPosition(m_tileSelection.vleftTop);
+		Vector3D bboxMax = g_pGameWorld->m_level.GlobalTilePointToPosition(m_tileSelection.vrightBottom);
 
-	BoundingBox bbox;
-	bbox.AddVertex(bboxMin);
-	bbox.AddVertex(bboxMax);
+		BoundingBox bbox;
+		bbox.AddVertex(bboxMin);
+		bbox.AddVertex(bboxMax);
 
-	debugoverlay->Box3D(bbox.minPoint-HFIELD_POINT_SIZE*0.5f, bbox.maxPoint+HFIELD_POINT_SIZE*0.5f, ColorRGBA(1,1,0,1), 0.0f);
+		IVector2D size = m_tileSelection.GetSize();
+
+		if(size.y > 1 && size.y > 1)
+		{
+			debugoverlay->Box3D(bbox.minPoint-HFIELD_POINT_SIZE*0.5f, bbox.maxPoint+HFIELD_POINT_SIZE*0.5f, ColorRGBA(1,1,0,1), 0.0f);
+			debugoverlay->Text3D(bbox.maxPoint, -1.0f, ColorRGBA(1,1,0,1), 0.0f, "size: %d %d", size.x, size.y);
+		}
+	}
 
 	if(m_selPrefab)
 	{
@@ -226,22 +253,61 @@ void CUI_PrefabManager::OnRender()
 
 void CUI_PrefabManager::OnLevelUnload()
 {
+	CBaseTilebasedEditor::OnLevelUnload();
 
+	if(m_selPrefab != nullptr)
+	{
+		m_selPrefab->Cleanup();
+		delete m_selPrefab;
+		m_mode = PREFABMODE_READY;
+	}
+}
+
+void CUI_PrefabManager::RefreshPrefabList()
+{
+	m_prefabList->Clear();
+
+	EqString prefabs_dir(g_fileSystem->GetCurrentGameDirectory());
+	prefabs_dir = prefabs_dir + EqString("/editor_prefabs/*.pfb");
+
+	WIN32_FIND_DATAA wfd;
+	HANDLE hFile;
+
+	hFile = FindFirstFileA(prefabs_dir.GetData(), &wfd);
+	if(hFile != NULL)
+	{
+		while(1) 
+		{
+			EqString filename = wfd.cFileName;
+
+			if( !(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
+			{
+				m_prefabList->Append(filename.Path_Strip_Ext().c_str());
+			}
+
+			if(!FindNextFileA(hFile, &wfd))
+				break;
+		}
+
+		FindClose(hFile);
+	}
 }
 
 void CUI_PrefabManager::OnLevelLoad()
 {
+	CBaseTilebasedEditor::OnLevelLoad();
+
 	m_mode = PREFABMODE_READY;
 }
 
 void CUI_PrefabManager::InitTool()
 {
-	
+	RefreshPrefabList();
 }
 
 void CUI_PrefabManager::ReloadTool()
 {
-
+	RefreshPrefabList();
 }
 
 void CUI_PrefabManager::Update_Refresh()

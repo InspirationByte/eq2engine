@@ -46,6 +46,17 @@ public:
 
 
 protected:
+
+	void						MakePrefabFromSelection();
+	void						RefreshPrefabList();
+		
+	// Virtual event handlers, overide them in your derived class
+	virtual void OnBeginPrefabPlacement( wxCommandEvent& event );
+	virtual void OnFilterChange( wxCommandEvent& event );
+	virtual void OnNewPrefabClick( wxCommandEvent& event) ;
+	virtual void OnEditPrefabClick( wxCommandEvent& event );
+	virtual void OnDeletePrefabClick( wxCommandEvent& event );
+
 	IRectangle					m_tileSelection;
 	EPrefabManagerMode			m_mode;
 
@@ -59,13 +70,6 @@ protected:
 	wxTextEntryDialog* m_prefabNameDialog;
 
 	CEditorLevel* m_selPrefab;
-		
-	// Virtual event handlers, overide them in your derived class
-	virtual void OnBeginPrefabPlacement( wxCommandEvent& event );
-	virtual void OnFilterChange( wxCommandEvent& event );
-	virtual void OnNewPrefabClick( wxCommandEvent& event) ;
-	virtual void OnEditPrefabClick( wxCommandEvent& event );
-	virtual void OnDeletePrefabClick( wxCommandEvent& event );
 };
 
 #endif // UI_PREFABMGR

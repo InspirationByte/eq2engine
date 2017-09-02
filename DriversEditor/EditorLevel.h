@@ -145,6 +145,9 @@ public:
 	bool			Load(const char* levelname, kvkeybase_t* kvDefs);
 	bool			Save(const char* levelname, bool isfinal = false);
 
+	bool			LoadPrefab(const char* prefabName);
+	bool			SavePrefab(const char* prefabName);
+
 	void			Ed_Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj);
 
 	void			Ed_Prerender(const Vector3D& cameraPosition);
@@ -166,7 +169,7 @@ public:
 	CEditorLevel*	CreatePrefab(const IVector2D& minCell, const IVector2D& maxCell, int flags /*EPrefabCreationFlags*/);
 protected:
 
-	void			PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell);
+	void			PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell, bool cloneRoads);
 	void			PrefabObjects(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const BoundingBox& prefabBounds);
 	void			PrefabOccluders(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const BoundingBox& prefabBounds);
 	void			PrefabRoads(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell);

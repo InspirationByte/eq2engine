@@ -148,8 +148,9 @@ public:
 	const char*						GetLevelName() const;
 
 	bool							LoadLevel();
+
 #ifdef EDITOR
-	bool							SaveLevel();
+	bool							LoadPrefabLevel();
 #endif // EDITOR
 
 	//-------------------------------------------------------------------------

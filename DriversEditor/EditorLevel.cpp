@@ -177,7 +177,11 @@ void buildingSource_t::ToKeyValues(kvkeybase_t* kvs)
 	kvs->SetName( layerColl->name.c_str() );
 	kvs->SetKey("order", order);
 	kvs->SetKey("objectId", regObjectId);
-	kvs->SetKey("position", modelPosition);
+
+	kvkeybase_t* positionKey = kvs->AddKeyBase("position", nullptr, KVPAIR_FLOAT);
+	positionKey->AddValue(modelPosition.x);
+	positionKey->AddValue(modelPosition.x);
+	positionKey->AddValue(modelPosition.x);
 
 	kvkeybase_t* kvPoints = kvs->AddKeyBase("points");
 
@@ -573,9 +577,11 @@ bool CEditorLevel::Save(const char* levelname, bool isFinal)
 
 	if(!pFile)
 	{
-		MsgError("can't open level '%s' for write\n", levelname);
+		MsgError("can't open '%s' for write\n", levelname);
 		return false;
 	}
+
+	Msg("Saving level '%s'...\n", levelname);
 
 	levHdr_t hdr;
 	hdr.ident = LEVEL_IDENT;
@@ -606,39 +612,86 @@ bool CEditorLevel::Save(const char* levelname, bool isFinal)
 	return true;
 }
 
+bool CEditorLevel::LoadPrefab(const char* prefabName)
+{
+	IFile* pFile = g_fileSystem->Open(varargs("editor_prefabs/%s.pfb", prefabName), "rb", SP_MOD);
+
+	if(!pFile)
+	{
+		MsgError("can't find prefab '%s'\n", prefabName);
+		return false;
+	}
+
+	Msg("Loading prefab '%s'...\n", prefabName);
+
+	m_levelName = prefabName;
+
+	kvkeybase_t empty;
+	return CGameLevel::_Load(pFile, &empty);
+}
+
+bool CEditorLevel::SavePrefab(const char* prefabName)
+{
+	IFile* pFile = g_fileSystem->Open(varargs("editor_prefabs/%s.pfb", prefabName), "wb", SP_MOD);
+
+	if(!pFile)
+	{
+		MsgError("can't open '%s' for write\n", prefabName);
+		return false;
+	}
+
+	Msg("Saving prefab '%s'...\n", prefabName);
+
+	levHdr_t hdr;
+	hdr.ident = LEVEL_IDENT;
+	hdr.version = LEVEL_VERSION;
+
+	pFile->Write(&hdr, sizeof(levHdr_t), 1);
+
+	// write models first if available
+	WriteObjectDefsLump( pFile );
+
+	// write region info
+	WriteLevelRegions( pFile, false );
+
+	levLump_t endLump;
+	endLump.type = LEVLUMP_ENDMARKER;
+	endLump.size = 0;
+
+	g_fileSystem->Close(pFile);
+
+	return true;
+}
+
 void CEditorLevel::WriteObjectDefsLump(IVirtualStream* stream)
 {
-	// if(m_finalBuild)
-	//	return;
-
 	if(m_objectDefs.numElem() == 0)
 		return;
 
-	CMemoryStream modelsLump;
-	modelsLump.Open(NULL, VS_OPEN_WRITE, 2048);
+	CMemoryStream objectDefsLump;
+	objectDefsLump.Open(NULL, VS_OPEN_WRITE, 2048);
 
 	int numModels = m_objectDefs.numElem();
-
-	modelsLump.Write(&numModels, 1, sizeof(int));
+	objectDefsLump.Write(&numModels, 1, sizeof(int));
 
 	// write model names
-	CMemoryStream modelNamesData;
-	modelNamesData.Open(NULL, VS_OPEN_WRITE, 2048);
+	CMemoryStream defNames;
+	defNames.Open(NULL, VS_OPEN_WRITE, 2048);
 
 	char nullSymbol = '\0';
 
 	for(int i = 0; i < m_objectDefs.numElem(); i++)
 	{
-		modelNamesData.Print(m_objectDefs[i]->m_name.c_str());
-		modelNamesData.Write(&nullSymbol, 1, 1);
+		defNames.Print(m_objectDefs[i]->m_name.c_str());
+		defNames.Write(&nullSymbol, 1, 1);
 	}
 
-	modelNamesData.Write(&nullSymbol, 1, 1);
+	defNames.Write(&nullSymbol, 1, 1);
 
-	int modelNamesSize = modelNamesData.Tell();
+	int defNamesLength = defNames.Tell();
 
-	modelsLump.Write(&modelNamesSize, 1, sizeof(int));
-	modelsLump.Write(modelNamesData.GetBasePointer(), 1, modelNamesSize);
+	objectDefsLump.Write(&defNamesLength, 1, sizeof(int));
+	objectDefsLump.Write(defNames.GetBasePointer(), 1, defNamesLength);
 
 	// write model data
 	for(int i = 0; i < m_objectDefs.numElem(); i++)
@@ -646,31 +699,27 @@ void CEditorLevel::WriteObjectDefsLump(IVirtualStream* stream)
 		CMemoryStream modeldata;
 		modeldata.Open(NULL, VS_OPEN_WRITE, 2048);
 
-		if(m_objectDefs[i]->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		levObjectDefInfo_t& defInfo = m_objectDefs[i]->m_info;
+
+		if(defInfo.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
 			m_objectDefs[i]->m_model->Save( &modeldata );
 		}
-		else if(m_objectDefs[i]->m_info.type == LOBJ_TYPE_OBJECT_CFG)
-		{
-			// do nothing
-		}
 
-		int modelSize = modeldata.Tell();
+		defInfo.size = modeldata.Tell();
 
-		m_objectDefs[i]->m_info.size = modelSize;
-
-		modelsLump.Write(&m_objectDefs[i]->m_info, 1, sizeof(levObjectDefInfo_t));
-		modelsLump.Write(modeldata.GetBasePointer(), 1, modelSize);
+		objectDefsLump.Write(&defInfo, 1, sizeof(levObjectDefInfo_t));
+		objectDefsLump.Write(modeldata.GetBasePointer(), 1, defInfo.size);
 	}
 
 	// compute lump size
 	levLump_t modelLumpInfo;
 	modelLumpInfo.type = LEVLUMP_OBJECTDEFS;
-	modelLumpInfo.size = modelsLump.Tell();
+	modelLumpInfo.size = objectDefsLump.Tell();
 
 	// write lump header and data
 	stream->Write(&modelLumpInfo, 1, sizeof(levLump_t));
-	stream->Write(modelsLump.GetBasePointer(), 1, modelsLump.Tell());
+	stream->Write(objectDefsLump.GetBasePointer(), 1, modelLumpInfo.size);
 }
 
 void CEditorLevel::WriteHeightfieldsLump(IVirtualStream* stream)
@@ -1072,9 +1121,6 @@ CEditorLevel* CEditorLevel::CreatePrefab(const IVector2D& minCell, const IVector
 	regionsMin = GlobalPointToRegionPosition(minCell);
 	regionsMax = GlobalPointToRegionPosition(maxCell);
 
-	//GetPointAt(prefabBounds.minPoint, regionsMin);
-	//GetPointAt(prefabBounds.maxPoint, regionsMax);
-	
 	Msg("---------------------\n");
 	Msg("Prefab cells size: [%d %d], using biggest one\n", prefabSize.x, prefabSize.y);
 	Msg("Generating prefab [%d %d] to [%d %d]\n", minCell.x,minCell.y, maxCell.x, maxCell.y);
@@ -1108,29 +1154,24 @@ CEditorLevel* CEditorLevel::CreatePrefab(const IVector2D& minCell, const IVector
 			Msg("    cloning bounds: [%d %d] [%d %d] size=[%d %d]\n", regionMinCell.x, regionMinCell.y, regionMaxCell.x, regionMaxCell.y, regionSelSize.x, regionSelSize.y);
 
 			if(flags & PREFAB_HEIGHTFIELDS)
-				PrefabHeightfields(newLevel, regionStart-minCell, regionIdx, regionMinCell, regionMaxCell);
+				PrefabHeightfields(newLevel, regionStart-minCell, regionIdx, regionMinCell, regionMaxCell, flags & PREFAB_ROADS);
 
 			if(flags & PREFAB_OBJECTS)
 				PrefabObjects(newLevel, regionStart-minCell, regionIdx, prefabBounds);
 
 			if(flags & PREFAB_OCCLUDERS)
 				PrefabOccluders(newLevel, regionStart-minCell, regionIdx, prefabBounds);
-
-			if(flags & PREFAB_ROADS)
-				PrefabRoads(newLevel, regionStart-minCell, regionIdx, regionMinCell, regionMaxCell);
 		}
 	}
 
 	return newLevel;
 }
 
-void CEditorLevel::PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell)
+void CEditorLevel::PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell, bool cloneRoads)
 {
 	CEditorLevelRegion* region = &m_regions[regionIdx];
 
 	CLevelRegion& destRegion = destLevel->m_regions[0];
-
-	//Msg("	Dest offset: [%d %d] on region %d\n", prefabOffset.x, prefabOffset.y, regionIdx);
 
 	for(int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
 	{
@@ -1139,7 +1180,7 @@ void CEditorLevel::PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& 
 
 		bool hasTiles = false;
 
-		// copy regions
+		// copy heightfield cells
 		for(int x = regionMinCell.x; x < regionMaxCell.x; x++)
 		{
 			for(int y = regionMinCell.y; y < regionMaxCell.y; y++)
@@ -1175,6 +1216,24 @@ void CEditorLevel::PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& 
 		{
 			destField->SetChanged();
 			destField->GenereateRenderData();
+		}
+	}
+
+	if(cloneRoads)
+	{
+		// copy road cells
+		for(int x = regionMinCell.x; x < regionMaxCell.x; x++)
+		{
+			for(int y = regionMinCell.y; y < regionMaxCell.y; y++)
+			{
+				int srcTileIdx = y * m_cellsSize + x;
+	
+				IVector2D destTileOfs(IVector2D(x,y)+prefabOffset);
+
+				int destTileIdx = destTileOfs.y * destLevel->m_cellsSize + destTileOfs.x;
+
+				destRegion.m_roads[destTileIdx] = region->m_roads[srcTileIdx];
+			}
 		}
 	}
 }

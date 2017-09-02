@@ -58,8 +58,6 @@ void CGameLevel::Cleanup()
 	if(!m_regions)
 		return;
 
-	Msg("Unloading level...\n");
-
 	//DevMsg(DEVMSG_CORE, "Stopping loader thread...\n");
 	//StopThread();
 
@@ -115,6 +113,13 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 		return false;
 	}
 
+	m_levelName = levelname;
+
+	return CGameLevel::_Load(pFile, kvDefs);
+}
+
+bool CGameLevel::_Load(IFile* pFile, kvkeybase_t* kvDefs)
+{
 	Cleanup();
 
 	levHdr_t hdr;
@@ -122,14 +127,14 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 
 	if(hdr.ident != LEVEL_IDENT)
 	{
-		MsgError("**ERROR** invalid level '%s' \n", levelname);
+		MsgError("**ERROR** invalid level '%s' \n", m_levelName.c_str());
 		g_fileSystem->Close(pFile);
 		return false;
 	}
 
 	if(hdr.version != LEVEL_VERSION)
 	{
-		MsgError("**ERROR** '%s' - unsupported lev file version\n", levelname);
+		MsgError("**ERROR** '%s' - unsupported lev file version\n", m_levelName.c_str());
 		g_fileSystem->Close(pFile);
 		return false;
 	}
@@ -266,8 +271,6 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 
 	float loadTime = Platform_GetCurrentTime()-startLoadTime;
 	DevMsg(DEVMSG_GAME, "*** Level file read for %g seconds\n", loadTime);
-
-	m_levelName = levelname;
 
 	Msg("LEVEL %s\n", isOK ? "OK" : "LOAD FAILED");
 
