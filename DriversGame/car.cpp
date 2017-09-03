@@ -2499,7 +2499,6 @@ void CCar::Simulate( float fDt )
 			Vector3D startLightPos = GetOrigin() + forwardVec*m_conf->visual.headlightPosition.z;
 			ColorRGBA lightColor(0.7, 0.6, 0.5, lightIntensity*0.7f);
 
-#ifndef EDITOR
 			// show the light decal
 			float distToCam = length(cam_pos-GetOrigin());
 
@@ -2534,7 +2533,6 @@ void CCar::Simulate( float fDt )
 
 				ProjectDecalToSpriteBuilder(lightDecal, g_vehicleLights, flipRect, viewProj, lightDecalColor);
 			}
-#endif // EDITOR
 
 			if(m_isLocalCar && r_carLights.GetInt() == 2)
 			{

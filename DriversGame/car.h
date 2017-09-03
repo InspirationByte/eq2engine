@@ -508,6 +508,8 @@ public:
 
 	virtual void			UpdateLightsState();
 
+	virtual void			Simulate( float fDt );
+
 #ifndef NO_LUA
 	virtual void			L_RegisterEventHandler(const OOLUA::Table& tableRef);
 #endif // NO_LUA
@@ -530,7 +532,7 @@ protected:
 
 	ISoundController*		CreateCarSound(const char* name, float radiusMult);
 
-	virtual void			Simulate( float fDt );
+	
 
 	virtual void			OnPrePhysicsFrame( float fDt );
 	virtual void			OnPhysicsFrame( float fDt );

@@ -589,11 +589,15 @@ void CLevelModel::GetDecalPolygons( decalprimitives_t& polys, const Matrix4x4& t
 	// transform volume (optimization)
 	// BUG: wrong rotation
 	//Volume tVolume = transform * volume;
-
+	
 	// in game only physics verts are available
 	for(int i = 0; i < m_numBatches; i++)
 	{
+#ifndef EDITOR
 		lmodel_batch_t& batch = m_phybatches[i];
+#else
+		lmodel_batch_t& batch = m_batches[i];
+#endif // EDITOR
 
 		if(batch.pMaterial && (batch.pMaterial->GetFlags() & polys.settings.avoidMaterialFlags))
 			continue;
@@ -606,9 +610,15 @@ void CLevelModel::GetDecalPolygons( decalprimitives_t& polys, const Matrix4x4& t
 			int i2 = m_indices[si+1];
 			int i3 = m_indices[si+2];
 
+#ifndef EDITOR
 			Vector3D p1 = m_physVerts[i1];
 			Vector3D p2 = m_physVerts[i2];
 			Vector3D p3 = m_physVerts[i3];
+#else
+			Vector3D p1 = m_verts[i1].position;
+			Vector3D p2 = m_verts[i2].position;
+			Vector3D p3 = m_verts[i3].position;
+#endif // EDITOR
 
 			// check it using transformed plane, do not transform every vertex of model
 			//if(!tVolume.IsTriangleInside(p1,p2,p3))

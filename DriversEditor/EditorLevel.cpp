@@ -992,6 +992,38 @@ void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
 	//-------------------------------------------------------------------------------
 }
 
+void CEditorLevel::Ed_InitPhysics()
+{
+	// build region offsets
+	for(int x = 0; x < m_wide; x++)
+	{
+		for(int y = 0; y < m_tall; y++)
+		{
+			int idx = y*m_wide+x;
+
+			CEditorLevelRegion* reg = (CEditorLevelRegion*)&m_regions[idx];
+
+			reg->Ed_InitPhysics();
+		}
+	}
+}
+
+void CEditorLevel::Ed_DestroyPhysics()
+{
+	// build region offsets
+	for(int x = 0; x < m_wide; x++)
+	{
+		for(int y = 0; y < m_tall; y++)
+		{
+			int idx = y*m_wide+x;
+
+			CEditorLevelRegion* reg = (CEditorLevelRegion*)&m_regions[idx];
+
+			reg->Ed_DestroyPhysics();
+		}
+	}
+}
+
 void CEditorLevel::SaveEditorBuildings( const char* levelName )
 {
 	EqString path = varargs("levels/%s_editor/buildings.ekv", levelName);
@@ -1370,6 +1402,54 @@ void CEditorLevelRegion::Cleanup()
 		delete m_buildings[i];
 
 	m_buildings.clear();
+}
+
+void CEditorLevelRegion::Ed_InitPhysics()
+{
+	for(int i = 0; i < GetNumHFields(); i++)
+	{
+		if(m_heightfield[i])
+			g_pPhysics->AddHeightField( m_heightfield[i] );
+	}
+
+	for(int i = 0; i < m_objects.numElem(); i++)
+	{
+		regionObject_t* ref = m_objects[i];
+
+		if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		{
+			// create collision objects and translate them
+			CLevelModel* model = ref->def->m_model;
+
+			model->CreateCollisionObject( ref );
+
+			// add physics objects
+			g_pPhysics->m_physics.AddStaticObject( ref->physObject );
+		}
+	}
+}
+
+void CEditorLevelRegion::Ed_DestroyPhysics()
+{
+	for(int i = 0; i < GetNumHFields(); i++)
+	{
+		if(m_heightfield[i])
+			g_pPhysics->RemoveHeightField( m_heightfield[i] );
+	}
+
+	for(int i = 0; i < m_objects.numElem(); i++)
+	{
+		regionObject_t* ref = m_objects[i];
+
+		if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		{
+			// create collision objects and translate them
+			CLevelModel* model = ref->def->m_model;
+
+			g_pPhysics->m_physics.DestroyStaticObject( ref->physObject );
+			ref->physObject = NULL;
+		}
+	}
 }
 
 int FindObjectContainer(DkList<CLevObjectDef*>& listObjects, CLevObjectDef* container)

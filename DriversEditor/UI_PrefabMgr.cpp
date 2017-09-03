@@ -239,7 +239,7 @@ void CUI_PrefabManager::OnRender()
 		}
 	}
 
-	if(m_selPrefab)
+	if(m_selPrefab && m_mode == PREFABMODE_PLACEMENT)
 	{
 		materials->SetMatrix(MATRIXMODE_WORLD2, translate(0.0f,1.0f,0.0f));
 

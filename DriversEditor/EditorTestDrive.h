@@ -25,7 +25,7 @@ public:
 
 	bool				IsGameRunning() const;
 
-	void				BeginGame( const char* carName, const Vector3D& startPos );
+	bool				BeginGame( const char* carName, const Vector3D& startPos );
 	void				EndGame();
 
 	void				Update( float fDt );

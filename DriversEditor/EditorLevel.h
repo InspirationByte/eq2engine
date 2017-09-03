@@ -148,6 +148,9 @@ public:
 	bool			LoadPrefab(const char* prefabName);
 	bool			SavePrefab(const char* prefabName);
 
+	void			Ed_InitPhysics();
+	void			Ed_DestroyPhysics();
+
 	void			Ed_Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj);
 
 	void			Ed_Prerender(const Vector3D& cameraPosition);
@@ -185,6 +188,9 @@ public:
 	void						Cleanup();
 
 	void						Ed_Prerender();
+
+	void						Ed_InitPhysics();
+	void						Ed_DestroyPhysics();
 
 	void						WriteRegionData(IVirtualStream* stream, DkList<CLevObjectDef*>& models, bool isFinal);
 	void						WriteRegionOccluders(IVirtualStream* stream);

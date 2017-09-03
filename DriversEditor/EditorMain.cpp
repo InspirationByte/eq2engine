@@ -802,10 +802,10 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 		{
 			EqString carName = m_carNameDialog->GetValue().c_str().AsChar();
 
-			g_editorTestGame->BeginGame(carName.c_str(), g_camera_target);
-
-			if(!g_editorTestGame->IsGameRunning())
+			if(!g_editorTestGame->BeginGame(carName.c_str(), g_camera_target))
+			{
 				wxMessageBox("Not valid vehicle name.", "Error", wxOK | wxCENTRE, this);
+			}
 		}
 	}
 	else if(event.GetId() == Event_File_Exit)

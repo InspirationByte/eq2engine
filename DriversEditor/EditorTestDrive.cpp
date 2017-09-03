@@ -93,13 +93,23 @@ bool CEditorTestGame::IsGameRunning() const
 	return m_car != NULL;
 }
 
-void CEditorTestGame::BeginGame( const char* carName, const Vector3D& startPos )
+bool CEditorTestGame::BeginGame( const char* carName, const Vector3D& startPos )
 {
+	m_car = CreateCar( carName );
+
+	if(!m_car)
+	{
+		return false;
+	}
+
+	m_car->Precache();
+
 	g_pCameraAnimator->Reset();
 
 	g_pPhysics->SceneInitBroadphase();
 
-	m_car = CreateCar( carName );
+	// editor create objects
+	g_pGameWorld->m_level.Ed_InitPhysics();
 
 	m_car->SetOrigin(startPos);
 	m_car->L_Activate();
@@ -109,17 +119,21 @@ void CEditorTestGame::BeginGame( const char* carName, const Vector3D& startPos )
 	m_car->m_isLocalCar = true;
 
 	m_clientButtons = 0;
+
+	return true;
 }
 
 void CEditorTestGame::EndGame()
 {
-	g_pPhysics->SceneDestroyBroadphase();
+	// editor create objects
+	g_pGameWorld->m_level.Ed_DestroyPhysics();
 
 	if(m_car)
 		m_car->Remove();
 
 	m_car = NULL;
 
+	g_pPhysics->SceneDestroyBroadphase();
 	m_clientButtons = 0;
 }
 
