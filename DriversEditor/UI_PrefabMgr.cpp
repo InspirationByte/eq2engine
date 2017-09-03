@@ -120,7 +120,24 @@ void CUI_PrefabManager::OnEditPrefabClick( wxCommandEvent& event )
 
 void CUI_PrefabManager::OnDeletePrefabClick( wxCommandEvent& event )
 {
+	int idx = m_prefabList->GetSelection();
 
+	if(idx != -1)
+	{
+		EqString pfbName = m_prefabList->GetString(idx).mbc_str();
+
+		int result = wxMessageBox(varargs("Are you sure to remove '%s' prefab?", pfbName.c_str()), "Question", wxYES_NO | wxCANCEL | wxCENTRE | wxICON_WARNING, this);
+
+		if(result == wxCANCEL)
+			return;
+
+		if(result == wxNO)
+			return;
+
+		// TODO: remove to recycle bin
+		g_fileSystem->FileRemove(varargs("editor_prefabs/%s.pfb", pfbName.c_str()), SP_MOD);
+		RefreshPrefabList();
+	}
 }
 
 // IEditorTool stuff
@@ -161,12 +178,8 @@ void CUI_PrefabManager::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* til
 
 void CUI_PrefabManager::OnKey(wxKeyEvent& event, bool bDown)
 {
-	if(event.m_keyCode == WXK_RETURN)
-	{
-		MakePrefabFromSelection();
-	}
-}
 
+}
 
 void CUI_PrefabManager::MakePrefabFromSelection()
 {

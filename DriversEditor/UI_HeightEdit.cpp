@@ -1188,10 +1188,9 @@ bool HeightPaintUpFunc(int rx, int ry, int px, int py, CUI_HeightEdit* edit, CHe
 	}
 	else
 	{
-		if(edit->IsLineMode())
+		if(edit->IsLineMode() && mode == HEDIT_SMOOTH)
 		{
 			short newHeight = floor(lerp((float)edit->GetStartHeight(), (float)edit->GetEndHeight(), percent));
-
 			tile->height = lerp(newHeight, tile->height, rVal);
 		}
 		else
