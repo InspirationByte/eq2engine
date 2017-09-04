@@ -1113,8 +1113,27 @@ void CEditorLevel::PostLoadEditorBuildings( DkList<buildLayerColl_t*>& buildingT
 	}
 }
 
+void CEditorLevel::OnPreApplyMaterial( IMaterial* pMaterial )
+{
+	if( pMaterial->GetState() != MATERIAL_LOAD_OK )
+		return;
+
+	g_pShaderAPI->SetShaderConstantVector4D("SunColor", 0.25f);
+	g_pShaderAPI->SetShaderConstantVector3D("SunDir", Vector3D(0.0f,1.0f,0.0f));
+
+	g_pShaderAPI->SetShaderConstantFloat("GameTime", 1.0f);
+
+	Vector2D envParams(0.0f);
+	g_pShaderAPI->SetShaderConstantVector2D("ENVPARAMS", envParams);
+
+	materials->SetDepthStates(true,false);
+	materials->SetShaderParameterOverriden(SHADERPARAM_DEPTHSETUP, true);
+}
+
 void CEditorLevel::Ed_Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj)
 {
+	materials->SetMaterialRenderParamCallback(this);
+
 	occludingFrustum_t bypassFrustum;
 	bypassFrustum.bypass = true;
 
@@ -1131,6 +1150,8 @@ void CEditorLevel::Ed_Render(const Vector3D& cameraPosition, const Matrix4x4& vi
 			}
 		}
 	}
+
+	materials->SetMaterialRenderParamCallback(nullptr);
 }
 
 CEditorLevel* CEditorLevel::CreatePrefab(const IVector2D& minCell, const IVector2D& maxCell, int flags)

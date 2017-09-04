@@ -137,7 +137,7 @@ enum EPrefabCreationFlags
 	PREFAB_ALL	 = 0xFFFFFFFF,
 };
 
-class CEditorLevel : public CGameLevel
+class CEditorLevel : public CGameLevel, public IMaterialRenderParamCallbacks
 {
 	friend class CEditorLevelRegion;
 public:
@@ -150,6 +150,8 @@ public:
 
 	void			Ed_InitPhysics();
 	void			Ed_DestroyPhysics();
+
+	void			OnPreApplyMaterial( IMaterial* pMaterial );
 
 	void			Ed_Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj);
 

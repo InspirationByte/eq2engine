@@ -77,6 +77,7 @@ CUI_PrefabManager::CUI_PrefabManager( wxWindow* parent ) : wxPanel( parent, -1, 
 
 	m_mode = PREFABMODE_READY;
 	m_selPrefab = nullptr;
+	m_rotation = 0;
 }
 
 CUI_PrefabManager::~CUI_PrefabManager()
@@ -95,7 +96,25 @@ CUI_PrefabManager::~CUI_PrefabManager()
 // Virtual event handlers, overide them in your derived class
 void CUI_PrefabManager::OnBeginPrefabPlacement( wxCommandEvent& event )
 {
+	int idx = m_prefabList->GetSelection();
 
+	if(idx != -1)
+	{
+		EqString pfbName = m_prefabList->GetString(idx).mbc_str();
+
+		if(m_selPrefab == nullptr)
+			m_selPrefab = new CEditorLevel();
+
+		m_selPrefab->Cleanup();
+
+		if(!m_selPrefab->LoadPrefab(pfbName.c_str()))
+		{
+			CancelPrefab();
+			return;
+		}
+
+		m_mode = PREFABMODE_PLACEMENT;
+	}
 }
 
 void CUI_PrefabManager::OnFilterChange( wxCommandEvent& event )
@@ -134,7 +153,7 @@ void CUI_PrefabManager::OnDeletePrefabClick( wxCommandEvent& event )
 		if(result == wxNO)
 			return;
 
-		// TODO: remove to recycle bin
+		// TODO: remove to recycle bin`
 		g_fileSystem->FileRemove(varargs("editor_prefabs/%s.pfb", pfbName.c_str()), SP_MOD);
 		RefreshPrefabList();
 	}
@@ -175,13 +194,26 @@ void CUI_PrefabManager::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* til
 		}
 	}
 }
-
 void CUI_PrefabManager::OnKey(wxKeyEvent& event, bool bDown)
 {
+	if(!bDown)
+	{
+		if(event.m_keyCode == WXK_SPACE)
+		{
+			m_rotation += 1;
 
+			if(m_rotation > 3)
+				m_rotation = 0;
+		}
+		else if(event.m_keyCode == WXK_ESCAPE)
+		{
+			CancelPrefab();
+		}
+	}
 }
 
 void CUI_PrefabManager::MakePrefabFromSelection()
+
 {
 	if(m_mode != PREFABMODE_CREATE_READY)
 	{
@@ -232,6 +264,24 @@ void CUI_PrefabManager::OnRender()
 		CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
 
 		field->DebugRender(false, m_mouseOverTileHeight);
+
+		if(m_selPrefab && m_mode == PREFABMODE_PLACEMENT)
+		{
+			IVector2D globalTile;
+			g_pGameWorld->m_level.LocalToGlobalPoint(m_mouseOverTile, m_selectedRegion, globalTile);
+
+			Vector3D mouseOverPos = g_pGameWorld->m_level.GlobalTilePointToPosition(globalTile);
+			Vector3D prefabTileOffset = m_selPrefab->GlobalTilePointToPosition(m_selPrefab->m_cellsSize/2);
+
+			float rotation = -m_rotation*90.0f;
+		
+			Matrix4x4 previewTransform = translate(mouseOverPos) * rotateY4(DEG2RAD(rotation)) * translate(-prefabTileOffset + Vector3D(0.0f,0.01f, 0.0f));
+			materials->SetMatrix(MATRIXMODE_WORLD2, previewTransform);
+
+			m_selPrefab->Ed_Render(g_pCameraParams.GetOrigin(), g_pGameWorld->m_viewprojection);
+
+			materials->SetMatrix(MATRIXMODE_WORLD2, identity4());
+		}
 	}
 
 	if(m_mode == PREFABMODE_TILESELECTION || m_mode == PREFABMODE_CREATE_READY)
@@ -252,28 +302,30 @@ void CUI_PrefabManager::OnRender()
 		}
 	}
 
-	if(m_selPrefab && m_mode == PREFABMODE_PLACEMENT)
-	{
-		materials->SetMatrix(MATRIXMODE_WORLD2, translate(0.0f,1.0f,0.0f));
-
-		m_selPrefab->Ed_Render(g_pCameraParams.GetOrigin(), g_pGameWorld->m_viewprojection);
-
-		materials->SetMatrix(MATRIXMODE_WORLD2, identity4());
-	}
-
 	CBaseTilebasedEditor::OnRender();
 }
 
-void CUI_PrefabManager::OnLevelUnload()
+void CUI_PrefabManager::CancelPrefab()
 {
-	CBaseTilebasedEditor::OnLevelUnload();
+	if(m_mode == PREFABMODE_CREATE_READY)
+	{
+		m_mode = PREFABMODE_READY;
+	}
 
 	if(m_selPrefab != nullptr)
 	{
 		m_selPrefab->Cleanup();
 		delete m_selPrefab;
+		m_selPrefab = nullptr;
+
 		m_mode = PREFABMODE_READY;
 	}
+}
+
+void CUI_PrefabManager::OnLevelUnload()
+{
+	CBaseTilebasedEditor::OnLevelUnload();
+	CancelPrefab();
 }
 
 void CUI_PrefabManager::RefreshPrefabList()
@@ -304,6 +356,16 @@ void CUI_PrefabManager::RefreshPrefabList()
 
 		FindClose(hFile);
 	}
+}
+
+void CUI_PrefabManager::SetRotation(int rot)
+{
+	m_rotation = rot;
+}
+
+int CUI_PrefabManager::GetRotation()
+{
+	return m_rotation;
 }
 
 void CUI_PrefabManager::OnLevelLoad()

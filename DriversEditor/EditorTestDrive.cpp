@@ -95,6 +95,16 @@ bool CEditorTestGame::IsGameRunning() const
 
 bool CEditorTestGame::BeginGame( const char* carName, const Vector3D& startPos )
 {
+	bool wasGameRunning = IsGameRunning();
+
+	if(wasGameRunning)
+	{
+		if(m_car)
+			m_car->Remove();
+
+		m_car = NULL;
+	}
+
 	m_car = CreateCar( carName );
 
 	if(!m_car)
@@ -106,10 +116,13 @@ bool CEditorTestGame::BeginGame( const char* carName, const Vector3D& startPos )
 
 	g_pCameraAnimator->Reset();
 
-	g_pPhysics->SceneInitBroadphase();
+	if(!wasGameRunning)
+	{
+		g_pPhysics->SceneInitBroadphase();
 
-	// editor create objects
-	g_pGameWorld->m_level.Ed_InitPhysics();
+		// editor create objects
+		g_pGameWorld->m_level.Ed_InitPhysics();
+	}
 
 	m_car->SetOrigin(startPos);
 	m_car->L_Activate();

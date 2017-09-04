@@ -44,11 +44,14 @@ public:
 
 	void						Update_Refresh();
 
+	int							GetRotation();
+	void						SetRotation(int rot);
 
 protected:
 
 	void						MakePrefabFromSelection();
 	void						RefreshPrefabList();
+	void						CancelPrefab();
 		
 	// Virtual event handlers, overide them in your derived class
 	virtual void OnBeginPrefabPlacement( wxCommandEvent& event );
@@ -62,14 +65,16 @@ protected:
 
 	IVector2D					m_startPoint;
 
-	wxListBox* m_prefabList;
-	wxTextCtrl* m_filtertext;
-	wxButton* m_newbtn;
-	wxButton* m_editbtn;
-	wxButton* m_delbtn;
-	wxTextEntryDialog* m_prefabNameDialog;
+	wxListBox*					m_prefabList;
+	wxTextCtrl*					m_filtertext;
+	wxButton*					m_newbtn;
+	wxButton*					m_editbtn;
+	wxButton*					m_delbtn;
+	wxTextEntryDialog*			m_prefabNameDialog;
 
-	CEditorLevel* m_selPrefab;
+	CEditorLevel*				m_selPrefab;
+
+	int							m_rotation;
 };
 
 #endif // UI_PREFABMGR
