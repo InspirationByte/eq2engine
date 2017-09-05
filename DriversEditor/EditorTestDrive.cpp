@@ -18,7 +18,7 @@ CEditorTestGame* g_editorTestGame = &s_editorTestGame;
 static CCameraAnimator	s_CameraAnimator;
 extern CCameraAnimator*	g_pCameraAnimator = &s_CameraAnimator;;
 
-CEditorTestGame::CEditorTestGame() : m_car(NULL), m_clientButtons(0)
+CEditorTestGame::CEditorTestGame() : m_car(nullptr), m_clientButtons(0)
 {
 
 }
@@ -144,7 +144,7 @@ void CEditorTestGame::EndGame()
 	if(m_car)
 		m_car->Remove();
 
-	m_car = NULL;
+	m_car = nullptr;
 
 	g_pPhysics->SceneDestroyBroadphase();
 	m_clientButtons = 0;
@@ -155,7 +155,7 @@ void CEditorTestGame::Update( float fDt )
 	m_car->SetControlButtons( m_clientButtons );
 	m_car->GetPhysicsBody()->Wake();
 
-	g_pPhysics->Simulate(fDt, 4, NULL);
+	g_pPhysics->Simulate(fDt, 4, nullptr);
 
 	g_pCameraAnimator->Update( fDt, m_clientButtons, m_car );
 }
@@ -195,5 +195,5 @@ CCar* CEditorTestGame::CreateCar(const char* name) const
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }

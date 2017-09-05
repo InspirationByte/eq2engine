@@ -13,6 +13,8 @@
 
 #include "VirtualStream.h"
 
+#include "EditorActionHistory.h"
+
 #include "utils/strtools.h"
 
 // layer model header
@@ -1222,13 +1224,13 @@ CEditorLevel* CEditorLevel::CreatePrefab(const IVector2D& minCell, const IVector
 
 void CEditorLevel::PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell, bool cloneRoads)
 {
-	CEditorLevelRegion* region = &m_regions[regionIdx];
+	CEditorLevelRegion& srcRegion = m_regions[regionIdx];
 
 	CLevelRegion& destRegion = destLevel->m_regions[0];
 
 	for(int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
 	{
-		CHeightTileField* srcField = region->GetHField(i);
+		CHeightTileField* srcField = srcRegion.GetHField(i);
 		CHeightTileFieldRenderable* destField = destRegion.GetHField(i);
 
 		bool hasTiles = false;
@@ -1285,7 +1287,7 @@ void CEditorLevel::PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& 
 
 				int destTileIdx = destTileOfs.y * destLevel->m_cellsSize + destTileOfs.x;
 
-				destRegion.m_roads[destTileIdx] = region->m_roads[srcTileIdx];
+				destRegion.m_roads[destTileIdx] = srcRegion.m_roads[srcTileIdx];
 			}
 		}
 	}
@@ -1304,6 +1306,177 @@ void CEditorLevel::PrefabOccluders(CEditorLevel* destLevel, const IVector2D& pre
 void CEditorLevel::PrefabRoads(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell)
 {
 	CEditorLevelRegion* region = &m_regions[regionIdx];
+}
+
+//-----------------------------------------------------------------------------
+
+void CEditorLevel::PlacePrefab(const IVector2D& globalTile, int height, int rotation, CEditorLevel* prefab, int flags /*EPrefabCreationFlags*/)
+{
+	IVector2D prefabSize(prefab->m_cellsSize);
+	IVector2D prefabCenterTile(prefabSize/2);
+
+	IRectangle tileBounds;
+	tileBounds.AddVertex(globalTile-prefabCenterTile);
+	tileBounds.AddVertex(globalTile+prefabCenterTile);
+
+	// region bounds
+	IVector2D regionsMin, regionsMax;
+	regionsMin = GlobalPointToRegionPosition(tileBounds.vleftTop);
+	regionsMax = GlobalPointToRegionPosition(tileBounds.vrightBottom);
+
+	regionsMin.x = clamp(0,regionsMin.x,m_wide-1);
+	regionsMin.y = clamp(0,regionsMin.y,m_tall-1);
+
+	regionsMax.x = clamp(0,regionsMax.x,m_wide-1);
+	regionsMax.y = clamp(0,regionsMax.y,m_tall-1);
+
+	Msg("---------------------\n");
+	Msg("Prefab cells size: [%d %d], using biggest one\n", prefabSize.x, prefabSize.y);
+	Msg("Placing prefab [%d %d] to [%d %d]\n", tileBounds.vleftTop.x,tileBounds.vleftTop.y, tileBounds.vrightBottom.x, tileBounds.vrightBottom.y);
+	Msg("	prefab regions [%d %d] to [%d %d]\n", regionsMin.x, regionsMin.y, regionsMax.x, regionsMax.y);
+
+	/*
+	int prefabCellsSize = prefab->m_cellsSize;
+	short lowestHeight = 32760;
+	
+	for(int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
+	{
+		CHeightTileField* field = prefab->m_regions[0].GetHField(i);
+		// get prefab lowest height level
+		for(int x = 0; x < prefabCellsSize; x++)
+		{
+			for(int y = 0; y < prefabCellsSize; y++)
+			{
+				hfieldtile_t* tile = field->GetTile(x, y);
+
+				if(tile->height < lowestHeight)
+					lowestHeight = tile->height;
+			}
+		}
+	}*/
+
+	//
+	// placing prefab to regions
+	//
+	for(int x = regionsMin.x; x <= regionsMax.x; x++)
+	{
+		for(int y = regionsMin.y; y <= regionsMax.y; y++)
+		{
+			int regionIdx = y*m_wide+x;
+
+			IVector2D regionStart = IVector2D(x,y)*m_cellsSize;
+
+			IVector2D localPosition = globalTile-regionStart;
+
+			Msg("	prefab cell start on region %d [%d %d]\n", regionIdx, localPosition.x, localPosition.y);
+
+			PlacePrefabHeightfields(localPosition, height, rotation, prefab, regionIdx);
+		}
+	}
+
+	g_pEditorActionObserver->EndModify();
+}
+
+IVector2D RotatePoint(const IVector2D& point, int rotation)
+{
+	IVector2D result = point;
+
+	while(rotation-- > 0)
+		result = IVector2D(result.y, -result.x);
+
+	return result;
+}
+
+void CEditorLevel::PlacePrefabHeightfields(const IVector2D& position, int height, int rotation, CEditorLevel* prefab, int regionIdx)
+{
+	CLevelRegion& srcRegion = prefab->m_regions[0];
+	CEditorLevelRegion& destRegion = m_regions[regionIdx];
+
+	int prefabCellsSize = prefab->m_cellsSize;
+
+	IVector2D prefabCenter(prefabCellsSize/2);
+
+	int centerTileHeight = srcRegion.GetHField(0)->GetTile(prefabCenter.x,prefabCenter.y)->height;
+
+	height -= centerTileHeight;
+
+	for(int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
+	{
+		CHeightTileField* srcField = srcRegion.GetHField(i);
+		CHeightTileFieldRenderable* destField = destRegion.GetHField(i);
+
+		float rotationDeg = -rotation*90.0f;
+		Matrix2x2 rotateMatrix = rotate2(DEG2RAD(rotationDeg));
+
+		// copy heightfield cells
+		for(int x = 0; x < prefabCellsSize; x++)
+		{
+			for(int y = 0; y < prefabCellsSize; y++)
+			{
+				IVector2D srcTileOfs(IVector2D(x,y));
+				IVector2D destTileOfs(RotatePoint(IVector2D(x,y)-prefabCenter, rotation)+position);
+
+				hfieldtile_t* srcTile = srcField->GetTile(srcTileOfs.x, srcTileOfs.y);
+				hfieldtile_t* destTile = destField->GetTile(destTileOfs.x, destTileOfs.y);
+
+				if(!destTile)
+					continue;
+
+				// don't set any propery of tile if we has no texture
+				if(srcTile->texture != -1)
+				{
+					destField->SetChanged();
+					g_pEditorActionObserver->BeginModify(destField);
+
+					//*destTile = *srcTile;
+					destTile->height = srcTile->height + height;
+					destTile->flags = srcTile->flags;
+					destTile->transition = srcTile->transition;
+
+					destTile->rotatetex = srcTile->rotatetex+rotation;
+
+					if(destTile->rotatetex > 3)
+						destTile->rotatetex -= 4;
+
+					IMaterial* material = srcField->m_materials[srcTile->texture]->material;
+
+					destField->SetPointMaterial(destTileOfs.x, destTileOfs.y, material, srcTile->atlasIdx);
+				}
+			}
+		}
+	}
+
+	//if(cloneRoads)
+	{
+		// copy road cells
+		for(int x = 0; x < prefabCellsSize; x++)
+		{
+			for(int y = 0; y < prefabCellsSize; y++)
+			{
+				int srcTileIdx = y * prefabCellsSize + x;
+	
+				IVector2D destTileOfs(RotatePoint(IVector2D(x,y)-prefabCenter, rotation)+position);
+
+				if(!(destTileOfs.x >= 0 && destTileOfs.x < m_cellsSize) || !(destTileOfs.y >= 0 && destTileOfs.y < m_cellsSize))
+					continue;
+
+				int destTileIdx = destTileOfs.y * m_cellsSize + destTileOfs.x;
+
+				// don't set empty roads
+				if(srcRegion.m_roads[srcTileIdx].type == ROADTYPE_NOROAD)
+					continue;
+
+				destRegion.m_roads[destTileIdx] = srcRegion.m_roads[srcTileIdx];
+
+				int newDirection = srcRegion.m_roads[srcTileIdx].direction + rotation;
+
+				if(newDirection > 3)
+					newDirection -= 4;
+
+				destRegion.m_roads[destTileIdx].direction = newDirection;
+			}
+		}
+	}
 }
 
 int CEditorLevel::Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CEditorLevelRegion** reg, float& dist)

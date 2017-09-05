@@ -1333,7 +1333,7 @@ void CUI_HeightEdit::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, 
 
 				PaintHeightfieldLine(	m_globalTile_lineStart.x,m_globalTile_lineStart.y,
 										m_globalTile_lineEnd.x, m_globalTile_lineEnd.y,
-										HeightPaintUpFunc, GetEditMode() == HEDIT_SET ? HEDIT_LINEMODE_WIDTH : HEDIT_LINEMODE_RADIUS);
+										HeightPaintUpFunc, HEDIT_LINEMODE_WIDTH/*GetEditMode() == HEDIT_SET ? HEDIT_LINEMODE_WIDTH : HEDIT_LINEMODE_RADIUS*/);
 
 				m_isLineMode = false;
 			}

@@ -192,8 +192,13 @@ void CUI_PrefabManager::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* til
 
 			m_mode = PREFABMODE_CREATE_READY;
 		}
+		else if(m_selPrefab && m_mode == PREFABMODE_PLACEMENT)
+		{
+			g_pGameWorld->m_level.PlacePrefab(globalTile, tile->height, GetRotation(), m_selPrefab, PREFAB_ALL);
+		}
 	}
 }
+
 void CUI_PrefabManager::OnKey(wxKeyEvent& event, bool bDown)
 {
 	if(!bDown)
