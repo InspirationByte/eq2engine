@@ -915,12 +915,14 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 		int curDir = m_straights[STRAIGHT_CURRENT].direction;
 
-		// also check previous straight
-		bool hasTrafficLight = m_straights[STRAIGHT_CURRENT].hasTrafficLight;
+		levroadcell_t* roadTile = g_pGameWorld->m_level.GetGlobalRoadTileAt(carPosOnCell);
 
-		if(m_straights[STRAIGHT_PREV].hasTrafficLight &&
-			m_straights[STRAIGHT_CURRENT].direction == m_straights[STRAIGHT_PREV].direction )
-			hasTrafficLight = true;
+		// check current tile for traffic light indication
+		bool hasTrafficLight = roadTile ? (roadTile->flags & ROAD_FLAG_TRAFFICLIGHT) : false;//m_straights[STRAIGHT_CURRENT].hasTrafficLight;
+
+		//if(m_straights[STRAIGHT_PREV].hasTrafficLight &&
+		//	m_straights[STRAIGHT_CURRENT].direction == m_straights[STRAIGHT_PREV].direction )
+		//	hasTrafficLight = true;
 
 		bool isAllowedToMove = hasTrafficLight ? (trafficLightDir%2 == curDir%2) : true;
 

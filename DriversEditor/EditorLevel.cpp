@@ -1705,6 +1705,20 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 
 	cellObjectsList.resize(regObjects.numElem());
 
+	// before we do PostprocessCellObject, make sure we remove all traffic light flags from straights
+	for(int x = 0; x < m_heightfield[0]->m_sizew; x++)
+	{
+		for(int y = 0; y < m_heightfield[0]->m_sizeh; y++)
+		{
+			int idx = y*m_heightfield[0]->m_sizew + x;
+
+			if(m_roads[idx].type == ROADTYPE_STRAIGHT)
+				continue;
+
+			m_roads[idx].flags &= ~ROAD_FLAG_TRAFFICLIGHT;
+		}
+	}
+
 	//
 	// collect models and cell objects
 	//
