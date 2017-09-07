@@ -607,6 +607,9 @@ void CGameWorld::Cleanup( bool unloadLevel )
 	}
 #endif // EDITOR
 
+	// wait until it load all before unload
+	m_level.WaitForThread();
+
 	m_renderingObjects.clear();
 
 	for(int i = 0; i < m_gameObjects.numElem(); i++)
