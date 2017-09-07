@@ -93,3 +93,43 @@ void CLoadLevelDialog::RebuildLevelList()
 		FindClose(hFile);
 	}
 }
+
+//----------------------------------------------------------------------------------------------
+
+CLoadingDialog::CLoadingDialog(wxWindow* parent) : wxDialog(parent, -1, DKLOC("TOKEN_PLSWAIT", L"Please wait"),wxPoint(-1,-1),wxSize( 300,100 ),wxCAPTION | wxSTAY_ON_TOP | wxCENTER_ON_SCREEN)
+{
+	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+	
+	wxBoxSizer* bSizer24;
+	bSizer24 = new wxBoxSizer( wxVERTICAL );
+	
+	m_statusLabel = new wxStaticText( this, wxID_ANY, wxT("Status"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE );
+	m_statusLabel->Wrap( -1 );
+	bSizer24->Add( m_statusLabel, 0, wxALL|wxEXPAND, 5 );
+	
+	m_statusGauge = new wxGauge( this, wxID_ANY, 100, wxDefaultPosition, wxDefaultSize, wxGA_HORIZONTAL );
+	m_statusGauge->SetValue( 0 ); 
+	bSizer24->Add( m_statusGauge, 0, wxALL|wxEXPAND, 5 );
+	
+	
+	this->SetSizer( bSizer24 );
+	this->Layout();
+	
+	this->Centre( wxBOTH );
+}
+
+CLoadingDialog::~CLoadingDialog()
+{
+}
+
+void CLoadingDialog::SetText(const wxString& text)
+{
+	m_statusLabel->SetLabelText(text);
+	Update();
+}
+
+void CLoadingDialog::SetPercentage(int percent)
+{
+	m_statusGauge->SetValue( percent );
+	Update();
+}

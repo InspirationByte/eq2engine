@@ -10,6 +10,9 @@
 
 #include "EditorHeader.h"
 
+#include <wx/gauge.h>
+
+
 // level load dialog
 class CLoadLevelDialog : public wxDialog
 {
@@ -28,6 +31,21 @@ protected:
 	void		OnDoubleClick(wxCommandEvent& event);
 
 	wxListBox*	m_levels;
+};
+
+class CLoadingDialog : public wxDialog 
+{
+public:
+	CLoadingDialog( wxWindow* parent);
+	~CLoadingDialog();
+
+	void			SetText(const wxString& text);
+	void			SetPercentage(int percent);
+	
+protected:
+
+	wxStaticText*	m_statusLabel;
+	wxGauge*		m_statusGauge;
 };
 
 #endif // LOADLEVDIALOG_H

@@ -669,6 +669,11 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="windows\mainicon.ico" />
+    <Image Include="windows\mainicon.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="windows\editor_splash.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

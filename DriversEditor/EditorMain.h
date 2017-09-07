@@ -22,6 +22,7 @@
 class IEditorTool;
 class CLoadLevelDialog;
 class CNewLevelDialog;
+class CLoadingDialog;
 class CRegionEditFrame;
 
 class CMainWindow : public wxFrame 
@@ -96,8 +97,11 @@ protected:
 
 	CNewLevelDialog*	m_newLevelDialog;
 	CLoadLevelDialog*	m_loadleveldialog;
+	CLoadingDialog*		m_loadingDialog;
+
 	wxTextEntryDialog*	m_levelsavedialog;
 	CRegionEditFrame*	m_regionEditorFrame;
+	
 
 	wxTextEntryDialog*	m_carNameDialog;
 

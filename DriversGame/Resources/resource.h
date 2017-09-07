@@ -3,9 +3,6 @@
 // Используется Resources.rc
 //
 #define IDI_MAINICON                    101
-#define IDB_BITMAP1                     111
-#define IDD_DIALOG1                     113
-#define IDC_STATIC                      -1
 
 // Next default values for new objects
 // 

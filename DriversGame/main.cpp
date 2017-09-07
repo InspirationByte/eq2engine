@@ -114,33 +114,6 @@ int main(int argc, char** argv)
 
 #endif
 
-#ifdef _WIN32
-	//Show splash!
-	HWND Splash_HWND;
-
-	RECT rect;
-
-	Splash_HWND = CreateDialog(hThisInst, MAKEINTRESOURCE(IDD_DIALOG1), NULL, NULL);
-
-	if (Splash_HWND)
-	{
-		if (GetWindowRect(Splash_HWND, &rect))
-		{
-			if (rect.left > (rect.top * 2))
-			{
-				SetWindowPos (Splash_HWND, 0,
-					(rect.left / 2) - ((rect.right - rect.left) / 2),
-					rect.top, 0, 0,
-					SWP_NOZORDER | SWP_NOSIZE);
-			}
-		}
-
-		ShowWindow(Splash_HWND, SW_NORMAL);
-		UpdateWindow(Splash_HWND);
-		SetForegroundWindow (Splash_HWND);
-	}
-#endif // _WIN32
-
 	// init file system
 	if(!g_fileSystem->Init(false))
 		return -2;
@@ -154,11 +127,6 @@ int main(int argc, char** argv)
 
 	if(!Host_Init())
 		return -3;
-
-#ifdef _WIN32
-	if(Splash_HWND)
-		DestroyWindow(Splash_HWND);
-#endif // _WIN32
 
 	Host_GameLoop();
 

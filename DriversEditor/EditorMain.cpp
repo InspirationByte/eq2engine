@@ -5,6 +5,11 @@
 // Description: 'Drivers' level editor
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "windows/resource.h"
+#ifdef _WIN32
+#include <wx/msw/private.h>
+#endif 
+
 #include "EditorMain.h"
 
 #include "FontCache.h"
@@ -396,7 +401,11 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_selectedTool = m_hmapedit;
 
 	m_newLevelDialog = new CNewLevelDialog(this);
+	
 	m_loadleveldialog = new CLoadLevelDialog(this);
+	m_loadingDialog = new CLoadingDialog(this);
+	m_loadingDialog->CenterOnScreen();
+
 	m_levelsavedialog = new wxTextEntryDialog(this, DKLOC("TOKEN_WORLDNAME", L"World name"), DKLOC("TOKEN_SPECIFYWORLDNAME", L"Specify world name"));
 	m_carNameDialog = new wxTextEntryDialog(this, L"Vehicle entry name", "Enter the vehicle name you want to drive on");
 
@@ -540,6 +549,10 @@ void CMainWindow::OpenLevelPrompt()
 
 	if(m_loadleveldialog->ShowModal() == wxID_OK)
 	{
+		m_loadingDialog->Show();
+		m_loadingDialog->SetPercentage(0);
+		m_loadingDialog->SetText("Cleaning up...");
+
 		OnLevelUnload();
 		g_pGameWorld->Cleanup();
 
@@ -549,11 +562,14 @@ void CMainWindow::OpenLevelPrompt()
 		g_pGameWorld->SetLevelName( m_loadleveldialog->GetSelectedLevelString() );
 		g_pGameWorld->Init();
 
+		m_loadingDialog->SetText("Preparing level...");
 		if(!g_pGameWorld->LoadLevel())
 		{
 			wxMessageBox("Invalid level file, or not found", "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 			return;
 		}
+
+		m_loadingDialog->SetPercentage(100);
 
 		m_editingPrefab = false;
 
@@ -563,6 +579,7 @@ void CMainWindow::OpenLevelPrompt()
 		m_bNeedsSave = false;
 
 		OnLevelLoad();
+		m_loadingDialog->Hide();
 
 		//ResetViews();
 		//UpdateAllWindows();
@@ -655,12 +672,15 @@ bool CMainWindow::IsSavedOnDisk()
 
 bool CMainWindow::SavePrompt(bool showQuestion, bool changeLevelName, bool bForceSave)
 {
-	
 	if(!IsNeedsSave() && !changeLevelName)
 	{
 		// if it's already on disk, save it
 		if(IsSavedOnDisk() && bForceSave)
 		{
+			m_loadingDialog->Show();
+			m_loadingDialog->SetPercentage(0);
+			m_loadingDialog->SetText("Saving level...");
+
 			if(m_editingPrefab)
 				g_pGameWorld->m_level.SavePrefab(g_pGameWorld->GetLevelName());
 			else
@@ -668,6 +688,9 @@ bool CMainWindow::SavePrompt(bool showQuestion, bool changeLevelName, bool bForc
 
 			for(int i = 0; i < m_tools.numElem(); i++)
 				m_tools[i]->OnLevelSave();
+
+			m_loadingDialog->SetPercentage(100);
+			m_loadingDialog->Hide();
 
 			m_bSavedOnDisk = true;
 			m_bNeedsSave = false;
@@ -695,6 +718,10 @@ bool CMainWindow::SavePrompt(bool showQuestion, bool changeLevelName, bool bForc
 		{
 			g_pGameWorld->SetLevelName(m_levelsavedialog->GetValue());
 
+			m_loadingDialog->Show();
+			m_loadingDialog->SetPercentage(0);
+			m_loadingDialog->SetText("Saving level...");
+
 			if(m_editingPrefab)
 				g_pGameWorld->m_level.SavePrefab(g_pGameWorld->GetLevelName());
 			else
@@ -705,17 +732,28 @@ bool CMainWindow::SavePrompt(bool showQuestion, bool changeLevelName, bool bForc
 
 			for(int i = 0; i < m_tools.numElem(); i++)
 				m_tools[i]->OnLevelSave();
+
+			m_loadingDialog->SetPercentage(100);
+			m_loadingDialog->Hide();
 		}
 	}
 	else
 	{
+		m_loadingDialog->Show();
+		m_loadingDialog->SetPercentage(0);
+		m_loadingDialog->SetText("Saving prefab...");
+
 		if(m_editingPrefab)
 			g_pGameWorld->m_level.SavePrefab(g_pGameWorld->GetLevelName());
 		else
 			g_pGameWorld->m_level.Save(g_pGameWorld->GetLevelName(), false);
 
+		m_loadingDialog->SetPercentage(100);
 		for(int i = 0; i < m_tools.numElem(); i++)
 			m_tools[i]->OnLevelSave();
+
+		m_loadingDialog->SetPercentage(100);
+		m_loadingDialog->Hide();
 
 		m_bSavedOnDisk = true;
 		m_bNeedsSave = false;
@@ -1324,6 +1362,35 @@ bool CEGFViewApp::OnInit()
 	_CrtSetReportMode( _CRT_ASSERT, _CRTDBG_MODE_WNDW );
 #endif
 
+#ifdef _WIN32
+	HINSTANCE hInstance = wxGetInstance();
+	
+	//Show splash!
+	HWND Splash_HWND;
+
+	RECT rect;
+
+	Splash_HWND = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, NULL);
+
+	if (Splash_HWND)
+	{
+		if (GetWindowRect(Splash_HWND, &rect))
+		{
+			if (rect.left > (rect.top * 2))
+			{
+				SetWindowPos (Splash_HWND, 0,
+					(rect.left / 2) - ((rect.right - rect.left) / 2),
+					rect.top, 0, 0,
+					SWP_NOZORDER | SWP_NOSIZE);
+			}
+		}
+
+		ShowWindow(Splash_HWND, SW_NORMAL);
+		UpdateWindow(Splash_HWND);
+		SetForegroundWindow (Splash_HWND);
+	}
+#endif // _WIN32
+
 	InitCore(GetCommandLineA());
 
 	setlocale(LC_ALL,"C");
@@ -1354,6 +1421,11 @@ bool CEGFViewApp::OnInit()
 		EqString prefabName(g_cmdLine->GetArgumentsOf(pfbCmdIdx));
 		g_pMainFrame->LoadEditPrefab( prefabName.c_str() );
 	}
+
+#ifdef _WIN32
+	if(Splash_HWND)
+		DestroyWindow(Splash_HWND);
+#endif // _WIN32
 
     return true;
 }

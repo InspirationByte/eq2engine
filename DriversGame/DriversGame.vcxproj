@@ -373,7 +373,6 @@
     <ResourceCompile Include="Resources\Resources.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Resources\drvsyn_splash.bmp" />
     <Image Include="Resources\mainicon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

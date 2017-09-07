@@ -785,8 +785,5 @@
     <Image Include="Resources\mainicon.ico">
       <Filter>Файлы ресурсов</Filter>
     </Image>
-    <Image Include="Resources\drvsyn_splash.bmp">
-      <Filter>Файлы ресурсов</Filter>
-    </Image>
   </ItemGroup>
 </Project>
