@@ -78,11 +78,6 @@ enum EWeatherType
 
 struct worldEnvConfig_t
 {
-	worldEnvConfig_t()
-	{
-		skyboxMaterial = NULL;
-	}
-
 	EqString		name;
 
 	ColorRGB		sunColor;
@@ -111,7 +106,6 @@ struct worldEnvConfig_t
 	Vector3D		fogColor;
 
 	EqString		skyboxPath;
-	IMaterial*		skyboxMaterial;
 };
 
 //----------------------------------------------------------------------
@@ -211,7 +205,14 @@ public:
 	occludingFrustum_t				m_occludingFrustum;
 
 	worldinfo_t						m_info;
+
 	worldEnvConfig_t				m_envConfig;
+
+	DkList<worldEnvConfig_t>		m_envTransitions;
+
+	float							m_envWetness;
+	float							m_envTransitionTime;
+	float							m_envTransitionTotalTime;
 
 	IVertexFormat*					m_vehicleVertexFormat;
 	IVertexFormat*					m_objectInstVertexFormat;
@@ -265,6 +266,7 @@ protected:
 
 	IMatVar*						m_skyColor;
 	IEqModel*						m_skyModel;
+	IMaterial*						m_skyMaterial;
 
 	EqString						m_envName;
 

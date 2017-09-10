@@ -905,6 +905,13 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		m_switchedLane = false;
 	}
 
+	eqPhysCollisionFilter collFilter;
+	collFilter.type = EQPHYS_FILTER_TYPE_EXCLUDE;
+	collFilter.flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS | EQPHYS_FILTER_FLAG_FORCE_RAYCAST;
+	collFilter.AddObject( GetPhysicsBody() );
+
+	bool hasLeftTurn = false;
+
 	//
 	// Breakage on red light
 	//
@@ -960,7 +967,9 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 				SetLight(CAR_LIGHT_EMERGENCY, false);
 
-				if( CompareDirection(m_straights[STRAIGHT_CURRENT].direction-1, selRoad.direction) )
+				hasLeftTurn = CompareDirection(m_straights[STRAIGHT_CURRENT].direction-1, selRoad.direction);
+
+				if( hasLeftTurn )
 					SetLight(CAR_LIGHT_DIM_LEFT, true);
 				else if( CompareDirection(m_straights[STRAIGHT_CURRENT].direction+1, selRoad.direction) )
 					SetLight(CAR_LIGHT_DIM_RIGHT, true);
@@ -994,16 +1003,11 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		accelerator *= 0.25f;
 	}
 
-	eqPhysCollisionFilter collFilter;
-	collFilter.type = EQPHYS_FILTER_TYPE_EXCLUDE;
-	collFilter.flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS | EQPHYS_FILTER_FLAG_FORCE_RAYCAST;
-	collFilter.AddObject( GetPhysicsBody() );
-
 	//
 	// Breakage when has object in front
 	//
 	{
-		float fTraceDist = AI_CAR_TRACE_DIST_MAX * trafficBrakeDistModifier[g_pGameWorld->m_envConfig.weatherType]; //RemapValClamp(carForwardSpeed, 0.0f, 40.0f, AI_CAR_TRACE_DIST_MIN, AI_CAR_TRACE_DIST_MAX);
+		float fTraceDist = AI_CAR_TRACE_DIST_MAX * trafficBrakeDistModifier[g_pGameWorld->m_envConfig.weatherType];
 
 		CollisionData_t frontObjColl;
 
