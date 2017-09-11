@@ -179,6 +179,7 @@
     <ClCompile Include="ParticleEffects.cpp" />
     <ClCompile Include="Shader_Shadow.cpp" />
     <ClCompile Include="Shader_ShadowBuild.cpp" />
+    <ClCompile Include="Shader_Sky.cpp" />
     <ClCompile Include="ShadowRenderer.cpp" />
     <ClCompile Include="state_lobby.cpp" />
     <ClCompile Include="object_scripted.cpp" />

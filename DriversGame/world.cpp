@@ -252,16 +252,11 @@ void ParseEnvConfig(worldEnvConfig_t& env, kvkeybase_t* kvs)
 	kvkeybase_t* sunLensAngles = kvs->FindKeyBase("sunLensAngles");
 
 	if(sunLensAngles)
-	{
-		Vector3D angles = KV_GetVector3D(sunLensAngles);
-		AngleVectors(angles, &env.sunLensDirection);
-	}
+		env.sunLensAngles = KV_GetVector3D(sunLensAngles);
 	else
-	{
-		AngleVectors(env.sunAngles, &env.sunLensDirection);
-	}
+		env.sunLensAngles = env.sunAngles;
 
-	env.rainBrightness = KV_GetValueFloat(kvs->FindKeyBase("rainBrightness"));
+	env.rainBrightness = KV_GetValueFloat(kvs->FindKeyBase("rainBrightness"), 0, 0.4f);
 	env.rainDensity = KV_GetValueFloat(kvs->FindKeyBase("rainDensity"));
 
 	env.lightsType = 0;
@@ -311,13 +306,15 @@ void InterpolateEnv(worldEnvConfig_t& result, const worldEnvConfig_t& from, cons
 	result.brightnessModFactor = lerp(from.brightnessModFactor, to.brightnessModFactor, factor);
 
 	result.sunAngles = lerp(from.sunAngles, to.sunAngles, factor);
-	result.sunLensDirection = from.sunLensDirection; //lerp(from,to,factor);
+	result.sunLensAngles = lerp(from.sunLensAngles,to.sunLensAngles,factor);
 	result.lensIntensity = lerp(from.lensIntensity, to.lensIntensity, factor);
 	result.rainBrightness = lerp(from.rainBrightness, to.rainBrightness, factor);
 	result.rainDensity = lerp(from.rainDensity, to.rainDensity, factor);
+
 	result.headLightIntensity = lerp(from.headLightIntensity, to.headLightIntensity, factor);
+	//result.streetLightIntensity = lerp(from.streetLightIntensity, to.streetLightIntensity, factor);
+
 	result.shadowColor = lerp(from.shadowColor, to.shadowColor, factor);
-	result.streetLightIntensity = lerp(from.streetLightIntensity, to.streetLightIntensity, factor);
 
 	result.lightsType = 0;
 
@@ -331,8 +328,17 @@ void InterpolateEnv(worldEnvConfig_t& result, const worldEnvConfig_t& from, cons
 	if(cityLights)
 		result.lightsType |= WLIGHTS_CITY;
 
+
 	if(lampLights)
+	{
 		result.lightsType |= WLIGHTS_LAMPS;
+
+		if((from.lightsType & WLIGHTS_LAMPS) == 0)
+			result.streetLightIntensity = lerp(from.streetLightIntensity, to.streetLightIntensity, (factor-0.5f) * 2.0f);
+		else
+			result.streetLightIntensity = lerp(from.streetLightIntensity, to.streetLightIntensity, factor);
+		
+	}
 
 	result.weatherType = (EWeatherType)(int)lerp((float)from.weatherType, (float)to.weatherType, factor);
 
@@ -354,7 +360,13 @@ void CGameWorld::InitEnvironment()
 		return;
 #endif // EDITOR
 
+	for(int i = 0; i < m_envTransitions.numElem(); i++)
+		g_pShaderAPI->FreeTexture(m_envTransitions[i].skyTexture);
+
 	m_envTransitions.clear();
+
+	g_pShaderAPI->FreeTexture(m_envConfig.skyTexture);
+	m_envConfig.skyTexture = nullptr;
 
 	m_envMapsDirty = true;
 	materials->SetEnvironmentMapTexture(NULL);
@@ -369,11 +381,6 @@ void CGameWorld::InitEnvironment()
 
 		status = envKvs.LoadFromFile("scripts/environments/default_environment.txt", SP_MOD);
 	}
-
-	if(m_skyMaterial)
-		materials->FreeMaterial( m_skyMaterial );
-
-	m_skyMaterial = nullptr;
 
 	m_fNextThunderTime = 6.0f;
 	m_fThunderTime = 0.2f;
@@ -398,16 +405,25 @@ void CGameWorld::InitEnvironment()
 				// parse into new item
 				ParseEnvConfig(m_envTransitions[i], transitionEnv);
 
-				Msg("parsed env %s\n", transitionEnv->GetName());
+				// load it's sky textre
+				m_envTransitions[i].skyTexture = g_pShaderAPI->LoadTexture( m_envTransitions[i].skyboxPath.c_str(), TEXFILTER_TRILINEAR_ANISO);
+				m_envTransitions[i].skyTexture->Ref_Grab();
 			}
 
 			m_envTransitionTotalTime = KV_GetValueFloat(envSection->FindKeyBase("transition_time"), 0, 100.0f );
 			m_envTransitionTime = 0.0f;
 
 			m_envConfig = m_envTransitions[0];
+			m_envConfig.skyTexture = nullptr;
 		}
 		else
+		{
 			ParseEnvConfig(m_envConfig, envSection);
+
+			// load sky texture
+			m_envConfig.skyTexture = g_pShaderAPI->LoadTexture( m_envConfig.skyboxPath.c_str(), TEXFILTER_TRILINEAR_ANISO );
+			m_envConfig.skyTexture->Ref_Grab();
+		}
 	}
 	else
 		SetupDefaultEnvConfig(m_envConfig);
@@ -417,12 +433,12 @@ void CGameWorld::InitEnvironment()
 	// adjust sun dir
 	AngleVectors(m_envConfig.sunAngles, &m_info.sunDir);
 
-	// load sky
-	m_skyMaterial = materials->FindMaterial(m_envConfig.skyboxPath.c_str());
-	m_skyMaterial->Ref_Grab();
+	// prepare
+	m_skyTexture1->AssignTexture(m_envConfig.skyTexture);
+	m_skyTexture2->AssignTexture(m_envConfig.skyTexture);
+	m_skyInterp->SetFloat(0.0f);
 
-	m_skyColor = m_skyMaterial->GetMaterialVar("color", "[1 1 1 1]");
-	materials->PutMaterialToLoadingQueue(m_skyMaterial);
+	m_envMapRegenTime = 0.0f;
 
 	if(m_reflectionTex)
 	{
@@ -599,7 +615,6 @@ void CGameWorld::Init()
 		m_lightsTex = g_pShaderAPI->CreateProceduralTexture("_vlights",
 														FORMAT_RGBA16F, MAX_LIGHTS_TEXTURE, 2, 1,1,
 														TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, TEXFLAG_NOQUALITYLOD);
-
 		if(m_lightsTex)
 			m_lightsTex->Ref_Grab();
 	}
@@ -613,14 +628,45 @@ void CGameWorld::Init()
 		m_depthTestMat->Ref_Grab();
 	}
 
-	m_reflectionTex = g_pShaderAPI->CreateNamedRenderTarget("_reflection", 512, 256, FORMAT_RGBA8, TEXFILTER_LINEAR, ADDRESSMODE_CLAMP);
-	m_reflectionTex->Ref_Grab();
+	if(!m_reflectionTex)
+	{
+		m_reflectionTex = g_pShaderAPI->CreateNamedRenderTarget("_reflection", 512, 256, FORMAT_RGBA8, TEXFILTER_LINEAR, ADDRESSMODE_CLAMP);
+		m_reflectionTex->Ref_Grab();
+	}
 
-	m_tempReflTex = g_pShaderAPI->CreateNamedRenderTarget("_tempTexture", 512, 256, FORMAT_RGBA8, TEXFILTER_NEAREST, ADDRESSMODE_CLAMP);
-	m_tempReflTex->Ref_Grab();
+	if(!m_tempReflTex)
+	{
+		m_tempReflTex = g_pShaderAPI->CreateNamedRenderTarget("_tempTexture", 512, 256, FORMAT_RGBA8, TEXFILTER_NEAREST, ADDRESSMODE_CLAMP);
+		m_tempReflTex->Ref_Grab();
+	}
+	
+	if(!m_blurYMaterial)
+	{
+		m_blurYMaterial = materials->FindMaterial("engine/BlurY", true);
+		m_blurYMaterial->Ref_Grab();
+	}
 
-	m_blurYMaterial = materials->FindMaterial("engine/BlurY", true);
-	m_blurYMaterial->Ref_Grab();
+	if(!m_skyMaterial)
+	{
+		m_skyMaterial = materials->FindMaterial("engine/sky");
+		m_skyMaterial->Ref_Grab();
+	}
+
+	m_skyMaterial->LoadShaderAndTextures();
+
+	// get material vars we gonna control
+	m_skyColor = m_skyMaterial->GetMaterialVar("color", "[1 1 1 1]");
+	m_skyTexture1 = m_skyMaterial->GetMaterialVar("Base1", "$base1");
+	m_skyTexture2 = m_skyMaterial->GetMaterialVar("Base2", "$base1");
+	m_skyInterp = m_skyMaterial->GetMaterialVar("Interp", "0.0");
+
+	ASSERT(m_skyColor);
+	ASSERT(m_skyTexture1);
+	ASSERT(m_skyTexture2);
+	ASSERT(m_skyInterp);
+
+	m_envTransitionTime = 0.0f;
+	m_envMapRegenTime = 0.0f;
 }
 
 void CGameWorld::AddObject(CGameObject* pObject, bool spawned)
@@ -704,8 +750,14 @@ void CGameWorld::Cleanup( bool unloadLevel )
 	ses->StopAllSounds();
 
 	// clear transition environments
+	for(int i = 0; i < m_envTransitions.numElem(); i++)
+		g_pShaderAPI->FreeTexture(m_envTransitions[i].skyTexture);
+
 	m_envTransitions.clear();
 
+	g_pShaderAPI->FreeTexture(m_envConfig.skyTexture);
+	m_envConfig.skyTexture = nullptr;
+	
 	// non-spawned objects are deleted in UpdateRegions()
 
 	if(unloadLevel)
@@ -777,41 +829,48 @@ void CGameWorld::Cleanup( bool unloadLevel )
 		g_pPFXRenderer->Shutdown();
 
 		g_pShaderAPI->DestroyVertexFormat(m_vehicleVertexFormat);
-		m_vehicleVertexFormat = NULL;
+		m_vehicleVertexFormat = nullptr;
 
 		g_pShaderAPI->FreeTexture(m_lightsTex);
-		m_lightsTex = NULL;
+		m_lightsTex = nullptr;
 
 		g_pShaderAPI->FreeTexture(m_reflectionTex);
-		m_reflectionTex = NULL;
+		m_reflectionTex = nullptr;
 
 		g_pShaderAPI->FreeTexture(m_tempReflTex);
-		m_tempReflTex = NULL;
+		m_tempReflTex = nullptr;
 
 		materials->FreeMaterial(m_blurYMaterial);
-		m_blurYMaterial = NULL;
+		m_blurYMaterial = nullptr;
 
-		materials->SetEnvironmentMapTexture(NULL);
+		materials->FreeMaterial(m_skyMaterial);
+		m_skyMaterial = nullptr;
+
+		m_skyColor = nullptr;
+		m_skyInterp = nullptr;
+		m_skyTexture1 = nullptr;
+		m_skyTexture2 = nullptr;
+
+		materials->SetEnvironmentMapTexture(nullptr);
 		g_pShaderAPI->FreeTexture(m_envMap);
-		m_envMap = NULL;
+		m_envMap = nullptr;
 
 		g_pShaderAPI->FreeTexture(m_fogEnvMap);
-		m_fogEnvMap = NULL;
+		m_fogEnvMap = nullptr;
 
 		g_pShaderAPI->DestroyVertexFormat(m_objectInstVertexFormat);
-		m_objectInstVertexFormat = NULL;
+		m_objectInstVertexFormat = nullptr;
 
 		g_pShaderAPI->DestroyVertexBuffer(m_objectInstVertexBuffer);
-		m_objectInstVertexBuffer = NULL;
+		m_objectInstVertexBuffer = nullptr;
 
 		g_pShaderAPI->DestroyOcclusionQuery(m_sunGlowOccQuery);
-		m_sunGlowOccQuery = NULL;
+		m_sunGlowOccQuery = nullptr;
 
 		materials->FreeMaterial(m_depthTestMat);
-		m_depthTestMat = NULL;
+		m_depthTestMat = nullptr;
 
-		m_skyColor = NULL;
-		m_skyModel = NULL;
+		m_skyModel = nullptr;
 	}
 }
 
@@ -885,13 +944,29 @@ void CGameWorld::UpdateWorld(float fDt)
 				timePercentage = 1.0f;
 			}
 			else
+			{
 				m_envTransitionTime += fDt;
+
+				// every 15 seconds we should regenerate cubemaps
+				m_envMapRegenTime -= fDt;
+				if(m_envMapRegenTime <= 0.0f)
+				{
+					m_envMapsDirty = true;
+					m_envMapRegenTime = 15.0f;
+				}
+			}
 
 			float percentageScaled = timePercentage*(m_envTransitions.numElem()-1);
 
 			int weatherIdx = ceil(percentageScaled);
 
 			float transitionPercent = percentageScaled - (weatherIdx-1);
+
+			if(m_envTransitionTime <= 0.1f)
+			{
+				transitionPercent = 0.0f;
+				weatherIdx = 1;
+			}
 
 			if(weatherIdx == 0)
 				weatherIdx = 1;
@@ -905,7 +980,15 @@ void CGameWorld::UpdateWorld(float fDt)
 			int fromType = m_envTransitions[weatherIdx-1].weatherType;
 			int toType = m_envTransitions[weatherIdx].weatherType;
 
+			// prepare
+			m_skyTexture1->AssignTexture(m_envTransitions[weatherIdx-1].skyTexture);
+			m_skyTexture2->AssignTexture(m_envTransitions[weatherIdx].skyTexture);
+			m_skyInterp->SetFloat(transitionPercent);
+
 			m_envWetness = lerp(g_visualWetnessTable[fromType], g_visualWetnessTable[toType], transitionPercent);
+
+			// adjust sun dir
+			AngleVectors(m_envConfig.sunAngles, &m_info.sunDir);
 
 			debugoverlay->Text(ColorRGBA(1,1,0,1), "------ weather transition -------");
 			debugoverlay->Text(ColorRGBA(1,1,0,1), "     time: %g / %g sec", m_envTransitionTime, m_envTransitionTotalTime);
@@ -1166,7 +1249,7 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 
 	materials->SetMaterialRenderParamCallback(this);
 
-	// render the skybox into textures
+	// render the skybox into cubemap
 	for(int i = 0; i < 6; i++)
 	{
 		g_pShaderAPI->ChangeRenderTarget(tempRenderTarget, i);
@@ -1184,7 +1267,6 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	g_pShaderAPI->Finish();
 
 	texlockdata_t tempLock;
-
 
 	CImage envMap, fogEnvMap;
 	envMap.Create(FORMAT_RGBA8, 256, 256, 0, 1);
@@ -1230,8 +1312,8 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 
 	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(TEXFILTER_LINEAR, ADDRESSMODE_CLAMP, ADDRESSMODE_CLAMP, ADDRESSMODE_CLAMP);
 
-	// DEPTH == 0 is cubemap
-	materials->SetEnvironmentMapTexture(NULL);
+	// set cubemap to none before we freeing the texture
+	materials->SetEnvironmentMapTexture(nullptr);
 	g_pShaderAPI->FreeTexture(m_envMap);
 
 	m_envMap = g_pShaderAPI->CreateTexture(envMapImg, sampler);
@@ -1736,7 +1818,10 @@ void CGameWorld::Draw( int nRenderFlags )
 	materials->SetMaterialRenderParamCallback( NULL );
 
 #ifndef EDITOR
-	Vector3D virtualSunPos = m_view.GetOrigin() + m_envConfig.sunLensDirection*1000.0f;
+	Vector3D sunLensDirection;
+	AngleVectors(m_envConfig.sunAngles, &sunLensDirection);
+
+	Vector3D virtualSunPos = m_view.GetOrigin() + sunLensDirection*1000.0f;
 
 	Vector2D lensScreenPos;
 	PointToScreen(virtualSunPos, lensScreenPos, m_viewprojection, screenSize);
@@ -1744,7 +1829,7 @@ void CGameWorld::Draw( int nRenderFlags )
 	// lens flare rendering on screen by using particle engine
 	if(m_envConfig.lensIntensity > 0.0f && r_drawLensFlare.GetBool())
 	{
-		float fIntensity = dot(m_envConfig.sunLensDirection, m_matrices[MATRIXMODE_VIEW].rows[2].xyz());
+		float fIntensity = dot(sunLensDirection, m_matrices[MATRIXMODE_VIEW].rows[2].xyz());
 
 		// Occlusion query begin
 		if(m_sunGlowOccQuery &&

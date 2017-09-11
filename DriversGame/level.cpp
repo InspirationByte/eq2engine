@@ -513,14 +513,16 @@ bool DrawDefLightData( Matrix4x4& objDefMatrix, const wlightdata_t& data, float 
 		if(!lightsAdded)
 			return false;
 
-		float extraBrightness = 0.0f;
-		float extraSizeScale = 1.0f;
+		float extraBrightness = 0.0f + g_pGameWorld->m_envWetness*0.08f;
+		float extraSizeScale = 1.0f + g_pGameWorld->m_envWetness*0.25f;
 
+		/*
 		if(g_pGameWorld->m_envConfig.weatherType != WEATHER_TYPE_CLEAR)
 		{
 			extraBrightness = 0.07f;	// add extra brightness to glows
 			extraSizeScale = 1.25f;
 		}
+		*/
 
 		for(int i = 0; i < data.m_glows.numElem(); i++)
 		{

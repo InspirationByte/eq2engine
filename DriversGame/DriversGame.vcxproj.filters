@@ -396,6 +396,9 @@
     <ClCompile Include="..\shared_engine\EqUI\IEqUI_Control.cpp">
       <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
     </ClCompile>
+    <ClCompile Include="Shader_Sky.cpp">
+      <Filter>Файлы исходного кода\MatSystem\Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">

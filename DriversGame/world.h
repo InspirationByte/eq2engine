@@ -78,6 +78,11 @@ enum EWeatherType
 
 struct worldEnvConfig_t
 {
+	worldEnvConfig_t()
+	{
+		skyTexture = nullptr;
+	}
+
 	EqString		name;
 
 	ColorRGB		sunColor;
@@ -94,7 +99,7 @@ struct worldEnvConfig_t
 	float			rainDensity;
 
 	Vector3D		sunAngles;
-	Vector3D		sunLensDirection;
+	Vector3D		sunLensAngles;
 
 	int				lightsType;
 	EWeatherType	weatherType;
@@ -106,6 +111,7 @@ struct worldEnvConfig_t
 	Vector3D		fogColor;
 
 	EqString		skyboxPath;
+	ITexture*		skyTexture;
 };
 
 //----------------------------------------------------------------------
@@ -214,6 +220,8 @@ public:
 	float							m_envTransitionTime;
 	float							m_envTransitionTotalTime;
 
+	float							m_envMapRegenTime;
+
 	IVertexFormat*					m_vehicleVertexFormat;
 	IVertexFormat*					m_objectInstVertexFormat;
 	IVertexBuffer*					m_objectInstVertexBuffer;
@@ -264,9 +272,13 @@ protected:
 	ITexture*						m_fogEnvMap;
 	bool							m_envMapsDirty;
 
-	IMatVar*						m_skyColor;
 	IEqModel*						m_skyModel;
+
 	IMaterial*						m_skyMaterial;
+	IMatVar*						m_skyColor;
+	IMatVar*						m_skyTexture1;
+	IMatVar*						m_skyTexture2;
+	IMatVar*						m_skyInterp;
 
 	EqString						m_envName;
 
