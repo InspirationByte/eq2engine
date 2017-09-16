@@ -147,6 +147,8 @@ void CCameraAnimator::Reset()
 
 void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
 {
+	extern ConVar r_zfar;
+
 	// Check camera switch buttons
 	if(	(nButtons & IN_CHANGECAM) && !(m_oldBtns & IN_CHANGECAM) )
 	{
@@ -165,6 +167,16 @@ void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
 			newMode = CAM_MODE_OUTCAR;
 
 		m_mode = (ECameraMode)newMode;
+	}
+
+	if( target && m_mode >= CAM_MODE_TRIPOD_ZOOM && m_mode <= CAM_MODE_TRIPOD_STATIC )
+	{
+		float dist = length(target->GetOrigin() - GetOrigin());
+
+		float zfar = r_zfar.GetFloat();
+
+		if(dist > min(zfar, 200))
+			m_mode = CAM_MODE_OUTCAR;
 	}
 
 	// TODO: other control for addRot

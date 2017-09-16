@@ -16,7 +16,16 @@
 
 extern CGameSession* g_pGameSession;
 
-ConVar		g_car("g_car", "rollo", "player car", CV_ARCHIVE);
+void fng_car_variants(DkList<EqString>& list, const char* query)
+{
+	if(g_pGameSession)
+		g_pGameSession->GetCarNames(list); 
+}
+
+ConVar		g_car("g_car", "rollo", fng_car_variants, "player car",  CV_ARCHIVE);
+
+ConVar		g_invicibility("g_invicibility", "0", "No damage for player car", CV_CHEAT);
+ConVar		g_infiniteMass("g_infiniteMass", "0", "Infinite mass for player car", CV_CHEAT);
 
 bool		g_bIsServer = true;
 
@@ -327,20 +336,20 @@ void CGameSession::Update( float fDt )
 	if (GetLeadCar())
 		g_pGameWorld->m_level.QueryNearestRegions(GetLeadCar()->GetOrigin(), false);
 
-	if (GetPlayerCar())
-		g_pGameWorld->m_level.QueryNearestRegions(GetPlayerCar()->GetOrigin(), false);
+	if ( player_car )
+		g_pGameWorld->m_level.QueryNearestRegions(player_car->GetOrigin(), false);
 
 	if( player_car )
 	{
 		if( !g_replayData->IsCarPlaying( player_car ) )
 		{
-			m_playerCar->SetControlButtons( m_localControls );
-			m_playerCar->SetControlVars((m_localControls & IN_ACCELERATE) ? m_localAccelBrakeValue : 0.0f,
+			player_car->SetControlButtons( m_localControls );
+			player_car->SetControlVars((m_localControls & IN_ACCELERATE) ? m_localAccelBrakeValue : 0.0f,
 										(m_localControls & IN_BRAKE) ? m_localAccelBrakeValue : 0.0f,
 										m_localSteeringValue);
 		}
 
-		m_playerCar->UpdateLightsState();
+		player_car->UpdateLightsState();
 	}
 
 	float phys_begin = MEASURE_TIME_BEGIN();
@@ -352,6 +361,14 @@ void CGameSession::Update( float fDt )
 
 	// updates world
 	g_pGameWorld->UpdateWorld( fDt );
+
+	if( player_car )
+	{
+		if(g_invicibility.GetBool())
+			player_car->SetDamage(0.0f);
+
+		player_car->SetInfiniteMass(g_infiniteMass.GetBool());
+	}
 
 	{
 		OOLUA::Script& state = GetLuaState();
@@ -598,7 +615,13 @@ void CGameSession::LoadCarData()
 	}
 }
 
-vehicleConfig_t* CGameSession::FindCarEntryByName(const char* name)
+void CGameSession::GetCarNames(DkList<EqString>& list) const
+{
+	for (int i = 0; i < m_carEntries.numElem(); i++)
+		list.append(m_carEntries[i]->carName);
+}
+
+vehicleConfig_t* CGameSession::FindCarEntryByName(const char* name) const
 {
 	for (int i = 0; i < m_carEntries.numElem(); i++)
 	{

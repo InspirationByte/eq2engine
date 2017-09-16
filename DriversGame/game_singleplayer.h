@@ -77,14 +77,15 @@ public:
 	CGameObject*				FindScriptObjectById( int scriptID );
 
 	void						LoadCarData();
-	vehicleConfig_t*			FindCarEntryByName(const char* name);
+	vehicleConfig_t*			FindCarEntryByName(const char* name) const;
+
+	void						GetCarNames(DkList<EqString>& list) const;
 
 	//-------------------------------------------------------------------------
 	// functions only used by Lua
 
 	CCar*						Lua_CreateCar(const char* name, int type = CAR_TYPE_NORMAL);
 	CAIPursuerCar*				Lua_CreatePursuerCar(const char* name, int type = PURSUER_TYPE_COP);
-
 
 protected:
 

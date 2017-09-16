@@ -157,13 +157,10 @@ DECLARE_CMD(instantreplay, "Does instant replay (slowly). You can fetch to frame
 	Game_InstantReplay( replayTo );
 }
 
-DECLARE_CMD(start, "loads a level or starts mission", 0)
+DECLARE_CMD(start, "start a game with specified mission or level name", 0)
 {
 	if(CMD_ARGC == 0)
-	{
-		Msg("Usage: start <name> - starts game with specified level or mission\n");
 		return;
-	}
 
 	// unload game
 	if(GetCurrentStateType() == GAME_STATE_GAME)
@@ -174,10 +171,11 @@ DECLARE_CMD(start, "loads a level or starts mission", 0)
 	// always set level name
 	g_pGameWorld->SetLevelName( CMD_ARGV(0).c_str() );
 
-	// first try load mission script
-	if( !g_State_Game->LoadMissionScript(CMD_ARGV(0).c_str()) )
+	EqString scriptFileName(varargs("scripts/missions/%s.lua", CMD_ARGV(0).c_str()));
+	if( g_fileSystem->FileExist(scriptFileName.c_str()) )
 	{
-		// fail-safe mode
+		// try load mission script
+		g_State_Game->LoadMissionScript(CMD_ARGV(0).c_str());
 	}
 
 	SetCurrentState( g_states[GAME_STATE_GAME], true);
@@ -981,7 +979,6 @@ void CState_Game::DoGameFrame(float fDt)
 	g_pGameSession->UpdateLocalControls( g_nClientButtons, g_joySteeringValue, g_joyAccelBrakeValue );
 	g_pGameSession->Update(fDt);
 
-	//Game_UpdateCamera(fDt);
 	DoCameraUpdates( fDt );
 
 	// render all

@@ -18,9 +18,9 @@
 // int argumentType definitions
 #define ARG_TYPE_GENERIC			0
 
-struct AutoCompletionNode_s
+struct ConAutoCompletion_t
 {
-	AutoCompletionNode_s()
+	ConAutoCompletion_t()
 	{
 		argumentType = ARG_TYPE_GENERIC;
 	}
@@ -72,7 +72,7 @@ public:
 	bool	MouseEvent(const Vector2D &pos, int Button,bool pressed);
 	void	MousePos(const Vector2D &pos);
 
-	void	AddAutoCompletionNode(AutoCompletionNode_s *pNode);
+	void	AddAutoCompletion(ConAutoCompletion_t* item);
 
 protected:
 	void	DrawFastFind(float x, float y, float w);
@@ -126,8 +126,8 @@ private:
 	// Current input text
 	EqString						m_inputText;
 
-	// Autocompletion collection
-	DkList<AutoCompletionNode_s*>	m_hAutoCompletionNodes;
+	// custom autocompletion
+	DkList<ConAutoCompletion_t*>	m_customAutocompletion;
 };
 
 extern CEqSysConsole* g_pSysConsole;

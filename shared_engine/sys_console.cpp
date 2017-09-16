@@ -112,20 +112,20 @@ void AutoCompletionCheckExtensionDir(const char* extension, const char *dir, boo
 }
 */
 
-DECLARE_CMD(autocompletion_addcommandbase,"Adds autocompletion variants", CV_INVISIBLE)
+DECLARE_CMD(con_addAutoCompletion,"Adds autocompletion variants", CV_INVISIBLE)
 {
 	if(CMD_ARGC == 0)
 	{
-		Msg("Usage: autocompletion_addcommandbase <console command/variable> [argument1,argument2,...]\n");
+		Msg("Usage: con_addAutoCompletion <console command/variable> [argument1,argument2,...]\n");
 		return;
 	}
 
-	AutoCompletionNode_s* pNode = new AutoCompletionNode_s;
-	pNode->cmd_name = CMD_ARGV(0);
+	ConAutoCompletion_t* newItem = new ConAutoCompletion_t;
+	newItem->cmd_name = CMD_ARGV(0);
 
-	xstrsplit(CMD_ARGV(1).c_str(),",",pNode->args);
+	xstrsplit(CMD_ARGV(1).c_str(),",",newItem->args);
 
-	g_pSysConsole->AddAutoCompletionNode(pNode);
+	g_pSysConsole->AddAutoCompletion(newItem);
 }
 
 DECLARE_CMD(help,"Display the help", 0)
@@ -178,18 +178,18 @@ void CEqSysConsole::Initialize()
 	m_font = g_fontCache->GetFont("console", 16);
 }
 
-void CEqSysConsole::AddAutoCompletionNode(AutoCompletionNode_s *pNode)
+void CEqSysConsole::AddAutoCompletion(ConAutoCompletion_t* newItem)
 {
-	for(int i = 0; i < m_hAutoCompletionNodes.numElem();i++)
+	for(int i = 0; i < m_customAutocompletion.numElem();i++)
 	{
-		if(!m_hAutoCompletionNodes[i]->cmd_name.CompareCaseIns(pNode->cmd_name.GetData()))
+		if(!m_customAutocompletion[i]->cmd_name.CompareCaseIns(newItem->cmd_name.c_str()))
 		{
-			delete pNode;
+			delete newItem;
 			return;
 		}
 	}
 
-	m_hAutoCompletionNodes.append(pNode);
+	m_customAutocompletion.append(newItem);
 }
 
 void CEqSysConsole::consoleRemTextInRange(int start,int len)
@@ -370,9 +370,9 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 				// find autocompletion
 				if(!bHasAutocompletion)
 				{
-					for(int j = 0;j < m_hAutoCompletionNodes.numElem();j++)
+					for(int j = 0;j < m_customAutocompletion.numElem();j++)
 					{
-						if(!stricmp(cmdBase->GetName(), m_hAutoCompletionNodes[j]->cmd_name.GetData()))
+						if(!stricmp(cmdBase->GetName(), m_customAutocompletion[j]->cmd_name.GetData()))
 						{
 							bHasAutocompletion = true;
 							break;
@@ -517,15 +517,15 @@ void CEqSysConsole::UpdateVariantsList( const EqString& queryStr )
 
 	DkList<EqString> allAutoCompletion;
 
-	for(int i = 0; i < m_hAutoCompletionNodes.numElem(); i++)
+	for(int i = 0; i < m_customAutocompletion.numElem(); i++)
 	{
-		AutoCompletionNode_s* node = m_hAutoCompletionNodes[i];
+		ConAutoCompletion_t* item = m_customAutocompletion[i];
 
-		if(stricmp(m_fastfind_cmdbase->GetName(), node->cmd_name.GetData()))
+		if(stricmp(m_fastfind_cmdbase->GetName(), item->cmd_name.c_str()))
 			continue;
 
-		for(int j = 0; j < node->args.numElem(); j++)
-			allAutoCompletion.append( node->args[j] );
+		for(int j = 0; j < item->args.numElem(); j++)
+			allAutoCompletion.append( item->args[j] );
 
 		break;
 	}

@@ -628,8 +628,6 @@ void CCar::DebugReloadCar()
 	SetAngularVelocity(angVel);
 }
 
-ConVar g_infinitemass("g_infinitemass", "0", "Infinite mass vehicle", CV_CHEAT);
-
 void CCar::Precache()
 {
 	PrecacheScriptSound("tarmac.skid");
@@ -685,7 +683,7 @@ void CCar::CreateCarPhysics()
 		winfo.m_bodyGroupFlags = (1 << winfo.m_defaultBodyGroup);
 	}
 
-	body->m_flags |= BODY_COLLISIONLIST | BODY_ISCAR | (g_infinitemass.GetBool() ? BODY_INFINITEMASS : 0);
+	body->m_flags |= BODY_COLLISIONLIST | BODY_ISCAR;
 
 	// CREATE BODY
 	Vector3D body_mins = m_conf->physics.body_center - m_conf->physics.body_size;
@@ -1636,17 +1634,12 @@ void CCar::UpdateVehiclePhysics(float delta)
 		fAcceleration = 0;
 
 	float fRpm = m_radsPerSec * ( 60.0f / ( 2.0f * PI_F ));
-
-	if(fRpm > 7500)
+	/*
+	if(fRpm < -7500)
 	{
 		torque = 0;
 		fAcceleration = 0;
-	}
- 	else if(fRpm < -7500)
-	{
-		torque = 0;
-		fAcceleration = 0;
-	}
+	}*/
 
 	float fAccelerator = float(fAcceleration * torque) * m_torqueScale;
 	float fBraker = (float)fBreakage*pow(m_torqueScale, 0.5f);
@@ -3535,23 +3528,32 @@ void CCar::UpdateSounds( float fDt )
 
 	m_sounds[CAR_SOUND_ENGINE_IDLE]->SetPitch(1.0f + m_fEngineRPM / 4000.0f);
 
-	if(m_sounds[CAR_SOUND_WHINE] != nullptr && IsDriveWheelsOnGround())
+	if(m_isLocalCar && m_sounds[CAR_SOUND_WHINE] != nullptr && IsDriveWheelsOnGround())
 	{
 		if(m_nGear == 0 )
 		{
 			if(m_sounds[CAR_SOUND_WHINE]->IsStopped())
 				m_sounds[CAR_SOUND_WHINE]->Play();
 
-			float wheelSpeedFac = -GetSpeedWheels()*0.2f;
+			float wheelSpeedFac = fabs(GetSpeedWheels()*0.2f);
 
-			m_sounds[CAR_SOUND_WHINE]->SetVolume(clamp(wheelSpeedFac*m_fAccelEffect, 0.0f, 1.0f));
 			m_sounds[CAR_SOUND_WHINE]->SetPitch(wheelSpeedFac);
+
+			if(wheelSpeedFac > 4.0f)
+				wheelSpeedFac -= (wheelSpeedFac - 4.0f)*10.0f;
+
+			m_sounds[CAR_SOUND_WHINE]->SetVolume(clamp(wheelSpeedFac*m_fAccelEffect, 0.0f, 1.0f));		
 		}
 		else
 		{
 			if(!m_sounds[CAR_SOUND_WHINE]->IsStopped())
 				m_sounds[CAR_SOUND_WHINE]->Stop();
 		}
+	}
+	else
+	{
+		if(m_sounds[CAR_SOUND_WHINE] != nullptr && !m_sounds[CAR_SOUND_WHINE]->IsStopped())
+			m_sounds[CAR_SOUND_WHINE]->Stop();
 	}
 
 	if(m_sounds[CAR_SOUND_ENGINE]->IsStopped())
