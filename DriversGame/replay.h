@@ -68,7 +68,7 @@ enum EReplayEventType
 	REPLAY_EVENT_FORCE_RANDOM,
 
 	REPLAY_EVENT_SET_PLAYERCAR,
-	REPLAY_EVENT_CAR_RANDOMCOLOR,
+	REPLAY_EVENT_CAR_SETCOLOR,
 	REPLAY_EVENT_CAR_ENABLE,
 	REPLAY_EVENT_CAR_LOCK,
 	REPLAY_EVENT_CAR_DAMAGE,
@@ -85,7 +85,11 @@ struct replaycontrol_s
 
 	TVec3D<half>	car_vel;
 	TVec3D<half>	car_angvel;
+
 	short			button_flags;
+
+	ubyte			lights_enabled;
+	ubyte			reserved;
 };
 
 ALIGNED_TYPE(replaycontrol_s,4) replaycontrol_t;

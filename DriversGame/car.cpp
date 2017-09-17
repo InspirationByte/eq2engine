@@ -945,11 +945,13 @@ void CCar::SetOrientation(const Quaternion& q)
 void CCar::SetVelocity(const Vector3D& vel)
 {
 	m_pPhysicsObject->m_object->SetLinearVelocity( vel  );
+	m_pPhysicsObject->m_object->TryWake();
 }
 
 void CCar::SetAngularVelocity(const Vector3D& vel)
 {
 	m_pPhysicsObject->m_object->SetAngularVelocity( vel );
+	m_pPhysicsObject->m_object->TryWake();
 }
 
 const Quaternion& CCar::GetOrientation() const

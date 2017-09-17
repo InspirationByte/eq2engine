@@ -11,7 +11,7 @@
 #include "IDebugOverlay.h"
 
 #define CONTROL_DETAILS_STEP	(0.0025f)
-#define CORRECTION_TICK			128
+#define CORRECTION_TICK			32
 #define COLLISION_MIN_IMPULSE	(0.1f)
 
 // sort events in right order
@@ -279,25 +279,22 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 	if(m_tick < frame.tick)
 		return;
 
-	CCar* car = rep->obj_car;
-
-	// don't play dead car
-	if(!car->IsAlive())
-		return;
-
 	// advance frame
 	rep->curr_frame++;
 
-	if(!car->IsLocked())
-	{
-		CEqRigidBody* body = car->GetPhysicsBody();
+	CCar* car = rep->obj_car;
 
-		// correct whole frame
-		body->SetPosition(frame.car_origin);
-		body->SetOrientation(Quaternion(frame.car_rot.w, frame.car_rot.x, frame.car_rot.y, frame.car_rot.z));
-		body->SetLinearVelocity(frame.car_vel);
-		body->SetAngularVelocity(frame.car_angvel);
-	}
+	// don't play dead scripted cars
+	if(car->GetScriptID() != SCRIPT_ID_NOTSCRIPTED && !car->IsAlive())
+		return;
+
+	CEqRigidBody* body = car->GetPhysicsBody();
+
+	// correct whole frame
+	body->SetPosition(frame.car_origin);
+	body->SetOrientation(Quaternion(frame.car_rot.w, frame.car_rot.x, frame.car_rot.y, frame.car_rot.z));
+	body->SetLinearVelocity(frame.car_vel);
+	body->SetAngularVelocity(frame.car_angvel);
 
 	// unpack
 	short accelControl = (frame.control_vars & 0x3FF);
@@ -314,6 +311,7 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 
 	car->m_accelRatio = accelControl;
 	car->m_brakeRatio = brakeControl;
+	car->m_lightsEnabled = frame.lights_enabled;
 
 	car->SetControlButtons(control_flags);
 }
@@ -346,6 +344,7 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 	short accelControl = rep->obj_car->m_accelRatio;
 	short brakeControl = rep->obj_car->m_brakeRatio;
 	short steerControl = rep->obj_car->m_steerRatio;
+	ubyte lightsEnabled = rep->obj_car->m_lightsEnabled;
 
 	uint control_flags = rep->obj_car->GetControlButtons();
 	control_flags &= ~IN_MISC; // kill misc buttons, left only needed
@@ -370,6 +369,7 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 		short prevAccelControl = (prevControl.control_vars & 0x3FF);
 		short prevbrakeControl = ((prevControl.control_vars >> 10) & 0x3FF);
 		short prevsteerControl = ((prevControl.control_vars >> 20) & 0x3FF);
+		ubyte prevlightsEnabled = prevControl.lights_enabled;
 
 		short prevSteerSign = (prevControl.control_vars >> 30) ? -1 : 1;	// steering sign bit
 
@@ -382,12 +382,13 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 						(accelControl != prevAccelControl) ||
 						(brakeControl != prevbrakeControl) ||
 						(steerControl != prevsteerControl) ||
+						(lightsEnabled != prevlightsEnabled) ||
 						forceCorrection;
 	}
 
 
 	DkList<CollisionPairData_t>& collisionList = body->m_collisionList;
-	bool satisfiesCollisions = collisionList.numElem([=](CollisionPairData_t& pair){ return pair.appliedImpulse > COLLISION_MIN_IMPULSE; });;
+	bool satisfiesCollisions = collisionList.numElem([=](CollisionPairData_t& pair){ return pair.appliedImpulse > COLLISION_MIN_IMPULSE; });
 
 	// add replay frame if car has collision with objects
 
@@ -402,6 +403,7 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 		con.car_rot = TVec4D<half>(orient.x, orient.y, orient.z, orient.w);
 		con.car_vel = body->GetLinearVelocity();
 		con.car_angvel = body->GetAngularVelocity();
+		con.lights_enabled = lightsEnabled;
 
 		int steerBit = 0;
 
@@ -561,7 +563,7 @@ void CReplayData::WriteEvents( IVirtualStream* stream, int onlyEvent )
 		replayevent_file_t fevent( evt );
 
 		// make replay event data
-		if( evt.eventData != NULL && fevent.eventDataSize > 0 )
+		if( evt.eventData != NULL )
 		{
 			eventData.Open(NULL, VS_OPEN_WRITE, 128);
 
@@ -571,10 +573,28 @@ void CReplayData::WriteEvents( IVirtualStream* stream, int onlyEvent )
 				case REPLAY_EVENT_CAR_ENABLE:
 				case REPLAY_EVENT_CAR_LOCK:
 				{
-					eventData.Write( evt.eventData, 1, fevent.eventDataSize );
+					bool value = (bool)evt.eventData;
 
+					eventData.Write( &value, sizeof(value), 1 );
 					fevent.eventDataSize = eventData.Tell();
 
+					break;
+				}
+				case REPLAY_EVENT_CAR_DAMAGE:
+				{
+					float value = *(float *)&evt.eventData;
+
+					eventData.Write( &value, sizeof(value), 1 );
+					fevent.eventDataSize = eventData.Tell();
+					break;
+				}
+				case REPLAY_EVENT_CAR_DEATH:
+				case REPLAY_EVENT_CAR_SETCOLOR:
+				{
+					int value = (int)(intptr_t)evt.eventData;
+
+					eventData.Write( &value, sizeof(value), 1 );
+					fevent.eventDataSize = eventData.Tell();
 					break;
 				}
 			}
@@ -651,10 +671,27 @@ void CReplayData::ReadEvent( replayevent_t& evt, IVirtualStream* stream )
 			case REPLAY_EVENT_CAR_ENABLE:
 			case REPLAY_EVENT_CAR_LOCK:
 			{
-				bool enabled;
-				stream->Read(&enabled, 1, sizeof(bool));
+				bool value;
+				stream->Read(&value, 1, sizeof(value));
 
-				evt.eventData = (void*)enabled;
+				evt.eventData = (void*)value;
+				break;
+			}
+			case REPLAY_EVENT_CAR_DAMAGE:
+			{
+				float value;
+				stream->Read(&value, 1, sizeof(value));
+
+				evt.eventData = *(void**)&value;
+				break;
+			}
+			case REPLAY_EVENT_CAR_DEATH:
+			case REPLAY_EVENT_CAR_SETCOLOR:
+			{
+				int value;
+				stream->Read(&value, 1, sizeof(value));
+
+				evt.eventData = (void*)(intptr_t)value;
 				break;
 			}
 		}
@@ -1117,7 +1154,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 			g_replayRandom.Regenerate();
 			break;
 		}
-		case REPLAY_EVENT_CAR_RANDOMCOLOR:
+		case REPLAY_EVENT_CAR_SETCOLOR:
 		{
 			// spawn car
 			if(evt.replayIndex == REPLAY_NOT_TRACKED)
@@ -1125,13 +1162,11 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 
 			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
 
-			vehicleConfig_t* conf = rep.obj_car->m_conf;
+			int col_idx = (int)(intptr_t)evt.eventData;
 
-			if( conf->numColors > 0 )
-			{
-				int col_idx = g_replayRandom.Get(0, conf->numColors - 1);
+			if(rep.obj_car)
 				rep.obj_car->SetColorScheme(col_idx);
-			}
+
 			break;
 		}
 		case REPLAY_EVENT_CAR_ENABLE:

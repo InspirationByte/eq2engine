@@ -248,8 +248,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	// Set default cursor
 	SDL_SetCursor( staticDefaultCursor[dc_arrow] );
 
-	g_inputCommandBinder->Init();
-
 	// make job threads
 	g_parallelJobs->Init( (int)ceil((float)g_cpuCaps->GetCPUCount() / 2.0f) );
 
@@ -274,6 +272,9 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 		ErrorMsg("Lua base initialization error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
 		return false;
 	}
+
+	// finally init input and adjust bindings
+	g_inputCommandBinder->Init();
 
 	MsgInfo("EqEngine systems init successfully\n");
 

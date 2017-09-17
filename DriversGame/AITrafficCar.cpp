@@ -132,7 +132,7 @@ const float AI_LANE_SWITCH_DELAY = 12.0f;
 
 const float AI_EMERGENCY_ESCAPE_TIME = 1.5f;
 
-const float KILL_COLLISION_POWER = 18.0f;
+const float AI_TRAFFIC_MAX_DAMAGE = 2.0f;
 
 #define STRAIGHT_CURRENT	0
 #define STRAIGHT_PREV		1
@@ -205,6 +205,8 @@ CAITrafficCar::CAITrafficCar( vehicleConfig_t* carConfig ) : CCar(carConfig), CF
 	m_emergencyEscapeSteer = 1.0f;
 	m_prevFract = 1.0f;
 
+	SetMaxDamage(AI_TRAFFIC_MAX_DAMAGE);
+
 	m_signalSeq = NULL;
 	m_signalSeqFrame = 0;
 
@@ -234,12 +236,6 @@ void CAITrafficCar::Spawn()
 	// perform lazy collision checks
 	GetPhysicsBody()->SetMinFrameTime(1.0f / 30.0f);
 
-	if( m_conf->numColors )
-	{
-		int col_idx = g_replayRandom.Get(0, m_conf->numColors - 1);
-		SetColorScheme(col_idx);
-	}
-
 	// also randomize lane switching
 	//m_nextSwitchLaneTime = g_replayRandom.Get(0, AI_LANE_SWITCH_DELAY);
 }
@@ -247,6 +243,10 @@ void CAITrafficCar::Spawn()
 int CAITrafficCar::DeadState( float fDt, EStateTransition transition )
 {
 	SignalNoSequence(0,0);
+	int buttons = GetControlButtons();
+	buttons &= ~(IN_HORN | IN_ACCELERATE | IN_BRAKE);
+
+	SetControlButtons(buttons);
 	return 0;
 }
 
@@ -357,23 +357,8 @@ void CAITrafficCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 		GetPhysicsBody()->SetCollideMask(COLLIDEMASK_VEHICLE);
 		GetPhysicsBody()->SetMinFrameTime(0.0f);
 
-		SignalNoSequence(0.7f, 0.5f);
-
-		CEqRigidBody* body = (CEqRigidBody*)pair.bodyA;
-
-		float impulse = pair.appliedImpulse*body->GetInvMass();
-
-		if(impulse > KILL_COLLISION_POWER)
-		{
-			m_hornTime.Set(0);
-
-			AI_SetState( &CAITrafficCar::DeadState );
-
-			int buttons = GetControlButtons();
-			buttons &= ~(IN_HORN | IN_ACCELERATE | IN_BRAKE);
-
-			SetControlButtons(buttons);
-		}
+		if(IsAlive())
+			SignalNoSequence(0.7f, 0.5f);
 	}
 }
 
@@ -619,13 +604,17 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 	// if this car was flipped, so put it to death state
 	// but only if it's not a pursuer type
-	if(!IsPursuer() && IsFlippedOver())
+	if(!IsPursuer())
 	{
-		AI_SetState( &CAITrafficCar::DeadState );
-		SetLight(CAR_LIGHT_EMERGENCY, true);
-		SetControlButtons(0);
-		return 0;
+		if( IsFlippedOver() || !IsAlive() )
+		{
+			AI_SetState( &CAITrafficCar::DeadState );
+			m_hornTime.Set(0);
+		}
 	}
+
+	//if(g_replayData->m_state == REPL_PLAYING)
+	//	return 0;
 
 	// 1. Build a line (A-B) from cell grid to 3D positions
 	// 2. Make middle (or near) point (C), lerp(a,b,0.25f)

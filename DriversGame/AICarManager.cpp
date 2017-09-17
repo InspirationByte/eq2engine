@@ -190,8 +190,8 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 				int col_idx = g_replayRandom.Get(0, conf->numColors - 1);
 				newCar->SetColorScheme(col_idx);
 
-				// car random color
-				g_replayData->PushEvent(REPLAY_EVENT_CAR_RANDOMCOLOR, newCar->m_replayID);
+				// set car color
+				g_replayData->PushEvent(REPLAY_EVENT_CAR_SETCOLOR, newCar->m_replayID, (void*)(intptr_t)col_idx);
 			}
 
 			g_pGameWorld->AddObject(newCar, true);
@@ -248,18 +248,29 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 		{
 			pNewCar = new CAITrafficCar(m_civCarEntries[randCar].config);
 			m_civCarEntries[randCar].nextSpawn = m_civCarEntries[randCar].GetZoneSpawnInterval("default");
+
+			// car will be spawn, regenerate random
+			g_replayRandom.Regenerate();
+			g_replayData->PushEvent(REPLAY_EVENT_FORCE_RANDOM);
 		}
 	}
 
 	if(!pNewCar)
 		return NULL;
 
-	// car will be spawn, regenerate random
-	g_replayRandom.Regenerate();
-	g_replayData->PushEvent(REPLAY_EVENT_FORCE_RANDOM);
-
 	pNewCar->Spawn();
 	pNewCar->PlaceOnRoadCell(pReg, roadCell);
+
+	vehicleConfig_t* conf = pNewCar->m_conf;
+
+	if( conf->numColors )
+	{
+		int col_idx = g_replayRandom.Get(0, conf->numColors - 1);
+		pNewCar->SetColorScheme(col_idx);
+
+		// set car color
+		g_replayData->PushEvent(REPLAY_EVENT_CAR_SETCOLOR, pNewCar->m_replayID, (void*)(intptr_t)col_idx);
+	}
 
 	if(pNewCar->IsPursuer())
 		pNewCar->SetInfiniteMass(g_railroadCops.GetBool());

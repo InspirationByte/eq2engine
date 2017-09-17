@@ -91,13 +91,13 @@ public:
 	void					WriteBindings(IFile* cfgFile);
 
 	// binds a command with arguments to known key
-	void					BindKey( const char* pszCommand, const char *pszArgs, const char* pszKeyStr );
+	bool					BindKey( const char* pszKeyStr, const char* pszCommand, const char *pszArgs );
 
 	// returns binding
 	in_binding_t*			LookupBinding(uint keyIdent);
 
 	// removes single binding on specified keychar
-	void					RemoveBinding( const char* pszKeyStr);
+	void					UnbindKey( const char* pszKeyStr);
 
 	// clears and removes all key bindings
 	void					UnbindAll();
@@ -136,6 +136,12 @@ public:
 	void					ExecuteBoundCommands(T* zone, bool bState);
 
 protected:
+	// adds binding
+	in_binding_t*			AddBinding( const char* pszKeyStr, const char* pszCommand, const char *pszArgs );
+	void					DeleteBinding( in_binding_t* binding );
+
+	bool					ResolveCommandBinding(in_binding_t* binding);
+
 	axisAction_t*			FindAxisAction(const char* name);
 
 	DkList<in_binding_t*>			m_bindings;
@@ -143,6 +149,8 @@ protected:
 
 	DkList<in_touchzone_t>			m_touchZones;
 	DkList<axisAction_t>			m_axisActs;
+
+	bool					m_init;
 };
 
 extern CInputCommandBinder* g_inputCommandBinder;
