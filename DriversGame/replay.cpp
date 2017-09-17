@@ -285,8 +285,8 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 	CCar* car = rep->obj_car;
 
 	// don't play dead scripted cars
-	if(car->GetScriptID() != SCRIPT_ID_NOTSCRIPTED && !car->IsAlive())
-		return;
+	//if(car->GetScriptID() != SCRIPT_ID_NOTSCRIPTED && !car->IsAlive())
+	//	return;
 
 	CEqRigidBody* body = car->GetPhysicsBody();
 
@@ -319,16 +319,16 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 // records vehicle frame
 bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 {
-	int nFrame = rep->replayArray.numElem();
+	int numFrames = rep->replayArray.numElem();
 
 	// if replay is done or current frames are loaded and must be played (or rewinded)
-	if( rep->done || rep->curr_frame < rep->replayArray.numElem() )
+	if( rep->done || numFrames > 0 && rep->curr_frame < numFrames )
 		return false; // done or has future frames
 
 	CEqRigidBody* body = rep->obj_car->GetPhysicsBody();
 
 	// position must be set
-	if(nFrame == 0)
+	if(numFrames == 0)
 	{
 		Quaternion orient = body->GetOrientation();
 
@@ -363,7 +363,7 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 		else
 			rep->skeptFrames = 0;
 
-		replaycontrol_t& prevControl = rep->replayArray[nFrame-1];
+		replaycontrol_t& prevControl = rep->replayArray[numFrames-1];
 
 		// unpack
 		short prevAccelControl = (prevControl.control_vars & 0x3FF);
@@ -798,6 +798,23 @@ bool CReplayData::LoadVehicleReplay( CCar* target, const char* filename, int& ti
 	MsgWarning("Cannot load vehicle replay '%s'\n", filename);
 
 	return false;
+}
+
+void CReplayData::StopVehicleReplay(CCar* pCar)
+{
+	if(	m_state != REPL_RECORDING)
+	{
+		return;
+	}
+
+	if(pCar->m_replayID == REPLAY_NOT_TRACKED)
+		return;
+
+	vehiclereplay_t& veh = m_vehicles[pCar->m_replayID];
+
+	// remove future frames to record new ones
+	for(int i = veh.curr_frame; i < veh.replayArray.numElem(); )
+		veh.replayArray.removeIndex(i);
 }
 
 bool CReplayData::LoadFromFile(const char* filename)

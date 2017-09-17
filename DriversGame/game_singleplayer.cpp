@@ -165,6 +165,11 @@ float CGameSession::LoadCarReplay(CCar* pCar, const char* filename)
 	return numTicks * fixedTicksDelta;
 }
 
+void CGameSession::StopCarReplay(CCar* pCar)
+{
+	g_replayData->StopVehicleReplay(pCar);
+}
+
 void CGameSession::FinalizeMissionManager()
 {
 	OOLUA::Script& state = GetLuaState();
@@ -700,6 +705,7 @@ OOLUA_EXPORT_FUNCTIONS(
 	SetPlayerCar,
 	SetLeadCar,
 	LoadCarReplay,
+	StopCarReplay,
 	SignalMissionStatus,
 	ResetReplay
 )

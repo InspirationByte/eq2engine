@@ -60,6 +60,7 @@ public:
 	void						SetLeadCar(CCar* pCar);
 
 	float						LoadCarReplay(CCar* pCar, const char* filename);
+	void						StopCarReplay(CCar* pCar);
 
 	virtual int					GetSessionType() const {return SESSION_SINGLE;}
 
@@ -121,7 +122,8 @@ OOLUA_PROXY(CGameSession)
 	OOLUA_MEM_FUNC_RENAME(CreatePursuerCar, maybe_null<CAIPursuerCar*>, Lua_CreatePursuerCar, const char*, int)
 
 	OOLUA_MFUNC(LoadCarReplay)
-
+	OOLUA_MFUNC(StopCarReplay)
+	
 	OOLUA_MFUNC_CONST(IsClient)
 	OOLUA_MFUNC_CONST(IsServer)
 

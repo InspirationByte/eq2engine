@@ -261,6 +261,8 @@ public:
 	bool					LoadFromFile(const char* filename);
 	bool					LoadVehicleReplay( CCar* target, const char* filename, int& tickCount );
 
+	void					StopVehicleReplay(CCar* pCar);
+
 	//------------------------------------------------------
 
 	// replay events
