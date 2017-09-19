@@ -284,10 +284,6 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 
 	CCar* car = rep->obj_car;
 
-	// don't play dead scripted cars
-	//if(car->GetScriptID() != SCRIPT_ID_NOTSCRIPTED && !car->IsAlive())
-	//	return;
-
 	CEqRigidBody* body = car->GetPhysicsBody();
 
 	// correct whole frame

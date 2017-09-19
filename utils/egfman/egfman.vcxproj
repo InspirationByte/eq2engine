@@ -66,7 +66,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\..\Engine;..\..\public;..\..\public\core;..\..\shared_engine;..\..\public\platform;..\..\src_dependency\wx\include;..\..\src_dependency\wx\include\msvc;..\..\src_dependency\wx\include\msw;..\..\src_dependency\bullet\src;..\..\src_dependency\bullet\src\BulletSoftBody;..\eq_physgen;..\..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Engine;..\..\public;..\..\public\core;..\..\shared_engine;..\..\shared_game;..\..\public\platform;..\..\src_dependency\wx\include;..\..\src_dependency\wx\include\msvc;..\..\src_dependency\wx\include\msw;..\..\src_dependency\bullet\src;..\..\src_dependency\bullet\src\BulletSoftBody;..\eq_physgen;..\..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;PHYSICS_EXPORT;NO_GAME;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -145,13 +145,13 @@
     <ClInclude Include="..\..\shared_engine\Font.h" />
     <ClInclude Include="..\..\shared_engine\FontCache.h" />
     <ClInclude Include="..\..\shared_engine\studio_egf.h" />
-    <ClInclude Include="..\..\public\anim_activity.h" />
-    <ClInclude Include="..\..\public\anim_defs.h" />
-    <ClInclude Include="..\..\public\anim_events.h" />
-    <ClInclude Include="..\..\public\BoneSetup.h" />
+    <ClInclude Include="..\..\shared_game\anim_activity.h" />
+    <ClInclude Include="..\..\shared_game\anim_defs.h" />
+    <ClInclude Include="..\..\shared_game\anim_events.h" />
+    <ClInclude Include="..\..\shared_game\BoneSetup.h" />
     <ClInclude Include="..\..\public\dsm_loader.h" />
     <ClInclude Include="..\..\public\Font.h" />
-    <ClInclude Include="..\..\public\ragdoll.h" />
+    <ClInclude Include="..\..\shared_game\ragdoll.h" />
     <ClInclude Include="..\..\public\RenderList.h" />
     <ClInclude Include="..\..\public\Utils\Align.h" />
     <ClInclude Include="..\..\public\CharSet.h" />
@@ -230,19 +230,19 @@
     <ClCompile Include="..\..\shared_engine\eqParallelJobs.cpp" />
     <ClCompile Include="..\..\shared_engine\FontCache.cpp" />
     <ClCompile Include="..\..\shared_engine\studio_egf.cpp" />
-    <ClCompile Include="..\..\public\anim_activity.cpp" />
-    <ClCompile Include="..\..\public\anim_events.cpp" />
-    <ClCompile Include="..\..\public\BoneSetup.cpp" />
+    <ClCompile Include="..\..\shared_game\anim_activity.cpp" />
+    <ClCompile Include="..\..\shared_game\anim_events.cpp" />
+    <ClCompile Include="..\..\shared_game\BoneSetup.cpp" />
     <ClCompile Include="..\..\shared_engine\Font.cpp" />
     <ClCompile Include="..\..\public\Math\math_util.cpp" />
-    <ClCompile Include="..\..\public\ragdoll.cpp" />
-    <ClCompile Include="..\..\public\RenderList.cpp" />
+    <ClCompile Include="..\..\shared_game\ragdoll.cpp" />
+    <ClCompile Include="..\..\shared_engine\RenderList.cpp" />
     <ClCompile Include="..\..\public\Utils\GeomTools.cpp" />
     <ClCompile Include="..\..\shared_engine\physics\BulletShapeCache.cpp" />
     <ClCompile Include="CAnimatedModel.cpp" />
     <ClCompile Include="EgfMan.cpp" />
-    <ClCompile Include="..\..\public\ViewParams.cpp" />
-    <ClCompile Include="..\..\public\BaseRenderableObject.cpp" />
+    <ClCompile Include="..\..\shared_engine\ViewParams.cpp" />
+    <ClCompile Include="..\..\shared_engine\BaseRenderableObject.cpp" />
     <ClCompile Include="..\..\shared_engine\DebugOverlay.cpp" />
     <ClCompile Include="..\..\shared_engine\modelloader_shared.cpp" />
   </ItemGroup>

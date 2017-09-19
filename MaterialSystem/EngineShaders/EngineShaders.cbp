@@ -43,8 +43,6 @@
 			<Add library="eqCore" />
 			<Add directory="../../libs" />
 		</Linker>
-		<Unit filename="../../public/ViewParams.cpp" />
-		<Unit filename="../../public/ViewParams.h" />
 		<Unit filename="../../public/materialsystem/BaseShader.cpp" />
 		<Unit filename="../../public/materialsystem/BaseShader.h" />
 		<Unit filename="Shaders/BaseParticle.cpp" />

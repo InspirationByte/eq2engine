@@ -1635,7 +1635,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	if(fHandbrake > 0)
 		fAcceleration = 0;
 
-	float fRpm = m_radsPerSec * ( 60.0f / ( 2.0f * PI_F ));
+	//float fRpm = m_radsPerSec * ( 60.0f / ( 2.0f * PI_F ));
 	/*
 	if(fRpm < -7500)
 	{
@@ -4023,7 +4023,7 @@ void CCar::Draw( int nRenderFlags )
 	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
 	int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
-	bool isShadowPass = (nRenderFlags & RFLAG_SHADOW);
+	bool isShadowPass = (nRenderFlags & RFLAG_SHADOW) > 0;
 
 	if(!isShadowPass)
 	{
@@ -4240,7 +4240,6 @@ float CCar::GetTorqueScale() const
 void CCar::SetDamage( float damage )
 {
 	bool wasAlive = IsAlive();
-
 	m_gameDamage = damage;
 
 #ifndef EDITOR

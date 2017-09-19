@@ -80,9 +80,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\public\ViewParams.cpp">
-      <Filter>Source Files\EngineLib\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="MainWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -124,6 +121,9 @@
     </ClCompile>
     <ClCompile Include="..\..\shared_engine\Font.cpp">
       <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\ViewParams.cpp">
+      <Filter>Source Files\EngineLib\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

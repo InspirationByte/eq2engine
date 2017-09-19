@@ -25,8 +25,7 @@ LOCAL_SRC_FILES := \
 	MaterialSystem/EngineShaders/Shaders/Sky.cpp	\
 	MaterialSystem/EngineShaders/ShadersOverride.cpp	\
 	MaterialSystem/EngineShaders/ShadersMain.cpp	\
-	public/materialsystem/BaseShader.cpp		\
-	public/ViewParams.cpp
+	public/materialsystem/BaseShader.cpp
 
 LOCAL_STATIC_LIBRARIES := coreLib prevLib jpeg eqCore
 

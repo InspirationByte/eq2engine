@@ -38,7 +38,9 @@
 using namespace EqBulletUtils;
 using namespace Threading;
 
-#define PHYSGRID_WORLD_SIZE 24	// compromised betwen memory usage and performance
+#define PHYSGRID_WORLD_SIZE			24	// compromised betwen memory usage and performance
+#define PHYSICS_WORLD_MAX_UNITS		65535.0f
+
 
 extern ConVar ph_margin;
 
@@ -1521,7 +1523,7 @@ class CEqConvexTestCallback : public btCollisionWorld::ClosestConvexResultCallba
 public:
 	CEqConvexTestCallback(const btVector3&	rayFromWorld,const btVector3&	rayToWorld) : ClosestConvexResultCallback(rayFromWorld, rayToWorld)
 	{
-		m_closestHitFraction = MAX_COORD_UNITS;
+		m_closestHitFraction = PHYSICS_WORLD_MAX_UNITS;
 		m_surfMaterialId = 0;
 	}
 

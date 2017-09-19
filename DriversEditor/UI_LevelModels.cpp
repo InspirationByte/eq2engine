@@ -1275,7 +1275,7 @@ void CUI_LevelModels::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile,
 
 		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
 		{
-			float dist = MAX_COORD_UNITS;
+			float dist = DrvSynUnits::MaxCoordInUnits;
 
 			refselectioninfo_t info;
 

@@ -990,7 +990,7 @@ void CMainWindow::ProcessMouseEvents(wxMouseEvent& event)
 		ShowCursor(FALSE);
 	}
 
-	cam_pos = clamp(cam_pos, Vector3D(-MAX_COORD_UNITS), Vector3D(MAX_COORD_UNITS));
+	cam_pos = clamp(cam_pos, Vector3D(-DrvSynUnits::MaxCoordInUnits), Vector3D(DrvSynUnits::MaxCoordInUnits));
 
 	g_camera_rotation = cam_angles;
 	g_camera_target = cam_pos;
@@ -1054,7 +1054,7 @@ CLevelRegion* CMainWindow::GetRegionAtScreenPos(int mx, int my, float height, Ve
 
 	Plane pl(0,1,0,-height);
 
-	float fNearest = MAX_COORD_UNITS;
+	float fNearest = DrvSynUnits::MaxCoordInUnits;
 
 	if( pl.GetIntersectionWithRay(ray_start, normalize(ray_dir), pointPos) )
 	{
@@ -1074,7 +1074,7 @@ CLevelRegion* CMainWindow::GetRegionAtScreenPos(int mx, int my, float height, Ve
 
 					float frac = 1.0f;
 
-					if(pl2.GetIntersectionLineFraction(ray_start, ray_start+normalize(ray_dir)*MAX_COORD_UNITS, tileTracedPos, frac))
+					if(pl2.GetIntersectionLineFraction(ray_start, ray_start+normalize(ray_dir)*DrvSynUnits::MaxCoordInUnits, tileTracedPos, frac))
 					{
 						int c_x, c_y;
 

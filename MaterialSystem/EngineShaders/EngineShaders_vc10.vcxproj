@@ -162,7 +162,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\public\materialsystem\BaseShader.cpp" />
-    <ClCompile Include="..\..\public\ViewParams.cpp" />
     <ClCompile Include="ShadersMain.cpp" />
     <ClCompile Include="ShadersOverride.cpp" />
     <ClCompile Include="Shaders\BaseParticle.cpp" />
@@ -247,7 +246,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\public\materialsystem\BaseShader.h" />
-    <ClInclude Include="..\..\public\ViewParams.h" />
     <ClInclude Include="vars_generic.h" />
     <ClInclude Include="CmdLineParser.h" />
     <ClInclude Include="..\public\ConCommand.h" />

@@ -176,7 +176,7 @@
     <ClCompile Include="..\..\public\TextureAtlas.cpp" />
     <ClCompile Include="..\..\public\Utils\GeomTools.cpp" />
     <ClCompile Include="MainWindow.cpp" />
-    <ClCompile Include="..\..\public\ViewParams.cpp" />
+    <ClCompile Include="..\..\shared_engine\ViewParams.cpp" />
     <ClCompile Include="..\..\shared_engine\DebugOverlay.cpp" />
   </ItemGroup>
   <ItemGroup>

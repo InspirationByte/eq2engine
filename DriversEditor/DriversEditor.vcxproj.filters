@@ -423,9 +423,6 @@
     <None Include="Notes.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\public\ViewParams.cpp">
-      <Filter>Source Files\EngineLib\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="..\public\Math\math_util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -620,6 +617,9 @@
     </ClCompile>
     <ClCompile Include="UI_PrefabMgr.cpp">
       <Filter>Source Files\Editor\Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\ViewParams.cpp">
+      <Filter>Source Files\EngineLib\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

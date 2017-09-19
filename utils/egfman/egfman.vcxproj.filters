@@ -214,18 +214,6 @@
     <ClInclude Include="CAnimatedModel.h">
       <Filter>Source Files\System</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\public\anim_activity.h">
-      <Filter>Source Files\System</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\public\anim_defs.h">
-      <Filter>Source Files\System</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\public\anim_events.h">
-      <Filter>Source Files\System</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\public\BoneSetup.h">
-      <Filter>Source Files\System</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Engine\Physics\Convert.h">
       <Filter>Source Files\EngineLib\Physics</Filter>
     </ClInclude>
@@ -240,9 +228,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Engine\Physics\DkPhysicsRope.h">
       <Filter>Source Files\EngineLib\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\public\ragdoll.h">
-      <Filter>Source Files\System</Filter>
     </ClInclude>
     <ClInclude Include="..\..\shared_engine\physics\BulletConvert.h">
       <Filter>Source Files\EngineLib\Physics</Filter>
@@ -268,6 +253,21 @@
     <ClInclude Include="..\..\shared_engine\FontCache.h">
       <Filter>Source Files\EngineLib</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\shared_game\ragdoll.h">
+      <Filter>Source Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shared_game\BoneSetup.h">
+      <Filter>Source Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shared_game\anim_events.h">
+      <Filter>Source Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shared_game\anim_defs.h">
+      <Filter>Source Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shared_game\anim_activity.h">
+      <Filter>Source Files\System</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="windows\mainicon.ico">
@@ -284,28 +284,10 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\public\BaseRenderableObject.cpp">
-      <Filter>Source Files\EngineLib\Renderer\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\public\RenderList.cpp">
-      <Filter>Source Files\EngineLib\Renderer\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\public\ViewParams.cpp">
-      <Filter>Source Files\EngineLib\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\public\Math\math_util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CAnimatedModel.cpp">
-      <Filter>Source Files\System</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\public\anim_activity.cpp">
-      <Filter>Source Files\System</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\public\anim_events.cpp">
-      <Filter>Source Files\System</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\public\BoneSetup.cpp">
       <Filter>Source Files\System</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Engine\Physics\DkBulletObject.cpp">
@@ -322,9 +304,6 @@
     </ClCompile>
     <ClCompile Include="..\..\public\Utils\GeomTools.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\public\ragdoll.cpp">
-      <Filter>Source Files\System</Filter>
     </ClCompile>
     <ClCompile Include="..\..\shared_engine\physics\BulletShapeCache.cpp">
       <Filter>Source Files\EngineLib\Physics</Filter>
@@ -348,6 +327,27 @@
     </ClCompile>
     <ClCompile Include="..\..\shared_engine\FontCache.cpp">
       <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\ViewParams.cpp">
+      <Filter>Source Files\EngineLib\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_game\ragdoll.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_game\BoneSetup.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_game\anim_events.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_game\anim_activity.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\BaseRenderableObject.cpp">
+      <Filter>Source Files\EngineLib\Renderer\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\RenderList.cpp">
+      <Filter>Source Files\EngineLib\Renderer\Scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

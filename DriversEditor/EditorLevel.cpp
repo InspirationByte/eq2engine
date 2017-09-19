@@ -1481,7 +1481,7 @@ void CEditorLevel::PlacePrefabHeightfields(const IVector2D& position, int height
 
 int CEditorLevel::Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CEditorLevelRegion** reg, float& dist)
 {
-	float max_dist = MAX_COORD_UNITS;
+	float max_dist = DrvSynUnits::MaxCoordInUnits;
 	int bestDistrefIdx = NULL;
 	CEditorLevelRegion* bestReg = NULL;
 
@@ -1494,7 +1494,7 @@ int CEditorLevel::Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir,
 
 			CEditorLevelRegion& reg = *(CEditorLevelRegion*)&m_regions[idx];
 
-			float refdist = MAX_COORD_UNITS;
+			float refdist = DrvSynUnits::MaxCoordInUnits;
 			int foundIdx = reg.Ed_SelectRef(start, dir, refdist);
 
 			if(foundIdx != -1 && (refdist < max_dist))
@@ -1513,7 +1513,7 @@ int CEditorLevel::Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir,
 
 int	CEditorLevel::Ed_SelectBuildingAndReg(const Vector3D& start, const Vector3D& dir, CEditorLevelRegion** reg, float& dist)
 {
-	float max_dist = MAX_COORD_UNITS;
+	float max_dist = DrvSynUnits::MaxCoordInUnits;
 	int bestDistrefIdx = NULL;
 	CEditorLevelRegion* bestReg = NULL;
 
@@ -1526,7 +1526,7 @@ int	CEditorLevel::Ed_SelectBuildingAndReg(const Vector3D& start, const Vector3D&
 
 			CEditorLevelRegion& reg = *(CEditorLevelRegion*)&m_regions[idx];
 
-			float refdist = MAX_COORD_UNITS;
+			float refdist = DrvSynUnits::MaxCoordInUnits;
 			int foundIdx = reg.Ed_SelectBuilding(start, dir, refdist);
 
 			if(foundIdx != -1 && (refdist < max_dist))
@@ -1913,9 +1913,9 @@ float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D
 
 	float f1,f2;
 	if(!bbox.IntersectsRay(ray_start, ray_dir, f1,f2))
-		return MAX_COORD_UNITS;
+		return DrvSynUnits::MaxCoordInUnits;
 
-	float best_dist = MAX_COORD_UNITS;
+	float best_dist = DrvSynUnits::MaxCoordInUnits;
 	float fraction = 1.0f;
 
 	studiohdr_t* pHdr = pModel->GetHWData()->pStudioHdr;
@@ -1952,7 +1952,7 @@ float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D
 				v1 = pGroup->pVertex(pIndices[k+1])->point;
 				v2 = pGroup->pVertex(pIndices[k+2])->point;
 
-				float dist = MAX_COORD_UNITS+1;
+				float dist = DrvSynUnits::MaxCoordInUnits+1;
 
 				if(IsRayIntersectsTriangle(v0,v1,v2, ray_start, ray_dir, dist))
 				{
@@ -1974,7 +1974,7 @@ float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D
 int CEditorLevelRegion::Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float& dist)
 {
 	int bestDistrefIdx = -1;
-	float fMaxDist = MAX_COORD_UNITS;
+	float fMaxDist = DrvSynUnits::MaxCoordInUnits;
 
 	for(int i = 0; i < m_objects.numElem(); i++)
 	{
@@ -1983,7 +1983,7 @@ int CEditorLevelRegion::Ed_SelectRef(const Vector3D& start, const Vector3D& dir,
 		Vector3D tray_start = ((!wmatrix)*Vector4D(start, 1)).xyz();
 		Vector3D tray_dir = (!wmatrix.getRotationComponent())*dir;
 
-		float raydist = MAX_COORD_UNITS;
+		float raydist = DrvSynUnits::MaxCoordInUnits;
 
 		CLevObjectDef* def = m_objects[i]->def;
 
@@ -2011,14 +2011,14 @@ int CEditorLevelRegion::Ed_SelectRef(const Vector3D& start, const Vector3D& dir,
 int	CEditorLevelRegion::Ed_SelectBuilding(const Vector3D& start, const Vector3D& dir, float& dist)
 {
 	int bestDistrefIdx = -1;
-	float fMaxDist = MAX_COORD_UNITS;
+	float fMaxDist = DrvSynUnits::MaxCoordInUnits;
 
 	for(int i = 0; i < m_buildings.numElem(); i++)
 	{
 		Vector3D tray_start = start - m_buildings[i]->modelPosition;
 		Vector3D tray_dir = dir;
 
-		float raydist = MAX_COORD_UNITS;
+		float raydist = DrvSynUnits::MaxCoordInUnits;
 
 		buildingSource_t* building = m_buildings[i];
 

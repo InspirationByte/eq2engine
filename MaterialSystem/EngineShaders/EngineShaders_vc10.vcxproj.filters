@@ -30,9 +30,6 @@
     <ClCompile Include="ShadersMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\public\ViewParams.cpp">
-      <Filter>Source Files\EngineLib</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\public\materialsystem\BaseShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -154,9 +151,6 @@
     </ClInclude>
     <ClInclude Include="..\public\Platform\Platform.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\public\ViewParams.h">
-      <Filter>Source Files\EngineLib</Filter>
     </ClInclude>
     <ClInclude Include="..\..\public\materialsystem\BaseShader.h">
       <Filter>Source Files</Filter>

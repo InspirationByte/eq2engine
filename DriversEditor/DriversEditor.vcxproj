@@ -323,7 +323,7 @@
     <ClCompile Include="EditorActionHistory.cpp" />
     <ClCompile Include="EditorLevel.cpp" />
     <ClCompile Include="EditorMain.cpp" />
-    <ClCompile Include="..\public\ViewParams.cpp" />
+    <ClCompile Include="..\shared_engine\ViewParams.cpp" />
     <ClCompile Include="..\shared_engine\DebugOverlay.cpp" />
     <ClCompile Include="..\shared_engine\modelloader_shared.cpp" />
     <ClCompile Include="EditorPreviewable.cpp" />

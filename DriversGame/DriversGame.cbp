@@ -73,8 +73,8 @@
 		</Linker>
 		<Unit filename="../public/TextureAtlas.cpp" />
 		<Unit filename="../public/TextureAtlas.h" />
-		<Unit filename="../public/ViewParams.cpp" />
-		<Unit filename="../public/ViewParams.h" />
+		<Unit filename="../shared_engine/ViewParams.cpp" />
+		<Unit filename="../shared_engine/ViewParams.h" />
 		<Unit filename="../public/luabinding/LuaBinding.cpp" />
 		<Unit filename="../public/luabinding/LuaBinding.h" />
 		<Unit filename="../public/luabinding/LuaBinding_Engine.cpp" />

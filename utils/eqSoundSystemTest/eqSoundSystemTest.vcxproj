@@ -64,7 +64,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\..\FileSystem;..\..\Engine;..\..\public;..\..\public\core;..\..\shared_engine;..\..\src_dependency\wx\include;..\..\src_dependency\wx\include\msvc;..\..\src_dependency\wx\include\msw;..\..\src_dependency\libogg\include;..\..\src_dependency\libvorbis\include;..\..\src_depndency\dx9sdk\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\FileSystem;..\..\Engine;..\..\public;..\..\public\core;..\..\shared_game;..\..\shared_engine;..\..\src_dependency\wx\include;..\..\src_dependency\wx\include\msvc;..\..\src_dependency\wx\include\msw;..\..\src_dependency\libogg\include;..\..\src_dependency\libvorbis\include;..\..\src_depndency\dx9sdk\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;PHYSICS_EXPORT;NO_GAME;NO_ENGINE;NOENGINE;EDITOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
@@ -218,7 +218,7 @@
     <ClCompile Include="..\..\shared_engine\Font.cpp" />
     <ClCompile Include="..\..\shared_engine\FontCache.cpp" />
     <ClCompile Include="eqSoundSystemTest.cpp" />
-    <ClCompile Include="..\..\public\ViewParams.cpp" />
+    <ClCompile Include="..\..\shared_engine\ViewParams.cpp" />
     <ClCompile Include="..\..\shared_engine\DebugOverlay.cpp" />
     <ClCompile Include="SoundEngineV2\snd_channel.cpp" />
     <ClCompile Include="SoundEngineV2\snd_dev.cpp" />

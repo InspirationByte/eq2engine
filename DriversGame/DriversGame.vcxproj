@@ -154,7 +154,7 @@
     <ClCompile Include="..\public\Math\math_util.cpp" />
     <ClCompile Include="..\public\TextureAtlas.cpp" />
     <ClCompile Include="..\public\Utils\GeomTools.cpp" />
-    <ClCompile Include="..\public\ViewParams.cpp" />
+    <ClCompile Include="..\shared_engine\ViewParams.cpp" />
     <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp" />
     <ClCompile Include="AICarManager.cpp" />
     <ClCompile Include="AIPursuerCar.cpp" />

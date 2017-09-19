@@ -840,9 +840,9 @@ float CLevelModel::Ed_TraceRayDist(const Vector3D& start, const Vector3D& dir)
 	float f1,f2;
 
 	if(!m_bbox.IntersectsRay(start, dir, f1,f2))
-		return MAX_COORD_UNITS;
+		return DrvSynUnits::MaxCoordInUnits;
 
-	float best_dist = MAX_COORD_UNITS;
+	float best_dist = DrvSynUnits::MaxCoordInUnits;
 
 	bool bDoTwoSided = false;
 
@@ -863,7 +863,7 @@ float CLevelModel::Ed_TraceRayDist(const Vector3D& start, const Vector3D& dir)
 		v1 = m_verts[m_indices[i+1]].position;
 		v2 = m_verts[m_indices[i+2]].position;
 
-		float dist = MAX_COORD_UNITS+1;
+		float dist = DrvSynUnits::MaxCoordInUnits+1;
 
 		if(IsRayIntersectsTriangle(v0,v1,v2, start, dir, dist, bDoTwoSided))
 		{

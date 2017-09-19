@@ -141,9 +141,6 @@
     <ClCompile Include="eqphysics\eqCollision_Object.cpp">
       <Filter>Файлы исходного кода\Physics</Filter>
     </ClCompile>
-    <ClCompile Include="..\public\ViewParams.cpp">
-      <Filter>Файлы исходного кода\EngineLib</Filter>
-    </ClCompile>
     <ClCompile Include="eqphysics\eqCollision_ObjectGrid.cpp">
       <Filter>Файлы исходного кода\Physics</Filter>
     </ClCompile>
@@ -398,6 +395,9 @@
     </ClCompile>
     <ClCompile Include="Shader_Sky.cpp">
       <Filter>Файлы исходного кода\MatSystem\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\ViewParams.cpp">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

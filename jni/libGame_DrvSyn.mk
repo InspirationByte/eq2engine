@@ -99,6 +99,7 @@ LOCAL_SRC_FILES := \
 	shared_engine/studio_egf.cpp\
 	shared_engine/sys_console.cpp\
 	shared_engine/SpriteBuilder.cpp\
+	shared_engine/ViewParams.cpp\
 	shared_engine/Audio/alsound_local.cpp\
 	shared_engine/Audio/alsnd_emitter.cpp\
 	shared_engine/Audio/alsnd_sample.cpp\
@@ -111,7 +112,6 @@ LOCAL_SRC_FILES := \
 	shared_engine/EqUI/EqUI_Image.cpp\
 	shared_engine/EqUI/IEqUI_Control.cpp\
 	public/utils/RectanglePacker.cpp\
-	public/ViewParams.cpp\
 	public/luabinding/LuaBinding.cpp\
 	public/luabinding/LuaBinding_Engine.cpp\
 	public/materialsystem/BaseShader.cpp\

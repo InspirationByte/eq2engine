@@ -1308,7 +1308,7 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 		
 		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
 		{
-			float dist = MAX_COORD_UNITS;
+			float dist = DrvSynUnits::MaxCoordInUnits;
 
 			buildingSelInfo_t info;
 
