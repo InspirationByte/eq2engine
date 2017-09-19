@@ -621,6 +621,9 @@
     <ClCompile Include="..\shared_engine\ViewParams.cpp">
       <Filter>Source Files\EngineLib\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="..\DriversGame\Shader_Sky.cpp">
+      <Filter>Source Files\MatSystem\Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\Libs\DkCore.lib">

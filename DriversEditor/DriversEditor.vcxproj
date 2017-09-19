@@ -293,6 +293,7 @@
     <ClCompile Include="..\DriversGame\Rain.cpp" />
     <ClCompile Include="..\DriversGame\region.cpp" />
     <ClCompile Include="..\DriversGame\ShaderOverrides.cpp" />
+    <ClCompile Include="..\DriversGame\Shader_Sky.cpp" />
     <ClCompile Include="..\DriversGame\Shader_StaticObjs.cpp" />
     <ClCompile Include="..\DriversGame\Shader_VehicleBody.cpp" />
     <ClCompile Include="..\DriversGame\Shader_Water.cpp" />
