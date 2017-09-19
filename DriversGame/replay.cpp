@@ -296,14 +296,11 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 	short accelControl = (frame.control_vars & 0x3FF);
 	short brakeControl = ((frame.control_vars >> 10) & 0x3FF);
 	short steerControl = ((frame.control_vars >> 20) & 0x3FF);	// steering sign bit
-	short steerSign = (frame.control_vars >> 30) ? -1 : 1;	// steering sign bit
+	short steerSign = (frame.control_vars >> 30) > 0 ? -1 : 1;	// steering sign bit
 
 	int control_flags = frame.button_flags;
 
-	if(control_flags & IN_ANALOGSTEER)
-		car->m_steerRatio = steerControl * steerSign;
-	else
-		car->m_steerRatio = 1023;
+	car->m_steerRatio = steerControl * steerSign;
 
 	car->m_accelRatio = accelControl;
 	car->m_brakeRatio = brakeControl;
@@ -349,12 +346,15 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 
 	bool forceCorrection = m_tick % CORRECTION_TICK == 0;
 
+	DkList<CollisionPairData_t>& collisionList = body->m_collisionList;
+	bool satisfiesCollisions = collisionList.numElem([=](CollisionPairData_t& pair){ return pair.appliedImpulse > COLLISION_MIN_IMPULSE; });
+
 	// decide to discard frames or not depending on events
 	// or record only frames where collision ocurred
-	if(!rep->recordOnlyCollisions && !rep->onEvent)
+	if(!rep->recordOnlyCollisions && !rep->onEvent && !satisfiesCollisions)
 	{
 		// skip frames if not on event
-		if (rep->skeptFrames < rep->skipFrames)
+		if (rep->skeptFrames < rep->skipFrames && !forceCorrection)
 			return true;
 		else
 			rep->skeptFrames = 0;
@@ -367,12 +367,9 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 		short prevsteerControl = ((prevControl.control_vars >> 20) & 0x3FF);
 		ubyte prevlightsEnabled = prevControl.lights_enabled;
 
-		short prevSteerSign = (prevControl.control_vars >> 30) ? -1 : 1;	// steering sign bit
+		short prevSteerSign = (prevControl.control_vars >> 30) > 0 ? -1 : 1;	// steering sign bit
 
-		short prevSteerRatio = 1023;
-
-		if( control_flags & IN_ANALOGSTEER )
-			prevSteerRatio = prevsteerControl * prevSteerSign;
+		short prevSteerRatio = prevsteerControl * prevSteerSign;
 
 		addControls =	(prevControl.button_flags != control_flags) ||
 						(accelControl != prevAccelControl) ||
@@ -382,9 +379,9 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 						forceCorrection;
 	}
 
-
-	DkList<CollisionPairData_t>& collisionList = body->m_collisionList;
-	bool satisfiesCollisions = collisionList.numElem([=](CollisionPairData_t& pair){ return pair.appliedImpulse > COLLISION_MIN_IMPULSE; });
+	// should not skip frames after collision
+	if(rep->skipFrames > 0 && (satisfiesCollisions || !rep->obj_car->IsAlive()))
+		rep->skipFrames = 0;
 
 	// add replay frame if car has collision with objects
 
@@ -405,12 +402,6 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 
 		if(steerControl < 0)
 			steerBit = 1;
-
-		if( !(control_flags & IN_ANALOGSTEER) )
-		{
-			steerControl = 1023;
-			steerBit = 0;
-		}
 
 		con.control_vars = (steerBit << 30) | (abs(steerControl) << 20) | (brakeControl << 10) | accelControl;
 

@@ -1128,12 +1128,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		} // if(carForwardSpeed > 5.0f)
 	}
 
-	// control method
-	if(m_emergencyEscape)
-		controls |= IN_TURNRIGHT;
-	else
-		controls |= IN_ANALOGSTEER;
-
+	// control method for emergency escape
 	if( m_emergencyEscape && m_emergencyEscapeTime > 0.0f )
 	{
 		m_emergencyEscapeTime -= fDt;
@@ -1145,19 +1140,27 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 			accelerator = 1.0f;
 		}
 		else
+		{
 			fSteeringAngle = m_emergencyEscapeSteer;
+			controls |= IN_TURNRIGHT;
+		}
 	}
 	else
+	{
 		m_emergencyEscape = false;
+		controls |= IN_ANALOGSTEER;
+	}
 
 	if( accelerator > 0.1f )
 		GetPhysicsBody()->Wake();
 
 	SetControlButtons( controls );
 
-	accelerator = clamp(accelerator, 0.0f, 0.6f);
+	float speedClampFac = 20.0f-carSpeed;
 
-	SetControlVars(accelerator, brake, fSteeringAngle);
+	accelerator *= RemapValClamp(speedClampFac, 0.0f, 20.0f, 0.6f, 1.0f);
+
+	SetControlVars(accelerator, brake, clamp(fSteeringAngle, -0.95f, 0.95f));
 
 	return 0;
 }

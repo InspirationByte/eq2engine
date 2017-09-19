@@ -343,8 +343,9 @@ void CState_Game::UnloadGame()
 	g_pShaderAPI->Reset(STATE_RESET_ALL);
 	g_pShaderAPI->Apply();
 
-	g_pGameWorld->Cleanup();
 	g_pGameHUD->Cleanup();
+	g_pGameWorld->Cleanup();
+	
 	Game_ShutdownSession();
 
 	g_pPhysics->SceneShutdown();
@@ -448,8 +449,9 @@ void CState_Game::QuickRestart(bool replay)
 	g_pShaderAPI->Reset(STATE_RESET_ALL);
 	g_pShaderAPI->Apply();
 
-	g_pGameWorld->Cleanup(false);
 	g_pGameHUD->Cleanup();
+	g_pGameWorld->Cleanup(false);
+	
 	Game_ShutdownSession(true);
 
 	g_pGameWorld->Init();

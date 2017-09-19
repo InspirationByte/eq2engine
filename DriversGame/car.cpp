@@ -1221,8 +1221,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		fSteerAngle -= (float)((float)m_steerRatio*_oneBy1024);
 	else if( m_controlButtons & IN_TURNRIGHT )
 		fSteerAngle += (float)((float)m_steerRatio*_oneBy1024);
-
-	if(m_controlButtons & IN_ANALOGSTEER)
+	else if(m_controlButtons & IN_ANALOGSTEER)
 	{
 		fSteerAngle = (float)((float)m_steerRatio*_oneBy1024);
 		m_steering = fSteerAngle;
