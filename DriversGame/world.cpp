@@ -773,7 +773,7 @@ void CGameWorld::Cleanup( bool unloadLevel )
 	else
 	{
 		// regions must be unloaded
-		m_level.UpdateRegions();
+		m_level.UnloadRegions();
 	}
 
 	if(unloadLevel)

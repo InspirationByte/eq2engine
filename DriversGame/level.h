@@ -50,6 +50,8 @@ public:
 	void							Init(int wide, int tall, int cells, bool isCleanLevel);	
 	void							Cleanup(); // unloads level
 
+	void							UnloadRegions();
+
 	bool							Load(const char* levelname, kvkeybase_t* kvDefs);
 
 	//-------------------------------------------------------------------------

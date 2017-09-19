@@ -1730,6 +1730,35 @@ int CGameLevel::UpdateRegionLoading()
 #endif // EDITOR
 }
 
+void CGameLevel::UnloadRegions()
+{
+	int numFreedRegions = 0;
+
+	// unloading only available after loading
+	if(!IsWorkDone())
+		return;
+
+	for(int x = 0; x < m_wide; x++)
+	{
+		for(int y = 0; y < m_tall; y++)
+		{
+			int idx = y*m_wide+x;
+
+			if(m_regions[idx].m_isLoaded &&m_regionOffsets[idx] != -1 )
+			{
+				// unload region
+				m_regions[idx].Cleanup();
+				m_regions[idx].m_scriptEventCallbackCalled = false;
+
+				numFreedRegions++;
+				DevMsg(DEVMSG_CORE, "Region %d freed\n", idx);
+			}
+
+			m_regions[idx].m_queryTimes.SetValue(0);
+		}
+	}
+}
+
 int CGameLevel::UpdateRegions( RegionLoadUnloadCallbackFunc func )
 {
 	int numFreedRegions = 0;

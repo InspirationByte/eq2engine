@@ -338,17 +338,16 @@ void CState_Game::UnloadGame()
 		return;
 
 	m_isGameRunning = false;
-	g_pGameHUD->Cleanup();
 
 	// renderer must be reset
 	g_pShaderAPI->Reset(STATE_RESET_ALL);
 	g_pShaderAPI->Apply();
 
 	g_pGameWorld->Cleanup();
+	g_pGameHUD->Cleanup();
+	Game_ShutdownSession();
 
 	g_pPhysics->SceneShutdown();
-
-	Game_ShutdownSession();
 
 	g_pModelCache->ReleaseCache();
 
@@ -439,8 +438,6 @@ void CState_Game::StopStreams()
 
 void CState_Game::QuickRestart(bool replay)
 {
-	g_pGameHUD->Cleanup();
-
 	StopStreams();
 
 	m_isGameRunning = false;
@@ -452,12 +449,14 @@ void CState_Game::QuickRestart(bool replay)
 	g_pShaderAPI->Apply();
 
 	g_pGameWorld->Cleanup(false);
-
+	g_pGameHUD->Cleanup();
 	Game_ShutdownSession(true);
 
-	g_pGameWorld->LoadLevel();
-
 	g_pGameWorld->Init();
+	if(!g_pGameWorld->LoadLevel())
+	{
+		MsgError("Failed to load level\n");
+	}
 
 	g_pGameHUD->Init();
 
