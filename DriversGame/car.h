@@ -491,6 +491,7 @@ public:
 	void					Repair(bool unlock = false);
 
 	void					SetInfiniteMass( bool infMass );
+	bool					HasInfiniteMass() const;
 
 	void					Lock(bool lock = true);	// locks car, false to unlock
 	bool					IsLocked() const;

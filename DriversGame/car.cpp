@@ -4302,6 +4302,11 @@ void CCar::SetInfiniteMass( bool infMass )
 		m_pPhysicsObject->m_object->m_flags &= ~BODY_INFINITEMASS;
 }
 
+bool CCar::HasInfiniteMass() const
+{
+	return (m_pPhysicsObject->m_object->m_flags & BODY_INFINITEMASS) > 0;
+}
+
 void CCar::Lock(bool lock)
 {
 	m_locked = lock;

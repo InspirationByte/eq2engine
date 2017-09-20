@@ -344,7 +344,8 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 
 	rep->skeptFrames++;
 
-	bool forceCorrection = m_tick % CORRECTION_TICK == 0;
+	// correct only non-frozen bodies
+	bool forceCorrection = (m_tick % CORRECTION_TICK == 0) && !body->IsFrozen();
 
 	DkList<CollisionPairData_t>& collisionList = body->m_collisionList;
 	bool satisfiesCollisions = collisionList.numElem([=](CollisionPairData_t& pair){ return pair.appliedImpulse > COLLISION_MIN_IMPULSE; });

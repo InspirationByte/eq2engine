@@ -1157,7 +1157,6 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	SetControlButtons( controls );
 
 	float speedClampFac = 20.0f-carSpeed;
-
 	accelerator *= RemapValClamp(speedClampFac, 0.0f, 20.0f, 0.6f, 1.0f);
 
 	SetControlVars(accelerator, brake, clamp(fSteeringAngle, -0.95f, 0.95f));

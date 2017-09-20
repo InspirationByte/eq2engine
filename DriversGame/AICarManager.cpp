@@ -14,7 +14,6 @@
 ConVar g_trafficMaxCars("g_trafficMaxCars", "48", "Maximum traffic cars", CV_ARCHIVE);
 ConVar g_traffic_mindist("g_traffic_mindist", "50", "Min traffic car distance to spawn", CV_CHEAT);
 ConVar g_traffic_maxdist("g_traffic_maxdist", "51", "Max traffic car distance, to disappear", CV_CHEAT);
-ConVar g_railroadCops("g_railroadCops", "0", NULL, CV_CHEAT);
 
 const float AI_COP_SPEECH_DELAY = 3.0f;		// delay before next speech
 const float AI_COP_TAUNT_DELAY = 11.0f;		// delay before next taunt
@@ -271,9 +270,6 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 		// set car color
 		g_replayData->PushEvent(REPLAY_EVENT_CAR_SETCOLOR, pNewCar->m_replayID, (void*)(intptr_t)col_idx);
 	}
-
-	if(pNewCar->IsPursuer())
-		pNewCar->SetInfiniteMass(g_railroadCops.GetBool());
 
 	pNewCar->InitAI( false ); // TODO: chance of stoped, empty and active car on parking lane
 
@@ -642,7 +638,6 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 		copBlockCar->PlaceOnRoadCell(pReg, roadCell);
 		copBlockCar->InitAI(false);
 		copBlockCar->SetTorqueScale(m_copAccelerationModifier);
-		copBlockCar->SetInfiniteMass(g_railroadCops.GetBool());
 		copBlockCar->SetMaxDamage(m_copMaxDamage);
 
 		g_pGameWorld->AddObject(copBlockCar, true);
