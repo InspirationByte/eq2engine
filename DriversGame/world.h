@@ -43,7 +43,7 @@ enum ERenderFlags
 #define MAX_LIGHTS_QUEUE		128
 #define MAX_LIGHTS_TEXTURE		32
 
-#define MAX_RENDERABLE_LIST		256		// maximum objects drawn
+#define MAX_RENDERABLE_LIST		512		// maximum objects drawn
 
 struct worldinfo_t
 {
