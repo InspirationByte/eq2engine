@@ -399,6 +399,9 @@
     <ClCompile Include="..\shared_engine\ViewParams.cpp">
       <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared_game\DataTables.cpp">
+      <Filter>Файлы исходного кода\Game\Objects</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">
@@ -777,6 +780,9 @@
     </ClInclude>
     <ClInclude Include="..\shared_engine\EqUI\IEqUI_Control.h">
       <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\DataTables.h">
+      <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

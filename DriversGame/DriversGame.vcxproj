@@ -147,6 +147,7 @@
     <ClCompile Include="..\shared_engine\EqParticles_Render.cpp" />
     <ClCompile Include="..\public\materialsystem\BaseShader.cpp" />
     <ClCompile Include="..\shared_engine\Font.cpp" />
+    <ClCompile Include="..\shared_game\DataTables.cpp" />
     <ClCompile Include="..\shared_game\GameSoundEmitterSystem.cpp" />
     <ClCompile Include="..\public\imaging\ImageLoader.cpp" />
     <ClCompile Include="..\public\luabinding\LuaBinding.cpp" />
@@ -296,6 +297,7 @@
     <ClInclude Include="..\shared_engine\Font.h" />
     <ClInclude Include="..\shared_engine\SpriteBuilder.h" />
     <ClInclude Include="..\shared_engine\video\AVStream.h" />
+    <ClInclude Include="..\shared_game\DataTables.h" />
     <ClInclude Include="..\shared_game\GameSoundEmitterSystem.h" />
     <ClInclude Include="..\public\imaging\ImageLoader.h" />
     <ClInclude Include="..\public\luabinding\LuaBinding.h" />

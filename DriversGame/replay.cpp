@@ -568,6 +568,8 @@ void CReplayData::WriteEvents( IVirtualStream* stream, int onlyEvent )
 
 					break;
 				}
+				case REPLAY_EVENT_CAR_SETMAXSPEED:
+				case REPLAY_EVENT_CAR_SETMAXDAMAGE:
 				case REPLAY_EVENT_CAR_DAMAGE:
 				{
 					float value = *(float *)&evt.eventData;
@@ -665,6 +667,8 @@ void CReplayData::ReadEvent( replayevent_t& evt, IVirtualStream* stream )
 				evt.eventData = (void*)value;
 				break;
 			}
+			case REPLAY_EVENT_CAR_SETMAXSPEED:
+			case REPLAY_EVENT_CAR_SETMAXDAMAGE:
 			case REPLAY_EVENT_CAR_DAMAGE:
 			{
 				float value;
@@ -1208,6 +1212,34 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 
 			if(rep.obj_car && rep.obj_car->IsAlive())
 				rep.obj_car->SetDamage( damage );
+
+			break;
+		}
+		case REPLAY_EVENT_CAR_SETMAXDAMAGE:
+		{
+			if( evt.replayIndex == REPLAY_NOT_TRACKED )
+				break;
+
+			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+
+			float damage = *(float *)&evt.eventData;
+
+			if(rep.obj_car)
+				rep.obj_car->SetMaxDamage( damage );
+
+			break;
+		}
+		case REPLAY_EVENT_CAR_SETMAXSPEED:
+		{
+			if( evt.replayIndex == REPLAY_NOT_TRACKED )
+				break;
+
+			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+
+			float speed = *(float *)&evt.eventData;
+
+			if(rep.obj_car)
+				rep.obj_car->SetMaxSpeed( speed );
 
 			break;
 		}

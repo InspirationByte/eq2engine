@@ -4209,6 +4209,10 @@ bool CCar::IsFlippedOver( bool checkWheels ) const
 void CCar::SetMaxDamage( float fDamage )
 {
 	m_gameMaxDamage = fDamage;
+
+#ifndef EDITOR
+	g_replayData->PushEvent( REPLAY_EVENT_CAR_SETMAXDAMAGE, m_replayID, *(void**)&m_gameMaxDamage.m_value );
+#endif // EDITOR
 }
 
 float CCar::GetMaxDamage() const
@@ -4219,6 +4223,10 @@ float CCar::GetMaxDamage() const
 void CCar::SetMaxSpeed( float fSpeed )
 {
 	m_maxSpeed = fSpeed;
+
+#ifndef EDITOR
+	g_replayData->PushEvent( REPLAY_EVENT_CAR_SETMAXSPEED, m_replayID, *(void**)&m_maxSpeed );
+#endif // EDITOR
 }
 
 float CCar::GetMaxSpeed() const
