@@ -186,15 +186,15 @@ private:
 	DataVarType_e	varType;
 };
 
-struct datamap_t;
+struct dataDescMap_t;
 
 #define MAKE_SIMPLE_CONSTRUCT_FUNC(friendlyName, dtvartype)									\
-	static mappedVar_t Field_##friendlyName##(const char* name, int offset, int flags){		\
-		return mappedVar_t { dtvartype, name, offset, flags, nullptr };						\
+	static dataDescField_t Field_##friendlyName##(const char* name, int offset, int flags){		\
+		return dataDescField_t { dtvartype, name, offset, flags, nullptr };						\
 	}
 
 // this is used by key fields and save data
-struct mappedVar_t
+struct dataDescField_t
 {
 	MAKE_SIMPLE_CONSTRUCT_FUNC(Float, DTVAR_TYPE_FLOAT)
 	MAKE_SIMPLE_CONSTRUCT_FUNC(Int, DTVAR_TYPE_INTEGER)
@@ -228,39 +228,39 @@ struct mappedVar_t
 	int						nFlags;
 
 	// for embedding
-	datamap_t*				dataMap;
+	dataDescMap_t*			dataMap;
 };
 
 // the datamap
-struct datamap_t
+struct dataDescMap_t
 {
-	const char*		dataClassName;
-	int				dataSize;		// for array enumeration
+	const char*			dataClassName;
+	int					dataSize;		// for array enumeration
 
-	datamap_t*		baseMap;
+	dataDescMap_t*		baseMap;
 
-	int16			numFields;
+	int16				numFields;
 
-	mappedVar_t*	fields;
+	dataDescField_t*	fields;
 };
 
 // debug functions
 void DataMap_PrintFlagsStr(int flags);
-void DataMap_Print(datamap_t* dataMap, int spaces = 0);
+void DataMap_Print(dataDescMap_t* dataMap, int spaces = 0);
 
 //
 // this is a compile-time data description map creator
 //
 
 #define BEGIN_DATAMAP_GUTS( className ) \
-	template <typename T> datamap_t* DataMapInit(T *); \
-	template <> datamap_t* DataMapInit<className>( className * ); \
+	template <typename T> dataDescMap_t* DataMapInit(T *); \
+	template <> dataDescMap_t* DataMapInit<className>( className * ); \
 	namespace className##_DataDescInit /* namespaces are ideal for this */ \
 	{ \
-		datamap_t* g_DataMapHolder = DataMapInit( (className *)NULL );  \
+		dataDescMap_t* g_DataMapHolder = DataMapInit( (className *)NULL );  \
 	} \
 	\
-	template <> datamap_t *DataMapInit<className>( className * ) \
+	template <> dataDescMap_t* DataMapInit<className>( className * ) \
 	{ \
 		typedef className ThisClass; \
 		static mappedVar_t dataDesc[] = \
@@ -284,25 +284,25 @@ void DataMap_Print(datamap_t* dataMap, int spaces = 0);
 	}
 
 #define BEGIN_DATAMAP( className ) \
-	datamap_t className::m_DataMap = { #className, sizeof(ThisClass), &BaseClass::m_DataMap, 0, NULL }; \
-	datamap_t* className::GetDataDescMap( void ) { return &m_DataMap; } \
+	dataDescMap_t className::m_DataMap = { #className, sizeof(ThisClass), &BaseClass::m_DataMap, 0, NULL }; \
+	dataDescMap_t* className::GetDataDescMap( void ) { return &m_DataMap; } \
 	BEGIN_DATAMAP_GUTS( className )
 
 //
 #define BEGIN_DATAMAP_NO_BASE( className ) \
-	datamap_t className::m_DataMap = { #className, sizeof(ThisClass), NULL, 0, NULL }; \
-	datamap_t* className::GetDataDescMap( void ) { return &m_DataMap; } \
+	dataDescMap_t className::m_DataMap = { #className, sizeof(ThisClass), NULL, 0, NULL }; \
+	dataDescMap_t* className::GetDataDescMap( void ) { return &m_DataMap; } \
 	BEGIN_DATAMAP_GUTS( className )
 
 // creates data description map for structures
 #define DECLARE_SIMPLE_DATAMAP() \
-	static datamap_t m_DataMap; \
-	template <typename T> friend datamap_t* DataMapInit(T *);
+	static dataDescMap_t m_DataMap; \
+	template <typename T> friend dataDescMap_t* DataMapInit(T *);
 
 // creates data description map
 #define	DECLARE_DATAMAP() \
 	DECLARE_SIMPLE_DATAMAP() \
-	virtual datamap_t* GetDataDescMap( void );
+	virtual dataDescMap_t* GetDataDescMap( void );
 
 #define _NAMEFIELD(var, name, fieldtype, flags)			mappedVar_t::Field_##fieldtype##(name, offsetOf(ThisClass, var), flags)
 #define _FIELD(name, fieldtype, flags)					mappedVar_t::Field_##fieldtype##(#name, offsetOf(ThisClass, name), flags)
@@ -313,10 +313,10 @@ void DataMap_Print(datamap_t* dataMap, int spaces = 0);
 #define DEFINE_LISTFIELD(name,fieldtype)				_FIELD(name, fieldtype, FIELD_LIST )
 
 // nested object
-#define DEFINE_MAPPEDOBJECT(name)						mappedVar_t { DTVAR_TYPE_NESTED, #name, offsetOf(ThisClass, name), 0, &(((ThisClass *)0)->name.m_DataMap) }
+#define DEFINE_MAPPEDOBJECT(name)						dataDescField_t { DTVAR_TYPE_NESTED, #name, offsetOf(ThisClass, name), 0, &(((ThisClass *)0)->name.m_DataMap) }
 
-#define DEFINE_MAPPEDOBJECT_ARRAY(name)					mappedVar_t { DTVAR_TYPE_NESTED, #name, offsetOf(ThisClass, name), FIELD_ARRAY, &(((ThisClass *)0)->name[0].m_DataMap) }
-#define DEFINE_MAPPEDOBJECT_LIST(name, className)		mappedVar_t { DTVAR_TYPE_NESTED, #name, offsetOf(ThisClass, name), FIELD_LIST, &className::m_DataMap) }
+#define DEFINE_MAPPEDOBJECT_ARRAY(name)					dataDescField_t { DTVAR_TYPE_NESTED, #name, offsetOf(ThisClass, name), FIELD_ARRAY, &(((ThisClass *)0)->name[0].m_DataMap) }
+#define DEFINE_MAPPEDOBJECT_LIST(name, className)		dataDescField_t { DTVAR_TYPE_NESTED, #name, offsetOf(ThisClass, name), FIELD_LIST, &className::m_DataMap) }
 
 /*
 #define DEFINE_LISTFIELD(name,fieldtype)				{ fieldtype, #name, offsetOf(classNameTypedef, name), 1, 0, FIELDFLAG_SAVE, NULL, NULL, CDataopsInstantiator<fieldtype>::GetDataOperators(&(((classNameTypedef *)0)->name)) }

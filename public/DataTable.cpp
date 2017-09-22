@@ -6,7 +6,7 @@
 //				savegames / parsing entity KVs
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DataTables.h"
+#include "DataTable.h"
 #include "utils/strtools.h"
 
 #include "core/DebugInterface.h"
@@ -132,7 +132,7 @@ void DataMap_PrintFlagsStr(int flags)
 		Msg("FIELD_LINKEDLIST ");
 }
 
-void DataMap_Print(datamap_t* dataMap, int spaces)
+void DataMap_Print(dataDescMap_t* dataMap, int spaces)
 {
 	if(!dataMap)
 		return;
@@ -151,7 +151,7 @@ void DataMap_Print(datamap_t* dataMap, int spaces)
 
 		for(int i = 0; i < dataMap->numFields; i++)
 		{
-			mappedVar_t& mapVar = dataMap->fields[i];
+			dataDescField_t& mapVar = dataMap->fields[i];
 			Msg(spaceStr);
 			Msg("field '%s' (%s) offset=%d ", mapVar.name, s_dataVarTypeNames[mapVar.type], mapVar.offset);
 

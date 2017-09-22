@@ -399,7 +399,7 @@
     <ClCompile Include="..\shared_engine\ViewParams.cpp">
       <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_game\DataTables.cpp">
+    <ClCompile Include="..\public\DataTable.cpp">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClCompile>
   </ItemGroup>
@@ -781,7 +781,7 @@
     <ClInclude Include="..\shared_engine\EqUI\IEqUI_Control.h">
       <Filter>Файлы исходного кода\EngineLib\EqUI</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared_game\DataTables.h">
+    <ClInclude Include="..\public\DataTable.h">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClInclude>
   </ItemGroup>
