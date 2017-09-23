@@ -195,10 +195,15 @@ void CGameObject::OnRemove()
 	m_state = GO_STATE_REMOVED;
 }
 
-void CGameObject::Simulate( float fDt )
+void CGameObject::UpdateTransform()
 {
 	// refresh it's matrix
 	m_worldMatrix = translate(m_vecOrigin)*rotateXYZ4(DEG2RAD(m_vecAngles.x),DEG2RAD(m_vecAngles.y),DEG2RAD(m_vecAngles.z));
+}
+
+void CGameObject::Simulate( float fDt )
+{
+	UpdateTransform();
 }
 
 void CGameObject::SetOrigin( const Vector3D& origin )

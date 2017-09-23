@@ -373,7 +373,6 @@ static float weatherTireFrictionMod[WEATHER_COUNT] =
 };
 
 ConVar g_debug_car_lights("g_debug_car_lights", "0");
-ConVar g_autohandbrake("g_autohandbrake", "1", "Auto handbrake steering helper", CV_CHEAT);
 
 ConVar r_drawSkidMarks("r_drawSkidMarks", "1", "Draw skidmarks, 1 - player, 2 - all cars", CV_ARCHIVE);
 ConVar r_carShadowDetailDistance("r_carShadowDetailDistance", "50.0", "Detailed shadow distance", CV_ARCHIVE);
@@ -1429,7 +1428,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 	FReal autoHandbrakeHelper = 0.0f;
 
-	if( g_autohandbrake.GetBool() && m_autohandbrake && GetSpeedWheels() > 0.0f && !bDoBurnout )
+	if( m_autohandbrake && GetSpeedWheels() > 0.0f && !bDoBurnout )
 	{
 		const FReal AUTOHANDBRAKE_MIN_SPEED		= 10.0f;
 		const FReal AUTOHANDBRAKE_MAX_SPEED		= 30.0f;
@@ -4300,6 +4299,16 @@ void CCar::SetColorScheme( int colorIdx )
 		m_carColor = m_conf->colors[colorIdx];
 	else
 		m_carColor = ColorRGBA(1,1,1,1);
+}
+
+void CCar::SetAutoHandbrake( bool autoHandbrake )
+{
+	m_autohandbrake = autoHandbrake;
+}
+
+bool CCar::HasAutoHandbrake() const
+{
+	return m_autohandbrake;
 }
 
 void CCar::SetInfiniteMass( bool infMass )

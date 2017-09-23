@@ -293,19 +293,21 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 	body->SetAngularVelocity(frame.car_angvel);
 
 	// unpack
-	short accelControl = (frame.control_vars & 0x3FF);
-	short brakeControl = ((frame.control_vars >> 10) & 0x3FF);
-	short steerControl = ((frame.control_vars >> 20) & 0x3FF);	// steering sign bit
-	short steerSign = (frame.control_vars >> 30) > 0 ? -1 : 1;	// steering sign bit
+	uint16 accelControl = frame.control_vars.acceleration;
+	uint16 brakeControl = frame.control_vars.brake;
+	short steerControl = frame.control_vars.steering * (frame.control_vars.steerSign > 0 ? -1 : 1);
+	ubyte lightsEnabled = frame.lights_enabled;
+	bool autoHandbrake = (frame.control_vars.autoHandbrake > 0);
 
 	int control_flags = frame.button_flags;
 
-	car->m_steerRatio = steerControl * steerSign;
-
+	car->m_steerRatio = steerControl;
 	car->m_accelRatio = accelControl;
 	car->m_brakeRatio = brakeControl;
-	car->m_lightsEnabled = frame.lights_enabled;
+	car->m_autohandbrake = autoHandbrake;
 
+	car->m_lightsEnabled = lightsEnabled;
+	
 	car->SetControlButtons(control_flags);
 }
 
@@ -334,10 +336,11 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 	bool addControls = false;
 	float prevTime = 0.0f;
 
-	short accelControl = rep->obj_car->m_accelRatio;
-	short brakeControl = rep->obj_car->m_brakeRatio;
+	uint16 accelControl = rep->obj_car->m_accelRatio;
+	uint16 brakeControl = rep->obj_car->m_brakeRatio;
 	short steerControl = rep->obj_car->m_steerRatio;
 	ubyte lightsEnabled = rep->obj_car->m_lightsEnabled;
+	bool autoHandbrake = rep->obj_car->m_autohandbrake;
 
 	uint control_flags = rep->obj_car->GetControlButtons();
 	control_flags &= ~IN_MISC; // kill misc buttons, left only needed
@@ -363,20 +366,18 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 		replaycontrol_t& prevControl = rep->replayArray[numFrames-1];
 
 		// unpack
-		short prevAccelControl = (prevControl.control_vars & 0x3FF);
-		short prevbrakeControl = ((prevControl.control_vars >> 10) & 0x3FF);
-		short prevsteerControl = ((prevControl.control_vars >> 20) & 0x3FF);
+		uint16 prevAccelControl = prevControl.control_vars.acceleration;
+		uint16 prevbrakeControl = prevControl.control_vars.brake;
+		short prevsteerControl = prevControl.control_vars.steering * (prevControl.control_vars.steerSign > 0 ? -1 : 1);
 		ubyte prevlightsEnabled = prevControl.lights_enabled;
-
-		short prevSteerSign = (prevControl.control_vars >> 30) > 0 ? -1 : 1;	// steering sign bit
-
-		short prevSteerRatio = prevsteerControl * prevSteerSign;
+		bool prevAutoHandbrake = (prevControl.control_vars.autoHandbrake > 0);
 
 		addControls =	(prevControl.button_flags != control_flags) ||
 						(accelControl != prevAccelControl) ||
 						(brakeControl != prevbrakeControl) ||
 						(steerControl != prevsteerControl) ||
 						(lightsEnabled != prevlightsEnabled) ||
+						(autoHandbrake != prevAutoHandbrake) ||
 						forceCorrection;
 	}
 
@@ -399,12 +400,12 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 		con.car_angvel = body->GetAngularVelocity();
 		con.lights_enabled = lightsEnabled;
 
-		int steerBit = 0;
 
-		if(steerControl < 0)
-			steerBit = 1;
-
-		con.control_vars = (steerBit << 30) | (abs(steerControl) << 20) | (brakeControl << 10) | accelControl;
+		con.control_vars.acceleration = accelControl;
+		con.control_vars.brake = brakeControl;
+		con.control_vars.steering = abs(steerControl);
+		con.control_vars.steerSign = (steerControl < 0) ? 1 : 0;
+		con.control_vars.autoHandbrake = autoHandbrake ? 1 : 0;
 
 		con.tick = m_tick;
 

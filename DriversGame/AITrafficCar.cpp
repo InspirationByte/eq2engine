@@ -222,8 +222,31 @@ CAITrafficCar::~CAITrafficCar()
 
 void CAITrafficCar::InitAI( bool isParked )
 {
-	AI_SetState( &CAITrafficCar::SearchForRoad );
 	m_speedModifier = g_replayRandom.Get(0,10);
+
+	//AI_SetState( &CAITrafficCar::SearchForRoad );
+
+	UpdateTransform();
+
+	Vector3D carPos = GetOrigin();
+
+	// calc steering dir
+	straight_t road = g_pGameWorld->m_level.GetStraightAtPos(carPos, 32);
+
+	if(road.direction != -1)
+	{
+		road.lane = g_pGameWorld->m_level.GetLaneIndexAtPoint(road.start);
+
+		ChangeRoad( road );
+
+		// if it's more than 4 cells we should add some velocity to it
+		if(IsEnabled() && road.breakIter > 4)
+		{
+			SetVelocity(GetForwardVector() * g_traffic_maxspeed.GetFloat() * KPH_TO_MPS * 0.5f);
+		}
+
+		AI_SetState( &CAITrafficCar::TrafficDrive );
+	}
 }
 
 void CAITrafficCar::Spawn()
@@ -366,9 +389,6 @@ int	CAITrafficCar::SearchForRoad(float fDt, EStateTransition transition)
 {
 	if(transition != STATE_TRANSITION_NONE)
 		return 0;
-
-	Matrix4x4 carMatrix;
-	GetPhysicsBody()->ConstructRenderMatrix(carMatrix);
 
 	Vector3D carPos = GetOrigin();
 
@@ -1003,13 +1023,15 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		// FIXME: detect steering wheels?
 		Matrix3x3 wrotation = m_wheels[0].m_wheelOrient*transpose(bodyMat).getRotationComponent();
 
-		Vector3D traceDir = lerp(steerAbsDir, GetForwardVector(), 0.25f);
+		Vector3D traceDir = lerp(GetForwardVector(), steerAbsDir, pow(fabs(fSteeringAngle), 0.5f));
 
 		Vector3D carTraceEndPos = carTracePos+traceDir*fTraceDist;
 		//Vector3D navTraceEndPos = carTracePos+traceDir*(carSpeed*0.1f+4.0f);
 
+		//debugoverlay->Line3D(carTracePos, carTraceEndPos, ColorRGBA(1,0,0,1), ColorRGBA(0,0,1,1), 0.05f);
+
 		btConvexShape* carShape = (btConvexShape*)GetPhysicsBody()->GetBulletShape();
-		btBoxShape carBoxShape(btVector3(m_conf->physics.body_size.x, m_conf->physics.body_size.y, 0.25f));
+		btBoxShape carBoxShape(btVector3(m_conf->physics.body_size.x, m_conf->physics.body_size.y*2, 0.25f));
 
 		//float navTestLine = g_pGameWorld->m_level.Nav_TestLine(carTracePos, navTraceEndPos, true);
 

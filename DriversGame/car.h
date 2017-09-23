@@ -490,6 +490,9 @@ public:
 
 	void					Repair(bool unlock = false);
 
+	void					SetAutoHandbrake( bool autoHandbrake );
+	bool					HasAutoHandbrake() const;
+
 	void					SetInfiniteMass( bool infMass );
 	bool					HasInfiniteMass() const;
 

@@ -282,6 +282,8 @@ protected:
 	virtual void				OnPhysicsFrame(float fDt);
 	virtual void				OnPrePhysicsFrame(float fDt) {}
 
+	virtual void				UpdateTransform();
+
 	EqString					m_name;
 
 	Vector3D					m_vecOrigin;

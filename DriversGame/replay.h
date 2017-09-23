@@ -80,7 +80,16 @@ enum EReplayEventType
 struct replaycontrol_s
 {
 	int				tick;			// time since last update
-	int				control_vars;	// 3 packed 10 bit values
+
+	// 3 packed 10 bit values
+	struct 
+	{
+		uint		acceleration : 10;
+		uint		brake : 10;
+		uint		steering : 10;
+		uint		steerSign : 1;
+		uint		autoHandbrake : 1;
+	} control_vars;
 
 	FVector3D		car_origin;
 	TVec4D<half>	car_rot;

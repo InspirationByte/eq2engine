@@ -410,6 +410,7 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 
 void CAICarManager::UpdateNavigationVelocityMap(float fDt)
 {
+	/*
 	m_velocityMapUpdateTime += fDt;
 
 	if(m_velocityMapUpdateTime > 0.5f)
@@ -428,6 +429,7 @@ void CAICarManager::UpdateNavigationVelocityMap(float fDt)
 
 	// update debugging of navigation maps here
 	g_pGameWorld->m_level.UpdateDebugMaps();
+	*/
 }
 
 void CAICarManager::PaintVelocityMapFrom(CCar* car)

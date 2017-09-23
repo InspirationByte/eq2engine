@@ -24,6 +24,8 @@ void fng_car_variants(DkList<EqString>& list, const char* query)
 
 ConVar		g_car("g_car", "rollo", fng_car_variants, "player car",  CV_ARCHIVE);
 
+ConVar		g_autoHandbrake("g_autoHandbrake", "1", "Auto handbrake for steering help", CV_ARCHIVE);
+
 ConVar		g_invicibility("g_invicibility", "0", "No damage for player car", CV_CHEAT);
 ConVar		g_infiniteMass("g_infiniteMass", "0", "Infinite mass for player car", CV_CHEAT);
 
@@ -369,6 +371,8 @@ void CGameSession::Update( float fDt )
 
 	if( player_car )
 	{
+		player_car->SetAutoHandbrake( g_autoHandbrake.GetBool() );
+
 		if(g_invicibility.GetBool())
 			player_car->SetDamage(0.0f);
 
