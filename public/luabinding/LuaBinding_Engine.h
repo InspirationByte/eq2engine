@@ -136,6 +136,7 @@ OOLUA_PROXY(kvkeybase_t)
 	OOLUA_MFUNC_CONST(GetName)
 
 	OOLUA_MFUNC(AddKeyBase)
+	OOLUA_MEM_FUNC(void, AddExistingKeyBase, cpp_in_p<kvkeybase_t*>)
 	OOLUA_MFUNC(RemoveKeyBaseByName)
 	OOLUA_MEM_FUNC(void, RemoveKeyBase, cpp_in_p<kvkeybase_t*>)
 

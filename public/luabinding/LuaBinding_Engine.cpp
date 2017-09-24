@@ -111,6 +111,7 @@ OOLUA_EXPORT_FUNCTIONS(kvkeybase_t,
 	SetName,
 
 	AddKeyBase,
+	AddExistingKeyBase,
 	RemoveKeyBaseByName,
 	RemoveKeyBase,
 
@@ -175,6 +176,8 @@ OOLUA_CFUNC(KV_GetValueBool, L_KV_GetValueBool)
 OOLUA_CFUNC(KV_GetVector2D, L_KV_GetVector2D)
 OOLUA_CFUNC(KV_GetVector3D, L_KV_GetVector3D)
 OOLUA_CFUNC(KV_GetVector4D, L_KV_GetVector4D)
+
+OOLUA_CFUNC(KV_PrintSection, L_KV_PrintSection)
 
 //--------------------------------------------------------------------------------------
 
@@ -441,7 +444,6 @@ OOLUA_CFUNC(Lua_Console_CreateCommand, LLua_Console_CreateCommand)
 OOLUA_CFUNC(Lua_Console_CreateCvar, LLua_Console_CreateCvar)
 OOLUA_CFUNC(Lua_Console_RemoveCommandBase, LLua_Console_RemoveCommandBase)
 
-
 //---------------------------------------------------------------------------------------
 //
 //---------------------------------------------------------------------------------------
@@ -514,6 +516,9 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	OOLUA::set_global(state, "KV_GetVector2D", L_KV_GetVector2D);
 	OOLUA::set_global(state, "KV_GetVector3D", L_KV_GetVector3D);
 	OOLUA::set_global(state, "KV_GetVector4D", L_KV_GetVector4D);
+
+	OOLUA::set_global(state, "KV_PrintSection", L_KV_PrintSection);
+	
 
 	OOLUA::register_class<equi::IUIControl>(state);
 	OOLUA::register_class<equi::Panel>(state);

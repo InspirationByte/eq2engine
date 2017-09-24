@@ -751,6 +751,14 @@ kvkeybase_t* kvkeybase_t::AddKeyBase( const char* pszName, const char* pszValue,
 	return pKeyBase;
 }
 
+
+// adds existing keybase. You should set it's name manually. It should not be allocated by other keybase
+void kvkeybase_t::AddExistingKeyBase(kvkeybase_t* keyBase)
+{
+	if(keyBase != nullptr)
+		keys.append( keyBase );
+}
+
 // removes key base by name
 void kvkeybase_t::RemoveKeyBaseByName( const char* name, bool removeAll )
 {
