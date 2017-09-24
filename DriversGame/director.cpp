@@ -19,7 +19,9 @@
 
 extern ConVar	g_pause;
 
-ConVar			g_freecam("g_freecam", "0");
+void g_freecam_changed(ConVar* pVar,char const* pszOldValue);
+
+ConVar			g_freecam("g_freecam", "0", g_freecam_changed, nullptr, 0 );
 ConVar			g_freecam_speed("g_freecam_speed", "10", NULL, CV_ARCHIVE);
 ConVar			g_director("director", "0");
 ConVar			g_mouse_sens("g_mouse_sens", "1.0", "mouse sensitivity", CV_ARCHIVE);
@@ -38,6 +40,13 @@ freeCameraProps_t::freeCameraProps_t()
 }
 
 freeCameraProps_t g_freeCamProps;
+
+void g_freecam_changed(ConVar* pVar, char const* pszOldValue)
+{
+	// if we switching to free camera, we should reset Z axis rotation
+	if(g_pCameraAnimator->GetRealMode() == CAM_MODE_INCAR && pVar->GetBool())
+		g_freeCamProps.angles.z = 0.0f;
+}
 
 static const wchar_t* cameraTypeStrings[] = {
 	L"Outside car",

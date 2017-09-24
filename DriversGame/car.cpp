@@ -15,6 +15,8 @@
 #include "heightfield.h"
 #include "ParticleEffects.h"
 
+#include "director.h"
+
 #include "Shiny.h"
 
 #pragma todo("optimize vehicle code")
@@ -1316,7 +1318,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		// trace solid ground only
 		g_pPhysics->TestLine(line_start, line_end, wheel.m_collisionInfo, OBJECTCONTENTS_SOLID_GROUND, &collFilter);
 
-		if(m_isLocalCar && (wheel.m_collisionInfo.fract - fractionOld) >= 0.08f)
+		if(m_isLocalCar && fractionOld < 1.0f && (fractionOld - wheel.m_collisionInfo.fract) >= 0.1f)
 		{
 			EmitSound_t ep;
 
@@ -2484,7 +2486,7 @@ void CCar::Simulate( float fDt )
 
 		float worldIntensityMod = g_pGameWorld->m_envConfig.headLightIntensity;
 
-		lightIntensity *= max(0.7f, worldIntensityMod);
+		lightIntensity *= max(0.4f, worldIntensityMod);
 		decalIntensity *= worldIntensityMod;
 
 		if(lightIntensity > 0.0f)
@@ -2727,6 +2729,14 @@ void CCar::Simulate( float fDt )
 
 		float fHeadlightsAlpha = clamp((fLightsAlpha > 0.0f ? fLightsAlpha : 0.0f) + headlightDistance*0.1f, 0.0f, 1.0f);
 		float fBackLightAlpha = clamp((fLightsAlpha < 0.0f ? -fLightsAlpha : 0.0f) + back_plane.Distance(cam_pos)*0.1f, 0.0f, 1.0f);
+		float fBrakeLightAlpha = clamp((fLightsAlpha < 0.0f ? -fLightsAlpha : 0.0f) + brake_plane.Distance(cam_pos)*0.1f, 0.0f, 1.0f);
+
+		float lightsAmbientBrightnessFac = 1.0f - length(g_pGameWorld->m_envConfig.ambientColor);
+		float clampedAmientBrightnessFac = max(0.6f, lightsAmbientBrightnessFac);
+
+		fHeadlightsAlpha *= lightsAmbientBrightnessFac;
+		fBackLightAlpha *= clampedAmientBrightnessFac;
+		fBrakeLightAlpha *= clampedAmientBrightnessFac;
 
 		// render some lights
 		if (isCar && (m_lightsEnabled & CAR_LIGHT_HEADLIGHTS) && fHeadlightsAlpha > 0.0f)
@@ -2739,7 +2749,7 @@ void CCar::Simulate( float fDt )
 			if(	m_conf->visual.headlightType > LIGHTS_SINGLE)
 				fHeadlightsAlpha *= 0.65f;
 
-			float lightLensPercentage = clamp((100.0f-headlightDistance) * 0.025f, 0.0f, 1.0f);
+			float lightLensPercentage = clamp((100.0f-headlightDistance) * 0.025f, 0.0f, 1.0f) * pow(lightsAmbientBrightnessFac, 2.0f);
 			fHeadlightsAlpha *= lightLensPercentage;
 			fHeadlightsGlowAlpha *= clamp(1.0f - lightLensPercentage, 0.25f, 1.0f);
 
@@ -2803,8 +2813,6 @@ void CCar::Simulate( float fDt )
 				}
 			}
 		}
-
-		float fBrakeLightAlpha = clamp((fLightsAlpha < 0.0f ? -fLightsAlpha : 0.0f) + brake_plane.Distance(cam_pos)*0.1f, 0.0f, 1.0f);
 
 		if ((IsLightEnabled(CAR_LIGHT_BRAKE) || IsLightEnabled(CAR_LIGHT_HEADLIGHTS)) && fBrakeLightAlpha > 0)
 		{
@@ -3535,7 +3543,7 @@ void CCar::UpdateSounds( float fDt )
 			if(m_sounds[CAR_SOUND_WHINE]->IsStopped())
 				m_sounds[CAR_SOUND_WHINE]->Play();
 
-			float wheelSpeedFac = fabs(GetSpeedWheels()*0.2f);
+			float wheelSpeedFac = fabs(GetSpeedWheels()) * KPH_TO_MPS * 0.2f;
 
 			m_sounds[CAR_SOUND_WHINE]->SetPitch(wheelSpeedFac);
 
@@ -3647,7 +3655,7 @@ float CCar::GetSpeedWheels() const
 
 	for(int i = 0; i < wheelCount; i++)
 	{
-		fResult += m_wheels[i].m_pitchVel * m_conf->physics.wheels[i].radius;
+		fResult += m_wheels[i].m_pitchVel;
 	}
 
 	return fResult * wheelFac * MPS_TO_KPH;
@@ -4013,7 +4021,8 @@ void CCar::Draw( int nRenderFlags )
 
 #ifndef EDITOR
 	// don't render car
-	if(	g_pCameraAnimator->GetRealMode() == CAM_MODE_INCAR &&
+	if(	!Director_FreeCameraActive() &&
+		g_pCameraAnimator->GetRealMode() == CAM_MODE_INCAR &&
 		g_pGameSession->GetViewCar() == this)
 		isBodyDrawn = false;
 #endif // EDITOR

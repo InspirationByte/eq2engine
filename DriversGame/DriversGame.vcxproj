@@ -310,7 +310,9 @@
     <ClInclude Include="..\public\ViewParams.h" />
     <ClInclude Include="..\shared_engine\physics\BulletShapeCache.h" />
     <ClInclude Include="AICarManager.h" />
+    <ClInclude Include="AIBaseDriver.h" />
     <ClInclude Include="AIEventTypes.h" />
+    <ClInclude Include="AIManipulators.h" />
     <ClInclude Include="AIPursuerCar.h" />
     <ClInclude Include="AITrafficCar.h" />
     <ClInclude Include="BillboardList.h" />

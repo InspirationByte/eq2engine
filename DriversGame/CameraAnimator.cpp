@@ -190,10 +190,10 @@ void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
 
 		SetCameraProps( target->m_conf->cameraConf );
 
-		Animate(camMode, nButtons, target->GetOrigin(), target->GetOrientation(), target->GetVelocity(), fDt, vec3_zero);
+		Animate(camMode, nButtons, target->GetOrigin(), target->GetOrientation(), target->GetVelocity(), fDt, m_rotation);
 	}
 	else
-		Animate(m_mode, nButtons, vec3_zero, Quaternion(), vec3_zero, fDt, vec3_zero);
+		Animate(m_mode, nButtons, vec3_zero, Quaternion(), vec3_zero, fDt, m_rotation);
 
 	m_oldBtns = nButtons;
 }

@@ -15,6 +15,9 @@
 
 #define DEBRIS_COLLISION_RELAY	0.15f
 #define DEBRIS_PHYS_LIFETIME	10.0f
+#define DEBRIS_ERP				-0.02f
+
+#define HUBCAP_ERP				0.025f
 
 extern void EmitHitSoundEffect(CGameObject* obj, const char* prefix, const Vector3D& origin, float power, float maxPower);
 
@@ -103,7 +106,7 @@ void CObject_Debris::Spawn()
 		body->SetDebugName("hubcap");
 
 		// additional error correction required
-		body->m_erp = 0.05f;
+		body->m_erp = DEBRIS_ERP;
 
 		//body->SetCenterOfMass( obj->mass_center);
 
@@ -167,7 +170,7 @@ void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup)
 		body->SetDebugName("hubcap");
 
 		// additional error correction required
-		body->m_erp = 0.15f;
+		body->m_erp = HUBCAP_ERP;
 
 		//body->SetCenterOfMass( obj->mass_center);
 

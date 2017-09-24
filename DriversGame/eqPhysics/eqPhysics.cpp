@@ -929,6 +929,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 	bool bodyADisableResponse = false;
 
 	float combinedErp = ph_erp.GetFloat() + pair.bodyA->m_erp + pair.bodyB->m_erp;
+	combinedErp = max(combinedErp, ph_erp.GetFloat());
 
 	if (pair.flags & COLLPAIRFLAG_OBJECTA_STATIC)
 	{

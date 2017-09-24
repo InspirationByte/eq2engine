@@ -94,6 +94,9 @@
     <Filter Include="Файлы исходного кода\EngineLib\SharedUI">
       <UniqueIdentifier>{b9517efe-da1e-4b94-9da3-4b2d32e70fb0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Файлы исходного кода\Game\AI\Driver">
+      <UniqueIdentifier>{917ab40e-8722-44c1-be2c-f9166d64440a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -783,6 +786,12 @@
     </ClInclude>
     <ClInclude Include="..\public\DataTable.h">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="AIBaseDriver.h">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="AIManipulators.h">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

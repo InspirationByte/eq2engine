@@ -19,6 +19,8 @@ ConVar r_drawHUD("hud_draw", "1", NULL, CV_ARCHIVE);
 ConVar hud_mapZoom("hud_mapZoom", "1.5", NULL, CV_ARCHIVE);
 ConVar hud_mapSize("hud_mapSize", "250", NULL, CV_ARCHIVE);
 
+ConVar hud_debug_car("hud_debug_car", "0", NULL, CV_CHEAT);
+
 DECLARE_CMD(hud_showLastMessage, NULL, 0)
 {
 	g_pGameHUD->ShowLastMessage();
@@ -233,8 +235,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 	raster.scissor = true;
 	raster.cullMode = CULL_FRONT;
 
-
-
 	if(m_enable)
 	{
 		bool inPursuit = (m_mainVehicle ? m_mainVehicle->GetPursuedCount() > 0 : false);
@@ -369,6 +369,16 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		{
 			Vector2D damageTextPos( damageRect.vleftTop.x+5, damageRect.vleftTop.y+15);
 			robotocon30b->RenderText(m_damageTok ? m_damageTok->GetText() : L"Undefined", damageTextPos, fontParams);
+		}
+
+		if(hud_debug_car.GetBool() && m_mainVehicle)
+		{
+			fontParams.scale = 20.0f;
+			robotocon30b->RenderText(varargs("Speed: %.2f KPH (%.2f MPS)", m_mainVehicle->GetSpeed(), m_mainVehicle->GetSpeed()*KPH_TO_MPS), Vector2D(10,400), fontParams);
+			robotocon30b->RenderText(varargs("Speed from wheels: %.2f KPH (%.2f MPS)", m_mainVehicle->GetSpeedWheels(), m_mainVehicle->GetSpeedWheels()*KPH_TO_MPS), Vector2D(10,440), fontParams);
+			robotocon30b->RenderText(varargs("Lateral slide: %.2f", m_mainVehicle->GetLateralSlidingAtBody()), Vector2D(10,480), fontParams);
+			robotocon30b->RenderText(varargs("Traction slide: %.2f", m_mainVehicle->GetTractionSliding(true)), Vector2D(10,520), fontParams);
+			
 		}
 
 		// get felony
