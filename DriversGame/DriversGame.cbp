@@ -49,6 +49,7 @@
 			<Add directory="../shared_game" />
 			<Add directory="../src_dependency/oolua/include" />
 			<Add directory="../src_dependency/luajit/src" />
+			<Add directory="../src_dependency/luautf8" />
 			<Add directory="../src_dependency/Shiny/include" />
 			<Add directory="../src_dependency/openal-soft/include" />
 		</Compiler>

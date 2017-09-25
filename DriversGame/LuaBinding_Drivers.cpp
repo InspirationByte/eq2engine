@@ -14,11 +14,35 @@
 #include "DrvSynHUD.h"
 #include "system.h"
 #include "state_game.h"
+#include "utils/singleton.h"
 
-static OOLUA::Script g_luastate;
+class CLuaStateSingleton : public CSingletonAbstract<lua_State>
+{
+public:
+	// initialization function. Can be overrided
+	virtual void	Initialize()
+	{ 
+		if(!pInstance)
+		{
+			pInstance = EqLua::LuaBinding_AllocState();
+		}
+	}
+
+	// deletion function. Can be overrided
+	virtual void	Destroy()
+	{
+		if(pInstance)
+			delete pInstance; 
+		pInstance = NULL;
+	}
+};
+
+static CLuaStateSingleton g_luaState;
+
 OOLUA::Script& GetLuaState()
 {
-	return g_luastate;
+	static OOLUA::Script g_luaScriptState(g_luaState.GetInstancePtr());
+	return g_luaScriptState;
 }
 
 class CLCollisionData

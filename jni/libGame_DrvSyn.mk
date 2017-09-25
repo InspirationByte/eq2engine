@@ -21,6 +21,7 @@ LOCAL_C_INCLUDES:= \
 	$(LOCAL_PATH)/shared_engine\
 	$(LOCAL_PATH)/shared_game\
 	$(LOCAL_PATH)/src_dependency/luajit/src\
+	$(LOCAL_PATH)/src_dependency/luautf8\
 	$(LOCAL_PATH)/src_dependency/Shiny/include
 
 LOCAL_SRC_FILES := \

@@ -195,16 +195,52 @@ bool LuaTableFuncRef::Call(int nArgs, int nRet, int nErrIndex/* = 0*/)
 
 //--------------------------------------------------------------------------------------------------
 
+static const luaL_Reg eqlua_lib_load[] = {
+	{ "",			luaopen_base },
+	{ LUA_LOADLIBNAME,	luaopen_package },
+	{ LUA_TABLIBNAME,	luaopen_table },
+	//{ LUA_IOLIBNAME,	luaopen_io },
+	//{ LUA_OSLIBNAME,	luaopen_os },
+	{ LUA_STRLIBNAME,	luaopen_string },
+	{ LUA_MATHLIBNAME,	luaopen_math },
+	//{ LUA_DBLIBNAME,	luaopen_debug },
+	{ LUA_BITLIBNAME,	luaopen_bit },
+#ifdef LUA_JITLIBNAME
+	{ LUA_JITLIBNAME,	luaopen_jit },
+#endif // LUA_JITLIBNAME
+	{ NULL,		NULL }
+};
+
+static const luaL_Reg eqlua_lib_preload[] = {
+#ifdef LUA_FFILIBNAME
+	{ LUA_FFILIBNAME,	luaopen_ffi },
+#endif
+	{ NULL,		NULL }
+};
+
 static void eqlua_open_libs(lua_State *L)
 {
-	LuaStackGuard s(L);
+	//LuaStackGuard s(L);
 
-	//luaopen_io(L);
-	//luaopen_base(L);
-	luaopen_table(L);
-	luaopen_string(L);
-	luaopen_math(L);
-	//luaopen_loadlib(L);
+	//luaL_openlibs(L);
+
+	const luaL_Reg *lib;
+	for (lib = eqlua_lib_load; lib->func; lib++)
+	{
+		lua_pushcfunction(L, lib->func);
+		lua_pushstring(L, lib->name);
+		lua_call(L, 1, 0);
+	}
+
+	luaL_findtable(L, LUA_REGISTRYINDEX, "_PRELOAD", sizeof(eqlua_lib_preload)/sizeof(eqlua_lib_preload[0])-1);
+
+	for (lib = eqlua_lib_preload; lib->func; lib++)
+	{
+		lua_pushcfunction(L, lib->func);
+		lua_setfield(L, -2, lib->name);
+	}
+
+	lua_pop(L, 1);
 }
 
 bool LuaBinding_LoadAndDoFile(lua_State* state, const char* filename, const char* pszFuncName)
@@ -362,6 +398,14 @@ int LuaErrorHandler(lua_State* L)
 	}
 
 	return 1;
+}
+
+lua_State* LuaBinding_AllocState()
+{
+	lua_State* state = luaL_newstate();
+	eqlua_open_libs(state);
+
+	return state;
 }
 
 void LuaBinding_Initialize(lua_State* state)
