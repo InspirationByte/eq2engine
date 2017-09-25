@@ -105,7 +105,7 @@ void CGameLevel::Cleanup()
 
 bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 {
-	IFile* pFile = g_fileSystem->Open(varargs("levels/%s.lev", levelname), "rb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open(varargs(LEVELS_PATH "%s.lev", levelname), "rb", SP_MOD);
 
 	if(!pFile)
 	{
@@ -431,7 +431,7 @@ void CGameLevel::LoadRegionAt(int regionIndex, IVirtualStream* stream)
 void CGameLevel::PreloadRegion(int x, int y)
 {
 	// open level file
-	IFile* pFile = g_fileSystem->Open(varargs("levels/%s.lev", m_levelName.c_str()), "rb", SP_MOD);
+	IFile* pFile = g_fileSystem->Open(varargs(LEVELS_PATH "%s.lev", m_levelName.c_str()), "rb", SP_MOD);
 
 	if(!pFile)
 		return;

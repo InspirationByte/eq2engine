@@ -4322,6 +4322,9 @@ bool CCar::HasAutoHandbrake() const
 
 void CCar::SetInfiniteMass( bool infMass )
 {
+	if(m_pPhysicsObject == nullptr)
+		return;
+
 	if(infMass)
 		m_pPhysicsObject->m_object->m_flags |= BODY_INFINITEMASS;
 	else

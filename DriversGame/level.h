@@ -20,6 +20,7 @@
 #include "imaging/ImageLoader.h"
 
 #define AI_NAVIGATION_GRID_SCALE	2
+#define LEVELS_PATH					"levels/"
 
 struct pathFindResult_t
 {

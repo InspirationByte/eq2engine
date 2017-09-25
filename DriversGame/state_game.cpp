@@ -49,7 +49,18 @@ enum EReplayScheduleType
 {
 	REPLAY_SCHEDULE_NONE = 0,
 	REPLAY_SCHEDULE_REPLAY,
-	REPLAY_SCHEDULE_DIRECTOR
+	REPLAY_SCHEDULE_DIRECTOR,
+
+	REPLAY_SCHEDULE_REPLAY_NORESTART,
+};
+
+enum EReplayMode
+{
+	REPLAY_MODE_NONE = 0,
+
+	REPLAY_MODE_QUICK_REPLAY,
+	REPLAY_MODE_STORED_REPLAY,
+	REPLAY_MODE_DEMO,
 };
 
 void Game_ShutdownSession(bool restart = false);
@@ -160,7 +171,26 @@ DECLARE_CMD(instantreplay, "Does instant replay (slowly). You can fetch to frame
 	Game_InstantReplay( replayTo );
 }
 
-DECLARE_CMD(start, "start a game with specified mission or level name", 0)
+void fnstart_variants(DkList<EqString>& list, const char* query)
+{
+	DKFINDDATA* findData = nullptr;
+	char* fileName = (char*)g_fileSystem->FindFirst(LEVELS_PATH "*.lev", &findData, SP_MOD);
+
+	if(fileName)
+	{
+		list.append(_Es(fileName).Path_Strip_Ext());
+
+		while(fileName = (char*)g_fileSystem->FindNext(findData))
+		{
+			if(!g_fileSystem->FindIsDirectory(findData))
+				list.append(_Es(fileName).Path_Strip_Ext());
+		}
+
+		g_fileSystem->FindClose(findData);
+	}
+}
+
+DECLARE_CMD_VARIANTS(start, "start a game with specified mission or level name", fnstart_variants, 0)
 {
 	if(CMD_ARGC == 0)
 		return;
@@ -321,11 +351,13 @@ CState_Game* g_State_Game = new CState_Game();
 
 CState_Game::CState_Game() : CBaseStateHandler()
 {
-	m_demoMode = false;
+	m_replayMode = REPLAY_MODE_NONE;
 	m_isGameRunning = false;
 	m_fade = 1.0f;
 	m_doLoadingFrames = 0;
 	m_missionScriptName = "defaultmission";
+	m_scheduledQuickReplay = REPLAY_SCHEDULE_NONE;
+	m_storedMissionStatus = MIS_STATUS_INGAME;
 
 	RegisterInputJoysticEssentials();
 }
@@ -340,7 +372,19 @@ void CState_Game::UnloadGame()
 	if(!g_pPhysics)
 		return;
 
+	if(!m_isGameRunning)
+		return;
+
 	m_isGameRunning = false;
+
+	// if it were recording, stop the replay and save last session
+	if( g_replayData->m_state == REPL_RECORDING )
+	{
+		g_replayData->Stop();
+
+		g_fileSystem->MakeDir(USERREPLAYS_PATH, SP_MOD);
+		g_replayData->SaveToFile(USERREPLAYS_PATH "_lastSession.rdat");
+	}
 
 	// renderer must be reset
 	g_pShaderAPI->Reset(STATE_RESET_ALL);
@@ -349,6 +393,8 @@ void CState_Game::UnloadGame()
 	g_pGameHUD->Cleanup();
 	g_pGameWorld->Cleanup();
 	
+	m_storedMissionStatus = MIS_STATUS_INGAME;
+
 	Game_ShutdownSession();
 
 	g_pPhysics->SceneShutdown();
@@ -384,17 +430,17 @@ void CState_Game::LoadGame()
 		Game_InitializeSession();
 		g_pause.SetBool(false);
 
-		if(m_scheduledQuickReplay > 0)
+		if(m_replayMode != REPLAY_MODE_STORED_REPLAY)
 		{
-			m_gameMenuName = "ReplayEndMenuStack";
-		}
-		else
-		{
-			if(g_pGameSession->GetSessionType() == SESSION_SINGLE)
+			int sessionType = g_pGameSession->GetSessionType();
+
+			if(sessionType == SESSION_SINGLE)
 				m_gameMenuName = "GameMenuStack";
-			else if(g_pGameSession->GetSessionType() == SESSION_NETWORK)
+			else if(sessionType == SESSION_NETWORK)
 				m_gameMenuName = "MPGameMenuStack";
 		}
+		else
+			m_gameMenuName = "ReplayEndMenuStack";
 	}
 	else
 	{
@@ -455,6 +501,12 @@ void CState_Game::QuickRestart(bool replay)
 	g_pGameHUD->Cleanup();
 	g_pGameWorld->Cleanup(false);
 	
+	// store mission status if we're going to replay
+	m_storedMissionStatus = g_pGameSession->GetMissionStatus();
+
+	if(m_replayMode != REPLAY_MODE_STORED_REPLAY)
+		m_replayMode = replay ? REPLAY_MODE_QUICK_REPLAY : REPLAY_MODE_NONE;
+
 	Game_ShutdownSession(true);
 
 	g_pGameWorld->Init();
@@ -468,11 +520,6 @@ void CState_Game::QuickRestart(bool replay)
 	Game_InitializeSession();
 
 	g_pause.SetBool(false);
-
-	//-------------------------
-
-	if(!replay)
-		SetupMenuStack( m_gameMenuName.c_str() );
 }
 
 void CState_Game::OnEnterSelection( bool isFinal )
@@ -496,6 +543,8 @@ void CState_Game::SetupMenuStack( const char* name )
 
 void CState_Game::OnMenuCommand( const char* command )
 {
+	int missionStatus = g_pGameSession->GetMissionStatus();
+
 	if(!stricmp(command, "continue"))
 	{
 		m_showMenu = false;
@@ -510,7 +559,8 @@ void CState_Game::OnMenuCommand( const char* command )
 		m_exitGame = false;
 		m_fade = 0.0f;
 
-		if(g_pGameSession->GetMissionStatus() == MIS_STATUS_INGAME)
+		// fail the game
+		if(missionStatus == MIS_STATUS_INGAME)
 			g_pGameSession->SignalMissionStatus(MIS_STATUS_FAILED, 0.0f);
 
 		m_scheduledRestart = true;
@@ -521,11 +571,9 @@ void CState_Game::OnMenuCommand( const char* command )
 		m_exitGame = false;
 		m_fade = 0.0f;
 
-		if(g_pGameSession->GetMissionStatus() == MIS_STATUS_INGAME && (g_replayData->m_state != REPL_PLAYING))
-		{
-			SetupMenuStack("MissionEndMenuStack");
+		// fail the game
+		if(missionStatus == MIS_STATUS_INGAME)
 			g_pGameSession->SignalMissionStatus(MIS_STATUS_FAILED, 0.0f);
-		}
 
 		m_scheduledQuickReplay = !stricmp(command, "goToDirector") ? REPLAY_SCHEDULE_DIRECTOR : REPLAY_SCHEDULE_REPLAY;
 	}
@@ -559,8 +607,6 @@ bool CState_Game::DoLoadingFrame()
     if(!g_pGameSession)
         return false;	// no game session causes a real problem
 
-	SetupMenuStack( m_gameMenuName.c_str() );
-
 	return true;
 }
 
@@ -568,7 +614,7 @@ bool CState_Game::DoLoadingFrame()
 // @to - used to transfer data
 void CState_Game::OnLeave( CBaseStateHandler* to )
 {
-	m_demoMode = false;
+	m_replayMode = REPLAY_MODE_NONE;
 
 	if(!g_pGameSession)
 		return;
@@ -598,19 +644,45 @@ void CState_Game::SetPauseState( bool state )
 		m_showMenu = state;
 
 	if(m_showMenu)
+	{
 		m_selection = 0;
+
+		int missionStatus = (m_replayMode == REPLAY_MODE_QUICK_REPLAY) ? m_storedMissionStatus : g_pGameSession->GetMissionStatus();
+
+		if(m_replayMode <= REPLAY_MODE_QUICK_REPLAY)
+		{
+			if(missionStatus == MIS_STATUS_SUCCESS)
+			{
+				SetupMenuStack("MissionEndMenuStack");	// MissionSuccessMenuStack
+			}
+			else if(missionStatus == MIS_STATUS_FAILED)
+			{
+				SetupMenuStack("MissionEndMenuStack");	// MissionFailedMenuStack
+			}
+			else
+				SetupMenuStack( m_gameMenuName.c_str() );
+		}
+		else
+			SetupMenuStack( m_gameMenuName.c_str() );
+	}
 
 	// update pause state
 	UpdatePauseState();
 }
 
-void CState_Game::StartReplay( const char* path )
+bool CState_Game::StartReplay( const char* path, bool demoMode )
 {
 	if(g_replayData->LoadFromFile( path ))
 	{
 		ChangeState( this );
-		m_scheduledQuickReplay = REPLAY_SCHEDULE_REPLAY;
+		m_scheduledQuickReplay = REPLAY_SCHEDULE_REPLAY_NORESTART;
+
+		m_replayMode = demoMode ? REPLAY_MODE_DEMO : REPLAY_MODE_STORED_REPLAY;
+
+		return true;
 	}
+
+	return false;
 }
 
 void CState_Game::DrawLoadingScreen()
@@ -675,7 +747,7 @@ bool CState_Game::Update( float fDt )
 
 	if(gameDoneTimedOut && !m_exitGame)
 	{
-		if(m_demoMode)
+		if(m_replayMode == REPLAY_MODE_DEMO)
 		{
 			m_exitGame = true;
 			m_fade = 0.0f;
@@ -685,8 +757,6 @@ bool CState_Game::Update( float fDt )
 		{
 			// set other menu
 			m_showMenu = !m_scheduledRestart && !m_scheduledQuickReplay;
-
-			SetupMenuStack("MissionEndMenuStack");
 		}
 	}
 
@@ -703,7 +773,7 @@ bool CState_Game::Update( float fDt )
 	//
 	DoGameFrame( fGameFrameDt );
 
-	if(m_demoMode)
+	if(m_replayMode == REPLAY_MODE_DEMO)
 	{
 		materials->Setup2D(screenSize.x,screenSize.y);
 
@@ -721,6 +791,12 @@ bool CState_Game::Update( float fDt )
 
 	if(m_exitGame || m_scheduledRestart || m_scheduledQuickReplay)
 	{
+		if(m_scheduledQuickReplay == REPLAY_SCHEDULE_REPLAY_NORESTART)
+		{
+			m_scheduledQuickReplay = REPLAY_SCHEDULE_NONE;
+			return !m_exitGame;
+		}
+
 		ColorRGBA blockCol(0.0,0.0,0.0,m_fade);
 
 		Vertex2D_t tmprect1[] = { MAKETEXQUAD(0, 0,screenSize.x, screenSize.y, 0) };
@@ -1097,7 +1173,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 	if(!m_isGameRunning)
 		return;
 
-	if( m_demoMode )
+	if( m_replayMode == REPLAY_MODE_DEMO )
 	{
 		if(m_fade <= 0.0f)
 		{

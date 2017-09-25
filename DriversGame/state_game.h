@@ -47,7 +47,7 @@ public:
 	int			GetPauseMode() const;
 	void		SetPauseState( bool pause );
 
-	void		StartReplay( const char* path );
+	bool		StartReplay( const char* path, bool demoMode );
 
 	void		GetMouseCursorProperties(bool &visible, bool& centered);
 
@@ -62,8 +62,6 @@ public:
 	void		StopStreams();
 
 	void		QuickRestart(bool replay);
-
-	void		SetDemoMode(bool mode) {m_demoMode = mode;}
 
 	bool		IsGameRunning() {return m_isGameRunning;}
 	
@@ -99,13 +97,15 @@ protected:
 
 	bool		m_loadingError;
 
-	bool		m_demoMode;
+	int			m_replayMode;
 	bool		m_exitGame;
 
 	bool		m_showMenu;
 
 	bool		m_scheduledRestart;
 	int			m_scheduledQuickReplay;
+
+	int			m_storedMissionStatus;
 
 	EqString	m_gameMenuName;
 

@@ -900,7 +900,7 @@ void CBuildingLayerList::DeleteCollection(buildLayerColl_t* coll)
 
 void CBuildingLayerList::LoadLayerCollections( const char* levelName )
 {
-	EqString folderPath = varargs("levels/%s_editor",levelName);
+	EqString folderPath = varargs(LEVELS_PATH "%s_editor",levelName);
 
 	KeyValues kvDefs;
 	if(!kvDefs.LoadFromFile(_Es(folderPath + "/buildingTemplates.def").c_str()))
@@ -940,7 +940,7 @@ void CBuildingLayerList::LoadLayerCollections( const char* levelName )
 
 void CBuildingLayerList::SaveLayerCollections( const char* levelName )
 {
-	EqString folderPath = varargs("levels/%s_editor",levelName);
+	EqString folderPath = varargs(LEVELS_PATH "%s_editor",levelName);
 
 	// make folder <levelName>_editor and put this stuff there
 	g_fileSystem->MakeDir(folderPath.c_str(), SP_MOD);

@@ -44,7 +44,8 @@ protected:
 	int			m_codePos;
 	int			m_codeKeysEntered[16];
 
-	int			m_demoId;
+	int					m_demoId;
+	DkList<EqString>	m_demoList;
 };
 
 extern CState_Title* g_State_Title;

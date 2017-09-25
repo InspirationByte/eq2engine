@@ -935,16 +935,16 @@ bool CReplayData::LoadFromFile(const char* filename)
 	// load mission, level, set environment
 	m_state = REPL_INIT_PLAYBACK;
 
-	g_State_Game->UnloadGame();
+	//g_State_Game->UnloadGame();
+
+	g_pGameWorld->SetLevelName(hdr.levelname);
+	g_pGameWorld->SetEnvironmentName(hdr.envname);
 
 	if(!g_State_Game->LoadMissionScript( hdr.missionscript ))
 	{
 		MsgError("ERROR - Mission script '%s' for replay '%s'\n", hdr.missionscript, filename);
 		return false;
 	}
-
-	g_pGameWorld->SetLevelName(hdr.levelname);
-	g_pGameWorld->SetEnvironmentName(hdr.envname);
 
 	return true;
 }
@@ -1155,7 +1155,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 		}
 		case REPLAY_EVENT_END:
 		{
-			g_pGameSession->SignalMissionStatus(MIS_STATUS_SUCCESS, 0.0f);
+			g_pGameSession->SignalMissionStatus(MIS_STATUS_REPLAY_END, 0.0f);
 			//Stop();
 			break;
 		}

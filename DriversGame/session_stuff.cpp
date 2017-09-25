@@ -12,7 +12,7 @@ CReplayData*			g_replayData = &s_replayData;
 
 bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs );
 
-DECLARE_CMD(car_loosehubcaps, "looses hubcaps on current car", 0)
+DECLARE_CMD(car_loosehubcaps, "looses hubcaps on current car", CV_CHEAT)
 {
 	if(g_pGameSession && g_pGameSession->GetPlayerCar())
 	{
@@ -23,7 +23,7 @@ DECLARE_CMD(car_loosehubcaps, "looses hubcaps on current car", 0)
 	}
 }
 
-DECLARE_CMD(car_reload, "reload current car", 0)
+DECLARE_CMD(car_reload, "reload current car", CV_CHEAT)
 {
 	if(g_pGameSession && g_pGameSession->GetPlayerCar())
 	{
@@ -81,16 +81,35 @@ DECLARE_CMD(save, "Saves current replay", 0)
 
 	if(g_pGameSession)
 	{
-		g_fileSystem->MakeDir("UserReplays", SP_MOD);
-		g_replayData->SaveToFile( ("UserReplays/" + CMD_ARGV(0)).c_str() );
+		g_fileSystem->MakeDir(USERREPLAYS_PATH, SP_MOD);
+		g_replayData->SaveToFile( (USERREPLAYS_PATH + CMD_ARGV(0)).c_str() );
 	}
 }
 
-DECLARE_CMD(replay, "starts specified replay", 0)
+void fnreplay_variants(DkList<EqString>& list, const char* query)
+{
+	DKFINDDATA* findData = nullptr;
+	char* fileName = (char*)g_fileSystem->FindFirst(USERREPLAYS_PATH "*.rdat", &findData, SP_MOD);
+
+	if(fileName)
+	{
+		list.append(_Es(fileName).Path_Strip_Ext());
+
+		while(fileName = (char*)g_fileSystem->FindNext(findData))
+		{
+			if(!g_fileSystem->FindIsDirectory(findData))
+				list.append(_Es(fileName).Path_Strip_Ext());
+		}
+
+		g_fileSystem->FindClose(findData);
+	}
+}
+
+DECLARE_CMD_VARIANTS(replay, "starts specified replay", fnreplay_variants, 0)
 {
 	if(CMD_ARGC > 0)
 	{
-		g_State_Game->StartReplay( ("UserReplays/" + CMD_ARGV(0)).c_str() );
+		g_State_Game->StartReplay( (USERREPLAYS_PATH + CMD_ARGV(0)).c_str(), false );
 	}
 	else
 	{

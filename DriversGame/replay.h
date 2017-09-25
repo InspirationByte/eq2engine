@@ -29,6 +29,8 @@ TODO:
 #define VEHICLEREPLAY_VERSION	4
 #define CAMERAREPLAY_VERSION	1
 
+#define USERREPLAYS_PATH "UserReplays/"
+
 struct replaycamera_s
 {
 	int				startTick;	// camera start tick

@@ -193,7 +193,15 @@ struct DKMODULE
 
 struct DKFINDDATA
 {
+	int searchPathId;
+	EqString wildcard;
 
+#ifdef _WIN32
+	WIN32_FIND_DATAA	wfd;
+	HANDLE				fileHandle;
+#else
+
+#endif // _WIN32
 };
 
 extern bool g_bPrintLeaksOnShutdown;
@@ -885,17 +893,149 @@ void CFileSystem::ExtractFile(const char* filename, bool onlyNonExist)
 // opens directory for search props
 const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPath)
 {
+	ASSERT(findData != nullptr);
+
+	if(findData == nullptr)
+		return nullptr;
+
+	DKFINDDATA* newFind = new DKFINDDATA;
+	*findData = newFind;
+
+	newFind->searchPathId = -1;
+	newFind->wildcard = wildcard;
+	newFind->wildcard.Path_FixSlashes();
+
+	m_findDatas.append(newFind);
+
+	EqString fsBaseDir;
+	
+	if(searchPath == SP_DATA)
+	{
+		fsBaseDir = m_dataDir;
+	}
+	else if(searchPath == SP_MOD)
+	{
+		newFind->searchPathId = 0;
+		fsBaseDir = m_directories[0].path;
+	}
+
+	EqString searchWildcard( CombinePath(2, fsBaseDir.c_str(), newFind->wildcard.c_str()) );
+	
+#ifdef _WIN32
+	newFind->fileHandle = ::FindFirstFileA(searchWildcard.c_str(), &newFind->wfd);
+
+	if(newFind->fileHandle != NULL)
+		return newFind->wfd.cFileName;
+#else
+
+#endif // _WIN32
+
+	if(newFind->searchPathId != -1)
+	{
+		newFind->searchPathId++;
+
+		// try reinitialize
+		while(newFind->searchPathId < m_directories.numElem())
+		{
+			fsBaseDir = m_directories[newFind->searchPathId].path;
+
+			searchWildcard = CombinePath(2, fsBaseDir.c_str(), newFind->wildcard.c_str());
+
+#ifdef _WIN32
+			newFind->fileHandle = ::FindFirstFileA(searchWildcard.c_str(), &newFind->wfd);
+
+			if(newFind->fileHandle != NULL)
+				return newFind->wfd.cFileName;
+#else
+
+#endif // _WIN32
+
+			newFind->searchPathId++;
+		}
+	}
+
+	// delete if no luck
+	delete newFind;
+	m_findDatas.remove(newFind);
+
 	return nullptr;
 }
 
-const char* CFileSystem::FindNext(DKFINDDATA* findData)
+const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 {
-	return nullptr;
+	if(!findData)
+		return nullptr;
+
+#ifdef _WIN32
+	if(!::FindNextFileA(findData->fileHandle, &findData->wfd))
+#else
+#error "POSIX FindNextFile"
+#endif // _WIN32
+	{
+		if(findData->searchPathId == -1)
+			return nullptr;
+
+		findData->searchPathId++;
+
+		// try reinitialize
+		while(findData->searchPathId < m_directories.numElem())
+		{
+			EqString fsBaseDir(m_directories[findData->searchPathId].path);
+
+			EqString searchWildcard( CombinePath(2, fsBaseDir.c_str(), findData->wildcard.c_str()) );
+
+#ifdef _WIN32
+			// close existing find
+			::FindClose(findData->fileHandle);
+
+			// tre init new
+			findData->fileHandle = ::FindFirstFileA(searchWildcard.c_str(), &findData->wfd);
+
+			if(findData->fileHandle != NULL)
+				return findData->wfd.cFileName;
+#else
+
+#endif // _WIN32
+
+			findData->searchPathId++;
+		}
+
+		return nullptr;
+	}
+
+#ifdef _WIN32
+	return findData->wfd.cFileName;
+#else
+
+#endif // _WIN32
 }
 
 void CFileSystem::FindClose(DKFINDDATA* findData)
 {
+	if(!findData)
+		return;
 
+	if(m_findDatas.remove(findData))
+	{
+#ifdef _WIN32
+		::FindClose(findData->fileHandle);
+#else
+
+#endif // _WIN32
+		delete findData;
+	}
+}
+
+bool CFileSystem::FindIsDirectory(DKFINDDATA* findData) const
+{
+	if(!findData)
+		return false;
+
+#ifdef _WIN32
+	return (findData->wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+#else
+	return false;
+#endif // _WIN32
 }
 
 // loads module

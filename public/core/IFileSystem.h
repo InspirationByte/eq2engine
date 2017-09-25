@@ -101,8 +101,9 @@ public:
 
 	// opens directory for search props
 	virtual const char*		FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPath) = 0;
-	virtual const char*		FindNext(DKFINDDATA* findData) = 0;
+	virtual const char*		FindNext(DKFINDDATA* findData) const = 0;
 	virtual void			FindClose(DKFINDDATA* findData) = 0;
+	virtual bool			FindIsDirectory(DKFINDDATA* findData) const = 0;
 
 	//------------------------------------------------------------
 	// Dynamic library stuff

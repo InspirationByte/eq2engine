@@ -16,8 +16,6 @@
 
 #include "KeyBinding/InputCommandBinder.h"
 
-#define NUM_DEMO_REPLAYS 2
-
 CState_Title::CState_Title()
 {
 	m_titleTexture = NULL;
@@ -41,6 +39,22 @@ void CState_Title::OnEnter( CBaseStateHandler* from )
 	memset(m_codeKeysEntered, 0, sizeof(m_codeKeysEntered));
 	m_codePos = 0;
 	
+	m_demoList.clear();
+	m_demoId = 0;
+
+	KeyValues kvs;
+	if(kvs.LoadFromFile("scripts/rolling_demo.txt"))
+	{
+		for(int i = 0; i < kvs.GetRootSection()->keys.numElem(); i++)
+		{
+			kvkeybase_t* sect = kvs.GetRootSection()->keys[i];
+
+			if(!stricmp(sect->GetName(), "addReplay"))
+				m_demoList.append(KV_GetValueString(sect));
+		}
+
+		// TODO: use randomUserReplays
+	}
 
 	m_actionTimeout = 10.0f;
 	m_fade = 0.0f;
@@ -65,7 +79,7 @@ void CState_Title::OnLeave( CBaseStateHandler* to )
 
 bool CState_Title::Update( float fDt )
 {
-	if(!m_goesFromTitle)
+	if(!m_goesFromTitle && m_demoList.numElem() > 0)
 		m_actionTimeout -= fDt;
 
 	if( m_goesFromTitle || m_actionTimeout <= 0.0f )
@@ -74,15 +88,11 @@ bool CState_Title::Update( float fDt )
 
 		if(m_actionTimeout <= 0.0f && m_fade <= 0.0f)
 		{
-			if(g_replayData->LoadFromFile( varargs("demoReplays/demo%d", m_demoId+1) ))
+			if(m_demoId >= m_demoList.numElem())
+				m_demoId = 0;
+
+			if(g_State_Game->StartReplay( m_demoList[m_demoId].c_str(), true))
 			{
-				m_demoId++;
-
-				if(m_demoId >= NUM_DEMO_REPLAYS)
-					m_demoId = 0;
-
-				g_State_Game->SetDemoMode(true);
-				SetNextState(g_State_Game);
 				return false;
 			}
 			else
@@ -91,6 +101,8 @@ bool CState_Title::Update( float fDt )
 				m_fade = 0.0f;
 				m_goesFromTitle = false;
 			}
+
+			m_demoId++;
 		}
 	}
 	else

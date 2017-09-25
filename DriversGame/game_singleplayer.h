@@ -26,7 +26,9 @@ enum EMissionStatus
 {
 	MIS_STATUS_INGAME = 0,
 	MIS_STATUS_SUCCESS,
-	MIS_STATUS_FAILED
+	MIS_STATUS_FAILED,
+
+	MIS_STATUS_REPLAY_END
 };
 
 //--------------------------------------------------------------------------------------

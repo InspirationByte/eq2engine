@@ -186,14 +186,6 @@ void CGameSession::FinalizeMissionManager()
 
 void CGameSession::Shutdown()
 {
-	if( g_replayData->m_state == REPL_RECORDING )
-	{
-		g_replayData->Stop();
-
-		g_fileSystem->MakeDir("UserReplays", SP_MOD);
-		g_replayData->SaveToFile("UserReplays/_lastSession.rdat");
-	}
-
 	g_pAIManager->Shutdown();
 
 	for(int i = 0; i < m_carEntries.numElem(); i++)
@@ -339,6 +331,9 @@ void CGameSession::Update( float fDt )
 	}
 
 	CCar* player_car = GetPlayerCar();
+
+	if(!g_pGameWorld->IsValidObject(player_car))
+		player_car = nullptr;
 
 	if (GetLeadCar())
 		g_pGameWorld->m_level.QueryNearestRegions(GetLeadCar()->GetOrigin(), false);

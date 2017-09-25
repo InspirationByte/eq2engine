@@ -60,6 +60,9 @@ typedef va_list				__va_list;
 
 #endif // ANDROID
 
+// combines paths
+EqString	CombinePath(int num, ...);
+
 // fixes slashes in the directory name
 void		FixSlashes( char* str );
 

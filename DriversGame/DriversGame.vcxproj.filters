@@ -267,9 +267,6 @@
     <ClCompile Include="..\shared_engine\Audio\alsnd_stream.cpp">
       <Filter>Файлы исходного кода\EngineLib\Audio</Filter>
     </ClCompile>
-    <ClCompile Include="session_stuff.cpp">
-      <Filter>Файлы исходного кода\Game\States</Filter>
-    </ClCompile>
     <ClCompile Include="state_title.cpp">
       <Filter>Файлы исходного кода\Game\States</Filter>
     </ClCompile>
@@ -404,6 +401,9 @@
     </ClCompile>
     <ClCompile Include="..\public\DataTable.cpp">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="session_stuff.cpp">
+      <Filter>Файлы исходного кода\Game\Sessions</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -646,9 +646,6 @@
     <ClInclude Include="..\public\luabinding\LuaBinding_Math.h">
       <Filter>Файлы исходного кода\Game\Lua</Filter>
     </ClInclude>
-    <ClInclude Include="session_stuff.h">
-      <Filter>Файлы исходного кода\Game\States</Filter>
-    </ClInclude>
     <ClInclude Include="state_title.h">
       <Filter>Файлы исходного кода\Game\States</Filter>
     </ClInclude>
@@ -792,6 +789,9 @@
     </ClInclude>
     <ClInclude Include="AIManipulators.h">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="session_stuff.h">
+      <Filter>Файлы исходного кода\Game\Sessions</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
