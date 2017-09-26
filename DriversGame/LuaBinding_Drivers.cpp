@@ -20,7 +20,7 @@ class CLuaStateSingleton : public CSingletonAbstract<lua_State>
 {
 public:
 	// initialization function. Can be overrided
-	virtual void	Initialize()
+	void Initialize()
 	{ 
 		if(!pInstance)
 		{
@@ -29,10 +29,13 @@ public:
 	}
 
 	// deletion function. Can be overrided
-	virtual void	Destroy()
+	void Destroy()
 	{
 		if(pInstance)
-			delete pInstance; 
+		{
+			lua_gc(pInstance, LUA_GCCOLLECT, 0);
+			lua_close(pInstance);
+		}
 		pInstance = NULL;
 	}
 };

@@ -359,6 +359,8 @@ CState_Game::CState_Game() : CBaseStateHandler()
 	m_scheduledQuickReplay = REPLAY_SCHEDULE_NONE;
 	m_storedMissionStatus = MIS_STATUS_INGAME;
 
+	m_gameMenuName = "Ingame";
+
 	RegisterInputJoysticEssentials();
 }
 
@@ -435,12 +437,12 @@ void CState_Game::LoadGame()
 			int sessionType = g_pGameSession->GetSessionType();
 
 			if(sessionType == SESSION_SINGLE)
-				m_gameMenuName = "GameMenuStack";
+				m_gameMenuName = "Ingame";
 			else if(sessionType == SESSION_NETWORK)
-				m_gameMenuName = "MPGameMenuStack";
+				m_gameMenuName = "IngameMP";
 		}
 		else
-			m_gameMenuName = "ReplayEndMenuStack";
+			m_gameMenuName = "Replay";
 	}
 	else
 	{
@@ -492,8 +494,12 @@ void CState_Game::QuickRestart(bool replay)
 
 	m_isGameRunning = false;
 	m_exitGame = false;
+	m_showMenu = false;
+
 	m_fade = 1.0f;
 
+	g_pause.SetBool(false);
+	
 	// renderer must be reset
 	g_pShaderAPI->Reset(STATE_RESET_ALL);
 	g_pShaderAPI->Apply();
@@ -518,8 +524,6 @@ void CState_Game::QuickRestart(bool replay)
 	g_pGameHUD->Init();
 
 	Game_InitializeSession();
-
-	g_pause.SetBool(false);
 }
 
 void CState_Game::OnEnterSelection( bool isFinal )
@@ -534,11 +538,21 @@ void CState_Game::OnEnterSelection( bool isFinal )
 
 void CState_Game::SetupMenuStack( const char* name )
 {
-	OOLUA::Table mainMenuStack;
-	if(!OOLUA::get_global(GetLuaState(), name, mainMenuStack))
-		WarningMsg("Failed to get %s table (DrvSynMenus.lua ???)!\n", name);
-	else
-		SetMenuObject( mainMenuStack );
+	OOLUA::Table menuStacks;
+	if(!OOLUA::get_global(GetLuaState(), "CurrentGameMenuTable", menuStacks))
+	{
+		MsgError("Failed to get CurrentGameMenuTable table, No game menus available!\n", name);
+		return;
+	}
+
+	OOLUA::Table menuStackObject;
+	if(!menuStacks.safe_at(name, menuStackObject))
+	{
+		MsgWarning("Menu '%s' not found in CurrentGameMenuTable table!\n", name);
+		return;
+	}
+
+	SetMenuObject(menuStackObject);
 }
 
 void CState_Game::OnMenuCommand( const char* command )
@@ -653,11 +667,11 @@ void CState_Game::SetPauseState( bool state )
 		{
 			if(missionStatus == MIS_STATUS_SUCCESS)
 			{
-				SetupMenuStack("MissionEndMenuStack");	// MissionSuccessMenuStack
+				SetupMenuStack("MissionSuccess");
 			}
 			else if(missionStatus == MIS_STATUS_FAILED)
 			{
-				SetupMenuStack("MissionEndMenuStack");	// MissionFailedMenuStack
+				SetupMenuStack("MissionFailed");
 			}
 			else
 				SetupMenuStack( m_gameMenuName.c_str() );
@@ -756,7 +770,7 @@ bool CState_Game::Update( float fDt )
 		else if(!m_showMenu && !replayDirectorMode)
 		{
 			// set other menu
-			m_showMenu = !m_scheduledRestart && !m_scheduledQuickReplay;
+			SetPauseState(!m_scheduledRestart && !m_scheduledQuickReplay);
 		}
 	}
 

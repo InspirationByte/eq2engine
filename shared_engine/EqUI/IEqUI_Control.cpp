@@ -21,11 +21,12 @@ namespace equi
 {
 
 IUIControl::IUIControl()
-	: m_visible(false), m_selfVisible(true), m_enabled(true), m_parent(NULL), 
+	: m_visible(true), m_selfVisible(true), m_enabled(true), m_parent(NULL), 
 	m_font(nullptr), m_fontScale(1.0f), m_sizeDiff(0), m_sizeDiffPerc(1.0f), 
+	m_position(0),m_size(25),
 	m_scaling(UI_SCALING_NONE), m_anchors(0), m_alignment(UI_BORDER_LEFT | UI_BORDER_TOP)
 {
-
+	m_label = "Control";
 }
 
 IUIControl::~IUIControl()
@@ -43,23 +44,23 @@ void IUIControl::SetLabel(const char* pszLabel)
 	m_label = LocalizedString(pszLabel);
 }
 
-void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
+void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 {
-	ClearChilds(true);
+	if(!noClear)
+		ClearChilds(true);
 
 	if(!stricmp(sec->GetName(), "child"))
 		SetName(KV_GetValueString(sec, 1, ""));
 	else
 		SetName(KV_GetValueString(sec, 0, ""));
 
+	SetLabel(KV_GetValueString(sec->FindKeyBase("label"), 0, GetLabel()));
 
-	SetLabel(KV_GetValueString(sec->FindKeyBase("label"), 0, "Control"));
+	m_position = KV_GetIVector2D(sec->FindKeyBase("position"), 0, m_position);
+	m_size = KV_GetIVector2D(sec->FindKeyBase("size"), 0, m_size);
 
-	m_position = KV_GetIVector2D(sec->FindKeyBase("position"), 0, 25);
-	m_size = KV_GetIVector2D(sec->FindKeyBase("size"), 0, 128);
-
-	m_visible = KV_GetValueBool(sec->FindKeyBase("visible"), 0, true);
-	m_selfVisible = KV_GetValueBool(sec->FindKeyBase("selfvisible"), 0, true);
+	m_visible = KV_GetValueBool(sec->FindKeyBase("visible"), 0, m_visible);
+	m_selfVisible = KV_GetValueBool(sec->FindKeyBase("selfvisible"), 0, m_selfVisible);
 
 	m_font = nullptr;
 	m_sizeDiff = 0;
@@ -75,7 +76,7 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 		m_font = g_fontCache->GetFont(KV_GetValueString(font), KV_GetValueInt(font, 1, 20), 0, false);
 	}
 
-	m_fontScale = KV_GetVector2D(sec->FindKeyBase("fontScale"));
+	m_fontScale = KV_GetVector2D(sec->FindKeyBase("fontScale"), 0, m_fontScale);
 
 	kvkeybase_t* command = sec->FindKeyBase("command");
 
@@ -150,20 +151,30 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec )
 	for(int i = 0; i < sec->keys.numElem(); i++)
 	{
 		kvkeybase_t* csec = sec->keys[i];
+
 		if(!csec->IsSection())
 			continue;
 
 		if(!stricmp(csec->GetName(), "child"))
 		{
-			const char* controlClass = KV_GetValueString(csec, 0, "");
+			const char* childClass = KV_GetValueString(csec, 0, "InvalidClass");
+			const char* childName = KV_GetValueString(csec, 1, "Invalid");
 
-			IUIControl* control = equi::Manager->CreateElement( controlClass );
+			// try find existing child
+			IUIControl* control = FindChild(childName);
 
+			// if nothing, create new one
+			if(!control || control && stricmp(control->GetClassname(), childClass))
+			{
+				control = equi::Manager->CreateElement( childClass );
+				AddChild( control );
+			}
+
+			// if still no luck (wrong class name), we abort
 			if(!control)
 				continue;
 
-			control->InitFromKeyValues(csec);
-			AddChild( control );
+			control->InitFromKeyValues(csec, noClear);
 		}
 	}
 }

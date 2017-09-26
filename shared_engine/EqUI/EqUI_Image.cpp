@@ -25,11 +25,13 @@ Image::~Image()
 	materials->FreeMaterial(m_material);
 }
 
-void Image::InitFromKeyValues( kvkeybase_t* sec )
+void Image::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 {
-	BaseClass::InitFromKeyValues(sec);
+	BaseClass::InitFromKeyValues(sec, noClear);
 
-	SetMaterial(KV_GetValueString(sec->FindKeyBase("path"), 0, "ui/default"));
+	const char* materialPath = KV_GetValueString(sec->FindKeyBase("path"), 0, "ui/default");
+
+	SetMaterial( materialPath );
 }
 
 void Image::SetMaterial(const char* materialName)

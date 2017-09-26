@@ -56,7 +56,7 @@ public:
 	IUIControl();
 	virtual ~IUIControl();
 
-	virtual void				InitFromKeyValues( kvkeybase_t* sec = NULL );
+	virtual void				InitFromKeyValues( kvkeybase_t* sec, bool noClear = false );
 
 	// name and type
 	const char*					GetName() const						{return m_name.c_str();}

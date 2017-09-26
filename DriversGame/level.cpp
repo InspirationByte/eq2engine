@@ -671,7 +671,7 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 	}
 
 	//
-	// load new objects from <levname>_objects.txt
+	// load new objects from <levname>_objects.def
 	//
 	for(int i = 0; i < kvDefs->keys.numElem(); i++)
 	{

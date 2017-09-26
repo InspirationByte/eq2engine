@@ -30,7 +30,7 @@ public:
 	Panel();
 	~Panel();
 
-	virtual void			InitFromKeyValues( kvkeybase_t* sec = NULL );
+	virtual void			InitFromKeyValues( kvkeybase_t* sec, bool noClear );
 
 	virtual void			Hide();
 

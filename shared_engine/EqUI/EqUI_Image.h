@@ -25,7 +25,7 @@ public:
 	Image();
 	virtual ~Image();
 
-	void			InitFromKeyValues( kvkeybase_t* sec );
+	void			InitFromKeyValues( kvkeybase_t* sec, bool noClear );
 
 	void			SetMaterial(const char* materialName);
 

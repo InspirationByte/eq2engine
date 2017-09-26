@@ -157,6 +157,7 @@ struct kvkeybase_t
 
 	kvkeybase_t*			Clone() const;
 	void					CopyTo(kvkeybase_t* dest) const;
+	void					CopyValuesTo(kvkeybase_t* dest) const;
 
 	// adds value to key
 	void					AddValue(const char* value);

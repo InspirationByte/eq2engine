@@ -40,7 +40,7 @@ Panel::~Panel()
 
 }
 
-void Panel::InitFromKeyValues( kvkeybase_t* sec )
+void Panel::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 {
 	// initialize from scheme
 	kvkeybase_t* mainSec = sec->FindKeyBase("panel");
@@ -48,11 +48,12 @@ void Panel::InitFromKeyValues( kvkeybase_t* sec )
 	if(mainSec == NULL)
 		mainSec = sec->FindKeyBase("child");
 
-	BaseClass::InitFromKeyValues(mainSec);
+	BaseClass::InitFromKeyValues(mainSec, noClear);
 
-	m_windowControls = KV_GetValueBool(mainSec->FindKeyBase("window"), 0, false);
-	m_visible = KV_GetValueBool(mainSec->FindKeyBase("visible"), 0, !m_windowControls);
-	m_screenOverlay = KV_GetValueBool(mainSec->FindKeyBase("screenoverlay"), 0, false);
+	m_windowControls = KV_GetValueBool(mainSec->FindKeyBase("window"), 0, m_windowControls);
+	m_visible = !m_windowControls;
+	m_visible = KV_GetValueBool(mainSec->FindKeyBase("visible"), 0, m_visible);
+	m_screenOverlay = KV_GetValueBool(mainSec->FindKeyBase("screenoverlay"), 0, m_screenOverlay);
 	m_grabbed = false;
 	m_closeButton = nullptr;
 	m_labelCtrl = nullptr;

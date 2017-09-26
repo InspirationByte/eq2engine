@@ -343,11 +343,18 @@ kvkeybase_t* kvkeybase_t::Clone() const
 
 void kvkeybase_t::CopyTo(kvkeybase_t* dest) const
 {
-	for(int i = 0; i < values.numElem(); i++)
-		dest->AddValue(values[i]);
+	CopyValuesTo(dest);
 
 	for(int i = 0; i < keys.numElem(); i++)
 		dest->AddKey(keys[i]->GetName(), keys[i]->Clone());
+}
+
+void kvkeybase_t::CopyValuesTo(kvkeybase_t* dest) const
+{
+	dest->ClearValues();
+
+	for(int i = 0; i < values.numElem(); i++)
+		dest->AddValue(values[i]);
 }
 
 void kvkeybase_t::SetValueFrom(kvkeybase_t* pOther)
@@ -803,7 +810,8 @@ void kvkeybase_t::MergeFrom(const kvkeybase_t* base, bool recursive)
 		kvkeybase_t* src = base->keys[i];
 
 		kvkeybase_t* dst = AddKeyBase(src->name);
-		src->CopyTo(dst);
+
+		src->CopyValuesTo(dst);
 
 		// go to next in hierarchy
 		if(recursive)

@@ -77,6 +77,24 @@ void CDrvSynHUDManager::Init()
 	//SetHudScheme( DEFAULT_HUD_SCHEME );
 }
 
+void InitHUDBaseKeyValues_r(kvkeybase_t* hudKVs, kvkeybase_t* baseKVs)
+{
+	for(int i = 0; i < baseKVs->keys.numElem(); i++)
+	{
+		kvkeybase_t* src = baseKVs->keys[i];
+
+		kvkeybase_t* dst = hudKVs->FindKeyBase(src->name);
+
+		if(dst == NULL)
+			dst = hudKVs->AddKeyBase(src->name);
+
+		src->CopyTo(dst);
+
+		// go to next in hierarchy
+		InitHUDBaseKeyValues_r(src, dst);
+	}
+}
+
 void CDrvSynHUDManager::SetHudScheme(const char* name)
 {
 	if(!m_schemeName.CompareCaseIns(name))
@@ -85,17 +103,42 @@ void CDrvSynHUDManager::SetHudScheme(const char* name)
 	MsgInfo("Loading HUD scheme '%s'...\n", name);
 
 	m_schemeName = name;
-
-	KeyValues gameHudKvs;
+	EqString baseHudPath(m_schemeName.Path_Strip_Name());
 
 	m_hudDamageBar = nullptr;
 	m_hudFelonyBar = nullptr;
 	m_hudMap = nullptr;
 
-	if(gameHudKvs.LoadFromFile(m_schemeName.c_str(), SP_MOD))
-		m_hudLayout->InitFromKeyValues(gameHudKvs.GetRootSection());
+	kvkeybase_t* hudKvs = KV_LoadFromFile(m_schemeName.c_str(), SP_MOD);
+	kvkeybase_t* baseHud = nullptr;
+
+	if(hudKvs)
+	{
+		kvkeybase_t* hudBasePath = hudKvs->FindKeyBase("base");
+		if(hudBasePath)
+		{
+			EqString hudPath(CombinePath(2, baseHudPath.c_str(), KV_GetValueString(hudBasePath)));
+			baseHud = KV_LoadFromFile(hudPath.c_str(), SP_MOD);
+
+			if(!baseHud)
+			{
+				MsgError("Can't open HUD scheme '%s'\n", hudPath.c_str());
+			}
+		}
+
+		if(baseHud)
+		{
+			m_hudLayout->InitFromKeyValues( baseHud );
+			m_hudLayout->InitFromKeyValues( hudKvs, true );
+		}
+		else
+			m_hudLayout->InitFromKeyValues( hudKvs );
+
+		delete baseHud;
+		delete hudKvs;
+	}
 	else
-		MsgError("Failed to load HUD scheme\n", name);
+		MsgError("Failed to load HUD scheme\n");
 
 	m_hudDamageBar = m_hudLayout->FindChild("damageBar");
 	m_hudFelonyBar = m_hudLayout->FindChild("felonyLabel");

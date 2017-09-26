@@ -1951,11 +1951,11 @@ bool CGameWorld::LoadLevel()
 	{
 		// load object definition file
 		KeyValues objectDefsKV;
-		if( !objectDefsKV.LoadFromFile(varargs("scripts/levels/%s_objects.txt", m_levelname.GetData())) )
+		if( !objectDefsKV.LoadFromFile(varargs("scripts/levels/%s_objects.def", m_levelname.GetData())) )
 		{
 			MsgWarning("Object definition file for '%s' cannot be loaded or not found\n", m_levelname.GetData());
 
-			if( !objectDefsKV.LoadFromFile(varargs("scripts/levels/default_objects.txt", m_levelname.GetData())) )
+			if( !objectDefsKV.LoadFromFile(varargs("scripts/levels/default_objects.def", m_levelname.GetData())) )
 			{
 				MsgError("DEFAULT Object definition file for '%s' cannot be loaded or not found\n");
 			}
@@ -2109,7 +2109,7 @@ CGameObject* CGameWorld::CreateObject( const char* objectDefName ) const
 		}
 	}
 
-	MsgError("CGameWorld::CreateObject error: Invalid def '%s', check <levelname>_objects.txt\n", objectDefName);
+	MsgError("CGameWorld::CreateObject error: Invalid def '%s', check <levelname>_objects.def\n", objectDefName);
 
 	return NULL;
 }

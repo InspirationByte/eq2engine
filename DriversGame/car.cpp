@@ -3543,7 +3543,7 @@ void CCar::UpdateSounds( float fDt )
 			if(m_sounds[CAR_SOUND_WHINE]->IsStopped())
 				m_sounds[CAR_SOUND_WHINE]->Play();
 
-			float wheelSpeedFac = fabs(GetSpeedWheels()) * KPH_TO_MPS * 0.2f;
+			float wheelSpeedFac = fabs(GetSpeedWheels()) * KPH_TO_MPS * 0.225f;
 
 			m_sounds[CAR_SOUND_WHINE]->SetPitch(wheelSpeedFac);
 
