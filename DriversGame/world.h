@@ -164,7 +164,9 @@ public:
 	CGameObject*					CreateObject( const char* objectDefName ) const;
 	CGameObject*					FindObjectByName( const char* objectName ) const;
 
+#ifndef EDITOR
 	OOLUA::Table					L_FindObjectOnLevel( const char* name ) const;
+#endif // EDITOR
 
 	//-------------------------------------------------------------------------
 	// world simulation

@@ -2134,6 +2134,7 @@ CGameObject* CGameWorld::FindObjectByName( const char* objectName ) const
 	return NULL;
 }
 
+#ifndef EDITOR
 OOLUA::Table CGameWorld::L_FindObjectOnLevel( const char* name ) const
 {
 	OOLUA::Table newTable;
@@ -2152,7 +2153,7 @@ OOLUA::Table CGameWorld::L_FindObjectOnLevel( const char* name ) const
 
 	return newTable;
 }
-
+#endif // EDITOR
 static CGameWorld s_GameWorld;
 CGameWorld*	g_pGameWorld = &s_GameWorld;
 
