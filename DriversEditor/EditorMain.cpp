@@ -831,8 +831,10 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 			}
 			g_pMainFrame->NotifyUpdate();
 		}
-		else
-			return;
+
+		delete file;
+
+		return;
 	}
 	else if(event.GetId() == Event_Level_Play)
 	{

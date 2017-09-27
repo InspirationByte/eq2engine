@@ -68,6 +68,7 @@ struct CollisionData_t
 	{
 		fract = 32767.0f;
 		hitobject = NULL;
+		materialIndex = -1;
 	}
 
 	FVector3D			position;			// position in world

@@ -1062,6 +1062,8 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 			}
 		}
 
+		delete file;
+
 		RefreshModelReplacement();
 	}
 	else if(event.GetId() == ELM_IMPORTOVER)
@@ -1097,6 +1099,8 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 				m_modelPicker->RebuildPreviewShots();
 			}
 		}
+
+		delete file;
 
 		m_modelReplacement->RefreshObjectDefLists();
 	}

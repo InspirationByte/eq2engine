@@ -1232,7 +1232,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		if(ai_debug_pursuer.GetBool())
 		{
 			debugoverlay->TextFadeOut(0, color4_white, 10.0f, "-------------------");
-			debugoverlay->TextFadeOut(0, color4_white, 10.0f, "velocityToTargetFactor: %.2f speedFactor: %.2f lateralSlide: %.2f brakeDistantFactor: %.2f", velocityToTargetFactor, speedFactor, lateralSlide, brakeDistantFactor);
+			debugoverlay->TextFadeOut(0, color4_white, 10.0f, "velocityToTargetFactor: %.2f speedFactor: %.2f lateralSlide: %.2f brakeDistantFactor: %.2f", (float)velocityToTargetFactor, (float)speedFactor, (float)lateralSlide, (float)brakeDistantFactor);
 			debugoverlay->TextFadeOut(0, ColorRGBA(1,1,0,1), 10.0f, "result brake: %.2f hasToBrake: %d hardSteer: %d", (float)brake, (controls & IN_BRAKE) > 0, doesHardSteer);
 		}
 	}

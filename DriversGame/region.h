@@ -36,6 +36,7 @@ struct navcell_t
 	{
 		cost = 0;
 		flag = 0;
+		pdir = 0;
 	}
 
 	navcell_t(int8 parentDir, int8 c)

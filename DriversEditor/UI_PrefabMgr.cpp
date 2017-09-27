@@ -300,7 +300,7 @@ void CUI_PrefabManager::OnRender()
 
 		IVector2D size = m_tileSelection.GetSize();
 
-		if(size.y > 1 && size.y > 1)
+		if(size.x > 1 && size.y > 1)
 		{
 			debugoverlay->Box3D(bbox.minPoint-HFIELD_POINT_SIZE*0.5f, bbox.maxPoint+HFIELD_POINT_SIZE*0.5f, ColorRGBA(1,1,0,1), 0.0f);
 			debugoverlay->Text3D(bbox.maxPoint, -1.0f, ColorRGBA(1,1,0,1), 0.0f, "size: %d %d", size.x, size.y);

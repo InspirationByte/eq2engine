@@ -32,7 +32,7 @@ class CEvent
 {
 	friend class CFSM_Base;
 public:
-	CEvent(CGameObject* sender) : m_sender(m_sender)
+	CEvent(CGameObject* sender) : m_sender(sender)
 	{}
 	virtual				~CEvent() {}
 	virtual int			GetType() = 0;

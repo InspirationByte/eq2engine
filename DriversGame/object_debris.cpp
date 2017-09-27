@@ -223,17 +223,13 @@ void CObject_Debris::SetVelocity(const Vector3D& vel)
 		m_physBody->SetLinearVelocity( vel  );
 }
 
-const Vector3D& CObject_Debris::GetOrigin()
+const Vector3D& CObject_Debris::GetOrigin() const
 {
-	m_vecOrigin = m_physBody->GetPosition();
 	return m_vecOrigin;
 }
 
-const Vector3D& CObject_Debris::GetAngles()
+const Vector3D& CObject_Debris::GetAngles() const
 { 
-	m_vecAngles = eulers(m_physBody->GetOrientation());
-	m_vecAngles = VRAD2DEG(m_vecAngles);
-
 	return m_vecAngles;
 }
 
@@ -295,6 +291,9 @@ void CObject_Debris::Simulate(float fDt)
 		return;
 
 	m_vecOrigin = m_physBody->GetPosition();
+
+	m_vecAngles = eulers(m_physBody->GetOrientation());
+	m_vecAngles = VRAD2DEG(m_vecAngles);
 
 	if (m_collOccured && m_fTimeToRemove < 0.0f)
 	{

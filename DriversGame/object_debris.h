@@ -27,8 +27,8 @@ public:
 	void				SetAngles(const Vector3D& angles);
 	void				SetVelocity(const Vector3D& vel);
 
-	const Vector3D&		GetOrigin();
-	const Vector3D&		GetAngles();
+	const Vector3D&		GetOrigin() const;
+	const Vector3D&		GetAngles() const;
 	const Vector3D&		GetVelocity() const;
 
 	void				Draw( int nRenderFlags );

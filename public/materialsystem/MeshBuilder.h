@@ -433,19 +433,9 @@ inline void CMeshBuilder::Triangle2( const Vector2D& v1, const Vector2D& v2, con
 	Position2fv(v3);
 	AdvanceVertexPtr();
 
-	// make indices working
-	if(primType == PRIM_TRIANGLES)
-	{
-		indices[0] = startIndex;
-		indices[1] = startIndex+1;
-		indices[2] = startIndex+2;
-	}
-	else // more linear
-	{
-		indices[0] = startIndex;
-		indices[1] = startIndex+1;
-		indices[2] = startIndex+2;
-	}
+	indices[0] = startIndex;
+	indices[1] = startIndex+1;
+	indices[2] = startIndex+2;
 }
 
 // Makes 2D quad

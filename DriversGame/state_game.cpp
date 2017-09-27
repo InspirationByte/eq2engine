@@ -884,18 +884,15 @@ bool CState_Game::UpdatePauseState()
 		if(voiceChan)
 			voiceChan->Pause();
 	}
-	else
+	else if(m_pauseState)
 	{
-		if(m_pauseState != (pauseMode > 0))
-		{
-			ISoundPlayable* musicChan = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
-			if(musicChan && musicChan->GetState() != SOUND_STATE_PLAYING)
-				musicChan->Play();
+		ISoundPlayable* musicChan = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
+		if(musicChan && musicChan->GetState() != SOUND_STATE_PLAYING)
+			musicChan->Play();
 
-			ISoundPlayable* voiceChan = soundsystem->GetStaticStreamChannel(CHAN_VOICE);
-			if(voiceChan && voiceChan->GetState() != SOUND_STATE_PLAYING)
-				voiceChan->Play();
-		}
+		ISoundPlayable* voiceChan = soundsystem->GetStaticStreamChannel(CHAN_VOICE);
+		if(voiceChan && voiceChan->GetState() != SOUND_STATE_PLAYING)
+			voiceChan->Play();
 	}
 
 	soundsystem->SetPauseState( pauseMode > 0);
