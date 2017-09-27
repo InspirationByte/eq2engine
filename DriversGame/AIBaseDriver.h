@@ -61,7 +61,6 @@ public:
 		m_manipulator.UpdateAffector(m_handling, driver, fDt);
 	}
 
-protected:
 	TYPE			m_manipulator;
 	ai_handling_t	m_handling;
 };

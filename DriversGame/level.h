@@ -74,6 +74,13 @@ public:
 	void							UpdateDebugMaps();
 
 	//-------------------------------------------------------------------------
+	// objects stuff
+
+	// searches for object on level
+	// useful if you need to find spawn point on non-loaded level
+	bool							FindObjectOnLevel(levCellObject_t& objectInfo, const char* name, const char* defName = NULL) const;
+
+	//-------------------------------------------------------------------------
 	// 2D grid stuff
 
 	CHeightTileFieldRenderable*		GetHeightFieldAt(const IVector2D& XYPos, int idx = 0) const;		// returns heightfield if region at global 2D point
@@ -156,7 +163,7 @@ public:
 	ubyte&							Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacles = false);
 	ubyte&							Nav_GetTileAtPosition(const Vector3D& position, bool obstacles = false);
 
-	navcell_t&							Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, ubyte& tile);
+	navcell_t&						Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, ubyte& tile);
 
 	//----------------------------------
 

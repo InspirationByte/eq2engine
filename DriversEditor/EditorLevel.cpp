@@ -2064,9 +2064,27 @@ void CEditorLevelRegion::Ed_Prerender()
 	}
 }
 
+ConVar editor_objectnames_distance("ed_objNamesDist", "100.0f", nullptr, CV_ARCHIVE);
+ConVar editor_objectnames_onlynamed("ed_objNamesOnlyNamed", "1", nullptr, CV_ARCHIVE);
+
 void CEditorLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& frustumOccluders, int nRenderFlags)
 {
 	CLevelRegion::Render(cameraPosition, viewProj, frustumOccluders, nRenderFlags);
+
+	for(int i = 0; i < m_objects.numElem(); i++)
+	{
+		if(m_objects[i]->def->m_info.type != LOBJ_TYPE_OBJECT_CFG)
+			continue;
+
+		if(m_objects[i]->name.Length() > 0)
+		{
+			debugoverlay->Text3D(m_objects[i]->position, editor_objectnames_distance.GetFloat(), ColorRGBA(1), 0.0f, varargs("%s '%s'", m_objects[i]->def->m_name.c_str(), m_objects[i]->name.c_str()) );
+		}
+		else if(!editor_objectnames_onlynamed.GetBool())
+		{
+			debugoverlay->Text3D(m_objects[i]->position, editor_objectnames_distance.GetFloat(), ColorRGBA(1), 0.0f, m_objects[i]->def->m_name.c_str());
+		}
+	}
 
 	// render completed buildings
 	for(int i = 0; i < m_buildings.numElem(); i++)

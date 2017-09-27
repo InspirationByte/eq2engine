@@ -1997,7 +1997,9 @@ void CCar::EmitCollisionParticles(const Vector3D& position, const Vector3D& velo
 			const float FLECK_SCALE = 0.8f;
 			const int FLECK_COUNT = 2;
 
-			for(int j = 0; j < numDamageParticles*FLECK_COUNT; j++)
+			int partCount = numDamageParticles*FLECK_COUNT;
+
+			for(int j = 0; j < partCount; j++)
 			{
 				ColorRGB randColor = m_carColor.col1.xyz() * RandomFloat(0.7f, 1.0f);
 
@@ -2006,7 +2008,13 @@ void CCar::EmitCollisionParticles(const Vector3D& position, const Vector3D& velo
 				CPFXAtlasGroup* feffgroup = g_translParticles;
 				TexAtlasEntry_t* fentry = m_trans_fleck;
 
-				Vector3D rnd_ang = VectorAngles(fastNormalize(normal)) + Vector3D(RandomFloat(-55,55),RandomFloat(-55,55),RandomFloat(-55,55));
+				Vector3D norm(normal);
+
+				if(j > partCount/2)
+					norm *= -1;
+
+				Vector3D rnd_ang = VectorAngles(fastNormalize(norm)) + Vector3D(RandomFloat(-55,55),RandomFloat(-55,55),RandomFloat(-55,55));
+
 				Vector3D n;
 				AngleVectors(rnd_ang, &n);
 

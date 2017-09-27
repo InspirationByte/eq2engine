@@ -2054,7 +2054,11 @@ const char*	CGameWorld::GetLevelName() const
 CGameObject* CGameWorld::CreateGameObject( const char* typeName, kvkeybase_t* kvdata ) const
 {
 #ifndef EDITOR
-	if(!stricmp(typeName, "debris"))
+	if(!stricmp(typeName, "dummy"))
+	{
+		return NULL;
+	}
+	else if(!stricmp(typeName, "debris"))
 	{
 		return new CObject_Debris(kvdata);
 	}
@@ -2130,13 +2134,32 @@ CGameObject* CGameWorld::FindObjectByName( const char* objectName ) const
 	return NULL;
 }
 
+OOLUA::Table CGameWorld::L_FindObjectOnLevel( const char* name ) const
+{
+	OOLUA::Table newTable;
+	newTable = OOLUA::new_table(GetLuaState());
+
+	if(!newTable.valid())
+		return newTable;
+
+	levCellObject_t cellObj;
+	if( m_level.FindObjectOnLevel(cellObj, name, nullptr) )
+	{
+		newTable.set("name", cellObj.name);
+		newTable.set("position", Vector3D(cellObj.position));
+		newTable.set("rotation", cellObj.rotation);
+	}
+
+	return newTable;
+}
+
 static CGameWorld s_GameWorld;
 CGameWorld*	g_pGameWorld = &s_GameWorld;
 
 #ifndef NO_LUA
 
 OOLUA_EXPORT_FUNCTIONS(CGameWorld, SetEnvironmentName, SetLevelName, GetView, QueryNearestRegions, RemoveObject)
-OOLUA_EXPORT_FUNCTIONS_CONST(CGameWorld, FindObjectByName, CreateObject, IsValidObject, GetEnvironmentName, GetLevelName)
+OOLUA_EXPORT_FUNCTIONS_CONST(CGameWorld, FindObjectByName, FindObjectOnLevel, CreateObject, IsValidObject, GetEnvironmentName, GetLevelName)
 
 OOLUA_EXPORT_FUNCTIONS(CViewParams, SetOrigin, SetAngles, SetFOV)
 OOLUA_EXPORT_FUNCTIONS_CONST(CViewParams, GetOrigin, GetAngles, GetFOV)

@@ -201,6 +201,7 @@
     <ClInclude Include="public\Utils\eqthread.h" />
     <ClInclude Include="public\utils\eqwstring.h" />
     <ClInclude Include="public\utils\KeyValues.h" />
+    <ClInclude Include="public\utils\strong_typedef.h" />
     <ClInclude Include="public\Utils\strtools.h" />
     <ClInclude Include="public\Utils\eqtimer.h" />
     <ClInclude Include="public\dktypes.h" />

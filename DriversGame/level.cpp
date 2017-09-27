@@ -1841,6 +1841,126 @@ void CGameLevel::UpdateDebugMaps()
 	}
 }
 
+// searches for object on level
+bool CGameLevel::FindObjectOnLevel(levCellObject_t& objectInfo, const char* name, const char* defName) const
+{
+	if(name == NULL)
+		return false;
+
+	CLevObjectDef* def = NULL;
+	int defIdx = -1;
+
+	if(defName)
+	{
+		for(int i = 0; i < m_objectDefs.numElem(); i++)
+		{
+			if(!m_objectDefs[i]->m_name.CompareCaseIns(defName))
+			{
+				defIdx = i;
+				def = m_objectDefs[i];
+				break;
+			}
+		}
+	}
+
+	CScopedMutex m(m_mutex);
+
+	bool found = false;
+
+	// first we try to find object on loaded regions
+	for(int x = 0; x < m_wide; x++)
+	{
+		for(int y = 0; y < m_tall; y++)
+		{
+			int regIdx = y*m_wide+x;
+
+			if(m_regionOffsets[regIdx] == -1)
+				continue;
+			
+			if(m_regions[regIdx].m_isLoaded)
+			{
+				// online objects
+				found = m_regions[regIdx].FindObject(objectInfo, name, def);
+				objectInfo.objectDefId = defIdx;
+
+				if(found)
+					break;
+			}
+		}
+
+		if(found)
+			break;
+	}
+
+	if(found)
+		return true;
+
+	// open level file
+	IFile* stream = g_fileSystem->Open(varargs(LEVELS_PATH "%s.lev", m_levelName.c_str()), "rb", SP_MOD);
+
+	if(!stream)
+		return false;
+
+	// next we try to load list from regions
+	for(int x = 0; x < m_wide; x++)
+	{
+		for(int y = 0; y < m_tall; y++)
+		{
+			int regIdx = y*m_wide+x;
+
+			if(m_regionOffsets[regIdx] == -1)
+				continue;
+			
+			if(!m_regions[regIdx].m_isLoaded)
+			{
+				// offline objects
+
+				// Read region header
+				int regOffset = m_regionDataLumpOffset + m_regionOffsets[regIdx];
+				stream->Seek(regOffset, VS_SEEK_SET);
+
+				levRegionDataInfo_t	regdatahdr;
+				stream->Read(&regdatahdr, 1, sizeof(levRegionDataInfo_t));
+
+				// skip the defs
+				for(int i = 0; i < regdatahdr.numObjectDefs; i++)
+				{
+					levObjectDefInfo_t defInfo;
+					stream->Read(&defInfo, 1, sizeof(levObjectDefInfo_t));
+
+					stream->Seek(defInfo.size, VS_SEEK_CUR);
+				}
+
+				levCellObject_t cellObj;
+
+				// find cell object by reading it
+				for(int i = 0; i < regdatahdr.numCellObjects; i++)
+				{
+					stream->Read(&cellObj, 1, sizeof(levCellObject_t));
+
+					if(cellObj.name[0] == 0)
+						continue;
+
+					if((defIdx == -1 || defIdx >= 0 && cellObj.objectDefId == defIdx) && !stricmp(cellObj.name, name))
+					{
+						objectInfo = cellObj;
+						found = true;
+						break;
+					}
+				}
+			}
+
+		}
+
+		if(found)
+			break;
+	}
+
+	g_fileSystem->Close(stream);
+
+	return found;
+}
+
 #define OBSTACLE_STATIC_MAX_HEIGHT	(6.0f)
 #define OBSTACLE_PROP_MAX_HEIGHT	(6.0f)
 

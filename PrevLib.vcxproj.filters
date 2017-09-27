@@ -144,6 +144,9 @@
     <ClInclude Include="public\math\GridUtils.h">
       <Filter>Source Files\Math</Filter>
     </ClInclude>
+    <ClInclude Include="public\utils\strong_typedef.h">
+      <Filter>Source Files\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="public\Utils\Tokenizer.cpp">

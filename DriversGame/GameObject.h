@@ -214,6 +214,8 @@ public:
 	void						SetName(const char* pszName);
 	const char*					GetName() const;
 
+	const char*					GetDefName() const;
+
 	virtual void				SetModel(const char* pszModelName);
 	virtual void				SetModelPtr(IEqModel* modelPtr);
 	IEqModel*					GetModel() const {return m_pModel;}

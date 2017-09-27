@@ -65,7 +65,9 @@ bool CFleckEffect::DrawEffect(float dTime)
 	effect.vColor = Vector4D(m_vLastColor,lifeTimePerc*2);
 	effect.nFlags = EFFECT_FLAG_NO_FRUSTUM_CHECK;
 
-	effect.fZAngle = lifeTimePerc*rotate;
+	rotate += dTime * 120.0f * lifeTimePerc;
+
+	effect.fZAngle = rotate;
 
 	//internaltrace_t tr;
 	//physics->InternalTraceLine(m_vOrigin,m_vOrigin+normalize(m_vVelocity), COLLISION_GROUP_WORLD | COLLISION_GROUP_OBJECTS, &tr);

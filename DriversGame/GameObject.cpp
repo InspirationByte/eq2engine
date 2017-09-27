@@ -355,6 +355,11 @@ const char* CGameObject::GetName() const
 	return m_name.c_str();
 }
 
+const char* CGameObject::GetDefName() const
+{
+	return m_defname.c_str();
+}
+
 void CGameObject::OnPackMessage( CNetMessageBuffer* buffer )
 {
 	BaseClass::OnPackMessage(buffer);

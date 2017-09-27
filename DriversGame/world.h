@@ -164,6 +164,8 @@ public:
 	CGameObject*					CreateObject( const char* objectDefName ) const;
 	CGameObject*					FindObjectByName( const char* objectName ) const;
 
+	OOLUA::Table					L_FindObjectOnLevel( const char* name ) const;
+
 	//-------------------------------------------------------------------------
 	// world simulation
 
@@ -342,7 +344,9 @@ OOLUA_PROXY(CGameWorld)
 	OOLUA_MFUNC(RemoveObject)
 	OOLUA_MFUNC_CONST(IsValidObject)
 	
-	OOLUA_MFUNC_CONST(FindObjectByName)
+	OOLUA_MEM_FUNC_CONST(maybe_null<CGameObject*>, FindObjectByName, const char*)
+
+	OOLUA_MEM_FUNC_CONST_RENAME(FindObjectOnLevel, OOLUA::Table, L_FindObjectOnLevel, const char*)
 
 	OOLUA_MFUNC(QueryNearestRegions)
 OOLUA_PROXY_END

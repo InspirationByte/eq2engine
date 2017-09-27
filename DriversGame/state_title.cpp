@@ -93,7 +93,7 @@ bool CState_Title::Update( float fDt )
 
 			if(g_State_Game->StartReplay( m_demoList[m_demoId].c_str(), true))
 			{
-				return false;
+				return true;
 			}
 			else
 			{

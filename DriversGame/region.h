@@ -214,6 +214,8 @@ public:
 
 	void							UpdateDebugMaps();
 
+	bool							FindObject(levCellObject_t& objectInfo, const char* name, CLevObjectDef* def = NULL) const;
+
 	//----------------------------------------------------
 
 	BoundingBox						m_bbox;

@@ -529,6 +529,35 @@ void CLevelRegion::UpdateDebugMaps()
 	}
 }
 
+bool CLevelRegion::FindObject(levCellObject_t& objectInfo, const char* name, CLevObjectDef* def) const
+{
+	if(!m_isLoaded)
+		return false;
+
+	for(int i = 0; i < m_objects.numElem(); i++)
+	{
+		regionObject_t* obj = m_objects[i];
+
+		if(obj->name.Length() == 0)
+			continue;
+
+		if((!def || def && def == obj->def) && !obj->name.CompareCaseIns(name))
+		{
+			strcpy(objectInfo.name, obj->name.c_str());
+
+			objectInfo.position = obj->position;
+			objectInfo.rotation = obj->rotation;
+
+			objectInfo.tile_x = obj->tile_x;
+			objectInfo.tile_y = obj->tile_y;
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void CLevelRegion::Cleanup()
 {
 	if(!m_isLoaded)

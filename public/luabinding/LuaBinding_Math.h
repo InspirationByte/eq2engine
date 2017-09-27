@@ -157,4 +157,39 @@ OOLUA_PROXY_END
 
 #endif // __INTELLISENSE__
 
+
+// HACK: get TVec*D values pushed using OOLua and not getting fucking frustrated with SharedPtr thingy
+namespace OOLUA
+{
+	namespace INTERNAL
+	{
+		template<typename NumberType>
+		struct push_basic_type<TVec2D<NumberType>, 0, 0>
+		{
+			static bool push(lua_State* const vm, TVec2D<NumberType> const& value)
+			{
+				return OOLUA::push(vm, new TVec2D<NumberType>(value), Lua);
+			}
+		};
+
+		template<typename NumberType>
+		struct push_basic_type<TVec3D<NumberType>, 0, 0>
+		{
+			static bool push(lua_State* const vm, TVec3D<NumberType> const& value)
+			{
+				return OOLUA::push(vm, new TVec3D<NumberType>(value), Lua);
+			}
+		};
+
+		template<typename NumberType>
+		struct push_basic_type<TVec4D<NumberType>, 0, 0>
+		{
+			static bool push(lua_State* const vm, TVec4D<NumberType> const& value)
+			{
+				return OOLUA::push(vm, new TVec4D<NumberType>(value), Lua);
+			}
+		};
+	}
+};
+
 #endif // LUABINDING_MATH
