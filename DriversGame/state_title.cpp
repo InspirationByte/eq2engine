@@ -40,8 +40,8 @@ void CState_Title::OnEnter( CBaseStateHandler* from )
 	m_codePos = 0;
 	
 	m_demoList.clear();
-	m_demoId = 0;
 
+	// load or reload demo list
 	KeyValues kvs;
 	if(kvs.LoadFromFile("scripts/rolling_demo.txt"))
 	{
@@ -50,11 +50,19 @@ void CState_Title::OnEnter( CBaseStateHandler* from )
 			kvkeybase_t* sect = kvs.GetRootSection()->keys[i];
 
 			if(!stricmp(sect->GetName(), "addReplay"))
-				m_demoList.append(KV_GetValueString(sect));
+			{
+				const char* demoPath = KV_GetValueString(sect);
+				m_demoList.append(demoPath);
+
+				Msg("rolling demo: %s\n", demoPath);
+			}
 		}
 
 		// TODO: use randomUserReplays
 	}
+
+	if(m_demoId >= m_demoList.numElem())
+		m_demoId = 0;
 
 	m_actionTimeout = 10.0f;
 	m_fade = 0.0f;
@@ -88,21 +96,20 @@ bool CState_Title::Update( float fDt )
 
 		if(m_actionTimeout <= 0.0f && m_fade <= 0.0f)
 		{
-			if(m_demoId >= m_demoList.numElem())
-				m_demoId = 0;
+			bool result = g_State_Game->StartReplay( m_demoList[m_demoId++].c_str(), true);
 
-			if(g_State_Game->StartReplay( m_demoList[m_demoId].c_str(), true))
-			{
-				return true;
-			}
-			else
+			if(!result)
 			{
 				m_actionTimeout = 10.0f;
 				m_fade = 0.0f;
 				m_goesFromTitle = false;
 			}
 
-			m_demoId++;
+			if(m_demoId >= m_demoList.numElem())
+				m_demoId = 0;
+
+			if(result)
+				return true;
 		}
 	}
 	else
