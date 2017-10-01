@@ -1292,8 +1292,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 	float wheelsSpeed = 0.0f;
 
-	float steerwheelsFriction = 0.0f;
-
 	// final: trace new straight for blocking cars and deny if have any
 	CollisionData_t coll_line;
 
@@ -1309,16 +1307,22 @@ void CCar::UpdateVehiclePhysics(float delta)
 		CCarWheel& wheel = m_wheels[i];
 		carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
 
-		// Test rays of wheels
+		float suspensionLength = length(wheelConf.suspensionTop-wheelConf.suspensionBottom);
+
+		// transform suspension trace line by car origin
 		Vector3D line_start = (m_worldMatrix*Vector4D(wheelConf.suspensionTop, 1)).xyz();
 		Vector3D line_end = (m_worldMatrix*Vector4D(wheelConf.suspensionBottom, 1)).xyz();
 
 		float fractionOld = wheel.m_collisionInfo.fract;
+		float fractionOldDist = suspensionLength * fractionOld;
 
 		// trace solid ground only
 		g_pPhysics->TestLine(line_start, line_end, wheel.m_collisionInfo, OBJECTCONTENTS_SOLID_GROUND, &collFilter);
 
-		if(m_isLocalCar && fractionOld < 1.0f && (fractionOld - wheel.m_collisionInfo.fract) >= 0.1f)
+		float fractionNewDist = suspensionLength * wheel.m_collisionInfo.fract;
+
+		// play wheel hit sound if wheel suddenly goes up by HFIELD_HEIGHT_STEP
+		if(m_isLocalCar && fractionOld < 1.0f && (fractionOldDist - fractionNewDist) >= HFIELD_HEIGHT_STEP)
 		{
 			EmitSound_t ep;
 
@@ -1347,22 +1351,11 @@ void CCar::UpdateVehiclePhysics(float delta)
 			if(wheelConf.flags & WHEEL_FLAG_HANDBRAKE)
 				numHandbrakeWheelsOnGround++;
 
+			// find surface parameter
 			wheel.m_surfparam = g_pPhysics->GetSurfaceParamByID( wheel.m_collisionInfo.materialIndex );
 
 			if(wheelConf.flags & WHEEL_FLAG_STEER)
-			{
 				numSteerWheelsOnGround++;
-
-				if(wheel.m_surfparam)
-					steerwheelsFriction += wheel.m_surfparam->tirefriction;
-			}
-		}
-		else
-		{
-			if(wheelConf.flags & WHEEL_FLAG_STEER)
-			{
-				steerwheelsFriction += 0.2f;
-			}
 		}
 
 		// update effects
@@ -1374,7 +1367,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 	float driveGroundWheelMod = (numDriveWheelsOnGround > 0) ? (1.0f / (float)numDriveWheelsOnGround) : 1.0f;
 
 	wheelsSpeed *= wheelMod;
-	steerwheelsFriction /= numSteerWheels;
 
 	if(numHandbrakeWheelsOnGround > 0 && fHandbrake > 0.0f)
 	{

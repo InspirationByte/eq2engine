@@ -41,6 +41,32 @@ OOLUA_CFUNC( WMsgWarning, LMsgWarning)
 OOLUA_CFUNC( WMsgError, LMsgError)
 OOLUA_CFUNC( WMsgAccept, LMsgAccept)
 
+void WMsgBox(const char* str)
+{
+	InfoMsg(str);
+}
+
+void WMsgBoxWarning(const char* str)
+{
+	WarningMsg(str);
+}
+
+void WMsgBoxError(const char* str)
+{
+	ErrorMsg(str);
+}
+
+void WMsgBoxAbort(const char* str)
+{
+	CrashMsg(str);
+}
+
+
+OOLUA_CFUNC( WMsgBox, LMsgBox )
+OOLUA_CFUNC( WMsgBoxWarning, LMsgBoxWarning)
+OOLUA_CFUNC( WMsgBoxError, LMsgBoxError)
+OOLUA_CFUNC( WMsgBoxAbort, LMsgBoxAbort)
+
 //--------------------------------------------------------------------------
 
 OOLUA_EXPORT_FUNCTIONS(ConCommandBase)
@@ -326,6 +352,11 @@ void DebugMessages_InitBinding(lua_State* state)
 	OOLUA::set_global(state, "MsgWarning", LMsgWarning);
 	OOLUA::set_global(state, "MsgError", LMsgError);
 	OOLUA::set_global(state, "MsgAccept", LMsgAccept);
+
+	OOLUA::set_global(state, "MsgBox", LMsgBox);
+	OOLUA::set_global(state, "MsgBoxWarning", LMsgBoxWarning);
+	OOLUA::set_global(state, "MsgBoxError", LMsgBoxError);
+	OOLUA::set_global(state, "MsgBoxAbort", LMsgBoxAbort);
 }
 
 ConVar* Lua_Console_FindCvar(const char* name)

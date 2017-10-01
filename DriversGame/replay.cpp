@@ -149,7 +149,6 @@ void CReplayData::UpdatePlayback( float fDt )
 			{
 				if(m_tick >= m_cameras[i].startTick)
 				{
-					Msg("Replay switches camera to %d\n", i);
 					m_currentCamera = i;
 					break;
 				}

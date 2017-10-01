@@ -53,8 +53,6 @@ void CState_Title::OnEnter( CBaseStateHandler* from )
 			{
 				const char* demoPath = KV_GetValueString(sect);
 				m_demoList.append(demoPath);
-
-				Msg("rolling demo: %s\n", demoPath);
 			}
 		}
 

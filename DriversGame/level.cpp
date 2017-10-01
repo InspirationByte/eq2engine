@@ -61,6 +61,8 @@ void CGameLevel::Cleanup()
 	//DevMsg(DEVMSG_CORE, "Stopping loader thread...\n");
 	//StopThread();
 
+	WaitForThread();
+
 	// remove regions first
 	int num = m_wide*m_tall;
 
@@ -455,12 +457,6 @@ void LoadDefLightData( wlightdata_t& out, kvkeybase_t* sec )
 			light.position = KV_GetVector4D(sec->keys[i]);
 			light.color = KV_GetVector4D(sec->keys[i], 4);
 
-			// transform light position
-			//Vector3D lightPos = light.position.xyz();
-			//lightPos = (objDefMatrix*Vector4D(lightPos, 1.0f)).xyz();
-
-			//light.position = Vector4D(lightPos, light.position.w);
-
 			out.m_lights.append(light);
 		}
 		else if(!stricmp(sec->keys[i]->name, "glow"))
@@ -469,12 +465,6 @@ void LoadDefLightData( wlightdata_t& out, kvkeybase_t* sec )
 			light.position = KV_GetVector4D(sec->keys[i]);
 			light.color = KV_GetVector4D(sec->keys[i], 4);
 			light.type = KV_GetValueInt(sec->keys[i], 8);
-
-			// transform light position
-			//Vector3D lightPos = light.position.xyz();
-			//lightPos = (objDefMatrix*Vector4D(lightPos, 1.0f)).xyz();
-
-			//light.position = Vector4D(lightPos, light.position.w);
 
 			out.m_glows.append(light);
 		}
@@ -515,14 +505,6 @@ bool DrawDefLightData( Matrix4x4& objDefMatrix, const wlightdata_t& data, float 
 
 		float extraBrightness = 0.0f + g_pGameWorld->m_envWetness*0.08f;
 		float extraSizeScale = 1.0f + g_pGameWorld->m_envWetness*0.25f;
-
-		/*
-		if(g_pGameWorld->m_envConfig.weatherType != WEATHER_TYPE_CLEAR)
-		{
-			extraBrightness = 0.07f;	// add extra brightness to glows
-			extraSizeScale = 1.25f;
-		}
-		*/
 
 		for(int i = 0; i < data.m_glows.numElem(); i++)
 		{
@@ -856,6 +838,8 @@ bool CGameLevel::GetRegionAndTile(const Vector3D& pos, CLevelRegion** pReg, IVec
 {
 	CLevelRegion* pRegion = GetRegionAtPosition(pos);
 
+	CScopedMutex m(m_mutex);
+
 	if(pRegion && pRegion->m_heightfield[0]->PointAtPos(pos, outXYPos.x, outXYPos.y))
 	{
 		(*pReg) = pRegion;
@@ -944,6 +928,8 @@ float CGameLevel::GetWaterLevelAt(const IVector2D& tilePos) const
 
 	if(pRegion)
 	{
+		CScopedMutex m(m_mutex);
+
 		for(int i = 0; i < pRegion->GetNumHFields(); i++)
 		{
 			CHeightTileField* field = pRegion->GetHField(i);
@@ -972,6 +958,8 @@ float CGameLevel::GetWaterLevelAt(const IVector2D& tilePos) const
 
 straight_t CGameLevel::GetStraightAtPoint( const IVector2D& point, int numIterations ) const
 {
+	CScopedMutex m(m_mutex);
+
 	CLevelRegion* pRegion = NULL;
 
 	straight_t straight;
@@ -1071,6 +1059,8 @@ straight_t CGameLevel::GetStraightAtPos( const Vector3D& pos, int numIterations 
 
 roadJunction_t CGameLevel::GetJunctionAtPoint( const IVector2D& point, int numIterations ) const
 {
+	CScopedMutex m(m_mutex);
+
 	CLevelRegion* pRegion = NULL;
 
 	roadJunction_t junction;
@@ -1157,6 +1147,8 @@ roadJunction_t CGameLevel::GetJunctionAtPos( const Vector3D& pos, int numIterati
 
 int	CGameLevel::GetLaneIndexAtPoint( const IVector2D& point, int numIterations)
 {
+	CScopedMutex m(m_mutex);
+
 	CLevelRegion* pRegion = NULL;
 
 	IVector2D localPos;
@@ -1216,6 +1208,8 @@ int	CGameLevel::GetLaneIndexAtPos( const Vector3D& pos, int numIterations)
 
 int	CGameLevel::GetRoadWidthInLanesAtPoint( const IVector2D& point, int numIterations, int iterationsOnEmpty )
 {
+	CScopedMutex m(m_mutex);
+
 	CLevelRegion* pRegion = NULL;
 
 	IVector2D localPos;
@@ -1291,6 +1285,8 @@ int	CGameLevel::GetRoadWidthInLanesAtPos( const Vector3D& pos, int numIterations
 
 int	CGameLevel::GetNumLanesAtPoint( const IVector2D& point, int numIterations )
 {
+	CScopedMutex m(m_mutex);
+
 	CLevelRegion* pRegion = NULL;
 
 	IVector2D localPos;
@@ -1364,6 +1360,8 @@ levroadcell_t* CGameLevel::GetGlobalRoadTile(const Vector3D& pos, CLevelRegion**
 
 levroadcell_t* CGameLevel::GetGlobalRoadTileAt(const IVector2D& point, CLevelRegion** pRegion) const
 {
+	CScopedMutex m(m_mutex);
+
 	IVector2D outXYPos;
 
 	CLevelRegion* reg = NULL;
@@ -1386,6 +1384,8 @@ levroadcell_t* CGameLevel::GetGlobalRoadTileAt(const IVector2D& point, CLevelReg
 
 bool CGameLevel::FindBestRoadCellForTrafficLight( IVector2D& out, const Vector3D& origin, int trafficDir, int juncIterations )
 {
+	CScopedMutex m(m_mutex);
+
 	IVector2D cellPos = PositionToGlobalTilePoint(origin);
 	int laneRowDir = GetPerpendicularDir(trafficDir);
 
@@ -1535,6 +1535,8 @@ void CGameLevel::QueryNearestRegions( const IVector2D& point, bool waitLoad )
 
 void CGameLevel::CollectVisibleOccluders(occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition)
 {
+	CScopedMutex m(m_mutex);
+
 	frustumOccluders.frustum = g_pGameWorld->m_frustum;
 
 	// don't render too far?
@@ -1813,6 +1815,8 @@ int CGameLevel::UpdateRegions( RegionLoadUnloadCallbackFunc func )
 
 void CGameLevel::RespawnAllObjects()
 {
+	CScopedMutex m(m_mutex);
+
 	for(int x = 0; x < m_wide; x++)
 	{
 		for(int y = 0; y < m_tall; y++)
@@ -1976,6 +1980,8 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 		MsgError("NULL reference of object found in region %d\n", reg->m_regionIndex);
 		return;
 	}
+
+	CScopedMutex m(m_mutex);
 
 	/*
 		transformedModel = transformModelRef(ref)
@@ -2188,6 +2194,8 @@ Vector3D CGameLevel::Nav_GlobalPointToPosition(const IVector2D& point) const
 
 	Nav_GlobalToLocalPoint(point, outXYPos, &pRegion);
 
+	CScopedMutex m(m_mutex);
+
 	if (pRegion)
 	{
 		CHeightTileField& defField = *pRegion->m_heightfield[0];
@@ -2387,6 +2395,8 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 
 	IVector2D dir = end-start;
 
+	CScopedMutex m(m_mutex);
+
 	// go through all open pos
 	while (m_navOpenSet.numElem() > 0)
 	{
@@ -2576,6 +2586,8 @@ void CGameLevel::GetDecalPolygons(decalprimitives_t& polys, occludingFrustum_t* 
 {
 	polys.indices.setNum(0, false);
 	polys.verts.setNum(0, false);
+
+	CScopedMutex m(m_mutex);
 
 	for (int x = 0; x < m_wide; x++)
 	{

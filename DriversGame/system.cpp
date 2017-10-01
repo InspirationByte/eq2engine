@@ -705,8 +705,12 @@ void CGameHost::SignalPause()
 		return;
 
 	CState_Game* gameState = (CState_Game*)GetCurrentState();
-	gameState->SetPauseState( true );
-	ses->Update();
+
+	if(gameState->GetPauseMode() == PAUSEMODE_NONE)
+	{
+		gameState->SetPauseState( true );
+		ses->Update();
+	}
 }
 
 void CGameHost::OnWindowResize(int width, int height)
