@@ -505,14 +505,19 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( DkList<dsmvertex_t>& vertices, 
 				strcpy(object.surfaceprops, KV_GetValueString(surfPropsPair));
 		}
 
-		// add object after building
-		m_objects.append(object);
-
 		// build joint information
 		physjoint_t joint;
 
 		memset(joint.name, 0, sizeof(joint.name));
-		strcpy(joint.name, m_srcModel->bones[i]->name);
+		strcpy_s(joint.name, m_srcModel->bones[i]->name);
+
+		physNamedObject_t obj;
+		memset(obj.name, 0, sizeof(obj.name));
+		strcpy_s(obj.name, m_srcModel->bones[i]->name);
+		obj.object = object;
+
+		// add object after building
+		m_objects.append(obj);
 
 		// setup default limits
 		joint.minLimit = vec3_zero;
@@ -634,7 +639,6 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( DkList<dsmvertex_t>&
 		}
 
 		physobject_t object;
-
 		object.body_part = 0;
 
 		kvkeybase_t* surfPropsPair = m_physicsParams->FindKeyBase("SurfaceProps");
@@ -660,10 +664,24 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( DkList<dsmvertex_t>&
 		object.offset = vec3_zero;
 		object.mass_center = KV_GetVector3D( m_physicsParams->FindKeyBase("MassCenter"), 0, m_bbox.GetCenter() );
 
-		m_objects.append(object);
+		physNamedObject_t obj;
+		memset(obj.name, 0, sizeof(obj.name));
+		strcpy_s(obj.name, KV_GetValueString(m_physicsParams, 0, varargs("obj_%d", m_objects.numElem())));
+
+		obj.object = object;
+
+		m_objects.append(obj);
 	}
 	else
 	{
+		physobject_t object;
+		object.body_part = 0;
+
+		memset(object.surfaceprops, 0, 0);
+		strcpy(object.surfaceprops, KV_GetValueString(m_physicsParams->FindKeyBase("SurfaceProps"), 0, "default"));
+
+		object.mass = KV_GetValueFloat(m_physicsParams->FindKeyBase("Mass"), 0, DEFAULT_MASS);
+
 		for(int i = 0; i < indexGroups.numElem(); i++)
 		{
 			DkList<int> tmpIndices;
@@ -676,22 +694,25 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( DkList<dsmvertex_t>&
 			}
 
 			int shapeID = AddShape( vertices, tmpIndices, nShapeType );
-			physobject_t object;
-
-			object.body_part = 0;
-
-			memset(object.surfaceprops, 0, 0);
-			strcpy(object.surfaceprops, KV_GetValueString(m_physicsParams->FindKeyBase("SurfaceProps"), 0, "default"));
-
-			object.mass = KV_GetValueFloat(m_physicsParams->FindKeyBase("Mass"), 0, DEFAULT_MASS);
 
 			object.numShapes = 1;
 			memset(object.shape_indexes, -1, sizeof(object.shape_indexes));
+
 			object.shape_indexes[0] = shapeID;
 			object.offset = vec3_zero;
 			object.mass_center = vec3_zero;
 
-			m_objects.append(object);
+			physNamedObject_t obj;
+			obj.object = object;
+
+			memset(obj.name, 0, sizeof(obj.name));
+
+			if(m_physicsParams->values.numElem() > 0)
+				strcpy_s(obj.name, varargs("%s_part%d", KV_GetValueString(m_physicsParams), i));
+			else
+				strcpy_s(obj.name,varargs("obj_%d", m_objects.numElem()));
+
+			m_objects.append(obj);
 		}
 	}
 
@@ -733,13 +754,23 @@ bool CEGFPhysicsGenerator::CreateSingleObject( DkList<dsmvertex_t>& vertices, Dk
 	object.shape_indexes[0] = shapeID;
 	object.offset = vec3_zero;
 
-	m_objects.append(object);
+	physNamedObject_t obj;
+	memset(obj.name, 0, sizeof(obj.name));
+	strcpy_s(obj.name, KV_GetValueString(m_physicsParams, 0, varargs("obj_%d", m_objects.numElem())));
+
+	obj.object = object;
+
+	m_objects.append(obj);
 
 	return true;
 }
 
-bool CEGFPhysicsGenerator::GenerateGeometry()
+bool CEGFPhysicsGenerator::GenerateGeometry(dsmmodel_t* srcModel, kvkeybase_t* physInfo, bool forceGroupSubdivision)
 {
+	m_srcModel = srcModel;
+	m_physicsParams = physInfo;
+	m_forceGroupSubdivision = forceGroupSubdivision;
+
 	if(!m_srcModel || !m_physicsParams)
 		return false;
 
@@ -857,9 +888,40 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 		return;
 	}
 
-	WriteLumpToStream(&lumpsStream, PHYSLUMP_PROPERTIES,	(ubyte*)&m_props, sizeof(physmodelprops_t));
-	WriteLumpToStream(&lumpsStream, PHYSLUMP_GEOMETRYINFO,(ubyte*)m_shapes.ptr(), sizeof(physgeominfo_t) * m_shapes.numElem());
-	WriteLumpToStream(&lumpsStream, PHYSLUMP_OBJECTS,		(ubyte*)m_objects.ptr(), sizeof(physobject_t) * m_objects.numElem());
+	WriteLumpToStream(&lumpsStream, PHYSLUMP_PROPERTIES, (ubyte*)&m_props, sizeof(physmodelprops_t));
+	WriteLumpToStream(&lumpsStream, PHYSLUMP_GEOMETRYINFO, (ubyte*)m_shapes.ptr(), sizeof(physgeominfo_t) * m_shapes.numElem());
+
+	// write names lump before objects lump
+	// PHYSLUMP_OBJECTNAMES
+	{
+		CMemoryStream objNamesLump;
+		objNamesLump.Open(NULL, VS_OPEN_WRITE, 2048);
+
+		for(int i = 0; i < m_objects.numElem(); i++)
+			objNamesLump.Write(m_objects[i].name, 1, strlen(m_objects[i].name)+1);
+
+		char nullChar = '\0';
+		objNamesLump.Write(&nullChar, 1, 1);
+
+		WriteLumpToStream(&lumpsStream, PHYSLUMP_OBJECTNAMES,		(ubyte*)objNamesLump.GetBasePointer(), objNamesLump.Tell());
+
+		objNamesLump.Close();
+	}
+
+
+	// PHYSLUMP_OBJECTS
+	{
+		CMemoryStream objDataLump;
+		objDataLump.Open(NULL, VS_OPEN_WRITE, 2048);
+
+		for(int i = 0; i < m_objects.numElem(); i++)
+			objDataLump.Write(&m_objects[i].object, 1, sizeof(m_objects[i].object));
+
+		WriteLumpToStream(&lumpsStream, PHYSLUMP_OBJECTS,		(ubyte*)objDataLump.GetBasePointer(), objDataLump.Tell());
+
+		objDataLump.Close();
+	}
+
 	WriteLumpToStream(&lumpsStream, PHYSLUMP_INDEXDATA,	(ubyte*)m_indices.ptr(), sizeof(int) * m_indices.numElem());
 	WriteLumpToStream(&lumpsStream, PHYSLUMP_VERTEXDATA,	(ubyte*)m_vertices.ptr(), sizeof(Vector3D) * m_vertices.numElem());
 	WriteLumpToStream(&lumpsStream, PHYSLUMP_JOINTDATA,	(ubyte*)m_joints.ptr(), sizeof(physjoint_t) * m_joints.numElem());
@@ -884,17 +946,10 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 	physmodelhdr_t header;
 	header.ident = PHYSMODEL_ID;
 	header.version = PHYSMODEL_VERSION;
-	header.num_lumps = 6;
+	header.num_lumps = PHYSLUMP_LUMPS;
 
 	outputFile->Write(&header, 1, sizeof(header));
 	lumpsStream.WriteToFileStream(outputFile);
 
 	g_fileSystem->Close(outputFile);
-}
-
-void CEGFPhysicsGenerator::Init(dsmmodel_t* srcModel, kvkeybase_t* physInfo, bool forceGroupSubdivision)
-{
-	m_srcModel = srcModel;
-	m_physicsParams = physInfo;
-	m_forceGroupSubdivision = forceGroupSubdivision;
 }

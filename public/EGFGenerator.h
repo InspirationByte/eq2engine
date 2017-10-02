@@ -12,6 +12,8 @@
 #include "dsm_obj_loader.h"
 #include "model.h"
 
+#include "EGFPhysicsGenerator.h"
+
 struct cbone_t
 {
 	dsmskelbone_t*		referencebone;
@@ -109,6 +111,8 @@ protected:
 	void				LoadIKChains(kvkeybase_t* pSection);
 	void				LoadAttachments(kvkeybase_t* pSection);
 
+	void				LoadPhysModels(kvkeybase_t* pSection);
+
 	// preprocessing
 	void				MergeBones();
 	void				BuildBoneChains();
@@ -145,7 +149,7 @@ protected:
 	EqString						m_refsPath;
 	EqString						m_outputFilename;
 
-	kvkeybase_t*					m_physicsParams;
+	CEGFPhysicsGenerator			m_physModels;
 };
 
 #endif // EGFGENERATOR_H

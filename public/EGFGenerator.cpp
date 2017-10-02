@@ -8,14 +8,13 @@
 #include "DebugInterface.h"
 
 #include "EGFGenerator.h"
-#include "EGFPhysicsGenerator.h"
 
 #include "dsm_esm_loader.h"
 
 //------------------------------------------------------------
 
 CEGFGenerator::CEGFGenerator() 
-	: m_modelScale(1.0f), m_modelOffset(0.0f), m_notextures(false), m_physicsParams(nullptr)
+	: m_modelScale(1.0f), m_modelOffset(0.0f), m_notextures(false), m_physModels()
 {
 
 }
@@ -977,63 +976,15 @@ void CEGFGenerator::LoadAttachments(kvkeybase_t* pSection)
 //************************************
 bool CEGFGenerator::GeneratePOD()
 {
-	if(!m_physicsParams)
+	if(!m_physModels.HasObjects())
 		return true;
 
-	MsgWarning("\nGenerating physics objects...\n");
+	MsgWarning("\nWriting physics objects...\n");
 
-	kvkeybase_t* modelNamePair = m_physicsParams->FindKeyBase("model");
+	EqString outputPOD(m_outputFilename.Path_Strip_Ext() + _Es(".pod"));
+	m_physModels.SaveToFile( outputPOD.c_str() );
 
-	dsmmodel_t* physModel = nullptr;
-
-	if(modelNamePair)
-	{
-		egfcamodel_t* foundRef = FindModelByName( KV_GetValueString(modelNamePair) );
-
-		if(!foundRef)
-		{
-			// scaling already performed here
-			egfcamodel_t newRef = LoadModel( KV_GetValueString(modelNamePair) );
-
-			if(newRef.model == nullptr)
-			{
-				MsgError("*ERROR* Cannot find model reference '%s'\n", KV_GetValueString(modelNamePair));
-				return false;
-			}
-
-			m_modelrefs.append(newRef);
-			physModel = newRef.model;
-		}
-		else
-		{
-			//physicsmodel = lodMod->lodmodels[0];
-
-			physModel = foundRef->model;
-
-			if(!physModel)
-			{
-				MsgError("*ERROR* no such model '%s' for physics\n", KV_GetValueString(modelNamePair));
-				return false;
-			}
-		}
-	}
-	else
-	{
-		physModel = m_modelrefs[0].model;
-	}
-
-	CEGFPhysicsGenerator physGen;
-	physGen.Init(physModel, m_physicsParams, false);
-
-	if(physGen.GenerateGeometry())
-	{
-		EqString outputPOD(m_outputFilename.Path_Strip_Ext() + _Es(".pod"));
-
-		physGen.SaveToFile( outputPOD.c_str() );
-		return true;
-	}
-
-	return false;
+	return true;
 }
 
 void CEGFGenerator::Cleanup()
@@ -1054,9 +1005,6 @@ void CEGFGenerator::Cleanup()
 
 	m_modelrefs.clear();
 	m_modellodrefs.clear();
-
-	if(m_physicsParams)
-		delete m_physicsParams;
 }
 
 void CEGFGenerator::SetRefsPath(const char* path)
@@ -1087,6 +1035,68 @@ bool CEGFGenerator::InitFromKeyValues(const char* filename)
 	{
 		MsgError("Can't open %s\n", filename);
 		return false;
+	}
+}
+
+void CEGFGenerator::LoadPhysModels(kvkeybase_t* mainsection)
+{
+	for(int i = 0; i < mainsection->keys.numElem(); i++)
+	{
+		kvkeybase_t* physObjectSec = mainsection->keys[i];
+
+		if(stricmp(physObjectSec->name, "physics"))
+			continue;
+
+		if(!physObjectSec->IsSection())
+		{
+			MsgError("*ERROR* key 'physics' must be a section\n");
+			continue;
+		}
+
+		dsmmodel_t* physModel = nullptr;
+
+		kvkeybase_t* modelNamePair = physObjectSec->FindKeyBase("model");
+		if(modelNamePair)
+		{
+			egfcamodel_t* foundRef = FindModelByName( KV_GetValueString(modelNamePair) );
+
+			if(!foundRef)
+			{
+				// scaling already performed here
+				egfcamodel_t newRef = LoadModel( KV_GetValueString(modelNamePair) );
+
+				if(newRef.model == nullptr)
+				{
+					MsgError("*ERROR* Cannot find model reference '%s'\n", KV_GetValueString(modelNamePair));
+					continue;
+				}
+
+				m_modelrefs.append(newRef);
+				physModel = newRef.model;
+			}
+			else
+			{
+				//physicsmodel = lodMod->lodmodels[0];
+
+				physModel = foundRef->model;
+
+				if(!physModel)
+				{
+					MsgError("*ERROR* no such model '%s' for physics\n", KV_GetValueString(modelNamePair));
+					continue;
+				}
+			}
+		}
+		else
+		{
+			MsgError("*ERROR* no model for physics object '%s' defined\n", KV_GetValueString(physObjectSec, 0, "unnamed"));
+			continue;
+		}
+
+		MsgWarning("\nAdding physics object %s...\n", KV_GetValueString(physObjectSec, 0, ""));
+
+		// append object
+		m_physModels.GenerateGeometry(physModel, physObjectSec, false);
 	}
 }
 
@@ -1144,10 +1154,8 @@ bool CEGFGenerator::InitFromKeyValues(kvkeybase_t* mainsection)
 	// load ik chains if available
 	LoadIKChains( mainsection );
 
-	kvkeybase_t* physSection = mainsection->FindKeyBase("physics", KV_FLAG_SECTION);
-
-	if(physSection)
-		m_physicsParams = physSection->Clone();
+	// load and pre-generate physics models as final operation
+	LoadPhysModels( mainsection );
 
 	return true;
 }

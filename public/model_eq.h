@@ -354,27 +354,12 @@ inline int Studio_FindBoneId(studiohdr_t* pStudioHdr, const char* pszName)
 //---------------------------------------------------------------
 inline bonedesc_t* Studio_FindBone(studiohdr_t* pStudioHdr, const char* pszName)
 {
-	for(int i = 0; i < pStudioHdr->numbones; i++)
-	{
-		if(!stricmp(pStudioHdr->pBone(i)->name, pszName))
-			return pStudioHdr->pBone(i);
-	}
+	int id = Studio_FindBoneId(pStudioHdr, pszName);
 
-	return NULL;
-}
+	if(id == -1)
+		return NULL;
 
-//---------------------------------------------------------------
-// Searches for body group
-//---------------------------------------------------------------
-inline studiobodygroup_t* Studio_FindBodyGroup(studiohdr_t* pStudioHdr, const char* pszName)
-{
-	for(int i = 0; i < pStudioHdr->numbodygroups; i++)
-	{
-		if(!stricmp(pStudioHdr->pBodyGroups(i)->name, pszName))
-			return pStudioHdr->pBodyGroups(i);
-	}
-
-	return NULL;
+	return pStudioHdr->pBone(id);
 }
 
 //---------------------------------------------------------------
@@ -389,6 +374,19 @@ inline int Studio_FindBodyGroupId(studiohdr_t* pStudioHdr, const char* pszName)
 	}
 
 	return -1;
+}
+
+//---------------------------------------------------------------
+// Searches for body group
+//---------------------------------------------------------------
+inline studiobodygroup_t* Studio_FindBodyGroup(studiohdr_t* pStudioHdr, const char* pszName)
+{
+	int id = Studio_FindBodyGroupId(pStudioHdr, pszName);
+
+	if(id == -1)
+		return NULL;
+
+	return pStudioHdr->pBodyGroups(id);
 }
 
 //---------------------------------------------------------------
@@ -408,7 +406,7 @@ inline studioikchain_t* Studio_FindIkChain(studiohdr_t* pStudioHdr, const char* 
 //---------------------------------------------------------------
 // Searches for attachment, returns id
 //---------------------------------------------------------------
-inline int Studio_FindAttachmentID(studiohdr_t* pStudioHdr, const char* pszName)
+inline int Studio_FindAttachmentId(studiohdr_t* pStudioHdr, const char* pszName)
 {
 	for(int i = 0; i < pStudioHdr->numattachments; i++)
 	{
@@ -424,13 +422,12 @@ inline int Studio_FindAttachmentID(studiohdr_t* pStudioHdr, const char* pszName)
 //---------------------------------------------------------------
 inline studioattachment_t* Studio_FindAttachment(studiohdr_t* pStudioHdr, const char* pszName)
 {
-	for(int i = 0; i < pStudioHdr->numattachments; i++)
-	{
-		if(!stricmp(pStudioHdr->pAttachment(i)->name, pszName))
-			return pStudioHdr->pAttachment(i);
-	}
+	int id = Studio_FindAttachmentId(pStudioHdr, pszName);
 
-	return NULL;
+	if(id == -1)
+		return NULL;
+
+	return pStudioHdr->pAttachment(id);
 }
 
 #endif //EQMODEL_H

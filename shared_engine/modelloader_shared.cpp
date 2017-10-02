@@ -295,17 +295,19 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 	
 		if(pHdr->ident != PHYSMODEL_ID)
 		{
-			MsgError("%s is not a POD physics model\n", pszPath);
+			MsgError("'%s' is not a POD physics model\n", pszPath);
 			PPFree(pData);
 			return false;
 		}
 
 		if(pHdr->version != PHYSMODEL_VERSION)
 		{
-			MsgError("POD-File %s has physics model version\n", pszPath);
+			MsgError("POD-File '%s' has physics model version\n", pszPath);
 			PPFree(pData);
 			return false;
 		}
+
+		DkList<EqString> objectNames;
 
 		pData += sizeof(physmodelhdr_t);
 
@@ -347,23 +349,49 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 
 					break;
 				}
+				case PHYSLUMP_OBJECTNAMES:
+				{
+					char* name = (char*)pData;
+
+					int len = strlen(name);
+					int sz = 0;
+
+					do
+					{
+						char* str = name+sz;
+
+						len = strlen(str);
+
+						if(len > 0)
+							objectNames.append(str);
+
+						sz += len + 1; 
+					}while(sz < pLump->size);
+
+					DevMsg(DEVMSG_CORE, "PHYSLUMP_OBJECTNAMES size = %d (cnt = %d)\n", pLump->size, objectNames.numElem());
+
+					break;
+				}
 				case PHYSLUMP_OBJECTS:
 				{
 					int numObjInfos = pLump->size / sizeof(physobject_t);
-					physobject_t* pObjData = (physobject_t*)pData;
+					physobject_t* physObjDataLump = (physobject_t*)pData;
 
 					pModel->numobjects = numObjInfos;
 					pModel->objects = (physobjectdata_t*)PPAlloc(numObjInfos*sizeof(physobjectdata_t));
 
 					for(int i = 0; i < numObjInfos; i++)
 					{
+						physobjectdata_t& objData = pModel->objects[i];
+
+						if(objectNames.numElem() > 0)
+							strcpy_s(objData.name, objectNames[i].c_str());
+
 						// copy shape info
-						memcpy(&pModel->objects[i].object, &pObjData[i], sizeof(physobject_t));
+						memcpy(&objData.object, &physObjDataLump[i], sizeof(physobject_t));
 
 						for(int j = 0; j < MAX_GEOM_PER_OBJECT; j++)
-						{
-							pModel->objects[i].shapeCache[j] = 0;
-						}
+							objData.shapeCache[j] = nullptr;
 					}
 
 					DevMsg(DEVMSG_CORE, "PHYSLUMP_OBJECTS size = %d (cnt = %d)\n", pLump->size, numObjInfos);
@@ -415,7 +443,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 				}
 				default:
 				{
-					MsgWarning("Invalid physmodel lump type. Please update engine.\n");
+					MsgWarning("*WARNING* Invalid POD-file '%s' lump type '%d'.\n", pszPath, pLump->type);
 					break;
 				}
 			}

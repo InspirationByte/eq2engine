@@ -24,16 +24,22 @@ extern void EmitHitSoundEffect(CGameObject* obj, const char* prefix, const Vecto
 CObject_Debris::CObject_Debris( kvkeybase_t* kvdata )
 {
 	m_keyValues = kvdata;
+
 	m_physBody = NULL;
 	m_collOccured = false;
 	m_fTimeToRemove = 0.0f;
 	m_surfParams = NULL;
 	m_userData = NULL;
+
+	m_breakable = NULL;
+	m_breakSpawn = NULL;
+	m_numBreakParts = 0;
 }
 
 CObject_Debris::~CObject_Debris()
 {
-	
+	delete m_breakable;
+	delete m_breakSpawn;
 }
 
 void CObject_Debris::OnRemove()
@@ -73,6 +79,39 @@ void CObject_Debris::Spawn()
 	ASSERT(m_pModel);
 
 	m_smashSound = KV_GetValueString(m_keyValues->FindKeyBase("smashsound"), 0, "");
+
+	// init breakable
+	kvkeybase_t* brkSec = m_keyValues->FindKeyBase("breakable");
+	if(brkSec)
+	{
+		kvkeybase_t* brkPartsSec = brkSec->FindKeyBase("parts");
+
+		if(brkPartsSec)
+		{
+			m_numBreakParts = brkPartsSec->keys.numElem();
+			m_breakable = new breakablePart_t[m_numBreakParts];
+
+			for(int i = 0; i < brkPartsSec->keys.numElem(); i++)
+			{
+				kvkeybase_t* partSec = brkPartsSec->keys[i];
+
+				const char* partName = KV_GetValueString(partSec);
+
+				m_breakable[i].bodyGroupIdx = Studio_FindBodyGroupId(m_pModel->GetHWData()->pStudioHdr, partName);
+				m_breakable[i].physObjIdx = PhysModel_FindObjectId(&m_pModel->GetHWData()->m_physmodel, KV_GetValueString(partSec->FindKeyBase("physics"), 0, partName));
+
+				m_breakable[i].offset = KV_GetVector3D(partSec->FindKeyBase("offset"));
+			}
+		}
+
+		kvkeybase_t* spawnSec = brkSec->FindKeyBase("spawn");
+		if(spawnSec)
+		{
+			m_breakSpawn = new breakSpawn_t;
+			strcpy_s(m_breakSpawn->objectDefName, KV_GetValueString(spawnSec, 0, "bad_spawn_sec"));
+			m_breakSpawn->offset = KV_GetVector3D(spawnSec->FindKeyBase("offset"));
+		}
+	}
 
 	if(m_smashSound.Length() > 0)
 	{
@@ -154,7 +193,6 @@ void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup)
 		m_pModel->SetInstancer( instancer );
 	}
 
-	// TODO: hubcap sounds
 	m_smashSound = "";
 	
 	CEqRigidBody* body = new CEqRigidBody();
@@ -175,6 +213,78 @@ void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup)
 		//body->SetCenterOfMass( obj->mass_center);
 
 		body->m_flags = COLLOBJ_DISABLE_RESPONSE;
+
+		body->SetPosition( m_vecOrigin );
+		body->SetOrientation(Quaternion(DEG2RAD(m_vecAngles.x),DEG2RAD(m_vecAngles.y),DEG2RAD(m_vecAngles.z)));
+
+		body->SetContents( OBJECTCONTENTS_DEBRIS );
+		body->SetCollideMask( COLLIDEMASK_DEBRIS );
+
+		body->SetUserData(this);
+
+		m_physBody = body;
+
+		// initially this object is not moveable
+		g_pPhysics->m_physics.AddToWorld( m_physBody, true );
+
+		m_bbox = body->m_aabb_transformed;
+	}
+	else
+	{
+		MsgError("No physics model for '%s'\n", m_pModel->GetName());
+		delete body;
+	}
+
+	// baseclass spawn
+	CGameObject::Spawn();
+}
+
+void CObject_Debris::SpawnAsBreakablePart(IEqModel* model, int8 bodyGroup, int physObj)
+{
+	m_pModel = model;
+	m_bodyGroupFlags = (1 << bodyGroup);
+	m_collOccured = true;
+
+	if(g_pShaderAPI->GetCaps().isInstancingSupported &&
+		m_pModel && m_pModel->GetInstancer() == NULL)
+	{
+		CGameObjectInstancer* instancer = new CGameObjectInstancer();
+
+		// init with this preallocated buffer and format
+		instancer->Init( g_pGameWorld->m_objectInstVertexFormat, g_pGameWorld->m_objectInstVertexBuffer );
+
+		m_pModel->SetInstancer( instancer );
+	}
+
+	CEqRigidBody* body = new CEqRigidBody();
+
+	if( body->Initialize(&m_pModel->GetHWData()->m_physmodel, physObj) )//
+	{
+		physobject_t* obj = &m_pModel->GetHWData()->m_physmodel.objects[physObj].object;
+
+		// set friction from surface parameters
+		m_surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);
+		if(m_surfParams)
+		{
+			body->SetFriction( m_surfParams->friction );
+			body->SetRestitution( m_surfParams->restitution );
+		}
+		else
+		{
+			body->SetFriction( 0.8f );
+			body->SetRestitution( 0.15f );
+		}
+
+		body->SetFriction( 0.7f );
+		body->SetRestitution( 0.8f );
+		body->SetMass(obj->mass);
+		body->SetGravity(body->GetGravity() * 2.0f);
+		body->SetDebugName("brkbl");
+
+		// additional error correction required
+		body->m_erp = DEBRIS_ERP;
+
+		body->m_flags = COLLOBJ_COLLISIONLIST | COLLOBJ_DISABLE_RESPONSE;
 
 		body->SetPosition( m_vecOrigin );
 		body->SetOrientation(Quaternion(DEG2RAD(m_vecAngles.x),DEG2RAD(m_vecAngles.y),DEG2RAD(m_vecAngles.z)));
@@ -275,6 +385,39 @@ void CObject_Debris::Draw( int nRenderFlags )
 		CGameObject::Draw( nRenderFlags );
 }
 
+void CObject_Debris::BreakAndSpawnDebris()
+{
+	// remove this instance
+	if(m_numBreakParts)
+		m_state = GO_STATE_REMOVE;
+
+	for(int i = 0; i < m_numBreakParts; i++)
+	{
+		breakablePart_t& partDesc = m_breakable[i];
+
+		// don't create unknown objects
+		if(partDesc.bodyGroupIdx == -1 || partDesc.physObjIdx == -1)
+			continue;
+
+		CObject_Debris* part = new CObject_Debris(NULL);
+
+		part->SpawnAsBreakablePart(GetModel(), partDesc.bodyGroupIdx, partDesc.physObjIdx);
+
+		// transform the offset
+		Vector3D offset = m_worldMatrix*partDesc.offset;
+
+		part->SetOrigin( GetOrigin() + offset );
+
+		part->m_physBody->SetOrientation( m_physBody->GetOrientation() );
+		part->m_physBody->SetLinearVelocity( m_physBody->GetLinearVelocity() );
+		part->m_physBody->SetAngularVelocity( m_physBody->GetAngularVelocity() );
+
+		g_pGameWorld->AddObject(part, true);
+
+		part->m_smashSound = m_smashSound;
+	}
+}
+
 ConVar g_debris_as_physics("g_debris_as_physics", "0", "Thread debris as physics objects", CV_CHEAT);
 
 void CObject_Debris::Simulate(float fDt)
@@ -295,21 +438,24 @@ void CObject_Debris::Simulate(float fDt)
 	m_vecAngles = eulers(m_physBody->GetOrientation());
 	m_vecAngles = VRAD2DEG(m_vecAngles);
 
-	if (m_collOccured && m_fTimeToRemove < 0.0f)
+	if(m_collOccured)
 	{
-		//g_pGameWorld->RemoveObject(this);
+		if(m_fTimeToRemove < 0.0f)
+		{
+			if(m_fTimeToRemove < -DEBRIS_PHYS_LIFETIME)
+			{
+				m_state = GO_STATE_REMOVE;
+				return;
+			}
 
-		m_physBody->SetContents( OBJECTCONTENTS_DEBRIS );
-		m_physBody->SetCollideMask( COLLIDEMASK_DEBRIS );
+			m_physBody->SetContents( OBJECTCONTENTS_DEBRIS );
+			m_physBody->SetCollideMask( COLLIDEMASK_DEBRIS );
 
-		m_physBody->m_flags &= ~BODY_FORCE_FREEZE;
+			m_physBody->m_flags &= ~BODY_FORCE_FREEZE;
+		}
 	}
 
-	if(m_collOccured && m_fTimeToRemove < -DEBRIS_PHYS_LIFETIME)
-		g_pGameWorld->RemoveObject(this);
-
-	/*-------------------------------------------------------------*/
-
+	// process collisions
 	for(int i = 0; i < m_physBody->m_collisionList.numElem(); i++)
 	{
 		CollisionPairData_t& pair = m_physBody->m_collisionList[i];
@@ -318,9 +464,17 @@ void CObject_Debris::Simulate(float fDt)
 
 		if(impulse > 10.0f)
 		{
-			// change look of models
-			if(m_pModel->GetHWData()->pStudioHdr->numbodygroups > 1)
-				m_bodyGroupFlags = (1 << 1);
+			if(m_numBreakParts > 0)
+			{
+				// make debris
+				BreakAndSpawnDebris();
+			}
+			else if(!m_collOccured) // need this because break debris would change model
+			{
+				// change look of models
+				if(m_pModel->GetHWData()->pStudioHdr->numbodygroups > 1)
+					m_bodyGroupFlags = (1 << 1);
+			}
 		}
 
 		if(m_surfParams && m_surfParams->word == 'M' && pair.impactVelocity > 3.0f)
@@ -332,7 +486,6 @@ void CObject_Debris::Simulate(float fDt)
 
 		CEqCollisionObject* obj = pair.GetOppositeTo(m_physBody);
 		
-		//if (m_collOccured)
 		EmitHitSoundEffect(this, m_smashSound.c_str(), pair.position, pair.impactVelocity, 50.0f);
 
 		if(!m_collOccured && obj->IsDynamic())
@@ -371,6 +524,9 @@ void CObject_Debris::Simulate(float fDt)
 				m_physBody->SetCollideMask(COLLIDEMASK_OBJECT);
 			}
 		}
+
+		if(m_state == GO_STATE_REMOVE)
+			break;
 	}
 }
 

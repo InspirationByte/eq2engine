@@ -166,6 +166,7 @@ struct physobjectdata_t
 {
 	PPMEM_MANAGED_OBJECT();
 
+	char			name[32];
 	physobject_t	object;
 	void*			shapeCache[MAX_GEOM_PER_OBJECT];		// indexes of geomdata
 };
@@ -276,5 +277,18 @@ struct studiohwdata_t
 	studiomotiondata_t*	motiondata[MAX_MOTIONPACKAGES];
 	int					numMotionPackages;
 };
+
+//------------------------------------------------------------------------------
+
+inline int PhysModel_FindObjectId(physmodeldata_t* model, const char* name)
+{
+	for(int i = 0; i < model->numobjects; i++)
+	{
+		if(!stricmp(model->objects[i].name, name))
+			return i;
+	}
+
+	return -1;
+}
 
 #endif //MODEL_H

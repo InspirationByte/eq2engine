@@ -649,7 +649,7 @@ Vector3D BaseAnimating::GetLocalBoneDirection(int nBone)
 // finds attachment
 int BaseAnimating::FindAttachment(const char* name)
 {
-	return Studio_FindAttachmentID(m_pModel->GetHWData()->pStudioHdr, name);
+	return Studio_FindAttachmentId(m_pModel->GetHWData()->pStudioHdr, name);
 }
 
 // gets local attachment position

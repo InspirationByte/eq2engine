@@ -25,12 +25,15 @@ enum EPODModelUsage
 
 enum EPODLumpTypes
 {
-	PHYSLUMP_PROPERTIES	= 0,	// shared model property lump
+	PHYSLUMP_PROPERTIES	= 0,	// shared model property lump	// TODO: make the physobject_t embedded with this
 	PHYSLUMP_GEOMETRYINFO,		// geometrical info lump
 	PHYSLUMP_JOINTDATA,			// joint data
 	PHYSLUMP_OBJECTS,			// objects in this model
 	PHYSLUMP_VERTEXDATA,		// vertex data, Vector3D format
 	PHYSLUMP_INDEXDATA,			// vertex indices data, uint format
+	PHYSLUMP_OBJECTNAMES,		// object names lump
+
+	PHYSLUMP_LUMPS,
 };
 
 // NOTE: When you change these constants, change them in engine

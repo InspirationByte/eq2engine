@@ -21,6 +21,12 @@ typedef DkList<itriangle> indxgroup_t;
 
 struct ragdolljoint_t;
 
+struct physNamedObject_t
+{
+	char name[32];
+	physobject_t object;
+};
+
 class CEGFPhysicsGenerator
 {
 public:
@@ -29,10 +35,11 @@ public:
 
 	void		Cleanup();
 
-	void		Init(dsmmodel_t* srcModel, kvkeybase_t* physInfo, bool forceGroupSubdivision);
+	bool		GenerateGeometry(dsmmodel_t* srcModel, kvkeybase_t* physInfo, bool forceGroupSubdivision);
 
-	bool		GenerateGeometry();
 	void		SaveToFile(const char* filename);
+
+	bool		HasObjects() const {return m_objects.numElem() > 0;}
 
 protected:
 	void		SetupRagdollJoints(ragdolljoint_t* boneArray);
@@ -55,7 +62,7 @@ protected:
 	DkList<Vector3D>			m_vertices;			// generated verts
 	DkList<int>					m_indices;			// generated indices
 	DkList<physgeominfo_t>		m_shapes;			// shapes
-	DkList<physobject_t>		m_objects;			// objects that use shapes
+	DkList<physNamedObject_t>	m_objects;			// objects that use shapes
 	DkList<physjoint_t>			m_joints;			// joints which uses objects
 
 	BoundingBox					m_bbox;
