@@ -821,8 +821,32 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		return 0;
 	}
 
-	//--------------------------------------------------------------------------------------------------
+	m_navAffector.m_manipulator.m_driveTarget = m_targInfo.target->GetOrigin();
+	m_navAffector.Update(this, fDt);
+	
+	int controls = IN_ACCELERATE | IN_ANALOGSTEER | IN_HORN;
 
+	if(m_navAffector.m_handling.braking > 0.5f)
+	{
+		controls &= ~IN_ACCELERATE;
+		controls |= IN_BRAKE;
+	}
+
+	if(fabs(m_navAffector.m_handling.steering) > 0.7f)
+		controls |= IN_EXTENDTURN;
+
+	m_autohandbrake = true;
+
+	SetControlButtons( controls );
+	SetControlVars(	m_navAffector.m_handling.acceleration, 
+					m_navAffector.m_handling.braking, 
+					m_navAffector.m_handling.steering);
+
+	if(m_navAffector.m_handling.acceleration > 0.05f)
+		GetPhysicsBody()->TryWake(false);
+
+	//--------------------------------------------------------------------------------------------------
+	/*
 	eqPhysCollisionFilter collFilter;
 	collFilter.type = EQPHYS_FILTER_TYPE_EXCLUDE;
 	collFilter.flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS | EQPHYS_FILTER_FLAG_FORCE_RAYCAST;
@@ -1249,7 +1273,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	SetControlButtons( controls );
 	SetControlVars(accelerator, brake, clamp(fSteeringAngle, FReal(-1.0f), FReal(1.0f)));
-
+	*/
 	return 0;
 }
 

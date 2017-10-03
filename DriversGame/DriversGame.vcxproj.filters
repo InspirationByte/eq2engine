@@ -97,6 +97,9 @@
     <Filter Include="Файлы исходного кода\Game\AI\Driver">
       <UniqueIdentifier>{917ab40e-8722-44c1-be2c-f9166d64440a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Файлы исходного кода\EngineLib\PathFinder">
+      <UniqueIdentifier>{3e358f62-c393-4b9e-bd2d-21ee9164ea20}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -404,6 +407,15 @@
     </ClCompile>
     <ClCompile Include="session_stuff.cpp">
       <Filter>Файлы исходного кода\Game\Sessions</Filter>
+    </ClCompile>
+    <ClCompile Include="AIManipulator_Navigation.cpp">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\PathFinder\Node.cpp">
+      <Filter>Файлы исходного кода\EngineLib\PathFinder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\PathFinder\AStar.cpp">
+      <Filter>Файлы исходного кода\EngineLib\PathFinder</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -784,14 +796,29 @@
     <ClInclude Include="..\public\DataTable.h">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClInclude>
-    <ClInclude Include="AIBaseDriver.h">
-      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
-    </ClInclude>
     <ClInclude Include="AIManipulators.h">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClInclude>
     <ClInclude Include="session_stuff.h">
       <Filter>Файлы исходного кода\Game\Sessions</Filter>
+    </ClInclude>
+    <ClInclude Include="AIHandling.h">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="AIManipulator_Navigation.h">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\PathFinder\Node.h">
+      <Filter>Файлы исходного кода\EngineLib\PathFinder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\PathFinder\PathAlgorithm.h">
+      <Filter>Файлы исходного кода\EngineLib\PathFinder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\PathFinder\PathFinder.h">
+      <Filter>Файлы исходного кода\EngineLib\PathFinder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\PathFinder\AStar.h">
+      <Filter>Файлы исходного кода\EngineLib\PathFinder</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -9,6 +9,7 @@
 #define AIPURSUERCARCONTROLLER_H
 
 #include "AITrafficCar.h"
+#include "AIHandling.h"
 
 enum EPursuerAIType
 {
@@ -107,9 +108,12 @@ protected:
 		int					lastInfraction;
 
 		bool				isAngry;
-	};
+	} m_targInfo;
 
-	pursuitTargetInfo_t		m_targInfo;
+	// all handling affectors, they are biased by the current behavior state
+	CAIHandlingAffector<CAINavigationManipulator>			m_navAffector;
+	//CAIHandlingAffector<CAIChasingManipulator>				m_chaseAffector;
+	//CAIHandlingAffector<CAIObstacleAvoidanceManipulator>	m_obstacleAffector;
 
 	float					m_blockingTime;
 	float					m_blockTimeout;

@@ -11,13 +11,6 @@
 #include "utils/DkList.h"
 #include "EventFSM.h"
 
-#include "AIManipulator_Navigation.h"
-#include "AIManipulator_ObstacleAvoidance.h"
-#include "AIManipulator_Chasing.h"
-
-class CCar;
-class CAIBaseDriver;
-
 struct ai_handling_t
 {
 	float		steering;
@@ -29,6 +22,14 @@ struct ai_handling_t
 
 	float		confidence;		// 0..1
 };
+
+
+#include "AIManipulator_Navigation.h"
+//#include "AIManipulator_ObstacleAvoidance.h"
+//#include "AIManipulator_Chasing.h"
+
+class CCar;
+//class CAIBaseDriver;
 
 //
 // TYPE is a CAIBaseManipulator-derived
@@ -56,9 +57,9 @@ public:
 		m_handling.confidence = 0.0f;
 	}
 
-	void Update(CAIBaseDriver* driver, float fDt)
+	void Update(CCar* car, float fDt)
 	{
-		m_manipulator.UpdateAffector(m_handling, driver, fDt);
+		m_manipulator.UpdateAffector(m_handling, car, fDt);
 	}
 
 	TYPE			m_manipulator;
@@ -76,7 +77,7 @@ enum EDriverConditionFlags
 	DRIVER_COND_ANGRY			= (1 << 2),
 	DRIVER_COND_SCARED			= (1 << 3),
 };
-
+/*
 class CAINavigationManipulator;
 class CAIChasingManipulator;
 class CAIObstacleAvoidanceManipulator;
@@ -101,6 +102,6 @@ protected:
 	CAIHandlingAffector<CAINavigationManipulator>			m_navAffector;
 	CAIHandlingAffector<CAIChasingManipulator>				m_chaseAffector;
 	CAIHandlingAffector<CAIObstacleAvoidanceManipulator>	m_obstacleAffector;
-};
+};*/
 
 #endif //AIBASEDRIVER_H
