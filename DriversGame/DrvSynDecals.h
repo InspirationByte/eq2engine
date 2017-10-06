@@ -20,13 +20,14 @@ struct decalsettings_t
 		avoidMaterialFlags = 0;
 		facingDir = vec3_up;
 		customClipVolume = false;
+		userData = nullptr;
 	}
 
 	Vector3D	facingDir;
 	Volume		clipVolume;
 	int			avoidMaterialFlags;
 	bool		customClipVolume;
-
+	void*		userData;
 };
 
 typedef bool (*DECALPROCESSTRIANGLEFN)(struct decalsettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3);

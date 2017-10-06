@@ -31,7 +31,7 @@ protected:
 
 	IMaterial*	m_pFilterMaterial;
 	float		m_fAmount;
-	ColorRGB	m_vColor;
+	ColorRGB	color;
 	EqString	m_szLayerName;
 	char		m_char;
 };

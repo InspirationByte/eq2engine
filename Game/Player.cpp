@@ -466,8 +466,8 @@ void CWhiteCagePlayer::OnPostRender()
 
 		float health_perc = (float)m_nHealth/(float)m_nMaxHealth;
 
-		static ITexture* pIndicatorBody = g_pShaderAPI->LoadTexture("ui/hud_6indicator_body", TEXFILTER_TRILINEAR_ANISO, ADDRESSMODE_CLAMP);
-		static ITexture* pIndicator = g_pShaderAPI->LoadTexture("ui/hud_6indicator", TEXFILTER_TRILINEAR_ANISO, ADDRESSMODE_CLAMP);
+		static ITexture* pIndicatorBody = g_pShaderAPI->LoadTexture("ui/hud_6indicator_body", TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP);
+		static ITexture* pIndicator = g_pShaderAPI->LoadTexture("ui/hud_6indicator", TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP);
 
 		float fHealthBarSize = 90.0f;
 
@@ -626,9 +626,9 @@ void CWhiteCagePlayer::OnPreRender()
 	{
 		dlight_t *flashlight = viewrenderer->AllocLight();
 		SetLightDefaults(flashlight);
-		static ITexture* pSpot = g_pShaderAPI->LoadTexture("lights/flashlight",TEXFILTER_TRILINEAR_ANISO,ADDRESSMODE_CLAMP,TEXFLAG_NOQUALITYLOD);
+		static ITexture* pSpot = g_pShaderAPI->LoadTexture("lights/flashlight",TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_CLAMP,TEXFLAG_NOQUALITYLOD);
 
-		//static ITexture* pSpot = g_pShaderAPI->LoadTexture("lights/flashlight_dudv",TEXFILTER_TRILINEAR_ANISO,ADDRESSMODE_CLAMP,TEXFLAG_NOQUALITYLOD);
+		//static ITexture* pSpot = g_pShaderAPI->LoadTexture("lights/flashlight_dudv",TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_CLAMP,TEXFLAG_NOQUALITYLOD);
 
 		if(!r_freezeflashlight.GetBool())
 		{
@@ -727,26 +727,26 @@ void CWhiteCagePlayer::Render(int nViewRenderFlags)
 	if(!frustum.IsBoxInside(mins.x,maxs.x,mins.y,maxs.y,mins.z,maxs.z))
 		return;
 
-	studiohdr_t* pHdr = m_pModel->GetHWData()->pStudioHdr;
+	studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
 	int nLod = 0;
 
 	viewrenderer->GetNearestEightLightsForPoint(m_vecAbsOrigin, m_pLights);
 
-	for(int i = 0; i < pHdr->numbodygroups; i++)
+	for(int i = 0; i < pHdr->numBodyGroups; i++)
 	{
-		int nLodableModelIndex = pHdr->pBodyGroups(i)->lodmodel_index;
-		int nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+		int nLodableModelIndex = pHdr->pBodyGroups(i)->lodModelIndex;
+		int nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 
 		while(nLod > 0 && nModDescId != -1)
 		{
 			nLod--;
-			nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+			nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 		}
 
 		if(nModDescId == -1)
 			continue;
 
-		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
 		{
 			viewrenderer->DrawModelPart(m_pModel, nModDescId, j, nViewRenderFlags, m_pLights, m_BoneMatrixList);
 		}

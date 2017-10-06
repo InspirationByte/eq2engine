@@ -12,7 +12,7 @@
 #include "utils/DkList.h"
 #include "dktypes.h"
 
-// for PrimitiveType_e
+// for ER_PrimitiveType
 #include "materialsystem/renderers/ShaderAPI_defs.h"
 
 #include "motionpackage.h"
@@ -61,13 +61,13 @@ ALIGNED_TYPE(basemodelheader_s, 4) basemodelheader_t;
 // Base model material search path descriptor
 typedef struct materialpathdesc_s
 {
-	char				m_szSearchPathString[128];
+	char				searchPath[128];
 }materialpathdesc_t;
 
 // material descriptor
 struct motionpackagedesc_s
 {
-	char				packagename[128]; //only this?
+	char				packageName[128]; //only this?
 };
 
 ALIGNED_TYPE(motionpackagedesc_s, 4) motionpackagedesc_t;
@@ -97,8 +97,8 @@ struct joint_t
 // animation frames for each bone
 struct boneframe_t
 {
-	int				numframes;
-	animframe_t*	keyframes;
+	int				numFrames;
+	animframe_t*	keyFrames;
 };
 
 // model animation
@@ -181,13 +181,13 @@ struct physmodeldata_t
 		modeltype = 0;
 
 		objects = nullptr;
-		numobjects = 0;
+		numObjects = 0;
 
 		joints = nullptr;
-		numjoints = 0;
+		numJoints = 0;
 
 		shapes = nullptr;
-		numshapes = 0;
+		numShapes = 0;
 
 		vertices = nullptr;
 		numVertices = 0;
@@ -199,13 +199,13 @@ struct physmodeldata_t
 	int modeltype;
 
 	physobjectdata_t* objects;	// array, because it may be dynamic or ragdoll.
-	int numobjects;
+	int numObjects;
 
 	physjoint_t* joints;
-	int numjoints;				// because it may be merged
+	int numJoints;				// because it may be merged
 
 	physmodelshapecache_t* shapes;
-	int numshapes;
+	int numShapes;
 
 	Vector3D*	vertices;
 	int			numVertices;
@@ -223,14 +223,14 @@ struct hwgroup_desc_t
 // lod data
 struct hwmodelref_t
 {
-	hwgroup_desc_t*		groupdescs; // offset in hw index buffer to this lod, for each geometry group
+	hwgroup_desc_t*		groupDescs; // offset in hw index buffer to this lod, for each geometry group
 };
 
 // model motion package loaded and expanded data
 struct studiomotiondata_t
 {
 	// animations
-	int					numanimations;
+	int					numAnimations;
 	modelanimation_t*	animations;
 
 	// sequences
@@ -238,12 +238,12 @@ struct studiomotiondata_t
 	sequencedesc_t*		sequences;
 
 	// events
-	int					numevents;
+	int					numEvents;
 	sequenceevent_t*	events;
 
 	// pose controllers
-	int					numposecontrollers;
-	posecontroller_t*	posecontrollers;
+	int					numPoseControllers;
+	posecontroller_t*	poseControllers;
 
 	animframe_t*		frames;
 };
@@ -255,17 +255,17 @@ struct studiohwdata_t
 
 	studiohwdata_t()
 	{
-		pStudioHdr = nullptr;
+		studio = nullptr;
 		modelrefs = nullptr;
 		joints = nullptr;
 		numMotionPackages = 0;
 	}
 
 	// loaded/cached studio model
-	studiohdr_t*		pStudioHdr;
+	studiohdr_t*		studio;
 
 	// POD data
-	physmodeldata_t		m_physmodel;
+	physmodeldata_t		physModel;
 
 	// lod models
 	hwmodelref_t*		modelrefs;
@@ -282,7 +282,7 @@ struct studiohwdata_t
 
 inline int PhysModel_FindObjectId(physmodeldata_t* model, const char* name)
 {
-	for(int i = 0; i < model->numobjects; i++)
+	for(int i = 0; i < model->numObjects; i++)
 	{
 		if(!stricmp(model->objects[i].name, name))
 			return i;

@@ -43,7 +43,7 @@ extern void DkDrawFilledSphere(const Vector3D& origin, float radius, int sides);
 
 void RenderPhysModel(IEqModel* pModel)
 {
-	if(!g_editormainframe->IsPhysmodelDrawEnabled() || pModel->GetHWData()->m_physmodel.numobjects == 0)
+	if(!g_editormainframe->IsPhysmodelDrawEnabled() || pModel->GetHWData()->physModel.numObjects == 0)
 		return;
 
 	g_pShaderAPI->Reset();
@@ -53,9 +53,9 @@ void RenderPhysModel(IEqModel* pModel)
 
 	IMeshBuilder* mesh = g_pShaderAPI->CreateMeshBuilder();
 
-	physmodeldata_t* phys_data = &pModel->GetHWData()->m_physmodel;
+	physmodeldata_t* phys_data = &pModel->GetHWData()->physModel;
 
-	for(int i = 0; i < phys_data->numobjects; i++)
+	for(int i = 0; i < phys_data->numObjects; i++)
 	{
 		for(int j = 0; j < phys_data->objects[i].numShapes; j++)
 		{
@@ -106,26 +106,26 @@ void CEditableEntity::Render(int nViewRenderFlags)
 		materials->SetCullMode(CULL_BACK);
 		materials->SetMatrix(MATRIXMODE_WORLD, GetRenderWorldTransform());
 
-		studiohdr_t* pHdr = m_pModel->GetHWData()->pStudioHdr;
+		studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
 		int nLod = 0;
 
 		//materials->SetSkinningEnabled(true);
 
-		for(int i = 0; i < pHdr->numbodygroups; i++)
+		for(int i = 0; i < pHdr->numBodyGroups; i++)
 		{
-			int nLodableModelIndex = pHdr->pBodyGroups(i)->lodmodel_index;
-			int nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+			int nLodableModelIndex = pHdr->pBodyGroups(i)->lodModelIndex;
+			int nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 
 			while(nLod > 0 && nModDescId != -1)
 			{
 				nLod--;
-				nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+				nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 			}
 
 			if(nModDescId == -1)
 				continue;
 
-			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
 			{
 				
 				IMaterial* pMaterial = m_pModel->GetMaterial(nModDescId, j);
@@ -405,26 +405,26 @@ void CEditableEntity::RenderGhost(Vector3D &addpos, Vector3D &addscale, Vector3D
 
 		m_pModel->PrepareForSkinning(m_BoneMatrixList);
 
-		studiohdr_t* pHdr = m_pModel->GetHWData()->pStudioHdr;
+		studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
 		int nLod = 0;
 
 		materials->BindMaterial(g_pLevel->GetFlatMaterial());
 
-		for(int i = 0; i < pHdr->numbodygroups; i++)
+		for(int i = 0; i < pHdr->numBodyGroups; i++)
 		{
-			int nLodableModelIndex = pHdr->pBodyGroups(i)->lodmodel_index;
-			int nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+			int nLodableModelIndex = pHdr->pBodyGroups(i)->lodModelIndex;
+			int nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 
 			while(nLod > 0 && nModDescId != -1)
 			{
 				nLod--;
-				nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+				nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 			}
 
 			if(nModDescId == -1)
 				continue;
 
-			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
 			{
 				//IMaterial* pMaterial = m_pModel->GetMaterial(nModDescId, j);
 				m_pModel->DrawGroup(nModDescId, j);
@@ -931,32 +931,32 @@ float CEditableEntity::CheckLineIntersection(const Vector3D &start, const Vector
 		float best_dist = MAX_COORD_UNITS;
 		float fraction = 1.0f;
 
-		studiohdr_t* pHdr = m_pModel->GetHWData()->pStudioHdr;
+		studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
 		int nLod = 0;
 
 		Matrix4x4 transform = GetRenderWorldTransform();
 
-		for(int i = 0; i < pHdr->numbodygroups; i++)
+		for(int i = 0; i < pHdr->numBodyGroups; i++)
 		{
-			int nLodableModelIndex = pHdr->pBodyGroups(i)->lodmodel_index;
-			int nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+			int nLodableModelIndex = pHdr->pBodyGroups(i)->lodModelIndex;
+			int nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 
 			while(nLod > 0 && nModDescId != -1)
 			{
 				nLod--;
-				nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+				nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 			}
 
 			if(nModDescId == -1)
 				continue;
 
-			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
 			{
 				modelgroupdesc_t* pGroup = pHdr->pModelDesc(nModDescId)->pGroup(j);
 
 				uint32 *pIndices = pGroup->pVertexIdx(0);
 
-				for(int k = 0; k < pGroup->numindices; k+=3)
+				for(int k = 0; k < pGroup->numIndices; k+=3)
 				{
 					Vector3D v0,v1,v2;
 
@@ -1276,7 +1276,7 @@ void CEditableEntity::InitAnimationThings()
 	/*
 	if(m_pModel)
 	{
-		m_numBones = m_pModel->GetHWData()->pStudioHdr->numbones;
+		m_numBones = m_pModel->GetHWData()->studio->numBones;
 
 		m_BoneMatrixList = new Matrix4x4[m_numBones];
 		m_AnimationBoneMatrixList = DNewArray(Matrix4x4, m_numBones);
@@ -1320,10 +1320,10 @@ void CEditableEntity::InitAnimationThings()
 void CEditableEntity::PreloadMotionData(studiomotiondata_t* pMotionData)
 {
 	// create pose controllers
-	for(int i = 0; i < pMotionData->numposecontrollers; i++)
+	for(int i = 0; i < pMotionData->numPoseControllers; i++)
 	{
 		gposecontroller_t controller;
-		controller.pDesc = &pMotionData->posecontrollers[i];
+		controller.pDesc = &pMotionData->poseControllers[i];
 
 		// get center in blending range
 		controller.value = lerp(controller.pDesc->blendRange[0], controller.pDesc->blendRange[1], 0.5f);
@@ -1453,7 +1453,7 @@ void CEditableEntity::StandardPose()
 {
 	if(m_pModel && m_pModel->GetHWData() && m_pModel->GetHWData()->joints)
 	{
-		for(int i = 0; i < m_pModel->GetHWData()->pStudioHdr->numbones; i++)
+		for(int i = 0; i < m_pModel->GetHWData()->studio->numBones; i++)
 		{
 			m_BoneMatrixList[i] = m_pModel->GetHWData()->joints[i].absTrans;
 		}
@@ -1462,7 +1462,7 @@ void CEditableEntity::StandardPose()
 
 void CEditableEntity::GetInterpolatedBoneFrame(modelanimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out)
 {
-	InterpolateFrameTransform(pAnim->bones[nBone].keyframes[firstframe], pAnim->bones[nBone].keyframes[lastframe], clamp(interp,0,1), out);
+	InterpolateFrameTransform(pAnim->bones[nBone].keyFrames[firstframe], pAnim->bones[nBone].keyFrames[lastframe], clamp(interp,0,1), out);
 }
 
 void CEditableEntity::GetInterpolatedBoneFrameBetweenTwoAnimations(modelanimation_t* pAnim1, modelanimation_t* pAnim2, int nBone, int firstframe, int lastframe, float interp, float animTransition, animframe_t &out)

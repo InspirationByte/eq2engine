@@ -97,8 +97,8 @@ void CObject_Debris::Spawn()
 
 				const char* partName = KV_GetValueString(partSec);
 
-				m_breakable[i].bodyGroupIdx = Studio_FindBodyGroupId(m_pModel->GetHWData()->pStudioHdr, partName);
-				m_breakable[i].physObjIdx = PhysModel_FindObjectId(&m_pModel->GetHWData()->m_physmodel, KV_GetValueString(partSec->FindKeyBase("physics"), 0, partName));
+				m_breakable[i].bodyGroupIdx = Studio_FindBodyGroupId(m_pModel->GetHWData()->studio, partName);
+				m_breakable[i].physObjIdx = PhysModel_FindObjectId(&m_pModel->GetHWData()->physModel, KV_GetValueString(partSec->FindKeyBase("physics"), 0, partName));
 
 				m_breakable[i].offset = KV_GetVector3D(partSec->FindKeyBase("offset"));
 			}
@@ -123,9 +123,9 @@ void CObject_Debris::Spawn()
 
 	CEqRigidBody* body = new CEqRigidBody();
 
-	if( body->Initialize(&m_pModel->GetHWData()->m_physmodel, 0) )//
+	if( body->Initialize(&m_pModel->GetHWData()->physModel, 0) )//
 	{
-		physobject_t* obj = &m_pModel->GetHWData()->m_physmodel.objects[0].object;
+		physobject_t* obj = &m_pModel->GetHWData()->physModel.objects[0].object;
 
 		// set friction from surface parameters
 		m_surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);
@@ -197,9 +197,9 @@ void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup)
 	
 	CEqRigidBody* body = new CEqRigidBody();
 
-	if( body->Initialize(&m_pModel->GetHWData()->m_physmodel, 0) )//
+	if( body->Initialize(&m_pModel->GetHWData()->physModel, 0) )//
 	{
-		physobject_t* obj = &m_pModel->GetHWData()->m_physmodel.objects[0].object;
+		physobject_t* obj = &m_pModel->GetHWData()->physModel.objects[0].object;
 
 		body->SetFriction( 0.7f );
 		body->SetRestitution( 0.8f );
@@ -258,9 +258,9 @@ void CObject_Debris::SpawnAsBreakablePart(IEqModel* model, int8 bodyGroup, int p
 
 	CEqRigidBody* body = new CEqRigidBody();
 
-	if( body->Initialize(&m_pModel->GetHWData()->m_physmodel, physObj) )//
+	if( body->Initialize(&m_pModel->GetHWData()->physModel, physObj) )//
 	{
-		physobject_t* obj = &m_pModel->GetHWData()->m_physmodel.objects[physObj].object;
+		physobject_t* obj = &m_pModel->GetHWData()->physModel.objects[physObj].object;
 
 		// set friction from surface parameters
 		m_surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);
@@ -472,7 +472,7 @@ void CObject_Debris::Simulate(float fDt)
 			else if(!m_collOccured) // need this because break debris would change model
 			{
 				// change look of models
-				if(m_pModel->GetHWData()->pStudioHdr->numbodygroups > 1)
+				if(m_pModel->GetHWData()->studio->numBodyGroups > 1)
 					m_bodyGroupFlags = (1 << 1);
 			}
 		}

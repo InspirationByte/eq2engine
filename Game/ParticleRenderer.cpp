@@ -406,10 +406,10 @@ bool InitParticleBuffers()
 	if(!g_pParticleVF)
 	{
 		VertexFormatDesc_s format[] = {
-			{ 0, 3, VERTEXTYPE_VERTEX,		ATTRIBUTEFORMAT_FLOAT },	// vertex position
-			{ 0, 2, VERTEXTYPE_TEXCOORD,	ATTRIBUTEFORMAT_FLOAT },	// vertex texture coord
-			{ 0, 4, VERTEXTYPE_TEXCOORD,	ATTRIBUTEFORMAT_FLOAT },	// vertex color
-			{ 0, 3, VERTEXTYPE_TEXCOORD,	ATTRIBUTEFORMAT_FLOAT },	// vertex normal
+			{ 0, 3, VERTEXATTRIB_POSITION,		ATTRIBUTEFORMAT_FLOAT },	// vertex position
+			{ 0, 2, VERTEXATTRIB_TEXCOORD,	ATTRIBUTEFORMAT_FLOAT },	// vertex texture coord
+			{ 0, 4, VERTEXATTRIB_TEXCOORD,	ATTRIBUTEFORMAT_FLOAT },	// vertex color
+			{ 0, 3, VERTEXATTRIB_TEXCOORD,	ATTRIBUTEFORMAT_FLOAT },	// vertex normal
 		};
 
 		g_pParticleVF = g_pShaderAPI->CreateVertexFormat(format, elementsOf(format));

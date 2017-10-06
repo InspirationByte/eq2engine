@@ -457,13 +457,13 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 
 			if(value_id > 0)
 			{
-				graph_line_verts[num_line_verts].m_vPosition = last_point;
-				graph_line_verts[num_line_verts].m_vColor = graph->color;
+				graph_line_verts[num_line_verts].position = last_point;
+				graph_line_verts[num_line_verts].color = graph->color;
 
 				num_line_verts++;
 
-				graph_line_verts[num_line_verts].m_vPosition = point;
-				graph_line_verts[num_line_verts].m_vColor = graph->color;
+				graph_line_verts[num_line_verts].position = point;
+				graph_line_verts[num_line_verts].color = graph->color;
 
 				num_line_verts++;
 				//g_pShaderAPI->DrawSetColor(graph->color);

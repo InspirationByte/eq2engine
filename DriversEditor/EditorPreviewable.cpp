@@ -50,7 +50,7 @@ bool CEditorPreviewable::CreatePreview(int texSize)
 	DkList<CImage*> images;
 	images.append(&emptyImage);
 
-	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(TEXFILTER_TRILINEAR, ADDRESSMODE_CLAMP, ADDRESSMODE_CLAMP, ADDRESSMODE_CLAMP);
+	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(TEXFILTER_TRILINEAR, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);
 
 	m_preview = g_pShaderAPI->CreateTexture(images, sampler);
 

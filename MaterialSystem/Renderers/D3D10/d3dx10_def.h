@@ -197,11 +197,11 @@ const D3D10_TEXTURE_ADDRESS_MODE d3dAddressMode[] = {
 	D3D10_TEXTURE_ADDRESS_CLAMP,
 };
 
-inline bool HasMipmaps(Filter_e filter)
+inline bool HasMipmaps(ER_TextureFilterMode filter)
 {
     return (filter >= TEXFILTER_BILINEAR);
 }
-inline bool HasAniso(Filter_e filter)
+inline bool HasAniso(ER_TextureFilterMode filter)
 {
     return (filter >= TEXFILTER_BILINEAR_ANISO);
 }

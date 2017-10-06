@@ -116,7 +116,7 @@ void Cleanup()
 	for(int i = 0; i < g_animations.numElem(); i++)
 	{
 		for(int j = 0; j < g_numbones; j++)
-			delete [] g_animations[i].bones[j].keyframes;
+			delete [] g_animations[i].bones[j].keyFrames;
 
 		delete [] g_animations[i].bones;
 	}
@@ -180,22 +180,22 @@ int	GetPoseControllerIndex(const char* name)
 //************************************
 void ShiftAnimationFrames(boneframe_t* bone, int new_start_frame)
 {
-	animframe_t* frames_copy = new animframe_t[bone->numframes];
+	animframe_t* frames_copy = new animframe_t[bone->numFrames];
 
 	for(int i = 0; i < new_start_frame; i++)
 	{
-		frames_copy[i] = bone->keyframes[(bone->numframes-1) - new_start_frame];
+		frames_copy[i] = bone->keyFrames[(bone->numFrames-1) - new_start_frame];
 	}
 
 	int c = 0;
-	for(int i = new_start_frame-1; i < bone->numframes; i++; c++)
+	for(int i = new_start_frame-1; i < bone->numFrames; i++; c++)
 	{
-		frames_copy[i] = bone->keyframes[c++];
+		frames_copy[i] = bone->keyFrames[c++];
 	}
 
-	delete [] bone->keyframes;
+	delete [] bone->keyFrames;
 
-	bone->keyframes = frames_copy;
+	bone->keyFrames = frames_copy;
 }
 */
 
@@ -204,9 +204,9 @@ void ShiftAnimationFrames(boneframe_t* bone, int new_start_frame)
 //*******************************************************
 void TranslateAnimationFrames(boneframe_t* bone, Vector3D &offset)
 {
-	for(int i = 0; i < bone->numframes; i++)
+	for(int i = 0; i < bone->numFrames; i++)
 	{
-		bone->keyframes[i].vecBonePosition += offset;
+		bone->keyFrames[i].vecBonePosition += offset;
 	}
 }
 
@@ -216,10 +216,10 @@ void TranslateAnimationFrames(boneframe_t* bone, Vector3D &offset)
 //******************************************************
 void SubtractAnimationFrames(boneframe_t* bone, boneframe_t* otherbone)
 {
-	for(int i = 0; i < bone->numframes; i++)
+	for(int i = 0; i < bone->numFrames; i++)
 	{
-		bone->keyframes[i].vecBonePosition -= otherbone->keyframes[0].vecBonePosition;
-		bone->keyframes[i].angBoneAngles -= otherbone->keyframes[0].angBoneAngles;
+		bone->keyFrames[i].vecBonePosition -= otherbone->keyFrames[0].vecBonePosition;
+		bone->keyFrames[i].angBoneAngles -= otherbone->keyFrames[0].angBoneAngles;
 	}
 }
 
@@ -229,9 +229,9 @@ void SubtractAnimationFrames(boneframe_t* bone, boneframe_t* otherbone)
 //*******************************************************
 void VelocityBackTransform(boneframe_t* bone, Vector3D &velocity)
 {
-	for(int i = 0; i < bone->numframes; i++)
+	for(int i = 0; i < bone->numFrames; i++)
 	{
-		bone->keyframes[i].vecBonePosition -= velocity*float(i);
+		bone->keyFrames[i].vecBonePosition -= velocity*float(i);
 	}
 }
 
@@ -261,21 +261,21 @@ void InterpolateBoneAnimationFrames(boneframe_t* bone)
 	animframe_t *nextInterpKeyFrame = NULL;
 
 	// TODO: interpolate bone at the missing animation frames
-	for(int i = 0; i < bone->numframes; i++)
+	for(int i = 0; i < bone->numFrames; i++)
 	{
 		if(!lastKeyFrame)
 		{
 			lastKeyframeTime = i;
-			lastKeyFrame = &bone->keyframes[i]; // set last key frame
+			lastKeyFrame = &bone->keyFrames[i]; // set last key frame
 			continue;
 		}
 
-		for(int j = i; j < bone->numframes; j++)
+		for(int j = i; j < bone->numFrames; j++)
 		{
-			if(!nextInterpKeyFrame && !IsEmptyKeyframe(&bone->keyframes[j]))
+			if(!nextInterpKeyFrame && !IsEmptyKeyframe(&bone->keyFrames[j]))
 			{
 				//Msg("Interpolation destination key set to %d\n", j);
-				nextInterpKeyFrame = &bone->keyframes[j];
+				nextInterpKeyFrame = &bone->keyFrames[j];
 				nextKeyframeTime = j;
 				break;
 			}
@@ -283,7 +283,7 @@ void InterpolateBoneAnimationFrames(boneframe_t* bone)
 
 		if(lastKeyFrame && nextInterpKeyFrame)
 		{
-			if(!IsEmptyKeyframe(&bone->keyframes[i]))
+			if(!IsEmptyKeyframe(&bone->keyFrames[i]))
 			{
 				//Msg("Interp ends\n");
 				lastKeyFrame = NULL;
@@ -298,30 +298,30 @@ void InterpolateBoneAnimationFrames(boneframe_t* bone)
 					MsgError("Can't interpolate when end frame is NULL\n");
 
 				// do basic interpolation
-				bone->keyframes[i].vecBonePosition = lerp(lastKeyFrame->vecBonePosition, nextInterpKeyFrame->vecBonePosition, (float)(i - lastKeyframeTime) / (float)(nextKeyframeTime - lastKeyframeTime));
-				bone->keyframes[i].angBoneAngles = lerp(lastKeyFrame->angBoneAngles, nextInterpKeyFrame->angBoneAngles, (float)(i - lastKeyframeTime) / (float)(nextKeyframeTime - lastKeyframeTime));
+				bone->keyFrames[i].vecBonePosition = lerp(lastKeyFrame->vecBonePosition, nextInterpKeyFrame->vecBonePosition, (float)(i - lastKeyframeTime) / (float)(nextKeyframeTime - lastKeyframeTime));
+				bone->keyFrames[i].angBoneAngles = lerp(lastKeyFrame->angBoneAngles, nextInterpKeyFrame->angBoneAngles, (float)(i - lastKeyframeTime) / (float)(nextKeyframeTime - lastKeyframeTime));
 			}
 		}
 		else if(lastKeyFrame && !nextInterpKeyFrame)
 		{
 			// if there is no next frame, don't do interpolation, simple copy
-			bone->keyframes[i].vecBonePosition = lastKeyFrame->vecBonePosition;
-			bone->keyframes[i].angBoneAngles = lastKeyFrame->angBoneAngles;
+			bone->keyFrames[i].vecBonePosition = lastKeyFrame->vecBonePosition;
+			bone->keyFrames[i].angBoneAngles = lastKeyFrame->angBoneAngles;
 		}
 
 		if(!lastKeyFrame)
 		{
 			lastKeyframeTime = i;
-			lastKeyFrame = &bone->keyframes[i]; // set last key frame
+			lastKeyFrame = &bone->keyFrames[i]; // set last key frame
 			continue;
 		}
 
-		for(int j = i; j < bone->numframes; j++)
+		for(int j = i; j < bone->numFrames; j++)
 		{
-			if(!nextInterpKeyFrame && !IsEmptyKeyframe(&bone->keyframes[j]))
+			if(!nextInterpKeyFrame && !IsEmptyKeyframe(&bone->keyFrames[j]))
 			{
 				//Msg("Interpolation destination key set to %d\n", j);
-				nextInterpKeyFrame = &bone->keyframes[j];
+				nextInterpKeyFrame = &bone->keyFrames[j];
 				nextKeyframeTime = j;
 				break;
 			}
@@ -343,16 +343,16 @@ inline void InterpolateFrameTransform(animframe_t &frame1, animframe_t &frame2, 
 //************************************
 void CropAnimationBoneFrames(boneframe_t* pBone, int newStart, int newFrames)
 {
-	if(newStart >= pBone->numframes)
+	if(newStart >= pBone->numFrames)
 	{
 		MsgError("Error in crop: min frame value is bigger than number of frames of animation\n");
 		return;
 	}
 
 	if(newFrames == -1)
-		newFrames = pBone->numframes - newStart;
+		newFrames = pBone->numFrames - newStart;
 
-	if(newFrames > (pBone->numframes - newStart))
+	if(newFrames > (pBone->numFrames - newStart))
 	{
 		MsgError("Error in crop: max frame value is bigger than number of frames of animation, it must be ident\n");
 		return;
@@ -362,13 +362,13 @@ void CropAnimationBoneFrames(boneframe_t* pBone, int newStart, int newFrames)
 
 	for(int i = 0; i < newFrames; i++)
 	{
-		new_frames[i] = pBone->keyframes[i + newStart];
+		new_frames[i] = pBone->keyFrames[i + newStart];
 	}
 
-	delete [] pBone->keyframes;
-	pBone->keyframes = new_frames;
+	delete [] pBone->keyFrames;
+	pBone->keyFrames = new_frames;
 
-	pBone->numframes = newFrames;
+	pBone->numFrames = newFrames;
 }
 
 //************************************
@@ -376,7 +376,7 @@ void CropAnimationBoneFrames(boneframe_t* pBone, int newStart, int newFrames)
 //************************************
 void CropAnimationDimensions(modelanimation_t* pAnim, int newStart, int newFrames)
 {
-	for(int i = 0; i < g_model->numbones; i++)
+	for(int i = 0; i < g_model->numBones; i++)
 		CropAnimationBoneFrames(&pAnim->bones[i], newStart, newFrames);
 }
 
@@ -385,17 +385,17 @@ void CropAnimationDimensions(modelanimation_t* pAnim, int newStart, int newFrame
 //************************************
 void ReverseAnimationBoneFrames(boneframe_t* pBone)
 {
-	animframe_t* new_frames = new animframe_t[pBone->numframes];
+	animframe_t* new_frames = new animframe_t[pBone->numFrames];
 
-	for(int i = 0; i < pBone->numframes; i++)
+	for(int i = 0; i < pBone->numFrames; i++)
 	{
-		int rev_idx = (pBone->numframes-1)-i;
+		int rev_idx = (pBone->numFrames-1)-i;
 
-		new_frames[i] = pBone->keyframes[rev_idx];
+		new_frames[i] = pBone->keyFrames[rev_idx];
 	}
 
-	delete [] pBone->keyframes;
-	pBone->keyframes = new_frames;
+	delete [] pBone->keyFrames;
+	pBone->keyFrames = new_frames;
 }
 
 //************************************
@@ -404,7 +404,7 @@ void ReverseAnimationBoneFrames(boneframe_t* pBone)
 
 void ReverseAnimation( modelanimation_t* pAnim )
 {
-	for(int i = 0; i < g_model->numbones; i++)
+	for(int i = 0; i < g_model->numBones; i++)
 		ReverseAnimationBoneFrames( &pAnim->bones[i] );
 }
 
@@ -450,17 +450,17 @@ void RemapBoneFrames(boneframe_t* pBone, int newLength)
 		newFrames[i].angBoneAngles.x = BONE_NOT_SET;
 	}
 
-	float fFrameFactor = (float)newLength / (float)pBone->numframes;
-	float fFrameFactor_to_old = (float)pBone->numframes / (float)newLength;
+	float fFrameFactor = (float)newLength / (float)pBone->numFrames;
+	float fFrameFactor_to_old = (float)pBone->numFrames / (float)newLength;
 
 
 	bSetFrames[0] = true;
 	bSetFrames[newLength-1] = true;
 
-	newFrames[0] = pBone->keyframes[0];
-	newFrames[newLength-1] = pBone->keyframes[pBone->numframes-1];
+	newFrames[0] = pBone->keyFrames[0];
+	newFrames[newLength-1] = pBone->keyFrames[pBone->numFrames-1];
 
-	for(int i = 0; i < pBone->numframes; i++)
+	for(int i = 0; i < pBone->numFrames; i++)
 	{
 		float fframe_id = fFrameFactor*(float)i;
 
@@ -471,13 +471,13 @@ void RemapBoneFrames(boneframe_t* pBone, int newLength)
 		int interp_frame1 = 0;
 		int interp_frame2 = 0;
 		float timefactor_to_old = fFrameFactor_to_old*(float)new_frame_1;
-		GetCurrAndNextFrameFromTime(timefactor_to_old, pBone->numframes, &interp_frame1, &interp_frame2);
+		GetCurrAndNextFrameFromTime(timefactor_to_old, pBone->numFrames, &interp_frame1, &interp_frame2);
 
 		if(!bSetFrames[i])
 		{
 			float ftime_interp = timefactor_to_old - (int)interp_frame1;
 
-			InterpolateFrameTransform(pBone->keyframes[interp_frame1], pBone->keyframes[interp_frame2], ftime_interp, newFrames[new_frame_1]);
+			InterpolateFrameTransform(pBone->keyFrames[interp_frame1], pBone->keyFrames[interp_frame2], ftime_interp, newFrames[new_frame_1]);
 		}
 
 		bSetFrames[i] = true;
@@ -485,11 +485,11 @@ void RemapBoneFrames(boneframe_t* pBone, int newLength)
 
 	// finally, replace bones
 
-	delete [] pBone->keyframes;
+	delete [] pBone->keyFrames;
 	delete [] bSetFrames;
 
-	pBone->keyframes = newFrames;
-	pBone->numframes = newLength;
+	pBone->keyFrames = newFrames;
+	pBone->numFrames = newLength;
 
 	InterpolateBoneAnimationFrames(pBone);
 }
@@ -499,7 +499,7 @@ void RemapBoneFrames(boneframe_t* pBone, int newLength)
 //************************************
 void RemapAnimationLength(modelanimation_t* pAnim, int newLength)
 {
-	for(int i = 0; i < g_model->numbones; i++)
+	for(int i = 0; i < g_model->numBones; i++)
 		RemapBoneFrames(&pAnim->bones[i], newLength);
 }
 
@@ -537,7 +537,7 @@ void SetupESABones(dsmmodel_t* pModel, animCaBoneFrames_t* bones)
 	// because I'm not sure that the bones in ESA file are valid
 
 	// setup each bone's transformation
-	for(int8 i = 0; i < g_model->numbones; i++)
+	for(int8 i = 0; i < g_model->numBones; i++)
 	{
 		bonedesc_t* bone = g_model->pBone(i);
 
@@ -656,11 +656,11 @@ bool ReadFrames(Tokenizer& tok, dsmmodel_t* pModel, modelanimation_t* pAnim)
 	for(int i = 0; i < bones.numElem(); i++)
 	{
 		int numFrames = bones[i].frames.numElem();
-		pAnim->bones[i].numframes = numFrames;
-		pAnim->bones[i].keyframes = new animframe_t[numFrames];
+		pAnim->bones[i].numFrames = numFrames;
+		pAnim->bones[i].keyFrames = new animframe_t[numFrames];
 
 		// copy frames
-		memcpy(pAnim->bones[i].keyframes, bones[i].frames.ptr(), numFrames * sizeof(animframe_t));
+		memcpy(pAnim->bones[i].keyFrames, bones[i].frames.ptr(), numFrames * sizeof(animframe_t));
 
 		// try fix and iterpolate
 		//InterpolateBoneAnimationFrames( &pAnim->bones[i] );
@@ -719,7 +719,7 @@ int LoadAnimationFromESA(const char* filename)
 			if(g_numbones == 0)
 				g_numbones = tempDSM.bones.numElem();
 
-			if(g_model->numbones < g_numbones)
+			if(g_model->numBones < g_numbones)
 			{
 				MsgError("Invalid bones! Please re-export model!\n");
 				delete [] modelAnim.bones;
@@ -1005,7 +1005,7 @@ void LoadSequence(kvkeybase_t* section, const char* seq_name)
 		}
 
 		// check for validness
-		int checkFrameCount = g_animations[desc.animations[0]].bones[0].numframes;
+		int checkFrameCount = g_animations[desc.animations[0]].bones[0].numFrames;
 
 		int old_frame_count = checkFrameCount;
 
@@ -1013,7 +1013,7 @@ void LoadSequence(kvkeybase_t* section, const char* seq_name)
 		{
 			for(int i = 0; i < desc.numAnimations; i++)
 			{
-				int real_frames = g_animations[desc.animations[i]].bones[0].numframes;
+				int real_frames = g_animations[desc.animations[i]].bones[0].numFrames;
 
 				if(real_frames > checkFrameCount)
 					checkFrameCount = real_frames;
@@ -1024,9 +1024,9 @@ void LoadSequence(kvkeybase_t* section, const char* seq_name)
 
 		for(int i = 0; i < desc.numAnimations; i++)
 		{
-			int real_frames = g_animations[desc.animations[i]].bones[0].numframes;
+			int real_frames = g_animations[desc.animations[i]].bones[0].numFrames;
 
-			if(g_animations[desc.animations[i]].bones[0].numframes != checkFrameCount)
+			if(g_animations[desc.animations[i]].bones[0].numFrames != checkFrameCount)
 			{
 				if(bAlignAnimationLengths)
 				{
@@ -1182,11 +1182,11 @@ void ConvertAnimationsToWrite()
 		// convert bones.
 		for(int j = 0; j < g_numbones; j++)
 		{
-			anim.numFrames += g_animations[i].bones[j].numframes;
+			anim.numFrames += g_animations[i].bones[j].numFrames;
 
-			for(int k = 0; k < g_animations[i].bones[j].numframes; k++)
+			for(int k = 0; k < g_animations[i].bones[j].numFrames; k++)
 			{
-				g_animframes.append(g_animations[i].bones[j].keyframes[k]);
+				g_animframes.append(g_animations[i].bones[j].keyFrames[k]);
 			}
 		}
 
@@ -1208,15 +1208,15 @@ void MakeDefaultPoseAnimation()
 
 	strcpy(modelAnim.name, "default"); // set it externally from file name
 
-	g_numbones = g_model->numbones;
+	g_numbones = g_model->numBones;
 
 	modelAnim.bones = new boneframe_t[g_numbones];
 	for(int i = 0; i < g_numbones; i++)
 	{
-		modelAnim.bones[i].numframes = 1;
-		modelAnim.bones[i].keyframes = new animframe_t[1];
-		modelAnim.bones[i].keyframes[0].angBoneAngles = vec3_zero;
-		modelAnim.bones[i].keyframes[0].vecBonePosition = vec3_zero;
+		modelAnim.bones[i].numFrames = 1;
+		modelAnim.bones[i].keyFrames = new animframe_t[1];
+		modelAnim.bones[i].keyFrames[0].angBoneAngles = vec3_zero;
+		modelAnim.bones[i].keyFrames[0].vecBonePosition = vec3_zero;
 	}
 
 	g_animations.append(modelAnim);

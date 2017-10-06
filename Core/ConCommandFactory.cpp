@@ -293,10 +293,10 @@ const ConCommand *CConsoleCommands::FindCommand(const char* name)
 
 const ConCommandBase *CConsoleCommands::FindBase(const char* name)
 {
-	for ( int i = 0; i < m_pCommandBases.numElem(); i++ )
+	for ( int i = 0; i < m_registeredCommands.numElem(); i++ )
 	{
-		if ( !stricmp( name, m_pCommandBases[i]->GetName() ) )
-			return m_pCommandBases[i];
+		if ( !stricmp( name, m_registeredCommands[i]->GetName() ) )
+			return m_registeredCommands[i];
 	}
 	return NULL;
 }
@@ -336,12 +336,12 @@ void CConsoleCommands::RegisterCommand(ConCommandBase *pCmd)
 	if ( pCmd->IsRegistered() )
 		return;
 
-	m_pCommandBases.append( pCmd );
+	m_registeredCommands.append( pCmd );
 
 	pCmd->m_bIsRegistered = true;
 
 	// alphabetic sort
-	qsort(m_pCommandBases.ptr(), m_pCommandBases.numElem(), sizeof(ConCommandBase*), alpha_cmd_comp);
+	qsort(m_registeredCommands.ptr(), m_registeredCommands.numElem(), sizeof(ConCommandBase*), alpha_cmd_comp);
 }
 
 void CConsoleCommands::UnregisterCommand(ConCommandBase *pCmd)
@@ -349,15 +349,15 @@ void CConsoleCommands::UnregisterCommand(ConCommandBase *pCmd)
 	if ( !pCmd->IsRegistered() )
 		return;
 
-	m_pCommandBases.remove(pCmd);
+	m_registeredCommands.remove(pCmd);
 }
 
 void CConsoleCommands::DeInit()
 {
-	for(int i = 0; i < m_pCommandBases.numElem(); i++)
-		((ConCommandBase*)m_pCommandBases[i])->m_bIsRegistered = false;
+	for(int i = 0; i < m_registeredCommands.numElem(); i++)
+		((ConCommandBase*)m_registeredCommands[i])->m_bIsRegistered = false;
 
-	m_pCommandBases.clear();
+	m_registeredCommands.clear();
 }
 
 void CConsoleCommands::ForEachSeparated(char* str, char separator, FUNC fn, void* extra)

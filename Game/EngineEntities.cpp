@@ -23,7 +23,7 @@ public:
 	{
 		m_bEnabled = true;
 		m_fRadius = 300;
-		m_vColor = ColorRGB(0.8f,0.8f,0.8f);
+		color = ColorRGB(0.8f,0.8f,0.8f);
 		m_bShadows = true;
 		m_bMisc = false;
 		m_bVolumetric = false;
@@ -53,7 +53,7 @@ public:
 
 	void Precache()
 	{
-		m_pMaskTexture = g_pShaderAPI->LoadTexture(m_szMaskTexture.GetData(), TEXFILTER_TRILINEAR, ADDRESSMODE_CLAMP, TEXFLAG_NOQUALITYLOD);
+		m_pMaskTexture = g_pShaderAPI->LoadTexture(m_szMaskTexture.GetData(), TEXFILTER_TRILINEAR, TEXADDRESS_CLAMP, TEXFLAG_NOQUALITYLOD);
 		m_pMaskTexture->Ref_Grab();
 	}
 
@@ -108,7 +108,7 @@ public:
 
 		light->position = GetAbsOrigin();
 		light->radius = m_fRadius;
-		light->color = m_vColor;
+		light->color = color;
 		light->curintensity = m_fIntensity;
 		light->intensity = m_fIntensity;
 
@@ -167,7 +167,7 @@ private:
 	bool					m_bEnabled;
 	float					m_fRadius;
 	Vector3D				m_vRadius3;
-	Vector3D				m_vColor;
+	Vector3D				color;
 	bool					m_bShadows;
 	bool					m_bNoShadows;
 	bool					m_bMisc;
@@ -194,7 +194,7 @@ private:
 BEGIN_DATAMAP(CPointLight)
 
 	DEFINE_KEYFIELD( m_bEnabled,		"enabled", VTYPE_BOOLEAN ),
-	DEFINE_KEYFIELD( m_vColor,			"color", VTYPE_VECTOR3D ),
+	DEFINE_KEYFIELD( color,			"color", VTYPE_VECTOR3D ),
 	DEFINE_KEYFIELD( m_fIntensity,		"intensity", VTYPE_FLOAT ),
 	DEFINE_KEYFIELD( m_fRadius,			"radius", VTYPE_FLOAT ),
 	DEFINE_KEYFIELD( m_vRadius3,		"light_radius", VTYPE_ORIGIN ),
@@ -266,7 +266,7 @@ public:
 	CSpotLight()
 	{
 		m_fRadius = 300;
-		m_vColor = ColorRGB(0.8f,0.8f,0.8f);
+		color = ColorRGB(0.8f,0.8f,0.8f);
 		m_fFov = 90;
 		m_bShadows = true;
 		m_bMisc = false;
@@ -296,7 +296,7 @@ public:
 
 	void Precache()
 	{
-		m_pMaskTexture = g_pShaderAPI->LoadTexture(m_szMaskTexture.GetData(), TEXFILTER_TRILINEAR, ADDRESSMODE_CLAMP, TEXFLAG_NOQUALITYLOD);
+		m_pMaskTexture = g_pShaderAPI->LoadTexture(m_szMaskTexture.GetData(), TEXFILTER_TRILINEAR, TEXADDRESS_CLAMP, TEXFLAG_NOQUALITYLOD);
 		m_pMaskTexture->Ref_Grab();
 	}
 
@@ -353,7 +353,7 @@ public:
 		light->angles = GetAbsAngles();
 		light->position = GetAbsOrigin();
 		light->radius = m_fRadius;
-		light->color = m_vColor;
+		light->color = color;
 		light->curintensity = m_fIntensity;
 		light->intensity = m_fIntensity;
 
@@ -426,7 +426,7 @@ public:
 
 private:
 
-	Vector3D				m_vColor;
+	Vector3D				color;
 	float					m_fRadius;
 	bool					m_bShadows;
 	bool					m_bMisc;
@@ -453,7 +453,7 @@ private:
 BEGIN_DATAMAP(CSpotLight)
 
 	DEFINE_KEYFIELD( m_bEnabled,			"enabled", VTYPE_BOOLEAN),
-	DEFINE_KEYFIELD( m_vColor,				"color", VTYPE_VECTOR3D),
+	DEFINE_KEYFIELD( color,				"color", VTYPE_VECTOR3D),
 	DEFINE_KEYFIELD( m_fIntensity,			"intensity", VTYPE_FLOAT ),
 	DEFINE_KEYFIELD( m_fRadius,				"radius", VTYPE_FLOAT),
 	DEFINE_KEYFIELD( m_fFov,				"fov", VTYPE_FLOAT),
@@ -482,7 +482,7 @@ public:
 
 	CSunLight()
 	{
-		m_vColor = ColorRGB(0.8f,0.8f,0.8f);
+		color = ColorRGB(0.8f,0.8f,0.8f);
 		m_bShadows = true;
 
 		m_pLightAreaList = NULL;
@@ -513,7 +513,7 @@ public:
 		light->angles = GetAbsAngles();
 		light->position = GetAbsOrigin();
 		light->radius = -1;
-		light->color = m_vColor;
+		light->color = color;
 		light->curintensity = 1.0f;
 		light->intensity = 1.0f;
 
@@ -529,7 +529,7 @@ public:
 
 private:
 
-	Vector3D				m_vColor;
+	Vector3D				color;
 
 	bool					m_bShadows;
 
@@ -541,7 +541,7 @@ private:
 // declare save data
 BEGIN_DATAMAP(CSunLight)
 
-	DEFINE_KEYFIELD( m_vColor,				"color", VTYPE_VECTOR3D),
+	DEFINE_KEYFIELD( color,				"color", VTYPE_VECTOR3D),
 	DEFINE_KEYFIELD( m_bShadows,			"shadows", VTYPE_BOOLEAN),
 
 END_DATAMAP()

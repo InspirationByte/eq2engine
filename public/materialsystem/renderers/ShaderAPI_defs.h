@@ -20,7 +20,7 @@
 //---------------------------------------
 
 // comparison functions
-enum CompareFunc_e
+enum ER_CompareFunc
 {
 	COMP_NEVER			= 0,
 
@@ -34,7 +34,7 @@ enum CompareFunc_e
 };
 
 // Reserved, used for shaders only
-enum ConstantType_e
+enum ER_ConstantType
 {
     CONSTANT_FLOAT,
 	CONSTANT_VECTOR2D,
@@ -55,7 +55,7 @@ enum ConstantType_e
     CONSTANT_TYPE_COUNT
 };
 
-static int constantTypeSizes[CONSTANT_TYPE_COUNT] = {
+static int s_constantTypeSizes[CONSTANT_TYPE_COUNT] = {
 	sizeof(float),
 	sizeof(Vector2D),
 	sizeof(Vector3D),
@@ -73,23 +73,8 @@ static int constantTypeSizes[CONSTANT_TYPE_COUNT] = {
 	sizeof(Matrix4x4),
 };
 
-// for SetDepthState()
-enum DepthState_e
-{
-	DS_NODEPTHTEST,
-	DS_NODEPTHWRITE,
-};
-
-// for SetCullingMode()
-enum RasterizerState_e
-{
-	RASTER_CULL_NONE,
-	RASTER_CULL_BACK,
-	RASTER_CULL_FRONT,
-};
-
 // Texture filtering type for SetTextureFilteringMode()
-enum Filter_e
+enum ER_TextureFilterMode
 {
 	TEXFILTER_NEAREST	= 0,
 	TEXFILTER_LINEAR,
@@ -100,7 +85,7 @@ enum Filter_e
 };
 
 // for SetMatrixMode()
-enum MatrixMode_e
+enum ER_MatrixMode
 {
 	MATRIXMODE_VIEW	= 0,			// view tranformation matrix
 	MATRIXMODE_PROJECTION,			// projection mode matrix
@@ -112,14 +97,14 @@ enum MatrixMode_e
 };
 
 // for SetTextureClamp()
-enum AddressMode_e
+enum ER_TextureAddressMode
 {
-	ADDRESSMODE_WRAP	= 0,
-	ADDRESSMODE_CLAMP,
+	TEXADDRESS_WRAP	= 0,
+	TEXADDRESS_CLAMP,
 };
 
 // for mesh builder and type of drawing the world model
-enum PrimitiveType_e
+enum ER_PrimitiveType
 {
 	PRIM_TRIANGLES      = 0,
 	PRIM_TRIANGLE_FAN,
@@ -169,42 +154,35 @@ static int PrimCount_None( int )
 }
 
 // Vertex type
-enum VertexType_e
+enum ER_VertexAttribType
 {
-	VERTEXTYPE_NONE		= 0,	// or unused
+	VERTEXATTRIB_UNUSED		= 0,	// or unused
 
-	VERTEXTYPE_COLOR,
-	VERTEXTYPE_VERTEX,
-	VERTEXTYPE_TEXCOORD,
-	VERTEXTYPE_NORMAL,
-	VERTEXTYPE_TANGENT,
-	VERTEXTYPE_BINORMAL,
+	VERTEXATTRIB_COLOR,
+	VERTEXATTRIB_POSITION,
+	VERTEXATTRIB_TEXCOORD,
+	VERTEXATTRIB_NORMAL,
+	VERTEXATTRIB_TANGENT,
+	VERTEXATTRIB_BINORMAL,
 };
 
 // Attribute format
-enum AttributeFormat_e
+enum ER_AttributeFormat
 {
 	ATTRIBUTEFORMAT_FLOAT = 0,
 	ATTRIBUTEFORMAT_HALF,
 	ATTRIBUTEFORMAT_UBYTE,
 };
 
-static int attributeFormatSize[] =
+static int s_attributeSize[] =
 {
 	sizeof(float),
 	sizeof(half),
 	sizeof(ubyte)
 };
 
-// Index type
-enum IndexType_e
-{
-	INDEXTYPE_SHORT = 0,
-	INDEXTYPE_INTEGER,
-};
-
 // Buffer access type (for VBO)
-enum BufferAccessType_e
+enum ER_BufferAccess
 {
 	BUFFER_DEFAULT		= 0,
 	BUFFER_STATIC,
@@ -213,11 +191,11 @@ enum BufferAccessType_e
 
 typedef struct VertexFormatDesc_s
 {
-	int					m_nStream;
-	int					m_nSize;
+	int					streamId;
+	int					elemCount;
 
-	VertexType_e		m_nType;
-	AttributeFormat_e	m_nFormat;
+	ER_VertexAttribType	attribType;
+	ER_AttributeFormat	attribFormat;
 
 }VertexFormatDesc_t;
 
@@ -226,17 +204,17 @@ typedef struct SamplerStateParam_s
 	SamplerStateParam_s()
 	{
 		userData = NULL;
-		nComparison = COMP_LESS;
+		compareFunc = COMP_LESS;
 	}
 
-	Filter_e		minFilter;
-	Filter_e		magFilter;
+	ER_TextureFilterMode		minFilter;
+	ER_TextureFilterMode		magFilter;
 
-	CompareFunc_e	nComparison;
+	ER_CompareFunc	compareFunc;
 
-	AddressMode_e	wrapS;
-	AddressMode_e	wrapT;
-	AddressMode_e	wrapR;
+	ER_TextureAddressMode	wrapS;
+	ER_TextureAddressMode	wrapT;
+	ER_TextureAddressMode	wrapR;
 	int				aniso;
 
 	float			lod;
@@ -261,7 +239,7 @@ typedef struct SamplerStateParam_s
 // HOW BLENDING WORKS:
 // (TextureRGBA * SRCBlendingFactor) (Blending Function) (FrameBuffer * DSTBlendingFactor)
 
-enum BlendingFactor_e
+enum ER_BlendFactor
 {
 	BLENDFACTOR_ZERO					= 0,
 	BLENDFACTOR_ONE,					//	1
@@ -277,7 +255,7 @@ enum BlendingFactor_e
 };
 
 // Function of blending
-enum BlendingFunction_e
+enum ER_BlendFunction
 {
 	// Function of blending
 	BLENDFUNC_ADD				= 0,
@@ -291,7 +269,7 @@ enum BlendingFunction_e
 // Texture flags
 //-----------------------------------------------------------------------------
 
-enum ETextureFlags
+enum ER_TextureFlags
 {
 	// texture creating flags
 	TEXFLAG_CUBEMAP					= (1 << 0),		// should create cubemap
@@ -327,7 +305,7 @@ enum ETextureFlags
 #define VERTEX_TEXTURE_INDEX(idx)	((-MAX_VERTEXTEXTURES - 1)+idx)
 
 // Stencil-test function constants for SetStencilStateEx()
-enum StencilFunction_e
+enum ER_StencilFunction
 {
 	STENCILFUNC_KEEP		= 0,
 	STENCILFUNC_SET_ZERO,	// 1
@@ -341,7 +319,7 @@ enum StencilFunction_e
 };
 
 // Fillmode constants for SetFillMode()
-enum FillMode_e
+enum ER_FillMode
 {
 	FILL_SOLID		= 0,
 	FILL_WIREFRAME,	// 1
@@ -349,7 +327,7 @@ enum FillMode_e
 };
 
 // Cull modes
-enum CullMode_e
+enum ER_CullMode
 {
 	CULL_NONE		= 0,
 	CULL_BACK,		// 1
@@ -370,9 +348,9 @@ typedef struct BlendStateParam_s
 		alphaTestRef = 0.9f;
 	}
 
-	BlendingFactor_e	srcFactor;
-	BlendingFactor_e	dstFactor;
-	BlendingFunction_e	blendFunc;
+	ER_BlendFactor	srcFactor;
+	ER_BlendFactor	dstFactor;
+	ER_BlendFunction	blendFunc;
 
 	int mask;
 
@@ -399,16 +377,16 @@ typedef struct DepthStencilStateParams_s
 
 	bool					depthTest;
 	bool					depthWrite;
-	CompareFunc_e			depthFunc;
+	ER_CompareFunc			depthFunc;
 
 	bool					doStencilTest;
 	uint8					nStencilMask;
 	uint8					nStencilWriteMask;
 	uint8					nStencilRef;
-	CompareFunc_e			nStencilFunc;
-	StencilFunction_e		nStencilFail;
-	StencilFunction_e		nDepthFail;
-	StencilFunction_e		nStencilPass;
+	ER_CompareFunc			nStencilFunc;
+	ER_StencilFunction		nStencilFail;
+	ER_StencilFunction		nDepthFail;
+	ER_StencilFunction		nStencilPass;
 
 }DepthStencilStateParams_t;
 
@@ -425,8 +403,8 @@ typedef struct RasterizerStateParams_s
 		slopeDepthBias = 0.0f;
 	}
 
-	CullMode_e				cullMode;
-	FillMode_e				fillMode;
+	ER_CullMode				cullMode;
+	ER_FillMode				fillMode;
 	bool					useDepthBias;
 	float					depthBias;
 	float					slopeDepthBias;
@@ -438,7 +416,7 @@ typedef struct RasterizerStateParams_s
 //---------------------------------------
 
 // shader constant setup flags to set to shader :P
-enum EShaderConstantSetup
+enum ER_ShaderConstantSetup
 {
 	SCONST_VERTEX		= (1 << 0),
 	SCONST_PIXEL		= (1 << 1),
@@ -448,7 +426,7 @@ enum EShaderConstantSetup
 };
 
 // API reset type
-enum EStateResetFlags
+enum ER_StateResetFlags
 {
 	STATE_RESET_SHADER		= (1 << 0),
 	STATE_RESET_VF			= (1 << 1),
@@ -460,21 +438,19 @@ enum EStateResetFlags
 	STATE_RESET_SS			= (1 << 7),
 	STATE_RESET_TEX			= (1 << 8),
 	STATE_RESET_SHADERCONST	= (1 << 9),
-};
 
-// Reset() flags
-#define STATE_RESET_ALL			0xFFFF
-#define STATE_RESET_VBO			(STATE_RESET_VF | STATE_RESET_VB | STATE_RESET_IB)
+	STATE_RESET_ALL			= 0xFFFF,
+	STATE_RESET_VBO			= (STATE_RESET_VF | STATE_RESET_VB | STATE_RESET_IB)
+};
 
 #ifndef BUFFER_OFFSET
 #define BUFFER_OFFSET(i) ((char *) NULL + (i))
 #endif
 
-#define MAX_SAMPLER_NAMELEN 64
-
 typedef struct Sampler_s
 {
-	char	name[MAX_SAMPLER_NAMELEN];
+	char	name[64];
+
 	uint	index;
 	uint	gsIndex;
 	uint	vsIndex;
@@ -512,7 +488,7 @@ struct shaderProgramCompileInfo_t
 
 // shader API class for shader developers.
 // DON'T USE TYPES IN DYNAMIC SHADER CODE!
-enum ShaderAPIClass_e
+enum ER_ShaderAPIType
 {
 	SHADERAPI_EMPTY = 0,
 	SHADERAPI_OPENGL,

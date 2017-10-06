@@ -142,23 +142,23 @@ public:
 	//-----------------------------
 
 	// draws primitives
-	void							DrawPrimitivesFFP(	PrimitiveType_e type, Vertex3D_t *pVerts, int nVerts,
-																ITexture* pTexture = NULL, const ColorRGBA &color = color4_white,
-																BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
-																RasterizerStateParams_t* rasterParams = NULL);
+	void							DrawPrimitivesFFP(	ER_PrimitiveType type, Vertex3D_t *pVerts, int nVerts,
+														ITexture* pTexture = NULL, const ColorRGBA &color = color4_white,
+														BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
+														RasterizerStateParams_t* rasterParams = NULL);
 
 	// draws primitives for 2D
-	void							DrawPrimitives2DFFP(	PrimitiveType_e type, Vertex2D_t *pVerts, int nVerts,
-																	ITexture* pTexture = NULL, const ColorRGBA &color = color4_white,
-																	BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
-																	RasterizerStateParams_t* rasterParams = NULL);
+	void							DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pVerts, int nVerts,
+															ITexture* pTexture = NULL, const ColorRGBA &color = color4_white,
+															BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
+															RasterizerStateParams_t* rasterParams = NULL);
 
 	//-----------------------------
 	// Shader dynamic states
 	//-----------------------------
 
-	CullMode_e						GetCurrentCullMode();
-	void							SetCullMode(CullMode_e cullMode);
+	ER_CullMode						GetCurrentCullMode();
+	void							SetCullMode(ER_CullMode cullMode);
 
 	void							SetSkinningEnabled( bool bEnable );
 	bool							IsSkinningEnabled();
@@ -200,20 +200,20 @@ public:
 
 
 	// sets blending
-	void							SetBlendingStates(	BlendingFactor_e nSrcFactor,
-																BlendingFactor_e nDestFactor,
-																BlendingFunction_e nBlendingFunc = BLENDFUNC_ADD,
+	void							SetBlendingStates(	ER_BlendFactor nSrcFactor,
+																ER_BlendFactor nDestFactor,
+																ER_BlendFunction nBlendingFunc = BLENDFUNC_ADD,
 																int colormask = COLORMASK_ALL
 																);
 
 	// sets depth stencil state
 	void							SetDepthStates(	bool bDoDepthTest,
 															bool bDoDepthWrite,
-															CompareFunc_e depthCompFunc = COMP_LEQUAL);
+															ER_CompareFunc depthCompFunc = COMP_LEQUAL);
 
 	// sets rasterizer extended mode
-	void							SetRasterizerStates(	CullMode_e nCullMode,
-																	FillMode_e nFillMode = FILL_SOLID,
+	void							SetRasterizerStates(	ER_CullMode nCullMode,
+																	ER_FillMode nFillMode = FILL_SOLID,
 																	bool bMultiSample = true,
 																	bool bScissor = false,
 																	bool bPolyOffset = false
@@ -247,10 +247,10 @@ public:
 	void							SetupOrtho(float left, float right, float top, float bottom, float zNear, float zFar);
 
 	// sets up a matrix, projection, view, and world
-	void							SetMatrix(MatrixMode_e mode, const Matrix4x4 &matrix);
+	void							SetMatrix(ER_MatrixMode mode, const Matrix4x4 &matrix);
 
 	// returns a typed matrix
-	void							GetMatrix(MatrixMode_e mode, Matrix4x4 &matrix);
+	void							GetMatrix(ER_MatrixMode mode, Matrix4x4 &matrix);
 
 	// retunrs multiplied matrix
 	void							GetWorldViewProjection(Matrix4x4 &matrix);
@@ -298,7 +298,7 @@ public:
 
 	void							PrintLoadedMaterials();
 
-	bool							IsInitialized() const {return (m_pRenderLib != NULL);}
+	bool							IsInitialized() const {return (m_renderLibrary != NULL);}
 	const char*						GetInterfaceName() const {return MATSYSTEM_INTERFACE_VERSION;}
 
 private:
@@ -308,20 +308,20 @@ private:
 
 	matsystem_render_config_t		m_config;
 
-	IRenderLibrary*					m_pRenderLib;					// render library.
+	IRenderLibrary*					m_renderLibrary;					// render library.
 	DKMODULE*						m_rendermodule;					// render dll.
 
-	IShaderAPI*						m_pShaderAPI;					// the main renderer interface
-	EqString						m_szMaterialsdir;				// material path
+	IShaderAPI*						m_shaderAPI;					// the main renderer interface
+	EqString						m_materialsPath;				// material path
 
-	DkList<DKMODULE*>				m_hShaderLibraries;				// loaded shader libraries
+	DkList<DKMODULE*>				m_shaderLibs;				// loaded shader libraries
 
-	DkList<shaderfactory_t>			m_hShaders;						// registered shaders
-	DkList<shaderoverride_t>		m_ShaderOverrideList;			// shader override functors
-	DkList<proxyfactory_t>			m_ProxyList;
+	DkList<shaderfactory_t>			m_shaderFactoryList;						// registered shaders
+	DkList<shaderoverride_t>		m_shaderOverrideList;			// shader override functors
+	DkList<proxyfactory_t>			m_proxyFactoryList;
 
-	DkList<IMaterial*>				m_pLoadedMaterials;				// loaded material list
-	CullMode_e						m_nCurrentCullMode;				// culling mode. For shaders. TODO: remove, and check matrix handedness.
+	DkList<IMaterial*>				m_loadedMaterials;				// loaded material list
+	ER_CullMode						m_cullMode;				// culling mode. For shaders. TODO: remove, and check matrix handedness.
 
 	CDynamicMesh					m_dynamicMesh;
 
@@ -333,38 +333,38 @@ private:
 
 	IMaterialRenderParamCallbacks*	m_preApplyCallback;
 
-	MaterialLightingMode_e			m_nCurrentLightingShaderModel;	// dynamic-changeable lighting model. Used as state
-	bool							m_bIsSkinningEnabled;
+	MaterialLightingMode_e			m_curentLightingModel;	// dynamic-changeable lighting model. Used as state
+	bool							m_skinningEnabled;
 	bool							m_instancingEnabled;
 
 	Matrix4x4						m_matrices[5];					// matrix modes
 
-	IMaterial*						m_pCurrentMaterial;				// currently binded material
+	IMaterial*						m_setMaterial;				// currently binded material
 	uint							m_paramOverrideMask;			// parameter setup mask for overrides
 
 
-	IMaterial*						m_pOverdrawMaterial;
+	IMaterial*						m_overdrawMaterial;
 
-	ITexture*						m_pEnvmapTexture;
+	ITexture*						m_currentEnvmapTexture;
 
-	DkList<DEVLICELOSTRESTORE>		m_pDeviceLostCb;
-	DkList<DEVLICELOSTRESTORE>		m_pDeviceRestoreCb;
+	DkList<DEVLICELOSTRESTORE>		m_lostDeviceCb;
+	DkList<DEVLICELOSTRESTORE>		m_restoreDeviceCb;
 
-	ITexture*						m_pWhiteTexture;
-	ITexture*						m_pLuxelTestTexture;
+	ITexture*						m_whiteTexture;
+	ITexture*						m_luxelTestTexture;
 
 	IMaterial*						m_pDefaultMaterial;
 
 	FogInfo_t						m_fogInfo;
 	ColorRGBA						m_ambColor;
 
-	dlight_t*						m_pCurrentLight;
+	dlight_t*						m_currentLight;
 
-	bool							m_bDeviceState;
+	bool							m_deviceActiveState;
 
 	CEqMutex						m_Mutex;
 
-	bool							m_bPreloadingMarker;
+	bool							m_forcePreloadMaterials;
 	uint							m_frame;
 };
 

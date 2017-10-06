@@ -324,7 +324,7 @@ void BaseAnimating::InitAnimationThings()
 
 	if(m_pModel)
 	{
-		m_numBones = m_pModel->GetHWData()->pStudioHdr->numbones;
+		m_numBones = m_pModel->GetHWData()->studio->numBones;
 
 		m_BoneMatrixList = PPAllocStructArray(Matrix4x4, m_numBones);
 		m_AnimationBoneMatrixList = PPAllocStructArray(Matrix4x4, m_numBones);
@@ -364,20 +364,20 @@ void BaseAnimating::InitAnimationThings()
 		StandardPose();
 
 		// load ik chains
-		for(int i = 0; i < m_pModel->GetHWData()->pStudioHdr->numikchains; i++)
+		for(int i = 0; i < m_pModel->GetHWData()->studio->numIKChains; i++)
 		{
-			studioikchain_t* pStudioChain = m_pModel->GetHWData()->pStudioHdr->pIkChain(i);
+			studioikchain_t* pStudioChain = m_pModel->GetHWData()->studio->pIkChain(i);
 
 			gikchain_t* chain = new gikchain_t;
 
 			strcpy(chain->name, pStudioChain->name);
-			chain->numlinks = pStudioChain->numlinks;
+			chain->numLinks = pStudioChain->numLinks;
 			chain->local_target = Vector3D(0,0,10);
 			chain->enable = false;
 
-			chain->links = PPAllocStructArray(giklink_t, chain->numlinks);
+			chain->links = PPAllocStructArray(giklink_t, chain->numLinks);
 
-			for( int j = 0; j < chain->numlinks; j++ )
+			for( int j = 0; j < chain->numLinks; j++ )
 			{
 				giklink_t link;
 
@@ -388,9 +388,9 @@ void BaseAnimating::InitAnimationThings()
 				link.limits[0] = pLink->mins;
 				link.limits[1] = pLink->maxs;
 
-				Vector3D rotation = m_pModel->GetHWData()->pStudioHdr->pBone(link.bone_index)->rotation;
+				Vector3D rotation = m_pModel->GetHWData()->studio->pBone(link.bone_index)->rotation;
 
-				link.position = m_pModel->GetHWData()->pStudioHdr->pBone(link.bone_index)->position;
+				link.position = m_pModel->GetHWData()->studio->pBone(link.bone_index)->position;
 				link.quat = Quaternion(rotation.x,rotation.y,rotation.z);
 
 				// initial transform
@@ -409,7 +409,7 @@ void BaseAnimating::InitAnimationThings()
 				m_pModel->GetHWData()->joints[link.bone_index].chain_id = i;
 			}
 
-			for(int j = 0; j < chain->numlinks; j++)
+			for(int j = 0; j < chain->numLinks; j++)
 			{
 				int parent = chain->links[j].parent;
 
@@ -439,10 +439,10 @@ void BaseAnimating::InitAnimationThings()
 void BaseAnimating::PreloadMotionData(studiomotiondata_t* pMotionData)
 {
 	// create pose controllers
-	for(int i = 0; i < pMotionData->numposecontrollers; i++)
+	for(int i = 0; i < pMotionData->numPoseControllers; i++)
 	{
 		gposecontroller_t controller;
-		controller.pDesc = &pMotionData->posecontrollers[i];
+		controller.pDesc = &pMotionData->poseControllers[i];
 
 		// get center in blending range
 		controller.value = lerp(controller.pDesc->blendRange[0], controller.pDesc->blendRange[1], 0.5f);
@@ -496,7 +496,7 @@ void BaseAnimating::PreloadMotionData(studiomotiondata_t* pMotionData)
 
 void BaseAnimating::PrecacheSoundEvents( studiomotiondata_t* pMotionData )
 {
-	for(int i = 0; i < pMotionData->numevents; i++)
+	for(int i = 0; i < pMotionData->numEvents; i++)
 	{
 		AnimationEvent event_type = GetEventByName(pMotionData->events[i].command);
 
@@ -599,7 +599,7 @@ void BaseAnimating::SetAnimationTime(float newTime, int slot)
 
 int BaseAnimating::GetBoneCount()
 {
-	return m_pModel->GetHWData()->pStudioHdr->numbones;
+	return m_pModel->GetHWData()->studio->numBones;
 }
 
 Matrix4x4* BaseAnimating::GetBoneMatrices()
@@ -612,7 +612,7 @@ void BaseAnimating::StandardPose()
 {
 	if(m_pModel && m_pModel->GetHWData() && m_pModel->GetHWData()->joints)
 	{
-		for(int i = 0; i < m_pModel->GetHWData()->pStudioHdr->numbones; i++)
+		for(int i = 0; i < m_pModel->GetHWData()->studio->numBones; i++)
 		{
 			m_BoneMatrixList[i] = m_pModel->GetHWData()->joints[i].absTrans;
 		}
@@ -622,7 +622,7 @@ void BaseAnimating::StandardPose()
 // finds bone
 int BaseAnimating::FindBone(const char* boneName)
 {
-	for(int i = 0; i < m_pModel->GetHWData()->pStudioHdr->numbones; i++)
+	for(int i = 0; i < m_pModel->GetHWData()->studio->numBones; i++)
 	{
 		if(!stricmp(m_pModel->GetHWData()->joints[i].name, boneName))
 			return i;
@@ -649,7 +649,7 @@ Vector3D BaseAnimating::GetLocalBoneDirection(int nBone)
 // finds attachment
 int BaseAnimating::FindAttachment(const char* name)
 {
-	return Studio_FindAttachmentId(m_pModel->GetHWData()->pStudioHdr, name);
+	return Studio_FindAttachmentId(m_pModel->GetHWData()->studio, name);
 }
 
 // gets local attachment position
@@ -658,10 +658,10 @@ Vector3D BaseAnimating::GetLocalAttachmentOrigin(int nAttach)
 	if(nAttach == -1)
 		return vec3_zero;
 
-	if(nAttach >= m_pModel->GetHWData()->pStudioHdr->numattachments)
+	if(nAttach >= m_pModel->GetHWData()->studio->numAttachments)
 		return vec3_zero;
 
-	studioattachment_t* attach = m_pModel->GetHWData()->pStudioHdr->pAttachment(nAttach);
+	studioattachment_t* attach = m_pModel->GetHWData()->studio->pAttachment(nAttach);
 
 	Matrix4x4 matrix = identity4();
 	matrix.setRotation(Vector3D(DEG2RAD(attach->angles.x),DEG2RAD(attach->angles.y),DEG2RAD(attach->angles.z)));
@@ -679,10 +679,10 @@ Vector3D BaseAnimating::GetLocalAttachmentDirection(int nAttach)
 	if(nAttach == -1)
 		return vec3_zero;
 
-	if(nAttach >= m_pModel->GetHWData()->pStudioHdr->numattachments)
+	if(nAttach >= m_pModel->GetHWData()->studio->numAttachments)
 		return vec3_zero;
 
-	studioattachment_t* attach = m_pModel->GetHWData()->pStudioHdr->pAttachment(nAttach);
+	studioattachment_t* attach = m_pModel->GetHWData()->studio->pAttachment(nAttach);
 
 	Matrix4x4 matrix = identity4();
 	matrix.setRotation(Vector3D(DEG2RAD(attach->angles.x),DEG2RAD(attach->angles.y),DEG2RAD(attach->angles.z)));
@@ -700,7 +700,7 @@ float BaseAnimating::GetCurrentAnimationDuration()
 	if(!m_sequenceTimers[0].base_sequence)
 		return 1.0f;
 
-	return (m_sequenceTimers[0].base_sequence->animations[0]->bones[0].numframes - 1) / m_sequenceTimers[0].base_sequence->framerate;
+	return (m_sequenceTimers[0].base_sequence->animations[0]->bones[0].numFrames - 1) / m_sequenceTimers[0].base_sequence->framerate;
 }
 
 // returns duration time of the specific animation
@@ -709,7 +709,7 @@ float BaseAnimating::GetAnimationDuration(int animIndex)
 	if(animIndex == -1)
 		return 1.0f;
 
-	return (m_pSequences[animIndex].animations[0]->bones[0].numframes - 1) / m_pSequences[animIndex].framerate;
+	return (m_pSequences[animIndex].animations[0]->bones[0].numFrames - 1) / m_pSequences[animIndex].framerate;
 }
 
 // returns remaining duration time of the current animation
@@ -856,7 +856,7 @@ void BaseAnimating::SwapSequenceTimers(int index, int swapTo)
 
 void BaseAnimating::GetInterpolatedBoneFrame(modelanimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out)
 {
-	InterpolateFrameTransform(pAnim->bones[nBone].keyframes[firstframe], pAnim->bones[nBone].keyframes[lastframe], clamp(interp,0,1), out);
+	InterpolateFrameTransform(pAnim->bones[nBone].keyFrames[firstframe], pAnim->bones[nBone].keyFrames[lastframe], clamp(interp,0,1), out);
 }
 
 void BaseAnimating::GetInterpolatedBoneFrameBetweenTwoAnimations(modelanimation_t* pAnim1, modelanimation_t* pAnim2, int nBone, int firstframe, int lastframe, float interp, float animTransition, animframe_t &out)
@@ -1043,7 +1043,7 @@ void BaseAnimating::UpdateBones()
 		/*
 		if(r_springanimations.GetBool() && m_sequenceTimers[0].base_sequence)
 		{
-			animframe_t mulFrame = m_sequenceTimers[0].base_sequence->animations[0]->bones[boneId].keyframes[m_sequenceTimers[0].nextFrame];
+			animframe_t mulFrame = m_sequenceTimers[0].base_sequence->animations[0]->bones[boneId].keyFrames[m_sequenceTimers[0].nextFrame];
 
 			mulFrame.angBoneAngles -= cComputedFrame.angBoneAngles;
 			mulFrame.vecBonePosition -= cComputedFrame.vecBonePosition;
@@ -1168,7 +1168,7 @@ void BaseAnimating::UpdateIK()
 
 		if(link_id != -1 && chain_id != -1 && m_IkChains[chain_id]->enable)
 		{
-			for(int i = 0; i < m_IkChains[chain_id]->numlinks; i++)
+			for(int i = 0; i < m_IkChains[chain_id]->numLinks; i++)
 			{
 				if(m_IkChains[chain_id]->links[i].bone_index == boneId)
 				{
@@ -1201,7 +1201,7 @@ void BaseAnimating::UpdateIK()
 		else
 		{
 			// copy last frames to all links
-			for(int j = 0; j < m_IkChains[i]->numlinks; j++)
+			for(int j = 0; j < m_IkChains[i]->numLinks; j++)
 			{
 				int bone_id = m_IkChains[i]->links[j].bone_index;
 
@@ -1222,7 +1222,7 @@ void BaseAnimating::UpdateIK()
 // solves single ik chain
 void BaseAnimating::UpdateIkChain( gikchain_t* pIkChain )
 {
-	for(int i = 0; i < pIkChain->numlinks; i++)
+	for(int i = 0; i < pIkChain->numLinks; i++)
 	{
 		// this is broken
 		pIkChain->links[i].localTrans = Matrix4x4(pIkChain->links[i].quat);
@@ -1232,7 +1232,7 @@ void BaseAnimating::UpdateIkChain( gikchain_t* pIkChain )
 		//pIkChain->links[i].localTrans = m_LocalBonematrixList[bone_id] * pIkChain->links[i].localTrans;
 	}
 
-	for(int i = 0; i < pIkChain->numlinks; i++)
+	for(int i = 0; i < pIkChain->numLinks; i++)
 	{
 		int parent = pIkChain->links[i].parent;
 
@@ -1277,7 +1277,7 @@ void BaseAnimating::UpdateIkChain( gikchain_t* pIkChain )
 	
 	// use last bone for movement
 	// TODO: use more points to solve to do correct IK
-	int nEffector = pIkChain->numlinks-1;
+	int nEffector = pIkChain->numLinks-1;
 
 	// solve link now
 	SolveIKLinks(pIkChain->links, &pIkChain->links[nEffector], pIkChain->local_target, gpGlobals->frametime, r_ik_iterations.GetInt());
@@ -1352,7 +1352,7 @@ void BaseAnimating::AttachIKChain(int chain, int attach_type)
 	if(chain == -1)
 		return;
 
-	int effector_id = m_IkChains[chain]->numlinks - 1;
+	int effector_id = m_IkChains[chain]->numLinks - 1;
 	giklink_t* link = &m_IkChains[chain]->links[effector_id];
 
 	switch(attach_type)

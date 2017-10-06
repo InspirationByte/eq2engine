@@ -207,18 +207,18 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 	// triangle list by default
 	dstGroup->primitiveType = EGFPRIM_TRIANGLES;
 
-	dstGroup->numindices = 0;
-	dstGroup->numvertices = srcGroup->verts.numElem();
+	dstGroup->numIndices = 0;
+	dstGroup->numVertices = srcGroup->verts.numElem();
 
 	DkList<studiovertexdesc_t>	gVertexList;
 	DkList<studiovertexdesc_t>	gVertexList2;
 
 	DkList<int32>				gIndexList;
 
-	for(int i = 0; i < dstGroup->numvertices; i++)
+	for(int i = 0; i < dstGroup->numVertices; i++)
 	{
-		gVertexList.resize(gVertexList.numElem() + dstGroup->numvertices);
-		gIndexList.resize(gVertexList.numElem() + dstGroup->numvertices);
+		gVertexList.resize(gVertexList.numElem() + dstGroup->numVertices);
+		gIndexList.resize(gVertexList.numElem() + dstGroup->numVertices);
 
 		studiovertexdesc_t vertex = MakeStudioVertex( srcGroup->verts[i] );
 		studiovertexdesc_t vertex2 = vertex;
@@ -253,17 +253,17 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 		usedVertList = gVertexList2;
 
 	// set index count
-	dstGroup->numindices = gIndexList.numElem();
-	dstGroup->numvertices = usedVertList.numElem();
+	dstGroup->numIndices = gIndexList.numElem();
+	dstGroup->numVertices = usedVertList.numElem();
 
-	if((float)dstGroup->numindices / (float)3.0f != (int)dstGroup->numindices / (int)3)
+	if((float)dstGroup->numIndices / (float)3.0f != (int)dstGroup->numIndices / (int)3)
 	{
 		MsgError("Model group has invalid triangles!\n");
 		return;
 	}
 
 	// calculate rest of tangent space
-	for(uint32 i = 0; i < dstGroup->numindices; i+=3)
+	for(uint32 i = 0; i < dstGroup->numIndices; i+=3)
 	{
 		Vector3D tangent;
 		Vector3D binormal;
@@ -294,7 +294,7 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 	}
 
 	// normalize them once
-	for(uint32 i = 0; i < dstGroup->numindices; i+=3)
+	for(uint32 i = 0; i < dstGroup->numIndices; i+=3)
 	{
 		int32 idx0 = gIndexList[i];
 		int32 idx1 = gIndexList[i+1];
@@ -412,17 +412,17 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 #endif // USE_ACTC
 
 	// set index count and now that is triangle strip
-	dstGroup->numindices = gIndexList.numElem();
+	dstGroup->numIndices = gIndexList.numElem();
 
 skipOptimize:
 
 	//WRT_TEXT("MODEL GROUP DATA");
 
 	// set write offset for vertex buffer
-	dstGroup->vertexoffset = OBJ_WRITE_OFS(dstGroup);
+	dstGroup->vertexOffset = OBJ_WRITE_OFS(dstGroup);
 
 	// now fill studio verts
-	for(int32 i = 0; i < dstGroup->numvertices; i++)
+	for(int32 i = 0; i < dstGroup->numVertices; i++)
 	{
 		*dstGroup->pVertex(i) = usedVertList[i];
 		
@@ -430,10 +430,10 @@ skipOptimize:
 	}
 
 	// set write offset for index buffer
-	dstGroup->indicesoffset = OBJ_WRITE_OFS(dstGroup);
+	dstGroup->indicesOffset = OBJ_WRITE_OFS(dstGroup);
 
 	// now fill studio indexes
-	for(uint32 i = 0; i < dstGroup->numindices; i++)
+	for(uint32 i = 0; i < dstGroup->numIndices; i++)
 	{
 		*dstGroup->pVertexIdx(i) = gIndexList[i];
 		
@@ -449,8 +449,8 @@ void CEGFGenerator::WriteModels(CMemoryStream* stream)
 	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
 	// Write models
-	header->modelsoffset = WRITE_OFS;
-	header->nummodels = m_modelrefs.numElem();
+	header->modelsOffset = WRITE_OFS;
+	header->numModels = m_modelrefs.numElem();
 
 	// move offset forward, to not overwrite the studiomodeldescs
 	WTYPE_ADVANCE_NUM( studiomodeldesc_t, m_modelrefs.numElem() );
@@ -461,13 +461,13 @@ void CEGFGenerator::WriteModels(CMemoryStream* stream)
 	{
 		studiomodeldesc_t* pDesc = header->pModelDesc(i);
 
-		pDesc->numgroups = m_modelrefs[i].model->groups.numElem();
-		pDesc->groupsoffset = OBJ_WRITE_OFS( pDesc );
+		pDesc->numGroups = m_modelrefs[i].model->groups.numElem();
+		pDesc->groupsOffset = OBJ_WRITE_OFS( pDesc );
 
 		//Msg("Write offset: %d, structure offset: %d\n", WRITE_OFS, ((ubyte*)pDesc - pStart));
 
 		// skip headers
-		WTYPE_ADVANCE_NUM( modelgroupdesc_t, header->pModelDesc(i)->numgroups );
+		WTYPE_ADVANCE_NUM( modelgroupdesc_t, header->pModelDesc(i)->numGroups );
 	}
 
 	//WRT_TEXT("MODEL GROUPS OFFSET");
@@ -477,7 +477,7 @@ void CEGFGenerator::WriteModels(CMemoryStream* stream)
 		studiomodeldesc_t* pDesc = header->pModelDesc(i);
 
 		// write groups
-		for(int j = 0; j < pDesc->numgroups; j++)
+		for(int j = 0; j < pDesc->numGroups; j++)
 		{
 			modelgroupdesc_t* groupDesc = header->pModelDesc(i)->pGroup(j);
 
@@ -496,8 +496,8 @@ void CEGFGenerator::WriteLods(CMemoryStream* stream)
 {
 	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
-	header->lodsoffset = WRITE_OFS;
-	header->numlods = m_modellodrefs.numElem();
+	header->lodsOffset = WRITE_OFS;
+	header->numLods = m_modellodrefs.numElem();
 
 	for(int i = 0; i < m_modellodrefs.numElem(); i++)
 	{
@@ -505,17 +505,17 @@ void CEGFGenerator::WriteLods(CMemoryStream* stream)
 		{
 			int refId = GetReferenceIndex( m_modellodrefs[i].lodmodels[j] );
 
-			header->pLodModel(i)->lodmodels[j] = refId;
+			header->pLodModel(i)->modelsIndexes[j] = refId;
 
 			if(refId != -1)
-				header->pModelDesc(i)->lod_index = j;
+				header->pModelDesc(i)->lodIndex = j;
 
 			WTYPE_ADVANCE(studiolodmodel_t);
 		}
 	}
 
-	header->lodparamsoffset = WRITE_OFS;
-	header->numlodparams = m_lodparams.numElem();
+	header->lodParamsOffset = WRITE_OFS;
+	header->numLodParams = m_lodparams.numElem();
 
 	for(int i = 0; i < m_lodparams.numElem(); i++)
 	{
@@ -533,8 +533,8 @@ void CEGFGenerator::WriteBodyGroups(CMemoryStream* stream)
 {
 	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
-	header->bodygroupsoffset = WRITE_OFS;
-	header->numbodygroups = m_bodygroups.numElem();
+	header->bodyGroupsOffset = WRITE_OFS;
+	header->numBodyGroups = m_bodygroups.numElem();
 
 	for(int i = 0; i <  m_bodygroups.numElem(); i++)
 	{
@@ -550,8 +550,8 @@ void CEGFGenerator::WriteAttachments(CMemoryStream* stream)
 {
 	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
-	header->attachmentsoffset = WRITE_OFS;
-	header->numattachments = m_attachments.numElem();
+	header->attachmentsOffset = WRITE_OFS;
+	header->numAttachments = m_attachments.numElem();
 
 	for(int i = 0; i < m_attachments.numElem(); i++)
 	{
@@ -567,8 +567,8 @@ void CEGFGenerator::WriteIkChains(CMemoryStream* stream)
 {
 	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
-	header->ikchainsoffset = WRITE_OFS;
-	header->numikchains = m_ikchains.numElem();
+	header->ikChainsOffset = WRITE_OFS;
+	header->numIKChains = m_ikchains.numElem();
 
 	// advance n times to give more space
 	WTYPE_ADVANCE_NUM(studioikchain_t, m_ikchains.numElem());
@@ -577,11 +577,11 @@ void CEGFGenerator::WriteIkChains(CMemoryStream* stream)
 	{
 		studioikchain_t* chain = header->pIkChain(i);
 
-		chain->numlinks = m_ikchains[i].link_list.numElem();
+		chain->numLinks = m_ikchains[i].link_list.numElem();
 
 		strcpy(chain->name, m_ikchains[i].name);
 
-		chain->linksoffset = OBJ_WRITE_OFS(header->pIkChain(i));
+		chain->linksOffset = OBJ_WRITE_OFS(header->pIkChain(i));
 
 		// write link list flipped
 		//for(int j = g_ikchains[i].link_list.numElem()-1; j > -1; j--)
@@ -611,8 +611,8 @@ void CEGFGenerator::WriteMaterialDescs(CMemoryStream* stream)
 {
 	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
-	header->materialsoffset = WRITE_OFS;
-	header->nummaterials = m_materials.numElem();
+	header->materialsOffset = WRITE_OFS;
+	header->numMaterialSearchPaths = m_materials.numElem();
 
 	for(int i = 0; i < m_materials.numElem(); i++)
 	{
@@ -635,8 +635,8 @@ void CEGFGenerator::WriteMaterialPaths(CMemoryStream* stream)
 {
 	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
-	header->searchpathdescsoffset = WRITE_OFS;
-	header->numsearchpathdescs = m_matpathes.numElem();
+	header->materialSearchPathsOffset = WRITE_OFS;
+	header->numMaterialSearchPaths = m_matpathes.numElem();
 
 	for(int i = 0; i < m_matpathes.numElem(); i++)
 	{
@@ -652,8 +652,8 @@ void CEGFGenerator::WriteMotionPackageList(CMemoryStream* stream)
 {
 	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
-	header->packagesoffset = WRITE_OFS;
-	header->nummotionpackages = m_motionpacks.numElem();
+	header->packagesOffset = WRITE_OFS;
+	header->numMotionPackages = m_motionpacks.numElem();
 
 	for(int i = 0; i < m_motionpacks.numElem(); i++)
 	{
@@ -669,8 +669,8 @@ void CEGFGenerator::WriteBones(CMemoryStream* stream)
 {
 	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
-	header->bonesoffset = WRITE_OFS;
-	header->numbones = m_bones.numElem();
+	header->bonesOffset = WRITE_OFS;
+	header->numBones = m_bones.numElem();
 
 	for(int i = 0; i < m_bones.numElem(); i++)
 	{
@@ -710,9 +710,9 @@ bool CEGFGenerator::GenerateEGF()
 	header.length = sizeof(studiohdr_t);
 
 	// set model name
-	strcpy( header.modelname, m_outputFilename.c_str() );
+	strcpy( header.modelName, m_outputFilename.c_str() );
 
-	FixSlashes( header.modelname );
+	FixSlashes( header.modelName );
 
 	memStream.Write(&header, 1, sizeof(header));
 
@@ -749,13 +749,13 @@ bool CEGFGenerator::GenerateEGF()
 	// set the size of file (size with header), for validation purposes
 	pHdr->length = memStream.Tell();
 
-	Msg(" models: %d\n", pHdr->nummodels);
-	Msg(" body groups: %d\n", pHdr->numbodygroups);
-	Msg(" bones: %d\n", pHdr->numbones);
-	Msg(" lods: %d\n", pHdr->numlods);
-	Msg(" materials: %d\n", pHdr->nummaterials);
-	Msg(" ik chains: %d\n", pHdr->numikchains);
-	Msg(" search paths: %d\n", pHdr->numsearchpathdescs);
+	Msg(" models: %d\n", pHdr->numModels);
+	Msg(" body groups: %d\n", pHdr->numBodyGroups);
+	Msg(" bones: %d\n", pHdr->numBones);
+	Msg(" lods: %d\n", pHdr->numLods);
+	Msg(" materials: %d\n", pHdr->numMaterialSearchPaths);
+	Msg(" ik chains: %d\n", pHdr->numIKChains);
+	Msg(" search paths: %d\n", pHdr->numMaterialSearchPaths);
 	Msg("   Wrote %d bytes:\n", pHdr->length);
 
 	// open model file

@@ -50,7 +50,7 @@ public:
 	const ConCommandBase*				FindBase(const char* name);
 
 	// Returns all bases array
-	const DkList<ConCommandBase*>*		GetAllCommands() { return &m_pCommandBases; }
+	const DkList<ConCommandBase*>*		GetAllCommands() { return &m_registeredCommands; }
 
 	// Executes file
 	void								ParseFileToCommandBuffer(const char* pszFilename);
@@ -84,15 +84,15 @@ private:
 	void								ParseAndAppend(char* str, int len, void* extra);
 	void								SplitOnArgsAndExec(char* str, int len, void* extra);
 
-	DkList<ConCommandBase*>	m_pCommandBases;
+	DkList<ConCommandBase*>	m_registeredCommands;
 
 	DkList<EqString>		m_failedCommands;
 
-	char m_pszCommandBuffer[COMMANDBUFFER_SIZE];
-	char m_pszLastCommandBuffer[COMMANDBUFFER_SIZE];
+	char					m_pszCommandBuffer[COMMANDBUFFER_SIZE];
+	char					m_pszLastCommandBuffer[COMMANDBUFFER_SIZE];
 
-	int   m_nSameCommandsExecuted;
-	bool m_bEnableInitOnlyChange;
+	int						m_nSameCommandsExecuted;
+	bool					m_bEnableInitOnlyChange;
 };
 
 #endif //CONCOMMANDFACTORY_H

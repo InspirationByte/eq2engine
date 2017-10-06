@@ -142,9 +142,9 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	materials_config.enableShadows = true;
 	materials_config.threadedloader = !useOpenGLRender;
 
-	materials_config.shaderapi_params.bIsWindowed = bWindowed;
-	materials_config.shaderapi_params.hWindow = pWindow;
-	materials_config.shaderapi_params.nMultisample = r_antialiasing.GetInt();
+	materials_config.shaderapi_params.windowedMode = bWindowed;
+	materials_config.shaderapi_params.windowHandle = pWindow;
+	materials_config.shaderapi_params.multiSamplingMode = r_antialiasing.GetInt();
 
 	// set window info
 	SDL_SysWMinfo winfo;
@@ -160,11 +160,11 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	const char* materialsPath = "materials/";
 
 #ifdef _WIN32
-	materials_config.shaderapi_params.hWindow = winfo.info.win.window;
+	materials_config.shaderapi_params.windowHandle = winfo.info.win.window;
 #elif LINUX
-	materials_config.shaderapi_params.hWindow = (void*)winfo.info.x11.window;
+	materials_config.shaderapi_params.windowHandle = (void*)winfo.info.x11.window;
 #elif APPLE
-	materials_config.shaderapi_params.hWindow = (void*)winfo.info.cocoa.window;
+	materials_config.shaderapi_params.windowHandle = (void*)winfo.info.cocoa.window;
 #elif ANDROID
 
     externalWindowDisplayParams_t winParams;
@@ -175,13 +175,13 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	winParams.paramArray = paramArray;
 	winParams.numParams = 1;
 
-	materials_config.shaderapi_params.hWindow = &winParams;
+	materials_config.shaderapi_params.windowHandle = &winParams;
 
 	materialsPath = "mmaterials/";
 #endif
 
-	materials_config.shaderapi_params.nScreenFormat = format;
-	materials_config.shaderapi_params.bEnableVerticalSync = r_vSync.GetBool();
+	materials_config.shaderapi_params.screenFormat = format;
+	materials_config.shaderapi_params.verticalSyncEnabled = r_vSync.GetBool();
 
     bool materialSystemStatus = false;
 

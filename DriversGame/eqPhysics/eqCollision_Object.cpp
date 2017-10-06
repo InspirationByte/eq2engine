@@ -97,7 +97,7 @@ void CEqCollisionObject::InitAABB()
 bool CEqCollisionObject::Initialize( physmodeldata_t* data, int nObject )
 {
 	// TODO: make it
-	ASSERTMSG((nObject < data->numobjects), "DkPhysics::CreateObject - nObject is out of numobjects");
+	ASSERTMSG((nObject < data->numObjects), "DkPhysics::CreateObject - nObject is out of numObjects");
 
 	// first determine shapes
 	if(data->objects[nObject].object.numShapes > 1)

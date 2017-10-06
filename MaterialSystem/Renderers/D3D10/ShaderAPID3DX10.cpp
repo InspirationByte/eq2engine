@@ -93,7 +93,7 @@ void ShaderAPID3DX10::SetD3DDevice(ID3D10Device* d3ddev)
 }
 
 // Init + Shurdown
-void ShaderAPID3DX10::Init(const shaderapiinitparams_t &params)
+void ShaderAPID3DX10::Init(const shaderAPIParams_t &params)
 {
 	HOOK_TO_CVAR(r_textureanisotrophy);
 
@@ -853,7 +853,7 @@ void InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
 }
 
 // It will add new rendertarget
-ITexture* ShaderAPID3DX10::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat, Filter_e textureFilterType, AddressMode_e textureAddress, CompareFunc_e comparison, int nFlags)
+ITexture* ShaderAPID3DX10::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
 	CD3D10Texture *pTexture = new CD3D10Texture;
 
@@ -864,7 +864,7 @@ ITexture* ShaderAPID3DX10::CreateRenderTarget(int width, int height, ETextureFor
 	pTexture->SetName("_rt_001");
 
 	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
-	texSamplerParams.nComparison = comparison;
+	texSamplerParams.compareFunc = comparison;
 	pTexture->SetSamplerState(texSamplerParams);
 
 	pTexture->m_pD3D10SamplerState = CreateSamplerState(texSamplerParams);
@@ -888,7 +888,7 @@ ITexture* ShaderAPID3DX10::CreateRenderTarget(int width, int height, ETextureFor
 }
 
 // It will add new rendertarget
-ITexture* ShaderAPID3DX10::CreateNamedRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, Filter_e textureFilterType, AddressMode_e textureAddress, CompareFunc_e comparison, int nFlags)
+ITexture* ShaderAPID3DX10::CreateNamedRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
 	CD3D10Texture *pTexture = new CD3D10Texture;
 
@@ -900,7 +900,7 @@ ITexture* ShaderAPID3DX10::CreateNamedRenderTarget(const char* pszName,int width
 	
 	
 	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
-	texSamplerParams.nComparison = comparison;
+	texSamplerParams.compareFunc = comparison;
 	pTexture->SetSamplerState(texSamplerParams);
 
 	pTexture->m_pD3D10SamplerState = CreateSamplerState(texSamplerParams);
@@ -1111,7 +1111,7 @@ void ShaderAPID3DX10::GetViewportDimensions(int &wide, int &tall)
 //-------------------------------------------------------------
 
 // Matrix mode
-void ShaderAPID3DX10::SetMatrixMode(MatrixMode_e nMatrixMode)
+void ShaderAPID3DX10::SetMatrixMode(ER_MatrixMode nMatrixMode)
 {
 	m_nCurrentMatrixMode = nMatrixMode;
 }
@@ -2984,7 +2984,7 @@ IRenderState* ShaderAPID3DX10::CreateSamplerState( const SamplerStateParam_t &sa
 				samplerDesc.wrapT == pState->m_params.wrapT &&
 				samplerDesc.wrapR == pState->m_params.wrapR &&
 				samplerDesc.lod == pState->m_params.lod &&
-				samplerDesc.nComparison == pState->m_params.nComparison)
+				samplerDesc.compareFunc == pState->m_params.compareFunc)
 			{
 				pState->AddReference();
 				return pState;
@@ -2998,10 +2998,10 @@ IRenderState* ShaderAPID3DX10::CreateSamplerState( const SamplerStateParam_t &sa
 	D3D10_SAMPLER_DESC desc;
 	desc.Filter = d3dFilterType[samplerDesc.minFilter];
 
-	if (samplerDesc.nComparison != COMP_NEVER)
+	if (samplerDesc.compareFunc != COMP_NEVER)
 		desc.Filter = (D3D10_FILTER) (desc.Filter | D3D10_COMPARISON_FILTERING_BIT);
 
-	desc.ComparisonFunc = comparisonConst[samplerDesc.nComparison];
+	desc.ComparisonFunc = comparisonConst[samplerDesc.compareFunc];
 	desc.AddressU = d3dAddressMode[samplerDesc.wrapS];
 	desc.AddressV = d3dAddressMode[samplerDesc.wrapT];
 	desc.AddressW = d3dAddressMode[samplerDesc.wrapR];
@@ -3115,43 +3115,43 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(VertexFormatDesc_s *formatDes
 	// Fill the vertex element array
 	for (int i = 0; i < nAttribs; i++)
 	{
-		int stream = formatDesc[i].m_nStream;
-		int size = formatDesc[i].m_nSize;
+		int stream = formatDesc[i].streamId;
+		int size = formatDesc[i].elemCount;
 
-		if(formatDesc[i].m_nType != VERTEXTYPE_NONE)
+		if(formatDesc[i].attribType != VERTEXATTRIB_UNUSED)
 		{
 			pDesc[numRealAttribs].InputSlot = stream;
 			pDesc[numRealAttribs].AlignedByteOffset = pFormat->m_nVertexSize[stream];
-			pDesc[numRealAttribs].SemanticName = semantics[formatDesc[i].m_nType];
-			pDesc[numRealAttribs].SemanticIndex = index[formatDesc[i].m_nType]++;
-			pDesc[numRealAttribs].Format = vformats[formatDesc[i].m_nFormat][size - 1];
+			pDesc[numRealAttribs].SemanticName = semantics[formatDesc[i].attribType];
+			pDesc[numRealAttribs].SemanticIndex = index[formatDesc[i].attribType]++;
+			pDesc[numRealAttribs].Format = vformats[formatDesc[i].attribFormat][size - 1];
 			pDesc[numRealAttribs].InputSlotClass = D3D10_INPUT_PER_VERTEX_DATA;
 			pDesc[numRealAttribs].InstanceDataStepRate = 0;
 
-			nSemanticIndices[formatDesc[i].m_nType]++;
+			nSemanticIndices[formatDesc[i].attribType]++;
 			numRealAttribs++;
 
 			char str[512];
 		
 			if(size > 1)
 			{
-				if(nSemanticIndices[formatDesc[i].m_nType] <= 1)
-					sprintf(str, "%s%d %s_%d : %s;\n", formatNames[formatDesc[i].m_nFormat], size, semantics[formatDesc[i].m_nType], i, semantics[formatDesc[i].m_nType]);
+				if(nSemanticIndices[formatDesc[i].attribType] <= 1)
+					sprintf(str, "%s%d %s_%d : %s;\n", formatNames[formatDesc[i].attribFormat], size, semantics[formatDesc[i].attribType], i, semantics[formatDesc[i].attribType]);
 				else
-					sprintf(str, "%s%d %s_%d : %s%d;\n", formatNames[formatDesc[i].m_nFormat], size, semantics[formatDesc[i].m_nType], i, semantics[formatDesc[i].m_nType], nSemanticIndices[formatDesc[i].m_nType]-1);
+					sprintf(str, "%s%d %s_%d : %s%d;\n", formatNames[formatDesc[i].attribFormat], size, semantics[formatDesc[i].attribType], i, semantics[formatDesc[i].attribType], nSemanticIndices[formatDesc[i].attribType]-1);
 			}
 			else
 			{
-				if(nSemanticIndices[formatDesc[i].m_nType] <= 1)
-					sprintf(str, "%s %s_%d : %s;\n", formatNames[formatDesc[i].m_nFormat], semantics[formatDesc[i].m_nType], i, semantics[formatDesc[i].m_nType]);
+				if(nSemanticIndices[formatDesc[i].attribType] <= 1)
+					sprintf(str, "%s %s_%d : %s;\n", formatNames[formatDesc[i].attribFormat], semantics[formatDesc[i].attribType], i, semantics[formatDesc[i].attribType]);
 				else
-					sprintf(str, "%s %s_%d : %s%d;\n", formatNames[formatDesc[i].m_nFormat], semantics[formatDesc[i].m_nType], i, semantics[formatDesc[i].m_nType], nSemanticIndices[formatDesc[i].m_nType]-1);
+					sprintf(str, "%s %s_%d : %s%d;\n", formatNames[formatDesc[i].attribFormat], semantics[formatDesc[i].attribType], i, semantics[formatDesc[i].attribType], nSemanticIndices[formatDesc[i].attribType]-1);
 			}
 
 			vertexShaderString.Append(str);
 		}
 
-		pFormat->m_nVertexSize[stream] += size * attributeFormatSize[formatDesc[i].m_nFormat];
+		pFormat->m_nVertexSize[stream] += size * s_attributeSize[formatDesc[i].attribFormat];
 	}
 
 	vertexShaderString.Append("};\n\n");
@@ -3201,7 +3201,7 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(VertexFormatDesc_s *formatDes
 	return pFormat;
 }
 
-IVertexBuffer* ShaderAPID3DX10::CreateVertexBuffer(BufferAccessType_e nBufAccess, int nNumVerts, int strideSize, void *pData)
+IVertexBuffer* ShaderAPID3DX10::CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData)
 {
 	ASSERT(m_pD3DDevice);
 
@@ -3241,7 +3241,7 @@ IVertexBuffer* ShaderAPID3DX10::CreateVertexBuffer(BufferAccessType_e nBufAccess
 	return pBuffer;
 }
 
-IIndexBuffer* ShaderAPID3DX10::CreateIndexBuffer(int nIndices, int nIndexSize, BufferAccessType_e nBufAccess, void *pData)
+IIndexBuffer* ShaderAPID3DX10::CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData)
 {
 	ASSERT(nIndexSize >= 2);
 	ASSERT(nIndexSize <= 4);
@@ -3297,7 +3297,7 @@ PRIMCOUNTER g_pDX10PrimCounterCallbacks[] =
 
 
 // Indexed primitive drawer
-void ShaderAPID3DX10::DrawIndexedPrimitives(PrimitiveType_e nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
+void ShaderAPID3DX10::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
 {
 	int nTris = g_pDX10PrimCounterCallbacks[nType](nIndices);
 
@@ -3311,7 +3311,7 @@ void ShaderAPID3DX10::DrawIndexedPrimitives(PrimitiveType_e nType, int nFirstInd
 }
 
 // Draw elements
-void ShaderAPID3DX10::DrawNonIndexedPrimitives(PrimitiveType_e nType, int nFirstVertex, int nVertices)
+void ShaderAPID3DX10::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices)
 {
 	ASSERT(nVertices > 0);
 
@@ -3336,7 +3336,7 @@ void ShaderAPID3DX10::DrawNonIndexedPrimitives(PrimitiveType_e nType, int nFirst
 }
 
 // mesh buffer FFP emulation
-void ShaderAPID3DX10::DrawMeshBufferPrimitives(PrimitiveType_e nType, int nVertices, int nIndices)
+void ShaderAPID3DX10::DrawMeshBufferPrimitives(ER_PrimitiveType nType, int nVertices, int nIndices)
 {
 	if(m_pSelectedShader == NULL)
 	{

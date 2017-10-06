@@ -395,10 +395,10 @@ void CBuildingLayerEditDialog::RenderList()
 				/*
 				if(elem.type == BUILDLAYER_TEXTURE && elem.atlEntry)
 				{
-					verts[0].m_vTexCoord = elem.atlEntry->rect.GetLeftTop();
-					verts[1].m_vTexCoord = elem.atlEntry->rect.GetLeftBottom();
-					verts[2].m_vTexCoord = elem.atlEntry->rect.GetRightTop();
-					verts[3].m_vTexCoord = elem.atlEntry->rect.GetRightBottom();
+					verts[0].texCoord = elem.atlEntry->rect.GetLeftTop();
+					verts[1].texCoord = elem.atlEntry->rect.GetLeftBottom();
+					verts[2].texCoord = elem.atlEntry->rect.GetRightTop();
+					verts[3].texCoord = elem.atlEntry->rect.GetRightBottom();
 				}
 				*/
 

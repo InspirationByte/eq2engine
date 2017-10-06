@@ -80,11 +80,11 @@ ShaderAPI_Base::ShaderAPI_Base()
 }
 
 // Init + Shurdown
-void ShaderAPI_Base::Init( shaderapiinitparams_t &params )
+void ShaderAPI_Base::Init( shaderAPIParams_t &params )
 {
 	m_params = &params;
 
-	m_nScreenFormat = params.nScreenFormat;
+	m_nScreenFormat = params.screenFormat;
 
 	// Do master reset for all things
 	Reset();
@@ -355,7 +355,7 @@ ITexture* ShaderAPI_Base::FindTexture(const char* pszName)
 }
 
 
-SamplerStateParam_t ShaderAPI_Base::MakeSamplerState(Filter_e textureFilterType,AddressMode_e addressS, AddressMode_e addressT, AddressMode_e addressR)
+SamplerStateParam_t ShaderAPI_Base::MakeSamplerState(ER_TextureFilterMode textureFilterType,ER_TextureAddressMode addressS, ER_TextureAddressMode addressT, ER_TextureAddressMode addressR)
 {
 	HOOK_TO_CVAR(r_textureanisotrophy);
 
@@ -381,7 +381,7 @@ SamplerStateParam_t ShaderAPI_Base::MakeSamplerState(Filter_e textureFilterType,
 	newParam.wrapS = addressS;
 	newParam.wrapT = addressT;
 	newParam.wrapR = addressR;
-	newParam.nComparison = COMP_LESS;
+	newParam.compareFunc = COMP_LESS;
 
 	newParam.lod = 0.0f;
 
@@ -391,7 +391,7 @@ SamplerStateParam_t ShaderAPI_Base::MakeSamplerState(Filter_e textureFilterType,
 }
 
 // Find Rasterizer State with adding new one (if not exist)
-RasterizerStateParams_t ShaderAPI_Base::MakeRasterizerState(CullMode_e nCullMode, FillMode_e nFillMode, bool bMultiSample, bool bScissor)
+RasterizerStateParams_t ShaderAPI_Base::MakeRasterizerState(ER_CullMode nCullMode, ER_FillMode nFillMode, bool bMultiSample, bool bScissor)
 {
 	/*
 	for(int i = 0; i < m_RasterizerStates.numElem();i++)
@@ -417,7 +417,7 @@ RasterizerStateParams_t ShaderAPI_Base::MakeRasterizerState(CullMode_e nCullMode
 }
 
 // Find Depth State with adding new one (if not exist)
-DepthStencilStateParams_t ShaderAPI_Base::MakeDepthState(bool bDoDepthTest, bool bDoDepthWrite, CompareFunc_e depthCompFunc)
+DepthStencilStateParams_t ShaderAPI_Base::MakeDepthState(bool bDoDepthTest, bool bDoDepthWrite, ER_CompareFunc depthCompFunc)
 {
 	/*
 	for(int i = 0; i < m_DepthStates.numElem();i++)
@@ -444,7 +444,7 @@ DepthStencilStateParams_t ShaderAPI_Base::MakeDepthState(bool bDoDepthTest, bool
 //-------------------------------------------------------------
 
 // Load texture from file (DDS or TGA only)
-ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, Filter_e textureFilterType, AddressMode_e textureAddress/* = ADDRESSMODE_WRAP*/, int nFlags/* = 0*/ )
+ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress/* = TEXADDRESS_WRAP*/, int nFlags/* = 0*/ )
 {
 	// first search for existing texture
 	ITexture* pFoundTexture = FindTexture(pszFileName);
@@ -452,7 +452,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, Filter_e texture
 	EqString texturePath;
 
 	if(!(nFlags & TEXFLAG_REALFILEPATH))
-		texturePath = EqString(m_params->textures_path) + pszFileName;
+		texturePath = EqString(m_params->texturePath) + pszFileName;
 	else
 		texturePath = pszFileName;
 
@@ -507,7 +507,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, Filter_e texture
 			cmds[i] = cmds[i].Left(cmds[i].Length()-1);
 
 			if(!(nFlags & TEXFLAG_REALFILEPATH))
-				texturePathA = EqString(m_params->textures_path) + cmds[i];
+				texturePathA = EqString(m_params->texturePath) + cmds[i];
 			else
 				texturePathA = cmds[i];
 
@@ -623,8 +623,8 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 													int width, int height,
 													int depth,
 													int arraySize,
-													Filter_e texFilter,
-													AddressMode_e textureAddress,
+													ER_TextureFilterMode texFilter,
+													ER_TextureAddressMode textureAddress,
 													int nFlags,
 													int nDataSize, const unsigned char* pData)
 {
@@ -683,7 +683,7 @@ bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 		{
 			cmds[i] = cmds[i].Left(cmds[i].Length()-1);
 
-			texturePathA = EqString(m_params->textures_path) + cmds[i];
+			texturePathA = EqString(m_params->texturePath) + cmds[i];
 			texturePathExtA = texturePathA + EqString(TEXTURE_DEFAULT_EXTENSION);
 
 			CImage* pImage = new CImage();
@@ -758,7 +758,7 @@ ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
 	if(nFlags & TEXFLAG_NULL_ON_ERROR)
 		return NULL;
 
-	SamplerStateParam_t texSamplerParams = MakeSamplerState(TEXFILTER_TRILINEAR_ANISO,ADDRESSMODE_WRAP,ADDRESSMODE_WRAP,ADDRESSMODE_WRAP);
+	SamplerStateParam_t texSamplerParams = MakeSamplerState(TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_WRAP,TEXADDRESS_WRAP,TEXADDRESS_WRAP);
 
 	Vector4D color;
 	Vector4D color2;

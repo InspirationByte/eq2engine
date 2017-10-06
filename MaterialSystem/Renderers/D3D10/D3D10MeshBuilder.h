@@ -15,7 +15,7 @@ class CD3D10MeshBuilder : public IMeshBuilder
 public:
 	~CD3D10MeshBuilder();
 
-	void		Begin(PrimitiveType_e type);
+	void		Begin(ER_PrimitiveType type);
 	void		End();
 
 	// color setting

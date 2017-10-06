@@ -21,7 +21,7 @@ class IRenderLibrary : public ICoreModuleInterface
 public:
 	virtual bool			InitCaps() = 0;
 
-	virtual bool			InitAPI( shaderapiinitparams_t &params ) = 0;
+	virtual bool			InitAPI( shaderAPIParams_t &params ) = 0;
 	virtual void			ExitAPI() = 0;
 	virtual void			ReleaseSwapChains() = 0;
 

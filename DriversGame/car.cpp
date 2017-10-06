@@ -664,9 +664,9 @@ void CCar::CreateCarPhysics()
 
 		winfo.SetModelPtr( wheelModel );
 
-		winfo.m_defaultBodyGroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->pStudioHdr, wconf.hubcapWheelName);
-		winfo.m_damagedBodygroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->pStudioHdr, wconf.wheelName);
-		winfo.m_hubcapBodygroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->pStudioHdr, wconf.hubcapName);
+		winfo.m_defaultBodyGroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->studio, wconf.hubcapWheelName);
+		winfo.m_damagedBodygroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->studio, wconf.wheelName);
+		winfo.m_hubcapBodygroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->studio, wconf.hubcapName);
 
 		if(winfo.m_defaultBodyGroup == -1)
 		{
@@ -691,9 +691,9 @@ void CCar::CreateCarPhysics()
 	Vector3D body_maxs = m_conf->physics.body_center + m_conf->physics.body_size;
 
 
-	if(m_pModel->GetHWData()->m_physmodel.numobjects)
+	if(m_pModel->GetHWData()->physModel.numObjects)
 	{
-		body->Initialize(&m_pModel->GetHWData()->m_physmodel, 0);
+		body->Initialize(&m_pModel->GetHWData()->physModel, 0);
 	}
 	else
 		body->Initialize(body_mins, body_maxs);
@@ -806,10 +806,10 @@ void CCar::Spawn()
 	// Init car body parts
 	for(int i = 0; i < CB_PART_WINDOW_PARTS; i++)
 	{
-		m_bodyParts[i].boneIndex = Studio_FindBoneId(m_pModel->GetHWData()->pStudioHdr, s_pBodyPartsNames[i]);
+		m_bodyParts[i].boneIndex = Studio_FindBoneId(m_pModel->GetHWData()->studio, s_pBodyPartsNames[i]);
 
 		//if(m_bodyParts[i].boneIndex == -1)
-		//	MsgError("Error in model '%s' - can't find bone '%s' which is required\n", m_pModel->GetHWData()->pStudioHdr->modelname, s_pBodyPartsNames[i]);
+		//	MsgError("Error in model '%s' - can't find bone '%s' which is required\n", m_pModel->GetHWData()->studio->modelName, s_pBodyPartsNames[i]);
 	}
 
 	CreateCarPhysics();
@@ -3829,7 +3829,7 @@ void CCar::DrawBody( int nRenderFlags )
 	if( !m_pModel )
 		return;
 
-	studiohdr_t* pHdr = m_pModel->GetHWData()->pStudioHdr;
+	studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
 
 	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
 
@@ -3876,23 +3876,23 @@ void CCar::DrawBody( int nRenderFlags )
 			bApplyDamage = true;
 	}
 
-	for(int i = 0; i < pHdr->numbodygroups; i++)
+	for(int i = 0; i < pHdr->numBodyGroups; i++)
 	{
 		// check bodygroups for rendering
 		if(!(m_bodyGroupFlags & (1 << i)))
 			continue;
 
 		int bodyGroupLOD = nLOD;
-		int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
+		int nLodModelIdx = pHdr->pBodyGroups(i)->lodModelIndex;
 		studiolodmodel_t* lodModel = pHdr->pLodModel(nLodModelIdx);
 
-		int nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
+		int nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
 
 		// get the right LOD model number
 		while(nModDescId == -1 && bodyGroupLOD > 0)
 		{
 			bodyGroupLOD--;
-			nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
+			nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
 		}
 
 		if(nModDescId == -1)
@@ -3901,7 +3901,7 @@ void CCar::DrawBody( int nRenderFlags )
 		studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
 
 		// render model groups that in this body group
-		for(int j = 0; j < modDesc->numgroups; j++)
+		for(int j = 0; j < modDesc->numGroups; j++)
 		{
 			//materials->SetSkinningEnabled(true);
 

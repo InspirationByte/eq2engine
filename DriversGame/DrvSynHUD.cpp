@@ -41,7 +41,7 @@ void CDrvSynHUDManager::Init()
 	EqString mapTexName("levelmap/");
 	mapTexName.Append( g_pGameWorld->GetLevelName() );
 
-	m_mapTexture = g_pShaderAPI->LoadTexture( mapTexName.c_str() , TEXFILTER_LINEAR, ADDRESSMODE_CLAMP, TEXFLAG_NOQUALITYLOD );
+	m_mapTexture = g_pShaderAPI->LoadTexture( mapTexName.c_str() , TEXFILTER_LINEAR, TEXADDRESS_CLAMP, TEXFLAG_NOQUALITYLOD );
 
 	if( m_mapTexture )
 	{
@@ -565,8 +565,8 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 			// draw the map rectangle
 			meshBuilder.Begin(PRIM_TRIANGLES);
 				meshBuilder.Color4f( 1,1,1,0.5f );
-				meshBuilder.TexturedQuad2(	mapVerts[0].m_vPosition, mapVerts[1].m_vPosition, mapVerts[2].m_vPosition, mapVerts[3].m_vPosition,
-											mapVerts[0].m_vTexCoord, mapVerts[1].m_vTexCoord, mapVerts[2].m_vTexCoord, mapVerts[3].m_vTexCoord);
+				meshBuilder.TexturedQuad2(	mapVerts[0].position, mapVerts[1].position, mapVerts[2].position, mapVerts[3].position,
+											mapVerts[0].texCoord, mapVerts[1].texCoord, mapVerts[2].texCoord, mapVerts[3].texCoord);
 			meshBuilder.End();
 
 			g_pShaderAPI->SetTexture(m_mapTexture,NULL,0);
@@ -767,7 +767,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 					// draw the map-sized rectangle
 					meshBuilder.Color4fv( color );
-					meshBuilder.Quad2(	mapVerts[0].m_vPosition, mapVerts[1].m_vPosition, mapVerts[2].m_vPosition, mapVerts[3].m_vPosition);
+					meshBuilder.Quad2(	mapVerts[0].position, mapVerts[1].position, mapVerts[2].position, mapVerts[3].position);
 				}
 
 			meshBuilder.End();
@@ -792,10 +792,10 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 		Vertex2D_t baseVerts[] = {MAKETEXQUAD(0.0f, screenMessagePos.y, screenSize.x, screenMessagePos.y + messageSizeY, 0.0f)};
 
-		baseVerts[0].m_vColor.w = 0.0f;
-		baseVerts[1].m_vColor.w = 0.0f;
-		baseVerts[2].m_vColor.w = 0.0f;
-		baseVerts[3].m_vColor.w = 0.0f;
+		baseVerts[0].color.w = 0.0f;
+		baseVerts[1].color.w = 0.0f;
+		baseVerts[2].color.w = 0.0f;
+		baseVerts[3].color.w = 0.0f;
 
 		verts[0] = baseVerts[0];
 		verts[1] = baseVerts[1];
@@ -806,8 +806,8 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		verts[2] = Vertex2D_t::Interpolate(verts[0], verts[4], 0.5f);
 		verts[3] = Vertex2D_t::Interpolate(verts[1], verts[5], 0.5f);
 
-		verts[2].m_vColor.w = 1.0f;
-		verts[3].m_vColor.w = 1.0f;
+		verts[2].color.w = 1.0f;
+		verts[3].color.w = 1.0f;
 
 		float clampedAlertTime = clamp(m_screenAlertTime, 0.0f, 1.0f);
 

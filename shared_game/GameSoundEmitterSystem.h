@@ -16,7 +16,7 @@
 class BaseEntity;
 
 // flags
-enum EmitSoundFlags_e
+enum EEmitSoundFlags
 {
 	EMITSOUND_FLAG_OCCLUSION		= (1 << 0),		// occludes source by the world geometry
 	EMITSOUND_FLAG_ROOM_OCCLUSION	= (1 << 1),		// uses more expensive occlusion system, use it for ambient sounds
@@ -27,7 +27,7 @@ enum EmitSoundFlags_e
 };
 
 // channel type for entity call
-enum Channel_t
+enum ESoundChannelType
 {
 	CHAN_INVALID = -1,
 
@@ -42,7 +42,7 @@ enum Channel_t
 	CHAN_COUNT
 };
 
-static int channel_max_sounds[CHAN_COUNT] =
+static int s_soundChannelMaxEmitters[CHAN_COUNT] =
 {
 	16, // 16 static channels for entity
 	1,	// 1 voice/speech of human
@@ -53,7 +53,7 @@ static int channel_max_sounds[CHAN_COUNT] =
 	1	// one streaming sound
 };
 
-static const char* channel_names[CHAN_COUNT] =
+static const char* s_soundChannelNames[CHAN_COUNT] =
 {
 	"CHAN_STATIC",
 	"CHAN_VOICE",
@@ -64,22 +64,16 @@ static const char* channel_names[CHAN_COUNT] =
 	"CHAN_STREAM",
 };
 
-static Channel_t ChannelFromString(char* str)
+static ESoundChannelType ChannelFromString(char* str)
 {
 	for(int i = 0; i < CHAN_COUNT; i++)
 	{
-		if(!stricmp(str, channel_names[i]))
-			return (Channel_t)i;
+		if(!stricmp(str, s_soundChannelNames[i]))
+			return (ESoundChannelType)i;
 	}
 
 	return CHAN_INVALID;
 }
-
-struct channelemitter_t
-{
-	ISoundEmitter **staticEmitters;
-	Channel_t		channel;
-};
 
 //---------------------------------------------------------------------------------
 
@@ -99,8 +93,8 @@ public:
 	// emit sound with parameters
 	void		EmitSoundWithParams( EmitSound_t* ep );
 
-	int			GetChannelSoundCount( Channel_t chan );
-	void		DecrementChannelSoundCount( Channel_t chan );
+	int			GetChannelSoundCount( ESoundChannelType chan );
+	void		DecrementChannelSoundCount( ESoundChannelType chan );
 
 	void		SetSoundVolumeScale( float fScale ) {m_volumeScale = fScale;}
 	float		GetSoundVolumeScale() const { return m_volumeScale;}
@@ -164,7 +158,7 @@ struct EmitSound_t
 
 typedef EmitSound_t EmitParams;
 
-struct scriptsounddata_t
+struct soundScriptDesc_t
 {
 	char*		pszName;
 	int			namehash;
@@ -184,7 +178,7 @@ struct scriptsounddata_t
 	bool		stopLoop : 1;
 	bool		is2d : 1;
 
-	Channel_t	channel;
+	ESoundChannelType	channel;
 };
 
 
@@ -223,7 +217,7 @@ struct EmitterData_t
 		script = NULL;
 	}
 
-	scriptsounddata_t*		script;
+	soundScriptDesc_t*		script;
 	CSoundChannelObject*	pObject;
 	ISoundController*		pController;
 	ISoundEmitter*			pEmitter;
@@ -234,7 +228,7 @@ struct EmitterData_t
 
 	float					origVolume;
 
-	Channel_t				channel;
+	ESoundChannelType				channel;
 
 	EmitSound_t				emitSoundData;
 
@@ -302,7 +296,7 @@ public:
 
 	bool						UpdateEmitter( EmitterData_t* emit, soundParams_t &params, bool bForceNoInterp = false );
 
-	scriptsounddata_t*			FindSound(const char* soundName);							// searches for loaded script sound
+	soundScriptDesc_t*			FindSound(const char* soundName);							// searches for loaded script sound
 
 	ISoundController*			CreateSoundController(EmitSound_t* ep);						// creates new sound controller
 	void						RemoveSoundController(ISoundController* cont);
@@ -310,7 +304,7 @@ public:
 protected:
 	void						LoadScriptSoundFile(const char* fileName);
 
-	int							GetEmitterIndexByEntityAndChannel(CSoundChannelObject* pEnt, Channel_t chan);
+	int							GetEmitterIndexByEntityAndChannel(CSoundChannelObject* pEnt, ESoundChannelType chan);
 
 #ifdef EDITOR
 public:
@@ -318,15 +312,15 @@ public:
 private:
 #endif
 
-	DkList<scriptsounddata_t*>	m_scriptsoundlist;
+	DkList<soundScriptDesc_t*>	m_scriptsoundlist;
 
 #ifdef EDITOR
 private:
 #endif
 
-	DkList<EmitterData_t*>		m_pCurrentTempEmitters;
-	DkList<ISoundController*>	m_pSoundControllerList;
-	DkList<EmitSound_t>			m_pUnreleasedSounds;
+	DkList<EmitterData_t*>		m_emitters;
+	DkList<ISoundController*>	m_controllers;
+	DkList<EmitSound_t>			m_pendingStartSounds;
 
 	bool						m_isInit;
 

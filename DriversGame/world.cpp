@@ -477,26 +477,26 @@ void CGameWorld::Init()
 	//
 	VertexFormatDesc_t pFormat[] = {
 		// model at stream 0
-		{ 0, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position 0
-		{ 0, 2, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 0
+		{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position 0
+		{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 0
 
-		{ 0, 4, VERTEXTYPE_NONE, ATTRIBUTEFORMAT_HALF }, // Tangent UNUSED
-		{ 0, 4, VERTEXTYPE_NONE, ATTRIBUTEFORMAT_HALF }, // Binormal UNUSED
-		{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Normal (TC1)
+		{ 0, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF }, // Tangent UNUSED
+		{ 0, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF }, // Binormal UNUSED
+		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Normal (TC1)
 
-		{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Bone indices (hw skinning), (TC2)
-		{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF },  // Bone weights (hw skinning), (TC3)
+		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Bone indices (hw skinning), (TC2)
+		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF },  // Bone weights (hw skinning), (TC3)
 
 		// model at stream 1
-		{ 1, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position 0
-		{ 1, 2, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 4
+		{ 1, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position 0
+		{ 1, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 4
 
-		{ 1, 4, VERTEXTYPE_NONE, ATTRIBUTEFORMAT_HALF }, // Tangent UNUSED
-		{ 1, 4, VERTEXTYPE_NONE, ATTRIBUTEFORMAT_HALF }, // Binormal UNUSED
-		{ 1, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Normal (TC5)
+		{ 1, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF }, // Tangent UNUSED
+		{ 1, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF }, // Binormal UNUSED
+		{ 1, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Normal (TC5)
 
-		{ 1, 4, VERTEXTYPE_NONE, ATTRIBUTEFORMAT_HALF }, // Bone indices (hw skinning), (TC4)
-		{ 1, 4, VERTEXTYPE_NONE, ATTRIBUTEFORMAT_HALF },  // Bone weights (hw skinning), (TC5)
+		{ 1, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF }, // Bone indices (hw skinning), (TC4)
+		{ 1, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF },  // Bone weights (hw skinning), (TC5)
 	};
 
 	if(!m_vehicleVertexFormat)
@@ -614,7 +614,7 @@ void CGameWorld::Init()
 	{
 		m_lightsTex = g_pShaderAPI->CreateProceduralTexture("_vlights",
 														FORMAT_RGBA16F, MAX_LIGHTS_TEXTURE, 2, 1,1,
-														TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, TEXFLAG_NOQUALITYLOD);
+														TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXFLAG_NOQUALITYLOD);
 		if(m_lightsTex)
 			m_lightsTex->Ref_Grab();
 	}
@@ -630,13 +630,13 @@ void CGameWorld::Init()
 
 	if(!m_reflectionTex)
 	{
-		m_reflectionTex = g_pShaderAPI->CreateNamedRenderTarget("_reflection", 512, 256, FORMAT_RGBA8, TEXFILTER_LINEAR, ADDRESSMODE_CLAMP);
+		m_reflectionTex = g_pShaderAPI->CreateNamedRenderTarget("_reflection", 512, 256, FORMAT_RGBA8, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
 		m_reflectionTex->Ref_Grab();
 	}
 
 	if(!m_tempReflTex)
 	{
-		m_tempReflTex = g_pShaderAPI->CreateNamedRenderTarget("_tempTexture", 512, 256, FORMAT_RGBA8, TEXFILTER_NEAREST, ADDRESSMODE_CLAMP);
+		m_tempReflTex = g_pShaderAPI->CreateNamedRenderTarget("_tempTexture", 512, 256, FORMAT_RGBA8, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
 		m_tempReflTex->Ref_Grab();
 	}
 	
@@ -1185,17 +1185,17 @@ void CGameWorld::DrawSkyBox(int renderFlags)
 	materials->SetCullMode(CULL_BACK);
 	materials->BindMaterial( m_skyMaterial );
 
-	studiohdr_t* pHdr = m_skyModel->GetHWData()->pStudioHdr;
+	studiohdr_t* pHdr = m_skyModel->GetHWData()->studio;
 	int nLOD = 0;
 
 	// draw skydome body groups
-	for(int i = 0; i < pHdr->numbodygroups; i++)
+	for(int i = 0; i < pHdr->numBodyGroups; i++)
 	{
 		//if(!(m_bodyGroupFlags & (1 << i)))
 		//	continue;
 
-		int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
-		int nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ nLOD ];
+		int nLodModelIdx = pHdr->pBodyGroups(i)->lodModelIndex;
+		int nModDescId = pHdr->pLodModel(nLodModelIdx)->modelsIndexes[ nLOD ];
 
 		if(nModDescId == -1)
 			continue;
@@ -1203,7 +1203,7 @@ void CGameWorld::DrawSkyBox(int renderFlags)
 		studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
 
 		// render model groups that in this body group
-		for(int j = 0; j < modDesc->numgroups; j++)
+		for(int j = 0; j < modDesc->numGroups; j++)
 			m_skyModel->DrawGroup( nModDescId, j );
 	}
 }
@@ -1241,7 +1241,7 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	m_envMapsDirty = false;
 
 	ITexture* tempRenderTarget = g_pShaderAPI->CreateNamedRenderTarget("_tempSkyboxRender", 512, 512, FORMAT_RGBA8,
-										TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
+										TEXFILTER_NEAREST, TEXADDRESS_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
 
 	tempRenderTarget->Ref_Grab();
 
@@ -1310,7 +1310,7 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	envMap.SetName("_skyEnvMap");
 	fogEnvMap.SetName("_fogEnvMap");
 
-	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(TEXFILTER_LINEAR, ADDRESSMODE_CLAMP, ADDRESSMODE_CLAMP, ADDRESSMODE_CLAMP);
+	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(TEXFILTER_LINEAR, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);
 
 	// set cubemap to none before we freeing the texture
 	materials->SetEnvironmentMapTexture(nullptr);
@@ -1597,8 +1597,8 @@ void CGameWorld::DrawFakeReflections()
 		meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 			for(int i = 0; i < 4; i++)
 			{
-				meshBuilder.Position3fv(Vector3D(screenQuad[i].m_vPosition - Vector2D(bufHalfTexel),0));
-				meshBuilder.TexCoord2fv( screenQuad[i].m_vTexCoord );
+				meshBuilder.Position3fv(Vector3D(screenQuad[i].position - Vector2D(bufHalfTexel),0));
+				meshBuilder.TexCoord2fv( screenQuad[i].texCoord );
 				meshBuilder.AdvanceVertex();
 			}
 		meshBuilder.End();

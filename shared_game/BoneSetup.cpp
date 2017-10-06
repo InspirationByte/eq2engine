@@ -32,7 +32,7 @@ void sequencetimer_t::AdvanceFrame(float fDt)
 	float new_seq_time = sequence_time+frame_time;
 	SetTime(new_seq_time);
 
-	int curNumFrames = base_sequence->animations[0]->bones[0].numframes-1;
+	int curNumFrames = base_sequence->animations[0]->bones[0].numFrames-1;
 
 	// stop non-looping
 	if(!(base_sequence->flags & SEQFLAG_LOOP))
@@ -75,7 +75,7 @@ void sequencetimer_t::SetTime(float time)
 	currFrame = floor(sequence_time);
 	nextFrame = currFrame+1;
 
-	int curNumFrames = base_sequence->animations[0]->bones[0].numframes-1;
+	int curNumFrames = base_sequence->animations[0]->bones[0].numFrames-1;
 
 	// check max frame bounds
 	if(base_sequence->flags & SEQFLAG_LOOP)

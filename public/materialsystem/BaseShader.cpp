@@ -10,7 +10,7 @@
 struct FilterTypeString_s
 {
 	const char*		pszFilterName;
-	Filter_e		nFilterType;
+	ER_TextureFilterMode		nFilterType;
 };
 
 const FilterTypeString_s pBaseTextureFilterTypes[] = {
@@ -21,7 +21,7 @@ const FilterTypeString_s pBaseTextureFilterTypes[] = {
 	{ "aniso", TEXFILTER_TRILINEAR_ANISO },
 };
 
-Filter_e ResolveFilterType(const char* string)
+ER_TextureFilterMode ResolveFilterType(const char* string)
 {
 	for(int i = 0; i < 5; i++)
 	{
@@ -36,20 +36,20 @@ Filter_e ResolveFilterType(const char* string)
 struct AddressingTypeString_s
 {
 	const char*		pszAddressName;
-	AddressMode_e	nAddress;
+	ER_TextureAddressMode	nAddress;
 };
 
 const AddressingTypeString_s pBaseTextureAddressTypes[] = {
-	{ "wrap", ADDRESSMODE_WRAP },
-	{ "clamp", ADDRESSMODE_CLAMP },
+	{ "wrap", TEXADDRESS_WRAP },
+	{ "clamp", TEXADDRESS_CLAMP },
 };
 
-AddressMode_e ResolveAddressType(const char* string)
+ER_TextureAddressMode ResolveAddressType(const char* string)
 {
 	if(!stricmp(string,"wrap"))
-		return ADDRESSMODE_WRAP;
+		return TEXADDRESS_WRAP;
 	else
-		return ADDRESSMODE_CLAMP;
+		return TEXADDRESS_CLAMP;
 }
 
 //--------------------------------------
@@ -75,7 +75,7 @@ CBaseShader::CBaseShader()
 	m_pBaseTextureScaleVar = NULL;
 	m_pBaseTextureFrame = NULL;
 
-	m_nAddressMode = ADDRESSMODE_WRAP;
+	m_nAddressMode = TEXADDRESS_WRAP;
 	m_nTextureFilter = TEXFILTER_TRILINEAR_ANISO;
 
 	for(int i = 0; i < SHADERPARAM_COUNT; i++)
@@ -283,7 +283,7 @@ void CBaseShader::ParamSetup_AlphaModel_Modulate()
 
 void CBaseShader::ParamSetup_RasterState()
 {
-	CullMode_e cull_mode = materials->GetCurrentCullMode();
+	ER_CullMode cull_mode = materials->GetCurrentCullMode();
 
 	if(m_nFlags & MATERIAL_FLAG_NOCULL)
 		cull_mode = CULL_NONE;
@@ -292,7 +292,7 @@ void CBaseShader::ParamSetup_RasterState()
 	if(materials->GetConfiguration().wireframeMode && materials->GetConfiguration().editormode)
 		cull_mode = CULL_NONE;
 
-	materials->SetRasterizerStates(cull_mode, (FillMode_e)materials->GetConfiguration().wireframeMode, m_msaaEnabled, false, m_polyOffset);
+	materials->SetRasterizerStates(cull_mode, (ER_FillMode)materials->GetConfiguration().wireframeMode, m_msaaEnabled, false, m_polyOffset);
 }
 
 

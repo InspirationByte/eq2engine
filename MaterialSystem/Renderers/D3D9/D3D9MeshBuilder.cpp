@@ -24,7 +24,7 @@ CD3D9MeshBuilder::~CD3D9MeshBuilder()
 //-----------------------------------------------------------------------------
 // "glBegin()"
 
-void CD3D9MeshBuilder::Begin( PrimitiveType_e type)
+void CD3D9MeshBuilder::Begin( ER_PrimitiveType type)
 {
 	m_primType = type;
 

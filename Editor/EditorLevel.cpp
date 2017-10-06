@@ -1144,14 +1144,14 @@ IVertexFormat* CEditorLevel::GetLevelVertexFormat()
 	if(!m_pLevelvertexformat)
 	{
 		VertexFormatDesc_t pFormat[] = {
-			{ 0, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position
-			{ 0, 2, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0
+			{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position
+			{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0
 
-			{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Tangent (TC1)
-			{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Binormal (TC2)
-			{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal (TC3)
+			{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Tangent (TC1)
+			{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Binormal (TC2)
+			{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal (TC3)
 
-			{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // vertex painting data (TC4)
+			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // vertex painting data (TC4)
 		};
 
 		m_pLevelvertexformat = g_pShaderAPI->CreateVertexFormat(pFormat, elementsOf(pFormat));

@@ -152,7 +152,7 @@ bool ParseLightEntity_Point(kvkeybase_t* pSection)
 
 	if(pair)
 	{
-		pLight->pMaskTexture = g_pShaderAPI->LoadTexture(pair->values[0],TEXFILTER_TRILINEAR_ANISO,ADDRESSMODE_CLAMP,0);
+		pLight->pMaskTexture = g_pShaderAPI->LoadTexture(pair->values[0],TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_CLAMP,0);
 		pLight->pMaskTexture->Ref_Grab();
 	}
 
@@ -237,7 +237,7 @@ bool ParseLightEntity_Spot(kvkeybase_t* pSection)
 
 	if(pair)
 	{
-		pLight->pMaskTexture = g_pShaderAPI->LoadTexture(pair->values[0],TEXFILTER_TRILINEAR_ANISO,ADDRESSMODE_CLAMP,0);
+		pLight->pMaskTexture = g_pShaderAPI->LoadTexture(pair->values[0],TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_CLAMP,0);
 		pLight->pMaskTexture->Ref_Grab();
 	}
 
@@ -377,24 +377,24 @@ public:
 
 		//m_pModel->PrepareForSkinning(m_BoneMatrixList);
 
-		studiohdr_t* pHdr = m_pModel->GetHWData()->pStudioHdr;
+		studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
 		int nLod = 0;
 
-		for(int i = 0; i < pHdr->numbodygroups; i++)
+		for(int i = 0; i < pHdr->numBodyGroups; i++)
 		{
-			int nLodableModelIndex = pHdr->pBodyGroups(i)->lodmodel_index;
-			int nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+			int nLodableModelIndex = pHdr->pBodyGroups(i)->lodModelIndex;
+			int nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 
 			while(nLod > 0 && nModDescId != -1)
 			{
 				nLod--;
-				nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+				nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 			}
 
 			if(nModDescId == -1)
 				continue;
 
-			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
 			{
 				viewrenderer->DrawModelPart(m_pModel, nModDescId, j, nViewRenderFlags, NULL, NULL);
 			}
@@ -756,8 +756,8 @@ void FixEdgesAndSave(int nLightmap, bool bDirMap)
 		for(int i = 0; i < 4; i++)
 		{
 			pMB->Color4fv(color4_white);
-			pMB->TexCoord2f(verts[i].m_vTexCoord.x, verts[i].m_vTexCoord.y);
-			pMB->Position3f(verts[i].m_vPosition.x, verts[i].m_vPosition.y, 0);
+			pMB->TexCoord2f(verts[i].texCoord.x, verts[i].texCoord.y);
+			pMB->Position3f(verts[i].position.x, verts[i].position.y, 0);
 
 			pMB->AdvanceVertex();
 		}

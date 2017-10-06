@@ -595,7 +595,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 			bool filter_font = KV_GetValueBool( fontSec->FindKeyBase("filter") ) || m_flags.sdf;
 
 			m_spacing = 0.0f;
-			m_fontTexture = g_pShaderAPI->LoadTexture(KV_GetValueString(fontSec->FindKeyBase("texture")), filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST,ADDRESSMODE_WRAP, TEXFLAG_NOQUALITYLOD);
+			m_fontTexture = g_pShaderAPI->LoadTexture(KV_GetValueString(fontSec->FindKeyBase("texture")), filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST,TEXADDRESS_WRAP, TEXFLAG_NOQUALITYLOD);
 
 			if(m_flags.sdf)
 				m_scale = KV_GetVector2D( fontSec->FindKeyBase("scale") );
@@ -676,7 +676,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 				float interval = KV_GetValueFloat(pFontSizeSection->FindKeyBase("interval"), 0, 0.75);
 
-				m_fontTexture = g_pShaderAPI->LoadTexture(texname.GetData(),filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST,ADDRESSMODE_WRAP, TEXFLAG_NOQUALITYLOD);
+				m_fontTexture = g_pShaderAPI->LoadTexture(texname.GetData(),filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST,TEXADDRESS_WRAP, TEXFLAG_NOQUALITYLOD);
 
 				if(m_fontTexture == NULL)
 				{

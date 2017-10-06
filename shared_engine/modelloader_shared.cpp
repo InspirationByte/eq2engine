@@ -92,7 +92,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 	strcpy(str, pszPath);
 	FixSlashes(str);
 
-	if(stricmp(str, pHdr->modelname))
+	if(stricmp(str, pHdr->modelName))
 	{
 		MsgError("Model %s is not valid model, didn't you replaced model?\n", pszPath);
 		CacheFree(hunkHiMark);
@@ -213,23 +213,23 @@ studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 			}
 			case ANIMCA_EVENTS:
 			{
-				pMotion->numevents = pLump->size / sizeof(sequenceevent_t);
+				pMotion->numEvents = pLump->size / sizeof(sequenceevent_t);
 
 				pMotion->events = (sequenceevent_t*)PPAlloc(pLump->size);
 				memcpy(pMotion->events, pData, pLump->size);
 
-				DevMsg(DEVMSG_CORE,"events: %d\n", pMotion->numevents);
+				DevMsg(DEVMSG_CORE,"events: %d\n", pMotion->numEvents);
 
 				break;
 			}
 			case ANIMCA_POSECONTROLLERS:
 			{
-				pMotion->numposecontrollers = pLump->size / sizeof(posecontroller_t);
+				pMotion->numPoseControllers = pLump->size / sizeof(posecontroller_t);
 
-				pMotion->posecontrollers = (posecontroller_t*)PPAlloc(pLump->size);
-				memcpy(pMotion->posecontrollers, pData, pLump->size);
+				pMotion->poseControllers = (posecontroller_t*)PPAlloc(pLump->size);
+				memcpy(pMotion->poseControllers, pData, pLump->size);
 
-				DevMsg(DEVMSG_CORE,"pose controllers: %d\n", pMotion->numposecontrollers);
+				DevMsg(DEVMSG_CORE,"pose controllers: %d\n", pMotion->numPoseControllers);
 
 				break;
 			}
@@ -243,12 +243,12 @@ studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 	//Msg("Num anim descs: %d\n", numAnimDescs);
 
-	pMotion->numanimations = numAnimDescs;
+	pMotion->numAnimations = numAnimDescs;
 
 	pMotion->frames = (animframe_t*)PPAlloc(numAnimFrames * sizeof(animframe_t));
 	memcpy(pMotion->frames, animframes, numAnimFrames * sizeof(animframe_t));
 
-	for(int i = 0; i < pMotion->numanimations; i++)
+	for(int i = 0; i < pMotion->numAnimations; i++)
 	{
 		memset(&pMotion->animations[i], 0, sizeof(modelanimation_t));
 
@@ -261,8 +261,8 @@ studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 		for(int j = 0; j < boneCount; j++)
 		{
-			pMotion->animations[i].bones[j].numframes = numFrames;
-			pMotion->animations[i].bones[j].keyframes = pMotion->frames + (animationdescs[i].firstFrame + j*numFrames);
+			pMotion->animations[i].bones[j].numFrames = numFrames;
+			pMotion->animations[i].bones[j].keyFrames = pMotion->frames + (animationdescs[i].firstFrame + j*numFrames);
 		}
 	}
 
@@ -334,7 +334,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 
 					physgeominfo_t* pGeomInfos = (physgeominfo_t*)pData;
 
-					pModel->numshapes = numGeomInfos;
+					pModel->numShapes = numGeomInfos;
 					pModel->shapes = (physmodelshapecache_t*)PPAlloc(numGeomInfos*sizeof(physmodelshapecache_t));
 					
 					for(int i = 0; i < numGeomInfos; i++)
@@ -377,7 +377,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 					int numObjInfos = pLump->size / sizeof(physobject_t);
 					physobject_t* physObjDataLump = (physobject_t*)pData;
 
-					pModel->numobjects = numObjInfos;
+					pModel->numObjects = numObjInfos;
 					pModel->objects = (physobjectdata_t*)PPAlloc(numObjInfos*sizeof(physobjectdata_t));
 
 					for(int i = 0; i < numObjInfos; i++)
@@ -403,9 +403,9 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 					int numJointInfos = pLump->size / sizeof(physjoint_t);
 					physjoint_t* pJointData = (physjoint_t*)pData;
 
-					pModel->numjoints = numJointInfos;
+					pModel->numJoints = numJointInfos;
 
-					if(pModel->numjoints)
+					if(pModel->numJoints)
 					{
 						pModel->joints = (physjoint_t*)PPAlloc(pLump->size);
 						memcpy(pModel->joints, pJointData, pLump->size );
@@ -463,10 +463,10 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 
 void Studio_FreeMotionData(studiomotiondata_t* pData, int numBones)
 {
-	for(int i = 0; i < pData->numanimations; i++)
+	for(int i = 0; i < pData->numAnimations; i++)
 	{
 		//for(int j = 0; j < numBones; j++)
-			//PPFree(pData->animations[i].bones[j].keyframes);
+			//PPFree(pData->animations[i].bones[j].keyFrames);
 
 		PPFree(pData->animations[i].bones);
 	}
@@ -474,7 +474,7 @@ void Studio_FreeMotionData(studiomotiondata_t* pData, int numBones)
 	PPFree(pData->frames);
 	PPFree(pData->sequences);
 	PPFree(pData->events);
-	PPFree(pData->posecontrollers);
+	PPFree(pData->poseControllers);
 	PPFree(pData->animations);
 
 	PPFree(pData);

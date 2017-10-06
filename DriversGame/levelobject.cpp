@@ -140,24 +140,24 @@ void CLevObjectDef::Render( float lodDistance, const BoundingBox& bbox, bool pre
 		int m_bodyGroupFlags = 0xFFFFFFFf;
 #endif // EDITOR
 
-		studiohdr_t* pHdr = m_defModel->GetHWData()->pStudioHdr;
-		for(int i = 0; i < pHdr->numbodygroups; i++)
+		studiohdr_t* pHdr = m_defModel->GetHWData()->studio;
+		for(int i = 0; i < pHdr->numBodyGroups; i++)
 		{
 			// check bodygroups for rendering
 			if(!(m_bodyGroupFlags & (1 << i)))
 				continue;
 
 			int bodyGroupLOD = nStartLOD;
-			int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
+			int nLodModelIdx = pHdr->pBodyGroups(i)->lodModelIndex;
 			studiolodmodel_t* lodModel = pHdr->pLodModel(nLodModelIdx);
 
-			int nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
+			int nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
 
 			// get the right LOD model number
 			while(nModDescId == -1 && bodyGroupLOD > 0)
 			{
 				bodyGroupLOD--;
-				nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
+				nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
 			}
 
 			if(nModDescId == -1)
@@ -166,7 +166,7 @@ void CLevObjectDef::Render( float lodDistance, const BoundingBox& bbox, bool pre
 			studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
 
 			// render model groups that in this body group
-			for(int j = 0; j < modDesc->numgroups; j++)
+			for(int j = 0; j < modDesc->numGroups; j++)
 			{
 				//materials->SetSkinningEnabled(true);
 
@@ -481,13 +481,13 @@ bool CLevelModel::GenereateRenderData()
 		if(caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
 		{
 			VertexFormatDesc_t pFormat[] = {
-				{ 0, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position
-				{ 0, 2, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0
+				{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position
+				{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0
 
-				{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal (TC3)
+				{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal (TC3)
 
-				{ 2, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // quaternion
-				{ 2, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // position
+				{ 2, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // quaternion
+				{ 2, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // position
 			};
 
 			if (!m_format)
@@ -496,17 +496,17 @@ bool CLevelModel::GenereateRenderData()
 		else
 		{
 			VertexFormatDesc_t pFormat[] = {
-				{ 0, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position
-				{ 0, 2, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0
+				{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position
+				{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0
 
-				{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal (TC3)
+				{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal (TC3)
 			};
 
 			if (!m_format)
 				m_format = g_pShaderAPI->CreateVertexFormat(pFormat, elementsOf(pFormat));
 		}
 
-		BufferAccessType_e bufferType = BUFFER_STATIC;
+		ER_BufferAccess bufferType = BUFFER_STATIC;
 		int vb_lock_size = m_numVerts;
 		int ib_lock_size = m_numIndices;
 

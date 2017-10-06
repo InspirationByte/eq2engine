@@ -27,7 +27,7 @@ public:
 	CGLMeshBuilder();
 	~CGLMeshBuilder();
 
-	void		Begin(PrimitiveType_e type);
+	void		Begin(ER_PrimitiveType type);
 	void		End();
 
 	// color setting
@@ -53,7 +53,7 @@ public:
 protected:
 	bool					m_renderBegun;
 
-	PrimitiveType_e			m_primType;
+	ER_PrimitiveType			m_primType;
 
 	DkList<ListVertex_t>	m_vertList;
 

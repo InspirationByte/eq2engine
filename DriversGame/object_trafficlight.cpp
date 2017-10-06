@@ -66,9 +66,9 @@ void CObject_TrafficLight::Spawn()
 
 	m_pPhysicsObject = new CEqCollisionObject();
 
-	if( m_pPhysicsObject->Initialize(&m_pModel->GetHWData()->m_physmodel, 0) )//
+	if( m_pPhysicsObject->Initialize(&m_pModel->GetHWData()->physModel, 0) )//
 	{
-		physobject_t* obj = &m_pModel->GetHWData()->m_physmodel.objects[0].object;
+		physobject_t* obj = &m_pModel->GetHWData()->physModel.objects[0].object;
 
 		// set friction from surface parameters
 		eqPhysSurfParam_t* surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);

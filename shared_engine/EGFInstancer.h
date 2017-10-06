@@ -184,16 +184,16 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	studiohdr_t* pHdr = model->GetHWData()->pStudioHdr;
+	studiohdr_t* pHdr = model->GetHWData()->studio;
 
-	ASSERTMSG(pHdr->numbodygroups <= MAX_INSTANCE_BODYGROUPS, "Model got too many body groups! Tell it to programmer or reduce body group count.");
+	ASSERTMSG(pHdr->numBodyGroups <= MAX_INSTANCE_BODYGROUPS, "Model got too many body groups! Tell it to programmer or reduce body group count.");
 
 	// proceed to render
 	materials->SetInstancingEnabled(true);
 
 	for(int lod = 0; lod < MAX_INSTANCE_LODS; lod++)
 	{
-		for(int i = 0; i < pHdr->numbodygroups; i++)
+		for(int i = 0; i < pHdr->numBodyGroups; i++)
 		{
 			// don't do empty instances
 			if(m_numInstances[i][lod] == 0)
@@ -209,16 +209,16 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 			m_instanceBuf->Update(m_instances[i][lod], numInst, 0, true);
 
 			int bodyGroupLOD = lod;
-			int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
+			int nLodModelIdx = pHdr->pBodyGroups(i)->lodModelIndex;
 			studiolodmodel_t* lodModel = pHdr->pLodModel(nLodModelIdx);
 
-			int nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
+			int nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
 
 			// get the right LOD model number
 			while(nModDescId == -1 && bodyGroupLOD > 0)
 			{
 				bodyGroupLOD--;
-				nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
+				nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
 			}
 
 			if(nModDescId == -1)
@@ -227,7 +227,7 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 			studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
 
 			// render model groups that in this body group
-			for(int j = 0; j < modDesc->numgroups; j++)
+			for(int j = 0; j < modDesc->numGroups; j++)
 			{
 				//materials->SetSkinningEnabled(true);
 

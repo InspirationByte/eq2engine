@@ -42,8 +42,8 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 		return NULL;
 
 	studiohwdata_t* hwdata = pModel->GetHWData();
-	physmodeldata_t& physModel = hwdata->m_physmodel;
-	studiohdr_t* studio = hwdata->pStudioHdr;
+	physmodeldata_t& physModel = hwdata->physModel;
+	studiohdr_t* studio = hwdata->studio;
 
 	int type = physModel.modeltype;
 
@@ -54,16 +54,16 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 
 		newRagdoll->m_pReferenceModel = pModel;
 
-		int numPhysJoints = physModel.numjoints;
+		int numPhysJoints = physModel.numJoints;
 		newRagdoll->m_numBones = numPhysJoints;
 
-		int numParts = physModel.numobjects;
+		int numParts = physModel.numObjects;
 		newRagdoll->m_numParts = numParts;
 
 		// build joint remap table
 		for(int i = 0; i < numPhysJoints; i++)
 		{
-			for(int j = 0; j < studio->numbones; j++)
+			for(int j = 0; j < studio->numBones; j++)
 			{
 				if(!stricmp(hwdata->joints[j].name, physModel.joints[i].name))
 				{
@@ -78,7 +78,7 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 		}
 
 		// build far parental table
-		for(int i = 0; i < studio->numbones; i++)
+		for(int i = 0; i < studio->numBones; i++)
 		{
 			newRagdoll->m_pBoneMerge_far_parents[i] = newRagdoll->ComputeAndGetFarParentOf(i);
 
@@ -191,9 +191,9 @@ void ragdoll_t::GetVisualBonesTransforms(Matrix4x4 *bones)
 	Matrix4x4 offsetTranslate = identity4();
 	offsetTranslate.setTranslation(-GetPosition());
 
-	studiohdr_t* studio = m_pReferenceModel->GetHWData()->pStudioHdr;
+	studiohdr_t* studio = m_pReferenceModel->GetHWData()->studio;
 
-	for(int i = 0; i < studio->numbones; i++)
+	for(int i = 0; i < studio->numBones; i++)
 	{
 		int ragdoll_joint_index = m_pBoneToRagdollIndices[i];
 

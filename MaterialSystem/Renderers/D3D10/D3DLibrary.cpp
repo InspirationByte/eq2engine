@@ -43,17 +43,17 @@ bool CD3DRenderLib::InitCaps()
 	return true;
 }
 
-bool CD3DRenderLib::InitAPI(const shaderapiinitparams_t& sparams)
+bool CD3DRenderLib::InitAPI(const shaderAPIParams_t& sparams)
 {
 	savedParams = sparams;
 
-	int depthBits = savedParams.nDepthBits;
+	int depthBits = savedParams.depthBits;
 
 	//int stencilBits = 0;
 
 
 	// set window
-	hwnd = (HWND)savedParams.hWindow;
+	hwnd = (HWND)savedParams.windowHandle;
 
 	// get window parameters
 	RECT windowRect;
@@ -64,10 +64,10 @@ bool CD3DRenderLib::InitAPI(const shaderapiinitparams_t& sparams)
 
 	Msg("WINDOW SIZE: %d %d\n", m_width, m_height);
 
-	if(savedParams.nScreenFormat == FORMAT_RGB8)
-		savedParams.nScreenFormat = FORMAT_RGBA8;
+	if(savedParams.screenFormat == FORMAT_RGB8)
+		savedParams.screenFormat = FORMAT_RGBA8;
 
-	m_nBackBufferFormat = formats[savedParams.nScreenFormat];
+	m_nBackBufferFormat = formats[savedParams.screenFormat];
 	m_nDepthBufferFormat = DXGI_FORMAT_UNKNOWN;
 
 	switch (depthBits)
@@ -116,7 +116,7 @@ bool CD3DRenderLib::InitAPI(const shaderapiinitparams_t& sparams)
 	DXGI_OUTPUT_DESC oDesc;
 	dxgiOutput->GetDesc(&oDesc);
 
-	int targetHz = savedParams.nRefreshRateHZ;
+	int targetHz = savedParams.screenRefreshRateHZ;
 	int fsRefresh = 60;
 
 	m_fullScreenRefresh.Numerator = fsRefresh;
@@ -167,7 +167,7 @@ bool CD3DRenderLib::InitAPI(const shaderapiinitparams_t& sparams)
 		return false;
 	}
 
-	m_nMsaaSamples = savedParams.nMultisample+1;
+	m_nMsaaSamples = savedParams.multiSamplingMode+1;
 
 	while (m_nMsaaSamples > 0)
 	{
@@ -188,7 +188,7 @@ bool CD3DRenderLib::InitAPI(const shaderapiinitparams_t& sparams)
 	g_pShaderAPI = m_Renderer;
 
 	// create our swap chain
-	m_swapChain = CreateSwapChain(savedParams.hWindow, savedParams.bIsWindowed);
+	m_swapChain = CreateSwapChain(savedParams.windowHandle, savedParams.windowedMode);
 
 	// We'll handle Alt-Enter ourselves thank you very much ...
 	m_dxgiFactory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
@@ -203,7 +203,7 @@ bool CD3DRenderLib::InitAPI(const shaderapiinitparams_t& sparams)
 		return false;
 	}
 
-	UpdateWindow((HWND)savedParams.hWindow);
+	UpdateWindow((HWND)savedParams.windowHandle);
 
 	return true;
 }
@@ -302,7 +302,7 @@ bool CD3DRenderLib::CaptureScreenshot(CImage &img)
 	{
 		ID3D10Resource* backbufferTex = ((CD3D10SwapChain*)m_swapChain)->m_backbuffer->textures[0];
 
-		if (savedParams.nMultisample > 1)
+		if (savedParams.multiSamplingMode > 1)
 		{
 			ID3D10Texture2D *resolved = NULL;
 			desc.Usage = D3D10_USAGE_DEFAULT;
@@ -374,7 +374,7 @@ IEqSwapChain* CD3DRenderLib::CreateSwapChain(void* window, bool windowed)
 {
 	CD3D10SwapChain* pNewChain = new CD3D10SwapChain();
 	
-	if(!pNewChain->Initialize((HWND)window, m_nMsaaSamples, m_nBackBufferFormat, savedParams.bEnableVerticalSync, m_fullScreenRefresh, windowed, m_dxgiFactory, m_rhi ))
+	if(!pNewChain->Initialize((HWND)window, m_nMsaaSamples, m_nBackBufferFormat, savedParams.verticalSyncEnabled, m_fullScreenRefresh, windowed, m_dxgiFactory, m_rhi ))
 	{
 		MsgError("ERROR: Can't create D3D10 swapchain!\n");
 		delete pNewChain;

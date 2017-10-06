@@ -260,9 +260,9 @@ void InitMatSystem(HWND window)
 
 		materials_config.lighting_model = MATERIAL_LIGHT_FORWARD;
 
-		materials_config.shaderapi_params.bIsWindowed = true;
-		materials_config.shaderapi_params.hWindow = window;
-		materials_config.shaderapi_params.nScreenFormat = format;
+		materials_config.shaderapi_params.windowedMode = true;
+		materials_config.shaderapi_params.windowHandle = window;
+		materials_config.shaderapi_params.screenFormat = format;
 
 		bool materialSystemStatus = materials->Init("materials/", "EqD3D9RHI", materials_config);
 
@@ -1283,9 +1283,9 @@ void CEGFViewFrame::RefreshGUI()
 	// populate all lists
 	if(g_pModel && g_pModel->m_pModel != NULL)
 	{
-		studiohdr_t* modelHdr = g_pModel->m_pModel->GetHWData()->pStudioHdr;
+		studiohdr_t* modelHdr = g_pModel->m_pModel->GetHWData()->studio;
 
-		for(int i = 0; i < modelHdr->numbodygroups; i++)
+		for(int i = 0; i < modelHdr->numBodyGroups; i++)
 		{
 			int idx = m_enabledBodyParts->Append( modelHdr->pBodyGroups(i)->name );
 			m_enabledBodyParts->Check(idx, true);

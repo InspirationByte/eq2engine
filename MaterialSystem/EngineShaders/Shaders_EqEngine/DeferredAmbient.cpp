@@ -36,7 +36,7 @@ public:
 
 		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CDeferredAmbient::ParamSetup_AlphaModel_Translucent);
 
-		//m_pRotationMap = g_pShaderAPI->LoadTexture("engine/rot_map", TEXFILTER_LINEAR, ADDRESSMODE_WRAP);
+		//m_pRotationMap = g_pShaderAPI->LoadTexture("engine/rot_map", TEXFILTER_LINEAR, TEXADDRESS_WRAP);
 		//AddTextureToAutoremover(&m_pRotationMap);
 	}
 

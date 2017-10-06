@@ -22,6 +22,7 @@ enum EModelEditMode
 	MEDIT_PLACEMENT = 0,
 	MEDIT_TRANSLATE,
 	MEDIT_ROTATE,
+	MEDIT_SELECTION,
 };
 
 // selection info for region relocation

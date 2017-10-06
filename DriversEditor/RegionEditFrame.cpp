@@ -268,7 +268,7 @@ void CRegionEditFrame::RegenerateRegionImage(regionMap_t* regMap)
 
 	if(!regMap->image)
 	{
-		regMap->image = g_pShaderAPI->CreateProceduralTexture("regTex_%d", FORMAT_RGBA8, m_regCells, m_regCells, 1, 1,TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, TEXFLAG_NOQUALITYLOD);
+		regMap->image = g_pShaderAPI->CreateProceduralTexture("regTex_%d", FORMAT_RGBA8, m_regCells, m_regCells, 1, 1,TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXFLAG_NOQUALITYLOD);
 		regMap->image->Ref_Grab();
 	}
 
@@ -305,7 +305,7 @@ void CRegionEditFrame::RegenerateRegionImage(regionMap_t* regMap)
 
 	if(!regMap->aiMapImage)
 	{
-		regMap->aiMapImage = g_pShaderAPI->CreateProceduralTexture(varargs("navgrid_%d", regMap->region->m_regionIndex), FORMAT_RGBA8, navGrid.wide, navGrid.tall, 1, 1,TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, TEXFLAG_NOQUALITYLOD);
+		regMap->aiMapImage = g_pShaderAPI->CreateProceduralTexture(varargs("navgrid_%d", regMap->region->m_regionIndex), FORMAT_RGBA8, navGrid.wide, navGrid.tall, 1, 1,TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXFLAG_NOQUALITYLOD);
 		regMap->aiMapImage->Ref_Grab();
 	}
 

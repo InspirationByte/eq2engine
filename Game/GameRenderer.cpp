@@ -665,8 +665,8 @@ void GR_DrawScene( int nRenderFlags )
 	
 	if( bMustShotCubemap )
 	{
-		pCubemapTarget = g_pShaderAPI->CreateNamedRenderTarget("_rt_tempcubemap", 512,512,FORMAT_RGBA8,TEXFILTER_LINEAR,ADDRESSMODE_CLAMP,COMP_NEVER,TEXFLAG_CUBEMAP);
-		pCubemapDepthTarget = g_pShaderAPI->CreateRenderTarget(512,512, FORMAT_D24, TEXFILTER_LINEAR, ADDRESSMODE_CLAMP);
+		pCubemapTarget = g_pShaderAPI->CreateNamedRenderTarget("_rt_tempcubemap", 512,512,FORMAT_RGBA8,TEXFILTER_LINEAR,TEXADDRESS_CLAMP,COMP_NEVER,TEXFLAG_CUBEMAP);
+		pCubemapDepthTarget = g_pShaderAPI->CreateRenderTarget(512,512, FORMAT_D24, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
 
 		pCubemapTarget->Ref_Grab();
 		pCubemapDepthTarget->Ref_Grab();
@@ -990,8 +990,8 @@ reshot:
 			meshBuilder.Begin(PRIM_TRIANGLES);
 				for(int i = 0; i < vCount; i++)
 				{
-					meshBuilder.Position3fv(Vector3D(quad_sub[i].m_vPosition * (size-1.0f),0));
-					meshBuilder.TexCoord2fv(quad_sub[i].m_vTexCoord);
+					meshBuilder.Position3fv(Vector3D(quad_sub[i].position * (size-1.0f),0));
+					meshBuilder.TexCoord2fv(quad_sub[i].texCoord);
 					meshBuilder.Color4f(1.0,1.0,1.0,1.0);
 					meshBuilder.AdvanceVertex();
 				}
@@ -1126,37 +1126,37 @@ bool ViewRenderInitResources()
 
 	if(!g_pFramebufferTexture)
 	{
-		g_pFramebufferTexture = g_pShaderAPI->CreateNamedRenderTarget("_rt_framebuffer", g_pEngineHost->GetWindowSize().x, g_pEngineHost->GetWindowSize().y, FORMAT_RGB8, TEXFILTER_LINEAR, ADDRESSMODE_CLAMP);
+		g_pFramebufferTexture = g_pShaderAPI->CreateNamedRenderTarget("_rt_framebuffer", g_pEngineHost->GetWindowSize().x, g_pEngineHost->GetWindowSize().y, FORMAT_RGB8, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
 		g_pFramebufferTexture->Ref_Grab();
 	}
 
 	if(!g_pTransparentLighting)
 	{
-		g_pTransparentLighting = g_pShaderAPI->CreateNamedRenderTarget("_rt_transbuffer", g_pEngineHost->GetWindowSize().x, g_pEngineHost->GetWindowSize().y, FORMAT_RGB8, TEXFILTER_LINEAR, ADDRESSMODE_CLAMP);
+		g_pTransparentLighting = g_pShaderAPI->CreateNamedRenderTarget("_rt_transbuffer", g_pEngineHost->GetWindowSize().x, g_pEngineHost->GetWindowSize().y, FORMAT_RGB8, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
 		g_pTransparentLighting->Ref_Grab();
 	}
 
 	if(!g_pHDRBlur1Texture)
 	{
-		g_pHDRBlur1Texture = g_pShaderAPI->CreateNamedRenderTarget("_rt_hdrblur1", 512, 512, FORMAT_RGBA16F, TEXFILTER_LINEAR, ADDRESSMODE_CLAMP);
+		g_pHDRBlur1Texture = g_pShaderAPI->CreateNamedRenderTarget("_rt_hdrblur1", 512, 512, FORMAT_RGBA16F, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
 		g_pHDRBlur1Texture->Ref_Grab();
 	}
 
 	if(!g_pHDRBlur2Texture)
 	{
-		g_pHDRBlur2Texture = g_pShaderAPI->CreateNamedRenderTarget("_rt_hdrblur2", 512, 512, FORMAT_RGBA16F, TEXFILTER_LINEAR, ADDRESSMODE_CLAMP);
+		g_pHDRBlur2Texture = g_pShaderAPI->CreateNamedRenderTarget("_rt_hdrblur2", 512, 512, FORMAT_RGBA16F, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
 		g_pHDRBlur2Texture->Ref_Grab();
 	}
 
 	if(!g_pUnderwaterTexture)
 	{
-		g_pUnderwaterTexture = g_pShaderAPI->CreateNamedRenderTarget("_rt_underwater", r_waterTexturesSize.GetInt(), r_waterTexturesSize.GetInt(), FORMAT_RGB8, TEXFILTER_LINEAR, ADDRESSMODE_CLAMP);
+		g_pUnderwaterTexture = g_pShaderAPI->CreateNamedRenderTarget("_rt_underwater", r_waterTexturesSize.GetInt(), r_waterTexturesSize.GetInt(), FORMAT_RGB8, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
 		g_pUnderwaterTexture->Ref_Grab();
 	}
 
 	if(!g_pReflectionTexture)
 	{
-		g_pReflectionTexture = g_pShaderAPI->CreateNamedRenderTarget("_rt_reflection", r_waterTexturesSize.GetInt(), r_waterTexturesSize.GetInt(), FORMAT_RGB8, TEXFILTER_LINEAR, ADDRESSMODE_CLAMP);
+		g_pReflectionTexture = g_pShaderAPI->CreateNamedRenderTarget("_rt_reflection", r_waterTexturesSize.GetInt(), r_waterTexturesSize.GetInt(), FORMAT_RGB8, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
 		g_pReflectionTexture->Ref_Grab();
 	}
 
@@ -1266,9 +1266,9 @@ void GR_InitDynamics()
 		if(!g_pRopeFormat)
 		{
 			VertexFormatDesc_t pRopeFormat[] = {
-				{ 0, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position
-				{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // TexCoord with bone index
-				{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal
+				{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position
+				{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // TexCoord with bone index
+				{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal
 			};
 
 			g_pRopeFormat = g_pShaderAPI->CreateVertexFormat(pRopeFormat, elementsOf(pRopeFormat));
@@ -1351,8 +1351,8 @@ void GR_Draw2DMaterial(IMaterial* pMaterial)
 	meshBuilder.Begin(PRIM_TRIANGLES);
 		for(int i = 0; i < vCount; i++)
 		{
-			meshBuilder.Position3fv(Vector3D(quad_sub[i].m_vPosition * (screen_size-1.0f),0));
-			meshBuilder.TexCoord2fv(quad_sub[i].m_vTexCoord);
+			meshBuilder.Position3fv(Vector3D(quad_sub[i].position * (screen_size-1.0f),0));
+			meshBuilder.TexCoord2fv(quad_sub[i].texCoord);
 			meshBuilder.AdvanceVertex();
 		}
 	meshBuilder.End();

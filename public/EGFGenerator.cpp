@@ -511,7 +511,7 @@ bool CEGFGenerator::LoadBodyGroups(kvkeybase_t* pSection)
 					return false;
 				}
 
-				bodygroup.lodmodel_index = lodIndex;
+				bodygroup.lodModelIndex = lodIndex;
 
 				Msg("Adding body group '%s'\n", bodygroup.name);
 
@@ -723,11 +723,11 @@ bool CEGFGenerator::LoadMaterialPaths(kvkeybase_t* pSection)
 
 			if(path.c_str()[sp_len] != '/' || path.c_str()[sp_len] != '\\')
 			{
-				strcpy(desc.m_szSearchPathString, varargs("%s/", path.c_str()));
+				strcpy(desc.searchPath, varargs("%s/", path.c_str()));
 			}
 			else
 			{
-				strcpy(desc.m_szSearchPathString, path.c_str());
+				strcpy(desc.searchPath, path.c_str());
 			}
 			
 			m_matpathes.append(desc);
@@ -771,7 +771,7 @@ bool CEGFGenerator::LoadMotionPackagePatchs(kvkeybase_t* pSection)
 
 			motionpackagedesc_t desc;
 
-			strcpy(desc.packagename, KV_GetValueString(keyBase));
+			strcpy(desc.packageName, KV_GetValueString(keyBase));
 
 			m_motionpacks.append(desc);
 		}
@@ -1076,7 +1076,7 @@ void CEGFGenerator::LoadPhysModels(kvkeybase_t* mainsection)
 			}
 			else
 			{
-				//physicsmodel = lodMod->lodmodels[0];
+				//physicsmodel = lodMod->modelsIndexes[0];
 
 				physModel = foundRef->model;
 

@@ -2086,7 +2086,7 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			return;
 
 		// studio model
-		physmodeldata_t* physData = &def->m_defModel->GetHWData()->m_physmodel;
+		physmodeldata_t* physData = &def->m_defModel->GetHWData()->physModel;
 
 		for(int i = 0; i < physData->numIndices; i+=3)
 		{

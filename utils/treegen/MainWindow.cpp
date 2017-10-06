@@ -157,9 +157,9 @@ void InitMatSystem(EQWNDHANDLE window)
 		materials_config.lighting_model = MATERIAL_LIGHT_FORWARD;
 		materials_config.threadedloader = true;
 
-		materials_config.shaderapi_params.bIsWindowed = true;
-		materials_config.shaderapi_params.hWindow = window;
-		materials_config.shaderapi_params.nScreenFormat = format;
+		materials_config.shaderapi_params.windowedMode = true;
+		materials_config.shaderapi_params.windowHandle = window;
+		materials_config.shaderapi_params.screenFormat = format;
 
 #ifdef _WIN32
 		bool materialSystemStatus = materials->Init("materials/", "eqD3D9RHI.dll", materials_config);
@@ -639,24 +639,24 @@ void ShowFPS()
 
 void RenderModel()
 {
-	studiohdr_t* pHdr = g_pModel->GetHWData()->pStudioHdr;
+	studiohdr_t* pHdr = g_pModel->GetHWData()->studio;
 
 	int nLOD = g_pModel->SelectLod( 0 ); // lod distance check
 
-	for(int i = 0; i < pHdr->numbodygroups; i++)
+	for(int i = 0; i < pHdr->numBodyGroups; i++)
 	{
 		int bodyGroupLOD = nLOD;
 
 		// TODO: check bodygroups for rendering
 
-		int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
-		int nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
+		int nLodModelIdx = pHdr->pBodyGroups(i)->lodModelIndex;
+		int nModDescId = pHdr->pLodModel(nLodModelIdx)->modelsIndexes[ bodyGroupLOD ];
 
 		// get the right LOD model number
 		while(nModDescId == -1 && bodyGroupLOD > 0)
 		{
 			bodyGroupLOD--;
-			nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
+			nModDescId = pHdr->pLodModel(nLodModelIdx)->modelsIndexes[ bodyGroupLOD ];
 		}
 
 		if(nModDescId == -1)
@@ -665,7 +665,7 @@ void RenderModel()
 		studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
 
 		// render model groups that in this body group
-		for(int j = 0; j < modDesc->numgroups; j++)
+		for(int j = 0; j < modDesc->numGroups; j++)
 		{
 			materials->SetSkinningEnabled(true);
 

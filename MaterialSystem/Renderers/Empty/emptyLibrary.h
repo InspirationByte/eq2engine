@@ -20,7 +20,7 @@ public:
 
 	bool			InitCaps();
 
-	bool			InitAPI( shaderapiinitparams_t &params);
+	bool			InitAPI( shaderAPIParams_t &params);
 	void			ExitAPI();
 	void			ReleaseSwapChains() {}
 

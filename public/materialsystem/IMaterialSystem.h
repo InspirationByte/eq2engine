@@ -64,66 +64,66 @@ typedef struct Vertex2D
 {
 	Vertex2D()
 	{
-		m_vTexCoord = vec2_zero;
-		m_vColor = color4_white;
+		texCoord = vec2_zero;
+		color = color4_white;
 	}
 
     Vertex2D(const Vector2D& p, const Vector2D& t)
     {
-        m_vPosition = p;
-        m_vTexCoord = t;
-		m_vColor = color4_white;
+        position = p;
+        texCoord = t;
+		color = color4_white;
     }
 
-	Vertex2D(const Vector2D& p, const Vector2D& t,const Vector4D& color)
+	Vertex2D(const Vector2D& p, const Vector2D& t,const Vector4D& c)
 	{
-		m_vPosition = p;
-		m_vTexCoord = t;
-		m_vColor = color;
+		position = p;
+		texCoord = t;
+		color = c;
 	}
 
-	void Set(const Vector2D& p, const Vector2D& t,const Vector4D& color)
+	void Set(const Vector2D& p, const Vector2D& t,const Vector4D& c)
 	{
-		m_vPosition = p;
-		m_vTexCoord = t;
-		m_vColor = color;
+		position = p;
+		texCoord = t;
+		color = c;
 	}
 
 	static Vertex2D Interpolate(const Vertex2D& a, const Vertex2D& b, float fac)
 	{
-		return Vertex2D(lerp(a.m_vPosition, b.m_vPosition, fac), lerp(a.m_vTexCoord, b.m_vTexCoord, fac), lerp(a.m_vColor, b.m_vColor, fac));
+		return Vertex2D(lerp(a.position, b.position, fac), lerp(a.texCoord, b.texCoord, fac), lerp(a.color, b.color, fac));
 	}
 
-    Vector2D		m_vPosition;
-    Vector2D		m_vTexCoord;
-	Vector4D		m_vColor;
+    Vector2D		position;
+    Vector2D		texCoord;
+	Vector4D		color;
 }Vertex2D_t;
 
 typedef struct Vertex3D
 {
 	Vertex3D()
 	{
-		m_vPosition = vec3_zero;
-		m_vTexCoord = vec2_zero;
-		m_vColor = color4_white;
+		position = vec3_zero;
+		texCoord = vec2_zero;
+		color = color4_white;
 	}
 
     Vertex3D(const Vector3D& p, const Vector2D& t)
     {
-        m_vPosition = p;
-        m_vTexCoord = t;
-		m_vColor = color4_white;
+        position = p;
+        texCoord = t;
+		color = color4_white;
     }
 
-	Vertex3D(const Vector3D& p, const Vector2D& t,const Vector4D& color)
+	Vertex3D(const Vector3D& p, const Vector2D& t,const Vector4D& c)
 	{
-		m_vPosition = p;
-		m_vTexCoord = t;
-		m_vColor = color;
+		position = p;
+		texCoord = t;
+		color = c;
 	}
-    Vector3D		m_vPosition;
-    Vector2D		m_vTexCoord;
-	Vector4D		m_vColor;
+    Vector3D		position;
+    Vector2D		texCoord;
+	Vector4D		color;
 }Vertex3D_t;
 
 //-----------------------------------------------------
@@ -149,7 +149,7 @@ struct matsystem_render_config_t
 	}
 
 	// rendering api parameters
-	shaderapiinitparams_t shaderapi_params;
+	shaderAPIParams_t shaderapi_params;
 
 	// the basic parameters that materials system can handle
 
@@ -280,13 +280,13 @@ public:
 	//-----------------------------
 
 	// draws primitives
-	virtual void							DrawPrimitivesFFP(	PrimitiveType_e type, Vertex3D_t *pVerts, int nVerts,
+	virtual void							DrawPrimitivesFFP(	ER_PrimitiveType type, Vertex3D_t *pVerts, int nVerts,
 																ITexture* pTexture = NULL, const ColorRGBA &color = color4_white,
 																BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
 																RasterizerStateParams_t* rasterParams = NULL) = 0;
 
 	// draws primitives for 2D
-	virtual void							DrawPrimitives2DFFP(	PrimitiveType_e type, Vertex2D_t *pVerts, int nVerts,
+	virtual void							DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pVerts, int nVerts,
 																	ITexture* pTexture = NULL, const ColorRGBA &color = color4_white,
 																	BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
 																	RasterizerStateParams_t* rasterParams = NULL) = 0;
@@ -295,8 +295,8 @@ public:
 	// Shader dynamic states
 	//-----------------------------
 
-	virtual CullMode_e						GetCurrentCullMode() = 0;
-	virtual void							SetCullMode(CullMode_e cullMode) = 0;
+	virtual ER_CullMode						GetCurrentCullMode() = 0;
+	virtual void							SetCullMode(ER_CullMode cullMode) = 0;
 
 	virtual void							SetSkinningEnabled( bool bEnable ) = 0;
 	virtual bool							IsSkinningEnabled() = 0;
@@ -338,20 +338,20 @@ public:
 
 
 	// sets blending
-	virtual void							SetBlendingStates(	BlendingFactor_e nSrcFactor,
-																BlendingFactor_e nDestFactor,
-																BlendingFunction_e nBlendingFunc = BLENDFUNC_ADD,
+	virtual void							SetBlendingStates(	ER_BlendFactor nSrcFactor,
+																ER_BlendFactor nDestFactor,
+																ER_BlendFunction nBlendingFunc = BLENDFUNC_ADD,
 																int colormask = COLORMASK_ALL
 																) = 0;
 
 	// sets depth stencil state
 	virtual void							SetDepthStates(	bool bDoDepthTest,
 															bool bDoDepthWrite,
-															CompareFunc_e depthCompFunc = COMP_LEQUAL) = 0;
+															ER_CompareFunc depthCompFunc = COMP_LEQUAL) = 0;
 
 	// sets rasterizer extended mode
-	virtual void							SetRasterizerStates(	CullMode_e nCullMode,
-																	FillMode_e nFillMode = FILL_SOLID,
+	virtual void							SetRasterizerStates(	ER_CullMode nCullMode,
+																	ER_FillMode nFillMode = FILL_SOLID,
 																	bool bMultiSample = true,
 																	bool bScissor = false,
 																	bool bPolyOffset = false
@@ -385,10 +385,10 @@ public:
 	virtual void							SetupOrtho(float left, float right, float top, float bottom, float zNear, float zFar) = 0;
 
 	// sets up a matrix, projection, view, and world
-	virtual void							SetMatrix(MatrixMode_e mode, const Matrix4x4 &matrix) = 0;
+	virtual void							SetMatrix(ER_MatrixMode mode, const Matrix4x4 &matrix) = 0;
 
 	// returns a typed matrix
-	virtual void							GetMatrix(MatrixMode_e mode, Matrix4x4 &matrix) = 0;
+	virtual void							GetMatrix(ER_MatrixMode mode, Matrix4x4 &matrix) = 0;
 
 	// retunrs multiplied matrix
 	virtual void							GetWorldViewProjection(Matrix4x4 &matrix) = 0;

@@ -17,7 +17,7 @@ public:
 	~CMeshBuilder();
 
 	// begins the mesh
-	void		Begin(PrimitiveType_e type);
+	void		Begin(ER_PrimitiveType type);
 
 	// ends building and renders the mesh
 	void		End(bool render = true);
@@ -96,7 +96,7 @@ protected:
 
 		int8				offset;
 		int8				count;
-		AttributeFormat_e	format;
+		ER_AttributeFormat	format;
 		Vector4D			value;
 	};
 
@@ -131,30 +131,30 @@ inline CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh) :
 	int vertexSize = 0;
 	for(int i = 0; i < numAttribs; i++)
 	{
-		AttributeFormat_e format = m_formatDesc[i].m_nFormat;
-		VertexType_e type = m_formatDesc[i].m_nType;
-		int vecCount = m_formatDesc[i].m_nSize;
-		int attribSize = vecCount * attributeFormatSize[format];
+		ER_AttributeFormat format = m_formatDesc[i].attribFormat;
+		ER_VertexAttribType type = m_formatDesc[i].attribType;
+		int vecCount = m_formatDesc[i].elemCount;
+		int attribSize = vecCount * s_attributeSize[format];
 
-		if(type == VERTEXTYPE_VERTEX)
+		if(type == VERTEXATTRIB_POSITION)
 		{
 			m_position.offset = vertexSize;
 			m_position.count = vecCount;
 			m_position.format = format;
 		}
-		else if(type == VERTEXTYPE_NORMAL)
+		else if(type == VERTEXATTRIB_NORMAL)
 		{
 			m_normal.offset = vertexSize;
 			m_normal.count = vecCount;
 			m_normal.format = format;
 		}
-		else if(type == VERTEXTYPE_TEXCOORD)
+		else if(type == VERTEXATTRIB_TEXCOORD)
 		{
 			m_texcoord.offset = vertexSize;
 			m_texcoord.count = vecCount;
 			m_texcoord.format = format;
 		}
-		else if(type == VERTEXTYPE_COLOR)
+		else if(type == VERTEXATTRIB_COLOR)
 		{
 			m_color.offset = vertexSize;
 			m_color.count = vecCount;
@@ -174,7 +174,7 @@ inline CMeshBuilder::~CMeshBuilder()
 }
 
 // begins the mesh
-inline void CMeshBuilder::Begin(PrimitiveType_e type)
+inline void CMeshBuilder::Begin(ER_PrimitiveType type)
 {
 	m_mesh->Reset();
 	m_mesh->SetPrimitiveType(type);
@@ -416,7 +416,7 @@ inline void CMeshBuilder::Line3fv(const Vector3D& v1, const Vector3D& v2)
 // to set quad color use Color3*/Color4* operators
 inline void CMeshBuilder::Triangle2( const Vector2D& v1, const Vector2D& v2, const Vector2D& v3 )
 {
-	PrimitiveType_e primType = m_mesh->GetPrimitiveType();
+	ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
 	uint16* indices = NULL;
 
 	int startIndex = m_mesh->AllocateGeom(3, 3, &m_curVertex, &indices);
@@ -442,7 +442,7 @@ inline void CMeshBuilder::Triangle2( const Vector2D& v1, const Vector2D& v2, con
 // to set quad color use Color3*/Color4* operators
 inline void CMeshBuilder::Quad2(const Vector2D& v_tl, const Vector2D& v_tr, const Vector2D& v_bl, const Vector2D& v_br)
 {
-	PrimitiveType_e primType = m_mesh->GetPrimitiveType();
+	ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
 	uint16* indices = NULL;
 
 	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
@@ -493,7 +493,7 @@ inline void CMeshBuilder::Quad2(const Vector2D& v_tl, const Vector2D& v_tr, cons
 inline void CMeshBuilder::TexturedQuad2(const Vector2D& v_tl, const Vector2D& v_tr, const Vector2D& v_bl, const Vector2D& v_br,
 										const Vector2D& t_tl, const Vector2D& t_tr, const Vector2D& t_bl,const Vector2D& t_br)
 {
-	PrimitiveType_e primType = m_mesh->GetPrimitiveType();
+	ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
 	uint16* indices = NULL;
 
 	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
@@ -548,7 +548,7 @@ inline void CMeshBuilder::TexturedQuad2(const Vector2D& v_tl, const Vector2D& v_
 inline void CMeshBuilder::TexturedQuad3(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3, const Vector3D& v4,
 										const Vector2D& t1, const Vector2D& t2, const Vector2D& t3,const Vector2D& t4)
 {
-	PrimitiveType_e primType = m_mesh->GetPrimitiveType();
+	ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
 	uint16* indices = NULL;
 
 	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
@@ -605,7 +605,7 @@ inline void CMeshBuilder::CopyVertData(vertdata_t& vert, bool isNormal)
 
 	ubyte* dest = (ubyte*)m_curVertex + vert.offset;
 
-	int size = min(vert.count, 4) * attributeFormatSize[vert.format];
+	int size = min(vert.count, 4) * s_attributeSize[vert.format];
 
 	switch(vert.format)
 	{

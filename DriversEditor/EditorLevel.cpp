@@ -1918,30 +1918,30 @@ float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D
 	float best_dist = DrvSynUnits::MaxCoordInUnits;
 	float fraction = 1.0f;
 
-	studiohdr_t* pHdr = pModel->GetHWData()->pStudioHdr;
+	studiohdr_t* pHdr = pModel->GetHWData()->studio;
 	int nLod = 0;
 
-	for(int i = 0; i < pHdr->numbodygroups; i++)
+	for(int i = 0; i < pHdr->numBodyGroups; i++)
 	{
-		int nLodableModelIndex = pHdr->pBodyGroups(i)->lodmodel_index;
-		int nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+		int nLodableModelIndex = pHdr->pBodyGroups(i)->lodModelIndex;
+		int nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 
 		while(nLod > 0 && nModDescId != -1)
 		{
 			nLod--;
-			nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+			nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 		}
 
 		if(nModDescId == -1)
 			continue;
 
-		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
 		{
 			modelgroupdesc_t* pGroup = pHdr->pModelDesc(nModDescId)->pGroup(j);
 
 			uint32 *pIndices = pGroup->pVertexIdx(0);
 
-			int numTriangles = floor((float)pGroup->numindices / 3.0f);
+			int numTriangles = floor((float)pGroup->numIndices / 3.0f);
 			int validIndexes = numTriangles * 3;
 
 			for(int k = 0; k < validIndexes; k+=3)

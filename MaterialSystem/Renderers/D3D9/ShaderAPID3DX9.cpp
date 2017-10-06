@@ -410,7 +410,7 @@ void ShaderAPID3DX9::ReleaseD3DFrameBufferSurfaces()
 }
 
 // Init + Shurdown
-void ShaderAPID3DX9::Init( shaderapiinitparams_t &params )
+void ShaderAPID3DX9::Init( shaderAPIParams_t &params )
 {
 	m_bDeviceIsLost = false;
 	m_bDeviceAtReset = false;
@@ -664,9 +664,9 @@ void ShaderAPID3DX9::ApplySamplerState()
 				m_pCustomSamplerState->magFilter = TEXFILTER_NEAREST;
 				m_pCustomSamplerState->minFilter = TEXFILTER_NEAREST;
 				//m_pCustomSamplerState->mipFilter = D3DTEXF_NONE;
-				m_pCustomSamplerState->wrapS = ADDRESSMODE_WRAP;
-				m_pCustomSamplerState->wrapT = ADDRESSMODE_WRAP;
-				m_pCustomSamplerState->wrapR = ADDRESSMODE_WRAP;
+				m_pCustomSamplerState->wrapS = TEXADDRESS_WRAP;
+				m_pCustomSamplerState->wrapT = TEXADDRESS_WRAP;
+				m_pCustomSamplerState->wrapR = TEXADDRESS_WRAP;
 				m_pCustomSamplerState->aniso = 1;
 
 				ss = m_pCustomSamplerState;
@@ -681,9 +681,9 @@ void ShaderAPID3DX9::ApplySamplerState()
 				m_pCustomSamplerState->magFilter = TEXFILTER_NEAREST;
 				m_pCustomSamplerState->minFilter = TEXFILTER_NEAREST;
 				//m_pCustomSamplerState->mipFilter = D3DTEXF_NONE;
-				m_pCustomSamplerState->wrapS = ADDRESSMODE_WRAP;
-				m_pCustomSamplerState->wrapT = ADDRESSMODE_WRAP;
-				m_pCustomSamplerState->wrapR = ADDRESSMODE_WRAP;
+				m_pCustomSamplerState->wrapS = TEXADDRESS_WRAP;
+				m_pCustomSamplerState->wrapT = TEXADDRESS_WRAP;
+				m_pCustomSamplerState->wrapR = TEXADDRESS_WRAP;
 				m_pCustomSamplerState->aniso = 1;
 
 				css = m_pCustomSamplerState;
@@ -724,9 +724,9 @@ void ShaderAPID3DX9::ApplySamplerState()
 				m_pCustomSamplerState->magFilter = TEXFILTER_NEAREST;
 				m_pCustomSamplerState->minFilter = TEXFILTER_NEAREST;
 				//m_pCustomSamplerState->mipFilter = D3DTEXF_NONE;
-				m_pCustomSamplerState->wrapS = ADDRESSMODE_WRAP;
-				m_pCustomSamplerState->wrapT = ADDRESSMODE_WRAP;
-				m_pCustomSamplerState->wrapR = ADDRESSMODE_WRAP;
+				m_pCustomSamplerState->wrapS = TEXADDRESS_WRAP;
+				m_pCustomSamplerState->wrapT = TEXADDRESS_WRAP;
+				m_pCustomSamplerState->wrapR = TEXADDRESS_WRAP;
 				m_pCustomSamplerState->aniso = 1;
 
 				ss = m_pCustomSamplerState;
@@ -741,9 +741,9 @@ void ShaderAPID3DX9::ApplySamplerState()
 				m_pCustomSamplerState->magFilter = TEXFILTER_NEAREST;
 				m_pCustomSamplerState->minFilter = TEXFILTER_NEAREST;
 				//m_pCustomSamplerState->mipFilter = D3DTEXF_NONE;
-				m_pCustomSamplerState->wrapS = ADDRESSMODE_WRAP;
-				m_pCustomSamplerState->wrapT = ADDRESSMODE_WRAP;
-				m_pCustomSamplerState->wrapR = ADDRESSMODE_WRAP;
+				m_pCustomSamplerState->wrapS = TEXADDRESS_WRAP;
+				m_pCustomSamplerState->wrapT = TEXADDRESS_WRAP;
+				m_pCustomSamplerState->wrapR = TEXADDRESS_WRAP;
 				m_pCustomSamplerState->aniso = 1;
 
 				css = m_pCustomSamplerState;
@@ -1488,7 +1488,7 @@ bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nF
 }
 
 // It will add new rendertarget
-ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat,Filter_e textureFilterType, AddressMode_e textureAddress, CompareFunc_e comparison, int nFlags)
+ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat,ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
 	CD3D9Texture *pTexture = new CD3D9Texture;
 
@@ -1530,7 +1530,7 @@ ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureForm
 }
 
 // It will add new rendertarget
-ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, Filter_e textureFilterType, AddressMode_e textureAddress, CompareFunc_e comparison, int nFlags)
+ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
 	CD3D9Texture *pTexture = new CD3D9Texture;
 
@@ -1813,7 +1813,7 @@ void ShaderAPID3DX9::GetViewportDimensions(int &wide, int &tall)
 //-------------------------------------------------------------
 
 // Matrix mode
-void ShaderAPID3DX9::SetMatrixMode(MatrixMode_e nMatrixMode)
+void ShaderAPID3DX9::SetMatrixMode(ER_MatrixMode nMatrixMode)
 {
 	m_nCurrentMatrixMode = d3dmatrixmodes[nMatrixMode];
 }
@@ -2755,7 +2755,7 @@ IVertexFormat* ShaderAPID3DX9::CreateVertexFormat(VertexFormatDesc_s* formatDesc
 	return pFormat;
 }
 
-IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(BufferAccessType_e nBufAccess, int nNumVerts, int strideSize, void *pData)
+IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData)
 {
 	CVertexBufferD3DX9* pBuffer = new CVertexBufferD3DX9();
 	pBuffer->m_nSize = nNumVerts*strideSize;
@@ -2798,7 +2798,7 @@ IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(BufferAccessType_e nBufAccess,
 	return pBuffer;
 
 }
-IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, BufferAccessType_e nBufAccess, void *pData)
+IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData)
 {
 	ASSERT(nIndexSize >= 2);
 	ASSERT(nIndexSize <= 4);
@@ -2848,7 +2848,7 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, Bu
 //-------------------------------------------------------------
 
 // Indexed primitive drawer
-void ShaderAPID3DX9::DrawIndexedPrimitives(PrimitiveType_e nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
+void ShaderAPID3DX9::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
 {
 	ASSERT(nVertices > 0);
 
@@ -2862,7 +2862,7 @@ void ShaderAPID3DX9::DrawIndexedPrimitives(PrimitiveType_e nType, int nFirstInde
 }
 
 // Draw elements
-void ShaderAPID3DX9::DrawNonIndexedPrimitives(PrimitiveType_e nType, int nFirstVertex, int nVertices)
+void ShaderAPID3DX9::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices)
 {
 	int nTris = s_DX9PrimitiveCounterFunctions[nType](nVertices);
 	m_pD3DDevice->DrawPrimitive(d3dPrim[nType], nFirstVertex, nTris);

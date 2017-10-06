@@ -41,7 +41,7 @@ struct ListVertex
 static bool bRenderBegun =  FALSE;
 
 //static D3D10_PRIMITIVE_TOPOLOGY PrimitiveType = D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-static PrimitiveType_e type;
+static ER_PrimitiveType type;
 
 static ListVertex *pVertList = NULL;
 ListVertex fill_vertex;
@@ -56,10 +56,10 @@ static IVertexFormat*		s_pVertexFormat	= NULL;
 // "glBegin()"
 
 static VertexFormatDesc_t g_meshBuilder_format[] = {
-	0, 3, VERTEXTYPE_VERTEX,	ATTRIBUTEFORMAT_FLOAT,
-	0, 2, VERTEXTYPE_TEXCOORD,	ATTRIBUTEFORMAT_FLOAT,
-	0, 4, VERTEXTYPE_COLOR,		ATTRIBUTEFORMAT_FLOAT,
-	0, 3, VERTEXTYPE_NORMAL,	ATTRIBUTEFORMAT_FLOAT,
+	0, 3, VERTEXATTRIB_POSITION,	ATTRIBUTEFORMAT_FLOAT,
+	0, 2, VERTEXATTRIB_TEXCOORD,	ATTRIBUTEFORMAT_FLOAT,
+	0, 4, VERTEXATTRIB_COLOR,		ATTRIBUTEFORMAT_FLOAT,
+	0, 3, VERTEXATTRIB_NORMAL,	ATTRIBUTEFORMAT_FLOAT,
 };
 
 CD3D10MeshBuilder::~CD3D10MeshBuilder()
@@ -67,7 +67,7 @@ CD3D10MeshBuilder::~CD3D10MeshBuilder()
 	ASSERT(!bRenderBegun);
 }
 
-void CD3D10MeshBuilder::Begin( PrimitiveType_e Type)
+void CD3D10MeshBuilder::Begin( ER_PrimitiveType Type)
 {
 	//if( pXDevice == NULL )
 	//	return;

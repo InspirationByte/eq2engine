@@ -82,7 +82,7 @@ bool CIndexBufferD3DX10::Lock(int lockOfs, int sizeToLock, void** outdata, bool 
 
 	if(dynamic)
 	{
-		//m_nSize = nLockByteCount;
+		//elemCount = nLockByteCount;
 		m_nIndices = sizeToLock;
 	}
 

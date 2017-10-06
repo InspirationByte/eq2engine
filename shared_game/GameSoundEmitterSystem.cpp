@@ -81,14 +81,14 @@ void CSoundController::StartSound(const char* newSoundName)
 			return;
 		}
 
-		if(m_emitParams.emitterIndex < 0 || m_emitParams.emitterIndex > ses->m_pCurrentTempEmitters.numElem()-1)
+		if(m_emitParams.emitterIndex < 0 || m_emitParams.emitterIndex > ses->m_emitters.numElem()-1)
 		{
 			MsgError("Can't emit sound '%s', no out of emitters\n", m_emitParams.name);
 			return;
 		}
 
 		// get emitter
-		m_emitData = ses->m_pCurrentTempEmitters[m_emitParams.emitterIndex];
+		m_emitData = ses->m_emitters[m_emitParams.emitterIndex];
 
 		// set controller
 		m_emitData->pController = this;
@@ -257,12 +257,12 @@ void CSoundChannelObject::EmitSoundWithParams(EmitSound_t *ep)
 	m_numChannelSounds[channel]++;
 }
 
-int CSoundChannelObject::GetChannelSoundCount(Channel_t chan)
+int CSoundChannelObject::GetChannelSoundCount(ESoundChannelType chan)
 {
 	return m_numChannelSounds[chan];
 }
 
-void CSoundChannelObject::DecrementChannelSoundCount(Channel_t chan)
+void CSoundChannelObject::DecrementChannelSoundCount(ESoundChannelType chan)
 {
 	if(chan == CHAN_INVALID)
 		return;
@@ -309,26 +309,26 @@ void CSoundEmitterSystem::Shutdown()
 {
 	StopAllSounds();
 
-	for(int i = 0; i < m_pSoundControllerList.numElem(); i++)
+	for(int i = 0; i < m_controllers.numElem(); i++)
 	{
-		m_pSoundControllerList[i]->Stop(true);
+		m_controllers[i]->Stop(true);
 
-		delete m_pSoundControllerList[i];
+		delete m_controllers[i];
 	}
 
-	m_pSoundControllerList.clear();
+	m_controllers.clear();
 
-	for(int i = 0; i < m_pCurrentTempEmitters.numElem(); i++)
+	for(int i = 0; i < m_emitters.numElem(); i++)
 	{
-		m_pCurrentTempEmitters[i]->pEmitter->Pause();
-		m_pCurrentTempEmitters[i]->pEmitter->Stop();
-		soundsystem->FreeEmitter(m_pCurrentTempEmitters[i]->pEmitter);
-		m_pCurrentTempEmitters[i]->pEmitter = NULL;
+		m_emitters[i]->pEmitter->Pause();
+		m_emitters[i]->pEmitter->Stop();
+		soundsystem->FreeEmitter(m_emitters[i]->pEmitter);
+		m_emitters[i]->pEmitter = NULL;
 
-		delete m_pCurrentTempEmitters[i];
+		delete m_emitters[i];
 	}
 
-	m_pCurrentTempEmitters.clear();
+	m_emitters.clear();
 
 	for(int i = 0; i < m_scriptsoundlist.numElem(); i++)
 	{
@@ -344,11 +344,11 @@ void CSoundEmitterSystem::Shutdown()
 	m_isInit = false;
 }
 
-int CSoundEmitterSystem::GetEmitterIndexByEntityAndChannel(CSoundChannelObject* pEnt, Channel_t chan)
+int CSoundEmitterSystem::GetEmitterIndexByEntityAndChannel(CSoundChannelObject* pEnt, ESoundChannelType chan)
 {
-	for(int i = 0; i < m_pCurrentTempEmitters.numElem(); i++)
+	for(int i = 0; i < m_emitters.numElem(); i++)
 	{
-		if(m_pCurrentTempEmitters[i]->pObject == pEnt && m_pCurrentTempEmitters[i]->channel == chan)
+		if(m_emitters[i]->pObject == pEnt && m_emitters[i]->channel == chan)
 			return i;
 	}
 
@@ -360,7 +360,7 @@ ISoundController* CSoundEmitterSystem::CreateSoundController(EmitSound_t *ep)
 	ASSERT(ep);
 	ASSERT(ep->name);
 
-	scriptsounddata_t* pScriptSound = FindSound(ep->name);
+	soundScriptDesc_t* pScriptSound = FindSound(ep->name);
 
 	// check
 	if(!pScriptSound)
@@ -371,7 +371,7 @@ ISoundController* CSoundEmitterSystem::CreateSoundController(EmitSound_t *ep)
 
 	CSoundController* pController = new CSoundController();
 
-	m_pSoundControllerList.append(pController);
+	m_controllers.append(pController);
 
 	pController->m_soundName = ep->name; // copy sound name since the params can use non-permanent adresses
 	pController->m_emitParams = *ep;
@@ -389,16 +389,16 @@ void CSoundEmitterSystem::RemoveSoundController(ISoundController* cont)
 
 	delete cont;
 
-	int idx = m_pSoundControllerList.findIndex(cont);
+	int idx = m_controllers.findIndex(cont);
 
 	if( idx != -1)
-		m_pSoundControllerList.fastRemoveIndex( idx );
+		m_controllers.fastRemoveIndex( idx );
 }
 
 void CSoundEmitterSystem::PrecacheSound(const char* pszName)
 {
 	// find the present sound file
-	scriptsounddata_t* pSound = FindSound(pszName);
+	soundScriptDesc_t* pSound = FindSound(pszName);
 
 	if(!pSound)
 		return;
@@ -428,7 +428,7 @@ void CSoundEmitterSystem::PrecacheSound(const char* pszName)
 #endif
 }
 
-scriptsounddata_t* CSoundEmitterSystem::FindSound(const char* soundName)
+soundScriptDesc_t* CSoundEmitterSystem::FindSound(const char* soundName)
 {
 	EqString sname(soundName);
 	sname = sname.LowerCase();
@@ -462,7 +462,7 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 	{
 		EmitSound_t newEmit = (*emit);
 		newEmit.nFlags &= ~EMITSOUND_FLAG_START_ON_UPDATE;
-		m_pUnreleasedSounds.append( newEmit );
+		m_pendingStartSounds.append( newEmit );
 
 		return CHAN_INVALID;
 	}
@@ -474,7 +474,7 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 
 #endif // NO_ENGINE
 
-	scriptsounddata_t* pScriptSound = FindSound(emit->name);
+	soundScriptDesc_t* pScriptSound = FindSound(emit->name);
 
 	if(pScriptSound)
 	{
@@ -499,13 +499,13 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 		if(pChanObj)
 		{
 			// if entity reached the maximum sound count for self
-			if(pChanObj->GetChannelSoundCount(pScriptSound->channel) >= channel_max_sounds[pScriptSound->channel])
+			if(pChanObj->GetChannelSoundCount(pScriptSound->channel) >= s_soundChannelMaxEmitters[pScriptSound->channel])
 			{
 				// find currently playing sound index
 				int firstPlayingSound = GetEmitterIndexByEntityAndChannel( pChanObj, pScriptSound->channel );
 				if(firstPlayingSound != -1)
 				{
-					EmitterData_t* substEmitter = m_pCurrentTempEmitters[firstPlayingSound];
+					EmitterData_t* substEmitter = m_emitters[firstPlayingSound];
 
 					// if index is valid, shut up this sound
 					if(substEmitter->pController)
@@ -517,7 +517,7 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 					soundsystem->FreeEmitter( substEmitter->pEmitter );
 					substEmitter->pEmitter = NULL;
 					delete substEmitter;
-					m_pCurrentTempEmitters.fastRemoveIndex(firstPlayingSound);
+					m_emitters.fastRemoveIndex(firstPlayingSound);
 
 					// pChanObj sound count
 					pChanObj->DecrementChannelSoundCount(pScriptSound->channel);
@@ -593,7 +593,7 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 
 		edata->pEmitter->Play();
 
-		int eIndex = m_pCurrentTempEmitters.append(edata);
+		int eIndex = m_emitters.append(edata);
 		emit->emitterIndex = eIndex;
 
 		return edata->channel;
@@ -618,7 +618,7 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channel)
 
 #endif // NO_ENGINE
 
-	scriptsounddata_t* pScriptSound = FindSound(emit->name);
+	soundScriptDesc_t* pScriptSound = FindSound(emit->name);
 
 	if (pScriptSound)
 	{
@@ -789,8 +789,8 @@ void CSoundEmitterSystem::StopAllSounds()
 void CSoundEmitterSystem::StopAllEmitters()
 {
 	// stop emitters
-	for(int i = 0; i < m_pCurrentTempEmitters.numElem(); i++)
-		m_pCurrentTempEmitters[i]->pEmitter->Stop();
+	for(int i = 0; i < m_emitters.numElem(); i++)
+		m_emitters[i]->pEmitter->Stop();
 
 	Update(true);
 	soundsystem->Update();
@@ -835,19 +835,19 @@ void CSoundEmitterSystem::Update(bool force)
 	m_bViewIsAvailable = m_nRooms > 0;
 #endif
 
-	if(m_pUnreleasedSounds.numElem())
+	if(m_pendingStartSounds.numElem())
 	{
 		// play sounds
-		for(int i = 0; i < m_pUnreleasedSounds.numElem(); i++)
-			EmitSound( &m_pUnreleasedSounds[i] );
+		for(int i = 0; i < m_pendingStartSounds.numElem(); i++)
+			EmitSound( &m_pendingStartSounds[i] );
 
 		// release
-		m_pUnreleasedSounds.clear();
+		m_pendingStartSounds.clear();
 	}
 
-	for(int i = 0; i < m_pCurrentTempEmitters.numElem(); i++)
+	for(int i = 0; i < m_emitters.numElem(); i++)
 	{
-		EmitterData_t* emitter = m_pCurrentTempEmitters[i];
+		EmitterData_t* emitter = m_emitters[i];
 
 		bool remove = (!emitter || (emitter && !emitter->pEmitter));
 
@@ -871,7 +871,7 @@ void CSoundEmitterSystem::Update(bool force)
 			// delete this emitter
 			delete emitter;
 
-			m_pCurrentTempEmitters.fastRemoveIndex(i);
+			m_emitters.fastRemoveIndex(i);
 			i--;
 		}
 	}
@@ -905,7 +905,7 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 
 		char* scrsoundName = xstrdup(curSec->name);
 
-		scriptsounddata_t* pSoundData = new scriptsounddata_t;
+		soundScriptDesc_t* pSoundData = new soundScriptDesc_t;
 
 		pSoundData->pszName = scrsoundName;
 

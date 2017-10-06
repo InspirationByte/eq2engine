@@ -14,10 +14,10 @@
 //-----------------------------------------------------------------------------
 
 static VertexFormatDesc_t g_meshBuilder_format[] = {
-	0, 3, VERTEXTYPE_VERTEX,	ATTRIBUTEFORMAT_HALF,
-	0, 2, VERTEXTYPE_TEXCOORD,	ATTRIBUTEFORMAT_HALF,
-	0, 3, VERTEXTYPE_NORMAL,	ATTRIBUTEFORMAT_HALF,
-	0, 4, VERTEXTYPE_COLOR,		ATTRIBUTEFORMAT_HALF,
+	0, 3, VERTEXATTRIB_POSITION,	ATTRIBUTEFORMAT_HALF,
+	0, 2, VERTEXATTRIB_TEXCOORD,	ATTRIBUTEFORMAT_HALF,
+	0, 3, VERTEXATTRIB_NORMAL,	ATTRIBUTEFORMAT_HALF,
+	0, 4, VERTEXATTRIB_COLOR,		ATTRIBUTEFORMAT_HALF,
 };
 
 CGLMeshBuilder::CGLMeshBuilder()
@@ -44,7 +44,7 @@ CGLMeshBuilder::~CGLMeshBuilder()
 //-----------------------------------------------------------------------------
 // "glBegin()"
 
-void CGLMeshBuilder::Begin( PrimitiveType_e type)
+void CGLMeshBuilder::Begin( ER_PrimitiveType type)
 {
 	m_primType = type;
 

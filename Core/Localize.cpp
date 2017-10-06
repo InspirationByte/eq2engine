@@ -82,9 +82,9 @@ void CLocalize::Init()
 		return;
 	}
 
-    m_szLanguageName = KV_GetValueString(pRegional->FindKeyBase("DefaultLanguage"), 0, "English" );
+    m_language = KV_GetValueString(pRegional->FindKeyBase("DefaultLanguage"), 0, "English" );
 
-    Msg("Language '%s' set\n", m_szLanguageName.c_str());
+    Msg("Language '%s' set\n", m_language.c_str());
 
 	int langArg = g_cmdLine->FindArgument("-language");
 
@@ -93,7 +93,7 @@ void CLocalize::Init()
 		char* args = g_cmdLine->GetArgumentsOf(langArg);
 
 		if(strlen(args) > 0)
-			m_szLanguageName = args;
+			m_language = args;
 		else
 			MsgError("Error: -language must have argument\n");
 	}
@@ -103,17 +103,17 @@ void CLocalize::Init()
 
 void CLocalize::Shutdown()
 {
-	for(int i = 0; i < m_lTokens.numElem(); i++)
+	for(int i = 0; i < m_tokens.numElem(); i++)
 	{
-		delete m_lTokens[i];
+		delete m_tokens[i];
 	}
 
-	m_lTokens.clear();
+	m_tokens.clear();
 }
 
 const char* CLocalize::GetLanguageName()
 {
-	return m_szLanguageName.GetData();
+	return m_language.GetData();
 }
 
 void CLocalize::AddTokensFile(const char* pszFilePrefix)
@@ -163,7 +163,7 @@ void CLocalize::AddToken(const char* token, const wchar_t* pszTokenString)
 
 	CLocToken* pToken = new CLocToken(token, pszTokenString);
 
-	m_lTokens.append(pToken);
+	m_tokens.append(pToken);
 }
 
 void CLocalize::AddToken(const char* token, const char* pszTokenString)
@@ -175,17 +175,17 @@ void CLocalize::AddToken(const char* token, const char* pszTokenString)
 
 	CLocToken* pToken = new CLocToken(token, pszTokenString);
 
-	m_lTokens.append(pToken);
+	m_tokens.append(pToken);
 }
 
 const wchar_t* CLocalize::GetTokenString(const char* pszToken,const wchar_t* pszDefaultToken)
 {
 	int tokHash = StringToHash(pszToken, true);
 
-	for(int i = 0; i < m_lTokens.numElem();i++)
+	for(int i = 0; i < m_tokens.numElem();i++)
 	{
-		if(m_lTokens[i]->m_tokHash == tokHash)
-			return m_lTokens[i]->GetText();
+		if(m_tokens[i]->m_tokHash == tokHash)
+			return m_tokens[i]->GetText();
 	}
 
 	DevMsg(DEVMSG_LOCALE, "LOCALIZER: Token %s not found\n", pszToken);
@@ -197,10 +197,10 @@ ILocToken* CLocalize::GetToken( const char* pszToken )
 {
 	int tokHash = StringToHash(pszToken, true);
 
-	for(int i = 0; i < m_lTokens.numElem();i++)
+	for(int i = 0; i < m_tokens.numElem();i++)
 	{
-		if(m_lTokens[i]->m_tokHash == tokHash)
-			return m_lTokens[i];
+		if(m_tokens[i]->m_tokHash == tokHash)
+			return m_tokens[i];
 	}
 
 	DevMsg(DEVMSG_LOCALE, "LOCALIZER: Token %s not found\n", pszToken);

@@ -250,7 +250,7 @@ void CGameObject::SetModelPtr(IEqModel* modelPtr)
 	if(!m_pModel)
 		return;
 
-	//studiohdr_t* pHdr = m_pModel->GetHWData()->pStudioHdr;
+	//studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
 
 	m_bodyGroupFlags = (1 << 0);
 }
@@ -284,24 +284,24 @@ void CGameObject::Draw( int nRenderFlags )
 	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
 	int nStartLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
-	studiohdr_t* pHdr = m_pModel->GetHWData()->pStudioHdr;
-	for(int i = 0; i < pHdr->numbodygroups; i++)
+	studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
+	for(int i = 0; i < pHdr->numBodyGroups; i++)
 	{
 		// check bodygroups for rendering
 		if(!(m_bodyGroupFlags & (1 << i)))
 			continue;
 
 		int bodyGroupLOD = nStartLOD;
-		int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
+		int nLodModelIdx = pHdr->pBodyGroups(i)->lodModelIndex;
 		studiolodmodel_t* lodModel = pHdr->pLodModel(nLodModelIdx);
 
-		int nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
+		int nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
 
 		// get the right LOD model number
 		while(nModDescId == -1 && bodyGroupLOD > 0)
 		{
 			bodyGroupLOD--;
-			nModDescId = lodModel->lodmodels[ bodyGroupLOD ];
+			nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
 		}
 
 		if(nModDescId == -1)
@@ -310,7 +310,7 @@ void CGameObject::Draw( int nRenderFlags )
 		studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
 
 		// render model groups that in this body group
-		for(int j = 0; j < modDesc->numgroups; j++)
+		for(int j = 0; j < modDesc->numGroups; j++)
 		{
 			//materials->SetSkinningEnabled(true);
 

@@ -316,7 +316,7 @@ inline void DkList<T>::resize( int newsize )
 		return;
 	}
 
-	// not changing the m_nSize, so just exit
+	// not changing the elemCount, so just exit
 	if ( newsize == m_nSize )
 		return;
 
@@ -499,7 +499,7 @@ inline int DkList<T>::append( const DkList<T2> &other, TRANSFORMFUNC transform )
 }
 
 // -----------------------------------------------------------------
-// Increases the m_nSize of the list by at leat one element if necessary
+// Increases the elemCount of the list by at leat one element if necessary
 // and inserts the supplied data into it.
 // -----------------------------------------------------------------
 template< class T >

@@ -36,7 +36,7 @@ public:
 
 
 	// Init + Shurdown
-	void						Init(const shaderapiinitparams_t &params);
+	void						Init(const shaderAPIParams_t &params);
 	void						Shutdown();
 
 	void						PrintAPIInfo();
@@ -64,7 +64,7 @@ public:
 
 	// shader API class type for shader developers.
 	// DON'T USE TYPES IN DYNAMIC SHADER CODE! USE MATSYSTEM MAT-FILE DEFS!
-	ShaderAPIClass_e			GetShaderAPIClass() {return SHADERAPI_DIRECT3D10;}
+	ER_ShaderAPIType			GetShaderAPIClass() {return SHADERAPI_DIRECT3D10;}
 
 	// Device vendor and version
 	const char*					GetDeviceNameString() const;
@@ -123,13 +123,13 @@ public:
 	void						FreeTexture(ITexture* pTexture);
 	
 	// Create procedural texture such as error texture, etc.
-	ITexture*					CreateProceduralTexture(const char* pszName,int width, int height, const unsigned char* data, int nDataSize, ETextureFormat nFormat, AddressMode_e textureAddress = ADDRESSMODE_WRAP, int nFlags = 0);
+	ITexture*					CreateProceduralTexture(const char* pszName,int width, int height, const unsigned char* data, int nDataSize, ETextureFormat nFormat, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, int nFlags = 0);
 
 	// It will add new rendertarget
-	ITexture*					CreateRenderTarget(int width, int height,ETextureFormat nRTFormat,Filter_e textureFilterType = TEXFILTER_LINEAR, AddressMode_e textureAddress = ADDRESSMODE_WRAP, CompareFunc_e comparison = COMP_NEVER, int nFlags = 0);
+	ITexture*					CreateRenderTarget(int width, int height,ETextureFormat nRTFormat,ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMP_NEVER, int nFlags = 0);
 
 	// It will add new rendertarget
-	ITexture*					CreateNamedRenderTarget(const char* pszName,int width, int height, ETextureFormat nRTFormat, Filter_e textureFilterType = TEXFILTER_LINEAR, AddressMode_e textureAddress = ADDRESSMODE_WRAP, CompareFunc_e comparison = COMP_NEVER, int nFlags = 0);
+	ITexture*					CreateNamedRenderTarget(const char* pszName,int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMP_NEVER, int nFlags = 0);
 
 //-------------------------------------------------------------
 // Texture operations
@@ -161,7 +161,7 @@ public:
 //-------------------------------------------------------------
 
 	// Matrix mode
-	void						SetMatrixMode(MatrixMode_e nMatrixMode);
+	void						SetMatrixMode(ER_MatrixMode nMatrixMode);
 
 	// Will save matrix
 	void						PushMatrix();
@@ -311,21 +311,21 @@ public:
 //-------------------------------------------------------------
 
 	IVertexFormat*				CreateVertexFormat(VertexFormatDesc_s *formatDesc, int nAttribs);
-	IVertexBuffer*				CreateVertexBuffer(BufferAccessType_e nBufAccess, int nNumVerts, int strideSize, void *pData = NULL);
-	IIndexBuffer*				CreateIndexBuffer(int nIndices, int nIndexSize, BufferAccessType_e nBufAccess, void *pData = NULL);
+	IVertexBuffer*				CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData = NULL);
+	IIndexBuffer*				CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData = NULL);
 
 //-------------------------------------------------------------
 // Primitive drawing (lower level than DrawPrimitives2D)
 //-------------------------------------------------------------
 
 	// Indexed primitive drawer
-	void						DrawIndexedPrimitives(PrimitiveType_e nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex = 0);
+	void						DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex = 0);
 
 	// Draw elements
-	void						DrawNonIndexedPrimitives(PrimitiveType_e nType, int nFirstVertex, int nVertices);
+	void						DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices);
 
 	// mesh buffer FFP emulation
-	void						DrawMeshBufferPrimitives(PrimitiveType_e nType, int nVertices, int nIndices);
+	void						DrawMeshBufferPrimitives(ER_PrimitiveType nType, int nVertices, int nIndices);
 
 //-------------------------------------------------------------
 // Internal
@@ -404,7 +404,7 @@ private:
 	int							m_nCurrentSampleMask;
 	int							m_nSelectedSampleMask;
 
-	MatrixMode_e				m_nCurrentMatrixMode;
+	ER_MatrixMode				m_nCurrentMatrixMode;
 	Matrix4x4					m_matrices[4];
 
 	bool						m_bDeviceIsLost;
