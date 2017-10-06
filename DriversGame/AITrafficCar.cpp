@@ -240,7 +240,7 @@ void CAITrafficCar::InitAI( bool isParked )
 		ChangeRoad( road );
 
 		// if it's more than 4 cells we should add some velocity to it
-		if(IsEnabled() && road.breakIter > 4)
+		if(IsEnabled() && road.breakIter > 4 && GetPhysicsBody())
 		{
 			SetVelocity(GetForwardVector() * g_traffic_maxspeed.GetFloat() * KPH_TO_MPS * 0.5f);
 		}

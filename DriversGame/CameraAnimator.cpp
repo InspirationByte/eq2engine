@@ -364,7 +364,7 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		Vector3D cam_pos_low = pos + Vector3D(0,CAM_HEIGHT_TRACE,0) - forward*desiredDist;
 
 		CollisionData_t height_coll;
-		g_pPhysics->TestLine(cam_pos + Vector3D(0,desiredHeight,0), cam_pos_low, height_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_WATER | OBJECTCONTENTS_VEHICLE, &ignoreFilter);
+		g_pPhysics->TestLine(cam_pos + Vector3D(0,desiredHeight,0), cam_pos_low, height_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_WATER);
 
 		FReal fCamDot = fabs(dot(height_coll.normal, Vector3D(0,1,0)));
 

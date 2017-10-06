@@ -38,13 +38,6 @@ CPFXAtlasGroup* g_translParticles = NULL;
 CPFXAtlasGroup* g_additPartcles = NULL;
 CPFXAtlasGroup* g_treeAtlas = NULL;
 
-const float g_visualWetnessTable[WEATHER_COUNT] =
-{
-	0.0f,
-	0.55f,
-	1.0f
-};
-
 //-----------------------------------------------------------------------------------
 
 ConVar r_zfar("r_zfar", "350", NULL, CV_ARCHIVE);
@@ -217,37 +210,43 @@ void SetupDefaultEnvConfig(worldEnvConfig_t& env)
 	// set defaults
 	env.ambientColor = ColorRGB(0.45f, 0.45f, 0.51f);
 	env.sunColor = ColorRGB(0.79f, 0.71f, 0.61f);
-	env.shadowColor = ColorRGBA(0.01f, 0.01f, 0.05f, 0.45f);
+	env.shadowColor = 0.0f;
+	env.streetLightIntensity = 0.0f;
 
 	env.sunAngles = Vector3D(-45.0f, -35.0f, 0.0f);
 	env.skyboxPath = "sky/sky_day";
 	env.lensIntensity = 1.0f;
 	env.headLightIntensity = 1.0f;
+	env.rainDensity = 0.0f;
+	env.rainBrightness = 0.4f;
+	env.brightnessModFactor = 0.0f;
 
 	env.fogEnable = false;
 	env.fogNear = DrvSynUnits::MaxCoordInUnits;
 	env.fogFar = DrvSynUnits::MaxCoordInUnits;
 	env.fogColor = ColorRGB(0.5f);
+
+	env.weatherType = WEATHER_TYPE_CLEAR;
+	env.thunder = false;
+
+	env.lightsType = 0;
 }
 
 void ParseEnvConfig(worldEnvConfig_t& env, kvkeybase_t* kvs)
 {
 	if(kvs == nullptr)
-	{
-		SetupDefaultEnvConfig(env);
 		return;
-	}
 
-	env.ambientColor = KV_GetVector3D(kvs->FindKeyBase("ambientColor"));
-	env.sunColor = KV_GetVector3D(kvs->FindKeyBase("sunColor"));
-	env.shadowColor = KV_GetVector4D(kvs->FindKeyBase("shadowColor"));
+	env.ambientColor = KV_GetVector3D(kvs->FindKeyBase("ambientColor"), 0, env.ambientColor);
+	env.sunColor = KV_GetVector3D(kvs->FindKeyBase("sunColor"), 0, env.sunColor);
+	env.shadowColor = KV_GetVector4D(kvs->FindKeyBase("shadowColor"), 0, env.shadowColor);
 
-	env.sunAngles = KV_GetVector3D(kvs->FindKeyBase("sunAngles"));
-	env.brightnessModFactor = KV_GetValueFloat(kvs->FindKeyBase("brightModFactor"));
-	env.streetLightIntensity = KV_GetValueFloat(kvs->FindKeyBase("streetLightIntensity"), 0, 0.0f);
-	env.lensIntensity = KV_GetValueFloat(kvs->FindKeyBase("sunLensItensity"), 0, 1.0f);
-	env.skyboxPath = KV_GetValueString(kvs->FindKeyBase("sky"), 0, "sky/sky_day");
-	env.headLightIntensity = KV_GetValueFloat(kvs->FindKeyBase("headlightIntensity"), 0, 1.0f);
+	env.sunAngles = KV_GetVector3D(kvs->FindKeyBase("sunAngles"), 0, env.sunAngles);
+	env.brightnessModFactor = KV_GetValueFloat(kvs->FindKeyBase("brightModFactor"), 0, env.brightnessModFactor);
+	env.streetLightIntensity = KV_GetValueFloat(kvs->FindKeyBase("streetLightIntensity"), 0, env.streetLightIntensity);
+	env.lensIntensity = KV_GetValueFloat(kvs->FindKeyBase("sunLensItensity"), 0, env.lensIntensity);
+	env.skyboxPath = KV_GetValueString(kvs->FindKeyBase("sky"), 0, env.skyboxPath.c_str());
+	env.headLightIntensity = KV_GetValueFloat(kvs->FindKeyBase("headlightIntensity"), 0, env.headLightIntensity);
 
 	kvkeybase_t* sunLensAngles = kvs->FindKeyBase("sunLensAngles");
 
@@ -256,14 +255,14 @@ void ParseEnvConfig(worldEnvConfig_t& env, kvkeybase_t* kvs)
 	else
 		env.sunLensAngles = env.sunAngles;
 
-	env.rainBrightness = KV_GetValueFloat(kvs->FindKeyBase("rainBrightness"), 0, 0.4f);
-	env.rainDensity = KV_GetValueFloat(kvs->FindKeyBase("rainDensity"));
-
-	env.lightsType = 0;
+	env.rainBrightness = KV_GetValueFloat(kvs->FindKeyBase("rainBrightness"), 0, env.rainBrightness);
+	env.rainDensity = KV_GetValueFloat(kvs->FindKeyBase("rainDensity"), 0, env.rainDensity);
 
 	kvkeybase_t* lightsSec = kvs->FindKeyBase("lights");
 	if(lightsSec)
 	{
+		env.lightsType = 0;
+
 		for(int i = 0; i < lightsSec->ValueCount(); i++)
 		{
 			const char* valueStr = KV_GetValueString(lightsSec, i);
@@ -277,25 +276,32 @@ void ParseEnvConfig(worldEnvConfig_t& env, kvkeybase_t* kvs)
 		}
 	}
 
-	const char* weatherName = KV_GetValueString(kvs->FindKeyBase("weather"));
+	const char* weatherName = KV_GetValueString(kvs->FindKeyBase("weather"), 0, s_weatherNamesStr[env.weatherType]);
 
-	// resolve weather system type
-	env.weatherType = WEATHER_TYPE_CLEAR;
+	// resolve weather type
+	for(int i = 0; i < WEATHER_COUNT; i++)
+	{
+		if(!stricmp(s_weatherNamesStr[i], weatherName))
+			env.weatherType = (EWeatherType)i;
+	}
 
-	if(!stricmp(weatherName, "rain"))
-		env.weatherType = WEATHER_TYPE_RAIN;
-	else if(!stricmp(weatherName, "thunderstorm"))
-		env.weatherType = WEATHER_TYPE_THUNDERSTORM;
+	// thunder enabled automatically
+	if(env.weatherType == WEATHER_TYPE_STORM)
+		env.thunder = true;
 
+	// thunder?
+	env.thunder = KV_GetValueBool(kvs->FindKeyBase("thunder"), 0, env.thunder);
+
+	// get the fog
 	kvkeybase_t* fogSec = kvs->FindKeyBase("fog");
 
-	env.fogEnable = KV_GetValueBool(fogSec);
+	env.fogEnable = KV_GetValueBool(fogSec, 0, env.fogEnable);
 
 	if(fogSec)
 	{
-		env.fogColor = KV_GetVector3D(fogSec->FindKeyBase("fog_color"));
-		env.fogNear = KV_GetValueFloat(fogSec->FindKeyBase("fog_near"));
-		env.fogFar = KV_GetValueFloat(fogSec->FindKeyBase("fog_far"));
+		env.fogColor = KV_GetVector3D(fogSec->FindKeyBase("fog_color"), 0, env.fogColor);
+		env.fogNear = KV_GetValueFloat(fogSec->FindKeyBase("fog_near"), 0, env.fogNear);
+		env.fogFar = KV_GetValueFloat(fogSec->FindKeyBase("fog_far"), 0, env.fogFar);
 	}
 }
 
@@ -341,6 +347,8 @@ void InterpolateEnv(worldEnvConfig_t& result, const worldEnvConfig_t& from, cons
 	}
 
 	result.weatherType = (EWeatherType)(int)lerp((float)from.weatherType, (float)to.weatherType, factor);
+
+	result.thunder = lerp(from.thunder ? 1.0f : 0.0f, to.thunder > 0 ? 1.0f : 0.0f, factor) >= 0.5f;
 
 	result.fogEnable = from.fogEnable || to.fogEnable;
 
@@ -388,6 +396,9 @@ void CGameWorld::InitEnvironment()
 	// find section
 	kvkeybase_t* envSection = envKvs.GetRootSection()->FindKeyBase( m_envName.c_str(), KV_FLAG_SECTION );
 
+	// first setup default env config
+	SetupDefaultEnvConfig(m_envConfig);
+
 	if(envSection)
 	{
 		kvkeybase_t* transitionData = envSection->FindKeyBase("transition", KV_FLAG_ARRAY);
@@ -399,8 +410,19 @@ void CGameWorld::InitEnvironment()
 
 			for(int i = 0; i < transitionData->ValueCount(); i++)
 			{
+				// make all params default
+				SetupDefaultEnvConfig(m_envTransitions[i]);
+
 				// find environment section
 				kvkeybase_t* transitionEnv = envKvs.GetRootSection()->FindKeyBase( KV_GetValueString(transitionData, i), KV_FLAG_SECTION);
+
+				const char* baseEnvName = KV_GetValueString(transitionEnv->FindKeyBase("base"), 0, nullptr);
+
+				if(baseEnvName) // parse base env into this first
+				{
+					kvkeybase_t* baseEnvKvs = envKvs.GetRootSection()->FindKeyBase( baseEnvName, KV_FLAG_SECTION);
+					ParseEnvConfig(m_envTransitions[i], baseEnvKvs);
+				}
 
 				// parse into new item
 				ParseEnvConfig(m_envTransitions[i], transitionEnv);
@@ -418,6 +440,14 @@ void CGameWorld::InitEnvironment()
 		}
 		else
 		{
+			const char* baseEnvName = KV_GetValueString(envSection->FindKeyBase("base"), 0, nullptr);
+
+			if(baseEnvName) // parse base env into this first
+			{
+				kvkeybase_t* baseEnvKvs = envKvs.GetRootSection()->FindKeyBase( baseEnvName, KV_FLAG_SECTION);
+				ParseEnvConfig(m_envConfig, baseEnvKvs);
+			}
+
 			ParseEnvConfig(m_envConfig, envSection);
 
 			// load sky texture
@@ -425,10 +455,9 @@ void CGameWorld::InitEnvironment()
 			m_envConfig.skyTexture->Ref_Grab();
 		}
 	}
-	else
-		SetupDefaultEnvConfig(m_envConfig);
 
-	m_envWetness = g_visualWetnessTable[m_envConfig.weatherType];
+	m_envWetness = (m_envConfig.rainDensity * 0.01f);
+	m_envWetness = min(m_envWetness, 1.0f);
 
 	// adjust sun dir
 	AngleVectors(m_envConfig.sunAngles, &m_info.sunDir);
@@ -977,15 +1006,16 @@ void CGameWorld::UpdateWorld(float fDt)
 			// interpolate
 			InterpolateEnv(m_envConfig, m_envTransitions[weatherIdx-1], m_envTransitions[weatherIdx], transitionPercent);
 
-			int fromType = m_envTransitions[weatherIdx-1].weatherType;
-			int toType = m_envTransitions[weatherIdx].weatherType;
+			float fromWetness = m_envTransitions[weatherIdx-1].rainDensity*0.01f;
+			float toWetness = m_envTransitions[weatherIdx].rainDensity*0.01f;
 
 			// prepare
 			m_skyTexture1->AssignTexture(m_envTransitions[weatherIdx-1].skyTexture);
 			m_skyTexture2->AssignTexture(m_envTransitions[weatherIdx].skyTexture);
 			m_skyInterp->SetFloat(transitionPercent);
 
-			m_envWetness = lerp(g_visualWetnessTable[fromType], g_visualWetnessTable[toType], transitionPercent);
+			m_envWetness = lerp(fromWetness, toWetness, transitionPercent);
+			m_envWetness = min(m_envWetness, 1.0f);
 
 			// adjust sun dir
 			AngleVectors(m_envConfig.sunAngles, &m_info.sunDir);
@@ -996,7 +1026,7 @@ void CGameWorld::UpdateWorld(float fDt)
 			debugoverlay->Text(ColorRGBA(1,1,0,1), "     trans: %g", transitionPercent);
 		}
 
-		if(m_envConfig.weatherType == WEATHER_TYPE_THUNDERSTORM)
+		if(	m_envConfig.thunder )
 		{
 			m_fNextThunderTime -= fDt;
 
@@ -1644,7 +1674,7 @@ void CGameWorld::Draw( int nRenderFlags )
 	float fSkyBrightness = 1.0f;
 
 	// calculate ambient, sun and sky colors
-	if (m_fNextThunderTime > 0 && m_fNextThunderTime < m_fThunderTime)
+	if( m_envConfig.thunder && m_fNextThunderTime > 0 && m_fNextThunderTime < m_fThunderTime)
 	{
 		float fThunderLight = saturate(sinf((m_fThunderTime - m_fNextThunderTime)*30.0f))*0.5f;
 		fThunderLight += saturate(sinf((m_fThunderTime - m_fNextThunderTime)*70.0f));

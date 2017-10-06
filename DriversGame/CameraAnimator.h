@@ -40,6 +40,7 @@ struct carCameraConfig_t
 };
 
 class CCar;
+class CEqRigidBody;
 
 class CCameraAnimator
 {

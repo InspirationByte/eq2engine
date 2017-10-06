@@ -107,6 +107,9 @@ static Vector3D s_BodyPartDirections[] =
 #define HINGE_INIT_DISTANCE_THRESH	(4.0f)
 #define HINGE_DISCONNECT_COS_ANGLE	(0.2f)
 
+#define SKID_SMOKE_MAX_WETNESS			(0.5f) // wetness level before skid sound disappear
+#define SKID_WATERTRAIL_MIN_WETNESS		(0.25f) // wetness level before skid sound disappear
+
 bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 {
 	conf->visual.cleanModelName = KV_GetValueString(kvs->FindKeyBase("cleanModel"), 0, "");
@@ -2983,8 +2986,10 @@ void CCar::AddWheelWaterTrail(const CCarWheel& wheel, const carWheelConfig_t& wh
 
 	trailPair[0] = skidmarkPair;
 
-	trailPair[0].v0.color = ColorRGBA(ambientAndSun,1.0f);
-	trailPair[0].v1.color = ColorRGBA(ambientAndSun,1.0f);
+	float alpha = g_pGameWorld->m_envWetness;
+
+	trailPair[0].v0.color = ColorRGBA(ambientAndSun, alpha);
+	trailPair[0].v1.color = ColorRGBA(ambientAndSun, alpha);
 
 	trailPair[1].v0 = PFXVertex_t(skidmarkPos - wheelRightDir*wheelConf.width*0.75f, vec2_zero, ColorRGBA(ambientAndSun,0.0f));
 	trailPair[1].v1 = PFXVertex_t(skidmarkPos + wheelRightDir*wheelConf.width*0.75f, vec2_zero, ColorRGBA(ambientAndSun,0.0f));
@@ -3012,8 +3017,8 @@ void CCar::AddWheelWaterTrail(const CCarWheel& wheel, const carWheelConfig_t& wh
 
 	rect = rect.GetLeftHorizontal(0.35f);
 
-	trailPair[0].v0 = PFXVertex_t(skidmarkPos + vec3_up*wheelConf.radius*0.5f, vec2_zero, ColorRGBA(ambientAndSun,1.0f));
-	trailPair[0].v1 = PFXVertex_t(skidmarkPos, vec2_zero, ColorRGBA(ambientAndSun,1.0f));
+	trailPair[0].v0 = PFXVertex_t(skidmarkPos + vec3_up*wheelConf.radius*0.5f, vec2_zero, ColorRGBA(ambientAndSun,alpha));
+	trailPair[0].v1 = PFXVertex_t(skidmarkPos, vec2_zero, ColorRGBA(ambientAndSun,alpha));
 	trailPair[1].v0 = PFXVertex_t(skidmarkPos + vec3_up*wheelConf.radius*0.5f, vec2_zero, ColorRGBA(ambientAndSun,0.0f));
 	trailPair[1].v1 = PFXVertex_t(skidmarkPos, vec2_zero, ColorRGBA(ambientAndSun,0.0f));
 
@@ -3055,7 +3060,7 @@ void CCar::DrawWheelEffects(int wheelIdx, int lod, bool drawSkidMarks)
 	float tractionSlide = GetTractionSlidingAtWheel(wheelIdx);
 	float lateralSlide = GetLateralSlidingAtWheel(wheelIdx);
 
-	if(lod == 0 && g_pGameWorld->m_envConfig.weatherType > WEATHER_TYPE_CLEAR)
+	if(lod == 0 && g_pGameWorld->m_envWetness > SKID_WATERTRAIL_MIN_WETNESS)
 	{
 		// make some trails on wet surfaces
 		if(	wheel.m_surfparam != NULL && wheel.m_surfparam->word == 'C')
@@ -3276,7 +3281,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 			float efficency = RemapValClamp(fSliding, 5.0f, 40.0f, 0.4f, 1.0f);
 			float timeScale = RemapValClamp(fSliding, 5.0f, 40.0f, 0.7f, 1.0f);
 
-			if(g_pGameWorld->m_envConfig.weatherType >= WEATHER_TYPE_RAIN)
+			if(g_pGameWorld->m_envWetness > SKID_WATERTRAIL_MIN_WETNESS)
 			{
 				// add the splashing on wet surfaces
 				ColorRGB rippleColor(0.8f, 0.8f, 0.8f);
@@ -3289,7 +3294,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 						RandomFloat(0.1f)*efficency,
 						g_translParticles, m_trans_raindrops,
 						RandomFloat(5, 35), Vector3D(0,RandomFloat(-0.9, -8.2) , 0),
-						rippleColor, rippleColor);
+						rippleColor, rippleColor, g_pGameWorld->m_envWetness);
 
 				effectrenderer->RegisterEffectForRender(pSmoke);
 
@@ -3298,13 +3303,14 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 						RandomFloat(0.1f),
 						g_translParticles, m_trans_raindrops,
 						RandomFloat(5, 35), Vector3D(0,RandomFloat(-0.9, -8.2) , 0),
-						rippleColor, rippleColor);
+						rippleColor, rippleColor, g_pGameWorld->m_envWetness);
 
 				effectrenderer->RegisterEffectForRender(pSmoke);
 
 				wheel.m_smokeTime = 0.07f;
 			}
-			else
+
+			if(g_pGameWorld->m_envWetness < SKID_SMOKE_MAX_WETNESS)
 			{
 				// generate smoke
 				float skidFactor = (wheel.m_skidTime-WHEEL_MIN_SKIDTIME)*WHEEL_SKIDTIME_EFFICIENCY;
@@ -3437,17 +3443,17 @@ void CCar::UpdateSounds( float fDt )
 
 	float fSkid = (fSlideLevel + fTractionLevel)*0.5f;
 
-	float fSkidVol = clamp((fSkid-0.5)*1.0f, 0.0, 1.0);
+	float fSkidVol = clamp((fSkid-0.5)*1.0f - g_pGameWorld->m_envWetness*3.0f, 0.0, 1.0);
 
 	int wheelCount = GetWheelCount();
 
-	if(fSkidVol > 0.08 && g_pGameWorld->m_envConfig.weatherType == WEATHER_TYPE_CLEAR)
+	if(fSkidVol > 0.08)
 	{
 		if(m_sounds[CAR_SOUND_SKID]->IsStopped())
 			m_sounds[CAR_SOUND_SKID]->Play();
 
-		if(!m_sounds[CAR_SOUND_SURFACE]->IsStopped())
-			m_sounds[CAR_SOUND_SURFACE]->Stop();
+		//if(!m_sounds[CAR_SOUND_SURFACE]->IsStopped())
+		//	m_sounds[CAR_SOUND_SURFACE]->Stop();
 	}
 	else
 	{
@@ -3464,7 +3470,7 @@ void CCar::UpdateSounds( float fDt )
 			}
 		}
 
-		if(anyWheelOnGround && m_sounds[CAR_SOUND_SURFACE]->IsStopped() && g_pGameWorld->m_envConfig.weatherType != WEATHER_TYPE_CLEAR && m_isLocalCar)
+		if(anyWheelOnGround && m_sounds[CAR_SOUND_SURFACE]->IsStopped() && m_isLocalCar && g_pGameWorld->m_envWetness > SKID_WATERTRAIL_MIN_WETNESS)
 		{
 			m_sounds[CAR_SOUND_SURFACE]->Play();
 		}
@@ -3477,7 +3483,7 @@ void CCar::UpdateSounds( float fDt )
 		float fSpeedModVol = clamp(GetSpeed()/20.0f + fTractionLevel*0.25f, 0.0f, 1.0f);
 
 		m_sounds[CAR_SOUND_SURFACE]->SetPitch(fSpeedMod);
-		m_sounds[CAR_SOUND_SURFACE]->SetVolume(fSpeedModVol);
+		m_sounds[CAR_SOUND_SURFACE]->SetVolume(fSpeedModVol*g_pGameWorld->m_envWetness);
 	}
 
 	float fWheelRad = 0.0f;

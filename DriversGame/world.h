@@ -71,9 +71,15 @@ enum EWeatherType
 {
 	WEATHER_TYPE_CLEAR = 0,		// fair weather
 	WEATHER_TYPE_RAIN,			// slight raining
-	WEATHER_TYPE_THUNDERSTORM,	// heavy raining along with thunder
+	WEATHER_TYPE_STORM,
 
 	WEATHER_COUNT,
+};
+
+static char* s_weatherNamesStr[WEATHER_COUNT] = {
+	"clear",
+	"rain",
+	"storm",
 };
 
 struct worldEnvConfig_t
@@ -103,6 +109,8 @@ struct worldEnvConfig_t
 
 	int				lightsType;
 	EWeatherType	weatherType;
+
+	bool			thunder;
 
 	bool			fogEnable;
 	float			fogNear;
