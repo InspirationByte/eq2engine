@@ -161,7 +161,7 @@ cwbrush_t* ParseBrush(kvkeybase_t* pSection)
 		*/
 
 		pPair = pThisFace->FindKeyBase("material");
-		face->pMaterial = materials->FindMaterial(pPair->values[0], true);
+		face->pMaterial = materials->GetMaterial(pPair->values[0], true);
 
 		pPair = pThisFace->FindKeyBase("smoothinggroup");
 		face->nSmoothingGroup = atoi(pPair->values[0]);
@@ -259,7 +259,7 @@ void ParseAndLoadSurface(kvkeybase_t* pSection)
 	surf->surfflags = surfData.nFlags;
 	surf->nTesselation = surfData.nTesseleation;
 
-	surf->pMaterial = materials->FindMaterial(surfData.material, true);
+	surf->pMaterial = materials->GetMaterial(surfData.material, true);
 
 	surf->flags = ComputeCompileSurfaceFlags(surf->pMaterial);
 
@@ -293,7 +293,7 @@ void ParseAndLoadDecal(kvkeybase_t* pSection)
 
 	pair = pSection->FindKeyBase("material");
 	if(pair)
-		decal->pMaterial = materials->FindMaterial(pair->values[0], true);
+		decal->pMaterial = materials->GetMaterial(pair->values[0], true);
 
 	pair = pSection->FindKeyBase("nplane");
 

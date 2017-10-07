@@ -67,17 +67,44 @@ void CShadowRenderer::Init()
 	m_shadowRt = g_pShaderAPI->CreateNamedRenderTarget("_rt_shadow", 256, 256, FORMAT_R8);
 	m_shadowRt->Ref_Grab();
 
-	m_matVehicle = materials->FindMaterial("engine/shadowbuild_vehicle");
-	m_matVehicle->Ref_Grab();
+	kvkeybase_t shadowBuildParams;
+	shadowBuildParams.SetKey("nofog", true);
+	shadowBuildParams.SetKey("zwrite", false);
+	shadowBuildParams.SetKey("ztest", false);
 
-	m_matSkinned = materials->FindMaterial("engine/shadowbuild_skin");
-	m_matSkinned->Ref_Grab();
+	{
+		shadowBuildParams.SetName("ShadowBuildVehicle");
 
-	m_matSimple = materials->FindMaterial("engine/shadowbuild");
-	m_matSimple->Ref_Grab();
+		m_matVehicle = materials->CreateMaterial("_shadowbuild_vehicle", &shadowBuildParams);
+		m_matVehicle->Ref_Grab();
+	}
 
-	m_shadowResult = materials->FindMaterial("engine/shadow");
-	m_shadowResult->Ref_Grab();
+	{
+		shadowBuildParams.SetName("ShadowBuildSkinned");
+
+		m_matSkinned = materials->CreateMaterial("_shadowbuild_skinned", &shadowBuildParams);
+		m_matSkinned->Ref_Grab();
+	}
+
+	{
+		shadowBuildParams.SetName("ShadowBuild");
+
+		m_matSimple = materials->CreateMaterial("_shadowbuild", &shadowBuildParams);
+		m_matSimple->Ref_Grab();
+	}
+
+	{
+		kvkeybase_t shadowParams;
+		shadowParams.SetName("Shadow");
+
+		shadowParams.SetKey("basetexture", "_dshadow");
+		shadowParams.SetKey("zwrite", false);
+		shadowParams.SetKey("translucent", true);
+		shadowParams.SetKey("Decal", true);
+
+		m_shadowResult = materials->CreateMaterial("_dshadow", &shadowParams);
+		m_shadowResult->Ref_Grab();
+	}
 
 	CSpriteBuilder::Init();
 

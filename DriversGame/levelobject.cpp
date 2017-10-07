@@ -743,7 +743,7 @@ bool CLevelModel::CreateFrom(dsmmodel_t* pModel)
 			pszPath += diff + strlen(materials->GetMaterialPath());
 		}
 
-		m_batches[i].pMaterial = materials->FindMaterial(pszPath, true);
+		m_batches[i].pMaterial = materials->GetMaterial(pszPath);
 		m_batches[i].pMaterial->Ref_Grab();
 
 		if(m_batches[i].pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT)
@@ -790,7 +790,7 @@ void CLevelModel::Load(IVirtualStream* stream)
 		m_batches[i].startVertex = batch.startVertex;
 		m_batches[i].startIndex = batch.startIndex;
 
-		m_batches[i].pMaterial = materials->FindMaterial(batch.materialname, true);
+		m_batches[i].pMaterial = materials->GetMaterial(batch.materialname);
 		m_batches[i].pMaterial->Ref_Grab();
 
 		if(m_batches[i].pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT)

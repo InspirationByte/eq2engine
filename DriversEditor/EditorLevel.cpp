@@ -106,7 +106,7 @@ void buildLayerColl_t::Load(IVirtualStream* stream, kvkeybase_t* kvs)
 
 		if(layer.type == BUILDLAYER_TEXTURE)
 		{
-			layer.material = materials->FindMaterial(KV_GetValueString(layerKvs->FindKeyBase("material")));
+			layer.material = materials->GetMaterial(KV_GetValueString(layerKvs->FindKeyBase("material")));
 			layer.material->Ref_Grab();
 		}
 		else

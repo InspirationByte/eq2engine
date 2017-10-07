@@ -92,8 +92,11 @@ public:
 	// returns luxel test texture (used for lightmap test)
 	ITexture*						GetLuxelTestTexture() const;
 
+	// creates new material with defined parameters
+	IMaterial*						CreateMaterial(const char* szMaterialName, kvkeybase_t* params);
+
 	// Finds or loads material (if findExisting is false then it will be loaded as new material instance)
-	IMaterial*						FindMaterial(const char* szMaterialName, bool findExisting = true);
+	IMaterial*						GetMaterial(const char* szMaterialName);
 
 	// checks material for existence
 	bool							IsMaterialExist(const char* szMaterialName);
@@ -104,10 +107,10 @@ public:
 	// Loads textures, compiles shaders. Called after level loading
 	void							PreloadNewMaterials();
 
-	// begins preloading zone of materials when FindMaterial calls
+	// begins preloading zone of materials when GetMaterial calls
 	void							BeginPreloadMarker();
 
-	// ends preloading zone of materials when FindMaterial calls
+	// ends preloading zone of materials when GetMaterial calls
 	void							EndPreloadMarker();
 
 	// waits for material loader thread is finished

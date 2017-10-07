@@ -416,7 +416,7 @@ inline void CMeshBuilder::Line3fv(const Vector3D& v1, const Vector3D& v2)
 // to set quad color use Color3*/Color4* operators
 inline void CMeshBuilder::Triangle2( const Vector2D& v1, const Vector2D& v2, const Vector2D& v3 )
 {
-	ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
+	//ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
 	uint16* indices = NULL;
 
 	int startIndex = m_mesh->AllocateGeom(3, 3, &m_curVertex, &indices);

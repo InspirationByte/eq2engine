@@ -673,7 +673,7 @@ void CEqLevel::InitMaterials(eqworldlump_t* pMaterials)
 
 	for(int i = 0; i < m_numMaterials; i++)
 	{
-		m_pMaterials[i] = materials->FindMaterial(pMaterialStrings[i].material_path, true);
+		m_pMaterials[i] = materials->GetMaterial(pMaterialStrings[i].material_path, true);
 
 		if(m_pMaterials[i])
 		{

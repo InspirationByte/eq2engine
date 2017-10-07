@@ -980,7 +980,7 @@ bool CEditableBrush::ReadObject(IVirtualStream* pStream)
 		addFace.vScale = face.vTexScale;
 		addFace.fRotation = face.fTexRotation;
 
-		addFace.pMaterial = materials->FindMaterial(face.materialname, true);
+		addFace.pMaterial = materials->GetMaterial(face.materialname, true);
 
 		faces.append(addFace);
 	}
@@ -1306,7 +1306,7 @@ bool CEditableBrush::LoadFromKeyValues(kvkeybase_t* pSection)
 		face.fRotation = atof(pPair->values[0]);
 
 		pPair = pThisFace->FindKeyBase("material");
-		face.pMaterial = materials->FindMaterial(pPair->values[0], true);
+		face.pMaterial = materials->GetMaterial(pPair->values[0], true);
 
 		pPair = pThisFace->FindKeyBase("smoothinggroup");
 		face.nSmoothingGroup = atoi(pPair->values[0]);

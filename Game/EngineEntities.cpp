@@ -721,7 +721,7 @@ public:
 
 	void Precache()
 	{
-		m_pRopeMaterial = materials->FindMaterial(m_szRopeMaterial.GetData(), true);
+		m_pRopeMaterial = materials->GetMaterial(m_szRopeMaterial.GetData(), true);
 		m_pRopeMaterial->Ref_Grab();
 	}
 
@@ -1084,7 +1084,7 @@ public:
 
 	void Precache()
 	{
-		m_pDecalMaterial = materials->FindMaterial(m_matName.GetData());
+		m_pDecalMaterial = materials->GetMaterial(m_matName.GetData());
 		m_pDecalMaterial->Ref_Grab();
 	}
 

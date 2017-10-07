@@ -114,7 +114,7 @@ void CHeightTileField::ReadOnlyMaterials( IVirtualStream* stream )
 	for(int i = 0; i < numMaterials; i++)
 	{
 		hfieldmaterial_t* matBundle = new hfieldmaterial_t();
-		matBundle->material = materials->FindMaterial(matNamePtr, true);
+		matBundle->material = materials->GetMaterial(matNamePtr);
 		matBundle->atlas = TexAtlas_LoadAtlas((materials->GetMaterialPath() + _Es(CORRECT_PATH_SEPARATOR) +_Es(matNamePtr)+".atlas").c_str(), matNamePtr, true);
 
 		if(matBundle->material)
@@ -149,7 +149,7 @@ void CHeightTileField::ReadFromStream( IVirtualStream* stream )
 	for(int i = 0; i < numMaterials; i++)
 	{
 		hfieldmaterial_t* matBundle = new hfieldmaterial_t();
-		matBundle->material = materials->FindMaterial(matNamePtr, true);
+		matBundle->material = materials->GetMaterial(matNamePtr);
 		matBundle->atlas = TexAtlas_LoadAtlas((materials->GetMaterialPath() + _Es(CORRECT_PATH_SEPARATOR) +_Es(matNamePtr)+".atlas").c_str(), matNamePtr, true);
 
 		if(matBundle->material)

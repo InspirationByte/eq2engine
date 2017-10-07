@@ -348,7 +348,7 @@ void InterpolateEnv(worldEnvConfig_t& result, const worldEnvConfig_t& from, cons
 
 	result.weatherType = (EWeatherType)(int)lerp((float)from.weatherType, (float)to.weatherType, factor);
 
-	result.thunder = lerp(from.thunder ? 1.0f : 0.0f, to.thunder > 0 ? 1.0f : 0.0f, factor) >= 0.5f;
+	result.thunder = lerp(from.thunder ? 1.0f : 0.0f, to.thunder ? 1.0f : 0.0f, factor) >= 0.5f;
 
 	result.fogEnable = from.fogEnable || to.fogEnable;
 
@@ -651,10 +651,19 @@ void CGameWorld::Init()
 	if(!m_sunGlowOccQuery)
 		m_sunGlowOccQuery = g_pShaderAPI->CreateOcclusionQuery();
 
-	if(!m_depthTestMat)
+	if(!m_pointQueryMat)
 	{
-		m_depthTestMat = materials->FindMaterial("engine/pointquery", true);
-		m_depthTestMat->Ref_Grab();
+		kvkeybase_t pointQueryParams;
+		pointQueryParams.SetName("BaseUnlit");
+		pointQueryParams.SetKey("basetexture", "_matsys_white");
+		pointQueryParams.SetKey("ztest", true);
+		pointQueryParams.SetKey("zwrite", true);
+		pointQueryParams.SetKey("translucent", true);
+		pointQueryParams.SetKey("color", "[1 1 1 0]");
+		pointQueryParams.SetKey("noMSAA", true);
+
+		m_pointQueryMat = materials->CreateMaterial("_occquery", &pointQueryParams);
+		m_pointQueryMat->Ref_Grab();
 	}
 
 	if(!m_reflectionTex)
@@ -671,16 +680,29 @@ void CGameWorld::Init()
 	
 	if(!m_blurYMaterial)
 	{
-		m_blurYMaterial = materials->FindMaterial("engine/BlurY", true);
+		kvkeybase_t blurParams;
+		blurParams.SetName("BlurFilter");
+		blurParams.SetKey("BaseTexture", "_tempTexture");
+		blurParams.SetKey("BlurY", true); // blur by Y
+		blurParams.SetKey("YLow", true); // upper kernel
+		blurParams.SetKey("YHigh", true); // lower kernel
+
+		m_blurYMaterial = materials->CreateMaterial("_reflBlur", &blurParams);
 		m_blurYMaterial->Ref_Grab();
 	}
 
 	if(!m_skyMaterial)
 	{
-		m_skyMaterial = materials->FindMaterial("engine/sky");
+		kvkeybase_t skyParams;
+		skyParams.SetName("DrvSynSky");
+		skyParams.SetKey("ztest", true);
+		skyParams.SetKey("zwrite", false);
+
+		m_skyMaterial = materials->CreateMaterial("_sky", &skyParams);
 		m_skyMaterial->Ref_Grab();
 	}
 
+	// initialize material
 	m_skyMaterial->LoadShaderAndTextures();
 
 	// get material vars we gonna control
@@ -896,8 +918,8 @@ void CGameWorld::Cleanup( bool unloadLevel )
 		g_pShaderAPI->DestroyOcclusionQuery(m_sunGlowOccQuery);
 		m_sunGlowOccQuery = nullptr;
 
-		materials->FreeMaterial(m_depthTestMat);
-		m_depthTestMat = nullptr;
+		materials->FreeMaterial(m_pointQueryMat);
+		m_pointQueryMat = nullptr;
 
 		m_skyModel = nullptr;
 	}
@@ -1884,7 +1906,7 @@ void CGameWorld::Draw( int nRenderFlags )
 
 			m_sunGlowOccQuery->Begin();
 			{
-				materials->BindMaterial(m_depthTestMat);
+				materials->BindMaterial(m_pointQueryMat);
 				Vector2D screenQuad[] = {MAKEQUAD(
 											lensScreenPos.x,
 											lensScreenPos.y,

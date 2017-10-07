@@ -260,7 +260,7 @@ void CBaseViewRenderer::InitializeResources()
 
 		// TODO: needs to initialize m_pCausticsGBuffer
 
-		m_pSpotCaustics = materials->FindMaterial("engine/flashlightreflector");
+		m_pSpotCaustics = materials->GetMaterial("engine/flashlightreflector");
 		m_pSpotCaustics->Ref_Grab();
 
 		int NUM_PHOTONS = (r_photonCount.GetInt()*r_photonCount.GetInt());
@@ -295,30 +295,30 @@ void CBaseViewRenderer::InitializeResources()
 
 		Msg("Initializing DS materials...\n");
 
-		m_pDSAmbient = materials->FindMaterial("engine/deferred/ds_ambient");
+		m_pDSAmbient = materials->GetMaterial("engine/deferred/ds_ambient");
 		m_pDSAmbient->Ref_Grab();
 
 		// Init lighting materials
-		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][0] = materials->FindMaterial("engine/deferred/ds_pointlight");
+		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][0] = materials->GetMaterial("engine/deferred/ds_pointlight");
 
 		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][0]->Ref_Grab();
 
-		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][1] = materials->FindMaterial("engine/deferred/ds_pointlight_shadow");
+		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][1] = materials->GetMaterial("engine/deferred/ds_pointlight_shadow");
 
 		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][1]->Ref_Grab();
 
-		m_pDSLightMaterials[DLT_SPOT][0] = materials->FindMaterial("engine/deferred/ds_spotlight");
+		m_pDSLightMaterials[DLT_SPOT][0] = materials->GetMaterial("engine/deferred/ds_spotlight");
 		
 		m_pDSLightMaterials[DLT_SPOT][0]->Ref_Grab();
 
-		m_pDSLightMaterials[DLT_SPOT][1] = materials->FindMaterial("engine/deferred/ds_spotlight_shadow");
+		m_pDSLightMaterials[DLT_SPOT][1] = materials->GetMaterial("engine/deferred/ds_spotlight_shadow");
 
 		m_pDSLightMaterials[DLT_SPOT][1]->Ref_Grab();
 
-		m_pDSSpotlightReflector = materials->FindMaterial("engine/deferred/ds_spotlight_shadow_reflector");
+		m_pDSSpotlightReflector = materials->GetMaterial("engine/deferred/ds_spotlight_shadow_reflector");
 		m_pDSSpotlightReflector->Ref_Grab();
 
-		m_pDSLightMaterials[DLT_SUN][0] = materials->FindMaterial("engine/deferred/ds_sunlight");
+		m_pDSLightMaterials[DLT_SUN][0] = materials->GetMaterial("engine/deferred/ds_sunlight");
 		m_pDSLightMaterials[DLT_SUN][1] = m_pDSLightMaterials[DLT_SUN][0];
 
 		m_pDSLightMaterials[DLT_SUN][0]->Ref_Grab();
@@ -330,17 +330,17 @@ void CBaseViewRenderer::InitializeResources()
 	// init shadowmapping textures and materials
 	if(materials->GetConfiguration().enableShadows && (materials->GetLightingModel() != MATERIAL_LIGHT_UNLIT) && !m_bShadowsInit)
 	{
-		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][0]	= materials->FindMaterial("engine/pointdepth");
-		m_pShadowmapDepthwrite[DLT_SPOT][0]				= materials->FindMaterial("engine/spotdepth");
-		m_pShadowmapDepthwrite[DLT_SUN][0]				= materials->FindMaterial("engine/sundepth");
+		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][0]	= materials->GetMaterial("engine/pointdepth");
+		m_pShadowmapDepthwrite[DLT_SPOT][0]				= materials->GetMaterial("engine/spotdepth");
+		m_pShadowmapDepthwrite[DLT_SUN][0]				= materials->GetMaterial("engine/sundepth");
 
-		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][1]	= materials->FindMaterial("engine/pointdepth_skin");
-		m_pShadowmapDepthwrite[DLT_SPOT][1]				= materials->FindMaterial("engine/spotdepth_skin");
-		m_pShadowmapDepthwrite[DLT_SUN][1]				= materials->FindMaterial("engine/sundepth_skin");
+		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][1]	= materials->GetMaterial("engine/pointdepth_skin");
+		m_pShadowmapDepthwrite[DLT_SPOT][1]				= materials->GetMaterial("engine/spotdepth_skin");
+		m_pShadowmapDepthwrite[DLT_SUN][1]				= materials->GetMaterial("engine/sundepth_skin");
 
-		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][2]	= materials->FindMaterial("engine/pointdepth_simple");
-		m_pShadowmapDepthwrite[DLT_SPOT][2]				= materials->FindMaterial("engine/spotdepth_simple");
-		m_pShadowmapDepthwrite[DLT_SUN][2]				= materials->FindMaterial("engine/sundepth_simple");
+		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][2]	= materials->GetMaterial("engine/pointdepth_simple");
+		m_pShadowmapDepthwrite[DLT_SPOT][2]				= materials->GetMaterial("engine/spotdepth_simple");
+		m_pShadowmapDepthwrite[DLT_SUN][2]				= materials->GetMaterial("engine/sundepth_simple");
 
 #ifdef EQLC
 		m_pShadowMaps[DLT_OMNIDIRECTIONAL][0]		= g_pShaderAPI->CreateNamedRenderTarget("_rt_cubedepth",2048,2048,FORMAT_R32F, TEXFILTER_NEAREST, TEXADDRESS_CLAMP, COMP_GREATER, TEXFLAG_CUBEMAP);

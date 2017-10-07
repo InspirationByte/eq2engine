@@ -558,7 +558,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 
 				if(materials->IsMaterialExist( extend_path.GetData() ))
 				{
-					m_materials[i] = materials->FindMaterial(extend_path.GetData(), true);
+					m_materials[i] = materials->GetMaterial(extend_path.GetData());
 
 					if(!m_materials[i]->IsError() && !(m_materials[i]->GetFlags() & MATERIAL_FLAG_SKINNED))
 						MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", m_materials[i]->GetName(), m_materials[i]->GetShaderName(), m_szPath.c_str());
@@ -579,7 +579,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 			MsgError( "Couldn't load model material '%s'\n", pHdr->pMaterial(i)->materialname, m_szPath.c_str() );
 			bError = true;
 
-			m_materials[i] = materials->FindMaterial("error");
+			m_materials[i] = materials->GetMaterial("error");
 		}
 	}
 

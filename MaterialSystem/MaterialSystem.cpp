@@ -398,7 +398,11 @@ void CMaterialSystem::InitDefaultMaterial()
 {
 	if(!m_pDefaultMaterial)
 	{
-		CMaterial* pMaterial = (CMaterial*)FindMaterial("engine/matsys_default");
+		kvkeybase_t defaultParams;
+		defaultParams.SetName("Default"); // set shader 'Default'
+		defaultParams.SetKey("BaseTexture", "$basetexture");
+
+		CMaterial* pMaterial = (CMaterial*)CreateMaterial("_default", &defaultParams);
 		pMaterial->Ref_Grab();
 		pMaterial->LoadShaderAndTextures();
 
@@ -407,7 +411,12 @@ void CMaterialSystem::InitDefaultMaterial()
 
 	if(!m_overdrawMaterial)
 	{
-		CMaterial* pMaterial = (CMaterial*)FindMaterial("engine/matsys_overdraw");
+		kvkeybase_t overdrawParams;
+		overdrawParams.SetName("BaseUnlit"); // set shader 'BaseUnlit'
+		overdrawParams.SetKey("BaseTexture", "_matsys_white");
+		overdrawParams.SetKey("Color", "[0.045 0.02 0.02 1.0]");
+
+		CMaterial* pMaterial = (CMaterial*)CreateMaterial("_overdraw", &overdrawParams);
 		pMaterial->Ref_Grab();
 		pMaterial->LoadShaderAndTextures();
 
@@ -471,45 +480,23 @@ bool CMaterialSystem::IsMaterialExist(const char* szMaterialName)
 	return g_fileSystem->FileExist(mat_path.GetData());
 }
 
-IMaterial* CMaterialSystem::FindMaterial(const char* szMaterialName,bool findExisting/* = false*/)
+// creates new material with defined parameters
+IMaterial* CMaterialSystem::CreateMaterial(const char* szMaterialName, kvkeybase_t* params)
 {
-	// Don't load null materials
-	if( strlen(szMaterialName) == 0 )
-		return NULL;
-
-	CScopedMutex m(m_Mutex);
-
-	g_pLoadBeginCallback();
-
-	if(findExisting)
-	{
-		EqString search_string;
-
-		if( szMaterialName[0] == '/' || szMaterialName[0] == '\\' )
-			search_string = szMaterialName+1;
-		else
-			search_string = szMaterialName;
-
-		search_string.Path_FixSlashes();
-
-		for(int i = 0; i < m_loadedMaterials.numElem(); i++)
-		{
-			if(m_loadedMaterials[i] != NULL)
-			{
-				if(!search_string.CompareCaseIns( m_loadedMaterials[i]->GetName() ))
-				{
-					g_pLoadEndCallback();
-					return m_loadedMaterials[i];
-				}
-			}
-		}
-	}
+	// must have names
+	ASSERT(strlen(szMaterialName) > 0);
 
 	// create new material
-	CMaterial *pMaterial = new CMaterial;
+	CMaterial* pMaterial = new CMaterial();
 
-	// initialize it
-	pMaterial->Init( szMaterialName );
+	// if no params, we can load it a usual way
+	if(params == nullptr)
+		pMaterial->Init( szMaterialName );
+	else
+		pMaterial->Init( szMaterialName, params);
+
+	CScopedMutex m(m_Mutex);
+	g_pLoadBeginCallback();
 
 	if( m_forcePreloadMaterials )
 		PutMaterialToLoadingQueue( pMaterial );
@@ -520,6 +507,40 @@ IMaterial* CMaterialSystem::FindMaterial(const char* szMaterialName,bool findExi
 	g_pLoadEndCallback();
 
 	return pMaterial;
+}
+
+IMaterial* CMaterialSystem::GetMaterial(const char* szMaterialName/* = true*/)
+{
+	// Don't load null materials
+	if( strlen(szMaterialName) == 0 )
+		return NULL;
+
+	// fix slashes first
+	EqString search_string;
+
+	if( szMaterialName[0] == '/' || szMaterialName[0] == '\\' )
+		search_string = szMaterialName+1;
+	else
+		search_string = szMaterialName;
+
+	search_string.Path_FixSlashes();
+
+	// find the material with existing name
+	CScopedMutex m(m_Mutex);
+
+	for(int i = 0; i < m_loadedMaterials.numElem(); i++)
+	{
+		if(m_loadedMaterials[i] != NULL)
+		{
+			if(!search_string.CompareCaseIns( m_loadedMaterials[i]->GetName() ))
+			{
+				g_pLoadEndCallback();
+				return m_loadedMaterials[i];
+			}
+		}
+	}
+
+	return CreateMaterial(szMaterialName, nullptr);
 }
 
 // If we have unliaded material, just load it
@@ -546,7 +567,7 @@ void CMaterialSystem::PreloadNewMaterials()
 	g_pLoadEndCallback();
 }
 
-// begins preloading zone of materials when FindMaterial calls
+// begins preloading zone of materials when GetMaterial calls
 void CMaterialSystem::BeginPreloadMarker()
 {
 	if(!m_forcePreloadMaterials)
@@ -556,7 +577,7 @@ void CMaterialSystem::BeginPreloadMarker()
 	}
 }
 
-// ends preloading zone of materials when FindMaterial calls
+// ends preloading zone of materials when GetMaterial calls
 void CMaterialSystem::EndPreloadMarker()
 {
 	if(m_forcePreloadMaterials)

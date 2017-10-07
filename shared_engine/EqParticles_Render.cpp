@@ -43,7 +43,7 @@ void CParticleRenderGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO
 	// init sprite stuff
 	CSpriteBuilder::Init(maxQuads);
 
-	m_pMaterial = materials->FindMaterial(pszMaterialName, true);
+	m_pMaterial = materials->GetMaterial(pszMaterialName);
 	m_pMaterial->Ref_Grab();
 }
 

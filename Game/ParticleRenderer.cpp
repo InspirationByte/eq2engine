@@ -185,7 +185,7 @@ int PrecacheParticleMaterial(const char* materialname, bool isPostRender, bool i
 	grp.s_ParticleIndices	= (uint16*)malloc(PIBO_MAX_SIZE);
 
 	if(!pMat)
-		pMat = materials->FindMaterial(materialname);
+		pMat = materials->GetMaterial(materialname);
 
 	pMat->LoadShaderAndTextures();
 

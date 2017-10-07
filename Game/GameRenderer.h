@@ -220,7 +220,7 @@ private:
 			// get first group
 			dsmgroup_t* pGroup = tempModel.groups[0];
 
-			pDest->material = materials->FindMaterial( pGroup->texture );
+			pDest->material = materials->GetMaterial( pGroup->texture );
 
 			// create index and vertex data
 			for(int16 i = 0; i < pGroup->verts.numElem(); i++)

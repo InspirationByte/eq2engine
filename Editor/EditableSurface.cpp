@@ -305,7 +305,7 @@ void AddOBJToWorld(const char* pszFileName)
 				pszPath += diff + strlen(materials->GetMaterialPath());
 			}
 
-			pNewSurface->SetMaterial(materials->FindMaterial(pszPath, true));
+			pNewSurface->SetMaterial(materials->GetMaterial(pszPath, true));
 
 			pNewSurface->GetSurfaceTexture(0)->nFlags |= STFL_CUSTOMTEXCOORD;
 
@@ -1347,7 +1347,7 @@ bool CEditableSurface::ReadObject(IVirtualStream* pStream)
 	m_surftex.nFlags = surfData.nFlags;
 	m_tesselation.nTesselation = surfData.nTesseleation;
 
-	m_surftex.pMaterial = materials->FindMaterial(surfData.material,true);
+	m_surftex.pMaterial = materials->GetMaterial(surfData.material,true);
 
 	// read terrain patch sizes
 	pStream->Read(&m_nWide, 1, sizeof(int));

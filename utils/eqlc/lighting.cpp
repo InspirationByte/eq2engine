@@ -542,28 +542,28 @@ void InitLightingShaders()
 	g_pRenderArea = eqlevel->CreateRenderAreaList();
 	viewrenderer->SetAreaList(g_pRenderArea);
 
-	g_lightmaterials[DLT_OMNIDIRECTIONAL][0][0] = materials->FindMaterial("eqlc/pointlight");
-	g_lightmaterials[DLT_OMNIDIRECTIONAL][1][0] = materials->FindMaterial("eqlc/pointlight_shadow");
+	g_lightmaterials[DLT_OMNIDIRECTIONAL][0][0] = materials->GetMaterial("eqlc/pointlight");
+	g_lightmaterials[DLT_OMNIDIRECTIONAL][1][0] = materials->GetMaterial("eqlc/pointlight_shadow");
 
-	g_lightmaterials[DLT_SPOT][0][0] = materials->FindMaterial("eqlc/spotlight");
-	g_lightmaterials[DLT_SPOT][1][0] = materials->FindMaterial("eqlc/spotlight_shadow");
+	g_lightmaterials[DLT_SPOT][0][0] = materials->GetMaterial("eqlc/spotlight");
+	g_lightmaterials[DLT_SPOT][1][0] = materials->GetMaterial("eqlc/spotlight_shadow");
 
-	g_lightmaterials[DLT_SUN][0][0] = materials->FindMaterial("eqlc/sunlight");
-	g_lightmaterials[DLT_SUN][1][0] = materials->FindMaterial("eqlc/sunlight_shadow");
+	g_lightmaterials[DLT_SUN][0][0] = materials->GetMaterial("eqlc/sunlight");
+	g_lightmaterials[DLT_SUN][1][0] = materials->GetMaterial("eqlc/sunlight_shadow");
 
 	// make the direction shaders
 
-	g_lightmaterials[DLT_OMNIDIRECTIONAL][0][1] = materials->FindMaterial("eqlc/pointlight_dir");
-	g_lightmaterials[DLT_OMNIDIRECTIONAL][1][1] = materials->FindMaterial("eqlc/pointlight_shadow_dir");
+	g_lightmaterials[DLT_OMNIDIRECTIONAL][0][1] = materials->GetMaterial("eqlc/pointlight_dir");
+	g_lightmaterials[DLT_OMNIDIRECTIONAL][1][1] = materials->GetMaterial("eqlc/pointlight_shadow_dir");
 
-	g_lightmaterials[DLT_SPOT][0][1] = materials->FindMaterial("eqlc/spotlight_dir");
-	g_lightmaterials[DLT_SPOT][1][1] = materials->FindMaterial("eqlc/spotlight_shadow_dir");
+	g_lightmaterials[DLT_SPOT][0][1] = materials->GetMaterial("eqlc/spotlight_dir");
+	g_lightmaterials[DLT_SPOT][1][1] = materials->GetMaterial("eqlc/spotlight_shadow_dir");
 
-	g_lightmaterials[DLT_SUN][0][1] = materials->FindMaterial("eqlc/sunlight_dir");
-	g_lightmaterials[DLT_SUN][1][1] = materials->FindMaterial("eqlc/sunlight_shadow_dir");
+	g_lightmaterials[DLT_SUN][0][1] = materials->GetMaterial("eqlc/sunlight_dir");
+	g_lightmaterials[DLT_SUN][1][1] = materials->GetMaterial("eqlc/sunlight_shadow_dir");
 
-	g_lightmapPixelCorrection = materials->FindMaterial("eqlc/lightmapfilter");
-	g_lightmapWireCombine = materials->FindMaterial("eqlc/lightmapwirecombine");
+	g_lightmapPixelCorrection = materials->GetMaterial("eqlc/lightmapfilter");
+	g_lightmapWireCombine = materials->GetMaterial("eqlc/lightmapwirecombine");
 
 	g_pTempLightmap = g_pShaderAPI->CreateRenderTarget(g_pLevel->m_nLightmapSize,g_pLevel->m_nLightmapSize,FORMAT_RGB8,TEXFILTER_TRILINEAR_ANISO);
 	g_pTempLightmap->Ref_Grab();

@@ -41,7 +41,7 @@ void LookupMaterial(const LevelGenParams_t& params, tileGenTexture_t& tex, kvkey
 			return;
 		}
 
-		tex.material = materials->FindMaterial( atl->GetMaterialName(), true);
+		tex.material = materials->GetMaterial( atl->GetMaterialName() );
 		tex.atlasIdx = atl->FindEntryIndex(texName);
 
 		// fail-safe
@@ -53,7 +53,7 @@ void LookupMaterial(const LevelGenParams_t& params, tileGenTexture_t& tex, kvkey
 	}
 	else
 	{
-		tex.material = materials->FindMaterial( matName, true );
+		tex.material = materials->GetMaterial( matName );
 		tex.atlasIdx = 0;
 	}
 }
@@ -63,14 +63,14 @@ void LoadTileTextureFile(const char* filename, LevelGenParams_t& params)
 	KeyValues kvs;
 	if(!kvs.LoadFromFile(filename, SP_ROOT))
 	{
-		params.tiles.grass.material = materials->FindMaterial(DEFAULT_GRASS_MATERIAL, true);
-		params.tiles.normal.material = materials->FindMaterial(DEFAULT_ASPHALT_MATERIAL, true);
-		params.tiles.sidewalk.material = materials->FindMaterial(DEFAULT_SIDEWALK_MATERIAL, true);
-		params.tiles.normal_innercorner.material = materials->FindMaterial(DEFAULT_ASPHALT_MATERIAL, true);
-		params.tiles.normal_faded.material = materials->FindMaterial(DEFAULT_ASPHALT_MATERIAL, true);
-		params.tiles.normal_outercorner.material = materials->FindMaterial(DEFAULT_ASPHALT_MATERIAL, true);
-		params.tiles.line_longdots.material = materials->FindMaterial(DEFAULT_ASPHALT_MATERIAL, true);
-		params.tiles.zebra.material = materials->FindMaterial(DEFAULT_ASPHALT_MATERIAL, true);
+		params.tiles.grass.material = materials->GetMaterial(DEFAULT_GRASS_MATERIAL);
+		params.tiles.normal.material = materials->GetMaterial(DEFAULT_ASPHALT_MATERIAL);
+		params.tiles.sidewalk.material = materials->GetMaterial(DEFAULT_SIDEWALK_MATERIAL);
+		params.tiles.normal_innercorner.material = materials->GetMaterial(DEFAULT_ASPHALT_MATERIAL);
+		params.tiles.normal_faded.material = materials->GetMaterial(DEFAULT_ASPHALT_MATERIAL);
+		params.tiles.normal_outercorner.material = materials->GetMaterial(DEFAULT_ASPHALT_MATERIAL);
+		params.tiles.line_longdots.material = materials->GetMaterial(DEFAULT_ASPHALT_MATERIAL);
+		params.tiles.zebra.material = materials->GetMaterial(DEFAULT_ASPHALT_MATERIAL);
 		return;
 	}
 

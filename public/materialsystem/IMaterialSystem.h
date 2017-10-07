@@ -234,8 +234,11 @@ public:
 	// returns luxel test texture (used for lightmap test)
 	virtual	ITexture*						GetLuxelTestTexture() const = 0;
 
+	// creates new material with defined parameters
+	virtual IMaterial*						CreateMaterial(const char* szMaterialName, kvkeybase_t* params) = 0;
+
 	// Finds or loads material (if findExisting is false then it will be loaded as new material instance)
-	virtual IMaterial*						FindMaterial(const char* szMaterialName, bool findExisting = true) = 0;
+	virtual IMaterial*						GetMaterial(const char* szMaterialName) = 0;
 
 	// checks material for existence
 	virtual bool							IsMaterialExist(const char* szMaterialName) = 0;
@@ -246,10 +249,10 @@ public:
 	// Loads textures, compiles shaders. Called after level loading
 	virtual void							PreloadNewMaterials() = 0;
 
-	// begins preloading zone of materials when FindMaterial calls
+	// begins preloading zone of materials when GetMaterial calls
 	virtual void							BeginPreloadMarker() = 0;
 
-	// ends preloading zone of materials when FindMaterial calls
+	// ends preloading zone of materials when GetMaterial calls
 	virtual void							EndPreloadMarker() = 0;
 
 	// waits for material loader thread is finished

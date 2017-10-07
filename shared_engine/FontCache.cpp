@@ -167,10 +167,18 @@ bool CEqFontCache::Init()
 	if(!m_defaultFont)
 		MsgError("ERROR: No default font specified in '%s'!\n", FONT_DEFAULT_LIST_FILENAME);
 
-	m_sdfRegular = materials->FindMaterial("ui/text_sdf_regular");
+	kvkeybase_t sdfFontParams;
+	sdfFontParams.SetName("SDFFont");
+	sdfFontParams.SetKey("basetexture", "$basetexture");
+	sdfFontParams.SetKey("range", "[0.92 0.08]");
+
+	m_sdfRegular = materials->CreateMaterial("_sdfRegular", &sdfFontParams);
 	m_sdfRegular->Ref_Grab();
 
-	m_sdfBold = materials->FindMaterial("ui/text_sdf_bold");
+	// make bold
+	sdfFontParams.SetKey("range", "[0.90 0.10]");
+
+	m_sdfBold = materials->CreateMaterial("_sdfBold", &sdfFontParams);
 	m_sdfBold->Ref_Grab();
 	
 	return true;	

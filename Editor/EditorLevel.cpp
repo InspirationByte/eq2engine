@@ -467,7 +467,7 @@ void CEditorLevel::ImportMapFile(const char* pFileName)
 				MatchToken("}");
 
 				pSurface->MakeCustomTerrainPatch(wide, tall, pTempVerts, 4);
-				pSurface->SetMaterial(materials->FindMaterial(material_name,true));
+				pSurface->SetMaterial(materials->GetMaterial(material_name,true));
 				m_pEditableList.append(pSurface);
 
 				delete [] pTempVerts;
@@ -565,7 +565,7 @@ void CEditorLevel::ImportMapFile(const char* pFileName)
 					face.vScale = scale;
 					face.fRotation = rotate;
 
-					face.pMaterial = materials->FindMaterial(material_name, true);
+					face.pMaterial = materials->GetMaterial(material_name, true);
 
 					if(face.pMaterial->GetShader())
 						face.pMaterial->GetShader()->InitParams();
@@ -1163,7 +1163,7 @@ IVertexFormat* CEditorLevel::GetLevelVertexFormat()
 IMaterial* CEditorLevel::GetFlatMaterial()
 {
 	if(!m_pFlatMaterial)
-		m_pFlatMaterial = materials->FindMaterial("flatcolor");
+		m_pFlatMaterial = materials->GetMaterial("flatcolor");
 
 	return m_pFlatMaterial;
 }

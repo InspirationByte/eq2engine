@@ -38,7 +38,7 @@ void Image::SetMaterial(const char* materialName)
 {
 	materials->FreeMaterial(m_material);
 
-	m_material = materials->FindMaterial(materialName);
+	m_material = materials->GetMaterial(materialName);
 	m_material->Ref_Grab();
 
 	materials->PutMaterialToLoadingQueue(m_material);
