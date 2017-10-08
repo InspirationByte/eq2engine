@@ -223,7 +223,7 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 
 void CEngineStudioEGF::DestroyModel()
 {
-	DevMsg(DEVMSG_CORE, "CEngineStudioEGF::DestroyModel()\n");
+	DevMsg(DEVMSG_CORE, "DestroyModel: '%s'\n", m_szPath.c_str());
 
 	// instancer is removed here if set
 	if(m_instancer != NULL)
@@ -1072,7 +1072,7 @@ int CModelCache::PrecacheModel( const char* modelName )
 
 	if(idx == CACHE_INVALID_MODEL)
 	{
-		DevMsg(DEVMSG_CORE, "Caching model '%s'\n", modelName);
+		DevMsg(DEVMSG_CORE, "Loading model '%s'\n", modelName);
 
 		CEngineStudioEGF* pModel = new CEngineStudioEGF;
 		pModel->m_cacheIdx = m_cachedList.append(pModel);

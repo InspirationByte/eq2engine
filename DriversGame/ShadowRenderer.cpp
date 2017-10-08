@@ -322,8 +322,10 @@ void CShadowRenderer::RenderShadowCasters()
 		float shadowAlpha = length(orthoView.GetOrigin()-viewPos) * distFac;
 		shadowAlpha = 1.0f - pow(max(0.0f, shadowAlpha), 8.0f);
 
+		Plane nearPlane(-vec3_up, firstObject->m_bbox.maxPoint.y);
+
 		shadowDecal.settings.clipVolume.LoadAsFrustum(viewProj);
-		shadowDecal.settings.customClipVolume = true;
+		shadowDecal.settings.clipVolume.SetupPlane(nearPlane, VOLUME_PLANE_NEAR);
 		shadowDecal.settings.userData = firstObject;
 
 		ProjectDecalToSpriteBuilder( shadowDecal, this, shadowRect, viewProj, ColorRGBA(1,1,1,shadowAlpha) );

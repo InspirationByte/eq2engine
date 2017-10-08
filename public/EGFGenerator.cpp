@@ -107,6 +107,20 @@ int CEGFGenerator::GetReferenceIndex(dsmmodel_t* pRef)
 	return -1;
 }
 
+void CEGFGenerator::AddModelLodUsageReference(int lodModelIndex)
+{
+	clodmodel_t& lod = m_modellodrefs[lodModelIndex];
+
+	for(int i = 0; i < MAX_MODELLODS; i++)
+	{
+		int refIdx = GetReferenceIndex(lod.lodmodels[i]);
+		if(refIdx == -1)
+			continue;
+
+		m_modelrefs[refIdx].used++;
+	}
+}
+
 //************************************
 // Loads a model
 //************************************
@@ -129,8 +143,6 @@ egfcamodel_t CEGFGenerator::LoadModel(const char* pszFileName)
 
 		if( LoadESXShapes( mod.shapeData, modelPath.c_str() ))
 		{
-			MsgAccept("esx shapes loaded!\n");
-
 			// use referenced filename by the shape file
 			modelPath = CombinePath(3, m_refsPath.c_str(), CORRECT_PATH_SEPARATOR_STR, mod.shapeData->reference.c_str());
 		}
@@ -198,8 +210,9 @@ egfcamodel_t CEGFGenerator::LoadModel(const char* pszFileName)
 			}
 
 			// create new material
-			studiomaterialdesc_t desc;
+			egfcamaterialdesc_t desc;
 			strcpy(desc.materialname, mod.model->groups[i]->texture);
+
 			m_materials.append(desc);
 		}
 	}
@@ -515,6 +528,9 @@ bool CEGFGenerator::LoadBodyGroups(kvkeybase_t* pSection)
 
 				Msg("Adding body group '%s'\n", bodygroup.name);
 
+				// mark the models
+				AddModelLodUsageReference(lodIndex);
+
 				m_bodygroups.append(bodygroup);
 			}
 			else if(keyBase->IsSection())
@@ -707,7 +723,7 @@ void CEGFGenerator::BuildBoneChains()
 //************************************
 bool CEGFGenerator::LoadMaterialPaths(kvkeybase_t* pSection)
 {
-	MsgWarning("\nLoading material paths\n");
+	MsgWarning("\nAdding material paths\n");
 
 	for(int i = 0; i < pSection->keys.numElem(); i++)
 	{
@@ -729,6 +745,8 @@ bool CEGFGenerator::LoadMaterialPaths(kvkeybase_t* pSection)
 			{
 				strcpy(desc.searchPath, path.c_str());
 			}
+
+			Msg("   '%s'\n", desc.searchPath);
 			
 			m_matpathes.append(desc);
 		}
@@ -747,7 +765,7 @@ bool CEGFGenerator::LoadMaterialPaths(kvkeybase_t* pSection)
 	}
 
 	if(m_matpathes.numElem() > 0)
-		Msg("Added %d material paths\n", m_matpathes.numElem());
+		Msg(" %d material paths total\n", m_matpathes.numElem());
 
 	return true;
 }

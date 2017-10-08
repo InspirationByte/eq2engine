@@ -201,7 +201,6 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 		material_index = GetMaterialIndex( srcGroup->texture );
 
 	// DSM groups to be generated indices and optimized here
-
 	dstGroup->materialIndex = material_index;
 
 	// triangle list by default
@@ -316,14 +315,14 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 
 	ACTCData* tc;
 
-	MsgInfo("Optimizing group...\n");
-
     tc = actcNew();
     if(tc == NULL)
 	{
 		Msg("Model optimization disabled\n");
 		goto skipOptimize;
     }
+	else
+		MsgInfo("Optimizing group...\n");
 
 	// optimization code
 
@@ -335,7 +334,7 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 
 	actcBeginInput(tc);
 
-	MsgInfo("phase 1: adding triangles to optimizer\n");
+	MsgInfo("   phase 1: adding triangles to optimizer\n");
 
 	// input all indices
 	for(int i = 0; i < gIndexList.numElem(); i+=3)
@@ -346,7 +345,7 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 	int prim;
 	uint32 v1, v2, v3;
 
-	MsgInfo("phase 2: generate triangles\n");
+	MsgInfo("   phase 2: generate triangles\n");
 
 	int nTriangleResults = 0;
 
@@ -360,8 +359,8 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 	{
 		if(prim == ACTC_PRIM_FAN)
 		{
-			MsgError("This should not generate triangle fans! Sorry!\n");
-			Msg("optimization disabled\n");
+			MsgError("   This should not generate triangle fans! Sorry!\n");
+			Msg("   optimization disabled\n");
 			actcDelete( tc );
 			goto skipOptimize;
 		}
@@ -400,7 +399,7 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 	// destroy context
 	actcDelete( tc );
 
-	MsgWarning("group optimization complete\n");
+	MsgWarning("   group optimization complete\n");
 
 	// replace
 	gIndexList.clear();
@@ -459,12 +458,14 @@ void CEGFGenerator::WriteModels(CMemoryStream* stream)
 
 	for(int i = 0; i < m_modelrefs.numElem(); i++)
 	{
+		egfcamodel_t& modelRef = m_modelrefs[i];
+		if(!modelRef.used)
+			continue;
+
 		studiomodeldesc_t* pDesc = header->pModelDesc(i);
 
-		pDesc->numGroups = m_modelrefs[i].model->groups.numElem();
+		pDesc->numGroups = modelRef.model->groups.numElem();
 		pDesc->groupsOffset = OBJ_WRITE_OFS( pDesc );
-
-		//Msg("Write offset: %d, structure offset: %d\n", WRITE_OFS, ((ubyte*)pDesc - pStart));
 
 		// skip headers
 		WTYPE_ADVANCE_NUM( modelgroupdesc_t, header->pModelDesc(i)->numGroups );
@@ -474,6 +475,10 @@ void CEGFGenerator::WriteModels(CMemoryStream* stream)
 
 	for(int i = 0; i < m_modelrefs.numElem(); i++)
 	{
+		egfcamodel_t& modelRef = m_modelrefs[i];
+		if(!modelRef.used)
+			continue;
+
 		studiomodeldesc_t* pDesc = header->pModelDesc(i);
 
 		// write groups
@@ -482,9 +487,15 @@ void CEGFGenerator::WriteModels(CMemoryStream* stream)
 			modelgroupdesc_t* groupDesc = header->pModelDesc(i)->pGroup(j);
 
 			// shape key modifier (if available)
-			esmshapekey_t* key = (m_modelrefs[i].shapeBy != -1) ? m_modelrefs[i].shapeData->shapes[m_modelrefs[i].shapeBy] : NULL;
+			esmshapekey_t* key = (modelRef.shapeBy != -1) ? modelRef.shapeData->shapes[modelRef.shapeBy] : NULL;
 
-			WriteGroup(stream, m_modelrefs[i].model->groups[j], key, groupDesc);
+			WriteGroup(stream, modelRef.model->groups[j], key, groupDesc);
+
+			if(groupDesc->materialIndex != -1)
+			{
+				Msg("Group %s:%d material used: %s\n", modelRef.model->name, j, m_materials[groupDesc->materialIndex].materialname);
+				m_materials[groupDesc->materialIndex].used++;
+			}
 		}
 	}
 }
@@ -612,18 +623,22 @@ void CEGFGenerator::WriteMaterialDescs(CMemoryStream* stream)
 	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
 	header->materialsOffset = WRITE_OFS;
-	header->numMaterialSearchPaths = m_materials.numElem();
+	header->numMaterials = 0;
 
 	for(int i = 0; i < m_materials.numElem(); i++)
 	{
-		EqString mat_no_ext = m_materials[i].materialname;
-		mat_no_ext = mat_no_ext.Path_Strip_Ext();
+		egfcamaterialdesc_t& mat = m_materials[i];
 
-		strcpy(m_materials[i].materialname, mat_no_ext.c_str());
+		if(!mat.used)
+			continue;
 
-		Msg("Material used: %s\n", m_materials[i].materialname);
+		header->numMaterials++;
 
-		*header->pMaterial(i) = m_materials[i];
+		EqString mat_no_ext(mat.materialname);
+
+		studiomaterialdesc_t* matDesc = header->pMaterial(i);
+		strcpy(matDesc->materialname, mat_no_ext.Path_Strip_Ext().c_str());
+
 		WTYPE_ADVANCE(studiomaterialdesc_t);
 	}
 }
@@ -753,7 +768,7 @@ bool CEGFGenerator::GenerateEGF()
 	Msg(" body groups: %d\n", pHdr->numBodyGroups);
 	Msg(" bones: %d\n", pHdr->numBones);
 	Msg(" lods: %d\n", pHdr->numLods);
-	Msg(" materials: %d\n", pHdr->numMaterialSearchPaths);
+	Msg(" materials: %d\n", pHdr->numMaterials);
 	Msg(" ik chains: %d\n", pHdr->numIKChains);
 	Msg(" search paths: %d\n", pHdr->numMaterialSearchPaths);
 	Msg("   Wrote %d bytes:\n", pHdr->length);

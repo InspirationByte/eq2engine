@@ -481,7 +481,7 @@ void CObject_Debris::Simulate(float fDt)
 		{
 			Vector3D wVelocity = m_physBody->GetVelocityAtWorldPoint( pair.position );
 			Vector3D reflDir = reflect(wVelocity, pair.normal);
-			MakeSparks(pair.position+pair.normal*0.05f, reflDir, Vector3D(5.0f), 1.0f, 10);
+			MakeSparks(pair.position+pair.normal*0.05f, reflDir, Vector3D(5.0f), 1.0f, 6);
 		}
 
 		CEqCollisionObject* obj = pair.GetOppositeTo(m_physBody);

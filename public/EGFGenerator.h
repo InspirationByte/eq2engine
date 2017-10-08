@@ -54,12 +54,26 @@ struct egfcamodel_t
 		model = nullptr;
 		shapeData = nullptr;
 		shapeBy = -1;
+		used = 0;
 	}
 
 	dsmmodel_t*			model;
 	esmshapedata_t*		shapeData;
 
 	int					shapeBy;	// shape index
+
+	int					used;
+};
+
+struct egfcamaterialdesc_t
+{
+	egfcamaterialdesc_t()
+	{
+		used = 0;
+	}
+
+	char				materialname[32];
+	int					used;
 };
 
 class CMemoryStream;
@@ -107,6 +121,8 @@ protected:
 	bool				LoadMaterialPaths(kvkeybase_t* pSection);
 	bool				LoadMotionPackagePatchs(kvkeybase_t* pSection);
 
+	void				AddModelLodUsageReference(int modelLodIndex);
+
 	void				ParseIKChain(kvkeybase_t* pSection);
 	void				LoadIKChains(kvkeybase_t* pSection);
 	void				LoadAttachments(kvkeybase_t* pSection);
@@ -140,7 +156,7 @@ protected:
 	DkList<cbone_t>					m_bones;		// bone list
 	DkList<studioattachment_t>		m_attachments;	// attachment list
 	DkList<studiobodygroup_t>		m_bodygroups;	// body group list
-	DkList<studiomaterialdesc_t>	m_materials;	// materials that this model uses
+	DkList<egfcamaterialdesc_t>		m_materials;	// materials that this model uses
 
 	Vector3D						m_modelScale;
 	Vector3D						m_modelOffset;

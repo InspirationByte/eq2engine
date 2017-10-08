@@ -482,8 +482,6 @@ void Studio_FreeMotionData(studiomotiondata_t* pData, int numBones)
 
 void Studio_FreePhysModel(physmodeldata_t* pModel)
 {
-	DevMsg(DEVMSG_CORE, "Studio_FreePhysModel()\n");
-
 	PPFree(pModel->indices);
 	PPFree(pModel->vertices);
 	PPFree(pModel->shapes);

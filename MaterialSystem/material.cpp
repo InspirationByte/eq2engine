@@ -18,7 +18,7 @@
 
 #define MATERIAL_FILE_EXTENSION		".mat"
 
-CMaterial::CMaterial() : m_state(MATERIAL_LOAD_ERROR), m_pShader(nullptr), m_proxyIsDirty(true), m_frameBound(0)
+CMaterial::CMaterial() : m_state(MATERIAL_LOAD_ERROR), m_pShader(nullptr), m_proxyIsDirty(true), m_loadFromDisk(true), m_frameBound(0)
 {
 }
 
@@ -40,6 +40,8 @@ void CMaterial::Init(const char* materialPath)
 		if( m_szMaterialName.c_str()[0] == CORRECT_PATH_SEPARATOR )
 			m_szMaterialName = m_szMaterialName.c_str()+1;
 	}
+
+	m_loadFromDisk = true;
 
 	DevMsg(DEVMSG_MATSYSTEM, "Loading material '%s'\n", m_szMaterialName.c_str());
 
@@ -80,6 +82,8 @@ void CMaterial::Init(const char* materialPath)
 void CMaterial::Init(const char* materialName, kvkeybase_t* shader_root)
 {
 	m_szMaterialName = materialName;
+
+	m_loadFromDisk = false;
 
 	// section name is used as shader name
 	m_szShaderName = shader_root->name;

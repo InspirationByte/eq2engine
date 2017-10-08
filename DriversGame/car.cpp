@@ -103,6 +103,7 @@ static Vector3D s_BodyPartDirections[] =
 #define WHEEL_MIN_SKIDTIME			(2.5f)
 #define WHEEL_SKIDTIME_EFFICIENCY	(0.25f)
 #define WHEEL_SKID_COOLDOWNTIME		(10.0f)
+#define WHEEL_SKID_WETSCALING		(0.7f)	// env wetness scale
 
 #define HINGE_INIT_DISTANCE_THRESH	(4.0f)
 #define HINGE_DISCONNECT_COS_ANGLE	(0.2f)
@@ -3257,7 +3258,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 	wheel.m_smokeTime -= fDt;
 
 	if(wheel.m_flags.doSkidmarks)
-		wheel.m_skidTime += fDt;
+		wheel.m_skidTime += fDt*(1.0f - g_pGameWorld->m_envWetness*WHEEL_SKID_WETSCALING);
 	else
 		wheel.m_skidTime -= fDt;
 

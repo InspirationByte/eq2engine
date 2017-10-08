@@ -223,6 +223,7 @@ public:
 	occludingFrustum_t				m_occludingFrustum;
 
 	worldinfo_t						m_info;
+	bool							m_reflectionStage;
 
 	worldEnvConfig_t				m_envConfig;
 
@@ -262,12 +263,17 @@ protected:
 
 	lensFlareTable_t				m_lensTable[LENSFLARE_TABLE_SIZE];
 	float							m_lensIntensityTiming;
+
 	IOcclusionQuery*				m_sunGlowOccQuery;	// sun glow
 	IMaterial*						m_pointQueryMat;
 
 	ITexture*						m_lightsTex;		// vertex texture fetch lights
+
 	ITexture*						m_reflectionTex;	// reflection texture
 	ITexture*						m_tempReflTex;		// temporary reflection buffer
+	ITexture*						m_reflDepth;
+
+
 	IMaterial*						m_blurYMaterial;	// y blur shader
 
 	ISoundController*				m_rainSound;

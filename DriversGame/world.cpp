@@ -677,6 +677,13 @@ void CGameWorld::Init()
 		m_tempReflTex = g_pShaderAPI->CreateNamedRenderTarget("_tempTexture", 512, 256, FORMAT_RGBA8, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
 		m_tempReflTex->Ref_Grab();
 	}
+
+	if(!m_reflDepth)
+	{
+		m_reflDepth = g_pShaderAPI->CreateNamedRenderTarget("_reflDepth", 512, 256, FORMAT_D16, TEXFILTER_NEAREST);
+		m_reflDepth->Ref_Grab();
+	}
+	
 	
 	if(!m_blurYMaterial)
 	{
@@ -890,6 +897,9 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 		g_pShaderAPI->FreeTexture(m_tempReflTex);
 		m_tempReflTex = nullptr;
+
+		g_pShaderAPI->FreeTexture(m_reflDepth);
+		m_reflDepth = nullptr;
 
 		materials->FreeMaterial(m_blurYMaterial);
 		m_blurYMaterial = nullptr;
@@ -1384,36 +1394,37 @@ void CGameWorld::OnPreApplyMaterial( IMaterial* pMaterial )
 
 	if( pMaterial->GetState() != MATERIAL_LOAD_OK )
 		return;
+	
+	ColorRGBA sunColor = m_info.sunColor*r_lightscale->GetFloat();
 
-	// update material proxy
-	pMaterial->UpdateProxy( m_frameTime );
-
-	int numRTs;
-	int cubeTarg[MAX_MRTS];
-	g_pShaderAPI->GetCurrentRenderTargets(NULL,&numRTs, NULL, cubeTarg);
-
-	if(numRTs == 0)
+	// detect render to texture mode
+	if(!m_reflectionStage)
 	{
-		g_pShaderAPI->SetTexture(m_lightsTex, "vlights", VERTEX_TEXTURE_INDEX(0));
-		g_pShaderAPI->SetTexture(m_lightsTex, "vlights", 4);
+		// update material proxy
+		pMaterial->UpdateProxy( m_frameTime );
 
 		g_pShaderAPI->SetTexture(m_reflectionTex, "Reflection", 4);
+		g_pShaderAPI->SetTexture(m_fogEnvMap, "FogEnvMap", 6);
 	}
+	else
+	{
+		g_pShaderAPI->SetTexture(nullptr, "Reflection", 4);
+		g_pShaderAPI->SetTexture(nullptr, "FogEnvMap", 6);
 
-	g_pShaderAPI->SetShaderConstantVector4D("SunColor", m_info.sunColor*r_lightscale->GetFloat());
+		sunColor *= 0.25f;
+	} 
+
+	g_pShaderAPI->SetTexture(m_lightsTex, "vlights", VERTEX_TEXTURE_INDEX(0));
+	g_pShaderAPI->SetTexture(m_lightsTex, "vlights", 7);
+
+	g_pShaderAPI->SetShaderConstantVector4D("SunColor", sunColor);
 	g_pShaderAPI->SetShaderConstantVector3D("SunDir", m_info.sunDir);
 
 	g_pShaderAPI->SetShaderConstantFloat("GameTime", m_curTime);
 
-	g_pShaderAPI->SetTexture(m_fogEnvMap, "FogEnvMap", 6);
-
 	Vector2D envParams;
-
-	// wetness
-	envParams.x = m_envWetness;
-
-	// texture lights
-	envParams.y = (m_envConfig.lightsType & WLIGHTS_CITY) > 0 ? 1.0f : 0.0f;
+	envParams.x = m_envWetness;		// wetness
+	envParams.y = (m_envConfig.lightsType & WLIGHTS_CITY) > 0 ? 1.0f : 0.0f; // texture lights
 
 	g_pShaderAPI->SetShaderConstantVector2D("ENVPARAMS", envParams);
 }
@@ -1571,51 +1582,66 @@ void CGameWorld::DrawLensFlare( const Vector2D& screenSize, const Vector2D& scre
 void CGameWorld::DrawFakeReflections()
 {
 #ifndef EDITOR
-
 	bool draw = r_drawFakeReflections.GetBool() && (m_envConfig.lightsType != 0 || m_envWetness > 0.01f);
 	if (!draw)
-		return;
+	{
+		// just clear the reflection texture
+		g_pShaderAPI->ChangeRenderTarget(m_reflectionTex);
+		g_pShaderAPI->Clear(true,false,false);
 
+		g_pShaderAPI->ChangeRenderTargetToBackBuffer();
+
+		m_reflectionStage = false;
+
+		return;
+	}
+
+	m_reflectionStage = true;
+
+	// trace down view
+	Matrix4x4 proj, view, skyView;
 	CollisionData_t coll;
 	g_pPhysics->TestLine(m_view.GetOrigin(), m_view.GetOrigin() - Vector3D(0, 100, 0), coll, (OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS));
 
 	float traceResultDist = coll.fract*100.0f;
-
-	Matrix4x4 proj, view;
-
-	// quickly produce matrices
-	Vector3D radians = m_view.GetAngles();
-	radians = VDEG2RAD(radians);
-
 	Vector3D newViewPos = -(coll.position - Vector3D(0, traceResultDist,0));
 
+	// flip view
+	{
+		// quickly produce matrices
+		Vector3D radians = m_view.GetAngles();
+		radians = VDEG2RAD(radians);
+
+		view = rotateZXY4(radians.x, -radians.y, radians.z);
+		skyView = view;
+
+		view.translate(newViewPos);
+
+		materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
+		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+	}
+
 	// draw into temporary buffer
-	g_pShaderAPI->ChangeRenderTarget(m_tempReflTex);
-	g_pShaderAPI->Clear(true,false,false);
-
-	view = rotateZXY4(radians.x, -radians.y, radians.z);
-	view.translate(newViewPos);
-
-	materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
+	g_pShaderAPI->ChangeRenderTarget(m_tempReflTex, 0, m_reflDepth, 0);
+	g_pShaderAPI->Clear(true,true,false);
+	/*
+	if(r_drawsky.GetBool())
+	{
+		materials->SetMatrix(MATRIXMODE_VIEW, skyView);
+		m_skyColor->SetVector3(ColorRGB(0.25f));
+		DrawSkyBox(0);
+	}*/
+	
 	materials->SetMatrix(MATRIXMODE_VIEW, view);
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
-
 
 	Matrix4x4 viewProj = proj*view;
-	// TEMPORARILY DISABLED, NEEDS DEPTH BUFFER
-	// and prettier look
 
 	if(r_drawFakeReflections.GetInt() > 1)
 	{
-		FogInfo_t noFog;
-		noFog.enableFog = fog_enable.GetBool();
-		materials->SetFogInfo(noFog);
-
-		worldEnvConfig_t conf = m_envConfig;
-
-		m_envConfig.ambientColor *= 0.25f;
-		m_envConfig.sunColor *= 0.25f;
-		m_envConfig.fogColor *= 0.0f;
+		FogInfo_t fogInfo = m_info.fogInfo;
+		fogInfo.fogColor *= 0.0f;
+		fogInfo.fogfar *= 0.8f;
+		materials->SetFogInfo(fogInfo);
 
 		materials->SetAmbientColor(ColorRGBA(0, 0, 0, 1.0f));
 
@@ -1626,11 +1652,11 @@ void CGameWorld::DrawFakeReflections()
 		// restore
 		materials->SetAmbientColor(ColorRGBA(1.0f));
 		materials->SetMaterialRenderParamCallback(NULL);
-		m_envConfig = conf;
 	}
 
 	// draw only additive particles
 	g_additPartcles->Render( EPRFLAG_DONT_FLUSHBUFFERS );
+	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
 
 	// Apply the vertical blur on texture
 	{
@@ -1638,6 +1664,7 @@ void CGameWorld::DrawFakeReflections()
 
 		// setup 2D here
 		materials->Setup2D(512, 512);
+		materials->SetCullMode(CULL_FRONT);
 
 		materials->BindMaterial(m_blurYMaterial);
 
@@ -1658,6 +1685,8 @@ void CGameWorld::DrawFakeReflections()
 
 	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
 #endif // EDITOR
+
+	m_reflectionStage = false;
 }
 
 void CGameWorld::Draw( int nRenderFlags )
@@ -1871,7 +1900,7 @@ void CGameWorld::Draw( int nRenderFlags )
 
 #ifndef EDITOR
 	Vector3D sunLensDirection;
-	AngleVectors(m_envConfig.sunAngles, &sunLensDirection);
+	AngleVectors(m_envConfig.sunLensAngles, &sunLensDirection);
 
 	Vector3D virtualSunPos = m_view.GetOrigin() + sunLensDirection*1000.0f;
 

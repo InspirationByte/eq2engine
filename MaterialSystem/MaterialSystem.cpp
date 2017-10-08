@@ -627,6 +627,14 @@ void CMaterialSystem::ReloadAllMaterials()
 
 		// don't drop variables, just reload shader
 		material->Cleanup(false, true);
+
+		// don't load materials which are not from disk
+		if(!material->m_loadFromDisk)
+		{
+			material->InitShader();
+			continue;
+		}
+
 		material->Init( NULL );
 
 		int framesDiff = (material->m_frameBound - m_frame);
@@ -653,9 +661,9 @@ void CMaterialSystem::FreeMaterials()
 	{
 		DevMsg(DEVMSG_MATSYSTEM, "freeing %s\n", m_loadedMaterials[i]->GetName());
 
-		((CMaterial*)m_loadedMaterials[i])->Cleanup();
 		CMaterial* pMaterial = (CMaterial*)m_loadedMaterials[i];
-		delete ((CMaterial*)pMaterial);
+		pMaterial->Cleanup();
+		delete pMaterial;
 	}
 	m_loadedMaterials.clear();
 }
@@ -687,11 +695,14 @@ void CMaterialSystem::FreeMaterial(IMaterial *pMaterial)
 
 	if(pMaterial->Ref_Count() <= 0)
 	{
-		((CMaterial*)pMaterial)->Cleanup();
-		DevMsg(DEVMSG_MATSYSTEM,"freeing %s\n",pMaterial->GetName());
+		CMaterial* material = (CMaterial*)pMaterial;
 
-		m_loadedMaterials.fastRemove(pMaterial);
-		delete ((CMaterial*)pMaterial);
+		if(m_loadedMaterials.fastRemove(material))
+		{
+			DevMsg(DEVMSG_MATSYSTEM,"freeing %s\n", material->GetName());
+			material->Cleanup();
+			delete material;
+		}
 	}
 }
 
