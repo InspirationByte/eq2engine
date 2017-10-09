@@ -60,9 +60,9 @@ void CObject_Static::Spawn()
 	
 	m_pPhysicsObject = new CEqCollisionObject();
 
-	if( m_pPhysicsObject->Initialize(&m_pModel->GetHWData()->m_physmodel, 0) )//
+	if( m_pPhysicsObject->Initialize(&m_pModel->GetHWData()->physModel, 0) )//
 	{
-		physobject_t* obj = &m_pModel->GetHWData()->m_physmodel.objects[0].object;
+		physobject_t* obj = &m_pModel->GetHWData()->physModel.objects[0].object;
 
 		// deny wheel and camera collisions
 		m_pPhysicsObject->m_flags = COLLOBJ_NO_RAYCAST;

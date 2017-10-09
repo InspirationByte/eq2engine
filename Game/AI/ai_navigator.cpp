@@ -277,7 +277,7 @@ void CAINavigator::InitNavigationMesh()
 		BaseEntity* pEnt = (BaseEntity*)ents->ptr()[i];
 		if(!stricmp(pEnt->GetClassname(), "prop_static") && pEnt->GetModel())
 		{
-			physmodeldata_t* pPhysModel = &pEnt->GetModel()->GetHWData()->m_physmodel;
+			physmodeldata_t* pPhysModel = &pEnt->GetModel()->GetHWData()->physModel;
 
 			int area_count = pPhysModel->numIndices / 3;
 			

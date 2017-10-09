@@ -167,8 +167,8 @@ private:
 		if(!m_pDetailFormat)
 		{
 			VertexFormatDesc_t pFormat[] = {
-				{ 0, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position
-				{ 0, 2, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0
+				{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position
+				{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0
 			};
 
 			m_pDetailFormat = g_pShaderAPI->CreateVertexFormat(pFormat, elementsOf(pFormat));
@@ -220,7 +220,7 @@ private:
 			// get first group
 			dsmgroup_t* pGroup = tempModel.groups[0];
 
-			pDest->material = materials->FindMaterial( pGroup->texture );
+			pDest->material = materials->GetMaterial( pGroup->texture );
 
 			// create index and vertex data
 			for(int16 i = 0; i < pGroup->verts.numElem(); i++)

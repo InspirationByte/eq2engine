@@ -73,6 +73,7 @@ protected:
 
 	uint					m_frameBound;
 	bool					m_proxyIsDirty;
+	bool					m_loadFromDisk;
 
 	DkList<CMatVar*>		m_hMatVars;
 	DkList<IMaterialProxy*>	m_hMatProxies;

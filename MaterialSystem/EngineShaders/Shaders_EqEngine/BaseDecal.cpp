@@ -44,7 +44,7 @@ public:
 
 	void InitTextures()
 	{
-		m_nAddressMode = ADDRESSMODE_CLAMP;
+		m_nAddressMode = TEXADDRESS_CLAMP;
 
 		// load textures from parameters
 		SHADER_PARAM_TEXTURE(BaseTexture, m_pBaseTexture);

@@ -494,7 +494,7 @@ void BaseEntity::RenderEGFModel( int nViewRenderFlags, Matrix4x4* bones )
 
 	Vector3D view_vec = g_pViewEntity->GetEyeOrigin() - m_matWorldTransform.getTranslationComponent();
 
-	studiohdr_t* pHdr = m_pModel->GetHWData()->pStudioHdr;
+	studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
 
 	// select the LOD
 	int nLOD = m_pModel->SelectLod( length(view_vec) ); // lod distance check
@@ -503,25 +503,25 @@ void BaseEntity::RenderEGFModel( int nViewRenderFlags, Matrix4x4* bones )
 	if(nViewRenderFlags & VR_FLAG_WATERREFLECTION)
 		nLOD += r_waterModelLod.GetInt();
 
-	for(int i = 0; i < pHdr->numbodygroups; i++)
+	for(int i = 0; i < pHdr->numBodyGroups; i++)
 	{
 		// TODO: check bodygroups for rendering
 
-		int nLodableModelIndex = pHdr->pBodyGroups(i)->lodmodel_index;
-		int nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[ nLOD ];
+		int nLodableModelIndex = pHdr->pBodyGroups(i)->lodModelIndex;
+		int nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[ nLOD ];
 
 		// get the right LOD model number
 		while(nLOD > 0 && nModDescId == -1)
 		{
 			nLOD--;
-			nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[ nLOD ];
+			nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[ nLOD ];
 		}
 
 		if(nModDescId == -1)
 			continue;
 
 		// render model groups that in this body group
-		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
 		{
 			if( bones )
 				materials->SetSkinningEnabled(true);
@@ -831,9 +831,9 @@ IPhysicsObject* BaseEntity::PhysicsInitStatic()
 	if(!m_pModel->GetHWData())
 		return NULL;
 
-	physmodeldata_t& physMod = m_pModel->GetHWData()->m_physmodel;
+	physmodeldata_t& physMod = m_pModel->GetHWData()->physModel;
 
-	if(physMod.numobjects == 1)
+	if(physMod.numObjects == 1)
 	{
 		float fOldMass = physMod.objects[0].object.mass;
 		physMod.objects[0].object.mass = 0;
@@ -852,7 +852,7 @@ IPhysicsObject* BaseEntity::PhysicsInitStatic()
 	}
 	else
 	{
-		//Msg("Physics object count: %d\n", m_pModel->GetHWData()->m_physmodel.numobjects);
+		//Msg("Physics object count: %d\n", m_pModel->GetHWData()->physModel.numObjects);
 	}
 
 	return NULL;
@@ -864,20 +864,20 @@ IPhysicsObject* BaseEntity::PhysicsInitNormal(int nSolidFlags, bool makeAsleep, 
 
 	PhysicsDestroyObject();
 
-	if(m_pModel->GetHWData()->m_physmodel.numobjects == 1)
+	if(m_pModel->GetHWData()->physModel.numObjects == 1)
 	{
 		objectIndex = 0;
 	}
 	else
 	{
-		if(m_pModel->GetHWData()->m_physmodel.numobjects > 1 && objectIndex == -1)
+		if(m_pModel->GetHWData()->physModel.numObjects > 1 && objectIndex == -1)
 		{
-			MsgWarning("Too many physics objects in POD for model %s (%d)\n", m_pModel->GetName(), m_pModel->GetHWData()->m_physmodel.numobjects);
+			MsgWarning("Too many physics objects in POD for model %s (%d)\n", m_pModel->GetName(), m_pModel->GetHWData()->physModel.numObjects);
 			objectIndex = 0;
 		}
 	}
 
-	IPhysicsObject* pObject = physics->CreateObject(&m_pModel->GetHWData()->m_physmodel, objectIndex);
+	IPhysicsObject* pObject = physics->CreateObject(&m_pModel->GetHWData()->physModel, objectIndex);
 
 	PhysicsSetObject(pObject);
 

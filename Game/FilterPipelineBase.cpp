@@ -16,7 +16,7 @@ CFilterLayer::CFilterLayer()
 {
 	m_pFilterMaterial = NULL;
 	m_fAmount = 1.0f;
-	m_vColor = ColorRGB(1);
+	color = ColorRGB(1);
 	m_szLayerName = "InvalidFilterName";
 	m_char = 0;
 }

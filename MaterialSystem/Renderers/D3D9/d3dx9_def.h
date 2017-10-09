@@ -212,11 +212,11 @@ const D3DTRANSFORMSTATETYPE d3dmatrixmodes[] = {
 	D3DTS_TEXTURE0
 };
 
-inline bool HasMipmaps(Filter_e filter)
+inline bool HasMipmaps(ER_TextureFilterMode filter)
 {
     return (filter >= TEXFILTER_BILINEAR);
 }
-inline bool HasAniso(Filter_e filter)
+inline bool HasAniso(ER_TextureFilterMode filter)
 {
     return (filter >= TEXFILTER_BILINEAR_ANISO);
 }

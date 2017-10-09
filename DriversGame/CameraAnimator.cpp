@@ -29,6 +29,8 @@
 #define START_FOV					40.0f
 #define END_FOV						10.0f
 
+#define CAM_DISTANCE_SPEED			2.0f;
+
 ConVar cam_velocity_accel("cam_velocity_accel", "0.5");
 ConVar cam_velocity_mindiff("cam_velocity_mindiff", "0.15");
 
@@ -190,10 +192,10 @@ void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
 
 		SetCameraProps( target->m_conf->cameraConf );
 
-		Animate(camMode, nButtons, target->GetOrigin(), target->GetOrientation(), target->GetVelocity(), fDt, m_rotation);
+		Animate(camMode, nButtons, target->GetOrigin(), target->GetOrientation(), target->GetVelocity(), fDt, m_rotation, target->GetPhysicsBody());
 	}
 	else
-		Animate(m_mode, nButtons, vec3_zero, Quaternion(), vec3_zero, fDt, m_rotation);
+		Animate(m_mode, nButtons, vec3_zero, Quaternion(), vec3_zero, fDt, m_rotation, nullptr);
 
 	m_oldBtns = nButtons;
 }
@@ -241,17 +243,18 @@ void CCameraAnimator::L_Update( float fDt, CCar* target )
 
 		SetCameraProps( target->m_conf->cameraConf );
 
-		Animate(camMode, 0, target->GetOrigin(), target->GetOrientation(), target->GetVelocity(), fDt, vec3_zero);
+		Animate(camMode, 0, target->GetOrigin(), target->GetOrientation(), target->GetVelocity(), fDt, vec3_zero, target->GetPhysicsBody());
 	}
 	else
-		Animate(CAM_MODE_TRIPOD_STATIC, 0, vec3_zero, Quaternion(), vec3_zero, fDt, vec3_zero);
+		Animate(CAM_MODE_TRIPOD_STATIC, 0, vec3_zero, Quaternion(), vec3_zero, fDt, vec3_zero, nullptr);
 }
 
 void CCameraAnimator::Animate(	ECameraMode mode,
 								int nButtons,
 								const Vector3D& targetOrigin, const Quaternion& targetRotation, const Vector3D& targetVelocity,
 								float fDt,
-								const Vector3D& addRot )
+								const Vector3D& addRot,
+								CEqRigidBody* traceIgnore)
 {
 	m_realMode = mode;
 
@@ -326,8 +329,8 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 	if(mode == CAM_MODE_OUTCAR)
 	{
-		float desiredHeight = m_carConfig.height;// - m_targetForwardSpeedModifier*0.15f;
-		float desiredDist = m_carConfig.dist;// - m_targetForwardSpeedModifier*0.9f;
+		float desiredHeight = m_carConfig.height;
+		float desiredDist = m_carConfig.dist;
 
 		Vector3D cam_angles = Vector3D(0, m_fTempCamAngle - m_fLookAngle, 0) + addRot;
 
@@ -340,33 +343,34 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		Vector3D cam_target = pos + Vector3D(0, desiredHeight, 0);
 
 		Vector3D cam_pos_h = pos + Vector3D(0,desiredHeight,0);
-		Vector3D cam_pos = cam_pos_h - forward*m_cameraDistVar;
-		Vector3D cam_pos_low = pos + Vector3D(0,CAM_HEIGHT_TRACE,0) - forward*m_cameraDistVar;
-
+		Vector3D cam_pos = cam_pos_h - forward*desiredDist;
+		
+		// trace back
 		CollisionData_t back_coll;
 
+		eqPhysCollisionFilter ignoreFilter(traceIgnore);
+		
 		btBoxShape sphere(btVector3(0.5f, 0.5f, 0.5f));
-		g_pPhysics->TestConvexSweep(&sphere, identity(), cam_pos_h, cam_pos, back_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS);
-
-		if( back_coll.fract < 1.0f )
+		if(g_pPhysics->TestConvexSweep(&sphere, identity(), cam_pos_h, cam_pos, back_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_VEHICLE, &ignoreFilter))
 		{
-			m_cameraDistVar = lerp(0.0f, m_cameraDistVar, back_coll.fract);
+			desiredDist *= back_coll.fract;
 		}
 
-		m_cameraDistVar += fDt*2.0f;
-
-		m_cameraDistVar = min(m_cameraDistVar, desiredDist);
+		// make camera out from car smoothly
+		m_cameraDistVar += (desiredDist-m_cameraDistVar) * fDt * CAM_DISTANCE_SPEED;
+		m_cameraDistVar = min(m_cameraDistVar, desiredDist); // clamp to desired distance
 
 		cam_pos = cam_pos_h - forward*(m_cameraDistVar-0.1f);
+		Vector3D cam_pos_low = pos + Vector3D(0,CAM_HEIGHT_TRACE,0) - forward*desiredDist;
 
-		CollisionData_t coll;
-		g_pPhysics->TestLine(cam_pos + Vector3D(0,desiredHeight,0), cam_pos_low, coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_WATER);
+		CollisionData_t height_coll;
+		g_pPhysics->TestLine(cam_pos + Vector3D(0,desiredHeight,0), cam_pos_low, height_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_WATER);
 
-		FReal fCamDot = fabs(dot(coll.normal, Vector3D(0,1,0)));
+		FReal fCamDot = fabs(dot(height_coll.normal, Vector3D(0,1,0)));
 
-		if(coll.fract < 1.0f && fCamDot > 0.5f)
+		if(height_coll.fract < 1.0f && fCamDot > 0.5f)
 		{
-			FReal height = coll.position.y;
+			FReal height = height_coll.position.y;
 
 			cam_pos.y = desiredHeight + height - CAM_HEIGHT_TRACE;
 		}

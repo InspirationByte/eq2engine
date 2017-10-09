@@ -38,7 +38,7 @@
 
 struct kvkeybase_t;
 
-// designed to be sent as hWindow param
+// designed to be sent as windowHandle param
 struct externalWindowDisplayParams_t
 {
 	void*			window;
@@ -47,40 +47,39 @@ struct externalWindowDisplayParams_t
 };
 
 // shader api initializer
-struct shaderapiinitparams_t
+struct shaderAPIParams_t
 {
-	shaderapiinitparams_t()
+	shaderAPIParams_t()
 	{
-		hWindow					= NULL;
-		bIsWindowed				= false;
-		nScreenFormat			= FORMAT_RGB8;
-		nRefreshRateHZ			= 60;
-		nMultisample			= 0;
-		nDepthBits				= 24;
-		bEnableVerticalSync		= false;
+		windowHandle			= NULL;
+		windowedMode			= false;
+		screenFormat			= FORMAT_RGB8;
+		screenRefreshRateHZ		= 60;
+		multiSamplingMode		= 0;
+		depthBits				= 24;
+		verticalSyncEnabled		= false;
 
-		memset(textures_path, 0, sizeof(textures_path));
+		memset(texturePath, 0, sizeof(texturePath));
 	}
 
 	// basic parameters for shader API initialization
-	void*			hWindow;				// OS window handle or externalWindowDisplayParams_t
+	void*			windowHandle;			// OS window handle or externalWindowDisplayParams_t
 
-	bool			bIsWindowed;			// is windowed?
-	ETextureFormat	nScreenFormat;			// screen back buffer format
+	bool			windowedMode;			// is windowed?
+	ETextureFormat	screenFormat;			// screen back buffer format
 
-	int				nRefreshRateHZ;			// refresh rate in HZ
-	int				nMultisample;			// multisampling
+	int				screenRefreshRateHZ;	// refresh rate in HZ
+	int				multiSamplingMode;		// multisampling
 
 	// extended parameters
-	int				nDepthBits;				// bit depth for depth/stencil
+	int				depthBits;				// bit depth for depth/stencil
 
-	bool			bEnableVerticalSync;	// vertical syncronization
+	bool			verticalSyncEnabled;	// vertical syncronization
 
-	char			textures_path[64];		// texture path
+	char			texturePath[64];		// texture path
 };
 
 class CImage;
-typedef int OcclusionHandle_t;
 
 //
 // ShaderAPI interface
@@ -92,7 +91,7 @@ public:
 
 	// initializes shader api.
 	// Don't use this, this already called by materials->Init()
-	virtual void				Init( shaderapiinitparams_t &params ) = 0;
+	virtual void				Init( shaderAPIParams_t &params ) = 0;
 
 	// shutdowns shader api. Don't use this, this already called by materials->Shutdown()
 	virtual void				Shutdown() = 0;
@@ -160,7 +159,7 @@ public:
 	// shader API class type for shader developers.
 	virtual const ShaderAPICaps_t&	GetCaps() const = 0;
 
-	virtual ShaderAPIClass_e		GetShaderAPIClass() {return SHADERAPI_EMPTY;}
+	virtual ER_ShaderAPIType		GetShaderAPIClass() {return SHADERAPI_EMPTY;}
 
 	// Renderer string (ex: OpenGL, D3D9)
 	virtual const char*				GetRendererName() const = 0;
@@ -232,8 +231,8 @@ public:
 
 	// loads texture
 	virtual ITexture*			LoadTexture(	const char* pszFileName,
-												Filter_e textureFilterType,
-												AddressMode_e textureAddress = ADDRESSMODE_WRAP,
+												ER_TextureFilterMode textureFilterType,
+												ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
 												int nFlags = 0
 												) = 0;
 
@@ -243,8 +242,8 @@ public:
 														int width, int height,
 														int depth = 1,
 														int arraySize = 1,
-														Filter_e texFilter = TEXFILTER_NEAREST,
-														AddressMode_e textureAddress = ADDRESSMODE_WRAP,
+														ER_TextureFilterMode texFilter = TEXFILTER_NEAREST,
+														ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
 														int nFlags = 0,
 														int nDataSize = 0, const unsigned char* pData = NULL
 														) = 0;
@@ -252,9 +251,9 @@ public:
 	// creates render target texture
 	virtual ITexture*			CreateRenderTarget(	int width, int height,
 													ETextureFormat nRTFormat,
-													Filter_e textureFilterType = TEXFILTER_LINEAR,
-													AddressMode_e textureAddress = ADDRESSMODE_WRAP,
-													CompareFunc_e comparison = COMP_NEVER,
+													ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
+													ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
+													ER_CompareFunc comparison = COMP_NEVER,
 													int nFlags = 0
 													) = 0;
 
@@ -262,9 +261,9 @@ public:
 	virtual ITexture*			CreateNamedRenderTarget(	const char* pszName,
 															int width, int height,
 															ETextureFormat nRTFormat,
-															Filter_e textureFilterType = TEXFILTER_LINEAR,
-															AddressMode_e textureAddress = ADDRESSMODE_WRAP,
-															CompareFunc_e comparison = COMP_NEVER,
+															ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
+															ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
+															ER_CompareFunc comparison = COMP_NEVER,
 															int nFlags = 0
 															) = 0;
 
@@ -311,7 +310,7 @@ public:
 //-------------------------------------------------------------
 
 	// sets matrix mode
-	virtual void				SetMatrixMode( MatrixMode_e nMatrixMode ) = 0;
+	virtual void				SetMatrixMode( ER_MatrixMode nMatrixMode ) = 0;
 
 	// loads identity matrix
 	virtual void				LoadIdentityMatrix() = 0;
@@ -330,7 +329,7 @@ public:
 //-------------------------------------------------------------
 
 	// Find sampler state with adding new one (if not exist)
-	virtual SamplerStateParam_t	MakeSamplerState(Filter_e textureFilterType,AddressMode_e addressS, AddressMode_e addressT, AddressMode_e addressR) = 0;
+	virtual SamplerStateParam_t	MakeSamplerState(ER_TextureFilterMode textureFilterType,ER_TextureAddressMode addressS, ER_TextureAddressMode addressT, ER_TextureAddressMode addressR) = 0;
 
 	// creates blending state
 	virtual IRenderState*		CreateBlendingState( const BlendStateParam_t &blendDesc ) = 0;
@@ -462,7 +461,7 @@ public:
 	virtual IVertexFormat*		CreateVertexFormat(VertexFormatDesc_s *formatDesc, int nAttribs) = 0;
 
 	// NOTENOTE: when you set nSize you must add the vertex structure size!
-	virtual IVertexBuffer*		CreateVertexBuffer(	BufferAccessType_e nBufAccess,
+	virtual IVertexBuffer*		CreateVertexBuffer(	ER_BufferAccess nBufAccess,
 															int nNumVerts,
 															int strideSize,
 															void *pData = NULL
@@ -471,7 +470,7 @@ public:
 	// create new index buffer
 	virtual IIndexBuffer*		CreateIndexBuffer(	int nIndices,
 															int nIndexSize,
-															BufferAccessType_e nBufAccess,
+															ER_BufferAccess nBufAccess,
 															void *pData = NULL
 															) = 0;
 
@@ -485,7 +484,7 @@ public:
 //-------------------------------------------------------------
 
 	// Indexed primitive drawer
-	virtual void				DrawIndexedPrimitives(	PrimitiveType_e nType,
+	virtual void				DrawIndexedPrimitives(	ER_PrimitiveType nType,
 														int nFirstIndex,
 														int nIndices,
 														int nFirstVertex,
@@ -494,7 +493,7 @@ public:
 														) = 0;
 
 	// Non-Indexed primitive drawer
-	virtual void				DrawNonIndexedPrimitives(PrimitiveType_e nType, int nFirstVertex, int nVertices) = 0;
+	virtual void				DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices) = 0;
 
 };
 

@@ -758,7 +758,7 @@ bool CEditableDecal::ReadObject(IVirtualStream*	pStream)
 	m_surftex.vScale = surfData.scale;
 	m_surftex.nFlags = surfData.nFlags;
 
-	m_surftex.pMaterial = materials->FindMaterial(surfData.material,true);
+	m_surftex.pMaterial = materials->GetMaterial(surfData.material,true);
 
 	pStream->Read(m_position, 1, sizeof(Vector3D));
 	pStream->Read(m_scale, 1, sizeof(Vector3D));
@@ -813,7 +813,7 @@ bool CEditableDecal::LoadFromKeyValues(kvkeybase_t* pSection)
 
 	pair = pSection->FindKeyBase("material");
 	if(pair)
-		m_surftex.pMaterial = materials->FindMaterial(pair->values[0], true);
+		m_surftex.pMaterial = materials->GetMaterial(pair->values[0], true);
 
 	pair = pSection->FindKeyBase("nplane");
 

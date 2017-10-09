@@ -52,7 +52,7 @@ struct gikchain_t
 	Vector3D			local_target; // local target position
 
 	giklink_t*			links;
-	int					numlinks;
+	int					numLinks;
 };
 
 // pose controller

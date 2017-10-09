@@ -290,9 +290,9 @@ void InitMatSystem(HWND window)
 		materials_config.stubMode = false;
 
 		DefaultShaderAPIParameters(&materials_config.shaderapi_params);
-		materials_config.shaderapi_params.bIsWindowed = true;
-		materials_config.shaderapi_params.hWindow = window;
-		materials_config.shaderapi_params.nScreenFormat = format;
+		materials_config.shaderapi_params.windowedMode = true;
+		materials_config.shaderapi_params.windowHandle = window;
+		materials_config.shaderapi_params.screenFormat = format;
 
 		bool materialSystemStatus = materials->Init("materials/", "EqD3D9RHI", materials_config);
 

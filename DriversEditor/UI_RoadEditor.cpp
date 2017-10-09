@@ -355,9 +355,9 @@ void CUI_RoadEditor::OnRender()
 
 void CUI_RoadEditor::InitTool()
 {
-	m_trafficDir = materials->FindMaterial("traffic_dir");
-	m_trafficDirVar = materials->FindMaterial("traffic_dir_variant");
-	m_trafficParking = materials->FindMaterial("traffic_dir_parking");
+	m_trafficDir = materials->GetMaterial("traffic_dir");
+	m_trafficDirVar = materials->GetMaterial("traffic_dir_variant");
+	m_trafficParking = materials->GetMaterial("traffic_dir_parking");
 
 	materials->PutMaterialToLoadingQueue(m_trafficDir);
 	materials->PutMaterialToLoadingQueue(m_trafficDirVar);

@@ -542,7 +542,7 @@ bool CMaterialAtlasList::CheckDirForMaterials(const char* filename_to_add)
 					filename = filename.Path_Strip_Ext();
 					filename = filename.Right(filename.Length() - tex_dir.Length());
 
-					IMaterial* pMaterial = materials->FindMaterial( filename.GetData(), true);
+					IMaterial* pMaterial = materials->GetMaterial( filename.GetData() );
 					if(pMaterial)
 					{
 						IMatVar* pVar = pMaterial->FindMaterialVar("showineditor");

@@ -99,7 +99,7 @@ bool CBulletStudioShapeCache::IsShapeCachePresent( physmodelshapecache_t* shapeI
 void CBulletStudioShapeCache::InitStudioCache( physmodeldata_t* studioData )
 {
 	// cache shapes using model info.
-	for(int i = 0; i < studioData->numobjects; i++)
+	for(int i = 0; i < studioData->numObjects; i++)
 	{
 		for(int j = 0; j < studioData->objects[i].object.numShapes; j++)
 		{
@@ -126,7 +126,7 @@ void CBulletStudioShapeCache::InitStudioCache( physmodeldata_t* studioData )
 
 void CBulletStudioShapeCache::DestroyStudioCache( physmodeldata_t* studioData )
 {
-	for(int i = 0; i < studioData->numshapes; i++)
+	for(int i = 0; i < studioData->numShapes; i++)
 	{
 		int nShape = m_collisionShapes.findIndex((btCollisionShape*)studioData->shapes[i].cachedata);
 

@@ -607,7 +607,7 @@ cwlitsurface_t* LoadLitSurface(IVirtualStream* pStream)
 	pSurf->layer_index = rdata.layer_index;
 	pSurf->lightmap_id = rdata.lightmap_id;
 
-	pSurf->pMaterial = materials->FindMaterial( rdata.material, true );
+	pSurf->pMaterial = materials->GetMaterial( rdata.material, true );
 
 	pSurf->pVerts = new eqlevelvertexlm_t[pSurf->numVertices];
 	pSurf->pIndices = new int[pSurf->numIndices];

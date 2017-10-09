@@ -42,7 +42,7 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 	m_textFade = 0.0f;
 	m_changesMenu = 0;
 	m_goesFromMenu = false;
-	m_titleTexture = g_pShaderAPI->LoadTexture("ui/title", TEXFILTER_TRILINEAR_ANISO, ADDRESSMODE_CLAMP);
+	m_titleTexture = g_pShaderAPI->LoadTexture("ui/title", TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP);
 	m_titleTexture->Ref_Grab();
 
 	soundsystem->SetPauseState(false);

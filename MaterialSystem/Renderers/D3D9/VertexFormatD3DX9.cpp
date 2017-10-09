@@ -54,23 +54,23 @@ void CVertexFormatD3DX9::GenVertexElement(D3DVERTEXELEMENT9* elems)
 		VertexFormatDesc_t& fmtdesc = m_vertexDesc[i];
 		D3DVERTEXELEMENT9& elem = elems[numRealAttribs];
 
-		int stream = fmtdesc.m_nStream;
-		int size = fmtdesc.m_nSize;
+		int stream = fmtdesc.streamId;
+		int size = fmtdesc.elemCount;
 
 		// if not unused
-		if(fmtdesc.m_nType != VERTEXTYPE_NONE)
+		if(fmtdesc.attribType != VERTEXATTRIB_UNUSED)
 		{
 			elem.Stream = stream;
 			elem.Offset = m_streamStride[stream];
-			elem.Type = d3ddecltypes[fmtdesc.m_nFormat][size - 1];
+			elem.Type = d3ddecltypes[fmtdesc.attribFormat][size - 1];
 			elem.Method = D3DDECLMETHOD_DEFAULT;
-			elem.Usage = d3dvertexusage[fmtdesc.m_nType];
-			elem.UsageIndex = index[fmtdesc.m_nType]++;
+			elem.Usage = d3dvertexusage[fmtdesc.attribType];
+			elem.UsageIndex = index[fmtdesc.attribType]++;
 
 			numRealAttribs++;
 		}
 
-		m_streamStride[stream] += size * attributeFormatSize[fmtdesc.m_nFormat];
+		m_streamStride[stream] += size * s_attributeSize[fmtdesc.attribFormat];
 	}
 
 	// Terminating element

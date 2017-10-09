@@ -482,7 +482,7 @@ void CLevelRegion::InitRoads()
 	// init debug maps
 	if(nav_debug_map.GetInt() > 0)
 	{
-		m_navGrid.debugObstacleMap = g_pShaderAPI->CreateProceduralTexture(varargs("navgrid_%d", m_regionIndex), FORMAT_RGBA8, m_navGrid.wide, m_navGrid.tall, 1, 1,TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, TEXFLAG_NOQUALITYLOD);
+		m_navGrid.debugObstacleMap = g_pShaderAPI->CreateProceduralTexture(varargs("navgrid_%d", m_regionIndex), FORMAT_RGBA8, m_navGrid.wide, m_navGrid.tall, 1, 1,TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXFLAG_NOQUALITYLOD);
 		m_navGrid.debugObstacleMap->Ref_Grab();
 	}
 }

@@ -40,6 +40,7 @@ struct carCameraConfig_t
 };
 
 class CCar;
+class CEqRigidBody;
 
 class CCameraAnimator
 {
@@ -84,7 +85,8 @@ protected:
 										const Quaternion& targetRotation,
 										const Vector3D& targetVelocity,
 										float fDt,
-										const Vector3D& addRot);
+										const Vector3D& addRot,
+										CEqRigidBody* traceIgnore);
 
 	carCameraConfig_t		m_carConfig;
 	float					m_cameraDistVar;

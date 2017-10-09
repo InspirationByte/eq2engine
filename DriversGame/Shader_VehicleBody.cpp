@@ -6,6 +6,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "BaseShader.h"
+#include "ConVar.h"
+
+ConVar r_carPerPixelLights("r_carPerPixelLights", "0", nullptr, CV_ARCHIVE);
 
 BEGIN_SHADER_CLASS(DrvSynVehicle)
 
@@ -66,7 +69,7 @@ BEGIN_SHADER_CLASS(DrvSynVehicle)
 		// define modulate parameter.
 		SHADER_DECLARE_SIMPLE_DEFINITION((m_nFlags & MATERIAL_FLAG_MODULATE), "MODULATE");
 
-		//SHADER_DECLARE_SIMPLE_DEFINITION(true, "PIXEL_LIGHTING");
+		SHADER_DECLARE_SIMPLE_DEFINITION(r_carPerPixelLights.GetBool(), "PIXEL_LIGHTING");
 
 		bool useCubemap = (m_nFlags & MATERIAL_FLAG_USE_ENVCUBEMAP) || (m_pCubemap != NULL);
 

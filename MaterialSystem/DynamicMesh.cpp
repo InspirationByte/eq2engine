@@ -28,13 +28,13 @@ assert_sizeof(vertexFormatId_t, 2);
 
 /*
 Vertex data order:
-	VERTEXTYPE_VERTEX		// default, 2D or 3D (+ 1 comp padding)
-	VERTEXTYPE_TEXCOORD		// 2D only
-	VERTEXTYPE_COLOR		// 3D (alpha used or padding)
+	VERTEXATTRIB_POSITION		// default, 2D or 3D (+ 1 comp padding)
+	VERTEXATTRIB_TEXCOORD		// 2D only
+	VERTEXATTRIB_COLOR		// 3D (alpha used or padding)
 
-	VERTEXTYPE_TANGENT		// 2D or 3D (+ 1 comp padding)
-	VERTEXTYPE_BINORMAL		// 2D or 3D (+ 1 comp padding)
-	VERTEXTYPE_NORMAL		// 2D or 3D (+ 1 comp padding)
+	VERTEXATTRIB_TANGENT		// 2D or 3D (+ 1 comp padding)
+	VERTEXATTRIB_BINORMAL		// 2D or 3D (+ 1 comp padding)
+	VERTEXATTRIB_NORMAL		// 2D or 3D (+ 1 comp padding)
 
 Sort:
 	Bigger to smaller
@@ -87,12 +87,12 @@ bool CDynamicMesh::Init( VertexFormatDesc_t* desc, int numAttribs )
 
 	for(int i = 0; i < numAttribs; i++)
 	{
-		int stream = desc[i].m_nStream;
-		int vecCount = desc[i].m_nSize;
+		int stream = desc[i].streamId;
+		int vecCount = desc[i].elemCount;
 
 		ASSERTMSG(stream == 0, "Error - you should pass STREAM 0 only to CDynamicMesh::Init!\n");
 
-		vertexSize += vecCount * attributeFormatSize[desc[i].m_nFormat];
+		vertexSize += vecCount * s_attributeSize[desc[i].attribFormat];
 	}
 
 	m_vertexStride = vertexSize;
@@ -140,12 +140,12 @@ void CDynamicMesh::GetVertexFormatDesc(VertexFormatDesc_t** desc, int& numAttrib
 }
 
 // sets the primitive type (chooses the way how to allocate geometry parts)
-void CDynamicMesh::SetPrimitiveType( PrimitiveType_e primType )
+void CDynamicMesh::SetPrimitiveType( ER_PrimitiveType primType )
 {
 	m_primType = primType;
 }
 
-PrimitiveType_e	CDynamicMesh::GetPrimitiveType() const
+ER_PrimitiveType	CDynamicMesh::GetPrimitiveType() const
 {
 	return m_primType;
 }

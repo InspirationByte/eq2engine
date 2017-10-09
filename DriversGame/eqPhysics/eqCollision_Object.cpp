@@ -97,7 +97,7 @@ void CEqCollisionObject::InitAABB()
 bool CEqCollisionObject::Initialize( physmodeldata_t* data, int nObject )
 {
 	// TODO: make it
-	ASSERTMSG((nObject < data->numobjects), "DkPhysics::CreateObject - nObject is out of numobjects");
+	ASSERTMSG((nObject < data->numObjects), "DkPhysics::CreateObject - nObject is out of numObjects");
 
 	// first determine shapes
 	if(data->objects[nObject].object.numShapes > 1)
@@ -114,12 +114,14 @@ bool CEqCollisionObject::Initialize( physmodeldata_t* data, int nObject )
 
 			pCompoundShape->addChildShape(ident, shape);
 		}
+		
+		m_hasStudioShape = false;
 	}
 	else
 	{
 		// not a compound object, skipping
 		m_shape = (btCollisionShape*)data->objects[nObject].shapeCache[0];
-		m_hasStudioShape = true;
+		m_hasStudioShape = true; // using a studio shape flag
 	}
 
 	ASSERTMSG(m_shape, "No valid shape!");
@@ -132,8 +134,6 @@ bool CEqCollisionObject::Initialize( physmodeldata_t* data, int nObject )
 	m_collObject->setCollisionShape(m_shape);
 
 	m_collObject->setUserPointer(this);
-
-	m_hasStudioShape = true;
 
 	return true;
 }

@@ -20,7 +20,7 @@
 class IMeshBuilder
 {
 public:
-	virtual void		Begin(PrimitiveType_e type) = 0;
+	virtual void		Begin(ER_PrimitiveType type) = 0;
 	virtual void		End() = 0;
 
 	// color setup

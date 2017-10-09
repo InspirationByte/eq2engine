@@ -114,7 +114,7 @@ void CHeightTileField::ReadOnlyMaterials( IVirtualStream* stream )
 	for(int i = 0; i < numMaterials; i++)
 	{
 		hfieldmaterial_t* matBundle = new hfieldmaterial_t();
-		matBundle->material = materials->FindMaterial(matNamePtr, true);
+		matBundle->material = materials->GetMaterial(matNamePtr);
 		matBundle->atlas = TexAtlas_LoadAtlas((materials->GetMaterialPath() + _Es(CORRECT_PATH_SEPARATOR) +_Es(matNamePtr)+".atlas").c_str(), matNamePtr, true);
 
 		if(matBundle->material)
@@ -149,7 +149,7 @@ void CHeightTileField::ReadFromStream( IVirtualStream* stream )
 	for(int i = 0; i < numMaterials; i++)
 	{
 		hfieldmaterial_t* matBundle = new hfieldmaterial_t();
-		matBundle->material = materials->FindMaterial(matNamePtr, true);
+		matBundle->material = materials->GetMaterial(matNamePtr);
 		matBundle->atlas = TexAtlas_LoadAtlas((materials->GetMaterialPath() + _Es(CORRECT_PATH_SEPARATOR) +_Es(matNamePtr)+".atlas").c_str(), matNamePtr, true);
 
 		if(matBundle->material)
@@ -1258,9 +1258,9 @@ void CHeightTileFieldRenderable::GenereateRenderData(bool debug)
 	if(!m_vertexbuffer || !m_indexbuffer || !m_format)
 	{
 		VertexFormatDesc_t pFormat[] = {
-			{ 0, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position
-			{ 0, 2, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 0
-			{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Normal (TC1) + border
+			{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position
+			{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 0
+			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Normal (TC1) + border
 		};
 
 		DevMsg(2,"Creating hfield buffers, %d verts %d indices in %d batches\n", verts.numElem(), indices.numElem(), m_numBatches);
@@ -1269,7 +1269,7 @@ void CHeightTileFieldRenderable::GenereateRenderData(bool debug)
 			m_format = g_pShaderAPI->CreateVertexFormat(pFormat, elementsOf(pFormat));
 
 #ifdef EDITOR
-		BufferAccessType_e bufferType = BUFFER_STATIC;
+		ER_BufferAccess bufferType = BUFFER_STATIC;
 
 		int vb_lock_size = m_sizew*m_sizeh*12;
 		int ib_lock_size = m_sizew*m_sizeh*16;
@@ -1277,7 +1277,7 @@ void CHeightTileFieldRenderable::GenereateRenderData(bool debug)
 		m_vertexbuffer = g_pShaderAPI->CreateVertexBuffer(bufferType, vb_lock_size, sizeof(hfielddrawvertex_t), NULL);
 		m_indexbuffer = g_pShaderAPI->CreateIndexBuffer(ib_lock_size, sizeof(int), bufferType, NULL);
 #else
-		BufferAccessType_e bufferType = BUFFER_STATIC;
+		ER_BufferAccess bufferType = BUFFER_STATIC;
 		int vb_lock_size = verts.numElem();
 		int ib_lock_size = indices.numElem();
 

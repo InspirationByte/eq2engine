@@ -381,7 +381,7 @@ void CTextureListPanel::ReloadMaterialList()
 IMaterial* CTextureListPanel::GetSelectedMaterial()
 {
 	if(selection_id == -1)
-		return materials->FindMaterial("error", true);
+		return materials->GetMaterial("error", true);
 
 	return m_filteredlist[selection_id];
 }
@@ -430,7 +430,7 @@ bool CTextureListPanel::CheckDirForMaterials(const char* filename_to_add)
 					filename = filename.Path_Strip_Ext();
 					filename = filename.Right(filename.Length() - tex_dir.Length());
 
-					IMaterial* pMaterial = materials->FindMaterial( filename.GetData(), true);
+					IMaterial* pMaterial = materials->GetMaterial( filename.GetData(), true);
 					if(pMaterial)
 					{
 						IMatVar* pVar = pMaterial->FindMaterialVar("showineditor");

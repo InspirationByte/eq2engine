@@ -275,8 +275,8 @@ protected:
 
 	SHADERPARAMFUNC				m_param_functors[SHADERPARAM_COUNT];
 
-	AddressMode_e				m_nAddressMode;
-	Filter_e					m_nTextureFilter;
+	ER_TextureAddressMode				m_nAddressMode;
+	ER_TextureFilterMode					m_nTextureFilter;
 
 	IMaterial*					m_pAssignedMaterial;
 

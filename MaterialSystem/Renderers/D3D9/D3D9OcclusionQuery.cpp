@@ -71,7 +71,7 @@ bool CD3D9OcclusionQuery::IsReady()
 	m_pixelsVisible = 0;
 	m_ready = (m_query->GetData((void*)&m_pixelsVisible, sizeof(DWORD), D3DGETDATA_FLUSH) != S_FALSE);
 
-	int msaa = ((ShaderAPID3DX9*)g_pShaderAPI)->m_params->nMultisample;
+	int msaa = ((ShaderAPID3DX9*)g_pShaderAPI)->m_params->multiSamplingMode;
 	if(msaa > 0)
 		m_pixelsVisible /= msaa;
 

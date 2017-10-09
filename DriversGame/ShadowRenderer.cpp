@@ -67,17 +67,44 @@ void CShadowRenderer::Init()
 	m_shadowRt = g_pShaderAPI->CreateNamedRenderTarget("_rt_shadow", 256, 256, FORMAT_R8);
 	m_shadowRt->Ref_Grab();
 
-	m_matVehicle = materials->FindMaterial("engine/shadowbuild_vehicle");
-	m_matVehicle->Ref_Grab();
+	kvkeybase_t shadowBuildParams;
+	shadowBuildParams.SetKey("nofog", true);
+	shadowBuildParams.SetKey("zwrite", false);
+	shadowBuildParams.SetKey("ztest", false);
 
-	m_matSkinned = materials->FindMaterial("engine/shadowbuild_skin");
-	m_matSkinned->Ref_Grab();
+	{
+		shadowBuildParams.SetName("ShadowBuildVehicle");
 
-	m_matSimple = materials->FindMaterial("engine/shadowbuild");
-	m_matSimple->Ref_Grab();
+		m_matVehicle = materials->CreateMaterial("_shadowbuild_vehicle", &shadowBuildParams);
+		m_matVehicle->Ref_Grab();
+	}
 
-	m_shadowResult = materials->FindMaterial("engine/shadow");
-	m_shadowResult->Ref_Grab();
+	{
+		shadowBuildParams.SetName("ShadowBuildSkinned");
+
+		m_matSkinned = materials->CreateMaterial("_shadowbuild_skinned", &shadowBuildParams);
+		m_matSkinned->Ref_Grab();
+	}
+
+	{
+		shadowBuildParams.SetName("ShadowBuild");
+
+		m_matSimple = materials->CreateMaterial("_shadowbuild", &shadowBuildParams);
+		m_matSimple->Ref_Grab();
+	}
+
+	{
+		kvkeybase_t shadowParams;
+		shadowParams.SetName("Shadow");
+
+		shadowParams.SetKey("basetexture", "_dshadow");
+		shadowParams.SetKey("zwrite", false);
+		shadowParams.SetKey("translucent", true);
+		shadowParams.SetKey("Decal", true);
+
+		m_shadowResult = materials->CreateMaterial("_dshadow", &shadowParams);
+		m_shadowResult->Ref_Grab();
+	}
 
 	CSpriteBuilder::Init();
 
@@ -179,6 +206,19 @@ inline int AtlasPackComparison(PackerRectangle *const &elem0, PackerRectangle *c
 	return (elem1->width + elem1->height) - (elem0->width + elem0->height);
 }
 
+bool ShadowDecalClipping(struct decalsettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
+{
+	CGameObject* object = (CGameObject*)settings.userData;
+
+	Vector3D triNormal = NormalOfTriangle(v1.point,v2.point,v3.point);
+	Vector3D facingToObjectNormal = fastNormalize(object->GetOrigin() - v1.point);
+
+	if(dot(triNormal, facingToObjectNormal) < 0.0f || dot(triNormal, settings.facingDir) < 0.0f)
+		return false;
+
+	return true;
+}
+
 ConVar r_shadows_debugatlas("r_shadows_debugatlas", "0");
 
 void CShadowRenderer::RenderShadowCasters()
@@ -199,6 +239,7 @@ void CShadowRenderer::RenderShadowCasters()
 
 	decalprimitives_t shadowDecal;
 	shadowDecal.settings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
+	shadowDecal.processFunc = ShadowDecalClipping;
 
 	CViewParams orthoView;
 
@@ -246,13 +287,15 @@ void CShadowRenderer::RenderShadowCasters()
 		shadowRect.vleftTop *= m_shadowTexelSize;
 		shadowRect.vrightBottom *= m_shadowTexelSize;
 
+		// take shadow height for near plane using first object AABB
+		float shadowHeight = length(firstObject->m_bbox.GetSize())*0.5f;
+
 		// move view to the object origin
 		orthoView.SetOrigin(firstObject->GetOrigin());
-		orthoView.GetMatrices(proj, view, shadowSize.x*SHADOW_DESCALING, shadowSize.y*SHADOW_DESCALING, -2.5f, 100.0f, true );
+		orthoView.GetMatrices(proj, view, shadowSize.x*SHADOW_DESCALING, shadowSize.y*SHADOW_DESCALING, -shadowHeight, 100.0f, true );
 		
 		shadowDecal.settings.facingDir = view.rows[2].xyz();
 		
-
 		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
 		materials->SetMatrix(MATRIXMODE_VIEW, view);
 		viewProj = proj * view;
@@ -279,8 +322,11 @@ void CShadowRenderer::RenderShadowCasters()
 		float shadowAlpha = length(orthoView.GetOrigin()-viewPos) * distFac;
 		shadowAlpha = 1.0f - pow(max(0.0f, shadowAlpha), 8.0f);
 
+		Plane nearPlane(-vec3_up, firstObject->m_bbox.maxPoint.y);
+
 		shadowDecal.settings.clipVolume.LoadAsFrustum(viewProj);
-		shadowDecal.settings.customClipVolume = true;
+		shadowDecal.settings.clipVolume.SetupPlane(nearPlane, VOLUME_PLANE_NEAR);
+		shadowDecal.settings.userData = firstObject;
 
 		ProjectDecalToSpriteBuilder( shadowDecal, this, shadowRect, viewProj, ColorRGBA(1,1,1,shadowAlpha) );
 	}
@@ -350,11 +396,11 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 
 	materials->SetCullMode(CULL_FRONT);
 
-	studiohdr_t* pHdr = model->GetHWData()->pStudioHdr;
+	studiohdr_t* pHdr = model->GetHWData()->studio;
 
 	int nLOD = r_shadowLod.GetInt();
 
-	for(int i = 0; i < pHdr->numbodygroups; i++)
+	for(int i = 0; i < pHdr->numBodyGroups; i++)
 	{
 		if(!(bodyGroups & (1 << i)))
 			continue;
@@ -363,21 +409,21 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 
 		// TODO: check bodygroups for rendering
 
-		int nLodModelIdx = pHdr->pBodyGroups(i)->lodmodel_index;
-		int nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
+		int nLodModelIdx = pHdr->pBodyGroups(i)->lodModelIndex;
+		int nModDescId = pHdr->pLodModel(nLodModelIdx)->modelsIndexes[ bodyGroupLOD ];
 
 		// get the right LOD model number
 		while(nModDescId == -1 && bodyGroupLOD > 0)
 		{
 			bodyGroupLOD--;
-			nModDescId = pHdr->pLodModel(nLodModelIdx)->lodmodels[ bodyGroupLOD ];
+			nModDescId = pHdr->pLodModel(nLodModelIdx)->modelsIndexes[ bodyGroupLOD ];
 		}
 
 		if(nModDescId == -1)
 			continue;
 
 		// render model groups that in this body group
-		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
 		{
 			//IMaterial* pMaterial = model->GetMaterial(nModDescId, j);
 

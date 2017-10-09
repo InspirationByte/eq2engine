@@ -147,7 +147,7 @@ public:
 	void					SetCubemapIndex( int nCubeIndex );
 
 	// returns the specified matrix
-	Matrix4x4				GetMatrix(MatrixMode_e mode);
+	Matrix4x4				GetMatrix(ER_MatrixMode mode);
 
 	// returns view-projection matrix
 	Matrix4x4				GetViewProjectionMatrix();

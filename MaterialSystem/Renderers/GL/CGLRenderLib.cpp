@@ -283,11 +283,11 @@ GL_CONTEXT CGLRenderLib::GetFreeSharedContext(uintptr_t threadId)
 	return NULL;
 }
 
-bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
+bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 {
 #ifdef USE_GLES2
 #ifdef ANDROID
-    externalWindowDisplayParams_t* winParams = (externalWindowDisplayParams_t*)params.hWindow;
+    externalWindowDisplayParams_t* winParams = (externalWindowDisplayParams_t*)params.windowHandle;
 
     ASSERT(winParams != NULL);
 
@@ -297,7 +297,7 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 #else
 
 	// other EGL
-	hwnd = (EGLNativeWindowType)params.hWindow;
+	hwnd = (EGLNativeWindowType)params.windowHandle;
 
 	eglSurface = EGL_NO_SURFACE;
 
@@ -416,7 +416,7 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 	if (r_screen->GetInt() >= GetSystemMetrics(SM_CMONITORS))
 		r_screen->SetValue("0");
 
-	hwnd = (HWND)params.hWindow;
+	hwnd = (HWND)params.windowHandle;
 
 	// Enumerate display devices
 	int monitorCounter = r_screen->GetInt();
@@ -437,15 +437,15 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 	dm.dmSize = sizeof(dm);
 
 	// Figure display format to use
-	if(params.nScreenFormat == FORMAT_RGBA8)
+	if(params.screenFormat == FORMAT_RGBA8)
 	{
 		dm.dmBitsPerPel = 32;
 	}
-	else if(params.nScreenFormat == FORMAT_RGB8)
+	else if(params.screenFormat == FORMAT_RGB8)
 	{
 		dm.dmBitsPerPel = 24;
 	}
-	else if(params.nScreenFormat == FORMAT_RGB565)
+	else if(params.screenFormat == FORMAT_RGB565)
 	{
 		dm.dmBitsPerPel = 16;
 	}
@@ -460,7 +460,7 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 	//dm.dmDisplayFrequency = 60;
 
 	// change display settings
-	if (!params.bIsWindowed)
+	if (!params.windowedMode)
 	{
 		int dispChangeStatus = ChangeDisplaySettings(&dm, CDS_FULLSCREEN);
 
@@ -530,7 +530,7 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 		for (uint i = 0; i < nPFormats; i++)
 		{
 			wgl::GetPixelFormatAttribivARB(hdc, pixelFormats[i], 0, 1, &attrib, &samples);
-			int diff = abs(params.nMultisample - samples);
+			int diff = abs(params.multiSamplingMode - samples);
 			if (diff < minDiff)
 			{
 				minDiff = diff;
@@ -539,7 +539,7 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 			}
 		}
 
-		params.nMultisample = bestSamples;
+		params.multiSamplingMode = bestSamples;
 	}
 	else
 	{
@@ -578,7 +578,7 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 		}
 	}
 
-    Window xwin = (Window)params.hWindow;
+    Window xwin = (Window)params.windowHandle;
 
     XWindowAttributes winAttrib;
     XGetWindowAttributes(display,xwin,&winAttrib);
@@ -591,15 +591,15 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
     int stencilBits = 0;
 
 	// Figure display format to use
-	if(params.nScreenFormat == FORMAT_RGBA8)
+	if(params.screenFormat == FORMAT_RGBA8)
 	{
 		colorBits = 32;
 	}
-	else if(params.nScreenFormat == FORMAT_RGB8)
+	else if(params.screenFormat == FORMAT_RGB8)
 	{
 		colorBits = 24;
 	}
-	else if(params.nScreenFormat == FORMAT_RGB565)
+	else if(params.screenFormat == FORMAT_RGB565)
 	{
 		colorBits = 16;
 	}
@@ -619,16 +619,16 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 			GLX_ALPHA_SIZE,    (colorBits > 24)? 8 : 0,
 			GLX_DEPTH_SIZE,    depthBits,
 			GLX_STENCIL_SIZE,  stencilBits,
-			GLX_SAMPLE_BUFFERS, (params.nMultisample > 0),
-			GLX_SAMPLES,         params.nMultisample,
+			GLX_SAMPLE_BUFFERS, (params.multiSamplingMode > 0),
+			GLX_SAMPLES,         params.multiSamplingMode,
 			None,
 		};
 
 		vi = glXChooseVisual(display, m_screen, attribs);
 		if (vi != NULL) break;
 
-		params.nMultisample -= 2;
-		if (params.nMultisample < 0){
+		params.multiSamplingMode -= 2;
+		if (params.multiSamplingMode < 0){
 			char str[256];
 			sprintf(str, "No Visual matching colorBits=%d, depthBits=%d and stencilBits=%d", colorBits, depthBits, stencilBits);
 			ErrorMsg(str);
@@ -636,7 +636,7 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 		}
 	}
 
-    if (!params.bIsWindowed)
+    if (!params.windowedMode)
     {
 		if (foundMode >= 0 && XF86VidModeSwitchToMode(display, m_screen, dmodes[foundMode]))
 		{
@@ -645,14 +645,14 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 		else
 		{
 			MsgError("Couldn't set fullscreen at %dx%d.", m_width, m_height);
-			params.bIsWindowed = true;
+			params.windowedMode = true;
 		}
 	}
 
 	glContext = glXCreateContext(display, vi, None, True);
 	InitSharedContexts();
 
-	glXMakeCurrent(display, (GLXDrawable)params.hWindow, glContext);
+	glXMakeCurrent(display, (GLXDrawable)params.windowHandle, glContext);
 #endif //PLAT_WIN
 
 	Msg("Initializing GL extensions...\n");
@@ -701,7 +701,7 @@ bool CGLRenderLib::InitAPI( shaderapiinitparams_t& params )
 	m_Renderer->m_glContext = this->glContext;
 
 #ifndef USE_GLES2 // TEMPORARILY DISABLED
-	if (GLAD_GL_ARB_multisample && params.nMultisample > 0)
+	if (GLAD_GL_ARB_multisample && params.multiSamplingMode > 0)
 		glEnable(GL_MULTISAMPLE_ARB);
 #endif // USE_GLES2
 
@@ -727,7 +727,7 @@ void CGLRenderLib::ExitAPI()
 
 	ReleaseDC(hwnd, hdc);
 
-	if (!m_Renderer->m_params->bIsWindowed)
+	if (!m_Renderer->m_params->windowedMode)
 	{
 		// Reset display mode to default
 		ChangeDisplaySettingsEx((const char *) device.DeviceName, NULL, NULL, 0, NULL);
@@ -741,7 +741,7 @@ void CGLRenderLib::ExitAPI()
     glXMakeCurrent(display, None, NULL);
     glXDestroyContext(display, glContext);
 
-	if(!m_Renderer->m_params->bIsWindowed)
+	if(!m_Renderer->m_params->windowedMode)
 	{
 		if (XF86VidModeSwitchToMode(display, m_screen, dmodes[0]))
 			XF86VidModeSetViewPort(display, m_screen, 0, 0);
@@ -776,7 +776,7 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 #elif PLAT_WIN
 	if (wgl::exts::var_EXT_swap_control)
 	{
-		wgl::SwapIntervalEXT(m_Renderer->m_params->bEnableVerticalSync ? 1 : 0);
+		wgl::SwapIntervalEXT(m_Renderer->m_params->verticalSyncEnabled ? 1 : 0);
 	}
 
 	SwapBuffers(hdc);
@@ -785,10 +785,10 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 
 	if (glX::exts::var_EXT_swap_control)
 	{
-		glX::SwapIntervalEXT(display, (Window)m_Renderer->m_params->hWindow, m_Renderer->m_params->bEnableVerticalSync ? 1 : 0);
+		glX::SwapIntervalEXT(display, (Window)m_Renderer->m_params->windowHandle, m_Renderer->m_params->verticalSyncEnabled ? 1 : 0);
 	}
 
-	glXSwapBuffers(display, (Window)m_Renderer->m_params->hWindow);
+	glXSwapBuffers(display, (Window)m_Renderer->m_params->windowHandle);
 
 #endif // PLAT_WIN
 }
@@ -801,7 +801,7 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 	m_width = w;
 	m_height = h;
 
-	if(!m_Renderer->m_params->bIsWindowed)
+	if(!m_Renderer->m_params->windowedMode)
 	{
 #if defined(PLAT_WIN) && !defined(USE_GLES2)
 		dm.dmPelsWidth = m_width;

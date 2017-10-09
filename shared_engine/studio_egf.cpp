@@ -39,22 +39,21 @@ CEngineStudioEGF::CEngineStudioEGF()
 	m_instancer = NULL;
 	m_readyState = EQMODEL_LOAD_ERROR;
 
-	m_bSoftwareSkinned = false;
-	m_bSoftwareSkinChanged = false;
+	m_forceSoftwareSkinning = false;
+	m_skinningDirty = false;
 
 	m_pVB = NULL;
 	m_pIB = NULL;
 
-	m_pSWVertices = NULL;
+	m_softwareVerts = NULL;
 
 	m_numVertices = 0;
 	m_numIndices = 0;
 
-	m_nNumGroups = 0;
+	memset(m_materials, 0, sizeof(m_materials));
+	m_numMaterials = 0;
 
-	m_nNumMaterials = 0;
-
-	m_pHardwareData = NULL;
+	m_hwdata = NULL;
 
 	m_cacheIdx = -1;
 }
@@ -139,10 +138,10 @@ bool TransformEGFVertex( EGFHwVertex_t& vert, Matrix4x4* pMatrices )
 //------------------------------------------
 bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 {
-	if(!m_pHardwareData || (m_pHardwareData && !m_pHardwareData->pStudioHdr))
+	if(!m_hwdata || (m_hwdata && !m_hwdata->studio))
 		return false;
 
-	if(m_pHardwareData->pStudioHdr->numbones == 0)
+	if(m_hwdata->studio->numBones == 0)
 		return false; // model is not animatable, skip
 
 	if(!jointMatrices)
@@ -153,26 +152,26 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 	/*if(g_pShaderAPI->IsSupportsHardwareSkinning() && !r_force_softwareskinning.GetBool())*/
 	if(!r_force_softwareskinning.GetBool())
 	{
-		if(m_bSoftwareSkinChanged)
+		if(m_skinningDirty)
 		{
 			EGFHwVertex_t* bufferData = NULL;
 
 			if(m_pVB->Lock( 0, m_numVertices, (void**)&bufferData, false))
 			{
-				memcpy( bufferData, m_pSWVertices, m_numVertices*sizeof(EGFHwVertex_t));
+				memcpy( bufferData, m_softwareVerts, m_numVertices*sizeof(EGFHwVertex_t));
 				m_pVB->Unlock();
 			}
 
-			m_bSoftwareSkinChanged = false;
+			m_skinningDirty = false;
 		}
 
 		bonequaternion_t bquats[128];
 
 		// Send all matrices as 4x3
-		for(int i = 0; i < m_pHardwareData->pStudioHdr->numbones; i++)
+		for(int i = 0; i < m_hwdata->studio->numBones; i++)
 		{
 			// FIXME: kind of slowness
-			Matrix4x4 toAbsTransform = (!m_pHardwareData->joints[i].absTrans * jointMatrices[i]);
+			Matrix4x4 toAbsTransform = (!m_hwdata->joints[i].absTrans * jointMatrices[i]);
 
 			// cast matrices to quaternions
 			// note that quaternions uses transposes matrix set.
@@ -180,22 +179,22 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 			bquats[i].origin = Vector4D(toAbsTransform.rows[3].xyz(), 1);
 		}
 
-		//g_pShaderAPI->SetVertexShaderConstantVector4DArray(100, (Vector4D*)&bquats[0].quat, m_pHardwareData->pStudioHdr->numbones*2);
-		g_pShaderAPI->SetShaderConstantArrayVector4D("Bones", (Vector4D*)&bquats[0].quat, m_pHardwareData->pStudioHdr->numbones*2);
+		//g_pShaderAPI->SetVertexShaderConstantVector4DArray(100, (Vector4D*)&bquats[0].quat, m_hwdata->studio->numBones*2);
+		g_pShaderAPI->SetShaderConstantArrayVector4D("Bones", (Vector4D*)&bquats[0].quat, m_hwdata->studio->numBones*2);
 
 		return true;
 	}
-	else if(m_bSoftwareSkinned && r_force_softwareskinning.GetBool())
+	else if(m_forceSoftwareSkinning && r_force_softwareskinning.GetBool())
 	{
-		m_bSoftwareSkinChanged = true;
+		m_skinningDirty = true;
 
 		Matrix4x4 tempMatrixArray[128];
 
 		// Send all matrices as 4x3
-		for(int i = 0; i < m_pHardwareData->pStudioHdr->numbones; i++)
+		for(int i = 0; i < m_hwdata->studio->numBones; i++)
 		{
 			// FIXME: kind of slowness
-			tempMatrixArray[i] = (!m_pHardwareData->joints[i].absTrans * jointMatrices[i]);
+			tempMatrixArray[i] = (!m_hwdata->joints[i].absTrans * jointMatrices[i]);
 		}
 
 		EGFHwVertex_t* bufferData = NULL;
@@ -205,7 +204,7 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 			// setup each bone's transformation
 			for(register int i = 0; i < m_numVertices; i++)
 			{
-				EGFHwVertex_t vert = m_pSWVertices[i];
+				EGFHwVertex_t vert = m_softwareVerts[i];
 
 				TransformEGFVertex( vert, tempMatrixArray );
 
@@ -224,7 +223,7 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 
 void CEngineStudioEGF::DestroyModel()
 {
-	DevMsg(DEVMSG_CORE, "CEngineStudioEGF::DestroyModel()\n");
+	DevMsg(DEVMSG_CORE, "DestroyModel: '%s'\n", m_szPath.c_str());
 
 	// instancer is removed here if set
 	if(m_instancer != NULL)
@@ -238,48 +237,49 @@ void CEngineStudioEGF::DestroyModel()
 	g_pShaderAPI->DestroyVertexBuffer(m_pVB);
 	g_pShaderAPI->DestroyIndexBuffer(m_pIB);
 
-	for(int i = 0; i < m_nNumMaterials;i++)
-		materials->FreeMaterial(m_pMaterials[i]);
+	for(int i = 0; i < m_numMaterials; i++)
+		materials->FreeMaterial(m_materials[i]);
 
-	memset(m_pMaterials, 0, sizeof(m_pMaterials));
+	memset(m_materials, 0, sizeof(m_materials));
 
-	if(m_pHardwareData)
+	m_numMaterials = 0;
+
+	if(m_hwdata)
 	{
 		for(int i = 0; i < 8; i++)
 		{
-			if(m_pHardwareData->motiondata[i])
-				Studio_FreeMotionData(m_pHardwareData->motiondata[i], m_pHardwareData->pStudioHdr->numbones);
+			if(m_hwdata->motiondata[i])
+				Studio_FreeMotionData(m_hwdata->motiondata[i], m_hwdata->studio->numBones);
 		}
 
 		// destroy this model
-		g_pStudioShapeCache->DestroyStudioCache( &m_pHardwareData->m_physmodel );
+		g_pStudioShapeCache->DestroyStudioCache( &m_hwdata->physModel );
 
-		Studio_FreePhysModel(&m_pHardwareData->m_physmodel);
+		Studio_FreePhysModel(&m_hwdata->physModel);
 
-		hwmodelref_t* pLodModels = m_pHardwareData->modelrefs;
+		hwmodelref_t* pLodModels = m_hwdata->modelrefs;
 
-		for(int i = 0; i < m_pHardwareData->pStudioHdr->nummodels; i++)
-			delete [] pLodModels[i].groupdescs;
+		for(int i = 0; i < m_hwdata->studio->numModels; i++)
+			delete [] pLodModels[i].groupDescs;
 
-		delete [] m_pHardwareData->modelrefs;
-		delete [] m_pHardwareData->joints;
-		delete [] m_pHardwareData->pStudioHdr;
+		delete [] m_hwdata->modelrefs;
+		delete [] m_hwdata->joints;
+		delete [] m_hwdata->studio;
 
-		delete m_pHardwareData;
+		delete m_hwdata;
 	}
 
-	m_pHardwareData = NULL;
+	m_hwdata = NULL;
 
-	if( m_bSoftwareSkinned )
+	if( m_forceSoftwareSkinning )
 	{
-		PPFree(m_pSWVertices);
-		m_pSWVertices = NULL;
+		PPFree(m_softwareVerts);
+		m_softwareVerts = NULL;
 	}
 
-	m_nNumGroups = 0;
 	m_numIndices = 0;
 	m_numVertices = 0;
-	m_nNumMaterials = 0;
+	m_numMaterials = 0;
 
 	m_readyState = EQMODEL_LOAD_ERROR;
 }
@@ -289,8 +289,8 @@ void CEngineStudioEGF::LoadPhysicsData()
 	EqString podFileName = m_szPath.Path_Strip_Ext();
 	podFileName.Append(".pod");
 
-	if( Studio_LoadPhysModel(podFileName.GetData(), &m_pHardwareData->m_physmodel) )
-		g_pStudioShapeCache->InitStudioCache( &m_pHardwareData->m_physmodel );
+	if( Studio_LoadPhysModel(podFileName.GetData(), &m_hwdata->physModel) )
+		g_pStudioShapeCache->InitStudioCache( &m_hwdata->physModel );
 }
 
 extern ConVar r_detaillevel;
@@ -298,9 +298,9 @@ extern ConVar r_detaillevel;
 void CopyGroupVertexDataToHWList(DkList<EGFHwVertex_t>& hwVtxList, modelgroupdesc_t* pGroup, BoundingBox& aabb)
 {
 	// huge speedup
-	hwVtxList.resize(hwVtxList.numElem() + pGroup->numvertices);
+	hwVtxList.resize(hwVtxList.numElem() + pGroup->numVertices);
 
-	for(int32 i = 0; i < pGroup->numvertices; i++)
+	for(int32 i = 0; i < pGroup->numVertices; i++)
 	{
 		studiovertexdesc_t* pVertex = pGroup->pVertex(i);
 
@@ -318,10 +318,10 @@ int CopyGroupIndexDataToHWList(DkList<uint16>& hwIdxList, DkList<uint32>& hwIdxL
 	int index_size = INDEX_SIZE_SHORT;
 
 	// huge speedup
-	hwIdxList.resize(hwIdxList.numElem() + pGroup->numindices);
-	hwIdxList32.resize(hwIdxList32.numElem() + pGroup->numindices);
+	hwIdxList.resize(hwIdxList.numElem() + pGroup->numIndices);
+	hwIdxList32.resize(hwIdxList32.numElem() + pGroup->numIndices);
 
-	for(uint32 i = 0; i < pGroup->numindices; i++)
+	for(uint32 i = 0; i < pGroup->numIndices; i++)
 	{
 		int index = (*pGroup->pVertexIdx(i));
 
@@ -414,23 +414,22 @@ bool CEngineStudioEGF::LoadFromFile()
 		return false; // get out, nothing to load
 
 	// allocate hardware data
-	m_pHardwareData = new studiohwdata_t;
-	memset(m_pHardwareData, 0, sizeof(studiohwdata_t));
+	m_hwdata = new studiohwdata_t;
+	memset(m_hwdata, 0, sizeof(studiohwdata_t));
 
-	m_pHardwareData->pStudioHdr = pHdr;
+	m_hwdata->studio = pHdr;
 
 	return true;
 }
 
 bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 {
-	m_bSoftwareSkinned = r_force_softwareskinning.GetBool();
-	m_nNumGroups = 0;
+	m_forceSoftwareSkinning = r_force_softwareskinning.GetBool();
 
-	studiohdr_t* pHdr = m_pHardwareData->pStudioHdr;
+	studiohdr_t* pHdr = m_hwdata->studio;
 
-	m_pHardwareData->modelrefs = new hwmodelref_t[pHdr->nummodels];
-	hwmodelref_t* pLodModels = m_pHardwareData->modelrefs;
+	m_hwdata->modelrefs = new hwmodelref_t[pHdr->numModels];
+	hwmodelref_t* pLodModels = m_hwdata->modelrefs;
 
 	{
 		// load all group vertices and indices
@@ -442,22 +441,20 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		// use index size
 		int nIndexSize = INDEX_SIZE_SHORT;
 
-		for(int i = 0; i < pHdr->nummodels; i++)
+		for(int i = 0; i < pHdr->numModels; i++)
 		{
 			studiomodeldesc_t* pModelDesc = pHdr->pModelDesc(i);
 
-			pLodModels[i].groupdescs = new hwgroup_desc_t[pModelDesc->numgroups];
+			pLodModels[i].groupDescs = new hwgroup_desc_t[pModelDesc->numGroups];
 
-			for(int j = 0; j < pModelDesc->numgroups; j++)
+			for(int j = 0; j < pModelDesc->numGroups; j++)
 			{
 				// add vertices, add indices
 				modelgroupdesc_t* pGroup = pModelDesc->pGroup(j);
 
-				m_nNumGroups++;
-
 				// set lod index
 				int lod_first_index = loadedindices.numElem();
-				pLodModels[i].groupdescs[j].firstindex = lod_first_index;
+				pLodModels[i].groupDescs[j].firstindex = lod_first_index;
 
 				int new_offset = loadedvertices.numElem();
 
@@ -472,7 +469,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 					nIndexSize = nGenIndexSize;
 
 				// set index count for lod group
-				pLodModels[i].groupdescs[j].indexcount = pGroup->numindices;
+				pLodModels[i].groupDescs[j].indexcount = pGroup->numIndices;
 			}
 		}
 
@@ -481,34 +478,34 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		m_numIndices = loadedindices.numElem();
 
 		// Initialize HW data joints
-		m_pHardwareData->joints = new joint_t[pHdr->numbones];
+		m_hwdata->joints = new joint_t[pHdr->numBones];
 
 		// parse bones
-		for(int i = 0; i < pHdr->numbones; i++)
+		for(int i = 0; i < pHdr->numBones; i++)
 		{
 			// copy all bone data
 			bonedesc_t* bone = pHdr->pBone(i);
-			m_pHardwareData->joints[i].position = bone->position;
-			m_pHardwareData->joints[i].rotation = bone->rotation;
-			m_pHardwareData->joints[i].parentbone = bone->parent;
+			m_hwdata->joints[i].position = bone->position;
+			m_hwdata->joints[i].rotation = bone->rotation;
+			m_hwdata->joints[i].parentbone = bone->parent;
 
 			// initialize array because we don't want bugs
-			memset(&m_pHardwareData->joints[i].childs, 0, sizeof(DkList<int>));
-			m_pHardwareData->joints[i].bone_id = i;
-			m_pHardwareData->joints[i].link_id = -1;
-			m_pHardwareData->joints[i].chain_id = -1;
+			memset(&m_hwdata->joints[i].childs, 0, sizeof(DkList<int>));
+			m_hwdata->joints[i].bone_id = i;
+			m_hwdata->joints[i].link_id = -1;
+			m_hwdata->joints[i].chain_id = -1;
 
 			// copy name
-			strcpy(m_pHardwareData->joints[i].name, bone->name);
+			strcpy(m_hwdata->joints[i].name, bone->name);
 		}
 
 		// link joints
-		for(int i = 0; i < pHdr->numbones; i++)
+		for(int i = 0; i < pHdr->numBones; i++)
 		{
-			int parent_index = m_pHardwareData->joints[i].parentbone;
+			int parent_index = m_hwdata->joints[i].parentbone;
 
 			if(parent_index != -1)
-				m_pHardwareData->joints[parent_index].childs.append(i);
+				m_hwdata->joints[parent_index].childs.append(i);
 		}
 
 		// setup matrices for bones
@@ -523,23 +520,23 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		m_pIB = g_pShaderAPI->CreateIndexBuffer( nIndexCount, nIndexSize, BUFFER_STATIC, pIndexData );
 
 		// if we using software skinning, we need to create temporary vertices
-		if(m_bSoftwareSkinned)
+		if(m_forceSoftwareSkinning)
 		{
-			m_pSWVertices = PPAllocStructArray(EGFHwVertex_t, m_numVertices);
+			m_softwareVerts = PPAllocStructArray(EGFHwVertex_t, m_numVertices);
 
-			memcpy(m_pSWVertices, loadedvertices.ptr(), sizeof(EGFHwVertex_t)*m_numVertices);
+			memcpy(m_softwareVerts, loadedvertices.ptr(), sizeof(EGFHwVertex_t)*m_numVertices);
 		}
 	}
 
 	// try to load materials
-	m_nNumMaterials = pHdr->nummaterials;
+	m_numMaterials = pHdr->numMaterials;
 
 	// init materials
-	memset(m_pMaterials, 0, sizeof(m_pMaterials));
+	memset(m_materials, 0, sizeof(m_materials));
 
 	// try load materials properly
 	// this is a source engine - like material loading using material paths
-	for(int i = 0; i < m_nNumMaterials; i++)
+	for(int i = 0; i < m_numMaterials; i++)
 	{
         EqString fpath(pHdr->pMaterial(i)->materialname);
 		fpath.Path_FixSlashes();
@@ -547,11 +544,11 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
         if(fpath.c_str()[0] == CORRECT_PATH_SEPARATOR)
             fpath = EqString(fpath.c_str(),fpath.Length()-1);
 
-		for(int j = 0; j < pHdr->numsearchpathdescs; j++)
+		for(int j = 0; j < pHdr->numMaterialSearchPaths; j++)
 		{
-			if(!m_pMaterials[i])
+			if(!m_materials[i])
 			{
-                EqString spath(pHdr->pMaterialSearchPath(j)->m_szSearchPathString);
+                EqString spath(pHdr->pMaterialSearchPath(j)->searchPath);
 				spath.Path_FixSlashes();
 
                 if(spath.c_str()[spath.Length()-1] == CORRECT_PATH_SEPARATOR)
@@ -561,12 +558,12 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 
 				if(materials->IsMaterialExist( extend_path.GetData() ))
 				{
-					m_pMaterials[i] = materials->FindMaterial(extend_path.GetData(), true);
+					m_materials[i] = materials->GetMaterial(extend_path.GetData());
 
-					if(!m_pMaterials[i]->IsError() && !(m_pMaterials[i]->GetFlags() & MATERIAL_FLAG_SKINNED))
-						MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", m_pMaterials[i]->GetName(), m_pMaterials[i]->GetShaderName(), m_szPath.c_str());
+					if(!m_materials[i]->IsError() && !(m_materials[i]->GetFlags() & MATERIAL_FLAG_SKINNED))
+						MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", m_materials[i]->GetName(), m_materials[i]->GetShaderName(), m_szPath.c_str());
 
-					m_pMaterials[i]->Ref_Grab();
+					m_materials[i]->Ref_Grab();
 				}
 			}
 		}
@@ -575,14 +572,14 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 	bool bError = false;
 
 	// false-initialization of non-loaded materials
-	for(int i = 0; i < m_nNumMaterials; i++)
+	for(int i = 0; i < m_numMaterials; i++)
 	{
-		if(!m_pMaterials[i])
+		if(!m_materials[i])
 		{
 			MsgError( "Couldn't load model material '%s'\n", pHdr->pMaterial(i)->materialname, m_szPath.c_str() );
 			bError = true;
 
-			m_pMaterials[i] = materials->FindMaterial("error");
+			m_materials[i] = materials->GetMaterial("error");
 		}
 	}
 
@@ -590,9 +587,9 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 	{
 		MsgError("  In following search paths:");
 
-		for(int i = 0; i < pHdr->numsearchpathdescs; i++)
+		for(int i = 0; i < pHdr->numMaterialSearchPaths; i++)
 		{
-			MsgError( "   '%s'\n", pHdr->pMaterialSearchPath(i)->m_szSearchPathString );
+			MsgError( "   '%s'\n", pHdr->pMaterialSearchPath(i)->searchPath );
 		}
 	}
 
@@ -601,37 +598,37 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 
 void CEngineStudioEGF::LoadMotionPackages()
 {
-	studiohdr_t* pHdr = m_pHardwareData->pStudioHdr;
+	studiohdr_t* pHdr = m_hwdata->studio;
 
 	DevMsg(DEVMSG_CORE, "Loading animations for '%s'\n", m_szPath.c_str());
 
 	// Try load default motion file
-	m_pHardwareData->motiondata[0] = Studio_LoadMotionData(( m_szPath.Path_Strip_Ext() + ".mop").GetData(), pHdr->numbones);
+	m_hwdata->motiondata[0] = Studio_LoadMotionData(( m_szPath.Path_Strip_Ext() + ".mop").GetData(), pHdr->numBones);
 
-	if(m_pHardwareData->motiondata[0])
-		m_pHardwareData->numMotionPackages++;
+	if(m_hwdata->motiondata[0])
+		m_hwdata->numMotionPackages++;
 	else
 		DevMsg(DEVMSG_CORE, "Can't open motion data package, skipped\n");
 
 	// load external motion packages if available
-	for(int i = 0; i < pHdr->nummotionpackages; i++)
+	for(int i = 0; i < pHdr->numMotionPackages; i++)
 	{
-		int nPackages = m_pHardwareData->numMotionPackages;
+		int nPackages = m_hwdata->numMotionPackages;
 
-		m_pHardwareData->motiondata[nPackages] = Studio_LoadMotionData(pHdr->pPackage(i)->packagename, pHdr->numbones);
+		m_hwdata->motiondata[nPackages] = Studio_LoadMotionData(pHdr->pPackage(i)->packageName, pHdr->numBones);
 
-		if(m_pHardwareData->motiondata[nPackages])
-			m_pHardwareData->numMotionPackages++;
+		if(m_hwdata->motiondata[nPackages])
+			m_hwdata->numMotionPackages++;
 		else
-			MsgError("Can't open motion package '%s'\n", pHdr->pPackage(i)->packagename);
+			MsgError("Can't open motion package '%s'\n", pHdr->pPackage(i)->packageName);
 	}
 }
 
 // loads materials for studio
 void CEngineStudioEGF::LoadMaterials()
 {
-	for(int i = 0; i < m_nNumMaterials; i++)
-		materials->PutMaterialToLoadingQueue( m_pMaterials[i] );
+	for(int i = 0; i < m_numMaterials; i++)
+		materials->PutMaterialToLoadingQueue( m_materials[i] );
 }
 
 IMaterial* CEngineStudioEGF::GetMaterial(int materialIdx)
@@ -639,15 +636,15 @@ IMaterial* CEngineStudioEGF::GetMaterial(int materialIdx)
 	if(materialIdx == -1)
 		return materials->GetDefaultMaterial();
 
-	return m_pMaterials[materialIdx];
+	return m_materials[materialIdx];
 }
 
 void CEngineStudioEGF::SetupBones()
 {
 	// setup each bone's transformation
-	for(int8 i = 0; i < m_pHardwareData->pStudioHdr->numbones; i++)
+	for(int8 i = 0; i < m_hwdata->studio->numBones; i++)
 	{
-		joint_t* bone = &m_pHardwareData->joints[i];
+		joint_t* bone = &m_hwdata->joints[i];
 
 		// setup transformation
 		bone->localTrans = identity4();
@@ -656,7 +653,7 @@ void CEngineStudioEGF::SetupBones()
 		bone->localTrans.setTranslation(bone->position);
 
 		if(bone->parentbone != -1)
-			bone->absTrans = bone->localTrans*m_pHardwareData->joints[bone->parentbone].absTrans;
+			bone->absTrans = bone->localTrans*m_hwdata->joints[bone->parentbone].absTrans;
 		else
 			bone->absTrans = bone->localTrans;
 	}
@@ -664,8 +661,8 @@ void CEngineStudioEGF::SetupBones()
 
 void CEngineStudioEGF::DrawFull()
 {
-	if(m_nNumMaterials > 0)
-		materials->BindMaterial(m_pMaterials[0]);
+	if(m_numMaterials > 0)
+		materials->BindMaterial(m_materials[0]);
 
 	g_pShaderAPI->SetVertexFormat(g_pModelCache->GetEGFVertexFormat());
 
@@ -682,7 +679,7 @@ int CEngineStudioEGF::SelectLod(float dist_to_camera)
 	if(r_lodtest.GetInt() != -1)
 		return r_lodtest.GetInt();
 
-	int numLods = m_pHardwareData->pStudioHdr->numlodparams;
+	int numLods = m_hwdata->studio->numLodParams;
 
 	if( numLods < 2)
 		return 0;
@@ -691,7 +688,7 @@ int CEngineStudioEGF::SelectLod(float dist_to_camera)
 
 	for(int i = r_lodstart.GetInt(); i < numLods; i++)
 	{
-		if(dist_to_camera > m_pHardwareData->pStudioHdr->pLodParams(i)->distance * r_lodscale.GetFloat())
+		if(dist_to_camera > m_hwdata->studio->pLodParams(i)->distance * r_lodscale.GetFloat())
 			idealLOD = i;
 	}
 
@@ -721,15 +718,15 @@ void CEngineStudioEGF::DrawGroup(int nModel, int nGroup, bool preSetVBO)
 
 	materials->Apply();
 
-	hwgroup_desc_t& desc = m_pHardwareData->modelrefs[nModel].groupdescs[nGroup];
+	hwgroup_desc_t& desc = m_hwdata->modelrefs[nModel].groupDescs[nGroup];
 
 	int nFirstIndex = desc.firstindex;
 	int nIndexCount = desc.indexcount;
 
 	// get primitive type
-	int8 nPrimType = m_pHardwareData->pStudioHdr->pModelDesc( nModel )->pGroup( nGroup )->primitiveType;
+	int8 nPrimType = m_hwdata->studio->pModelDesc( nModel )->pGroup( nGroup )->primitiveType;
 
-	g_pShaderAPI->DrawIndexedPrimitives( (PrimitiveType_e)nPrimType, nFirstIndex, nIndexCount, 0, m_numVertices );
+	g_pShaderAPI->DrawIndexedPrimitives( (ER_PrimitiveType)nPrimType, nFirstIndex, nIndexCount, 0, m_numVertices );
 }
 
 ConVar r_debugmodels("r_debugmodels","0","Draw debug information for each model",CV_CHEAT);
@@ -770,7 +767,7 @@ studiohwdata_t* CEngineStudioEGF::GetHWData() const
 	while(m_readyState == EQMODEL_LOAD_IN_PROGRESS)
 		Platform_Sleep(1);
 
-	return m_pHardwareData;
+	return m_hwdata;
 }
 
 // instancing
@@ -898,42 +895,42 @@ studiotempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info,
 	Vector3D decal_normal = info.normal;
 
 	// pick a geometry
-	studiohdr_t* pHdr = m_pHardwareData->pStudioHdr;
+	studiohdr_t* pHdr = m_hwdata->studio;
 	int nLod = 0;	// do from LOD 0
 
 	DkList<EGFHwVertex_t>	verts;
 	DkList<int>				indices;
 
-	Matrix4x4* tempMatrixArray = PPAllocStructArray(Matrix4x4, m_pHardwareData->pStudioHdr->numbones);
+	Matrix4x4* tempMatrixArray = PPAllocStructArray(Matrix4x4, m_hwdata->studio->numBones);
 
 	if(jointMatrices)
 	{
 		// Send all matrices as 4x3
-		for(int i = 0; i < m_pHardwareData->pStudioHdr->numbones; i++)
+		for(int i = 0; i < m_hwdata->studio->numBones; i++)
 		{
 			// FIXME: kind of slowness
-			tempMatrixArray[i] = (!m_pHardwareData->joints[i].absTrans * jointMatrices[i]);
+			tempMatrixArray[i] = (!m_hwdata->joints[i].absTrans * jointMatrices[i]);
 		}
 	}
 
 	BoundingBox bbox(decal_origin - info.size, decal_origin + info.size);
 
 	// we should transform every vertex and find an intersecting ones
-	for(int i = 0; i < pHdr->numbodygroups; i++)
+	for(int i = 0; i < pHdr->numBodyGroups; i++)
 	{
-		int nLodableModelIndex = pHdr->pBodyGroups(i)->lodmodel_index;
-		int nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+		int nLodableModelIndex = pHdr->pBodyGroups(i)->lodModelIndex;
+		int nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 
 		while(nLod > 0 && nModDescId != -1)
 		{
 			nLod--;
-			nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+			nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 		}
 
 		if(nModDescId == -1)
 			continue;
 
-		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
 		{
 			modelgroupdesc_t* pGroup = pHdr->pModelDesc(nModDescId)->pGroup(j);
 
@@ -943,10 +940,10 @@ studiotempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info,
 			DkList<int>				g_indices;
 			DkList<int>				g_orig_indices;
 
-			g_verts.resize(pGroup->numindices);
-			g_indices.resize(pGroup->numindices);
+			g_verts.resize(pGroup->numIndices);
+			g_indices.resize(pGroup->numIndices);
 
-			for(uint32 k = 0; k < pGroup->numindices; k+=3)
+			for(uint32 k = 0; k < pGroup->numIndices; k+=3)
 			{
 				EGFHwVertex_t v0(pGroup->pVertex(pIndices[k]));
 				EGFHwVertex_t v1(pGroup->pVertex(pIndices[k+1]));
@@ -1057,15 +1054,15 @@ int CModelCache::PrecacheModel( const char* modelName )
 	if(m_egfFormat == NULL)
 	{
 		VertexFormatDesc_t pFormat[] = {
-			{ 0, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position
-			{ 0, 2, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 0
+			{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position
+			{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 0
 
-			{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Tangent (TC1)
-			{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Binormal (TC2)
-			{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Normal (TC3)
+			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Tangent (TC1)
+			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Binormal (TC2)
+			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Normal (TC3)
 
-			{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Bone indices (hw skinning), (TC4)
-			{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_HALF }  // Bone weights (hw skinning), (TC5)
+			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Bone indices (hw skinning), (TC4)
+			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }  // Bone weights (hw skinning), (TC5)
 		};
 
 		m_egfFormat = g_pShaderAPI->CreateVertexFormat(pFormat, elementsOf(pFormat));
@@ -1075,14 +1072,14 @@ int CModelCache::PrecacheModel( const char* modelName )
 
 	if(idx == CACHE_INVALID_MODEL)
 	{
-		DevMsg(DEVMSG_CORE, "Caching model '%s'\n", modelName);
+		DevMsg(DEVMSG_CORE, "Loading model '%s'\n", modelName);
 
 		CEngineStudioEGF* pModel = new CEngineStudioEGF;
-		pModel->m_cacheIdx = m_pModels.append(pModel);
+		pModel->m_cacheIdx = m_cachedList.append(pModel);
 
 		if(!pModel->LoadModel( modelName, job_modelLoader.GetBool() ))
 		{
-			m_pModels[pModel->m_cacheIdx] = NULL;
+			m_cachedList[pModel->m_cacheIdx] = NULL;
 
 			delete pModel;
 			pModel = NULL;
@@ -1105,7 +1102,7 @@ int CModelCache::PrecacheModel( const char* modelName )
 // returns count of cached models
 int	CModelCache::GetCachedModelCount() const
 {
-	return m_pModels.numElem();
+	return m_cachedList.numElem();
 }
 
 IEqModel* CModelCache::GetModel(int index) const
@@ -1113,14 +1110,14 @@ IEqModel* CModelCache::GetModel(int index) const
 	IEqModel* model = NULL;
 
 	if(index == CACHE_INVALID_MODEL)
-		model = m_pModels[0];
+		model = m_cachedList[0];
 	else
-		model = m_pModels[index];
+		model = m_cachedList[index];
 
 	if(model && model->GetLoadingState() != EQMODEL_LOAD_ERROR)
 		return model;
 	else
-		return m_pModels[0];
+		return m_cachedList[0];
 }
 
 const char* CModelCache::GetModelFilename(IEqModel* pModel) const
@@ -1135,12 +1132,12 @@ int CModelCache::GetModelIndex(const char* modelName) const
 	strcpy(str, modelName);
 	FixSlashes(str);
 
-	for(int i = 0; i < m_pModels.numElem(); i++)
+	for(int i = 0; i < m_cachedList.numElem(); i++)
 	{
-		if(m_pModels[i] == NULL)
+		if(m_cachedList[i] == NULL)
 			continue;
 
-		if(!stricmp(m_pModels[i]->GetName(), str))
+		if(!stricmp(m_cachedList[i]->GetName(), str))
 			return i;
 	}
 
@@ -1149,9 +1146,9 @@ int CModelCache::GetModelIndex(const char* modelName) const
 
 int CModelCache::GetModelIndex(IEqModel* pModel) const
 {
-	for(int i = 0; i < m_pModels.numElem(); i++)
+	for(int i = 0; i < m_cachedList.numElem(); i++)
 	{
-		if(m_pModels[i] == pModel)
+		if(m_cachedList[i] == pModel)
 			return i;
 	}
 
@@ -1160,15 +1157,15 @@ int CModelCache::GetModelIndex(IEqModel* pModel) const
 
 void CModelCache::ReleaseCache()
 {
-	for(int i = 0; i < m_pModels.numElem(); i++)
+	for(int i = 0; i < m_cachedList.numElem(); i++)
 	{
-		if(m_pModels[i])
+		if(m_cachedList[i])
 		{
-			delete m_pModels[i];
+			delete m_cachedList[i];
 		}
 	}
 
-	m_pModels.clear();
+	m_cachedList.clear();
 
 	g_pShaderAPI->DestroyVertexFormat(m_egfFormat);
 	m_egfFormat = NULL;
@@ -1183,10 +1180,10 @@ IVertexFormat* CModelCache::GetEGFVertexFormat() const
 void CModelCache::PrintLoadedModels() const
 {
 	Msg("---MODELS---\n");
-	for(int i = 0; i < m_pModels.numElem(); i++)
+	for(int i = 0; i < m_cachedList.numElem(); i++)
 	{
-		if(m_pModels[i])
-			Msg("%s\n", m_pModels[i]->GetName());
+		if(m_cachedList[i])
+			Msg("%s\n", m_cachedList[i]->GetName());
 	}
 	Msg("---END MODELS---\n");
 }

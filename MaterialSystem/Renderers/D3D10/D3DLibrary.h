@@ -27,7 +27,7 @@ public:
 	void			ExitAPI();
 	void			ReleaseSwapChains();
 
-	bool			InitAPI(const shaderapiinitparams_t &params);
+	bool			InitAPI(const shaderAPIParams_t &params);
 
 	// frame begin/end
 	void			BeginFrame();
@@ -78,7 +78,7 @@ protected:
 
 	bool			m_bResized;
 
-	shaderapiinitparams_t	savedParams;
+	shaderAPIParams_t	savedParams;
 };
 
 #endif //CGLRENDERLIB_H

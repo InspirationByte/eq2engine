@@ -142,7 +142,7 @@ public:
 	virtual void					SetCubemapIndex( int nCubeIndex ) = 0;
 
 	// returns the specified matrix
-	virtual Matrix4x4				GetMatrix(MatrixMode_e mode) = 0;
+	virtual Matrix4x4				GetMatrix(ER_MatrixMode mode) = 0;
 
 	// returns view-projection matrix
 	virtual Matrix4x4				GetViewProjectionMatrix() = 0;

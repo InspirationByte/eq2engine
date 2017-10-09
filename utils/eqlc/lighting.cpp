@@ -152,7 +152,7 @@ bool ParseLightEntity_Point(kvkeybase_t* pSection)
 
 	if(pair)
 	{
-		pLight->pMaskTexture = g_pShaderAPI->LoadTexture(pair->values[0],TEXFILTER_TRILINEAR_ANISO,ADDRESSMODE_CLAMP,0);
+		pLight->pMaskTexture = g_pShaderAPI->LoadTexture(pair->values[0],TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_CLAMP,0);
 		pLight->pMaskTexture->Ref_Grab();
 	}
 
@@ -237,7 +237,7 @@ bool ParseLightEntity_Spot(kvkeybase_t* pSection)
 
 	if(pair)
 	{
-		pLight->pMaskTexture = g_pShaderAPI->LoadTexture(pair->values[0],TEXFILTER_TRILINEAR_ANISO,ADDRESSMODE_CLAMP,0);
+		pLight->pMaskTexture = g_pShaderAPI->LoadTexture(pair->values[0],TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_CLAMP,0);
 		pLight->pMaskTexture->Ref_Grab();
 	}
 
@@ -377,24 +377,24 @@ public:
 
 		//m_pModel->PrepareForSkinning(m_BoneMatrixList);
 
-		studiohdr_t* pHdr = m_pModel->GetHWData()->pStudioHdr;
+		studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
 		int nLod = 0;
 
-		for(int i = 0; i < pHdr->numbodygroups; i++)
+		for(int i = 0; i < pHdr->numBodyGroups; i++)
 		{
-			int nLodableModelIndex = pHdr->pBodyGroups(i)->lodmodel_index;
-			int nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+			int nLodableModelIndex = pHdr->pBodyGroups(i)->lodModelIndex;
+			int nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 
 			while(nLod > 0 && nModDescId != -1)
 			{
 				nLod--;
-				nModDescId = pHdr->pLodModel(nLodableModelIndex)->lodmodels[nLod];
+				nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 			}
 
 			if(nModDescId == -1)
 				continue;
 
-			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numgroups; j++)
+			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
 			{
 				viewrenderer->DrawModelPart(m_pModel, nModDescId, j, nViewRenderFlags, NULL, NULL);
 			}
@@ -542,28 +542,28 @@ void InitLightingShaders()
 	g_pRenderArea = eqlevel->CreateRenderAreaList();
 	viewrenderer->SetAreaList(g_pRenderArea);
 
-	g_lightmaterials[DLT_OMNIDIRECTIONAL][0][0] = materials->FindMaterial("eqlc/pointlight");
-	g_lightmaterials[DLT_OMNIDIRECTIONAL][1][0] = materials->FindMaterial("eqlc/pointlight_shadow");
+	g_lightmaterials[DLT_OMNIDIRECTIONAL][0][0] = materials->GetMaterial("eqlc/pointlight");
+	g_lightmaterials[DLT_OMNIDIRECTIONAL][1][0] = materials->GetMaterial("eqlc/pointlight_shadow");
 
-	g_lightmaterials[DLT_SPOT][0][0] = materials->FindMaterial("eqlc/spotlight");
-	g_lightmaterials[DLT_SPOT][1][0] = materials->FindMaterial("eqlc/spotlight_shadow");
+	g_lightmaterials[DLT_SPOT][0][0] = materials->GetMaterial("eqlc/spotlight");
+	g_lightmaterials[DLT_SPOT][1][0] = materials->GetMaterial("eqlc/spotlight_shadow");
 
-	g_lightmaterials[DLT_SUN][0][0] = materials->FindMaterial("eqlc/sunlight");
-	g_lightmaterials[DLT_SUN][1][0] = materials->FindMaterial("eqlc/sunlight_shadow");
+	g_lightmaterials[DLT_SUN][0][0] = materials->GetMaterial("eqlc/sunlight");
+	g_lightmaterials[DLT_SUN][1][0] = materials->GetMaterial("eqlc/sunlight_shadow");
 
 	// make the direction shaders
 
-	g_lightmaterials[DLT_OMNIDIRECTIONAL][0][1] = materials->FindMaterial("eqlc/pointlight_dir");
-	g_lightmaterials[DLT_OMNIDIRECTIONAL][1][1] = materials->FindMaterial("eqlc/pointlight_shadow_dir");
+	g_lightmaterials[DLT_OMNIDIRECTIONAL][0][1] = materials->GetMaterial("eqlc/pointlight_dir");
+	g_lightmaterials[DLT_OMNIDIRECTIONAL][1][1] = materials->GetMaterial("eqlc/pointlight_shadow_dir");
 
-	g_lightmaterials[DLT_SPOT][0][1] = materials->FindMaterial("eqlc/spotlight_dir");
-	g_lightmaterials[DLT_SPOT][1][1] = materials->FindMaterial("eqlc/spotlight_shadow_dir");
+	g_lightmaterials[DLT_SPOT][0][1] = materials->GetMaterial("eqlc/spotlight_dir");
+	g_lightmaterials[DLT_SPOT][1][1] = materials->GetMaterial("eqlc/spotlight_shadow_dir");
 
-	g_lightmaterials[DLT_SUN][0][1] = materials->FindMaterial("eqlc/sunlight_dir");
-	g_lightmaterials[DLT_SUN][1][1] = materials->FindMaterial("eqlc/sunlight_shadow_dir");
+	g_lightmaterials[DLT_SUN][0][1] = materials->GetMaterial("eqlc/sunlight_dir");
+	g_lightmaterials[DLT_SUN][1][1] = materials->GetMaterial("eqlc/sunlight_shadow_dir");
 
-	g_lightmapPixelCorrection = materials->FindMaterial("eqlc/lightmapfilter");
-	g_lightmapWireCombine = materials->FindMaterial("eqlc/lightmapwirecombine");
+	g_lightmapPixelCorrection = materials->GetMaterial("eqlc/lightmapfilter");
+	g_lightmapWireCombine = materials->GetMaterial("eqlc/lightmapwirecombine");
 
 	g_pTempLightmap = g_pShaderAPI->CreateRenderTarget(g_pLevel->m_nLightmapSize,g_pLevel->m_nLightmapSize,FORMAT_RGB8,TEXFILTER_TRILINEAR_ANISO);
 	g_pTempLightmap->Ref_Grab();
@@ -756,8 +756,8 @@ void FixEdgesAndSave(int nLightmap, bool bDirMap)
 		for(int i = 0; i < 4; i++)
 		{
 			pMB->Color4fv(color4_white);
-			pMB->TexCoord2f(verts[i].m_vTexCoord.x, verts[i].m_vTexCoord.y);
-			pMB->Position3f(verts[i].m_vPosition.x, verts[i].m_vPosition.y, 0);
+			pMB->TexCoord2f(verts[i].texCoord.x, verts[i].texCoord.y);
+			pMB->Position3f(verts[i].position.x, verts[i].position.y, 0);
 
 			pMB->AdvanceVertex();
 		}

@@ -125,12 +125,12 @@ void CObject_Physics::Spawn()
 
 	CEqRigidBody* body = new CEqRigidBody();
 
-	if( body->Initialize(&m_pModel->GetHWData()->m_physmodel, 0) )//
+	if( body->Initialize(&m_pModel->GetHWData()->physModel, 0) )
 	{
 		m_netPos = m_vecOrigin;
 		m_netAngles = m_vecAngles;
 
-		physobject_t* obj = &m_pModel->GetHWData()->m_physmodel.objects[0].object;
+		physobject_t* obj = &m_pModel->GetHWData()->physModel.objects[0].object;
 
 		// set friction from surface parameters
 		m_surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);

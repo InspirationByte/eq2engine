@@ -52,7 +52,7 @@ public:
 
 	void ParamSetup_RasterState()
 	{
-		materials->SetRasterizerStates(CULL_NONE, (FillMode_e)materials->GetConfiguration().wireframeMode);
+		materials->SetRasterizerStates(CULL_NONE, (ER_FillMode)materials->GetConfiguration().wireframeMode);
 	}
 
 	SHADER_SETUP_STAGE()

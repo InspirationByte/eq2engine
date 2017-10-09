@@ -65,7 +65,7 @@ void CState_Title::OnEnter( CBaseStateHandler* from )
 	m_actionTimeout = 10.0f;
 	m_fade = 0.0f;
 	m_goesFromTitle = false;
-	m_titleTexture = g_pShaderAPI->LoadTexture("ui/title", TEXFILTER_TRILINEAR_ANISO, ADDRESSMODE_CLAMP);
+	m_titleTexture = g_pShaderAPI->LoadTexture("ui/title", TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP);
 	m_titleTexture->Ref_Grab();
 
 	soundsystem->SetPauseState(false);

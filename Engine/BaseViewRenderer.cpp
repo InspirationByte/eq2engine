@@ -231,16 +231,16 @@ void CBaseViewRenderer::InitializeResources()
 		int nDSBuffersSize = 0;
 
 		// Init GBuffer textures
-		m_pGBufferTextures[GBUF_DIFFUSE] = g_pShaderAPI->CreateNamedRenderTarget("_rt_gbuf_diff", screenWide, screenTall, FORMAT_RGBA8, TEXFILTER_NEAREST, ADDRESSMODE_CLAMP);
+		m_pGBufferTextures[GBUF_DIFFUSE] = g_pShaderAPI->CreateNamedRenderTarget("_rt_gbuf_diff", screenWide, screenTall, FORMAT_RGBA8, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
 		m_pGBufferTextures[GBUF_DIFFUSE]->Ref_Grab();
 
-		m_pGBufferTextures[GBUF_NORMALS] = g_pShaderAPI->CreateNamedRenderTarget("_rt_gbuf_norm", screenWide, screenTall, FORMAT_RGBA8, TEXFILTER_NEAREST, ADDRESSMODE_CLAMP);
+		m_pGBufferTextures[GBUF_NORMALS] = g_pShaderAPI->CreateNamedRenderTarget("_rt_gbuf_norm", screenWide, screenTall, FORMAT_RGBA8, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
 		m_pGBufferTextures[GBUF_NORMALS]->Ref_Grab();
 
-		m_pGBufferTextures[GBUF_DEPTH] = g_pShaderAPI->CreateNamedRenderTarget("_rt_gbuf_depth", screenWide, screenTall, FORMAT_RG32F, TEXFILTER_NEAREST, ADDRESSMODE_CLAMP);
+		m_pGBufferTextures[GBUF_DEPTH] = g_pShaderAPI->CreateNamedRenderTarget("_rt_gbuf_depth", screenWide, screenTall, FORMAT_RG32F, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
 		m_pGBufferTextures[GBUF_DEPTH]->Ref_Grab();
 
-		m_pGBufferTextures[GBUF_MATERIALMAP1] = g_pShaderAPI->CreateNamedRenderTarget("_rt_gbuf_mat1", screenWide, screenTall, FORMAT_RGBA8, TEXFILTER_NEAREST, ADDRESSMODE_CLAMP);
+		m_pGBufferTextures[GBUF_MATERIALMAP1] = g_pShaderAPI->CreateNamedRenderTarget("_rt_gbuf_mat1", screenWide, screenTall, FORMAT_RGBA8, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
 		m_pGBufferTextures[GBUF_MATERIALMAP1]->Ref_Grab();
 
 		nDSBuffersSize += screenWide*screenTall*4;
@@ -255,12 +255,12 @@ void CBaseViewRenderer::InitializeResources()
 		//--------------------------------------------------------------------------------------
 
 		// create texture first and then material
-		m_pSpotCausticTex = g_pShaderAPI->CreateNamedRenderTarget("_rt_caustics", r_photonBufferSize.GetInt(), r_photonBufferSize.GetInt(), FORMAT_RGBA8, TEXFILTER_LINEAR, ADDRESSMODE_CLAMP);
+		m_pSpotCausticTex = g_pShaderAPI->CreateNamedRenderTarget("_rt_caustics", r_photonBufferSize.GetInt(), r_photonBufferSize.GetInt(), FORMAT_RGBA8, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
 		m_pSpotCausticTex->Ref_Grab();
 
 		// TODO: needs to initialize m_pCausticsGBuffer
 
-		m_pSpotCaustics = materials->FindMaterial("engine/flashlightreflector");
+		m_pSpotCaustics = materials->GetMaterial("engine/flashlightreflector");
 		m_pSpotCaustics->Ref_Grab();
 
 		int NUM_PHOTONS = (r_photonCount.GetInt()*r_photonCount.GetInt());
@@ -283,7 +283,7 @@ void CBaseViewRenderer::InitializeResources()
 		delete [] photons;
 
 		VertexFormatDesc_t pFormat[] = {
-			{ 0, 2, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position
+			{ 0, 2, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position
 		};
 
 		m_pSpotCausticsFormat = g_pShaderAPI->CreateVertexFormat(pFormat, elementsOf(pFormat));
@@ -291,34 +291,34 @@ void CBaseViewRenderer::InitializeResources()
 		//--------------------------------------------------------------------------------------
 
 		// THIS IS ONLY DX10
-		//m_pGBufferTextures[GBUF_MATERIALMAP2] = g_pShaderAPI->CreateNamedRenderTarget("_rt_gbuf_mat2", screenWide, screenTall, FORMAT_RGBA8, TEXFILTER_NEAREST, ADDRESSMODE_WRAP);
+		//m_pGBufferTextures[GBUF_MATERIALMAP2] = g_pShaderAPI->CreateNamedRenderTarget("_rt_gbuf_mat2", screenWide, screenTall, FORMAT_RGBA8, TEXFILTER_NEAREST, TEXADDRESS_WRAP);
 
 		Msg("Initializing DS materials...\n");
 
-		m_pDSAmbient = materials->FindMaterial("engine/deferred/ds_ambient");
+		m_pDSAmbient = materials->GetMaterial("engine/deferred/ds_ambient");
 		m_pDSAmbient->Ref_Grab();
 
 		// Init lighting materials
-		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][0] = materials->FindMaterial("engine/deferred/ds_pointlight");
+		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][0] = materials->GetMaterial("engine/deferred/ds_pointlight");
 
 		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][0]->Ref_Grab();
 
-		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][1] = materials->FindMaterial("engine/deferred/ds_pointlight_shadow");
+		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][1] = materials->GetMaterial("engine/deferred/ds_pointlight_shadow");
 
 		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][1]->Ref_Grab();
 
-		m_pDSLightMaterials[DLT_SPOT][0] = materials->FindMaterial("engine/deferred/ds_spotlight");
+		m_pDSLightMaterials[DLT_SPOT][0] = materials->GetMaterial("engine/deferred/ds_spotlight");
 		
 		m_pDSLightMaterials[DLT_SPOT][0]->Ref_Grab();
 
-		m_pDSLightMaterials[DLT_SPOT][1] = materials->FindMaterial("engine/deferred/ds_spotlight_shadow");
+		m_pDSLightMaterials[DLT_SPOT][1] = materials->GetMaterial("engine/deferred/ds_spotlight_shadow");
 
 		m_pDSLightMaterials[DLT_SPOT][1]->Ref_Grab();
 
-		m_pDSSpotlightReflector = materials->FindMaterial("engine/deferred/ds_spotlight_shadow_reflector");
+		m_pDSSpotlightReflector = materials->GetMaterial("engine/deferred/ds_spotlight_shadow_reflector");
 		m_pDSSpotlightReflector->Ref_Grab();
 
-		m_pDSLightMaterials[DLT_SUN][0] = materials->FindMaterial("engine/deferred/ds_sunlight");
+		m_pDSLightMaterials[DLT_SUN][0] = materials->GetMaterial("engine/deferred/ds_sunlight");
 		m_pDSLightMaterials[DLT_SUN][1] = m_pDSLightMaterials[DLT_SUN][0];
 
 		m_pDSLightMaterials[DLT_SUN][0]->Ref_Grab();
@@ -330,21 +330,21 @@ void CBaseViewRenderer::InitializeResources()
 	// init shadowmapping textures and materials
 	if(materials->GetConfiguration().enableShadows && (materials->GetLightingModel() != MATERIAL_LIGHT_UNLIT) && !m_bShadowsInit)
 	{
-		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][0]	= materials->FindMaterial("engine/pointdepth");
-		m_pShadowmapDepthwrite[DLT_SPOT][0]				= materials->FindMaterial("engine/spotdepth");
-		m_pShadowmapDepthwrite[DLT_SUN][0]				= materials->FindMaterial("engine/sundepth");
+		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][0]	= materials->GetMaterial("engine/pointdepth");
+		m_pShadowmapDepthwrite[DLT_SPOT][0]				= materials->GetMaterial("engine/spotdepth");
+		m_pShadowmapDepthwrite[DLT_SUN][0]				= materials->GetMaterial("engine/sundepth");
 
-		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][1]	= materials->FindMaterial("engine/pointdepth_skin");
-		m_pShadowmapDepthwrite[DLT_SPOT][1]				= materials->FindMaterial("engine/spotdepth_skin");
-		m_pShadowmapDepthwrite[DLT_SUN][1]				= materials->FindMaterial("engine/sundepth_skin");
+		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][1]	= materials->GetMaterial("engine/pointdepth_skin");
+		m_pShadowmapDepthwrite[DLT_SPOT][1]				= materials->GetMaterial("engine/spotdepth_skin");
+		m_pShadowmapDepthwrite[DLT_SUN][1]				= materials->GetMaterial("engine/sundepth_skin");
 
-		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][2]	= materials->FindMaterial("engine/pointdepth_simple");
-		m_pShadowmapDepthwrite[DLT_SPOT][2]				= materials->FindMaterial("engine/spotdepth_simple");
-		m_pShadowmapDepthwrite[DLT_SUN][2]				= materials->FindMaterial("engine/sundepth_simple");
+		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][2]	= materials->GetMaterial("engine/pointdepth_simple");
+		m_pShadowmapDepthwrite[DLT_SPOT][2]				= materials->GetMaterial("engine/spotdepth_simple");
+		m_pShadowmapDepthwrite[DLT_SUN][2]				= materials->GetMaterial("engine/sundepth_simple");
 
 #ifdef EQLC
-		m_pShadowMaps[DLT_OMNIDIRECTIONAL][0]		= g_pShaderAPI->CreateNamedRenderTarget("_rt_cubedepth",2048,2048,FORMAT_R32F, TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, COMP_GREATER, TEXFLAG_CUBEMAP);
-		m_pShadowMaps[DLT_SPOT][0]					= g_pShaderAPI->CreateNamedRenderTarget("_rt_spotdepth",2048,2048,FORMAT_R32F, TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, COMP_GREATER );
+		m_pShadowMaps[DLT_OMNIDIRECTIONAL][0]		= g_pShaderAPI->CreateNamedRenderTarget("_rt_cubedepth",2048,2048,FORMAT_R32F, TEXFILTER_NEAREST, TEXADDRESS_CLAMP, COMP_GREATER, TEXFLAG_CUBEMAP);
+		m_pShadowMaps[DLT_SPOT][0]					= g_pShaderAPI->CreateNamedRenderTarget("_rt_spotdepth",2048,2048,FORMAT_R32F, TEXFILTER_NEAREST, TEXADDRESS_CLAMP, COMP_GREATER );
 
 		// Sun has two depth textures
 		//m_pShadowMaps[DLT_SUN][0]					= g_pShaderAPI->CreateNamedRenderTarget("_rt_sundepth1",2048,2048,FORMAT_R16F,TEXFILTER_NEAREST);
@@ -375,18 +375,18 @@ void CBaseViewRenderer::InitializeResources()
 		m_pShadowMapDepth[5]->Ref_Grab();
 #endif // USE_SINGLE_CUBEMAPRENDER
 #else
-		Filter_e shadowMapFilter = TEXFILTER_NEAREST;
+		ER_TextureFilterMode shadowMapFilter = TEXFILTER_NEAREST;
 
-		if(g_pShaderAPI->GetShaderAPIClass() == ShaderAPIClass_e::SHADERAPI_DIRECT3D10)
+		if(g_pShaderAPI->GetShaderAPIClass() == ER_ShaderAPIType::SHADERAPI_DIRECT3D10)
 			shadowMapFilter = TEXFILTER_LINEAR;
 
-		m_pShadowMaps[DLT_OMNIDIRECTIONAL][0]		= g_pShaderAPI->CreateNamedRenderTarget("_rt_cubedepth",512,512,FORMAT_R32F, shadowMapFilter, ADDRESSMODE_CLAMP, COMP_GREATER, TEXFLAG_CUBEMAP);
-		m_pShadowMaps[DLT_SPOT][0]					= g_pShaderAPI->CreateNamedRenderTarget("_rt_spotdepth",1024,1024,FORMAT_R32F,shadowMapFilter, ADDRESSMODE_CLAMP, COMP_GREATER);
+		m_pShadowMaps[DLT_OMNIDIRECTIONAL][0]		= g_pShaderAPI->CreateNamedRenderTarget("_rt_cubedepth",512,512,FORMAT_R32F, shadowMapFilter, TEXADDRESS_CLAMP, COMP_GREATER, TEXFLAG_CUBEMAP);
+		m_pShadowMaps[DLT_SPOT][0]					= g_pShaderAPI->CreateNamedRenderTarget("_rt_spotdepth",1024,1024,FORMAT_R32F,shadowMapFilter, TEXADDRESS_CLAMP, COMP_GREATER);
 
 		// Sun has two depth textures
-		m_pShadowMaps[DLT_SUN][0]					= g_pShaderAPI->CreateNamedRenderTarget("_rt_sundepth1",2048,2048,FORMAT_R32F,shadowMapFilter, ADDRESSMODE_CLAMP, COMP_GREATER);
+		m_pShadowMaps[DLT_SUN][0]					= g_pShaderAPI->CreateNamedRenderTarget("_rt_sundepth1",2048,2048,FORMAT_R32F,shadowMapFilter, TEXADDRESS_CLAMP, COMP_GREATER);
 		
-		m_pShadowMaps[DLT_SUN][1]					= g_pShaderAPI->CreateNamedRenderTarget("_rt_sundepth2",2048,2048,FORMAT_R32F,shadowMapFilter, ADDRESSMODE_CLAMP, COMP_GREATER);
+		m_pShadowMaps[DLT_SUN][1]					= g_pShaderAPI->CreateNamedRenderTarget("_rt_sundepth2",2048,2048,FORMAT_R32F,shadowMapFilter, TEXADDRESS_CLAMP, COMP_GREATER);
 
 		m_pShadowMaps[DLT_OMNIDIRECTIONAL][0]->Ref_Grab();
 		m_pShadowMaps[DLT_SPOT][0]->Ref_Grab();
@@ -397,9 +397,9 @@ void CBaseViewRenderer::InitializeResources()
 		// FIXME: THIS is very weird
 		// this will be removed when engine will work on DirectX 10 API
 #ifndef USE_SINGLE_CUBEMAPRENDER
-		m_pShadowMapDepth[0]						= g_pShaderAPI->CreateNamedRenderTarget("_srt_depthmap1", 512, 512, FORMAT_D16, TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, COMP_NEVER, TEXTURE_FLAG_DEPTHBUFFER);
-		m_pShadowMapDepth[1]						= g_pShaderAPI->CreateNamedRenderTarget("_srt_depthmap2", 1024, 1024, FORMAT_D16, TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, COMP_NEVER, TEXTURE_FLAG_DEPTHBUFFER);
-		m_pShadowMapDepth[2]						= g_pShaderAPI->CreateNamedRenderTarget("_srt_depthmap3", 2048, 2048, FORMAT_D16, TEXFILTER_NEAREST, ADDRESSMODE_CLAMP, COMP_NEVER, TEXTURE_FLAG_DEPTHBUFFER);
+		m_pShadowMapDepth[0]						= g_pShaderAPI->CreateNamedRenderTarget("_srt_depthmap1", 512, 512, FORMAT_D16, TEXFILTER_NEAREST, TEXADDRESS_CLAMP, COMP_NEVER, TEXTURE_FLAG_DEPTHBUFFER);
+		m_pShadowMapDepth[1]						= g_pShaderAPI->CreateNamedRenderTarget("_srt_depthmap2", 1024, 1024, FORMAT_D16, TEXFILTER_NEAREST, TEXADDRESS_CLAMP, COMP_NEVER, TEXTURE_FLAG_DEPTHBUFFER);
+		m_pShadowMapDepth[2]						= g_pShaderAPI->CreateNamedRenderTarget("_srt_depthmap3", 2048, 2048, FORMAT_D16, TEXFILTER_NEAREST, TEXADDRESS_CLAMP, COMP_NEVER, TEXTURE_FLAG_DEPTHBUFFER);
 
 		m_pShadowMapDepth[0]->Ref_Grab();
 		m_pShadowMapDepth[1]->Ref_Grab();
@@ -967,8 +967,8 @@ void CBaseViewRenderer::DrawDeferredAmbient()
 	pMeshBuilder->Begin(PRIM_TRIANGLES);
 		for(int i = 0; i < VERTS_SUBDIVS_COUNT; i++)
 		{
-			pMeshBuilder->Position3fv(Vector3D((amb_quad_sub[i].m_vPosition * Vector2D((float)m_nViewportW+wTexel,(float)m_nViewportH+hTexel) - Vector2D(wTexel, hTexel)),0));
-			pMeshBuilder->TexCoord2fv( amb_quad_sub[i].m_vTexCoord );
+			pMeshBuilder->Position3fv(Vector3D((amb_quad_sub[i].position * Vector2D((float)m_nViewportW+wTexel,(float)m_nViewportH+hTexel) - Vector2D(wTexel, hTexel)),0));
+			pMeshBuilder->TexCoord2fv( amb_quad_sub[i].texCoord );
 			pMeshBuilder->AdvanceVertex();
 		}
 	pMeshBuilder->End();
@@ -1174,8 +1174,8 @@ void CBaseViewRenderer::DrawDeferredCurrentLighting(bool bShadowLight)
 		pMeshBuilder->Begin(PRIM_TRIANGLES);
 			for(int i = 0; i < VERTS_SUBDIVS_COUNT; i++)
 			{
-				pMeshBuilder->Position3fv(Vector3D((amb_quad_sub[i].m_vPosition * Vector2D((float)m_nViewportW+wTexel,(float)m_nViewportH+hTexel) - Vector2D(wTexel, hTexel)),0));
-				pMeshBuilder->TexCoord2fv( amb_quad_sub[i].m_vTexCoord );
+				pMeshBuilder->Position3fv(Vector3D((amb_quad_sub[i].position * Vector2D((float)m_nViewportW+wTexel,(float)m_nViewportH+hTexel) - Vector2D(wTexel, hTexel)),0));
+				pMeshBuilder->TexCoord2fv( amb_quad_sub[i].texCoord );
 				pMeshBuilder->AdvanceVertex();
 			}
 		pMeshBuilder->End();
@@ -1324,7 +1324,7 @@ void CBaseViewRenderer::SetCubemapIndex( int nCubeIndex )
 }
 
 // returns the specified matrix
-Matrix4x4 CBaseViewRenderer::GetMatrix(MatrixMode_e mode)
+Matrix4x4 CBaseViewRenderer::GetMatrix(ER_MatrixMode mode)
 {
 	return m_matrices[mode];
 }

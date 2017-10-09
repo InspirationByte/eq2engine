@@ -22,8 +22,8 @@ public:
 	void			Destroy();
 
 	// sets the primitive type (chooses the way how to allocate geometry parts)
-	void			SetPrimitiveType( PrimitiveType_e primType );
-	PrimitiveType_e	GetPrimitiveType() const;
+	void			SetPrimitiveType( ER_PrimitiveType primType );
+	ER_PrimitiveType	GetPrimitiveType() const;
 
 	// returns a pointer to vertex format description
 	void			GetVertexFormatDesc(VertexFormatDesc_t** desc, int& numAttribs);
@@ -45,7 +45,7 @@ protected:
 	bool			Lock();
 	void			Unlock();
 
-	PrimitiveType_e	m_primType;
+	ER_PrimitiveType	m_primType;
 
 	void*			m_vertices;
 	uint16*			m_indices;

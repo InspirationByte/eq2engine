@@ -12,10 +12,10 @@
 
 // standard vertex format used by the material system's dynamic mesh instance
 static VertexFormatDesc_t g_standardVertexFormatDesc[] = {
-	0, 4, VERTEXTYPE_VERTEX,	ATTRIBUTEFORMAT_FLOAT,
-	0, 4, VERTEXTYPE_TEXCOORD,	ATTRIBUTEFORMAT_HALF,
-	0, 4, VERTEXTYPE_NORMAL,	ATTRIBUTEFORMAT_HALF,
-	0, 4, VERTEXTYPE_COLOR,		ATTRIBUTEFORMAT_HALF,
+	0, 4, VERTEXATTRIB_POSITION,	ATTRIBUTEFORMAT_FLOAT,
+	0, 4, VERTEXATTRIB_TEXCOORD,	ATTRIBUTEFORMAT_HALF,
+	0, 4, VERTEXATTRIB_NORMAL,	ATTRIBUTEFORMAT_HALF,
+	0, 4, VERTEXATTRIB_COLOR,		ATTRIBUTEFORMAT_HALF,
 };
 
 //
@@ -27,8 +27,8 @@ public:
 	virtual ~IDynamicMesh() {}
 
 	// sets the primitive type (chooses the way how to allocate geometry parts)
-	virtual void			SetPrimitiveType( PrimitiveType_e primType ) = 0;
-	virtual PrimitiveType_e	GetPrimitiveType() const = 0;
+	virtual void			SetPrimitiveType( ER_PrimitiveType primType ) = 0;
+	virtual ER_PrimitiveType	GetPrimitiveType() const = 0;
 
 	// returns a pointer to vertex format description
 	virtual void			GetVertexFormatDesc(VertexFormatDesc_t** desc, int& numAttribs) = 0;

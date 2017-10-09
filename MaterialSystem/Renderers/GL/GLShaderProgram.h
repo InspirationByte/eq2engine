@@ -25,7 +25,7 @@ struct GLShaderConstant_t
 	char name[MAX_CONSTANT_NAMELEN];
 	ubyte*			data;
 	uint			index;
-	ConstantType_e	type;
+	ER_ConstantType	type;
 	int				nElements;
 	bool			dirty;
 };

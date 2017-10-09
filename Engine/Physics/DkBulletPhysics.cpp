@@ -1286,7 +1286,7 @@ IPhysicsObject* DkPhysics::CreateObject( physmodeldata_t* data, int nObject )
 {
 	CScopedMutex m(m_Mutex);
 
-	ASSERTMSG((nObject < data->numobjects), "DkPhysics::CreateObject - nObject is out of numobjects");
+	ASSERTMSG((nObject < data->numObjects), "DkPhysics::CreateObject - nObject is out of numObjects");
 
 	DevMsg(DEVMSG_CORE, "Creating physics object\n");
 	DevMsg(DEVMSG_CORE, "mass = %f (%f)\n", data->objects[nObject].object.mass, data->objects[nObject].object.mass * METERS_PER_UNIT_INV);

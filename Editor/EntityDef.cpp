@@ -186,7 +186,7 @@ bool ParseEDEFEntity(kvkeybase_t* pSection)
 	if(pPair)
 	{
 		pDef->modelname = pPair->values[0];
-		pDef->sprite = materials->FindMaterial(pDef->modelname.GetData(), true);
+		pDef->sprite = materials->GetMaterial(pDef->modelname.GetData(), true);
 	}
 	else
 	{

@@ -95,7 +95,7 @@ DWORD ComputeDeviceFlags( const D3DCAPS9& caps, bool bSoftwareVertexProcessing )
 	return nDeviceCreationFlags;
 }
 
-bool CD3DRenderLib::InitAPI( shaderapiinitparams_t &params )
+bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 {
 	// get device information
 	D3DADAPTER_IDENTIFIER9 dai;
@@ -108,7 +108,7 @@ bool CD3DRenderLib::InitAPI( shaderapiinitparams_t &params )
 	memset(&m_d3dpp, 0, sizeof(m_d3dpp));
 
 	// set window
-	hwnd = (HWND)params.hWindow;
+	hwnd = (HWND)params.windowHandle;
 
 	// get window parameters
 	RECT windowRect;
@@ -117,18 +117,18 @@ bool CD3DRenderLib::InitAPI( shaderapiinitparams_t &params )
 	m_width = windowRect.right;
 	m_height = windowRect.bottom;
 
-	m_d3dpp.Windowed = params.bIsWindowed;
+	m_d3dpp.Windowed = params.windowedMode;
 
 	// set backbuffer bits
-	int depthBits = params.nDepthBits;
+	int depthBits = params.depthBits;
 	int stencilBits = 0;
 
 	// setup backbuffer format
-	m_d3dpp.BackBufferFormat = formats[ params.nScreenFormat ];
+	m_d3dpp.BackBufferFormat = formats[ params.screenFormat ];
 
 	// Find a suitable fullscreen format
 	//int fullScreenRefresh = 60;
-	//int targetHz = params.nRefreshRateHZ;
+	//int targetHz = params.screenRefreshRateHZ;
 
 	int nModes = m_d3dFactory->GetAdapterModeCount(D3DADAPTER_DEFAULT, m_d3dpp.BackBufferFormat);
 
@@ -138,7 +138,7 @@ bool CD3DRenderLib::InitAPI( shaderapiinitparams_t &params )
 
 	DevMsg(DEVMSG_SHADERAPI, "Initial backbuffer size: %d %d\n", m_width, m_height);
 
-	if(params.bEnableVerticalSync)
+	if(params.verticalSyncEnabled)
 		m_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
 	else
 		m_d3dpp.PresentationInterval	= D3DPRESENT_INTERVAL_IMMEDIATE;
@@ -153,10 +153,10 @@ bool CD3DRenderLib::InitAPI( shaderapiinitparams_t &params )
 	}
 
 	// setup windowed parameters
-	if(params.bIsWindowed)
+	if(params.windowedMode)
 	{
 		m_d3dpp.BackBufferFormat	= d3ddm.Format;
-		m_d3dpp.SwapEffect			= params.nMultisample > 0 ? D3DSWAPEFFECT_DISCARD : D3DSWAPEFFECT_COPY;
+		m_d3dpp.SwapEffect			= params.multiSamplingMode > 0 ? D3DSWAPEFFECT_DISCARD : D3DSWAPEFFECT_COPY;
 	}
 	else
 		m_d3dpp.SwapEffect			= D3DSWAPEFFECT_DISCARD;
@@ -190,7 +190,7 @@ bool CD3DRenderLib::InitAPI( shaderapiinitparams_t &params )
 	DWORD deviceFlags = ComputeDeviceFlags(m_d3dCaps, bSoftwareVertexProcessing);
 
 	// try to create device and check the multisample types
-	int multiSample = params.nMultisample;
+	int multiSample = params.multiSamplingMode;
 
 	while (true)
 	{
@@ -227,10 +227,10 @@ bool CD3DRenderLib::InitAPI( shaderapiinitparams_t &params )
 		}
 	}
 
-	if(params.nMultisample != multiSample)
-		MsgWarning("MSAA fallback from %d to %d\n", params.nMultisample, multiSample);
+	if(params.multiSamplingMode != multiSample)
+		MsgWarning("MSAA fallback from %d to %d\n", params.multiSamplingMode, multiSample);
 
-	params.nMultisample = multiSample;
+	params.multiSamplingMode = multiSample;
 
 	m_Renderer = new ShaderAPID3DX9();
 	m_Renderer->SetD3DDevice(m_rhi, m_d3dCaps);
@@ -244,7 +244,7 @@ bool CD3DRenderLib::InitAPI( shaderapiinitparams_t &params )
 
 void CD3DRenderLib::ExitAPI()
 {
-	if (!m_Renderer->m_params->bIsWindowed)
+	if (!m_Renderer->m_params->windowedMode)
 	{
 		// Reset display mode to default
 		ChangeDisplaySettingsEx(m_dispDev.DeviceName, NULL, NULL, 0, NULL);
@@ -310,7 +310,7 @@ void CD3DRenderLib::EndFrame(IEqSwapChain* swapChain)
 	if(swapChain != NULL)
 		pHWND = (HWND)swapChain->GetWindow();
 
-	if(!m_Renderer->m_params->bIsWindowed)
+	if(!m_Renderer->m_params->windowedMode)
 	{
 		// fullscreen present
 		hr = m_rhi->Present(NULL, NULL, pHWND, NULL);
@@ -355,7 +355,7 @@ void CD3DRenderLib::SetBackbufferSize(const int w, const int h)
 bool CD3DRenderLib::CaptureScreenshot(CImage& img)
 {
 	/*
-	if(m_Renderer->m_params->bIsWindowed)
+	if(m_Renderer->m_params->windowedMode)
 	{
 		MsgWarning("Go to fullscreen mode to capture screenshots\n");
 		return false;
@@ -407,7 +407,7 @@ IEqSwapChain* CD3DRenderLib::CreateSwapChain(void* window, bool windowed)
 {
 	CD3D9SwapChain* pNewChain = new CD3D9SwapChain();
 	
-	if(!pNewChain->Initialize((HWND)window, m_Renderer->m_params->bEnableVerticalSync, windowed))
+	if(!pNewChain->Initialize((HWND)window, m_Renderer->m_params->verticalSyncEnabled, windowed))
 	{
 		MsgError("ERROR: Can't create D3D9 swapchain!\n");
 		delete pNewChain;

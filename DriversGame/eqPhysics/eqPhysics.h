@@ -177,7 +177,7 @@ struct eqPhysCollisionFilter
 
 	void AddObject(void* ptr)
 	{
-		if (numObjects < MAX_COLLISION_FILTER_OBJECTS)
+		if (ptr && numObjects < MAX_COLLISION_FILTER_OBJECTS)
 			objectPtrs[numObjects++] = ptr;
 	}
 

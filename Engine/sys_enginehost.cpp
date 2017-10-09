@@ -720,7 +720,7 @@ bool CEngineHost::InitSubSystems()
 	materials_config.lowShaderQuality = r_shaderquality.GetBool();
 	materials_config.threadedloader = sys_threadedmatsystem.GetBool();
 
-	materials_config.shaderapi_params.bIsWindowed = isWindowed;
+	materials_config.shaderapi_params.windowedMode = isWindowed;
 
 	// set window
 #ifdef PLAT_SDL
@@ -735,18 +735,18 @@ bool CEngineHost::InitSubSystems()
 	}
 
 #ifdef _WIN32
-	materials_config.shaderapi_params.hWindow = winfo.info.win.window;
+	materials_config.shaderapi_params.windowHandle = winfo.info.win.window;
 #elif LINUX
 	// TODO: LINUX VERSION
 #endif
 
 #elif PLAT_WIN // pure windows
-	materials_config.shaderapi_params.hWindow = m_hHWND;
+	materials_config.shaderapi_params.windowHandle = m_hHWND;
 #endif // PLAT_SDL
 	
-	materials_config.shaderapi_params.nScreenFormat = format;
-	materials_config.shaderapi_params.bEnableVerticalSync = r_vSync.GetBool();
-	materials_config.shaderapi_params.nMultisample = r_antialiasing.GetInt();
+	materials_config.shaderapi_params.screenFormat = format;
+	materials_config.shaderapi_params.verticalSyncEnabled = r_vSync.GetBool();
+	materials_config.shaderapi_params.multiSamplingMode = r_antialiasing.GetInt();
 
 	bool materialSystemStatus = materials->Init("materials/", (char*)r_renderer.GetString(), materials_config);
 

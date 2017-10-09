@@ -19,11 +19,11 @@
 
 struct eqGLVertAttrDesc_t
 {
-	int					m_nStream;
-	int					m_nSize;
+	int					streamId;
+	int					sizeInBytes;
 
-	AttributeFormat_e	m_nFormat;
-	int					m_nOffset;
+	ER_AttributeFormat	attribFormat;
+	int					offsetInBytes;
 
 };
 
@@ -46,7 +46,7 @@ protected:
 	VertexFormatDesc_t*	m_vertexDesc;
 	int					m_numAttribs;
 
-	eqGLVertAttrDesc_t	m_hGeneric[MAX_GL_GENERIC_ATTRIB];
+	eqGLVertAttrDesc_t	m_genericAttribs[MAX_GL_GENERIC_ATTRIB];
 
 #ifndef GL_NO_DEPRECATED_ATTRIBUTES
 	eqGLVertAttrDesc_t	m_hTexCoord[MAX_TEXCOORD_ATTRIB];

@@ -23,7 +23,7 @@ public:
 										ShaderAPI_Base();
 
 	// Init + Shurdown
-	virtual void						Init( shaderapiinitparams_t &params );
+	virtual void						Init( shaderAPIParams_t &params );
 	virtual void						Shutdown();
 
 	void								ThreadLock();
@@ -81,7 +81,7 @@ public:
 //-------------------------------------------------------------
 
 	// Load texture from file (DDS or TGA only)
-	ITexture*							LoadTexture(const char* pszFileName, Filter_e textureFilterType, AddressMode_e textureAddress = ADDRESSMODE_WRAP, int nFlags = 0);
+	ITexture*							LoadTexture(const char* pszFileName, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, int nFlags = 0);
 
 	// creates texture from image array, used in LoadTexture, common use only
 	ITexture*							CreateTexture(const DkList<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0);
@@ -92,8 +92,8 @@ public:
 																int width, int height,
 																int depth = 1,
 																int arraySize = 1,
-																Filter_e texFilter = TEXFILTER_NEAREST,
-																AddressMode_e textureAddress = ADDRESSMODE_WRAP,
+																ER_TextureFilterMode texFilter = TEXFILTER_NEAREST,
+																ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
 																int nFlags = 0,
 																int nDataSize = 0, const unsigned char* pData = NULL
 																);
@@ -172,13 +172,13 @@ public:
 //-------------------------------------------------------------
 
 	// Find sampler state with adding new one (if not exist)
-	SamplerStateParam_t					MakeSamplerState(Filter_e textureFilterType,AddressMode_e addressS, AddressMode_e addressT, AddressMode_e addressR);
+	SamplerStateParam_t					MakeSamplerState(ER_TextureFilterMode textureFilterType,ER_TextureAddressMode addressS, ER_TextureAddressMode addressT, ER_TextureAddressMode addressR);
 
 	// Find Rasterizer State with adding new one (if not exist)
-	RasterizerStateParams_t				MakeRasterizerState(CullMode_e nCullMode, FillMode_e nFillMode = FILL_SOLID, bool bMultiSample = true, bool bScissor = false);
+	RasterizerStateParams_t				MakeRasterizerState(ER_CullMode nCullMode, ER_FillMode nFillMode = FILL_SOLID, bool bMultiSample = true, bool bScissor = false);
 
 	// Find Depth State with adding new one (if not exist)
-	DepthStencilStateParams_t			MakeDepthState(bool bDoDepthTest, bool bDoDepthWrite, CompareFunc_e depthCompFunc = COMP_LEQUAL);
+	DepthStencilStateParams_t			MakeDepthState(bool bDoDepthTest, bool bDoDepthWrite, ER_CompareFunc depthCompFunc = COMP_LEQUAL);
 
 protected:
 
@@ -190,7 +190,7 @@ protected:
 // Useful data
 //-------------------------------------------------------------
 
-	const shaderapiinitparams_t*		m_params;
+	const shaderAPIParams_t*		m_params;
 	ShaderAPICaps_t						m_caps;
 
 	// Shader list

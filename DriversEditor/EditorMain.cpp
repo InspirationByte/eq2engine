@@ -171,10 +171,10 @@ void InitMatSystem(HWND window)
 		materials_config.lighting_model = MATERIAL_LIGHT_FORWARD;
 		materials_config.threadedloader = true;
 
-		materials_config.shaderapi_params.bIsWindowed = true;
-		materials_config.shaderapi_params.hWindow = window;
-		materials_config.shaderapi_params.nScreenFormat = format;
-		materials_config.shaderapi_params.bEnableVerticalSync = false;
+		materials_config.shaderapi_params.windowedMode = true;
+		materials_config.shaderapi_params.windowHandle = window;
+		materials_config.shaderapi_params.screenFormat = format;
+		materials_config.shaderapi_params.verticalSyncEnabled = false;
 
 		bool materialSystemStatus = materials->Init("materials/", "EqD3D9RHI", materials_config);
 

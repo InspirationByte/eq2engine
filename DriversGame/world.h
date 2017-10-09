@@ -71,9 +71,15 @@ enum EWeatherType
 {
 	WEATHER_TYPE_CLEAR = 0,		// fair weather
 	WEATHER_TYPE_RAIN,			// slight raining
-	WEATHER_TYPE_THUNDERSTORM,	// heavy raining along with thunder
+	WEATHER_TYPE_STORM,
 
 	WEATHER_COUNT,
+};
+
+static char* s_weatherNamesStr[WEATHER_COUNT] = {
+	"clear",
+	"rain",
+	"storm",
 };
 
 struct worldEnvConfig_t
@@ -103,6 +109,8 @@ struct worldEnvConfig_t
 
 	int				lightsType;
 	EWeatherType	weatherType;
+
+	bool			thunder;
 
 	bool			fogEnable;
 	float			fogNear;
@@ -215,6 +223,7 @@ public:
 	occludingFrustum_t				m_occludingFrustum;
 
 	worldinfo_t						m_info;
+	bool							m_reflectionStage;
 
 	worldEnvConfig_t				m_envConfig;
 
@@ -254,12 +263,17 @@ protected:
 
 	lensFlareTable_t				m_lensTable[LENSFLARE_TABLE_SIZE];
 	float							m_lensIntensityTiming;
+
 	IOcclusionQuery*				m_sunGlowOccQuery;	// sun glow
-	IMaterial*						m_depthTestMat;
+	IMaterial*						m_pointQueryMat;
 
 	ITexture*						m_lightsTex;		// vertex texture fetch lights
+
 	ITexture*						m_reflectionTex;	// reflection texture
 	ITexture*						m_tempReflTex;		// temporary reflection buffer
+	ITexture*						m_reflDepth;
+
+
 	IMaterial*						m_blurYMaterial;	// y blur shader
 
 	ISoundController*				m_rainSound;

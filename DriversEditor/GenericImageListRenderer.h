@@ -136,10 +136,10 @@ inline void CGenericImageListRenderer<T>::RedrawItems( const IRectangle& rect, f
 
 			Rectangle_t texCoords = ItemGetImageCoordinates( elem );
 
-			verts[0].m_vTexCoord = texCoords.GetLeftTop();
-			verts[1].m_vTexCoord = texCoords.GetLeftBottom();
-			verts[2].m_vTexCoord = texCoords.GetRightTop();
-			verts[3].m_vTexCoord = texCoords.GetRightBottom();
+			verts[0].texCoord = texCoords.GetLeftTop();
+			verts[1].texCoord = texCoords.GetLeftBottom();
+			verts[2].texCoord = texCoords.GetRightTop();
+			verts[3].texCoord = texCoords.GetRightBottom();
 
 			// mouseover rectangle
 			if( check_rect.IsInRectangle( m_mousePos ) )

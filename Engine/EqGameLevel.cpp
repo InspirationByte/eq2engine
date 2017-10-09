@@ -653,10 +653,10 @@ void CEqLevel::LoadLightmaps()
 	for(int i = 0; i < m_numLightmaps; i++)
 	{
 		EqString filename(varargs("worlds/%s/lm#%d", m_levelpath.GetData(), i));
-		m_pLightmaps[i] = g_pShaderAPI->LoadTexture(filename.GetData(),TEXFILTER_TRILINEAR_ANISO,ADDRESSMODE_CLAMP,TEXFLAG_REALFILEPATH | TEXFLAG_NOQUALITYLOD);
+		m_pLightmaps[i] = g_pShaderAPI->LoadTexture(filename.GetData(),TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_CLAMP,TEXFLAG_REALFILEPATH | TEXFLAG_NOQUALITYLOD);
 
 		//EqString dirfilename(varargs("worlds/%s/dm#%d", m_levelpath.GetData(), i));
-		m_pDirmaps[i] = NULL;//g_pShaderAPI->LoadTexture(dirfilename.GetData(),TEXFILTER_TRILINEAR_ANISO,ADDRESSMODE_CLAMP,TEXFLAG_REALFILEPATH | TEXFLAG_NOQUALITYLOD);
+		m_pDirmaps[i] = NULL;//g_pShaderAPI->LoadTexture(dirfilename.GetData(),TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_CLAMP,TEXFLAG_REALFILEPATH | TEXFLAG_NOQUALITYLOD);
 	}
 }
 
@@ -673,7 +673,7 @@ void CEqLevel::InitMaterials(eqworldlump_t* pMaterials)
 
 	for(int i = 0; i < m_numMaterials; i++)
 	{
-		m_pMaterials[i] = materials->FindMaterial(pMaterialStrings[i].material_path, true);
+		m_pMaterials[i] = materials->GetMaterial(pMaterialStrings[i].material_path, true);
 
 		if(m_pMaterials[i])
 		{
@@ -734,19 +734,19 @@ void CEqLevel::InitRenderBuffers(eqworldlump_t* pVerts, eqworldlump_t* pIndices)
 	if(!m_pVertexFormat_Lit)
 	{
 		VertexFormatDesc_t pFormat[] = {
-			{ 0, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position
-			{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0 + lightmap coord
+			{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position
+			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0 + lightmap coord
 
 			/*
-			{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_UBYTE }, // t.xyz + color.r
-			{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_UBYTE }, // b.xyz + color.g
-			{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_UBYTE }, // n.xyz + color.b
+			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_UBYTE }, // t.xyz + color.r
+			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_UBYTE }, // b.xyz + color.g
+			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_UBYTE }, // n.xyz + color.b
 			*/
-			{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Tangent (TC1)
-			{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Binormal (TC2)
-			{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal (TC3)
+			{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Tangent (TC1)
+			{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Binormal (TC2)
+			{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal (TC3)
 
-			{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // vertex painting data (TC4)
+			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // vertex painting data (TC4)
 		};
 
 		// create vertex format
@@ -757,14 +757,14 @@ void CEqLevel::InitRenderBuffers(eqworldlump_t* pVerts, eqworldlump_t* pIndices)
 	if(!m_pDecalVertexFormat)
 	{
 		VertexFormatDesc_t pFormat[] = {
-			{ 0, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position
-			{ 0, 2, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0
+			{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position
+			{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0
 
-			{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Tangent (TC1)
-			{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Binormal (TC2)
-			{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal (TC3)
+			{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Tangent (TC1)
+			{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Binormal (TC2)
+			{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal (TC3)
 
-			{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // vertex painting data (TC4)
+			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // vertex painting data (TC4)
 		};
 
 		// create vertex format

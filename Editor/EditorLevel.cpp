@@ -467,7 +467,7 @@ void CEditorLevel::ImportMapFile(const char* pFileName)
 				MatchToken("}");
 
 				pSurface->MakeCustomTerrainPatch(wide, tall, pTempVerts, 4);
-				pSurface->SetMaterial(materials->FindMaterial(material_name,true));
+				pSurface->SetMaterial(materials->GetMaterial(material_name,true));
 				m_pEditableList.append(pSurface);
 
 				delete [] pTempVerts;
@@ -565,7 +565,7 @@ void CEditorLevel::ImportMapFile(const char* pFileName)
 					face.vScale = scale;
 					face.fRotation = rotate;
 
-					face.pMaterial = materials->FindMaterial(material_name, true);
+					face.pMaterial = materials->GetMaterial(material_name, true);
 
 					if(face.pMaterial->GetShader())
 						face.pMaterial->GetShader()->InitParams();
@@ -1144,14 +1144,14 @@ IVertexFormat* CEditorLevel::GetLevelVertexFormat()
 	if(!m_pLevelvertexformat)
 	{
 		VertexFormatDesc_t pFormat[] = {
-			{ 0, 3, VERTEXTYPE_VERTEX, ATTRIBUTEFORMAT_FLOAT },	  // position
-			{ 0, 2, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0
+			{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position
+			{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0
 
-			{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Tangent (TC1)
-			{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Binormal (TC2)
-			{ 0, 3, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal (TC3)
+			{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Tangent (TC1)
+			{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Binormal (TC2)
+			{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal (TC3)
 
-			{ 0, 4, VERTEXTYPE_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // vertex painting data (TC4)
+			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // vertex painting data (TC4)
 		};
 
 		m_pLevelvertexformat = g_pShaderAPI->CreateVertexFormat(pFormat, elementsOf(pFormat));
@@ -1163,7 +1163,7 @@ IVertexFormat* CEditorLevel::GetLevelVertexFormat()
 IMaterial* CEditorLevel::GetFlatMaterial()
 {
 	if(!m_pFlatMaterial)
-		m_pFlatMaterial = materials->FindMaterial("flatcolor");
+		m_pFlatMaterial = materials->GetMaterial("flatcolor");
 
 	return m_pFlatMaterial;
 }

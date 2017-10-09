@@ -82,25 +82,24 @@ private:
 	//-----------------------------------------------
 
 	IEqModelInstancer*	m_instancer;
-	studiohwdata_t*		m_pHardwareData;
+	studiohwdata_t*		m_hwdata;
 
 	IVertexBuffer*		m_pVB;
 	IIndexBuffer*		m_pIB;
 
 	// array of material index for each group
-	IMaterial*			m_pMaterials[MAX_STUDIOMATERIALS];
+	IMaterial*			m_materials[MAX_STUDIOMATERIALS];
 
-	bool				m_bSoftwareSkinned;
-	bool				m_bSoftwareSkinChanged;
+	bool				m_forceSoftwareSkinning;
+	bool				m_skinningDirty;
 
-	uint8				m_nNumMaterials;
-	uint8				m_nNumGroups;
+	uint8				m_numMaterials;
 	volatile short		m_readyState;
 
 	int					m_numVertices;
 	int					m_numIndices;
 
-	EGFHwVertex_t*		m_pSWVertices;
+	EGFHwVertex_t*		m_softwareVerts;
 
 	BoundingBox			m_aabb;
 	EqString			m_szPath;
@@ -141,7 +140,7 @@ public:
 
 private:
 
-	DkList<IEqModel*>		m_pModels;
+	DkList<IEqModel*>		m_cachedList;
 	IVertexFormat*			m_egfFormat;	// vertex format for streams
 };
 

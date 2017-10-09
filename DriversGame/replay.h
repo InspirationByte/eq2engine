@@ -10,7 +10,7 @@ TODO:
 		- [ok] Record all cars
 		- [ok] Record car spawns
 		- [ok] Cameras
-		- Camera keyframes ()
+		- Camera keyFrames ()
 		- [ok] Record spawn params
 		- [ok] Stream recording of the controls and events
 		- Record networked cars

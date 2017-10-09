@@ -33,7 +33,7 @@ public:
 	CD3D9MeshBuilder(LPDIRECT3DDEVICE9 device);
 	~CD3D9MeshBuilder();
 
-	void		Begin(PrimitiveType_e type);
+	void		Begin(ER_PrimitiveType type);
 	void		End();
 
 	// color setting
@@ -62,7 +62,7 @@ protected:
 
 	bool					m_renderBegun;
 
-	PrimitiveType_e			m_primType;
+	ER_PrimitiveType			m_primType;
 
 	DkList<ListVertex_t>	m_vertList;
 

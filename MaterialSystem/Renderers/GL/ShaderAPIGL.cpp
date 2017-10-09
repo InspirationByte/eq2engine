@@ -153,7 +153,7 @@ bool GLCheckError(const char* op)
 typedef GLvoid (APIENTRY *UNIFORM_FUNC)(GLint location, GLsizei count, const void *value);
 typedef GLvoid (APIENTRY *UNIFORM_MAT_FUNC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 
-ConstantType_e GetConstantType(GLenum type)
+ER_ConstantType GetConstantType(GLenum type)
 {
 	switch (type)
 	{
@@ -176,7 +176,7 @@ ConstantType_e GetConstantType(GLenum type)
 
 	MsgError("Invalid constant type (%d)\n", type);
 
-	return (ConstantType_e) -1;
+	return (ER_ConstantType) -1;
 }
 
 void* s_uniformFuncs[CONSTANT_TYPE_COUNT] = {};
@@ -248,7 +248,7 @@ void ShaderAPIGL::PrintAPIInfo()
 }
 
 // Init + Shurdown
-void ShaderAPIGL::Init( shaderapiinitparams_t &params)
+void ShaderAPIGL::Init( shaderAPIParams_t &params)
 {
 	const char* vendorStr = (const char *) glGetString(GL_VENDOR);
 
@@ -946,9 +946,9 @@ void ShaderAPIGL::FreeTexture(ITexture* pTexture)
 // It will add new rendertarget
 ITexture* ShaderAPIGL::CreateRenderTarget(	int width, int height,
 											ETextureFormat nRTFormat,
-											Filter_e textureFilterType,
-											AddressMode_e textureAddress,
-											CompareFunc_e comparison,
+											ER_TextureFilterMode textureFilterType,
+											ER_TextureAddressMode textureAddress,
+											ER_CompareFunc comparison,
 											int nFlags)
 {
 	return CreateNamedRenderTarget("__rt_001", width, height, nRTFormat, textureFilterType,textureAddress,comparison,nFlags);
@@ -957,9 +957,9 @@ ITexture* ShaderAPIGL::CreateRenderTarget(	int width, int height,
 // It will add new rendertarget
 ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 												int width, int height,
-												ETextureFormat nRTFormat, Filter_e textureFilterType,
-												AddressMode_e textureAddress,
-												CompareFunc_e comparison,
+												ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType,
+												ER_TextureAddressMode textureAddress,
+												ER_CompareFunc comparison,
 												int nFlags)
 {
 	CGLTexture *pTexture = new CGLTexture;
@@ -1316,15 +1316,15 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& 
 void ShaderAPIGL::InternalSetupSampler(uint texTarget, const SamplerStateParam_t& sampler, int mipMapCount)
 {
 	// Set requested wrapping modes
-	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, (sampler.wrapS == ADDRESSMODE_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, (sampler.wrapS == TEXADDRESS_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 
 #ifndef USE_GLES2
 	if (texTarget != GL_TEXTURE_1D)
 #endif // USE_GLES2
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, (sampler.wrapT == ADDRESSMODE_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, (sampler.wrapT == TEXADDRESS_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 
 	if (texTarget == GL_TEXTURE_3D)
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_R, (sampler.wrapR == ADDRESSMODE_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+		glTexParameteri(texTarget, GL_TEXTURE_WRAP_R, (sampler.wrapR == TEXADDRESS_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 
 	// Set requested filter modes
 	glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, minFilters[sampler.magFilter]);
@@ -1337,7 +1337,7 @@ void ShaderAPIGL::InternalSetupSampler(uint texTarget, const SamplerStateParam_t
 #else
 	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
 #endif // USE_GLES2
-	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_FUNC, depthConst[sampler.nComparison]);
+	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_FUNC, depthConst[sampler.compareFunc]);
 
 #ifndef USE_GLES2
 	// Setup anisotropic filtering
@@ -1562,7 +1562,7 @@ void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 //-------------------------------------------------------------
 
 // Matrix mode
-void ShaderAPIGL::SetMatrixMode(MatrixMode_e nMatrixMode)
+void ShaderAPIGL::SetMatrixMode(ER_MatrixMode nMatrixMode)
 {
 #ifndef USE_GLES2
 	glMatrixMode( matrixModeConst[nMatrixMode] );
@@ -1648,15 +1648,15 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 
 		for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 		{
-			eqGLVertAttrDesc_t& selDesc = pSelectedFormat->m_hGeneric[i];
-			eqGLVertAttrDesc_t& curDesc = pCurrentFormat->m_hGeneric[i];
+			eqGLVertAttrDesc_t& selDesc = pSelectedFormat->m_genericAttribs[i];
+			eqGLVertAttrDesc_t& curDesc = pCurrentFormat->m_genericAttribs[i];
 
-			CVertexBufferGL* glVB = (CVertexBufferGL*)m_pCurrentVertexBuffers[selDesc.m_nStream];
+			CVertexBufferGL* glVB = (CVertexBufferGL*)m_pCurrentVertexBuffers[selDesc.streamId];
 
 			if(glVB)
 				glBindBuffer(GL_ARRAY_BUFFER, glVB->m_nGL_VB_Index);
 
-			if (!selDesc.m_nSize && curDesc.m_nSize)
+			if (!selDesc.sizeInBytes && curDesc.sizeInBytes)
 			{
 				glDisableVertexAttribArray(i);
 				GLCheckError("disable vtx attrib");
@@ -1664,7 +1664,7 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-			if(selDesc.m_nSize && !curDesc.m_nSize)
+			if(selDesc.sizeInBytes && !curDesc.sizeInBytes)
 			{
 				glEnableVertexAttribArray(i);
 				GLCheckError("enable vtx attrib");
@@ -1721,11 +1721,11 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 			{
-				if (cvf->m_hGeneric[i].m_nStream == nStream)
+				if (cvf->m_genericAttribs[i].streamId == nStream)
 				{
-					if(cvf->m_hGeneric[i].m_nSize)
+					if(cvf->m_genericAttribs[i].sizeInBytes)
 					{
-						glVertexAttribPointer(i, cvf->m_hGeneric[i].m_nSize, glTypes[cvf->m_hGeneric[i].m_nFormat], GL_TRUE, vertexSize, base + cvf->m_hGeneric[i].m_nOffset);
+						glVertexAttribPointer(i, cvf->m_genericAttribs[i].sizeInBytes, glTypes[cvf->m_genericAttribs[i].attribFormat], GL_TRUE, vertexSize, base + cvf->m_genericAttribs[i].offsetInBytes);
 						GLCheckError("attribpointer");
 					}
 
@@ -2217,7 +2217,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		for (int i = 0; i < nUniforms; i++)
 		{
-			int constantSize = constantTypeSizes[uniforms[i].type] * uniforms[i].nElements;
+			int constantSize = s_constantTypeSizes[uniforms[i].type] * uniforms[i].nElements;
 			uniforms[i].data = new ubyte[constantSize];
 			memset(uniforms[i].data, 0, constantSize);
 			uniforms[i].dirty = false;
@@ -2298,7 +2298,7 @@ IVertexFormat* ShaderAPIGL::CreateVertexFormat(VertexFormatDesc_s *formatDesc, i
 	return pVertexFormat;
 }
 
-IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(BufferAccessType_e nBufAccess, int nNumVerts, int strideSize, void *pData )
+IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData )
 {
 	CVertexBufferGL* pGLVertexBuffer = new CVertexBufferGL();
 
@@ -2337,7 +2337,7 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(BufferAccessType_e nBufAccess, in
 	return pGLVertexBuffer;
 }
 
-IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, BufferAccessType_e nBufAccess, void *pData )
+IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData )
 {
 	CIndexBufferGL* pGLIndexBuffer = new CIndexBufferGL();
 
@@ -2467,7 +2467,7 @@ PRIMCOUNTER g_pGLPrimCounterCallbacks[] =
 };
 
 // Indexed primitive drawer
-void ShaderAPIGL::DrawIndexedPrimitives(PrimitiveType_e nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
+void ShaderAPIGL::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
 {
 	ASSERT(m_pCurrentIndexBuffer != NULL);
 	ASSERT(nVertices > 0);
@@ -2494,7 +2494,7 @@ void ShaderAPIGL::DrawIndexedPrimitives(PrimitiveType_e nType, int nFirstIndex, 
 }
 
 // Draw elements
-void ShaderAPIGL::DrawNonIndexedPrimitives(PrimitiveType_e nType, int nFirstVertex, int nVertices)
+void ShaderAPIGL::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices)
 {
 	if(m_pCurrentVertexFormat == NULL)
 		return;
@@ -2519,7 +2519,7 @@ void ShaderAPIGL::DrawNonIndexedPrimitives(PrimitiveType_e nType, int nFirstVert
 }
 
 // mesh buffer FFP emulation
-void ShaderAPIGL::DrawMeshBufferPrimitives(PrimitiveType_e nType, int nVertices, int nIndices)
+void ShaderAPIGL::DrawMeshBufferPrimitives(ER_PrimitiveType nType, int nVertices, int nIndices)
 {
 	if(m_pSelectedShader == NULL)
 	{
@@ -2846,7 +2846,7 @@ void ShaderAPIGL::GL_CRITICAL()
 #elif _WIN32
 		wglMakeCurrent(m_hdc, worker.context);
 #elif LINUX
-		glXMakeCurrent(m_display, (Window)m_params->hWindow, worker.context);
+		glXMakeCurrent(m_display, (Window)m_params->windowHandle, worker.context);
 #elif __APPLE__
 
 #endif
