@@ -355,6 +355,8 @@ OOLUA_PROXY(equi::Panel, equi::IUIControl)
 
 	OOLUA_MFUNC( SetSelectionColor )
 	OOLUA_MFUNC_CONST( GetSelectionColor )
+
+	OOLUA_MFUNC( CenterOnScreen )
 OOLUA_PROXY_END
 
 //

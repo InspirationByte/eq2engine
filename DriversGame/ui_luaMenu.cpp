@@ -183,6 +183,8 @@ void CLuaMenu::EnterSelection()
 					}
 				}
 			}
+			else
+				MsgError("CLuaMenu::EnterSelection error:\n %s\n", OOLUA::get_last_error(state).c_str());
 		}
 	}
 }

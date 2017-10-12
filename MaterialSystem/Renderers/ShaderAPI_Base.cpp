@@ -90,6 +90,7 @@ void ShaderAPI_Base::Init( shaderAPIParams_t &params )
 	Reset();
 
 	m_pErrorTexture = GenerateErrorTexture();
+	m_pErrorTexture->Ref_Grab();
 
 	ConVar* r_debug_showTexture = (ConVar*)g_sysConsole->FindCvar("r_debug_showTexture");
 
@@ -117,46 +118,53 @@ void ShaderAPI_Base::Shutdown()
 	ConVar* r_debug_showTexture = (ConVar*)g_sysConsole->FindCvar("r_debug_showTexture");
 
 	if(r_debug_showTexture)
-		r_debug_showTexture->SetVariantsCallback(NULL);
+		r_debug_showTexture->SetVariantsCallback(nullptr);
 
 	Reset();
+
+	FreeTexture(m_pErrorTexture);
+	m_pErrorTexture = nullptr;
 
 	for(int i = 0; i < m_TextureList.numElem();i++)
 	{
 		FreeTexture(m_TextureList[i]);
 		i--;
 	}
+	m_TextureList.clear();
 
 	for(int i = 0; i < m_ShaderList.numElem();i++)
 	{
 		DestroyShaderProgram(m_ShaderList[i]);
 		i--;
 	}
+	m_ShaderList.clear();
 
 	for(int i = 0; i < m_VFList.numElem();i++)
 	{
 		DestroyVertexFormat(m_VFList[i]);
 		i--;
 	}
+	m_VFList.clear();
 
 	for(int i = 0; i < m_VBList.numElem();i++)
 	{
 		DestroyVertexBuffer(m_VBList[i]);
 		i--;
 	}
+	m_VBList.clear();
 
 	for(int i = 0; i < m_IBList.numElem();i++)
 	{
 		DestroyIndexBuffer(m_IBList[i]);
 		i--;
 	}
+	m_IBList.clear();
 
 	for(int i = 0; i < m_SamplerStates.numElem();i++)
 	{
 		DestroyRenderState(m_SamplerStates[i]);
 		i--;
 	}
-
 	m_SamplerStates.clear();
 
 	for(int i = 0; i < m_BlendStates.numElem();i++)
@@ -164,7 +172,6 @@ void ShaderAPI_Base::Shutdown()
 		DestroyRenderState(m_BlendStates[i]);
 		i--;
 	}
-
 	m_BlendStates.clear();
 
 	for(int i = 0; i < m_DepthStates.numElem();i++)
@@ -172,7 +179,6 @@ void ShaderAPI_Base::Shutdown()
 		DestroyRenderState(m_DepthStates[i]);
 		i--;
 	}
-
 	m_DepthStates.clear();
 
 	for(int i = 0; i < m_RasterizerStates.numElem();i++)
@@ -180,7 +186,6 @@ void ShaderAPI_Base::Shutdown()
 		DestroyRenderState(m_RasterizerStates[i]);
 		i--;
 	}
-
 	m_RasterizerStates.clear();
 
 	for(int i = 0; i < m_OcclusionQueryList.numElem(); i++)
@@ -188,7 +193,6 @@ void ShaderAPI_Base::Shutdown()
 		DestroyOcclusionQuery(m_OcclusionQueryList[i]);
 		i--;
 	}
-
 	m_OcclusionQueryList.clear();
 }
 
@@ -547,7 +551,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, ER_TextureFilter
 
 			PPFree(animScriptBuffer);
 
-			return GenerateErrorTexture(nFlags);
+			return m_pErrorTexture;
 		}
 
 		PPFree(animScriptBuffer);
@@ -591,7 +595,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, ER_TextureFilter
 
 	// Generate the error
 	if(!pFoundTexture)
-		pFoundTexture = GenerateErrorTexture(nFlags);
+		pFoundTexture = m_pErrorTexture;
 
 	return pFoundTexture;
 }

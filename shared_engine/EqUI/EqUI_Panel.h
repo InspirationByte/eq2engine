@@ -41,6 +41,8 @@ public:
 	virtual void			SetSelectionColor(const ColorRGBA &color);
 	virtual void			GetSelectionColor(ColorRGBA &color) const;
 
+	void					CenterOnScreen();
+
 protected:
 
 	// rendering

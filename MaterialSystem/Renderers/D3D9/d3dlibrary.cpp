@@ -256,7 +256,8 @@ void CD3DRenderLib::ExitAPI()
 	{
 		ULONG numUnreleased = m_rhi->Release();
 
-		MsgWarning("D3D warning: unreleased objects: %d\n", numUnreleased);
+		if(numUnreleased)
+			MsgWarning("D3D warning: unreleased objects: %d\n", numUnreleased);
 
 		m_rhi = NULL;
 	}

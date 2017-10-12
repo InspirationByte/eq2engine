@@ -120,7 +120,7 @@ void CGameSession::Init()
 		m_lua_misman_InitMission.Push();
 
 		if(!m_lua_misman_InitMission.Call(0, 0))
-			Msg("CGameSession::Init, :CMissionManager_InitMission() error:\n %s\n", OOLUA::get_last_error(state).c_str());
+			MsgError("CGameSession::Init, :CMissionManager_InitMission() error:\n %s\n", OOLUA::get_last_error(state).c_str());
 	}
 
 	// start recorder
@@ -180,7 +180,7 @@ void CGameSession::FinalizeMissionManager()
 	m_lua_misman_Finalize.Push();
 	if(!m_lua_misman_Finalize.Call(0, 0))
 	{
-		Msg("CGameSession::Init, :CMissionManager_Finalize() error:\n %s\n", OOLUA::get_last_error(state).c_str());
+		MsgError("CGameSession::Init, :CMissionManager_Finalize() error:\n %s\n", OOLUA::get_last_error(state).c_str());
 	}
 }
 
