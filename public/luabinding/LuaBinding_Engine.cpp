@@ -241,8 +241,14 @@ OOLUA_EXPORT_FUNCTIONS_CONST(equi::IUIControl,
 	//GetFont
 )
 
-OOLUA_EXPORT_FUNCTIONS(equi::Panel)
-OOLUA_EXPORT_FUNCTIONS_CONST(equi::Panel)
+OOLUA_EXPORT_FUNCTIONS(equi::Panel, 
+	SetColor, 
+	SetSelectionColor, 
+	CenterOnScreen
+)
+OOLUA_EXPORT_FUNCTIONS_CONST(equi::Panel, 
+	GetSelectionColor
+)
 
 OOLUA_EXPORT_FUNCTIONS(equi::CUIManager,
 

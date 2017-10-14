@@ -44,8 +44,8 @@ eqFontStyleInfo_t::~eqFontStyleInfo_t()
 
 CEqFontCache::CEqFontCache() : 
 	m_defaultFont(nullptr),
-	m_sdfRegular(nullptr),
-	m_sdfBold(nullptr)
+	m_sdfMaterial(nullptr),
+	m_sdfRange(nullptr)
 {
 	GetCore()->RegisterInterface(FONTCACHE_INTERFACE_VERSION, this);
 }
@@ -170,17 +170,12 @@ bool CEqFontCache::Init()
 	kvkeybase_t sdfFontParams;
 	sdfFontParams.SetName("SDFFont");
 	sdfFontParams.SetKey("basetexture", "$basetexture");
-	sdfFontParams.SetKey("range", "[0.92 0.08]");
 
-	m_sdfRegular = materials->CreateMaterial("_sdfRegular", &sdfFontParams);
-	m_sdfRegular->Ref_Grab();
+	m_sdfMaterial = materials->CreateMaterial("_sdfRegular", &sdfFontParams);
+	m_sdfMaterial->Ref_Grab();
 
-	// make bold
-	sdfFontParams.SetKey("range", "[0.90 0.10]");
+	m_sdfRange = m_sdfMaterial->GetMaterialVar("range", "[0.94 0.06]");
 
-	m_sdfBold = materials->CreateMaterial("_sdfBold", &sdfFontParams);
-	m_sdfBold->Ref_Grab();
-	
 	return true;	
 }
 
@@ -199,11 +194,9 @@ void CEqFontCache::Shutdown()
 	m_fonts.clear();
 	m_defaultFont = nullptr;
 
-	materials->FreeMaterial( m_sdfRegular );
-	m_sdfRegular = nullptr;
-
-	materials->FreeMaterial( m_sdfBold );
-	m_sdfBold = nullptr;
+	materials->FreeMaterial( m_sdfMaterial );
+	m_sdfMaterial = nullptr;
+	m_sdfRange = nullptr;
 }
 
 void CEqFontCache::ReloadFonts()

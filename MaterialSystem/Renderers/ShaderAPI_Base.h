@@ -295,13 +295,6 @@ protected:
 	// Current render target slices
 	int8								m_pCurrentRenderTargetsSlices[MAX_MRTS];
 
-	// Units count
-	//int									m_nCurrentTexUnitsCount;
-	//int									m_nCurrentMRTCount;
-
-	// Texture filtering
-	//int8								m_nMaxAnisotropic;
-
 	// Viewport
 	int16								m_nViewportWidth;
 	int16								m_nViewportHeight;

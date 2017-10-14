@@ -411,6 +411,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		if(damageBarVisible)
 		{
 			Vector2D damageTextPos( damageRect.vleftTop.x+5, damageRect.vleftTop.y+15);
+			fontParams.scale = 30.0f;
 			robotocon30b->RenderText(m_damageTok ? m_damageTok->GetText() : L"Undefined", damageTextPos, fontParams);
 		}
 
@@ -482,6 +483,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 			numFontParams.styleFlag |= TEXT_STYLE_SHADOW;
 			numFontParams.align = TEXT_ALIGN_HCENTER;
 			numFontParams.textColor = color4_white;
+			numFontParams.scale = 50.0f;
 
 			Vector2D timeDisplayTextPos(screenSize.x / 2, 80);
 
@@ -491,6 +493,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 			numbers50->RenderText(str, timeDisplayTextPos, numFontParams);
 
 			numFontParams.align = 0;
+			numFontParams.scale = 20.0f;
 
 			Vector2D millisDisplayTextPos = timeDisplayTextPos + Vector2D(floor(minSecWidth*0.5f), 0.0f);
 
@@ -826,6 +829,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
 		scrMsgParams.align = TEXT_ALIGN_HCENTER;
 		scrMsgParams.textColor = ColorRGBA(1,1,1,alpha);
+		scrMsgParams.scale = 30.0f;
 
 		// ok for 3 seconds
 

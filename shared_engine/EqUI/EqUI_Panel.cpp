@@ -120,6 +120,17 @@ void Panel::GetSelectionColor(ColorRGBA &color) const
 	color = m_selColor;
 }
 
+void Panel::CenterOnScreen()
+{
+	const IRectangle& screenRect = Manager->GetViewFrame();
+
+	IVector2D panelSize = GetRectangle().GetSize();
+
+	IVector2D screenCenter = screenRect.GetCenter();
+	
+	SetPosition(screenCenter - panelSize/2);
+}
+
 void DrawWindowRectangle(const Rectangle_t &rect, const ColorRGBA &color1, const ColorRGBA &color2)
 {
 	BlendStateParam_t blending;
