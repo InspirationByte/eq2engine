@@ -60,8 +60,6 @@ public:
 	IEqFont*				GetFont(const char* name, int bestSize, int styleFlags = TEXT_STYLE_REGULAR, bool defaultIfNotFound = true) const;
 	eqFontFamily_t*			GetFamily(const char* name) const;
 
-	IMaterial*				GetSDFMaterial(bool bold = false) const {return m_sdfRegular;}
-
 protected:
 
 	bool					LoadFontDescriptionFile( const char* filename );
@@ -69,8 +67,8 @@ protected:
 	DkList<eqFontFamily_t*>	m_fonts;
 	eqFontFamily_t*			m_defaultFont;
 
-	IMaterial*				m_sdfRegular;
-	IMaterial*				m_sdfBold;
+	IMaterial*				m_sdfMaterial;
+	IMatVar*				m_sdfRange;
 };
 
 #endif // FONTCACHE_H

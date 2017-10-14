@@ -394,6 +394,9 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
     } //while
 }
 
+ConVar r_font_sdf_start("r_font_sdf_start", "0.94");
+ConVar r_font_sdf_range("r_font_sdf_range", "0.06");
+
 //
 // Renders new styled tagged text - wide chars only
 //
@@ -426,23 +429,33 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 
 	g_pShaderAPI->SetTexture(m_fontTexture, NULL, 0);
 
-	IMaterial* fontMaterial = m_flags.sdf ? ((CEqFontCache*)g_fontCache)->GetSDFMaterial(m_flags.bold) : materials->GetDefaultMaterial();
-	
+	CEqFontCache* fontCache = ((CEqFontCache*)g_fontCache);
+
+	IMaterial* fontMaterial = m_flags.sdf ? fontCache->m_sdfMaterial : materials->GetDefaultMaterial();
+
+	IMatVar* sdfRange = fontCache->m_sdfRange;
+
 	// draw shadow
 	if(params.styleFlag & TEXT_STYLE_SHADOW)
 	{
 		materials->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));
 		materials->SetAmbientColor(ColorRGBA(0,0,0,params.shadowAlpha));
 
+		// shadow width
+		float sdfEndClamped = clamp(r_font_sdf_range.GetFloat()+params.shadowWidth, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
+		sdfRange->SetVector2(Vector2D(r_font_sdf_start.GetFloat()-params.shadowWidth, sdfEndClamped));
+
 		materials->BindMaterial(fontMaterial);
 
 		dynMesh->Render();
 	}
 
+	float sdfEndClamped = clamp(r_font_sdf_range.GetFloat(), 0.0f, 1.0f - r_font_sdf_start.GetFloat());
+	sdfRange->SetVector2(Vector2D(r_font_sdf_start.GetFloat(), sdfEndClamped));
+
 	materials->SetAmbientColor(color4_white);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	
 	materials->BindMaterial(fontMaterial);
 
 	dynMesh->Render();

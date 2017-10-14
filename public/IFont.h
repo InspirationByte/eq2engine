@@ -111,6 +111,7 @@ struct eqFontStyleParam_t
 		shadowOffset = 1.0f;
 		shadowColor = ColorRGB(0.0f);
 		shadowAlpha = 0.7f;
+		shadowWidth = 0.01f;
 
 		scale		= 1.0f;
 
@@ -119,7 +120,9 @@ struct eqFontStyleParam_t
 
 	int					align;			// ETextAlignment
 	int					styleFlag;		// ETextStyleFlag
+
 	float				shadowOffset;
+	float				shadowWidth;
 
 	ITextLayoutBuilder*	layoutBuilder;
 
