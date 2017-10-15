@@ -262,11 +262,14 @@ public:
 	// stop play or recording
 	void					Stop();
 
+
 	// returns status the current car playing or not
 	bool					IsCarPlaying(CCar* pCar);
 
 	void					UpdatePlayback( float fDt );
 	void					UpdateReplayObject( int replayId );
+
+	void					ForceUpdateReplayObjects();
 
 	void					SaveToFile( const char* filename );
 	bool					SaveVehicleReplay( CCar* target, const char* filename );

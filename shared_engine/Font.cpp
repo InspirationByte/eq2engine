@@ -492,21 +492,35 @@ void CFont::RenderText(const char* pszText, const Vector2D& start, const eqFontS
 	materials->SetRasterizerStates(raster);
 
 	g_pShaderAPI->SetTexture(m_fontTexture, NULL, 0);
+
+	CEqFontCache* fontCache = ((CEqFontCache*)g_fontCache);
+
+	IMaterial* fontMaterial = m_flags.sdf ? fontCache->m_sdfMaterial : materials->GetDefaultMaterial();
 	
+	IMatVar* sdfRange = fontCache->m_sdfRange;
+
 	// draw shadow
 	if(params.styleFlag & TEXT_STYLE_SHADOW)
 	{
 		materials->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));
 		materials->SetAmbientColor(ColorRGBA(0,0,0,params.shadowAlpha));
-		materials->BindMaterial(materials->GetDefaultMaterial());
+
+		// shadow width
+		float sdfEndClamped = clamp(r_font_sdf_range.GetFloat()+params.shadowWidth, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
+		sdfRange->SetVector2(Vector2D(r_font_sdf_start.GetFloat()-params.shadowWidth, sdfEndClamped));
+
+		materials->BindMaterial(fontMaterial);
 
 		dynMesh->Render();
 	}
 
+	float sdfEndClamped = clamp(r_font_sdf_range.GetFloat(), 0.0f, 1.0f - r_font_sdf_start.GetFloat());
+	sdfRange->SetVector2(Vector2D(r_font_sdf_start.GetFloat(), sdfEndClamped));
+
 	materials->SetAmbientColor(color4_white);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	materials->BindMaterial(materials->GetDefaultMaterial());
+	materials->BindMaterial(fontMaterial);
 
 	dynMesh->Render();
 }

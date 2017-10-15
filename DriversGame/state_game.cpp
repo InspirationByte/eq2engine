@@ -89,32 +89,35 @@ DECLARE_CMD(restart, "Restarts game quickly", 0)
 	Game_QuickRestart(false);
 }
 
-DECLARE_CMD(fastseek, "Does instant replay. You can fetch to frame if specified", 0)
+DECLARE_CMD(fastseek, "Seeks to the replay frame. (Visual mistakes are possible)", 0)
 {
 	if(g_pGameSession == NULL)
 		return;
 
 	int replayTo = 0;
+	int seekFrame = 0;
+
 	if(CMD_ARGC > 0)
-		replayTo = atoi(CMD_ARGV(0).c_str());
+		replayTo = seekFrame = atoi(CMD_ARGV(0).c_str());
 
 	g_replayData->Stop();
-	g_replayData->m_tick = 0;
 	g_replayData->m_state = REPL_INIT_PLAYBACK;
 
 	Game_QuickRestart(true);
 
-	const float frameRate = 1.0f / 60.0f;
+	const float frameRate = 1.0f / 60.0f; // TODO: use g_replayData->m_demoFrameRate
 
 	while(replayTo > 0)
 	{
-		// TODO: use g_replayData->m_demoFrameRate
+		g_replayData->ForceUpdateReplayObjects();
+
 		Game_OnPhysicsUpdate(frameRate, 0);
+
+		g_pCameraAnimator->Reset();
 
 		replayTo--;
 	}
 
-	g_pCameraAnimator->Reset();
 }
 
 void Game_InstantReplay(int replayTo)
@@ -654,6 +657,10 @@ int CState_Game::GetPauseMode() const
 
 void CState_Game::SetPauseState( bool state )
 {
+	// can't set to pause when in demo mode
+	if(m_replayMode == REPLAY_MODE_DEMO)
+		return;
+
 	if(!m_exitGame)
 		m_showMenu = state;
 
@@ -712,8 +719,19 @@ void CState_Game::DrawLoadingScreen()
 
 	eqFontStyleParam_t param;
 	param.styleFlag |= TEXT_STYLE_SHADOW;
+	param.scale = 40.0f;
 
-	font->RenderText(loadingStr, Vector2D(100,screenSize.y - 100), param);
+	float offs = sinf(g_pHost->GetCurTime()*0.5f) * 50.0f;
+
+	font->RenderText(loadingStr, Vector2D(100 + offs,screenSize.y - 100), param);
+
+	param.scale = 90.0f;
+	param.styleFlag &= ~TEXT_STYLE_SHADOW;
+	param.textColor.w = 0.35f;
+
+	offs *= 1.5f;
+
+	font->RenderText(loadingStr, Vector2D(100 + offs,screenSize.y - 100), param);
 }
 
 //-------------------------------------------------------------------------------
@@ -726,7 +744,7 @@ bool CState_Game::Update( float fDt )
 
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
-	if(!m_isGameRunning)
+	if(!m_isGameRunning )
 	{
 		DrawLoadingScreen();
 		
@@ -796,10 +814,10 @@ bool CState_Game::Update( float fDt )
 		eqFontStyleParam_t fontParam;
 		fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 		fontParam.align = TEXT_ALIGN_HCENTER;
-		fontParam.textColor = color4_white;
+		fontParam.textColor = ColorRGBA(fabs(sinf(g_pHost->GetCurTime()*2.0f)),0.0f,0.0f,1.0f);
 		fontParam.scale = 30.0f;
 
-		fontParam.textColor = ColorRGBA(fabs(sinf(g_pHost->GetCurTime()*2.0f)),0.0f,0.0f,1.0f);
+		
 		font->RenderText("Demo", Vector2D(screenSize.x/2,screenSize.y - 100), fontParam);
 	}
 
