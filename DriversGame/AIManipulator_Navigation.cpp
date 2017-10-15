@@ -270,6 +270,9 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		float percentageToNextPos = clamp(lineProjection(currPointPos, nextPointPos, carPos), 0.0f, 2.0f);
 		float distBetweenPoints = length(currPointPos - nextPointPos);
 
+		Vector3D posOnSegment = lerp(currPointPos, nextPointPos, percentageToNextPos);
+		float distFromSegmentPos = length(posOnSegment - carPos);
+
 		float distFromStart = percentageToNextPos*distBetweenPoints;
 
 		const float AI_STEERING_TARGET_DISTANCE_A = 1.0f;
@@ -286,9 +289,6 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		// steering target position is based on the middle point of the A and B
 		Vector3D positionA = GetAdvancedPointByDist(m_pathPointIdx, distFromStart + AI_STEERING_TARGET_DISTANCE_A*steeringBySpeedModifier);
 		Vector3D positionB = GetAdvancedPointByDist(pathIdx, distFromStart + AI_STEERING_TARGET_DISTANCE_B*steeringBySpeedModifier);
-		
-		Vector3D steeringDir = fastNormalize(positionB - positionA);
-		Vector3D relateiveSteeringDir = fastNormalize((!bodyMat.getRotationComponent()) * steeringDir);
 
 		// calculate steering angle for applying brakes
 		pathIdx = m_pathPointIdx;
@@ -297,7 +297,15 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		pathIdx = m_pathPointIdx;
 		Vector3D brakePointB = GetAdvancedPointByDist(pathIdx, distFromStart + AI_BRAKE_TARGET_DISTANCE_B * brakeBySpeedModifier + brakeDistAtCurSpeed * weatherBrakeDistModifier);
 
+		// brake
 		Vector3D brakeDir = fastNormalize(brakePointB - brakePointA);
+
+		// calculate steering. correctionSteeringDir used when car is too far from segment point
+		Vector3D correctionSteeringDir = fastNormalize(brakePointA - carPos);
+		Vector3D pathSteeringDir = fastNormalize(positionB - positionA);
+
+		Vector3D steeringDir = lerp(pathSteeringDir, correctionSteeringDir, RemapValClamp(distFromSegmentPos, 0.0f, AI_SEGMENT_VALID_RADIUS, 0.0f, 1.0f));
+		Vector3D relateiveSteeringDir = fastNormalize((!bodyMat.getRotationComponent()) * steeringDir);
 
 		Vector3D carMoveDir = fastNormalize(carVelocity);
 

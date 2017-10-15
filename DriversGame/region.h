@@ -34,21 +34,26 @@ struct navcell_t
 	// Position is not necessary in this form
 	navcell_t()
 	{
-		cost = 0;
-		flag = 0;
-		pdir = 0;
+		Reset();
 	}
 
-	navcell_t(int8 parentDir, int8 c)
+	void Reset()
 	{
-		pdir = parentDir;
-		cost = c;
-		flag = 0;
+		flags = 0;
+		parentDir = 7;
+
+		f = 0.0f;
+		g = 0.0f;
+		h = 0.0f;
 	}
 
-	ubyte		pdir : 3;	// parent direction (1,2,3,4)
-	ubyte		cost : 4;	// cost of this point; max is 15
-	ubyte		flag : 1;	// 1 = closed, 0 = open
+	ubyte		parentDir : 3;	// parent direction (1,2,3,4)
+	ubyte		flags : 2;		// 0 = neither, 1 = closed, 2 = in open
+
+	// cost factors
+	float		f;
+	float		g;
+	float		h;
 };
 
 struct navGrid_t
@@ -69,7 +74,7 @@ struct navGrid_t
 		Cleanup();
 	}
 
-	void Init( int w, int h)
+	void Init( int w, int h )
 	{
 		if(staticObst || cellStates || dynamicObst )
 			Cleanup();
@@ -81,12 +86,23 @@ struct navGrid_t
 		memset(staticObst, 0x4, w*h);
 
 		dynamicObst = new ubyte[w*h];
-		memset(dynamicObst, 0x4, w*h);
 
 		cellStates = new navcell_t[w*h];
-		memset(cellStates, 0, w*h);
 
 		dirty = true;
+	}
+
+	void ResetStates()
+	{
+		int count = wide*tall;
+		for(int i = 0; i < count; i++)
+			cellStates[i].Reset();
+	}
+
+	void ResetDynamicObst()
+	{
+		int count = wide*tall;
+		memset(dynamicObst, 0x4, count);
 	}
 
 	void Cleanup()

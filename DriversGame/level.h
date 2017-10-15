@@ -30,6 +30,12 @@ struct pathFindResult_t
 	DkList<IVector2D>	points;	// z is distance in cells
 };
 
+struct cellpoint_t
+{
+	IVector2D	point;
+	navcell_t*	cell;
+};
+
 typedef void (*RegionLoadUnloadCallbackFunc)(CLevelRegion* reg, int regionIdx);
 
 enum ECellClearStateMode
@@ -220,7 +226,7 @@ protected:
 
 	IVertexBuffer*			m_instanceBuffer;
 
-	DkList<IVector2D>		m_navOpenSet;
+	DkList<cellpoint_t>		m_navOpenSet;
 	ubyte					m_defaultNavTile;
 };
 

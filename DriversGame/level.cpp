@@ -2218,24 +2218,6 @@ Vector3D CGameLevel::Nav_GlobalPointToPosition(const IVector2D& point) const
 	return Vector3D(0, 0, 0);
 }
 
-float estimateDist(const IVector2D& src, const IVector2D& dest)
-{
-	float d;
-
-	Vector2D dir = Vector2D(dest) - Vector2D(src);
-
-	// Euclidian Distance
-	//d = sqrt(dir.x * dir.x + dir.y * dir.y);
-
-	// Manhattan distance
-	d = fabs(dir.x)+fabs(dir.y);
-
-	// Chebyshev distance
-	//d = max(abs(dir.x), abs(dir.y));
-
-	return d;
-}
-
 navcell_t& CGameLevel::Nav_GetCellStateAtGlobalPoint(const IVector2D& point)
 {
 	int navSize = m_cellsSize * AI_NAVIGATION_GRID_SCALE;
@@ -2253,9 +2235,11 @@ navcell_t& CGameLevel::Nav_GetCellStateAtGlobalPoint(const IVector2D& point)
 	}
 
 	static navcell_t emptyCell;
-	emptyCell.cost = 15;
-	emptyCell.flag = 1;
-	emptyCell.pdir = 7;
+	emptyCell.f = 10000.0f;
+	emptyCell.g = 10000.0f;
+	emptyCell.h = 10000.0f;
+	emptyCell.flags = 0xF;
+	emptyCell.parentDir = 7;
 
 	return emptyCell;
 }
@@ -2305,12 +2289,14 @@ navcell_t& CGameLevel::Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, u
 		return reg->m_navGrid.cellStates[idx];
 	}
 
-	static navcell_t emptyCell;
-	emptyCell.cost = 15;
-	emptyCell.flag = 1;
-	emptyCell.pdir = 7;
-
 	tile = 0;
+
+	static navcell_t emptyCell;
+	emptyCell.f = 10000.0f;
+	emptyCell.g = 10000.0f;
+	emptyCell.h = 10000.0f;
+	emptyCell.flags = 0xF;
+	emptyCell.parentDir = 7;
 
 	return emptyCell;
 }
@@ -2334,10 +2320,10 @@ void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
 				switch(mode)
 				{
 					case NAV_CLEAR_WORKSTATES:
-						memset(reg.m_navGrid.cellStates, 0, navSize*navSize);
+						reg.m_navGrid.ResetStates();
 						break;
 					case NAV_CLEAR_DYNAMIC_OBSTACLES:
-						memset(reg.m_navGrid.dynamicObst, 0x4, navSize*navSize);
+						reg.m_navGrid.ResetDynamicObst();
 						break;
 				}
 
@@ -2364,10 +2350,35 @@ bool CGameLevel::Nav_FindPath(const Vector3D& start, const Vector3D& end, pathFi
 	return Nav_FindPath2D(startPoint, endPoint, result, iterationLimit, cellPriority);
 }
 
+float estimateDist(const IVector2D& src, const IVector2D& dest)
+{
+	float d;
+
+	Vector2D dir = Vector2D(dest) - Vector2D(src);
+
+	// Euclidian Distance
+	//d = sqrt(dir.x * dir.x + dir.y * dir.y);
+
+	// Manhattan distance
+	d = fabs(dir.x)+fabs(dir.y);
+
+	// Chebyshev distance
+	//d = max(abs(dir.x), abs(dir.y));
+
+	return d;
+}
+
+int sortOpenCells(const cellpoint_t& a, const cellpoint_t& b)
+{
+	return b.cell->f < a.cell->f;
+}
+
 bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pathFindResult_t& result, int iterationLimit, bool cellPriority)
 {
 	if(start == end)
 		return false;
+
+	CScopedMutex m(m_mutex);
 
 	result.points.setNum(0,false);
 
@@ -2378,101 +2389,93 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 	// clear states before we proceed
 	Nav_ClearCellStates( NAV_CLEAR_WORKSTATES );
 
-	// check the start and dest points
-	//navcell_t& startCheck = Nav_GetCellStateAtGlobalPoint(start);
-	//navcell_t& endCheck = Nav_GetCellStateAtGlobalPoint(end);
+	ubyte startTile = 0;
+	navcell_t& startCell = Nav_GetTileAndCellAtGlobalPoint(start, startTile);
 
-	// FIXME: find a way out
-	//if(startCheck.flag == 0x1 || endCheck.flag == 0x1)
-	//	return false;
+	// don't search from empty tiles
+	if(startTile == 0)
+		return false;
 
 	m_navOpenSet.setNum(0, false);
-	m_navOpenSet.append(start);
+	m_navOpenSet.append( cellpoint_t{start, &startCell} );
 
-	bool found = false;
+	bool foundPath = false;
 
-	int totalIterations = 0;
-
-	IVector2D dir = end-start;
-
-	CScopedMutex m(m_mutex);
-
-	// go through all open pos
 	while (m_navOpenSet.numElem() > 0)
 	{
-		int bestOpenSetIdx = m_navOpenSet.numElem() == 1 ? 0 : -1;
+		m_navOpenSet.shellSort( sortOpenCells, 0, m_navOpenSet.numElem()-1);
 
-		if(bestOpenSetIdx == -1)
+		IVector2D curPoint = m_navOpenSet[0].point;
+
+		if(curPoint == end)
 		{
-			float minCost = 10000.0f;
-
-			// search for best costless point
-			for (int i = 0; i < m_navOpenSet.numElem(); i++)
-			{
-				if(m_navOpenSet[i] == end)
-				{
-					found = true;
-					break;
-				}
-
-				ubyte tile = 0;
-				navcell_t& cell = Nav_GetTileAndCellAtGlobalPoint(m_navOpenSet[i], tile);
-
-				// calc cost and check
-				float g = estimateDist(end, m_navOpenSet[i]);
-				float h = estimateDist(m_navOpenSet[i] - IVector2D(dx[cell.pdir], dy[cell.pdir]), m_navOpenSet[i]);
-				float cost = g + h;	// regulate by cell priority
-
-				if(cellPriority)
-				{
-					cost += tile;
-				}
-
-				if (cost < minCost)
-				{
-					minCost = cost;
-					bestOpenSetIdx = i;
-				}
-			}
+			// goto path reconstruction
+			foundPath = true;
+			break;
 		}
 
-		if(found == true)
-			break;
+		ubyte curTile = 0;
+		navcell_t& curCell = Nav_GetTileAndCellAtGlobalPoint(curPoint, curTile);
 
-		if (bestOpenSetIdx == -1)
-			break;
+		// make it closed
+		curCell.flags |= 0x1;
 
-		IVector2D curPoint = m_navOpenSet[bestOpenSetIdx];
-		navcell_t& curCell = Nav_GetCellStateAtGlobalPoint(curPoint);
+		m_navOpenSet.fastRemoveIndex(0);
 
-		// remove from open set
-		m_navOpenSet.fastRemoveIndex(bestOpenSetIdx);
-		curCell.flag = 0x1;	// closed
-
-		// STOP IF WE START FAILS
-		if(totalIterations > iterationLimit)
-			break;
-
-		for (ubyte i = 0; i < 8; i++)
+		// go through all neighbours
+		for (int i = 0; i < 8; i++)
 		{
-			IVector2D nextPoint(curPoint + IVector2D(dx[i], dy[i]));
+			IVector2D neighbourPoint(curPoint + IVector2D(dx[i], dy[i]));
 
-			ubyte next;
-			navcell_t& nextCell = Nav_GetTileAndCellAtGlobalPoint(nextPoint, next);
+			ubyte neighbourTile;
+			navcell_t& neighbourCell = Nav_GetTileAndCellAtGlobalPoint(neighbourPoint, neighbourTile);
 
-			if(next == 0 || nextCell.flag == 0x1)	// wall or closed
+			if(neighbourTile == 0)	// wall?
 				continue;
 
-			totalIterations++;
+			float distBetween = estimateDist(curPoint, neighbourPoint);
 
-			nextCell.flag = 0;
-			nextCell.pdir = i;
+			float g = curCell.g + distBetween;  // dist from start + distance between the two nodes
 
-			m_navOpenSet.append( nextPoint );
+			// if open or closed
+			if(((neighbourCell.flags & 0x1) || (neighbourCell.flags & 0x2)) && neighbourCell.g < g)
+				continue; // consider next successor
+
+			float h = estimateDist(neighbourPoint, end);
+			float f = g + h; // compute f(n')
+			neighbourCell.f = f;
+			neighbourCell.g = g;
+			neighbourCell.h = h;
+
+			// set direction to the parent
+			neighbourCell.parentDir = i;
+
+			// if it were closed, remove closed state
+			if(neighbourCell.flags & 0x1)
+				neighbourCell.flags &= ~0x1;
+
+			// add to open set
+			if(!(neighbourCell.flags & 0x2))
+			{
+				m_navOpenSet.append(cellpoint_t{neighbourPoint, &neighbourCell});
+				neighbourCell.flags |= 0x2;
+				
+				// DEBUG DRAW
+				Vector3D offset(0.0f, 0.25f, 0.0f);
+				Vector3D pointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(neighbourPoint) + offset;
+				Vector3D pointPos2 = g_pGameWorld->m_level.Nav_GlobalPointToPosition(curPoint) + offset;
+
+				float dispalyTime = 0.1f;
+
+				debugoverlay->Box3D(pointPos - 0.15f, pointPos + 0.15f, ColorRGBA(1, 1, 0, 1.0f), dispalyTime);
+				debugoverlay->Line3D(pointPos, pointPos + (pointPos2-pointPos)*0.25f, ColorRGBA(1, 1, 0, 1), ColorRGBA(1, 1, 0, 1), dispalyTime);
+				
+			}
 		}
 	}
 
-	if(found)
+	// reconstruct the path
+	if(foundPath)
 	{
 		IVector2D testPoint = end;
 		navcell_t lastCell = Nav_GetCellStateAtGlobalPoint(testPoint);
@@ -2483,42 +2486,19 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 
 		do
 		{
-			IVector2D prevPoint = testPoint - IVector2D(dx[lastCell.pdir], dy[lastCell.pdir]);
+			IVector2D prevPoint = testPoint - IVector2D(dx[lastCell.parentDir], dy[lastCell.parentDir]);
 
-			// apply simplification
-			if( lastDir != lastCell.pdir)
-			{
-				bool shouldAdd = true;
-
-				int lastPointIdx = result.points.numElem()-1;
-
-				if(lastPointIdx >= 0)
-				{
-					shouldAdd = Nav_TestLine2D(result.points[lastPointIdx], testPoint) < 1.0f;
-
-					if(!shouldAdd)
-						nonFailedPoint = testPoint;
-				}
-				else
-					nonFailedPoint = testPoint;
-
-				if(shouldAdd)
-					result.points.append(nonFailedPoint);
-			}
+			result.points.append(testPoint);
 
 			if(testPoint == start)
 				break;
 
-			lastDir = lastCell.pdir;
+			lastDir = lastCell.parentDir;
 
 			testPoint = prevPoint;
 			lastCell = Nav_GetCellStateAtGlobalPoint(testPoint);
 		}
 		while(true);
-
-		// add last point
-		if(result.points.numElem() > 0 && result.points[result.points.numElem()-1] != testPoint)
-			result.points.append(testPoint);
 	}
 
 	return (result.points.numElem() > 1);
