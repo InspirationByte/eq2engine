@@ -2352,20 +2352,8 @@ bool CGameLevel::Nav_FindPath(const Vector3D& start, const Vector3D& end, pathFi
 
 float estimateDist(const IVector2D& src, const IVector2D& dest)
 {
-	float d;
-
-	Vector2D dir = Vector2D(dest) - Vector2D(src);
-
-	// Euclidian Distance
-	//d = sqrt(dir.x * dir.x + dir.y * dir.y);
-
-	// Manhattan distance
-	d = fabs(dir.x)+fabs(dir.y);
-
-	// Chebyshev distance
-	//d = max(abs(dir.x), abs(dir.y));
-
-	return d;
+	// use Euclidean method, result looks best for the driving game
+	return length(Vector2D(dest) - Vector2D(src));
 }
 
 int sortOpenCells(const cellpoint_t& a, const cellpoint_t& b)
@@ -2390,10 +2378,11 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 	Nav_ClearCellStates( NAV_CLEAR_WORKSTATES );
 
 	ubyte startTile = 0;
+	ubyte endTile = Nav_GetTileAtGlobalPoint(end);
 	navcell_t& startCell = Nav_GetTileAndCellAtGlobalPoint(start, startTile);
 
 	// don't search from empty tiles
-	if(startTile == 0)
+	if(startTile == 0 || endTile == 0)
 		return false;
 
 	m_navOpenSet.setNum(0, false);

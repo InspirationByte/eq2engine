@@ -835,7 +835,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	if(fabs(m_navAffector.m_handling.steering) > 0.7f)
 		controls |= IN_EXTENDTURN;
 
-	m_autohandbrake = true;
+	m_autohandbrake = false;
 
 	SetControlButtons( controls );
 	SetControlVars(	m_navAffector.m_handling.acceleration, 

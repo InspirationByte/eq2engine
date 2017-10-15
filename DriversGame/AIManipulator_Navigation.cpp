@@ -14,7 +14,8 @@ const float AI_MAX_DISTANCE_TO_PATH = 10.0f;
 const float AI_PATH_TIME_TO_UPDATE = 10.0f;			// every 5 seconds
 const float AI_PATH_TIME_TO_UPDATE_FORCE = 0.5f;
 
-const float AI_SEGMENT_VALID_RADIUS = 2.0f; // distance to segment
+const float AI_SEGMENT_VALID_RADIUS = 5.0f; // distance to segment
+const float AI_SEGMENT_STEERING_CORRECTION_RADIUS = 2.0f; // distance to segment
 
 const int AI_PATH_SEARCH_RANGE = 4096;
 
@@ -106,7 +107,7 @@ Vector3D CAINavigationManipulator::GetAdvancedPointByDist(int& startSeg, float d
 	return currPointPos + dir*distFromSegment;
 }
 
-int CAINavigationManipulator::FindSegmentByPosition(const Vector3D& pos, const Vector3D& forward, float distToSegment)
+int CAINavigationManipulator::FindSegmentByPosition(const Vector3D& pos, float distToSegment)
 {
 	Vector3D currPointPos;
 	Vector3D nextPointPos;
@@ -118,16 +119,14 @@ int CAINavigationManipulator::FindSegmentByPosition(const Vector3D& pos, const V
 		currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[segment]);
 		nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[segment + 1]);
 
-		float segPos = lineProjection(currPointPos, nextPointPos, pos);
+		float segProj = lineProjection(currPointPos, nextPointPos, pos);
 
-		Vector3D posOnSegment = lerp(currPointPos, nextPointPos, clamp(segPos, 0.0f, 1.0f));
+		Vector3D posOnSegment = lerp(currPointPos, nextPointPos, segProj);
 
 		float distToSegPos = length(posOnSegment-pos);
 
-		if(segPos >= 0.0f && segPos <= 1.0f && distToSegPos < distToSegment && dot(forward, fastNormalize(nextPointPos-currPointPos)) > 0.0f)
-		{
+		if(segProj >= 0.0f && segProj <= 1.0f && distToSegPos < distToSegment)
 			return segment;
-		}
 
 		segment++;
 	}
@@ -256,61 +255,90 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 	// if we have path available, drive by the path
 	if(!doesHaveStraightPath && m_path.points.numElem() > 0 && m_pathPointIdx != -1 && m_pathPointIdx < m_path.points.numElem()-2)
 	{
-		int newPathPoint = FindSegmentByPosition(carPos, carForward, AI_SEGMENT_VALID_RADIUS);
+		int segmentByCarPosition = FindSegmentByPosition(carPos, AI_SEGMENT_VALID_RADIUS);
 		
-		if(newPathPoint > m_pathPointIdx)
+		if(segmentByCarPosition > m_pathPointIdx)
 		{
-			Msg("were incorrect (%d => %d)\n", m_pathPointIdx, newPathPoint);
-			m_pathPointIdx = newPathPoint;
+			Msg("quickly move on to new segment (%d => %d)\n", m_pathPointIdx, segmentByCarPosition);
+			m_pathPointIdx = segmentByCarPosition;
 		}
 
-		Vector3D currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[m_pathPointIdx]);
-		Vector3D nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[m_pathPointIdx + 1]);
+		if(segmentByCarPosition == -1)
+			segmentByCarPosition = m_pathPointIdx;
 
-		float percentageToNextPos = clamp(lineProjection(currPointPos, nextPointPos, carPos), 0.0f, 2.0f);
-		float distBetweenPoints = length(currPointPos - nextPointPos);
+		// the path segment by m_pathPointIdx
+		Vector3D pathSegmentStart = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[m_pathPointIdx]);
+		Vector3D pathSegmentEnd = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[m_pathPointIdx + 1]);
 
-		Vector3D posOnSegment = lerp(currPointPos, nextPointPos, percentageToNextPos);
-		float distFromSegmentPos = length(posOnSegment - carPos);
+		float pathSegmentLength = length(pathSegmentStart - pathSegmentEnd);
+		float pathSegmentProj = lineProjection(pathSegmentStart, pathSegmentEnd, carPos);
 
-		float distFromStart = percentageToNextPos*distBetweenPoints;
+		// the path segment by segmentByCarPosition
+		Vector3D carPosSegmentStart = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[segmentByCarPosition]);
+		Vector3D carPosSegmentEnd = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[segmentByCarPosition + 1]);
 
-		const float AI_STEERING_TARGET_DISTANCE_A = 1.0f;
-		const float AI_STEERING_TARGET_DISTANCE_B = 3.5f;
+		float carPosSegmentLength = length(carPosSegmentStart - carPosSegmentEnd);
+		float carPosSegmentProj = lineProjection(carPosSegmentStart, carPosSegmentEnd, carPos);
 
-		const float AI_BRAKE_TARGET_DISTANCE_A = 1.0f;
-		const float AI_BRAKE_TARGET_DISTANCE_B = 2.5f;
+		// calculate distance between car position and point on the segment by car position
+		// to 
+		Vector3D carPosOnSegmentByCarPos = lerp(carPosSegmentStart, carPosSegmentEnd, carPosSegmentProj);
+		float distFromSegmentByCarPos = length(carPosOnSegmentByCarPos - carPos);
 
-		float steeringBySpeedModifier = RemapValClamp(speedMPS, 0.0f, 30.0f, 1.0f, 3.0f);
+		debugoverlay->Box3D(carPosOnSegmentByCarPos - 0.5f, carPosOnSegmentByCarPos + 0.5f, ColorRGBA(1, 0, 1, 1.0f), fDt);
+
+		// distance from path segment start
+		float distFromPathSegStart = pathSegmentProj*pathSegmentLength;
+
+		const float AI_STEERING_TARGET_CONST_DISTANCE = 0.0f;
+		const float AI_STEERING_TARGET_DISTANCE_A = 1.5f;
+		const float AI_STEERING_TARGET_DISTANCE_B = 4.5f;
+
+		const float AI_BRAKE_TARGET_CONST_DISTANCE = -1.0f;
+
+		const float AI_BRAKE_TARGET_DISTANCE_A = 0.1f;
+		const float AI_BRAKE_TARGET_DISTANCE_B = 0.25f;
+
+		const float AI_STEERING_PATH_CORRECTION_DISTANCE = 5.0f;
+
+		// brake curve
+		const float AI_BRAKE_POW_FACTOR = 0.65f;
+
+		float steeringBySpeedModifier = RemapValClamp(speedMPS, 0.0f, 40.0f, 1.0f, 3.0f);
 		float brakeBySpeedModifier = RemapValClamp(speedMPS, 0.0f, 30.0f, 0.5f, 1.0f);
+
+		//float correctionBySpeedModifier = RemapValClamp(speedMPS, 0.0f, 30.0f, 0.0f, 0.5f);
 
 		int pathIdx = m_pathPointIdx;
 
 		// steering target position is based on the middle point of the A and B
-		Vector3D positionA = GetAdvancedPointByDist(m_pathPointIdx, distFromStart + AI_STEERING_TARGET_DISTANCE_A*steeringBySpeedModifier);
-		Vector3D positionB = GetAdvancedPointByDist(pathIdx, distFromStart + AI_STEERING_TARGET_DISTANCE_B*steeringBySpeedModifier);
+		Vector3D positionA = GetAdvancedPointByDist(m_pathPointIdx, distFromPathSegStart + AI_STEERING_TARGET_CONST_DISTANCE + AI_STEERING_TARGET_DISTANCE_A*steeringBySpeedModifier);
+		Vector3D positionB = GetAdvancedPointByDist(pathIdx, distFromPathSegStart + AI_STEERING_TARGET_CONST_DISTANCE + AI_STEERING_TARGET_DISTANCE_B*steeringBySpeedModifier);
 
 		// calculate steering angle for applying brakes
 		pathIdx = m_pathPointIdx;
-		Vector3D brakePointA = GetAdvancedPointByDist(pathIdx, distFromStart + AI_BRAKE_TARGET_DISTANCE_A * brakeBySpeedModifier + brakeDistAtCurSpeed * weatherBrakeDistModifier);
+		Vector3D brakePointA = GetAdvancedPointByDist(pathIdx, distFromPathSegStart + AI_BRAKE_TARGET_CONST_DISTANCE + AI_BRAKE_TARGET_DISTANCE_A * brakeBySpeedModifier + brakeDistAtCurSpeed * weatherBrakeDistModifier);
 
 		pathIdx = m_pathPointIdx;
-		Vector3D brakePointB = GetAdvancedPointByDist(pathIdx, distFromStart + AI_BRAKE_TARGET_DISTANCE_B * brakeBySpeedModifier + brakeDistAtCurSpeed * weatherBrakeDistModifier);
+		Vector3D brakePointB = GetAdvancedPointByDist(pathIdx, distFromPathSegStart + AI_BRAKE_TARGET_CONST_DISTANCE + AI_BRAKE_TARGET_DISTANCE_B * brakeBySpeedModifier + brakeDistAtCurSpeed * weatherBrakeDistModifier);
+
+		pathIdx = m_pathPointIdx;
+		Vector3D pathCorrectionPoint = GetAdvancedPointByDist(pathIdx, distFromPathSegStart + AI_STEERING_PATH_CORRECTION_DISTANCE);
 
 		// brake
 		Vector3D brakeDir = fastNormalize(brakePointB - brakePointA);
 
 		// calculate steering. correctionSteeringDir used when car is too far from segment point
-		Vector3D correctionSteeringDir = fastNormalize(brakePointA - carPos);
+		Vector3D correctionSteeringDir = fastNormalize(pathCorrectionPoint - carPos);
 		Vector3D pathSteeringDir = fastNormalize(positionB - positionA);
 
-		Vector3D steeringDir = lerp(pathSteeringDir, correctionSteeringDir, RemapValClamp(distFromSegmentPos, 0.0f, AI_SEGMENT_VALID_RADIUS, 0.0f, 1.0f));
+		Vector3D steeringDir = lerp(pathSteeringDir, correctionSteeringDir, RemapValClamp(distFromSegmentByCarPos, 0.0f, AI_SEGMENT_STEERING_CORRECTION_RADIUS, 0.0f, 1.0f));
 		Vector3D relateiveSteeringDir = fastNormalize((!bodyMat.getRotationComponent()) * steeringDir);
 
 		Vector3D carMoveDir = fastNormalize(carVelocity);
 
-		bool isBrakePointBehindMe = frontBackCheckPlane.ClassifyPoint(brakePointA) == CP_BACK;
-		bool isTargetBehindMe = frontBackCheckPlane.ClassifyPoint(positionA) == CP_BACK;
+		bool isBrakePointBehindMe = frontBackCheckPlane.ClassifyPointEpsilon(brakePointA, -car->m_conf->physics.body_size.z) == CP_BACK;
+		bool isTargetBehindMe = frontBackCheckPlane.ClassifyPointEpsilon(positionA, -car->m_conf->physics.body_size.z) == CP_BACK;
 		
 		if(isTargetBehindMe && !isBrakePointBehindMe)
 		{
@@ -318,7 +346,9 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			relateiveSteeringDir = fastNormalize((!bodyMat.getRotationComponent()) * steeringDir);
 		}
 
-		handling.braking = (1.0f - fabs(dot(brakeDir, carMoveDir)))*lowSpeedFactor;// * (brakeDistAtCurSpeed-speedMPS);
+		float brakeFactor = powf(1.0f - fabs(dot(brakeDir, carForward)), AI_BRAKE_POW_FACTOR);
+
+		handling.braking = brakeFactor*lowSpeedFactor;// * (brakeDistAtCurSpeed-speedMPS);
 		handling.acceleration = 1.0f - handling.braking;
 
 		handling.steering = atan2(relateiveSteeringDir.x, relateiveSteeringDir.z) * (isTargetBehindMe && isBrakePointBehindMe ? -1.0f : 1.0f);

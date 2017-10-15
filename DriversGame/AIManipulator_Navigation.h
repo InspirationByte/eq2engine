@@ -21,7 +21,7 @@ public:
 	void SetPath(pathFindResult_t& newPath, const Vector3D& searchPos);
 
 	Vector3D GetAdvancedPointByDist(int& startSeg, float distFromSegment) const;
-	int FindSegmentByPosition(const Vector3D& pos, const Vector3D& forward, float distToSegment);
+	int FindSegmentByPosition(const Vector3D& pos, float distToSegment);
 
 	// the position driver needs reach to
 	Vector3D			m_driveTarget;
