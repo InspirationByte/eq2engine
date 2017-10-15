@@ -232,6 +232,13 @@ void CReplayData::UpdateReplayObject( int replayId )
 		PlayVehicleFrame( rep );
 }
 
+void CReplayData::ForceUpdateReplayObjects()
+{
+	for(int i = 0; i < m_activeVehicles.numElem(); i++)
+	{
+		UpdateReplayObject(m_activeVehicles[i]);
+	}
+}
 
 // returns status the current car playing or not
 bool CReplayData::IsCarPlaying( CCar* pCar )
