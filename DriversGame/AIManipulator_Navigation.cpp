@@ -54,6 +54,33 @@ void DebugDrawPath(pathFindResult_t& path, float time = -1.0f)
 
 //------------------------------------------------------------------------
 
+void SimplifyPath(pathFindResult_t& path)
+{
+	return;
+	
+	if(path.points.numElem() <= 2)
+		return;
+
+	IVector2D lastPointPos = path.points[0];
+
+	for (int i = 1; i < path.points.numElem()-1; i++)
+	{
+		IVector2D pointPos = path.points[i];
+
+		Vector2D dir(Vector2D(pointPos)-Vector2D(lastPointPos));
+		dir = normalize(dir);
+
+		if( g_pGameWorld->m_level.Nav_TestLine2D(lastPointPos, pointPos+dir*3) >= 1.0f)
+		{
+			path.points.removeIndex(i);
+			i--;
+			continue;
+		}
+
+		lastPointPos = pointPos;
+	}
+}
+
 CAINavigationManipulator::CAINavigationManipulator()
 {
 	m_driveTarget = vec3_zero;
@@ -67,6 +94,8 @@ CAINavigationManipulator::CAINavigationManipulator()
 void CAINavigationManipulator::SetPath(pathFindResult_t& newPath, const Vector3D& searchPos)
 {
 	m_path = newPath;
+	SimplifyPath( m_path );
+
 	m_pathPointIdx = 0;
 	m_timeToUpdatePath = AI_PATH_TIME_TO_UPDATE;
 
@@ -296,13 +325,15 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 
 		const float AI_BRAKE_TARGET_CONST_DISTANCE = -1.0f;
 
-		const float AI_BRAKE_TARGET_DISTANCE_A = 0.1f;
-		const float AI_BRAKE_TARGET_DISTANCE_B = 0.25f;
+		const float AI_BRAKE_TARGET_DISTANCE_A = 0.0f;
+		const float AI_BRAKE_TARGET_DISTANCE_B = 5.0f;
+
+		const float	AI_BRAKE_SPEED_DISTANCE_FACTOR = 0.8f;
 
 		const float AI_STEERING_PATH_CORRECTION_DISTANCE = 5.0f;
 
 		// brake curve
-		const float AI_BRAKE_POW_FACTOR = 0.65f;
+		const float AI_BRAKE_POW_FACTOR = 0.6f;
 
 		float steeringBySpeedModifier = RemapValClamp(speedMPS, 0.0f, 40.0f, 1.0f, 3.0f);
 		float brakeBySpeedModifier = RemapValClamp(speedMPS, 0.0f, 30.0f, 0.5f, 1.0f);
@@ -317,10 +348,10 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 
 		// calculate steering angle for applying brakes
 		pathIdx = m_pathPointIdx;
-		Vector3D brakePointA = GetAdvancedPointByDist(pathIdx, distFromPathSegStart + AI_BRAKE_TARGET_CONST_DISTANCE + AI_BRAKE_TARGET_DISTANCE_A * brakeBySpeedModifier + brakeDistAtCurSpeed * weatherBrakeDistModifier);
+		Vector3D brakePointA = GetAdvancedPointByDist(pathIdx, distFromPathSegStart + AI_BRAKE_TARGET_CONST_DISTANCE + AI_BRAKE_TARGET_DISTANCE_A * brakeBySpeedModifier + brakeDistAtCurSpeed * weatherBrakeDistModifier * AI_BRAKE_SPEED_DISTANCE_FACTOR);
 
 		pathIdx = m_pathPointIdx;
-		Vector3D brakePointB = GetAdvancedPointByDist(pathIdx, distFromPathSegStart + AI_BRAKE_TARGET_CONST_DISTANCE + AI_BRAKE_TARGET_DISTANCE_B * brakeBySpeedModifier + brakeDistAtCurSpeed * weatherBrakeDistModifier);
+		Vector3D brakePointB = GetAdvancedPointByDist(pathIdx, distFromPathSegStart + AI_BRAKE_TARGET_CONST_DISTANCE + AI_BRAKE_TARGET_DISTANCE_B * brakeBySpeedModifier + brakeDistAtCurSpeed * weatherBrakeDistModifier * AI_BRAKE_SPEED_DISTANCE_FACTOR);
 
 		pathIdx = m_pathPointIdx;
 		Vector3D pathCorrectionPoint = GetAdvancedPointByDist(pathIdx, distFromPathSegStart + AI_STEERING_PATH_CORRECTION_DISTANCE);

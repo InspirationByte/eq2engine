@@ -2448,7 +2448,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 			{
 				m_navOpenSet.append(cellpoint_t{neighbourPoint, &neighbourCell});
 				neighbourCell.flags |= 0x2;
-				
+				/*
 				// DEBUG DRAW
 				Vector3D offset(0.0f, 0.25f, 0.0f);
 				Vector3D pointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(neighbourPoint) + offset;
@@ -2458,7 +2458,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 
 				debugoverlay->Box3D(pointPos - 0.15f, pointPos + 0.15f, ColorRGBA(1, 1, 0, 1.0f), dispalyTime);
 				debugoverlay->Line3D(pointPos, pointPos + (pointPos2-pointPos)*0.25f, ColorRGBA(1, 1, 0, 1), ColorRGBA(1, 1, 0, 1), dispalyTime);
-				
+				*/
 			}
 		}
 	}
