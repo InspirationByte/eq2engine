@@ -77,6 +77,8 @@ void CShadowRenderer::Init()
 
 		m_matVehicle = materials->CreateMaterial("_shadowbuild_vehicle", &shadowBuildParams);
 		m_matVehicle->Ref_Grab();
+
+		m_matVehicle->LoadShaderAndTextures();
 	}
 
 	{
@@ -84,6 +86,8 @@ void CShadowRenderer::Init()
 
 		m_matSkinned = materials->CreateMaterial("_shadowbuild_skinned", &shadowBuildParams);
 		m_matSkinned->Ref_Grab();
+
+		m_matSkinned->LoadShaderAndTextures();
 	}
 
 	{
@@ -91,6 +95,8 @@ void CShadowRenderer::Init()
 
 		m_matSimple = materials->CreateMaterial("_shadowbuild", &shadowBuildParams);
 		m_matSimple->Ref_Grab();
+
+		m_matSimple->LoadShaderAndTextures();
 	}
 
 	{
@@ -104,6 +110,8 @@ void CShadowRenderer::Init()
 
 		m_shadowResult = materials->CreateMaterial("_dshadow", &shadowParams);
 		m_shadowResult->Ref_Grab();
+
+		m_shadowResult->LoadShaderAndTextures();
 	}
 
 	CSpriteBuilder::Init();

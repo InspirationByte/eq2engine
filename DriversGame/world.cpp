@@ -664,6 +664,8 @@ void CGameWorld::Init()
 
 		m_pointQueryMat = materials->CreateMaterial("_occquery", &pointQueryParams);
 		m_pointQueryMat->Ref_Grab();
+
+		materials->PutMaterialToLoadingQueue(m_pointQueryMat);
 	}
 
 	if(!m_reflectionTex)
@@ -696,6 +698,8 @@ void CGameWorld::Init()
 
 		m_blurYMaterial = materials->CreateMaterial("_reflBlur", &blurParams);
 		m_blurYMaterial->Ref_Grab();
+
+		materials->PutMaterialToLoadingQueue(m_blurYMaterial);
 	}
 
 	if(!m_skyMaterial)
@@ -707,10 +711,9 @@ void CGameWorld::Init()
 
 		m_skyMaterial = materials->CreateMaterial("_sky", &skyParams);
 		m_skyMaterial->Ref_Grab();
-	}
 
-	// initialize material
-	m_skyMaterial->LoadShaderAndTextures();
+		m_skyMaterial->LoadShaderAndTextures();
+	}
 
 	// get material vars we gonna control
 	m_skyColor = m_skyMaterial->GetMaterialVar("color", "[1 1 1 1]");

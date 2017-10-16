@@ -940,6 +940,9 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 														batch->verts[eindxs[2]].position,
 														batch->verts[eindxs[0]].position);
 
+						// FIXME: don't add degenerate triangles to physics
+						// or it will make NaN issue (and ASSERT occur in CEqRigidBody::AccumulateForces)
+
 						batch->verts[eindxs[0]].normal = norm1;
 						batch->verts[eindxs[1]].normal = norm1;
 						batch->verts[eindxs[2]].normal = norm1;

@@ -1056,8 +1056,7 @@ void CState_Game::RenderMainView2D( float fDt )
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
 	// draw HUD
-	if( g_replayData->m_state != REPL_PLAYING )
-		g_pGameHUD->Render( fDt, screenSize );
+	g_pGameHUD->Render( fDt, screenSize );
 
 	Director_Draw( fDt );
 

@@ -176,6 +176,8 @@ bool CEqFontCache::Init()
 
 	m_sdfRange = m_sdfMaterial->GetMaterialVar("range", "[0.94 0.06]");
 
+	m_sdfMaterial->LoadShaderAndTextures();
+
 	return true;	
 }
 
@@ -257,7 +259,6 @@ IEqFont* CEqFontCache::GetFont(const char* name, int bestSize, int styleFlags, b
 		else
 			return NULL;
 	}
-		
 
 	return family->FindBestSize(bestSize, styleFlags);
 }

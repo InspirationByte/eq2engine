@@ -296,6 +296,9 @@ void CEqRigidBody::AccumulateForces(float time)
 	// and accumulate
 	Quaternion angVelSpinning = AngularVelocityToSpin(m_orientation, m_angularVelocity*m_angularFactor);
 
+	// encountered
+	ASSERT(angVelSpinning.isNan() == false);
+
 	m_orientation += (angVelSpinning * time);
 	m_orientation.fastNormalize();
 
@@ -311,8 +314,8 @@ void CEqRigidBody::AccumulateForces(float time)
 	}
 
 	// clear them
-	m_totalTorque = FVector3D(0);
-	m_totalForce = FVector3D(0);
+	m_totalTorque = Vector3D(0);
+	m_totalForce = Vector3D(0);
 
 	m_cachedTransformDirty = true;
 
