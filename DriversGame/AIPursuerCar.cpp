@@ -822,6 +822,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	}
 
 	m_navAffector.m_manipulator.m_driveTarget = m_targInfo.target->GetOrigin();
+	m_navAffector.m_manipulator.m_driveTargetVelocity = m_targInfo.target->GetVelocity();
 	m_navAffector.Update(this, fDt);
 	
 	int controls = IN_ACCELERATE | IN_ANALOGSTEER | IN_HORN;

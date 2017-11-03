@@ -25,6 +25,7 @@ public:
 
 	// the position driver needs reach to
 	Vector3D			m_driveTarget;
+	Vector3D			m_driveTargetVelocity;
 
 protected:
 	pathFindResult_t	m_path;
