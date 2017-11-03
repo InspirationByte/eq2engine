@@ -16,6 +16,8 @@
 
 #include "shaderapigl_def.h"
 
+extern bool GLCheckError(const char* op);
+
 CGLTexture::CGLTexture()
 {
 	m_flLod = 0.0f;
@@ -47,11 +49,15 @@ void CGLTexture::ReleaseTextures()
 	if (glTarget == GL_RENDERBUFFER)
 	{
 		glDeleteRenderbuffers(1, &glDepthID);
+		GLCheckError("del tex renderbuffer");
 	}
 	else
 	{
 		for(int i = 0; i < textures.numElem(); i++)
+		{
 			glDeleteTextures(1, &textures[i].glTexID);
+			GLCheckError("del tex");
+		}
 	}
 }
 
@@ -131,6 +137,7 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
         GLenum srcType = chanTypePerFormat[m_iFormat];
 
         glGetTexImage(glTarget,m_nLockLevel, srcFormat, srcType, m_lockPtr);
+		GLCheckError("lock get tex image");
 
         glBindTexture(glTarget, 0);
     }
@@ -153,6 +160,9 @@ void CGLTexture::Unlock()
 
 			glBindTexture(glTarget, textures[0].glTexID);
 			glTexSubImage2D(glTarget, 0, 0, 0, m_iWidth, m_iHeight, srcFormat, srcType, m_lockPtr);
+
+			GLCheckError("unlock upload tex image");
+
 			glBindTexture(glTarget, 0);
 		}
 

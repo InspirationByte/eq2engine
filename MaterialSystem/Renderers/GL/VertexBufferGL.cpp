@@ -73,6 +73,7 @@ void CVertexBufferGL::Update(void* data, int size, int offset, bool discard /*= 
 	pGLRHI->GL_CRITICAL();
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
+	GLCheckError("vertexbuffer update bind");
 
 	glBufferSubData(GL_ARRAY_BUFFER, offset*m_strideSize, size*m_strideSize, data);
 	GLCheckError("vertexbuffer update");
@@ -147,6 +148,7 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 	{
 		pGLRHI->GL_CRITICAL();
 		glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
+		GLCheckError("vertexbuffer get data bind");
 
 		// lock whole buffer
 		glGetBufferSubData(GL_ARRAY_BUFFER, m_lockOffs*m_strideSize, nLockByteCount, m_lockPtr);
@@ -179,6 +181,7 @@ void CVertexBufferGL::Unlock()
 			pGLRHI->GL_CRITICAL();
 
 			glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
+			GLCheckError("vertexbuffer unmap bind");
 
 #ifdef USE_GLES2
 			glUnmapBuffer(GL_ARRAY_BUFFER);

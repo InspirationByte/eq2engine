@@ -152,7 +152,6 @@
   <ItemGroup>
     <ClCompile Include="CTexture.cpp" />
     <ClCompile Include="D3D9\CD3D9Texture.cpp" />
-    <ClCompile Include="D3D9\D3D9MeshBuilder.cpp" />
     <ClCompile Include="D3D9\D3D9OcclusionQuery.cpp" />
     <ClCompile Include="D3D9\D3D9ShaderProgram.cpp" />
     <ClCompile Include="D3D9\D3D9SwapChain.cpp" />
@@ -175,7 +174,6 @@
     <ClInclude Include="..\public\Renderer\IVertexBuffer.h" />
     <ClInclude Include="..\public\Renderer\IVertexFormat.h" />
     <ClInclude Include="CTexture.h" />
-    <ClInclude Include="D3D9\D3D9MeshBuilder.h" />
     <ClInclude Include="D3D9\D3D9OcclusionQuery.h" />
     <ClInclude Include="D3D9\D3D9RenderState.h" />
     <ClInclude Include="D3D9\D3D9SwapChain.h" />

@@ -280,12 +280,6 @@ void CShadowRenderer::RenderShadowCasters()
 		shadowListObject_t* objectGroup = (shadowListObject_t*)userData;
 		CGameObject* firstObject = objectGroup->object;
 
-		// render shadow to the rt
-		if(r_shadows_debugatlas.GetBool())
-			g_pShaderAPI->Clear( true,false,false, ColorRGBA((float)i / (float)m_texAtlasPacker.GetRectangleCount()) );
-		else
-			g_pShaderAPI->Clear( true,false,false, ColorRGBA(1.0f) );
-
 		// calculate view
 		Vector2D shadowPos = shadowRect.vleftTop*SHADOW_DESCALING;
 		Vector2D shadowSize = shadowRect.GetSize()-SHADOW_CROP;
@@ -295,6 +289,12 @@ void CShadowRenderer::RenderShadowCasters()
 		shadowRect.vleftTop *= m_shadowTexelSize;
 		shadowRect.vrightBottom *= m_shadowTexelSize;
 
+		// render shadow to the rt
+		if(r_shadows_debugatlas.GetBool())
+			g_pShaderAPI->Clear( true,false,false, ColorRGBA((float)i / (float)m_texAtlasPacker.GetRectangleCount()) );
+		else
+			g_pShaderAPI->Clear( true,false,false, ColorRGBA(1.0f) );
+		
 		// take shadow height for near plane using first object AABB
 		float shadowHeight = length(firstObject->m_bbox.GetSize())*0.5f;
 

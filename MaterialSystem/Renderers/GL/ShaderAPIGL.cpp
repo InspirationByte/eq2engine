@@ -13,7 +13,6 @@
 #include "IndexBufferGL.h"
 #include "GLShaderProgram.h"
 #include "GLRenderState.h"
-#include "GLMeshBuilder.h"
 #include "GLOcclusionQuery.h"
 
 #include "DebugInterface.h"
@@ -32,83 +31,16 @@ HOOK_TO_CVAR(r_loadmiplevel);
 #include "glx_caps.hpp"
 #endif // PLAT_LINUX
 
-#ifdef USE_GLES2
-
-static char s_FFPMeshBuilder_VertexProgram[] =
-"precision lowp float;\n"
-"attribute vec4 input_vPos;\n"
-"attribute vec2 input_texCoord;\n"
-"attribute vec4 input_color;\n"
-"varying vec2 texCoord;\n"
-"varying vec4 vColor;\n"
-"uniform mat4 WVP;\n"
-"void main()\n"
-"{\n"
-"	gl_Position = WVP * input_vPos;\n"
-"	vColor = input_color;\n"
-"	texCoord = input_texCoord;\n"
-"}";
-
-static char s_FFPMeshBuilder_NoTexture_PixelProgram[] =
-"precision lowp float;\n"
-"varying vec4 vColor;\n"
-"void main()\n"
-"{\n"
-"	gl_FragColor = vColor;\n"
-"}";
-
-static char s_FFPMeshBuilder_Textured_PixelProgram[] =
-"precision lowp float;\n"
-"uniform sampler2D Base;\n"
-"varying vec2 texCoord;\n"
-"varying vec4 vColor;\n"
-"void main()\n"
-"{\n"
-"	gl_FragColor = texture2D(Base, texCoord)*vColor;\n"
-"}";
-
-#else
-
-static char s_FFPMeshBuilder_VertexProgram[] =
-"attribute vec4 input_vPos;\n"
-"attribute vec2 input_texCoord;\n"
-"attribute vec4 input_color;\n"
-"varying vec2 texCoord;\n"
-"varying vec4 vColor;\n"
-"uniform mat4 WVP;\n"
-"void main()\n"
-"{\n"
-"	gl_Position = gl_ModelViewProjectionMatrix * input_vPos;\n"
-"	vColor = input_color;\n"
-"	texCoord = input_texCoord;\n"
-"}";
-
-static char s_FFPMeshBuilder_NoTexture_PixelProgram[] =
-"varying vec4 vColor;\n"
-"void main()\n"
-"{\n"
-"	gl_FragColor = vColor;\n"
-"}";
-
-static char s_FFPMeshBuilder_Textured_PixelProgram[] =
-"uniform sampler2D Base;\n"
-"varying vec2 texCoord;\n"
-"varying vec4 vColor;\n"
-"void main()\n"
-"{\n"
-"	gl_FragColor = texture2D(Base, texCoord)*vColor;\n"
-"}";
-
-#endif // USE_GLES2
-
-ConVar gl_report_errors("gl_report_errors", "1", NULL, CV_ARCHIVE);
-
+ConVar gl_report_errors("gl_report_errors", "1");
+ConVar gl_break_on_error("gl_break_on_error", "0");
 
 bool GLCheckError(const char* op)
 {
 	GLenum lastError = glGetError();
 	if(lastError != GL_NO_ERROR)
 	{
+		ASSERT(!gl_break_on_error.GetBool());
+
         EqString errString = varargs("code %x", lastError);
 
         switch(lastError)
@@ -194,8 +126,6 @@ ShaderAPIGL::ShaderAPIGL() : ShaderAPI_Base()
 
 	m_nCurrentFrontFace = 0;
 
-	m_meshBuilder = NULL;
-
 	m_nCurrentSrcFactor = BLENDFACTOR_ONE;
 	m_nCurrentDstFactor = BLENDFACTOR_ZERO;
 	m_nCurrentBlendFunc = BLENDFUNC_ADD;
@@ -219,9 +149,6 @@ ShaderAPIGL::ShaderAPIGL() : ShaderAPI_Base()
 	m_depthBuffer = 0;
 
 	m_nCurrentMatrixMode = MATRIXMODE_VIEW;
-
-	m_pMeshBufferTexturedShader = NULL;
-	m_pMeshBufferNoTextureShader = NULL;
 
 	m_boundInstanceStream = -1;
 }
@@ -277,66 +204,6 @@ void ShaderAPIGL::Init( shaderAPIParams_t &params)
 	glPixelStorei(GL_PACK_ALIGNMENT,   1);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-	memset(&m_caps, 0, sizeof(m_caps));
-
-	m_caps.maxTextureAnisotropicLevel = 1;
-
-#ifdef USE_GLES2
-	m_caps.isHardwareOcclusionQuerySupported = true;
-	m_caps.isInstancingSupported = true; // GL ES 3
-#else
-	m_caps.isInstancingSupported = GLAD_GL_ARB_instanced_arrays && GLAD_GL_ARB_draw_instanced;
-	m_caps.isHardwareOcclusionQuerySupported = GLAD_GL_ARB_occlusion_query;
-
-	if (GLAD_GL_EXT_texture_filter_anisotropic)
-		glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_caps.maxTextureAnisotropicLevel);
-
-#endif // USE_GLES2
-
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &m_caps.maxTextureSize);
-
-	m_caps.maxRenderTargets = MAX_MRTS;
-
-	m_caps.maxVertexGenericAttributes = MAX_GL_GENERIC_ATTRIB;
-	m_caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
-
-	m_caps.maxTextureUnits = 1;
-	m_caps.maxVertexStreams = MAX_VERTEXSTREAM;
-	m_caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
-
-	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &m_caps.maxVertexGenericAttributes);
-
-	// limit by the MAX_GL_GENERIC_ATTRIB defined by ShaderAPI
-	m_caps.maxVertexGenericAttributes = min(MAX_GL_GENERIC_ATTRIB, m_caps.maxVertexGenericAttributes);
-
-#ifdef USE_GLES2
-	// ES 2.0 supports shaders
-	m_caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED;
-	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &m_caps.maxTextureUnits);
-#else
-	m_caps.shadersSupportedFlags = ((GLAD_GL_ARB_vertex_shader || GLAD_GL_ARB_shader_objects) ? SHADER_CAPS_VERTEX_SUPPORTED : 0)
-								 | ((GLAD_GL_ARB_fragment_shader || GLAD_GL_ARB_shader_objects) ? SHADER_CAPS_PIXEL_SUPPORTED : 0);
-
-	if (m_caps.shadersSupportedFlags & SHADER_CAPS_PIXEL_SUPPORTED)
-		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &m_caps.maxTextureUnits);
-	else
-		glGetIntegerv(GL_MAX_TEXTURE_UNITS, &m_caps.maxTextureUnits);
-#endif // USE_GLES2
-
-	if(m_caps.maxTextureUnits > MAX_TEXTUREUNIT)
-		m_caps.maxTextureUnits = MAX_TEXTUREUNIT;
-
-#ifndef USE_GLES2
-	if (GLAD_GL_ARB_draw_buffers)
-#endif // USE_GLES2
-	{
-		m_caps.maxRenderTargets = 1;
-		glGetIntegerv(GL_MAX_DRAW_BUFFERS, &m_caps.maxRenderTargets);
-	}
-
-	if (m_caps.maxRenderTargets > MAX_MRTS)
-		m_caps.maxRenderTargets = MAX_MRTS;
-
 	for (int i = 0; i < m_caps.maxRenderTargets; i++)
 		m_drawBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
 
@@ -376,43 +243,10 @@ void ShaderAPIGL::Init( shaderAPIParams_t &params)
 		if(s_uniformFuncs[i] == NULL)
 			ASSERTMSG(false, varargs("Uniform function for '%d' is not ok, pls check extensions\n", i));
 	}
-
-	if(m_pMeshBufferTexturedShader == NULL)
-	{
-		m_pMeshBufferTexturedShader = CreateNewShaderProgram("MeshBuffer_Textured");
-
-		shaderProgramCompileInfo_t sinfo;
-
-		sinfo.apiPrefs = &baseMeshBufferParams;
-		sinfo.ps.text = s_FFPMeshBuilder_Textured_PixelProgram;
-		sinfo.vs.text = s_FFPMeshBuilder_VertexProgram;
-		sinfo.disableCache = true;
-
-		CompileShadersFromStream(m_pMeshBufferTexturedShader, sinfo);
-	}
-
-	if(m_pMeshBufferNoTextureShader == NULL)
-	{
-		m_pMeshBufferNoTextureShader = CreateNewShaderProgram("MeshBuffer_NoTexture");
-
-		shaderProgramCompileInfo_t sinfo;
-
-		sinfo.apiPrefs = &baseMeshBufferParams;
-		sinfo.ps.text = s_FFPMeshBuilder_NoTexture_PixelProgram;
-		sinfo.vs.text = s_FFPMeshBuilder_VertexProgram;
-		sinfo.disableCache = true;
-
-		CompileShadersFromStream(m_pMeshBufferNoTextureShader,sinfo);
-	}
-
-	m_meshBuilder = new CGLMeshBuilder();
 }
 
 void ShaderAPIGL::Shutdown()
 {
-	delete m_meshBuilder;
-	m_meshBuilder = NULL;
-
 	ShaderAPI_Base::Shutdown();
 }
 
@@ -815,6 +649,8 @@ void ShaderAPIGL::Clear(bool bClearColor,
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		clearBits |= GL_COLOR_BUFFER_BIT;
 		glClearColor(fillColor.x, fillColor.y, fillColor.z, 1.0f);
+
+		GLCheckError("clr color");
 	}
 
 	if (bClearDepth)
@@ -825,6 +661,8 @@ void ShaderAPIGL::Clear(bool bClearColor,
 #ifndef USE_GLES2
 		glClearDepth(fDepth);
 #endif // USE_GLES2
+
+		GLCheckError("clr depth");
 	}
 
 	if (bClearStencil)
@@ -832,11 +670,14 @@ void ShaderAPIGL::Clear(bool bClearColor,
 		glStencilMask(GL_TRUE);
 		clearBits |= GL_STENCIL_BUFFER_BIT;
 		glClearStencil(nStencil);
+
+		GLCheckError("clr stencil");
 	}
 
 	if (clearBits)
 	{
 		glClear(clearBits);
+		GLCheckError("clr bits");
 	}
 
 
@@ -938,8 +779,6 @@ void ShaderAPIGL::FreeTexture(ITexture* pTexture)
 
 		m_TextureList.remove(pTexture);
 		delete pTex;
-
-		GLCheckError("delete texture");
 	}
 }
 
@@ -1374,8 +1213,19 @@ void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destT
 	// 1. preserve old render targets
 	// 2. set shader
 	// 3. render to texture
+	CGLTexture* srcTexture = (CGLTexture*)srcTarget;
+	CGLTexture* destTexture = (CGLTexture*)destTex;
+	/*
+	ChangeRenderTarget( destTex );
 
-	ASSERT(!"TODO: Implement ShaderAPIGL::CopyRendertargetToTexture()");
+	// set source
+	glBindTexture(GL_TEXTURE_2D, srcTexture->textures[0].glTexID);
+
+	glCopyTexSubImage2D(
+
+	//ChangeRenderTargetToBackBuffer();
+	*/
+	//ASSERT(!"TODO: Implement ShaderAPIGL::CopyRendertargetToTexture()");
 }
 
 // Changes render target (MRT)
@@ -1553,8 +1403,6 @@ void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 	{
 		m_pCurrentDepthRenderTarget = NULL;
 	}
-
-
 }
 
 //-------------------------------------------------------------
@@ -1721,21 +1569,20 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 			{
-				if (cvf->m_genericAttribs[i].streamId == nStream)
+				if (cvf->m_genericAttribs[i].streamId != nStream)
+					continue;
+
+				if(cvf->m_genericAttribs[i].sizeInBytes)
 				{
-					if(cvf->m_genericAttribs[i].sizeInBytes)
-					{
-						glVertexAttribPointer(i, cvf->m_genericAttribs[i].sizeInBytes, glTypes[cvf->m_genericAttribs[i].attribFormat], GL_TRUE, vertexSize, base + cvf->m_genericAttribs[i].offsetInBytes);
-						GLCheckError("attribpointer");
-					}
-
-					// instance vertex attrib divisor
-					int selStreamParam = instanceBuffer ? 1 : 0;
-
-					glVertexAttribDivisorARB(i, selStreamParam);
-
-					GLCheckError("divisor");
+					glVertexAttribPointer(i, cvf->m_genericAttribs[i].sizeInBytes, glTypes[cvf->m_genericAttribs[i].attribFormat], GL_TRUE, vertexSize, base + cvf->m_genericAttribs[i].offsetInBytes);
+					GLCheckError("attribpointer"); 
 				}
+
+				// instance vertex attrib divisor
+				int selStreamParam = instanceBuffer ? 1 : 0;
+
+				glVertexAttribDivisorARB(i, selStreamParam);
+				GLCheckError("divisor");
 			}
 		}
 	}
@@ -2516,29 +2363,6 @@ void ShaderAPIGL::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVer
 	m_nDrawIndexedPrimitiveCalls++;
 	m_nDrawCalls++;
 	m_nTrianglesCount += nTris;
-}
-
-// mesh buffer FFP emulation
-void ShaderAPIGL::DrawMeshBufferPrimitives(ER_PrimitiveType nType, int nVertices, int nIndices)
-{
-	if(m_pSelectedShader == NULL)
-	{
-		if(m_pCurrentTextures[0] == NULL)
-			SetShader(m_pMeshBufferNoTextureShader);
-		else
-			SetShader(m_pMeshBufferTexturedShader);
-
-		Matrix4x4 matrix = identity4() * m_matrices[MATRIXMODE_PROJECTION] * (m_matrices[MATRIXMODE_VIEW] * m_matrices[MATRIXMODE_WORLD]);
-
-		SetShaderConstantMatrix4("WVP", matrix);
-	}
-
-	Apply();
-
-	if(nIndices > 0)
-		DrawIndexedPrimitives(nType, 0, nIndices, 0, nVertices);
-	else
-		DrawNonIndexedPrimitives(nType, 0, nVertices);
 }
 
 bool ShaderAPIGL::IsDeviceActive()

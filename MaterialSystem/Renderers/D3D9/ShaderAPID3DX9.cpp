@@ -43,7 +43,6 @@ ShaderAPID3DX9::ShaderAPID3DX9() : ShaderAPI_Base()
 	Msg("Initializing Direct3D9 Shader API...\n");
 
 	m_pEventQuery = NULL;
-	m_meshBuilder = NULL;
 
 	m_pD3DDevice = NULL;
 
@@ -417,37 +416,9 @@ void ShaderAPID3DX9::Init( shaderAPIParams_t &params )
 
 	CreateD3DFrameBufferSurfaces();
 
-	memset(&m_caps, 0, sizeof(m_caps));
 
-	m_caps.isHardwareOcclusionQuerySupported = m_hCaps.PixelShaderVersion >= D3DPS_VERSION(2, 0);
-	m_caps.isInstancingSupported = m_hCaps.VertexShaderVersion >= D3DVS_VERSION(2, 0);
-
-	m_caps.maxTextureAnisotropicLevel = m_hCaps.MaxAnisotropy;
-	m_caps.maxTextureSize = min(m_hCaps.MaxTextureWidth, m_hCaps.MaxTextureHeight);
-	m_caps.maxRenderTargets = m_hCaps.NumSimultaneousRTs;
-	m_caps.maxVertexGenericAttributes = MAX_GENERIC_ATTRIB;
-	m_caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
-	m_caps.maxVertexStreams = MAX_VERTEXSTREAM;
-	m_caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
-
-	m_caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED;
-
-	if (m_hCaps.PixelShaderVersion >= D3DPS_VERSION(1, 0))
-	{
-		m_caps.maxTextureUnits = 4;
-
-		if (m_hCaps.PixelShaderVersion >= D3DPS_VERSION(1, 4)) m_caps.maxTextureUnits = 6;
-		if (m_hCaps.PixelShaderVersion >= D3DPS_VERSION(2, 0)) m_caps.maxTextureUnits = 16;
-	}
-	else
-	{
-		m_caps.maxTextureUnits = m_hCaps.MaxSimultaneousTextures;
-	}
 
 	m_nCurrentMatrixMode = D3DTS_VIEW;
-
-	HOOK_TO_CVAR(r_textureanisotrophy);
-	m_caps.maxTextureAnisotropicLevel = clamp(r_textureanisotrophy->GetInt(), 1, m_caps.maxTextureAnisotropicLevel);
 
 	// Set some of my preferred defaults
 	m_pD3DDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
@@ -456,8 +427,6 @@ void ShaderAPID3DX9::Init( shaderAPIParams_t &params )
 	m_pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 
 	m_pD3DDevice->CreateQuery(D3DQUERYTYPE_EVENT, &m_pEventQuery);
-
-	//m_meshBuilder = new CD3D9MeshBuilder(m_pD3DDevice);
 
 	// set the anisotropic level
 	if (m_caps.maxTextureAnisotropicLevel > 1)
@@ -574,9 +543,6 @@ void ShaderAPID3DX9::Shutdown()
 		m_pEventQuery->Release();
 
 	m_pEventQuery = NULL;
-
-	//delete m_meshBuilder;
-	//m_meshBuilder = NULL;
 }
 
 //-------------------------------------------------------------

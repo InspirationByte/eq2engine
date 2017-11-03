@@ -48,5 +48,5 @@ DECLARE_CMD(writecfg,"Saves the confirugation file", 0)
 		WriteCfgFile(CMD_ARGV(0).c_str(),true);
 	}
 	else
-		WriteCfgFile("config.cfg",true);
+		WriteCfgFile("user.cfg",true);
 }

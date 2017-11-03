@@ -21,6 +21,8 @@
 
 #define GAME_WINDOW_TITLE "The Driver Syndicate" //varargs("Driver Syndicate Alpha [%s] build %d", __DATE__, GetEngineBuildNumber())
 
+#define DEFAULT_CONFIG_PATH			"cfg/config_default.cfg"
+
 // Renderer
 DECLARE_CVAR(r_mode,1024x768,"Screen Resoulution. Resolution string format: WIDTHxHEIGHT" ,CV_ARCHIVE);
 DECLARE_CVAR(r_bpp,32,"Screen bits per pixel",CV_ARCHIVE);
@@ -264,9 +266,17 @@ bool Host_Init()
 	if(!g_pHost->LoadModules())
 		return false;
 
+	int userCfgIdx = g_cmdLine->FindArgument("-user_cfg");
+
+	if(userCfgIdx != -1)
+	{
+		extern ConVar user_cfg;
+		user_cfg.SetValue( g_cmdLine->GetArgumentsOf(userCfgIdx) );
+	}
+
 	// execute configuration files and command line after all libraries are loaded.
 	g_sysConsole->ClearCommandBuffer();
-	g_sysConsole->ParseFileToCommandBuffer("cfg/config_default.cfg");
+	g_sysConsole->ParseFileToCommandBuffer( DEFAULT_CONFIG_PATH );
 	g_sysConsole->ExecuteCommandBuffer();
 
 	EQWNDHANDLE mainWindow = Sys_CreateWindow();
@@ -274,7 +284,7 @@ bool Host_Init()
 	if(!g_pHost->InitSystems( mainWindow, !r_fullscreen.GetBool() ))
 		return false;
 
-	g_cmdLine->ExecuteCommandLine(true, true);
+	g_cmdLine->ExecuteCommandLine(true,true);
 
 	InitSDLJoysticks();
 

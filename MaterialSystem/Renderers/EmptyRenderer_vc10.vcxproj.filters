@@ -122,9 +122,6 @@
     <ClInclude Include="CTexture.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\IMeshBuilder.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources.rc">

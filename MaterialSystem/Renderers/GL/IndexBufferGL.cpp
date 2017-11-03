@@ -61,7 +61,10 @@ void CIndexBufferGL::Update(void* data, int size, int offset, bool discard /*= t
 	pGLRHI->GL_CRITICAL();
 
 	if(currIB != this)
+	{
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+		GLCheckError("indexbuffer update bind");
+	}
 
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset*m_nIndexSize, size*m_nIndexSize, data);
 	GLCheckError("indexbuffer update");
@@ -139,7 +142,10 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 		pGLRHI->GL_CRITICAL();
 
 		if(currIB != this)
+		{
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+			GLCheckError("indexbuffer get data bind");
+		}
 
 		// lock whole buffer
 		glGetBufferSubData(GL_ELEMENT_ARRAY_BUFFER, m_lockOffs*m_nIndexSize, m_lockSize*m_nIndexSize, m_lockPtr);
@@ -173,7 +179,10 @@ void CIndexBufferGL::Unlock()
 			pGLRHI->GL_CRITICAL();
 
 			if(currIB != this)
+			{
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+				GLCheckError("indexbuffer unmap bind");
+			}
 
 #ifdef USE_GLES2
 			glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);

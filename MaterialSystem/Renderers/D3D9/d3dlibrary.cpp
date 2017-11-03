@@ -237,7 +237,50 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 
 	g_pShaderAPI = m_Renderer;
 
-	UpdateWindow(hwnd);
+	//-------------------------------------------
+	// init caps
+	//-------------------------------------------
+	ShaderAPICaps_t& caps = m_Renderer->m_caps;
+
+	memset(&caps, 0, sizeof(caps));
+
+	caps.isHardwareOcclusionQuerySupported = m_d3dCaps.PixelShaderVersion >= D3DPS_VERSION(2, 0);
+	caps.isInstancingSupported = m_d3dCaps.VertexShaderVersion >= D3DVS_VERSION(2, 0);
+
+	caps.maxTextureAnisotropicLevel = m_d3dCaps.MaxAnisotropy;
+	caps.maxTextureSize = min(m_d3dCaps.MaxTextureWidth, m_d3dCaps.MaxTextureHeight);
+	caps.maxRenderTargets = m_d3dCaps.NumSimultaneousRTs;
+	caps.maxVertexGenericAttributes = MAX_GENERIC_ATTRIB;
+	caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
+	caps.maxVertexStreams = MAX_VERTEXSTREAM;
+	caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
+
+	caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED;
+
+	if (m_d3dCaps.PixelShaderVersion >= D3DPS_VERSION(1, 0))
+	{
+		caps.maxTextureUnits = 4;
+
+		if (m_d3dCaps.PixelShaderVersion >= D3DPS_VERSION(1, 4))
+			caps.maxTextureUnits = 6;
+
+		if (m_d3dCaps.PixelShaderVersion >= D3DPS_VERSION(2, 0))
+			caps.maxTextureUnits = 16;
+	}
+	else
+	{
+		caps.maxTextureUnits = m_d3dCaps.MaxSimultaneousTextures;
+	}
+
+	HOOK_TO_CVAR(r_textureanisotrophy);
+	caps.maxTextureAnisotropicLevel = clamp(r_textureanisotrophy->GetInt(), 1, caps.maxTextureAnisotropicLevel);
+
+	// get texture caps
+	for(int i = 0; i < FORMAT_COUNT; i++)
+	{
+		caps.textureFormatsSupported[i] = (m_d3dFactory->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_d3dMode.Format, 0, D3DRTYPE_TEXTURE, formats[i]) == D3D_OK);
+		caps.renderTargetFormatsSupported[i] = (m_d3dFactory->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_d3dMode.Format, D3DUSAGE_RENDERTARGET, D3DRTYPE_SURFACE, formats[i]) == D3D_OK);
+	}
 
 	return true;
 }

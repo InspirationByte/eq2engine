@@ -705,6 +705,73 @@ bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 		glEnable(GL_MULTISAMPLE_ARB);
 #endif // USE_GLES2
 
+	//-------------------------------------------
+	// init caps
+	//-------------------------------------------
+	ShaderAPICaps_t& caps = m_Renderer->m_caps;
+
+	memset(&caps, 0, sizeof(caps));
+
+	caps.maxTextureAnisotropicLevel = 1;
+
+#ifdef USE_GLES2
+	caps.isHardwareOcclusionQuerySupported = true;
+	caps.isInstancingSupported = true; // GL ES 3
+#else
+	caps.isInstancingSupported = GLAD_GL_ARB_instanced_arrays && GLAD_GL_ARB_draw_instanced;
+	caps.isHardwareOcclusionQuerySupported = GLAD_GL_ARB_occlusion_query;
+
+	if (GLAD_GL_EXT_texture_filter_anisotropic)
+		glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &caps.maxTextureAnisotropicLevel);
+
+#endif // USE_GLES2
+
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &caps.maxTextureSize);
+
+	caps.maxRenderTargets = MAX_MRTS;
+
+	caps.maxVertexGenericAttributes = MAX_GL_GENERIC_ATTRIB;
+	caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
+
+	caps.maxTextureUnits = 1;
+	caps.maxVertexStreams = MAX_VERTEXSTREAM;
+	caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
+
+	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &caps.maxVertexGenericAttributes);
+
+	// limit by the MAX_GL_GENERIC_ATTRIB defined by ShaderAPI
+	caps.maxVertexGenericAttributes = min(MAX_GL_GENERIC_ATTRIB, caps.maxVertexGenericAttributes);
+
+#ifdef USE_GLES2
+	// ES 2.0 supports shaders
+	caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED;
+	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &caps.maxTextureUnits);
+#else
+	caps.shadersSupportedFlags = ((GLAD_GL_ARB_vertex_shader || GLAD_GL_ARB_shader_objects) ? SHADER_CAPS_VERTEX_SUPPORTED : 0)
+								 | ((GLAD_GL_ARB_fragment_shader || GLAD_GL_ARB_shader_objects) ? SHADER_CAPS_PIXEL_SUPPORTED : 0);
+
+	if (caps.shadersSupportedFlags & SHADER_CAPS_PIXEL_SUPPORTED)
+		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &caps.maxTextureUnits);
+	else
+		glGetIntegerv(GL_MAX_TEXTURE_UNITS, &caps.maxTextureUnits);
+#endif // USE_GLES2
+
+	if(caps.maxTextureUnits > MAX_TEXTUREUNIT)
+		caps.maxTextureUnits = MAX_TEXTUREUNIT;
+
+#ifndef USE_GLES2
+	if (GLAD_GL_ARB_draw_buffers)
+#endif // USE_GLES2
+	{
+		caps.maxRenderTargets = 1;
+		glGetIntegerv(GL_MAX_DRAW_BUFFERS, &caps.maxRenderTargets);
+	}
+
+	if (caps.maxRenderTargets > MAX_MRTS)
+		caps.maxRenderTargets = MAX_MRTS;
+
+	GLCheckError("caps check");
+
 	return true;
 }
 
@@ -772,6 +839,7 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 #ifdef USE_GLES2
 
 	eglSwapBuffers(eglDisplay, eglSurface);
+	GLCheckError("swap buffers");
 
 #elif PLAT_WIN
 	if (wgl::exts::var_EXT_swap_control)
@@ -818,6 +886,7 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 	if (glContext != NULL)
 	{
 		glViewport(0, 0, m_width, m_height);
+		GLCheckError("set viewport");
 	}
 }
 

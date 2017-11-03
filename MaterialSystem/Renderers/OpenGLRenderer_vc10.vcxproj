@@ -203,7 +203,6 @@
     <ClCompile Include="GL\glad_es3.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="GL\GLMeshBuilder.cpp" />
     <ClCompile Include="GL\GLOcclusionQuery.cpp" />
     <ClCompile Include="GL\GLShaderProgram.cpp" />
     <ClCompile Include="GL\gl_loader.cpp" />
@@ -227,7 +226,6 @@
     <ClInclude Include="GL\glad_es3.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="GL\GLMeshBuilder.h" />
     <ClInclude Include="GL\GLOcclusionQuery.h" />
     <ClInclude Include="GL\GLRenderState.h" />
     <ClInclude Include="GL\GLShaderProgram.h" />
