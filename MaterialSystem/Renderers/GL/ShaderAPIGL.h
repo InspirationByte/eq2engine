@@ -71,7 +71,6 @@ class 		CIndexBufferGL;
 class		CGLTexture;
 class		CGLRenderLib;
 class		CGLShaderProgram;
-class		CGLMeshBuilder;
 
 class ShaderAPIGL : public ShaderAPI_Base
 {
@@ -331,9 +330,6 @@ public:
 	// Draw elements
 	void				DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices);
 
-	// mesh buffer FFP emulation
-	void				DrawMeshBufferPrimitives(ER_PrimitiveType nType, int nVertices, int nIndices);
-
 protected:
 
 	void				GL_CRITICAL();
@@ -385,11 +381,6 @@ private:
 
 	int						m_nCurrentMatrixMode;
 	Matrix4x4				m_matrices[4];
-
-	IShaderProgram*			m_pMeshBufferNoTextureShader;
-	IShaderProgram*			m_pMeshBufferTexturedShader;
-
-	CGLMeshBuilder*			m_meshBuilder;
 
 #ifdef USE_GLES2
     EGLNativeDisplayType	m_hdc;

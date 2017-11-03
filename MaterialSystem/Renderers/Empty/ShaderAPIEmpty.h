@@ -9,39 +9,9 @@
 #define SHADERAPIEMPTY_H
 
 #include "../ShaderAPI_Base.h"
-#include "IMeshBuilder.h"
 
 #include "CEmptyTexture.h"
 #include "imaging/ImageLoader.h"
-
-class CEmptyMeshBuilder : public IMeshBuilder
-{
-	void		Begin(ER_PrimitiveType type) {}
-	void		End() {}
-
-	// color setup
-	void		Color3f( float r, float g, float b ){}
-	void		Color3fv( float const *rgb ){}
-	void		Color4f( float r, float g, float b, float a ){}
-	void		Color4fv( float const *rgba ){}
-
-	// position setup
-	void		Position3f	(float x, float y, float z){}
-	void		Position3fv	(const float *v) {}
-
-	// normal setup
-	void		Normal3f	(float nx, float ny, float nz){}
-	void		Normal3fv	(const float *v){}
-
-	void		TexCoord2f	(float s, float t){}
-	void		TexCoord2fv	(const float *v){}
-	void		TexCoord3f	(float s, float t, float r){}
-	void		TexCoord3fv	(const float *v){}
-
-	void		AdvanceVertex() {}	// advances vertex
-};
-
-static CEmptyMeshBuilder g_emptyMeshBuilder;
 
 class CEmptyVertexBuffer : public IVertexBuffer
 {

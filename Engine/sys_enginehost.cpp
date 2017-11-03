@@ -9,7 +9,6 @@
 #include "IEngineGame.h"
 #include "sys_console.h"
 
-
 #include "Imaging/ImageLoader.h"
 
 #include "materialsystem/IMaterialSystem.h"
@@ -46,6 +45,8 @@ enum HostEmulationMode_e
 //------------------
 // Generic settings
 //------------------
+
+#define DEFAULT_CONFIG_PATH			"cfg/config_default.cfg"
 
 // Renderer
 DECLARE_CVAR		(r_mode,1024x768,"Screen Resoulution. Resolution string format: WIDTHxHEIGHT" ,CV_ARCHIVE);
@@ -850,11 +851,12 @@ bool CEngineHost::Init()
 	if(!initStatus)
 		return initStatus;
 
+	// first execute command line
 	g_cmdLine->ExecuteCommandLine(true,true);
 
 	// execute configuration files and command line after all libraries are loaded.
 	g_sysConsole->ClearCommandBuffer();
-	g_sysConsole->ParseFileToCommandBuffer("cfg/config_default.cfg");
+	g_sysConsole->ParseFileToCommandBuffer( DEFAULT_CONFIG_PATH );
 	g_sysConsole->ExecuteCommandBuffer();
 
 	// initialize subsystems

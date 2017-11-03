@@ -8,6 +8,7 @@
 #include "DrvSynHUD.h"
 #include "AICarManager.h"
 #include "heightfield.h"
+#include "replay.h"
 
 #define DEFAULT_HUD_SCHEME "resources/hud/defaulthud.res"
 
@@ -242,7 +243,9 @@ void CDrvSynHUDManager::DrawDamageRectangle(CMeshBuilder& meshBuilder, Rectangle
 // render the screen with maps and shit
 void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , const Matrix4x4& projMatrix, const Matrix4x4& viewMatrix )
 {
-	m_hudLayout->SetVisible(m_enable && r_drawHUD.GetBool());
+	bool replayHud = (g_replayData->m_state == REPL_PLAYING);
+
+	m_hudLayout->SetVisible(m_enable && r_drawHUD.GetBool() && !replayHud);
 
 	if( !r_drawHUD.GetBool() )
 		return;
@@ -278,7 +281,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 	raster.scissor = true;
 	raster.cullMode = CULL_FRONT;
 
-	if(m_enable)
+	if(m_enable && !replayHud)
 	{
 		bool inPursuit = (m_mainVehicle ? m_mainVehicle->GetPursuedCount() > 0 : false);
 		bool damageBarVisible = m_hudDamageBar && m_hudDamageBar->IsVisible();
@@ -780,88 +783,91 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 	}
 
-	// show screen alert
-	if( m_screenAlertTime > 0 && fDt > 0.0f )
+	if(!replayHud)
 	{
-		m_screenAlertTime -= fDt;
-		m_screenAlertInTime -= fDt;
-		m_screenAlertInTime = max(m_screenAlertInTime, 0.0f);
-
-		Vector2D screenMessagePos(screenSize.x / 2, screenSize.y / 2.8);
-
-		Vertex2D_t verts[6];
-
-		const float messageSizeY = 50.0f;
-
-		Vertex2D_t baseVerts[] = {MAKETEXQUAD(0.0f, screenMessagePos.y, screenSize.x, screenMessagePos.y + messageSizeY, 0.0f)};
-
-		baseVerts[0].color.w = 0.0f;
-		baseVerts[1].color.w = 0.0f;
-		baseVerts[2].color.w = 0.0f;
-		baseVerts[3].color.w = 0.0f;
-
-		verts[0] = baseVerts[0];
-		verts[1] = baseVerts[1];
-
-		verts[4] = baseVerts[2];
-		verts[5] = baseVerts[3];
-
-		verts[2] = Vertex2D_t::Interpolate(verts[0], verts[4], 0.5f);
-		verts[3] = Vertex2D_t::Interpolate(verts[1], verts[5], 0.5f);
-
-		verts[2].color.w = 1.0f;
-		verts[3].color.w = 1.0f;
-
-		float clampedAlertTime = clamp(m_screenAlertTime, 0.0f, 1.0f);
-
-		float alpha = clampedAlertTime;
-
-		ColorRGBA alertColor(1.0f, 0.7f, 0.0f, alpha);
-
-		if(m_screenAlertType == HUD_ALERT_SUCCESS)
-			alertColor = ColorRGBA(0.25f, 0.6f, 0.25f, alpha);
-		else if(m_screenAlertType == HUD_ALERT_DANGER)
-			alertColor = ColorRGBA(1.0f, 0.15f, 0.0f, alpha);
-
-		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,verts,elementsOf(verts), NULL, alertColor, &blending);
-
-		eqFontStyleParam_t scrMsgParams;
-		scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
-		scrMsgParams.align = TEXT_ALIGN_HCENTER;
-		scrMsgParams.textColor = ColorRGBA(1,1,1,alpha);
-		scrMsgParams.scale = 30.0f;
-
-		// ok for 3 seconds
-
-		float textXPos = -2000.0f * pow(m_screenAlertInTime, 4.0f) + (2000.0f * pow(1.0f - clampedAlertTime, 4.0f));
-
-		robotocon30bi->RenderText(m_screenAlertText.c_str(), screenMessagePos + Vector2D(textXPos, messageSizeY*0.7f), scrMsgParams);
-	}
-
-	// show message on screen
-	if( m_screenMessageTime > 0 && fDt > 0.0f )
-	{
-		float textYOffs = 0.0f;
-		float textAlpha = 1.0f;
-
-		if(m_screenMessageTime <= 1.0f)
+		// show screen alert
+		if( m_screenAlertTime > 0 && fDt > 0.0f )
 		{
-			textAlpha = pow(m_screenMessageTime, 5.0f);
-			textYOffs = (1.0f-m_screenMessageTime)*5.0f;
-			textYOffs = pow(textYOffs, 5.0f);
+			m_screenAlertTime -= fDt;
+			m_screenAlertInTime -= fDt;
+			m_screenAlertInTime = max(m_screenAlertInTime, 0.0f);
+
+			Vector2D screenMessagePos(screenSize.x / 2, screenSize.y / 2.8);
+
+			Vertex2D_t verts[6];
+
+			const float messageSizeY = 50.0f;
+
+			Vertex2D_t baseVerts[] = {MAKETEXQUAD(0.0f, screenMessagePos.y, screenSize.x, screenMessagePos.y + messageSizeY, 0.0f)};
+
+			baseVerts[0].color.w = 0.0f;
+			baseVerts[1].color.w = 0.0f;
+			baseVerts[2].color.w = 0.0f;
+			baseVerts[3].color.w = 0.0f;
+
+			verts[0] = baseVerts[0];
+			verts[1] = baseVerts[1];
+
+			verts[4] = baseVerts[2];
+			verts[5] = baseVerts[3];
+
+			verts[2] = Vertex2D_t::Interpolate(verts[0], verts[4], 0.5f);
+			verts[3] = Vertex2D_t::Interpolate(verts[1], verts[5], 0.5f);
+
+			verts[2].color.w = 1.0f;
+			verts[3].color.w = 1.0f;
+
+			float clampedAlertTime = clamp(m_screenAlertTime, 0.0f, 1.0f);
+
+			float alpha = clampedAlertTime;
+
+			ColorRGBA alertColor(1.0f, 0.7f, 0.0f, alpha);
+
+			if(m_screenAlertType == HUD_ALERT_SUCCESS)
+				alertColor = ColorRGBA(0.25f, 0.6f, 0.25f, alpha);
+			else if(m_screenAlertType == HUD_ALERT_DANGER)
+				alertColor = ColorRGBA(1.0f, 0.15f, 0.0f, alpha);
+
+			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,verts,elementsOf(verts), NULL, alertColor, &blending);
+
+			eqFontStyleParam_t scrMsgParams;
+			scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
+			scrMsgParams.align = TEXT_ALIGN_HCENTER;
+			scrMsgParams.textColor = ColorRGBA(1,1,1,alpha);
+			scrMsgParams.scale = 30.0f;
+
+			// ok for 3 seconds
+
+			float textXPos = -2000.0f * pow(m_screenAlertInTime, 4.0f) + (2000.0f * pow(1.0f - clampedAlertTime, 4.0f));
+
+			robotocon30bi->RenderText(m_screenAlertText.c_str(), screenMessagePos + Vector2D(textXPos, messageSizeY*0.7f), scrMsgParams);
 		}
 
-		eqFontStyleParam_t scrMsgParams;
-		scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
-		scrMsgParams.align = TEXT_ALIGN_HCENTER;
-		scrMsgParams.textColor = ColorRGBA(1,1,0.25f,textAlpha);
-		scrMsgParams.scale = 30.0f;
+		// show message on screen
+		if(m_screenMessageTime > 0 && fDt > 0.0f )
+		{
+			float textYOffs = 0.0f;
+			float textAlpha = 1.0f;
 
-		Vector2D screenMessagePos(screenSize.x / 2, (float)screenSize.y / 3 - textYOffs);
+			if(m_screenMessageTime <= 1.0f)
+			{
+				textAlpha = pow(m_screenMessageTime, 5.0f);
+				textYOffs = (1.0f-m_screenMessageTime)*5.0f;
+				textYOffs = pow(textYOffs, 5.0f);
+			}
 
-		roboto30b->RenderText(m_screenMessageText.c_str(), screenMessagePos, scrMsgParams);
+			eqFontStyleParam_t scrMsgParams;
+			scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
+			scrMsgParams.align = TEXT_ALIGN_HCENTER;
+			scrMsgParams.textColor = ColorRGBA(1,1,0.25f,textAlpha);
+			scrMsgParams.scale = 30.0f;
 
-		m_screenMessageTime -= fDt;
+			Vector2D screenMessagePos(screenSize.x / 2, (float)screenSize.y / 3 - textYOffs);
+
+			roboto30b->RenderText(m_screenMessageText.c_str(), screenMessagePos, scrMsgParams);
+
+			m_screenMessageTime -= fDt;
+		}
 	}
 
 	if(g_showCameraPosition.GetBool())

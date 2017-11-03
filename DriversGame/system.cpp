@@ -28,6 +28,24 @@
 
 #include "Shiny.h"
 
+#define DEFAULT_USERCONFIG_PATH		"cfg/user.cfg"
+
+ConVar user_cfg("user_cfg", DEFAULT_USERCONFIG_PATH, "User configuration file location", CV_INITONLY);
+
+DECLARE_CMD(exec_user_cfg, "Executes user configuration file (from cvar 'cfg_user' value)", 0)
+{
+	MsgInfo("* Executing user configuration file '%s'\n", user_cfg.GetString());
+	g_sysConsole->ParseFileToCommandBuffer( user_cfg.GetString() );
+}
+
+ConCommand cc_exit("exit",CGameHost::HostExitCmd,"Closes current instance of engine");
+ConCommand cc_quit("quit",CGameHost::HostExitCmd,"Closes current instance of engine");
+ConCommand cc_quti("quti",CGameHost::HostExitCmd,"This made for keyboard writing errors");
+
+DECLARE_CVAR(r_clear,0,"Clear the backbuffer",CV_ARCHIVE);
+DECLARE_CVAR(r_vSync,0,"Vertical syncronization",CV_ARCHIVE);
+DECLARE_CVAR(r_antialiasing,0,"Multisample antialiasing",CV_ARCHIVE);
+
 static EQCURSOR staticDefaultCursor[20];
 
 // TODO: Move this to GUI
@@ -69,14 +87,6 @@ void CGameHost::HostExitCmd(CONCOMMAND_ARGUMENTS)
 {
 	HostQuitToDesktop();
 }
-
-ConCommand cc_exit("exit",CGameHost::HostExitCmd,"Closes current instance of engine");
-ConCommand cc_quit("quit",CGameHost::HostExitCmd,"Closes current instance of engine");
-ConCommand cc_quti("quti",CGameHost::HostExitCmd,"This made for keyboard writing errors");
-
-DECLARE_CVAR(r_clear,0,"Clear the backbuffer",CV_ARCHIVE);
-DECLARE_CVAR(r_vSync,0,"Vertical syncronization",CV_ARCHIVE);
-DECLARE_CVAR(r_antialiasing,0,"Multisample antialiasing",CV_ARCHIVE);
 
 bool CGameHost::LoadModules()
 {
@@ -456,7 +466,7 @@ void CGameHost::ShutdownSystems()
 	ChangeState( NULL );
 
 	// Save configuration before full unload
-	WriteCfgFile("cfg/config.cfg",true);
+	WriteCfgFile( user_cfg.GetString(), true );
 
 	// shutdown any dependent bindings to avoid crashes
 	LuaBinding_ShutdownEngineBindings();

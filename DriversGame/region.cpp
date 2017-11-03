@@ -15,7 +15,7 @@
 #define AI_NAVIGATION_ROAD_PRIORITY (1)
 
 extern ConVar r_enableLevelInstancing;
-ConVar w_pregeneratedhfields("w_pregeneratedhfields", "1");
+ConVar w_noCollide("w_noCollide", "0");
 ConVar nav_debug_map("nav_debug_map", "0", nullptr, CV_CHEAT);
 
 //-----------------------------------------------------------------------------------------
@@ -686,8 +686,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		if(!m_heightfield[i])
 			continue;
 
-        if(w_pregeneratedhfields.GetBool())
-            m_heightfield[i]->GenereateRenderData( nav_debug_map.GetBool() );
+		m_heightfield[i]->GenereateRenderData( nav_debug_map.GetBool() );
 
 		if(m_heightfield[i]->m_hasTransparentSubsets)
 			m_hasTransparentSubsets = true;
@@ -771,10 +770,13 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 			model->Ref_Grab();
 
 #ifndef EDITOR
-			model->CreateCollisionObject( ref );
+			if(!w_noCollide.GetBool())
+			{
+				model->CreateCollisionObject( ref );
 
-			// add physics objects
-			g_pPhysics->m_physics.AddStaticObject( ref->physObject );
+				// add physics objects
+				g_pPhysics->m_physics.AddStaticObject( ref->physObject );
+			}
 #endif // EDITOR
 
 			if(model->m_hasTransparentSubsets)

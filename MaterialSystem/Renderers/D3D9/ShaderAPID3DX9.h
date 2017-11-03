@@ -11,8 +11,6 @@
 #include <d3d9.h>
 #include <d3dx9.h>
 
-#include "D3D9MeshBuilder.h"
-
 #include "../ShaderAPI_Base.h"
 #include "D3D9RenderState.h"
 
@@ -380,8 +378,6 @@ private:
 
 	D3DCAPS9					m_hCaps;
 #endif
-
-	CD3D9MeshBuilder*			m_meshBuilder;
 
 	// the main renderer
 	//ITexture*					m_pBackBuffer;

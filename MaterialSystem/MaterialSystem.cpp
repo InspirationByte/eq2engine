@@ -231,7 +231,7 @@ bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderA
 	// render library initialization
 	// collect all needed data for use in shaderapi initialization
 
-	if(m_renderLibrary->InitCaps())
+	if( m_renderLibrary->InitCaps() )
 	{
 		if(!m_renderLibrary->InitAPI( m_config.shaderapi_params ))
 			return false;
@@ -262,17 +262,14 @@ bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderA
 
 	g_pShaderAPI = m_shaderAPI;
 
-	//if(debugoverlay)
-	//	debugoverlay->Graph_AddBucket("Material change count per update", ColorRGBA(1,1,0,1), 100, 0.25f);
-
-	// initialize some resources
-	CreateWhiteTexture();
-
 	if(!m_dynamicMesh.Init( g_standardVertexFormatDesc, elementsOf(g_standardVertexFormatDesc)))
 	{
 		ErrorMsg("Couldn't init DynamicMesh!\n");
 		return false;
 	}
+
+	// initialize some resources
+	CreateWhiteTexture();
 
 	InitStandardMaterialProxies();
 	REGISTER_INTERNAL_SHADERS();

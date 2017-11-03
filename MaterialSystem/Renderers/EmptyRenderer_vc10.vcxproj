@@ -154,7 +154,6 @@
     <ClCompile Include="ShaderAPI_Base.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\public\IMeshBuilder.h" />
     <ClInclude Include="CTexture.h" />
     <ClInclude Include="Empty\CEmptyTexture.h" />
     <ClInclude Include="Empty\emptyLibrary.h" />

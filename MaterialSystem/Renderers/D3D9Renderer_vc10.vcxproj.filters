@@ -51,9 +51,6 @@
     <ClCompile Include="CTexture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D3D9\D3D9MeshBuilder.cpp">
-      <Filter>Source Files\D3D9</Filter>
-    </ClCompile>
     <ClCompile Include="D3D9\D3D9SwapChain.cpp">
       <Filter>Source Files\D3D9</Filter>
     </ClCompile>
@@ -178,9 +175,6 @@
     </ClInclude>
     <ClInclude Include="IRenderLibrary.h">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="D3D9\D3D9MeshBuilder.h">
-      <Filter>Source Files\D3D9</Filter>
     </ClInclude>
     <ClInclude Include="D3D9\D3DX9DefaultShaders.h">
       <Filter>Source Files\D3D9</Filter>
