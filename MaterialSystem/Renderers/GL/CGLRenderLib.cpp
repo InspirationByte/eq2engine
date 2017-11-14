@@ -283,6 +283,15 @@ GL_CONTEXT CGLRenderLib::GetFreeSharedContext(uintptr_t threadId)
 	return NULL;
 }
 
+#ifdef USE_GLES2
+void CGLRenderLib::ReobtainEGLSurface()
+{
+#ifdef ANDROID
+	eglSurface = (EGLSurface)getEGLSurfaceFunc();
+#endif // ANDROID
+}
+#endif // USE_GLES2
+
 bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 {
 #ifdef USE_GLES2
@@ -291,7 +300,8 @@ bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 
     ASSERT(winParams != NULL);
 
-    eglSurface = (EGLSurface)winParams->paramArray[0];
+	getEGLSurfaceFunc = (PFNGetEGLSurfaceFromSDL)winParams->paramArray[0];
+	ReobtainEGLSurface();
 
 	hwnd = (EGLNativeWindowType)winParams->window;
 #else
@@ -401,18 +411,13 @@ bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 
 	InitSharedContexts();
 
-	/*
-    glContext2 = eglCreateContext(eglDisplay, eglConfig, glContext, contextAttr);
-    if (glContext2 == EGL_NO_CONTEXT)
-    {
-		ErrorMsg("OpenGL ES init error: Could not create EGL context\n");
-        return false;
-    }*/
+	ReobtainEGLSurface();
 
 	// assign to this thread
 	eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext);
 
 #elif defined(PLAT_WIN)
+
 	if (r_screen->GetInt() >= GetSystemMetrics(SM_CMONITORS))
 		r_screen->SetValue("0");
 
@@ -553,7 +558,6 @@ bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 
 	wglMakeCurrent(hdc, glContext);
 
-
 #elif PLAT_LINUX
 
     display = XOpenDisplay(0);
@@ -690,7 +694,7 @@ bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 
 #ifdef USE_GLES2
 	m_Renderer->m_display = this->eglDisplay;
-	m_Renderer->m_eglSurface = this->eglSurface;
+	//m_Renderer->m_eglSurface = this->eglSurface;
 	m_Renderer->m_hdc = this->hdc;
 #elif PLAT_WIN
 	m_Renderer->m_hdc = this->hdc;
@@ -783,7 +787,9 @@ void CGLRenderLib::ExitAPI()
 	eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 	eglDestroyContext(eglDisplay, glContext);
 
+#ifndef ANDROID
 	eglDestroySurface(eglDisplay, eglSurface);
+#endif // ANDROID
 	eglTerminate(eglDisplay);
 #else
 	wglMakeCurrent(NULL, NULL);
@@ -838,6 +844,7 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 {
 #ifdef USE_GLES2
 
+	ReobtainEGLSurface();
 	eglSwapBuffers(eglDisplay, eglSurface);
 	GLCheckError("swap buffers");
 

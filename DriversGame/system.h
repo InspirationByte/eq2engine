@@ -73,6 +73,10 @@ public:
 	static void			HostQuitToDesktop();
 	static void 		HostExitCmd(CONCOMMAND_ARGUMENTS);
 
+#ifdef ANDROID
+	void*				GetEGLSurfaceFromSDL();
+#endif // ANDROID
+
 protected:
 
 	void				UpdateCursorState();
