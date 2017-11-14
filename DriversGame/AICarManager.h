@@ -176,6 +176,7 @@ public:
 	DkList<CAIPursuerCar*>		m_copCars;
 
 	DkList<CCar*>				m_roadBlockCars;
+	int							m_roadBlockSpawnedCount;
 };
 
 extern CAICarManager*			g_pAIManager;

@@ -622,7 +622,10 @@ void CGameSession::LoadCarData()
 void CGameSession::GetCarNames(DkList<EqString>& list) const
 {
 	for (int i = 0; i < m_carEntries.numElem(); i++)
-		list.append(m_carEntries[i]->carName);
+	{
+		if(m_carEntries[i]->flags.isCar)
+			list.append(m_carEntries[i]->carName);
+	}
 }
 
 vehicleConfig_t* CGameSession::FindCarEntryByName(const char* name) const

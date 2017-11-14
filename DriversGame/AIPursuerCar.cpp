@@ -810,8 +810,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		m_targInfo.notSeeingTime = 0.0f;
 	}
 
-	if(g_replayData->m_state == REPL_PLAYING)
-		return 0;
+	//if(g_replayData->m_state == REPL_PLAYING)
+	//	return 0;
 
 	// don't try to control the car
 	if(IsFlippedOver())
@@ -821,29 +821,61 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		return 0;
 	}
 
+	// update navigation affector parameters
 	m_navAffector.m_manipulator.m_driveTarget = m_targInfo.target->GetOrigin();
 	m_navAffector.m_manipulator.m_driveTargetVelocity = m_targInfo.target->GetVelocity();
-	m_navAffector.Update(this, fDt);
-	
-	int controls = IN_ACCELERATE | IN_ANALOGSTEER | IN_HORN;
+	m_navAffector.m_manipulator.m_excludeColl = m_targInfo.target->GetPhysicsBody();
 
-	if(m_navAffector.m_handling.braking > 0.5f)
+	// update target avoidance affector parameters
+	m_targetAvoidance.m_manipulator.m_avoidanceRadius = 15.0f;
+	m_targetAvoidance.m_manipulator.m_enabled = true;
+	m_targetAvoidance.m_manipulator.m_targetPosition = m_targInfo.target->GetOrigin();
+
+	// do regular updates of ai navigation
+	m_navAffector.Update(this, fDt);
+
+	// make stability control
+	m_stability.Update(this, fDt);
+
+	// collision avoidance
+	m_collAvoidance.Update(this, fDt);
+
+	// target avoidance
+	m_targetAvoidance.Update(this, fDt);
+
+	ai_handling_t handling = m_navAffector.m_handling;
+
+	// TODO: apply stability control handling amounts to the final handling
+	// based on the game difficulty
+	handling += m_stability.m_handling;
+	handling += m_collAvoidance.m_handling;
+	handling *= m_targetAvoidance.m_handling;
+
+	if(!m_stability.m_handling.autoHandbrake)
+		handling.autoHandbrake = false;
+
+	int controls = IN_ACCELERATE | IN_ANALOGSTEER;
+
+	if(m_type == PURSUER_TYPE_COP)
+		controls |= IN_HORN;
+
+	if(handling.braking > 0.5f)
 	{
 		controls &= ~IN_ACCELERATE;
 		controls |= IN_BRAKE;
 	}
 
-	if(fabs(m_navAffector.m_handling.steering) > 0.7f)
+	if(fabs(handling.steering) > 0.7f)
 		controls |= IN_EXTENDTURN;
 
-	m_autohandbrake = false;
+	m_autohandbrake = handling.autoHandbrake;
 
 	SetControlButtons( controls );
-	SetControlVars(	m_navAffector.m_handling.acceleration, 
-					m_navAffector.m_handling.braking, 
-					m_navAffector.m_handling.steering);
+	SetControlVars(	handling.acceleration, 
+					handling.braking, 
+					handling.steering);
 
-	if(m_navAffector.m_handling.acceleration > 0.05f)
+	if(handling.acceleration > 0.05f)
 		GetPhysicsBody()->TryWake(false);
 
 	//--------------------------------------------------------------------------------------------------

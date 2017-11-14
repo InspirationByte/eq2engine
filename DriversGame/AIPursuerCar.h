@@ -112,8 +112,9 @@ protected:
 
 	// all handling affectors, they are biased by the current behavior state
 	CAIHandlingAffector<CAINavigationManipulator>			m_navAffector;
-	//CAIHandlingAffector<CAIChasingManipulator>				m_chaseAffector;
-	//CAIHandlingAffector<CAIObstacleAvoidanceManipulator>	m_obstacleAffector;
+	CAIHandlingAffector<CAIStabilityControlManipulator>		m_stability;
+	CAIHandlingAffector<CAICollisionAvoidanceManipulator>	m_collAvoidance;
+	CAIHandlingAffector<CAITargetAvoidanceManipulator>		m_targetAvoidance;
 
 	float					m_blockingTime;
 	float					m_blockTimeout;

@@ -417,6 +417,15 @@
     <ClCompile Include="..\shared_game\PathFinder\AStar.cpp">
       <Filter>Файлы исходного кода\EngineLib\PathFinder</Filter>
     </ClCompile>
+    <ClCompile Include="AIManipulator_StabilityControl.cpp">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="AIManipulator_CollisionAvoidance.cpp">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="AIManipulator_TargetAvoidance.cpp">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">
@@ -819,6 +828,15 @@
     </ClInclude>
     <ClInclude Include="..\shared_game\PathFinder\AStar.h">
       <Filter>Файлы исходного кода\EngineLib\PathFinder</Filter>
+    </ClInclude>
+    <ClInclude Include="AIManipulator_StabilityControl.h">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="AIManipulator_CollisionAvoidance.h">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="AIManipulator_TargetAvoidance.h">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

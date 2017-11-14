@@ -21,12 +21,41 @@ struct ai_handling_t
 	bool		autoHandbrake;
 
 	float		confidence;		// 0..1
+
+	void operator += (const ai_handling_t& v)
+	{
+		steering += v.steering;
+		acceleration += v.acceleration;
+		braking += v.braking;
+
+		confidence += v.confidence;
+	}
+
+	void operator -= (const ai_handling_t& v)
+	{
+		steering -= v.steering;
+		acceleration -= v.acceleration;
+		braking -= v.braking;
+
+		confidence -= v.confidence;
+	}
+
+	void operator *= (const ai_handling_t& v)
+	{
+		steering *= v.steering;
+		acceleration *= v.acceleration;
+		braking *= v.braking;
+
+		confidence *= v.confidence;
+	}
 };
 
 
+
 #include "AIManipulator_Navigation.h"
-//#include "AIManipulator_ObstacleAvoidance.h"
-//#include "AIManipulator_Chasing.h"
+#include "AIManipulator_StabilityControl.h"
+#include "AIManipulator_CollisionAvoidance.h"
+#include "AIManipulator_TargetAvoidance.h"
 
 class CCar;
 //class CAIBaseDriver;

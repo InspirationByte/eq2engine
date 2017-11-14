@@ -2411,6 +2411,10 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 
 		m_navOpenSet.fastRemoveIndex(0);
 
+		iterationLimit--;
+		if(iterationLimit <= 0)
+			break;
+
 		// go through all neighbours
 		for (int i = 0; i < 8; i++)
 		{

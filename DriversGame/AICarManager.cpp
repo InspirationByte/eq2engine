@@ -19,8 +19,8 @@ const float AI_COP_SPEECH_DELAY = 3.0f;		// delay before next speech
 const float AI_COP_TAUNT_DELAY = 11.0f;		// delay before next taunt
 
 #define COP_DEFAULT_DAMAGE			(4.0f)
-
 #define TRAFFIC_BETWEEN_DISTANCE	5
+#define MIN_ROADBLOCK_CARS			2
 
 //------------------------------------------------------------------------------------------
 
@@ -57,6 +57,7 @@ CAICarManager::CAICarManager()
 	m_numMaxTrafficCars = 32;
 	
 	m_copSpawnIntervalCounter = 0;
+	m_roadBlockSpawnedCount = 0;
 
 	m_leadVelocity = vec3_zero;
 	m_leadPosition = vec3_zero;
@@ -79,6 +80,7 @@ void CAICarManager::Init()
 	m_trafficUpdateTime = 0.0f;
 	m_velocityMapUpdateTime = 0.0f;
 	m_copSpawnIntervalCounter = 0;
+	m_roadBlockSpawnedCount = 0;
 	m_enableTrafficCars = true;
 	m_enableCops = true;
 
@@ -342,6 +344,22 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 		m_trafficUpdateTime = 0.5f;
 	else
 		return;
+
+	// update road block state
+	bool allCarsAreFromRoadBlock = true;
+	for(int i = 0; i < m_copCars.numElem(); i++)
+	{
+		if( m_roadBlockCars.findIndex(m_copCars[i]) == -1)
+		{
+			allCarsAreFromRoadBlock = false;
+			break;
+		}
+	}
+
+	// if road block were disapper due to driving to other region
+	// or we have all cars from roadblock
+	if( (m_roadBlockCars.numElem() < MIN_ROADBLOCK_CARS) || (allCarsAreFromRoadBlock && m_roadBlockCars.numElem() <= m_numMaxCops))
+		m_roadBlockCars.clear();
 
 	//-------------------------------------------------
 
@@ -654,6 +672,8 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 		nCars++;
 	}
 
+	m_roadBlockSpawnedCount = m_roadBlockCars.numElem();
+
 	return m_roadBlockCars.numElem() > 0;
 }
 
@@ -686,7 +706,7 @@ void CAICarManager::StopPursuit( CCar* car )
 
 bool CAICarManager::IsRoadBlockSpawn() const
 {
-	return m_roadBlockCars.numElem() > 0;
+	return (m_roadBlockCars.numElem() > 0);
 }
 
 // ----- TRAFFIC ------

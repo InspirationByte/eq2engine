@@ -154,6 +154,23 @@ OOLUA_CFUNC(Lua_LoadMissionScript, L_LoadMissionScript)
 
 OOLUA_CFUNC(Lua_Util_TestLine, L_Lua_Util_TestLine)
 
+template <class T>
+T* CGameObject_DynamicCast(CGameObject* object, int typeId)
+{
+	if(object == nullptr)
+		return nullptr;
+
+	if(object->ObjType() == typeId) 
+	{
+		return (T*)object;
+	}
+	return nullptr;
+}
+
+int L_gameobject_castto_car( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<CCar*>, CGameObject_DynamicCast, CGameObject*, int) }
+//int L_gameobject_castto_traffic( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<CAITrafficCar*>, CGameObject_DynamicCast, CGameObject*, int) }
+int L_gameobject_castto_pursuer( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<CAIPursuerCar*>, CGameObject_DynamicCast, CGameObject*, int) }
+
 bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 {
 	MsgInfo("Initializing script system...\n");
@@ -279,9 +296,16 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 
 	OOLUA::Table utilTable = OOLUA::new_table(state);
 	utilTable.set("TestLine", L_Lua_Util_TestLine);
+	//utilTable.set("Cast", L_Lua_Util_);
 	//utilTable.set("TestModel", LLua_Console_ExecuteString);
 
 	OOLUA::set_global(state, "gameutil", utilTable);
+
+	OOLUA::Table gameObjectCastFuncs = OOLUA::new_table(state);
+	gameObjectCastFuncs.set(GO_CAR, L_gameobject_castto_car);
+	gameObjectCastFuncs.set(GO_CAR_AI, L_gameobject_castto_pursuer);
+
+	OOLUA::set_global(state, "gameobjcast", gameObjectCastFuncs);
 
 	// initialize library
 	return EqLua::LuaBinding_LoadAndDoFile(state, "scripts/lua/_init.lua", "__init");

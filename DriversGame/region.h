@@ -94,6 +94,9 @@ struct navGrid_t
 
 	void ResetStates()
 	{
+		if(!cellStates)
+			return;
+
 		int count = wide*tall;
 		for(int i = 0; i < count; i++)
 			cellStates[i].Reset();
@@ -101,6 +104,9 @@ struct navGrid_t
 
 	void ResetDynamicObst()
 	{
+		if(!dynamicObst)
+			return;
+
 		int count = wide*tall;
 		memset(dynamicObst, 0x4, count);
 	}

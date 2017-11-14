@@ -1056,7 +1056,7 @@ void CCar::SetControlVars(float fAccelRatio, float fBrakeRatio, float fSteering)
 {
 	m_accelRatio = min(fAccelRatio, 1.0f)*1023.0f;
 	m_brakeRatio = min(fBrakeRatio, 1.0f)*1023.0f;
-	m_steerRatio = min(fSteering, 1.0f)*1023.0f;
+	m_steerRatio = clamp(fSteering, -1.0f, 1.0f)*1023.0f;
 
 	if(m_accelRatio > 1023)
 		m_accelRatio = 1023;

@@ -160,7 +160,10 @@
     <ClCompile Include="..\shared_game\PathFinder\AStar.cpp" />
     <ClCompile Include="..\shared_game\PathFinder\Node.cpp" />
     <ClCompile Include="AICarManager.cpp" />
+    <ClCompile Include="AIManipulator_CollisionAvoidance.cpp" />
     <ClCompile Include="AIManipulator_Navigation.cpp" />
+    <ClCompile Include="AIManipulator_StabilityControl.cpp" />
+    <ClCompile Include="AIManipulator_TargetAvoidance.cpp" />
     <ClCompile Include="AIPursuerCar.cpp" />
     <ClCompile Include="AITrafficCar.cpp" />
     <ClCompile Include="BillboardList.cpp" />
@@ -320,7 +323,10 @@
     <ClInclude Include="AIHandling.h" />
     <ClInclude Include="AIEventTypes.h" />
     <ClInclude Include="AIManipulators.h" />
+    <ClInclude Include="AIManipulator_CollisionAvoidance.h" />
     <ClInclude Include="AIManipulator_Navigation.h" />
+    <ClInclude Include="AIManipulator_StabilityControl.h" />
+    <ClInclude Include="AIManipulator_TargetAvoidance.h" />
     <ClInclude Include="AIPursuerCar.h" />
     <ClInclude Include="AITrafficCar.h" />
     <ClInclude Include="BillboardList.h" />

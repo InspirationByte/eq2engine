@@ -770,7 +770,9 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 			model->Ref_Grab();
 
 #ifndef EDITOR
-			if(!w_noCollide.GetBool())
+			bool noCollide = !(ref->def->m_info.modelflags & LMODEL_FLAG_ISGROUND) && w_noCollide.GetBool();
+
+			if(!noCollide)
 			{
 				model->CreateCollisionObject( ref );
 
