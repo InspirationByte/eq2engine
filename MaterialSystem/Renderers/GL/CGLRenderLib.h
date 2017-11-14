@@ -18,6 +18,8 @@
 
 class ShaderAPIGL;
 
+typedef void* (*PFNGetEGLSurfaceFromSDL)();
+
 #ifdef USE_GLES2
 #define GL_CONTEXT EGLContext
 #elif _WIN32
@@ -100,6 +102,12 @@ protected:
     EGLContext				glContext;
 
 	EGLConfig				eglConfig;
+
+	void					ReobtainEGLSurface();
+
+#ifdef ANDROID
+	PFNGetEGLSurfaceFromSDL	getEGLSurfaceFunc;
+#endif // ANDROID
 
 #elif defined(_WIN32)
 	DISPLAY_DEVICE			device;

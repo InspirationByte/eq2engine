@@ -117,6 +117,30 @@ DECLARE_INTERNAL_SHADERS();
 
 extern void DrvSyn_RegisterShaderOverrides();
 
+#ifdef ANDROID
+void* CGameHost::GetEGLSurfaceFromSDL()
+{
+    // set window info
+    SDL_SysWMinfo winfo;
+    SDL_VERSION(&winfo.version); // initialize info structure with SDL version info
+
+    if( !SDL_GetWindowWMInfo(m_pWindow, &winfo) )
+    {
+        MsgError("SDL_GetWindowWMInfo failed %s\n\tWindow handle: %p", SDL_GetError(), m_pWindow);
+        ErrorMsg("Can't get SDL window WM info!\n");
+        return nullptr;
+    }
+
+    return (void*)winfo.info.android.surface;
+}
+
+void* Helper_GetEGLSurfaceFromSDL()
+{
+	return g_pHost->GetEGLSurfaceFromSDL();
+}
+
+#endif // ANDROID
+
 bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 {
 	m_pWindow = pWindow;
@@ -180,7 +204,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
     externalWindowDisplayParams_t winParams;
     winParams.window = (void*)winfo.info.android.window;
 
-    void* paramArray[] = {(void*)winfo.info.android.surface};
+    void* paramArray[] = { Helper_GetEGLSurfaceFromSDL };
 
 	winParams.paramArray = paramArray;
 	winParams.numParams = 1;

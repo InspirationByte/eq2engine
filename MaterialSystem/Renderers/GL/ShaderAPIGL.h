@@ -385,7 +385,6 @@ private:
 #ifdef USE_GLES2
     EGLNativeDisplayType	m_hdc;
     EGLDisplay				m_display;
-    EGLSurface				m_eglSurface;
     EGLContext				m_glContext;
 #elif _WIN32
 	HDC						m_hdc;
