@@ -283,12 +283,14 @@ GL_CONTEXT CGLRenderLib::GetFreeSharedContext(uintptr_t threadId)
 	return NULL;
 }
 
+#ifdef USE_GLES2
 void CGLRenderLib::ReobtainEGLSurface()
 {
 #ifdef ANDROID
 	eglSurface = (EGLSurface)getEGLSurfaceFunc();
 #endif // ANDROID
 }
+#endif // USE_GLES2
 
 bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 {
@@ -415,6 +417,7 @@ bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 	eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext);
 
 #elif defined(PLAT_WIN)
+
 	if (r_screen->GetInt() >= GetSystemMetrics(SM_CMONITORS))
 		r_screen->SetValue("0");
 
@@ -554,7 +557,6 @@ bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 	InitSharedContexts();
 
 	wglMakeCurrent(hdc, glContext);
-
 
 #elif PLAT_LINUX
 

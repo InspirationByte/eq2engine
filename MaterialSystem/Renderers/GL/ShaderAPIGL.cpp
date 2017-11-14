@@ -31,8 +31,9 @@ HOOK_TO_CVAR(r_loadmiplevel);
 #include "glx_caps.hpp"
 #endif // PLAT_LINUX
 
-ConVar gl_report_errors("gl_report_errors", "1");
+ConVar gl_report_errors("gl_report_errors", "0");
 ConVar gl_break_on_error("gl_break_on_error", "0");
+ConVar gl_bypass_errors("gl_bypass_errors", "1");
 
 bool GLCheckError(const char* op)
 {
@@ -76,7 +77,7 @@ bool GLCheckError(const char* op)
 		if(gl_report_errors.GetBool())
 			MsgError("*OGL* error occured while '%s' (%s)\n", op, errString.c_str());
 
-		return false;
+		return gl_bypass_errors.GetBool();
 	}
 
 	return true;
@@ -199,10 +200,19 @@ void ShaderAPIGL::Init( shaderAPIParams_t &params)
 
 	// Set some of my preferred defaults
 	glEnable(GL_DEPTH_TEST);
+	GLCheckError("def param GL_DEPTH_TEST");
+
 	glDepthFunc(GL_LEQUAL);
+	GLCheckError("def param GL_LEQUAL");
+
 	glFrontFace(GL_CW);
+	GLCheckError("def param GL_CW");
+
 	glPixelStorei(GL_PACK_ALIGNMENT,   1);
+	GLCheckError("def param GL_PACK_ALIGNMENT");
+
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	GLCheckError("def param GL_UNPACK_ALIGNMENT");
 
 	for (int i = 0; i < m_caps.maxRenderTargets; i++)
 		m_drawBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
@@ -646,41 +656,46 @@ void ShaderAPIGL::Clear(bool bClearColor,
 
 	if (bClearColor)
 	{
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		clearBits |= GL_COLOR_BUFFER_BIT;
-		glClearColor(fillColor.x, fillColor.y, fillColor.z, 1.0f);
 
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		GLCheckError("clr mask");
+
+		glClearColor(fillColor.x, fillColor.y, fillColor.z, 1.0f);
 		GLCheckError("clr color");
 	}
 
 	if (bClearDepth)
 	{
-		glDepthMask(GL_TRUE);
 		clearBits |= GL_DEPTH_BUFFER_BIT;
+
+		glDepthMask(GL_TRUE);
+		GLCheckError("clr depth msk");
 
 #ifndef USE_GLES2
 		glClearDepth(fDepth);
+		GLCheckError("clr depth");
 #endif // USE_GLES2
 
-		GLCheckError("clr depth");
+		
 	}
 
 	if (bClearStencil)
 	{
-		glStencilMask(GL_TRUE);
 		clearBits |= GL_STENCIL_BUFFER_BIT;
-		glClearStencil(nStencil);
 
+		glStencilMask(GL_TRUE);
+		GLCheckError("clr stencil msk");
+
+		glClearStencil(nStencil);
 		GLCheckError("clr stencil");
 	}
 
 	if (clearBits)
 	{
 		glClear(clearBits);
-		GLCheckError("clr bits");
+		GLCheckError("clear");
 	}
-
-
 }
 //-------------------------------------------------------------
 // Renderer information
@@ -932,12 +947,14 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 
 	// Generate a texture
 	glGenTextures(1, &textureID);
+	GLCheckError("gen tex");
 
 #ifndef USE_GLES2
 	glEnable(gltarget);
 #endif // USE_GLES2
 
 	glBindTexture( gltarget, textureID );
+	GLCheckError("bind tex");
 
 	// Setup the sampler state
 	InternalSetupSampler(gltarget, sampler, pSrc->GetMipMapCount()-nQuality);
@@ -978,6 +995,7 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 									srcType,
 									src + i * size);
 				}
+				GLCheckError("tex upload cube");
 			}
 		}
 		else if (pSrc->Is3D())
@@ -1003,6 +1021,8 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 								srcType,
 								src);
 			}
+
+			GLCheckError("tex upload 3d");
 		}
 		else if (pSrc->Is2D())
 		{
@@ -1027,6 +1047,8 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 								srcType,
 								src);
 			}
+
+			GLCheckError("tex upload 2d");
 		}
 		else
 		{
@@ -1041,6 +1063,8 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 							srcFormat,
 							srcType,
 							src);
+
+			GLCheckError("tex upload 1d");
 #endif // USE_GLES2
 		}
 
@@ -1050,11 +1074,14 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 
 #ifndef USE_GLES2
 	if(pSrc->IsCube())
+	{
 		glDisable( GL_TEXTURE_CUBE_MAP );
+		GLCheckError("tex disa cube");
+	}
 #endif //USE_GLES2
 
 	glBindTexture(gltarget, 0);
-
+	GLCheckError("tex unbind");
 
 
 	return textureID;
@@ -1156,33 +1183,46 @@ void ShaderAPIGL::InternalSetupSampler(uint texTarget, const SamplerStateParam_t
 {
 	// Set requested wrapping modes
 	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, (sampler.wrapS == TEXADDRESS_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	GLCheckError("smp w s");
 
 #ifndef USE_GLES2
 	if (texTarget != GL_TEXTURE_1D)
 #endif // USE_GLES2
 		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, (sampler.wrapT == TEXADDRESS_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+		GLCheckError("smp w t");
 
 	if (texTarget == GL_TEXTURE_3D)
+	{
 		glTexParameteri(texTarget, GL_TEXTURE_WRAP_R, (sampler.wrapR == TEXADDRESS_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+		GLCheckError("smp w r");
+	}
 
 	// Set requested filter modes
 	glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, minFilters[sampler.magFilter]);
+	GLCheckError("smp mag");
+
 	glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, minFilters[sampler.minFilter]);
+	GLCheckError("smp min");
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipMapCount-1);
+	GLCheckError("smp mip");
 
 #ifdef USE_GLES2
 	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 #else
 	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
 #endif // USE_GLES2
+	GLCheckError("smp cmpmode");
+
 	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_FUNC, depthConst[sampler.compareFunc]);
+	GLCheckError("smp cmpfunc");
 
 #ifndef USE_GLES2
 	// Setup anisotropic filtering
 	if (sampler.aniso > 1 && GLAD_GL_EXT_texture_filter_anisotropic)
 	{
 		glTexParameteri(texTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, sampler.aniso);
+		GLCheckError("smp aniso");
 	}
 #endif // USE_GLES2
 }
@@ -2548,8 +2588,11 @@ void ShaderAPIGL::SetViewport(int x, int y, int w, int h)
 	m_nViewportWidth = w;
 	m_nViewportHeight = h;
 
+	GLCheckError("before set viewport");
+
     // TODO: d3d to gl coord system
 	glViewport(x,y,w,h);
+	GLCheckError("set viewport");
 }
 
 // returns viewport
@@ -2581,6 +2624,7 @@ void ShaderAPIGL::SetScissorRectangle( const IRectangle &rect )
 
     IVector2D size = scissor.GetSize();
 	glScissor( scissor.vleftTop.x, scissor.vleftTop.y, size.x, size.y);
+	GLCheckError("set scissor");
 }
 
 int ShaderAPIGL::GetSamplerUnit(CGLShaderProgram* prog, const char* samplerName)
