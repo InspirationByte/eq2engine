@@ -16,9 +16,19 @@ class CCar;
 class CAICollisionAvoidanceManipulator
 {
 public:
-	CAICollisionAvoidanceManipulator() {}
+	CAICollisionAvoidanceManipulator();
 
 	void UpdateAffector(ai_handling_t& handling, CCar* car, float fDt);
+
+	ai_handling_t	m_initialHandling;
+
+	bool			m_enabled;
+	bool			m_isColliding;
+	Vector3D		m_lastCollidingPosition;
+
+protected:
+	float			m_blockingTime;
+	float			m_blockTimeout;
 };
 
 #endif // AIMANIPULATOR_COLLISIONAVOIDANCE_H

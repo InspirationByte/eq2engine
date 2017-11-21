@@ -222,10 +222,10 @@ void CAIPursuerCar::OnPhysicsFrame( float fDt )
 	if(IsAlive())
 	{
 		// update blocking
-		m_isColliding = GetPhysicsBody()->m_collisionList.numElem() > 0;
+		m_collAvoidance.m_manipulator.m_isColliding = GetPhysicsBody()->m_collisionList.numElem() > 0;
 
-		if(m_isColliding)
-			m_lastCollidingPosition = GetPhysicsBody()->m_collisionList[0].position;
+		if(m_collAvoidance.m_manipulator.m_isColliding)
+			m_collAvoidance.m_manipulator.m_lastCollidingPosition = GetPhysicsBody()->m_collisionList[0].position;
 
 		if(!g_pGameWorld->IsValidObject(m_targInfo.target))
 			m_targInfo.target = NULL;
@@ -827,7 +827,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	m_navAffector.m_manipulator.m_excludeColl = m_targInfo.target->GetPhysicsBody();
 
 	// update target avoidance affector parameters
-	m_targetAvoidance.m_manipulator.m_avoidanceRadius = 15.0f;
+	m_targetAvoidance.m_manipulator.m_avoidanceRadius = 10.0f;
 	m_targetAvoidance.m_manipulator.m_enabled = true;
 	m_targetAvoidance.m_manipulator.m_targetPosition = m_targInfo.target->GetOrigin();
 
@@ -835,9 +835,12 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	m_navAffector.Update(this, fDt);
 
 	// make stability control
+	m_stability.m_manipulator.m_initialHandling = m_navAffector.m_handling;
 	m_stability.Update(this, fDt);
 
 	// collision avoidance
+	// take the initial handing for avoidance from navigator
+	m_collAvoidance.m_manipulator.m_initialHandling = m_navAffector.m_handling;
 	m_collAvoidance.Update(this, fDt);
 
 	// target avoidance
@@ -848,8 +851,10 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	// TODO: apply stability control handling amounts to the final handling
 	// based on the game difficulty
 	handling += m_stability.m_handling;
-	handling += m_collAvoidance.m_handling;
 	handling *= m_targetAvoidance.m_handling;
+
+	if(m_collAvoidance.m_manipulator.m_enabled)
+		handling = m_collAvoidance.m_handling;
 
 	if(!m_stability.m_handling.autoHandbrake)
 		handling.autoHandbrake = false;

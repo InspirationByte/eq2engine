@@ -32,20 +32,23 @@ enum EBodyFlags
 	// body is constantly frozen and can't woke up unless this flag active
 	BODY_FORCE_FREEZE			= (1 << 17),
 
+	// when object is frozen, it will preserve the forces
+	BODY_FORCE_PRESERVEFORCES	= (1 << 18),
+
 	// disables angular damping of body
-	BODY_DISABLE_DAMPING		= (1 << 18),
+	BODY_DISABLE_DAMPING		= (1 << 19),
 
 	// disables body freezing
-	BODY_NO_AUTO_FREEZE			= (1 << 19),
+	BODY_NO_AUTO_FREEZE			= (1 << 20),
 
 	// don't take response from all bodies (good for trains)
-	BODY_INFINITEMASS			= (1 << 20),
+	BODY_INFINITEMASS			= (1 << 21),
 
 	// cars have some specials like "Car vs Car" is a "Box vs Box" collision detection and faster game object detection
-	BODY_ISCAR					= (1 << 21),
+	BODY_ISCAR					= (1 << 22),
 
 	// forces to use Box instead of this object's shape
-	BODY_BOXVSDYNAMIC			= (1 << 22),
+	BODY_BOXVSDYNAMIC			= (1 << 23),
 };
 
 ///

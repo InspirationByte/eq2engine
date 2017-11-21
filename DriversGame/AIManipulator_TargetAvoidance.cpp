@@ -8,7 +8,7 @@
 #include "AIManipulator_TargetAvoidance.h"
 #include "car.h"
 
-const float AI_DISTANCE_CURVE = 0.25f;
+const float AI_DISTANCE_CURVE = 2.5f;
 
 void CAITargetAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, float fDt)
 {

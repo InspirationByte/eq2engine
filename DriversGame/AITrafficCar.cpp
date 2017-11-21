@@ -26,6 +26,8 @@ ConVar ai_traffic_debug_straigth("ai_traffic_debug_straigths", "0", NULL, CV_CHE
 
 ConVar ai_changelane("ai_changelane", "-1", NULL, CV_CHEAT);
 
+ConVar ai_debug_freeze("ai_debug_freeze", "0", NULL, 0);
+
 // here's some signal sequences i've recorded
 
 struct signalVal_t
@@ -277,6 +279,14 @@ ConVar g_disableTrafficCarThink("g_disableTrafficCarThink", "0", "Disables traff
 
 void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 {
+	if(ai_debug_freeze.GetBool())
+	{
+		GetPhysicsBody()->m_flags |= BODY_FORCE_PRESERVEFORCES;
+		GetPhysicsBody()->Freeze();
+	}
+	else
+		GetPhysicsBody()->Wake();
+
 	BaseClass::OnPrePhysicsFrame(fDt);
 
 	PROFILE_BEGIN(AITrafficCar_Think);

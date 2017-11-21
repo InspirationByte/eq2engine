@@ -24,6 +24,7 @@ public:
 
 	Vector3D GetAdvancedPointByDist(int& startSeg, float distFromSegment);
 	int FindSegmentByPosition(const Vector3D& pos, float distToSegment);
+	float GetPathPercentage(const Vector3D& pos);
 
 	// the position driver needs reach to
 	Vector3D			m_driveTarget;
@@ -39,6 +40,8 @@ protected:
 	float				m_timeToUpdatePath;
 
 	Vector3D			m_lastSuccessfulSearchPos;
+	Vector3D			m_targetSuccessfulSearchPos;
+
 	int					m_searchFails;
 };
 

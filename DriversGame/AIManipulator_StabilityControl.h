@@ -19,6 +19,8 @@ public:
 	CAIStabilityControlManipulator() {}
 
 	void UpdateAffector(ai_handling_t& handling, CCar* car, float fDt);
+
+	ai_handling_t m_initialHandling;
 };
 
 #endif // AIMANIPULATOR_STABILITYCONTROL_H

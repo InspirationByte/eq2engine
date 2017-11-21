@@ -208,11 +208,14 @@ void CEqRigidBody::Integrate(float delta)
 {
 	if( IsFrozen() )
 	{
-		// zero some forces
-		m_totalTorque = Vector3D(0);
-		m_totalForce = Vector3D(0);
-		m_linearVelocity = Vector3D(0);
-		m_angularVelocity = Vector3D(0);
+		if(!(m_flags & BODY_FORCE_PRESERVEFORCES))
+		{
+			// zero some forces
+			m_totalTorque = Vector3D(0);
+			m_totalForce = Vector3D(0);
+			m_linearVelocity = Vector3D(0);
+			m_angularVelocity = Vector3D(0);
+		}
 
 		return;
 	}
@@ -694,13 +697,13 @@ float CEqRigidBody::ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* 
 	bodyB->TryWake();
 
 	// apply now
-	if(!(bodyA->m_flags & BODY_INFINITEMASS) && !(bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE))
+	if( !(bodyA->m_flags & BODY_INFINITEMASS) && !(bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE))
 	{
 		bodyA->ApplyImpulse(contactRelativePosA, impactVelA);
 		bodyA->TryWake();
 	}
 
-	if(!(bodyB->m_flags & BODY_INFINITEMASS) && !(bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE))
+	if( !(bodyB->m_flags & BODY_INFINITEMASS) && !(bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE))
 	{
 		bodyB->ApplyImpulse(contactRelativePosB, impactVelB);
 		bodyB->TryWake();

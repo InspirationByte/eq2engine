@@ -2550,6 +2550,9 @@ float CGameLevel::Nav_TestLine2D(const IVector2D& start, const IVector2D& end, b
         }
     }
 
+	if(start == IVector2D(x1,y1))
+		return 0.0f;
+
 	return clamp(lineProjection((Vector2D)start, (Vector2D)end, Vector2D(x1,y1)), 0.0f, 1.0f);
 }
 
