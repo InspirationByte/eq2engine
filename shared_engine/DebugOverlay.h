@@ -51,6 +51,23 @@ struct DebugBoxNode_t
 	float lifetime;
 };
 
+struct DebugOriBoxNode_t
+{
+	Vector3D mins;
+	Vector3D maxs;
+	Matrix4x4 transform;
+	ColorRGBA color;
+	float lifetime;
+};
+
+struct DebugSphereNode_t
+{
+	Vector3D origin;
+	float radius;
+	ColorRGBA color;
+	float lifetime;
+};
+
 struct DebugLineNode_t
 {
 	Vector3D start;
@@ -90,6 +107,8 @@ public:
 
 	void							Line3D(const Vector3D &start, const Vector3D &end, const ColorRGBA &color1, const ColorRGBA &color2, float fTime = 0.0f);
 	void							Box3D(const Vector3D &mins, const Vector3D &maxs, const ColorRGBA &color1, float fTime = 0.0f);
+	//void							OrientedBox3D(const Vector3D &mins, const Vector3D &maxs, Matrix4x4& transform, const ColorRGBA &color, float fTime = 0.0f);
+	void							Sphere3D(const Vector3D& position, float radius, const ColorRGBA &color, float fTime = 0.0f);
 	void							Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime = 0.0f);
 
 	void							Draw3DFunc( OnDebugDrawFn func, void* args );
@@ -120,9 +139,13 @@ private:
 	DkList<DebugFadingTextNode_t>	m_RightTextFadeArray;
 
 	DkList<DebugBoxNode_t>			m_BoxList;
+	//DkList<DebugOriBoxNode_t>		m_OrientedBoxList;
+	DkList<DebugSphereNode_t>		m_SphereList;
 	DkList<DebugLineNode_t>			m_LineList;
 
 	DkList<DebugBoxNode_t>			m_FastBoxList;
+	//DkList<DebugOriBoxNode_t>		m_FastOrientedBoxList;
+	DkList<DebugSphereNode_t>		m_FastSphereList;
 	DkList<DebugLineNode_t>			m_FastLineList;
 
 	DkList<debugGraphBucket_t*>		m_graphbuckets;

@@ -237,6 +237,51 @@ void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const Col
 	else
 		m_LineList.append(line);
 }
+/*
+void CDebugOverlay::OrientedBox3D(const Vector3D &mins, const Vector3D &maxs, Matrix4x4& transform, const ColorRGBA &color, float fTime)
+{
+	Threading::CScopedMutex m(m_mutex);
+
+	if(!r_debugdrawboxes.GetBool())
+		return;
+
+	//if(!m_frustum.IsBoxInside(mins,maxs))
+	//	return;
+
+	DebugOriBoxNode_t box;
+	box.mins = mins;
+	box.maxs = maxs;
+	box.transform = transform;
+	box.color = color;
+	box.lifetime = fTime;
+
+	if(fTime == 0.0f)
+		m_FastOrientedBoxList.append(box);
+	else
+		m_OrientedBoxList.append(box);
+}*/
+
+void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const ColorRGBA &color, float fTime)
+{
+	Threading::CScopedMutex m(m_mutex);
+
+	if(!r_debugdrawboxes.GetBool())
+		return;
+
+	if(!m_frustum.IsSphereInside(position, radius))
+		return;
+
+	DebugSphereNode_t sphere;
+	sphere.origin = position;
+	sphere.radius = radius;
+	sphere.color = color;
+	sphere.lifetime = fTime;
+
+	if(fTime == 0.0f)
+		m_FastSphereList.append(sphere);
+	else
+		m_SphereList.append(sphere);
+}
 
 void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime)
 {
@@ -266,115 +311,114 @@ void CDebugOverlay::Draw3DFunc( OnDebugDrawFn func, void* args )
 
 void DrawLineArray(DkList<DebugLineNode_t>& lines, float frametime)
 {
-	if(r_debugdrawlines.GetBool())
-	{
-		g_pShaderAPI->SetTexture(NULL,NULL, 0);
+	if(!lines.numElem())
+		return;
 
-		materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
-		materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
-		materials->SetDepthStates(true, false);
+	g_pShaderAPI->SetTexture(NULL,NULL, 0);
 
-		materials->Apply();
+	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
+	materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
+	materials->SetDepthStates(true, false);
 
-		// bind the default material as we're emulating an FFP
-		materials->BindMaterial(materials->GetDefaultMaterial());
+	materials->Apply();
 
-		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
-		meshBuilder.Begin(PRIM_LINES);
+	// bind the default material as we're emulating an FFP
+	materials->BindMaterial(materials->GetDefaultMaterial());
 
-			for(int i = 0; i < lines.numElem(); i++)
-			{
-				DebugLineNode_t& line = lines[i];
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	meshBuilder.Begin(PRIM_LINES);
 
-				meshBuilder.Color4fv(line.color1);
-				meshBuilder.Position3fv(line.start);
+		for(int i = 0; i < lines.numElem(); i++)
+		{
+			DebugLineNode_t& line = lines[i];
 
-				meshBuilder.AdvanceVertex();
+			meshBuilder.Color4fv(line.color1);
+			meshBuilder.Position3fv(line.start);
 
-				meshBuilder.Color4fv(line.color2);
-				meshBuilder.Position3fv(line.end);
+			meshBuilder.AdvanceVertex();
 
-				meshBuilder.AdvanceVertex();
+			meshBuilder.Color4fv(line.color2);
+			meshBuilder.Position3fv(line.end);
 
-				line.lifetime -= frametime;
-			}
+			meshBuilder.AdvanceVertex();
 
-		meshBuilder.End();
-	}
+			line.lifetime -= frametime;
+		}
+
+	meshBuilder.End();
 }
 
 void DrawBoxArray(DkList<DebugBoxNode_t>& boxes, float frametime)
 {
-	if(r_debugdrawboxes.GetBool())
-	{
-		g_pShaderAPI->SetTexture(NULL,NULL, 0);
+	if(!boxes.numElem())
+		return;
 
-		materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
-		materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
-		materials->SetDepthStates(true,false);
+	g_pShaderAPI->SetTexture(NULL,NULL, 0);
 
-		materials->Apply();
+	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
+	materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
+	materials->SetDepthStates(true,false);
 
-		// bind the default material as we're emulating an FFP
-		materials->BindMaterial(materials->GetDefaultMaterial());
+	materials->Apply();
 
-		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
-		meshBuilder.Begin(PRIM_LINES);
+	// bind the default material as we're emulating an FFP
+	materials->BindMaterial(materials->GetDefaultMaterial());
 
-			for(int i = 0; i < boxes.numElem(); i++)
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	meshBuilder.Begin(PRIM_LINES);
+
+		for(int i = 0; i < boxes.numElem(); i++)
+		{
+			DebugBoxNode_t& node = boxes[i];
+
+			meshBuilder.Color4fv(node.color);
+
+			meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.mins.z),
+								Vector3D(node.mins.x, node.maxs.y, node.maxs.z));
+
+			meshBuilder.Line3fv(Vector3D(node.maxs.x, node.maxs.y, node.maxs.z),
+								Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
+
+			meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.mins.z),
+								Vector3D(node.maxs.x, node.mins.y, node.maxs.z));
+
+			meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
+								Vector3D(node.mins.x, node.mins.y, node.mins.z));
+
+			meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
+								Vector3D(node.mins.x, node.maxs.y, node.maxs.z));
+
+			meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.maxs.z),
+								Vector3D(node.maxs.x, node.maxs.y, node.maxs.z));
+
+			meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.mins.z),
+								Vector3D(node.mins.x, node.maxs.y, node.mins.z));
+
+			meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.mins.z),
+								Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
+
+			meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.mins.z),
+								Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
+
+			meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.maxs.z),
+								Vector3D(node.maxs.x, node.maxs.y, node.maxs.z));
+
+			meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.mins.z),
+								Vector3D(node.maxs.x, node.mins.y, node.mins.z));
+
+			meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
+								Vector3D(node.maxs.x, node.mins.y, node.maxs.z));
+
+			node.lifetime -= frametime;
+
+			if((i % BOXES_DRAW_SUBDIV) == 0)
 			{
-				DebugBoxNode_t& node = boxes[i];
-
-				meshBuilder.Color4fv(node.color);
-
-				meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.mins.z),
-									Vector3D(node.mins.x, node.maxs.y, node.maxs.z));
-
-				meshBuilder.Line3fv(Vector3D(node.maxs.x, node.maxs.y, node.maxs.z),
-									Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
-
-				meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.mins.z),
-									Vector3D(node.maxs.x, node.mins.y, node.maxs.z));
-
-				meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
-									Vector3D(node.mins.x, node.mins.y, node.mins.z));
-
-				meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
-									Vector3D(node.mins.x, node.maxs.y, node.maxs.z));
-
-				meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.maxs.z),
-									Vector3D(node.maxs.x, node.maxs.y, node.maxs.z));
-
-				meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.mins.z),
-									Vector3D(node.mins.x, node.maxs.y, node.mins.z));
-
-				meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.mins.z),
-									Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
-
-				meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.mins.z),
-									Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
-
-				meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.maxs.z),
-									Vector3D(node.maxs.x, node.maxs.y, node.maxs.z));
-
-				meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.mins.z),
-									Vector3D(node.maxs.x, node.mins.y, node.mins.z));
-
-				meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
-									Vector3D(node.maxs.x, node.mins.y, node.maxs.z));
-
-				node.lifetime -= frametime;
-
-				if((i % BOXES_DRAW_SUBDIV) == 0)
-				{
-					meshBuilder.End();
-					meshBuilder.Begin(PRIM_LINES);
-				}
+				meshBuilder.End();
+				meshBuilder.Begin(PRIM_LINES);
 			}
+		}
 
-		meshBuilder.End();
-
-	}
+	meshBuilder.End();
 }
 
 void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float frame_time)
@@ -491,6 +535,9 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 
 void DrawPolygons(DkList<DebugPolyNode_t>& polygons, float frameTime)
 {
+	if(!polygons.numElem())
+		return;
+
 	g_pShaderAPI->SetTexture(NULL,NULL, 0);
 
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
@@ -559,6 +606,183 @@ void DrawPolygons(DkList<DebugPolyNode_t>& polygons, float frameTime)
 	meshBuilder.End();
 }
 
+Vector3D v3sphere(float theta, float phi)
+{
+	return Vector3D(
+		cos(theta) * cos(phi),
+		sin(theta) * cos(phi),
+		sin(phi));
+}
+
+// use PRIM_LINES
+void DrawSphereWireframe(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, int sides)
+{
+	if (sphere.radius <= 0)
+		return;
+
+	meshBuilder.Color4fv(sphere.color);
+
+	{
+		for (int i = 0; i <= sides; i++)
+		{
+			double ds = sin((i * 2 * PI) / sides);
+			double dc = cos((i * 2 * PI) / sides);
+
+			meshBuilder.Position3f(
+						static_cast<float>(sphere.origin.x + sphere.radius * dc),
+						static_cast<float>(sphere.origin.y + sphere.radius * ds),
+						sphere.origin.z
+						);
+
+			meshBuilder.AdvanceVertex();
+		}
+	}
+
+	{
+		for (int i = 0; i <= sides; i++)
+		{
+			double ds = sin((i * 2 * PI) / sides);
+			double dc = cos((i * 2 * PI) / sides);
+
+			meshBuilder.Position3f(
+						static_cast<float>(sphere.origin.x + sphere.radius * dc),
+						sphere.origin.y,
+						static_cast<float>(sphere.origin.z + sphere.radius * ds)
+						);
+
+			meshBuilder.AdvanceVertex();
+		}
+	}
+
+	{
+		for (int i = 0; i <= sides; i++)
+		{
+			double ds = sin((i * 2 * PI) / sides);
+			double dc = cos((i * 2 * PI) / sides);
+
+			meshBuilder.Position3f(
+						sphere.origin.x,
+						static_cast<float>(sphere.origin.y + sphere.radius * dc),
+						static_cast<float>(sphere.origin.z + sphere.radius * ds)
+						);
+
+			meshBuilder.AdvanceVertex();
+		}
+	}
+}
+
+// use PRIM_TRIANGLES
+void DrawSphereFilled(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, int sides)
+{
+	if (sphere.radius <= 0)
+		return;
+
+	float dt = PI*2.0f / float(sides);
+	float dp = PI / float(sides);
+
+	meshBuilder.Color4fv(sphere.color);
+
+	for (int i = 0; i <= sides - 1; i++)
+	{
+		for (int j = 0; j <= sides - 2; j++)
+		{
+			const double t = i * dt;
+			const double p = (j * dp) - (PI * 0.5f);
+
+			{
+				Vector3D v(sphere.origin + (v3sphere(t, p) * sphere.radius));
+				meshBuilder.Position3fv(v);
+				meshBuilder.AdvanceVertex();
+			}
+
+			{
+				Vector3D v(sphere.origin + (v3sphere(t, p + dp) * sphere.radius));
+				meshBuilder.Position3fv(v);
+				meshBuilder.AdvanceVertex();
+			}
+
+			{
+				Vector3D v(sphere.origin + (v3sphere(t + dt, p + dp) * sphere.radius));
+				meshBuilder.Position3fv(v);
+				meshBuilder.AdvanceVertex();
+			}
+
+			{
+				Vector3D v(sphere.origin + (v3sphere(t, p) * sphere.radius));
+				meshBuilder.Position3fv(v);
+				meshBuilder.AdvanceVertex();
+			}
+
+			{
+				Vector3D v(sphere.origin + (v3sphere(t + dt, p + dp) * sphere.radius));
+				meshBuilder.Position3fv(v);
+				meshBuilder.AdvanceVertex();
+			}
+
+			{
+				Vector3D v(sphere.origin + (v3sphere(t + dt, p) * sphere.radius));
+				meshBuilder.Position3fv(v);
+				meshBuilder.AdvanceVertex();
+			}
+		}
+	}
+
+	{
+		const double p = (sides - 1) * dp - (PI * 0.5f);
+		for (int i = 0; i <= sides - 1; i++)
+		{
+			const double t = i * dt;
+
+			{
+				Vector3D v(sphere.origin + (v3sphere(t, p) * sphere.radius));
+				meshBuilder.Position3fv(v);
+				meshBuilder.AdvanceVertex();
+			}
+
+			{
+				Vector3D v(sphere.origin + (v3sphere(t + dt, p + dp) * sphere.radius));
+				meshBuilder.Position3fv(v);
+				meshBuilder.AdvanceVertex();
+			}
+
+			{
+				Vector3D v(sphere.origin + (v3sphere(t + dt, p) * sphere.radius));
+				meshBuilder.Position3fv(v);
+				meshBuilder.AdvanceVertex();
+			}
+		}
+	}
+}
+
+void DrawSphereArray(DkList<DebugSphereNode_t>& spheres, float frameTime)
+{
+	if(!spheres.numElem())
+		return;
+
+	g_pShaderAPI->SetTexture(NULL,NULL, 0);
+
+	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
+	materials->SetRasterizerStates(CULL_BACK,FILL_SOLID);
+	materials->SetDepthStates(true, true);
+
+	// bind the default material as we're emulating an FFP
+	materials->BindMaterial(materials->GetDefaultMaterial());
+
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	//meshBuilder.Begin(PRIM_TRIANGLES);
+
+	meshBuilder.Begin(PRIM_LINES);
+
+	for (int i = 0; i < spheres.numElem(); i++)
+	{
+		//DrawSphereFilled(meshBuilder, spheres[i], 12);
+		DrawSphereWireframe(meshBuilder, spheres[i], 12);
+		spheres[i].lifetime -= frameTime;
+	}
+
+	meshBuilder.End();
+}
+
 void CDebugOverlay::SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view )
 {
 	m_projMat = proj;
@@ -600,6 +824,9 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 
 		DrawBoxArray(m_BoxList, m_frametime);
 		DrawBoxArray(m_FastBoxList, m_frametime);
+
+		DrawSphereArray(m_SphereList, m_frametime);
+		DrawSphereArray(m_FastSphereList, m_frametime);
 
 		DrawLineArray(m_LineList, m_frametime);
 		DrawLineArray(m_FastLineList, m_frametime);
@@ -793,6 +1020,15 @@ void CDebugOverlay::CleanOverlays()
 		if(m_BoxList[i].lifetime <= 0)
 		{
 			m_BoxList.fastRemoveIndex(i);
+			i--;
+		}
+	}
+
+	for (int i = 0;i < m_SphereList.numElem();i++)
+	{
+		if(m_SphereList[i].lifetime <= 0)
+		{
+			m_SphereList.fastRemoveIndex(i);
 			i--;
 		}
 	}

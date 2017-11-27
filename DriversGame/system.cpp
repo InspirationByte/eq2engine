@@ -470,7 +470,7 @@ void InputCommands_SDL(SDL_Event* event)
 
 CGameHost::CGameHost() :
 	m_winSize(0), m_prevMousePos(0), m_mousePos(0), m_pWindow(NULL), m_nQuitState(QUIT_NOTQUITTING),
-	m_bTrapMode(false), m_bDoneTrapping(false), m_nTrapKey(0), m_nTrapButtons(0), m_cursorCentered(false),
+	m_bTrapMode(false), m_skipMouseMove(false), m_bDoneTrapping(false), m_nTrapKey(0), m_nTrapButtons(0), m_cursorCentered(false),
 	m_pDefaultFont(NULL)
 {
 	m_fCurTime = 0;
@@ -579,13 +579,11 @@ void CGameHost::UpdateCursorState()
 void CGameHost::SetCursorPosition(int x, int y)
 {
 	SDL_WarpMouseInWindow(m_pWindow, x, y);
+	//m_skipMouseMove = true;
 
-	IVector2D realpos;
+	m_mousePos = IVector2D(x,y);
 
-	SDL_GetMouseState(&realpos.x, &realpos.y);
-	m_mousePos = realpos;
-
-	//m_prevMousePos = m_mousePos;
+	//SDL_GetMouseState(&m_mousePos.x, &m_mousePos.y);
 }
 
 void CGameHost::SetCursorShow(bool bShow)
@@ -640,7 +638,7 @@ bool CGameHost::Frame()
 		return false;
 
 	UpdateCursorState();
-
+	
 	//--------------------------------------------
 
 	BeginScene();
@@ -824,14 +822,14 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 
 void CGameHost::TrapMouseMove_Event( int x, int y )
 {
-	m_mousePos = IVector2D(x,y);
-
-	if(m_cursorCentered)
+	if(m_skipMouseMove)
 	{
-		m_mousePos = IVector2D(m_winSize.x/2,m_winSize.y/2);
-		SetCursorPosition(m_mousePos.x, m_mousePos.y);
+		m_skipMouseMove = false;
+		return;
 	}
 
+	m_mousePos = IVector2D(x,y);
+	
 	g_pSysConsole->MousePos( m_mousePos );
 
 	if( equi::Manager->ProcessMouseEvents( x, y, 0, equi::UIEVENT_MOUSE_MOVE) )
@@ -844,6 +842,9 @@ void CGameHost::TrapMouseMove_Event( int x, int y )
 
 	if(GetCurrentState())
 		GetCurrentState()->HandleMouseMove(x, y, delta.x, delta.y);
+
+	if(m_cursorCentered)
+		SetCursorPosition(m_winSize.x/2, m_winSize.y/2);
 }
 
 void CGameHost::TrapMouseWheel_Event(int x, int y, int scroll)

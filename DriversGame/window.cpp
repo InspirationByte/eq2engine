@@ -304,16 +304,16 @@ void Host_GameLoop()
 
 	SDL_Event event;
 
+#ifdef ANDROID
     // TODO:    use this in right place
     //          e.g. g_pHost->RequestTextInput()
 	SDL_StartTextInput();
+#endif // ANDROID
 
 	do
 	{
 		while(SDL_PollEvent(&event))
 			EQHandleSDLEvents( &event );
-
-		
 
 		if (s_bActive || g_pHost->IsInMultiplayerGame())
 		{

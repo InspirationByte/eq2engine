@@ -1310,14 +1310,13 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 
 	tempRenderTarget->Ref_Grab();
 
-	g_pShaderAPI->Finish();
-
 	materials->SetMaterialRenderParamCallback(this);
 
 	// render the skybox into cubemap
 	for(int i = 0; i < 6; i++)
 	{
 		g_pShaderAPI->ChangeRenderTarget(tempRenderTarget, i);
+		g_pShaderAPI->Clear(true,true,false);
 
 		// Draw sky
 		materials->SetMatrix(MATRIXMODE_PROJECTION, cubeProjectionMatrixD3D(0.1f, 1000.0f));
@@ -1329,7 +1328,7 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	}
 
 	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
-	g_pShaderAPI->Finish();
+	//g_pShaderAPI->Finish();
 
 	texlockdata_t tempLock;
 
@@ -1359,7 +1358,7 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 		}
 	}
 
-	g_pShaderAPI->Finish();
+	//g_pShaderAPI->Finish();
 
 	envMap.SwapChannels(0, 2);
 	fogEnvMap.SwapChannels(0, 2);

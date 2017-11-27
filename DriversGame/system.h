@@ -97,6 +97,9 @@ protected:
 
 	bool		m_bTrapMode;
 	bool		m_bDoneTrapping;
+	bool		m_skipMouseMove;
+
+
 	int			m_nTrapKey;
 	int			m_nTrapButtons;
 
