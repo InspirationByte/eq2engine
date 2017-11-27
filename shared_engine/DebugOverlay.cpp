@@ -775,8 +775,7 @@ void DrawSphereArray(DkList<DebugSphereNode_t>& spheres, float frameTime)
 
 	for (int i = 0; i < spheres.numElem(); i++)
 	{
-		//DrawSphereFilled(meshBuilder, spheres[i], 12);
-		DrawSphereWireframe(meshBuilder, spheres[i], 12);
+		DrawSphereWireframe(meshBuilder, spheres[i], 20);
 		spheres[i].lifetime -= frameTime;
 	}
 

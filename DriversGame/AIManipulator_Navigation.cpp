@@ -387,9 +387,6 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 
 	btSphereShape sphereTraceShape(traceShapeRadius);
 
-	// TEST
-	debugoverlay->Sphere3D(carPos, traceShapeRadius, ColorRGBA(1, 1, 1, 1.0f), fDt);
-
 	if(doesHaveStraightPath)
 	{
 		// add half car length to the car position
@@ -451,7 +448,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			if(ai_debug_navigator.GetBool())
 			{
 				debugoverlay->Line3D(pathColl.position, steeringTargetPos, ColorRGBA(1, 0, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), fDt);
-				debugoverlay->Box3D(steeringTargetPos-traceShapeRadius, steeringTargetPos+traceShapeRadius, ColorRGBA(1, 1, 0, 1.0f), fDt);
+				debugoverlay->Sphere3D(steeringTargetPos, traceShapeRadius, ColorRGBA(1, 1, 0, 1.0f), fDt);
 			}
 		}
 
@@ -472,7 +469,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			if(ai_debug_navigator.GetBool())
 			{
 				debugoverlay->Line3D(steeringTargetColl.position, steeringTargetPos, ColorRGBA(0, 1, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), fDt);
-				debugoverlay->Box3D(steeringTargetPos-traceShapeRadius, steeringTargetPos+traceShapeRadius, ColorRGBA(0, 1, 0, 1.0f), fDt);
+				debugoverlay->Sphere3D(steeringTargetPos, traceShapeRadius, ColorRGBA(0, 1, 0, 1.0f), fDt);
 			}
 		}
 

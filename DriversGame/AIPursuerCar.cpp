@@ -12,7 +12,6 @@
 
 #include "AICarManager.h"
 
-ConVar ai_debug_pursuer_nav("ai_debug_pursuer_nav", "0", NULL, CV_CHEAT);
 ConVar ai_debug_pursuer("ai_debug_pursuer", "0", NULL, CV_CHEAT);
 ConVar g_railroadCops("g_railroadCops", "0", NULL, CV_CHEAT);
 
@@ -33,9 +32,6 @@ const float AI_COPVIEW_RADIUS_WANTED	= 25.0f;
 const float AI_COPVIEW_RADIUS_PURSUIT	= 120.0f;
 const float AI_COPVIEW_RADIUS_ROADBLOCK = 15.0f;
 
-const float AI_COP_BLOCK_DELAY			= 1.5f;
-const float AI_COP_BLOCK_REALIZE_TIME	= 0.8f;
-
 const float AI_COP_CHECK_MAXSPEED = 80.0f; // 80 kph and you will be pursued
 
 const float AI_COP_MINFELONY			= 0.1f;
@@ -47,35 +43,10 @@ const float AI_COP_COLLISION_FELONY_REDLIGHT = 0.005f;
 
 const float AI_COP_COLLISION_CHECKTIME		= 0.01f;
 
-const float AI_COP_TIME_FELONY = 0.001f;	// 0.1 percent per second
+const float AI_COP_TIME_TO_LOST_TARGET		= 30.0f;
 
-const float AI_COP_TIME_TO_LOST_TARGET = 30.0f;
-
-const float AI_COP_TIME_TO_UPDATE_PATH = 10.0f;			// every 5 seconds
-const float AI_COP_TIME_TO_UPDATE_PATH_FORCE = 0.5f;
-
-const float AI_COP_BRAKEDISTANCE_SCALE = 8.0f;
-
-const float AI_COP_ANGRY_RAMMING_DISTANCE = 5.0f;
-
-const float AI_MAX_DISTANCE_TO_PATH = 10.0f;
-
-const float AI_OSTACLE_STEERINGCORRECTION_DIST = 4.0f;
-
-// wheel friction modifier on diferrent weathers
-static float pursuerSpeedModifier[WEATHER_COUNT] =
-{
-	1.0f,
-	0.86f,
-	0.8f
-};
-
-static float pursuerBrakeDistModifier[WEATHER_COUNT] =
-{
-	1.0f,
-	2.5f,
-	2.8f
-};
+const float AI_ALTER_SIREN_MIN_SPEED		= 65.0f;
+const float AI_ALTER_SIREN_CHANGETIME		= 2.0f;
 
 //------------------------------------------------------------------------------------------------
 
@@ -94,9 +65,9 @@ CAIPursuerCar::CAIPursuerCar(vehicleConfig_t* carConfig, EPursuerAIType type) : 
 
 	m_loudhailer = NULL;
 	m_type = type;
-	m_isColliding = false;
-	m_blockTimeout = 0.0f;
-	m_blockingTime = 0.0f;
+
+	m_alterSirenChangeTime = AI_ALTER_SIREN_CHANGETIME;
+	m_sirenAltered = false;
 }
 
 CAIPursuerCar::~CAIPursuerCar()
@@ -308,6 +279,8 @@ void CAIPursuerCar::EndPursuit(bool death)
 
 	if(m_loudhailer)
 		m_loudhailer->Stop();
+
+	m_sirenAltered = false;
 
 	// HACK: just kill
 	if (GetCurrentStateType() != GAME_STATE_GAME)
@@ -545,67 +518,6 @@ bool CAIPursuerCar::CheckObjectVisibility(CCar* obj)
 	return false;
 }
 
-void DebugDisplayPath(pathFindResult_t& path, float time = -1.0f)
-{
-	if(ai_debug_pursuer_nav.GetBool() && path.points.numElem())
-	{
-		Vector3D lastLinePos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.points[0]);
-
-		for (int i = 1; i < path.points.numElem(); i++)
-		{
-			Vector3D pointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.points[i]);
-
-			float dispalyTime = time > 0 ? time : float(i) * 0.1f;
-
-			debugoverlay->Box3D(pointPos - 0.15f, pointPos + 0.15f, ColorRGBA(1, 1, 0, 1.0f), dispalyTime);
-			debugoverlay->Line3D(lastLinePos, pointPos, ColorRGBA(1, 1, 0, 1), ColorRGBA(1, 1, 0, 1), dispalyTime);
-
-			lastLinePos = pointPos;
-		}
-	}
-}
-
-void CAIPursuerCar::SetPath(pathFindResult_t& newPath, const Vector3D& searchPos)
-{
-	m_targInfo.path = newPath;
-	m_targInfo.pathTargetIdx = 0;
-	m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
-
-	m_targInfo.lastSuccessfulSearchPos = searchPos;
-	m_targInfo.searchFails = 0;
-
-	DebugDisplayPath(m_targInfo.path);
-}
-
-Vector3D CAIPursuerCar::GetAdvancedPointByDist(int& startSeg, float distFromSegment)
-{
-	Vector3D currPointPos;
-	Vector3D nextPointPos;
-
-	while (startSeg < m_targInfo.path.points.numElem()-2)
-	{
-		currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[startSeg]);
-		nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[startSeg + 1]);
-
-		float segLen = length(currPointPos - nextPointPos);
-
-		if(distFromSegment > segLen)
-		{
-			distFromSegment -= segLen;
-			startSeg++;
-		}
-		else
-			break;
-	}
-
-	currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[startSeg]);
-	nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[startSeg + 1]);
-
-	Vector3D dir = fastNormalize(nextPointPos - currPointPos);
-
-	return currPointPos + dir*distFromSegment;
-}
-
 int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 {
 	bool targetIsValid = (m_targInfo.target != NULL);
@@ -619,8 +531,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 			AI_SetState(&CAIPursuerCar::SearchForRoad);
 			return 0;
 		}
-
-		m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
 
 		// reset the emergency lights
 		SetLight(CAR_LIGHT_EMERGENCY, false);
@@ -810,8 +720,12 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		m_targInfo.notSeeingTime = 0.0f;
 	}
 
-	//if(g_replayData->m_state == REPL_PLAYING)
-	//	return 0;
+	if(!ai_debug_pursuer.GetBool())
+	{
+		// don't update AI in replays, unless we have debugging enabled
+		if(g_replayData->m_state == REPL_PLAYING)
+			return 0;
+	}
 
 	// don't try to control the car
 	if(IsFlippedOver())
@@ -820,6 +734,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		SetControlButtons( IN_ANALOGSTEER );
 		return 0;
 	}
+
+	float mySpeed = GetSpeed();
 
 	// update navigation affector parameters
 	m_navAffector.m_manipulator.m_driveTarget = m_targInfo.target->GetOrigin();
@@ -861,8 +777,27 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	int controls = IN_ACCELERATE | IN_ANALOGSTEER;
 
-	if(m_type == PURSUER_TYPE_COP)
-		controls |= IN_HORN;
+	// alternating siren sound by speed
+	if(	m_type == PURSUER_TYPE_COP )
+	{
+		bool newAlterState = (mySpeed > AI_ALTER_SIREN_MIN_SPEED);
+
+		if(newAlterState != m_sirenAltered)
+		{
+			m_alterSirenChangeTime -= fDt;
+		
+			if(m_alterSirenChangeTime <= 0.0f)
+			{
+				m_sirenAltered = (mySpeed > AI_ALTER_SIREN_MIN_SPEED);
+				m_alterSirenChangeTime = AI_ALTER_SIREN_CHANGETIME;
+			}
+		}
+		else
+			m_alterSirenChangeTime = AI_ALTER_SIREN_CHANGETIME;
+
+		if(m_sirenAltered)
+			controls |= IN_HORN;
+	}
 
 	if(handling.braking > 0.5f)
 	{
@@ -883,435 +818,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	if(handling.acceleration > 0.05f)
 		GetPhysicsBody()->TryWake(false);
 
-	//--------------------------------------------------------------------------------------------------
-	/*
-	eqPhysCollisionFilter collFilter;
-	collFilter.type = EQPHYS_FILTER_TYPE_EXCLUDE;
-	collFilter.flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS | EQPHYS_FILTER_FLAG_FORCE_RAYCAST;
-	collFilter.AddObject( GetPhysicsBody() );
-	collFilter.AddObject( m_targInfo.target->GetPhysicsBody() );
-
-	int traceContents = OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE;
-
-	if(HasInfiniteMass())
-	{
-		traceContents &= ~OBJECTCONTENTS_OBJECT;
-		traceContents &= ~OBJECTCONTENTS_VEHICLE;
-	}
-
-	Vector3D targetOrigin = m_targInfo.target->GetOrigin();
-
-	// movement prediction factor is distant
-	FReal velocityDistOffsetFactor = length(GetOrigin() - targetOrigin);
-	velocityDistOffsetFactor = RemapValClamp(velocityDistOffsetFactor, FReal(0.0f), FReal(6.0f), FReal(0.0f), FReal(1.0f));
-	velocityDistOffsetFactor = FReal(1.0f - pow((float)velocityDistOffsetFactor, 2.0f));
-
-	Vector3D carForwardDir	= GetForwardVector();
-	Vector3D carPos			= GetOrigin() + carForwardDir * m_conf->physics.body_size.z;
-	Vector3D carLinearVel	= GetVelocity();
-
-	FReal fSpeed = GetSpeedWheels();
-	FReal speedMPS = (fSpeed*KPH_TO_MPS);
-
-	FReal velocity = GetSpeed();
-
-	FReal distToPursueTarget = length(m_targInfo.target->GetOrigin() - GetOrigin());
-
-	FReal brakeDistancePerSec = m_conf->GetBrakeEffectPerSecond()*0.5f;
-	FReal brakeToStopTime = speedMPS / brakeDistancePerSec*2.0f;
-	FReal brakeDistAtCurSpeed = brakeDistancePerSec*brakeToStopTime;
-
-	FReal weatherBrakeDistModifier = pursuerBrakeDistModifier[g_pGameWorld->m_envConfig.weatherType];
-
-	bool doesHaveStraightPath = true;
-
-	// test for the straight path and visibility
-	if(distToPursueTarget < AI_COPVIEW_FAR_HASSTRAIGHTPATH)
-	{
-		float tracePercentage = g_pGameWorld->m_level.Nav_TestLine(GetOrigin(), m_targInfo.target->GetOrigin(), false);
-
-		if(ai_debug_pursuer_nav.GetBool())
-			debugoverlay->TextFadeOut(0, color4_white, 10.0f, "path trace percentage: %d", (int)(tracePercentage*100.0f));
-
-		if(tracePercentage < 1.0f)
-			doesHaveStraightPath = false;
-	}
-	else
-	{
-		doesHaveStraightPath = false;
-	}
-
-
-	if(ai_debug_pursuer_nav.GetBool())
-		debugoverlay->TextFadeOut(0, color4_white, 10.0f, "has straight path: %d", doesHaveStraightPath);
-
-	//-------------------------------------------------------------------------------
-	// refresh the navigation path if we don't see the target
-
-	// update last successful position by checking cell which at carPos
-	ubyte navPoint = g_pGameWorld->m_level.Nav_GetTileAtPosition(GetOrigin());
-
-	if(navPoint >= 0x4)
-		m_targInfo.lastSuccessfulSearchPos = GetOrigin();
-
-	//
-	// only if we have made most of the path
-	//
-	if (!doesHaveStraightPath)
-	{
-		//
-		// Get the last point on the path
-		//
-		int lastPoint = m_targInfo.pathTargetIdx;
-		Vector3D pathTarget = (lastPoint != -1) ? g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[lastPoint]) : targetOrigin;
-
-		FReal pathCompletionPercentage = (float)lastPoint / (float)m_targInfo.path.points.numElem();
-
-		if(length(pathTarget-carPos) > AI_MAX_DISTANCE_TO_PATH)
-			pathCompletionPercentage = 1.0f;
-
-		// if we have old path, try continue moving
-		if(pathCompletionPercentage < 0.5f && m_targInfo.path.points.numElem() > 1)
-		{
-			m_targInfo.nextPathUpdateTime -= fDt;
-		}
-		else
-		{
-			if(m_targInfo.nextPathUpdateTime > AI_COP_TIME_TO_UPDATE_PATH_FORCE )
-				m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH_FORCE;
-
-			m_targInfo.nextPathUpdateTime -= fDt;
-		}
-
-		DebugDisplayPath(m_targInfo.path, m_refreshTime);
-
-		if(ai_debug_pursuer_nav.GetBool())
-		{
-			debugoverlay->TextFadeOut(0, color4_white, 10.0f, "pathCompletionPercentage: %d (length=%d)", (int)(pathCompletionPercentage*100.0f), m_targInfo.path.points.numElem());
-			debugoverlay->TextFadeOut(0, color4_white, 10.0f, "nextPathUpdateTime: %g", m_targInfo.nextPathUpdateTime);
-		}
-
-		if( m_targInfo.nextPathUpdateTime <= 0.0f)
-		{
-			Vector3D searchStart(carPos);
-
-			int trials = m_targInfo.searchFails;
-
-			if(m_targInfo.searchFails > 0)
-			{
-				searchStart = m_targInfo.lastSuccessfulSearchPos;
-			}
-
-			pathFindResult_t newPath;
-			if( g_pGameWorld->m_level.Nav_FindPath(targetOrigin, searchStart, newPath, 1024, true))
-			{
-				SetPath(newPath, carPos);
-			}
-			else
-			{
-				m_targInfo.searchFails++;
-
-				if(m_targInfo.searchFails > 1)
-					m_targInfo.searchFails = 0;
-
-				//debugoverlay->Box3D(m_targInfo.lastSuccessfulSearchPos-1.0f,m_targInfo.lastSuccessfulSearchPos+1.0f, color4_white, 1.0f);
-
-				m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH_FORCE;
-			}
-
-			if(ai_debug_pursuer_nav.GetBool())
-				debugoverlay->TextFadeOut(0, color4_white, 10.0f, "path search result: %d points, tries: %d", newPath.points.numElem(), trials);
-		}
-	}
-	else
-		m_targInfo.pathTargetIdx = -1;
-
-	//
-	// Introduce steering target and brake position
-	//
-	Vector3D steeringTargetPos = targetOrigin;
-
-	Vector3D steeringTargetPosB = carPos + targetForward*velocityDistOffsetFactor;
-	Vector3D brakeTargetPos = targetOrigin + lerp(targetForward*targetSpeedMPS, targetVelocity, 0.5f) * velocityDistOffsetFactor;
-
-	if(m_targInfo.isAngry)
-	{
-		// FIXME: should be this more careful and timed?
-		if(distToPursueTarget > AI_COP_ANGRY_RAMMING_DISTANCE)
-			brakeTargetPos = targetOrigin + targetVelocity*10.0f;
-	}
-
-	CollisionData_t velocityColl;
-	CollisionData_t frontColl;
-
-	float frontCollDist = clamp((float)speedMPS, 1.0f, 8.0f);
-
-	btBoxShape carBoxShape(btVector3(m_conf->physics.body_size.x, m_conf->physics.body_size.y, 0.25f));
-
-	// trace in the front direction
-	g_pPhysics->TestConvexSweep(&carBoxShape, GetOrientation(),
-		GetOrigin(), GetOrigin()+carForwardDir*frontCollDist, frontColl,
-		traceContents, &collFilter);
-
-	// trace the car body in velocity direction
-	g_pPhysics->TestConvexSweep(&carBoxShape, GetOrientation(),
-		GetOrigin(), GetOrigin()+carLinearVel*2.0f, velocityColl,
-		traceContents,
-		&collFilter);
-
-	//-------------------------------------------------------------------------------
-	// calculate the steering
-
-	bool doesHardSteer = false;
-
-	FReal lateralSlideSigned = GetLateralSlidingAtBody();
-	FReal lateralSlide = FPmath::abs(lateralSlideSigned);
-
-	FReal speedFactor = RemapValClamp(fSpeed, FReal(0.0f), FReal(60.0f), FReal(0.0f), FReal(1.0f));
-
-	FReal speedToSteering = speedMPS - lateralSlideSigned*10.0f;
-	FReal steeringSpeedFactor = pow( (float)RemapValClamp(speedToSteering, FReal(0.0f), FReal(180.0f), FReal(1.0f), FReal(0.45f)), 0.5f);
-
-	if( !doesHaveStraightPath &&
-		m_targInfo.path.points.numElem() > 0 &&
-		m_targInfo.pathTargetIdx != -1 &&
-		m_targInfo.pathTargetIdx < m_targInfo.path.points.numElem()-2)
-	{
-		Vector3D currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[m_targInfo.pathTargetIdx]);
-		Vector3D nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_targInfo.path.points[m_targInfo.pathTargetIdx + 1]);
-
-		FReal currPosPerc = lineProjection(currPointPos, nextPointPos, carPos);
-
-		FReal len = length(currPointPos - nextPointPos);
-
-		int pathIdx = m_targInfo.pathTargetIdx;
-
-		// calculate steering target position and advance current point
-		steeringTargetPos = GetAdvancedPointByDist(m_targInfo.pathTargetIdx, currPosPerc*len+8.0f);
-
-		// also get hardsteering angle to calculate braking
-		pathIdx = m_targInfo.pathTargetIdx;
-		Vector3D hardSteerPosStart = GetAdvancedPointByDist(pathIdx, currPosPerc*len + 6.0f + brakeDistAtCurSpeed*speedFactor*weatherBrakeDistModifier);
-
-		pathIdx = m_targInfo.pathTargetIdx;
-		Vector3D hardSteerPosEnd = GetAdvancedPointByDist(pathIdx, currPosPerc*len + 7.0f + brakeDistAtCurSpeed*speedFactor*weatherBrakeDistModifier);
-
-		Vector3D steerDirHard = fastNormalize(hardSteerPosEnd-hardSteerPosStart);
-
-		FReal cosHardSteerAngle = dot(steerDirHard, fastNormalize(carLinearVel));
-
-		FReal distanceToSteer = length(hardSteerPosStart - carPos);
-
-		if(fSpeed > FReal(60.0f) && cosHardSteerAngle < FReal(0.65f))
-		{
-			pathIdx = m_targInfo.pathTargetIdx;
-			brakeTargetPos = GetAdvancedPointByDist(pathIdx, currPosPerc*len + 4.0f + brakeDistAtCurSpeed*speedFactor*weatherBrakeDistModifier);
-
-			steeringTargetPos = lerp(steeringTargetPos, brakeTargetPos, speedFactor);
-
-			if(distanceToSteer < brakeDistAtCurSpeed)
-			{
-				// make hard steer
-				steeringTargetPosB = hardSteerPosStart;
-				steeringTargetPos = hardSteerPosEnd;
-				doesHardSteer = true;
-			}
-		}
-
-		if(ai_debug_pursuer_nav.GetBool())
-		{
-			debugoverlay->Box3D(hardSteerPosStart - 0.25f, hardSteerPosStart + 0.25f, ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
-			debugoverlay->Line3D(hardSteerPosStart, hardSteerPosEnd, ColorRGBA(1, 0, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
-			debugoverlay->Box3D(hardSteerPosEnd - 0.25f, hardSteerPosEnd + 0.25f, ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
-		}
-	}
-
-	bool hasCarObstacleInFront = false;
-
-	// get rid of obstacles by tracing sphere forwards
-	{
-		float traceShapeRadius = 1.0f + speedMPS*0.01f;
-
-		CollisionData_t steeringTargetColl;
-		btSphereShape sphereTraceShape(traceShapeRadius);
-
-		// trace the car body in velocity direction
-		g_pPhysics->TestConvexSweep(&sphereTraceShape, GetOrientation(),
-			carPos, steeringTargetPos, steeringTargetColl,
-			traceContents,
-			&collFilter);
-
-		debugoverlay->Line3D(carPos, steeringTargetColl.position, ColorRGBA(0, 1, 0, 1.0f), ColorRGBA(1, 1, 0, 1.0f), DOVERLAY_DELAY);
-
-		// correct the steering to prevent car damage if we moving towards obstacle
-		if(steeringTargetColl.fract < 1.0f)
-		{
-			float distanceScale = (1.0f-steeringTargetColl.fract);
-
-			float newPositionDist = distanceScale * AI_OSTACLE_STEERINGCORRECTION_DIST + FPmath::abs(speedMPS)* distanceScale * 0.25f;
-
-			Vector3D newSteeringTargetPos = steeringTargetColl.position + steeringTargetColl.normal * newPositionDist; // 4 meters is enough to be safe
-
-			Vector3D checkSteeringDir = fastNormalize(steeringTargetPos-steeringTargetPosB);
-
-			//if(dot(normalize(newSteeringTargetPos-carPos), normalize(carForwardDir)) > 0.5f)
-			if(fabs(dot(checkSteeringDir, carForwardDir)) > 0.5f)
-			{
-				steeringTargetPosB = carPos;
-				steeringTargetPos = newSteeringTargetPos;
-
-				//if(ai_debug_pursuer_nav.GetBool())
-				{
-					debugoverlay->Box3D(steeringTargetColl.position - traceShapeRadius, steeringTargetColl.position + traceShapeRadius, ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
-					debugoverlay->Line3D(steeringTargetColl.position, steeringTargetPos, ColorRGBA(1, 1, 0, 1.0f), ColorRGBA(1, 1, 0, 1.0f), DOVERLAY_DELAY);
-					debugoverlay->Box3D(steeringTargetPos - traceShapeRadius, steeringTargetPos + traceShapeRadius, ColorRGBA(0, 1, 0, 1.0f), DOVERLAY_DELAY);
-				}
-			}
-		}
-
-		if(!m_sirenEnabled && frontColl.fract < 1.0f && frontColl.hitobject)
-		{
-			if(frontColl.hitobject->m_flags & BODY_ISCAR)
-			{
-				CCar* car = (CCar*)frontColl.hitobject->GetUserData();
-
-				hasCarObstacleInFront = car->IsAlive() && car->IsEnabled() && !(car->GetPursuedCount() > 0);
-			}
-		}
-	}
-
-	if(ai_debug_pursuer_nav.GetBool() || ai_debug_pursuer.GetBool())
-	{
-		debugoverlay->Line3D(carPos, carPos+carLinearVel, ColorRGBA(1, 1, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
-		debugoverlay->Line3D(carPos, carPos+carForwardDir*10.0f, ColorRGBA(1, 1, 0, 1.0f), ColorRGBA(1, 0, 1, 1.0f), DOVERLAY_DELAY);
-		debugoverlay->Box3D(steeringTargetPos - 0.25f, steeringTargetPos + 0.25f, ColorRGBA(1, 0, 1, 1.0f), DOVERLAY_DELAY);
-		debugoverlay->Box3D(steeringTargetPosB - 0.25f, steeringTargetPosB + 0.25f, ColorRGBA(1, 0, 0, 1.0f), DOVERLAY_DELAY);
-		debugoverlay->Box3D(brakeTargetPos - 0.25f, brakeTargetPos + 0.25f, ColorRGBA(0, 1, 0, 1.0f), DOVERLAY_DELAY);
-	}
-
-	GetPhysicsBody()->TryWake(false);
-
-	Matrix4x4 bodyMat;
-	GetPhysicsBody()->ConstructRenderMatrix( bodyMat );
-
-	Vector3D steeringTargetDir = fastNormalize(steeringTargetPos-steeringTargetPosB);
-	Vector3D relateiveSteeringDir = fastNormalize((!bodyMat.getRotationComponent()) * steeringTargetDir);
-
-	FReal fSteerTarget = atan2(relateiveSteeringDir.x, relateiveSteeringDir.z);
-	FReal fSteeringAngle = clamp(fSteerTarget , FReal(-1.0f), FReal(1.0f)) * steeringSpeedFactor;
-
-	//if(lateralSlide < 1.0f)
-	//	fSteeringAngle = sign(fSteeringAngle) * powf(fabs(fSteeringAngle), 1.25f);
-
-	// inverese steering angle if we're going backwards
-	if(fSpeed < -0.1f)
-		fSteeringAngle *= -1.0f;
-	
-	if(lateralSlide > 4.0f && sign(lateralSlideSigned)+sign(fSteeringAngle) < 0.5f)
-		doesHardSteer = false;
-
-	Vector3D velocityDir = fastNormalize(carLinearVel+carForwardDir);
-
-	FReal steeringToTargetDot = dot(steeringTargetDir, velocityDir);
-	FReal steeringBrakeFactor = pow(1.0f - max(FReal(0.0f), steeringToTargetDot), 2.0f);
-
-	FReal accelerator = 1.0f;
-	FReal brake = 0.0f;
-
-	FReal distToTarget = length(steeringTargetPos - carPos);
-	FReal distToBrakeTarget = length(brakeTargetPos - carPos);
-	FReal distToTargetReal = length(m_targInfo.target->GetOrigin() - GetOrigin());
-
-	int controls = IN_ACCELERATE | IN_ANALOGSTEER | IN_EXTENDTURN;
-
-	// make fast siren sound
-	if(	m_sirenEnabled && fabs(fSpeed) > 20 || 
-		!m_sirenEnabled && hasCarObstacleInFront)
-		controls |= IN_HORN;
-
-	//if(frontColl.fract < 1.0f)
-	//	steeringTargetPos = frontColl.position + carForwardDir*5.0f + frontColl.normal*(1.0f-frontColl.fract)*16.0f;
-
-	if (m_blockTimeout <= 0.0f && (frontColl.fract < 1.0f || m_isColliding) && fSpeed < 5.0f)
-	{
-		m_blockingTime += fDt;
-
-		if(m_blockingTime > AI_COP_BLOCK_REALIZE_TIME)
-		{
-			m_blockTimeout = AI_COP_BLOCK_DELAY;
-			m_blockingTime = 0.0f;
-		}
-	}
-	else
-	{
-		FReal distFromCollPoint = length(m_lastCollidingPosition-GetOrigin());
-
-		if(distFromCollPoint > 5.0f)
-			m_blockTimeout = 0.0f;
-
-		m_blockTimeout -= fDt;
-
-		if(m_blockTimeout > 0.0f)
-		{
-			brake = 1.0f;
-			accelerator = 0.0f;
-			controls |= IN_BRAKE;
-			controls &= ~IN_ACCELERATE;
-		}
-	}
-
-	FReal minSpeedClampFac = 20.0f-fSpeed;
-	FReal minSpeedFac = RemapValClamp(minSpeedClampFac, 0.0f, 20.0f, 0.0f, 1.0f);
-
-	if(fSpeed > 1.0f)
-	{
-		FReal velocityToTargetFactor = pow(max(FReal(0.0f), steeringToTargetDot), 0.5f);
-
-		FReal lateralSlideSpd = lateralSlide*speedFactor;
-
-		FReal distToTargetDiff = speedMPS * 2.0f - distToBrakeTarget;
-		FReal brakeDistantFactor = RemapValClamp(distToTargetDiff, FReal(0.0f), FReal(AI_COP_BRAKEDISTANCE_SCALE), FReal(0.0f), FReal(1.0f)) * weatherBrakeDistModifier;
-		
-		if(doesHardSteer && minSpeedFac <= 0.0f || velocityColl.fract < 0.5f || speedFactor > 0.05f && (steeringToTargetDot < 0.85f || speedFactor >= 0.5f && brakeDistantFactor > 0.0f) )
-		{
-			controls |= IN_BRAKE;
-
-			if(minSpeedFac < 0.5f)
-				controls &= ~IN_ACCELERATE;
-		}
-
-		doesHardSteer = doesHardSteer || speedFactor >= 0.25f && lateralSlideSpd < 2.2f;
-
-		float directionBrakeFac = fabs(dot(velocityColl.normal, carForwardDir));
-
-		brake += powf((1.0f-velocityColl.fract) * directionBrakeFac, 0.5f) + steeringBrakeFactor*brakeDistantFactor*0.5f;
-
-		if(lateralSlideSpd > 1.0f)
-			brake += (1.0f-minSpeedFac) * lateralSlideSpd * 0.5f;
-
-		fSteeringAngle -= sign(fSteeringAngle)*lateralSlideSpd*0.05f;
-
-		if(ai_debug_pursuer.GetBool())
-		{
-			debugoverlay->TextFadeOut(0, color4_white, 10.0f, "-------------------");
-			debugoverlay->TextFadeOut(0, color4_white, 10.0f, "velocityToTargetFactor: %.2f speedFactor: %.2f lateralSlide: %.2f brakeDistantFactor: %.2f", (float)velocityToTargetFactor, (float)speedFactor, (float)lateralSlide, (float)brakeDistantFactor);
-			debugoverlay->TextFadeOut(0, ColorRGBA(1,1,0,1), 10.0f, "result brake: %.2f hasToBrake: %d hardSteer: %d", (float)brake, (controls & IN_BRAKE) > 0, doesHardSteer);
-		}
-	}
-
-	if(minSpeedFac < 0.5f)
-		controls |= IN_EXTENDTURN;
-
-	accelerator -= (FReal)powf(FPmath::abs(fSteeringAngle) * (FReal(1.0f) - minSpeedFac), 0.5f);
-	
-	if((controls & IN_ACCELERATE) && fSpeed < 50.0f && lateralSlide < 1.0f && accelerator >= 1.0f)
-		controls |= IN_BURNOUT;
-
-	m_autohandbrake = doesHardSteer;
-
-	SetControlButtons( controls );
-	SetControlVars(accelerator, brake, clamp(fSteeringAngle, FReal(-1.0f), FReal(1.0f)));
-	*/
 	return 0;
 }
 
@@ -1331,13 +837,7 @@ void CAIPursuerCar::SetPursuitTarget(CCar* obj)
 	m_targInfo.direction = -1;
 
 	m_targInfo.lastInfraction = INFRACTION_HAS_FELONY;
-	m_targInfo.path.points.clear();
-	m_targInfo.pathTargetIdx = -1;
 	m_targInfo.nextCheckImpactTime = AI_COP_COLLISION_CHECKTIME;
-	m_targInfo.nextPathUpdateTime = AI_COP_TIME_TO_UPDATE_PATH;
-
-	m_targInfo.lastSuccessfulSearchPos = GetOrigin();
-	m_targInfo.searchFails = 0;
 
 	if(obj)
 		m_targInfo.isAngry = (obj->GetFelony() > 0.6f) || m_type == PURSUER_TYPE_GANG;

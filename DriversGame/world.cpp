@@ -1305,7 +1305,9 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 
 	m_envMapsDirty = false;
 
-	ITexture* tempRenderTarget = g_pShaderAPI->CreateNamedRenderTarget("_tempSkyboxRender", 512, 512, FORMAT_RGBA8,
+	// TODO: more efficient way
+
+	ITexture* tempRenderTarget = g_pShaderAPI->CreateNamedRenderTarget("_tempSkyboxRender", 256, 256, FORMAT_RGBA8,
 										TEXFILTER_NEAREST, TEXADDRESS_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
 
 	tempRenderTarget->Ref_Grab();

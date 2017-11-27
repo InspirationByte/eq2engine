@@ -78,10 +78,6 @@ protected:
 	bool				Speak( const char* soundName, bool force = false );
 	void				TrySayTaunt();
 
-	void				SetPath(pathFindResult_t& path, const Vector3D& searchPos);
-
-	Vector3D 			GetAdvancedPointByDist(int& startSeg, float distFromSegment);
-
 	// states
 	int					TrafficDrive( float fDt, EStateTransition transition );
 	int					DeadState( float fDt, EStateTransition transition );
@@ -97,30 +93,20 @@ protected:
 		int					direction;	// swne
 		float				notSeeingTime;
 
-		Vector3D			lastSuccessfulSearchPos;
-		int					searchFails;
-
-		pathFindResult_t	path;
-		int					pathTargetIdx;
-
-		float				nextPathUpdateTime;
 		float				nextCheckImpactTime;
 		int					lastInfraction;
 
 		bool				isAngry;
 	} m_targInfo;
 
+	float					m_alterSirenChangeTime;
+	bool					m_sirenAltered;
+
 	// all handling affectors, they are biased by the current behavior state
 	CAIHandlingAffector<CAINavigationManipulator>			m_navAffector;
 	CAIHandlingAffector<CAIStabilityControlManipulator>		m_stability;
 	CAIHandlingAffector<CAICollisionAvoidanceManipulator>	m_collAvoidance;
 	CAIHandlingAffector<CAITargetAvoidanceManipulator>		m_targetAvoidance;
-
-	float					m_blockingTime;
-	float					m_blockTimeout;
-
-	bool					m_isColliding;
-	Vector3D				m_lastCollidingPosition;
 
 	ISoundController*		m_loudhailer;
 };
