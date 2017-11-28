@@ -60,11 +60,8 @@ void CIndexBufferGL::Update(void* data, int size, int offset, bool discard /*= t
 
 	pGLRHI->GL_CRITICAL();
 
-	if(currIB != this)
-	{
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
-		GLCheckError("indexbuffer update bind");
-	}
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nGL_IB_Index);
+	GLCheckError("indexbuffer update bind");
 
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset*m_nIndexSize, size*m_nIndexSize, data);
 	GLCheckError("indexbuffer update");

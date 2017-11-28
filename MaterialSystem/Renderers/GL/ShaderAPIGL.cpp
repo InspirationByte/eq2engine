@@ -280,7 +280,7 @@ void ShaderAPIGL::ApplyTextures()
 
 		if(pSelectedTexture != pCurrentTexture)
 		{
-			// Set the active texture to modify
+			// Set the active texture unit and bind the selected texture to target
 			glActiveTexture(GL_TEXTURE0 + i);
 
 			if (pSelectedTexture == NULL)
@@ -841,6 +841,9 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 	pTexture->textures.setNum(1);
 
 	glGenTextures(1, &pTexture->textures[0].glTexID);
+	GLCheckError("gen tex");
+
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(pTexture->glTarget, pTexture->textures[0].glTexID);
 
 	InternalSetupSampler(pTexture->glTarget, texSamplerParams);
@@ -948,6 +951,8 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 	// Generate a texture
 	glGenTextures(1, &textureID);
 	GLCheckError("gen tex");
+
+	glActiveTexture(GL_TEXTURE0);
 
 #ifndef USE_GLES2
 	glEnable(gltarget);
@@ -1539,24 +1544,28 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 			eqGLVertAttrDesc_t& selDesc = pSelectedFormat->m_genericAttribs[i];
 			eqGLVertAttrDesc_t& curDesc = pCurrentFormat->m_genericAttribs[i];
 
-			CVertexBufferGL* glVB = (CVertexBufferGL*)m_pCurrentVertexBuffers[selDesc.streamId];
+			// CVertexBufferGL* glVB = (CVertexBufferGL*)m_pCurrentVertexBuffers[selDesc.streamId];
 
-			if(glVB)
-				glBindBuffer(GL_ARRAY_BUFFER, glVB->m_nGL_VB_Index);
+			bool shouldDisable = !selDesc.sizeInBytes && curDesc.sizeInBytes;
+			bool shouldEnable = selDesc.sizeInBytes && !curDesc.sizeInBytes;
 
-			if (!selDesc.sizeInBytes && curDesc.sizeInBytes)
+			//if(glVB && (shouldEnable || shouldDisable))
+			//	glBindBuffer(GL_ARRAY_BUFFER, glVB->m_nGL_VB_Index);
+
+			if (shouldDisable)
 			{
 				glDisableVertexAttribArray(i);
 				GLCheckError("disable vtx attrib");
 			}
 
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-			if(selDesc.sizeInBytes && !curDesc.sizeInBytes)
+			if(shouldEnable)
 			{
 				glEnableVertexAttribArray(i);
 				GLCheckError("enable vtx attrib");
 			}
+
+			//if(glVB && (shouldEnable || shouldDisable))
+			//	glBindBuffer(GL_ARRAY_BUFFER, 0);
 		}
 
 		m_pCurrentVertexFormat = pVertexFormat;
@@ -1587,19 +1596,19 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 	if (pVB != NULL)
 		vbo = pVB->m_nGL_VB_Index;
 
-	bool boundHere = false;
-	
-	if( m_pCurrentVertexBuffers[nStream] != pVertexBuffer )
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		GLCheckError("bind array");
-		boundHere = true;
-	}
-
 	bool instanceBuffer = (nStream > 0) && pVB != NULL && (pVB->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
 
 	if (pVB != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream] || m_pCurrentVertexFormat != m_pActiveVertexFormat[nStream])
 	{
+		bool boundHere = false;
+	
+		if( m_pCurrentVertexBuffers[nStream] != pVertexBuffer )
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, vbo);
+			GLCheckError("bind array");
+			boundHere = true;
+		}
+
 		if (m_pCurrentVertexFormat != NULL)
 		{
 			CVertexFormatGL* cvf = (CVertexFormatGL*)m_pCurrentVertexFormat;
@@ -1609,28 +1618,30 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 			{
-				if (cvf->m_genericAttribs[i].streamId != nStream)
+				eqGLVertAttrDesc_t& attrib = cvf->m_genericAttribs[i];
+
+				if (attrib.streamId != nStream)
 					continue;
 
-				if(cvf->m_genericAttribs[i].sizeInBytes)
+				if(attrib.sizeInBytes)
 				{
-					glVertexAttribPointer(i, cvf->m_genericAttribs[i].sizeInBytes, glTypes[cvf->m_genericAttribs[i].attribFormat], GL_TRUE, vertexSize, base + cvf->m_genericAttribs[i].offsetInBytes);
+					glVertexAttribPointer(i, attrib.sizeInBytes, glTypes[attrib.attribFormat], GL_TRUE, vertexSize, base + attrib.offsetInBytes);
 					GLCheckError("attribpointer"); 
+
+					// instance vertex attrib divisor
+					int selStreamParam = instanceBuffer ? 1 : 0;
+
+					glVertexAttribDivisorARB(i, selStreamParam);
+					GLCheckError("divisor");
 				}
-
-				// instance vertex attrib divisor
-				int selStreamParam = instanceBuffer ? 1 : 0;
-
-				glVertexAttribDivisorARB(i, selStreamParam);
-				GLCheckError("divisor");
 			}
 		}
-	}
 
-	if(boundHere)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		GLCheckError("unbind array after vattrib");
+		if(boundHere)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			GLCheckError("unbind array after vattrib");
+		}
 	}
 
 	if(pVertexBuffer)
@@ -1960,8 +1971,6 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		glGetProgramiv(prog->m_program, GL_OBJECT_LINK_STATUS_ARB, &linkResult);
 
 		GLCheckError("link program");
-
-
 
 		if( !linkResult )
 		{

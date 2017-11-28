@@ -706,7 +706,7 @@ void CGameWorld::Init()
 	{
 		kvkeybase_t skyParams;
 		skyParams.SetName("DrvSynSky");
-		skyParams.SetKey("ztest", true);
+		skyParams.SetKey("ztest", false);
 		skyParams.SetKey("zwrite", false);
 
 		m_skyMaterial = materials->CreateMaterial("_sky", &skyParams);
