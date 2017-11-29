@@ -2,16 +2,6 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Release" />
-	<File name="eqCPUServices.cpp" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1550" topLine="40" />
-		</Cursor>
-	</File>
-	<File name="ConCommandFactory.cpp" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="8951" topLine="391" />
-		</Cursor>
-	</File>
 	<File name="ExceptionHandler.cpp" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="9545" topLine="232" />
@@ -22,24 +12,9 @@
 			<Cursor1 position="5739" topLine="218" />
 		</Cursor>
 	</File>
-	<File name="DPKFileReader.cpp" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="ConCommandFactory.cpp" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="4853" topLine="195" />
-		</Cursor>
-	</File>
-	<File name="Localize.cpp" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1954" topLine="83" />
-		</Cursor>
-	</File>
-	<File name="CoreVersion.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="515" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="DPKFileWriter.cpp" open="0" top="0" tabpos="31" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="985" topLine="19" />
+			<Cursor1 position="8951" topLine="391" />
 		</Cursor>
 	</File>
 	<File name="CmdLineParser.cpp" open="0" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -47,9 +22,24 @@
 			<Cursor1 position="2107" topLine="89" />
 		</Cursor>
 	</File>
-	<File name="FileSystem.cpp" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="DPKFileReader.cpp" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="880" topLine="12" />
+			<Cursor1 position="4853" topLine="195" />
+		</Cursor>
+	</File>
+	<File name="FileSystem.cpp" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="20336" topLine="967" />
+		</Cursor>
+	</File>
+	<File name="CoreVersion.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="515" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="ppmem.cpp" open="0" top="0" tabpos="28" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="14977" topLine="608" />
 		</Cursor>
 	</File>
 	<File name="debuginterface.cpp" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -57,9 +47,19 @@
 			<Cursor1 position="2722" topLine="92" />
 		</Cursor>
 	</File>
-	<File name="ppmem.cpp" open="0" top="0" tabpos="28" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="Localize.cpp" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="14977" topLine="608" />
+			<Cursor1 position="1954" topLine="83" />
+		</Cursor>
+	</File>
+	<File name="DPKFileWriter.cpp" open="0" top="0" tabpos="31" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="985" topLine="19" />
+		</Cursor>
+	</File>
+	<File name="eqCPUServices.cpp" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1550" topLine="40" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>

@@ -9,6 +9,7 @@
 #define AIBASEDRIVER_H
 
 #include "utils/DkList.h"
+#include "math/Vector.h"
 #include "EventFSM.h"
 
 struct ai_handling_t
@@ -49,13 +50,6 @@ struct ai_handling_t
 		confidence *= v.confidence;
 	}
 };
-
-
-
-#include "AIManipulator_Navigation.h"
-#include "AIManipulator_StabilityControl.h"
-#include "AIManipulator_CollisionAvoidance.h"
-#include "AIManipulator_TargetAvoidance.h"
 
 class CCar;
 //class CAIBaseDriver;
@@ -126,7 +120,7 @@ protected:
 	CCar*		m_vehicle;
 
 	int			m_condition;		// EDriverConditionFlags
-	
+
 	// all handling affectors, they are biased by the current behavior state
 	CAIHandlingAffector<CAINavigationManipulator>			m_navAffector;
 	CAIHandlingAffector<CAIChasingManipulator>				m_chaseAffector;

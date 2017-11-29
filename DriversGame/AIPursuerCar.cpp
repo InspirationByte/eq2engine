@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright Â© Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Description: pursuer car controller AI
@@ -98,7 +98,7 @@ void CAIPursuerCar::OnRemove()
 		ses->RemoveSoundController(m_loudhailer);
 
 	m_loudhailer = NULL;
-	
+
 	BaseClass::OnRemove();
 }
 
@@ -118,6 +118,7 @@ void CAIPursuerCar::Precache()
 	PrecacheScriptSound("cop.heading_north");
 	PrecacheScriptSound("cop.taunt");
 
+	BaseClass::Precache();
 }
 
 void CAIPursuerCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy)
@@ -565,7 +566,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		{
 			// make automatically angry
 			SetInfiniteMass(true);
-			
+
 			m_targInfo.isAngry = true;
 		}
 
@@ -785,7 +786,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		if(newAlterState != m_sirenAltered)
 		{
 			m_alterSirenChangeTime -= fDt;
-		
+
 			if(m_alterSirenChangeTime <= 0.0f)
 			{
 				m_sirenAltered = (mySpeed > AI_ALTER_SIREN_MIN_SPEED);
@@ -811,8 +812,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	m_autohandbrake = handling.autoHandbrake;
 
 	SetControlButtons( controls );
-	SetControlVars(	handling.acceleration, 
-					handling.braking, 
+	SetControlVars(	handling.acceleration,
+					handling.braking,
 					handling.steering);
 
 	if(handling.acceleration > 0.05f)

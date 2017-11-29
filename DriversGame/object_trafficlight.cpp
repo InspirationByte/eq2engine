@@ -13,7 +13,7 @@
 
 ConVar g_debugTrafficLight("g_debug_trafficlight", "0", NULL, CV_CHEAT);
 
-static ColorRGB lightColorTypes[] = 
+static ColorRGB lightColorTypes[] =
 {
 	ColorRGB(1.0f, 0.145f, 0.13f),	// red
 	ColorRGB(1.0f, 0.6f, 0.0f),		// orange
@@ -52,7 +52,7 @@ void CObject_TrafficLight::OnRemove()
 void CObject_TrafficLight::Spawn()
 {
 	SetModel( KV_GetValueString(m_keyValues->FindKeyBase("model"), 0, "models/error.egf") );
-	
+
 	if(g_pShaderAPI->GetCaps().isInstancingSupported &&
 		m_pModel && m_pModel->GetInstancer() == NULL)
 	{
@@ -159,7 +159,7 @@ void CObject_TrafficLight::Draw( int nRenderFlags )
 {
 	//if(!g_pGameWorld->m_frustum.IsSphereInside(GetOrigin(), length(m_pModel->GetBBoxMaxs())))
 	//	return;
-	
+
 	if( g_debugTrafficLight.GetBool() )
 	{
 		IVector2D cellPos = g_pGameWorld->m_level.PositionToGlobalTilePoint(GetOrigin());
@@ -251,11 +251,11 @@ void CObject_TrafficLight::Simulate(float fDt)
 			drawOrange = (g_pGameWorld->m_globalTrafficLightTime < 2.0f);
 
 			bool blinkGreen = (g_pGameWorld->m_globalTrafficLightTime < 6.0f) && !drawOrange;
-			
+
 			drawnLightType = 2;
 
 			if(blinkGreen)
-				greenBlinker = clamp(sin(g_pGameWorld->m_globalTrafficLightTime*7.0f)*100.0f, 0.0f, 1.0f);
+				greenBlinker = clamp(sinf(g_pGameWorld->m_globalTrafficLightTime*7.0f)*100.0f, 0.0f, 1.0f);
 			else if(drawOrange)
 				drawnLightType = -1;
 		}
@@ -305,7 +305,7 @@ void CObject_TrafficLight::OnCarCollisionEvent(const CollisionPairData_t& pair, 
 		{
 			m_flicker = true;
 		}
-	
+
 		if(impulse > 15.0f)
 		{
 			m_killed = true;

@@ -54,7 +54,6 @@
 		<Unit filename="GL/CGLRenderLib.h" />
 		<Unit filename="GL/CGLTexture.cpp" />
 		<Unit filename="GL/CGLTexture.h" />
-		<Unit filename="GL/GLMeshBuilder.cpp" />
 		<Unit filename="GL/GLMeshBuilder.h" />
 		<Unit filename="GL/GLOcclusionQuery.cpp" />
 		<Unit filename="GL/GLOcclusionQuery.h" />

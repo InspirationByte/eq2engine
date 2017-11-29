@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright Â© Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Drivers system and modules
@@ -204,7 +204,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
     externalWindowDisplayParams_t winParams;
     winParams.window = (void*)winfo.info.android.window;
 
-    void* paramArray[] = { Helper_GetEGLSurfaceFromSDL };
+    void* paramArray[] = { (void*)Helper_GetEGLSurfaceFromSDL };
 
 	winParams.paramArray = paramArray;
 	winParams.numParams = 1;
@@ -638,7 +638,7 @@ bool CGameHost::Frame()
 		return false;
 
 	UpdateCursorState();
-	
+
 	//--------------------------------------------
 
 	BeginScene();
@@ -829,7 +829,7 @@ void CGameHost::TrapMouseMove_Event( int x, int y )
 	}
 
 	m_mousePos = IVector2D(x,y);
-	
+
 	g_pSysConsole->MousePos( m_mousePos );
 
 	if( equi::Manager->ProcessMouseEvents( x, y, 0, equi::UIEVENT_MOUSE_MOVE) )

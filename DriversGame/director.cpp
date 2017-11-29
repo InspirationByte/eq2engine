@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright Â© Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Film director
@@ -195,18 +195,18 @@ void Director_KeyPress(int key, bool down)
 			if(currentCamera && g_pause.GetBool())
 			{
 				currentCamera->startTick -= g_director_ShiftKey ? 10 : 1;
-				
+
 				if(currentCamera->startTick < lowTick)
 					currentCamera->startTick = lowTick;
 			}
-				
+
 		}
 		else if(key == KEY_RIGHT)
 		{
 			if(currentCamera && g_pause.GetBool())
 			{
 				currentCamera->startTick += g_director_ShiftKey ? 10 : 1;
-				
+
 				if(currentCamera->startTick > highTick)
 					currentCamera->startTick = highTick;
 			}
@@ -324,7 +324,7 @@ void Director_UpdateFreeCamera(float fDt)
 
 	debugoverlay->Box3D(coll.position - 0.5f, coll.position + 0.5f, ColorRGBA(0,1,0,0.25f), 0.1f);
 	debugoverlay->Line3D(coll.position, coll.position + coll.normal, ColorRGBA(0,0,1,0.25f), ColorRGBA(0,0,1,0.25f) );
-	
+
 	g_pPhysics->m_physics.SetDebugRaycast(false);
 	*/
 
@@ -353,7 +353,7 @@ void Director_Draw( float fDt )
 
 	materials->Setup2D(screenSize.x,screenSize.y);
 
-	wchar_t* controlsText = varargs_w(
+	const wchar_t* controlsText = varargs_w(
 		L"PLAY = &#FFFF00;O&;\n"
 		L"TOGGLE FREE CAMERA = &#FFFF00;F&;\n\n"
 
@@ -371,10 +371,10 @@ void Director_Draw( float fDt )
 		L"CAMERA TYPE = &#FFFF00;1-5&; (Current is &#FFFF00;'%s'&;)\n"
 		L"CAMERA ZOOM = &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
 		L"TARGET VEHICLE = &#FFFF00;LEFT MOUSE CLICK ON OBJECT&;\n"
-		
+
 		L"SEEK = &#FFFF00;fastseek <frame>&; (in console)\n", cameraTypeStrings[g_nDirectorCameraType], g_freeCamProps.fov);
 
-	wchar_t* shortText =	L"PAUSE = &#FFFF00;O&;\n"
+	const wchar_t* shortText =	L"PAUSE = &#FFFF00;O&;\n"
 							L"TOGGLE FREE CAMERA = &#FFFF00;F&;\n"
 							L"FAST FORWARD 4x = &#FFFF00;BACKSPACE&;\n";
 

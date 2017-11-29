@@ -76,10 +76,10 @@ enum EWeatherType
 	WEATHER_COUNT,
 };
 
-static char* s_weatherNamesStr[WEATHER_COUNT] = {
+static const char* s_weatherNamesStr[WEATHER_COUNT] = {
 	"clear",
 	"rain",
-	"storm",
+	"storm"
 };
 
 struct worldEnvConfig_t
@@ -151,7 +151,7 @@ public:
 	void							Cleanup( bool unloadLevel = true );
 
 	//-------------------------------------------------------------------------
-	
+
 	void							SetLevelName(const char* name);
 	const char*						GetLevelName() const;
 
@@ -281,7 +281,7 @@ protected:
 	DkList<CGameObject*>			m_gameObjects;
 	DkList<CGameObject*>			m_nonSpawnedObjects;
 
-	DkFixedLinkedList<CGameObject*, MAX_RENDERABLE_LIST>	
+	DkFixedLinkedList<CGameObject*, MAX_RENDERABLE_LIST>
 									m_renderingObjects;
 
 	EqString						m_levelname;
@@ -359,7 +359,7 @@ OOLUA_PROXY(CGameWorld)
 	OOLUA_MFUNC_CONST(CreateObject)
 	OOLUA_MFUNC(RemoveObject)
 	OOLUA_MFUNC_CONST(IsValidObject)
-	
+
 	OOLUA_MEM_FUNC_CONST(maybe_null<CGameObject*>, FindObjectByName, const char*)
 
 	OOLUA_MEM_FUNC_CONST_RENAME(FindObjectOnLevel, OOLUA::Table, L_FindObjectOnLevel, const char*)

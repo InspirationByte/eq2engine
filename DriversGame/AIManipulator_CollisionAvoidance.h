@@ -9,7 +9,6 @@
 #define AIMANIPULATOR_COLLISIONAVOIDANCE_H
 
 #include "AIHandling.h"
-#include "level.h"
 
 class CCar;
 

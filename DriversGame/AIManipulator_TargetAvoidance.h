@@ -9,7 +9,6 @@
 #define AIMANIPULATOR_TARGETAVOIDANCE_H
 
 #include "AIHandling.h"
-#include "level.h"
 
 class CCar;
 

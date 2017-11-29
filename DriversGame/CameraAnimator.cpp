@@ -177,7 +177,7 @@ void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
 
 		float zfar = r_zfar.GetFloat();
 
-		if(dist > min(zfar, 200))
+		if(dist > min(zfar, 200.0f))
 			m_mode = CAM_MODE_OUTCAR;
 	}
 
@@ -344,12 +344,12 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 		Vector3D cam_pos_h = pos + Vector3D(0,desiredHeight,0);
 		Vector3D cam_pos = cam_pos_h - forward*desiredDist;
-		
+
 		// trace back
 		CollisionData_t back_coll;
 
 		eqPhysCollisionFilter ignoreFilter(traceIgnore);
-		
+
 		btBoxShape sphere(btVector3(0.5f, 0.5f, 0.5f));
 		if(g_pPhysics->TestConvexSweep(&sphere, identity(), cam_pos_h, cam_pos, back_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_VEHICLE, &ignoreFilter))
 		{

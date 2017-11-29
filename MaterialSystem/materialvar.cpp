@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Description: DarkTech materialvar
@@ -111,7 +111,7 @@ void CMatVar::SetString(const char* szValue)
 				}
 
 				int len = vchar-start;
-				strncpy(temp, start, min(len, sizeof(temp)-1));
+				strncpy(temp, start, min(len, (int)sizeof(temp)-1));
 
 				m_vector[vec_count] = (float)atof(start);
 				vec_count++;

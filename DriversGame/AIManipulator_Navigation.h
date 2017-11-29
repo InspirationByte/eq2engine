@@ -9,9 +9,10 @@
 #define AIMANIPULATOR_NAVIGATOR_H
 
 #include "AIHandling.h"
-#include "level.h"
+#include "road_defs.h"
 
 class CCar;
+class CEqCollisionObject;
 
 class CAINavigationManipulator
 {

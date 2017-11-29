@@ -53,6 +53,14 @@ struct roadJunction_t
 	int			breakIter;
 };
 
+struct pathFindResult_t
+{
+	IVector2D			start;
+	IVector2D			end;
+
+	DkList<IVector2D>	points;	// z is distance in cells
+};
+
 // helper functions
 bool		IsOppositeDirectionTo(int dirA, int dirB);
 bool		CompareDirection(int dirA, int dirB);

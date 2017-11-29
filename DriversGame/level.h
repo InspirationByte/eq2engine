@@ -22,14 +22,6 @@
 #define AI_NAVIGATION_GRID_SCALE	2
 #define LEVELS_PATH					"levels/"
 
-struct pathFindResult_t
-{
-	IVector2D			start;
-	IVector2D			end;
-
-	DkList<IVector2D>	points;	// z is distance in cells
-};
-
 struct cellpoint_t
 {
 	IVector2D	point;
@@ -54,7 +46,7 @@ public:
 	CGameLevel();
 	virtual ~CGameLevel() {}
 
-	void							Init(int wide, int tall, int cells, bool isCleanLevel);	
+	void							Init(int wide, int tall, int cells, bool isCleanLevel);
 	void							Cleanup(); // unloads level
 
 	void							UnloadRegions();
@@ -90,7 +82,7 @@ public:
 	// 2D grid stuff
 
 	CHeightTileFieldRenderable*		GetHeightFieldAt(const IVector2D& XYPos, int idx = 0) const;		// returns heightfield if region at global 2D point
-	
+
 	bool							GetPointAt(const Vector3D& pos, IVector2D& outXYPos) const;			// calculates region index from 3D position
 
 	CLevelRegion*					GetRegionAt(const IVector2D& XYPos) const;							// returns region at global 2D point
@@ -101,7 +93,7 @@ public:
 	//
 	bool							GetTileGlobal(const Vector3D& pos, IVector2D& outGlobalXYPos) const;	// returns global tile XYPos which belongs to 3D position
 	bool							GetRegionAndTile(const Vector3D& pos, CLevelRegion** outReg, IVector2D& outLocalXYPos) const;	// returns a tile XYPos and region which belongs to 3D position
-	bool							GetRegionAndTileAt(const IVector2D& tilePos, CLevelRegion** outReg, IVector2D& outLocalXYPos) const; // returns a tile at region 
+	bool							GetRegionAndTileAt(const IVector2D& tilePos, CLevelRegion** outReg, IVector2D& outLocalXYPos) const; // returns a tile at region
 
 	float							GetWaterLevel(const Vector3D& pos) const;
 	float							GetWaterLevelAt(const IVector2D& tilePos) const;

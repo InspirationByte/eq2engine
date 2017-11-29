@@ -100,7 +100,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 	}
 #endif
 	*/
-	
+
 
 	return pHdr;
 }
@@ -292,7 +292,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 		DevMsg(DEVMSG_CORE, "Loading POD '%s'\n", pszPath);
 
 		physmodelhdr_t *pHdr = (physmodelhdr_t*)pData;
-	
+
 		if(pHdr->ident != PHYSMODEL_ID)
 		{
 			MsgError("'%s' is not a POD physics model\n", pszPath);
@@ -336,7 +336,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 
 					pModel->numShapes = numGeomInfos;
 					pModel->shapes = (physmodelshapecache_t*)PPAlloc(numGeomInfos*sizeof(physmodelshapecache_t));
-					
+
 					for(int i = 0; i < numGeomInfos; i++)
 					{
 						pModel->shapes[i].cachedata = NULL;
@@ -344,7 +344,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 						// copy shape info
 						memcpy(&pModel->shapes[i].shape_info, &pGeomInfos[i], sizeof(physgeominfo_t));
 					}
-					
+
 					DevMsg(DEVMSG_CORE, "PHYSLUMP_GEOMETRYINFO size = %d (cnt = %d)\n", pLump->size, numGeomInfos);
 
 					break;
@@ -365,7 +365,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 						if(len > 0)
 							objectNames.append(str);
 
-						sz += len + 1; 
+						sz += len + 1;
 					}while(sz < pLump->size);
 
 					DevMsg(DEVMSG_CORE, "PHYSLUMP_OBJECTNAMES size = %d (cnt = %d)\n", pLump->size, objectNames.numElem());
@@ -385,7 +385,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 						physobjectdata_t& objData = pModel->objects[i];
 
 						if(objectNames.numElem() > 0)
-							strcpy_s(objData.name, objectNames[i].c_str());
+							strcpy(objData.name, objectNames[i].c_str());
 
 						// copy shape info
 						memcpy(&objData.object, &physObjDataLump[i], sizeof(physobject_t));

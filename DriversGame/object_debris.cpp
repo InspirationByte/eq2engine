@@ -108,7 +108,7 @@ void CObject_Debris::Spawn()
 		if(spawnSec)
 		{
 			m_breakSpawn = new breakSpawn_t;
-			strcpy_s(m_breakSpawn->objectDefName, KV_GetValueString(spawnSec, 0, "bad_spawn_sec"));
+			strcpy(m_breakSpawn->objectDefName, KV_GetValueString(spawnSec, 0, "bad_spawn_sec"));
 			m_breakSpawn->offset = KV_GetVector3D(spawnSec->FindKeyBase("offset"));
 		}
 	}
@@ -194,7 +194,7 @@ void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup)
 	}
 
 	m_smashSound = "";
-	
+
 	CEqRigidBody* body = new CEqRigidBody();
 
 	if( body->Initialize(&m_pModel->GetHWData()->physModel, 0) )//
@@ -339,7 +339,7 @@ const Vector3D& CObject_Debris::GetOrigin() const
 }
 
 const Vector3D& CObject_Debris::GetAngles() const
-{ 
+{
 	return m_vecAngles;
 }
 
@@ -485,7 +485,7 @@ void CObject_Debris::Simulate(float fDt)
 		}
 
 		CEqCollisionObject* obj = pair.GetOppositeTo(m_physBody);
-		
+
 		EmitHitSoundEffect(this, m_smashSound.c_str(), pair.position, pair.impactVelocity, 50.0f);
 
 		if(!m_collOccured && obj->IsDynamic())

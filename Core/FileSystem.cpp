@@ -908,7 +908,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	m_findDatas.append(newFind);
 
 	EqString fsBaseDir;
-	
+
 	if(searchPath == SP_DATA)
 	{
 		fsBaseDir = m_dataDir;
@@ -920,7 +920,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	}
 
 	EqString searchWildcard( CombinePath(2, fsBaseDir.c_str(), newFind->wildcard.c_str()) );
-	
+
 #ifdef _WIN32
 	newFind->fileHandle = ::FindFirstFileA(searchWildcard.c_str(), &newFind->wfd);
 
@@ -969,7 +969,8 @@ const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 #ifdef _WIN32
 	if(!::FindNextFileA(findData->fileHandle, &findData->wfd))
 #else
-#error "POSIX FindNextFile"
+//#error "POSIX FindNextFile"
+    return nullptr;
 #endif // _WIN32
 	{
 		if(findData->searchPathId == -1)

@@ -40,6 +40,9 @@ LOCAL_SRC_FILES := \
 	DriversGame/eqPhysics/eqCollision_ObjectGrid.cpp\
 	DriversGame/eqPhysics/eqPhysics.cpp\
 	DriversGame/eqPhysics/eqPhysics_Body.cpp\
+	DriversGame/eqPhysics/eqPhysics_HingeJoint.cpp\
+	DriversGame/eqPhysics/eqPhysics_MaxDistConstraint.cpp\
+	DriversGame/eqPhysics/eqPhysics_PointConstraint.cpp\
 	DriversGame/state_title.cpp\
 	DriversGame/session_stuff.cpp\
 	DriversGame/state_game.cpp\
@@ -61,8 +64,12 @@ LOCAL_SRC_FILES := \
 	DriversGame/physics.cpp\
 	DriversGame/predictable_object.cpp\
 	DriversGame/AICarManager.cpp\
-	DriversGame/AIPursuerCar.cpp\
 	DriversGame/AITrafficCar.cpp\
+	DriversGame/AIPursuerCar.cpp\
+	DriversGame/AIManipulator_CollisionAvoidance.cpp\
+	DriversGame/AIManipulator_Navigation.cpp\
+	DriversGame/AIManipulator_StabilityControl.cpp\
+	DriversGame/AIManipulator_TargetAvoidance.cpp\
 	DriversGame/BillboardList.cpp\
 	DriversGame/CameraAnimator.cpp\
 	DriversGame/DrvSynHUD.cpp\
@@ -79,6 +86,7 @@ LOCAL_SRC_FILES := \
 	DriversGame/Shader_Shadow.cpp\
 	DriversGame/Shader_StaticObjs.cpp\
 	DriversGame/Shader_VehicleBody.cpp\
+	DriversGame/Shader_Sky.cpp\
 	DriversGame/Shader_Water.cpp\
 	shared_game/GameSoundEmitterSystem.cpp\
 	shared_engine/DebugOverlay.cpp\
@@ -90,7 +98,7 @@ LOCAL_SRC_FILES := \
 	shared_engine/Font.cpp\
 	shared_engine/FontCache.cpp\
 	shared_engine/FontLayoutBuilders.cpp\
-	shared_engine/KeyBinding/Keys.cpp\
+	shared_engine/KeyBinding/InputCommandBinder.cpp\
 	shared_engine/Network/NETThread.cpp\
 	shared_engine/cfgloader.cpp\
 	shared_engine/eqGlobalMutex.cpp\

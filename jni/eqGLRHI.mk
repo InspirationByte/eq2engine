@@ -21,7 +21,6 @@ LOCAL_SRC_FILES := \
 	MaterialSystem/Renderers/GL/gl_loader.cpp	\
 	MaterialSystem/Renderers/GL/CGLRenderLib.cpp	\
 	MaterialSystem/Renderers/GL/ShaderAPIGL.cpp	\
-	MaterialSystem/Renderers/GL/GLMeshBuilder.cpp	\
 	MaterialSystem/Renderers/GL/GLOcclusionQuery.cpp\
 	MaterialSystem/Renderers/GL/GLShaderProgram.cpp	\
 	MaterialSystem/Renderers/GL/VertexBufferGL.cpp	\
