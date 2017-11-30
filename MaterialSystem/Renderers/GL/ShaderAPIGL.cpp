@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright Â© Inspiration Byte
+// Copyright © Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Description: DarkTech OpenGL ShaderAPI
@@ -328,9 +328,11 @@ void ShaderAPIGL::ApplyBlendState()
 {
 	CGLBlendingState* pSelectedState = (CGLBlendingState*)m_pSelectedBlendstate;
 
-	if (m_pCurrentBlendstate != m_pSelectedBlendstate)
+	if (m_pCurrentBlendstate != pSelectedState)
 	{
-		if (m_pSelectedBlendstate == NULL)
+		int mask = COLORMASK_ALL;
+	
+		if (pSelectedState == NULL)
 		{
 			if (m_bCurrentBlendEnable)
 			{
@@ -340,7 +342,9 @@ void ShaderAPIGL::ApplyBlendState()
 		}
 		else
 		{
-			if (pSelectedState->m_params.blendEnable)
+			BlendStateParam_t& state = pSelectedState->m_params;
+		
+			if (state.blendEnable)
 			{
 				if (!m_bCurrentBlendEnable)
 				{
@@ -348,17 +352,17 @@ void ShaderAPIGL::ApplyBlendState()
 					m_bCurrentBlendEnable = true;
 				}
 
-				if (pSelectedState->m_params.srcFactor != m_nCurrentSrcFactor || pSelectedState->m_params.dstFactor != m_nCurrentDstFactor)
+				if (state.srcFactor != m_nCurrentSrcFactor || state.dstFactor != m_nCurrentDstFactor)
 				{
-					m_nCurrentSrcFactor = pSelectedState->m_params.srcFactor;
-					m_nCurrentDstFactor = pSelectedState->m_params.dstFactor;
+					m_nCurrentSrcFactor = state.srcFactor;
+					m_nCurrentDstFactor = state.dstFactor;
 
 					glBlendFunc(blendingConsts[m_nCurrentSrcFactor],blendingConsts[m_nCurrentDstFactor]);
 				}
 
-				if (pSelectedState->m_params.blendFunc != m_nCurrentBlendFunc)
+				if (state.blendFunc != m_nCurrentBlendFunc)
 				{
-					m_nCurrentBlendFunc = pSelectedState->m_params.blendFunc;
+					m_nCurrentBlendFunc = state.blendFunc;
 
 					glBlendEquation(blendingModes[m_nCurrentBlendFunc]);
 				}
@@ -373,34 +377,27 @@ void ShaderAPIGL::ApplyBlendState()
 			}
 
 #if 0 // don't use FFP alpha test it's freakin slow and deprecated
-			if(pSelectedState->m_params.alphaTest)
+			if(state.alphaTest)
 			{
 				glEnable(GL_ALPHA_TEST);
-				glAlphaFunc(GL_GREATER,pSelectedState->m_params.alphaTestRef);
+				glAlphaFunc(GL_GREATER, state.alphaTestRef);
 			}
 			else
 			{
 				glDisable(GL_ALPHA_TEST);
 			}
 #endif // 0
-		}
 
-		int mask = COLORMASK_ALL;
-		if (m_pSelectedBlendstate != NULL)
-		{
-			mask = pSelectedState->m_params.mask;
+			mask = state.mask;
 		}
 
 		if (mask != m_nCurrentMask)
 		{
 			glColorMask((mask & COLORMASK_RED) ? 1 : 0, ((mask & COLORMASK_GREEN) >> 1) ? 1 : 0, ((mask & COLORMASK_BLUE) >> 2) ? 1 : 0, ((mask & COLORMASK_ALPHA) >> 3)  ? 1 : 0);
-
 			m_nCurrentMask = mask;
 		}
 
 		m_pCurrentBlendstate = m_pSelectedBlendstate;
-
-
 	}
 }
 
@@ -433,21 +430,23 @@ void ShaderAPIGL::ApplyDepthState()
 		}
 		else
 		{
-			if (pSelectedState->m_params.depthTest)
+			DepthStencilStateParams_t& state = pSelectedState->m_params;
+		
+			if (state.depthTest)
 			{
 				if (!m_bCurrentDepthTestEnable)
 				{
 					glEnable(GL_DEPTH_TEST);
 					m_bCurrentDepthTestEnable = true;
 				}
-				if (pSelectedState->m_params.depthWrite != m_bCurrentDepthWriteEnable)
+				if (state.depthWrite != m_bCurrentDepthWriteEnable)
 				{
-					m_bCurrentDepthWriteEnable = pSelectedState->m_params.depthWrite;
+					m_bCurrentDepthWriteEnable = state.depthWrite;
 					glDepthMask((m_bCurrentDepthWriteEnable)? GL_TRUE : GL_FALSE);
 				}
-				if (pSelectedState->m_params.depthFunc != m_nCurrentDepthFunc)
+				if (state.depthFunc != m_nCurrentDepthFunc)
 				{
-					m_nCurrentDepthFunc = pSelectedState->m_params.depthFunc;
+					m_nCurrentDepthFunc = state.depthFunc;
 					glDepthFunc(depthConst[m_nCurrentDepthFunc]);
 				}
 			}
@@ -464,8 +463,6 @@ void ShaderAPIGL::ApplyDepthState()
 		}
 
 		m_pCurrentDepthState = m_pSelectedDepthState;
-
-
 	}
 }
 
@@ -479,6 +476,9 @@ void ShaderAPIGL::ApplyRasterizerState()
 		{
 			if (CULL_BACK != m_nCurrentCullMode)
 			{
+				if (m_nCurrentCullMode == CULL_NONE)
+					glEnable(GL_CULL_FACE);
+			
 				m_nCurrentCullMode = CULL_BACK;
 
 				glCullFace(cullConst[m_nCurrentCullMode]);
@@ -516,9 +516,11 @@ void ShaderAPIGL::ApplyRasterizerState()
 		}
 		else
 		{
-			if (pSelectedState->m_params.cullMode != m_nCurrentCullMode)
+			RasterizerStateParams_t& state = pSelectedState->m_params;
+		
+			if (state.cullMode != m_nCurrentCullMode)
 			{
-				if (pSelectedState->m_params.cullMode == CULL_NONE)
+				if (state.cullMode == CULL_NONE)
 				{
 					glDisable(GL_CULL_FACE);
 				}
@@ -527,22 +529,22 @@ void ShaderAPIGL::ApplyRasterizerState()
 					if (m_nCurrentCullMode == CULL_NONE)
 						glEnable(GL_CULL_FACE);
 
-					glCullFace(cullConst[pSelectedState->m_params.cullMode]);
+					glCullFace(cullConst[state.cullMode]);
 				}
 
-				m_nCurrentCullMode = pSelectedState->m_params.cullMode;
+				m_nCurrentCullMode = state.cullMode;
 			}
 
 #ifndef USE_GLES2
-			if (pSelectedState->m_params.fillMode != m_nCurrentFillMode)
+			if (state.fillMode != m_nCurrentFillMode)
 			{
-				m_nCurrentFillMode = pSelectedState->m_params.fillMode;
+				m_nCurrentFillMode = state.fillMode;
 				glPolygonMode(GL_FRONT_AND_BACK, fillConst[m_nCurrentFillMode]);
 			}
 
-			if (pSelectedState->m_params.multiSample != m_bCurrentMultiSampleEnable)
+			if (state.multiSample != m_bCurrentMultiSampleEnable)
 			{
-				if (pSelectedState->m_params.multiSample)
+				if (state.multiSample)
 				{
 					glEnable(GL_MULTISAMPLE);
 				}
@@ -550,13 +552,13 @@ void ShaderAPIGL::ApplyRasterizerState()
 				{
 					glDisable(GL_MULTISAMPLE);
 				}
-				m_bCurrentMultiSampleEnable = pSelectedState->m_params.multiSample;
+				m_bCurrentMultiSampleEnable = state.multiSample;
 			}
 #endif // USE_GLES2
 
-			if (pSelectedState->m_params.scissor != m_bCurrentScissorEnable)
+			if (state.scissor != m_bCurrentScissorEnable)
 			{
-				if (pSelectedState->m_params.scissor)
+				if (state.scissor)
 				{
 					glEnable(GL_SCISSOR_TEST);
 				}
@@ -564,15 +566,15 @@ void ShaderAPIGL::ApplyRasterizerState()
 				{
 					glDisable(GL_SCISSOR_TEST);
 				}
-				m_bCurrentScissorEnable = pSelectedState->m_params.scissor;
+				m_bCurrentScissorEnable = state.scissor;
 			}
 
-			if (pSelectedState->m_params.useDepthBias != false)
+			if (state.useDepthBias != false)
 			{
-				if(m_fCurrentDepthBias != pSelectedState->m_params.depthBias || m_fCurrentSlopeDepthBias != pSelectedState->m_params.slopeDepthBias)
+				if(m_fCurrentDepthBias != state.depthBias || m_fCurrentSlopeDepthBias != state.slopeDepthBias)
 				{
-					m_fCurrentDepthBias = pSelectedState->m_params.depthBias;
-					m_fCurrentSlopeDepthBias = pSelectedState->m_params.slopeDepthBias;
+					m_fCurrentDepthBias = state.depthBias;
+					m_fCurrentSlopeDepthBias = state.slopeDepthBias;
 
 					glPolygonOffset(m_fCurrentDepthBias, m_fCurrentSlopeDepthBias);
 					glEnable(GL_POLYGON_OFFSET_FILL);
@@ -589,10 +591,7 @@ void ShaderAPIGL::ApplyRasterizerState()
 					m_fCurrentSlopeDepthBias = 0.0f;
 				}
 			}
-
 		}
-
-
 	}
 
 	m_pCurrentRasterizerState = m_pSelectedRasterizerState;
@@ -614,8 +613,6 @@ void ShaderAPIGL::ApplyShaderProgram()
 		}
 
 		m_pCurrentShader = m_pSelectedShader;
-
-
 	}
 }
 
