@@ -1217,38 +1217,119 @@ void ShaderAPIGL::InternalSetupSampler(uint texTarget, const SamplerStateParam_t
 // Copy render target to texture
 void ShaderAPIGL::CopyFramebufferToTexture(ITexture* pTargetTexture)
 {
+	// store the current rendertarget states
+	ITexture* currentRenderTarget[MAX_MRTS];
+	int	currentCRTSlice[MAX_MRTS];
+	ITexture* currentDepthTarget = m_pCurrentDepthRenderTarget;
+	m_pCurrentDepthRenderTarget = NULL;
+
+	int currentNumRTs = 0;
+	for(; currentNumRTs < MAX_MRTS;)
+	{
+		if(!m_pCurrentColorRenderTargets[currentNumRTs])
+			break;
+
+		currentRenderTarget[currentNumRTs] = m_pCurrentColorRenderTargets[currentNumRTs];
+		currentCRTSlice[currentNumRTs] = m_nCurrentCRTSlice[currentNumRTs];
+
+		m_pCurrentColorRenderTargets[currentNumRTs] = NULL;
+		m_nCurrentCRTSlice[currentNumRTs] = 0;
+
+		currentNumRTs++;
+	}
+
 	ChangeRenderTarget(pTargetTexture);
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_frameBuffer);
 
-	glBlitFramebuffer(0, 0,m_nViewportWidth, m_nViewportHeight,0,pTargetTexture->GetHeight(),pTargetTexture->GetWidth(), 0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebuffer(0, 0, m_nViewportWidth, m_nViewportHeight, 0, pTargetTexture->GetHeight(), pTargetTexture->GetWidth(), 0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-	ChangeRenderTargetToBackBuffer();
+	// restore render targets back
+	// or to backbuffer if no RTs were set
+	if(currentNumRTs)
+		ChangeRenderTargets(currentRenderTarget, currentNumRTs, currentCRTSlice, currentDepthTarget);
+	else
+		ChangeRenderTargetToBackBuffer();
 }
+
+ConVar gl_disable_copy("gl_disable_copy", "0");
 
 // Copy render target to texture
 void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect, IRectangle* destRect)
 {
+	if(gl_disable_copy.GetBool())
+		return;
+
+	// store the current rendertarget states
+	ITexture* currentRenderTarget[MAX_MRTS];
+	int	currentCRTSlice[MAX_MRTS];
+	ITexture* currentDepthTarget = m_pCurrentDepthRenderTarget;
+	m_pCurrentDepthRenderTarget = NULL;
+
+	int currentNumRTs = 0;
+	for(; currentNumRTs < MAX_MRTS;)
+	{
+		if(!m_pCurrentColorRenderTargets[currentNumRTs])
+			break;
+
+		currentRenderTarget[currentNumRTs] = m_pCurrentColorRenderTargets[currentNumRTs];
+		currentCRTSlice[currentNumRTs] = m_nCurrentCRTSlice[currentNumRTs];
+
+		m_pCurrentColorRenderTargets[currentNumRTs] = NULL;
+		m_nCurrentCRTSlice[currentNumRTs] = 0;
+
+		currentNumRTs++;
+	}
+
 	// 1. preserve old render targets
 	// 2. set shader
 	// 3. render to texture
 	CGLTexture* srcTexture = (CGLTexture*)srcTarget;
 	CGLTexture* destTexture = (CGLTexture*)destTex;
-	/*
-	ChangeRenderTarget( destTex );
 
-	// set source
-	glBindTexture(GL_TEXTURE_2D, srcTexture->textures[0].glTexID);
+	IRectangle _srcRect(0,0,srcTexture->GetWidth(), srcTexture->GetHeight());
+	IRectangle _destRect(0,0,destTexture->GetWidth(), destTexture->GetHeight());
 
-	glCopyTexSubImage2D(
+	if(srcRect)
+		_srcRect = *srcRect;
 
-	//ChangeRenderTargetToBackBuffer();
-	*/
-	//ASSERT(!"TODO: Implement ShaderAPIGL::CopyRendertargetToTexture()");
+	if(destRect)
+		_destRect = *destRect;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
+
+	// setup read from texture
+	glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, srcTexture->textures[0].glTexID, 0);
+
+	// setup write to texture
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, destTexture->textures[0].glTexID, 0);
+
+	// setup GL_COLOR_ATTACHMENT1 as destination
+	glDrawBuffer(GL_COLOR_ATTACHMENT1);
+	GLCheckError("glDrawBuffer att1");
+
+	// copy
+	glBlitFramebuffer(	_srcRect.vleftTop.x, _srcRect.vleftTop.y, _srcRect.vrightBottom.x, _srcRect.vrightBottom.y,
+						_destRect.vleftTop.x, _destRect.vleftTop.y, _destRect.vrightBottom.x, _destRect.vrightBottom.y, 
+						GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	GLCheckError("blit");
+
+	// reset
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	GLCheckError("glDrawBuffer rst");
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+	// change render targets back
+	if(currentNumRTs)
+		ChangeRenderTargets(currentRenderTarget, currentNumRTs, currentCRTSlice, currentDepthTarget);
+	else
+		ChangeRenderTargetToBackBuffer();
 }
 
 // Changes render target (MRT)
@@ -1267,12 +1348,12 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 
 		if (colorRT->GetFlags() & TEXFLAG_CUBEMAP)
 		{
-			if (colorRT != m_pCurrentColorRenderTargets[i] || m_pCurrentRenderTargetsSlices[i] != nCubeFace)
+			if (colorRT != m_pCurrentColorRenderTargets[i] || m_nCurrentCRTSlice[i] != nCubeFace)
 			{
 				glFramebufferTexture2D(GL_FRAMEBUFFER,
 						GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_CUBE_MAP_POSITIVE_X + nCubeFace, colorRT->textures[0].glTexID, 0);
 
-				m_pCurrentRenderTargetsSlices[i] = nCubeFace;
+				m_nCurrentCRTSlice[i] = nCubeFace;
 			}
 		}
 		else
@@ -1292,16 +1373,18 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		{
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
 			m_pCurrentColorRenderTargets[i] = NULL;
-			m_pCurrentRenderTargetsSlices[i] = -1;
+			m_nCurrentCRTSlice[i] = -1;
 		}
 
 		if (nNumRTs == 0)
 		{
+
 #ifdef USE_GLES2
 			glDrawBuffers(0, GL_NONE);
 #else
 			glDrawBuffer(GL_NONE);
 #endif // USE_GLES2
+
 			glReadBuffer(GL_NONE);
 		}
 		else
@@ -1317,8 +1400,7 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 
 	if (pDepth != m_pCurrentDepthRenderTarget)
 	{
-		if (pDepth != NULL &&
-			pDepth->glTarget != GL_RENDERBUFFER)
+		if (pDepth != NULL && pDepth->glTarget != GL_RENDERBUFFER)
 		{
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, pDepth->textures[0].glTexID, 0);
 			if (IsStencilFormat(pDepth->GetFormat()))
@@ -1333,8 +1415,8 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		else
 		{
 			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, (pDepth == NULL) ? 0 : pDepth->textures[0].glTexID);
-			if (pDepth != NULL &&
-				IsStencilFormat(pDepth->GetFormat()))
+
+			if (pDepth != NULL && IsStencilFormat(pDepth->GetFormat()))
 			{
 				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, pDepth->textures[0].glTexID);
 			}
@@ -1347,8 +1429,7 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		m_pCurrentDepthRenderTarget = pDepth;
 	}
 
-	if (m_nCurrentRenderTargets > 0 &&
-		m_pCurrentColorRenderTargets[0] != NULL)
+	if (m_nCurrentRenderTargets > 0 && m_pCurrentColorRenderTargets[0] != NULL)
 	{
 		// I still don't know why GL decided to be like that... damn
 		//if (m_pCurrentColorRenderTargets[0]->GetFlags() & TEXFLAG_CUBEMAP)

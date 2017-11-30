@@ -292,9 +292,6 @@ protected:
 	// special error texture
 	ITexture*							m_pErrorTexture;
 
-	// Current render target slices
-	int8								m_pCurrentRenderTargetsSlices[MAX_MRTS];
-
 	// Viewport
 	int16								m_nViewportWidth;
 	int16								m_nViewportHeight;

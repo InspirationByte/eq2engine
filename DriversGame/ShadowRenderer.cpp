@@ -259,11 +259,11 @@ void CShadowRenderer::RenderShadowCasters()
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
 	g_pShaderAPI->ChangeVertexBuffer( NULL, 2 );
 
+	// clear the shadow atlas
 	g_pShaderAPI->ChangeRenderTarget( m_shadowTexture );
-
-	// render shadow to the rt
 	g_pShaderAPI->Clear( true,false,false, ColorRGBA(1.0f) );
 
+	// now start rendering to temporary shadow buffer
 	g_pShaderAPI->ChangeRenderTarget( m_shadowRt );
 
 	Vector2D halfTexSizeNeg = m_shadowTextureSize*-1.0f*SHADOW_DESCALING;
@@ -324,6 +324,7 @@ void CShadowRenderer::RenderShadowCasters()
 			delete prev;
 		};
 
+		// copy temporary shadow buffer result to shadow atlas
 		g_pShaderAPI->CopyRendertargetToTexture(m_shadowRt, m_shadowTexture, NULL, &copyRect);
 
 		// project our decal to sprite builder
