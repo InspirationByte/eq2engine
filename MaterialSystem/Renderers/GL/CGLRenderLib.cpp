@@ -837,6 +837,10 @@ void CGLRenderLib::ExitAPI()
 
 void CGLRenderLib::BeginFrame()
 {
+	// ShaderAPIGL uses m_nViewportWidth/Height as backbuffer size
+	m_Renderer->m_nViewportWidth = m_width;
+	m_Renderer->m_nViewportHeight = m_height;
+
 	m_Renderer->SetViewport(0, 0, m_width, m_height);
 }
 

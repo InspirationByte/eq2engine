@@ -45,7 +45,7 @@ protected:
 	Vector3D			m_shadowAngles;
 
 	ITexture*			m_shadowTexture;
-	ITexture*			m_shadowRt;
+	//ITexture*			m_shadowRt;
 
 	IMaterial*			m_matVehicle;
 	IMaterial*			m_matSkinned;

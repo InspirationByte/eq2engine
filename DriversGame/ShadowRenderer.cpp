@@ -64,8 +64,8 @@ void CShadowRenderer::Init()
 	m_shadowTexture->Ref_Grab();
 
 	// shadow render target for rendering and blitting
-	m_shadowRt = g_pShaderAPI->CreateNamedRenderTarget("_rt_shadow", 256, 256, FORMAT_R8);
-	m_shadowRt->Ref_Grab();
+	//m_shadowRt = g_pShaderAPI->CreateNamedRenderTarget("_rt_shadow", 256, 256, FORMAT_R8);
+	//m_shadowRt->Ref_Grab();
 
 	kvkeybase_t shadowBuildParams;
 	shadowBuildParams.SetKey("nofog", true);
@@ -146,8 +146,8 @@ void CShadowRenderer::Shutdown()
 	g_pShaderAPI->FreeTexture(m_shadowTexture);
 	m_shadowTexture = NULL;
 
-	g_pShaderAPI->FreeTexture(m_shadowRt);
-	m_shadowRt = NULL;
+	//g_pShaderAPI->FreeTexture(m_shadowRt);
+	//m_shadowRt = NULL;
 
 	materials->FreeMaterial(m_matVehicle);
 	materials->FreeMaterial(m_matSkinned);
@@ -264,7 +264,7 @@ void CShadowRenderer::RenderShadowCasters()
 	g_pShaderAPI->Clear( true,false,false, ColorRGBA(1.0f) );
 
 	// now start rendering to temporary shadow buffer
-	g_pShaderAPI->ChangeRenderTarget( m_shadowRt );
+	//g_pShaderAPI->ChangeRenderTarget( m_shadowRt );
 
 	Vector2D halfTexSizeNeg = m_shadowTextureSize*-1.0f*SHADOW_DESCALING;
 
@@ -288,6 +288,9 @@ void CShadowRenderer::RenderShadowCasters()
 
 		shadowRect.vleftTop *= m_shadowTexelSize;
 		shadowRect.vrightBottom *= m_shadowTexelSize;
+
+		IVector2D copyRectSize = copyRect.GetSize();
+		g_pShaderAPI->SetViewport(copyRect.vleftTop.x,copyRect.vleftTop.y, copyRectSize.x, copyRectSize.y);
 
 		// render shadow to the rt
 		if(r_shadows_debugatlas.GetBool())
@@ -325,7 +328,7 @@ void CShadowRenderer::RenderShadowCasters()
 		};
 
 		// copy temporary shadow buffer result to shadow atlas
-		g_pShaderAPI->CopyRendertargetToTexture(m_shadowRt, m_shadowTexture, NULL, &copyRect);
+		//g_pShaderAPI->CopyRendertargetToTexture(m_shadowRt, m_shadowTexture, NULL, &copyRect);
 
 		// project our decal to sprite builder
 		float shadowAlpha = length(orthoView.GetOrigin()-viewPos) * distFac;

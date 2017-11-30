@@ -1256,13 +1256,10 @@ void ShaderAPIGL::CopyFramebufferToTexture(ITexture* pTargetTexture)
 		ChangeRenderTargetToBackBuffer();
 }
 
-ConVar gl_disable_copy("gl_disable_copy", "0");
-
 // Copy render target to texture
 void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect, IRectangle* destRect)
 {
-	if(gl_disable_copy.GetBool())
-		return;
+	// FIXME: use glCopyTexSubImage2D
 
 	// store the current rendertarget states
 	ITexture* currentRenderTarget[MAX_MRTS];
@@ -1429,20 +1426,14 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		m_pCurrentDepthRenderTarget = pDepth;
 	}
 
+	// like in D3D, set the viewport as texture size by default
 	if (m_nCurrentRenderTargets > 0 && m_pCurrentColorRenderTargets[0] != NULL)
 	{
-		// I still don't know why GL decided to be like that... damn
-		//if (m_pCurrentColorRenderTargets[0]->GetFlags() & TEXFLAG_CUBEMAP)
-		//	InternalChangeFrontFace(GL_CCW);
-		//else
-		//	InternalChangeFrontFace(GL_CW);
-
-		glViewport(0, 0, m_pCurrentColorRenderTargets[0]->GetWidth(), m_pCurrentColorRenderTargets[0]->GetHeight());
+		SetViewport(0, 0, m_pCurrentColorRenderTargets[0]->GetWidth(), m_pCurrentColorRenderTargets[0]->GetHeight());
 	}
 	else if(m_pCurrentDepthRenderTarget != NULL)
 	{
-		//InternalChangeFrontFace(GL_CW);
-		glViewport(0, 0, m_pCurrentDepthRenderTarget->GetWidth(), m_pCurrentDepthRenderTarget->GetHeight());
+		SetViewport(0, 0, m_pCurrentDepthRenderTarget->GetWidth(), m_pCurrentDepthRenderTarget->GetHeight());
 	}
 }
 
@@ -1488,7 +1479,7 @@ void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 		return;
 
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
-	glViewport(0, 0, m_nViewportWidth, m_nViewportHeight);
+	SetViewport(0, 0, m_nViewportWidth, m_nViewportHeight);
 
 	if (m_pCurrentColorRenderTargets[0] != NULL)
 	{
@@ -1844,8 +1835,6 @@ int samplerComparator(const void *sampler0, const void *sampler1)
 	return strcmp(((GLShaderSampler_t *) sampler0)->name, ((GLShaderSampler_t *) sampler1)->name);
 }
 
-ConVar gl_disable_shaders("gl_disable_shaders", "0", "Disable OpenGL shader compilation", CV_CHEAT);
-
 // Load any shader from stream
 bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const shaderProgramCompileInfo_t& info, const char* extra)
 {
@@ -1860,9 +1849,6 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 	if (info.vs.text == NULL && info.ps.text == NULL)
 		return false;
-
-    if(gl_disable_shaders.GetBool())
-        return false;
 
 	if(!info.apiPrefs)
 	{
@@ -2652,14 +2638,12 @@ void ShaderAPIGL::DestroyRenderState( IRenderState* pState, bool removeAllRefs )
 // sets viewport
 void ShaderAPIGL::SetViewport(int x, int y, int w, int h)
 {
-	m_viewPort = IRectangle(x,y, w,h);
-	m_nViewportWidth = w;
-	m_nViewportHeight = h;
+	// this is actually represents our viewport state
+	m_viewPort = IRectangle(x,y,x+w,y+h);
 
-	GLCheckError("before set viewport");
+	IVector2D size = m_viewPort.GetSize();
 
-    // TODO: d3d to gl coord system
-	glViewport(x,y,w,h);
+	glViewport(m_viewPort.vleftTop.x, m_viewPort.vleftTop.y, size.x, size.y);
 	GLCheckError("set viewport");
 }
 
@@ -2669,24 +2653,30 @@ void ShaderAPIGL::GetViewport(int &x, int &y, int &w, int &h)
 	x = m_viewPort.vleftTop.x;
 	y = m_viewPort.vleftTop.y;
 
-	w = m_viewPort.vrightBottom.x;
-	h = m_viewPort.vrightBottom.y;
+	IVector2D size = m_viewPort.GetSize();
+
+	w = size.x;
+	h = size.y;
 }
 
 // returns current size of viewport
 void ShaderAPIGL::GetViewportDimensions(int &wide, int &tall)
 {
-	wide = m_viewPort.vrightBottom.x;
-	tall = m_viewPort.vrightBottom.y;
+	IVector2D size = m_viewPort.GetSize();
+
+	wide = size.x;
+	tall = size.y;
 }
 
 // sets scissor rectangle
 void ShaderAPIGL::SetScissorRectangle( const IRectangle &rect )
 {
+	IVector2D viewportSize = m_viewPort.GetSize();
+
     IRectangle scissor(rect);
 
-    scissor.vleftTop.y = m_nViewportHeight - scissor.vleftTop.y;
-    scissor.vrightBottom.y = m_nViewportHeight - scissor.vrightBottom.y;
+    scissor.vleftTop.y = viewportSize.y - scissor.vleftTop.y;
+    scissor.vrightBottom.y = viewportSize.y - scissor.vrightBottom.y;
 
     QuickSwap(scissor.vleftTop.y, scissor.vrightBottom.y);
 
