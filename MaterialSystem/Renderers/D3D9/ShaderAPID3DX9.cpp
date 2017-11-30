@@ -74,7 +74,7 @@ ShaderAPID3DX9::ShaderAPID3DX9() : ShaderAPI_Base()
 	m_bCurrentAlphaTestEnabled = false;
 	m_fCurrentAlphaTestRef = 0.9f;
 
-	m_nCurrentSampleMask = ~0;
+	//m_nCurrentSampleMask = ~0;
 	m_nSelectedSampleMask = ~0;
 
 	memset(m_vsRegs,0,sizeof(m_vsRegs));
@@ -260,7 +260,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 	m_bCurrentAlphaTestEnabled = false;
 	m_fCurrentAlphaTestRef = 0.9f;
 
-	m_nCurrentSampleMask = ~0;
+	//m_nCurrentSampleMask = ~0;
 	m_nSelectedSampleMask = ~0;
 
 	// Set some of my preferred defaults
@@ -741,87 +741,84 @@ void ShaderAPID3DX9::ApplyBlendState()
 {
 	CD3D9BlendingState* pSelectedState = (CD3D9BlendingState*)m_pSelectedBlendstate;
 
-	// alphatest check
+	int mask = COLORMASK_ALL;
+	bool blendingEnabled = pSelectedState != NULL && pSelectedState->m_params.blendEnable;
+
+	// switch the blending on/off
+	if (m_bCurrentBlendEnable != blendingEnabled)
+	{
+		m_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, (DWORD)blendingEnabled);
+		m_bCurrentBlendEnable = blendingEnabled;
+	}
+
 	if(pSelectedState != NULL)
 	{
-		if (pSelectedState->m_params.alphaTest != m_bCurrentAlphaTestEnabled)
+		BlendStateParam_t& state = pSelectedState->m_params;
+
+		// enable alphatest
+		if (state.alphaTest != m_bCurrentAlphaTestEnabled)
 		{
-			m_bCurrentAlphaTestEnabled = pSelectedState->m_params.alphaTest;
-			m_pD3DDevice->SetRenderState(D3DRS_ALPHATESTENABLE, (DWORD)m_bCurrentAlphaTestEnabled);
+			m_pD3DDevice->SetRenderState(D3DRS_ALPHATESTENABLE, (DWORD)state.alphaTest);
 			m_pD3DDevice->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL);
+			m_bCurrentAlphaTestEnabled = state.alphaTest;
 		}
 
-		if (pSelectedState->m_params.alphaTestRef != m_fCurrentAlphaTestRef)
+		if (state.alphaTestRef != m_fCurrentAlphaTestRef)
 		{
-			m_fCurrentAlphaTestRef = pSelectedState->m_params.alphaTestRef;
-			m_pD3DDevice->SetRenderState(D3DRS_ALPHAREF, (DWORD)255*m_fCurrentAlphaTestRef);
+			m_pD3DDevice->SetRenderState(D3DRS_ALPHAREF, (DWORD)(255.0f*state.alphaTestRef));
+			m_fCurrentAlphaTestRef = state.alphaTestRef;
 		}
-	}
-	else
-	{
-		if(m_bCurrentAlphaTestEnabled)
-		{
-			m_pD3DDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-			m_bCurrentAlphaTestEnabled = false;
-		}
-	}
 
-	if (pSelectedState == NULL || !pSelectedState->m_params.blendEnable)
-	{
-		if (m_bCurrentBlendEnable)
+		// handle blending params if blending is enabled
+		if (state.blendEnable)
 		{
-			m_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-			m_bCurrentBlendEnable = false;
-		}
-	}
-	else 
-	{
-		if (pSelectedState->m_params.blendEnable)
-		{
-			if (!m_bCurrentBlendEnable)
+			if (state.srcFactor != m_nCurrentSrcFactor)
 			{
-				m_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-				m_bCurrentBlendEnable = true;
-			}
-
-			if (pSelectedState->m_params.srcFactor != m_nCurrentSrcFactor)
-			{
-				m_nCurrentSrcFactor = pSelectedState->m_params.srcFactor;
+				m_nCurrentSrcFactor = state.srcFactor;
 				m_pD3DDevice->SetRenderState(D3DRS_SRCBLEND, blendingConsts[m_nCurrentSrcFactor]);
 			}
 
-			if (pSelectedState->m_params.dstFactor != m_nCurrentDstFactor)
+			if (state.dstFactor != m_nCurrentDstFactor)
 			{
-				m_nCurrentDstFactor = pSelectedState->m_params.dstFactor;
+				m_nCurrentDstFactor = state.dstFactor;
 				m_pD3DDevice->SetRenderState(D3DRS_DESTBLEND, blendingConsts[m_nCurrentDstFactor]);
 			}
-			if (pSelectedState->m_params.blendFunc != m_nCurrentBlendMode)
+			if (state.blendFunc != m_nCurrentBlendMode)
 			{
-				m_nCurrentBlendMode = pSelectedState->m_params.blendFunc;
+				m_nCurrentBlendMode = state.blendFunc;
 				m_pD3DDevice->SetRenderState(D3DRS_BLENDOP, blendingModes[m_nCurrentBlendMode]);
 			}
 		}
+
+		mask = state.mask;
+	}
+	else
+	{
+		// disable alpha testing
+		if(m_bCurrentAlphaTestEnabled)
+		{
+			m_pD3DDevice->SetRenderState(D3DRS_ALPHATESTENABLE, m_bCurrentAlphaTestEnabled = false);
+		}
 	}
 
-	int mask = COLORMASK_ALL;
-	if (pSelectedState != NULL)
-		mask = pSelectedState->m_params.mask;
-
+	// change the mask
 	if (mask != m_nCurrentMask)
 	{
 		m_nCurrentMask = mask;
 
+		// FIXME: use all MRTs feature, not just global value
 		m_pD3DDevice->SetRenderState(D3DRS_COLORWRITEENABLE, m_nCurrentMask);
 		m_pD3DDevice->SetRenderState(D3DRS_COLORWRITEENABLE1, m_nCurrentMask);
 		m_pD3DDevice->SetRenderState(D3DRS_COLORWRITEENABLE2, m_nCurrentMask);
 		m_pD3DDevice->SetRenderState(D3DRS_COLORWRITEENABLE3, m_nCurrentMask);
 	}
-
+	/*
 	if (m_nSelectedSampleMask != m_nCurrentSampleMask)
 	{
 		m_pD3DDevice->SetRenderState(D3DRS_MULTISAMPLEMASK, m_nSelectedSampleMask);
 		m_nCurrentSampleMask = m_nSelectedSampleMask;
 	}
+	*/
 	
 	// state was set up
 	m_pCurrentBlendstate = pSelectedState;
@@ -834,14 +831,12 @@ void ShaderAPID3DX9::ApplyDepthState()
 	{
 		if (!m_bCurrentDepthTestEnable)
 		{
-			m_pD3DDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
-			m_bCurrentDepthTestEnable = true;
+			m_pD3DDevice->SetRenderState(D3DRS_ZENABLE, m_bCurrentDepthTestEnable = true);
 		}
 
 		if (!m_bCurrentDepthWriteEnable)
 		{
-			m_pD3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-			m_bCurrentDepthWriteEnable = true;
+			m_pD3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, m_bCurrentDepthWriteEnable = true);
 		}
 
 		if (m_nCurrentDepthFunc != COMP_LESS)
@@ -852,7 +847,9 @@ void ShaderAPID3DX9::ApplyDepthState()
 	} 
 	else 
 	{
-		if (pSelectedState->m_params.depthTest)
+		DepthStencilStateParams_t& state = pSelectedState->m_params;
+
+		if (state.depthTest)
 		{
 			if (!m_bCurrentDepthTestEnable)
 			{
@@ -860,51 +857,50 @@ void ShaderAPID3DX9::ApplyDepthState()
 				m_bCurrentDepthTestEnable = true;
 			}
 
-			if (pSelectedState->m_params.depthWrite != m_bCurrentDepthWriteEnable)
-				m_pD3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, (m_bCurrentDepthWriteEnable = pSelectedState->m_params.depthWrite)? TRUE : FALSE);
+			if (state.depthWrite != m_bCurrentDepthWriteEnable)
+				m_pD3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, (m_bCurrentDepthWriteEnable = state.depthWrite)? TRUE : FALSE);
 
-			if (pSelectedState->m_params.depthFunc != m_nCurrentDepthFunc)
-				m_pD3DDevice->SetRenderState(D3DRS_ZFUNC, depthConst[m_nCurrentDepthFunc = pSelectedState->m_params.depthFunc]);
+			if (state.depthFunc != m_nCurrentDepthFunc)
+				m_pD3DDevice->SetRenderState(D3DRS_ZFUNC, depthConst[m_nCurrentDepthFunc = state.depthFunc]);
 		
 		} 
 		else 
 		{
 			if (m_bCurrentDepthTestEnable)
 			{
-				m_pD3DDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
-				m_bCurrentDepthTestEnable = false;
+				m_pD3DDevice->SetRenderState(D3DRS_ZENABLE, m_bCurrentDepthTestEnable = false);
 			}
 		}
 
-		if(pSelectedState->m_params.doStencilTest != m_bDoStencilTest)
+		if(state.doStencilTest != m_bDoStencilTest)
 		{
-			m_pD3DDevice->SetRenderState(D3DRS_STENCILENABLE, m_bDoStencilTest = pSelectedState->m_params.doStencilTest);
+			m_pD3DDevice->SetRenderState(D3DRS_STENCILENABLE, m_bDoStencilTest = state.doStencilTest);
 
 			if(m_bDoStencilTest)
 			{
-				if(m_nStencilMask != pSelectedState->m_params.nStencilMask)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILMASK, m_nStencilMask = pSelectedState->m_params.nStencilMask);
+				if(m_nStencilMask != state.nStencilMask)
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILMASK, m_nStencilMask = state.nStencilMask);
 
-				if(m_nStencilWriteMask != pSelectedState->m_params.nStencilWriteMask)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, m_nStencilWriteMask = pSelectedState->m_params.nStencilWriteMask);
+				if(m_nStencilWriteMask != state.nStencilWriteMask)
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, m_nStencilWriteMask = state.nStencilWriteMask);
 
-				if(m_nStencilRef != pSelectedState->m_params.nStencilRef)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, m_nStencilRef = pSelectedState->m_params.nStencilRef);
+				if(m_nStencilRef != state.nStencilRef)
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, m_nStencilRef = state.nStencilRef);
 
-				if(m_nStencilFunc != pSelectedState->m_params.nStencilFunc)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILFUNC, stencilConst[m_nStencilFunc = pSelectedState->m_params.nStencilFunc]);
+				if(m_nStencilFunc != state.nStencilFunc)
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILFUNC, stencilConst[m_nStencilFunc = state.nStencilFunc]);
 
-				if(m_nStencilFail != pSelectedState->m_params.nStencilFail)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILFAIL, stencilConst[m_nStencilFail = pSelectedState->m_params.nStencilFail]);
+				if(m_nStencilFail != state.nStencilFail)
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILFAIL, stencilConst[m_nStencilFail = state.nStencilFail]);
 
-				if(m_nStencilFunc != pSelectedState->m_params.nStencilFunc)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, depthConst[m_nStencilFunc = pSelectedState->m_params.nStencilFunc]);
+				if(m_nStencilFunc != state.nStencilFunc)
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, depthConst[m_nStencilFunc = state.nStencilFunc]);
 
-				if(m_nStencilPass != pSelectedState->m_params.nStencilPass)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILPASS, stencilConst[m_nStencilPass = pSelectedState->m_params.nStencilPass]);
+				if(m_nStencilPass != state.nStencilPass)
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILPASS, stencilConst[m_nStencilPass = state.nStencilPass]);
 
-				if(m_nDepthFail != pSelectedState->m_params.nDepthFail)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILZFAIL, stencilConst[m_nDepthFail = pSelectedState->m_params.nDepthFail]);
+				if(m_nDepthFail != state.nDepthFail)
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILZFAIL, stencilConst[m_nDepthFail = state.nDepthFail]);
 			}
 		}
 	}
@@ -958,39 +954,39 @@ void ShaderAPID3DX9::ApplyRasterizerState()
 	}
 	else
 	{
-		if (pSelectedState->m_params.cullMode != m_nCurrentCullMode)
+		RasterizerStateParams_t& state = pSelectedState->m_params;
+
+		if (state.cullMode != m_nCurrentCullMode)
 		{
-			m_nCurrentCullMode = pSelectedState->m_params.cullMode;
+			m_nCurrentCullMode = state.cullMode;
 			m_pD3DDevice->SetRenderState(D3DRS_CULLMODE, cullConst[m_nCurrentCullMode]);
 		}
 
-		if (pSelectedState->m_params.fillMode != m_nCurrentFillMode)
+		if (state.fillMode != m_nCurrentFillMode)
 		{
-			m_nCurrentFillMode = pSelectedState->m_params.fillMode;
+			m_nCurrentFillMode = state.fillMode;
 			m_pD3DDevice->SetRenderState(D3DRS_FILLMODE, fillConst[m_nCurrentFillMode]);
 		}
 
-		
-		if (pSelectedState->m_params.multiSample != m_bCurrentMultiSampleEnable)
+		if (state.multiSample != m_bCurrentMultiSampleEnable)
 		{
-			m_bCurrentMultiSampleEnable = pSelectedState->m_params.multiSample;
+			m_bCurrentMultiSampleEnable = state.multiSample;
 			m_pD3DDevice->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, m_bCurrentMultiSampleEnable );
 		}
 		
-
-		if (pSelectedState->m_params.scissor != m_bCurrentScissorEnable)
+		if (state.scissor != m_bCurrentScissorEnable)
 		{
-			m_bCurrentScissorEnable = pSelectedState->m_params.scissor;
+			m_bCurrentScissorEnable = state.scissor;
 			m_pD3DDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, m_bCurrentScissorEnable );
 		}
 
-		if (pSelectedState->m_params.useDepthBias != false)
+		if (state.useDepthBias != false)
 		{
-			if(m_fCurrentDepthBias != pSelectedState->m_params.depthBias)
-				m_pD3DDevice->SetRenderState( D3DRS_DEPTHBIAS, *((DWORD*) (&(m_fCurrentDepthBias = pSelectedState->m_params.depthBias)) ));
+			if(m_fCurrentDepthBias != state.depthBias)
+				m_pD3DDevice->SetRenderState( D3DRS_DEPTHBIAS, *((DWORD*) (&(m_fCurrentDepthBias = state.depthBias)) ));
 
-			if(m_fCurrentSlopeDepthBias != pSelectedState->m_params.slopeDepthBias)
-				m_pD3DDevice->SetRenderState( D3DRS_SLOPESCALEDEPTHBIAS, *((DWORD*) (&(m_fCurrentSlopeDepthBias = pSelectedState->m_params.slopeDepthBias)))); 
+			if(m_fCurrentSlopeDepthBias != state.slopeDepthBias)
+				m_pD3DDevice->SetRenderState( D3DRS_SLOPESCALEDEPTHBIAS, *((DWORD*) (&(m_fCurrentSlopeDepthBias = state.slopeDepthBias)))); 
 		}
 		else
 		{

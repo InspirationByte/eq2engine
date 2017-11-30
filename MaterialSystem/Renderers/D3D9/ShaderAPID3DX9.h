@@ -383,7 +383,7 @@ private:
 	//ITexture*					m_pBackBuffer;
 	//ITexture*					m_pDepthBuffer;
 
-	int							m_nCurrentSampleMask;
+	//int							m_nCurrentSampleMask;
 	int							m_nSelectedSampleMask;
 
 	//uint8						m_nMRTs;

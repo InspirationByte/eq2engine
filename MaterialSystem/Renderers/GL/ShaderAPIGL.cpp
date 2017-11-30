@@ -439,11 +439,13 @@ void ShaderAPIGL::ApplyDepthState()
 					glEnable(GL_DEPTH_TEST);
 					m_bCurrentDepthTestEnable = true;
 				}
+
 				if (state.depthWrite != m_bCurrentDepthWriteEnable)
 				{
 					m_bCurrentDepthWriteEnable = state.depthWrite;
 					glDepthMask((m_bCurrentDepthWriteEnable)? GL_TRUE : GL_FALSE);
 				}
+
 				if (state.depthFunc != m_nCurrentDepthFunc)
 				{
 					m_nCurrentDepthFunc = state.depthFunc;
@@ -494,14 +496,12 @@ void ShaderAPIGL::ApplyRasterizerState()
 			if (false != m_bCurrentMultiSampleEnable)
 			{
 				glDisable(GL_MULTISAMPLE);
-
 				m_bCurrentMultiSampleEnable = false;
 			}
 #endif // USE_GLES2
 			if (false != m_bCurrentScissorEnable)
 			{
 				glDisable(GL_SCISSOR_TEST);
-
 				m_bCurrentScissorEnable = false;
 			}
 
@@ -520,17 +520,15 @@ void ShaderAPIGL::ApplyRasterizerState()
 		
 			if (state.cullMode != m_nCurrentCullMode)
 			{
-				if (state.cullMode == CULL_NONE)
-				{
-					glDisable(GL_CULL_FACE);
-				}
-				else
+				if (state.cullMode > CULL_NONE)
 				{
 					if (m_nCurrentCullMode == CULL_NONE)
 						glEnable(GL_CULL_FACE);
 
 					glCullFace(cullConst[state.cullMode]);
 				}
+				else
+					glDisable(GL_CULL_FACE);
 
 				m_nCurrentCullMode = state.cullMode;
 			}
@@ -544,28 +542,14 @@ void ShaderAPIGL::ApplyRasterizerState()
 
 			if (state.multiSample != m_bCurrentMultiSampleEnable)
 			{
-				if (state.multiSample)
-				{
-					glEnable(GL_MULTISAMPLE);
-				}
-				else
-				{
-					glDisable(GL_MULTISAMPLE);
-				}
+				(state.multiSample ? glEnable : glDisable)(GL_MULTISAMPLE);
 				m_bCurrentMultiSampleEnable = state.multiSample;
 			}
 #endif // USE_GLES2
 
 			if (state.scissor != m_bCurrentScissorEnable)
 			{
-				if (state.scissor)
-				{
-					glEnable(GL_SCISSOR_TEST);
-				}
-				else
-				{
-					glDisable(GL_SCISSOR_TEST);
-				}
+				(state.scissor ? glEnable : glDisable)(GL_SCISSOR_TEST);
 				m_bCurrentScissorEnable = state.scissor;
 			}
 
@@ -673,8 +657,6 @@ void ShaderAPIGL::Clear(bool bClearColor,
 		glClearDepth(fDepth);
 		GLCheckError("clr depth");
 #endif // USE_GLES2
-
-		
 	}
 
 	if (bClearStencil)
@@ -759,7 +741,6 @@ void ShaderAPIGL::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
 		delete pQuery;
 
 	m_OcclusionQueryList.fastRemove( pQuery );
-
 }
 
 //-------------------------------------------------------------
