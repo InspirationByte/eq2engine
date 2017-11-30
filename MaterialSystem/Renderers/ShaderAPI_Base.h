@@ -55,6 +55,8 @@ public:
 
 	const ShaderAPICaps_t&				GetCaps() const {return m_caps;}
 
+	virtual ER_ShaderAPIType			GetShaderAPIClass() const {return SHADERAPI_EMPTY;}
+
 	// Draw call counter
 	int									GetDrawCallsCount() const;
 

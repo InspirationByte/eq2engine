@@ -76,7 +76,7 @@ public:
 
 	// shader API class type for shader developers.
 	// DON'T USE TYPES IN DYNAMIC SHADER CODE! USE MATSYSTEM MAT-FILE DEFS!
-	ER_ShaderAPIType			GetShaderAPIClass() {return SHADERAPI_DIRECT3D9;}
+	ER_ShaderAPIType			GetShaderAPIClass() const {return SHADERAPI_DIRECT3D9;}
 
 	// Device vendor and version
 	const char*					GetDeviceNameString() const;

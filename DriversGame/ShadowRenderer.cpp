@@ -271,6 +271,8 @@ void CShadowRenderer::RenderShadowCasters()
 	const Vector3D& viewPos = g_pGameWorld->GetView()->GetOrigin();
 	float distFac = 1.0f / r_shadowDist.GetFloat();
 
+	bool flipY = (g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_OPENGL);
+
 	for(int i = 0; i < m_texAtlasPacker.GetRectangleCount(); i++)
 	{
 		void* userData;
@@ -339,6 +341,9 @@ void CShadowRenderer::RenderShadowCasters()
 		shadowDecal.settings.clipVolume.LoadAsFrustum(viewProj);
 		shadowDecal.settings.clipVolume.SetupPlane(nearPlane, VOLUME_PLANE_NEAR);
 		shadowDecal.settings.userData = firstObject;
+
+		if(flipY)
+			shadowRect.FlipY();
 
 		ProjectDecalToSpriteBuilder( shadowDecal, this, shadowRect, viewProj, ColorRGBA(1,1,1,shadowAlpha) );
 	}

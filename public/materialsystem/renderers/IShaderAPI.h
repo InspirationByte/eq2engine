@@ -159,7 +159,7 @@ public:
 	// shader API class type for shader developers.
 	virtual const ShaderAPICaps_t&	GetCaps() const = 0;
 
-	virtual ER_ShaderAPIType		GetShaderAPIClass() {return SHADERAPI_EMPTY;}
+	virtual ER_ShaderAPIType		GetShaderAPIClass() const = 0;
 
 	// Renderer string (ex: OpenGL, D3D9)
 	virtual const char*				GetRendererName() const = 0;

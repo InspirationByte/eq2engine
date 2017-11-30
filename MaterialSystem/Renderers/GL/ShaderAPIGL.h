@@ -126,6 +126,8 @@ public:
 	// Renderer string (ex: OpenGL, D3D9)
 	const char*			GetRendererName() const;
 
+	ER_ShaderAPIType	GetShaderAPIClass() const {return SHADERAPI_OPENGL;}
+
 //-------------------------------------------------------------
 // MT Synchronization
 //-------------------------------------------------------------
