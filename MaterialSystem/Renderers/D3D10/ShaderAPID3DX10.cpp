@@ -3223,7 +3223,7 @@ IVertexBuffer* ShaderAPID3DX10::CreateVertexBuffer(ER_BufferAccess nBufAccess, i
 	vbData.SysMemPitch = 0;
 	vbData.SysMemSlicePitch = 0;
 
-	DevMsg(DEVMSG_SHADERAPI,"Creatting VBO with size %i KB\n", pBuffer->m_nSize / 1024);
+	DevMsg(DEVMSG_SHADERAPI,"Creating VBO with size %i KB\n", pBuffer->m_nSize / 1024);
 
 	CScopedMutex scoped(m_Mutex);
 

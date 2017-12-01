@@ -2247,7 +2247,7 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int n
 	pGLVertexBuffer->m_strideSize = strideSize;
 	pGLVertexBuffer->m_usage = glBufferUsages[nBufAccess];
 
-	DevMsg(DEVMSG_SHADERAPI,"Creatting VBO with size %i KB\n", pGLVertexBuffer->GetSizeInBytes() / 1024);
+	DevMsg(DEVMSG_SHADERAPI,"Creating VBO with size %i KB\n", pGLVertexBuffer->GetSizeInBytes() / 1024);
 
 	GL_CRITICAL();
 
@@ -2286,7 +2286,7 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_Bu
 	pGLIndexBuffer->m_nIndexSize = nIndexSize;
 	pGLIndexBuffer->m_usage = glBufferUsages[nBufAccess];
 
-	DevMsg(DEVMSG_SHADERAPI,"Creatting IBO with size %i KB\n", (nIndices*nIndexSize) / 1024);
+	DevMsg(DEVMSG_SHADERAPI,"Creating IBO with size %i KB\n", (nIndices*nIndexSize) / 1024);
 
 	int size = nIndices * nIndexSize;
 

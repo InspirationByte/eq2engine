@@ -2726,7 +2726,7 @@ IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(ER_BufferAccess nBufAccess, in
 	pBuffer->m_nStrideSize = strideSize;
 	pBuffer->m_nInitialSize = nNumVerts*strideSize;
 
-	DevMsg(DEVMSG_SHADERAPI,"Creatting VBO with size %i KB\n", pBuffer->m_nSize / 1024);
+	DevMsg(DEVMSG_SHADERAPI,"Creating VBO with size %i KB\n", pBuffer->m_nSize / 1024);
 
 	HRESULT hr = m_pD3DDevice->TestCooperativeLevel();
 
@@ -2773,7 +2773,7 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, ER
 
 	bool dynamic = (pBuffer->m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
-	DevMsg(DEVMSG_SHADERAPI,"Creatting IBO with size %i KB\n",(nIndices*nIndexSize) / 1024);
+	DevMsg(DEVMSG_SHADERAPI,"Creating IBO with size %i KB\n",(nIndices*nIndexSize) / 1024);
 
 	HRESULT hr = m_pD3DDevice->TestCooperativeLevel();
 

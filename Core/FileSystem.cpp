@@ -771,7 +771,7 @@ bool CFileSystem::AddPackage(const char* packageName,SearchPath_e type)
 			return false;
 	}
 
-    CDPKFileReader* pPackageReader = new CDPKFileReader;
+    CDPKFileReader* pPackageReader = new CDPKFileReader(m_FSMutex);
 
     if (pPackageReader->SetPackageFilename( packageName ))
     {

@@ -16,6 +16,8 @@
 
 #include "utils/eqstring.h"
 #include "utils/DkList.h"
+#include "utils/eqthread.h"
+
 #include "dpk_defs.h"
 
 typedef int dpkhandle_t;
@@ -43,7 +45,7 @@ enum PACKAGE_DUMP_MODE
 class CDPKFileReader
 {
 public:
-							CDPKFileReader();
+							CDPKFileReader(Threading::CEqMutex& fsMutex);
 							~CDPKFileReader();
 
 	bool					SetPackageFilename( const char* filename );
@@ -75,6 +77,7 @@ protected:
 	dpkheader_t				m_header;
 	dpkfileinfo_t*			m_dpkFiles;
 
+
 	dpkhandle_t				m_handles[DPKX_MAX_HANDLES];
 	int						m_dumpCount;
 
@@ -85,6 +88,8 @@ protected:
 	EqString				m_tempPath;
 
 	uint32					m_key[4];
+
+	Threading::CEqMutex&	m_FSMutex;
 };
 
 #endif //DPK_FILE_READER_H
