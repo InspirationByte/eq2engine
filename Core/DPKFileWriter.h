@@ -16,6 +16,7 @@
 #include "platform/Platform.h"
 #include "dpk_defs.h"
 #include "utils/DkList.h"
+#include "utils/eqstring.h"
 
 struct dpkfilewinfo_t
 {
@@ -39,6 +40,8 @@ public:
 	bool					AddFile( const char* fileName );
 	void					AddDirecory( const char* directoryname, bool bRecurse );
 
+	void					AddIgnoreCompressionExtension( const char* extension );
+
 	bool					BuildAndSave( const char* fileNamePrefix );
 
 protected:
@@ -46,12 +49,15 @@ protected:
 	bool					WriteFiles();
 	bool					SavePackage();
 
+	bool					CheckCompressionIgnored(const char* extension) const;
+
 	FILE*					m_file;
 	dpkheader_t				m_header;
 
 	char					m_mountPath[DPK_MAX_FILENAME_LENGTH];
 
 	DkList<dpkfilewinfo_t*>	m_files;
+	DkList<EqString>		m_ignoreCompressionExt;
 
 	int						m_compressionLevel;
 	int						m_encryption;

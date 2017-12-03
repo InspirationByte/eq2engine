@@ -17,6 +17,7 @@
 #include "IFileSystem.h"
 #include "cmdlib.h"
 #include "utils/eqtimer.h"
+#include "utils/strtools.h"
 
 void Usage()
 {
@@ -45,7 +46,7 @@ int _tmain(int argc, char **argv)
 
 	GetCore()->Init("fcompress",argc,argv);
 
-	Msg("DarkTech file compression utility\n");
+	Msg("Equilibrium package compressor utility\n");
 	Msg(" Version 1.0\n");
 
 	// initialize file system
@@ -88,6 +89,18 @@ int _tmain(int argc, char **argv)
 		else if(!stricmp(arg, "-c") || !stricmp(arg, "-compression"))
 		{
 			dpkWriter.SetCompression( atoi(g_cmdLine->GetArgumentsOf(i)) );
+		}
+		else if(!stricmp(arg, "-ignorecompressionext"))
+		{
+			DkList<EqString> splitArgs;
+
+			EqString argsStr = g_cmdLine->GetArgumentsOf(i);
+			xstrsplit(argsStr.c_str(), " ", splitArgs);
+
+			for(int j = 0; j < splitArgs.numElem(); j++)
+			{
+				dpkWriter.AddIgnoreCompressionExtension( splitArgs[j].c_str() );
+			}
 		}
 	}
 

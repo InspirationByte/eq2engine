@@ -208,6 +208,23 @@ void CDPKFileWriter::AddDirecory(const char* filename_to_add, bool bRecurse)
 #endif // _WIN32
 }
 
+void CDPKFileWriter::AddIgnoreCompressionExtension( const char* extension )
+{
+	Msg("Ignoring extension '%s' for compression\n", extension);
+	m_ignoreCompressionExt.append(extension);
+}
+
+bool CDPKFileWriter::CheckCompressionIgnored(const char* extension) const
+{
+	for(int i = 0; i < m_ignoreCompressionExt.numElem(); i++)
+	{
+		if(!stricmp(m_ignoreCompressionExt[i].c_str(), extension))
+			return true;
+	}
+
+	return false;
+}
+
 #define DPK_WRITE_BLOCK (8*1024*1024)
 
 bool CDPKFileWriter::WriteFiles()
@@ -282,13 +299,15 @@ bool CDPKFileWriter::SavePackage()
 		long filesize = 0;
 		ubyte* _filedata = LoadFileBuffer( fileInfo->filename, &filesize );
 
+		bool shouldIgnoreCompression = CheckCompressionIgnored( _Es(fileInfo->filename).Path_Extract_Ext().c_str() );
+
 		fileInfo->size = filesize;
 
 		if( _filedata )
 		{
 			int status = Z_DATA_ERROR;
 
-			if( m_compressionLevel > 0 )
+			if( m_compressionLevel > 0 && !shouldIgnoreCompression )
 			{
 				unsigned long compressed_size = filesize + 128;
 				ubyte* _compressedData = (ubyte*)malloc(compressed_size);
