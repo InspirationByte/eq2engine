@@ -8,7 +8,7 @@ Desktop.ini
 .DS_Store
 .AppleDouble
 .LSOverride
-
+.vs
 
 *.user
 *.tlog
@@ -41,6 +41,7 @@ ipch/
 nbproject/
 gamebin/
 src_dependency/
+packages/
 utils/driver_level*/
 obj/
 android-project/app/

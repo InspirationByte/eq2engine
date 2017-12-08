@@ -1589,7 +1589,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 				!bDoBurnout &&
 				numDriveWheelsOnGround)
 			{
-				m_fAcceleration *= 0.25f;
+				m_fAcceleration *= 0.25f;	// FIXME: automatic transmission has different values
 			}
 
 			m_nPrevGear = m_nGear;

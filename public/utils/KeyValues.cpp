@@ -1017,6 +1017,7 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 					{
 						// set key name
 						strncpy(key, pFirstLetter, min(KV_MAX_NAME_LENGTH, nLen));
+						key[nLen] = '\0';
 
 						if(c == KV_BREAK)
 						{
