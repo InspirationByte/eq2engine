@@ -416,12 +416,14 @@ int	EqWString::Find(const wchar_t* pszSub, bool bCaseSensetive, int nStart)
 {
 	int nFound = -1;
 
+	wchar_t* strStart = m_pszString+min(nStart,m_nLength);
+
 	wchar_t* st = NULL;
 
 	if(bCaseSensetive)
-		st = wcsstr(m_pszString, pszSub);
+		st = wcsstr(strStart, pszSub);
 	else
-		st = xwcsistr(m_pszString, pszSub);
+		st = xwcsistr(strStart, pszSub);
 
 	if(st)
 		nFound = st-m_pszString;

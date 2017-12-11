@@ -452,15 +452,17 @@ int	EqString::Find(const char* pszSub, bool bCaseSensetive, int nStart) const
 {
 	int nFound = -1;
 
+	char* strStart = m_pszString+min(nStart,m_nLength);
+
 	char *st = NULL;
 
 	if(bCaseSensetive)
-		st = strstr(m_pszString, pszSub);
+		st = strstr(strStart, pszSub);
 	else
-		st = xstristr(m_pszString, pszSub);
+		st = xstristr(strStart, pszSub);
 
 	if(st)
-		nFound = st-m_pszString;
+		nFound = st - m_pszString;
 
 	return nFound;
 }

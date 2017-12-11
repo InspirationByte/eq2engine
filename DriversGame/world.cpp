@@ -220,6 +220,7 @@ void SetupDefaultEnvConfig(worldEnvConfig_t& env)
 	env.rainDensity = 0.0f;
 	env.rainBrightness = 0.4f;
 	env.brightnessModFactor = 0.0f;
+	env.moonBrightness = 0.0f;
 
 	env.fogEnable = false;
 	env.fogNear = DrvSynUnits::MaxCoordInUnits;
@@ -247,6 +248,7 @@ void ParseEnvConfig(worldEnvConfig_t& env, kvkeybase_t* kvs)
 	env.lensIntensity = KV_GetValueFloat(kvs->FindKeyBase("sunLensItensity"), 0, env.lensIntensity);
 	env.skyboxPath = KV_GetValueString(kvs->FindKeyBase("sky"), 0, env.skyboxPath.c_str());
 	env.headLightIntensity = KV_GetValueFloat(kvs->FindKeyBase("headlightIntensity"), 0, env.headLightIntensity);
+	env.moonBrightness = KV_GetValueFloat(kvs->FindKeyBase("moonBrightness"), 0, env.moonBrightness);
 
 	kvkeybase_t* sunLensAngles = kvs->FindKeyBase("sunLensAngles");
 
@@ -319,6 +321,9 @@ void InterpolateEnv(worldEnvConfig_t& result, const worldEnvConfig_t& from, cons
 
 	result.headLightIntensity = lerp(from.headLightIntensity, to.headLightIntensity, factor);
 	//result.streetLightIntensity = lerp(from.streetLightIntensity, to.streetLightIntensity, factor);
+
+	// moon is not drawn during transitions.
+	result.moonBrightness = 0.0f;//lerp(from.moonBrightness, to.moonBrightness, factor);
 
 	result.shadowColor = lerp(from.shadowColor, to.shadowColor, factor);
 
@@ -1517,6 +1522,78 @@ void CGameWorld::UpdateOccludingFrustum()
 	m_level.CollectVisibleOccluders( m_occludingFrustum, m_view.GetOrigin() );
 }
 
+void CGameWorld::DrawMoon()
+{
+	if(m_envConfig.moonBrightness > 0.0f)
+	{
+		PFXBillboard_t effect;
+
+		Vector3D sunLensDirection;
+		AngleVectors(m_envConfig.sunLensAngles, &sunLensDirection);
+
+		Vector3D virtualMoonPos = m_view.GetOrigin() + sunLensDirection*100.0f;
+
+		effect.group = g_translParticles;
+		effect.tex = g_translParticles->FindEntry("moon");
+
+		effect.vOrigin = virtualMoonPos;
+		effect.vColor = ColorRGBA(1,1,1,m_envConfig.moonBrightness);
+		effect.nFlags = EFFECT_FLAG_NO_FRUSTUM_CHECK | EFFECT_FLAG_RADIAL_ALIGNING;
+		effect.fZAngle = 0.0f;
+
+		effect.fWide = 2.0f;
+		effect.fTall = 2.0f;
+
+		Effects_DrawBillboard(&effect, &m_view, NULL);
+	}
+}
+
+void CGameWorld::DrawMoonGlow( const Vector2D& screenSize, const Vector2D& screenPos, float intensity )
+{
+	const float MOON_GLOW_SIZE = 250.0f;
+
+	Vector2D halfScreen(screenSize * 0.5f);
+
+	Vector2D lensDir = halfScreen-screenPos;
+
+	float lensDist = length(lensDir);
+	float lensScale = lensDist*3.0f;
+
+	lensDir = normalize(lensDir);
+
+	PFXVertex_t* verts;
+	if(g_additPartcles->AllocateGeom(4, 4, &verts, NULL, true) < 0)
+		return;
+
+	Rectangle_t texCoords(0,0,1,1);
+
+	TexAtlasEntry_t* entry = g_additPartcles->FindEntry("glow1");
+
+	if(entry)
+		texCoords = entry->rect;
+
+	Vector2D lensPos = screenPos;
+	ColorRGB lensColor = ColorRGB(0.5f) * intensity;
+
+	float fScale = MOON_GLOW_SIZE;
+
+	verts[0].point = Vector3D(lensPos + Vector2D(fScale, fScale), 0.0f);
+	verts[0].texcoord = Vector2D(texCoords.vrightBottom.x, texCoords.vrightBottom.y);
+	verts[0].color = TVec4D<half>(lensColor, 1.0f);
+
+	verts[1].point =  Vector3D(lensPos + Vector2D(fScale, -fScale), 0.0f);
+	verts[1].texcoord = Vector2D(texCoords.vrightBottom.x, texCoords.vleftTop.y);
+	verts[1].color = TVec4D<half>(lensColor, 1.0f);
+
+	verts[2].point =  Vector3D(lensPos + Vector2D(-fScale, fScale), 0.0f);
+	verts[2].texcoord = Vector2D(texCoords.vleftTop.x, texCoords.vrightBottom.y);
+	verts[2].color = TVec4D<half>(lensColor, 1.0f);
+
+	verts[3].point = Vector3D(lensPos + Vector2D(-fScale, -fScale), 0.0f);
+	verts[3].texcoord = Vector2D(texCoords.vleftTop.x, texCoords.vleftTop.y);
+	verts[3].color = TVec4D<half>(lensColor, 1.0f);
+}
+
 void CGameWorld::DrawLensFlare( const Vector2D& screenSize, const Vector2D& screenPos, float intensity )
 {
 	Vector2D halfScreen(screenSize * 0.5f);
@@ -1896,6 +1973,8 @@ void CGameWorld::Draw( int nRenderFlags )
 	// wait scheduled PFX render
 	g_parallelJobs->Wait();
 
+	DrawMoon();
+
 	// draw particle effects
 	g_pPFXRenderer->Render( nRenderFlags );
 
@@ -1912,20 +1991,19 @@ void CGameWorld::Draw( int nRenderFlags )
 	PointToScreen(virtualSunPos, lensScreenPos, m_viewprojection, screenSize);
 
 	// lens flare rendering on screen by using particle engine
-	if(m_envConfig.lensIntensity > 0.0f && r_drawLensFlare.GetBool())
+	if((m_envConfig.lensIntensity > 0.0f || m_envConfig.moonBrightness > 0.0f) && r_drawLensFlare.GetBool())
 	{
 		float fIntensity = dot(sunLensDirection, m_matrices[MATRIXMODE_VIEW].rows[2].xyz());
 
 		// Occlusion query begin
-		if(m_sunGlowOccQuery &&
-			r_drawLensFlare.GetInt() == 2)
+		if(m_sunGlowOccQuery && r_drawLensFlare.GetInt() == 2)
 		{
 			// get previous result
 
 			g_pShaderAPI->Reset( STATE_RESET_VBO );
 			materials->Setup2D(screenSize.x, screenSize.y);
 
-			const int LENS_PIXELS_HALFSIZE = 8;
+			const int LENS_PIXELS_HALFSIZE = 10;
 			const int LENS_TOTAL_PIXELS = LENS_PIXELS_HALFSIZE*LENS_PIXELS_HALFSIZE * 4;
 
 			const float LENS_PIXEL_TO_INTENSITY = 1.0f / (float)LENS_TOTAL_PIXELS;
@@ -1977,14 +2055,23 @@ void CGameWorld::Draw( int nRenderFlags )
 #endif // EDITOR
 
 #ifndef EDITOR
+
 	// Draw lensflare
 	if(m_lensIntensityTiming > 0 && r_drawLensFlare.GetBool())
 	{
+		if(m_envConfig.lensIntensity > 0.0f)
+		{
+			DrawLensFlare(screenSize, lensScreenPos, m_envConfig.lensIntensity*m_lensIntensityTiming );
+		}
+
+		if(m_envConfig.moonBrightness > 0.0f)
+		{
+			DrawMoonGlow( screenSize, lensScreenPos, m_lensIntensityTiming );
+		}
+
 		FogInfo_t fogDisabled;
 		fogDisabled.enableFog = false;
 		materials->SetFogInfo(fogDisabled);
-
-		DrawLensFlare(screenSize, lensScreenPos, m_envConfig.lensIntensity*m_lensIntensityTiming );
 
 		materials->SetMatrix(MATRIXMODE_VIEW, identity4());
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());

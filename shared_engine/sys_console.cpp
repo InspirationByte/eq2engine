@@ -164,7 +164,8 @@ CEqSysConsole::CEqSysConsole()
 	m_fullscreen = false;
 
 	m_cursorPos = 0;
-	m_startCursorPos = -1;
+	m_startCursorPos = 0;
+
 	m_logScrollPosition = 0;
 	m_histIndex = 0;
 	m_fastfind_cmdbase = NULL;
@@ -455,20 +456,34 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 void CEqSysConsole::OnTextUpdate()
 {
 	m_histIndex = -1;
+	
+	int curentStatementStart = 0;
 
+	while(true)
+	{
+		int nextStatementIdx = m_inputText.Find(";", false, curentStatementStart);
+
+		if(nextStatementIdx == -1)
+			break;
+
+		curentStatementStart = nextStatementIdx+1;
+	};
+	
+	EqString inputText(m_inputText.Mid(curentStatementStart, m_inputText.Length()));
+	
 	// update command variants
-	UpdateCommandAutocompletionList();
+	UpdateCommandAutocompletionList( inputText.c_str() );
 
 	// update argument variants
-	int spaceIdx = m_inputText.Find(" ");
+	int spaceIdx = inputText.Find(" ");
 	if(spaceIdx != -1)
 	{
-		EqString firstArguemnt(m_inputText.Left(spaceIdx));
+		EqString firstArguemnt( inputText.Left(spaceIdx) );
 		m_fastfind_cmdbase = (ConCommandBase*)g_sysConsole->FindBase( firstArguemnt.c_str() );
 
 		if(m_fastfind_cmdbase)
 		{
-			EqString nextArguemnt(m_inputText.Mid(spaceIdx+1, m_inputText.Length()));
+			EqString nextArguemnt( inputText.Mid(spaceIdx+1, inputText.Length()) );
 			UpdateVariantsList( nextArguemnt );
 		}
 		else
@@ -483,7 +498,7 @@ void CEqSysConsole::OnTextUpdate()
 	}
 }
 
-void CEqSysConsole::UpdateCommandAutocompletionList()
+void CEqSysConsole::UpdateCommandAutocompletionList(const EqString& queryStr)
 {
 	m_foundCmdList.clear();
 	m_cmdSelection = -1;
@@ -497,7 +512,7 @@ void CEqSysConsole::UpdateCommandAutocompletionList()
 		EqString conVarName(cmdBase->GetName());
 
 		// find by input text
-		if(conVarName.Find(m_inputText.c_str()) != -1)
+		if(conVarName.Find(queryStr.c_str()) != -1)
 		{
 			if(cmdBase->GetFlags() & CV_INVISIBLE)
 				continue;
@@ -729,7 +744,7 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, float curTim
 	float cursorPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText.c_str(), inputTextStyle, m_cursorPos);
 
 	// render selection
-	if(m_startCursorPos != -1)
+	if(m_startCursorPos != m_cursorPos)
 	{
 		float selStartPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText.c_str(), inputTextStyle, m_startCursorPos);
 
@@ -778,19 +793,31 @@ bool CEqSysConsole::KeyChar(int ch)
 	if(m_font == NULL)
 		return false;
 
-	if(ch == '~')
+	if(ch == '~' || ch == '`')
 		return false;
 
-
-	// THis is a weird thing
-	if(m_font->GetFontCharById(ch).advX > 0.0f && ch != '`')
+	if(m_font->GetFontCharById(ch).advX > 0.0f)
 	{
+		if(m_startCursorPos != m_cursorPos)
+		{
+			int selStart = min(m_startCursorPos, m_cursorPos);
+			int selEnd = max(m_startCursorPos, m_cursorPos);
+
+			m_inputText.Remove(selStart, selEnd - selStart);
+
+			m_cursorPos = selStart;
+			m_startCursorPos = m_cursorPos;
+		}
+
 		char text[2];
 		text[0] = ch;
 		text[1] = 0;
 
 		m_inputText.Insert( text, m_cursorPos);
+
 		m_cursorPos += 1;
+		m_startCursorPos = m_cursorPos;
+
 		OnTextUpdate();
 	}
 
@@ -858,64 +885,73 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 		switch (key)
 		{
 			case KEY_BACKSPACE:
-				if(m_startCursorPos != -1 && m_startCursorPos != m_cursorPos)
+			case KEY_DELETE:
+			{
+				if(m_startCursorPos != m_cursorPos)
 				{
-					if(m_cursorPos > m_startCursorPos)
-					{
-						consoleRemTextInRange(m_startCursorPos, m_cursorPos - m_startCursorPos);
-						m_cursorPos = m_startCursorPos;
-					}
-					else
-					{
-						consoleRemTextInRange(m_cursorPos, m_startCursorPos - m_cursorPos);
-					}
+					int selStart = min(m_startCursorPos, m_cursorPos);
+					int selEnd = max(m_startCursorPos, m_cursorPos);
 
-					m_startCursorPos = -1;
+					consoleRemTextInRange(selStart, selEnd - selStart);
+
+					m_cursorPos = selStart;
+					m_startCursorPos = m_cursorPos;
+
 					m_histIndex = -1;
 					return true;
 				}
 
-				if (m_cursorPos > 0)
+				if(key == KEY_BACKSPACE)
 				{
-					m_cursorPos--;
-					consoleRemTextInRange(m_cursorPos, 1);
-					m_histIndex = -1;
-				}
-				return true;
-			case KEY_DELETE:
-				if (m_cursorPos <= m_inputText.Length())
-				{
-					if(m_startCursorPos != -1 && m_startCursorPos != m_cursorPos)
+					if(m_cursorPos > 0)
 					{
-						if(m_cursorPos > m_startCursorPos)
-						{
-							consoleRemTextInRange(m_startCursorPos, m_cursorPos - m_startCursorPos);
-							m_cursorPos = m_startCursorPos;
-						}
-						else
-						{
-							consoleRemTextInRange(m_cursorPos, m_startCursorPos - m_cursorPos);
-						}
-
+						m_cursorPos--;
 						m_startCursorPos = m_cursorPos;
+
+						consoleRemTextInRange(m_cursorPos, 1);
 						m_histIndex = -1;
-						return true;
 					}
+				}
+				else
+				{
 					consoleRemTextInRange(m_cursorPos, 1);
 					m_histIndex = -1;
 				}
+
 				return true;
+			}
 			case KEY_SHIFT:
-				if(!m_shiftModifier)
-				{
-					m_startCursorPos = m_cursorPos;
-					m_shiftModifier = true;
-				}
+			{
+				m_shiftModifier = true;
+
 				return true;
+			}
 			case KEY_CTRL:
+			{
 				m_ctrlModifier = true;
 
 				return true;
+			}
+			case KEY_LEFT:
+			{
+				m_cursorPos--;
+				m_cursorPos = max(m_cursorPos, 0);
+
+				if(!m_shiftModifier)	// drop secondary cursor position
+					m_startCursorPos = m_cursorPos;
+
+				return true;
+			}
+			case KEY_RIGHT:
+			{
+				m_cursorPos++;
+				m_cursorPos = min(m_cursorPos, m_inputText.Length());
+
+				if(!m_shiftModifier)	// drop secondary cursor position
+					m_startCursorPos = m_cursorPos;
+
+				return true;
+			}
 			case KEY_HOME:
 				m_logScrollPosition = 0;
 				return true;
@@ -932,13 +968,12 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 			case KEY_C:
 				if(m_ctrlModifier)
 				{
-					if(m_startCursorPos != -1 && m_startCursorPos != m_cursorPos)
+					if(m_startCursorPos != m_cursorPos)
 					{
-						bool bInverseSelection = m_cursorPos > m_startCursorPos;
-						int cpystartpos = bInverseSelection ? m_startCursorPos : m_cursorPos;
-						int cpylength = bInverseSelection ? (m_cursorPos - m_startCursorPos) : (m_startCursorPos - m_cursorPos);
+						int selStart = min(m_startCursorPos, m_cursorPos);
+						int selEnd = max(m_startCursorPos, m_cursorPos);
 
-						EqString tmpString(m_inputText.Mid(cpystartpos,cpylength));
+						EqString tmpString(m_inputText.Mid(selStart, selEnd-selStart));
 
 #ifdef PLAT_SDL
 						// simple, yea
@@ -964,13 +999,12 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 			case KEY_X:
 				if(m_ctrlModifier)
 				{
-					if(m_startCursorPos != -1 && m_startCursorPos != m_cursorPos)
+					if(m_startCursorPos != m_cursorPos)
 					{
-						bool bInverseSelection = m_cursorPos > m_startCursorPos;
-						int cpystartpos = bInverseSelection ? m_startCursorPos : m_cursorPos;
-						int cpylength = bInverseSelection ? (m_cursorPos - m_startCursorPos) : (m_startCursorPos - m_cursorPos);
+						int selStart = min(m_startCursorPos, m_cursorPos);
+						int selEnd = max(m_startCursorPos, m_cursorPos);
 
-						EqString tmpString(m_inputText.Mid(cpystartpos,cpylength));
+						EqString tmpString(m_inputText.Mid(selStart, selEnd-selStart));
 #ifdef PLAT_SDL
 						SDL_SetClipboardText(tmpString.c_str());
 #elif PLAT_WIN
@@ -989,17 +1023,10 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 						}
 #endif // PLAT_SDL
 
-						if(m_cursorPos > m_startCursorPos)
-						{
-							consoleRemTextInRange(m_startCursorPos, m_cursorPos - m_startCursorPos);
-							m_cursorPos = m_startCursorPos;
-						}
-						else
-						{
-							consoleRemTextInRange(m_cursorPos, m_startCursorPos - m_cursorPos);
-						}
+						consoleRemTextInRange(selStart, selEnd - selStart);
 
-						m_startCursorPos = -1;
+						m_cursorPos = selStart;
+						m_startCursorPos = m_cursorPos;
 					}
 				}
 				return true;
@@ -1028,21 +1055,18 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 						CloseClipboard();
 #endif // PLAT_SDL
 
-						if(m_startCursorPos != -1)
+						if(m_startCursorPos != m_cursorPos)
 						{
-							if(m_cursorPos > m_startCursorPos)
-							{
-								consoleRemTextInRange(m_startCursorPos, m_cursorPos - m_startCursorPos);
-								m_cursorPos = m_startCursorPos;
-							}
-							else
-							{
-								consoleRemTextInRange(m_cursorPos, m_startCursorPos - m_cursorPos);
-							}
+							int selStart = min(m_startCursorPos, m_cursorPos);
+							int selEnd = max(m_startCursorPos, m_cursorPos);
+
+							consoleRemTextInRange(selStart, selEnd - selStart);
 						}
 
 						consoleInsText((char*)tmpString.GetData(),m_cursorPos);
+
 						m_cursorPos += tmpString.Length();
+						m_startCursorPos = m_cursorPos;
 					}
 				}
 				return true;
@@ -1244,15 +1268,6 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				}
 				return true;
 
-			case KEY_LEFT:
-				if (m_cursorPos > 0)
-				{
-					m_cursorPos--;
-
-					if(!m_shiftModifier)
-						m_startCursorPos = -1;
-				}
-				return true;
 			case KEY_TILDE:
 				if(!m_fullscreen)
 					return true;
@@ -1261,15 +1276,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 
 				//m_visible = !m_visible;
 				return true;
-			case KEY_RIGHT:
-				if (m_cursorPos < m_inputText.Length())
-				{
-					m_cursorPos++;
 
-					if(!m_shiftModifier)
-						m_startCursorPos = -1;
-				}
-				return true;
 			case KEY_DOWN: // FIXME: invalid indices
 
 				if(m_fastfind_cmdbase && m_variantList.numElem())
@@ -1334,7 +1341,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 					SetText("", true);
 
 				m_histIndex = -1; // others and escape
-				m_startCursorPos = -1;
+				m_startCursorPos = m_cursorPos;
 				return true;
 		}
 	}

@@ -422,10 +422,9 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		{
 			fontParams.scale = 20.0f;
 			robotocon30b->RenderText(varargs("Speed: %.2f KPH (%.2f MPS)", m_mainVehicle->GetSpeed(), m_mainVehicle->GetSpeed()*KPH_TO_MPS), Vector2D(10,400), fontParams);
-			robotocon30b->RenderText(varargs("Speed from wheels: %.2f KPH (%.2f MPS)", m_mainVehicle->GetSpeedWheels(), m_mainVehicle->GetSpeedWheels()*KPH_TO_MPS), Vector2D(10,440), fontParams);
+			robotocon30b->RenderText(varargs("Speed from wheels: %.2f KPH (%.2f MPS) at gear: %d, RPM: %d", m_mainVehicle->GetSpeedWheels(), m_mainVehicle->GetSpeedWheels()*KPH_TO_MPS, m_mainVehicle->GetGear(), (int)m_mainVehicle->GetRPM()), Vector2D(10,440), fontParams);
 			robotocon30b->RenderText(varargs("Lateral slide: %.2f", m_mainVehicle->GetLateralSlidingAtBody()), Vector2D(10,480), fontParams);
 			robotocon30b->RenderText(varargs("Traction slide: %.2f", m_mainVehicle->GetTractionSliding(true)), Vector2D(10,520), fontParams);
-			
 		}
 
 		// get felony

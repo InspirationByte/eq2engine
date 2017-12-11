@@ -81,7 +81,7 @@ protected:
 	void	consoleInsText(char* text,int pos);
 	void	consoleRemTextInRange(int start,int len);
 
-	void	UpdateCommandAutocompletionList();
+	void	UpdateCommandAutocompletionList(const EqString& queryStr);
 	void	UpdateVariantsList( const EqString& queryStr );
 	void	OnTextUpdate();
 
@@ -105,8 +105,8 @@ private:
 
 	bool							m_fullscreen;
 
-	uint							m_cursorPos;
-	uint							m_startCursorPos;
+	int								m_cursorPos;
+	int								m_startCursorPos;
 
 	int								m_logScrollPosition;
 

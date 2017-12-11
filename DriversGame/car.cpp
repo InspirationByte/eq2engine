@@ -74,6 +74,7 @@ static Vector3D s_BodyPartDirections[] =
 #define ANTIROLL_FACTOR_DEADZONE	(0.01f)
 #define ANTIROLL_FACTOR_MAX			(1.0f)
 #define ANTIROLL_SCALE				(4.0f)
+#define DEFAULT_SHIFT_ACCEL_FACTOR	(0.25f)
 
 #define MIN_VISUAL_BODYPART_DAMAGE	(0.32f)
 
@@ -137,6 +138,7 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 	conf->physics.differentialRatio = KV_GetValueFloat(kvs->FindKeyBase("differential"));
 	conf->physics.torqueMult = KV_GetValueFloat(kvs->FindKeyBase("torqueMultipler"));
 	conf->physics.transmissionRate = KV_GetValueFloat(kvs->FindKeyBase("transmissionRate"));
+	conf->physics.shiftAccelFactor = KV_GetValueFloat(kvs->FindKeyBase("shiftAccelFactor"), 0, DEFAULT_SHIFT_ACCEL_FACTOR);
 	conf->physics.mass = KV_GetValueFloat(kvs->FindKeyBase("mass"));
 	conf->physics.antiRoll = KV_GetValueFloat(kvs->FindKeyBase("antiRoll"));
 
@@ -1589,7 +1591,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 				!bDoBurnout &&
 				numDriveWheelsOnGround)
 			{
-				m_fAcceleration *= 0.25f;	// FIXME: automatic transmission has different values
+				m_fAcceleration *= m_conf->physics.shiftAccelFactor;	// FIXME: automatic transmission has different values
 			}
 
 			m_nPrevGear = m_nGear;

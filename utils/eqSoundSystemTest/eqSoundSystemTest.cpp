@@ -200,7 +200,7 @@ void InitMatSystem(EQWNDHANDLE window)
 			exit(0);
 	}
 
-	//materials->LoadShaderLibrary("Shaders_Engine.dll");
+	materials->LoadShaderLibrary("eqBaseShaders.dll");
 
 	// register all shaders
 	for(int i = 0; i < pShaderRegistrators.numElem(); i++)

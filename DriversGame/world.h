@@ -101,6 +101,8 @@ struct worldEnvConfig_t
 	float			streetLightIntensity;
 	float			headLightIntensity;
 
+	float			moonBrightness;
+
 	float			rainBrightness;
 	float			rainDensity;
 
@@ -248,7 +250,10 @@ protected:
 
 	void							SimulateObjects( float fDt );
 	void							DrawFakeReflections();
+
 	void							DrawLensFlare( const Vector2D& screenSize, const Vector2D& screenPos, float intensity );
+	void							DrawMoon();
+	void							DrawMoonGlow( const Vector2D& screenSize, const Vector2D& screenPos, float intensity );
 
 	void							UpdateRenderables( const occludingFrustum_t& frustum );
 	void							UpdateLightTexture();

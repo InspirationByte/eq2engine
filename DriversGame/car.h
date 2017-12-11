@@ -214,6 +214,8 @@ struct vehicleConfig_t
 		float*						gears;
 		int8						numGears;
 
+		float						shiftAccelFactor;
+
 		carWheelConfig_t*			wheels;
 		int8						numWheels;
 
