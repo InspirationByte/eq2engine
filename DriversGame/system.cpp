@@ -707,7 +707,7 @@ bool CGameHost::Frame()
 	equi::Manager->SetViewFrame(IRectangle(0,0,m_winSize.x,m_winSize.y));
 	equi::Manager->Render();
 
-	g_pSysConsole->DrawSelf(true, m_winSize.x, m_winSize.y, m_fCurTime);
+	g_pSysConsole->DrawSelf(m_winSize.x, m_winSize.y, m_fGameFrameTime);
 
 	// issue the rendering of anything
 	g_pShaderAPI->Flush();

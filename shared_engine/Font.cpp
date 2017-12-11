@@ -696,8 +696,8 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				int wide = KV_GetValueInt(pFontSizeSection->FindKeyBase("width"), 0, 8);
 				int tall = KV_GetValueInt(pFontSizeSection->FindKeyBase("height"), 0, 8);
 
-				m_baseline = 8.0f;
-				m_lineHeight = 8.0f;
+				m_baseline = tall;
+				m_lineHeight = tall;
 
 				int charsperline =  KV_GetValueInt(pFontSizeSection->FindKeyBase("charsperline"), 0, 16);
 
@@ -716,7 +716,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 				int line = 0;
 				int lChars = 0;
-				for(int i = 0; i < 256;i++)
+				for(int i = 0; i < 256; i++)
 				{
 					if(lChars == charsperline)
 					{

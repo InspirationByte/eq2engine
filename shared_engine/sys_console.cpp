@@ -54,7 +54,6 @@ DECLARE_CMD(con_hide, "Hides console", 0)
 	g_pSysConsole->SetLogVisible(false);
 }
 
-ConVar con_enable("con_enable","1",NULL, CV_CHEAT);
 ConVar con_fastfind("con_fastfind","1",NULL,CV_ARCHIVE);
 ConVar con_fastfind_count("con_fastfind_count","35",NULL,CV_ARCHIVE);
 ConVar con_autocompletion_enable("con_autocompletion_enable","1","See file <game dir>/cfg/autocompletion.cfg",CV_ARCHIVE);
@@ -144,6 +143,12 @@ bool IsInRectangle(int posX, int posY,int rectX,int rectY,int rectW,int rectH)
 	return ((posX >= rectX) && (posX <= rectX + rectW) && (posY >= rectY) && (posY <= rectY + rectH));
 }
 
+const float LOG_SCROLL_DELAY_START	= 0.15f;
+const float LOG_SCROLL_DELAY_END	= 0.0f;
+
+const float LOG_SCROLL_DELAY_STEP	= 0.01f;
+const float LOG_SCROLL_POWER_INC	= 0.05f;
+
 CEqSysConsole::CEqSysConsole()
 {
 	// release build needs false
@@ -161,12 +166,16 @@ CEqSysConsole::CEqSysConsole()
 
 	m_width = 512;
 	m_height = 512;
-	m_fullscreen = false;
+	m_enabled = false;
 
 	m_cursorPos = 0;
 	m_startCursorPos = 0;
 
 	m_logScrollPosition = 0;
+	m_logScrollDelay = LOG_SCROLL_DELAY_START;
+	m_logScrollDir = 0;
+	m_logScrollPower = 1.0f;
+
 	m_histIndex = 0;
 	m_fastfind_cmdbase = NULL;
 	m_variantSelection = -1;
@@ -176,7 +185,10 @@ CEqSysConsole::CEqSysConsole()
 
 void CEqSysConsole::Initialize()
 {
-	m_font = g_fontCache->GetFont("console", 16);
+	kvkeybase_t* consoleSettings = GetCore()->GetConfig()->FindKeyBase("Console");
+
+	m_font = g_fontCache->GetFont(KV_GetValueString(consoleSettings->FindKeyBase("FontName"), 0, "console"), 16);
+	m_enabled = KV_GetValueBool(consoleSettings->FindKeyBase("Enable"));
 }
 
 void CEqSysConsole::AddAutoCompletion(ConAutoCompletion_t* newItem)
@@ -646,20 +658,39 @@ void CEqSysConsole::SetText( const char* text, bool quiet /*= false*/ )
 		OnTextUpdate();
 }
 
-void CEqSysConsole::DrawSelf(bool transparent,int width,int height, float curTime)
+void CEqSysConsole::DrawSelf(int width,int height, float frameTime)
 {
+	m_cursorTime -= frameTime;
+
+	if(m_cursorTime < 0.0f)
+	{
+		m_cursorVisible = !m_cursorVisible;
+		m_cursorTime = CURSOR_BLINK_TIME;
+	}
+
+	if(m_logScrollDir != 0)
+	{
+		int maxScroll = GetAllMessages()->numElem()-1;
+
+		m_logScrollNextTime -= frameTime;
+		if(m_logScrollNextTime <= 0.0f)
+		{
+			m_logScrollNextTime = m_logScrollDelay;
+
+			m_logScrollPosition += m_logScrollDir*floor(m_logScrollPower);
+
+			m_logScrollPosition = min(m_logScrollPosition, maxScroll);
+			m_logScrollPosition = max(m_logScrollPosition, 0);
+		}
+	}
+
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
 	eqFontStyleParam_t fontStyle;
 
-	m_fullscreen = transparent;
-
 	int drawstart = m_logScrollPosition;
-
-	if(m_logScrollPosition > GetAllMessages()->numElem())
-		m_logScrollPosition = GetAllMessages()->numElem();
 
 	if(!m_visible)
 		return;
@@ -724,12 +755,6 @@ void CEqSysConsole::DrawSelf(bool transparent,int width,int height, float curTim
 	EqString conInputStr(CONSOLE_INPUT_STARTSTR);
 	conInputStr.Append(m_inputText);
 
-	if(m_cursorTime < curTime)
-	{
-		m_cursorVisible = !m_cursorVisible;
-		m_cursorTime = curTime + CURSOR_BLINK_TIME;
-	}
-
 	DrawAlphaFilledRectangle(inputTextEntryRect, s_conInputBackColor, s_conBorderColor);
 
 	eqFontStyleParam_t inputTextStyle;
@@ -793,33 +818,33 @@ bool CEqSysConsole::KeyChar(int ch)
 	if(m_font == NULL)
 		return false;
 
-	if(ch == '~' || ch == '`')
+	if(ch < 32 || ch == '~' || ch == '`')
 		return false;
 
-	if(m_font->GetFontCharById(ch).advX > 0.0f)
+	if(m_font->GetFontCharById(ch).advX == 0.0f)
+		return false;
+
+	if(m_startCursorPos != m_cursorPos)
 	{
-		if(m_startCursorPos != m_cursorPos)
-		{
-			int selStart = min(m_startCursorPos, m_cursorPos);
-			int selEnd = max(m_startCursorPos, m_cursorPos);
+		int selStart = min(m_startCursorPos, m_cursorPos);
+		int selEnd = max(m_startCursorPos, m_cursorPos);
 
-			m_inputText.Remove(selStart, selEnd - selStart);
+		m_inputText.Remove(selStart, selEnd - selStart);
 
-			m_cursorPos = selStart;
-			m_startCursorPos = m_cursorPos;
-		}
-
-		char text[2];
-		text[0] = ch;
-		text[1] = 0;
-
-		m_inputText.Insert( text, m_cursorPos);
-
-		m_cursorPos += 1;
+		m_cursorPos = selStart;
 		m_startCursorPos = m_cursorPos;
-
-		OnTextUpdate();
 	}
+
+	char text[2];
+	text[0] = ch;
+	text[1] = 0;
+
+	m_inputText.Insert( text, m_cursorPos);
+
+	m_cursorPos += 1;
+	m_startCursorPos = m_cursorPos;
+
+	OnTextUpdate();
 
 	return true;
 }
@@ -850,6 +875,12 @@ bool CEqSysConsole::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 }
 void CEqSysConsole::SetVisible(bool bVisible)
 {
+	if(!m_enabled)
+	{
+		m_visible = false;
+		return;
+	}
+
 	m_visible = bVisible;
 
 	if(!m_visible)
@@ -1251,30 +1282,20 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				return true;
 
 			case KEY_PGUP:
-				if(m_logScrollPosition > 0)
-					m_logScrollPosition--;
+				m_logScrollDir = -1;
+
+				m_logScrollDelay -= LOG_SCROLL_DELAY_STEP;
+				m_logScrollPower += LOG_SCROLL_POWER_INC;
+				m_logScrollDelay = max(m_logScrollDelay, LOG_SCROLL_DELAY_END);
+
 				return true;
 			case KEY_PGDN:
-				//int m_maxLines;
+				m_logScrollDir = 1;
 
-				if(m_fullscreen)
-					m_maxLines = ((m_height) / 22) -2;
-				else
-					m_maxLines = ((m_height*2) / 22) -2;
+				m_logScrollDelay -= LOG_SCROLL_DELAY_STEP;
+				m_logScrollPower += LOG_SCROLL_POWER_INC;
+				m_logScrollDelay = max(m_logScrollDelay, LOG_SCROLL_DELAY_END);
 
-				if(m_logScrollPosition < GetAllMessages()->numElem())
-				{
-					m_logScrollPosition++;
-				}
-				return true;
-
-			case KEY_TILDE:
-				if(!m_fullscreen)
-					return true;
-
-				m_histIndex = -1;
-
-				//m_visible = !m_visible;
 				return true;
 
 			case KEY_DOWN: // FIXME: invalid indices
@@ -1354,6 +1375,14 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				break;
 			case KEY_CTRL:
 				m_ctrlModifier = false;
+				break;
+			case KEY_PGUP:
+			case KEY_PGDN:
+				m_logScrollDelay = LOG_SCROLL_DELAY_START;
+				m_logScrollPower = 1.0f;
+				m_logScrollNextTime = 0.0f;
+				m_logScrollDir = 0;
+				break;
 		}
 	}
 

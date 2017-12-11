@@ -51,7 +51,7 @@ public:
 	// useful for scripts
 	void	SetAlternateHandler( CONSOLE_ALTERNATE_HANDLER handler ) {m_alternateHandler = handler;}
 
-	void	DrawSelf(bool transparent, int width, int height, float curTime);
+	void	DrawSelf(int width, int height, float frameTime);
 
 	void	SetLastLine();
 	void	AddToLinePos(int num);
@@ -103,12 +103,18 @@ private:
 	int								m_width;
 	int								m_height;
 
-	bool							m_fullscreen;
+	bool							m_enabled;
 
 	int								m_cursorPos;
 	int								m_startCursorPos;
 
 	int								m_logScrollPosition;
+
+	float							m_logScrollDelay;
+	float							m_logScrollPower;
+	int								m_logScrollDir;
+
+	float							m_logScrollNextTime;
 
 	// Input history
 	DkList<EqString>				m_commandHistory;
