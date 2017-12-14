@@ -25,11 +25,11 @@
 #endif // _DEBUG
 
 #define CONSOLE_INPUT_STARTSTR ("> ")
-
 #define CURSOR_BLINK_TIME (0.2f)
+const float CMDLIST_SYMBOL_SIZE = 15.0f;
 
 // dummy command
-DECLARE_CMD(toggleconsole, "Toggles console", 0)
+DECLARE_CMD(toggleconsole, NULL, 0)	// dummy console command
 {
 }
 
@@ -61,11 +61,6 @@ ConVar con_autocompletion_enable("con_autocompletion_enable","1","See file <game
 static CEqSysConsole s_SysConsole;
 CEqSysConsole* g_pSysConsole = &s_SysConsole;
 
-#define FONT_WIDE 10 //9
-#define FONT_TALL 18 //14
-
-#define FONT_DIMS FONT_WIDE, FONT_TALL
-
 static ColorRGBA s_conBackColor = ColorRGBA(0.15f, 0.25f, 0.25f, 0.85f);
 static ColorRGBA s_conInputBackColor = ColorRGBA(0.15f, 0.25f, 0.25f, 0.85f);
 static ColorRGBA s_conBorderColor = ColorRGBA(0.05f, 0.05f, 0.1f, 1.0f);
@@ -76,40 +71,6 @@ static ColorRGBA s_conTextColor = ColorRGBA(0.7f,0.7f,0.8f,1);
 static ColorRGBA s_conSelectedTextColor = ColorRGBA(0.2f,0.2f,0.2f,1);
 static ColorRGBA s_conInputTextColor = ColorRGBA(0.7f,0.7f,0.6f,1);
 static ColorRGBA s_conHelpTextColor = ColorRGBA(0.7f,0.7f,0.8f,1);
-
-/*
-void AutoCompletionCheckExtensionDir(const char* extension, const char *dir, bool stripExtensions, DkList<EqString>* strings)
-{
-	EqString dirname = dir + _Es(extension);
-
-#ifdef _WIN32
-
-	WIN32_FIND_DATA wfd;
-	HANDLE hFile;
-
-	hFile = FindFirstFile(dirname.GetData(), &wfd);
-	if(hFile != NULL)
-	{
-		while(1)
-		{
-			if(!FindNextFile(hFile, &wfd))
-				break;
-
-			EqString filename = wfd.cFileName;
-			if(filename.Length() > 1 && filename != ".." && filename != "." && !(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-			{
-				if(stripExtensions)
-					strings->append(filename.Path_Strip_Ext());
-				else
-					strings->append(filename);
-			}
-		}
-
-		FindClose(hFile);
-	}
-#endif // _WIN32
-}
-*/
 
 DECLARE_CMD(con_addAutoCompletion,"Adds autocompletion variants", CV_INVISIBLE)
 {
@@ -187,8 +148,10 @@ void CEqSysConsole::Initialize()
 {
 	kvkeybase_t* consoleSettings = GetCore()->GetConfig()->FindKeyBase("Console");
 
-	m_font = g_fontCache->GetFont(KV_GetValueString(consoleSettings->FindKeyBase("FontName"), 0, "console"), 16);
-	m_enabled = KV_GetValueBool(consoleSettings->FindKeyBase("Enable"));
+	const char* consoleFontName = KV_GetValueString(consoleSettings ? consoleSettings->FindKeyBase("Font") : NULL, 0, "console");
+
+	m_font = g_fontCache->GetFont(consoleFontName, 16);
+	m_enabled = KV_GetValueBool(consoleSettings ? consoleSettings->FindKeyBase("Enable") : NULL);
 }
 
 void CEqSysConsole::AddAutoCompletion(ConAutoCompletion_t* newItem)
@@ -359,11 +322,12 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 			// Set color
 			char* str = varargs("%d commands found (too many to show here)", m_foundCmdList.numElem());
 			m_font->RenderText(str, rect.GetLeftTop() + Vector2D(5,4), helpTextParams);
-
-			return;
 		}
 		else if(m_foundCmdList.numElem() > 0)
 		{
+			eqFontStyleParam_t variantsTextParams;
+			variantsTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
+
 			int max_string_length = 35;
 
 			for(int i = 0; i < m_foundCmdList.numElem(); i++)
@@ -371,7 +335,9 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 
 			int numElemsToDraw = m_foundCmdList.numElem();
 
-			Rectangle_t rect(x,y,x+max_string_length*FONT_WIDE,y+numElemsToDraw*m_font->GetLineHeight(helpTextParams)+2);
+			float lineHeight = m_font->GetLineHeight(variantsTextParams);
+
+			Rectangle_t rect(x,y,x+max_string_length*CMDLIST_SYMBOL_SIZE,y+numElemsToDraw*m_font->GetLineHeight(helpTextParams)+2);
 			DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor);
 
 			for(int i = 0; i < m_foundCmdList.numElem();i++)
@@ -402,7 +368,7 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 				if(IsInRectangle(m_mousePosition.x,m_mousePosition.y,x,textYPos+2,w-x,12) || m_cmdSelection == i)
 				{
 					g_pShaderAPI->Reset(STATE_RESET_TEX);
-					Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos, x+max_string_length*FONT_WIDE, textYPos + 15 , 0) };
+					Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos, x+max_string_length*CMDLIST_SYMBOL_SIZE, textYPos + 15 , 0) };
 
 					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,selrect,elementsOf(selrect), NULL, ColorRGBA(1.0f, 1.0f, 1.0f, 0.8f), &blending);
 					g_pShaderAPI->Apply();
@@ -417,10 +383,7 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 					text_color = Vector4D(0.7f,0.7f,0.8f,1);
 
 				Vector4D selTextColor = bSelected ? Vector4D(0.1f,0.1f,0,1) : text_color;
-
-				eqFontStyleParam_t variantsTextParams;
 				variantsTextParams.textColor = selTextColor;
-				variantsTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
 
 				char* str = NULL;
 
@@ -469,19 +432,8 @@ void CEqSysConsole::OnTextUpdate()
 {
 	m_histIndex = -1;
 	
-	int curentStatementStart = 0;
-
-	while(true)
-	{
-		int nextStatementIdx = m_inputText.Find(";", false, curentStatementStart);
-
-		if(nextStatementIdx == -1)
-			break;
-
-		curentStatementStart = nextStatementIdx+1;
-	};
-	
-	EqString inputText(m_inputText.Mid(curentStatementStart, m_inputText.Length()));
+	EqString inputText;
+	int currentStatementStart = GetCurrentInputText(inputText);
 	
 	// update command variants
 	UpdateCommandAutocompletionList( inputText.c_str() );
@@ -508,6 +460,229 @@ void CEqSysConsole::OnTextUpdate()
 	{
 		m_fastfind_cmdbase = NULL;
 	}
+}
+
+int CEqSysConsole::GetCurrentInputText(EqString& str)
+{
+	int currentStatementStart = 0;
+
+	while(true)
+	{
+		int nextStatementIdx = m_inputText.Find(";", false, currentStatementStart);
+
+		if(nextStatementIdx == -1)
+			break;
+
+		currentStatementStart = nextStatementIdx+1;
+	};
+	
+	str = m_inputText.Mid(currentStatementStart, m_inputText.Length());
+
+	return currentStatementStart;
+}
+
+bool CEqSysConsole::AutoCompleteSelectVariant()
+{
+	EqString inputText;
+	int currentStatementStart = GetCurrentInputText(inputText);
+
+	if(m_fastfind_cmdbase && m_variantSelection != -1)
+	{
+		// remove from this position
+		m_inputText.Remove(currentStatementStart, inputText.Length());
+		m_inputText.Append( (m_fastfind_cmdbase->GetName() + _Es(" \"") + m_variantList[m_variantSelection] + _Es("\"")).c_str() );
+
+		m_cursorPos = m_startCursorPos = m_inputText.Length();
+		OnTextUpdate();
+		return true;
+	}
+	else if(m_foundCmdList.numElem() && m_cmdSelection != -1)
+	{
+		// remove from this position
+		m_inputText.Remove(currentStatementStart, inputText.Length());
+		m_inputText.Append( (m_foundCmdList[m_cmdSelection]->GetName() + _Es(" ")).c_str() );
+
+		m_cursorPos = m_startCursorPos = m_inputText.Length();
+		OnTextUpdate();
+		return true;
+	}
+
+	return false;
+}
+
+void CEqSysConsole::AutoCompleteSuggestion()
+{
+	EqString inputText;
+	int currentStatementStart = GetCurrentInputText(inputText);
+
+	int char_index = 0;
+
+	int max_match_chars = -1;
+	EqString matching_str;
+
+	if(m_fastfind_cmdbase != NULL)
+	{
+		if(m_variantList.numElem() == 1)
+		{
+			// remove from this position
+			m_inputText.Remove(currentStatementStart, inputText.Length());
+			m_inputText.Append( (m_fastfind_cmdbase->GetName() + _Es(" ") + m_variantList[0]).c_str() );
+
+			m_cursorPos = m_startCursorPos = m_inputText.Length();
+			OnTextUpdate();
+		}
+		else
+		{
+			EqString queryStr;
+
+			int spaceIdx = inputText.Find(" ");
+			if(spaceIdx != -1)
+				queryStr = inputText.c_str() + spaceIdx + 1;
+
+			for(int i = 0; i < m_variantList.numElem(); i++)
+			{
+				char_index = m_variantList[i].Find(queryStr.c_str(), true);
+
+				if(char_index != -1)
+				{
+					if(max_match_chars == -1)
+					{
+						matching_str = m_variantList[i];
+						max_match_chars = matching_str.Length();
+					}
+					else
+					{
+						int cmpLen = matching_str.GetMathingChars( m_variantList[i] );
+
+						if(cmpLen < max_match_chars)
+						{
+							matching_str = matching_str.Left(cmpLen);
+							max_match_chars = cmpLen;
+						}
+					}
+				}
+			}
+
+			// remove from this position
+			m_inputText.Remove(currentStatementStart, inputText.Length());
+
+			if(max_match_chars != 0)
+				m_inputText.Append( (m_fastfind_cmdbase->GetName() + _Es(" ") + matching_str).c_str() );
+			else
+				m_inputText.Append( (m_fastfind_cmdbase->GetName() + _Es(" ")).c_str() );
+
+			m_cursorPos = m_startCursorPos = m_inputText.Length();
+			OnTextUpdate();
+		}
+	}
+	else
+	{
+		int exactCmdIdx = -1;
+
+		if(m_foundCmdList.numElem() == 1)
+		{
+			// remove from this position
+			m_inputText.Remove(currentStatementStart, inputText.Length());
+			m_inputText.Append( varargs("%s ", m_foundCmdList[0]->GetName()) );
+
+			m_cursorPos = m_startCursorPos = m_inputText.Length();
+			OnTextUpdate();
+			return;
+		}
+
+		for(int i = 0; i < m_foundCmdList.numElem();i++)
+		{
+			ConCommandBase* cmdBase = m_foundCmdList[i];
+
+			EqString conVarName(cmdBase->GetName());
+			char_index = conVarName.Find( inputText.c_str() );
+
+			if(char_index == -1)
+				continue;
+
+			if(char_index == 0)
+			{
+				exactCmdIdx = i;
+
+				// if we have 100% match, force to use this command
+				if(!inputText.CompareCaseIns(cmdBase->GetName()))
+					break;
+
+				if(!con_fastfind.GetBool())
+					MsgAccept("%s - %s\n",cmdBase->GetName(), cmdBase->GetDesc());
+			}
+
+			if(max_match_chars == -1)
+			{
+				matching_str = conVarName;
+				max_match_chars = matching_str.Length();
+			}
+			else
+			{
+				int cmpLen = matching_str.GetMathingChars( conVarName );
+
+				if(cmpLen < max_match_chars)
+				{
+					matching_str = matching_str.Left(cmpLen);
+					max_match_chars = cmpLen;
+				}
+			}
+		}
+
+		// remove from this position
+		m_inputText.Remove(currentStatementStart, inputText.Length());
+
+		if(exactCmdIdx != -1)
+			m_inputText.Append( varargs("%s ", m_foundCmdList[exactCmdIdx]->GetName()) );
+		else if(max_match_chars != 0)
+			m_inputText.Append( matching_str.c_str() );
+
+		m_cursorPos = m_startCursorPos = m_inputText.Length();
+		OnTextUpdate();
+
+		if(!con_fastfind.GetBool())
+			Msg(" \n");
+	}
+}
+
+void CEqSysConsole::ExecuteCurrentInput()
+{
+	MsgInfo("> %s\n",m_inputText.GetData());
+
+	g_sysConsole->ResetCounter();
+	g_sysConsole->SetCommandBuffer(m_inputText.GetData());
+
+	bool execStatus = g_sysConsole->ExecuteCommandBuffer(-1, m_alternateHandler != NULL);
+
+	DkList<EqString>& failedCmds = g_sysConsole->GetFailedCommands();
+
+	bool hasFailed = failedCmds.numElem() > 0;
+
+	if( (execStatus == false || hasFailed) && m_alternateHandler != NULL)
+	{
+		hasFailed = !(*m_alternateHandler)(m_inputText.c_str());
+		execStatus = true;
+	}
+
+	if(!execStatus)
+		MsgError("Failed to execute '%s'\n",m_inputText.GetData());
+
+	if(hasFailed)
+	{
+		for(int i = 0; i < failedCmds.numElem(); i++)
+		{
+			MsgError( "Unknown command or variable: '%s'\n", failedCmds[i].c_str() );
+		}
+	}
+
+	// Compare the last command with current and add history if needs
+	if(m_commandHistory.numElem() > 0)
+	{
+		if(stricmp(m_commandHistory[m_commandHistory.numElem()-1].GetData(),m_inputText.GetData()))
+			m_commandHistory.append(m_inputText);
+	}
+	else
+		m_commandHistory.append(m_inputText);
 }
 
 void CEqSysConsole::UpdateCommandAutocompletionList(const EqString& queryStr)
@@ -599,7 +774,7 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w)
 	int linesToDraw = displayEnd-displayStart+1;
 
 	// draw as autocompletion
-	Rectangle_t rect(x,y,x+max_string_length*FONT_WIDE,y+linesToDraw*m_font->GetLineHeight(variantsTextParams));
+	Rectangle_t rect(x,y,x+max_string_length*CMDLIST_SYMBOL_SIZE,y+linesToDraw*m_font->GetLineHeight(variantsTextParams));
 	DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor);
 
 	m_font->RenderText("Possible variants: ", Vector2D(x+5,y+2), variantsTextParams);
@@ -612,9 +787,9 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w)
 		bool bSelected = false;
 
 		if(IsInRectangle(m_mousePosition.x,m_mousePosition.y,
-						x,textYPos,(max_string_length*FONT_WIDE)-x,12) || m_variantSelection == i)
+						x,textYPos,(max_string_length*CMDLIST_SYMBOL_SIZE)-x,12) || m_variantSelection == i)
 		{
-			Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos-4,x+max_string_length*FONT_WIDE, textYPos + 14 , 1) };
+			Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos-4,x+max_string_length*CMDLIST_SYMBOL_SIZE, textYPos + 14 , 1) };
 
 			// Cancel textures
 			g_pShaderAPI->Reset(STATE_RESET_TEX);
@@ -824,17 +999,6 @@ bool CEqSysConsole::KeyChar(int ch)
 	if(m_font->GetFontCharById(ch).advX == 0.0f)
 		return false;
 
-	if(m_startCursorPos != m_cursorPos)
-	{
-		int selStart = min(m_startCursorPos, m_cursorPos);
-		int selEnd = max(m_startCursorPos, m_cursorPos);
-
-		m_inputText.Remove(selStart, selEnd - selStart);
-
-		m_cursorPos = selStart;
-		m_startCursorPos = m_cursorPos;
-	}
-
 	char text[2];
 	text[0] = ch;
 	text[1] = 0;
@@ -858,16 +1022,7 @@ bool CEqSysConsole::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 	{
 		if (Button == MOU_B1)
 		{
-			if(m_fastfind_cmdbase && m_variantSelection != -1)
-			{
-				SetText((m_fastfind_cmdbase->GetName() + _Es(" \"") + m_variantList[m_variantSelection] + _Es("\"")).c_str());
-				return true;
-			}
-			else if(m_foundCmdList.numElem() && m_cmdSelection != -1)
-			{
-				SetText( (m_foundCmdList[m_cmdSelection]->GetName() + _Es(" ")).c_str() );
-				return true;
-			}
+			AutoCompleteSelectVariant();
 		}
 	}
 
@@ -929,7 +1084,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 					m_startCursorPos = m_cursorPos;
 
 					m_histIndex = -1;
-					return true;
+					break;
 				}
 
 				if(key == KEY_BACKSPACE)
@@ -949,19 +1104,19 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 					m_histIndex = -1;
 				}
 
-				return true;
+				break;
 			}
 			case KEY_SHIFT:
 			{
 				m_shiftModifier = true;
 
-				return true;
+				break;
 			}
 			case KEY_CTRL:
 			{
 				m_ctrlModifier = true;
 
-				return true;
+				break;
 			}
 			case KEY_LEFT:
 			{
@@ -971,7 +1126,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				if(!m_shiftModifier)	// drop secondary cursor position
 					m_startCursorPos = m_cursorPos;
 
-				return true;
+				break;
 			}
 			case KEY_RIGHT:
 			{
@@ -981,21 +1136,21 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				if(!m_shiftModifier)	// drop secondary cursor position
 					m_startCursorPos = m_cursorPos;
 
-				return true;
+				break;
 			}
 			case KEY_HOME:
 				m_logScrollPosition = 0;
-				return true;
+				break;
 			case KEY_END:
 				SetLastLine();
-				
-				return true;
+				break;
 			case KEY_A:
 				if(m_ctrlModifier)
 				{
 					m_cursorPos = m_inputText.Length();
 					m_startCursorPos = 0;
 				}
+				break;
 			case KEY_C:
 				if(m_ctrlModifier)
 				{
@@ -1026,7 +1181,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 #endif // PLAT_SDL
 					}
 				}
-				return true;
+				break;
 			case KEY_X:
 				if(m_ctrlModifier)
 				{
@@ -1060,7 +1215,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 						m_startCursorPos = m_cursorPos;
 					}
 				}
-				return true;
+				break;
 			case KEY_V:
 				if(m_ctrlModifier)
 				{
@@ -1078,7 +1233,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 						{
 							GlobalUnlock(hData);
 							CloseClipboard();
-							return true;
+							break;
 						}
 
 						tmpString = chBuffer;
@@ -1100,57 +1255,14 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 						m_startCursorPos = m_cursorPos;
 					}
 				}
-				return true;
+				break;
 			case KEY_ENTER:
 				if (m_inputText.Length() > 0)
 				{
-					if(m_fastfind_cmdbase && m_variantSelection != -1)
-					{
-						SetText( (m_fastfind_cmdbase->GetName() + _Es(" \"") + m_variantList[m_variantSelection] + _Es("\"")).c_str() );
-						return true;
-					}
-					else if(m_foundCmdList.numElem() && m_cmdSelection != -1)
-					{
-						SetText( (m_foundCmdList[m_cmdSelection]->GetName() + _Es(" ")).c_str() );
-						return true;
-					}
+					if(AutoCompleteSelectVariant())
+						break;
 
-					MsgInfo("> %s\n",m_inputText.GetData());
-
-					g_sysConsole->ResetCounter();
-					g_sysConsole->SetCommandBuffer(m_inputText.GetData());
-
-					bool execStatus = g_sysConsole->ExecuteCommandBuffer(-1, m_alternateHandler != NULL);
-
-					DkList<EqString>& failedCmds = g_sysConsole->GetFailedCommands();
-
-					bool hasFailed = failedCmds.numElem() > 0;
-
-					if( (execStatus == false || hasFailed) && m_alternateHandler != NULL)
-					{
-						hasFailed = !(*m_alternateHandler)(m_inputText.c_str());
-						execStatus = true;
-					}
-
-					if(!execStatus)
-						MsgError("Failed to execute '%s'\n",m_inputText.GetData());
-
-					if(hasFailed)
-					{
-						for(int i = 0; i < failedCmds.numElem(); i++)
-						{
-							MsgError( "Unknown command or variable: '%s'\n", failedCmds[i].c_str() );
-						}
-					}
-
-					// Compare the last command with current and add history if needs
-					if(m_commandHistory.numElem() > 0)
-					{
-						if(stricmp(m_commandHistory[m_commandHistory.numElem()-1].GetData(),m_inputText.GetData()))
-							m_commandHistory.append(m_inputText);
-					}
-					else
-						m_commandHistory.append(m_inputText);
+					ExecuteCurrentInput();
 				}
 				else
 				{
@@ -1158,7 +1270,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 					{
 						SetText(m_commandHistory[m_histIndex].c_str());
 						m_histIndex = -1;
-						return true;
+						break;
 					}
 
 					Msg("]\n");
@@ -1166,120 +1278,13 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 
 				SetText("");
 
-				return true;
+				break;
 
 			case KEY_TAB:
 				{
-					//const DkList<ConCommandBase*> *base = g_sysConsole->GetAllCommands();
-					int char_index = 0;
-
-					int max_match_chars = -1;
-					EqString matching_str;
-
-					if(m_fastfind_cmdbase != NULL)
-					{
-						if(m_variantList.numElem() == 1)
-						{
-							SetText( (m_fastfind_cmdbase->GetName() + _Es(" ") + m_variantList[0]).c_str() );
-						}
-						else
-						{
-							EqString queryStr;
-
-							int spaceIdx = m_inputText.Find(" ");
-							if(spaceIdx != -1)
-								queryStr = m_inputText.c_str() + spaceIdx + 1;
-
-							for(int i = 0; i < m_variantList.numElem(); i++)
-							{
-								char_index = m_variantList[i].Find(queryStr.c_str(), true);
-
-								if(char_index != -1)
-								{
-									if(max_match_chars == -1)
-									{
-										matching_str = m_variantList[i];
-										max_match_chars = matching_str.Length();
-									}
-									else
-									{
-										int cmpLen = matching_str.GetMathingChars( m_variantList[i] );
-
-										if(cmpLen < max_match_chars)
-										{
-											matching_str = matching_str.Left(cmpLen);
-											max_match_chars = cmpLen;
-										}
-									}
-								}
-							}
-
-							if(max_match_chars != 0)
-								SetText( (m_fastfind_cmdbase->GetName() + _Es(" ") + matching_str).c_str() );
-							else
-								SetText( (m_fastfind_cmdbase->GetName() + _Es(" ")).c_str() );
-						}
-					}
-					else
-					{
-						int exactCmdIdx = -1;
-
-						if(m_foundCmdList.numElem() == 1)
-						{
-							SetText( varargs("%s ", m_foundCmdList[0]->GetName()) );
-							return true;
-						}
-
-						for(int i = 0; i < m_foundCmdList.numElem();i++)
-						{
-							ConCommandBase* cmdBase = m_foundCmdList[i];
-
-							EqString conVarName(cmdBase->GetName());
-							char_index = conVarName.Find( m_inputText.c_str() );
-
-							if(char_index == -1)
-								continue;
-
-							if(char_index == 0)
-							{
-								exactCmdIdx = i;
-
-								// if we have 100% match, force to use this command
-								if(!m_inputText.CompareCaseIns(cmdBase->GetName()))
-									break;
-
-								if(!con_fastfind.GetBool())
-									MsgAccept("%s - %s\n",cmdBase->GetName(), cmdBase->GetDesc());
-							}
-
-							if(max_match_chars == -1)
-							{
-								matching_str = conVarName;
-								max_match_chars = matching_str.Length();
-							}
-							else
-							{
-								int cmpLen = matching_str.GetMathingChars( conVarName );
-
-								if(cmpLen < max_match_chars)
-								{
-									matching_str = matching_str.Left(cmpLen);
-									max_match_chars = cmpLen;
-								}
-							}
-						}
-
-						if(exactCmdIdx != -1)
-							SetText( varargs("%s ", m_foundCmdList[exactCmdIdx]->GetName()) );
-						else if(max_match_chars != 0)
-							SetText( matching_str.c_str() );
-
-						if(!con_fastfind.GetBool())
-							Msg(" \n");
-					}
-
+					AutoCompleteSuggestion();
 				}
-				return true;
+				break;
 
 			case KEY_PGUP:
 				m_logScrollDir = -1;
@@ -1288,7 +1293,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				m_logScrollPower += LOG_SCROLL_POWER_INC;
 				m_logScrollDelay = max(m_logScrollDelay, LOG_SCROLL_DELAY_END);
 
-				return true;
+				break;
 			case KEY_PGDN:
 				m_logScrollDir = 1;
 
@@ -1296,7 +1301,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				m_logScrollPower += LOG_SCROLL_POWER_INC;
 				m_logScrollDelay = max(m_logScrollDelay, LOG_SCROLL_DELAY_END);
 
-				return true;
+				break;
 
 			case KEY_DOWN: // FIXME: invalid indices
 
@@ -1304,7 +1309,7 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				{
 					m_variantSelection++;
 					m_variantSelection = min(m_variantSelection, m_variantList.numElem()-1);
-					return true;
+					break;
 				}
 				else
 				{
@@ -1312,12 +1317,12 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 					{
 						m_cmdSelection++;
 						m_cmdSelection = min(m_cmdSelection, m_foundCmdList.numElem()-1);
-						return true;
+						break;
 					}
 				}
 
 				if(!m_commandHistory.numElem())
-					return true;
+					break;
 
 				m_histIndex++;
 				m_histIndex = min(m_histIndex, m_commandHistory.numElem()-1);
@@ -1325,14 +1330,14 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				if(m_commandHistory.numElem() > 0)
 					SetText(m_commandHistory[m_histIndex].c_str(), true);
 
-				return true;
+				break;
 			case KEY_UP:
 
 				if(m_fastfind_cmdbase && m_variantList.numElem())
 				{
 					m_variantSelection--;
 					m_variantSelection = max(m_variantSelection, 0);
-					return true;
+					break;
 				}
 				else
 				{
@@ -1340,12 +1345,12 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 					{
 						m_cmdSelection--;
 						m_cmdSelection = max(m_cmdSelection, 0);
-						return true;
+						break;
 					}
 				}
 
 				if(!m_commandHistory.numElem())
-					return true;
+					break;
 
 				if(m_histIndex == -1)
 					m_histIndex = m_commandHistory.numElem();
@@ -1356,14 +1361,28 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 				if(m_commandHistory.numElem() > 0)
 					SetText(m_commandHistory[m_histIndex].c_str(), true);
 
-				return true;
-			default:
-				if(m_histIndex != -1 && key == KEY_ESCAPE)
+				break;
+
+			case KEY_ESCAPE:
+				if(m_histIndex != -1)
 					SetText("", true);
+
+			default:
+
+				if(m_startCursorPos != m_cursorPos)
+				{
+					int selStart = min(m_startCursorPos, m_cursorPos);
+					int selEnd = max(m_startCursorPos, m_cursorPos);
+
+					m_inputText.Remove(selStart, selEnd - selStart);
+
+					m_cursorPos = selStart;
+					m_startCursorPos = m_cursorPos;
+				}
 
 				m_histIndex = -1; // others and escape
 				m_startCursorPos = m_cursorPos;
-				return true;
+				break;
 		}
 	}
 	else

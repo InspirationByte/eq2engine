@@ -84,10 +84,7 @@ void EngineSpewFunc(SpewType_t type,const char* pMsg)
 void InstallEngineSpewFunction()
 {
 	kvkeybase_t* consoleSettings = GetCore()->GetConfig()->FindKeyBase("Console");
-	if(consoleSettings)
-	{
-		g_maxConsoleLines = KV_GetValueInt(consoleSettings->FindKeyBase("MaxLines"), 0, DEFAULT_MAX_CONSOLE_LINES);
-	}
+	g_maxConsoleLines = KV_GetValueInt(consoleSettings ? consoleSettings->FindKeyBase("MaxLines") : NULL, 0, DEFAULT_MAX_CONSOLE_LINES);
 
 	// init list
 

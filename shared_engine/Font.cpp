@@ -697,7 +697,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				int tall = KV_GetValueInt(pFontSizeSection->FindKeyBase("height"), 0, 8);
 
 				m_baseline = tall;
-				m_lineHeight = tall;
+				m_lineHeight = tall+4;
 
 				int charsperline =  KV_GetValueInt(pFontSizeSection->FindKeyBase("charsperline"), 0, 16);
 

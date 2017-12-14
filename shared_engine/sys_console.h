@@ -15,20 +15,10 @@
 #include "utils/DkList.h"
 #include "IFont.h"
 
-// int argumentType definitions
-#define ARG_TYPE_GENERIC			0
-
 struct ConAutoCompletion_t
 {
-	ConAutoCompletion_t()
-	{
-		argumentType = ARG_TYPE_GENERIC;
-	}
-
 	EqString cmd_name;
 	DkList<EqString> args;
-
-	int argumentType;
 };
 
 #ifdef KeyPress
@@ -86,6 +76,14 @@ protected:
 	void	OnTextUpdate();
 
 private:
+
+	// returns current statement start and current input text
+	int		GetCurrentInputText(EqString& str);
+
+	bool	AutoCompleteSelectVariant();
+	void	AutoCompleteSuggestion();
+
+	void	ExecuteCurrentInput();
 
 	IEqFont*						m_font;
 

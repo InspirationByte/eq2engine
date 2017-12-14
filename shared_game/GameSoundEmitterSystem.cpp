@@ -297,7 +297,17 @@ void CSoundEmitterSystem::Init(float maxDistance)
 
 	m_defaultMaxDistance = maxDistance;
 
-	LoadScriptSoundFile("scripts/sounds.txt");
+	kvkeybase_t* soundSettings = GetCore()->GetConfig()->FindKeyBase("Sound");
+
+	const char* baseScriptFilePath = soundSettings ? KV_GetValueString(soundSettings->FindKeyBase("EmitterScripts"), 0, NULL) : NULL;
+
+	if(baseScriptFilePath == NULL)
+	{
+		MsgError("InitEFX: EQCONFIG missing Sound:EmitterScripts !\n");
+		return;
+	}
+
+	LoadScriptSoundFile(baseScriptFilePath);
 
 	m_bViewIsAvailable = false;
 	m_nRooms = 0;

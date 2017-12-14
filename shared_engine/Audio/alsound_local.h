@@ -102,11 +102,11 @@ public:
 
 public:
 
-	void					ReloadEffects();
+	void					ReloadEFX();
 
 protected:
 
-	void					InitEffects();
+	void					InitEFX();
 
 	int						RequestChannel(DkSoundEmitterLocal* emitter);
 

@@ -26,6 +26,7 @@
 #include "eqParallelJobs.h"
 
 #include "IDebugOverlay.h"
+#include "IDkCore.h"
 
 #ifndef NO_ENGINE
 #include "IEngineGame.h"
@@ -68,7 +69,7 @@ DECLARE_CMD(snd_reloadeffects,"Play a sound",0)
 {
 	DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 
-	pSoundSystem->ReloadEffects();
+	pSoundSystem->ReloadEFX();
 }
 
 static int out_channel_formats[][2] =
@@ -250,7 +251,7 @@ void DkSoundSystemLocal::Init()
 	alcGetIntegerv(m_dev, ALC_MAX_AUXILIARY_SENDS, 1, &max_sends);
 	DevMsg(DEVMSG_SOUND,"Sound: max effect slots is: %d\n", max_sends);
 
-	InitEffects();
+	InitEFX();
 
 	//Create channels
 	for(int i = 0; i < snd_3dchannels.GetInt(); i++)
@@ -310,7 +311,7 @@ bool CreateALEffect(const char* pszName, kvkeybase_t* pSection, sndEffect_t& eff
 		return false;
 }
 
-void DkSoundSystemLocal::InitEffects()
+void DkSoundSystemLocal::InitEFX()
 {
 	m_pCurrentEffect = NULL;
 	m_nCurrentSlot = 0;
@@ -323,46 +324,58 @@ void DkSoundSystemLocal::InitEffects()
 
 	m_effects.append(no_eff);
 
-	KeyValues kv;
-	if(kv.LoadFromFile("scripts/soundeffects.txt"))
+	//
+	// Load effect presets from file
+	//
+	kvkeybase_t* soundSettings = GetCore()->GetConfig()->FindKeyBase("Sound");
+
+	const char* effectFilePath = soundSettings ? KV_GetValueString(soundSettings->FindKeyBase("EFXScript"), 0, NULL) : NULL;
+
+	if(effectFilePath == NULL)
 	{
-		for(int i = 0; i < kv.GetRootSection()->keys.numElem(); i++)
+		MsgError("InitEFX: EQCONFIG missing Sound:EFXScript !\n");
+		return;
+	}
+
+	KeyValues kv;
+	if(!kv.LoadFromFile(effectFilePath))
+	{
+		MsgError("InitEFX: Can't init EFX from '%s'\n", effectFilePath);
+		return;
+	}
+
+	for(int i = 0; i < kv.GetRootSection()->keys.numElem(); i++)
+	{
+		kvkeybase_t* pEffectSection = kv.GetRootSection()->keys[i];
+
+		sndEffect_t effect;
+		strcpy( effect.name, pEffectSection->name );
+
+		kvkeybase_t* pPair = pEffectSection->FindKeyBase("type");
+
+		if(pPair)
 		{
-			kvkeybase_t* pEffectSection = kv.GetRootSection()->keys[i];
-
-			sndEffect_t effect;
-			strcpy( effect.name, pEffectSection->name );
-
-			kvkeybase_t* pPair = pEffectSection->FindKeyBase("type");
-
-			if(pPair)
+			if(!CreateALEffect(KV_GetValueString( pPair ), pEffectSection, effect))
 			{
-				if(!CreateALEffect(KV_GetValueString( pPair ), pEffectSection, effect))
-				{
-					MsgError("SOUND: Cannot create effect '%s' with type %s!\n", effect.name, KV_GetValueString( pPair ));
-					continue;
-				}
-			}
-			else
-			{
-				MsgError("SOUND: Effect '%s' doesn't have type!\n", effect.name);
+				MsgError("SOUND: Cannot create effect '%s' with type %s!\n", effect.name, KV_GetValueString( pPair ));
 				continue;
 			}
-
-			DevMsg(DEVMSG_SOUND,"registering sound effect '%s'\n", effect.name);
-
-			m_effects.append(effect);
 		}
-	}
-	else
-	{
-		MsgError("DkSoundSystem::InitEffects(): Can't init effect, 'scripts/soundeffects.txt' missing\n");
+		else
+		{
+			MsgError("SOUND: Effect '%s' doesn't have type!\n", effect.name);
+			continue;
+		}
+
+		DevMsg(DEVMSG_SOUND,"registering sound effect '%s'\n", effect.name);
+
+		m_effects.append(effect);
 	}
 }
 
 #define AL_SAMPLE_OFFSET 0x1025
 
-void DkSoundSystemLocal::ReloadEffects()
+void DkSoundSystemLocal::ReloadEFX()
 {
 	for(int i = 0; i < m_effects.numElem(); i++)
 	{
@@ -373,7 +386,7 @@ void DkSoundSystemLocal::ReloadEffects()
 
 	m_effects.clear();
 
-	InitEffects();
+	InitEFX();
 }
 
 static ConVar snd_effect("snd_effect", "-1", "Test sound effects", CV_CHEAT);
