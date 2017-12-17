@@ -580,7 +580,7 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_isLocalCar(false),
 	m_lightsEnabled(false),
 	m_nGear(1),
-	m_radsPerSec(0.0f),
+	m_radsPerSec(0),
 	m_effectTime(0.0f),
 	m_pDamagedModel(NULL),
 	m_engineSmokeTime(0.0f),
@@ -1460,7 +1460,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	FReal fAcceleration = m_fAcceleration;
 	FReal fBreakage = fBrake;
 
-	FReal torque = 0;
+	int torque = 0;
 
 	//
 	// Update engine
@@ -1469,24 +1469,22 @@ void CCar::UpdateVehiclePhysics(float delta)
 	{
 		int engineType = m_conf->physics.engineType;
 
-		FReal differentialRatio = m_conf->physics.differentialRatio;
-		FReal transmissionRate = m_conf->physics.transmissionRate;
+		float differentialRatio = m_conf->physics.differentialRatio;
+		float transmissionRate = m_conf->physics.transmissionRate;
 
-		FReal torqueConvert = differentialRatio * m_conf->physics.gears[m_nGear];
-		m_radsPerSec = (float)fabs(wheelsSpeed)*torqueConvert;
+		float torqueConvert = differentialRatio * m_conf->physics.gears[m_nGear];
+		m_radsPerSec = fabs(wheelsSpeed)*torqueConvert;
 		torque = CalcTorqueCurve(m_radsPerSec, engineType) * m_conf->physics.torqueMult;
 
 		float gbxDecelRate = max((float)fAccel, GEARBOX_DECEL_SHIFTDOWN_FACTOR);
 
  		if(torque < 0)
-			torque = 0.0f;
+			torque = 0;
 
 		torque *= torqueConvert * transmissionRate;
 
-		float car_speed = wheelsSpeed;
-
 		// check neutral zone
-		if( !bDoBurnout && (fsimilar(car_speed, 0.0f, 0.1f) || !numDriveWheelsOnGround))
+		if( !bDoBurnout && (fsimilar(wheelsSpeed, 0.0f, 0.1f) || !numDriveWheelsOnGround))
 		{
 			if(fBrake > 0)
 				m_nGear = 0;
@@ -1499,7 +1497,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 			{
 				// find gear to diffential
 				torqueConvert = differentialRatio * m_conf->physics.gears[m_nGear];
-				FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
+				int gearRadsPerSecond = wheelsSpeed * torqueConvert;
 				m_radsPerSec = gearRadsPerSecond;
 				torque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
 
@@ -1513,9 +1511,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 		else
 		{
 			// switch gears quickly if we move in wrong direction
-			if(car_speed < 0.0f && m_nGear > 0)
+			if(wheelsSpeed < 0.0f && m_nGear > 0)
 				m_nGear = 0;
-			else if(car_speed > 0.0f && m_nGear == 0)
+			else if(wheelsSpeed > 0.0f && m_nGear == 0)
 				m_nGear = 1;
 
 			m_nPrevGear = m_nGear;
@@ -1543,16 +1541,16 @@ void CCar::UpdateVehiclePhysics(float delta)
 				{
 					// find gear to diffential
 					torqueConvert = differentialRatio * m_conf->physics.gears[nGear];
-					FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
+					int gearRadsPerSecond = wheelsSpeed * torqueConvert;
 
-					FReal gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
+					int gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
  					if(gearTorque < 0)
 						gearTorque = 0.0f;
 
 					gearTorque *= torqueConvert * transmissionRate;
 
 					// gear torque check
-					if ( gearTorque*gbxDecelRate*m_gearboxShiftThreshold > torque )
+					if ( float(gearTorque)*gbxDecelRate*m_gearboxShiftThreshold > torque )
 					{
 						newGear = nGear;
 					}
@@ -1563,9 +1561,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 				{
 					// find gear to diffential
 					torqueConvert = differentialRatio * m_conf->physics.gears[nGear];
-					FReal gearRadsPerSecond = wheelsSpeed * torqueConvert;
+					int gearRadsPerSecond = wheelsSpeed * torqueConvert;
 
-					FReal gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
+					int gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
  					if(gearTorque < 0)
 						gearTorque = 0.0f;
 
@@ -1641,8 +1639,8 @@ void CCar::UpdateVehiclePhysics(float delta)
 		fAcceleration = 0;
 	}*/
 
-	float fAccelerator = float(fAcceleration * torque) * m_torqueScale;
-	float fBraker = (float)fBreakage*pow(m_torqueScale, 0.5f);
+	float fAccelerator = float(fAcceleration) * float(torque) * m_torqueScale;
+	float fBraker = float(fBreakage)*pow(m_torqueScale, 0.5f);
 
 	// Limit the speed
 	if(GetSpeed() > m_maxSpeed)
@@ -3688,7 +3686,7 @@ float CCar::GetSpeed() const
 
 float CCar::GetRPM() const
 {
-	return fabs(m_radsPerSec * ( 60.0f / ( 2.0f * PI_F ) ) );
+	return fabs(float(m_radsPerSec) * ( 60.0f / ( 2.0f * PI_F ) ) );
 }
 
 int CCar::GetGear() const

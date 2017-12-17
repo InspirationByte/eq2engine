@@ -420,11 +420,17 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 		if(hud_debug_car.GetBool() && m_mainVehicle)
 		{
-			fontParams.scale = 20.0f;
-			robotocon30b->RenderText(varargs("Speed: %.2f KPH (%.2f MPS)", m_mainVehicle->GetSpeed(), m_mainVehicle->GetSpeed()*KPH_TO_MPS), Vector2D(10,400), fontParams);
-			robotocon30b->RenderText(varargs("Speed from wheels: %.2f KPH (%.2f MPS) at gear: %d, RPM: %d", m_mainVehicle->GetSpeedWheels(), m_mainVehicle->GetSpeedWheels()*KPH_TO_MPS, m_mainVehicle->GetGear(), (int)m_mainVehicle->GetRPM()), Vector2D(10,440), fontParams);
-			robotocon30b->RenderText(varargs("Lateral slide: %.2f", m_mainVehicle->GetLateralSlidingAtBody()), Vector2D(10,480), fontParams);
-			robotocon30b->RenderText(varargs("Traction slide: %.2f", m_mainVehicle->GetTractionSliding(true)), Vector2D(10,520), fontParams);
+			const float DEBUG_FONT_SIZE = 20.0f;
+			const Vector2D DEBUG_LINE_OFS = Vector2D(0,DEBUG_FONT_SIZE*2.0f);
+
+			const Vector2D debugOffset = Vector2D(10,400);
+
+			fontParams.scale = DEBUG_FONT_SIZE;
+
+			robotocon30b->RenderText(varargs("Speed: %.2f KPH (%.2f MPS)", m_mainVehicle->GetSpeed(), m_mainVehicle->GetSpeed()*KPH_TO_MPS), debugOffset, fontParams);
+			robotocon30b->RenderText(varargs("Speed from wheels: %.2f KPH (%.2f MPS) at gear: %d, RPM: %d", m_mainVehicle->GetSpeedWheels(), m_mainVehicle->GetSpeedWheels()*KPH_TO_MPS, m_mainVehicle->GetGear(), (int)m_mainVehicle->GetRPM()), debugOffset+DEBUG_LINE_OFS, fontParams);
+			robotocon30b->RenderText(varargs("Lateral slide: %.2f", m_mainVehicle->GetLateralSlidingAtBody()), debugOffset+DEBUG_LINE_OFS*2, fontParams);
+			robotocon30b->RenderText(varargs("Traction slide: %.2f", m_mainVehicle->GetTractionSliding(true)), debugOffset+DEBUG_LINE_OFS*3, fontParams);
 		}
 
 		// get felony

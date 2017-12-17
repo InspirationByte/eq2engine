@@ -365,7 +365,7 @@ class CCar : public CGameObject
 	friend class CAITrafficCar;
 	friend class CAIPursuerCar;
 	friend class CReplayData;
-
+	friend class CDrvSynHUDManager;
 public:
 	DECLARE_NETWORK_TABLE();
 	DECLARE_CLASS( CCar, CGameObject )
@@ -587,9 +587,9 @@ protected:
 	short					m_nGear;
 	short					m_nPrevGear;
 
-	FReal					m_gearboxShiftThreshold;
+	float					m_gearboxShiftThreshold;
 
-	FReal					m_radsPerSec;	// current rotations per sec
+	int						m_radsPerSec;	// current rotations per sec
 
 	FReal					m_fAcceleration;
 	FReal					m_fBreakage;
