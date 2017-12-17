@@ -7,10 +7,12 @@
 
 #include "platform/Platform.h"
 #include "EngineVersion.h" // Engine version
-#include "EngineSpew.h"
-#include "sys_enginehost.h"
 
 #include "sys_enginehost.h"
+#include "sys_console.h"
+
+#include "utils/strtools.h"
+#include "IFileSystem.h"
 
 #include <crtdbg.h>
 
@@ -52,6 +54,8 @@ ONLY_EXPORTS int CreateEngineFn(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR 
 	if(!stricmp("Eq32", modNamefromExe) || !stricmp("Eq64", modNamefromExe) || !stricmp("Equilibrium", modNamefromExe))
 		shouldUseExeName = false;
 
+	CEqSysConsole::SpewInit();
+
 	if(!g_fileSystem->Init( shouldUseExeName ))
 		return -1;
 
@@ -60,8 +64,6 @@ ONLY_EXPORTS int CreateEngineFn(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR 
 		g_fileSystem->AddSearchPath( "$GAME$", modNamefromExe );
 
 	Msg("Initializing Engine...\n \n");
-
-	InstallEngineSpewFunction();
 
 	// tell engine information
 	EngineMessage();

@@ -177,9 +177,6 @@
     <ClCompile Include="..\shared_engine\DebugOverlay.cpp">
       <Filter>Source Files\Renderer\Debug</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\EngineSpew.cpp">
-      <Filter>Source Files\System</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -214,9 +211,6 @@
     </ClInclude>
     <ClInclude Include="..\FileSystem\cfgloader.h">
       <Filter>Source Files\Common\FileSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="EngineSpew.h">
-      <Filter>Source Files\System</Filter>
     </ClInclude>
     <ClInclude Include="EngineVersion.h">
       <Filter>Source Files\System</Filter>

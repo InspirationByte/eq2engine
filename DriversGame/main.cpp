@@ -18,7 +18,12 @@
 
 #include "IDkCore.h"
 #include "window.h"
-#include "EngineSpew.h"
+
+#include "ConVar.h"
+#include "ILocalize.h"
+#include "IFileSystem.h"
+
+#include "sys_console.h"
 
 #include "utils/DkLinkedList.h"
 
@@ -66,6 +71,7 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 	_CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_DEBUG );
 	_CrtSetReportMode( _CRT_ASSERT, _CRTDBG_MODE_WNDW );
 #endif
+
 	/*
 	//----------------------------------------------------------------
 	// Used to show console
@@ -84,6 +90,9 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 	*stdin = *hf_in;
 	//----------------------------------------------------------------
 	*/
+
+	CEqSysConsole::SpewInit();
+
 	// init core
 	if(!GetCore()->Init("Game", lpszCmdLine))
 		return -1;
@@ -120,8 +129,6 @@ int main(int argc, char** argv)
 
 	g_localizer->AddTokensFile("game");
 
-	InstallEngineSpewFunction();
-
 	// initialize timers
 	Platform_InitTime();
 
@@ -130,7 +137,7 @@ int main(int argc, char** argv)
 
 	Host_GameLoop();
 
-	UninstallEngineSpewFunction();
+	CEqSysConsole::SpewClear();
 
 	Host_Terminate();
 

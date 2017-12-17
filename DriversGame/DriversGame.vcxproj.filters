@@ -213,9 +213,6 @@
     <ClCompile Include="..\shared_engine\DebugOverlay.cpp">
       <Filter>Файлы исходного кода\EngineLib\DebugOverlay</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\EngineSpew.cpp">
-      <Filter>Файлы исходного кода\Console</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared_engine\Audio\alsnd_emitter.cpp">
       <Filter>Файлы исходного кода\EngineLib\Audio</Filter>
     </ClCompile>

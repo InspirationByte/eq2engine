@@ -21,10 +21,6 @@ struct ConAutoCompletion_t
 	DkList<EqString> args;
 };
 
-#ifdef KeyPress
-#undef KeyPress
-#endif // KeyPress
-
 typedef bool (*CONSOLE_ALTERNATE_HANDLER)(const char* commandText);
 
 class ConCommandBase;
@@ -34,56 +30,63 @@ class CEqSysConsole
 public:
 	friend class CFont;
 
-			CEqSysConsole();
+	static void		SpewFunc(SpewType_t type,const char* pMsg);
 
-	void	Initialize();
+	static void		SpewClear();
+	static void		SpewInit();
+	static void		SpewUninstall();
+
+
+					CEqSysConsole();
+
+	void			Initialize();
 
 	// useful for scripts
-	void	SetAlternateHandler( CONSOLE_ALTERNATE_HANDLER handler ) {m_alternateHandler = handler;}
+	void			SetAlternateHandler( CONSOLE_ALTERNATE_HANDLER handler ) {m_alternateHandler = handler;}
 
-	void	DrawSelf(int width, int height, float frameTime);
+	void			DrawSelf(int width, int height, float frameTime);
 
-	void	SetLastLine();
-	void	AddToLinePos(int num);
-	void	SetText( const char* text, bool quiet = false );
+	void			SetLastLine();
+	void			AddToLinePos(int num);
+	void			SetText( const char* text, bool quiet = false );
 
-	void	SetVisible(bool bVisible);
-	bool	IsVisible() const				{return m_visible;}
+	void			SetVisible(bool bVisible);
+	bool			IsVisible() const				{return m_visible;}
 
-	void	SetLogVisible( bool bVisible )	{ m_logVisible = bVisible; }
-	bool	IsLogVisible() const			{ return m_logVisible; }
+	void			SetLogVisible( bool bVisible )	{ m_logVisible = bVisible; }
+	bool			IsLogVisible() const			{ return m_logVisible; }
 
-	bool	IsShiftPressed() const			{return m_shiftModifier;}
-	bool	IsCtrlPressed() const			{return m_ctrlModifier;}
+	bool			IsShiftPressed() const			{return m_shiftModifier;}
+	bool			IsCtrlPressed() const			{return m_ctrlModifier;}
 
 	// events
-	bool	KeyPress(int key, bool pressed);
-	bool	KeyChar(int ch);
-	bool	MouseEvent(const Vector2D &pos, int Button,bool pressed);
-	void	MousePos(const Vector2D &pos);
+	bool			KeyPress(int key, bool pressed);
+	bool			KeyChar(int ch);
+	bool			MouseEvent(const Vector2D &pos, int Button,bool pressed);
+	void			MousePos(const Vector2D &pos);
 
-	void	AddAutoCompletion(ConAutoCompletion_t* item);
+	void			AddAutoCompletion(ConAutoCompletion_t* item);
 
 protected:
-	void	DrawFastFind(float x, float y, float w);
-	int		DrawAutoCompletion(float x, float y, float w);
+	void			DrawFastFind(float x, float y, float w);
+	int				DrawAutoCompletion(float x, float y, float w);
 
-	void	consoleInsText(char* text,int pos);
-	void	consoleRemTextInRange(int start,int len);
+	void			consoleInsText(char* text,int pos);
+	void			consoleRemTextInRange(int start,int len);
 
-	void	UpdateCommandAutocompletionList(const EqString& queryStr);
-	void	UpdateVariantsList( const EqString& queryStr );
-	void	OnTextUpdate();
-
-private:
+	void			UpdateCommandAutocompletionList(const EqString& queryStr);
+	void			UpdateVariantsList( const EqString& queryStr );
+	void			OnTextUpdate();
 
 	// returns current statement start and current input text
-	int		GetCurrentInputText(EqString& str);
+	int				GetCurrentInputText(EqString& str);
 
-	bool	AutoCompleteSelectVariant();
-	void	AutoCompleteSuggestion();
+	bool			AutoCompleteSelectVariant();
+	void			AutoCompleteSuggestion();
 
-	void	ExecuteCurrentInput();
+	void			ExecuteCurrentInput();
+
+private:
 
 	IEqFont*						m_font;
 

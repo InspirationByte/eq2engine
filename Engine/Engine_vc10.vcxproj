@@ -193,7 +193,6 @@
     <ClCompile Include="..\shared_engine\cfgloader.cpp" />
     <ClCompile Include="CEngineGame.cpp" />
     <ClCompile Include="..\public\GlobalVarsBase.cpp" />
-    <ClCompile Include="..\shared_engine\EngineSpew.cpp" />
     <ClCompile Include="..\shared_engine\EngineVersion.cpp" />
     <ClCompile Include="Modules.cpp" />
     <ClCompile Include="..\shared_engine\sys_console.cpp" />
@@ -255,7 +254,6 @@
     <ClInclude Include="..\FileSystem\cfgloader.h" />
     <ClInclude Include="..\public\GlobalVarsBase.h" />
     <ClInclude Include="..\public\IEngineGame.h" />
-    <ClInclude Include="EngineSpew.h" />
     <ClInclude Include="EngineVersion.h" />
     <ClInclude Include="..\public\IEngineHost.h" />
     <ClInclude Include="..\public\in_keys_ident.h" />

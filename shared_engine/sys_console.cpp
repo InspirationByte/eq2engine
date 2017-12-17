@@ -7,16 +7,18 @@
 
 #include "sys_console.h"
 
-#include <stdio.h>
-
 #include "FontLayoutBuilders.h"
 
-#include "EngineSpew.h"
+#include "IConCommandFactory.h"
 #include "EngineVersion.h"
 #include "FontCache.h"
 
+#include "IDebugOverlay.h"
+
 #include "materialsystem/MeshBuilder.h"
 #include "KeyBinding/InputCommandBinder.h"
+
+#include "utils/strtools.h"
 
 #ifdef _DEBUG
 #define CONSOLE_ENGINEVERSION_STR varargs(ENGINE_NAME " Engine " ENGINE_VERSION " DEBUG build %d (" COMPILE_DATE ")", BUILD_NUMBER_ENGINE)
@@ -29,7 +31,7 @@
 const float CMDLIST_SYMBOL_SIZE = 15.0f;
 
 // dummy command
-DECLARE_CMD(toggleconsole, NULL, 0)	// dummy console command
+DECLARE_CMD(toggleconsole, NULL, CV_INVISIBLE)	// dummy console command
 {
 }
 
@@ -54,9 +56,24 @@ DECLARE_CMD(con_hide, "Hides console", 0)
 	g_pSysConsole->SetLogVisible(false);
 }
 
-ConVar con_fastfind("con_fastfind","1",NULL,CV_ARCHIVE);
-ConVar con_fastfind_count("con_fastfind_count","35",NULL,CV_ARCHIVE);
-ConVar con_autocompletion_enable("con_autocompletion_enable","1","See file <game dir>/cfg/autocompletion.cfg",CV_ARCHIVE);
+// spew function for console
+DECLARE_CMD(clear,NULL,0)
+{
+	CEqSysConsole::SpewClear();
+}
+
+static int CON_SUGGESTIONS_MAX	= 40;
+static float CON_MINICON_TIME	= 5.0f;
+
+const float LOG_SCROLL_DELAY_START	= 0.15f;
+const float LOG_SCROLL_DELAY_END	= 0.0f;
+
+const float LOG_SCROLL_DELAY_STEP	= 0.01f;
+const float LOG_SCROLL_POWER_INC	= 0.05f;
+
+ConVar con_suggest("con_suggest","1",NULL,CV_ARCHIVE);
+
+static ConVar con_minicon("con_minicon", "0", NULL, CV_ARCHIVE);
 
 static CEqSysConsole s_SysConsole;
 CEqSysConsole* g_pSysConsole = &s_SysConsole;
@@ -71,6 +88,15 @@ static ColorRGBA s_conTextColor = ColorRGBA(0.7f,0.7f,0.8f,1);
 static ColorRGBA s_conSelectedTextColor = ColorRGBA(0.2f,0.2f,0.2f,1);
 static ColorRGBA s_conInputTextColor = ColorRGBA(0.7f,0.7f,0.6f,1);
 static ColorRGBA s_conHelpTextColor = ColorRGBA(0.7f,0.7f,0.8f,1);
+
+static ColorRGBA s_spewColors[] =
+{
+	Vector4D(1,1,1,1),				// SPEW_NORM
+	Vector4D(0.8f,0.8f,0.8f,1),		// SPEW_INFO
+	Vector4D(1,1,0,1),				// SPEW_WARNING
+	Vector4D(0.8f,0,0,1),			// SPEW_ERROR
+	Vector4D(0.2f,1,0.2f,1)			// SPEW_SUCCESS
+};
 
 DECLARE_CMD(con_addAutoCompletion,"Adds autocompletion variants", CV_INVISIBLE)
 {
@@ -104,11 +130,72 @@ bool IsInRectangle(int posX, int posY,int rectX,int rectY,int rectW,int rectH)
 	return ((posX >= rectX) && (posX <= rectX + rectW) && (posY >= rectY) && (posY <= rectY + rectH));
 }
 
-const float LOG_SCROLL_DELAY_START	= 0.15f;
-const float LOG_SCROLL_DELAY_END	= 0.0f;
+struct conSpewText_t
+{
+	~conSpewText_t()
+	{
+		delete [] text;
+	}
 
-const float LOG_SCROLL_DELAY_STEP	= 0.01f;
-const float LOG_SCROLL_POWER_INC	= 0.05f;
+	SpewType_t	type;
+	char*		text;
+};
+
+static DkList<conSpewText_t*> s_spewMessages;
+
+void CEqSysConsole::SpewFunc(SpewType_t type, const char* pMsg)
+{
+	// print out to std console
+	printf("%s", pMsg );
+
+#ifdef _WIN32
+	// debug print only for Windows
+	OutputDebugString(pMsg);
+#endif // _WIN32
+
+	DkList<EqString> splitNewLines;
+	xstrsplit(pMsg,"\n",splitNewLines);
+
+	int nMsgLen = strlen(pMsg);
+
+	for(int i = 0; i < splitNewLines.numElem(); i++)
+	{
+		if(con_minicon.GetBool() && debugoverlay != NULL)
+			debugoverlay->TextFadeOut(0, s_spewColors[type], CON_MINICON_TIME, splitNewLines[i].c_str());
+
+		int len = splitNewLines[i].Length() + 1;
+
+		conSpewText_t* spew = new conSpewText_t;
+
+		spew->type = type;
+
+		spew->text = new char[len];
+		memcpy(spew->text, splitNewLines[i].c_str(), len);
+
+		s_spewMessages.append(spew);
+	}
+}
+
+void CEqSysConsole::SpewClear()
+{
+	for(int i = 0; i < s_spewMessages.numElem(); i++)
+		delete s_spewMessages[i];
+
+	s_spewMessages.clear();
+}
+
+void CEqSysConsole::SpewInit()
+{
+	SetSpewFunction(CEqSysConsole::SpewFunc);
+}
+
+void CEqSysConsole::SpewUninstall()
+{
+	SpewClear();
+	SetSpewFunction(NULL);
+}
+
+//-------------------------------------------------------------------------
 
 CEqSysConsole::CEqSysConsole()
 {
@@ -241,7 +328,7 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 
 		m_font->RenderText("Last executed command: (cycle: Up/Down, press Enter to repeat)", rect.GetLeftTop() + Vector2D(5,4), helpTextParams);
 
-		int startDraw = m_commandHistory.numElem()-con_fastfind_count.GetInt();
+		int startDraw = m_commandHistory.numElem()-CON_SUGGESTIONS_MAX;
 		startDraw = max(0,startDraw);
 
 		//for(int order = 0, i = m_commandHistory.numElem()-1; i >= startDraw;i--,order++)
@@ -270,7 +357,7 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 		return;
 	}
 
-	if(con_fastfind.GetBool())
+	if(con_suggest.GetBool())
 	{
 		int commandinfo_size = 0;
 
@@ -314,7 +401,7 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 			commandinfo_size += numLines+1;
 		}
 
-		if(m_foundCmdList.numElem() >= con_fastfind_count.GetInt())
+		if(m_foundCmdList.numElem() >= CON_SUGGESTIONS_MAX)
 		{
 			Rectangle_t rect(x,y,w,y + m_font->GetLineHeight(helpTextParams) + 2 );
 			DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor);
@@ -608,7 +695,7 @@ void CEqSysConsole::AutoCompleteSuggestion()
 				if(!inputText.CompareCaseIns(cmdBase->GetName()))
 					break;
 
-				if(!con_fastfind.GetBool())
+				if(!con_suggest.GetBool())
 					MsgAccept("%s - %s\n",cmdBase->GetName(), cmdBase->GetDesc());
 			}
 
@@ -640,7 +727,7 @@ void CEqSysConsole::AutoCompleteSuggestion()
 		m_cursorPos = m_startCursorPos = m_inputText.Length();
 		OnTextUpdate();
 
-		if(!con_fastfind.GetBool())
+		if(!con_suggest.GetBool())
 			Msg(" \n");
 	}
 }
@@ -711,7 +798,7 @@ void CEqSysConsole::UpdateCommandAutocompletionList(const EqString& queryStr)
 
 void CEqSysConsole::UpdateVariantsList( const EqString& queryStr )
 {
-	if(!con_autocompletion_enable.GetBool())
+	if(!con_suggest.GetBool())
 		return;
 
 	m_variantSelection = -1;
@@ -745,7 +832,7 @@ void CEqSysConsole::UpdateVariantsList( const EqString& queryStr )
 
 int CEqSysConsole::DrawAutoCompletion(float x, float y, float w)
 {
-	if(!(con_autocompletion_enable.GetBool() && m_fastfind_cmdbase))
+	if(!(con_suggest.GetBool() && m_fastfind_cmdbase))
 		return 0;
 
 	int max_string_length = 35;
@@ -753,13 +840,13 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w)
 	for(int i = 0; i < m_variantList.numElem(); i++)
 		max_string_length = max((uint)max_string_length, m_variantList[i].Length());
 
-	int displayEnd = con_fastfind_count.GetInt();
+	int displayEnd = CON_SUGGESTIONS_MAX;
 	int displayStart = 0;
 
-	while(m_variantSelection-displayStart > con_fastfind_count.GetInt()-1)
+	while(m_variantSelection-displayStart > CON_SUGGESTIONS_MAX-1)
 	{
-		displayStart += con_fastfind_count.GetInt();
-		displayEnd += con_fastfind_count.GetInt();
+		displayStart += CON_SUGGESTIONS_MAX;
+		displayEnd += CON_SUGGESTIONS_MAX;
 	}
 
 	displayEnd = min(displayEnd, m_variantList.numElem());
@@ -813,13 +900,13 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w)
 
 void CEqSysConsole::SetLastLine()
 {
-	m_logScrollPosition = GetAllMessages()->numElem() - m_maxLines;
+	m_logScrollPosition = s_spewMessages.numElem() - m_maxLines;
 	m_logScrollPosition = max(0,m_logScrollPosition);
 }
 
 void CEqSysConsole::AddToLinePos(int num)
 {
-	int totalLines = GetAllMessages()->numElem();
+	int totalLines = s_spewMessages.numElem();
 	m_logScrollPosition += num;
 	m_logScrollPosition = min(totalLines,m_logScrollPosition);
 }
@@ -845,7 +932,7 @@ void CEqSysConsole::DrawSelf(int width,int height, float frameTime)
 
 	if(m_logScrollDir != 0)
 	{
-		int maxScroll = GetAllMessages()->numElem()-1;
+		int maxScroll = s_spewMessages.numElem()-1;
 
 		m_logScrollNextTime -= frameTime;
 		if(m_logScrollNextTime <= 0.0f)
@@ -889,7 +976,7 @@ void CEqSysConsole::DrawSelf(int width,int height, float frameTime)
 
 		int cnumLines = 0;
 
-		int numRenderLines = GetAllMessages()->numElem();
+		int numRenderLines = s_spewMessages.numElem();
 
 		m_maxLines = (con_outputRectangle.GetSize().y / m_font->GetLineHeight(fontStyle))-1;
 
@@ -910,9 +997,9 @@ void CEqSysConsole::DrawSelf(int width,int height, float frameTime)
 
 		for(int i = drawstart; i < numRenderLines; i++, numDrawn++)
 		{
-			outputTextStyle.textColor = GetAllMessages()->ptr()[i]->color;
+			outputTextStyle.textColor = s_spewColors[s_spewMessages[i]->type];
 
-			m_font->RenderText(GetAllMessages()->ptr()[i]->text, con_outputRectangle.vleftTop, outputTextStyle);
+			m_font->RenderText(s_spewMessages[i]->text, con_outputRectangle.vleftTop, outputTextStyle);
 
 			con_outputRectangle.vleftTop.y += m_font->GetLineHeight(fontStyle)*rectLayout.GetProducedLines();//cnumLines;
 
