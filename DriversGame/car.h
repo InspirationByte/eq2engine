@@ -589,7 +589,7 @@ protected:
 
 	float					m_gearboxShiftThreshold;
 
-	int						m_radsPerSec;	// current rotations per sec
+	float					m_radsPerSec;	// current rotations per sec
 
 	FReal					m_fAcceleration;
 	FReal					m_fBreakage;

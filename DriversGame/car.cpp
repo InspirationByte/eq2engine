@@ -101,6 +101,9 @@ static Vector3D s_BodyPartDirections[] =
 #define WHELL_ROLL_RESISTANCE_CONST		(150)
 #define WHELL_ROLL_RESISTANCE_HALF		(WHELL_ROLL_RESISTANCE_CONST * 0.5f)
 
+#define WHEEL_ROLL_RESISTANCE_FREE	(8.0f)
+#define ENGINE_ROLL_RESISTANCE		(38.0f)
+
 #define WHEEL_MIN_SKIDTIME			(2.5f)
 #define WHEEL_SKIDTIME_EFFICIENCY	(0.25f)
 #define WHEEL_SKID_COOLDOWNTIME		(10.0f)
@@ -1460,7 +1463,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	FReal fAcceleration = m_fAcceleration;
 	FReal fBreakage = fBrake;
 
-	int torque = 0;
+	float torque = 0.0f;
 
 	//
 	// Update engine
@@ -1473,18 +1476,18 @@ void CCar::UpdateVehiclePhysics(float delta)
 		float transmissionRate = m_conf->physics.transmissionRate;
 
 		float torqueConvert = differentialRatio * m_conf->physics.gears[m_nGear];
-		m_radsPerSec = fabs(wheelsSpeed)*torqueConvert;
+		m_radsPerSec = wheelsSpeed*torqueConvert;
 		torque = CalcTorqueCurve(m_radsPerSec, engineType) * m_conf->physics.torqueMult;
 
 		float gbxDecelRate = max((float)fAccel, GEARBOX_DECEL_SHIFTDOWN_FACTOR);
 
- 		if(torque < 0)
-			torque = 0;
+ 		if(torque < 0.0f)
+			torque = 0.0f;
 
 		torque *= torqueConvert * transmissionRate;
 
 		// check neutral zone
-		if( !bDoBurnout && (fsimilar(wheelsSpeed, 0.0f, 0.1f) || !numDriveWheelsOnGround))
+		if( !bDoBurnout && fsimilar(wheelsSpeed, 0.0f, 0.1f))// || !numDriveWheelsOnGround))
 		{
 			if(fBrake > 0)
 				m_nGear = 0;
@@ -1497,7 +1500,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 			{
 				// find gear to diffential
 				torqueConvert = differentialRatio * m_conf->physics.gears[m_nGear];
-				int gearRadsPerSecond = wheelsSpeed * torqueConvert;
+				float gearRadsPerSecond = wheelsSpeed * torqueConvert;
 				m_radsPerSec = gearRadsPerSecond;
 				torque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
 
@@ -1541,16 +1544,16 @@ void CCar::UpdateVehiclePhysics(float delta)
 				{
 					// find gear to diffential
 					torqueConvert = differentialRatio * m_conf->physics.gears[nGear];
-					int gearRadsPerSecond = wheelsSpeed * torqueConvert;
+					float gearRadsPerSecond = wheelsSpeed * torqueConvert;
 
-					int gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
+					float gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
  					if(gearTorque < 0)
 						gearTorque = 0.0f;
 
 					gearTorque *= torqueConvert * transmissionRate;
 
 					// gear torque check
-					if ( float(gearTorque)*gbxDecelRate*m_gearboxShiftThreshold > torque )
+					if ( gearTorque*gbxDecelRate*m_gearboxShiftThreshold > torque )
 					{
 						newGear = nGear;
 					}
@@ -1561,16 +1564,16 @@ void CCar::UpdateVehiclePhysics(float delta)
 				{
 					// find gear to diffential
 					torqueConvert = differentialRatio * m_conf->physics.gears[nGear];
-					int gearRadsPerSecond = wheelsSpeed * torqueConvert;
+					float gearRadsPerSecond = wheelsSpeed * torqueConvert;
 
-					int gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
+					float gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
  					if(gearTorque < 0)
 						gearTorque = 0.0f;
 
 					gearTorque *= torqueConvert * transmissionRate;
 
 					// gear torque check
-					if ( gearTorque > torque*m_gearboxShiftThreshold && numDriveWheelsOnGround )
+					if ( gearTorque > torque*m_gearboxShiftThreshold )
 					{
 						newGear = nGear;
 						torque = gearTorque;
@@ -1586,8 +1589,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 			if(	m_nGear > 0 &&
 				m_nGear > m_nPrevGear &&
 				m_fAcceleration >= 0.9f &&
-				!bDoBurnout &&
-				numDriveWheelsOnGround)
+				!bDoBurnout)
 			{
 				m_fAcceleration *= m_conf->physics.shiftAccelFactor;	// FIXME: automatic transmission has different values
 			}
@@ -1631,20 +1633,14 @@ void CCar::UpdateVehiclePhysics(float delta)
 	if(fHandbrake > 0)
 		fAcceleration = 0;
 
-	//float fRpm = m_radsPerSec * ( 60.0f / ( 2.0f * PI_F ));
-	/*
-	if(fRpm < -7500)
-	{
-		torque = 0;
-		fAcceleration = 0;
-	}*/
-
-	float fAccelerator = float(fAcceleration) * float(torque) * m_torqueScale;
+	float fAccelerator = float(fAcceleration) * torque * m_torqueScale;
 	float fBraker = float(fBreakage)*pow(m_torqueScale, 0.5f);
+
+	float acceleratorAbs = fabs(fAccelerator);
 
 	// Limit the speed
 	if(GetSpeed() > m_maxSpeed)
-		fAccelerator = 0;
+		fAccelerator = 0.0f;
 
 	Matrix3x3 transposedRotation(transpose(m_worldMatrix.getRotationComponent()));
 
@@ -1654,11 +1650,15 @@ void CCar::UpdateVehiclePhysics(float delta)
 		CCarWheel& wheel = m_wheels[i];
 		carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
 
+		bool isDriveWheel = (wheelConf.flags & WHEEL_FLAG_DRIVE);
+		bool isSteerWheel = (wheelConf.flags & WHEEL_FLAG_STEER);
+		bool isHandbrakeWheel = (wheelConf.flags & WHEEL_FLAG_HANDBRAKE);
+
 		wheel.m_wheelOrient = identity3();
 
 		float fWheelSteerAngle = 0.0f;
 
-		if(wheelConf.flags & WHEEL_FLAG_STEER)
+		if(isSteerWheel)
 		{
 			fWheelSteerAngle = DEG2RAD(m_steering*40) * wheelConf.steerMultipler;
 			wheel.m_wheelOrient = rotateY3( fWheelSteerAngle );
@@ -1763,14 +1763,14 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 				fLongitudinalForce = longitudial;
 
-				if( bDoBurnout && (wheelConf.flags & WHEEL_FLAG_DRIVE) )
+				if( isDriveWheel && bDoBurnout )
 				{
 					fLongitudinalForce += wheelTractionFrictionScale * (1.0f-fPitchFac);
 				}
 
 				float handbrakes = autoHandbrakeHelper+fHandbrake;
 
-				if((wheelConf.flags & WHEEL_FLAG_HANDBRAKE) && handbrakes > 0.0f)
+				if(isHandbrakeWheel && handbrakes > 0.0f)
 				{
 					fLongitudinalForce += handbrakes*m_conf->physics.handbrakeScale;
 				}
@@ -1826,18 +1826,15 @@ void CCar::UpdateVehiclePhysics(float delta)
 			}
 
 			// apply force by drive wheel
-			if(wheelConf.flags & WHEEL_FLAG_DRIVE)
+			if(isDriveWheel && fAcceleration > 0.01f)
 			{
-				if(fAcceleration > 0.01f)
+				if(bDoBurnout)
 				{
-					if(bDoBurnout && (wheelConf.flags & WHEEL_FLAG_DRIVE))
-					{
-						wheelTractionForce += fabs(fAccelerator) * driveGroundWheelMod * wheelTractionFrictionScale;
-						wheelSlipOppositeForce *= wheelTractionFrictionScale * (1.0f-fPitchFac); // BY DIFFERENCE
-					}
-
-					wheelTractionForce += fAccelerator * driveGroundWheelMod;
+					wheelTractionForce += acceleratorAbs * driveGroundWheelMod * wheelTractionFrictionScale;
+					wheelSlipOppositeForce *= wheelTractionFrictionScale * (1.0f-fPitchFac); // BY DIFFERENCE
 				}
+
+				wheelTractionForce += fAccelerator * driveGroundWheelMod;
 			}
 
 			if(fabs(fBraker) > 0 && fabs(wheelPitchSpeed) > 0)
@@ -1856,7 +1853,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 				}
 			}
 
-			if((wheelConf.flags & WHEEL_FLAG_HANDBRAKE) && fHandbrake > 0.0f)
+			if(isHandbrakeWheel && fHandbrake > 0.0f)
 			{
 				const float HANDBRAKE_TORQUE = 8500.0f;
 
@@ -1877,7 +1874,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 				if(fHandbrake == 1.0f)
 					wheelPitchSpeed = 0.0f;
 			}
-
+			
 			{
 				// set wheel velocity, add pitch radians
 				wheel.m_pitchVel = wheelPitchSpeed;
@@ -1903,31 +1900,32 @@ void CCar::UpdateVehiclePhysics(float delta)
 			// TODO: dependency on other wheels
 			float fAntiRollFac = springPowerFac+ANTIROLL_FACTOR_DEADZONE;
 
-			if(fAntiRollFac > ANTIROLL_FACTOR_MAX) fAntiRollFac = ANTIROLL_FACTOR_MAX;
+			if(fAntiRollFac > ANTIROLL_FACTOR_MAX)
+				fAntiRollFac = ANTIROLL_FACTOR_MAX;
 
 			springForcePos += m_worldMatrix.rows[1].xyz() * fAntiRollFac * m_conf->physics.antiRoll * ANTIROLL_SCALE;
 
 			// apply force of wheel
 			carBody->ApplyWorldForce(springForcePos, springForce);
 		}
-		else if(!numDriveWheelsOnGround)
-		{
-			if(fAccel > 0 || fabs(fBrake) > 0)
-				wheel.m_pitchVel += fAccelerator * carBody->GetInvMass();
-			else
-				wheel.m_pitchVel = 0.0f;
-		}
 		else
 		{
-			wheel.m_pitchVel = dot(wheel_forward, carBody->GetLinearVelocity());
+			float rollResistance = isDriveWheel ? ENGINE_ROLL_RESISTANCE : WHEEL_ROLL_RESISTANCE_FREE;
+
+			if(isDriveWheel && acceleratorAbs > 0.0f)
+			{
+				wheel.m_pitchVel += acceleratorAbs*sign(fAccelerator) * carBody->GetInvMass() * delta * 8.0f;
+			}
+			else
+			{
+				wheel.m_pitchVel -= sign(wheel.m_pitchVel) * delta * rollResistance;
+			}
 		}
 
-		bool burnout = bDoBurnout && (wheelConf.flags & WHEEL_FLAG_DRIVE);
+		bool burnout = isDriveWheel && bDoBurnout;
 		if(burnout)
 		{
-			if((wheelConf.flags & WHEEL_FLAG_DRIVE)
-				&& wheel.m_pitchVel < 0
-				&& bDoBurnout)
+			if(wheel.m_pitchVel < 0 && bDoBurnout)
 				fPitchFac = 1.0f;
 
 			wheel.m_pitch += (15.0f/wheelConf.radius) * fPitchFac * delta;
