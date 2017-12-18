@@ -1646,6 +1646,8 @@ void CCar::UpdateVehiclePhysics(float delta)
 	if(GetSpeed() > m_maxSpeed)
 		fAccelerator = 0;
 
+	Matrix3x3 transposedRotation(transpose(m_worldMatrix.getRotationComponent()));
+
 	// springs for wheels
 	for(int i = 0; i < wheelCount; i++)
 	{
@@ -1667,7 +1669,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		Vector3D line_end = (m_worldMatrix*Vector4D(wheelConf.suspensionBottom, 1)).xyz();
 
 		// compute wheel world rotation (turn + body rotation)
-		Matrix3x3 wrotation = wheel.m_wheelOrient*transpose(m_worldMatrix).getRotationComponent();
+		Matrix3x3 wrotation = wheel.m_wheelOrient*transposedRotation;
 
 		// get wheel vectors
 		Vector3D wheel_right = wrotation.rows[0];

@@ -134,11 +134,10 @@ struct conSpewText_t
 {
 	~conSpewText_t()
 	{
-		delete [] text;
 	}
 
 	SpewType_t	type;
-	char*		text;
+	EqString	text;
 };
 
 static DkList<conSpewText_t*> s_spewMessages;
@@ -153,26 +152,36 @@ void CEqSysConsole::SpewFunc(SpewType_t type, const char* pMsg)
 	OutputDebugString(pMsg);
 #endif // _WIN32
 
-	DkList<EqString> splitNewLines;
-	xstrsplit(pMsg,"\n",splitNewLines);
+	char* pc = (char*)pMsg;
+	char* lineStart = pc;
 
-	int nMsgLen = strlen(pMsg);
+	conSpewText_t* currentSpewLine = NULL;
 
-	for(int i = 0; i < splitNewLines.numElem(); i++)
+	for(;;pc++)
 	{
-		if(con_minicon.GetBool() && debugoverlay != NULL)
-			debugoverlay->TextFadeOut(0, s_spewColors[type], CON_MINICON_TIME, splitNewLines[i].c_str());
+		if(!(*pc == '\n' || *pc == '\0'))
+			continue;
 
-		int len = splitNewLines[i].Length() + 1;
+		int length = pc-lineStart;
 
-		conSpewText_t* spew = new conSpewText_t;
+		if(length > 0 || *pc == '\n')	// print non empty text and newlines
+		{
+			currentSpewLine = new conSpewText_t;
+			currentSpewLine->type = type;
+			currentSpewLine->text.Assign(lineStart, length);
 
-		spew->type = type;
+			// output to debugoverlay if enabled
+			if(con_minicon.GetBool() && debugoverlay != NULL)
+				debugoverlay->TextFadeOut(0, s_spewColors[type], CON_MINICON_TIME, currentSpewLine->text.c_str());
 
-		spew->text = new char[len];
-		memcpy(spew->text, splitNewLines[i].c_str(), len);
+			s_spewMessages.append(currentSpewLine);
+		}
 
-		s_spewMessages.append(spew);
+		// if not a zero, there is line start
+		if(*pc != '\0')
+			lineStart = pc+1;
+		else
+			break;
 	}
 }
 
@@ -900,7 +909,9 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w)
 
 void CEqSysConsole::SetLastLine()
 {
-	m_logScrollPosition = s_spewMessages.numElem() - m_maxLines;
+	int totalLines = s_spewMessages.numElem();
+
+	m_logScrollPosition = totalLines - m_maxLines;
 	m_logScrollPosition = max(0,m_logScrollPosition);
 }
 
@@ -999,7 +1010,7 @@ void CEqSysConsole::DrawSelf(int width,int height, float frameTime)
 		{
 			outputTextStyle.textColor = s_spewColors[s_spewMessages[i]->type];
 
-			m_font->RenderText(s_spewMessages[i]->text, con_outputRectangle.vleftTop, outputTextStyle);
+			m_font->RenderText(s_spewMessages[i]->text.c_str(), con_outputRectangle.vleftTop, outputTextStyle);
 
 			con_outputRectangle.vleftTop.y += m_font->GetLineHeight(fontStyle)*rectLayout.GetProducedLines();//cnumLines;
 
