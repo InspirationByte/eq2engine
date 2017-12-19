@@ -1243,14 +1243,12 @@ void CCar::UpdateVehiclePhysics(float delta)
 	if(bBurnout)
 		fAccel = 1.0f;
 
-	bool bDoBurnout = bBurnout && (GetSpeed() < m_conf->physics.burnoutMaxSpeed);// && (fHandbrake == 0);
-
-	FReal accel_scale = 1;
+	bool bDoBurnout = bBurnout && (GetSpeed() < m_conf->physics.burnoutMaxSpeed);
 
 	if(fAccel > m_fAcceleration)
 	{
 		if(m_nGear > 1)
-			m_fAcceleration += delta * ACCELERATION_CONST * accel_scale;
+			m_fAcceleration += delta * ACCELERATION_CONST;
 		else
 			m_fAcceleration = fAccel;
 	}
@@ -1296,8 +1294,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 	int numHandbrakeWheelsOnGround = 0;
 	int numDriveWheelsOnGround = 0;
 	int numWheelsOnGround = 0;
-	int numSteerWheels = 0;
-	int numSteerWheelsOnGround = 0;
 
 	float wheelsSpeed = 0.0f;
 
@@ -1347,9 +1343,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 			wheelsSpeed += wheel.m_pitchVel;
 		}
 
-		if(wheelConf.flags & WHEEL_FLAG_STEER)
-			numSteerWheels++;
-
 		if(wheel.m_collisionInfo.fract < 1.0f)
 		{
 			numWheelsOnGround++;
@@ -1362,9 +1355,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 			// find surface parameter
 			wheel.m_surfparam = g_pPhysics->GetSurfaceParamByID( wheel.m_collisionInfo.materialIndex );
-
-			if(wheelConf.flags & WHEEL_FLAG_STEER)
-				numSteerWheelsOnGround++;
 		}
 
 		// update effects
@@ -1372,56 +1362,57 @@ void CCar::UpdateVehiclePhysics(float delta)
 	}
 
 	float wheelMod = 1.0f / numDriveWheels; //(numDriveWheelsOnGround > 0) ? (1.0f / (float)numDriveWheelsOnGround) : 1.0f;
-
 	float driveGroundWheelMod = (numDriveWheelsOnGround > 0) ? (1.0f / (float)numDriveWheelsOnGround) : 1.0f;
 
 	wheelsSpeed *= wheelMod;
-
+	
+	// disable damping when the handbrake is on
 	if(numHandbrakeWheelsOnGround > 0 && fHandbrake > 0.0f)
-	{
 		carBody->m_flags |= BODY_DISABLE_DAMPING;
-	}
 	else
-	{
 		carBody->m_flags &= ~BODY_DISABLE_DAMPING;
-	}
 
-	//-------------------------------------------------------
-	// Sound update - m_fEngineRPM
-	//-------------------------------------------------------
-
-	float accelEffect = m_fAcceleration+fBrake * -sign(wheelsSpeed);
-	m_fAccelEffect += (accelEffect-m_fAccelEffect) * delta * ACCELERATION_SOUND_CONST * accel_scale;
-	m_fAccelEffect = clamp(m_fAccelEffect, -1.0f, 1.0f);
-
-	#define RPM_REFRESH_TIMES 16
-
-	float fRPM = GetRPM();
-
-	if(bDoBurnout)
+	// Sound effect update
 	{
-		m_engineIdleFactor = 0.0f;
-		accel_scale = 5;
-		fRPM = 5800.0f;
+		//
+		// Calculate fake engine load effect with clutch
+		//
+		float accelEffect = m_fAcceleration+fBrake * -sign(wheelsSpeed);
+		m_fAccelEffect += (accelEffect-m_fAccelEffect) * delta * ACCELERATION_SOUND_CONST;
+		m_fAccelEffect = clamp(m_fAccelEffect, -1.0f, 1.0f);
+
+		float fRPM = GetRPM();
+
+		if(bDoBurnout)
+		{
+			m_engineIdleFactor = 0.0f;
+			fRPM = 5800.0f;
+		}
+		else
+		{
+			float absWheelsSpeed = fabs(wheelsSpeed);
+			if(absWheelsSpeed < 3.5f && m_fAccelEffect > 0.0f)
+			{
+				float optimalRpmLoad = RemapValClamp(m_fAccelEffect*absWheelsSpeed, 0.0f, 2.0f, 0.0f, 1.0f);
+				fRPM = lerp(fRPM, 3500.0f, optimalRpmLoad) - 1200.0f * m_fAccelEffect * RemapValClamp(absWheelsSpeed,0.0f, 3.5f, 0.0f, 1.0f);
+			}
+		}
+
+		//
+		// make RPM changes smooth
+		//
+		#define RPM_REFRESH_TIMES 16
+
+		float fDeltaRpm = delta / RPM_REFRESH_TIMES;
+
+		for(int i = 0; i < RPM_REFRESH_TIMES; i++)
+		{
+			if(fabs(fRPM - m_fEngineRPM) > 0.02f)
+				m_fEngineRPM += sign(fRPM - m_fEngineRPM) * 12000.0f * fDeltaRpm;
+		}
+
+		m_fEngineRPM = clamp(m_fEngineRPM, 0.0f, 8500.0f);
 	}
-
-	float absWheelsSpeed = fabs(wheelsSpeed);
-	if(absWheelsSpeed < 3.5f && m_fAccelEffect > 0.0f && !bDoBurnout)
-	{
-		float optimalRpmLoad = RemapValClamp(m_fAccelEffect*absWheelsSpeed, 0.0f, 2.0f, 0.0f, 1.0f);
-
-		fRPM = lerp(fRPM, 3500.0f, optimalRpmLoad) - 1200.0f * m_fAccelEffect * RemapValClamp(absWheelsSpeed,0.0f, 3.5f, 0.0f, 1.0f);
-	}
-
-	float fDeltaRpm = delta / RPM_REFRESH_TIMES;
-
-	for(int i = 0; i < RPM_REFRESH_TIMES; i++)
-	{
-		if(fabs(fRPM - m_fEngineRPM) > 0.02f)
-			m_fEngineRPM += sign(fRPM - m_fEngineRPM) * 12000.0f * fDeltaRpm;
-	}
-
-	m_fEngineRPM = clamp(m_fEngineRPM, 0.0f, 8500.0f);
 
 	//-------------------------------------------------------
 
@@ -1429,29 +1420,29 @@ void CCar::UpdateVehiclePhysics(float delta)
 	// Some steering stuff from Driver 1
 	//
 
-	FReal autoHandbrakeHelper = 0.0f;
+	float autoHandbrakeHelper = 0.0f;
 
 	if( m_autohandbrake && GetSpeedWheels() > 0.0f && !bDoBurnout )
 	{
-		const FReal AUTOHANDBRAKE_MIN_SPEED		= 10.0f;
-		const FReal AUTOHANDBRAKE_MAX_SPEED		= 30.0f;
-		const FReal AUTOHANDBRAKE_MAX_FACTOR	= 5.0f;
-		const FReal AUTOHANDBRAKE_SCALE			= 4.0f;
-		const FReal AUTOHANDBRAKE_START_MIN		= 0.1f;
+		const float AUTOHANDBRAKE_MIN_SPEED		= 10.0f;
+		const float AUTOHANDBRAKE_MAX_SPEED		= 30.0f;
+		const float AUTOHANDBRAKE_MAX_FACTOR	= 5.0f;
+		const float AUTOHANDBRAKE_SCALE			= 4.0f;
+		const float AUTOHANDBRAKE_START_MIN		= 0.1f;
 
 		float handbrakeFactor = RemapVal((GetSpeed()-AUTOHANDBRAKE_MIN_SPEED), 0.0f, AUTOHANDBRAKE_MAX_SPEED, 0.0f, 1.0f);
 
-		FReal fLateral = GetLateralSlidingAtBody();
-		FReal fLateralSign = sign(GetLateralSlidingAtBody())*-0.01f;
+		float fLateral = GetLateralSlidingAtBody();
+		float fLateralSign = sign(GetLateralSlidingAtBody())*-0.01f;
 
 		if( fLateralSign > 0 && (m_steeringHelper > fLateralSign)
 			|| fLateralSign < 0 && (m_steeringHelper < fLateralSign) || fabs(fLateral) < 5.0f)
 		{
-			if(FPmath::abs(m_steeringHelper) > AUTOHANDBRAKE_START_MIN)
+			if(fabs(m_steeringHelper) > AUTOHANDBRAKE_START_MIN)
 				autoHandbrakeHelper = (FPmath::abs(m_steeringHelper)-AUTOHANDBRAKE_START_MIN)*AUTOHANDBRAKE_SCALE * handbrakeFactor;
 		}
 
-		autoHandbrakeHelper = clamp(autoHandbrakeHelper,FReal(0),AUTOHANDBRAKE_MAX_FACTOR);
+		autoHandbrakeHelper = clamp(autoHandbrakeHelper,0.0f,AUTOHANDBRAKE_MAX_FACTOR);
 	}
 
 	if( GetSpeed() <= 0.25f )
@@ -1460,13 +1451,13 @@ void CCar::UpdateVehiclePhysics(float delta)
 		fBrake -= fAccel;
 	}
 
-	FReal fAcceleration = m_fAcceleration;
-	FReal fBreakage = fBrake;
+	float fAcceleration = m_fAcceleration;
+	float fBreakage = fBrake;
 
 	float torque = 0.0f;
 
 	//
-	// Update engine
+	// Update gearbox
 	//
 	if( isCar )
 	{
@@ -1474,131 +1465,92 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		float differentialRatio = m_conf->physics.differentialRatio;
 		float transmissionRate = m_conf->physics.transmissionRate;
+		float torqueMultiplier = m_conf->physics.torqueMult;
 
-		float torqueConvert = differentialRatio * m_conf->physics.gears[m_nGear];
-		m_radsPerSec = wheelsSpeed*torqueConvert;
-		torque = CalcTorqueCurve(m_radsPerSec, engineType) * m_conf->physics.torqueMult;
-
-		float gbxDecelRate = max((float)fAccel, GEARBOX_DECEL_SHIFTDOWN_FACTOR);
-
- 		if(torque < 0.0f)
-			torque = 0.0f;
-
-		torque *= torqueConvert * transmissionRate;
-
-		// check neutral zone
-		if( !bDoBurnout && fsimilar(wheelsSpeed, 0.0f, 0.1f))// || !numDriveWheelsOnGround))
+		if(bDoBurnout)
 		{
-			if(fBrake > 0)
-				m_nGear = 0;
-			else if(fAcceleration > 0)
-				m_nGear = 1;
-
-			m_nPrevGear = m_nGear;
-
 			if(m_nGear == 0)
-			{
-				// find gear to diffential
-				torqueConvert = differentialRatio * m_conf->physics.gears[m_nGear];
-				float gearRadsPerSecond = wheelsSpeed * torqueConvert;
-				m_radsPerSec = gearRadsPerSecond;
-				torque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
-
-				torque *= torqueConvert * transmissionRate;
-
-				// swap brake and acceleration
-				swap(fAcceleration, fBreakage);
-				fBreakage.raw *= -1;
-			}
+				m_nGear = 1;
 		}
 		else
 		{
-			// switch gears quickly if we move in wrong direction
-			if(wheelsSpeed < 0.0f && m_nGear > 0)
-				m_nGear = 0;
-			else if(wheelsSpeed > 0.0f && m_nGear == 0)
-				m_nGear = 1;
-
-			m_nPrevGear = m_nGear;
-
-
-			//
-			// update gearbox
-			//
-
-			if(m_nGear == 0 && !bDoBurnout)
+			// neutral zone
+			// check for backwards gear
+			if(fsimilar(wheelsSpeed, 0.0f, 0.1f))
 			{
-				// Use next physics frame to calculate torque
-
-
-				// swap brake and acceleration
-				swap(fAcceleration, fBreakage);
-				fBreakage.raw *= -1;
+				if(fBrake > 0)
+					m_nGear = 0;
+				else if(fAccel > 0)
+					m_nGear = 1;
 			}
-			else
+			else // switch gears quickly if we move in wrong direction
 			{
-				int newGear = m_nGear;
+				if(wheelsSpeed < 0.0f && m_nGear > 0)
+					m_nGear = 0;
+				else if(wheelsSpeed > 0.0f && m_nGear == 0)
+					m_nGear = 1;
+			}
+		}
 
-				// shift down
-				for ( int nGear = 1; nGear < m_nGear; nGear++ )
-				{
-					// find gear to diffential
-					torqueConvert = differentialRatio * m_conf->physics.gears[nGear];
-					float gearRadsPerSecond = wheelsSpeed * torqueConvert;
+		// setup current gear
+		float torqueConvert = differentialRatio * m_conf->physics.gears[m_nGear];
+		
+		torque = CalcTorqueCurve(m_radsPerSec, engineType) * torqueMultiplier;
+		torque *= torqueConvert * transmissionRate;
 
-					float gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
- 					if(gearTorque < 0)
-						gearTorque = 0.0f;
+		m_radsPerSec = wheelsSpeed * torqueConvert;
 
-					gearTorque *= torqueConvert * transmissionRate;
+		float gbxDecelRate = max(float(fAccel), GEARBOX_DECEL_SHIFTDOWN_FACTOR);
 
-					// gear torque check
-					if ( gearTorque*gbxDecelRate*m_gearboxShiftThreshold > torque )
-					{
-						newGear = nGear;
-					}
-				}
+		if(m_nGear == 0)
+		{
+			// swap brake and acceleration
+			swap(fAcceleration, fBreakage);
+			fBreakage *= -1.0f;
+		}
+		else
+		{
+			//
+			// update forward automatic transmission
+			//
 
-				// shuft up
-				for ( int nGear = newGear; nGear < m_conf->physics.numGears; nGear++ )
-				{
-					// find gear to diffential
-					torqueConvert = differentialRatio * m_conf->physics.gears[nGear];
-					float gearRadsPerSecond = wheelsSpeed * torqueConvert;
+			int newGear = m_nGear;
 
-					float gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * m_conf->physics.torqueMult;
- 					if(gearTorque < 0)
-						gearTorque = 0.0f;
+			for( int gear = 1; gear < m_conf->physics.numGears; gear++ )
+			{
+				// find gear to diffential
+				torqueConvert = differentialRatio * m_conf->physics.gears[gear];
+				float gearRadsPerSecond = wheelsSpeed * torqueConvert;
 
-					gearTorque *= torqueConvert * transmissionRate;
+				float gearTorque = CalcTorqueCurve(gearRadsPerSecond, engineType) * torqueMultiplier;
+				gearTorque *= torqueConvert * transmissionRate;
 
-					// gear torque check
-					if ( gearTorque > torque*m_gearboxShiftThreshold )
-					{
-						newGear = nGear;
-						torque = gearTorque;
+				bool shouldShift =	(gear < m_nGear) ? 
+									(gearTorque*gbxDecelRate*m_gearboxShiftThreshold > torque) :	// shift down logic
+									(gearTorque > torque*m_gearboxShiftThreshold);					// shift up logic
 
-						m_radsPerSec = gearRadsPerSecond;
-					}
-				}
+				if(!shouldShift)
+					continue;
 
-				m_nGear = newGear;
+				// setup new gear
+				newGear = gear;
+				torque = gearTorque;
+
+				m_radsPerSec = gearRadsPerSecond;
 			}
 
 			// if shifted up, reduce gas since we pressed clutch
-			if(	m_nGear > 0 &&
-				m_nGear > m_nPrevGear &&
-				m_fAcceleration >= 0.9f &&
-				!bDoBurnout)
+			if(	!bDoBurnout && newGear > m_nPrevGear && m_fAcceleration >= 0.9f)
 			{
 				m_fAcceleration *= m_conf->physics.shiftAccelFactor;	// FIXME: automatic transmission has different values
 			}
 
 			m_nPrevGear = m_nGear;
+			m_nGear = newGear;
 		}
 
-		bool reverseLightsEnabled = (m_nGear == 0) && !bDoBurnout && fBrake > 0.0f;
-		SetLight(CAR_LIGHT_REVERSELIGHT, reverseLightsEnabled);
+		// update reverse lights
+		SetLight(CAR_LIGHT_REVERSELIGHT, (m_nGear == 0));
 	}
 
 	if(FPmath::abs(fBreakage) > m_fBreakage)
@@ -1607,8 +1559,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	}
 	else
 	{
-		if(m_conf->sounds[CAR_SOUND_BRAKERELEASE].Length() > 0 &&
-			m_fBreakage > 0.4f && fabs(fBreakage) < 0.01f)
+		if(m_sounds[CAR_SOUND_BRAKERELEASE] && m_fBreakage > 0.4f && fabs(fBreakage) < 0.01f)
 		{
 			// m_fBreakage is volume
 			EmitSound_t ep;
@@ -1631,10 +1582,10 @@ void CCar::UpdateVehiclePhysics(float delta)
 		m_fBreakage = 0;
 
 	if(fHandbrake > 0)
-		fAcceleration = 0;
+		fAcceleration = 0.0f;
 
-	float fAccelerator = float(fAcceleration) * torque * m_torqueScale;
-	float fBraker = float(fBreakage)*pow(m_torqueScale, 0.5f);
+	float fAccelerator = fAcceleration * torque * m_torqueScale;
+	float fBraker = fBreakage * pow(m_torqueScale, 0.5f);
 
 	float acceleratorAbs = fabs(fAccelerator);
 
