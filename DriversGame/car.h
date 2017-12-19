@@ -312,7 +312,7 @@ class CCarWheel : public CGameObject
 {
 	friend class CCar;
 	friend class CAITrafficCar;
-	friend class CAIPursuerCar;
+	friend class CAINavigationManipulator;
 public:
 	DECLARE_CLASS( CCarWheel, CGameObject )
 
@@ -394,6 +394,7 @@ public:
 	int						GetGear() const;
 
 	int						GetWheelCount() const;
+	CCarWheel&				GetWheel(int indxe) const;
 	float					GetWheelSpeed(int index) const;
 
 	float					GetLateralSlidingAtBody() const;					// returns non-absolute lateral (side) sliding from body

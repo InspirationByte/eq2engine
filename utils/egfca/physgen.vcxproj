@@ -156,8 +156,8 @@
     <Library Include="..\..\libs\CoreLib.lib" />
     <Library Include="..\..\libs\DkCore.lib" />
     <Library Include="..\..\libs\FrameworkLib.lib" />
-    <Library Include="..\..\src_dependency\bullet\lib\Release\BulletCollision.lib" />
-    <Library Include="..\..\src_dependency\bullet\lib\Release\LinearMath.lib" />
+    <Library Include="..\..\src_dependency\bullet\bin\BulletCollision.lib" />
+    <Library Include="..\..\src_dependency\bullet\bin\LinearMath.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

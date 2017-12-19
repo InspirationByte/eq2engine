@@ -226,6 +226,8 @@ CEqBulletIndexedMesh* CreateBulletTriangleMeshFromBatch(hfieldbatch_t* batch)
 	return pTriMesh;
 }
 
+ConVar ph_hfield_subdiv("ph_hfield_subdiv", "8", NULL, CV_ARCHIVE);
+
 void CPhysicsEngine::AddHeightField( CHeightTileField* pField )
 {
 	if(pField->m_physData != NULL)
@@ -236,7 +238,7 @@ void CPhysicsEngine::AddHeightField( CHeightTileField* pField )
 
 	hfieldPhysicsData_t* fieldInfo = new hfieldPhysicsData_t;
 
-	pField->Generate(HFIELD_GEOM_PHYSICS, fieldInfo->m_batches);
+	pField->Generate(HFIELD_GEOM_PHYSICS, fieldInfo->m_batches, ph_hfield_subdiv.GetFloat());
 
 	if(fieldInfo->m_batches.numElem() == 0)
 	{

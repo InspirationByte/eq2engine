@@ -229,93 +229,79 @@ bool DkPhysics::Init(int nSceneSize)
 
 	KeyValues pMaterials;
 
-	if(pMaterials.LoadFromFile("scripts/physics_surface_params.txt"))
-	{
-		for(int i = 0; i < pMaterials.GetRootSection()->keys.numElem(); i++)
-		{
-			kvkeybase_t* pSec = pMaterials.GetRootSection()->keys[i];
-
-			if(stricmp(pSec->name, "#include"))
-			{
-				phySurfaceMaterial_t* pMaterial = new phySurfaceMaterial_t;
-
-				DefaultMaterialParams(pMaterial);
-
-				pMaterial->name = xstrdup( pSec->name );
-
-				kvkeybase_t* pBaseNamePair = pSec->FindKeyBase("base");
-				if(pBaseNamePair)
-				{
-					phySurfaceMaterial_t* param = FindMaterial( KV_GetValueString(pBaseNamePair));
-					if(param)
-					{
-						CopyMaterialParams(param, pMaterial);
-					}
-					else
-						DevMsg(DEVMSG_CORE, "script error: physics surface properties '%s' doesn't exist\n", KV_GetValueString(pBaseNamePair) );
-				}
-
-				kvkeybase_t* pPair = pSec->FindKeyBase("friction");
-				if(pPair)
-					pMaterial->friction = KV_GetValueFloat(pPair);
-
-				pPair = pSec->FindKeyBase("damping");
-				if(pPair)
-					pMaterial->dampening = KV_GetValueFloat(pPair);
-
-				pPair = pSec->FindKeyBase("density");
-				if(pPair)
-					pMaterial->density = KV_GetValueFloat(pPair);
-
-				pPair = pSec->FindKeyBase("surfaceword");
-				if(pPair)
-					pMaterial->surfaceword = KV_GetValueString(pPair)[0];
-
-				pPair = pSec->FindKeyBase("footsteps");
-				if(pPair)
-				{
-					delete [] pMaterial->footStepSound;
-					pMaterial->footStepSound = xstrdup(KV_GetValueString(pPair));
-				}
-
-				pPair = pSec->FindKeyBase("bulletimpact");
-				if(pPair)
-				{
-					delete [] pMaterial->bulletImpactSound;
-					pMaterial->bulletImpactSound = xstrdup(KV_GetValueString(pPair));
-				}
-
-				pPair = pSec->FindKeyBase("scrape");
-				if(pPair)
-				{
-					delete [] pMaterial->scrapeSound;
-					pMaterial->scrapeSound = xstrdup(KV_GetValueString(pPair));
-				}
-
-				pPair = pSec->FindKeyBase("impactlight");
-				if(pPair)
-				{
-					delete [] pMaterial->lightImpactSound;
-					pMaterial->lightImpactSound = xstrdup(KV_GetValueString(pPair));
-				}
-
-				pPair = pSec->FindKeyBase("impactheavy");
-				if(pPair)
-				{
-					delete [] pMaterial->heavyImpactSound;
-					pMaterial->heavyImpactSound = xstrdup(KV_GetValueString(pPair));
-				}
-
-				m_physicsMaterialDesc.append(pMaterial);
-			}
-		}
-	}
-	else
+	if(!pMaterials.LoadFromFile("scripts/SurfaceParams.def"))
 	{
 		MsgError("Error! Physics surface definition file 'scripts/physics_surface_params.txt' not found\n");
 		CrashMsg("Error! Physics surface definition file 'scripts/physics_surface_params.txt' not found, Exiting.\n");
-
 		return false;
+	}
+
+	for(int i = 0; i < pMaterials.GetRootSection()->keys.numElem(); i++)
+	{
+		kvkeybase_t* pSec = pMaterials.GetRootSection()->keys[i];
+
+		if(stricmp(pSec->name, "#include"))
+		{
+			phySurfaceMaterial_t* pMaterial = new phySurfaceMaterial_t;
+
+			DefaultMaterialParams(pMaterial);
+
+			pMaterial->name = xstrdup( pSec->name );
+
+			kvkeybase_t* pBaseNamePair = pSec->FindKeyBase("base");
+			if(pBaseNamePair)
+			{
+				phySurfaceMaterial_t* param = FindMaterial( KV_GetValueString(pBaseNamePair));
+				if(param)
+				{
+					CopyMaterialParams(param, pMaterial);
+				}
+				else
+					DevMsg(DEVMSG_CORE, "script error: physics surface properties '%s' doesn't exist\n", KV_GetValueString(pBaseNamePair) );
+			}
+
+			pMaterial->friction = KV_GetValueFloat(pSec->FindKeyBase("friction"), 0, 1.0f);
+			pMaterial->dampening = KV_GetValueFloat(pSec->FindKeyBase("damping"), 0, 1.0f);
+			pMaterial->density = KV_GetValueFloat(pSec->FindKeyBase("density"), 0, 100.0f);
+			pMaterial->surfaceword = KV_GetValueString(pSec->FindKeyBase("surfaceword"), 0, "C")[0];
+
+			kvkeybase_t* pPair = pSec->FindKeyBase("footsteps");
+			if(pPair)
+			{
+				delete [] pMaterial->footStepSound;
+				pMaterial->footStepSound = xstrdup(KV_GetValueString(pPair));
+			}
+
+			pPair = pSec->FindKeyBase("bulletimpact");
+			if(pPair)
+			{
+				delete [] pMaterial->bulletImpactSound;
+				pMaterial->bulletImpactSound = xstrdup(KV_GetValueString(pPair));
+			}
+
+			pPair = pSec->FindKeyBase("scrape");
+			if(pPair)
+			{
+				delete [] pMaterial->scrapeSound;
+				pMaterial->scrapeSound = xstrdup(KV_GetValueString(pPair));
+			}
+
+			pPair = pSec->FindKeyBase("impactlight");
+			if(pPair)
+			{
+				delete [] pMaterial->lightImpactSound;
+				pMaterial->lightImpactSound = xstrdup(KV_GetValueString(pPair));
+			}
+
+			pPair = pSec->FindKeyBase("impactheavy");
+			if(pPair)
+			{
+				delete [] pMaterial->heavyImpactSound;
+				pMaterial->heavyImpactSound = xstrdup(KV_GetValueString(pPair));
+			}
+
+			m_physicsMaterialDesc.append(pMaterial);
+		}
 	}
 
 	return true;

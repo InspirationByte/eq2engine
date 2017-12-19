@@ -24,18 +24,22 @@ ConVar ai_debug_navigator("ai_debug_navigator", "0");
 ConVar ai_debug_path("ai_debug_path", "0");
 ConVar ai_debug_search("ai_debug_search", "0");
 
-static float s_weatherBrakeDistanceModifier[WEATHER_COUNT] =
+// asphalt: 0.24	- 0.76
+// grass:	0.15	- 0.85
+// dirt:	0.20	- 0.80
+
+static float s_weatherBrakeDistanceModifier[WEATHER_COUNT] =	// * (1.0f - tirefriction)
 {
-	0.50f,
-	0.57f,
-	0.59f
+	0.65f,	// 0.50f,
+	0.75f,	// 0.57f,
+	0.78f	// 0.59f,
 };
 
-static float s_weatherBrakeCurve[WEATHER_COUNT] =
+static float s_weatherBrakeCurve[WEATHER_COUNT] =	// * tirefriction
 {
-	1.00f,
-	0.84f,
-	0.79f
+	4.20f,	// 1.00f,
+	3.50f,	// 0.84f,
+	3.25f	// 0.79f,
 };
 
 void DebugDrawPath(pathFindResult_t& path, float time = -1.0f)
@@ -351,8 +355,20 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 	// Introduce handling basics
 	//
 
-	float weatherBrakeDistModifier = s_weatherBrakeDistanceModifier[g_pGameWorld->m_envConfig.weatherType];
-	float weatherBrakePow = s_weatherBrakeCurve[g_pGameWorld->m_envConfig.weatherType];
+	float tireFrictionModifier = 0.0f;
+
+	int numWheels = car->GetWheelCount();
+
+	for(int i = 0; i < numWheels; i++)
+	{
+		CCarWheel& wheel = car->GetWheel(i);
+		tireFrictionModifier += wheel.m_surfparam->tirefriction;
+	}
+
+	tireFrictionModifier /= float(numWheels);
+
+	float weatherBrakeDistModifier = s_weatherBrakeDistanceModifier[g_pGameWorld->m_envConfig.weatherType] * (1.0f-tireFrictionModifier);
+	float weatherBrakePow = s_weatherBrakeCurve[g_pGameWorld->m_envConfig.weatherType] * tireFrictionModifier;
 
 	const float AI_LOWSPEED_CURVE		= 15.0f;
 	const float AI_LOWSPEED_END			= 8.0f;	// 8 meters per second
@@ -538,7 +554,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		const float AI_BRAKE_PATH_CORRECTION_CURVE = 0.5f;
 
 		// brake curve and limits
-		const float AI_BRAKE_CURVE = 0.65f;
+		const float AI_BRAKE_CURVE = 0.75f;
 		const float AI_BRAKE_LIMIT = 1.0f;
 
 		float steeringBySpeedModifier = RemapValClamp(speedMPS, 0.0f, 40.0f, 0.1f, 5.0f);
@@ -683,7 +699,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			relateiveSteeringDir = fastNormalize((!bodyMat.getRotationComponent()) * steeringDir);
 		}
 
-		const float AI_BRAKE_ACCEL_PRESSING_CURVE = 0.75f;
+		const float AI_BRAKE_ACCEL_PRESSING_CURVE = 0.85f;
 		const float AI_MIN_BRAKE_LEVEL = 0.6f;
 
 		float brakeFactor = powf(1.0f - fabs(dot(brakeDir, carForward)), AI_BRAKE_CURVE*weatherBrakePow);

@@ -578,8 +578,6 @@ int valid_edge_index(int idx)
 	return eidx;
 }
 
-#define HFIELD_SUBDIVIDE (16.0f)
-
 bool hfieldVertexComparator(const hfielddrawvertex_t& a, const hfielddrawvertex_t& b)
 {
 	if(a.position == b.position && a.texcoord == b.texcoord)
@@ -588,7 +586,7 @@ bool hfieldVertexComparator(const hfielddrawvertex_t& a, const hfielddrawvertex_
 	return false;
 }
 
-void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldbatch_t*>& batches )
+void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldbatch_t*>& batches, float subdivision )
 {
 	Vector3D hfield_offset = (mode == HFIELD_GEOM_PHYSICS) ? vec3_zero : m_position;
 
@@ -608,8 +606,8 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 			if( point.texture == -1 )
 				continue;
 
-			int sx = floor((float)x / HFIELD_SUBDIVIDE);
-			int sy = floor((float)y / HFIELD_SUBDIVIDE);
+			int sx = floor((float)x / subdivision);
+			int sy = floor((float)y / subdivision);
 
 			//Msg("tile=%d %d sxsy=%d %d\n", x,y, sx, sy);
 

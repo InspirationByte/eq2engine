@@ -3624,6 +3624,11 @@ int	CCar::GetWheelCount() const
 	return m_conf->physics.numWheels;
 }
 
+CCarWheel& CCar::GetWheel(int index) const
+{
+	return m_wheels[index];
+}
+
 float CCar::GetWheelSpeed(int index) const
 {
 	return m_wheels[index].m_pitchVel * MPS_TO_KPH;

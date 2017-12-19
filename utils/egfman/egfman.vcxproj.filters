@@ -360,16 +360,16 @@
     <Library Include="..\..\libs\FrameworkLib.lib">
       <Filter>Libs</Filter>
     </Library>
-    <Library Include="..\..\src_dependency\bullet\lib\Release\BulletCollision.lib">
+    <Library Include="..\..\src_dependency\bullet\bin\BulletCollision.lib">
       <Filter>Libs</Filter>
     </Library>
-    <Library Include="..\..\src_dependency\bullet\lib\Release\BulletDynamics.lib">
+    <Library Include="..\..\src_dependency\bullet\bin\BulletDynamics.lib">
       <Filter>Libs</Filter>
     </Library>
-    <Library Include="..\..\src_dependency\bullet\lib\Release\LinearMath.lib">
+    <Library Include="..\..\src_dependency\bullet\bin\BulletSoftBody.lib">
       <Filter>Libs</Filter>
     </Library>
-    <Library Include="..\..\src_dependency\bullet\lib\Release\BulletSoftBody.lib">
+    <Library Include="..\..\src_dependency\bullet\bin\LinearMath.lib">
       <Filter>Libs</Filter>
     </Library>
   </ItemGroup>

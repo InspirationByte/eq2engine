@@ -41,11 +41,10 @@ using namespace Threading;
 #define PHYSGRID_WORLD_SIZE			24	// compromised betwen memory usage and performance
 #define PHYSICS_WORLD_MAX_UNITS		65535.0f
 
-
 extern ConVar ph_margin;
 
 ConVar ph_showcontacts("ph_showcontacts", "0", NULL, CV_CHEAT);
-ConVar ph_erp("ph_erp", "0.05", "Error correction", CV_CHEAT);
+ConVar ph_erp("ph_erp", "0.01", "Error correction", CV_CHEAT);
 
 // cvar value mostly depends on velocity
 ConVar ph_grid_tolerance("ph_grid_tolerance", "0.05", NULL, CV_CHEAT);
@@ -147,62 +146,33 @@ CEqPhysics::~CEqPhysics()
 
 }
 
-void DefaultSurfaceParams(eqPhysSurfParam_t* param)
-{
-	param->id = -1;
-
-	param->name = "invalid";
-	param->word = 'C';
-
-	param->friction = 12.9;
-	param->restitution = 0.1;
-	param->tirefriction = 0.2;
-	param->tirefriction_traction = 1.0;
-}
-
 void InitSurfaceParams( DkList<eqPhysSurfParam_t*>& list )
 {
 	// parse physics file
 	KeyValues kvs;
-	if (kvs.LoadFromFile("scripts/physics_surface_params.txt"))
+	if (!kvs.LoadFromFile("scripts/SurfaceParams.def"))
 	{
-		for (int i = 0; i < kvs.GetRootSection()->keys.numElem(); i++)
-		{
-			kvkeybase_t* pSec = kvs.GetRootSection()->keys[i];
+		MsgError("ERROR! Failed to load 'scripts/SurfaceParams.def'!");
+		return;
+	}
 
-			if (stricmp(pSec->name, "#include"))
-			{
-				eqPhysSurfParam_t* pMaterial = new eqPhysSurfParam_t;
-				DefaultSurfaceParams(pMaterial);
+	for (int i = 0; i < kvs.GetRootSection()->keys.numElem(); i++)
+	{
+		kvkeybase_t* pSec = kvs.GetRootSection()->keys[i];
 
-				pMaterial->name = pSec->name;
+		if (!stricmp(pSec->name, "#include"))
+			continue;
 
-				int mat_idx = list.append(pMaterial);
+		eqPhysSurfParam_t* pMaterial = new eqPhysSurfParam_t;
+		int mat_idx = list.append(pMaterial);
 
-				kvkeybase_t* pPair = pSec->FindKeyBase("friction");
-				if (pPair)
-					pMaterial->friction = KV_GetValueFloat(pPair, 0, 1.0f);
-
-				pPair = pSec->FindKeyBase("restitution");
-				if (pPair)
-					pMaterial->restitution = KV_GetValueFloat(pPair, 0, 1.0f);
-
-				pPair = pSec->FindKeyBase("tirefriction");
-				if (pPair)
-					pMaterial->tirefriction = KV_GetValueFloat(pPair, 0, 1.0f);
-
-				pPair = pSec->FindKeyBase("tirefriction_traction");
-				if (pPair)
-					pMaterial->tirefriction_traction = KV_GetValueFloat(pPair, 0, 1.0f);
-
-				pPair = pSec->FindKeyBase("surfaceword");
-				if (pPair)
-					pMaterial->word = KV_GetValueString(pPair)[0];
-
-				pMaterial->id = mat_idx;
-
-			}
-		}
+		pMaterial->id = mat_idx;
+		pMaterial->name = pSec->name;
+		pMaterial->friction = KV_GetValueFloat(pSec->FindKeyBase("friction"), 0, 12.9f);
+		pMaterial->restitution = KV_GetValueFloat(pSec->FindKeyBase("restitution"), 0, 0.1f);
+		pMaterial->tirefriction = KV_GetValueFloat(pSec->FindKeyBase("tirefriction"), 0, 0.2f);
+		pMaterial->tirefriction_traction = KV_GetValueFloat(pSec->FindKeyBase("tirefriction_traction"), 0, 1.0f);
+		pMaterial->word = KV_GetValueString(pSec->FindKeyBase("surfaceword"), NULL, "C")[0];
 	}
 }
 
@@ -549,6 +519,7 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 {
 	PROFILE_FUNC();
 
+	// apply filters
 	if(!bodyA->CheckCanCollideWith(bodyB))
 		return;
 
@@ -571,8 +542,6 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 	if(distBetweenObjects > lenA+lenB)
 		return;
 
-	DkList<ContactPair_t>& pairs = bodyA->m_contactPairs;
-
 	// check the contact pairs of bodyB (because it has been already processed by the order)
 	// if we had any contact pair with bodyA we should discard this collision
 	{
@@ -587,13 +556,13 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 	}
 
 	// trasform collision objects and test
-
-	PROFILE_BEGIN(shapeOperations);
+	//PROFILE_BEGIN(shapeOperations);
 
 	// prepare for testing...
 	btCollisionObject* objA = bodyA->m_collObject;
 	btCollisionObject* objB = bodyB->m_collObject;
 
+	/*
 	btBoxShape boxShapeA(ConvertDKToBulletVectors(bodyA->m_aabb.GetSize()*0.5f));
 	boxShapeA.setMargin(ph_margin.GetFloat());
 
@@ -606,13 +575,14 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 	btCollisionObject boxObjectB;
 	boxObjectB.setCollisionShape(&boxShapeB);
 
-	PROFILE_END();
-
 	if(bodyA->m_flags & BODY_BOXVSDYNAMIC)
 		objA = &boxObjectA;
 
 	if(bodyB->m_flags & BODY_BOXVSDYNAMIC)
 		objB = &boxObjectB;
+	*/
+
+	//PROFILE_END();
 
 	PROFILE_BEGIN(matrixOperations);
 
@@ -622,18 +592,14 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 	eqTransA = transpose(eqTransA);
 	eqTransA.rows[3] += Vector4D(bodyA->GetPosition()+center, 1.0f);
 
-
 	// body b
 	Matrix4x4 eqTransB = Matrix4x4( bodyB->GetOrientation() );
 	eqTransB.translate(bodyB->GetShapeCenter());
 	eqTransB = transpose(eqTransB);
 	eqTransB.rows[3] += Vector4D(bodyB->GetPosition()+center, 1.0f);
 
-	btTransform transA = ConvertMatrix4ToBullet(eqTransA);
-	btTransform transB = ConvertMatrix4ToBullet(eqTransB);
-
-	objA->setWorldTransform(transA);
-	objB->setWorldTransform(transB);
+	objA->setWorldTransform(ConvertMatrix4ToBullet(eqTransA));
+	objB->setWorldTransform(ConvertMatrix4ToBullet(eqTransB));
 
 	PROFILE_END();
 
@@ -642,6 +608,9 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 	PROFILE_BEGIN(contactPairTest);
 	m_collisionWorld->contactPairTest(objA, objB, cbResult);
 	PROFILE_END();
+
+	// so collision test were performed, get our results to contact pairs
+	DkList<ContactPair_t>& pairs = bodyA->m_contactPairs;
 
 	int numCollResults = cbResult.m_collisions.numElem();
 
@@ -844,12 +813,12 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 	// move object
 	body->Integrate( m_fDt );
 
-	if(body->IsCanIntegrate(true))
+	if( body->IsCanIntegrate(true) )
 	{
 		// get new cell
 		collgridcell_t* newCell = m_grid.GetCellAtPos( body->GetPosition() );
 
-		// move object in grid
+		// move object in grid if it's a really new cell
 		if (newCell != oldCell)
 		{
 			if (oldCell)
@@ -876,40 +845,39 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 	if (!body->IsCanIntegrate())
 		return;
 
+	const BoundingBox& aabb = body->m_aabb_transformed;
+
+	// get the grid box range for searching collision objects
+	IVector2D crMin, crMax;
+	m_grid.FindBoxRange(aabb.minPoint, aabb.maxPoint, crMin, crMax, ph_grid_tolerance.GetFloat() );
+
+	// in this range do all collision checks
+	// might be slow
+	for(int y = crMin.y; y < crMax.y+1; y++)
 	{
-		BoundingBox& aabb = body->m_aabb_transformed;
-
-		IVector2D crMin, crMax;
-		m_grid.FindBoxRange(aabb.minPoint, aabb.maxPoint, crMin, crMax, ph_grid_tolerance.GetFloat() );
-
-		// in this range do all collision checks
-		// might be slow
-		for(int y = crMin.y; y < crMax.y+1; y++)
+		for(int x = crMin.x; x < crMax.x+1; x++)
 		{
-			for(int x = crMin.x; x < crMax.x+1; x++)
+			collgridcell_t* ncell = m_grid.GetCellAt( x, y );
+
+			if(!ncell)
+				continue;
+
+			// iterate over static objects in cell
+			for (int j = 0; j < ncell->m_gridObjects.numElem(); j++)
+				SolveStaticVsBodyCollision(ncell->m_gridObjects[j], body, body->GetLastFrameTime(), body->m_contactPairs);
+
+			// iterate over dynamic objects in cell
+			for (int j = 0; j < ncell->m_dynamicObjs.numElem(); j++)
 			{
-				collgridcell_t* ncell = m_grid.GetCellAt( x, y );
+				CEqCollisionObject* collObj = ncell->m_dynamicObjs[j];
 
-				if(ncell)
-				{
-					// check for static objects
-					for (int j = 0; j < ncell->m_gridObjects.numElem(); j++)
-						SolveStaticVsBodyCollision(ncell->m_gridObjects[j], body, body->GetLastFrameTime(), body->m_contactPairs);
+				if (collObj == body)
+					continue;
 
-					// check for dynamic objects in cell
-					for (int j = 0; j < ncell->m_dynamicObjs.numElem(); j++)
-					{
-						CEqCollisionObject* collObj = ncell->m_dynamicObjs[j];
-
-						if (collObj == body)
-							continue;
-
-						if(collObj->IsDynamic())
-							SolveBodyCollisions(body, (CEqRigidBody*)ncell->m_dynamicObjs[j], body->GetLastFrameTime());
-						else
-							SolveStaticVsBodyCollision(ncell->m_dynamicObjs[j], body, body->GetLastFrameTime(), body->m_contactPairs);
-					}
-				}
+				if(collObj->IsDynamic())
+					SolveBodyCollisions(body, (CEqRigidBody*)collObj, body->GetLastFrameTime());
+				else // purpose for triggers
+					SolveStaticVsBodyCollision(collObj, body, body->GetLastFrameTime(), body->m_contactPairs);
 			}
 		}
 	}
@@ -957,14 +925,11 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 	{
 		CEqRigidBody* bodyA = (CEqRigidBody*)pair.bodyA;
 
-		float positionalError = combinedErp * pair.depth / pair.dt;
-
 		bool isCarCollidingWithCar = (bodyA->m_flags & BODY_ISCAR) && (bodyB->m_flags & BODY_ISCAR);
 
-		if (isCarCollidingWithCar)
-		{
-			positionalError = ph_carVsCarErp.GetFloat() * pair.depth / pair.dt;
-		}
+		float varyErp = (isCarCollidingWithCar ? ph_carVsCarErp.GetFloat() : combinedErp);
+
+		float positionalError = varyErp * pair.depth / pair.dt;
 
 		// correct position
 		if (!(bodyA->m_flags & BODY_FORCE_FREEZE) && !(bodyA->m_flags & BODY_INFINITEMASS) && !(bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
@@ -1463,31 +1428,13 @@ bool CEqPhysics::TestLineSingleObject(
 	Matrix4x4 obj_mat; // don't use fixed point, it's damn slow
 	object->ConstructRenderMatrix(obj_mat);
 
-	// NEW
 	btTransform transIdent = ConvertMatrix4ToBullet(transpose(obj_mat));
 
 	btVector3 strt = ConvertPositionToBullet(start);
 	btVector3 endt = ConvertPositionToBullet(end);
 
-	/*
-	// OLD
-
-	btTransform transIdent;
-	transIdent.setIdentity();
-	Matrix4x4 inv_obj_mat = !(obj_mat);
-
-	// transform ray over object
-	Vector3D ray_start = (inv_obj_mat*Vector4D(start, 1.0f)).xyz();
-	Vector3D ray_end = (inv_obj_mat*Vector4D(end, 1.0f)).xyz();
-
-	btVector3 strt = ConvertPositionToBullet(ray_start);
-	btVector3 endt = ConvertPositionToBullet(ray_end);
-	*/
-
 	btTransform startTrans(btident3, strt);
 	btTransform endTrans(btident3, endt);
-
-
 
 #if BT_BULLET_VERSION >= 283 // new bullet
 	btCollisionObjectWrapper objWrap(NULL, object->m_shape, object->m_collObject, transIdent, 0, 0);
@@ -1495,7 +1442,7 @@ bool CEqPhysics::TestLineSingleObject(
     btCollisionObjectWrapper objWrap(NULL, object->m_shape, object->m_collObject, transIdent);
 #endif
 
-	CEqRayTestCallback rayCallback(ConvertDKToBulletVectors(start), ConvertDKToBulletVectors(end));
+	CEqRayTestCallback rayCallback(strt, endt);
 	m_collisionWorld->rayTestSingleInternal( startTrans, endTrans, &objWrap, rayCallback);
 
 	m_numRayQueries++;

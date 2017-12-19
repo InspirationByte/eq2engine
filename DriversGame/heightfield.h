@@ -24,6 +24,7 @@
 #define HFIELD_HEIGHT_STEP		(0.1f)
 #define HFIELD_POINT_SIZE		(4.0f)
 #define HFIELD_MIN_POINTS		64			// means default is 32x32 meters
+#define HFIELD_SUBDIVIDE		(16.0f)
 
 #define NEIGHBOR_OFFS_XDX(x, f)	{x-f, x, x+f, x, x-f, x+f, x+f, x-f}		// neighbours
 #define NEIGHBOR_OFFS_YDY(y, f)	{y, y-f, y, y+f, y-f, y-f, y+f, y+f}
@@ -201,7 +202,7 @@ public:
 	// returns face at position
 	bool						PointAtPos(const Vector3D& pos, int& x, int& y) const;
 
-	void						Generate( EHFieldGeometryGenerateMode mode, DkList<hfieldbatch_t*>& batches );
+	void						Generate( EHFieldGeometryGenerateMode mode, DkList<hfieldbatch_t*>& batches, float subdivision = HFIELD_SUBDIVIDE );
 
 	bool						IsEmpty();
 

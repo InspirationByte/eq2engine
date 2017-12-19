@@ -240,16 +240,16 @@
     <Library Include="..\libs\libvorbisfile_static.lib" />
     <Library Include="..\libs\libvorbis_static.lib" />
     <Library Include="..\libs\zlib.lib" />
-    <Library Include="..\src_dependency\bullet\lib\Debug\BulletCollision_Debug.lib">
+    <Library Include="..\src_dependency\bullet\bin\Debug\BulletCollision_Debug.lib">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </Library>
-    <Library Include="..\src_dependency\bullet\lib\Debug\LinearMath_Debug.lib">
+    <Library Include="..\src_dependency\bullet\bin\Debug\LinearMath_Debug.lib">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </Library>
-    <Library Include="..\src_dependency\bullet\lib\Release\BulletCollision.lib">
+    <Library Include="..\src_dependency\bullet\bin\BulletCollision.lib">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </Library>
-    <Library Include="..\src_dependency\bullet\lib\Release\LinearMath.lib">
+    <Library Include="..\src_dependency\bullet\bin\LinearMath.lib">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </Library>
     <Library Include="..\src_dependency\lua\LuaLib.lib" />
