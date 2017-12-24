@@ -25,31 +25,34 @@ extern "C"
 
 #include "mtriangle_framework.h"
 
-/*
-// data pointers
-static ubyte *pData;
-static ubyte *pStart;
-
-// studio header for write
-static studiohdr_t *g_hdr;
-
-#define CHECK_OVERFLOW(arrsize, add_size)	ASSERT(WRITE_OFS+add_size < arrsize)
-
-#define WTYPE_ADVANCE(type)				CHECK_OVERFLOW(FILEBUFFER_EQGF, sizeof(type)); pData += sizeof(type)
-#define WTYPE_ADVANCE_NUM(type, num)	pData += (sizeof(type)*num)
-#define WRT_TEXT(text)					strcpy((char*)pData, text); pData += strlen(text)+1
-
-#define WRITE_OFS						(pData - pStart)		// write offset over header
-#define OBJ_WRITE_OFS(obj)				((pData - pStart) - ((ubyte*)obj - pStart))	// write offset over object
-
-void WriteAdvance(void* data, int size)
+const char* GetACTCErrorString(int result)
 {
-	memcpy(pData, data, size);
+	switch(result)
+	{
+		case ACTC_ALLOC_FAILED:
+			return "ACTC_ALLOC_FAILED";
 
-	pData += size;
+		case ACTC_DURING_INPUT:
+			return "ACTC_DURING_INPUT";
 
-	g_hdr->length = (pData - pStart);
-}*/
+		case ACTC_DURING_OUTPUT:
+			return "ACTC_DURING_OUTPUT";
+
+		case ACTC_IDLE:
+			return "ACTC_IDLE";
+
+		case ACTC_INVALID_VALUE:
+			return "ACTC_INVALID_VALUE";
+
+		case ACTC_DATABASE_EMPTY:
+			return "ACTC_DATABASE_EMPTY";
+
+		case ACTC_DATABASE_CORRUPT:
+			return "ACTC_DATABASE_CORRUPT";
+	}
+
+	return "OTHER ERROR";
+}
 
 // EGF file buffer
 #define FILEBUFFER_EQGF (16 * 1024 * 1024)
@@ -214,16 +217,16 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 
 	DkList<int32>				gIndexList;
 
+	gVertexList.resize(gVertexList.numElem() + dstGroup->numVertices);
+	gIndexList.resize(gVertexList.numElem() + dstGroup->numVertices);
+
 	for(int i = 0; i < dstGroup->numVertices; i++)
 	{
-		gVertexList.resize(gVertexList.numElem() + dstGroup->numVertices);
-		gIndexList.resize(gVertexList.numElem() + dstGroup->numVertices);
-
 		studiovertexdesc_t vertex = MakeStudioVertex( srcGroup->verts[i] );
 		studiovertexdesc_t vertex2 = vertex;
 
 		// add vertex or point to existing vertex if found duplicate
-		int nIndex = 0;
+		int nIndex;
 
 		int equalVertex = FindVertexInList( gVertexList, vertex );
 
@@ -251,18 +254,14 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 	if( modShapeKey )
 		usedVertList = gVertexList2;
 
-	// set index count
-	dstGroup->numIndices = gIndexList.numElem();
-	dstGroup->numVertices = usedVertList.numElem();
-
-	if((float)dstGroup->numIndices / (float)3.0f != (int)dstGroup->numIndices / (int)3)
+	if((float)gIndexList.numElem() / (float)3.0f != (int)gIndexList.numElem() / (int)3)
 	{
 		MsgError("Model group has invalid triangles!\n");
 		return;
 	}
 
 	// calculate rest of tangent space
-	for(uint32 i = 0; i < dstGroup->numIndices; i+=3)
+	for(int32 i = 0; i < gIndexList.numElem(); i+=3)
 	{
 		Vector3D tangent;
 		Vector3D binormal;
@@ -288,132 +287,145 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 
 		usedVertList[idx2].tangent += tangent*fTriangleArea;
 		usedVertList[idx2].binormal += binormal*fTriangleArea;
-
-
 	}
 
-	// normalize them once
-	for(uint32 i = 0; i < dstGroup->numIndices; i+=3)
+	// normalize resulting tangent space
+	for(int32 i = 0; i < usedVertList.numElem(); i++)
 	{
-		int32 idx0 = gIndexList[i];
-		int32 idx1 = gIndexList[i+1];
-		int32 idx2 = gIndexList[i+2];
-
-		usedVertList[idx0].tangent = normalize(usedVertList[idx0].tangent);
-		usedVertList[idx0].binormal = normalize(usedVertList[idx0].binormal);
-
-		usedVertList[idx1].tangent = normalize(usedVertList[idx1].tangent);
-		usedVertList[idx1].binormal = normalize(usedVertList[idx1].binormal);
-
-		usedVertList[idx2].tangent = normalize(usedVertList[idx2].tangent);
-		usedVertList[idx2].binormal = normalize(usedVertList[idx2].binormal);
+		usedVertList[i].tangent = normalize(usedVertList[i].tangent);
+		usedVertList[i].binormal = normalize(usedVertList[i].binormal);
 	}
 
 #ifdef USE_ACTC
-	// optimize model using ACTC
-	DkList<int32>	gOptIndexList;
-
-	ACTCData* tc;
-
-    tc = actcNew();
-    if(tc == NULL)
 	{
-		Msg("Model optimization disabled\n");
-		goto skipOptimize;
-    }
-	else
-		MsgInfo("Optimizing group...\n");
+		// optimize model using ACTC
+		DkList<int32>	gOptIndexList;
 
-	// optimization code
+		ACTCData* tc;
 
-	gOptIndexList.resize( gIndexList.numElem() );
-
-	// we want only triangle fans (say THANKS to DirectX10)
-	actcParami(tc, ACTC_OUT_MIN_FAN_VERTS, INT_MAX);
-	actcParami(tc, ACTC_OUT_HONOR_WINDING, ACTC_FALSE);
-
-	actcBeginInput(tc);
-
-	MsgInfo("   phase 1: adding triangles to optimizer\n");
-
-	// input all indices
-	for(int i = 0; i < gIndexList.numElem(); i+=3)
-		actcAddTriangle(tc, gIndexList[i], gIndexList[i+1], gIndexList[i+2]);
-
-	actcEndInput(tc);
-
-	int prim;
-	uint32 v1, v2, v3;
-
-	MsgInfo("   phase 2: generate triangles\n");
-
-	int nTriangleResults = 0;
-
-	int stripLength = 0;
-	int primCount = 0;
-
-	//int evenPrimitives = 0;
-
-	actcBeginOutput(tc);
-	while(prim = actcStartNextPrim(tc, &v1, &v2) != ACTC_DATABASE_EMPTY)
-	{
-		if(prim == ACTC_PRIM_FAN)
+		tc = actcNew();
+		if(tc == NULL)
 		{
-			MsgError("   This should not generate triangle fans! Sorry!\n");
-			Msg("   optimization disabled\n");
-			actcDelete( tc );
+			Msg("Model optimization disabled\n");
 			goto skipOptimize;
 		}
+		else
+			MsgInfo("Optimizing group '%s'...\n", srcGroup->texture);
 
-		if(primCount && v1 != v3)
+		// optimization code
+		gOptIndexList.resize( gIndexList.numElem() );
+
+		// configure it to make strips
+		actcParami(tc, ACTC_OUT_MIN_FAN_VERTS, INT_MAX);
+		actcParami(tc, ACTC_OUT_HONOR_WINDING, ACTC_FALSE);
+
+		MsgInfo("   phase 1: adding triangles to optimizer (%d indices)\n", gIndexList.numElem());
+		actcBeginInput(tc);
+
+		// input all indices
+		for(int i = 0; i < gIndexList.numElem(); i+=3)
 		{
-			// wait, WHAT? 
-			gOptIndexList.append( v3 );
+			int result = actcAddTriangle(tc, gIndexList[i], gIndexList[i+1], gIndexList[i+2]);
+
+			if(result < 0)
+			{
+				MsgError("   ACTC error: %s (%d)!\n", GetACTCErrorString(result), result);
+				Msg("   optimization disabled\n");
+				actcDelete( tc );
+				goto skipOptimize;
+			}
+		}
+
+		actcEndInput(tc);
+
+		MsgInfo("   phase 2: generate strips\n");
+
+		int prim;
+		uint32 v1, v2, v3;
+
+		int nTriangleResults = 0;
+
+		int stripLength = 0;
+		int primCount = 0;
+
+		actcBeginOutput(tc);
+
+		while((prim = actcStartNextPrim(tc, &v1, &v2)) != ACTC_DATABASE_EMPTY)
+		{
+			if(prim < 0)
+			{
+				MsgError("   ACTC error: %s (%d)!\n", GetACTCErrorString(prim), prim);
+				Msg("   optimization disabled\n");
+				actcDelete( tc );
+				goto skipOptimize;
+			}
+
+			if(prim == ACTC_PRIM_FAN)
+			{
+				MsgError("   This should not generate triangle fans! Sorry!\n");
+				Msg("   optimization disabled\n");
+				actcDelete( tc );
+				goto skipOptimize;
+			}
+
+			if(primCount && v1 != v3)
+			{
+				// wait, WHAT? 
+				gOptIndexList.append( v3 );
+				gOptIndexList.append( v1 );
+			}
+
+			// reset
+			stripLength = 2;
+
 			gOptIndexList.append( v1 );
-		}
+			gOptIndexList.append( v2 );
 
-		// reset
-		stripLength = 2;
+			int result = ACTC_NO_ERROR;
+			// start a primitive of type "prim" with v1 and v2
+			while((result = actcGetNextVert(tc, &v3)) != ACTC_PRIM_COMPLETE)
+			{
+				if(result < 0)
+				{
+					MsgError("   ACTC error: %s (%d)!\n", GetACTCErrorString(result), result);
+					Msg("   optimization disabled\n");
+					actcDelete( tc );
+					goto skipOptimize;
+				}
 
-		gOptIndexList.append( v1 );
-		gOptIndexList.append( v2 );
+				gOptIndexList.append( v3 );
+				stripLength++;
+				nTriangleResults++;
+			}
 
-		// start a primitive of type "prim" with v1 and v2
-		while(actcGetNextVert(tc, &v3) != ACTC_PRIM_COMPLETE)
-		{
-			gOptIndexList.append( v3 );
-			stripLength++;
-			nTriangleResults++;
-		}
-
-		if(stripLength & 1)
-		{
-			// add degenerate vertex
-			gOptIndexList.append( v3 );
-		}
+			if(stripLength & 1)
+			{
+				// add degenerate vertex
+				gOptIndexList.append( v3 );
+			}
 			
-		primCount++;
+			primCount++;
+		}
+
+		actcEndOutput( tc );
+
+		// destroy
+		actcDelete( tc );
+
+		MsgWarning("   group optimization complete\n");
+
+		// swap with new index list
+		gIndexList.swap( gOptIndexList );
+
+		dstGroup->primitiveType = EGFPRIM_TRI_STRIP;
 	}
-	actcEndOutput( tc );
-
-	// destroy context
-	actcDelete( tc );
-
-	MsgWarning("   group optimization complete\n");
-
-	// replace
-	gIndexList.clear();
-	gIndexList.append( gOptIndexList );
-
-	gOptIndexList.clear();
-
-	dstGroup->primitiveType = EGFPRIM_TRI_STRIP;
 #endif // USE_ACTC
+
+skipOptimize:
 
 	// set index count and now that is triangle strip
 	dstGroup->numIndices = gIndexList.numElem();
-
-skipOptimize:
+	dstGroup->numVertices = usedVertList.numElem();
 
 	//WRT_TEXT("MODEL GROUP DATA");
 

@@ -91,8 +91,6 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		Msg("string = %s\n", c_filename.GetString());
-
 		if( CompileESCScript( c_filename.GetString() ) )
 		{
 			MsgAccept("Compilation success\n");
