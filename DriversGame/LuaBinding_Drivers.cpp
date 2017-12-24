@@ -168,7 +168,7 @@ T* CGameObject_DynamicCast(CGameObject* object, int typeId)
 }
 
 int L_gameobject_castto_car( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<CCar*>, CGameObject_DynamicCast, CGameObject*, int) }
-//int L_gameobject_castto_traffic( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<CAITrafficCar*>, CGameObject_DynamicCast, CGameObject*, int) }
+int L_gameobject_castto_traffic( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<CAITrafficCar*>, CGameObject_DynamicCast, CGameObject*, int) }
 int L_gameobject_castto_pursuer( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<CAIPursuerCar*>, CGameObject_DynamicCast, CGameObject*, int) }
 
 bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
@@ -286,6 +286,7 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	OOLUA::register_class<CCar>(state);
 	//OOLUA::register_class_static<CCar>(state, "nullptr", CCarNULLPointer );
 
+	OOLUA::register_class<CAITrafficCar>(state);
 	OOLUA::register_class<CAIPursuerCar>(state);
 
 	OOLUA::set_global(state, "world", g_pGameWorld);
@@ -302,8 +303,9 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	OOLUA::set_global(state, "gameutil", utilTable);
 
 	OOLUA::Table gameObjectCastFuncs = OOLUA::new_table(state);
-	gameObjectCastFuncs.set(GO_CAR, L_gameobject_castto_car);
-	gameObjectCastFuncs.set(GO_CAR_AI, L_gameobject_castto_pursuer);
+	gameObjectCastFuncs.set("CCar", L_gameobject_castto_car);
+	gameObjectCastFuncs.set("CAITrafficCar", L_gameobject_castto_traffic);
+	gameObjectCastFuncs.set("CAIPursuerCar", L_gameobject_castto_traffic);
 
 	OOLUA::set_global(state, "gameobjcast", gameObjectCastFuncs);
 

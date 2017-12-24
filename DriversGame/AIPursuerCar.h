@@ -119,7 +119,7 @@ protected:
 
 #ifndef NO_LUA
 #ifndef __INTELLISENSE__
-OOLUA_PROXY(CAIPursuerCar, CCar)
+OOLUA_PROXY(CAIPursuerCar, CAITrafficCar)
 	OOLUA_TAGS( Abstract )
 
 	OOLUA_MFUNC(SetPursuitTarget)

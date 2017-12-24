@@ -412,21 +412,18 @@ CCar* CGameSession::CreateCar(const char* name, int carType)
 			else if (carType == CAR_TYPE_TRAFFIC_AI)
 			{
 				CAITrafficCar* traffic = new CAITrafficCar(m_carEntries[i]);
-				traffic->InitAI(false);
 
 				car = traffic;
 			}
 			else if (carType == CAR_TYPE_PURSUER_COP_AI)
 			{
 				CAIPursuerCar* traffic = new CAIPursuerCar(m_carEntries[i], PURSUER_TYPE_COP);
-				traffic->InitAI(false);
 
 				car = traffic;
 			}
 			else if (carType == CAR_TYPE_PURSUER_GANG_AI)
 			{
 				CAIPursuerCar* traffic = new CAIPursuerCar(m_carEntries[i], PURSUER_TYPE_GANG);
-				traffic->InitAI(false);
 
 				car = traffic;
 			}

@@ -30,6 +30,7 @@ struct junctionDetail_t
 	roadJunction_t		junc;
 	int					allowedMovement;		// flags, 1 & 2 depending on traffic light
 	int					selectedStraight;
+	bool				availDirs[4];
 };
 
 //
@@ -137,6 +138,7 @@ protected:
 	// states
 	int					SearchForRoad( float fDt, EStateTransition transition );
 	virtual int			TrafficDrive( float fDt, EStateTransition transition );
+	int					InitTrafficState( float fDt, EStateTransition transition );
 
 	virtual int			DeadState( float fDt, EStateTransition transition );
 
@@ -171,5 +173,16 @@ protected:
 	signalSeq_t*		m_signalSeq;
 	int					m_signalSeqFrame;
 };
+
+#ifndef NO_LUA
+#ifndef __INTELLISENSE__
+OOLUA_PROXY(CAITrafficCar, CCar)
+	OOLUA_TAGS( Abstract )
+
+	OOLUA_MFUNC(InitAI)
+	OOLUA_MFUNC_CONST(IsPursuer)
+OOLUA_PROXY_END
+#endif // __INTELLISENSE__
+#endif // NO_LUA
 
 #endif // AITRAFFICCONTROLLER_H

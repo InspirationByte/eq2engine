@@ -236,8 +236,8 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 
 	const Vector3D& carVelocity = car->GetVelocity();
 	
-	Matrix4x4 bodyMat;
-	car->GetPhysicsBody()->ConstructRenderMatrix(bodyMat);
+	// use vehicle world matrix
+	Matrix4x4& bodyMat = car->m_worldMatrix;
 
 	Vector3D carForward = car->GetForwardVector();
 
