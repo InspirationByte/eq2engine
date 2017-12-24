@@ -13,6 +13,10 @@
 #include <stdarg.h>
 #include "utils/eqthread.h"
 
+#ifdef _WIN32
+#include <direct.h>
+#endif
+
 #ifdef ANDROID
 #include <android/log.h>
 #define EQENGINE_LOG_TAG(v) varargs("%s %s", GetCore()->GetApplicationName(), v)
@@ -27,11 +31,62 @@ static const char* s_spewTypeStr[] = {
 };
 
 Threading::CEqMutex g_debugOutputMutex;
+bool g_bLoggingInitialized = false;
+FILE* g_logFile = NULL;
 
-//#define DEBUG_NO_OUTPUT
+bool g_logContinue = false;
 
-extern bool bDoLogs;
-extern bool bLoggingInitialized;
+bool g_logForceFlush = true;
+
+void Log_WriteBOM(const char* fileName);
+
+// initializes logging to the disk
+void Log_Init()
+{
+	if(g_logFile)
+		return;
+
+#ifdef PLAT_POSIX
+	mkdir("logs",S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#else
+	mkdir("logs");
+#endif // PLAT_POSIX
+
+#ifndef NO_CORE
+	char tmp_path[2048];
+	sprintf(tmp_path, "logs/%s_%s.log",GetCore()->GetApplicationName(),GetCore()->GetCurrentUserName());
+
+	Log_WriteBOM( tmp_path );
+
+	g_logFile = fopen(tmp_path, g_logContinue ? "a" : "w");
+#else
+	Log_WriteBOM( "logs/dkcore.log" );
+
+	g_logFile = fopen("logs/dkcore.log", g_logContinue ? "a" : "w");
+#endif
+
+	if(g_logFile)
+		g_logContinue = true;
+}
+
+// flushes the console log to the disk
+void Log_Flush()
+{
+	if(!g_logFile)
+		return;
+
+	fflush(g_logFile);
+}
+
+// closes the log file
+void Log_Close()
+{
+	if(!g_logFile)
+		return;
+
+	fclose(g_logFile);
+	g_logFile = NULL;
+}
 
 int g_developerMode = 0;
 
@@ -177,47 +232,18 @@ void SpewMessageToOutput(SpewType_t spewtype,char const* pMsgFormat, va_list arg
 
 #endif // ANDROID
 
-	if(!bLoggingInitialized)
+	if(!g_bLoggingInitialized)
 	{
 		printf( "%s", pTempBuffer );
-	/*
-		switch(spewtype)
-		{
-			case SPEW_NORM:
-			case SPEW_SUCCESS:
-			case SPEW_INFO:
-				InfoMsg(pTempBuffer);
-				break;
-			case SPEW_WARNING:
-				WarningMsg(pTempBuffer);
-				break;
-			case SPEW_ERROR:
-				ErrorMsg(pTempBuffer);
-				break;
-		}
-		return;
-		*/
 	}
 
-	if(bDoLogs)
+	// print to log file if enabled
+	if(g_logFile)
 	{
-#ifndef NO_CORE
-		char tmp_path[2048];
-		sprintf(tmp_path, "logs/%s_%s.log",GetCore()->GetApplicationName(),GetCore()->GetCurrentUserName());
+		fprintf(g_logFile, "%s", pTempBuffer);
 
-		Log_WriteBOM( tmp_path );
-
-		FILE* g_logFile = fopen(tmp_path, "a");
-#else
-		Log_WriteBOM( "logs/dkcore.log" );
-
-		FILE* g_logFile = fopen("logs/dkcore.log", "a");
-#endif
-		if(g_logFile)
-		{
-			fprintf(g_logFile, "%s", pTempBuffer);
-			fclose(g_logFile);
-		}
+		if(g_logForceFlush)
+			Log_Flush();
 	}
 
 	(g_fnConSpewFunc)(spewtype,pTempBuffer);

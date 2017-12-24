@@ -92,7 +92,6 @@ LOCAL_SRC_FILES := \
 	shared_engine/DebugOverlay.cpp\
 	shared_engine/EGFInstancer.cpp\
 	shared_engine/EffectRender.cpp\
-	shared_engine/EngineSpew.cpp\
 	shared_engine/EngineVersion.cpp\
 	shared_engine/EqParticles_Render.cpp\
 	shared_engine/Font.cpp\

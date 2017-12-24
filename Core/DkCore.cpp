@@ -9,7 +9,6 @@
 #include <ctime>
 
 #ifdef _WIN32
-#include <direct.h>
 #include <locale.h>
 #include <crtdbg.h>
 #endif
@@ -90,24 +89,25 @@ ConVar *c_SupressAccessorMessages = NULL;
 extern ConCommand c_developer;
 extern ConCommand c_echo;
 
-bool bDoLogs = false;
-bool bLoggingInitialized = false;
+extern void Log_Init();
+extern void Log_Flush();
+extern void Log_Close();
 
-DECLARE_CONCOMMAND_FN(enable_logging)
+extern bool g_bLoggingInitialized;
+
+DECLARE_CONCOMMAND_FN(log_enable)
 {
-#ifdef PLAT_POSIX
-	mkdir("logs",S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-#else
-	mkdir("logs");
-#endif // PLAT_POSIX
-	bDoLogs = true;
+	Log_Init();
 }
 
-ConCommand *c_enable_log;
-
-DECLARE_CONCOMMAND_FN(disable_logging)
+DECLARE_CONCOMMAND_FN(log_disable)
 {
-	bDoLogs = false;
+	Log_Close();
+}
+
+DECLARE_CONCOMMAND_FN(log_flush)
+{
+	Log_Flush();
 }
 
 DECLARE_CONCOMMAND_FN(addpackage)
@@ -118,8 +118,11 @@ DECLARE_CONCOMMAND_FN(addpackage)
 		MsgWarning("Usage: fs_addpackage <package name>\n");
 }
 
-ConCommand *c_disable_log;
-ConCommand *c_addpackage;
+ConCommand* c_log_enable;
+ConCommand* c_log_disable;
+ConCommand* c_log_flush;
+
+ConCommand* c_addpackage;
 
 void PPMemInit();
 void PPMemShutdown();
@@ -148,16 +151,6 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
     ASSERT(strlen(pszApplicationName) > 0);
 
-	int nNoLogIndex = g_cmdLine->FindArgument("-nolog");
-
-	if(nNoLogIndex != -1)
-		bDoLogs = false;
-
-	int nLogIndex = g_cmdLine->FindArgument("-log");
-
-	if(nLogIndex != -1)
-		bDoLogs = true;
-
 	int nWorkdirIndex = g_cmdLine->FindArgument("-workdir");
 
 	if(nWorkdirIndex != -1)
@@ -171,10 +164,8 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 #endif // _WIN32
 	}
 
-    m_szApplicationName = pszApplicationName;
-    m_szCurrentSessionUserName = UTIL_GetUserName();
-
-	bLoggingInitialized = true;
+	m_szApplicationName = pszApplicationName;
+	m_szCurrentSessionUserName = UTIL_GetUserName();
 
 	m_coreConfiguration = new KeyValues();
 	kvkeybase_t* coreConfigRoot = m_coreConfiguration->GetRootSection();
@@ -194,11 +185,13 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		regionalConfig->SetKey("DefaultLanguage", "English");
 	}
 
+	bool logEnabled = false;
+
 	kvkeybase_t* pAppDebug = coreConfigRoot->FindKeyBase("ApplicationDebug", KV_FLAG_SECTION);
 	if(pAppDebug)
 	{
 		if(pAppDebug->FindKeyBase("ForceEnableLog", KV_FLAG_NOVALUE))
-			bDoLogs = true;
+			logEnabled = true;
 
 		if(pAppDebug->FindKeyBase("PrintLeaksOnExit", KV_FLAG_NOVALUE))
 			g_bPrintLeaksOnShutdown = true;
@@ -222,79 +215,86 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 			{
 				if(!stricmp(KV_GetValueString(pForceLogged, i), m_szApplicationName.c_str()))
 				{
-					bDoLogs = true;
+					logEnabled = true;
 					break;
 				}
 			}
 		}
 	}
 
-	if(bDoLogs)
+	int nNoLogIndex = g_cmdLine->FindArgument("-nolog");
+
+	if(nNoLogIndex != -1)
+		logEnabled = false;
+
+	int nLogIndex = g_cmdLine->FindArgument("-log");
+
+	if(nLogIndex != -1)
+		logEnabled = true;
+
+	g_bLoggingInitialized = true;
+
+	if(logEnabled)
 	{
-#ifdef _WIN32
-		mkdir("logs");
-#else
-		mkdir("logs",S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-#endif
+		Log_Init();
 	}
 
-    //Remove log files
-    remove("logs/Assert.log");
+	//Remove log files
+	remove("logs/Assert.log");
 
 	char tmp_path[2048];
 	sprintf(tmp_path, "logs/%s_%s.log", m_szApplicationName.GetData(), m_szCurrentSessionUserName.GetData());
 
-    remove(tmp_path);
+	remove(tmp_path);
 
-    // Reset counter of same commands
-    g_sysConsole->ResetCounter();
+	// Reset counter of same commands
+	g_sysConsole->ResetCounter();
 
-    // Show core message
-    CoreMessage();
+	// Show core message
+	CoreMessage();
 
-    // Инициализировать CPU
-    CEqCPUCaps* cpuCaps = (CEqCPUCaps*)g_cpuCaps.GetInstancePtr();
-    cpuCaps->Init();
+	// Инициализировать CPU
+	CEqCPUCaps* cpuCaps = (CEqCPUCaps*)g_cpuCaps.GetInstancePtr();
+	cpuCaps->Init();
 
-    // Initialize time and query perfomance
-    Platform_InitTime();
+	// Initialize time and query perfomance
+	Platform_InitTime();
 
-    // Регистрация некоторых комманд.
-    g_sysConsole->RegisterCommand(&cmd_info);
+	// Регистрация некоторых комманд.
+	g_sysConsole->RegisterCommand(&cmd_info);
 	g_sysConsole->RegisterCommand(&cmd_coreversion);
 	g_sysConsole->RegisterCommand(&c_developer);
 	g_sysConsole->RegisterCommand(&c_echo);
 
-    // Регистрация некоторых комманд.
-    ((CConsoleCommands*)g_sysConsole.GetInstancePtr())->RegisterCommands();
+	// Регистрация некоторых комманд.
+	((CConsoleCommands*)g_sysConsole.GetInstancePtr())->RegisterCommands();
 
-	c_enable_log = new ConCommand("enablelog",CONCOMMAND_FN(enable_logging),"Enable logging");
-    c_disable_log = new ConCommand("disablelog",CONCOMMAND_FN(disable_logging),"Disable logging");
+	c_log_enable = new ConCommand("log_enable",CONCOMMAND_FN(log_enable));
+	c_log_disable = new ConCommand("log_disable",CONCOMMAND_FN(log_disable));
+	c_log_flush = new ConCommand("log_flush",CONCOMMAND_FN(log_flush));
+
 	c_addpackage = new ConCommand("fs_addpackage",CONCOMMAND_FN(addpackage),"Add packages");
-    c_SupressAccessorMessages = new ConVar("c_SupressAccessorMessages","1","Supress command/variable accessing. Dispays errors only",CV_ARCHIVE);
+	c_SupressAccessorMessages = new ConVar("c_SupressAccessorMessages","1","Supress command/variable accessing. Dispays errors only",CV_ARCHIVE);
 
-    // Install exception handler
-    if (g_cmdLine->FindArgument("-nocrashdump") == -1)
-        InstallExceptionHandler();
+	// Install exception handler
+	if (g_cmdLine->FindArgument("-nocrashdump") == -1)
+		InstallExceptionHandler();
 
-	if(bDoLogs)
+	if(logEnabled)
 		MsgAccept("\nCore: Logging console output to file is enabled.\n");
 	else
 		MsgError("\nCore: Logging console output to file is disabled.\n");
 
-    // Установка статуса
-    m_bInitialized = true;
+	// Установка статуса
+	m_bInitialized = true;
 
-    Msg("\n");
+	Msg("\n");
 
-    return true;
+	return true;
 }
 
 bool CDkCore::Init(const char* pszApplicationName,int argc, char **argv)
 {
-	// always write log for tools (if -nolog is not specified)
-	bDoLogs = true;
-
 	static EqString strCmdLine;
 	strCmdLine.Empty();
 
@@ -384,6 +384,8 @@ void CDkCore::Shutdown()
 
 	// shutdown memory
 	PPMemShutdown();
+
+	Log_Close();
 }
 
 char* CDkCore::GetApplicationName()
