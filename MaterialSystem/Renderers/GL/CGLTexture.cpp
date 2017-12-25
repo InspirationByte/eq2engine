@@ -80,6 +80,7 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
 	ASSERT( !m_bIsLocked );
 
 	m_nLockLevel = nLevel;
+	m_lockCubeFace = nCubeFaceId;
 	m_bIsLocked = true;
 
 	if( IsCompressedFormat(m_iFormat) )
@@ -131,12 +132,15 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
 
         pGLRHI->GL_CRITICAL();
 
-        glBindTexture(glTarget, textures[0].glTexID);
+		int targetOrCubeTarget = (glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X+m_lockCubeFace : glTarget;
 
         GLenum srcFormat = chanCountTypes[GetChannelCount(m_iFormat)];
         GLenum srcType = chanTypePerFormat[m_iFormat];
 
-        glGetTexImage(glTarget,m_nLockLevel, srcFormat, srcType, m_lockPtr);
+        glBindTexture(glTarget, textures[0].glTexID);
+
+		glGetTexImage(targetOrCubeTarget, m_nLockLevel, srcFormat, srcType, m_lockPtr);
+
 		GLCheckError("lock get tex image");
 
         glBindTexture(glTarget, 0);
@@ -158,8 +162,11 @@ void CGLTexture::Unlock()
 
             pGLRHI->GL_CRITICAL();
 
+			int targetOrCubeTarget = (glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X+m_lockCubeFace : glTarget;
+
 			glBindTexture(glTarget, textures[0].glTexID);
-			glTexSubImage2D(glTarget, 0, 0, 0, m_iWidth, m_iHeight, srcFormat, srcType, m_lockPtr);
+
+			glTexSubImage2D(targetOrCubeTarget, m_nLockLevel, 0, 0, m_iWidth, m_iHeight, srcFormat, srcType, m_lockPtr);
 
 			GLCheckError("unlock upload tex image");
 

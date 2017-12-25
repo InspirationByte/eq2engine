@@ -76,8 +76,12 @@ void CObject_Static::Spawn()
 
 		// set friction from surface parameters
 		eqPhysSurfParam_t* surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);
-		m_pPhysicsObject->SetFriction( surfParams->friction );
-		m_pPhysicsObject->SetRestitution( surfParams->restitution );
+
+		if(surfParams)
+		{
+			m_pPhysicsObject->SetFriction( surfParams->friction );
+			m_pPhysicsObject->SetRestitution( surfParams->restitution );
+		}
 
 		g_pPhysics->m_physics.AddStaticObject( m_pPhysicsObject );
 

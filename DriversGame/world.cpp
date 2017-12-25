@@ -1278,7 +1278,7 @@ void CGameWorld::DrawSkyBox(int renderFlags)
 	}
 }
 
-void CopyPixels(int* src, int* dest, int w1, int h1, int w2, int h2)
+void CopyPixels(int* src, int* dest, int w1, int h1, int w2, int h2, bool flipY)
 {
     int x_ratio = (int)((w1<<16)/w2) +1;
     int y_ratio = (int)((h1<<16)/h2) +1;
@@ -1291,7 +1291,9 @@ void CopyPixels(int* src, int* dest, int w1, int h1, int w2, int h2)
             x2 = ((j*x_ratio)>>16);
             y2 = ((i*y_ratio)>>16);
 
-            dest[(i*w2)+j] = src[(y2*w1)+x2] ;
+			int srcPos = ((flipY ? h1-y2-1 : y2)*w1)+x2;
+
+            dest[(i*w2)+j] = src[srcPos] ;
         }
     }
 }
@@ -1318,6 +1320,7 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	tempRenderTarget->Ref_Grab();
 
 	materials->SetMaterialRenderParamCallback(this);
+	materials->SetEnvironmentMapTexture(nullptr);
 
 	// render the skybox into cubemap
 	for(int i = 0; i < 6; i++)
@@ -1349,16 +1352,18 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	int envMapFace = envMap.GetMipMappedSize(0,1) / 6;
 	int fogEnvMapFace = fogEnvMap.GetMipMappedSize(0,1) / 6;
 
+	bool isOpenGL = (g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_OPENGL);
+
 	// do resize by software
 	for(int i = 0; i < 6; i++)
 	{
 		tempRenderTarget->Lock(&tempLock, NULL, false, true, 0, i );
 		if(tempLock.pData)
 		{
-			CopyPixels((int*)tempLock.pData, (int*)envMapData, tempRenderTarget->GetWidth(), tempRenderTarget->GetHeight(), envMap.GetWidth(), envMap.GetHeight());
+			CopyPixels((int*)tempLock.pData, (int*)envMapData, tempRenderTarget->GetWidth(), tempRenderTarget->GetHeight(), envMap.GetWidth(), envMap.GetHeight(), isOpenGL);
 			envMapData += envMapFace;
 
-			CopyPixels((int*)tempLock.pData, (int*)fogEnvMapData, tempRenderTarget->GetWidth(), tempRenderTarget->GetHeight(), fogEnvMap.GetWidth(), fogEnvMap.GetHeight());
+			CopyPixels((int*)tempLock.pData, (int*)fogEnvMapData, tempRenderTarget->GetWidth(), tempRenderTarget->GetHeight(), fogEnvMap.GetWidth(), fogEnvMap.GetHeight(), isOpenGL);
 			fogEnvMapData += fogEnvMapFace;
 
 			tempRenderTarget->Unlock();
@@ -1367,8 +1372,12 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 
 	//g_pShaderAPI->Finish();
 
-	envMap.SwapChannels(0, 2);
-	fogEnvMap.SwapChannels(0, 2);
+	if(!isOpenGL)
+	{
+		// swap on D3D
+		envMap.SwapChannels(0, 2);
+		fogEnvMap.SwapChannels(0, 2);
+	}
 
 	envMap.CreateMipMaps(7);
 
@@ -1384,7 +1393,6 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(TEXFILTER_LINEAR, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);
 
 	// set cubemap to none before we freeing the texture
-	materials->SetEnvironmentMapTexture(nullptr);
 	g_pShaderAPI->FreeTexture(m_envMap);
 
 	m_envMap = g_pShaderAPI->CreateTexture(envMapImg, sampler);

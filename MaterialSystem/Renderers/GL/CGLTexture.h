@@ -44,6 +44,8 @@ public:
 	GLuint					glDepthID;
 
 	int						m_nLockLevel;
+	int						m_lockCubeFace;
+
 	bool					m_bIsLocked;
 	int						m_texSize;
 

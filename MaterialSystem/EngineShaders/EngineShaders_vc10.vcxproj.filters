@@ -111,6 +111,9 @@
     <ClCompile Include="Shaders\BaseSkinned.cpp">
       <Filter>Source Files\Shaders</Filter>
     </ClCompile>
+    <ClCompile Include="EnvMapTest.cpp">
+      <Filter>Source Files\Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vars_generic.h">

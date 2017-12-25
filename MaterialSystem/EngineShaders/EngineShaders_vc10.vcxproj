@@ -162,6 +162,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\public\materialsystem\BaseShader.cpp" />
+    <ClCompile Include="EnvMapTest.cpp" />
     <ClCompile Include="ShadersMain.cpp" />
     <ClCompile Include="ShadersOverride.cpp" />
     <ClCompile Include="Shaders\BaseParticle.cpp" />
