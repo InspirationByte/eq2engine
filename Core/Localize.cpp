@@ -144,7 +144,7 @@ void CLocalize::AddTokensFile(const char* pszFilePrefix)
 		}
 
 		// Cannot add same one
-		if(GetTokenString( kvs.GetRootSection()->keys[i]->name ) != NULL)
+		if(_FindToken( kvs.GetRootSection()->keys[i]->name ) != NULL)
 		{
 			MsgWarning("Localization warning (%s): Token '%s' already registered\n", pszFilePrefix, kvs.GetRootSection()->keys[i]->name );
 			continue;
@@ -178,22 +178,24 @@ void CLocalize::AddToken(const char* token, const char* pszTokenString)
 	m_tokens.append(pToken);
 }
 
-const wchar_t* CLocalize::GetTokenString(const char* pszToken,const wchar_t* pszDefaultToken)
+const wchar_t* CLocalize::GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken) const
 {
-	int tokHash = StringToHash(pszToken, true);
+	ILocToken* foundTok = GetToken(pszToken);
 
-	for(int i = 0; i < m_tokens.numElem();i++)
-	{
-		if(m_tokens[i]->m_tokHash == tokHash)
-			return m_tokens[i]->GetText();
-	}
-
-	DevMsg(DEVMSG_LOCALE, "LOCALIZER: Token %s not found\n", pszToken);
-
-	return pszDefaultToken;
+	return foundTok ? foundTok->GetText() : pszDefaultToken;
 }
 
-ILocToken* CLocalize::GetToken( const char* pszToken )
+ILocToken* CLocalize::GetToken( const char* pszToken ) const
+{
+	ILocToken* foundTok = _FindToken(pszToken);
+
+	if(!foundTok)
+		DevMsg(DEVMSG_LOCALE, "LOCALIZER: Token %s not found\n", pszToken);
+
+	return foundTok;
+}
+
+ILocToken* CLocalize::_FindToken( const char* pszToken ) const
 {
 	int tokHash = StringToHash(pszToken, true);
 
@@ -202,8 +204,6 @@ ILocToken* CLocalize::GetToken( const char* pszToken )
 		if(m_tokens[i]->m_tokHash == tokHash)
 			return m_tokens[i];
 	}
-
-	DevMsg(DEVMSG_LOCALE, "LOCALIZER: Token %s not found\n", pszToken);
 
 	return NULL;
 }

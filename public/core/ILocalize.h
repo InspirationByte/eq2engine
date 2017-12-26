@@ -46,8 +46,8 @@ public:
 	virtual void			AddToken(const char* token, const wchar_t* pszTokenString) = 0;
 	virtual void			AddToken(const char* token, const char* pszTokenString) = 0;
 
-	virtual const wchar_t*	GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken = 0) = 0;
-	virtual ILocToken*		GetToken( const char* pszToken ) = 0;
+	virtual const wchar_t*	GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken = 0) const = 0;
+	virtual ILocToken*		GetToken( const char* pszToken ) const = 0;
 
 
 };

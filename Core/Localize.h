@@ -52,13 +52,15 @@ public:
 	void				AddToken(const char* token, const wchar_t* pszTokenString);
 	void				AddToken(const char* token, const char* pszTokenString);
 
-	const wchar_t*		GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken = 0);
-	ILocToken*			GetToken( const char* pszToken );
+	const wchar_t*		GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken = 0) const;
+	ILocToken*			GetToken( const char* pszToken ) const;
 
 	bool				IsInitialized() const {return m_language.Length() > 0;}
 	const char*			GetInterfaceName() const {return LOCALIZER_INTERFACE_VERSION;}
 
 private:
+	ILocToken*			_FindToken( const char* pszToken ) const;
+
 	DkList<CLocToken*>	m_tokens;
 	EqString			m_language;
 };

@@ -294,12 +294,6 @@ void CShadowRenderer::RenderShadowCasters()
 		IVector2D copyRectSize = copyRect.GetSize();
 		g_pShaderAPI->SetViewport(copyRect.vleftTop.x,copyRect.vleftTop.y, copyRectSize.x, copyRectSize.y);
 
-		// render shadow to the rt
-		if(r_shadows_debugatlas.GetBool())
-			g_pShaderAPI->Clear( true,false,false, ColorRGBA((float)i / (float)m_texAtlasPacker.GetRectangleCount()) );
-		else
-			g_pShaderAPI->Clear( true,false,false, ColorRGBA(1.0f) );
-		
 		// take shadow height for near plane using first object AABB
 		float shadowHeight = length(firstObject->m_bbox.GetSize())*0.5f;
 

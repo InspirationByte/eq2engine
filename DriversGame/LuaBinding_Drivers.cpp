@@ -305,7 +305,7 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	OOLUA::Table gameObjectCastFuncs = OOLUA::new_table(state);
 	gameObjectCastFuncs.set("CCar", L_gameobject_castto_car);
 	gameObjectCastFuncs.set("CAITrafficCar", L_gameobject_castto_traffic);
-	gameObjectCastFuncs.set("CAIPursuerCar", L_gameobject_castto_traffic);
+	gameObjectCastFuncs.set("CAIPursuerCar", L_gameobject_castto_pursuer);
 
 	OOLUA::set_global(state, "gameobjcast", gameObjectCastFuncs);
 
