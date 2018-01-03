@@ -407,6 +407,10 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 
 	materials->SetCullMode(CULL_FRONT);
 
+	materials->SetInstancingEnabled(false);
+	// force disable vertex buffer
+	g_pShaderAPI->SetVertexBuffer( NULL, 2 );
+
 	studiohdr_t* pHdr = model->GetHWData()->studio;
 
 	int nLOD = r_shadowLod.GetInt();
