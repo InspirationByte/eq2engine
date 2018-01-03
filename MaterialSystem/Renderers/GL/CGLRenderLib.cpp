@@ -681,12 +681,30 @@ bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 		PrintGLExtensions();
 
 	{
-		const char *rend = (const char *) glGetString(GL_RENDERER);
-		const char *vendor = (const char *) glGetString(GL_VENDOR);
-		Msg("*Detected video adapter: %s by %s\n",rend,vendor);
+		const char* rend = (const char *) glGetString(GL_RENDERER);
+		const char* vendor = (const char *) glGetString(GL_VENDOR);
+		Msg("*Detected video adapter: %s by %s\n", rend, vendor);
 
-		const char *version = (const char *) glGetString(GL_VERSION);
-		Msg("*OpenGL version is: %s\n",version);
+		const char* versionStr = (const char *) glGetString(GL_VERSION);
+		Msg("*OpenGL version is: %s\n", versionStr);
+
+		const char majorStr[2] = {versionStr[0], '\0'};
+		const char minorStr[2] = {versionStr[2], '\0'};
+
+		int verMajor = atoi(majorStr);
+		int verMinor = atoi(minorStr);
+
+		if(verMajor < 2)
+		{
+			ErrorMsg("OpenGL major version must be at least 2!\n\nPlease update your drivers or hardware.");
+			return false;
+		}
+
+		if(verMajor == 2 && verMinor < 1)
+		{
+			ErrorMsg("OpenGL 2.x version must be at least 2.1!\n\nPlease update your drivers or hardware.");
+			return false;
+		}
 	}
 
 	m_Renderer = new ShaderAPIGL();

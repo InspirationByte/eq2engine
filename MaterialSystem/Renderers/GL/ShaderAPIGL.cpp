@@ -1306,8 +1306,9 @@ void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destT
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, destTexture->textures[0].glTexID, 0);
 
 	// setup GL_COLOR_ATTACHMENT1 as destination
-	glDrawBuffer(GL_COLOR_ATTACHMENT1);
-	GLCheckError("glDrawBuffer att1");
+	GLenum drawBufferSetting[2] = {GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, drawBufferSetting);
+	GLCheckError("glDrawBuffers att1");
 
 	// copy
 	glBlitFramebuffer(	_srcRect.vleftTop.x, _srcRect.vleftTop.y, _srcRect.vrightBottom.x, _srcRect.vrightBottom.y,
@@ -1316,7 +1317,7 @@ void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destT
 	GLCheckError("blit");
 
 	// reset
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glDrawBuffers(1, drawBufferSetting+1);
 	GLCheckError("glDrawBuffer rst");
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
@@ -1375,13 +1376,7 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 
 		if (nNumRTs == 0)
 		{
-
-#ifdef USE_GLES2
-			glDrawBuffers(0, GL_NONE);
-#else
-			glDrawBuffer(GL_NONE);
-#endif // USE_GLES2
-
+			glDrawBuffers(0, NULL);
 			glReadBuffer(GL_NONE);
 		}
 		else
