@@ -44,13 +44,13 @@ PROJECT:
 		^ [СДЕЛАНО] EqMatSystem
 		^ [СДЕЛАНО] EqShaderAPINull
 		^ EqShaderAPIGL
-			^ создать полностью совместимую библиотеку с GL ES RHI
-		^ EqBaseShaders
+			^ [СДЕЛАНО] создать полностью совместимую библиотеку с GL ES RHI
+		^ [СДЕЛАНО] EqBaseShaders
 
 		^ EqEngine (только компоненты)
-			^ EqSoundSystem (нет, не корректировать ISoundSystem )
+			^ [СДЕЛАНО] EqSoundSystem (нет, не корректировать ISoundSystem )
 			^ [СДЕЛАНО] Studio models
-			^ Visual console
+			^ [СДЕЛАНО] Visual console
 			^ [СДЕЛАНО] EqPhysics
 
 		^ [СДЕЛАНО] DriversGame
@@ -102,10 +102,10 @@ EQENGINE:
 
 RENDERERS:
 
-	1. Occlusion Query Objects
+	1. [СДЕЛАНО] Occlusion Query Objects
 	2. [СДЕЛАНО] Вычистить код RenderLibrary
-	3. IMeshBuilder полностью переработать, сделать CMeshBuilder, публичным, и работать по заданному формату в VBO
-	4. Render API capabilities (caps). g_pShaderAPI->GetCaps()
+	3. [СДЕЛАНО] IMeshBuilder полностью переработать, сделать CMeshBuilder, публичным, и работать по заданному формату в VBO
+	4. [СДЕЛАНО] Render API capabilities (caps). g_pShaderAPI->GetCaps()
 	5. Переработать загрузку текстур (ImageProvider) Работа в сегодняшнем варианте с ними просто отвратительная.
 	6. Рефакторить уродливый код создания State-объектов, особенно для текстур
 	7. Работа с Direct3D10 и Direct3D11, Direct3D12 (и забросить Direct3D9)
@@ -115,7 +115,7 @@ RENDERERS:
 MATSYSTEM:
 
 	1. Отдать шейдерам создание State-объектов, чтобы не выбирать их в системе материалов
-	2. Упразднить все Draw*FFP и пересадить на новый IMeshBuilder
+	2. [СДЕЛАНО] Упразднить все Draw*FFP и пересадить на новый IMeshBuilder
 
 EQEDIT:
 
