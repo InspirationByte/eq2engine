@@ -19,10 +19,6 @@
 
 #include "VirtualStream.h"
 
-#ifndef NO_LUA
-#include "luabinding/LuaBinding_Math.h"
-#endif // NO_LUA
-
 struct kvkeybase_t;
 
 namespace Networking
