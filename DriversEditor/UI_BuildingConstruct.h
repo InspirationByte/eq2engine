@@ -207,6 +207,8 @@ protected:
 	void OnEditClick( wxCommandEvent& event );
 	void OnDeleteClick( wxCommandEvent& event );
 
+	void MouseTranslateEvents( wxMouseEvent& event, const Vector3D& ray_start, const Vector3D& ray_dir );
+
 	CEditAxisXYZ				m_editAxis;
 
 	int							m_mouseLastY;
@@ -240,6 +242,8 @@ protected:
 	Vector3D					m_dragOffs;
 	bool						m_isSelecting;
 	int							m_draggedAxes;
+
+	bool						m_shiftModifier;
 };
 
 #endif // UI_BUILDINGCOSTRUCT_H

@@ -155,7 +155,7 @@ void CBaseActor::PhysicsCreateObjects()
 	int actor_half_shape = physics->AddPrimitiveShape(halfActor);
 
 	/*
-	physobjectdata_t actor_object_info;
+	studioPhysObject_t actor_object_info;
 	actor_object_info.object.mass = m_fMass;
 	actor_object_info.object.mass_center = vec3_zero;
 	actor_object_info.object.offset = vec3_zero;

@@ -16,11 +16,11 @@ public:
 	virtual ~IStudioShapeCache() {}
 
 	// checks the shape is initialized for the cache
-	virtual bool	IsShapeCachePresent( physmodelshapecache_t* shapeInfo ) = 0;
+	virtual bool	IsShapeCachePresent( studioPhysShapeCache_t* shapeInfo ) = 0;
 
 	// initializes whole studio shape model with all objects
-	virtual void	InitStudioCache( physmodeldata_t* studioData ) = 0;
-	virtual void	DestroyStudioCache( physmodeldata_t* studioData ) = 0;
+	virtual void	InitStudioCache( studioPhysData_t* studioData ) = 0;
+	virtual void	DestroyStudioCache( studioPhysData_t* studioData ) = 0;
 
 	// does all shape cleanup
 	virtual void	Cleanup_Invalidate() = 0;
@@ -34,11 +34,11 @@ class CEmptyStudioShapeCache : public IStudioShapeCache
 {
 public:
 	// checks the shape is initialized for the cache
-	bool	IsShapeCachePresent( physmodelshapecache_t* shapeInfo ) {return false;}
+	bool	IsShapeCachePresent( studioPhysShapeCache_t* shapeInfo ) {return false;}
 
 	// initializes whole studio shape model with all objects
-	void	InitStudioCache( physmodeldata_t* studioData )  {}
-	void	DestroyStudioCache( physmodeldata_t* studioData )  {}
+	void	InitStudioCache( studioPhysData_t* studioData )  {}
+	void	DestroyStudioCache( studioPhysData_t* studioData )  {}
 
 	// does all shape cleanup
 	void	Cleanup_Invalidate() {}

@@ -831,7 +831,7 @@ IPhysicsObject* BaseEntity::PhysicsInitStatic()
 	if(!m_pModel->GetHWData())
 		return NULL;
 
-	physmodeldata_t& physMod = m_pModel->GetHWData()->physModel;
+	studioPhysData_t& physMod = m_pModel->GetHWData()->physModel;
 
 	if(physMod.numObjects == 1)
 	{

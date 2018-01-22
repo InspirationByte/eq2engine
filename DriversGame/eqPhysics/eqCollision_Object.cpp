@@ -94,7 +94,7 @@ void CEqCollisionObject::InitAABB()
 }
 
 // objects that will be created
-bool CEqCollisionObject::Initialize( physmodeldata_t* data, int nObject )
+bool CEqCollisionObject::Initialize( studioPhysData_t* data, int nObject )
 {
 	// TODO: make it
 	ASSERTMSG((nObject < data->numObjects), "DkPhysics::CreateObject - nObject is out of numObjects");

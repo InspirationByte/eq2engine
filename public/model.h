@@ -48,21 +48,23 @@ enum EEGFLimits
 // Base model header
 struct basemodelheader_s
 {
-	int					m_nIdentifier;
-	uint8				m_nVersion;
+	int					ident;
+	uint8				version;
 
-	int					m_nFlags;	// Model flags
+	int					flags;	// Model flags
 
-	int					m_nLength;	// Size of model
+	int					size;	// Size of model
 };
 
 ALIGNED_TYPE(basemodelheader_s, 4) basemodelheader_t;
 
 // Base model material search path descriptor
-typedef struct materialpathdesc_s
+struct materialpathdesc_s
 {
 	char				searchPath[128];
-}materialpathdesc_t;
+};
+
+ALIGNED_TYPE(materialpathdesc_s, 4) materialpathdesc_t;
 
 // material descriptor
 struct motionpackagedesc_s
@@ -72,70 +74,34 @@ struct motionpackagedesc_s
 
 ALIGNED_TYPE(motionpackagedesc_s, 4) motionpackagedesc_t;
 
-// this structure holds in transformation
-struct joint_t
-{
-	PPMEM_MANAGED_OBJECT();
-
-	char				name[44]; // bone name
-
-	int					bone_id; // index of this bone
-	int					parentbone; // parent index
-
-	Matrix4x4			absTrans; // base absolute transform
-	Matrix4x4			localTrans; // local transform
-
-	Vector3D			position; // bone initial position
-	Vector3D			rotation; // bone initial rotation
-
-	DkList<int>			childs; // child bones
-
-	int					chain_id;
-	int					link_id;
-};
-
-// animation frames for each bone
-struct boneframe_t
-{
-	int				numFrames;
-	animframe_t*	keyFrames;
-};
-
-// model animation
-struct modelanimation_t
-{
-	char			name[44];
-
-	// bones, in count of studiohwdata_t::numJoints
-	boneframe_t*	bones;
-};
+//----------------------------------------------------------------------------------------------
 
 // equilibrium model format
 #include "model_eq.h"
 
 // egf model hardware vertex
-struct EGFHwVertex_t
+typedef struct EGFHwVertex_s
 {
-	EGFHwVertex_t() {}
+	EGFHwVertex_s() {}
 
-	EGFHwVertex_t(studiovertexdesc_t* initFrom)
+	EGFHwVertex_s(studiovertexdesc_t& initFrom)
 	{
-		pos = initFrom->point;
-		texcoord = initFrom->texCoord;
+		pos = initFrom.point;
+		texcoord = initFrom.texCoord;
 
-		tangent = initFrom->tangent;
-		binormal = initFrom->binormal;
-		normal = initFrom->normal;
+		tangent = initFrom.tangent;
+		binormal = initFrom.binormal;
+		normal = initFrom.normal;
 
 		for(int i = 0; i < 4; i++)
 			boneIndices[i] = -1;
 
 		memset(boneWeights,0,sizeof(boneWeights));
 
-		for(int i = 0; i < initFrom->boneweights.numweights; i++)
+		for(int i = 0; i < initFrom.boneweights.numweights; i++)
 		{
-			boneIndices[i] = initFrom->boneweights.bones[i];
-			boneWeights[i] = initFrom->boneweights.weight[i];
+			boneIndices[i] = initFrom.boneweights.bones[i];
+			boneWeights[i] = initFrom.boneweights.weight[i];
 		}
 	}
 
@@ -153,16 +119,29 @@ struct EGFHwVertex_t
 
 	half			boneIndices[4];
 	half			boneWeights[4];
+} EGFHwVertex_t;
+
+// Declare the EGF vertex format
+static VertexFormatDesc_t g_EGFHwVertexFormat[] = {
+	{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },		// position
+	{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF },		// texcoord 0
+
+	{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF },		// Tangent (TC1)
+	{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF },		// Binormal (TC2)
+	{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF },		// Normal (TC3)
+
+	{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF },		// Bone indices (hw skinning), (TC4)
+	{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }		// Bone weights (hw skinning), (TC5)
 };
 
 // shape cache data
-struct physmodelshapecache_t
+struct studioPhysShapeCache_t
 {
 	physgeominfo_t	shape_info;
 	void*			cachedata;
 };
 
-struct physobjectdata_t
+struct studioPhysObject_t
 {
 	PPMEM_MANAGED_OBJECT();
 
@@ -172,11 +151,11 @@ struct physobjectdata_t
 };
 
 // physics model data from POD
-struct physmodeldata_t
+struct studioPhysData_t
 {
 	PPMEM_MANAGED_OBJECT();
 
-	physmodeldata_t()
+	studioPhysData_t()
 	{
 		modeltype = 0;
 
@@ -198,13 +177,13 @@ struct physmodeldata_t
 
 	int modeltype;
 
-	physobjectdata_t* objects;	// array, because it may be dynamic or ragdoll.
+	studioPhysObject_t* objects;	// array, because it may be dynamic or ragdoll.
 	int numObjects;
 
 	physjoint_t* joints;
 	int numJoints;				// because it may be merged
 
-	physmodelshapecache_t* shapes;
+	studioPhysShapeCache_t* shapes;
 	int numShapes;
 
 	Vector3D*	vertices;
@@ -214,46 +193,12 @@ struct physmodeldata_t
 	int			numIndices;
 };
 
-struct hwgroup_desc_t
-{
-	int	firstindex;
-	int indexcount;
-};
-
-// lod data
-struct hwmodelref_t
-{
-	hwgroup_desc_t*		groupDescs; // offset in hw index buffer to this lod, for each geometry group
-};
-
-// model motion package loaded and expanded data
-struct studiomotiondata_t
-{
-	// animations
-	int					numAnimations;
-	modelanimation_t*	animations;
-
-	// sequences
-	int					numsequences;
-	sequencedesc_t*		sequences;
-
-	// events
-	int					numEvents;
-	sequenceevent_t*	events;
-
-	// pose controllers
-	int					numPoseControllers;
-	posecontroller_t*	poseControllers;
-
-	animframe_t*		frames;
-};
-
 // hardware data for the MOD_STUDIO
-struct studiohwdata_t
+struct studioHwData_t
 {
 	PPMEM_MANAGED_OBJECT();
 
-	studiohwdata_t()
+	studioHwData_t()
 	{
 		studio = nullptr;
 		modelrefs = nullptr;
@@ -265,22 +210,78 @@ struct studiohwdata_t
 	studiohdr_t*		studio;
 
 	// POD data
-	physmodeldata_t		physModel;
+	studioPhysData_t		physModel;
 
 	// lod models
-	hwmodelref_t*		modelrefs;
+	struct modelRef_t
+	{
+		// offset in hw index buffer to this lod, for each geometry group
+		struct groupDesc_t
+		{
+			int	firstindex;
+			int indexcount;
+		} *groupDescs;
+	} *modelrefs;
 
 	// joints, for
-	joint_t*			joints;
+	struct joint_t
+	{
+		char				name[44]; // bone name
 
-	// shared cacheable motion data, this may be used for different models
-	studiomotiondata_t*	motiondata[MAX_MOTIONPACKAGES];
+		int					bone_id; // index of this bone
+		int					parentbone; // parent index
+
+		Matrix4x4			absTrans; // base absolute transform
+		Matrix4x4			localTrans; // local transform
+
+		Vector3D			position; // bone initial position
+		Vector3D			rotation; // bone initial rotation
+
+		DkList<int>			childs; // child bones
+
+		int					chain_id;
+		int					link_id;
+	}*	joints;
+
+	// model motion package loaded and expanded data
+	struct motionData_t
+	{
+		// animations
+		int					numAnimations;
+
+		struct animation_t
+		{
+			char name[44];
+
+			// bones, in count of studiohwdata_t::numJoints
+			struct boneframe_t
+			{
+				int				numFrames;
+				animframe_t*	keyFrames;
+			}*	bones;
+		}*	animations;
+
+		// sequences
+		int					numsequences;
+		sequencedesc_t*		sequences;
+
+		// events
+		int					numEvents;
+		sequenceevent_t*	events;
+
+		// pose controllers
+		int					numPoseControllers;
+		posecontroller_t*	poseControllers;
+
+		animframe_t*		frames;
+	}*	motiondata[MAX_MOTIONPACKAGES]; // shared cacheable motion data, this may be used for different models
+
 	int					numMotionPackages;
 };
 
 //------------------------------------------------------------------------------
 
-inline int PhysModel_FindObjectId(physmodeldata_t* model, const char* name)
+inline int PhysModel_FindObjectId(studioPhysData_t* model, const char* name)
 {
 	for(int i = 0; i < model->numObjects; i++)
 	{

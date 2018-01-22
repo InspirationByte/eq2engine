@@ -33,7 +33,7 @@ public:
 	
 	void				DestroyModel();
 
-	studiohwdata_t*		GetHWData() const;
+	studioHwData_t*		GetHWData() const;
 
 	// selects a lod. returns index
 	int					SelectLod(float dist_to_camera);
@@ -82,7 +82,7 @@ private:
 	//-----------------------------------------------
 
 	IEqModelInstancer*	m_instancer;
-	studiohwdata_t*		m_hwdata;
+	studioHwData_t*		m_hwdata;
 
 	IVertexBuffer*		m_pVB;
 	IIndexBuffer*		m_pIB;

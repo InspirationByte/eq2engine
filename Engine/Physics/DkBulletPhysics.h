@@ -110,7 +110,7 @@ public:
 	// Any physics object creator
 	IPhysicsObject*								CreateStaticObject(physmodelcreateinfo_t *info, int nCollisionGroupFlags = COLLISION_GROUP_ALL);
 
-	IPhysicsObject*								CreateObject(physmodeldata_t* data, int nObject = 0); // Creates physics object
+	IPhysicsObject*								CreateObject(studioPhysData_t* data, int nObject = 0); // Creates physics object
 
 	IPhysicsObject*								CreateObjectCustom(int numShapes, int* shapeIdxs, const char* surfaceProps, float mass); // Creates physics object
 

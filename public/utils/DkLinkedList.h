@@ -126,7 +126,7 @@ public:
 		return false;
 	}
 
-	const T & getCurrent() const
+	T & getCurrent() const
 	{
 		return curr->object;
 	}

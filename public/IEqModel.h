@@ -39,10 +39,10 @@ struct worldhwdata_t // (as studiohwdata_t)
 	eqlevelsurf_t** surfaces;
 	int				numSurfaces;
 
-	physmodeldata_t	m_physmodel;
+	studioPhysData_t	m_physmodel;
 };
 
-#define MOD_STUDIOHWDATA(m) (studiohwdata_t*)m->GetHWData()
+#define MOD_STUDIOHWDATA(m) (studioHwData_t*)m->GetHWData()
 #define MOD_WORLDHWDATA(m)	(worldhwdata_t*)m->GetHWData()
 
 //-------------------------------------------------------
@@ -128,7 +128,7 @@ public:
 	virtual	void				LoadMaterials() = 0;
 
 	// studio model hardware data pointer for information
-	virtual studiohwdata_t*		GetHWData() const = 0;
+	virtual studioHwData_t*		GetHWData() const = 0;
 
 	// loading state
 	virtual int					GetLoadingState() const = 0;

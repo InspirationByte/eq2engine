@@ -77,7 +77,7 @@ struct gsequence_t
 
 	// blending of animations
 	int8				numAnimations;
-	modelanimation_t*	animations[MAX_BLEND_WIDTH];
+	studioHwData_t::motionData_t::animation_t*	animations[MAX_BLEND_WIDTH];
 
 	// pose controllers
 	gposecontroller_t*	posecontroller;

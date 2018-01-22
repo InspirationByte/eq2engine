@@ -21,11 +21,11 @@ public:
 								CBulletStudioShapeCache();
 
 	// checks the shape is initialized for the cache
-	bool						IsShapeCachePresent( physmodelshapecache_t* shapeInfo );
+	bool						IsShapeCachePresent( studioPhysShapeCache_t* shapeInfo );
 
 	// initializes whole studio shape model with all objects
-	void						InitStudioCache( physmodeldata_t* studioData );
-	void						DestroyStudioCache( physmodeldata_t* studioData );
+	void						InitStudioCache( studioPhysData_t* studioData );
+	void						DestroyStudioCache( studioPhysData_t* studioData );
 
 	// does all shape cleanup
 	void						Cleanup_Invalidate();

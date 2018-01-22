@@ -43,8 +43,8 @@ public:
 	virtual void				InitAnimationThings();
 	void						DestroyAnimationThings();
 
-	virtual void				PreloadMotionData(studiomotiondata_t* pMotionData);
-	virtual void				PrecacheSoundEvents(studiomotiondata_t* pMotionData);
+	virtual void				PreloadMotionData(studioHwData_t::motionData_t* pMotionData);
+	virtual void				PrecacheSoundEvents(studioHwData_t::motionData_t* pMotionData);
 
 	virtual int					FindBone(const char* boneName);				// finds bone
 
@@ -131,9 +131,9 @@ protected:
 	// makes standard pose
 	void						StandardPose();
 
-	void						GetInterpolatedBoneFrame(modelanimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out);
+	void						GetInterpolatedBoneFrame(studioHwData_t::motionData_t::animation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out);
 
-	void						GetInterpolatedBoneFrameBetweenTwoAnimations(modelanimation_t* pAnim1, modelanimation_t* pAnim2, int nBone, int firstframe, int lastframe, float interp, float animTransition, animframe_t &out);
+	void						GetInterpolatedBoneFrameBetweenTwoAnimations(studioHwData_t::motionData_t::animation_t* pAnim1, studioHwData_t::motionData_t::animation_t* pAnim2, int nBone, int firstframe, int lastframe, float interp, float animTransition, animframe_t &out);
 
 	void						GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone, animframe_t &out);
 

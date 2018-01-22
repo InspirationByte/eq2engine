@@ -238,7 +238,7 @@ public:
 
 	virtual IPhysicsObject*						CreateStaticObject(physmodelcreateinfo_t *info, int nCollisionGroupFlags = COLLISION_GROUP_ALL) = 0;
 
-	virtual IPhysicsObject*						CreateObject(physmodeldata_t* data, int nObject = 0) = 0; // Creates physics object
+	virtual IPhysicsObject*						CreateObject(studioPhysData_t* data, int nObject = 0) = 0; // Creates physics object
 	virtual IPhysicsObject*						CreateObjectCustom(int numShapes, int* shapeIdxs, const char* surfaceProps, float mass) = 0; // Creates physics object
 
 	virtual IPhysicsJoint*						CreateJoint(IPhysicsObject* pObjectA, IPhysicsObject* pObjectB, Matrix4x4 &transformA, Matrix4x4 &transformB, bool bDisableCollisionBetweenBodies) = 0; // creates physics joint

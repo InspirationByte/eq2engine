@@ -53,7 +53,7 @@ void RenderPhysModel(IEqModel* pModel)
 
 	IMeshBuilder* mesh = g_pShaderAPI->CreateMeshBuilder();
 
-	physmodeldata_t* phys_data = &pModel->GetHWData()->physModel;
+	studioPhysData_t* phys_data = &pModel->GetHWData()->physModel;
 
 	for(int i = 0; i < phys_data->numObjects; i++)
 	{

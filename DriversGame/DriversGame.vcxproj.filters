@@ -835,6 +835,9 @@
     <ClInclude Include="AIManipulator_TargetAvoidance.h">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\materialsystem\VertexFormatUtil.h">
+      <Filter>Файлы исходного кода\MatSystem</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\Resources.rc">

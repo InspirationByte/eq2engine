@@ -82,7 +82,7 @@ CBulletStudioShapeCache::CBulletStudioShapeCache() : m_mutex(GetGlobalMutex(MUTE
 }
 
 // checks the shape is initialized for the cache
-bool CBulletStudioShapeCache::IsShapeCachePresent( physmodelshapecache_t* shapeInfo )
+bool CBulletStudioShapeCache::IsShapeCachePresent( studioPhysShapeCache_t* shapeInfo )
 {
 	Threading::CScopedMutex m( m_mutex );
 
@@ -96,7 +96,7 @@ bool CBulletStudioShapeCache::IsShapeCachePresent( physmodelshapecache_t* shapeI
 }
 
 // initializes whole studio shape model with all objects
-void CBulletStudioShapeCache::InitStudioCache( physmodeldata_t* studioData )
+void CBulletStudioShapeCache::InitStudioCache( studioPhysData_t* studioData )
 {
 	// cache shapes using model info.
 	for(int i = 0; i < studioData->numObjects; i++)
@@ -124,7 +124,7 @@ void CBulletStudioShapeCache::InitStudioCache( physmodeldata_t* studioData )
 	}
 }
 
-void CBulletStudioShapeCache::DestroyStudioCache( physmodeldata_t* studioData )
+void CBulletStudioShapeCache::DestroyStudioCache( studioPhysData_t* studioData )
 {
 	for(int i = 0; i < studioData->numShapes; i++)
 	{

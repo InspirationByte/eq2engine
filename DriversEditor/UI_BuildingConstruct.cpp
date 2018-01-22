@@ -1148,6 +1148,10 @@ void CUI_BuildingConstruct::OnKey(wxKeyEvent& event, bool bDown)
 		{
 			EditSelectedBuilding();
 		}
+		else if(event.GetRawKeyCode() == 'G')
+		{
+			m_mode = ED_BUILD_MOVEMENT;
+		}
 		else if(event.m_keyCode == WXK_DELETE)
 		{
 			DeleteSelection();
@@ -1171,6 +1175,11 @@ void CUI_BuildingConstruct::OnKey(wxKeyEvent& event, bool bDown)
 		{
 			m_tiledPlacement->SetValue(!m_tiledPlacement->GetValue());
 		}
+	}
+
+	if(event.m_keyCode == WXK_SHIFT)
+	{
+		m_shiftModifier = bDown;
 	}
 }
 
@@ -1377,7 +1386,7 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 					return;
 
 				// Modify last point to use selected segment and layer
-				buildSegmentPoint_t& lastPoint = m_editingBuilding->points.getCurrentNode()->object;
+				buildSegmentPoint_t& lastPoint = m_editingBuilding->points.getCurrent();
 				lastPoint.layerId = m_curLayerId;
 				lastPoint.scale = m_curSegmentScale;
 
@@ -1395,15 +1404,101 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				// ED_BUILD_DONE if connected to begin point
 				//if(distance(ppos, m_editingBuilding->points[0]) < 2.0f)
 				//	m_mode = ED_BUILD_DONE;
-
-				return;
 			}
 		}
 		else if(m_selBuildings.numElem() > 0)
 		{
 			// try move selection
-
+			if(m_mode == ED_BUILD_MOVEMENT)
+			{
+				MouseTranslateEvents(event,ray_start,ray_dir);
+			}
 		}
+	}
+}
+
+extern Vector3D g_camera_target;
+
+void CUI_BuildingConstruct::MouseTranslateEvents( wxMouseEvent& event, const Vector3D& ray_start, const Vector3D& ray_dir )
+{
+	if(!m_selBuildings.numElem())
+		return;
+
+	// display selection
+	float clength = length(m_editAxis.m_position-g_camera_target);
+
+	Vector3D plane_dir = normalize(m_editAxis.m_position-g_camera_target);
+
+	if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
+	{
+		bool isSet = false;
+
+		if(m_draggedAxes == 0)
+		{
+			m_draggedAxes = m_editAxis.TestRay(ray_start, ray_dir, clength);
+			isSet = true;
+		}
+
+		{
+			// process movement
+			Vector3D axsMod((m_draggedAxes & AXIS_X) ? 1.0f : 0.0f,
+							(m_draggedAxes & AXIS_Y) ? 1.0f : 0.0f,
+							(m_draggedAxes & AXIS_Z) ? 1.0f : 0.0f);
+
+			Vector3D edAxis = Vector3D(	dot(m_editAxis.m_rotation.rows[0],axsMod),
+										dot(m_editAxis.m_rotation.rows[1],axsMod),
+										dot(m_editAxis.m_rotation.rows[2],axsMod));
+
+			// absolute
+			edAxis *= sign(edAxis);
+
+			// movement plane
+			Plane pl(plane_dir, -dot(plane_dir, m_editAxis.m_position));
+
+			Vector3D point;
+
+			if( pl.GetIntersectionWithRay(ray_start, ray_dir, point) )
+			{
+				if(isSet)
+				{
+					m_dragOffs = m_editAxis.m_position-point;
+				}
+
+				Vector3D movement = (point-m_editAxis.m_position) + m_dragOffs;
+
+				movement *= edAxis;
+
+				m_editAxis.m_position += movement;
+
+				for(int i = 0; i < m_selBuildings.numElem(); i++)
+				{
+					buildingSource_t* build = m_selBuildings[i].selBuild;
+
+					build->modelPosition += movement;
+					if(build->points.goToFirst())
+					{
+						do
+						{
+							buildSegmentPoint_t& seg = build->points.getCurrent();
+							seg.position += movement;
+						}while(build->points.goToNext());
+
+						#pragma todo("Relocate model in a level regions after movement (or left mouse UP)")
+					}
+				}
+
+				g_pMainFrame->NotifyUpdate();
+			}
+		}
+	}
+
+	if(event.ButtonUp(wxMOUSE_BTN_LEFT))
+	{
+		m_draggedAxes = 0;
+		m_dragOffs = vec3_zero;
+		//m_dragRot = vec3_zero;
+
+		RecalcSelectionCenter();
 	}
 }
 

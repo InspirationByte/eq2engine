@@ -379,7 +379,7 @@ void CAnimatedModel::InitAnimationThings()
 	}
 }
 
-void CAnimatedModel::PreloadMotionData(studiomotiondata_t* pMotionData)
+void CAnimatedModel::PreloadMotionData(studioHwData_t::motionData_t* pMotionData)
 {
 	// create pose controllers
 	for(int i = 0; i < pMotionData->numPoseControllers; i++)
@@ -437,7 +437,7 @@ void CAnimatedModel::PreloadMotionData(studiomotiondata_t* pMotionData)
 	}
 }
 
-void CAnimatedModel::PrecacheSoundEvents( studiomotiondata_t* pMotionData )
+void CAnimatedModel::PrecacheSoundEvents( studioHwData_t::motionData_t* pMotionData )
 {
 	for(int i = 0; i < pMotionData->numEvents; i++)
 	{
@@ -805,12 +805,12 @@ void CAnimatedModel::SwapSequenceTimers(int index, int swapTo)
 	m_sequenceTimerBlendings[index] = swap_to_time;
 }
 
-void CAnimatedModel::GetInterpolatedBoneFrame(modelanimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out)
+void CAnimatedModel::GetInterpolatedBoneFrame(studioHwData_t::motionData_t::animation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out)
 {
 	InterpolateFrameTransform(pAnim->bones[nBone].keyFrames[firstframe], pAnim->bones[nBone].keyFrames[lastframe], clamp(interp,0,1), out);
 }
 
-void CAnimatedModel::GetInterpolatedBoneFrameBetweenTwoAnimations(modelanimation_t* pAnim1, modelanimation_t* pAnim2, int nBone, int firstframe, int lastframe, float interp, float animTransition, animframe_t &out)
+void CAnimatedModel::GetInterpolatedBoneFrameBetweenTwoAnimations(studioHwData_t::motionData_t::animation_t* pAnim1, studioHwData_t::motionData_t::animation_t* pAnim2, int nBone, int firstframe, int lastframe, float interp, float animTransition, animframe_t &out)
 {
 	// compute frame 1
 	animframe_t anim1transform;
@@ -838,8 +838,8 @@ void CAnimatedModel::GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone
 							blendAnimation2
 							);
 
-	modelanimation_t* pAnim1 = pSequence->animations[blendAnimation1];
-	modelanimation_t* pAnim2 = pSequence->animations[blendAnimation2];
+	studioHwData_t::motionData_t::animation_t* pAnim1 = pSequence->animations[blendAnimation1];
+	studioHwData_t::motionData_t::animation_t* pAnim2 = pSequence->animations[blendAnimation2];
 
 	GetInterpolatedBoneFrameBetweenTwoAnimations(	pAnim1,
 													pAnim2,
@@ -904,7 +904,7 @@ void CAnimatedModel::UpdateBones()
 			if(blend_weight <= 0)
 				continue;
 
-			modelanimation_t *curanim = m_sequenceTimers[j].base_sequence->animations[0];
+			studioHwData_t::motionData_t::animation_t *curanim = m_sequenceTimers[j].base_sequence->animations[0];
 
 			if(!curanim)
 				continue;
@@ -932,8 +932,8 @@ void CAnimatedModel::UpdateBones()
 										playingBlendAnimation2);
 
 				// get frame pointers
-				modelanimation_t* pPlayingAnim1 = m_sequenceTimers[j].base_sequence->animations[playingBlendAnimation1];
-				modelanimation_t* pPlayingAnim2 = m_sequenceTimers[j].base_sequence->animations[playingBlendAnimation2];
+				studioHwData_t::motionData_t::animation_t* pPlayingAnim1 = m_sequenceTimers[j].base_sequence->animations[playingBlendAnimation1];
+				studioHwData_t::motionData_t::animation_t* pPlayingAnim2 = m_sequenceTimers[j].base_sequence->animations[playingBlendAnimation2];
 
 				// compute blending frame
 				GetInterpolatedBoneFrameBetweenTwoAnimations(	pPlayingAnim1,
@@ -948,7 +948,7 @@ void CAnimatedModel::UpdateBones()
 			else
 			{
 				// simply compute frames
-				modelanimation_t *curanim = m_sequenceTimers[j].base_sequence->animations[0];
+				studioHwData_t::motionData_t::animation_t *curanim = m_sequenceTimers[j].base_sequence->animations[0];
 
 				GetInterpolatedBoneFrame(curanim, boneId, m_sequenceTimers[j].currFrame, m_sequenceTimers[j].nextFrame, frame_interp, cTimedFrame);
 			}
@@ -1091,7 +1091,7 @@ void CAnimatedModel::RenderPhysModel()
 	if(!m_pModel->GetHWData())
 		return;
 
-	const physmodeldata_t& phys_data = m_pModel->GetHWData()->physModel;
+	const studioPhysData_t& phys_data = m_pModel->GetHWData()->physModel;
 
 	if(phys_data.numObjects == 0)
 		return;

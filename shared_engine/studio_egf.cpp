@@ -257,7 +257,7 @@ void CEngineStudioEGF::DestroyModel()
 
 		Studio_FreePhysModel(&m_hwdata->physModel);
 
-		hwmodelref_t* pLodModels = m_hwdata->modelrefs;
+		studioHwData_t::modelRef_t* pLodModels = m_hwdata->modelrefs;
 
 		for(int i = 0; i < m_hwdata->studio->numModels; i++)
 			delete [] pLodModels[i].groupDescs;
@@ -304,10 +304,9 @@ void CopyGroupVertexDataToHWList(DkList<EGFHwVertex_t>& hwVtxList, modelgroupdes
 	{
 		studiovertexdesc_t* pVertex = pGroup->pVertex(i);
 
-		EGFHwVertex_t pNewVertex(pVertex);
+		EGFHwVertex_t pNewVertex(*pVertex);
 
 		hwVtxList.append(pNewVertex);
-
 		aabb.AddVertex(pVertex->point);
 	}
 }
@@ -414,8 +413,8 @@ bool CEngineStudioEGF::LoadFromFile()
 		return false; // get out, nothing to load
 
 	// allocate hardware data
-	m_hwdata = new studiohwdata_t;
-	memset(m_hwdata, 0, sizeof(studiohwdata_t));
+	m_hwdata = new studioHwData_t;
+	memset(m_hwdata, 0, sizeof(studioHwData_t));
 
 	m_hwdata->studio = pHdr;
 
@@ -428,8 +427,8 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 
 	studiohdr_t* pHdr = m_hwdata->studio;
 
-	m_hwdata->modelrefs = new hwmodelref_t[pHdr->numModels];
-	hwmodelref_t* pLodModels = m_hwdata->modelrefs;
+	m_hwdata->modelrefs = new studioHwData_t::modelRef_t[pHdr->numModels];
+	studioHwData_t::modelRef_t* pLodModels = m_hwdata->modelrefs;
 
 	{
 		// load all group vertices and indices
@@ -445,7 +444,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		{
 			studiomodeldesc_t* pModelDesc = pHdr->pModelDesc(i);
 
-			pLodModels[i].groupDescs = new hwgroup_desc_t[pModelDesc->numGroups];
+			pLodModels[i].groupDescs = new studioHwData_t::modelRef_t::groupDesc_t[pModelDesc->numGroups];
 
 			for(int j = 0; j < pModelDesc->numGroups; j++)
 			{
@@ -478,7 +477,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		m_numIndices = loadedindices.numElem();
 
 		// Initialize HW data joints
-		m_hwdata->joints = new joint_t[pHdr->numBones];
+		m_hwdata->joints = new studioHwData_t::joint_t[pHdr->numBones];
 
 		// parse bones
 		for(int i = 0; i < pHdr->numBones; i++)
@@ -644,7 +643,7 @@ void CEngineStudioEGF::SetupBones()
 	// setup each bone's transformation
 	for(int8 i = 0; i < m_hwdata->studio->numBones; i++)
 	{
-		joint_t* bone = &m_hwdata->joints[i];
+		studioHwData_t::joint_t* bone = &m_hwdata->joints[i];
 
 		// setup transformation
 		bone->localTrans = identity4();
@@ -718,7 +717,7 @@ void CEngineStudioEGF::DrawGroup(int nModel, int nGroup, bool preSetVBO)
 
 	materials->Apply();
 
-	hwgroup_desc_t& desc = m_hwdata->modelrefs[nModel].groupDescs[nGroup];
+	studioHwData_t::modelRef_t::groupDesc_t& desc = m_hwdata->modelrefs[nModel].groupDescs[nGroup];
 
 	int nFirstIndex = desc.firstindex;
 	int nIndexCount = desc.indexcount;
@@ -761,7 +760,7 @@ const char* CEngineStudioEGF::GetName() const
 	return m_szPath.c_str();
 }
 
-studiohwdata_t* CEngineStudioEGF::GetHWData() const
+studioHwData_t* CEngineStudioEGF::GetHWData() const
 {
 	// wait for loading end
 	while(m_readyState == EQMODEL_LOAD_IN_PROGRESS)
@@ -945,9 +944,9 @@ studiotempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info,
 
 			for(uint32 k = 0; k < pGroup->numIndices; k+=3)
 			{
-				EGFHwVertex_t v0(pGroup->pVertex(pIndices[k]));
-				EGFHwVertex_t v1(pGroup->pVertex(pIndices[k+1]));
-				EGFHwVertex_t v2(pGroup->pVertex(pIndices[k+2]));
+				EGFHwVertex_t v0(*pGroup->pVertex(pIndices[k]));
+				EGFHwVertex_t v1(*pGroup->pVertex(pIndices[k+1]));
+				EGFHwVertex_t v2(*pGroup->pVertex(pIndices[k+2]));
 
 				if(jointMatrices)
 				{
@@ -1052,21 +1051,7 @@ int CModelCache::PrecacheModel( const char* modelName )
 		return CACHE_INVALID_MODEL;
 
 	if(m_egfFormat == NULL)
-	{
-		VertexFormatDesc_t pFormat[] = {
-			{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position
-			{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 0
-
-			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Tangent (TC1)
-			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Binormal (TC2)
-			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Normal (TC3)
-
-			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Bone indices (hw skinning), (TC4)
-			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }  // Bone weights (hw skinning), (TC5)
-		};
-
-		m_egfFormat = g_pShaderAPI->CreateVertexFormat(pFormat, elementsOf(pFormat));
-	}
+		m_egfFormat = g_pShaderAPI->CreateVertexFormat(g_EGFHwVertexFormat, elementsOf(g_EGFHwVertexFormat));
 
 	int idx = GetModelIndex( modelName );
 

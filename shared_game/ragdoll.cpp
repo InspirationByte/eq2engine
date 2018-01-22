@@ -41,8 +41,8 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 	if(!pModel)
 		return NULL;
 
-	studiohwdata_t* hwdata = pModel->GetHWData();
-	physmodeldata_t& physModel = hwdata->physModel;
+	studioHwData_t* hwdata = pModel->GetHWData();
+	studioPhysData_t& physModel = hwdata->physModel;
 	studiohdr_t* studio = hwdata->studio;
 
 	int type = physModel.modeltype;

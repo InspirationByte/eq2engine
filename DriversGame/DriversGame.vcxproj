@@ -270,6 +270,7 @@
   <ItemGroup>
     <ClInclude Include="..\public\IFontCache.h" />
     <ClInclude Include="..\public\luabinding\LuaBinding_Math.h" />
+    <ClInclude Include="..\public\materialsystem\VertexFormatUtil.h" />
     <ClInclude Include="..\public\utils\RectanglePacker.h" />
     <ClInclude Include="..\shared_engine\Audio\alsnd_stream.h" />
     <ClInclude Include="..\shared_engine\Audio\alsnd_emitter.h" />

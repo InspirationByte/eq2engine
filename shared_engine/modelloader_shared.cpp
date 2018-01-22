@@ -59,7 +59,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 
 	basemodelheader_t* pBaseHdr = (basemodelheader_t*)_buffer;
 
-	if(!IsValidModelIdentifier( pBaseHdr->m_nIdentifier ))
+	if(!IsValidModelIdentifier( pBaseHdr->ident ))
 	{
 		PPFree(_buffer);
 		MsgError("Invalid model file '%s'\n",pszPath);
@@ -74,14 +74,14 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 
 	if(pHdr->version != EQUILIBRIUM_MODEL_VERSION)
 	{
-		MsgError("Wrong model '%s' version, excepted %i, but model version is %i\n",pszPath, EQUILIBRIUM_MODEL_VERSION,pBaseHdr->m_nVersion);
+		MsgError("Wrong model '%s' version, excepted %i, but model version is %i\n",pszPath, EQUILIBRIUM_MODEL_VERSION,pBaseHdr->version);
 		PPFree(_buffer);
 		return NULL;
 	}
 
 	if(len != pHdr->length)
 	{
-		MsgError("Model is not valid (%d versus %d in header)!\n",len,pBaseHdr->m_nLength);
+		MsgError("Model is not valid (%d versus %d in header)!\n",len,pBaseHdr->size);
 		PPFree(_buffer);
 		return NULL;
 	}
@@ -105,7 +105,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 	return pHdr;
 }
 
-studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
+studioHwData_t::motionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 {
 	ubyte* pData = (ubyte*)g_fileSystem->GetFileBuffer(pszPath);
 	ubyte* pStart = pData;
@@ -135,7 +135,7 @@ studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 	pData += sizeof(animpackagehdr_t);
 
-	studiomotiondata_t* pMotion = (studiomotiondata_t*)PPAlloc(sizeof(studiomotiondata_t));
+	studioHwData_t::motionData_t* pMotion = (studioHwData_t::motionData_t*)PPAlloc(sizeof(studioHwData_t::motionData_t));
 
 	int numAnimDescs = 0;
 	int numAnimFrames = 0;
@@ -239,7 +239,7 @@ studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 	}
 
 	// first processing done, convert animca animations to darktech format.
-	pMotion->animations = (modelanimation_t*)PPAlloc(sizeof(modelanimation_t)*numAnimDescs);
+	pMotion->animations = (studioHwData_t::motionData_t::animation_t*)PPAlloc(sizeof(studioHwData_t::motionData_t::animation_t)*numAnimDescs);
 
 	//Msg("Num anim descs: %d\n", numAnimDescs);
 
@@ -250,11 +250,11 @@ studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 	for(int i = 0; i < pMotion->numAnimations; i++)
 	{
-		memset(&pMotion->animations[i], 0, sizeof(modelanimation_t));
+		memset(&pMotion->animations[i], 0, sizeof(studioHwData_t::motionData_t::animation_t));
 
 		strcpy(pMotion->animations[i].name, animationdescs[i].name);
 
-		pMotion->animations[i].bones = (boneframe_t*)PPAlloc(sizeof(boneframe_t)*boneCount);
+		pMotion->animations[i].bones = (studioHwData_t::motionData_t::animation_t::boneframe_t*)PPAlloc(sizeof(studioHwData_t::motionData_t::animation_t)*boneCount);
 
 		// determine frame count of animation
 		int numFrames = animationdescs[i].numFrames / boneCount;
@@ -276,9 +276,9 @@ studiomotiondata_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 	return pMotion;
 }
 
-bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
+bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 {
-	memset(pModel, 0, sizeof(physmodeldata_t));
+	memset(pModel, 0, sizeof(studioPhysData_t));
 
 	if(g_fileSystem->FileExist( pszPath ))
 	{
@@ -335,7 +335,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 					physgeominfo_t* pGeomInfos = (physgeominfo_t*)pData;
 
 					pModel->numShapes = numGeomInfos;
-					pModel->shapes = (physmodelshapecache_t*)PPAlloc(numGeomInfos*sizeof(physmodelshapecache_t));
+					pModel->shapes = (studioPhysShapeCache_t*)PPAlloc(numGeomInfos*sizeof(studioPhysShapeCache_t));
 
 					for(int i = 0; i < numGeomInfos; i++)
 					{
@@ -378,11 +378,11 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 					physobject_t* physObjDataLump = (physobject_t*)pData;
 
 					pModel->numObjects = numObjInfos;
-					pModel->objects = (physobjectdata_t*)PPAlloc(numObjInfos*sizeof(physobjectdata_t));
+					pModel->objects = (studioPhysObject_t*)PPAlloc(numObjInfos*sizeof(studioPhysObject_t));
 
 					for(int i = 0; i < numObjInfos; i++)
 					{
-						physobjectdata_t& objData = pModel->objects[i];
+						studioPhysObject_t& objData = pModel->objects[i];
 
 						if(objectNames.numElem() > 0)
 							strcpy(objData.name, objectNames[i].c_str());
@@ -461,7 +461,7 @@ bool Studio_LoadPhysModel(const char* pszPath, physmodeldata_t* pModel)
 	return true;
 }
 
-void Studio_FreeMotionData(studiomotiondata_t* pData, int numBones)
+void Studio_FreeMotionData(studioHwData_t::motionData_t* pData, int numBones)
 {
 	for(int i = 0; i < pData->numAnimations; i++)
 	{
@@ -480,7 +480,7 @@ void Studio_FreeMotionData(studiomotiondata_t* pData, int numBones)
 	PPFree(pData);
 }
 
-void Studio_FreePhysModel(physmodeldata_t* pModel)
+void Studio_FreePhysModel(studioPhysData_t* pModel)
 {
 	PPFree(pModel->indices);
 	PPFree(pModel->vertices);
@@ -488,5 +488,5 @@ void Studio_FreePhysModel(physmodeldata_t* pModel)
 	PPFree(pModel->objects);
 	PPFree(pModel->joints);
 
-	memset(pModel, 0, sizeof(physmodeldata_t));
+	memset(pModel, 0, sizeof(studioPhysData_t));
 }

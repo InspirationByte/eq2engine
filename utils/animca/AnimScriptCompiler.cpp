@@ -57,7 +57,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 	}
 
 	basemodelheader_t* pBaseHdr = (basemodelheader_t*)_buffer;
-	if(!IsValidModelIdentifier(pBaseHdr->m_nIdentifier))
+	if(!IsValidModelIdentifier(pBaseHdr->ident))
 	{
 		delete [] _buffer;
 		MsgError("Invalid model file '%s'\n",pszPath);
@@ -72,14 +72,14 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 
 	if(pHdr->version != EQUILIBRIUM_MODEL_VERSION)
 	{
-		MsgError("Wrong model model version, should be %i, excepted %i\n",EQUILIBRIUM_MODEL_VERSION,pBaseHdr->m_nVersion);
+		MsgError("Wrong model model version, should be %i, excepted %i\n",EQUILIBRIUM_MODEL_VERSION,pBaseHdr->version);
 		delete [] _buffer;
 		return NULL;
 	}
 
 	if(len != pHdr->length)
 	{
-		MsgError("Model size is not valid (%d versus %d in header)!\n",len, pBaseHdr->m_nLength);
+		MsgError("Model size is not valid (%d versus %d in header)!\n",len, pBaseHdr->size);
 		delete [] _buffer;
 		return NULL;
 	}
