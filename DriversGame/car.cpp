@@ -1550,7 +1550,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		}
 
 		// update reverse lights
-		SetLight(CAR_LIGHT_REVERSELIGHT, (m_nGear == 0));
+		SetLight(CAR_LIGHT_REVERSELIGHT, (m_nGear == 0) && wheelsSpeed < -0.25f);
 	}
 
 	if(FPmath::abs(fBreakage) > m_fBreakage)

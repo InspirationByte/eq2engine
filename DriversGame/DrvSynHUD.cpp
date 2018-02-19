@@ -22,6 +22,11 @@ ConVar hud_mapSize("hud_mapSize", "250", NULL, CV_ARCHIVE);
 
 ConVar hud_debug_car("hud_debug_car", "0", NULL, CV_CHEAT);
 
+//ConVar hud_map_pos("hud_map_pos", "0", "Map position (0 - bottom, 1 - top)", CV_ARCHIVE);
+
+ConVar g_showCameraPosition("g_showCameraPosition", "0", NULL, CV_CHEAT);
+ConVar g_showCarPosition("g_showCarPosition", "0", NULL, CV_CHEAT);
+
 DECLARE_CMD(hud_showLastMessage, NULL, 0)
 {
 	g_pGameHUD->ShowLastMessage();
@@ -214,11 +219,6 @@ equi::IUIControl* CDrvSynHUDManager::FindChildElement(const char* name) const
 {
 	return m_hudLayout->FindChild(name);
 }
-
-ConVar hud_map_pos("hud_map_pos", "0", "Map position (0 - bottom, 1 - top)", CV_ARCHIVE);
-
-ConVar g_showCameraPosition("g_showCameraPosition", "0", NULL, CV_CHEAT);
-ConVar g_showCarPosition("g_showCarPosition", "0", NULL, CV_CHEAT);
 
 void CDrvSynHUDManager::DrawDamageRectangle(CMeshBuilder& meshBuilder, Rectangle_t& rect, float percentage, float alpha)
 {
@@ -513,14 +513,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		// display radar and map
 		if( mapVisible )
 		{
-			IVector2D mapSize(hud_mapSize.GetInt());
-			IVector2D mapPos = screenSize-mapSize-IVector2D(55);
-
-			if(hud_map_pos.GetInt() == 1)
-			{
-				mapPos.y = 55;
-			}
-
 			float viewRotation = DEG2RAD( camera.GetAngles().y + 180);
 			Vector3D viewPos = Vector3D(camera.GetOrigin().xz() * Vector2D(1.0f,-1.0f), 0.0f);
 			Vector2D playerPos(0);
