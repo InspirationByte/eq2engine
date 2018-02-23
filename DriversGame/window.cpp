@@ -83,6 +83,37 @@ DECLARE_CMD(kv3test, "Test", 0)
 		MsgError("Can't open kv3test.txt\n");
 }
 
+DECLARE_CMD(kvbintest, "Test 2", 0)
+{
+	kvkeybase_t destSec;
+	long fileSize = 0;
+	char* dataStr = g_fileSystem->GetFileBuffer("eq.config", &fileSize, SP_ROOT);
+
+	if(dataStr)
+	{
+		KV_ParseSection(dataStr, "test", &destSec);
+
+		//
+		IFile* file = g_fileSystem->Open("eqbin.bcf", "wb", SP_ROOT);
+		KV_WriteToStreamBinary( file, &destSec );
+		g_fileSystem->Close(file);
+
+		PPFree(dataStr);
+
+		destSec.Cleanup();
+
+		// try to read it
+		file = g_fileSystem->Open("eqbin.bcf", "rb", SP_ROOT);
+		KV_ReadBinaryBase(file, &destSec );
+		g_fileSystem->Close(file);
+
+		// look how it's been read
+		KV_PrintSection( &destSec );
+	}
+	else
+		MsgError("Can't open eq.config\n");
+}
+
 ConVar r_fullscreen("r_fullscreen", "0", "Fullscreen" ,CV_ARCHIVE);
 
 EQWNDHANDLE Sys_CreateWindow()

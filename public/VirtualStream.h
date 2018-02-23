@@ -16,6 +16,11 @@
 // CMemoryStream - File stream
 //--------------------------
 
+enum MemStreamOpenFlags_e
+{
+	VS_OPEN_MEMORY_FROM_EXISTING = (1 << 4),	// use existing allocated buffer
+};
+
 class CMemoryStream : public IVirtualStream
 {
 public:

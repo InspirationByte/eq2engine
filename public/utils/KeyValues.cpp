@@ -55,7 +55,7 @@ char* KV_ReadProcessString( const char* pszStr )
 
 	int sLen = strlen( pszStr );
 
-	char* temp = (char*)malloc( sLen+10 );
+	char* temp = (char*)malloc( sLen+10 ); // FIXME: extra symbols needs to be counted!!!
 	char* ptrTemp = temp;
 
 	do
@@ -1257,6 +1257,8 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 	return pKeyBase;
 }
 
+#define KV_IDENT_BINARY				MCHAR4('B','K','V','S')
+
 //
 // Loads file and parses it as KeyValues into the 'pParseTo'
 //
@@ -1275,6 +1277,7 @@ kvkeybase_t* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, kvkeyba
 	ushort byteordermark = *((ushort*)_buffer);
 
 	bool isUTF8 = false;
+	bool isBinary = false;
 
 	if(byteordermark == 0xbbef)
 	{
@@ -1288,10 +1291,26 @@ kvkeybase_t* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, kvkeyba
 		PPFree( pBuffer );
 		return NULL;
 	}
+	else
+	{
+		uint ident = *((uint*)_buffer);
+
+		// it's assuming UTF8 when using binary format
+		if(ident == KV_IDENT_BINARY)
+		{
+			isBinary = true;
+			isUTF8 = true;
+		}
+	}
 
 	// load as stream
 	// KV_ParseSectionV3(_buffer, lSize, pszFileName, pParseTo, 1);
-	kvkeybase_t* pBase = KV_ParseSection(_buffer, pszFileName, pParseTo, 0);
+	kvkeybase_t* pBase = NULL;
+	
+	if(isBinary)
+		pBase = KV_ParseBinary(_buffer, lSize, pParseTo);
+	else
+		pBase = KV_ParseSection(_buffer, pszFileName, pParseTo, 0);
 
 	if(pBase)
 	{
@@ -1304,6 +1323,192 @@ kvkeybase_t* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, kvkeyba
 
 	return pBase;
 }
+
+
+//-----------------------------------------------------------------------------------------------------
+// BINARY
+
+struct kvbinvalue_s
+{
+	int type;	// EKVPairType
+
+	union
+	{
+		int		nValue;		// treat as string length if KVPAIR_STRING
+		bool	bValue;
+		float	fValue;
+	};
+
+	// string is written next after the value struct
+};
+
+ALIGNED_TYPE(kvbinvalue_s,4) kvbinvalue_t;
+
+struct kvbinbase_s
+{
+	int		ident;	// it must be identified by KV_IDENT_BINARY
+
+	int		type;	// EKVPairType
+
+	int		valueCount;
+	int		keyCount;
+
+	char	name[KV_MAX_NAME_LENGTH];
+
+	// next after section header are values
+	// then other key bases
+};
+
+kvkeybase_t* KV_ParseBinary(const char* pszBuffer, int bufferSize, kvkeybase_t* pParseTo)
+{
+	CMemoryStream memstr;
+	memstr.Open((ubyte*)pszBuffer, VS_OPEN_READ | VS_OPEN_MEMORY_FROM_EXISTING, bufferSize);
+
+	return KV_ReadBinaryBase(&memstr, pParseTo);
+}
+
+void KV_ReadBinaryValue(IVirtualStream* stream, kvkeybase_t* addTo)
+{
+	kvbinvalue_t binValue;
+	stream->Read(&binValue, 1, sizeof(binValue));
+
+	if(binValue.type == KVPAIR_STRING)
+	{
+		 // int value as string length
+		char* strVal = (char*)malloc(binValue.nValue+1);
+
+		stream->Read(strVal, 1, binValue.nValue);
+		strVal[binValue.nValue] = '\0';
+
+		addTo->AddValue(strVal);
+	}
+	else if(binValue.type == KVPAIR_INT)
+	{
+		addTo->AddValue(binValue.nValue);
+	}
+	else if(binValue.type == KVPAIR_FLOAT)
+	{
+		addTo->AddValue(binValue.fValue);
+	}
+	else if(binValue.type == KVPAIR_BOOL)
+	{
+		addTo->AddValue(binValue.bValue);
+	}
+	else if(binValue.type == KVPAIR_SECTION)
+	{
+		kvkeybase_t* parsed = KV_ReadBinaryBase(stream, NULL);
+
+		if(parsed)
+			addTo->AddValue(parsed);
+	}
+}
+
+// reads binary keybase
+kvkeybase_t* KV_ReadBinaryBase(IVirtualStream* stream, kvkeybase_t* pParseTo)
+{
+	kvbinbase_s binBase;
+	stream->Read(&binBase, 1, sizeof(binBase));
+
+	if(binBase.ident != KV_IDENT_BINARY)
+	{
+		MsgError("KV_ReadBinaryBase - invalid header\n");
+		return NULL;
+	}
+
+	if(!pParseTo)
+		pParseTo = new kvkeybase_t();
+
+	pParseTo->SetName(binBase.name);
+	pParseTo->type = (EKVPairType)binBase.type;
+
+	pParseTo->unicode = true; // always as unicode UTF8
+	
+	// read values if we have any
+	for(int i = 0; i < binBase.valueCount; i++)
+	{
+		KV_ReadBinaryValue(stream, pParseTo);
+	}
+
+	// read nested keybases as well
+	for(int i = 0; i < binBase.keyCount; i++)
+	{
+		kvkeybase_t* parsed = KV_ReadBinaryBase(stream, NULL);
+		pParseTo->AddExistingKeyBase(parsed);
+	}
+
+	return pParseTo;
+}
+
+void KV_WriteToStreamBinary(IVirtualStream* outStream, kvkeybase_t* base);
+
+// writes KV value to the binary stream
+void KV_WriteValueBinary(IVirtualStream* outStream, kvpairvalue_t* value)
+{
+	kvbinvalue_t binValue;
+	binValue.type = value->type;
+
+	if(binValue.type == KVPAIR_STRING)
+	{
+		binValue.nValue = strlen(value->value); // store string length
+	}
+	else if(binValue.type == KVPAIR_INT)
+	{
+		binValue.nValue = value->nValue;
+	}
+	else if(binValue.type == KVPAIR_FLOAT)
+	{
+		binValue.fValue = value->fValue;
+	}
+	else if(binValue.type == KVPAIR_BOOL)
+	{
+		binValue.bValue = value->bValue;
+	}
+
+	// store header
+	outStream->Write(&binValue, 1, sizeof(binValue));
+	
+	if(binValue.type == KVPAIR_STRING)
+	{
+		// store the string
+		outStream->Write(value->value, 1, binValue.nValue);
+	}
+	else if(binValue.type == KVPAIR_SECTION)
+	{
+		// store section after the binary
+		KV_WriteToStreamBinary(outStream, value->section);
+	}
+}
+
+// writes keybase to the binary stream
+void KV_WriteToStreamBinary(IVirtualStream* outStream, kvkeybase_t* base)
+{
+	kvbinbase_s binBase;
+	memset(&binBase, 0, sizeof(binBase));
+
+	binBase.ident = KV_IDENT_BINARY;
+	binBase.keyCount = base->keys.numElem();
+	binBase.valueCount = base->values.numElem();
+	binBase.type = base->type;
+
+	strcpy(binBase.name, base->name);
+
+	// write header to the stream
+	outStream->Write(&binBase, 1, sizeof(binBase));
+
+	// write each value of key base
+	for(int i = 0; i < binBase.valueCount; i++)
+	{
+		KV_WriteValueBinary(outStream, base->values[i]);
+	}
+
+	// then write each subkey of this key recursively... pretty simple, huh?
+	for(int i = 0; i < binBase.keyCount; i++)
+	{
+		KV_WriteToStreamBinary(outStream, base->keys[i]);
+	}
+}
+
+//-----------------------------------------------------------------------------------------------------
 
 #define NOCOMMENT		0
 #define LINECOMMENT		1
@@ -1717,6 +1922,8 @@ void KV_PreProcessStringValue( char* out, char* pszStr )
 	// add NULL
 	*temp++ = 0;
 }
+
+//-----------------------------------------------------------------------------------------------------
 
 void KV_WriteToStreamV3(IVirtualStream* outStream, kvkeybase_t* section, int nTabs, bool pretty);
 

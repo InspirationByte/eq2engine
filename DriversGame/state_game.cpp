@@ -439,10 +439,10 @@ void CState_Game::LoadGame()
 		{
 			int sessionType = g_pGameSession->GetSessionType();
 
-			if(sessionType == SESSION_SINGLE)
+			//if(sessionType == SESSION_SINGLE)
 				m_gameMenuName = "Ingame";
-			else if(sessionType == SESSION_NETWORK)
-				m_gameMenuName = "IngameMP";
+			//else if(sessionType == SESSION_NETWORK)
+			//	m_gameMenuName = "IngameMP";
 		}
 		else
 			m_gameMenuName = "Replay";

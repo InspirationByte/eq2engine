@@ -7,6 +7,7 @@
 
 #include "VirtualStream.h"
 #include "IFileSystem.h"
+#include "platform/MessageBox.h"
 #include "utils/CRC32.h"
 
 #ifdef PLAT_POSIX
@@ -169,13 +170,22 @@ bool CMemoryStream::Open(ubyte* data, int nOpenFlags, int nDataSize)
 		m_pCurrent = NULL;
 	}
 
-	// make this as base buffer
-	if(nDataSize > 0 && m_pStart == NULL)
-		ReAllocate(nDataSize);
-
-	if((m_nUsageFlags & VS_OPEN_READ) && data)
+	if((m_nUsageFlags & VS_OPEN_MEMORY_FROM_EXISTING) && (m_nUsageFlags & VS_OPEN_READ) && data)
 	{
-		memcpy(m_pStart, data, nDataSize);
+		m_pStart = data;
+		m_pCurrent = m_pStart;
+		m_nAllocatedSize = nDataSize;
+	}
+	else
+	{
+		// make this as base buffer
+		if(nDataSize > 0 && m_pStart == NULL)
+			ReAllocate(nDataSize);
+
+		if((m_nUsageFlags & VS_OPEN_READ) && data)
+		{
+			memcpy(m_pStart, data, nDataSize);
+		}
 	}
 
 	return true;
@@ -200,6 +210,12 @@ void CMemoryStream::ReAllocate(long nNewSize)
 {
 	if(nNewSize == m_nAllocatedSize)
 		return;
+
+	// don't reallocate existing buffer
+	ASSERT(!(m_nUsageFlags & VS_OPEN_MEMORY_FROM_EXISTING));
+
+	if(m_nUsageFlags & VS_OPEN_MEMORY_FROM_EXISTING)
+		return; // bail out!
 
 	long curPos = Tell();
 

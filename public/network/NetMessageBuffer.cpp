@@ -192,7 +192,7 @@ void CNetMessageBuffer::WriteKeyValues(kvkeybase_t* kbase)
 {
 	CMemoryStream stream;
 	stream.Open(NULL, VS_OPEN_WRITE, 2048);
-	KV_WriteToStream(&stream, kbase, 0, false);
+	KV_WriteToStreamBinary(&stream, kbase);
 
 	char zerochar = '\0';
 	stream.Write(&zerochar, 1, 1);
@@ -208,7 +208,7 @@ void CNetMessageBuffer::ReadKeyValues(kvkeybase_t* kbase)
 	char* data = new char[len];
 	ReadData(data, len);
 
-	KV_ParseSection(data, "netbuf", kbase, 0);
+	KV_ParseBinary(data, len, kbase);
 
 	delete [] data;
 }
