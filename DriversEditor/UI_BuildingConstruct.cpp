@@ -1025,6 +1025,9 @@ CUI_BuildingConstruct::CUI_BuildingConstruct( wxWindow* parent )
 	m_tiledPlacement->SetValue(false); 
 	sbSizer6->Add( m_tiledPlacement, 0, wxALL, 5 );
 	
+	m_offsetCloning = new wxCheckBox( m_pSettingsPanel, wxID_ANY, wxT("Offset cloning (O)"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_offsetCloning->SetValue(true); 
+	sbSizer6->Add( m_offsetCloning, 0, wxALL, 5 );
 	
 	bSizer10->Add( sbSizer6, 0, wxEXPAND, 5 );
 	
@@ -1158,14 +1161,13 @@ void CUI_BuildingConstruct::OnKey(wxKeyEvent& event, bool bDown)
 		}
 		else if(event.m_keyCode == WXK_SPACE)
 		{
-			if(event.ControlDown())
+			if(m_editingBuilding)
 			{
-				DuplicateSelection();
+				m_editingBuilding->order = m_editingBuilding->order > 0 ? -1 : 1;
 				return;
 			}
 
-			if(m_editingBuilding)
-				m_editingBuilding->order = m_editingBuilding->order > 0 ? -1 : 1;
+			DuplicateSelection();
 		}
 		else if(event.m_keyCode == WXK_RETURN)
 		{
@@ -1175,6 +1177,11 @@ void CUI_BuildingConstruct::OnKey(wxKeyEvent& event, bool bDown)
 		{
 			m_tiledPlacement->SetValue(!m_tiledPlacement->GetValue());
 		}
+		else if(event.GetRawKeyCode() == 'O')
+		{
+			m_offsetCloning->SetValue(!m_offsetCloning->GetValue());
+		}
+		
 	}
 
 	if(event.m_keyCode == WXK_SHIFT)
@@ -1256,31 +1263,6 @@ void CUI_BuildingConstruct::ProcessMouseEvents( wxMouseEvent& event )
 	m_mouseLastY = event.GetY();
 }
 
-
-/*
-	1. move to EditorLevel.h and EditorLevel.cpp:
-
-		buildingData_t
-		
-			buildLayerColl_t
-				buildLayer_t
-
-			buildSegmentPoint_t
-
-	2. Save all building sources per region in regionBuildings.dat
-
-	3. buildingSources must be converted to CLevelModel using only Editor.
-		CLevelModel must have reference to buildingSource so it can be edited
-		Building model must be regenerated on the fly when it's dirty and completed editing
-
-	4. Generated building models are stored in region models data block
-
-	5. Make per-region model list so we can load models in specified regions
-		Generated models are not visible it the list, so they can't be reused.
-
-*/
-
-
 void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos )
 {
 	if(event.GetWheelRotation() != 0)
@@ -1315,7 +1297,7 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 	{
 		m_isSelecting = true;
 		
-		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
+		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging())
 		{
 			float dist = DrvSynUnits::MaxCoordInUnits;
 
@@ -1335,7 +1317,7 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 	{
 		m_isSelecting = false;
 
-		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging())
+		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging() && !m_selBuildings.numElem())
 		{
 			if(m_mode == ED_BUILD_READY)
 				m_mode = ED_BUILD_BEGUN;	// make to the point 1
@@ -1594,8 +1576,40 @@ void CUI_BuildingConstruct::CompleteBuilding()
 
 void CUI_BuildingConstruct::DuplicateSelection()
 {
+	DkList<buildingSelInfo_t> newSelection;
+
+	for(int i = 0; i < m_selBuildings.numElem(); i++)
+	{
+		buildingSource_t* building =  m_selBuildings[i].selBuild;
+		
+		buildingSource_t* cloned = new buildingSource_t();
+		cloned->InitFrom(*building);
+
+		if(m_offsetCloning->GetValue())
+		{
+			// move a bit
+			for(DkLLNode<buildSegmentPoint_t>* lln = cloned->points.goToFirst(); lln != NULL; lln = cloned->points.goToNext())
+			{
+				lln->object.position += FVector3D(1.0f,0.0f,1.0f);
+			}
+		}
+
+		GenerateBuildingModel(cloned);
+
+		cloned->hide = true; // prepare for selection
+
+		buildingSelInfo_t selection;
+		selection.selBuild = cloned;
+		selection.selRegion = m_selBuildings[i].selRegion;
+
+		selection.selRegion->m_buildings.append( cloned );
+
+		newSelection.append(selection);
+	}
 
 	ClearSelection();
+
+	m_selBuildings.swap(newSelection);
 }
 
 void CUI_BuildingConstruct::ClearSelection()

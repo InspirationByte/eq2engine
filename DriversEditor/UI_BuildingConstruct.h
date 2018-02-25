@@ -224,6 +224,7 @@ protected:
 	wxButton*					m_button8;
 
 	wxCheckBox*					m_tiledPlacement;
+	wxCheckBox*					m_offsetCloning;
 
 	Vector3D					m_mousePoint;
 	bool						m_placeError;
