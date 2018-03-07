@@ -52,6 +52,13 @@ Vector3D			g_camera_rotation(25,225,0);
 Vector3D			g_camera_target(0);
 float				g_fCamSpeed = 10.0;
 
+void ResetView()
+{
+	g_camera_rotation = Vector3D(25,225,0);
+	g_camera_target = Vector3D(0);
+	g_fCamSpeed = 10.0;
+}
+
 class CEGFViewApp: public wxApp
 {
     virtual bool OnInit();
@@ -326,6 +333,8 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	
 	m_menu_view = new wxMenu();
 	m_pMenu->Append( m_menu_view, wxT("View") );
+	
+	m_menu_view->Append(Event_View_ResetView, DKLOC("TOKEN_RESETVIEW", L"Reset view"));
 	m_menu_view->Append(Event_View_ShowRegionEditor, DKLOC("TOKEN_SHOWREGIONEDITOR", L"Show region editor"));
 	m_menu_view->AppendSeparator();
 
@@ -418,6 +427,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	// create physics scene
 	g_pPhysics->SceneInit();
+	ResetView();
 
 	g_pGameWorld->SetEnvironmentName("day_clear");
 
@@ -514,6 +524,7 @@ void CMainWindow::LoadEditPrefab(const char* name)
 
 	g_pPhysics->SceneShutdown();
 	g_pPhysics->SceneInit();
+	ResetView();
 
 	g_pGameWorld->SetLevelName( name );
 	g_pGameWorld->Init();
@@ -558,6 +569,7 @@ void CMainWindow::OpenLevelPrompt()
 
 		g_pPhysics->SceneShutdown();
 		g_pPhysics->SceneInit();
+		ResetView();
 
 		g_pGameWorld->SetLevelName( m_loadleveldialog->GetSelectedLevelString() );
 		g_pGameWorld->Init();
@@ -613,6 +625,7 @@ void CMainWindow::NewLevelPrompt()
 
 		g_pPhysics->SceneShutdown();
 		g_pPhysics->SceneInit();
+		ResetView();
 
 		g_pGameWorld->SetLevelName("unnamed");
 
@@ -791,9 +804,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 	}
 	else if(event.GetId() == Event_View_ResetView)
 	{
-		g_camera_rotation = Vector3D(25,225,0);
-		g_camera_target = vec3_zero;
-		g_fCamSpeed = 10.0f;
+		ResetView();
 	}
 	else if(event.GetId() == Event_View_ShowRegionEditor)
 	{

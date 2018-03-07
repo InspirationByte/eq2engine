@@ -971,10 +971,34 @@ void CState_Game::DrawMenu( float fDt )
 			EqLua::LuaTableFuncRef labelValue;
 			if(labelValue.Get(elem, "labelValue", true) && labelValue.Push() && labelValue.Call(0, 1))
 			{
-				int val = 0;
-				OOLUA::pull(state, val);
+				//int val = 0;
+				//OOLUA::pull(state, val);
 
-				token = tok ? varargs_w(tok->GetText(), val) : L"Undefined token";
+				int type = lua_type(state, -1);
+				if(type == LUA_TSTRING)
+				{
+					std::string str;
+					OOLUA::pull(state, str);
+
+					EqWString wstr(str.c_str());
+
+					token = tok ? varargs_w(tok->GetText(), wstr.c_str()) : L"Undefined token";
+				}
+				else if(type == LUA_TNUMBER)
+				{
+					float val = 0;
+					OOLUA::pull(state, val);
+
+					token = tok ? varargs_w(tok->GetText(), val) : L"Undefined token";
+				}
+				else if(type == LUA_TUSERDATA)
+				{
+					ILocToken* valTok = NULL;
+					OOLUA::pull(state, valTok);
+
+					token = tok ? varargs_w(tok->GetText(), valTok ? valTok->GetText() : L"Undefined token") : L"Undefined token";
+				}
+				
 			}
 
 			if(m_selection == idx)
