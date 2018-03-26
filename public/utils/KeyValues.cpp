@@ -1349,14 +1349,15 @@ struct kvbinbase_s
 	int		ident;	// it must be identified by KV_IDENT_BINARY
 
 	int		type;	// EKVPairType
-
-	int		valueCount;
 	int		keyCount;
 
-	char	name[KV_MAX_NAME_LENGTH];
+	ushort	valueCount;
+	ushort	nameLen;
 
-	// next after section header are values
-	// then other key bases
+	// next after section header:
+	// - name
+	// - values
+	// - nested key bases
 };
 
 kvkeybase_t* KV_ParseBinary(const char* pszBuffer, int bufferSize, kvkeybase_t* pParseTo)
@@ -1418,7 +1419,12 @@ kvkeybase_t* KV_ReadBinaryBase(IVirtualStream* stream, kvkeybase_t* pParseTo)
 	if(!pParseTo)
 		pParseTo = new kvkeybase_t();
 
-	pParseTo->SetName(binBase.name);
+	// read name after keybase header
+	char* nameTemp = (char*)stackalloc(binBase.nameLen+1);
+	stream->Read(nameTemp, 1, binBase.nameLen);
+	nameTemp[binBase.nameLen] = '\0';
+
+	pParseTo->SetName(nameTemp);
 	pParseTo->type = (EKVPairType)binBase.type;
 
 	pParseTo->unicode = true; // always as unicode UTF8
@@ -1489,11 +1495,13 @@ void KV_WriteToStreamBinary(IVirtualStream* outStream, kvkeybase_t* base)
 	binBase.keyCount = base->keys.numElem();
 	binBase.valueCount = base->values.numElem();
 	binBase.type = base->type;
-
-	strcpy(binBase.name, base->name);
+	binBase.nameLen = strlen(base->name);
 
 	// write header to the stream
 	outStream->Write(&binBase, 1, sizeof(binBase));
+
+	// write base name
+	outStream->Write(base->name, 1, binBase.nameLen);
 
 	// write each value of key base
 	for(int i = 0; i < binBase.valueCount; i++)

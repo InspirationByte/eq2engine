@@ -64,7 +64,7 @@ DECLARE_CMD(connect, "connects to server/game/lobby", 0)
 			kvkeybase_t kvs;
 			outBuf.ReadKeyValues( &kvs );
 
-			EqString statusString = KV_GetValueString(kvs.FindKeyBase("status"), 0, "error");
+			EqString statusString(KV_GetValueString(kvs.FindKeyBase("status"), 0, "error"));
 
 			if( !statusString.Compare("error") )
 			{

@@ -62,6 +62,8 @@ CMemoryStream::CMemoryStream()
 // destroys stream data
 CMemoryStream::~CMemoryStream()
 {
+	Close();
+
 	// destroy memory
 	m_pCurrent = NULL;
 
@@ -194,6 +196,9 @@ bool CMemoryStream::Open(ubyte* data, int nOpenFlags, int nDataSize)
 // closes stream
 void CMemoryStream::Close()
 {
+	if((m_nUsageFlags & VS_OPEN_READ) && (m_nUsageFlags & VS_OPEN_MEMORY_FROM_EXISTING))
+		m_pStart = NULL;
+
 	m_nUsageFlags = 0;
 	m_pCurrent = m_pStart;
 }

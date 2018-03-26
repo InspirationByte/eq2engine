@@ -91,7 +91,7 @@ studiohdr_t*				g_model = NULL;
 int							g_numbones = 0;
 
 // animations
-DkList<modelanimation_t>	g_animations;
+DkList<studioHwData_t::motionData_t::animation_t>	g_animations;
 
 // sequences
 DkList<sequencedesc_t>		g_sequences;
@@ -178,7 +178,7 @@ int	GetPoseControllerIndex(const char* name)
 //************************************
 // Shifts animation start
 //************************************
-void ShiftAnimationFrames(boneframe_t* bone, int new_start_frame)
+void ShiftAnimationFrames(studioHwData_t::motionData_t::animation_t::boneframe_t* bone, int new_start_frame)
 {
 	animframe_t* frames_copy = new animframe_t[bone->numFrames];
 
@@ -202,7 +202,7 @@ void ShiftAnimationFrames(boneframe_t* bone, int new_start_frame)
 //*******************************************************
 // TODO: use from bonesetup.h
 //*******************************************************
-void TranslateAnimationFrames(boneframe_t* bone, Vector3D &offset)
+void TranslateAnimationFrames(studioHwData_t::motionData_t::animation_t::boneframe_t* bone, Vector3D &offset)
 {
 	for(int i = 0; i < bone->numFrames; i++)
 	{
@@ -214,7 +214,7 @@ void TranslateAnimationFrames(boneframe_t* bone, Vector3D &offset)
 // Subtracts the animation frames
 // IT ONLY SUBTRACTS BY FIRST FRAME OF otherbone
 //******************************************************
-void SubtractAnimationFrames(boneframe_t* bone, boneframe_t* otherbone)
+void SubtractAnimationFrames(studioHwData_t::motionData_t::animation_t::boneframe_t* bone, studioHwData_t::motionData_t::animation_t::boneframe_t* otherbone)
 {
 	for(int i = 0; i < bone->numFrames; i++)
 	{
@@ -227,7 +227,7 @@ void SubtractAnimationFrames(boneframe_t* bone, boneframe_t* otherbone)
 // Advances every frame position on reversed velocity
 // Helps with motion capture issues.
 //*******************************************************
-void VelocityBackTransform(boneframe_t* bone, Vector3D &velocity)
+void VelocityBackTransform(studioHwData_t::motionData_t::animation_t::boneframe_t* bone, Vector3D &velocity)
 {
 	for(int i = 0; i < bone->numFrames; i++)
 	{
@@ -252,7 +252,7 @@ inline bool IsEmptyKeyframe(animframe_t* keyFrame)
 // Fills empty frames of animation
 // and interpolates non-empty to them.
 //*******************************************************
-void InterpolateBoneAnimationFrames(boneframe_t* bone)
+void InterpolateBoneAnimationFrames(studioHwData_t::motionData_t::animation_t::boneframe_t* bone)
 {
 	float lastKeyframeTime = 0;
 	float nextKeyframeTime = 0;
@@ -341,7 +341,7 @@ inline void InterpolateFrameTransform(animframe_t &frame1, animframe_t &frame2, 
 //************************************
 // Crops animated bones
 //************************************
-void CropAnimationBoneFrames(boneframe_t* pBone, int newStart, int newFrames)
+void CropAnimationBoneFrames(studioHwData_t::motionData_t::animation_t::boneframe_t* pBone, int newStart, int newFrames)
 {
 	if(newStart >= pBone->numFrames)
 	{
@@ -374,7 +374,7 @@ void CropAnimationBoneFrames(boneframe_t* pBone, int newStart, int newFrames)
 //************************************
 // Crops animation
 //************************************
-void CropAnimationDimensions(modelanimation_t* pAnim, int newStart, int newFrames)
+void CropAnimationDimensions(studioHwData_t::motionData_t::animation_t* pAnim, int newStart, int newFrames)
 {
 	for(int i = 0; i < g_model->numBones; i++)
 		CropAnimationBoneFrames(&pAnim->bones[i], newStart, newFrames);
@@ -383,7 +383,7 @@ void CropAnimationDimensions(modelanimation_t* pAnim, int newStart, int newFrame
 //************************************
 // Reverse animated bones
 //************************************
-void ReverseAnimationBoneFrames(boneframe_t* pBone)
+void ReverseAnimationBoneFrames(studioHwData_t::motionData_t::animation_t::boneframe_t* pBone)
 {
 	animframe_t* new_frames = new animframe_t[pBone->numFrames];
 
@@ -402,7 +402,7 @@ void ReverseAnimationBoneFrames(boneframe_t* pBone)
 // Reverse animation
 //************************************
 
-void ReverseAnimation( modelanimation_t* pAnim )
+void ReverseAnimation( studioHwData_t::motionData_t::animation_t* pAnim )
 {
 	for(int i = 0; i < g_model->numBones; i++)
 		ReverseAnimationBoneFrames( &pAnim->bones[i] );
@@ -437,7 +437,7 @@ void GetCurrAndNextFrameFromTime(float time, int max, int *curr, int *next)
 //************************************
 // Scales bone animation length
 //************************************
-void RemapBoneFrames(boneframe_t* pBone, int newLength)
+void RemapBoneFrames(studioHwData_t::motionData_t::animation_t::boneframe_t* pBone, int newLength)
 {
 	animframe_t*	newFrames = new animframe_t[newLength];
 	bool*			bSetFrames = new bool[newLength];
@@ -497,7 +497,7 @@ void RemapBoneFrames(boneframe_t* pBone, int newLength)
 //************************************
 // Scales animation length
 //************************************
-void RemapAnimationLength(modelanimation_t* pAnim, int newLength)
+void RemapAnimationLength(studioHwData_t::motionData_t::animation_t* pAnim, int newLength)
 {
 	for(int i = 0; i < g_model->numBones; i++)
 		RemapBoneFrames(&pAnim->bones[i], newLength);
@@ -611,7 +611,7 @@ bool ReadFramesForBone(Tokenizer& tok, DkList<animCaBoneFrames_t>& bones)
 	return false;
 }
 
-bool ReadFrames(Tokenizer& tok, dsmmodel_t* pModel, modelanimation_t* pAnim)
+bool ReadFrames(Tokenizer& tok, dsmmodel_t* pModel, studioHwData_t::motionData_t::animation_t* pAnim)
 {
 	char *str;
 
@@ -698,9 +698,9 @@ int LoadAnimationFromESA(const char* filename)
 	dsmmodel_t tempDSM;
 
 	// make new model animation
-	modelanimation_t modelAnim;
+	studioHwData_t::motionData_t::animation_t modelAnim;
 
-	memset(&modelAnim, 0, sizeof(modelanimation_t));
+	memset(&modelAnim, 0, sizeof(studioHwData_t::motionData_t::animation_t));
 
 	strcpy(modelAnim.name,filename); // set it externally from file name
 
@@ -726,7 +726,7 @@ int LoadAnimationFromESA(const char* filename)
 				return -1;
 			}
 
-			modelAnim.bones = new boneframe_t[g_numbones];
+			modelAnim.bones = new studioHwData_t::motionData_t::animation_t::boneframe_t[g_numbones];
 
 			if(!ReadFrames(tok, &tempDSM, &modelAnim))
 			{
@@ -822,7 +822,7 @@ void LoadAnimation(kvkeybase_t* section)
 		return;
 	}
 
-	modelanimation_t* pAnim = &g_animations[ anim_index ];
+	studioHwData_t::motionData_t::animation_t* pAnim = &g_animations[ anim_index ];
 
 	for(int i = 0; i < g_numbones; i++)
 	{
@@ -1202,17 +1202,18 @@ void WriteAnimationPackage();
 void MakeDefaultPoseAnimation()
 {
 	// make new model animation
-	modelanimation_t modelAnim;
+	studioHwData_t::motionData_t::animation_t modelAnim;
 
-	memset(&modelAnim, 0, sizeof(modelanimation_t));
+	memset(&modelAnim, 0, sizeof(studioHwData_t::motionData_t::animation_t));
 
 	strcpy(modelAnim.name, "default"); // set it externally from file name
 
 	g_numbones = g_model->numBones;
 
-	modelAnim.bones = new boneframe_t[g_numbones];
+	modelAnim.bones = new studioHwData_t::motionData_t::animation_t::boneframe_t[g_numbones];
 	for(int i = 0; i < g_numbones; i++)
 	{
+
 		modelAnim.bones[i].numFrames = 1;
 		modelAnim.bones[i].keyFrames = new animframe_t[1];
 		modelAnim.bones[i].keyFrames[0].angBoneAngles = vec3_zero;
