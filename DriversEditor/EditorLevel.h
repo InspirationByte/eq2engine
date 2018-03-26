@@ -36,30 +36,16 @@ public:
 	EqString		m_name;
 };
 
-enum EBuildLayerType
-{
-	BUILDLAYER_TEXTURE = 0,
-	BUILDLAYER_MODEL,
-	BUILDLAYER_CORNER_MODEL
-};
-
 struct buildLayer_t
 {
-	buildLayer_t() 
-		: size(16.0f), type(BUILDLAYER_TEXTURE), model(nullptr), material(nullptr)
-	{
-	}
+	~buildLayer_t();
 
-	float					size;			// size in units
-	int						type;			// ELayerType
-	CLayerModel*			model;
-	IMaterial*				material;
+	// floor variants
+	DkList<CLayerModel*>	models;
 };
 
 struct buildLayerColl_t
 {
-	~buildLayerColl_t();
-
 	void					Save(IVirtualStream* stream, kvkeybase_t* kvs);
 	void					Load(IVirtualStream* stream, kvkeybase_t* kvs);
 
@@ -71,6 +57,7 @@ struct buildSegmentPoint_t
 {
 	FVector3D	position;
 	int			layerId;
+	int			modelId;
 	float		scale;
 };
 
@@ -107,8 +94,7 @@ struct buildingSource_t
 };
 
 int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, float layerXSize);
-int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, buildLayer_t& layer);
-float GetSegmentLength(buildLayer_t& layer);
+float GetSegmentLength(buildLayer_t& layer, int modelId = 0);
 
 void CalculateBuildingSegmentTransform(	Matrix4x4& partTransform, 
 										buildLayer_t& layer, 

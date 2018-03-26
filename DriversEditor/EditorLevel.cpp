@@ -21,18 +21,16 @@
 struct layerModelFileHdr_t
 {
 	int		layerId;
+	//int		modelId;
 	char	name[80];
 	int		size;
 };
 
-buildLayerColl_t::~buildLayerColl_t()
+buildLayer_t::~buildLayer_t()
 {
-	for(int i = 0; i < layers.numElem(); i++)
+	for(int i = 0; i < models.numElem(); i++)
 	{
-		if(layers[i].type == BUILDLAYER_TEXTURE)
-			materials->FreeMaterial(layers[i].material);
-		else
-			delete layers[i].model;
+		delete models[i];
 	}
 }
 
@@ -43,20 +41,19 @@ void buildLayerColl_t::Save(IVirtualStream* stream, kvkeybase_t* kvs)
 
 	for(int i = 0; i < layers.numElem(); i++)
 	{
+		buildLayer_t& layer = layers[i];
+
 		// save both model and texture to kvs info
 		kvkeybase_t* layerKvs = kvs->AddKeyBase("layer");
-		layerKvs->SetKey("type", varargs("%d", layers[i].type));
-		layerKvs->SetKey("size", varargs("%d", layers[i].size));
 
-		if(layers[i].type == BUILDLAYER_TEXTURE && layers[i].material != NULL)
-			layerKvs->SetKey("material", layers[i].material->GetName());
-		else if(layers[i].type != BUILDLAYER_TEXTURE && layers[i].model != NULL)
-			layerKvs->SetKey("model", layers[i].model->m_name.c_str());
+		for (int j = 0; j < layer.models.numElem(); j++)
+		{
+			CLayerModel* model = layer.models[j];
 
-		if(layers[i].type == BUILDLAYER_TEXTURE)
-			continue;
+			layerKvs->AddKey("model", model->m_name.c_str());
+		}
 
-		numModels++;
+		numModels += layer.models.numElem();
 	}
 
 	stream->Write(&numModels, 1, sizeof(int));
@@ -65,26 +62,31 @@ void buildLayerColl_t::Save(IVirtualStream* stream, kvkeybase_t* kvs)
 
 	for(int i = 0; i < layers.numElem(); i++)
 	{
-		if(layers[i].type == BUILDLAYER_TEXTURE)
-			continue;
+		buildLayer_t& layer = layers[i];
 
-		// write model to temporary stream
-		modelStream.Open(NULL, VS_OPEN_READ | VS_OPEN_WRITE, 2048);
-		layers[i].model->m_model->Save( &modelStream );
+		// write all models of layer
+		for (int j = 0; j < layer.models.numElem(); j++)
+		{
+			CLayerModel* model = layer.models[j];
 
-		// prepare header
-		memset(&hdr, 0, sizeof(hdr));
-		hdr.layerId = i;
-		hdr.size = modelStream.Tell();
-		strncpy(hdr.name, layers[i].model->m_name.c_str(), sizeof(hdr.name));
+			// write model to temporary stream
+			modelStream.Open(NULL, VS_OPEN_READ | VS_OPEN_WRITE, 2048);
+			model->m_model->Save(&modelStream);
 
-		// write header
-		stream->Write(&hdr, 1, sizeof(hdr));
+			// prepare header
+			memset(&hdr, 0, sizeof(hdr));
+			hdr.layerId = i;
+			hdr.size = modelStream.Tell();
+			strncpy(hdr.name, model->m_name.c_str(), sizeof(hdr.name));
 
-		// write model
-		stream->Write(modelStream.GetBasePointer(), 1, hdr.size);
+			// write header
+			stream->Write(&hdr, 1, sizeof(hdr));
 
-		modelStream.Close();
+			// write model
+			stream->Write(modelStream.GetBasePointer(), 1, hdr.size);
+
+			modelStream.Close();
+		}
 	}
 }
 
@@ -99,18 +101,9 @@ void buildLayerColl_t::Load(IVirtualStream* stream, kvkeybase_t* kvs)
 		kvkeybase_t* layerKvs = kvs->keys[i];
 
 		int newLayer = layers.append(buildLayer_t());
-		buildLayer_t& layer = layers[newLayer];
 
-		layer.type = KV_GetValueInt(layerKvs->FindKeyBase("type"));
-		layer.size = KV_GetValueInt(layerKvs->FindKeyBase("size"), 0, layer.size);
-
-		if(layer.type == BUILDLAYER_TEXTURE)
-		{
-			layer.material = materials->GetMaterial(KV_GetValueString(layerKvs->FindKeyBase("material")));
-			layer.material->Ref_Grab();
-		}
-		else
-			layer.model = NULL;
+		//buildLayer_t& layer = layers[newLayer];
+		//layer.model = NULL;
 	}
 
 	// read models
@@ -125,7 +118,7 @@ void buildLayerColl_t::Load(IVirtualStream* stream, kvkeybase_t* kvs)
 
 		// make layer model
 		CLayerModel* mod = new CLayerModel();
-		layers[hdr.layerId].model = mod;
+		layers[hdr.layerId].models.append(mod);
 
 		mod->m_name = hdr.name;
 
@@ -140,7 +133,6 @@ void buildLayerColl_t::Load(IVirtualStream* stream, kvkeybase_t* kvs)
 		int modelSize = stream->Tell() - modOffset;
 
 		// a bit paranoid
-		ASSERT(layers[hdr.layerId].type == BUILDLAYER_MODEL || layers[hdr.layerId].type == BUILDLAYER_CORNER_MODEL);
 		ASSERT(hdr.size == modelSize);
 	}
 }
@@ -194,6 +186,7 @@ void buildingSource_t::ToKeyValues(kvkeybase_t* kvs)
 		kvp->AddValue((float)lln->object.position.y);
 		kvp->AddValue((float)lln->object.position.z);
 		kvp->AddValue(lln->object.scale);
+		kvp->AddValue(lln->object.modelId);
 	}
 }
 
@@ -214,6 +207,7 @@ void buildingSource_t::FromKeyValues(kvkeybase_t* kvs)
 		newSeg.layerId = atoi(pkv->name);
 		newSeg.position = KV_GetVector3D(pkv, 0);
 		newSeg.scale = KV_GetValueFloat(pkv, 3);
+		newSeg.modelId = KV_GetValueInt(pkv, 4, 0);
 		
 		points.addLast( newSeg );
 	}
@@ -245,30 +239,25 @@ int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegme
 	float remainingLength = length(end.position - start.position);
 	return (int)((remainingLength / layerXSize) + 0.5f);
 }
-
+/*
 int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, buildLayer_t& layer)
 {
 	float len = GetSegmentLength(layer) * start.scale;
 
 	return GetLayerSegmentIterations(start, end, len);
 }
-
-float GetSegmentLength( buildLayer_t& layer )
+*/
+float GetSegmentLength( buildLayer_t& layer, int modelId )
 {
-	float sizeX = layer.size;
+	// model set must have equal dimensions
+	// take the first floor
+	CLevelModel* model = layer.models[modelId]->m_model;
 
-	if(layer.type == BUILDLAYER_MODEL || layer.type == BUILDLAYER_CORNER_MODEL)
-	{
-		CLevelModel* model = layer.model->m_model;
+	// compute iteration count from model width
+	const BoundingBox& modelBox = model->GetAABB();
 
-		// compute iteration count from model width
-		const BoundingBox& modelBox = model->GetAABB();
-
-		Vector3D size = modelBox.GetSize();
-		sizeX = size.x;
-	}
-
-	return sizeX;
+	Vector3D size = modelBox.GetSize();
+	return size.x;
 }
 
 //
@@ -303,8 +292,13 @@ void RenderBuilding( buildingSource_t* building, buildSegmentPoint_t* extraSegme
 
 	if(extraSegment)
 	{
-		allPoints[allPoints.numElem()-1].layerId = extraSegment->layerId;
-		allPoints[allPoints.numElem()-1].scale = extraSegment->scale;
+		buildSegmentPoint_t& lastPoint = allPoints[allPoints.numElem() - 1];
+
+		// just copy render values
+		lastPoint.modelId = extraSegment->modelId;
+		lastPoint.layerId = extraSegment->layerId;
+		lastPoint.scale = extraSegment->scale;
+
 		allPoints.append(*extraSegment);
 	}
 
@@ -319,33 +313,27 @@ void RenderBuilding( buildingSource_t* building, buildSegmentPoint_t* extraSegme
 		// draw models or walls
 		buildLayer_t& layer = building->layerColl->layers[ start.layerId ];
 
-		if(layer.type == BUILDLAYER_MODEL || layer.type == BUILDLAYER_CORNER_MODEL)
+		CLevelModel* model = layer.models[start.modelId]->m_model;
+
+		// compute iteration count from model width
+		const BoundingBox& modelBox = model->GetAABB();
+
+		Vector3D size = modelBox.GetSize();
+		float modelLen = size.x*start.scale;
+
+		int numIterations = GetLayerSegmentIterations(start, end, modelLen);
+
+		// calculate transformation for each iteration
+		for(int iter = 0; iter < numIterations; iter++)
 		{
-			CLevelModel* model = layer.model->m_model;
+			CLevelModel* model = layer.models[start.modelId]->m_model;
 
-			// compute iteration count from model width
-			const BoundingBox& modelBox = model->GetAABB();
+			CalculateBuildingSegmentTransform( partTransform, layer, start.position, end.position, building->order, size, start.scale, iter );
 
-			Vector3D size = modelBox.GetSize();
-			float modelLen = size.x*start.scale;
-
-			int numIterations = GetLayerSegmentIterations(start, end, modelLen);
-
-			// calculate transformation for each iteration
-			for(int iter = 0; iter < numIterations; iter++)
-			{
-				CLevelModel* model = layer.model->m_model;
-
-				CalculateBuildingSegmentTransform( partTransform, layer, start.position, end.position, building->order, size, start.scale, iter );
-
-				materials->SetMatrix(MATRIXMODE_WORLD, partTransform);
-				model->Render(0, tempBBox);
-			}
+			materials->SetMatrix(MATRIXMODE_WORLD, partTransform);
+			model->Render(0, tempBBox);
 		}
-		else
-		{
-		
-		}
+
 	}
 }
 
@@ -513,31 +501,24 @@ bool GenerateBuildingModel( buildingSource_t* building )
 		// draw models or walls
 		buildLayer_t& layer = building->layerColl->layers[ start.layerId ];
 
-		if(layer.type == BUILDLAYER_MODEL || layer.type == BUILDLAYER_CORNER_MODEL)
+		CLevelModel* model = layer.models[start.modelId]->m_model;
+
+		// compute iteration count from model width
+		const BoundingBox& modelBox = model->GetAABB();
+
+		Vector3D size = modelBox.GetSize();
+		float modelLen = size.x*start.scale;
+
+		int numIterations = GetLayerSegmentIterations(start, end, modelLen);
+
+		// calculate transformation for each iteration
+		for(int iter = 0; iter < numIterations; iter++)
 		{
-			CLevelModel* model = layer.model->m_model;
+			CLevelModel* model = layer.models[start.modelId]->m_model;
 
-			// compute iteration count from model width
-			const BoundingBox& modelBox = model->GetAABB();
+			CalculateBuildingSegmentTransform( partTransform, layer, start.position, end.position, building->order, size, start.scale, iter );
 
-			Vector3D size = modelBox.GetSize();
-			float modelLen = size.x*start.scale;
-
-			int numIterations = GetLayerSegmentIterations(start, end, modelLen);
-
-			// calculate transformation for each iteration
-			for(int iter = 0; iter < numIterations; iter++)
-			{
-				CLevelModel* model = layer.model->m_model;
-
-				CalculateBuildingSegmentTransform( partTransform, layer, start.position, end.position, building->order, size, start.scale, iter );
-
-				generator.AppendModel(model, partTransform);
-			}
-		}
-		else
-		{
-		
+			generator.AppendModel(model, partTransform);
 		}
 	}
 

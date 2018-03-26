@@ -34,27 +34,54 @@ enum EBuildingEditMode
 
 //-----------------------------------------------------------------------------
 
-class CBuildingLayerEditDialog : public wxDialog, CPointerDropTarget
+class CFloorSetEditDialog : public wxDialog
 {
-	enum
-	{
-		LAYEREDIT_NEW = 1000,
-		LAYEREDIT_DELETE,
-		LAYEREDIT_CHOOSEMODEL,
-	};
-
 public:
-	CBuildingLayerEditDialog( wxWindow* parent ); 
-	~CBuildingLayerEditDialog();
+	CFloorSetEditDialog(wxWindow* parent);
+	~CFloorSetEditDialog();
 
 	void				UpdateSelection();
-	void				SetLayerCollection(buildLayerColl_t* coll);
-	buildLayerColl_t*	GetLayerCollection() const;
+	void				SetLayerModelList(buildLayer_t* coll);
+	buildLayer_t*		GetLayerModelList() const;
+
+	void				CallAddModel();
 
 protected:
+	enum
+	{
+		FLOOREDIT_NEW = 1000,
+		FLOOREDIT_CHOOSEMODEL,
+		FLOOREDIT_UP,
+		FLOOREDIT_DOWN,
+		FLOOREDIT_DELETE
+	};
 
-	void OnIdle(wxIdleEvent &event) {Redraw();}
+	wxPanel* m_renderPanel;
+	wxStaticBoxSizer* m_propertyBox;
+
+	wxPanel* m_panel18;
+	wxButton* m_newBtn;
+	wxButton* m_btnChoose;
+	wxButton* m_upBtn;
+	wxButton* m_dnBtn;
+	wxButton* m_delBtn;
+
+	IEqSwapChain*	m_pSwapChain;
+	IEqFont*		m_pFont;
+
+	// what we modifying
+	buildLayer_t*			m_selLayer;
+	CLayerModel*			m_selModel;
+
+	Vector2D				m_mousePos;
+	int						m_mouseoverItem;
+	int						m_selectedItem;
+
+	// Virtual event handlers, overide them in your derived class
+	void OnIdle(wxIdleEvent &event) { Redraw(); }
 	void OnEraseBackground(wxEraseEvent& event) {}
+
+	void OnBtnsClick(wxCommandEvent& event);
 	void OnMouseMotion(wxMouseEvent& event);
 	void OnMouseScroll(wxMouseEvent& event);
 	void OnMouseClick(wxMouseEvent& event);
@@ -62,92 +89,9 @@ protected:
 	void Redraw();
 	void RenderList();
 
-	void OnBtnsClick( wxCommandEvent& event );
-
-	void ChangeSize( wxCommandEvent& event );
-	void ChangeType( wxCommandEvent& event );
-
 	void OnScrollbarChange(wxScrollWinEvent& event);
 
-	bool OnDropPoiner(wxCoord x, wxCoord y, void* ptr, EDragDropPointerType type);
-
-	IEqSwapChain*	m_pSwapChain;
-	IEqFont*		m_pFont;
-
-	wxStaticBoxSizer* m_propertyBox;
-
-	wxPanel*			m_renderPanel;
-
-	wxPanel* m_panel18;
-	wxButton* m_newBtn;
-	wxButton* m_delBtn;
-	wxSpinCtrl* m_size;
-	wxChoice* m_typeSel;
-	wxButton* m_btnChoose;
-
-	// what we modifying
-	buildLayerColl_t*		m_layerColl;
-	buildLayer_t*			m_selLayer;
-	Vector2D				m_mousePos;
-	int						m_mouseoverItem;
-	int						m_selectedItem;
-};
-
-//-----------------------------------------------------------------------------
-
-// texture list panel
-class CBuildingLayerList : public wxPanel, CGenericImageListRenderer<buildLayerColl_t*>
-{
-	friend class CUI_BuildingConstruct;
-
-public:
-    CBuildingLayerList(CUI_BuildingConstruct* parent);
-
-	void					ReloadList();
-
-	buildLayerColl_t*		GetSelectedLayerColl() const;
-	void					SetSelectedLayerColl(buildLayerColl_t* layerColl);
-
-	void					Redraw();
-
-	void					ChangeFilter(const wxString& filter);
-	void					UpdateAndFilterList();
-	void					SetPreviewParams(int preview_size, bool bAspectFix);
-
-	void					RefreshScrollbar();
-
-	buildLayerColl_t*		CreateCollection();
-	void					DeleteCollection(buildLayerColl_t* coll);
-
-	void					LoadLayerCollections( const char* levelName );
-	void					SaveLayerCollections( const char* levelName );
-
-	void					RemoveAllLayerCollections();
-
-	DECLARE_EVENT_TABLE()
-protected:
-
-	void						OnSizeEvent(wxSizeEvent &event);
-	void						OnIdle(wxIdleEvent &event);
-	void						OnEraseBackground(wxEraseEvent& event);
-	void						OnScrollbarChange(wxScrollWinEvent& event);
-		
-	void						OnMouseMotion(wxMouseEvent& event);
-	void						OnMouseScroll(wxMouseEvent& event);
-	void						OnMouseClick(wxMouseEvent& event);
-
-	Rectangle_t					ItemGetImageCoordinates( buildLayerColl_t*& item );
-	ITexture*					ItemGetImage( buildLayerColl_t*& item );
-	void						ItemPostRender( int id, buildLayerColl_t*& item, const IRectangle& rect );
-
-	DkList<buildLayerColl_t*>	m_layerCollections;
-
-	wxString					m_filter;
-
-	int							m_nPreviewSize;
-
-	IEqSwapChain*				m_swapChain;
-	CUI_BuildingConstruct*		m_bldConstruct;
+	CLayerModel* GetModelUsingDialog();
 };
 
 //-----------------------------------------------------------------------------
@@ -164,7 +108,6 @@ public:
 
 	CUI_BuildingConstruct( wxWindow* parent ); 
 	~CUI_BuildingConstruct();
-
 	
 	void		ProcessMouseEvents( wxMouseEvent& event );
 	void		MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos );
@@ -201,30 +144,58 @@ public:
 	
 protected:
 
+	buildLayerColl_t*		GetSelectedTemplate();
+	void					SetSelectedTemplate(buildLayerColl_t* templ);
+
+	int						GetSelectedLayerId();
+	void					SetSelectedLayerId(int idx);
+
+	void					UpdateAndFilterList();
+	void					UpdateLayerList();
+
+	void					LoadTemplates();
+	void					SaveTemplates();
+	void					RemoveAllTemplates();
+
+	void					CallEditLayer();
+
+	enum
+	{
+		BUILD_TEMPLATE_NEW = 1000,
+		BUILD_TEMPLATE_RENAME,
+		BUILD_TEMPLATE_DELETE,
+		BUILD_LAYER_NEW,
+		BUILD_LAYER_EDIT,
+		BUILD_LAYER_DELETE
+	};
+
 	// Virtual event handlers, overide them in your derived class
 	void OnFilterChange( wxCommandEvent& event );
-	void OnCreateClick( wxCommandEvent& event );
-	void OnEditClick( wxCommandEvent& event );
-	void OnDeleteClick( wxCommandEvent& event );
+	void OnBtnsClick(wxCommandEvent& event);
+	void OnSelectTemplate(wxCommandEvent& event);
+	void OnItemDclick(wxCommandEvent& event);
 
 	void MouseTranslateEvents( wxMouseEvent& event, const Vector3D& ray_start, const Vector3D& ray_dir );
 
-	CEditAxisXYZ				m_editAxis;
-
-	int							m_mouseLastY;
-		
-	CBuildingLayerEditDialog*	m_layerEditDlg;
-	CBuildingLayerList*			m_layerCollList;
-
+	wxListBox*					m_templateList;
+	wxButton*					m_button5;
+	wxButton*					m_button29;
+	wxButton*					m_button8;
+	wxListBox*					m_layerList;
+	wxButton*					m_button26;
+	wxButton*					m_button28;
+	wxButton*					m_button27;
 	wxPanel*					m_pSettingsPanel;
 	wxTextCtrl*					m_filtertext;
-	wxChoice*					m_pPreviewSize;
-	wxButton*					m_button5;
-	wxButton*					m_button3;
-	wxButton*					m_button8;
-
 	wxCheckBox*					m_tiledPlacement;
 	wxCheckBox*					m_offsetCloning;
+
+	CFloorSetEditDialog*		m_layerEditDlg;
+
+	DkList<buildLayerColl_t*>	m_buildingTemplates;
+
+	CEditAxisXYZ				m_editAxis;
+	int							m_mouseLastY;
 
 	Vector3D					m_mousePoint;
 	bool						m_placeError;
@@ -234,7 +205,7 @@ protected:
 	buildingSource_t			m_editingCopy;		// for cancel reason
 	bool						m_isEditingNewBuilding;
 
-	int							m_curLayerId;
+	int							m_curModelId;
 	float						m_curSegmentScale;
 
 	DkList<buildingSelInfo_t>	m_selBuildings;
