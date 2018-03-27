@@ -53,6 +53,45 @@ regionObject_t::~regionObject_t()
 	}
 }
 
+#ifdef EDITOR
+// writing object
+bool regionObject_t::Undoable_WriteObjectData(IVirtualStream* stream)
+{
+	stream->Write(&tile_x, 1, sizeof(tile_x));
+	stream->Write(&tile_y, 1, sizeof(tile_y));
+	stream->Write(&position, 1, sizeof(position));
+	stream->Write(&rotation, 1, sizeof(rotation));
+
+	// store length and short string
+	int nameLen = name.Length();
+
+	stream->Write(&nameLen, 1, sizeof(nameLen));
+	stream->Write(name.c_str(), 1, nameLen);
+
+	return true;
+}
+
+// reading object
+void regionObject_t::Undoable_ReadObjectData(IVirtualStream* stream)
+{
+	stream->Read(&tile_x, 1, sizeof(tile_x));
+	stream->Read(&tile_y, 1, sizeof(tile_y));
+	stream->Read(&position, 1, sizeof(position));
+	stream->Read(&rotation, 1, sizeof(rotation));
+
+	// read length
+	int nameLen = 0;
+	stream->Read(&nameLen, 1, sizeof(nameLen));
+
+	char* nameStr = (char*)stackalloc(nameLen+1);
+	stream->Read(nameStr, 1, nameLen);
+	nameStr[nameLen] = '\0';
+
+	// assign name
+	name = nameStr;
+}
+#endif // EDITOR
+
 void regionObject_t::CalcBoundingBox()
 {
 	BoundingBox tbbox;

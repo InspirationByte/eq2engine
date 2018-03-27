@@ -1042,8 +1042,8 @@ void CUI_HeightEdit::PaintHeightfieldGlobal(int gx, int gy, TILEPAINTFUNC func, 
 	IVector2D local;
 	g_pGameWorld->m_level.GlobalToLocalPoint(IVector2D(gx,gy), local, &pReg);
 
-	int neighbour_x[8] = NEIGHBOR_OFFS_XDX(0, 1);
-	int neighbour_y[8] = NEIGHBOR_OFFS_YDY(0, 1);
+	//int neighbour_x[8] = NEIGHBOR_OFFS_XDX(0, 1);
+	//int neighbour_y[8] = NEIGHBOR_OFFS_YDY(0, 1);
 
 	if(pReg)
 	{

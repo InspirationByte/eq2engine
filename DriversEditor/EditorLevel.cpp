@@ -98,12 +98,7 @@ void buildLayerColl_t::Load(IVirtualStream* stream, kvkeybase_t* kvs)
 		if(stricmp(kvs->keys[i]->name, "layer"))
 			continue;
 
-		kvkeybase_t* layerKvs = kvs->keys[i];
-
-		int newLayer = layers.append(buildLayer_t());
-
-		//buildLayer_t& layer = layers[newLayer];
-		//layer.model = NULL;
+		layers.append(buildLayer_t());
 	}
 
 	// read models

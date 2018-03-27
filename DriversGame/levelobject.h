@@ -25,7 +25,6 @@ class CEqBulletIndexedMesh;
 class CLevelRegion;
 class IMaterial;
 struct dsmmodel_t;
-struct regionObject_t;
 class IVertexBuffer;
 class IIndexBuffer;
 class IVertexFormat;

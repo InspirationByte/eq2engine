@@ -1369,13 +1369,14 @@ void CUI_LevelModels::MouseTranslateEvents( wxMouseEvent& event, const Vector3D&
 
 				for(int i = 0; i < m_selRefs.numElem(); i++)
 				{
-					// move all
-					m_selRefs[i].selRef->position += movement;
+					regionObject_t* ref = m_selRefs[i].selRef;
 
-#pragma todo("Relocate model in a level regions after movement (or left mouse UP)")
+					// make undoable
+					g_pEditorActionObserver->BeginModify(ref);
+
+					// move
+					ref->position += movement;
 				}
-
-				g_pMainFrame->NotifyUpdate();
 			}
 		}
 	}
@@ -1386,7 +1387,12 @@ void CUI_LevelModels::MouseTranslateEvents( wxMouseEvent& event, const Vector3D&
 		m_dragOffs = vec3_zero;
 		m_dragRot = vec3_zero;
 
+		MoveSelectionToNewRegions();
 		RecalcSelectionCenter();
+
+		g_pMainFrame->NotifyUpdate();
+
+		g_pEditorActionObserver->EndModify();
 	}
 }
 
@@ -1463,6 +1469,10 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 		{
 			regionObject_t* ref = m_selRefs[i].selRef;
 
+			// make undoable
+			g_pEditorActionObserver->BeginModify(ref);
+
+			// rotate
 			Matrix3x3 m = rotateXYZ3(DEG2RAD(ref->rotation.x), DEG2RAD(ref->rotation.y), DEG2RAD(ref->rotation.z));
 			m = rotateXYZ3(DEG2RAD(m_dragRot.x), DEG2RAD(m_dragRot.y), DEG2RAD(m_dragRot.z))*m;
 
@@ -1477,6 +1487,8 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 
 		RecalcSelectionCenter();
 		g_pMainFrame->NotifyUpdate();
+
+		g_pEditorActionObserver->EndModify();
 	}
 }
 
@@ -1687,6 +1699,12 @@ void CUI_LevelModels::OnKey(wxKeyEvent& event, bool bDown)
 void CUI_LevelModels::MoveSelectionToNewRegions()
 {
 	// recalculate regions by object reference positions
+	for (int i = 0; i < m_selRefs.numElem(); i++)
+	{
+		regionObject_t* selectionRef = m_selRefs[i].selRef;
+		
+	}
+
 }
 
 void CUI_LevelModels::OnRender()

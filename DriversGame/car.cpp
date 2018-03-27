@@ -1601,9 +1601,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 		CCarWheel& wheel = m_wheels[i];
 		carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
 
-		bool isDriveWheel = (wheelConf.flags & WHEEL_FLAG_DRIVE);
-		bool isSteerWheel = (wheelConf.flags & WHEEL_FLAG_STEER);
-		bool isHandbrakeWheel = (wheelConf.flags & WHEEL_FLAG_HANDBRAKE);
+		bool isDriveWheel = (wheelConf.flags & WHEEL_FLAG_DRIVE) > 0;
+		bool isSteerWheel = (wheelConf.flags & WHEEL_FLAG_STEER) > 0;
+		bool isHandbrakeWheel = (wheelConf.flags & WHEEL_FLAG_HANDBRAKE) > 0;
 
 		wheel.m_wheelOrient = identity3();
 

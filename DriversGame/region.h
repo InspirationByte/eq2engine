@@ -17,6 +17,10 @@ using namespace Threading;
 
 #include "utils/strtools.h"
 
+#ifdef EDITOR
+#include "../DriversEditor/EditorActionHistory.h"
+#endif // EDITOR
+
 #define ENGINE_REGION_MAX_HFIELDS		4	// you could make more
 #define MAX_MODEL_INSTANCES				1024
 
@@ -144,8 +148,17 @@ struct navGrid_t
 
 class CLevelModel;
 
+#ifdef EDITOR
+class regionObject_t : public CUndoableObject
+{
+public:
+	bool		Undoable_WriteObjectData(IVirtualStream* stream);	// writing object
+	void		Undoable_ReadObjectData(IVirtualStream* stream);	// reading object
+
+#else
 struct regionObject_t
 {
+#endif // 
 	regionObject_t()
 	{
 		game_object = NULL;
