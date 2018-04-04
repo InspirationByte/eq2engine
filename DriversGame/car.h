@@ -322,6 +322,8 @@ public:
 	void					SetModelPtr(IEqModel* modelPtr);
 	void					Draw( int nRenderFlags );
 
+	void					CalculateTransform(Matrix4x4& out, const carWheelConfig_t& conf, bool applyScale = true);
+
 protected:
 	DkList<PFXVertexPair_t>	m_skidMarks;
 
@@ -353,6 +355,7 @@ protected:
 	float					m_smokeTime;
 	float					m_skidTime;
 	float					m_damage;				// this parameter affects hubcaps
+	float					m_hubcapLoose;
 };
 
 typedef float (*TORQUECURVEFUNC)( float rpm );

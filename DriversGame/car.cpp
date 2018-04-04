@@ -109,6 +109,11 @@ static Vector3D s_BodyPartDirections[] =
 #define WHEEL_SKID_COOLDOWNTIME		(10.0f)
 #define WHEEL_SKID_WETSCALING		(0.7f)	// env wetness scale
 
+#define WHEEL_VISUAL_DAMAGE_FACTOR_Y (0.025f)
+#define WHEEL_VISUAL_DAMAGE_FACTOR_Z (0.05f)
+
+#define WHEEL_MIN_DAMAGE_LOOSE_HUBCAP (0.5f)
+
 #define HINGE_INIT_DISTANCE_THRESH	(4.0f)
 #define HINGE_DISCONNECT_COS_ANGLE	(0.2f)
 
@@ -507,6 +512,7 @@ CCarWheel::CCarWheel()
 	m_skidTime = 0.0f;
 	m_surfparam = NULL;
 	m_damage = 0.0f;
+	m_hubcapLoose = 0.0f;
 	m_defaultBodyGroup = 0;
 	m_hubcapBodygroup = -1;
 	m_damagedBodygroup = -1;
@@ -550,6 +556,31 @@ void CCarWheel::Draw( int nRenderFlags )
 	}
 	else
 		BaseClass::Draw( nRenderFlags );
+}
+
+void CCarWheel::CalculateTransform(Matrix4x4& out, const carWheelConfig_t& conf, bool applyScale)
+{
+	float wheelVisualPosFactor = m_collisionInfo.fract;
+
+	if (wheelVisualPosFactor < conf.visualTop)
+		wheelVisualPosFactor = conf.visualTop;
+
+	bool leftWheel = conf.suspensionTop.x < 0.0f;
+
+	Vector3D wheelSuspDir = fastNormalize(conf.suspensionTop - conf.suspensionBottom);
+	Vector3D wheelCenterPos = lerp(conf.suspensionTop, conf.suspensionBottom, wheelVisualPosFactor) + wheelSuspDir * conf.radius;
+
+	Quaternion wheelRotation = Quaternion(m_wheelOrient) * Quaternion(-m_pitch, leftWheel ? PI_F : 0.0f, 0.0f);
+
+	wheelRotation = wheelRotation * Quaternion(0, m_damage*WHEEL_VISUAL_DAMAGE_FACTOR_Y, m_damage*WHEEL_VISUAL_DAMAGE_FACTOR_Z);
+
+	if(applyScale)
+	{
+		Matrix4x4 wheelScale = scale4(conf.width, conf.radius * 2, conf.radius * 2);
+		out = translate(Vector3D(wheelCenterPos - Vector3D(conf.woffset, 0, 0))) * Matrix4x4(wheelRotation) * wheelScale;
+	}
+	else
+		out = translate(wheelCenterPos) * Matrix4x4(wheelRotation);
 }
 
 BEGIN_NETWORK_TABLE( CCar )
@@ -2243,6 +2274,13 @@ void CCar::OnPhysicsFrame( float fDt )
 
 		//debugoverlay->Text3D(wheel.pWheelObject->GetOrigin(), 10.0f, color4_white, "damage: %.2f", wheel.damage);
 
+		// clamp the damage
+		if (wheel.m_damage >= 1.0f)
+			wheel.m_damage = 1.0f;
+
+		//
+		// don't process if already lost a hubcap
+		//
 		if(wheel.m_flags.lostHubcap)
 			continue;
 
@@ -2251,13 +2289,13 @@ void CCar::OnPhysicsFrame( float fDt )
 
 		// skidding can do this
 		if(lateralSliding > 2.0f)
-			wheel.m_damage += lateralSliding * fDt * 0.0035f;
+			wheel.m_hubcapLoose += lateralSliding * fDt * 0.0035f;
 
 		float tractionSliding = GetTractionSlidingAtWheel(i);
 
 		// if you burnout too much, or brake
 		if(tractionSliding > 4.0f)
-			wheel.m_damage += tractionSliding * fDt * 0.001f ;
+			wheel.m_hubcapLoose += tractionSliding * fDt * 0.001f;
 
 		// if vehicle landing on ground hubcaps may go away
 		if(wheel.m_flags.onGround && !wheel.m_flags.lastOnGround)
@@ -2265,15 +2303,22 @@ void CCar::OnPhysicsFrame( float fDt )
 			float wheelLandingVelocity = (-dot(wheel.m_collisionInfo.normal, wheel.m_velocityVec)) - 4.0f;
 
 			if(wheelLandingVelocity > 0.0f)
-				wheel.m_damage += pow(wheelLandingVelocity, 2.0f) * 0.05f;
+				wheel.m_hubcapLoose += pow(wheelLandingVelocity, 2.0f) * 0.05f;
 		}
 
-		if(wheel.m_damage >= 1.0f)
+		bool looseHubcap = false;
+
+		if(wheel.m_hubcapLoose >= 1.0f)
 		{
-			wheel.m_damage = 1.0f;
-
-			ReleaseHubcap(i);
+			wheel.m_hubcapLoose = 1.0f;
+			looseHubcap = true;
 		}
+			
+		if (wheel.m_damage >= WHEEL_MIN_DAMAGE_LOOSE_HUBCAP)
+			looseHubcap = true;
+
+		if(looseHubcap)
+			ReleaseHubcap(i);
 	}
 
 	m_effectTime -= fDt;
@@ -2319,19 +2364,10 @@ void CCar::ReleaseHubcap(int wheel)
 	if(wdata.m_flags.lostHubcap || wdata.m_hubcapBodygroup == -1)
 		return;
 
-	float wheelVisualPosFactor = wdata.m_collisionInfo.fract;
+	Matrix4x4 wheelTranslation;
+	wdata.CalculateTransform(wheelTranslation, wheelConf, false);
 
-	if(wheelVisualPosFactor < wheelConf.visualTop)
-		wheelVisualPosFactor = wheelConf.visualTop;
-
-	bool leftWheel = wheelConf.suspensionTop.x < 0.0f;
-
-	Vector3D wheelSuspDir = fastNormalize(wheelConf.suspensionTop - wheelConf.suspensionBottom);
-	Vector3D wheelCenterPos = lerp(wheelConf.suspensionTop, wheelConf.suspensionBottom, wheelVisualPosFactor) + wheelSuspDir*wheelConf.radius;
-
-	Quaternion wheelRotation = Quaternion(wdata.m_wheelOrient) * Quaternion(-wdata.m_pitch, leftWheel ? PI_F : 0.0f, 0.0f);
-
-	Matrix4x4 wheelTranslation = transpose(m_worldMatrix*(translate(wheelCenterPos) * Matrix4x4(wheelRotation)));
+	wheelTranslation = transpose(m_worldMatrix * wheelTranslation);
 
 	Vector3D wheelPos = wheelTranslation.getTranslationComponent();
 
@@ -4012,20 +4048,10 @@ void CCar::Draw( int nRenderFlags )
 				CCarWheel& wheel = m_wheels[i];
 				carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
 
-				float wheelVisualPosFactor = wheel.m_collisionInfo.fract;
+				Matrix4x4 wheelTranslation;
+				wheel.CalculateTransform(wheelTranslation, wheelConf);
 
-				if(wheelVisualPosFactor < wheelConf.visualTop)
-					wheelVisualPosFactor = wheelConf.visualTop;
-
-				bool leftWheel = wheelConf.suspensionTop.x < 0.0f;
-
-				Vector3D wheelSuspDir = fastNormalize(wheelConf.suspensionTop - wheelConf.suspensionBottom);
-				Vector3D wheelCenterPos = lerp(wheelConf.suspensionTop, wheelConf.suspensionBottom, wheelVisualPosFactor) + wheelSuspDir*wheelConf.radius;
-
-				Quaternion wheelRotation = Quaternion(wheel.m_wheelOrient) * Quaternion(-wheel.m_pitch, leftWheel ? PI_F : 0.0f, 0.0f);
-
-				Matrix4x4 wheelScale = scale4(wheelConf.width,wheelConf.radius*2,wheelConf.radius*2);
-				Matrix4x4 wheelTranslation = m_worldMatrix*(translate(Vector3D(wheelCenterPos - Vector3D(wheelConf.woffset, 0, 0))) * Matrix4x4(wheelRotation) * wheelScale);
+				wheelTranslation = m_worldMatrix * wheelTranslation;
 
 				wheel.SetOrigin(transpose(wheelTranslation).getTranslationComponent());
 				wheel.m_bbox = m_bbox;
@@ -4255,6 +4281,7 @@ void CCar::Repair(bool unlock)
 	for(int i = 0; i < GetWheelCount(); i++)
 	{
 		m_wheels[i].m_damage = 0.0f;
+		m_wheels[i].m_hubcapLoose = 0.0f;
 		m_wheels[i].m_flags.lostHubcap = false;
 		m_wheels[i].m_bodyGroupFlags = (1 << m_wheels[i].m_defaultBodyGroup);
 	}
