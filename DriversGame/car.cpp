@@ -60,65 +60,67 @@ static Vector3D s_BodyPartDirections[] =
 // Some default parameters for handling
 //
 
-#define DEFAULT_CAMERA_FOV			(60.0f)
-#define CAMERA_MIN_FOV				(50.0f)
-#define CAMERA_MAX_FOV				(90.0f)
+const float DEFAULT_CAMERA_FOV			= 60.0f;
+const float CAMERA_MIN_FOV				= 50.0f;
+const float CAMERA_MAX_FOV				= 90.0f;
 
-#define CAMERA_DISTANCE_BIAS		(0.25f)
+const float CAMERA_DISTANCE_BIAS		= 0.25f;
 
-#define ACCELERATION_CONST			(2.0f)
-#define	ACCELERATION_SOUND_CONST	(10.0f)
-#define STEERING_CONST				(1.5f)
-#define STEERING_HELP_CONST			(0.4f)
+const float ACCELERATION_CONST			= 2.0f;
+const float	ACCELERATION_SOUND_CONST	= 10.0f;
+const float STEERING_CONST				= 1.5f;
+const float STEERING_HELP_CONST			= 0.4f;
 
-#define ANTIROLL_FACTOR_DEADZONE	(0.01f)
-#define ANTIROLL_FACTOR_MAX			(1.0f)
-#define ANTIROLL_SCALE				(4.0f)
-#define DEFAULT_SHIFT_ACCEL_FACTOR	(0.25f)
+const float ANTIROLL_FACTOR_DEADZONE	= 0.01f;
+const float ANTIROLL_FACTOR_MAX			= 1.0f;
+const float ANTIROLL_SCALE				= 4.0f;
+const float DEFAULT_SHIFT_ACCEL_FACTOR	= 0.25f;
 
-#define MIN_VISUAL_BODYPART_DAMAGE	(0.32f)
+const float FLIPPED_TOLERANCE_COSINE	= 0.15f;
 
-#define DAMAGE_MINIMPACT			(0.45f)
-#define DAMAGE_SCALE				(0.12f)
-#define	DAMAGE_VISUAL_SCALE			(0.75f)
-#define DAMAGE_WHEEL_SCALE			(0.5f)
+const float MIN_VISUAL_BODYPART_DAMAGE	= 0.32f;
 
-#define DEFAULT_MAX_SPEED			(150.0f)
-#define BURNOUT_MAX_SPEED			(70.0f)
+const float DAMAGE_MINIMPACT			= 0.45f;
+const float DAMAGE_SCALE				= 0.12f;
+const float	DAMAGE_VISUAL_SCALE			= 0.75f;
+const float DAMAGE_WHEEL_SCALE			= 0.5f;
 
-#define DAMAGE_SOUND_SCALE			(0.25f)
-#define SIREN_SOUND_DEATHTIME		(3.5f)
+const float DEFAULT_MAX_SPEED			= 150.0f;
+const float BURNOUT_MAX_SPEED			= 70.0f;
 
-#define	DAMAGE_WATERDAMAGE_RATE		(5.5f)
+const float DAMAGE_SOUND_SCALE			= 0.25f;
+const float SIREN_SOUND_DEATHTIME		= 3.5f;
 
-#define CAR_DEFAULT_MAX_DAMAGE		(16.0f)
+const float	DAMAGE_WATERDAMAGE_RATE		= 5.5f;
 
-#define SKIDMARK_MAX_LENGTH			(256)
-#define SKIDMARK_MIN_INTERVAL		(0.25f)
+const float CAR_DEFAULT_MAX_DAMAGE		= 16.0f;
 
-#define GEARBOX_DECEL_SHIFTDOWN_FACTOR	(0.7f)
+const int SKIDMARK_MAX_LENGTH			= 256;
+const float SKIDMARK_MIN_INTERVAL		= 0.25f;
 
-#define WHELL_ROLL_RESISTANCE_CONST		(150)
-#define WHELL_ROLL_RESISTANCE_HALF		(WHELL_ROLL_RESISTANCE_CONST * 0.5f)
+const float GEARBOX_DECEL_SHIFTDOWN_FACTOR	= 0.7f;
 
-#define WHEEL_ROLL_RESISTANCE_FREE	(8.0f)
-#define ENGINE_ROLL_RESISTANCE		(38.0f)
+const float WHELL_ROLL_RESISTANCE_CONST		= 150.0f;
+const float WHELL_ROLL_RESISTANCE_HALF		= WHELL_ROLL_RESISTANCE_CONST * 0.5f;
 
-#define WHEEL_MIN_SKIDTIME			(2.5f)
-#define WHEEL_SKIDTIME_EFFICIENCY	(0.25f)
-#define WHEEL_SKID_COOLDOWNTIME		(10.0f)
-#define WHEEL_SKID_WETSCALING		(0.7f)	// env wetness scale
+const float WHEEL_ROLL_RESISTANCE_FREE	= 8.0f;
+const float ENGINE_ROLL_RESISTANCE		= 38.0f;
 
-#define WHEEL_VISUAL_DAMAGE_FACTOR_Y (0.025f)
-#define WHEEL_VISUAL_DAMAGE_FACTOR_Z (0.05f)
+const float WHEEL_MIN_SKIDTIME			= 2.5f;
+const float WHEEL_SKIDTIME_EFFICIENCY	= 0.25f;
+const float WHEEL_SKID_COOLDOWNTIME		= 10.0f;
+const float WHEEL_SKID_WETSCALING		= 0.7f;	// env wetness scale
 
-#define WHEEL_MIN_DAMAGE_LOOSE_HUBCAP (0.5f)
+const float WHEEL_VISUAL_DAMAGE_FACTOR_Y	= 0.025f;
+const float WHEEL_VISUAL_DAMAGE_FACTOR_Z	= 0.05f;
 
-#define HINGE_INIT_DISTANCE_THRESH	(4.0f)
-#define HINGE_DISCONNECT_COS_ANGLE	(0.2f)
+const float WHEEL_MIN_DAMAGE_LOOSE_HUBCAP	= 0.5f;
 
-#define SKID_SMOKE_MAX_WETNESS			(0.5f) // wetness level before skid sound disappear
-#define SKID_WATERTRAIL_MIN_WETNESS		(0.25f) // wetness level before skid sound disappear
+const float HINGE_INIT_DISTANCE_THRESH		= 4.0f;
+const float HINGE_DISCONNECT_COS_ANGLE		= 0.2f;
+
+const float SKID_SMOKE_MAX_WETNESS			= 0.5f; // wetness level before skid sound disappear
+const float SKID_WATERTRAIL_MIN_WETNESS		= 0.25f; // wetness level before skid sound disappear
 
 bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 {
@@ -4044,23 +4046,17 @@ void CCar::Draw( int nRenderFlags )
 
 			for(int i = 0; i < numWheels; i++)
 			{
-				//Matrix4x4 w = m;
 				CCarWheel& wheel = m_wheels[i];
 				carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
 
-				Matrix4x4 wheelTranslation;
-				wheel.CalculateTransform(wheelTranslation, wheelConf);
+				wheel.CalculateTransform(wheel.m_worldMatrix, wheelConf);
+				wheel.m_worldMatrix = m_worldMatrix * wheel.m_worldMatrix;
 
-				wheelTranslation = m_worldMatrix * wheelTranslation;
-
-				wheel.SetOrigin(transpose(wheelTranslation).getTranslationComponent());
+				wheel.SetOrigin(transpose(wheel.m_worldMatrix).getTranslationComponent());
 				wheel.m_bbox = m_bbox;
-				wheel.m_worldMatrix = wheelTranslation;
 
 				if(isBodyDrawn)
-				{
 					wheel.Draw(nRenderFlags);
-				}
 			}
 
 			if(isBodyDrawn)
@@ -4192,8 +4188,6 @@ bool CCar::IsInWater() const
 {
 	return m_inWater;
 }
-
-#define FLIPPED_TOLERANCE_COSINE (0.15f)
 
 bool CCar::IsFlippedOver( bool checkWheels ) const
 {
