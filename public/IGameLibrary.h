@@ -44,7 +44,7 @@ public:
 	virtual bool					Init(	ISoundSystem*			pSoundSystem,
 											IPhysics*				pPhysics,
 											IDebugOverlay*			pDebugOverlay,
-											IModelCache*			pModelCache,
+											IStudioModelCache*		pModelCache,
 											IViewRenderer*			pViewRenderer) = 0;
 
 	virtual bool				GameLoad() = 0;

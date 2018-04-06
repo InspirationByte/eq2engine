@@ -22,24 +22,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
     </Filter>
-    <Filter Include="Source Files\Audio">
-      <UniqueIdentifier>{468f0392-2495-478a-b801-517aea3af885}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Audio\AL">
-      <UniqueIdentifier>{a366dd1e-6611-41ae-b627-58f7cf938204}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Audio\NEW">
-      <UniqueIdentifier>{9a24a7ab-3469-4595-9318-17e1fc93dc96}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Common">
-      <UniqueIdentifier>{9a0e6a51-bebb-4e05-b59e-ab07b058dc8d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Common\Keys">
-      <UniqueIdentifier>{1f894a03-e582-4914-a901-433591d9cb4f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Common\FileSystem">
-      <UniqueIdentifier>{82c88a86-6795-4a30-bf9a-81d06413dfa0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\GameSystem">
       <UniqueIdentifier>{41e1ea42-ec65-4003-a7fc-b30544296c35}</UniqueIdentifier>
     </Filter>
@@ -73,6 +55,15 @@
     <Filter Include="Source Files\UI">
       <UniqueIdentifier>{17ddfd4f-5266-4174-ae20-ddb2b043b6cd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\EngineLib">
+      <UniqueIdentifier>{9a0e6a51-bebb-4e05-b59e-ab07b058dc8d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Input">
+      <UniqueIdentifier>{1f894a03-e582-4914-a901-433591d9cb4f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Audio">
+      <UniqueIdentifier>{468f0392-2495-478a-b801-517aea3af885}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\public\Math\math_util.cpp">
@@ -105,25 +96,13 @@
     <ClCompile Include="..\public\Utils\GeomTools.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\public\ViewParams.cpp">
-      <Filter>Source Files\Renderer\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\BaseRenderableObject.cpp">
-      <Filter>Source Files\Renderer\Scene</Filter>
-    </ClCompile>
     <ClCompile Include="ViewRenderer.cpp">
-      <Filter>Source Files\Renderer\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\Decals.cpp">
       <Filter>Source Files\Renderer\Scene</Filter>
     </ClCompile>
     <ClCompile Include="CEngineGame.cpp">
       <Filter>Source Files\GameSystem</Filter>
     </ClCompile>
     <ClCompile Include="EqGameLevel.cpp">
-      <Filter>Source Files\GameSystem</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\GlobalVarsBase.cpp">
       <Filter>Source Files\GameSystem</Filter>
     </ClCompile>
     <ClCompile Include="sys_enginehost.cpp">
@@ -135,26 +114,8 @@
     <ClCompile Include="BaseViewRenderer.cpp">
       <Filter>Source Files\Renderer\Scene</Filter>
     </ClCompile>
-    <ClCompile Include="Audio\EqSoundSystemA.cpp">
-      <Filter>Source Files\Audio\NEW</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp">
       <Filter>Source Files\Physics\Bullet</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_engine\Audio\alsnd_stream.cpp">
-      <Filter>Source Files\Audio\AL</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_engine\Audio\alsnd_emitter.cpp">
-      <Filter>Source Files\Audio\AL</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_engine\Audio\alsnd_sample.cpp">
-      <Filter>Source Files\Audio\AL</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_engine\Audio\alsound_local.cpp">
-      <Filter>Source Files\Audio\AL</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_engine\sys_console.cpp">
-      <Filter>Source Files\System</Filter>
     </ClCompile>
     <ClCompile Include="..\shared_engine\EngineVersion.cpp">
       <Filter>Source Files\System</Filter>
@@ -166,13 +127,7 @@
       <Filter>Source Files\Models</Filter>
     </ClCompile>
     <ClCompile Include="..\shared_engine\Audio\soundzero.cpp">
-      <Filter>Source Files\Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_engine\KeyBinding\Keys.cpp">
-      <Filter>Source Files\Common\Keys</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_engine\cfgloader.cpp">
-      <Filter>Source Files\Common\FileSystem</Filter>
+      <Filter>Source Files\EngineLib\Audio</Filter>
     </ClCompile>
     <ClCompile Include="..\shared_engine\DebugOverlay.cpp">
       <Filter>Source Files\Renderer\Debug</Filter>
@@ -192,6 +147,39 @@
     <ClCompile Include="..\shared_engine\FontCache.cpp">
       <Filter>Source Files\UI</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared_engine\KeyBinding\InputCommandBinder.cpp">
+      <Filter>Source Files\EngineLib\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\cfgloader.cpp">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\alsnd_emitter.cpp">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\alsnd_sample.cpp">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\alsnd_stream.cpp">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\alsound_local.cpp">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\GlobalVarsBase.cpp">
+      <Filter>Source Files\GameSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\sys_in_console.cpp">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Decals.cpp">
+      <Filter>Source Files\Renderer\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\ViewParams.cpp">
+      <Filter>Source Files\Renderer\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\BaseRenderableObject.cpp">
+      <Filter>Source Files\Renderer\Scene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\public\Utils\DkLinkedList.h">
@@ -201,16 +189,10 @@
       <Filter>Source Files\Utils</Filter>
     </ClInclude>
     <ClInclude Include="..\public\coord.h">
-      <Filter>Source Files\Common</Filter>
+      <Filter>Source Files\EngineLib</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Math\DkMath.h">
       <Filter>Source Files\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="KeyBinding\Keys.h">
-      <Filter>Source Files\Common\Keys</Filter>
-    </ClInclude>
-    <ClInclude Include="..\FileSystem\cfgloader.h">
-      <Filter>Source Files\Common\FileSystem</Filter>
     </ClInclude>
     <ClInclude Include="EngineVersion.h">
       <Filter>Source Files\System</Filter>
@@ -243,7 +225,7 @@
       <Filter>Source Files\GameSystem\Entities</Filter>
     </ClInclude>
     <ClInclude Include="Audio\soundzero.h">
-      <Filter>Source Files\Audio</Filter>
+      <Filter>Source Files\EngineLib\Audio</Filter>
     </ClInclude>
     <ClInclude Include="..\public\IDkPhysics.h">
       <Filter>Source Files\Physics</Filter>
@@ -326,28 +308,16 @@
     <ClInclude Include="..\public\Utils\GeomTools.h">
       <Filter>Source Files\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\ViewParams.h">
-      <Filter>Source Files\Renderer\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\BaseRenderableObject.h">
-      <Filter>Source Files\Renderer\Scene</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\IViewRenderer.h">
       <Filter>Source Files\Renderer\Scene</Filter>
     </ClInclude>
     <ClInclude Include="ViewRenderer.h">
       <Filter>Source Files\Renderer\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Decals.h">
-      <Filter>Source Files\Renderer\Scene</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\Math\math_common.h">
       <Filter>Source Files\Math</Filter>
     </ClInclude>
     <ClInclude Include="EqGameLevel.h">
-      <Filter>Source Files\GameSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\GlobalVarsBase.h">
       <Filter>Source Files\GameSystem</Filter>
     </ClInclude>
     <ClInclude Include="..\public\IEngineGame.h">
@@ -372,22 +342,10 @@
       <Filter>Source Files\Models</Filter>
     </ClInclude>
     <ClInclude Include="..\public\ISoundSystem.h">
-      <Filter>Source Files\Audio</Filter>
+      <Filter>Source Files\EngineLib\Audio</Filter>
     </ClInclude>
     <ClInclude Include="BaseViewRenderer.h">
       <Filter>Source Files\Renderer\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\EqSoundSystemA.h">
-      <Filter>Source Files\Audio\NEW</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\IEqSoundEmitter.h">
-      <Filter>Source Files\Audio\NEW</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\IEqSoundSample.h">
-      <Filter>Source Files\Audio\NEW</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\IEqSoundSystem.h">
-      <Filter>Source Files\Audio\NEW</Filter>
     </ClInclude>
     <ClInclude Include="..\shared_engine\physics\BulletConvert.h">
       <Filter>Source Files\Physics\Bullet</Filter>
@@ -410,6 +368,21 @@
     <ClInclude Include="..\shared_engine\FontCache.h">
       <Filter>Source Files\UI</Filter>
     </ClInclude>
+    <ClInclude Include="..\shared_engine\KeyBinding\InputCommandBinder.h">
+      <Filter>Source Files\EngineLib\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\GlobalVarsBase.h">
+      <Filter>Source Files\GameSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Decals.h">
+      <Filter>Source Files\Renderer\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\ViewParams.h">
+      <Filter>Source Files\Renderer\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\BaseRenderableObject.h">
+      <Filter>Source Files\Renderer\Scene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\Libs\DkCore.lib">
@@ -420,18 +393,6 @@
     </Library>
     <Library Include="..\src_dependency\SDL2\lib\SDL2.lib">
       <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\src_dependency\bullet\lib\BulletCollision_vs2010_debug.lib">
-      <Filter>Libs\Bullet</Filter>
-    </Library>
-    <Library Include="..\src_dependency\bullet\lib\BulletDynamics_vs2010_debug.lib">
-      <Filter>Libs\Bullet</Filter>
-    </Library>
-    <Library Include="..\src_dependency\bullet\lib\BulletSoftBody_vs2010_debug.lib">
-      <Filter>Libs\Bullet</Filter>
-    </Library>
-    <Library Include="..\src_dependency\bullet\lib\LinearMath_vs2010_debug.lib">
-      <Filter>Libs\Bullet</Filter>
     </Library>
     <Library Include="..\libs\CoreLib.lib">
       <Filter>Libs</Filter>
@@ -457,16 +418,19 @@
     <Library Include="..\libs\libvorbisfile_static.lib">
       <Filter>Libs</Filter>
     </Library>
-    <Library Include="..\src_dependency\bullet\lib\Release\BulletCollision.lib">
+    <Library Include="..\src_dependency\bullet\bin\BulletCollision.lib">
       <Filter>Libs\Bullet</Filter>
     </Library>
-    <Library Include="..\src_dependency\bullet\lib\Release\BulletDynamics.lib">
+    <Library Include="..\src_dependency\bullet\bin\BulletDynamics.lib">
       <Filter>Libs\Bullet</Filter>
     </Library>
-    <Library Include="..\src_dependency\bullet\lib\Release\BulletSoftBody.lib">
+    <Library Include="..\src_dependency\bullet\bin\BulletSoftBody.lib">
       <Filter>Libs\Bullet</Filter>
     </Library>
-    <Library Include="..\src_dependency\bullet\lib\Release\LinearMath.lib">
+    <Library Include="..\src_dependency\bullet\bin\ConvexDecomposition.lib">
+      <Filter>Libs\Bullet</Filter>
+    </Library>
+    <Library Include="..\src_dependency\bullet\bin\LinearMath.lib">
       <Filter>Libs\Bullet</Filter>
     </Library>
   </ItemGroup>
@@ -477,23 +441,11 @@
     <CustomBuildStep Include="..\public\Math\math_util.h">
       <Filter>Source Files\Math</Filter>
     </CustomBuildStep>
-    <CustomBuildStep Include="sys_console.h">
-      <Filter>Source Files\System</Filter>
-    </CustomBuildStep>
     <CustomBuildStep Include="DebugOverlay.h">
       <Filter>Source Files\Renderer\Debug</Filter>
     </CustomBuildStep>
     <CustomBuildStep Include="..\public\IDebugOverlay.h">
       <Filter>Source Files\Renderer\Debug</Filter>
-    </CustomBuildStep>
-    <CustomBuildStep Include="Audio\alsnd_emitter.h">
-      <Filter>Source Files\Audio\AL</Filter>
-    </CustomBuildStep>
-    <CustomBuildStep Include="Audio\alsnd_sample.h">
-      <Filter>Source Files\Audio\AL</Filter>
-    </CustomBuildStep>
-    <CustomBuildStep Include="Audio\alsound_local.h">
-      <Filter>Source Files\Audio\AL</Filter>
     </CustomBuildStep>
     <CustomBuildStep Include="Physics\DkBulletObject.h">
       <Filter>Source Files\Physics\Bullet</Filter>
@@ -502,7 +454,19 @@
       <Filter>Source Files\Physics\Bullet</Filter>
     </CustomBuildStep>
     <CustomBuildStep Include="..\shared_engine\Audio\alsnd_ambient.h">
-      <Filter>Source Files\Audio\AL</Filter>
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </CustomBuildStep>
+    <CustomBuildStep Include="Audio\alsnd_emitter.h">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </CustomBuildStep>
+    <CustomBuildStep Include="Audio\alsnd_sample.h">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </CustomBuildStep>
+    <CustomBuildStep Include="Audio\alsound_local.h">
+      <Filter>Source Files\EngineLib\Audio</Filter>
+    </CustomBuildStep>
+    <CustomBuildStep Include="sys_in_console.h">
+      <Filter>Source Files\System</Filter>
     </CustomBuildStep>
   </ItemGroup>
 </Project>

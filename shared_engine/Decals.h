@@ -99,7 +99,7 @@ struct staticdecal_t
 	eqlevelvertex_t*	pVerts;
 	int*				pIndices;
 
-	IMaterial*			pMaterial;
+	IMaterial*			material;
 	/*
 	// the decal attachment to avoid sorting
 	int					room_id[2];

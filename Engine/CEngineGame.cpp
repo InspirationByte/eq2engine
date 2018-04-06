@@ -11,7 +11,7 @@
 #include "IGameLibrary.h"
 #include "GlobalVarsBase.h"
 #include "KeyBinding/InputCommandBinder.h"
-#include "sys_console.h"
+#include "sys_in_console.h"
 #include "EqGameLevel.h"
 #include "studio_egf.h"
 #include "IViewRenderer.h"

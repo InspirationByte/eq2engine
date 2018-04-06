@@ -63,7 +63,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>..\FileSystem;..\Engine;..\public;..\public\core;..\shared_engine;..\public\platform;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\bullet\Extras\Serialization\BulletWorldImporter;..\src_dependency\bullet\src\BulletSoftBody;..\src_dependency\zlib;..\src_dependency\OpenALSoftCustom\include;..\src_dependency\libogg\include;..\src_dependency\libvorbis\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\FileSystem;..\Engine;..\public;..\public\core;..\shared_game;..\shared_engine;..\public\platform;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\bullet\Extras\Serialization\BulletWorldImporter;..\src_dependency\bullet\src\BulletSoftBody;..\src_dependency\zlib;..\src_dependency\OpenALSoftCustom\include;..\src_dependency\libogg\include;..\src_dependency\libvorbis\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;PHYSICS_EXPORT;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;USE_SIMD;EQ_USE_SDL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
@@ -168,34 +168,30 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\public\BaseRenderableObject.cpp" />
-    <ClCompile Include="..\public\Decals.cpp" />
+    <ClCompile Include="..\shared_engine\BaseRenderableObject.cpp" />
+    <ClCompile Include="..\shared_engine\Decals.cpp" />
     <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp" />
     <ClCompile Include="..\shared_engine\eqParallelJobs.cpp" />
     <ClCompile Include="..\shared_engine\Font.cpp" />
     <ClCompile Include="..\public\mtriangle_framework.cpp" />
     <ClCompile Include="..\public\Utils\GeomTools.cpp" />
     <ClCompile Include="..\public\Math\math_util.cpp" />
-    <ClCompile Include="..\public\ViewParams.cpp" />
+    <ClCompile Include="..\shared_engine\ViewParams.cpp" />
     <ClCompile Include="..\shared_engine\FontCache.cpp" />
     <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp" />
     <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp" />
-    <ClCompile Include="Audio\EqSoundSystemA.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="BaseViewRenderer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="EqGameLevel.cpp" />
-    <ClCompile Include="..\shared_engine\KeyBinding\Keys.cpp" />
+    <ClCompile Include="..\shared_engine\KeyBinding\InputCommandBinder.cpp" />
     <ClCompile Include="..\shared_engine\cfgloader.cpp" />
     <ClCompile Include="CEngineGame.cpp" />
-    <ClCompile Include="..\public\GlobalVarsBase.cpp" />
+    <ClCompile Include="..\shared_game\GlobalVarsBase.cpp" />
     <ClCompile Include="..\shared_engine\EngineVersion.cpp" />
     <ClCompile Include="Modules.cpp" />
-    <ClCompile Include="..\shared_engine\sys_console.cpp" />
+    <ClCompile Include="..\shared_engine\sys_in_console.cpp" />
     <ClCompile Include="sys_enginehost.cpp" />
     <ClCompile Include="sys_main.cpp">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
@@ -220,8 +216,8 @@
     <ClCompile Include="ViewRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\public\BaseRenderableObject.h" />
-    <ClInclude Include="..\public\Decals.h" />
+    <ClInclude Include="..\shared_engine\BaseRenderableObject.h" />
+    <ClInclude Include="..\shared_engine\Decals.h" />
     <ClInclude Include="..\public\Font.h" />
     <ClInclude Include="..\public\IEngineWorld.h" />
     <ClInclude Include="..\public\IViewRenderer.h" />
@@ -230,17 +226,13 @@
     <ClInclude Include="..\public\Utils\DkLinkedList.h" />
     <ClInclude Include="..\public\Utils\DkList.h" />
     <ClInclude Include="..\public\Utils\GeomTools.h" />
-    <ClInclude Include="..\public\ViewParams.h" />
+    <ClInclude Include="..\shared_engine\ViewParams.h" />
     <ClInclude Include="..\shared_engine\eqGlobalMutex.h" />
     <ClInclude Include="..\shared_engine\eqParallelJobs.h" />
     <ClInclude Include="..\shared_engine\FontCache.h" />
     <ClInclude Include="..\shared_engine\FontLayoutBuilders.h" />
     <ClInclude Include="..\shared_engine\physics\BulletConvert.h" />
     <ClInclude Include="..\shared_engine\physics\BulletShapeCache.h" />
-    <ClInclude Include="Audio\EqSoundSystemA.h" />
-    <ClInclude Include="Audio\IEqSoundEmitter.h" />
-    <ClInclude Include="Audio\IEqSoundSample.h" />
-    <ClInclude Include="Audio\IEqSoundSystem.h" />
     <ClInclude Include="BaseViewRenderer.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -250,15 +242,14 @@
     <ClInclude Include="..\public\Math\DkMath.h" />
     <ClInclude Include="ViewRenderer.h" />
     <CustomBuildStep Include="..\public\Math\math_util.h" />
-    <ClInclude Include="KeyBinding\Keys.h" />
-    <ClInclude Include="..\FileSystem\cfgloader.h" />
-    <ClInclude Include="..\public\GlobalVarsBase.h" />
+    <ClInclude Include="..\shared_engine\KeyBinding\InputCommandBinder.h" />
+    <ClInclude Include="..\shared_engine\GlobalVarsBase.h" />
     <ClInclude Include="..\public\IEngineGame.h" />
     <ClInclude Include="EngineVersion.h" />
     <ClInclude Include="..\public\IEngineHost.h" />
     <ClInclude Include="..\public\in_keys_ident.h" />
     <ClInclude Include="Modules.h" />
-    <CustomBuildStep Include="sys_console.h" />
+    <CustomBuildStep Include="sys_in_console.h" />
     <ClInclude Include="sys_enginehost.h" />
     <ClInclude Include="..\public\IFont.h" />
     <CustomBuildStep Include="..\public\Renderable.h" />
@@ -341,22 +332,11 @@
     <Library Include="..\libs\libvorbis_static.lib" />
     <Library Include="..\libs\OpenAL32.lib" />
     <Library Include="..\Libs\zlib.lib" />
-    <Library Include="..\src_dependency\bullet\lib\BulletCollision_vs2010_debug.lib">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </Library>
-    <Library Include="..\src_dependency\bullet\lib\BulletDynamics_vs2010_debug.lib">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </Library>
-    <Library Include="..\src_dependency\bullet\lib\BulletSoftBody_vs2010_debug.lib">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </Library>
-    <Library Include="..\src_dependency\bullet\lib\LinearMath_vs2010_debug.lib">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </Library>
-    <Library Include="..\src_dependency\bullet\lib\Release\BulletCollision.lib" />
-    <Library Include="..\src_dependency\bullet\lib\Release\BulletDynamics.lib" />
-    <Library Include="..\src_dependency\bullet\lib\Release\BulletSoftBody.lib" />
-    <Library Include="..\src_dependency\bullet\lib\Release\LinearMath.lib" />
+    <Library Include="..\src_dependency\bullet\bin\BulletCollision.lib" />
+    <Library Include="..\src_dependency\bullet\bin\BulletDynamics.lib" />
+    <Library Include="..\src_dependency\bullet\bin\BulletSoftBody.lib" />
+    <Library Include="..\src_dependency\bullet\bin\ConvexDecomposition.lib" />
+    <Library Include="..\src_dependency\bullet\bin\LinearMath.lib" />
     <Library Include="..\src_dependency\SDL2\lib\SDL2.lib" />
   </ItemGroup>
   <ItemGroup>

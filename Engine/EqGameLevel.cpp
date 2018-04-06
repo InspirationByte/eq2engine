@@ -117,10 +117,12 @@ public:
 		//if(!(decal.flags & DECAL_FLAG_VISIBLE))
 		//	return;
 
-		if((decal.pMaterial->GetFlags() & MATERIAL_FLAG_MODULATE) && (nViewRenderFlags & VR_FLAG_NO_MODULATEDECALS))
+		int decalMaterialFlags = decal.material->GetFlags();
+
+		if((decalMaterialFlags & MATERIAL_FLAG_MODULATE) && (nViewRenderFlags & VR_FLAG_NO_MODULATEDECALS))
 			return;
 
-		if(!(decal.pMaterial->GetFlags() & MATERIAL_FLAG_MODULATE) && (nViewRenderFlags & VR_FLAG_NO_TRANSLUCENT))
+		if(!(decalMaterialFlags & MATERIAL_FLAG_MODULATE) && (nViewRenderFlags & VR_FLAG_NO_TRANSLUCENT))
 			return;
 
 		if(!r_drawstaticdecals.GetBool())
@@ -184,7 +186,7 @@ public:
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 		materials->SetCullMode(CULL_BACK);
 
-		materials->BindMaterial( decal.pMaterial, false );
+		materials->BindMaterial( decal.material, false );
 
 		materials->Apply();
 
@@ -673,7 +675,7 @@ void CEqLevel::InitMaterials(eqworldlump_t* pMaterials)
 
 	for(int i = 0; i < m_numMaterials; i++)
 	{
-		m_pMaterials[i] = materials->GetMaterial(pMaterialStrings[i].material_path, true);
+		m_pMaterials[i] = materials->GetMaterial(pMaterialStrings[i].material_path);
 
 		if(m_pMaterials[i])
 		{
@@ -1674,7 +1676,7 @@ void MakeDecalTexCoord(decal_geom_data_t* pGeomData, const decalmakeinfo_t &info
 		int texSizeW = 1;
 		int texSizeH = 1;
 
-		ITexture* pTex = info.pMaterial->GetBaseTexture();
+		ITexture* pTex = info.material->GetBaseTexture();
 
 		if(pTex)
 		{
@@ -1859,19 +1861,19 @@ tempdecal_t* CEqLevel::MakeTempDecal( const decalmakeinfo_t& info )
 		pDecal->flags = 0;
 		pDecal->numIndices = 0;
 		pDecal->numVerts = 0;
-		pDecal->pMaterial = info.pMaterial;
+		pDecal->material = info.material;
 
 		pDecal->numVerts = pDecalGeom->verts.numElem();
 		pDecal->numIndices = pDecalGeom->indices.numElem();
 
-		pDecal->pVerts = PPAllocStructArray(eqlevelvertex_t, pDecal->numVerts);
-		pDecal->pIndices = PPAllocStructArray(uint16, pDecal->numIndices);
+		pDecal->verts = PPAllocStructArray(eqlevelvertex_t, pDecal->numVerts);
+		pDecal->indices = PPAllocStructArray(uint16, pDecal->numIndices);
 
 		// copy geometry
-		memcpy(pDecal->pVerts, pDecalGeom->verts.ptr(), sizeof(eqlevelvertex_t)*pDecal->numVerts);
+		memcpy(pDecal->verts, pDecalGeom->verts.ptr(), sizeof(eqlevelvertex_t)*pDecal->numVerts);
 
 		for(int i = 0; i < pDecal->numIndices; i++)
-			pDecal->pIndices[i] = pDecalGeom->indices[i];
+			pDecal->indices[i] = pDecalGeom->indices[i];
 		
 		if(pDecalGeom != pInitialGeometry)
 			delete pDecalGeom;
@@ -1976,7 +1978,7 @@ staticdecal_t* CEqLevel::MakeStaticDecal( const decalmakeinfo_t &info )
 		pDecal->flags = 0;
 		pDecal->numIndices = 0;
 		pDecal->numVerts = 0;
-		pDecal->pMaterial = info.pMaterial;
+		pDecal->material = info.material;
 		pDecal->box = decal_bbox;
 
 		// static decals are unlimited

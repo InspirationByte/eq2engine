@@ -19,7 +19,7 @@
 
 #if !defined(EDITOR) && !defined(NO_ENGINE)
 #include "IEngineGame.h"
-#include "sys_console.h"
+#include "sys_in_console.h"
 #endif
 
 static CInputCommandBinder s_inputCommandBinder;

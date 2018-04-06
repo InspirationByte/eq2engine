@@ -7,7 +7,7 @@
 
 #include "DebugInterface.h"
 #include "IEngineGame.h"
-#include "sys_console.h"
+#include "sys_in_console.h"
 
 #include "Imaging/ImageLoader.h"
 
@@ -1089,7 +1089,7 @@ int CEngineHost::Frame()
 								engine->GetGameState() == IEngineGame::GAME_LEVEL_LOAD);
 
 
-	g_consoleInput->DrawSelf(fullscreen_console, m_nWidth, m_nHeight, m_fCurTime);
+	g_consoleInput->DrawSelf(m_nWidth, m_nHeight, m_fFrameTime);
 
 	// End frame from render lib
 	EndScene();

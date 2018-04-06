@@ -9,7 +9,7 @@
 #include "EngineVersion.h" // Engine version
 
 #include "sys_enginehost.h"
-#include "sys_console.h"
+#include "sys_in_console.h"
 
 #include "utils/strtools.h"
 #include "IFileSystem.h"
