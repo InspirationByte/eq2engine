@@ -693,8 +693,8 @@ void CCar::CreateCarPhysics()
 {
 	CEqRigidBody* body = new CEqRigidBody();
 
-	int wheelCacheId = g_pModelCache->PrecacheModel( "models/vehicles/wheel.egf" );
-	IEqModel* wheelModel = g_pModelCache->GetModel( wheelCacheId );
+	int wheelCacheId = g_studioModelCache->PrecacheModel( "models/vehicles/wheel.egf" );
+	IEqModel* wheelModel = g_studioModelCache->GetModel( wheelCacheId );
 
 	m_wheels = new CCarWheel[m_conf->physics.numWheels]();
 
@@ -838,10 +838,10 @@ void CCar::Spawn()
 		m_pModel->SetInstancer( instancer );
 	}*/
 
-	int nDamModelIndex = g_pModelCache->PrecacheModel( m_conf->visual.damModelName.c_str() );
+	int nDamModelIndex = g_studioModelCache->PrecacheModel( m_conf->visual.damModelName.c_str() );
 
 	if(nDamModelIndex != -1)
-		m_pDamagedModel = g_pModelCache->GetModel( nDamModelIndex );
+		m_pDamagedModel = g_studioModelCache->GetModel( nDamModelIndex );
 	else
 		m_pDamagedModel = NULL;
 

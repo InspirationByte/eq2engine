@@ -808,16 +808,16 @@ void BaseEntity::SetModel(const char* pszModelName)
 
 	m_pszModelName = pszModelName;
 
-	int mod_index = g_pModelCache->GetModelIndex(pszModelName);
+	int mod_index = g_studioModelCache->GetModelIndex(pszModelName);
 
 	if(mod_index == -1)
 		MsgError("Model %s is not cached\n", pszModelName);
 
-	IEqModel* pModel = g_pModelCache->GetModel(mod_index);
+	IEqModel* pModel = g_studioModelCache->GetModel(mod_index);
 
 	if(pModel->GetHWData() == NULL)
 	{
-		pModel = g_pModelCache->GetModel(0);
+		pModel = g_studioModelCache->GetModel(0);
 		pModel->GetHWData();
 	}
 

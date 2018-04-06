@@ -8,7 +8,7 @@
 #ifndef STATE_TITLE_H
 #define STATE_TITLE_H
 
-#include "StateManager.h"
+#include "DrvSynStates.h"
 
 class CState_Title : public CBaseStateHandler
 {

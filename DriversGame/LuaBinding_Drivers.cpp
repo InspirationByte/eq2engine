@@ -10,9 +10,9 @@
 #include "world.h"
 #include "car.h"
 #include "game_multiplayer.h"
-#include "StateManager.h"
+#include "DrvSynStates.h"
 #include "DrvSynHUD.h"
-#include "system.h"
+#include "sys_host.h"
 #include "state_game.h"
 #include "utils/singleton.h"
 
@@ -144,9 +144,10 @@ bool Lua_LoadMissionScript(const char* name)
 	return g_State_Game->LoadMissionScript(name);
 }
 
-OOLUA_CFUNC(SetCurrentStateType, L_SetCurrentStateType)
-OOLUA_CFUNC(GetCurrentStateType, L_GetCurrentStateType)
-OOLUA_CFUNC(SheduleNextStateType, L_SheduleNextStateType)
+int L_SetCurrentStateType(lua_State* vm) { OOLUA_C_FUNCTION(void, EqStateMgr::SetCurrentStateType, int) }
+int L_GetCurrentStateType(lua_State* vm) { OOLUA_C_FUNCTION(int, EqStateMgr::GetCurrentStateType ) }
+int L_ScheduleNextStateType(lua_State* vm) { OOLUA_C_FUNCTION(void, EqStateMgr::ScheduleNextStateType, int) }
+
 OOLUA_CFUNC(Lua_LoadMissionScript, L_LoadMissionScript)
 
 //OOLUA_CFUNC(SetCurrentState, L_SetCurrentState)
@@ -276,7 +277,7 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 
 	OOLUA::set_global(state, "SetCurrentStateType", L_SetCurrentStateType);
 	OOLUA::set_global(state, "GetCurrentStateType", L_GetCurrentStateType);
-	OOLUA::set_global(state, "SheduleNextStateType", L_SheduleNextStateType);
+	OOLUA::set_global(state, "ScheduleNextStateType", L_ScheduleNextStateType);
 	OOLUA::set_global(state, "LoadMissionScript", L_LoadMissionScript);
 	
 	//OOLUA::set_global(state, "SetCurrentState", L_SetCurrentState);
@@ -311,17 +312,4 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 
 	// initialize library
 	return EqLua::LuaBinding_LoadAndDoFile(state, "scripts/lua/_init.lua", "__init");
-}
-
-bool LuaBinding_ConsoleHandler(const char* cmdText)
-{
-	EqString cmdFullText( cmdText );
-
-	if(*cmdText == '=')
-		cmdFullText = varargs("ConsolePrint(%s)", cmdText+1);
-
-	if(!EqLua::LuaBinding_DoBuffer(GetLuaState(), cmdFullText.c_str(), cmdFullText.Length(), "console"))
-		MsgError("%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
-
-	return true;
 }

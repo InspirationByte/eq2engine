@@ -2,27 +2,29 @@
 // Copyright © Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Drivers system and modules
+// Description: System and module loader
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "LuaBinding_Drivers.h"
+#include "sys_host.h"
+#include "sys_state.h"
+#include "sys_in_console.h"
+
+#include "luabinding/LuaBinding_Engine.h"
+
+#include "IConCommandFactory.h"
+
 #include "IEqCPUServices.h"
-
-#include "DebugOverlay.h"
-#include "system.h"
-#include "state_game.h"
-
-#include "StateManager.h"
-
+#include "eqParallelJobs.h"
 #include "KeyBinding/InputCommandBinder.h"
 #include "FontCache.h"
 
+#include "DebugOverlay.h"
+
 #include "EqUI/EqUI_Manager.h"
-#include "EqUI/EqUI_Panel.h"
+
+#include "GameSoundEmitterSystem.h"
 
 #include "network/net_defs.h"
-
-#include "sys_console.h"
 
 #include "cfgloader.h"
 
@@ -46,7 +48,9 @@ DECLARE_CVAR(r_clear,0,"Clear the backbuffer",CV_ARCHIVE);
 DECLARE_CVAR(r_vSync,0,"Vertical syncronization",CV_ARCHIVE);
 DECLARE_CVAR(r_antialiasing,0,"Multisample antialiasing",CV_ARCHIVE);
 
-static EQCURSOR staticDefaultCursor[20];
+DECLARE_INTERNAL_SHADERS();
+
+static EQCURSOR s_defaultCursor[20];
 
 // TODO: Move this to GUI
 enum CursorCode
@@ -113,9 +117,10 @@ bool CGameHost::LoadModules()
 	return true;
 }
 
-DECLARE_INTERNAL_SHADERS();
-
-extern void DrvSyn_RegisterShaderOverrides();
+void CGameHost::SetWindowTitle(const char* windowTitle)
+{
+	SDL_SetWindowTitle(m_pWindow, windowTitle);
+}
 
 #ifdef ANDROID
 void* CGameHost::GetEGLSurfaceFromSDL()
@@ -255,9 +260,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();
 
-	// initialize shader overrides after libraries are loaded
-	DrvSyn_RegisterShaderOverrides();
-
 	g_pShaderAPI = materials->GetShaderAPI();
 
 	// Initialize sound system
@@ -265,22 +267,22 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	Networking::InitNetworking();
 
-	staticDefaultCursor[dc_none]     = NULL;
-	staticDefaultCursor[dc_arrow]    =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-	staticDefaultCursor[dc_ibeam]    =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
-	staticDefaultCursor[dc_hourglass]=SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT);
-	staticDefaultCursor[dc_crosshair]=SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
-	staticDefaultCursor[dc_up]       =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAITARROW);
-	staticDefaultCursor[dc_sizenwse] =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
-	staticDefaultCursor[dc_sizenesw] =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
-	staticDefaultCursor[dc_sizewe]   =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
-	staticDefaultCursor[dc_sizens]   =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
-	staticDefaultCursor[dc_sizeall]  =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
-	staticDefaultCursor[dc_no]       =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
-	staticDefaultCursor[dc_hand]     =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+	s_defaultCursor[dc_none]     = NULL;
+	s_defaultCursor[dc_arrow]    =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+	s_defaultCursor[dc_ibeam]    =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+	s_defaultCursor[dc_hourglass]=SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT);
+	s_defaultCursor[dc_crosshair]=SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+	s_defaultCursor[dc_up]       =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAITARROW);
+	s_defaultCursor[dc_sizenwse] =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
+	s_defaultCursor[dc_sizenesw] =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
+	s_defaultCursor[dc_sizewe]   =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+	s_defaultCursor[dc_sizens]   =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+	s_defaultCursor[dc_sizeall]  =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+	s_defaultCursor[dc_no]       =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
+	s_defaultCursor[dc_hand]     =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
 
 	// Set default cursor
-	SDL_SetCursor( staticDefaultCursor[dc_arrow] );
+	SDL_SetCursor(s_defaultCursor[dc_arrow] );
 
 	// make job threads
 	g_parallelJobs->Init( (int)ceil((float)g_cpuCaps->GetCPUCount() / 2.0f) );
@@ -291,19 +293,16 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	m_pDefaultFont = g_fontCache->GetFont("default",0);
 
 	// init console
-	g_pSysConsole->Initialize();
+	g_consoleInput->Initialize();
 
-	g_pSysConsole->SetAlternateHandler( LuaBinding_ConsoleHandler );
+	g_consoleInput->SetAlternateHandler( LuaBinding_ConsoleHandler );
 
 	debugoverlay->Init();
 	equi::Manager->Init();
 
 	// init game states and proceed
-	InitRegisterStates();
-
-	if( !LuaBinding_InitDriverSyndicateBindings(GetLuaState()) )
+	if(!EqStateMgr::InitRegisterStates())
 	{
-		ErrorMsg("Lua base initialization error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
 		return false;
 	}
 
@@ -487,7 +486,7 @@ void CGameHost::ShutdownSystems()
 	Msg("---------  ShutdownSystems ---------\n");
 
 	// calls OnLeave and unloads state
-	ChangeState( NULL );
+	EqStateMgr::ChangeState( NULL );
 
 	// Save configuration before full unload
 	WriteCfgFile( user_cfg.GetString(), true );
@@ -567,10 +566,10 @@ void CGameHost::UpdateCursorState()
 {
 	bool cursorVisible = false;
 
-	GetStateMouseCursorProperties(cursorVisible, m_cursorCentered);
+	EqStateMgr::GetStateMouseCursorProperties(cursorVisible, m_cursorCentered);
 
-	cursorVisible = cursorVisible || g_pSysConsole->IsVisible() || equi::Manager->IsWindowsVisible();
-	m_cursorCentered = m_cursorCentered && !(g_pSysConsole->IsVisible() || equi::Manager->IsWindowsVisible());
+	cursorVisible = cursorVisible || g_consoleInput->IsVisible() || equi::Manager->IsWindowsVisible();
+	m_cursorCentered = m_cursorCentered && !(g_consoleInput->IsVisible() || equi::Manager->IsWindowsVisible());
 
 	// update cursor visibility state
 	SetCursorShow( cursorVisible );
@@ -594,7 +593,7 @@ void CGameHost::SetCursorShow(bool bShow)
 		return;
 
 	if(bShow)
-		SDL_SetCursor(staticDefaultCursor[dc_arrow]);
+		SDL_SetCursor(s_defaultCursor[dc_arrow]);
 
 	SDL_ShowCursor(bShow);
 }
@@ -652,7 +651,7 @@ bool CGameHost::Frame()
 
 	PROFILE_BLOCK(UpdateStates);
 
-	if(!UpdateStates( m_fGameFrameTime ))
+	if(!EqStateMgr::UpdateStates( m_fGameFrameTime ))
 	{
 		g_pHost->m_nQuitState = CGameHost::QUIT_TODESKTOP;
 		return false;
@@ -707,13 +706,10 @@ bool CGameHost::Frame()
 	equi::Manager->SetViewFrame(IRectangle(0,0,m_winSize.x,m_winSize.y));
 	equi::Manager->Render();
 
-	g_pSysConsole->DrawSelf(m_winSize.x, m_winSize.y, m_fGameFrameTime);
-
-	// issue the rendering of anything
-	g_pShaderAPI->Flush();
+	g_consoleInput->DrawSelf(m_winSize.x, m_winSize.y, m_fGameFrameTime);
 
 	// End frame from render lib
-	PROFILE_CODE(EndScene());
+	EndScene();
 
 	g_pShaderAPI->ResetCounters();
 
@@ -725,24 +721,15 @@ bool CGameHost::Frame()
 
 bool CGameHost::IsInMultiplayerGame() const
 {
-	extern ConVar sv_maxplayers;
-
-	// maxplayers set and ingame
-	return (GetCurrentStateType() == GAME_STATE_GAME) && sv_maxplayers.GetInt() > 1;
+	return EqStateMgr::IsMultiplayerGameState();
 }
 
 void CGameHost::SignalPause()
 {
-	if(GetCurrentStateType() != GAME_STATE_GAME)
+	if(EqStateMgr::IsInGameState())
 		return;
 
-	CState_Game* gameState = (CState_Game*)GetCurrentState();
-
-	if(gameState->GetPauseMode() == PAUSEMODE_NONE)
-	{
-		gameState->SetPauseState( true );
-		ses->Update();
-	}
+	EqStateMgr::SignalPause();
 }
 
 void CGameHost::OnWindowResize(int width, int height)
@@ -766,10 +753,12 @@ void CGameHost::BeginScene()
 
 void CGameHost::EndScene()
 {
-	// End frame from render lib
-	materials->EndFrame(NULL);
-}
+	// issue the rendering of anything
+	PROFILE_CODE(g_pShaderAPI->Flush(););
 
+	// End frame from render lib
+	PROFILE_CODE(materials->EndFrame(NULL););
+}
 
 void CGameHost::TrapKey_Event( int key, bool down )
 {
@@ -784,14 +773,14 @@ void CGameHost::TrapKey_Event( int key, bool down )
 		return;
 	}
 
-	if(g_pSysConsole->KeyPress( key, down ))
+	if(g_consoleInput->KeyPress( key, down ))
 		return;
 
 	if( equi::Manager->ProcessKeyboardEvents(key, down ? equi::UIEVENT_DOWN : equi::UIEVENT_UP ) )
 		return;
 
-	if(GetCurrentState())
-		GetCurrentState()->HandleKeyPress( key, down );
+	if(EqStateMgr::GetCurrentState())
+		EqStateMgr::GetCurrentState()->HandleKeyPress( key, down );
 }
 
 void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
@@ -807,7 +796,7 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 		return;
 	}
 
-	if( g_pSysConsole->MouseEvent( Vector2D(x,y), buttons, down ) )
+	if( g_consoleInput->MouseEvent( Vector2D(x,y), buttons, down ) )
 		return;
 
 	if( equi::Manager->ProcessMouseEvents( x, y, buttons, down ? equi::UIEVENT_DOWN : equi::UIEVENT_UP) )
@@ -816,8 +805,8 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 	if(in_mouse_to_touch.GetBool())
 		g_pHost->Touch_Event( x/m_winSize.x, y/m_winSize.y, 0, down);
 
-	if(GetCurrentState())
-		GetCurrentState()->HandleMouseClick( x, y, buttons, down );
+	if(EqStateMgr::GetCurrentState())
+		EqStateMgr::GetCurrentState()->HandleMouseClick( x, y, buttons, down );
 }
 
 void CGameHost::TrapMouseMove_Event( int x, int y )
@@ -830,7 +819,7 @@ void CGameHost::TrapMouseMove_Event( int x, int y )
 
 	m_mousePos = IVector2D(x,y);
 
-	g_pSysConsole->MousePos( m_mousePos );
+	g_consoleInput->MousePos( m_mousePos );
 
 	if( equi::Manager->ProcessMouseEvents( x, y, 0, equi::UIEVENT_MOUSE_MOVE) )
 		return;
@@ -840,8 +829,8 @@ void CGameHost::TrapMouseMove_Event( int x, int y )
 	delta.y *= (m_invert.GetBool() ? 1.0f : -1.0f);
 	delta *= 0.05f;
 
-	if(GetCurrentState())
-		GetCurrentState()->HandleMouseMove(x, y, delta.x, delta.y);
+	if(EqStateMgr::GetCurrentState())
+		EqStateMgr::GetCurrentState()->HandleMouseMove(x, y, delta.x, delta.y);
 
 	if(m_cursorCentered)
 		SetCursorPosition(m_winSize.x/2, m_winSize.y/2);
@@ -849,16 +838,16 @@ void CGameHost::TrapMouseMove_Event( int x, int y )
 
 void CGameHost::TrapMouseWheel_Event(int x, int y, int scroll)
 {
-	if(GetCurrentState())
-		GetCurrentState()->HandleMouseWheel(x,y,scroll);
+	if(EqStateMgr::GetCurrentState())
+		EqStateMgr::GetCurrentState()->HandleMouseWheel(x,y,scroll);
 }
 
 void CGameHost::TrapJoyAxis_Event( short axis, short value )
 {
 	g_inputCommandBinder->OnJoyAxisEvent( axis, value );
 
-	if(GetCurrentState())
-		GetCurrentState()->HandleJoyAxis( axis, value );
+	if(EqStateMgr::GetCurrentState())
+		EqStateMgr::GetCurrentState()->HandleJoyAxis( axis, value );
 }
 
 void CGameHost::TrapJoyBall_Event( short ball, short xrel, short yrel )
@@ -870,8 +859,8 @@ void CGameHost::TrapJoyButton_Event( short button, bool down)
 {
 	g_inputCommandBinder->OnKeyEvent( JOYSTICK_START_KEYS + button, down );
 
-	if(GetCurrentState())
-		GetCurrentState()->HandleKeyPress( JOYSTICK_START_KEYS + button, down );
+	if(EqStateMgr::GetCurrentState())
+		EqStateMgr::GetCurrentState()->HandleKeyPress( JOYSTICK_START_KEYS + button, down );
 }
 
 void CGameHost::TouchMotion_Event( float x, float y, int finger )
@@ -886,7 +875,7 @@ void CGameHost::Touch_Event( float x, float y, int finger, bool down )
 
 void CGameHost::ProcessKeyChar( int chr )
 {
-	if(g_pSysConsole->KeyChar( chr ))
+	if(g_consoleInput->KeyChar( chr ))
 		return;
 }
 

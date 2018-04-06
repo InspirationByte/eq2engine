@@ -188,7 +188,7 @@ void CBaseViewRenderer::InitializeResources()
 
 	if(materials->GetLightingModel() == MATERIAL_LIGHT_DEFERRED && !m_bDSInit)
 	{
-		int nDSLightModel = g_pModelCache->PrecacheModel("models/sphere_1x1.egf");
+		int nDSLightModel = g_studioModelCache->PrecacheModel("models/sphere_1x1.egf");
 
 		if(nDSLightModel == -1)
 		{
@@ -196,7 +196,7 @@ void CBaseViewRenderer::InitializeResources()
 			exit(-1);
 		}
 
-		m_pDSlightModel = g_pModelCache->GetModel(nDSLightModel);
+		m_pDSlightModel = g_studioModelCache->GetModel(nDSLightModel);
 
 		if(!m_pDSlightModel)
 		{

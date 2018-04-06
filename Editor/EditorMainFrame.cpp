@@ -738,7 +738,7 @@ CEditorFrame::CEditorFrame(const wxString& title, const wxPoint& pos, const wxSi
 	
 	Connect(wxEVT_SIZE, wxSizeEventHandler(CEditorFrame::ViewPanelResize));
 
-	g_pModelCache->PrecacheModel("models/error.egf");
+	g_studioModelCache->PrecacheModel("models/error.egf");
 	
 	Msg("Loading GameInfo.txt...\n");
 	
@@ -1380,7 +1380,7 @@ void CEditorFrame::OnClose(wxCloseEvent& event)
 
 	soundsystem->Shutdown();
 
-	g_pModelCache->ReleaseCache();
+	g_studioModelCache->ReleaseCache();
 
 	// shutdown material system
 	materials->Shutdown();

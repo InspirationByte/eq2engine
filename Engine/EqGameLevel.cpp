@@ -1489,12 +1489,12 @@ void CopyLevelGeomToDecal(eqlevelsurf_t* pSurfGrp, eqlevelvertexlm_t* pVerts, in
 
 		if( decal_volume.IsTriangleInside(v[0].position, v[1].position, v[2].position) )
 		{
-			if(info.flags & DECALFLAG_CULLING)
+			if(info.flags & MAKEDECAL_FLAG_CLIPPING)
 			{
 				Vector3D normal;
 				ComputeTriangleNormal(v[0].position, v[1].position, v[2].position, normal);
 
-				if(info.flags & DECALFLAG_TEXCOORD_BYNORMAL)
+				if(info.flags & MAKEDECAL_FLAG_TEX_NORMAL)
 				{
 					if(dot(info.normal, normal) > 0)
 						continue;
@@ -1669,7 +1669,7 @@ void MakeDecalTexCoord(decal_geom_data_t* pGeomData, const decalmakeinfo_t &info
 {
 	Vector3D scaledSize = info.size*2.0f;
 
-	if(info.flags & DECALFLAG_TEXCOORD_BYNORMAL)
+	if(info.flags & MAKEDECAL_FLAG_TEX_NORMAL)
 	{
 		int texSizeW = 1;
 		int texSizeH = 1;

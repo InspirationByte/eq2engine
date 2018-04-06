@@ -484,7 +484,7 @@ void CInputCommandBinder::ExecuteBoundCommands(T* zone, bool bState)
 	{
 #if !defined(EDITOR) && !defined(NO_ENGINE)
 		// skip client controls if console enabled
-		if((cmd->GetFlags() & CV_CLIENTCONTROLS) && (engine->GetGameState() == IEngineGame::GAME_PAUSE || g_pSysConsole->IsVisible()))
+		if((cmd->GetFlags() & CV_CLIENTCONTROLS) && (engine->GetGameState() == IEngineGame::GAME_PAUSE || g_consoleInput->IsVisible()))
 			return;
 #endif
 

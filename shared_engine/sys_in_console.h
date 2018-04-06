@@ -25,7 +25,7 @@ typedef bool (*CONSOLE_ALTERNATE_HANDLER)(const char* commandText);
 
 class ConCommandBase;
 
-class CEqSysConsole
+class CEqConsoleInput
 {
 public:
 	friend class CFont;
@@ -37,7 +37,7 @@ public:
 	static void		SpewUninstall();
 
 
-					CEqSysConsole();
+					CEqConsoleInput();
 
 	void			Initialize();
 
@@ -137,6 +137,6 @@ private:
 	DkList<ConAutoCompletion_t*>	m_customAutocompletion;
 };
 
-extern CEqSysConsole* g_pSysConsole;
+extern CEqConsoleInput* g_consoleInput;
 
 #endif //CONSOLE_H

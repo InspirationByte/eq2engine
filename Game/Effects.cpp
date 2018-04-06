@@ -675,7 +675,7 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 				decal.origin = decalTrace.traceEnd - decalTrace.normal*0.05f;
 				decal.size = Vector3D(bloodSize);
 				decal.pMaterial = GetParticleMaterial(EFFECT_GROUP_ID(BloodDecals, 0));
-				decal.flags = DECALFLAG_TEXCOORD_BYNORMAL | DECALFLAG_CULLING;
+				decal.flags = MAKEDECAL_FLAG_TEX_NORMAL | MAKEDECAL_FLAG_CLIPPING;
 
 				decal.texRotation = RandomFloat(-90, 90);
 
@@ -708,7 +708,7 @@ void UTIL_ExplosionEffect(Vector3D &origin, Vector3D &direction, bool onGround)
 	decal.origin = origin;
 	decal.size = Vector3D(fDecScale);
 	decal.pMaterial = pDecalMaterial;
-	decal.flags = DECALFLAG_CULLING;
+	decal.flags = MAKEDECAL_FLAG_CLIPPING;
 
 	tempdecal_t* pDecal = eqlevel->MakeTempDecal(decal);
 

@@ -402,5 +402,6 @@ OOLUA_PROXY_END
 
 bool LuaBinding_InitEngineBindings(lua_State* state);
 void LuaBinding_ShutdownEngineBindings();
+bool LuaBinding_ConsoleHandler(const char* cmdText);
 
 #endif // LUABINDING_ENGINE

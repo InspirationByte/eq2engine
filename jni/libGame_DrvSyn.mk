@@ -43,16 +43,15 @@ LOCAL_SRC_FILES := \
 	DriversGame/eqPhysics/eqPhysics_HingeJoint.cpp\
 	DriversGame/eqPhysics/eqPhysics_MaxDistConstraint.cpp\
 	DriversGame/eqPhysics/eqPhysics_PointConstraint.cpp\
-	DriversGame/state_title.cpp\
 	DriversGame/session_stuff.cpp\
+	DriversGame/DrvSynStates.cpp\
+	DriversGame/state_title.cpp\
 	DriversGame/state_game.cpp\
 	DriversGame/state_lobby.cpp\
 	DriversGame/state_mainmenu.cpp\
 	DriversGame/replay.cpp\
 	DriversGame/director.cpp\
-	DriversGame/system.cpp\
 	DriversGame/ui_luaMenu.cpp\
-	DriversGame/window.cpp\
 	DriversGame/world.cpp\
 	DriversGame/region.cpp\
 	DriversGame/object_scripted.cpp\
@@ -105,7 +104,6 @@ LOCAL_SRC_FILES := \
 	shared_engine/modelloader_shared.cpp\
 	shared_engine/physics/BulletShapeCache.cpp\
 	shared_engine/studio_egf.cpp\
-	shared_engine/sys_console.cpp\
 	shared_engine/SpriteBuilder.cpp\
 	shared_engine/ViewParams.cpp\
 	shared_engine/Audio/alsound_local.cpp\
@@ -124,7 +122,10 @@ LOCAL_SRC_FILES := \
 	public/luabinding/LuaBinding_Engine.cpp\
 	public/materialsystem/BaseShader.cpp\
 	public/TextureAtlas.cpp\
-	DriversGame/main.cpp\
+	shared_engine/sys_host.cpp\
+	shared_engine/sys_window.cpp\
+	shared_engine/sys_main.cpp\
+	shared_engine/sys_in_console.cpp\
 	src_dependency/SDL2/src/main/android/SDL_android_main.c
 
 LOCAL_SHARED_LIBRARIES := eqCore

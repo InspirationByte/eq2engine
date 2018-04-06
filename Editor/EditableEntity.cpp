@@ -1195,8 +1195,8 @@ void CEditableEntity::UpdateParameters()
 			//if(m_kvPairs[i].value[0] != '*')
 			{
 				// precache model
-				int cache_id = g_pModelCache->PrecacheModel(m_kvPairs[i].value);
-				m_pModel = g_pModelCache->GetModel(cache_id);
+				int cache_id = g_studioModelCache->PrecacheModel(m_kvPairs[i].value);
+				m_pModel = g_studioModelCache->GetModel(cache_id);
 
 				InitAnimationThings();
 
@@ -1210,8 +1210,8 @@ void CEditableEntity::UpdateParameters()
 			if(pParam && pParam->type == PARAM_TYPE_MODEL)
 			{
 				// precache model
-				int cache_id = g_pModelCache->PrecacheModel(m_kvPairs[i].value);
-				m_pModel = g_pModelCache->GetModel(cache_id);
+				int cache_id = g_studioModelCache->PrecacheModel(m_kvPairs[i].value);
+				m_pModel = g_studioModelCache->GetModel(cache_id);
 			}
 			*/
 		}

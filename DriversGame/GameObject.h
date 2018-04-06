@@ -353,7 +353,7 @@ OOLUA_PROXY_END
 
 #define PrecacheScriptSound(snd)	ses->PrecacheSound(snd)
 
-#define PrecacheStudioModel(mod)	g_pModelCache->PrecacheModel(mod)
+#define PrecacheStudioModel(mod)	g_studioModelCache->PrecacheModel(mod)
 
 #define PrecacheObject( className )								\
 	{	className* pCacheObj = new className;					\

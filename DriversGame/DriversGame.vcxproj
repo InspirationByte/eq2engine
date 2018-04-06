@@ -140,13 +140,17 @@
     <ClCompile Include="..\shared_engine\Network\NETThread.cpp" />
     <ClCompile Include="..\shared_engine\SpriteBuilder.cpp" />
     <ClCompile Include="..\shared_engine\studio_egf.cpp" />
-    <ClCompile Include="..\shared_engine\sys_console.cpp" />
+    <ClCompile Include="..\shared_engine\sys_in_console.cpp" />
     <ClCompile Include="..\shared_engine\cfgloader.cpp" />
     <ClCompile Include="..\shared_engine\EffectRender.cpp" />
     <ClCompile Include="..\shared_engine\EqParticles_Render.cpp" />
     <ClCompile Include="..\public\materialsystem\BaseShader.cpp" />
     <ClCompile Include="..\shared_engine\Font.cpp" />
     <ClCompile Include="..\public\DataTable.cpp" />
+    <ClCompile Include="..\shared_engine\sys_host.cpp" />
+    <ClCompile Include="..\shared_engine\sys_main.cpp" />
+    <ClCompile Include="..\shared_engine\sys_state.cpp" />
+    <ClCompile Include="..\shared_engine\sys_window.cpp" />
     <ClCompile Include="..\shared_game\GameSoundEmitterSystem.cpp" />
     <ClCompile Include="..\public\imaging\ImageLoader.cpp" />
     <ClCompile Include="..\public\luabinding\LuaBinding.cpp" />
@@ -171,6 +175,7 @@
     <ClCompile Include="director.cpp" />
     <ClCompile Include="DrvSynDecals.cpp" />
     <ClCompile Include="DrvSynHUD.cpp" />
+    <ClCompile Include="DrvSynStates.cpp" />
     <ClCompile Include="eqPhysics\eqPhysics_HingeJoint.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
     </ClCompile>
@@ -217,16 +222,12 @@
     <ClCompile Include="heightfield.cpp" />
     <ClCompile Include="input.cpp" />
     <ClCompile Include="level.cpp" />
-    <ClCompile Include="main.cpp" />
     <ClCompile Include="physics.cpp" />
     <ClCompile Include="replay.cpp" />
-    <ClCompile Include="StateManager.cpp" />
     <ClCompile Include="state_title.cpp" />
-    <ClCompile Include="system.cpp" />
     <ClCompile Include="ui_luaMenu.cpp" />
     <ClCompile Include="Shader_VehicleBody.cpp" />
     <ClCompile Include="Shader_Water.cpp" />
-    <ClCompile Include="window.cpp" />
     <ClCompile Include="world.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -295,13 +296,16 @@
     <ClInclude Include="..\shared_engine\Network\NETThread.h" />
     <ClInclude Include="..\shared_engine\eqParallelJobs.h" />
     <ClInclude Include="..\shared_engine\studio_egf.h" />
-    <ClInclude Include="..\shared_engine\sys_console.h" />
+    <ClInclude Include="..\shared_engine\sys_in_console.h" />
     <ClInclude Include="..\shared_engine\cfgloader.h" />
     <ClInclude Include="..\shared_engine\EffectRender.h" />
     <ClInclude Include="..\shared_engine\EqParticles.h" />
     <ClInclude Include="..\public\materialsystem\BaseShader.h" />
     <ClInclude Include="..\shared_engine\Font.h" />
     <ClInclude Include="..\shared_engine\SpriteBuilder.h" />
+    <ClInclude Include="..\shared_engine\sys_host.h" />
+    <ClInclude Include="..\shared_engine\sys_state.h" />
+    <ClInclude Include="..\shared_engine\sys_window.h" />
     <ClInclude Include="..\shared_engine\video\AVStream.h" />
     <ClInclude Include="..\public\DataTable.h" />
     <ClInclude Include="..\shared_game\GameSoundEmitterSystem.h" />
@@ -333,6 +337,7 @@
     <ClInclude Include="CameraAnimator.h" />
     <ClInclude Include="director.h" />
     <ClInclude Include="DrvSynDecals.h" />
+    <ClInclude Include="DrvSynStates.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Controller.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Contstraint.h" />
     <ClInclude Include="eqPhysics\eqPhysics_HingeJoint.h" />
@@ -381,10 +386,8 @@
     <ClInclude Include="level.h" />
     <ClInclude Include="physics.h" />
     <ClInclude Include="replay.h" />
-    <ClInclude Include="StateManager.h" />
     <ClInclude Include="state_mainmenu.h" />
     <ClInclude Include="state_title.h" />
-    <ClInclude Include="system.h" />
     <ClInclude Include="ui_luaMenu.h" />
     <ClInclude Include="world.h" />
   </ItemGroup>

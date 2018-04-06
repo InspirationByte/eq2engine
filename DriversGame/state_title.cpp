@@ -10,7 +10,7 @@
 #include "state_game.h"
 
 #include "in_keys_ident.h"
-#include "system.h"
+#include "sys_host.h"
 #include "FontCache.h"
 #include "replay.h"
 

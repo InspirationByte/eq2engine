@@ -9,7 +9,7 @@
 #define STATE_GAME_H
 
 #include "ui_luaMenu.h"
-#include "StateManager.h"
+#include "DrvSynStates.h"
 
 enum EPauseMode
 {

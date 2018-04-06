@@ -37,7 +37,7 @@ ConVar r_notempdecals("r_notempdecals", "0", "Disables temp decals", CV_CHEAT);
 CEngineStudioEGF::CEngineStudioEGF()
 {
 	m_instancer = NULL;
-	m_readyState = EQMODEL_LOAD_ERROR;
+	m_readyState = MODEL_LOAD_ERROR;
 
 	m_forceSoftwareSkinning = false;
 	m_skinningDirty = false;
@@ -281,7 +281,7 @@ void CEngineStudioEGF::DestroyModel()
 	m_numVertices = 0;
 	m_numMaterials = 0;
 
-	m_readyState = EQMODEL_LOAD_ERROR;
+	m_readyState = MODEL_LOAD_ERROR;
 }
 
 void CEngineStudioEGF::LoadPhysicsData()
@@ -362,7 +362,7 @@ void CEngineStudioEGF::ModelLoaderJob( void* data, int i )
 
 	materials->Wait();
 
-	model->m_readyState = EQMODEL_LOAD_OK;
+	model->m_readyState = MODEL_LOAD_OK;
 }
 
 bool CEngineStudioEGF::LoadModel( const char* pszPath, bool useJob )
@@ -371,7 +371,7 @@ bool CEngineStudioEGF::LoadModel( const char* pszPath, bool useJob )
 	m_szPath.Path_FixSlashes();
 
 	// first we switch to loading
-	m_readyState = EQMODEL_LOAD_IN_PROGRESS;
+	m_readyState = MODEL_LOAD_IN_PROGRESS;
 
 	if(useJob)
 	{
@@ -400,7 +400,7 @@ bool CEngineStudioEGF::LoadModel( const char* pszPath, bool useJob )
 
 	materials->Wait();
 
-	m_readyState = EQMODEL_LOAD_OK;
+	m_readyState = MODEL_LOAD_OK;
 
 	return true;
 }
@@ -418,11 +418,14 @@ bool CEngineStudioEGF::LoadFromFile()
 
 	m_hwdata->studio = pHdr;
 
+	LoadSetupBones();
+
 	return true;
 }
 
 bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 {
+	// detect and set the force software skinning flag
 	m_forceSoftwareSkinning = r_force_softwareskinning.GetBool();
 
 	studiohdr_t* pHdr = m_hwdata->studio;
@@ -475,40 +478,6 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		// set for rendering
 		m_numVertices = loadedvertices.numElem();
 		m_numIndices = loadedindices.numElem();
-
-		// Initialize HW data joints
-		m_hwdata->joints = new studioHwData_t::joint_t[pHdr->numBones];
-
-		// parse bones
-		for(int i = 0; i < pHdr->numBones; i++)
-		{
-			// copy all bone data
-			bonedesc_t* bone = pHdr->pBone(i);
-			m_hwdata->joints[i].position = bone->position;
-			m_hwdata->joints[i].rotation = bone->rotation;
-			m_hwdata->joints[i].parentbone = bone->parent;
-
-			// initialize array because we don't want bugs
-			memset(&m_hwdata->joints[i].childs, 0, sizeof(DkList<int>));
-			m_hwdata->joints[i].bone_id = i;
-			m_hwdata->joints[i].link_id = -1;
-			m_hwdata->joints[i].chain_id = -1;
-
-			// copy name
-			strcpy(m_hwdata->joints[i].name, bone->name);
-		}
-
-		// link joints
-		for(int i = 0; i < pHdr->numBones; i++)
-		{
-			int parent_index = m_hwdata->joints[i].parentbone;
-
-			if(parent_index != -1)
-				m_hwdata->joints[parent_index].childs.append(i);
-		}
-
-		// setup matrices for bones
-		SetupBones();
 
 		// choose the right index size
 		void* pIndexData = (nIndexSize == INDEX_SIZE_SHORT) ? loadedindices_short.ptr() : (void*)loadedindices.ptr();
@@ -638,10 +607,42 @@ IMaterial* CEngineStudioEGF::GetMaterial(int materialIdx)
 	return m_materials[materialIdx];
 }
 
-void CEngineStudioEGF::SetupBones()
+void CEngineStudioEGF::LoadSetupBones()
 {
+	studiohdr_t* pHdr = m_hwdata->studio;
+
+	// Initialize HW data joints
+	m_hwdata->joints = new studioHwData_t::joint_t[pHdr->numBones];
+
+	// parse bones
+	for (int i = 0; i < pHdr->numBones; i++)
+	{
+		// copy all bone data
+		bonedesc_t* bone = pHdr->pBone(i);
+		m_hwdata->joints[i].position = bone->position;
+		m_hwdata->joints[i].rotation = bone->rotation;
+		m_hwdata->joints[i].parentbone = bone->parent;
+
+		// initialize array because we don't want bugs
+		m_hwdata->joints[i].bone_id = i;
+		m_hwdata->joints[i].link_id = -1;
+		m_hwdata->joints[i].chain_id = -1;
+
+		// copy name
+		strcpy(m_hwdata->joints[i].name, bone->name);
+	}
+
+	// link joints
+	for (int i = 0; i < pHdr->numBones; i++)
+	{
+		int parent_index = m_hwdata->joints[i].parentbone;
+
+		if (parent_index != -1)
+			m_hwdata->joints[parent_index].childs.append(i);
+	}
+
 	// setup each bone's transformation
-	for(int8 i = 0; i < m_hwdata->studio->numBones; i++)
+	for (int i = 0; i < m_hwdata->studio->numBones; i++)
 	{
 		studioHwData_t::joint_t* bone = &m_hwdata->joints[i];
 
@@ -651,7 +652,7 @@ void CEngineStudioEGF::SetupBones()
 		bone->localTrans.setRotation(bone->rotation);
 		bone->localTrans.setTranslation(bone->position);
 
-		if(bone->parentbone != -1)
+		if (bone->parentbone != -1)
 			bone->absTrans = bone->localTrans*m_hwdata->joints[bone->parentbone].absTrans;
 		else
 			bone->absTrans = bone->localTrans;
@@ -663,7 +664,7 @@ void CEngineStudioEGF::DrawFull()
 	if(m_numMaterials > 0)
 		materials->BindMaterial(m_materials[0]);
 
-	g_pShaderAPI->SetVertexFormat(g_pModelCache->GetEGFVertexFormat());
+	g_pShaderAPI->SetVertexFormat(g_studioModelCache->GetEGFVertexFormat());
 
 	g_pShaderAPI->SetVertexBuffer(m_pVB,0);
 	g_pShaderAPI->SetIndexBuffer(m_pIB);
@@ -709,7 +710,7 @@ void CEngineStudioEGF::DrawGroup(int nModel, int nGroup, bool preSetVBO)
 
 	if(preSetVBO)
 	{
-		g_pShaderAPI->SetVertexFormat( g_pModelCache->GetEGFVertexFormat() );
+		g_pShaderAPI->SetVertexFormat( g_studioModelCache->GetEGFVertexFormat() );
 		g_pShaderAPI->SetVertexBuffer( m_pVB, 0);
 	}
 
@@ -728,28 +729,6 @@ void CEngineStudioEGF::DrawGroup(int nModel, int nGroup, bool preSetVBO)
 	g_pShaderAPI->DrawIndexedPrimitives( (ER_PrimitiveType)nPrimType, nFirstIndex, nIndexCount, 0, m_numVertices );
 }
 
-ConVar r_debugmodels("r_debugmodels","0","Draw debug information for each model",CV_CHEAT);
-
-void CEngineStudioEGF::DrawDebug()
-{
-	if(!r_debugmodels.GetBool())
-		return;
-
-	//g_pShaderAPI->ChangeDepthStateEx(false,false);
-
-	//g_pShaderAPI->Reset(STATE_RESET_SHADER);
-	/*
-	g_pShaderAPI->DrawSetColor(ColorRGBA(1,0,0,1));
-	g_pShaderAPI->DrawLine3D(Vector3D(0),Vector3D(10,0,0));
-
-	g_pShaderAPI->DrawSetColor(ColorRGBA(0,1,0,1));
-	g_pShaderAPI->DrawLine3D(Vector3D(0),Vector3D(0,10,0));
-
-	g_pShaderAPI->DrawSetColor(ColorRGBA(0,0,1,1));
-	g_pShaderAPI->DrawLine3D(Vector3D(0),Vector3D(0,0,10));
-	*/
-}
-
 const BoundingBox& CEngineStudioEGF::GetAABB() const
 {
 	return m_aabb;
@@ -763,7 +742,7 @@ const char* CEngineStudioEGF::GetName() const
 studioHwData_t* CEngineStudioEGF::GetHWData() const
 {
 	// wait for loading end
-	while(m_readyState == EQMODEL_LOAD_IN_PROGRESS)
+	while(m_readyState == MODEL_LOAD_IN_PROGRESS)
 		Platform_Sleep(1);
 
 	return m_hwdata;
@@ -792,12 +771,12 @@ void MakeDecalTexCoord(DkList<EGFHwVertex_t>& verts, DkList<int>& indices, const
 {
 	Vector3D fSize = info.size * 2.0f;
 
-	if(info.flags & DECALFLAG_TEXCOORD_BYNORMAL)
+	if(info.flags & MAKEDECAL_FLAG_TEX_NORMAL)
 	{
 		int texSizeW = 1;
 		int texSizeH = 1;
 
-		ITexture* pTex = info.pMaterial->GetBaseTexture();
+		ITexture* pTex = info.material->GetBaseTexture();
 
 		if(pTex)
 		{
@@ -885,7 +864,7 @@ void MakeDecalTexCoord(DkList<EGFHwVertex_t>& verts, DkList<int>& indices, const
 }
 
 // makes dynamic temporary decal
-studiotempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices)
+tempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices)
 {
 	if(r_notempdecals.GetBool())
 		return NULL;
@@ -997,23 +976,23 @@ studiotempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info,
 
 	if(verts.numElem() && indices.numElem())
 	{
-		studiotempdecal_t* pDecal = new studiotempdecal_t;
+		tempdecal_t* pDecal = new tempdecal_t;
 
-		pDecal->pMaterial = info.pMaterial;
+		pDecal->material = info.material;
 
 		pDecal->flags = DECAL_FLAG_STUDIODECAL;
 
 		pDecal->numVerts = verts.numElem();
 		pDecal->numIndices = indices.numElem();
 
-		pDecal->pVerts = PPAllocStructArray(EGFHwVertex_t, pDecal->numVerts);
-		pDecal->pIndices = PPAllocStructArray(uint16, pDecal->numIndices);
+		pDecal->verts = PPAllocStructArray(EGFHwVertex_t, pDecal->numVerts);
+		pDecal->indices = PPAllocStructArray(uint16, pDecal->numIndices);
 
 		// copy geometry
-		memcpy(pDecal->pVerts, verts.ptr(), sizeof(EGFHwVertex_t)*pDecal->numVerts);
+		memcpy(pDecal->verts, verts.ptr(), sizeof(EGFHwVertex_t)*pDecal->numVerts);
 
 		for(int i = 0; i < pDecal->numIndices; i++)
-			pDecal->pIndices[i] = indices[i];
+			pDecal->indices[i] = indices[i];
 
 		return pDecal;
 	}
@@ -1027,15 +1006,15 @@ studiotempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info,
 //
 //-------------------------------------------------------
 
-static CModelCache s_ModelCache;
-IModelCache* g_pModelCache = &s_ModelCache;
+static CStudioModelCache s_ModelCache;
+IStudioModelCache* g_studioModelCache = &s_ModelCache;
 
-CModelCache::CModelCache()
+CStudioModelCache::CStudioModelCache()
 {
 	m_egfFormat = NULL;
 }
 
-void CModelCache::ReloadModels()
+void CStudioModelCache::ReloadModels()
 {
 	g_pShaderAPI->Reset();
 	g_pShaderAPI->Apply();
@@ -1045,7 +1024,7 @@ void CModelCache::ReloadModels()
 ConVar job_modelLoader("job_modelLoader", "0", "Load models in parallel threads", CV_ARCHIVE);
 
 // caches model and returns it's index
-int CModelCache::PrecacheModel( const char* modelName )
+int CStudioModelCache::PrecacheModel( const char* modelName )
 {
 	if(strlen(modelName) <= 0)
 		return CACHE_INVALID_MODEL;
@@ -1085,12 +1064,12 @@ int CModelCache::PrecacheModel( const char* modelName )
 }
 
 // returns count of cached models
-int	CModelCache::GetCachedModelCount() const
+int	CStudioModelCache::GetCachedModelCount() const
 {
 	return m_cachedList.numElem();
 }
 
-IEqModel* CModelCache::GetModel(int index) const
+IEqModel* CStudioModelCache::GetModel(int index) const
 {
 	IEqModel* model = NULL;
 
@@ -1099,18 +1078,18 @@ IEqModel* CModelCache::GetModel(int index) const
 	else
 		model = m_cachedList[index];
 
-	if(model && model->GetLoadingState() != EQMODEL_LOAD_ERROR)
+	if(model && model->GetLoadingState() != MODEL_LOAD_ERROR)
 		return model;
 	else
 		return m_cachedList[0];
 }
 
-const char* CModelCache::GetModelFilename(IEqModel* pModel) const
+const char* CStudioModelCache::GetModelFilename(IEqModel* pModel) const
 {
 	return pModel->GetName();
 }
 
-int CModelCache::GetModelIndex(const char* modelName) const
+int CStudioModelCache::GetModelIndex(const char* modelName) const
 {
 	S_MALLOC(str, strlen(modelName)+10);
 
@@ -1129,7 +1108,7 @@ int CModelCache::GetModelIndex(const char* modelName) const
 	return CACHE_INVALID_MODEL;
 }
 
-int CModelCache::GetModelIndex(IEqModel* pModel) const
+int CStudioModelCache::GetModelIndex(IEqModel* pModel) const
 {
 	for(int i = 0; i < m_cachedList.numElem(); i++)
 	{
@@ -1140,7 +1119,7 @@ int CModelCache::GetModelIndex(IEqModel* pModel) const
 	return CACHE_INVALID_MODEL;
 }
 
-void CModelCache::ReleaseCache()
+void CStudioModelCache::ReleaseCache()
 {
 	for(int i = 0; i < m_cachedList.numElem(); i++)
 	{
@@ -1156,13 +1135,13 @@ void CModelCache::ReleaseCache()
 	m_egfFormat = NULL;
 }
 
-IVertexFormat* CModelCache::GetEGFVertexFormat() const
+IVertexFormat* CStudioModelCache::GetEGFVertexFormat() const
 {
 	return m_egfFormat;
 }
 
 // prints loaded models to console
-void CModelCache::PrintLoadedModels() const
+void CStudioModelCache::PrintLoadedModels() const
 {
 	Msg("---MODELS---\n");
 	for(int i = 0; i < m_cachedList.numElem(); i++)

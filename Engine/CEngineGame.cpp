@@ -121,7 +121,7 @@ debugGraphBucket_t*	g_pPostRenderGraph	= NULL;
 
 DECLARE_CMD(pause, "Pauses and unpauses the game", 0)
 {
-	if(g_pSysConsole->IsVisible())
+	if(g_consoleInput->IsVisible())
 		return;
 
 	if(engine->GetGameState() == IEngineGame::GAME_IDLE)
@@ -263,7 +263,7 @@ double CEngineGame::StateUpdate( void )
 
 					//g_pEngineHost->EndResourceLoading();
 
-					g_pSysConsole->SetVisible( false );
+					g_consoleInput->SetVisible( false );
 					g_pEngineHost->SetCursorShow(false);
 				}
 				else if(m_nLoadingState == LOADING_ERROR)
@@ -272,7 +272,7 @@ double CEngineGame::StateUpdate( void )
 					m_bLevelChanged = true;
 					UnloadGame(true);
 
-					g_pSysConsole->SetVisible(true);
+					g_consoleInput->SetVisible(true);
 
 					Reset();
 
@@ -500,7 +500,7 @@ bool CEngineGame::LoadGame( bool loadSaved )
 	m_bIsGameLoaded = true;
 
 	// Precache error model file
-	g_pModelCache->PrecacheModel( "models/error.egf" );
+	g_studioModelCache->PrecacheModel( "models/error.egf" );
 
 	gamedll->LoadingScreenFunction(LOADINGSCREEN_SHOW, 0.9f);
 
@@ -562,7 +562,7 @@ void CEngineGame::UnloadGame(bool freeCache, bool force)
 
 		// free all cached data
 		if( freeCache )
-			g_pModelCache->ReleaseCache();
+			g_studioModelCache->ReleaseCache();
 	}
 	
 }
@@ -581,7 +581,7 @@ bool CEngineGame::EngineRunFrame( float dTime )
 	// Reset mouse
 	if(GetGameState() != IEngineGame::GAME_RUNNING_MENU)
 	{
-		if(!g_pSysConsole->IsVisible() && GetGameState() == IEngineGame::GAME_IDLE && m_bCenterMouse)
+		if(!g_consoleInput->IsVisible() && GetGameState() == IEngineGame::GAME_IDLE && m_bCenterMouse)
 		{
 			g_pEngineHost->SetCursorPosition(IVector2D(g_pEngineHost->GetWindowSize().x/2,g_pEngineHost->GetWindowSize().y/2));
 		}

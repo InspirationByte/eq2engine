@@ -238,9 +238,9 @@ const Vector3D& CGameObject::GetVelocity() const
 
 void CGameObject::SetModel(const char* pszModelName)
 {
-	int nModelCacheId = g_pModelCache->PrecacheModel( pszModelName );
+	int nModelCacheId = g_studioModelCache->PrecacheModel( pszModelName );
 
-	SetModelPtr(g_pModelCache->GetModel( nModelCacheId ));
+	SetModelPtr(g_studioModelCache->GetModel( nModelCacheId ));
 }
 
 void CGameObject::SetModelPtr(IEqModel* modelPtr)

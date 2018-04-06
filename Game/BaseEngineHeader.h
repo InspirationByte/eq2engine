@@ -56,7 +56,7 @@ extern BaseEntity* g_pViewEntity;
 
 #define PrecacheScriptSound(snd)	ses->PrecacheSound(snd)
 
-#define PrecacheStudioModel(mod)	g_pModelCache->PrecacheModel(mod)
+#define PrecacheStudioModel(mod)	g_studioModelCache->PrecacheModel(mod)
 
 #define PrecacheEntity(ent)			\
 {	BaseEntity* pCacheEnt = (BaseEntity*)entityfactory->CreateEntityByName(#ent);\

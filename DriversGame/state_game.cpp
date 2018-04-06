@@ -16,14 +16,16 @@
 #include "CameraAnimator.h"
 #include "materialsystem/MeshBuilder.h"
 
+#include "eqParallelJobs.h"
+
 #include "session_stuff.h"
 #include "Rain.h"
 
 #include "KeyBinding/InputCommandBinder.h"
 
-#include "sys_console.h"
+#include "sys_in_console.h"
 
-#include "system.h"
+#include "sys_host.h"
 #include "FontCache.h"
 
 #include "DrvSynHUD.h"
@@ -68,7 +70,7 @@ void Game_InitializeSession();
 
 void Game_QuickRestart(bool demo)
 {
-	if(GetCurrentStateType() != GAME_STATE_GAME)
+	if(EqStateMgr::GetCurrentStateType() != GAME_STATE_GAME)
 		return;
 
 	//SetCurrentState(NULL);
@@ -199,7 +201,7 @@ DECLARE_CMD_VARIANTS(start, "start a game with specified mission or level name",
 		return;
 
 	// unload game
-	if(GetCurrentStateType() == GAME_STATE_GAME)
+	if(EqStateMgr::GetCurrentStateType() == GAME_STATE_GAME)
 	{
 		g_State_Game->UnloadGame();
 	}
@@ -214,7 +216,7 @@ DECLARE_CMD_VARIANTS(start, "start a game with specified mission or level name",
 		g_State_Game->LoadMissionScript(CMD_ARGV(0).c_str());
 	}
 
-	SetCurrentState( g_states[GAME_STATE_GAME], true);
+	EqStateMgr::SetCurrentState( g_states[GAME_STATE_GAME], true);
 }
 
 //------------------------------------------------------------------------------
@@ -404,7 +406,7 @@ void CState_Game::UnloadGame()
 
 	g_pPhysics->SceneShutdown();
 
-	g_pModelCache->ReleaseCache();
+	g_studioModelCache->ReleaseCache();
 
 	ses->Shutdown();
 
@@ -695,7 +697,7 @@ bool CState_Game::StartReplay( const char* path, bool demoMode )
 {
 	if(g_replayData->LoadFromFile( path ))
 	{
-		ChangeState( this );
+		EqStateMgr::ChangeState( this );
 		m_scheduledQuickReplay = REPLAY_SCHEDULE_REPLAY_NORESTART;
 
 		m_replayMode = demoMode ? REPLAY_MODE_DEMO : REPLAY_MODE_STORED_REPLAY;
@@ -1326,7 +1328,7 @@ void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )
 	if( m_showMenu )
 		return;
 
-	if(!g_pSysConsole->IsVisible())
+	if(!g_consoleInput->IsVisible())
 	{
 		Director_MouseMove(x,y,deltaX,deltaY);
 

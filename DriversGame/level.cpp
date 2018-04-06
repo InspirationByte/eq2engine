@@ -619,8 +619,8 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 				if(editorModelKey)
 				{
 					// try precache model
-					int modelIdx = g_pModelCache->PrecacheModel( KV_GetValueString(editorModelKey));
-					def->m_defModel = g_pModelCache->GetModel(modelIdx);
+					int modelIdx = g_studioModelCache->PrecacheModel( KV_GetValueString(editorModelKey));
+					def->m_defModel = g_studioModelCache->GetModel(modelIdx);
 				}
 				else
 #endif // EDITOR
@@ -631,8 +631,8 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 					if(modelKey)
 					{
 						// try precache model
-						int modelIdx = g_pModelCache->PrecacheModel( KV_GetValueString(modelKey));
-						def->m_defModel = g_pModelCache->GetModel(modelIdx);
+						int modelIdx = g_studioModelCache->PrecacheModel( KV_GetValueString(modelKey));
+						def->m_defModel = g_studioModelCache->GetModel(modelIdx);
 					}
 				}
 			}
@@ -642,7 +642,7 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 				def->m_defType = "INVALID";
 
 				// error model
-				def->m_defModel = g_pModelCache->GetModel(0);
+				def->m_defModel = g_studioModelCache->GetModel(0);
 			}
 		}
 
@@ -673,7 +673,7 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 		kvkeybase_t* modelName = defSection->FindKeyBase("model");
 
 		// precache model
-		int modelIdx = g_pModelCache->PrecacheModel( KV_GetValueString(modelName, 0, "models/error.egf"));
+		int modelIdx = g_studioModelCache->PrecacheModel( KV_GetValueString(modelName, 0, "models/error.egf"));
 
 		CLevObjectDef* def = new CLevObjectDef();
 		def->m_name = KV_GetValueString(defSection, 0, "unnamed_def");
@@ -686,7 +686,7 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 		def->m_info.type = LOBJ_TYPE_OBJECT_CFG;
 
 		def->m_model = NULL;
-		def->m_defModel = g_pModelCache->GetModel(modelIdx);
+		def->m_defModel = g_studioModelCache->GetModel(modelIdx);
 
 		m_objectDefs.append(def);
 	}

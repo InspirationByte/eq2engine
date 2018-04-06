@@ -60,7 +60,7 @@ float				g_fCamSpeed = 10.0;
 
 void FlushCache()
 {
-	g_pModelCache->ReleaseCache();
+	g_studioModelCache->ReleaseCache();
 }
 
 IEqModel*			g_pModel = NULL;
@@ -320,13 +320,13 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 			FlushCache();
 			g_pModel = NULL;
 
-			int cache_index = g_pModelCache->PrecacheModel( fname.GetData() );
+			int cache_index = g_studioModelCache->PrecacheModel( fname.GetData() );
 			if(cache_index < 0)
 			{
 				ErrorMsg("Can't open %s\n", fname.GetData());
 			}
 
-			g_pModel = g_pModelCache->GetModel(cache_index);
+			g_pModel = g_studioModelCache->GetModel(cache_index);
 		}
 
 		RefreshGUI();

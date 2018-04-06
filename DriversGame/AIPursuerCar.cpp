@@ -284,7 +284,7 @@ void CAIPursuerCar::EndPursuit(bool death)
 	m_sirenAltered = false;
 
 	// HACK: just kill
-	if (GetCurrentStateType() != GAME_STATE_GAME)
+	if (EqStateMgr::GetCurrentStateType() != GAME_STATE_GAME)
 	{
 		m_targInfo.target = NULL;
 		return;

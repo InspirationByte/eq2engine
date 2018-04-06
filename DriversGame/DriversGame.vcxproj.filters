@@ -15,9 +15,6 @@
     <Filter Include="Файлы исходного кода\Utils">
       <UniqueIdentifier>{5355431b-74a1-44d4-95a7-012b64764ac4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы исходного кода\Console">
-      <UniqueIdentifier>{90453955-4fad-40c8-b400-a77ec476787c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Файлы исходного кода\Network">
       <UniqueIdentifier>{b9db5a1b-cedc-49d1-b2f6-664f95b0f8dc}</UniqueIdentifier>
     </Filter>
@@ -100,17 +97,11 @@
     <Filter Include="Файлы исходного кода\EngineLib\PathFinder">
       <UniqueIdentifier>{3e358f62-c393-4b9e-bd2d-21ee9164ea20}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Файлы исходного кода\System">
+      <UniqueIdentifier>{90453955-4fad-40c8-b400-a77ec476787c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
-    <ClCompile Include="window.cpp">
-      <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
-    <ClCompile Include="system.cpp">
-      <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
     <ClCompile Include="..\public\Math\math_util.cpp">
       <Filter>Файлы исходного кода\Utils</Filter>
     </ClCompile>
@@ -192,9 +183,6 @@
     <ClCompile Include="..\public\luabinding\LuaBinding_Engine.cpp">
       <Filter>Файлы исходного кода\Game\Lua</Filter>
     </ClCompile>
-    <ClCompile Include="StateManager.cpp">
-      <Filter>Файлы исходного кода\Game\States</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp">
       <Filter>Файлы исходного кода\Physics\Bullet</Filter>
     </ClCompile>
@@ -239,9 +227,6 @@
     </ClCompile>
     <ClCompile Include="..\public\materialsystem\BaseShader.cpp">
       <Filter>Файлы исходного кода\MatSystem\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_engine\sys_console.cpp">
-      <Filter>Файлы исходного кода\Console</Filter>
     </ClCompile>
     <ClCompile Include="..\shared_engine\eqParallelJobs.cpp">
       <Filter>Файлы исходного кода\EngineLib</Filter>
@@ -423,6 +408,24 @@
     <ClCompile Include="AIManipulator_TargetAvoidance.cpp">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClCompile>
+    <ClCompile Include="DrvSynStates.cpp">
+      <Filter>Файлы исходного кода\Game\States</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\sys_host.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\sys_main.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\sys_state.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\sys_window.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\sys_in_console.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">
@@ -487,9 +490,6 @@
     </Library>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="system.h">
-      <Filter>Файлы исходного кода</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\Math\math_util.h">
       <Filter>Файлы исходного кода\Utils</Filter>
     </ClInclude>
@@ -592,9 +592,6 @@
     <ClInclude Include="..\public\luabinding\LuaBinding_Engine.h">
       <Filter>Файлы исходного кода\Game\Lua</Filter>
     </ClInclude>
-    <ClInclude Include="StateManager.h">
-      <Filter>Файлы исходного кода\Game\States</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared_engine\physics\BulletShapeCache.h">
       <Filter>Файлы исходного кода\Physics\Bullet</Filter>
     </ClInclude>
@@ -633,9 +630,6 @@
     </ClInclude>
     <ClInclude Include="..\public\materialsystem\BaseShader.h">
       <Filter>Файлы исходного кода\MatSystem\Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared_engine\sys_console.h">
-      <Filter>Файлы исходного кода\Console</Filter>
     </ClInclude>
     <ClInclude Include="..\shared_engine\eqParallelJobs.h">
       <Filter>Файлы исходного кода\EngineLib</Filter>
@@ -837,6 +831,21 @@
     </ClInclude>
     <ClInclude Include="..\public\materialsystem\VertexFormatUtil.h">
       <Filter>Файлы исходного кода\MatSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="DrvSynStates.h">
+      <Filter>Файлы исходного кода\Game\States</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\sys_host.h">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\sys_state.h">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\sys_window.h">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\sys_in_console.h">
+      <Filter>Файлы исходного кода\System</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

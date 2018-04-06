@@ -49,7 +49,7 @@ IMaterialSystem*		materials		= NULL;
 IViewRenderer*			viewrenderer	= NULL;
 IEqLevel*				eqlevel			= NULL;
 
-IModelCache*			g_pModelCache	= NULL;
+IModelCache*			g_studioModelCache	= NULL;
 IShaderAPI*				g_pShaderAPI	= NULL;
 
 // Common
@@ -161,7 +161,7 @@ bool CGameLibrary::Init(	ISoundSystem*	pSoundSystem,
 	soundsystem		= pSoundSystem;
 	physics			= pPhysics;
 	debugoverlay	= pDebugOverlay;
-	g_pModelCache	= pModelCache;
+	g_studioModelCache	= pModelCache;
 	viewrenderer	= pViewRenderer;
 
 	g_pShaderAPI = materials->GetShaderAPI();

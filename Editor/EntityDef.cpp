@@ -166,7 +166,7 @@ bool ParseEDEFEntity(kvkeybase_t* pSection)
 	if(pPair)
 	{
 		pDef->modelname = pPair->values[0];
-		g_pModelCache->PrecacheModel(pDef->modelname.GetData());
+		g_studioModelCache->PrecacheModel(pDef->modelname.GetData());
 	}
 	else
 	{
@@ -174,12 +174,12 @@ bool ParseEDEFEntity(kvkeybase_t* pSection)
 			pDef->modelname = "";
 	}
 
-	int mod_index = g_pModelCache->GetModelIndex(pDef->modelname.GetData());
+	int mod_index = g_studioModelCache->GetModelIndex(pDef->modelname.GetData());
 
 	if(mod_index == -1)
 		pDef->model = NULL;
 	else
-		pDef->model = g_pModelCache->GetModel(mod_index);
+		pDef->model = g_studioModelCache->GetModel(mod_index);
 
 	pPair = pSection->FindKeyBase("sprite");
 

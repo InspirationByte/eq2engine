@@ -6,20 +6,19 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DebugInterface.h"
-#include "system.h"
+#include "sys_host.h"
 #include "sys_console.h"
 #include "imaging/ImageLoader.h"
 #include "IConCommandFactory.h"
 #include "utils/strtools.h"
+#include "utils/eqthread.h"
 
 #include "EngineVersion.h"
-
+/*
 #ifdef _WIN32
 #include "Mmsystem.h"
 #include "Resources/resource.h"
-#endif
-
-#define GAME_WINDOW_TITLE "The Driver Syndicate" //varargs("Driver Syndicate Alpha [%s] build %d", __DATE__, GetEngineBuildNumber())
+#endif*/
 
 #define DEFAULT_CONFIG_PATH			"cfg/config_default.cfg"
 
@@ -64,57 +63,9 @@ DECLARE_CMD(screenshot, "Save screenshot", 0)
 	}
 }
 
-DECLARE_CMD(kv3test, "Test", 0)
-{
-	kvkeybase_t destSec;
-	long fileSize = 0;
-	char* dataStr = g_fileSystem->GetFileBuffer("kv3test.txt", &fileSize, SP_ROOT);
-
-	if(dataStr)
-	{
-		KV_ParseSectionV3(dataStr, fileSize, "test", &destSec);
-
-		// look how it's been parsed
-		KV_PrintSection( &destSec );
-
-		PPFree(dataStr);
-	}
-	else
-		MsgError("Can't open kv3test.txt\n");
-}
-
-DECLARE_CMD(kvbintest, "Test 2", 0)
-{
-	kvkeybase_t destSec;
-	long fileSize = 0;
-	char* dataStr = g_fileSystem->GetFileBuffer("eq.config", &fileSize, SP_ROOT);
-
-	if(dataStr)
-	{
-		KV_ParseSection(dataStr, "test", &destSec);
-
-		//
-		IFile* file = g_fileSystem->Open("eqbin.bcf", "wb", SP_ROOT);
-		KV_WriteToStreamBinary( file, &destSec );
-		g_fileSystem->Close(file);
-
-		PPFree(dataStr);
-
-		destSec.Cleanup();
-
-		// try to read it
-		file = g_fileSystem->Open("eqbin.bcf", "rb", SP_ROOT);
-		KV_ReadBinaryBase(file, &destSec );
-		g_fileSystem->Close(file);
-
-		// look how it's been read
-		KV_PrintSection( &destSec );
-	}
-	else
-		MsgError("Can't open eq.config\n");
-}
-
 ConVar r_fullscreen("r_fullscreen", "0", "Fullscreen" ,CV_ARCHIVE);
+
+#define DEFAULT_WINDOW_TITLE "Game window"
 
 EQWNDHANDLE Sys_CreateWindow()
 {
@@ -135,7 +86,7 @@ EQWNDHANDLE Sys_CreateWindow()
 
 #ifdef PLAT_SDL
 
-	int sdlFlags = SDL_WINDOW_SHOWN;// | SDL_WINDOW_OPENGL; // SDL_WINDOW_ALLOW_HIGHDPI
+	int sdlFlags = SDL_WINDOW_SHOWN;
 
 	if(isWindowed)
 	{
@@ -146,14 +97,14 @@ EQWNDHANDLE Sys_CreateWindow()
 		sdlFlags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS;
 	}
 
-	handle = SDL_CreateWindow(GAME_WINDOW_TITLE, nAdjustedPosX, nAdjustedPosY, nAdjustedWide, nAdjustedTall, sdlFlags);
+	handle = SDL_CreateWindow(DEFAULT_WINDOW_TITLE, nAdjustedPosX, nAdjustedPosY, nAdjustedWide, nAdjustedTall, sdlFlags);
 
 	if(handle == NULL)
 	{
 		ErrorMsg("Can't create window!\n%s\n",SDL_GetError());
 		return NULL;
 	}
-
+	/*
 #ifdef _WIN32
 	SDL_SysWMinfo wminfo;
 	SDL_VERSION(&wminfo.version)
@@ -168,39 +119,7 @@ EQWNDHANDLE Sys_CreateWindow()
 
 	//SDL_Surface* icon = IMG_Load("drvsyn_icon.png");
 #endif // _WIN32
-
-#elif PLAT_WIN
-
-	DWORD nWindowFlags = 0;
-
-	nWindowFlags = WS_POPUP | WS_CLIPSIBLINGS;
-
-	if(isWindowed)
-	{
-		nWindowFlags |= WS_OVERLAPPEDWINDOW;
-
-		//UNSETFLAG(nWindowFlags, WS_MAXIMIZEBOX );
-		//UNSETFLAG(nWindowFlags, WS_THICKFRAME );
-
-		RECT wRect;
-		wRect.left = nAdjustedPosX;
-		wRect.right = nAdjustedWide;
-		wRect.top = nAdjustedPosY;
-		wRect.bottom = nAdjustedTall;
-		AdjustWindowRect(&wRect, nWindowFlags, FALSE);
-
-		//nAdjustedPosX = wRect.left;
-		//nAdjustedPosY = wRect.top;
-		nAdjustedWide = wRect.right;
-		nAdjustedTall = wRect.bottom;
-	}
-
-	handle = CreateWindow(	DARKTECH_WINDOW_CLASSNAME,
-							"Engine Window",
-							nWindowFlags,
-							nAdjustedPosX, nAdjustedPosY,
-							nAdjustedWide, nAdjustedTall,
-							HWND_DESKTOP, NULL, NULL, NULL);
+*/
 #endif // PLAT_SDL
 
 	Msg("Created render window, %dx%d\n", nAdjustedWide, nAdjustedTall);
@@ -213,7 +132,6 @@ bool s_bProcessInput = true;
 
 static CGameHost s_Host;
 CGameHost* g_pHost = &s_Host;
-
 
 // TODO: always query joystick count
 
@@ -327,12 +245,6 @@ bool Host_Init()
 //
 void Host_GameLoop()
 {
-#ifdef _WIN32
-	// make windows do higher tick rate in kernel.
-	// I know this is bad
-	timeBeginPeriod(1);
-#endif
-
 	SDL_Event event;
 
 #ifdef ANDROID
@@ -362,11 +274,6 @@ void Host_GameLoop()
             Platform_Sleep( sys_sleep.GetInt() );
 	}
 	while(g_pHost->GetQuitState() != CGameHost::QUIT_TODESKTOP);
-
-#ifdef _WIN32
-	// restore period
-	timeEndPeriod(1);
-#endif
 }
 
 //

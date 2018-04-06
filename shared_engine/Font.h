@@ -17,7 +17,7 @@ class CMeshBuilder;
 class CFont : public IEqFont
 {
 	friend class			CEngineHost;
-	friend class			CEqSysConsole;
+	friend class			CEqConsoleInput;
 	friend class			CPlainTextLayoutBuilder;
 
 public:

@@ -15,61 +15,60 @@
 // streams in studio models used exclusively in interpolation
 class CEngineStudioEGF : public IEqModel
 {
-	friend class		CModelCache;
-
+	friend class		CStudioModelCache;
 public:
+
+	static void			ModelLoaderJob(void* data, int i);
+
+//------------------------------------------------------------
+
 						CEngineStudioEGF();
 						~CEngineStudioEGF();
 
-	static void ModelLoaderJob( void* data, int i );
-
-	bool				LoadModel( const char* pszPath, bool useJob = true );
-
-	const char*			GetName() const;
+	// model type
+	EModelType			GetModelType() const					{return MODEL_TYPE_STUDIO;}
 
 //------------------------------------------------------------
 // base methods
 //------------------------------------------------------------
 	
+	bool				LoadModel(const char* pszPath, bool useJob = true);
+
 	void				DestroyModel();
 
-	studioHwData_t*		GetHWData() const;
-
-	// selects a lod. returns index
-	int					SelectLod(float dist_to_camera);
+	const char*			GetName() const;
 
 	const BoundingBox&	GetAABB() const;
 
+	studioHwData_t*		GetHWData() const;
+
 	// makes dynamic temporary decal
-	studiotempdecal_t*	MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices);
+	tempdecal_t*		MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices);
 
-	// instancing
-	void				SetInstancer( IEqModelInstancer* instancer );
-	IEqModelInstancer*	GetInstancer() const;
+	int					GetLoadingState() const		{return m_readyState;}
 
-	int					GetLoadingState() const {return m_readyState;}
+	// loads materials for studio
+	void				LoadMaterials();
 
 //------------------------------------
 // Rendering
 //------------------------------------
+
+	// instancing
+	void				SetInstancer(IEqModelInstancer* instancer);
+	IEqModelInstancer*	GetInstancer() const;
+
+	// selects a lod. returns index
+	int					SelectLod(float dist_to_camera);
 
 	void				DrawFull();
 	void				DrawGroup(int nModel, int nGroup, bool preSetVBO = true);
 
 	void				SetupVBOStream( int nStream );
 
-	void				DrawDebug();
-
-	void				SetupBones();
-
 	bool				PrepareForSkinning(Matrix4x4* jointMatrices);
 
 	IMaterial*			GetMaterial(int materialIdx);
-
-	// loads materials for studio
-	void				LoadMaterials();
-
-	Vector3D			GetModelInitialOrigin() {return Vector3D(0);}
 
 private:
 
@@ -78,6 +77,8 @@ private:
 	void				LoadPhysicsData(); // loads physics object data
 	bool				LoadGenerateVertexBuffer();
 	void				LoadMotionPackages();
+
+	void				LoadSetupBones();
 
 	//-----------------------------------------------
 
@@ -112,12 +113,12 @@ private:
 // Model cache implementation
 //-------------------------------------------------------------------------------------
 
-class CModelCache : public IModelCache
+class CStudioModelCache : public IStudioModelCache
 {
 	friend class			CEngineStudioEGF;
 
 public:
-							CModelCache();
+							CStudioModelCache();
 
 	// caches model and returns it's index
 	int						PrecacheModel(const char* modelName);

@@ -21,10 +21,10 @@
 
 #include "Shiny.h"
 
-#ifndef NO_GAME
-#include "system.h"
-#else
 #include "eqParallelJobs.h"
+
+#ifndef NO_GAME
+#include "sys_host.h"
 #endif // NO_GAME
 
 CPredictableRandomGenerator	g_replayRandom;
@@ -546,8 +546,8 @@ void CGameWorld::Init()
 
 	if(!m_skyModel)
 	{
-		int cacheIdx = g_pModelCache->PrecacheModel("models/engine/sky.egf");
-		m_skyModel = g_pModelCache->GetModel(cacheIdx);
+		int cacheIdx = g_studioModelCache->PrecacheModel("models/engine/sky.egf");
+		m_skyModel = g_studioModelCache->GetModel(cacheIdx);
 	}
 
 	if(!g_vehicleLights)
@@ -1924,12 +1924,12 @@ void CGameWorld::Draw( int nRenderFlags )
 		}while(m_renderingObjects.goToNext());
 
 		// draw instanced models
-		int numCachedModels = g_pModelCache->GetCachedModelCount();
+		int numCachedModels = g_studioModelCache->GetCachedModelCount();
 
 		// draw model instances
 		for(int i = 0; i < numCachedModels; i++)
 		{
-			IEqModel* model = g_pModelCache->GetModel(i);
+			IEqModel* model = g_studioModelCache->GetModel(i);
 
 			if(model && model->GetInstancer())
 			{

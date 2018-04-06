@@ -5,7 +5,7 @@
 // Description: Provides base console interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "sys_console.h"
+#include "sys_in_console.h"
 
 #include "FontLayoutBuilders.h"
 
@@ -38,28 +38,28 @@ DECLARE_CMD(toggleconsole, NULL, CV_INVISIBLE)	// dummy console command
 // shows console
 DECLARE_CMD(con_show, "Show console", 0)
 {
-	g_pSysConsole->SetVisible(true);
-	g_pSysConsole->SetLogVisible(false);
+	g_consoleInput->SetVisible(true);
+	g_consoleInput->SetLogVisible(false);
 }
 
 // shows console with log
 DECLARE_CMD(con_show_full, "Show console", 0)
 {
-	g_pSysConsole->SetVisible(true);
-	g_pSysConsole->SetLogVisible(true);
+	g_consoleInput->SetVisible(true);
+	g_consoleInput->SetLogVisible(true);
 }
 
 // hides console
 DECLARE_CMD(con_hide, "Hides console", 0)
 {
-	g_pSysConsole->SetVisible(false);
-	g_pSysConsole->SetLogVisible(false);
+	g_consoleInput->SetVisible(false);
+	g_consoleInput->SetLogVisible(false);
 }
 
 // spew function for console
 DECLARE_CMD(clear,NULL,0)
 {
-	CEqSysConsole::SpewClear();
+	CEqConsoleInput::SpewClear();
 }
 
 static int CON_SUGGESTIONS_MAX	= 40;
@@ -75,8 +75,8 @@ ConVar con_suggest("con_suggest","1",NULL,CV_ARCHIVE);
 
 static ConVar con_minicon("con_minicon", "0", NULL, CV_ARCHIVE);
 
-static CEqSysConsole s_SysConsole;
-CEqSysConsole* g_pSysConsole = &s_SysConsole;
+static CEqConsoleInput s_SysConsole;
+CEqConsoleInput* g_consoleInput = &s_SysConsole;
 
 static ColorRGBA s_conBackColor = ColorRGBA(0.15f, 0.25f, 0.25f, 0.85f);
 static ColorRGBA s_conInputBackColor = ColorRGBA(0.15f, 0.25f, 0.25f, 0.85f);
@@ -111,7 +111,7 @@ DECLARE_CMD(con_addAutoCompletion,"Adds autocompletion variants", CV_INVISIBLE)
 
 	xstrsplit(CMD_ARGV(1).c_str(),",",newItem->args);
 
-	g_pSysConsole->AddAutoCompletion(newItem);
+	g_consoleInput->AddAutoCompletion(newItem);
 }
 
 DECLARE_CMD(help,"Display the help", 0)
@@ -142,7 +142,7 @@ struct conSpewText_t
 
 static DkList<conSpewText_t*> s_spewMessages;
 
-void CEqSysConsole::SpewFunc(SpewType_t type, const char* pMsg)
+void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 {
 	// print out to std console
 	printf("%s", pMsg );
@@ -185,7 +185,7 @@ void CEqSysConsole::SpewFunc(SpewType_t type, const char* pMsg)
 	}
 }
 
-void CEqSysConsole::SpewClear()
+void CEqConsoleInput::SpewClear()
 {
 	for(int i = 0; i < s_spewMessages.numElem(); i++)
 		delete s_spewMessages[i];
@@ -193,12 +193,12 @@ void CEqSysConsole::SpewClear()
 	s_spewMessages.clear();
 }
 
-void CEqSysConsole::SpewInit()
+void CEqConsoleInput::SpewInit()
 {
-	SetSpewFunction(CEqSysConsole::SpewFunc);
+	SetSpewFunction(CEqConsoleInput::SpewFunc);
 }
 
-void CEqSysConsole::SpewUninstall()
+void CEqConsoleInput::SpewUninstall()
 {
 	SpewClear();
 	SetSpewFunction(NULL);
@@ -206,7 +206,7 @@ void CEqSysConsole::SpewUninstall()
 
 //-------------------------------------------------------------------------
 
-CEqSysConsole::CEqSysConsole()
+CEqConsoleInput::CEqConsoleInput()
 {
 	// release build needs false
 	m_visible = false;
@@ -240,7 +240,7 @@ CEqSysConsole::CEqSysConsole()
 	m_alternateHandler = NULL;
 }
 
-void CEqSysConsole::Initialize()
+void CEqConsoleInput::Initialize()
 {
 	kvkeybase_t* consoleSettings = GetCore()->GetConfig()->FindKeyBase("Console");
 
@@ -250,7 +250,7 @@ void CEqSysConsole::Initialize()
 	m_enabled = KV_GetValueBool(consoleSettings ? consoleSettings->FindKeyBase("Enable") : NULL);
 }
 
-void CEqSysConsole::AddAutoCompletion(ConAutoCompletion_t* newItem)
+void CEqConsoleInput::AddAutoCompletion(ConAutoCompletion_t* newItem)
 {
 	for(int i = 0; i < m_customAutocompletion.numElem();i++)
 	{
@@ -264,7 +264,7 @@ void CEqSysConsole::AddAutoCompletion(ConAutoCompletion_t* newItem)
 	m_customAutocompletion.append(newItem);
 }
 
-void CEqSysConsole::consoleRemTextInRange(int start,int len)
+void CEqConsoleInput::consoleRemTextInRange(int start,int len)
 {
 	if(uint(start+len) > m_inputText.Length())
 		return;
@@ -273,7 +273,7 @@ void CEqSysConsole::consoleRemTextInRange(int start,int len)
 	OnTextUpdate();
 }
 
-void CEqSysConsole::consoleInsText(char* text,int pos)
+void CEqConsoleInput::consoleInsText(char* text,int pos)
 {
 	m_inputText.Insert(text, pos);
 	OnTextUpdate();
@@ -313,7 +313,7 @@ void DrawAlphaFilledRectangle(const Rectangle_t &rect, const ColorRGBA &color1, 
 	meshBuilder.End();
 }
 
-void CEqSysConsole::DrawFastFind(float x, float y, float w)
+void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 {
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
@@ -524,7 +524,7 @@ void CEqSysConsole::DrawFastFind(float x, float y, float w)
 	}
 }
 
-void CEqSysConsole::OnTextUpdate()
+void CEqConsoleInput::OnTextUpdate()
 {
 	m_histIndex = -1;
 	
@@ -558,7 +558,7 @@ void CEqSysConsole::OnTextUpdate()
 	}
 }
 
-int CEqSysConsole::GetCurrentInputText(EqString& str)
+int CEqConsoleInput::GetCurrentInputText(EqString& str)
 {
 	int currentStatementStart = 0;
 
@@ -577,7 +577,7 @@ int CEqSysConsole::GetCurrentInputText(EqString& str)
 	return currentStatementStart;
 }
 
-bool CEqSysConsole::AutoCompleteSelectVariant()
+bool CEqConsoleInput::AutoCompleteSelectVariant()
 {
 	EqString inputText;
 	int currentStatementStart = GetCurrentInputText(inputText);
@@ -606,7 +606,7 @@ bool CEqSysConsole::AutoCompleteSelectVariant()
 	return false;
 }
 
-void CEqSysConsole::AutoCompleteSuggestion()
+void CEqConsoleInput::AutoCompleteSuggestion()
 {
 	EqString inputText;
 	int currentStatementStart = GetCurrentInputText(inputText);
@@ -741,7 +741,7 @@ void CEqSysConsole::AutoCompleteSuggestion()
 	}
 }
 
-void CEqSysConsole::ExecuteCurrentInput()
+void CEqConsoleInput::ExecuteCurrentInput()
 {
 	MsgInfo("> %s\n",m_inputText.GetData());
 
@@ -781,7 +781,7 @@ void CEqSysConsole::ExecuteCurrentInput()
 		m_commandHistory.append(m_inputText);
 }
 
-void CEqSysConsole::UpdateCommandAutocompletionList(const EqString& queryStr)
+void CEqConsoleInput::UpdateCommandAutocompletionList(const EqString& queryStr)
 {
 	m_foundCmdList.clear();
 	m_cmdSelection = -1;
@@ -805,7 +805,7 @@ void CEqSysConsole::UpdateCommandAutocompletionList(const EqString& queryStr)
 	}
 }
 
-void CEqSysConsole::UpdateVariantsList( const EqString& queryStr )
+void CEqConsoleInput::UpdateVariantsList( const EqString& queryStr )
 {
 	if(!con_suggest.GetBool())
 		return;
@@ -839,7 +839,7 @@ void CEqSysConsole::UpdateVariantsList( const EqString& queryStr )
 	}
 }
 
-int CEqSysConsole::DrawAutoCompletion(float x, float y, float w)
+int CEqConsoleInput::DrawAutoCompletion(float x, float y, float w)
 {
 	if(!(con_suggest.GetBool() && m_fastfind_cmdbase))
 		return 0;
@@ -907,7 +907,7 @@ int CEqSysConsole::DrawAutoCompletion(float x, float y, float w)
 	return linesToDraw;
 }
 
-void CEqSysConsole::SetLastLine()
+void CEqConsoleInput::SetLastLine()
 {
 	int totalLines = s_spewMessages.numElem();
 
@@ -915,14 +915,14 @@ void CEqSysConsole::SetLastLine()
 	m_logScrollPosition = max(0,m_logScrollPosition);
 }
 
-void CEqSysConsole::AddToLinePos(int num)
+void CEqConsoleInput::AddToLinePos(int num)
 {
 	int totalLines = s_spewMessages.numElem();
 	m_logScrollPosition += num;
 	m_logScrollPosition = min(totalLines,m_logScrollPosition);
 }
 
-void CEqSysConsole::SetText( const char* text, bool quiet /*= false*/ )
+void CEqConsoleInput::SetText( const char* text, bool quiet /*= false*/ )
 {
 	m_inputText = text;
 	m_cursorPos = m_startCursorPos = m_inputText.Length();
@@ -931,7 +931,7 @@ void CEqSysConsole::SetText( const char* text, bool quiet /*= false*/ )
 		OnTextUpdate();
 }
 
-void CEqSysConsole::DrawSelf(int width,int height, float frameTime)
+void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 {
 	m_cursorTime -= frameTime;
 
@@ -1077,12 +1077,12 @@ void CEqSysConsole::DrawSelf(int width,int height, float frameTime)
 	m_font->RenderText( CONSOLE_ENGINEVERSION_STR, Vector2D(5,5), versionTextStl);
 }
 
-void CEqSysConsole::MousePos(const Vector2D &pos)
+void CEqConsoleInput::MousePos(const Vector2D &pos)
 {
 	m_mousePosition = pos;
 }
 
-bool CEqSysConsole::KeyChar(int ch)
+bool CEqConsoleInput::KeyChar(int ch)
 {
 	if(!m_visible)
 		return false;
@@ -1111,7 +1111,7 @@ bool CEqSysConsole::KeyChar(int ch)
 	return true;
 }
 
-bool CEqSysConsole::MouseEvent(const Vector2D &pos, int Button,bool pressed)
+bool CEqConsoleInput::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 {
 	if(!m_visible)
 		return false;
@@ -1126,7 +1126,7 @@ bool CEqSysConsole::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 
 	return true;
 }
-void CEqSysConsole::SetVisible(bool bVisible)
+void CEqConsoleInput::SetVisible(bool bVisible)
 {
 	if(!m_enabled)
 	{
@@ -1142,7 +1142,7 @@ void CEqSysConsole::SetVisible(bool bVisible)
 	}
 }
 
-bool CEqSysConsole::KeyPress(int key, bool pressed)
+bool CEqConsoleInput::KeyPress(int key, bool pressed)
 {
 	if( pressed ) // catch "DOWN" event
 	{
@@ -1150,9 +1150,9 @@ bool CEqSysConsole::KeyPress(int key, bool pressed)
 
 		if(tgBind && !stricmp(tgBind->commandString.c_str(), "toggleconsole"))
 		{
-			if(g_pSysConsole->IsVisible() && g_pSysConsole->IsShiftPressed())
+			if(g_consoleInput->IsVisible() && g_consoleInput->IsShiftPressed())
 			{
-				g_pSysConsole->SetLogVisible( !g_pSysConsole->IsLogVisible() );
+				g_consoleInput->SetLogVisible( !g_consoleInput->IsLogVisible() );
 				return false;
 			}
 

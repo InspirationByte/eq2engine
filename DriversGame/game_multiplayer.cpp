@@ -9,9 +9,9 @@
 
 #include "game_multiplayer.h"
 #include "NetPlayer.h"
-#include "StateManager.h"
+#include "DrvSynStates.h"
 #include "IDebugOverlay.h"
-#include "system.h"
+#include "sys_host.h"
 
 extern ConVar			sv_maxplayers;
 extern ConVar			g_car;
@@ -112,7 +112,7 @@ DECLARE_CMD(connect, "connects to server/game/lobby", 0)
 					g_pGameWorld->SetEnvironmentName( envName.c_str() );
 
 					// load game
-					SetCurrentState(g_states[GAME_STATE_GAME]);
+					EqStateMgr::SetCurrentState(g_states[GAME_STATE_GAME]);
 				}
 			}
 		}
@@ -141,8 +141,8 @@ DECLARE_CMD(disconnect, "shutdown game", 0)
 			ses->GetNetThread()->SendEvent( new CNetDisconnectEvent(player->m_id, "Disconnect by user"), CMSG_DISCONNECT, NM_SENDTOALL, CDPSEND_GUARANTEED );
 	}
 
-	if(GetCurrentStateType() == GAME_STATE_GAME)
-		SetCurrentState(g_states[GAME_STATE_MAINMENU]);
+	if(EqStateMgr::GetCurrentStateType() == GAME_STATE_GAME)
+		EqStateMgr::SetCurrentState(g_states[GAME_STATE_MAINMENU]);
 }
 
 DECLARE_CMD(ping, "shows ping of the clients", 0)
@@ -833,7 +833,7 @@ void CNetGameSession::DisconnectPlayer( int playerID, const char* reason )
 	}
 
 	if(!m_localPlayer)
-		SetCurrentState( g_states[GAME_STATE_MAINMENU] );
+		EqStateMgr::SetCurrentState( g_states[GAME_STATE_MAINMENU] );
 }
 
 int CNetGameSession::GetMaxPlayers() const
@@ -884,7 +884,7 @@ bool CNetGameSession::DoConnect()
 		}
 		else
 		{
-			SetCurrentState( g_states[GAME_STATE_GAME] );
+			EqStateMgr::SetCurrentState( g_states[GAME_STATE_GAME] );
 			return true;
 		}
 	}

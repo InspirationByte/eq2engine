@@ -16,8 +16,8 @@
 
 enum MakeDecalFlags_e
 {
-	DECALFLAG_TEXCOORD_BYNORMAL	= (1 << 0),	// texture coordinates by normal
-	DECALFLAG_CULLING			= (1 << 1),
+	MAKEDECAL_FLAG_TEX_NORMAL		= (1 << 0),		// texture coordinates by normal
+	MAKEDECAL_FLAG_CLIPPING			= (1 << 1),
 };
 
 class IMaterial;
@@ -26,15 +26,11 @@ class IPhysicsObject;
 // decal make info structure
 struct decalmakeinfo_t
 {
-	decalmakeinfo_t()
+	decalmakeinfo_t() : material(nullptr), flags(0), texRotation(0.0f), texScale(1.0f)
 	{
-		flags		= 0;
-		texRotation = 0.0f;
-		texScale	= Vector2D(1,1);
-		pMaterial	= NULL;
 	}
 
-	IMaterial*			pMaterial;
+	IMaterial*			material;
 
 	int					flags; // MakeDecalFlags_e
 
@@ -53,7 +49,35 @@ enum DecalFlags_e
 	DECAL_FLAG_STUDIODECAL		= (1 << 2), // this decal is on model
 };
 
-class IMaterial;
+//-------------------------------------------------------
+// temporary decal itself
+//-------------------------------------------------------
+struct tempdecal_t
+{
+	PPMEM_MANAGED_OBJECT();
+
+	tempdecal_t() : verts(nullptr), indices(nullptr), numVerts(0), numIndices(0), material(nullptr)
+	{
+	}
+
+	~tempdecal_t()
+	{
+		PPFree(verts);
+		PPFree(indices);
+	}
+
+	void*				verts;
+	uint16*				indices;
+
+	uint16				numVerts;
+	uint16				numIndices;
+
+	IMaterial*			material;
+
+	int					flags; // DecalFlags_e
+
+	BoundingBox			bbox;
+};
 
 // static decal, that comes with shared VBO
 struct staticdecal_t
@@ -74,66 +98,6 @@ struct staticdecal_t
 
 	eqlevelvertex_t*	pVerts;
 	int*				pIndices;
-
-	IMaterial*			pMaterial;
-	/*
-	// the decal attachment to avoid sorting
-	int					room_id[2];
-	int					room_volume;
-	int					surf_id;	// -1 if multiple surfaces
-	*/
-	int					flags; // DecalFlags_e
-};
-
-// temp decal
-struct tempdecal_t
-{
-	PPMEM_MANAGED_OBJECT();
-
-	~tempdecal_t()
-	{
-		PPFree(pVerts);
-		PPFree(pIndices);
-	}
-
-	BoundingBox			box;
-
-	eqlevelvertex_t*	pVerts;
-	uint16*				pIndices;
-
-	int					numVerts;
-	int					numIndices;
-
-	IMaterial*			pMaterial;
-	/*
-	// the decal attachment to avoid sorting
-	int					room_id[2];
-	int					room_volume;
-	int					surf_id;	// -1 if multiple surfaces
-	*/
-	int					flags; // DecalFlags_e
-};
-
-// studio temp decal
-// FACTS:
-//		- it's software-skinned
-//		- doesn't need bbox
-//		- back-transformed
-struct studiotempdecal_t
-{
-	PPMEM_MANAGED_OBJECT();
-
-	~studiotempdecal_t()
-	{
-		PPFree(pVerts);
-		PPFree(pIndices);
-	}
-
-	EGFHwVertex_t*		pVerts;
-	uint16*				pIndices;
-
-	int					numVerts;
-	int					numIndices;
 
 	IMaterial*			pMaterial;
 	/*

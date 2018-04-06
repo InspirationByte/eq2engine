@@ -5,11 +5,11 @@
 // Description: Drivers window handler
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef WINDOW_H
-#define WINDOW_H
+#ifndef SYS_WINDOW_H
+#define SYS_WINDOW_H
 
 bool Host_Init();
 void Host_GameLoop();
 void Host_Terminate();
 
-#endif // WINDOW_H
+#endif // SYS_WINDOW_H

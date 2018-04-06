@@ -5,18 +5,18 @@
 // Description: Drivers system and modules
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SYSTEM_H
-#define SYSTEM_H
-
-#include "materialsystem/IMaterialSystem.h"
-#include "GameSoundEmitterSystem.h"
-#include "in_keys_ident.h"
-#include "IFont.h"
-#include "eqParallelJobs.h"
+#ifndef SYS_HOST_H
+#define SYS_HOST_H
 
 #include "ConCommand.h"
 
+#include "materialsystem/IMaterialSystem.h"
+
+#include "in_keys_ident.h"
+
 #include "utils/eqtimer.h"
+
+class IEqFont;
 
 class CGameHost
 {
@@ -59,6 +59,8 @@ public:
 	bool				CheckDoneTrapping( int& buttons, int& key );
 
 	void				SetCursorPosition(int x, int y);
+
+	void				SetWindowTitle(const char* windowTitle);
 
 	double				GetCurTime() const {return m_fCurTime;}
 	double				GetFrameTime() const {return m_fGameFrameTime;}

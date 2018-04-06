@@ -213,7 +213,7 @@ void InitMatSystem(HWND window)
 
 	g_fontCache->Init();
 
-	g_pModelCache->PrecacheModel("models/error.egf");
+	g_studioModelCache->PrecacheModel("models/error.egf");
 
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();
@@ -1309,7 +1309,7 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 	for(int i = 0; i < m_tools.numElem(); i++)
 		m_tools[i]->ShutdownTool();
 
-	g_pModelCache->ReleaseCache();
+	g_studioModelCache->ReleaseCache();
 
 	Destroy();
 

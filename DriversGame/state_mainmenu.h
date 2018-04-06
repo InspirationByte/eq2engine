@@ -10,7 +10,7 @@
 
 #include "ui_luaMenu.h"
 
-#include "StateManager.h"
+#include "DrvSynStates.h"
 
 class CState_MainMenu : public CBaseStateHandler, public CLuaMenu
 {

@@ -636,3 +636,16 @@ void LuaBinding_ShutdownEngineBindings()
 {
 	g_luaCmdFuncRefs.clear();
 }
+
+bool LuaBinding_ConsoleHandler(const char* cmdText)
+{
+	EqString cmdFullText(cmdText);
+
+	if (*cmdText == '=')
+		cmdFullText = varargs("ConsolePrint(%s)", cmdText + 1);
+
+	if (!EqLua::LuaBinding_DoBuffer(GetLuaState(), cmdFullText.c_str(), cmdFullText.Length(), "console"))
+		MsgError("%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
+
+	return true;
+}

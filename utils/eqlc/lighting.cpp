@@ -328,8 +328,8 @@ public:
 
 	void LoadModel(const char* pszFileName, Vector3D &origin, Vector3D &angles)
 	{
-		int cIndex = g_pModelCache->PrecacheModel(pszFileName);
-		m_pModel = g_pModelCache->GetModel(cIndex);
+		int cIndex = g_studioModelCache->PrecacheModel(pszFileName);
+		m_pModel = g_studioModelCache->GetModel(cIndex);
 
 		m_origin = origin;
 		m_angles = angles;
@@ -870,7 +870,7 @@ void RenderLightmap(int nLightmap, bool bDirMap)
 
 void GenerateLightmapTextures()
 {
-	g_pModelCache->PrecacheModel("models/error.egf");
+	g_studioModelCache->PrecacheModel("models/error.egf");
 
 	materials->SetDeviceBackbufferSize(g_pLevel->m_nLightmapSize, g_pLevel->m_nLightmapSize);
 

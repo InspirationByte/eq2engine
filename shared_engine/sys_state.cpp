@@ -13,27 +13,18 @@
 //		- Lua state
 //
 
-#include "LuaBinding_Drivers.h"
-
-#include "StateManager.h"
-#include "session_stuff.h"
-
-#include "state_title.h"
-#include "state_mainmenu.h"
-#include "state_lobby.h"
-
-#include "physics.h"
-#include "world.h"
+#include "sys_state.h"
 
 #include "KeyBinding/InputCommandBinder.h"
 
 #include "IDebugOverlay.h"
 
-CBaseStateHandler*	g_states[GAME_STATE_COUNT];
-
 CBaseStateHandler* g_currentState = NULL;
 CBaseStateHandler* g_nextState = NULL;
 bool g_stateChanging = false;
+
+namespace EqStateMgr
+{
 
 // forces the current state
 void SetCurrentState( CBaseStateHandler* state, bool force )
@@ -82,7 +73,7 @@ void SetCurrentStateType( int stateType )
 	SetCurrentState( g_states[stateType] );
 }
 
-void SheduleNextState( CBaseStateHandler* state )
+void ScheduleNextState( CBaseStateHandler* state )
 {
 	if(GetCurrentState())
 		GetCurrentState()->SetNextState(state);
@@ -90,9 +81,9 @@ void SheduleNextState( CBaseStateHandler* state )
 		SetCurrentState(state);
 }
 
-void SheduleNextStateType( int stateType )
+void ScheduleNextStateType( int stateType )
 {
-	SheduleNextState( g_states[stateType] );
+	ScheduleNextState( g_states[stateType] );
 }
 
 // updates and manages the states
@@ -140,21 +131,6 @@ void GetStateMouseCursorProperties(bool& visible, bool& centered)
 	return g_currentState->GetMouseCursorProperties(visible, centered);
 }
 
-void InitRegisterStates()
-{
-	for(int i = 0; i < GAME_STATE_COUNT; i++)
-		g_states[i] = NULL;
-
-	g_states[GAME_STATE_GAME] = g_State_Game;
-	g_states[GAME_STATE_TITLESCREEN] = g_State_Title;
-	g_states[GAME_STATE_MAINMENU] = g_State_MainMenu;
-	g_states[GAME_STATE_MPLOBBY] = g_State_NetLobby;
-
-	// TODO: other states
-
-	// init the current state
-	//SetCurrentState( g_states[GAME_STATE_TITLESCREEN] );
-	//SetCurrentState( g_states[GAME_STATE_GAME] );
 }
 
 //------------------------------------------------------------------------

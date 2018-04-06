@@ -17,21 +17,19 @@
 #include "platform/MessageBox.h"
 
 #include "IDkCore.h"
-#include "window.h"
+#include "sys_window.h"
 
 #include "ConVar.h"
 #include "ILocalize.h"
 #include "IFileSystem.h"
 
-#include "sys_console.h"
+#include "sys_in_console.h"
 
 #include "utils/DkLinkedList.h"
 
 #ifdef _WIN32
-#include "Resources/resource.h"
+//#include "Resources/resource.h"
 #endif // _WIN32
-
-extern ConVar r_fullscreen;
 
 DECLARE_CVAR_NONSTATIC(__cheats,1,"Wireframe",0);
 
@@ -54,7 +52,6 @@ void EQSDLMessageBoxCallback(const char* messageStr, EMessageBoxType type )
 			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FATAL ERROR", messageStr, NULL);
 			break;
 	}
-
 }
 
 #endif // ANDROID && EQ_USE_SDL
@@ -72,26 +69,7 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 	_CrtSetReportMode( _CRT_ASSERT, _CRTDBG_MODE_WNDW );
 #endif
 
-	/*
-	//----------------------------------------------------------------
-	// Used to show console
-	AllocConsole();
-
-	HANDLE handle_out = GetStdHandle(STD_OUTPUT_HANDLE);
-	int hCrt = _open_osfhandle((long) handle_out, _O_TEXT);
-	FILE* hf_out = _fdopen(hCrt, "w");
-	setvbuf(hf_out, NULL, _IONBF, 1);
-	*stdout = *hf_out;
-
-	HANDLE handle_in = GetStdHandle(STD_INPUT_HANDLE);
-	hCrt = _open_osfhandle((long) handle_in, _O_TEXT);
-	FILE* hf_in = _fdopen(hCrt, "r");
-	setvbuf(hf_in, NULL, _IONBF, 128);
-	*stdin = *hf_in;
-	//----------------------------------------------------------------
-	*/
-
-	CEqSysConsole::SpewInit();
+	CEqConsoleInput::SpewInit();
 
 	// init core
 	if(!GetCore()->Init("Game", lpszCmdLine))
@@ -137,7 +115,7 @@ int main(int argc, char** argv)
 
 	Host_GameLoop();
 
-	CEqSysConsole::SpewClear();
+	CEqConsoleInput::SpewClear();
 
 	Host_Terminate();
 

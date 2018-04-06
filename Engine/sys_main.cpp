@@ -54,7 +54,7 @@ ONLY_EXPORTS int CreateEngineFn(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR 
 	if(!stricmp("Eq32", modNamefromExe) || !stricmp("Eq64", modNamefromExe) || !stricmp("Equilibrium", modNamefromExe))
 		shouldUseExeName = false;
 
-	CEqSysConsole::SpewInit();
+	CEqConsoleInput::SpewInit();
 
 	if(!g_fileSystem->Init( shouldUseExeName ))
 		return -1;

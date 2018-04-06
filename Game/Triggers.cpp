@@ -126,8 +126,8 @@ public:
 	{
 		if(!m_pModel)
 		{
-			int mdl = g_pModelCache->PrecacheModel(m_pszModelName.getData());
-			m_pModel = g_pModelCache->GetModel(mdl);
+			int mdl = g_studioModelCache->PrecacheModel(m_pszModelName.getData());
+			m_pModel = g_studioModelCache->GetModel(mdl);
 		}
 
 		BaseEntity::Activate();

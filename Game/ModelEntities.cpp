@@ -12,7 +12,7 @@
 #include "BaseAnimating.h"
 #include "ragdoll.h"
 
-extern IModelCache* g_pModelCache;
+extern IModelCache* g_studioModelCache;
 ConVar r_drawStaticProps("r_drawStaticProps", "1", "Draw static models (props)\n");
 ConVar r_drawPhysicsProps("r_drawPhysicsProps", "1", "Draw physics props\n");
 
@@ -288,7 +288,7 @@ public:
 
 	void Precache()
 	{
-		g_pModelCache->PrecacheModel(RAGDOLL_MODEL);
+		g_studioModelCache->PrecacheModel(RAGDOLL_MODEL);
 		BaseClass::Precache();
 	}
 

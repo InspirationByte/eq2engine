@@ -12,7 +12,7 @@
 #include "CameraAnimator.h"
 #include "materialsystem/MeshBuilder.h"
 
-#include "system.h"
+#include "sys_host.h"
 #include "FontCache.h"
 
 #include "KeyBinding/InputCommandBinder.h"

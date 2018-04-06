@@ -78,7 +78,7 @@ ConCommand cc_quti("quti",CONCOMMAND_FN(exit),"This made for keyboard writing er
 DECLARE_CONCOMMAND_FN(printres)
 {
 	materials->PrintLoadedMaterials();
-	g_pModelCache->PrintLoadedModels();
+	g_studioModelCache->PrintLoadedModels();
 }
 ConCommand cc_printres("sys_print_resources",CONCOMMAND_FN(printres),"Prints all loaded resources to the console");
 
@@ -764,7 +764,7 @@ bool CEngineHost::InitSubSystems()
 	if(!g_fontCache->Init())
 		return false;
 
-	g_pSysConsole->Initialize();
+	g_consoleInput->Initialize();
 
 	debugoverlay->Init();
 
@@ -773,7 +773,7 @@ bool CEngineHost::InitSubSystems()
 	g_parallelJobs->Init(g_cpuCaps->GetCPUCount() / 2);
 
 	Msg("--------- GameDllInit --------- \n");
-	if(!gamedll->Init(soundsystem, physics, debugoverlay, g_pModelCache, viewrenderer))
+	if(!gamedll->Init(soundsystem, physics, debugoverlay, g_studioModelCache, viewrenderer))
 		return false;
 
 	// add default shaders library first
@@ -1059,7 +1059,7 @@ int CEngineHost::Frame()
 		return 0;
 	}
 
-	SetCursorShow(g_pSysConsole->IsVisible(), true);
+	SetCursorShow(g_consoleInput->IsVisible(), true);
 
 	// go back
 	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
@@ -1089,7 +1089,7 @@ int CEngineHost::Frame()
 								engine->GetGameState() == IEngineGame::GAME_LEVEL_LOAD);
 
 
-	g_pSysConsole->DrawSelf(fullscreen_console, m_nWidth, m_nHeight, m_fCurTime);
+	g_consoleInput->DrawSelf(fullscreen_console, m_nWidth, m_nHeight, m_fCurTime);
 
 	// End frame from render lib
 	EndScene();
@@ -1180,7 +1180,7 @@ void CEngineHost::TrapKey_Event( int key, bool down )
 	}
 
 	// if console doesn't blocks key pressing
-	if(!g_pSysConsole->KeyPress(key,down))
+	if(!g_consoleInput->KeyPress(key,down))
 		engine->Key_Event(key, down);
 }
 
@@ -1200,9 +1200,9 @@ void CEngineHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 		return;
 	}
 
-	g_pSysConsole->MouseEvent(Vector2D(x,y),buttons,down);
+	g_consoleInput->MouseEvent(Vector2D(x,y),buttons,down);
 
-	if(!g_pSysConsole->IsVisible())
+	if(!g_consoleInput->IsVisible())
 		engine->Mouse_Event( x,y, buttons, down);
 }
 
@@ -1216,7 +1216,7 @@ void CEngineHost::TrapMouseMove_Event( int x, int y, float deltaX, float deltaY 
 
 	//m_bDisableMouseUpdatePerFrame = true;
 
-	g_pSysConsole->MousePos(Vector2D(x,y));
+	g_consoleInput->MousePos(Vector2D(x,y));
 
 	m_vCursorPosition = IVector2D(x,y);
 
@@ -1226,7 +1226,7 @@ void CEngineHost::TrapMouseMove_Event( int x, int y, float deltaX, float deltaY 
 	xChange *= 0.01f;
 	yChange *= 0.01f;
 
-	if(!g_pSysConsole->IsVisible())
+	if(!g_consoleInput->IsVisible())
 		engine->MouseMove_Event(x, y, xChange, yChange);
 }
 
@@ -1243,6 +1243,6 @@ void CEngineHost::ProcessKeyChar( ubyte chr )
 	if(m_nLoadingResourceTimes > 0)
 		return;
 
-	g_pSysConsole->KeyChar(chr);
+	g_consoleInput->KeyChar(chr);
 	engine->ProcessKeyChar(chr);
 }

@@ -1095,7 +1095,7 @@ public:
 		decalmakeinfo_t info;
 
 		if(m_project)
-			info.flags |= DECALFLAG_TEXCOORD_BYNORMAL;
+			info.flags |= MAKEDECAL_FLAG_TEX_NORMAL;
 
 		info.pMaterial = m_pDecalMaterial;
 		info.normal = m_normal;

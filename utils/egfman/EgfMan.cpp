@@ -69,8 +69,8 @@ void SetOptimalCameraDistance()
 
 void FlushCache()
 {
-	g_pModelCache->ReleaseCache();
-	g_pModelCache->PrecacheModel("models/error.egf");
+	g_studioModelCache->ReleaseCache();
+	g_studioModelCache->PrecacheModel("models/error.egf");
 }
 
 class CEGFViewApp: public wxApp
@@ -283,7 +283,7 @@ void InitMatSystem(HWND window)
 
 	materials->LoadShaderLibrary("eqBaseShaders.dll");
 
-	g_pModelCache->PrecacheModel("models/error.egf");
+	g_studioModelCache->PrecacheModel("models/error.egf");
 
 	g_fontCache->Init();
 
@@ -759,11 +759,11 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 			g_pModel->SetModel( NULL );
 			FlushCache();
 
-			int cache_index = g_pModelCache->PrecacheModel( model_path.c_str() );
+			int cache_index = g_studioModelCache->PrecacheModel( model_path.c_str() );
 			if(cache_index == CACHE_INVALID_MODEL)
 				wxMessageBox(varargs("Can't open %s\n", model_path.c_str()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 
-			g_pModel->SetModel( g_pModelCache->GetModel(cache_index) );
+			g_pModel->SetModel( g_studioModelCache->GetModel(cache_index) );
 		}
 
 		SetOptimalCameraDistance();
@@ -783,11 +783,11 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 		g_pModel->SetModel( NULL );
 		FlushCache();
 
-		int cache_index = g_pModelCache->PrecacheModel( model_path.c_str() );
+		int cache_index = g_studioModelCache->PrecacheModel( model_path.c_str() );
 		if(cache_index == CACHE_INVALID_MODEL)
 			wxMessageBox(varargs("Can't open %s\n", model_path.c_str()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 
-		g_pModel->SetModel( g_pModelCache->GetModel(cache_index) );
+		g_pModel->SetModel( g_studioModelCache->GetModel(cache_index) );
 	}
 	else if(event.GetId() == Event_File_CompileModel)
 	{
@@ -861,11 +861,11 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 						g_pModel->SetModel( NULL );
 						FlushCache();
 
-						int cache_index = g_pModelCache->PrecacheModel( model_path.c_str() );
+						int cache_index = g_studioModelCache->PrecacheModel( model_path.c_str() );
 						if(cache_index == CACHE_INVALID_MODEL)
 							wxMessageBox(varargs("Can't open %s\n", model_path.c_str()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 
-						g_pModel->SetModel( g_pModelCache->GetModel(cache_index) );
+						g_pModel->SetModel( g_studioModelCache->GetModel(cache_index) );
 
 						SetOptimalCameraDistance();
 						materials->PreloadNewMaterials();

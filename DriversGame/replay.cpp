@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "replay.h"
-#include "StateManager.h"
+#include "DrvSynStates.h"
 #include "session_stuff.h"
 #include "IDebugOverlay.h"
 

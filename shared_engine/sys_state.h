@@ -5,26 +5,18 @@
 // Description: State handlers
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef STATEMANAGER_H
-#define STATEMANAGER_H
+#ifndef SYS_STATE_H
+#define SYS_STATE_H
 
 #include "Font.h"
 #include "utils/KeyValues.h"
 #include "materialsystem/IMaterialSystem.h"
 
-enum EGameStateType 
-{
-	GAME_STATE_NONE = 0,
+#define GAME_STATE_NONE 0
 
-	GAME_STATE_TITLESCREEN,
-	GAME_STATE_MAINMENU,
-	GAME_STATE_MPLOBBY,
-	GAME_STATE_GAME,
-
-	GAME_STATE_COUNT,
-
-	GAME_STATE_LUA_BEGUN,
-};
+// forward and extern
+class CBaseStateHandler;
+extern CBaseStateHandler**	g_states;
 
 //--------------------------------------------------------------------------------
 // game state handler
@@ -68,60 +60,35 @@ private:
 
 //--------------------------------------------------------------------------------
 
-// forces the current state
-void					SetCurrentState( CBaseStateHandler* state, bool force = false );
-
-void					ChangeState(CBaseStateHandler* state);
-
-// returns the current state
-CBaseStateHandler*		GetCurrentState();
-
-// returns the current state type
-int						GetCurrentStateType();
-void					SetCurrentStateType( int stateType );
-
-void					SheduleNextState( CBaseStateHandler* state );
-void					SheduleNextStateType( int stateType );
-
-// updates and manages the states
-bool					UpdateStates( float fDt );
-void					GetStateMouseCursorProperties(bool& visible, bool& centered);
-
-void					InitRegisterStates();
-
-extern CBaseStateHandler*	g_states[GAME_STATE_COUNT];
-
-//---------------------------------------------------------------------------------
-/*
-#ifndef NO_LUA
-class CLuaState : public CBaseStateHandler
+namespace EqStateMgr
 {
-public:
-						CLuaState();
+	// forces the current state
+	void					SetCurrentState(CBaseStateHandler* state, bool force = false);
 
-	int					GetType() { return m_stateType; };
+	void					ChangeState(CBaseStateHandler* state);
 
-	void				OnEnter( CBaseStateHandler* from );
-	void				OnLeave( CBaseStateHandler* to );
+	// returns the current state
+	CBaseStateHandler*		GetCurrentState();
 
-	bool				Update( float fDt );
+	// returns the current state type
+	int						GetCurrentStateType();
+	void					SetCurrentStateType(int stateType);
 
-	void				HandleKeyPress( int key, bool down );
-	void				HandleMouseMove( int x, int y, float deltaX, float deltaY );
-	void				HandleMouseWheel(int x,int y,int scroll);
+	void					ScheduleNextState(CBaseStateHandler* state);
+	void					ScheduleNextStateType(int stateType);
 
-	void				HandleJoyAxis( short axis, short value );
+	// updates and manages the states
+	bool					UpdateStates(float fDt);
+	void					GetStateMouseCursorProperties(bool& visible, bool& centered);
 
-protected:
+	bool					IsMultiplayerGameState();
+	bool					IsInGameState();
 
-	int						m_stateType;
-	OOLUA::Table			m_object;
+	void					SignalPause();
 
-	EqLua::LuaTableFuncRef	m_onEnter;
-	EqLua::LuaTableFuncRef	m_onLeave;
+	bool					InitRegisterStates();
 };
 
+//---------------------------------------------------------------------------------
 
-#endif // NO_LUA
-*/
-#endif // STATEMANAGER_H
+#endif // SYS_STATE_H

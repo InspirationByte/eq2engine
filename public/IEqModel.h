@@ -17,29 +17,21 @@ class IMaterialSystem;
 class IVertexFormat;
 class IEqModelInstancer;
 
-enum EngineModelType_e
+enum EModelType
 {
-	ENGINEMODEL_INVALID = -1,
+	MODEL_TYPE_INVALID = -1,
 
-	ENGINEMODEL_STUDIO,			// egf models with dynamics
-	ENGINEMODEL_WORLD_BRUSH,	// brush model list of surfaces
-	ENGINEMODEL_WORLD_SURFACE,	// simply the list of surfaces
+	MODEL_TYPE_WORLD_LEVEL,		// big level model
+	MODEL_TYPE_WORLD_SOLID,		// world solid
+
+	MODEL_TYPE_STUDIO,			// EGF studio model
 };
 
 enum EModelLoadingState
 {
-	EQMODEL_LOAD_ERROR = -1,
-	EQMODEL_LOAD_IN_PROGRESS = 0,
-	EQMODEL_LOAD_OK,
-};
-
-// structure for world models
-struct worldhwdata_t // (as studiohwdata_t)
-{
-	eqlevelsurf_t** surfaces;
-	int				numSurfaces;
-
-	studioPhysData_t	m_physmodel;
+	MODEL_LOAD_ERROR = -1,
+	MODEL_LOAD_IN_PROGRESS = 0,
+	MODEL_LOAD_OK,
 };
 
 #define MOD_STUDIOHWDATA(m) (studioHwData_t*)m->GetHWData()
@@ -81,6 +73,9 @@ public:
 
 						virtual ~IEqModel() {}
 
+	// model type
+	virtual EModelType			GetModelType() const = 0;
+
 //------------------------------------
 // shared model usage
 //------------------------------------
@@ -91,21 +86,31 @@ public:
 	// returns name (real patch to model)
 	virtual const char*			GetName() const = 0;
 
-	// selects lod index
-	virtual int					SelectLod(float fDistance) = 0;
-
+	// Bounding box
 	virtual const BoundingBox&	GetAABB() const = 0;
 
-	// makes dynamic temporary decal
-	virtual studiotempdecal_t*	MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices) = 0;
+	// studio model hardware data pointer for information
+	virtual studioHwData_t*		GetHWData() const = 0;
 
-	// instancing
-	virtual void				SetInstancer( IEqModelInstancer* instancer ) = 0;
-	virtual IEqModelInstancer*	GetInstancer() const = 0;
+	// loading state
+	virtual int					GetLoadingState() const = 0;
+
+	// loads materials
+	virtual	void				LoadMaterials() = 0;
 
 //------------------------------------
 // Rendering
 //------------------------------------
+
+	// makes dynamic temporary decal
+	virtual tempdecal_t*		MakeTempDecal(const decalmakeinfo_t& info, Matrix4x4* jointMatrices) = 0;
+
+	// instancing
+	virtual void				SetInstancer(IEqModelInstancer* instancer) = 0;
+	virtual IEqModelInstancer*	GetInstancer() const = 0;
+
+	// selects lod index
+	virtual int					SelectLod(float fDistance) = 0;
 
 	// draws single texture group
 	// preSetVBO - if you don't use SetupVBOStream
@@ -114,24 +119,12 @@ public:
 	// sets vertex buffer streams in RHI
 	virtual void				SetupVBOStream( int nStream ) = 0;
 
-	// draw debug information (skeletons, etc.)
-	virtual void				DrawDebug() = 0;
-
 	// prepares model for skinning, return value indicates the hardware skinning flag
 	virtual bool				PrepareForSkinning( Matrix4x4* jointMatrices ) = 0;
 
 	// returns material assigned to the group
 	// materialIndex = <studiohwdata_t>->studio->pModelDesc(nModel)->pGroup(nTexGroup)->materialIndex;
 	virtual IMaterial*			GetMaterial(int materialIdx) = 0;
-
-	// loads materials for studio
-	virtual	void				LoadMaterials() = 0;
-
-	// studio model hardware data pointer for information
-	virtual studioHwData_t*		GetHWData() const = 0;
-
-	// loading state
-	virtual int					GetLoadingState() const = 0;
 };
 
 
@@ -143,9 +136,11 @@ public:
 
 #define CACHE_INVALID_MODEL -1
 
-class IModelCache
+class IStudioModelCache
 {
 public:
+	virtual ~IStudioModelCache() {}
+
 	// caches model and returns it's index
 	virtual int					PrecacheModel(const char* modelName) = 0;
 
@@ -178,6 +173,6 @@ public:
 };
 
 // model cache manager
-extern IModelCache* g_pModelCache;
+extern IStudioModelCache* g_studioModelCache;
 
 #endif // IEQMODEL_H
