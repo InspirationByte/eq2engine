@@ -1326,7 +1326,53 @@ void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )
 		return;
 
 	if( m_showMenu )
+	{
+		// perform a hit test
+		const IVector2D& screenSize = g_pHost->GetWindowSize();
+		IVector2D halfScreen(screenSize.x / 2, screenSize.y / 2);
+
+		IEqFont* font = g_fontCache->GetFont("Roboto", 30, TEXT_STYLE_ITALIC);
+
+		eqFontStyleParam_t fontParam;
+		fontParam.align = TEXT_ALIGN_LEFT;
+		fontParam.styleFlag |= TEXT_STYLE_SHADOW;
+		fontParam.textColor = color4_white;
+		fontParam.scale = 30.0f;
+
+		{
+			EqLua::LuaStackGuard g(GetLuaState());
+
+			int numElems = 0;
+
+			oolua_ipairs(m_menuElems)
+				numElems++;
+			oolua_ipairs_end()
+
+			int menuPosY = halfScreen.y - numElems * font->GetLineHeight(fontParam)*0.5f;
+
+			Vector2D mTextPos(halfScreen.x, menuPosY);
+
+			oolua_ipairs(m_menuElems)
+				int idx = _i_index_ - 1;
+
+			OOLUA::Table elem;
+			m_menuElems.safe_at(_i_index_, elem);
+
+			float lineWidth = 400;
+			float lineHeight = font->GetLineHeight(fontParam);
+
+			Vector2D eTextPos(halfScreen.x, menuPosY + _i_index_ * font->GetLineHeight(fontParam));
+
+			Rectangle_t rect(eTextPos - Vector2D(lineWidth, lineHeight), eTextPos + Vector2D(lineWidth, 0));
+
+			if (rect.IsInRectangle(Vector2D(x, y)))
+				Event_SelectMenuItem(idx);
+
+			oolua_ipairs_end()
+		}
+
 		return;
+	}
 
 	if(!g_consoleInput->IsVisible())
 	{
@@ -1343,13 +1389,38 @@ void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )
 	}
 }
 
+void CState_Game::Event_SelectMenuItem(int index)
+{
+	if (!m_showMenu)
+		return;
+
+	if (index > m_numElems - 1)
+		return;
+
+	if (m_selection == index)
+		return;
+
+	m_selection = index;
+
+	EmitSound_t ep("menu.roll");
+	ses->Emit2DSound(&ep);
+}
+
 void CState_Game::HandleMouseClick( int x, int y, int buttons, bool down )
 {
 	if(!m_isGameRunning)
 		return;
 
 	if( m_showMenu )
+	{
+		if (buttons == MOU_B1 && !down)
+		{
+			PreEnterSelection();
+			EnterSelection();
+		}
+
 		return;
+	}
 
 	if(buttons == MOU_B2)
 	{

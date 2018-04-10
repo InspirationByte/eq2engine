@@ -347,7 +347,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 			historyTextParams.textColor = Vector4D(0.7f,0.7f,0,1);
 			historyTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
 
-			int textYPos = (i+1)*m_font->GetLineHeight(helpTextParams);
+			int textYPos = m_font->GetLineHeight(helpTextParams) * (i + 1);
 
 			if(m_histIndex == i)
 			{

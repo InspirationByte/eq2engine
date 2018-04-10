@@ -85,6 +85,8 @@ protected:
 	void		OnEnterSelection( bool isFinal );
 	void		OnMenuCommand( const char* command );
 
+	void		Event_SelectMenuItem(int index);
+
 	Vector3D	GetViewVelocity() const;
 	CCar*		GetViewCar() const;
 
