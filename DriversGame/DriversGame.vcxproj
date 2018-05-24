@@ -188,6 +188,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="ParticleEffects.cpp" />
+    <ClCompile Include="session_base.cpp" />
     <ClCompile Include="Shader_Shadow.cpp" />
     <ClCompile Include="Shader_ShadowBuild.cpp" />
     <ClCompile Include="Shader_Sky.cpp" />
@@ -331,6 +332,7 @@
     <ClInclude Include="AIManipulator_Navigation.h" />
     <ClInclude Include="AIManipulator_StabilityControl.h" />
     <ClInclude Include="AIManipulator_TargetAvoidance.h" />
+    <ClInclude Include="AIManipulator_Traffic.h" />
     <ClInclude Include="AIPursuerCar.h" />
     <ClInclude Include="AITrafficCar.h" />
     <ClInclude Include="BillboardList.h" />
@@ -346,12 +348,14 @@
     <ClInclude Include="EventFSM.h" />
     <ClInclude Include="DrvSynHUD.h" />
     <ClInclude Include="game_singleplayer.h" />
+    <ClInclude Include="game_splitscreen.h" />
     <ClInclude Include="levelobject.h" />
     <ClInclude Include="LiteHTMLContainer.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="ParticleEffects.h" />
     <ClInclude Include="road_defs.h" />
+    <ClInclude Include="session_base.h" />
     <ClInclude Include="ShadowRenderer.h" />
     <ClInclude Include="state_lobby.h" />
     <ClInclude Include="LuaBinding_Drivers.h" />

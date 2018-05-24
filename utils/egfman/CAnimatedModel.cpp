@@ -1229,7 +1229,7 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 		{
 			materials->SetSkinningEnabled(true);
 
-			materials->BindMaterial( m_pModel->GetMaterial( modDesc->pGroup(j)->materialIndex ) , false);
+			materials->BindMaterial( m_pModel->GetMaterial( modDesc->pGroup(j)->materialIndex ), 0);
 
 			m_pModel->PrepareForSkinning( m_BoneMatrixList );
 			m_pModel->DrawGroup( nModDescId, j );

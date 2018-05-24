@@ -138,9 +138,10 @@ struct lensFlareTable_t
 class CGameWorld : public IMaterialRenderParamCallbacks, public CBaseNetworkedObject
 {
 	friend class CGameObject;
-	friend class CGameSession;
+	friend class CGameSessionBase;
 	friend class CNetGameSession;
 	friend class CLevelRegion;
+	friend class CState_Game;
 
 public:
 	DECLARE_NETWORK_TABLE()
@@ -237,9 +238,9 @@ public:
 
 	float							m_envMapRegenTime;
 
-	IVertexFormat*					m_vehicleVertexFormat;
-	IVertexFormat*					m_objectInstVertexFormat;
-	IVertexBuffer*					m_objectInstVertexBuffer;
+	IVertexFormat*					m_vehicleVertexFormat;	// FIXME: remove this
+	IVertexFormat*					m_objectInstFormat;
+	IVertexBuffer*					m_objectInstBuffer;
 
 	CNetworkVar(float,				m_globalTrafficLightTime);
 	CNetworkVar(int,				m_globalTrafficLightDirection);

@@ -103,7 +103,7 @@ void CEditableDecal::Render(int nViewRenderFlags)
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	materials->SetCullMode(CULL_BACK);
-	materials->BindMaterial(m_surftex.pMaterial, false);
+	materials->BindMaterial(m_surftex.pMaterial, 0);
 
 	g_pShaderAPI->SetVertexFormat(g_pLevel->GetLevelVertexFormat());
 	g_pShaderAPI->SetVertexBuffer(m_pVB, 0);
@@ -132,7 +132,7 @@ void CEditableDecal::Render(int nViewRenderFlags)
 	Vector3D min = m_position - Vector3D(2);
 	Vector3D max = m_position + Vector3D(2);
 
-	materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+	materials->BindMaterial(g_pLevel->GetFlatMaterial());
 
 	pBuilder->Begin(PRIM_TRIANGLE_STRIP);
 		pBuilder->Position3f(min.x, max.y, max.z);

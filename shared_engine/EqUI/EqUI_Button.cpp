@@ -33,7 +33,8 @@ void Button::DrawSelf( const IRectangle& rect )
 
 	// TODO: GetFontStyle
 
-	style.styleFlag |= TEXT_STYLE_SHADOW;
+	style.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_SCISSOR;
+	style.scale = m_fontScale;
 
 	IVector2D pos = rect.GetLeftTop() + IVector2D(0,25);
 

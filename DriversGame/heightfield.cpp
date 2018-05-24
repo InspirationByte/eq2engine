@@ -1337,7 +1337,7 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 		g_pShaderAPI->SetVertexBuffer(m_vertexbuffer, 0);
 		g_pShaderAPI->SetIndexBuffer(m_indexbuffer);
 
-		materials->BindMaterial(batch.pMaterial, true);
+		materials->BindMaterial(batch.pMaterial);
 
 		g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLES, batch.startIndex, batch.numIndices, batch.startVertex, batch.numVerts);
 	}
@@ -1367,7 +1367,7 @@ void CHeightTileFieldRenderable::RenderDebug(ITexture* debugTexture, int nDrawFl
 		g_pShaderAPI->SetVertexBuffer(m_vertexbuffer, 0);
 		g_pShaderAPI->SetIndexBuffer(m_indexbuffer);
 
-		materials->BindMaterial(batch.pMaterial, false);
+		materials->BindMaterial(batch.pMaterial, 0);
 
 		g_pShaderAPI->SetTexture(debugTexture,0,0);
 

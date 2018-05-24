@@ -284,6 +284,11 @@ bool CNetworkServer::InternalSend( netMessage_t* msg, int msg_size, short& msg_i
 			MsgError("Bad sent message (%d versus %d)\n", msg_size, sended);
 			return false;
 		}
+
+		if(flags & NETSERVER_FLAG_REMOVECLIENT)
+		{
+			RemoveClientById(pClient->client_id);
+		}
 	}
 
 	return true;

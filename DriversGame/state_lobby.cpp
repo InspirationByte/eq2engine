@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "state_lobby.h"
+#include "game_multiplayer.h"
 
 const int	DEFAULT_LOBBYSERVERPORT		= 12508;
 

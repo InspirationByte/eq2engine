@@ -79,7 +79,7 @@ void CDetailSystemTest::DrawNodes()
 		materials->SetMatrix(MATRIXMODE_WORLD, det_translation);
 
 		//materials->SetAmbientColor(ColorRGBA(0.5,0.5,0.5, 1.0f));
-		materials->BindMaterial( model->material, false );
+		materials->BindMaterial( model->material, 0 );
 		materials->Apply();
 
 		g_pShaderAPI->DrawIndexedPrimitives( PRIM_TRIANGLES, model->startIndex, model->indices.numElem(), model->startVertex, model->verts.numElem() );
@@ -1336,7 +1336,7 @@ void GR_Draw2DMaterial(IMaterial* pMaterial)
 
 	materials->SetCullMode(CULL_FRONT);
 
-	materials->BindMaterial( pMaterial, false );
+	materials->BindMaterial( pMaterial, 0 );
 
 	materials->Apply();
 

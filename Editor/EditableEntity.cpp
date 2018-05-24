@@ -129,7 +129,7 @@ void CEditableEntity::Render(int nViewRenderFlags)
 			{
 				
 				IMaterial* pMaterial = m_pModel->GetMaterial(nModDescId, j);
-				materials->BindMaterial(pMaterial, false);
+				materials->BindMaterial(pMaterial, 0);
 
 				m_pModel->PrepareForSkinning(m_BoneMatrixList);
 				m_pModel->DrawGroup(nModDescId, j);
@@ -185,7 +185,7 @@ void CEditableEntity::Render(int nViewRenderFlags)
 			materials->SetAmbientColor(color);
 
 			materials->SetCullMode(CULL_NONE);
-			materials->BindMaterial(m_pSprite, true);
+			materials->BindMaterial(m_pSprite);
 
 			float size = 16;
 			if(m_pDefinition)
@@ -221,7 +221,7 @@ void CEditableEntity::Render(int nViewRenderFlags)
 		}
 		else
 		{
-			materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+			materials->BindMaterial(g_pLevel->GetFlatMaterial());
 
 			pBuilder->Begin(PRIM_TRIANGLE_STRIP);
 				pBuilder->Position3f(min.x, max.y, max.z);
@@ -273,7 +273,7 @@ void CEditableEntity::Render(int nViewRenderFlags)
 		if((m_nFlags & EDFL_SELECTED) && m_pDefinition && m_pDefinition->showradius)
 		{
 			materials->SetAmbientColor(ColorRGBA(m_groupColor,0.25f));
-			materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+			materials->BindMaterial(g_pLevel->GetFlatMaterial());
 
 			DkDrawSphere(GetPosition(), m_fRadius, 32);
 			DkDrawFilledSphere(GetPosition(), m_fRadius, 32);
@@ -283,7 +283,7 @@ void CEditableEntity::Render(int nViewRenderFlags)
 		if(m_pDefinition && m_pDefinition->showanglearrow)
 		{
 			materials->SetAmbientColor(color*0.8f);
-			materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+			materials->BindMaterial(g_pLevel->GetFlatMaterial());
 
 			Vector3D start = GetPosition();
 
@@ -448,7 +448,7 @@ void CEditableEntity::RenderGhost(Vector3D &addpos, Vector3D &addscale, Vector3D
 			materials->SetAmbientColor(ColorRGBA(1,0,1,1));
 
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
-		materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+		materials->BindMaterial(g_pLevel->GetFlatMaterial());
 		
 		Vector3D min = GetBBoxMins()+addpos;
 		Vector3D max = GetBBoxMaxs()+addpos;
@@ -574,7 +574,7 @@ void CEditableEntity::RenderGhost(Vector3D &addpos, Vector3D &addscale, Vector3D
 		materials->GetConfiguration().wireframeMode = false;
 
 		materials->SetAmbientColor(ColorRGBA(m_groupColor,0.25f));
-		materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+		materials->BindMaterial(g_pLevel->GetFlatMaterial());
 
 		DkDrawSphere(GetPosition(), m_fRadius, 32);
 		DkDrawFilledSphere(GetPosition(), m_fRadius, 32);

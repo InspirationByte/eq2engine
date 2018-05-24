@@ -68,8 +68,7 @@ CNetPlayer::CNetPlayer( int clientID, const char* name )
 
 	m_clientID = clientID;
 	m_ready = false;
-	m_disconnect = false;
-	m_isLocal = false;
+	m_disconnectSignal = false;
 	m_fNotreadyTime = 0.0f;
 	m_ownCar = NULL;
 	m_curControls = 0;
@@ -128,15 +127,13 @@ bool CNetPlayer::IsAlive()
 }
 
 // client recieve
-bool CNetPlayer::AddSnapshot( const netSnapshot_t& snapshot )
+bool CNetPlayer::CL_AddSnapshot( const netSnapshot_t& snapshot )
 {
 	if( m_snapshots[0].in.timeStamp >= snapshot.in.timeStamp)
 		return false;
 
 	if( m_snapshots[1].in.timeStamp >= snapshot.in.timeStamp )
 		return false;
-
-	float lastLat = m_snapshots[m_curSnapshot].latency;
 
 	m_snapshots[m_curSnapshot] = snapshot;
 
@@ -158,7 +155,7 @@ bool CNetPlayer::AddSnapshot( const netSnapshot_t& snapshot )
 	return true;
 }
 
-void CNetPlayer::OnServerRecieveControls(int controls)
+void CNetPlayer::SV_OnRecieveControls(int controls)
 {
 	m_lastPrevCmdTick = m_lastCmdTick;
 	m_lastCmdTick = m_curTick;
@@ -217,7 +214,7 @@ void CNetPlayer::Update(float fDt)
 
 	if( netSes->IsServer() )
 	{
-		if(m_isLocal)
+		if(netSes->GetLocalPlayer() == this)
 		{
 			m_lastPrevCmdTick = m_lastCmdTick;
 			m_lastCmdTick = m_curTick;
@@ -232,13 +229,16 @@ void CNetPlayer::Update(float fDt)
 			MsgWarning("WARNING: connection lost...\n");
 
 		m_ready = false;
-		m_disconnect = true;
+		m_disconnectSignal = true;
 	}
 
-	float fOverallLatency = GetSnapshotLatency() * 0.5f;
+	float fOverallLatency = CL_GetSnapshotLatency() * 0.5f;
 
-	debugoverlay->Text(ColorRGBA(1,1,1,1), "latency: %.2f ms (pck+snap=%.2f ms) (tick=%d)\n", m_packetLatency*500.0f, fOverallLatency*1000.0f, m_curTick);
+	debugoverlay->Text(ColorRGBA(1,1,1,1), "latency : %.2f ms (pck+snap=%.2f ms) (tick=%d)\n", m_packetLatency*500.0f, fOverallLatency*1000.0f, m_curTick);
 
+	// update snapshot interpolation
+	// update prediction
+	// all clientside-only
 	if(netSes->IsClient())
 	{
 		// interpolate snapshot
@@ -262,7 +262,7 @@ void CNetPlayer::Update(float fDt)
 
 		// find prediction snapshot
 		netObjSnapshot_t predSnap;
-		GetPredictedSnapshot(interpSnap, (fDt+fSnapDelay)*cl_predict_ratio.GetFloat(), predSnap);
+		CL_GetPredictedSnapshot(interpSnap, (fDt+fSnapDelay)*cl_predict_ratio.GetFloat(), predSnap);
 
 		FVector3D car_pos	= m_ownCar->GetPhysicsBody()->GetPosition();
 		Quaternion car_rot	= m_ownCar->GetOrientation();
@@ -349,7 +349,8 @@ void CNetPlayer::Update(float fDt)
 		if(angDiffAngle > fMaxAngDiff)
 			m_ownCar->GetPhysicsBody()->SetOrientation(finSnap.rotation);
 
-		if(!m_isLocal)
+		// set controls for non-local player
+		if(netSes->GetLocalPlayer() != this)
 			SetControls(finSnap.in.controls);
 	}
 
@@ -359,7 +360,7 @@ void CNetPlayer::Update(float fDt)
 	m_fCurTime += fDt;
 }
 
-void CNetPlayer::GetPredictedSnapshot( const netObjSnapshot_t& in, float fDt_diff, netObjSnapshot_t& out ) const
+void CNetPlayer::CL_GetPredictedSnapshot( const netObjSnapshot_t& in, float fDt_diff, netObjSnapshot_t& out ) const
 {
 	Quaternion spin = AngularVelocityToSpin(in.rotation, m_ownCar->GetAngularVelocity());
 
@@ -375,16 +376,16 @@ void CNetPlayer::GetPredictedSnapshot( const netObjSnapshot_t& in, float fDt_dif
 	out.in.controls = in.in.controls;
 }
 
-extern ConVar sys_maxfps;
-
-float CNetPlayer::GetSnapshotLatency() const
+float CNetPlayer::CL_GetSnapshotLatency() const
 {
 	float fSnapLatency = (m_snapshots[0].latency + m_snapshots[1].latency) * 0.5f;
 
-	if(fSnapLatency < TICK_INTERVAL)
+	if(fSnapLatency < TICK_INTERVAL)	// if it less than tick interval, it will be jerky
 		fSnapLatency = TICK_INTERVAL;
 
-	return fSnapLatency + m_packetLatency;
+	CNetGameSession* netSes = (CNetGameSession*)g_pGameSession;
+
+	return fSnapLatency + netSes->GetLocalLatency();
 }
 
 float CNetPlayer::GetLatency() const
@@ -408,8 +409,9 @@ void CNetPlayer::NetUpdate(float fDt)
 	if(netSes == NULL)
 		return;
 
-	if( netSes->IsClient() && m_isLocal )
+	if( netSes->IsClient() && netSes->GetLocalPlayer() == this)
 	{
+		// send local player controls
 		netInputCmd_t cmd;
 		cmd.controls = m_curControls;
 		cmd.timeStamp = m_curSvTick;
@@ -422,7 +424,6 @@ void CNetPlayer::NetUpdate(float fDt)
 		// send snapshots to all clients
 		netSnapshot_t snap;
 		Quaternion orient = m_ownCar->GetPhysicsBody()->GetOrientation();
-
 
 		snap.car_pos = m_ownCar->GetPhysicsBody()->GetPosition();
 		snap.car_rot = TVec4D<half>(orient.x,orient.y,orient.z,orient.w);
@@ -469,6 +470,39 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 	if(netSes == NULL)
 		return;
 
+	netPeer_t* pClient = new netPeer_t;
+	pClient->client_addr = m_clientAddr;
+	pClient->client_id = -1;
+
+	CNetworkServer* srv = (CNetworkServer*)pNetThread->GetNetworkInterface();
+
+	// check forc client from this address already connected
+	if (srv->GetClientByAddr(&m_clientAddr) != NULL)
+	{
+		Msg("Player attempt to connect while CONNECTED\n");
+
+		kvkeybase_t kvs;
+		CNetMessageBuffer buffer;
+
+		kvs.SetKey("status", "error");
+		kvs.SetKey("desc", "#ALREADY_CONNECTED");
+		kvs.SetKey("clientID", "-1");
+		kvs.SetKey("playerID", "-1");
+
+		buffer.WriteKeyValues(&kvs);
+
+		// add him to remove...
+		int cl_id = srv->AddClient(pClient);
+		pNetThread->SendData(&buffer, m_nEventID, cl_id, CDPSEND_GUARANTEED | NETSERVER_FLAG_REMOVECLIENT);
+
+		return;
+	}
+
+
+	// we're adding this client because we need to send back statuses, POOR API DESIGN!!!
+	// be sure to use NETSERVER_FLAG_REMOVECLIENT flag if we fail
+	int cl_id = srv->AddClient(pClient);
+
 	if(netSes->GetFreePlayerSlots() == 0)
 	{
 		kvkeybase_t kvs;
@@ -481,37 +515,10 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 
 		buffer.WriteKeyValues(&kvs);
 
-		pNetThread->SendData(&buffer, m_nEventID, m_clientID, CDPSEND_GUARANTEED);
+		pNetThread->SendData(&buffer, m_nEventID, cl_id, CDPSEND_GUARANTEED | Networking::NETSERVER_FLAG_REMOVECLIENT);
 
 		return;
 	}
-
-	// add player
-	CNetworkServer* srv = (CNetworkServer*)pNetThread->GetNetworkInterface();
-
-	// check forc client from this address already connected
-	if( srv->GetClientByAddr(&m_clientAddr) != NULL )
-	{
-		kvkeybase_t kvs;
-		CNetMessageBuffer buffer;
-
-		kvs.SetKey("status", "error");
-		kvs.SetKey("desc", "#ALREADY_CONNECTED");
-		kvs.SetKey("clientID", "-1");
-		kvs.SetKey("playerID", "-1");
-
-		buffer.WriteKeyValues(&kvs);
-
-		pNetThread->SendData(&buffer, m_nEventID, m_clientID, CDPSEND_GUARANTEED);
-
-		return;
-	}
-
-	netPeer_t* pClient = new netPeer_t;
-	pClient->client_addr = m_clientAddr;
-	pClient->client_id = -1;
-
-	int cl_id = srv->AddClient(pClient);
 
 	// TODO: select spawn point
 
@@ -524,7 +531,21 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 	CNetPlayer* newPlayer = netSes->CreatePlayer(spawn, cl_id, SV_NEW_PLAYER, m_playerName.c_str());
 
 	if(!newPlayer)
+	{
+		kvkeybase_t kvs;
+		CNetMessageBuffer buffer;
+
+		kvs.SetKey("status", "error");
+		kvs.SetKey("desc", "#SERVER_UNKNOWN_ERROR");
+		kvs.SetKey("clientID", "-1");
+		kvs.SetKey("playerID", "-1");
+
+		buffer.WriteKeyValues(&kvs);
+
+		pNetThread->SendData(&buffer, m_nEventID, cl_id, CDPSEND_GUARANTEED | Networking::NETSERVER_FLAG_REMOVECLIENT);
+
 		return;
+	}
 
 	MsgInfo("Player '%s' joining the game...\n", m_playerName.c_str(), newPlayer->m_id);
 
@@ -807,7 +828,7 @@ void CNetPlayerPacket::Process( CNetworkThread* pNetThread )
 		{
 			player->m_lastPacketTick = m_packetTick;
 
-			player->OnServerRecieveControls( m_inCmd.controls );
+			player->SV_OnRecieveControls( m_inCmd.controls );
 
 			int tickDiff = (player->m_curTick - m_inCmd.timeStamp) + (m_packetTick - player->m_packetTick);
 
@@ -820,19 +841,18 @@ void CNetPlayerPacket::Process( CNetworkThread* pNetThread )
 		// make player ready
 		player->m_ready = true;
 
-		int snapTick = m_snapshot.in.timeStamp;
 
 		if( m_packetTick > player->m_lastPacketTick &&
-			player->AddSnapshot( m_snapshot ) )
+			player->CL_AddSnapshot( m_snapshot ) )
 		{
+			player->m_lastPacketTick = m_packetTick;
+			
 			int tickDiff = (player->m_curTick - m_packetTick) + (m_packetTick - player->m_packetTick);
 
 			if(tickDiff > 0)
 				player->m_packetLatency = TICKS_TO_TIME(tickDiff);
 
 			player->m_packetTick = m_packetTick;
-			player->m_lastPacketTick = m_packetTick;
-
 			player->m_curSvTick = m_snapshot.in.timeStamp;
 		}
 	}

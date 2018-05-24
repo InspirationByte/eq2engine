@@ -265,6 +265,7 @@
     <ClInclude Include="UI_HeightEdit.h" />
     <ClInclude Include="UI_LevelModels.h" />
     <ClInclude Include="UI_OccluderEditor.h" />
+    <ClInclude Include="UI_OutlineEdit.h" />
     <ClInclude Include="UI_PrefabMgr.h" />
     <ClInclude Include="UI_RoadEditor.h" />
     <ClInclude Include="EditorActionHistory.h" />
@@ -339,6 +340,7 @@
     <ClCompile Include="UI_HeightEdit.cpp" />
     <ClCompile Include="UI_LevelModels.cpp" />
     <ClCompile Include="UI_OccluderEditor.cpp" />
+    <ClCompile Include="UI_OutlineEdit.cpp" />
     <ClCompile Include="UI_PrefabMgr.cpp" />
     <ClCompile Include="UI_RoadEditor.cpp" />
   </ItemGroup>

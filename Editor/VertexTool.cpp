@@ -159,7 +159,7 @@ void RenderSurfaceSelection(CEditorViewRender* pViewRender, surfaceSelectionData
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
 	materials->SetAmbientColor(ColorRGBA(1,1,1,0.15f));
 	materials->SetCullMode(CULL_NONE);
-	materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+	materials->BindMaterial(g_pLevel->GetFlatMaterial());
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
 	materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
 	materials->SetDepthStates(true, false);
@@ -180,7 +180,7 @@ void RenderSurfaceSelection(CEditorViewRender* pViewRender, surfaceSelectionData
 	pMesh->End();
 	
 	materials->SetAmbientColor(ColorRGBA(1,1,1,1));
-	materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+	materials->BindMaterial(g_pLevel->GetFlatMaterial());
 	materials->SetRasterizerStates(CULL_NONE,FILL_WIREFRAME);
 	g_pShaderAPI->Apply();
 
@@ -228,7 +228,7 @@ void RenderTriangleSelection(CEditorViewRender* pViewRender, surfaceTriangleSele
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
 	materials->SetAmbientColor(ColorRGBA(1,1,1,0.75f));
 	materials->SetCullMode(CULL_NONE);
-	materials->BindMaterial(g_pLevel->GetFlatMaterial(), false);
+	materials->BindMaterial(g_pLevel->GetFlatMaterial(), 0);
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
 	materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
 	materials->SetDepthStates(true, false);
@@ -256,7 +256,7 @@ void RenderTriangleSelection(CEditorViewRender* pViewRender, surfaceTriangleSele
 	pMesh->End();
 	/*
 	materials->SetAmbientColor(ColorRGBA(1,1,1,1));
-	materials->BindMaterial(g_pLevel->GetFlatMaterial(), false);
+	materials->BindMaterial(g_pLevel->GetFlatMaterial(), 0);
 	materials->SetRasterizerStates(CULL_NONE,FILL_WIREFRAME);
 	g_pShaderAPI->Apply();
 
@@ -343,7 +343,7 @@ void RenderBrushVertexSelection(CEditorViewRender* pViewRender, brushVertexSelec
 		}
 
 		materials->SetAmbientColor(ColorRGBA(1,1,1,0.15f));
-		materials->BindMaterial(g_pLevel->GetFlatMaterial(), false);
+		materials->BindMaterial(g_pLevel->GetFlatMaterial(), 0);
 		materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
 		materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
 		materials->SetDepthStates(true, false);
@@ -376,7 +376,7 @@ void RenderBrushVertexSelection(CEditorViewRender* pViewRender, brushVertexSelec
 		pMesh->End();
 
 		materials->SetAmbientColor(ColorRGBA(1));
-		materials->BindMaterial(g_pLevel->GetFlatMaterial(), false);
+		materials->BindMaterial(g_pLevel->GetFlatMaterial(), 0);
 		materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
 		materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
 		materials->SetDepthStates(true, false);

@@ -872,7 +872,7 @@ void CMaterialSystem::SetShaderParameterOverriden(ShaderDefaultParams_e param, b
 		m_paramOverrideMask |= (1 << (uint)param);
 }
 
-bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, bool doApply/* = true*/)
+bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 {
 	if(!pMaterial)
 	{
@@ -918,11 +918,11 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, bool doApply/* = true*/
 	else
 		success = (*materialstate_callbacks[subRoutineId])(m_setMaterial, m_paramOverrideMask);
 
-	if(doApply)
+	if(flags & MATERIAL_BIND_PREAPPLY)
 		Apply();
 
-	// reset override mask shortly after we bind material
-	m_paramOverrideMask = 0xFFFFFFFF;
+	if(!(flags & MATERIAL_BIND_KEEPOVERRIDE))
+		m_paramOverrideMask = 0xFFFFFFFF; // reset override mask shortly after we bind material
 
 	return success;
 }
@@ -1127,12 +1127,12 @@ void CMaterialSystem::GetFogInfo(FogInfo_t &info)
 }
 
 // sets current lighting model as state
-void CMaterialSystem::SetCurrentLightingModel(MaterialLightingMode_e lightingModel)
+void CMaterialSystem::SetCurrentLightingModel(EMaterialLightingMode lightingModel)
 {
 	m_curentLightingModel = lightingModel;
 }
 
-MaterialLightingMode_e CMaterialSystem::GetCurrentLightingModel()
+EMaterialLightingMode CMaterialSystem::GetCurrentLightingModel()
 {
 	return m_curentLightingModel;
 }

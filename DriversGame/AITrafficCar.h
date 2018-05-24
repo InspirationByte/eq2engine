@@ -89,20 +89,6 @@ protected:
 	float m_time;
 };
 
-enum EAITrafficAction
-{
-	AIACT_DRIVE_STRAIGHT,
-	AIACT_STEER,
-	AIACT_CHANGE_LANE,
-};
-
-enum EAITrafficActionFlags
-{
-	AIACT_FLAG_WAIT_CAR,
-	AIACT_FLAG_WAIT_OBSTACLE,
-	AIACT_FLAG_WAIT_GREENLIGHT,
-};
-
 //-----------------------------------------------------------------------------------------------
 
 struct signalSeq_t;

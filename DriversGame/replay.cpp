@@ -76,6 +76,7 @@ void CReplayData::Clear()
 {
 	m_currentEvent = 0;
 	m_numFrames = 0;
+	m_playbackPhysIterations = g_pGameSession->GetPhysicsIterations();
 
 	m_events.clear();
 	m_vehicles.clear();
@@ -89,6 +90,7 @@ void CReplayData::StartRecording()
 	m_tick = 0;
 	m_currentEvent = 0;
 	m_state = REPL_RECORDING;
+	m_playbackPhysIterations = g_pGameSession->GetPhysicsIterations();
 }
 
 void CReplayData::StartPlay()
@@ -443,6 +445,7 @@ void CReplayData::SaveToFile( const char* filename )
 		replayhdr_t hdr;
 		hdr.idreplay = VEHICLEREPLAY_IDENT;
 		hdr.version = VEHICLEREPLAY_VERSION;
+		//hdr.phys_iterations = g_pGameSession->GetPhysicsIterations();
 
 		strcpy(hdr.levelname, g_pGameWorld->GetLevelName());
 		strcpy(hdr.envname, g_pGameWorld->GetEnvironmentName());
@@ -850,6 +853,8 @@ bool CReplayData::LoadFromFile(const char* filename)
 
 	Clear();
 
+	//m_playbackPhysIterations = hdr.phys_iterations;
+
 	int veh_count = 0;
 	pFile->Read(&veh_count, 1, sizeof(int));
 
@@ -873,10 +878,11 @@ bool CReplayData::LoadFromFile(const char* filename)
 
 		veh.name = data.name;
 
+		veh.done = true; // that's complete replay
 		veh.curr_frame = 0;
-		veh.done = true;
 		veh.onEvent = false;
 
+		// read control array stored after header
 		for(int j = 0; j < data.numFrames; j++)
 		{
 			replaycontrol_t control;
@@ -945,10 +951,11 @@ bool CReplayData::LoadFromFile(const char* filename)
 
 	g_pGameWorld->SetLevelName(hdr.levelname);
 	g_pGameWorld->SetEnvironmentName(hdr.envname);
+	
 
 	if(!g_State_Game->LoadMissionScript( hdr.missionscript ))
 	{
-		MsgError("ERROR - Mission script '%s' for replay '%s'\n", hdr.missionscript, filename);
+		MsgError("ERROR - Invalid mission script '%s' for replay '%s'\n", hdr.missionscript, filename);
 		return false;
 	}
 

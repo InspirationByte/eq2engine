@@ -599,7 +599,7 @@ void CEditableBrush::Render(int nViewRenderFlags)
 			materials->SetAmbientColor(ambientColor);
 
 		// apply the material (slow in editor)
-		materials->BindMaterial(polygons[i].pAssignedFace->pMaterial, false);
+		materials->BindMaterial(polygons[i].pAssignedFace->pMaterial, 0);
 
 		materials->Apply();
 
@@ -610,7 +610,7 @@ void CEditableBrush::Render(int nViewRenderFlags)
 			ColorRGBA sel_color(1.0f,0.0f,0.0f,0.35f);
 			materials->SetAmbientColor(sel_color);
 
-			materials->BindMaterial(g_pLevel->GetFlatMaterial(), false);
+			materials->BindMaterial(g_pLevel->GetFlatMaterial(), 0);
 			materials->SetDepthStates(true, false);
 
 			materials->Apply();

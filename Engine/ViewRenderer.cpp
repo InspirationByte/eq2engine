@@ -49,7 +49,7 @@ ConVar r_useLigting("r_useLigting", "1", "Use lighting", CV_ARCHIVE);
 
 void lighting_callback(ConVar* pVar,char const* pszOldValue)
 {
-	MaterialLightingMode_e newModel = MATERIAL_LIGHT_UNLIT;
+	EMaterialLightingMode newModel = MATERIAL_LIGHT_UNLIT;
 	
 	if(r_useLigting.GetBool())
 	{
@@ -1504,7 +1504,7 @@ void CViewRenderer::DrawSurfaceEx(renderArea_t* pCurArea, eqlevelsurf_t *pSurfac
 	{
 		materials->SetMatrix(MATRIXMODE_WORLD, m_matrices[MATRIXMODE_WORLD]);
 
-		materials->BindMaterial(pMaterial, false);
+		materials->BindMaterial(pMaterial, 0);
 
 #ifndef EQLC
 		if(g_pLevel->m_numLightmaps && pSurface->lightmap_id != -1)
@@ -1662,7 +1662,7 @@ void CViewRenderer::DrawModelPart(IEqModel*	pModel, int nModel, int nGroup, int 
 
 	if(!(nRenderFlags & VR_FLAG_NO_MATERIALS))
 	{
-		materials->BindMaterial(pMaterial, false);
+		materials->BindMaterial(pMaterial, 0);
 	}
 	else
 	{
@@ -1740,7 +1740,7 @@ void CViewRenderer::UpdateDepthSetup(bool bUpdateRT, VRSkinType_e nSkin)
 	else
 	{
 		// bind depth material, without apply operation
-		materials->BindMaterial( m_pShadowmapDepthwrite[nLightType][nSkin], true );
+		materials->BindMaterial( m_pShadowmapDepthwrite[nLightType][nSkin], 0 );
 	}
 }
 
@@ -1994,7 +1994,7 @@ void CViewRenderer::DrawDeferredAmbient()
 
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
 
-	materials->BindMaterial(m_pDSAmbient, false);
+	materials->BindMaterial(m_pDSAmbient, 0);
 
 	// setup 2D here
 	materials->Setup2D(m_nViewportW, m_nViewportH);
@@ -2175,7 +2175,7 @@ void CViewRenderer::DrawDeferredCurrentLighting(bool bShadowLight)
 			g_pShaderAPI->Clear( true,false,false );
 
 			// draw caustics firts
-			materials->BindMaterial(m_pSpotCaustics, false);
+			materials->BindMaterial(m_pSpotCaustics, 0);
 
 			g_pShaderAPI->SetVertexFormat( m_pSpotCausticsFormat );
 			g_pShaderAPI->SetVertexBuffer( m_pSpotCausticsBuffer, 0 );
@@ -2207,7 +2207,7 @@ void CViewRenderer::DrawDeferredCurrentLighting(bool bShadowLight)
 		materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
 		materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
 
-		materials->BindMaterial(m_pDSLightMaterials[nLightType][bShadowLight], false);
+		materials->BindMaterial(m_pDSLightMaterials[nLightType][bShadowLight], 0);
 
 		//if(materials->GetBoundMaterial()->GetState() == MATERIAL_LOAD_OK)
 		//	materials->GetBoundMaterial()->GetShader()->SetupConstants();
@@ -2288,14 +2288,14 @@ void CViewRenderer::DrawDeferredCurrentLighting(bool bShadowLight)
 	{
 		if( materials->GetLight()->nFlags & LFLAG_SIMULATE_REFLECTOR )
 		{
-			materials->BindMaterial(m_pDSSpotlightReflector, false);
+			materials->BindMaterial(m_pDSSpotlightReflector, 0);
 			g_pShaderAPI->SetTexture(m_pSpotCausticTex, "FlashlightReflector", 7);
 		}
 		else
-			materials->BindMaterial(m_pDSLightMaterials[nLightType][bShadowLight], false);
+			materials->BindMaterial(m_pDSLightMaterials[nLightType][bShadowLight], 0);
 	}
 	else
-		materials->BindMaterial(m_pDSLightMaterials[nLightType][bShadowLight], false);
+		materials->BindMaterial(m_pDSLightMaterials[nLightType][bShadowLight], 0);
 
 	// apply current shadowmap as s5, s6 for sun lod
 	g_pShaderAPI->SetTexture(m_pShadowMaps[nLightType][0], "ShadowMapSampler",  5);
@@ -2447,7 +2447,7 @@ void CViewRenderer::SetDrawMode(ViewDrawMode_e mode)
 		int nLightType = materials->GetLight()->nType;
 
 		// bind depth material, without apply operation
-		materials->BindMaterial( m_pShadowmapDepthwrite[nLightType][0], false );
+		materials->BindMaterial( m_pShadowmapDepthwrite[nLightType][0], 0 );
 
 #ifdef EQLC
 		SetViewportSize(2048, 2048);

@@ -1636,6 +1636,7 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 		// force disable vertex buffer
 		g_pShaderAPI->SetVertexBuffer( NULL, 2 );
 
+		// walk thru all defs
 		for(int i = 0; i < m_objectDefs.numElem(); i++)
 		{
 			CLevObjectDef* def = m_objectDefs[i];
@@ -1654,11 +1655,11 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 			if(renderTranslucency && !model->m_hasTransparentSubsets)
 				continue;
 
+			// before lock we have to unbind our buffer
+			g_pShaderAPI->ChangeVertexBuffer(NULL, 2);
+
 			// set vertex buffer
 			g_pShaderAPI->SetVertexBuffer( m_instanceBuffer, 2 );
-
-			// before lock we have to unbind our buffer
-			g_pShaderAPI->ChangeVertexBuffer( NULL, 2 );
 
 			int numInstances = def->m_instData->numInstances;
 

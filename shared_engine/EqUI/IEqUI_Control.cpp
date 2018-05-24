@@ -339,14 +339,22 @@ void IUIControl::Render()
 		return;
 
 	RasterizerStateParams_t rasterState;
-	rasterState.fillMode = FILL_SOLID;
-	rasterState.cullMode = CULL_NONE;
+	//rasterState.fillMode = FILL_SOLID;
+	//rasterState.cullMode = CULL_NONE;
 	rasterState.scissor = true;
 
 	IRectangle clientRectRender = GetClientRectangle();
 
 	if( m_parent && m_selfVisible )
 	{
+		// force rasterizer state
+		// other states are pretty useless
+		materials->SetRasterizerStates(rasterState);
+		materials->SetShaderParameterOverriden(SHADERPARAM_RASTERSETUP, true);
+
+		// set scissor rect before childs are rendered
+		g_pShaderAPI->SetScissorRectangle(clientRectRender);
+
 		// paint control itself
 		DrawSelf( clientRectRender );
 	}
@@ -356,6 +364,7 @@ void IUIControl::Render()
 	{
 		do
 		{
+			/*
 			// force rasterizer state
 			// other states are pretty useless
 			materials->SetRasterizerStates(rasterState);
@@ -363,7 +372,7 @@ void IUIControl::Render()
 
 			// set scissor rect before childs are rendered
 			g_pShaderAPI->SetScissorRectangle( clientRectRender );
-
+			*/
 			m_childs.getCurrent()->Render();
 		}
 		while(m_childs.goToPrev());

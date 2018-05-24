@@ -9,10 +9,19 @@
 #define SESSION_STUFF_H
 
 #include "state_game.h"
-#include "game_singleplayer.h"
-#include "game_multiplayer.h"
+#include "session_base.h"
 #include "replay.h"
 
-extern CReplayData*	g_replayData;
+struct server_client_info_t
+{
+	int			clientID;
+	int			playerID;
+
+	int			maxPlayers;
+	float		tickInterval;
+};
+
+extern server_client_info_t		g_svclientInfo;
+extern CReplayData*				g_replayData;
 
 #endif // SESSION_STUFF_H

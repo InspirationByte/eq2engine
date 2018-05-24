@@ -531,7 +531,7 @@ void CCarWheel::SetModelPtr(IEqModel* modelPtr)
 		CGameObjectInstancer* instancer = new CGameObjectInstancer();
 
 		// init with this preallocated buffer and format
-		instancer->Init( g_pGameWorld->m_objectInstVertexFormat, g_pGameWorld->m_objectInstVertexBuffer );
+		instancer->Init( g_pGameWorld->m_objectInstFormat, g_pGameWorld->m_objectInstBuffer );
 
 		m_pModel->SetInstancer( instancer );
 	}
@@ -888,7 +888,7 @@ void CCar::Spawn()
 		CGameObjectInstancer* instancer = new CGameObjectInstancer();
 
 		// init with this preallocated buffer and format
-		instancer->Init( g_pGameWorld->m_objectInstVertexFormat, g_pGameWorld->m_objectInstVertexBuffer );
+		instancer->Init( g_pGameWorld->m_objectInstFormat, g_pGameWorld->m_objectInstBuffer );
 
 		m_driverModel.GetModel()->SetInstancer( instancer );
 	}
@@ -3910,7 +3910,7 @@ void CCar::DrawBody( int nRenderFlags )
 			g_pShaderAPI->Reset(STATE_RESET_SHADERCONST);
 
 			int materialIndex = modDesc->pGroup(j)->materialIndex;
-			materials->BindMaterial( m_pModel->GetMaterial(materialIndex) , false);
+			materials->BindMaterial( m_pModel->GetMaterial(materialIndex), 0);
 
 			g_pShaderAPI->SetShaderConstantArrayFloat("BodyDamage", bodyDamages, 16);
 

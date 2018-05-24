@@ -128,7 +128,7 @@ void CParticleRenderGroup::Render(int nViewRenderFlags)
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	materials->BindMaterial(m_pMaterial, false);
+	materials->BindMaterial(m_pMaterial, 0);
 	materials->Apply();
 
 	//ASSERTMSG(!m_triangleListMode, "Shadow rederer, %d verts");

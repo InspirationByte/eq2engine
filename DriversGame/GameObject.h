@@ -191,7 +191,7 @@ static VertexFormatDesc_t s_gameObjectInstanceFmtDesc[] = {
 class CGameObject : public CBaseNetworkedObject, public CSoundChannelObject, public RefCountedObject
 {
 	friend class CNetGameSession;
-	friend class CGameSession;
+	friend class CGameSessionBase;
 	friend class CGameWorld;
 	friend class CPhysicsHFObject;
 	friend class CCar;

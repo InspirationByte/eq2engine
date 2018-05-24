@@ -670,7 +670,7 @@ void RenderModel()
 			materials->SetSkinningEnabled(true);
 
 			IMaterial* pMaterial = g_pModel->GetMaterial(modDesc->pGroup(j)->materialIndex);
-			materials->BindMaterial(pMaterial, false);
+			materials->BindMaterial(pMaterial, 0);
 			materials->SetSkinningEnabled(false);
 
 			g_pModel->DrawGroup( nModDescId, j );

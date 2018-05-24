@@ -232,7 +232,7 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 				//materials->SetSkinningEnabled(true);
 
 				int materialIndex = modDesc->pGroup(j)->materialIndex;
-				materials->BindMaterial( model->GetMaterial(materialIndex) , false);
+				materials->BindMaterial( model->GetMaterial(materialIndex), 0);
 
 				//m_pModel->PrepareForSkinning( m_BoneMatrixList );
 

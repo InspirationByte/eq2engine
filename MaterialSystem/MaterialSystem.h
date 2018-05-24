@@ -180,8 +180,8 @@ public:
 	dlight_t*						GetLight();
 
 	// lighting/shading model selection
-	void							SetCurrentLightingModel(MaterialLightingMode_e lightingModel);
-	MaterialLightingMode_e			GetCurrentLightingModel();
+	void							SetCurrentLightingModel(EMaterialLightingMode lightingModel);
+	EMaterialLightingMode			GetCurrentLightingModel();
 
 	//---------------------------
 	// $env_cubemap texture for use in shaders
@@ -229,7 +229,7 @@ public:
 
 	void							SetShaderParameterOverriden(ShaderDefaultParams_e param, bool set = true);
 
-	bool							BindMaterial( IMaterial *pMaterial, bool preApply = true );
+	bool							BindMaterial( IMaterial* pMaterial, int flags = MATERIAL_BIND_PREAPPLY);
 	void							Apply();
 
 	// sets the custom rendering callbacks
@@ -336,7 +336,7 @@ private:
 
 	IMaterialRenderParamCallbacks*	m_preApplyCallback;
 
-	MaterialLightingMode_e			m_curentLightingModel;	// dynamic-changeable lighting model. Used as state
+	EMaterialLightingMode			m_curentLightingModel;	// dynamic-changeable lighting model. Used as state
 	bool							m_skinningEnabled;
 	bool							m_instancingEnabled;
 

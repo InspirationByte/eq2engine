@@ -60,13 +60,13 @@ public:
 	float				GetLatency() const;
 
 	// when server recieves controls from player
-	void				OnServerRecieveControls(int controls);
+	void				SV_OnRecieveControls(int controls);
 
 	// client recieve
-	bool				AddSnapshot( const netSnapshot_t& snapshot );
+	bool				CL_AddSnapshot( const netSnapshot_t& snapshot );
 
-	void				GetPredictedSnapshot( const netObjSnapshot_t& snapshot, float fDt_diff, netObjSnapshot_t& out ) const;
-	float				GetSnapshotLatency() const;
+	void				CL_GetPredictedSnapshot( const netObjSnapshot_t& snapshot, float fDt_diff, netObjSnapshot_t& out ) const;
+	float				CL_GetSnapshotLatency() const;
 
 	void				NETSpawn();
 	void				NetUpdate(float fDt);
@@ -86,9 +86,8 @@ public:
 	int						m_id;
 
 	bool					m_ready;
-	bool					m_disconnect;
+	bool					m_disconnectSignal;
 
-	bool					m_isLocal;
 	float					m_fNotreadyTime;
 
 	float					m_fCurTime;

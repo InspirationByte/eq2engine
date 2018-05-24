@@ -30,6 +30,7 @@ enum ETextStyleFlag
 	TEXT_STYLE_MONOSPACE	= (1 << 1), // act as monospace, don't use advX
 	TEXT_STYLE_FROM_CAP		= (1 << 2),	// offset from cap height instead of baseline
 	TEXT_STYLE_USE_TAGS		= (1 << 3),	// use additional styling tags defined in the translated text
+	TEXT_STYLE_SCISSOR		= (1 << 4), // render using scissor
 
 	//
 	// font cache only flags

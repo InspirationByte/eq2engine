@@ -7,7 +7,7 @@
 
 #include "DebugInterface.h"
 #include "sys_host.h"
-#include "sys_console.h"
+#include "sys_in_console.h"
 #include "imaging/ImageLoader.h"
 #include "IConCommandFactory.h"
 #include "utils/strtools.h"

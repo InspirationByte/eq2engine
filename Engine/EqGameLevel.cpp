@@ -186,7 +186,7 @@ public:
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 		materials->SetCullMode(CULL_BACK);
 
-		materials->BindMaterial( decal.material, false );
+		materials->BindMaterial( decal.material, 0 );
 
 		materials->Apply();
 

@@ -93,6 +93,14 @@ struct buildingSource_t
 	bool								hide;
 };
 
+struct outlineDef_t
+{
+	EqString							name;
+
+	DkLinkedList<buildSegmentPoint_t>	points;
+	bool								hide;
+};
+
 int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, float layerXSize);
 float GetSegmentLength(buildLayer_t& layer, int modelId = 0);
 

@@ -522,7 +522,7 @@ void DrawDecals(ITexture** pDecalGBuffer)
 
 		if(MakeGroupVBOs(i))
 		{
-			materials->BindMaterial(s_ParticleOptimizedGroups[i].pMaterial, false);
+			materials->BindMaterial(s_ParticleOptimizedGroups[i].pMaterial, 0);
 
 			if(pDecalGBuffer)
 			{
@@ -622,7 +622,7 @@ void DrawParticleMaterialGroups(bool dsCheck)
 		{
 			materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-			materials->BindMaterial(s_ParticleOptimizedGroups[i].pMaterial, true);
+			materials->BindMaterial(s_ParticleOptimizedGroups[i].pMaterial);
 
 #ifndef NO_ENGINE
 			if(s_ParticleOptimizedGroups[i].isDecal)
@@ -702,7 +702,7 @@ void DrawParticleMaterialGroups(bool dsCheck)
 		{
 			materials->SetMatrix( MATRIXMODE_WORLD, identity4() );
 
-			materials->BindMaterial(s_ParticleOptimizedGroups[i].pMaterial, true);
+			materials->BindMaterial(s_ParticleOptimizedGroups[i].pMaterial);
 
 #ifndef NO_ENGINE
 			if(s_ParticleOptimizedGroups[i].isDecal)

@@ -52,7 +52,7 @@ void CFilterLayer::Render(float fAmount)
 	GR_CopyFramebuffer();
 
 	// bind this material
-	materials->BindMaterial(m_pFilterMaterial, false);
+	materials->BindMaterial(m_pFilterMaterial, 0);
 
 	// setup colors and amounts
 

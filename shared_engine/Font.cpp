@@ -418,6 +418,7 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 	// render
 	//
 	RasterizerStateParams_t raster;
+	raster.scissor = (params.styleFlag & TEXT_STYLE_SCISSOR) > 0;
 	BlendStateParam_t blending;
 
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;

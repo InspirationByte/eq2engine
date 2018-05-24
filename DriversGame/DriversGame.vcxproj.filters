@@ -426,6 +426,9 @@
     <ClCompile Include="..\shared_engine\sys_in_console.cpp">
       <Filter>Файлы исходного кода\System</Filter>
     </ClCompile>
+    <ClCompile Include="session_base.cpp">
+      <Filter>Файлы исходного кода\Game\Sessions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\libs\DkCore.lib">
@@ -846,6 +849,15 @@
     </ClInclude>
     <ClInclude Include="..\shared_engine\sys_in_console.h">
       <Filter>Файлы исходного кода\System</Filter>
+    </ClInclude>
+    <ClInclude Include="AIManipulator_Traffic.h">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="session_base.h">
+      <Filter>Файлы исходного кода\Game\Sessions</Filter>
+    </ClInclude>
+    <ClInclude Include="game_splitscreen.h">
+      <Filter>Файлы исходного кода\Game\Sessions</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

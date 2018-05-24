@@ -171,7 +171,7 @@ void CLevObjectDef::Render( float lodDistance, const BoundingBox& bbox, bool pre
 				//materials->SetSkinningEnabled(true);
 
 				int materialIndex = modDesc->pGroup(j)->materialIndex;
-				materials->BindMaterial( m_defModel->GetMaterial(materialIndex) , false);
+				materials->BindMaterial( m_defModel->GetMaterial(materialIndex), 0);
 
 				//m_pModel->PrepareForSkinning( m_BoneMatrixList );
 				m_defModel->DrawGroup( nModDescId, j );
@@ -558,7 +558,7 @@ void CLevelModel::Render(int nDrawFlags, const BoundingBox& aabb)
 
 		materials->SetCullMode((nDrawFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
 
-		materials->BindMaterial(batch.pMaterial, false);
+		materials->BindMaterial(batch.pMaterial, 0);
 
 		materials->Apply();
 

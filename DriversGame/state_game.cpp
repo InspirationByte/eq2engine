@@ -19,6 +19,10 @@
 #include "eqParallelJobs.h"
 
 #include "session_stuff.h"
+
+#include "game_singleplayer.h"
+#include "game_multiplayer.h"
+
 #include "Rain.h"
 
 #include "KeyBinding/InputCommandBinder.h"
@@ -36,8 +40,6 @@
 
 static CCameraAnimator	s_cameraAnimator;
 CCameraAnimator*		g_pCameraAnimator = &s_cameraAnimator;
-
-CGameSession*			g_pGameSession = NULL;
 
 extern ConVar			net_server;
 
@@ -160,7 +162,7 @@ void Game_InstantReplay(int replayTo)
 	while(replayTo > 0)
 	{
 		// TODO: use g_replayData->m_demoFrameRate
-		g_pPhysics->Simulate(frameRate, PHYSICS_ITERATION_COUNT, Game_OnPhysicsUpdate);
+		g_pPhysics->Simulate(frameRate, g_pGameSession->GetPhysicsIterations(), Game_OnPhysicsUpdate);
 
 		replayTo--;
 		replayTo--;
@@ -262,7 +264,7 @@ void Game_InitializeSession()
 			g_pGameSession = netSession;
 		}
 		else
-			g_pGameSession = new CGameSession();
+			g_pGameSession = new CSingleGameSession();
 	}
 
 #ifndef __INTELLISENSE__

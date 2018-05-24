@@ -71,7 +71,7 @@ void CObject_Debris::Spawn()
 		CGameObjectInstancer* instancer = new CGameObjectInstancer();
 
 		// init with this preallocated buffer and format
-		instancer->Init( g_pGameWorld->m_objectInstVertexFormat, g_pGameWorld->m_objectInstVertexBuffer );
+		instancer->Init( g_pGameWorld->m_objectInstFormat, g_pGameWorld->m_objectInstBuffer );
 
 		m_pModel->SetInstancer( instancer );
 	}
@@ -188,7 +188,7 @@ void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup)
 		CGameObjectInstancer* instancer = new CGameObjectInstancer();
 
 		// init with this preallocated buffer and format
-		instancer->Init( g_pGameWorld->m_objectInstVertexFormat, g_pGameWorld->m_objectInstVertexBuffer );
+		instancer->Init( g_pGameWorld->m_objectInstFormat, g_pGameWorld->m_objectInstBuffer );
 
 		m_pModel->SetInstancer( instancer );
 	}
@@ -251,7 +251,7 @@ void CObject_Debris::SpawnAsBreakablePart(IEqModel* model, int8 bodyGroup, int p
 		CGameObjectInstancer* instancer = new CGameObjectInstancer();
 
 		// init with this preallocated buffer and format
-		instancer->Init( g_pGameWorld->m_objectInstVertexFormat, g_pGameWorld->m_objectInstVertexBuffer );
+		instancer->Init( g_pGameWorld->m_objectInstFormat, g_pGameWorld->m_objectInstBuffer );
 
 		m_pModel->SetInstancer( instancer );
 	}

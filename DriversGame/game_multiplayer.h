@@ -41,17 +41,6 @@ enum EGameMsgs
 	CMSG_OBJECT_FRAME,
 };
 
-struct server_client_info_t
-{
-	int			clientID;
-	int			playerID;
-
-	int			maxPlayers;
-	float		tickInterval;
-};
-
-extern server_client_info_t	g_svclientInfo;
-
 //--------------------------------------------------------------------------
 
 #define SV_NEW_PLAYER (-1)	// for server: place player in a free slot
@@ -59,12 +48,14 @@ extern server_client_info_t	g_svclientInfo;
 class CNetPlayer;
 struct netPlayerSpawnInfo_t;
 
-class CNetGameSession : public CGameSession
+class CNetGameSession : public CGameSessionBase
 {
 	friend class CGameObject;
 
 public:
 	CNetGameSession();
+
+	int						GetSessionType() const { return SESSION_NETWORK; }
 
 	bool					Create_Server();
 	bool					Create_Client();
@@ -78,6 +69,8 @@ public:
 	bool					IsServer() const;
 
 	void					Update(float fDt);
+
+	void					UpdateLocalControls(int nControls, float steering, float accel_brake);
 
 	// makes new player
 	CNetPlayer*				CreatePlayer(netPlayerSpawnInfo_t* spawnInfo, int clientID, int playerID, const char* name);
@@ -104,6 +97,7 @@ public:
 	CNetPlayer*				GetLocalPlayer() const;
 
 	CCar*					GetPlayerCar() const;
+	void					SetPlayerCar(CCar* pCar);
 
 	// search for player
 	CNetPlayer*				GetPlayerByClientID(int clientID) const;
@@ -113,9 +107,10 @@ public:
 
 	CGameObject*			FindNetworkObjectById( int id ) const;
 
-public:
-	int						GetSessionType() const {return SESSION_NETWORK;}
+	float					GetLocalLatency() const;
 private:
+
+	void					UpdatePlayerControls();
 
 	void					Net_SpawnObject( CGameObject* obj );
 	void					Net_RemoveObject( CGameObject* obj );
@@ -125,8 +120,12 @@ private:
 
 	int						m_maxPlayers;
 
-	CNetPlayer*				m_localPlayer;
-	DkList<CNetPlayer*>		m_players;
+	CNetPlayer*				m_localNetPlayer;
+	playerControl_t			m_localControls;
+	float					m_localPlayerLatency;
+
+
+	DkList<CNetPlayer*>		m_netPlayers;
 
 	CNetworkThread			m_netThread;
 	bool					m_isServer;
@@ -140,7 +139,7 @@ private:
 
 #ifndef NO_LUA
 #ifndef __INTELLISENSE__
-OOLUA_PROXY(CNetGameSession, CGameSession)
+OOLUA_PROXY(CNetGameSession, CGameSessionBase)
 	OOLUA_TAGS( Abstract )
 
 	OOLUA_MFUNC_CONST(FindNetworkObjectById)

@@ -328,6 +328,8 @@ private:
 	
 	int							m_currentEvent;
 
+	int							m_playbackPhysIterations;
+
 	EqString					m_filename;
 };
 

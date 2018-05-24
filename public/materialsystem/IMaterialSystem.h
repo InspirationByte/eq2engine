@@ -47,11 +47,18 @@ typedef const char* (*DISPATCH_OVERRIDE_SHADER)( void );
 typedef bool (*DEVLICELOSTRESTORE)( void );
 
 // Lighting model for material system
-enum MaterialLightingMode_e
+enum EMaterialLightingMode
 {
 	MATERIAL_LIGHT_UNLIT = 0,	// no lighting, fully white (also, you can use it for ambient rendering)
 	MATERIAL_LIGHT_DEFERRED,	// deferred shading. Full dynamic lighting
 	MATERIAL_LIGHT_FORWARD,		// forward shading, also for use in deferred, if you setting non-state lighting model, it will be fully forward
+};
+
+// material bind flags
+enum EMaterialBindFlags
+{
+	MATERIAL_BIND_PREAPPLY = (1 << 0),
+	MATERIAL_BIND_KEEPOVERRIDE = (1 << 1),
 };
 
 struct shaderfactory_t
@@ -154,7 +161,7 @@ struct matsystem_render_config_t
 	// the basic parameters that materials system can handle
 
 	// preset lighting model
-	MaterialLightingMode_e	lighting_model;
+	EMaterialLightingMode	lighting_model;
 
 	// enable fixed-function mode
 	bool	ffp_mode;					// use FFP if possible (don't apply any shaders, DEBUG only)
@@ -318,8 +325,8 @@ public:
 	virtual dlight_t*						GetLight() = 0;
 
 	// lighting/shading model selection
-	virtual void							SetCurrentLightingModel(MaterialLightingMode_e lightingModel) = 0;
-	virtual MaterialLightingMode_e			GetCurrentLightingModel() = 0;
+	virtual void							SetCurrentLightingModel(EMaterialLightingMode lightingModel) = 0;
+	virtual EMaterialLightingMode			GetCurrentLightingModel() = 0;
 
 	//---------------------------
 	// $env_cubemap texture for use in shaders
@@ -367,7 +374,7 @@ public:
 
 	virtual void							SetShaderParameterOverriden(ShaderDefaultParams_e param, bool set = true) = 0;
 
-	virtual bool							BindMaterial( IMaterial *pMaterial, bool preApply = true ) = 0;
+	virtual bool							BindMaterial( IMaterial *pMaterial, int flags = MATERIAL_BIND_PREAPPLY ) = 0;
 	virtual void							Apply() = 0;
 
 	// sets the custom rendering callbacks

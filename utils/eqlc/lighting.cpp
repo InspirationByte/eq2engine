@@ -521,7 +521,7 @@ void RenderLight(dlight_t* pLight, int lm_id, bool bDirectionMap = false)
 	materials->GetConfiguration().wireframeMode = false;
 
 	// bind forward lighting material
-	materials->BindMaterial(g_lightmaterials[pLight->nType][(int)bDoShadows][(int)bDirectionMap], false);
+	materials->BindMaterial(g_lightmaterials[pLight->nType][(int)bDoShadows][(int)bDirectionMap], 0);
 
 	viewrenderer->SetDrawMode(VDM_LIGHTING);
 
@@ -731,7 +731,7 @@ void FixEdgesAndSave(int nLightmap, bool bDirMap)
 
 	g_pShaderAPI->Clear(true,true,false,ColorRGBA(0,0,0,1));
 
-	materials->BindMaterial( g_lightmapPixelCorrection, false );
+	materials->BindMaterial( g_lightmapPixelCorrection, 0 );
 
 	if(bDirMap)
 		g_pShaderAPI->SetTexture( g_pDirmapTextures[nLightmap],	0 );

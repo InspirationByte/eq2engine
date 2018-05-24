@@ -924,7 +924,7 @@ public:
 
 		if(!(nViewRenderFlags & VR_FLAG_NO_MATERIALS))
 		{
-			materials->BindMaterial( m_pRopeMaterial, false );
+			materials->BindMaterial( m_pRopeMaterial, 0 );
 		}
 		else
 		{

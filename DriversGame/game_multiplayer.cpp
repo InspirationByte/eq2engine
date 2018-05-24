@@ -48,6 +48,8 @@ DECLARE_CMD(connect, "connects to server/game/lobby", 0)
 
 	g_pClientInterface->SetClientID(-1);
 
+	bool isError = false;
+
 	if( g_pClientInterface->Connect(net_address.GetString(), net_serverport.GetInt(), net_clientport.GetInt()))
 	{
 		CNetworkThread connectionThread(g_pClientInterface);
@@ -68,8 +70,10 @@ DECLARE_CMD(connect, "connects to server/game/lobby", 0)
 
 			if( !statusString.Compare("error") )
 			{
+				// TODO: display message properly
 				MsgError("Cannot connect, reason: %s\n", KV_GetValueString(kvs.FindKeyBase("desc")));
-				return;
+
+				isError = true;
 			}
 			else if( !statusString.Compare("ok") )
 			{
@@ -118,11 +122,16 @@ DECLARE_CMD(connect, "connects to server/game/lobby", 0)
 		}
 		else
 		{
+			// TODO: display message properly
 			MsgWarning("Server not found at '%s:%d'\n", net_address.GetString(), net_serverport.GetInt());
-			connectionThread.StopWork();
-			connectionThread.SetNetworkInterface(NULL);
-			g_pClientInterface->Shutdown();
+
+			isError = true;
 		}
+	}
+
+	if (isError)
+	{
+		g_pClientInterface->Shutdown();
 	}
 }
 
@@ -167,7 +176,7 @@ DECLARE_CMD(ping, "shows ping of the clients", 0)
 		if(!player)
 			continue;
 
-		Msg("%s: %.1f ms\n", player->GetName(), player->GetLatency()*500.0f);
+		Msg("(%d) %s: %.1f ms%s\n", player->m_id, player->GetName(), player->GetLatency()*500.0f, ses->GetLocalPlayer()==player ? " (local)" : "");
 	}
 }
 
@@ -205,12 +214,13 @@ CNetGameSession::CNetGameSession() : m_netThread(NULL)
 {
 	m_curTimeNetwork = 0.0f;
 	m_prevTimeNetwork = 0.0f;
+	m_localPlayerLatency = 0.0f;
 
 	m_isClient = false;
 	m_isServer = false;
 
 	m_connectStatus = CONN_NONE;
-	m_localPlayer = NULL;
+	m_localNetPlayer = NULL;
 }
 
 bool CNetGameSession::Create_Server()
@@ -238,10 +248,10 @@ bool CNetGameSession::Create_Server()
 
 	m_maxPlayers = sv_maxplayers.GetInt();
 
-	m_players.setNum( m_maxPlayers );
+	m_netPlayers.setNum( m_maxPlayers );
 
-	for(int i = 0; i < m_players.numElem(); i++)
-		m_players[i] = NULL;
+	for(int i = 0; i < m_netPlayers.numElem(); i++)
+		m_netPlayers[i] = NULL;
 
 	// TODO: get spawn point from mission script
 
@@ -257,6 +267,13 @@ bool CNetGameSession::Create_Server()
 	return true;
 }
 
+void CNetGameSession::UpdateLocalControls(int nControls, float steering, float accel_brake)
+{
+	m_localControls.buttons = nControls;
+	m_localControls.steeringValue = steering;
+	m_localControls.accelBrakeValue = accel_brake;
+}
+
 void CNetGameSession::InitLocalPlayer(netPlayerSpawnInfo_t* spawnInfo, int clientID, int playerID)
 {
 	CNetPlayer* player = CreatePlayer(spawnInfo, clientID, playerID, net_name.GetString());
@@ -268,7 +285,6 @@ void CNetGameSession::InitLocalPlayer(netPlayerSpawnInfo_t* spawnInfo, int clien
 	}
 
 	player->m_carName = g_car.GetString();
-	player->m_isLocal = true;
 
 	// server player is always ready
 	if(IsServer())
@@ -290,46 +306,60 @@ void CNetGameSession::InitLocalPlayer(netPlayerSpawnInfo_t* spawnInfo, int clien
 
 		if(IsClient())
 			player->m_ownCar->m_networkID = spawnInfo->m_netCarID;
-
-		SetLocalPlayer( player );
 	}
+	else
+	{
+		MsgError("Failed to init local player car!\n");
+	}
+
+	SetLocalPlayer(player);
 }
 
 void CNetGameSession::SetLocalPlayer(CNetPlayer* player)
 {
-	m_localPlayer = player;
+	if (GetPlayerCar())
+		GetPlayerCar()->m_isLocalCar = false;
 
-	if(m_localPlayer)
+	m_localNetPlayer = player;
+
+	if(m_localNetPlayer)
 	{
-		SetPlayerCar( m_localPlayer->m_ownCar );
-		g_pGameWorld->m_level.QueryNearestRegions( m_localPlayer->m_ownCar->GetOrigin(), true);
+		SetPlayerCar( m_localNetPlayer->m_ownCar );
+		g_pGameWorld->m_level.QueryNearestRegions( m_localNetPlayer->m_ownCar->GetOrigin(), true);
 	}
 }
 
 CNetPlayer*	CNetGameSession::GetLocalPlayer() const
 {
-	return m_localPlayer;
+	return m_localNetPlayer;
 }
 
 CCar* CNetGameSession::GetPlayerCar() const
 {
-	if(m_localPlayer)
+	if(m_localNetPlayer)
 	{
-		return m_localPlayer->m_ownCar;
+		return m_localNetPlayer->m_ownCar;
 	}
 
 	return NULL;
 }
 
+void CNetGameSession::SetPlayerCar(CCar* pCar)
+{
+	// nothing to do... that's a lobby script defined
+	if(pCar)
+		pCar->m_isLocalCar = true;
+}
+
 CNetPlayer*	CNetGameSession::GetPlayerByClientID(int clientID) const
 {
-	for(int i = 0; i < m_players.numElem(); i++)
+	for(int i = 0; i < m_netPlayers.numElem(); i++)
 	{
-		if(m_players[i] == NULL)
+		if(m_netPlayers[i] == NULL)
 			continue;
 
-		if(m_players[i]->m_clientID == clientID)
-			return m_players[i];
+		if(m_netPlayers[i]->m_clientID == clientID)
+			return m_netPlayers[i];
 	}
 
 	return NULL;
@@ -337,16 +367,21 @@ CNetPlayer*	CNetGameSession::GetPlayerByClientID(int clientID) const
 
 CNetPlayer* CNetGameSession::GetPlayerByID(int playerID) const
 {
-	for(int i = 0; i < m_players.numElem(); i++)
+	for(int i = 0; i < m_netPlayers.numElem(); i++)
 	{
-		if(m_players[i] == NULL)
+		if(m_netPlayers[i] == NULL)
 			continue;
 
-		if(m_players[i]->m_id == playerID)
-			return m_players[i];
+		if(m_netPlayers[i]->m_id == playerID)
+			return m_netPlayers[i];
 	}
 
 	return NULL;
+}
+
+float CNetGameSession::GetLocalLatency() const
+{
+	return m_localPlayerLatency;
 }
 
 bool CNetGameSession::Create_Client()
@@ -364,10 +399,10 @@ bool CNetGameSession::Create_Client()
 
 	m_maxPlayers = g_svclientInfo.maxPlayers;
 
-	m_players.setNum( m_maxPlayers );
+	m_netPlayers.setNum( m_maxPlayers );
 
-	for(int i = 0; i < m_players.numElem(); i++)
-		m_players[i] = NULL;
+	for(int i = 0; i < m_netPlayers.numElem(); i++)
+		m_netPlayers[i] = NULL;
 
 	CNetMessageBuffer buffer;
 
@@ -511,17 +546,17 @@ void CNetGameSession::SendObjectSpawns( int clientID )
 
 void CNetGameSession::SendPlayerInfoList( int clientID )
 {
-	for(int i = 0; i < m_players.numElem(); i++)
+	for(int i = 0; i < m_netPlayers.numElem(); i++)
 	{
-		if(m_players[i] == NULL)
+		if(m_netPlayers[i] == NULL)
 			continue;
 
-		//if( !m_players[i]->IsReady() )
+		//if( !m_netPlayers[i]->IsReady() )
 		//	continue;
 
-		//Msg("[SERVER] sending player info %s %s %d\n", m_players[i]->m_carName.c_str(), m_players[i]->m_name.c_str(), m_players[i]->m_id);
+		//Msg("[SERVER] sending player info %s %s %d\n", m_netPlayers[i]->m_carName.c_str(), m_netPlayers[i]->m_name.c_str(), m_netPlayers[i]->m_id);
 
-		m_netThread.SendEvent( new CNetServerPlayerInfo( m_players[i] ), CMSG_SERVERPLAYER_INFO, NM_SENDTOALL, CDPSEND_GUARANTEED );
+		m_netThread.SendEvent( new CNetServerPlayerInfo( m_netPlayers[i] ), CMSG_SERVERPLAYER_INFO, NM_SENDTOALL, CDPSEND_GUARANTEED );
 	}
 }
 
@@ -547,13 +582,13 @@ void CNetGameSession::Shutdown()
 	if(m_isServer)
 	{
 		// send disconnect to all clients
-		for(int i = 0; i < m_players.numElem(); i++)
+		for(int i = 0; i < m_netPlayers.numElem(); i++)
 		{
-			if(m_players[i] == NULL)
+			if(m_netPlayers[i] == NULL)
 				continue;
 
 			// send to other clients
-			m_netThread.SendEvent( new CNetDisconnectEvent(m_players[i]->m_id, "server shutdown"), CMSG_DISCONNECT, NM_SENDTOALL, CDPSEND_GUARANTEED );
+			m_netThread.SendEvent( new CNetDisconnectEvent(m_netPlayers[i]->m_id, "server shutdown"), CMSG_DISCONNECT, NM_SENDTOALL, CDPSEND_GUARANTEED );
 		}
 
 
@@ -589,18 +624,18 @@ void CNetGameSession::Shutdown()
 		}
 	}
 
-	for(int i = 0; i < m_players.numElem(); i++)
+	for(int i = 0; i < m_netPlayers.numElem(); i++)
 	{
-		if(m_players[i] != NULL)
+		if(m_netPlayers[i] != NULL)
 		{
-			delete m_players[i];
-			m_players[i] = NULL;
+			delete m_netPlayers[i];
+			m_netPlayers[i] = NULL;
 		}
 	}
 
-	m_localPlayer = NULL;
+	m_localNetPlayer = NULL;
 
-	CGameSession::Shutdown();
+	CGameSessionBase::Shutdown();
 }
 
 bool CNetGameSession::IsClient() const
@@ -618,19 +653,24 @@ CNetworkThread*	CNetGameSession::GetNetThread()
 	return &m_netThread;
 }
 
+void CNetGameSession::UpdatePlayerControls()
+{
+
+}
+
 void CNetGameSession::Update(float fDt)
 {
-	if(m_localPlayer)
+	if(m_localNetPlayer)
 	{
-		m_localPlayer->m_ready = true;
+		m_localNetPlayer->m_ready = true;
 
-		CCar* playerCar = m_localPlayer->GetCar();
+		CCar* playerCar = m_localNetPlayer->GetCar();
 
 		if(playerCar)
 		{
 			g_pGameWorld->m_level.QueryNearestRegions( playerCar->GetOrigin(), false);
 
-			playerCar->SetControlButtons( m_localControls );
+			playerCar->SetControlButtons( m_localControls.buttons );
 
 			debugoverlay->Text(ColorRGBA(1,1,0,1), "Car speed: %.1f MPH", playerCar->GetSpeed());
 		}
@@ -642,7 +682,7 @@ void CNetGameSession::Update(float fDt)
 
 	float phys_begin = MEASURE_TIME_BEGIN();
 
-	g_pPhysics->Simulate( fDt, PHYSICS_ITERATION_COUNT, NULL );
+	g_pPhysics->Simulate( fDt, GetPhysicsIterations(), NULL );
 
 	debugoverlay->Text(ColorRGBA(1,1,0,1), "physics time, ms: %g", abs(MEASURE_TIME_STATS(phys_begin)));
 
@@ -655,8 +695,6 @@ void CNetGameSession::Update(float fDt)
 	double fNetRate = IsServer() ? sv_rate.GetFloat() : cl_cmdrate.GetFloat();
 
 	double fRateMs = 1.0 / fNetRate;
-
-	float localPlayerLatency = 0.0;
 
 	if(IsServer())
 		g_svclientInfo.tickInterval = fRateMs;
@@ -679,29 +717,30 @@ void CNetGameSession::Update(float fDt)
 
 	if(m_curTimeNetwork-m_prevTimeNetwork > fRateMs)
 	{
-		for(int i = 0; i < m_players.numElem(); i++)
+		for(int i = 0; i < m_netPlayers.numElem(); i++)
 		{
-			if(m_players[i] == NULL)
+			CNetPlayer* player = m_netPlayers[i];
+
+			if(player == NULL)
 				continue;
 
-			if(m_players[i]->m_ready)
+			if(player->m_ready)
 			{
 				// set our controls
-				if( m_players[i]->m_isLocal )
+				if(player == m_localNetPlayer)
 				{
-					m_players[i]->SetControls( m_localControls );
+					player->SetControls(m_localControls.buttons);
+					m_localPlayerLatency = player->m_packetLatency;
 				}
+					
 
-				m_players[i]->NetUpdate( fRateMs );
-
-				if( m_players[i]->m_isLocal )
-					localPlayerLatency = m_players[i]->m_packetLatency;
+				player->NetUpdate(fRateMs);
 			}
 
 			// disconnect me if needed
-			if(m_players[i]->m_disconnect)
+			if(player->m_disconnectSignal)
 			{
-				DisconnectPlayer( m_players[i]->m_id, "unknown" );
+				DisconnectPlayer(player->m_id, "unknown" );
 			}
 		}
 
@@ -715,7 +754,10 @@ void CNetGameSession::Update(float fDt)
 	debugoverlay->Text(ColorRGBA(1,1,0,1), "Num players: %d\n", numPlayers);
 
 	if(IsClient())
+	{
 		debugoverlay->Text(ColorRGBA(1,1,0,1), "Running CLIENT");
+		debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "    latency: %g ms", m_localPlayerLatency*1000.0f);
+	}
 	else if(IsServer())
 	{
 		CNetworkServer* pServer = (CNetworkServer*)m_netThread.GetNetworkInterface();
@@ -723,25 +765,21 @@ void CNetGameSession::Update(float fDt)
 		debugoverlay->Text(ColorRGBA(1,1,0,1), "	number of clients: %d", pServer->GetClientCount());
 	}
 
-	// refresh players in standard way
-	for(int i = 0; i < m_players.numElem(); i++)
+	// update network players in standard way
+	for(int i = 0; i < m_netPlayers.numElem(); i++)
 	{
-		if(m_players[i] == NULL)
+		if(m_netPlayers[i] == NULL)
 			continue;
 
-		if(m_players[i]->m_ready)
+		if(m_netPlayers[i]->m_ready)
 		{
-			// make latency equal for non-local players on client
-			if( IsClient() && !m_players[i]->m_isLocal )
-				m_players[i]->m_packetLatency = localPlayerLatency;
-
-			m_players[i]->Update( fDt );
+			m_netPlayers[i]->Update( fDt );
 
 			// query nearest regions for servers to load
 			if(	IsServer() &&
-				m_players[i]->GetCar())
+				m_netPlayers[i]->GetCar())
 			{
-				g_pGameWorld->m_level.QueryNearestRegions( m_players[i]->GetCar()->GetOrigin() );
+				g_pGameWorld->m_level.QueryNearestRegions( m_netPlayers[i]->GetCar()->GetOrigin() );
 			}
 		}
 	}
@@ -749,31 +787,31 @@ void CNetGameSession::Update(float fDt)
 
 CNetPlayer* CNetGameSession::CreatePlayer(netPlayerSpawnInfo_t* spawnInfo, int clientID, int playerID, const char* name)
 {
-	for(int i = 0; i < m_players.numElem(); i++)
+	for(int i = 0; i < m_netPlayers.numElem(); i++)
 	{
-		if(m_players[i] == NULL)
+		if(m_netPlayers[i] == NULL)
 			continue;
 
-		if(m_players[i]->m_clientID == clientID &&
-			m_players[i]->m_id == playerID)
+		if(m_netPlayers[i]->m_clientID == clientID &&
+			m_netPlayers[i]->m_id == playerID)
 		{
 			MsgError("Player is already connected (playerID=%d clientID = %d)\n", playerID, clientID);
 			return NULL;
 		}
 	}
 
-	for(int i = 0; i < m_players.numElem(); i++)
+	for(int i = 0; i < m_netPlayers.numElem(); i++)
 	{
 		// place in the right slot if specified
 		if(playerID != SV_NEW_PLAYER && playerID != i)
 			continue;
 
-		if(m_players[i] == NULL)
+		if(m_netPlayers[i] == NULL)
 		{
 			playerID = i;
-			m_players[playerID] = new CNetPlayer( clientID, name );
-			m_players[playerID]->m_spawnInfo = spawnInfo;
-			m_players[playerID]->m_id = i;
+			m_netPlayers[playerID] = new CNetPlayer( clientID, name );
+			m_netPlayers[playerID]->m_spawnInfo = spawnInfo;
+			m_netPlayers[playerID]->m_id = i;
 			break;
 		}
 	}
@@ -783,56 +821,59 @@ CNetPlayer* CNetGameSession::CreatePlayer(netPlayerSpawnInfo_t* spawnInfo, int c
 	if(playerID == -1)
 		return NULL;
 
-	return m_players[playerID];
+	return m_netPlayers[playerID];
 }
 
 void CNetGameSession::DisconnectPlayer( int playerID, const char* reason )
 {
-	for(int i = 0; i < m_players.numElem(); i++)
+	for(int i = 0; i < m_netPlayers.numElem(); i++)
 	{
-		if(m_players[i] == NULL)
+		CNetPlayer* player = m_netPlayers[i];
+
+		if(player == NULL)
 			continue;
 
-		if(m_players[i]->m_id == playerID)
+		if(player->m_id != playerID)
+			continue;
+
+		// first we need to remove the car
+		if(player->m_ownCar)
 		{
-			// first we need to remove the car
-			if(m_players[i]->m_ownCar)
-			{
-				g_pGameWorld->RemoveObject(m_players[i]->m_ownCar);
-				m_players[i]->m_ownCar = NULL;
-			}
-
-			if( m_players[i]->m_ready )
-			{
-				// TODO: send disconnected message to all clients
-				Msg("%s left the game (%s)\n", m_players[i]->m_name.c_str(), reason);
-			}
-			else
-			{
-				Msg("Player '%s' timed out (connection lost?)\n", m_players[i]->m_name.c_str());
-			}
-
-			if( m_players[i]->m_isLocal )
-			{
-				m_localPlayer = NULL;
-				m_playerCar = NULL;
-			}
-			else if(IsServer())
-			{
-				// remove client from server send list
-				CNetworkServer* srv = (CNetworkServer*)m_netThread.GetNetworkInterface();
-				srv->RemoveClientById( m_players[i]->m_clientID );
-
-				// send to other clients
-				m_netThread.SendEvent( new CNetDisconnectEvent(playerID, reason), CMSG_DISCONNECT, NM_SENDTOALL, CDPSEND_GUARANTEED );
-			}
-
-			delete m_players[i];
-			m_players[i] = NULL;
+			g_pGameWorld->RemoveObject(player->m_ownCar);
+			player->m_ownCar = NULL;
 		}
+
+		if(player->m_ready )
+		{
+			// TODO: send disconnected message to all clients
+			Msg("%s left the game (%s)\n", player->m_name.c_str(), reason);
+		}
+		else
+		{
+			Msg("Player '%s' timed out (connection lost?)\n", player->m_name.c_str());
+		}
+
+		if(player == m_localNetPlayer )
+		{
+			m_localNetPlayer = NULL;
+		}
+		else if(IsServer())
+		{
+			// remove client from server send list
+			CNetworkServer* srv = (CNetworkServer*)m_netThread.GetNetworkInterface();
+			srv->RemoveClientById( player->m_clientID );
+
+			// send to other clients
+			m_netThread.SendEvent( new CNetDisconnectEvent(playerID, reason), CMSG_DISCONNECT, NM_SENDTOALL, CDPSEND_GUARANTEED );
+		}
+
+		delete m_netPlayers[i];
+
+		// free the slot
+		m_netPlayers[i] = NULL;
 	}
 
-	if(!m_localPlayer)
+	if(!m_localNetPlayer)
 		EqStateMgr::SetCurrentState( g_states[GAME_STATE_MAINMENU] );
 }
 
@@ -845,9 +886,9 @@ int CNetGameSession::GetNumPlayers() const
 {
 	int nSlots = 0;
 
-	for(int i = 0; i < m_players.numElem(); i++)
+	for(int i = 0; i < m_netPlayers.numElem(); i++)
 	{
-		if(m_players[i] != NULL)
+		if(m_netPlayers[i] != NULL)
 		{
 			nSlots++;
 		}
@@ -860,9 +901,9 @@ int CNetGameSession::GetFreePlayerSlots() const
 {
 	int nSlots = 0;
 
-	for(int i = 0; i < m_players.numElem(); i++)
+	for(int i = 0; i < m_netPlayers.numElem(); i++)
 	{
-		if(m_players[i] == NULL)
+		if(m_netPlayers[i] == NULL)
 		{
 			nSlots++;
 		}
@@ -891,9 +932,6 @@ bool CNetGameSession::DoConnect()
 
 	return false;
 }
-
-OOLUA_EXPORT_FUNCTIONS( CNetGameSession )
-OOLUA_EXPORT_FUNCTIONS_CONST( CNetGameSession, FindNetworkObjectById, GetFreePlayerSlots, GetMaxPlayers, GetNumPlayers )
 
 //---------------------------------------------------------------------------------------------
 
@@ -1030,6 +1068,11 @@ void CNetSyncronizePlayerEvent::Unpack( CNetworkThread* pNetThread, CNetMessageB
 {
 	m_clientID = pStream->GetClientID();
 }
+
+//---------------------------------------------------------------------------------------------
+
+OOLUA_EXPORT_FUNCTIONS(CNetGameSession)
+OOLUA_EXPORT_FUNCTIONS_CONST(CNetGameSession, FindNetworkObjectById, GetFreePlayerSlots, GetMaxPlayers, GetNumPlayers)
 
 //---------------------------------------------------------------------------------------------
 

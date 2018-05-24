@@ -268,7 +268,7 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	OOLUA::register_class<CLCollisionData>(state);
 
 	OOLUA::register_class<CGameWorld>(state);
-	OOLUA::register_class<CGameSession>(state);
+	OOLUA::register_class<CGameSessionBase>(state);
 	OOLUA::register_class<CAICarManager>(state);
 	OOLUA::register_class<CNetGameSession>(state);
 	OOLUA::register_class<CViewParams>(state);

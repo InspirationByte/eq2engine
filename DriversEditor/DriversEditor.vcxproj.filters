@@ -418,6 +418,9 @@
     <ClInclude Include="UI_PrefabMgr.h">
       <Filter>Source Files\Editor\Modes</Filter>
     </ClInclude>
+    <ClInclude Include="UI_OutlineEdit.h">
+      <Filter>Source Files\Editor\Modes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Notes.txt" />
@@ -623,6 +626,9 @@
     </ClCompile>
     <ClCompile Include="..\DriversGame\Shader_Sky.cpp">
       <Filter>Source Files\MatSystem\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="UI_OutlineEdit.cpp">
+      <Filter>Source Files\Editor\Modes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

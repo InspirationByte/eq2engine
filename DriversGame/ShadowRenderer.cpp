@@ -363,7 +363,7 @@ void CShadowRenderer::Draw()
 	// render
 	materials->SetCullMode( CULL_BACK );
 
-	materials->BindMaterial(m_shadowResult, false);
+	materials->BindMaterial(m_shadowResult, 0);
 	materials->Apply();
 
 	// draw
@@ -444,7 +444,7 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 
 			// FIXME:	pass additional information into that material
 			//			like transparency
-			materials->BindMaterial(rtMaterial, false);
+			materials->BindMaterial(rtMaterial, 0);
 
 			model->DrawGroup( nModDescId, j );
 		}

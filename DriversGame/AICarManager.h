@@ -70,7 +70,7 @@ struct civCarEntry_t
 
 class CAICarManager
 {
-	friend class				CGameSession;
+	friend class				CGameSessionBase;
 
 public:
 								CAICarManager();

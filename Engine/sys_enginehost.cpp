@@ -708,7 +708,7 @@ bool CEngineHost::InitSubSystems()
 
 	materials_config.ffp_mode = r_useffp.GetBool();
 
-	MaterialLightingMode_e lightingModel = MATERIAL_LIGHT_UNLIT;
+	EMaterialLightingMode lightingModel = MATERIAL_LIGHT_UNLIT;
 	
 	if(r_useLigting.GetBool())
 	{

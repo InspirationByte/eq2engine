@@ -315,7 +315,7 @@ void CGameObject::Draw( int nRenderFlags )
 			//materials->SetSkinningEnabled(true);
 
 			int materialIndex = modDesc->pGroup(j)->materialIndex;
-			materials->BindMaterial( m_pModel->GetMaterial(materialIndex) , false);
+			materials->BindMaterial( m_pModel->GetMaterial(materialIndex), 0);
 
 			//m_pModel->PrepareForSkinning( m_BoneMatrixList );
 			m_pModel->DrawGroup( nModDescId, j );

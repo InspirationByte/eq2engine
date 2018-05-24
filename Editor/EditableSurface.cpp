@@ -927,7 +927,7 @@ void CEditableSurface::Render(int nViewRenderFlags)
 	materials->SetCullMode(CULL_BACK);
 
 	//if(!(nViewRenderFlags & VR_FLAG_NO_MATERIALS))
-		materials->BindMaterial(m_surftex.pMaterial, false);
+		materials->BindMaterial(m_surftex.pMaterial, 0);
 		/*
 	else
 	{
@@ -978,7 +978,7 @@ void CEditableSurface::Render(int nViewRenderFlags)
 		ColorRGBA sel_color(1.0f,0.0f,0.0f,0.35f);
 		materials->SetAmbientColor(sel_color);
 
-		materials->BindMaterial(g_pLevel->GetFlatMaterial(), false);
+		materials->BindMaterial(g_pLevel->GetFlatMaterial(), 0);
 		materials->SetDepthStencilStates(true, false);
 
 		materials->Apply();
@@ -1011,7 +1011,7 @@ void CEditableSurface::RenderGhost(Vector3D &addpos, Vector3D &addscale, Vector3
 
 	materials->SetMatrix(MATRIXMODE_WORLD,rendermatrix);
 
-	materials->BindMaterial(g_pLevel->GetFlatMaterial(), false);
+	materials->BindMaterial(g_pLevel->GetFlatMaterial(), 0);
 
 	g_pShaderAPI->SetVertexFormat(g_pLevel->GetLevelVertexFormat());
 	g_pShaderAPI->SetVertexBuffer(m_pVB, 0);

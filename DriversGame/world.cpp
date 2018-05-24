@@ -164,8 +164,8 @@ CGameWorld::CGameWorld()
 
 	m_levelLoaded = false;
 
-	m_objectInstVertexFormat = nullptr;
-	m_objectInstVertexBuffer = nullptr;
+	m_objectInstFormat = nullptr;
+	m_objectInstBuffer = nullptr;
 	m_envMapsDirty = true;
 }
 
@@ -633,13 +633,13 @@ void CGameWorld::Init()
 	// instancing
 	if(g_pShaderAPI->GetCaps().isInstancingSupported)
 	{
-		if(!m_objectInstVertexFormat)
-			m_objectInstVertexFormat = g_pShaderAPI->CreateVertexFormat(s_gameObjectInstanceFmtDesc, elementsOf(s_gameObjectInstanceFmtDesc));
+		if(!m_objectInstFormat)
+			m_objectInstFormat = g_pShaderAPI->CreateVertexFormat(s_gameObjectInstanceFmtDesc, elementsOf(s_gameObjectInstanceFmtDesc));
 
-		if(!m_objectInstVertexBuffer)
+		if(!m_objectInstBuffer)
 		{
-			m_objectInstVertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_EGF_INSTANCES, sizeof(gameObjectInstance_t));
-			m_objectInstVertexBuffer->SetFlags( VERTBUFFER_FLAG_INSTANCEDATA );
+			m_objectInstBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_EGF_INSTANCES, sizeof(gameObjectInstance_t));
+			m_objectInstBuffer->SetFlags( VERTBUFFER_FLAG_INSTANCEDATA );
 		}
 	}
 
@@ -927,11 +927,11 @@ void CGameWorld::Cleanup( bool unloadLevel )
 		g_pShaderAPI->FreeTexture(m_fogEnvMap);
 		m_fogEnvMap = nullptr;
 
-		g_pShaderAPI->DestroyVertexFormat(m_objectInstVertexFormat);
-		m_objectInstVertexFormat = nullptr;
+		g_pShaderAPI->DestroyVertexFormat(m_objectInstFormat);
+		m_objectInstFormat = nullptr;
 
-		g_pShaderAPI->DestroyVertexBuffer(m_objectInstVertexBuffer);
-		m_objectInstVertexBuffer = nullptr;
+		g_pShaderAPI->DestroyVertexBuffer(m_objectInstBuffer);
+		m_objectInstBuffer = nullptr;
 
 		g_pShaderAPI->DestroyOcclusionQuery(m_sunGlowOccQuery);
 		m_sunGlowOccQuery = nullptr;

@@ -44,7 +44,7 @@ public:
 			return;
 
 		materials->SetAmbientColor(ColorRGBA(m_pEntity->GetGroupColor(), 0.25f));
-		materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+		materials->BindMaterial(g_pLevel->GetFlatMaterial());
 
 		//DkDrawSphere(m_pEntity->GetPosition(), m_variable.GetFloat(), 32);
 		DkDrawFilledSphere(m_pEntity->GetPosition(), m_variable.GetFloat(), 32);
@@ -58,7 +58,7 @@ public:
 		materials->GetConfiguration().wireframeMode = false;
 
 		materials->SetAmbientColor(ColorRGBA(m_pEntity->GetGroupColor(), 1.0f));
-		materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+		materials->BindMaterial(g_pLevel->GetFlatMaterial());
 
 		DkDrawSphere(m_pEntity->GetPosition(), m_variable.GetFloat(), 32);
 		//DkDrawFilledSphere(m_pEntity->GetPosition(), m_variable.GetFloat(), 32);
@@ -184,7 +184,7 @@ public:
 		if(m_pTargetEntity)
 		{
 			materials->SetAmbientColor(ColorRGBA(m_pEntity->GetGroupColor(), 1.0f));
-			materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+			materials->BindMaterial(g_pLevel->GetFlatMaterial());
 		
 			IMeshBuilder* meshbuild = g_pShaderAPI->CreateMeshBuilder();
 
@@ -267,7 +267,7 @@ public:
 
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 		materials->SetAmbientColor(ColorRGBA(m_pEntity->GetGroupColor(), 0.25f));
-		materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+		materials->BindMaterial(g_pLevel->GetFlatMaterial());
 
 		//DkDrawSphere(m_pEntity->GetPosition(), m_variable.GetFloat(), 32);
 		DkDrawFilledSphere(m_pEntity->GetPosition() + m_variable.GetVector3D(), 8, 8);
@@ -284,7 +284,7 @@ public:
 
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 		materials->SetAmbientColor(ColorRGBA(m_pEntity->GetGroupColor(), 1.0f));
-		materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+		materials->BindMaterial(g_pLevel->GetFlatMaterial());
 
 		DkDrawFilledSphere(m_pEntity->GetPosition() + m_variable.GetVector3D(), 8, 8);
 	}
@@ -396,7 +396,7 @@ public:
 		if(m_pTargetEntity)
 		{
 			materials->SetAmbientColor(ColorRGBA(m_pEntity->GetGroupColor(), 1.0f));
-			materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+			materials->BindMaterial(g_pLevel->GetFlatMaterial());
 		
 			IMeshBuilder* meshbuild = g_pShaderAPI->CreateMeshBuilder();
 
@@ -452,7 +452,7 @@ public:
 			return;
 
 		materials->SetAmbientColor(ColorRGBA(m_pEntity->GetGroupColor(), 0.25f));
-		materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+		materials->BindMaterial(g_pLevel->GetFlatMaterial());
 
 		//DkDrawSphere(m_pEntity->GetPosition(), m_variable.GetFloat(), 32);
 		//DkDrawFilledSphere(m_pEntity->GetPosition(), m_variable.GetFloat(), 32);
@@ -467,7 +467,7 @@ public:
 		materials->GetConfiguration().wireframeMode = false;
 
 		materials->SetAmbientColor(ColorRGBA(m_pEntity->GetGroupColor(), 1.0f));
-		materials->BindMaterial(g_pLevel->GetFlatMaterial(), true);
+		materials->BindMaterial(g_pLevel->GetFlatMaterial());
 
 		//DkDrawSphere(m_pEntity->GetPosition(), m_variable.GetFloat(), 32);
 		DkDrawCone(m_pEntity->GetPosition(), m_pEntity->GetAngles(), m_variable.GetFloat(), m_fov.GetFloat(), 16);

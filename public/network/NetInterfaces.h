@@ -16,6 +16,15 @@
 namespace Networking
 {
 
+#define NM_SENDTOLAST	(-1)
+#define NM_SENDTOALL	(-2)
+#define NM_SERVER		(-3)
+
+enum NetServerSendFlags
+{
+	NETSERVER_FLAG_REMOVECLIENT = (1 << 8),
+};
+
 struct netMessage_s
 {
 	struct hdr_t
@@ -37,10 +46,6 @@ struct netMessage_s
 ALIGNED_TYPE(netMessage_s,2) netMessage_t;
 
 #define NETMESSAGE_HDR	sizeof(netMessage_t::hdr_t)	// the network message header size
-
-#define NM_SENDTOLAST	(-1)
-#define NM_SENDTOALL	(-2)
-#define NM_SERVER		(-3)
 
 // client info for server
 struct netPeer_t
