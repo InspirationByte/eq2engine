@@ -107,6 +107,9 @@ void CGameSessionBase::Init()
 
 	g_pAIManager->Init();
 
+	// init vehicle zones
+	InitCarZoneDescs();
+
 	g_replayRandom.SetSeed(0);
 
 	// start recorder
@@ -495,6 +498,79 @@ CAIPursuerCar* CGameSessionBase::Lua_CreatePursuerCar(const char* name, int type
 	return NULL;
 }
 
+void CGameSessionBase::InitCarZoneDescs()
+{
+	EqString vehicleZoneFilename(varargs("scripts/levels/%s_vehiclezones.def", g_pGameWorld->GetLevelName()));
+
+	KeyValues kvs;
+	if (!kvs.LoadFromFile(vehicleZoneFilename.c_str()))
+	{
+		MsgWarning("Cannot load vehicle zone file '%s', using default!", vehicleZoneFilename.c_str());
+
+		vehicleZoneFilename = "scripts/levels/default_vehiclezones.def";
+
+		if(!kvs.LoadFromFile("scripts/%s.def"))
+		{
+			MsgError("Failed to load vehicle zone file '%s'!", vehicleZoneFilename.c_str());
+
+			// assign to default zones
+			for (int i = 0; i < m_carEntries.numElem(); i++)
+			{
+				civCarEntry_t entry;
+				entry.config = m_carEntries[i];
+				entry.zoneList.append(carZoneInfo_t{ "default", 0 });
+
+				g_pAIManager->m_civCarEntries.append(entry);
+			}
+
+			return;
+		}
+	}
+
+	kvkeybase_t* zone_presets = kvs.GetRootSection();
+
+	// thru all zone presets
+	for (int i = 0; i < zone_presets->keys.numElem(); i++)
+	{
+		kvkeybase_t* zone_kv = zone_presets->keys[i];
+
+		// thru vehicles in zone preset
+		for (int i = 0; i < zone_kv->keys.numElem(); i++)
+		{
+			vehicleConfig_t* carConfig = FindCarEntryByName(zone_kv->keys[i]->name);
+
+			if (!carConfig)
+			{
+				MsgWarning("Unknown vehicle '%s' for zone '%s'\n", zone_kv->keys[i]->name, zone_kv->name);
+				continue;
+			}
+
+			civCarEntry_t* civCarEntry = g_pAIManager->FindCivCarEntry(zone_kv->keys[i]->name);
+
+			// add new car entry if not exist
+			if (!civCarEntry)
+			{
+				civCarEntry_t entry;
+				entry.config = carConfig;
+
+				int idx = g_pAIManager->m_civCarEntries.append(entry);
+				civCarEntry = &g_pAIManager->m_civCarEntries[i];
+			}
+
+			int spawnInterval = KV_GetValueInt(zone_kv->keys[i], 0, 0);
+
+			// append zone with given spawn interval
+			civCarEntry->zoneList.append(carZoneInfo_t{ zone_kv->name, spawnInterval });
+		}
+	}
+
+	kvkeybase_t* lightCop = kvs.GetRootSection()->FindKeyBase("lightcop");
+	kvkeybase_t* heavyCop = kvs.GetRootSection()->FindKeyBase("heavycop");
+
+	g_pAIManager->SetCopCarConfig(KV_GetValueString(lightCop, 0, "cop_regis"), COP_LIGHT);
+	g_pAIManager->SetCopCarConfig(KV_GetValueString(heavyCop, 0, "cop_regis"), COP_HEAVY);
+}
+
 void CGameSessionBase::LoadCarData()
 {
 	// delete old entries
@@ -508,7 +584,7 @@ void CGameSessionBase::LoadCarData()
 	// initialize vehicle list
 
 	KeyValues kvs;
-	if (kvs.LoadFromFile("scripts/vehicles.txt"))
+	if (kvs.LoadFromFile("scripts/vehicles.def"))
 	{
 		kvkeybase_t* vehicleRegistry = kvs.GetRootSection()->FindKeyBase("vehicles");
 
@@ -549,67 +625,10 @@ void CGameSessionBase::LoadCarData()
 					MsgError("Can't open car script '%s'\n", carent->carScript.c_str());
 			}
 		}
-
-		kvkeybase_t* zone_presets = kvs.GetRootSection()->FindKeyBase("zones");
-
-		if (zone_presets)
-		{
-			// thru all zone presets
-			for (int i = 0; i < zone_presets->keys.numElem(); i++)
-			{
-				kvkeybase_t* zone_kv = zone_presets->keys[i];
-
-				// thru vehicles in zone preset
-				for (int i = 0; i < zone_kv->keys.numElem(); i++)
-				{
-					vehicleConfig_t* carConfig = FindCarEntryByName(zone_kv->keys[i]->name);
-
-					if (!carConfig)
-					{
-						MsgWarning("Unknown vehicle '%s' for zone '%s'\n", zone_kv->keys[i]->name, zone_kv->name);
-						continue;
-					}
-
-					civCarEntry_t* civCarEntry = g_pAIManager->FindCivCarEntry(zone_kv->keys[i]->name);
-
-					// add new car entry if not exist
-					if (!civCarEntry)
-					{
-						civCarEntry_t entry;
-						entry.config = carConfig;
-
-						int idx = g_pAIManager->m_civCarEntries.append(entry);
-						civCarEntry = &g_pAIManager->m_civCarEntries[i];
-					}
-
-					int spawnInterval = KV_GetValueInt(zone_kv->keys[i], 0, 0);
-
-					// append zone with given spawn interval
-					civCarEntry->zoneList.append(carZoneInfo_t{ zone_kv->name, spawnInterval });
-				}
-			}
-		}
-		else
-		{
-			for (int i = 0; i < m_carEntries.numElem(); i++)
-			{
-				civCarEntry_t entry;
-				entry.config = m_carEntries[i];
-				entry.zoneList.append(carZoneInfo_t{ "default", 0 });
-
-				g_pAIManager->m_civCarEntries.append(entry);
-			}
-		}
-
-		kvkeybase_t* lightCop = kvs.GetRootSection()->FindKeyBase("lightcop");
-		kvkeybase_t* heavyCop = kvs.GetRootSection()->FindKeyBase("heavycop");
-
-		g_pAIManager->SetCopCarConfig(KV_GetValueString(lightCop, 0, "cop_regis"), COP_LIGHT);
-		g_pAIManager->SetCopCarConfig(KV_GetValueString(heavyCop, 0, "cop_regis"), COP_HEAVY);
 	}
 	else
 	{
-		CrashMsg("FATAL: no scripts/vehicles.txt file!");
+		CrashMsg("FATAL: no scripts/vehicles.def file!");
 	}
 }
 

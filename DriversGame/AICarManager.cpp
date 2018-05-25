@@ -109,7 +109,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 		return NULL;
 
 	CLevelRegion* pReg = NULL;
-	levroadcell_t* roadCell = g_pGameWorld->m_level.GetGlobalRoadTileAt(globalCell, &pReg);
+	levroadcell_t* roadCell = g_pGameWorld->m_level.Road_GetGlobalTileAt(globalCell, &pReg);
 
 	// no tile - no spawn
 	if (!pReg || !roadCell)
@@ -126,7 +126,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 
 	if(!isParkingLot)
 	{
-		straight_t str = g_pGameWorld->m_level.GetStraightAtPoint(globalCell, 2);
+		straight_t str = g_pGameWorld->m_level.Road_GetStraightAtPoint(globalCell, 2);
 
 		if (str.breakIter <= 1)
 			return NULL;
@@ -438,12 +438,12 @@ void CAICarManager::UpdateNavigationVelocityMap(float fDt)
 
 	// clear navgrid dynamic obstacle
 	g_pGameWorld->m_level.Nav_ClearDynamicObstacleMap();
-
+	/*
 	// draw all car velocities on dynamic obstacle
 	for (int i = 0; i < m_trafficCars.numElem(); i++)
 	{
 		PaintVelocityMapFrom(m_trafficCars[i]);
-	}
+	}*/
 
 	// update debugging of navigation maps here
 	g_pGameWorld->m_level.UpdateDebugMaps();
@@ -595,18 +595,18 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 	IVector2D carDir = GetDirectionVec(targetDir);
 	IVector2D placementVec = playerCarCell - carDir*radius;
 
-	levroadcell_t* startCellPlacement = g_pGameWorld->m_level.GetGlobalRoadTileAt(placementVec);
+	levroadcell_t* startCellPlacement = g_pGameWorld->m_level.Road_GetGlobalTileAt(placementVec);
 
 	if(!startCellPlacement || (startCellPlacement && !(startCellPlacement->type == ERoadType::ROADTYPE_STRAIGHT || startCellPlacement->type == ERoadType::ROADTYPE_PARKINGLOT)))
 		return false;
 
 	IVector2D perpendicular = GetDirectionVec(startCellPlacement->direction-1);
 
-	int curLane = g_pGameWorld->m_level.GetLaneIndexAtPoint(placementVec, 16)-1;
+	int curLane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(placementVec, 16)-1;
 
 	placementVec -= perpendicular*curLane;
 
-	int numLanes = g_pGameWorld->m_level.GetRoadWidthInLanesAtPoint(placementVec, 32, 1);
+	int numLanes = g_pGameWorld->m_level.Road_GetWidthInLanesAtPoint(placementVec, 32, 1);
 
 	int nCars = 0;
 
@@ -627,7 +627,7 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 		placementVec += perpendicular;
 
 		CLevelRegion* pReg = NULL;
-		levroadcell_t* roadCell = g_pGameWorld->m_level.GetGlobalRoadTileAt(blockPoint, &pReg);
+		levroadcell_t* roadCell = g_pGameWorld->m_level.Road_GetGlobalTileAt(blockPoint, &pReg);
 
 		// no tile - no spawn
 		if (!pReg || !roadCell)

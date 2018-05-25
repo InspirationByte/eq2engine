@@ -78,7 +78,7 @@ struct navGrid_t
 		Cleanup();
 	}
 
-	void Init( int w, int h )
+	void Init( int w, int h)
 	{
 		if(staticObst || cellStates || dynamicObst )
 			Cleanup();
@@ -86,12 +86,12 @@ struct navGrid_t
 		wide = w;
 		tall = h;
 
-		staticObst = new ubyte[w*h];
+		staticObst = PPAllocStructArray(ubyte,w*h);
 		memset(staticObst, 0x4, w*h);
 
-		dynamicObst = new ubyte[w*h];
+		dynamicObst = PPAllocStructArray(ubyte, w*h);
 
-		cellStates = new navcell_t[w*h];
+		cellStates = PPAllocStructArray(navcell_t, w*h);
 
 		dirty = true;
 	}
@@ -117,13 +117,13 @@ struct navGrid_t
 
 	void Cleanup()
 	{
-		delete [] staticObst;
+		PPFree(staticObst);
 		staticObst = NULL;
 
-		delete [] cellStates;
+		PPFree(cellStates);
 		cellStates = NULL;
 
-		delete [] dynamicObst;
+		PPFree(dynamicObst);
 		dynamicObst = NULL;
 
 		wide = 0;
@@ -140,7 +140,7 @@ struct navGrid_t
 
 	ushort		wide;
 	ushort		tall;
-	
+
 	bool		dirty;
 };
 
@@ -258,8 +258,10 @@ public:
 
 	CHeightTileFieldRenderable*		m_heightfield[ENGINE_REGION_MAX_HFIELDS];	///< heightfield used on region
 
-	levroadcell_t*					m_roads;			///< road data. Must correspond with heightfield
-	navGrid_t						m_navGrid;
+	levroadcell_t*					m_roads;			///< road data. Must correspond with heightfield]
+
+	// two navigation grids here
+	navGrid_t						m_navGrid[2];		///< navigation grid. 1 is detailed, 2 is for fast pathfind
 
 	DkList<regionObject_t*>			m_objects;			///< complex and non-complex models
 	DkList<levOccluderLine_t>		m_occluders;		///< occluders

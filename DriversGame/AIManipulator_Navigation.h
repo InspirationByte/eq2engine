@@ -14,6 +14,16 @@
 class CCar;
 class CEqCollisionObject;
 
+struct pathFindResult3D_t
+{
+	Vector3D			start;
+	Vector3D			end;
+
+	DkList<Vector3D>	points;	// z is distance in cells
+
+	void InitFrom(pathFindResult_t& path);
+};
+
 class CAINavigationManipulator
 {
 public:
@@ -33,7 +43,7 @@ public:
 	CEqCollisionObject*	m_excludeColl;
 
 protected:
-	pathFindResult_t	m_path;
+	pathFindResult3D_t	m_path;
 	int					m_pathPointIdx;
 
 	bool				m_init;

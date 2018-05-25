@@ -297,11 +297,11 @@ int CAITrafficCar::InitTrafficState( float fDt, EStateTransition transition )
 		Vector3D carPos = GetOrigin();
 
 		// calc steering dir
-		straight_t road = g_pGameWorld->m_level.GetStraightAtPos(carPos, 32);
+		straight_t road = g_pGameWorld->m_level.Road_GetStraightAtPos(carPos, 32);
 
 		if(road.direction != -1)
 		{
-			road.lane = g_pGameWorld->m_level.GetLaneIndexAtPoint(road.start);
+			road.lane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(road.start);
 
 			ChangeRoad( road );
 
@@ -472,11 +472,11 @@ int	CAITrafficCar::SearchForRoad(float fDt, EStateTransition transition)
 	Vector3D carPos = GetOrigin();
 
 	// calc steering dir
-	straight_t road = g_pGameWorld->m_level.GetStraightAtPos(carPos, 32);
+	straight_t road = g_pGameWorld->m_level.Road_GetStraightAtPos(carPos, 32);
 
 	if(road.direction != -1)
 	{
-		road.lane = g_pGameWorld->m_level.GetLaneIndexAtPoint(road.start);
+		road.lane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(road.start);
 
 		ChangeRoad( road );
 
@@ -507,7 +507,7 @@ void CAITrafficCar::SwitchLane()
 
 	IVector2D carPosOnCell = g_pGameWorld->m_level.PositionToGlobalTilePoint( GetOrigin() );
 
-	int numLanes = g_pGameWorld->m_level.GetNumLanesAtPoint( carPosOnCell );
+	int numLanes = g_pGameWorld->m_level.Road_GetNumLanesAtPoint( carPosOnCell );
 
 	if(ai_traffic_debug_steering.GetBool())
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "SwitchLane() lanes on my side: %d\n", numLanes);
@@ -542,7 +542,7 @@ void CAITrafficCar::SwitchLane()
 	if( ai_traffic_debug_steering.GetBool() )
 		debugoverlay->Box3D(lanePos - 0.5f, lanePos + 0.5f, ColorRGBA(0,0,1,1), 5.0f);
 
-	straight_t newStraight = g_pGameWorld->m_level.GetStraightAtPoint( laneTile, 16 );
+	straight_t newStraight = g_pGameWorld->m_level.Road_GetStraightAtPoint( laneTile, 16 );
 
 	if( newStraight.direction != -1 &&
 		newStraight.direction == m_straights[STRAIGHT_CURRENT].direction)
@@ -605,7 +605,7 @@ void CAITrafficCar::SearchJunctionAndStraight()
 		return;
 	}
 
-	roadJunction_t junc = g_pGameWorld->m_level.GetJunctionAtPoint( m_straights[STRAIGHT_CURRENT].end, 16 );
+	roadJunction_t junc = g_pGameWorld->m_level.Road_GetJunctionAtPoint( m_straights[STRAIGHT_CURRENT].end, 16 );
 
 	if( junc.breakIter <= 0)
 	{
@@ -625,7 +625,7 @@ void CAITrafficCar::SearchJunctionAndStraight()
 
 		IVector2D checkPos = junc.start+dir*i;
 
-		straight_t road = g_pGameWorld->m_level.GetStraightAtPoint(checkPos, 16);
+		straight_t road = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkPos, 16);
 
 		if(	road.direction != -1 &&
 			road.breakIter > 1 &&
@@ -634,7 +634,7 @@ void CAITrafficCar::SearchJunctionAndStraight()
 			(road.start != m_straights[STRAIGHT_CURRENT].start) &&
 			!gotSameDirection)
 		{
-			road.lane = g_pGameWorld->m_level.GetLaneIndexAtPoint(road.start);
+			road.lane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(road.start);
 
 			m_nextJuncDetails.foundStraights.append( road );
 			gotSameDirection = true;
@@ -652,7 +652,7 @@ void CAITrafficCar::SearchJunctionAndStraight()
 
 			IVector2D checkStraightPos = checkPos+dirCheckVec*checkDir;
 
-			levroadcell_t* rcell = g_pGameWorld->m_level.GetGlobalRoadTileAt(checkStraightPos);
+			levroadcell_t* rcell = g_pGameWorld->m_level.Road_GetGlobalTileAt(checkStraightPos);
 
 			if(rcell && rcell->type == ROADTYPE_NOROAD)
 			{
@@ -667,14 +667,14 @@ void CAITrafficCar::SearchJunctionAndStraight()
 			int dirIdx = GetDirectionIndex(dirCheckVec*sign(checkDir));
 
 			// calc steering dir
-			straight_t road = g_pGameWorld->m_level.GetStraightAtPoint(checkStraightPos, 16);
+			straight_t road = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkStraightPos, 16);
 
 			if(	road.direction != -1 &&
 				road.direction == dirIdx &&
 				(road.end != m_straights[STRAIGHT_CURRENT].end) &&
 				(road.start != m_straights[STRAIGHT_CURRENT].start))
 			{
-				road.lane = g_pGameWorld->m_level.GetLaneIndexAtPoint(road.end);
+				road.lane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(road.end);
 
 				sideJuncFound = true;
 				m_nextJuncDetails.foundStraights.append( road );
@@ -826,7 +826,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	IVector2D newStraightStartPoint = m_straights[STRAIGHT_CURRENT].end+dir2D;
 
 	// get the new straight
-	straight_t newStraight = g_pGameWorld->m_level.GetStraightAtPoint( newStraightStartPoint, 16 );
+	straight_t newStraight = g_pGameWorld->m_level.Road_GetStraightAtPoint( newStraightStartPoint, 16 );
 
 	int cellsBeforeEnd = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
 
@@ -883,7 +883,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 				if( m_straights[STRAIGHT_CURRENT].direction == newStraight.direction )
 				{
 					// only accept in this direction and on same line, else select others
-					newStraight.lane = g_pGameWorld->m_level.GetLaneIndexAtPoint( newStraight.end );
+					newStraight.lane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint( newStraight.end );
 
 					ChangeRoad( newStraight );
 					return 0;
@@ -915,7 +915,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 			debugoverlay->TextFadeOut(0, ColorRGBA(1), 5.0f, "--- Has no selected straight ---");
 		}
 		
-		int curRoadWidth = g_pGameWorld->m_level.GetNumLanesAtPoint( m_straights[STRAIGHT_CURRENT].start );
+		int curRoadWidth = g_pGameWorld->m_level.Road_GetNumLanesAtPoint( m_straights[STRAIGHT_CURRENT].start );
 
 		bool isLongCar = (m_conf->physics.body_size.z > AI_LONG_CAR_CONST);
 
@@ -925,7 +925,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		{
 			straight_t& road = m_nextJuncDetails.foundStraights[i];
 
-			int destRoadWidth = g_pGameWorld->m_level.GetNumLanesAtPoint( road.start );
+			int destRoadWidth = g_pGameWorld->m_level.Road_GetNumLanesAtPoint( road.start );
 
 			int destLane = -1;
 			bool result = SolveIntersection(m_straights[STRAIGHT_CURRENT].direction, road.direction, 
@@ -1042,7 +1042,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 		int curDir = m_straights[STRAIGHT_CURRENT].direction;
 
-		levroadcell_t* roadTile = g_pGameWorld->m_level.GetGlobalRoadTileAt(carPosOnCell);
+		levroadcell_t* roadTile = g_pGameWorld->m_level.Road_GetGlobalTileAt(carPosOnCell);
 
 		// check current tile for traffic light indication
 		bool hasTrafficLight = roadTile ? (roadTile->flags & ROAD_FLAG_TRAFFICLIGHT) : false;//m_straights[STRAIGHT_CURRENT].hasTrafficLight;

@@ -296,7 +296,6 @@ void CAIPursuerCar::EndPursuit(bool death)
 		m_sirenEnabled = false;
 		SetLight(CAR_LIGHT_SERVICELIGHTS, false);
 
-		Msg("Make cop start seaching for road");
 		AI_SetState(&CAIPursuerCar::SearchForRoad);
 	}
 	else
@@ -402,7 +401,7 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 			return INFRACTION_HIT;
 	}
 
-	straight_t straight = g_pGameWorld->m_level.GetStraightAtPos(car->GetOrigin(), 2);
+	straight_t straight = g_pGameWorld->m_level.Road_GetStraightAtPos(car->GetOrigin(), 2);
 
 	// Check wrong direction
 	if ( straight.direction != -1)
@@ -418,10 +417,10 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 	}
 
 	// only if we going on junction
-	levroadcell_t* cell_checkRed = g_pGameWorld->m_level.GetGlobalRoadTile(car->GetOrigin());
+	levroadcell_t* cell_checkRed = g_pGameWorld->m_level.Road_GetGlobalTile(car->GetOrigin());
 
 	Vector3D redCrossingCheckPos = car->GetOrigin() - car->GetForwardVector()*12.0f;
-	straight_t straight_checkRed = g_pGameWorld->m_level.GetStraightAtPos( redCrossingCheckPos, 2 );
+	straight_t straight_checkRed = g_pGameWorld->m_level.Road_GetStraightAtPos( redCrossingCheckPos, 2 );
 
 	// Check red light crossing
 	if( cell_checkRed && cell_checkRed->type == ROADTYPE_JUNCTION &&

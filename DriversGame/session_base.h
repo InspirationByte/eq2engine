@@ -54,8 +54,6 @@ public:
 	virtual void				Shutdown();
 
 	int							GetPhysicsIterations() const;
-
-	void						LoadCarData();
 	vehicleConfig_t*			FindCarEntryByName(const char* name) const;
 
 	void						GetCarNames(DkList<EqString>& list) const;
@@ -101,6 +99,10 @@ public:
 	CAIPursuerCar*				Lua_CreatePursuerCar(const char* name, int type = PURSUER_TYPE_COP);
 
 protected:
+
+	void						LoadCarData();
+
+	void						InitCarZoneDescs();
 
 	virtual void				UpdatePlayerControls() = 0;
 	void						UpdateAsPlayerCar(const playerControl_t& control, CCar* car);

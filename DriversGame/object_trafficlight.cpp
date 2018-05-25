@@ -182,7 +182,7 @@ void CObject_TrafficLight::Draw( int nRenderFlags )
 		debugoverlay->Box3D(cellLeftOrigin-0.25f,cellLeftOrigin+0.25f, ColorRGBA(1,0,0,1));
 
 		IVector2D bestCell;
-		if(g_pGameWorld->m_level.FindBestRoadCellForTrafficLight(bestCell, GetOrigin(), m_trafficDir))
+		if(g_pGameWorld->m_level.Road_FindBestCellForTrafficLight(bestCell, GetOrigin(), m_trafficDir))
 		{
 			Vector3D bestCellPos = g_pGameWorld->m_level.GlobalTilePointToPosition(bestCell);
 

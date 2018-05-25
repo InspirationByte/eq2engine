@@ -18,7 +18,8 @@ const float AI_PATH_COMPLETION_TO_FULL_RENEW = 0.5f;		// percent
 
 const float AI_SEGMENT_VALID_RADIUS = 2.0f; // distance to segment
 
-const int AI_PATH_SEARCH_RANGE = 4096;
+const int AI_PATH_SEARCH_ITERATIONS = 2048;
+const int AI_PATH_SEARCH_DETAILED_MAX_RADIUS = 100.0f;
 
 ConVar ai_debug_navigator("ai_debug_navigator", "0");
 ConVar ai_debug_path("ai_debug_path", "0");
@@ -42,15 +43,15 @@ static float s_weatherBrakeCurve[WEATHER_COUNT] =	// * tirefriction
 	3.25f	// 0.79f,
 };
 
-void DebugDrawPath(pathFindResult_t& path, float time = -1.0f)
+void DebugDrawPath(pathFindResult3D_t& path, float time = -1.0f)
 {
 	if(ai_debug_path.GetBool() && path.points.numElem())
 	{
-		Vector3D lastLinePos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.points[0]);
+		Vector3D lastLinePos = path.points[0];
 
 		for (int i = 1; i < path.points.numElem(); i++)
 		{
-			Vector3D pointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.points[i]);
+			Vector3D pointPos = path.points[i];
 
 			float dispalyTime = time > 0 ? time : float(i) * 0.1f;
 
@@ -96,7 +97,23 @@ void SimplifyPath(pathFindResult_t& path)
 		i--;
 		path.points.removeIndex(i);
 	}
+}
 
+void pathFindResult3D_t::InitFrom(pathFindResult_t& path)
+{
+	g_pGameWorld->m_level.m_navGridSelector = path.gridSelector;
+
+	start = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.start);
+	end = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.end);
+
+	points.clear();
+
+	for(int i = 0; i < path.points.numElem(); i++)
+	{
+		points.append(g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.points[i]));
+	}
+
+	g_pGameWorld->m_level.m_navGridSelector = 0;
 }
 
 CAINavigationManipulator::CAINavigationManipulator()
@@ -111,8 +128,9 @@ CAINavigationManipulator::CAINavigationManipulator()
 
 void CAINavigationManipulator::SetPath(pathFindResult_t& newPath, const Vector3D& searchPos)
 {
-	m_path = newPath;
-	SimplifyPath( m_path );
+	SimplifyPath(newPath);
+
+	m_path.InitFrom(newPath);
 
 	m_pathPointIdx = 0;
 	m_timeToUpdatePath = AI_PATH_TIME_TO_UPDATE;
@@ -135,8 +153,8 @@ Vector3D CAINavigationManipulator::GetAdvancedPointByDist(int& startSeg, float d
 
 	while (startSeg < m_path.points.numElem()-2)
 	{
-		currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[startSeg]);
-		nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[startSeg + 1]);
+		currPointPos = m_path.points[startSeg];
+		nextPointPos = m_path.points[startSeg + 1];
 
 		float segLen = length(currPointPos - nextPointPos);
 
@@ -149,8 +167,8 @@ Vector3D CAINavigationManipulator::GetAdvancedPointByDist(int& startSeg, float d
 			break;
 	}
 
-	currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[startSeg]);
-	nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[startSeg + 1]);
+	currPointPos = m_path.points[startSeg];
+	nextPointPos = m_path.points[startSeg + 1];
 
 	Vector3D dir = fastNormalize(nextPointPos - currPointPos);
 
@@ -172,8 +190,8 @@ int CAINavigationManipulator::FindSegmentByPosition(const Vector3D& pos, float d
 
 	while (segment < m_path.points.numElem()-1)
 	{
-		currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[segment]);
-		nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[segment + 1]);
+		currPointPos = m_path.points[segment];
+		nextPointPos = m_path.points[segment + 1];
 
 		float segProj = lineProjection(currPointPos, nextPointPos, pos);
 
@@ -207,8 +225,8 @@ float CAINavigationManipulator::GetPathPercentage(const Vector3D& pos)
 
 	while (segment < m_path.points.numElem()-1)
 	{
-		currPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[segment]);
-		nextPointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[segment + 1]);
+		currPointPos = m_path.points[segment];
+		nextPointPos = m_path.points[segment + 1];
 
 		float segmentLength = length(currPointPos-nextPointPos);
 		float segProj = lineProjection(currPointPos, nextPointPos, pos);
@@ -276,7 +294,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		// Get the last point on the path
 		//
 		int currSeg = FindSegmentByPosition(carPos, AI_SEGMENT_VALID_RADIUS);
-		Vector3D pathTarget = (currSeg != -1) ? g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[currSeg]) : m_driveTarget;
+		Vector3D pathTarget = (currSeg != -1) ? m_path.points[currSeg] : m_driveTarget;
 
 		if(currSeg == -1)
 		{
@@ -310,9 +328,9 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			//debugoverlay->TextFadeOut(0, color4_white, 10.0f, "nextPathUpdateTime: %g", m_timeToUpdatePath);
 		}
 
-		ubyte tagetNavPoint = g_pGameWorld->m_level.Nav_GetTileAtGlobalPoint( g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(m_driveTarget) );
+		ubyte targetNavPoint = g_pGameWorld->m_level.Nav_GetTileAtGlobalPoint( g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(m_driveTarget) );
 
-		if(tagetNavPoint > 0)
+		if(targetNavPoint > 0)
 			m_targetSuccessfulSearchPos = m_driveTarget;
 
 		if( m_timeToUpdatePath <= 0.0f)
@@ -325,8 +343,14 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			if(m_searchFails > 0)
 				searchStart = m_lastSuccessfulSearchPos;
 
+			// if we're too far, search using fast grid
+			bool fastSearch = (length(m_targetSuccessfulSearchPos - searchStart) > AI_PATH_SEARCH_DETAILED_MAX_RADIUS);
+
+			if(fastSearch) // change the grid selector
+				g_pGameWorld->m_level.m_navGridSelector = 1;
+
 			pathFindResult_t newPath;
-			if( g_pGameWorld->m_level.Nav_FindPath(m_targetSuccessfulSearchPos, searchStart, newPath, AI_PATH_SEARCH_RANGE, false))
+			if( g_pGameWorld->m_level.Nav_FindPath(m_targetSuccessfulSearchPos, searchStart, newPath, AI_PATH_SEARCH_ITERATIONS, fastSearch))
 			{
 				SetPath(newPath, carPos);
 			}
@@ -339,6 +363,9 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 
 				m_timeToUpdatePath = AI_PATH_TIME_TO_UPDATE_FORCE;
 			}
+
+			// reset grid selectr
+			g_pGameWorld->m_level.m_navGridSelector = 0;
 
 			if(ai_debug_search.GetBool())
 				debugoverlay->TextFadeOut(0, color4_white, 10.0f, "path search result: %d points, tries: %d", newPath.points.numElem(), trials);
@@ -362,7 +389,9 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 	for(int i = 0; i < numWheels; i++)
 	{
 		CCarWheel& wheel = car->GetWheel(i);
-		tireFrictionModifier += wheel.m_surfparam->tirefriction;
+
+		if(wheel.m_surfparam)
+			tireFrictionModifier += wheel.m_surfparam->tirefriction;
 	}
 
 	tireFrictionModifier /= float(numWheels);
@@ -514,15 +543,15 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			segmentByCarPosition = m_pathPointIdx;
 
 		// the path segment by m_pathPointIdx
-		Vector3D pathSegmentStart = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[m_pathPointIdx]);
-		Vector3D pathSegmentEnd = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[m_pathPointIdx + 1]);
+		const Vector3D& pathSegmentStart = m_path.points[m_pathPointIdx];
+		const Vector3D& pathSegmentEnd = m_path.points[m_pathPointIdx + 1];
 
 		float pathSegmentLength = length(pathSegmentStart - pathSegmentEnd);
 		float pathSegmentProj = lineProjection(pathSegmentStart, pathSegmentEnd, carPos);
 
 		// the path segment by segmentByCarPosition
-		Vector3D carPosSegmentStart = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[segmentByCarPosition]);
-		Vector3D carPosSegmentEnd = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[segmentByCarPosition + 1]);
+		const Vector3D& carPosSegmentStart = m_path.points[segmentByCarPosition];
+		const Vector3D& carPosSegmentEnd = m_path.points[segmentByCarPosition + 1];
 
 		float carPosSegmentLength = length(carPosSegmentStart - carPosSegmentEnd);
 		float carPosSegmentProj = lineProjection(carPosSegmentStart, carPosSegmentEnd, carPos);
@@ -665,8 +694,8 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			for(int i = segmentByCarPosition+1; i < pathIdx; i++)
 			{
 				// the path segment by m_pathPointIdx
-				Vector3D segmentStart = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[i-1]);
-				Vector3D segmentEnd = g_pGameWorld->m_level.Nav_GlobalPointToPosition(m_path.points[i]);
+				const Vector3D& segmentStart = m_path.points[i-1];
+				const Vector3D& segmentEnd = m_path.points[i];
 
 				Vector3D segmentDir = fastNormalize(segmentEnd-segmentStart);
 

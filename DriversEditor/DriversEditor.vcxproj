@@ -340,7 +340,9 @@
     <ClCompile Include="UI_HeightEdit.cpp" />
     <ClCompile Include="UI_LevelModels.cpp" />
     <ClCompile Include="UI_OccluderEditor.cpp" />
-    <ClCompile Include="UI_OutlineEdit.cpp" />
+    <ClCompile Include="UI_OutlineEdit.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="UI_PrefabMgr.cpp" />
     <ClCompile Include="UI_RoadEditor.cpp" />
   </ItemGroup>

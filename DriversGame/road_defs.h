@@ -59,6 +59,8 @@ struct pathFindResult_t
 	IVector2D			end;
 
 	DkList<IVector2D>	points;	// z is distance in cells
+
+	int					gridSelector;
 };
 
 // helper functions

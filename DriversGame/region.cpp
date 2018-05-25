@@ -460,7 +460,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 		for(int i = 0; i < GetNumHFields(); i++)
 		{
 			if(m_heightfield[i])
-				m_heightfield[i]->RenderDebug(m_navGrid.debugObstacleMap, nRenderFlags, occlFrustum );
+				m_heightfield[i]->RenderDebug(m_navGrid[0].debugObstacleMap, nRenderFlags, occlFrustum );
 		}
 	}
 	else
@@ -515,55 +515,55 @@ void CLevelRegion::InitRoads()
 		}
 	}
 
-	m_navGrid.Init( defField.m_sizew*AI_NAVIGATION_GRID_SCALE,
-					defField.m_sizeh*AI_NAVIGATION_GRID_SCALE);
+	for(int i = 0; i < 2; i++)
+	{
+		m_navGrid[i].Init(defField.m_sizew*s_navGridScales[i], defField.m_sizeh*s_navGridScales[i]);
+	}
 
 	// init debug maps
 	if(nav_debug_map.GetInt() > 0)
 	{
-		m_navGrid.debugObstacleMap = g_pShaderAPI->CreateProceduralTexture(varargs("navgrid_%d", m_regionIndex), FORMAT_RGBA8, m_navGrid.wide, m_navGrid.tall, 1, 1,TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXFLAG_NOQUALITYLOD);
-		m_navGrid.debugObstacleMap->Ref_Grab();
+		m_navGrid[0].debugObstacleMap = g_pShaderAPI->CreateProceduralTexture(varargs("navgrid_%d", m_regionIndex), FORMAT_RGBA8, m_navGrid[0].wide, m_navGrid[0].tall, 1, 1,TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXFLAG_NOQUALITYLOD);
+		m_navGrid[0].debugObstacleMap->Ref_Grab();
 	}
 }
 
 void CLevelRegion::UpdateDebugMaps()
 {
 	// update navigation debug map
-	if(m_navGrid.debugObstacleMap != NULL)
+	if(m_navGrid[0].debugObstacleMap != NULL)
 	{
 		texlockdata_t lockData;
 
-		m_navGrid.debugObstacleMap->Lock(&lockData, NULL, true);
+		m_navGrid[0].debugObstacleMap->Lock(&lockData, NULL, true);
 		if(lockData.pData)
 		{
-			memset(lockData.pData, 0, m_navGrid.wide*m_navGrid.tall*sizeof(TVec4D<ubyte>));
+			memset(lockData.pData, 0, m_navGrid[0].wide*m_navGrid[0].tall*sizeof(TVec4D<ubyte>));
 
 			TVec4D<ubyte>* imgData = (TVec4D<ubyte>*)lockData.pData;
 
-			for(int y = 0; y < m_navGrid.tall; y++)
+			for(int y = 0; y < m_navGrid[0].tall; y++)
 			{
-				for(int x = 0; x < m_navGrid.wide; x++)
+				for(int x = 0; x < m_navGrid[0].wide; x++)
 				{
-					int pixIdx = y*m_navGrid.tall+x;
+					int pixIdx = y*m_navGrid[0].tall+x;
 
 					TVec4D<ubyte> color(0);
 
 					if(nav_debug_map.GetInt() > 1)
 					{
-						color.z = 255-m_navGrid.dynamicObst[pixIdx] * 48;
+						color.z = 255-m_navGrid[0].dynamicObst[pixIdx] * 48;
 					}
 					else
 					{
-						color.z = 255-m_navGrid.staticObst[pixIdx] * 48;
+						color.z = 255-m_navGrid[0].staticObst[pixIdx] * 48;
 					}
-
-					
 
 					imgData[pixIdx] = color;
 				}
 			}
 
-			m_navGrid.debugObstacleMap->Unlock();
+			m_navGrid[0].debugObstacleMap->Unlock();
 		}
 	}
 }
@@ -635,10 +635,13 @@ void CLevelRegion::Cleanup()
 	delete [] m_roads;
 	m_roads = NULL;
 
-	g_pShaderAPI->FreeTexture(m_navGrid.debugObstacleMap);
-	m_navGrid.debugObstacleMap = NULL;
+	g_pShaderAPI->FreeTexture(m_navGrid[0].debugObstacleMap);
+	m_navGrid[0].debugObstacleMap = NULL;
 
-	m_navGrid.Cleanup();
+	for (int i = 0; i < 2; i++)
+	{
+		m_navGrid[i].Cleanup();
+	}
 
 	m_isLoaded = false;
 	m_hasTransparentSubsets = false;
@@ -963,16 +966,19 @@ void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 			if(tmpCell.type == ROADTYPE_PARKINGLOT)
 				continue;
 
-			// higher the priority of road nodes
-			for(int j = 0; j < AI_NAVIGATION_GRID_SCALE; j++)
-			{
-				for(int k = 0; k < AI_NAVIGATION_GRID_SCALE; k++)
-				{
-					int ofsX = tmpCell.posX*AI_NAVIGATION_GRID_SCALE+j;
-					int ofsY = tmpCell.posY*AI_NAVIGATION_GRID_SCALE+k;
+			// fast navgrid uses same resolution
+			m_navGrid[1].staticObst[idx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
 
-					int navCellIdx = ofsY*m_navGrid.tall + ofsX;
-					m_navGrid.staticObst[navCellIdx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
+			// higher the priority of road nodes
+			for(int j = 0; j < AI_NAV_DETAILED_SCALE; j++)
+			{
+				for(int k = 0; k < AI_NAV_DETAILED_SCALE; k++)
+				{
+					int ofsX = tmpCell.posX*AI_NAV_DETAILED_SCALE +j;
+					int ofsY = tmpCell.posY*AI_NAV_DETAILED_SCALE +k;
+
+					int navCellIdx = ofsY*m_navGrid[0].tall + ofsX;
+					m_navGrid[0].staticObst[navCellIdx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
 				}
 			}
 		}

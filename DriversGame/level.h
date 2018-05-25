@@ -19,7 +19,7 @@
 
 #include "imaging/ImageLoader.h"
 
-#define AI_NAVIGATION_GRID_SCALE	2
+#define AI_NAV_DETAILED_SCALE		2
 #define LEVELS_PATH					"levels/"
 
 struct cellpoint_t
@@ -35,6 +35,8 @@ enum ECellClearStateMode
 	NAV_CLEAR_WORKSTATES = 0,
 	NAV_CLEAR_DYNAMIC_OBSTACLES = 1,
 };
+
+static int s_navGridScales[2] = { AI_NAV_DETAILED_SCALE, 1 };
 
 //-----------------------------------------------------------------------------------------
 // Game level renderer, utilities
@@ -83,7 +85,7 @@ public:
 
 	CHeightTileFieldRenderable*		GetHeightFieldAt(const IVector2D& XYPos, int idx = 0) const;		// returns heightfield if region at global 2D point
 
-	bool							GetPointAt(const Vector3D& pos, IVector2D& outXYPos) const;			// calculates region index from 3D position
+	bool							PositionToRegionOffset(const Vector3D& pos, IVector2D& outXYPos) const;			// calculates region index from 3D position
 
 	CLevelRegion*					GetRegionAt(const IVector2D& XYPos) const;							// returns region at global 2D point
 	CLevelRegion*					GetRegionAtPosition(const Vector3D& pos) const;						// returns region which belongs to 3D position
@@ -95,8 +97,8 @@ public:
 	bool							GetRegionAndTile(const Vector3D& pos, CLevelRegion** outReg, IVector2D& outLocalXYPos) const;	// returns a tile XYPos and region which belongs to 3D position
 	bool							GetRegionAndTileAt(const IVector2D& tilePos, CLevelRegion** outReg, IVector2D& outLocalXYPos) const; // returns a tile at region
 
-	float							GetWaterLevel(const Vector3D& pos) const;
-	float							GetWaterLevelAt(const IVector2D& tilePos) const;
+	float							GetWaterLevel(const Vector3D& pos) const;			// water tile height
+	float							GetWaterLevelAt(const IVector2D& tilePos) const;	// water tile height
 
 	//
 	// conversions
@@ -110,32 +112,32 @@ public:
 	void							LocalToGlobalPoint( const IVector2D& localPoint, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const;	// converts local point at region to global tile 2D point
 
 	//-------------------------------------------------------------------------
-	// roads
+	// roadmap grid
 
-	levroadcell_t*					GetGlobalRoadTile(const Vector3D& pos, CLevelRegion** pRegion = NULL) const;		// returns road cell which belongs to 3D position
-	levroadcell_t*					GetGlobalRoadTileAt(const IVector2D& point, CLevelRegion** pRegion = NULL) const;	// returns road cell by global tile 2D point
+	levroadcell_t*					Road_GetGlobalTile(const Vector3D& pos, CLevelRegion** pRegion = NULL) const;		// returns road cell which belongs to 3D position
+	levroadcell_t*					Road_GetGlobalTileAt(const IVector2D& point, CLevelRegion** pRegion = NULL) const;	// returns road cell by global tile 2D point
 
-	straight_t						GetStraightAtPoint( const IVector2D& point, int numIterations = 4 ) const;		// calculates straight starting from global tile 2D point
-	straight_t						GetStraightAtPos( const Vector3D& pos, int numIterations = 4 ) const;			// calculates straight starting from 3D position
+	straight_t						Road_GetStraightAtPoint( const IVector2D& point, int numIterations = 4 ) const;		// calculates straight starting from global tile 2D point
+	straight_t						Road_GetStraightAtPos( const Vector3D& pos, int numIterations = 4 ) const;			// calculates straight starting from 3D position
 
-	roadJunction_t					GetJunctionAtPoint( const IVector2D& point, int numIterations = 4 ) const;		// calculates junction starting from global tile 2D point
-	roadJunction_t					GetJunctionAtPos( const Vector3D& pos, int numIterations = 4 ) const;			// calculates junction starting from 3D position
+	roadJunction_t					Road_GetJunctionAtPoint( const IVector2D& point, int numIterations = 4 ) const;		// calculates junction starting from global tile 2D point
+	roadJunction_t					Road_GetJunctionAtPos( const Vector3D& pos, int numIterations = 4 ) const;			// calculates junction starting from 3D position
 
 	// current road lane
-	int								GetLaneIndexAtPoint( const IVector2D& point, int numIterations = 8 );			// calculates lane number from road at global tile 2D point
-	int								GetLaneIndexAtPos( const Vector3D& pos, int numIterations = 8 );				// calculates lane number from road at 3D position
+	int								Road_GetLaneIndexAtPoint( const IVector2D& point, int numIterations = 8 );			// calculates lane number from road at global tile 2D point
+	int								Road_GetLaneIndexAtPos( const Vector3D& pos, int numIterations = 8 );				// calculates lane number from road at 3D position
 
 	// road width in lane count
-	int								GetNumLanesAtPoint( const IVector2D& point, int numIterations = 8 );			// calculates lane count from lane at global tile 2D point
-	int								GetNumLanesAtPos( const Vector3D& pos, int numIterations = 8 );					// calculates lane count from lane at 3D position
+	int								Road_GetNumLanesAtPoint( const IVector2D& point, int numIterations = 8 );			// calculates lane count from lane at global tile 2D point
+	int								Road_GetNumLanesAtPos( const Vector3D& pos, int numIterations = 8 );					// calculates lane count from lane at 3D position
 
-	int								GetRoadWidthInLanesAtPoint( const IVector2D& point, int numIterations = 16, int iterationsOnEmpty = 0 );	// calculates road width in lanes from road at global tile 2D point
-	int								GetRoadWidthInLanesAtPos( const Vector3D& pos, int numIterations = 16 );		// calculates road width in lanes from road at 3D position
+	int								Road_GetWidthInLanesAtPoint( const IVector2D& point, int numIterations = 16, int iterationsOnEmpty = 0 );	// calculates road width in lanes from road at global tile 2D point
+	int								Road_GetWidthInLanesAtPos( const Vector3D& pos, int numIterations = 16 );		// calculates road width in lanes from road at 3D position
 
-	bool							FindBestRoadCellForTrafficLight( IVector2D& out, const Vector3D& origin, int trafficDir, int juncIterations = 16 );
+	bool							Road_FindBestCellForTrafficLight( IVector2D& out, const Vector3D& origin, int trafficDir, int juncIterations = 16 );
 
 	//-------------------------------------------------------------------------
-	// navigation
+	// navigation grid
 
 	void							Nav_ClearDynamicObstacleMap();
 
@@ -150,8 +152,8 @@ public:
 
 	Vector3D						Nav_GlobalPointToPosition(const IVector2D& point) const;	// converts 2D navigation point to 3D position
 
-	bool							Nav_FindPath(const Vector3D& start, const Vector3D& end, pathFindResult_t& result, int iterationLimit = 256, bool cellPriority = false);
-	bool							Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pathFindResult_t& result, int iterationLimit = 256, bool cellPriority = false);
+	bool							Nav_FindPath(const Vector3D& start, const Vector3D& end, pathFindResult_t& result, int iterationLimit = 256, bool fast = false);
+	bool							Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pathFindResult_t& result, int iterationLimit = 256, bool fast = false);
 
 	float							Nav_TestLine(const Vector3D& start, const Vector3D& end, bool obstacles = false);
 	float							Nav_TestLine2D(const IVector2D& start, const IVector2D& end, bool obstacles = false);
@@ -175,6 +177,8 @@ public:
 	int								m_tall;
 
 	int								m_cellsSize;
+
+	int								m_navGridSelector;
 
 	CEqMutex&						m_mutex;
 

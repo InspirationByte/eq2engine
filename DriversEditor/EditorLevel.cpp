@@ -1525,7 +1525,7 @@ void CEditorLevel::Ed_Prerender(const Vector3D& cameraPosition)
 	IVector2D camPosReg;
 
 	// mark renderable regions
-	if( GetPointAt(cameraPosition, camPosReg) )
+	if( PositionToRegionOffset(cameraPosition, camPosReg) )
 	{
 		CEditorLevelRegion* region = (CEditorLevelRegion*)GetRegionAt(camPosReg);
 
@@ -1804,13 +1804,13 @@ void CEditorLevelRegion::PostprocessCellObject(regionObject_t* obj)
 			IVector2D rightDir = IVector2D(dx[laneRowDir],dy[laneRowDir]);
 
 			IVector2D roadPos;
-			if(m_level->FindBestRoadCellForTrafficLight(roadPos, obj->position, trafficDir, 24))
+			if(m_level->Road_FindBestCellForTrafficLight(roadPos, obj->position, trafficDir, 24))
 			{
 				// move to first lane
-				int laneIndex = m_level->GetLaneIndexAtPoint( roadPos )-1;
+				int laneIndex = m_level->Road_GetLaneIndexAtPoint( roadPos )-1;
 				roadPos += rightDir*laneIndex;
 
-				int roadWidth = m_level->GetNumLanesAtPoint( roadPos );
+				int roadWidth = m_level->Road_GetNumLanesAtPoint( roadPos );
 
 				#define REPEAT_ITERATIONS 16
 
@@ -1823,7 +1823,7 @@ void CEditorLevelRegion::PostprocessCellObject(regionObject_t* obj)
 
 					for(int j = 0; j < REPEAT_ITERATIONS; j++)
 					{
-						levroadcell_t* rcell = m_level->GetGlobalRoadTileAt(lanePos - forwardDir*j );
+						levroadcell_t* rcell = m_level->Road_GetGlobalTileAt(lanePos - forwardDir*j );
 						if(rcell)
 						{
 							if(rcell->type != ROADTYPE_STRAIGHT)
