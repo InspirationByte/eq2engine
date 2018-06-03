@@ -37,6 +37,7 @@ enum ECellClearStateMode
 };
 
 static int s_navGridScales[2] = { AI_NAV_DETAILED_SCALE, 1 };
+static float s_invNavGridScales[2] = { 1.0f/float(AI_NAV_DETAILED_SCALE), 1.0f };
 
 //-----------------------------------------------------------------------------------------
 // Game level renderer, utilities

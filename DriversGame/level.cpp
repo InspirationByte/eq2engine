@@ -2167,7 +2167,7 @@ void CGameLevel::Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& 
 
 void CGameLevel::Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion) const
 {
-	int navGridSize = m_cellsSize* s_navGridScales[m_navGridSelector];
+	int navGridSize = m_cellsSize*s_navGridScales[m_navGridSelector];
 
 	IVector2D regPos = point / navGridSize;
 
@@ -2182,7 +2182,7 @@ void CGameLevel::Nav_LocalToGlobalPoint(const IVector2D& point, const CLevelRegi
 	outGlobalPoint = pRegion->m_heightfield[0]->m_regionPos * navGridSize + point;
 }
 
-#define NAV_POINT_SIZE (HFIELD_POINT_SIZE/s_navGridScales[m_navGridSelector])
+#define NAV_POINT_SIZE (HFIELD_POINT_SIZE * s_invNavGridScales[m_navGridSelector])
 
 //
 // conversions
@@ -2217,7 +2217,7 @@ Vector3D CGameLevel::Nav_GlobalPointToPosition(const IVector2D& point) const
 	{
 		CHeightTileField& defField = *pRegion->m_heightfield[0];
 
-		hfieldtile_t* tile = defField.GetTile(outXYPos.x / s_navGridScales[m_navGridSelector], outXYPos.y / s_navGridScales[m_navGridSelector]);
+		hfieldtile_t* tile = defField.GetTile(outXYPos.x * s_invNavGridScales[m_navGridSelector], outXYPos.y * s_invNavGridScales[m_navGridSelector]);
 
 		Vector3D tile_position;
 
@@ -2226,8 +2226,10 @@ Vector3D CGameLevel::Nav_GlobalPointToPosition(const IVector2D& point) const
 		else
 			tile_position = defField.m_position + Vector3D(outXYPos.x*NAV_POINT_SIZE, 0, outXYPos.y*NAV_POINT_SIZE);
 
-		tile_position.x -= NAV_POINT_SIZE*0.5f;
-		tile_position.z -= NAV_POINT_SIZE*0.5f;
+		float offsetFactor = float(s_navGridScales[m_navGridSelector]) - 1.0f;
+
+		tile_position.x -= NAV_POINT_SIZE*0.5f*offsetFactor;
+		tile_position.z -= NAV_POINT_SIZE*0.5f*offsetFactor;
 
 		return tile_position;
 	}
@@ -2237,7 +2239,7 @@ Vector3D CGameLevel::Nav_GlobalPointToPosition(const IVector2D& point) const
 
 navcell_t& CGameLevel::Nav_GetCellStateAtGlobalPoint(const IVector2D& point)
 {
-	int navSize = m_cellsSize * s_navGridScales[m_navGridSelector];
+	int navSize = m_cellsSize*s_navGridScales[m_navGridSelector];
 
 	IVector2D localPoint;
 	CLevelRegion* reg;
@@ -2263,7 +2265,7 @@ navcell_t& CGameLevel::Nav_GetCellStateAtGlobalPoint(const IVector2D& point)
 
 ubyte& CGameLevel::Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacles)
 {
-	int navSize = m_cellsSize * s_navGridScales[m_navGridSelector];
+	int navSize = m_cellsSize*s_navGridScales[m_navGridSelector];
 
 	IVector2D localPoint;
 	CLevelRegion* reg;
@@ -2290,7 +2292,7 @@ ubyte& CGameLevel::Nav_GetTileAtPosition(const Vector3D& position, bool obstacle
 
 navcell_t& CGameLevel::Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, ubyte& tile)
 {
-	int navSize = m_cellsSize * s_navGridScales[m_navGridSelector];
+	int navSize = m_cellsSize*s_navGridScales[m_navGridSelector];
 
 	IVector2D localPoint;
 	CLevelRegion* reg;
