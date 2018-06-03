@@ -209,7 +209,8 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 
 	CAITrafficCar* pNewCar = NULL;
 
-	m_copSpawnIntervalCounter++;
+	if(m_enableCops)
+		m_copSpawnIntervalCounter++;
 
 	if (m_copSpawnIntervalCounter >= m_copRespawnInterval && m_enableCops)
 	{
