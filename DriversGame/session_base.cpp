@@ -119,6 +119,9 @@ void CGameSessionBase::Init()
 	if (g_replayData->m_state == REPL_INIT_PLAYBACK) // make scripted cars work first
 		g_replayData->StartPlay();
 
+	// just before the scripted call occurs, we fade in by default
+	g_pGameHUD->FadeIn(true);
+
 	//
 	// MISSION SCRIPT INITIALIZER CALL
 	// also will spawn mission objects, if not in replay.

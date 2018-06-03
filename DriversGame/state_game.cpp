@@ -868,17 +868,9 @@ bool CState_Game::Update( float fDt )
 	}
 	else
 	{
+		// only fade sound
 		if( m_fade > 0.0f )
 		{
-			ColorRGBA blockCol(0.0,0.0,0.0,1.0f);
-
-			Vertex2D_t tmprect1[] = { MAKETEXQUAD(0, 0,screenSize.x, screenSize.y*m_fade*0.5f, 0) };
-			Vertex2D_t tmprect2[] = { MAKETEXQUAD(0, screenSize.y*0.5f + screenSize.y*(1.0f-m_fade)*0.5f,screenSize.x, screenSize.y, 0) };
-
-			materials->Setup2D(screenSize.x, screenSize.y);
-			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect1,elementsOf(tmprect1), NULL, blockCol);
-			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect2,elementsOf(tmprect2), NULL, blockCol);
-
 			m_fade -= fDt*5.0f;
 
 			soundsystem->SetVolumeScale(1.0f-m_fade);

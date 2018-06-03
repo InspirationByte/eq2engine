@@ -110,6 +110,10 @@ protected:
 	bool								m_timeDisplayEnable;
 	double								m_timeDisplayValue;
 
+	float								m_fadeValue;
+	bool								m_fadeCurtains;
+	bool								m_faded;
+
 	ILocToken*							m_damageTok;
 	ILocToken*							m_felonyTok;
 

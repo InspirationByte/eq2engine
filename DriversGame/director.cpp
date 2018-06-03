@@ -353,41 +353,44 @@ void Director_Draw( float fDt )
 
 	materials->Setup2D(screenSize.x,screenSize.y);
 
+	static IEqFont* roboto30 = g_fontCache->GetFont("Roboto", 30);
+
 	const wchar_t* controlsText = varargs_w(
-		L"PLAY = &#FFFF00;O&;\n"
-		L"TOGGLE FREE CAMERA = &#FFFF00;F&;\n\n"
+		L"Play: &#FFFF00;O&;\n"
+		L"Toggle free camera: &#FFFF00;F&;\n\n"
 
-		L"NEXT CAMERA = &#FFFF00;PAGE UP&;\n"
-		L"PREV CAMERA = &#FFFF00;PAGE DOWN&;\n\n"
+		L"Next camera: &#FFFF00;PAGE UP&;\n"
+		L"PREV CAMERA: &#FFFF00;PAGE DOWN&;\n\n"
 
-		L"INSERT NEW CAMERA = &#FFFF00;KP_PLUS&;\n"
-		L"UPDATE CAMERA = &#FFFF00;KP_ENTER&;\n"
-		L"DELETE CAMERA = &#FFFF00;DEL&;\n"
+		L"Insert camera: &#FFFF00;KP_PLUS&;\n"
+		L"Reset camera: &#FFFF00;KP_ENTER&;\n"
+		L"Delete camera: &#FFFF00;DEL&;\n"
 
-		L"MOVE CAMERA START = &#FFFF00;LEFT ARROW&; and &#FFFF00;RIGHT ARROW&;\n\n"
+		L"Move camera start frame: &#FFFF00;LEFT ARROW&; and &#FFFF00;RIGHT ARROW&;\n\n"
 
-		//L"SET CAMERA KEYFRAME = &#FFFF00;SPACE&;\n\n"
+		//L"Set camera key flyby frame = &#FFFF00;SPACE&;\n\n"
 
-		L"CAMERA TYPE = &#FFFF00;1-5&; (Current is &#FFFF00;'%s'&;)\n"
-		L"CAMERA ZOOM = &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
-		L"TARGET VEHICLE = &#FFFF00;LEFT MOUSE CLICK ON OBJECT&;\n"
+		L"Camera type: &#FFFF00;1-5&; (Current is &#FFFF00;'%s'&;)\n"
+		L"Zoom: &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
+		L"Target vehicle: &#FFFF00;LEFT MOUSE CLICK ON OBJECT&;\n"
 
-		L"SEEK = &#FFFF00;fastseek <frame>&; (in console)\n", cameraTypeStrings[g_nDirectorCameraType], g_freeCamProps.fov);
+		L"Seek frame &#FFFF00;fastseek <frame>&; (in console)\n", cameraTypeStrings[g_nDirectorCameraType], g_freeCamProps.fov);
 
-	const wchar_t* shortText =	L"PAUSE = &#FFFF00;O&;\n"
-							L"TOGGLE FREE CAMERA = &#FFFF00;F&;\n"
-							L"FAST FORWARD 4x = &#FFFF00;BACKSPACE&;\n";
+	const wchar_t* shortText =	L"Pause: &#FFFF00;O&;\n"
+							L"Toggle free camera: &#FFFF00;F&;\n"
+							L"Fast Forward: &#FFFF00;BACKSPACE&;\n";
 
 	eqFontStyleParam_t params;
 	params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
 	params.textColor = color4_white;
+	params.scale = 20.0f;
 
 	Vector2D directorTextPos(15, screenSize.y/3);
 
 	if(g_pause.GetBool())
-		g_pHost->GetDefaultFont()->RenderText(controlsText, directorTextPos, params);
+		roboto30->RenderText(controlsText, directorTextPos, params);
 	else
-		g_pHost->GetDefaultFont()->RenderText(shortText, directorTextPos, params);
+		roboto30->RenderText(shortText, directorTextPos, params);
 
 	replaycamera_t* currentCamera = g_replayData->GetCurrentCamera();
 	int replayCamera = g_replayData->m_currentCamera;
@@ -506,12 +509,12 @@ void Director_Draw( float fDt )
 			Vector3D screenPos;
 			PointToScreen_Z(carOnCrosshair->GetOrigin() + Vector3D(0,1.0f,0), screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x,(float)screenSize.y));
 
-			g_pHost->GetDefaultFont()->RenderText(L"Click to set as current", screenPos.xy(), params);
+			roboto30->RenderText(L"Click to set as current", screenPos.xy(), params);
 		}
 	}
 
 	Vector2D frameInfoTextPos(screenSize.x/2, screenSize.y - (screenSize.y/6));
-	g_pHost->GetDefaultFont()->RenderText(framesStr, frameInfoTextPos, params);
+	roboto30->RenderText(framesStr, frameInfoTextPos, params);
 
 	if(g_freecam.GetBool())
 	{

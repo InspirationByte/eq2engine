@@ -36,7 +36,7 @@ DECLARE_CMD(hud_showLastMessage, NULL, 0)
 
 CDrvSynHUDManager::CDrvSynHUDManager()
 	: m_handleCounter(0), m_mainVehicle(nullptr), m_curTime(0.0f), m_mapTexture(nullptr), m_showMap(true), m_screenAlertTime(0.0f), m_screenMessageTime(0.0f), 
-		m_hudLayout(nullptr), m_hudDamageBar(nullptr), 	m_hudFelonyBar(nullptr), m_hudMap(nullptr)
+		m_hudLayout(nullptr), m_hudDamageBar(nullptr), 	m_hudFelonyBar(nullptr), m_hudMap(nullptr), m_fadeValue(0.0f), m_fadeCurtains(false), m_faded(false)
 {
 }
 
@@ -71,6 +71,10 @@ void CDrvSynHUDManager::Init()
 
 	m_timeDisplayEnable = false;
 	m_timeDisplayValue = 0.0;
+
+	m_faded = false;
+	m_fadeCurtains = false;
+	m_fadeValue = 0.0f;
 
 	m_radarBlank = 0.0f;
 
@@ -207,12 +211,16 @@ void CDrvSynHUDManager::SetTimeDisplay(bool enabled, double time)
 
 void CDrvSynHUDManager::FadeIn( bool useCurtains )
 {
-
+	m_fadeValue = 1.0f;
+	m_faded = false;
+	m_fadeCurtains = useCurtains;
 }
 
 void CDrvSynHUDManager::FadeOut()
 {
-
+	m_fadeValue = 0.0f;
+	m_faded = true;
+	m_fadeCurtains = false;
 }
 
 equi::IUIControl* CDrvSynHUDManager::FindChildElement(const char* name) const
@@ -280,6 +288,36 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 	RasterizerStateParams_t raster;
 	raster.scissor = true;
 	raster.cullMode = CULL_FRONT;
+
+	// fade screen
+	if(m_fadeValue > 0.0f)
+	{
+		ColorRGBA blockCol(0.0, 0.0, 0.0, 1.0f);
+
+		if(m_fadeCurtains)
+		{
+			Vertex2D_t tmprect1[] = { MAKETEXQUAD(0, 0,screenSize.x, screenSize.y*m_fadeValue*0.5f, 0) };
+			Vertex2D_t tmprect2[] = { MAKETEXQUAD(0, screenSize.y*0.5f + screenSize.y*(1.0f - m_fadeValue)*0.5f,screenSize.x, screenSize.y, 0) };
+
+			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, tmprect1, elementsOf(tmprect1), NULL, blockCol);
+			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, tmprect2, elementsOf(tmprect2), NULL, blockCol);
+		}
+		else
+		{
+			blockCol.w = m_fadeValue;
+
+			Vertex2D_t tmprect[] = { MAKETEXQUAD(0, 0,screenSize.x, screenSize.y, 0) };
+
+			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, tmprect, elementsOf(tmprect), NULL, blockCol, &blending);
+		}
+	}
+
+	if(m_faded)
+		m_fadeValue += fDt;
+	else
+		m_fadeValue -= fDt * (m_fadeCurtains ? 4.0f : 1.0f);
+
+	m_fadeValue = clamp(m_fadeValue, 0.0f, 1.0f);
 
 	if(m_enable && !replayHud)
 	{
