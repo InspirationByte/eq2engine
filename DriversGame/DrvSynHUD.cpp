@@ -55,6 +55,9 @@ void CDrvSynHUDManager::Init()
 			m_mapTexture = NULL;
 		else
 			m_mapTexture->Ref_Grab();
+
+		m_mapRenderTarget = g_pShaderAPI->CreateNamedRenderTarget("_mapRender",256, 256, FORMAT_RGBA8, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
+		m_mapRenderTarget->Ref_Grab();
 	}
 
 	m_showMap = (m_mapTexture != NULL);
@@ -158,7 +161,10 @@ void CDrvSynHUDManager::SetHudScheme(const char* name)
 void CDrvSynHUDManager::Cleanup()
 {
 	g_pShaderAPI->FreeTexture( m_mapTexture );
-	m_mapTexture = NULL;
+	m_mapTexture = nullptr;
+
+	g_pShaderAPI->FreeTexture(m_mapRenderTarget);
+	m_mapRenderTarget = nullptr;
 
 	/*
 	for(hudDisplayObjIterator_t iterator = m_displayObjects.begin(); iterator != m_displayObjects.end(); iterator++)
@@ -248,8 +254,235 @@ void CDrvSynHUDManager::DrawDamageRectangle(CMeshBuilder& meshBuilder, Rectangle
 	}
 }
 
+void CDrvSynHUDManager::DrawWorldIntoMap(const CViewParams& params, float fDt)
+{
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+
+	Matrix4x4 proj,view;
+	params.GetMatrices(proj, view, 512, 512, 0.1f, 900.0f, false);
+
+	materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
+	materials->SetMatrix(MATRIXMODE_VIEW, view);
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+	Vector2D imgSize(1.0f);
+
+	if (m_mapTexture)
+		imgSize = Vector2D(m_mapTexture->GetWidth(), m_mapTexture->GetHeight());
+
+	Vector2D imgToWorld = imgSize * HFIELD_POINT_SIZE;
+	Vector2D imgHalf = imgToWorld * 0.5f;
+
+	BlendStateParam_t blending;
+	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
+	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+
+	BlendStateParam_t additiveBlend;
+	additiveBlend.srcFactor = BLENDFACTOR_ONE;
+	additiveBlend.dstFactor = BLENDFACTOR_ONE;
+
+	RasterizerStateParams_t raster;
+	raster.scissor = false;
+	raster.cullMode = CULL_NONE;
+
+	g_pShaderAPI->SetTexture(m_mapTexture, nullptr, 0);
+	materials->SetBlendingStates(blending);
+	materials->SetRasterizerStates(raster);
+	materials->SetDepthStates(false, false);
+	materials->BindMaterial(materials->GetDefaultMaterial());
+
+	Vertex2D_t mapVerts[] = { MAKETEXQUAD(imgHalf.x, -imgHalf.y, -imgHalf.x, imgHalf.y, 0) };
+
+#define MAKE_3D(v) Vector3D(v.x,-10.0f,v.y)
+
+	// draw the map rectangle
+	meshBuilder.Begin(PRIM_TRIANGLES);
+		meshBuilder.Color4f(1, 1, 1, 0.75f);
+		meshBuilder.TexturedQuad3(MAKE_3D(mapVerts[0].position), MAKE_3D(mapVerts[1].position), MAKE_3D(mapVerts[2].position), MAKE_3D(mapVerts[3].position),
+			mapVerts[0].texCoord, mapVerts[1].texCoord, mapVerts[2].texCoord, mapVerts[3].texCoord);
+	meshBuilder.End();
+
+	Vector3D mainVehiclePos = m_mainVehicle ? m_mainVehicle->GetOrigin() * Vector3D(1.0f, 0.0f, 1.0f) : params.GetOrigin();
+
+	bool mainVehicleInPursuit = (m_mainVehicle ? m_mainVehicle->GetPursuedCount() > 0 : false);
+	bool mainVehicleHasFelony = (m_mainVehicle ? m_mainVehicle->GetFelony() > 0.1f : false);
+
+	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
+	materials->BindMaterial(materials->GetDefaultMaterial());
+
+	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+
+		// display cop cars on map
+		for(int i = 0; i < g_pAIManager->m_copCars.numElem(); i++)
+		{
+			CAIPursuerCar* pursuer = g_pAIManager->m_copCars[i];
+
+			if(!pursuer)
+				continue;
+
+			if(!pursuer->IsAlive() || !pursuer->IsEnabled())
+				continue;
+
+			// don't reveal cop position
+			if(mainVehicleInPursuit && !pursuer->InPursuit())
+				continue;
+
+			Vector3D cop_forward = pursuer->GetForwardVector();
+
+			float Yangle = -RAD2DEG(atan2f(cop_forward.z, cop_forward.x));
+
+			Vector3D copPos = (pursuer->GetOrigin() + pursuer->GetForwardVector()) * Vector3D(1.0f,0.0f,1.0f);
+
+			meshBuilder.Color4fv(1.0f);
+			meshBuilder.Position3fv(copPos);
+
+			int vtxIdx = meshBuilder.AdvanceVertexIndex();
+
+			bool inPursuit = pursuer->InPursuit();
+
+			bool hasAttention = (mainVehicleHasFelony || pursuer->GetPursuerType() == PURSUER_TYPE_GANG);
+
+			// draw cop car frustum
+			float size = hasAttention ? AI_COPVIEW_FAR_WANTED : AI_COPVIEW_FAR;
+			float angFac = hasAttention ? 22.0f : 12.0f;
+			float angOffs = hasAttention ? 0.0f : 45.0f;
+
+			meshBuilder.Color4f(1,1,1,0.0f);
+			for(int j = 0; j < 8; j++)
+			{
+				float ss,cs;
+				float angle = (float(j)+0.5f) * angFac + Yangle + angOffs;
+				SinCos(DEG2RAD(angle), &ss, &cs);
+
+				if(j < 1 || j > 6)
+					meshBuilder.Position3fv(copPos + Vector3D(ss, 0.0f, cs)*size*0.35f);
+				else
+					meshBuilder.Position3fv(copPos + Vector3D(ss, 0.0f, cs)*size);
+
+				if(j > 0)
+					meshBuilder.AdvanceVertexIndex(vtxIdx);
+
+				meshBuilder.AdvanceVertexIndex(vtxIdx+j+1);
+			}
+
+			meshBuilder.AdvanceVertexIndex(0xFFFF);
+
+			// draw dot also
+			{
+				float colorValue = inPursuit ? sin(m_curTime*16.0) : 0.0f;
+				colorValue = clamp(colorValue*100.0f, 0.0f, 1.0f);
+
+				meshBuilder.Color4fv(ColorRGBA(ColorRGB(colorValue), 1.0f));
+				meshBuilder.Position3fv(copPos);
+				int firstVert = meshBuilder.AdvanceVertexIndex();
+
+				for(int i = 0; i < 11; i++)
+				{
+					float ss,cs;
+					float angle = float(i-1) * 36.0f;
+					SinCos(DEG2RAD(angle), &ss, &cs);
+
+					meshBuilder.Position3fv( copPos + Vector3D(ss, 0.0f, cs)*6.0f );
+
+					if(i > 0)
+						meshBuilder.AdvanceVertexIndex( firstVert );
+
+					meshBuilder.AdvanceVertexIndex( firstVert+i+1 );
+				}
+
+				meshBuilder.AdvanceVertexIndex(0xFFFF);
+			}
+		}
+		
+		for(hudDisplayObjIterator_t iterator = m_displayObjects.begin(); iterator != m_displayObjects.end(); iterator++)
+		{
+			hudDisplayObject_t& obj = iterator->second;
+
+			if(!(obj.flags & HUD_DOBJ_IS_TARGET))
+				continue;
+
+			Vector3D objPos = (obj.object ? obj.object->GetOrigin() : obj.point) * Vector3D(1.0f, 0.0f,1.0f);
+
+			// draw fading out arrow
+			{
+				ColorRGBA arrowCol1(0.0f,0.0f,0.0f,0.5f);
+				ColorRGBA arrowCol2(0.0f,0.0f,0.0f,0.15f);
+
+				meshBuilder.Color4fv(arrowCol1);
+				meshBuilder.Position3fv(objPos);
+				int firstVert = meshBuilder.AdvanceVertexIndex();
+
+				Vector3D targetDir(objPos - mainVehiclePos);
+				Vector3D ntargetDir(normalize(targetDir));
+				Vector3D targetPerpendicular(-ntargetDir.z, 0.0f, ntargetDir.x);
+
+				float distToTarg = length(targetDir);
+
+				meshBuilder.Color4fv(arrowCol2);
+
+				meshBuilder.Position3fv(mainVehiclePos - targetPerpendicular * distToTarg * 0.15f);
+				meshBuilder.AdvanceVertexIndex(firstVert+1);
+
+				meshBuilder.Position3fv(mainVehiclePos + targetPerpendicular * distToTarg * 0.15f);
+				meshBuilder.AdvanceVertexIndex(firstVert+2);
+
+				meshBuilder.AdvanceVertexIndex(firstVert+2);
+
+				meshBuilder.AdvanceVertexIndex(0xFFFF);
+			}
+
+			// draw flashing point
+			meshBuilder.Color4fv(1.0f);
+			meshBuilder.Position3fv(objPos);
+			int firstVert = meshBuilder.AdvanceVertexIndex();
+
+			meshBuilder.Color4f(1.0f, 1.0f, 1.0f, 0.0f);
+			for(int i = 0; i < 11; i++)
+			{
+				float ss,cs;
+				float angle = float(i-1) * 36.0f;
+				SinCos(DEG2RAD(angle), &ss, &cs);
+
+				meshBuilder.Position3fv( objPos + Vector3D(ss, 0.0f, cs) * obj.flashValue * 30.0f );
+
+				if(i > 0)
+					meshBuilder.AdvanceVertexIndex( firstVert );
+
+				meshBuilder.AdvanceVertexIndex( firstVert+i+1 );
+			}
+
+			meshBuilder.AdvanceVertexIndex(0xFFFF);
+		}
+		
+		// draw player car dot
+		{
+			meshBuilder.Color4f(0,0,0,1);
+			meshBuilder.Position3fv(mainVehiclePos);
+			int firstVert = meshBuilder.AdvanceVertexIndex();
+
+			//meshBuilder.Color4fv(0.0f);
+			for(int i = 0; i < 11; i++)
+			{
+				float ss,cs;
+				float angle = float(i-1) * 36.0f;
+				SinCos(DEG2RAD(angle), &ss, &cs);
+
+				meshBuilder.Position3fv(mainVehiclePos + Vector3D(ss, 0.0f, cs)*10.0f );
+
+				if(i > 0)
+					meshBuilder.AdvanceVertexIndex( firstVert );
+
+				meshBuilder.AdvanceVertexIndex( firstVert+i+1 );
+			}
+
+			meshBuilder.AdvanceVertexIndex(0xFFFF);
+		}
+		
+	meshBuilder.End();
+}
+
 // render the screen with maps and shit
-void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , const Matrix4x4& projMatrix, const Matrix4x4& viewMatrix )
+void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 {
 	bool replayHud = (g_replayData->m_state == REPL_PLAYING);
 
@@ -321,7 +554,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 
 	if(m_enable && !replayHud)
 	{
-		bool inPursuit = (m_mainVehicle ? m_mainVehicle->GetPursuedCount() > 0 : false);
+		bool mainVehicleInPursuit = (m_mainVehicle ? m_mainVehicle->GetPursuedCount() > 0 : false);
 		bool damageBarVisible = m_hudDamageBar && m_hudDamageBar->IsVisible();
 		bool felonyBarVisible = m_hudFelonyBar && m_hudFelonyBar->IsVisible();
 		bool mapVisible = m_hudMap && m_hudMap->IsVisible() && m_showMap;
@@ -352,7 +585,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 					DrawDamageRectangle(meshBuilder, damageRect, fDamage);
 
 					// draw pursuit cop "triangles" on screen
-					if( inPursuit )
+					if(mainVehicleInPursuit)
 					{
 						for(int i = 0; i < g_pAIManager->m_copCars.numElem(); i++)
 						{
@@ -474,16 +707,16 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		// get felony
 		float felonyPercent = 0.0f;
 
-		bool hasFelony = false;
+		bool mainVehicleHasFelony = false;
 
 		if( m_mainVehicle )
 		{
 			felonyPercent = m_mainVehicle->GetFelony()*100;
 
-			hasFelony = felonyPercent >= 10.0f;
+			mainVehicleHasFelony = felonyPercent >= 10.0f;
 
 			// if cars pursues me
-			if(felonyPercent >= 10.0f && inPursuit)
+			if(felonyPercent >= 10.0f && mainVehicleInPursuit)
 			{
 				float colorValue = clamp(sinf(m_curTime*16.0)*16,-1.0f,1.0f); //sin(g_pHost->m_fGameCurTime*8.0f);
 
@@ -552,14 +785,11 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 		if( mapVisible )
 		{
 			float viewRotation = DEG2RAD( camera.GetAngles().y + 180);
-			Vector3D viewPos = Vector3D(camera.GetOrigin().xz() * Vector2D(1.0f,-1.0f), 0.0f);
-			Vector2D playerPos(0);
+			Vector3D viewPos = camera.GetOrigin() * Vector3D(1.0f, 0.0f, 1.0f);//Vector3D(camera.GetOrigin().xz() * Vector2D(1.0f,-1.0f), 0.0f);
 
 			float mapZoom = (hud_mapZoom.GetFloat() / HFIELD_POINT_SIZE) * m_hudMap->CalcScaling().y;
 
 			IRectangle mapRectangle = m_hudMap->GetClientRectangle(); //(mapPos, mapPos+mapSize);
-
-			g_pShaderAPI->SetScissorRectangle(mapRectangle);
 
 			Vector2D mapCenter( mapRectangle.GetCenter() );
 
@@ -572,234 +802,62 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 				if (Yangle < 0.0)
 					Yangle += 360.0f;
 
-				viewPos = Vector3D(m_mainVehicle->GetOrigin().xz()*Vector2D(1.0f,-1.0f), 0.0f);
+				viewPos = m_mainVehicle->GetOrigin() * Vector3D(1.0f,0.0f,1.0f);
 				viewRotation = DEG2RAD( Yangle + 90);
-
-				playerPos = m_mainVehicle->GetOrigin().xz() * Vector2D(-1.0f,1.0f);
 			}
 
-			Matrix4x4 mapTransform = rotateZ4(viewRotation);// * rotateX4(DEG2RAD(25));
+			g_pShaderAPI->ChangeRenderTarget(m_mapRenderTarget, 0, nullptr, 0);
+			g_pShaderAPI->Clear(true, false, false);
 
-			//materials->SetMatrix(MATRIXMODE_PROJECTION, perspectiveMatrixY(mapSize.x,mapSize.y, 90.0f, 0.0f, 1000.0f));
-			//materials->SetMatrix(MATRIXMODE_VIEW, rotateZXY4(DEG2RAD(40.0f), DEG2RAD(180.0f), DEG2RAD(180.0f)) * translate(0.0f, 200.0f, -500.0f));
-			//materials->SetMatrix(MATRIXMODE_WORLD, mapTransform * translate(viewPos));
+			CViewParams mapView(viewPos + Vector3D(0,320.0f,0), Vector3D(60.0f,RAD2DEG(viewRotation) + 180.0f,0), 90.0f);
 
-			materials->SetMatrix(MATRIXMODE_VIEW, translate(mapCenter.x,mapCenter.y, 0.0f) * scale4(mapZoom, mapZoom, 1.0f));
-			materials->SetMatrix(MATRIXMODE_WORLD, mapTransform * translate(viewPos));
+			DrawWorldIntoMap(mapView, fDt);
 
-			Vector2D imgSize(1.0f);
+			// restore
+			g_pShaderAPI->ChangeRenderTargetToBackBuffer();
+			
+			materials->Setup2D(screenSize.x, screenSize.y);
+			materials->SetMatrix(MATRIXMODE_VIEW, identity4());
+			materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-			if( m_mapTexture )
-				imgSize = Vector2D(m_mapTexture->GetWidth(),m_mapTexture->GetHeight());
-
-			Vector2D imgToWorld = imgSize*HFIELD_POINT_SIZE;
-			Vector2D imgHalf = imgToWorld * 0.5f;
-
-			Vertex2D_t mapVerts[] = { MAKETEXQUAD(-imgHalf.x, -imgHalf.y, imgHalf.x, imgHalf.y, 0) };
-
-			g_pShaderAPI->SetTexture(m_mapTexture,NULL,0);
 			materials->SetBlendingStates(blending);
 			materials->SetRasterizerStates(raster);
-			materials->SetDepthStates(false,false);
+			materials->SetDepthStates(false, false);
+
+			g_pShaderAPI->SetScissorRectangle(mapRectangle);
+
+			g_pShaderAPI->SetTexture(m_mapRenderTarget, nullptr,0);
 			materials->BindMaterial(materials->GetDefaultMaterial());
+
+			Vertex2D_t mapVerts[] = { MAKETEXQUAD(mapRectangle.vleftTop.x, mapRectangle.vleftTop.y, mapRectangle.vrightBottom.x, mapRectangle.vrightBottom.y, 0) };
 
 			// draw the map rectangle
 			meshBuilder.Begin(PRIM_TRIANGLES);
-				meshBuilder.Color4f( 1,1,1,0.5f );
-				meshBuilder.TexturedQuad2(	mapVerts[0].position, mapVerts[1].position, mapVerts[2].position, mapVerts[3].position,
-											mapVerts[0].texCoord, mapVerts[1].texCoord, mapVerts[2].texCoord, mapVerts[3].texCoord);
+				meshBuilder.Color4f(1, 1, 1, 1);
+				meshBuilder.TexturedQuad2(mapVerts[0].position, mapVerts[1].position, mapVerts[2].position, mapVerts[3].position,
+				mapVerts[0].texCoord, mapVerts[1].texCoord, mapVerts[2].texCoord, mapVerts[3].texCoord);
 			meshBuilder.End();
 
-			g_pShaderAPI->SetTexture(m_mapTexture,NULL,0);
+			materials->SetBlendingStates(additiveBlend);
+			g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
 			materials->BindMaterial(materials->GetDefaultMaterial());
 
-			meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
-
-				// display cop cars on map
-				for(int i = 0; i < g_pAIManager->m_copCars.numElem(); i++)
+			meshBuilder.Begin(PRIM_TRIANGLES);
+				if (mainVehicleInPursuit || !mainVehicleInPursuit && m_radarBlank > 0)
 				{
-					CAIPursuerCar* pursuer = g_pAIManager->m_copCars[i];
-
-					if(!pursuer)
-						continue;
-
-					if(!pursuer->IsAlive() || !pursuer->IsEnabled())
-						continue;
-
-					// don't reveal cop position
-					if(inPursuit && !pursuer->InPursuit())
-						continue;
-
-					Vector3D cop_forward = pursuer->GetForwardVector();
-
-					float Yangle = RAD2DEG(atan2f(cop_forward.z, cop_forward.x));
-
-					if (Yangle < 0.0)
-						Yangle += 360.0f;
-
-					Vector2D copPos = (pursuer->GetOrigin().xz() + pursuer->GetForwardVector().xz()) * Vector2D(-1.0f,1.0f);
-
-					meshBuilder.Color4fv(1.0f);
-					meshBuilder.Position2fv(copPos);
-
-					int vtxIdx = meshBuilder.AdvanceVertexIndex();
-
-					bool inPursuit = pursuer->InPursuit();
-
-					bool hasAttention = (hasFelony || pursuer->GetPursuerType() == PURSUER_TYPE_GANG);
-
-					// draw cop car frustum
-					float size = hasAttention ? AI_COPVIEW_FAR_WANTED : AI_COPVIEW_FAR;
-					float angFac = hasAttention ? 22.0f : 12.0f;
-					float angOffs = hasAttention ? 176.0f : 228.0f;
-
-					meshBuilder.Color4f(1,1,1,0.0f);
-					for(int j = 0; j < 8; j++)
-					{
-						float ss,cs;
-						float angle = (float(j)+0.5f) * angFac + Yangle + angOffs;
-						SinCos(DEG2RAD(angle), &ss, &cs);
-
-						if(j < 1 || j > 6)
-							meshBuilder.Position2fv(copPos + Vector2D(ss, cs)*size*0.35f);
-						else
-							meshBuilder.Position2fv(copPos + Vector2D(ss, cs)*size);
-
-						if(j > 0)
-							meshBuilder.AdvanceVertexIndex(vtxIdx);
-
-						meshBuilder.AdvanceVertexIndex(vtxIdx+j+1);
-					}
-
-					meshBuilder.AdvanceVertexIndex(0xFFFF);
-
-					// draw dot also
-					{
-						float colorValue = inPursuit ? sin(m_curTime*16.0) : 0.0f;
-						colorValue = clamp(colorValue*100.0f, 0.0f, 1.0f);
-
-						meshBuilder.Color4fv(ColorRGBA(ColorRGB(colorValue), 1.0f));
-						meshBuilder.Position2fv(copPos);
-						int firstVert = meshBuilder.AdvanceVertexIndex();
-
-						//meshBuilder.Color4fv(ColorRGBA(ColorRGB(colorValue), 0.0f));
-						for(int i = 0; i < 11; i++)
-						{
-							float ss,cs;
-							float angle = float(i-1) * 36.0f;
-							SinCos(DEG2RAD(angle), &ss, &cs);
-
-							meshBuilder.Position2fv( copPos + Vector2D(ss, cs)*6.0f );
-
-							if(i > 0)
-								meshBuilder.AdvanceVertexIndex( firstVert );
-
-							meshBuilder.AdvanceVertexIndex( firstVert+i+1 );
-						}
-
-						meshBuilder.AdvanceVertexIndex(0xFFFF);
-					}
-				}
-
-				for(hudDisplayObjIterator_t iterator = m_displayObjects.begin(); iterator != m_displayObjects.end(); iterator++)
-				{
-					hudDisplayObject_t& obj = iterator->second;
-
-					if(!(obj.flags & HUD_DOBJ_IS_TARGET))
-						continue;
-
-					Vector2D objPos = (obj.object ? obj.object->GetOrigin().xz() : obj.point.xz()) * Vector2D(-1.0f,1.0f);
-
-					// draw fading out arrow
-					{
-						ColorRGBA arrowCol1(0.0f,0.0f,0.0f,0.5f);
-						ColorRGBA arrowCol2(0.0f,0.0f,0.0f,0.15f);
-
-						meshBuilder.Color4fv(arrowCol1);
-						meshBuilder.Position2fv(objPos);
-						int firstVert = meshBuilder.AdvanceVertexIndex();
-
-						Vector2D targetDir = (objPos - playerPos);
-						Vector2D ntargetDir = normalize(targetDir);
-						Vector2D targetPerpendicular = Vector2D(-ntargetDir.y,ntargetDir.x);
-
-						float distToTarg = length(targetDir);
-
-						meshBuilder.Color4fv(arrowCol2);
-
-						meshBuilder.Position2fv(playerPos - targetPerpendicular*distToTarg*0.25f);
-						meshBuilder.AdvanceVertexIndex(firstVert+1);
-
-						meshBuilder.Position2fv(playerPos + targetPerpendicular*distToTarg*0.25f);
-						meshBuilder.AdvanceVertexIndex(firstVert+2);
-
-						meshBuilder.AdvanceVertexIndex(firstVert+2);
-
-						meshBuilder.AdvanceVertexIndex(0xFFFF);
-					}
-
-					// draw flashing point
-					meshBuilder.Color4fv(1.0f);
-					meshBuilder.Position2fv(objPos);
-					int firstVert = meshBuilder.AdvanceVertexIndex();
-
-					meshBuilder.Color4f(1.0f, 1.0f, 1.0f, 0.0f);
-					for(int i = 0; i < 11; i++)
-					{
-						float ss,cs;
-						float angle = float(i-1) * 36.0f;
-						SinCos(DEG2RAD(angle), &ss, &cs);
-
-						meshBuilder.Position2fv( objPos + Vector2D(ss, cs) * obj.flashValue * 30.0f );
-
-						if(i > 0)
-							meshBuilder.AdvanceVertexIndex( firstVert );
-
-						meshBuilder.AdvanceVertexIndex( firstVert+i+1 );
-					}
-
-					meshBuilder.AdvanceVertexIndex(0xFFFF);
-				}
-
-				// draw player car dot
-				{
-					meshBuilder.Color4f(0,0,0,1);
-					meshBuilder.Position2fv(playerPos);
-					int firstVert = meshBuilder.AdvanceVertexIndex();
-
-					//meshBuilder.Color4fv(0.0f);
-					for(int i = 0; i < 11; i++)
-					{
-						float ss,cs;
-						float angle = float(i-1) * 36.0f;
-						SinCos(DEG2RAD(angle), &ss, &cs);
-
-						meshBuilder.Position2fv( playerPos + Vector2D(ss, cs)*10.0f );
-
-						if(i > 0)
-							meshBuilder.AdvanceVertexIndex( firstVert );
-
-						meshBuilder.AdvanceVertexIndex( firstVert+i+1 );
-					}
-
-					meshBuilder.AdvanceVertexIndex(0xFFFF);
-				}
-
-				if(inPursuit || !inPursuit && m_radarBlank > 0)
-				{
-					ColorRGBA color(1,1,1,m_radarBlank);
+					ColorRGBA color(m_radarBlank);
 
 					// draw flashing red-blue radar
-					if(inPursuit)
+					if (mainVehicleInPursuit)
 					{
 						float colorValue = sin(m_curTime*16.0);
 
-						float v1 = pow(-min(0.0f,colorValue), 2.0f);
-						float v2 = pow(max(0.0f,colorValue), 2.0f);
+						float v1 = pow(-min(0.0f, colorValue), 2.0f);
+						float v2 = pow(max(0.0f, colorValue), 2.0f);
 
 						m_radarBlank = 1.0f;
 
-						color = ColorRGBA(v1,0.0f,v2,0.35f);
+						color = ColorRGBA(v1, 0.0f, v2, 1.0f) * 0.25f;
 					}
 					else //draw radar blank after the pursuit ends
 					{
@@ -807,15 +865,12 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize) // , con
 					}
 
 					// draw the map-sized rectangle
-					meshBuilder.Color4fv( color );
-					meshBuilder.Quad2(	mapVerts[0].position, mapVerts[1].position, mapVerts[2].position, mapVerts[3].position);
+					meshBuilder.Color4fv(color);
+					meshBuilder.TexturedQuad2(mapVerts[0].position, mapVerts[1].position, mapVerts[2].position, mapVerts[3].position,
+						mapVerts[0].texCoord, mapVerts[1].texCoord, mapVerts[2].texCoord, mapVerts[3].texCoord);
 				}
-
 			meshBuilder.End();
 		}
-
-		materials->SetMatrix(MATRIXMODE_VIEW, identity4());
-		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 	}
 
 	if(!replayHud)

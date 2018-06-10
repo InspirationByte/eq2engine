@@ -58,7 +58,7 @@ float CViewParams::GetFOV() const
 	return m_fFOV;
 }
 
-float CViewParams::GetLODScaledDistFrom( const Vector3D& position )
+float CViewParams::GetLODScaledDistFrom( const Vector3D& position ) const
 {
 	float fLodDistScale = m_fFOV * BASE_LOD_FOV;
 	fLodDistScale = min(fLodDistScale, 1.0f);
@@ -66,7 +66,7 @@ float CViewParams::GetLODScaledDistFrom( const Vector3D& position )
 	return fLodDistScale * length(position-m_vecOrigin);
 }
 
-void CViewParams::GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, float height, float zNear, float zFar, bool orthographic)
+void CViewParams::GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, float height, float zNear, float zFar, bool orthographic) const
 {
 	Vector3D vRadianRotation = VDEG2RAD(m_vecAngles);
 
@@ -80,7 +80,7 @@ void CViewParams::GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, flo
 	view.translate(-m_vecOrigin);
 }
 
-void CViewParams::GetMatricesOrtho(Matrix4x4& proj, Matrix4x4& view, Rectangle_t rect, float zNear, float zFar)
+void CViewParams::GetMatricesOrtho(Matrix4x4& proj, Matrix4x4& view, Rectangle_t rect, float zNear, float zFar) const
 {
 	Vector3D vRadianRotation = VDEG2RAD(m_vecAngles);
 

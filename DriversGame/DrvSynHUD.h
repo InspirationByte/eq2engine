@@ -82,6 +82,7 @@ public:
 
 protected:
 
+	void						DrawWorldIntoMap(const CViewParams& params, float fDt);
 	void						DrawDamageRectangle(CMeshBuilder& meshBuilder, Rectangle_t& rect, float percentage, float alpha = 1.0f);
 
 	bool								m_enable;
@@ -90,6 +91,7 @@ protected:
 	float								m_radarBlank;
 
 	ITexture*							m_mapTexture;
+	ITexture*							m_mapRenderTarget;
 
 	std::map<int, hudDisplayObject_t>	m_displayObjects;
 	int									m_handleCounter;
