@@ -33,7 +33,10 @@ struct hudDisplayObject_t
 	int				flags;		// flags or type
 	CGameObject*	object;		// bound object
 	Vector3D		point;		// static position if object is undefined
+
 	float			flashValue; // flashing
+
+	float			flashVelocity;
 };
 
 typedef std::map<int, hudDisplayObject_t>::iterator hudDisplayObjIterator_t;
@@ -52,7 +55,8 @@ public:
 	void						SetHudScheme(const char* name);
 
 	// render the screen with maps and shit
-	void						Render( float fDt, const IVector2D& screenSize); //, const Matrix4x4& projMatrix, const Matrix4x4& viewMatrix );
+	void						Render( float fDt, const IVector2D& screenSize);
+	void						Render3D( float fDt );
 
 	// main object to display
 	void						SetDisplayMainVehicle( CCar* car );
@@ -125,6 +129,9 @@ protected:
 	equi::IUIControl*					m_hudDamageBar;
 	equi::IUIControl*					m_hudFelonyBar;
 	equi::IUIControl*					m_hudMap;
+
+	IEqModel*							m_hudModels;
+	CGameObject							m_hudObjectDummy;
 };
 
 #ifndef __INTELLISENSE__

@@ -17,8 +17,7 @@ CDrvSynHUDManager* g_pGameHUD = &s_drvSynHUDManager;
 
 ConVar r_drawHUD("hud_draw", "1", NULL, CV_ARCHIVE);
 
-ConVar hud_mapZoom("hud_mapZoom", "1.5", NULL, CV_ARCHIVE);
-ConVar hud_mapSize("hud_mapSize", "250", NULL, CV_ARCHIVE);
+ConVar hud_mapZoom("hud_mapZoom", "1.0", NULL, CV_ARCHIVE);
 
 ConVar hud_debug_car("hud_debug_car", "0", NULL, CV_CHEAT);
 
@@ -87,7 +86,8 @@ void CDrvSynHUDManager::Init()
 	// init hud layout
 	m_hudLayout = equi::Manager->CreateElement("HudElement");
 
-	//SetHudScheme( DEFAULT_HUD_SCHEME );
+	int hudModelCacheId = PrecacheStudioModel("/models/misc/hud_models.egf");
+	m_hudObjectDummy.SetModel("/models/misc/hud_models.egf");
 }
 
 void InitHUDBaseKeyValues_r(kvkeybase_t* hudKVs, kvkeybase_t* baseKVs)
@@ -181,6 +181,8 @@ void CDrvSynHUDManager::Cleanup()
 	m_hudLayout = nullptr;
 
 	m_schemeName.Empty();
+
+	m_hudObjectDummy.SetModelPtr(nullptr);
 }
 
 void CDrvSynHUDManager::ShowMessage( const char* token, float time )
@@ -258,8 +260,11 @@ void CDrvSynHUDManager::DrawWorldIntoMap(const CViewParams& params, float fDt)
 {
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
+	IRectangle mapRectangle = m_hudMap->GetClientRectangle();
+	Vector2D mapRectSize = mapRectangle.GetSize();
+
 	Matrix4x4 proj,view;
-	params.GetMatrices(proj, view, 512, 512, 0.1f, 900.0f, false);
+	params.GetMatrices(proj, view, mapRectSize.x, mapRectSize.y, 0.1f, 900.0f, false);
 
 	materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
 	materials->SetMatrix(MATRIXMODE_VIEW, view);
@@ -293,7 +298,7 @@ void CDrvSynHUDManager::DrawWorldIntoMap(const CViewParams& params, float fDt)
 
 	Vertex2D_t mapVerts[] = { MAKETEXQUAD(imgHalf.x, -imgHalf.y, -imgHalf.x, imgHalf.y, 0) };
 
-#define MAKE_3D(v) Vector3D(v.x,-10.0f,v.y)
+#define MAKE_3D(v) Vector3D(v.x,0.0f,v.y)
 
 	// draw the map rectangle
 	meshBuilder.Begin(PRIM_TRIANGLES);
@@ -305,7 +310,7 @@ void CDrvSynHUDManager::DrawWorldIntoMap(const CViewParams& params, float fDt)
 	Vector3D mainVehiclePos = m_mainVehicle ? m_mainVehicle->GetOrigin() * Vector3D(1.0f, 0.0f, 1.0f) : params.GetOrigin();
 
 	bool mainVehicleInPursuit = (m_mainVehicle ? m_mainVehicle->GetPursuedCount() > 0 : false);
-	bool mainVehicleHasFelony = (m_mainVehicle ? m_mainVehicle->GetFelony() > 0.1f : false);
+	bool mainVehicleHasFelony = (m_mainVehicle ? m_mainVehicle->GetFelony() >= 0.1f : false);
 
 	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
 	materials->BindMaterial(materials->GetDefaultMaterial());
@@ -481,6 +486,45 @@ void CDrvSynHUDManager::DrawWorldIntoMap(const CViewParams& params, float fDt)
 	meshBuilder.End();
 }
 
+void CDrvSynHUDManager::Render3D( float fDt )
+{
+	bool replayHud = (g_replayData->m_state == REPL_PLAYING);
+
+	if (m_enable && !replayHud)
+	{
+		CViewParams& camera = *g_pGameWorld->GetView();
+
+		float viewRotation = camera.GetAngles().y + 180.0f;
+
+		for (hudDisplayObjIterator_t iterator = m_displayObjects.begin(); iterator != m_displayObjects.end(); iterator++)
+		{
+			hudDisplayObject_t& obj = iterator->second;
+
+			Vector3D markPos = obj.point;
+
+			CGameObject* gameObj = obj.object;
+
+			if (gameObj && (gameObj->ObjType() == GO_CAR || gameObj->ObjType() == GO_CAR_AI))
+			{
+				CCar* car = (CCar*)gameObj;
+
+				markPos = car->GetOrigin() + vec3_up * car->m_conf->cameraConf.height;
+			}
+
+			markPos += vec3_up * sinf(obj.flashValue * PI_F);
+
+			if (obj.flags & HUD_DOBJ_IS_TARGET)
+			{
+				m_hudObjectDummy.SetAngles(Vector3D(0.0f, viewRotation, 0.0f));
+				m_hudObjectDummy.SetOrigin(markPos);
+				m_hudObjectDummy.Simulate(0.0f);
+
+				m_hudObjectDummy.Draw(0);
+			}
+		}
+	}
+}
+
 // render the screen with maps and shit
 void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 {
@@ -621,11 +665,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 				{
 					hudDisplayObject_t& obj = iterator->second;
 
-					obj.flashValue -= fDt;
-
-					if(obj.flashValue < 0.0f)
-						obj.flashValue = 1.0f;
-
 					if(	(obj.flags & HUD_DOBJ_CAR_DAMAGE) || (obj.flags & HUD_DOBJ_IS_TARGET))
 					{
 						CGameObject* gameObj = obj.object;
@@ -644,6 +683,11 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 							maxVisibleDistance = 50.0f;
 						}
 
+						obj.flashValue -= fDt * 1.5f;
+
+						if (obj.flashValue < 0.0f)
+							obj.flashValue = 1.0f;
+
 						Vector3D screenPos;
 						PointToScreen_Z(markPos, screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x,(float)screenSize.y));
 
@@ -658,14 +702,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 								continue;
 
 							float targetAlpha = 1.0f - (dist / maxVisibleDistance);
-
-							if(obj.flags & HUD_DOBJ_IS_TARGET)
-							{
-								Vector2D targetScreenPos = screenPos.xy() - Vector2D(0, obj.flashValue*30.0f);
-
-								meshBuilder.Color4f( 1.0f, 0.0f, 0.0f, pow(targetAlpha, 0.5f) );
-								meshBuilder.Triangle2(targetScreenPos, targetScreenPos+Vector2D(-20, -20), targetScreenPos+Vector2D(20, -20));
-							}
 
 							if( (obj.flags & HUD_DOBJ_CAR_DAMAGE) )
 							{
@@ -784,12 +820,10 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 		// display radar and map
 		if( mapVisible )
 		{
-			float viewRotation = DEG2RAD( camera.GetAngles().y + 180);
-			Vector3D viewPos = camera.GetOrigin() * Vector3D(1.0f, 0.0f, 1.0f);//Vector3D(camera.GetOrigin().xz() * Vector2D(1.0f,-1.0f), 0.0f);
+			float viewRotation = camera.GetAngles().y + 180.0f;
+			Vector3D viewPos = camera.GetOrigin() * Vector3D(1.0f, 0.0f, 1.0f);
 
-			float mapZoom = (hud_mapZoom.GetFloat() / HFIELD_POINT_SIZE) * m_hudMap->CalcScaling().y;
-
-			IRectangle mapRectangle = m_hudMap->GetClientRectangle(); //(mapPos, mapPos+mapSize);
+			IRectangle mapRectangle = m_hudMap->GetClientRectangle();
 
 			Vector2D mapCenter( mapRectangle.GetCenter() );
 
@@ -803,13 +837,16 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 					Yangle += 360.0f;
 
 				viewPos = m_mainVehicle->GetOrigin() * Vector3D(1.0f,0.0f,1.0f);
-				viewRotation = DEG2RAD( Yangle + 90);
+				viewRotation = Yangle + 90.0f;
 			}
+
+			Vector3D viewForward;
+			AngleVectors(Vector3D(0.0f, viewRotation, 0.0f), &viewForward);
 
 			g_pShaderAPI->ChangeRenderTarget(m_mapRenderTarget, 0, nullptr, 0);
 			g_pShaderAPI->Clear(true, false, false);
 
-			CViewParams mapView(viewPos + Vector3D(0,320.0f,0), Vector3D(60.0f,RAD2DEG(viewRotation) + 180.0f,0), 90.0f);
+			CViewParams mapView(viewPos + Vector3D(0,250.0f * hud_mapZoom.GetFloat(),0) + viewForward*100.0f * hud_mapZoom.GetFloat(), Vector3D(60.0f,viewRotation + 180.0f,0), 70.0f);
 
 			DrawWorldIntoMap(mapView, fDt);
 

@@ -1067,8 +1067,12 @@ void CState_Game::RenderMainView3D( float fDt )
 	// frustum update
 	PROFILE_CODE(g_pGameWorld->UpdateOccludingFrustum());
 
-	// render
+	// render world
 	PROFILE_CODE(g_pGameWorld->Draw( 0 ));
+
+	// Render 3D parts of HUD
+	g_pGameWorld->BuildViewMatrices(screenSize.x, screenSize.y, 0);
+	g_pGameHUD->Render3D(fDt);
 }
 
 void CState_Game::RenderMainView2D( float fDt )
