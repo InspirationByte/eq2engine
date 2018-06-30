@@ -301,7 +301,7 @@ void CRegionEditFrame::RegenerateRegionImage(regionMap_t* regMap)
 		lockdata.pData = NULL;
 	}
 
-	navGrid_t& navGrid = regMap->region->m_navGrid;
+	navGrid_t& navGrid = regMap->region->m_navGrid[0];
 
 	if(!regMap->aiMapImage)
 	{
