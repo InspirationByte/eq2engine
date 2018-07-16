@@ -1315,7 +1315,7 @@ reincrement:
 void CState_Game::GetMouseCursorProperties(bool &visible, bool& centered)
 {
 	visible = (GetPauseMode() > PAUSEMODE_NONE) && !Director_FreeCameraActive();
-	centered = Director_FreeCameraActive() || g_freeLook.GetBool();
+	centered = (Director_FreeCameraActive() || g_freeLook.GetBool());
 }
 
 void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )

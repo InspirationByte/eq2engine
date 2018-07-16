@@ -773,7 +773,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 
 		if(felonyBarVisible)
 		{
-			Vector2D felonyTextPos(damageRect.vleftTop.x, damageRect.vrightBottom.y+25);
+			Vector2D felonyTextPos = m_hudFelonyBar->GetClientRectangle().GetLeftTop();// (damageRect.vleftTop.x, damageRect.vrightBottom.y + 25);
 
 			fontParams.styleFlag |= TEXT_STYLE_FROM_CAP;
 			fontParams.scale = 24.0f;
