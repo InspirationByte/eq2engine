@@ -38,6 +38,7 @@ public:
 public:
 
 	IMaterial*		m_material;
+	Rectangle_t		m_atlasRegion;
 };
 
 };

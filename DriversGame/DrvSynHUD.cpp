@@ -721,7 +721,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 		if(damageBarVisible)
 		{
 			Vector2D damageTextPos( damageRect.vleftTop.x+5, damageRect.vleftTop.y+15);
-			fontParams.scale = 30.0f;
+			fontParams.scale = 16.0f * m_hudDamageBar->CalcScaling();
 			robotocon30b->RenderText(m_damageTok ? m_damageTok->GetText() : L"Undefined", damageTextPos, fontParams);
 		}
 
@@ -776,7 +776,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 			Vector2D felonyTextPos = m_hudFelonyBar->GetClientRectangle().GetLeftTop();// (damageRect.vleftTop.x, damageRect.vrightBottom.y + 25);
 
 			fontParams.styleFlag |= TEXT_STYLE_FROM_CAP;
-			fontParams.scale = 24.0f;
+			fontParams.scale = 14.0f * m_hudFelonyBar->CalcScaling();
 			roboto30b->RenderText(varargs_w(m_felonyTok ? m_felonyTok->GetText() : L"Undefined", (int)felonyPercent), felonyTextPos, fontParams);
 		}
 

@@ -29,9 +29,37 @@ void Image::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 {
 	BaseClass::InitFromKeyValues(sec, noClear);
 
-	const char* materialPath = KV_GetValueString(sec->FindKeyBase("path"), 0, "ui/default");
+	kvkeybase_t* pathBase = sec->FindKeyBase("path");
+	if (pathBase != nullptr)
+	{
+		const char* materialPath = KV_GetValueString(pathBase, 0, "ui/default");
+		SetMaterial(materialPath);
+		m_atlasRegion.vleftTop = Vector2D(0.0f);
+		m_atlasRegion.vrightBottom = Vector2D(1.0f);
+	}
+	else
+	{
+		pathBase = sec->FindKeyBase("atlas");
 
-	SetMaterial( materialPath );
+		if (pathBase)
+		{
+			const char* atlasPath = KV_GetValueString(pathBase, 0, "");
+
+			CTextureAtlas* atlas = FindAtlas(atlasPath);
+			if (atlas)
+			{
+				SetMaterial(atlas->GetMaterialName());
+
+				TexAtlasEntry_t* entry = atlas->FindEntry(KV_GetValueString(pathBase, 1));
+				if (entry)
+					m_atlasRegion = entry->rect;
+			}
+			else
+				MsgError("EqUI error: no such atlas '%s' for image '%s' (forgot 'loadatlas' for parent element?)", atlasPath, m_name.c_str());
+		}
+		else
+			MsgError("EqUI error: image '%s' missing 'path' or 'atlas' property", m_name.c_str());
+	}
 }
 
 void Image::SetMaterial(const char* materialName)
@@ -53,7 +81,7 @@ void Image::DrawSelf( const IRectangle& rect )
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		//meshBuilder.Color4fv(m_color);
 		meshBuilder.TexturedQuad2(rect.GetLeftBottom(), rect.GetRightBottom(), rect.GetLeftTop(), rect.GetRightTop(), 
-									Vector2D(0,1), Vector2D(1,1), Vector2D(0,0), Vector2D(1, 0));
+			m_atlasRegion.GetLeftBottom(), m_atlasRegion.GetRightBottom(), m_atlasRegion.GetLeftTop(), m_atlasRegion.GetRightTop());
 	meshBuilder.End();
 }
 

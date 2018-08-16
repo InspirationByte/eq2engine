@@ -156,7 +156,7 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, kvkeybase_t* kv)
 		EqString imgName(atlas_dir + image_name);
 
 		CImage* pImg = new CImage();
-		bool isOk = pImg->LoadTGA(imgName.c_str());
+		bool isOk = pImg->LoadImage(imgName.c_str());
 
 		if(!isOk || pImg->Is1D() || pImg->IsCube())
 		{
@@ -195,7 +195,7 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, kvkeybase_t* kv)
 			{
 				EqString imgName(atlas_dir + image_path);
 				CImage* pImg = new CImage();
-				bool isOk = pImg->LoadTGA(imgName.c_str());
+				bool isOk = pImg->LoadImage(imgName.c_str());
 
 				if(!isOk || pImg->Is1D() || pImg->IsCube())
 				{

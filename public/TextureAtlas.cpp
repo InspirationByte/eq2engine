@@ -66,15 +66,14 @@ bool CTextureAtlas::Load( const char* pszFileName, const char* pszMyName )
 		if(!pAtlasSec)
 		{
 			MsgError("Invalid atlas file '%s'\n", pszFileName);
-			return NULL;
+			return false;
 		}
 
 		InitAtlas(pAtlasSec, pszMyName);
+		return true;
 	}
-	else
-		return false;
 
-	return true;
+	return false;
 }
 
 void CTextureAtlas::InitAtlas( kvkeybase_t* kvs, const char* pszMyName )
