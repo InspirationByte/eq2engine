@@ -183,7 +183,6 @@ void CAIPursuerCar::OnPrePhysicsFrame( float fDt )
 		playerCar->GetPursuedCount() == 0)
 	{
 		SetPursuitTarget(playerCar);
-		m_targInfo.target->IncrementPursue();
 	}
 }
 
@@ -199,8 +198,10 @@ void CAIPursuerCar::OnPhysicsFrame( float fDt )
 		if(m_collAvoidance.m_manipulator.m_isColliding)
 			m_collAvoidance.m_manipulator.m_lastCollidingPosition = GetPhysicsBody()->m_collisionList[0].position;
 
-		if(!g_pGameWorld->IsValidObject(m_targInfo.target))
-			m_targInfo.target = NULL;
+		if (!g_pGameWorld->IsValidObject(m_targInfo.target))
+		{
+			m_targInfo.target = nullptr;
+		}
 
 		// update target infraction
 		if(m_targInfo.target)
@@ -266,7 +267,7 @@ void CAIPursuerCar::BeginPursuit( float delay )
 
 	if(!IsAlive())
 	{
-		m_targInfo.target = NULL;
+		SetPursuitTarget(nullptr);
 		return;
 	}
 
@@ -286,7 +287,7 @@ void CAIPursuerCar::EndPursuit(bool death)
 	// HACK: just kill
 	if (EqStateMgr::GetCurrentStateType() != GAME_STATE_GAME)
 	{
-		m_targInfo.target = NULL;
+		SetPursuitTarget(nullptr);
 		return;
 	}
 
@@ -306,27 +307,19 @@ void CAIPursuerCar::EndPursuit(bool death)
 		// validate
 		if(!g_pGameWorld->IsValidObject(m_targInfo.target))
 		{
-			m_targInfo.target = NULL;
+			m_targInfo.target = nullptr;
 			return;
 		}
 
-		if(m_targInfo.target->GetPursuedCount() == 0)
-		{
-			m_targInfo.target = NULL;
-			return;
-		}
-
-		m_targInfo.target->DecrementPursue();
-
-		if (m_targInfo.target->GetPursuedCount() == 0 &&
+		if (m_targInfo.target->GetPursuedCount() == 1 &&
 			g_pGameSession->GetPlayerCar() == m_targInfo.target)	// only play sound when in game, not unloading or restaring
 			// g_State_Game->IsGameRunning())
 		{
 			Speak("cop.lost", true);
 		}
-	}
 
-	m_targInfo.target = NULL;
+		SetPursuitTarget(nullptr);
+	}	
 }
 
 bool CAIPursuerCar::InPursuit() const
@@ -545,7 +538,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 			if (m_conf->visual.sirenType != SERVICE_LIGHTS_NONE)
 				m_sirenEnabled = true;
 
-			if (m_targInfo.target->GetPursuedCount() == 0 &&
+			if (m_targInfo.target->GetPursuedCount() == 1 &&
 				g_pGameSession->GetPlayerCar() == m_targInfo.target)
 			{
 				if (m_targInfo.target->GetFelony() >= AI_COP_MINFELONY)
@@ -568,8 +561,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 			m_targInfo.isAngry = true;
 		}
-
-		m_targInfo.target->IncrementPursue();
 
 		m_enabled = true;
 
@@ -833,8 +824,14 @@ int	CAIPursuerCar::DeadState( float fDt, EStateTransition transition )
 
 void CAIPursuerCar::SetPursuitTarget(CCar* obj)
 {
+	if (m_targInfo.target)
+		m_targInfo.target->DecrementPursue();
+
 	m_targInfo.target = obj;
 	m_targInfo.direction = -1;
+
+	if(m_targInfo.target)
+		m_targInfo.target->IncrementPursue();
 
 	m_targInfo.lastInfraction = INFRACTION_HAS_FELONY;
 	m_targInfo.nextCheckImpactTime = AI_COP_COLLISION_CHECKTIME;
