@@ -31,12 +31,12 @@ enum ECameraMode
 
 struct carCameraConfig_t
 {
-	float						height;
-	float						dist;
-	float						fov;
-	float						distInCar;
-	float						heightInCar;
-	float						widthInCar;
+	float					height;
+	float					dist;
+	float					fov;
+	float					distInCar;
+	float					heightInCar;
+	float					widthInCar;
 };
 
 class CCar;

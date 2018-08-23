@@ -190,7 +190,20 @@ void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
 		if( target->IsInWater() && camMode == CAM_MODE_INCAR )
 			camMode = CAM_MODE_OUTCAR;
 
-		SetCameraProps( target->m_conf->cameraConf );
+		CCar* hingedVehicle = target->GetHingedVehicle();
+
+		if(hingedVehicle)
+		{
+			carCameraConfig_t conf = target->m_conf->cameraConf;
+			carCameraConfig_t& hingeConf = hingedVehicle->m_conf->cameraConf;
+
+			conf.dist += hingeConf.dist;
+			conf.height += hingeConf.height;
+
+			SetCameraProps(conf);
+		}
+		else
+			SetCameraProps( target->m_conf->cameraConf );
 
 		Animate(camMode, nButtons, target->GetOrigin(), target->GetOrientation(), target->GetVelocity(), fDt, m_rotation, target->GetPhysicsBody());
 	}
