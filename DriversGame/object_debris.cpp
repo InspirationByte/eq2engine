@@ -29,7 +29,6 @@ CObject_Debris::CObject_Debris( kvkeybase_t* kvdata )
 	m_collOccured = false;
 	m_fTimeToRemove = 0.0f;
 	m_surfParams = NULL;
-	m_userData = NULL;
 
 	m_breakable = NULL;
 	m_breakSpawn = NULL;
@@ -50,14 +49,6 @@ void CObject_Debris::OnRemove()
 	{
 		g_pPhysics->m_physics.DestroyBody(m_physBody);
 		m_physBody = NULL;
-	}
-
-	// debris objects requires setting reference to NULL
-	if(m_userData)
-	{
-		regionObject_t* ref = (regionObject_t*)m_userData;
-		ref->game_object = NULL;
-		m_userData = NULL;
 	}
 }
 

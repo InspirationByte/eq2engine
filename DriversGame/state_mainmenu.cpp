@@ -85,16 +85,16 @@ bool CState_MainMenu::Update( float fDt )
 	if( m_goesFromMenu )
 	{
 		m_fade -= fDt;
-		m_textFade -= fDt*4.0f;
+		m_textFade -= fDt*8.0f;
 	}
 	else
 	{
 		m_fade += fDt;
 
 		if(m_changesMenu > 0)
-			m_textFade -= fDt*2.0f;
+			m_textFade -= fDt*3.0f;
 		else
-			m_textFade += fDt*4.0f;
+			m_textFade += fDt*6.0f;
 	}
 
 	const IVector2D& screenSize = g_pHost->GetWindowSize();

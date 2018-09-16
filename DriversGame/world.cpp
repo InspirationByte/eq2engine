@@ -150,7 +150,6 @@ CGameWorld::CGameWorld()
 	m_levelname = "unnamed";
 	m_envName = "day_clear";
 
-	m_prevProgram = nullptr;
 	m_lightsTex = nullptr;
 	m_reflectionTex = nullptr;
 	m_tempReflTex = nullptr;
@@ -1175,6 +1174,9 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 {
 	m_renderingObjects.clear();
 
+	if (!r_drawObjects.GetBool())
+		return;
+
 	// simulate objects of world
 	for(int i = 0; i < g_pGameWorld->m_gameObjects.numElem(); i++)
 	{
@@ -1897,8 +1899,7 @@ void CGameWorld::Draw( int nRenderFlags )
 		m_level.Render(m_view.GetOrigin(), m_viewprojection, m_occludingFrustum, nRenderFlags);
 	}
 
-	if(r_drawObjects.GetBool())
-		UpdateRenderables( m_occludingFrustum );
+	UpdateRenderables( m_occludingFrustum );
 
 #ifndef EDITOR
 	// cleanup of casters

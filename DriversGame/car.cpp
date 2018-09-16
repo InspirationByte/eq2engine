@@ -2122,6 +2122,16 @@ void CCar::OnPhysicsFrame( float fDt )
 			collSpeed = length(collVelocity);
 		}
 
+		CGameObject* hitGameObject = NULL;
+
+		// TODO: make it safe
+		if (!(coll.bodyB->GetContents() & OBJECTCONTENTS_SOLID_GROUND) &&
+			coll.bodyB->GetUserData() != NULL &&
+			coll.appliedImpulse != 0.0f)
+		{
+			hitGameObject = (CGameObject*)coll.bodyB->GetUserData();
+			hitGameObject->OnCarCollisionEvent(coll, this);
+		}
 
 		// don't apply collision damage if this is a trigger or water
 		if ((coll.flags & COLLPAIRFLAG_OBJECTA_NO_RESPONSE) || (coll.flags & COLLPAIRFLAG_OBJECTB_NO_RESPONSE))
@@ -2136,17 +2146,6 @@ void CCar::OnPhysicsFrame( float fDt )
 		{
 			CEqRigidBody* body = (CEqRigidBody*)coll.bodyB;
 			wVelocity -= body->GetVelocityAtWorldPoint( coll.position );
-		}
-
-		CGameObject* hitGameObject = NULL;
-
-		// TODO: make it safe
-		if( !(coll.bodyB->GetContents() & OBJECTCONTENTS_SOLID_GROUND) &&
-			coll.bodyB->GetUserData() != NULL &&
-			coll.appliedImpulse != 0.0f)
-		{
-			hitGameObject = (CGameObject*)coll.bodyB->GetUserData();
-			hitGameObject->OnCarCollisionEvent( coll, this );
 		}
 
 		EmitCollisionParticles(coll.position, wVelocity, coll.normal, (coll.appliedImpulse/3500.0f)+1, coll.appliedImpulse);

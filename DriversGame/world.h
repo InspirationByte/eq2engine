@@ -309,8 +309,6 @@ protected:
 	wlight_t						m_lights[MAX_LIGHTS_QUEUE];
 	int								m_numLights;
 
-	IShaderProgram*					m_prevProgram;
-
 	CNetworkVar(float,				m_fNextThunderTime);
 	CNetworkVar(float,				m_fThunderTime);
 

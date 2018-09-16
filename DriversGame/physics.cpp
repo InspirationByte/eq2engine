@@ -351,13 +351,15 @@ void CPhysicsEngine::RemoveHeightField( CHeightTileField* pPhysObject )
 				m_physics.DestroyStaticObject( obj );
 		}
 
-		mutex.Unlock();
+		
+
+		for (int i = 0; i < fieldInfo->m_batches.numElem(); i++)
+			delete fieldInfo->m_batches[i];
 
 		for(int i = 0; i < fieldInfo->m_meshes.numElem(); i++)
 			delete fieldInfo->m_meshes[i];
 
-		for(int i = 0; i < fieldInfo->m_batches.numElem(); i++)
-			delete fieldInfo->m_batches[i];
+		mutex.Unlock();
 
 		delete fieldInfo;
 		pPhysObject->m_physData = NULL;

@@ -90,7 +90,7 @@ bool CState_Title::Update( float fDt )
 
 	if( m_goesFromTitle || m_actionTimeout <= 0.0f )
 	{
-		m_fade -= fDt/2.0f;
+		m_fade -= fDt*0.7f;
 
 		if(m_actionTimeout <= 0.0f && m_fade <= 0.0f)
 		{
@@ -180,7 +180,7 @@ bool CState_Title::Update( float fDt )
 			fontParam.textColor.w = pow(m_textEffect-0.25f, 2.5f);
 
 		textPos = 0.0f;
-		textYOffs = (1.0f-m_fade)*10.0f;
+		textYOffs = (1.0f-m_fade)*7.0f;
 
 		textYOffs = pow(textYOffs, 5.0f);
 	}
