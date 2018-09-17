@@ -2315,6 +2315,33 @@ CGameObject* CGameWorld::FindObjectByName( const char* objectName ) const
 	return NULL;
 }
 
+int CGameWorld::AddObjectDef(const char* type, const char* name, kvkeybase_t* kvs)
+{
+	CLevObjectDef* def = new CLevObjectDef();
+	def->m_info.type = LOBJ_TYPE_OBJECT_CFG;
+	def->m_info.level = 0;
+	def->m_info.modelflags = 0;
+	def->m_info.size = 0;
+
+	kvs->SetName(type);
+	def->m_name = name;
+
+	m_level.InitObjectDefFromKeyValues(def, kvs);
+
+	for (int i = 0; i < m_level.m_objectDefs.numElem(); i++)
+	{
+		// reject if already has this object
+		if (m_level.m_objectDefs[i]->m_name == name)
+		{
+			delete def;
+			return -1;
+		}
+
+	}
+
+	return m_level.m_objectDefs.append(def);
+}
+
 #ifndef EDITOR
 OOLUA::Table CGameWorld::L_FindObjectOnLevel( const char* name ) const
 {
@@ -2340,7 +2367,7 @@ CGameWorld*	g_pGameWorld = &s_GameWorld;
 
 #ifndef NO_LUA
 
-OOLUA_EXPORT_FUNCTIONS(CGameWorld, SetEnvironmentName, SetLevelName, GetView, QueryNearestRegions, RemoveObject)
+OOLUA_EXPORT_FUNCTIONS(CGameWorld, SetEnvironmentName, SetLevelName, GetView, QueryNearestRegions, AddObjectDef, RemoveObject)
 OOLUA_EXPORT_FUNCTIONS_CONST(CGameWorld, FindObjectByName, FindObjectOnLevel, CreateObject, IsValidObject, GetEnvironmentName, GetLevelName)
 
 OOLUA_EXPORT_FUNCTIONS(CViewParams, SetOrigin, SetAngles, SetFOV)

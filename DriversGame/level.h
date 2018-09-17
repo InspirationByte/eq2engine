@@ -81,6 +81,8 @@ public:
 	// useful if you need to find spawn point on non-loaded level
 	bool							FindObjectOnLevel(levCellObject_t& objectInfo, const char* name, const char* defName = NULL) const;
 
+	void							InitObjectDefFromKeyValues(CLevObjectDef* def, kvkeybase_t* defDesc);
+
 	//-------------------------------------------------------------------------
 	// 2D grid stuff
 

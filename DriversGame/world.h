@@ -175,6 +175,8 @@ public:
 	CGameObject*					CreateObject( const char* objectDefName ) const;
 	CGameObject*					FindObjectByName( const char* objectName ) const;
 
+	int								AddObjectDef(const char* type, const char* name, kvkeybase_t* kvs);
+
 #ifndef EDITOR
 	OOLUA::Table					L_FindObjectOnLevel( const char* name ) const;
 #endif // EDITOR
@@ -360,6 +362,7 @@ OOLUA_PROXY(CGameWorld)
 
 	OOLUA_MFUNC(GetView)
 
+	OOLUA_MFUNC(AddObjectDef)
 	OOLUA_MFUNC_CONST(CreateObject)
 	OOLUA_MFUNC(RemoveObject)
 	OOLUA_MFUNC_CONST(IsValidObject)

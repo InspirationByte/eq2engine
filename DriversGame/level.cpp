@@ -535,6 +535,41 @@ bool DrawDefLightData( Matrix4x4& objDefMatrix, const wlightdata_t& data, float 
 
 //-------------------------------------------------------------------------------------------------
 
+void CGameLevel::InitObjectDefFromKeyValues(CLevObjectDef* def, kvkeybase_t* defDesc)
+{
+	def->m_model = NULL;
+
+	def->m_defType = defDesc->name;
+
+	def->m_defKeyvalues = new kvkeybase_t();
+	def->m_defKeyvalues->MergeFrom(defDesc, true);
+
+#ifdef EDITOR
+	LoadDefLightData(def->m_lightData, foundDef);
+
+	kvkeybase_t* editorModelKey = foundDef->FindKeyBase("editormodel");
+
+	// use editor model
+	if (editorModelKey)
+	{
+		// try precache model
+		int modelIdx = g_studioModelCache->PrecacheModel(KV_GetValueString(editorModelKey));
+		def->m_defModel = g_studioModelCache->GetModel(modelIdx);
+	}
+	else
+#endif // EDITOR
+	{
+		kvkeybase_t* modelKey = defDesc->FindKeyBase("model");
+
+		// try precache model
+		if (modelKey)
+		{
+			// try precache model
+			int modelIdx = g_studioModelCache->PrecacheModel(KV_GetValueString(modelKey));
+			def->m_defModel = g_studioModelCache->GetModel(modelIdx);
+		}
+	}
+}
 
 void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 {
@@ -607,38 +642,7 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 
 			if(foundDef)
 			{
-				def->m_defType = foundDef->name;
-
-				def->m_defKeyvalues = new kvkeybase_t();
-				def->m_defKeyvalues->MergeFrom( foundDef, true );
-
-				
-
-#ifdef EDITOR
-				LoadDefLightData(def->m_lightData, foundDef);
-
-				kvkeybase_t* editorModelKey = foundDef->FindKeyBase("editormodel");
-
-				// use editor model
-				if(editorModelKey)
-				{
-					// try precache model
-					int modelIdx = g_studioModelCache->PrecacheModel( KV_GetValueString(editorModelKey));
-					def->m_defModel = g_studioModelCache->GetModel(modelIdx);
-				}
-				else
-#endif // EDITOR
-				{
-					kvkeybase_t* modelKey = foundDef->FindKeyBase("model");
-
-					// try precache model
-					if(modelKey)
-					{
-						// try precache model
-						int modelIdx = g_studioModelCache->PrecacheModel( KV_GetValueString(modelKey));
-						def->m_defModel = g_studioModelCache->GetModel(modelIdx);
-					}
-				}
+				InitObjectDefFromKeyValues(def, foundDef);
 			}
 			else
 			{
