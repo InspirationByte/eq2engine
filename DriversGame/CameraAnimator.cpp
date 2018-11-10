@@ -14,27 +14,27 @@
 #include "car.h"
 #include "CameraAnimator.h"
 
-#define DEFAULT_CAMERA_FOV			(52.0f)
+const float DEFAULT_CAMERA_FOV		= 52.0f;
 
-#define CAM_TURN_SPEED				3.4f
-#define CAM_LOOK_TURN_SPEED			15.0f
+const float CAM_TURN_SPEED			= 3.4f;
+const float CAM_LOOK_TURN_SPEED		= 15.0f;
 
-#define CAM_HEIGHT_TRACE			(-0.3f)
+const float CAM_HEIGHT_TRACE		= -0.3f;
 
-#define ZOOM_START_DIST				8.0f
-#define ZOOM_END_DIST				200.0f
+const float ZOOM_START_DIST			= 8.0f;
+const float ZOOM_END_DIST			= 200.0f;
 
-#define MAX_CAR_DIST				250.0f
+const float MAX_CAR_DIST			= 250.0f;
 
-#define START_FOV					40.0f
-#define END_FOV						10.0f
+const float START_FOV				= 40.0f;
+const float END_FOV					= 10.0f;
 
-#define CAM_DISTANCE_SPEED			2.0f;
+const float CAM_DISTANCE_SPEED		= 2.0f;
 
 ConVar cam_velocity_accel("cam_velocity_accel", "0.5");
 ConVar cam_velocity_mindiff("cam_velocity_mindiff", "0.15");
 
-#define CAR_ACCEL_VEL_FACTOR	cam_velocity_accel.GetFloat() //0.15f
+#define CAR_ACCEL_VEL_FACTOR		cam_velocity_accel.GetFloat() //0.15f
 #define CAR_DECEL_VEL_MINDIFF		cam_velocity_mindiff.GetFloat() //5.0f
 
 ConVar cam_velocity_springconst("cam_velocity_springconst", "15");
@@ -147,7 +147,7 @@ void CCameraAnimator::Reset()
 		m_mode = CAM_MODE_OUTCAR;
 }
 
-void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
+void CCameraAnimator::Update( float fDt, int nButtons, CCar* target)
 {
 	extern ConVar r_zfar;
 
@@ -183,6 +183,10 @@ void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
 
 	// TODO: other control for addRot
 
+	eqPhysCollisionFilter collFilter;
+	collFilter.type = EQPHYS_FILTER_TYPE_EXCLUDE;
+	collFilter.flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
+
 	if( target )
 	{
 		ECameraMode camMode = m_mode;
@@ -191,6 +195,8 @@ void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
 			camMode = CAM_MODE_OUTCAR;
 
 		CCar* hingedVehicle = target->GetHingedVehicle();
+
+		collFilter.AddObject(target->GetPhysicsBody());
 
 		if(hingedVehicle)
 		{
@@ -201,14 +207,17 @@ void CCameraAnimator::Update( float fDt, int nButtons, CCar* target )
 			conf.height += hingeConf.height;
 
 			SetCameraProps(conf);
+
+			// add hinged vehicle to collision filter
+			collFilter.AddObject(hingedVehicle->GetPhysicsBody());
 		}
 		else
 			SetCameraProps( target->m_conf->cameraConf );
 
-		Animate(camMode, nButtons, target->GetOrigin(), target->GetOrientation(), target->GetVelocity(), fDt, m_rotation, target->GetPhysicsBody());
+		Animate(camMode, nButtons, target->GetOrigin(), target->GetOrientation(), target->GetVelocity(), fDt, collFilter);
 	}
 	else
-		Animate(m_mode, nButtons, vec3_zero, Quaternion(), vec3_zero, fDt, m_rotation, nullptr);
+		Animate(m_mode, nButtons, vec3_zero, Quaternion(), vec3_zero, fDt, collFilter);
 
 	m_oldBtns = nButtons;
 }
@@ -247,6 +256,10 @@ void CCameraAnimator::ViewShake(float fMagnutude, float fTime)
 
 void CCameraAnimator::L_Update( float fDt, CCar* target )
 {
+	eqPhysCollisionFilter collFilter;
+	collFilter.type = EQPHYS_FILTER_TYPE_EXCLUDE;
+	collFilter.flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
+
 	if( target )
 	{
 		ECameraMode camMode = m_mode;
@@ -256,18 +269,19 @@ void CCameraAnimator::L_Update( float fDt, CCar* target )
 
 		SetCameraProps( target->m_conf->cameraConf );
 
-		Animate(camMode, 0, target->GetOrigin(), target->GetOrientation(), target->GetVelocity(), fDt, vec3_zero, target->GetPhysicsBody());
+		collFilter.AddObject(target->GetPhysicsBody());
+
+		Animate(camMode, 0, target->GetOrigin(), target->GetOrientation(), target->GetVelocity(), fDt, collFilter);
 	}
 	else
-		Animate(CAM_MODE_TRIPOD_STATIC, 0, vec3_zero, Quaternion(), vec3_zero, fDt, vec3_zero, nullptr);
+		Animate(CAM_MODE_TRIPOD_STATIC, 0, vec3_zero, Quaternion(), vec3_zero, fDt, collFilter);
 }
 
 void CCameraAnimator::Animate(	ECameraMode mode,
 								int nButtons,
 								const Vector3D& targetOrigin, const Quaternion& targetRotation, const Vector3D& targetVelocity,
 								float fDt,
-								const Vector3D& addRot,
-								CEqRigidBody* traceIgnore)
+								eqPhysCollisionFilter& traceIgnore)
 {
 	m_realMode = mode;
 
@@ -345,10 +359,10 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		float desiredHeight = m_carConfig.height;
 		float desiredDist = m_carConfig.dist;
 
-		Vector3D cam_angles = Vector3D(0, m_fTempCamAngle - m_fLookAngle, 0) + addRot;
+		Vector3D cam_angles = Vector3D(0, m_fTempCamAngle - m_fLookAngle, 0);
 
 		if( bLookBack )
-			cam_angles = Vector3D(0, Yangle+180, 0) + addRot;
+			cam_angles = Vector3D(0, Yangle+180, 0);
 
 		Vector3D forward;
 		AngleVectors(cam_angles, &forward);
@@ -361,10 +375,9 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		// trace back
 		CollisionData_t back_coll;
 
-		eqPhysCollisionFilter ignoreFilter(traceIgnore);
 
 		btBoxShape sphere(btVector3(0.5f, 0.5f, 0.5f));
-		if(g_pPhysics->TestConvexSweep(&sphere, identity(), cam_pos_h, cam_pos, back_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_VEHICLE, &ignoreFilter))
+		if(g_pPhysics->TestConvexSweep(&sphere, identity(), cam_pos_h, cam_pos, back_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_VEHICLE, &traceIgnore))
 		{
 			desiredDist *= back_coll.fract;
 		}
@@ -396,7 +409,7 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 	}
 	else if(mode == CAM_MODE_OUTCAR_FIXED)
 	{
-		euler_angles += addRot + m_rotation;
+		euler_angles += m_rotation;
 
 		Vector3D forward;
 		AngleVectors(euler_angles, &forward);

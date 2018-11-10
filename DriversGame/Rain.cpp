@@ -40,35 +40,20 @@ bool CRippleEffect::DrawEffect(float dTime)
 	ColorRGB lighting = g_pGameWorld->m_info.rainBrightness;
 
 	Vector4D col = ColorRGBA(lighting,lifeTimePerc*2.0f);
-	/*
+
 	PFXBillboard_t effect;
 
-	effect.vOrigin = m_vOrigin+Vector3D(0,(1.0f - lifeTimePerc)*5.0f,0);
+	effect.vOrigin = m_vOrigin+Vector3D(0,(1.0f - lifeTimePerc)*0.1f,0);
 	effect.vColor = col;
-	effect.group = g_translParticles;
-	effect.tex = emitter->m_rippleEntry;
+	effect.group = m_atlGroup;
+	effect.tex = m_atlEntry;
 	//effect.nFlags = EFFECT_FLAG_ALWAYS_VISIBLE;
-	effect.fZAngle = lifeTimePerc*150.0f;
+	effect.fZAngle = lifeTimePerc*-50.0f;
 
-	effect.fWide = lerp(fStartSize, fEndSize, 1.0f-lifeTimePerc);
-	effect.fTall = lerp(fStartSize, fEndSize, 1.0f-lifeTimePerc);
-
-	Effects_DrawBillboard(&effect, &g_pGameWorld->m_CameraParams, &g_pGameWorld->m_frustum);
-	*/
-
-	PFXBillboard_t effect2;
-
-	effect2.vOrigin = m_vOrigin+Vector3D(0,(1.0f - lifeTimePerc)*0.1f,0);
-	effect2.vColor = col;
-	effect2.group = m_atlGroup;
-	effect2.tex = m_atlEntry;
-	//effect2.nFlags = EFFECT_FLAG_ALWAYS_VISIBLE;
-	effect2.fZAngle = lifeTimePerc*-50.0f;
-
-	effect2.fWide = lerp(fStartSize, fEndSize*4.0f, 1.0f-lifeTimePerc);
-	effect2.fTall = lerp(fStartSize, fEndSize*4.0f, 1.0f-lifeTimePerc);
-
-	Effects_DrawBillboard(&effect2, g_pGameWorld->m_matrices[MATRIXMODE_VIEW], &g_pGameWorld->m_frustum);
+	effect.fWide = lerp(fStartSize, fEndSize*4.0f, 1.0f-lifeTimePerc);
+	effect.fTall = lerp(fStartSize, fEndSize*4.0f, 1.0f-lifeTimePerc);
+	
+	Effects_DrawBillboard(&effect, g_pGameWorld->m_matrices[MATRIXMODE_VIEW], &g_pGameWorld->m_frustum);
 
 	SetSortOrigin(m_vOrigin);
 
@@ -191,17 +176,17 @@ void RainEmitter::Update_Draw(float dt, float emit_rate, float rain_speed)
 
 		CollisionData_t rain_trace;
 
-		if(dot(viewDir, fastNormalize(trace_start-viewOrigin)) > 0)
+		//if(dot(viewDir, fastNormalize(trace_start-viewOrigin)) > -0.5f)
 		{
 			g_pPhysics->TestLine(trace_start,trace_start - Vector3D(0,height,0), rain_trace, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS, &collFilter);
 		}
 
 		if(dt > 0.0f && (pParticle->origin.y < (viewOrigin.y - 10.0f) || rain_trace.fract < 1.0f))
 		{
-			float fSpeed = length(rParticles[i]->velocity)*0.001f;
-
 			if(rain_advancedeffects.GetBool() && rain_trace.fract < 1.0f)
 			{
+				float fSpeed = length(rParticles[i]->velocity)*0.001f;
+
 				CRippleEffect* pEffect = new CRippleEffect(	Vector3D(rain_trace.position),
 															rain_trace.normal,
 															0.04f+RandomFloat(-0.07f, 0.07f)*fSpeed, 0.04f+RandomFloat(-0.07f, 0.07f)*fSpeed, 0.08f);

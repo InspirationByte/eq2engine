@@ -1171,8 +1171,8 @@ void CState_Game::DoCameraUpdates( float fDt )
 					}
 				}
 			}
-			else
-				g_pCameraAnimator->SetAngles(g_freeLookAngles);
+
+			//g_pCameraAnimator->SetFreeLookAngles(g_freeLook.GetBool(), g_freeLookAngles);
 
 			/*
 			if( viewedCar && viewedCar->GetPhysicsBody() )
@@ -1315,7 +1315,7 @@ reincrement:
 void CState_Game::GetMouseCursorProperties(bool &visible, bool& centered)
 {
 	visible = (GetPauseMode() > PAUSEMODE_NONE) && !Director_FreeCameraActive();
-	centered = (Director_FreeCameraActive() || g_freeLook.GetBool());
+	centered = (Director_FreeCameraActive() || g_freeLook.GetBool()) && !visible;
 }
 
 void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )

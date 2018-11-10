@@ -175,6 +175,18 @@ struct eqPhysCollisionFilter
 		flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
 	}
 
+	eqPhysCollisionFilter(CEqRigidBody** obj, int cnt)
+	{
+		int cpcnt = sizeof(CEqRigidBody*)*cnt;
+		cpcnt = min(cpcnt, MAX_COLLISION_FILTER_OBJECTS);
+
+		memcpy(objectPtrs, obj, cpcnt);
+		numObjects = cpcnt;
+
+		type = EQPHYS_FILTER_TYPE_EXCLUDE;
+		flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
+	}
+
 	void AddObject(void* ptr)
 	{
 		if (ptr && numObjects < MAX_COLLISION_FILTER_OBJECTS)

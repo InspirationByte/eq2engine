@@ -545,9 +545,9 @@ void CGameLevel::InitObjectDefFromKeyValues(CLevObjectDef* def, kvkeybase_t* def
 	def->m_defKeyvalues->MergeFrom(defDesc, true);
 
 #ifdef EDITOR
-	LoadDefLightData(def->m_lightData, foundDef);
+	LoadDefLightData(def->m_lightData, defDesc);
 
-	kvkeybase_t* editorModelKey = foundDef->FindKeyBase("editormodel");
+	kvkeybase_t* editorModelKey = defDesc->FindKeyBase("editormodel");
 
 	// use editor model
 	if (editorModelKey)

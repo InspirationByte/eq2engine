@@ -68,7 +68,7 @@ public:
 	int						GetMode() const					{return m_mode;}
 	void					SetMode( int newMode )			{m_mode = (ECameraMode)newMode;}
 
-	void					Update( float fDt, int nButtons, CCar* target );
+	void					Update( float fDt, int nButtons, CCar* target);
 
 	void					SetScripted( bool enable )		{ m_scriptControl = enable; }
 	bool					IsScripted() const				{ return m_scriptControl; }
@@ -85,8 +85,7 @@ protected:
 										const Quaternion& targetRotation,
 										const Vector3D& targetVelocity,
 										float fDt,
-										const Vector3D& addRot,
-										CEqRigidBody* traceIgnore);
+										eqPhysCollisionFilter& collFilter);
 
 	carCameraConfig_t		m_carConfig;
 	float					m_cameraDistVar;
