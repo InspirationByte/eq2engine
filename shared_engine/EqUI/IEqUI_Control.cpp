@@ -141,6 +141,34 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	}
 
 	//------------------------------------------------------------------------------
+	kvkeybase_t* textAlign = sec->FindKeyBase("textAlign");
+
+	if (textAlign)
+	{
+		m_textAlignment = 0;
+
+		for (int i = 0; i < align->values.numElem(); i++)
+		{
+			const char* alignVal = KV_GetValueString(align, i);
+
+			if (!stricmp("left", alignVal))
+				m_textAlignment |= TEXT_ALIGN_LEFT;
+			else if (!stricmp("top", alignVal))
+				m_textAlignment |= TEXT_ALIGN_TOP;
+			else if (!stricmp("right", alignVal))
+				m_textAlignment |= TEXT_ALIGN_RIGHT;
+			else if (!stricmp("bottom", alignVal))
+				m_textAlignment |= TEXT_ALIGN_BOTTOM;
+			else if (!stricmp("vcenter", alignVal))
+				m_textAlignment |= TEXT_ALIGN_VCENTER;
+			else if (!stricmp("hcenter", alignVal))
+				m_textAlignment |= TEXT_ALIGN_HCENTER;
+			else if (!stricmp("center", alignVal))
+				m_textAlignment |= TEXT_ALIGN_HCENTER | TEXT_ALIGN_VCENTER;
+		}
+	}
+
+	//------------------------------------------------------------------------------
 	kvkeybase_t* scaling = sec->FindKeyBase("scaling");
 	const char* scalingValue = KV_GetValueString(scaling, 0, "none");
 

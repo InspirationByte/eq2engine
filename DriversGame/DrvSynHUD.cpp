@@ -532,9 +532,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 
 	m_hudLayout->SetVisible(m_enable && r_drawHUD.GetBool() && !replayHud);
 
-	if( !r_drawHUD.GetBool() )
-		return;
-
 	m_curTime += fDt;
 
 	materials->Setup2D(screenSize.x,screenSize.y);
@@ -596,7 +593,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 
 	m_fadeValue = clamp(m_fadeValue, 0.0f, 1.0f);
 
-	if(m_enable && !replayHud)
+	if(m_enable && !replayHud && r_drawHUD.GetBool())
 	{
 		bool mainVehicleInPursuit = (m_mainVehicle ? m_mainVehicle->GetPursuedCount() > 0 : false);
 		bool damageBarVisible = m_hudDamageBar && m_hudDamageBar->IsVisible();

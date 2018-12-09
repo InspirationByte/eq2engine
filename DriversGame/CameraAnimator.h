@@ -85,7 +85,7 @@ protected:
 										const Quaternion& targetRotation,
 										const Vector3D& targetVelocity,
 										float fDt,
-										eqPhysCollisionFilter& collFilter);
+										struct eqPhysCollisionFilter& collFilter);
 
 	carCameraConfig_t		m_carConfig;
 	float					m_cameraDistVar;

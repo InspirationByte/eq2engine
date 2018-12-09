@@ -20,6 +20,7 @@ void Label::DrawSelf( const IRectangle& rect )
 	// TODO: GetFontStyle
 	eqFontStyleParam_t style;
 	style.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_SCISSOR;
+	style.align = m_textAlignment;
 	style.scale = m_fontScale * scaling;
 
 	if(equi::Manager->GetFocus() == this)

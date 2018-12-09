@@ -165,6 +165,7 @@ protected:
 
 	IEqFont*					m_font;
 	Vector2D					m_fontScale;
+	int							m_textAlignment;
 };
 
 template <class T> 

@@ -14,6 +14,8 @@
 #include "FontCache.h"
 #include "replay.h"
 
+#include "EqUI/EqUI_Manager.h"
+
 #include "KeyBinding/InputCommandBinder.h"
 
 CState_Title::CState_Title()
