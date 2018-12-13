@@ -11,16 +11,21 @@
 
 //------------------------------------------------------------------------------------------
 
-ConVar g_trafficMaxCars("g_trafficMaxCars", "48", "Maximum traffic cars", CV_ARCHIVE);
+ConVar g_trafficMaxCars("g_trafficMaxCars", "48", "Maximum traffic cars", CV_CHEAT);
+
 ConVar g_traffic_mindist("g_traffic_mindist", "50", "Min traffic car distance to spawn", CV_CHEAT);
 ConVar g_traffic_maxdist("g_traffic_maxdist", "51", "Max traffic car distance, to disappear", CV_CHEAT);
 
 const float AI_COP_SPEECH_DELAY = 3.0f;		// delay before next speech
 const float AI_COP_TAUNT_DELAY = 11.0f;		// delay before next taunt
 
-#define COP_DEFAULT_DAMAGE			(4.0f)
-#define TRAFFIC_BETWEEN_DISTANCE	5
-#define MIN_ROADBLOCK_CARS			2
+const float AI_COP_DEFAULT_DAMAGE = 4.0f;
+const float AI_COP_DEFAULT_MAXSPEED = 160.0f;
+
+const int MIN_ROADBLOCK_CARS = 2;
+
+const float AI_TRAFFIC_RESPAWN_TIME	= 0.1f;
+const float AI_TRAFFIC_SPAWN_DISTANCE_THRESH = 5.0f;
 
 //------------------------------------------------------------------------------------------
 
@@ -48,9 +53,9 @@ CAICarManager::CAICarManager()
 	m_enableCops = true;
 	m_enableTrafficCars = true;
 
-	m_copMaxDamage = COP_DEFAULT_DAMAGE;
 	m_copAccelerationModifier = 1.0f;
-	m_copMaxSpeed = 160.0f;
+	m_copMaxDamage = AI_COP_DEFAULT_DAMAGE;
+	m_copMaxSpeed = AI_COP_DEFAULT_MAXSPEED;
 
 	m_numMaxCops = 2;
 	m_copRespawnInterval = 20;	// spawn on every 20th traffic car
@@ -73,8 +78,10 @@ void CAICarManager::Init()
 	PrecacheObject(CAIPursuerCar);
 
 	// reset variables
-	m_copMaxDamage = COP_DEFAULT_DAMAGE;
 	m_copAccelerationModifier = 1.0f;
+	m_copMaxDamage = AI_COP_DEFAULT_DAMAGE;
+	m_copMaxSpeed = AI_COP_DEFAULT_MAXSPEED;
+	
 	m_numMaxTrafficCars = g_trafficMaxCars.GetInt();
 
 	m_trafficUpdateTime = 0.0f;
@@ -142,7 +149,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 		if (!g_pGameWorld->m_level.GetTileGlobal(m_trafficCars[j]->GetOrigin(), trafficPosGlobal))
 			continue;
 
-		if (distance(trafficPosGlobal, globalCell) < TRAFFIC_BETWEEN_DISTANCE*TRAFFIC_BETWEEN_DISTANCE)
+		if (distance(trafficPosGlobal, globalCell) < AI_TRAFFIC_SPAWN_DISTANCE_THRESH*AI_TRAFFIC_SPAWN_DISTANCE_THRESH)
 			return NULL;
 	}
 
@@ -342,7 +349,7 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 	m_trafficUpdateTime -= fDt;
 
 	if (m_trafficUpdateTime <= 0.0f)
-		m_trafficUpdateTime = 0.5f;
+		m_trafficUpdateTime = AI_TRAFFIC_RESPAWN_TIME;
 	else
 		return;
 
@@ -619,7 +626,9 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 	Vector3D startPos = g_pGameWorld->m_level.GlobalTilePointToPosition(placementVec);
 	Vector3D endPos = g_pGameWorld->m_level.GlobalTilePointToPosition(placementVec+perpendicular*numLanes);
 
-	debugoverlay->Line3D(startPos, endPos, ColorRGBA(1,0,0,1), ColorRGBA(0,1,0,1), 1000.0f);
+	m_roadBlockPosition = placementVec;
+
+	debugoverlay->Line3D(startPos, endPos, ColorRGBA(1,0,0,1), ColorRGBA(0,1,0,1), 1000.0f);	
 
 	for(int i = 0; i < numLanes; i++)
 	{

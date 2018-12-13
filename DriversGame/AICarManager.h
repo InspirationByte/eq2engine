@@ -177,6 +177,7 @@ public:
 
 	DkList<CCar*>				m_roadBlockCars;
 	int							m_roadBlockSpawnedCount;
+	IVector2D					m_roadBlockPosition;
 };
 
 extern CAICarManager*			g_pAIManager;
