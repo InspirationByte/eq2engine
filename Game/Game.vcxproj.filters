@@ -1,0 +1,915 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Libs">
+      <UniqueIdentifier>{fba18bfe-a103-4330-bec6-df4074467142}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{cdf1aca4-5ea6-4169-a7af-bb06356c600b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Utils">
+      <UniqueIdentifier>{50cb3d82-9985-4296-b47f-d34a6c0efbd7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Math">
+      <UniqueIdentifier>{1abc7d55-23ba-4a31-8884-6540ae8de38a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineLib\Scene">
+      <UniqueIdentifier>{eb8b9e15-3c4b-400e-950c-c19604b25627}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib">
+      <UniqueIdentifier>{dad3b27b-fe2c-415b-a7f1-a0a16d868f7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\AI">
+      <UniqueIdentifier>{af867ff9-6ea4-4f99-9c61-65542ee5fcd9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\AI\Nav">
+      <UniqueIdentifier>{6b340d92-08c6-4db8-8bf3-57639fed8822}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\AI\Nav\Detour">
+      <UniqueIdentifier>{761a645a-f16b-4bdc-a37f-1eedd5a50f18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\AI\Nav\Recast">
+      <UniqueIdentifier>{dc26e426-536a-4827-8578-d4f055d59983}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\AI\TaskBase">
+      <UniqueIdentifier>{851687ed-189e-48d7-ba7a-30b2c0332621}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\GameCommon">
+      <UniqueIdentifier>{0ac31b28-9a3d-4845-a919-70c6993d4673}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\GameCommon\Shared">
+      <UniqueIdentifier>{fb97c430-e7c1-4f0a-a3e6-5a82ee616803}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\SaveRestore">
+      <UniqueIdentifier>{4e72609e-16db-4581-9a26-5a427d3feae7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\Renderer">
+      <UniqueIdentifier>{fb4f341d-7b30-47f6-8651-a6b111d93248}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\Sound">
+      <UniqueIdentifier>{68b966de-e492-4f14-8dd6-f3c9b8316feb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\Game_Pigeon">
+      <UniqueIdentifier>{98086d31-6024-472e-801c-fd66f396dca5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\Game_STD">
+      <UniqueIdentifier>{57114093-9dcc-4c69-ab2f-0ea752824ccd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\EqUI">
+      <UniqueIdentifier>{c0879527-a161-49b2-ba3e-0ddea327d2e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\Scripting">
+      <UniqueIdentifier>{d8e5208f-6997-444d-b068-515dc9f37a54}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\Scripting\gm">
+      <UniqueIdentifier>{f0184481-61bf-4ffc-83a9-f8e7dd39cc63}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\Scripting\gm\src">
+      <UniqueIdentifier>{9543f02a-2370-42e1-bc19-38aad6661c4b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\Scripting\gm\binds">
+      <UniqueIdentifier>{8e4ea302-871d-4c0a-ad85-010696259b70}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameLib\Scripting\gm\config">
+      <UniqueIdentifier>{d9c14a7e-1c68-4cc2-b40a-396c44693381}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\public\Utils\Align.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\CharSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CmdLineParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandAccessor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ConCommand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ConCommandBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ConCommandFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\consolenode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ConVar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\core_base_header.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\CPU.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\DebugInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ICmdLineParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ICommandAccessor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IConCommandFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IDkCore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IFileSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IMaterial.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IMaterialSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IMeshBuilder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\InterfaceManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Platform\Platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\Queue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\String.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\strtools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseActor.h">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseWeapon.h">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClInclude>
+    <ClInclude Include="EngineEntities.h">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClInclude>
+    <ClInclude Include="IGameRules.h">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\GeomTools.h">
+      <Filter>Source Files\EngineLib\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Math\math_util.h">
+      <Filter>Source Files\EngineLib\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BaseRenderableObject.h">
+      <Filter>Source Files\EngineLib\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\RenderList.h">
+      <Filter>Source Files\EngineLib\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="env_explode.h">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ViewParams.h">
+      <Filter>Source Files\EngineLib\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Ladder.h">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClInclude>
+    <ClInclude Include="GameRenderer.h">
+      <Filter>Source Files\GameLib\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="FilterPipelineBase.h">
+      <Filter>Source Files\GameLib\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="AI\ai_navigator.h">
+      <Filter>Source Files\GameLib\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="SaveRestoreManager.h">
+      <Filter>Source Files\GameLib\SaveRestore</Filter>
+    </ClInclude>
+    <ClInclude Include="SaveGame_DkList.h">
+      <Filter>Source Files\GameLib\SaveRestore</Filter>
+    </ClInclude>
+    <ClInclude Include="SaveGame_Events.h">
+      <Filter>Source Files\GameLib\SaveRestore</Filter>
+    </ClInclude>
+    <ClInclude Include="SaveRestoreDefaultFunctions.h">
+      <Filter>Source Files\GameLib\SaveRestore</Filter>
+    </ClInclude>
+    <ClInclude Include="npc_cyborg.h">
+      <Filter>Source Files\GameLib\Game_STD</Filter>
+    </ClInclude>
+    <ClInclude Include="viewmodel.h">
+      <Filter>Source Files\GameLib\Game_STD</Filter>
+    </ClInclude>
+    <ClInclude Include="GameRules_WhiteCage.h">
+      <Filter>Source Files\GameLib\Game_STD</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerSpawn.h">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BoneSetup.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Effects.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\iksolver_ccd.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Rain.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Snow.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="GameTrace.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="GameInput.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="DamageInfo.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="GlobalVarsGame.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityDataField.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="AI\AITaskTypes.h">
+      <Filter>Source Files\GameLib\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="EffectRender.h">
+      <Filter>Source Files\GameLib\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="AI\AITaskActionBase.h">
+      <Filter>Source Files\GameLib\AI\TaskBase</Filter>
+    </ClInclude>
+    <ClInclude Include="AI\AIMemoryBase.h">
+      <Filter>Source Files\GameLib\AI\TaskBase</Filter>
+    </ClInclude>
+    <ClInclude Include="AI\AIMemoryBits.h">
+      <Filter>Source Files\GameLib\AI\TaskBase</Filter>
+    </ClInclude>
+    <ClInclude Include="AI\AINode.h">
+      <Filter>Source Files\GameLib\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="AI\AI_MovementTarget.h">
+      <Filter>Source Files\GameLib\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="AI\AI_Idle.h">
+      <Filter>Source Files\GameLib\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderDefs.h">
+      <Filter>Source Files\GameLib\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\anim_activity.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\anim_events.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ragdoll.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="InfoCamera.h">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClInclude>
+    <ClInclude Include="EGUI\EQUI_Manager.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="PigeonGame\GameRules_Pigeon.h">
+      <Filter>Source Files\GameLib\Game_Pigeon</Filter>
+    </ClInclude>
+    <ClInclude Include="PigeonGame\BasePigeon.h">
+      <Filter>Source Files\GameLib\Game_Pigeon</Filter>
+    </ClInclude>
+    <ClInclude Include="EGUI\EqUI_Panel.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="AmmoType.h">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClInclude>
+    <ClInclude Include="PigeonGame\Pigeon_Player.h">
+      <Filter>Source Files\GameLib\Game_Pigeon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\dsm_loader.h">
+      <Filter>Source Files\GameLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\dsm_obj_loader.h">
+      <Filter>Source Files\GameLib</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmVariable.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmArraySimple.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmByteCode.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmByteCodeGen.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmCodeGen.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmCodeGenHooks.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmCodeTree.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmConfig.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmCrc.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmDebug.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmFunctionObject.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmHash.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmIncGC.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmIterator.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmLibHooks.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmListDouble.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmLog.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmMachine.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmMachineLib.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmMem.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmMemChain.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmMemFixed.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmMemFixedSet.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmOperators.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmParser.cpp.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmScanner.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmStream.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmStreamBuffer.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmStringObject.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmTableObject.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmThread.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmUserObject.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmUtil.h">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmArrayLib.h">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmCall.h">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmGCRoot.h">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmGCRootUtil.h">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmHelpers.h">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmMathLib.h">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmStringLib.h">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmSystemLib.h">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmVector3Lib.h">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClInclude>
+    <ClInclude Include="gmScript\platform\win32msvc\gmConfig_p.h">
+      <Filter>Source Files\GameLib\Scripting\gm\config</Filter>
+    </ClInclude>
+    <ClInclude Include="EqScriptObject.h">
+      <Filter>Source Files\GameLib\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="EqGMS.h">
+      <Filter>Source Files\GameLib\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityBind.h">
+      <Filter>Source Files\GameLib\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="AI\AIBaseNPC.h">
+      <Filter>Source Files\GameLib\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="AI\AIScriptTask.h">
+      <Filter>Source Files\GameLib\AI\TaskBase</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleRenderer.h">
+      <Filter>Source Files\GameLib\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="GameState.h">
+      <Filter>Source Files\GameLib</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseEntity.h">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseEngineHeader.h">
+      <Filter>Source Files\GameLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IGameLibrary.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityQueue.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Button.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EGUI\equi_defs.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Label.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Manager.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Panel.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EGUI\IEqUI_Control.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\src_dependency\Shiny\lib\Release\Shiny.lib">
+      <Filter>Libs</Filter>
+    </Library>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="weapon_ak74.cpp">
+      <Filter>Source Files\GameLib\Game_STD</Filter>
+    </ClCompile>
+    <ClCompile Include="weapon_deagle.cpp">
+      <Filter>Source Files\GameLib\Game_STD</Filter>
+    </ClCompile>
+    <ClCompile Include="weapon_f1.cpp">
+      <Filter>Source Files\GameLib\Game_STD</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseActor.cpp">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseAnimating.cpp">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseWeapon.cpp">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="EffectEntities.cpp">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="EngineEntities.cpp">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="Triggers.cpp">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\Utils\GeomTools.cpp">
+      <Filter>Source Files\EngineLib\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\Math\math_util.cpp">
+      <Filter>Source Files\EngineLib\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\BaseRenderableObject.cpp">
+      <Filter>Source Files\EngineLib\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\RenderList.cpp">
+      <Filter>Source Files\EngineLib\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="npc_soldier.cpp">
+      <Filter>Source Files\GameLib\Game_STD</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundEntities.cpp">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\ViewParams.cpp">
+      <Filter>Source Files\EngineLib\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Player.cpp">
+      <Filter>Source Files\GameLib\Game_STD</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelEntities.cpp">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="Ladder.cpp">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="LogicEntities.cpp">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="GameRenderer.cpp">
+      <Filter>Source Files\GameLib\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="FilterPipelineBase.cpp">
+      <Filter>Source Files\GameLib\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\ai_navigator.cpp">
+      <Filter>Source Files\GameLib\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Detour\Source\DetourAlloc.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Detour</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Detour\Source\DetourCommon.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Detour</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Detour\Source\DetourNavMesh.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Detour</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Detour\Source\DetourNavMeshBuilder.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Detour</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Detour\Source\DetourNavMeshQuery.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Detour</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Detour\Source\DetourNode.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Detour</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Recast\Source\Recast.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Recast</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Recast\Source\RecastAlloc.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Recast</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Recast\Source\RecastArea.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Recast</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Recast\Source\RecastContour.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Recast</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Recast\Source\RecastFilter.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Recast</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Recast\Source\RecastLayers.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Recast</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Recast\Source\RecastMesh.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Recast</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Recast\Source\RecastMeshDetail.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Recast</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Recast\Source\RecastRasterization.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Recast</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\Recast\Source\RecastRegion.cpp">
+      <Filter>Source Files\GameLib\AI\Nav\Recast</Filter>
+    </ClCompile>
+    <ClCompile Include="SaveRestoreManager.cpp">
+      <Filter>Source Files\GameLib\SaveRestore</Filter>
+    </ClCompile>
+    <ClCompile Include="npc_cyborg.cpp">
+      <Filter>Source Files\GameLib\Game_STD</Filter>
+    </ClCompile>
+    <ClCompile Include="viewmodel.cpp">
+      <Filter>Source Files\GameLib\Game_STD</Filter>
+    </ClCompile>
+    <ClCompile Include="GameRules_WhiteCage.cpp">
+      <Filter>Source Files\GameLib\Game_STD</Filter>
+    </ClCompile>
+    <ClCompile Include="PlayerSpawn.cpp">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\BoneSetup.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Effects.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Rain.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Snow.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="GameInput.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="GameTrace.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="GlobalVarsGame.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="EntityDataField.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\AITaskTypes.cpp">
+      <Filter>Source Files\GameLib\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="GameLibrary.cpp">
+      <Filter>Source Files\GameLib</Filter>
+    </ClCompile>
+    <ClCompile Include="weapon_wiremine.cpp">
+      <Filter>Source Files\GameLib\Game_STD</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\AIMemoryBase.cpp">
+      <Filter>Source Files\GameLib\AI\TaskBase</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\AITaskActionBase.cpp">
+      <Filter>Source Files\GameLib\AI\TaskBase</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\AINode.cpp">
+      <Filter>Source Files\GameLib\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\AI_Idle.cpp">
+      <Filter>Source Files\GameLib\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\AI_MovementTarget.cpp">
+      <Filter>Source Files\GameLib\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderDefs.cpp">
+      <Filter>Source Files\GameLib\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\anim_activity.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\anim_events.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\ragdoll.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="InfoCamera.cpp">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="PigeonGame\GameRules_Pigeon.cpp">
+      <Filter>Source Files\GameLib\Game_Pigeon</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletSimulator.cpp">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="PigeonGame\BasePigeon.cpp">
+      <Filter>Source Files\GameLib\Game_Pigeon</Filter>
+    </ClCompile>
+    <ClCompile Include="AmmoType.cpp">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="PigeonGame\Pigeon_Player.cpp">
+      <Filter>Source Files\GameLib\Game_Pigeon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\dsm_esm_loader.cpp">
+      <Filter>Source Files\GameLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\dsm_loader.cpp">
+      <Filter>Source Files\GameLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\dsm_obj_loader.cpp">
+      <Filter>Source Files\GameLib</Filter>
+    </ClCompile>
+    <ClCompile Include="SaveGame_Events.cpp">
+      <Filter>Source Files\GameLib\SaveRestore</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmArraySimple.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmByteCode.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmByteCodeGen.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmCodeGen.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmCodeGenHooks.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmCodeTree.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmCrc.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmDebug.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmFunctionObject.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmHash.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmIncGC.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmLibHooks.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmListDouble.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmLog.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmMachine.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmMachineLib.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmMem.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmMemChain.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmMemFixed.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmMemFixedSet.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmOperators.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmParser.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmScanner.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmStream.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmStreamBuffer.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmStringObject.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmTableObject.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmThread.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmUserObject.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmUtil.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmVariable.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\src</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmArrayLib.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmCall.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmGCRoot.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmGCRootUtil.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmHelpers.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmMathLib.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmStringLib.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmSystemLib.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmVector3Lib.cpp">
+      <Filter>Source Files\GameLib\Scripting\gm\binds</Filter>
+    </ClCompile>
+    <ClCompile Include="EqGMS.cpp">
+      <Filter>Source Files\GameLib\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="EngineScriptBind.cpp">
+      <Filter>Source Files\GameLib\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="EntityBind.cpp">
+      <Filter>Source Files\GameLib\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\AIBaseNPC.cpp">
+      <Filter>Source Files\GameLib\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="AI\AIScriptTask.cpp">
+      <Filter>Source Files\GameLib\AI\TaskBase</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticleRenderer.cpp">
+      <Filter>Source Files\GameLib\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="GameState.cpp">
+      <Filter>Source Files\GameLib</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseEntity.cpp">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="EntityQueue.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\GameSoundEmitterSystem.cpp">
+      <Filter>Source Files\GameLib\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EGUI\EQUI_Manager.cpp">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EGUI\EqUI_Panel.cpp">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EffectRender.cpp">
+      <Filter>Source Files\GameLib\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EGUI\EqUI_Button.cpp">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EGUI\EqUI_Label.cpp">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EGUI\IEqUI_Control.cpp">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuildStep Include="BaseAnimating.h">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </CustomBuildStep>
+    <CustomBuildStep Include="Player.h">
+      <Filter>Source Files\GameLib\Game_STD</Filter>
+    </CustomBuildStep>
+    <CustomBuildStep Include="BulletSimulator.h">
+      <Filter>Source Files\GameLib\GameCommon</Filter>
+    </CustomBuildStep>
+  </ItemGroup>
+</Project>

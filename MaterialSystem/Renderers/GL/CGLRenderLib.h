@@ -8,7 +8,7 @@
 #ifndef CGLRENDERLIB_H
 #define CGLRENDERLIB_H
 
-#include "../IRenderLibrary.h"
+#include "../Shared/IRenderLibrary.h"
 #include "ShaderAPIGL.h"
 #include <map>
 

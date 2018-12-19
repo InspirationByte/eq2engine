@@ -8,7 +8,7 @@
 #ifndef SHADERAPIEMPTY_H
 #define SHADERAPIEMPTY_H
 
-#include "../ShaderAPI_Base.h"
+#include "../Shared/ShaderAPI_Base.h"
 
 #include "CEmptyTexture.h"
 #include "imaging/ImageLoader.h"

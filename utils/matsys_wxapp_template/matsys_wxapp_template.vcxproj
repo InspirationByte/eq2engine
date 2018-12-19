@@ -15,7 +15,6 @@
     <ProjectGuid>{CADC216A-CA8C-4042-8461-AAF5D6498B72}</ProjectGuid>
     <RootNamespace>DkCore</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">

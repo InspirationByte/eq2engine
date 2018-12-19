@@ -13,11 +13,14 @@
 
 //----------------------------------------------------------
 
+// the sample pair used as output mix
 typedef struct samplepair_s
 {
 	int     left;
 	int     right;
 } samplepair_t;
+
+//----------------------------------------------------------
 
 typedef struct stereo16_s
 {

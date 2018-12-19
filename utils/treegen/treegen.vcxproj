@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -15,7 +15,7 @@
     <ProjectGuid>{9045AE07-CA86-4035-B058-45FF6ED382A1}</ProjectGuid>
     <RootNamespace>DkCore</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <TargetPlatformVersion>8.1</TargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -23,14 +23,14 @@
     <CharacterSet>Unicode</CharacterSet>
     <CLRSupport>false</CLRSupport>
     <WholeProgramOptimization>false</WholeProgramOptimization>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <CLRSupport>false</CLRSupport>
     <WholeProgramOptimization>false</WholeProgramOptimization>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -44,8 +44,6 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
     <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</IgnoreImportLibrary>
@@ -122,7 +120,6 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>user32.lib;comctl32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\DriversGame\Editor.exe</OutputFile>
       <IgnoreSpecificDefaultLibraries>LIBCMT.lib;libc.lib</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -180,12 +177,18 @@
     <ClCompile Include="..\..\shared_engine\DebugOverlay.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\libs\CoreLib.lib" />
-    <Library Include="..\..\Libs\DkCore.lib" />
-    <Library Include="..\..\libs\FrameworkLib.lib" />
+    <ResourceCompile Include="windows\Resources.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="windows\Resources.rc" />
+    <ProjectReference Include="..\..\coreLib.vcxproj">
+      <Project>{591567d2-96d1-4cbc-988b-07b7794ad489}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Core\eqCore.vcxproj">
+      <Project>{d8bffbb2-af7b-48a2-8958-c7969dfdb3a2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\frameworkLib.vcxproj">
+      <Project>{5eddcdb2-e467-4db3-ad7e-4e78f5020028}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

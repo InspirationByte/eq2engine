@@ -431,32 +431,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\libs\DkCore.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\libs\zlib.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\src_dependency\SDL2\lib\SDL2.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\libs\CoreLib.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\libs\FrameworkLib.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\libs\OpenAL32.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\src_dependency\lua\LuaLib.lib">
-      <Filter>Libs\lua</Filter>
-    </Library>
     <Library Include="..\src_dependency\oolua\bin\Release\oolua.lib">
       <Filter>Libs\lua</Filter>
-    </Library>
-    <Library Include="..\libs\libpng.lib">
-      <Filter>Libs</Filter>
     </Library>
     <Library Include="..\src_dependency\oolua\bin\Debug\oolua_d.lib">
       <Filter>Libs\lua</Filter>
@@ -468,9 +444,6 @@
       <Filter>Libs</Filter>
     </Library>
     <Library Include="..\libs\libvorbis_static.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\libs\jpeg.lib">
       <Filter>Libs</Filter>
     </Library>
     <Library Include="..\src_dependency\Shiny\lib\Release\Shiny.lib">
@@ -490,6 +463,21 @@
     </Library>
     <Library Include="..\src_dependency\bullet\bin\LinearMath.lib">
       <Filter>Libs\bullet</Filter>
+    </Library>
+    <Library Include="..\src_dependency\SDL2\VisualC\SDL\Win32\Release\SDL2.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\OpenALSoftCustom\build\Release\OpenAL32.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\jpeg\Release\jpeg.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\zlib\MinSizeRel\zlibstatic.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\lua\src\lua51.lib">
+      <Filter>Libs\lua</Filter>
     </Library>
   </ItemGroup>
   <ItemGroup>

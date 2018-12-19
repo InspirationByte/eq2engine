@@ -758,7 +758,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	// TODO: apply stability control handling amounts to the final handling
 	// based on the game difficulty
 	handling += m_stability.m_handling;
-	handling *= m_targetAvoidance.m_handling;
+	handling += m_targetAvoidance.m_handling;
 
 	if(m_collAvoidance.m_manipulator.m_enabled)
 		handling = m_collAvoidance.m_handling;

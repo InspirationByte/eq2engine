@@ -9,7 +9,7 @@
 #define CGLRENDERLIB_H
 
 #include "IShaderAPI.h"
-#include "../IRenderLibrary.h"
+#include "../Shared/IRenderLibrary.h"
 
 #include <d3d10.h>
 #include <d3dx10.h>

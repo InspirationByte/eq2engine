@@ -130,9 +130,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\libs\DkCore.lib">
-      <Filter>Libs</Filter>
-    </Library>
     <Library Include="..\..\libs\zlib.lib">
       <Filter>Libs</Filter>
     </Library>
@@ -152,12 +149,6 @@
       <Filter>Libs</Filter>
     </Library>
     <Library Include="..\..\src_dependency\bullet\lib\LinearMath_vs2010.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\libs\CoreLib.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\libs\FrameworkLib.lib">
       <Filter>Libs</Filter>
     </Library>
   </ItemGroup>

@@ -452,7 +452,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		const float AI_BRAKE_TARGET_DISTANCE_SCALING = 2.5f;
 		const float AI_BRAKE_TARGET_DISTANCE_CURVE = 0.5f;
 
-		const float AI_STEERING_TARGET_DISTANCE_SCALING = 0.8f;
+		const float AI_STEERING_TARGET_DISTANCE_SCALING = 0.5f;
 		const float AI_STEERING_TARGET_DISTANCE_CURVE = 2.5f;
 
 		// add velocity offset
@@ -592,30 +592,30 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		// distance from path segment start
 		float distFromPathSegStart = pathSegmentProj*pathSegmentLength;
 
-		const float AI_STEERING_TARGET_CONST_DISTANCE = 0.3f;
-		const float AI_STEERING_TARGET_DISTANCE_A = 1.0f;
-		const float AI_STEERING_TARGET_DISTANCE_B = 3.0f;
+		const float AI_STEERING_TARGET_CONST_DISTANCE = 0.5f;
+		const float AI_STEERING_TARGET_DISTANCE_A = 0.5f;
+		const float AI_STEERING_TARGET_DISTANCE_B = 0.7f;
 
-		const float AI_BRAKE_TARGET_CONST_DISTANCE = 0.0f;
+		const float AI_BRAKE_TARGET_CONST_DISTANCE = 1.0f;
 
 		const float AI_BRAKE_TARGET_DISTANCE_A = 1.0f;
-		const float AI_BRAKE_TARGET_DISTANCE_B = 2.0f;
+		const float AI_BRAKE_TARGET_DISTANCE_B = 1.5f;
 
-		const float	AI_BRAKE_SPEED_DISTANCE_FACTOR_A = 0.9f;
-		const float	AI_BRAKE_SPEED_DISTANCE_FACTOR_B = 1.1f;
+		const float	AI_BRAKE_SPEED_DISTANCE_FACTOR_A = 0.7f;
+		const float	AI_BRAKE_SPEED_DISTANCE_FACTOR_B = 0.9f;
 		
 		const float AI_STEERING_PATH_CORRECTION_DISTANCE = 8.0f;
 		const float AI_SEGMENT_STEERING_CORRECTION_RADIUS = 4.0f; // distance to segment
 		const float AI_BRAKE_PATH_CORRECTION_CURVE = 0.65f;
 
 		// brake curve and limits
-		const float AI_BRAKE_CURVE = 0.75f;
+		const float AI_BRAKE_CURVE = 0.65f;
 		const float AI_BRAKE_LIMIT = 1.0f;
 
 		float steeringBySpeedModifier = RemapValClamp(speedMPS, 0.0f, 40.0f, 0.1f, 5.0f);
 		float brakeBySpeedModifier = RemapValClamp(speedMPS, 0.0f, 40.0f, 0.5f, 2.8f);
 
-		const float AI_STEERING_BY_SPEED_CURVE = 1.1f;
+		const float AI_STEERING_BY_SPEED_CURVE = 1.8f;
 		steeringBySpeedModifier = pow(steeringBySpeedModifier, AI_STEERING_BY_SPEED_CURVE);
 
 		//float correctionBySpeedModifier = RemapValClamp(speedMPS, 0.0f, 30.0f, 0.0f, 0.5f);
@@ -627,7 +627,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		Vector3D positionB = GetAdvancedPointByDist(pathIdx, distFromPathSegStart + AI_STEERING_TARGET_CONST_DISTANCE + AI_STEERING_TARGET_DISTANCE_B*steeringBySpeedModifier);
 
 		float forwardTraceDistanceBySpeed = RemapValClamp(speedMPS, 0.0f, 50.0f, 4.0f, 15.0f);
-
+		/*
 		// trace forward from car using speed
 		g_pPhysics->TestConvexSweep(&sphereTraceShape, identity(),
 			carPos, carPos+carForward*forwardTraceDistanceBySpeed, steeringTargetColl,
@@ -654,7 +654,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			positionA, positionB, pathColl,
 			traceContents,
 			&collFilter);
-
+		
 		if(pathColl.fract < 1.0f)
 		{
 			float AI_OBSTACLE_PATH_CORRECTION_AMOUNT = 1.1f;
@@ -668,7 +668,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			{
 				debugoverlay->Line3D(positionA, positionB, ColorRGBA(1, 0, 1, 1.0f), ColorRGBA(1, 0, 1, 1.0f), fDt);
 			}
-		}
+		}*/
 
 		// calculate steering angle for applying brakes
 		pathIdx = m_pathPointIdx;

@@ -145,6 +145,9 @@
     <ClInclude Include="eqSoundSystemTest.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="SoundEngineV2\snd_listener.h">
+      <Filter>Source Files\SoundEngine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="windows\mainicon.ico">
@@ -245,6 +248,9 @@
     <ClCompile Include="..\..\shared_engine\ViewParams.cpp">
       <Filter>Source Files\EngineLib\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="SoundEngineV2\snd_listener.cpp">
+      <Filter>Source Files\SoundEngine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="windows\Resources.rc">
@@ -252,15 +258,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\libs\CoreLib.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\libs\DkCore.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\libs\FrameworkLib.lib">
-      <Filter>Libs</Filter>
-    </Library>
     <Library Include="..\..\libs\libogg_static.lib">
       <Filter>Libs</Filter>
     </Library>

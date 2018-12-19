@@ -8,7 +8,7 @@
 #ifndef ShaderAPID3DX10_H
 #define ShaderAPID3DX10_H
 
-#include "../ShaderAPI_Base.h"
+#include "../Shared/ShaderAPI_Base.h"
 
 #include <d3d10.h>
 #include <d3dx10.h>

@@ -148,6 +148,8 @@ paintbuffer_t* CSoundEngine::GetPaintBuffer(int nBytes)
 		// make channel buffer same as the output paint buffer
 		m_channelBuffer.data = (ubyte *)PPAlloc( nBytes );
 		m_channelBuffer.size = nBytes;
+
+		DevMsg(DEVMSG_SOUND, "Created sound buffers (2), size: %d bytes", nBytes);
 	}
 	else if ( nBytes != m_paintBuffer.size )
 	{
@@ -160,6 +162,8 @@ paintbuffer_t* CSoundEngine::GetPaintBuffer(int nBytes)
 		// make channel buffer same as the output paint buffer
 		m_channelBuffer.data = (ubyte *)PPAlloc( nBytes );
 		m_channelBuffer.size = nBytes;
+
+		DevMsg(DEVMSG_SOUND, "Reset sound buffers (2), new size: %d bytes", nBytes);
 	}
 
 	memset( m_paintBuffer.data, 0, m_paintBuffer.size );
@@ -169,15 +173,14 @@ paintbuffer_t* CSoundEngine::GetPaintBuffer(int nBytes)
 
 //----------------------------------------------------------
 
-void CSoundEngine::SetListener(const Vector3D& vOrigin, const Vector3D& vForward, const Vector3D& vRight, const Vector3D& vUp)
+void CSoundEngine::SetListener(const Vector3D& vOrigin, const Matrix3x3& orient)
 {
 	m_listener.origin = vOrigin;
-	m_listener.forward = vForward;
-	m_listener.right = vRight;
-	m_listener.up = vUp;
+
+	m_listener.orient = orient;
 }
 
-const ListenerInfo&	CSoundEngine::GetListener() const
+const ListenerInfo_t& CSoundEngine::GetListener() const
 {
 	return m_listener;
 }

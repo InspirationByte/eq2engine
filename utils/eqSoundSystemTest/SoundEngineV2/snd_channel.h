@@ -43,7 +43,7 @@ public:
 	void				SetReserved(bool b) { m_reserved = b; }
 	bool				IsReserved() { return m_reserved; }
 
-	void				MixChannel(paintbuffer_t* input, paintbuffer_t* output, int numSamples);
+	void				MixChannel(paintbuffer_t* chanBuffer, paintbuffer_t* output, int numSamples);
 private:
 	bool				SetupSource(ISoundSource* source);
 

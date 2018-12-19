@@ -8,7 +8,7 @@
 #ifndef CGLTEXTURE_H
 #define CGLTEXTURE_H
 
-#include "../CTexture.h"
+#include "../Shared/CTexture.h"
 #include "utils/DkList.h"
 
 #include "ShaderAPIGL.h"

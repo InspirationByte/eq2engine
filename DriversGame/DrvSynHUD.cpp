@@ -381,18 +381,18 @@ void CDrvSynHUDManager::DrawWorldIntoMap(const CViewParams& params, float fDt)
 				meshBuilder.Position3fv(copPos);
 				int firstVert = meshBuilder.AdvanceVertexIndex();
 
-				for(int i = 0; i < 11; i++)
+				for(int d = 0; d < 11; d++)
 				{
 					float ss,cs;
-					float angle = float(i-1) * 36.0f;
+					float angle = float(d-1) * 36.0f;
 					SinCos(DEG2RAD(angle), &ss, &cs);
 
 					meshBuilder.Position3fv( copPos + Vector3D(ss, 0.0f, cs)*6.0f );
 
-					if(i > 0)
+					if(d > 0)
 						meshBuilder.AdvanceVertexIndex( firstVert );
 
-					meshBuilder.AdvanceVertexIndex( firstVert+i+1 );
+					meshBuilder.AdvanceVertexIndex( firstVert+d+1 );
 				}
 
 				meshBuilder.AdvanceVertexIndex(0xFFFF);

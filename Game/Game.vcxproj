@@ -1,0 +1,833 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="PigeonGame Release|Win32">
+      <Configuration>PigeonGame Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="STDGame Release|Win32">
+      <Configuration>STDGame Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>Game</ProjectName>
+    <ProjectGuid>{15E8B4AA-C5D0-4726-9F08-94D2D202D3AB}</ProjectGuid>
+    <RootNamespace>DkGame</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">false</LinkIncremental>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'" />
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'" />
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</IgnoreImportLibrary>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</IgnoreImportLibrary>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">false</IgnoreImportLibrary>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">false</IgnoreImportLibrary>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>..\FileSystem;..\Engine;..\public;..\Game\;..\public\core;..\public\materialsystem\renderers;..\public\platform;AI\Recast\Include;AI\Detour\Include;..\shared_game\;..\shared_engine\;..\src_dependency\shiny\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;GAME_EXPORT;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;STDGAME;SHINY_PROFILER=FALSE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <StringPooling>true</StringPooling>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+    </ClCompile>
+    <Link>
+      <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>
+      </OptimizeReferences>
+      <EnableCOMDATFolding>
+      </EnableCOMDATFolding>
+      <NoEntryPoint>false</NoEntryPoint>
+      <BaseAddress>0x30000000</BaseAddress>
+      <ImportLibrary>..\libs\game_win_x86.lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <DataExecutionPrevention>false</DataExecutionPrevention>
+      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>..\FileSystem;..\Engine;..\public;..\Game\;..\public\platform;AI\Recast\Include;AI\Detour\Include;gmScript\binds\;gmScript\platform\win32msvc;gmScript\gm\;..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;GAME_EXPORT;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;STDGAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <StringPooling>true</StringPooling>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>
+      </OptimizeReferences>
+      <EnableCOMDATFolding>
+      </EnableCOMDATFolding>
+      <NoEntryPoint>false</NoEntryPoint>
+      <BaseAddress>0x30000000</BaseAddress>
+      <ImportLibrary>..\libs\game_win_x86.lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <DataExecutionPrevention>false</DataExecutionPrevention>
+      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>..\FileSystem;..\Engine;..\public;..\Game\;..\public\platform;AI\Recast\Include;AI\Detour\Include;gmScript\binds\;gmScript\platform\win32msvc;gmScript\gm\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;GAME_EXPORT;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;PIGEONGAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <StringPooling>true</StringPooling>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\gamebin\BastardPigeon\GameLib.dll</OutputFile>
+      <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>
+      </OptimizeReferences>
+      <EnableCOMDATFolding>
+      </EnableCOMDATFolding>
+      <NoEntryPoint>false</NoEntryPoint>
+      <BaseAddress>0x30000000</BaseAddress>
+      <ImportLibrary>..\libs\game_win_x86.lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <DataExecutionPrevention>false</DataExecutionPrevention>
+      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
+      <ProgramDatabaseFile>..\..\gamebin\BastardPigeon\GameLib.pdb</ProgramDatabaseFile>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>..\FileSystem;..\Engine;..\public;..\Game\;..\public\core;..\public\platform;..\public\materialsystem\renderers;AI\Recast\Include;AI\Detour\Include;gmScript\binds\;gmScript\platform\win32msvc;gmScript\gm\;..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;GAME_EXPORT;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;STDGAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <StringPooling>true</StringPooling>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\gamebin\STDGame\GameLib.dll</OutputFile>
+      <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>
+      </OptimizeReferences>
+      <EnableCOMDATFolding>
+      </EnableCOMDATFolding>
+      <NoEntryPoint>false</NoEntryPoint>
+      <BaseAddress>
+      </BaseAddress>
+      <ImportLibrary>..\libs\game_win_x86.lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
+      <ProgramDatabaseFile>..\..\gamebin\STDGame\GameLib.pdb</ProgramDatabaseFile>
+      <FixedBaseAddress>false</FixedBaseAddress>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\public\anim_activity.h" />
+    <ClInclude Include="..\public\anim_events.h" />
+    <ClInclude Include="..\public\BaseRenderableObject.h" />
+    <ClInclude Include="..\public\dsm_loader.h" />
+    <ClInclude Include="..\public\dsm_obj_loader.h" />
+    <ClInclude Include="..\public\IGameLibrary.h" />
+    <ClInclude Include="..\public\iksolver_ccd.h" />
+    <ClInclude Include="..\public\ragdoll.h" />
+    <ClInclude Include="..\public\RenderList.h" />
+    <ClInclude Include="..\public\Utils\Align.h" />
+    <ClInclude Include="..\public\CharSet.h" />
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Button.h" />
+    <ClInclude Include="..\shared_engine\EGUI\equi_defs.h" />
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Label.h" />
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Manager.h" />
+    <ClInclude Include="..\shared_engine\EGUI\EqUI_Panel.h" />
+    <ClInclude Include="..\shared_engine\EGUI\IEqUI_Control.h" />
+    <ClInclude Include="AI\AIBaseNPC.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="AI\AIMemoryBase.h" />
+    <ClInclude Include="AI\AIMemoryBits.h" />
+    <ClInclude Include="AI\AIScriptTask.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="AI\AI_Idle.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="AI\AI_MovementTarget.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="AI\AINode.h" />
+    <ClInclude Include="AI\AITaskActionBase.h" />
+    <ClInclude Include="AI\AITaskTypes.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="AI\ai_navigator.h" />
+    <ClInclude Include="AmmoType.h" />
+    <ClInclude Include="BaseEngineHeader.h" />
+    <ClInclude Include="BaseEntity.h" />
+    <ClInclude Include="CmdLineParser.h" />
+    <ClInclude Include="CommandAccessor.h" />
+    <ClInclude Include="..\public\ConCommand.h" />
+    <ClInclude Include="..\public\ConCommandBase.h" />
+    <ClInclude Include="ConCommandFactory.h" />
+    <ClInclude Include="..\public\consolenode.h" />
+    <ClInclude Include="..\public\ConVar.h" />
+    <ClInclude Include="..\public\core_base_header.h" />
+    <ClInclude Include="..\public\CPU.h" />
+    <ClInclude Include="..\public\DebugInterface.h" />
+    <ClInclude Include="DamageInfo.h" />
+    <ClInclude Include="EGUI\EqUI_Panel.h" />
+    <ClInclude Include="EGUI\EQUI_Manager.h" />
+    <ClInclude Include="EntityBind.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="EntityDataField.h" />
+    <ClInclude Include="EntityQueue.h" />
+    <ClInclude Include="env_explode.h" />
+    <ClInclude Include="EqGMS.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="EqScriptObject.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\public\ICmdLineParser.h" />
+    <ClInclude Include="..\public\ICommandAccessor.h" />
+    <ClInclude Include="..\public\IConCommandFactory.h" />
+    <ClInclude Include="..\public\IDkCore.h" />
+    <ClInclude Include="..\public\IFileSystem.h" />
+    <ClInclude Include="..\public\IMaterial.h" />
+    <ClInclude Include="..\public\IMaterialSystem.h" />
+    <ClInclude Include="..\public\IMeshBuilder.h" />
+    <ClInclude Include="..\public\InterfaceManager.h" />
+    <ClInclude Include="..\public\IRenderer.h" />
+    <ClInclude Include="..\public\Platform\Platform.h" />
+    <ClInclude Include="..\public\Utils\Queue.h" />
+    <ClInclude Include="..\public\Utils\String.h" />
+    <ClInclude Include="..\public\Utils\strtools.h" />
+    <ClInclude Include="EffectRender.h" />
+    <ClInclude Include="FilterPipelineBase.h" />
+    <ClInclude Include="GameRenderer.h" />
+    <ClInclude Include="GameRules_WhiteCage.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="GameState.h" />
+    <ClInclude Include="GameTrace.h" />
+    <ClInclude Include="gmScript\binds\gmArrayLib.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmCall.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmGCRoot.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmGCRootUtil.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmHelpers.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmMathLib.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmStringLib.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmSystemLib.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\binds\gmVector3Lib.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmArraySimple.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmByteCode.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmByteCodeGen.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmCodeGen.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmCodeGenHooks.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmCodeTree.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmConfig.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmCrc.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmDebug.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmFunctionObject.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmHash.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmIncGC.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmIterator.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmLibHooks.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmListDouble.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmLog.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmMachine.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmMachineLib.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmMem.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmMemChain.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmMemFixed.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmMemFixedSet.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmOperators.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmParser.cpp.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmScanner.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmStream.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmStreamBuffer.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmStringObject.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmTableObject.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmThread.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmUserObject.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmUtil.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\gm\gmVariable.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="gmScript\platform\win32msvc\gmConfig_p.h" />
+    <ClInclude Include="InfoCamera.h" />
+    <ClInclude Include="Ladder.h" />
+    <ClInclude Include="npc_cyborg.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="ParticleRenderer.h" />
+    <ClInclude Include="PigeonGame\GameRules_Pigeon.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="PigeonGame\BasePigeon.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="PigeonGame\Pigeon_Player.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="PlayerSpawn.h" />
+    <ClInclude Include="RenderDefs.h" />
+    <ClInclude Include="viewmodel.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <CustomBuildStep Include="Player.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
+    </CustomBuildStep>
+    <CustomBuildStep Include="BulletSimulator.h" />
+    <ClInclude Include="BaseActor.h" />
+    <CustomBuildStep Include="BaseAnimating.h" />
+    <ClInclude Include="BaseWeapon.h" />
+    <ClInclude Include="..\public\BoneSetup.h" />
+    <ClInclude Include="Effects.h" />
+    <ClInclude Include="EngineEntities.h" />
+    <ClInclude Include="GameInput.h" />
+    <ClInclude Include="GlobalVarsGame.h" />
+    <ClInclude Include="IGameRules.h" />
+    <ClInclude Include="Rain.h" />
+    <ClInclude Include="SaveGame_DkList.h" />
+    <ClInclude Include="SaveGame_Events.h" />
+    <ClInclude Include="SaveRestoreDefaultFunctions.h" />
+    <ClInclude Include="SaveRestoreManager.h" />
+    <ClInclude Include="Snow.h" />
+    <CustomBuildStep Include="RoofRunner\RoofRunnerActor.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">true</ExcludedFromBuild>
+    </CustomBuildStep>
+    <CustomBuildStep Include="..\public\Vertex.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">true</ExcludedFromBuild>
+    </CustomBuildStep>
+    <ClInclude Include="..\public\ViewParams.h" />
+    <ClInclude Include="..\public\Utils\GeomTools.h" />
+    <ClInclude Include="..\public\Math\math_util.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\src_dependency\Shiny\lib\Release\Shiny.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\public\anim_activity.cpp" />
+    <ClCompile Include="..\public\anim_events.cpp" />
+    <ClCompile Include="..\public\BaseRenderableObject.cpp" />
+    <ClCompile Include="..\public\BoneSetup.cpp" />
+    <ClCompile Include="..\public\dsm_esm_loader.cpp" />
+    <ClCompile Include="..\public\dsm_loader.cpp" />
+    <ClCompile Include="..\public\dsm_obj_loader.cpp" />
+    <ClCompile Include="..\shared_engine\EGUI\EqUI_Button.cpp" />
+    <ClCompile Include="..\shared_engine\EGUI\EqUI_Label.cpp" />
+    <ClCompile Include="..\shared_engine\EGUI\IEqUI_Control.cpp" />
+    <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp" />
+    <ClCompile Include="..\shared_game\GameSoundEmitterSystem.cpp" />
+    <ClCompile Include="..\public\ragdoll.cpp" />
+    <ClCompile Include="..\public\RenderList.cpp" />
+    <ClCompile Include="AI\AIBaseNPC.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="AI\AIMemoryBase.cpp" />
+    <ClCompile Include="AI\AINode.cpp" />
+    <ClCompile Include="AI\AIScriptTask.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="AI\AITaskActionBase.cpp" />
+    <ClCompile Include="AI\AITaskTypes.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="AI\AI_Idle.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="AI\AI_MovementTarget.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="AI\ai_navigator.cpp" />
+    <ClCompile Include="AI\Detour\Source\DetourAlloc.cpp" />
+    <ClCompile Include="AI\Detour\Source\DetourCommon.cpp" />
+    <ClCompile Include="AI\Detour\Source\DetourNavMesh.cpp" />
+    <ClCompile Include="AI\Detour\Source\DetourNavMeshBuilder.cpp" />
+    <ClCompile Include="AI\Detour\Source\DetourNavMeshQuery.cpp" />
+    <ClCompile Include="AI\Detour\Source\DetourNode.cpp" />
+    <ClCompile Include="AI\Recast\Source\Recast.cpp" />
+    <ClCompile Include="AI\Recast\Source\RecastAlloc.cpp" />
+    <ClCompile Include="AI\Recast\Source\RecastArea.cpp" />
+    <ClCompile Include="AI\Recast\Source\RecastContour.cpp" />
+    <ClCompile Include="AI\Recast\Source\RecastFilter.cpp" />
+    <ClCompile Include="AI\Recast\Source\RecastLayers.cpp" />
+    <ClCompile Include="AI\Recast\Source\RecastMesh.cpp" />
+    <ClCompile Include="AI\Recast\Source\RecastMeshDetail.cpp" />
+    <ClCompile Include="AI\Recast\Source\RecastRasterization.cpp" />
+    <ClCompile Include="AI\Recast\Source\RecastRegion.cpp" />
+    <ClCompile Include="AmmoType.cpp" />
+    <ClCompile Include="BaseEntity.cpp" />
+    <ClCompile Include="..\shared_engine\EGUI\EQUI_Manager.cpp" />
+    <ClCompile Include="EntityBind.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="EntityQueue.cpp" />
+    <ClCompile Include="EqGMS.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="GameLibrary.cpp" />
+    <ClCompile Include="..\shared_engine\EffectRender.cpp" />
+    <ClCompile Include="..\shared_engine\EGUI\EqUI_Panel.cpp" />
+    <ClCompile Include="EntityDataField.cpp" />
+    <ClCompile Include="FilterPipelineBase.cpp" />
+    <ClCompile Include="GameRenderer.cpp" />
+    <ClCompile Include="GameRules_WhiteCage.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="GameTrace.cpp" />
+    <ClCompile Include="GameState.cpp" />
+    <ClCompile Include="gmScript\binds\gmArrayLib.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmCall.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmGCRoot.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmGCRootUtil.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmHelpers.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmMathLib.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmStringLib.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmSystemLib.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\binds\gmVector3Lib.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmArraySimple.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmByteCode.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmByteCodeGen.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmCodeGen.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmCodeGenHooks.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmCodeTree.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmCrc.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmDebug.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmFunctionObject.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmHash.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmIncGC.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmLibHooks.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmListDouble.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmLog.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmMachine.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmMachineLib.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmMem.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmMemChain.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmMemFixed.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmMemFixedSet.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmOperators.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmParser.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmScanner.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmStream.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmStreamBuffer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmStringObject.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmTableObject.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmThread.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmUserObject.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmUtil.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gmScript\gm\gmVariable.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="InfoCamera.cpp" />
+    <ClCompile Include="Ladder.cpp" />
+    <ClCompile Include="LogicEntities.cpp" />
+    <ClCompile Include="npc_cyborg.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="npc_soldier.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ParticleRenderer.cpp" />
+    <ClCompile Include="PigeonGame\BasePigeon.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="PigeonGame\GameRules_Pigeon.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="PigeonGame\Pigeon_Player.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="RenderDefs.cpp" />
+    <ClCompile Include="SaveGame_Events.cpp" />
+    <ClCompile Include="SaveRestoreManager.cpp" />
+    <ClCompile Include="Player.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="BulletSimulator.cpp" />
+    <ClCompile Include="EngineScriptBind.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="viewmodel.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="weapon_ak74.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="weapon_deagle.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="weapon_f1.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="BaseActor.cpp" />
+    <ClCompile Include="BaseAnimating.cpp" />
+    <ClCompile Include="BaseWeapon.cpp" />
+    <ClCompile Include="EffectEntities.cpp" />
+    <ClCompile Include="Effects.cpp" />
+    <ClCompile Include="EngineEntities.cpp" />
+    <ClCompile Include="GameInput.cpp" />
+    <ClCompile Include="PlayerSpawn.cpp" />
+    <ClCompile Include="GlobalVarsGame.cpp" />
+    <ClCompile Include="ModelEntities.cpp" />
+    <ClCompile Include="Rain.cpp" />
+    <ClCompile Include="Snow.cpp" />
+    <ClCompile Include="SoundEntities.cpp" />
+    <ClCompile Include="Triggers.cpp" />
+    <ClCompile Include="..\public\ViewParams.cpp" />
+    <ClCompile Include="..\public\Utils\GeomTools.cpp" />
+    <ClCompile Include="..\public\Math\math_util.cpp" />
+    <ClCompile Include="weapon_wiremine.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\coreLib.vcxproj">
+      <Project>{591567d2-96d1-4cbc-988b-07b7794ad489}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Core\eqCore.vcxproj">
+      <Project>{d8bffbb2-af7b-48a2-8958-c7969dfdb3a2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\frameworkLib.vcxproj">
+      <Project>{5eddcdb2-e467-4db3-ad7e-4e78f5020028}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

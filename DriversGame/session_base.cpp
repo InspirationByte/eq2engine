@@ -538,17 +538,17 @@ void CGameSessionBase::InitCarZoneDescs()
 		kvkeybase_t* zone_kv = zone_presets->keys[i];
 
 		// thru vehicles in zone preset
-		for (int i = 0; i < zone_kv->keys.numElem(); i++)
+		for (int j = 0; j < zone_kv->keys.numElem(); j++)
 		{
-			vehicleConfig_t* carConfig = FindCarEntryByName(zone_kv->keys[i]->name);
+			vehicleConfig_t* carConfig = FindCarEntryByName(zone_kv->keys[j]->name);
 
 			if (!carConfig)
 			{
-				MsgWarning("Unknown vehicle '%s' for zone '%s'\n", zone_kv->keys[i]->name, zone_kv->name);
+				MsgWarning("Unknown vehicle '%s' for zone '%s'\n", zone_kv->keys[j]->name, zone_kv->name);
 				continue;
 			}
 
-			civCarEntry_t* civCarEntry = g_pAIManager->FindCivCarEntry(zone_kv->keys[i]->name);
+			civCarEntry_t* civCarEntry = g_pAIManager->FindCivCarEntry(zone_kv->keys[j]->name);
 
 			// add new car entry if not exist
 			if (!civCarEntry)
@@ -557,10 +557,10 @@ void CGameSessionBase::InitCarZoneDescs()
 				entry.config = carConfig;
 
 				int idx = g_pAIManager->m_civCarEntries.append(entry);
-				civCarEntry = &g_pAIManager->m_civCarEntries[i];
+				civCarEntry = &g_pAIManager->m_civCarEntries[j];
 			}
 
-			int spawnInterval = KV_GetValueInt(zone_kv->keys[i], 0, 0);
+			int spawnInterval = KV_GetValueInt(zone_kv->keys[j], 0, 0);
 
 			// append zone with given spawn interval
 			civCarEntry->zoneList.append(carZoneInfo_t{ zone_kv->name, spawnInterval });
@@ -604,16 +604,16 @@ void CGameSessionBase::LoadCarData()
 
 				if (carent->scriptCRC != 0)
 				{
-					kvkeybase_t kvs;
+					kvkeybase_t kvb;
 
-					if (!KV_LoadFromFile(carent->carScript.c_str(), SP_MOD, &kvs))
+					if (!KV_LoadFromFile(carent->carScript.c_str(), SP_MOD, &kvb))
 					{
 						MsgError("can't load default car script '%s'\n", carent->carScript.c_str());
 						delete carent;
 						return;
 					}
 
-					if (!ParseVehicleConfig(carent, &kvs))
+					if (!ParseVehicleConfig(carent, &kvb))
 					{
 						MsgError("Car configuration '%s' is invalid!\n", carent->carScript.c_str());
 						delete carent;

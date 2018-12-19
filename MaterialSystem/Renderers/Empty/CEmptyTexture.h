@@ -8,7 +8,7 @@
 #ifndef CEMPTYTEXTURE_H
 #define CEMPTYTEXTURE_H
 
-#include "../CTexture.h"
+#include "../Shared/CTexture.h"
 #include "utils/DkList.h"
 
 class CEmptyTexture : public CTexture

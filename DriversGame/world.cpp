@@ -1567,7 +1567,6 @@ void CGameWorld::DrawMoonGlow( const Vector2D& screenSize, const Vector2D& scree
 	Vector2D lensDir = halfScreen-screenPos;
 
 	float lensDist = length(lensDir);
-	float lensScale = lensDist*3.0f;
 
 	lensDir = normalize(lensDir);
 

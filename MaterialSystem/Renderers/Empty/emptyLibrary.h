@@ -10,7 +10,7 @@
 #define CGLRENDERLIB_H
 
 #include "IShaderAPI.h"
-#include "../IRenderLibrary.h"
+#include "../Shared/IRenderLibrary.h"
 
 class CEmptyRenderLib : public IRenderLibrary
 {

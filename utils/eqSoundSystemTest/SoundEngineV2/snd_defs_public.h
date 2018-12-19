@@ -10,6 +10,7 @@
 
 #include "dktypes.h"
 #include "math/Vector.h"
+#include "math/Matrix.h"
 
 enum EChanSpatializeMethod
 {
@@ -21,8 +22,9 @@ enum EChanSpatializeMethod
 	SPATIAL_METHOD_MONO_CHANNEL_ATTEN	// method where left channel used as closest source and right as far source
 };
 
-struct ListenerInfo {
-	Vector3D	origin, forward, right, up;
+struct ListenerInfo_t {
+	Vector3D	origin;
+	Matrix3x3	orient;
 };
 
 #endif // SND_DEFS_PUBLIC_H

@@ -48,15 +48,4 @@
       <Filter>EngineLib</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\..\libs\DkCore.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\libs\CoreLib.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\libs\FrameworkLib.lib">
-      <Filter>Libs</Filter>
-    </Library>
-  </ItemGroup>
 </Project>

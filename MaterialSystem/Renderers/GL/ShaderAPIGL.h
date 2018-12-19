@@ -8,7 +8,7 @@
 #ifndef SHADERAPIGL_H
 #define SHADERAPIGL_H
 
-#include "../ShaderAPI_Base.h"
+#include "../Shared/ShaderAPI_Base.h"
 
 #ifdef USE_GLES2
 #include "glad_es3.h"

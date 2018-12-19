@@ -12,7 +12,7 @@
 #include <d3dx9.h>
 
 #include "IShaderAPI.h"
-#include "../IRenderLibrary.h"
+#include "../Shared/IRenderLibrary.h"
 
 class CD3DRenderLib : public IRenderLibrary
 {

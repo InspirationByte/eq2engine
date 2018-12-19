@@ -2164,15 +2164,15 @@ void CCar::OnPhysicsFrame( float fDt )
 			)
 		{
 			// apply visual damage
-			for(int i = 0; i < CB_PART_COUNT; i++)
+			for(int cb = 0; cb < CB_PART_COUNT; cb++)
 			{
-				float fDot = dot(fastNormalize(s_BodyPartDirections[i]), fastNormalize(localHitPos));
+				float fDot = dot(fastNormalize(s_BodyPartDirections[cb]), fastNormalize(localHitPos));
 
 				if(fDot < 0.2)
 					continue;
 
 				float fDamageToApply = pow(fDot, 2.0f) * fDamageImpact*DAMAGE_SCALE;
-				m_bodyParts[i].damage += fDamageToApply * DAMAGE_VISUAL_SCALE;
+				m_bodyParts[cb].damage += fDamageToApply * DAMAGE_VISUAL_SCALE;
 
 #ifndef EDITOR
 				// process damage and death only when not playing replays
@@ -2191,7 +2191,7 @@ void CCar::OnPhysicsFrame( float fDt )
 #endif // EDITOR
 
 				// clamp
-				m_bodyParts[i].damage = min(m_bodyParts[i].damage, 1.0f);
+				m_bodyParts[cb].damage = min(m_bodyParts[cb].damage, 1.0f);
 
 				OnNetworkStateChanged(NULL);
 			}
@@ -2200,14 +2200,14 @@ void CCar::OnPhysicsFrame( float fDt )
 
 			// make damage to wheels
 			// hubcap effects
-			for(int i = 0; i < wheelCount; i++)
+			for(int w = 0; w < wheelCount; w++)
 			{
-				Vector3D pos = m_wheels[i].GetOrigin()-Vector3D(coll.position);
+				Vector3D pos = m_wheels[w].GetOrigin()-Vector3D(coll.position);
 
 				float dmgDist = length(pos);
 
 				if(dmgDist < 1.0f)
-					m_wheels[i].m_damage += (1.0f-dmgDist)*fDamageImpact * DAMAGE_WHEEL_SCALE;
+					m_wheels[w].m_damage += (1.0f-dmgDist)*fDamageImpact * DAMAGE_WHEEL_SCALE;
 			}
 
 			RefreshWindowDamageEffects();
@@ -3837,8 +3837,8 @@ void CCar::DrawBody( int nRenderFlags )
 
 	if(nLOD > 0 && r_enableObjectsInstancing.GetBool() && m_pModel->GetInstancer())
 	{
-		float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
-		int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
+		camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
+		nLOD = m_pModel->SelectLod( camDist ); // lod distance check
 
 		CGameObjectInstancer* instancer = (CGameObjectInstancer*)m_pModel->GetInstancer();
 		for(int i = 0; i < MAX_INSTANCE_BODYGROUPS; i++)

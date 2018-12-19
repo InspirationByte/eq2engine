@@ -107,9 +107,8 @@ bool CSoundChannel::SetupSource(ISoundSource* source)
 	return true;
 }
 
-#include "IDebugOverlay.h"
 
-void CSoundChannel::MixChannel(paintbuffer_t* input, paintbuffer_t* output, int numSamples)
+void CSoundChannel::MixChannel(paintbuffer_t* chanBuffer, paintbuffer_t* output, int numSamples)
 {
 	soundFormat_t* format = m_source->GetFormat();
 
@@ -118,7 +117,7 @@ void CSoundChannel::MixChannel(paintbuffer_t* input, paintbuffer_t* output, int 
 	// read needed samples
 	int readSampleCount = numSamples*sampleRate;
 
-	int readSamples = m_source->GetSamples( (ubyte *)input->data, readSampleCount, floor(m_playbackSamplePos), m_looping );
+	int readSamples = m_source->GetSamples( (ubyte *)chanBuffer->data, readSampleCount, floor(m_playbackSamplePos), m_looping );
 
 	int volume = (int)(m_volume * output->volume * 255) >> 8;
 
@@ -133,7 +132,7 @@ void CSoundChannel::MixChannel(paintbuffer_t* input, paintbuffer_t* output, int 
 	if(readSampleCount < numSamples) // sample rate must be corrected if we doing resampling
 		correctSampleRate = (float)readSampleCount / (float)(numSamples+SAMPLECORRECT_THRESH);
 
-	float playedSamples = (*m_sourceMixer)( input->data, readSamples, output->data, numSamples, correctSampleRate, spatial_vol );
+	float playedSamples = (*m_sourceMixer)( chanBuffer->data, readSamples, (samplepair_t*)output->data, numSamples, correctSampleRate, spatial_vol );
 
 	if ( readSamples < readSampleCount ) // stop sound if we read less samples than we wanted
 		m_playbackState = false;

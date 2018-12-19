@@ -9,7 +9,7 @@
 #ifndef D3D9TEXTURE_H
 #define D3D9TEXTURE_H
 
-#include "../CTexture.h"
+#include "../Shared/CTexture.h"
 
 #include "utils/DkList.h"
 

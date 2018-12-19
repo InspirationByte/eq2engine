@@ -11,7 +11,7 @@
 #include <d3d9.h>
 #include <d3dx9.h>
 
-#include "../ShaderAPI_Base.h"
+#include "../Shared/ShaderAPI_Base.h"
 #include "D3D9RenderState.h"
 
 class ShaderAPID3DX9 : public ShaderAPI_Base

@@ -1,0 +1,216 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Libs">
+      <UniqueIdentifier>{90f6a87f-498b-47e8-ba12-83e0af3d86cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\D3D9">
+      <UniqueIdentifier>{c7a80f03-3cf8-4315-b7eb-66a0e41b3155}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Shared">
+      <UniqueIdentifier>{d544c89e-d15b-44f7-9c2c-6235453eb839}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Interafaces">
+      <UniqueIdentifier>{fff42f3e-4691-4675-a814-2156766e3a47}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="D3D9\CD3D9Texture.cpp">
+      <Filter>Source Files\D3D9</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D9\D3D9ShaderProgram.cpp">
+      <Filter>Source Files\D3D9</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D9\D3DLibrary.cpp">
+      <Filter>Source Files\D3D9</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D9\IndexBufferD3DX9.cpp">
+      <Filter>Source Files\D3D9</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D9\ShaderAPID3DX9.cpp">
+      <Filter>Source Files\D3D9</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D9\VertexBufferD3DX9.cpp">
+      <Filter>Source Files\D3D9</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D9\VertexFormatD3DX9.cpp">
+      <Filter>Source Files\D3D9</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D9\D3D9SwapChain.cpp">
+      <Filter>Source Files\D3D9</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D9\D3D9OcclusionQuery.cpp">
+      <Filter>Source Files\D3D9</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\CTexture.cpp">
+      <Filter>Source Files\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\ShaderAPIMain.cpp">
+      <Filter>Source Files\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\ShaderAPI_Base.cpp">
+      <Filter>Source Files\Shared</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D3D9\CD3D9Texture.h">
+      <Filter>Source Files\D3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D9\D3D9ShaderProgram.h">
+      <Filter>Source Files\D3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D9\d3dx9_def.h">
+      <Filter>Source Files\D3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D9\IndexBufferD3DX9.h">
+      <Filter>Source Files\D3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D9\ShaderAPID3DX9.h">
+      <Filter>Source Files\D3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D9\VertexBufferD3DX9.h">
+      <Filter>Source Files\D3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D9\VertexFormatD3DX9.h">
+      <Filter>Source Files\D3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\Align.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\CharSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ConCommand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ConCommandBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\consolenode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ConVar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\core_base_header.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\DebugInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ICmdLineParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IConCommandFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\IDkCore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\FileSystem\ifilesystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\InterfaceManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Platform\Platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\Queue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\String.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Utils\strtools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D9\D3D9RenderState.h">
+      <Filter>Source Files\D3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D9\D3DX9DefaultShaders.h">
+      <Filter>Source Files\D3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D9\D3D9SwapChain.h">
+      <Filter>Source Files\D3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\materialsystem\renderers\ShaderAPI_defs.h">
+      <Filter>Source Files\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D9\D3D9OcclusionQuery.h">
+      <Filter>Source Files\D3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\CTexture.h">
+      <Filter>Source Files\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Renderer\IIndexBuffer.h">
+      <Filter>Source Files\Interafaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Renderer\IMeshBuilder.h">
+      <Filter>Source Files\Interafaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\materialsystem\renderers\IOcclusionQuery.h">
+      <Filter>Source Files\Interafaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\IRenderLibrary.h">
+      <Filter>Source Files\Interafaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\renderer\IRenderState.h">
+      <Filter>Source Files\Interafaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\materialsystem\renderers\IShaderAPI.h">
+      <Filter>Source Files\Interafaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Renderer\IShaderProgram.h">
+      <Filter>Source Files\Interafaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Renderer\ITexture.h">
+      <Filter>Source Files\Interafaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Renderer\IVertexBuffer.h">
+      <Filter>Source Files\Interafaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Renderer\IVertexFormat.h">
+      <Filter>Source Files\Interafaces</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\textureformats.h">
+      <Filter>Source Files\Interafaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\ShaderAPI_Base.h">
+      <Filter>Source Files\Shared</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resources.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuildStep Include="D3D9\D3DLibrary.h">
+      <Filter>Source Files\D3D9</Filter>
+    </CustomBuildStep>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\src_dependency\jpeg\Release\jpeg.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\..\src_dependency\zlib\MinSizeRel\zlibstatic.lib">
+      <Filter>Libs</Filter>
+    </Library>
+  </ItemGroup>
+</Project>

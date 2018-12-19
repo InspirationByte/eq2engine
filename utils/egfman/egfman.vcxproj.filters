@@ -351,15 +351,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\Libs\DkCore.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\libs\CoreLib.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\libs\FrameworkLib.lib">
-      <Filter>Libs</Filter>
-    </Library>
     <Library Include="..\..\src_dependency\bullet\bin\BulletCollision.lib">
       <Filter>Libs</Filter>
     </Library>

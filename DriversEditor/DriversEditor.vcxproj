@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -15,7 +15,7 @@
     <ProjectGuid>{8D5F18DA-AE80-4A0A-BE88-5B07BCF8897B}</ProjectGuid>
     <RootNamespace>DkCore</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <TargetPlatformVersion>8.1</TargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -23,14 +23,14 @@
     <CharacterSet>Unicode</CharacterSet>
     <CLRSupport>false</CLRSupport>
     <WholeProgramOptimization>false</WholeProgramOptimization>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <CLRSupport>false</CLRSupport>
     <WholeProgramOptimization>false</WholeProgramOptimization>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -44,8 +44,6 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
     <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</IgnoreImportLibrary>
@@ -87,10 +85,10 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointExceptions>false</FloatingPointExceptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\DriversGame\$(TargetName).exe</OutputFile>
       <IgnoreSpecificDefaultLibraries>libc;libcmt;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -102,8 +100,6 @@
       </EntryPointSymbol>
       <ImportLibrary>
       </ImportLibrary>
-      <TargetMachine>MachineX86</TargetMachine>
-      <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
       <AdditionalLibraryDirectories>..\src_dependency\wx\lib\vc_lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions> /ignore:4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -141,7 +137,6 @@
       <ImportLibrary>
       </ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
-      <ProgramDatabaseFile>..\..\DriversGame\$(TargetName).pdb</ProgramDatabaseFile>
       <AdditionalLibraryDirectories>..\utils\wx\lib\vc_lib\</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
@@ -347,11 +342,8 @@
     <ClCompile Include="UI_RoadEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\libs\CoreLib.lib" />
-    <Library Include="..\Libs\DkCore.lib" />
-    <Library Include="..\libs\FrameworkLib.lib" />
     <Library Include="..\libs\libogg_static.lib" />
-    <Library Include="..\libs\OpenAL32.lib" />
+    <Library Include="..\src_dependency\OpenALSoftCustom\build\Release\OpenAL32.lib" />
     <Library Include="..\libs\libvorbisfile_static.lib" />
     <Library Include="..\libs\libvorbis_static.lib" />
     <Library Include="..\src_dependency\bullet\lib\Debug\BulletCollision_Debug.lib">
@@ -368,8 +360,6 @@
     <Library Include="..\src_dependency\bullet\bin\LinearMath.lib">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </Library>
-    <Library Include="..\src_dependency\lua\LuaLib.lib" />
-    <Library Include="..\src_dependency\oolua\bin\Release\oolua.lib" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="windows\Resources.rc" />
@@ -377,6 +367,17 @@
   <ItemGroup>
     <Image Include="windows\editor_splash.bmp" />
     <Image Include="windows\mainicon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\coreLib.vcxproj">
+      <Project>{591567d2-96d1-4cbc-988b-07b7794ad489}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Core\eqCore.vcxproj">
+      <Project>{d8bffbb2-af7b-48a2-8958-c7969dfdb3a2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\frameworkLib.vcxproj">
+      <Project>{5eddcdb2-e467-4db3-ad7e-4e78f5020028}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

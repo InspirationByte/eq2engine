@@ -127,17 +127,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\Libs\DkCore.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\libs\CoreLib.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\libs\FrameworkLib.lib">
-      <Filter>Libs</Filter>
-    </Library>
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="windows\Resources.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>

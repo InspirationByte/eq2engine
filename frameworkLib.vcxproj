@@ -1,0 +1,235 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Android">
+      <Configuration>Debug</Configuration>
+      <Platform>Android</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Android">
+      <Configuration>Release</Configuration>
+      <Platform>Android</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5EDDCDB2-E467-4DB3-AD7E-4E78F5020028}</ProjectGuid>
+    <RootNamespace>FrameworkLib</RootNamespace>
+    <ProjectName>frameworkLib</ProjectName>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>arm-linux-androideabi-4.9</PlatformToolset>
+    <AndroidAPILevel>android-14</AndroidAPILevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <IncludePath>$(SolutionDir)src_dependency\jpeg;$(SolutionDir)src_dependency\libpng;$(SolutionDir)src_dependency\zlib;$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <IntDir>Core\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android'">
+    <IncludePath>$(SolutionDir)src_dependency\jpeg;$(SolutionDir)src_dependency\libpng;$(SolutionDir)src_dependency\zlib;$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <IncludePath>$(SolutionDir)src_dependency\jpeg;$(SolutionDir)src_dependency\libpng;$(SolutionDir)src_dependency\zlib;$(IncludePath)</IncludePath>
+    <IntDir>$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android'">
+    <IncludePath>$(SolutionDir)src_dependency\jpeg;$(SolutionDir)src_dependency\libpng;$(SolutionDir)src_dependency\zlib;$(IncludePath)</IncludePath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>public;public\core;src_dependency\sdl2\include;src_dependency\lua\src;src_dependency\oolua\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;CROSSLINK_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FloatingPointModel>Fast</FloatingPointModel>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Lib />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>public;public\core;public\platform;src_dependency\sdl2\include;src_dependency\lua\src;src_dependency\oolua\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>CROSSLINK_LIB;LINUX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FloatingPointModel>Fast</FloatingPointModel>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Lib>
+      <OutputFile>libs/FrameworkLib.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>public;public\core;src_dependency\sdl2\include;src_dependency\lua\src;src_dependency\oolua\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_DEBUG;_CRTDBG_MAP_ALLOC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Lib />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>public;public\core;public\platform;src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Lib>
+      <OutputFile>libs/$(TargetName).lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="public\Imaging\ImageLoader.h" />
+    <ClInclude Include="public\Math\BoundingBox.h" />
+    <ClInclude Include="public\Math\DkMath.h" />
+    <ClInclude Include="public\math\FixedMath.h" />
+    <ClInclude Include="public\math\FVector.h" />
+    <ClInclude Include="public\math\GridUtils.h" />
+    <ClInclude Include="public\Math\math_common.h" />
+    <ClInclude Include="public\Math\Matrix.h" />
+    <ClInclude Include="public\math\Matrix_Inline.h" />
+    <ClInclude Include="public\math\QuadTree.h" />
+    <ClInclude Include="public\Math\Quaternion.h" />
+    <ClInclude Include="public\Math\Random.h" />
+    <ClInclude Include="public\Math\Rectangle.h" />
+    <ClInclude Include="public\Math\SIMD.h" />
+    <ClInclude Include="public\Math\Vector.h" />
+    <ClInclude Include="public\math\Vector_Inline.h" />
+    <ClInclude Include="public\Math\Volume.h" />
+    <ClInclude Include="public\Network\base64_inline.h" />
+    <ClInclude Include="public\Network\c_udp.h" />
+    <ClInclude Include="public\Network\NetEvent.h" />
+    <ClInclude Include="public\Network\NetMessageBuffer.h" />
+    <ClInclude Include="public\Network\NetInterfaces.h" />
+    <ClInclude Include="public\Network\net_defs.h" />
+    <ClInclude Include="public\Utils\align.h" />
+    <ClInclude Include="public\Utils\CRC32.h" />
+    <ClInclude Include="public\Utils\DkLinkedList.h" />
+    <ClInclude Include="public\utils\DkList.h" />
+    <ClInclude Include="public\Utils\eqthread.h" />
+    <ClInclude Include="public\utils\eqwstring.h" />
+    <ClInclude Include="public\utils\KeyValues.h" />
+    <ClInclude Include="public\utils\strong_typedef.h" />
+    <ClInclude Include="public\Utils\strtools.h" />
+    <ClInclude Include="public\Utils\eqtimer.h" />
+    <ClInclude Include="public\dktypes.h" />
+    <ClInclude Include="public\ppmem.h" />
+    <ClInclude Include="public\Utils\eqstring.h" />
+    <ClInclude Include="public\Utils\Tokenizer.h" />
+    <ClInclude Include="public\VirtualStream.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="public\Imaging\ImageLoader.cpp" />
+    <ClCompile Include="public\math\FixedMath.cpp" />
+    <ClCompile Include="public\math\FVector.cpp" />
+    <ClCompile Include="public\Math\Matrix.cpp" />
+    <ClCompile Include="public\math\QuadTree.cpp" />
+    <ClCompile Include="public\Math\Quaternion.cpp" />
+    <ClCompile Include="public\Math\Random.cpp" />
+    <ClCompile Include="public\Math\SIMD.cpp" />
+    <ClCompile Include="public\Math\Vector.cpp" />
+    <ClCompile Include="public\Math\Volume.cpp" />
+    <ClCompile Include="public\Network\c_udp.cpp" />
+    <ClCompile Include="public\Network\NetMessageBuffer.cpp" />
+    <ClCompile Include="public\Network\NetInterfaces.cpp" />
+    <ClCompile Include="public\Network\net_defs.cpp" />
+    <ClCompile Include="public\Utils\CRC32.cpp" />
+    <ClCompile Include="public\Utils\eqthread.cpp" />
+    <ClCompile Include="public\utils\eqwstring.cpp" />
+    <ClCompile Include="public\utils\KeyValues.cpp" />
+    <ClCompile Include="public\Utils\strtools.cpp" />
+    <ClCompile Include="public\Utils\eqtimer.cpp" />
+    <ClCompile Include="public\Utils\eqstring.cpp" />
+    <ClCompile Include="public\Utils\Tokenizer.cpp" />
+    <ClCompile Include="public\VirtualStream.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

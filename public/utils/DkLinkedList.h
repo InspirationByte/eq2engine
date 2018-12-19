@@ -81,14 +81,14 @@ public:
 		DkLLNode <T>* newnode = new DkLLNode <T>;
 		newnode->object = object;
 
-		DkLLNode <T>* curr = first;
-		while (curr != NULL && (comparator)(curr->object, object) <= 0)
+		DkLLNode <T>* c = first;
+		while (c != NULL && (comparator)(c->object, object) <= 0)
 		{
-			curr = curr->next;
+			c = c->next;
 		}
 
-		if(curr)
-			insertNodeBefore(curr, newnode);
+		if(c)
+			insertNodeBefore(c, newnode);
 		else
 			insertNodeLast(newnode);
 
@@ -315,12 +315,12 @@ public:
 			return false;
 		newnode->object = object;
 
-		DkLLNode <T>* curr = BaseClass::first;
-		while (curr != NULL && (comparator)(curr->object, object) <= 0)
-			curr = curr->next;
+		DkLLNode <T>* c = BaseClass::first;
+		while (c != NULL && (comparator)(c->object, object) <= 0)
+			c = c->next;
 
-		if(curr)
-			BaseClass::insertNodeBefore(curr, newnode);
+		if(c)
+			BaseClass::insertNodeBefore(c, newnode);
 		else
 			BaseClass::insertNodeLast(newnode);
 

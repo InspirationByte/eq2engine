@@ -3,18 +3,18 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "eqCore", "Core\DkCore_vc10.vcxproj", "{D8BFFBB2-AF7B-48A2-8958-C7969DFDB3A2}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "eqCore", "Core\eqCore.vcxproj", "{D8BFFBB2-AF7B-48A2-8958-C7969DFDB3A2}"
 	ProjectSection(ProjectDependencies) = postProject
 		{5EDDCDB2-E467-4DB3-AD7E-4E78F5020028} = {5EDDCDB2-E467-4DB3-AD7E-4E78F5020028}
 		{591567D2-96D1-4CBC-988B-07B7794AD489} = {591567D2-96D1-4CBC-988B-07B7794AD489}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EqEngine", "Engine\Engine_vc10.vcxproj", "{4EF02F27-8CEB-4566-936E-FBA91031EE1F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine", "Engine\Engine.vcxproj", "{4EF02F27-8CEB-4566-936E-FBA91031EE1F}"
 	ProjectSection(ProjectDependencies) = postProject
 		{5EDDCDB2-E467-4DB3-AD7E-4E78F5020028} = {5EDDCDB2-E467-4DB3-AD7E-4E78F5020028}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GameDLL", "Game\Game_vc10.vcxproj", "{15E8B4AA-C5D0-4726-9F08-94D2D202D3AB}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GameDLL", "Game\Game.vcxproj", "{15E8B4AA-C5D0-4726-9F08-94D2D202D3AB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{A0162FED-446D-4B4B-A78F-207C4EA7F5EE}"
 EndProject
@@ -22,12 +22,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Engine", "Engine", "{20F2A9
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Renderers", "Renderers", "{F3665CE3-B2CB-4C13-ADF2-569EDB79A907}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EqMatSystem", "MaterialSystem\MatSystem_vc10.vcxproj", "{A0CF9C6B-7EED-43C1-A8E1-D99D2A2B5CDD}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MatSystem", "MaterialSystem\MatSystem.vcxproj", "{A0CF9C6B-7EED-43C1-A8E1-D99D2A2B5CDD}"
 	ProjectSection(ProjectDependencies) = postProject
 		{5EDDCDB2-E467-4DB3-AD7E-4E78F5020028} = {5EDDCDB2-E467-4DB3-AD7E-4E78F5020028}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EqEdit", "Editor\Editor.vcxproj", "{9E0A7C33-5A91-4B4C-A725-65AC8740F5AD}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WorldEdit", "WorldEdit\WorldEdit.vcxproj", "{9E0A7C33-5A91-4B4C-A725-65AC8740F5AD}"
 	ProjectSection(ProjectDependencies) = postProject
 		{5EDDCDB2-E467-4DB3-AD7E-4E78F5020028} = {5EDDCDB2-E467-4DB3-AD7E-4E78F5020028}
 	EndProjectSection
@@ -42,7 +42,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "eqlc", "utils\eqlc\eqlc.vcx
 		{5EDDCDB2-E467-4DB3-AD7E-4E78F5020028} = {5EDDCDB2-E467-4DB3-AD7E-4E78F5020028}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FrameworkLib", "PrevLib.vcxproj", "{5EDDCDB2-E467-4DB3-AD7E-4E78F5020028}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FrameworkLib", "frameworkLib.vcxproj", "{5EDDCDB2-E467-4DB3-AD7E-4E78F5020028}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DriverSyndicate", "DriverSyndicate", "{BCB9F8C7-6169-4143-A1B8-C498270711DF}"
 EndProject
@@ -50,11 +50,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CoreFramework", "CoreFramew
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ShaderLibs", "ShaderLibs", "{62D3AE4C-416C-47DF-8126-48AD87CA474A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fcompress", "utils\fcompress\fcompressor_vc8.vcxproj", "{A41DD6A5-FB30-4D47-9385-EE6885695BD7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fcompress", "utils\fcompress\fcompress.vcxproj", "{A41DD6A5-FB30-4D47-9385-EE6885695BD7}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "egfca", "utils\egfca\physgen.vcxproj", "{736DB03C-DE8F-4E61-9786-A74DF1FF7047}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "egfca", "utils\egfca\egfCa.vcxproj", "{736DB03C-DE8F-4E61-9786-A74DF1FF7047}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "animca", "utils\animca\anim_compiler.vcxproj", "{D038395E-C792-4813-8BBB-14A9F73A7FBC}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "animca", "utils\animca\animCa.vcxproj", "{D038395E-C792-4813-8BBB-14A9F73A7FBC}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DriversGame", "DriversGame\DriversGame.vcxproj", "{45869401-A830-49BA-AF72-96815D8BFEBE}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -63,11 +63,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DriversGame", "DriversGame\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "egfman", "utils\egfman\egfman.vcxproj", "{DD50543B-DFAF-4E6B-97F0-752E7F22A5B6}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EqLauncher", "Launcher\EqLauncher_vc10.vcxproj", "{722E8FB4-258B-413D-9AFD-00563CFBB37A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EqLauncher", "Launcher\launcher.vcxproj", "{722E8FB4-258B-413D-9AFD-00563CFBB37A}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "atlasgen", "utils\atlasgen\atlasgen.vcxproj", "{E882DFBB-C856-479E-9175-41CAFE7D144C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EqEditLauncher", "EditorLauncher\EqEditLauncher_vc10.vcxproj", "{3BA65752-E3EE-4727-96AB-EB8CFA8F2E1A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WorldEditLauncher", "WorldEditLauncher\WorldEditLauncher.vcxproj", "{3BA65752-E3EE-4727-96AB-EB8CFA8F2E1A}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DriversEditor", "DriversEditor\DriversEditor.vcxproj", "{8D5F18DA-AE80-4A0A-BE88-5B07BCF8897B}"
 EndProject
@@ -76,17 +76,17 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "driver_level", "utils\drive
 		{5EDDCDB2-E467-4DB3-AD7E-4E78F5020028} = {5EDDCDB2-E467-4DB3-AD7E-4E78F5020028}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EqShaderAPID3D9", "MaterialSystem\Renderers\D3D9Renderer_vc10.vcxproj", "{88207507-AEBE-4E8B-AD01-FE6AFEE994F7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShaderAPID3D9", "MaterialSystem\Renderers\ShaderAPID3D9.vcxproj", "{88207507-AEBE-4E8B-AD01-FE6AFEE994F7}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EqShaderAPID3D10", "MaterialSystem\Renderers\D3D10Renderer_vc10.vcxproj", "{D19F601D-D3A0-4162-9703-98236A70F46E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShaderAPID3D10", "MaterialSystem\Renderers\ShaderAPID3D10.vcxproj", "{D19F601D-D3A0-4162-9703-98236A70F46E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EqShaderAPINull", "MaterialSystem\Renderers\EmptyRenderer_vc10.vcxproj", "{0AAEF7D5-CDC3-432A-8632-3E529F71C708}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShaderAPIEmpty", "MaterialSystem\Renderers\ShaderAPIEmpty.vcxproj", "{0AAEF7D5-CDC3-432A-8632-3E529F71C708}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EqShaderAPIGL", "MaterialSystem\Renderers\OpenGLRenderer_vc10.vcxproj", "{23249CCD-E8E0-49E1-ABD2-97B4611AC18E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShaderAPIGL", "MaterialSystem\Renderers\ShaderAPIGL.vcxproj", "{23249CCD-E8E0-49E1-ABD2-97B4611AC18E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EqBaseShaders", "MaterialSystem\EngineShaders\EngineShaders_vc10.vcxproj", "{6A83A676-BD41-4667-AD01-D88601BD4FBC}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EqBaseShaders", "MaterialSystem\EngineShaders\EngineShaders.vcxproj", "{6A83A676-BD41-4667-AD01-D88601BD4FBC}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CoreLib", "coreLib.vcxproj", "{591567D2-96D1-4CBC-988B-07B7794AD489}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "coreLib", "coreLib.vcxproj", "{591567D2-96D1-4CBC-988B-07B7794AD489}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "MaterialSystem", "MaterialSystem", "{3271F3A5-5D5C-41E6-9DED-D61A3CC47E91}"
 EndProject

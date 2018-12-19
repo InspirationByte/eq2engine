@@ -47,28 +47,29 @@ public:
 class ISoundEngine
 {
 public:
-	static ISoundEngine*		Create();
-	static void					Destroy(ISoundEngine* sound);
+	static ISoundEngine*			Create();
+	static void						Destroy(ISoundEngine* sound);
 
-	virtual void				Initialize(void* winhandle) = 0;
-	virtual void				Shutdown() = 0;
+	virtual void					Initialize(void* winhandle) = 0;
+	virtual void					Shutdown() = 0;
 
-	virtual void				Update() = 0;
+	virtual void					Update() = 0;
 
-	virtual void				SetListener(const Vector3D& origin, const Vector3D& forward, const Vector3D& right, const Vector3D& up) = 0;
-	virtual const ListenerInfo&	GetListener() const = 0;
+	virtual void					SetListener(const Vector3D& origin, const Matrix3x3& orient) = 0;
+	virtual void					SetListener(const Vector3D& origin, const Vector3D& forward, const Vector3D& right, const Vector3D& up)	{ SetListener(origin, Matrix3x3(right, up, forward)); }
+	virtual const ListenerInfo_t&	GetListener() const = 0;
 
-	virtual void				PlaySound(int soundId, const Vector3D& origin, float volume, float attenuation) = 0;
+	virtual void					PlaySound(int soundId, const Vector3D& origin, float volume, float attenuation) = 0;
 
-	virtual ISoundChannel*		AllocChannel(bool reserve = false) = 0;
-	virtual void				FreeChannel(ISoundChannel* chan) = 0;
+	virtual ISoundChannel*			AllocChannel(bool reserve = false) = 0;
+	virtual void					FreeChannel(ISoundChannel* chan) = 0;
 
-	virtual void				StopAllSounds() = 0;
-	virtual void				ReleaseCache() = 0;
+	virtual void					StopAllSounds() = 0;
+	virtual void					ReleaseCache() = 0;
 
-	virtual int					PrecacheSound(const char* fileName) = 0;
-	virtual ISoundSource*		GetSound(int soundId) = 0;
-	virtual ISoundSource*		FindSound(const char* fileName) = 0;
+	virtual int						PrecacheSound(const char* fileName) = 0;
+	virtual ISoundSource*			GetSound(int soundId) = 0;
+	virtual ISoundSource*			FindSound(const char* fileName) = 0;
 };
 
 #endif //__CM_SOUND_H__

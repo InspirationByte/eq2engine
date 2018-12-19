@@ -8,7 +8,7 @@
 #ifndef D3D10TEXTURE_H
 #define D3D10TEXTURE_H
 
-#include "../CTexture.h"
+#include "../Shared/CTexture.h"
 #include "utils/DkList.h"
 
 #include <d3d10.h>

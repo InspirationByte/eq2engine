@@ -19,7 +19,7 @@
 
 #include "utils/strtools.h"
 
-#include "Renderers/IRenderLibrary.h"
+#include "Renderers/Shared/IRenderLibrary.h"
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
 

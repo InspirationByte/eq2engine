@@ -932,28 +932,26 @@ btCollisionShape* InternalGenerateMesh(physmodelcreateinfo_t *info, DkList <btTr
 				sizeof(Vector3D)
 				);
 
-			btConvexShape* tmpConvexShape = new btConvexTriangleMeshShape(pTriMesh);
+			btConvexTriangleMeshShape tmpConvexShape(pTriMesh);
 
 			//create a hull approximation
-			btShapeHull* hull = new btShapeHull(tmpConvexShape);
+			btShapeHull hull(&tmpConvexShape);
 			
 
-			btScalar margin = (info->convexMargin == -2.0f) ? tmpConvexShape->getMargin() : info->convexMargin;
-			hull->buildHull( EQ2BULLET(margin) );
+			btScalar margin = (info->convexMargin == -2.0f) ? tmpConvexShape.getMargin() : info->convexMargin;
+			hull.buildHull( EQ2BULLET(margin) );
 
-			tmpConvexShape->setUserPointer(hull);
+			tmpConvexShape.setUserPointer(&hull);
 
 			// TODO: PhysGen code
-			btConvexHullShape* convexShape = new btConvexHullShape;
+			btConvexHullShape* convexShape = new btConvexHullShape();
 
-			for (int i=0;i<hull->numIndices();i++)
+			for (int i = 0;i < hull.numIndices(); i++)
 			{
-				uint32 index = hull->getIndexPointer()[i];
-				convexShape->addPoint(hull->getVertexPointer()[index]);
+				uint32 index = hull.getIndexPointer()[i];
+				convexShape->addPoint(hull.getVertexPointer()[index]);
 			}
 
-			delete hull;
-			delete tmpConvexShape;
 			delete pTriMesh;
 
 			return convexShape;
