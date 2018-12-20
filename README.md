@@ -36,7 +36,7 @@ Games:
 * **DriversEditor** - wxWidgets-based editor for Driver Syndicate
 
 * **Engine** - legacy Equilibrium Engine, the massive and undone part
-* **Editor** - legacy Equilibrium World Editor
+* **WorldEdit** - legacy Equilibrium World Editor
 * **Game** - Equilibrium Engine Game source files, undone part. Mostly a **White Cage** source code.
 * utils/**EqWC** - world compiler for legacy engine. Performs subdivision, lightmapped surface breakdown, etc
 * utils/**EqLC** - hardware lightmap rendering compiler.
@@ -48,11 +48,11 @@ Before you begin, you need to download dependencies and extract them to **src_de
 
 List of dependencies:
 
-* **luajit** - use latest LuaJIT 2.0, and just make.
+* **lua** - use latest LuaJIT 2.0, and just make.
 * **oolua** - needs to be configured first with "premake4 --class_functions=30 oolua-gen", optionally OOLUA_RUNTIME_CHECKS_ENABLED=0 and then build.
 * **openal-soft** - download tarball from http://kcat.strangesoft.net/openal.html
 * **Shiny** - Shiny C++ profiler. Should be taken from https://sourceforge.net/projects/shinyprofiler/ , please download only snapshot.
-* **bullet** - Bullet Physics Library 2.83, you may use latest release
+* **bullet** - Bullet Physics Library 2.83, you may use latest release. Windows build must use Multithreaded DLL option, otherwise it won't link
 * **ogg** and **vorbis**
 * **wx** - wxWidgets 3.1, which the all editors stands on.
 * **SDL2** - For mobile development please configure in SDL_config_android.h with SDL_VIDEO_RENDER_OGL_ES=0 and SDL_VIDEO_RENDER_OGL_ES2=0
@@ -62,5 +62,4 @@ Mobile platforms dependencies are:
 * **libpng**
 
 Also dependencies which not located in src_dependency are:
-
 * **gtk+-2.0** dev lib

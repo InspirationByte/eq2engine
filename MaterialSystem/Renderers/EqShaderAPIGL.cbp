@@ -48,8 +48,8 @@
 			<Add library="GL" />
 			<Add directory="../../libs" />
 		</Linker>
-		<Unit filename="CTexture.cpp" />
-		<Unit filename="CTexture.h" />
+		<Unit filename="Shared/CTexture.cpp" />
+		<Unit filename="Shared/CTexture.h" />
 		<Unit filename="GL/CGLRenderLib.cpp" />
 		<Unit filename="GL/CGLRenderLib.h" />
 		<Unit filename="GL/CGLTexture.cpp" />
@@ -80,9 +80,9 @@
 		<Unit filename="GL/glx_caps.hpp" />
 		<Unit filename="GL/shaderapigl_def.h" />
 		<Unit filename="GL/wgl_caps.hpp" />
-		<Unit filename="IRenderLibrary.h" />
-		<Unit filename="ShaderAPI_Base.cpp" />
-		<Unit filename="ShaderAPI_Base.h" />
+		<Unit filename="Shared/IRenderLibrary.h" />
+		<Unit filename="Shared/ShaderAPI_Base.cpp" />
+		<Unit filename="Shared/ShaderAPI_Base.h" />
 		<Unit filename="resource.h" />
 		<Extensions>
 			<code_completion />
