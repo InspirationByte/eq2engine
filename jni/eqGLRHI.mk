@@ -27,8 +27,8 @@ LOCAL_SRC_FILES := \
 	MaterialSystem/Renderers/GL/IndexBufferGL.cpp	\
 	MaterialSystem/Renderers/GL/CGLTexture.cpp	\
 	MaterialSystem/Renderers/GL/VertexFormatGL.cpp	\
-	MaterialSystem/Renderers/ShaderAPI_Base.cpp	\
-	MaterialSystem/Renderers/CTexture.cpp
+	MaterialSystem/Renderers/Shared/ShaderAPI_Base.cpp	\
+	MaterialSystem/Renderers/Shared/CTexture.cpp
 
 LOCAL_LDLIBS := -lGLESv2 -lEGL
 

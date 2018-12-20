@@ -71,16 +71,16 @@
 		<Unit filename="../public/consolenode.h" />
 		<Unit filename="../public/core_base_header.h" />
 		<Unit filename="../public/textureformats.h" />
-		<Unit filename="CTexture.cpp" />
-		<Unit filename="CTexture.h" />
+		<Unit filename="Shared/CTexture.cpp" />
+		<Unit filename="Shared/CTexture.h" />
 		<Unit filename="D3D9/D3DLibrary.h" />
 		<Unit filename="Empty/CEmptyTexture.h" />
 		<Unit filename="Empty/ShaderAPIEmpty.h" />
 		<Unit filename="Empty/emptyLibrary.h" />
 		<Unit filename="Empty/emptylibrary.cpp" />
-		<Unit filename="IRenderLibrary.h" />
-		<Unit filename="ShaderAPI_Base.cpp" />
-		<Unit filename="ShaderAPI_Base.h" />
+		<Unit filename="Shared/IRenderLibrary.h" />
+		<Unit filename="Shared/ShaderAPI_Base.cpp" />
+		<Unit filename="Shared/ShaderAPI_Base.h" />
 		<Unit filename="resource.h" />
 		<Extensions>
 			<code_completion />

@@ -18,8 +18,8 @@ LOCAL_C_INCLUDES:= \
 
 LOCAL_SRC_FILES := \
 	MaterialSystem/Renderers/Empty/emptylibrary.cpp	\
-	MaterialSystem/Renderers/ShaderAPI_Base.cpp		\
-	MaterialSystem/Renderers/CTexture.cpp
+	MaterialSystem/Renderers/Shared/ShaderAPI_Base.cpp		\
+	MaterialSystem/Renderers/Shared/CTexture.cpp
 
 LOCAL_STATIC_LIBRARIES := coreLib prevLib jpeg eqCore
 

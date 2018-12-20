@@ -45,7 +45,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
@@ -84,7 +84,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <IncludePath>$(SolutionDir)src_dependency\jpeg;$(SolutionDir)src_dependency\libpng;$(SolutionDir)src_dependency\zlib;$(IncludePath)</IncludePath>
-    <IntDir>$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir>Core\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android'">
     <IncludePath>$(SolutionDir)src_dependency\jpeg;$(SolutionDir)src_dependency\libpng;$(SolutionDir)src_dependency\zlib;$(IncludePath)</IncludePath>
