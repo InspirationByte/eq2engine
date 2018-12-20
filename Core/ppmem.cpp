@@ -361,10 +361,14 @@ void* PPDReAlloc( void* ptr, uint size, const char* pszFileName, int nLine, cons
 void PPFree(void* ptr)
 {
 #ifdef PPMEM_DISABLE
-	return free(ptr);
+	free(ptr);
 #else
-	if(!g_enablePPMem)
-		return free(ptr);
+	if (!g_enablePPMem)
+	{
+		free(ptr);
+		return;
+	}
+		
 
 	if(ptr == nullptr)
 		return;

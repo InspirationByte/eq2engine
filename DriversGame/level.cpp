@@ -2591,8 +2591,6 @@ void CGameLevel::GetDecalPolygons(decalprimitives_t& polys, occludingFrustum_t* 
 	polys.indices.setNum(0, false);
 	polys.verts.setNum(0, false);
 
-	CScopedMutex m(m_mutex);
-
 	for (int x = 0; x < m_wide; x++)
 	{
 		for (int y = 0; y < m_tall; y++)

@@ -438,9 +438,9 @@ void CReplayData::SaveToFile( const char* filename )
 	if(m_filename.Path_Extract_Ext().Length() == 0)
 		m_filename = m_filename + ".rdat";
 
-	IFile* pFile = g_fileSystem->Open(m_filename.c_str(), "wb", SP_MOD);
+	IFile* rplFile = g_fileSystem->Open(m_filename.c_str(), "wb", SP_MOD);
 
-	if(pFile)
+	if(rplFile)
 	{
 		replayhdr_t hdr;
 		hdr.idreplay = VEHICLEREPLAY_IDENT;
@@ -451,19 +451,19 @@ void CReplayData::SaveToFile( const char* filename )
 		strcpy(hdr.envname, g_pGameWorld->GetEnvironmentName());
 		strcpy(hdr.missionscript, g_State_Game->GetMissionScriptName());
 
-		pFile->Write(&hdr, 1, sizeof(replayhdr_t));
+		rplFile->Write(&hdr, 1, sizeof(replayhdr_t));
 
 		int count = m_vehicles.numElem();
-		pFile->Write(&count, 1, sizeof(int));
+		rplFile->Write(&count, 1, sizeof(int));
 
 		// write vehicles
 		for(int i = 0; i < m_vehicles.numElem(); i++)
-			WriteVehicleAndFrames(&m_vehicles[i], pFile);
+			WriteVehicleAndFrames(&m_vehicles[i], rplFile);
 
 		// write events
-		WriteEvents( pFile );
+		WriteEvents(rplFile);
 
-		g_fileSystem->Close(pFile);
+		g_fileSystem->Close(rplFile);
 
 		Msg("Replay '%s' saved\n", filename);
 	}
@@ -471,22 +471,22 @@ void CReplayData::SaveToFile( const char* filename )
 	if(m_cameras.numElem() > 0)
 	{
 		EqString camsFilename = m_filename.Path_Strip_Ext() + ".rcam";
-		IFile* pFile = g_fileSystem->Open(camsFilename.c_str(), "wb", SP_MOD);
+		IFile* camFile = g_fileSystem->Open(camsFilename.c_str(), "wb", SP_MOD);
 
-		if(pFile)
+		if(camFile)
 		{
 			replaycamerahdr_t camhdr;
 			camhdr.version = CAMERAREPLAY_VERSION;
 			camhdr.numCameras = m_cameras.numElem();
 
-			pFile->Write(&camhdr, 1, sizeof(replaycamerahdr_t));
+			camFile->Write(&camhdr, 1, sizeof(replaycamerahdr_t));
 
 			for(int i = 0; i < m_cameras.numElem(); i++)
 			{
-				pFile->Write(&m_cameras[i], 1, sizeof(replaycamera_t));
+				camFile->Write(&m_cameras[i], 1, sizeof(replaycamera_t));
 			}
 
-			g_fileSystem->Close(pFile);
+			g_fileSystem->Close(camFile);
 
 			Msg("Replay cameras '%s' saved\n", filename);
 		}
