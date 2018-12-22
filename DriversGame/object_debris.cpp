@@ -506,8 +506,8 @@ void CObject_Debris::Simulate(float fDt)
 			if( !g_debris_as_physics.GetBool() )
 			{
 				m_fTimeToRemove = 0;//DEBRIS_COLLISION_RELAY;
-				Vector3D impulse = body->GetLinearVelocity();
-				m_physBody->ApplyWorldImpulse(pair.position, impulse * 1.5f);
+				Vector3D impulseVec = body->GetLinearVelocity();
+				m_physBody->ApplyWorldImpulse(pair.position, impulseVec * 1.5f);
 			}
 			else
 			{

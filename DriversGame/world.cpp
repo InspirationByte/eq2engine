@@ -1188,6 +1188,8 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 		// sorted insert into render list
 		if( obj->CheckVisibility( frustum ) )
 			m_renderingObjects.insertSorted( obj, SortGameObjectsByDistance );
+
+		obj->PreDraw();
 	}
 }
 
@@ -1922,6 +1924,16 @@ void CGameWorld::Draw( int nRenderFlags )
 #endif // EDITOR
 
 		}while(m_renderingObjects.goToNext());
+
+		for (int i = 0; i < g_pGameWorld->m_gameObjects.numElem(); i++)
+		{
+			CGameObject* obj = g_pGameWorld->m_gameObjects[i];
+
+			if (obj->m_state != GO_STATE_IDLE)
+				continue;
+
+			obj->PostDraw();
+		}
 
 		// draw instanced models
 		int numCachedModels = g_studioModelCache->GetCachedModelCount();

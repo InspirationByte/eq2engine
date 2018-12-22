@@ -324,6 +324,8 @@ public:
 
 	void					CalculateTransform(Matrix4x4& out, const carWheelConfig_t& conf, bool applyScale = true);
 
+	void					CalcWheelSkidPair(PFXVertexPair_t& pair, float width, float wheelOffsX, const Matrix3x3& rotation);
+
 protected:
 	DkList<PFXVertexPair_t>	m_skidMarks;
 
@@ -386,6 +388,8 @@ public:
 	virtual void			PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell);
 
 	void					Draw( int nRenderFlags );
+	void					PostDraw();
+
 	CGameObject*			GetChildShadowCaster(int idx) const;
 	int						GetChildCasterCount() const;
 
@@ -550,8 +554,10 @@ protected:
 
 	void					DrawBody( int nRenderFlags );
 	void					DrawShadow( float distance );
-	void					DrawEffects( int lod );
-	void					DrawWheelEffects(int wheelIdx, int lod, bool drawSkidMarks);
+
+	void					DrawWheelEffects(int wheelIdx);
+	void					ProcessWheelSkidmarkTrails(int wheelIdx);
+
 	void					DrawSkidmarkTrails(int wheelIdx);
 
 	void					AddWheelWaterTrail(const CCarWheel& wheel, const carWheelConfig_t& wheelConf,

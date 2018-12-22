@@ -231,6 +231,9 @@ public:
 	virtual const Vector3D&		GetVelocity() const;
 
 	virtual	bool				CheckVisibility( const occludingFrustum_t& frustum ) const;
+
+	virtual void				PreDraw() {}
+	virtual void				PostDraw() {}
 	virtual void				Draw( int nRenderFlags );
 
 	virtual CGameObject*		GetChildShadowCaster(int idx) const;
