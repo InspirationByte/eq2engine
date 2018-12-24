@@ -44,8 +44,8 @@ public:
 	virtual bool					Init(	ISoundSystem*			pSoundSystem,
 											IPhysics*				pPhysics,
 											IDebugOverlay*			pDebugOverlay,
-											IStudioModelCache*		pModelCache,
-											IViewRenderer*			pViewRenderer) = 0;
+											IViewRenderer*			pViewRenderer,
+											IStudioModelCache*		pModelCache) = 0;
 
 	virtual bool				GameLoad() = 0;
 	virtual void				GameUnload() = 0;
@@ -53,7 +53,7 @@ public:
 	virtual void				GameStart() = 0;
 	virtual void				GameEnd() = 0;
 		
-	virtual void				SpawnEntities(KeyValues* inputKeyValues) = 0;
+	virtual void				SpawnEntities(kvkeybase_t* inputKeyValues) = 0;
 
 	virtual void				LoadingScreenFunction(int function, float fPercentage) = 0;
 

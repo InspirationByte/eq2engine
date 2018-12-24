@@ -7,20 +7,19 @@
 
 #include "BaseShader.h"
 
-class CDepthWriteLighting : public CBaseShader
-{
-public:
-	CDepthWriteLighting()
+BEGIN_SHADER_CLASS(DepthWriteLighting)
+
+	SHADER_INIT_PARAMS()
 	{
 		SHADER_PASS(Depth) = NULL;
 	}
 
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 		// does nothing
 	}
 
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
 		if(SHADER_PASS(Depth))
 			return true;
@@ -30,9 +29,9 @@ public:
 
 		int nSkinned = 0;
 
-		SHADER_PARAM_BOOL(Omni, bCubicOmni);
-		SHADER_PARAM_BOOL(DepthRemap, bDepthRemap);
-		SHADER_PARAM_INT(Skin, nSkinned);
+		SHADER_PARAM_BOOL(Omni, bCubicOmni, false);
+		SHADER_PARAM_BOOL(DepthRemap, bDepthRemap, true);
+		SHADER_PARAM_INT(Skin, nSkinned, 0);
 
 		// begin shader definitions
 		SHADERDEFINES_BEGIN;
@@ -109,11 +108,6 @@ public:
 		g_pShaderAPI->SetShaderConstantVector3D("LightParams", Vector3D(1, materials->GetLight()->radius.x, 1.0f / materials->GetLight()->radius.x));
 	}
 
-	const char* GetName()
-	{
-		return "DepthWriteLighting";
-	}
-
 	ITexture*	GetBaseTexture(int stage)
 	{
 		return NULL;
@@ -124,14 +118,5 @@ public:
 		return NULL;
 	}
 
-	// returns main shader program
-	IShaderProgram*	GetProgram()
-	{
-		return SHADER_PASS(Depth);
-	}
-
-private:
 	SHADER_DECLARE_PASS(Depth);
-};
-
-DEFINE_SHADER(DepthWriteLighting, CDepthWriteLighting)
+END_SHADER_CLASS

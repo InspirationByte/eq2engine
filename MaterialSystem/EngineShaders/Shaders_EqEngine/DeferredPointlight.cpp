@@ -6,12 +6,11 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "BaseShader.h"
-#include "vars_generic.h"
+#include "../vars_generic.h"
 
-class CDeferredPointLight : public CBaseShader
-{
-public:
-	CDeferredPointLight()
+BEGIN_SHADER_CLASS(DeferredPointLight)
+
+	SHADER_INIT_PARAMS()
 	{
 		SHADER_PASS(Ambient) = NULL;
 		SHADER_FOGPASS(Ambient) = NULL;
@@ -23,7 +22,7 @@ public:
 	}
 
 	// Initialize textures
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 		SHADER_PARAM_RENDERTARGET_FIND(Albedo, m_pRTAlbedo);
 		SHADER_PARAM_RENDERTARGET_FIND(Normal, m_pRTNormals);
@@ -32,7 +31,7 @@ public:
 	}
 
 	// Initialize shader(s)
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
 		// just skip if we already have shader
 		if(SHADER_PASS(Ambient))
@@ -49,16 +48,10 @@ public:
 
 		SHADER_FIND_OR_COMPILE(Ambient_fog, "DeferredPointLight")
 
-		SetParameterFunctor(SHADERPARAM_COLOR, &CDeferredPointLight::SetupColors);
-		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Additive_Fog);
+		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetupColors);
+		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &ThisShaderClass::ParamSetup_AlphaModel_Additive_Fog);
 
 		return true;
-	}
-
-	// Return real shader name
-	const char* GetName()
-	{
-		return "DeferredPointLight";
 	}
 
 	SHADER_SETUP_STAGE()
@@ -133,13 +126,6 @@ public:
 	ITexture* GetBaseTexture(int n)		{return NULL;}
 	ITexture* GetBumpTexture(int n)		{return NULL;}
 
-	// returns main shader program
-	IShaderProgram*	GetProgram()
-	{
-		return SHADER_PASS(Ambient);
-	}
-
-private:
 	SHADER_DECLARE_PASS(Ambient);
 	SHADER_DECLARE_FOGPASS(Ambient);
 
@@ -148,6 +134,5 @@ private:
 	ITexture* m_pRTDepth;
 	ITexture* m_pRTNormals;
 	ITexture* m_pRTMatMap;
-};
 
-DEFINE_SHADER(DeferredPointLight, CDeferredPointLight)
+END_SHADER_CLASS

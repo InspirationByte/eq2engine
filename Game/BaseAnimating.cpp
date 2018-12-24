@@ -207,7 +207,7 @@ void BaseAnimating::MakeDecal( const decalmakeinfo_t& info )
 		Matrix3x3 rotation = m_matWorldTransform.getRotationComponent();
 		dec_info.normal = !rotation * dec_info.normal;
 
-		studiotempdecal_t* pStudioDecal = m_pModel->MakeTempDecal( dec_info, m_LocalBonematrixList );
+		tempdecal_t* pStudioDecal = m_pModel->MakeTempDecal( dec_info, m_LocalBonematrixList );
 		m_pDecals.append(pStudioDecal);
 	}
 }
@@ -436,7 +436,7 @@ void BaseAnimating::InitAnimationThings()
 	}
 }
 
-void BaseAnimating::PreloadMotionData(studiomotiondata_t* pMotionData)
+void BaseAnimating::PreloadMotionData(studioHwData_t::motionData_t* pMotionData)
 {
 	// create pose controllers
 	for(int i = 0; i < pMotionData->numPoseControllers; i++)
@@ -494,7 +494,7 @@ void BaseAnimating::PreloadMotionData(studiomotiondata_t* pMotionData)
 	}
 }
 
-void BaseAnimating::PrecacheSoundEvents( studiomotiondata_t* pMotionData )
+void BaseAnimating::PrecacheSoundEvents(studioHwData_t::motionData_t* pMotionData )
 {
 	for(int i = 0; i < pMotionData->numEvents; i++)
 	{
@@ -854,12 +854,12 @@ void BaseAnimating::SwapSequenceTimers(int index, int swapTo)
 	m_sequenceTimerBlendings[index] = swap_to_time;
 }
 
-void BaseAnimating::GetInterpolatedBoneFrame(modelanimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out)
+void BaseAnimating::GetInterpolatedBoneFrame(studioHwData_t::motionData_t::animation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out)
 {
 	InterpolateFrameTransform(pAnim->bones[nBone].keyFrames[firstframe], pAnim->bones[nBone].keyFrames[lastframe], clamp(interp,0,1), out);
 }
 
-void BaseAnimating::GetInterpolatedBoneFrameBetweenTwoAnimations(modelanimation_t* pAnim1, modelanimation_t* pAnim2, int nBone, int firstframe, int lastframe, float interp, float animTransition, animframe_t &out)
+void BaseAnimating::GetInterpolatedBoneFrameBetweenTwoAnimations(studioHwData_t::motionData_t::animation_t* pAnim1, studioHwData_t::motionData_t::animation_t* pAnim2, int nBone, int firstframe, int lastframe, float interp, float animTransition, animframe_t &out)
 {
 	// compute frame 1
 	animframe_t anim1transform;
@@ -887,8 +887,8 @@ void BaseAnimating::GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone,
 							blendAnimation2
 							);
 
-	modelanimation_t* pAnim1 = pSequence->animations[blendAnimation1];
-	modelanimation_t* pAnim2 = pSequence->animations[blendAnimation2];
+	studioHwData_t::motionData_t::animation_t* pAnim1 = pSequence->animations[blendAnimation1];
+	studioHwData_t::motionData_t::animation_t* pAnim2 = pSequence->animations[blendAnimation2];
 
 	GetInterpolatedBoneFrameBetweenTwoAnimations(	pAnim1,
 													pAnim2,
@@ -953,7 +953,7 @@ void BaseAnimating::UpdateBones()
 			if(blend_weight <= 0)
 				continue;
 
-			modelanimation_t *curanim = m_sequenceTimers[j].base_sequence->animations[0];
+			studioHwData_t::motionData_t::animation_t *curanim = m_sequenceTimers[j].base_sequence->animations[0];
 
 			if(!curanim)
 				continue;
@@ -981,8 +981,8 @@ void BaseAnimating::UpdateBones()
 										playingBlendAnimation2);
 
 				// get frame pointers
-				modelanimation_t* pPlayingAnim1 = m_sequenceTimers[j].base_sequence->animations[playingBlendAnimation1];
-				modelanimation_t* pPlayingAnim2 = m_sequenceTimers[j].base_sequence->animations[playingBlendAnimation2];
+				studioHwData_t::motionData_t::animation_t* pPlayingAnim1 = m_sequenceTimers[j].base_sequence->animations[playingBlendAnimation1];
+				studioHwData_t::motionData_t::animation_t* pPlayingAnim2 = m_sequenceTimers[j].base_sequence->animations[playingBlendAnimation2];
 
 				// compute blending frame
 				GetInterpolatedBoneFrameBetweenTwoAnimations(	pPlayingAnim1,
@@ -997,7 +997,7 @@ void BaseAnimating::UpdateBones()
 			else
 			{
 				// simply compute frames
-				modelanimation_t *curanim = m_sequenceTimers[j].base_sequence->animations[0];
+				studioHwData_t::motionData_t::animation_t *curanim = m_sequenceTimers[j].base_sequence->animations[0];
 
 				GetInterpolatedBoneFrame(curanim, boneId, m_sequenceTimers[j].currFrame, m_sequenceTimers[j].nextFrame, frame_interp, cTimedFrame);
 			}

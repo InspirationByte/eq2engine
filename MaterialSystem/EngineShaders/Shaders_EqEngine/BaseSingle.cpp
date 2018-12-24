@@ -6,12 +6,11 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "BaseShader.h"
-#include "vars_generic.h"
+#include "../vars_generic.h"
 
-class CBaseSingle : public CBaseShader
-{
-public:
-	CBaseSingle()
+BEGIN_SHADER_CLASS(BaseSingle)
+
+	SHADER_INIT_PARAMS()
 	{
 		m_pBaseTexture	= NULL;
 		m_pBumpTexture	= NULL;
@@ -32,7 +31,7 @@ public:
 		m_fCubemapLightingScale = 1.0f;
 	}
 
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 		// load textures from parameters
 		SHADER_PARAM_TEXTURE(BaseTexture, m_pBaseTexture);
@@ -48,23 +47,23 @@ public:
 			SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_pCubemap);
 
 		// set texture setup
-		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &CBaseSingle::SetupBaseTexture);
+		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture);
 
 		if(m_pBumpTexture)
-			SetParameterFunctor(SHADERPARAM_BUMPMAP, &CBaseSingle::SetupBumpmap);
+			SetParameterFunctor(SHADERPARAM_BUMPMAP, &ThisShaderClass::SetupBumpmap);
 
 		if(m_pSpecIllum)
-			SetParameterFunctor(SHADERPARAM_SPECULARILLUM, &CBaseSingle::SetupSpecular);
+			SetParameterFunctor(SHADERPARAM_SPECULARILLUM, &ThisShaderClass::SetupSpecular);
 
-		SetParameterFunctor(SHADERPARAM_COLOR, &CBaseSingle::SetColorModulation);
+		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
 
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
 		if(SHADER_PASS(Ambient))
 			return true;
 
-		bool bDeferredShading = (materials->GetLightingModel() == MATERIAL_LIGHT_DEFERRED);
+		bool bDeferredShading = (materials->GetConfiguration().lighting_model == MATERIAL_LIGHT_DEFERRED);
 		bool bHasAnyTranslucency = (m_nFlags & MATERIAL_FLAG_TRANSPARENT) || (m_nFlags & MATERIAL_FLAG_ADDITIVE) || (m_nFlags & MATERIAL_FLAG_MODULATE);
 
 		//------------------------------------------
@@ -72,26 +71,26 @@ public:
 		//------------------------------------------
 
 		// illumination from specular green channel
-		SHADER_PARAM_BOOL(SpecularIllum, m_bSpecularIllum);
+		SHADER_PARAM_BOOL(SpecularIllum, m_bSpecularIllum, false);
 
-		SHADER_PARAM_BOOL(CubeMapLighting, m_bCubeMapLighting);
+		SHADER_PARAM_BOOL(CubeMapLighting, m_bCubeMapLighting, false);
 
-		SHADER_PARAM_FLOAT(CubeMapLightingScale, m_fCubemapLightingScale);
+		SHADER_PARAM_FLOAT(CubeMapLightingScale, m_fCubemapLightingScale, 1.0f);
 
 		// parallax as the bump map alpha
-		SHADER_PARAM_BOOL(Parallax, m_bParallax);
+		SHADER_PARAM_BOOL(Parallax, m_bParallax, false);
 
 		// parallax scale
-		SHADER_PARAM_FLOAT(ParallaxScale, m_fParallaxScale);
+		SHADER_PARAM_FLOAT(ParallaxScale, m_fParallaxScale, 1.0f);
 
 		if(m_pSpecIllum)
 			m_fSpecularScale = 1.0f;
 
 		// parallax scale
-		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale);
+		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale, m_fSpecularScale);
 
 		bool bVertexSpecular = false;
-		SHADER_PARAM_BOOL(VertexSpecular, bVertexSpecular);
+		SHADER_PARAM_BOOL(VertexSpecular, bVertexSpecular, false);
 
 		//------------------------------------------
 		// begin shader definitions
@@ -131,7 +130,7 @@ public:
 		if(bDeferredShading && !bHasAnyTranslucency)
 		{
 			// disable FFP alphatesting, let use the shader for better perfomance
-			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Solid);
+			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &ThisShaderClass::ParamSetup_AlphaModel_Solid);
 
 			// compile without fog
 			SHADER_FIND_OR_COMPILE(Ambient, "BaseSingle_Deferred");
@@ -230,11 +229,6 @@ public:
 		g_pShaderAPI->SetTexture(m_pSpecIllum, "SpecularMapSampler", 8);
 	}
 
-	const char* GetName()
-	{
-		return "BaseSingle";
-	}
-
 	ITexture*	GetBaseTexture(int stage)
 	{
 		return m_pBaseTexture;
@@ -250,8 +244,6 @@ public:
 	{
 		return SHADER_PASS(Ambient);
 	}
-
-private:
 
 	ITexture*			m_pBaseTexture;
 	ITexture*			m_pBumpTexture;
@@ -270,6 +262,5 @@ private:
 	float				m_fSpecularScale;
 	bool				m_bCubeMapLighting;
 	float				m_fCubemapLightingScale;
-};
 
-DEFINE_SHADER(BaseSingle, CBaseSingle)
+END_SHADER_CLASS

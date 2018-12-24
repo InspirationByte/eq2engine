@@ -8,7 +8,9 @@
 #ifndef NETPLAYER_H
 #define NETPLAYER_H
 
-#include "game_multiplayer.h"
+#include "Player.h"
+
+#include "net_game_defs.h"
 
 #include "car.h"
 #include "utils/eqstring.h"
@@ -42,7 +44,7 @@ struct netPlayerSpawnInfo_t
 //
 // Holds information about player of network state
 //
-class CNetPlayer
+class CNetPlayer : public CPlayer
 {
 	friend class CPredictable;
 
@@ -52,10 +54,8 @@ public:
 
 	const char*			GetName() const;
 	const char*			GetCarName() const;
-	void				SetControls(int controls);
+	void				SetControls(const playerControl_t& controls);
 	CCar*				GetCar();
-
-	bool				IsAlive();
 
 	float				GetLatency() const;
 
@@ -109,7 +109,6 @@ public:
 
 	float					m_packetLatency;	// it's converted from tick difference * tick rate
 	float					m_interpTime;
-
 };
 
 //----------------------------------------------------------------------------

@@ -7,6 +7,7 @@
 
 #include "BaseShader.h"
 
+
 class SH_BlockLight : public CBaseShader
 {
 public:

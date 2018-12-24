@@ -457,7 +457,7 @@ protected:
 	EqString					m_pszModelName;
 	IEqModel*					m_pModel;
 
-	DkList<studiotempdecal_t*>	m_pDecals;
+	DkList<tempdecal_t*>		m_pDecals;
 
 	EntPhysicsType_e			m_pPhysicsType;
 	IPhysicsObject*				m_pPhysicsObject;

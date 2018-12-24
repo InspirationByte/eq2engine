@@ -6,12 +6,11 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "BaseShader.h"
-#include "vars_generic.h"
+#include "../vars_generic.h"
 
-class CSkinnedRope : public CBaseShader
-{
-public:
-	CSkinnedRope()
+BEGIN_SHADER_CLASS(SkinnedRope)
+
+	SHADER_INIT_PARAMS()
 	{
 		m_pBaseTexture	= NULL;
 		m_pSpecIllum	= NULL;
@@ -28,7 +27,7 @@ public:
 		m_fCubemapLightingScale = 1.0f;
 	}
 
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 		// load textures from parameters
 		SHADER_PARAM_TEXTURE(BaseTexture, m_pBaseTexture);
@@ -41,37 +40,37 @@ public:
 			SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_pCubemap);
 
 		// set texture setup
-		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &CSkinnedRope::SetupBaseTexture);
+		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture);
 
 		if(m_pSpecIllum)
-			SetParameterFunctor(SHADERPARAM_SPECULARILLUM, &CSkinnedRope::SetupSpecular);
+			SetParameterFunctor(SHADERPARAM_SPECULARILLUM, &ThisShaderClass::SetupSpecular);
 
-		SetParameterFunctor(SHADERPARAM_COLOR, &CSkinnedRope::SetColorModulation);
+		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
 
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
 		if(SHADER_PASS(Ambient))
 			return true;
 
-		bool bDeferredShading = (materials->GetLightingModel() == MATERIAL_LIGHT_DEFERRED);
+		bool bDeferredShading = (materials->GetConfiguration().lighting_model == MATERIAL_LIGHT_DEFERRED);
 
 		//------------------------------------------
 		// load another shader params here (because we want to use less memory)
 		//------------------------------------------
 
 		// illumination from specular alpha
-		SHADER_PARAM_BOOL(SpecularIllum, m_bSpecularIllum);
+		SHADER_PARAM_BOOL(SpecularIllum, m_bSpecularIllum, false);
 
-		SHADER_PARAM_BOOL(CubeMapLighting, m_bCubeMapLighting);
+		SHADER_PARAM_BOOL(CubeMapLighting, m_bCubeMapLighting, false);
 
-		SHADER_PARAM_FLOAT(CubeMapLightingScale, m_fCubemapLightingScale);
+		SHADER_PARAM_FLOAT(CubeMapLightingScale, m_fCubemapLightingScale, 1.0f);
 
 		if(m_pSpecIllum)
 			m_fSpecularScale = 1.0f;
 
 		// parallax scale
-		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale);
+		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale, m_fSpecularScale);
 
 		//------------------------------------------
 		// begin shader definitions
@@ -98,7 +97,7 @@ public:
 		if(bDeferredShading)
 		{
 			// disable FFP alphatesting, let use the shader for better perfomance
-			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Solid);
+			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &ThisShaderClass::ParamSetup_AlphaModel_Solid);
 
 			// compile without fog
 			SHADER_FIND_OR_COMPILE(Ambient, "SkinnedRope_Deferred");
@@ -176,11 +175,6 @@ public:
 		g_pShaderAPI->SetTexture(m_pSpecIllum, "SpecularTexture", 8);
 	}
 
-	const char* GetName()
-	{
-		return "SkinnedRope";
-	}
-
 	ITexture*	GetBaseTexture(int stage)
 	{
 		return m_pBaseTexture;
@@ -190,14 +184,6 @@ public:
 	{
 		return NULL;
 	}
-
-	// returns main shader program
-	IShaderProgram*	GetProgram()
-	{
-		return SHADER_PASS(Ambient);
-	}
-
-private:
 
 	ITexture*			m_pBaseTexture;
 	ITexture*			m_pSpecIllum;
@@ -210,6 +196,5 @@ private:
 
 	SHADER_DECLARE_PASS(Ambient);
 	SHADER_DECLARE_FOGPASS(Ambient);
-};
 
-DEFINE_SHADER(SkinnedRope, CSkinnedRope)
+END_SHADER_CLASS

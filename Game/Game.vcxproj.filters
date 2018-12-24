@@ -179,17 +179,8 @@
     <ClInclude Include="..\public\Math\math_util.h">
       <Filter>Source Files\EngineLib\Math</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\BaseRenderableObject.h">
-      <Filter>Source Files\EngineLib\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\RenderList.h">
-      <Filter>Source Files\EngineLib\Scene</Filter>
-    </ClInclude>
     <ClInclude Include="env_explode.h">
       <Filter>Source Files\GameLib\GameCommon</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\ViewParams.h">
-      <Filter>Source Files\EngineLib\Scene</Filter>
     </ClInclude>
     <ClInclude Include="Ladder.h">
       <Filter>Source Files\GameLib\GameCommon</Filter>
@@ -227,13 +218,7 @@
     <ClInclude Include="PlayerSpawn.h">
       <Filter>Source Files\GameLib\GameCommon</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\BoneSetup.h">
-      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
-    </ClInclude>
     <ClInclude Include="Effects.h">
-      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\iksolver_ccd.h">
       <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
     </ClInclude>
     <ClInclude Include="Rain.h">
@@ -284,29 +269,14 @@
     <ClInclude Include="RenderDefs.h">
       <Filter>Source Files\GameLib\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\anim_activity.h">
-      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\anim_events.h">
-      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\ragdoll.h">
-      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
-    </ClInclude>
     <ClInclude Include="InfoCamera.h">
       <Filter>Source Files\GameLib\GameCommon</Filter>
-    </ClInclude>
-    <ClInclude Include="EGUI\EQUI_Manager.h">
-      <Filter>Source Files\GameLib\EqUI</Filter>
     </ClInclude>
     <ClInclude Include="PigeonGame\GameRules_Pigeon.h">
       <Filter>Source Files\GameLib\Game_Pigeon</Filter>
     </ClInclude>
     <ClInclude Include="PigeonGame\BasePigeon.h">
       <Filter>Source Files\GameLib\Game_Pigeon</Filter>
-    </ClInclude>
-    <ClInclude Include="EGUI\EqUI_Panel.h">
-      <Filter>Source Files\GameLib\EqUI</Filter>
     </ClInclude>
     <ClInclude Include="AmmoType.h">
       <Filter>Source Files\GameLib\GameCommon</Filter>
@@ -482,23 +452,53 @@
     <ClInclude Include="EntityQueue.h">
       <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared_engine\EGUI\EqUI_Button.h">
+    <ClInclude Include="..\shared_game\anim_activity.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\anim_events.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\BoneSetup.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Button.h">
       <Filter>Source Files\GameLib\EqUI</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared_engine\EGUI\equi_defs.h">
+    <ClInclude Include="..\shared_engine\EqUI\equi_defs.h">
       <Filter>Source Files\GameLib\EqUI</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared_engine\EGUI\EqUI_Label.h">
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Label.h">
       <Filter>Source Files\GameLib\EqUI</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared_engine\EGUI\EqUI_Manager.h">
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Manager.h">
       <Filter>Source Files\GameLib\EqUI</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared_engine\EGUI\EqUI_Panel.h">
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Panel.h">
       <Filter>Source Files\GameLib\EqUI</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared_engine\EGUI\IEqUI_Control.h">
+    <ClInclude Include="..\shared_engine\EqUI\IEqUI_Control.h">
       <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\BaseRenderableObject.h">
+      <Filter>Source Files\EngineLib\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Image.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\iksolver_ccd.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\ragdoll.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\RenderList.h">
+      <Filter>Source Files\EngineLib\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\ViewParams.h">
+      <Filter>Source Files\EngineLib\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TextureAtlas.h">
+      <Filter>Source Files\EngineLib\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -540,20 +540,11 @@
     <ClCompile Include="..\public\Math\math_util.cpp">
       <Filter>Source Files\EngineLib\Math</Filter>
     </ClCompile>
-    <ClCompile Include="..\public\BaseRenderableObject.cpp">
-      <Filter>Source Files\EngineLib\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\RenderList.cpp">
-      <Filter>Source Files\EngineLib\Scene</Filter>
-    </ClCompile>
     <ClCompile Include="npc_soldier.cpp">
       <Filter>Source Files\GameLib\Game_STD</Filter>
     </ClCompile>
     <ClCompile Include="SoundEntities.cpp">
       <Filter>Source Files\GameLib\GameCommon</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\ViewParams.cpp">
-      <Filter>Source Files\EngineLib\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Player.cpp">
       <Filter>Source Files\GameLib\Game_STD</Filter>
@@ -639,9 +630,6 @@
     <ClCompile Include="PlayerSpawn.cpp">
       <Filter>Source Files\GameLib\GameCommon</Filter>
     </ClCompile>
-    <ClCompile Include="..\public\BoneSetup.cpp">
-      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
-    </ClCompile>
     <ClCompile Include="Effects.cpp">
       <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
     </ClCompile>
@@ -689,15 +677,6 @@
     </ClCompile>
     <ClCompile Include="RenderDefs.cpp">
       <Filter>Source Files\GameLib\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\anim_activity.cpp">
-      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\anim_events.cpp">
-      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\ragdoll.cpp">
-      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
     </ClCompile>
     <ClCompile Include="InfoCamera.cpp">
       <Filter>Source Files\GameLib\GameCommon</Filter>
@@ -879,26 +858,53 @@
     <ClCompile Include="..\shared_game\GameSoundEmitterSystem.cpp">
       <Filter>Source Files\GameLib\Sound</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\EGUI\EQUI_Manager.cpp">
-      <Filter>Source Files\GameLib\EqUI</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_engine\EGUI\EqUI_Panel.cpp">
-      <Filter>Source Files\GameLib\EqUI</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared_engine\EffectRender.cpp">
       <Filter>Source Files\GameLib\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp">
       <Filter>Source Files\EngineLib</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\EGUI\EqUI_Button.cpp">
+    <ClCompile Include="..\shared_game\anim_events.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\anim_activity.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\BoneSetup.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EqUI\EqUI_Button.cpp">
       <Filter>Source Files\GameLib\EqUI</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\EGUI\EqUI_Label.cpp">
+    <ClCompile Include="..\shared_engine\EqUI\EQUI_Manager.cpp">
       <Filter>Source Files\GameLib\EqUI</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_engine\EGUI\IEqUI_Control.cpp">
+    <ClCompile Include="..\shared_engine\EqUI\EqUI_Panel.cpp">
       <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EqUI\IEqUI_Control.cpp">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\BaseRenderableObject.cpp">
+      <Filter>Source Files\EngineLib\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EqUI\EqUI_Label.cpp">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\EqUI\EqUI_Image.cpp">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\ragdoll.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\RenderList.cpp">
+      <Filter>Source Files\EngineLib\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\ViewParams.cpp">
+      <Filter>Source Files\EngineLib\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\TextureAtlas.cpp">
+      <Filter>Source Files\EngineLib\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

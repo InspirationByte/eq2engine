@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "BaseShader.h"
+#include "../vars_generic.h"
 
 class CBleachBypassFilter : public CBaseShader
 {

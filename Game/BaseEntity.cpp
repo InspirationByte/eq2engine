@@ -1019,7 +1019,7 @@ void BaseEntity::MakeDecal( const decalmakeinfo_t& info )
 		Matrix3x3 rotation = m_matWorldTransform.getRotationComponent();
 		dec_info.normal = !rotation * dec_info.normal;
 
-		studiotempdecal_t* pStudioDecal = m_pModel->MakeTempDecal( dec_info, NULL);
+		tempdecal_t* pStudioDecal = m_pModel->MakeTempDecal( dec_info, NULL);
 		m_pDecals.append(pStudioDecal);
 	}
 }

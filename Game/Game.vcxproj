@@ -99,7 +99,9 @@
     <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">false</IgnoreImportLibrary>
     <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">false</IgnoreImportLibrary>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TargetName>WhiteCage\GameLib</TargetName>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
@@ -131,7 +133,8 @@
       </EnableCOMDATFolding>
       <NoEntryPoint>false</NoEntryPoint>
       <BaseAddress>0x30000000</BaseAddress>
-      <ImportLibrary>..\libs\game_win_x86.lib</ImportLibrary>
+      <ImportLibrary>
+      </ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
       <DataExecutionPrevention>false</DataExecutionPrevention>
       <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
@@ -274,23 +277,25 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\public\anim_activity.h" />
-    <ClInclude Include="..\public\anim_events.h" />
-    <ClInclude Include="..\public\BaseRenderableObject.h" />
+    <ClInclude Include="..\public\TextureAtlas.h" />
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Image.h" />
+    <ClInclude Include="..\shared_game\anim_activity.h" />
+    <ClInclude Include="..\shared_game\anim_events.h" />
+    <ClInclude Include="..\shared_engine\BaseRenderableObject.h" />
     <ClInclude Include="..\public\dsm_loader.h" />
     <ClInclude Include="..\public\dsm_obj_loader.h" />
     <ClInclude Include="..\public\IGameLibrary.h" />
-    <ClInclude Include="..\public\iksolver_ccd.h" />
-    <ClInclude Include="..\public\ragdoll.h" />
-    <ClInclude Include="..\public\RenderList.h" />
+    <ClInclude Include="..\shared_game\iksolver_ccd.h" />
+    <ClInclude Include="..\shared_game\ragdoll.h" />
+    <ClInclude Include="..\shared_engine\RenderList.h" />
     <ClInclude Include="..\public\Utils\Align.h" />
     <ClInclude Include="..\public\CharSet.h" />
-    <ClInclude Include="..\shared_engine\EGUI\EqUI_Button.h" />
-    <ClInclude Include="..\shared_engine\EGUI\equi_defs.h" />
-    <ClInclude Include="..\shared_engine\EGUI\EqUI_Label.h" />
-    <ClInclude Include="..\shared_engine\EGUI\EqUI_Manager.h" />
-    <ClInclude Include="..\shared_engine\EGUI\EqUI_Panel.h" />
-    <ClInclude Include="..\shared_engine\EGUI\IEqUI_Control.h" />
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Button.h" />
+    <ClInclude Include="..\shared_engine\EqUI\equi_defs.h" />
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Label.h" />
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Manager.h" />
+    <ClInclude Include="..\shared_engine\EqUI\EqUI_Panel.h" />
+    <ClInclude Include="..\shared_engine\EqUI\IEqUI_Control.h" />
     <ClInclude Include="AI\AIBaseNPC.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClInclude>
@@ -325,8 +330,6 @@
     <ClInclude Include="..\public\CPU.h" />
     <ClInclude Include="..\public\DebugInterface.h" />
     <ClInclude Include="DamageInfo.h" />
-    <ClInclude Include="EGUI\EqUI_Panel.h" />
-    <ClInclude Include="EGUI\EQUI_Manager.h" />
     <ClInclude Include="EntityBind.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClInclude>
@@ -522,7 +525,7 @@
     <ClInclude Include="BaseActor.h" />
     <CustomBuildStep Include="BaseAnimating.h" />
     <ClInclude Include="BaseWeapon.h" />
-    <ClInclude Include="..\public\BoneSetup.h" />
+    <ClInclude Include="..\shared_game\BoneSetup.h" />
     <ClInclude Include="Effects.h" />
     <ClInclude Include="EngineEntities.h" />
     <ClInclude Include="GameInput.h" />
@@ -546,7 +549,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='PigeonGame Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='STDGame Release|Win32'">true</ExcludedFromBuild>
     </CustomBuildStep>
-    <ClInclude Include="..\public\ViewParams.h" />
+    <ClInclude Include="..\shared_engine\ViewParams.h" />
     <ClInclude Include="..\public\Utils\GeomTools.h" />
     <ClInclude Include="..\public\Math\math_util.h" />
   </ItemGroup>
@@ -554,20 +557,22 @@
     <Library Include="..\src_dependency\Shiny\lib\Release\Shiny.lib" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\public\anim_activity.cpp" />
-    <ClCompile Include="..\public\anim_events.cpp" />
-    <ClCompile Include="..\public\BaseRenderableObject.cpp" />
-    <ClCompile Include="..\public\BoneSetup.cpp" />
+    <ClCompile Include="..\public\TextureAtlas.cpp" />
+    <ClCompile Include="..\shared_engine\EqUI\EqUI_Image.cpp" />
+    <ClCompile Include="..\shared_game\anim_activity.cpp" />
+    <ClCompile Include="..\shared_game\anim_events.cpp" />
+    <ClCompile Include="..\shared_engine\BaseRenderableObject.cpp" />
+    <ClCompile Include="..\shared_game\BoneSetup.cpp" />
     <ClCompile Include="..\public\dsm_esm_loader.cpp" />
     <ClCompile Include="..\public\dsm_loader.cpp" />
     <ClCompile Include="..\public\dsm_obj_loader.cpp" />
-    <ClCompile Include="..\shared_engine\EGUI\EqUI_Button.cpp" />
-    <ClCompile Include="..\shared_engine\EGUI\EqUI_Label.cpp" />
-    <ClCompile Include="..\shared_engine\EGUI\IEqUI_Control.cpp" />
+    <ClCompile Include="..\shared_engine\EqUI\EqUI_Button.cpp" />
+    <ClCompile Include="..\shared_engine\EqUI\EqUI_Label.cpp" />
+    <ClCompile Include="..\shared_engine\EqUI\IEqUI_Control.cpp" />
     <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp" />
     <ClCompile Include="..\shared_game\GameSoundEmitterSystem.cpp" />
-    <ClCompile Include="..\public\ragdoll.cpp" />
-    <ClCompile Include="..\public\RenderList.cpp" />
+    <ClCompile Include="..\shared_game\ragdoll.cpp" />
+    <ClCompile Include="..\shared_engine\RenderList.cpp" />
     <ClCompile Include="AI\AIBaseNPC.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
@@ -605,7 +610,7 @@
     <ClCompile Include="AI\Recast\Source\RecastRegion.cpp" />
     <ClCompile Include="AmmoType.cpp" />
     <ClCompile Include="BaseEntity.cpp" />
-    <ClCompile Include="..\shared_engine\EGUI\EQUI_Manager.cpp" />
+    <ClCompile Include="..\shared_engine\EqUI\EQUI_Manager.cpp" />
     <ClCompile Include="EntityBind.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
@@ -615,7 +620,7 @@
     </ClCompile>
     <ClCompile Include="GameLibrary.cpp" />
     <ClCompile Include="..\shared_engine\EffectRender.cpp" />
-    <ClCompile Include="..\shared_engine\EGUI\EqUI_Panel.cpp" />
+    <ClCompile Include="..\shared_engine\EqUI\EqUI_Panel.cpp" />
     <ClCompile Include="EntityDataField.cpp" />
     <ClCompile Include="FilterPipelineBase.cpp" />
     <ClCompile Include="GameRenderer.cpp" />
@@ -809,7 +814,7 @@
     <ClCompile Include="Snow.cpp" />
     <ClCompile Include="SoundEntities.cpp" />
     <ClCompile Include="Triggers.cpp" />
-    <ClCompile Include="..\public\ViewParams.cpp" />
+    <ClCompile Include="..\shared_engine\ViewParams.cpp" />
     <ClCompile Include="..\public\Utils\GeomTools.cpp" />
     <ClCompile Include="..\public\Math\math_util.cpp" />
     <ClCompile Include="weapon_wiremine.cpp">

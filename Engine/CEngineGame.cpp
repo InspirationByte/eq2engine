@@ -506,7 +506,7 @@ bool CEngineGame::LoadGame( bool loadSaved )
 
 	if(!loadSaved)
 	{
-		gamedll->SpawnEntities( &g_pLevel->m_EntityKeyValues );
+		gamedll->SpawnEntities( g_pLevel->m_EntityKeyValues.GetRootSection() );
 	}
 
 	m_bLevelChanged = false;

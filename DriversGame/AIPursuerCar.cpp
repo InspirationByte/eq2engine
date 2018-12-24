@@ -112,6 +112,7 @@ void CAIPursuerCar::Precache()
 	PrecacheScriptSound("cop.redlight");
 	PrecacheScriptSound("cop.hitvehicle");
 	PrecacheScriptSound("cop.heading");
+	PrecacheScriptSound("cop.takehimup");
 	PrecacheScriptSound("cop.heading_west");
 	PrecacheScriptSound("cop.heading_east");
 	PrecacheScriptSound("cop.heading_south");
@@ -543,7 +544,12 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 			{
 				if (m_targInfo.target->GetFelony() >= AI_COP_MINFELONY)
 				{
-					Speak("cop.pursuit_continue", true);
+					int val = RandomInt(0, 1);
+
+					if(val)
+						Speak("cop.pursuit_continue", true);
+					else
+						SpeakTargetDirection("cop.takehimup", true);
 				}
 				else
 				{
@@ -676,35 +682,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 			if(targetSpeed > 50.0f)
 			{
-				float targetAngle = VectorAngles( fastNormalize(targetVelocity) ).y + 45;
-
-				#pragma todo("North direction as second argument")
-				targetAngle = NormalizeAngle360( -targetAngle /*g_pGameWorld->GetLevelNorthDirection()*/);
-
-				int targetDir = targetAngle / 90.0f;
-
-				if (targetDir < 0)
-					targetDir += 4;
-
-				if (targetDir > 3)
-					targetDir -= 4;
-
-				if( m_targInfo.direction != targetDir && targetDir < 4)
-				{
-					if(Speak("cop.heading"))
-					{
-						if (targetDir == 0)
-							Speak("cop.heading_west", true);
-						else if (targetDir == 1)
-							Speak("cop.heading_north", true);
-						else if (targetDir == 2)
-							Speak("cop.heading_east", true);
-						else if (targetDir == 3)
-							Speak("cop.heading_south", true);
-					}
-
-					m_targInfo.direction = targetDir;
-				}
+				SpeakTargetDirection("cop.heading");
 			}
 		}
 
@@ -810,6 +788,41 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		GetPhysicsBody()->TryWake(false);
 
 	return 0;
+}
+
+void CAIPursuerCar::SpeakTargetDirection(const char* startSoundName, bool force)
+{
+	Vector3D targetVelocity = m_targInfo.target->GetVelocity();
+
+	float targetAngle = VectorAngles(fastNormalize(targetVelocity)).y + 45;
+
+#pragma todo("North direction as second argument")
+	targetAngle = NormalizeAngle360(-targetAngle /*g_pGameWorld->GetLevelNorthDirection()*/);
+
+	int targetDir = targetAngle / 90.0f;
+
+	if (targetDir < 0)
+		targetDir += 4;
+
+	if (targetDir > 3)
+		targetDir -= 4;
+
+	if (m_targInfo.direction != targetDir && targetDir < 4)
+	{
+		if (Speak(startSoundName, force))
+		{
+			if (targetDir == 0)
+				Speak("cop.heading_west", true);
+			else if (targetDir == 1)
+				Speak("cop.heading_north", true);
+			else if (targetDir == 2)
+				Speak("cop.heading_east", true);
+			else if (targetDir == 3)
+				Speak("cop.heading_south", true);
+		}
+
+		m_targInfo.direction = targetDir;
+	}
 }
 
 int	CAIPursuerCar::DeadState( float fDt, EStateTransition transition )

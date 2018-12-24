@@ -5,6 +5,8 @@
 // Description: Network player
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "game_multiplayer.h"
+
 #include "NetPlayer.h"
 #include "IDebugOverlay.h"
 
@@ -110,20 +112,15 @@ const char* CNetPlayer::GetCarName() const
 	return m_carName.c_str();
 }
 
-void CNetPlayer::SetControls(int controls)
+void CNetPlayer::SetControls(const playerControl_t& controls)
 {
 	m_oldControls = m_curControls;
-	m_curControls = controls;
+	m_curControls = controls.buttons;
 }
 
 CCar* CNetPlayer::GetCar()
 {
 	return m_ownCar;
-}
-
-bool CNetPlayer::IsAlive()
-{
-	return true;
 }
 
 // client recieve
@@ -350,8 +347,14 @@ void CNetPlayer::Update(float fDt)
 			m_ownCar->GetPhysicsBody()->SetOrientation(finSnap.rotation);
 
 		// set controls for non-local player
-		if(netSes->GetLocalPlayer() != this)
-			SetControls(finSnap.in.controls);
+		if (netSes->GetLocalPlayer() != this)
+		{
+			playerControl_t control;
+			control.buttons = finSnap.in.controls;
+
+			SetControls(control);
+		}
+			
 	}
 
 	m_ownCar->UpdateLightsState();

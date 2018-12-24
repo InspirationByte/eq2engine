@@ -145,7 +145,7 @@ void FillEntityParameters(BaseEntity* pEnt, kvkeybase_t* pEntSection)
 	}
 }
 
-void GAME_STATE_SpawnEntities( KeyValues* inputKeyValues )
+void GAME_STATE_SpawnEntities(kvkeybase_t* inputKeyValues)
 {
 	// Initialize sound emitter system
 	ses->Init(EQ_AUDIO_MAX_DISTANCE);
@@ -163,11 +163,11 @@ void GAME_STATE_SpawnEntities( KeyValues* inputKeyValues )
 
 	if(inputKeyValues)
 	{
-		pEnts.resize(inputKeyValues->GetRootSection()->keys.numElem());
+		pEnts.resize(inputKeyValues->keys.numElem());
 
-		for(int i = 0; i < inputKeyValues->GetRootSection()->keys.numElem(); i++)
+		for(int i = 0; i < inputKeyValues->keys.numElem(); i++)
 		{
-			kvkeybase_t* pEntSec = inputKeyValues->GetRootSection()->keys[i];
+			kvkeybase_t* pEntSec = inputKeyValues->keys[i];
 
 			if(!pEntSec->keys.numElem())
 				continue;

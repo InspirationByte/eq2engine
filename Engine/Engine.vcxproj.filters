@@ -215,9 +215,6 @@
     <ClInclude Include="..\public\model.h">
       <Filter>Source Files\Models</Filter>
     </ClInclude>
-    <ClInclude Include="modelloader_shared.h">
-      <Filter>Source Files\Models</Filter>
-    </ClInclude>
     <ClInclude Include="EntityFactory.h">
       <Filter>Source Files\GameSystem\Entities</Filter>
     </ClInclude>
@@ -335,9 +332,6 @@
     <ClInclude Include="..\public\mtriangle_framework.h">
       <Filter>Source Files\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="studio_egf.h">
-      <Filter>Source Files\Models</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\IEqModel.h">
       <Filter>Source Files\Models</Filter>
     </ClInclude>
@@ -383,20 +377,14 @@
     <ClInclude Include="..\shared_engine\BaseRenderableObject.h">
       <Filter>Source Files\Renderer\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="..\shared_engine\modelloader_shared.h">
+      <Filter>Source Files\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\studio_egf.h">
+      <Filter>Source Files\Models</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\Libs\zlib.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\src_dependency\SDL2\lib\SDL2.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\libs\OpenAL32.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\libs\jpeg.lib">
-      <Filter>Libs</Filter>
-    </Library>
     <Library Include="..\libs\libogg_static.lib">
       <Filter>Libs</Filter>
     </Library>
@@ -420,6 +408,18 @@
     </Library>
     <Library Include="..\src_dependency\bullet\bin\LinearMath.lib">
       <Filter>Libs\Bullet</Filter>
+    </Library>
+    <Library Include="..\src_dependency\OpenALSoftCustom\build\Release\OpenAL32.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\zlib\MinSizeRel\zlibstatic.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\SDL2\VisualC\SDL\Win32\Release\SDL2.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\jpeg\Release\jpeg.lib">
+      <Filter>Libs</Filter>
     </Library>
   </ItemGroup>
   <ItemGroup>

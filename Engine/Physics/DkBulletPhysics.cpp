@@ -231,8 +231,8 @@ bool DkPhysics::Init(int nSceneSize)
 
 	if(!pMaterials.LoadFromFile("scripts/SurfaceParams.def"))
 	{
-		MsgError("Error! Physics surface definition file 'scripts/physics_surface_params.txt' not found\n");
-		CrashMsg("Error! Physics surface definition file 'scripts/physics_surface_params.txt' not found, Exiting.\n");
+		MsgError("Error! Physics surface definition file 'scripts/SurfaceParams.def' not found\n");
+		CrashMsg("Error! Physics surface definition file 'scripts/SurfaceParams.def' not found, Exiting.\n");
 		return false;
 	}
 

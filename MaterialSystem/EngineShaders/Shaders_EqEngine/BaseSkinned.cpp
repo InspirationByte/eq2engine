@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "BaseShader.h"
-#include "vars_generic.h"
+#include "../vars_generic.h"
 
 BEGIN_SHADER_CLASS(BaseSkinned)
 
@@ -69,30 +69,30 @@ BEGIN_SHADER_CLASS(BaseSkinned)
 		if(SHADER_PASS(Ambient))
 			return true;
 
-		bool bDeferredShading = (materials->GetLightingModel() == MATERIAL_LIGHT_DEFERRED);
+		bool bDeferredShading = (materials->GetConfiguration().lighting_model == MATERIAL_LIGHT_DEFERRED);
 
 		//------------------------------------------
 		// load another shader params here (because we want to use less memory)
 		//------------------------------------------
 
 		// illumination from specular alpha
-		SHADER_PARAM_BOOL(SpecularIllum, m_bSpecularIllum);
+		SHADER_PARAM_BOOL(SpecularIllum, m_bSpecularIllum, false);
 
-		SHADER_PARAM_BOOL(CubeMapLighting, m_bCubeMapLighting);
+		SHADER_PARAM_BOOL(CubeMapLighting, m_bCubeMapLighting, false);
 
-		SHADER_PARAM_FLOAT(CubeMapLightingScale, m_fCubemapLightingScale);
+		SHADER_PARAM_FLOAT(CubeMapLightingScale, m_fCubemapLightingScale, 1.0f);
 
 		// parallax as the bump map alpha
-		SHADER_PARAM_BOOL(Parallax, m_bParallax);
+		SHADER_PARAM_BOOL(Parallax, m_bParallax, false);
 
 		// parallax scale
-		SHADER_PARAM_FLOAT(ParallaxScale, m_fParallaxScale);
+		SHADER_PARAM_FLOAT(ParallaxScale, m_fParallaxScale, 1.0f);
 
 		if(m_pSpecIllum)
 			m_fSpecularScale = 1.0f;
 
 		// parallax scale
-		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale);
+		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale, m_fSpecularScale);
 
 		//------------------------------------------
 		// begin shader definitions
@@ -127,7 +127,7 @@ BEGIN_SHADER_CLASS(BaseSkinned)
 		if(bDeferredShading)
 		{
 			// disable FFP alphatesting, let use the shader for better perfomance
-			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Solid);
+			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &ThisShaderClass::ParamSetup_AlphaModel_Solid);
 
 			// compile without fog
 			SHADER_FIND_OR_COMPILE(Ambient, "BaseSkinned_Deferred");

@@ -44,7 +44,7 @@
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
-    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</IgnoreImportLibrary>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</IgnoreImportLibrary>
     <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</IgnoreImportLibrary>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkIncremental>
@@ -260,11 +260,11 @@
     <CustomBuildStep Include="materialvar.h" />
     <CustomBuildStep Include="DebugOverlay.h" />
     <CustomBuildStep Include="..\public\IDebugOverlay.h" />
-    <ClInclude Include="studio_egf.h" />
+    <ClInclude Include="..\shared_engine\studio_egf.h" />
     <ClInclude Include="..\public\eqmodel.h" />
     <ClInclude Include="..\public\IEqModel.h" />
     <ClInclude Include="..\public\model.h" />
-    <ClInclude Include="modelloader_shared.h" />
+    <ClInclude Include="..\shared_engine\modelloader_shared.h" />
     <ClInclude Include="EntityFactory.h" />
     <ClInclude Include="..\public\IEntityFactory.h" />
     <CustomBuildStep Include="GUI\Button.h">
@@ -322,18 +322,18 @@
     <ClInclude Include="..\public\Platform\Platform.h" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\libs\jpeg.lib" />
+    <Library Include="..\src_dependency\jpeg\Release\jpeg.lib" />
     <Library Include="..\libs\libogg_static.lib" />
     <Library Include="..\libs\libvorbisfile_static.lib" />
     <Library Include="..\libs\libvorbis_static.lib" />
-    <Library Include="..\libs\OpenAL32.lib" />
-    <Library Include="..\Libs\zlib.lib" />
+    <Library Include="..\src_dependency\OpenALSoftCustom\build\Release\OpenAL32.lib" />
+    <Library Include="..\src_dependency\zlib\MinSizeRel\zlibstatic.lib" />
     <Library Include="..\src_dependency\bullet\bin\BulletCollision.lib" />
     <Library Include="..\src_dependency\bullet\bin\BulletDynamics.lib" />
     <Library Include="..\src_dependency\bullet\bin\BulletSoftBody.lib" />
     <Library Include="..\src_dependency\bullet\bin\ConvexDecomposition.lib" />
     <Library Include="..\src_dependency\bullet\bin\LinearMath.lib" />
-    <Library Include="..\src_dependency\SDL2\lib\SDL2.lib" />
+    <Library Include="..\src_dependency\SDL2\VisualC\SDL\Win32\Release\SDL2.lib" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Notes.txt" />
@@ -345,8 +345,8 @@
     <ProjectReference Include="..\Core\eqCore.vcxproj">
       <Project>{d8bffbb2-af7b-48a2-8958-c7969dfdb3a2}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\utils\fcompress\fcompress.vcxproj">
-      <Project>{a41dd6a5-fb30-4d47-9385-ee6885695bd7}</Project>
+    <ProjectReference Include="..\frameworkLib.vcxproj">
+      <Project>{5eddcdb2-e467-4db3-ad7e-4e78f5020028}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

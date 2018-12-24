@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "Snow.h"
-#include "IMeshBuilder.h"
+
 #include "GameRenderer.h"
 #include "BaseEngineHeader.h"
 #include "EngineEntities.h"
@@ -111,7 +111,7 @@ void SnowEmitter::EmitParticles(float rate, float snow_speed, Vector3D &angle)
 
 		SnowParticle *pNewParticle = new SnowParticle();
 		pNewParticle->origin = viewOrigin + Vector3D(RandomFloat(-snow_radius.GetFloat(),snow_radius.GetFloat()), snow_start_h.GetFloat(), RandomFloat(-snow_radius.GetFloat(),snow_radius.GetFloat())) - Vector3D(forward.x*snow_wind_speed.GetFloat(),0,forward.z*snow_wind_speed.GetFloat());
-		pNewParticle->velocity = Vector3D(forward.x*snow_wind_speed.GetFloat(),-abs(RandomFloat(snow_speed / 2,snow_speed)),forward.z*snow_wind_speed.GetFloat());
+		pNewParticle->velocity = Vector3D(forward.x*snow_wind_speed.GetFloat(),-fabs(RandomFloat(snow_speed / 2,snow_speed)),forward.z*snow_wind_speed.GetFloat());
 		pNewParticle->emit = this;
 
 		rParticles.append(pNewParticle);

@@ -429,6 +429,9 @@
     <ClCompile Include="session_base.cpp">
       <Filter>Файлы исходного кода\Game\Sessions</Filter>
     </ClCompile>
+    <ClCompile Include="Player.cpp">
+      <Filter>Файлы исходного кода\Game\Sessions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\src_dependency\oolua\bin\Release\oolua.lib">
@@ -845,6 +848,12 @@
       <Filter>Файлы исходного кода\Game\Sessions</Filter>
     </ClInclude>
     <ClInclude Include="game_splitscreen.h">
+      <Filter>Файлы исходного кода\Game\Sessions</Filter>
+    </ClInclude>
+    <ClInclude Include="Player.h">
+      <Filter>Файлы исходного кода\Game\Sessions</Filter>
+    </ClInclude>
+    <ClInclude Include="net_game_defs.h">
       <Filter>Файлы исходного кода\Game\Sessions</Filter>
     </ClInclude>
   </ItemGroup>

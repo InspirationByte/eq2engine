@@ -5,17 +5,15 @@
 // Description: Basis Shader with fog support
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "../vars_generic.h"
 #include "BaseShader.h"
-#include "vars_generic.h"
-#include "IDkCore.h"
 
 //ConVar r_decals_depthbias("decal_depthbias", "0.000005f", "Decal depth bias", CV_ARCHIVE);
 //ConVar r_decals_slopedepthbias("decal_slopedepthbias", "0", "Decal depth bias", CV_ARCHIVE);
 
-class CBaseDecal : public CBaseShader
-{
-public:
-	CBaseDecal()
+BEGIN_SHADER_CLASS(Decal)
+
+	SHADER_INIT_PARAMS()
 	{
 		m_pBaseTexture	= NULL;
 		m_pBumpTexture	= NULL;
@@ -31,18 +29,11 @@ public:
 		m_fSpecularScale = 0.0f;
 		m_bCubeMapLighting = false;
 		m_fCubemapLightingScale = 1.0f;
+
+		m_depthwrite = false;
 	}
 
-	void InitParams()
-	{
-		if(!m_bInitialized && !m_bIsError)
-		{
-			CBaseShader::InitParams();
-			m_depthwrite = false;
-		}
-	}
-
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 		m_nAddressMode = TEXADDRESS_CLAMP;
 
@@ -60,15 +51,15 @@ public:
 			SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_pCubemap);
 
 		// set texture setup
-		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &CBaseDecal::SetupBaseTexture);
+		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture);
 
 		if(m_pBumpTexture)
-			SetParameterFunctor(SHADERPARAM_BUMPMAP, &CBaseDecal::SetupBumpmap);
+			SetParameterFunctor(SHADERPARAM_BUMPMAP, &ThisShaderClass::SetupBumpmap);
 
 		if(m_pSpecIllum)
-			SetParameterFunctor(SHADERPARAM_SPECULARILLUM, &CBaseDecal::SetupSpecular);
+			SetParameterFunctor(SHADERPARAM_SPECULARILLUM, &ThisShaderClass::SetupSpecular);
 
-		SetParameterFunctor(SHADERPARAM_COLOR, &CBaseDecal::SetColorModulation);
+		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
 
 	void ParamSetup_AlphaModel_Solid()
@@ -96,12 +87,12 @@ public:
 		m_depthwrite = false;
 	}
 
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
 		if(SHADER_PASS(Ambient))
 			return true;
 
-		bool bDeferredShading = (materials->GetLightingModel() == MATERIAL_LIGHT_DEFERRED);
+		bool bDeferredShading = (materials->GetConfiguration().lighting_model == MATERIAL_LIGHT_DEFERRED);
 		bool bIsModulated = (m_nFlags & MATERIAL_FLAG_MODULATE) > 0;
 
 		//------------------------------------------
@@ -109,23 +100,23 @@ public:
 		//------------------------------------------
 
 		// illumination from specular green channel
-		SHADER_PARAM_BOOL(SpecularIllum, m_bSpecularIllum);
+		SHADER_PARAM_BOOL(SpecularIllum, m_bSpecularIllum, false);
 
-		SHADER_PARAM_BOOL(CubeMapLighting, m_bCubeMapLighting);
+		SHADER_PARAM_BOOL(CubeMapLighting, m_bCubeMapLighting, false);
 
-		SHADER_PARAM_FLOAT(CubeMapLightingScale, m_fCubemapLightingScale);
+		SHADER_PARAM_FLOAT(CubeMapLightingScale, m_fCubemapLightingScale, 1.0f);
 
 		// parallax as the bump map alpha
-		SHADER_PARAM_BOOL(Parallax, m_bParallax);
+		SHADER_PARAM_BOOL(Parallax, m_bParallax, false);
 
 		// parallax scale
-		SHADER_PARAM_FLOAT(ParallaxScale, m_fParallaxScale);
+		SHADER_PARAM_FLOAT(ParallaxScale, m_fParallaxScale, 1.0f);
 
 		if(m_pSpecIllum)
 			m_fSpecularScale = 1.0f;
 
 		// parallax scale
-		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale);
+		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale, m_fSpecularScale);
 
 		//------------------------------------------
 		// begin shader definitions
@@ -248,11 +239,6 @@ public:
 		g_pShaderAPI->SetTexture(m_pSpecIllum, "SpecularMapSampler", 8);
 	}
 
-	const char* GetName()
-	{
-		return "Decal";
-	}
-
 	ITexture*	GetBaseTexture(int stage)
 	{
 		return m_pBaseTexture;
@@ -269,8 +255,6 @@ public:
 		return SHADER_PASS(Ambient);
 	}
 
-private:
-
 	ITexture*			m_pBaseTexture;
 	ITexture*			m_pBumpTexture;
 	ITexture*			m_pSpecIllum;
@@ -285,6 +269,5 @@ private:
 	float				m_fSpecularScale;
 	bool				m_bCubeMapLighting;
 	float				m_fCubemapLightingScale;
-};
 
-DEFINE_SHADER(Decal, CBaseDecal)
+END_SHADER_CLASS

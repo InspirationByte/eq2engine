@@ -1676,7 +1676,7 @@ void MakeDecalTexCoord(decal_geom_data_t* pGeomData, const decalmakeinfo_t &info
 		int texSizeW = 1;
 		int texSizeH = 1;
 
-		ITexture* pTex = info.material->GetBaseTexture();
+		ITexture* pTex = info.material ? info.material->GetBaseTexture() : nullptr;
 
 		if(pTex)
 		{
@@ -1730,8 +1730,8 @@ void MakeDecalTexCoord(decal_geom_data_t* pGeomData, const decalmakeinfo_t &info
 			float one_over_w = 1.0f / fabs(dot(scaledSize,pGeomData->verts[i].tangent));
 			float one_over_h = 1.0f / fabs(dot(scaledSize,pGeomData->verts[i].binormal));
 
-			pGeomData->verts[i].texcoord.x = abs(dot(info.origin-pGeomData->verts[i].position,pGeomData->verts[i].tangent*sign(pGeomData->verts[i].tangent))*one_over_w+0.5f);
-			pGeomData->verts[i].texcoord.y = abs(dot(info.origin-pGeomData->verts[i].position,pGeomData->verts[i].binormal*sign(pGeomData->verts[i].binormal))*one_over_h+0.5f);
+			pGeomData->verts[i].texcoord.x = fabs(dot(info.origin-pGeomData->verts[i].position,pGeomData->verts[i].tangent*sign(pGeomData->verts[i].tangent))*one_over_w+0.5f);
+			pGeomData->verts[i].texcoord.y = fabs(dot(info.origin-pGeomData->verts[i].position,pGeomData->verts[i].binormal*sign(pGeomData->verts[i].binormal))*one_over_h+0.5f);
 		}
 	}
 

@@ -18,7 +18,7 @@ void	GAME_STATE_InitGame();
 void	GAME_STATE_GameStartSession( bool bFromSavedGame );
 void	GAME_STATE_UnloadGameObjects();
 void	GAME_STATE_GameEndSession();
-void	GAME_STATE_SpawnEntities( KeyValues* inputKeyValues );
+void	GAME_STATE_SpawnEntities(kvkeybase_t* inputKeyValues);
 
 float	GAME_STATE_FrameUpdate(float frametime);
 void	GAME_STATE_Prerender();

@@ -6,13 +6,11 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "BaseShader.h"
+#include "../vars_generic.h"
 
-#include "vars_generic.h"
+BEGIN_SHADER_CLASS(BaseVertexTransition)
 
-class CBaseVertexTransition4 : public CBaseShader
-{
-public:
-	CBaseVertexTransition4()
+	SHADER_INIT_PARAMS()
 	{
 		memset(m_pBaseTextures, 0, sizeof(m_pBaseTextures));
 		memset(m_pBumpTextures, 0, sizeof(m_pBumpTextures));
@@ -22,7 +20,7 @@ public:
 		SHADER_FOGPASS(Ambient) = NULL;
 	}
 
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 		SHADER_PARAM_TEXTURE(BaseTexture,			m_pBaseTextures[0]);
 		SHADER_PARAM_TEXTURE_NOERROR(BaseTexture2,	m_pBaseTextures[1]);
@@ -46,28 +44,28 @@ public:
 		}
 
 		// set texture setup
-		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &CBaseVertexTransition4::SetupBaseTextures);
+		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTextures);
 
 		// set bumpmap setup, if disabled - keep empty functor
 		if(materials->GetConfiguration().enableBumpmapping)
-			SetParameterFunctor(SHADERPARAM_BUMPMAP, &CBaseVertexTransition4::SetupBumpTextures);
+			SetParameterFunctor(SHADERPARAM_BUMPMAP, &ThisShaderClass::SetupBumpTextures);
 
 		if(m_pSpecularTex[0] || m_pSpecularTex[1] || m_pSpecularTex[2] || m_pSpecularTex[3])
 		{
-			SetParameterFunctor(SHADERPARAM_SPECULARILLUM, &CBaseVertexTransition4::SetupSpecularTextures);
+			SetParameterFunctor(SHADERPARAM_SPECULARILLUM, &ThisShaderClass::SetupSpecularTextures);
 		}
 
-		SetParameterFunctor(SHADERPARAM_COLOR, &CBaseVertexTransition4::SetColorModulation);
+		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 
 		m_nFlags |= MATERIAL_FLAG_ISTEXTRANSITION;
 	}
 
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
 		if(SHADER_PASS(Ambient))
 			return true;
 
-		bool bDeferredShading = (materials->GetLightingModel() == MATERIAL_LIGHT_DEFERRED);
+		bool bDeferredShading = (materials->GetConfiguration().lighting_model == MATERIAL_LIGHT_DEFERRED);
 
 		// begin shader definitions
 		SHADERDEFINES_BEGIN;
@@ -86,22 +84,22 @@ public:
 		float fParallaxScale4 = 1.0f;
 
 		// illumination from specular alpha
-		SHADER_PARAM_BOOL(SpecularIllum, bSpecularIllum1);
-		SHADER_PARAM_BOOL(SpecularIllum2, bSpecularIllum2);
-		SHADER_PARAM_BOOL(SpecularIllum3, bSpecularIllum3);
-		SHADER_PARAM_BOOL(SpecularIllum4, bSpecularIllum4);
+		SHADER_PARAM_BOOL(SpecularIllum, bSpecularIllum1, false);
+		SHADER_PARAM_BOOL(SpecularIllum2, bSpecularIllum2, false);
+		SHADER_PARAM_BOOL(SpecularIllum3, bSpecularIllum3, false);
+		SHADER_PARAM_BOOL(SpecularIllum4, bSpecularIllum4, false);
 
 		// parallax as the bump map alpha
-		SHADER_PARAM_BOOL(Parallax, bParallax1);
-		SHADER_PARAM_BOOL(Parallax2, bParallax2);
-		SHADER_PARAM_BOOL(Parallax3, bParallax3);
-		SHADER_PARAM_BOOL(Parallax4, bParallax4);
+		SHADER_PARAM_BOOL(Parallax, bParallax1, false);
+		SHADER_PARAM_BOOL(Parallax2, bParallax2, false);
+		SHADER_PARAM_BOOL(Parallax3, bParallax3, false);
+		SHADER_PARAM_BOOL(Parallax4, bParallax4, false);
 
 		// parallax scale
-		SHADER_PARAM_FLOAT(ParallaxScale, fParallaxScale1);
-		SHADER_PARAM_FLOAT(ParallaxScale1, fParallaxScale2);
-		SHADER_PARAM_FLOAT(ParallaxScale2, fParallaxScale3);
-		SHADER_PARAM_FLOAT(ParallaxScale3, fParallaxScale4);
+		SHADER_PARAM_FLOAT(ParallaxScale, fParallaxScale1, 1.0f);
+		SHADER_PARAM_FLOAT(ParallaxScale1, fParallaxScale2, 1.0f);
+		SHADER_PARAM_FLOAT(ParallaxScale2, fParallaxScale3, 1.0f);
+		SHADER_PARAM_FLOAT(ParallaxScale3, fParallaxScale4, 1.0f);
 
 		// base usage table
 		SHADER_DECLARE_SIMPLE_DEFINITION((m_pBaseTextures[0] != NULL), "USE_BASE1");
@@ -164,7 +162,7 @@ public:
 		if(bDeferredShading)
 		{
 			// disable FFP alphatesting, let use the shader for better perfomance
-			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Solid);
+			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &ThisShaderClass::ParamSetup_AlphaModel_Solid);
 
 			// alphatesting because stock DX9 and OGL sucks
 			SHADER_DECLARE_SIMPLE_DEFINITION((m_nFlags & MATERIAL_FLAG_ALPHATESTED), "ALPHATEST");
@@ -261,11 +259,6 @@ public:
 		*/
 	}
 	
-	const char* GetName()
-	{
-		return "BaseVertexTransition";
-	}
-
 	ITexture*	GetBaseTexture(int stage)
 	{
 		return m_pBaseTextures[stage];
@@ -282,14 +275,11 @@ public:
 		return SHADER_PASS(Ambient);
 	}
 
-private:
-
 	ITexture*			m_pBaseTextures[4];
 	ITexture*			m_pBumpTextures[4];
 	ITexture*			m_pSpecularTex[4];
 
 	SHADER_DECLARE_PASS(Ambient);
 	SHADER_DECLARE_FOGPASS(Ambient);
-};
 
-DEFINE_SHADER(BaseVertexTransition, CBaseVertexTransition4)
+END_SHADER_CLASS

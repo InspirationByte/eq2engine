@@ -1649,7 +1649,9 @@ extern ConVar r_force_softwareskinning;
 // draws model with parameters
 void CViewRenderer::DrawModelPart(IEqModel*	pModel, int nModel, int nGroup, int nRenderFlags, slight_t* pStaticLights, Matrix4x4* pBones)
 {
-	IMaterial* pMaterial = pModel->GetMaterial(nModel);
+	int materialIdx = pModel->GetHWData()->studio->pModelDesc(nModel)->pGroup(nGroup)->materialIndex;
+
+	IMaterial* pMaterial = pModel->GetMaterial(materialIdx);
 
 	if((nRenderFlags & VR_FLAG_NO_TRANSLUCENT) && (pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT))
 		return;

@@ -6,12 +6,11 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "BaseShader.h"
-#include "vars_generic.h"
+#include "../vars_generic.h"
 
-class CWaterShader : public CBaseShader
-{
-public:
-	CWaterShader()
+BEGIN_SHADER_CLASS(Water)
+
+	SHADER_INIT_PARAMS()
 	{
 		m_pBaseTexture	= NULL;
 		m_pBumpTexture	= NULL;
@@ -28,18 +27,10 @@ public:
 		m_nFlags |= MATERIAL_FLAG_TRANSPARENT | MATERIAL_FLAG_WATER;
 	}
 
-	void InitParams()
+	SHADER_INIT_TEXTURES()
 	{
-		if(!m_bInitialized && !m_bIsError)
-		{
-			CBaseShader::InitParams();
+		m_pBumpFrame = GetAssignedMaterial()->GetMaterialVar("bumptextureframe", 0);
 
-			m_pBumpFrame = m_pAssignedMaterial->GetMaterialVar("bumptextureframe", 0);
-		}
-	}
-
-	void InitTextures()
-	{
 		// load textures from parameters
 		SHADER_PARAM_TEXTURE(BaseTexture, m_pBaseTexture);
 
@@ -63,9 +54,9 @@ public:
 		if(m_pDepth)
 			m_pDepth->Ref_Grab();
 
-		AddTextureToAutoremover(&m_pUnderwater);
-		AddTextureToAutoremover(&m_pReflection);
-		AddTextureToAutoremover(&m_pDepth);
+		AddManagedTexture(&m_pUnderwater);
+		AddManagedTexture(&m_pReflection);
+		AddManagedTexture(&m_pDepth);
 
 		// set texture setup
 		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &CWaterShader::SetupBaseTexture);

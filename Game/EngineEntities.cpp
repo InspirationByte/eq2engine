@@ -721,7 +721,7 @@ public:
 
 	void Precache()
 	{
-		m_pRopeMaterial = materials->GetMaterial(m_szRopeMaterial.GetData(), true);
+		m_pRopeMaterial = materials->GetMaterial(m_szRopeMaterial.GetData());
 		m_pRopeMaterial->Ref_Grab();
 	}
 
@@ -1097,7 +1097,7 @@ public:
 		if(m_project)
 			info.flags |= MAKEDECAL_FLAG_TEX_NORMAL;
 
-		info.pMaterial = m_pDecalMaterial;
+		info.material = m_pDecalMaterial;
 		info.normal = m_normal;
 		info.origin = GetAbsOrigin();
 		info.size = m_size;

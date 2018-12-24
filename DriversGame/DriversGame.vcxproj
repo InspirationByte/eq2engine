@@ -180,6 +180,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="ParticleEffects.cpp" />
+    <ClCompile Include="Player.cpp" />
     <ClCompile Include="session_base.cpp" />
     <ClCompile Include="Shader_Shadow.cpp" />
     <ClCompile Include="Shader_ShadowBuild.cpp" />
@@ -341,7 +342,9 @@
     <ClInclude Include="LiteHTMLContainer.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="net_game_defs.h" />
     <ClInclude Include="ParticleEffects.h" />
+    <ClInclude Include="Player.h" />
     <ClInclude Include="road_defs.h" />
     <ClInclude Include="session_base.h" />
     <ClInclude Include="ShadowRenderer.h" />

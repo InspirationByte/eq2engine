@@ -6,12 +6,11 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "BaseShader.h"
-#include "vars_generic.h"
+#include "../vars_generic.h"
 
-class CDeferredSpotLight : public CBaseShader
-{
-public:
-	CDeferredSpotLight()
+BEGIN_SHADER_CLASS(DeferredSpotLight)
+
+	SHADER_INIT_PARAMS()
 	{
 		SHADER_PASS(Ambient) = NULL;
 		SHADER_FOGPASS(Ambient) = NULL;
@@ -25,7 +24,7 @@ public:
 	}
 
 	// Initialize textures
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 		SHADER_PARAM_RENDERTARGET_FIND(Albedo, m_pRTAlbedo);
 		SHADER_PARAM_RENDERTARGET_FIND(Normal, m_pRTNormals);
@@ -34,13 +33,13 @@ public:
 	}
 
 	// Initialize shader(s)
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
 		// just skip if we already have shader
 		if(SHADER_PASS(Ambient))
 			return true;
 
-		SHADER_PARAM_BOOL( Reflector, m_bReflector);
+		SHADER_PARAM_BOOL( Reflector, m_bReflector, false);
 
 		// required
 		SHADERDEFINES_BEGIN
@@ -55,16 +54,10 @@ public:
 
 		SHADER_FIND_OR_COMPILE(Ambient_fog, "DeferredSpotLight")
 
-		SetParameterFunctor(SHADERPARAM_COLOR, &CDeferredSpotLight::SetupColors);
-		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Additive_Fog);
+		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetupColors);
+		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &ThisShaderClass::ParamSetup_AlphaModel_Additive_Fog);
 
 		return true;
-	}
-
-	// Return real shader name
-	const char* GetName()
-	{
-		return "DeferredSpotLight";
 	}
 
 	SHADER_SETUP_STAGE()
@@ -144,13 +137,6 @@ public:
 	ITexture* GetBaseTexture(int n)		{return NULL;}
 	ITexture* GetBumpTexture(int n)		{return NULL;}
 
-	// returns main shader program
-	IShaderProgram*	GetProgram()
-	{
-		return SHADER_PASS(Ambient);
-	}
-
-private:
 	SHADER_DECLARE_PASS(Ambient);
 	SHADER_DECLARE_FOGPASS(Ambient);
 
@@ -161,6 +147,4 @@ private:
 	ITexture* m_pRTMatMap;
 
 	bool	m_bReflector;
-};
-
-DEFINE_SHADER(DeferredSpotLight, CDeferredSpotLight)
+END_SHADER_CLASS

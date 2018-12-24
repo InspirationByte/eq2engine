@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "Rain.h"
-#include "IMeshBuilder.h"
+
 #include "BaseEngineHeader.h"
 #include "GameRenderer.h"
 #include "EngineEntities.h"
@@ -181,7 +181,7 @@ void RainEmitter::EmitParticles(float rate, float rain_speed)
 		float fRainDirX = sin(gpGlobals->curtime*0.02f)*rain_wind_x.GetFloat();
 		float fRainDirZ = sin(gpGlobals->curtime*0.026f)+cos(gpGlobals->curtime*0.036f)*rain_wind_z.GetFloat();
 
-		pNewParticle->velocity = Vector3D(RandomFloat(fRainDirX*0.5f, fRainDirX),-abs(RandomFloat(rain_speed *0.5,rain_speed)),RandomFloat(fRainDirZ*0.5f, fRainDirZ));
+		pNewParticle->velocity = Vector3D(RandomFloat(fRainDirX*0.5f, fRainDirX),-fabs(RandomFloat(rain_speed *0.5,rain_speed)),RandomFloat(fRainDirZ*0.5f, fRainDirZ));
 		
 		
 		pNewParticle->emit = this;

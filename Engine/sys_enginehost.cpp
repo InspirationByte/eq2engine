@@ -16,7 +16,7 @@
 #include "ISoundSystem.h"
 #include "IViewRenderer.h"
 #include "Physics/DkBulletPhysics.h"
-//#include "network/net_thread.h"
+#include "KeyBinding/InputCommandBinder.h"
 
 #include "sys_enginehost.h"
 #include "modules.h"
@@ -773,7 +773,7 @@ bool CEngineHost::InitSubSystems()
 	g_parallelJobs->Init(g_cpuCaps->GetCPUCount() / 2);
 
 	Msg("--------- GameDllInit --------- \n");
-	if(!gamedll->Init(soundsystem, physics, debugoverlay, g_studioModelCache, viewrenderer))
+	if(!gamedll->Init(soundsystem, physics, debugoverlay, viewrenderer, g_studioModelCache))
 		return false;
 
 	// add default shaders library first
@@ -862,6 +862,8 @@ bool CEngineHost::Init()
 	// initialize subsystems
 	if(!InitSubSystems())
 		return false;
+
+	g_inputCommandBinder->Init();
 
 	// exec again
 	g_sysConsole->ExecuteCommandBuffer();

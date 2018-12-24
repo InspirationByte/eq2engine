@@ -6,24 +6,23 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "BaseShader.h"
-#include "vars_generic.h"
+#include "../vars_generic.h"
 
-class CFlashlightReflector : public CBaseShader
-{
-public:
-	CFlashlightReflector()
+BEGIN_SHADER_CLASS(FlashlightReflector)
+
+	SHADER_INIT_PARAMS()
 	{
 		SHADER_PASS(Ambient) = NULL;
 	}
 
 	// Initialize textures
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 
 	}
 
 	// Initialize shader(s)
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
 		// just skip if we already have shader
 		if(SHADER_PASS(Ambient))
@@ -34,16 +33,10 @@ public:
 
 		SHADER_FIND_OR_COMPILE(Ambient, "FlashlightReflector")
 
-		SetParameterFunctor(SHADERPARAM_COLOR, &CFlashlightReflector::SetupColors);
-		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Additive);
+		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetupColors);
+		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &ThisShaderClass::ParamSetup_AlphaModel_Additive);
 
 		return true;
-	}
-
-	// Return real shader name
-	const char* GetName()
-	{
-		return "FlashlightReflector";
 	}
 
 	SHADER_SETUP_STAGE()
@@ -108,14 +101,5 @@ public:
 	ITexture* GetBaseTexture(int n)		{return NULL;}
 	ITexture* GetBumpTexture(int n)		{return NULL;}
 
-	// returns main shader program
-	IShaderProgram*	GetProgram()
-	{
-		return SHADER_PASS(Ambient);
-	}
-
-private:
 	SHADER_DECLARE_PASS(Ambient);
-};
-
-DEFINE_SHADER(FlashlightReflector, CFlashlightReflector)
+END_SHADER_CLASS

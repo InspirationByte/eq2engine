@@ -84,6 +84,8 @@ protected:
 	bool				Speak( const char* soundName, bool force = false );
 	void				TrySayTaunt();
 
+	void				SpeakTargetDirection(const char* startSoundName, bool force = false);
+
 	// states
 	int					TrafficDrive( float fDt, EStateTransition transition );
 	int					DeadState( float fDt, EStateTransition transition );

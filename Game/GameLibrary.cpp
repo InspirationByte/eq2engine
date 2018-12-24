@@ -49,8 +49,9 @@ IMaterialSystem*		materials		= NULL;
 IViewRenderer*			viewrenderer	= NULL;
 IEqLevel*				eqlevel			= NULL;
 
-IModelCache*			g_studioModelCache	= NULL;
 IShaderAPI*				g_pShaderAPI	= NULL;
+
+IStudioModelCache*		g_studioModelCache = NULL;
 
 // Common
 ISoundSystem*			soundsystem		= NULL;
@@ -90,12 +91,11 @@ public:
 						CGameLibrary();
 						~CGameLibrary();
 
-	bool					Init(	ISoundSystem*	pSoundSystem,
-									IPhysics*		pPhysics,
-									IDebugOverlay*	pDebugOverlay,
-									IModelCache*	pModelCache,
-									IViewRenderer*	pViewRenderer
-								);
+	bool					Init(	ISoundSystem*			pSoundSystem,
+									IPhysics*				pPhysics,
+									IDebugOverlay*			pDebugOverlay,
+									IViewRenderer*			pViewRenderer,
+									IStudioModelCache*		pModelCache);
 
 
 	void				LoadingScreenFunction(int function, float fPercentage);
@@ -110,7 +110,7 @@ public:
 	void				PostRender();
 	void				OnRenderScene();
 
-	void				SpawnEntities(KeyValues* inputKeyValues);
+	void				SpawnEntities(kvkeybase_t* inputKeyValues);
 
 	// key/mouse events goes here now
 	bool				ProcessKeyChar( ubyte ch );
@@ -150,19 +150,18 @@ GlobalVarsBase*	CGameLibrary::GetGlobalVars()
 	return gpGlobals;
 }
 
-bool CGameLibrary::Init(	ISoundSystem*	pSoundSystem,
-							IPhysics*		pPhysics,
-							IDebugOverlay*	pDebugOverlay,
-							IModelCache*	pModelCache,
-							IViewRenderer*	pViewRenderer
-							)
+bool CGameLibrary::Init(ISoundSystem*			pSoundSystem,
+						IPhysics*				pPhysics,
+						IDebugOverlay*			pDebugOverlay,
+						IViewRenderer*			pViewRenderer,
+						IStudioModelCache*		pModelCache)
 {
 	// Initialize shared pointers
 	soundsystem		= pSoundSystem;
 	physics			= pPhysics;
 	debugoverlay	= pDebugOverlay;
-	g_studioModelCache	= pModelCache;
 	viewrenderer	= pViewRenderer;
+	g_studioModelCache = pModelCache;
 
 	g_pShaderAPI = materials->GetShaderAPI();
 
@@ -234,7 +233,7 @@ void CGameLibrary::GameEnd()
 	GAME_STATE_GameEndSession();
 }
 
-void CGameLibrary::SpawnEntities( KeyValues* inputKeyValues )
+void CGameLibrary::SpawnEntities(kvkeybase_t* inputKeyValues)
 {
 	GAME_STATE_SpawnEntities(inputKeyValues);
 }

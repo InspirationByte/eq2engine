@@ -1160,9 +1160,9 @@ bool ViewRenderInitResources()
 		g_pReflectionTexture->Ref_Grab();
 	}
 
-	g_pHDRBlur1	= materials->GetMaterial("engine/postprocess/hdr_blurfilter1", false);
-	g_pHDRBlur2	= materials->GetMaterial("engine/postprocess/hdr_blurfilter2", false);
-	g_pHDRBloom	= materials->GetMaterial("engine/postprocess/hdr_bloom", true);
+	g_pHDRBlur1	= materials->GetMaterial("engine/postprocess/hdr_blurfilter1");
+	g_pHDRBlur2	= materials->GetMaterial("engine/postprocess/hdr_blurfilter2");
+	g_pHDRBloom	= materials->GetMaterial("engine/postprocess/hdr_bloom");
 
 	materials->EndPreloadMarker();
 	materials->Wait();

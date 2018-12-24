@@ -729,7 +729,7 @@ void CNetGameSession::Update(float fDt)
 				// set our controls
 				if(player == m_localNetPlayer)
 				{
-					player->SetControls(m_localControls.buttons);
+					player->SetControls(m_localControls);
 					m_localPlayerLatency = player->m_packetLatency;
 				}
 					
@@ -935,7 +935,7 @@ bool CNetGameSession::DoConnect()
 
 //---------------------------------------------------------------------------------------------
 
-CNetSpawnInfo::CNetSpawnInfo(CGameObject* obj, int evType)
+CNetSpawnInfo::CNetSpawnInfo(CGameObject* obj, ENetObjEventType evType)
 {
 	m_object = obj;
 	m_objectId = m_object->m_networkID;
@@ -955,7 +955,7 @@ void CNetSpawnInfo::Process( CNetworkThread* pNetThread )
 
 void CNetSpawnInfo::Unpack( CNetworkThread* pNetThread, CNetMessageBuffer* pStream )
 {
-	m_objEvent = pStream->ReadInt();
+	m_objEvent = (ENetObjEventType)pStream->ReadInt();
 	int objType = pStream->ReadInt();
 	m_objectId = pStream->ReadInt();
 	EqString objectName = pStream->ReadString();
