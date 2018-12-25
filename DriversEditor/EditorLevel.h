@@ -184,6 +184,8 @@ class CEditorLevelRegion : public CLevelRegion
 	friend class CEditorLevel;
 public:
 
+	CEditorLevelRegion();
+
 	void						Cleanup();
 
 	void						Ed_Prerender();
@@ -207,6 +209,8 @@ public:
 	void						Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& frustumOccluders, int nRenderFlags);
 
 	bool						m_modified; // needs saving?
+
+	bool						m_physicsPreview;
 
 	DkList<buildingSource_t*>	m_buildings;
 };

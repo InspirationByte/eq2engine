@@ -832,7 +832,7 @@ int	CAIPursuerCar::DeadState( float fDt, EStateTransition transition )
 
 void CAIPursuerCar::SetPursuitTarget(CCar* obj)
 {
-	if (m_targInfo.target && g_pGameWorld->IsValidObject(m_targInfo.target))
+	if (m_targInfo.target && g_pGameWorld->IsValidObject(m_targInfo.target)) 
 		m_targInfo.target->DecrementPursue();
 
 	m_targInfo.target = obj;

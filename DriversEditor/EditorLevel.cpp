@@ -972,6 +972,10 @@ void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
 
 void CEditorLevel::Ed_InitPhysics()
 {
+	if (!IsRunning())
+		StartWorkerThread("LevelPhysicsInitializerThread");
+
+	/*
 	// build region offsets
 	for(int x = 0; x < m_wide; x++)
 	{
@@ -984,10 +988,13 @@ void CEditorLevel::Ed_InitPhysics()
 			reg->Ed_InitPhysics();
 		}
 	}
+	*/
 }
 
 void CEditorLevel::Ed_DestroyPhysics()
 {
+	StopThread();
+
 	// build region offsets
 	for(int x = 0; x < m_wide; x++)
 	{
@@ -1565,6 +1572,8 @@ void CEditorLevel::Ed_Prerender(const Vector3D& cameraPosition)
 
 void CEditorLevelRegion::Cleanup()
 {
+	Ed_DestroyPhysics();
+
 	CLevelRegion::Cleanup();
 
 	// Clear editor data
@@ -1574,8 +1583,17 @@ void CEditorLevelRegion::Cleanup()
 	m_buildings.clear();
 }
 
+CEditorLevelRegion::CEditorLevelRegion() : CLevelRegion(), m_physicsPreview(false)
+{
+}
+
 void CEditorLevelRegion::Ed_InitPhysics()
 {
+	if (m_physicsPreview)
+		return;
+
+	m_physicsPreview = true;
+
 	for(int i = 0; i < GetNumHFields(); i++)
 	{
 		if(m_heightfield[i])
@@ -1597,10 +1615,15 @@ void CEditorLevelRegion::Ed_InitPhysics()
 			g_pPhysics->m_physics.AddStaticObject( ref->physObject );
 		}
 	}
+
+	Msg("Generated physics for region %d\n", m_regionIndex);
 }
 
 void CEditorLevelRegion::Ed_DestroyPhysics()
 {
+	if (!m_physicsPreview)
+		return;
+
 	for(int i = 0; i < GetNumHFields(); i++)
 	{
 		if(m_heightfield[i])
@@ -1620,6 +1643,8 @@ void CEditorLevelRegion::Ed_DestroyPhysics()
 			ref->physObject = NULL;
 		}
 	}
+
+	m_physicsPreview = false;
 }
 
 int FindObjectContainer(DkList<CLevObjectDef*>& listObjects, CLevObjectDef* container)

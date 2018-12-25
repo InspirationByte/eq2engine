@@ -345,34 +345,81 @@ void CViewRenderer::InitializeResources()
 
 		Msg("Initializing DS materials...\n");
 
-		m_pDSAmbient = materials->GetMaterial("engine/deferred/ds_ambient");
-		m_pDSAmbient->Ref_Grab();
-
 		// Init lighting materials
-		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][0] = materials->GetMaterial("engine/deferred/ds_pointlight");
 
-		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][0]->Ref_Grab();
+		// ambient light shader
+		{
+			kvkeybase_t deferredAmbientMat;
+			deferredAmbientMat.SetName("DeferredAmbient");
+			deferredAmbientMat.SetKey("albedo", "_rt_gbuf_diff");
+			deferredAmbientMat.SetKey("depth", "_rt_gbuf_depth");
+			deferredAmbientMat.SetKey("normal", "_rt_gbuf_norm");
+			deferredAmbientMat.SetKey("materialmap1", "_rt_gbuf_mat1");
 
-		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][1] = materials->GetMaterial("engine/deferred/ds_pointlight_shadow");
+			m_pDSAmbient = materials->CreateMaterial("deferred_ambient", &deferredAmbientMat);
+			m_pDSAmbient->Ref_Grab();
+		}
 
-		m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][1]->Ref_Grab();
+		// point light shader
+		{
+			kvkeybase_t deferredLightMat;
+			deferredLightMat.SetName("DeferredPointLight");
+			deferredLightMat.SetKey("albedo", "_rt_gbuf_diff");
+			deferredLightMat.SetKey("depth", "_rt_gbuf_depth");
+			deferredLightMat.SetKey("normal", "_rt_gbuf_norm");
+			deferredLightMat.SetKey("materialmap1", "_rt_gbuf_mat1");
 
-		m_pDSLightMaterials[DLT_SPOT][0] = materials->GetMaterial("engine/deferred/ds_spotlight");
-		
-		m_pDSLightMaterials[DLT_SPOT][0]->Ref_Grab();
+			deferredLightMat.SetKey("ReceiveShadows", false);
 
-		m_pDSLightMaterials[DLT_SPOT][1] = materials->GetMaterial("engine/deferred/ds_spotlight_shadow");
+			m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][0] = materials->CreateMaterial("deferred_pointlight", &deferredLightMat);
+			m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][0]->Ref_Grab();
 
-		m_pDSLightMaterials[DLT_SPOT][1]->Ref_Grab();
+			deferredLightMat.SetKey("ReceiveShadows", true);
 
-		m_pDSSpotlightReflector = materials->GetMaterial("engine/deferred/ds_spotlight_shadow_reflector");
-		m_pDSSpotlightReflector->Ref_Grab();
+			m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][1] = materials->CreateMaterial("deferred_pointlight_shadow", &deferredLightMat);
+			m_pDSLightMaterials[DLT_OMNIDIRECTIONAL][1]->Ref_Grab(); 
+		}
 
-		m_pDSLightMaterials[DLT_SUN][0] = materials->GetMaterial("engine/deferred/ds_sunlight");
-		m_pDSLightMaterials[DLT_SUN][1] = m_pDSLightMaterials[DLT_SUN][0];
+		// spot light shader
+		{
+			kvkeybase_t deferredLightMat;
+			deferredLightMat.SetName("DeferredSpotLight");
+			deferredLightMat.SetKey("albedo", "_rt_gbuf_diff");
+			deferredLightMat.SetKey("depth", "_rt_gbuf_depth");
+			deferredLightMat.SetKey("normal", "_rt_gbuf_norm");
+			deferredLightMat.SetKey("materialmap1", "_rt_gbuf_mat1");
 
-		m_pDSLightMaterials[DLT_SUN][0]->Ref_Grab();
-		m_pDSLightMaterials[DLT_SUN][0]->Ref_Grab();
+			deferredLightMat.SetKey("ReceiveShadows", false);
+
+			m_pDSLightMaterials[DLT_SPOT][0] = materials->CreateMaterial("deferred_spotlight", &deferredLightMat);
+			m_pDSLightMaterials[DLT_SPOT][0]->Ref_Grab();
+
+			deferredLightMat.SetKey("ReceiveShadows", true);
+
+			m_pDSLightMaterials[DLT_SPOT][1] = materials->CreateMaterial("deferred_spotlight_shadow", &deferredLightMat);
+			m_pDSLightMaterials[DLT_SPOT][1]->Ref_Grab();
+
+			deferredLightMat.SetKey("reflector", 1);
+			deferredLightMat.SetKey("reflectortex", "_rt_caustics");
+
+			m_pDSSpotlightReflector = materials->CreateMaterial("deferred_spotlight_shadow_reflector", &deferredLightMat);
+			m_pDSSpotlightReflector->Ref_Grab();
+		}
+
+		{
+			kvkeybase_t deferredLightMat;
+			deferredLightMat.SetName("DeferredSunLight");
+			deferredLightMat.SetKey("albedo", "_rt_gbuf_diff");
+			deferredLightMat.SetKey("depth", "_rt_gbuf_depth");
+			deferredLightMat.SetKey("normal", "_rt_gbuf_norm");
+			deferredLightMat.SetKey("materialmap1", "_rt_gbuf_mat1");
+
+			m_pDSLightMaterials[DLT_SUN][0] = materials->CreateMaterial("deferred_sunlight", &deferredLightMat);
+			m_pDSLightMaterials[DLT_SUN][1] = m_pDSLightMaterials[DLT_SUN][0];
+
+			m_pDSLightMaterials[DLT_SUN][0]->Ref_Grab();
+			m_pDSLightMaterials[DLT_SUN][0]->Ref_Grab();
+		}
 
 		m_bDSInit = true;
 	}
@@ -380,17 +427,47 @@ void CViewRenderer::InitializeResources()
 	// init shadowmapping textures and materials
 	if(materials->GetConfiguration().enableShadows && (materials->GetConfiguration().lighting_model != MATERIAL_LIGHT_UNLIT) && !m_bShadowsInit)
 	{
-		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][0]	= materials->GetMaterial("engine/pointdepth");
-		m_pShadowmapDepthwrite[DLT_SPOT][0]				= materials->GetMaterial("engine/spotdepth");
-		m_pShadowmapDepthwrite[DLT_SUN][0]				= materials->GetMaterial("engine/sundepth");
+		{
+			kvkeybase_t depthWriteMat;
+			depthWriteMat.SetName("DepthWriteLighting");
+			depthWriteMat.SetKey("Omni", true);
 
-		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][1]	= materials->GetMaterial("engine/pointdepth_skin");
-		m_pShadowmapDepthwrite[DLT_SPOT][1]				= materials->GetMaterial("engine/spotdepth_skin");
-		m_pShadowmapDepthwrite[DLT_SUN][1]				= materials->GetMaterial("engine/sundepth_skin");
+			m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][0] = materials->CreateMaterial("depth_omni", &depthWriteMat);
 
-		m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][2]	= materials->GetMaterial("engine/pointdepth_simple");
-		m_pShadowmapDepthwrite[DLT_SPOT][2]				= materials->GetMaterial("engine/spotdepth_simple");
-		m_pShadowmapDepthwrite[DLT_SUN][2]				= materials->GetMaterial("engine/sundepth_simple");
+			depthWriteMat.SetKey("Skin", 1);
+			m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][1] = materials->CreateMaterial("depth_omni_skin", &depthWriteMat);
+
+			depthWriteMat.SetKey("Skin", 2);
+			m_pShadowmapDepthwrite[DLT_OMNIDIRECTIONAL][2] = materials->CreateMaterial("depth_omni_skin2", &depthWriteMat);
+		}
+
+		{
+			kvkeybase_t depthWriteMat;
+			depthWriteMat.SetName("DepthWriteLighting");
+			depthWriteMat.SetKey("Omni", true);				// because simple spot depth totally sucks
+
+			m_pShadowmapDepthwrite[DLT_SPOT][0] = materials->CreateMaterial("depth_spot", &depthWriteMat);
+
+			depthWriteMat.SetKey("Skin", 1);
+			m_pShadowmapDepthwrite[DLT_SPOT][1] = materials->CreateMaterial("depth_spot_skin", &depthWriteMat);
+
+			depthWriteMat.SetKey("Skin", 2);
+			m_pShadowmapDepthwrite[DLT_SPOT][2] = materials->CreateMaterial("depth_spot_skin2", &depthWriteMat);
+		}
+
+		{
+			kvkeybase_t depthWriteMat;
+			depthWriteMat.SetName("DepthWriteLighting");
+			depthWriteMat.SetKey("DepthRemap", false);
+
+			m_pShadowmapDepthwrite[DLT_SUN][0] = materials->CreateMaterial("depth_sun", &depthWriteMat);
+
+			depthWriteMat.SetKey("Skin", 1);
+			m_pShadowmapDepthwrite[DLT_SUN][1] = materials->CreateMaterial("depth_sun_skin", &depthWriteMat);
+
+			depthWriteMat.SetKey("Skin", 2);
+			m_pShadowmapDepthwrite[DLT_SUN][2] = materials->CreateMaterial("depth_sun_skin2", &depthWriteMat);
+		}
 
 #ifdef EQLC
 		m_pShadowMaps[DLT_OMNIDIRECTIONAL][0]		= g_pShaderAPI->CreateNamedRenderTarget("_rt_cubedepth",2048,2048,FORMAT_R32F, TEXFILTER_NEAREST, TEXADDRESS_CLAMP, COMP_GREATER, TEXFLAG_CUBEMAP);

@@ -1500,12 +1500,21 @@ void CGameLevel::QueryNearestRegions( const Vector3D& pos, bool waitLoad )
 
 void CGameLevel::QueryNearestRegions( const IVector2D& point, bool waitLoad )
 {
-	CLevelRegion* region = GetRegionAt(point);
+#ifdef EDITOR
+	CEditorLevelRegion* region = (CEditorLevelRegion*)GetRegionAt(point);
 
-	if(!region)
+	if (!region)
 		return;
 
-	int numNeedToLoad = !region->m_isLoaded && (m_regionOffsets[point.y*m_wide+point.x] != -1);
+	int numNeedToLoad = !region->m_physicsPreview && (m_regionOffsets[point.y*m_wide + point.x] != -1);
+#else
+	CLevelRegion* region = GetRegionAt(point);
+
+	if (!region)
+		return;
+
+	int numNeedToLoad = !region->m_isLoaded && (m_regionOffsets[point.y*m_wide + point.x] != -1);
+#endif // EDITOR
 
 	// query this region
 	region->m_queryTimes.Increment();
@@ -1520,8 +1529,15 @@ void CGameLevel::QueryNearestRegions( const IVector2D& point, bool waitLoad )
 
 		if(nregion)
 		{
-			if(!nregion->m_isLoaded)
-				numNeedToLoad += (m_regionOffsets[dy[i]*m_wide+dx[i]] != -1);
+#ifdef EDITOR
+			CEditorLevelRegion* neditorreg = (CEditorLevelRegion*)nregion;
+
+			if (!neditorreg->m_physicsPreview)
+				numNeedToLoad += (m_regionOffsets[dy[i] * m_wide + dx[i]] != -1);
+#else
+			if (!nregion->m_isLoaded)
+				numNeedToLoad += (m_regionOffsets[dy[i] * m_wide + dx[i]] != -1);
+#endif // EDITOR
 
 			nregion->m_queryTimes.Increment();
 		}
@@ -1699,8 +1715,6 @@ int	CGameLevel::Run()
 
 int CGameLevel::UpdateRegionLoading()
 {
-#ifndef EDITOR
-
 	int numLoadedRegions = 0;
 
 	float startLoadTime = Platform_GetCurrentTime();
@@ -1710,18 +1724,27 @@ int CGameLevel::UpdateRegionLoading()
 		for(int y = 0; y < m_tall; y++)
 		{
 			int idx = y*m_wide+x;
-
+#ifdef EDITOR
 			// try preloading region
-			if( !w_freeze.GetBool() &&
-				!m_regions[idx].m_isLoaded &&
+			if( !m_regions[idx].m_physicsPreview &&
 				(m_regions[idx].m_queryTimes.GetValue() > 0) &&
 				m_regionOffsets[idx] != -1 )
 			{
+				CEditorLevelRegion* reg = (CEditorLevelRegion*)&m_regions[idx];
+				reg->Ed_InitPhysics();
+#else
+			// try preloading region
+			if (!w_freeze.GetBool() &&
+				!m_regions[idx].m_isLoaded &&
+				(m_regions[idx].m_queryTimes.GetValue() > 0) &&
+				m_regionOffsets[idx] != -1)
+			{
 				PreloadRegion(x,y);
-
+#endif // EDITOR
 				numLoadedRegions++;
 				DevMsg(DEVMSG_CORE, "Region %d loaded\n", idx);
 			}
+
 		}
 	}
 
@@ -1734,9 +1757,6 @@ int CGameLevel::UpdateRegionLoading()
 		materials->Wait();
 
 	return numLoadedRegions;
-#else
-	return 0;
-#endif // EDITOR
 }
 
 void CGameLevel::UnloadRegions()

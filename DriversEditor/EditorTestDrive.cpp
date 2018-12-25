@@ -116,15 +116,18 @@ bool CEditorTestGame::BeginGame( const char* carName, const Vector3D& startPos )
 
 	g_pCameraAnimator->Reset();
 
+	m_car->SetOrigin(startPos);
+
 	if(!wasGameRunning)
 	{
 		g_pPhysics->SceneInitBroadphase();
 
-		// editor create objects
 		g_pGameWorld->m_level.Ed_InitPhysics();
+
+		// editor create objects
+		g_pGameWorld->QueryNearestRegions(m_car->GetOrigin(), true);
 	}
 
-	m_car->SetOrigin(startPos);
 	m_car->L_Activate();
 
 	m_car->AlignToGround();
@@ -152,6 +155,8 @@ void CEditorTestGame::EndGame()
 
 void CEditorTestGame::Update( float fDt )
 {
+	g_pGameWorld->QueryNearestRegions(m_car->GetOrigin());
+
 	m_car->SetControlButtons( m_clientButtons );
 	m_car->GetPhysicsBody()->Wake();
 

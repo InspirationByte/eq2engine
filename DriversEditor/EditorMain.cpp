@@ -1031,6 +1031,9 @@ void CMainWindow::ProcessKeyboardUpEvents(wxKeyEvent& event)
 	{
 		if(event.GetKeyCode() == WXK_ESCAPE)
 		{
+			g_camera_rotation = g_pCameraAnimator->GetComputedView().GetAngles();
+			g_camera_target = g_pCameraAnimator->GetComputedView().GetOrigin();
+
 			g_editorTestGame->EndGame();
 			return;
 		}
