@@ -461,32 +461,28 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 	return true;
 }
 
-void Studio_FreeMotionData(studioHwData_t::motionData_t* pData, int numBones)
+void Studio_FreeMotionData(studioHwData_t::motionData_t* data, int numBones)
 {
-	for(int i = 0; i < pData->numAnimations; i++)
+	for(int i = 0; i < data->numAnimations; i++)
 	{
 		//for(int j = 0; j < numBones; j++)
 			//PPFree(pData->animations[i].bones[j].keyFrames);
 
-		PPFree(pData->animations[i].bones);
+		PPFree(data->animations[i].bones);
 	}
 
-	PPFree(pData->frames);
-	PPFree(pData->sequences);
-	PPFree(pData->events);
-	PPFree(pData->poseControllers);
-	PPFree(pData->animations);
-
-	PPFree(pData);
+	PPFree(data->frames);
+	PPFree(data->sequences);
+	PPFree(data->events);
+	PPFree(data->poseControllers);
+	PPFree(data->animations);
 }
 
-void Studio_FreePhysModel(studioPhysData_t* pModel)
+void Studio_FreePhysModel(studioPhysData_t* model)
 {
-	PPFree(pModel->indices);
-	PPFree(pModel->vertices);
-	PPFree(pModel->shapes);
-	PPFree(pModel->objects);
-	PPFree(pModel->joints);
-
-	memset(pModel, 0, sizeof(studioPhysData_t));
+	PPFree(model->indices);
+	PPFree(model->vertices);
+	PPFree(model->shapes);
+	PPFree(model->objects);
+	PPFree(model->joints);
 }

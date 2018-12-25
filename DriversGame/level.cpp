@@ -68,10 +68,8 @@ void CGameLevel::Cleanup()
 	int num = m_wide*m_tall;
 
 	DevMsg(DEVMSG_CORE, "Unloading regions...\n");
-	for(int i = 0; i < num; i++)
-	{
-		m_regions[i].Cleanup();
-	}
+
+	UnloadRegions();
 
 	delete [] m_regions;
 	m_regions = NULL;
@@ -1755,14 +1753,13 @@ void CGameLevel::UnloadRegions()
 		{
 			int idx = y*m_wide+x;
 
-			if(m_regions[idx].m_isLoaded &&m_regionOffsets[idx] != -1 )
+			if(m_regions[idx].m_isLoaded && m_regionOffsets[idx] != -1 )
 			{
 				// unload region
 				m_regions[idx].Cleanup();
 				m_regions[idx].m_scriptEventCallbackCalled = false;
 
 				numFreedRegions++;
-				DevMsg(DEVMSG_CORE, "Region %d freed\n", idx);
 			}
 
 			m_regions[idx].m_queryTimes.SetValue(0);

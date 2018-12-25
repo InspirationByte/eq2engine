@@ -28,17 +28,17 @@ regionObject_t::~regionObject_t()
 
 	if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 	{
-#ifndef EDITOR
-		g_pPhysics->m_physics.DestroyStaticObject( physObject );
-		physObject = NULL;
-#endif // EDITOR
-
 		CLevelModel* mod = def->m_model;
 		mod->Ref_Drop();
 
 		// the model cannot be removed if it's not loaded with region
 		if(mod->Ref_Count() <= 0)
 			delete mod;
+
+#ifndef EDITOR
+		g_pPhysics->m_physics.DestroyStaticObject(physObject);
+		physObject = NULL;
+#endif // EDITOR
 	}
 	else
 	{
@@ -604,17 +604,6 @@ void CLevelRegion::Cleanup()
 
 	m_level->m_mutex.Lock();
 
-#ifndef EDITOR
-	for(int i = 0; i < GetNumHFields(); i++)
-	{
-		if(m_heightfield[i])
-		{
-			g_pPhysics->RemoveHeightField( m_heightfield[i] );
-			m_heightfield[i]->CleanRenderData();
-		}
-	}
-#endif // EDITOR
-
 	for(int i = 0; i < m_objects.numElem(); i++)
 		delete m_objects[i];
 
@@ -643,12 +632,25 @@ void CLevelRegion::Cleanup()
 		m_navGrid[i].Cleanup();
 	}
 
+#ifndef EDITOR
+	for (int i = 0; i < GetNumHFields(); i++)
+	{
+		if (m_heightfield[i])
+		{
+			g_pPhysics->RemoveHeightField(m_heightfield[i]);
+			m_heightfield[i]->CleanRenderData();
+		}
+	}
+#endif // EDITOR
+
 	m_isLoaded = false;
 	m_hasTransparentSubsets = false;
 
 	m_level->m_mutex.Unlock();
 
 	m_queryTimes.SetValue(0);
+
+	DevMsg(DEVMSG_CORE, "Region %d freed\n", m_regionIndex);
 }
 
 bool CLevelRegion::IsRegionEmpty()

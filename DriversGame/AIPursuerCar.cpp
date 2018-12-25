@@ -305,14 +305,9 @@ void CAIPursuerCar::EndPursuit(bool death)
 
 	if (m_targInfo.target != NULL)
 	{
-		// validate
-		if(!g_pGameWorld->IsValidObject(m_targInfo.target))
-		{
-			m_targInfo.target = nullptr;
-			return;
-		}
-
-		if (m_targInfo.target->GetPursuedCount() == 1 &&
+		// validate and remove
+		if (g_pGameWorld->IsValidObject(m_targInfo.target) &&
+			m_targInfo.target->GetPursuedCount() == 1 &&
 			g_pGameSession->GetPlayerCar() == m_targInfo.target)	// only play sound when in game, not unloading or restaring
 			// g_State_Game->IsGameRunning())
 		{
@@ -837,20 +832,20 @@ int	CAIPursuerCar::DeadState( float fDt, EStateTransition transition )
 
 void CAIPursuerCar::SetPursuitTarget(CCar* obj)
 {
-	if (m_targInfo.target)
+	if (m_targInfo.target && g_pGameWorld->IsValidObject(m_targInfo.target))
 		m_targInfo.target->DecrementPursue();
 
 	m_targInfo.target = obj;
 	m_targInfo.direction = -1;
 
-	if(m_targInfo.target)
+	if (m_targInfo.target && g_pGameWorld->IsValidObject(m_targInfo.target))
+	{
 		m_targInfo.target->IncrementPursue();
+		m_targInfo.isAngry = (m_targInfo.target->GetFelony() > 0.6f) || m_type == PURSUER_TYPE_GANG;
+	}
 
 	m_targInfo.lastInfraction = INFRACTION_HAS_FELONY;
 	m_targInfo.nextCheckImpactTime = AI_COP_COLLISION_CHECKTIME;
-
-	if(obj)
-		m_targInfo.isAngry = (obj->GetFelony() > 0.6f) || m_type == PURSUER_TYPE_GANG;
 }
 
 OOLUA_EXPORT_FUNCTIONS(

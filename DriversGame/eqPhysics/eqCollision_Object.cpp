@@ -69,8 +69,8 @@ void CEqCollisionObject::Destroy()
 	delete m_trimap;
 
 	m_shape = NULL;
-	m_collObject = NULL;
 	m_mesh = NULL;
+	m_collObject = NULL;
 	m_trimap = NULL;
 }
 

@@ -225,6 +225,8 @@ void CEngineStudioEGF::DestroyModel()
 {
 	DevMsg(DEVMSG_CORE, "DestroyModel: '%s'\n", m_szPath.c_str());
 
+	m_readyState = MODEL_LOAD_ERROR;
+
 	// instancer is removed here if set
 	if(m_instancer != NULL)
 		delete m_instancer;
@@ -244,33 +246,6 @@ void CEngineStudioEGF::DestroyModel()
 
 	m_numMaterials = 0;
 
-	if(m_hwdata)
-	{
-		for(int i = 0; i < 8; i++)
-		{
-			if(m_hwdata->motiondata[i])
-				Studio_FreeMotionData(m_hwdata->motiondata[i], m_hwdata->studio->numBones);
-		}
-
-		// destroy this model
-		g_pStudioShapeCache->DestroyStudioCache( &m_hwdata->physModel );
-
-		Studio_FreePhysModel(&m_hwdata->physModel);
-
-		studioHwData_t::modelRef_t* pLodModels = m_hwdata->modelrefs;
-
-		for(int i = 0; i < m_hwdata->studio->numModels; i++)
-			delete [] pLodModels[i].groupDescs;
-
-		delete [] m_hwdata->modelrefs;
-		delete [] m_hwdata->joints;
-		delete [] m_hwdata->studio;
-
-		delete m_hwdata;
-	}
-
-	m_hwdata = NULL;
-
 	if( m_forceSoftwareSkinning )
 	{
 		PPFree(m_softwareVerts);
@@ -281,7 +256,32 @@ void CEngineStudioEGF::DestroyModel()
 	m_numVertices = 0;
 	m_numMaterials = 0;
 
-	m_readyState = MODEL_LOAD_ERROR;
+	if (m_hwdata)
+	{
+		for (int i = 0; i < MAX_MOTIONPACKAGES; i++)
+		{
+			if (!m_hwdata->motiondata[i])
+				continue;
+
+			Studio_FreeMotionData(m_hwdata->motiondata[i], m_hwdata->studio->numBones);
+			PPFree(m_hwdata->motiondata[i]);
+		}
+
+		g_pStudioShapeCache->DestroyStudioCache(&m_hwdata->physModel);
+		Studio_FreePhysModel(&m_hwdata->physModel);
+
+		studioHwData_t::modelRef_t* lodRefs = m_hwdata->modelrefs;
+
+		for (int i = 0; i < m_hwdata->studio->numModels; i++)
+			delete[] lodRefs[i].groupDescs;
+
+		delete[] m_hwdata->modelrefs;
+		delete[] m_hwdata->joints;
+		delete m_hwdata->studio;
+
+		delete m_hwdata;
+		m_hwdata = NULL;
+	}
 }
 
 void CEngineStudioEGF::LoadPhysicsData()
