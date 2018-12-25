@@ -54,7 +54,7 @@ struct Plane_t
 		return dot(normal, pos) + offset;
 	}
 
-	ClassifyPlane_e ClassifyPoint(const TVec3D<T> &pos)
+	ClassifyPlane_e ClassifyPoint(const TVec3D<T> &pos) const
 	{
 		T fDist = Distance(pos);
 
@@ -135,7 +135,7 @@ struct Plane_t
 		return true;
 	}
 
-	bool CompareEpsilon(const Plane_t<T>& other, T fDistEps, T fNormalEps)
+	bool CompareEpsilon(const Plane_t<T>& other, T fDistEps, T fNormalEps) const
 	{
 		if(abs(offset - other.offset) > fDistEps)
 			return false;

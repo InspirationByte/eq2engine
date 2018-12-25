@@ -489,7 +489,7 @@ void CGameLibrary::OnRenderScene()
 		maxs = g_pCurrentWaterInfo->GetBounds().maxPoint;
 
 		// draw reflections
-		if(viewrenderer->GetViewFrustum()->IsBoxInside(	mins.x, maxs.x, 
+		if(viewrenderer->GetViewFrustum().IsBoxInside(	mins.x, maxs.x, 
 														mins.y,maxs.y,
 														mins.z,maxs.z ))
 		{

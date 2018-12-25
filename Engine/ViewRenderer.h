@@ -153,7 +153,7 @@ public:
 	Matrix4x4				GetViewProjectionMatrix();
 
 	// view frustum
-	Volume*					GetViewFrustum();
+	Volume&					GetViewFrustum();
 
 	// sets scene info
 	void					SetSceneInfo(sceneinfo_t &info);

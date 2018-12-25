@@ -2406,9 +2406,9 @@ Matrix4x4 CViewRenderer::GetViewProjectionMatrix()
 }
 
 // view frustum
-Volume* CViewRenderer::GetViewFrustum()
+Volume& CViewRenderer::GetViewFrustum()
 {
-	return &m_frustum;
+	return m_frustum;
 }
 
 // sets the render mode

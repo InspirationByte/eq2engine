@@ -1336,9 +1336,9 @@ Matrix4x4 CBaseViewRenderer::GetViewProjectionMatrix()
 }
 
 // view frustum
-Volume* CBaseViewRenderer::GetViewFrustum()
+const Volume& CBaseViewRenderer::GetViewFrustum() const
 {
-	return &m_frustum;
+	return m_frustum;
 }
 
 // sets the render mode

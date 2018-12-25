@@ -361,7 +361,7 @@ public:
 
 		SetSortOrigin(m_vOrigin);
 
-		if(viewrenderer->GetViewFrustum()->IsSphereInside(m_vOrigin, length(m_pDecal->bbox.GetSize())))
+		if(viewrenderer->GetViewFrustum().IsSphereInside(m_vOrigin, length(m_pDecal->bbox.GetSize())))
 		{
 			//firstIndex = GetParticleIndexCount(m_nMaterialGroup);
 			AddDecalGeom( (eqlevelvertex_t*)m_pDecal->verts, (uint16*)m_pDecal->indices, m_pDecal->numVerts, m_pDecal->numIndices, m_matindex);

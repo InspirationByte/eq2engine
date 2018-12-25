@@ -734,9 +734,10 @@ bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &
 
 			if(m_nRooms > 0 && nSRooms > 0)
 			{
-				if(srooms[0] != m_rooms[0])
+				if(srooms[0] != m_rooms[0]) 
 				{
 					// check the portal for connection
+					// TODO: recursive!
 					int nPortal = eqlevel->GetFirstPortalLinkedToRoom( m_rooms[0], srooms[0], m_vViewPos, 2);
 
 					if(nPortal == -1)
@@ -750,10 +751,11 @@ bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &
 						Vector3D portal_pos = eqlevel->GetPortalPosition(nPortal);
 						emitPos = portal_pos;
 
+						// TODO: volume scaling according to the distance from one portal to another
 						emitter->pEmitter->SetPosition( emitter->interpolatedOrigin );
 
 						params.referenceDistance -= length(portal_pos - emitPos);
-						fBestVolume = emitter->origVolume*0.05f;
+						fBestVolume = emitter->origVolume*0.25f;
 					}
 				}
 			}

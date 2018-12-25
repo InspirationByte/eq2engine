@@ -51,7 +51,7 @@ void CDetailSystemTest::DrawNodes()
 		return;
 
 	CViewParams* pView = viewrenderer->GetView();
-	Volume frustum = *viewrenderer->GetViewFrustum();
+	Volume& frustum = viewrenderer->GetViewFrustum();
 	for(int i = 0; i < 4; i++)
 	{
 		Plane pl = frustum.GetPlane(i);
@@ -482,10 +482,16 @@ Volume BuildOmniFrustum( const Volume& viewerCameraFrustum, const Vector3D& view
 	return frustum;
 }
 
-bool IsCubeShadowFaceDrawn(const Vector3D& viewerPos, const Matrix4x4& viewMatrix, const sceneinfo_t& sceneinfo, const Vector3D& lightPos, int nCubeFace)
+bool IsCubeShadowFaceDrawn(const Vector3D& viewerPos, const Matrix4x4& viewMatrix, const Volume& faceFrustum)
 {
-	// TODO: realize and implement...
+	const Plane& pl = faceFrustum.GetPlane(VOLUME_PLANE_FAR);
 
+	//Vector3D temp;
+	//if(!pl.GetIntersectionWithRay(viewerPos, viewMatrix.rows[2].xyz(), temp))
+	//	return false;
+
+	// TODO: realize and implement...
+	/*
 	Matrix4x4 lightViewMatrix = cubeViewMatrix(nCubeFace);
 
 	Vector3D light_dir = lightViewMatrix.rows[2].xyz();
@@ -497,6 +503,9 @@ bool IsCubeShadowFaceDrawn(const Vector3D& viewerPos, const Matrix4x4& viewMatri
 
 	if(pl.Distance(viewerPos) < 0.0f && dot(view_dir, light_dir) < 0)
 		return false;
+
+	
+	*/
 
 	return true;
 }
@@ -531,11 +540,11 @@ void GR_LightShadow( dlight_t* pLight, CViewParams* pView, sceneinfo_t& scene, i
 			if(i > 0)
 				pLight->lightWVP = pLight->lightWVP2;
 
-			nVRFlags |= VR_FLAG_CUSTOM_FRUSTUM;
-
 			// setup our custom frustum
-			Volume* sunFrustum = viewrenderer->GetViewFrustum();
-			(*sunFrustum) = BuildSunFrustum(viewFrustum, viewerPos, pLight->lightWVP, (i > 0) ? r_sun_osize1.GetFloat() : 0.0f);
+			Volume& sunFrustum = viewrenderer->GetViewFrustum();
+			sunFrustum = BuildSunFrustum(viewFrustum, viewerPos, pLight->lightWVP, (i > 0) ? r_sun_osize1.GetFloat() : 0.0f);
+
+			nVRFlags |= VR_FLAG_CUSTOM_FRUSTUM;
 
 			// modify sun matrix
 			//pLight->lightWVP = RecalcSunMatrixByFrustum(pLight, *sunFrustum);
@@ -543,20 +552,17 @@ void GR_LightShadow( dlight_t* pLight, CViewParams* pView, sceneinfo_t& scene, i
 		}
 		else if(pLight->nType == DLT_OMNIDIRECTIONAL)
 		{
+			viewrenderer->BuildViewMatrices(1, 1, nVRFlags);
+
+			Volume& lightFaceFrustum = viewrenderer->GetViewFrustum();
+
+			// setup our custom frustum
+			lightFaceFrustum = BuildOmniFrustum(viewFrustum, viewerPos, pLight->position, viewMatrix, viewrenderer->GetViewProjectionMatrix(), 0.0f);
+			nVRFlags |= VR_FLAG_CUSTOM_FRUSTUM;
+
 			// skip this face if we haven't see it
-			if(!bLightPositionInFrustum && !IsCubeShadowFaceDrawn(viewerPos, viewMatrix, scene, pLight->position, i))
+			if (!bLightPositionInFrustum && !IsCubeShadowFaceDrawn(viewerPos, viewMatrix, lightFaceFrustum))
 				continue;
-
-			//if(!IsCubeShadowFaceDrawn(viewerPos, viewMatrix, scene, pLight->position, i))
-			{
-				viewrenderer->BuildViewMatrices(1,1,nVRFlags);
-
-				// setup our custom frustum
-				Volume* lightFaceFrustum = viewrenderer->GetViewFrustum();
-				(*lightFaceFrustum) = BuildOmniFrustum(viewFrustum, viewerPos, pLight->position, viewMatrix, viewrenderer->GetViewProjectionMatrix(), 0.0f);
-
-				nVRFlags |= VR_FLAG_CUSTOM_FRUSTUM;
-			}
 		}
 
 		viewrenderer->SetDrawMode(VDM_SHADOW);
@@ -767,7 +773,7 @@ reshot:
 	// sort transparents
 	g_transparentsList->SortByDistanceFrom( g_viewEntityParams.GetOrigin() );
 
-	Volume viewFrustum = *viewrenderer->GetViewFrustum();
+	Volume& viewFrustum = viewrenderer->GetViewFrustum();
 	Matrix4x4 viewMatrix = viewrenderer->GetMatrix(MATRIXMODE_VIEW);
 
 	// draw view models if not in water mode
@@ -1467,5 +1473,5 @@ void GR_SetViewEntity(BaseEntity* pEnt)
 
 void GR_DrawBillboard(PFXBillboard_t* effect)
 {
-	Effects_DrawBillboard(effect, viewrenderer->GetView(), viewrenderer->GetViewFrustum());
+	Effects_DrawBillboard(effect, viewrenderer->GetView(), &viewrenderer->GetViewFrustum());
 }

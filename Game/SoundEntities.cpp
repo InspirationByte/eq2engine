@@ -36,7 +36,7 @@ public:
 		ep.origin = Vector3D(0);
 		ep.name = (char*)m_soundName.GetData();
 		ep.pObject = this;
-		ep.nFlags |= (/*EMITSOUND_FLAG_ROOM_OCCLUSION | */EMITSOUND_FLAG_START_ON_UPDATE);
+		ep.nFlags |= (EMITSOUND_FLAG_ROOM_OCCLUSION | EMITSOUND_FLAG_START_ON_UPDATE);
 
 		ses->EmitSound( &ep );
 	}

@@ -110,8 +110,8 @@
       <RandomizedBaseAddress>true</RandomizedBaseAddress>
     </Link>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>cd $(SolutionDir)
+call copy_whitecage_engine.bat $(ConfigurationName)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

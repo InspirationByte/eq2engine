@@ -114,13 +114,13 @@ void RainEmitter::Update_Draw(float dt, float emit_rate, float rain_speed)
 		Vector3D trace_start(pParticle->origin.x,startH,pParticle->origin.z);
 		physics->InternalTraceLine(trace_start,trace_start - Vector3D(0,height+rain_length.GetFloat(),0),COLLISION_GROUP_WORLD | COLLISION_GROUP_OBJECTS,&rain_trace);
 
-		Volume* pViewFrustum = viewrenderer->GetViewFrustum();
+		const Volume& pViewFrustum = viewrenderer->GetViewFrustum();
 
 		if(pParticle->origin.y < (viewOrigin.y - 800) || rain_trace.fraction < 1.0)
 		{
 			float fSpeed = length(rParticles[i]->velocity)*0.001f;
 
-			if(rain_trace.fraction < 1.0f && pViewFrustum->IsPointInside(rain_trace.traceEnd))
+			if(rain_trace.fraction < 1.0f && pViewFrustum.IsPointInside(rain_trace.traceEnd))
 			{
 				MakeRipple(rain_trace.traceEnd + rain_trace.normal*0.5f, rain_trace.normal, 2+RandomFloat(-0.7f, 0.7f)*fSpeed,4+RandomFloat(-0.7f, 0.7f)*fSpeed,0.08f);
 			}

@@ -38,7 +38,7 @@ public:
 	{
 		CViewRenderer* pVR = (CViewRenderer*)viewrenderer;
 
-		if( !pVR->GetViewFrustum()->IsBoxInside(info.mins.x,info.maxs.x, info.mins.y,info.maxs.y, info.mins.z,info.maxs.z) )
+		if( !pVR->GetViewFrustum().IsBoxInside(info.mins.x,info.maxs.x, info.mins.y,info.maxs.y, info.mins.z,info.maxs.z) )
 			return;
 
 		if(pVR->GetAreaList() && pVR->GetAreaList()->area_list[m_nRoomID].doRender)

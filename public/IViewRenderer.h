@@ -148,7 +148,7 @@ public:
 	virtual Matrix4x4				GetViewProjectionMatrix() = 0;
 
 	// view frustum
-	virtual Volume*					GetViewFrustum() = 0;
+	virtual Volume&					GetViewFrustum() = 0;
 
 	//------------------------------------------------
 

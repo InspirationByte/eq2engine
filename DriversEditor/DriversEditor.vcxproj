@@ -104,8 +104,9 @@
       <AdditionalOptions> /ignore:4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>cd $(SolutionDir)
+call copy_drvsyn_binary.bat $(ConfigurationName) $(TargetFileName)
+call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

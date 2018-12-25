@@ -440,7 +440,7 @@ void BaseEntity::RenderEGFModel( int nViewRenderFlags, Matrix4x4* bones )
 	for(int i = 0; i < 9; i++)
 		bbox.AddVertex( (m_matWorldTransform*Vector4D(m_vBBox.GetVertex(i), 1.0f)).xyz() );	
 
-	Volume frustum = *viewrenderer->GetViewFrustum();
+	const Volume& frustum = viewrenderer->GetViewFrustum();
 
 	Vector3D mins = bbox.minPoint;
 	Vector3D maxs = bbox.maxPoint;

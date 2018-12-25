@@ -16,7 +16,7 @@
 
 const float DEFAULT_CAMERA_FOV		= 52.0f;
 
-const float CAM_TURN_SPEED			= 3.4f;
+const float CAM_TURN_SPEED			= 4.0f;
 const float CAM_LOOK_TURN_SPEED		= 15.0f;
 
 const float CAM_HEIGHT_TRACE		= -0.3f;
@@ -379,6 +379,9 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 		btBoxShape sphere(btVector3(0.5f, 0.5f, 0.5f));
 		if(g_pPhysics->TestConvexSweep(&sphere, identity(), cam_pos_h, cam_pos, back_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_VEHICLE, &traceIgnore))
 		{
+			if (back_coll.fract < 0.05f)
+				back_coll.fract = 0.05f;
+
 			desiredDist *= back_coll.fract;
 		}
 
