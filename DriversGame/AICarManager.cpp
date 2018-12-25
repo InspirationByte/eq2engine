@@ -16,7 +16,9 @@ ConVar g_trafficMaxCars("g_trafficMaxCars", "48", "Maximum traffic cars", CV_CHE
 ConVar g_traffic_mindist("g_traffic_mindist", "50", "Min traffic car distance to spawn", CV_CHEAT);
 ConVar g_traffic_maxdist("g_traffic_maxdist", "51", "Max traffic car distance, to disappear", CV_CHEAT);
 
-const float AI_COP_SPEECH_DELAY = 1.0f;		// delay before next speech
+const int	AI_COP_SPEECH_QUEUE = 6;
+
+const float AI_COP_SPEECH_DELAY = 2.0f;		// delay before next speech
 const float AI_COP_TAUNT_DELAY = 8.0f;		// delay before next taunt
 
 const float AI_COP_DEFAULT_DAMAGE = 4.0f;
@@ -820,6 +822,9 @@ bool CAICarManager::MakeCopSpeech(const char* soundScriptName, bool force)
 	if (m_copSpeechTime < 0 || force)
 	{
 		m_speechQueue.append(soundScriptName);
+
+		if (m_speechQueue.numElem() > AI_COP_SPEECH_QUEUE)
+			m_speechQueue.removeIndex(0);
 
 		m_copSpeechTime = RandomFloat(AI_COP_SPEECH_DELAY, AI_COP_SPEECH_DELAY + 5.0f);
 

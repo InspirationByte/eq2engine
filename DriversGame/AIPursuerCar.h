@@ -105,6 +105,7 @@ protected:
 		int					lastInfraction;
 
 		bool				isAngry;
+		bool				hasAnnouncedTarget;
 	} m_targInfo;
 
 	float					m_alterSirenChangeTime;

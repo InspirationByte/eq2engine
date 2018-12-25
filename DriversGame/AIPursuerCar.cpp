@@ -272,6 +272,30 @@ void CAIPursuerCar::BeginPursuit( float delay )
 		return;
 	}
 
+	// announce pursuit for cops
+	if (m_type == PURSUER_TYPE_COP && 
+		!m_targInfo.hasAnnouncedTarget && 
+		g_pGameSession->GetPlayerCar() == m_targInfo.target)
+	{
+		if (m_targInfo.target->GetFelony() >= AI_COP_MINFELONY)
+		{
+			int val = RandomInt(0, 1);
+
+			if (val)
+				Speak("cop.pursuit_continue", true);
+			else
+				SpeakTargetDirection("cop.takehimup", true);
+		}
+		else
+		{
+			m_targInfo.target->SetFelony(AI_COP_MINFELONY);
+
+			Speak("cop.pursuit", true);
+		}
+	}
+
+	m_targInfo.hasAnnouncedTarget = true;
+
 	AI_SetNextState(&CAIPursuerCar::PursueTarget, delay);
 }
 
@@ -521,6 +545,12 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 			return 0;
 		}
 
+		if (m_type == PURSUER_TYPE_COP)
+		{
+			if (m_conf->visual.sirenType != SERVICE_LIGHTS_NONE)
+				m_sirenEnabled = true;
+		}
+
 		// reset the emergency lights
 		SetLight(CAR_LIGHT_EMERGENCY, false);
 
@@ -528,32 +558,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		GetPhysicsBody()->SetCollideMask(COLLIDEMASK_VEHICLE);
 		GetPhysicsBody()->SetMinFrameTime(0.0f);
 		GetPhysicsBody()->Wake();
-
-		if(m_type == PURSUER_TYPE_COP)
-		{
-			if (m_conf->visual.sirenType != SERVICE_LIGHTS_NONE)
-				m_sirenEnabled = true;
-
-			if (m_targInfo.target->GetPursuedCount() == 1 &&
-				g_pGameSession->GetPlayerCar() == m_targInfo.target)
-			{
-				if (m_targInfo.target->GetFelony() >= AI_COP_MINFELONY)
-				{
-					int val = RandomInt(0, 1);
-
-					if(val)
-						Speak("cop.pursuit_continue", true);
-					else
-						SpeakTargetDirection("cop.takehimup", true);
-				}
-				else
-				{
-					m_targInfo.target->SetFelony(AI_COP_MINFELONY);
-
-					Speak("cop.pursuit", true);
-				}
-			}
-		}
 
 		if(g_railroadCops.GetBool())
 		{
@@ -676,9 +680,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 			}
 
 			if(targetSpeed > 50.0f)
-			{
 				SpeakTargetDirection("cop.heading");
-			}
 		}
 
 		m_targInfo.notSeeingTime = 0.0f;
@@ -840,6 +842,8 @@ void CAIPursuerCar::SetPursuitTarget(CCar* obj)
 
 	if (m_targInfo.target && g_pGameWorld->IsValidObject(m_targInfo.target))
 	{
+		m_targInfo.hasAnnouncedTarget = (m_targInfo.target->GetPursuedCount() > 0);
+
 		m_targInfo.target->IncrementPursue();
 		m_targInfo.isAngry = (m_targInfo.target->GetFelony() > 0.6f) || m_type == PURSUER_TYPE_GANG;
 	}
