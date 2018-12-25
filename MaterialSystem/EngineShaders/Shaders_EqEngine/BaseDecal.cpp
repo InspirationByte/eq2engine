@@ -31,6 +31,9 @@ BEGIN_SHADER_CLASS(Decal)
 		m_fCubemapLightingScale = 1.0f;
 
 		m_depthwrite = false;
+
+		m_nFlags |= MATERIAL_FLAG_DECAL;
+		m_polyOffset = true;
 	}
 
 	SHADER_INIT_TEXTURES()

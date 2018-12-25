@@ -24,6 +24,11 @@ DECLARE_EFFECT_GROUP( Muzzle )
 BEGIN_DATAMAP( CBaseWeapon )
 
 	DEFINE_FIELD( m_nClipCurrent,			VTYPE_INTEGER),
+	DEFINE_FIELD( m_nAmmoType,				VTYPE_INTEGER),
+	
+	DEFINE_FIELD(m_nShotsFired,				VTYPE_INTEGER),
+	DEFINE_FIELD(m_fNextIdleTime,			VTYPE_TIME),
+	DEFINE_FIELD(m_fIdleTime,				VTYPE_FLOAT),
 
 	DEFINE_FIELD( m_fPrimaryAttackTime,		VTYPE_TIME),
 	DEFINE_FIELD( m_fSecondaryAttackTime,	VTYPE_TIME),

@@ -33,13 +33,13 @@ struct effectdispatch_t
 */
 
 extern Vector3D ComputeLightingForPoint(Vector3D &point, bool doPhysics);
-/*
+
 class CSmokeEffect : public IEffect
 {
 public:
 	CSmokeEffect(Vector3D &position, Vector3D &velocity, float StartSize, float EndSize, float lifetime, int nMaterial, float rotation, Vector3D &gravity = vec3_zero, Vector3D &color1 = color3_white, Vector3D &color2 = color3_white, float alpha = 1.0f)
 	{
-		InternalInit( position, lifetime, nMaterial );
+		InternalInit( position, lifetime, nullptr, nullptr );
 
 		fCurSize = StartSize;
 		fStartSize = StartSize;
@@ -60,6 +60,8 @@ public:
 		m_color2 = color2;
 
 		m_alpha = alpha;
+
+		m_matindex = nMaterial;
 	}
 
 	bool DrawEffect(float dTime)
@@ -93,7 +95,7 @@ public:
 
 		effect.vOrigin = m_vOrigin;
 		effect.vColor = Vector4D(m_vCurrColor * col_lerp, lifeTimePerc*m_alpha*fStartAlpha);//Vector4D(lerp(m_vCurrColor, col_lerp, 0.25f),lifeTimePerc*m_alpha);
-		effect.nGroupIndex = m_nMaterialGroup;
+		effect.nGroupIndex = m_matindex;
 		effect.nFlags = EFFECT_FLAG_ALWAYS_VISIBLE;
 		effect.fZAngle = lifeTimePerc*rotate;
 
@@ -131,6 +133,8 @@ protected:
 	float		m_alpha;
 
 	int			nDraws;
+
+	int			m_matindex;
 };
 
 class CSparkLine : public IEffect
@@ -138,7 +142,7 @@ class CSparkLine : public IEffect
 public:
 	CSparkLine(Vector3D &position, Vector3D &velocity, Vector3D &gravity, float length, float StartSize, float EndSize, float lifetime, int nMaterial, bool light = true)
 	{
-		InternalInit(position, lifetime, nMaterial);
+		InternalInit(position, lifetime, nullptr, nullptr);
 
 		fCurSize = StartSize;
 		fStartSize = StartSize;
@@ -151,6 +155,8 @@ public:
 		vGravity = gravity;
 
 		lights = light;
+
+		m_matindex = nMaterial;
 	}
 
 	bool DrawEffect(float dTime)
@@ -205,7 +211,7 @@ public:
 		verts[3].texcoord = Vector2D(1,1);
 		verts[3].color = color;
 
-		AddParticleQuad(verts, m_nMaterialGroup);
+		AddParticleQuad(verts, m_matindex);
 
 		internaltrace_t tr;
 		physics->InternalTraceLine(m_vOrigin, vEnd, COLLISION_GROUP_WORLD | COLLISION_GROUP_OBJECTS, &tr);
@@ -251,7 +257,9 @@ protected:
 	float		fLength;
 
 	bool		lights;
-};*/
+
+	int			m_matindex;
+};
 
 void PrecacheEffects();
 void UnloadEffects();

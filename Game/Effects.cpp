@@ -16,13 +16,12 @@ struct particle_spark_t
 	Vector3D normal;
 };
 
-/*
 class CQuadEffect : public IEffect
 {
 public:
 	CQuadEffect(Vector3D &position, Vector3D &normal, float StartSize, float EndSize, float lifetime, int nMaterial)
 	{
-		InternalInit(position, lifetime, nMaterial);
+		InternalInit(position, lifetime, nullptr, nullptr);
 
 		Vector3D binorm, tang;
 		VectorVectors(normal, tang, binorm);
@@ -38,6 +37,7 @@ public:
 
 		rotation = 0;
 
+		m_matindex = nMaterial;
 	}
 
 	bool DrawEffect(float dTime)
@@ -75,7 +75,7 @@ public:
 		verts[3].texcoord = Vector2D(0,0);
 		verts[3].color = col;
 
-		AddParticleQuad(verts, m_nMaterialGroup);
+		AddParticleQuad(verts, m_matindex);
 
 		SetSortOrigin(m_vOrigin);
 
@@ -93,6 +93,8 @@ protected:
 	float		fEndSize;
 
 	float		rotation;
+
+	int			m_matindex;
 };
 
 class CFleckEffect : public IEffect
@@ -100,7 +102,7 @@ class CFleckEffect : public IEffect
 public:
 	CFleckEffect(Vector3D &position, Vector3D &velocity, Vector3D &gravity, float StartSize, float lifetime, int nMaterial, float rotation)
 	{
-		InternalInit(position, lifetime, nMaterial);
+		InternalInit(position, lifetime, nullptr, nullptr);
 
 		fStartSize = StartSize;
 
@@ -113,6 +115,8 @@ public:
 		m_vGravity = gravity;
 
 		m_vLastColor = ComputeLightingForPoint(m_vOrigin, false);
+
+		m_matindex = nMaterial;
 	}
 
 	bool DrawEffect(float dTime)
@@ -140,7 +144,7 @@ public:
 
 		effect.vOrigin = m_vOrigin;
 		effect.vColor = Vector4D(m_vLastColor,lifeTimePerc*2);
-		effect.nGroupIndex = m_nMaterialGroup;
+		effect.nGroupIndex = m_matindex;
 		effect.nFlags = EFFECT_FLAG_ALWAYS_VISIBLE;
 
 		effect.fZAngle = lifeTimePerc*rotate;
@@ -180,8 +184,10 @@ protected:
 	float		rotate;
 
 	int			nDraws;
+
+	int			m_matindex;
 };
-*/
+
 // base engine effect group
 DECLARE_EFFECT_GROUP(ConcreteDecals)
 {
@@ -203,18 +209,6 @@ DECLARE_EFFECT_GROUP(MetalDecals)
 	PRECACHE_DECAL_MATERIAL( "decals/bullets/metal/decal_metal2");
 	PRECACHE_DECAL_MATERIAL( "decals/bullets/metal/decal_metal3");
 }
-
-/*
-DECLARE_EFFECT_GROUP(TileDecals)
-{
-
-}
-
-DECLARE_EFFECT_GROUP(DirtDecals)
-{
-
-}
-*/
 
 DECLARE_EFFECT_GROUP(GlassDecals)
 {
@@ -336,18 +330,19 @@ void FX_DrawTracer(Vector3D &origin, Vector3D &line_dir, float width, float leng
 }
 
 //ConVar r_maxTempDecals("r_maxTempDecals", "1000", "Maximum of temp decals in game");
-/* REWRITE_GAME_EFFECTS
+
 class CDecalEffect : public IEffect//, public CBaseRenderableObject
 {
 public:
 	CDecalEffect(tempdecal_t* decal, Vector3D &sortPos, float lifetime, int matIndex)
 	{
-		InternalInit(sortPos, lifetime, matIndex);
+		InternalInit(sortPos, lifetime, nullptr, nullptr);
 		m_pDecal = decal;
+		m_matindex = matIndex;
 
 		//g_transparentsList->AddRenderable( this );
 
-		nDraws = 0;
+		m_nDraws = 0;
 	}
 
 	void DestroyEffect()
@@ -362,17 +357,17 @@ public:
 		if(m_fLifeTime <= 0)
 			return false;
 
-		nDraws = 0;
+		m_nDraws = 0;
 
 		SetSortOrigin(m_vOrigin);
 
-		if(viewrenderer->GetViewFrustum()->IsSphereInside(m_vOrigin, length(m_pDecal->box.GetSize())))
+		if(viewrenderer->GetViewFrustum()->IsSphereInside(m_vOrigin, length(m_pDecal->bbox.GetSize())))
 		{
 			//firstIndex = GetParticleIndexCount(m_nMaterialGroup);
-			AddDecalGeom( m_pDecal->pVerts, (uint16*)m_pDecal->pIndices, m_pDecal->numVerts, m_pDecal->numIndices, m_nMaterialGroup);
+			AddDecalGeom( (eqlevelvertex_t*)m_pDecal->verts, (uint16*)m_pDecal->indices, m_pDecal->numVerts, m_pDecal->numIndices, m_matindex);
 		}
 
-		nDraws++;
+		m_nDraws++;
 
 		return true;
 	}
@@ -382,18 +377,19 @@ protected:
 
 	Vector3D	m_vLastColor;
 
-	//int			firstIndex;
+	int			m_matindex;
 
-	int			nDraws;
+	int			m_nDraws;
 };
-*/
+
 ConVar r_impactsvisibledist("r_impactsvisibledist", "1600");
 
 void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 {
 	if(g_pViewEntity && length(tr.traceEnd - g_pViewEntity->GetEyeOrigin()) > r_impactsvisibledist.GetFloat())
 		return;
-	/* REWRITE_GAME_EFFECTS
+
+	// REWRITE_GAME_EFFECTS
 	if(tr.hitmaterial)
 	{
 		EmitSound_t rico;
@@ -424,7 +420,7 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 				decal.normal = -tr.normal;
 				decal.origin = tr.traceEnd - tr.normal*0.05f;
 				decal.size = Vector3D(fDecScale);
-				decal.pMaterial = pDecalMaterial;
+				decal.material = pDecalMaterial;
 
 				tempdecal_t* pDecal = eqlevel->MakeTempDecal(decal);
 			
@@ -434,7 +430,7 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 					effectrenderer->RegisterEffectForRender(pEffect);
 				}
 			}
-
+			
 			for(int i = 0; i < 6; i++)
 			{
 				Vector3D rnd_ang = VectorAngles(tr.normal) + Vector3D(RandomFloat(-25,25),RandomFloat(-25,25),RandomFloat(-25,25));
@@ -480,7 +476,7 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 				decal.normal = -tr.normal;
 				decal.origin = tr.traceEnd - tr.normal*0.05f;
 				decal.size = Vector3D(fDecScale);
-				decal.pMaterial = pDecalMaterial;
+				decal.material = pDecalMaterial;
 
 				tempdecal_t* pDecal = eqlevel->MakeTempDecal(decal);
 				if(pDecal)
@@ -489,7 +485,7 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 					effectrenderer->RegisterEffectForRender(pEffect);
 				}
 			}
-
+			
 			for(int i = 0; i < 3; i++)
 			{
 				Vector3D rnd_ang = VectorAngles(tr.normal) + Vector3D(RandomFloat(-45,45),RandomFloat(-45,45),RandomFloat(-45,45));
@@ -535,7 +531,7 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 				decal.normal = -tr.normal;
 				decal.origin = tr.traceEnd - tr.normal*0.05f;
 				decal.size = Vector3D(fDecScale);
-				decal.pMaterial = pDecalMaterial;
+				decal.material = pDecalMaterial;
 
 				tempdecal_t* pDecal = eqlevel->MakeTempDecal(decal);
 				if(pDecal)
@@ -544,7 +540,7 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 					effectrenderer->RegisterEffectForRender(pEffect);
 				}
 			}
-
+			/*
 			for(int i = 0; i < 15; i++)
 			{
 				Vector3D reflDir = reflect(impactDirection, tr.normal);
@@ -555,7 +551,7 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 
 				CFleckEffect* pEffect = new CFleckEffect(tr.traceEnd, n*RandomFloat(10,140), Vector3D(0,RandomFloat(-400,-1000),0), RandomFloat(0.9f,1.7f),3.0f, EFFECT_GROUP_ID(WoodFlecks, RandomInt(0,1)), RandomFloat(200,360));
 				effectrenderer->RegisterEffectForRender(pEffect);
-			}
+			}*/
 		}
 		else if(tr.hitmaterial->surfaceword == 'M') // metal
 		{
@@ -587,7 +583,7 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 				decal.normal = -tr.normal;
 				decal.origin = tr.traceEnd - tr.normal*0.05f;
 				decal.size = Vector3D(fDecScale);
-				decal.pMaterial = pDecalMaterial;
+				decal.material = pDecalMaterial;
 
 				tempdecal_t* pDecal = eqlevel->MakeTempDecal(decal);
 				if(pDecal)
@@ -611,12 +607,12 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 				decal.normal = -tr.normal;
 				decal.origin = tr.traceEnd - tr.normal*0.05f;
 				decal.size = Vector3D(fDecScale);
-				decal.pMaterial = pDecalMaterial;
+				decal.material = pDecalMaterial;
 
 				// make decal on entity
 				tr.hitEnt->MakeDecal( decal );
 			}
-
+			
 			if(dot(tr.normal, -impactDirection) < 0.8f)
 			{
 				CQuadEffect* quad = new CQuadEffect(tr.traceEnd+tr.normal,tr.normal, RandomFloat(4.4f,7.9f), RandomFloat(16.4f,16.9f), RandomFloat(0.1f,0.2f),EFFECT_GROUP_ID( MetalImpacts, 0));
@@ -660,7 +656,7 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 				CSparkLine* effect = new CSparkLine(tr.traceEnd, n*RandomFloat(25,80), Vector3D(0,-200,0), 45, RandomFloat(0.7,1.2), RandomFloat(0.9,0.6), 0.9f, EFFECT_GROUP_ID( Blood, 0), false);
 				effectrenderer->RegisterEffectForRender(effect);
 			}
-
+			
 			IPhysicsObject* pObj = tr.hitEnt ? tr.hitEnt->PhysicsGetObject() : NULL;
 
 			internaltrace_t decalTrace;
@@ -674,7 +670,7 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 				decal.normal = lerp(impactDirection, -decalTrace.normal, 0.5f);
 				decal.origin = decalTrace.traceEnd - decalTrace.normal*0.05f;
 				decal.size = Vector3D(bloodSize);
-				decal.pMaterial = GetParticleMaterial(EFFECT_GROUP_ID(BloodDecals, 0));
+				decal.material = GetParticleMaterial(EFFECT_GROUP_ID(BloodDecals, 0));
 				decal.flags = MAKEDECAL_FLAG_TEX_NORMAL | MAKEDECAL_FLAG_CLIPPING;
 
 				decal.texRotation = RandomFloat(-90, 90);
@@ -690,12 +686,11 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 			}
 		}
 	}
-	*/
 }
 
 void UTIL_ExplosionEffect(Vector3D &origin, Vector3D &direction, bool onGround)
 {
-	/* REWRITE_GAME_EFFECTS
+	/* REWRITE_GAME_EFFECTS */
 
 	int gID = 6;
 
@@ -707,7 +702,7 @@ void UTIL_ExplosionEffect(Vector3D &origin, Vector3D &direction, bool onGround)
 	decal.normal = direction;
 	decal.origin = origin;
 	decal.size = Vector3D(fDecScale);
-	decal.pMaterial = pDecalMaterial;
+	decal.material = pDecalMaterial;
 	decal.flags = MAKEDECAL_FLAG_CLIPPING;
 
 	tempdecal_t* pDecal = eqlevel->MakeTempDecal(decal);
@@ -773,7 +768,6 @@ void UTIL_ExplosionEffect(Vector3D &origin, Vector3D &direction, bool onGround)
 		CSmokeEffect* pEffect = new CSmokeEffect(origin+dir*5.0f, dir*RandomFloat(180,200), RandomFloat(40,49), RandomFloat(94,119), RandomFloat(1.25,2.05), EFFECT_GROUP_ID( Smoke, 0), RandomFloat(10,105), Vector3D(0,15,0), ColorRGB(0,0,0), ColorRGB(0,0,0));
 		effectrenderer->RegisterEffectForRender(pEffect);
 	}
-	*/
 }
 
 ConVar ph_contact_min_momentum("ph_contact_min_momentum", "60", "Minimum contact momentum for playing sound and making effects", CV_CHEAT);
