@@ -1228,61 +1228,56 @@ void MakeDefaultPoseAnimation()
 //************************************
 bool CompileScript(const char* filename)
 {
-	KeyValues* pKV = new KeyValues;
+	KeyValues kvs;
 
-	if( pKV->LoadFromFile(filename) )
-	{
-		kvkeybase_t* sec = pKV->GetRootSection();
-		if(sec)
-		{
-			g_outputfilename = sec->FindKeyBase("OutputPackage");
-
-			if(!g_outputfilename)
-			{
-				MsgError("No output specified from script\n");
-				return false;
-			}
-
-			g_model_usage = sec->FindKeyBase("CheckModel");
-
-			if(!g_model_usage)
-				return false;
-
-			g_model = Studio_LoadModel((_Es("models/") + KV_GetValueString(g_model_usage)).GetData());
-
-			if(g_model == NULL)
-				return false;
-
-			animPath = _Es(filename).Path_Strip_Name();
-
-			// begin script compilation
-			MakeDefaultPoseAnimation();
-
-			Msg("Loading animations\n");
-			// parse all animations in this script.
-			ParseAnimations(sec);
-
-			Msg("Loading pose parameters\n");
-			// parse all pose parameters
-			ParsePoseparameters(sec);
-
-			Msg("Loading sequences\n");
-			// parse sequences
-			ParseSequences(sec);
-		}
-		else
-		{
-			delete pKV;
-			return false;
-		}
-	}
-	else
+	if (!kvs.LoadFromFile(filename))
 	{
 		MsgError("Cannot open %s!\n", filename);
-
-		delete pKV;
 		return false;
 	}
+
+	kvkeybase_t* sec = kvs.GetRootSection();
+
+	g_outputfilename = sec->FindKeyBase("OutputPackage");
+
+	if(!g_outputfilename)
+	{
+		MsgError("No output specified from script\n");
+		return false;
+	}
+
+	g_model_usage = sec->FindKeyBase("CheckModel");
+
+	if (!g_model_usage)
+	{
+		MsgError("No 'CheckModel' specified!\n");
+		return false;
+	}
+			
+	g_model = Studio_LoadModel((_Es("models/") + KV_GetValueString(g_model_usage)).GetData());
+
+	if (g_model == NULL)
+	{
+		MsgError("Failed to load studio model '%s'\n", KV_GetValueString(g_model_usage));
+		return false;
+	}
+
+	animPath = _Es(filename).Path_Strip_Name();
+
+	// begin script compilation
+	MakeDefaultPoseAnimation();
+
+	Msg("Loading animations\n");
+	// parse all animations in this script.
+	ParseAnimations(sec);
+
+	Msg("Loading pose parameters\n");
+	// parse all pose parameters
+	ParsePoseparameters(sec);
+
+	Msg("Loading sequences\n");
+	// parse sequences
+	ParseSequences(sec);
 
 	// write made package
 	WriteAnimationPackage();
@@ -1290,7 +1285,6 @@ bool CompileScript(const char* filename)
 	// master cleanup
 	Cleanup();
 
-	delete pKV;
 	return true;
 }
 
