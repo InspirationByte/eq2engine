@@ -448,10 +448,10 @@ bool DkPhysics::CreateScene()
 
 
 	//m_dynamicsWorld->getDispatchInfo().m_enableSPU = true;
-	m_dynamicsWorld->getDispatchInfo().m_allowedCcdPenetration = 0.1f;
+	//m_dynamicsWorld->getDispatchInfo().m_allowedCcdPenetration = 0.1f;
 	m_dynamicsWorld->getDispatchInfo().m_useConvexConservativeDistanceUtil = true;
 	//m_dynamicsWorld->getDispatchInfo().m_enableSatConvex = true;
-	m_dynamicsWorld->getDispatchInfo().m_useContinuous = true;
+	//m_dynamicsWorld->getDispatchInfo().m_useContinuous = true;
 
 	// set physics world
 	g_pPhysicsWorld = m_dynamicsWorld;
@@ -1363,8 +1363,8 @@ IPhysicsObject* DkPhysics::CreateObject( studioPhysData_t* data, int nObject )
 
 	pPhysicsObject->m_pPhyObjectPointer->setDeactivationTime(0.1f);
 	pPhysicsObject->m_pPhyObjectPointer->setSleepingThresholds(10.0f, 10.0f);
-	pPhysicsObject->m_pPhyObjectPointer->setCcdMotionThreshold( fSize * ph_ccdMotionThresholdScale.GetFloat() );
-	pPhysicsObject->m_pPhyObjectPointer->setCcdSweptSphereRadius( fSize * ph_CcdSweptSphereRadiusScale.GetFloat() );
+	//pPhysicsObject->m_pPhyObjectPointer->setCcdMotionThreshold( fSize * ph_ccdMotionThresholdScale.GetFloat() );
+	//pPhysicsObject->m_pPhyObjectPointer->setCcdSweptSphereRadius( fSize * ph_CcdSweptSphereRadiusScale.GetFloat() );
 
 	pPhysicsObject->m_pPhyObjectPointer->setCollisionFlags(pPhysicsObject->m_pPhyObjectPointer->getCollisionFlags()  | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
 

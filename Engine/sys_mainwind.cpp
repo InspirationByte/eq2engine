@@ -235,11 +235,7 @@ int RunEngine(HINSTANCE hInst)
 			EQHandleSDLEvents(&event);
         }
 
-		if (s_bActive /* || g_pEngineHost->IsInMultiplayerGame()*/)
-		{
-			g_pEngineHost->Frame();
-		}
-		else Platform_Sleep(100);
+		g_pEngineHost->Frame();
 
 		// or yield
 		Platform_Sleep(0);

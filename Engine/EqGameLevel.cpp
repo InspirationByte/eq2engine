@@ -308,24 +308,42 @@ bool CEqLevel::LoadLevel(const char* pszLevelName)
 // Sector data format lumps
 char* EQWORLD_LUMP_NAMES[] = 
 {
+	// geometry file
 	"EQWLUMP_SURFACES",
 	"EQWLUMP_VERTICES",
 	"EQWLUMP_INDICES",
 	"EQWLUMP_MATERIALS",
 	"EQWLUMP_ENTITIES",				// default entities for the sector
 
+	// physics file
 	"EQWLUMP_PHYS_SURFACES",
 	"EQWLUMP_PHYS_VERTICES",
 	"EQWLUMP_PHYS_INDICES",
 
+	// occlusion file
 	"EQWLUMP_OCCLUSION_SURFACES",
 	"EQWLUMP_OCCLUSION_VERTS",
 	"EQWLUMP_OCCLUSION_INDICES",
 
-	"EQWLUMP_SECTORINFO",
+	// world file
+	"EQWLUMP_ROOMS",
+	"EQWLUMP_ROOMVOLUMES",
+	"EQWLUMP_AREAPORTALS",
+	"EQWLUMP_AREAPORTALVERTS",
+	"EQWLUMP_PLANES",
 
 	"EQWLUMP_LIGHTMAPINFO",			// lightmap information
-	"EQWLUMP_LIGHTS",				// lightmap light data
+	"EQWLUMP_LIGHTS",					// lightmap light data
+
+	// detail file
+	"EQWLUMP_DETAIL_SURFACES",		// decals, grass are details
+	"EQWLUMP_DETAIL_VERTICES",
+	"EQWLUMP_DETAIL_INDICES",
+
+	// decal file
+	"EQWLUMP_WATER_PLANES",
+	"EQWLUMP_WATER_INFOS",
+	"EQWLUMP_WATER_VOLUMES",
 
 	"EQWLUMP_COUNT",
 };
@@ -407,7 +425,7 @@ bool CEqLevel::LoadCompatibleWorldFile(const char* pszFileName)
 
 		int data_size = lump_data->data_size;
 
-		DevMsg(DEVMSG_CORE, "Lump: %s\n", EQWORLD_LUMP_NAMES[lump_data->data_type]);
+		DevMsg(DEVMSG_CORE, "Lump: %s (%d)\n", EQWORLD_LUMP_NAMES[lump_data->data_type], lump_data->data_type);
 
 		switch(lump_data->data_type)
 		{
@@ -909,6 +927,8 @@ void CEqLevel::UnloadLevel()
 
 	m_bIsLoaded = false;
 
+	m_EntityKeyValues.Reset();
+
 	for(int i = 0; i < m_pPhysicsObjects.numElem(); i++)
 		physics->DestroyPhysicsObject(m_pPhysicsObjects[i]);
 
@@ -922,7 +942,7 @@ void CEqLevel::UnloadLevel()
 		delete [] m_pMaterials;
 	}
 
-	m_pMaterials = NULL;
+	m_pMaterials = nullptr;
 	m_numMaterials = 0;
 
 	if(m_pLightmaps)
@@ -937,27 +957,27 @@ void CEqLevel::UnloadLevel()
 		delete [] m_pDirmaps;
 	}
 
-	m_pLightmaps = NULL;
-	m_pDirmaps = NULL;
+	m_pLightmaps = nullptr;
+	m_pDirmaps = nullptr;
+
+	m_numLightmaps = 0;
 
 	if(m_pLevelLights)
 		PPFree(m_pLevelLights);
-	m_pLevelLights = NULL;
+	m_pLevelLights = nullptr;
 	m_numLevelLights = 0;
 
 	if(m_pPhysVertexData)
 		PPFree(m_pPhysVertexData);
-	m_pPhysVertexData = NULL;
+	m_pPhysVertexData = nullptr;
 
 	if(m_pPhysIndexData)
 		PPFree(m_pPhysIndexData);
-	m_pPhysIndexData = NULL;
+	m_pPhysIndexData = nullptr;
 
 	if(m_pPhysSurfaces)
 		PPFree(m_pPhysSurfaces);
-	m_pPhysSurfaces = NULL;
-
-	m_numLightmaps = 0;
+	m_pPhysSurfaces = nullptr;
 
 	if(m_pRooms)
 	{
@@ -967,7 +987,10 @@ void CEqLevel::UnloadLevel()
 		m_numRooms = 0;
 
 		delete [] m_pRooms;
+		m_pRooms = nullptr;
 	}
+
+	m_numRooms = 0;
 
 	if(m_pPortals)
 	{
@@ -976,7 +999,7 @@ void CEqLevel::UnloadLevel()
 
 		delete [] m_pPortals;
 
-		m_pPortals = NULL;
+		m_pPortals = nullptr;
 	}
 
 	m_numPortals = 0;
@@ -991,7 +1014,7 @@ void CEqLevel::UnloadLevel()
 		delete [] m_pWaterInfos;
 	}
 
-	m_pWaterInfos = NULL;
+	m_pWaterInfos = nullptr;
 
 	for(int i = 0; i < m_StaticTransparents.numElem(); i++)
 		delete m_StaticTransparents[i];
@@ -1005,13 +1028,11 @@ void CEqLevel::UnloadLevel()
 
 	if(m_pDecalVertexFormat)
 		g_pShaderAPI->DestroyVertexFormat(m_pDecalVertexFormat);
-
-	m_pDecalVertexFormat = NULL;
+	m_pDecalVertexFormat = nullptr;
 
 	if(m_pVertexFormat_Lit)
 		g_pShaderAPI->DestroyVertexFormat(m_pVertexFormat_Lit);
-
-	m_pVertexFormat_Lit = NULL;
+	m_pVertexFormat_Lit = nullptr;
 
 	if(m_pVertexBuffer)
 		g_pShaderAPI->DestroyVertexBuffer(m_pVertexBuffer);
@@ -1019,17 +1040,17 @@ void CEqLevel::UnloadLevel()
 	if(m_pIndexBuffer)
 		g_pShaderAPI->DestroyIndexBuffer(m_pIndexBuffer);
 
-	m_pVertexBuffer = NULL;
-	m_pIndexBuffer = NULL;
+	m_pVertexBuffer = nullptr;
+	m_pIndexBuffer = nullptr;
 
 	if(m_bOcclusionAvailable)
 	{
 		delete [] m_pOcclusionSurfaces;
-		m_pOcclusionSurfaces = NULL;
+		m_pOcclusionSurfaces = nullptr;
 		m_numOcclusionSurfs = 0;
 
 		delete [] m_vOcclusionVerts;
-		m_vOcclusionVerts = NULL;
+		m_vOcclusionVerts = nullptr;
 
 		delete [] m_nOcclusionIndices;
 		m_nOcclusionIndices = 0;
@@ -1037,19 +1058,13 @@ void CEqLevel::UnloadLevel()
 		m_bOcclusionAvailable = false;
 	}
 
-	m_pRooms = NULL;
-	m_numRooms = 0;
-
-	m_EntityKeyValues.Reset();
-
-	if(m_pIndices)
-		PPFree(m_pIndices);
-
 	if(m_pVertices)
 		PPFree(m_pVertices);
-
-	m_pVertices = NULL;
-	m_pIndices = NULL;
+	m_pVertices = nullptr;
+	
+	if (m_pIndices)
+		PPFree(m_pIndices);
+	m_pIndices = nullptr;
 }
 
 struct decal_geom_data_t

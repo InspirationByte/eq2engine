@@ -715,7 +715,27 @@ bool CEngineGame::EngineRunFrame( float dTime )
 	return true;
 }
 
-DECLARE_CMD(start_world,"Loads world and starts new game",0)
+void fnstart_world_variants(DkList<EqString>& list, const char* query)
+{
+	DKFINDDATA* findData = nullptr;
+	EqString fileName = (char*)g_fileSystem->FindFirst("worlds/*", &findData, SP_MOD);
+
+	if (fileName.Length())
+	{
+		if (g_fileSystem->FindIsDirectory(findData) && fileName.Find(".") == -1)
+			list.append(fileName.Path_Strip_Ext());
+
+		while ((fileName = (char*)g_fileSystem->FindNext(findData)).Length())
+		{
+			if (g_fileSystem->FindIsDirectory(findData) && fileName.Find(".") == -1)
+				list.append(fileName.Path_Strip_Ext());
+		}
+
+		g_fileSystem->FindClose(findData);
+	}
+}
+
+DECLARE_CMD_VARIANTS(start_world,"Loads world and starts new game", fnstart_world_variants, 0)
 {
 	if(CMD_ARGC)
 	{

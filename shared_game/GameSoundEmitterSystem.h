@@ -283,6 +283,8 @@ public:
 
 	void						PrecacheSound(const char* pszName);							// precaches sound
 
+	void						GetAllSoundNames(DkList<EqString>& soundNames) const;
+
 	// emits new sound. returns channel type
 	int							EmitSound( EmitSound_t* emit );								// emits sound with specified parameters
 	void						Emit2DSound( EmitSound_t* emit, int channel = -1 );
@@ -296,7 +298,7 @@ public:
 
 	bool						UpdateEmitter( EmitterData_t* emit, soundParams_t &params, bool bForceNoInterp = false );
 
-	soundScriptDesc_t*			FindSound(const char* soundName);							// searches for loaded script sound
+	soundScriptDesc_t*			FindSound(const char* soundName) const;						// searches for loaded script sound
 
 	ISoundController*			CreateSoundController(EmitSound_t* ep);						// creates new sound controller
 	void						RemoveSoundController(ISoundController* cont);

@@ -26,7 +26,12 @@ static CSoundEmitterSystem s_ses;
 
 CSoundEmitterSystem* ses = &s_ses;
 
-DECLARE_CMD(test_scriptsound, "Test the scripted sound",0)
+void sounds_list(DkList<EqString>& list, const char* query)
+{
+	s_ses.GetAllSoundNames(list);
+}
+
+DECLARE_CMD_VARIANTS(test_scriptsound, "Test the scripted sound", sounds_list, 0)
 {
 	if(CMD_ARGC > 0)
 	{
@@ -438,7 +443,15 @@ void CSoundEmitterSystem::PrecacheSound(const char* pszName)
 #endif
 }
 
-soundScriptDesc_t* CSoundEmitterSystem::FindSound(const char* soundName)
+void CSoundEmitterSystem::GetAllSoundNames(DkList<EqString>& soundNames) const
+{
+	for (int i = 0; i < m_scriptsoundlist.numElem(); i++)
+	{
+		soundNames.append(m_scriptsoundlist[i]->pszName);
+	}
+}
+
+soundScriptDesc_t* CSoundEmitterSystem::FindSound(const char* soundName) const
 {
 	EqString sname(soundName);
 	sname = sname.LowerCase();

@@ -411,7 +411,7 @@ void CWeaponWireMine::HandleEvent(AnimationEvent nEvent, char* options)
 	{
 		m_bDeployed = true;
 	}
-	if((int)nEvent == 6)
+	else if((int)nEvent == 6)
 	{
 		m_bDeployed = false;
 
