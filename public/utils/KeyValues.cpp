@@ -208,38 +208,32 @@ void kvpairvalue_t::SetValueFromString( const char* pszValue )
 
 KeyValues::KeyValues()
 {
-	m_pKeyBase = new kvkeybase_t;
 }
 
 KeyValues::~KeyValues()
 {
-	delete m_pKeyBase;
 }
 
 void KeyValues::Reset()
 {
-	delete m_pKeyBase;
-	m_pKeyBase = NULL;
+	m_pKeyBase.Cleanup();
 }
 
 // searches for keybase
 kvkeybase_t* KeyValues::FindKeyBase(const char* pszName, int nFlags)
 {
-	if(!m_pKeyBase)
-		return NULL;
-
-	return m_pKeyBase->FindKeyBase(pszName, nFlags);
+	return m_pKeyBase.FindKeyBase(pszName, nFlags);
 }
 
 // loads from file
 bool KeyValues::LoadFromFile(const char* pszFileName, int nSearchFlags)
 {
-	return KV_LoadFromFile(pszFileName, nSearchFlags, m_pKeyBase) != NULL;
+	return KV_LoadFromFile(pszFileName, nSearchFlags, &m_pKeyBase) != NULL;
 }
 
 bool KeyValues::LoadFromStream(ubyte* pData)
 {
-	return KV_ParseSection( (const char*)pData, NULL, m_pKeyBase, 0 ) != NULL;
+	return KV_ParseSection( (const char*)pData, NULL, &m_pKeyBase, 0 ) != NULL;
 }
 
 void KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
@@ -248,7 +242,7 @@ void KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
 
 	if(pStream)
 	{
-		KV_WriteToStream(pStream, m_pKeyBase);
+		KV_WriteToStream(pStream, &m_pKeyBase);
 		g_fileSystem->Close(pStream);
 	}
 	else

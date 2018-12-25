@@ -232,10 +232,10 @@ public:
 
 	void			SaveToFile(const char* pszFileName, int nSearchFlags = -1);
 
-	kvkeybase_t*	GetRootSection() {return m_pKeyBase;}
+	kvkeybase_t*	GetRootSection() {return &m_pKeyBase;}
 
 private:
-	kvkeybase_t*	m_pKeyBase;
+	kvkeybase_t	m_pKeyBase;
 };
 
 //---------------------------------------------------------------------------------------------------------
