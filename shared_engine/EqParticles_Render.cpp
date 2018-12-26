@@ -19,16 +19,16 @@ CParticleLowLevelRenderer*	g_pPFXRenderer = &s_pfxRenderer;
 //----------------------------------------------------------------------------------------------------
 
 ConVar r_particleBufferSize("r_particleBufferSize", "16384", "particle buffer size, change requires restart game", CV_ARCHIVE);
+ConVar r_drawParticles("r_drawParticles", "1", "Render particles", CV_CHEAT);
 
 CParticleRenderGroup::CParticleRenderGroup() :
 	m_pMaterial(NULL),
 	m_useCustomProjMat(false),
-	m_vertexBuffer(NULL),
-	m_indexBuffer(NULL),
-	m_vertexFormat(NULL),
+	//m_vertexFormat(NULL),
 	m_invertCull(false)
 {
-
+	//memset(m_vertexBuffer, 0, sizeof(m_vertexBuffer));
+	//memset(m_indexBuffer, 0, sizeof(m_indexBuffer));
 }
 
 CParticleRenderGroup::~CParticleRenderGroup()
@@ -84,8 +84,6 @@ void CParticleRenderGroup::AddParticleStrip(PFXVertex_t* verts, int nVertices)
 	_AddParticleStrip(verts, nVertices);
 }
 
-ConVar r_drawParticles("r_drawParticles", "1", "Render particles", CV_CHEAT);
-
 // prepares render buffers and sends renderables to ViewRenderer
 void CParticleRenderGroup::Render(int nViewRenderFlags)
 {
@@ -99,25 +97,23 @@ void CParticleRenderGroup::Render(int nViewRenderFlags)
 	if(m_numVertices == 0 || (!m_triangleListMode && m_numIndices == 0))
 		return;
 
-	//if(!m_bHasOwnVBO)
 	{
 		g_pShaderAPI->Reset(STATE_RESET_VBO);
 		g_pShaderAPI->ApplyBuffers();
 
+		int vboIdx = g_pPFXRenderer->MakeVBOFrom(this);
+
 		// copy buffers
-		if(!g_pPFXRenderer->MakeVBOFrom(this))
+		if(vboIdx == -1)
 			return;
 
 		g_pShaderAPI->SetVertexFormat(g_pPFXRenderer->m_vertexFormat);
-		g_pShaderAPI->SetVertexBuffer(g_pPFXRenderer->m_vertexBuffer, 0);
+
+		g_pShaderAPI->SetVertexBuffer(g_pPFXRenderer->m_vertexBuffer[vboIdx], 0);
 
 		if(m_numIndices)
-			g_pShaderAPI->SetIndexBuffer(g_pPFXRenderer->m_indexBuffer);
+			g_pShaderAPI->SetIndexBuffer(g_pPFXRenderer->m_indexBuffer[vboIdx]);
 	}
-	//else
-	//{
-		// BLAH
-	//}
 
 	bool invertCull = m_invertCull || (nViewRenderFlags & EPRFLAG_INVERT_CULL);
 
@@ -190,10 +186,10 @@ void CPFXAtlasGroup::Shutdown()
 
 //----------------------------------------------------------------------------------------------------------
 
-CParticleLowLevelRenderer::CParticleLowLevelRenderer() : m_mutex(GetGlobalMutex(MUTEXPURPOSE_RENDERER))
+CParticleLowLevelRenderer::CParticleLowLevelRenderer() : m_mutex(GetGlobalMutex(MUTEXPURPOSE_RENDERER)), m_vboIdx(0)
 {
-	m_vertexBuffer = NULL;
-	m_indexBuffer = NULL;
+	memset(m_vertexBuffer, 0, sizeof(m_vertexBuffer));
+	memset(m_indexBuffer, 0, sizeof(m_indexBuffer));
 	m_vertexFormat = NULL;
 
 	m_initialized = false;
@@ -242,11 +238,11 @@ bool CParticleLowLevelRenderer::InitBuffers()
 
 	m_vbMaxQuads = r_particleBufferSize.GetInt();
 
-	if(!m_vertexBuffer)
-		m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, m_vbMaxQuads*4, sizeof(PFXVertex_t), nullptr);
-
-	if(!m_indexBuffer)
-		m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(m_vbMaxQuads*6, sizeof(int16), BUFFER_DYNAMIC, nullptr);
+	for (int i = 0; i < PARTICLE_RENDER_BUFFERS; i++)
+	{
+		m_vertexBuffer[i] = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, m_vbMaxQuads * 4, sizeof(PFXVertex_t), nullptr);
+		m_indexBuffer[i] = g_pShaderAPI->CreateIndexBuffer(m_vbMaxQuads * 6, sizeof(int16), BUFFER_DYNAMIC, nullptr);
+	}
 
 	if(!m_vertexFormat)
 	{
@@ -274,11 +270,16 @@ bool CParticleLowLevelRenderer::ShutdownBuffers()
 	MsgWarning("Destroying particle buffers...\n");
 
 	g_pShaderAPI->DestroyVertexFormat(m_vertexFormat);
-	g_pShaderAPI->DestroyIndexBuffer(m_indexBuffer);
-	g_pShaderAPI->DestroyVertexBuffer(m_vertexBuffer);
 
-	m_vertexBuffer = NULL;
-	m_indexBuffer = NULL;
+	for (int i = 0; i < PARTICLE_RENDER_BUFFERS; i++)
+	{
+		g_pShaderAPI->DestroyIndexBuffer(m_indexBuffer[i]);
+		g_pShaderAPI->DestroyVertexBuffer(m_vertexBuffer[i]);
+	}
+
+	memset(m_vertexBuffer, 0, sizeof(m_vertexBuffer));
+	memset(m_indexBuffer, 0, sizeof(m_indexBuffer));
+
 	m_vertexFormat = NULL;
 
 	m_initialized = false;
@@ -328,26 +329,31 @@ void CParticleLowLevelRenderer::ClearBuffers()
 	}
 }
 
-bool CParticleLowLevelRenderer::MakeVBOFrom(CSpriteBuilder<PFXVertex_t>* pGroup)
+int CParticleLowLevelRenderer::MakeVBOFrom(CSpriteBuilder<PFXVertex_t>* pGroup)
 {
 	if(!m_initialized)
-		return false;
+		return -1;
 
 	uint16 nVerts	= pGroup->m_numVertices;
 	uint16 nIndices	= pGroup->m_numIndices;
 
 	if(nVerts == 0)
-		return false;
+		return -1;
 
 	if(nVerts > SVBO_MAX_SIZE(m_vbMaxQuads, PFXVertex_t))
-		return false;
+		return -1;
 
-	m_vertexBuffer->Update((void*)pGroup->m_pVerts, nVerts, 0, true);
+	m_vboIdx++;
+
+	if (m_vboIdx >= PARTICLE_RENDER_BUFFERS)
+		m_vboIdx = 0;
+
+	m_vertexBuffer[m_vboIdx]->Update((void*)pGroup->m_pVerts, nVerts, 0, true);
 
 	if(nIndices)
-		m_indexBuffer->Update((void*)pGroup->m_pIndices, nIndices, 0, true);
+		m_indexBuffer[m_vboIdx]->Update((void*)pGroup->m_pIndices, nIndices, 0, true);
 
-	return true;
+	return m_vboIdx;
 }
 
 //----------------------------------------------------------------------------------------------------

@@ -58,18 +58,18 @@ Sizes:
 CDynamicMesh::CDynamicMesh() :
 	m_primType( PRIM_TRIANGLES ),
 	m_vertexFormat(NULL),
-	m_vertexBuffer(NULL),
-	m_indexBuffer(NULL),
 	m_numVertices(0),
 	m_numIndices(0),
 	m_vertices(NULL),
 	m_indices(NULL),
 	m_lockVertices(NULL),
 	m_lockIndices(NULL),
-	m_vboDirty(false),
-	m_vboAqquired(false)
+	m_vboDirty(-1),
+	m_vboAqquired(-1),
+	m_vboIdx(0)
 {
-
+	memset(m_vertexBuffer, 0, sizeof(m_vertexBuffer));
+	memset(m_indexBuffer, 0, sizeof(m_indexBuffer));
 }
 
 CDynamicMesh::~CDynamicMesh()
@@ -97,8 +97,14 @@ bool CDynamicMesh::Init( VertexFormatDesc_t* desc, int numAttribs )
 
 	m_vertexStride = vertexSize;
 
-	m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_DYNAMIC_VERTICES, m_vertexStride, NULL);
-	m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(MAX_DYNAMIC_INDICES, sizeof(uint16), BUFFER_DYNAMIC, NULL);
+	for (int i = 0; i < DYNAMICMESH_VBO_COUNT; i++)
+	{
+		m_vertexBuffer[i] = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_DYNAMIC_VERTICES, m_vertexStride, NULL);
+		m_indexBuffer[i] = g_pShaderAPI->CreateIndexBuffer(MAX_DYNAMIC_INDICES, sizeof(uint16), BUFFER_DYNAMIC, NULL);
+	}
+
+	m_vboIdx = 0;
+
 	m_vertexFormat = g_pShaderAPI->CreateVertexFormat(desc, numAttribs);
 
 	m_vertices = PPAlloc(MAX_DYNAMIC_VERTICES*m_vertexStride);
@@ -115,15 +121,20 @@ void CDynamicMesh::Destroy()
 	Reset();
 	Unlock();
 
-	g_pShaderAPI->DestroyIndexBuffer(m_indexBuffer);
-	g_pShaderAPI->DestroyVertexBuffer(m_vertexBuffer);
+	for (int i = 0; i < DYNAMICMESH_VBO_COUNT; i++)
+	{
+		g_pShaderAPI->DestroyIndexBuffer(m_indexBuffer[i]);
+		g_pShaderAPI->DestroyVertexBuffer(m_vertexBuffer[i]);
+	}
+
 	g_pShaderAPI->DestroyVertexFormat(m_vertexFormat);
 
 	PPFree(m_vertices);
 	PPFree(m_indices);
 
-	m_indexBuffer = NULL;
-	m_vertexBuffer = NULL;
+	memset(m_vertexBuffer, 0, sizeof(m_vertexBuffer));
+	memset(m_indexBuffer, 0, sizeof(m_indexBuffer));
+
 	m_vertexFormat = NULL;
 
 	m_vertices = NULL;
@@ -157,7 +168,7 @@ void CDynamicMesh::AddStripBreak()
 		return;
 
 	if(m_numIndices == 0)
-		return; // no problemo
+		return; // no problemo 
 
 	int num_ind = m_numIndices;
 
@@ -176,7 +187,7 @@ void CDynamicMesh::AddStripBreak()
 		m_numIndices += 2;
 	}
 
-	m_vboDirty = true;
+	m_vboDirty = m_vboIdx;
 }
 
 // allocates geometry chunk. Returns the start index. Will return -1 if failed
@@ -212,22 +223,22 @@ int CDynamicMesh::AllocateGeom( int nVertices, int nIndices, void** verts, uint1
 
 	memset(*verts, 0, m_vertexStride*nVertices);
 
-	m_vboDirty = true;
+	m_vboDirty = m_vboIdx;
 
 	return startVertex;
 }
 
 bool CDynamicMesh::Lock()
 {
-	if(!m_vboAqquired)
+	if(m_vboAqquired == -1)
 	{
-		if(!m_vertexBuffer->Lock(0, m_numVertices, &m_lockVertices, false))
+		if(!m_vertexBuffer[m_vboIdx]->Lock(0, m_numVertices, &m_lockVertices, false))
 			return false;
 
-		if(!m_indexBuffer->Lock(0, m_numIndices, (void**)&m_lockIndices, false))
+		if(!m_indexBuffer[m_vboIdx]->Lock(0, m_numIndices, (void**)&m_lockIndices, false))
 			return false;
 
-		m_vboAqquired = true;
+		m_vboAqquired = m_vboIdx;
 	}
 
 	return true;
@@ -235,13 +246,14 @@ bool CDynamicMesh::Lock()
 
 void CDynamicMesh::Unlock()
 {
-	if(m_vboAqquired)
-	{
-		m_vertexBuffer->Unlock();
-		m_indexBuffer->Unlock();
+	if (m_vboAqquired == -1)
+		return;
 
-		m_vboAqquired = false;
-	}
+	m_vertexBuffer[m_vboAqquired]->Unlock();
+	m_indexBuffer[m_vboAqquired]->Unlock();
+
+	m_vboAqquired = -1;
+	m_vboDirty = -1;
 }
 
 // uploads buffers and renders the mesh. Note that you has been set material and adjusted RTs
@@ -250,25 +262,27 @@ void CDynamicMesh::Render()
 	if(m_numVertices == 0)
 		return;
 
+	ASSERT(m_vboAqquired != m_vboIdx);
+
 	bool drawIndexed = m_numIndices > 0;
 
-	if(m_vboDirty)
+	if(m_vboDirty == m_vboIdx)
 	{
-		m_vertexBuffer->Update(m_vertices, m_numVertices, 0, true);
+		m_vertexBuffer[m_vboIdx]->Update(m_vertices, m_numVertices, 0, true);
 
 		if(drawIndexed)
-			m_indexBuffer->Update(m_indices, m_numIndices, 0, true);
+			m_indexBuffer[m_vboIdx]->Update(m_indices, m_numIndices, 0, true);
 
-		m_vboDirty = false;
+		m_vboDirty = -1;
 	}
 
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
 
 	g_pShaderAPI->SetVertexFormat(m_vertexFormat);
-	g_pShaderAPI->SetVertexBuffer(m_vertexBuffer, 0);
+	g_pShaderAPI->SetVertexBuffer(m_vertexBuffer[m_vboIdx], 0);
 
 	if(drawIndexed)
-		g_pShaderAPI->SetIndexBuffer(m_indexBuffer);
+		g_pShaderAPI->SetIndexBuffer(m_indexBuffer[m_vboIdx]);
 
 	g_pShaderAPI->ApplyBuffers();
 
@@ -283,6 +297,14 @@ void CDynamicMesh::Reset()
 {
 	m_numVertices = 0;
 	m_numIndices = 0;
-	m_vboDirty = false;
+
+	m_vboDirty = -1;
+
+	m_vboIdx++;
+
+	// cycle VBOs
+	if (m_vboIdx >= DYNAMICMESH_VBO_COUNT)
+		m_vboIdx = 0;
+
 	Unlock();
 }

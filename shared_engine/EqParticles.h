@@ -43,6 +43,8 @@ struct PFXVertex_t
 	//half			unused;
 };
 
+#define PARTICLE_RENDER_BUFFERS 2
+
 //
 // Particle renderer
 //
@@ -97,9 +99,9 @@ protected:
 	bool				m_useCustomProjMat;
 	Matrix4x4			m_customProjMat;
 
-	IVertexBuffer*		m_vertexBuffer;
-	IIndexBuffer*		m_indexBuffer;
-	IVertexFormat*		m_vertexFormat;
+	//IVertexBuffer*		m_vertexBuffer[PARTICLE_RENDER_BUFFERS];
+	//IIndexBuffer*		m_indexBuffer[PARTICLE_RENDER_BUFFERS];
+	//IVertexFormat*		m_vertexFormat;
 
 	bool				m_invertCull;
 };
@@ -142,7 +144,8 @@ public:
 	void							Render(int nRenderFlags);
 	void							ClearBuffers();
 
-	bool							MakeVBOFrom(CSpriteBuilder<PFXVertex_t>* pGroup);
+	// returns VBO index
+	int								MakeVBOFrom(CSpriteBuilder<PFXVertex_t>* pGroup);
 
 	bool							InitBuffers();
 	bool							ShutdownBuffers();
@@ -153,9 +156,11 @@ protected:
 
 	DkList<CParticleRenderGroup*>	m_renderGroups;
 
-	IVertexBuffer*					m_vertexBuffer;
-	IIndexBuffer*					m_indexBuffer;
+	IVertexBuffer*					m_vertexBuffer[PARTICLE_RENDER_BUFFERS];
+	IIndexBuffer*					m_indexBuffer[PARTICLE_RENDER_BUFFERS];
 	IVertexFormat*					m_vertexFormat;
+
+	int								m_vboIdx;
 
 	int								m_vbMaxQuads;
 

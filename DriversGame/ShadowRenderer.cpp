@@ -351,14 +351,15 @@ void CShadowRenderer::Draw()
 		return;
 
 	// upload to vertex & index buffers
-	if(!g_pPFXRenderer->MakeVBOFrom(this))
+	int vboIdx = g_pPFXRenderer->MakeVBOFrom(this);
+	if(vboIdx == -1)
 		return;
 
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
 
 	g_pShaderAPI->SetVertexFormat(g_pPFXRenderer->m_vertexFormat);
-	g_pShaderAPI->SetVertexBuffer(g_pPFXRenderer->m_vertexBuffer, 0);
-	//g_pShaderAPI->SetIndexBuffer(g_pPFXRenderer->m_indexBuffer);
+	g_pShaderAPI->SetVertexBuffer(g_pPFXRenderer->m_vertexBuffer[vboIdx], 0);
+	//g_pShaderAPI->SetIndexBuffer(g_pPFXRenderer->m_indexBuffer[vboIdx]);
 
 	// render
 	materials->SetCullMode( CULL_BACK );
