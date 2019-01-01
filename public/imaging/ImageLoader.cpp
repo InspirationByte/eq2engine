@@ -20,7 +20,7 @@
 
 extern "C"
 {
-#include <jpeglib.h>
+#include <include/jpeglib.h>
 }
 
 #endif // NO_JPEG

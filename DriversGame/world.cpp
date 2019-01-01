@@ -629,8 +629,10 @@ void CGameWorld::Init()
 
 	g_pRainEmitter->Init();
 
+	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
+
 	// instancing
-	if(g_pShaderAPI->GetCaps().isInstancingSupported)
+	if(caps.isInstancingSupported)
 	{
 		if(!m_objectInstFormat)
 			m_objectInstFormat = g_pShaderAPI->CreateVertexFormat(s_gameObjectInstanceFmtDesc, elementsOf(s_gameObjectInstanceFmtDesc));
@@ -652,7 +654,7 @@ void CGameWorld::Init()
 			m_lightsTex->Ref_Grab();
 	}
 
-	if(!m_sunGlowOccQuery)
+	if(!m_sunGlowOccQuery && caps.isHardwareOcclusionQuerySupported)
 		m_sunGlowOccQuery = g_pShaderAPI->CreateOcclusionQuery();
 
 	if(!m_pointQueryMat)
@@ -672,25 +674,36 @@ void CGameWorld::Init()
 		materials->PutMaterialToLoadingQueue(m_pointQueryMat);
 	}
 
-	if(!m_reflectionTex)
+	ETextureFormat reflTextureTargetFormat = FORMAT_RGB8;
+
+	if (!caps.renderTargetFormatsSupported[reflTextureTargetFormat])
+		reflTextureTargetFormat = FORMAT_RGBA8;
+
+	if (caps.renderTargetFormatsSupported[reflTextureTargetFormat])
 	{
-		m_reflectionTex = g_pShaderAPI->CreateNamedRenderTarget("_reflection", 512, 256, FORMAT_RGBA8, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
-		m_reflectionTex->Ref_Grab();
+		if (!m_reflectionTex)
+		{
+			m_reflectionTex = g_pShaderAPI->CreateNamedRenderTarget("_reflection", 512, 256, reflTextureTargetFormat, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
+			m_reflectionTex->Ref_Grab();
+		}
+
+		if (!m_tempReflTex)
+		{
+			m_tempReflTex = g_pShaderAPI->CreateNamedRenderTarget("_tempTexture", 512, 256, reflTextureTargetFormat, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
+			m_tempReflTex->Ref_Grab();
+		}
+
+		if (!m_reflDepth)
+		{
+			m_reflDepth = g_pShaderAPI->CreateNamedRenderTarget("_reflDepth", 512, 256, FORMAT_D16, TEXFILTER_NEAREST);
+			m_reflDepth->Ref_Grab();
+		}
+	}
+	else
+	{
+		r_drawFakeReflections.SetBool(false);
 	}
 
-	if(!m_tempReflTex)
-	{
-		m_tempReflTex = g_pShaderAPI->CreateNamedRenderTarget("_tempTexture", 512, 256, FORMAT_RGBA8, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
-		m_tempReflTex->Ref_Grab();
-	}
-
-	if(!m_reflDepth)
-	{
-		m_reflDepth = g_pShaderAPI->CreateNamedRenderTarget("_reflDepth", 512, 256, FORMAT_D16, TEXFILTER_NEAREST);
-		m_reflDepth->Ref_Grab();
-	}
-	
-	
 	if(!m_blurYMaterial)
 	{
 		kvkeybase_t blurParams;
@@ -1674,6 +1687,9 @@ void CGameWorld::DrawLensFlare( const Vector2D& screenSize, const Vector2D& scre
 void CGameWorld::DrawFakeReflections()
 {
 #ifndef EDITOR
+	if (!m_reflectionTex)
+		return;
+
 	bool draw = r_drawFakeReflections.GetBool() && (m_envConfig.lightsType != 0 || m_envWetness > 0.01f);
 	if (!draw)
 	{
@@ -2030,10 +2046,18 @@ void CGameWorld::Draw( int nRenderFlags )
 
 			uint32 pixels = LENS_TOTAL_PIXELS;
 
-			if(m_sunGlowOccQuery->IsReady())
-				pixels = m_sunGlowOccQuery->GetVisiblePixels();
+			do
+			{
+				if (m_sunGlowOccQuery->IsReady())
+				{
+					pixels = m_sunGlowOccQuery->GetVisiblePixels();
+					m_lensIntensityTiming = (float)pixels * LENS_PIXEL_TO_INTENSITY * fIntensity;
 
-			m_lensIntensityTiming = (float)pixels * LENS_PIXEL_TO_INTENSITY * fIntensity;
+					break;
+				}
+				Threading::Yield();	// FIXME: this is not the best solution
+
+			} while (true);
 
 			m_sunGlowOccQuery->Begin();
 			{

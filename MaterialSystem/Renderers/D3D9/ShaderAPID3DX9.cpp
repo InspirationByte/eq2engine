@@ -26,6 +26,8 @@
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
 
+#include <d3dx9.h>
+
 HOOK_TO_CVAR(r_loadmiplevel);
 
 bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags);
@@ -2217,7 +2219,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 			char minor = '0';
 
-			int cnt = sscanf(profile.GetData(), "vs_%d_%c", &vsVersion, &minor);
+			sscanf(profile.GetData(), "vs_%d_%c", &vsVersion, &minor);
 
 			if(vsVersion > maxVSVersion)
 			{
@@ -2275,7 +2277,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 			char minor = '0';
 
-			int cnt = sscanf(profile.GetData(), "ps_%d_%c", &psVersion, &minor);
+			sscanf(profile.GetData(), "ps_%d_%c", &psVersion, &minor);
 
 			if(psVersion > maxPSVersion)
 			{
@@ -2405,8 +2407,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	D3DXCONSTANT_DESC cDesc;
 	for (uint i = 0; i < vsDesc.Constants; i++)
 	{
-		UINT count = 1;
-		pShader->m_pVSConstants->GetConstantDesc(pShader->m_pVSConstants->GetConstant(NULL, i), &cDesc, &count);
+		UINT cnt = 1;
+		pShader->m_pVSConstants->GetConstantDesc(pShader->m_pVSConstants->GetConstant(NULL, i), &cDesc, &cnt);
 
 		//size_t length = strlen(cDesc.Name);
 		if (cDesc.Type >= D3DXPT_SAMPLER && cDesc.Type <= D3DXPT_SAMPLERCUBE)
@@ -2429,8 +2431,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	uint nVSConsts = nConstants;
 	for (uint i = 0; i < psDesc.Constants; i++)
 	{
-		UINT count = 1;
-		pShader->m_pPSConstants->GetConstantDesc(pShader->m_pPSConstants->GetConstant(NULL, i), &cDesc, &count);
+		UINT cnt = 1;
+		pShader->m_pPSConstants->GetConstantDesc(pShader->m_pPSConstants->GetConstant(NULL, i), &cDesc, &cnt);
 
 		//size_t length = strlen(cDesc.Name);
 		if (cDesc.Type >= D3DXPT_SAMPLER && cDesc.Type <= D3DXPT_SAMPLERCUBE)
@@ -2443,11 +2445,11 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		else 
 		{
 			int merge = -1;
-			for (uint i = 0; i < nVSConsts; i++)
+			for (uint j = 0; j < nVSConsts; j++)
 			{
-				if (strcmp(constants[i].name, cDesc.Name) == 0)
+				if (strcmp(constants[j].name, cDesc.Name) == 0)
 				{
-					merge = i;
+					merge = j;
 					break;
 				}
 			}

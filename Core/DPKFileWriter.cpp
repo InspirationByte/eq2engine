@@ -7,6 +7,10 @@
 
 #include "DPKFileWriter.h"
 
+#ifdef _WIN32
+#define ZLIB_WINAPI
+#endif // _WIN32
+
 #include <zlib.h>
 
 #include "utils/strtools.h"

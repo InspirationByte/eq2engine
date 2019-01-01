@@ -9,6 +9,9 @@
 #include "DebugInterface.h"
 #include "IConCommandFactory.h"
 
+#ifdef _WIN32
+#define ZLIB_WINAPI
+#endif // _WIN32
 #include <zlib.h>
 
 namespace Networking

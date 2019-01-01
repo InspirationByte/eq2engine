@@ -54,12 +54,14 @@
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IncludePath);D:\DXSDK_NOV\Include</IncludePath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IncludePath);D:\DXSDK_NOV\Include</IncludePath>
-    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">D:\DXSDK_NOV\Lib\x86;$(LibraryPath)</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">D:\DXSDK_NOV\Lib\x86;$(LibraryPath)</LibraryPath>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">eqD3D9RHI</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">eqD3D9RHI</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(SolutionDir)src_dependency\minidx9\Include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)src_dependency\minidx9\Lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -211,8 +213,7 @@
     <ResourceCompile Include="Resources.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\src_dependency\jpeg\Release\jpeg.lib" />
-    <Library Include="..\..\src_dependency\zlib\MinSizeRel\zlibstatic.lib" />
+    <Library Include="..\..\src_dependency\jpeg\lib\jpeg.lib" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\coreLib.vcxproj">

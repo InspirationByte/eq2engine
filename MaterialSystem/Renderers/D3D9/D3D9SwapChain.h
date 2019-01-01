@@ -11,7 +11,6 @@
 #include "IEqSwapChain.h"
 
 #include <d3d9.h>
-#include <d3dx9.h>
 
 #include "CD3D9Texture.h"
 

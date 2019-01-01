@@ -326,7 +326,7 @@ call copy_whitecage_engine.bat $(ConfigurationName)</Command>
     <Library Include="..\libs\libogg_static.lib" />
     <Library Include="..\libs\libvorbisfile_static.lib" />
     <Library Include="..\libs\libvorbis_static.lib" />
-    <Library Include="..\src_dependency\OpenALSoftCustom\build\Release\OpenAL32.lib" />
+    <Library Include="..\src_dependency\openal-soft\build\Release\OpenAL32.lib" />
     <Library Include="..\src_dependency\zlib\MinSizeRel\zlibstatic.lib" />
     <Library Include="..\src_dependency\bullet\bin\BulletCollision.lib" />
     <Library Include="..\src_dependency\bullet\bin\BulletDynamics.lib" />

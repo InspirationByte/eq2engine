@@ -409,9 +409,6 @@
     <Library Include="..\src_dependency\bullet\bin\LinearMath.lib">
       <Filter>Libs\Bullet</Filter>
     </Library>
-    <Library Include="..\src_dependency\OpenALSoftCustom\build\Release\OpenAL32.lib">
-      <Filter>Libs</Filter>
-    </Library>
     <Library Include="..\src_dependency\zlib\MinSizeRel\zlibstatic.lib">
       <Filter>Libs</Filter>
     </Library>
@@ -419,6 +416,9 @@
       <Filter>Libs</Filter>
     </Library>
     <Library Include="..\src_dependency\jpeg\Release\jpeg.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\openal-soft\build\Release\OpenAL32.lib">
       <Filter>Libs</Filter>
     </Library>
   </ItemGroup>

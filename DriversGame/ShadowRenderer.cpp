@@ -56,11 +56,28 @@ void CShadowRenderer::Init()
 	if(!r_shadows.GetBool())
 		return; // don't init shadows
 
+	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
+
+	ETextureFormat shadowRendertargetFormat = FORMAT_R8;
+
+	if (!caps.renderTargetFormatsSupported[shadowRendertargetFormat])
+		shadowRendertargetFormat = FORMAT_RGB8;
+
+	if (!caps.renderTargetFormatsSupported[shadowRendertargetFormat])
+		shadowRendertargetFormat = FORMAT_RGBA8;
+
+	if (!caps.renderTargetFormatsSupported[shadowRendertargetFormat])
+	{
+		MsgWarning("r_shadows: not supported!\n");
+		r_shadows.SetBool(false);
+		return;
+	}
+
 	m_shadowTextureSize = r_shadowAtlasSize.GetFloat();
 	m_shadowTexelSize = 1.0f / m_shadowTextureSize;
 
 	// create shadow render target
-	m_shadowTexture = g_pShaderAPI->CreateNamedRenderTarget("_dshadow", m_shadowTextureSize.x, m_shadowTextureSize.y, FORMAT_R8);
+	m_shadowTexture = g_pShaderAPI->CreateNamedRenderTarget("_dshadow", m_shadowTextureSize.x, m_shadowTextureSize.y, shadowRendertargetFormat);
 	m_shadowTexture->Ref_Grab();
 
 	// shadow render target for rendering and blitting
