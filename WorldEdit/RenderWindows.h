@@ -57,6 +57,8 @@ protected:
 
 	wxPoint					m_vLastCursorPos;
 	wxPoint					m_vLastClientCursorPos;
+
+	IEqSwapChain*			m_swapChain;
 };
 
 #endif // RENDERWINDOW_H

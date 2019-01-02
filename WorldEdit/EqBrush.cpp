@@ -145,9 +145,7 @@ void EqBrushWinding_t::CalculateTextureCoordinates()
 	int texSizeW = 32;
 	int texSizeH = 32;
 
-	pAssignedFace->pMaterial->GetShader()->InitParams();
-
-	ITexture* pTex = pAssignedFace->pMaterial->GetShader()->GetBaseTexture();
+	ITexture* pTex = pAssignedFace->pMaterial->GetBaseTexture();
 
 	if(pTex)
 	{
@@ -1303,13 +1301,13 @@ bool CEditableBrush::LoadFromKeyValues(kvkeybase_t* pSection)
 		face.vScale = UTIL_StringToVector2(pPair->values[0]);
 
 		pPair = pThisFace->FindKeyBase("rotation");
-		face.fRotation = atof(pPair->values[0]);
+		face.fRotation = KV_GetValueFloat(pPair);
 
 		pPair = pThisFace->FindKeyBase("material");
-		face.pMaterial = materials->GetMaterial(pPair->values[0], true);
+		face.pMaterial = materials->GetMaterial(KV_GetValueString(pPair), true);
 
 		pPair = pThisFace->FindKeyBase("smoothinggroup");
-		face.nSmoothingGroup = atoi(pPair->values[0]);
+		face.nSmoothingGroup = KV_GetValueInt(pPair);
 
 		pPair = pThisFace->FindKeyBase("nocollide");
 		face.nFlags |= KV_GetValueBool(pPair, false) ? STFL_NOCOLLIDE : 0;

@@ -15,6 +15,8 @@
 #include "EditableSurface.h"
 #include "EqBrush.h"
 
+#include "materialsystem/MeshBuilder.h"
+
 // for string2vector
 #include "EntityDef.h"
 
@@ -127,56 +129,60 @@ void CEditableDecal::Render(int nViewRenderFlags)
 
 	debugoverlay->Box3D(m_bbox[0], m_bbox[1], ColorRGBA(m_groupColor,1));
 
-	IMeshBuilder* pBuilder = g_pShaderAPI->CreateMeshBuilder();
+	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
+	materials->SetRasterizerStates(CULL_BACK, FILL_SOLID);
+	materials->SetDepthStates(true, true);
+
+	CMeshBuilder builder(materials->GetDynamicMesh());
 
 	Vector3D min = m_position - Vector3D(2);
 	Vector3D max = m_position + Vector3D(2);
 
+	// FIXME: use DebugOverlay do render it
+
 	materials->BindMaterial(g_pLevel->GetFlatMaterial());
 
-	pBuilder->Begin(PRIM_TRIANGLE_STRIP);
-		pBuilder->Position3f(min.x, max.y, max.z);
-		pBuilder->AdvanceVertex();
-		pBuilder->Position3f(max.x, max.y, max.z);
-		pBuilder->AdvanceVertex();
-		pBuilder->Position3f(min.x, max.y, min.z);
-		pBuilder->AdvanceVertex();
-		pBuilder->Position3f(max.x, max.y, min.z);
-		pBuilder->AdvanceVertex();
-		pBuilder->Position3f(min.x, min.y, min.z);
-		pBuilder->AdvanceVertex();
-		pBuilder->Position3f(max.x, min.y, min.z);
-		pBuilder->AdvanceVertex();
-		pBuilder->Position3f(min.x, min.y, max.z);
-		pBuilder->AdvanceVertex();
-		pBuilder->Position3f(max.x, min.y, max.z);
-		pBuilder->AdvanceVertex();
+	builder.Begin(PRIM_TRIANGLE_STRIP);
+		builder.Position3f(min.x, max.y, max.z);
+		builder.AdvanceVertex();
+		builder.Position3f(max.x, max.y, max.z);
+		builder.AdvanceVertex();
+		builder.Position3f(min.x, max.y, min.z);
+		builder.AdvanceVertex();
+		builder.Position3f(max.x, max.y, min.z);
+		builder.AdvanceVertex();
+		builder.Position3f(min.x, min.y, min.z);
+		builder.AdvanceVertex();
+		builder.Position3f(max.x, min.y, min.z);
+		builder.AdvanceVertex();
+		builder.Position3f(min.x, min.y, max.z);
+		builder.AdvanceVertex();
+		builder.Position3f(max.x, min.y, max.z);
+		builder.AdvanceVertex();
 
-		pBuilder->Position3f(max.x, min.y, max.z);
-		pBuilder->AdvanceVertex();
+		builder.Position3f(max.x, min.y, max.z);
+		builder.AdvanceVertex();
 
-		pBuilder->Position3f(max.x, min.y, min.z);
-		pBuilder->AdvanceVertex();
+		builder.Position3f(max.x, min.y, min.z);
+		builder.AdvanceVertex();
 
-		pBuilder->Position3f(max.x, min.y, min.z);
-		pBuilder->AdvanceVertex();
-		pBuilder->Position3f(max.x, max.y, min.z);
-		pBuilder->AdvanceVertex();
-		pBuilder->Position3f(max.x, min.y, max.z);
-		pBuilder->AdvanceVertex();
-		pBuilder->Position3f(max.x, max.y, max.z);
-		pBuilder->AdvanceVertex();
-		pBuilder->Position3f(min.x, min.y, max.z);
-		pBuilder->AdvanceVertex();
-		pBuilder->Position3f(min.x, max.y, max.z);
-		pBuilder->AdvanceVertex();
-		pBuilder->Position3f(min.x, min.y, min.z);
-		pBuilder->AdvanceVertex();
-		pBuilder->Position3f(min.x, max.y, min.z);
-		pBuilder->AdvanceVertex();
-	pBuilder->End();
-
-	g_pShaderAPI->DestroyMeshBuilder(pBuilder);
+		builder.Position3f(max.x, min.y, min.z);
+		builder.AdvanceVertex();
+		builder.Position3f(max.x, max.y, min.z);
+		builder.AdvanceVertex();
+		builder.Position3f(max.x, min.y, max.z);
+		builder.AdvanceVertex();
+		builder.Position3f(max.x, max.y, max.z);
+		builder.AdvanceVertex();
+		builder.Position3f(min.x, min.y, max.z);
+		builder.AdvanceVertex();
+		builder.Position3f(min.x, max.y, max.z);
+		builder.AdvanceVertex();
+		builder.Position3f(min.x, min.y, min.z);
+		builder.AdvanceVertex();
+		builder.Position3f(min.x, max.y, min.z);
+		builder.AdvanceVertex();
+	builder.End();
 }
 
 void CEditableDecal::RenderGhost(Vector3D &addpos, Vector3D &addscale, Vector3D &addrot, bool use_center, Vector3D &center)
@@ -813,7 +819,7 @@ bool CEditableDecal::LoadFromKeyValues(kvkeybase_t* pSection)
 
 	pair = pSection->FindKeyBase("material");
 	if(pair)
-		m_surftex.pMaterial = materials->GetMaterial(pair->values[0], true);
+		m_surftex.pMaterial = materials->GetMaterial(KV_GetValueString(pair));
 
 	pair = pSection->FindKeyBase("nplane");
 
@@ -851,11 +857,11 @@ bool CEditableDecal::LoadFromKeyValues(kvkeybase_t* pSection)
 
 	pair = pSection->FindKeyBase("rotation");
 	if(pair)
-		m_surftex.fRotation = atof(pair->values[0]);
+		m_surftex.fRotation = KV_GetValueFloat(pair);
 
 	pair = pSection->FindKeyBase("customtex");
 	if(pair)
-		m_surftex.nFlags = atoi(pair->values[0]) ? STFL_CUSTOMTEXCOORD : 0;
+		m_surftex.nFlags = KV_GetValueBool(pair) ? STFL_CUSTOMTEXCOORD : 0;
 
 	BeginModify();
 	UpdateDecalGeom();

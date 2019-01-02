@@ -36,5 +36,8 @@
 	Windows: using premake, create project files for vs2012. 
 			Change build settings to Multithreaded DLL option, otherwise it won't link.
 			Required projects: LinearMath, BulletCollision, BulletDynamics, BulletSoftBody, ConvexDecomposition
+			
+* **wxWidgets**
+	Windows/Linux: use wxWidgets 3.1, you can build it by yourself or download compiled dev package.
 	
 There has to be more dependencies, but there is enough for building **Driver Syndicate**.

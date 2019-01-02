@@ -24,19 +24,19 @@ BEGIN_EVENT_TABLE(CSoundList, wxDialog)
 	EVT_BUTTON(-1, CSoundList::OnButtonClick)
 END_EVENT_TABLE()
 
-CSoundList::CSoundList() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_SOUNDLIST", "Sound list"), wxPoint(-1,-1),wxSize(310,630), wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX)
+CSoundList::CSoundList() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_SOUNDLIST", L"Sound list"), wxPoint(-1,-1),wxSize(310,630), wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX)
 {
 	Iconize( false );
 
 	m_pSndList = new wxListBox(this, BUTTON_SELECT, wxPoint(5,5), wxSize(290,450), 0, NULL, wxLB_SINGLE | wxLB_SORT);
 
-	new wxStaticText(this, -1, DKLOC("TOKEN_SEARCHTOK", "Search string"), wxPoint(5,460));
+	new wxStaticText(this, -1, DKLOC("TOKEN_SEARCHTOK", L"Search string"), wxPoint(5,460));
 	m_pSearchText = new wxTextCtrl(this, -1, "", wxPoint(75,460), wxSize(210, 25));
 
-	new wxStaticText(this, -1, DKLOC("TOKEN_SOUNDNAME", "Sound name"), wxPoint(5,490));
+	new wxStaticText(this, -1, DKLOC("TOKEN_SOUNDNAME", L"Sound name"), wxPoint(5,490));
 	m_pSoundName = new wxTextCtrl(this, -1, "", wxPoint(75,490), wxSize(210, 25), wxTE_READONLY);
 
-	new wxButton(this, BUTTON_SEARCH, DKLOC("TOKEN_SEARCH", "Search"), wxPoint(5,550),wxSize(65,25));
+	new wxButton(this, BUTTON_SEARCH, DKLOC("TOKEN_SEARCH", L"Search"), wxPoint(5,550),wxSize(65,25));
 
 	UpdateList();
 }
@@ -44,7 +44,7 @@ CSoundList::CSoundList() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_SOUNDLIS
 void CSoundList::Reload()
 {
 	ses->Shutdown();
-	ses->Init();
+	ses->Init(2000.0f);
 
 	UpdateList();
 }
@@ -59,7 +59,7 @@ void CSoundList::UpdateList()
 {
 	m_pSndList->Clear();
 
-	EqString search_str(m_pSearchText->GetValue().c_str());
+	EqString search_str(m_pSearchText->GetValue().c_str().AsChar());
 
 	// fill the list
 	for(int i = 0; i < ses->m_scriptsoundlist.numElem(); i++)
@@ -81,8 +81,7 @@ void CSoundList::OnButtonClick(wxCommandEvent& event)
 	}
 	else
 	{
-		EqString str(m_pSndList->GetString(m_pSndList->GetSelection()).c_str());
-		m_pSoundName->SetValue( str.GetData() );
+		m_pSoundName->SetValue( m_pSndList->GetString(m_pSndList->GetSelection()) );
 	}
 }
 
@@ -92,7 +91,7 @@ void CSoundList::OnDoubleClickList(wxCommandEvent& event)
 	{
 		ses->StopAllSounds();
 
-		EqString str(m_pSndList->GetString(m_pSndList->GetSelection()).c_str());
+		EqString str( m_pSndList->GetString(m_pSndList->GetSelection()).c_str().AsChar() );
 
 		EmitSound_t emit;
 		emit.name = (char*)str.GetData();

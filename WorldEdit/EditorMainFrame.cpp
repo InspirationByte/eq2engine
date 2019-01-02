@@ -43,6 +43,8 @@
 #include "cfgloader.h"
 #include "grid.h"
 
+#include "utils/strtools.h"
+
 #define ENGINE_EXECUTABLE_NAME	"Eq32.exe"	// TODO: swithable
 
 static CDebugOverlay g_DebugOverlays;
@@ -289,7 +291,6 @@ void InitMatSystem(HWND window)
 #endif
 		materials_config.stubMode = false;
 
-		DefaultShaderAPIParameters(&materials_config.shaderapi_params);
 		materials_config.shaderapi_params.windowedMode = true;
 		materials_config.shaderapi_params.windowHandle = window;
 		materials_config.shaderapi_params.screenFormat = format;
@@ -329,7 +330,7 @@ void nullspew(SpewType_t t,const char* v) {}
 
 void Editor_Init()
 {
-	GetLocalizer()->AddTokensFile("editor");
+	g_localizer->AddTokensFile("editor");
 
 	g_cmdLine->ExecuteCommandLine(true,true);
 
@@ -503,7 +504,7 @@ public:
 			{
 				for(int i = 0; i < m_pGamesList->GetCount(); i++)
 				{
-					if(!stricmp(m_pGamesList->GetString(i).c_str(), pPair->values[0]))
+					if(!stricmp(m_pGamesList->GetString(i).c_str(), KV_GetValueString(pPair)))
 					{
 						m_pGamesList->SetSelection( i );
 						break;
@@ -580,7 +581,7 @@ bool EqEditorApplication::OnInit()
 
 	Editor_Init();
 
-	g_editormainframe = new CEditorFrame( DKLOC("TOKEN_TITLE", "Equilibrium World Editor") , wxPoint(50, 50), wxSize(1024,768) );
+	g_editormainframe = new CEditorFrame( DKLOC("TOKEN_TITLE", L"Equilibrium World Editor") , wxPoint(50, 50), wxSize(1024,768) );
 	g_editormainframe->Centre();
 	g_editormainframe->Show(true);
 
@@ -609,7 +610,7 @@ CEditorFrame::CEditorFrame(const wxString& title, const wxPoint& pos, const wxSi
 	else
 		MsgError("Can't load icon!\n");
 
-	SetTitle(wxString(g_pLevel->GetLevelName()) + wxString(" - ") + DKLOC("TOKEN_TITLE", "Equilibrium World Editor"));
+	SetTitle(wxString(g_pLevel->GetLevelName()) + wxString(" - ") + DKLOC("TOKEN_TITLE", L"Equilibrium World Editor"));
 
 	m_nTool = Tool_Selection;
 
@@ -622,7 +623,7 @@ CEditorFrame::CEditorFrame(const wxString& title, const wxPoint& pos, const wxSi
 
 	m_output_notebook = new wxAuiNotebook(this, -1, wxDefaultPosition, wxSize(600, 450),wxAUI_NB_TOP |wxAUI_NB_TAB_SPLIT | wxAUI_NB_TAB_MOVE | wxAUI_NB_SCROLL_BUTTONS |wxNO_BORDER);
 
-	m_viewspanel = new wxPanel(this,0,0,1000,1000);
+	m_viewspanel = new wxPanel(this, -1, wxPoint(0, 0),wxSize(1000,1000));
 	/*
 	m_views_aui.SetManagedWindow(m_viewspanel);
 
@@ -701,15 +702,15 @@ CEditorFrame::CEditorFrame(const wxString& title, const wxPoint& pos, const wxSi
 	ConstructMenus();
 	ConstructToolbars();
 
-	m_toolsettings_multipanel = new wxPanel(this, 10,10,200,400, wxTAB_TRAVERSAL | wxNO_BORDER, "ToolSettings");
+	m_toolsettings_multipanel = new wxPanel(this, -1, wxPoint(10,10),wxSize(200,400), wxTAB_TRAVERSAL | wxNO_BORDER, "ToolSettings");
 
-	m_mgr.AddPane(m_toolsettings_multipanel, wxAuiPaneInfo().Right().CloseButton(false).MaxSize(200,400).Caption(DKLOC("TOKEN_TOOLSETTINGS", "Tool settings")));
+	m_mgr.AddPane(m_toolsettings_multipanel, wxAuiPaneInfo().Right().CloseButton(false).MaxSize(200,400).Caption(DKLOC("TOKEN_TOOLSETTINGS", L"Tool settings")));
 
 	m_entprops = new CEntityPropertiesPanel();
 
 	
 	m_worldlayers = new CWorldLayerPanel();
-	m_mgr.AddPane(m_worldlayers,  wxAuiPaneInfo().Right().CloseButton(false).MaxSize(200,400).Caption(DKLOC("TOKEN_WLAYERS", "World layers")));
+	m_mgr.AddPane(m_worldlayers,  wxAuiPaneInfo().Right().CloseButton(false).MaxSize(200,400).Caption(DKLOC("TOKEN_WLAYERS", L"World layers")));
 	
 
 	// tell the manager to "commit" all the changes just made
@@ -725,7 +726,7 @@ CEditorFrame::CEditorFrame(const wxString& title, const wxPoint& pos, const wxSi
 	soundsystem->Init();
 
 	// initialize game sound emitter system
-	ses->Init();
+	ses->Init(1000.0f);	//	FIXME: (EQ_AUDIO_MAX_DISTANCE);
 	
 	// create dialogs
 	m_surfacedialog = new CSurfaceDialog();
@@ -753,16 +754,18 @@ CEditorFrame::CEditorFrame(const wxString& title, const wxPoint& pos, const wxSi
 
 			if(pair)
 			{
-				Msg("EDef_Load: parsing %s\n", pair->values[0]);
-				g_entdefname = pair->values[0];
-				EDef_Load(pair->values[0]);
+				g_entdefname = KV_GetValueString(pair);
+				
+				Msg("EDef_Load: parsing %s\n", g_entdefname.c_str());
 			}
 			else
 			{
-				MsgError("Couldn't find EditorEntities in GameInfo, using default definition file!\n");
 				g_entdefname = "eqengine_base.edf";
-				EDef_Load("eqengine_base.edf");
+
+				MsgError("Couldn't find EditorEntities in GameInfo, using default definition file!\n");
 			}
+
+			EDef_Load(g_entdefname.c_str());
 
 			int numPaths = 0;
 			for(int i = 0; i < pGameInfoSec->keys.numElem(); i++)
@@ -798,8 +801,8 @@ CEditorFrame::CEditorFrame(const wxString& title, const wxPoint& pos, const wxSi
 
 	LoadRegOptions();
 
-	m_levelsavedialog = new wxTextEntryDialog(this, DKLOC("TOKEN_WORLDNAME", "World name"), DKLOC("TOKEN_SPECIFYWORLDNAME", "Specify world name"));
-	m_groupnamedialog = new wxTextEntryDialog(this, DKLOC("TOKEN_GROUPNAME", "Group name"), DKLOC("TOKEN_SPECIFYGROUPNAME", "Specify group name"));
+	m_levelsavedialog = new wxTextEntryDialog(this, DKLOC("TOKEN_WORLDNAME", L"World name"), DKLOC("TOKEN_SPECIFYWORLDNAME", L"Specify world name"));
+	m_groupnamedialog = new wxTextEntryDialog(this, DKLOC("TOKEN_GROUPNAME", L"Group name"), DKLOC("TOKEN_SPECIFYGROUPNAME", L"Specify group name"));
 
 	g_pLevel->CreateNew();
 
@@ -955,84 +958,84 @@ void CEditorFrame::ConstructMenus()
 {
 	wxMenu *menuFile = new wxMenu;
 	
-	menuFile->Append( Event_File_NewLevel, DKLOC("TOKEN_NEW", "New\tCtrl+N") );
+	menuFile->Append( Event_File_NewLevel, DKLOC("TOKEN_NEW", L"New\tCtrl+N") );
 	menuFile->AppendSeparator();
-	menuFile->Append( Event_File_OpenLevel, DKLOC("TOKEN_OPEN", "Open\tCtrl+O") );
-	menuFile->Append( Event_File_SaveLevel, DKLOC("TOKEN_SAVE", "Save\tCtrl+S") );
-	menuFile->Append( Event_File_SaveLevelAs, DKLOC("TOKEN_SAVEAS", "Save As...") );
+	menuFile->Append( Event_File_OpenLevel, DKLOC("TOKEN_OPEN", L"Open\tCtrl+O") );
+	menuFile->Append( Event_File_SaveLevel, DKLOC("TOKEN_SAVE", L"Save\tCtrl+S") );
+	menuFile->Append( Event_File_SaveLevelAs, DKLOC("TOKEN_SAVEAS", L"Save As...") );
 	menuFile->AppendSeparator();
 
 	m_pRecent = new wxMenu;
-	menuFile->AppendSubMenu(m_pRecent, DKLOC("TOKEN_RECENT", "Recent"));
+	menuFile->AppendSubMenu(m_pRecent, DKLOC("TOKEN_RECENT", L"Recent"));
 	
 	//menuFile->Append( Event_File_Import, DKLOC("TOKEN_IMPORT", "Import Map...") );
 	menuFile->AppendSeparator();
-	menuFile->Append( Event_File_Exit, DKLOC("TOKEN_EXIT", "Exit\tAlt+F4") );
+	menuFile->Append( Event_File_Exit, DKLOC("TOKEN_EXIT", L"Exit\tAlt+F4") );
 
 	wxMenu *menuEdit = new wxMenu;
-	menuEdit->Append(Event_Edit_ArbitaryTransform, DKLOC("TOKEN_ARBITARYTRANSFORM", "Arbitary transform..."));
+	menuEdit->Append(Event_Edit_ArbitaryTransform, DKLOC("TOKEN_ARBITARYTRANSFORM", L"Arbitary transform..."));
 	menuEdit->AppendSeparator();
-	menuEdit->Append(Event_Edit_Redo, DKLOC("TOKEN_REDO", "ReDo\tCtrl+Y"));
-	menuEdit->Append(Event_Edit_Undo, DKLOC("TOKEN_UNDO", "UnDo\tCtrl+Z"));
+	menuEdit->Append(Event_Edit_Redo, DKLOC("TOKEN_REDO", L"ReDo\tCtrl+Y"));
+	menuEdit->Append(Event_Edit_Undo, DKLOC("TOKEN_UNDO", L"UnDo\tCtrl+Z"));
 	menuEdit->AppendSeparator();
-	menuEdit->Append(Event_Edit_Cut, DKLOC("TOKEN_CUT", "Cut\tCtrl+X"));
-	menuEdit->Append(Event_Edit_Copy, DKLOC("TOKEN_COPY", "Copy\tCtrl+C"));
-	menuEdit->Append(Event_Edit_Paste, DKLOC("TOKEN_PASTE", "Paste\tCtrl+V"));
+	menuEdit->Append(Event_Edit_Cut, DKLOC("TOKEN_CUT", L"Cut\tCtrl+X"));
+	menuEdit->Append(Event_Edit_Copy, DKLOC("TOKEN_COPY", L"Copy\tCtrl+C"));
+	menuEdit->Append(Event_Edit_Paste, DKLOC("TOKEN_PASTE", L"Paste\tCtrl+V"));
 	menuEdit->AppendSeparator();
-	menuEdit->Append(Event_Edit_InvertSelection, DKLOC("TOKEN_INVERTSELECTION", "Invert selection\tCtrl+I"));
-	menuEdit->Append(Event_Edit_HideSelected, DKLOC("TOKEN_HIDE", "Hide selection\tCtrl+H"));
-	menuEdit->Append(Event_Edit_UnHideAll, DKLOC("TOKEN_SHOWALL", "Unhide selection\tShift+Ctrl+H"));
+	menuEdit->Append(Event_Edit_InvertSelection, DKLOC("TOKEN_INVERTSELECTION", L"Invert selection\tCtrl+I"));
+	menuEdit->Append(Event_Edit_HideSelected, DKLOC("TOKEN_HIDE", L"Hide selection\tCtrl+H"));
+	menuEdit->Append(Event_Edit_UnHideAll, DKLOC("TOKEN_SHOWALL", L"Unhide selection\tShift+Ctrl+H"));
 	menuEdit->AppendSeparator();
-	menuEdit->Append(Event_Edit_GroupSelected, DKLOC("TOKEN_GROUPSELECTED", "Group selection\tCtrl+G"));
-	menuEdit->Append(Event_Edit_UngroupSelected, DKLOC("TOKEN_UNGROUPSELECTED", "Ungroup selection\tShift+Ctrl+G"));
-	menuEdit->Append(Event_Edit_CloneSelected, DKLOC("TOKEN_CLONESELECTED", "Clone selected objects\tSpace"));
+	menuEdit->Append(Event_Edit_GroupSelected, DKLOC("TOKEN_GROUPSELECTED", L"Group selection\tCtrl+G"));
+	menuEdit->Append(Event_Edit_UngroupSelected, DKLOC("TOKEN_UNGROUPSELECTED", L"Ungroup selection\tShift+Ctrl+G"));
+	menuEdit->Append(Event_Edit_CloneSelected, DKLOC("TOKEN_CLONESELECTED", L"Clone selected objects\tSpace"));
 	menuEdit->AppendSeparator();
-	menuEdit->Append(Event_Edit_Properties, DKLOC("TOKEN_PROPERTIES", "Properties...\tN"));
+	menuEdit->Append(Event_Edit_Properties, DKLOC("TOKEN_PROPERTIES", L"Properties...\tN"));
 	
 	wxMenu *menuView = new wxMenu;
 
-	menuView->Append(Event_View_Reset3DView, DKLOC("TOKEN_RESET3DVIEW", "Reset 3D view"), wxEmptyString);
-	menuView->Append(Event_View_TargetViews, DKLOC("TOKEN_TARGETTOSELECTION", "Target views to selection center\tY"), wxEmptyString);
-	menuView->Append(Event_View_TranslateViews, DKLOC("TOKEN_MOVETOSELECTION", "Move views to selection center\tU"), wxEmptyString);
+	menuView->Append(Event_View_Reset3DView, DKLOC("TOKEN_RESET3DVIEW", L"Reset 3D view"), wxEmptyString);
+	menuView->Append(Event_View_TargetViews, DKLOC("TOKEN_TARGETTOSELECTION", L"Target views to selection center\tY"), wxEmptyString);
+	menuView->Append(Event_View_TranslateViews, DKLOC("TOKEN_MOVETOSELECTION", L"Move views to selection center\tU"), wxEmptyString);
 
 	wxMenu *menuFilter = new wxMenu;
 
-	m_objectvis[0] = menuFilter->Append(Event_View_Filter, DKLOC("TOKEN_SHOWENTS", "Show entities"), wxEmptyString, wxITEM_CHECK);
-	m_objectvis[1] = menuFilter->Append(Event_View_Filter+1, DKLOC("TOKEN_SHOWGEOM", "Show world geometry"), wxEmptyString, wxITEM_CHECK);
-	m_objectvis[2] = menuFilter->Append(Event_View_Filter+2, DKLOC("TOKEN_SHOWROOMS", "Show rooms"), wxEmptyString, wxITEM_CHECK);
-	m_objectvis[3] = menuFilter->Append(Event_View_Filter+3, DKLOC("TOKEN_SHOWAREAPORTALS", "Show area portals"), wxEmptyString, wxITEM_CHECK);
-	m_objectvis[4] = menuFilter->Append(Event_View_Filter+4, DKLOC("TOKEN_SHOWCLIPS", "Show clip"), wxEmptyString, wxITEM_CHECK);
+	m_objectvis[0] = menuFilter->Append(Event_View_Filter, DKLOC("TOKEN_SHOWENTS", L"Show entities"), wxEmptyString, wxITEM_CHECK);
+	m_objectvis[1] = menuFilter->Append(Event_View_Filter+1, DKLOC("TOKEN_SHOWGEOM", L"Show world geometry"), wxEmptyString, wxITEM_CHECK);
+	m_objectvis[2] = menuFilter->Append(Event_View_Filter+2, DKLOC("TOKEN_SHOWROOMS", L"Show rooms"), wxEmptyString, wxITEM_CHECK);
+	m_objectvis[3] = menuFilter->Append(Event_View_Filter+3, DKLOC("TOKEN_SHOWAREAPORTALS", L"Show area portals"), wxEmptyString, wxITEM_CHECK);
+	m_objectvis[4] = menuFilter->Append(Event_View_Filter+4, DKLOC("TOKEN_SHOWCLIPS", L"Show clip"), wxEmptyString, wxITEM_CHECK);
 
 	for(int i = 0; i < VisObj_Count; i++)
 		m_objectvis[i]->Check();
 
-	menuView->AppendSubMenu(menuFilter, DKLOC("TOKEN_SHOWFILTER", "View filter"));
+	menuView->AppendSubMenu(menuFilter, DKLOC("TOKEN_SHOWFILTER", L"View filter"));
 
 	menuView->AppendSeparator();
-	m_gridsizes[0] = menuView->Append(Event_View_GridSpacing, DKLOC("TOKEN_GRID1", "Grid 1\t1"), wxEmptyString, wxITEM_RADIO);
-	m_gridsizes[1] = menuView->Append(Event_View_GridSpacing+1, DKLOC("TOKEN_GRID2", "Grid 2\t2"), wxEmptyString, wxITEM_RADIO);
-	m_gridsizes[2] = menuView->Append(Event_View_GridSpacing+2, DKLOC("TOKEN_GRID4", "Grid 4\t3"), wxEmptyString, wxITEM_RADIO);
-	m_gridsizes[3] = menuView->Append(Event_View_GridSpacing+3, DKLOC("TOKEN_GRID8", "Grid 8\t4"), wxEmptyString, wxITEM_RADIO);
-	m_gridsizes[4] = menuView->Append(Event_View_GridSpacing+4, DKLOC("TOKEN_GRID16", "Grid 16\t5"), wxEmptyString, wxITEM_RADIO);
-	m_gridsizes[5] = menuView->Append(Event_View_GridSpacing+5, DKLOC("TOKEN_GRID32", "Grid 32\t6"), wxEmptyString, wxITEM_RADIO);
-	m_gridsizes[6] = menuView->Append(Event_View_GridSpacing+6, DKLOC("TOKEN_GRID64", "Grid 64\t7"), wxEmptyString, wxITEM_RADIO);
-	m_gridsizes[7] = menuView->Append(Event_View_GridSpacing+7, DKLOC("TOKEN_GRID128", "Grid 128\t8"), wxEmptyString, wxITEM_RADIO);
-	m_gridsizes[8] = menuView->Append(Event_View_GridSpacing+8, DKLOC("TOKEN_GRID256", "Grid 256\t9"), wxEmptyString, wxITEM_RADIO);
+	m_gridsizes[0] = menuView->Append(Event_View_GridSpacing, DKLOC("TOKEN_GRID1", L"Grid 1\t1"), wxEmptyString, wxITEM_RADIO);
+	m_gridsizes[1] = menuView->Append(Event_View_GridSpacing+1, DKLOC("TOKEN_GRID2", L"Grid 2\t2"), wxEmptyString, wxITEM_RADIO);
+	m_gridsizes[2] = menuView->Append(Event_View_GridSpacing+2, DKLOC("TOKEN_GRID4", L"Grid 4\t3"), wxEmptyString, wxITEM_RADIO);
+	m_gridsizes[3] = menuView->Append(Event_View_GridSpacing+3, DKLOC("TOKEN_GRID8", L"Grid 8\t4"), wxEmptyString, wxITEM_RADIO);
+	m_gridsizes[4] = menuView->Append(Event_View_GridSpacing+4, DKLOC("TOKEN_GRID16", L"Grid 16\t5"), wxEmptyString, wxITEM_RADIO);
+	m_gridsizes[5] = menuView->Append(Event_View_GridSpacing+5, DKLOC("TOKEN_GRID32", L"Grid 32\t6"), wxEmptyString, wxITEM_RADIO);
+	m_gridsizes[6] = menuView->Append(Event_View_GridSpacing+6, DKLOC("TOKEN_GRID64", L"Grid 64\t7"), wxEmptyString, wxITEM_RADIO);
+	m_gridsizes[7] = menuView->Append(Event_View_GridSpacing+7, DKLOC("TOKEN_GRID128", L"Grid 128\t8"), wxEmptyString, wxITEM_RADIO);
+	m_gridsizes[8] = menuView->Append(Event_View_GridSpacing+8, DKLOC("TOKEN_GRID256", L"Grid 256\t9"), wxEmptyString, wxITEM_RADIO);
 	menuView->AppendSeparator();
 
 	m_gridsizes[3]->Toggle();
 
-	m_snaptogrid = menuView->Append(Event_View_SnapToGrid, DKLOC("TOKEN_SNAPTOGRID", "Snap to grid\tG"), wxEmptyString, wxITEM_CHECK);
+	m_snaptogrid = menuView->Append(Event_View_SnapToGrid, DKLOC("TOKEN_SNAPTOGRID", L"Snap to grid\tG"), wxEmptyString, wxITEM_CHECK);
 	m_snaptogrid->Check();
 
-	m_snaptovisiblegrid = menuView->Append(Event_View_SnapToVisibleGrid, DKLOC("TOKEN_SNAPTOVISIBLEGRID", "Snap to visible grid\tAlt+G"), wxEmptyString, wxITEM_CHECK);
+	m_snaptovisiblegrid = menuView->Append(Event_View_SnapToVisibleGrid, DKLOC("TOKEN_SNAPTOVISIBLEGRID", L"Snap to visible grid\tAlt+G"), wxEmptyString, wxITEM_CHECK);
 	m_snaptovisiblegrid->Check();
 
 	menuView->AppendSeparator();
-	m_drawphysmodels = menuView->Append(Event_View_ShowPhysicsModels, DKLOC("TOKEN_SHOWPHYSMODELS", "Show physics models"), wxEmptyString, wxITEM_CHECK);
-	m_preview = menuView->Append(Event_View_PreviewRender, DKLOC("TOKEN_PREVIEWRENDER", "Preview rendering"), wxEmptyString, wxITEM_CHECK);
+	m_drawphysmodels = menuView->Append(Event_View_ShowPhysicsModels, DKLOC("TOKEN_SHOWPHYSMODELS", L"Show physics models"), wxEmptyString, wxITEM_CHECK);
+	m_preview = menuView->Append(Event_View_PreviewRender, DKLOC("TOKEN_PREVIEWRENDER", L"Preview rendering"), wxEmptyString, wxITEM_CHECK);
 	menuView->AppendSeparator();
-	m_clipmodels = menuView->Append(Event_View_ClipModels, DKLOC("TOKEN_CLIPMODELS2D", "Clip models in 2D view"), wxEmptyString, wxITEM_CHECK);
+	m_clipmodels = menuView->Append(Event_View_ClipModels, DKLOC("TOKEN_CLIPMODELS2D", L"Clip models in 2D view"), wxEmptyString, wxITEM_CHECK);
 
 	/*
 	wxMenu *menuObject = new wxMenu;
@@ -1041,76 +1044,76 @@ void CEditorFrame::ConstructMenus()
 	*/
 
 	wxMenu *menuLevel = new wxMenu;
-	menuLevel->Append( Event_Level_BuildWorld, DKLOC("TOKEN_BUILDWORLD", "Build world\tF7"), wxEmptyString);
-	menuLevel->Append( Event_Level_BuildLevel, DKLOC("TOKEN_BUILDLEVEL", "Build level and objects\tF9"), wxEmptyString);
+	menuLevel->Append( Event_Level_BuildWorld, DKLOC("TOKEN_BUILDWORLD", L"Build world\tF7"), wxEmptyString);
+	menuLevel->Append( Event_Level_BuildLevel, DKLOC("TOKEN_BUILDLEVEL", L"Build level and objects\tF9"), wxEmptyString);
 	menuLevel->AppendSeparator();
-	menuLevel->Append( Event_Level_StartGame, DKLOC("TOKEN_RUNGAME", "Run level in game"), wxEmptyString);
+	menuLevel->Append( Event_Level_StartGame, DKLOC("TOKEN_RUNGAME", L"Run level in game"), wxEmptyString);
 	
-	//menuLevel->Append( Event_Level_BuildVisibility, DKLOC("TOKEN_BUILDVIS", "Build visibility\tF9"), wxEmptyString);
+	//menuLevel->Append( Event_Level_BuildVisibility, DKLOC("TOKEN_BUILDVIS", L"Build visibility\tF9"), wxEmptyString);
 	
 
 	wxMenu *menuTools = new wxMenu;
-	menuTools->Append( Event_Tools_ImportOBJ, DKLOC("TOKEN_IMPORTOBJ", "Import OBJ to world..."), wxEmptyString);
+	menuTools->Append( Event_Tools_ImportOBJ, DKLOC("TOKEN_IMPORTOBJ", L"Import OBJ to world..."), wxEmptyString);
 	menuView->AppendSeparator();
-	menuTools->Append( Event_Tools_CastBrushToSurface, DKLOC("TOKEN_CONVERTTOSURF", "Convert brush to surface"), wxEmptyString);
-	menuTools->Append( Event_Tools_CastBrushToSurfaces, DKLOC("TOKEN_CONVERTTOSURFS", "Convert selected brush faces to free editables..."), wxEmptyString);
-	menuTools->Append( Event_Tools_FlipSelectedModelFaces, DKLOC("TOKEN_FLIPFACES", "Flip free editable faces..."), wxEmptyString);
-	menuTools->Append( Event_Tools_JoinSelectedSurfaces, DKLOC("TOKEN_JOINFACES", "Join free editables to one..."), wxEmptyString);
+	menuTools->Append( Event_Tools_CastBrushToSurface, DKLOC("TOKEN_CONVERTTOSURF", L"Convert brush to surface"), wxEmptyString);
+	menuTools->Append( Event_Tools_CastBrushToSurfaces, DKLOC("TOKEN_CONVERTTOSURFS", L"Convert selected brush faces to free editables..."), wxEmptyString);
+	menuTools->Append( Event_Tools_FlipSelectedModelFaces, DKLOC("TOKEN_FLIPFACES", L"Flip free editable faces..."), wxEmptyString);
+	menuTools->Append( Event_Tools_JoinSelectedSurfaces, DKLOC("TOKEN_JOINFACES", L"Join free editables to one..."), wxEmptyString);
 	
 	
 	menuTools->AppendSeparator();
-	menuTools->Append( Event_Tools_ReloadMaterials, DKLOC("TOKEN_RELOADMATERIALS", "Reload all materials"), wxEmptyString);
+	menuTools->Append( Event_Tools_ReloadMaterials, DKLOC("TOKEN_RELOADMATERIALS", L"Reload all materials"), wxEmptyString);
 
 	
 
 
 	wxMenu *menuWindow = new wxMenu;
-	menuWindow->Append( Event_Window_ToggleOutput, DKLOC("TOKEN_OUTPUT", "Output\tShift+O"), wxEmptyString);
-	menuWindow->Append( Event_Window_SurfaceDialog, DKLOC("TOKEN_SURFDIALOG", "Surface dialog\tShift+S"), wxEmptyString);
-	menuWindow->Append( Event_Window_EntityList, DKLOC("TOKEN_ENTITYLISTDIALOG", "Entity list\tE"), wxEmptyString);
-	menuWindow->Append( Event_Window_GroupList, DKLOC("TOKEN_GROUPLISTDIALOG", "Group list\tG"), wxEmptyString);
-	menuWindow->Append( Event_Window_SoundList, DKLOC("TOKEN_SOUNDLISTDIALOG", "Sound list"), wxEmptyString);
+	menuWindow->Append( Event_Window_ToggleOutput, DKLOC("TOKEN_OUTPUT", L"Output\tShift+O"), wxEmptyString);
+	menuWindow->Append( Event_Window_SurfaceDialog, DKLOC("TOKEN_SURFDIALOG", L"Surface dialog\tShift+S"), wxEmptyString);
+	menuWindow->Append( Event_Window_EntityList, DKLOC("TOKEN_ENTITYLISTDIALOG", L"Entity list\tE"), wxEmptyString);
+	menuWindow->Append( Event_Window_GroupList, DKLOC("TOKEN_GROUPLISTDIALOG", L"Group list\tG"), wxEmptyString);
+	menuWindow->Append( Event_Window_SoundList, DKLOC("TOKEN_SOUNDLISTDIALOG", L"Sound list"), wxEmptyString);
 	
 	
-	menuWindow->Append( Event_Window_MaterialsWindow, DKLOC("TOKEN_MATERIALS", "Materials window\tT"), wxEmptyString);
+	menuWindow->Append( Event_Window_MaterialsWindow, DKLOC("TOKEN_MATERIALS", L"Materials window\tT"), wxEmptyString);
 
 	wxMenu *menuHelp = new wxMenu;
-	menuHelp->Append( Event_Help_About, DKLOC("TOKEN_ABOUT", "About")  );
+	menuHelp->Append( Event_Help_About, DKLOC("TOKEN_ABOUT", L"About")  );
 
 	wxMenuBar *menuBar = new wxMenuBar;
-	menuBar->Append( menuFile, DKLOC("TOKEN_FILE", "File") );
-	menuBar->Append( menuEdit, DKLOC("TOKEN_EDIT", "Edit") );
-	menuBar->Append( menuView, DKLOC("TOKEN_VIEW", "View") );
-//	menuBar->Append( menuObject, DKLOC("TOKEN_OBJECT", "Object") );
-	menuBar->Append( menuLevel, DKLOC("TOKEN_LEVEL", "Level") );
-	menuBar->Append( menuTools, DKLOC("TOKEN_TOOLS", "Tools") );
-	menuBar->Append( menuWindow, DKLOC("TOKEN_WINDOW", "Window") );
-	menuBar->Append( menuHelp, DKLOC("TOKEN_HELP", "Help") );
+	menuBar->Append( menuFile, DKLOC("TOKEN_FILE", L"File") );
+	menuBar->Append( menuEdit, DKLOC("TOKEN_EDIT", L"Edit") );
+	menuBar->Append( menuView, DKLOC("TOKEN_VIEW", L"View") );
+//	menuBar->Append( menuObject, DKLOC("TOKEN_OBJECT", L"Object") );
+	menuBar->Append( menuLevel, DKLOC("TOKEN_LEVEL", L"Level") );
+	menuBar->Append( menuTools, DKLOC("TOKEN_TOOLS", L"Tools") );
+	menuBar->Append( menuWindow, DKLOC("TOKEN_WINDOW", L"Window") );
+	menuBar->Append( menuHelp, DKLOC("TOKEN_HELP", L"Help") );
 
 	SetMenuBar( menuBar );
 
 	// make context menu with useful functions
 	m_contextMenu = new wxMenu;
 
-	m_contextMenu->Append(Event_Edit_ArbitaryTransform, DKLOC("TOKEN_ARBITARYTRANSFORM", "Arbitary transform..."));
+	m_contextMenu->Append(Event_Edit_ArbitaryTransform, DKLOC("TOKEN_ARBITARYTRANSFORM", L"Arbitary transform..."));
 	m_contextMenu->AppendSeparator();
-	m_contextMenu->Append(Event_Edit_Cut, DKLOC("TOKEN_CUT", "Cut\tCtrl+X"));
-	m_contextMenu->Append(Event_Edit_Copy, DKLOC("TOKEN_COPY", "Copy\tCtrl+C"));
-	m_contextMenu->Append(Event_Edit_Paste, DKLOC("TOKEN_PASTE", "Paste\tCtrl+V"));
+	m_contextMenu->Append(Event_Edit_Cut, DKLOC("TOKEN_CUT", L"Cut\tCtrl+X"));
+	m_contextMenu->Append(Event_Edit_Copy, DKLOC("TOKEN_COPY", L"Copy\tCtrl+C"));
+	m_contextMenu->Append(Event_Edit_Paste, DKLOC("TOKEN_PASTE", L"Paste\tCtrl+V"));
 	m_contextMenu->AppendSeparator();
-	m_contextMenu->Append( Event_Tools_CastBrushToSurface, DKLOC("TOKEN_CONVERTTOSURF", "Convert brush to surface"), wxEmptyString);
-	m_contextMenu->Append( Event_Tools_CastBrushToSurfaces, DKLOC("TOKEN_CONVERTTOSURFS", "Convert selected brush faces to free editables..."), wxEmptyString);
-	m_contextMenu->Append( Event_Tools_FlipSelectedModelFaces, DKLOC("TOKEN_FLIPFACES", "Flip free editable faces..."), wxEmptyString);
-	m_contextMenu->Append( Event_Tools_JoinSelectedSurfaces, DKLOC("TOKEN_JOINFACES", "Join free editables to one..."), wxEmptyString);
+	m_contextMenu->Append( Event_Tools_CastBrushToSurface, DKLOC("TOKEN_CONVERTTOSURF", L"Convert brush to surface"), wxEmptyString);
+	m_contextMenu->Append( Event_Tools_CastBrushToSurfaces, DKLOC("TOKEN_CONVERTTOSURFS", L"Convert selected brush faces to free editables..."), wxEmptyString);
+	m_contextMenu->Append( Event_Tools_FlipSelectedModelFaces, DKLOC("TOKEN_FLIPFACES", L"Flip free editable faces..."), wxEmptyString);
+	m_contextMenu->Append( Event_Tools_JoinSelectedSurfaces, DKLOC("TOKEN_JOINFACES", L"Join free editables to one..."), wxEmptyString);
 	m_contextMenu->AppendSeparator();
-	m_contextMenu->Append(Event_Edit_InvertSelection, DKLOC("TOKEN_INVERTSELECTION", "Invert selection\tCtrl+I"));
-	m_contextMenu->Append(Event_Edit_HideSelected, DKLOC("TOKEN_HIDE", "Hide selection\tCtrl+H"));
+	m_contextMenu->Append(Event_Edit_InvertSelection, DKLOC("TOKEN_INVERTSELECTION", L"Invert selection\tCtrl+I"));
+	m_contextMenu->Append(Event_Edit_HideSelected, DKLOC("TOKEN_HIDE", L"Hide selection\tCtrl+H"));
 	m_contextMenu->AppendSeparator();
-	m_contextMenu->Append(Event_Edit_GroupSelected, DKLOC("TOKEN_GROUPSELECTED", "Group selection\tCtrl+G"));
-	m_contextMenu->Append(Event_Edit_UngroupSelected, DKLOC("TOKEN_UNGROUPSELECTED", "Ungroup selection\tShift+Ctrl+G"));
-	m_contextMenu->Append(Event_Edit_CloneSelected, DKLOC("TOKEN_CLONESELECTED", "Clone selected objects\tSpace"));
+	m_contextMenu->Append(Event_Edit_GroupSelected, DKLOC("TOKEN_GROUPSELECTED", L"Group selection\tCtrl+G"));
+	m_contextMenu->Append(Event_Edit_UngroupSelected, DKLOC("TOKEN_UNGROUPSELECTED", L"Ungroup selection\tShift+Ctrl+G"));
+	m_contextMenu->Append(Event_Edit_CloneSelected, DKLOC("TOKEN_CLONESELECTED", L"Clone selected objects\tSpace"));
 	m_contextMenu->AppendSeparator();
-	m_contextMenu->Append(Event_Edit_Properties, DKLOC("TOKEN_PROPERTIES", "Properties...\tN"));
+	m_contextMenu->Append(Event_Edit_Properties, DKLOC("TOKEN_PROPERTIES", L"Properties...\tN"));
 }
 
 void CEditorFrame::ConstructToolbars()
@@ -1152,24 +1155,24 @@ void CEditorFrame::ConstructToolbars()
 #define ADD_TOOLBUTTON(event_id, text, bitmap) \
 	pToolBar->AddTool(event_id, text, bitmap, wxNullBitmap, wxITEM_NORMAL ,text, text);
 
-	ADD_TOOLRADIO(Event_Tools_Selection, DKLOC("TOKEN_SELECTION", "Selection"),toolBarBitmaps[0]);
-	ADD_TOOLRADIO(Event_Tools_Brush,  DKLOC("TOKEN_BRUSH", "Brushes"),toolBarBitmaps[1]);
-	ADD_TOOLRADIO(Event_Tools_Surface,  DKLOC("TOKEN_SURFACES", "Surfaces"),toolBarBitmaps[2]);
-	ADD_TOOLRADIO(Event_Tools_TerrainPatch,  DKLOC("TOKEN_TERRAINPATCHES", "Terrains"),toolBarBitmaps[3]);
-	ADD_TOOLRADIO(Event_Tools_Decals,  DKLOC("TOKEN_DECALS", "Decals"),toolBarBitmaps[13]);
-	ADD_TOOLRADIO(Event_Tools_DynObj, DKLOC("TOKEN_ENTITIES",  "Entities"),toolBarBitmaps[4]);
-	ADD_TOOLRADIO(Event_Tools_VertexManip,  DKLOC("TOKEN_VERTEXMANIP", "Vertex nudge"),toolBarBitmaps[8]);
-	ADD_TOOLRADIO(Event_Tools_Clipper,  DKLOC("TOKEN_CLIPPER", "Clipper"),toolBarBitmaps[7]);
+	ADD_TOOLRADIO(Event_Tools_Selection, DKLOC("TOKEN_SELECTION", L"Selection"),toolBarBitmaps[0]);
+	ADD_TOOLRADIO(Event_Tools_Brush,  DKLOC("TOKEN_BRUSH", L"Brushes"),toolBarBitmaps[1]);
+	ADD_TOOLRADIO(Event_Tools_Surface,  DKLOC("TOKEN_SURFACES", L"Surfaces"),toolBarBitmaps[2]);
+	ADD_TOOLRADIO(Event_Tools_TerrainPatch,  DKLOC("TOKEN_TERRAINPATCHES", L"Terrains"),toolBarBitmaps[3]);
+	ADD_TOOLRADIO(Event_Tools_Decals,  DKLOC("TOKEN_DECALS", L"Decals"),toolBarBitmaps[13]);
+	ADD_TOOLRADIO(Event_Tools_DynObj, DKLOC("TOKEN_ENTITIES",  L"Entities"),toolBarBitmaps[4]);
+	ADD_TOOLRADIO(Event_Tools_VertexManip,  DKLOC("TOKEN_VERTEXMANIP", L"Vertex nudge"),toolBarBitmaps[8]);
+	ADD_TOOLRADIO(Event_Tools_Clipper,  DKLOC("TOKEN_CLIPPER", L"Clipper"),toolBarBitmaps[7]);
 
 	pToolBar->AddSeparator();
 
-	ADD_TOOLBUTTON(Event_Edit_HideSelected, DKLOC("TOKEN_TOOLHIDE", "Hide"),toolBarBitmaps[9]);
-	ADD_TOOLBUTTON(Event_Edit_UnHideAll,DKLOC("TOKEN_TOOLSHOWALL", "Show all"),toolBarBitmaps[10]);
+	ADD_TOOLBUTTON(Event_Edit_HideSelected, DKLOC("TOKEN_TOOLHIDE", L"Hide"),toolBarBitmaps[9]);
+	ADD_TOOLBUTTON(Event_Edit_UnHideAll,DKLOC("TOKEN_TOOLSHOWALL", L"Show all"),toolBarBitmaps[10]);
 
 	pToolBar->AddSeparator();
 
-	ADD_TOOLBUTTON(Event_Edit_GroupSelected, DKLOC("TOKEN_TOOLGROUP", "Group selection"), toolBarBitmaps[11]);
-	ADD_TOOLBUTTON(Event_Edit_UngroupSelected,DKLOC("TOKEN_TOOLUNGROUP", "Ungroup selection"), toolBarBitmaps[12]);
+	ADD_TOOLBUTTON(Event_Edit_GroupSelected, DKLOC("TOKEN_TOOLGROUP", L"Group selection"), toolBarBitmaps[11]);
+	ADD_TOOLBUTTON(Event_Edit_UngroupSelected,DKLOC("TOKEN_TOOLUNGROUP", L"Ungroup selection"), toolBarBitmaps[12]);
 
 	/*
 	m_projection_selector = new wxComboBox(NULL, -1, "Perspective");
@@ -1300,7 +1303,7 @@ void CEditorFrame::OpenLevelPrompt()
 	if(g_pLevel->IsSavedOnDisk())
 		AddRecentWorld((char*)g_pLevel->GetLevelName());
 
-	SetTitle(wxString(g_pLevel->GetLevelName()) + wxString(" - ") + DKLOC("TOKEN_TITLE", "Equilibrium World Editor"));
+	SetTitle(wxString(g_pLevel->GetLevelName()) + wxString(" - ") + DKLOC("TOKEN_TITLE", L"Equilibrium World Editor"));
 }
 
 void CEditorFrame::NewLevelPrompt()
@@ -1312,7 +1315,7 @@ void CEditorFrame::NewLevelPrompt()
 	g_pLevel->CreateNew();
 	UpdateAllWindows();
 
-	SetTitle(wxString(g_pLevel->GetLevelName()) + wxString(" - ") + DKLOC("TOKEN_TITLE", "Equilibrium World Editor"));
+	SetTitle(wxString(g_pLevel->GetLevelName()) + wxString(" - ") + DKLOC("TOKEN_TITLE", L"Equilibrium World Editor"));
 }
 
 bool CEditorFrame::SavePrompt(bool showQuestion, bool changeLevelName, bool bForceSave)
@@ -1328,7 +1331,7 @@ bool CEditorFrame::SavePrompt(bool showQuestion, bool changeLevelName, bool bFor
 
 	if(showQuestion)
 	{
-		int result = wxMessageBox(varargs((char*)DKLOC("TOKEN_SAVEWORLDQUESTION", "Do you want to save world '%s'?"),g_pLevel->GetLevelName()), "Question", wxYES_NO | wxCANCEL | wxCENTRE | wxICON_WARNING, this);
+		int result = wxMessageBox(varargs((char*)DKLOC("TOKEN_SAVEWORLDQUESTION", L"Do you want to save world '%s'?"),g_pLevel->GetLevelName()), "Question", wxYES_NO | wxCANCEL | wxCENTRE | wxICON_WARNING, this);
 
 		if(result == wxCANCEL)
 			return false;
@@ -1353,7 +1356,7 @@ bool CEditorFrame::SavePrompt(bool showQuestion, bool changeLevelName, bool bFor
 	else
 		g_pLevel->Save();
 
-	SetTitle(wxString(g_pLevel->GetLevelName()) + wxString(" - ") + DKLOC("TOKEN_TITLE", "Equilibrium World Editor"));
+	SetTitle(wxString(g_pLevel->GetLevelName()) + wxString(" - ") + DKLOC("TOKEN_TITLE", L"Equilibrium World Editor"));
 
 	return true;
 }
@@ -1831,7 +1834,7 @@ void CEditorFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 				AddRecentWorld((char*)g_pLevel->GetLevelName());
 			}
 
-			SetTitle(wxString(g_pLevel->GetLevelName()) + wxString(" - ") + DKLOC("TOKEN_TITLE", "Equilibrium World Editor"));
+			SetTitle(wxString(g_pLevel->GetLevelName()) + wxString(" - ") + DKLOC("TOKEN_TITLE", L"Equilibrium World Editor"));
 
 			break;
 		}
@@ -2149,35 +2152,35 @@ void LoadEditorConfig()
 
 		pPair = pSection->FindKeyBase("background_color");
 		if(pPair)
-			g_editorCfg->background_color = UTIL_StringToColor3(pPair->values[0]);
+			g_editorCfg->background_color = UTIL_StringToColor3(KV_GetValueString(pPair));
 
 		pPair = pSection->FindKeyBase("grid1_color");
 		if(pPair)
-			g_editorCfg->grid1_color = UTIL_StringToColor4(pPair->values[0]);
+			g_editorCfg->grid1_color = UTIL_StringToColor4(KV_GetValueString(pPair));
 
 		pPair = pSection->FindKeyBase("grid2_color");
 		if(pPair)
-			g_editorCfg->grid2_color = UTIL_StringToColor4(pPair->values[0]);
+			g_editorCfg->grid2_color = UTIL_StringToColor4(KV_GetValueString(pPair));
 
 		pPair = pSection->FindKeyBase("level_center_color");
 		if(pPair)
-			g_editorCfg->level_center_color = UTIL_StringToColor3(pPair->values[0]);
+			g_editorCfg->level_center_color = UTIL_StringToColor3(KV_GetValueString(pPair));
 
 		pPair = pSection->FindKeyBase("selection_color");
 		if(pPair)
-			g_editorCfg->selection_color = UTIL_StringToColor3(pPair->values[0]);
+			g_editorCfg->selection_color = UTIL_StringToColor3(KV_GetValueString(pPair));
 
 		pPair = pSection->FindKeyBase("default_grid_size");
 		if(pPair)
-			g_editorCfg->default_grid_size = atoi(pPair->values[0]);
+			g_editorCfg->default_grid_size = atoi(KV_GetValueString(pPair));
 
 		pPair = pSection->FindKeyBase("zoom_2d_gridsnap");
 		if(pPair)
-			g_editorCfg->zoom_2d_gridsnap = atoi(pPair->values[0]);
+			g_editorCfg->zoom_2d_gridsnap = atoi(KV_GetValueString(pPair));
 
 		pPair = pSection->FindKeyBase("default_material");
 		if(pPair)
-			g_editorCfg->default_material = pPair->values[0];
+			g_editorCfg->default_material = KV_GetValueString(pPair);
 	}
 }
 

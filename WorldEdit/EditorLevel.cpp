@@ -35,6 +35,8 @@
 
 #include "VirtualStream.h"
 
+#include "IFont.h"
+
 
 int s_objectid_increment = 0;
 
@@ -666,7 +668,7 @@ bool CEditorLevel::Load()
 					kvkeybase_t* pCamera = pCameraParams->keys[i];
 					g_views[i].GetView()->SetOrigin(UTIL_StringToColor3(pCamera->FindKeyBase("position")->values[0]));
 					g_views[i].GetView()->SetAngles(UTIL_StringToColor3(pCamera->FindKeyBase("angles")->values[0]));
-					g_views[i].GetView()->SetFOV(atof(pCamera->FindKeyBase("fov")->values[0]));
+					g_views[i].GetView()->SetFOV(KV_GetValueFloat(pCamera->FindKeyBase("fov"))));
 				}
 			}
 			else if(!stricmp("layer", pSection->keys[i]->name))
@@ -676,13 +678,13 @@ bool CEditorLevel::Load()
 				edworldlayer_t* pLayer = CreateLayer();
 
 				kvkeybase_t* pPair = pLayerParams->FindKeyBase("name");
-				pLayer->layer_name = pPair->values[0];
+				pLayer->layer_name = KV_GetValueString(pPair);
 
 				pPair = pLayerParams->FindKeyBase("visible");
-				pLayer->visible = atoi(pPair->values[0]);
+				pLayer->visible = KV_GetValueBool(pPair);
 
 				pPair = pLayerParams->FindKeyBase("active");
-				pLayer->active = atoi(pPair->values[0]);
+				pLayer->active = KV_GetValueBool(pPair);
 			}
 			else
 			{
@@ -712,7 +714,7 @@ bool CEditorLevel::Load()
 				// assign object id after reading to not be corrupt with groupped objects
 				if(pPair)
 				{
-					pObject->m_id = atoi(pPair->values[0]);
+					pObject->m_id = KV_GetValueInt(pPair);
 
 					// increment used ID automatically
 					if(pObject->m_id > s_objectid_increment)
@@ -724,7 +726,7 @@ bool CEditorLevel::Load()
 				pPair = pObjectSection->FindKeyBase("layer");
 				if(pPair)
 				{
-					pObject->m_layer_id = atoi(pPair->values[0]);
+					pObject->m_layer_id = KV_GetValueInt(pPair);
 
 					// assign object to layer
 					m_pLayers[pObject->m_layer_id]->object_ids.append( pObject->m_id );
@@ -733,14 +735,14 @@ bool CEditorLevel::Load()
 				pPair = pObjectSection->FindKeyBase("name");
 				if(pPair)
 				{
-					pObject->SetName(pPair->values[0]);
+					pObject->SetName(KV_GetValueString(pPair));
 				}
 
 				pPair = pObjectSection->FindKeyBase("hide");
 				if(pPair)
 				{
-					bool bHidden = atoi(pPair->values[0]);
-					pObject->AddFlags(atoi(pPair->values[0]) ? EDFL_HIDDEN : 0);
+					bool bHidden = KV_GetValueInt(pPair);
+					pObject->AddFlags(bHidden ? EDFL_HIDDEN : 0);
 
 					if(bHidden)
 						nHasHiddenObjects++;
@@ -815,7 +817,7 @@ bool CEditorLevel::Load()
 	}
 
 	if(nHasHiddenObjects)
-		wxMessageBox(wxString(varargs((char*)DKLOC("TOKEN_HIDDENOBJECTS", "World has %d hidden objects!"), nHasHiddenObjects)), wxString("Warning"), wxOK | wxCENTRE | wxICON_WARNING, g_editormainframe);
+		wxMessageBox(wxString(varargs_w(DKLOC("TOKEN_HIDDENOBJECTS", L"World has %d hidden objects!"), nHasHiddenObjects)), wxString("Warning"), wxOK | wxCENTRE | wxICON_WARNING, g_editormainframe);
 
 	g_editormainframe->GetEntityListDialog()->RefreshObjectList();
 	g_editormainframe->GetGroupListDialog()->RefreshObjectList();
@@ -1188,7 +1190,7 @@ void CEditorLevel::Update(int nViewRenderFlags, void* userdata)
 	if(userdata)
 		screen_dims = drawOptions->pViewRender->Get2DDimensions();
 
-	Rectangle_t screen_rect(0,0, screen_dims.x,screen_dims.y);
+	Rectangle_t screen_rect(0.0f, 0.0f, screen_dims.x, screen_dims.y);
 
 	// compute distances
 	for(int i = 0; i < m_pEditableList.numElem(); i++)
@@ -1351,8 +1353,10 @@ void CEditorLevel::Render(int nViewRenderFlags, void* userdata)
 
 				CEditableEntity* pEntity = (CEditableEntity*)pObject;
 
-				debugoverlay->GetFont()->DrawSetColor(1,1,1,1);
-				debugoverlay->GetFont()->DrawTextEx(pEntity->GetClassname(), center2D.x,center2D.y,8,8,TEXT_ORIENT_RIGHT,false);
+				IEqFont* font = debugoverlay->GetFont();
+			
+				eqFontStyleParam_t style;
+				font->RenderText(pEntity->GetClassname(), center2D, style);
 			}
 		}
 	}

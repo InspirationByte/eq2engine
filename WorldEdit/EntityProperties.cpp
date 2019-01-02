@@ -62,26 +62,26 @@ BEGIN_EVENT_TABLE(CEntityPropertiesPanel, wxDialog)
 	EVT_CLOSE(CEntityPropertiesPanel::OnClose)
 END_EVENT_TABLE()
 
-CEntityPropertiesPanel::CEntityPropertiesPanel() : wxDialog(g_editormainframe,-1, DKLOC("TOKEN_OBJECTPROPS", "Object properties"), wxPoint( -1,-1), wxSize(400,500), wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX)
+CEntityPropertiesPanel::CEntityPropertiesPanel() : wxDialog(g_editormainframe,-1, DKLOC("TOKEN_OBJECTPROPS", L"Object properties"), wxPoint( -1,-1), wxSize(400,500), wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX)
 {
 	Iconize( false );
 
-	m_pPropertiesPanel = new wxPanel(this, 0, 60,400,500);
+	m_pPropertiesPanel = new wxPanel(this, -1, wxPoint(0,60), wxSize(400,500));
 
 	wxAuiNotebook *notebook = new wxAuiNotebook(m_pPropertiesPanel, -1, wxDefaultPosition, wxSize(600, 450),wxAUI_NB_TOP |wxAUI_NB_TAB_SPLIT | wxAUI_NB_TAB_MOVE | wxAUI_NB_SCROLL_BUTTONS |wxNO_BORDER);
 
-	wxPanel* pEntityKeyPanel = new wxPanel(m_pPropertiesPanel, 0,0,400,500);
-	wxPanel* pEntityOutputPanel = new wxPanel(m_pPropertiesPanel, 0,0,400,500);
-	wxPanel* pObjectPropertiesPanel = new wxPanel(m_pPropertiesPanel, 0,0,400,500);
+	wxPanel* pEntityKeyPanel = new wxPanel(m_pPropertiesPanel, -1, wxPoint(0,0), wxSize(400,500));
+	wxPanel* pEntityOutputPanel = new wxPanel(m_pPropertiesPanel, -1, wxPoint(0, 0), wxSize(400, 500));
+	wxPanel* pObjectPropertiesPanel = new wxPanel(m_pPropertiesPanel, -1, wxPoint(0, 0), wxSize(400, 500));
 
-	notebook->AddPage(pEntityKeyPanel, DKLOC("TOKEN_KEYS", "Keys"), true);
-	notebook->AddPage(pEntityOutputPanel, DKLOC("TOKEN_OUTPUTS", "Outputs"), false);
-	notebook->AddPage(pObjectPropertiesPanel, DKLOC("TOKEN_OBJECTPROPS", "Object properties"), false);
+	notebook->AddPage(pEntityKeyPanel, DKLOC("TOKEN_KEYS", L"Keys"), true);
+	notebook->AddPage(pEntityOutputPanel, DKLOC("TOKEN_OUTPUTS", L"Outputs"), false);
+	notebook->AddPage(pObjectPropertiesPanel, DKLOC("TOKEN_OBJECTPROPS", L"Object properties"), false);
 
-	new wxStaticText(this, -1, DKLOC("TOKEN_CLASSNAME", "Class name"), wxPoint(5,5));
+	new wxStaticText(this, -1, DKLOC("TOKEN_CLASSNAME", L"Class name"), wxPoint(5,5));
 	m_pClassList = new wxComboBox(this, EPANEL_CHANGECLASSNAME, "", wxPoint(65,5), wxSize(320,25), 0, NULL, wxTE_PROCESS_ENTER);
 
-	new wxStaticText(this, -1, DKLOC("TOKEN_OBJECTNAME", "Object name"), wxPoint(5,30));
+	new wxStaticText(this, -1, DKLOC("TOKEN_OBJECTNAME", L"Object name"), wxPoint(5,30));
 	m_pNameList = new wxComboBox(this, EPANEL_CHANGENAME, "", wxPoint(65,30), wxSize(320,25), 0, NULL, wxTE_PROCESS_ENTER);
 
 	//-----------
@@ -92,12 +92,12 @@ CEntityPropertiesPanel::CEntityPropertiesPanel() : wxDialog(g_editormainframe,-1
 
 	wxListItem col0;
 	col0.SetId(0);
-	col0.SetText(DKLOC("TOKEN_KEY", "Key"));
+	col0.SetText(DKLOC("TOKEN_KEY", L"Key"));
 	col0.SetWidth(100);
 
 	wxListItem col1;
 	col1.SetId(1);
-	col1.SetText(DKLOC("TOKEN_VALUE", "Value"));
+	col1.SetText(DKLOC("TOKEN_VALUE", L"Value"));
 	col1.SetWidth(400);
 
 	m_pKeyList->InsertColumn(0, col0);
@@ -105,16 +105,16 @@ CEntityPropertiesPanel::CEntityPropertiesPanel() : wxDialog(g_editormainframe,-1
 
 	//m_pKeyList->SetItemCount();
 
-	new wxStaticText(pEntityKeyPanel, -1, DKLOC("TOKEN_KEY", "Key"), wxPoint(5,285));
+	new wxStaticText(pEntityKeyPanel, -1, DKLOC("TOKEN_KEY", L"Key"), wxPoint(5,285));
 	m_pKeyText = new wxTextCtrl(pEntityKeyPanel, -1, "", wxPoint(75,285), wxSize(310, 25));
 
-	new wxStaticText(pEntityKeyPanel, -1, DKLOC("TOKEN_VALUE", "Value"), wxPoint(5,310));
+	new wxStaticText(pEntityKeyPanel, -1, DKLOC("TOKEN_VALUE", L"Value"), wxPoint(5,310));
 	m_pValueText = new wxComboBox(pEntityKeyPanel, EPANEL_SETVALUE, "", wxPoint(75,310), wxSize(310, 25), 0,NULL, wxTE_PROCESS_ENTER);
 
-	m_pBrowseModelButton = new wxButton(pEntityKeyPanel, EPANEL_BROWSE, DKLOC("TOKEN_BROWSE", "Browse"), wxPoint(75,340),wxSize(90,25));
+	m_pBrowseModelButton = new wxButton(pEntityKeyPanel, EPANEL_BROWSE, DKLOC("TOKEN_BROWSE", L"Browse"), wxPoint(75,340),wxSize(90,25));
 	m_pBrowseModelButton->Hide();
 
-	m_pPickColorButton = new wxButton(pEntityKeyPanel, EPANEL_BROWSE, DKLOC("TOKEN_PICKCOLOR", "Pick color"), wxPoint(75,340),wxSize(90,25));
+	m_pPickColorButton = new wxButton(pEntityKeyPanel, EPANEL_BROWSE, DKLOC("TOKEN_PICKCOLOR", L"Pick color"), wxPoint(75,340),wxSize(90,25));
 	m_pPickColorButton->Hide();
 
 	//-----------
@@ -129,7 +129,7 @@ CEntityPropertiesPanel::CEntityPropertiesPanel() : wxDialog(g_editormainframe,-1
 	// Object properties panel
 	//-----------
 
-	new wxStaticText(pObjectPropertiesPanel, -1, DKLOC("TOKEN_LAYER", "Layer"), wxPoint(5,5));
+	new wxStaticText(pObjectPropertiesPanel, -1, DKLOC("TOKEN_LAYER", L"Layer"), wxPoint(5,5));
 	m_pLayer = new wxComboBox(pObjectPropertiesPanel, EPANEL_SETLAYER, "", wxPoint(5,25), wxSize(310, 25), 0,NULL, wxTE_PROCESS_ENTER);
 }
 
@@ -137,32 +137,32 @@ void CEntityPropertiesPanel::InitOutputPanel(wxPanel* panel)
 {
 	wxListItem col0;
 	col0.SetId(0);
-	col0.SetText(DKLOC("TOKEN_ENTITY", "Entity"));
+	col0.SetText(DKLOC("TOKEN_ENTITY", L"Entity"));
 	col0.SetWidth(60);
 
 	wxListItem col1;
 	col1.SetId(1);
-	col1.SetText(DKLOC("TOKEN_ENTOUTPUT", "Output"));
+	col1.SetText(DKLOC("TOKEN_ENTOUTPUT", L"Output"));
 	col1.SetWidth(60);
 
 	wxListItem col2;
 	col2.SetId(2);
-	col2.SetText(DKLOC("TOKEN_ENTINPUT", "Input"));
+	col2.SetText(DKLOC("TOKEN_ENTINPUT", L"Input"));
 	col2.SetWidth(60);
 
 	wxListItem col3;
 	col3.SetId(3);
-	col3.SetText(DKLOC("TOKEN_DELAY", "Delay"));
+	col3.SetText(DKLOC("TOKEN_DELAY", L"Delay"));
 	col3.SetWidth(60);
 
 	wxListItem col4;
 	col4.SetId(4);
-	col4.SetText(DKLOC("TOKEN_FIRETIMES", "Fire times"));
+	col4.SetText(DKLOC("TOKEN_FIRETIMES", L"Fire times"));
 	col4.SetWidth(60);
 
 	wxListItem col5;
 	col5.SetId(5);
-	col5.SetText(DKLOC("TOKEN_VALUE", "Value"));
+	col5.SetText(DKLOC("TOKEN_VALUE", L"Value"));
 	col5.SetWidth(60);
 
 	m_pOutputList->InsertColumn(0, col5);
@@ -172,27 +172,27 @@ void CEntityPropertiesPanel::InitOutputPanel(wxPanel* panel)
 	m_pOutputList->InsertColumn(0, col1);
 	m_pOutputList->InsertColumn(0, col0);
 
-	new wxStaticText(panel, -1, DKLOC("TOKEN_ENTOUTPUT", "Output"), wxPoint(5,210));
+	new wxStaticText(panel, -1, DKLOC("TOKEN_ENTOUTPUT", L"Output"), wxPoint(5,210));
 	m_pOutput = new wxComboBox(panel, -1, "", wxPoint(55,210), wxSize(130, 25), 0,NULL);
 
-	new wxStaticText(panel, -1, DKLOC("TOKEN_ENTITY", "Entity"), wxPoint(190,210));
+	new wxStaticText(panel, -1, DKLOC("TOKEN_ENTITY", L"Entity"), wxPoint(190,210));
 	m_pTargetEntity = new wxComboBox(panel, EPANEL_SETTARGETENTITY, "", wxPoint(240,210), wxSize(130, 25), 0, NULL, wxTE_PROCESS_ENTER);
 
-	new wxStaticText(panel, -1, DKLOC("TOKEN_DELAY", "Delay"), wxPoint(5,240));
+	new wxStaticText(panel, -1, DKLOC("TOKEN_DELAY", L"Delay"), wxPoint(5,240));
 	m_pDelay = new wxTextCtrl(panel, -1, "0", wxPoint(55,240), wxSize(130, 25));
 
-	new wxStaticText(panel, -1, DKLOC("TOKEN_INPUT", "Input"), wxPoint(190,240));
+	new wxStaticText(panel, -1, DKLOC("TOKEN_INPUT", L"Input"), wxPoint(190,240));
 	m_pTargetInput = new wxComboBox(panel, -1, "", wxPoint(240,240), wxSize(130, 25), 0, NULL);
 
-	new wxStaticText(panel, -1, DKLOC("TOKEN_VALUE", "Value"), wxPoint(190,270));
+	new wxStaticText(panel, -1, DKLOC("TOKEN_VALUE", L"Value"), wxPoint(190,270));
 	m_pOutValue = new wxTextCtrl(panel, -1, "", wxPoint(240,270), wxSize(130, 25));
 
-	new wxStaticText(panel, -1, DKLOC("TOKEN_FIRETIMES", "Fire times"), wxPoint(5,270));
+	new wxStaticText(panel, -1, DKLOC("TOKEN_FIRETIMES", L"Fire times"), wxPoint(5,270));
 	m_pFireTimes = new wxTextCtrl(panel, -1, "-1", wxPoint(55,270), wxSize(130, 25));
 
-	new wxButton(panel, EPANEL_ADDOUTPUT, DKLOC("TOKEN_ADDOUTPUT", "Add"), wxPoint(5,300),wxSize(75,25));
-	new wxButton(panel, EPANEL_REMOVEOUTPUT, DKLOC("TOKEN_REMOVEOUTPUT", "Remove"), wxPoint(80,300),wxSize(75,25));
-	new wxButton(panel, EPANEL_SETOUTPUT, DKLOC("TOKEN_SETOUTPUT", "Set"), wxPoint(190,300),wxSize(75,25));
+	new wxButton(panel, EPANEL_ADDOUTPUT, DKLOC("TOKEN_ADDOUTPUT", L"Add"), wxPoint(5,300),wxSize(75,25));
+	new wxButton(panel, EPANEL_REMOVEOUTPUT, DKLOC("TOKEN_REMOVEOUTPUT", L"Remove"), wxPoint(80,300),wxSize(75,25));
+	new wxButton(panel, EPANEL_SETOUTPUT, DKLOC("TOKEN_SETOUTPUT", L"Set"), wxPoint(190,300),wxSize(75,25));
 }
 
 bool ChangeClassName(CBaseEditableObject* pObject, void* userdata)
@@ -290,7 +290,7 @@ bool SetEntityValue(CBaseEditableObject* pObject, void* userdata)
 
 	kvkeybase_t* pair = (kvkeybase_t*)userdata;
 
-	pEntity->SetKey(pair->name, pair->values[0]);
+	pEntity->SetKey(pair->name, KV_GetValueString(pair));
 	pEntity->UpdateParameters();
 
 	return false;
@@ -302,19 +302,19 @@ void CEntityPropertiesPanel::OnValueSet(wxCommandEvent &event)
 
 	kvkeybase_t pair;
 	strcpy(pair.name, m_pKeyText->GetValue().c_str());
-	pair.SetValue(m_pValueText->GetValue().c_str());
+	pair.SetValueAt(m_pValueText->GetValue().c_str(), 0);
 
 	if(m_currentParamType == PARAM_TYPE_CHOICE && m_pValueText->GetSelection() != -1)
-		pair.SetValue(m_CurrentProps[m_nSelectedProp].value_desc->choice.choice_list[ m_pValueText->GetSelection() ].value);
+		pair.SetValueAt(m_CurrentProps[m_nSelectedProp].value_desc->choice.choice_list[ m_pValueText->GetSelection() ].value, 0);
 
-	EqString classText = m_pClassList->GetValue().c_str();
+	wxString classText(m_pClassList->GetValue());
 
 	((CSelectionBaseTool*)g_pSelectionTools[0])->DoForEachSelectedObjects(SetEntityValue, &pair, true);
 
 	UpdateSelection();
 	UpdateAllWindows();
 
-	m_pClassList->SetValue(wxString(classText.GetData()));
+	m_pClassList->SetValue(classText);
 }
 
 void CEntityPropertiesPanel::OnOpenModel(wxCommandEvent &event)
@@ -365,16 +365,16 @@ void CEntityPropertiesPanel::OnOpenModel(wxCommandEvent &event)
 		else
 			pair.SetValue(varargs("%g %g %g", colorval.x,colorval.y,colorval.z));
 
-		m_pValueText->SetValue(wxString(pair.values[0]));
+		m_pValueText->SetValue(wxString(KV_GetValueString(&pair)));
 
-		EqString classText = m_pClassList->GetValue().c_str();
+		wxString classText = m_pClassList->GetValue();
 
 		((CSelectionBaseTool*)g_pSelectionTools[0])->DoForEachSelectedObjects(SetEntityValue, &pair, true);
 
 		UpdateSelection();
 		UpdateAllWindows();
 
-		m_pClassList->SetValue(wxString(classText.GetData()));
+		m_pClassList->SetValue(classText);
 
 		return;
 	}
@@ -390,7 +390,7 @@ void CEntityPropertiesPanel::OnOpenModel(wxCommandEvent &event)
 
 	if(file && (file->ShowModal() == wxID_OK))
 	{
-		EqString path(file->GetPath().c_str());
+		EqString path(file->GetPath().c_str().AsChar());
 
 		if(m_currentParamType == PARAM_TYPE_TEXTURE || m_currentParamType == PARAM_TYPE_MATERIAL)
 			path = path.Path_Strip_Ext();
@@ -411,18 +411,18 @@ void CEntityPropertiesPanel::OnOpenModel(wxCommandEvent &event)
 
 		kvkeybase_t pair;
 		strcpy(pair.name, m_pKeyText->GetValue().c_str());
-		pair.SetValue(pszPath);
+		pair.SetValueAt(pszPath, 0);
 
 		m_pValueText->SetValue(wxString(pszPath));
 
-		EqString classText = m_pClassList->GetValue().c_str();
+		wxString classText(m_pClassList->GetValue());
 
 		((CSelectionBaseTool*)g_pSelectionTools[0])->DoForEachSelectedObjects(SetEntityValue, &pair, true);
 
 		UpdateSelection();
 		UpdateAllWindows();
 
-		m_pClassList->SetValue(wxString(classText.GetData()));
+		m_pClassList->SetValue(classText);
 
 		delete file;
 	}
@@ -432,28 +432,28 @@ void CEntityPropertiesPanel::OnClassSelect(wxCommandEvent &event)
 {
 	((CSelectionBaseTool*)g_pSelectionTools[0])->BackupSelectionForUndo();
 
-	EqString classText = m_pClassList->GetValue().c_str();
+	wxString classText(m_pClassList->GetValue());
 
-	((CSelectionBaseTool*)g_pSelectionTools[0])->DoForEachSelectedObjects(ChangeClassName, (void*)classText.GetData(), true);
+	((CSelectionBaseTool*)g_pSelectionTools[0])->DoForEachSelectedObjects(ChangeClassName, (void*)classText.c_str().AsChar(), true);
 
 	UpdateSelection();
 	UpdateAllWindows();
 
-	m_pClassList->SetValue(wxString(classText.GetData()));
+	m_pClassList->SetValue(classText);
 }
 
 void CEntityPropertiesPanel::OnSetObjectName(wxCommandEvent &event)
 {
 	((CSelectionBaseTool*)g_pSelectionTools[0])->BackupSelectionForUndo();
 
-	EqString nameText = m_pNameList->GetValue().c_str();
+	wxString nameText(m_pNameList->GetValue());
 
-	((CSelectionBaseTool*)g_pSelectionTools[0])->DoForEachSelectedObjects(ChangeName, (void*)nameText.GetData(), true);
+	((CSelectionBaseTool*)g_pSelectionTools[0])->DoForEachSelectedObjects(ChangeName, (void*)nameText.c_str().AsChar(), true);
 
 	UpdateSelection();
 	UpdateAllWindows();
 
-	m_pNameList->SetValue(wxString(nameText.GetData()));
+	m_pNameList->SetValue(nameText);
 }
 
 //---------------------------

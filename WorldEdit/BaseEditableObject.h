@@ -10,12 +10,12 @@
 #ifndef EDITORRENDERABLE_H
 #define EDITORRENDERABLE_H
 
-#include "Platform.h"
+#include "platform/Platform.h"
 #include "Math/DkMath.h"
 #include "BaseRenderableObject.h"
 #include "IVirtualStream.h"
-#include "KeyValues.h"
-#include "Utils/eqstring.h"
+#include "utils/KeyValues.h"
+#include "utils/eqstring.h"
 
 // object data ident, used for clipboard
 #define OBJECTDATA_MAGIC 0x0b7ec1d1

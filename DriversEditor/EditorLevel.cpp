@@ -321,8 +321,6 @@ void RenderBuilding( buildingSource_t* building, buildSegmentPoint_t* extraSegme
 		// calculate transformation for each iteration
 		for(int iter = 0; iter < numIterations; iter++)
 		{
-			CLevelModel* model = layer.models[start.modelId]->m_model;
-
 			CalculateBuildingSegmentTransform( partTransform, layer, start.position, end.position, building->order, size, start.scale, iter );
 
 			materials->SetMatrix(MATRIXMODE_WORLD, partTransform);
@@ -509,8 +507,6 @@ bool GenerateBuildingModel( buildingSource_t* building )
 		// calculate transformation for each iteration
 		for(int iter = 0; iter < numIterations; iter++)
 		{
-			CLevelModel* model = layer.models[start.modelId]->m_model;
-
 			CalculateBuildingSegmentTransform( partTransform, layer, start.position, end.position, building->order, size, start.scale, iter );
 
 			generator.AppendModel(model, partTransform);
@@ -821,8 +817,8 @@ void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
 						zoneRegions_t zr;
 						zr.zoneName = zone.zoneName;
 
-						int idx = zoneRegionList.append( zr );
-						zoneRegions = &zoneRegionList[idx];
+						int zrIdx = zoneRegionList.append( zr );
+						zoneRegions = &zoneRegionList[zrIdx];
 					}
 
 					// add region index to this zone
@@ -1475,15 +1471,15 @@ int CEditorLevel::Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir,
 		{
 			int idx = y*m_wide+x;
 
-			CEditorLevelRegion& reg = *(CEditorLevelRegion*)&m_regions[idx];
+			CEditorLevelRegion& sreg = *(CEditorLevelRegion*)&m_regions[idx];
 
 			float refdist = DrvSynUnits::MaxCoordInUnits;
-			int foundIdx = reg.Ed_SelectRef(start, dir, refdist);
+			int foundIdx = sreg.Ed_SelectRef(start, dir, refdist);
 
 			if(foundIdx != -1 && (refdist < max_dist))
 			{
 				max_dist = refdist;
-				bestReg = &reg;
+				bestReg = &sreg;
 				bestDistrefIdx = foundIdx;
 			}
 		}
@@ -1507,15 +1503,15 @@ int	CEditorLevel::Ed_SelectBuildingAndReg(const Vector3D& start, const Vector3D&
 		{
 			int idx = y*m_wide+x;
 
-			CEditorLevelRegion& reg = *(CEditorLevelRegion*)&m_regions[idx];
+			CEditorLevelRegion& sreg = *(CEditorLevelRegion*)&m_regions[idx];
 
 			float refdist = DrvSynUnits::MaxCoordInUnits;
-			int foundIdx = reg.Ed_SelectBuilding(start, dir, refdist);
+			int foundIdx = sreg.Ed_SelectBuilding(start, dir, refdist);
 
 			if(foundIdx != -1 && (refdist < max_dist))
 			{
 				max_dist = refdist;
-				bestReg = &reg;
+				bestReg = &sreg;
 				bestDistrefIdx = foundIdx;
 			}
 		}

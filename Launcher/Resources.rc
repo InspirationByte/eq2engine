@@ -127,7 +127,7 @@ END
 
 2 TEXTINCLUDE 
 BEGIN
-    "#include ""afxres.h""\r\n"
+    "#include ""WinResrc.h""\r\n"
     "\0"
 END
 
