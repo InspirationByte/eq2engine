@@ -997,8 +997,6 @@ void BaseAnimating::UpdateBones()
 			else
 			{
 				// simply compute frames
-				studioHwData_t::motionData_t::animation_t *curanim = m_sequenceTimers[j].base_sequence->animations[0];
-
 				GetInterpolatedBoneFrame(curanim, boneId, m_sequenceTimers[j].currFrame, m_sequenceTimers[j].nextFrame, frame_interp, cTimedFrame);
 			}
 

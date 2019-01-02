@@ -108,7 +108,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>..\FileSystem;..\Engine;..\public;..\Game\;..\public\core;..\public\materialsystem\renderers;..\public\platform;AI\Recast\Include;AI\Detour\Include;..\shared_game\;..\shared_engine\;..\src_dependency\shiny\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\FileSystem;..\Engine;..\public;..\Game\;..\public\core;..\public\materialsystem\renderers;..\public\platform;AI\Recast\Include;AI\Detour\Include;..\shared_game\;..\shared_engine\;..\src_dependency\shiny\shiny\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;GAME_EXPORT;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;STDGAME;SHINY_PROFILER=FALSE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
@@ -554,7 +554,7 @@ call copy_whitecage_binary.bat $(ConfigurationName) $(TargetName)$(TargetExt)</C
     <ClInclude Include="..\public\Math\math_util.h" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\src_dependency\Shiny\lib\Release\Shiny.lib" />
+    <Library Include="..\src_dependency\Shiny\Shiny\lib\Release\Shiny.lib" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\public\TextureAtlas.cpp" />

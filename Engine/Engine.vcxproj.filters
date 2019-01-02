@@ -385,15 +385,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\libs\libogg_static.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\libs\libvorbis_static.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\libs\libvorbisfile_static.lib">
-      <Filter>Libs</Filter>
-    </Library>
     <Library Include="..\src_dependency\bullet\bin\BulletCollision.lib">
       <Filter>Libs\Bullet</Filter>
     </Library>
@@ -409,16 +400,25 @@
     <Library Include="..\src_dependency\bullet\bin\LinearMath.lib">
       <Filter>Libs\Bullet</Filter>
     </Library>
-    <Library Include="..\src_dependency\zlib\MinSizeRel\zlibstatic.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\src_dependency\SDL2\VisualC\SDL\Win32\Release\SDL2.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\src_dependency\jpeg\Release\jpeg.lib">
-      <Filter>Libs</Filter>
-    </Library>
     <Library Include="..\src_dependency\openal-soft\build\Release\OpenAL32.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\libogg\win32\VS2015\Win32\Release\libogg_static.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbis_static.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbisfile_static.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\SDL2\lib\x86\SDL2.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\jpeg\lib\jpeg.lib">
       <Filter>Libs</Filter>
     </Library>
   </ItemGroup>

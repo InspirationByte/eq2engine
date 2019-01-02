@@ -71,7 +71,7 @@ protected:
 	void		DrawSpansBetweenEdges(const REdge_t<T> &e1, const REdge_t<T> &e2);
 
 	T*			m_pImage;
-	int			m_Width, m_Height;
+	uint		m_Width, m_Height;
 
 	bool		m_bAdditive;
 	bool		m_bColorClampDiscard;
@@ -294,8 +294,8 @@ inline void CRasterizer<T>::DrawSpan(const RSpan_t<T> &span, int y)
 	float factorStep = 1.0f / (float)xdiff;
 
 	int min,max;
-	min = clamp(span.X1, 0, m_Width);
-	max = clamp(span.X2, 0, m_Width);
+	min = clamp(span.X1, 0, (int)m_Width);
+	max = clamp(span.X2, 0, (int)m_Width);
 
 	// draw each pixel in the span
 	for(int x = min; x < max; x++)
@@ -336,8 +336,8 @@ inline void CRasterizer<T>::DrawSpansBetweenEdges(const REdge_t<T> &e1, const RE
 	float factorStep2 = 1.0f / e2ydiff;
 
 	int min, max;
-	min = clamp(e2.Y1, 0, m_Height);
-	max = clamp(e2.Y2, 0, m_Height);
+	min = clamp(e2.Y1, 0, (int)m_Height);
+	max = clamp(e2.Y2, 0, (int)m_Height);
 
 	// loop through the lines between the edges and draw spans
 	for(int y = min; y < max; y++)

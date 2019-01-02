@@ -334,11 +334,7 @@ void CBaseWeapon::SetActivity(Activity act, int slot)
 	}
 	else
 	{
-		CBaseActor* pActor = dynamic_cast<CBaseActor*>(m_pOwner);
-
 		// translate viewmodel activities
-
-
 		pActor->SetActivity( act, 2 );
 	}
 }

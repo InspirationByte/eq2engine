@@ -284,11 +284,13 @@ void ShutdownEngineHost()
 // The main engine class pointers
 IShaderAPI *g_pShaderAPI = NULL;
 IEngineSceneRenderer *scenerenderer = NULL;
-IPhysics *physics = NULL;
 IMaterialSystem *materials = NULL;
 
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay *debugoverlay = ( IDebugOverlay * )&g_DebugOverlays;
+
+static DkPhysics s_Physics;
+IPhysics *physics = NULL;
 
 IGameLibrary* gamedll = NULL;
 
@@ -402,12 +404,7 @@ IShaderAPI* CEngineHost::GetRenderer()
 
 IPhysics* CEngineHost::GetPhysics()
 {
-	if(!physics)
-		return new DkPhysics();
-	else
-		return physics;
-
-	return NULL;
+	return &s_Physics;
 }
 
 
