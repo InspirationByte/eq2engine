@@ -32,12 +32,13 @@ enum EInfractionType
 
 	INFRACTION_MINOR,			// minor infraction ratio
 
-	INFRACTION_SPEEDING,		// speed over 65 mph
-	INFRACTION_RED_LIGHT,		// he crossed red light
-	INFRACTION_WRONG_LANE,		// he drives opposite lane
-	INFRACTION_HIT_MINOR,		// hit the debris
-	INFRACTION_HIT,				// hit the object or world
-	INFRACTION_HIT_VEHICLE,		// hit the vehicle
+	INFRACTION_SPEEDING,			// speed over 65 mph
+	INFRACTION_RED_LIGHT,			// he crossed red light
+	INFRACTION_WRONG_LANE,			// he drives opposite lane
+	INFRACTION_HIT_MINOR,			// hit the debris
+	INFRACTION_HIT,					// hit the object or world
+	INFRACTION_HIT_VEHICLE,			// hit the vehicle
+	INFRACTION_HIT_SQUAD_VEHICLE,	// hit a squad vehicle
 };
 
 const float AI_COPVIEW_FAR					= 60.0f;
@@ -106,6 +107,7 @@ protected:
 
 		bool				isAngry;
 		bool				hasAnnouncedTarget;
+		bool				hasToCheck;
 	} m_targInfo;
 
 	float					m_alterSirenChangeTime;
