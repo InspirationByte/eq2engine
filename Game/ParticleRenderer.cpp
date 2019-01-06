@@ -639,13 +639,7 @@ void DrawParticleMaterialGroups(bool dsCheck)
 
 			g_pShaderAPI->SetIndexBuffer(g_pParticleIB);
 
-
-			materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
-
-			
-			if(s_ParticleOptimizedGroups[i].isDecal)
-				materials->SetRasterizerStates(CULL_BACK, FILL_SOLID);
-			else
+			if (!s_ParticleOptimizedGroups[i].isDecal)
 				materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
 
 			g_pShaderAPI->Apply();
