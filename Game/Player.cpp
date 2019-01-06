@@ -541,7 +541,7 @@ void CWhiteCagePlayer::OnPostRender()
 
 			float seg_angle = 60.0f*((float)i+1) - health_segment_ratio*60.0f;
 
-			Matrix2x2 mat = rotate2( DEG2RAD( seg_angle - 120.0f ) );
+			mat = rotate2( DEG2RAD( seg_angle - 120.0f ) );
 			rotVec = hfan_center+normalize(mat*Vector2D(1,0))*fHealthBarSize;
 
 			HFAN_VERT(rotVec);

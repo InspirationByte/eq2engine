@@ -17,6 +17,11 @@
 #include "EditableSurface.h"
 #include "EqBrush.h"
 
+#include "FontLayoutBuilders.h"
+
+#include "utils/strtools.h"
+
+
 extern editor_user_prefs_t* g_editorCfg;
 
 BEGIN_EVENT_TABLE(CTextureListPanel, wxPanel)
@@ -31,7 +36,7 @@ END_EVENT_TABLE()
 
 bool g_bTexturesInit = false;
 
-CTextureListPanel::CTextureListPanel(wxWindow* parent) : wxPanel( parent, 0,0,640,480 )
+CTextureListPanel::CTextureListPanel(wxWindow* parent) : wxPanel( parent, -1, wxPoint(0,0), wxSize(640,480) )
 {
 	m_pFont = NULL;
 
@@ -42,6 +47,8 @@ CTextureListPanel::CTextureListPanel(wxWindow* parent) : wxPanel( parent, 0,0,64
 
 	m_nPreviewSize = 128;
 	m_bAspectFix = true;
+
+	m_swapChain = materials->CreateSwapChain(GetHWND());
 }
 
 void CTextureListPanel::OnMouseMotion(wxMouseEvent& event)
@@ -159,7 +166,7 @@ void CTextureListPanel::Redraw()
 		return;
 
 	if(!m_pFont)
-		m_pFont = InternalLoadFont("debug");
+		m_pFont = debugoverlay->GetFont();
 
 	g_bTexturesInit = true;
 
@@ -170,6 +177,13 @@ void CTextureListPanel::Redraw()
 
 	materials->GetConfiguration().wireframeMode = false;
 
+	CRectangleTextLayoutBuilder rectLayout;
+
+	eqFontStyleParam_t fontParam;
+	fontParam.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+	fontParam.textColor = ColorRGBA(1, 1, 1, 1);
+	fontParam.layoutBuilder = &rectLayout;
+
 	materials->SetAmbientColor( color4_white );
 
 	if( materials->BeginFrame() )
@@ -178,7 +192,7 @@ void CTextureListPanel::Redraw()
 
 		if(!m_materialslist.numElem())
 		{
-			materials->EndFrame((HWND)GetHWND());
+			materials->EndFrame(m_swapChain);
 			return;
 		}
 
@@ -237,22 +251,13 @@ void CTextureListPanel::Redraw()
 
 				if( screenRect.IsIntersectsRectangle(check_rect) )
 				{
-					ITexture* pTex = g_pShaderAPI->GetErrorTexture();
+					ITexture* pTex = m_filteredlist[i]->GetBaseTexture();
 
-					if(m_filteredlist[i]->GetShader())
+					if(!pTex)
 					{
 						// preload
 						materials->PutMaterialToLoadingQueue( m_filteredlist[i] );
-
-						if(m_filteredlist[i]->GetShader())
-						{
-							pTex = m_filteredlist[i]->GetShader()->GetBaseTexture();
-
-							if(!pTex)
-								pTex = g_pShaderAPI->GetErrorTexture();
-						}
-						else
-							pTex = g_pShaderAPI->GetErrorTexture();
+						pTex = g_pShaderAPI->GetErrorTexture();
 					}
 
 					float texture_aspect = pTex->GetWidth() / pTex->GetHeight();
@@ -316,6 +321,8 @@ void CTextureListPanel::Redraw()
 
 					Rectangle_t name_rect(x_offset, y_offset+fSize, x_offset + fSize,y_offset + fSize + 400);
 
+					m_pFont->RenderText(material_name.c_str(), name_rect.vleftTop, fontParam);
+					/*
 					m_pFont->DrawSetColor(color4_white);
 					m_pFont->DrawTextInRect(material_name.c_str(), name_rect, 8, 8, false);
 
@@ -324,13 +331,14 @@ void CTextureListPanel::Redraw()
 
 					if(!m_filteredlist[i]->GetShader() || (m_filteredlist[i]->GetShader() && m_filteredlist[i]->GetShader()->IsError()))
 						m_pFont->DrawText("BAD SHADER\nEDIT IT FIRST", x_offset, y_offset+10, 8,8,false);
+					*/
 				}
 
 				nItem++;
 			}
 		}
 
-		materials->EndFrame((HWND)GetHWND());
+		materials->EndFrame(m_swapChain);
 	}
 }
 
@@ -360,7 +368,7 @@ void CTextureListPanel::ReloadMaterialList()
 		for(int i = 0; i < pSection->keys.numElem(); i++)
 		{
 			if(!stricmp(pSection->keys[i]->name, "SkipMaterialDir" ))
-				m_loadfilter.append( pSection->keys[i]->values[0] );
+				m_loadfilter.append( KV_GetValueString(pSection->keys[i]) );
 		}
 	}
 
@@ -381,7 +389,7 @@ void CTextureListPanel::ReloadMaterialList()
 IMaterial* CTextureListPanel::GetSelectedMaterial()
 {
 	if(selection_id == -1)
-		return materials->GetMaterial("error", true);
+		return materials->GetMaterial("error"); // FIXME: potential reference leak
 
 	return m_filteredlist[selection_id];
 }
@@ -430,7 +438,7 @@ bool CTextureListPanel::CheckDirForMaterials(const char* filename_to_add)
 					filename = filename.Path_Strip_Ext();
 					filename = filename.Right(filename.Length() - tex_dir.Length());
 
-					IMaterial* pMaterial = materials->GetMaterial( filename.GetData(), true);
+					IMaterial* pMaterial = materials->GetMaterial( filename.GetData());	// FIXME: potential reference leak
 					if(pMaterial)
 					{
 						IMatVar* pVar = pMaterial->FindMaterialVar("showineditor");

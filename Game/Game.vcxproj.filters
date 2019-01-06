@@ -502,11 +502,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\src_dependency\Shiny\lib\Release\Shiny.lib">
-      <Filter>Libs</Filter>
-    </Library>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="weapon_ak74.cpp">
       <Filter>Source Files\GameLib\Game_STD</Filter>
     </ClCompile>
@@ -917,5 +912,10 @@
     <CustomBuildStep Include="BulletSimulator.h">
       <Filter>Source Files\GameLib\GameCommon</Filter>
     </CustomBuildStep>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\src_dependency\Shiny\Shiny\lib\Release\Shiny.lib">
+      <Filter>Libs</Filter>
+    </Library>
   </ItemGroup>
 </Project>

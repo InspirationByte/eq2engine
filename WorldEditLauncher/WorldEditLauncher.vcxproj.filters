@@ -14,10 +14,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\public\Platform\Platform.cpp">
+    <ClCompile Include="editorlauncher_win.cpp">
       <Filter>Launcher</Filter>
     </ClCompile>
-    <ClCompile Include="editorlauncher_win.cpp">
+    <ClCompile Include="..\Core\platform\MessageBox.cpp">
       <Filter>Launcher</Filter>
     </ClCompile>
   </ItemGroup>

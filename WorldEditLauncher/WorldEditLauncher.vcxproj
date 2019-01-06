@@ -126,7 +126,7 @@
       <OmitFramePointers>false</OmitFramePointers>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>../FileSystem;../Engine;../public;../public/core;../public/platform;..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../FileSystem;../Engine;../public;../public/core;../public/platform;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;_DKLAUNCHER_;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <MinimalRebuild>true</MinimalRebuild>
@@ -149,7 +149,7 @@
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
-      <AdditionalIncludeDirectories>..\src_dependency\wx\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src_dependency\wxWidgets\include</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/FORCE:MULTIPLE /FIXED:NO %(AdditionalOptions)</AdditionalOptions>
@@ -390,7 +390,7 @@
     <None Include="splashscreen.bmp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\public\Platform\Platform.cpp" />
+    <ClCompile Include="..\Core\platform\MessageBox.cpp" />
     <ClCompile Include="editorlauncher_win.cpp" />
   </ItemGroup>
   <ItemGroup>

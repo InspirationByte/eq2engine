@@ -9,7 +9,6 @@
 #define SHADERAPID3DX9_H
 
 #include <d3d9.h>
-#include <d3dx9.h>
 
 #include "../Shared/ShaderAPI_Base.h"
 #include "D3D9RenderState.h"

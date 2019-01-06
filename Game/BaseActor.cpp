@@ -650,8 +650,6 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 		Matrix4x4 ladder_endpoint_rot = !rotateXYZ4(DEG2RAD(m_pLadder->GetLadderDestAngles().x),DEG2RAD(m_pLadder->GetLadderDestAngles().y),DEG2RAD(m_pLadder->GetLadderDestAngles().z));
 		Vector3D lforward = ladder_endpoint_rot.rows[2].xyz();
 		
-		Vector3D ladderVec = normalize(m_pLadder->GetLadderDestPoint() - m_pLadder->GetAbsOrigin());
-
 		//if(fDotSignMoveDir > 0)
 		Vector3D offs = lforward*32.0f;
 
@@ -671,6 +669,7 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 		if(fabs(data.forward) > 0.05f || fabs(data.right) > 0.05f)
 			bMovementPressed = true;
 
+		// jump off the ladder
 		if(m_nActorButtons & IN_JUMP)
 		{
 			m_pLadder = NULL;
@@ -694,68 +693,67 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 			return;
 		}
 
-		// if we at the end of ladder, set it's pointer and start from crouching
-		if(m_pLadder)
+		// we at the end of ladder, set it's pointer and start from crouching
+
+		m_pPhysicsObject->SetCollisionMask(COLLIDE_ACTOR);
+
+		Vector3D ladderVec = normalize(m_pLadder->GetLadderDestPoint() - m_pLadder->GetAbsOrigin());
+
+		// check movement pressed (the deadzone applyed for joystick usage)
+		if(fabs(data.forward) > 0.01f)
 		{
-			m_pPhysicsObject->SetCollisionMask(COLLIDE_ACTOR);
+			m_vMoveDir = ladderVec*data.forward;
+		}
 
-			Vector3D ladderVec = normalize(m_pLadder->GetLadderDestPoint() - m_pLadder->GetAbsOrigin());
+		float intrp = lineProjection(m_pLadder->GetAbsOrigin(), m_pLadder->GetLadderDestPoint(), GetAbsOrigin());
 
-			// check movement pressed (the deadzone applyed for joystick usage)
-			if(fabs(data.forward) > 0.01f)
+		// getting out from ladder
+		if((intrp < 0.0f || intrp > 1.0f) && ground_trace.fraction < 1.0f && dot(ground_trace.normal, Vector3D(0,1,0)) > 0.5f)
+		{
+			m_pLadder = NULL;
+
+			Vector3D forward;
+			AngleVectors(Vector3D(0,GetEyeAngles().y, 0), &forward);
+
+			m_vecAbsVelocity = forward*m_fMaxSpeed;
+
+			m_pPhysicsObject->SetVelocity(m_vecAbsVelocity);
+
+			m_fMaxFallingVelocity = 0.0f;
+			return;
+		}
+
+		if(!bMovementPressed)
+		{
+			m_pPhysicsObject->SetPosition(GetAbsOrigin());
+			m_pPhysicsObject->SetVelocity(vec3_zero);
+		}
+		else
+		{
+			m_vMoveDir *= g_ladder_speed.GetFloat();
+
+			if(data.forward < 0 && (m_nActorButtons & IN_FORCERUN))
 			{
-				m_vMoveDir = ladderVec*data.forward;
-			}
-
-			float intrp = lineProjection(m_pLadder->GetAbsOrigin(), m_pLadder->GetLadderDestPoint(), GetAbsOrigin());
-
-			// getting out from ladder
-			if((intrp < 0.0f || intrp > 1.0f) && ground_trace.fraction < 1.0f && dot(ground_trace.normal, Vector3D(0,1,0)) > 0.5f)
-			{
-				m_pLadder = NULL;
-
-				Vector3D forward;
-				AngleVectors(Vector3D(0,GetEyeAngles().y, 0), &forward);
-
-				m_vecAbsVelocity = forward*m_fMaxSpeed;
-
-				m_pPhysicsObject->SetVelocity(m_vecAbsVelocity);
-
-				m_fMaxFallingVelocity = 0.0f;
-				return;
-			}
-
-			if(!bMovementPressed)
-			{
-				m_pPhysicsObject->SetPosition(GetAbsOrigin());
-				m_pPhysicsObject->SetVelocity(vec3_zero);
+				m_vMoveDir.y = m_pPhysicsObject->GetVelocity().y;
+				if(m_vMoveDir.y < -450)
+					m_vMoveDir.y = -450;
 			}
 			else
 			{
-				m_vMoveDir *= g_ladder_speed.GetFloat();
-
-				if(data.forward < 0 && (m_nActorButtons & IN_FORCERUN))
+				// handle footsteps
+				if(m_fNextStepTime < gpGlobals->curtime && fabs(m_vMoveDir.y) > 50 && m_bOnGround)
 				{
-					m_vMoveDir.y = m_pPhysicsObject->GetVelocity().y;
-					if(m_vMoveDir.y < -450)
-						m_vMoveDir.y = -450;
+					PlayStepSound("physics.footstepmetal", 0.25f);
+
+					m_fNextStepTime = gpGlobals->curtime + 0.43f;
 				}
-				else
-				{
-					// handle footsteps
-					if(m_fNextStepTime < gpGlobals->curtime && fabs(m_vMoveDir.y) > 50 && m_bOnGround)
-					{
-						PlayStepSound("physics.footstepmetal", 0.25f);
-
-						m_fNextStepTime = gpGlobals->curtime + 0.43f;
-					}
-				}
-
-
-				m_pPhysicsObject->SetVelocity(m_vMoveDir);
-				SetAbsOrigin( m_pPhysicsObject->GetPosition() );
 			}
+
+
+			m_pPhysicsObject->SetVelocity(m_vMoveDir);
+			SetAbsOrigin( m_pPhysicsObject->GetPosition() );
 		}
+
 	}
 	else if(move_type == MOVE_TYPE_NOCLIP)
 	{

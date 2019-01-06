@@ -169,14 +169,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\src_dependency\jpeg\Release\jpeg.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\src_dependency\zlib\MinSizeRel\zlibstatic.lib">
-      <Filter>Libs</Filter>
-    </Library>
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="Resources.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
@@ -191,5 +183,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\src_dependency\jpeg\lib\jpeg.lib">
+      <Filter>Libs</Filter>
+    </Library>
   </ItemGroup>
 </Project>

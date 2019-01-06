@@ -24,6 +24,8 @@ typedef struct DX9ShaderConstant
 	int		constFlags;
 }DX9ShaderConstant_t;
 
+struct ID3DXConstantTable;
+
 class CD3D9ShaderProgram : public IShaderProgram
 {
 public:

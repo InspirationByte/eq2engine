@@ -129,10 +129,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\src_dependency\jpeg\Release\jpeg.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\src_dependency\zlib\MinSizeRel\zlibstatic.lib">
+    <Library Include="..\..\src_dependency\jpeg\lib\jpeg.lib">
       <Filter>Libs</Filter>
     </Library>
   </ItemGroup>

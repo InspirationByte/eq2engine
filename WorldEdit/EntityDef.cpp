@@ -8,22 +8,27 @@
 #include "EntityDef.h"
 #include "materialsystem/IMaterialSystem.h"
 
+#include "ILocalize.h"
+
+
 DkList<edef_entity_t*>	g_defs;
 EqString				g_entdefname("NULL");
 edef_entity_t*			g_baseentity;
 
-const char* LocalizedEDEF(char *pszkey, kvkeybase_t *sec)
+EqWString LocalizedEDEF(char *pszkey, kvkeybase_t *sec)
 {
 	kvkeybase_t *pair = sec->FindKeyBase(pszkey);
 	if(pair)
 	{
-		if(pair->values[0][0] == '#')
-			return DKLOC(pair->values[0]+1, pair->values[0]);
+		const char* value = KV_GetValueString(pair);
+
+		if(value[0] == '#')
+			return DKLOC(value +1, EqWString(value).c_str());
 		else
-			return pair->values[0];
+			return value;
 	}
 	else
-		return "";
+		return L"";
 }
 
 Vector2D UTIL_StringToVector2(const char *str)
@@ -98,8 +103,12 @@ bool ParseEDEFParameter(kvkeybase_t* pPair, edef_param_t *param)
 		// load choice values
 		for(int i = 0; i < pPair->keys.numElem(); i++)
 		{
-			strcpy(param->choice.choice_list[nChoice].desc, LocalizedString(pPair->keys[i]->values[0]));
-			strcpy(param->choice.choice_list[nChoice].value, pPair->keys[i]->name);
+			kvkeybase_t* pair = pPair->keys[i];
+
+			edef_choiceval_t& val = param->choice.choice_list[nChoice];
+
+			val.desc = LocalizedString(KV_GetValueString(pair));
+			val.value = pair->name;
 			nChoice++;
 		}
 	}
@@ -117,10 +126,10 @@ bool ParseEDEFEntity(kvkeybase_t* pSection)
 	kvkeybase_t *pPair = pSection->FindKeyBase("baseclass");
 	if(pPair)
 	{
-		edef_entity_t* pBaseDef = EDef_Find(pPair->values[0]);
+		edef_entity_t* pBaseDef = EDef_Find( KV_GetValueString(pPair) );
 		if(!pBaseDef)
 		{
-			MsgError("\n***Error*** class '%s' not found as baseclass of '%s'\n", pPair->values[0], pDef->classname.GetData());
+			MsgError("\n***Error*** class '%s' not found as baseclass of '%s'\n", KV_GetValueString(pPair), pDef->classname.GetData());
 			return false;
 		}
 		else
@@ -165,7 +174,7 @@ bool ParseEDEFEntity(kvkeybase_t* pSection)
 
 	if(pPair)
 	{
-		pDef->modelname = pPair->values[0];
+		pDef->modelname = KV_GetValueString(pPair);
 		g_studioModelCache->PrecacheModel(pDef->modelname.GetData());
 	}
 	else
@@ -185,8 +194,10 @@ bool ParseEDEFEntity(kvkeybase_t* pSection)
 
 	if(pPair)
 	{
-		pDef->modelname = pPair->values[0];
-		pDef->sprite = materials->GetMaterial(pDef->modelname.GetData(), true);
+		pDef->modelname = KV_GetValueString(pPair);
+
+		pDef->sprite = materials->GetMaterial(pDef->modelname.GetData());
+		pDef->sprite->Ref_Grab();
 	}
 	else
 	{
@@ -246,7 +257,7 @@ bool ParseEDEFEntity(kvkeybase_t* pSection)
 			edef_input_t input;
 
 			// copy name
-			strcpy(input.name, pInputSection->keys[i]->values[0]);
+			input.name = KV_GetValueString(pInputSection->keys[i]);
 
 			// resolve value type from string
 			input.valuetype = EDef_ResolveParamTypeFromString(pInputSection->keys[i]->name);
@@ -264,7 +275,7 @@ bool ParseEDEFEntity(kvkeybase_t* pSection)
 			edef_output_t output;
 
 			// copy name
-			strcpy(output.name, pOutputSection->keys[i]->name);
+			output.name = pOutputSection->keys[i]->name;
 
 			// TODO: description
 
@@ -303,13 +314,17 @@ bool EDef_Load(const char* filename, bool clean)
 
 	if(kv.LoadFromFile(filename))
 	{
+		kvkeybase_t* root = kv.GetRootSection();
+
 		// parse includes
-		for(int i = 0; i < kv.GetRootSection()->keys.numElem(); i++)
+		for(int i = 0; i < root->keys.numElem(); i++)
 		{
-			if(!stricmp(kv.GetRootSection()->keys[i]->name, "#include"))
-				EDef_Load( kv.GetRootSection()->keys[i]->values[0], false );
-			else if(!stricmp(kv.GetRootSection()->keys[i]->name, "localizedtokensfile"))
-				GetLocalizer()->AddTokensFile( kv.GetRootSection()->keys[i]->values[0] );
+			kvkeybase_t* key = root->keys[i];
+
+			if(!stricmp(key->name, "#include"))
+				EDef_Load(KV_GetValueString(key), false );
+			else if(!stricmp(key->name, "localizedtokensfile"))
+				g_localizer->AddTokensFile(KV_GetValueString(key));
 		}
 
 		// parse entities

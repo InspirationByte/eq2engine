@@ -474,7 +474,7 @@ extern FactoryList& _InternalShaderList();
 			shaderfactory_t factory;												\
 			factory.dispatcher = &C##className##Factory;							\
 			factory.shader_name = stringName;										\
-			int idx = _InternalShaderList().append(factory);						\
+			_InternalShaderList().append(factory);						\
 		}																			\
 	};																				\
 	static C_ShaderClassFactoryFoo g_CShaderClassFactoryFoo;

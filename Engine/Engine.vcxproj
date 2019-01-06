@@ -67,7 +67,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>..\FileSystem;..\Engine;..\public;..\public\core;..\shared_game;..\shared_engine;..\public\platform;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\bullet\Extras\Serialization\BulletWorldImporter;..\src_dependency\bullet\src\BulletSoftBody;..\src_dependency\zlib;..\src_dependency\OpenALSoftCustom\include;..\src_dependency\libogg\include;..\src_dependency\libvorbis\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\FileSystem;..\Engine;..\public;..\public\core;..\shared_game;..\shared_engine;..\public\platform;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\bullet\Extras\Serialization\BulletWorldImporter;..\src_dependency\bullet\src\BulletSoftBody;..\src_dependency\zlib;..\src_dependency\openal-soft\include;..\src_dependency\libogg\include;..\src_dependency\libvorbis\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;PHYSICS_EXPORT;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;USE_SIMD;EQ_USE_SDL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
@@ -322,18 +322,20 @@ call copy_whitecage_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="..\public\Platform\Platform.h" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\src_dependency\jpeg\Release\jpeg.lib" />
-    <Library Include="..\libs\libogg_static.lib" />
-    <Library Include="..\libs\libvorbisfile_static.lib" />
-    <Library Include="..\libs\libvorbis_static.lib" />
-    <Library Include="..\src_dependency\OpenALSoftCustom\build\Release\OpenAL32.lib" />
-    <Library Include="..\src_dependency\zlib\MinSizeRel\zlibstatic.lib" />
+    <Library Include="..\src_dependency\jpeg\lib\jpeg.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\src_dependency\libogg\win32\VS2015\Win32\Release\libogg_static.lib" />
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbisfile_static.lib" />
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbis_static.lib" />
+    <Library Include="..\src_dependency\openal-soft\build\Release\OpenAL32.lib" />
+    <Library Include="..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib" />
     <Library Include="..\src_dependency\bullet\bin\BulletCollision.lib" />
     <Library Include="..\src_dependency\bullet\bin\BulletDynamics.lib" />
     <Library Include="..\src_dependency\bullet\bin\BulletSoftBody.lib" />
     <Library Include="..\src_dependency\bullet\bin\ConvexDecomposition.lib" />
     <Library Include="..\src_dependency\bullet\bin\LinearMath.lib" />
-    <Library Include="..\src_dependency\SDL2\VisualC\SDL\Win32\Release\SDL2.lib" />
+    <Library Include="..\src_dependency\SDL2\lib\x86\SDL2.lib" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Notes.txt" />

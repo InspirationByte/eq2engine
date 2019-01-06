@@ -26,7 +26,7 @@ BEGIN_EVENT_TABLE(CEntityList, wxDialog)
 	EVT_BUTTON(-1, CEntityList::OnButtonClick)
 END_EVENT_TABLE()
 
-CEntityList::CEntityList() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_ENTLIST", "Entity list"), wxPoint( -1, -1), wxSize(310,630), wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX)
+CEntityList::CEntityList() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_ENTLIST", L"Entity list"), wxPoint( -1, -1), wxSize(310,630), wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX)
 {
 	Iconize( false );
 
@@ -34,16 +34,16 @@ CEntityList::CEntityList() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_ENTLIS
 	//new wxButton(this, BUTTON_SELECT, DKLOC("TOKEN_ENTLSELECT", "Select"), wxPoint(5,455),wxSize(65,25));
 	//new wxButton(this, BUTTON_SELECTALL, DKLOC("TOKEN_ENTLSELECTALL", "Select all"), wxPoint(75,455),wxSize(65,25));
 
-	new wxStaticText(this, -1, DKLOC("TOKEN_CLASSNAME", "Classname"), wxPoint(5,460));
+	new wxStaticText(this, -1, DKLOC("TOKEN_CLASSNAME", L"Classname"), wxPoint(5,460));
 	m_pSearchClass = new wxTextCtrl(this, -1, "", wxPoint(75,460), wxSize(210, 25));
 
-	new wxStaticText(this, -1, DKLOC("TOKEN_KEY", "Key"), wxPoint(5,490));
+	new wxStaticText(this, -1, DKLOC("TOKEN_KEY", L"Key"), wxPoint(5,490));
 	m_pSearchKey = new wxTextCtrl(this, -1, "", wxPoint(75,490), wxSize(210, 25));
 
-	new wxStaticText(this, -1, DKLOC("TOKEN_VALUE", "Value"), wxPoint(5,520));
+	new wxStaticText(this, -1, DKLOC("TOKEN_VALUE", L"Value"), wxPoint(5,520));
 	m_pSearchValue = new wxTextCtrl(this, -1, "", wxPoint(75,520), wxSize(210, 25));
 
-	new wxButton(this, BUTTON_SEARCH, DKLOC("TOKEN_SEARCH", "Search"), wxPoint(5,550),wxSize(65,25));
+	new wxButton(this, BUTTON_SEARCH, DKLOC("TOKEN_SEARCH", L"Search"), wxPoint(5,550),wxSize(65,25));
 }
 
 void CEntityList::RefreshObjectList()

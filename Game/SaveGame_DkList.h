@@ -101,12 +101,12 @@ public:
 			}
 			else if(pField->ops)
 			{
-				saverestore_fieldinfo_t info;
-				info.pFieldObject = (char *)&pList->ptr()[i] + pField->offset;
-				info.pStruct = &pList->ptr()[i];
-				info.pVariant = pField;
+				saverestore_fieldinfo_t nestedInfo;
+				nestedInfo.pFieldObject = (char *)&pList->ptr()[i] + pField->offset;
+				nestedInfo.pStruct = &pList->ptr()[i];
+				nestedInfo.pVariant = pField;
 
-				pField->ops->Restore(&info, entlist);
+				pField->ops->Restore(&nestedInfo, entlist);
 			}
 			else if((pField->type == VTYPE_ENTITYPTR) && (pField->nFlags & FIELDFLAG_SAVE))
 			{

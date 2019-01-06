@@ -64,7 +64,7 @@
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;NO_ENGINE;NOENGINE;GAME_DRIVERS;EQ_USE_SDL;PLAT_PC;BIG_REPLAYS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\public\materialsystem;..\public\materialsystem\renderers;..\Physics\bullet\src;..\Physics\bullet\src\BulletSoftBody;..\utils\eq_physgen;..\utils\wx\include;..\utils\wx\include\msvc;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\oolua\include;..\src_dependency\luautf8;..\src_dependency\lua\src;..\src_dependency\jpeg;..\src_dependency\shiny\include;..\src_dependency\OpenALSoftCustom\include;..\src_dependency\libogg\include;..\src_dependency\libvorbis\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\public\materialsystem;..\public\materialsystem\renderers;..\Physics\bullet\src;..\Physics\bullet\src\BulletSoftBody;..\utils\eq_physgen;..\utils\wx\include;..\utils\wx\include\msvc;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\oolua\include;..\src_dependency\luautf8;..\src_dependency\lua\src;..\src_dependency\jpeg;..\src_dependency\shiny\shiny\include;..\src_dependency\openal-soft\include;..\src_dependency\libogg\include;..\src_dependency\libvorbis\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -96,7 +96,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;NO_ENGINE;NOENGINE;GAME_DRIVERS;EQ_USE_SDL;BIG_REPLAYS;_CRTDBG_MAP_ALLOC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\public\materialsystem;..\public\materialsystem\renderers;..\Physics\bullet\src;..\Physics\bullet\src\BulletSoftBody;..\utils\eq_physgen;..\utils\wx\include;..\utils\wx\include\msvc;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\oolua\include;..\src_dependency\lua\src;..\src_dependency\jpeg;..\src_dependency\shiny\include;..\src_dependency\OpenALSoftCustom\include;..\src_dependency\libogg\include;..\src_dependency\libvorbis\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\public\materialsystem;..\public\materialsystem\renderers;..\Physics\bullet\src;..\Physics\bullet\src\BulletSoftBody;..\utils\eq_physgen;..\utils\wx\include;..\utils\wx\include\msvc;..\src_dependency\sdl2\include;..\src_dependency\bullet\src;..\src_dependency\oolua\include;..\src_dependency\lua\src;..\src_dependency\jpeg;..\src_dependency\shiny\include;..\src_dependency\openal-soft\include;..\src_dependency\libogg\include;..\src_dependency\libvorbis\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
     </ClCompile>
@@ -157,8 +157,6 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="..\public\Utils\GeomTools.cpp" />
     <ClCompile Include="..\shared_engine\ViewParams.cpp" />
     <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp" />
-    <ClCompile Include="..\shared_game\PathFinder\AStar.cpp" />
-    <ClCompile Include="..\shared_game\PathFinder\Node.cpp" />
     <ClCompile Include="AICarManager.cpp" />
     <ClCompile Include="AIManipulator_CollisionAvoidance.cpp" />
     <ClCompile Include="AIManipulator_Navigation.cpp" />
@@ -191,10 +189,14 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="Shader_ShadowBuild.cpp" />
     <ClCompile Include="Shader_Sky.cpp" />
     <ClCompile Include="ShadowRenderer.cpp" />
-    <ClCompile Include="state_lobby.cpp" />
+    <ClCompile Include="state_lobby.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="object_scripted.cpp" />
     <ClCompile Include="occluderSet.cpp" />
-    <ClCompile Include="predictable_object.cpp" />
+    <ClCompile Include="predictable_object.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="region.cpp" />
     <ClCompile Include="state_mainmenu.cpp" />
     <ClCompile Include="game_singleplayer.cpp" />
@@ -206,8 +208,12 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="eqPhysics\eqPhysics.cpp" />
     <ClCompile Include="eqPhysics\eqPhysics_Body.cpp" />
     <ClCompile Include="GameObject.cpp" />
-    <ClCompile Include="game_multiplayer.cpp" />
-    <ClCompile Include="NetPlayer.cpp" />
+    <ClCompile Include="game_multiplayer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="NetPlayer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="object_physics.cpp" />
     <ClCompile Include="object_sheets.cpp" />
     <ClCompile Include="object_static.cpp" />
@@ -230,12 +236,12 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="world.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\libs\libogg_static.lib" />
-    <Library Include="..\src_dependency\jpeg\Release\jpeg.lib" />
+    <Library Include="..\src_dependency\libogg\win32\VS2015\Win32\Release\libogg_static.lib" />
+    <Library Include="..\src_dependency\jpeg\lib\jpeg.lib" />
     <Library Include="..\src_dependency\lua\src\lua51.lib" />
-    <Library Include="..\src_dependency\OpenALSoftCustom\build\Release\OpenAL32.lib" />
-    <Library Include="..\libs\libvorbisfile_static.lib" />
-    <Library Include="..\libs\libvorbis_static.lib" />
+    <Library Include="..\src_dependency\openal-soft\build\Release\OpenAL32.lib" />
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbisfile_static.lib" />
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbis_static.lib" />
     <Library Include="..\src_dependency\bullet\bin\Debug\BulletCollision_Debug.lib">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </Library>
@@ -254,14 +260,14 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <Library Include="..\src_dependency\oolua\bin\Release\oolua.lib">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </Library>
-    <Library Include="..\src_dependency\SDL2\VisualC\SDL\Win32\Release\SDL2.lib" />
-    <Library Include="..\src_dependency\Shiny\lib\Release\Shiny.lib">
+    <Library Include="..\src_dependency\SDL2\lib\x86\SDL2.lib" />
+    <Library Include="..\src_dependency\Shiny\Shiny\lib\Release\Shiny.lib">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </Library>
-    <Library Include="..\src_dependency\Shiny\lib\Debug\Shiny.lib">
+    <Library Include="..\src_dependency\Shiny\Shiny\lib\Debug\Shiny.lib">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </Library>
-    <Library Include="..\src_dependency\zlib\MinSizeRel\zlibstatic.lib" />
+    <Library Include="..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\public\IFontCache.h" />
@@ -314,10 +320,6 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="..\public\Utils\GeomTools.h" />
     <ClInclude Include="..\public\ViewParams.h" />
     <ClInclude Include="..\shared_engine\physics\BulletShapeCache.h" />
-    <ClInclude Include="..\shared_game\PathFinder\AStar.h" />
-    <ClInclude Include="..\shared_game\PathFinder\Node.h" />
-    <ClInclude Include="..\shared_game\PathFinder\PathAlgorithm.h" />
-    <ClInclude Include="..\shared_game\PathFinder\PathFinder.h" />
     <ClInclude Include="AICarManager.h" />
     <ClInclude Include="AIHandling.h" />
     <ClInclude Include="AIEventTypes.h" />
@@ -353,7 +355,9 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="road_defs.h" />
     <ClInclude Include="session_base.h" />
     <ClInclude Include="ShadowRenderer.h" />
-    <ClInclude Include="state_lobby.h" />
+    <ClInclude Include="state_lobby.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="LuaBinding_Drivers.h" />
     <ClInclude Include="object_debris.h" />
     <ClInclude Include="GameObject.h" />
@@ -364,9 +368,13 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="eqPhysics\eqPhysics.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Body.h" />
     <ClInclude Include="eqphysics\eqCollision_ObjectGrid.h" />
-    <ClInclude Include="game_multiplayer.h" />
+    <ClInclude Include="game_multiplayer.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="levfile.h" />
-    <ClInclude Include="NetPlayer.h" />
+    <ClInclude Include="NetPlayer.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="object_physics.h" />
     <ClInclude Include="object_scripted.h" />
     <ClInclude Include="object_sheets.h" />

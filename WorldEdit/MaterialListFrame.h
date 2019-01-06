@@ -59,6 +59,8 @@ protected:
 
 	bool				m_bAspectFix;
 	int					m_nPreviewSize;
+
+	IEqSwapChain*		m_swapChain;
 };
 
 //---------------------------------------------------------------

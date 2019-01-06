@@ -161,7 +161,7 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 	GetExceptionStrings( pRecord->ExceptionCode, &pName, &pDescription );
 
 	char tmp_path[2048];
-	sprintf(tmp_path, "\nUnhandled Exception !!!\nException code: %s (%p)\nAddress: %p\n\n\nSee application log for details.",pName, pRecord->ExceptionCode,pRecord->ExceptionAddress);
+	sprintf(tmp_path, "\nUnhandled Exception !!!\nException code: %s (%p)\nAddress: %p\n\n\nSee application log for details.",pName, (void*)pRecord->ExceptionCode, pRecord->ExceptionAddress);
 
 	_InternalAssert(NULL, NULL, tmp_path);
 

@@ -162,7 +162,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\src_dependency\zlib\MinSizeRel\zlibstatic.lib">
+    <Library Include="..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib">
       <Filter>Libs</Filter>
     </Library>
   </ItemGroup>

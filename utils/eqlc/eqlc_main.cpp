@@ -168,7 +168,6 @@ void InitMatSystem()
 	materials_config.lighting_model = MATERIAL_LIGHT_FORWARD;
 	materials_config.stubMode = false;
 
-	DefaultShaderAPIParameters(&materials_config.shaderapi_params);
 	materials_config.shaderapi_params.windowedMode = true;
 	materials_config.shaderapi_params.windowHandle = window;
 	materials_config.shaderapi_params.screenFormat = FORMAT_RGB8;

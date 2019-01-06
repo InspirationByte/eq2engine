@@ -12,6 +12,10 @@
 #include "dsm_esm_loader.h"
 #include "model.h"
 
+#ifdef _WIN32
+#define ZLIB_WINAPI
+#endif // _WIN32
+
 #include <zlib.h>
 
 //************************************

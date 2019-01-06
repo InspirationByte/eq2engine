@@ -247,8 +247,7 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\src_dependency\jpeg\Release\jpeg.lib" />
-    <Library Include="..\..\src_dependency\zlib\MinSizeRel\zlibstatic.lib" />
+    <Library Include="..\..\src_dependency\jpeg\lib\jpeg.lib" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources.rc" />

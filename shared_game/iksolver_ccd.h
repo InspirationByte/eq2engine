@@ -64,7 +64,7 @@ inline bool SolveIKLinks(giklink_t* pLinks, giklink_t* pEffectorLink, Vector3D &
 			if (cosAngle < 1.0)
 			{
 				// determine way of rotation
-				Vector3D crossResult = normalize(cross(targetVector, curVector));
+				crossResult = normalize(cross(targetVector, curVector));
 				float turnAngle = acosf(cosAngle); // get the angle of dot product
 
 				// damp using time

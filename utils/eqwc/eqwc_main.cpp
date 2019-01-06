@@ -66,7 +66,6 @@ void InitStubMatSystem()
 	materials_config.lighting_model = MATERIAL_LIGHT_UNLIT;
 	materials_config.stubMode = true;
 
-	DefaultShaderAPIParameters(&materials_config.shaderapi_params);
 	materials_config.shaderapi_params.windowedMode = true;
 	materials_config.shaderapi_params.windowHandle = NULL;
 	materials_config.shaderapi_params.screenFormat = FORMAT_RGB8;

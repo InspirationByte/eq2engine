@@ -94,9 +94,6 @@
     <Filter Include="Файлы исходного кода\Game\AI\Driver">
       <UniqueIdentifier>{917ab40e-8722-44c1-be2c-f9166d64440a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы исходного кода\EngineLib\PathFinder">
-      <UniqueIdentifier>{3e358f62-c393-4b9e-bd2d-21ee9164ea20}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Файлы исходного кода\System">
       <UniqueIdentifier>{90453955-4fad-40c8-b400-a77ec476787c}</UniqueIdentifier>
     </Filter>
@@ -393,12 +390,6 @@
     <ClCompile Include="AIManipulator_Navigation.cpp">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared_game\PathFinder\Node.cpp">
-      <Filter>Файлы исходного кода\EngineLib\PathFinder</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared_game\PathFinder\AStar.cpp">
-      <Filter>Файлы исходного кода\EngineLib\PathFinder</Filter>
-    </ClCompile>
     <ClCompile Include="AIManipulator_StabilityControl.cpp">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClCompile>
@@ -440,21 +431,6 @@
     <Library Include="..\src_dependency\oolua\bin\Debug\oolua_d.lib">
       <Filter>Libs\lua</Filter>
     </Library>
-    <Library Include="..\libs\libogg_static.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\libs\libvorbisfile_static.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\libs\libvorbis_static.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\src_dependency\Shiny\lib\Release\Shiny.lib">
-      <Filter>Libs\shiny</Filter>
-    </Library>
-    <Library Include="..\src_dependency\Shiny\lib\Debug\Shiny.lib">
-      <Filter>Libs\shiny</Filter>
-    </Library>
     <Library Include="..\src_dependency\bullet\bin\Debug\BulletCollision_Debug.lib">
       <Filter>Libs\bullet</Filter>
     </Library>
@@ -467,20 +443,35 @@
     <Library Include="..\src_dependency\bullet\bin\LinearMath.lib">
       <Filter>Libs\bullet</Filter>
     </Library>
-    <Library Include="..\src_dependency\SDL2\VisualC\SDL\Win32\Release\SDL2.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\src_dependency\OpenALSoftCustom\build\Release\OpenAL32.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\src_dependency\jpeg\Release\jpeg.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\src_dependency\zlib\MinSizeRel\zlibstatic.lib">
-      <Filter>Libs</Filter>
-    </Library>
     <Library Include="..\src_dependency\lua\src\lua51.lib">
       <Filter>Libs\lua</Filter>
+    </Library>
+    <Library Include="..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\SDL2\lib\x86\SDL2.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\openal-soft\build\Release\OpenAL32.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\Shiny\Shiny\lib\Debug\Shiny.lib">
+      <Filter>Libs\shiny</Filter>
+    </Library>
+    <Library Include="..\src_dependency\Shiny\Shiny\lib\Release\Shiny.lib">
+      <Filter>Libs\shiny</Filter>
+    </Library>
+    <Library Include="..\src_dependency\jpeg\lib\jpeg.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbis_static.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbisfile_static.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\libogg\win32\VS2015\Win32\Release\libogg_static.lib">
+      <Filter>Libs</Filter>
     </Library>
   </ItemGroup>
   <ItemGroup>
@@ -801,18 +792,6 @@
     </ClInclude>
     <ClInclude Include="AIManipulator_Navigation.h">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared_game\PathFinder\Node.h">
-      <Filter>Файлы исходного кода\EngineLib\PathFinder</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared_game\PathFinder\PathAlgorithm.h">
-      <Filter>Файлы исходного кода\EngineLib\PathFinder</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared_game\PathFinder\PathFinder.h">
-      <Filter>Файлы исходного кода\EngineLib\PathFinder</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared_game\PathFinder\AStar.h">
-      <Filter>Файлы исходного кода\EngineLib\PathFinder</Filter>
     </ClInclude>
     <ClInclude Include="AIManipulator_StabilityControl.h">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>

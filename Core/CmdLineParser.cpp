@@ -178,8 +178,6 @@ int CommandLineParse::FindArgument(const char* arg,int startfrom /* = 0 */)
 
 bool CommandLineParse::IsArgument(char* pszString, bool skipMinus)
 {
-	int uind = -1;
-
 	char* pStrChar = strchr(pszString, '+');
 
 	if(pStrChar == pszString)
@@ -187,7 +185,7 @@ bool CommandLineParse::IsArgument(char* pszString, bool skipMinus)
 
 	if(!skipMinus)
 	{
-		char* pStrChar = strchr(pszString, '-');
+		pStrChar = strchr(pszString, '-');
 
 		if(pStrChar == pszString)
 			return false;

@@ -11,7 +11,7 @@
 #include "DebugInterface.h"
 #include "EditorMainFrame.h"
 
-#include "IShaderAPI.h"
+#include "ILocalize.h"
 #include "materialsystem/IMaterialSystem.h"
 
 #include "EditorLevel.h"

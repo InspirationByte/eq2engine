@@ -5,11 +5,10 @@
 // Description: D3D Rendering library interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CGLRENDERLIB_H
-#define CGLRENDERLIB_H
+#ifndef D3DLIBRARY_H
+#define D3DLIBRARY_H
 
 #include <d3d9.h>
-#include <d3dx9.h>
 
 #include "IShaderAPI.h"
 #include "../Shared/IRenderLibrary.h"
@@ -77,4 +76,4 @@ protected:
 
 	bool					m_bResized;
 };
-#endif //CGLRENDERLIB_H
+#endif //D3DLIBRARY_H

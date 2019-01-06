@@ -114,7 +114,7 @@ enum LayerPanelEvent_e
 	LAYERPANEL_REMOVE,
 };
 
-CWorldLayerPanel::CWorldLayerPanel() : wxPanel(g_editormainframe, 0, 0, 200, 400)
+CWorldLayerPanel::CWorldLayerPanel() : wxPanel(g_editormainframe, -1, wxPoint(0, 0), wxSize(200, 400))
 {
 	wxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
 
@@ -142,8 +142,8 @@ CWorldLayerPanel::CWorldLayerPanel() : wxPanel(g_editormainframe, 0, 0, 200, 400
 
 	wxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
 
-	buttonSizer->Add(new wxButton(this, LAYERPANEL_ADD, DKLOC("TOKEN_ADD", "Add"),wxPoint(5,210), wxSize(70,25)), 0, wxALL, 5);
-	buttonSizer->Add(new wxButton(this, LAYERPANEL_REMOVE, DKLOC("TOKEN_REMOVE", "Remove"),wxPoint(80,210), wxSize(70,25)), 0, wxALL, 5);
+	buttonSizer->Add(new wxButton(this, LAYERPANEL_ADD, DKLOC("TOKEN_ADD", L"Add"),wxPoint(5,210), wxSize(70,25)), 0, wxALL, 5);
+	buttonSizer->Add(new wxButton(this, LAYERPANEL_REMOVE, DKLOC("TOKEN_REMOVE", L"Remove"),wxPoint(80,210), wxSize(70,25)), 0, wxALL, 5);
 
 	mainSizer->Add(buttonSizer, 1, wxEXPAND, 0);
 
@@ -181,11 +181,11 @@ void CWorldLayerPanel::OnButton(wxCommandEvent &event)
 	{
 		if(m_nSelectedLayer < 1)
 		{
-			wxMessageBox(wxString(DKLOC("TOKEN_DEFAULTLAYER_REMOVED", "Default Layer cannot be removed!")), wxString("Warning"), wxOK | wxCENTRE | wxICON_WARNING, g_editormainframe);
+			wxMessageBox(wxString(DKLOC("TOKEN_DEFAULTLAYER_REMOVED", L"Default Layer cannot be removed!")), wxString("Warning"), wxOK | wxCENTRE | wxICON_WARNING, g_editormainframe);
 			return;
 		}
 
-		int result = wxMessageBox(wxString(varargs((char*)DKLOC("TOKEN_REMOVE_LAYER", "Remove selected layer?\nAll objects bound to that layer will be attached to %s"), g_pLevel->GetLayer(0)->layer_name.GetData())), wxString("Warning"), wxYES_NO | wxCENTRE | wxICON_WARNING, g_editormainframe);
+		int result = wxMessageBox(wxString(varargs((char*)DKLOC("TOKEN_REMOVE_LAYER", L"Remove selected layer?\nAll objects bound to that layer will be attached to %s"), g_pLevel->GetLayer(0)->layer_name.GetData())), wxString("Warning"), wxYES_NO | wxCENTRE | wxICON_WARNING, g_editormainframe);
 
 		if(result == wxNO)
 			return;

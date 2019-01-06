@@ -1150,9 +1150,11 @@ variable_t BaseEntity::GetKeyDatamap(const char* pszName, datamap_t* pDataMap)
 {
 	for(int k = 0; k < pDataMap->m_dataNumFields; k++)
 	{
-		if(!stricmp(pDataMap->m_fields[k].name, pszName))
+		const datavariant_t& var = pDataMap->m_fields[k];
+
+		if(!stricmp(var.name, pszName))
 		{
-			return GetDataVariableOf(pDataMap->m_fields[k]);
+			return GetDataVariableOf(var);
 		}
 	}
 
@@ -1263,70 +1265,72 @@ void BaseEntity::SetKeyDatamap(const char* pszName, const variable_t& var, datam
 
 	for(int k = 0; k < pDataMap->m_dataNumFields; k++)
 	{
-		if(!stricmp(pDataMap->m_fields[k].name, pszName))
+		const datavariant_t& variant = pDataMap->m_fields[k];
+
+		if(!stricmp(variant.name, pszName))
 		{
-			if(	pDataMap->m_fields[k].type == VTYPE_STRING ||
-				pDataMap->m_fields[k].type == VTYPE_MODELNAME ||
-				pDataMap->m_fields[k].type == VTYPE_SOUNDNAME)
+			if(variant.type == VTYPE_STRING ||
+				variant.type == VTYPE_MODELNAME ||
+				variant.type == VTYPE_SOUNDNAME)
 			{
-				EqString* strPtr = (EqString*)((char *)this + pDataMap->m_fields[k].offset);
+				EqString* strPtr = (EqString*)((char *)this + variant.offset);
 				value.Convert(VTYPE_STRING);
 				*strPtr = value.GetString();
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_FLOAT || pDataMap->m_fields[k].type == VTYPE_TIME)
+			else if(variant.type == VTYPE_FLOAT || variant.type == VTYPE_TIME)
 			{
-				float* ptr = (float*)((char *)this + pDataMap->m_fields[k].offset);
+				float* ptr = (float*)((char *)this + variant.offset);
 				value.Convert(VTYPE_FLOAT);
 				*ptr = value.GetFloat();
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_FUNCTION)
+			else if(variant.type == VTYPE_FUNCTION)
 			{
-				void** function_ptr = (void**)((char *)this + pDataMap->m_fields[k].offset);
+				void** function_ptr = (void**)((char *)this + variant.offset);
 				// TODO: find function by reg. name
 				//ptr = 
 
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_INTEGER)
+			else if(variant.type == VTYPE_INTEGER)
 			{
-				int* ptr = (int*)((char *)this + pDataMap->m_fields[k].offset);
+				int* ptr = (int*)((char *)this + variant.offset);
 				value.Convert(VTYPE_INTEGER);
 				*ptr = value.GetInt();
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_BOOLEAN)
+			else if(variant.type == VTYPE_BOOLEAN)
 			{
-				bool* ptr = (bool*)((char *)this + pDataMap->m_fields[k].offset);
+				bool* ptr = (bool*)((char *)this + variant.offset);
 				value.Convert(VTYPE_BOOLEAN);
 				*ptr = value.GetBool();
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_SHORT)
+			else if(variant.type == VTYPE_SHORT)
 			{
-				short* ptr = (short*)((char *)this + pDataMap->m_fields[k].offset);
+				short* ptr = (short*)((char *)this + variant.offset);
 				value.Convert(VTYPE_INTEGER);
 				*ptr = (short)value.GetInt();
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_BYTE)
+			else if(variant.type == VTYPE_BYTE)
 			{
-				int8* ptr = (int8*)((char *)this + pDataMap->m_fields[k].offset);
+				int8* ptr = (int8*)((char *)this + variant.offset);
 				value.Convert(VTYPE_INTEGER);
 				*ptr = (int8)value.GetInt();
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_VECTOR2D)
+			else if(variant.type == VTYPE_VECTOR2D)
 			{
-				Vector2D* vec = (Vector2D *)((char *)this + pDataMap->m_fields[k].offset);
+				Vector2D* vec = (Vector2D *)((char *)this + variant.offset);
 				Vector2D decode;
 				value.Convert(VTYPE_VECTOR2D);
 
@@ -1337,9 +1341,9 @@ void BaseEntity::SetKeyDatamap(const char* pszName, const variable_t& var, datam
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_VECTOR3D)
+			else if(variant.type == VTYPE_VECTOR3D)
 			{
-				Vector3D* vec = (Vector3D *)((char *)this + pDataMap->m_fields[k].offset);
+				Vector3D* vec = (Vector3D *)((char *)this + variant.offset);
 				Vector3D decode;
 				value.Convert(VTYPE_VECTOR3D);
 
@@ -1351,9 +1355,9 @@ void BaseEntity::SetKeyDatamap(const char* pszName, const variable_t& var, datam
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_VECTOR4D)
+			else if(variant.type == VTYPE_VECTOR4D)
 			{
-				Vector4D* vec = (Vector4D *)((char *)this + pDataMap->m_fields[k].offset);
+				Vector4D* vec = (Vector4D *)((char *)this + variant.offset);
 				Vector4D decode;
 				value.Convert(VTYPE_VECTOR4D);
 
@@ -1366,10 +1370,10 @@ void BaseEntity::SetKeyDatamap(const char* pszName, const variable_t& var, datam
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_ORIGIN ||
-				pDataMap->m_fields[k].type == VTYPE_ANGLES)
+			else if(variant.type == VTYPE_ORIGIN ||
+			variant.type == VTYPE_ANGLES)
 			{
-				Vector3D* vec = (Vector3D *)((char *)this + pDataMap->m_fields[k].offset);
+				Vector3D* vec = (Vector3D *)((char *)this + variant.offset);
 				Vector3D decode;
 				value.Convert(VTYPE_VECTOR3D);
 
@@ -1384,17 +1388,17 @@ void BaseEntity::SetKeyDatamap(const char* pszName, const variable_t& var, datam
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_ANGLE)
+			else if(variant.type == VTYPE_ANGLE)
 			{
-				float* ptr = (float*)((char *)this + pDataMap->m_fields[k].offset);
+				float* ptr = (float*)((char *)this + variant.offset);
 				value.Convert(VTYPE_FLOAT);
 				*ptr = value.GetFloat();
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_MATRIX2X2)
+			else if(variant.type == VTYPE_MATRIX2X2)
 			{
-				Matrix2x2* vec = (Matrix2x2 *)((char *)this + pDataMap->m_fields[k].offset);
+				Matrix2x2* vec = (Matrix2x2 *)((char *)this + variant.offset);
 				Matrix2x2 decode;
 				value.Convert(VTYPE_MATRIX2X2);
 
@@ -1404,9 +1408,9 @@ void BaseEntity::SetKeyDatamap(const char* pszName, const variable_t& var, datam
 				return;
 			}
 
-			if(pDataMap->m_fields[k].type == VTYPE_MATRIX3X3)
+			if(variant.type == VTYPE_MATRIX3X3)
 			{
-				Matrix3x3* vec = (Matrix3x3 *)((char *)this + pDataMap->m_fields[k].offset);
+				Matrix3x3* vec = (Matrix3x3 *)((char *)this + variant.offset);
 
 				Matrix3x3 decode;
 
@@ -1423,9 +1427,9 @@ void BaseEntity::SetKeyDatamap(const char* pszName, const variable_t& var, datam
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_MATRIX4X4)
+			else if(variant.type == VTYPE_MATRIX4X4)
 			{
-				Matrix4x4* vec = (Matrix4x4 *)((char *)this + pDataMap->m_fields[k].offset);
+				Matrix4x4* vec = (Matrix4x4 *)((char *)this + variant.offset);
 				Matrix4x4 decode;
 				value.Convert(VTYPE_MATRIX4X4);
 
@@ -1469,9 +1473,11 @@ void BaseEntity::SetKeyDatamap(const char* pszName, const char* pszValue, datama
 
 			for(int k = 0; k < pDataMap->m_dataNumFields; k++)
 			{
-				if((pDataMap->m_fields[k].nFlags & FIELDFLAG_OUTPUT) && !stricmp(pDataMap->m_fields[k].name, pszText))
+				const datavariant_t& var = pDataMap->m_fields[k];
+
+				if((var.nFlags & FIELDFLAG_OUTPUT) && !stricmp(var.name, pszText))
 				{
-					CBaseEntityOutput* pOutput = (CBaseEntityOutput*)((char *)this + pDataMap->m_fields[k].offset);
+					CBaseEntityOutput* pOutput = (CBaseEntityOutput*)((char *)this + var.offset);
 					pOutput->AddAction(pszBegin + 1);
 				}
 			}
@@ -1485,64 +1491,66 @@ void BaseEntity::SetKeyDatamap(const char* pszName, const char* pszValue, datama
 
 	for(int k = 0; k < pDataMap->m_dataNumFields; k++)
 	{
-		if((pDataMap->m_fields[k].nFlags & FIELDFLAG_KEY) && !stricmp(pDataMap->m_fields[k].name, pszName))
+		const datavariant_t& var = pDataMap->m_fields[k];
+
+		if((var.nFlags & FIELDFLAG_KEY) && !stricmp(var.name, pszName))
 		{
-			if(	pDataMap->m_fields[k].type == VTYPE_STRING ||
-				pDataMap->m_fields[k].type == VTYPE_MODELNAME ||
-				pDataMap->m_fields[k].type == VTYPE_SOUNDNAME)
+			if(var.type == VTYPE_STRING ||
+				var.type == VTYPE_MODELNAME ||
+				var.type == VTYPE_SOUNDNAME)
 			{
-				EqString* strPtr = (EqString*)((char *)this + pDataMap->m_fields[k].offset);
+				EqString* strPtr = (EqString*)((char *)this + var.offset);
 				*strPtr = pszValue;
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_FLOAT || pDataMap->m_fields[k].type == VTYPE_TIME)
+			else if(var.type == VTYPE_FLOAT || var.type == VTYPE_TIME)
 			{
-				float* ptr = (float*)((char *)this + pDataMap->m_fields[k].offset);
+				float* ptr = (float*)((char *)this + var.offset);
 				*ptr = atof( pszValue );
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_FUNCTION)
+			else if(var.type == VTYPE_FUNCTION)
 			{
-				void** function_ptr = (void**)((char *)this + pDataMap->m_fields[k].offset);
+				void** function_ptr = (void**)((char *)this + var.offset);
 				// TODO: find function by reg. name
 				//ptr = 
 
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_INTEGER)
+			else if(var.type == VTYPE_INTEGER)
 			{
-				int* ptr = (int*)((char *)this + pDataMap->m_fields[k].offset);
+				int* ptr = (int*)((char *)this + var.offset);
 				*ptr = atoi( pszValue );
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_BOOLEAN)
+			else if(var.type == VTYPE_BOOLEAN)
 			{
-				bool* ptr = (bool*)((char *)this + pDataMap->m_fields[k].offset);
+				bool* ptr = (bool*)((char *)this + var.offset);
 				*ptr = atoi( pszValue ) > 0;
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_SHORT)
+			else if(var.type == VTYPE_SHORT)
 			{
-				short* ptr = (short*)((char *)this + pDataMap->m_fields[k].offset);
+				short* ptr = (short*)((char *)this + var.offset);
 				*ptr = (short)atoi( pszValue );
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_BYTE)
+			else if(var.type == VTYPE_BYTE)
 			{
-				int8* ptr = (int8*)((char *)this + pDataMap->m_fields[k].offset);
+				int8* ptr = (int8*)((char *)this + var.offset);
 				*ptr = (int8)atoi( pszValue );
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_VECTOR2D)
+			else if(var.type == VTYPE_VECTOR2D)
 			{
-				Vector2D* vec = (Vector2D *)((char *)this + pDataMap->m_fields[k].offset);
+				Vector2D* vec = (Vector2D *)((char *)this + var.offset);
 				Vector2D decode;
 				sscanf( pszValue ,"%f %f", &decode.x, &decode.y);
 
@@ -1551,9 +1559,9 @@ void BaseEntity::SetKeyDatamap(const char* pszName, const char* pszValue, datama
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_VECTOR3D)
+			else if(var.type == VTYPE_VECTOR3D)
 			{
-				Vector3D* vec = (Vector3D *)((char *)this + pDataMap->m_fields[k].offset);
+				Vector3D* vec = (Vector3D *)((char *)this + var.offset);
 				Vector3D decode;
 				sscanf( pszValue ,"%f %f %f", &decode.x, &decode.y, &decode.z);
 
@@ -1563,9 +1571,9 @@ void BaseEntity::SetKeyDatamap(const char* pszName, const char* pszValue, datama
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_VECTOR4D)
+			else if(var.type == VTYPE_VECTOR4D)
 			{
-				Vector4D* vec = (Vector4D *)((char *)this + pDataMap->m_fields[k].offset);
+				Vector4D* vec = (Vector4D *)((char *)this + var.offset);
 				Vector4D decode;
 				sscanf( pszValue ,"%f %f %f %f", &decode.x, &decode.y, &decode.z, &decode.w);
 
@@ -1576,10 +1584,10 @@ void BaseEntity::SetKeyDatamap(const char* pszName, const char* pszValue, datama
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_ORIGIN ||
-				pDataMap->m_fields[k].type == VTYPE_ANGLES)
+			else if(var.type == VTYPE_ORIGIN ||
+				var.type == VTYPE_ANGLES)
 			{
-				Vector3D* vec = (Vector3D *)((char *)this + pDataMap->m_fields[k].offset);
+				Vector3D* vec = (Vector3D *)((char *)this + var.offset);
 				Vector3D decode;
 				sscanf( pszValue ,"%f %f %f", &decode.x, &decode.y, &decode.z);
 
@@ -1592,16 +1600,16 @@ void BaseEntity::SetKeyDatamap(const char* pszName, const char* pszValue, datama
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_ANGLE)
+			else if(var.type == VTYPE_ANGLE)
 			{
-				float* ptr = (float*)((char *)this + pDataMap->m_fields[k].offset);
+				float* ptr = (float*)((char *)this + var.offset);
 				*ptr = atof( pszValue );
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_MATRIX2X2)
+			else if(var.type == VTYPE_MATRIX2X2)
 			{
-				Matrix2x2* vec = (Matrix2x2 *)((char *)this + pDataMap->m_fields[k].offset);
+				Matrix2x2* vec = (Matrix2x2 *)((char *)this + var.offset);
 				Matrix2x2 decode;
 				sscanf(pszValue,"%f %f %f %f", &decode.rows[0].x, &decode.rows[0].y, &decode.rows[1].x, &decode.rows[1].y);
 
@@ -1609,9 +1617,9 @@ void BaseEntity::SetKeyDatamap(const char* pszName, const char* pszValue, datama
 				return;
 			}
 
-			if(pDataMap->m_fields[k].type == VTYPE_MATRIX3X3)
+			if(var.type == VTYPE_MATRIX3X3)
 			{
-				Matrix3x3* vec = (Matrix3x3 *)((char *)this + pDataMap->m_fields[k].offset);
+				Matrix3x3* vec = (Matrix3x3 *)((char *)this + var.offset);
 
 				Matrix3x3 decode;
 
@@ -1620,20 +1628,15 @@ void BaseEntity::SetKeyDatamap(const char* pszName, const char* pszValue, datama
 					&decode.rows[1].x, &decode.rows[1].y, &decode.rows[1].z,
 					&decode.rows[2].x, &decode.rows[2].y, &decode.rows[2].z);
 
-				Matrix3x3 final;
-				final.rows[0] = decode.rows[0]; // z forward
-				final.rows[1] = decode.rows[1]; // x
-				final.rows[2] = decode.rows[2]; // y 
-
-				*vec = final;
+				*vec = decode;
 				return;
 			}
 
-			else if(pDataMap->m_fields[k].type == VTYPE_MATRIX4X4)
+			else if(var.type == VTYPE_MATRIX4X4)
 			{
-				Matrix4x4* vec = (Matrix4x4 *)((char *)this + pDataMap->m_fields[k].offset);
+				Matrix4x4* vec = (Matrix4x4 *)((char *)this + var.offset);
 				Matrix4x4 decode;
-				sscanf(pszValue,"%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", 
+				sscanf(pszValue,"%f %f %f %f %f %f %f %f %f %f %f %f", 
 					&decode.rows[0].x, &decode.rows[0].y, &decode.rows[0].z, &decode.rows[0].w,
 					&decode.rows[1].x, &decode.rows[1].y, &decode.rows[1].z, &decode.rows[1].w,
 					&decode.rows[2].x, &decode.rows[2].y, &decode.rows[2].z, &decode.rows[2].w);

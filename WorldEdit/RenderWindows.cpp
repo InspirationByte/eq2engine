@@ -114,6 +114,8 @@ CViewWindow::CViewWindow(wxWindow* parent, const wxString& title, const wxPoint&
 
 	m_bIsMoving = false;
 
+	m_swapChain = materials->CreateSwapChain(GetHWND());
+
 	//SetDoubleBuffered(true);
 }
 
@@ -129,6 +131,7 @@ void CViewWindow::OnSize(wxSizeEvent &event)
 		int w, h;
 		g_editormainframe->GetMaxRenderWindowSize(w,h);
 
+		// FIXME: is that needed here now?
 		materials->SetDeviceBackbufferSize(w,h);
 
 		NotifyUpdate();
@@ -673,9 +676,8 @@ void CViewWindow::Redraw()
 			g_pShaderAPI->Clear(true,true,false, ColorRGBA(g_editorCfg->background_color, 1));
 		}
 
-		g_pShaderAPI->SetupFog(&fog);
+		materials->SetFogInfo(fog);
 
-		
 		switch(GetActiveView()->GetCameraMode())
 		{
 			case CPM_PERSPECTIVE:
@@ -841,15 +843,19 @@ void CViewWindow::Redraw()
 
 			if(!beh)
 			{
-				debugoverlay->GetFont()->DrawSetColor(ColorRGBA(1,1,1,1));
-				debugoverlay->GetFont()->DrawText(xyzText[i], screen.x, screen.y, 8, 8);
+				IEqFont* font = debugoverlay->GetFont();
+
+				eqFontStyleParam_t style;
+				style.textColor = ColorRGBA(1, 1, 1, 1);
+
+				font->RenderText(xyzText[i], screen, style);
 			}
 		}
 		
 		// restore
 		g_pShaderAPI->SetViewport( 0, 0, w, h );
 
-		materials->EndFrame((HWND)GetHWND());
+		materials->EndFrame(m_swapChain);
 
 		//DrawViewInfo(this);
 	}

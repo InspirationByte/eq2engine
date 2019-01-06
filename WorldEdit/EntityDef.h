@@ -79,21 +79,21 @@ static char* param_type_text[PARAM_TYPE_COUNT] =
 // input
 struct edef_input_t
 {
-	char name[128];
+	EqString name;
 	eDef_ParamType_e valuetype;
 };
 
 // output
 struct edef_output_t
 {
-	char name[128];
+	EqString name;
 };
 
 // choice value
 struct edef_choiceval_t
 {
-	char value[32];
-	char desc[EDEF_MAX_STRING_LENGTH];
+	EqString value;
+	EqWString desc;
 };
 
 // choice type
@@ -106,7 +106,7 @@ struct edef_choice_t
 // choice type
 struct edef_string_t
 {
-	char data[EDEF_MAX_STRING_LENGTH];
+	EqString data;
 };
 
 // parameter
@@ -118,10 +118,11 @@ struct edef_param_t
 	EqString			description;	// description text
 
 	// default values
+	edef_string_t	string;
+	edef_choice_t	choice;
+
 	union
 	{
-		edef_string_t	string;
-		edef_choice_t	choice;
 		int				ival;
 		float			fval;
 		bool			bval;
@@ -132,7 +133,7 @@ struct edef_param_t
 struct edef_entity_t
 {
 	EqString				classname;		// entity classname
-	EqString				description;	// description text
+	EqWString				description;	// description text
 
 	edef_entity_t*			basedef;		// base definition
 	bool					showinlist;		// show it in list
@@ -144,7 +145,7 @@ struct edef_entity_t
 	ColorRGBA				drawcolor;		// draw color
 	bool					colorfromkey;
 	EqString				modelname;		// model name
-	IEqModel*			model;			// model reference.
+	IEqModel*				model;			// model reference.
 	IMaterial*				sprite;
 	float					spritesize;
 

@@ -6,7 +6,6 @@
 //				Vertex Buffer Direct3D 9 declaration//////////////////////////////////////////////////////////////////////////////////
 
 #include <d3d9.h>
-#include <d3dx9.h>
 
 #include "DebugInterface.h"
 #include "VertexBufferD3DX9.h"

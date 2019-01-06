@@ -35,6 +35,7 @@ const float AI_COPVIEW_RADIUS_ROADBLOCK = 15.0f;
 const float AI_COP_CHECK_MAXSPEED = 80.0f; // 80 kph and you will be pursued
 
 const float AI_COP_MINFELONY			= 0.1f;
+const float AI_COP_MINFELONY_CHECK		= 0.05f;
 
 const float AI_COP_COLLISION_FELONY			= 0.06f;
 const float AI_COP_COLLISION_FELONY_VEHICLE	= 0.1f;
@@ -68,6 +69,8 @@ CAIPursuerCar::CAIPursuerCar(vehicleConfig_t* carConfig, EPursuerAIType type) : 
 
 	m_alterSirenChangeTime = AI_ALTER_SIREN_CHANGETIME;
 	m_sirenAltered = false;
+
+	m_targInfo.hasToCheck = true;
 }
 
 CAIPursuerCar::~CAIPursuerCar()
@@ -118,6 +121,9 @@ void CAIPursuerCar::Precache()
 	PrecacheScriptSound("cop.heading_south");
 	PrecacheScriptSound("cop.heading_north");
 	PrecacheScriptSound("cop.taunt");
+	PrecacheScriptSound("cop.check");
+	PrecacheScriptSound("cop.squad_car_hit");
+	PrecacheScriptSound("cop.squad_car_down");
 
 	BaseClass::Precache();
 }
@@ -242,6 +248,15 @@ int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 	if( CheckObjectVisibility(playerCar) )
 	{
 		int infraction = CheckTrafficInfraction(playerCar);
+
+		if (m_type == PURSUER_TYPE_COP)
+		{
+			if (m_targInfo.hasToCheck && !m_targInfo.target && (m_targInfo.target != playerCar) && playerCar->GetFelony() >= AI_COP_MINFELONY_CHECK && playerCar->GetFelony() < AI_COP_MINFELONY)
+			{
+				m_targInfo.hasToCheck = false;
+				Speak("cop.check");
+			}	
+		}
 
 		if (m_type == PURSUER_TYPE_COP && infraction == INFRACTION_NONE)
 			return 0;
@@ -396,7 +411,7 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 			{
 				CAITrafficCar* tfc = (CAITrafficCar*)obj;
 				if(tfc->IsPursuer())
-					continue;
+					return INFRACTION_HIT_SQUAD_VEHICLE;
 			}
 
 			return INFRACTION_HIT_VEHICLE;
@@ -646,6 +661,13 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 						Speak("cop.hitvehicle");
 						break;
 					}
+					case INFRACTION_HIT_SQUAD_VEHICLE:
+					{
+						newFelony += AI_COP_COLLISION_FELONY_VEHICLE;
+
+						Speak("cop.squad_car_hit");
+						break;
+					}
 					case INFRACTION_HIT:
 					{
 						newFelony += AI_COP_COLLISION_FELONY;
@@ -846,7 +868,10 @@ void CAIPursuerCar::SetPursuitTarget(CCar* obj)
 
 		m_targInfo.target->IncrementPursue();
 		m_targInfo.isAngry = (m_targInfo.target->GetFelony() > 0.6f) || m_type == PURSUER_TYPE_GANG;
+		m_targInfo.hasToCheck = false;
 	}
+	else
+		m_targInfo.hasToCheck = true;
 
 	m_targInfo.lastInfraction = INFRACTION_HAS_FELONY;
 	m_targInfo.nextCheckImpactTime = AI_COP_COLLISION_CHECKTIME;

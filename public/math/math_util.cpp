@@ -206,7 +206,7 @@ float TriangleArea( const Vector3D& v1, const Vector3D& v2, const Vector3D& v3)
 
 	float h = (d1 + d2 + d3) * 0.5f;
 
-	return sqrt(h * (h - d1) * (h - d2) * (h - d3));
+	return sqrtf(h * (h - d1) * (h - d2) * (h - d3));
 }
 
 bool IsPointInCone( Vector3D &pt, Vector3D &origin, Vector3D &axis, float cosAngle, float cone_length )

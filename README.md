@@ -41,25 +41,28 @@ Games:
 * utils/**EqWC** - world compiler for legacy engine. Performs subdivision, lightmapped surface breakdown, etc
 * utils/**EqLC** - hardware lightmap rendering compiler.
 
+Building base engine libraries
+-------------
+
+First you need to resolve **zlib** and **jpeg** dependencies. More information in **src_dependency/.keepfolder** file
+* **coreLib**
+* **frameworkLib**
+* **Core** (eqCore) 
+
+Next libraries that depends on **eqCore**, **coreLib** and **frameworkLib**:
+* **MatSystem** (eqMatSystem)
+* **Renderers/ShaderAPINull** (eqNullRHI)
+* **Renderers/ShaderAPIGL** (eqGLRHI) - not required on Windows
+* **Renderers/ShaderAPID3D9** (eqD3D9RHI) - requires dependency **minidx9**
+* **ShaderLibs/EngineShaders** (eqBaseShaders)
+
+After that you can build other projects like Engine, DriversGame, etc.
+
 Dependencies
 -------------
 
-Before you begin, you need to download dependencies and extract them to **src_dependency/** folder, located in project root.
+More information in **src_dependency/.keepfolder** file
 
-List of dependencies:
 
-* **lua** - use latest LuaJIT 2.0, and just make.
-* **oolua** - needs to be configured first with "premake4 --class_functions=30 oolua-gen", optionally OOLUA_RUNTIME_CHECKS_ENABLED=0 and then build.
-* **openal-soft** - download tarball from http://kcat.strangesoft.net/openal.html
-* **Shiny** - Shiny C++ profiler. Should be taken from https://sourceforge.net/projects/shinyprofiler/ , please download only snapshot.
-* **bullet** - Bullet Physics Library 2.83, you may use latest release. Windows build must use Multithreaded DLL option, otherwise it won't link
-* **ogg** and **vorbis**
-* **wx** - wxWidgets 3.1, which the all editors stands on.
-* **SDL2** - For mobile development please configure in SDL_config_android.h with SDL_VIDEO_RENDER_OGL_ES=0 and SDL_VIDEO_RENDER_OGL_ES2=0
-
-Mobile platforms dependencies are:
-* **libjpeg** (jpeg8)
-* **libpng**
-
-Also dependencies which not located in src_dependency are:
+Linux dependencies which not located in src_dependency are:
 * **gtk+-2.0** dev lib

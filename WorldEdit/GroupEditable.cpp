@@ -9,6 +9,7 @@
 #include "math/BoundingBox.h"
 #include "EditorLevel.h"
 #include "DebugInterface.h"
+#include "utils/strtools.h"
 
 CEditableGroup::CEditableGroup()
 {
@@ -85,7 +86,7 @@ bool CEditableGroup::LoadFromKeyValues(kvkeybase_t* pSection)
 
 	for(int i = 0; i < objIds->keys.numElem(); i++)
 	{
-		int obj_id = atoi(objIds->keys[i]->values[0]);
+		int obj_id = KV_GetValueInt(objIds->keys[i]);
 
 		CBaseEditableObject* pObj = g_pLevel->GetEditableByUniqueID(obj_id);
 		if(pObj)
