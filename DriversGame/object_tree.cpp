@@ -54,7 +54,7 @@ void CObject_Tree::Spawn()
 
 	m_smashSound = KV_GetValueString(m_keyValues->FindKeyBase("smashsound"), 0, "");
 
-	ses->PrecacheSound(m_smashSound.c_str());
+	g_sounds->PrecacheSound(m_smashSound.c_str());
 	
 	m_pPhysicsObject = new CEqCollisionObject();
 

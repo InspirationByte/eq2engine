@@ -542,7 +542,7 @@ void CAICarManager::UpdateCopStuff(float fDt)
 		EmitSound_t ep;
 		ep.name = m_speechQueue[0].c_str();
 
-		ses->Emit2DSound(&ep);
+		g_sounds->Emit2DSound(&ep);
 
 		m_speechQueue.removeIndex(0);
 	}

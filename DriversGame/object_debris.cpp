@@ -106,10 +106,10 @@ void CObject_Debris::Spawn()
 
 	if(m_smashSound.Length() > 0)
 	{
-		ses->PrecacheSound(m_smashSound.c_str());
-		ses->PrecacheSound((m_smashSound + "_light").c_str());
-		ses->PrecacheSound((m_smashSound + "_medium").c_str());
-		ses->PrecacheSound((m_smashSound + "_hard").c_str());
+		g_sounds->PrecacheSound(m_smashSound.c_str());
+		g_sounds->PrecacheSound((m_smashSound + "_light").c_str());
+		g_sounds->PrecacheSound((m_smashSound + "_medium").c_str());
+		g_sounds->PrecacheSound((m_smashSound + "_hard").c_str());
 	}
 
 	CEqRigidBody* body = new CEqRigidBody();

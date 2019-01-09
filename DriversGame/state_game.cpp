@@ -410,7 +410,7 @@ void CState_Game::UnloadGame()
 
 	g_studioModelCache->ReleaseCache();
 
-	ses->Shutdown();
+	g_sounds->Shutdown();
 
 	delete g_pPhysics;
 	g_pPhysics = NULL;
@@ -422,7 +422,8 @@ void CState_Game::LoadGame()
 
 	UnloadGame();
 
-	ses->Init(EQ_DRVSYN_DEFAULT_SOUND_DISTANCE);
+	g_sounds->Init(EQ_DRVSYN_DEFAULT_SOUND_DISTANCE);
+	g_sounds->SetPaused(true);
 
 	PrecacheStudioModel( "models/error.egf" );
 	PrecacheScriptSound( "menu.back" );
@@ -492,7 +493,8 @@ const char* CState_Game::GetMissionScriptName() const
 
 void CState_Game::StopStreams()
 {
-	ses->StopAllSounds();
+	g_sounds->StopAllSounds();
+	g_sounds->SetPaused(true);
 }
 
 void CState_Game::QuickRestart(bool replay)
@@ -738,6 +740,13 @@ void CState_Game::DrawLoadingScreen()
 	font->RenderText(loadingStr, Vector2D(100 + offs,screenSize.y - 100), param);
 }
 
+void CState_Game::OnLoadingDone()
+{
+	m_isGameRunning = true;
+	g_sounds->SetPaused(false);
+}
+
+
 //-------------------------------------------------------------------------------
 // Game frame step along with rendering
 //-------------------------------------------------------------------------------
@@ -759,8 +768,10 @@ bool CState_Game::Update( float fDt )
 		else if( m_doLoadingFrames == 0 )	
 			return DoLoadingFrame(); // actual level loading happened here
 
-		if(g_pGameWorld->m_level.IsWorkDone() && materials->GetLoadingQueue() == 0)
-			m_isGameRunning = true;
+		if (g_pGameWorld->m_level.IsWorkDone() && materials->GetLoadingQueue() == 0)
+		{
+			OnLoadingDone();
+		}
 
 		return true;
 	}
@@ -1017,7 +1028,7 @@ CCar* CState_Game::GetViewCar() const
 	if(g_replayData->m_state == REPL_PLAYING && g_replayData->m_cameras.numElem() > 0)
 	{
 		// replay controls camera
-		replaycamera_t* replCamera = g_replayData->GetCurrentCamera();
+		replayCamera_t* replCamera = g_replayData->GetCurrentCamera();
 
 		if(replCamera)
 		{
@@ -1151,7 +1162,7 @@ void CState_Game::DoCameraUpdates( float fDt )
 			if(g_replayData->m_state == REPL_PLAYING && g_replayData->m_cameras.numElem() > 0)
 			{
 				// replay controls camera
-				replaycamera_t* replCamera = g_replayData->GetCurrentCamera();
+				replayCamera_t* replCamera = g_replayData->GetCurrentCamera();
 
 				if(replCamera)
 				{
@@ -1242,7 +1253,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 		if(m_showMenu && IsCanPopMenu())
 		{
 			EmitSound_t es("menu.back");
-			ses->Emit2DSound( &es );
+			g_sounds->Emit2DSound( &es );
 
 			PopMenu();
 
@@ -1267,7 +1278,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 			if(ChangeSelection(key == KEY_LEFT ? -1 : 1))
 			{
 				EmitSound_t es("menu.roll");
-				ses->Emit2DSound( &es );
+				g_sounds->Emit2DSound( &es );
 			}
 		}
 		else if(key == KEY_UP)
@@ -1286,7 +1297,7 @@ redecrement:
 			//	goto redecrement;
 
 			EmitSound_t ep("menu.roll");
-			ses->Emit2DSound(&ep);
+			g_sounds->Emit2DSound(&ep);
 		}
 		else if(key == KEY_DOWN)
 		{
@@ -1300,7 +1311,7 @@ reincrement:
 			//	goto reincrement;
 
 			EmitSound_t ep("menu.roll");
-			ses->Emit2DSound(&ep);
+			g_sounds->Emit2DSound(&ep);
 		}
 	}
 	else
@@ -1401,7 +1412,7 @@ void CState_Game::Event_SelectMenuItem(int index)
 	m_selection = index;
 
 	EmitSound_t ep("menu.roll");
-	ses->Emit2DSound(&ep);
+	g_sounds->Emit2DSound(&ep);
 }
 
 void CState_Game::HandleMouseClick( int x, int y, int buttons, bool down )

@@ -187,16 +187,13 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="session_base.cpp" />
     <ClCompile Include="Shader_Shadow.cpp" />
     <ClCompile Include="Shader_ShadowBuild.cpp" />
+    <ClCompile Include="Shader_Skinned.cpp" />
     <ClCompile Include="Shader_Sky.cpp" />
     <ClCompile Include="ShadowRenderer.cpp" />
-    <ClCompile Include="state_lobby.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="state_lobby.cpp" />
     <ClCompile Include="object_scripted.cpp" />
     <ClCompile Include="occluderSet.cpp" />
-    <ClCompile Include="predictable_object.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="predictable_object.cpp" />
     <ClCompile Include="region.cpp" />
     <ClCompile Include="state_mainmenu.cpp" />
     <ClCompile Include="game_singleplayer.cpp" />
@@ -208,12 +205,8 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="eqPhysics\eqPhysics.cpp" />
     <ClCompile Include="eqPhysics\eqPhysics_Body.cpp" />
     <ClCompile Include="GameObject.cpp" />
-    <ClCompile Include="game_multiplayer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="NetPlayer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="game_multiplayer.cpp" />
+    <ClCompile Include="NetPlayer.cpp" />
     <ClCompile Include="object_physics.cpp" />
     <ClCompile Include="object_sheets.cpp" />
     <ClCompile Include="object_static.cpp" />
@@ -355,9 +348,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="road_defs.h" />
     <ClInclude Include="session_base.h" />
     <ClInclude Include="ShadowRenderer.h" />
-    <ClInclude Include="state_lobby.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="state_lobby.h" />
     <ClInclude Include="LuaBinding_Drivers.h" />
     <ClInclude Include="object_debris.h" />
     <ClInclude Include="GameObject.h" />
@@ -368,13 +359,9 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="eqPhysics\eqPhysics.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Body.h" />
     <ClInclude Include="eqphysics\eqCollision_ObjectGrid.h" />
-    <ClInclude Include="game_multiplayer.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="game_multiplayer.h" />
     <ClInclude Include="levfile.h" />
-    <ClInclude Include="NetPlayer.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="NetPlayer.h" />
     <ClInclude Include="object_physics.h" />
     <ClInclude Include="object_scripted.h" />
     <ClInclude Include="object_sheets.h" />

@@ -15,7 +15,7 @@
 #define COLLISION_MIN_IMPULSE	(0.1f)
 
 // sort events in right order
-int _sortEventsFunc(const replayevent_t& a, const replayevent_t& b)
+int _sortEventsFunc(const replayEvent_t& a, const replayEvent_t& b)
 {
 	return a.frameIndex - b.frameIndex;
 }
@@ -46,7 +46,7 @@ int CReplayData::Record(CCar* pCar, bool onlyCollisions)
 		}
 	}
 
-	vehiclereplay_t veh;
+	replayCarStream_t veh;
 
 	veh.obj_car = pCar;
 	veh.recordOnlyCollisions = onlyCollisions;
@@ -115,7 +115,7 @@ void CReplayData::Stop()
 
 	for(int i = 0; i < m_vehicles.numElem(); i++)
 	{
-		vehiclereplay_t& veh = m_vehicles[i];
+		replayCarStream_t& veh = m_vehicles[i];
 		veh.done = true;
 
 		if(m_state == REPL_PLAYING)
@@ -161,7 +161,7 @@ void CReplayData::UpdatePlayback( float fDt )
 	}
 }
 
-replaycamera_t* CReplayData::GetCurrentCamera()
+replayCamera_t* CReplayData::GetCurrentCamera()
 {
 	if(m_cameras.numElem() == 0)
 		return NULL;
@@ -172,7 +172,7 @@ replaycamera_t* CReplayData::GetCurrentCamera()
 	return &m_cameras[m_currentCamera];
 }
 
-int CReplayData::AddCamera(const replaycamera_t& camera)
+int CReplayData::AddCamera(const replayCamera_t& camera)
 {
 	// do not add the camera, just set
 	for(int i = 0; i < m_cameras.numElem(); i++)
@@ -223,7 +223,7 @@ void CReplayData::UpdateReplayObject( int replayId )
 	if(replayId == REPLAY_NOT_TRACKED)
 		return;
 
-	vehiclereplay_t* rep = &m_vehicles[ replayId ];
+	replayCarStream_t* rep = &m_vehicles[ replayId ];
 
 	if(m_state == REPL_RECORDING)
 	{
@@ -251,7 +251,7 @@ bool CReplayData::IsCarPlaying( CCar* pCar )
 	if(pCar->m_replayID == REPLAY_NOT_TRACKED)
 		return false;
 
-	vehiclereplay_t& veh = m_vehicles[pCar->m_replayID];
+	replayCarStream_t& veh = m_vehicles[pCar->m_replayID];
 
 	if(veh.obj_car == pCar)
 	{
@@ -260,7 +260,7 @@ bool CReplayData::IsCarPlaying( CCar* pCar )
 
 		int lastFrameIdx = veh.replayArray.numElem()-1;
 
-		replaycontrol_t& frame = veh.replayArray[lastFrameIdx];
+		replayCarFrame_t& frame = veh.replayArray[lastFrameIdx];
 
 		// wait for our tick
 		return (m_tick <= frame.tick);
@@ -269,7 +269,7 @@ bool CReplayData::IsCarPlaying( CCar* pCar )
 	return false;
 }
 
-void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
+void CReplayData::PlayVehicleFrame(replayCarStream_t* rep)
 {
 	if(rep->obj_car == NULL)
 		return;
@@ -281,7 +281,7 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 	if(rep->curr_frame >= rep->replayArray.numElem())
 		return; // done playing it
 
-	replaycontrol_t& frame = rep->replayArray[rep->curr_frame];
+	replayCarFrame_t& frame = rep->replayArray[rep->curr_frame];
 
 	// wait for our tick
 	if(m_tick < frame.tick)
@@ -320,7 +320,7 @@ void CReplayData::PlayVehicleFrame(vehiclereplay_t* rep)
 }
 
 // records vehicle frame
-bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
+bool CReplayData::RecordVehicleFrame(replayCarStream_t* rep)
 {
 	int numFrames = rep->replayArray.numElem();
 
@@ -350,7 +350,7 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 	ubyte lightsEnabled = rep->obj_car->m_lightsEnabled;
 	bool autoHandbrake = rep->obj_car->m_autohandbrake;
 
-	uint control_flags = rep->obj_car->GetControlButtons();
+	short control_flags = rep->obj_car->GetControlButtons();
 	control_flags &= ~IN_MISC; // kill misc buttons, left only needed
 
 	rep->skeptFrames++;
@@ -371,7 +371,7 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 		else
 			rep->skeptFrames = 0;
 
-		replaycontrol_t& prevControl = rep->replayArray[numFrames-1];
+		replayCarFrame_t& prevControl = rep->replayArray[numFrames-1];
 
 		// unpack
 		uint16 prevAccelControl = prevControl.control_vars.acceleration;
@@ -397,7 +397,7 @@ bool CReplayData::RecordVehicleFrame(vehiclereplay_t* rep)
 
 	if( rep->onEvent || addControls || satisfiesCollisions )
 	{
-		replaycontrol_t con;
+		replayCarFrame_t con;
 		con.button_flags = control_flags;
 
 		Quaternion orient = body->GetOrientation();
@@ -442,7 +442,7 @@ void CReplayData::SaveToFile( const char* filename )
 
 	if(rplFile)
 	{
-		replayhdr_t hdr;
+		replayHeader_t hdr;
 		hdr.idreplay = VEHICLEREPLAY_IDENT;
 		hdr.version = VEHICLEREPLAY_VERSION;
 		//hdr.phys_iterations = g_pGameSession->GetPhysicsIterations();
@@ -451,7 +451,7 @@ void CReplayData::SaveToFile( const char* filename )
 		strcpy(hdr.envname, g_pGameWorld->GetEnvironmentName());
 		strcpy(hdr.missionscript, g_State_Game->GetMissionScriptName());
 
-		rplFile->Write(&hdr, 1, sizeof(replayhdr_t));
+		rplFile->Write(&hdr, 1, sizeof(replayHeader_t));
 
 		int count = m_vehicles.numElem();
 		rplFile->Write(&count, 1, sizeof(int));
@@ -475,15 +475,15 @@ void CReplayData::SaveToFile( const char* filename )
 
 		if(camFile)
 		{
-			replaycamerahdr_t camhdr;
+			replayCameraHeader_t camhdr;
 			camhdr.version = CAMERAREPLAY_VERSION;
 			camhdr.numCameras = m_cameras.numElem();
 
-			camFile->Write(&camhdr, 1, sizeof(replaycamerahdr_t));
+			camFile->Write(&camhdr, 1, sizeof(replayCameraHeader_t));
 
 			for(int i = 0; i < m_cameras.numElem(); i++)
 			{
-				camFile->Write(&m_cameras[i], 1, sizeof(replaycamera_t));
+				camFile->Write(&m_cameras[i], 1, sizeof(replayCamera_t));
 			}
 
 			g_fileSystem->Close(camFile);
@@ -493,16 +493,16 @@ void CReplayData::SaveToFile( const char* filename )
 	}
 }
 
-void CReplayData::WriteVehicleAndFrames(vehiclereplay_t* rep, IVirtualStream* stream )
+void CReplayData::WriteVehicleAndFrames(replayCarStream_t* rep, IVirtualStream* stream )
 {
-	vehiclereplay_file_t data(*rep);
+	replayFileCarStream_t data(*rep);
 
-	stream->Write(&data, 1, sizeof(vehiclereplay_file_t));
+	stream->Write(&data, 1, sizeof(replayFileCarStream_t));
 
 	for(int j = 0; j < rep->replayArray.numElem(); j++)
 	{
-		replaycontrol_t& control = rep->replayArray[j];
-		stream->Write(&control, 1, sizeof(replaycontrol_t));
+		replayCarFrame_t& control = rep->replayArray[j];
+		stream->Write(&control, 1, sizeof(replayCarFrame_t));
 	}
 }
 
@@ -532,7 +532,7 @@ void CReplayData::WriteEvents( IVirtualStream* stream, int onlyEvent )
 	int lastEventFrame = m_numFrames > 0 ? m_numFrames : m_tick;
 	for(int i = 0; i < m_events.numElem(); i++)
 	{
-		replayevent_t& evt = m_events[i];
+		replayEvent_t& evt = m_events[i];
 
 		if(evt.eventType == REPLAY_EVENT_END)
 			hasEndEvent = true;
@@ -549,7 +549,7 @@ void CReplayData::WriteEvents( IVirtualStream* stream, int onlyEvent )
 	// write events
 	for(int i = 0; i < m_events.numElem(); i++)
 	{
-		replayevent_t& evt = m_events[i];
+		replayEvent_t& evt = m_events[i];
 
 		// if set, do only specific events
 		if( onlyEvent != -1 )
@@ -558,7 +558,7 @@ void CReplayData::WriteEvents( IVirtualStream* stream, int onlyEvent )
 				continue;
 		}
 
-		replayevent_file_t fevent( evt );
+		replayFileEvent_t fevent( evt );
 
 		// make replay event data
 		if( evt.eventData != NULL )
@@ -602,7 +602,7 @@ void CReplayData::WriteEvents( IVirtualStream* stream, int onlyEvent )
 		else
 			fevent.eventDataSize = 0;
 
-		stream->Write(&fevent, 1, sizeof(replayevent_file_t));
+		stream->Write(&fevent, 1, sizeof(replayFileEvent_t));
 
 		if( fevent.eventDataSize > 0 )
 			stream->Write(eventData.GetBasePointer(), 1, fevent.eventDataSize);
@@ -611,20 +611,20 @@ void CReplayData::WriteEvents( IVirtualStream* stream, int onlyEvent )
 	// write end event
 	if(!hasEndEvent)
 	{
-		replayevent_file_t endEvent;
+		replayFileEvent_t endEvent;
 		endEvent.frameIndex = lastEventFrame+1;
 		endEvent.replayIndex = REPLAY_NOT_TRACKED;
 		endEvent.eventType = REPLAY_EVENT_END;
 		endEvent.eventFlags = 0;
 		endEvent.eventDataSize = 0;
 
-		stream->Write(&endEvent, 1, sizeof(replayevent_file_t));
+		stream->Write(&endEvent, 1, sizeof(replayFileEvent_t));
 	}
 }
 
 bool CReplayData::SaveVehicleReplay( CCar* target, const char* filename )
 {
-	vehiclereplay_t* rep = NULL;
+	replayCarStream_t* rep = NULL;
 
 	for(int i = 0; i < m_vehicles.numElem(); i++)
 	{
@@ -653,10 +653,10 @@ bool CReplayData::SaveVehicleReplay( CCar* target, const char* filename )
 	return false;
 }
 
-void CReplayData::ReadEvent( replayevent_t& evt, IVirtualStream* stream )
+void CReplayData::ReadEvent( replayEvent_t& evt, IVirtualStream* stream )
 {
-	replayevent_file_t fevent;
-	stream->Read(&fevent, 1, sizeof(replayevent_file_t));
+	replayFileEvent_t fevent;
+	stream->Read(&fevent, 1, sizeof(replayFileEvent_t));
 
 	evt.frameIndex = fevent.frameIndex;
 	evt.replayIndex = fevent.replayIndex;
@@ -720,8 +720,8 @@ bool CReplayData::LoadVehicleReplay( CCar* target, const char* filename, int& ti
 	if(pFile)
 	{
 		// read replay file header
-		vehiclereplay_file_t data;
-		pFile->Read(&data, 1, sizeof(vehiclereplay_file_t));
+		replayFileCarStream_t data;
+		pFile->Read(&data, 1, sizeof(replayFileCarStream_t));
 
 		// try to inject frames
 		int repIdx = target->m_replayID;
@@ -731,12 +731,12 @@ bool CReplayData::LoadVehicleReplay( CCar* target, const char* filename, int& ti
 		// make vehicle tracking if not
 		if(repIdx == REPLAY_NOT_TRACKED)
 		{
-			vehiclereplay_t newRep;
+			replayCarStream_t newRep;
 			repIdx = m_vehicles.append(newRep);
 			wereTracked = false;
 		}
 
-		vehiclereplay_t& veh = m_vehicles[repIdx];
+		replayCarStream_t& veh = m_vehicles[repIdx];
 
 		if(!wereTracked)
 		{
@@ -761,8 +761,8 @@ bool CReplayData::LoadVehicleReplay( CCar* target, const char* filename, int& ti
 		// read frames of vehicle controls
 		for(int j = 0; j < data.numFrames; j++)
 		{
-			replaycontrol_t control;
-			pFile->Read(&control, 1, sizeof(replaycontrol_t));
+			replayCarFrame_t control;
+			pFile->Read(&control, 1, sizeof(replayCarFrame_t));
 
 			tickCount = control.tick;
 
@@ -778,7 +778,7 @@ bool CReplayData::LoadVehicleReplay( CCar* target, const char* filename, int& ti
 
 		for(int i = 0; i < numEvents; i++)
 		{
-			replayevent_t evt;
+			replayEvent_t evt;
 			ReadEvent(evt, pFile);
 
 			evt.frameIndex += m_tick;
@@ -812,7 +812,7 @@ void CReplayData::StopVehicleReplay(CCar* pCar)
 	if(pCar->m_replayID == REPLAY_NOT_TRACKED)
 		return;
 
-	vehiclereplay_t& veh = m_vehicles[pCar->m_replayID];
+	replayCarStream_t& veh = m_vehicles[pCar->m_replayID];
 
 	// remove future frames to record new ones
 	for(int i = veh.curr_frame; i < veh.replayArray.numElem(); )
@@ -834,8 +834,8 @@ bool CReplayData::LoadFromFile(const char* filename)
 		return false;
 	}
 
-	replayhdr_t hdr;
-	pFile->Read(&hdr, 1, sizeof(replayhdr_t));
+	replayHeader_t hdr;
+	pFile->Read(&hdr, 1, sizeof(replayHeader_t));
 
 	if(hdr.idreplay != VEHICLEREPLAY_IDENT)
 	{
@@ -861,11 +861,11 @@ bool CReplayData::LoadFromFile(const char* filename)
 	// read vehicle names
 	for(int i = 0; i < veh_count; i++)
 	{
-		vehiclereplay_file_t data;
+		replayFileCarStream_t data;
 
-		pFile->Read(&data, 1, sizeof(vehiclereplay_file_t));
+		pFile->Read(&data, 1, sizeof(replayFileCarStream_t));
 
-		vehiclereplay_t veh;
+		replayCarStream_t veh;
 
 		// event will spawn this car
 		veh.obj_car = NULL;
@@ -885,8 +885,8 @@ bool CReplayData::LoadFromFile(const char* filename)
 		// read control array stored after header
 		for(int j = 0; j < data.numFrames; j++)
 		{
-			replaycontrol_t control;
-			pFile->Read(&control, 1, sizeof(replaycontrol_t));
+			replayCarFrame_t control;
+			pFile->Read(&control, 1, sizeof(replayCarFrame_t));
 
 			veh.replayArray.append(control);
 		}
@@ -900,7 +900,7 @@ bool CReplayData::LoadFromFile(const char* filename)
 
 	for(int i = 0; i < numEvents; i++)
 	{
-		replayevent_t evt;
+		replayEvent_t evt;
 		ReadEvent(evt, pFile);
 
 		// set frame count
@@ -920,18 +920,18 @@ bool CReplayData::LoadFromFile(const char* filename)
 
 	if(pFile)
 	{
-		replaycamerahdr_t camhdr;
-		pFile->Read( &camhdr,1,sizeof(replaycamerahdr_t) );
+		replayCameraHeader_t camhdr;
+		pFile->Read( &camhdr,1,sizeof(replayCameraHeader_t) );
 
 		if(camhdr.version == CAMERAREPLAY_VERSION)
 		{
 			m_currentCamera = 0;
 
-			replaycamera_t cam;
+			replayCamera_t cam;
 
 			for(int i = 0; i < camhdr.numCameras; i++)
 			{
-				pFile->Read( &cam,1,sizeof(replaycamera_t) );
+				pFile->Read( &cam,1,sizeof(replayCamera_t) );
 
 				m_cameras.append(cam);
 			}
@@ -967,7 +967,7 @@ void CReplayData::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject* ob
 	if( m_state != REPL_RECORDING )
 		return;
 
-	replayevent_t evt;
+	replayEvent_t evt;
 	evt.eventType = type;
 	evt.frameIndex = m_tick;
 	evt.replayIndex = REPLAY_NOT_TRACKED;
@@ -988,7 +988,7 @@ void CReplayData::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject* ob
 
 			evt.replayIndex = Record(pCar, false);
 
-			vehiclereplay_t& veh = m_vehicles[evt.replayIndex];
+			replayCarStream_t& veh = m_vehicles[evt.replayIndex];
 
 			if ( pCar->IsPursuer() )
 			{
@@ -1021,7 +1021,7 @@ void CReplayData::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject* ob
 
 			if(evt.replayIndex != REPLAY_NOT_TRACKED)
 			{
-				vehiclereplay_t& veh = m_vehicles[evt.replayIndex];
+				replayCarStream_t& veh = m_vehicles[evt.replayIndex];
 
 				// make replay done, and invalidate realtime data
 				veh.done = true;
@@ -1044,7 +1044,7 @@ void CReplayData::PushEvent(EReplayEventType type, int replayId, void* eventData
 	if( m_state != REPL_RECORDING )
 		return;
 
-	replayevent_t evt;
+	replayEvent_t evt;
 	evt.eventType = type;
 	evt.frameIndex = m_tick;
 	evt.replayIndex = replayId;
@@ -1070,7 +1070,7 @@ void CReplayData::RaiseTickEvents()
 {
 	for(int i = m_currentEvent; i < m_events.numElem(); i++)
 	{
-		replayevent_t& evt = m_events[i];
+		replayEvent_t& evt = m_events[i];
 
 		if(evt.frameIndex != m_tick)
 			break;
@@ -1081,7 +1081,7 @@ void CReplayData::RaiseTickEvents()
 	}
 }
 
-void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
+void CReplayData::RaiseReplayEvent(const replayEvent_t& evt)
 {
 	if(evt.eventFlags & REPLAY_FLAG_IS_PUSHED)
 		return;
@@ -1095,7 +1095,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 			if(evt.replayIndex == REPLAY_NOT_TRACKED)
 				break;
 
-			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
 
 			m_activeVehicles.append( evt.replayIndex );
 
@@ -1154,7 +1154,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 			if( evt.replayIndex == REPLAY_NOT_TRACKED )
 				break;
 
-			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
 
 			m_activeVehicles.fastRemove( evt.replayIndex );
 
@@ -1183,7 +1183,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 			if(evt.replayIndex == REPLAY_NOT_TRACKED)
 				break;
 
-			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
 
 			int col_idx = (int)(intptr_t)evt.eventData;
 
@@ -1197,7 +1197,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 			if( evt.replayIndex == REPLAY_NOT_TRACKED )
 				break;
 
-			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
 			if(rep.obj_car)
 				rep.obj_car->Enable( (bool)evt.eventData );
 
@@ -1208,7 +1208,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 			if( evt.replayIndex == REPLAY_NOT_TRACKED )
 				break;
 
-			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
 
 			if(rep.obj_car)
 				rep.obj_car->Lock( (bool)evt.eventData );
@@ -1220,7 +1220,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 			if( evt.replayIndex == REPLAY_NOT_TRACKED )
 				break;
 
-			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
 
 			float damage = *(float *)&evt.eventData;
 
@@ -1234,7 +1234,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 			if( evt.replayIndex == REPLAY_NOT_TRACKED )
 				break;
 
-			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
 
 			float damage = *(float *)&evt.eventData;
 
@@ -1248,7 +1248,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 			if( evt.replayIndex == REPLAY_NOT_TRACKED )
 				break;
 
-			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
 
 			float speed = *(float *)&evt.eventData;
 
@@ -1262,7 +1262,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 			if( evt.replayIndex == REPLAY_NOT_TRACKED )
 				break;
 
-			vehiclereplay_t& rep = m_vehicles[evt.replayIndex];
+			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
 
 			if(rep.obj_car)
 			{
@@ -1273,7 +1273,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 
 				if(deathByReplayIdx != REPLAY_NOT_TRACKED)
 				{
-					vehiclereplay_t& deathByRep = m_vehicles[(int)(intptr_t)evt.eventData];
+					replayCarStream_t& deathByRep = m_vehicles[(int)(intptr_t)evt.eventData];
 					rep.obj_car->OnDeath( deathByRep.obj_car );
 				}
 				else
@@ -1285,7 +1285,7 @@ void CReplayData::RaiseReplayEvent(const replayevent_t& evt)
 	}
 }
 
-void CReplayData::SetupReplayCar( vehiclereplay_t* rep )
+void CReplayData::SetupReplayCar( replayCarStream_t* rep )
 {
 	rep->curr_frame = 0;
 	CCar* pCar = rep->obj_car;
@@ -1304,7 +1304,7 @@ void CReplayData::SetupReplayCar( vehiclereplay_t* rep )
 	}
 	else
 	{
-		const replaycontrol_t& ctrl = rep->replayArray[0];
+		const replayCarFrame_t& ctrl = rep->replayArray[0];
 
 		pCar->GetPhysicsBody()->SetPosition(ctrl.car_origin);
 		pCar->GetPhysicsBody()->SetOrientation(Quaternion(ctrl.car_rot));

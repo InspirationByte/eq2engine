@@ -86,13 +86,13 @@ BEGIN_SHADER_CLASS(DrvSynVehicle)
 		SHADER_DECLARE_SIMPLE_DEFINITION((m_nFlags & MATERIAL_FLAG_ALPHATESTED), "ALPHATEST");
 
 		// compile without fog
-		SHADER_FIND_OR_COMPILE(Ambient, "VehicleBody");
+		SHADER_FIND_OR_COMPILE(Ambient, "Vehicle");
 
 		// define fog parameter.
 		SHADER_DECLARE_SIMPLE_DEFINITION(m_fogenabled, "DOFOG");
 		
 		// compile with fog
-		SHADER_FIND_OR_COMPILE(Ambient_fog, "VehicleBody");
+		SHADER_FIND_OR_COMPILE(Ambient_fog, "Vehicle");
 
 		return true;
 	}

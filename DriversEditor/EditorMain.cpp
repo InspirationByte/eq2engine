@@ -247,7 +247,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	g_sysConsole->ExecuteCommandBuffer();
 
 	soundsystem->Init();
-	ses->Init(EQ_DRVSYN_DEFAULT_SOUND_DISTANCE);
+	g_sounds->Init(EQ_DRVSYN_DEFAULT_SOUND_DISTANCE);
 	
 	m_nbPanel = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxSize( -1,300 ), wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer4;
@@ -1172,7 +1172,7 @@ void CMainWindow::ReDraw()
 	if(!materials)
 		return;
 
-	//	ses->Update();
+	//	g_sounds->Update();
 
 	if(!IsShown())
 		return;
@@ -1253,7 +1253,7 @@ void CMainWindow::ReDraw()
 		materials->GetMatrix(MATRIXMODE_VIEW, g_mViewMat);
 
 		soundsystem->SetListener(g_pCameraParams.GetOrigin(), g_mViewMat.rows[2].xyz(),g_mViewMat.rows[1].xyz(), vec3_zero);
-		ses->Update();
+		g_sounds->Update();
 
 		g_pGameWorld->UpdateWorld(g_frametime);
 
@@ -1316,8 +1316,8 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 
 	Destroy();
 
-	ses->StopAllSounds();
-	ses->Shutdown();
+	g_sounds->StopAllSounds();
+	g_sounds->Shutdown();
 
 	soundsystem->Shutdown();
 

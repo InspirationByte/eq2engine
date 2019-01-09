@@ -354,7 +354,7 @@ OOLUA_PROXY_END
 #endif //  __INTELLISENSE__
 #endif // NO_LUA
 
-#define PrecacheScriptSound(snd)	ses->PrecacheSound(snd)
+#define PrecacheScriptSound(snd)	g_sounds->PrecacheSound(snd)
 
 #define PrecacheStudioModel(mod)	g_studioModelCache->PrecacheModel(mod)
 

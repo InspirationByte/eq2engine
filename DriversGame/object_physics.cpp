@@ -121,7 +121,7 @@ void CObject_Physics::Spawn()
 
 	m_smashSound = KV_GetValueString(m_keyValues->FindKeyBase("smashsound"), 0, "");
 
-	ses->PrecacheSound(m_smashSound.c_str());
+	g_sounds->PrecacheSound(m_smashSound.c_str());
 
 	CEqRigidBody* body = new CEqRigidBody();
 

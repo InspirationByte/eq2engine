@@ -580,7 +580,7 @@ void CViewWindow::Redraw()
 		return;
 
 	if(GetActiveView()->GetCameraMode() == CPM_PERSPECTIVE)
-		ses->Update();
+		g_sounds->Update();
 
 	if(!m_mustupdate)
 	{

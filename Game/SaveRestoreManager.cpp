@@ -682,7 +682,7 @@ bool DoLoadSavedGame( void* pData )
 	saved_game_params_t* params = (saved_game_params_t*)pData;
 
 	// Initialize sound emitter system
-	ses->Init(EQ_AUDIO_MAX_DISTANCE);
+	g_sounds->Init(EQ_AUDIO_MAX_DISTANCE);
 
 	PrecachePhysicsSounds();
 

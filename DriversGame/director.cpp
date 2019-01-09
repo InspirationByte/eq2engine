@@ -123,9 +123,9 @@ void Director_KeyPress(int key, bool down)
 		//Msg("Director mode keypress: %d\n", key);
 
 		int replayCamera = g_replayData->m_currentCamera;
-		replaycamera_t* currentCamera = g_replayData->GetCurrentCamera();
-		replaycamera_t* prevCamera = g_replayData->m_cameras.inRange(replayCamera-1) ? &g_replayData->m_cameras[replayCamera-1] : NULL;
-		replaycamera_t* nextCamera = g_replayData->m_cameras.inRange(replayCamera+1) ? &g_replayData->m_cameras[replayCamera+1] : NULL;
+		replayCamera_t* currentCamera = g_replayData->GetCurrentCamera();
+		replayCamera_t* prevCamera = g_replayData->m_cameras.inRange(replayCamera-1) ? &g_replayData->m_cameras[replayCamera-1] : NULL;
+		replayCamera_t* nextCamera = g_replayData->m_cameras.inRange(replayCamera+1) ? &g_replayData->m_cameras[replayCamera+1] : NULL;
 		int totalTicks = g_replayData->m_numFrames;
 
 		int highTick = nextCamera ? nextCamera->startTick : totalTicks;
@@ -133,7 +133,7 @@ void Director_KeyPress(int key, bool down)
 
 		if(key == KEY_ADD)
 		{
-			replaycamera_t cam;
+			replayCamera_t cam;
 
 			cam.fov = g_freeCamProps.fov;
 			cam.origin = g_freeCamProps.position;
@@ -392,7 +392,7 @@ void Director_Draw( float fDt )
 	else
 		roboto30->RenderText(shortText, directorTextPos, params);
 
-	replaycamera_t* currentCamera = g_replayData->GetCurrentCamera();
+	replayCamera_t* currentCamera = g_replayData->GetCurrentCamera();
 	int replayCamera = g_replayData->m_currentCamera;
 	int currentTick = g_replayData->m_tick;
 	int totalTicks = g_replayData->m_numFrames;
@@ -441,11 +441,11 @@ void Director_Draw( float fDt )
 
 		for(int i = 0; i < totalCameras; i++)
 		{
-			replaycamera_t* camera = &g_replayData->m_cameras[i];
+			replayCamera_t* camera = &g_replayData->m_cameras[i];
 
 			float cameraTickPos = (camera->startTick-currentTick) * pixelsPerTick;
 
-			replaycamera_t* nextCamera = i+1 <g_replayData->m_cameras.numElem() ? &g_replayData->m_cameras[i+1] : NULL;
+			replayCamera_t* nextCamera = i+1 <g_replayData->m_cameras.numElem() ? &g_replayData->m_cameras[i+1] : NULL;
 			float nextTickPos = ((nextCamera ? nextCamera->startTick : totalTicks)-currentTick) * pixelsPerTick;
 
 			// draw colored rectangle

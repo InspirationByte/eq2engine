@@ -2147,7 +2147,7 @@ int CEqLevel::GetRoomsForBBox(const Vector3D &point, int* room_ids)
 }
 
 // returns portal between rooms
-int	CEqLevel::GetFirstPortalLinkedToRoom( int startRoom, int endRoom, Vector3D& orient_to_pos, int maxDepth)
+int	CEqLevel::GetFirstPortalLinkedToRoom( int startRoom, int endRoom, const Vector3D& orient_to_pos, int maxDepth)
 {
 	// fancy checkks
 	if(startRoom == -1)

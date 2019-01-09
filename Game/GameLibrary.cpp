@@ -201,7 +201,7 @@ void CGameLibrary::GameUnload()
 
 	g_pBulletSimulator->Cleanup();
 
-	ses->Shutdown();
+	g_sounds->Shutdown();
 
 	g_pAINavigator->Shutdown();
 
@@ -567,7 +567,7 @@ void CGameLibrary::Update(float decaytime)
 
 	//GetScriptSys()->Update(decaytime);
 
-	ses->Update();
+	g_sounds->Update();
 
 	debugoverlay->Text(Vector4D(1,1,1,1), "  soundemittersystem: %.2f ms", MEASURE_TIME_STATS(measureses));
 

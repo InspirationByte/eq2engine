@@ -726,7 +726,7 @@ CEditorFrame::CEditorFrame(const wxString& title, const wxPoint& pos, const wxSi
 	soundsystem->Init();
 
 	// initialize game sound emitter system
-	ses->Init(1000.0f);	//	FIXME: (EQ_AUDIO_MAX_DISTANCE);
+	g_sounds->Init(1000.0f);	//	FIXME: (EQ_AUDIO_MAX_DISTANCE);
 	
 	// create dialogs
 	m_surfacedialog = new CSurfaceDialog();
@@ -1378,8 +1378,8 @@ void CEditorFrame::OnClose(wxCloseEvent& event)
 
 	SaveRegOptions();
 
-	ses->StopAllSounds();
-	ses->Shutdown();
+	g_sounds->StopAllSounds();
+	g_sounds->Shutdown();
 
 	soundsystem->Shutdown();
 

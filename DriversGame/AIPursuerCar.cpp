@@ -87,7 +87,7 @@ void CAIPursuerCar::Spawn()
 		EmitSound_t ep;
 		ep.name = "cop.taunt";
 		ep.pObject = this;
-		m_loudhailer = ses->CreateSoundController(&ep);
+		m_loudhailer = g_sounds->CreateSoundController(&ep);
 	}
 
 	SetMaxDamage( g_pAIManager->GetCopMaxDamage() );
@@ -98,7 +98,7 @@ void CAIPursuerCar::OnRemove()
 	EndPursuit(true);
 
 	if (m_loudhailer)
-		ses->RemoveSoundController(m_loudhailer);
+		g_sounds->RemoveSoundController(m_loudhailer);
 
 	m_loudhailer = NULL;
 

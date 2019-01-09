@@ -230,7 +230,7 @@ public:
 	void Update()
 	{
 
-		//ses->StopAllSounds();
+		//g_sounds->StopAllSounds();
 	}
 
 	void Render(int nViewRenderFlags)

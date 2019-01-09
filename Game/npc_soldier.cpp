@@ -133,7 +133,7 @@ void CNPCTestSoldier::DeathSound()
 	// attach this sound to entity
 	ep.pEntity = this;
 
-	ses->EmitSound(&ep);
+	g_sounds->EmitSound(&ep);
 }
 
 void CNPCTestSoldier::GiveWeapon(const char *classname)

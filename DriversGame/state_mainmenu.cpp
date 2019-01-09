@@ -32,11 +32,11 @@ CState_MainMenu::~CState_MainMenu()
 
 void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 {
-	ses->Init(100.0f);
+	g_sounds->Init(100.0f);
 
-	ses->PrecacheSound( "menu.back" );
-	ses->PrecacheSound( "menu.roll" );
-	ses->PrecacheSound( "menu.click" );
+	g_sounds->PrecacheSound( "menu.back" );
+	g_sounds->PrecacheSound( "menu.roll" );
+	g_sounds->PrecacheSound( "menu.click" );
 
 	m_fade = 0.0f;
 	m_textFade = 0.0f;
@@ -62,7 +62,7 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 	SetMenuObject( mainMenuStack );
 
 	//EmitSound_t es("music.menu", EMITSOUND_FLAG_FORCE_CACHED);
-	//ses->Emit2DSound( &es );
+	//g_sounds->Emit2DSound( &es );
 
 	soundsystem->SetVolumeScale(0.0f);
 }
@@ -74,7 +74,7 @@ void CState_MainMenu::OnEnterSelection( bool isFinal )
 
 void CState_MainMenu::OnLeave( CBaseStateHandler* to )
 {
-	ses->Shutdown();
+	g_sounds->Shutdown();
 
 	g_pShaderAPI->FreeTexture(m_titleTexture);
 	m_titleTexture = NULL;
@@ -291,7 +291,7 @@ void CState_MainMenu::HandleMouseClick( int x, int y, int buttons, bool down )
 void CState_MainMenu::Event_BackToPrevious()
 {
 	EmitSound_t es("menu.back");
-	ses->EmitSound( &es );
+	g_sounds->EmitSound( &es );
 
 	if(IsCanPopMenu())
 	{
@@ -318,7 +318,7 @@ void CState_MainMenu::Event_SelectionEnter()
 		return;
 
 	EmitSound_t es("menu.click");
-	ses->EmitSound( &es );
+	g_sounds->EmitSound( &es );
 
 	m_changesMenu = MENU_ENTER;
 	m_textEffect = 1.0f;
@@ -345,7 +345,7 @@ redecrement:
 	//	goto redecrement;
 
 	EmitSound_t ep("menu.roll");
-	ses->EmitSound(&ep);
+	g_sounds->EmitSound(&ep);
 }
 
 void CState_MainMenu::Event_SelectionDown()
@@ -363,7 +363,7 @@ reincrement:
 	//	goto reincrement;
 
 	EmitSound_t ep("menu.roll");
-	ses->EmitSound(&ep);
+	g_sounds->EmitSound(&ep);
 }
 
 void CState_MainMenu::Event_SelectMenuItem(int index)
@@ -380,7 +380,7 @@ void CState_MainMenu::Event_SelectMenuItem(int index)
 	m_selection = index;
 
 	EmitSound_t ep("menu.roll");
-	ses->EmitSound(&ep);
+	g_sounds->EmitSound(&ep);
 }
 
 CState_MainMenu* g_State_MainMenu = new CState_MainMenu();

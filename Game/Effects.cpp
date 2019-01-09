@@ -401,7 +401,7 @@ void UTIL_Impact( trace_t& tr, Vector3D &impactDirection )
 
 		rico.name = tr.hitmaterial->bulletImpactSound;
 
-		ses->EmitSound(&rico);
+		g_sounds->EmitSound(&rico);
 
 		if(tr.hitmaterial->surfaceword == 'C' || tr.hitmaterial->surfaceword == 'T') // concrete or tile
 		{

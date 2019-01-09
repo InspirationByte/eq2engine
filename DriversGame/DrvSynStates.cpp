@@ -76,7 +76,7 @@ void SignalPause()
 	if (gameState->GetPauseMode() == PAUSEMODE_NONE)
 	{
 		gameState->SetPauseState(true);
-		ses->Update();
+		g_sounds->Update();
 	}
 }
 

@@ -423,6 +423,9 @@
     <ClCompile Include="Player.cpp">
       <Filter>Файлы исходного кода\Game\Sessions</Filter>
     </ClCompile>
+    <ClCompile Include="Shader_Skinned.cpp">
+      <Filter>Файлы исходного кода\MatSystem\Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\src_dependency\oolua\bin\Release\oolua.lib">

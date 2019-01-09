@@ -222,10 +222,10 @@ public:
 
 	virtual void								UpdateEvents() = 0;								// updates events
 
-	virtual void 								InternalTraceLine(Vector3D &tracestart, Vector3D &traceend,int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0) = 0;	// internal trace line
-	virtual void 								InternalTraceBox(Vector3D &tracestart, Vector3D &traceend, Vector3D& boxSize,int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0, Matrix4x4* transform = NULL) = 0;	// internal trace box
-	virtual void 								InternalTraceSphere(Vector3D &tracestart, Vector3D &traceend, float sphereRadius,int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0) = 0; // internal trace sphere
-	virtual void								InternalTraceShape(Vector3D &tracestart, Vector3D &traceend, int shapeId, int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0, Matrix4x4* transform = NULL) = 0;
+	virtual void 								InternalTraceLine(const Vector3D &tracestart, const Vector3D &traceend,int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0) = 0;	// internal trace line
+	virtual void 								InternalTraceBox(const Vector3D &tracestart, const Vector3D &traceend, const Vector3D& boxSize,int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0, Matrix4x4* transform = NULL) = 0;	// internal trace box
+	virtual void 								InternalTraceSphere(const Vector3D &tracestart, const Vector3D &traceend, float sphereRadius,int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0) = 0; // internal trace sphere
+	virtual void								InternalTraceShape(const Vector3D &tracestart, const Vector3D &traceend, int shapeId, int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0, Matrix4x4* transform = NULL) = 0;
 
 
 	virtual phySurfaceMaterial_t*				FindMaterial(const char* pszName) = 0;			// finds surface material parameters by it's name
@@ -241,8 +241,8 @@ public:
 	virtual IPhysicsObject*						CreateObject(studioPhysData_t* data, int nObject = 0) = 0; // Creates physics object
 	virtual IPhysicsObject*						CreateObjectCustom(int numShapes, int* shapeIdxs, const char* surfaceProps, float mass) = 0; // Creates physics object
 
-	virtual IPhysicsJoint*						CreateJoint(IPhysicsObject* pObjectA, IPhysicsObject* pObjectB, Matrix4x4 &transformA, Matrix4x4 &transformB, bool bDisableCollisionBetweenBodies) = 0; // creates physics joint
-	virtual IPhysicsRope*						CreateRope(Vector3D &pointA, Vector3D &pointB, int numSegments) = 0; // creates physics rope
+	virtual IPhysicsJoint*						CreateJoint(IPhysicsObject* pObjectA, IPhysicsObject* pObjectB, const Matrix4x4 &transformA, const Matrix4x4 &transformB, bool bDisableCollisionBetweenBodies) = 0; // creates physics joint
+	virtual IPhysicsRope*						CreateRope(const Vector3D &pointA, const Vector3D &pointB, int numSegments) = 0; // creates physics rope
 
 	//****** Geometry cache ******
 	virtual int									AddPrimitiveShape(pritimiveinfo_t &info) = 0;

@@ -530,7 +530,7 @@ bool DkPhysics::IsSupportsHardwareAcceleration()
 #define RAYCAST_NORMAL_EPSILON 0.001f;
 
 // Generic traceLine for physics
-void DkPhysics::InternalTraceLine(Vector3D &tracestart, Vector3D &traceend, int groupmask, internaltrace_t *trace, IPhysicsObject** pIgnoreList, int numIgnored)
+void DkPhysics::InternalTraceLine(const Vector3D &tracestart, const Vector3D &traceend, int groupmask, internaltrace_t *trace, IPhysicsObject** pIgnoreList, int numIgnored)
 {
 	btVector3 strt = ConvertPositionToBullet(tracestart);
 	btVector3 end = ConvertPositionToBullet(traceend);
@@ -565,7 +565,7 @@ void DkPhysics::InternalTraceLine(Vector3D &tracestart, Vector3D &traceend, int 
 }
 
 // Generic traceLine for physics
-void DkPhysics::InternalTraceBox(Vector3D &tracestart, Vector3D &traceend, Vector3D& boxSize,int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList, int numIgnored, Matrix4x4 *externalBoxTransform)
+void DkPhysics::InternalTraceBox(const Vector3D &tracestart, const Vector3D &traceend, const Vector3D& boxSize,int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList, int numIgnored, Matrix4x4 *externalBoxTransform)
 {
 	btVector3 strt = ConvertPositionToBullet(tracestart);
 	btVector3 end = ConvertPositionToBullet(traceend);
@@ -615,7 +615,7 @@ void DkPhysics::InternalTraceBox(Vector3D &tracestart, Vector3D &traceend, Vecto
 }
 
 // Generic traceLine for physics
-void DkPhysics::InternalTraceSphere(Vector3D &tracestart, Vector3D &traceend, float sphereRadius,int groupmask,internaltrace_t* trace, IPhysicsObject** pIgnoreList, int numIgnored)
+void DkPhysics::InternalTraceSphere(const Vector3D &tracestart, const Vector3D &traceend, float sphereRadius,int groupmask,internaltrace_t* trace, IPhysicsObject** pIgnoreList, int numIgnored)
 {
 	btVector3 strt = ConvertPositionToBullet(tracestart);
 	btVector3 end = ConvertPositionToBullet(traceend);
@@ -654,7 +654,7 @@ void DkPhysics::InternalTraceSphere(Vector3D &tracestart, Vector3D &traceend, fl
 }
 
 // Generic traceLine for physics
-void DkPhysics::InternalTraceShape(Vector3D &tracestart, Vector3D &traceend, int shapeId, int groupmask, internaltrace_t* trace, IPhysicsObject** pIgnoreList, int numIgnored, Matrix4x4* transform)
+void DkPhysics::InternalTraceShape(const Vector3D &tracestart, const Vector3D &traceend, int shapeId, int groupmask, internaltrace_t* trace, IPhysicsObject** pIgnoreList, int numIgnored, Matrix4x4* transform)
 {
 	ASSERT(shapeId != -1 );
 
@@ -856,7 +856,7 @@ void DkPhysics::DrawDebug()
 	m_Mutex.Unlock();
 }
 
-btRigidBody* DkPhysics::LocalCreateRigidBody(float mass, Vector3D &mass_center, const btTransform& startTransform, btCollisionShape* shape)
+btRigidBody* DkPhysics::LocalCreateRigidBody(float mass, const Vector3D &mass_center, const btTransform& startTransform, btCollisionShape* shape)
 {
 	btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
 
@@ -1194,7 +1194,7 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 }
 
 // creates physics joint
-IPhysicsJoint* DkPhysics::CreateJoint(IPhysicsObject* pObjectA,IPhysicsObject* pObjectB, Matrix4x4 &transformA, Matrix4x4 &transformB, bool bDisableCollisionBetweenBodies)
+IPhysicsJoint* DkPhysics::CreateJoint(IPhysicsObject* pObjectA,IPhysicsObject* pObjectB, const Matrix4x4 &transformA, const Matrix4x4 &transformB, bool bDisableCollisionBetweenBodies)
 {
 	if(!pObjectA || !pObjectB)
 		return NULL;
@@ -1238,7 +1238,7 @@ IPhysicsJoint* DkPhysics::CreateJoint(IPhysicsObject* pObjectA,IPhysicsObject* p
 }
 
 // creates physics rope
-IPhysicsRope* DkPhysics::CreateRope(Vector3D &pointA, Vector3D &pointB, int numSegments)
+IPhysicsRope* DkPhysics::CreateRope(const Vector3D &pointA, const Vector3D &pointB, int numSegments)
 {
 	CScopedMutex m(m_Mutex);
 

@@ -38,12 +38,12 @@ public:
 		ep.pObject = this;
 		ep.nFlags |= (EMITSOUND_FLAG_ROOM_OCCLUSION | EMITSOUND_FLAG_START_ON_UPDATE);
 
-		ses->EmitSound( &ep );
+		g_sounds->EmitSound( &ep );
 	}
 
 	void Precache()
 	{
-		ses->PrecacheSound( m_soundName.GetData() );
+		g_sounds->PrecacheSound( m_soundName.GetData() );
 	}
 
 	void Spawn()
@@ -237,7 +237,7 @@ public:
 		{
 			//kvs.GetRootSection()->FindKeyBase
 
-			//m_soundScape.ambientsound = ses->CreateSoundController( &sound );
+			//m_soundScape.ambientsound = g_sounds->CreateSoundController( &sound );
 		}
 	}
 

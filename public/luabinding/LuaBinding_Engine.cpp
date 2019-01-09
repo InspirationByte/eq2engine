@@ -616,7 +616,7 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	OOLUA::set_global(state, "VectorAngles", L_VectorAngles);
 
 	OOLUA::set_global(state, "debugoverlay", debugoverlay);
-	OOLUA::set_global(state, "sounds", ses);
+	OOLUA::set_global(state, "sounds", g_sounds);
 
 	OOLUA::Table consoleTab = OOLUA::new_table(state);
 	consoleTab.set("FindCvar", LLua_Console_FindCvar);

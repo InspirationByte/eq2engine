@@ -34,22 +34,11 @@ public:
 	void			GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, float height, float zNear, float zFar, bool orthographic = false) const;
 	void			GetMatricesOrtho(Matrix4x4& proj, Matrix4x4& view, Rectangle_t rect, float zNear, float zFar) const;
 
-	/*
-	void			BuildViewMatrices(float fNear, float fFar, int width, int height, bool orthographic = false, bool cubemap = false);
-
-	void			SetupMatrices();
-
-	Matrix4x4		m_viewprojection;
-	Matrix4x4		m_matrices[4];	*/
-
 protected:
 
 	Vector3D		m_vecOrigin;
 	Vector3D		m_vecAngles;
 	float			m_fFOV;
-
-	//float			m_orthoScale;
-	//int				m_cubemapFace;
 };
 
 #endif //VIEWPARAMS_H

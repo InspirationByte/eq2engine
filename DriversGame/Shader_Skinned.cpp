@@ -2,12 +2,12 @@
 // Copyright © Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Basic skinned shader
+// Description: Skinned shader for DrvSyn
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "BaseShader.h"
 
-BEGIN_SHADER_CLASS(BaseSkinned)
+BEGIN_SHADER_CLASS(Skinned)
 
 	SHADER_INIT_PARAMS()
 	{
@@ -54,19 +54,19 @@ BEGIN_SHADER_CLASS(BaseSkinned)
 		SHADER_DECLARE_SIMPLE_DEFINITION((m_nFlags & MATERIAL_FLAG_ALPHATESTED), "ALPHATEST");
 
 		// compile without fog
-		SHADER_FIND_OR_COMPILE(Ambient, "BaseSkinned_Ambient");
-		SHADER_FIND_OR_COMPILE(Ambient_noskin, "BaseSkinned_Ambient_NoSkin");
-		SHADER_FIND_OR_COMPILE(AmbientInst, "BaseSkinned_Inst_Ambient");
-		SHADER_FIND_OR_COMPILE(AmbientInst_noskin, "BaseSkinned_Inst_Ambient_NoSkin");
+		SHADER_FIND_OR_COMPILE(Ambient, "Skinned");
+		SHADER_FIND_OR_COMPILE(Ambient_noskin, "Skinned_NoSkin");
+		SHADER_FIND_OR_COMPILE(AmbientInst, "Skinned_Inst");
+		SHADER_FIND_OR_COMPILE(AmbientInst_noskin, "Skinned_Inst_NoSkin");
 
 		// define fog parameter.
 		SHADER_DECLARE_SIMPLE_DEFINITION(m_fogenabled, "DOFOG");
 		
 		// compile with fog
-		SHADER_FIND_OR_COMPILE(Ambient_fog, "BaseSkinned_Ambient");
-		SHADER_FIND_OR_COMPILE(Ambient_noskin_fog, "BaseSkinned_Ambient_NoSkin");
-		SHADER_FIND_OR_COMPILE(AmbientInst_fog, "BaseSkinned_Inst_Ambient");
-		SHADER_FIND_OR_COMPILE(AmbientInst_noskin_fog, "BaseSkinned_Inst_Ambient_NoSkin");
+		SHADER_FIND_OR_COMPILE(Ambient_fog, "Skinned");
+		SHADER_FIND_OR_COMPILE(Ambient_noskin_fog, "Skinned_NoSkin");
+		SHADER_FIND_OR_COMPILE(AmbientInst_fog, "Skinned_Inst");
+		SHADER_FIND_OR_COMPILE(AmbientInst_noskin_fog, "Skinned_Inst_NoSkin");
 
 		return true;
 	}

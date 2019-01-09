@@ -568,7 +568,7 @@ void CMainWindow::ReDraw()
 	if(!materials)
 		return;
 
-	//	ses->Update();
+	//	g_sounds->Update();
 
 	if(!IsShown())
 		return;

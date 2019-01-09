@@ -2278,7 +2278,7 @@ navcell_t& CGameLevel::Nav_GetCellStateAtGlobalPoint(const IVector2D& point)
 	emptyCell.f = 10000.0f;
 	emptyCell.g = 10000.0f;
 	emptyCell.h = 10000.0f;
-	emptyCell.flags = 0xF;
+	emptyCell.flags = 0;
 	emptyCell.parentDir = 7;
 
 	return emptyCell;
@@ -2335,7 +2335,7 @@ navcell_t& CGameLevel::Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, u
 	emptyCell.f = 10000.0f;
 	emptyCell.g = 10000.0f;
 	emptyCell.h = 10000.0f;
-	emptyCell.flags = 0xF;
+	emptyCell.flags = 0;
 	emptyCell.parentDir = 7;
 
 	return emptyCell;
@@ -2343,7 +2343,7 @@ navcell_t& CGameLevel::Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, u
 
 void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
 {
-	int navSize = (m_cellsSize*s_navGridScales[m_navGridSelector]);
+	//int navSize = (m_cellsSize*s_navGridScales[m_navGridSelector]);
 
 	for (int x = 0; x < m_wide; x++)
 	{

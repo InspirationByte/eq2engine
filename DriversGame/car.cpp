@@ -776,7 +776,7 @@ ISoundController* CCar::CreateCarSound(const char* name, float radiusMult)
 	soundEp.origin = m_vecOrigin;
 	soundEp.pObject = this;
 
-	return ses->CreateSoundController(&soundEp);
+	return g_sounds->CreateSoundController(&soundEp);
 }
 
 void CCar::InitCarSound()
@@ -816,7 +816,7 @@ void CCar::InitCarSound()
 		siren_ep.sampleId = 0;
 		siren_ep.pObject = this;
 
-		m_sounds[CAR_SOUND_SIREN] = ses->CreateSoundController(&siren_ep);
+		m_sounds[CAR_SOUND_SIREN] = g_sounds->CreateSoundController(&siren_ep);
 	}
 }
 
@@ -932,7 +932,7 @@ void CCar::OnRemove()
 
 	for(int i = 0; i < CAR_SOUND_COUNT; i++)
 	{
-		ses->RemoveSoundController(m_sounds[i]);
+		g_sounds->RemoveSoundController(m_sounds[i]);
 		m_sounds[i] = nullptr;
 	}
 	

@@ -68,6 +68,8 @@ void GAME_STATE_GameStartSession( bool bFromSavedGame )
 	engine->Reset();
 
 	materials->Wait();
+
+	g_sounds->SetPaused(false);
 }
 
 void GAME_STATE_UnloadGameObjects()
@@ -102,7 +104,7 @@ void GAME_STATE_GameEndSession()
 {
 	//Msg("GameEndSession\n");
 
-	ses->StopAllSounds();
+	g_sounds->StopAllSounds();
 
 	g_pSoundEffect = NULL;
 	soundsystem->SetListener(vec3_zero, Vector3D(0,0,1), Vector3D(0,1,0), NULL);
@@ -148,7 +150,8 @@ void FillEntityParameters(BaseEntity* pEnt, kvkeybase_t* pEntSection)
 void GAME_STATE_SpawnEntities(kvkeybase_t* inputKeyValues)
 {
 	// Initialize sound emitter system
-	ses->Init(EQ_AUDIO_MAX_DISTANCE);
+	g_sounds->Init(EQ_AUDIO_MAX_DISTANCE);
+	g_sounds->SetPaused(true);
 
 	PrecachePhysicsSounds();
 

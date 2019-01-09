@@ -160,9 +160,6 @@
     <ClCompile Include="ShadersMain.cpp" />
     <ClCompile Include="ShadersOverride.cpp" />
     <ClCompile Include="Shaders\BaseParticle.cpp" />
-    <ClCompile Include="Shaders\BaseSkinned.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="Shaders\BaseUnlit.cpp" />
     <ClCompile Include="Shaders\BlurFilter.cpp" />
     <ClCompile Include="Shaders\Error.cpp" />

@@ -24,7 +24,7 @@
 
 static CSoundEmitterSystem s_ses;
 
-CSoundEmitterSystem* ses = &s_ses;
+CSoundEmitterSystem* g_sounds = &s_ses;
 
 void sounds_list(DkList<EqString>& list, const char* query)
 {
@@ -35,7 +35,7 @@ DECLARE_CMD_VARIANTS(test_scriptsound, "Test the scripted sound", sounds_list, 0
 {
 	if(CMD_ARGC > 0)
 	{
-		ses->PrecacheSound( CMD_ARGV(0).c_str() );
+		g_sounds->PrecacheSound( CMD_ARGV(0).c_str() );
 
 		EmitSound_t ep;
 		ep.nFlags = (EMITSOUND_FLAG_FORCE_CACHED | EMITSOUND_FLAG_FORCE_2D);
@@ -46,7 +46,7 @@ DECLARE_CMD_VARIANTS(test_scriptsound, "Test the scripted sound", sounds_list, 0
 		ep.name = (char*)CMD_ARGV(0).c_str();
 		ep.pObject = NULL;
 
-		if(ses->EmitSound( &ep ) == CHAN_INVALID)
+		if(g_sounds->EmitSound( &ep ) == CHAN_INVALID)
 			MsgError("Cannot play - not valid sound '%s'\n", CMD_ARGV(0).c_str());
 	}
 }
@@ -77,7 +77,7 @@ void CSoundController::StartSound(const char* newSoundName)
 		}
 
 		// sound must be aquired
-		int chan = ses->EmitSound(&m_emitParams);
+		int chan = g_sounds->EmitSound(&m_emitParams);
 
 		// can't start
 		if(chan == CHAN_INVALID)
@@ -86,14 +86,14 @@ void CSoundController::StartSound(const char* newSoundName)
 			return;
 		}
 
-		if(m_emitParams.emitterIndex < 0 || m_emitParams.emitterIndex > ses->m_emitters.numElem()-1)
+		if(m_emitParams.emitterIndex < 0 || m_emitParams.emitterIndex > g_sounds->m_emitters.numElem()-1)
 		{
 			MsgError("Can't emit sound '%s', no out of emitters\n", m_emitParams.name);
 			return;
 		}
 
 		// get emitter
-		m_emitData = ses->m_emitters[m_emitParams.emitterIndex];
+		m_emitData = g_sounds->m_emitters[m_emitParams.emitterIndex];
 
 		// set controller
 		m_emitData->pController = this;
@@ -242,7 +242,7 @@ void CSoundChannelObject::EmitSound(const char* name)
 	ep.pObject = this;
 	ep.name = (char*)name;
 
-	int channel = ses->EmitSound(&ep);
+	int channel = g_sounds->EmitSound(&ep);
 
 	if(channel == CHAN_INVALID)
 		return;
@@ -254,7 +254,7 @@ void CSoundChannelObject::EmitSoundWithParams(EmitSound_t *ep)
 {
 	ep->pObject = this;
 
-	int channel = ses->EmitSound(ep);
+	int channel = g_sounds->EmitSound(ep);
 
 	if(channel == CHAN_INVALID)
 		return;
@@ -295,6 +295,11 @@ void EmitSound_t::Init( const char* pszName, const Vector3D& pos, float volume, 
 //
 //----------------------------------------------------------------------------
 
+CSoundEmitterSystem::CSoundEmitterSystem() : m_isInit(false), m_defaultMaxDistance(100.0f), m_isPaused(false), m_viewIsAvailable(false), m_numRooms(0)
+{
+
+}
+
 void CSoundEmitterSystem::Init(float maxDistance)
 {
 	if(m_isInit)
@@ -314,8 +319,9 @@ void CSoundEmitterSystem::Init(float maxDistance)
 
 	LoadScriptSoundFile(baseScriptFilePath);
 
-	m_bViewIsAvailable = false;
-	m_nRooms = 0;
+	m_isPaused = false;
+	m_viewIsAvailable = false;
+	m_numRooms = 0;
 
 	m_isInit = true;
 }
@@ -323,6 +329,25 @@ void CSoundEmitterSystem::Init(float maxDistance)
 void CSoundEmitterSystem::Shutdown()
 {
 	StopAllSounds();
+
+	// play sounds
+	for (int i = 0; i < m_pendingStartSounds2D.numElem(); i++)
+	{
+		EmitSound_t& snd = m_pendingStartSounds2D[i];
+		delete[] snd.name;
+	}
+
+	// release
+	m_pendingStartSounds2D.clear();
+
+	for (int i = 0; i < m_pendingStartSounds.numElem(); i++)
+	{
+		EmitSound_t& snd = m_pendingStartSounds[i];
+		delete[] snd.name;
+	}
+
+	// release
+	m_pendingStartSounds.clear();
 
 	for(int i = 0; i < m_controllers.numElem(); i++)
 	{
@@ -345,18 +370,28 @@ void CSoundEmitterSystem::Shutdown()
 
 	m_emitters.clear();
 
-	for(int i = 0; i < m_scriptsoundlist.numElem(); i++)
+	for(int i = 0; i < m_allSounds.numElem(); i++)
 	{
-		for(int j = 0; j < m_scriptsoundlist[i]->pSamples.numElem(); j++)
-			soundsystem->ReleaseSample( m_scriptsoundlist[i]->pSamples[j] );
+		for(int j = 0; j < m_allSounds[i]->pSamples.numElem(); j++)
+			soundsystem->ReleaseSample( m_allSounds[i]->pSamples[j] );
 
-		delete [] m_scriptsoundlist[i]->pszName;
-		delete m_scriptsoundlist[i];
+		delete [] m_allSounds[i]->pszName;
+		delete m_allSounds[i];
 	}
 
-	m_scriptsoundlist.clear();
+	m_allSounds.clear();
 
 	m_isInit = false;
+}
+
+void CSoundEmitterSystem::SetPaused(bool paused)
+{
+	m_isPaused = paused;
+}
+
+bool CSoundEmitterSystem::IsPaused()
+{
+	return m_isPaused;
 }
 
 int CSoundEmitterSystem::GetEmitterIndexByEntityAndChannel(CSoundChannelObject* pEnt, ESoundChannelType chan)
@@ -445,9 +480,9 @@ void CSoundEmitterSystem::PrecacheSound(const char* pszName)
 
 void CSoundEmitterSystem::GetAllSoundNames(DkList<EqString>& soundNames) const
 {
-	for (int i = 0; i < m_scriptsoundlist.numElem(); i++)
+	for (int i = 0; i < m_allSounds.numElem(); i++)
 	{
-		soundNames.append(m_scriptsoundlist[i]->pszName);
+		soundNames.append(m_allSounds[i]->pszName);
 	}
 }
 
@@ -458,10 +493,10 @@ soundScriptDesc_t* CSoundEmitterSystem::FindSound(const char* soundName) const
 
 	int snameHash = StringToHash( sname.c_str(), true );
 
-	for(int i = 0; i < m_scriptsoundlist.numElem(); i++)
+	for(int i = 0; i < m_allSounds.numElem(); i++)
 	{
-		if(m_scriptsoundlist[i]->namehash == snameHash)
-			return m_scriptsoundlist[i];
+		if(m_allSounds[i]->namehash == snameHash)
+			return m_allSounds[i];
 	}
 
 	return NULL;
@@ -478,17 +513,19 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 {
 	ASSERT(emit);
 
-	// quickly set
-	emit->emitterIndex = -1;
-
-	if(emit->nFlags & EMITSOUND_FLAG_START_ON_UPDATE)
+	if((emit->nFlags & EMITSOUND_FLAG_START_ON_UPDATE) || m_isPaused)
 	{
 		EmitSound_t newEmit = (*emit);
 		newEmit.nFlags &= ~EMITSOUND_FLAG_START_ON_UPDATE;
-		m_pendingStartSounds.append( newEmit );
+		newEmit.name = xstrdup(newEmit.name);
 
+		m_pendingStartSounds.append( newEmit );
 		return CHAN_INVALID;
 	}
+
+
+	// quickly set
+	emit->emitterIndex = -1;
 
 #ifndef NO_ENGINE
 	// don't start sound if game isn't started
@@ -631,6 +668,17 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channel)
 {
 	ASSERT(emit);
 
+	if ((emit->nFlags & EMITSOUND_FLAG_START_ON_UPDATE) || m_isPaused)
+	{
+		EmitSound_t newEmit = (*emit);
+		newEmit.nFlags &= ~EMITSOUND_FLAG_START_ON_UPDATE;
+		newEmit.emitterIndex = channel;	// temporary
+		newEmit.name = xstrdup(newEmit.name);
+
+		m_pendingStartSounds2D.append(newEmit);
+		return;
+	}
+
 	// quickly set
 	emit->emitterIndex = -1;
 
@@ -702,6 +750,9 @@ bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &
 
 	Vector3D emitPos = emitter->origin;
 
+	float fBestVolume = emitter->origVolume;
+	bool volumeNeedsChange = false;
+
 #ifndef NO_ENGINE
 	if(emitter->pObject)
 	{
@@ -716,42 +767,38 @@ bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &
 			emitter->pObject = NULL;
 		}
 	}
-#endif // NO_ENGINE
 
-	emitter->pEmitter->SetPosition(emitPos);
-	emitter->pEmitter->SetVelocity(emitter->velocity);
-
-	if(m_bViewIsAvailable)
+	// Sound occlusion tested here
+	if(m_viewIsAvailable)
 	{
-		// Sound occlusion tests are here
-		float fBestVolume = emitter->origVolume;
-
-#ifndef NO_ENGINE
-
-		// Game engine occlusion stuff
+		const Vector3D& viewPos = soundsystem->GetListenerPosition();
 
 		// check occlusion flag and audible distance
 		if(emitter->emitSoundData.nFlags & EMITSOUND_FLAG_OCCLUSION)
 		{
 			internaltrace_t trace;
-			physics->InternalTraceLine(m_vViewPos, emitPos, COLLISION_GROUP_WORLD, &trace);
+			physics->InternalTraceLine(viewPos, emitPos, COLLISION_GROUP_WORLD, &trace);
 
-			if(trace.fraction < 1.0f)
+			if (trace.fraction < 1.0f)
+			{
 				fBestVolume *= 0.2f;
+				volumeNeedsChange = true;
+			}
 		}
 
+		// do room lookup
 		if(emitter->emitSoundData.nFlags & EMITSOUND_FLAG_ROOM_OCCLUSION)
 		{
 			int srooms[2];
 			int nSRooms = eqlevel->GetRoomsForPoint( emitPos, srooms );
 
-			if(m_nRooms > 0 && nSRooms > 0)
+			if(m_numRooms > 0 && nSRooms > 0)
 			{
 				if(srooms[0] != m_rooms[0]) 
 				{
 					// check the portal for connection
 					// TODO: recursive!
-					int nPortal = eqlevel->GetFirstPortalLinkedToRoom( m_rooms[0], srooms[0], m_vViewPos, 2);
+					int nPortal = eqlevel->GetFirstPortalLinkedToRoom( m_rooms[0], srooms[0], viewPos, 2);
 
 					if(nPortal == -1)
 					{
@@ -784,20 +831,24 @@ bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &
 		}
 
 		if(bForceNoInterp)
-		{
 			params.volume = fBestVolume;
-		}
 		else
-		{
 			params.volume = lerp(params.volume, fBestVolume, gpGlobals->frametime*2.0f);
-		}
-#else
-		if(emitter->pObject && !emitter->pController)
-			fBestVolume *= emitter->pObject->GetSoundVolumeScale();
 
-		params.volume = fBestVolume;
-#endif
+		volumeNeedsChange = true;
 	}
+#endif
+
+	emitter->pEmitter->SetPosition(emitPos);
+	emitter->pEmitter->SetVelocity(emitter->velocity);
+
+	if (!emitter->pController && emitter->pObject)
+	{
+		fBestVolume *= emitter->pObject->GetSoundVolumeScale();
+	}
+
+	if (volumeNeedsChange)
+		params.volume = fBestVolume;
 
 	if( !emitter->pController && (emitter->pEmitter->GetState() == SOUND_STATE_STOPPED) )
 		return false;
@@ -853,21 +904,43 @@ void CSoundEmitterSystem::Update(bool force)
 	if(!force && soundsystem->GetPauseState())
 		return;
 
-	m_vViewPos = soundsystem->GetListenerPosition();
+	const Vector3D& viewPos = soundsystem->GetListenerPosition();
 
 #ifndef NO_ENGINE
-	m_nRooms = eqlevel->GetRoomsForPoint( m_vViewPos, m_rooms );
-	m_bViewIsAvailable = m_nRooms > 0;
+	m_numRooms = eqlevel->GetRoomsForPoint(viewPos, m_rooms );
+	m_viewIsAvailable = m_numRooms > 0;
 #endif
-
-	if(m_pendingStartSounds.numElem())
+	if (!m_isPaused)
 	{
-		// play sounds
-		for(int i = 0; i < m_pendingStartSounds.numElem(); i++)
-			EmitSound( &m_pendingStartSounds[i] );
+		if (m_pendingStartSounds2D.numElem())
+		{
+			// play sounds
+			for (int i = 0; i < m_pendingStartSounds2D.numElem(); i++)
+			{
+				EmitSound_t& snd = m_pendingStartSounds2D[i];
+				Emit2DSound(&snd, snd.emitterIndex);
 
-		// release
-		m_pendingStartSounds.clear();
+				delete [] snd.name;
+			}
+
+			// release
+			m_pendingStartSounds2D.clear();
+		}
+
+		if (m_pendingStartSounds.numElem())
+		{
+			// play sounds
+			for (int i = 0; i < m_pendingStartSounds.numElem(); i++)
+			{
+				EmitSound_t& snd = m_pendingStartSounds[i];
+				EmitSound(&snd);
+
+				delete[] snd.name;
+			}
+
+			// release
+			m_pendingStartSounds.clear();
+		}
 	}
 
 	for(int i = 0; i < m_emitters.numElem(); i++)
@@ -987,6 +1060,6 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 				MsgError("There is no any wave file for script sound '%s'!\n", pSoundData->pszName);
 		}
 
-		m_scriptsoundlist.append(pSoundData);
+		m_allSounds.append(pSoundData);
 	}
 }

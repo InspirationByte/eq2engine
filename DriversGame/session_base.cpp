@@ -661,7 +661,7 @@ CCar* CGameSessionBase::GetViewCar() const
 {
 	if (g_replayData->m_state == REPL_PLAYING && !g_pause.GetBool())
 	{
-		replaycamera_t* cam = g_replayData->GetCurrentCamera();
+		replayCamera_t* cam = g_replayData->GetCurrentCamera();
 
 		if (cam)
 			return g_replayData->GetCarByReplayIndex(cam->targetIdx);

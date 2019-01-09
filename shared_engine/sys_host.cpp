@@ -499,7 +499,7 @@ void CGameHost::ShutdownSystems()
 	equi::Manager->Shutdown();
 	g_fontCache->Shutdown();
 
-	ses->Shutdown();
+	g_sounds->Shutdown();
 	soundsystem->Shutdown();
 
 	g_inputCommandBinder->Shutdown();
@@ -659,7 +659,7 @@ bool CGameHost::Frame()
 
 	PROFILE_END();
 
-	ses->Update();
+	g_sounds->Update();
 
 	// Engine frames status
 	static float gameAccTime = 0.1f;

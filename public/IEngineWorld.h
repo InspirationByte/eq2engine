@@ -187,7 +187,7 @@ public:
 	//virtual int					GetRoomVolumeByPoint
 
 	// returns first near portal between rooms (-1 if none linked)
-	virtual int						GetFirstPortalLinkedToRoom( int startRoom, int endRoom, Vector3D& orient_to_pos, int maxDepth = 2 ) = 0;
+	virtual int						GetFirstPortalLinkedToRoom( int startRoom, int endRoom, const Vector3D& orient_to_pos, int maxDepth = 2 ) = 0;
 
 	// checks portal linkage in specified depth
 	virtual bool					CheckPortalLink( int startroom, int targetroom, int maxDepth ) = 0;

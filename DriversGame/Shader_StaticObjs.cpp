@@ -88,15 +88,15 @@ BEGIN_SHADER_CLASS(BaseStatic)
 		SHADER_DECLARE_SIMPLE_DEFINITION(bUseLightmaps, "LIGHTMAP");
 
 		// compile without fog
-		SHADER_FIND_OR_COMPILE(Ambient, "BaseSingle_Ambient");
-		SHADER_FIND_OR_COMPILE(AmbientInst, "BaseSingle_Inst_Ambient");
+		SHADER_FIND_OR_COMPILE(Ambient, "Static");
+		SHADER_FIND_OR_COMPILE(AmbientInst, "Static_Inst");
 
 		// define fog parameter.
 		SHADER_DECLARE_SIMPLE_DEFINITION(m_fogenabled, "DOFOG");
 		
 		// compile with fog
-		SHADER_FIND_OR_COMPILE(Ambient_fog, "BaseSingle_Ambient");
-		SHADER_FIND_OR_COMPILE(AmbientInst_fog, "BaseSingle_Inst_Ambient");
+		SHADER_FIND_OR_COMPILE(Ambient_fog, "Static");
+		SHADER_FIND_OR_COMPILE(AmbientInst_fog, "Static_Inst");
 
 		return true;
 	}

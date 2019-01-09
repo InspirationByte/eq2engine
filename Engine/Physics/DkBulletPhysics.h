@@ -62,26 +62,26 @@ public:
 	bool										IsSupportsHardwareAcceleration();
 
 	// Generic traceLine for physics
-	void										InternalTraceLine(	Vector3D &tracestart, Vector3D &traceend,
+	void										InternalTraceLine(	const Vector3D &tracestart, const Vector3D &traceend,
 																	int groupmask,
 																	internaltrace_t* trace, 
 																	IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0
 																	);
 
-	void 										InternalTraceBox(	Vector3D &tracestart, Vector3D &traceend, 
-																	Vector3D& boxSize,int groupmask,
+	void 										InternalTraceBox(const Vector3D &tracestart, const Vector3D &traceend,
+																	const Vector3D& boxSize,int groupmask,
 																	internaltrace_t* trace, 
 																	IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0,
 																	Matrix4x4* transform = NULL
 																	);
 
-	void 										InternalTraceSphere(Vector3D &tracestart, Vector3D &traceend, 
+	void 										InternalTraceSphere(const Vector3D &tracestart, const Vector3D &traceend,
 																	float sphereRadius,int groupmask,
 																	internaltrace_t* trace,
 																	IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0
 																	);
 
-	void										InternalTraceShape(	Vector3D &tracestart, Vector3D &traceend,
+	void										InternalTraceShape(const Vector3D &tracestart, const Vector3D &traceend,
 																	int shapeId, int groupmask, 
 																	internaltrace_t* trace,
 																	IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0, 
@@ -115,10 +115,10 @@ public:
 	IPhysicsObject*								CreateObjectCustom(int numShapes, int* shapeIdxs, const char* surfaceProps, float mass); // Creates physics object
 
 	// creates physics joint
-	IPhysicsJoint*								CreateJoint(IPhysicsObject* pObjectA, IPhysicsObject* pObjectB, Matrix4x4 &transformA, Matrix4x4 &transformB, bool bDisableCollisionBetweenBodies);
+	IPhysicsJoint*								CreateJoint(IPhysicsObject* pObjectA, IPhysicsObject* pObjectB, const Matrix4x4 &transformA, const Matrix4x4 &transformB, bool bDisableCollisionBetweenBodies);
 
 	// creates physics rope
-	IPhysicsRope*								CreateRope(Vector3D &pointA, Vector3D &pointB, int numSegments);
+	IPhysicsRope*								CreateRope(const Vector3D &pointA, const Vector3D &pointB, int numSegments);
 
 	// creates primitive shape
 	int											AddPrimitiveShape(pritimiveinfo_t &info);
@@ -137,7 +137,7 @@ public:
 
 
 protected:
-	btRigidBody*								LocalCreateRigidBody(float mass, Vector3D &mass_center, const btTransform& startTransform,btCollisionShape* shape);
+	btRigidBody*								LocalCreateRigidBody(float mass, const Vector3D &mass_center, const btTransform& startTransform,btCollisionShape* shape);
 
 private:
 	btBroadphaseInterface*						m_broadphase;

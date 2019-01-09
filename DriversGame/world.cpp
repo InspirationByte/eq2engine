@@ -501,7 +501,7 @@ void CGameWorld::Init()
 	rainSound.fPitch = 1.0;
 	rainSound.fVolume = 1.0f;
 
-	m_rainSound = ses->CreateSoundController(&rainSound);
+	m_rainSound = g_sounds->CreateSoundController(&rainSound);
 
 	//----------------------------------------------------
 
@@ -821,11 +821,11 @@ void CGameWorld::Cleanup( bool unloadLevel )
 	g_pRainEmitter->Clear();
 
 	if(m_rainSound != nullptr)
-		ses->RemoveSoundController(m_rainSound);
+		g_sounds->RemoveSoundController(m_rainSound);
 
 	m_rainSound = nullptr;
 
-	ses->StopAllSounds();
+	g_sounds->StopAllSounds();
 
 	// clear transition environments
 	for(int i = 0; i < m_envTransitions.numElem(); i++)
@@ -1093,7 +1093,7 @@ void CGameWorld::UpdateWorld(float fDt)
 				thunderSnd.origin = m_view.GetOrigin();
 				thunderSnd.fRadiusMultiplier = 10.0f;
 
-				ses->EmitSound(&thunderSnd);
+				g_sounds->EmitSound(&thunderSnd);
 
 				m_info.ambientColor = ColorRGBA(m_envConfig.ambientColor, m_envConfig.brightnessModFactor);
 			}

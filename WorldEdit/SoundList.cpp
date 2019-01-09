@@ -43,8 +43,8 @@ CSoundList::CSoundList() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_SOUNDLIS
 
 void CSoundList::Reload()
 {
-	ses->Shutdown();
-	ses->Init(2000.0f);
+	g_sounds->Shutdown();
+	g_sounds->Init(2000.0f);
 
 	UpdateList();
 }
@@ -62,14 +62,14 @@ void CSoundList::UpdateList()
 	EqString search_str(m_pSearchText->GetValue().c_str().AsChar());
 
 	// fill the list
-	for(int i = 0; i < ses->m_scriptsoundlist.numElem(); i++)
+	for(int i = 0; i < g_sounds->m_allSounds.numElem(); i++)
 	{
 		if(search_str.Length() == 0)
 		{
-			m_pSndList->AppendString( ses->m_scriptsoundlist[i]->pszName );
+			m_pSndList->AppendString( g_sounds->m_allSounds[i]->pszName );
 		}
-		else if(strstr(ses->m_scriptsoundlist[i]->pszName, search_str.GetData()))
-			m_pSndList->AppendString( ses->m_scriptsoundlist[i]->pszName );
+		else if(strstr(g_sounds->m_allSounds[i]->pszName, search_str.GetData()))
+			m_pSndList->AppendString( g_sounds->m_allSounds[i]->pszName );
 	}
 }
 
@@ -89,7 +89,7 @@ void CSoundList::OnDoubleClickList(wxCommandEvent& event)
 {
 	if(m_pSndList->GetSelection() != -1)
 	{
-		ses->StopAllSounds();
+		g_sounds->StopAllSounds();
 
 		EqString str( m_pSndList->GetString(m_pSndList->GetSelection()).c_str().AsChar() );
 
@@ -98,7 +98,7 @@ void CSoundList::OnDoubleClickList(wxCommandEvent& event)
 		emit.fVolume = 1.0f;
 		emit.nFlags = (EMITSOUND_FLAG_FORCE_2D | EMITSOUND_FLAG_FORCE_CACHED);
 
-		if(ses->EmitSound( &emit ) == CHAN_INVALID)
+		if(g_sounds->EmitSound( &emit ) == CHAN_INVALID)
 		{
 			wxMessageBox(varargs("Missing wave file(s) for sound '%s', Can't play!", str.GetData()), wxT("ERROR"), wxOK | wxICON_ERROR | wxCENTRE, g_editormainframe);
 		}

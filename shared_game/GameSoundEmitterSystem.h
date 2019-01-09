@@ -276,10 +276,13 @@ class CSoundEmitterSystem
 	friend class				CSoundController;
 
 public:
-								CSoundEmitterSystem() : m_isInit(false), m_defaultMaxDistance(100.0f) {}
+	CSoundEmitterSystem();
 
 	void						Init(float maxDistance);
 	void						Shutdown();
+
+	void						SetPaused(bool paused);
+	bool						IsPaused();
 
 	void						PrecacheSound(const char* pszName);							// precaches sound
 
@@ -314,7 +317,7 @@ public:
 private:
 #endif
 
-	DkList<soundScriptDesc_t*>	m_scriptsoundlist;
+	DkList<soundScriptDesc_t*>	m_allSounds;
 
 #ifdef EDITOR
 private:
@@ -322,18 +325,22 @@ private:
 
 	DkList<EmitterData_t*>		m_emitters;
 	DkList<ISoundController*>	m_controllers;
+
 	DkList<EmitSound_t>			m_pendingStartSounds;
+	DkList<EmitSound_t>			m_pendingStartSounds2D;
 
 	bool						m_isInit;
 
-	Vector3D					m_vViewPos;
-	bool						m_bViewIsAvailable;
+	bool						m_isPaused;
+
+	bool						m_viewIsAvailable;
+
 	int							m_rooms[2];
-	int							m_nRooms;
+	int							m_numRooms;
 
 	float						m_defaultMaxDistance;
 };
 
-extern CSoundEmitterSystem* ses;
+extern CSoundEmitterSystem* g_sounds;
 
 #endif // GAMESNDEMITSYSTEM_H

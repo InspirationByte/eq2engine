@@ -46,8 +46,8 @@ public:
 	{
 		BaseClass::Precache();
 
-		ses->PrecacheSound("rain.rain");
-		ses->PrecacheSound("rain.thunder");
+		g_sounds->PrecacheSound("rain.rain");
+		g_sounds->PrecacheSound("rain.thunder");
 	}
 
 	void Spawn()
@@ -66,7 +66,7 @@ public:
 
 		rainsound.name = "rain.rain";
 
-		ses->EmitSound(&rainsound);
+		g_sounds->EmitSound(&rainsound);
 	}
 
 	void OnRemove()
@@ -135,7 +135,7 @@ public:
 
 				thunder.name = "rain.thunder";
 
-				ses->EmitSound(&thunder);
+				g_sounds->EmitSound(&thunder);
 
 				m_thunderTimes.removeIndex(i);
 				i--;

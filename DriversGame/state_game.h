@@ -70,6 +70,7 @@ public:
 protected:
 
 	bool		DoLoadingFrame();
+	void		OnLoadingDone();
 
 	bool		UpdatePauseState();
 

@@ -1141,7 +1141,7 @@ void CEGFViewFrame::ReDraw()
 	if(!materials)
 		return;
 
-	//	ses->Update();
+	//	g_sounds->Update();
 
 	if(!m_bDoRefresh)
 	{

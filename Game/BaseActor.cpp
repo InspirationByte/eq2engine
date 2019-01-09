@@ -894,7 +894,7 @@ void CBaseActor::DeathSound()
 	// attach this sound to entity
 	ep.pObject = this;
 
-	ses->EmitSound(&ep);
+	g_sounds->EmitSound(&ep);
 }
 
 
@@ -913,7 +913,7 @@ void CBaseActor::PainSound()
 
 	ep.nFlags |= EMITSOUND_FLAG_FORCE_CACHED;
 
-	ses->EmitSound(&ep);
+	g_sounds->EmitSound(&ep);
 }
 
 void CBaseActor::MakeHit(const damageInfo_t& info, bool sound)

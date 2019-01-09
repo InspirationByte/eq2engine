@@ -101,9 +101,6 @@
     <ClCompile Include="Shaders_EqEngine\BaseSkinned.cpp">
       <Filter>Source Files\Shaders_EqEngine</Filter>
     </ClCompile>
-    <ClCompile Include="Shaders\BaseSkinned.cpp">
-      <Filter>Source Files\Shaders</Filter>
-    </ClCompile>
     <ClCompile Include="EnvMapTest.cpp">
       <Filter>Source Files\Shaders</Filter>
     </ClCompile>

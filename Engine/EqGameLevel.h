@@ -206,7 +206,7 @@ public:
 	int								GetRoomsForSphere(const Vector3D &point, float radius, int* room_ids);
 
 	// returns portal between rooms (-1 if none linked)
-	int								GetFirstPortalLinkedToRoom( int startRoom, int endRoom, Vector3D& orient_to_pos, int maxDepth = 2 );
+	int								GetFirstPortalLinkedToRoom( int startRoom, int endRoom, const Vector3D& orient_to_pos, int maxDepth = 2 );
 
 	// returns center of the portal
 	Vector3D						GetPortalPosition( int nPortal );

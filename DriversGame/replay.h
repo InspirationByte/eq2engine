@@ -31,7 +31,7 @@ TODO:
 
 #define USERREPLAYS_PATH "UserReplays/"
 
-struct replaycamera_s
+struct replayCamera_s
 {
 	int				startTick;	// camera start tick
 	int8			type;		// ECameraMode
@@ -43,7 +43,7 @@ struct replaycamera_s
 	half			fov;
 };
 
-ALIGNED_TYPE(replaycamera_s,4) replaycamera_t;
+ALIGNED_TYPE(replayCamera_s,4) replayCamera_t;
 
 enum EReplayFlags
 {
@@ -79,7 +79,7 @@ enum EReplayEventType
 	REPLAY_EVENT_CAR_DEATH,
 };
 
-struct replaycontrol_s
+struct replayCarFrame_s
 {
 	int				tick;			// time since last update
 
@@ -105,9 +105,9 @@ struct replaycontrol_s
 	ubyte			reserved;
 };
 
-ALIGNED_TYPE(replaycontrol_s,4) replaycontrol_t;
+ALIGNED_TYPE(replayCarFrame_s,4) replayCarFrame_t;
 
-struct vehiclereplay_t
+struct replayCarStream_t
 {
 	FVector3D	car_initial_pos;
 	Quaternion	car_initial_rot;
@@ -128,10 +128,10 @@ struct vehiclereplay_t
 	CCar*		obj_car;
 	EqString	name;
 
-	DkList<replaycontrol_t> replayArray;
+	DkList<replayCarFrame_t> replayArray;
 };
 
-struct replayevent_t
+struct replayEvent_t
 {
 	int 		frameIndex;		// physics frame index
 	int			replayIndex;
@@ -143,11 +143,11 @@ struct replayevent_t
 	void*		eventData;
 };
 
-struct vehiclereplay_file_s
+struct replayFileCarStream_s
 {
-	vehiclereplay_file_s() {}
+	replayFileCarStream_s() {}
 
-	vehiclereplay_file_s(const vehiclereplay_t& rep)
+	replayFileCarStream_s(const replayCarStream_t& rep)
 	{
 		car_initial_pos = rep.car_initial_pos;
 		car_initial_rot = TVec4D<half>(	rep.car_initial_rot.x, 
@@ -178,13 +178,13 @@ struct vehiclereplay_file_s
 	// float	startTime;	// start time when actually car spawned
 };
 
-ALIGNED_TYPE(vehiclereplay_file_s,4) vehiclereplay_file_t;
+ALIGNED_TYPE(replayFileCarStream_s,4) replayFileCarStream_t;
 
-struct replayevent_file_s
+struct replayFileEvent_s
 {
-	replayevent_file_s() {}
+	replayFileEvent_s() {}
 
-	replayevent_file_s(const replayevent_t& evt)
+	replayFileEvent_s(const replayEvent_t& evt)
 	{
 		frameIndex = evt.frameIndex;
 		replayIndex = evt.replayIndex;
@@ -204,9 +204,9 @@ struct replayevent_file_s
 	int			eventDataSize;
 };
 
-ALIGNED_TYPE(replayevent_file_s,4) replayevent_file_t;
+ALIGNED_TYPE(replayFileEvent_s,4) replayFileEvent_t;
 
-struct replayhdr_s
+struct replayHeader_s
 {
 	int		idreplay;		// VEHICLEREPLAY_IDENT
 
@@ -217,16 +217,16 @@ struct replayhdr_s
 	char	missionscript[64];
 };
 
-ALIGNED_TYPE(replayhdr_s,4) replayhdr_t;
+ALIGNED_TYPE(replayHeader_s,4) replayHeader_t;
 
-struct replaycamerahdr_s
+struct replayCameraHeader_s
 {
 	int		version;		// CAMERAREPLAY_VERSION
 
 	int		numCameras;
 };
 
-ALIGNED_TYPE(replaycamerahdr_s,4) replaycamerahdr_t;
+ALIGNED_TYPE(replayCameraHeader_s,4) replayCameraHeader_t;
 
 enum EReplayState
 {
@@ -285,8 +285,8 @@ public:
 	void					PushSpawnOrRemoveEvent(EReplayEventType type, CGameObject* object, int eventFlags = 0);
 	void					PushEvent(EReplayEventType type, int replayId = REPLAY_NOT_TRACKED, void* eventData = NULL, int eventFlags = 0);
 
-	replaycamera_t*			GetCurrentCamera();
-	int						AddCamera(const replaycamera_t& camera);
+	replayCamera_t*			GetCurrentCamera();
+	int						AddCamera(const replayCamera_t& camera);
 	void					RemoveCamera(int frameIndex);
 
 	CCar*					GetCarByReplayIndex(int index);
@@ -295,7 +295,7 @@ public:
 	int						m_tick;
 	int						m_numFrames;
 
-	DkList<replaycamera_t>	m_cameras;
+	DkList<replayCamera_t>	m_cameras;
 
 	int						m_currentCamera;
 
@@ -304,27 +304,27 @@ protected:
 	void					ResetEvents();
 
 	void					WriteEvents( IVirtualStream* stream, int onlyEvent = -1 );
-	void					WriteVehicleAndFrames(vehiclereplay_t* rep, IVirtualStream* stream );
+	void					WriteVehicleAndFrames(replayCarStream_t* rep, IVirtualStream* stream );
 
-	void					ReadEvent( replayevent_t& evt, IVirtualStream* stream );
+	void					ReadEvent( replayEvent_t& evt, IVirtualStream* stream );
 
-	void					PlayVehicleFrame(vehiclereplay_t* rep);
+	void					PlayVehicleFrame(replayCarStream_t* rep);
 
 	// records vehicle frame
-	bool					RecordVehicleFrame(vehiclereplay_t* rep);
+	bool					RecordVehicleFrame(replayCarStream_t* rep);
 
 	void					RaiseTickEvents();
-	void					RaiseReplayEvent(const replayevent_t& evt);
+	void					RaiseReplayEvent(const replayEvent_t& evt);
 
-	void					SetupReplayCar( vehiclereplay_t* rep );
+	void					SetupReplayCar( replayCarStream_t* rep );
 	
 
 private:
 
 	DkList<int>					m_activeVehicles;
 
-	DkList<vehiclereplay_t>		m_vehicles;
-	DkList<replayevent_t>		m_events;
+	DkList<replayCarStream_t>		m_vehicles;
+	DkList<replayEvent_t>		m_events;
 	
 	int							m_currentEvent;
 
