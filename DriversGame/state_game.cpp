@@ -454,6 +454,8 @@ void CState_Game::LoadGame()
 	}
 	else
 	{
+		g_sounds->SetPaused(false);
+
 		SetNextState(g_states[GAME_STATE_TITLESCREEN]);
 		m_loadingError = true;
 	}
