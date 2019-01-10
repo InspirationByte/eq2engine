@@ -17,7 +17,7 @@
 #include "DebugInterface.h"
 #include "alsound_local.h"
 
-#define EQSOUND_STREAM_BUFFER_SIZE		(1024*32) //16 kb
+#define EQSOUND_STREAM_BUFFER_SIZE		(1024*8) // 8 kb
 
 extern size_t	eqogg_read(void *ptr, size_t size, size_t nmemb, void *datasource);
 extern int		eqogg_seek(void *datasource, ogg_int64_t offset, int whence);
@@ -36,13 +36,11 @@ DkSoundAmbient::DkSoundAmbient()
 	m_sample = NULL;
 
 	alGenSources(1, &m_alSource);
-	alGenBuffers(2, m_buffer);
 }
 
 DkSoundAmbient::~DkSoundAmbient()
 {
 	alDeleteSources(1, &m_alSource);
-	alDeleteBuffers(2, m_buffer);
 }
 
 void DkSoundAmbient::Play()
@@ -50,25 +48,31 @@ void DkSoundAmbient::Play()
 	if(!m_sample)
 		return;
 
-	m_sample->WaitForLoad();
+	// if it was currently playing
+	if (GetState() != SOUND_STATE_PAUSED)
+	{
+		ResetStream();
+		alSourceRewind(m_alSource);
+	}
+	else
+		m_sample->WaitForLoad();
+
+	bool loopEnabled = (m_sample->m_flags & SAMPLE_FLAG_LOOPING) && !(m_sample->m_flags & SAMPLE_FLAG_STREAMED);
 
 	alSourcei(m_alSource, AL_SOURCE_RELATIVE, AL_TRUE);
-
-	alSourcei(m_alSource, AL_LOOPING, (m_sample->m_flags & SAMPLE_FLAG_LOOPING) && !(m_sample->m_flags & SAMPLE_FLAG_STREAMED));
+	alSourcei(m_alSource, AL_LOOPING, loopEnabled);
 
 	alSourcef(m_alSource, AL_GAIN, m_volume);
 	alSourcef(m_alSource, AL_PITCH, m_pitch);
 
-	if(GetState() != SOUND_STATE_PAUSED)
-		alSourceRewind(m_alSource);
-
-	//Play
+	// option for streaming
 	if( m_sample->m_flags & SAMPLE_FLAG_STREAMED )
 	{
 		EqString soundPath = (_Es(SOUND_DEFAULT_PATH) +  m_sample->m_szName).c_str();
 
 		if(GetState() != SOUND_STATE_PAUSED)
 		{
+			// create local stream buffer
 			OpenStreamFile( soundPath.c_str() );
 			StartStreaming();
 		}
@@ -77,6 +81,7 @@ void DkSoundAmbient::Play()
 	}
 	else
 	{
+		// use buffer from sample
 		alSourcei(m_alSource, AL_BUFFER, m_sample->m_alBuffer);
 		alSourcePlay(m_alSource);
 	}
@@ -86,6 +91,7 @@ void DkSoundAmbient::Stop()
 {
 	alSourceStop(m_alSource);
 	alSourceRewind(m_alSource);
+
 	alSourcei(m_alSource, AL_BUFFER, AL_NONE);
 
 	StopStreaming();
@@ -116,9 +122,6 @@ void DkSoundAmbient::SetPitch(float val)
 void DkSoundAmbient::SetSample(ISoundSample* sample)
 {
 	Stop();
-
-#pragma todo("workaround for disabled RTTI")
-
 	m_sample = (DkSoundSampleLocal*)(sample);
 }
 
@@ -217,10 +220,10 @@ void DkSoundAmbient::UpdateStreaming()
 	if(m_ready && !m_playing)
 	{
 		// prepare buffers for streaming and play
-		UploadStream(m_buffer[0]);
-		UploadStream(m_buffer[1]);
+		for(int i = 0; i < AMB_STREAM_BUFFERS; i++)
+			UploadStream(m_buffers[i]);
 
-		alSourceQueueBuffers(m_alSource, 2, m_buffer);
+		alSourceQueueBuffers(m_alSource, AMB_STREAM_BUFFERS, m_buffers);
 		alSourcePlay(m_alSource);
 
 		m_playing = true;
@@ -230,7 +233,6 @@ void DkSoundAmbient::UpdateStreaming()
 		return;
 
 	int	processedBuffers;
-
     alGetSourcei(m_alSource, AL_BUFFERS_PROCESSED, &processedBuffers);
 
 	bool hasData = true;
@@ -250,21 +252,11 @@ void DkSoundAmbient::UpdateStreaming()
     }
 
 
-	//Make sure music isn't stopped
 	ALenum state;
 	alGetSourcei(m_alSource, AL_SOURCE_STATE, &state);
 
 	if(state == AL_STOPPED)
-	{
-		//Make sure music is looping
-		if(!hasData && (m_sample->m_flags & SAMPLE_FLAG_LOOPING))
-		{
-			ResetStream();
-		}
-
 		alSourcePlay(m_alSource);
-	}
-
 }
 
 void DkSoundAmbient::ResetStream()
@@ -275,13 +267,15 @@ void DkSoundAmbient::ResetStream()
 	m_playing = false;
 	m_ready = true;
 
-	ov_time_seek(&m_oggStream, 0.0);
+	ov_raw_seek(&m_oggStream, 0);
 }
 
 void DkSoundAmbient::StartStreaming()
 {
 	if(!m_loaded)
 		return;
+
+	alGenBuffers(AMB_STREAM_BUFFERS, m_buffers);
 
 	m_ready = true;
 }
@@ -301,30 +295,41 @@ void DkSoundAmbient::StopStreaming()
 
 	m_oggFile = NULL;
 	m_loaded = false;
+
+	alDeleteBuffers(AMB_STREAM_BUFFERS, m_buffers);
 }
 
 bool DkSoundAmbient::UploadStream(ALuint buffer)
 {
-	static char pcm[EQSOUND_STREAM_BUFFER_SIZE];
+	static char pcmBuffer[EQSOUND_STREAM_BUFFER_SIZE];
 
-    int  size = 0;
-    int  section;
-    int  result;
+	char* destBuf = pcmBuffer;
 
-    while(size < EQSOUND_STREAM_BUFFER_SIZE)
+	int section;
+
+    while((destBuf-pcmBuffer) < EQSOUND_STREAM_BUFFER_SIZE)
     {
-        result = ov_read(&m_oggStream, pcm + size, EQSOUND_STREAM_BUFFER_SIZE - size, 0, 2, 1, &section);
+		int readBytes = ov_read(&m_oggStream, destBuf, EQSOUND_STREAM_BUFFER_SIZE - (destBuf-pcmBuffer), 0, 2, 1, &section);
 
-        if(result > 0)
-            size += result;
+		if (readBytes > 0)
+		{
+			destBuf += readBytes;
+		}
 		else
-			break;
+		{
+			// we have to seek again to starting position
+			if (m_sample->m_flags & SAMPLE_FLAG_LOOPING)
+				ov_time_seek(&m_oggStream, 0.0);
+			else
+				break;
+		}
     }
 
-    if(size == 0)
+    if((destBuf - pcmBuffer) == 0)
         return false;
 
-    alBufferData(buffer, m_format, pcm, size, m_vorbisInfo->rate);
+	// upload to buffer
+    alBufferData(buffer, m_format, pcmBuffer, (destBuf - pcmBuffer), m_vorbisInfo->rate);
 
     return true;
 }
@@ -332,13 +337,11 @@ bool DkSoundAmbient::UploadStream(ALuint buffer)
 void DkSoundAmbient::EmptyStreamQueue()
 {
 	int queued = 0;
-
     alGetSourcei(m_alSource, AL_BUFFERS_QUEUED, &queued);
 
     while(queued--)
     {
         ALuint buffer;
-
         alSourceUnqueueBuffers(m_alSource, 1, &buffer);
     }
 }

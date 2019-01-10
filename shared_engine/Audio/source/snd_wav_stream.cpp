@@ -27,6 +27,7 @@ void CSoundSource_WaveStream::Unload()
 {
 	m_reader->ChunkClose();
 	delete m_reader;
+	m_numSamples = 0;
 }
 
 void CSoundSource_WaveStream::ParseData(CRIFF_Parser &chunk)

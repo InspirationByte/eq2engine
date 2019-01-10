@@ -2,15 +2,15 @@
 // Copyright © Inspiration Byte
 // 2009-2017
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Ogg Vorbis source stream
+// Description: Ogg Vorbis source cache
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SND_OGG_STREAM_H
-#define SND_OGG_STREAM_H
+#ifndef SND_OGG_CACHE_H
+#define SND_OGG_CACHE_H
 
-#include "snd_ogg_cache.h"
+#include "snd_ogg_source.h"
 
-class CSoundSource_OggStream : public CSoundSource_OggCache
+class CSoundSource_OggCache : public CSoundSource_Ogg
 {
 public:
 	virtual int     GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping);
@@ -18,18 +18,14 @@ public:
 	virtual bool	Load(const char* filename);
 	virtual void	Unload();
 
-	void			Rewind();
+	bool			IsStreaming() { return false; }
 
 protected:
-	void			ParseData(OggVorbis_File* file);
+	virtual void	ParseData(OggVorbis_File* file);
 
-	int				ReadData(ubyte *pOutput, int nStart, int nBytes);
-
-	IFile*			m_oggFile;
-	OggVorbis_File	m_oggStream;
-
-	int				m_dataSize;     // in bytes
-	bool			m_eof;
+	ubyte*			m_dataCache;   // data chunk
+	int				m_cacheSize;    // in bytes
 };
 
-#endif // SND_OGG_STREAM_H
+
+#endif // SND_OGG_CACHE_H

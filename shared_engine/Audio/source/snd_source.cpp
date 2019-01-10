@@ -62,7 +62,7 @@ ISoundSource* ISoundSource::CreateSound( const char* szFilename )
 	else if ( pSource )
 		delete pSource;
 
-	return NULL;
+	return nullptr;
 }
 
 void ISoundSource::DestroySound(ISoundSource *pSound)

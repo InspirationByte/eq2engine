@@ -8,7 +8,7 @@
 #ifndef SND_SOURCE_H
 #define SND_SOURCE_H
 
-#include "soundinterface.h"
+#include "dktypes.h"
 
 typedef struct soundFormat_s
 {
@@ -32,8 +32,7 @@ public:
 
 	virtual float           GetLoopPosition(float flPosition) = 0;
 
-	// function to rewind stream
-	virtual void			Rewind() {}
+	virtual bool			IsStreaming() = 0;
 
 private:
 	virtual bool			Load(const char *szFilename) = 0;

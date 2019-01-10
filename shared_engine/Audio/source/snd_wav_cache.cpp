@@ -5,7 +5,7 @@
 // Description: Cached WAVe data
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "snd_dma.h"
+
 #include "snd_wav_cache.h"
 
 #include "DebugInterface.h"
@@ -31,6 +31,7 @@ void CSoundSource_WaveCache::Unload()
 	PPFree(m_dataCache);
 	m_dataCache = NULL;
 	m_cacheSize = 0;
+	m_numSamples = 0;
 }
 
 void CSoundSource_WaveCache::ParseData(CRIFF_Parser &chunk)
@@ -85,6 +86,7 @@ int CSoundSource_WaveCache::GetSamples(ubyte *pOutput, int nSamples, int nOffset
 	nRemaining -= nBytes;
 	nCompleted += nBytes;
 
+	// if we still have remaining data to fill stream for loop, but stream is at EOF, read it again
 	while ( nRemaining && bLooping )
 	{
 		nBytes = nRemaining;

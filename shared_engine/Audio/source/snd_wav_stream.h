@@ -15,6 +15,8 @@ public:
 	bool			Load(const char *szFilename);
 	void			Unload();
 
+	bool			IsStreaming() { return true; }
+
 private:
 	virtual void    ParseData(CRIFF_Parser &chunk);
 

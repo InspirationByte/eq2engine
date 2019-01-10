@@ -9,9 +9,9 @@
 #define SND_WAV_SOURCE_H
 
 #include "snd_source.h"
-#include "utils/eqstring.h"
 
-#include "riff.h"
+#include "utils/eqstring.h"
+#include "utils/riff.h"
 
 //---------------------------------------------------------------------
 

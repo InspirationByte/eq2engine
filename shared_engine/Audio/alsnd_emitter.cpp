@@ -106,8 +106,10 @@ bool DkSoundEmitterLocal::DropChannel()
 	sndChannel_t *chnl = pSoundSystem->m_pChannels[m_nChannel];
 
 	// stop the sound
-	alSourceRewind(chnl->alSource);
 	alSourceStop(chnl->alSource);
+
+	alSourceRewind(chnl->alSource);
+
 	alSourcei(chnl->alSource, AL_BUFFER, AL_NONE);
 
 	chnl->alState = AL_STOPPED;
@@ -154,6 +156,8 @@ void DkSoundEmitterLocal::Play()
 
 		m_sample->WaitForLoad();
 
+		alSourceRewind(chnl->alSource);
+
 		alSourcei(chnl->alSource, AL_LOOPING, (m_sample->m_flags & SAMPLE_FLAG_LOOPING) > 0 ? AL_TRUE : AL_FALSE );
 
 		alSourcefv(chnl->alSource,AL_POSITION, vPosition);
@@ -167,7 +171,6 @@ void DkSoundEmitterLocal::Play()
 		alSourcef(chnl->alSource,AL_PITCH, m_params.pitch);
 		alSourcefv(chnl->alSource,AL_POSITION, vPosition);
 
-		alSourceRewind(chnl->alSource);
 		alSourcePlay(chnl->alSource);
 
 		chnl->alState = AL_PLAYING;

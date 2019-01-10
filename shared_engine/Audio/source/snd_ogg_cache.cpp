@@ -48,8 +48,9 @@ bool CSoundSource_OggCache::Load(const char* filename)
 void CSoundSource_OggCache::Unload()
 {
 	PPFree(m_dataCache);
-	m_dataCache = NULL;
+	m_dataCache = nullptr;
 	m_cacheSize = 0;
+	m_numSamples = 0;
 }
 
 void CSoundSource_OggCache::ParseData(OggVorbis_File* file)

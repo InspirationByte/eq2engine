@@ -6,7 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "snd_dma.h"
-#include "snd_source.h"
+
+#include "Audio/source/snd_source.h"
 
 #include "ConVar.h"
 #include "DebugInterface.h"

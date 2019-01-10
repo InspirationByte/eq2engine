@@ -7,7 +7,8 @@
 
 #include "snd_channel.h"
 #include "snd_dma.h"
-#include "snd_source.h"
+
+#include "Audio/source/snd_source.h"
 
 #include "DebugInterface.h"
 
@@ -101,8 +102,8 @@ bool CSoundChannel::SetupSource(ISoundSource* source)
 		}
 	}
 
-	if(m_source)
-		m_source->Rewind(); // Necessary for Ogg streams
+	//if(m_source)
+	//	m_source->Rewind(); // Necessary for Ogg streams
 
 	return true;
 }

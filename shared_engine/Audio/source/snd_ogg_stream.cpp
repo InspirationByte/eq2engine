@@ -15,8 +15,6 @@ bool CSoundSource_OggStream::Load(const char* filename)
 	if(!m_oggFile)
 		return false;
 
-	m_eof = false;
-
 	ov_callbacks cb;
 
 	cb.read_func = eqVorbisFile::fread;
@@ -29,7 +27,8 @@ bool CSoundSource_OggStream::Load(const char* filename)
 	if(ovResult < 0)
 	{
 		g_fileSystem->Close(m_oggFile);
-		m_oggFile = NULL;
+		m_oggFile = nullptr;
+
 		MsgError("Failed to load sound '%s', because it is not a valid Ogg file (%d)\n", filename, ovResult);
 		return false;
 	}
@@ -48,14 +47,10 @@ void CSoundSource_OggStream::Unload()
 	{
 		ov_clear( &m_oggStream );
 		g_fileSystem->Close(m_oggFile);
-		m_oggFile = NULL;
 	}
-}
 
-void CSoundSource_OggStream::Rewind()
-{
-	ov_time_seek( &m_oggStream, 0.0f );
-	m_eof = false;
+	m_oggFile = nullptr;
+	m_numSamples = 0;
 }
 
 void CSoundSource_OggStream::ParseData(OggVorbis_File* file)
@@ -80,15 +75,21 @@ int CSoundSource_OggStream::GetSamples(ubyte* pOutput, int nSamples, int nOffset
 	if ( nBytes + nStart > m_dataSize )
 		nBytes = m_dataSize - nStart;
 
-	if(bLooping && m_eof)
-		Rewind();
+	if (nOffset > m_numSamples)
+		nOffset -= m_numSamples;
 
-	ReadData( pOutput, nStart, nBytes );
+	ReadData( pOutput, nOffset, nBytes );
 	nRemaining -= nBytes;
 	
+	// if we still have remaining data to fill stream for loop, but stream is at EOF, read it again
 	if ( nRemaining && bLooping )
 	{
-		ReadData( pOutput+nBytes, 0, nRemaining );
+		nOffset += nSamples;
+
+		if (nOffset > m_numSamples)
+			nOffset -= m_numSamples;
+
+		ReadData( pOutput+nBytes, nOffset, nRemaining );
 
 		return (nBytes + nRemaining) / nSampleSize;
 	}
@@ -98,6 +99,9 @@ int CSoundSource_OggStream::GetSamples(ubyte* pOutput, int nSamples, int nOffset
 
 int CSoundSource_OggStream::ReadData(ubyte* out, int nStart, int nBytes)
 {
+	if(nStart >= 0)
+		ov_pcm_seek(&m_oggStream, nStart);
+
 	int  samplePos = 0;
 	while(samplePos < nBytes)
 	{
@@ -105,10 +109,7 @@ int CSoundSource_OggStream::ReadData(ubyte* out, int nStart, int nBytes)
 		int readBytes = ov_read(&m_oggStream, dest, nBytes - samplePos, 0, 2, 1, NULL);
 
 		if (readBytes <= 0)
-		{
-			m_eof = true;
 			break;
-		}
 
 		samplePos += readBytes;
 	}

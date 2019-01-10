@@ -13,6 +13,8 @@
 #include "ISoundSystem.h"
 #include "IFileSystem.h"
 
+#define AMB_STREAM_BUFFERS 4
+
 class DkSoundAmbient : public ISoundPlayable
 {
 public:
@@ -58,7 +60,7 @@ protected:
 
 	ALenum				m_format;
 	ALuint				m_alSource;
-	ALuint				m_buffer[2];
+	ALuint				m_buffers[AMB_STREAM_BUFFERS];
 	
 	bool				m_playing : 1;
 	bool				m_loaded : 1;

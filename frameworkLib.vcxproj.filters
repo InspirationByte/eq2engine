@@ -147,6 +147,9 @@
     <ClInclude Include="public\utils\strong_typedef.h">
       <Filter>Source Files\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="public\utils\riff.h">
+      <Filter>Source Files\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="public\Utils\Tokenizer.cpp">
@@ -216,6 +219,9 @@
       <Filter>Source Files\Imaging</Filter>
     </ClCompile>
     <ClCompile Include="public\utils\KeyValues.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="public\utils\riff.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
   </ItemGroup>
