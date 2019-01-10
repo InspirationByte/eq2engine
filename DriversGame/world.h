@@ -133,6 +133,22 @@ struct lensFlareTable_t
 	ColorRGB	color;
 };
 
+struct WorldGlobals_t
+{
+	IVertexFormat*			vehicleVertexFormat;	// FIXME: remove this
+	IVertexFormat*			objectInstFormat;
+	IVertexBuffer*			objectInstBuffer;
+
+	TexAtlasEntry_t*		trans_grasspart;
+	TexAtlasEntry_t*		trans_smoke2;
+	TexAtlasEntry_t*		trans_raindrops;
+	TexAtlasEntry_t*		trans_fleck;
+
+	TexAtlasEntry_t*		veh_skidmark_asphalt;
+	TexAtlasEntry_t*		veh_raintrail;
+	TexAtlasEntry_t*		veh_shadow;
+};
+
 #define LENSFLARE_TABLE_SIZE 12
 
 class CGameWorld : public IMaterialRenderParamCallbacks, public CBaseNetworkedObject
@@ -240,10 +256,6 @@ public:
 
 	float							m_envMapRegenTime;
 
-	IVertexFormat*					m_vehicleVertexFormat;	// FIXME: remove this
-	IVertexFormat*					m_objectInstFormat;
-	IVertexBuffer*					m_objectInstBuffer;
-
 	CNetworkVar(float,				m_globalTrafficLightTime);
 	CNetworkVar(int,				m_globalTrafficLightDirection);
 
@@ -332,6 +344,8 @@ public:
 	CShadowRenderer					m_shadowRenderer;
 #endif // EDITOR
 };
+
+extern WorldGlobals_t				g_worldGlobals;
 
 extern CPredictableRandomGenerator	g_replayRandom;
 

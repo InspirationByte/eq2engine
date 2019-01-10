@@ -23,24 +23,6 @@ enum EPursuerAIType
 	PURSUER_TYPE_GANG,			// he looks only for your car
 };
 
-// There are some traffic infraction types that cop can recognize
-enum EInfractionType
-{
-	INFRACTION_NONE = 0,
-
-	INFRACTION_HAS_FELONY,		// this car has a felony
-
-	INFRACTION_MINOR,			// minor infraction ratio
-
-	INFRACTION_SPEEDING,			// speed over 65 mph
-	INFRACTION_RED_LIGHT,			// he crossed red light
-	INFRACTION_WRONG_LANE,			// he drives opposite lane
-	INFRACTION_HIT_MINOR,			// hit the debris
-	INFRACTION_HIT,					// hit the object or world
-	INFRACTION_HIT_VEHICLE,			// hit the vehicle
-	INFRACTION_HIT_SQUAD_VEHICLE,	// hit a squad vehicle
-};
-
 const float AI_COPVIEW_FAR					= 60.0f;
 const float AI_COPVIEW_FAR_WANTED			= 100.0f;
 const float AI_COPVIEW_FAR_HASSTRAIGHTPATH	= 40.0f;
@@ -83,7 +65,7 @@ protected:
 	EInfractionType		CheckTrafficInfraction( CCar* car, bool checkFelony = true, bool checkSpeeding = true );
 
 	bool				Speak( const char* soundName, bool force = false );
-	void				TrySayTaunt();
+	void				DoPoliceLoudhailer();
 
 	void				SpeakTargetDirection(const char* startSoundName, bool force = false);
 

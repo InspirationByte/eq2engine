@@ -13,6 +13,8 @@
 #include "EqParticles.h"
 #include "eqPhysics/eqPhysics_HingeJoint.h"
 
+#include "GameDefs.h"
+
 const float _oneBy1024 = 1.0f / 1023.0f;
 
 #define MPS_TO_KPH		(3.6f)
@@ -660,14 +662,6 @@ protected:
 	EqLua::LuaTableFuncRef	m_luaOnCollision;
 	EqLua::LuaTableFuncRef	m_luaOnDeath;
 #endif // NO_LUA
-
-	TexAtlasEntry_t*		m_trans_grasspart;
-	TexAtlasEntry_t*		m_trans_smoke2;
-	TexAtlasEntry_t*		m_trans_raindrops;
-	TexAtlasEntry_t*		m_trans_fleck;
-	TexAtlasEntry_t*		m_veh_skidmark_asphalt;
-	TexAtlasEntry_t*		m_veh_raintrail;
-	TexAtlasEntry_t*		m_veh_shadow;
 };
 
 #ifndef NO_LUA

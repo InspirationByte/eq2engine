@@ -45,6 +45,9 @@ const float AI_COP_COLLISION_FELONY_REDLIGHT = 0.005f;
 const float AI_COP_COLLISION_CHECKTIME		= 0.01f;
 
 const float AI_COP_TIME_TO_LOST_TARGET		= 30.0f;
+const float AI_COP_TIME_TO_LOST_TARGET_FAR	= 10.0f;
+
+const float AI_COP_LOST_TARGET_FARDIST		= 160.0f;
 
 const float AI_ALTER_SIREN_MIN_SPEED		= 65.0f;
 const float AI_ALTER_SIREN_CHANGETIME		= 2.0f;
@@ -162,17 +165,17 @@ bool CAIPursuerCar::Speak(const char* soundName, bool force)
 	return g_pAIManager->MakeCopSpeech(soundName, force);
 }
 
-void CAIPursuerCar::TrySayTaunt()
+void CAIPursuerCar::DoPoliceLoudhailer()
 {
 	if (m_type == PURSUER_TYPE_GANG)
 		return;
 
-	if (g_pAIManager->IsCopCanSayTaunt())
+	if (g_pAIManager->IsCopsCanUseLoudhailer())
 	{
 		m_loudhailer->Stop();
 		m_loudhailer->Play();
 
-		g_pAIManager->GotCopTaunt();
+		g_pAIManager->CopLoudhailerTold();
 	}
 }
 
@@ -341,7 +344,7 @@ void CAIPursuerCar::EndPursuit(bool death)
 	}
 	else
 		AI_SetState( &CAIPursuerCar::DeadState );
-
+	 
 	if (m_targInfo.target != NULL)
 	{
 		// validate and remove
@@ -629,7 +632,11 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	{
 		m_targInfo.notSeeingTime += fDt;
 
-		if (m_targInfo.notSeeingTime  > AI_COP_TIME_TO_LOST_TARGET)
+		float distToTarget = length(m_targInfo.target->GetOrigin() - GetOrigin());
+
+		float timeToLostTarget = (distToTarget > AI_COP_LOST_TARGET_FARDIST) ? AI_COP_TIME_TO_LOST_TARGET_FAR : AI_COP_TIME_TO_LOST_TARGET;
+
+		if (m_targInfo.notSeeingTime  > timeToLostTarget)
 		{
 			EndPursuit(false);
 			return 0;
@@ -698,7 +705,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 				m_loudhailer->SetOrigin(GetOrigin());
 				m_loudhailer->SetVelocity(GetVelocity());
 
-				TrySayTaunt();
+				DoPoliceLoudhailer();
 			}
 
 			if(targetSpeed > 50.0f)

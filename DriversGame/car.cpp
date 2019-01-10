@@ -531,7 +531,7 @@ void CCarWheel::SetModelPtr(IEqModel* modelPtr)
 		CGameObjectInstancer* instancer = new CGameObjectInstancer();
 
 		// init with this preallocated buffer and format
-		instancer->Init( g_pGameWorld->m_objectInstFormat, g_pGameWorld->m_objectInstBuffer );
+		instancer->Init(g_worldGlobals.objectInstFormat, g_worldGlobals.objectInstBuffer );
 
 		m_pModel->SetInstancer( instancer );
 	}
@@ -866,17 +866,6 @@ void CCar::Spawn()
 		g_replayData->PushSpawnOrRemoveEvent( REPLAY_EVENT_SPAWN, this, (m_state == GO_STATE_REMOVE_BY_SCRIPT) ? REPLAY_FLAG_SCRIPT_CALL : 0  );
 #endif // EDITOR
 
-	m_trans_grasspart = g_translParticles->FindEntry("grasspart");
-	m_trans_smoke2 = g_translParticles->FindEntry("smoke2");
-	m_trans_raindrops = g_translParticles->FindEntry("rain_ripple");
-
-	m_trans_fleck = g_translParticles->FindEntry("fleck");
-	m_veh_skidmark_asphalt = g_vehicleEffects->FindEntry("skidmark_asphalt");
-	m_veh_raintrail = g_vehicleEffects->FindEntry("rain_trail");
-
-	// TODO: own car shadow texture
-	m_veh_shadow = g_vehicleShadows->FindEntry("carshad");
-
 	UpdateLightsState();
 
 	// init driver model and instancer for it
@@ -888,7 +877,7 @@ void CCar::Spawn()
 		CGameObjectInstancer* instancer = new CGameObjectInstancer();
 
 		// init with this preallocated buffer and format
-		instancer->Init( g_pGameWorld->m_objectInstFormat, g_pGameWorld->m_objectInstBuffer );
+		instancer->Init(g_worldGlobals.objectInstFormat, g_worldGlobals.objectInstBuffer );
 
 		m_driverModel.GetModel()->SetInstancer( instancer );
 	}
@@ -1986,7 +1975,7 @@ void CCar::EmitCollisionParticles(const Vector3D& position, const Vector3D& velo
 				Vector3D fleckPos = Vector3D(position) + Vector3D(RandomFloat(-0.05,0.05),RandomFloat(-0.05,0.05),RandomFloat(-0.05,0.05));
 
 				CPFXAtlasGroup* feffgroup = g_translParticles;
-				TexAtlasEntry_t* fentry = m_trans_fleck;
+				TexAtlasEntry_t* fentry = g_worldGlobals.trans_fleck;
 
 				Vector3D norm(normal);
 
@@ -2578,7 +2567,7 @@ void CCar::Simulate( float fDt )
 			CSmokeEffect* pSmoke = new CSmokeEffect(smokePos, Vector3D(0,1, 1),
 													RandomFloat(0.1, 0.3), RandomFloat(1.0, 1.8),
 													RandomFloat(1.2f),
-													g_translParticles, m_trans_smoke2,
+													g_translParticles, g_worldGlobals.trans_smoke2,
 													RandomFloat(25, 85), Vector3D(1,RandomFloat(-0.7, 0.2) , 1),
 													smokeCol, smokeCol, alphaModifier);
 			effectrenderer->RegisterEffectForRender(pSmoke);
@@ -2614,7 +2603,7 @@ void CCar::Simulate( float fDt )
 			CSmokeEffect* pSmoke = new CSmokeEffect(smokePos, -smokeDir,
 													RandomFloat(0.08, 0.12), RandomFloat(0.3, 0.4),
 													RandomFloat(alphaModifier*alphaScale),
-													g_translParticles, m_trans_smoke2,
+													g_translParticles, g_worldGlobals.trans_smoke2,
 													RandomFloat(25,45), Vector3D(0.1,RandomFloat(0.0, 0.2), 0.05),
 													smokeCol, smokeCol, alphaModifier*alphaScale);
 			effectrenderer->RegisterEffectForRender(pSmoke);
@@ -3146,7 +3135,7 @@ void CCar::DrawWheelEffects(int wheelIdx)
 		{
 			AddWheelWaterTrail(	wheel, wheelConf,
 								skidmarkPos,
-								m_veh_raintrail->rect,
+								g_worldGlobals.veh_raintrail->rect,
 								ambientAndSun,
 								skidPitchVel,
 								wheelDir,
@@ -3160,7 +3149,7 @@ void CCar::DrawWheelEffects(int wheelIdx)
 
 			AddWheelWaterTrail(	wheel, wheelConf,
 								skidmarkPos,
-								m_veh_raintrail->rect,
+								g_worldGlobals.veh_raintrail->rect,
 								ambientAndSun,
 								tractionSlide*0.5f,
 								wheelTractionDir,
@@ -3172,7 +3161,7 @@ void CCar::DrawWheelEffects(int wheelIdx)
 void CCar::DrawSkidmarkTrails(int wheelIdx)
 {
 	CCarWheel& wheel = m_wheels[wheelIdx];
-	TexAtlasEntry_t* skidmarkEntry = m_veh_skidmark_asphalt;
+	TexAtlasEntry_t* skidmarkEntry = g_worldGlobals.veh_skidmark_asphalt;
 
 	//
 	// add skidmark particle strips to the renderer
@@ -3305,7 +3294,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 				CSmokeEffect* pSmoke = new CSmokeEffect(wheel.m_collisionInfo.position, particleVel + rightDir,
 						RandomFloat(0.1f, 0.2f), RandomFloat(0.9f, 1.1f),
 						RandomFloat(0.1f)*efficency,
-						g_translParticles, m_trans_raindrops,
+						g_translParticles, g_worldGlobals.trans_raindrops,
 						RandomFloat(5, 35), Vector3D(0,RandomFloat(-0.9, -8.2) , 0),
 						rippleColor, rippleColor, g_pGameWorld->m_envWetness);
 
@@ -3314,7 +3303,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 				pSmoke = new CSmokeEffect(wheel.m_collisionInfo.position, particleVel - rightDir,
 						RandomFloat(0.1f, 0.2f), RandomFloat(0.9f, 1.1f),
 						RandomFloat(0.1f),
-						g_translParticles, m_trans_raindrops,
+						g_translParticles, g_worldGlobals.trans_raindrops,
 						RandomFloat(5, 35), Vector3D(0,RandomFloat(-0.9, -8.2) , 0),
 						rippleColor, rippleColor, g_pGameWorld->m_envWetness);
 
@@ -3334,7 +3323,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 				CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, wheel.m_velocityVec*0.25f+Vector3D(0,1,1),
 							RandomFloat(0.1, 0.3)*efficency, RandomFloat(1.0, 1.8)*timeScale+skidFactor*2.0f,
 							RandomFloat(1.2f)*timeScale+skidFactor,
-							g_translParticles, m_trans_smoke2,
+							g_translParticles, g_worldGlobals.trans_smoke2,
 							RandomFloat(25, 85), Vector3D(1,RandomFloat(-0.7, 0.2) , 1),
 							smokeCol, smokeCol, max(skidFactor, 0.45f));
 
@@ -3359,7 +3348,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 				CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, vel,
 														RandomFloat(0.11, 0.14), RandomFloat(1.1, 1.5),
 														RandomFloat(0.15f),
-														g_translParticles, m_trans_smoke2,
+														g_translParticles, g_worldGlobals.trans_smoke2,
 														RandomFloat(5, 35), Vector3D(1,RandomFloat(-3.9, -5.2) , 1),
 														ColorRGB(0.95f,0.757f,0.611f), ColorRGB(0.95f,0.757f,0.611f));
 
@@ -3382,7 +3371,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 				CSmokeEffect* pSmoke = new CSmokeEffect(smoke_pos, vel,
 														RandomFloat(0.11, 0.14), RandomFloat(1.5, 1.7),
 														RandomFloat(0.35f),
-														g_translParticles, m_trans_smoke2,
+														g_translParticles, g_worldGlobals.trans_smoke2,
 														RandomFloat(25, 85), Vector3D(1,RandomFloat(-3.9, -5.2) , 1),
 														ColorRGB(0.1f,0.08f,0.00f), ColorRGB(0.1f,0.08f,0.00f));
 
@@ -3410,7 +3399,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 														RandomFloat(0.01f, 0.02f), RandomFloat(0.01f, 0.02f), // sizes
 														RandomFloat(0.35f, 0.45f),// lifetime
 														8.0f,
-														g_translParticles, m_trans_grasspart, // group - texture
+														g_translParticles, g_worldGlobals.trans_grasspart, // group - texture
 														ColorRGB(1.0f,0.8f,0.0f), 1.0f);
 					effectrenderer->RegisterEffectForRender(pSpark);
 				}
@@ -3953,7 +3942,7 @@ void CCar::DrawBody( int nRenderFlags )
 			g_pShaderAPI->SetShaderConstantArrayVector4D("CarColor", colors, 2);
 
 			// setup our brand new vertex format
-			g_pShaderAPI->SetVertexFormat( g_pGameWorld->m_vehicleVertexFormat );
+			g_pShaderAPI->SetVertexFormat(g_worldGlobals.vehicleVertexFormat );
 
 			// bind
 			m_pModel->SetupVBOStream( 0 );
@@ -3975,7 +3964,7 @@ void CCar::DrawShadow(float distance)
 {
 	Vector3D rightVec = GetRightVector();
 	Vector3D forwardVec = GetForwardVector();
-	TexAtlasEntry_t* carShadow = m_veh_shadow;
+	TexAtlasEntry_t* carShadow = g_worldGlobals.veh_shadow;
 
 	Vector2D shadowSize(m_conf->physics.body_size.x+0.35f, m_conf->physics.body_size.z+0.25f);
 

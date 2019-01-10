@@ -12,7 +12,7 @@
 #include "game_multiplayer.h"
 #include "DrvSynStates.h"
 #include "DrvSynHUD.h"
-#include "sys_host.h"
+
 #include "state_game.h"
 #include "utils/singleton.h"
 
@@ -144,15 +144,7 @@ bool Lua_LoadMissionScript(const char* name)
 	return g_State_Game->LoadMissionScript(name);
 }
 
-int L_SetCurrentStateType(lua_State* vm) { OOLUA_C_FUNCTION(void, EqStateMgr::SetCurrentStateType, int) }
-int L_GetCurrentStateType(lua_State* vm) { OOLUA_C_FUNCTION(int, EqStateMgr::GetCurrentStateType ) }
-int L_ScheduleNextStateType(lua_State* vm) { OOLUA_C_FUNCTION(void, EqStateMgr::ScheduleNextStateType, int) }
-
 OOLUA_CFUNC(Lua_LoadMissionScript, L_LoadMissionScript)
-
-//OOLUA_CFUNC(SetCurrentState, L_SetCurrentState)
-//OOLUA_CFUNC(GetCurrentState, L_GetCurrentState)
-
 OOLUA_CFUNC(Lua_Util_TestLine, L_Lua_Util_TestLine)
 
 template <class T>
@@ -275,10 +267,11 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	OOLUA::register_class<CDrvSynHUDManager>(state);
 	OOLUA::register_class<CCameraAnimator>(state);
 
-	OOLUA::set_global(state, "SetCurrentStateType", L_SetCurrentStateType);
-	OOLUA::set_global(state, "GetCurrentStateType", L_GetCurrentStateType);
-	OOLUA::set_global(state, "ScheduleNextStateType", L_ScheduleNextStateType);
+
+
 	OOLUA::set_global(state, "LoadMissionScript", L_LoadMissionScript);
+
+	
 	
 	//OOLUA::set_global(state, "SetCurrentState", L_SetCurrentState);
 	//OOLUA::set_global(state, "GetCurrentState", L_GetCurrentState);

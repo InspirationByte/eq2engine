@@ -29,6 +29,8 @@
 
 CPredictableRandomGenerator	g_replayRandom;
 
+WorldGlobals_t g_worldGlobals;
+
 CPFXAtlasGroup* g_vehicleEffects = NULL;
 CPFXAtlasGroup* g_vehicleShadows = NULL;
 
@@ -133,7 +135,6 @@ END_NETWORK_TABLE()
 CGameWorld::CGameWorld()
 {
 	m_rainSound = NULL;
-	m_vehicleVertexFormat = NULL;
 
 	m_skyColor = NULL;
 	m_skyModel = NULL;
@@ -163,8 +164,6 @@ CGameWorld::CGameWorld()
 
 	m_levelLoaded = false;
 
-	m_objectInstFormat = nullptr;
-	m_objectInstBuffer = nullptr;
 	m_envMapsDirty = true;
 }
 
@@ -532,8 +531,8 @@ void CGameWorld::Init()
 		{ 1, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF },  // Bone weights (hw skinning), (TC5)
 	};
 
-	if(!m_vehicleVertexFormat)
-		m_vehicleVertexFormat = g_pShaderAPI->CreateVertexFormat(pFormat, elementsOf(pFormat));
+	if(!g_worldGlobals.vehicleVertexFormat)
+		g_worldGlobals.vehicleVertexFormat = g_pShaderAPI->CreateVertexFormat(pFormat, elementsOf(pFormat));
 
 	//-------------------------
 
@@ -571,6 +570,8 @@ void CGameWorld::Init()
 		g_vehicleLights->SetCullInverted(true);
 
 		g_pPFXRenderer->AddRenderGroup( g_vehicleShadows );
+
+		g_worldGlobals.veh_shadow = g_vehicleShadows->FindEntry("carshad");
 	}
 
 	if(!g_vehicleEffects)
@@ -578,6 +579,9 @@ void CGameWorld::Init()
 		g_vehicleEffects = new CPFXAtlasGroup();
 		g_vehicleEffects->Init("scripts/effects_vehicles.atlas", false, 8192);
 		g_pPFXRenderer->AddRenderGroup( g_vehicleEffects );
+
+		g_worldGlobals.veh_skidmark_asphalt = g_vehicleEffects->FindEntry("skidmark_asphalt");
+		g_worldGlobals.veh_raintrail = g_vehicleEffects->FindEntry("rain_trail");
 	}
 
 	if(!g_treeAtlas)
@@ -592,6 +596,11 @@ void CGameWorld::Init()
 		g_translParticles = new CPFXAtlasGroup();
 		g_translParticles->Init("scripts/effects_translucent.atlas", false, 10000);
 		g_pPFXRenderer->AddRenderGroup( g_translParticles );
+
+		g_worldGlobals.trans_grasspart = g_translParticles->FindEntry("grasspart");
+		g_worldGlobals.trans_smoke2 = g_translParticles->FindEntry("smoke2");
+		g_worldGlobals.trans_raindrops = g_translParticles->FindEntry("rain_ripple");
+		g_worldGlobals.trans_fleck = g_translParticles->FindEntry("fleck");
 	}
 
 	if(!g_additPartcles)
@@ -622,7 +631,6 @@ void CGameWorld::Init()
 		m_lensTable[9] = {70.0f, lens2Id, ColorRGB(0.22f,0.9f,0.2f)};
 		m_lensTable[10] = {120.0f, lens3Id, ColorRGB(0.35f)};
 		m_lensTable[11] = {120.0f, lens4Id, ColorRGB(0.2f,0.3f,0.8f)};
-
 	}
 
 	g_pPFXRenderer->PreloadMaterials();
@@ -634,13 +642,13 @@ void CGameWorld::Init()
 	// instancing
 	if(caps.isInstancingSupported)
 	{
-		if(!m_objectInstFormat)
-			m_objectInstFormat = g_pShaderAPI->CreateVertexFormat(s_gameObjectInstanceFmtDesc, elementsOf(s_gameObjectInstanceFmtDesc));
+		if(!g_worldGlobals.objectInstFormat)
+			g_worldGlobals.objectInstFormat = g_pShaderAPI->CreateVertexFormat(s_gameObjectInstanceFmtDesc, elementsOf(s_gameObjectInstanceFmtDesc));
 
-		if(!m_objectInstBuffer)
+		if(!g_worldGlobals.objectInstBuffer)
 		{
-			m_objectInstBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_EGF_INSTANCES, sizeof(gameObjectInstance_t));
-			m_objectInstBuffer->SetFlags( VERTBUFFER_FLAG_INSTANCEDATA );
+			g_worldGlobals.objectInstBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_EGF_INSTANCES, sizeof(gameObjectInstance_t));
+			g_worldGlobals.objectInstBuffer->SetFlags( VERTBUFFER_FLAG_INSTANCEDATA );
 		}
 	}
 
@@ -878,27 +886,27 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 		if(g_vehicleEffects)
 			delete g_vehicleEffects;
-		g_vehicleEffects = NULL;
+		g_vehicleEffects = nullptr;
 
 		if(g_translParticles)
 			delete g_translParticles;
-		g_translParticles = NULL;
+		g_translParticles = nullptr;
 
 		if(g_additPartcles)
 			delete g_additPartcles;
-		g_additPartcles = NULL;
+		g_additPartcles = nullptr;
 
 		if(g_treeAtlas)
 			delete g_treeAtlas;
-		g_treeAtlas = NULL;
+		g_treeAtlas = nullptr;
 
 		if(g_vehicleLights)
 			delete g_vehicleLights;
-		g_vehicleLights = NULL;
+		g_vehicleLights = nullptr;
 
 		if(g_vehicleShadows)
 			delete g_vehicleShadows;
-		g_vehicleShadows = NULL;
+		g_vehicleShadows = nullptr;
 
 #ifndef EDITOR
 		m_shadowRenderer.Shutdown();
@@ -906,8 +914,14 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 		g_pPFXRenderer->Shutdown();
 
-		g_pShaderAPI->DestroyVertexFormat(m_vehicleVertexFormat);
-		m_vehicleVertexFormat = nullptr;
+		g_pShaderAPI->DestroyVertexFormat(g_worldGlobals.vehicleVertexFormat);
+		g_worldGlobals.vehicleVertexFormat = nullptr;
+
+		g_pShaderAPI->DestroyVertexFormat(g_worldGlobals.objectInstFormat);
+		g_worldGlobals.objectInstFormat = nullptr;
+
+		g_pShaderAPI->DestroyVertexBuffer(g_worldGlobals.objectInstBuffer);
+		g_worldGlobals.objectInstBuffer = nullptr;
 
 		g_pShaderAPI->FreeTexture(m_lightsTex);
 		m_lightsTex = nullptr;
@@ -938,12 +952,6 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 		g_pShaderAPI->FreeTexture(m_fogEnvMap);
 		m_fogEnvMap = nullptr;
-
-		g_pShaderAPI->DestroyVertexFormat(m_objectInstFormat);
-		m_objectInstFormat = nullptr;
-
-		g_pShaderAPI->DestroyVertexBuffer(m_objectInstBuffer);
-		m_objectInstBuffer = nullptr;
 
 		g_pShaderAPI->DestroyOcclusionQuery(m_sunGlowOccQuery);
 		m_sunGlowOccQuery = nullptr;

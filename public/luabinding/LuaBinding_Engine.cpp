@@ -16,6 +16,8 @@
 
 #include "Network/NETThread.h"
 
+#include "sys_state.h"
+
 void WMsg(const char* str)
 {
 	Msg(str);
@@ -351,6 +353,11 @@ int L_v3d_lineProjection( lua_State* vm )	{ OOLUA_C_FUNCTION(float,lineProjectio
 int L_v3d_cross( lua_State* vm )		{ OOLUA_C_FUNCTION(Vector3D,cross,const Vector3D&, const Vector3D&) }
 int L_v3d_reflect( lua_State* vm )		{ OOLUA_C_FUNCTION(Vector3D,reflect,const Vector3D&, const Vector3D&) }
 
+int L_ChangeStateType(lua_State* vm) { OOLUA_C_FUNCTION(void, EqStateMgr::ChangeStateType, int) }
+int L_SetCurrentStateType(lua_State* vm) { OOLUA_C_FUNCTION(void, EqStateMgr::SetCurrentStateType, int) }
+int L_GetCurrentStateType(lua_State* vm) { OOLUA_C_FUNCTION(int, EqStateMgr::GetCurrentStateType) }
+int L_ScheduleNextStateType(lua_State* vm) { OOLUA_C_FUNCTION(void, EqStateMgr::ScheduleNextStateType, int) }
+
 // привязка LUA
 void DebugMessages_InitBinding(lua_State* state)
 {
@@ -556,6 +563,13 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 
 	OOLUA::set_global(state, "KV_PrintSection", L_KV_PrintSection);
 	
+	OOLUA::Table eqStateTable = OOLUA::new_table(state);
+	eqStateTable.set("ChangeStateType", L_ChangeStateType);
+	eqStateTable.set("SetCurrentStateType", L_SetCurrentStateType);
+	eqStateTable.set("GetCurrentStateType", L_GetCurrentStateType);
+	eqStateTable.set("ScheduleNextStateType", L_ScheduleNextStateType);
+
+	OOLUA::set_global(state, "EqStateMgr", eqStateTable);
 
 	OOLUA::register_class<equi::IUIControl>(state);
 	OOLUA::register_class<equi::Panel>(state);

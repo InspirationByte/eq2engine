@@ -73,6 +73,11 @@ void SetCurrentStateType( int stateType )
 	SetCurrentState( g_states[stateType] );
 }
 
+void ChangeStateType(int stateType)
+{
+	ChangeState( g_states[stateType] );
+}
+
 void ScheduleNextState( CBaseStateHandler* state )
 {
 	if(GetCurrentState())

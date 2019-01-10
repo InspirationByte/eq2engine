@@ -336,6 +336,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="eqPhysics\eqPhysics_PointConstraint.h" />
     <ClInclude Include="EventFSM.h" />
     <ClInclude Include="DrvSynHUD.h" />
+    <ClInclude Include="GameDefs.h" />
     <ClInclude Include="game_singleplayer.h" />
     <ClInclude Include="game_splitscreen.h" />
     <ClInclude Include="levelobject.h" />

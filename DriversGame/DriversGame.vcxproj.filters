@@ -838,6 +838,9 @@
     <ClInclude Include="net_game_defs.h">
       <Filter>Файлы исходного кода\Game\Sessions</Filter>
     </ClInclude>
+    <ClInclude Include="GameDefs.h">
+      <Filter>Файлы исходного кода\Game\Objects</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\Resources.rc">

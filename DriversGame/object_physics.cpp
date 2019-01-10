@@ -114,7 +114,7 @@ void CObject_Physics::Spawn()
 		CGameObjectInstancer* instancer = new CGameObjectInstancer();
 
 		// init with this preallocated buffer and format
-		instancer->Init( g_pGameWorld->m_objectInstFormat, g_pGameWorld->m_objectInstBuffer );
+		instancer->Init(g_worldGlobals.objectInstFormat, g_worldGlobals.objectInstBuffer );
 
 		m_pModel->SetInstancer( instancer );
 	}

@@ -74,6 +74,8 @@ namespace EqStateMgr
 	int						GetCurrentStateType();
 	void					SetCurrentStateType(int stateType);
 
+	void					ChangeStateType(int stateType);
+
 	void					ScheduleNextState(CBaseStateHandler* state);
 	void					ScheduleNextStateType(int stateType);
 
