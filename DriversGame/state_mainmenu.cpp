@@ -46,7 +46,6 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 	m_titleTexture->Ref_Grab();
 
 	soundsystem->SetPauseState(false);
-	soundsystem->SetVolumeScale(1.0f);
 	sndEffect_t* reverb = soundsystem->FindEffect( "menu_reverb" );
 
 	soundsystem->SetListener(vec3_zero, vec3_forward, vec3_up, vec3_zero, reverb);
@@ -63,8 +62,6 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 
 	//EmitSound_t es("music.menu", EMITSOUND_FLAG_FORCE_CACHED);
 	//g_sounds->Emit2DSound( &es );
-
-	soundsystem->SetVolumeScale(0.0f);
 }
 
 void CState_MainMenu::OnEnterSelection( bool isFinal )
@@ -129,8 +126,6 @@ bool CState_MainMenu::Update( float fDt )
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
 	float fFade = pow(m_fade,2.0f);
-
-	soundsystem->SetVolumeScale(fFade);
 
 	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect,elementsOf(tmprect), m_titleTexture, ColorRGBA(fFade,fFade,fFade,1.0f), &blending);
 

@@ -44,9 +44,9 @@ void DkSoundEmitterLocal::SetPosition(const Vector3D& position)
 
 	DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 
-	sndChannel_t *c = pSoundSystem->m_pChannels[m_nChannel];
+	sndChannel_t *c = pSoundSystem->m_channels[m_nChannel];
 
-	alSourcefv(c->alSource,AL_POSITION, vPosition);
+	alSourcefv(c->alSource, AL_POSITION, vPosition);
 }
 
 void DkSoundEmitterLocal::SetVelocity(const Vector3D& velocity)
@@ -56,13 +56,15 @@ void DkSoundEmitterLocal::SetVelocity(const Vector3D& velocity)
 
 	DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 
-	sndChannel_t *c = pSoundSystem->m_pChannels[m_nChannel];
+	sndChannel_t *c = pSoundSystem->m_channels[m_nChannel];
 
 	alSourcefv(c->alSource,AL_VELOCITY, velocity);
 }
 
 void DkSoundEmitterLocal::SetSample(ISoundSample* sample)
 {
+	Stop();
+
 #pragma todo("workaround for disabled RTTI")
 	if((ISoundSample*)m_sample == (ISoundSample*)&zeroSample)
 	{
@@ -87,7 +89,7 @@ bool DkSoundEmitterLocal::SelfAssignChannel()
 
 	if(m_nChannel >= 0)
 	{
-		sndChannel_t* chnl = pSoundSystem->m_pChannels[m_nChannel];
+		sndChannel_t* chnl = pSoundSystem->m_channels[m_nChannel];
 		chnl->emitter = this;
 
 		return true;
@@ -103,7 +105,7 @@ bool DkSoundEmitterLocal::DropChannel()
 
 	DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 
-	sndChannel_t *chnl = pSoundSystem->m_pChannels[m_nChannel];
+	sndChannel_t *chnl = pSoundSystem->m_channels[m_nChannel];
 
 	// stop the sound
 	alSourceStop(chnl->alSource);
@@ -130,7 +132,7 @@ void DkSoundEmitterLocal::Play()
 		{
 			m_sample->WaitForLoad();
 
-			sndChannel_t *chnl = pSoundSystem->m_pChannels[m_nChannel];
+			sndChannel_t *chnl = pSoundSystem->m_channels[m_nChannel];
 			
 			alSourcePlay(chnl->alSource);
 			chnl->alState = AL_PLAYING;
@@ -148,9 +150,9 @@ void DkSoundEmitterLocal::Play()
         return;
 	}
 
-	if( SelfAssignChannel() )
+	if(!HasToBeVirtual() && SelfAssignChannel() )
 	{
-		sndChannel_t* chnl = pSoundSystem->m_pChannels[m_nChannel];
+		sndChannel_t* chnl = pSoundSystem->m_channels[m_nChannel];
 
 		chnl->emitter = this;
 
@@ -160,16 +162,18 @@ void DkSoundEmitterLocal::Play()
 
 		alSourcei(chnl->alSource, AL_LOOPING, (m_sample->m_flags & SAMPLE_FLAG_LOOPING) > 0 ? AL_TRUE : AL_FALSE );
 
-		alSourcefv(chnl->alSource,AL_POSITION, vPosition);
 		alSourcei(chnl->alSource, AL_BUFFER, m_sample->m_alBuffer);
 
-		alSourcef(chnl->alSource,AL_REFERENCE_DISTANCE, m_params.referenceDistance);
-		alSourcef(chnl->alSource,AL_MAX_DISTANCE, m_params.maxDistance);
-		alSourcef(chnl->alSource,AL_ROLLOFF_FACTOR, m_params.rolloff);
-		alSourcef(chnl->alSource,AL_GAIN, m_params.volume);
+		alSourcefv(chnl->alSource, AL_POSITION, vPosition);
+
+		alSourcef(chnl->alSource, AL_REFERENCE_DISTANCE, m_params.referenceDistance);
+		alSourcef(chnl->alSource, AL_MAX_DISTANCE, m_params.maxDistance);
+		alSourcef(chnl->alSource, AL_ROLLOFF_FACTOR, m_params.rolloff);
+
 		alSourcef(chnl->alSource, AL_AIR_ABSORPTION_FACTOR, m_params.airAbsorption);
-		alSourcef(chnl->alSource,AL_PITCH, m_params.pitch);
-		alSourcefv(chnl->alSource,AL_POSITION, vPosition);
+
+		alSourcef(chnl->alSource, AL_GAIN, m_params.volume);
+		alSourcef(chnl->alSource, AL_PITCH, m_params.pitch);
 
 		alSourcePlay(chnl->alSource);
 
@@ -201,7 +205,7 @@ void DkSoundEmitterLocal::StopLoop()
 	{
 		DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 
-		sndChannel_t* chnl = pSoundSystem->m_pChannels[m_nChannel];
+		sndChannel_t* chnl = pSoundSystem->m_channels[m_nChannel];
 		alSourcei(chnl->alSource, AL_LOOPING, AL_FALSE );
 	}
 }
@@ -212,7 +216,7 @@ void DkSoundEmitterLocal::Pause()
 	{
 		DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 
-		sndChannel_t* chnl = pSoundSystem->m_pChannels[m_nChannel];
+		sndChannel_t* chnl = pSoundSystem->m_channels[m_nChannel];
 
 		alSourcePause(chnl->alSource);
 		chnl->alState = AL_PAUSED;
@@ -238,7 +242,7 @@ ESoundState DkSoundEmitterLocal::GetState() const
 
 	DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 
-	sndChannel_t* chnl = pSoundSystem->m_pChannels[m_nChannel];
+	sndChannel_t* chnl = pSoundSystem->m_channels[m_nChannel];
 
 	switch(chnl->alState)
 	{
@@ -256,31 +260,34 @@ bool DkSoundEmitterLocal::IsVirtual() const
 	return m_virtual;
 }
 
+bool DkSoundEmitterLocal::HasToBeVirtual()
+{
+	if ((length(vPosition - soundsystem->GetListenerPosition())) > m_params.maxDistance)
+		return true;
+
+	return false;
+}
+
 void DkSoundEmitterLocal::Update()
 {
-	DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
-
 	if(m_nChannel == -1)
 	{
 		if(m_virtual && m_virtualState == AL_PLAYING)
 			Play();
-
-		return;
 	}
-	else if(m_sample/* && (m_sample->m_nChannels == 1)*/)
+	else if(m_sample && HasToBeVirtual())
 	{
-		if( (length(vPosition - soundsystem->GetListenerPosition())) > m_params.maxDistance)
-		{
-			sndChannel_t* chnl = pSoundSystem->m_pChannels[m_nChannel];
+		DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 
-			// free channel and switch to virtual mode
-			if(chnl->alState == AL_PLAYING)
-			{
-				Stop();
-				m_virtual = true;
-				m_virtualState = AL_PLAYING;
-				return;
-			}
+		sndChannel_t* chnl = pSoundSystem->m_channels[m_nChannel];
+
+		// free channel and switch to virtual mode
+		if (chnl->alState == AL_PLAYING)
+		{
+			Stop();
+
+			m_virtual = true;
+			m_virtualState = AL_PLAYING;
 		}
 	}
 }
@@ -299,7 +306,7 @@ void DkSoundEmitterLocal::SetVolume(float val)
 
 	DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 
-	sndChannel_t* chnl = pSoundSystem->m_pChannels[m_nChannel];
+	sndChannel_t* chnl = pSoundSystem->m_channels[m_nChannel];
 
 	alSourcef(chnl->alSource,AL_GAIN, m_params.volume);
 }
@@ -314,7 +321,7 @@ void DkSoundEmitterLocal::SetPitch(float val)
 
 	DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 
-	sndChannel_t* chnl = pSoundSystem->m_pChannels[m_nChannel];
+	sndChannel_t* chnl = pSoundSystem->m_channels[m_nChannel];
 
 	alSourcef(chnl->alSource,AL_PITCH, m_params.pitch);
 }
@@ -328,7 +335,7 @@ void DkSoundEmitterLocal::SetParams(soundParams_t *param)
 
 	DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 
-	sndChannel_t* chnl = pSoundSystem->m_pChannels[m_nChannel];
+	sndChannel_t* chnl = pSoundSystem->m_channels[m_nChannel];
 
 	alSourcefv(chnl->alSource,AL_POSITION, vPosition);
 

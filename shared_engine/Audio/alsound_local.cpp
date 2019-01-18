@@ -7,8 +7,6 @@
 //				Sound system
 //////////////////////////////////////////////////////////////////////////////////
 
-//Local sound system
-
 #define AL_ALEXT_PROTOTYPES
 
 #include <AL/al.h>
@@ -34,20 +32,10 @@
 #include "coord.h"
 #endif
 
+#define MAX_AMBIENT_STREAMS 8
+
 static DkSoundSystemLocal	s_soundSystem;
 ISoundSystem* soundsystem = &s_soundSystem;
-
-DECLARE_CMD(snd_play,"Play a sound",0)
-{
-	if(CMD_ARGC == 0)
-		return;
-
-	ISoundSample* pSample = soundsystem->LoadSample(CMD_ARGV(0).c_str(), SAMPLE_FLAG_REMOVEWHENSTOPPED);
-	ISoundPlayable* staticChannel = soundsystem->GetStaticStreamChannel(0);
-
-	staticChannel->SetSample(pSample);
-	staticChannel->Play();
-}
 
 void channels_callback(ConVar* pVar,char const* pszOldValue)
 {
@@ -58,18 +46,28 @@ void channels_callback(ConVar* pVar,char const* pszOldValue)
 	}
 }
 
-static ConVar snd_device("snd_device","0", NULL, CV_ARCHIVE);
+static ConVar snd_mastervolume("snd_mastervolume", "1.0", 0.0f, 1.0f, nullptr, CV_ARCHIVE);
 
-static ConVar snd_3dchannels("snd_3dchannels","32", channels_callback,NULL,CV_ARCHIVE);
-static ConVar snd_volume("snd_volume","1.0",0.0f,1.0f, NULL, CV_ARCHIVE);
-static ConVar snd_samplerate("snd_samplerate", "44100", NULL, CV_ARCHIVE);
+static ConVar snd_device("snd_device","0", nullptr, CV_ARCHIVE);
+static ConVar snd_3dchannels("snd_3dchannels","32", channels_callback, nullptr, CV_ARCHIVE);
+static ConVar snd_samplerate("snd_samplerate", "44100", nullptr, CV_ARCHIVE);
 static ConVar snd_outputchannels("snd_outputchannels", "2", "Output channels. 2 is headphones, 4 - quad surround system, 5 - 5.1 surround", CV_ARCHIVE);
+static ConVar snd_effect("snd_effect", "-1", "Test sound effects", CV_CHEAT);
+static ConVar snd_debug("snd_debug", "0", "Print debug info about sound", CV_CHEAT);
+static ConVar snd_dopplerFac("snd_doppler_factor", "2.0f", "Doppler factor (could crash on biggest values)", CV_ARCHIVE);
+static ConVar snd_doppler_soundSpeed("snd_doppler_soundSpeed", "800.0f", "Doppler speed sound (could crash on biggest values)", CV_ARCHIVE);
+static ConVar job_soundLoader("job_soundLoader", "1", "Multi-threaded sound sample loading", CV_ARCHIVE);
 
 DECLARE_CMD(snd_reloadeffects,"Play a sound",0)
 {
 	DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 
 	pSoundSystem->ReloadEFX();
+}
+
+DECLARE_CMD(snd_info, "Print info about sound system", 0)
+{
+	((DkSoundSystemLocal*)soundsystem)->PrintInfo();
 }
 
 static int out_channel_formats[][2] =
@@ -82,50 +80,6 @@ static int out_channel_formats[][2] =
 	{AL_FORMAT_61CHN16,		AL_FORMAT_61CHN32},				// 6.1
 	{AL_FORMAT_71CHN16,		AL_FORMAT_71CHN32}				// 6.1
 };
-
-DkSoundSystemLocal::DkSoundSystemLocal()
-{
-#ifndef NO_ENGINE
-	m_defaultParams.referenceDistance = 300.0f;
-	m_defaultParams.maxDistance = MAX_COORD_UNITS;
-#else
-	m_defaultParams.referenceDistance = 1.0f;
-	m_defaultParams.maxDistance = 128000;
-#endif
-	m_defaultParams.rolloff = 2.1f;
-	m_defaultParams.volume = 1.0f;
-	m_defaultParams.pitch = 1.0f;
-	m_defaultParams.airAbsorption = 0.0f;
-	m_defaultParams.is2D = false;
-
-	m_bSoundInit = false;
-	m_pauseState = false;
-
-	m_fVolumeScale = 1.0f;
-
-	m_dev = NULL;
-	m_ctx = NULL;
-}
-
-void DkSoundSystemLocal::SetVolumeScale(float vol_scale)
-{
-	m_fVolumeScale = vol_scale;
-}
-
-void DkSoundSystemLocal::SetPauseState(bool pause)
-{
-	m_pauseState = pause;
-}
-
-bool DkSoundSystemLocal::GetPauseState()
-{
-	return m_pauseState;
-}
-
-bool DkSoundSystemLocal::IsInitialized()
-{
-	return m_bSoundInit;
-}
 
 const char* getALCErrorString(int err)
 {
@@ -169,16 +123,55 @@ const char* getALErrorString(int err)
 	}
 }
 
-void DkSoundSystemLocal::Init()
+DkSoundSystemLocal::DkSoundSystemLocal()
+{
+#ifndef NO_ENGINE
+	m_defaultParams.referenceDistance = 300.0f;
+	m_defaultParams.maxDistance = MAX_COORD_UNITS;
+#else
+	m_defaultParams.referenceDistance = 1.0f;
+	m_defaultParams.maxDistance = 128000;
+#endif
+
+	m_defaultParams.rolloff = 2.1f;
+	m_defaultParams.volume = 1.0f;
+	m_defaultParams.pitch = 1.0f;
+	m_defaultParams.airAbsorption = 0.0f;
+	m_defaultParams.is2D = false;
+
+	m_init = false;
+	m_pauseState = false;
+
+	m_masterVolume = 1.0f;
+
+	m_dev = nullptr;
+	m_ctx = nullptr;
+}
+
+void DkSoundSystemLocal::SetPauseState(bool pause)
+{
+	m_pauseState = pause;
+}
+
+bool DkSoundSystemLocal::GetPauseState()
+{
+	return m_pauseState;
+}
+
+bool DkSoundSystemLocal::IsInitialized()
+{
+	return m_init;
+}
+
+bool DkSoundSystemLocal::InitContext()
 {
 	Msg(" \n--------- InitSound --------- \n");
 
 	// Init openAL
-
 	DkList<char*> tempListChars;
 
 	// check devices list
-	char* devices = (char*)alcGetString(NULL, ALC_DEVICE_SPECIFIER);
+	char* devices = (char*)alcGetString(nullptr, ALC_DEVICE_SPECIFIER);
 
 	// go through device list (each device terminated with a single NULL, list terminated with double NULL)
 	while ((*devices) != '\0')
@@ -190,30 +183,29 @@ void DkSoundSystemLocal::Init()
 		devices += strlen(devices) + 1;
 	}
 
-	if(snd_device.GetInt() >= tempListChars.numElem())
+	if (snd_device.GetInt() >= tempListChars.numElem())
 	{
-		MsgError("snd_device: Invalid audio device selected, reset to 0\n");
+		MsgWarning("snd_device: Invalid audio device selected, reset to 0\n");
 		snd_device.SetInt(0);
 	}
 
 	Msg("Audio device: %s\n", tempListChars[snd_device.GetInt()]);
-
 	m_dev = alcOpenDevice((ALCchar*)tempListChars[snd_device.GetInt()]);
 
 	int alErr = AL_NO_ERROR;
 
-	if(!m_dev)
+	if (!m_dev)
 	{
-		alErr = alcGetError(NULL);
+		alErr = alcGetError(nullptr);
 		MsgError("alcOpenDevice: NULL DEVICE error: %s\n", getALCErrorString(alErr));
+		return false;
 	}
 
 	// out_channel_formats snd_outputchannels
-
 	int al_context_params[] =
 	{
 		ALC_FREQUENCY, snd_samplerate.GetInt(),
-		ALC_MAX_AUXILIARY_SENDS, 32,
+		ALC_MAX_AUXILIARY_SENDS, 4,
 		//ALC_SYNC, ALC_TRUE,
 		//ALC_REFRESH, 120,
 		0
@@ -223,37 +215,56 @@ void DkSoundSystemLocal::Init()
 
 	alErr = alcGetError(m_dev);
 
-	if(alErr != AL_NO_ERROR)
+	if (alErr != AL_NO_ERROR)
 	{
 		MsgError("alcCreateContext error: %s\n", getALCErrorString(alErr));
+		return false;
 	}
 
 	alcMakeContextCurrent(m_ctx);
-
 	alErr = alcGetError(m_dev);
 
-	if(alErr != AL_NO_ERROR)
+	if (alErr != AL_NO_ERROR)
 	{
 		MsgError("alcMakeContextCurrent error: %s\n", getALCErrorString(alErr));
+		return false;
+	}
+
+	return true;
+}
+
+void DkSoundSystemLocal::ShutdownContext()
+{
+	// destroy context
+	alcMakeContextCurrent(nullptr);
+	alcDestroyContext(m_ctx);
+	alcCloseDevice(m_dev);
+}
+
+void DkSoundSystemLocal::Init()
+{
+	if (!InitContext())
+	{
+		MsgError("Unable to initialize sound!\n");
 	}
 
 	//Set Gain
-	alListenerf(AL_GAIN, snd_volume.GetFloat());
+	alListenerf(AL_GAIN, snd_mastervolume.GetFloat());
 	alListenerf(AL_PITCH, 1.0f);
 
 	alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
-
-	// 8 stream/ambient source
-	for(int i = 0; i < 8; i++)
-		m_pAmbients.append(new DkSoundAmbient);
 
 	int max_sends = 0;
 	alcGetIntegerv(m_dev, ALC_MAX_AUXILIARY_SENDS, 1, &max_sends);
 	DevMsg(DEVMSG_SOUND,"Sound: max effect slots is: %d\n", max_sends);
 
-	InitEFX();
+	if(max_sends >= SOUND_EFX_SLOTS)
+		InitEFX();
 
-	//Create channels
+	for (int i = 0; i < MAX_AMBIENT_STREAMS; i++)
+		m_ambientStreams.append(new DkSoundAmbient);
+
+	// create channels
 	for(int i = 0; i < snd_3dchannels.GetInt(); i++)
 	{
 		sndChannel_t *c = new sndChannel_t;
@@ -265,57 +276,18 @@ void DkSoundSystemLocal::Init()
 		alSourcef(c->alSource, AL_MAX_GAIN, 0.9f);
 		alSourcef(c->alSource, AL_DOPPLER_FACTOR, 1.0f);
 
-		m_pChannels.append(c);
+		m_channels.append(c);
 	}
 
 	//Activate soundsystem
-	m_bSoundInit = true;
-}
-
-bool CreateALEffect(const char* pszName, kvkeybase_t* pSection, sndEffect_t& effect)
-{
-	if(!stricmp(pszName, "reverb"))
-	{
-		alGenEffects(1, &effect.nAlEffect);
-
-		alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
-
-		alEffectf(effect.nAlEffect, AL_REVERB_GAIN, KV_GetValueFloat(pSection->FindKeyBase("gain"), 0, 0.5f));
-		alEffectf(effect.nAlEffect, AL_REVERB_GAINHF, KV_GetValueFloat(pSection->FindKeyBase("gain_hf"), 0, 0.5f));
-
-		alEffectf(effect.nAlEffect, AL_REVERB_DECAY_TIME, KV_GetValueFloat(pSection->FindKeyBase("decay_time"), 0, 10.0f));
-		alEffectf(effect.nAlEffect, AL_REVERB_DECAY_HFRATIO, KV_GetValueFloat(pSection->FindKeyBase("decay_hf"), 0, 0.5f));
-		alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_DELAY, KV_GetValueFloat(pSection->FindKeyBase("reflection_delay"), 0, 0.0f));
-		alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_GAIN, KV_GetValueFloat(pSection->FindKeyBase("reflection_gain"), 0, 0.5f));
-		alEffectf(effect.nAlEffect, AL_REVERB_DIFFUSION, KV_GetValueFloat(pSection->FindKeyBase("diffusion"), 0, 0.5f));
-		alEffectf(effect.nAlEffect, AL_REVERB_DENSITY, KV_GetValueFloat(pSection->FindKeyBase("density"), 0, 0.5f));
-		alEffectf(effect.nAlEffect, AL_REVERB_AIR_ABSORPTION_GAINHF, KV_GetValueFloat(pSection->FindKeyBase("airabsorption_gain"), 0, 0.5f));
-
-
-		return true;
-	}
-	else if(!stricmp(pszName, "echo"))
-	{
-		alGenEffects(1, &effect.nAlEffect);
-
-		alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_ECHO);
-
-		return true;
-	}
-	else if(!stricmp(pszName, "none"))
-	{
-		effect.nAlEffect = AL_EFFECT_NULL;
-		return true;
-	}
-	else
-		return false;
+	m_init = true;
 }
 
 void DkSoundSystemLocal::InitEFX()
 {
-	m_pCurrentEffect = NULL;
-	m_nCurrentSlot = 0;
-	alGenAuxiliaryEffectSlots( 2, m_nEffectSlots);
+	m_currEffect = nullptr;
+	m_currEffectSlotIdx = 0;
+	alGenAuxiliaryEffectSlots(SOUND_EFX_SLOTS, m_effectSlots);
 
 	// add default effect
 	sndEffect_t no_eff;
@@ -329,9 +301,9 @@ void DkSoundSystemLocal::InitEFX()
 	//
 	kvkeybase_t* soundSettings = GetCore()->GetConfig()->FindKeyBase("Sound");
 
-	const char* effectFilePath = soundSettings ? KV_GetValueString(soundSettings->FindKeyBase("EFXScript"), 0, NULL) : NULL;
+	const char* effectFilePath = soundSettings ? KV_GetValueString(soundSettings->FindKeyBase("EFXScript"), 0, nullptr) : nullptr;
 
-	if(effectFilePath == NULL)
+	if(effectFilePath == nullptr)
 	{
 		MsgError("InitEFX: EQCONFIG missing Sound:EFXScript !\n");
 		return;
@@ -377,55 +349,50 @@ void DkSoundSystemLocal::InitEFX()
 
 void DkSoundSystemLocal::ReloadEFX()
 {
-	for(int i = 0; i < m_effects.numElem(); i++)
-	{
-		alDeleteEffects(1, &m_effects[i].nAlEffect);
-	}
-
-	alDeleteAuxiliaryEffectSlots(1, m_nEffectSlots);
-
-	m_effects.clear();
+	ReleaseEffects();
 
 	InitEFX();
 }
 
-static ConVar snd_effect("snd_effect", "-1", "Test sound effects", CV_CHEAT);
-ConVar snd_debug("snd_debug", "0", "Print debug info about sound", CV_CHEAT);
-ConVar snd_dopplerFac("snd_doppler_factor", "2.0f", "Doppler factor (could crash on biggest values)", CV_ARCHIVE);
-ConVar snd_doppler_soundSpeed("snd_doppler_soundSpeed", "800.0f", "Doppler speed sound (could crash on biggest values)", CV_ARCHIVE);
-
 void DkSoundSystemLocal::Update()
 {
-	if(!m_bSoundInit)
+	if(!m_init)
 		return;
 
 	alDopplerFactor( snd_dopplerFac.GetFloat() );
 	alSpeedOfSound( snd_doppler_soundSpeed.GetFloat() );
 
 	// Update mixer volume and time scale
-	alListenerf(AL_GAIN, snd_volume.GetFloat() * m_fVolumeScale);
+	alListenerf(AL_GAIN, snd_mastervolume.GetFloat());
 
-	//Ambient Channels
-	for(int i = 0; i < m_pAmbients.numElem(); i++)
-		m_pAmbients[i]->Update();
-
-	if(snd_effect.GetInt() != -1)
-	{
-		if(snd_effect.GetInt() < m_effects.numElem())
-			m_pCurrentEffect = &m_effects[snd_effect.GetInt()];
-
-		alAuxiliaryEffectSloti(m_nEffectSlots[m_nCurrentSlot], AL_EFFECTSLOT_EFFECT, m_effects[snd_effect.GetInt()].nAlEffect);
-	}
-
+	int nStreamsInUse = 0;
 	int nChannelsInUse = 0;
 	int nEmittersUsesChannels = 0;
 	int nVirtualEmitters = 0;
 
+	//Ambient Channels
+	for (int i = 0; i < m_ambientStreams.numElem(); i++)
+	{
+		DkSoundAmbient* str = m_ambientStreams[i];
+		str->Update();
+
+		if (str->GetState() == SOUND_STATE_PLAYING)
+			nStreamsInUse++;
+	}
+
+	if(snd_effect.GetInt() != -1)
+	{
+		if(snd_effect.GetInt() < m_effects.numElem())
+			m_currEffect = &m_effects[snd_effect.GetInt()];
+
+		alAuxiliaryEffectSloti(m_effectSlots[m_currEffectSlotIdx], AL_EFFECTSLOT_EFFECT, m_effects[snd_effect.GetInt()].nAlEffect);
+	}
+
 	if( !m_pauseState )
 	{
-		for(int i = 0; i < m_pSoundEmitters.numElem(); i++)
+		for(int i = 0; i < m_emitters.numElem(); i++)
 		{
-			DkSoundEmitterLocal* pEmitter = (DkSoundEmitterLocal*)m_pSoundEmitters[i];
+			DkSoundEmitterLocal* pEmitter = (DkSoundEmitterLocal*)m_emitters[i];
 
 			// don't update emitters without samples
 			if(!pEmitter->m_sample)
@@ -442,9 +409,9 @@ void DkSoundSystemLocal::Update()
 	}
 
 	// update channels
-	for( int i = 0; i < m_pChannels.numElem(); i++ )
+	for( int i = 0; i < m_channels.numElem(); i++ )
 	{
-		sndChannel_t* chnl = m_pChannels[i];
+		sndChannel_t* chnl = m_channels[i];
 
 		if(!chnl->emitter)
 		{
@@ -481,9 +448,10 @@ void DkSoundSystemLocal::Update()
 			if(chnl->alState == AL_STOPPED)
 			{
 				alSourceRewind(chnl->alSource);
+
 				chnl->alState = AL_STOPPED;
 				chnl->emitter->m_nChannel = -1;
-				chnl->emitter = NULL;
+				chnl->emitter = nullptr;
 			}
 		}
 	}
@@ -494,10 +462,11 @@ void DkSoundSystemLocal::Update()
 
 		debugoverlay->Text(ColorRGBA(1,1,0,1), "-----sound debug info------");
 
-		debugoverlay->Text(ColorRGBA(1,1,1,1), "channels in use: %d/%d (emitters use %d)", nChannelsInUse, m_pChannels.numElem(), nEmittersUsesChannels);
-		debugoverlay->Text(ColorRGBA(1,1,1,1), "emitters: %d (%d virtual)", m_pSoundEmitters.numElem(), nVirtualEmitters);
-		debugoverlay->Text(ColorRGBA(1,1,1,1), "samples cached: %d", m_pSoundSamples.numElem());
-		debugoverlay->Text(ColorRGBA(1,1,1,1), "DSP effect: %s", m_pCurrentEffect ? m_pCurrentEffect->name : "none");
+		debugoverlay->Text(ColorRGBA(1,1,1,1), "channels in use: %d/%d (emitters use %d)", nChannelsInUse, m_channels.numElem(), nEmittersUsesChannels);
+		debugoverlay->Text(ColorRGBA(1,1,1,1), "streams in use: %d/%d", m_ambientStreams.numElem(), MAX_AMBIENT_STREAMS);
+		debugoverlay->Text(ColorRGBA(1,1,1,1), "emitters: %d (%d virtual)", m_emitters.numElem(), nVirtualEmitters);
+		debugoverlay->Text(ColorRGBA(1,1,1,1), "samples cached: %d", m_samples.numElem());
+		debugoverlay->Text(ColorRGBA(1,1,1,1), "DSP effect: %s", m_currEffect ? m_currEffect->name : "none");
 		debugoverlay->Text(ColorRGBA(1,1,1,1), "effect types: %d", m_effects.numElem());
 	}
 }
@@ -510,90 +479,86 @@ sndEffect_t* DkSoundSystemLocal::FindEffect(const char* pszName)
 			return &m_effects[i];
 	}
 
-	return NULL;
+	return nullptr;
+}
+
+void DkSoundSystemLocal::ReleaseEffects()
+{
+	for (int i = 0; i < m_effects.numElem(); i++)
+		alDeleteEffects(1, &m_effects[i].nAlEffect);
+
+	alDeleteAuxiliaryEffectSlots(2, m_effectSlots);
+
+	m_effects.clear();
 }
 
 void DkSoundSystemLocal::Shutdown()
 {
-	if(!m_bSoundInit)
+	if(!m_init)
 		return;
+
+	m_init = false;
 
 	Msg("SoundSystem shutdown...\n");
 
-	// deallocate channels
-	for(int i = 0; i < m_pChannels.numElem(); i++)
+	// release all channels
+	for(int i = 0; i < m_channels.numElem(); i++)
 	{
-		alDeleteSources(1, &m_pChannels[i]->alSource);
-		delete m_pChannels[i];
+		alDeleteSources(1, &m_channels[i]->alSource);
+		delete m_channels[i];
 	}
 
-	m_pChannels.clear();
+	m_channels.clear();
 
-	// Create 32 ambient channels TODO: remove
-	for(int i = 0; i < m_pAmbients.numElem(); i++)
-		delete m_pAmbients[i];
+	for(int i = 0; i < m_ambientStreams.numElem(); i++)
+		delete m_ambientStreams[i];
 
-	m_pAmbients.clear();
+	m_ambientStreams.clear();
 
 	ReleaseEmitters();
-
-	for(int i = 0; i < m_effects.numElem(); i++)
-	{
-		alDeleteEffects(1, &m_effects[i].nAlEffect);
-	}
-
-	alDeleteAuxiliaryEffectSlots(2, m_nEffectSlots);
-
-	m_effects.clear();
-
-	//Delete sound samples
+	ReleaseEffects();
 	ReleaseSamples();
 
-	m_pSoundSamples.clear();
-
-	//Deactivate
-	alcMakeContextCurrent(NULL);
-	alcDestroyContext(m_ctx);
-	alcCloseDevice(m_dev);
+	ShutdownContext();
 }
 
 void DkSoundSystemLocal::SetListener( const Vector3D &position, const Vector3D &forwardVec, const Vector3D &upVec, const Vector3D& velocity, sndEffect_t* pEffect)
 {
-	if(!m_bSoundInit)
+	if(!m_init)
 		return;
 
 	m_listenerOrigin = position;
 
 	// set zero effect if nothing
-	if(pEffect == NULL)
+	if(pEffect == nullptr)
 		pEffect = &m_effects[0];
 
-	if(m_pCurrentEffect != pEffect)
+	if(m_currEffect != pEffect)
 	{
-		m_nCurrentSlot = !m_nCurrentSlot;
+		m_currEffectSlotIdx = !m_currEffectSlotIdx;
 
 		if(snd_effect.GetInt() == -1)
-			m_pCurrentEffect = pEffect;
+			m_currEffect = pEffect;
 
-		if( m_pCurrentEffect )
+		if( m_currEffect )
 		{
-			alAuxiliaryEffectSloti(m_nEffectSlots[m_nCurrentSlot], AL_EFFECTSLOT_EFFECT, m_pCurrentEffect->nAlEffect);
+			alAuxiliaryEffectSloti(m_effectSlots[m_currEffectSlotIdx], AL_EFFECTSLOT_EFFECT, m_currEffect->nAlEffect);
 		}
 		else
 		{
-			m_nCurrentSlot = 0;
-			alAuxiliaryEffectSloti(m_nEffectSlots[0], AL_EFFECTSLOT_EFFECT, AL_EFFECT_NULL);
-			alAuxiliaryEffectSloti(m_nEffectSlots[1], AL_EFFECTSLOT_EFFECT, AL_EFFECT_NULL);
+			m_currEffectSlotIdx = 0;
+			alAuxiliaryEffectSloti(m_effectSlots[0], AL_EFFECTSLOT_EFFECT, AL_EFFECT_NULL);
+			alAuxiliaryEffectSloti(m_effectSlots[1], AL_EFFECTSLOT_EFFECT, AL_EFFECT_NULL);
 		}
 
 		// apply effect slot change to channels
-		for(register int i=0; i < m_pChannels.numElem(); i++)
+		for(register int i=0; i < m_channels.numElem(); i++)
 		{
 			// set current effect slot
-			if( m_pCurrentEffect /* && channels[i]->emitter->m_bShouldUseEffects */ )
-				alSource3i(m_pChannels[i]->alSource, AL_AUXILIARY_SEND_FILTER, m_nEffectSlots[m_nCurrentSlot], 0, AL_FILTER_NULL);
+			if( m_currEffect /* && channels[i]->emitter->m_bShouldUseEffects */ )
+				alSource3i(m_channels[i]->alSource, AL_AUXILIARY_SEND_FILTER, m_effectSlots[m_currEffectSlotIdx], 0, AL_FILTER_NULL);
 			else
-				alSource3i(m_pChannels[i]->alSource, AL_AUXILIARY_SEND_FILTER, AL_EFFECTSLOT_NULL, 0, AL_FILTER_NULL);
+				alSource3i(m_channels[i]->alSource, AL_AUXILIARY_SEND_FILTER, AL_EFFECTSLOT_NULL, 0, AL_FILTER_NULL);
 		}
 	}
 
@@ -613,43 +578,34 @@ const Vector3D& DkSoundSystemLocal::GetListenerPosition() const
 }
 
 // removes the sound sample
-void DkSoundSystemLocal::ReleaseSample(ISoundSample *pSample)
+void DkSoundSystemLocal::ReleaseSample(ISoundSample* pSample)
 {
-	if(pSample == NULL)
+	if(pSample == nullptr)
 		return;
 
 	if(pSample == &zeroSample)
 		return;
 
 	// channels
-	for(int i = 0; i < m_pChannels.numElem(); i++)
+	for(int i = 0; i < m_channels.numElem(); i++)
 	{
-		sndChannel_t* chan = m_pChannels[i];
-		DkSoundEmitterLocal* emitter = chan->emitter;
+		DkSoundEmitterLocal* emitter = m_channels[i]->emitter;
 
-		if(emitter != NULL)
-		{
-			// Break if we found used sample
-			if(emitter->m_sample == pSample)
-			{
-				MsgError("Programming error! You need to free sound emitter first!\n");
-				return;
-			}
-		}
+		if (emitter != nullptr && emitter->m_sample == pSample)	// drop channel
+			emitter->SetSample(nullptr);
 	}
 
 	// ambient
-	for(int i = 0; i < m_pAmbients.numElem(); i++)
+	for(int i = 0; i < m_ambientStreams.numElem(); i++)
 	{
-		if(m_pAmbients[i]->m_sample == pSample)
-		{
-			m_pAmbients[i]->Stop();
-			m_pAmbients[i]->m_sample = NULL;
-		}
+		DkSoundAmbient* str = m_ambientStreams[i];
+
+		if(str->m_sample == pSample)
+			str->SetSample(nullptr);
 	}
 
 	// Remove sample
-	if(m_pSoundSamples.fastRemove( pSample ))
+	if(m_samples.fastRemove( pSample ))
 	{
 		// deallocate sample
 		DkSoundSampleLocal* pSamp = (DkSoundSampleLocal*)pSample;
@@ -662,14 +618,15 @@ void DkSoundSystemLocal::ReleaseSample(ISoundSample *pSample)
 // frees the sound emitter
 void DkSoundSystemLocal::FreeEmitter(ISoundEmitter* pEmitter)
 {
-	if(pEmitter == NULL)
+	if(pEmitter == nullptr)
 		return;
 
 	if(pEmitter->GetState() != SOUND_STATE_STOPPED)
 		pEmitter->Stop();
 
 	// Remove sample
-	m_pSoundEmitters.fastRemove(pEmitter);
+	m_emitters.fastRemove(pEmitter);
+
 	DkSoundEmitterLocal* pEmit = (DkSoundEmitterLocal*)pEmitter;
 
 	delete pEmit;
@@ -677,9 +634,9 @@ void DkSoundSystemLocal::FreeEmitter(ISoundEmitter* pEmitter)
 
 bool DkSoundSystemLocal::IsValidEmitter(ISoundEmitter* pEmitter) const
 {
-	for(int i = 0; i < m_pSoundEmitters.numElem(); i++)
+	for(int i = 0; i < m_emitters.numElem(); i++)
 	{
-		if(m_pSoundEmitters[i] == pEmitter)
+		if(m_emitters[i] == pEmitter)
 			return true;
 	}
 
@@ -688,46 +645,44 @@ bool DkSoundSystemLocal::IsValidEmitter(ISoundEmitter* pEmitter) const
 
 void DkSoundSystemLocal::ReleaseEmitters()
 {
-	for(int i = 0; i < m_pSoundEmitters.numElem(); i++)
+	for(int i = 0; i < m_emitters.numElem(); i++)
 	{
-		m_pSoundEmitters[i]->Stop();
-		delete ((DkSoundEmitterLocal*)m_pSoundEmitters[i]);
+		m_emitters[i]->Stop();
+		delete ((DkSoundEmitterLocal*)m_emitters[i]);
 	}
 
-	m_pSoundEmitters.clear();
+	m_emitters.clear();
 
-	m_pCurrentEffect = NULL;
-	m_nCurrentSlot = 0;
+	m_currEffect = nullptr;
+	m_currEffectSlotIdx = 0;
 }
 
 // releases all sound samples
 void DkSoundSystemLocal::ReleaseSamples()
 {
-	for(int i = 0; i < m_pSoundSamples.numElem(); i++)
+	for(int i = 0; i < m_samples.numElem(); i++)
 	{
-		delete ((DkSoundSampleLocal*)m_pSoundSamples[i]);
+		delete ((DkSoundSampleLocal*)m_samples[i]);
 	}
 
-	m_pSoundSamples.clear();
+	m_samples.clear();
 }
 
 ISoundEmitter* DkSoundSystemLocal::AllocEmitter()
 {
-	if(m_bSoundInit)
+	if(m_init)
 	{
-		int index = m_pSoundEmitters.append( new DkSoundEmitterLocal );
+		int index = m_emitters.append( new DkSoundEmitterLocal );
 
-		return m_pSoundEmitters[index];
+		return m_emitters[index];
 	}
 
-	return NULL;
+	return nullptr;
 }
-
-ConVar job_soundLoader("job_soundLoader", "1", "Multi-threaded sound sample loading", CV_ARCHIVE);
 
 ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, int nFlags)
 {
-	if(!m_bSoundInit)
+	if(!m_init)
 		return (ISoundSample*) &zeroSample;
 
 	ISoundSample *pSample = FindSampleByName(name);
@@ -738,7 +693,7 @@ ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, int nFlags)
 	if(!g_fileSystem->FileExist((_Es(SOUND_DEFAULT_PATH) + name).GetData()))
 	{
 		MsgError("Can't open sound file '%s', file is probably missing on disk\n",name);
-		return NULL;
+		return nullptr;
 	}
 
 #ifndef NO_ENGINE
@@ -758,7 +713,7 @@ ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, int nFlags)
 		pNewSample->Load();
 	}
 
-	m_pSoundSamples.append( pNewSample );
+	m_samples.append( pNewSample );
 
 #ifndef NO_ENGINE
 	g_pEngineHost->EndResourceLoading();
@@ -769,28 +724,28 @@ ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, int nFlags)
 
 ISoundSample* DkSoundSystemLocal::FindSampleByName(const char *name)
 {
-	for(int i = 0; i < m_pSoundSamples.numElem();i++)
+	for(int i = 0; i < m_samples.numElem();i++)
 	{
-		if( !stricmp(((DkSoundSampleLocal*)m_pSoundSamples[i])->GetName(), name))
-			return m_pSoundSamples[i];
+		if( !stricmp(((DkSoundSampleLocal*)m_samples[i])->GetName(), name))
+			return m_samples[i];
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 ISoundPlayable* DkSoundSystemLocal::GetStaticStreamChannel( int channel )
 {
-	if(channel > -1 && channel < m_pAmbients.numElem())
+	if(channel > -1 && channel < m_ambientStreams.numElem())
 	{
-		return m_pAmbients[channel];
+		return m_ambientStreams[channel];
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 int DkSoundSystemLocal::GetNumStaticStreamChannels()
 {
-	return m_pAmbients.numElem();
+	return m_ambientStreams.numElem();
 }
 
 int	DkSoundSystemLocal::RequestChannel(DkSoundEmitterLocal *emitter)
@@ -802,26 +757,60 @@ int	DkSoundSystemLocal::RequestChannel(DkSoundEmitterLocal *emitter)
 	if( (length(emitter->vPosition-m_listenerOrigin)) > emitter->m_params.maxDistance)
 		return -1;
 
-	for(int i = 0; i < m_pChannels.numElem(); i++)
+	for(int i = 0; i < m_channels.numElem(); i++)
 	{
-		if(m_pChannels[i]->emitter == NULL)
+		if(m_channels[i]->emitter == nullptr)
 			return i;
 	}
 
 	return -1;
 }
 
+bool DkSoundSystemLocal::CreateALEffect(const char* pszName, kvkeybase_t* pSection, sndEffect_t& effect)
+{
+	if (!stricmp(pszName, "reverb"))
+	{
+		alGenEffects(1, &effect.nAlEffect);
+
+		alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
+
+		alEffectf(effect.nAlEffect, AL_REVERB_GAIN, KV_GetValueFloat(pSection->FindKeyBase("gain"), 0, 0.5f));
+		alEffectf(effect.nAlEffect, AL_REVERB_GAINHF, KV_GetValueFloat(pSection->FindKeyBase("gain_hf"), 0, 0.5f));
+
+		alEffectf(effect.nAlEffect, AL_REVERB_DECAY_TIME, KV_GetValueFloat(pSection->FindKeyBase("decay_time"), 0, 10.0f));
+		alEffectf(effect.nAlEffect, AL_REVERB_DECAY_HFRATIO, KV_GetValueFloat(pSection->FindKeyBase("decay_hf"), 0, 0.5f));
+		alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_DELAY, KV_GetValueFloat(pSection->FindKeyBase("reflection_delay"), 0, 0.0f));
+		alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_GAIN, KV_GetValueFloat(pSection->FindKeyBase("reflection_gain"), 0, 0.5f));
+		alEffectf(effect.nAlEffect, AL_REVERB_DIFFUSION, KV_GetValueFloat(pSection->FindKeyBase("diffusion"), 0, 0.5f));
+		alEffectf(effect.nAlEffect, AL_REVERB_DENSITY, KV_GetValueFloat(pSection->FindKeyBase("density"), 0, 0.5f));
+		alEffectf(effect.nAlEffect, AL_REVERB_AIR_ABSORPTION_GAINHF, KV_GetValueFloat(pSection->FindKeyBase("airabsorption_gain"), 0, 0.5f));
+
+		return true;
+	}
+	else if (!stricmp(pszName, "echo"))
+	{
+		alGenEffects(1, &effect.nAlEffect);
+
+		alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_ECHO);
+
+		return true;
+	}
+	else if (!stricmp(pszName, "none"))
+	{
+		effect.nAlEffect = AL_EFFECT_NULL;
+		return true;
+	}
+	else
+		return false;
+}
+
+
 void DkSoundSystemLocal::PrintInfo()
 {
 	Msg("---- sound system info ----\n");
-	MsgInfo("    3d channels: %d\n", m_pChannels.numElem());
-	MsgInfo("    stream channels: %d\n", m_pAmbients.numElem());
+	MsgInfo("    3d channels: %d\n", m_channels.numElem());
+	MsgInfo("    stream channels: %d\n", m_ambientStreams.numElem());
 	MsgInfo("    registered effects: %d\n", m_effects.numElem());
-	MsgInfo("    emitters: %d\n", m_pSoundEmitters.numElem());
-	MsgInfo("    samples loaded: %d\n", m_pSoundSamples.numElem());
-}
-
-DECLARE_CMD(snd_info, "Print info about sound system", 0)
-{
-	((DkSoundSystemLocal*)soundsystem)->PrintInfo();
+	MsgInfo("    emitters: %d\n", m_emitters.numElem());
+	MsgInfo("    samples loaded: %d\n", m_samples.numElem());
 }

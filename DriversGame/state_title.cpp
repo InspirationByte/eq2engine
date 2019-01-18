@@ -71,7 +71,6 @@ void CState_Title::OnEnter( CBaseStateHandler* from )
 	m_titleTexture->Ref_Grab();
 
 	soundsystem->SetPauseState(false);
-	soundsystem->SetVolumeScale(1.0f);
 	sndEffect_t* reverb = soundsystem->FindEffect( "menu_reverb" );
 
 	soundsystem->SetListener(vec3_zero, vec3_forward, vec3_up, vec3_zero, reverb);

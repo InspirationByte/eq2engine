@@ -46,6 +46,8 @@ public:
 
 protected:
 
+	bool				HasToBeVirtual();
+
 	bool				SelfAssignChannel();
 	bool				DropChannel();
 

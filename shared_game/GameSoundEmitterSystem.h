@@ -108,6 +108,8 @@ protected:
 
 //---------------------------------------------------------------------------------
 
+class ISoundController;
+
 struct EmitSound_t
 {
 	// the first and biggest
@@ -150,6 +152,7 @@ struct EmitSound_t
 	float					fRadiusMultiplier;
 
 	CSoundChannelObject*	pObject;
+	ISoundController*		pController;
 
 	int						nFlags;
 	int						sampleId;
@@ -241,7 +244,7 @@ class CSoundController : public ISoundController
 	friend class	CSoundEmitterSystem;
 public:
 
-	CSoundController() : m_emitData(NULL)
+	CSoundController() : m_emitData(NULL), m_volume(1.0f)
 	{
 	}
 
@@ -266,6 +269,8 @@ protected:
 
 	EmitSound_t		m_emitParams;
 	EqString		m_soundName;	// hold sound name
+
+	float			m_volume;
 
 	EmitterData_t*	m_emitData;
 };

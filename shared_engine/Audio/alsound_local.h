@@ -15,12 +15,11 @@
 #include "alsnd_emitter.h"
 #include "alsnd_stream.h"
 
-#define AL_FORMAT_VORBIS_EXT			0x10003
+#define SOUND_EFX_SLOTS					2
 
 struct sndEffect_t
 {
-	char		name[128];
-
+	char		name[32];
 	ALuint		nAlEffect;
 };
 
@@ -55,12 +54,12 @@ public:
 	void					Update();
 	void					Shutdown();
 
+	bool					InitContext();
+	void					ShutdownContext();
+
 	bool					IsInitialized();
 
 	//-----------------------------------------------------------------------------------------
-
-	// sets volume (not affecting on ambient sources)
-	void					SetVolumeScale(float vol_scale);
 
 	// sets the pause state
 	void					SetPauseState(bool pause);
@@ -97,44 +96,43 @@ public:
 
 	void					ReleaseEmitters();
 	void					ReleaseSamples();
-
-	void					PrintInfo();
-
-public:
+	void					ReleaseEffects();
 
 	void					ReloadEFX();
+	void					PrintInfo();
 
 protected:
 
 	void					InitEFX();
+	bool					CreateALEffect(const char* pszName, struct kvkeybase_t* pSection, struct sndEffect_t& effect);
 
 	int						RequestChannel(DkSoundEmitterLocal* emitter);
 
-protected:
+	//------------------
 
 	Vector3D				m_listenerOrigin;
 	Vector3D				m_listenerDir;
 
 	soundParams_t			m_defaultParams;
 
-	bool					m_bSoundInit;
+	bool					m_init;
 	bool					m_pauseState;
 
-	DkList<ISoundEmitter*>	m_pSoundEmitters;
-	DkList<ISoundSample*>	m_pSoundSamples;
-	DkList<sndChannel_t*>	m_pChannels;
-	DkList<DkSoundAmbient*>	m_pAmbients;
+	DkList<ISoundEmitter*>	m_emitters;
+	DkList<ISoundSample*>	m_samples;
+	DkList<sndChannel_t*>	m_channels;
+	DkList<DkSoundAmbient*>	m_ambientStreams;
 	DkList<sndEffect_t>		m_effects;
 
 	ALCcontext*				m_ctx;
 	ALCdevice*				m_dev;
 
-	ALuint					m_nEffectSlots[2];
-	int						m_nCurrentSlot;
+	ALuint					m_effectSlots[SOUND_EFX_SLOTS];
+	int						m_currEffectSlotIdx;
 
-	sndEffect_t*			m_pCurrentEffect;
+	sndEffect_t*			m_currEffect;
 
-	float					m_fVolumeScale;
+	float					m_masterVolume;
 };
 
 #endif // ALSOUND_LOCAL_H

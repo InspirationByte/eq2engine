@@ -116,9 +116,6 @@ public:
 
 	//-----------------------------------------------------------------------------------------
 
-	// sets volume (not affecting on ambient sources)
-	virtual void				SetVolumeScale(float vol_scale) = 0;
-
 	// sets the pause state
 	virtual void				SetPauseState(bool pause) = 0;
 	virtual bool				GetPauseState() = 0;

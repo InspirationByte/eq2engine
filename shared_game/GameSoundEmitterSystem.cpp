@@ -52,6 +52,8 @@ DECLARE_CMD_VARIANTS(test_scriptsound, "Test the scripted sound", sounds_list, 0
 }
 
 ConVar emitsound_debug("scriptsound_debug", "0", NULL, CV_CHEAT);
+
+ConVar snd_effectsvolume("snd_effectsvolume", "0.5", NULL, CV_ARCHIVE);
 ConVar snd_musicvolume("snd_musicvolume", "0.5", NULL, CV_ARCHIVE);
 
 bool CSoundController::IsStopped() const
@@ -76,6 +78,8 @@ void CSoundController::StartSound(const char* newSoundName)
 			m_emitParams.name = (char*)m_soundName.c_str();
 		}
 
+		m_emitParams.pController = this;
+
 		// sound must be aquired
 		int chan = g_sounds->EmitSound(&m_emitParams);
 
@@ -94,9 +98,6 @@ void CSoundController::StartSound(const char* newSoundName)
 
 		// get emitter
 		m_emitData = g_sounds->m_emitters[m_emitParams.emitterIndex];
-
-		// set controller
-		m_emitData->pController = this;
 
 		return;
 	}
@@ -192,23 +193,7 @@ void CSoundController::SetPitch(float fPitch)
 
 void CSoundController::SetVolume(float fVolume)
 {
-	if(!m_emitData)
-		return;
-
-	if(!m_emitData->pEmitter)
-		return;
-
-	float fSoundVolume = m_emitData->origVolume;
-
-	if(m_emitData->pObject)
-		fSoundVolume *= m_emitData->pObject->GetSoundVolumeScale();
-
-	soundParams_t params;
-	m_emitData->pEmitter->GetParams(&params);
-
-	params.volume = fSoundVolume*fVolume;
-
-	m_emitData->pEmitter->SetParams(&params);
+	m_volume = fVolume;
 }
 
 void CSoundController::SetOrigin(const Vector3D& origin)
@@ -282,7 +267,8 @@ void EmitSound_t::Init( const char* pszName, const Vector3D& pos, float volume, 
 	fVolume = volume;
 	fPitch = pitch;
 	fRadiusMultiplier = radius;
-	pObject = NULL;
+	pObject = nullptr;
+	pController = nullptr;
 	nFlags = flags;	// all sounds forced to use simple occlusion
 	origin = pos;
 	sampleId = -1;
@@ -329,25 +315,6 @@ void CSoundEmitterSystem::Init(float maxDistance)
 void CSoundEmitterSystem::Shutdown()
 {
 	StopAllSounds();
-
-	// play sounds
-	for (int i = 0; i < m_pendingStartSounds2D.numElem(); i++)
-	{
-		EmitSound_t& snd = m_pendingStartSounds2D[i];
-		delete[] snd.name;
-	}
-
-	// release
-	m_pendingStartSounds2D.clear();
-
-	for (int i = 0; i < m_pendingStartSounds.numElem(); i++)
-	{
-		EmitSound_t& snd = m_pendingStartSounds[i];
-		delete[] snd.name;
-	}
-
-	// release
-	m_pendingStartSounds.clear();
 
 	for(int i = 0; i < m_controllers.numElem(); i++)
 	{
@@ -605,17 +572,19 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 		// alloc SoundEmitterSystem emitter data
 		EmitterData_t* edata = new EmitterData_t();
 
-		edata->pEmitter = soundsystem->AllocEmitter();
+		ISoundEmitter* sndEmitter = soundsystem->AllocEmitter();;
+
+		edata->pEmitter = sndEmitter;
 		edata->pObject = emit->pObject;
 
 		edata->origin = emit->origin;
 		edata->velocity = vec3_zero;		// only accessible by sound controller
 		edata->interpolatedOrigin = emit->origin;
-		edata->origVolume = emit->fVolume * pScriptSound->fVolume;
+		edata->origVolume = pScriptSound->fVolume * emit->fVolume;
 		edata->channel = pScriptSound->channel;
 		edata->script = pScriptSound;
 
-		edata->pController = NULL;
+		edata->pController = emit->pController;
 
 		edata->emitSoundData = *emit;
 
@@ -625,16 +594,16 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 		sParams.maxDistance			= pScriptSound->fMaxDistance;
 		sParams.referenceDistance	= pScriptSound->fAtten * emit->fRadiusMultiplier;
 		sParams.pitch				= emit->fPitch * pScriptSound->fPitch;
-		sParams.rolloff				= pScriptSound->fRolloff;
 		sParams.volume				= edata->origVolume;
+		sParams.rolloff				= pScriptSound->fRolloff;
 		sParams.airAbsorption		= pScriptSound->fAirAbsorption;
 		sParams.is2D				= pScriptSound->is2d;
 
-		if(emit->nFlags & EMITSOUND_FLAG_STARTSILENT)
-			sParams.volume = 0.0f;
-
 		// update emitter before playing
 		UpdateEmitter( edata, sParams, true );
+
+		if (emit->nFlags & EMITSOUND_FLAG_STARTSILENT)
+			sParams.volume = 0.0f;
 
 		if(emitsound_debug.GetBool())
 		{
@@ -648,10 +617,10 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 		//if(!pScriptSound->loop)
 		//	sParams.pitch += RandomFloat(-0.05f,0.05f);
 
-		edata->pEmitter->SetSample(bestSample);
-		edata->pEmitter->SetParams(&sParams);
+		sndEmitter->SetSample(bestSample);
+		sndEmitter->SetParams(&sParams);
 
-		edata->pEmitter->Play();
+		sndEmitter->Play();
 
 		int eIndex = m_emitters.append(edata);
 		emit->emitterIndex = eIndex;
@@ -729,8 +698,13 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channel)
 
 		if(staticChannel)
 		{
+			float volume = emit->fVolume*pScriptSound->fVolume;
+
+			if (channel == CHAN_STREAM)
+				volume = snd_musicvolume.GetFloat();
+
 			staticChannel->SetSample(bestSample);
-			staticChannel->SetVolume(emit->fVolume*pScriptSound->fVolume);
+			staticChannel->SetVolume(volume);
 			staticChannel->SetPitch(emit->fPitch*pScriptSound->fPitch);
 
 			staticChannel->Play();
@@ -748,10 +722,11 @@ bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &
 {
 	ASSERT(soundsystem->IsValidEmitter( emitter->pEmitter ));
 
+	CSoundController* controller = (CSoundController*)emitter->pController;
+
 	Vector3D emitPos = emitter->origin;
 
 	float fBestVolume = emitter->origVolume;
-	bool volumeNeedsChange = false;
 
 #ifndef NO_ENGINE
 	if(emitter->pObject)
@@ -780,10 +755,7 @@ bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &
 			physics->InternalTraceLine(viewPos, emitPos, COLLISION_GROUP_WORLD, &trace);
 
 			if (trace.fraction < 1.0f)
-			{
 				fBestVolume *= 0.2f;
-				volumeNeedsChange = true;
-			}
 		}
 
 		// do room lookup
@@ -830,27 +802,29 @@ bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &
 			}
 		}
 
-		if(bForceNoInterp)
-			params.volume = fBestVolume;
+		/*
+		if(!bForceNoInterp)
+			emitter->interpVolume = fBestVolume;
 		else
-			params.volume = lerp(params.volume, fBestVolume, gpGlobals->frametime*2.0f);
-
-		volumeNeedsChange = true;
+			emitter->interpVolume = lerp(emitter->interpVolume, fBestVolume, gpGlobals->frametime*2.0f);
+		*/
 	}
 #endif
 
 	emitter->pEmitter->SetPosition(emitPos);
 	emitter->pEmitter->SetVelocity(emitter->velocity);
-
-	if (!emitter->pController && emitter->pObject)
+	
+	if (controller)
 	{
-		fBestVolume *= emitter->pObject->GetSoundVolumeScale();
+		fBestVolume *= controller->m_volume;
 	}
+	
+	if(emitter->pObject)
+		fBestVolume *= emitter->pObject->GetSoundVolumeScale();
+	
+	params.volume = fBestVolume * snd_effectsvolume.GetFloat();
 
-	if (volumeNeedsChange)
-		params.volume = fBestVolume;
-
-	if( !emitter->pController && (emitter->pEmitter->GetState() == SOUND_STATE_STOPPED) )
+	if (!controller && (emitter->pEmitter->GetState() == SOUND_STATE_STOPPED))
 		return false;
 
 	return true;
@@ -864,16 +838,50 @@ void CSoundEmitterSystem::StopAllSounds()
 
 void CSoundEmitterSystem::StopAllEmitters()
 {
-	// stop emitters
-	for(int i = 0; i < m_emitters.numElem(); i++)
-		m_emitters[i]->pEmitter->Stop();
+	// remove pending sounds
+	for (int i = 0; i < m_pendingStartSounds.numElem(); i++)
+	{
+		EmitSound_t& snd = m_pendingStartSounds[i];
+		delete[] snd.name;
+	}
 
-	Update(true);
+	m_pendingStartSounds.clear();
+
+	// stop emitters
+	for (int i = 0; i < m_emitters.numElem(); i++)
+	{
+		EmitterData_t* em = m_emitters[i];
+
+		if (em->pController)
+			em->pController->Stop(true);
+
+		if (em->pEmitter)
+		{
+			em->pEmitter->Stop();
+
+			soundsystem->FreeEmitter(em->pEmitter);
+			em->pEmitter = nullptr;
+		}
+
+		delete em;
+		m_emitters.fastRemoveIndex(i);
+		i--;
+	}
+
 	soundsystem->Update();
 }
 
 void CSoundEmitterSystem::StopAll2DSounds()
 {
+	// remove pending sounds
+	for (int i = 0; i < m_pendingStartSounds2D.numElem(); i++)
+	{
+		EmitSound_t& snd = m_pendingStartSounds2D[i];
+		delete[] snd.name;
+	}
+
+	m_pendingStartSounds2D.clear();
+
 	// stop static channels
 	int i = 0;
 	while(true)
@@ -949,14 +957,16 @@ void CSoundEmitterSystem::Update(bool force)
 
 		bool remove = (!emitter || (emitter && !emitter->pEmitter));
 
+		ISoundEmitter* em = emitter->pEmitter;
+
 		if( !remove )
 		{
 			soundParams_t params;
-			emitter->pEmitter->GetParams( &params );
+			em->GetParams( &params );
 
 			remove = UpdateEmitter(emitter, params) == false;
 
-			emitter->pEmitter->SetParams( &params );
+			em->SetParams( &params );
 		}
 
 		if( remove )
@@ -964,7 +974,7 @@ void CSoundEmitterSystem::Update(bool force)
 			if(emitter->pController)
 				emitter->pController->Stop(true);
 
-			soundsystem->FreeEmitter( emitter->pEmitter );
+			soundsystem->FreeEmitter(em);
 
 			// delete this emitter
 			delete emitter;

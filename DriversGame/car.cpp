@@ -775,6 +775,7 @@ ISoundController* CCar::CreateCarSound(const char* name, float radiusMult)
 	soundEp.fRadiusMultiplier = radiusMult;
 	soundEp.origin = m_vecOrigin;
 	soundEp.pObject = this;
+	soundEp.nFlags |= EMITSOUND_FLAG_STARTSILENT;
 
 	return g_sounds->CreateSoundController(&soundEp);
 }
@@ -3441,71 +3442,77 @@ void CCar::UpdateSounds( float fDt )
 			m_sirenDeathTime = SIREN_SOUND_DEATHTIME;
 	}
 
-	float fTractionLevel = GetTractionSliding(true)*0.2f;
-	float fSlideLevel = fabs(GetLateralSlidingAtWheels(true)*0.5f) - 0.25;
-
-	float fSkid = (fSlideLevel + fTractionLevel)*0.5f;
-
-	float fSkidVol = clamp((fSkid-0.5)*1.0f - g_pGameWorld->m_envWetness*3.0f, 0.0, 1.0);
-
 	int wheelCount = GetWheelCount();
-
-	if(fSkidVol > 0.08)
+	float fTractionLevel = GetTractionSliding(true)*0.2f;
+	
+	// wet ground
 	{
-		if(m_sounds[CAR_SOUND_SKID]->IsStopped())
-			m_sounds[CAR_SOUND_SKID]->Play();
-
-		//if(!m_sounds[CAR_SOUND_SURFACE]->IsStopped())
-		//	m_sounds[CAR_SOUND_SURFACE]->Stop();
-	}
-	else
-	{
-		m_sounds[CAR_SOUND_SKID]->Stop();
-
 		bool anyWheelOnGround = false;
 
-		for(int i = 0; i < wheelCount; i++)
+		for (int i = 0; i < wheelCount; i++)
 		{
-			if(m_wheels[i].m_collisionInfo.fract < 1.0f)
+			if (m_wheels[i].m_collisionInfo.fract < 1.0f)
 			{
 				anyWheelOnGround = true;
 				break;
 			}
 		}
 
-		if(anyWheelOnGround && m_sounds[CAR_SOUND_SURFACE]->IsStopped() && m_isLocalCar && g_pGameWorld->m_envWetness > SKID_WATERTRAIL_MIN_WETNESS)
-		{
-			m_sounds[CAR_SOUND_SURFACE]->Play();
-		}
-		else if(!anyWheelOnGround && !m_sounds[CAR_SOUND_SURFACE]->IsStopped())
-		{
-			m_sounds[CAR_SOUND_SURFACE]->Stop();
-		}
-
-		float fSpeedMod = clamp(GetSpeed()/90.0f + fTractionLevel*0.25f, 0.0f, 1.0f);
-		float fSpeedModVol = clamp(GetSpeed()/20.0f + fTractionLevel*0.25f, 0.0f, 1.0f);
+		float fSpeedMod = clamp(GetSpeed() / 90.0f + fTractionLevel * 0.25f, 0.0f, 1.0f);
+		float fSpeedModVol = clamp(GetSpeed() / 20.0f + fTractionLevel * 0.25f, 0.0f, 1.0f);
 
 		m_sounds[CAR_SOUND_SURFACE]->SetPitch(fSpeedMod);
 		m_sounds[CAR_SOUND_SURFACE]->SetVolume(fSpeedModVol*g_pGameWorld->m_envWetness);
+
+		if (anyWheelOnGround && m_sounds[CAR_SOUND_SURFACE]->IsStopped() && m_isLocalCar && g_pGameWorld->m_envWetness > SKID_WATERTRAIL_MIN_WETNESS)
+		{
+			m_sounds[CAR_SOUND_SURFACE]->Play();
+		}
+		else if (!anyWheelOnGround && !m_sounds[CAR_SOUND_SURFACE]->IsStopped())
+		{
+			m_sounds[CAR_SOUND_SURFACE]->Stop();
+		}
 	}
 
-	float fWheelRad = 0.0f;
+	// skid sound
+	{
+		float fSlideLevel = fabs(GetLateralSlidingAtWheels(true)*0.5f) - 0.25;
 
-	float inv_wheelCount = 1.0f / wheelCount;
+		float fSkid = (fSlideLevel + fTractionLevel)*0.5f;
 
-	for(int i = 0; i < wheelCount; i++)
-		fWheelRad += m_conf->physics.wheels[i].radius;
+		float fSkidVol = clamp((fSkid - 0.5)*1.0f - g_pGameWorld->m_envWetness*3.0f, 0.0, 1.0);
 
-	fWheelRad *= inv_wheelCount;
+		float fWheelRad = 0.0f;
 
-	const float IDEAL_WHEEL_RADIUS = 0.35f;
-	const float SKID_RADIAL_SOUNDPITCH_SCALE = 0.68f;
+		float inv_wheelCount = 1.0f / wheelCount;
 
-	float wheelSkidPitchModifier = IDEAL_WHEEL_RADIUS - fWheelRad;
-	float fSkidPitch = clamp(0.7f*fSkid+0.25f, 0.35f, 1.0f) - 0.15f*saturate(sinf(m_curTime*1.25f)*8.0f - fTractionLevel);
+		for (int i = 0; i < wheelCount; i++)
+			fWheelRad += m_conf->physics.wheels[i].radius;
 
-	m_sounds[CAR_SOUND_SKID]->SetVolume( fSkidVol );
-	m_sounds[CAR_SOUND_SKID]->SetPitch( fSkidPitch + wheelSkidPitchModifier*SKID_RADIAL_SOUNDPITCH_SCALE );
+		fWheelRad *= inv_wheelCount;
+
+		const float IDEAL_WHEEL_RADIUS = 0.35f;
+		const float SKID_RADIAL_SOUNDPITCH_SCALE = 0.68f;
+
+		float wheelSkidPitchModifier = IDEAL_WHEEL_RADIUS - fWheelRad;
+		float fSkidPitch = clamp(0.7f*fSkid + 0.25f, 0.35f, 1.0f) - 0.15f*saturate(sinf(m_curTime*1.25f)*8.0f - fTractionLevel);
+
+		m_sounds[CAR_SOUND_SKID]->SetVolume(fSkidVol);
+		m_sounds[CAR_SOUND_SKID]->SetPitch(fSkidPitch + wheelSkidPitchModifier * SKID_RADIAL_SOUNDPITCH_SCALE);
+
+		if (fSkidVol > 0.08)
+		{
+			if (m_sounds[CAR_SOUND_SKID]->IsStopped())
+				m_sounds[CAR_SOUND_SKID]->Play();
+
+			//if(!m_sounds[CAR_SOUND_SURFACE]->IsStopped())
+			//	m_sounds[CAR_SOUND_SURFACE]->Stop();
+		}
+		else
+		{
+			m_sounds[CAR_SOUND_SKID]->Stop();
+		}
+	}
 
 	//
 	// skip other sounds if that's not a car
@@ -3573,12 +3580,6 @@ void CCar::UpdateSounds( float fDt )
 			m_sounds[CAR_SOUND_WHINE]->Stop();
 	}
 
-	if(m_sounds[CAR_SOUND_ENGINE]->IsStopped())
-		m_sounds[CAR_SOUND_ENGINE]->Play();
-
-	if(m_isLocalCar && m_sounds[CAR_SOUND_ENGINE_LOW]->IsStopped())
-		m_sounds[CAR_SOUND_ENGINE_LOW]->Play();
-
 	m_engineIdleFactor = (clamp(2200.0f-m_fEngineRPM, 0.0f,2200.0f)/2200.0f);
 
 	float fEngineSoundVol = clamp((1.0f - m_engineIdleFactor), 0.45f, 1.0f);
@@ -3603,9 +3604,8 @@ void CCar::UpdateSounds( float fDt )
 #endif // EDITOR
 
 	m_sounds[CAR_SOUND_ENGINE]->SetVolume(fEngineSoundVol * fRPMDiff);
-
-	if(m_isLocalCar)
-		m_sounds[CAR_SOUND_ENGINE_LOW]->SetVolume(fEngineSoundVol * (1.0f-fRPMDiff));
+	m_sounds[CAR_SOUND_ENGINE_LOW]->SetVolume(fEngineSoundVol * (1.0f-fRPMDiff));
+	m_sounds[CAR_SOUND_ENGINE_IDLE]->SetVolume(m_engineIdleFactor);
 
 	if(m_engineIdleFactor <= 0.05f && !m_sounds[CAR_SOUND_ENGINE_IDLE]->IsStopped())
 	{
@@ -3616,7 +3616,11 @@ void CCar::UpdateSounds( float fDt )
 		m_sounds[CAR_SOUND_ENGINE_IDLE]->Play();
 	}
 
-	m_sounds[CAR_SOUND_ENGINE_IDLE]->SetVolume(m_engineIdleFactor);
+	if (m_sounds[CAR_SOUND_ENGINE]->IsStopped())
+		m_sounds[CAR_SOUND_ENGINE]->Play();
+
+	if (m_isLocalCar && m_sounds[CAR_SOUND_ENGINE_LOW]->IsStopped())
+		m_sounds[CAR_SOUND_ENGINE_LOW]->Play();
 
 	if( m_sounds[CAR_SOUND_SIREN] )
 	{

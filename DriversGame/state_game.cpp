@@ -418,8 +418,6 @@ void CState_Game::UnloadGame()
 
 void CState_Game::LoadGame()
 {
-	soundsystem->SetVolumeScale( 0.0f );
-
 	UnloadGame();
 
 	g_sounds->Init(EQ_DRVSYN_DEFAULT_SOUND_DISTANCE);
@@ -876,8 +874,6 @@ bool CState_Game::Update( float fDt )
 
 			return !m_exitGame;
 		}
-
-		soundsystem->SetVolumeScale(1.0f-m_fade);
 	}
 	else
 	{
@@ -885,11 +881,7 @@ bool CState_Game::Update( float fDt )
 		if( m_fade > 0.0f )
 		{
 			m_fade -= fDt*5.0f;
-
-			soundsystem->SetVolumeScale(1.0f-m_fade);
 		}
-		else
-			soundsystem->SetVolumeScale( 1.0f );
 	}
 
 	DrawMenu(fDt);
