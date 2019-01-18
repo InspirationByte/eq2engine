@@ -221,6 +221,11 @@ CSoundChannelObject::CSoundChannelObject() : m_volumeScale(1.0f)
 	memset(m_numChannelSounds, 0, sizeof(m_numChannelSounds));
 }
 
+CSoundChannelObject::~CSoundChannelObject()
+{
+	g_sounds->InvalidateSoundChannelObject(this);
+}
+
 void CSoundChannelObject::EmitSound(const char* name)
 {
 	EmitSound_t ep;
@@ -410,6 +415,15 @@ void CSoundEmitterSystem::RemoveSoundController(ISoundController* cont)
 
 	if( idx != -1)
 		m_controllers.fastRemoveIndex( idx );
+}
+
+void CSoundEmitterSystem::InvalidateSoundChannelObject(CSoundChannelObject* pEnt)
+{
+	for (int i = 0; i < m_emitters.numElem(); i++)
+	{
+		if (m_emitters[i]->pObject == pEnt)
+			m_emitters[i]->pObject = nullptr;
+	}
 }
 
 void CSoundEmitterSystem::PrecacheSound(const char* pszName)

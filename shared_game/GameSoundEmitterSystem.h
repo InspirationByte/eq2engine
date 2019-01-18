@@ -85,7 +85,7 @@ public:
 	//PPMEM_MANAGED_OBJECT()
 
 	CSoundChannelObject();
-	virtual ~CSoundChannelObject() {}
+	virtual ~CSoundChannelObject();
 
 	// emit sound
 	void		EmitSound(const char* name);
@@ -310,6 +310,8 @@ public:
 
 	ISoundController*			CreateSoundController(EmitSound_t* ep);						// creates new sound controller
 	void						RemoveSoundController(ISoundController* cont);
+
+	void						InvalidateSoundChannelObject(CSoundChannelObject* pEnt);
 
 protected:
 	void						LoadScriptSoundFile(const char* fileName);
