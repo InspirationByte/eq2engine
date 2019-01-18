@@ -115,9 +115,9 @@ public:
 	float						GetCopMaxSpeed() const;
 
 	bool						MakeCopSpeech(const char* soundScriptName, bool force);			// shedules a cop speech
-	bool						IsCopCanSayTaunt() const;
+	bool						IsCopsCanUseLoudhailer() const;
 
-	void						GotCopTaunt();
+	void						CopLoudhailerTold();
 
 	void						SetCopCarConfig(const char* car_name, int type = COP_LIGHT);	// sets cop car configuration
 
@@ -160,7 +160,7 @@ protected:
 	int							m_copRespawnInterval;
 	int							m_copSpawnIntervalCounter;
 
-	float						m_copTauntTime;
+	float						m_copLoudhailerTime;
 	float						m_copSpeechTime;
 
 	DkList<EqString>			m_speechQueue;

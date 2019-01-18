@@ -96,7 +96,7 @@ void CAICarManager::Init()
 	for (int i = 0; i < COP_NUMTYPES; i++)
 		m_copCarName[i] = "";
 
-	m_copTauntTime = RandomFloat(AI_COP_TAUNT_DELAY, AI_COP_TAUNT_DELAY + 5.0f);
+	m_copLoudhailerTime = RandomFloat(AI_COP_TAUNT_DELAY, AI_COP_TAUNT_DELAY + 5.0f);
 	m_copSpeechTime = RandomFloat(AI_COP_SPEECH_DELAY, AI_COP_SPEECH_DELAY + 5.0f);
 }
 
@@ -529,10 +529,10 @@ void CAICarManager::UpdateCopStuff(float fDt)
 	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "cops spawned: %d (max %d) (cntr=%d, lvl=%d)\n", m_copCars.numElem(), GetMaxCops(), m_copSpawnIntervalCounter, m_copRespawnInterval);
 	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "num traffic cars: %d\n", m_trafficCars.numElem());
 
-	debugoverlay->Text(ColorRGBA(1, 1, 1, 1), "cop speech time: normal %g taunt %g\n", m_copSpeechTime, m_copTauntTime);
+	debugoverlay->Text(ColorRGBA(1, 1, 1, 1), "cop speech time: normal %g taunt %g\n", m_copSpeechTime, m_copLoudhailerTime);
 
 	m_copSpeechTime -= fDt;
-	m_copTauntTime -= fDt;
+	m_copLoudhailerTime -= fDt;
 
 	ISoundPlayable* copVoiceChannel = soundsystem->GetStaticStreamChannel(CHAN_VOICE);
 
@@ -834,14 +834,14 @@ bool CAICarManager::MakeCopSpeech(const char* soundScriptName, bool force)
 	return false;
 }
 
-bool CAICarManager::IsCopCanSayTaunt() const
+bool CAICarManager::IsCopsCanUseLoudhailer() const
 {
-	return (m_copSpeechTime < 0) && (m_copTauntTime < 0);
+	return (m_copSpeechTime < 0) && (m_copLoudhailerTime < 0);
 }
 
-void CAICarManager::GotCopTaunt()
+void CAICarManager::CopLoudhailerTold()
 {
-	m_copTauntTime = RandomFloat(AI_COP_TAUNT_DELAY, AI_COP_TAUNT_DELAY+5.0f);
+	m_copLoudhailerTime = RandomFloat(AI_COP_TAUNT_DELAY, AI_COP_TAUNT_DELAY+5.0f);
 	m_copSpeechTime = RandomFloat(AI_COP_SPEECH_DELAY, AI_COP_SPEECH_DELAY + 5.0f);
 }
 

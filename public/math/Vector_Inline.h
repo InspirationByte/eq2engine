@@ -743,6 +743,13 @@ inline TVec4D<T> clamp(const TVec4D<T> &v, const TVec4D<T> &c0, const TVec4D<T> 
 }
 
 template <typename T>
+inline T normalize(const T f)
+{
+	T invLen = 1.0f / sqrt(f * f);
+	return v * invLen;
+}
+
+template <typename T>
 inline TVec2D<T> normalize(const TVec2D<T> &v)
 {
 	T invLen = 1.0f / sqrt(v.x * v.x + v.y * v.y);

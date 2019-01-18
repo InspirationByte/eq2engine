@@ -1124,6 +1124,7 @@ void CCar::AnalogSetControls(float accel_brake, float steering, bool extendSteer
 		buttons |= IN_BRAKE;
 
 	SetControlVars(accelRatio, brakeRatio, steering);
+	SetControlButtons(buttons);
 }
 
 void CCar::HingeVehicle(int thisHingePoint, CCar* otherVehicle, int otherHingePoint)
