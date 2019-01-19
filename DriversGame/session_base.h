@@ -92,6 +92,8 @@ public:
 	int							GenScriptID();
 	CGameObject*				FindScriptObjectById(int scriptID);
 
+	double						GetGameTime() const { return m_gameTime; }
+
 	//-------------------------------------------------------------------------
 	// functions only used by Lua
 
@@ -109,6 +111,8 @@ protected:
 
 	float						m_waitForExitTime;
 	int							m_missionStatus;
+
+	double						m_gameTime;
 
 	int							m_scriptIDCounter;
 

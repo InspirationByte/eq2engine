@@ -38,9 +38,9 @@ const float AI_COP_MINFELONY			= 0.1f;
 const float AI_COP_MINFELONY_CHECK		= 0.05f;
 
 const float AI_COP_COLLISION_FELONY			= 0.06f;
-const float AI_COP_COLLISION_FELONY_VEHICLE	= 0.1f;
-const float AI_COP_COLLISION_FELONY_DEBRIS	= 0.02f;
-const float AI_COP_COLLISION_FELONY_REDLIGHT = 0.005f;
+const float AI_COP_COLLISION_FELONY_VEHICLE	= 0.15f;
+const float AI_COP_COLLISION_FELONY_DEBRIS	= 0.04f;
+const float AI_COP_COLLISION_FELONY_REDLIGHT = 0.010f;
 
 const float AI_COP_COLLISION_CHECKTIME		= 0.01f;
 
@@ -58,22 +58,20 @@ IVector2D GetDirectionVec(int dirIdx);
 
 //------------------------------------------------------------------------------------------------
 
-CAIPursuerCar::CAIPursuerCar() : CAITrafficCar(NULL)
+CAIPursuerCar::CAIPursuerCar() : CAITrafficCar(nullptr)
 {
-	memset(&m_targInfo, 0, sizeof(m_targInfo));
+	m_target = nullptr;
 }
 
 CAIPursuerCar::CAIPursuerCar(vehicleConfig_t* carConfig, EPursuerAIType type) : CAITrafficCar(carConfig)
 {
-	memset(&m_targInfo, 0, sizeof(m_targInfo));
+	m_target = nullptr;
 
-	m_loudhailer = NULL;
+	m_loudhailer = nullptr;
 	m_type = type;
 
 	m_alterSirenChangeTime = AI_ALTER_SIREN_CHANGETIME;
 	m_sirenAltered = false;
-
-	m_targInfo.hasToCheck = true;
 }
 
 CAIPursuerCar::~CAIPursuerCar()
@@ -148,7 +146,7 @@ void CAIPursuerCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 
 		CCar* playerCar = g_pGameSession->GetPlayerCar();
 
-		if (m_targInfo.target == NULL &&
+		if (!m_target &&
 			(pair.impactVelocity > 1.0f) && hitBy == playerCar)
 		{
 			SetPursuitTarget(playerCar);
@@ -183,8 +181,6 @@ void CAIPursuerCar::OnPrePhysicsFrame( float fDt )
 {
 	BaseClass::OnPrePhysicsFrame(fDt);
 
-	m_targInfo.nextCheckImpactTime -= fDt;
-
 	CCar* playerCar = g_pGameSession->GetPlayerCar();
 	if(	IsAlive()&&
 		!m_enabled &&
@@ -208,18 +204,26 @@ void CAIPursuerCar::OnPhysicsFrame( float fDt )
 		if(m_collAvoidance.m_manipulator.m_isColliding)
 			m_collAvoidance.m_manipulator.m_lastCollidingPosition = GetPhysicsBody()->m_collisionList[0].position;
 
-		if (!g_pGameWorld->IsValidObject(m_targInfo.target))
+		if (!g_pGameWorld->IsValidObject(m_target))
 		{
-			m_targInfo.target = nullptr;
+			m_target = nullptr;
 		}
 
 		// update target infraction
-		if(m_targInfo.target)
+		if(m_target)
 		{
-			int infraction = CheckTrafficInfraction(m_targInfo.target, false,false);
+			int infraction = CheckTrafficInfraction(m_target, false,false);
 
-			if(infraction > INFRACTION_HAS_FELONY)
-				m_targInfo.lastInfraction = infraction;
+			PursuerData_t& pursuer = m_target->GetPursuerData();
+
+			if (infraction > INFRACTION_HAS_FELONY)
+			{
+				if (g_pGameSession->GetGameTime() > pursuer.lastInfractionTime[infraction])
+				{
+					pursuer.lastInfractionTime[infraction] = g_pGameSession->GetGameTime() + INFRACTION_SKIP_REGISTER_TIME;
+					pursuer.hasInfraction[infraction] = true;
+				}
+			}
 		}
 		else // do passive state
 		{
@@ -251,15 +255,17 @@ int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 	if( CheckObjectVisibility(playerCar) )
 	{
 		int infraction = CheckTrafficInfraction(playerCar);
-
+		/*
 		if (m_type == PURSUER_TYPE_COP)
 		{
-			if (m_targInfo.hasToCheck && !m_targInfo.target && (m_targInfo.target != playerCar) && playerCar->GetFelony() >= AI_COP_MINFELONY_CHECK && playerCar->GetFelony() < AI_COP_MINFELONY)
+			PursuerData_t& playerPursuerData = playerCar->GetPursuerData();
+
+			if (!playerPursuerData.announced && !m_target && (m_target != playerCar) && playerCar->GetFelony() >= AI_COP_MINFELONY_CHECK && playerCar->GetFelony() < AI_COP_MINFELONY)
 			{
-				m_targInfo.hasToCheck = false;
+				playerPursuerData.announced = true;
 				Speak("cop.check");
 			}	
-		}
+		}*/
 
 		if (m_type == PURSUER_TYPE_COP && infraction == INFRACTION_NONE)
 			return 0;
@@ -281,7 +287,7 @@ int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 
 void CAIPursuerCar::BeginPursuit( float delay )
 {
-	if (!m_targInfo.target)
+	if (!m_target)
 		return;
 
 	if(!IsAlive())
@@ -290,12 +296,14 @@ void CAIPursuerCar::BeginPursuit( float delay )
 		return;
 	}
 
+	PursuerData_t& targetPursuerData = m_target->GetPursuerData();
+
 	// announce pursuit for cops
 	if (m_type == PURSUER_TYPE_COP && 
-		!m_targInfo.hasAnnouncedTarget && 
-		g_pGameSession->GetPlayerCar() == m_targInfo.target)
+		!targetPursuerData.announced &&
+		g_pGameSession->GetPlayerCar() == m_target)
 	{
-		if (m_targInfo.target->GetFelony() >= AI_COP_MINFELONY)
+		if (m_target->GetFelony() >= AI_COP_MINFELONY)
 		{
 			int val = RandomInt(0, 1);
 
@@ -306,20 +314,20 @@ void CAIPursuerCar::BeginPursuit( float delay )
 		}
 		else
 		{
-			m_targInfo.target->SetFelony(AI_COP_MINFELONY);
+			m_target->SetFelony(AI_COP_MINFELONY);
 
 			Speak("cop.pursuit", true);
 		}
 	}
 
-	m_targInfo.hasAnnouncedTarget = true;
+	targetPursuerData.announced = true;
 
 	AI_SetNextState(&CAIPursuerCar::PursueTarget, delay);
 }
 
 void CAIPursuerCar::EndPursuit(bool death)
 {
-	if (!m_targInfo.target)
+	if (!m_target)
 		return;
 
 	if(m_loudhailer)
@@ -345,12 +353,12 @@ void CAIPursuerCar::EndPursuit(bool death)
 	else
 		AI_SetState( &CAIPursuerCar::DeadState );
 	 
-	if (m_targInfo.target != NULL)
+	if (m_target != NULL)
 	{
 		// validate and remove
-		if (g_pGameWorld->IsValidObject(m_targInfo.target) &&
-			m_targInfo.target->GetPursuedCount() == 1 &&
-			g_pGameSession->GetPlayerCar() == m_targInfo.target)	// only play sound when in game, not unloading or restaring
+		if (g_pGameWorld->IsValidObject(m_target) &&
+			m_target->GetPursuedCount() == 1 &&
+			g_pGameSession->GetPlayerCar() == m_target)	// only play sound when in game, not unloading or restaring
 			// g_State_Game->IsGameRunning())
 		{
 			Speak("cop.lost", true);
@@ -362,7 +370,7 @@ void CAIPursuerCar::EndPursuit(bool death)
 
 bool CAIPursuerCar::InPursuit() const
 {
-	return m_targInfo.target && FSMGetCurrentState() == &CAIPursuerCar::PursueTarget;
+	return m_target && FSMGetCurrentState() == &CAIPursuerCar::PursueTarget;
 }
 
 EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelony, bool checkSpeeding )
@@ -551,7 +559,7 @@ bool CAIPursuerCar::CheckObjectVisibility(CCar* obj)
 
 int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 {
-	bool targetIsValid = (m_targInfo.target != NULL);
+	bool targetIsValid = (m_target != NULL);
 
 	if(transition == STATE_TRANSITION_PROLOG)
 	{
@@ -582,7 +590,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 			// make automatically angry
 			SetInfiniteMass(true);
 
-			m_targInfo.isAngry = true;
+			//m_targInfo.isAngry = true;
 		}
 
 		m_enabled = true;
@@ -616,27 +624,29 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		return 0;
 	}
 
-	if (!m_targInfo.target)
+	if (!m_target)
 		return 0;
 
-	Vector3D targetVelocity = m_targInfo.target->GetVelocity();
-	Vector3D targetForward = m_targInfo.target->GetForwardVector();
+	Vector3D targetVelocity = m_target->GetVelocity();
+	Vector3D targetForward = m_target->GetForwardVector();
 
-	float targetSpeed = m_targInfo.target->GetSpeed();
+	float targetSpeed = m_target->GetSpeed();
 	float targetSpeedMPS = (targetSpeed*KPH_TO_MPS);
 
-	bool isVisible = CheckObjectVisibility( m_targInfo.target );
+	bool isVisible = CheckObjectVisibility( m_target );
+
+	PursuerData_t& targetPursuerData = m_target->GetPursuerData();
 
 	// check the visibility
 	if ( !isVisible )
 	{
-		m_targInfo.notSeeingTime += fDt;
+		targetPursuerData.lastSeenTimer += fDt;
 
-		float distToTarget = length(m_targInfo.target->GetOrigin() - GetOrigin());
+		float distToTarget = length(m_target->GetOrigin() - GetOrigin());
 
 		float timeToLostTarget = (distToTarget > AI_COP_LOST_TARGET_FARDIST) ? AI_COP_TIME_TO_LOST_TARGET_FAR : AI_COP_TIME_TO_LOST_TARGET;
 
-		if (m_targInfo.notSeeingTime  > timeToLostTarget)
+		if (targetPursuerData.lastSeenTimer > timeToLostTarget)
 		{
 			EndPursuit(false);
 			return 0;
@@ -644,60 +654,60 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	}
 	else
 	{
-		if (m_targInfo.notSeeingTime  > AI_COP_TIME_TO_LOST_TARGET*0.5f &&
-			g_pGameSession->GetPlayerCar() == m_targInfo.target)
+		if (targetPursuerData.lastSeenTimer > AI_COP_TIME_TO_LOST_TARGET*0.5f &&
+			g_pGameSession->GetPlayerCar() == m_target)
 		{
 			Speak("cop.pursuit_continue");
 		}
 
 		if (m_type == PURSUER_TYPE_COP)
 		{
-			if(	m_targInfo.lastInfraction > INFRACTION_HAS_FELONY &&
-				m_targInfo.nextCheckImpactTime < 0 )
+			float newFelony = m_target->GetFelony();
+
+			for (int i = 0; i < INFRACTION_COUNT; i++)
 			{
-				m_targInfo.nextCheckImpactTime = AI_COP_COLLISION_CHECKTIME;
-
-				float newFelony = m_targInfo.target->GetFelony();
-
-				switch( m_targInfo.lastInfraction )
+				if (targetPursuerData.hasInfraction[i])
 				{
-					case INFRACTION_HIT_VEHICLE:
+					switch (i)
 					{
-						newFelony += AI_COP_COLLISION_FELONY_VEHICLE;
+						case INFRACTION_HIT_VEHICLE:
+						{
+							newFelony += AI_COP_COLLISION_FELONY_VEHICLE;
 
-						Speak("cop.hitvehicle");
-						break;
-					}
-					case INFRACTION_HIT_SQUAD_VEHICLE:
-					{
-						newFelony += AI_COP_COLLISION_FELONY_VEHICLE;
+							Speak("cop.hitvehicle");
+							break;
+						}
+						case INFRACTION_HIT_SQUAD_VEHICLE:
+						{
+							newFelony += AI_COP_COLLISION_FELONY_VEHICLE;
 
-						Speak("cop.squad_car_hit");
-						break;
+							Speak("cop.squad_car_hit");
+							break;
+						}
+						case INFRACTION_HIT:
+						{
+							newFelony += AI_COP_COLLISION_FELONY;
+							break;
+						}
+						case INFRACTION_HIT_MINOR:
+						{
+							newFelony += AI_COP_COLLISION_FELONY_DEBRIS;
+							break;
+						}
+						case INFRACTION_RED_LIGHT:
+						{
+							newFelony += AI_COP_COLLISION_FELONY_REDLIGHT;
+							Speak("cop.redlight");
+							break;
+						}
 					}
-					case INFRACTION_HIT:
-					{
-						newFelony += AI_COP_COLLISION_FELONY;
-						break;
-					}
-					case INFRACTION_HIT_MINOR:
-					{
-						newFelony += AI_COP_COLLISION_FELONY_DEBRIS;
-						break;
-					}
-					case INFRACTION_RED_LIGHT:
-					{
-						newFelony += AI_COP_COLLISION_FELONY_REDLIGHT;
-						Speak("cop.redlight");
-						break;
-					}
+
+					if (newFelony > 1.0f)
+						newFelony = 1.0f;
+
+					targetPursuerData.hasInfraction[i] = false;
+					m_target->SetFelony(newFelony);
 				}
-
-				if (newFelony > 1.0f)
-					newFelony = 1.0f;
-
-				m_targInfo.lastInfraction = INFRACTION_HAS_FELONY;
-				m_targInfo.target->SetFelony(newFelony);
 			}
 
 			if (m_loudhailer)
@@ -712,7 +722,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 				SpeakTargetDirection("cop.heading");
 		}
 
-		m_targInfo.notSeeingTime = 0.0f;
+		targetPursuerData.lastSeenTimer = 0.0f;
 	}
 
 	if(!ai_debug_pursuer.GetBool())
@@ -733,14 +743,14 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	float mySpeed = GetSpeed();
 
 	// update navigation affector parameters
-	m_navAffector.m_manipulator.m_driveTarget = m_targInfo.target->GetOrigin();
-	m_navAffector.m_manipulator.m_driveTargetVelocity = m_targInfo.target->GetVelocity();
-	m_navAffector.m_manipulator.m_excludeColl = m_targInfo.target->GetPhysicsBody();
+	m_navAffector.m_manipulator.m_driveTarget = m_target->GetOrigin();
+	m_navAffector.m_manipulator.m_driveTargetVelocity = m_target->GetVelocity();
+	m_navAffector.m_manipulator.m_excludeColl = m_target->GetPhysicsBody();
 
 	// update target avoidance affector parameters
 	m_targetAvoidance.m_manipulator.m_avoidanceRadius = 10.0f;
 	m_targetAvoidance.m_manipulator.m_enabled = true;
-	m_targetAvoidance.m_manipulator.m_targetPosition = m_targInfo.target->GetOrigin();
+	m_targetAvoidance.m_manipulator.m_targetPosition = m_target->GetOrigin();
 
 	// do regular updates of ai navigation
 	m_navAffector.Update(this, fDt);
@@ -818,7 +828,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 void CAIPursuerCar::SpeakTargetDirection(const char* startSoundName, bool force)
 {
-	Vector3D targetVelocity = m_targInfo.target->GetVelocity();
+	Vector3D targetVelocity = m_target->GetVelocity();
 
 	float targetAngle = VectorAngles(fastNormalize(targetVelocity)).y + 45;
 
@@ -833,7 +843,9 @@ void CAIPursuerCar::SpeakTargetDirection(const char* startSoundName, bool force)
 	if (targetDir > 3)
 		targetDir -= 4;
 
-	if (m_targInfo.direction != targetDir && targetDir < 4)
+	PursuerData_t& targetPursuerData = m_target->GetPursuerData();
+
+	if (targetPursuerData.lastDirection != targetDir && targetDir < 4)
 	{
 		if (Speak(startSoundName, force))
 		{
@@ -847,7 +859,7 @@ void CAIPursuerCar::SpeakTargetDirection(const char* startSoundName, bool force)
 				Speak("cop.heading_south", true);
 		}
 
-		m_targInfo.direction = targetDir;
+		targetPursuerData.lastDirection = targetDir;
 	}
 }
 
@@ -863,25 +875,22 @@ int	CAIPursuerCar::DeadState( float fDt, EStateTransition transition )
 
 void CAIPursuerCar::SetPursuitTarget(CCar* obj)
 {
-	if (m_targInfo.target && g_pGameWorld->IsValidObject(m_targInfo.target)) 
-		m_targInfo.target->DecrementPursue();
+	if (m_target && g_pGameWorld->IsValidObject(m_target)) 
+		m_target->DecrementPursue();
 
-	m_targInfo.target = obj;
-	m_targInfo.direction = -1;
+	m_target = obj;
 
-	if (m_targInfo.target && g_pGameWorld->IsValidObject(m_targInfo.target))
+	if (m_target && g_pGameWorld->IsValidObject(m_target))
 	{
-		m_targInfo.hasAnnouncedTarget = (m_targInfo.target->GetPursuedCount() > 0);
-
-		m_targInfo.target->IncrementPursue();
-		m_targInfo.isAngry = (m_targInfo.target->GetFelony() > 0.6f) || m_type == PURSUER_TYPE_GANG;
-		m_targInfo.hasToCheck = false;
+		m_target->IncrementPursue();
+		//m_isAngry = (m_targInfo.target->GetFelony() > 0.6f) || m_type == PURSUER_TYPE_GANG;
+		//m_targInfo.hasToCheck = false;
 	}
-	else
-		m_targInfo.hasToCheck = true;
+	//else
+	//	m_targInfo.hasToCheck = true;
 
-	m_targInfo.lastInfraction = INFRACTION_HAS_FELONY;
-	m_targInfo.nextCheckImpactTime = AI_COP_COLLISION_CHECKTIME;
+	//m_targInfo.lastInfraction = INFRACTION_HAS_FELONY;
+	//m_targInfo.nextCheckImpactTime = AI_COP_COLLISION_CHECKTIME;
 }
 
 OOLUA_EXPORT_FUNCTIONS(

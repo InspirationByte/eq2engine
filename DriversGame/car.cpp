@@ -628,8 +628,6 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_steerRatio(1023),
 
 	m_gameDamage(0.0f),
-	m_gameFelony(0.0f),
-	m_numPursued(0),
 	m_gameMaxDamage(CAR_DEFAULT_MAX_DAMAGE),
 	m_locked(false),
 	m_enabled(true),
@@ -643,12 +641,14 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_conf = config;
 	memset(m_bodyParts, 0,sizeof(m_bodyParts));
 	memset(m_sounds, 0,sizeof(m_sounds));
+	memset(&m_pursuerData, 0, sizeof(m_pursuerData));
 
 	if(m_conf)
 	{
 		SetColorScheme(0);
 		m_maxSpeed = m_conf->physics.maxSpeed;
 	}
+
 
 }
 
@@ -4368,27 +4368,35 @@ bool CCar::IsEnabled() const
 
 void CCar::SetFelony(float percentage)
 {
-	m_gameFelony = percentage;
+	m_pursuerData.felonyRating = percentage;
 }
 
 float CCar::GetFelony() const
 {
-	return m_gameFelony;
+	return m_pursuerData.felonyRating;
 }
 
 void CCar::IncrementPursue()
 {
-	m_numPursued++;
+	m_pursuerData.pursuedByCount++;
 }
 
 void CCar::DecrementPursue()
 {
-	m_numPursued--;
+	m_pursuerData.pursuedByCount--;
+
+	if (m_pursuerData.pursuedByCount == 0)
+		m_pursuerData.announced = false;
 }
 
 int CCar::GetPursuedCount() const
 {
-	return m_numPursued;
+	return m_pursuerData.pursuedByCount;
+}
+
+PursuerData_t& CCar::GetPursuerData()
+{
+	return m_pursuerData;
 }
 
 void CCar::TurnOffLights()

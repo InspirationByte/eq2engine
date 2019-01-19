@@ -952,7 +952,7 @@ bool CReplayData::LoadFromFile(const char* filename)
 	g_pGameWorld->SetLevelName(hdr.levelname);
 	g_pGameWorld->SetEnvironmentName(hdr.envname);
 	
-	if(!g_State_Game->LoadMissionScript( hdr.missionscript ))
+	if(!g_State_Game->SetMissionScript(hdr.missionscript))
 	{
 		MsgError("ERROR - Invalid mission script '%s' for replay '%s'\n", hdr.missionscript, filename);
 

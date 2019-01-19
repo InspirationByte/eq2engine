@@ -134,7 +134,7 @@ const float AI_TARGET_EXTENDED_DIST = 30.0f;
 
 const float AI_LANE_SWITCH_DELAY = 12.0f;
 
-const float AI_EMERGENCY_ESCAPE_TIME = 1.5f;
+const float AI_EMERGENCY_ESCAPE_TIME = 0.5f;
 
 const float AI_TRAFFIC_MAX_DAMAGE = 2.0f;
 
@@ -727,6 +727,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	m_nextSwitchLaneTime -= fDt;
 
 	Vector3D	carForward		= GetForwardVector();
+	Vector3D	carRight		= GetRightVector();
 	Vector3D	carPos			= GetOrigin() + carForward*m_conf->physics.body_size.z*0.5f;
 
 	Vector3D	carTracePos		= GetOrigin();
@@ -1250,7 +1251,10 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 								m_autohandbrake = true;
 							}
 
-							m_emergencyEscapeSteer = sign(dot(GetRightVector(), frontObjColl.normal));
+							Plane dPlane(carRight, -dot(carPos, carRight));
+							float posSteerFactor = dPlane.Distance(pCar->GetOrigin() + pCar->GetVelocity()*0.25f);
+
+							m_emergencyEscapeSteer = sign(posSteerFactor) * -1.0f;
 						}
 					}
 
@@ -1266,17 +1270,8 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	{
 		m_emergencyEscapeTime -= fDt;
 
-		if(m_emergencyEscapeTime < 0.7f && carForwardSpeed > 0.5f)
-		{
-			controls |= IN_BRAKE;
-			brake = 1.0f;
-			accelerator = 1.0f;
-		}
-		else
-		{
-			fSteeringAngle = m_emergencyEscapeSteer;
-			controls |= IN_TURNRIGHT;
-		}
+		fSteeringAngle = m_emergencyEscapeSteer;
+		controls |= IN_TURNRIGHT;
 	}
 	else
 	{

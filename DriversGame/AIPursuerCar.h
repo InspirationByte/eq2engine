@@ -78,19 +78,7 @@ protected:
 
 	EPursuerAIType			m_type;
 
-	struct pursuitTargetInfo_t
-	{
-		CCar*				target;
-		int					direction;	// swne
-		float				notSeeingTime;
-
-		float				nextCheckImpactTime;
-		int					lastInfraction;
-
-		bool				isAngry;
-		bool				hasAnnouncedTarget;
-		bool				hasToCheck;
-	} m_targInfo;
+	CCar*					m_target;
 
 	float					m_alterSirenChangeTime;
 	bool					m_sirenAltered;

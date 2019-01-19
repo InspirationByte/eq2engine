@@ -519,6 +519,8 @@ public:
 	void					DecrementPursue();
 	int						GetPursuedCount() const;
 
+	PursuerData_t&			GetPursuerData();
+
 	void					TurnOffLights();
 	void					SetLight(int light, bool enabled);
 	bool					IsLightEnabled(int light) const;
@@ -548,8 +550,6 @@ protected:
 	void					InitCarSound();
 
 	ISoundController*		CreateCarSound(const char* name, float radiusMult);
-
-	
 
 	virtual void			OnPrePhysicsFrame( float fDt );
 	virtual void			OnPhysicsFrame( float fDt );
@@ -644,8 +644,7 @@ protected:
 	CNetworkVar(float,		m_gameDamage);
 	CNetworkVar(float,		m_gameMaxDamage);
 
-	CNetworkVar(float,		m_gameFelony);	// felony percentage
-	CNetworkVar(short,		m_numPursued);
+	PursuerData_t			m_pursuerData;
 
 	CNetworkVar(ubyte,		m_lightsEnabled);
 

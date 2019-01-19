@@ -31,20 +31,16 @@ enum EInfractionType
 	INFRACTION_COUNT,
 };
 
-struct SpeechQueue_t
-{
-	SpeechQueue_t* prev;
-	EqString soundName;
-};
-
-#define MAX_SPEECH_QUEUE 8
+const float INFRACTION_SKIP_REGISTER_TIME = 2.0f;
 
 // cop data
-struct PursuerData_s
+struct PursuerData_t
 {
-	int		infractions[INFRACTION_COUNT];
+	float	lastInfractionTime[INFRACTION_COUNT];
+	bool	hasInfraction[INFRACTION_COUNT];
 	float	felonyRating;
 
+	float	lastSeenTimer;
 	float	hitCheckTimer;
 	float	loudhailerTimer;
 	float	speechTimer;
@@ -52,12 +48,8 @@ struct PursuerData_s
 	int		pursuedByCount;
 	bool	announced;
 
-	int		lastDirection;
-
-	SpeechQueue_t speechList[MAX_SPEECH_QUEUE];
-	SpeechQueue_t* speech;
+	float	lastDirectionTimer;
+	int		lastDirection;		// swne
 };
-
-ALIGNED_TYPE(PursuerData_s, 4) PursuerData_t;
 
 #endif // GAMEDEFS_H

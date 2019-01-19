@@ -826,7 +826,7 @@ bool CAICarManager::MakeCopSpeech(const char* soundScriptName, bool force)
 		if (m_speechQueue.numElem() > AI_COP_SPEECH_QUEUE)
 			m_speechQueue.removeIndex(0);
 
-		m_copSpeechTime = RandomFloat(AI_COP_SPEECH_DELAY, AI_COP_SPEECH_DELAY + 5.0f);
+		m_copSpeechTime = RandomFloat(AI_COP_SPEECH_DELAY, AI_COP_SPEECH_DELAY + 2.0f);
 
 		return true;
 	}

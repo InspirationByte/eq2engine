@@ -102,6 +102,8 @@ void CGameSessionBase::Init()
 	m_scriptIDCounter = 0;
 	m_scriptIDReplayCounter = 0;
 
+	m_gameTime = 0.0;
+
 	// load cars
 	LoadCarData();
 
@@ -364,6 +366,8 @@ void CGameSessionBase::Update(float fDt)
 		g_pGameWorld->UpdateWorld(0.0f);
 		return;
 	}
+
+	m_gameTime += fDt;
 
 	UpdatePlayerControls();
 
