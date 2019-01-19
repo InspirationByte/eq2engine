@@ -2626,10 +2626,41 @@ void CCar::Simulate( float fDt )
 
 		switch(m_conf->visual.sirenType)
 		{
-			case SERVICE_LIGHTS_DOUBLE:
+			case SERVICE_LIGHTS_BLUE:
+			case SERVICE_LIGHTS_RED:
 			{
-				ColorRGB col1(1,0.25,0);
-				ColorRGB col2(0,0.25,1);
+				ColorRGB colors[2] = {
+					ColorRGB(0, 0.25, 1),
+					ColorRGB(1, 0.25, 0)
+				};
+
+				ColorRGB color = colors[m_conf->visual.sirenType-SERVICE_LIGHTS_BLUE];
+
+				PoliceSirenEffect(m_curTime, color, siren_position, rightVec, m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
+
+				float fSin = fabs(sinf(m_curTime*16.0f));
+				float fSinFactor = clamp(fSin, 0.5f, 1.0f);
+
+				wlight_t light;
+				light.position = Vector4D(siren_position, 20.0f);
+				light.color = ColorRGBA(color, fSinFactor);
+
+				g_pGameWorld->AddLight(light);
+
+				break;
+			}
+			case SERVICE_LIGHTS_DOUBLE_BLUE:
+			case SERVICE_LIGHTS_DOUBLE_RED:
+			case SERVICE_LIGHTS_DOUBLE_BLUERED:
+			{
+				ColorRGB colors[3][2] = {
+					{ColorRGB(0, 0.25, 1),ColorRGB(0, 0.25, 1)},
+					{ColorRGB(1, 0.25, 0),ColorRGB(1, 0.25, 0)},
+					{ColorRGB(1, 0.25, 0),ColorRGB(0, 0.25, 1)},
+				};
+
+				ColorRGB col1(colors[m_conf->visual.sirenType-SERVICE_LIGHTS_DOUBLE_BLUE][0]);
+				ColorRGB col2(colors[m_conf->visual.sirenType - SERVICE_LIGHTS_DOUBLE_BLUE][1]);
 
 				PoliceSirenEffect(m_curTime, col1, siren_position, rightVec, -m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
 				PoliceSirenEffect(-m_curTime, col2, siren_position, rightVec, m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
@@ -2639,35 +2670,12 @@ void CCar::Simulate( float fDt )
 
 				wlight_t light;
 				light.position = Vector4D(siren_position, 20.0f);
-				light.color = ColorRGBA(lerp(col1,col2, fSin), fSinFactor);
+				light.color = ColorRGBA(lerp(col1, col2, fSin), fSinFactor);
 
 				g_pGameWorld->AddLight(light);
 
 				break;
 			}
-			case SERVICE_LIGHTS_DOUBLE_SINGLECOLOR:
-			{
-				PoliceSirenEffect(m_curTime, ColorRGB(0,0.2,1), siren_position, rightVec, -m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
-				PoliceSirenEffect(m_curTime+PI_F, ColorRGB(0,0.2,1), siren_position, rightVec, m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
-
-				break;
-			}
-			case SERVICE_LIGHTS_DOUBLE_SINGLECOLOR_RED:
-			{
-				PoliceSirenEffect(m_curTime, ColorRGB(1,0.2,0), siren_position, rightVec, -m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
-				PoliceSirenEffect(m_curTime+PI_F, ColorRGB(1,0.2,0), siren_position, rightVec, m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
-
-				float fSinFactor = clamp((float)fabs(sinf(m_curTime*16.0f)), 0.5f, 1.0f);
-
-				wlight_t light;
-				light.position = Vector4D(siren_position, 20.0f);
-				light.color = ColorRGBA(1,0.2,0, fSinFactor);
-
-				g_pGameWorld->AddLight(light);
-
-				break;
-			}
-
 		}
 	}
 
