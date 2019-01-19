@@ -215,8 +215,10 @@ DECLARE_CMD_VARIANTS(start, "start a game with specified mission or level name",
 	if( g_fileSystem->FileExist(scriptFileName.c_str()) )
 	{
 		// try load mission script
-		g_State_Game->LoadMissionScript(CMD_ARGV(0).c_str());
+		g_State_Game->SetMissionScript(CMD_ARGV(0).c_str());
 	}
+	else
+		g_State_Game->SetMissionScript("defaultmission");
 
 	EqStateMgr::SetCurrentState( g_states[GAME_STATE_GAME], true);
 }
@@ -428,10 +430,9 @@ void CState_Game::LoadGame()
 	PrecacheScriptSound( "menu.roll" );
 
 	g_pPhysics = new CPhysicsEngine();
-
 	g_pPhysics->SceneInit();
 
-	if( Game_LoadWorld() )
+	if( DoLoadMission() && Game_LoadWorld() )
 	{
 		g_pGameHUD->Init();
 
@@ -459,31 +460,35 @@ void CState_Game::LoadGame()
 	}
 }
 
-bool CState_Game::LoadMissionScript( const char* name )
+bool CState_Game::DoLoadMission()
 {
-	// don't start both times
-	EqString scriptFileName(varargs("scripts/missions/%s.lua", name));
+	EqString scriptFileName(varargs("scripts/missions/%s.lua", m_missionScriptName.c_str()));
 
 	// then we load custom script
-	if( !EqLua::LuaBinding_LoadAndDoFile( GetLuaState(), scriptFileName.c_str(), "MissionLoader" ) )
+	if (!EqLua::LuaBinding_LoadAndDoFile(GetLuaState(), scriptFileName.c_str(), "MissionLoader"))
 	{
 		MsgError("mission script init error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
 
 		// okay, try reinitialize with default mission script
-		if( !EqLua::LuaBinding_LoadAndDoFile( GetLuaState(), "scripts/missions/defaultmission.lua", "MissionLoader"))
+		if (!EqLua::LuaBinding_LoadAndDoFile(GetLuaState(), "scripts/missions/defaultmission.lua", "MissionLoader"))
 		{
 			MsgError("default mission script init error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
 			return false;
 		}
 
 		m_missionScriptName = "defaultmission";
-
-		return false;
 	}
 
+	return true;
+}
+
+bool CState_Game::SetMissionScript( const char* name )
+{
 	m_missionScriptName = name;
 
-	return true;
+	EqString scriptFileName(varargs("scripts/missions/%s.lua", m_missionScriptName.c_str()));
+
+	return g_fileSystem->FileExist(scriptFileName.c_str(), SP_MOD);
 }
 
 const char* CState_Game::GetMissionScriptName() const

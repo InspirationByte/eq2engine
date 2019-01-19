@@ -56,7 +56,7 @@ public:
 	void		UnloadGame();
 	void		LoadGame();
 
-	bool		LoadMissionScript( const char* name );
+	bool		SetMissionScript( const char* name );
 	const char*	GetMissionScriptName() const;
 
 	void		StopStreams();
@@ -90,6 +90,8 @@ protected:
 
 	Vector3D	GetViewVelocity() const;
 	CCar*		GetViewCar() const;
+
+	bool		DoLoadMission();
 
 	//----------------------------------------------
 	int			m_doLoadingFrames;

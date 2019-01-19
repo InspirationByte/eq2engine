@@ -139,12 +139,12 @@ CLCollisionData Lua_Util_TestLine(const Vector3D& start, const Vector3D& end, in
 	return coll;
 }
 
-bool Lua_LoadMissionScript(const char* name)
+bool Lua_SetMissionScript(const char* name)
 {
-	return g_State_Game->LoadMissionScript(name);
+	return g_State_Game->SetMissionScript(name);
 }
 
-OOLUA_CFUNC(Lua_LoadMissionScript, L_LoadMissionScript)
+OOLUA_CFUNC(Lua_SetMissionScript, L_SetMissionScript)
 OOLUA_CFUNC(Lua_Util_TestLine, L_Lua_Util_TestLine)
 
 template <class T>
@@ -269,7 +269,7 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 
 
 
-	OOLUA::set_global(state, "LoadMissionScript", L_LoadMissionScript);
+	OOLUA::set_global(state, "SetMissionScript", L_SetMissionScript);
 
 	
 	
