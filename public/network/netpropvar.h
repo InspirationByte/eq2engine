@@ -8,6 +8,7 @@
 #ifndef NETPROPVAR_H
 #define NETPROPVAR_H
 
+#include "utils/DkList.h"
 #include "NetMessageBuffer.h"
 
 template <class TYPE, class CHANGER>
@@ -127,6 +128,8 @@ protected:
 
 //--------------------------------------------------------------------------------------------------------
 
+#define MyOffsetOf( type, var ) ( (int)&((type*)0)->var )
+
 // Internal macros used in definitions of network vars.
 #define NETWORK_VAR_START( type, name ) \
 	class NetworkVar_##name; \
@@ -138,7 +141,7 @@ protected:
 
 #define NETWORK_VAR_END( type, name, base, stateChangedFn ) \
 	public: \
-		static inline void OnNetworkStateChanged( void *ptr ) \
+		static inline void OnNetworkStateChanged( void* ptr ) \
 		{ \
 			((ThisClass*)(((char*)ptr) - offsetOf(ThisClass,name)))->stateChangedFn( ptr ); \
 		} \
@@ -149,13 +152,49 @@ protected:
 	NETWORK_VAR_START( type, name ) \
 	NETWORK_VAR_END( type, name, CNetworkVarBase, OnNetworkStateChanged )
 
+#define DECLARE_EMBEDDED_NETWORKVAR() \
+	virtual void OnNetworkStateChanged() {} virtual void OnNetworkStateChanged( void* ptr ) {}
+
+// Use this macro when you want to embed a structure inside your entity and have CNetworkVars in it.
+template< class T >
+static inline void DispatchNetworkStateChanged(T* pObj)
+{
+	pObj->OnNetworkStateChanged();
+}
+template< class T >
+static inline void DispatchNetworkStateChanged(T* pObj, void *pVar)
+{
+	pObj->OnNetworkStateChanged(pVar);
+}
+
+#define CNetworkVarEmbedded( type, name ) \
+	class NetworkVar_##name; \
+	friend class NetworkVar_##name; \
+	typedef ThisClass ThisClass_##name; \
+	static inline int GetOffset_##name() { return MyOffsetOf(ThisClass,name); } \
+	class NetworkVar_##name : public type \
+	{ \
+		template< class T > NetworkVar_##name& operator=( const T &val ) { *((type*)this) = val; return *this; } \
+	public: \
+		void CopyFrom( const type &src ) { *((type *)this) = src; OnNetworkStateChanged(this); } \
+		virtual void OnNetworkStateChanged() \
+		{ \
+			DispatchNetworkStateChanged(((ThisClass_##name*)(((char*)this) - GetOffset_##name()))); \
+		} \
+		virtual void OnNetworkStateChanged( void* ptr ) \
+		{ \
+			DispatchNetworkStateChanged(((ThisClass_##name*)(((char*)this) - GetOffset_##name())), ptr); \
+		} \
+	}; \
+	NetworkVar_##name name; 
+
 //--------------------------------------------------------------------------------------------------------
 
 enum ENetPropFlags
 {
-	NETPROP_FLAG_SEND			= (1 << 0),
+	NETPROP_FLAG_SEND = (1 << 0),
+	NETPROP_FLAG_ARRAY = (1 << 1),
 };
-
 
 enum ENetPropTypes
 {
@@ -172,18 +211,22 @@ enum ENetPropTypes
 	NETPROP_FVECTOR2D,
 	NETPROP_FVECTOR3D,
 	NETPROP_FVECTOR4D,
+
+	NETPROP_NETPROP,		// nesting
 };
 
 // network property address holder
 struct netprop_t
 {
-	const char*	name;
+	const char*					name;
 
-	int			flags;		// ENetPropFlags
-	int			type;		// ENetPropTypes
+	int							flags;		// ENetPropFlags
+	int							type;		// ENetPropTypes
 
-	int			offset;
-	int			size;
+	int							offset;
+	int							size;
+
+	struct netvariablemap_t*	nestedMap;
 };
 
 // variable map basics
@@ -253,21 +296,29 @@ struct netvariablemap_t
 	DECLARE_SIMPLE_NETWORK_TABLE() \
 	virtual netvariablemap_t* GetNetworkTableMap( void ) = 0;
 
+#define NETWORK_CHANGELIST(name) m_changeList_##name
+
+#define DECLARE_NETWORK_CHANGELIST(name)	DkList<int>	NETWORK_CHANGELIST(name);
+
 //------------------------------------------------------------------------------------
 
+#define memb(structure,member)			(((structure *)0)->member)
+
 // network variable declarations
-#define DEFINE_SENDPROP_BYTE(name)		{#name, NETPROP_FLAG_SEND, NETPROP_BYTE, offsetOf(classNameTypedef, name), sizeof(ubyte)}
-#define DEFINE_SENDPROP_INT(name)		{#name, NETPROP_FLAG_SEND, NETPROP_INT, offsetOf(classNameTypedef, name), sizeof(int)}
-#define DEFINE_SENDPROP_FLOAT(name)		{#name, NETPROP_FLAG_SEND, NETPROP_FLOAT, offsetOf(classNameTypedef, name), sizeof(float)}
-#define DEFINE_SENDPROP_FREAL(name)		{#name, NETPROP_FLAG_SEND, NETPROP_FREAL, offsetOf(classNameTypedef, name), sizeof(FReal)}
+#define DEFINE_SENDPROP_BYTE(name)		{#name, NETPROP_FLAG_SEND, NETPROP_BYTE, offsetOf(classNameTypedef, name), sizeof(ubyte), nullptr}
+#define DEFINE_SENDPROP_INT(name)		{#name, NETPROP_FLAG_SEND, NETPROP_INT, offsetOf(classNameTypedef, name), sizeof(int), nullptr}
+#define DEFINE_SENDPROP_FLOAT(name)		{#name, NETPROP_FLAG_SEND, NETPROP_FLOAT, offsetOf(classNameTypedef, name), sizeof(float), nullptr}
+#define DEFINE_SENDPROP_FREAL(name)		{#name, NETPROP_FLAG_SEND, NETPROP_FREAL, offsetOf(classNameTypedef, name), sizeof(FReal), nullptr}
 
-#define DEFINE_SENDPROP_VECTOR2D(name)	{#name, NETPROP_FLAG_SEND, NETPROP_VECTOR2D, offsetOf(classNameTypedef, name), sizeof(Vector2D)}
-#define DEFINE_SENDPROP_VECTOR3D(name)	{#name, NETPROP_FLAG_SEND, NETPROP_VECTOR3D, offsetOf(classNameTypedef, name), sizeof(Vector3D)}
-#define DEFINE_SENDPROP_VECTOR4D(name)	{#name, NETPROP_FLAG_SEND, NETPROP_VECTOR4D, offsetOf(classNameTypedef, name), sizeof(Vector4D)}
+#define DEFINE_SENDPROP_VECTOR2D(name)	{#name, NETPROP_FLAG_SEND, NETPROP_VECTOR2D, offsetOf(classNameTypedef, name), sizeof(Vector2D), nullptr}
+#define DEFINE_SENDPROP_VECTOR3D(name)	{#name, NETPROP_FLAG_SEND, NETPROP_VECTOR3D, offsetOf(classNameTypedef, name), sizeof(Vector3D), nullptr}
+#define DEFINE_SENDPROP_VECTOR4D(name)	{#name, NETPROP_FLAG_SEND, NETPROP_VECTOR4D, offsetOf(classNameTypedef, name), sizeof(Vector4D), nullptr}
 
-#define DEFINE_SENDPROP_FVECTOR2D(name)	{#name, NETPROP_FLAG_SEND, NETPROP_FVECTOR2D, offsetOf(classNameTypedef, name), sizeof(FVector2D)}
-#define DEFINE_SENDPROP_FVECTOR3D(name)	{#name, NETPROP_FLAG_SEND, NETPROP_FVECTOR3D, offsetOf(classNameTypedef, name), sizeof(FVector3D)}
-#define DEFINE_SENDPROP_FVECTOR4D(name)	{#name, NETPROP_FLAG_SEND, NETPROP_FVECTOR4D, offsetOf(classNameTypedef, name), sizeof(FVector4D)}
+#define DEFINE_SENDPROP_FVECTOR2D(name)	{#name, NETPROP_FLAG_SEND, NETPROP_FVECTOR2D, offsetOf(classNameTypedef, name), sizeof(FVector2D), nullptr}
+#define DEFINE_SENDPROP_FVECTOR3D(name)	{#name, NETPROP_FLAG_SEND, NETPROP_FVECTOR3D, offsetOf(classNameTypedef, name), sizeof(FVector3D), nullptr}
+#define DEFINE_SENDPROP_FVECTOR4D(name)	{#name, NETPROP_FLAG_SEND, NETPROP_FVECTOR4D, offsetOf(classNameTypedef, name), sizeof(FVector4D), nullptr}
+
+#define DEFINE_SENDPROP_EMBEDDED(name)	{#name, NETPROP_FLAG_SEND, NETPROP_NETPROP, offsetOf(classNameTypedef, name), 0, &memb(classNameTypedef, name).m_NetworkVariableMap}
 
 
 /*

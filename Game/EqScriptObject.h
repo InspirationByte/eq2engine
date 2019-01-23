@@ -37,14 +37,14 @@ public:
 	void			SetMemberFloat(const char* a_memberName, float a_float);
 	void			SetMemberString(const char* a_memberName, const char* a_string, int a_strLength = -1);
 
-	void			SetMemberVar(const char* a_memberName, VariableType_e type, void* value);
+	void			SetMemberVar(const char* a_memberName, EVariableType type, void* value);
 
 	gmTableObject*	SetMemberTable(const char* a_memberName);
 
 	bool			GetMemberInt(const char* a_memberName, int& a_int);
 	bool			GetMemberFloat(const char* a_memberName, float& a_float);
 	bool			GetMemberString(const char* a_memberName, EqString& a_string);
-	bool			GetMemberVar(const char* a_memberName, VariableType_e type, void* value);
+	bool			GetMemberVar(const char* a_memberName, EVariableType type, void* value);
 
 	bool			GetMemberTable(const char* a_memberName, gmTableObject*& a_retTable);
 	

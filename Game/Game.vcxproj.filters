@@ -239,9 +239,6 @@
     <ClInclude Include="GlobalVarsGame.h">
       <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
     </ClInclude>
-    <ClInclude Include="EntityDataField.h">
-      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
-    </ClInclude>
     <ClInclude Include="AI\AITaskTypes.h">
       <Filter>Source Files\GameLib\AI</Filter>
     </ClInclude>
@@ -500,6 +497,9 @@
     <ClInclude Include="..\public\TextureAtlas.h">
       <Filter>Source Files\EngineLib\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="DataMap.h">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="weapon_ak74.cpp">
@@ -641,9 +641,6 @@
       <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
     </ClCompile>
     <ClCompile Include="GlobalVarsGame.cpp">
-      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="EntityDataField.cpp">
       <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
     </ClCompile>
     <ClCompile Include="AI\AITaskTypes.cpp">
@@ -900,6 +897,9 @@
     </ClCompile>
     <ClCompile Include="..\public\TextureAtlas.cpp">
       <Filter>Source Files\EngineLib\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="DataMap.cpp">
+      <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

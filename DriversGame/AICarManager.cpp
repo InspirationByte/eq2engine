@@ -201,7 +201,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 				newCar->SetColorScheme(col_idx);
 
 				// set car color
-				g_replayData->PushEvent(REPLAY_EVENT_CAR_SETCOLOR, newCar->m_replayID, (void*)(intptr_t)col_idx);
+				//g_replayData->PushEvent(REPLAY_EVENT_CAR_SETCOLOR, newCar->m_replayID, (void*)(intptr_t)col_idx);
 			}
 
 			g_pGameWorld->AddObject(newCar, true);
@@ -280,7 +280,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 		pNewCar->SetColorScheme(col_idx);
 
 		// set car color
-		g_replayData->PushEvent(REPLAY_EVENT_CAR_SETCOLOR, pNewCar->m_replayID, (void*)(intptr_t)col_idx);
+		//g_replayData->PushEvent(REPLAY_EVENT_CAR_SETCOLOR, pNewCar->m_replayID, (void*)(intptr_t)col_idx);
 	}
 
 	pNewCar->InitAI( false ); // TODO: chance of stoped, empty and active car on parking lane

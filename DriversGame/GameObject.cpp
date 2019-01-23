@@ -16,21 +16,29 @@ ConVar r_enableObjectsInstancing("r_enableObjectsInstancing", "1", "Use instanci
 
 void CBaseNetworkedObject::OnNetworkStateChanged(void* ptr)
 {
-	m_isNetworkStateChanged = true;
+	uint propOfs = (char*)ptr - ((char*)this);
+
+	NETWORK_CHANGELIST(NetGame).append(propOfs);
+	NETWORK_CHANGELIST(Replay).append(propOfs);
 }
 
-void CBaseNetworkedObject::OnPackMessage( CNetMessageBuffer* buffer )
+void CBaseNetworkedObject::OnNetworkStateChanged()
+{
+	Msg("changed some unchangeable\n");
+}
+
+void CBaseNetworkedObject::OnPackMessage( CNetMessageBuffer* buffer, DkList<int>& changeList)
 {
 	// packs all data
 	netvariablemap_t* map = GetNetworkTableMap();
 	while(map)
 	{
-		PackNetworkVariables(map, buffer);
+		PackNetworkVariables(map, buffer, changeList);
 		map = map->m_baseMap;
 	};
 }
 
-void CBaseNetworkedObject::OnUnpackMessage( CNetMessageBuffer* buffer )
+void CBaseNetworkedObject::OnUnpackMessage( CNetMessageBuffer* buffer)
 {
 	// unpacks all data
 	netvariablemap_t* map = GetNetworkTableMap();
@@ -41,51 +49,128 @@ void CBaseNetworkedObject::OnUnpackMessage( CNetMessageBuffer* buffer )
 	};
 }
 
-void CBaseNetworkedObject::PackNetworkVariables(const netvariablemap_t* map, CNetMessageBuffer* buffer)
+inline void PackNetworkVariables(void* object, const netvariablemap_t* map, IVirtualStream* stream, DkList<int>& changeList)
 {
-	if(map->m_numProps == 1 && map->m_props[0].size == 0)
+	if (map->m_numProps == 1 && map->m_props[0].size == 0)
 		return;
 
-	// debug only
-	//buffer->WriteString(map->m_mapName);
+	int numWrittenProps = 0;	
+	
+	int startPos = stream->Tell();
+	stream->Write(&numWrittenProps, 1, sizeof(numWrittenProps));
 
-	for(int i = 0; i < map->m_numProps; i++)
+	for (int i = 0; i < map->m_numProps; i++)
 	{
 		const netprop_t& prop = map->m_props[i];
-		if(prop.size == 0)
-			continue;
-	
-		// write vars
-		char* varData = ((char*)this)+prop.offset;
 
-		buffer->WriteData( varData, prop.size ); // TODO: special rules for strings
+		if (changeList.numElem())
+		{
+			bool found = false;
+
+			// PARANOID
+			for (int j = 0; j < changeList.numElem(); j++)
+			{
+				if (changeList[j] == prop.offset)
+				{
+					found = true;
+					break;
+				}
+			}
+
+			if (!found)
+				continue;
+		}
+
+		// write offset
+		stream->Write(&prop.offset, 1, sizeof(int));
+
+		char* varData = ((char*)object) + prop.offset;
+
+		if (prop.type == NETPROP_NETPROP)
+		{
+			static DkList<int> _empty;
+			PackNetworkVariables(varData, prop.nestedMap, stream, _empty);
+
+			numWrittenProps++;
+
+			continue;
+		}
+
+		// write data
+		stream->Write(varData, 1, prop.size);
+		numWrittenProps++;
 	}
+
+	long lastPos = stream->Tell();
+	stream->Seek(startPos, VS_SEEK_SET);
+	stream->Write(&numWrittenProps, 1, sizeof(numWrittenProps));
+
+	stream->Seek(lastPos, VS_SEEK_SET);
+}
+
+inline void UnpackNetworkVariables(void* object, const netvariablemap_t* map, Networking::CNetMessageBuffer* buffer)
+{
+	if (map->m_numProps == 1 && map->m_props[0].size == 0)
+		return;
+
+	int numWrittenProps = buffer->ReadInt();
+
+	for (int i = 0; i < numWrittenProps; i++)
+	{
+		netprop_t* found = nullptr;
+
+		int propOfs = buffer->ReadInt();
+
+		// PARANOID
+		for (int j = 0; j < map->m_numProps; j++)
+		{
+			if (map->m_props[j].offset == propOfs)
+			{
+				found = &map->m_props[j];
+				break;
+			}
+		}
+
+		if (!found)
+		{
+			MsgError("invalid offset!\n");
+			continue;
+		}
+
+
+		char* varData = ((char*)object) + propOfs;
+
+		if (found->type == NETPROP_NETPROP)
+		{
+			UnpackNetworkVariables(varData, found->nestedMap, buffer);
+			continue;
+		}
+
+		// write vars
+		buffer->ReadData(varData, found->size);
+	}
+}
+
+
+void CBaseNetworkedObject::PackNetworkVariables(const netvariablemap_t* map, CNetMessageBuffer* buffer, DkList<int>& changeList)
+{
+	CMemoryStream varsData;
+	varsData.Open(nullptr, VS_OPEN_WRITE | VS_OPEN_READ, 2048);
+
+	::PackNetworkVariables(this, map, &varsData, changeList);
+
+	// write to net buffer
+	buffer->WriteData(varsData.GetBasePointer(), varsData.Tell());
 }
 
 void CBaseNetworkedObject::UnpackNetworkVariables(const netvariablemap_t* map, CNetMessageBuffer* buffer)
 {
-	// first, write the map name (DEBUG)
-	if(map->m_numProps == 1 && map->m_props[0].size == 0)
-		return;
-
-	//EqString mapName = buffer->ReadString();
-
-	for(int i = 0; i < map->m_numProps; i++)
-	{
-		const netprop_t& prop = map->m_props[i];
-		if(prop.size == 0)
-			continue;
-	
-		// write vars
-		char* varData = ((char*)this)+prop.offset;
-		buffer->ReadData( varData, prop.size );
-	}
+	::UnpackNetworkVariables(this, map, buffer);
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
 
 BEGIN_NETWORK_TABLE_NO_BASE( CGameObject )
-
 END_NETWORK_TABLE()
 
 CGameObject::CGameObject() : CBaseNetworkedObject(), 
@@ -360,9 +445,9 @@ const char* CGameObject::GetDefName() const
 	return m_defname.c_str();
 }
 
-void CGameObject::OnPackMessage( CNetMessageBuffer* buffer )
+void CGameObject::OnPackMessage( CNetMessageBuffer* buffer, DkList<int>& changeList)
 {
-	BaseClass::OnPackMessage(buffer);
+	BaseClass::OnPackMessage(buffer, changeList);
 	//buffer->WriteString(m_defname);
 
 #ifndef NO_LUA

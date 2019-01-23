@@ -8,7 +8,7 @@
 #ifndef SAVEGAME_EVENTS_H
 #define SAVEGAME_EVENTS_H
 
-#include "EntityDataField.h"
+#include "DataMap.h"
 
 class CEventSaveRestoreOperators : public ISaveRestoreOperators
 {

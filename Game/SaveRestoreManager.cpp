@@ -10,7 +10,8 @@
 #include "BaseEngineHeader.h"
 #include "IGameRules.h"
 #include "SaveRestoreDefaultFunctions.h"
-#include "EntityDataField.h"
+
+#include "DataMap.h"
 
 #include "GameState.h"
 
@@ -202,7 +203,7 @@ static SAVE_FIELD_METHOD		s_savedGameSaveFunctions[VTYPE_COUNT];
 static RESTORE_FIELD_METHOD		s_savedGameRestoreFunctions[VTYPE_COUNT];
 
 // registers save/restore functions for field type
-void RegisterSaveRestore(VariableType_e field_type, SAVE_FIELD_METHOD saveMethod, RESTORE_FIELD_METHOD restoreMethod)
+void RegisterSaveRestore(EVariableType field_type, SAVE_FIELD_METHOD saveMethod, RESTORE_FIELD_METHOD restoreMethod)
 {
 	// set save/restore functions
 	s_savedGameSaveFunctions[field_type] = saveMethod;

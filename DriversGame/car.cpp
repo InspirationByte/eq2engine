@@ -585,11 +585,25 @@ void CCarWheel::CalculateTransform(Matrix4x4& out, const carWheelConfig_t& conf,
 		out = translate(wheelCenterPos) * Matrix4x4(wheelRotation);
 }
 
+BEGIN_NETWORK_TABLE_NO_BASE(carColorScheme_t)
+	DEFINE_SENDPROP_VECTOR4D(col1),
+	DEFINE_SENDPROP_VECTOR4D(col2)
+END_NETWORK_TABLE()
+
 BEGIN_NETWORK_TABLE( CCar )
 	DEFINE_SENDPROP_BYTE(m_sirenEnabled),
+	DEFINE_SENDPROP_FLOAT(m_maxSpeed),
+	DEFINE_SENDPROP_FLOAT(m_torqueScale),
+	DEFINE_SENDPROP_FREAL(m_gearboxShiftThreshold),
 	DEFINE_SENDPROP_FLOAT(m_gameDamage),
 	DEFINE_SENDPROP_FLOAT(m_gameMaxDamage),
+	DEFINE_SENDPROP_BYTE(m_lightsEnabled),
 	DEFINE_SENDPROP_BYTE(m_locked),
+	DEFINE_SENDPROP_BYTE(m_enabled),
+	DEFINE_SENDPROP_BYTE(m_autohandbrake),
+	DEFINE_SENDPROP_BYTE(m_inWater),
+	DEFINE_SENDPROP_BYTE(m_hasDriver),
+	DEFINE_SENDPROP_EMBEDDED(m_carColor)
 END_NETWORK_TABLE()
 
 CCar::CCar()
@@ -620,7 +634,6 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_effectTime(0.0f),
 	m_pDamagedModel(NULL),
 	m_engineSmokeTime(0.0f),
-	m_carColor(ColorRGBA(0.9,0.25,0.25,1.0)),
 	m_enablePhysics(true),
 
 	m_accelRatio(1023),
@@ -642,6 +655,8 @@ CCar::CCar( vehicleConfig_t* config ) :
 	memset(m_bodyParts, 0,sizeof(m_bodyParts));
 	memset(m_sounds, 0,sizeof(m_sounds));
 	memset(&m_pursuerData, 0, sizeof(m_pursuerData));
+
+	m_carColor.col1 = m_carColor.col2 = ColorRGBA(0.9, 0.25, 0.25, 1.0);
 
 	if(m_conf)
 	{
@@ -1972,7 +1987,7 @@ void CCar::EmitCollisionParticles(const Vector3D& position, const Vector3D& velo
 
 			for(int j = 0; j < partCount; j++)
 			{
-				ColorRGB randColor = m_carColor.col1.xyz() * RandomFloat(0.7f, 1.0f);
+				ColorRGB randColor = m_carColor.col1.Get().xyz() * RandomFloat(0.7f, 1.0f);
 
 				Vector3D fleckPos = Vector3D(position) + Vector3D(RandomFloat(-0.05,0.05),RandomFloat(-0.05,0.05),RandomFloat(-0.05,0.05));
 
@@ -4125,10 +4140,10 @@ int CCar::GetChildCasterCount() const
 	return m_conf->physics.numWheels;
 }
 
-void CCar::OnPackMessage( CNetMessageBuffer* buffer )
+void CCar::OnPackMessage( CNetMessageBuffer* buffer, DkList<int>& changeList)
 {
-	BaseClass::OnPackMessage(buffer);
-
+	BaseClass::OnPackMessage(buffer, changeList);
+	
 	// send extra vars
 	float damageFloats[CB_PART_COUNT];
 
@@ -4146,7 +4161,7 @@ void CCar::OnPackMessage( CNetMessageBuffer* buffer )
 void CCar::OnUnpackMessage( CNetMessageBuffer* buffer )
 {
 	BaseClass::OnUnpackMessage(buffer);
-
+	
 	// recv extra vars
 	float damageFloats[CB_PART_COUNT];
 
@@ -4158,8 +4173,9 @@ void CCar::OnUnpackMessage( CNetMessageBuffer* buffer )
 		fOverall += damageFloats[i];
 		m_bodyParts[i].damage = damageFloats[i];
 	}
-
+	
 	RefreshWindowDamageEffects();
+	UpdateLightsState();
 }
 
 //---------------------------------------------------------------------------
@@ -4225,10 +4241,10 @@ bool CCar::IsFlippedOver( bool checkWheels ) const
 void CCar::SetMaxDamage( float fDamage )
 {
 	m_gameMaxDamage = fDamage;
-
+	/*
 #ifndef EDITOR
 	g_replayData->PushEvent( REPLAY_EVENT_CAR_SETMAXDAMAGE, m_replayID, *(void**)&m_gameMaxDamage.m_value );
-#endif // EDITOR
+#endif // EDITOR*/
 }
 
 float CCar::GetMaxDamage() const
@@ -4239,10 +4255,10 @@ float CCar::GetMaxDamage() const
 void CCar::SetMaxSpeed( float fSpeed )
 {
 	m_maxSpeed = fSpeed;
-
+	/*
 #ifndef EDITOR
 	g_replayData->PushEvent( REPLAY_EVENT_CAR_SETMAXSPEED, m_replayID, *(void**)&m_maxSpeed );
-#endif // EDITOR
+#endif // EDITOR*/
 }
 
 float CCar::GetMaxSpeed() const
@@ -4253,6 +4269,10 @@ float CCar::GetMaxSpeed() const
 void CCar::SetTorqueScale( float fScale )
 {
 	m_torqueScale = fScale;
+	/*
+#ifndef EDITOR
+	g_replayData->PushEvent(REPLAY_EVENT_CAR_SETTORQUESCALE, m_replayID, *(void**)&m_torqueScale);
+#endif // EDITOR*/
 }
 
 float CCar::GetTorqueScale() const
@@ -4264,11 +4284,11 @@ void CCar::SetDamage( float damage )
 {
 	bool wasAlive = IsAlive();
 	m_gameDamage = damage;
-
+	/*
 #ifndef EDITOR
 	if(wasAlive)
 		g_replayData->PushEvent( REPLAY_EVENT_CAR_DAMAGE, m_replayID, *(void**)&m_gameDamage.m_value );
-#endif // EDITOR
+#endif // EDITOR*/
 	if(m_gameDamage > m_gameMaxDamage)
 		m_gameDamage = m_gameMaxDamage;
 }
@@ -4311,12 +4331,22 @@ void CCar::Repair(bool unlock)
 	RefreshWindowDamageEffects();
 }
 
+void CCar::SetCarColour(const carColorScheme_t& col) 
+{
+	m_carColor.CopyFrom(col); 
+}
+
+carColorScheme_t CCar::GetCarColour() const
+{
+	return m_carColor; 
+}
+
 void CCar::SetColorScheme( int colorIdx )
 {
 	if(colorIdx >= 0 && colorIdx < m_conf->numColors)
-		m_carColor = m_conf->colors[colorIdx];
+		m_carColor.CopyFrom(m_conf->colors[colorIdx]);
 	else
-		m_carColor = ColorRGBA(1,1,1,1);
+		m_carColor.CopyFrom(ColorRGBA(1,1,1,1));
 }
 
 void CCar::SetAutoHandbrake( bool autoHandbrake )
@@ -4348,9 +4378,10 @@ bool CCar::HasInfiniteMass() const
 void CCar::Lock(bool lock)
 {
 	m_locked = lock;
+	/*
 #ifndef EDITOR
 	g_replayData->PushEvent( REPLAY_EVENT_CAR_LOCK, m_replayID, (void*)lock );
-#endif // EDITOR
+#endif // EDITOR*/
 }
 
 bool CCar::IsLocked() const
@@ -4361,10 +4392,10 @@ bool CCar::IsLocked() const
 void CCar::Enable(bool enable)
 {
 	m_enabled = enable;
-
+	/*
 #ifndef EDITOR
 	g_replayData->PushEvent( REPLAY_EVENT_CAR_ENABLE, m_replayID, (void*)enable );
-#endif // EDITOR
+#endif // EDITOR*/
 
 	UpdateLightsState();
 }

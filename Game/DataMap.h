@@ -6,10 +6,9 @@
 //				savegames / parsing entity KVs
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ENTITYDATAFIELD_H
-#define ENTITYDATAFIELD_H
+#ifndef DATAMAP_H
+#define DATAMAP_H
 
-//#include "BaseEngineHeader.h"
 #include "SaveRestoreManager.h"
 
 #include "SaveGame_DkList.h"
@@ -18,10 +17,6 @@
 #include "utils/eqstring.h"
 #include "math/Vector.h"
 #include "math/Matrix.h"
-
-// 
-// TODO: script bindings goes here
-//
 
 /*
 
@@ -59,9 +54,6 @@ MyEntity::DoSomething()
 		// Do another cool things
 	}
 }
-
-
-
 */
 
 enum FieldFlag_e
@@ -73,7 +65,7 @@ enum FieldFlag_e
 	FIELDFLAG_FUNCTION	= (1 << 4),
 };
 
-enum VariableType_e
+enum EVariableType
 {
 	// basic types
 	VTYPE_VOID = 0,
@@ -180,7 +172,7 @@ struct variable_t
 public:
 	variable_t()	: varType(VTYPE_VOID), iVal(0) {}
 
-	VariableType_e		GetVarType()					{return varType;}
+	EVariableType		GetVarType() const				{return varType;}
 
 	inline bool			GetBool() const					{ return( varType == VTYPE_BOOLEAN ) ? bVal : false; }
 	inline const char*	GetString() const				{ return( varType == VTYPE_STRING ) ? pszVal : "(null)"; }
@@ -216,7 +208,7 @@ public:
 	inline void			SetMatrix4x4(Matrix4x4& val)	{ *((Matrix4x4*)matVal4) = val; varType = VTYPE_MATRIX4X4;}
 
 	// use this if you want to get different values
-	bool				Convert(VariableType_e newType);
+	bool				Convert(EVariableType newType);
 
 private:
 	union
@@ -235,7 +227,7 @@ private:
 		float		matVal4[16];
 	};
 
-	VariableType_e varType;
+	EVariableType varType;
 };
 
 class BaseEntity;
@@ -260,7 +252,7 @@ struct datamap_t;
 // this is used by key fields and save data
 struct datavariant_t
 {
-	VariableType_e			type;
+	EVariableType			type;
 
 	// name (key)
 	const char*				name;
@@ -431,7 +423,7 @@ public:
 	void					Clear();
 
 	float					GetDelay() { return m_fDelay;}
-	VariableType_e			ValueType() { return m_Value.GetVarType(); }
+	EVariableType			ValueType() { return m_Value.GetVarType(); }
 
 	void					FireOutput( variable_t &Value, BaseEntity *pActivator, BaseEntity *pCaller, float fDelay);
 	void					AddAction(char* pszEditorActionData);
@@ -445,4 +437,4 @@ protected:
 	DkList<CEventAction*>	m_pActionList; // action list for that output
 };
 
-#endif //ENTITYDATAFIELD_H
+#endif // DATAMAP_H

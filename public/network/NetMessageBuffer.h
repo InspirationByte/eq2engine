@@ -64,6 +64,7 @@ public:
 	void				ResetPos();
 
 	void				DebugWriteToFile(const char* fileprefix);
+	void				WriteToStream(IVirtualStream* stream);
 
 	bool				Send( int nFlags = 0 );
 	int					GetOverallStatus() const;

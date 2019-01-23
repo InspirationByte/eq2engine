@@ -23,7 +23,7 @@
 
 struct variable_t;
 
-#include "EntityDataField.h"
+#include "DataMap.h"
 
 #define TICK_RATE				(.015)  // 15 msec ticks
 #define TIME_TO_TICKS( dt )		( (int)( 0.5f + (float)dt / TICK_RATE ) )

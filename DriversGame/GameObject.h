@@ -34,7 +34,6 @@ using namespace Networking;
 	typedef baseClassName BaseClass; \
 	typedef className ThisClass;
 
-
 class CBaseNetworkedObject
 {
 public:
@@ -43,19 +42,20 @@ public:
 	DECLARE_NETWORK_TABLE_PUREVIRTUAL()
 	DECLARE_CLASS_NOBASE( CBaseNetworkedObject )
 
-						CBaseNetworkedObject() : m_isNetworkStateChanged(false)	{}
-	virtual				~CBaseNetworkedObject() {}
+							CBaseNetworkedObject()	{}
+	virtual					~CBaseNetworkedObject() {}
 
-	void				OnNetworkStateChanged(void* ptr);
+	void					OnNetworkStateChanged();
+	void					OnNetworkStateChanged(void* ptr);
 
-	virtual void		OnPackMessage( CNetMessageBuffer* buffer );
-	virtual void		OnUnpackMessage( CNetMessageBuffer* buffer );
+	virtual void			OnPackMessage( CNetMessageBuffer* buffer, DkList<int>& changeList );
+	virtual void			OnUnpackMessage( CNetMessageBuffer* buffer );
 
-	bool				m_isNetworkStateChanged;
-
+	DECLARE_NETWORK_CHANGELIST(NetGame)
+	DECLARE_NETWORK_CHANGELIST(Replay)
 protected:
 
-	void				PackNetworkVariables(const netvariablemap_t* map, CNetMessageBuffer* buffer);
+	void				PackNetworkVariables(const netvariablemap_t* map, CNetMessageBuffer* buffer, DkList<int>& changeList);
 	void				UnpackNetworkVariables(const netvariablemap_t* map, CNetMessageBuffer* buffer);
 };
 
@@ -269,7 +269,7 @@ public:
 
 	//------------------------
 
-	virtual void				OnPackMessage( CNetMessageBuffer* buffer );
+	virtual void				OnPackMessage( CNetMessageBuffer* buffer, DkList<int>& changeList );
 	virtual void				OnUnpackMessage( CNetMessageBuffer* buffer );
 
 	BoundingBox					m_bbox;

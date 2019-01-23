@@ -70,13 +70,11 @@ enum EReplayEventType
 	REPLAY_EVENT_FORCE_RANDOM,
 
 	REPLAY_EVENT_SET_PLAYERCAR,
-	REPLAY_EVENT_CAR_SETCOLOR,
-	REPLAY_EVENT_CAR_ENABLE,
-	REPLAY_EVENT_CAR_LOCK,
-	REPLAY_EVENT_CAR_DAMAGE,
-	REPLAY_EVENT_CAR_SETMAXDAMAGE,
-	REPLAY_EVENT_CAR_SETMAXSPEED,
+
+	REPLAY_EVENT_NETWORKSTATE_CHANGED,
+
 	REPLAY_EVENT_CAR_DEATH,
+	
 };
 
 struct replayCarFrame_s
@@ -321,9 +319,11 @@ protected:
 
 private:
 
+	void					ClearEvents();
+
 	DkList<int>					m_activeVehicles;
 
-	DkList<replayCarStream_t>		m_vehicles;
+	DkList<replayCarStream_t>	m_vehicles;
 	DkList<replayEvent_t>		m_events;
 	
 	int							m_currentEvent;

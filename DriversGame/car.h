@@ -147,6 +147,11 @@ struct carWheelConfig_t
 // color scheme
 struct carColorScheme_t
 {
+public:
+	DECLARE_CLASS_NOBASE(carColorScheme_t);
+	DECLARE_NETWORK_TABLE();
+	DECLARE_EMBEDDED_NETWORKVAR();
+
 	char name[16];
 
 	carColorScheme_t() {}
@@ -156,8 +161,8 @@ struct carColorScheme_t
 		col2 = col;
 	}
 
-	TVec4D<half> col1;
-	TVec4D<half> col2;
+	CNetworkVar(Vector4D, col1);
+	CNetworkVar(Vector4D, col2);
 };
 
 struct vehicleConfig_t
@@ -466,15 +471,15 @@ public:
 
 	virtual int				ObjType() const		{ return GO_CAR; }
 
-	virtual void			OnPackMessage( CNetMessageBuffer* buffer );
+	virtual void			OnPackMessage( CNetMessageBuffer* buffer, DkList<int>& changeList);
 	virtual void			OnUnpackMessage( CNetMessageBuffer* buffer );
 
 	//---------------------------------------------------------------------------
 	// Gameplay-related
 	//---------------------------------------------------------------------------
 
-	void					SetCarColour( const carColorScheme_t& col ) { m_carColor = col; }
-	carColorScheme_t		GetCarColour() const { return m_carColor; }
+	void					SetCarColour(const carColorScheme_t& col);
+	carColorScheme_t		GetCarColour() const;
 
 	void					SetColorScheme( int colorIdx );
 
@@ -604,7 +609,7 @@ protected:
 	short					m_nGear;
 	short					m_nPrevGear;
 
-	float					m_gearboxShiftThreshold;
+	CNetworkVar(float,		m_gearboxShiftThreshold);
 
 	float					m_radsPerSec;	// current rotations per sec
 
@@ -619,14 +624,14 @@ protected:
 	// dynamic config parts
 	//
 
-	float					m_maxSpeed;
-	float					m_torqueScale;
+	CNetworkVar(float,		m_maxSpeed);
+	CNetworkVar(float,		m_torqueScale);
 
 	//
 	// visual properties
 	//
 
-	carColorScheme_t		m_carColor;
+	CNetworkVarEmbedded(carColorScheme_t,	m_carColor);
 
 	IEqModel*				m_pDamagedModel;
 

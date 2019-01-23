@@ -14,6 +14,11 @@
 #define CORRECTION_TICK			32
 #define COLLISION_MIN_IMPULSE	(0.1f)
 
+DECLARE_CMD(replay_debug_stop, "stops playback (debug)", CV_CHEAT)
+{
+	g_replayData->m_state = REPL_NONE;
+}
+
 // sort events in right order
 int _sortEventsFunc(const replayEvent_t& a, const replayEvent_t& b)
 {
@@ -78,12 +83,23 @@ void CReplayData::Clear()
 	m_numFrames = 0;
 	m_playbackPhysIterations = g_pGameSession->GetPhysicsIterations();
 
-	m_events.clear();
+	ClearEvents();
+	
 	m_vehicles.clear();
 	m_cameras.clear();
 	m_activeVehicles.clear();
 }
 
+void CReplayData::ClearEvents()
+{
+	for (int i = 0; i < m_events.numElem(); i++)
+	{
+		if(m_events[i].eventType == REPLAY_EVENT_NETWORKSTATE_CHANGED)
+			delete ((CNetMessageBuffer*)m_events[i].eventData);
+	}
+
+	m_events.clear();
+}
 
 void CReplayData::StartRecording()
 {
@@ -227,6 +243,20 @@ void CReplayData::UpdateReplayObject( int replayId )
 
 	if(m_state == REPL_RECORDING)
 	{
+		CCar* car = rep->obj_car;
+
+		if (car && (car->m_changeList_Replay.numElem()))
+		{
+			// allow netmessage to do this
+			CNetMessageBuffer* msgBuffer = new CNetMessageBuffer();
+
+			car->OnPackMessage(msgBuffer, car->m_changeList_Replay);
+
+			PushEvent(REPLAY_EVENT_NETWORKSTATE_CHANGED, replayId, msgBuffer);
+
+			car->m_changeList_Replay.clear();
+		}
+
 		if(!RecordVehicleFrame( rep ))
 			PlayVehicleFrame( rep ); // should play already recorded
 	}
@@ -567,34 +597,20 @@ void CReplayData::WriteEvents( IVirtualStream* stream, int onlyEvent )
 
 			switch( evt.eventType )
 			{
-				// boolean event
-				case REPLAY_EVENT_CAR_ENABLE:
-				case REPLAY_EVENT_CAR_LOCK:
-				{
-					bool value = (bool)evt.eventData;
-
-					eventData.Write( &value, sizeof(value), 1 );
-					fevent.eventDataSize = eventData.Tell();
-
-					break;
-				}
-				case REPLAY_EVENT_CAR_SETMAXSPEED:
-				case REPLAY_EVENT_CAR_SETMAXDAMAGE:
-				case REPLAY_EVENT_CAR_DAMAGE:
-				{
-					float value = *(float *)&evt.eventData;
-
-					eventData.Write( &value, sizeof(value), 1 );
-					fevent.eventDataSize = eventData.Tell();
-					break;
-				}
 				case REPLAY_EVENT_CAR_DEATH:
-				case REPLAY_EVENT_CAR_SETCOLOR:
 				{
 					int value = (int)(intptr_t)evt.eventData;
 
 					eventData.Write( &value, sizeof(value), 1 );
 					fevent.eventDataSize = eventData.Tell();
+					break;
+				}
+				case REPLAY_EVENT_NETWORKSTATE_CHANGED:
+				{
+					CNetMessageBuffer* buf = (CNetMessageBuffer*)evt.eventData;
+					buf->ResetPos();
+					buf->WriteToStream(&eventData);
+					fevent.eventDataSize = buf->GetMessageLength();
 					break;
 				}
 			}
@@ -667,34 +683,25 @@ void CReplayData::ReadEvent( replayEvent_t& evt, IVirtualStream* stream )
 	{
 		switch( evt.eventType )
 		{
-			// boolean event
-			case REPLAY_EVENT_CAR_ENABLE:
-			case REPLAY_EVENT_CAR_LOCK:
-			{
-				bool value;
-				stream->Read(&value, 1, sizeof(value));
-
-				evt.eventData = (void*)value;
-				break;
-			}
-			case REPLAY_EVENT_CAR_SETMAXSPEED:
-			case REPLAY_EVENT_CAR_SETMAXDAMAGE:
-			case REPLAY_EVENT_CAR_DAMAGE:
-			{
-				float value;
-				stream->Read(&value, 1, sizeof(value));
-
-				evt.eventData = *(void**)&value;
-				break;
-			}
 			case REPLAY_EVENT_CAR_DEATH:
-			case REPLAY_EVENT_CAR_SETCOLOR:
 			{
 				int value;
 				stream->Read(&value, 1, sizeof(value));
 
 				evt.eventData = (void*)(intptr_t)value;
 				break;
+			}
+			case REPLAY_EVENT_NETWORKSTATE_CHANGED:
+			{
+				void* tempBuf = stackalloc(fevent.eventDataSize+4);
+				stream->Read(tempBuf, 1, fevent.eventDataSize);
+
+				CNetMessageBuffer* buf = new CNetMessageBuffer();
+				buf->WriteData(tempBuf, fevent.eventDataSize);
+
+				stackfree(tempBuf);
+
+				evt.eventData = buf;
 			}
 		}
 	}
@@ -1181,86 +1188,6 @@ void CReplayData::RaiseReplayEvent(const replayEvent_t& evt)
 			g_replayRandom.Regenerate();
 			break;
 		}
-		case REPLAY_EVENT_CAR_SETCOLOR:
-		{
-			// spawn car
-			if(evt.replayIndex == REPLAY_NOT_TRACKED)
-				break;
-
-			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
-
-			int col_idx = (int)(intptr_t)evt.eventData;
-
-			if(rep.obj_car)
-				rep.obj_car->SetColorScheme(col_idx);
-
-			break;
-		}
-		case REPLAY_EVENT_CAR_ENABLE:
-		{
-			if( evt.replayIndex == REPLAY_NOT_TRACKED )
-				break;
-
-			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
-			if(rep.obj_car)
-				rep.obj_car->Enable( (bool)evt.eventData );
-
-			break;
-		}
-		case REPLAY_EVENT_CAR_LOCK:
-		{
-			if( evt.replayIndex == REPLAY_NOT_TRACKED )
-				break;
-
-			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
-
-			if(rep.obj_car)
-				rep.obj_car->Lock( (bool)evt.eventData );
-
-			break;
-		}
-		case REPLAY_EVENT_CAR_DAMAGE:
-		{
-			if( evt.replayIndex == REPLAY_NOT_TRACKED )
-				break;
-
-			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
-
-			float damage = *(float *)&evt.eventData;
-
-			if(rep.obj_car && rep.obj_car->IsAlive())
-				rep.obj_car->SetDamage( damage );
-
-			break;
-		}
-		case REPLAY_EVENT_CAR_SETMAXDAMAGE:
-		{
-			if( evt.replayIndex == REPLAY_NOT_TRACKED )
-				break;
-
-			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
-
-			float damage = *(float *)&evt.eventData;
-
-			if(rep.obj_car)
-				rep.obj_car->SetMaxDamage( damage );
-
-			break;
-		}
-		case REPLAY_EVENT_CAR_SETMAXSPEED:
-		{
-			if( evt.replayIndex == REPLAY_NOT_TRACKED )
-				break;
-
-			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
-
-			float speed = *(float *)&evt.eventData;
-
-			if(rep.obj_car)
-				rep.obj_car->SetMaxSpeed( speed );
-
-			break;
-		}
 		case REPLAY_EVENT_CAR_DEATH:
 		{
 			if( evt.replayIndex == REPLAY_NOT_TRACKED )
@@ -1285,6 +1212,21 @@ void CReplayData::RaiseReplayEvent(const replayEvent_t& evt)
 			}
 
 			break;
+		}
+		case REPLAY_EVENT_NETWORKSTATE_CHANGED:
+		{
+			if (evt.replayIndex == REPLAY_NOT_TRACKED)
+				break;
+
+			replayCarStream_t& rep = m_vehicles[evt.replayIndex];
+
+			if (rep.obj_car)
+			{
+				CNetMessageBuffer* buf = (CNetMessageBuffer*)evt.eventData;
+				buf->ResetPos();
+				rep.obj_car->OnUnpackMessage(buf);
+			}
+				
 		}
 	}
 }

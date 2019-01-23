@@ -3,12 +3,15 @@
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Entity data table for use in savegames and restoring from
-//				savegames / parsing entity KVs//////////////////////////////////////////////////////////////////////////////////
+//				savegames / parsing entity KVs
+//////////////////////////////////////////////////////////////////////////////////
 
-#include "EntityDataField.h"
-#include "BaseEngineHeader.h"
+#include "DataMap.h"
+#include "BaseEntity.h"
 
-bool variable_t::Convert( VariableType_e newType )
+#include "utils/strtools.h"
+
+bool variable_t::Convert( EVariableType newType )
 {
 	if ( newType == varType )
 		return true;
@@ -169,7 +172,7 @@ void CBaseEntityOutput::AddAction(char* pszEditorActionData)
 	m_pActionList.append(pAction);
 }
 
-void CBaseEntityOutput::FireOutput( variable_t &Value, BaseEntity *pActivator, BaseEntity *pCaller, float fDelay)
+void CBaseEntityOutput::FireOutput( variable_t& Value, BaseEntity* pActivator, BaseEntity* pCaller, float fDelay)
 {
 	for(int i = 0; i < m_pActionList.numElem(); i++)
 	{
@@ -275,37 +278,34 @@ void CEventQueue::ServiceEvents()
 {
 	for(int i = 0; i < m_pEventList.numElem(); i++)
 	{
-		if(m_pEventList[i]->fFireTime < gpGlobals->curtime)
+		if (m_pEventList[i]->fFireTime > gpGlobals->curtime)
+			continue;
+
+		// FIRE THIS!
+		EventQueueEvent_t* pEvent = m_pEventList[i];
+
+		bool bTargetFound = false;
+
+		while(true)
 		{
-			// FIRE THIS!
+			BaseEntity* pEnt = (BaseEntity*)UTIL_EntByName(pEvent->szTargetName.GetData(), pEnt);
 
-			EventQueueEvent_t* pEvent = m_pEventList[i];
+			if(!pEnt)
+				break;
 
-			bool bTargetFound = false;
+			pEnt->AcceptInput((char*)pEvent->szTargetInput.GetData(), pEvent->parameter, pEvent->pActivator, pEvent->pCaller);
 
-			BaseEntity* pEnt = NULL;
+			//Msg("AcceptInput\n");
 
-			while(true)
-			{
-				pEnt = (BaseEntity*)UTIL_EntByName(pEvent->szTargetName.GetData(), pEnt);
-
-				if(!pEnt)
-					break;
-
-				pEnt->AcceptInput((char*)pEvent->szTargetInput.GetData(), pEvent->parameter, pEvent->pActivator, pEvent->pCaller);
-
-				//Msg("AcceptInput\n");
-
-				bTargetFound = true;
-			}
-
-			if(!bTargetFound)
-				DevMsg( 1, "Output ERROR: Entity with name '%s' not found\n", pEvent->szTargetName.GetData());
-
-			// and remove
-			m_pEventList.fastRemoveIndex(i);
-			i--;
+			bTargetFound = true;
 		}
+
+		if(!bTargetFound)
+			DevMsg( 1, "Output ERROR: Entity with name '%s' not found\n", pEvent->szTargetName.GetData());
+
+		// and remove
+		m_pEventList.fastRemoveIndex(i);
+		i--;
 	}
 }
 

@@ -17,7 +17,7 @@
 #include "anim_activity.h"
 
 #if !defined(EDITOR) && !defined(NO_GAME)
-#include "EntityDataField.h"
+#include "DataMap.h"
 #endif // EDITOR
 
 struct gikchain_t;

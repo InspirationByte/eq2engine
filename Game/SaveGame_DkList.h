@@ -8,7 +8,7 @@
 #ifndef SAVEGAME_DKLIST_H
 #define SAVEGAME_DKLIST_H
 
-#include "EntityDataField.h"
+#include "DataMap.h"
 
 void SaveGame_WriteField(void* pStruct, datavariant_t* pField, IVirtualStream* pStream);
 void SaveGame_ReadField(void* pStruct, datavariant_t* pField, IVirtualStream* pStream);
@@ -26,7 +26,7 @@ public:
 
 		datavariant_t field_objects = 
 		{
-			(VariableType_e)FIELD_TYPE,
+			(EVariableType)FIELD_TYPE,
 			"elems",
 			0,
 			pList->numElem(),
@@ -53,7 +53,7 @@ public:
 
 		datavariant_t field_objects = 
 		{
-			(VariableType_e)FIELD_TYPE,
+			(EVariableType)FIELD_TYPE,
 			"elems",
 			0,
 			array_count,
@@ -80,7 +80,7 @@ public:
 
 		datavariant_t field_objects = 
 		{
-			(VariableType_e)FIELD_TYPE,
+			(EVariableType)FIELD_TYPE,
 			"elems",
 			0,
 			1,

@@ -333,7 +333,7 @@ call copy_whitecage_binary.bat $(ConfigurationName) $(TargetName)$(TargetExt)</C
     <ClInclude Include="EntityBind.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="EntityDataField.h" />
+    <ClInclude Include="DataMap.h" />
     <ClInclude Include="EntityQueue.h" />
     <ClInclude Include="env_explode.h" />
     <ClInclude Include="EqGMS.h">
@@ -621,7 +621,7 @@ call copy_whitecage_binary.bat $(ConfigurationName) $(TargetName)$(TargetExt)</C
     <ClCompile Include="GameLibrary.cpp" />
     <ClCompile Include="..\shared_engine\EffectRender.cpp" />
     <ClCompile Include="..\shared_engine\EqUI\EqUI_Panel.cpp" />
-    <ClCompile Include="EntityDataField.cpp" />
+    <ClCompile Include="DataMap.cpp" />
     <ClCompile Include="FilterPipelineBase.cpp" />
     <ClCompile Include="GameRenderer.cpp" />
     <ClCompile Include="GameRules_WhiteCage.cpp">

@@ -523,9 +523,9 @@ void CNetGameSession::Net_SendObjectData( CGameObject* obj, int nClientID )
 	if(obj->m_networkID == NETWORK_ID_OFFLINE)
 		return;
 
-	obj->m_isNetworkStateChanged = false;
-
 	m_netThread.SendEvent(new CNetObjectFrame(obj), CMSG_OBJECT_FRAME, nClientID);
+
+	obj->m_changeList_NetGame.clear();
 }
 
 void CNetGameSession::SendObjectSpawns( int clientID )
@@ -708,7 +708,7 @@ void CNetGameSession::Update(float fDt)
 
 		// send object
 		if(	IsServer() &&
-			obj->m_isNetworkStateChanged &&
+			(obj->m_changeList_NetGame.numElem()) &&
 			(m_curTimeNetwork-m_prevTimeNetwork > fRateMs))
 		{
 			Net_SendObjectData(obj, NM_SENDTOALL);
@@ -1004,7 +1004,8 @@ void CNetSpawnInfo::Pack( CNetworkThread* pNetThread, CNetMessageBuffer* pStream
 	if(m_objEvent == NETOBJ_SPAWN)
 	{
 		//Msg("Spawn pack object\n");
-		m_object->OnPackMessage( pStream );
+		DkList<int> empty;
+		m_object->OnPackMessage( pStream, empty);
 	}
 }
 
@@ -1050,7 +1051,7 @@ void CNetObjectFrame::Pack( CNetworkThread* pNetThread, CNetMessageBuffer* pStre
 	pStream->WriteInt( m_objectId );
 	pStream->WriteInt( m_object->ObjType() );
 
-	m_object->OnPackMessage( pStream );
+	m_object->OnPackMessage( pStream, m_object->m_changeList_NetGame);
 }
 
 //---------------------------------------------------------------------------------------------

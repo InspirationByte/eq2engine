@@ -75,6 +75,12 @@ void CNetMessageBuffer::DebugWriteToFile(const char* fileprefix)
 	}
 }
 
+void CNetMessageBuffer::WriteToStream(IVirtualStream* stream)
+{
+	for (int i = 0; i < m_pMessage.numElem(); i++)
+		stream->Write(m_pMessage[i]->data, m_pMessage[i]->len, 1);
+}
+
 bool CNetMessageBuffer::Send( int nFlags )
 {
 	for(int i = 0; i < m_pMessage.numElem(); i++)
