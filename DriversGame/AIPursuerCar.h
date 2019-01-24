@@ -55,6 +55,9 @@ public:
 
 	EPursuerAIType		GetPursuerType() const {return m_type;}
 
+	void				SetMaxSpeed(float fSpeed);
+	void				SetTorqueScale(float fScale);
+
 protected:
 
 	int					PassiveCopState( float fDt, EStateTransition transition );
@@ -82,6 +85,9 @@ protected:
 
 	float					m_alterSirenChangeTime;
 	bool					m_sirenAltered;
+
+	float					m_savedMaxSpeed;
+	float					m_savedTorqueScale;
 
 	// all handling affectors, they are biased by the current behavior state
 	CAIHandlingAffector<CAINavigationManipulator>			m_navAffector;

@@ -46,6 +46,7 @@ const float AI_COP_COLLISION_CHECKTIME		= 0.01f;
 
 const float AI_COP_TIME_TO_LOST_TARGET		= 30.0f;
 const float AI_COP_TIME_TO_LOST_TARGET_FAR	= 10.0f;
+const float AI_COP_TIME_TO_TELL_DIRECTION	= 5.0f;
 
 const float AI_COP_LOST_TARGET_FARDIST		= 160.0f;
 
@@ -72,6 +73,9 @@ CAIPursuerCar::CAIPursuerCar(vehicleConfig_t* carConfig, EPursuerAIType type) : 
 
 	m_alterSirenChangeTime = AI_ALTER_SIREN_CHANGETIME;
 	m_sirenAltered = false;
+
+	m_savedMaxSpeed = carConfig->physics.maxSpeed;
+	m_savedTorqueScale = 1.0f;
 }
 
 CAIPursuerCar::~CAIPursuerCar()
@@ -563,8 +567,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	if(transition == STATE_TRANSITION_PROLOG)
 	{
-		m_gearboxShiftThreshold = 1.0f;
-
 		if(!targetIsValid)
 		{
 			AI_SetState(&CAIPursuerCar::SearchForRoad);
@@ -595,10 +597,19 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 		m_enabled = true;
 
+		// set desired torque and speed
+		m_maxSpeed = m_savedMaxSpeed;
+		m_torqueScale = m_savedTorqueScale;
+		m_gearboxShiftThreshold = 1.0f;
+
 		return 0;
 	}
 	else if(transition == STATE_TRANSITION_EPILOG)
 	{
+		// restore torque and speed
+		m_maxSpeed = m_conf->physics.maxSpeed;
+		m_torqueScale = 1.0f;
+
 		m_gearboxShiftThreshold = 0.6f;
 	}
 	else
@@ -640,8 +651,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	// check the visibility
 	if ( !isVisible )
 	{
-		targetPursuerData.lastSeenTimer += fDt;
-
 		float distToTarget = length(m_target->GetOrigin() - GetOrigin());
 
 		float timeToLostTarget = (distToTarget > AI_COP_LOST_TARGET_FARDIST) ? AI_COP_TIME_TO_LOST_TARGET_FAR : AI_COP_TIME_TO_LOST_TARGET;
@@ -845,21 +854,26 @@ void CAIPursuerCar::SpeakTargetDirection(const char* startSoundName, bool force)
 
 	PursuerData_t& targetPursuerData = m_target->GetPursuerData();
 
-	if (targetPursuerData.lastDirection != targetDir && targetDir < 4)
+	if (targetPursuerData.lastDirectionTimer > AI_COP_TIME_TO_TELL_DIRECTION)
 	{
-		if (Speak(startSoundName, force))
+		if (targetPursuerData.lastDirection != targetDir && targetDir < 4)
 		{
-			if (targetDir == 0)
-				Speak("cop.heading_west", true);
-			else if (targetDir == 1)
-				Speak("cop.heading_north", true);
-			else if (targetDir == 2)
-				Speak("cop.heading_east", true);
-			else if (targetDir == 3)
-				Speak("cop.heading_south", true);
-		}
+			if (Speak(startSoundName, force))
+			{
+				if (targetDir == 0)
+					Speak("cop.heading_west", true);
+				else if (targetDir == 1)
+					Speak("cop.heading_north", true);
+				else if (targetDir == 2)
+					Speak("cop.heading_east", true);
+				else if (targetDir == 3)
+					Speak("cop.heading_south", true);
 
-		targetPursuerData.lastDirection = targetDir;
+				targetPursuerData.lastDirectionTimer = 0.0f;
+			}
+
+			targetPursuerData.lastDirection = targetDir;
+		}
 	}
 }
 
@@ -891,6 +905,16 @@ void CAIPursuerCar::SetPursuitTarget(CCar* obj)
 
 	//m_targInfo.lastInfraction = INFRACTION_HAS_FELONY;
 	//m_targInfo.nextCheckImpactTime = AI_COP_COLLISION_CHECKTIME;
+}
+
+void CAIPursuerCar::SetMaxSpeed(float fSpeed)
+{
+	m_savedMaxSpeed = fSpeed;
+}
+
+void CAIPursuerCar::SetTorqueScale(float fScale)
+{
+	m_savedTorqueScale = fScale;
 }
 
 OOLUA_EXPORT_FUNCTIONS(

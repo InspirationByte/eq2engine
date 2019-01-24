@@ -590,6 +590,11 @@ BEGIN_NETWORK_TABLE_NO_BASE(carColorScheme_t)
 	DEFINE_SENDPROP_VECTOR4D(col2)
 END_NETWORK_TABLE()
 
+BEGIN_NETWORK_TABLE_NO_BASE(PursuerData_t)
+	DEFINE_SENDPROP_FLOAT(felonyRating),
+	DEFINE_SENDPROP_INT(pursuedByCount)
+END_NETWORK_TABLE()
+
 BEGIN_NETWORK_TABLE( CCar )
 	DEFINE_SENDPROP_BYTE(m_sirenEnabled),
 	DEFINE_SENDPROP_FLOAT(m_maxSpeed),
@@ -603,7 +608,8 @@ BEGIN_NETWORK_TABLE( CCar )
 	DEFINE_SENDPROP_BYTE(m_autohandbrake),
 	DEFINE_SENDPROP_BYTE(m_inWater),
 	DEFINE_SENDPROP_BYTE(m_hasDriver),
-	DEFINE_SENDPROP_EMBEDDED(m_carColor)
+	DEFINE_SENDPROP_EMBEDDED(m_carColor),
+	DEFINE_SENDPROP_EMBEDDED(m_pursuerData)
 END_NETWORK_TABLE()
 
 CCar::CCar()
@@ -2023,6 +2029,10 @@ void CCar::EmitCollisionParticles(const Vector3D& position, const Vector3D& velo
 
 void CCar::OnPrePhysicsFrame(float fDt)
 {
+	// update pursuit stuff
+	m_pursuerData.lastSeenTimer += fDt;
+	m_pursuerData.lastDirectionTimer += fDt;
+
 #ifndef EDITOR
 	// record it
 	g_replayData->UpdateReplayObject( m_replayID );

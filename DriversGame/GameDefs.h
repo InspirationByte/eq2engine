@@ -36,6 +36,10 @@ const float INFRACTION_SKIP_REGISTER_TIME = 2.0f;
 // cop data
 struct PursuerData_t
 {
+	DECLARE_CLASS_NOBASE(PursuerData_t);
+	DECLARE_NETWORK_TABLE();
+	DECLARE_EMBEDDED_NETWORKVAR();
+
 	float	lastInfractionTime[INFRACTION_COUNT];
 	bool	hasInfraction[INFRACTION_COUNT];
 	float	felonyRating;

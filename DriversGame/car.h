@@ -496,10 +496,10 @@ public:
 	void					SetMaxDamage( float fDamage );
 	float					GetMaxDamage() const;
 
-	void					SetMaxSpeed( float fSpeed );
+	virtual void			SetMaxSpeed( float fSpeed );
 	float					GetMaxSpeed() const;
 
-	void					SetTorqueScale( float fScale );
+	virtual void			SetTorqueScale( float fScale );
 	float					GetTorqueScale() const;
 
 	void					SetDamage( float damage );
@@ -653,7 +653,7 @@ protected:
 	CNetworkVar(float,		m_gameDamage);
 	CNetworkVar(float,		m_gameMaxDamage);
 
-	PursuerData_t			m_pursuerData;
+	CNetworkVarEmbedded(PursuerData_t, m_pursuerData);
 
 	CNetworkVar(ubyte,		m_lightsEnabled);
 
