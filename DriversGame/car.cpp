@@ -74,7 +74,9 @@ const float STEERING_HELP_CONST			= 0.4f;
 const float ANTIROLL_FACTOR_DEADZONE	= 0.01f;
 const float ANTIROLL_FACTOR_MAX			= 1.0f;
 const float ANTIROLL_SCALE				= 4.0f;
+
 const float DEFAULT_SHIFT_ACCEL_FACTOR	= 0.25f;
+const float DEFAULT_CAR_INERTIA_SCALE	= 1.5f;
 
 const float FLIPPED_TOLERANCE_COSINE	= 0.15f;
 
@@ -122,6 +124,10 @@ const float HINGE_DISCONNECT_COS_ANGLE		= 0.2f;
 const float SKID_SMOKE_MAX_WETNESS			= 0.5f; // wetness level before skid sound disappear
 const float SKID_WATERTRAIL_MIN_WETNESS		= 0.25f; // wetness level before skid sound disappear
 
+const float CAR_PHYSICS_RESTITUTION			= 0.5f;
+const float CAR_PHYSICS_FRICTION			= 0.4f;
+
+
 bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 {
 	conf->visual.cleanModelName = KV_GetValueString(kvs->FindKeyBase("cleanModel"), 0, "");
@@ -150,6 +156,7 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 	conf->physics.transmissionRate = KV_GetValueFloat(kvs->FindKeyBase("transmissionRate"));
 	conf->physics.shiftAccelFactor = KV_GetValueFloat(kvs->FindKeyBase("shiftAccelFactor"), 0, DEFAULT_SHIFT_ACCEL_FACTOR);
 	conf->physics.mass = KV_GetValueFloat(kvs->FindKeyBase("mass"));
+	conf->physics.inertiaScale = KV_GetValueFloat(kvs->FindKeyBase("inertiaScale"), 0, DEFAULT_CAR_INERTIA_SCALE);
 	conf->physics.antiRoll = KV_GetValueFloat(kvs->FindKeyBase("antiRoll"));
 
 	conf->physics.maxSpeed = KV_GetValueFloat(kvs->FindKeyBase("maxSpeed"), 0, DEFAULT_MAX_SPEED);
@@ -383,11 +390,11 @@ float vehicleConfig_t::GetBrakeEffectPerSecond() const
 #pragma todo("make better lateral sliding on steering wheels when going backwards")
 
 // wheel friction modifier on diferrent weathers
-static float weatherTireFrictionMod[WEATHER_COUNT] =
+static float s_weatherTireFrictionMod[WEATHER_COUNT] =
 {
 	1.0f,
-	0.8f,
-	0.75f
+	0.9f,
+	0.8f
 };
 
 ConVar g_debug_car_lights("g_debug_car_lights", "0");
@@ -489,7 +496,7 @@ float DBSlipAngleToLateralForce(float fSlipAngle, float fLongitudinalForce, eqPh
 	else
 		fResult *= 0.2f;
 
-	return fResult * weatherTireFrictionMod[g_pGameWorld->m_envConfig.weatherType];
+	return fResult * s_weatherTireFrictionMod[g_pGameWorld->m_envConfig.weatherType];
 }
 
 //-------------------------------------------------------------------------------------------------------------------------
@@ -766,10 +773,10 @@ void CCar::CreateCarPhysics()
 	body->m_aabb.maxPoint = m_conf->physics.body_center + m_conf->physics.body_size;
 
 	// TODO: custom friction and restitution
-	body->SetFriction( 0.4f );
-	body->SetRestitution( 0.5f );
+	body->SetFriction( CAR_PHYSICS_FRICTION );
+	body->SetRestitution( CAR_PHYSICS_RESTITUTION );
 
-	body->SetMass( m_conf->physics.mass );
+	body->SetMass( m_conf->physics.mass, m_conf->physics.inertiaScale);
 	body->SetCenterOfMass( m_conf->physics.virtualMassCenter );
 
 	// don't forget about contents!
@@ -1680,7 +1687,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 			if(wheel.m_surfparam)
 				wheelTractionFrictionScale = wheel.m_surfparam->tirefriction;
 
-			wheelTractionFrictionScale *= weatherTireFrictionMod[g_pGameWorld->m_envConfig.weatherType];
+			wheelTractionFrictionScale *= s_weatherTireFrictionMod[g_pGameWorld->m_envConfig.weatherType];
 
 			// wheel ray direction
 

@@ -49,7 +49,12 @@ ConVar ph_erp("ph_erp", "0.03", "Error correction", CV_CHEAT);
 // cvar value mostly depends on velocity
 ConVar ph_grid_tolerance("ph_grid_tolerance", "0.05", NULL, CV_CHEAT);
 
-const int collisionList_Max = 16;
+const int PHYSICS_COLLISION_LIST_MAX = 16;
+
+const float PHYSICS_DEFAULT_FRICTION = 12.9f;
+const float PHYSICS_DEFAULT_RESTITUTION = 0.25f;
+const float PHYSICS_DEFAULT_TIRE_FRICTION = 0.2f;
+const float PHYSICS_DEFAULT_TIRE_TRACTION = 1.0f;
 
 CEqCollisionObject* CollisionPairData_t::GetOppositeTo(CEqCollisionObject* obj)
 {
@@ -168,10 +173,10 @@ void InitSurfaceParams( DkList<eqPhysSurfParam_t*>& list )
 
 		pMaterial->id = mat_idx;
 		pMaterial->name = pSec->name;
-		pMaterial->friction = KV_GetValueFloat(pSec->FindKeyBase("friction"), 0, 12.9f);
-		pMaterial->restitution = KV_GetValueFloat(pSec->FindKeyBase("restitution"), 0, 0.1f);
-		pMaterial->tirefriction = KV_GetValueFloat(pSec->FindKeyBase("tirefriction"), 0, 0.2f);
-		pMaterial->tirefriction_traction = KV_GetValueFloat(pSec->FindKeyBase("tirefriction_traction"), 0, 1.0f);
+		pMaterial->friction = KV_GetValueFloat(pSec->FindKeyBase("friction"), 0, PHYSICS_DEFAULT_FRICTION);
+		pMaterial->restitution = KV_GetValueFloat(pSec->FindKeyBase("restitution"), 0, PHYSICS_DEFAULT_RESTITUTION);
+		pMaterial->tirefriction = KV_GetValueFloat(pSec->FindKeyBase("tirefriction"), 0, PHYSICS_DEFAULT_TIRE_FRICTION);
+		pMaterial->tirefriction_traction = KV_GetValueFloat(pSec->FindKeyBase("tirefriction_traction"), 0, PHYSICS_DEFAULT_TIRE_TRACTION);
 		pMaterial->word = KV_GetValueString(pSec->FindKeyBase("surfaceword"), NULL, "C")[0];
 	}
 }
@@ -951,7 +956,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 
 	// All objects have collision list
 	if ((pair.bodyA->m_flags & COLLOBJ_COLLISIONLIST) &&
-		pairsA.numElem() < collisionList_Max)
+		pairsA.numElem() < PHYSICS_COLLISION_LIST_MAX)
 	{
 		int oldNum = pairsA.numElem();
 		pairsA.setNum(oldNum+1);
@@ -974,7 +979,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 	}
 
 	if ((bodyB->m_flags & COLLOBJ_COLLISIONLIST) &&
-		pairsB.numElem() < collisionList_Max)
+		pairsB.numElem() < PHYSICS_COLLISION_LIST_MAX)
 	{
 		int oldNum = pairsB.numElem();
 		pairsB.setNum(oldNum+1);

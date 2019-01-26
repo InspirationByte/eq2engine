@@ -211,6 +211,7 @@ struct vehicleConfig_t
 
 		Vector3D					virtualMassCenter;
 		float						mass;
+		float						inertiaScale;
 
 		Vector3D					hingePoints[2];
 

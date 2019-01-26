@@ -45,8 +45,7 @@ const float minimumAngularVelocity = 0.000001f;	// squared value
 const float gravity_const = 9.81f;
 const float angVelDamp = 0.01f;//0.0125f;
 
-const float inertiaMassScale = 1.2f;
-const float impactAngularImpulseScale = 0.62f;
+const float inertiaMassScale = 1.5f;
 
 const float BODY_FREEZE_TIME		= 1.0f;
 const float BODY_MIN_VELOCITY		= 0.05f;
@@ -111,12 +110,12 @@ void CEqRigidBody::SetConstraintsUnsatisfied()
 		m_constraints[i]->m_satisfied = false;
 }
 
-void CEqRigidBody::ComputeInertia()
+void CEqRigidBody::ComputeInertia(float scale)
 {
 	ASSERTMSG(m_shape != NULL, "CEqRigidBody(CEqCollisionObject) - did you forgot to call Initialize()?");
 
 	btVector3 inertia;
-	m_shape->calculateLocalInertia(m_mass*inertiaMassScale, inertia);
+	m_shape->calculateLocalInertia(m_mass*scale, inertia);
 
 	m_inertia = ConvertBulletToDKVectors(inertia);
 
@@ -127,7 +126,7 @@ void CEqRigidBody::ComputeInertia()
 	UpdateInertiaTensor();
 }
 
-void CEqRigidBody::SetMass(float mass)
+void CEqRigidBody::SetMass(float mass, float inertiaScale /*= 1.0f*/)
 {
 	m_mass = mass;
 
@@ -136,7 +135,7 @@ void CEqRigidBody::SetMass(float mass)
 	else
 		m_invMass = 0.0f;
 
-	ComputeInertia();
+	ComputeInertia(inertiaScale);
 }
 
 float CEqRigidBody::GetMass() const
@@ -669,10 +668,10 @@ float CEqRigidBody::ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* 
 	impactDirB = fastNormalize(impactDirB);
 
     float normalImpulse = penetrationImpulse+velocityImpulse;
-	normalImpulse = 0.f > normalImpulse ? 0.f: normalImpulse;
+	normalImpulse = (0.0f > normalImpulse) ? 0.0f: normalImpulse;
 
     float normalImpulseRest = penetrationImpulse+velocityImpulseRest;
-	normalImpulseRest = 0.f > normalImpulseRest ? 0.f: normalImpulseRest;
+	normalImpulseRest = (0.0f > normalImpulseRest) ? 0.0f: normalImpulseRest;
 
 	// apply impact based on point velocity
 	Vector3D impactVelA = impactDirA*normalImpulseRest;

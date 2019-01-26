@@ -124,7 +124,7 @@ public:
 
 	bool					IsDynamic() const {return true;}
 
-	void					SetMass(float mass);
+	void					SetMass(float mass, float inertiaScale = 1.0f);
 	float					GetMass() const;
 	float					GetInvMass() const;
 
@@ -188,7 +188,7 @@ protected:
 
 	float					ComputeImpulseDenominator(const FVector3D& pos, const Vector3D& normal) const;
 
-	void					ComputeInertia();
+	void					ComputeInertia(float scale);
 	void					UpdateInertiaTensor();		///< updates inertia tensor
 	void					AccumulateForces(float time);	///< accumulates forces
 

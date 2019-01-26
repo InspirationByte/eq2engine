@@ -421,13 +421,21 @@ void Director_Draw( float fDt )
 	float timelineCenterPos = timelineRect.GetCenter().x;
 
 	CCar* viewedCar = g_pGameSession->GetViewCar();
+	CCar* playerCar = g_pGameSession->GetPlayerCar();
+	CCar* leadCar = g_pGameSession->GetLeadCar();
 
 	// if car is no longer valid, resetthe viewed car
 	if(!g_pGameWorld->IsValidObject(viewedCar))
 	{
-		g_pGameSession->SetViewCar(NULL);
+		g_pGameSession->SetViewCar(nullptr);
 		viewedCar = g_pGameSession->GetViewCar();
 	}
+
+	if (!g_pGameWorld->IsValidObject(playerCar))
+		playerCar = nullptr;
+
+	if (!g_pGameWorld->IsValidObject(leadCar))
+		leadCar = nullptr;
 
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		float ticksOffset = lastTickOffset-currentTickOffset;
@@ -472,20 +480,6 @@ void Director_Draw( float fDt )
 			meshBuilder.Quad2(currentTickRect.GetLeftTop(), currentTickRect.GetRightTop(), currentTickRect.GetLeftBottom(), currentTickRect.GetRightBottom());
 		}
 
-		if(g_freecam.GetBool())
-		{
-			if(viewedCar)
-			{
-				Vector3D screenPos;
-				PointToScreen_Z(viewedCar->GetOrigin() + Vector3D(0,1.0f,0), screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x,(float)screenSize.y));
-
-				meshBuilder.Color4f( 0.0f, 0.7f, 0.0f, 0.5f );
-
-				if(screenPos.z > 0.0f)
-					meshBuilder.Triangle2(screenPos.xy(), screenPos.xy()+Vector2D(-20, -20), screenPos.xy()+Vector2D(20, -20));
-			}
-		}
-
 		// current tick
 		Rectangle_t currentTickRect(timelineRect.GetCenter() - Vector2D(2, 20), timelineRect.GetCenter() + Vector2D(2, 20));
 		meshBuilder.Color4f(0,0,0,1.0f);
@@ -495,6 +489,58 @@ void Director_Draw( float fDt )
 		Rectangle_t lastTickRect(timelineRect.GetCenter() - Vector2D(2, 20) + Vector2D(ticksOffset,0), timelineRect.GetCenter() + Vector2D(2, 20) + Vector2D(ticksOffset,0));
 		meshBuilder.Color4f(1,0.05f,0,1.0f);
 		meshBuilder.Quad2(lastTickRect.GetLeftTop(), lastTickRect.GetRightTop(), lastTickRect.GetLeftBottom(), lastTickRect.GetRightBottom());
+
+		// draw 3D stuff
+		if (g_freecam.GetBool())
+		{
+			Vector2D halfScreen = Vector2D(screenSize)*0.5f;
+
+			Vector2D crosshair[] =
+			{
+				Vector2D(halfScreen + Vector2D(0,-3)),
+				Vector2D(halfScreen + Vector2D(3,3)),
+				Vector2D(halfScreen + Vector2D(-3,3))
+			};
+
+			meshBuilder.Color4f(1, 1, 1, 0.45);
+			meshBuilder.Triangle2(crosshair[0], crosshair[1], crosshair[2]);
+
+			if (viewedCar)
+			{
+				Vector3D screenPos;
+				PointToScreen_Z(viewedCar->GetOrigin() + Vector3D(0, 1.0f, 0), screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x, (float)screenSize.y));
+
+				if (screenPos.z > 0.0f)
+				{
+					meshBuilder.Color4f(0.0f, 0.7f, 0.0f, 0.5f);
+					meshBuilder.Triangle2(screenPos.xy() + Vector2D(-20, -20), screenPos.xy(), screenPos.xy() + Vector2D(20, -20));
+				}
+			}
+
+			if (leadCar)
+			{
+				Vector3D screenPos;
+				PointToScreen_Z(leadCar->GetOrigin() + Vector3D(0, 1.0f, 0), screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x, (float)screenSize.y));
+
+				if (screenPos.z > 0.0f)
+				{
+					meshBuilder.Color4f(0.9f, 0.7f, 0.0f, 0.5f);
+					meshBuilder.Triangle2(screenPos.xy() + Vector2D(-20, -20), screenPos.xy(), screenPos.xy() + Vector2D(20, -20));
+				}
+			}
+
+			if (playerCar)
+			{
+				Vector3D screenPos;
+				PointToScreen_Z(playerCar->GetOrigin() + Vector3D(0, 1.0f, 0), screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x, (float)screenSize.y));
+
+				if (screenPos.z > 0.0f)
+				{
+					meshBuilder.Color4f(0.0f, 0.2f, 0.5f, 0.5f);
+					meshBuilder.Triangle2(screenPos.xy() + Vector2D(-20, -20), screenPos.xy(), screenPos.xy() + Vector2D(20, -20));
+				}
+			}
+		}
 
 	meshBuilder.End();
 
@@ -515,19 +561,4 @@ void Director_Draw( float fDt )
 
 	Vector2D frameInfoTextPos(screenSize.x/2, screenSize.y - (screenSize.y/6));
 	roboto30->RenderText(framesStr, frameInfoTextPos, params);
-
-	if(g_freecam.GetBool())
-	{
-		Vector2D halfScreen = Vector2D(screenSize)*0.5f;
-
-		Vertex2D_t tmprect[] =
-		{
-			Vertex2D_t(halfScreen+Vector2D(0,-3), vec2_zero),
-			Vertex2D_t(halfScreen+Vector2D(3,3), vec2_zero),
-			Vertex2D_t(halfScreen+Vector2D(-3,3), vec2_zero)
-		};
-
-		// Draw crosshair
-		materials->DrawPrimitives2DFFP(PRIM_TRIANGLES, tmprect, elementsOf(tmprect), NULL, ColorRGBA(1,1,1,0.45));
-	}
 }
