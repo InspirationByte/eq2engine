@@ -103,8 +103,8 @@ OOLUA_EXPORT_FUNCTIONS_CONST(IDebugOverlay)
 OOLUA_EXPORT_FUNCTIONS(ISoundController, StartSound, Play, Pause, Stop, SetPitch, SetVolume, SetOrigin, SetVelocity)
 OOLUA_EXPORT_FUNCTIONS_CONST(ISoundController, IsStopped)
 
-OOLUA_EXPORT_FUNCTIONS(EmitParams)
-OOLUA_EXPORT_FUNCTIONS_CONST(EmitParams)
+OOLUA_EXPORT_FUNCTIONS(EmitParams, set_sampleId)
+OOLUA_EXPORT_FUNCTIONS_CONST(EmitParams, get_sampleId)
 
 OOLUA_EXPORT_FUNCTIONS(CSoundEmitterSystem, Precache, Emit, Emit2D, CreateController, RemoveController)
 OOLUA_EXPORT_FUNCTIONS_CONST(CSoundEmitterSystem)

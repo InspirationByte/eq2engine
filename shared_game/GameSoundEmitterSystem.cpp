@@ -687,20 +687,20 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channel)
 
 		ISoundSample* bestSample;
 
-		if(emit->sampleId > pScriptSound->pSamples.numElem()-1)
-			emit->sampleId = -1;
+		int numSamples = pScriptSound->pSamples.numElem();
 
-		if(emit->sampleId < 0)
+		if (numSamples > 0)
 		{
-			if(pScriptSound->pSamples.numElem() == 1 )
-				bestSample = pScriptSound->pSamples[0];
+			if (emit->sampleId > numSamples - 1)
+				emit->sampleId = -1;
+
+			if (emit->sampleId < 0)
+				bestSample = pScriptSound->pSamples[RandomInt(0, numSamples - 1)];
 			else
-				bestSample = pScriptSound->pSamples[RandomInt(0,pScriptSound->pSamples.numElem()-1)];
+				bestSample = pScriptSound->pSamples[emit->sampleId];
 		}
 		else
-		{
-			bestSample = pScriptSound->pSamples[ emit->sampleId ];
-		}
+			bestSample = pScriptSound->pSamples[0];
 
 		// use the channel defined by the script
 		if(channel == -1)
@@ -1025,53 +1025,57 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 		if(!stricmp(curSec->name, "include"))
 			continue;
 
-		char* scrsoundName = xstrdup(curSec->name);
+		soundScriptDesc_t* newSound = new soundScriptDesc_t;
 
-		soundScriptDesc_t* pSoundData = new soundScriptDesc_t;
+		newSound->pszName = xstrdup(curSec->name);
+		newSound->namehash = StringToHash(newSound->pszName, true );
 
-		pSoundData->pszName = scrsoundName;
+		newSound->fVolume = KV_GetValueFloat( curSec->FindKeyBase("volume"), 0, 1.0f );
 
-		EqString sname(scrsoundName);
-		sname = sname.LowerCase();
+		newSound->fAtten = KV_GetValueFloat( curSec->FindKeyBase("distance"), 0, m_defaultMaxDistance * 0.35f );
+		newSound->fMaxDistance = KV_GetValueFloat(curSec->FindKeyBase("maxdistance"), 0, m_defaultMaxDistance);
 
-		pSoundData->namehash = StringToHash( sname.c_str(), true );
+		newSound->fPitch = KV_GetValueFloat( curSec->FindKeyBase("pitch"), 0, 1.0f );
+		newSound->fRolloff = KV_GetValueFloat( curSec->FindKeyBase("rolloff"), 0, 1.0f );
+		newSound->fAirAbsorption = KV_GetValueFloat( curSec->FindKeyBase("airabsorption"), 0, 0.0f );
 
-		pSoundData->fVolume = KV_GetValueFloat( curSec->FindKeyBase("volume"), 0, 1.0f );
-		pSoundData->fAtten = KV_GetValueFloat( curSec->FindKeyBase("distance"), 0, m_defaultMaxDistance * 0.35f );
-		pSoundData->fPitch = KV_GetValueFloat( curSec->FindKeyBase("pitch"), 0, 1.0f );
-		pSoundData->fRolloff = KV_GetValueFloat( curSec->FindKeyBase("rolloff"), 0, 1.0f );
-		pSoundData->fMaxDistance = KV_GetValueFloat( curSec->FindKeyBase("maxdistance"), 0, m_defaultMaxDistance );
-		pSoundData->fAirAbsorption = KV_GetValueFloat( curSec->FindKeyBase("airabsorption"), 0, 0.0f );
-		pSoundData->loop = KV_GetValueBool( curSec->FindKeyBase("loop"), 0, false );
-		pSoundData->stopLoop = KV_GetValueBool( curSec->FindKeyBase("stopLoop"), 0, false );
-		pSoundData->extraStreaming = KV_GetValueBool( curSec->FindKeyBase("streamed"), 0, false );
-		pSoundData->is2d = KV_GetValueBool(curSec->FindKeyBase("is2d"), 0, false);
+		newSound->loop = KV_GetValueBool( curSec->FindKeyBase("loop"), 0, false );
+		newSound->stopLoop = KV_GetValueBool( curSec->FindKeyBase("stopLoop"), 0, false );
+
+		newSound->extraStreaming = KV_GetValueBool( curSec->FindKeyBase("streamed"), 0, false );
+		newSound->is2d = KV_GetValueBool(curSec->FindKeyBase("is2d"), 0, false);
 
 		kvkeybase_t* pKey = curSec->FindKeyBase("channel");
 
 		if(pKey)
 		{
-			pSoundData->channel = ChannelFromString((char*)KV_GetValueString(pKey));
+			newSound->channel = ChannelTypeByName(KV_GetValueString(pKey));
 
-			if(pSoundData->channel == CHAN_INVALID)
+			if(newSound->channel == CHAN_INVALID)
 			{
-				Msg("Invalid channel '%s' for sound %s\n", KV_GetValueString(pKey), pSoundData->pszName);
-				pSoundData->channel = CHAN_STATIC;
+				Msg("Invalid channel '%s' for sound %s\n", KV_GetValueString(pKey), newSound->pszName);
+				newSound->channel = CHAN_STATIC;
 			}
 		}
 		else
-			pSoundData->channel = CHAN_STATIC;
+			newSound->channel = CHAN_STATIC;
 
-		kvkeybase_t* pRndWaveSec = curSec->FindKeyBase("rndwave", KV_FLAG_SECTION);
+		// pick 'rndwave' or 'wave' sections for lists
+		pKey = curSec->FindKeyBase("rndwave", KV_FLAG_SECTION);
 
-		if(pRndWaveSec)
+		if(!pKey)
+			pKey = curSec->FindKeyBase("wave", KV_FLAG_SECTION);
+
+		if(pKey)
 		{
-			for(int j = 0; j < pRndWaveSec->keys.numElem(); j++)
+			for(int j = 0; j < pKey->keys.numElem(); j++)
 			{
-				if(stricmp(pRndWaveSec->keys[j]->name, "wave"))
+				kvkeybase_t* ent = pKey->keys[j];
+
+				if(stricmp(ent->name, "wave"))
 					continue;
 
-				pSoundData->soundFileNames.append(KV_GetValueString(pRndWaveSec->keys[j]));
+				newSound->soundFileNames.append(KV_GetValueString(ent));
 			}
 		}
 		else
@@ -1079,11 +1083,12 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 			pKey = curSec->FindKeyBase("wave");
 
 			if(pKey)
-				pSoundData->soundFileNames.append(KV_GetValueString(pKey));
-			else
-				MsgError("There is no any wave file for script sound '%s'!\n", pSoundData->pszName);
+				newSound->soundFileNames.append(KV_GetValueString(pKey));
 		}
 
-		m_allSounds.append(pSoundData);
+		if(newSound->soundFileNames.numElem() == 0)
+			MsgWarning("empty sound script '%s'!\n", newSound->pszName);
+
+		m_allSounds.append(newSound);
 	}
 }

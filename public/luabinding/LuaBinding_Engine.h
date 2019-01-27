@@ -258,6 +258,8 @@ OOLUA_PROXY( EmitParams )
 		OOLUA_CTOR( const char*, const Vector3D& )
 		OOLUA_CTOR( const char*, const Vector3D&, float, float )
 	)
+
+	OOLUA_MGET_MSET(sampleId)
 OOLUA_PROXY_END
 
 //

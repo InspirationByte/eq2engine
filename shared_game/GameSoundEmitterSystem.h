@@ -64,7 +64,7 @@ static const char* s_soundChannelNames[CHAN_COUNT] =
 	"CHAN_STREAM",
 };
 
-static ESoundChannelType ChannelFromString(char* str)
+static ESoundChannelType ChannelTypeByName(const char* str)
 {
 	for(int i = 0; i < CHAN_COUNT; i++)
 	{
@@ -231,7 +231,7 @@ struct EmitterData_t
 
 	float					origVolume;
 
-	ESoundChannelType				channel;
+	ESoundChannelType		channel;
 
 	EmitSound_t				emitSoundData;
 
