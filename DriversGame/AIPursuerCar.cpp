@@ -596,6 +596,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		}
 
 		m_enabled = true;
+		m_autogearswitch = true;
 
 		// set desired torque and speed
 		m_maxSpeed = m_savedMaxSpeed;
@@ -606,10 +607,11 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	}
 	else if(transition == STATE_TRANSITION_EPILOG)
 	{
+		m_autogearswitch = false;
+
 		// restore torque and speed
 		m_maxSpeed = m_conf->physics.maxSpeed;
 		m_torqueScale = 1.0f;
-
 		m_gearboxShiftThreshold = 0.6f;
 	}
 	else

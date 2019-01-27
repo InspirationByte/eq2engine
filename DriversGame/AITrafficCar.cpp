@@ -113,12 +113,13 @@ extern ConVar g_traffic_maxdist;
 #define ROADNEIGHBOUR_OFFS_PX(x)		{x+1, x, x-1, x}		// non-diagonal, perpendicular
 #define ROADNEIGHBOUR_OFFS_PY(y)		{y, y-1, y, y+1}
 
-const float AI_STOPLINE_DIST = 3.0f;
-const float AI_OBSTACLE_DIST = 3.5f;
+const float AI_STOPLINE_DIST = 4.0f;
+const float AI_OBSTACLE_DIST = 4.5f;
 
 const float AICAR_THINK_TIME = 0.15f;
 
-const float AI_SIDECHECK_DIST = 8.0f;
+const float AI_SIDECHECK_DIST_FR = 5.0f;
+const float AI_SIDECHECK_DIST_RR = 20.0f;
 
 const float AI_ROAD_STOP_DIST = 18.0f;
 
@@ -154,6 +155,8 @@ bool SolveIntersection(	int curDirection,
 						bool availDirs[4])
 {
 	int availDirsCount = 0;
+
+	bool straightAvail = false;
 	bool leftTurnAvail = false;
 	bool rightTurnAvail = false;
 
@@ -167,6 +170,9 @@ bool SolveIntersection(	int curDirection,
 
 			if(!rightTurnAvail)
 				rightTurnAvail = CompareDirection(curDirection, i-1);
+
+			if(!straightAvail)
+				straightAvail = CompareDirection(curDirection, i);
 
 			availDirsCount++;
 		}
@@ -497,7 +503,10 @@ void CAITrafficCar::ChangeRoad( const straight_t& road )
 	m_currEnd = road.end;
 
 	// do it every time now
-	SearchJunctionAndStraight();
+	m_nextJuncDetails.selectedStraight = -1;
+	m_nextJuncDetails.foundStraights.clear();
+
+	//SearchJunctionAndStraight();
 }
 
 void CAITrafficCar::SwitchLane()
@@ -506,6 +515,11 @@ void CAITrafficCar::SwitchLane()
 		return;
 
 	IVector2D carPosOnCell = g_pGameWorld->m_level.PositionToGlobalTilePoint( GetOrigin() );
+
+	int cellsBeforeEnd = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
+
+	if (cellsBeforeEnd < 4)
+		return;
 
 	int numLanes = g_pGameWorld->m_level.Road_GetNumLanesAtPoint( carPosOnCell );
 
@@ -537,7 +551,7 @@ void CAITrafficCar::SwitchLane()
 	int laneOfs = m_straights[STRAIGHT_CURRENT].lane-newLane;
 
 	IVector2D laneTile = carPosOnCell + (forwardDir*4) + rightPerpDir*laneOfs;
-	Vector3D lanePos = g_pGameWorld->m_level.GlobalTilePointToPosition(laneTile);
+	Vector3D lanePos = g_pGameWorld->m_level.GlobalTilePointToPosition(laneTile) + Vector3D(0,0.5f,0);
 
 	if( ai_traffic_debug_steering.GetBool() )
 		debugoverlay->Box3D(lanePos - 0.5f, lanePos + 0.5f, ColorRGBA(0,0,1,1), 5.0f);
@@ -551,8 +565,8 @@ void CAITrafficCar::SwitchLane()
 
 		Vector3D laneDir(dir.x,0,dir.y);
 
-		Vector3D traceStart = lanePos - laneDir*AI_SIDECHECK_DIST;
-		Vector3D traceEnd = lanePos + laneDir*AI_SIDECHECK_DIST;
+		Vector3D traceStart = lanePos - laneDir* AI_SIDECHECK_DIST_RR;
+		Vector3D traceEnd = lanePos + laneDir* AI_SIDECHECK_DIST_FR;
 
 		// Trace convex car
 		CollisionData_t coll;
@@ -571,13 +585,16 @@ void CAITrafficCar::SwitchLane()
 			SetLight(laneOfs < 0 ? CAR_LIGHT_DIM_LEFT : CAR_LIGHT_DIM_RIGHT, true);
 
 			ChangeRoad( newStraight );
+			SearchJunctionAndStraight();
 		}
+		else
+			SetLight(CAR_LIGHT_EMERGENCY, false);
 
 		if(ai_traffic_debug_steering.GetBool())
 		{
-			ColorRGBA col(0,0,0,1);
+			ColorRGBA col(0,1,1,1);
 
-			col[m_switchedLane ? 1 : 0] = 1.0f;
+			//col[m_switchedLane ? 1 : 0] = 1.0f;
 
 			debugoverlay->Box3D(traceStart-0.5f, traceStart+0.5f, col, 5.0f);
 			debugoverlay->Box3D(traceEnd-0.5f, traceEnd+0.5f, col, 5.0f);
@@ -600,18 +617,12 @@ void CAITrafficCar::SearchJunctionAndStraight()
 	m_nextJuncDetails.selectedStraight = -1;
 
 	if( m_straights[STRAIGHT_CURRENT].direction == -1 )
-	{
-		//Msg("Current straight has no direction, exiting\n");
 		return;
-	}
 
 	roadJunction_t junc = g_pGameWorld->m_level.Road_GetJunctionAtPoint( m_straights[STRAIGHT_CURRENT].end, 16 );
 
 	if( junc.breakIter <= 0)
-	{
-		//Msg("Junction was not found\n");
 		return;
-	}
 
 	m_nextJuncDetails.junc = junc;
 
@@ -625,7 +636,7 @@ void CAITrafficCar::SearchJunctionAndStraight()
 
 		IVector2D checkPos = junc.start+dir*i;
 
-		straight_t road = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkPos, 16);
+		straight_t road = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkPos, 24);
 
 		if(	road.direction != -1 &&
 			road.breakIter > 1 &&
@@ -667,7 +678,7 @@ void CAITrafficCar::SearchJunctionAndStraight()
 			int dirIdx = GetDirectionIndex(dirCheckVec*sign(checkDir));
 
 			// calc steering dir
-			straight_t road = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkStraightPos, 16);
+			straight_t road = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkStraightPos, 4);
 
 			if(	road.direction != -1 &&
 				road.direction == dirIdx &&
@@ -829,8 +840,9 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	// get the new straight
 	straight_t newStraight = g_pGameWorld->m_level.Road_GetStraightAtPoint( newStraightStartPoint, 16 );
 
+	
 	int cellsBeforeEnd = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
-
+	
 	if( newStraight.direction != -1 &&
 		newStraight.direction == m_straights[STRAIGHT_CURRENT].direction &&
 		cellsBeforeEnd < 8)
@@ -1019,19 +1031,34 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 	}
 
-	// disable lights
-	if( cellsBeforeEnd > 8 && isOnCurrRoad && m_straights[STRAIGHT_PREV].direction != m_straights[STRAIGHT_CURRENT].direction || isOnCurrRoad && !isOnPrevRoad && m_switchedLane )// && (!nextStraightIsSame && fabs(dot(roadDir, carForward)) > 0.9f || nextStraightIsSame && m_switchedLane ))
+	if (m_nextJuncDetails.selectedStraight != -1)
 	{
-		SetLight(CAR_LIGHT_EMERGENCY, false);
-		m_switchedLane = false;
+		straight_t& selRoad = m_nextJuncDetails.foundStraights[m_nextJuncDetails.selectedStraight];
+
+		bool hasLeftTurn = CompareDirection(m_straights[STRAIGHT_CURRENT].direction - 1, selRoad.direction);
+
+		if (hasLeftTurn)
+			SetLight(CAR_LIGHT_DIM_LEFT, true);
+		else if (CompareDirection(m_straights[STRAIGHT_CURRENT].direction + 1, selRoad.direction))
+			SetLight(CAR_LIGHT_DIM_RIGHT, true);
 	}
-
-	eqPhysCollisionFilter collFilter;
-	collFilter.type = EQPHYS_FILTER_TYPE_EXCLUDE;
-	collFilter.flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS | EQPHYS_FILTER_FLAG_FORCE_RAYCAST;
-	collFilter.AddObject( GetPhysicsBody() );
-
-	bool hasLeftTurn = false;
+	else
+	{
+		// disable lights
+		if (m_switchedLane)
+		{
+			if (isOnCurrRoad && !isOnPrevRoad)
+			{
+				SetLight(CAR_LIGHT_EMERGENCY, false);
+				m_switchedLane = false;
+			}
+		}
+		else if(isOnCurrRoad)
+		{
+			SetLight(CAR_LIGHT_EMERGENCY, false);
+			SearchJunctionAndStraight();
+		}
+	}
 
 	//
 	// Breakage on red light
@@ -1046,83 +1073,61 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		levroadcell_t* roadTile = g_pGameWorld->m_level.Road_GetGlobalTileAt(carPosOnCell);
 
 		// check current tile for traffic light indication
-		bool hasTrafficLight = roadTile ? (roadTile->flags & ROAD_FLAG_TRAFFICLIGHT) : false;//m_straights[STRAIGHT_CURRENT].hasTrafficLight;
-
-		//if(m_straights[STRAIGHT_PREV].hasTrafficLight &&
-		//	m_straights[STRAIGHT_CURRENT].direction == m_straights[STRAIGHT_PREV].direction )
-		//	hasTrafficLight = true;
+		bool hasTrafficLight = roadTile ? (roadTile->flags & ROAD_FLAG_TRAFFICLIGHT) : false;
 
 		bool isAllowedToMove = hasTrafficLight ? (trafficLightDir%2 == curDir%2) : true;
 
 		if( !g_disableTrafficLights.GetBool() && (!isAllowedToMove || (g_pGameWorld->m_globalTrafficLightTime < 2.0f)) )
 		{
-			if(carForwardSpeed > 0.5f)
+			float brakeSpeedDiff = brakeDistAtCurSpeed + AI_STOPLINE_DIST - distToStop;
+			brakeSpeedDiff = max(brakeSpeedDiff, 0.0f);
+
+			brake = brakeSpeedDiff / AI_ROAD_STOP_DIST;
+
+			if(distToStop > AI_STOPLINE_DIST)
 			{
-				float brakeSpeedDiff = brakeDistAtCurSpeed + AI_STOPLINE_DIST - distToStop;
-				brakeSpeedDiff = max(brakeSpeedDiff, 0.0f);
-
-				brake = brakeSpeedDiff / AI_ROAD_STOP_DIST;
-
-				if(brake > 0.01f && brake < 0.9f) // don't brake extremely
-				{
-					accelerator = 0.0f;
-					controls |= IN_BRAKE;
-				}
+				accelerator -= brake*2.0f;
+				controls |= IN_BRAKE;
 			}
 			else
 			{
-				controls |= IN_HANDBRAKE;
-				controls &= ~IN_BRAKE;
+				controls |= IN_BRAKE;
 				controls &= ~IN_ACCELERATE;
 			}
 		}
-		else
+		else if (m_nextJuncDetails.selectedStraight != -1)
 		{
 			//
 			// Breakage before junction when changing direction
 			//
 
-			if(m_nextJuncDetails.selectedStraight != -1)
+			straight_t& selRoad = m_nextJuncDetails.foundStraights[m_nextJuncDetails.selectedStraight];
+
+			if( m_straights[STRAIGHT_CURRENT].direction != selRoad.direction)
 			{
-				straight_t& selRoad = m_nextJuncDetails.foundStraights[m_nextJuncDetails.selectedStraight];
-
-				SetLight(CAR_LIGHT_EMERGENCY, false);
-
-				hasLeftTurn = CompareDirection(m_straights[STRAIGHT_CURRENT].direction-1, selRoad.direction);
-
-				if( hasLeftTurn )
-					SetLight(CAR_LIGHT_DIM_LEFT, true);
-				else if( CompareDirection(m_straights[STRAIGHT_CURRENT].direction+1, selRoad.direction) )
-					SetLight(CAR_LIGHT_DIM_RIGHT, true);
-				else
-					SetLight(CAR_LIGHT_EMERGENCY, false);
-
-				if( m_straights[STRAIGHT_CURRENT].direction != selRoad.direction)
+				if( carForwardSpeed > 8.0f*trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType] )
 				{
-					if( carForwardSpeed > 8.0f*trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType] )
-					{
-						// FIXME: calculate acceleration more gentle
+					// FIXME: calculate acceleration more gentle
 
-						float distToNextStraight = distToStop;
+					float distToNextStraight = distToStop;
 
-						float fBrakeRate = 1.0f - RemapValClamp(distToNextStraight, 0.0f, AI_ROAD_STOP_DIST, 0.0f, 1.0f);
+					float fBrakeRate = 1.0f - RemapValClamp(distToNextStraight, 0.0f, AI_ROAD_STOP_DIST, 0.0f, 1.0f);
 
-						brake = clamp(fBrakeRate + (carForwardSpeed-distToStop)*0.25f, 0.0f, 0.5f);
+					brake = clamp(fBrakeRate + (carForwardSpeed-distToStop)*0.25f, 0.0f, 0.5f);
 
-						accelerator -= brake*1.1f;
+					accelerator -= brake*1.1f;
 
-						if(brake >= 0.5f)
-							controls |= IN_BRAKE;
-					}
+					if(brake >= 0.5f)
+						controls |= IN_BRAKE;
 				}
 			}
 		}
 	}
-	else if(m_straights[STRAIGHT_PREV].direction != m_straights[STRAIGHT_CURRENT].direction && !isOnCurrRoad)
-	{
-		// don't accelerate too much if we're going to steer to another road
-		accelerator *= 0.25f;
-	}
+
+	eqPhysCollisionFilter collFilter;
+	collFilter.type = EQPHYS_FILTER_TYPE_EXCLUDE;
+	collFilter.flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS | EQPHYS_FILTER_FLAG_FORCE_RAYCAST;
+	collFilter.AddObject(GetPhysicsBody());
 
 	//
 	// Breakage when has object in front
@@ -1186,24 +1191,23 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 				}
 			}
 
-
-			float dbrakeToStopTime = diffForwardSpeed / brakeDistancePerSec*2.0f;
-			float dbrakeDistAtCurSpeed = brakeDistancePerSec*dbrakeToStopTime;
+			float dbrakeToStopTime = diffForwardSpeed / brakeDistancePerSec * 2.0f;
+			float dbrakeDistAtCurSpeed = brakeDistancePerSec * dbrakeToStopTime;
 
 			float brakeSpeedDiff = dbrakeDistAtCurSpeed + AI_OBSTACLE_DIST - lineDist;
 			brakeSpeedDiff = max(brakeSpeedDiff, 0.0f);
 
 			brake = brakeSpeedDiff / 10.0f;
 
-			if(brake > 0.01f)
+			if(lineDist > AI_OBSTACLE_DIST)
 			{
-				if(carForwardSpeed > 0.5f )
-				{
-					accelerator = 0.0f;
-					controls |= IN_BRAKE;
-				}
-				else
-					controls |= IN_HANDBRAKE;
+				accelerator -= brake * 2.0f;
+				controls |= IN_BRAKE;
+			}
+			else
+			{
+				controls |= IN_BRAKE;
+				controls &= ~IN_ACCELERATE;
 			}
 
 			m_prevFract = frontFract;

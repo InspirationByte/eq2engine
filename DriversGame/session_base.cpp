@@ -336,8 +336,11 @@ void CGameSessionBase::UpdateAsPlayerCar(const playerControl_t& control, CCar* c
 			car->SetInfiniteMass(g_infiniteMass.GetBool());
 		}
 
-		car->SetAutoHandbrake(g_autoHandbrake.GetBool());		// auto handbrake is a setting
-		car->SetControlButtons(control.buttons);				// set the controls
+		car->SetAutoHandbrake(g_autoHandbrake.GetBool());
+		car->SetAutoGearSwitch(true);
+
+		car->SetControlButtons(control.buttons);
+
 		car->SetControlVars(
 			(control.buttons & IN_ACCELERATE) ? control.accelBrakeValue : 0.0f,
 			(control.buttons & IN_BRAKE) ? control.accelBrakeValue : 0.0f,

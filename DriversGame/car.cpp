@@ -613,6 +613,7 @@ BEGIN_NETWORK_TABLE( CCar )
 	DEFINE_SENDPROP_BYTE(m_locked),
 	DEFINE_SENDPROP_BYTE(m_enabled),
 	DEFINE_SENDPROP_BYTE(m_autohandbrake),
+	DEFINE_SENDPROP_BYTE(m_autogearswitch),
 	DEFINE_SENDPROP_BYTE(m_inWater),
 	DEFINE_SENDPROP_BYTE(m_hasDriver),
 	DEFINE_SENDPROP_EMBEDDED(m_carColor),
@@ -660,6 +661,7 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_inWater(false),
 	m_hasDriver(false),
 	m_autohandbrake(true),
+	m_autogearswitch(false),
 	m_torqueScale(1.0f),
 	m_maxSpeed(125.0f),
 	m_gearboxShiftThreshold(1.0f)
@@ -1497,12 +1499,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 		autoHandbrakeHelper = clamp(autoHandbrakeHelper,0.0f,AUTOHANDBRAKE_MAX_FACTOR);
 	}
 
-	if( GetSpeed() <= 0.25f )
-	{
-		m_fAcceleration -= fBrake;
-		fBrake -= fAccel;
-	}
-
 	float fAcceleration = m_fAcceleration;
 	float fBreakage = fBrake;
 
@@ -1518,13 +1514,13 @@ void CCar::UpdateVehiclePhysics(float delta)
 		float differentialRatio = m_conf->physics.differentialRatio;
 		float transmissionRate = m_conf->physics.transmissionRate;
 		float torqueMultiplier = m_conf->physics.torqueMult;
-
+		
 		if(bDoBurnout)
 		{
 			if(m_nGear == 0)
 				m_nGear = 1;
 		}
-		else
+		else if(m_autogearswitch)
 		{
 			// neutral zone
 			// check for backwards gear
@@ -1601,7 +1597,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 			m_nGear = newGear;
 		}
 
-		// update reverse lights
 		SetLight(CAR_LIGHT_REVERSELIGHT, (m_nGear == 0) && wheelsSpeed < -0.25f);
 	}
 
@@ -1842,37 +1837,17 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 			if(fabs(fBraker) > 0 && fabs(wheelPitchSpeed) > 0)
 			{
-				// strange, but effective
-				if(fBraker > 0 && wheelPitchSpeed > 0)
-				{
-					wheelTractionForce -= fabs(fBraker * wheelConf.brakeTorque) * wheelTractionFrictionScale * 4.0f * (1.0f+springPowerFac);
+				wheelTractionForce -= sign(wheelPitchSpeed) * fabs(fBraker * wheelConf.brakeTorque) * wheelTractionFrictionScale * 4.0f * (1.0f + springPowerFac);
 
-					if(fBraker >= 0.95f)
-						wheelPitchSpeed -= wheelPitchSpeed * 3.0f * wheelTractionFrictionScale;
-				}
-				else if(fBraker < 0 && wheelPitchSpeed < 0)
-				{
-					wheelTractionForce += fabs(fBraker * wheelConf.brakeTorque) * wheelTractionFrictionScale * 4.0f * (1.0f+springPowerFac);
-				}
+				if (fBraker >= 0.95f)
+					wheelPitchSpeed -= wheelPitchSpeed * 3.0f * wheelTractionFrictionScale;
 			}
 
 			if(isHandbrakeWheel && fHandbrake > 0.0f)
 			{
 				const float HANDBRAKE_TORQUE = 8500.0f;
 
-				// strange, but effective
-				if(wheelPitchSpeed > 0.1f)
-				{
-					wheelTractionForce -= HANDBRAKE_TORQUE * wheelTractionFrictionScale * 3.0f;
-				}
-				else if(wheelPitchSpeed < -0.1f)
-				{
-					wheelTractionForce += HANDBRAKE_TORQUE * wheelTractionFrictionScale * 3.0f;
-				}
-				else
-				{
-					springForce -= wheelTractionForceDir*(dot(wheelVelAtPoint, wheelTractionForceDir) * HANDBRAKE_TORQUE * 5.0f);
-				}
+				wheelTractionForce -= sign(wheelPitchSpeed) * HANDBRAKE_TORQUE * wheelTractionFrictionScale * 3.0f;
 
 				if(fHandbrake == 1.0f)
 					wheelPitchSpeed = 0.0f;
@@ -4366,14 +4341,24 @@ void CCar::SetColorScheme( int colorIdx )
 		m_carColor.CopyFrom(ColorRGBA(1,1,1,1));
 }
 
-void CCar::SetAutoHandbrake( bool autoHandbrake )
+void CCar::SetAutoHandbrake( bool enable )
 {
-	m_autohandbrake = autoHandbrake;
+	m_autohandbrake = enable;
 }
 
 bool CCar::HasAutoHandbrake() const
 {
 	return m_autohandbrake;
+}
+
+void CCar::SetAutoGearSwitch(bool enable)
+{
+	m_autogearswitch = enable;
+}
+
+bool CCar::HasAutoGearSwitch() const
+{
+	return m_autogearswitch;
 }
 
 void CCar::SetInfiniteMass( bool infMass )

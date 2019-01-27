@@ -513,8 +513,11 @@ public:
 
 	void					Repair(bool unlock = false);
 
-	void					SetAutoHandbrake( bool autoHandbrake );
+	void					SetAutoHandbrake( bool enable);
 	bool					HasAutoHandbrake() const;
+
+	void					SetAutoGearSwitch(bool enable);
+	bool					HasAutoGearSwitch() const;
 
 	void					SetInfiniteMass( bool infMass );
 	bool					HasInfiniteMass() const;
@@ -663,6 +666,7 @@ protected:
 	CNetworkVar(bool,		m_locked);
 	CNetworkVar(bool,		m_enabled);
 	CNetworkVar(bool,		m_autohandbrake);
+	CNetworkVar(bool,		m_autogearswitch);
 	CNetworkVar(bool,		m_inWater);
 
 	CNetworkVar(bool,		m_hasDriver);
