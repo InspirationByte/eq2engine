@@ -261,6 +261,7 @@ CAITrafficCar::CAITrafficCar( vehicleConfig_t* carConfig ) : CCar(carConfig), CF
 	m_frameSkip = false;
 	m_switchedLane = false;
 	m_autohandbrake = false;
+	m_autogearswitch = false;
 
 	m_thinkTime = 0.0f;
 	m_nextSwitchLaneTime = AI_LANE_SWITCH_DELAY;
@@ -518,7 +519,7 @@ void CAITrafficCar::SwitchLane()
 
 	int cellsBeforeEnd = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
 
-	if (cellsBeforeEnd < 4)
+	if (cellsBeforeEnd < 6)
 		return;
 
 	int numLanes = g_pGameWorld->m_level.Road_GetNumLanesAtPoint( carPosOnCell );
@@ -1028,19 +1029,30 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "num next straights: %d\n", m_nextJuncDetails.foundStraights.numElem());
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "selected next straight: %d\n", m_nextJuncDetails.selectedStraight);
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "cellsBeforeEnd: %d\n", cellsBeforeEnd);
-
 	}
 
 	if (m_nextJuncDetails.selectedStraight != -1)
 	{
-		straight_t& selRoad = m_nextJuncDetails.foundStraights[m_nextJuncDetails.selectedStraight];
+		if (!m_switchedLane)
+		{
+			bool doTurnSignals = cellsBeforeEnd < 8;
 
-		bool hasLeftTurn = CompareDirection(m_straights[STRAIGHT_CURRENT].direction - 1, selRoad.direction);
+			straight_t& selRoad = m_nextJuncDetails.foundStraights[m_nextJuncDetails.selectedStraight];
 
-		if (hasLeftTurn)
-			SetLight(CAR_LIGHT_DIM_LEFT, true);
-		else if (CompareDirection(m_straights[STRAIGHT_CURRENT].direction + 1, selRoad.direction))
-			SetLight(CAR_LIGHT_DIM_RIGHT, true);
+			bool hasLeftTurn = CompareDirection(m_straights[STRAIGHT_CURRENT].direction - 1, selRoad.direction);
+
+			if (doTurnSignals && hasLeftTurn)
+				SetLight(CAR_LIGHT_DIM_LEFT, true);
+			else if (doTurnSignals && CompareDirection(m_straights[STRAIGHT_CURRENT].direction + 1, selRoad.direction))
+				SetLight(CAR_LIGHT_DIM_RIGHT, true);
+			else
+				SetLight(CAR_LIGHT_EMERGENCY, false);
+		}
+		else if (isOnCurrRoad && !isOnPrevRoad)
+		{
+			SetLight(CAR_LIGHT_EMERGENCY, false);
+			m_switchedLane = false;
+		}
 	}
 	else
 	{

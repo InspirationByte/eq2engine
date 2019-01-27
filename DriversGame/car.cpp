@@ -661,7 +661,7 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_inWater(false),
 	m_hasDriver(false),
 	m_autohandbrake(true),
-	m_autogearswitch(false),
+	m_autogearswitch(true),
 	m_torqueScale(1.0f),
 	m_maxSpeed(125.0f),
 	m_gearboxShiftThreshold(1.0f)
