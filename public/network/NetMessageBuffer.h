@@ -17,7 +17,7 @@
 
 #include "math/Vector.h"
 
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 
 struct kvkeybase_t;
 

@@ -126,7 +126,7 @@ void CDPKFileWriter::SetMountPath( const char* path )
 bool FileExists( const char* szPath )
 {
 #ifdef _WIN32
-	DWORD dwAttrib = GetFileAttributes(szPath);
+	DWORD dwAttrib = GetFileAttributesA(szPath);
 
 	return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
 			!(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));

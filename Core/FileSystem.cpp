@@ -453,7 +453,7 @@ bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool ove
 	if( FileExist(filename, search) )
 	{
 #ifdef WIN32
-		CopyFile(filename, dest_file, (BOOL)overWrite);
+		CopyFileA(filename, dest_file, (BOOL)overWrite);
 #else
 		ASSERTMSG(false, "CFileSystem::FileCopy for LINUX is undone!");
 #endif
@@ -1050,7 +1050,7 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 	if(modExt.Length() == 0)
 		moduleFileName = moduleFileName + ".dll";
 
-	HMODULE mod = LoadLibrary( moduleFileName.c_str() );
+	HMODULE mod = LoadLibraryA( moduleFileName.c_str() );
 
 	DWORD lastErr = GetLastError();
 
@@ -1058,7 +1058,7 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 
 	if(lastErr != 0)
 	{
-		FormatMessage(	FORMAT_MESSAGE_FROM_SYSTEM,
+		FormatMessageA(	FORMAT_MESSAGE_FROM_SYSTEM,
 						NULL,
 						lastErr,
 						MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT),

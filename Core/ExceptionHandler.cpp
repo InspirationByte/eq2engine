@@ -120,8 +120,7 @@ void CreateMiniDump( EXCEPTION_POINTERS* pep )
 	char tmp_path[2048];
 	sprintf(tmp_path, "logs/CrashDump_%s_%s.dmp", GetCore()->GetApplicationName(), GetCore()->GetCurrentUserName());
 
-	HANDLE hFile = CreateFile(tmp_path, GENERIC_READ | GENERIC_WRITE,
-	0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
+	HANDLE hFile = CreateFileA(tmp_path, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
 
 	if( ( hFile != NULL ) && ( hFile != INVALID_HANDLE_VALUE ) )
 	{
@@ -187,7 +186,7 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 	MsgError("\nModules listing:\n");
 
 	// show modules list
-	HMODULE PsapiLib = LoadLibrary("psapi.dll");
+	HMODULE PsapiLib = LoadLibraryA("psapi.dll");
 	if (PsapiLib)
 	{
 		ENUMPROCESSMODULESFUNC		EnumProcessModules;
@@ -208,7 +207,7 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 					for(i = 0; i < numModules; i++)
 					{
 						char modname[MAX_PATH];
-						if (GetModuleFileName(hModules[i], modname, MAX_PATH))
+						if (GetModuleFileNameA(hModules[i], modname, MAX_PATH))
 						{
 							modname[MAX_PATH-1] = 0;
 							MsgError("%s : ", modname);
