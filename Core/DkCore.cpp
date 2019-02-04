@@ -74,7 +74,7 @@ EqString UTIL_GetUserName()
 
     DWORD size;
     size=sizeof(buffer);
-    if (GetUserName(buffer,&size)==0)
+    if (GetUserNameA(buffer,&size)==0)
         return "nouser";
 
     return buffer;
@@ -158,7 +158,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		Msg("Setting working directory to %s\n", g_cmdLine->GetArgumentsOf(nWorkdirIndex));
 #ifdef _WIN32
 
-		SetCurrentDirectory( g_cmdLine->GetArgumentsOf(nWorkdirIndex) );
+		SetCurrentDirectoryA( g_cmdLine->GetArgumentsOf(nWorkdirIndex) );
 #else
 
 #endif // _WIN32

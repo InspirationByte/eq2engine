@@ -1,6 +1,6 @@
 -- premake5.lua
 
-workspace "EqEngineLib"
+workspace "equilibrium"
    configurations { "Debug", "Release" }
 
 project "eqCoreLib"
@@ -16,9 +16,7 @@ project "eqCoreLib"
    includedirs {
 		"public",
 		"public/core",
-		--"src_dependency\sdl2\include"
-		--"src_dependency\lua\src"
-		--"src_dependency\oolua\include"
+		--"src_dependency\zlib\include"
    }
 
    filter "configurations:Debug"
@@ -48,10 +46,37 @@ project "eqFrameworkLib"
    includedirs {
 		"public",
 		"public/core",
-		--"src_dependency\sdl2\include"
-		--"src_dependency\lua\src"
-		--"src_dependency\oolua\include"
+		--"src_dependency\zlib\include"
    }
+
+   filter "configurations:Debug"
+      defines { "DEBUG" }
+      symbols "On"
+
+   filter "configurations:Release"
+      defines { "NDEBUG" }
+      optimize "On"
+	  
+project "eqCoreShared"
+   kind "SharedLib"
+   
+   language "C++"
+   targetdir "%{cfg.buildcfg}"
+   
+   location "Core"
+   
+   files { 
+	   "Core/*.h", 
+	   "Core/*.cpp",
+   }
+   
+   includedirs {
+		"public",
+		"public/core",
+		--"src_dependency\zlib\include"
+   }
+   
+   defines { "DLL_EXPORT" }
 
    filter "configurations:Debug"
       defines { "DEBUG" }
