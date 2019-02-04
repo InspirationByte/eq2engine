@@ -289,13 +289,16 @@ void QuadTree::RebuildTree()
             // Reinsert point in the root tree
             node->Insert(rem_index);
         }
-    }    
-    
-    // Rebuild lower parts of the tree
-    northWest->RebuildTree();
-    northEast->RebuildTree();
-    southWest->RebuildTree();
-    southEast->RebuildTree();
+    }
+
+	if (!is_leaf)
+	{
+		// Rebuild lower parts of the tree
+		northWest->RebuildTree();
+		northEast->RebuildTree();
+		southWest->RebuildTree();
+		southEast->RebuildTree();
+	}
 }
 
 

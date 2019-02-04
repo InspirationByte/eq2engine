@@ -102,7 +102,7 @@ void fnConDebugSpew(SpewType_t type,const char* text)
 			old = SetConsoleTextColor( 1, 1, 1, 1 );
 		}
 
-		OutputDebugString( text );
+		OutputDebugStringA( text );
 		printf( "%s", text );
 
 		RestoreConsoleTextColor( old );

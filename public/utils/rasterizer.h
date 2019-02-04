@@ -12,7 +12,7 @@
 
 #include "DebugInterface.h"
 #include "Math/math_util.h"
-#include "math/Vector.h"
+#include "math/Plane.h"
 
 template< class T >
 struct REdge_t
