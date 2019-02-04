@@ -59,11 +59,8 @@ void SetOptimalCameraDistance()
 {
 	if(g_pModel && g_pModel->m_pModel)
 	{
-		BoundingBox;
-
-		Vector3D bsize = g_pModel->m_pModel->GetAABB().GetSize();
-
-		g_fCamDistance = length(bsize)*2.0f;
+		const BoundingBox& bbox = g_pModel->m_pModel->GetAABB();
+		g_fCamDistance = length(bbox.GetSize())*2.0f;
 	}
 }
 
@@ -602,14 +599,14 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 
 #define PHYS_PLANE_SIZE 512
 
-#define PLANE_W 32
-#define PLANE_H 32
+#define PHY_PLANE_W 32
+#define PHY_PLANE_H 32
 
-#define PLANE_VERTCOUNT (PLANE_W*PLANE_H)
-#define PLANE_IDXCOUNT ((PLANE_W-1)*(PLANE_H-1)*6)
+#define PHY_PLANE_VERTCOUNT (PHY_PLANE_W*PHY_PLANE_H)
+#define PHY_PLANE_IDXCOUNT ((PHY_PLANE_W-1)*(PHY_PLANE_H-1)*6)
 
-Vector3D	g_physPlaneVertices[PLANE_W*PLANE_H];
-uint		g_physPlaneIndices[PLANE_IDXCOUNT];
+Vector3D	g_physPlaneVertices[PHY_PLANE_W*PHY_PLANE_H];
+uint		g_physPlaneIndices[PHY_PLANE_IDXCOUNT];
 
 void InitPhysicsScene()
 {
@@ -647,14 +644,14 @@ void InitPhysicsScene()
 	// create big plane
 
 	// compute vertices
-	for(int c = 0; c < PLANE_H; c++)
+	for(int c = 0; c < PHY_PLANE_H; c++)
 	{
-		for(int r = 0; r < PLANE_W; r++)
+		for(int r = 0; r < PHY_PLANE_W; r++)
 		{
-			int vertex_id = r + c*PLANE_W;
+			int vertex_id = r + c* PHY_PLANE_W;
 
-			float tc_x = (float)(r)/(float)(PLANE_W-1);
-			float tc_y = (float)(c)/(float)(PLANE_H-1);
+			float tc_x = (float)(r)/(float)(PHY_PLANE_W-1);
+			float tc_y = (float)(c)/(float)(PHY_PLANE_H-1);
 
 			float v_pos_x = (tc_x-0.5f)*2.0f*PHYS_PLANE_SIZE;
 			float v_pos_y = (tc_y-0.5f)*2.0f*PHYS_PLANE_SIZE;
@@ -667,14 +664,14 @@ void InitPhysicsScene()
 	// support edge turning - this creates more smoothed terrain, but needs more polygons
 	bool bTurnEdge = false;
 	int nTriangle = 0;
-	for(int c = 0; c < (PLANE_H-1); c++)
+	for(int c = 0; c < (PHY_PLANE_H-1); c++)
 	{
-		for(int r = 0; r < (PLANE_W-1); r++)
+		for(int r = 0; r < (PHY_PLANE_W-1); r++)
 		{
-			int index1 = r + c*PLANE_W;
-			int index2 = r + (c+1)*PLANE_W;
-			int index3 = (r+1) + c*PLANE_W;
-			int index4 = (r+1) + (c+1)*PLANE_W;
+			int index1 = r + c* PHY_PLANE_W;
+			int index2 = r + (c+1)*PHY_PLANE_W;
+			int index3 = (r+1) + c* PHY_PLANE_W;
+			int index4 = (r+1) + (c+1)*PHY_PLANE_W;
 
 			if(!bTurnEdge)
 			{
@@ -711,11 +708,11 @@ void InitPhysicsScene()
 	}
 	
 	collData.indices = g_physPlaneIndices;
-	collData.numIndices = PLANE_IDXCOUNT;
+	collData.numIndices = PHY_PLANE_IDXCOUNT;
 	collData.vertices = g_physPlaneVertices;
 	collData.vertexPosOffset = 0;
 	collData.vertexSize = sizeof(Vector3D);
-	collData.numVertices = PLANE_VERTCOUNT;
+	collData.numVertices = PHY_PLANE_VERTCOUNT;
 
 	info.isStatic = true;
 	info.flipXAxis = false;
