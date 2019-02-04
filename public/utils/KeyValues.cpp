@@ -14,7 +14,7 @@
 
 #include "KeyValues.h"
 
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 
 #ifdef LINUX
 #include <ctype.h>

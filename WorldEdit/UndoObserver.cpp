@@ -10,7 +10,7 @@
 #include "DebugInterface.h"
 #include "EditorLevel.h"
 #include "BaseEditableObject.h"
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 
 //---------------------------------
 // Object action. For undo.

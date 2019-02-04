@@ -33,7 +33,7 @@
 
 #include "EditorVersion.h"
 
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 
 #include "IFont.h"
 

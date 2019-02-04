@@ -8,7 +8,7 @@
 #ifndef EDITORACTIONHISTORY_H
 #define EDITORACTIONHISTORY_H
 
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 #include "utils/DkList.h"
 
 enum EHistoryAction

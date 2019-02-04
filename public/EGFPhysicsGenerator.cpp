@@ -12,7 +12,7 @@
 #include "mtriangle_framework.h"
 #include "utils/SmartPtr.h"
 
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 
 using namespace MTriangle;
 
