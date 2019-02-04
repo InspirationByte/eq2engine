@@ -17,14 +17,6 @@
 namespace Networking
 {
 
-DECLARE_CMD(net_info, "Print networking information", 0)
-{
-	Msg("Equilibrium Engine network layer\n");
-	Msg("  Protocol version: %d\n", EQUILIBRIUM_NETPROTOCOL_VERSION);
-	Msg("  Uses IPv4\n");
-	Msg("  Compression is not supported\n");
-}
-
 DECLARE_CVAR(net_compress, 1, "Compress network traffic", CV_ARCHIVE)
 DECLARE_CVAR_CLAMP(net_compress_level, 1, 1, 9, "Compression ratio", CV_ARCHIVE)
 
@@ -48,6 +40,7 @@ bool INetworkInterface::PreProcessRecievedMessage( ubyte* data, int size, netMes
 	out.header = msg->header;
 
 	// decompress message and put to &out
+	
 	if( msg->header.compressed_size > 0 )
 	{
 		uLongf decompSize = msg->header.message_size;

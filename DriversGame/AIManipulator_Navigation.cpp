@@ -258,6 +258,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 	Matrix4x4& bodyMat = car->m_worldMatrix;
 
 	Vector3D carForward = car->GetForwardVector();
+	Vector3D carRight = car->GetRightVector();
 
 	Plane frontBackCheckPlane(carForward, -dot(carForward, carPos));
 
@@ -484,8 +485,8 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		if(brakeFac < AI_CHASE_BRAKE_MIN)
 			brakeFac = 0.0f;
 		
-		float forwardTraceDistanceBySpeed = RemapValClamp(speedMPS, 0.0f, 50.0f, 4.0f, 15.0f);
-
+		float forwardTraceDistanceBySpeed = RemapValClamp(speedMPS, 0.0f, 50.0f, 6.0f, 16.0f);
+		/*
 		// trace from position A to position B first
 		g_pPhysics->TestConvexSweep(&sphereTraceShape, identity(),
 			carPos, steeringTargetPos, pathColl,
@@ -514,39 +515,29 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 				debugoverlay->Sphere3D(steeringTargetPos, traceShapeRadius, ColorRGBA(1, 1, 0, 1.0f), fDt);
 			}
 		}
-
-		/*
+		*/
+		// final steering dir after collision tests
+		steeringDir = fastNormalize(steeringTargetPos - carPos);
+		
 		// trace forward from car using speed
 		g_pPhysics->TestConvexSweep(&sphereTraceShape, identity(),
 			carPos, carPos+carForward*forwardTraceDistanceBySpeed, steeringTargetColl,
 			traceContents,
 			&collFilter);
 
-		if(steeringTargetColl.fract < 1.0f)
+		if (steeringTargetColl.fract < 1.0f)
 		{
-			float AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT = 3.5f;
+			float AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT = 0.25f;
 
-			float offsetAmount = 1.0f - steeringTargetColl.fract;
+			Vector3D collPoint(steeringTargetColl.position);
 
-			Vector3D newSteeringTarget = steeringTargetColl.position + steeringTargetColl.normal * offsetAmount * AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT;
+			Plane dPlane(carRight, -dot(carPos, carRight));
+			float posSteerFactor = -dPlane.Distance(collPoint);
 
-			float steerToCorrectionDot = dot(steeringDir, fastNormalize(newSteeringTarget - carPos));
-
-			if (steerToCorrectionDot > 0.5f)
-				steeringTargetPos = newSteeringTarget;
-
-			if(ai_debug_navigator.GetBool())
-			{
-				debugoverlay->TextFadeOut(0, color4_white, 10.0f, "steering to forward correction (collision): %g", steerToCorrectionDot);
-
-				debugoverlay->Line3D(steeringTargetColl.position, steeringTargetPos, ColorRGBA(0, 1, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), fDt);
-				debugoverlay->Sphere3D(steeringTargetPos, traceShapeRadius, ColorRGBA(0, 1, 0, 1.0f), fDt);
-			}
-		}*/
-
-		// final steering dir after collision tests
-		steeringDir = fastNormalize(steeringTargetPos - carPos);
-
+			steeringDir += carRight * posSteerFactor * (1.0f - steeringTargetColl.fract) * AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT;
+			steeringDir = normalize(steeringDir);
+		}
+		
 		// calculate steering
 		Vector3D relateiveSteeringDir = fastNormalize((!bodyMat.getRotationComponent()) * steeringDir);
 
@@ -592,21 +583,21 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		// distance from path segment start
 		float distFromPathSegStart = pathSegmentProj*pathSegmentLength;
 
-		const float AI_STEERING_TARGET_CONST_DISTANCE = 0.5f;
-		const float AI_STEERING_TARGET_DISTANCE_A = 0.5f;
+		const float AI_STEERING_TARGET_CONST_DISTANCE = 0.0f;
+		const float AI_STEERING_TARGET_DISTANCE_A = 0.3f;
 		const float AI_STEERING_TARGET_DISTANCE_B = 0.7f;
 
-		const float AI_BRAKE_TARGET_CONST_DISTANCE = 1.0f;
+		const float AI_BRAKE_TARGET_CONST_DISTANCE = 1.5f;
 
 		const float AI_BRAKE_TARGET_DISTANCE_A = 1.0f;
-		const float AI_BRAKE_TARGET_DISTANCE_B = 1.5f;
+		const float AI_BRAKE_TARGET_DISTANCE_B = 1.8f;
 
 		const float	AI_BRAKE_SPEED_DISTANCE_FACTOR_A = 0.7f;
 		const float	AI_BRAKE_SPEED_DISTANCE_FACTOR_B = 0.9f;
 		
-		const float AI_STEERING_PATH_CORRECTION_DISTANCE = 8.0f;
-		const float AI_SEGMENT_STEERING_CORRECTION_RADIUS = 4.0f; // distance to segment
-		const float AI_BRAKE_PATH_CORRECTION_CURVE = 0.65f;
+		const float AI_STEERING_PATH_CORRECTION_DISTANCE = 9.0f;
+		const float AI_SEGMENT_STEERING_CORRECTION_RADIUS = 2.5f; // distance to segment
+		const float AI_BRAKE_PATH_CORRECTION_CURVE = 0.85f;
 
 		// brake curve and limits
 		const float AI_BRAKE_CURVE = 0.65f;
@@ -627,48 +618,6 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		Vector3D positionB = GetAdvancedPointByDist(pathIdx, distFromPathSegStart + AI_STEERING_TARGET_CONST_DISTANCE + AI_STEERING_TARGET_DISTANCE_B*steeringBySpeedModifier);
 
 		float forwardTraceDistanceBySpeed = RemapValClamp(speedMPS, 0.0f, 50.0f, 4.0f, 15.0f);
-		/*
-		// trace forward from car using speed
-		g_pPhysics->TestConvexSweep(&sphereTraceShape, identity(),
-			carPos, carPos+carForward*forwardTraceDistanceBySpeed, steeringTargetColl,
-			traceContents,
-			&collFilter);
-
-		if(steeringTargetColl.fract < 1.0f)
-		{
-			float AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT = 3.5f;
-
-			float offsetAmount = 1.0f - steeringTargetColl.fract;
-
-			positionB += steeringTargetColl.normal * offsetAmount * AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT;
-
-			if(ai_debug_navigator.GetBool())
-			{
-				debugoverlay->Line3D(carPos, steeringTargetColl.position, ColorRGBA(0, 1, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), fDt);
-				debugoverlay->Sphere3D(steeringTargetColl.position, traceShapeRadius, ColorRGBA(0, 1, 0, 1.0f), fDt);
-			}
-		}
-
-		// trace from position A to position B
-		g_pPhysics->TestConvexSweep(&sphereTraceShape, identity(),
-			positionA, positionB, pathColl,
-			traceContents,
-			&collFilter);
-		
-		if(pathColl.fract < 1.0f)
-		{
-			float AI_OBSTACLE_PATH_CORRECTION_AMOUNT = 1.1f;
-			float AI_OBSTACLE_PATH_LOWSPEED_CORRECTION_AMOUNT = 1.5f;
-
-			Vector3D offsetAmount = pathColl.normal * (traceShapeRadius * AI_OBSTACLE_PATH_CORRECTION_AMOUNT + lowSpeedFactor*AI_OBSTACLE_PATH_LOWSPEED_CORRECTION_AMOUNT);
-
-			positionB += offsetAmount;
-
-			if(ai_debug_navigator.GetBool())
-			{
-				debugoverlay->Line3D(positionA, positionB, ColorRGBA(1, 0, 1, 1.0f), ColorRGBA(1, 0, 1, 1.0f), fDt);
-			}
-		}*/
 
 		// calculate steering angle for applying brakes
 		pathIdx = m_pathPointIdx;
@@ -688,6 +637,25 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 
 		// steering
 		Vector3D steeringDir = lerp(pathSteeringDir, correctionSteeringDir, pathCorrectionFactor);
+
+		// trace forward from car using speed
+		g_pPhysics->TestConvexSweep(&sphereTraceShape, identity(),
+			carPos, carPos + carForward * forwardTraceDistanceBySpeed, steeringTargetColl,
+			traceContents,
+			&collFilter);
+
+		if (steeringTargetColl.fract < 1.0f)
+		{
+			float AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT = 0.2f;
+
+			Vector3D collPoint(steeringTargetColl.position);
+
+			Plane dPlane(carRight, -dot(carPos, carRight));
+			float posSteerFactor = -dPlane.Distance(collPoint);
+
+			steeringDir += carRight * posSteerFactor * (1.0f - steeringTargetColl.fract) * AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT;
+			steeringDir = normalize(steeringDir);
+		}
 
 		// brake
 		Vector3D brakeDir = lerp(fastNormalize(brakePointB - brakePointA), correctionSteeringDir, pow(pathCorrectionFactor, AI_BRAKE_PATH_CORRECTION_CURVE));

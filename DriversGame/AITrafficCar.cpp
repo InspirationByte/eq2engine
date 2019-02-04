@@ -121,7 +121,7 @@ const float AICAR_THINK_TIME = 0.15f;
 const float AI_SIDECHECK_DIST_FR = 5.0f;
 const float AI_SIDECHECK_DIST_RR = 20.0f;
 
-const float AI_ROAD_STOP_DIST = 18.0f;
+const float AI_ROAD_STOP_DIST = 14.0f;
 
 const float AI_CAR_TRACE_DIST_MIN = 6.0f;
 const float AI_CAR_TRACE_DIST_MAX = 25.0f;
@@ -1093,8 +1093,10 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		{
 			float brakeSpeedDiff = brakeDistAtCurSpeed + AI_STOPLINE_DIST - distToStop;
 			brakeSpeedDiff = max(brakeSpeedDiff, 0.0f);
-
+			
 			brake = brakeSpeedDiff / AI_ROAD_STOP_DIST;
+			brake = min(brake, 0.9f);
+
 
 			if(distToStop > AI_STOPLINE_DIST)
 			{
@@ -1203,23 +1205,30 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 				}
 			}
 
-			float dbrakeToStopTime = diffForwardSpeed / brakeDistancePerSec * 2.0f;
-			float dbrakeDistAtCurSpeed = brakeDistancePerSec * dbrakeToStopTime;
-
-			float brakeSpeedDiff = dbrakeDistAtCurSpeed + AI_OBSTACLE_DIST - lineDist;
-			brakeSpeedDiff = max(brakeSpeedDiff, 0.0f);
-
-			brake = brakeSpeedDiff / 10.0f;
-
-			if(lineDist > AI_OBSTACLE_DIST)
+			if (lineDist < AI_ROAD_STOP_DIST)
 			{
-				accelerator -= brake * 2.0f;
-				controls |= IN_BRAKE;
+				float dbrakeToStopTime = diffForwardSpeed / brakeDistancePerSec * 2.0f;
+				float dbrakeDistAtCurSpeed = brakeDistancePerSec * dbrakeToStopTime;
+
+				float brakeSpeedDiff = dbrakeDistAtCurSpeed + AI_OBSTACLE_DIST - lineDist;
+				brakeSpeedDiff = max(brakeSpeedDiff, 0.0f);
+
+				brake = brakeSpeedDiff / 20.0f;
+
+				if (lineDist > AI_OBSTACLE_DIST)
+				{
+					accelerator -= brake * 2.0f;
+					controls |= IN_BRAKE;
+				}
+				else
+				{
+					controls |= IN_BRAKE;
+					controls &= ~IN_ACCELERATE;
+				}
 			}
 			else
 			{
-				controls |= IN_BRAKE;
-				controls &= ~IN_ACCELERATE;
+				accelerator *= (frontFract-0.5f) * 2.0f;
 			}
 
 			m_prevFract = frontFract;

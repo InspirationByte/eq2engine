@@ -72,7 +72,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\public\materialsystem;..\src_dependency\wxWidgets\include;..\src_dependency\wxWidgets\include\msvc;..\src_dependency\wxWidgets\include\msw;..\DriversGame;..\src_dependency\bullet\src;..\Game;..\src_dependency\sdl2\include;..\src_dependency\lua\src;..\src_dependency\oolua\include;..\src_dependency\shiny\shiny\include;..\src_dependency\openal-soft\include;..\src_dependency\libogg\include;..\src_dependency\libvorbis\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;GAME_DRIVERS;PHYSICS_EXPORT;NO_GAME;NO_ENGINE;NOENGINE;EDITOR;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;NO_LUA;SHINY_IS_COMPILED=FALSE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;GAME_DRIVERS;PHYSICS_EXPORT;NO_GAME;NO_ENGINE;NOENGINE;EDITOR;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;NO_LUA;SHINY_IS_COMPILED=FALSE;wxNO_ZLIB_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -114,7 +114,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\src_dependency\wx\include;..\src_dependency\wx\include\msvc;..\src_dependency\wx\include\msw;..\DriversGame;..\src_dependency\bullet\src;..\Game;..\src_dependency\sdl2\include;..\src_dependency\lua\src;..\src_dependency\oolua\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;GAME_DRIVERS;PHYSICS_EXPORT;NO_GAME;NO_ENGINE;NOENGINE;EDITOR;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;NO_LUA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;GAME_DRIVERS;PHYSICS_EXPORT;NO_GAME;NO_ENGINE;NOENGINE;EDITOR;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;NO_LUA;SHINY_IS_COMPILED=FALSE;wxNO_ZLIB_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -343,10 +343,10 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="UI_RoadEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\libs\libogg_static.lib" />
-    <Library Include="..\src_dependency\OpenALSoftCustom\build\Release\OpenAL32.lib" />
-    <Library Include="..\libs\libvorbisfile_static.lib" />
-    <Library Include="..\libs\libvorbis_static.lib" />
+    <Library Include="..\src_dependency\libogg\win32\VS2015\Win32\Release\libogg_static.lib" />
+    <Library Include="..\src_dependency\openal-soft\build\Release\OpenAL32.lib" />
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbisfile_static.lib" />
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbis_static.lib" />
     <Library Include="..\src_dependency\bullet\lib\Debug\BulletCollision_Debug.lib">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -361,6 +361,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <Library Include="..\src_dependency\bullet\bin\LinearMath.lib">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </Library>
+    <Library Include="..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="windows\Resources.rc" />
