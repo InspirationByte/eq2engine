@@ -87,7 +87,7 @@ IEXPORTS void AssertValidReadPtr( void* ptr, int count/* = 1*/ )
 IEXPORTS void AssertValidStringPtr( const char* ptr, int maxchar/* = 0xFFFFFF */ )
 {
 #ifdef _WIN32
-    ASSERT(!IsBadStringPtr( ptr, maxchar ));
+    ASSERT(!IsBadStringPtrA( ptr, maxchar ));
 #endif
 }
 
