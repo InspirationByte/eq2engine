@@ -8,9 +8,14 @@ project "eqCoreLib"
    language "C++"
    targetdir "%{cfg.buildcfg}"
 
+   vpaths {
+	   ["Headers"] = { "**.h" },
+	   ["Sources"] = { "**.cpp" }
+   }
+
    files { 
+		"public/core/*.cpp",
 		"public/core/*.h", 
-		"public/core/*.cpp" 
    }
    
    includedirs {
@@ -31,6 +36,11 @@ project "eqFrameworkLib"
    kind "StaticLib"
    language "C++"
    targetdir "%{cfg.buildcfg}"
+   
+   vpaths {
+	   ["Headers/*"] = { "**.h" },
+	   ["Sources/*"] = { "**.cpp" }
+   }
    
    files { 
 	   "public/imaging/*.h", 
@@ -63,7 +73,14 @@ project "eqCoreShared"
    language "C++"
    targetdir "%{cfg.buildcfg}"
    
+   links {  "eqCoreLib", "eqFrameworkLib"  }
+   
    location "Core"
+   
+   vpaths {
+	   ["Headers"] = { "**.h" },
+	   ["Sources"] = { "**.cpp" }
+   }
    
    files { 
 	   "Core/*.h", 
