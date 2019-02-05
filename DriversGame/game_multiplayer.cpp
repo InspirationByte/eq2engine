@@ -446,7 +446,7 @@ CGameObject* CNetGameSession::FindNetworkObjectById( int id ) const
 	return NULL;
 }
 
-int SortObjectsById(CGameObject* const& a, CGameObject* const& b)
+int SortObjectsByNetworkId(CGameObject* const& a, CGameObject* const& b)
 {
 	return a->m_networkID - b->m_networkID;
 }
@@ -460,7 +460,7 @@ int	CNetGameSession::FindUniqueNetworkObjectId()
 	objList.clear(false);
 	objList.append(g_pGameWorld->m_gameObjects);
 
-	objList.sort(SortObjectsById);
+	objList.sort(SortObjectsByNetworkId);
 
 	int enumIdx = 0;
 
