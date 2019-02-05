@@ -64,21 +64,24 @@ void InterpolateSnapshots(const netObjSnapshot_t& a, const netObjSnapshot_t& b, 
 CNetPlayer::CNetPlayer( int clientID, const char* name )
 {
 	m_name = name;
-	m_carName = "buick";
-
-	m_spawnInfo = NULL;
+	m_dupNameId = 0;
 
 	m_clientID = clientID;
+
+
 	m_ready = false;
 	m_disconnectSignal = false;
+
 	m_fNotreadyTime = 0.0f;
+	
+
+	m_spawnInfo = NULL;
 	m_ownCar = NULL;
+
 	m_curControls = 0;
 	m_oldControls = 0;
 
 	m_fCurTime = 0.0f;
-	//m_fLastCmdTime = 0.0f;
-	//m_fPrevLastCmdTime = 0.0f;
 
 	m_curSnapshot = 0;
 	memset(m_snapshots, 0, sizeof(m_snapshots));
@@ -88,7 +91,6 @@ CNetPlayer::CNetPlayer( int clientID, const char* name )
 	m_packetLatency = 0.0f;
 	m_interpTime = 0.0f;
 
-	//--
 	m_lastPacketTick = 0;
 	m_curTick = 0;
 	m_curSvTick = 0;
@@ -102,9 +104,9 @@ CNetPlayer::~CNetPlayer()
 
 }
 
-const char* CNetPlayer::GetName() const
+const wchar_t* CNetPlayer::GetName() const
 {
-	return m_name.c_str();
+	return m_dupName.c_str();
 }
 
 const char* CNetPlayer::GetCarName() const
@@ -473,53 +475,44 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 	if(netSes == NULL)
 		return;
 
-	netPeer_t* pClient = new netPeer_t;
-	pClient->client_addr = m_clientAddr;
-	pClient->client_id = -1;
+	CNetworkServer* serverInterface = (CNetworkServer*)pNetThread->GetNetworkInterface();
 
-	CNetworkServer* srv = (CNetworkServer*)pNetThread->GetNetworkInterface();
-
-	// check forc client from this address already connected
-	if (srv->GetClientByAddr(&m_clientAddr) != NULL)
-	{
-		Msg("Player attempt to connect while CONNECTED\n");
-
-		kvkeybase_t kvs;
-		CNetMessageBuffer buffer;
-
-		kvs.SetKey("status", "error");
-		kvs.SetKey("desc", "#ALREADY_CONNECTED");
-		kvs.SetKey("clientID", "-1");
-		kvs.SetKey("playerID", "-1");
-
-		buffer.WriteKeyValues(&kvs);
-
-		// add him to remove...
-		int cl_id = srv->AddClient(pClient);
-		pNetThread->SendData(&buffer, m_nEventID, cl_id, CDPSEND_GUARANTEED | NETSERVER_FLAG_REMOVECLIENT);
-
-		return;
-	}
-
+	netPeer_t* peer = new netPeer_t;
+	peer->client_addr = m_clientAddr;
+	peer->client_id = -1;
 
 	// we're adding this client because we need to send back statuses, POOR API DESIGN!!!
 	// be sure to use NETSERVER_FLAG_REMOVECLIENT flag if we fail
-	int cl_id = srv->AddClient(pClient);
+	int cl_id = serverInterface->AddClient(peer);
+
+	kvkeybase_t returnStatus;
+	CNetMessageBuffer buffer;
+
+	// check for client from this address already connected
+	if (serverInterface->GetClientByAddr(&m_clientAddr) != NULL)
+	{
+		Msg("Player attempt to connect while CONNECTED\n");
+
+		returnStatus
+			.SetKey("status", "error")
+			.SetKey("desc", "#ALREADY_CONNECTED");
+
+		buffer.WriteKeyValues(&returnStatus);
+
+		// add him to remove using NETSERVER_FLAG_REMOVECLIENT
+		pNetThread->SendData(&buffer, m_nEventID, cl_id, CDPSEND_GUARANTEED | Networking::NETSERVER_FLAG_REMOVECLIENT);
+		return;
+	}
 
 	if(netSes->GetFreePlayerSlots() == 0)
 	{
-		kvkeybase_t kvs;
-		CNetMessageBuffer buffer;
+		returnStatus
+			.SetKey("status", "error")
+			.SetKey("desc", "#SERVER_IS_FULL");
 
-		kvs.SetKey("status", "error");
-		kvs.SetKey("desc", "#SERVER_IS_FULL");
-		kvs.SetKey("clientID", "-1");
-		kvs.SetKey("playerID", "-1");
-
-		buffer.WriteKeyValues(&kvs);
+		buffer.WriteKeyValues(&returnStatus);
 
 		pNetThread->SendData(&buffer, m_nEventID, cl_id, CDPSEND_GUARANTEED | Networking::NETSERVER_FLAG_REMOVECLIENT);
-
 		return;
 	}
 
@@ -535,33 +528,26 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 
 	if(!newPlayer)
 	{
-		kvkeybase_t kvs;
-		CNetMessageBuffer buffer;
+		returnStatus
+			.SetKey("status", "error")
+			.SetKey("desc", "#SERVER_UNKNOWN_ERROR");
 
-		kvs.SetKey("status", "error");
-		kvs.SetKey("desc", "#SERVER_UNKNOWN_ERROR");
-		kvs.SetKey("clientID", "-1");
-		kvs.SetKey("playerID", "-1");
-
-		buffer.WriteKeyValues(&kvs);
+		buffer.WriteKeyValues(&returnStatus);
 
 		pNetThread->SendData(&buffer, m_nEventID, cl_id, CDPSEND_GUARANTEED | Networking::NETSERVER_FLAG_REMOVECLIENT);
-
 		return;
 	}
 
 	MsgInfo("Player '%s' joining the game...\n", m_playerName.c_str(), newPlayer->m_id);
 
-	CNetMessageBuffer buffer;
-	kvkeybase_t kvs;
-
-	kvs.SetKey("status", "ok");
-	kvs.SetKey("levelname", g_pGameWorld->GetLevelName());
-	kvs.SetKey("environment", g_pGameWorld->GetEnvironmentName());
-	kvs.SetKey("clientID", varargs("%d", cl_id));
-	kvs.SetKey("playerID", varargs("%d", newPlayer->m_id));
-	kvs.SetKey("maxPlayers", varargs("%d", netSes->GetMaxPlayers()));
-	kvs.SetKey("numPlayers", varargs("%d", netSes->GetNumPlayers()));
+	returnStatus
+		.SetKey("status", "ok")
+		.SetKey("levelname", g_pGameWorld->GetLevelName());
+		.SetKey("environment", g_pGameWorld->GetEnvironmentName());
+		.SetKey("clientID", varargs("%d", cl_id));
+		.SetKey("playerID", varargs("%d", newPlayer->m_id));
+		.SetKey("maxPlayers", varargs("%d", netSes->GetMaxPlayers()));
+		.SetKey("numPlayers", varargs("%d", netSes->GetNumPlayers()));
 
 	buffer.WriteKeyValues(&kvs);
 
@@ -729,9 +715,7 @@ void CNetServerPlayerInfo::Process( CNetworkThread* pNetThread )
 		CNetPlayer* player = netSes->GetPlayerByID(m_playerID);
 
 		if(player && player->IsReady())
-		{
 			return;
-		}
 
 		// set to a server-controlled
 		player = netSes->CreatePlayer(spawn, NM_SERVER, m_playerID, m_playerName.c_str());

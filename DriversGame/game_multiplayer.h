@@ -92,6 +92,9 @@ private:
 	void					Net_RemoveObject( CGameObject* obj );
 	void					Net_SendObjectData( CGameObject* obj, int nClientID );
 
+	void					SV_ProcessDuplicatePlayerName(CNetPlayer* player);
+	void					SV_ScriptedPlayerProvision(CNetPlayer* player);
+
 	int						FindUniqueNetworkObjectId();
 
 	int						m_maxPlayers;

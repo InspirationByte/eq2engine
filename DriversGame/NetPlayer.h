@@ -52,7 +52,7 @@ public:
 						CNetPlayer( int clientID, const char* name );
 						~CNetPlayer();
 
-	const char*			GetName() const;
+	const wchar_t*		GetName() const;
 	const char*			GetCarName() const;
 	void				SetControls(const playerControl_t& controls);
 	CCar*				GetCar();
@@ -76,11 +76,8 @@ public:
 
 //protected:
 
-	netPlayerSpawnInfo_t*	m_spawnInfo;
-
 	EqString				m_name;
-	EqString				m_carName;
-	CCar*					m_ownCar;
+	int						m_dupNameId;
 
 	int						m_clientID;
 	int						m_id;
@@ -89,6 +86,16 @@ public:
 	bool					m_disconnectSignal;
 
 	float					m_fNotreadyTime;
+
+	//----------------------------------------------------------------------
+	// controls and snapshot stuff 
+	//		TODO: to the structure
+
+	netPlayerSpawnInfo_t*	m_spawnInfo;
+
+	EqString				m_carName;
+	CCar*					m_ownCar;
+
 
 	float					m_fCurTime;
 	float					m_fLastCmdTime;

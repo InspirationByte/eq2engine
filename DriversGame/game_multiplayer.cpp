@@ -284,32 +284,10 @@ void CNetGameSession::InitLocalPlayer(netPlayerSpawnInfo_t* spawnInfo, int clien
 		return;
 	}
 
-	player->m_carName = g_car.GetString();
-
 	// server player is always ready
-	if(IsServer())
+	if (IsServer())
+	{
 		player->m_ready = true;
-
-	player->m_ownCar = g_pGameSession->CreateCar( g_car.GetString() );
-
-	if( player->m_ownCar )
-	{
-		player->m_ownCar->Spawn();
-
-		player->m_ownCar->SetOrigin( spawnInfo->m_spawnPos );
-		player->m_ownCar->SetAngles( spawnInfo->m_spawnRot );
-
-		if(spawnInfo->m_useColor)
-			player->m_ownCar->SetCarColour( spawnInfo->m_spawnColor );
-
-		g_pGameWorld->AddObject( player->m_ownCar );
-
-		if(IsClient())
-			player->m_ownCar->m_networkID = spawnInfo->m_netCarID;
-	}
-	else
-	{
-		MsgError("Failed to init local player car!\n");
 	}
 
 	SetLocalPlayer(player);
@@ -787,94 +765,167 @@ void CNetGameSession::Update(float fDt)
 
 CNetPlayer* CNetGameSession::CreatePlayer(netPlayerSpawnInfo_t* spawnInfo, int clientID, int playerID, const char* name)
 {
-	for(int i = 0; i < m_netPlayers.numElem(); i++)
-	{
-		if(m_netPlayers[i] == NULL)
-			continue;
+	ASSERT(IsServer() && playerID == SV_NEW_PLAYER);
 
-		if(m_netPlayers[i]->m_clientID == clientID &&
-			m_netPlayers[i]->m_id == playerID)
+	if (IsServer())
+	{
+		// find a slot
+		for (int i = 0; i < m_netPlayers.numElem(); i++)
 		{
-			MsgError("Player is already connected (playerID=%d clientID = %d)\n", playerID, clientID);
+			CNetPlayer* pl = m_netPlayers[i];
+
+			if (pl == NULL)
+			{
+				playerID = i;
+				break;
+			}
+
+			if (pl->m_clientID == clientID && pl->m_id == playerID)
+			{
+				MsgError("[SERVER] Player %s (clid=%d) is already connected\n", name, clientID);
+			}
+		}
+
+		if (playerID >= 0)
+			Msg("[SERVER] Player slot %d created\n", playerID);
+	}
+	else
+	{
+		if(!m_netPlayers.inRange(playerID))
+			MsgError("[CLIENT] Bad player slot (%d)\n", playerID);
+
+		// protection
+		if (m_netPlayers[playerID])
+		{
+			MsgError("[CLIENT] Player slot is already used (%d)\n", playerID);
 			return NULL;
 		}
 	}
 
-	for(int i = 0; i < m_netPlayers.numElem(); i++)
-	{
-		// place in the right slot if specified
-		if(playerID != SV_NEW_PLAYER && playerID != i)
-			continue;
-
-		if(m_netPlayers[i] == NULL)
-		{
-			playerID = i;
-			m_netPlayers[playerID] = new CNetPlayer( clientID, name );
-			m_netPlayers[playerID]->m_spawnInfo = spawnInfo;
-			m_netPlayers[playerID]->m_id = i;
-			break;
-		}
-	}
-
-	Msg("[SERVER] Player slot %d created\n", playerID);
-
-	if(playerID == -1)
+	if (playerID == -1)
 		return NULL;
+
+	CNetPlayer* player = new CNetPlayer(clientID, name);
+	player->m_spawnInfo = spawnInfo;
+	player->m_id = playerID;
+
+	// if player name is duplicated
+	SV_ProcessDuplicatePlayerName(player);
+
+	m_netPlayers[playerID] = player;
+
+	// mission script player init
+	SV_ScriptedPlayerProvision(player);
 
 	return m_netPlayers[playerID];
 }
 
-void CNetGameSession::DisconnectPlayer( int playerID, const char* reason )
+void CNetGameSession::SV_ProcessDuplicatePlayerName(CNetPlayer* player)
 {
-	for(int i = 0; i < m_netPlayers.numElem(); i++)
+	if (!IsServer())
+		return;
+
+	for (int i = 0; i < m_netPlayers.numElem(); i++)
 	{
-		CNetPlayer* player = m_netPlayers[i];
-
-		if(player == NULL)
+		if (i == player->m_id)
 			continue;
 
-		if(player->m_id != playerID)
-			continue;
+		CNetPlayer* pl = m_netPlayers[i];
 
-		// first we need to remove the car
-		if(player->m_ownCar)
+		// rename existing player if names are equal
+		if (pl->m_name == player->m_name)
 		{
-			g_pGameWorld->RemoveObject(player->m_ownCar);
-			player->m_ownCar = NULL;
-		}
+			pl->m_dupNameId++;	// increment duplicates on existing name
 
-		if(player->m_ready )
-		{
-			// TODO: send disconnected message to all clients
-			Msg("%s left the game (%s)\n", player->m_name.c_str(), reason);
+			// change the specified player name
+			player->m_name.Append(varargs(" (%d)", pl->m_dupNameId));
+			break;
 		}
-		else
-		{
-			Msg("Player '%s' timed out (connection lost?)\n", player->m_name.c_str());
-		}
+	}
+}
 
-		if(player == m_localNetPlayer )
-		{
-			m_localNetPlayer = NULL;
-		}
-		else if(IsServer())
-		{
-			// remove client from server send list
-			CNetworkServer* srv = (CNetworkServer*)m_netThread.GetNetworkInterface();
-			srv->RemoveClientById( player->m_clientID );
+void CNetGameSession::SV_ScriptedPlayerProvision(CNetPlayer* player)
+{
+	if(!IsServer())
+		return;
 
-			// send to other clients
-			m_netThread.SendEvent( new CNetDisconnectEvent(playerID, reason), CMSG_DISCONNECT, NM_SENDTOALL, CDPSEND_GUARANTEED );
-		}
+	/*
+	player->m_carName = g_car.GetString();
+	player->m_ownCar = g_pGameSession->CreateCar(g_car.GetString());
 
-		delete m_netPlayers[i];
+	if (player->m_ownCar)
+	{
+		player->m_ownCar->Spawn();
 
-		// free the slot
-		m_netPlayers[i] = NULL;
+		player->m_ownCar->SetOrigin(spawnInfo->m_spawnPos);
+		player->m_ownCar->SetAngles(spawnInfo->m_spawnRot);
+
+		if (spawnInfo->m_useColor)
+			player->m_ownCar->SetCarColour(spawnInfo->m_spawnColor);
+
+		g_pGameWorld->AddObject(player->m_ownCar);
+
+		if (IsClient())
+			player->m_ownCar->m_networkID = spawnInfo->m_netCarID;
+	}
+	else
+		MsgError("Failed to init local player car!\n");
+	*/
+}
+
+void CNetGameSession::DisconnectPlayer(int playerID, const char* reason)
+{
+	if (!m_netPlayers.inRange(playerID))
+	{
+		MsgError("DisconnectPlayer: invalid slot (%d)\n", playerID);
+		return;
 	}
 
-	if(!m_localNetPlayer)
-		EqStateMgr::SetCurrentState( g_states[GAME_STATE_MAINMENU] );
+	CNetPlayer* player = m_netPlayers[playerID];
+
+	if (!m_netPlayers.inRange(playerID))
+	{
+		MsgError("DisconnectPlayer: no player in slot (%d)\n", playerID);
+		return;
+	}
+
+	// first we need to remove the car
+	if (player->m_ownCar)
+	{
+		g_pGameWorld->RemoveObject(player->m_ownCar);
+		player->m_ownCar = NULL;
+	}
+
+	if (player->m_ready)
+	{
+		// TODO: send disconnected message to all clients
+		Msg("%s left the game (%s)\n", player->m_name.c_str(), reason);
+	}
+	else
+	{
+		Msg("Player '%s' timed out (connection lost?)\n", player->m_name.c_str());
+	}
+
+	// FIXME: is that a correct behavior?
+	if (player == m_localNetPlayer)
+	{
+		// which leads us to drop server
+		m_localNetPlayer = NULL;
+		EqStateMgr::SetCurrentState(g_states[GAME_STATE_MAINMENU]);
+	}
+	else if (IsServer())
+	{
+		// remove client from server send list
+		CNetworkServer* serverInterface = (CNetworkServer*)m_netThread.GetNetworkInterface();
+		serverInterface->RemoveClientById(player->m_clientID);
+
+		// send to other clients
+		m_netThread.SendEvent(new CNetDisconnectEvent(playerID, reason), CMSG_DISCONNECT, NM_SENDTOALL, CDPSEND_GUARANTEED);
+	}
+
+	// finalize and drop slot
+	delete player;
+	m_netPlayers[playerID] = NULL;
 }
 
 int CNetGameSession::GetMaxPlayers() const
