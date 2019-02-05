@@ -13,7 +13,7 @@
 #include "levfile.h"
 #include "level.h"
 #include "physics.h"
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 
 #include "utils/GeomTools.h"
 

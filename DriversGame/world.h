@@ -247,8 +247,9 @@ public:
 	bool							m_reflectionStage;
 
 	worldEnvConfig_t				m_envConfig;
-
 	DkList<worldEnvConfig_t>		m_envTransitions;
+
+	Vector2D						m_envSkyProps;
 
 	float							m_envWetness;
 	float							m_envTransitionTime;
@@ -276,6 +277,7 @@ protected:
 	void							DrawSkyBox(int nRenderFlags);
 
 	void							GenerateEnvmapAndFogTextures();
+
 
 	//--------------------------------------
 

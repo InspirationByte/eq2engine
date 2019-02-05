@@ -393,6 +393,11 @@ void CGameWorld::InitEnvironment()
 		status = envKvs.LoadFromFile("scripts/environments/default_environment.txt", SP_MOD);
 	}
 
+	m_envSkyProps.x = KV_GetValueFloat(envKvs.FindKeyBase("skyHeight"), 0, 0.0f);
+	m_envSkyProps.y = KV_GetValueFloat(envKvs.FindKeyBase("skyAngle"), 0, 0.0f);
+
+	m_envSkyProps.y = DEG2RAD(m_envSkyProps.y);
+
 	m_fNextThunderTime = 6.0f;
 	m_fThunderTime = 0.2f;
 
@@ -1267,7 +1272,7 @@ void CGameWorld::BuildViewMatrices(int width, int height, int nRenderFlags)
 	materials->SetFogInfo(fog);
 }
 
-void CGameWorld::DrawSkyBox(int renderFlags)
+void CGameWorld::DrawSkyBox(int skyBodyGroups)
 {
 	if(!m_skyModel)
 		return;
@@ -1284,10 +1289,10 @@ void CGameWorld::DrawSkyBox(int renderFlags)
 	int nLOD = 0;
 
 	// draw skydome body groups
-	for(int i = 0; i < pHdr->numBodyGroups; i++)
+	for (int i = 0; i < pHdr->numBodyGroups; i++)
 	{
-		//if(!(m_bodyGroupFlags & (1 << i)))
-		//	continue;
+		if (!(skyBodyGroups & (1 << i)))
+			continue;
 
 		int nLodModelIdx = pHdr->pBodyGroups(i)->lodModelIndex;
 		int nModDescId = pHdr->pLodModel(nLodModelIdx)->modelsIndexes[ nLOD ];
@@ -1356,10 +1361,10 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 		// Draw sky
 		materials->SetMatrix(MATRIXMODE_PROJECTION, cubeProjectionMatrixD3D(0.1f, 1000.0f));
 		materials->SetMatrix(MATRIXMODE_VIEW, cubeViewMatrix(i));
-		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+		materials->SetMatrix(MATRIXMODE_WORLD, translate(Vector3D(0, m_envSkyProps.x, 0)) * rotateY4(m_envSkyProps.y));
 
 		m_skyColor->SetVector4( 1.0f );
-		DrawSkyBox(0);
+		DrawSkyBox(0xf);
 	}
 
 	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
@@ -1740,13 +1745,6 @@ void CGameWorld::DrawFakeReflections()
 	// draw into temporary buffer
 	g_pShaderAPI->ChangeRenderTarget(m_tempReflTex, 0, m_reflDepth, 0);
 	g_pShaderAPI->Clear(true,true,false);
-	/*
-	if(r_drawsky.GetBool())
-	{
-		materials->SetMatrix(MATRIXMODE_VIEW, skyView);
-		m_skyColor->SetVector3(ColorRGB(0.25f));
-		DrawSkyBox(0);
-	}*/
 	
 	materials->SetMatrix(MATRIXMODE_VIEW, view);
 
@@ -1857,10 +1855,10 @@ void CGameWorld::Draw( int nRenderFlags )
 		// Draw sky
 		materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
 		materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
-		materials->SetMatrix(MATRIXMODE_WORLD, translate(m_view.GetOrigin()));
+		materials->SetMatrix(MATRIXMODE_WORLD, translate(m_view.GetOrigin() + Vector3D(0, m_envSkyProps.x, 0)) * rotateY4(m_envSkyProps.y));
 
 		m_skyColor->SetVector4( fSkyBrightness );
-		DrawSkyBox(nRenderFlags);
+		DrawSkyBox(0xf);
 	}
 
 	// calculate fog parameters

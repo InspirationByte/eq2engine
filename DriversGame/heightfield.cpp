@@ -11,7 +11,7 @@
 
 #include "materialsystem/MeshBuilder.h"
 
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 #include "IDebugOverlay.h"
 #include "math/math_util.h"
 

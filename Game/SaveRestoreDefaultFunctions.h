@@ -9,7 +9,7 @@
 #define SAVERESTORE_H
 
 #include "DebugInterface.h"
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 
 // INTEGER
 

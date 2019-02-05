@@ -11,7 +11,7 @@
 #include "IDebugOverlay.h"
 #include "world.h"
 
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 
 #include "EditorActionHistory.h"
 

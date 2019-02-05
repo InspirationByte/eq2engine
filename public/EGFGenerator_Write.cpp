@@ -19,7 +19,7 @@ extern "C"
 #include "EGFGenerator.h"
 
 #include "utils/geomtools.h"
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 
 #include "dsm_esm_loader.h"
 

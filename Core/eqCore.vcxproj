@@ -124,7 +124,8 @@
       </EnableCOMDATFolding>
       <BaseAddress>
       </BaseAddress>
-      <ImportLibrary>..\libs\DkCore.lib</ImportLibrary>
+      <ImportLibrary>
+      </ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
       <FixedBaseAddress>false</FixedBaseAddress>
       <RegisterOutput>false</RegisterOutput>

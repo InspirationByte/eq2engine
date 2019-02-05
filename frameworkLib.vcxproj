@@ -204,7 +204,7 @@
     <ClInclude Include="public\ppmem.h" />
     <ClInclude Include="public\Utils\eqstring.h" />
     <ClInclude Include="public\Utils\Tokenizer.h" />
-    <ClInclude Include="public\VirtualStream.h" />
+    <ClInclude Include="public\Utils\VirtualStream.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="public\Imaging\ImageLoader.cpp" />
@@ -230,7 +230,7 @@
     <ClCompile Include="public\Utils\eqtimer.cpp" />
     <ClCompile Include="public\Utils\eqstring.cpp" />
     <ClCompile Include="public\Utils\Tokenizer.cpp" />
-    <ClCompile Include="public\VirtualStream.cpp" />
+    <ClCompile Include="public\Utils\VirtualStream.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

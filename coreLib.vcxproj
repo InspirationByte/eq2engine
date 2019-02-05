@@ -89,7 +89,7 @@
     <Lib />
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Core\DPKFileWriter.h" />
+    <ClInclude Include="public\core\DPKFileWriter.h" />
     <ClInclude Include="public\core\cmdlib.h" />
     <ClInclude Include="public\core\cmd_pacifier.h" />
     <ClInclude Include="public\core\ConCommand.h" />
@@ -102,7 +102,7 @@
     <ClInclude Include="public\Utils\eqtimer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Core\DPKFileWriter.cpp" />
+    <ClCompile Include="public\core\DPKFileWriter.cpp" />
     <ClCompile Include="public\core\cmdlib.cpp" />
     <ClCompile Include="public\core\cmd_pacifier.cpp" />
     <ClCompile Include="public\core\ConCommand.cpp" />

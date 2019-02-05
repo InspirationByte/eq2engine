@@ -632,15 +632,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\libs\libvorbisfile_static.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\libs\libvorbis_static.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\libs\libogg_static.lib">
-      <Filter>Libs</Filter>
-    </Library>
     <Library Include="..\src_dependency\bullet\lib\Debug\BulletCollision_Debug.lib">
       <Filter>Libs\bullet</Filter>
     </Library>
@@ -653,7 +644,19 @@
     <Library Include="..\src_dependency\bullet\bin\LinearMath.lib">
       <Filter>Libs\bullet</Filter>
     </Library>
-    <Library Include="..\src_dependency\OpenALSoftCustom\build\Release\OpenAL32.lib">
+    <Library Include="..\src_dependency\libogg\win32\VS2015\Win32\Release\libogg_static.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbis_static.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbisfile_static.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\openal-soft\build\Release\OpenAL32.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib">
       <Filter>Libs</Filter>
     </Library>
   </ItemGroup>

@@ -363,5 +363,8 @@
     <Library Include="..\..\src_dependency\bullet\bin\LinearMath.lib">
       <Filter>Libs</Filter>
     </Library>
+    <Library Include="..\..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib">
+      <Filter>Libs</Filter>
+    </Library>
   </ItemGroup>
 </Project>

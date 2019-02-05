@@ -18,7 +18,7 @@
 #include "in_keys_ident.h"
 #include "EntityDef.h"
 #include "editor_config.h"
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 
 extern float	g_realtime;
 extern float	g_oldrealtime;

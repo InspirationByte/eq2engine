@@ -12,28 +12,13 @@
 #ifdef _WIN32
 #define ZLIB_WINAPI
 #endif // _WIN32
-
 #include <zlib.h>
 
 bool IsValidModelIdentifier(int id)
 {
-	switch(id)
-	{
-		case EQUILIBRIUM_MODEL_SIGNATURE:
-			return true;
-#ifdef EQUILIBRIUMFX_MODEL_FORMAT
-		case EQUILIBRIUMFX_MODEL_SIGNATURE:
-			return true;
-#endif
-#ifdef SUNSHINE_MODEL_FORMAT
-		case SUNSHINE_MODEL_SIGNATURE:
-			return true;
-#endif
-#ifdef SUNSHINEFX_MODEL_FORMAT
-		case SUNSHINEFX_MODEL_SIGNATURE:
-			return true;
-#endif
-	}
+	if(EQUILIBRIUM_MODEL_SIGNATURE == id)
+		return true;
+
 	return false;
 }
 

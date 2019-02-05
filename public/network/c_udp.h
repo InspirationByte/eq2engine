@@ -16,7 +16,7 @@
 
 #include "platform/Platform.h"
 #include "net_defs.h"
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 
 #define CUDP_MESSAGE_ID_IMMEDIATE			(-3)
 #define CUDP_MESSAGE_ID_ERROR				(-2)

@@ -22,7 +22,7 @@
 
 #include "Imaging/ImageLoader.h"
 
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 
 ShaderAPID3DX10::~ShaderAPID3DX10()
 {

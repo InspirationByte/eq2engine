@@ -18,7 +18,7 @@
 
 #include "D3DX9DefaultShaders.h"
 
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 
 #include "Imaging/ImageLoader.h"
 

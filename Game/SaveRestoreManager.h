@@ -8,7 +8,7 @@
 #ifndef SAVERESTOREMANAGER_H
 #define SAVERESTOREMANAGER_H
 
-#include "VirtualStream.h"
+#include "utils/VirtualStream.h"
 #include "utils/DkList.h"
 
 struct datavariant_t;
