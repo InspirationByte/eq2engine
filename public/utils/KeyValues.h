@@ -138,12 +138,18 @@ struct kvkeybase_t
 	kvkeybase_t&			SetKey(const char* name, int nValue);
 	kvkeybase_t&			SetKey(const char* name, float fValue);
 	kvkeybase_t&			SetKey(const char* name, bool bValue);
+	kvkeybase_t&			SetKey(const char* name, const Vector2D& value);
+	kvkeybase_t&			SetKey(const char* name, const Vector3D& value);
+	kvkeybase_t&			SetKey(const char* name, const Vector4D& value);
 	kvkeybase_t&			SetKey(const char* name, kvkeybase_t* value);
 
 	kvkeybase_t&			AddKey(const char* name, const char* value);
 	kvkeybase_t&			AddKey(const char* name, int nValue);
 	kvkeybase_t&			AddKey(const char* name, float fValue);
 	kvkeybase_t&			AddKey(const char* name, bool bValue);
+	kvkeybase_t&			AddKey(const char* name, const Vector2D& value);
+	kvkeybase_t&			AddKey(const char* name, const Vector3D& value);
+	kvkeybase_t&			AddKey(const char* name, const Vector4D& value);
 	kvkeybase_t&			AddKey(const char* name, kvkeybase_t* value);
 
 	//----------------------------------------------
@@ -164,6 +170,9 @@ struct kvkeybase_t
 	void					AddValue(int nValue);
 	void					AddValue(float fValue);
 	void					AddValue(bool bValue);
+	void					AddValue(const Vector2D& vecValue);
+	void					AddValue(const Vector3D& vecValue);
+	void					AddValue(const Vector4D& vecValue);
 	void					AddValue(kvkeybase_t* keybase);
 	void					AddValue(kvpairvalue_t* value);
 

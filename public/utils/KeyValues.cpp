@@ -386,6 +386,27 @@ void kvkeybase_t::AddValue(bool bValue)
 	SetValueAt(bValue, values.numElem()-1);
 }
 
+void kvkeybase_t::AddValue(const Vector2D& vecValue)
+{
+	AddValue(vecValue.x);
+	AddValue(vecValue.y);
+}
+
+void kvkeybase_t::AddValue(const Vector3D& vecValue)
+{
+	AddValue(vecValue.x);
+	AddValue(vecValue.y);
+	AddValue(vecValue.z);
+}
+
+void kvkeybase_t::AddValue(const Vector4D& vecValue)
+{
+	AddValue(vecValue.x);
+	AddValue(vecValue.y);
+	AddValue(vecValue.z);
+	AddValue(vecValue.w);
+}
+
 void kvkeybase_t::AddValue(kvkeybase_t* keybase)
 {
 	int numVal = values.numElem();
@@ -649,6 +670,48 @@ kvkeybase_t& kvkeybase_t::SetKey(const char* name, bool bValue)
 	return *this;
 }
 
+kvkeybase_t& kvkeybase_t::SetKey(const char* name, const Vector2D& value)
+{
+	kvkeybase_t* pPair = (kvkeybase_t*)FindKeyBase(name);
+	if (!pPair)
+		return AddKey(name, value);
+
+	// value setup
+	pPair->ClearValues();
+	pPair->type = KVPAIR_FLOAT;
+	pPair->AddValue(value);
+
+	return *this;
+}
+
+kvkeybase_t& kvkeybase_t::SetKey(const char* name, const Vector3D& value)
+{
+	kvkeybase_t* pPair = (kvkeybase_t*)FindKeyBase(name);
+	if (!pPair)
+		return AddKey(name, value);
+
+	// value setup
+	pPair->ClearValues();
+	pPair->type = KVPAIR_FLOAT;
+	pPair->AddValue(value);
+
+	return *this;
+}
+
+kvkeybase_t& kvkeybase_t::SetKey(const char* name, const Vector4D& value)
+{
+	kvkeybase_t* pPair = (kvkeybase_t*)FindKeyBase(name);
+	if (!pPair)
+		return AddKey(name, value);
+
+	// value setup
+	pPair->ClearValues();
+	pPair->type = KVPAIR_FLOAT;
+	pPair->AddValue(value);
+
+	return *this;
+}
+
 kvkeybase_t& kvkeybase_t::SetKey(const char* name, kvkeybase_t* pair)
 {
 	if(!pair)
@@ -694,6 +757,30 @@ kvkeybase_t& kvkeybase_t::AddKey(const char* name, bool bValue)
 {
 	kvkeybase_t* pPair = AddKeyBase(name, NULL, KVPAIR_BOOL);
 	pPair->AddValue(bValue);
+
+	return *this;
+}
+
+kvkeybase_t& kvkeybase_t::AddKey(const char* name, const Vector2D& vecValue)
+{
+	kvkeybase_t* pPair = AddKeyBase(name, NULL, KVPAIR_BOOL);
+	pPair->AddValue(vecValue);
+
+	return *this;
+}
+
+kvkeybase_t& kvkeybase_t::AddKey(const char* name, const Vector3D& vecValue)
+{
+	kvkeybase_t* pPair = AddKeyBase(name, NULL, KVPAIR_BOOL);
+	pPair->AddValue(vecValue);
+
+	return *this;
+}
+
+kvkeybase_t& kvkeybase_t::AddKey(const char* name, const Vector4D& vecValue)
+{
+	kvkeybase_t* pPair = AddKeyBase(name, NULL, KVPAIR_BOOL);
+	pPair->AddValue(vecValue);
 
 	return *this;
 }

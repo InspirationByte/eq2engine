@@ -65,23 +65,23 @@ CNetPlayer::CNetPlayer( int clientID, const char* name )
 {
 	m_name = name;
 	m_dupNameId = 0;
+	m_hasPlayerNameOf = -1;
 
 	m_clientID = clientID;
-
 
 	m_ready = false;
 	m_disconnectSignal = false;
 
 	m_fNotreadyTime = 0.0f;
 	
-
-	m_spawnInfo = NULL;
-	m_ownCar = NULL;
+	m_spawnInfo = nullptr;
+	m_ownCar = nullptr;
 
 	m_curControls = 0;
 	m_oldControls = 0;
 
 	m_fCurTime = 0.0f;
+	m_fLastCmdTime = 0.0f;
 
 	m_curSnapshot = 0;
 	memset(m_snapshots, 0, sizeof(m_snapshots));
@@ -101,17 +101,21 @@ CNetPlayer::CNetPlayer( int clientID, const char* name )
 
 CNetPlayer::~CNetPlayer()
 {
-
+	delete m_spawnInfo;
+	m_spawnInfo = nullptr;
 }
 
-const wchar_t* CNetPlayer::GetName() const
+const char* CNetPlayer::GetName() const
 {
-	return m_dupName.c_str();
+	return m_name.c_str();
 }
 
 const char* CNetPlayer::GetCarName() const
 {
-	return m_carName.c_str();
+	if (!m_ownCar)
+		return "";
+
+	return m_ownCar->m_conf->carName.c_str();
 }
 
 void CNetPlayer::SetControls(const playerControl_t& controls)
@@ -164,39 +168,32 @@ void CNetPlayer::SV_OnRecieveControls(int controls)
 	m_curControls = controls;
 }
 
-void CNetPlayer::NETSpawn()
+void CNetPlayer::CL_Spawn()
 {
-	m_ownCar = g_pGameSession->CreateCar( m_carName.c_str() );
-
-	if(!m_ownCar)
+	if (!m_spawnInfo)
 		return;
-
-	if(!m_spawnInfo)
-		return;
-
-	m_ownCar->Spawn();
-
-	m_ownCar->SetOrigin(m_spawnInfo->m_spawnPos);
-	m_ownCar->SetAngles(m_spawnInfo->m_spawnRot);
-	g_pGameWorld->AddObject( m_ownCar );
 
 	// add player to list and send back message
 	CNetGameSession* netSes = (CNetGameSession*)g_pGameSession;
 
-	if(netSes == NULL)
+	if (netSes == NULL)
 		return;
 
-	if(m_spawnInfo->m_useColor)
-		m_ownCar->SetCarColour(m_spawnInfo->m_spawnColor);
+	m_ownCar = g_pGameSession->CreateCar( m_spawnInfo->carName.c_str() );
+
+	if(!m_ownCar)
+		return;
+
+	m_ownCar->Spawn();
+
+	m_ownCar->SetOrigin(m_spawnInfo->spawnPos);
+	m_ownCar->SetAngles(m_spawnInfo->spawnRot);
+	m_ownCar->SetCarColour(m_spawnInfo->spawnColor);
+
+	g_pGameWorld->AddObject( m_ownCar );
 
 	// work on client side spawns
-	if(netSes->IsClient())
-		m_ownCar->m_networkID = m_spawnInfo->m_netCarID;
-
-	Msg("[SERVER] %s spawn\n", m_name.c_str());
-
-	delete m_spawnInfo;
-	m_spawnInfo = NULL;
+	m_ownCar->m_networkID = m_spawnInfo->netCarID;
 }
 
 void UTIL_DebugDrawOBB(const FVector3D& pos, const Vector3D& mins, const Vector3D& maxs, const Matrix4x4& matrix, const ColorRGBA& color);
@@ -400,8 +397,8 @@ float CNetPlayer::GetLatency() const
 
 void CNetPlayer::NetUpdate(float fDt)
 {
-	if(!m_ownCar)
-		NETSpawn();
+	//if(!m_ownCar)
+	//	NETSpawn();
 
 	if(!m_ownCar)
 		return;
@@ -459,12 +456,11 @@ bool CNetPlayer::IsReady()
 
 CNetConnectQueryEvent::CNetConnectQueryEvent()
 {
-	m_playerName = "";
 }
 
-CNetConnectQueryEvent::CNetConnectQueryEvent( const char* playername )
+CNetConnectQueryEvent::CNetConnectQueryEvent(kvkeybase_t& kvs)
 {
-	m_playerName = playername;
+	kvs.CopyTo(&m_kvs);
 }
 
 void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
@@ -481,10 +477,6 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 	peer->client_addr = m_clientAddr;
 	peer->client_id = -1;
 
-	// we're adding this client because we need to send back statuses, POOR API DESIGN!!!
-	// be sure to use NETSERVER_FLAG_REMOVECLIENT flag if we fail
-	int cl_id = serverInterface->AddClient(peer);
-
 	kvkeybase_t returnStatus;
 	CNetMessageBuffer buffer;
 
@@ -499,10 +491,15 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 
 		buffer.WriteKeyValues(&returnStatus);
 
-		// add him to remove using NETSERVER_FLAG_REMOVECLIENT
-		pNetThread->SendData(&buffer, m_nEventID, cl_id, CDPSEND_GUARANTEED | Networking::NETSERVER_FLAG_REMOVECLIENT);
+		// add him temporarily to remove using NETSERVER_FLAG_REMOVECLIENT
+		int sendBackClientId = serverInterface->AddClient(peer);
+		pNetThread->SendData(&buffer, m_nEventID, sendBackClientId, CDPSEND_GUARANTEED | Networking::NETSERVER_FLAG_REMOVECLIENT);
 		return;
 	}
+
+	// we're adding this client because we need to send back statuses, POOR API DESIGN!!!
+	// be sure to use NETSERVER_FLAG_REMOVECLIENT flag if we fail
+	int cl_id = serverInterface->AddClient(peer);
 
 	if(netSes->GetFreePlayerSlots() == 0)
 	{
@@ -517,14 +514,22 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 	}
 
 	// TODO: select spawn point
+	extern ConVar g_car;
 
 	netPlayerSpawnInfo_t* spawn = new netPlayerSpawnInfo_t;
-	spawn->m_spawnPos = Vector3D(0, 0.5, 10);
-	spawn->m_spawnRot = Vector3D(0,0,0);
-	spawn->m_spawnColor = Vector4D(0);
-	spawn->m_useColor = false;
 
-	CNetPlayer* newPlayer = netSes->CreatePlayer(spawn, cl_id, SV_NEW_PLAYER, m_playerName.c_str());
+	spawn->spawnPos = Vector3D(0, 0.5, 10);
+	spawn->spawnRot = Vector3D(0,0,0);
+
+	spawn->carName = KV_GetValueString(m_kvs.FindKeyBase("car_name"), 0, g_car.GetString());
+	spawn->teamName = KV_GetValueString(m_kvs.FindKeyBase("team_name"), 0, "default");
+
+	spawn->spawnColor.col1 = KV_GetVector4D(m_kvs.FindKeyBase("car_color1"), 0, color4_white);
+	spawn->spawnColor.col2 = KV_GetVector4D(m_kvs.FindKeyBase("car_color2"), 0, color4_white);
+
+	const char* playerName = KV_GetValueString(m_kvs.FindKeyBase("player_name"), 0, "unnamed");
+
+	CNetPlayer* newPlayer = netSes->CreatePlayer(spawn, cl_id, SV_NEW_PLAYER, playerName);
 
 	if(!newPlayer)
 	{
@@ -538,18 +543,19 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 		return;
 	}
 
-	MsgInfo("Player '%s' joining the game...\n", m_playerName.c_str(), newPlayer->m_id);
+	MsgInfo("Player '%s' joining the game...\n", playerName, newPlayer->m_id);
 
 	returnStatus
 		.SetKey("status", "ok")
-		.SetKey("levelname", g_pGameWorld->GetLevelName());
-		.SetKey("environment", g_pGameWorld->GetEnvironmentName());
-		.SetKey("clientID", varargs("%d", cl_id));
-		.SetKey("playerID", varargs("%d", newPlayer->m_id));
-		.SetKey("maxPlayers", varargs("%d", netSes->GetMaxPlayers()));
-		.SetKey("numPlayers", varargs("%d", netSes->GetNumPlayers()));
+		.SetKey("level_name", g_pGameWorld->GetLevelName())
+		.SetKey("environment", g_pGameWorld->GetEnvironmentName())
+		.SetKey("client_id", varargs("%d", cl_id))
+		.SetKey("player_slot", varargs("%d", newPlayer->m_id))
+		.SetKey("player_name", newPlayer->m_name.c_str())
+		.SetKey("max_players", varargs("%d", netSes->GetMaxPlayers()))
+		.SetKey("num_players", varargs("%d", netSes->GetNumPlayers()));
 
-	buffer.WriteKeyValues(&kvs);
+	buffer.WriteKeyValues(&returnStatus);
 
 	pNetThread->SendData(&buffer, m_nEventID, cl_id, CDPSEND_GUARANTEED);
 }
@@ -557,12 +563,12 @@ void CNetConnectQueryEvent::Process( CNetworkThread* pNetThread )
 void CNetConnectQueryEvent::Unpack( CNetworkThread* pNetThread, CNetMessageBuffer* pStream )
 {
 	pStream->GetClientInfo(m_clientAddr, m_clientID);
-	m_playerName = pStream->ReadString();
+	pStream->ReadKeyValues(&m_kvs);
 }
 
 void CNetConnectQueryEvent::Pack( CNetworkThread* pNetThread, CNetMessageBuffer* pStream )
 {
-	pStream->WriteString(m_playerName);
+	pStream->WriteKeyValues(&m_kvs);
 }
 
 //------------------------------------------------------
@@ -628,13 +634,7 @@ void CNetClientPlayerInfo::Process( CNetworkThread* pNetThread )
 		return;
 	}
 
-	player->m_carName = m_carName;
-
 	// add player to list and send back message
-
-	// don't make him ready unless recieved controls
-	player->NETSpawn();
-
 	if(netSes->IsServer())
 	{
         MsgInfo("[SYNC] Sending player info...\n");
@@ -665,25 +665,25 @@ void CNetClientPlayerInfo::Pack( CNetworkThread* pNetThread, CNetMessageBuffer* 
 
 CNetServerPlayerInfo::CNetServerPlayerInfo()
 {
-	m_carName = "";
-	m_playerName = "";
-	m_playerID = -1;
-	m_carNetID = -1;
 }
 
 CNetServerPlayerInfo::CNetServerPlayerInfo( CNetPlayer* player )
 {
-	m_carName = player->m_carName.c_str();
-	m_playerName = player->m_name.c_str();
-	m_playerID = player->m_id;
-	m_sync_time = player->m_fCurTime;
+	m_kvs.Cleanup();
+
+	m_kvs.SetKey("player_name", player->m_name.c_str())
+		.SetKey("player_slot", player->m_id);
 
 	if( player->m_ownCar )
 	{
-		m_position = player->m_ownCar->GetOrigin();
-		m_rotation = player->m_ownCar->GetOrientation();
-		m_carColor = player->m_ownCar->GetCarColour();
-		m_carNetID = player->m_ownCar->m_networkID;
+		carColorScheme_t& color = player->m_ownCar->GetCarColour();
+
+		m_kvs.SetKey("car_name", player->m_ownCar->m_conf->carName.c_str())
+			.SetKey("car_color1", color.col1)
+			.SetKey("car_color2", color.col2)
+			.SetKey("car_pos", player->m_ownCar->GetOrigin())
+			.SetKey("car_rot", player->m_ownCar->GetOrientation())
+			.SetKey("car_netid", player->m_ownCar->m_networkID);
 	}
 }
 
@@ -695,37 +695,41 @@ void CNetServerPlayerInfo::Process( CNetworkThread* pNetThread )
 	if(netSes == NULL)
 		return;
 
-	CNetworkClient* client = (CNetworkClient*)pNetThread->GetNetworkInterface();
+	const char* playerName = KV_GetValueString(m_kvs.FindKeyBase("player_name"), 0, "unnamed");
+	int playerSlotId = KV_GetValueInt(m_kvs.FindKeyBase("player_slot"));
 
-	Msg("[SYNC] got player info %s (time: %.2fs)\n", m_playerName.c_str(), m_sync_time);
+	Msg("[SYNC] got player info %s (time: %.2fs)\n", playerName, m_sync_time);
+
+	extern ConVar g_car;
 
 	netPlayerSpawnInfo_t* spawn = new netPlayerSpawnInfo_t;
-	spawn->m_spawnPos = m_position;
-	spawn->m_spawnRot = eulers(m_rotation);
-	spawn->m_spawnColor = m_carColor;
-	spawn->m_netCarID = m_carNetID;
+	spawn->spawnPos = KV_GetVector3D(m_kvs.FindKeyBase("car_pos"));
+	spawn->spawnRot = eulers(KV_GetVector4D(m_kvs.FindKeyBase("car_rot")));
+	spawn->spawnColor.col1 = KV_GetVector4D(m_kvs.FindKeyBase("car_color1"));
+	spawn->spawnColor.col2 = KV_GetVector4D(m_kvs.FindKeyBase("car_color2"));
+	spawn->netCarID = KV_GetValueInt(m_kvs.FindKeyBase("car_netid"));
+	spawn->carName = KV_GetValueString(m_kvs.FindKeyBase("car_name"), 0, g_car.GetString());
 
 	// if it's our car
-	if( g_svclientInfo.playerID == m_playerID )
+	if( g_svclientInfo.playerID == playerSlotId)
 	{
-		netSes->InitLocalPlayer( spawn, client->GetClientID(),  g_svclientInfo.playerID);
+		CNetworkClient* clientInterface = (CNetworkClient*)pNetThread->GetNetworkInterface();
+		netSes->InitLocalPlayer( spawn, clientInterface->GetClientID(),  g_svclientInfo.playerID);
 	}
 	else
 	{
-		CNetPlayer* player = netSes->GetPlayerByID(m_playerID);
+		CNetPlayer* player = netSes->GetPlayerByID(playerSlotId);
 
 		if(player && player->IsReady())
 			return;
 
 		// set to a server-controlled
-		player = netSes->CreatePlayer(spawn, NM_SERVER, m_playerID, m_playerName.c_str());
+		player = netSes->CreatePlayer(spawn, NM_SERVER, playerSlotId, playerName);
 
 		if(player)
 		{
-			player->m_carName = m_carName;
-
 			player->m_fCurTime = m_sync_time;	// set sync time
-			player->NETSpawn();
+			player->CL_Spawn();
 			player->m_ready = true;
 		}
 	}
@@ -733,30 +737,14 @@ void CNetServerPlayerInfo::Process( CNetworkThread* pNetThread )
 
 void CNetServerPlayerInfo::Unpack( CNetworkThread* pNetThread, CNetMessageBuffer* pStream )
 {
-	m_playerID = pStream->ReadInt();
-	m_carNetID = pStream->ReadInt();
-	m_position = pStream->ReadVector3D();
-	m_rotation = pStream->ReadVector4D();
-	pStream->ReadData(&m_carColor, sizeof(m_carColor));
 	m_sync_time = pStream->ReadFloat();
-
-	m_carName = pStream->ReadString();
-	m_playerName = pStream->ReadString();
-
-	pStream->GetClientInfo(m_clientAddr, m_clientID);
+	pStream->ReadKeyValues(&m_kvs);
 }
 
 void CNetServerPlayerInfo::Pack( CNetworkThread* pNetThread, CNetMessageBuffer* pStream )
 {
-	pStream->WriteInt(m_playerID);
-	pStream->WriteInt(m_carNetID);
-	pStream->WriteVector3D(m_position);
-	pStream->WriteVector4D(m_rotation.asVector4D());
-	pStream->WriteData(&m_carColor, sizeof(m_carColor));
 	pStream->WriteFloat(m_sync_time);
-
-	pStream->WriteString(m_carName);
-	pStream->WriteString(m_playerName);
+	pStream->WriteKeyValues(&m_kvs);
 }
 
 //----------------------------------------------------------------------------

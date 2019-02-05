@@ -58,8 +58,13 @@ DECLARE_CMD(connect, "connects to server/game/lobby", 0)
 
 		connectionThread.StartThread("ClientConnectionThread");
 
+		kvkeybase_t connectInfo;
+		connectInfo.SetKey("player_name", net_name.GetString())
+			.SetKey("car_name", g_car.GetString())
+			.SetKey("team_name", "default");
+
 		CNetMessageBuffer outBuf;
-		if( connectionThread.SendWaitDataEvent( new CNetConnectQueryEvent(net_name.GetString()), CMSG_CONNECT, &outBuf, -1) )
+		if( connectionThread.SendWaitDataEvent( new CNetConnectQueryEvent(connectInfo), CMSG_CONNECT, &outBuf, -1) )
 		{
             MsgInfo("Got response from server '%s' on connect\n", net_name.GetString());
 
@@ -83,20 +88,19 @@ DECLARE_CMD(connect, "connects to server/game/lobby", 0)
 				// set level name, set other info, and change states
 				net_server.SetInt(0);
 
-				EqString levName = KV_GetValueString(kvs.FindKeyBase("levelname"), 0, "default");
-				int clientID = KV_GetValueInt(kvs.FindKeyBase("clientID"), 0, -1);
-				int playerID = KV_GetValueInt(kvs.FindKeyBase("playerID"), 0, -1);
-				int maxPlayers = KV_GetValueInt(kvs.FindKeyBase("maxPlayers"), 0, -1);
-				int numPlayers = KV_GetValueInt(kvs.FindKeyBase("numPlayers"), 0, -1);
-				int tickInterval = KV_GetValueInt(kvs.FindKeyBase("tickInterval"), 0, -1);
-				EqString envName = KV_GetValueString(kvs.FindKeyBase("environment"), 0, "day_clear");
+				const char* levName = KV_GetValueString(kvs.FindKeyBase("level_name"), 0, "default");
+				int clientID = KV_GetValueInt(kvs.FindKeyBase("client_id"), 0, -1);
+				int playerID = KV_GetValueInt(kvs.FindKeyBase("player_slot"), 0, -1);
+				const char* playerName = KV_GetValueString(kvs.FindKeyBase("player_name"), 0, "unnamed");
+				int maxPlayers = KV_GetValueInt(kvs.FindKeyBase("max_players"), 0, -1);
+				int numPlayers = KV_GetValueInt(kvs.FindKeyBase("num_players"), 0, -1);
+				const char*  envName = KV_GetValueString(kvs.FindKeyBase("environment"), 0, "day_clear");
 
 				MsgInfo("---- Server game info ----\n");
 				MsgInfo("max players: %d\n", maxPlayers);
 				MsgInfo("num players: %d\n", numPlayers);
-				MsgInfo("tick intrvl: %d\n", tickInterval);
-				MsgInfo("level: %s\n", levName.c_str());
-				MsgInfo("env: %s\n", envName.c_str());
+				MsgInfo("level: %s\n", levName);
+				MsgInfo("env: %s\n", envName);
 
 				sv_maxplayers.SetInt(maxPlayers);
 
@@ -108,12 +112,13 @@ DECLARE_CMD(connect, "connects to server/game/lobby", 0)
 					g_svclientInfo.clientID = clientID;
 					g_svclientInfo.playerID = playerID;
 					g_svclientInfo.maxPlayers = maxPlayers;
-					g_svclientInfo.tickInterval = tickInterval;
+					g_svclientInfo.tickInterval = 0.0f;
+					g_svclientInfo.playerName = playerName;
 
 					// TODO: set client info to new session
-					g_pGameWorld->SetLevelName( levName.c_str() );
+					g_pGameWorld->SetLevelName(levName);
 
-					g_pGameWorld->SetEnvironmentName( envName.c_str() );
+					g_pGameWorld->SetEnvironmentName(envName);
 
 					// load game
 					EqStateMgr::SetCurrentState(g_states[GAME_STATE_GAME]);
@@ -139,16 +144,6 @@ DECLARE_CMD(disconnect, "shutdown game", 0)
 {
 	if(!g_pGameSession)
 		return;
-
-	if(g_pGameSession->GetSessionType() == SESSION_NETWORK)
-	{
-		CNetGameSession* ses = (CNetGameSession*)g_pGameSession;
-
-		CNetPlayer* player = ses->GetLocalPlayer();
-
-		if(player)
-			ses->GetNetThread()->SendEvent( new CNetDisconnectEvent(player->m_id, "Disconnect by user"), CMSG_DISCONNECT, NM_SENDTOALL, CDPSEND_GUARANTEED );
-	}
 
 	if(EqStateMgr::GetCurrentStateType() == GAME_STATE_GAME)
 		EqStateMgr::SetCurrentState(g_states[GAME_STATE_MAINMENU]);
@@ -241,7 +236,6 @@ bool CNetGameSession::Create_Server()
 	m_netThread.RegisterEventList( NETEVENT_LIST(SERVER_EVENTS), true );
 	m_netThread.SetEventFilterCallback( FilterServerUnwantedMessages );
 
-
 	m_netThread.StartThread("DServerThread");
 
 	m_isServer = true;
@@ -256,13 +250,13 @@ bool CNetGameSession::Create_Server()
 	// TODO: get spawn point from mission script
 
 	netPlayerSpawnInfo_t* spawn = new netPlayerSpawnInfo_t;
-	spawn->m_spawnPos = Vector3D(0, 0.5, 10);
-	spawn->m_spawnRot = Vector3D(0,0,0);
-	spawn->m_spawnColor = Vector4D(0);
-	spawn->m_useColor = false;
+	spawn->spawnPos = Vector3D(0, 0.5, 10);
+	spawn->spawnRot = Vector3D(0,0,0);
+	spawn->spawnColor = color4_white;
+	spawn->carName = g_car.GetString();
 
 	// INIT SERVER LOCAL PLAYER
-	InitLocalPlayer( spawn, NM_SERVER );
+	InitLocalPlayer( spawn, NM_SERVER, SV_NEW_PLAYER);
 
 	return true;
 }
@@ -278,7 +272,7 @@ void CNetGameSession::InitLocalPlayer(netPlayerSpawnInfo_t* spawnInfo, int clien
 {
 	CNetPlayer* player = CreatePlayer(spawnInfo, clientID, playerID, net_name.GetString());
 
-	if(!player)
+	if (!player)
 	{
 		MsgError("Cannot create local player (clid = %d)\n", clientID);
 		return;
@@ -289,6 +283,13 @@ void CNetGameSession::InitLocalPlayer(netPlayerSpawnInfo_t* spawnInfo, int clien
 	{
 		player->m_ready = true;
 	}
+	else
+	{
+		// change player name in case if server detected he has duplicate one
+		player->m_name = g_svclientInfo.playerName;
+		player->CL_Spawn();
+	}
+		
 
 	SetLocalPlayer(player);
 }
@@ -302,6 +303,8 @@ void CNetGameSession::SetLocalPlayer(CNetPlayer* player)
 
 	if(m_localNetPlayer)
 	{
+		ASSERT(m_localNetPlayer->m_ownCar);
+
 		SetPlayerCar( m_localNetPlayer->m_ownCar );
 		g_pGameWorld->m_level.QueryNearestRegions( m_localNetPlayer->m_ownCar->GetOrigin(), true);
 	}
@@ -765,10 +768,10 @@ void CNetGameSession::Update(float fDt)
 
 CNetPlayer* CNetGameSession::CreatePlayer(netPlayerSpawnInfo_t* spawnInfo, int clientID, int playerID, const char* name)
 {
-	ASSERT(IsServer() && playerID == SV_NEW_PLAYER);
-
 	if (IsServer())
 	{
+		ASSERT(IsServer() && playerID == SV_NEW_PLAYER);
+
 		// find a slot
 		for (int i = 0; i < m_netPlayers.numElem(); i++)
 		{
@@ -827,18 +830,22 @@ void CNetGameSession::SV_ProcessDuplicatePlayerName(CNetPlayer* player)
 
 	for (int i = 0; i < m_netPlayers.numElem(); i++)
 	{
+		CNetPlayer* pl = m_netPlayers[i];
+
+		if (!pl)
+			continue;
+
 		if (i == player->m_id)
 			continue;
 
-		CNetPlayer* pl = m_netPlayers[i];
-
 		// rename existing player if names are equal
-		if (pl->m_name == player->m_name)
+		if (!pl->m_name.Compare(player->m_name))
 		{
 			pl->m_dupNameId++;	// increment duplicates on existing name
 
 			// change the specified player name
 			player->m_name.Append(varargs(" (%d)", pl->m_dupNameId));
+			player->m_hasPlayerNameOf = i;
 			break;
 		}
 	}
@@ -849,28 +856,31 @@ void CNetGameSession::SV_ScriptedPlayerProvision(CNetPlayer* player)
 	if(!IsServer())
 		return;
 
-	/*
-	player->m_carName = g_car.GetString();
-	player->m_ownCar = g_pGameSession->CreateCar(g_car.GetString());
+	// let script do it...
 
-	if (player->m_ownCar)
+	// spawn is modified here
+
+	// if script did not created car, create default one
+	if (!player->m_ownCar)
 	{
-		player->m_ownCar->Spawn();
+		CCar* car = g_pGameSession->CreateCar( player->m_spawnInfo->carName.c_str() );
 
-		player->m_ownCar->SetOrigin(spawnInfo->m_spawnPos);
-		player->m_ownCar->SetAngles(spawnInfo->m_spawnRot);
+		player->m_ownCar = car;
 
-		if (spawnInfo->m_useColor)
-			player->m_ownCar->SetCarColour(spawnInfo->m_spawnColor);
+		if (car)
+		{
+			car->Spawn();
 
-		g_pGameWorld->AddObject(player->m_ownCar);
+			car->SetOrigin(vec3_zero);
+			car->SetAngles(vec3_zero);
+			car->SetCarColour(player->m_spawnInfo->spawnColor);
 
-		if (IsClient())
-			player->m_ownCar->m_networkID = spawnInfo->m_netCarID;
+			g_pGameWorld->AddObject(player->m_ownCar);
+		}
 	}
-	else
-		MsgError("Failed to init local player car!\n");
-	*/
+	
+	if(!player->m_ownCar)
+		MsgError("[SERVER] failed to create car for player '%s'!\n", player->GetName());
 }
 
 void CNetGameSession::DisconnectPlayer(int playerID, const char* reason)
@@ -883,7 +893,7 @@ void CNetGameSession::DisconnectPlayer(int playerID, const char* reason)
 
 	CNetPlayer* player = m_netPlayers[playerID];
 
-	if (!m_netPlayers.inRange(playerID))
+	if (!player)
 	{
 		MsgError("DisconnectPlayer: no player in slot (%d)\n", playerID);
 		return;
@@ -925,7 +935,7 @@ void CNetGameSession::DisconnectPlayer(int playerID, const char* reason)
 
 	// finalize and drop slot
 	delete player;
-	m_netPlayers[playerID] = NULL;
+	m_netPlayers[playerID] = nullptr;
 }
 
 int CNetGameSession::GetMaxPlayers() const

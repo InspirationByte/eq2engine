@@ -17,6 +17,8 @@ struct server_client_info_t
 	int			clientID;
 	int			playerID;
 
+	EqString	playerName;
+
 	int			maxPlayers;
 	float		tickInterval;
 };

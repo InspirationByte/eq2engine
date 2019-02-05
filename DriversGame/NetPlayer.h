@@ -26,17 +26,17 @@ struct netPlayerSpawnInfo_t
 {
 	netPlayerSpawnInfo_t()
 	{
-		m_useColor = true;
-		m_netCarID = -1;
+		netCarID = -1;
 	}
 
-	Vector3D			m_spawnPos;
-	Vector3D			m_spawnRot;
-	carColorScheme_t	m_spawnColor;
+	Vector3D			spawnPos;
+	Vector3D			spawnRot;
 
-	int					m_netCarID;
+	EqString			carName;
+	EqString			teamName;
+	carColorScheme_t	spawnColor;
 
-	bool				m_useColor;
+	int					netCarID;
 };
 
 //------------------------------------------------------------------------------------
@@ -52,7 +52,7 @@ public:
 						CNetPlayer( int clientID, const char* name );
 						~CNetPlayer();
 
-	const wchar_t*		GetName() const;
+	const char*			GetName() const;
 	const char*			GetCarName() const;
 	void				SetControls(const playerControl_t& controls);
 	CCar*				GetCar();
@@ -68,7 +68,8 @@ public:
 	void				CL_GetPredictedSnapshot( const netObjSnapshot_t& snapshot, float fDt_diff, netObjSnapshot_t& out ) const;
 	float				CL_GetSnapshotLatency() const;
 
-	void				NETSpawn();
+	void				CL_Spawn();
+
 	void				NetUpdate(float fDt);
 	void				Update(float fDt);
 
@@ -78,6 +79,7 @@ public:
 
 	EqString				m_name;
 	int						m_dupNameId;
+	int						m_hasPlayerNameOf;
 
 	int						m_clientID;
 	int						m_id;
@@ -93,9 +95,7 @@ public:
 
 	netPlayerSpawnInfo_t*	m_spawnInfo;
 
-	EqString				m_carName;
 	CCar*					m_ownCar;
-
 
 	float					m_fCurTime;
 	float					m_fLastCmdTime;
@@ -123,7 +123,7 @@ public:
 class CNetConnectQueryEvent : public CNetEvent
 {
 public:
-	CNetConnectQueryEvent( const char* playername );
+	CNetConnectQueryEvent( kvkeybase_t& kvs);
 	CNetConnectQueryEvent();
 
 	void		Process( CNetworkThread* pNetThread );
@@ -137,7 +137,8 @@ public:
 protected:
 	int			m_clientID;
 	sockaddr_in	m_clientAddr;
-	EqString	m_playerName;
+
+	kvkeybase_t	m_kvs;
 };
 
 //----------------------------------------------------------------------------
@@ -203,21 +204,9 @@ public:
 	int			GetEventType() const {return CMSG_SERVERPLAYER_INFO;}
 
 protected:
-	int					m_clientID;
-	int					m_playerID;
-	int					m_carNetID;
-
-	Vector3D			m_position;
-	Quaternion			m_rotation;
-
-	carColorScheme_t	m_carColor;
+	kvkeybase_t			m_kvs;
 
 	float				m_sync_time;
-
-	EqString			m_carName;
-	EqString			m_playerName;
-
-	sockaddr_in			m_clientAddr;
 };
 
 //----------------------------------------------------------------------------

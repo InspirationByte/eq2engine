@@ -490,7 +490,7 @@ void CObject_Debris::Simulate(float fDt)
 
 			if(isCar)
 			{
-				CCar* pCar = (CCar*)body->GetUserData();
+				//CCar* pCar = (CCar*)body->GetUserData();
 
 				EmitSound_t ep;
 
