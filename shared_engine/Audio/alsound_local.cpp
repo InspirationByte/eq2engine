@@ -26,12 +26,6 @@
 #include "IDebugOverlay.h"
 #include "IDkCore.h"
 
-#ifndef NO_ENGINE
-#include "IEngineGame.h"
-#include "IEngineHost.h"
-#include "coord.h"
-#endif
-
 #define MAX_AMBIENT_STREAMS 8
 
 static DkSoundSystemLocal	s_soundSystem;
@@ -125,13 +119,8 @@ const char* getALErrorString(int err)
 
 DkSoundSystemLocal::DkSoundSystemLocal()
 {
-#ifndef NO_ENGINE
-	m_defaultParams.referenceDistance = 300.0f;
-	m_defaultParams.maxDistance = MAX_COORD_UNITS;
-#else
 	m_defaultParams.referenceDistance = 1.0f;
 	m_defaultParams.maxDistance = 128000;
-#endif
 
 	m_defaultParams.rolloff = 2.1f;
 	m_defaultParams.volume = 1.0f;
@@ -696,10 +685,6 @@ ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, int nFlags)
 		return nullptr;
 	}
 
-#ifndef NO_ENGINE
-	g_pEngineHost->EnterResourceLoading();
-#endif
-
 	DkSoundSampleLocal* pNewSample = new DkSoundSampleLocal();
 	pNewSample->Init(name, nFlags);
 
@@ -714,10 +699,6 @@ ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, int nFlags)
 	}
 
 	m_samples.append( pNewSample );
-
-#ifndef NO_ENGINE
-	g_pEngineHost->EndResourceLoading();
-#endif
 
 	return pNewSample;
 }

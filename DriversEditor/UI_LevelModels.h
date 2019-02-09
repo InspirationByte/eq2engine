@@ -166,7 +166,10 @@ protected:
 
 	Vector3D					m_dragPos;
 	Vector3D					m_dragOffs;
+
+	Vector3D					m_dragInitRot;
 	Vector3D					m_dragRot;
+
 
 	float						m_dragPrevMove;
 

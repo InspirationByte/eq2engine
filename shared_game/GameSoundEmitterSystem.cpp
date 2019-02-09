@@ -61,10 +61,10 @@ bool CSoundController::IsStopped() const
 	if(!m_emitData)
 		return true;
 
-	if(!m_emitData->pEmitter)
+	if(!m_emitData->soundSource)
 		return true;
 
-	return (m_emitData->pEmitter->GetState() == SOUND_STATE_STOPPED);
+	return (m_emitData->soundSource->GetState() == SOUND_STATE_STOPPED);
 }
 
 void CSoundController::StartSound(const char* newSoundName)
@@ -102,14 +102,14 @@ void CSoundController::StartSound(const char* newSoundName)
 		return;
 	}
 
-	if(!m_emitData->pEmitter)
+	if(!m_emitData->soundSource)
 	{
 		m_emitData = NULL;
 		return;
 	}
 
 	// resume previous sample
-	m_emitData->pEmitter->Play();
+	m_emitData->soundSource->Play();
 }
 
 void CSoundController::Play()
@@ -122,12 +122,12 @@ void CSoundController::Pause()
 	if(!m_emitData)
 		return;
 
-	if(!m_emitData->pEmitter)
+	if(!m_emitData->soundSource)
 		return;
 
-	ASSERT(soundsystem->IsValidEmitter( m_emitData->pEmitter ));
+	ASSERT(soundsystem->IsValidEmitter( m_emitData->soundSource ));
 
-	m_emitData->pEmitter->Pause();
+	m_emitData->soundSource->Pause();
 }
 
 void CSoundController::Stop(bool force)
@@ -137,20 +137,20 @@ void CSoundController::Stop(bool force)
 		return;
 	}
 
-	if(!m_emitData->pEmitter)
+	if(!m_emitData->soundSource)
 	{
-		m_emitData->pController = NULL;
+		m_emitData->controller = NULL;
 		m_emitParams.emitterIndex = -1;
 		return;
 	}
 
 	if(!force && m_emitData->script && m_emitData->script->stopLoop)
-		m_emitData->pEmitter->StopLoop();
+		m_emitData->soundSource->StopLoop();
 	else
-		m_emitData->pEmitter->Stop();
+		m_emitData->soundSource->Stop();
 
 	// at stop we invalidate channel and detach emitter
-	m_emitData->pController = NULL;
+	m_emitData->controller = NULL;
 	m_emitParams.emitterIndex = -1;
 	m_emitData = NULL;
 }
@@ -162,14 +162,14 @@ void CSoundController::StopLoop()
 		return;
 	}
 
-	if(!m_emitData->pEmitter)
+	if(!m_emitData->soundSource)
 	{
-		m_emitData->pController = NULL;
+		m_emitData->controller = NULL;
 		m_emitParams.emitterIndex = -1;
 		return;
 	}
 
-	m_emitData->pEmitter->StopLoop();
+	m_emitData->soundSource->StopLoop();
 }
 
 void CSoundController::SetPitch(float fPitch)
@@ -177,18 +177,18 @@ void CSoundController::SetPitch(float fPitch)
 	if(!m_emitData)
 		return;
 
-	if(!m_emitData->pEmitter)
+	if(!m_emitData->soundSource)
 		return;
 
 	float fSoundPitch = m_emitData->script->fPitch;
 
 	soundParams_t params;
 
-	m_emitData->pEmitter->GetParams(&params);
+	m_emitData->soundSource->GetParams(&params);
 
 	params.pitch = fSoundPitch*fPitch;
 
-	m_emitData->pEmitter->SetParams(&params);
+	m_emitData->soundSource->SetParams(&params);
 }
 
 void CSoundController::SetVolume(float fVolume)
@@ -204,6 +204,11 @@ void CSoundController::SetOrigin(const Vector3D& origin)
 		return;
 
 	m_emitData->origin = origin;
+
+	if (!m_emitData->soundSource)
+		return;
+
+	m_emitData->soundSource->SetPosition(m_emitData->origin);
 }
 
 void CSoundController::SetVelocity(const Vector3D& velocity)
@@ -212,6 +217,11 @@ void CSoundController::SetVelocity(const Vector3D& velocity)
 		return;
 
 	m_emitData->velocity = velocity;
+
+	if (!m_emitData->soundSource)
+		return;
+
+	m_emitData->soundSource->SetVelocity(m_emitData->velocity);
 }
 
 //----------------------------------------------------------------------------
@@ -232,24 +242,24 @@ void CSoundChannelObject::EmitSound(const char* name)
 	ep.pObject = this;
 	ep.name = (char*)name;
 
-	int channel = g_sounds->EmitSound(&ep);
+	int channelType = g_sounds->EmitSound(&ep);
 
-	if(channel == CHAN_INVALID)
+	if(channelType == CHAN_INVALID)
 		return;
 
-	m_numChannelSounds[channel]++;
+	m_numChannelSounds[channelType]++;
 }
 
 void CSoundChannelObject::EmitSoundWithParams(EmitSound_t *ep)
 {
 	ep->pObject = this;
 
-	int channel = g_sounds->EmitSound(ep);
+	int channelType = g_sounds->EmitSound(ep);
 
-	if(channel == CHAN_INVALID)
+	if(channelType == CHAN_INVALID)
 		return;
 
-	m_numChannelSounds[channel]++;
+	m_numChannelSounds[channelType]++;
 }
 
 int CSoundChannelObject::GetChannelSoundCount(ESoundChannelType chan)
@@ -286,17 +296,18 @@ void EmitSound_t::Init( const char* pszName, const Vector3D& pos, float volume, 
 //
 //----------------------------------------------------------------------------
 
-CSoundEmitterSystem::CSoundEmitterSystem() : m_isInit(false), m_defaultMaxDistance(100.0f), m_isPaused(false), m_viewIsAvailable(false), m_numRooms(0)
+CSoundEmitterSystem::CSoundEmitterSystem() : m_isInit(false), m_defaultMaxDistance(100.0f), m_isPaused(false)
 {
 
 }
 
-void CSoundEmitterSystem::Init(float maxDistance)
+void CSoundEmitterSystem::Init(float maxDistance, fnSoundEmitterUpdate updFunc /* = nullptr*/)
 {
 	if(m_isInit)
 		return;
 
 	m_defaultMaxDistance = maxDistance;
+	m_fnEmitterProcess = updFunc;
 
 	kvkeybase_t* soundSettings = GetCore()->GetConfig()->FindKeyBase("Sound");
 
@@ -311,14 +322,14 @@ void CSoundEmitterSystem::Init(float maxDistance)
 	LoadScriptSoundFile(baseScriptFilePath);
 
 	m_isPaused = false;
-	m_viewIsAvailable = false;
-	m_numRooms = 0;
-
 	m_isInit = true;
 }
 
 void CSoundEmitterSystem::Shutdown()
 {
+	m_fnEmitterProcess = nullptr;
+	m_isPaused = false;
+
 	StopAllSounds();
 
 	for(int i = 0; i < m_controllers.numElem(); i++)
@@ -332,10 +343,10 @@ void CSoundEmitterSystem::Shutdown()
 
 	for(int i = 0; i < m_emitters.numElem(); i++)
 	{
-		m_emitters[i]->pEmitter->Pause();
-		m_emitters[i]->pEmitter->Stop();
-		soundsystem->FreeEmitter(m_emitters[i]->pEmitter);
-		m_emitters[i]->pEmitter = NULL;
+		m_emitters[i]->soundSource->Pause();
+		m_emitters[i]->soundSource->Stop();
+		soundsystem->FreeEmitter(m_emitters[i]->soundSource);
+		m_emitters[i]->soundSource = NULL;
 
 		delete m_emitters[i];
 	}
@@ -370,7 +381,7 @@ int CSoundEmitterSystem::GetEmitterIndexByEntityAndChannel(CSoundChannelObject* 
 {
 	for(int i = 0; i < m_emitters.numElem(); i++)
 	{
-		if(m_emitters[i]->pObject == pEnt && m_emitters[i]->channel == chan)
+		if(m_emitters[i]->channelObj == pEnt && m_emitters[i]->channelType == chan)
 			return i;
 	}
 
@@ -421,8 +432,8 @@ void CSoundEmitterSystem::InvalidateSoundChannelObject(CSoundChannelObject* pEnt
 {
 	for (int i = 0; i < m_emitters.numElem(); i++)
 	{
-		if (m_emitters[i]->pObject == pEnt)
-			m_emitters[i]->pObject = nullptr;
+		if (m_emitters[i]->channelObj == pEnt)
+			m_emitters[i]->channelObj = nullptr;
 	}
 }
 
@@ -504,150 +515,126 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 		return CHAN_INVALID;
 	}
 
-
 	// quickly set
 	emit->emitterIndex = -1;
 
-#ifndef NO_ENGINE
-	// don't start sound if game isn't started
-	if(gpGlobals->curtime <= 0)
+	soundScriptDesc_t* script = FindSound(emit->name);
+
+	if (!script)
+	{
+		if (emitsound_debug.GetBool())
+			MsgError("EmitSound: unknown sound '%s'\n", emit->name);
+
+		return CHAN_INVALID;
+	}
+
+	if(script->pSamples.numElem() == 0 && (emit->nFlags & EMITSOUND_FLAG_FORCE_CACHED))
+	{
+		MsgWarning("Warning! use of EMITSOUND_FLAG_FORCE_CACHED flag!\n");
+		PrecacheSound( emit->name );
+	}
+
+	ISoundSample* bestSample = FindBestSample(script, emit->sampleId);
+
+	if (!bestSample)
 		return CHAN_INVALID;
 
-#endif // NO_ENGINE
+	CSoundChannelObject* pChanObj = emit->pObject;
 
-	soundScriptDesc_t* pScriptSound = FindSound(emit->name);
-
-	if(pScriptSound)
+	if(pChanObj)
 	{
-		if(pScriptSound->pSamples.numElem() == 0 && (emit->nFlags & EMITSOUND_FLAG_FORCE_CACHED))
+		int usedSounds = pChanObj->GetChannelSoundCount(script->channelType);
+
+		// if entity reached the maximum sound count for self
+		if(usedSounds >= s_soundChannelMaxEmitters[script->channelType])
 		{
-			MsgWarning("Warning! use of EMITSOUND_FLAG_FORCE_CACHED flag!\n");
-			PrecacheSound( emit->name );
-		}
+			// find currently playing sound index
+			int firstPlayingSound = GetEmitterIndexByEntityAndChannel( pChanObj, script->channelType );
 
-		if(pScriptSound->pSamples.numElem() == 0)
-		{
-			MsgWarning("WARNING! Script sound '%s' is not cached!\n", emit->name);
-			return CHAN_INVALID;
-		}
-
-		// use worldinfo for static sounds that does not have entites
-		CSoundChannelObject* pChanObj = emit->pObject;
-
-		//if(!pSoundChannelEntity)
-		//	pSoundChannelEntity = g_pWorldInfo;
-
-		if(pChanObj)
-		{
-			// if entity reached the maximum sound count for self
-			if(pChanObj->GetChannelSoundCount(pScriptSound->channel) >= s_soundChannelMaxEmitters[pScriptSound->channel])
+			if(firstPlayingSound != -1)
 			{
-				// find currently playing sound index
-				int firstPlayingSound = GetEmitterIndexByEntityAndChannel( pChanObj, pScriptSound->channel );
-				if(firstPlayingSound != -1)
-				{
-					EmitterData_t* substEmitter = m_emitters[firstPlayingSound];
+				EmitterData_t* substEmitter = m_emitters[firstPlayingSound];
 
-					// if index is valid, shut up this sound
-					if(substEmitter->pController)
-						substEmitter->pController->Stop();
-					else
-						substEmitter->pEmitter->Stop();
+				// if index is valid, shut up this sound
+				if(substEmitter->controller)
+					substEmitter->controller->Stop();
+				else
+					substEmitter->soundSource->Stop();
 
-					// and remove
-					soundsystem->FreeEmitter( substEmitter->pEmitter );
-					substEmitter->pEmitter = NULL;
-					delete substEmitter;
-					m_emitters.fastRemoveIndex(firstPlayingSound);
+				// and remove
+				soundsystem->FreeEmitter( substEmitter->soundSource );
+				substEmitter->soundSource = NULL;
+				delete substEmitter;
+				m_emitters.fastRemoveIndex(firstPlayingSound);
 
-					// pChanObj sound count
-					pChanObj->DecrementChannelSoundCount(pScriptSound->channel);
-				}
+				// pChanObj sound count
+				pChanObj->DecrementChannelSoundCount(script->channelType);
 			}
 		}
+	}
 
-		ISoundSample* bestSample = NULL;
+	// alloc SoundEmitterSystem emitter data
+	EmitterData_t* edata = new EmitterData_t();
 
-		if(emit->sampleId > pScriptSound->pSamples.numElem()-1)
-			emit->sampleId = -1;
+	edata->emitParams = *emit;
+	edata->script = script;
 
-		if(emit->sampleId < 0)
-		{
-			if(pScriptSound->pSamples.numElem() == 1 )
-				bestSample = pScriptSound->pSamples[0];
-			else
-				bestSample = pScriptSound->pSamples[RandomInt(0,pScriptSound->pSamples.numElem()-1)];
-		}
-		else
-		{
-			bestSample = pScriptSound->pSamples[ emit->sampleId ];
-		}
+	edata->origin = edata->interpolatedOrigin = emit->origin;
+	edata->startVolume = script->fVolume * emit->fVolume;
+	edata->channelType = script->channelType;
 
-		// alloc SoundEmitterSystem emitter data
-		EmitterData_t* edata = new EmitterData_t();
+	edata->channelObj = emit->pObject;
+	edata->controller = emit->pController;
 
-		ISoundEmitter* sndEmitter = soundsystem->AllocEmitter();;
+	// sound parameters to initialize SoundEmitter
+	soundParams_t sParams;
 
-		edata->pEmitter = sndEmitter;
-		edata->pObject = emit->pObject;
+	sParams.pitch = emit->fPitch * script->fPitch;
+	sParams.volume = edata->startVolume;
 
-		edata->origin = emit->origin;
-		edata->velocity = vec3_zero;		// only accessible by sound controller
-		edata->interpolatedOrigin = emit->origin;
-		edata->origVolume = pScriptSound->fVolume * emit->fVolume;
-		edata->channel = pScriptSound->channel;
-		edata->script = pScriptSound;
+	sParams.maxDistance			= script->fMaxDistance;
+	sParams.referenceDistance	= script->fAtten * emit->fRadiusMultiplier;
 
-		edata->pController = emit->pController;
+	sParams.rolloff				= script->fRolloff;
+	sParams.airAbsorption		= script->fAirAbsorption;
+	sParams.is2D				= script->is2d;
 
-		edata->emitSoundData = *emit;
+	ISoundEmitter* sndSource = soundsystem->AllocEmitter();
+	
+	// setup default values
+	sndSource->SetPosition(edata->origin);
+	sndSource->SetVelocity(edata->velocity);
 
-		// make new sound parameters
-		soundParams_t sParams;
+	// update emitter before playing
+	edata->soundSource = sndSource;
+	UpdateEmitter( edata, sParams, true );
 
-		sParams.maxDistance			= pScriptSound->fMaxDistance;
-		sParams.referenceDistance	= pScriptSound->fAtten * emit->fRadiusMultiplier;
-		sParams.pitch				= emit->fPitch * pScriptSound->fPitch;
-		sParams.volume				= edata->origVolume;
-		sParams.rolloff				= pScriptSound->fRolloff;
-		sParams.airAbsorption		= pScriptSound->fAirAbsorption;
-		sParams.is2D				= pScriptSound->is2d;
+	if (emit->nFlags & EMITSOUND_FLAG_STARTSILENT)
+		sParams.volume = 0.0f;
 
-		// update emitter before playing
-		UpdateEmitter( edata, sParams, true );
+	if(emitsound_debug.GetBool())
+	{
+		float boxsize = sParams.referenceDistance;
 
-		if (emit->nFlags & EMITSOUND_FLAG_STARTSILENT)
-			sParams.volume = 0.0f;
-
-		if(emitsound_debug.GetBool())
-		{
-			float boxsize = sParams.referenceDistance;
-
-			debugoverlay->Box3D(edata->origin-boxsize, edata->origin+boxsize, ColorRGBA(1,1,1,0.5f), 1.0f);
-			MsgInfo("started sound '%s' ref=%g max=%g\n", pScriptSound->pszName, sParams.referenceDistance, sParams.maxDistance);
-		}
+		debugoverlay->Box3D(edata->origin-boxsize, edata->origin+boxsize, ColorRGBA(1,1,1,0.5f), 1.0f);
+		MsgInfo("started sound '%s' ref=%g max=%g\n", script->pszName, sParams.referenceDistance, sParams.maxDistance);
+	}
 
 #pragma todo("randomization flag for sounding pitch")
-		//if(!pScriptSound->loop)
-		//	sParams.pitch += RandomFloat(-0.05f,0.05f);
+	//if(!script->loop)
+	//	sParams.pitch += RandomFloat(-0.05f,0.05f);
 
-		sndEmitter->SetSample(bestSample);
-		sndEmitter->SetParams(&sParams);
+	sndSource->SetSample(bestSample);
+	sndSource->SetParams(&sParams);
+	sndSource->Play();
 
-		sndEmitter->Play();
+	emit->emitterIndex = m_emitters.append(edata);
 
-		int eIndex = m_emitters.append(edata);
-		emit->emitterIndex = eIndex;
-
-		return edata->channel;
-	}
-	else if(emitsound_debug.GetBool())
-		MsgError("EmitSound: unknown sound '%s'\n", emit->name);
-
-	return CHAN_INVALID;
+	// return channel type
+	return edata->channelType;
 }
 
-void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channel)
+void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channelType)
 {
 	ASSERT(emit);
 
@@ -655,7 +642,7 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channel)
 	{
 		EmitSound_t newEmit = (*emit);
 		newEmit.nFlags &= ~EMITSOUND_FLAG_START_ON_UPDATE;
-		newEmit.emitterIndex = channel;	// temporary
+		newEmit.emitterIndex = channelType;	// temporary
 		newEmit.name = xstrdup(newEmit.name);
 
 		m_pendingStartSounds2D.append(newEmit);
@@ -665,180 +652,70 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channel)
 	// quickly set
 	emit->emitterIndex = -1;
 
-#ifndef NO_ENGINE
-	// don't start sound if game isn't started
-	if (gpGlobals->curtime <= 0)
+	soundScriptDesc_t* script = FindSound(emit->name);
+
+	if (!script)
+	{
+		if (emitsound_debug.GetBool())
+			MsgError("Emit2DSound: unknown sound '%s'\n", emit->name);
+
+		return;
+	}
+
+	if(script->pSamples.numElem() == 0 && (emit->nFlags & EMITSOUND_FLAG_FORCE_CACHED))
+		PrecacheSound( emit->name );
+
+	ISoundSample* bestSample = FindBestSample(script, emit->sampleId);
+
+	if (!bestSample)
 		return;
 
-#endif // NO_ENGINE
+	// use the channel defined by the script
+	if(channelType == -1)
+		channelType = script->channelType;
 
-	soundScriptDesc_t* pScriptSound = FindSound(emit->name);
+	ISoundPlayable* staticChannel = soundsystem->GetStaticStreamChannel(channelType);
 
-	if (pScriptSound)
+	if(staticChannel)
 	{
-		if(pScriptSound->pSamples.numElem() == 0 && (emit->nFlags & EMITSOUND_FLAG_FORCE_CACHED))
-			PrecacheSound( emit->name );
+		float startVolume = emit->fVolume*script->fVolume;
+		float startPitch = emit->fPitch*script->fPitch;
 
-		if(pScriptSound->pSamples.numElem() == 0)
-		{
-			MsgWarning("WARNING! Script sound '%s' is not cached!\n", emit->name);
-			return;
-		}
+		if (channelType == CHAN_STREAM)
+			startVolume = snd_musicvolume.GetFloat();
 
-		ISoundSample* bestSample;
+		staticChannel->SetSample(bestSample);
+		staticChannel->SetVolume(startVolume);
+		staticChannel->SetPitch(startPitch);
 
-		int numSamples = pScriptSound->pSamples.numElem();
-
-		if (numSamples > 0)
-		{
-			if (emit->sampleId > numSamples - 1)
-				emit->sampleId = -1;
-
-			if (emit->sampleId < 0)
-				bestSample = pScriptSound->pSamples[RandomInt(0, numSamples - 1)];
-			else
-				bestSample = pScriptSound->pSamples[emit->sampleId];
-		}
-		else
-			bestSample = pScriptSound->pSamples[0];
-
-		// use the channel defined by the script
-		if(channel == -1)
-		{
-			channel = pScriptSound->channel;
-		}
-
-		ISoundPlayable* staticChannel = soundsystem->GetStaticStreamChannel(channel);
-
-		if(staticChannel)
-		{
-			float volume = emit->fVolume*pScriptSound->fVolume;
-
-			if (channel == CHAN_STREAM)
-				volume = snd_musicvolume.GetFloat();
-
-			staticChannel->SetSample(bestSample);
-			staticChannel->SetVolume(volume);
-			staticChannel->SetPitch(emit->fPitch*pScriptSound->fPitch);
-
-			staticChannel->Play();
-		}
+		staticChannel->Play();
 	}
-	else if(emitsound_debug.GetBool())
-		MsgError("Emit2DSound: unknown sound '%s'\n", emit->name);
 }
-
-#ifndef NO_ENGINE
-ConVar snd_occlusion_debug("snd_occlusion_debug", "0");
-#endif // NO_ENGINE
 
 bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &params, bool bForceNoInterp )
 {
-	ASSERT(soundsystem->IsValidEmitter( emitter->pEmitter ));
+	ISoundEmitter* source = emitter->soundSource;
 
-	CSoundController* controller = (CSoundController*)emitter->pController;
+	ASSERT(soundsystem->IsValidEmitter(source));
 
-	Vector3D emitPos = emitter->origin;
+	CSoundController* controller = (CSoundController*)emitter->controller;
 
-	float fBestVolume = emitter->origVolume;
+	float fBestVolume = emitter->startVolume;
 
-#ifndef NO_ENGINE
-	if(emitter->pObject)
-	{
-		BaseEntity* pEnt = (BaseEntity*)emitter->pObject;
-
-		if(pEnt != g_pWorldInfo)
-			emitPos += pEnt->GetAbsOrigin();
-
-		if(pEnt->GetState() == BaseEntity::ENTITY_REMOVE)
-		{
-			emitter->origin += pEnt->GetAbsOrigin();
-			emitter->pObject = NULL;
-		}
-	}
-
-	// Sound occlusion tested here
-	if(m_viewIsAvailable)
-	{
-		const Vector3D& viewPos = soundsystem->GetListenerPosition();
-
-		// check occlusion flag and audible distance
-		if(emitter->emitSoundData.nFlags & EMITSOUND_FLAG_OCCLUSION)
-		{
-			internaltrace_t trace;
-			physics->InternalTraceLine(viewPos, emitPos, COLLISION_GROUP_WORLD, &trace);
-
-			if (trace.fraction < 1.0f)
-				fBestVolume *= 0.2f;
-		}
-
-		// do room lookup
-		if(emitter->emitSoundData.nFlags & EMITSOUND_FLAG_ROOM_OCCLUSION)
-		{
-			int srooms[2];
-			int nSRooms = eqlevel->GetRoomsForPoint( emitPos, srooms );
-
-			if(m_numRooms > 0 && nSRooms > 0)
-			{
-				if(srooms[0] != m_rooms[0]) 
-				{
-					// check the portal for connection
-					// TODO: recursive!
-					int nPortal = eqlevel->GetFirstPortalLinkedToRoom( m_rooms[0], srooms[0], viewPos, 2);
-
-					if(nPortal == -1)
-					{
-						fBestVolume = 0.0f;
-					}
-					else
-					{
-						// TODO: Better sound positioning using clipping by portal here
-
-						Vector3D portal_pos = eqlevel->GetPortalPosition(nPortal);
-						emitPos = portal_pos;
-
-						// TODO: volume scaling according to the distance from one portal to another
-						emitter->pEmitter->SetPosition( emitter->interpolatedOrigin );
-
-						params.referenceDistance -= length(portal_pos - emitPos);
-						fBestVolume = emitter->origVolume*0.25f;
-					}
-				}
-			}
-
-			if(bForceNoInterp)
-			{
-				emitter->interpolatedOrigin = emitPos;
-			}
-			else
-			{
-				emitter->interpolatedOrigin = lerp( emitter->interpolatedOrigin, emitPos, gpGlobals->frametime*2.0f );
-			}
-		}
-
-		/*
-		if(!bForceNoInterp)
-			emitter->interpVolume = fBestVolume;
-		else
-			emitter->interpVolume = lerp(emitter->interpVolume, fBestVolume, gpGlobals->frametime*2.0f);
-		*/
-	}
-#endif
-
-	emitter->pEmitter->SetPosition(emitPos);
-	emitter->pEmitter->SetVelocity(emitter->velocity);
+	if(m_fnEmitterProcess)
+		fBestVolume = (m_fnEmitterProcess)(params, emitter, bForceNoInterp);
 	
 	if (controller)
 	{
 		fBestVolume *= controller->m_volume;
 	}
 	
-	if(emitter->pObject)
-		fBestVolume *= emitter->pObject->GetSoundVolumeScale();
+	if(emitter->channelObj)
+		fBestVolume *= emitter->channelObj->GetSoundVolumeScale();
 	
 	params.volume = fBestVolume * snd_effectsvolume.GetFloat();
 
-	if (!controller && (emitter->pEmitter->GetState() == SOUND_STATE_STOPPED))
+	if (!controller && (emitter->soundSource->GetState() == SOUND_STATE_STOPPED))
 		return false;
 
 	return true;
@@ -866,15 +743,15 @@ void CSoundEmitterSystem::StopAllEmitters()
 	{
 		EmitterData_t* em = m_emitters[i];
 
-		if (em->pController)
-			em->pController->Stop(true);
+		if (em->controller)
+			em->controller->Stop(true);
 
-		if (em->pEmitter)
+		if (em->soundSource)
 		{
-			em->pEmitter->Stop();
+			em->soundSource->Stop();
 
-			soundsystem->FreeEmitter(em->pEmitter);
-			em->pEmitter = nullptr;
+			soundsystem->FreeEmitter(em->soundSource);
+			em->soundSource = nullptr;
 		}
 
 		delete em;
@@ -926,15 +803,6 @@ void CSoundEmitterSystem::Update(bool force)
 	if(!force && soundsystem->GetPauseState())
 		return;
 
-	
-
-#ifndef NO_ENGINE
-	const Vector3D& viewPos = soundsystem->GetListenerPosition();
-
-	m_numRooms = eqlevel->GetRoomsForPoint(viewPos, m_rooms );
-	m_viewIsAvailable = m_numRooms > 0;
-#endif
-
 	if (!m_isPaused)
 	{
 		if (m_pendingStartSounds2D.numElem())
@@ -972,9 +840,9 @@ void CSoundEmitterSystem::Update(bool force)
 	{
 		EmitterData_t* emitter = m_emitters[i];
 
-		bool remove = (!emitter || (emitter && !emitter->pEmitter));
+		bool remove = (!emitter || (emitter && !emitter->soundSource));
 
-		ISoundEmitter* em = emitter->pEmitter;
+		ISoundEmitter* em = emitter->soundSource;
 
 		if( !remove )
 		{
@@ -988,8 +856,8 @@ void CSoundEmitterSystem::Update(bool force)
 
 		if( remove )
 		{
-			if(emitter->pController)
-				emitter->pController->Stop(true);
+			if(emitter->controller)
+				emitter->controller->Stop(true);
 
 			soundsystem->FreeEmitter(em);
 
@@ -1052,16 +920,16 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 
 		if(pKey)
 		{
-			newSound->channel = ChannelTypeByName(KV_GetValueString(pKey));
+			newSound->channelType = ChannelTypeByName(KV_GetValueString(pKey));
 
-			if(newSound->channel == CHAN_INVALID)
+			if(newSound->channelType == CHAN_INVALID)
 			{
 				Msg("Invalid channel '%s' for sound %s\n", KV_GetValueString(pKey), newSound->pszName);
-				newSound->channel = CHAN_STATIC;
+				newSound->channelType = CHAN_STATIC;
 			}
 		}
 		else
-			newSound->channel = CHAN_STATIC;
+			newSound->channelType = CHAN_STATIC;
 
 		// pick 'rndwave' or 'wave' sections for lists
 		pKey = curSec->FindKeyBase("rndwave", KV_FLAG_SECTION);
@@ -1094,4 +962,28 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 
 		m_allSounds.append(newSound);
 	}
+}
+
+ISoundSample* CSoundEmitterSystem::FindBestSample(soundScriptDesc_t* script, int sampleId /*= -1*/)
+{
+	int numSamples = script->pSamples.numElem();
+
+	if (!numSamples)
+	{
+		MsgWarning("WARNING! Script sound '%s' is not cached!\n", script->pszName);
+		return nullptr;
+	}
+
+	if (!script->pSamples.inRange(sampleId))	// if it is out of range, randomize
+		sampleId = -1;
+
+	if (sampleId < 0)
+	{
+		if (script->pSamples.numElem() == 1)
+			return script->pSamples[0];
+		else
+			return script->pSamples[RandomInt(0, numSamples - 1)];
+	}
+	else
+		return script->pSamples[sampleId];
 }

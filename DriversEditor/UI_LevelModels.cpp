@@ -1015,6 +1015,7 @@ CUI_LevelModels::CUI_LevelModels( wxWindow* parent ) : wxPanel( parent, -1, wxDe
 
 	m_dragOffs = vec3_zero;
 	m_dragRot = vec3_zero;
+	m_dragInitRot = vec3_zero;
 	m_dragPrevMove = 0.0f;
 }
 
@@ -1386,6 +1387,7 @@ void CUI_LevelModels::MouseTranslateEvents( wxMouseEvent& event, const Vector3D&
 		m_draggedAxes = 0;
 		m_dragOffs = vec3_zero;
 		m_dragRot = vec3_zero;
+		m_dragInitRot = vec3_zero;
 
 		MoveSelectionToNewRegions();
 		RecalcSelectionCenter();
@@ -1458,6 +1460,9 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 				Vector3D eulerAngles = EulerMatrixXYZ(!counterRotation*rotation);
 				m_dragRot = -VRAD2DEG(eulerAngles);
 				m_dragRot.z *= -1.0f;
+
+				if(!event.Dragging())
+					m_dragInitRot = m_dragRot;
 			}
 			
 		}
@@ -1465,6 +1470,8 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 
 	if(event.ButtonUp(wxMOUSE_BTN_LEFT))
 	{
+		Vector3D dragRot = m_dragInitRot-m_dragRot;
+
 		for(int i = 0; i < m_selRefs.numElem(); i++)
 		{
 			regionObject_t* ref = m_selRefs[i].selRef;
@@ -1474,7 +1481,7 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 
 			// rotate
 			Matrix3x3 m = rotateXYZ3(DEG2RAD(ref->rotation.x), DEG2RAD(ref->rotation.y), DEG2RAD(ref->rotation.z));
-			m = rotateXYZ3(DEG2RAD(m_dragRot.x), DEG2RAD(m_dragRot.y), DEG2RAD(m_dragRot.z))*m;
+			m = rotateXYZ3(DEG2RAD(dragRot.x), DEG2RAD(dragRot.y), DEG2RAD(dragRot.z))*m;
 
 			ref->rotation = EulerMatrixXYZ(m);
 			ref->rotation = VRAD2DEG(ref->rotation);
@@ -1484,6 +1491,7 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 		m_dragOffs = vec3_zero;
 		m_dragPrevMove = 0.0f;
 		m_dragRot = vec3_zero;
+		m_dragInitRot = vec3_zero;
 
 		RecalcSelectionCenter();
 		g_pMainFrame->NotifyUpdate();
@@ -1752,13 +1760,15 @@ void CUI_LevelModels::OnRender()
 		// display selection
 		BoundingBox bbox;
 
+		Vector3D dragRot = m_dragInitRot-m_dragRot;
+
 		for(int i = 0; i < m_selRefs.numElem(); i++)
 		{
 			regionObject_t* selectionRef = m_selRefs[i].selRef;
 
 			bbox.Merge(selectionRef->bbox);
 
-			Matrix4x4 wmatrix = GetModelRefRenderMatrix(m_selRefs[i].selRegion, selectionRef, m_dragRot);
+			Matrix4x4 wmatrix = GetModelRefRenderMatrix(m_selRefs[i].selRegion, selectionRef, dragRot);
 
 			// render
 			materials->SetCullMode(CULL_BACK);

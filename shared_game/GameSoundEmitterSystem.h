@@ -161,30 +161,6 @@ struct EmitSound_t
 
 typedef EmitSound_t EmitParams;
 
-struct soundScriptDesc_t
-{
-	char*		pszName;
-	int			namehash;
-
-	DkList<ISoundSample*>	pSamples;
-	DkList<EqString>		soundFileNames;
-
-	float		fVolume;
-	float		fAtten;
-	float		fRolloff;
-	float		fPitch;
-	float		fAirAbsorption;
-	float		fMaxDistance;
-
-	bool		extraStreaming : 1;
-	bool		loop : 1;
-	bool		stopLoop : 1;
-	bool		is2d : 1;
-
-	ESoundChannelType	channel;
-};
-
-
 // Dynamic sound controller
 class ISoundController
 {
@@ -209,34 +185,7 @@ public:
 	virtual void			SetVelocity(const Vector3D& velocity) = 0;
 };
 
-struct EmitterData_t
-{
-	EmitterData_t()
-	{
-		pEmitter = NULL;
-		pObject = NULL;
-		pController = NULL;
-		emitSoundData = NULL;
-		script = NULL;
-	}
-
-	soundScriptDesc_t*		script;
-	CSoundChannelObject*	pObject;
-	ISoundController*		pController;
-	ISoundEmitter*			pEmitter;
-
-	Vector3D				origin;
-	Vector3D				interpolatedOrigin;
-	Vector3D				velocity;
-
-	float					origVolume;
-
-	ESoundChannelType		channel;
-
-	EmitSound_t				emitSoundData;
-
-	bool					isVirtual;
-};
+struct EmitterData_t;
 
 // Dynamic sound controller
 class CSoundController : public ISoundController
@@ -275,6 +224,59 @@ protected:
 	EmitterData_t*	m_emitData;
 };
 
+//-------------------------------------------------------------------------------------
+
+struct soundScriptDesc_t
+{
+	char*		pszName;
+	int			namehash;
+
+	DkList<ISoundSample*>	pSamples;
+	DkList<EqString>		soundFileNames;
+
+	float		fVolume;
+	float		fAtten;
+	float		fRolloff;
+	float		fPitch;
+	float		fAirAbsorption;
+	float		fMaxDistance;
+
+	bool		extraStreaming : 1;
+	bool		loop : 1;
+	bool		stopLoop : 1;
+	bool		is2d : 1;
+
+	ESoundChannelType	channelType;
+};
+
+struct EmitterData_t
+{
+	EmitterData_t()
+	{
+		soundSource = nullptr;
+		channelObj = nullptr;
+		controller = nullptr;
+		script = nullptr;
+		velocity = vec3_zero;
+	}
+
+	ESoundChannelType		channelType;
+
+	CSoundChannelObject*	channelObj;
+	ISoundController*		controller;
+	ISoundEmitter*			soundSource;
+
+	Vector3D				origin;
+	Vector3D				interpolatedOrigin;
+	Vector3D				velocity;
+
+	float					startVolume;
+	soundScriptDesc_t*		script;			// sound script which used to start this sound
+	EmitParams				emitParams;		// parameters which used to start this sound
+};
+
+typedef float (*fnSoundEmitterUpdate)(soundParams_t& params, EmitterData_t* emit, bool bForceNoInterp);
+
 // the sound emitter system
 class CSoundEmitterSystem
 {
@@ -283,7 +285,7 @@ class CSoundEmitterSystem
 public:
 	CSoundEmitterSystem();
 
-	void						Init(float maxDistance);
+	void						Init(float maxDistance, fnSoundEmitterUpdate updFunc = nullptr);
 	void						Shutdown();
 
 	void						SetPaused(bool paused);
@@ -295,7 +297,7 @@ public:
 
 	// emits new sound. returns channel type
 	int							EmitSound( EmitSound_t* emit );								// emits sound with specified parameters
-	void						Emit2DSound( EmitSound_t* emit, int channel = -1 );
+	void						Emit2DSound( EmitSound_t* emit, int channelType = -1 );
 
 	void						StopAllSounds();
 
@@ -315,6 +317,8 @@ public:
 
 protected:
 	void						LoadScriptSoundFile(const char* fileName);
+
+	ISoundSample*				FindBestSample(soundScriptDesc_t* script, int sampleId = -1);
 
 	int							GetEmitterIndexByEntityAndChannel(CSoundChannelObject* pEnt, ESoundChannelType chan);
 
@@ -340,12 +344,9 @@ private:
 
 	bool						m_isPaused;
 
-	bool						m_viewIsAvailable;
-
-	int							m_rooms[2];
-	int							m_numRooms;
-
 	float						m_defaultMaxDistance;
+
+	fnSoundEmitterUpdate		m_fnEmitterProcess;
 };
 
 extern CSoundEmitterSystem* g_sounds;

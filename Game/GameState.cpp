@@ -19,6 +19,9 @@ sndEffect_t* g_pSoundEffect = NULL;
 int first_game_update_frames = 0;
 
 CWorldInfo* g_pWorldInfo = NULL;
+bool g_viewIsAvailable = false;
+int g_viewRooms[2];
+int g_viewNumRooms = 0;
 
 // sets world info entity
 void SetWorldSpawn(BaseEntity* pEntity)
@@ -147,10 +150,121 @@ void FillEntityParameters(BaseEntity* pEnt, kvkeybase_t* pEntSection)
 	}
 }
 
+float UpdateSoundEmitterFunc(soundParams_t& params, EmitterData_t* emitter, bool bForceNoInterp)
+{
+	float fBestVolume = emitter->startVolume;
+
+	Vector3D emitPos = emitter->origin;
+
+	// the BaseEntity is CSoundChannelObject itself, it needs to be validated
+	if (emitter->channelObj)
+	{
+		BaseEntity* pEnt = (BaseEntity*)emitter->channelObj;
+
+		if (pEnt != g_pWorldInfo)
+			emitPos += pEnt->GetAbsOrigin();
+
+		if (pEnt->GetState() == BaseEntity::ENTITY_REMOVE)
+		{
+			emitter->origin += pEnt->GetAbsOrigin();
+			emitter->channelObj = NULL;
+		}
+	}
+
+	// Sound occlusion tested here
+	if (!g_viewIsAvailable)
+		return fBestVolume;
+
+	const Vector3D& viewPos = soundsystem->GetListenerPosition();
+
+	// check occlusion flag and audible distance
+	if (emitter->emitParams.nFlags & EMITSOUND_FLAG_OCCLUSION)
+	{
+		internaltrace_t trace;
+		physics->InternalTraceLine(viewPos, emitPos, COLLISION_GROUP_WORLD, &trace);
+
+		if (trace.fraction < 1.0f)
+			fBestVolume *= 0.2f;
+	}
+
+	// do room lookup
+	if (emitter->emitParams.nFlags & EMITSOUND_FLAG_ROOM_OCCLUSION)
+	{
+		int srooms[2];
+		int nSRooms = eqlevel->GetRoomsForPoint(emitPos, srooms);
+
+		if (g_viewNumRooms > 0 && nSRooms > 0)
+		{
+			if (srooms[0] != g_viewRooms[0])
+			{
+				// check the portal for connection
+				// TODO: recursive!
+				int nPortal = eqlevel->GetFirstPortalLinkedToRoom(g_viewRooms[0], srooms[0], viewPos, 2);
+
+				if (nPortal == -1)
+				{
+					fBestVolume = 0.0f;
+				}
+				else
+				{
+					// TODO: Better sound positioning using clipping by portal here
+
+					Vector3D portal_pos = eqlevel->GetPortalPosition(nPortal);
+					emitPos = portal_pos;
+
+					// TODO: volume scaling according to the distance from one portal to another
+					emitter->soundSource->SetPosition(emitter->interpolatedOrigin);
+
+					params.referenceDistance -= length(portal_pos - emitPos);
+					fBestVolume = emitter->startVolume*0.25f;
+				}
+			}
+		}
+
+		if (bForceNoInterp)
+		{
+			emitter->interpolatedOrigin = emitPos;
+		}
+		else
+		{
+			emitter->interpolatedOrigin = lerp(emitter->interpolatedOrigin, emitPos, gpGlobals->frametime*2.0f);
+		}
+	}
+
+	emitter->soundSource->SetPosition(emitPos);
+
+	/*
+	if(!bForceNoInterp)
+		emitter->interpVolume = fBestVolume;
+	else
+		emitter->interpVolume = lerp(emitter->interpVolume, fBestVolume, gpGlobals->frametime*2.0f);
+	*/
+
+	return fBestVolume;
+}
+
+void GAME_STATE_UpdateSounds()
+{
+	float measureses = MEASURE_TIME_BEGIN();
+
+	g_viewIsAvailable = false;
+	g_viewNumRooms = 0;
+
+	const Vector3D& viewPos = soundsystem->GetListenerPosition();
+
+	g_viewNumRooms = eqlevel->GetRoomsForPoint(viewPos, g_viewRooms);
+	g_viewIsAvailable = g_viewNumRooms > 0;
+
+	// perform update
+	g_sounds->Update();
+
+	debugoverlay->Text(Vector4D(1, 1, 1, 1), "  soundemittersystem: %.2f ms", MEASURE_TIME_STATS(measureses));
+}
+
 void GAME_STATE_SpawnEntities(kvkeybase_t* inputKeyValues)
 {
 	// Initialize sound emitter system
-	g_sounds->Init(EQ_AUDIO_MAX_DISTANCE);
+	g_sounds->Init(EQ_AUDIO_MAX_DISTANCE, UpdateSoundEmitterFunc);
 	g_sounds->SetPaused(true);
 
 	PrecachePhysicsSounds();
@@ -214,6 +328,48 @@ void GAME_STATE_SpawnEntities(kvkeybase_t* inputKeyValues)
 	}
 
 	pGameRules->Activate();
+}
+
+void GAME_STATE_GameUpdate(float decaytime)
+{
+	GAME_STATE_UpdateSounds();
+
+	// now simulate entities
+	for (int i = 0; i < ents->numElem(); i++)
+	{
+		BaseEntity *pEnt = ents->ptr()[i];
+
+		if (!pEnt)
+			continue;
+
+		// entity will be removed on next frame
+		if (pEnt->GetState() == BaseEntity::ENTITY_REMOVE)
+		{
+			pEnt->UpdateOnRemove();
+
+			if (pEnt)
+				delete pEnt;
+
+			ents->removeIndex(i);
+			i--;
+
+			continue;
+		}
+
+		if (pEnt->GetState() != BaseEntity::ENTITY_NO_UPDATE)
+		{
+			if (pEnt->GetAbsOrigin().x > MAX_COORD_UNITS || pEnt->GetAbsOrigin().x < MIN_COORD_UNITS ||
+				pEnt->GetAbsOrigin().y > MAX_COORD_UNITS || pEnt->GetAbsOrigin().y < MIN_COORD_UNITS ||
+				pEnt->GetAbsOrigin().z > MAX_COORD_UNITS || pEnt->GetAbsOrigin().z < MIN_COORD_UNITS)
+			{
+				MsgError("Error! entity '%s' outside the WORLD_SIZE limits (> %d units)\n", pEnt->GetClassname(), MAX_COORD_UNITS);
+
+				pEnt->SetState(BaseEntity::ENTITY_NO_UPDATE);
+			}
+
+			pEnt->Simulate(decaytime);
+		}
+	}
 }
 
 float GAME_STATE_FrameUpdate(float frametime)

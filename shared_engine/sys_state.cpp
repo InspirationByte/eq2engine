@@ -19,12 +19,12 @@
 
 #include "IDebugOverlay.h"
 
+namespace EqStateMgr
+{
+
 CBaseStateHandler* g_currentState = NULL;
 CBaseStateHandler* g_nextState = NULL;
 bool g_stateChanging = false;
-
-namespace EqStateMgr
-{
 
 // forces the current state
 void SetCurrentState( CBaseStateHandler* state, bool force )

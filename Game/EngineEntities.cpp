@@ -1043,8 +1043,6 @@ public:
 
 	void OnPreRender()
 	{
-		CBaseActor* pActor = (CBaseActor*)UTIL_EntByIndex(1);
-
 		debugoverlay->Text3D(GetAbsOrigin(),m_fRadius, ColorRGBA(1), 0.0f, "%s", m_pText.GetData());
 	}
 

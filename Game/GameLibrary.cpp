@@ -521,61 +521,13 @@ void CGameLibrary::OnRenderScene()
 	GR_PostDraw();
 }
 
-void Game_Update(float decaytime)
-{
-	// Will update entities of the game
-	for(int i = 0; i < ents->numElem(); i++)
-	{
-		BaseEntity *pEnt = ents->ptr()[i];
-
-		if(!pEnt)
-			continue;
-
-		// entity will be removed on next frame
-		if(pEnt->GetState() == BaseEntity::ENTITY_REMOVE)
-		{
-			pEnt->UpdateOnRemove();
-
-			if(pEnt)
-				delete pEnt;
-
-			ents->removeIndex(i);
-			i--;
-
-			continue;
-		}
-
-		if(pEnt->GetState() != BaseEntity::ENTITY_NO_UPDATE)
-		{
-			if(	pEnt->GetAbsOrigin().x > MAX_COORD_UNITS || pEnt->GetAbsOrigin().x < MIN_COORD_UNITS ||
-				pEnt->GetAbsOrigin().y > MAX_COORD_UNITS || pEnt->GetAbsOrigin().y < MIN_COORD_UNITS ||
-				pEnt->GetAbsOrigin().z > MAX_COORD_UNITS || pEnt->GetAbsOrigin().z < MIN_COORD_UNITS)
-			{
-				MsgError("Error! entity '%s' outside the WORLD_SIZE limits (> %d units)\n",pEnt->GetClassname(),MAX_COORD_UNITS);
-					
-				pEnt->SetState(BaseEntity::ENTITY_NO_UPDATE);
-			}
-			
-			pEnt->Simulate( decaytime );
-		}
-	}
-}
-
 void CGameLibrary::Update(float decaytime)
 {
-	float measureses = MEASURE_TIME_BEGIN();
-
-	//GetScriptSys()->Update(decaytime);
-
-	g_sounds->Update();
-
-	debugoverlay->Text(Vector4D(1,1,1,1), "  soundemittersystem: %.2f ms", MEASURE_TIME_STATS(measureses));
-
 	debugoverlay->Text(Vector4D(1,1,1,1), " Num entities: %i", ents->numElem());
 
 	float measure = MEASURE_TIME_BEGIN();
 
-	Game_Update(decaytime);
+	GAME_STATE_GameUpdate(decaytime);
 
 	//g_pJobList->AddJob((jobFunction_t)Game_Update, *(void**)&decaytime);
 	//g_pJobList->Submit();

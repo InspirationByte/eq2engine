@@ -20,7 +20,9 @@ void	GAME_STATE_UnloadGameObjects();
 void	GAME_STATE_GameEndSession();
 void	GAME_STATE_SpawnEntities(kvkeybase_t* inputKeyValues);
 
+void	GAME_STATE_GameUpdate(float frametime);
 float	GAME_STATE_FrameUpdate(float frametime);
+
 void	GAME_STATE_Prerender();
 void	GAME_STATE_Postrender();
 
