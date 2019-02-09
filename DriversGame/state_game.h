@@ -94,27 +94,29 @@ protected:
 	bool		DoLoadMission();
 
 	//----------------------------------------------
-	int			m_doLoadingFrames;
+	int				m_doLoadingFrames;
 
-	bool		m_isGameRunning;
-	bool		m_pauseState;
-	float		m_fade;
+	bool			m_isGameRunning;
+	bool			m_pauseState;
+	float			m_fade;
 
-	bool		m_loadingError;
+	bool			m_loadingError;
 
-	int			m_replayMode;
-	bool		m_exitGame;
+	int				m_replayMode;
+	bool			m_exitGame;
 
-	bool		m_showMenu;
+	bool			m_showMenu;
 
-	bool		m_scheduledRestart;
-	int			m_scheduledQuickReplay;
+	bool			m_scheduledRestart;
+	int				m_scheduledQuickReplay;
 
-	int			m_storedMissionStatus;
+	int				m_storedMissionStatus;
 
-	EqString	m_gameMenuName;
+	EqString		m_gameMenuName;
 
-	EqString	m_missionScriptName;
+	EqString		m_missionScriptName;
+
+	sndEffect_t*	m_tunnelEfx;
 };
 
 //--------------------------------------------------------------------------------------

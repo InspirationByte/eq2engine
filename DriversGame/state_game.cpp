@@ -386,6 +386,8 @@ void CState_Game::UnloadGame()
 	if(!m_isGameRunning)
 		return;
 
+	m_tunnelEfx = nullptr;
+
 	m_isGameRunning = false;
 
 	// if it were recording, stop the replay and save last session
@@ -626,6 +628,8 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 	m_fade = 1.0f;
 
 	m_menuTitleToken = g_localizer->GetToken("MENU_GAME_TITLE_PAUSE");
+
+	m_tunnelEfx = soundsystem->FindEffect("tunnel_reverb");
 }
 
 bool CState_Game::DoLoadingFrame()
@@ -1224,8 +1228,30 @@ void CState_Game::DoCameraUpdates( float fDt )
 	Vector3D f,r,u;
 	AngleVectors(curView->GetAngles(), &f, &r, &u);
 
-	// all positions and velocity props
-	soundsystem->SetListener(curView->GetOrigin(), f, u, viewVelocity);
+	sndEffect_t* sndEffect = nullptr;
+	{
+		const float TUNNEL_SOUND_TRACE_UPDIST = 15.0f;
+		const float TUNNEL_SOUND_TRACE_FORWARD = 15.0f;
+
+		Vector3D tunnelTracePos1 = curView->GetOrigin();
+		Vector3D tunnelTracePos2 = curView->GetOrigin() + f * TUNNEL_SOUND_TRACE_FORWARD;
+
+		CollisionData_t coll1;
+		CollisionData_t coll2;
+
+		g_pPhysics->TestLine(tunnelTracePos1, tunnelTracePos1 + vec3_up * TUNNEL_SOUND_TRACE_UPDIST, coll1, OBJECTCONTENTS_SOLID_OBJECTS);
+		g_pPhysics->TestLine(tunnelTracePos1, tunnelTracePos2, coll2, OBJECTCONTENTS_SOLID_OBJECTS);
+
+		Vector3D middlePos = lerp(tunnelTracePos1, tunnelTracePos2, coll2.fract);
+		g_pPhysics->TestLine(middlePos, middlePos + vec3_up * TUNNEL_SOUND_TRACE_UPDIST, coll2, OBJECTCONTENTS_SOLID_OBJECTS);
+
+		// set tunnel sound effect
+		if (coll1.fract < 1.0f && coll2.fract < 1.0f)
+			sndEffect = m_tunnelEfx;
+	}
+
+	soundsystem->SetListener(curView->GetOrigin(), f, u, viewVelocity, sndEffect);
+
 	effectrenderer->SetViewSortPosition(curView->GetOrigin());
 	g_pRainEmitter->SetViewVelocity(viewVelocity);
 }
