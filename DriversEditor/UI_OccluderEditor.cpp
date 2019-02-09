@@ -137,6 +137,8 @@ void CUI_OccluderEditor::SelectOccluder(const Vector3D& rayStart, const Vector3D
 
 	selectedOccluder_t nearest;
 	nearest.occIdx = -1;
+	nearest.region = nullptr;
+
 	float fNearestDist = DrvSynUnits::MaxCoordInUnits;
 
 	for(int i = 0; i < m_selectedRegion->m_occluders.numElem(); i++)

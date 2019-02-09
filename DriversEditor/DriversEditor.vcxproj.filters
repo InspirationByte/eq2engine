@@ -65,6 +65,9 @@
     <Filter Include="Source Files\Game\World">
       <UniqueIdentifier>{78fdd358-a674-4390-9069-c295012ef104}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Game\NewFilter1">
+      <UniqueIdentifier>{63a01ed6-3a22-4edf-8b12-46fdc79ae686}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandAccessor.h">
@@ -629,6 +632,15 @@
     </ClCompile>
     <ClCompile Include="UI_OutlineEdit.cpp">
       <Filter>Source Files\Editor\Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\Shader_Shadow.cpp">
+      <Filter>Source Files\MatSystem\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\Shader_ShadowBuild.cpp">
+      <Filter>Source Files\MatSystem\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\Shader_Skinned.cpp">
+      <Filter>Source Files\MatSystem\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

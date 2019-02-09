@@ -1204,7 +1204,7 @@ void CUI_LevelModels::DeleteSelection()
 {
 	for(int i = 0; i < m_selRefs.numElem(); i++)
 	{
-		CLevObjectDef* cont = m_selRefs[i].selRef->def;
+		//CLevObjectDef* cont = m_selRefs[i].selRef->def;
 
 		// remove and invalidate
 		delete m_selRefs[i].selRef;
@@ -1703,8 +1703,8 @@ void CUI_LevelModels::MoveSelectionToNewRegions()
 	{
 		regionObject_t* selectionRef = m_selRefs[i].selRef;
 		
-	}
 
+	}
 }
 
 void CUI_LevelModels::OnRender()

@@ -47,16 +47,16 @@ void CEditorTestGame::Init()
 				carent->carName = key->name;
 				carent->carScript = KV_GetValueString(key);
 
-				kvkeybase_t kvs;
+				kvkeybase_t vehScript;
 
-				if( !KV_LoadFromFile(carent->carScript.c_str(), SP_MOD,&kvs) )
+				if( !KV_LoadFromFile(carent->carScript.c_str(), SP_MOD, &vehScript) )
 				{
 					MsgError("Can't open car script '%s'\n", carent->carScript.c_str());
 					delete carent;
 					return;
 				}
 
-				if(!ParseVehicleConfig(carent, &kvs))
+				if(!ParseVehicleConfig(carent, &vehScript))
 				{
 					MsgError("Car configuration '%s' is invalid!\n", carent->carScript.c_str());
 					delete carent;

@@ -279,8 +279,8 @@ void CUI_RoadEditor::OnRender()
 				if(cell->type == ROADTYPE_NOROAD && cell->flags == 0)
 					continue;
 
-				float dxv[4] = NEIGHBOR_OFFS_DX(x, 0.5);
-				float dyv[4] = NEIGHBOR_OFFS_DY(y, 0.5);
+				float dxv[4] = NEIGHBOR_OFFS_DX(x, 0.5f);
+				float dyv[4] = NEIGHBOR_OFFS_DY(y, 0.5f);
 
 				hfieldtile_t& tile = field->m_points[pt_idx];
 

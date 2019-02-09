@@ -136,7 +136,7 @@ void CRegionEditFrame::ProcessMouseEvents(wxMouseEvent& event)
 
 	Vector2D point(w-event.GetPosition().x, event.GetPosition().y);
 
-	float wh = (float)w/(float)h;
+	//float wh = (float)w/(float)h;
 
 	Vector3D start, dir;
 	ScreenToDirection(Vector3D(-m_viewPos.x,0,-m_viewPos.y), point, Vector2D(w,h), start, dir, m_viewProj, true);
