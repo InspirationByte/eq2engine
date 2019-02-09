@@ -395,8 +395,6 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 				}
 				else
 				{
-					float fDist = length(cameraPosition - ref->position);
-
 					materials->SetMatrix(MATRIXMODE_WORLD, mat);
 					cont->Render(fDist, ref->bbox, false, nRenderFlags);
 				}

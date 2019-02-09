@@ -2012,8 +2012,16 @@ void CCar::EmitCollisionParticles(const Vector3D& position, const Vector3D& velo
 void CCar::OnPrePhysicsFrame(float fDt)
 {
 	// update pursuit stuff
-	m_pursuerData.lastSeenTimer += fDt;
-	m_pursuerData.lastDirectionTimer += fDt;
+	if (m_pursuerData.pursuedByCount)
+	{
+		m_pursuerData.lastSeenTimer += fDt;
+		m_pursuerData.lastDirectionTimer += fDt;
+	}
+	else
+	{
+		m_pursuerData.lastSeenTimer = 0.0f;
+		m_pursuerData.lastDirectionTimer = 0.0f;
+	}
 
 #ifndef EDITOR
 	// record it

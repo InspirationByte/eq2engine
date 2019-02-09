@@ -926,12 +926,15 @@ void CSoundEmitterSystem::Update(bool force)
 	if(!force && soundsystem->GetPauseState())
 		return;
 
-	const Vector3D& viewPos = soundsystem->GetListenerPosition();
+	
 
 #ifndef NO_ENGINE
+	const Vector3D& viewPos = soundsystem->GetListenerPosition();
+
 	m_numRooms = eqlevel->GetRoomsForPoint(viewPos, m_rooms );
 	m_viewIsAvailable = m_numRooms > 0;
 #endif
+
 	if (!m_isPaused)
 	{
 		if (m_pendingStartSounds2D.numElem())
