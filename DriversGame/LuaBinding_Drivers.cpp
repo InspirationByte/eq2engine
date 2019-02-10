@@ -164,6 +164,20 @@ int L_gameobject_castto_car( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_nul
 int L_gameobject_castto_traffic( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<CAITrafficCar*>, CGameObject_DynamicCast, CGameObject*, int) }
 int L_gameobject_castto_pursuer( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<CAIPursuerCar*>, CGameObject_DynamicCast, CGameObject*, int) }
 
+bool LuaBinding_LoadDriverSyndicateScript(lua_State* state)
+{
+	return EqLua::LuaBinding_LoadAndDoFile(state, "scripts/lua/_init.lua", "__init");
+}
+
+DECLARE_CMD(lua_reload, "Reloads _init.lua script", CV_CHEAT)
+{
+	if(!LuaBinding_LoadDriverSyndicateScript(GetLuaState()))
+	{
+		MsgError("__init.lua reload error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
+	}
+
+}
+
 bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 {
 	MsgInfo("Initializing script system...\n");
@@ -304,5 +318,5 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	OOLUA::set_global(state, "gameobjcast", gameObjectCastFuncs);
 
 	// initialize library
-	return EqLua::LuaBinding_LoadAndDoFile(state, "scripts/lua/_init.lua", "__init");
+	return LuaBinding_LoadDriverSyndicateScript(state);
 }
