@@ -205,8 +205,12 @@ void CAIPursuerCar::OnPhysicsFrame( float fDt )
 		// update blocking
 		m_collAvoidance.m_manipulator.m_isColliding = GetPhysicsBody()->m_collisionList.numElem() > 0;
 
-		if(m_collAvoidance.m_manipulator.m_isColliding)
+		if (m_collAvoidance.m_manipulator.m_isColliding && !m_collAvoidance.m_manipulator.m_collidingPositionSet)
+		{
 			m_collAvoidance.m_manipulator.m_lastCollidingPosition = GetPhysicsBody()->m_collisionList[0].position;
+			m_collAvoidance.m_manipulator.m_collidingPositionSet = true;
+		}
+			
 
 		if (!g_pGameWorld->IsValidObject(m_target))
 		{

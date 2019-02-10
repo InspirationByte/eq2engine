@@ -19,6 +19,7 @@ const float AI_COP_BLOCK_DISTANCE_FROM_COLLISION	= 5.0f;
 CAICollisionAvoidanceManipulator::CAICollisionAvoidanceManipulator()
 {
 	m_isColliding = false;
+	m_collidingPositionSet = false;
 	m_blockTimeout = 0.0f;
 	m_blockingTime = 0.0f;
 	m_enabled = false;
@@ -74,7 +75,7 @@ void CAICollisionAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, C
 
 		m_blockTimeout -= fDt;
 
-		if(m_blockTimeout > 0.0f || frontColl.fract < 1.0f && speedMPS < AI_COP_BLOCK_MAX_SPEED)
+		if (m_blockTimeout > 0.0f || frontColl.fract < 1.0f && speedMPS < AI_COP_BLOCK_MAX_SPEED)
 		{
 			handling.braking = 1.0f;
 			handling.acceleration = 0.0f;
@@ -82,5 +83,7 @@ void CAICollisionAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, C
 
 			m_enabled = true;
 		}
+		else
+			m_collidingPositionSet = false;
 	}
 }

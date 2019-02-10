@@ -23,6 +23,7 @@ public:
 
 	bool			m_enabled;
 	bool			m_isColliding;
+	bool			m_collidingPositionSet;
 	Vector3D		m_lastCollidingPosition;
 
 protected:
