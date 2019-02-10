@@ -95,6 +95,8 @@ public:
 	
 	CCar*						SpawnTrafficCar( const IVector2D& globalCell );
 
+	void						QueryTrafficCars( DkList<CCar*>& list, float radius, const Vector3D& position, const Vector3D& direction, float queryCosAngle );
+
 	// ----- COPS ------
 	void						SetCopsEnabled(bool enable);									// switch to spawn
 	bool						IsCopsEnabled() const;

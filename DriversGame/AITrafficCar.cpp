@@ -694,7 +694,7 @@ void CAITrafficCar::SearchJunctionAndStraight()
 			int dirIdx = GetDirectionIndex(dirCheckVec*sign(checkDir));
 
 			// calc steering dir
-			straight_t road = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkStraightPos, 1);
+			straight_t road = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkStraightPos, 4);
 
 			if(	road.direction != -1 &&
 				road.direction == dirIdx &&
@@ -854,18 +854,16 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	IVector2D newStraightStartPoint = m_straights[STRAIGHT_CURRENT].end+dir2D;
 
 	// get the new straight
-	straight_t newStraight = g_pGameWorld->m_level.Road_GetStraightAtPoint( newStraightStartPoint, 16 );
+	straight_t newStraight = g_pGameWorld->m_level.Road_GetStraightAtPoint(newStraightStartPoint, 16);
+	newStraight.lane = m_straights[STRAIGHT_CURRENT].lane;
 
-	int cellsBeforeStart = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
 	int cellsBeforeEnd = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
 
-	if( newStraight.direction != -1 &&
-		newStraight.direction == m_straights[STRAIGHT_CURRENT].direction &&
-		cellsBeforeEnd < 8)
+	// continue movement on current straight by extending it
+	if (newStraight.direction != -1 &&
+		newStraight.direction == m_straights[STRAIGHT_CURRENT].direction && cellsBeforeEnd < 4)
 	{
-		newStraight.lane = m_straights[STRAIGHT_CURRENT].lane;
-		m_straights[STRAIGHT_CURRENT] = newStraight;
-
+		ChangeRoad(newStraight);
 		SearchJunctionAndStraight();
 		return 0;
 	}
@@ -1009,12 +1007,6 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	// steering target
 	Vector3D steeringTargetPos = lerp(startPos, endPos, targetOfsOnLine);
 
-	/*
-	if (m_changingDirection && !isOnCurrRoad)
-	{
-		steeringTargetPos = startPos;
-	}*/
-
 	if(ai_traffic_debug_steering.GetBool())
 		debugoverlay->Box3D(steeringTargetPos-0.25f,steeringTargetPos+0.25f, ColorRGBA(1,1,0,1), AICAR_THINK_TIME);
 
@@ -1091,6 +1083,11 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 				SetLight(CAR_LIGHT_DIM_RIGHT, true);
 		}
 	}
+	else if (cellsBeforeEnd < 8)
+	{
+		SearchJunctionAndStraight();
+		SetLight(CAR_LIGHT_EMERGENCY, false);
+	}
 
 	//
 	// Breakage on red light
@@ -1155,6 +1152,36 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 						controls |= IN_BRAKE;
 				}
 			}
+		}
+	}
+
+	// if we're on intersection
+	if (m_changingDirection && !isOnCurrRoad)
+	{
+		DkList<CCar*> forwardCars;
+		g_pAIManager->QueryTrafficCars(forwardCars, 16.0f, carPos, carForward, 0.8f);
+
+		CCar* firstOppositeMovingCar = nullptr;
+
+		for (int i = 0; i < forwardCars.numElem(); i++)
+		{
+			if (forwardCars[i] == this || forwardCars[i]->GetSpeed() < 5.0f)
+				continue;
+
+			const Vector3D& velocity = forwardCars[i]->GetVelocity();
+
+			if (dot(fastNormalize(velocity), -carForward) > 0.4f)
+			{
+				firstOppositeMovingCar = forwardCars[i];
+				break;
+			}
+		}
+
+		if (firstOppositeMovingCar)
+		{
+			brake = 1.0f;
+			accelerator -= brake * 2.0f;
+			controls |= IN_BRAKE;
 		}
 	}
 
@@ -1324,7 +1351,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 		controls |= IN_ANALOGSTEER;
 	}
 
-	if( accelerator > 0.1f )
+	if( accelerator > 0.05f )
 		GetPhysicsBody()->Wake();
 
 	SetControlButtons( controls );

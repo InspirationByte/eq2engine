@@ -2356,6 +2356,24 @@ CGameObject* CGameWorld::FindObjectByName( const char* objectName ) const
 	return NULL;
 }
 
+void CGameWorld::QueryObjects(DkList<CGameObject*>& list, float radius, const Vector3D& position, bool(*comparator)(CGameObject* obj))
+{
+	for (int i = 0; i < m_gameObjects.numElem(); i++)
+	{
+		CGameObject* obj = m_gameObjects[i];
+
+		Vector3D dirVec = obj->GetOrigin() - position;
+
+		float dotDist = dot(dirVec, dirVec);
+
+		if (dotDist > radius*radius)
+			continue;
+
+		if(comparator(obj))
+			list.append(obj);
+	}
+}
+
 int CGameWorld::AddObjectDef(const char* type, const char* name, kvkeybase_t* kvs)
 {
 	CLevObjectDef* def = new CLevObjectDef();

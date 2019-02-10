@@ -292,6 +292,27 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 	return pNewCar;
 }
 
+void CAICarManager::QueryTrafficCars(DkList<CCar*>& list, float radius, const Vector3D& position, const Vector3D& direction, float queryCosAngle)
+{
+	for (int i = 0; i < m_trafficCars.numElem(); i++)
+	{
+		CCar* car = m_trafficCars[i];
+
+		Vector3D dirVec = car->GetOrigin()-position;
+
+		float dotDist = dot(dirVec, dirVec);
+
+		if (dotDist > radius*radius)
+			continue;
+
+		float cosAngle = dot(fastNormalize(dirVec), direction);
+
+		// is visible to cone?
+		if (cosAngle > queryCosAngle)
+			list.append(car);
+	}
+}
+
 void CAICarManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
 {
 	int f = 1 - radius;

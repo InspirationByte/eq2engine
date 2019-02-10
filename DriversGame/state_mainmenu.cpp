@@ -220,6 +220,14 @@ void CState_MainMenu::HandleKeyPress( int key, bool down )
 		{
 			Event_SelectionEnter();
 		}
+		else if (key == KEY_LEFT || key == KEY_RIGHT)
+		{
+			if (ChangeSelection(key == KEY_LEFT ? -1 : 1))
+			{
+				EmitSound_t es("menu.roll");
+				g_sounds->EmitSound(&es);
+			}
+		}
 		else if(key == KEY_ESCAPE)
 		{
 			Event_BackToPrevious();

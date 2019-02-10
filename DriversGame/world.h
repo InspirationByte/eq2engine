@@ -191,6 +191,8 @@ public:
 	CGameObject*					CreateObject( const char* objectDefName ) const;
 	CGameObject*					FindObjectByName( const char* objectName ) const;
 
+	void							QueryObjects(DkList<CGameObject*>& list, float radius, const Vector3D& position, bool(*comparator)(CGameObject* obj));
+
 	int								AddObjectDef(const char* type, const char* name, kvkeybase_t* kvs);
 
 #ifndef EDITOR
