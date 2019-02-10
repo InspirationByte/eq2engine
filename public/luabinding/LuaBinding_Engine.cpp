@@ -290,12 +290,13 @@ ILocToken* LocalizedToken( char* pszToken )
 	return tok;
 }
 
+int L_LocalizedToken(lua_State* vm) { OOLUA_C_FUNCTION(OOLUA::maybe_null<ILocToken*>, LocalizedToken, char*) }
+
 void AddLanguageFile( char* filenamePrefix )
 {
 	return g_localizer->AddTokensFile( filenamePrefix );
 }
 
-OOLUA_CFUNC(LocalizedToken, L_LocalizedToken)
 OOLUA_CFUNC(AddLanguageFile, L_AddLanguageFile)
 
 OOLUA_CFUNC(ConstrainAngle180,L_ConstrainAngle180)

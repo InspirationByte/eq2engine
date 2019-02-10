@@ -203,3 +203,74 @@ void CLuaMenu::SetMenuTable( OOLUA::Table& tabl )
 
 	m_menuTitleToken = GetMenuTitleToken();
 }
+
+const wchar_t* CLuaMenu::GetMenuItemString(OOLUA::Table& menuElem)
+{
+	static EqWString _tempStr;
+	static EqWString _tempValueStr;
+	static std::string tok_str;
+	tok_str = "";
+
+	lua_State* state = menuElem.state();
+	const wchar_t* resultStr = nullptr;
+	ILocToken* tok = nullptr;
+
+	if (menuElem.safe_at("label", tok))
+	{
+		if (!tok)
+		{
+			if (menuElem.safe_at("label", tok_str))
+			{
+				const char* tokenName = tok_str.c_str();
+				if (*tokenName == '#')	// only search for token if it starts with '#', just like "LocalizedString" behaves
+				{
+					// this will slowdown the engine, so we need to find it and optimize
+					tok = g_localizer->GetToken(tokenName+1);
+
+					if (tok)	// store for optimization
+						menuElem.set("label", tok);
+				}
+
+				_tempStr = tok_str.c_str();
+				resultStr = tok ? tok->GetText() : _tempStr.c_str();
+			}
+		}
+		else
+			resultStr = tok->GetText();
+	}
+
+	if (!resultStr)
+		return L"Undefined token";
+
+	EqLua::LuaTableFuncRef labelValue;
+	if (labelValue.Get(menuElem, "labelValue", true) && labelValue.Push() && labelValue.Call(0, 1))
+	{
+		//int val = 0;
+		//OOLUA::pull(state, val);
+
+		int type = lua_type(state, -1);
+		if (type == LUA_TSTRING)
+		{
+			OOLUA::pull(state, tok_str);
+
+			_tempValueStr = tok_str.c_str();
+			resultStr = varargs_w(resultStr, _tempValueStr.c_str());
+		}
+		else if (type == LUA_TNUMBER)
+		{
+			float val = 0;
+			OOLUA::pull(state, val);
+
+			resultStr = varargs_w(resultStr, val);
+		}
+		else if (type == LUA_TUSERDATA)
+		{
+			ILocToken* valTok = NULL;
+			OOLUA::pull(state, valTok);
+
+			resultStr = varargs_w(resultStr, valTok ? valTok->GetText() : L"Undefined token");
+		}
+	}
+
+	return resultStr;
+}

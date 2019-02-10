@@ -32,7 +32,7 @@ public:
 
 protected:
 
-	
+	const wchar_t*			GetMenuItemString(OOLUA::Table& menuElem);
 
 	void					SetMenuObject(OOLUA::Table& tabl);
 

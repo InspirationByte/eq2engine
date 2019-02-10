@@ -148,8 +148,7 @@ bool CState_MainMenu::Update( float fDt )
 			OOLUA::Table elem;
 			m_menuElems.safe_at(_i_index_, elem);
 
-			ILocToken* tok = NULL;
-			elem.safe_at("label", tok);
+			const wchar_t* token = GetMenuItemString(elem);
 
 			if(m_selection == idx)
 				fontParam.textColor = ColorRGBA(1,0.7f,0.0f,pow(m_textFade*m_fade,5.0f));
@@ -181,7 +180,7 @@ bool CState_MainMenu::Update( float fDt )
 
 			Vector2D elemPos(halfScreen.x-500, menuPosY+idx*font->GetLineHeight(fontParam));
 
-			font->RenderText(tok ? tok->GetText() : L"Undefined token", elemPos, fontParam);
+			font->RenderText(token, elemPos, fontParam);
 		oolua_ipairs_end()
 	}
 
