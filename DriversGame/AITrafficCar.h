@@ -141,9 +141,10 @@ protected:
 
 	junctionDetail_t	m_nextJuncDetails;
 
-	float				m_prevFract;
+	bool				m_changingLane;
+	bool				m_changingDirection;
 
-	bool				m_switchedLane;
+	float				m_prevFract;
 
 	float				m_refreshTime;
 

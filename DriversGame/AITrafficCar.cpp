@@ -259,7 +259,10 @@ bool SolveIntersection(	int curDirection,
 CAITrafficCar::CAITrafficCar( vehicleConfig_t* carConfig ) : CCar(carConfig), CFSM_Base()
 {
 	m_frameSkip = false;
-	m_switchedLane = false;
+
+	m_changingLane = false;
+	m_changingDirection = false;
+
 	m_autohandbrake = false;
 	m_autogearswitch = false;
 
@@ -498,8 +501,15 @@ int	CAITrafficCar::SearchForRoad(float fDt, EStateTransition transition)
 
 void CAITrafficCar::ChangeRoad( const straight_t& road )
 {
+	// cycle roads
 	m_straights[STRAIGHT_PREV] = m_straights[STRAIGHT_CURRENT];
 	m_straights[STRAIGHT_CURRENT] = road;
+
+	// change conditions
+	if (m_straights[STRAIGHT_PREV].direction != m_straights[STRAIGHT_CURRENT].direction)
+	{
+		m_changingDirection = true;
+	}
 
 	m_currEnd = road.end;
 
@@ -513,6 +523,9 @@ void CAITrafficCar::ChangeRoad( const straight_t& road )
 void CAITrafficCar::SwitchLane()
 {
 	if(m_straights[STRAIGHT_CURRENT].direction == -1)
+		return;
+
+	if (m_changingDirection || m_changingLane)
 		return;
 
 	IVector2D carPosOnCell = g_pGameWorld->m_level.PositionToGlobalTilePoint( GetOrigin() );
@@ -579,14 +592,16 @@ void CAITrafficCar::SwitchLane()
 
 		btConvexShape* shape = (btConvexShape*)GetPhysicsBody()->GetBulletShape();
 
-		m_switchedLane = g_pPhysics->TestConvexSweep(shape, GetOrientation(), traceStart, traceEnd, coll, AI_TRACE_CONTENTS, &collFilter) == false;
+		bool canSwitchLane = g_pPhysics->TestConvexSweep(shape, GetOrientation(), traceStart, traceEnd, coll, AI_TRACE_CONTENTS, &collFilter) == false;
 
-		if(m_switchedLane)
+		if(canSwitchLane)
 		{
 			SetLight(laneOfs < 0 ? CAR_LIGHT_DIM_LEFT : CAR_LIGHT_DIM_RIGHT, true);
 
 			ChangeRoad( newStraight );
 			SearchJunctionAndStraight();
+
+			m_changingLane = true;
 		}
 		else
 			SetLight(CAR_LIGHT_EMERGENCY, false);
@@ -679,7 +694,7 @@ void CAITrafficCar::SearchJunctionAndStraight()
 			int dirIdx = GetDirectionIndex(dirCheckVec*sign(checkDir));
 
 			// calc steering dir
-			straight_t road = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkStraightPos, 4);
+			straight_t road = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkStraightPos, 1);
 
 			if(	road.direction != -1 &&
 				road.direction == dirIdx &&
@@ -832,7 +847,7 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 	bool nextStraightIsSame = m_straights[STRAIGHT_PREV].direction == m_straights[STRAIGHT_CURRENT].direction;
 
-	if( m_switchedLane )
+	if( m_changingLane )
 		targetOfsOnLine = projWay + AI_TARGET_EXTENDED_DIST*invStraightDist;
 
 	IVector2D dir2D = GetDirectionVec( m_straights[STRAIGHT_CURRENT].direction);
@@ -841,9 +856,9 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	// get the new straight
 	straight_t newStraight = g_pGameWorld->m_level.Road_GetStraightAtPoint( newStraightStartPoint, 16 );
 
-	
+	int cellsBeforeStart = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
 	int cellsBeforeEnd = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
-	
+
 	if( newStraight.direction != -1 &&
 		newStraight.direction == m_straights[STRAIGHT_CURRENT].direction &&
 		cellsBeforeEnd < 8)
@@ -870,7 +885,12 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 			debugoverlay->Line3D(start+Vector3D(0,1,0), end+Vector3D(0,1,0), ColorRGBA(0,1,0,1), ColorRGBA(0,1,0,1), AICAR_THINK_TIME);
 		}
 
-		if(	distToChange < 2.0f ) // && projWay > 1.0f)
+		float preferredChangeDistance = 7.0f;
+
+		if (m_straights[STRAIGHT_CURRENT].lane == 1)
+			preferredChangeDistance = 4.0f;
+
+		if(	distToChange < preferredChangeDistance) // && projWay > 1.0f)
 		{
 			if( newStraight.direction == -1 )
 			{
@@ -883,7 +903,6 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 				if( m_nextJuncDetails.selectedStraight != -1 )
 				{
 					ChangeRoad( m_nextJuncDetails.foundStraights[ m_nextJuncDetails.selectedStraight ] );
-					m_switchedLane = false;
 				}
 			}
 			else
@@ -990,6 +1009,12 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	// steering target
 	Vector3D steeringTargetPos = lerp(startPos, endPos, targetOfsOnLine);
 
+	/*
+	if (m_changingDirection && !isOnCurrRoad)
+	{
+		steeringTargetPos = startPos;
+	}*/
+
 	if(ai_traffic_debug_steering.GetBool())
 		debugoverlay->Box3D(steeringTargetPos-0.25f,steeringTargetPos+0.25f, ColorRGBA(1,1,0,1), AICAR_THINK_TIME);
 
@@ -1025,15 +1050,34 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	{
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "isOnCurrRoad: %d\n", isOnCurrRoad);
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "isOnPrevRoad: %d\n", isOnPrevRoad);
+		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "changing lane: %d\n", m_changingLane);
+		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "changing direction: %d\n", m_changingDirection);
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "nextStraightIsSame: %d\n", nextStraightIsSame);
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "num next straights: %d\n", m_nextJuncDetails.foundStraights.numElem());
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "selected next straight: %d\n", m_nextJuncDetails.selectedStraight);
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "cellsBeforeEnd: %d\n", cellsBeforeEnd);
 	}
 
+	// disable lights turning
+	if (m_changingDirection && isOnCurrRoad)
+	{
+		SearchJunctionAndStraight();
+
+		SetLight(CAR_LIGHT_EMERGENCY, false);
+		m_changingDirection = false;
+	}
+
+	if (m_changingLane && isOnCurrRoad)
+	{
+		SearchJunctionAndStraight();
+
+		SetLight(CAR_LIGHT_EMERGENCY, false);
+		m_changingLane = false;
+	}
+
 	if (m_nextJuncDetails.selectedStraight != -1)
 	{
-		if (!m_switchedLane)
+		if (!m_changingLane && !m_changingDirection)
 		{
 			bool doTurnSignals = cellsBeforeEnd < 8;
 
@@ -1045,30 +1089,6 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 				SetLight(CAR_LIGHT_DIM_LEFT, true);
 			else if (doTurnSignals && CompareDirection(m_straights[STRAIGHT_CURRENT].direction + 1, selRoad.direction))
 				SetLight(CAR_LIGHT_DIM_RIGHT, true);
-			else
-				SetLight(CAR_LIGHT_EMERGENCY, false);
-		}
-		else if (isOnCurrRoad && !isOnPrevRoad)
-		{
-			SetLight(CAR_LIGHT_EMERGENCY, false);
-			m_switchedLane = false;
-		}
-	}
-	else
-	{
-		// disable lights
-		if (m_switchedLane)
-		{
-			if (isOnCurrRoad && !isOnPrevRoad)
-			{
-				SetLight(CAR_LIGHT_EMERGENCY, false);
-				m_switchedLane = false;
-			}
-		}
-		else if(isOnCurrRoad)
-		{
-			SetLight(CAR_LIGHT_EMERGENCY, false);
-			SearchJunctionAndStraight();
 		}
 	}
 
