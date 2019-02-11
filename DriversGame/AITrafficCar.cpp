@@ -528,6 +528,15 @@ void CAITrafficCar::SwitchLane()
 	if (m_changingDirection || m_changingLane)
 		return;
 
+	// if we have to turn, don't switch lanes; its illegal :D
+	if (m_nextJuncDetails.selectedStraight != -1)
+	{
+		straight_t& nextRoad = m_nextJuncDetails.foundStraights[m_nextJuncDetails.selectedStraight];
+
+		if(nextRoad.direction != m_straights[STRAIGHT_CURRENT].direction)
+			return;
+	}
+
 	IVector2D carPosOnCell = g_pGameWorld->m_level.PositionToGlobalTilePoint( GetOrigin() );
 
 	int cellsBeforeEnd = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
@@ -594,6 +603,8 @@ void CAITrafficCar::SwitchLane()
 
 		bool canSwitchLane = g_pPhysics->TestConvexSweep(shape, GetOrientation(), traceStart, traceEnd, coll, AI_TRACE_CONTENTS, &collFilter) == false;
 
+		SetLight(CAR_LIGHT_EMERGENCY, false);
+
 		if(canSwitchLane)
 		{
 			SetLight(laneOfs < 0 ? CAR_LIGHT_DIM_LEFT : CAR_LIGHT_DIM_RIGHT, true);
@@ -603,8 +614,6 @@ void CAITrafficCar::SwitchLane()
 
 			m_changingLane = true;
 		}
-		else
-			SetLight(CAR_LIGHT_EMERGENCY, false);
 
 		if(ai_traffic_debug_steering.GetBool())
 		{
