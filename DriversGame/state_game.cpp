@@ -627,7 +627,7 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 
 	m_fade = 1.0f;
 
-	m_menuTitleToken = g_localizer->GetToken("MENU_GAME_TITLE_PAUSE");
+	m_menuTitleStr = LocalizedString("#MENU_GAME_TITLE_PAUSE");
 
 	m_tunnelEfx = soundsystem->FindEffect("tunnel_reverb");
 }
@@ -964,7 +964,7 @@ void CState_Game::DrawMenu( float fDt )
 		Vector2D mTextPos(halfScreen.x, menuPosY);
 
 		fontParam.textColor = ColorRGBA(0.7f,0.7f,0.7f,1.0f);
-		font->RenderText(m_menuTitleToken ? m_menuTitleToken->GetText() : L"Undefined token", mTextPos, fontParam);
+		font->RenderText(m_menuTitleStr.c_str(), mTextPos, fontParam);
 
 		oolua_ipairs(m_menuElems)
 			int idx = _i_index_-1;

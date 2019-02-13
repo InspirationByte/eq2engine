@@ -129,19 +129,28 @@ bool CLuaMenu::ChangeSelection(int dir)
 	return false;
 }
 
-ILocToken* CLuaMenu::GetMenuTitleToken()
+void CLuaMenu::GetMenuTitleToken(EqWString& outText)
 {
 	lua_State* state = GetLuaState();
 
 	if( m_stackGetTitleToken.Push() && m_stackGetTitleToken.Call(0, 1) )
 	{
-		ILocToken* tok = NULL;
-		OOLUA::pull( state, tok );
+		int type = lua_type(state, -1);
 
-		return tok;
+		if (type == LUA_TSTRING)
+		{
+			std::string tok_str;
+			OOLUA::pull(state, tok_str);
+			outText = LocalizedString(tok_str.c_str());
+		}
+		else if (type == LUA_TUSERDATA)
+		{
+			ILocToken* tok = NULL;
+			OOLUA::pull( state, tok );
+
+			outText = tok ? tok->GetText() : L"(nulltoken)";
+		}
 	}
-
-	return NULL;
 }
 
 void CLuaMenu::EnterSelection()
@@ -179,7 +188,7 @@ void CLuaMenu::EnterSelection()
 					std::string newTitleToken = "";
 					if(params.safe_at("titleToken", newTitleToken))
 					{
-						m_menuTitleToken = g_localizer->GetToken(newTitleToken.c_str());
+						m_menuTitleStr = LocalizedString(newTitleToken.c_str());
 					}
 				}
 			}
@@ -192,6 +201,7 @@ void CLuaMenu::EnterSelection()
 void CLuaMenu::SetMenuTable( OOLUA::Table& tabl )
 {
 	m_menuElems = tabl;
+	GetMenuTitleToken(m_menuTitleStr);
 
 	m_numElems = 0;
 
@@ -200,8 +210,6 @@ void CLuaMenu::SetMenuTable( OOLUA::Table& tabl )
 	oolua_ipairs(m_menuElems)
 		m_numElems++;
 	oolua_ipairs_end()
-
-	m_menuTitleToken = GetMenuTitleToken();
 }
 
 const wchar_t* CLuaMenu::GetMenuItemString(OOLUA::Table& menuElem)

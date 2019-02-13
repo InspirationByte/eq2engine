@@ -25,7 +25,7 @@ public:
 	bool					PreEnterSelection();
 	bool					ChangeSelection(int dir);
 
-	ILocToken*				GetMenuTitleToken();
+	void					GetMenuTitleToken(EqWString& text);
 
 	virtual void			OnEnterSelection( bool isFinal ) = 0;
 	virtual void			OnMenuCommand( const char* command ) {}
@@ -55,7 +55,7 @@ protected:
 	int						m_selection;
 	int						m_numElems;
 
-	ILocToken*				m_menuTitleToken;
+	EqWString				m_menuTitleStr;
 
 };
 
