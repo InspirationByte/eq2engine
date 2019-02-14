@@ -315,11 +315,8 @@ int CAITrafficCar::InitTrafficState( float fDt, EStateTransition transition )
 
 			ChangeRoad( road );
 
-			// if it's more than 4 cells we should add some velocity to it
-			if(IsEnabled() && road.breakIter > 4 && GetPhysicsBody())
-			{
+			if(IsEnabled() && GetPhysicsBody())
 				SetVelocity(GetForwardVector() * g_traffic_maxspeed.GetFloat() * KPH_TO_MPS * 0.5f);
-			}
 
 			AI_SetState( &CAITrafficCar::TrafficDrive );
 		}
@@ -641,7 +638,7 @@ void CAITrafficCar::SearchJunctionAndStraight()
 	m_nextJuncDetails.allowedMovement = 0;
 	m_nextJuncDetails.selectedStraight = -1;
 
-	if( m_straights[STRAIGHT_CURRENT].direction == -1 )
+	if (m_straights[STRAIGHT_CURRENT].direction == -1)
 		return;
 
 	roadJunction_t junc = g_pGameWorld->m_level.Road_GetJunctionAtPoint( m_straights[STRAIGHT_CURRENT].end, 16 );
@@ -703,7 +700,7 @@ void CAITrafficCar::SearchJunctionAndStraight()
 			int dirIdx = GetDirectionIndex(dirCheckVec*sign(checkDir));
 
 			// calc steering dir
-			straight_t road = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkStraightPos, 4);
+			straight_t road = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkStraightPos, 16);
 
 			if(	road.direction != -1 &&
 				road.direction == dirIdx &&
