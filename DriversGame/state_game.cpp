@@ -7,9 +7,7 @@
 
 //
 // TODO:
-//		- General code refactoring from C-style to better C++ style
-//		- Move replay director to separate source files and as a state
-//		- Make CState_Game state object initialized from here as g_pState_Game to make it more accessible
+//		- More code refactoring from C-style to better C++ style
 //
 
 #include "state_game.h"
@@ -1084,7 +1082,7 @@ void CState_Game::DoGameFrame(float fDt)
 	// Update game
 	PROFILE_FUNC();
 
-	// session update
+	// step the game simulation
 	g_pGameSession->UpdateLocalControls( g_nClientButtons, g_joySteeringValue, g_joyAccelBrakeValue );
 	g_pGameSession->Update(fDt);
 

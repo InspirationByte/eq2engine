@@ -679,7 +679,7 @@ inline TVec4D<T> cerp(const TVec4D<T> &u0, const TVec4D<T> &u1, const TVec4D<T> 
 template <typename T>
 inline T sign(const T v)
 {
-	return (T) ((v > 0) ? 1 : (v < 0)? -1 : 0);
+	return (T)(v > 0) - (v < 0);
 }
 
 template <typename T>

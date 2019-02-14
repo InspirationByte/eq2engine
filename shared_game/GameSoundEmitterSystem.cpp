@@ -393,20 +393,17 @@ ISoundController* CSoundEmitterSystem::CreateSoundController(EmitSound_t *ep)
 	ASSERT(ep);
 	ASSERT(ep->name);
 
-	soundScriptDesc_t* pScriptSound = FindSound(ep->name);
-
 	// check
-	if(!pScriptSound)
-	{
-		MsgError("CreateSoundController: Couldn't find script sound '%s'!\n", ep->name);
-		return NULL;
-	}
+	if(!FindSound(ep->name))
+		MsgWarning("CreateSoundController: invalid sound '%s'!\n", ep->name);
 
 	CSoundController* pController = new CSoundController();
 
 	m_controllers.append(pController);
 
-	pController->m_soundName = ep->name; // copy sound name since the params can use non-permanent adresses
+	// copy sound name
+	pController->m_soundName.Assign(ep->name); 
+
 	pController->m_emitParams = *ep;
 	pController->m_emitParams.name = (char*)pController->m_soundName.c_str();
 

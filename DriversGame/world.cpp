@@ -109,15 +109,12 @@ DECLARE_CMD(w_respawn, "Respawn all level objects", CV_CHEAT)
 
 int SortGameObjectsByDistance(CGameObject* const& a, CGameObject* const& b)
 {
-	Vector3D cam_pos = g_pGameWorld->m_view.GetOrigin();
-	Vector3D objPosA = a->GetOrigin();
-	Vector3D objPosB = b->GetOrigin();
+	const Vector3D& cam_pos = g_pGameWorld->m_view.GetOrigin();
+	const Vector3D& objPosA = a->GetOrigin();
+	const Vector3D& objPosB = b->GetOrigin();
 
-	Vector3D vecObjA = objPosA-cam_pos;
-	Vector3D vecObjB = objPosB-cam_pos;
-
-	float distA = length(vecObjA);
-	float distB = length(vecObjB);
+	float distA = lengthSqr(objPosA - cam_pos);
+	float distB = lengthSqr(objPosB - cam_pos);
 
 	if(fsimilar(distA, distB, 0.05f))
 		return 0;
@@ -785,8 +782,10 @@ bool CGameWorld::IsValidObject(CGameObject* pObject) const
 
 	for (int i = 0; i < m_gameObjects.numElem(); i++)
 	{
-		if (m_gameObjects[i] == pObject)
-			return true;
+		CGameObject* obj = m_gameObjects[i];
+
+		if (obj == pObject)
+			return (obj->m_state < GO_STATE_REMOVE);
 	}
 
 	return false;
@@ -1182,7 +1181,7 @@ void CGameWorld::UpdateWorld(float fDt)
                 obj->OnRemove();
 
                 if (obj->m_state != GO_STATE_REMOVED)
-                    ASSERTMSG(false, "PROGRAMMER ERROR - your object doesn't fully called OnRemove (not GO_STATE_REMOVED)");
+                    ASSERTMSG(false, "PROGRAMMER ERROR - OnRemove requires super method called.");
 
                 obj->Ref_Drop();
                 i--;
@@ -2342,18 +2341,21 @@ CGameObject* CGameWorld::CreateObject( const char* objectDefName ) const
 
 CGameObject* CGameWorld::FindObjectByName( const char* objectName ) const
 {
-	const DkList<CGameObject*>& objList = m_gameObjects;
-
-	for(int i = 0; i < objList.numElem(); i++)
+	for(int i = 0; i < m_gameObjects.numElem(); i++)
 	{
-		if(objList[i]->m_name.Length() == 0)
+		CGameObject* obj = m_gameObjects[i];
+
+		if (obj->m_state >= GO_STATE_REMOVE)
 			continue;
 
-		if( !objList[i]->m_name.Compare(objectName) )
-			return objList[i];
+		if(obj->m_name.Length() == 0)
+			continue;
+
+		if( !obj->m_name.Compare(objectName) )
+			return obj;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 void CGameWorld::QueryObjects(DkList<CGameObject*>& list, float radius, const Vector3D& position, bool(*comparator)(CGameObject* obj))
@@ -2361,6 +2363,9 @@ void CGameWorld::QueryObjects(DkList<CGameObject*>& list, float radius, const Ve
 	for (int i = 0; i < m_gameObjects.numElem(); i++)
 	{
 		CGameObject* obj = m_gameObjects[i];
+
+		if(obj->m_state >= GO_STATE_REMOVE)
+			continue;
 
 		Vector3D dirVec = obj->GetOrigin() - position;
 
