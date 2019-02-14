@@ -10,13 +10,6 @@
 
 #include "AITrafficCar.h"
 
-#include "AIHandling.h"
-
-#include "AIManipulator_Navigation.h"
-#include "AIManipulator_StabilityControl.h"
-#include "AIManipulator_CollisionAvoidance.h"
-#include "AIManipulator_TargetAvoidance.h"
-
 enum EPursuerAIType
 {
 	PURSUER_TYPE_COP	= 0,	// he looks on your felony rate

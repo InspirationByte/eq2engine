@@ -158,10 +158,12 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="..\shared_engine\ViewParams.cpp" />
     <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp" />
     <ClCompile Include="AICarManager.cpp" />
+    <ClCompile Include="AIHornSequencer.cpp" />
     <ClCompile Include="AIManipulator_CollisionAvoidance.cpp" />
     <ClCompile Include="AIManipulator_Navigation.cpp" />
     <ClCompile Include="AIManipulator_StabilityControl.cpp" />
     <ClCompile Include="AIManipulator_TargetAvoidance.cpp" />
+    <ClCompile Include="AIManipulator_Traffic.cpp" />
     <ClCompile Include="AIPursuerCar.cpp" />
     <ClCompile Include="AITrafficCar.cpp" />
     <ClCompile Include="BillboardList.cpp" />
@@ -316,6 +318,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="AICarManager.h" />
     <ClInclude Include="AIHandling.h" />
     <ClInclude Include="AIEventTypes.h" />
+    <ClInclude Include="AIHornSequencer.h" />
     <ClInclude Include="AIManipulators.h" />
     <ClInclude Include="AIManipulator_CollisionAvoidance.h" />
     <ClInclude Include="AIManipulator_Navigation.h" />

@@ -426,6 +426,12 @@
     <ClCompile Include="Shader_Skinned.cpp">
       <Filter>Файлы исходного кода\MatSystem\Shaders</Filter>
     </ClCompile>
+    <ClCompile Include="AIManipulator_Traffic.cpp">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="AIHornSequencer.cpp">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\src_dependency\oolua\bin\Release\oolua.lib">
@@ -823,9 +829,6 @@
     <ClInclude Include="..\shared_engine\sys_in_console.h">
       <Filter>Файлы исходного кода\System</Filter>
     </ClInclude>
-    <ClInclude Include="AIManipulator_Traffic.h">
-      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
-    </ClInclude>
     <ClInclude Include="session_base.h">
       <Filter>Файлы исходного кода\Game\Sessions</Filter>
     </ClInclude>
@@ -840,6 +843,12 @@
     </ClInclude>
     <ClInclude Include="GameDefs.h">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="AIManipulator_Traffic.h">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="AIHornSequencer.h">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

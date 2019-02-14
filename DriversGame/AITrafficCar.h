@@ -14,84 +14,19 @@
 
 #include "utils/DkList.h"
 
+#include "AIHandling.h"
+
+#include "AIManipulator_Navigation.h"
+#include "AIManipulator_StabilityControl.h"
+#include "AIManipulator_CollisionAvoidance.h"
+#include "AIManipulator_TargetAvoidance.h"
+#include "AIManipulator_Traffic.h"
+
+#include "AIHornSequencer.h"
+
 #define AI_TRACE_CONTENTS (OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE)
 
-// junction details - holds already found roads. 
-// Using this AI selects straight and turns on repeater indicator
-struct junctionDetail_t
-{
-	junctionDetail_t()
-	{
-		allowedMovement = 0;
-		selectedStraight = 0;
-	}
-
-	DkList<straight_t>	foundStraights;
-	roadJunction_t		junc;
-	int					allowedMovement;		// flags, 1 & 2 depending on traffic light
-	int					selectedStraight;
-	bool				availDirs[4];
-};
-
-//
-// Little helper
-//
-class CTimedRelay
-{
-public:
-	CTimedRelay() : m_time(0), m_delay(0) {}
-
-	void Set( float time, float delay = 0.0f )
-	{
-		m_time = time;
-		m_delay = delay;
-	}
-
-	void SetIfNot( float time, float delay = 0.0f )
-	{
-		if(GetTotalTime() > 0)
-			return;
-
-		m_time = time;
-		m_delay = delay;
-	}
-
-	bool IsOn()
-	{
-		return (m_delay <= 0.0f && m_time > 0.0f);
-	}
-
-	float GetTotalTime()
-	{
-		return m_delay + m_time;
-	}
-
-	float GetRemainingTime()
-	{
-		return m_time;
-	}
-
-	void Update(float fDt)
-	{
-		if (m_delay <= 0.0f)
-		{
-			m_delay = 0.0f;
-			if (m_time > 0.0f)
-				m_time -= fDt;
-		}
-		else
-			m_delay -= fDt;
-	}
-
-protected:
-
-	float m_delay;
-	float m_time;
-};
-
 //-----------------------------------------------------------------------------------------------
-
-struct signalSeq_t;
 
 class CAITrafficCar :	public CFSM_Base,
 						public CCar
@@ -110,16 +45,8 @@ public:
 	int					ObjType() const { return GO_CAR_AI; }
 	virtual bool		IsPursuer() const {return false;}
 
-	void				SignalRandomSequence( float delayBeforeStart );
-	void				SignalNoSequence( float time, float delayBeforeStart );
-
 protected:
 	virtual void		OnPrePhysicsFrame( float fDt );
-
-	// task
-	void				SearchJunctionAndStraight();
-	void				SwitchLane();
-	void				ChangeRoad( const straight_t& road );
 
 	// states
 	int					SearchForRoad( float fDt, EStateTransition transition );
@@ -128,37 +55,14 @@ protected:
 
 	virtual int			DeadState( float fDt, EStateTransition transition );
 
-	//------------------------------------------------
-
-	int					m_condition;
-
-	float				m_speedModifier;
-	bool				m_hasDamage;
-	bool				m_frameSkip;
-
-	straight_t			m_straights[2];
-	IVector2D			m_currEnd;
-
-	junctionDetail_t	m_nextJuncDetails;
-
-	bool				m_changingLane;
-	bool				m_changingDirection;
-
-	float				m_prevFract;
-
+	float				m_thinkTime;
 	float				m_refreshTime;
 
-	CTimedRelay			m_hornTime;
+	CAIHandlingAffector<CAITrafficManipulator>	m_traffic;
 
-	float				m_thinkTime;
-	float				m_nextSwitchLaneTime;
+	bool				m_hasDamage;
 
-	bool				m_emergencyEscape;
-	float				m_emergencyEscapeTime;
-	float				m_emergencyEscapeSteer;
-
-	signalSeq_t*		m_signalSeq;
-	int					m_signalSeqFrame;
+	CAIHornSequencer	m_hornSequencer;
 };
 
 #ifndef NO_LUA
