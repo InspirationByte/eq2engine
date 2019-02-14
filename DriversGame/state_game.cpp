@@ -1103,7 +1103,13 @@ void CState_Game::DoCameraUpdates( float fDt )
 
 	if( Director_FreeCameraActive() )
 	{
-		Director_UpdateFreeCamera( g_pHost->GetFrameTime() );
+		float cameraFrameTimes = g_pHost->GetSysFrameTime();
+
+		const float minCameraFrameTime = (1.0f / 60.0f);
+
+		cameraFrameTimes = max(cameraFrameTimes, minCameraFrameTime);
+
+		Director_UpdateFreeCamera(cameraFrameTimes);
 
 		curView->SetOrigin(g_freeCamProps.position);
 		curView->SetAngles(g_freeCamProps.angles);

@@ -64,6 +64,7 @@ public:
 
 	double				GetCurTime() const {return m_fCurTime;}
 	double				GetFrameTime() const {return m_fGameFrameTime;}
+	double				GetSysFrameTime() const { return m_fFrameTime; }
 
 	const IVector2D&	GetWindowSize() const {return m_winSize;}
 	IEqFont*			GetDefaultFont() const {return m_pDefaultFont;}
