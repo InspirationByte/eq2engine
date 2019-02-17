@@ -253,9 +253,9 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 	int controls = IN_ACCELERATE | IN_EXTENDTURN | IN_BRAKE;
 
 	if (m_traffic.m_manipulator.m_emergencyEscape)
-		controls |= IN_ANALOGSTEER;
-	else
 		controls |= IN_TURNRIGHT;
+	else
+		controls |= IN_ANALOGSTEER; 
 
 	SetControlButtons(controls);
 	SetControlVars(handling.acceleration,

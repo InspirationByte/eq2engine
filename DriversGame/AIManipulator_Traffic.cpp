@@ -299,6 +299,8 @@ void CAITrafficManipulator::SearchJunctionAndStraight()
 	if (junc.breakIter <= 0)
 		return;
 
+	m_junction.size = junc.breakIter;
+
 	bool gotSameDirection = false;
 	bool sideJuncFound = false;
 
@@ -515,8 +517,12 @@ void CAITrafficManipulator::RoadProvision()
 
 void CAITrafficManipulator::HandleJunctionExit(CCar* car)
 {
+	straight_t& current = m_straights[STRAIGHT_CURRENT];
+
 	IVector2D carPosOnCell = g_pGameWorld->m_level.PositionToGlobalTilePoint(car->GetOrigin());
 	int cellsBeforeEnd = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
+
+	int curRoadWidth = g_pGameWorld->m_level.Road_GetNumLanesAtPoint(m_straights[STRAIGHT_CURRENT].start);
 
 	if (m_junction.selectedExit != -1)
 	{
@@ -530,6 +536,18 @@ void CAITrafficManipulator::HandleJunctionExit(CCar* car)
 				car->SetLight(CAR_LIGHT_DIM_LEFT, true);
 			else if (CompareDirection(m_straights[STRAIGHT_CURRENT].direction + 1, selRoad.direction))
 				car->SetLight(CAR_LIGHT_DIM_RIGHT, true);
+		}
+
+		straight_t& selectedExit = m_junction.exits[m_junction.selectedExit];
+
+		// HACK: move change a bit further
+		if (m_straights[STRAIGHT_CURRENT].direction != selectedExit.direction)	// assuming that is the right turn
+		{
+			if (m_straights[STRAIGHT_CURRENT].lane == 1)
+			{
+				carPosOnCell -= GetDirectionVec(m_straights[STRAIGHT_CURRENT].direction) * 2;
+				cellsBeforeEnd = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
+			}
 		}
 
 		if (cellsBeforeEnd < 1)
@@ -548,8 +566,6 @@ void CAITrafficManipulator::HandleJunctionExit(CCar* car)
 	{
 		if (ai_traffic_debug_junctions.GetBool())
 			debugoverlay->TextFadeOut(0, ColorRGBA(1), 5.0f, "--- Has no selected straight ---");
-
-		int curRoadWidth = g_pGameWorld->m_level.Road_GetNumLanesAtPoint(m_straights[STRAIGHT_CURRENT].start);
 
 		bool isLongCar = (car->m_conf->physics.body_size.z > AI_LONG_CAR_CONST);
 
@@ -669,10 +685,6 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 	float targetDistance = (projWay < 0.0f) ? (m_changingLane ? AI_TARGET_EXTENDED_DIST : AI_TARGET_DIST_NOLANE) : AI_TARGET_DIST;
 
-	// FIXME: this causing AI hitting corners of buildings
-	if (m_changingDirection && m_straights[STRAIGHT_CURRENT].lane == 1)
-		targetDistance = AI_TARGET_DIST_NOLANE;
-
 	float targetOfsOnLine = projWay + targetDistance * invStraightDist;
 
 	bool isOnPrevRoad = IsPointOnStraight(carPosOnCell, m_straights[STRAIGHT_PREV]);
@@ -680,8 +692,6 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 	// steering target
 	Vector3D steeringTargetPos = lerp(startPos, endPos, targetOfsOnLine);
-	
-	debugoverlay->Sphere3D(steeringTargetPos, 0.5f, ColorRGBA(1, 1, 0, 1), fDt);
 
 	float maxSpeed = m_maxSpeed * trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType] + m_speedModifier;
 
@@ -696,7 +706,6 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 	handling.acceleration = ((maxSpeed - carSpeed) / maxSpeed); // go forward
 	handling.acceleration = 1.0f - pow(1.0f - handling.acceleration, 4.0f);
-	float brake = 0.0f;
 
 	Vector3D steerAbsDir = fastNormalize(steeringTargetPos - carPos);
 
@@ -707,7 +716,6 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 	// modifier by steering
 	handling.acceleration *= trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType];
-	handling.acceleration -= fabs(fSteeringAngle*0.25f);
 
 	if (ai_traffic_debug_straigth.GetBool())
 	{
@@ -736,7 +744,6 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 		m_changingLane = false;
 	}
 
-
 	//
 	// Breakage on red light
 	//
@@ -759,7 +766,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 			float brakeSpeedDiff = brakeDistAtCurSpeed + AI_STOPLINE_DIST - distToStop;
 			brakeSpeedDiff = max(brakeSpeedDiff, 0.0f);
 
-			brake = brakeSpeedDiff / AI_ROAD_STOP_DIST;
+			float brake = brakeSpeedDiff / AI_ROAD_STOP_DIST;
 			brake = min(brake, 0.9f);
 
 
@@ -784,21 +791,8 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 			if (m_straights[STRAIGHT_CURRENT].direction != selRoad.direction)
 			{
-				if (carForwardSpeed > 8.0f*trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType])
-				{
-					// FIXME: calculate acceleration more gentle
-
-					float distToNextStraight = distToStop;
-
-					float fBrakeRate = 1.0f - RemapValClamp(distToNextStraight, 0.0f, AI_ROAD_STOP_DIST, 0.0f, 1.0f);
-
-					brake = clamp(fBrakeRate + (carForwardSpeed - distToStop)*0.25f, 0.0f, 0.5f);
-
-					handling.acceleration -= brake * 1.1f;
-
-					if (brake >= 0.5f)
-						handling.braking = brake;
-				}
+				float fDecelRate = RemapValClamp(distToStop, 0.0f, AI_ROAD_STOP_DIST, 1.0f, 0.25f);
+				handling.acceleration -= fDecelRate;
 			}
 		}
 	}
@@ -807,9 +801,10 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 	if (m_changingDirection && !isOnCurrRoad)
 	{
 		DkList<CCar*> forwardCars;
-		g_pAIManager->QueryTrafficCars(forwardCars, 16.0f, carPos, carForward, 0.8f);
+		g_pAIManager->QueryTrafficCars(forwardCars, m_junction.size*4.0f, carPos, carForward, 0.8f);
 
-		CCar* firstOppositeMovingCar = nullptr;
+		CCar* nearestOppositeMovingCar = nullptr;
+		float maxDist = DrvSynUnits::MaxCoordInUnits;
 
 		for (int i = 0; i < forwardCars.numElem(); i++)
 		{
@@ -820,21 +815,42 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 			if (dot(fastNormalize(velocity), -carForward) > 0.4f)
 			{
-				firstOppositeMovingCar = forwardCars[i];
-				break;
+				float distBetweenCars = distance(carTracePos, forwardCars[i]->GetOrigin());
+
+				if (distBetweenCars < maxDist)
+				{
+					nearestOppositeMovingCar = forwardCars[i];
+					maxDist = distBetweenCars;
+				}
 			}
 		}
 
-		if (firstOppositeMovingCar)
+		if (nearestOppositeMovingCar)
 		{
-			brake = 1.0f;
-			handling.acceleration -= brake * 2.0f;
-			handling.braking = brake;
+			debugoverlay->Line3D(carTracePos, startPos, ColorRGBA(1,0,0,1), ColorRGBA(1, 0, 0, 1), fDt);
+		
+			Vector3D oppLeft = -nearestOppositeMovingCar->GetRightVector();
+			Vector3D oppPos = nearestOppositeMovingCar->GetOrigin() + oppLeft;
+
+			debugoverlay->Line3D(oppPos + oppLeft, oppPos + oppLeft*2.0f, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1), fDt);
+			debugoverlay->Sphere3D(oppPos, 2.0f, ColorRGBA(1, 0, 0, 1), fDt);
+
+			Plane oppPl(oppLeft, -dot(oppLeft, oppPos));
+
+			Vector3D out;
+			float fractOut;
+
+			// trace the line from my center to the road start
+			if (oppPl.ClassifyPoint(carTracePos) == CP_FRONT && oppPl.GetIntersectionLineFraction(carTracePos, startPos, out, fractOut))
+			{
+				debugoverlay->Line3D(carTracePos, out, ColorRGBA(1, 1, 0, 1), ColorRGBA(1, 1, 0, 1), fDt);
+				debugoverlay->Sphere3D(out, 0.25f, ColorRGBA(1, 1, 0, 1), fDt);
+
+				handling.braking = (1.0f - fractOut);
+			}
 		}
-		else
-		{
-			handling.acceleration *= fSteeringAngle+0.5f-0.5f;
-		}
+
+		handling.acceleration -= fabs(fSteeringAngle)*0.65f;
 	}
 
 	eqPhysCollisionFilter collFilter;
@@ -916,7 +932,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 				float brakeSpeedDiff = dbrakeDistAtCurSpeed + AI_OBSTACLE_DIST - lineDist;
 				brakeSpeedDiff = max(brakeSpeedDiff, 0.0f);
 
-				brake = brakeSpeedDiff / 20.0f;
+				float brake = brakeSpeedDiff / 20.0f;
 
 				if (lineDist > AI_OBSTACLE_DIST)
 				{

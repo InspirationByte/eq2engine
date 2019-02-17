@@ -23,6 +23,7 @@ struct junctionDetail_t
 
 	DkList<straight_t>	exits;
 	int					selectedExit;
+	int					size;
 	bool				availDirs[4];
 };
 
