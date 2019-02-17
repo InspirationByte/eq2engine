@@ -194,7 +194,7 @@ void CAIPursuerCar::OnPrePhysicsFrame( float fDt )
 	if(	IsAlive() && !m_enabled)
 	{
 		DkList<CGameObject*> nearestCars;
-		g_pGameWorld->QueryObjects(nearestCars, 25, GetOrigin(), [](CGameObject* x) {
+		g_pGameWorld->QueryObjects(nearestCars, AI_COPVIEW_RADIUS_WANTED, GetOrigin(), [](CGameObject* x) {
 			return ((x->ObjType() == GO_CAR) || (x->ObjType() == GO_CAR_AI));
 		});
 
@@ -275,7 +275,7 @@ int	CAIPursuerCar::TrafficDrive( float fDt, EStateTransition transition )
 int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 {
 	DkList<CGameObject*> nearestCars;
-	g_pGameWorld->QueryObjects(nearestCars, 25, GetOrigin(), [](CGameObject* x) {
+	g_pGameWorld->QueryObjects(nearestCars, AI_COPVIEW_RADIUS_WANTED, GetOrigin(), [](CGameObject* x) {
 		return ((x->ObjType() == GO_CAR) || (x->ObjType() == GO_CAR_AI));
 	});
 

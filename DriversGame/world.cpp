@@ -2367,11 +2367,9 @@ void CGameWorld::QueryObjects(DkList<CGameObject*>& list, float radius, const Ve
 		if(obj->m_state >= GO_STATE_REMOVE)
 			continue;
 
-		Vector3D dirVec = obj->GetOrigin() - position;
+		float dist = length(obj->GetOrigin() - position);
 
-		float dotDist = dot(dirVec, dirVec);
-
-		if (dotDist > radius*radius)
+		if (dist > radius)
 			continue;
 
 		if(comparator(obj))
