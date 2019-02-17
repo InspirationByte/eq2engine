@@ -142,7 +142,6 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 
 		if(!m_traffic.m_manipulator.HasRoad())
 		{
-			MsgError("No road!\n");
 			if(FSMGetCurrentState() == &CAITrafficCar::TrafficDrive)
 			{
 				AI_SetState( &CAITrafficCar::SearchForRoad );

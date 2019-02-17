@@ -831,6 +831,10 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 			handling.acceleration -= brake * 2.0f;
 			handling.braking = brake;
 		}
+		else
+		{
+			handling.acceleration *= fSteeringAngle+0.5f-0.5f;
+		}
 	}
 
 	eqPhysCollisionFilter collFilter;
