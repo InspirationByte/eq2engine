@@ -9,7 +9,7 @@
     <ClCompile Include="fcompress_main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\Libs\zlib.lib">
+    <Library Include="..\..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib">
       <Filter>Libs</Filter>
     </Library>
   </ItemGroup>

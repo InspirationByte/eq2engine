@@ -246,7 +246,7 @@
     <ClCompile Include="AnimScriptCompiler.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\libs\zlib.lib" />
+    <Library Include="..\..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\coreLib.vcxproj">

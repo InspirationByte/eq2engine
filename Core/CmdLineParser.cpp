@@ -17,43 +17,34 @@ EXPORTED_INTERFACE(ICommandLineParse, CommandLineParse);
 
 CommandLineParse::CommandLineParse()
 {
-	m_szFullArgString = " ";
-	m_iArgsCount = 0;
 }
 
 CommandLineParse::~CommandLineParse()
 {
-	m_iArgsCount = 0;
-	m_szParams.clear();
 }
 
 void CommandLineParse::Init(const char* pszCommandLine)
 {
-	if(m_szFullArgString.Length())
-		m_szFullArgString.Empty();
-
-	m_iArgsCount = 0;
-
-	m_szFullArgString = pszCommandLine;
-
-	Parse();
+	m_args.clear();
+	Parse(pszCommandLine);
 }
 
 void CommandLineParse::DeInit()
 {
-
+	m_args.clear();
 }
 
-void CommandLineParse::Parse()
+void CommandLineParse::Parse(const char* pszCommandLine)
 {
-	const char *pChar = m_szFullArgString.GetData();
+	const char *pChar = pszCommandLine;
+
+	// trim whitespaces
 	while ( *pChar && isspace(static_cast<unsigned char>(*pChar)) )
-	{
 		++pChar;
-	}
 
 	bool bInQuotes = false;
 	const char *pFirstLetter = NULL;
+
 	for ( ; *pChar; ++pChar )
 	{
 		if ( bInQuotes )
@@ -61,7 +52,7 @@ void CommandLineParse::Parse()
 			if ( *pChar != '\"' )
 				continue;
 
-			Parse_AddParameter( pFirstLetter, pChar );
+			AddArgument( pFirstLetter, pChar );
 
 			pFirstLetter = NULL;
 			bInQuotes = false;
@@ -88,66 +79,59 @@ void CommandLineParse::Parse()
 		// Here, we're in the middle of a word. Look for the end of it.
 		if ( isspace( *pChar ) )
 		{
-			Parse_AddParameter( pFirstLetter, pChar );
+			AddArgument( pFirstLetter, pChar );
 			pFirstLetter = NULL;
 		}
 	}
 
 	if ( pFirstLetter )
-	{
-		Parse_AddParameter( pFirstLetter, pChar );
-	}
+		AddArgument( pFirstLetter, pChar );
 }
 
-void CommandLineParse::Parse_AddParameter( const char *pFirst, const char *pLast )
+void CommandLineParse::AddArgument( const char *pFirst, const char *pLast )
 {
-	if ( pLast == pFirst )
+	if ( pLast == pFirst )	// skip empty strings
 		return;
 
-	ASSERT( m_iArgsCount < 256 );
-	int nLen = (int)(pLast - pFirst);
-
-	m_szParams.append(EqString(pFirst, nLen));
-
-	//Msg("Added %s\n", EqString(pFirst, nLen).GetData());
-
-	++m_iArgsCount;
+	m_args.append(_Es(pFirst, (pLast - pFirst)));
 }
 
-void CommandLineParse::ExecuteCommandLine(bool cvars,bool commands, unsigned int CmdFilterFlags/* = -1*/)
+int	CommandLineParse::GetArgumentCount() const
 {
-	if(m_iArgsCount < 1)
+	return m_args.numElem();
+}
+
+void CommandLineParse::ExecuteCommandLine(bool cvars,bool commands, unsigned int CmdFilterFlags/* = -1*/) const
+{
+	if(!m_args.numElem())
 		return;
 
 	unsigned int filterFlags;
 
 	if(CmdFilterFlags == -1)
 	{
-		if(cvars)
-			filterFlags |= CMDBASE_CONVAR;
-		if(commands)
-			filterFlags |= CMDBASE_CONCOMMAND;
+		if(cvars) filterFlags |= CMDBASE_CONVAR;
+		if(commands) filterFlags |= CMDBASE_CONCOMMAND;
 	}
 	else
-	{
 		filterFlags = CmdFilterFlags;
-	}
 
 	g_sysConsole->ClearCommandBuffer();
 
-	char tmp_path[2048];
-
 	for (int i = 0; i < GetArgumentCount();i++ )
 	{
-		if(!IsArgument( (char*)m_szParams[i].GetData(), true))
-		{
-			EqString tempStr = m_szParams[i].Mid(1,m_szParams[i].Length() - 1);
-			EqString tmpArgs( GetArgumentsOf(i) );
+		const char* argStr = m_args[i].c_str();
 
-			sprintf(tmp_path, "%s %s",tempStr.GetData(), tmpArgs.GetData());
+		if (*argStr != '+')
+			continue;
 
-			g_sysConsole->AppendToCommandBuffer(tmp_path);
-		}
+		EqString cmdStr(argStr + 1);
+		cmdStr.Append(' ');
+		cmdStr.Append('\"');
+		cmdStr.Append( GetArgumentsOf(i) );
+		cmdStr.Append('\"');
+
+		g_sysConsole->AppendToCommandBuffer( cmdStr.c_str() );
 	}
 
 	((CConsoleCommands*)g_sysConsole.GetInstancePtr())->EnableInitOnlyVarsChangeProtection(true);
@@ -155,81 +139,49 @@ void CommandLineParse::ExecuteCommandLine(bool cvars,bool commands, unsigned int
 	((CConsoleCommands*)g_sysConsole.GetInstancePtr())->EnableInitOnlyVarsChangeProtection(false);
 }
 
-char* CommandLineParse::GetArgumentString(int index)
+const char* CommandLineParse::GetArgumentString(int index) const
 {
-	if(index > GetArgumentCount() || index < 0)
-		return NULL;
+	if(!m_args.inRange(index))
+		return nullptr;
 
-	return (char*)m_szParams[index].GetData();
+	return m_args[index].c_str();
 }
 
-int CommandLineParse::FindArgument(const char* arg,int startfrom /* = 0 */)
+int CommandLineParse::FindArgument(const char* arg, int startfrom /* = 0 */) const
 {
-	if(startfrom > GetArgumentCount()-1)
+	if(!m_args.inRange(startfrom))
 		return -1;
 
-	for(int i = startfrom;i < GetArgumentCount();i++)
+	for(int i = startfrom; i < m_args.numElem(); i++)
 	{
-		if(!m_szParams[i].CompareCaseIns(arg))
+		if(!m_args[i].CompareCaseIns(arg))
 			return i;
 	}
+
 	return -1;
 }
 
-bool CommandLineParse::IsArgument(char* pszString, bool skipMinus)
-{
-	char* pStrChar = strchr(pszString, '+');
-
-	if(pStrChar == pszString)
-		return false;
-
-	if(!skipMinus)
-	{
-		pStrChar = strchr(pszString, '-');
-
-		if(pStrChar == pszString)
-			return false;
-	}
-
-	// Not found any parameter-specific words? It's argument!
-	return true;
-}
-
-char* CommandLineParse::GetArgumentsOf(int paramIndex)
+const char* CommandLineParse::GetArgumentsOf(int paramIndex) const
 {
 	if(paramIndex == -1)
-		return NULL;
+		return nullptr;
 
 	// create an static string
-	static EqString tmpArguments;
-	tmpArguments.Empty();
+	static EqString _tmpArguments;
+	_tmpArguments.Empty();
 
-	char tmp_path[2048];
-
-	int nLastArg = m_iArgsCount;
-
-	// get the last argument
-	for (int i = paramIndex+1; i < m_iArgsCount; i++ )
+	for (int i = paramIndex+1; i < m_args.numElem(); i++ )
 	{
-		// if that's not argument, stop
-		if(!IsArgument( (char*)m_szParams[i].GetData() ))
+		const char* argStr = m_args[i].c_str();
+
+		if (*argStr == '+' || *argStr == '-')
 			break;
 
-		nLastArg = i+1;
+		if(i > paramIndex+1)
+			_tmpArguments.Append(' ');
+
+		_tmpArguments.Append(m_args[i]);
 	}
 
-	for (int i = paramIndex+1; i < nLastArg; i++ )
-	{
-		bool isLast = (i+1 == nLastArg);
-
-		if(!isLast)
-		{
-			sprintf(tmp_path, "%s ",m_szParams[i].GetData());
-			tmpArguments.Append(tmp_path);
-		}
-		else
-			tmpArguments.Append( m_szParams[i] );
-	}
-
-	return (char*)tmpArguments.GetData();
+	return _tmpArguments.c_str();
 }

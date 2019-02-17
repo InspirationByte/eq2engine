@@ -90,7 +90,7 @@ void CLocalize::Init()
 
 	if(langArg != -1)
 	{
-		char* args = g_cmdLine->GetArgumentsOf(langArg);
+		const char* args = g_cmdLine->GetArgumentsOf(langArg);
 
 		if(strlen(args) > 0)
 			m_language = args;

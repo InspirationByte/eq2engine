@@ -94,8 +94,8 @@
     <ClCompile Include="AtlasImagePacker.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\libs\jpeg.lib" />
-    <Library Include="..\..\libs\zlib.lib" />
+    <Library Include="..\..\src_dependency\jpeg\lib\jpeg.lib" />
+    <Library Include="..\..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\public\Utils\RectanglePacker.h" />

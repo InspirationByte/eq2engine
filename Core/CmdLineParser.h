@@ -19,28 +19,27 @@ public:
 						CommandLineParse();
 						~CommandLineParse();
 
-	void				Init(const char* pszCommandLine);								//Initializes command line interface. See sys_win.cpp, WINMAIN function
-	void				DeInit();								//De-Initializes command line interface. See sys_win.cpp, WINMAIN function
+	void				Init(const char* pszCommandLine);
+	void				DeInit();
 
-	void				Parse();
-	void				Parse_AddParameter(const char* pFirst,const char* pLast );
-	void				ExecuteCommandLine(bool cvars,bool commands,unsigned int CmdFilterFlags = -1);
+	void				ExecuteCommandLine(bool cvars, bool commands, unsigned int CmdFilterFlags = -1) const;
 
-	char*				GetArgumentString(int index); 					//Returns argument string
-	int					FindArgument(const char* arg,int startfrom = 0);		//Returns argument index
-	char*				GetArgumentsOf(int paramIndex);						//Returns arguments of parameter
-	int					GetArgumentCount() { return m_iArgsCount;}				//Returns argument count
+	const char*			GetArgumentString(int index) const;
+	int					FindArgument(const char* arg, int startfrom = 0)  const;
 
-	bool				IsArgument(char* pszString, bool skipMinus = false);									//Is this argument?
+	const char*			GetArgumentsOf(int paramIndex) const;
+	int					GetArgumentCount()  const;
 
 	//-------------------------
 	bool				IsInitialized() const		{return true;}
 	const char*			GetInterfaceName() const	{return CMDLINE_INTERFACE_VERSION;}
 
 protected:
-	int					m_iArgsCount;
-	DkList<EqString>	m_szParams;
-	EqString			m_szFullArgString;
+	void				Parse(const char* pszCommandLine);
+	void				AddArgument(const char* pFirst, const char* pLast);
+
+
+	DkList<EqString>	m_args;
 };
 
 #endif

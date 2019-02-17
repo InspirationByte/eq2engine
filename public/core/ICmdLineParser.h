@@ -17,16 +17,17 @@
 class ICommandLineParse : public ICoreModuleInterface
 {
 public:
-	virtual void			Init(const char* pszCommandLine) = 0;								//Initializes command line interface. See sys_win.cpp, WINMAIN function
-	virtual void			DeInit() = 0;								//De-Initializes command line interface. See sys_win.cpp, WINMAIN function
+	virtual void			Init(const char* pszCommandLine) = 0;
+	virtual void			DeInit() = 0;
 
-	virtual	void			Parse_AddParameter(const char* pFirst,const char* pLast ) = 0;
-	virtual void			ExecuteCommandLine(bool cvars,bool commands,unsigned int CmdFilterFlags = -1) = 0;
+	virtual void			ExecuteCommandLine(bool cvars,bool commands,unsigned int CmdFilterFlags = -1) const = 0;
 
-	virtual char*			GetArgumentString(int index) = 0; 					//Returns argument string
-	virtual int				FindArgument(const char* arg,int startfrom = 0) = 0;		//Returns argument index
-	virtual char*			GetArgumentsOf(int paramIndex) = 0;							//Returns arguments of parameter
-	virtual int				GetArgumentCount() = 0;	//Returns argument count
+	virtual int				FindArgument(const char* arg, int startfrom = 0) const = 0;
+
+	virtual const char*		GetArgumentString(int index) const = 0;
+
+	virtual const char*		GetArgumentsOf(int paramIndex) const = 0;
+	virtual int				GetArgumentCount() const = 0;
 };
 
 INTERFACE_SINGLETON( ICommandLineParse, CommandLineParse, CMDLINE_INTERFACE_VERSION, g_cmdLine )

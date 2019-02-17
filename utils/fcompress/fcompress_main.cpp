@@ -68,7 +68,7 @@ int _tmain(int argc, char **argv)
 
 	for(int i = 0; i < g_cmdLine->GetArgumentCount(); i++)
 	{
-		char* arg = g_cmdLine->GetArgumentString( i );
+		const char* arg = g_cmdLine->GetArgumentString( i );
 
 		if(!stricmp(arg, "-o") || !stricmp(arg, "-out"))
 		{
