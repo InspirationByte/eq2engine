@@ -10,6 +10,9 @@
 #include "NetPlayer.h"
 #include "IDebugOverlay.h"
 
+#include "world.h"
+#include "input.h"
+
 #pragma todo("joystick parameters")
 
 ConVar cl_predict("cl_predict", "1", "Prediction");

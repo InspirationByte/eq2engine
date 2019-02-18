@@ -12,6 +12,8 @@
 #include "world.h"
 #include "math/Volume.h"
 
+#include "input.h"
+
 #include "Shiny.h"
 
 #pragma todo("Peer2peer network model for AI cars")
@@ -95,9 +97,6 @@ void CAITrafficCar::Spawn()
 
 	// perform lazy collision checks
 	GetPhysicsBody()->SetMinFrameTime(1.0f / 30.0f);
-
-	// also randomize lane switching
-	//m_nextSwitchLaneTime = g_replayRandom.Get(0, AI_LANE_SWITCH_DELAY);
 }
 
 int CAITrafficCar::DeadState( float fDt, EStateTransition transition )
@@ -175,13 +174,13 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 
 void CAITrafficCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy)
 {
+	BaseClass::OnCarCollisionEvent(pair, hitBy);
+
 	if(FSMGetCurrentState() == &CAITrafficCar::DeadState)
 		return;
 
 	if(pair.impactVelocity > 2.0f && (pair.bodyA->m_flags & BODY_ISCAR))
 	{
-		// restore collision
-		GetPhysicsBody()->SetCollideMask(COLLIDEMASK_VEHICLE);
 		GetPhysicsBody()->SetMinFrameTime(0.0f);
 
 		if(IsAlive())

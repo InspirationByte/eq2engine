@@ -9,6 +9,8 @@
 #include "heightfield.h"
 #include "session_stuff.h"
 
+#include "world.h"
+
 //------------------------------------------------------------------------------------------
 
 ConVar g_trafficMaxCars("g_trafficMaxCars", "48", "Maximum traffic cars", CV_CHEAT);

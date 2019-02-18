@@ -13,6 +13,9 @@
 #include "IDebugOverlay.h"
 #include "sys_host.h"
 
+#include "world.h"
+#include "input.h"
+
 extern ConVar			sv_maxplayers;
 extern ConVar			g_car;
 

@@ -228,6 +228,12 @@ void SetupDefaultEnvConfig(worldEnvConfig_t& env)
 	env.lightsType = 0;
 }
 
+static const char* s_weatherNamesStr[WEATHER_COUNT] = {
+	"clear",
+	"rain",
+	"storm"
+};
+
 void ParseEnvConfig(worldEnvConfig_t& env, kvkeybase_t* kvs)
 {
 	if(kvs == nullptr)

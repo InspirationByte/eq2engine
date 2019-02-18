@@ -17,6 +17,9 @@
 
 #include "KeyBinding/InputCommandBinder.h"
 
+#include "world.h"
+#include "input.h"
+
 extern ConVar	g_pause;
 
 void g_freecam_changed(ConVar* pVar,char const* pszOldValue);

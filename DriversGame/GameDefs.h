@@ -51,6 +51,7 @@ struct PursuerData_t
 
 	int		pursuedByCount;
 	bool	announced;
+	bool	copsHasAttention;
 
 	float	lastDirectionTimer;
 	int		lastDirection;		// swne

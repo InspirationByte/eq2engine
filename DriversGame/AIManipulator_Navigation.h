@@ -37,6 +37,8 @@ public:
 	int FindSegmentByPosition(const Vector3D& pos, float distToSegment);
 	float GetPathPercentage(const Vector3D& pos);
 
+	void ForceUpdatePath();
+
 	// the position driver needs reach to
 	Vector3D			m_driveTarget;
 	Vector3D			m_driveTargetVelocity;

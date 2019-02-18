@@ -14,6 +14,9 @@
 
 #include "Shiny.h"	// profiler
 
+#include "world.h"
+#include "input.h"
+
 CGameSessionBase*	g_pGameSession = NULL;
 
 void fng_car_variants(DkList<EqString>& list, const char* query)

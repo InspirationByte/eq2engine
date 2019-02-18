@@ -8,6 +8,7 @@
 #include "AIManipulator_Traffic.h"
 #include "AICarManager.h"
 
+#include "world.h"
 
 ConVar g_disableTrafficLights("g_disableTrafficLights", "0", NULL, CV_CHEAT);
 

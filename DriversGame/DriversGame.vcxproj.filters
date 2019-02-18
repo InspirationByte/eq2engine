@@ -432,6 +432,12 @@
     <ClCompile Include="AIHornSequencer.cpp">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClCompile>
+    <ClCompile Include="AIManipulator_TargetChaser.cpp">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="AIHandling.cpp">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\src_dependency\oolua\bin\Release\oolua.lib">
@@ -848,6 +854,12 @@
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClInclude>
     <ClInclude Include="AIHornSequencer.h">
+      <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="worldenv.h">
+      <Filter>Файлы исходного кода\Game\World</Filter>
+    </ClInclude>
+    <ClInclude Include="AIManipulator_TargetChaser.h">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClInclude>
   </ItemGroup>

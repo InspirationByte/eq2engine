@@ -10,6 +10,8 @@
 #include "heightfield.h"
 #include "replay.h"
 
+#include "world.h"
+
 #define DEFAULT_HUD_SCHEME "resources/hud/defaulthud.res"
 
 static CDrvSynHUDManager s_drvSynHUDManager;

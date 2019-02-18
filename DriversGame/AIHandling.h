@@ -11,6 +11,7 @@
 #include "utils/DkList.h"
 #include "math/Vector.h"
 #include "EventFSM.h"
+#include "worldenv.h"
 
 struct ai_handling_t
 {
@@ -100,6 +101,25 @@ enum EDriverConditionFlags
 	DRIVER_COND_ANGRY			= (1 << 2),
 	DRIVER_COND_SCARED			= (1 << 3),
 };
+
+// asphalt: 0.24	- 0.76
+// grass:	0.15	- 0.85
+// dirt:	0.20	- 0.80
+
+static const float s_weatherBrakeDistanceModifier[WEATHER_COUNT] =	// * (1.0f - tirefriction)
+{
+	0.65f,	// 0.50f,
+	0.75f,	// 0.57f,
+	0.78f	// 0.59f,
+};
+
+static const float s_weatherBrakeCurve[WEATHER_COUNT] =	// * tirefriction
+{
+	4.20f,	// 1.00f,
+	3.50f,	// 0.84f,
+	3.25f	// 0.79f,
+};
+
 /*
 class CAINavigationManipulator;
 class CAIChasingManipulator;
@@ -122,7 +142,7 @@ protected:
 	int			m_condition;		// EDriverConditionFlags
 
 	// all handling affectors, they are biased by the current behavior state
-	CAIHandlingAffector<CAINavigationManipulator>			m_navAffector;
+	CAIHandlingAffector<CAINavigationManipulator>			m_nav;
 	CAIHandlingAffector<CAIChasingManipulator>				m_chaseAffector;
 	CAIHandlingAffector<CAIObstacleAvoidanceManipulator>	m_obstacleAffector;
 };*/

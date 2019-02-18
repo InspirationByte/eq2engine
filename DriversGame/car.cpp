@@ -7,6 +7,9 @@
 
 #include "car.h"
 
+#include "world.h"
+#include "input.h"
+
 #include "DebugOverlay.h"
 #include "session_stuff.h"
 #include "EqParticles.h"
@@ -3047,6 +3050,11 @@ void CCarWheel::CalcWheelSkidPair(PFXVertexPair_t& pair, float width, float whee
 
 	pair.v0 = PFXVertex_t(skidmarkPos - wheelRightDir * width*0.5f, vec2_zero, 0.0f);
 	pair.v1 = PFXVertex_t(skidmarkPos + wheelRightDir * width*0.5f, vec2_zero, 0.0f);
+}
+
+const eqPhysSurfParam_t* CCarWheel::GetSurfaceParams() const
+{
+	return m_surfparam;
 }
 
 void CCar::ProcessWheelSkidmarkTrails(int wheelIdx)

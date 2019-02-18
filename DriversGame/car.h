@@ -8,7 +8,7 @@
 #ifndef CAR_H
 #define CAR_H
 
-#include "world.h"
+#include "GameObject.h"
 #include "CameraAnimator.h"
 #include "EqParticles.h"
 #include "eqPhysics/eqPhysics_HingeJoint.h"
@@ -323,34 +323,34 @@ struct carHandlingInput_t
 class CCarWheel : public CGameObject
 {
 	friend class CCar;
-	friend class CAITrafficCar;
-	friend class CAINavigationManipulator;
 public:
 	DECLARE_CLASS( CCarWheel, CGameObject )
 
 	CCarWheel();
 	~CCarWheel() { OnRemove(); }
 
-	void					SetModelPtr(IEqModel* modelPtr);
-	void					Draw( int nRenderFlags );
+	void						SetModelPtr(IEqModel* modelPtr);
+	void						Draw( int nRenderFlags );
 
-	void					CalculateTransform(Matrix4x4& out, const carWheelConfig_t& conf, bool applyScale = true);
+	void						CalculateTransform(Matrix4x4& out, const carWheelConfig_t& conf, bool applyScale = true);
 
-	void					CalcWheelSkidPair(PFXVertexPair_t& pair, float width, float wheelOffsX, const Matrix3x3& rotation);
+	void						CalcWheelSkidPair(PFXVertexPair_t& pair, float width, float wheelOffsX, const Matrix3x3& rotation);
+
+	const eqPhysSurfParam_t*	GetSurfaceParams() const;
 
 protected:
-	DkList<PFXVertexPair_t>	m_skidMarks;
+	DkList<PFXVertexPair_t>		m_skidMarks;
 
-	eqPhysSurfParam_t*		m_surfparam;
+	eqPhysSurfParam_t*			m_surfparam;
 
-	CollisionData_t			m_collisionInfo;
-	Matrix3x3				m_wheelOrient;
+	CollisionData_t				m_collisionInfo;
+	Matrix3x3					m_wheelOrient;
 
-	Vector3D				m_velocityVec;
+	Vector3D					m_velocityVec;
 
-	int8					m_defaultBodyGroup;
-	int8					m_hubcapBodygroup;	// loose hubcaps
-	int8					m_damagedBodygroup;
+	int8						m_defaultBodyGroup;
+	int8						m_hubcapBodygroup;	// loose hubcaps
+	int8						m_damagedBodygroup;
 
 	// 1 byte
 	struct
@@ -374,6 +374,7 @@ protected:
 
 typedef float (*TORQUECURVEFUNC)( float rpm );
 
+class CLevelRegion;
 
 //-----------------------------------------------------------------------
 // The vehicle itself

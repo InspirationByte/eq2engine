@@ -59,9 +59,12 @@ protected:
 	virtual void		OnPhysicsFrame( float fDt );
 
 	EInfractionType		CheckTrafficInfraction( CCar* car, bool checkFelony = true, bool checkSpeeding = true );
+	void				ProcessTrafficInfractionsFor(CCar* checkCar);
 
-	bool				Speak( const char* soundName, bool force = false );
+	bool				Speak( const char* soundName, CCar* target, bool force = false );
+
 	void				DoPoliceLoudhailer();
+	bool				UpdateTarget();
 
 	void				SpeakTargetDirection(const char* startSoundName, bool force = false);
 
@@ -83,7 +86,8 @@ protected:
 	float					m_savedTorqueScale;
 
 	// all handling affectors, they are biased by the current behavior state
-	CAIHandlingAffector<CAINavigationManipulator>			m_navAffector;
+	CAIHandlingAffector<CAINavigationManipulator>			m_nav;
+	CAIHandlingAffector<CAITargetChaserManipulator>			m_chaser;
 	CAIHandlingAffector<CAIStabilityControlManipulator>		m_stability;
 	CAIHandlingAffector<CAICollisionAvoidanceManipulator>	m_collAvoidance;
 	CAIHandlingAffector<CAITargetAvoidanceManipulator>		m_targetAvoidance;

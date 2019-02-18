@@ -36,6 +36,10 @@
 
 #include "director.h"
 
+#include "world.h"
+
+#include "input.h"
+
 static CCameraAnimator	s_cameraAnimator;
 CCameraAnimator*		g_pCameraAnimator = &s_cameraAnimator;
 

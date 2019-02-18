@@ -13,6 +13,7 @@
 
 #include "car.h"
 #include "CameraAnimator.h"
+#include "input.h"
 
 const float DEFAULT_CAMERA_FOV		= 52.0f;
 

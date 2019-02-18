@@ -11,9 +11,9 @@
 #include "luabinding/LuaBinding.h"
 
 #include "materialsystem/IMaterialSystem.h"
-#include "input.h"
+
 #include "level.h"
-#include "GameObject.h"
+#include "worldenv.h"
 
 #include "predictablerandom.h"
 
@@ -54,74 +54,6 @@ struct worldinfo_t
 	float		rainBrightness;
 
 	FogInfo_t	fogInfo;
-};
-
-//----------------------------------------------------------
-
-enum EWorldLights
-{
-	WLIGHTS_NONE = 0,
-
-	WLIGHTS_CARS	= (1 << 0),
-	WLIGHTS_LAMPS	= (1 << 1),
-	WLIGHTS_CITY	= (1 << 2),
-};
-
-enum EWeatherType
-{
-	WEATHER_TYPE_CLEAR = 0,		// fair weather
-	WEATHER_TYPE_RAIN,			// slight raining
-	WEATHER_TYPE_STORM,
-
-	WEATHER_COUNT,
-};
-
-static const char* s_weatherNamesStr[WEATHER_COUNT] = {
-	"clear",
-	"rain",
-	"storm"
-};
-
-struct worldEnvConfig_t
-{
-	worldEnvConfig_t()
-	{
-		skyTexture = nullptr;
-	}
-
-	EqString		name;
-
-	ColorRGB		sunColor;
-	ColorRGB		ambientColor;
-	ColorRGBA		shadowColor;
-
-	float			lensIntensity;
-
-	float			brightnessModFactor;
-	float			streetLightIntensity;
-	float			headLightIntensity;
-
-	float			moonBrightness;
-
-	float			rainBrightness;
-	float			rainDensity;
-
-	Vector3D		sunAngles;
-	Vector3D		sunLensAngles;
-
-	int				lightsType;
-	EWeatherType	weatherType;
-
-	bool			thunder;
-
-	bool			fogEnable;
-	float			fogNear;
-	float			fogFar;
-
-	Vector3D		fogColor;
-
-	EqString		skyboxPath;
-	ITexture*		skyTexture;
 };
 
 //----------------------------------------------------------------------

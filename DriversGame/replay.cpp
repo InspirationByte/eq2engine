@@ -10,6 +10,9 @@
 #include "session_stuff.h"
 #include "IDebugOverlay.h"
 
+#include "world.h"
+#include "input.h"
+
 #define CONTROL_DETAILS_STEP	(0.0025f)
 #define CORRECTION_TICK			32
 #define COLLISION_MIN_IMPULSE	(0.1f)

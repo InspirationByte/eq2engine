@@ -158,11 +158,13 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="..\shared_engine\ViewParams.cpp" />
     <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp" />
     <ClCompile Include="AICarManager.cpp" />
+    <ClCompile Include="AIHandling.cpp" />
     <ClCompile Include="AIHornSequencer.cpp" />
     <ClCompile Include="AIManipulator_CollisionAvoidance.cpp" />
     <ClCompile Include="AIManipulator_Navigation.cpp" />
     <ClCompile Include="AIManipulator_StabilityControl.cpp" />
     <ClCompile Include="AIManipulator_TargetAvoidance.cpp" />
+    <ClCompile Include="AIManipulator_TargetChaser.cpp" />
     <ClCompile Include="AIManipulator_Traffic.cpp" />
     <ClCompile Include="AIPursuerCar.cpp" />
     <ClCompile Include="AITrafficCar.cpp" />
@@ -324,6 +326,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="AIManipulator_Navigation.h" />
     <ClInclude Include="AIManipulator_StabilityControl.h" />
     <ClInclude Include="AIManipulator_TargetAvoidance.h" />
+    <ClInclude Include="AIManipulator_TargetChaser.h" />
     <ClInclude Include="AIManipulator_Traffic.h" />
     <ClInclude Include="AIPursuerCar.h" />
     <ClInclude Include="AITrafficCar.h" />
@@ -332,6 +335,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="director.h" />
     <ClInclude Include="DrvSynDecals.h" />
     <ClInclude Include="DrvSynStates.h" />
+    <ClInclude Include="worldenv.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Controller.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Contstraint.h" />
     <ClInclude Include="eqPhysics\eqPhysics_HingeJoint.h" />
