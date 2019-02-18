@@ -7,6 +7,8 @@
 
 #include "EditorTestDrive.h"
 #include "CameraAnimator.h"
+#include "world.h"
+#include "input.h"
 
 #include "wx/defs.h"
 

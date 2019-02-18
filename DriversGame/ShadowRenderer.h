@@ -8,9 +8,11 @@
 #ifndef SHADOWRENDERER_H
 #define SHADOWRENDERER_H
 
-#include "GameObject.h"
+
 #include "utils/RectanglePacker.h"
 #include "DrvSynDecals.h"
+
+class CGameObject;
 
 //
 // Shadow rendering it's like particles rendering

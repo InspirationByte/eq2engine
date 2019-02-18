@@ -20,6 +20,8 @@
 #include "ViewParams.h"
 #include "scene_def.h"
 
+#include "GameObject.h"
+
 #ifdef EDITOR
 #include "../DriversEditor/level_generator.h"
 #include "../DriversEditor/EditorLevel.h"
