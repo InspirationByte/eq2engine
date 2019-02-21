@@ -79,7 +79,7 @@ CObject_Physics::~CObject_Physics()
 
 void CObject_Physics::OnRemove()
 {
-	CGameObject::OnRemove();
+	BaseClass::OnRemove();
 
 	if(m_hingeDummy)
 	{
@@ -195,7 +195,7 @@ void CObject_Physics::Spawn()
 	//m_keyValues.Cleanup();
 
 	// baseclass spawn
-	CGameObject::Spawn();
+	BaseClass::Spawn();
 }
 
 void CObject_Physics::SetOrigin(const Vector3D& origin)
@@ -274,7 +274,7 @@ void CObject_Physics::Draw( int nRenderFlags )
 
 	}
 	else
-		CGameObject::Draw( nRenderFlags );
+		BaseClass::Draw( nRenderFlags );
 }
 
 void CObject_Physics::Simulate(float fDt)

@@ -39,7 +39,7 @@ DECLARE_CMD(car_reload, "reload current car", CV_CHEAT)
 			kvkeybase_t kvs;
 			if( !KV_LoadFromFile(conf->carScript.c_str(), SP_MOD,&kvs) )
 			{
-				MsgError("can't load default car script '%s'\n", conf->carScript.c_str());
+				MsgError("can't load car script '%s'\n", conf->carScript.c_str());
 				return;
 			}
 

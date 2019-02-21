@@ -107,8 +107,9 @@ enum EGameObjectType
 	GO_DEFAULT = 0,	// no object type
 
 	GO_CAR,
+	GO_PEDESTRIAN,
 
-	GO_CAR_AI,	// same as GO_CAR, but simply networked, don't think that is needed
+	GO_CAR_AI,			// FIXME: needs to be removed
 
 	GO_MISC,
 	GO_DEBRIS,

@@ -15,6 +15,8 @@
 class CObject_Tree : public CGameObject
 {
 public:
+	DECLARE_CLASS(CObject_Tree, CGameObject)
+
 	CObject_Tree( kvkeybase_t* kvdata );
 	~CObject_Tree();
 

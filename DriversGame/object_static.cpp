@@ -33,7 +33,7 @@ CObject_Static::~CObject_Static()
 
 void CObject_Static::OnRemove()
 {
-	CGameObject::OnRemove();
+	BaseClass::OnRemove();
 
 	if(m_pPhysicsObject)
 	{
@@ -98,7 +98,7 @@ void CObject_Static::Spawn()
 	LoadDefLightData(m_light, m_keyValues);
 
 	// baseclass spawn
-	CGameObject::Spawn();
+	BaseClass::Spawn();
 }
 
 void CObject_Static::SetOrigin(const Vector3D& origin)
@@ -147,7 +147,7 @@ void CObject_Static::Draw( int nRenderFlags )
 		}
 	}
 	else
-		CGameObject::Draw( nRenderFlags );
+		BaseClass::Draw( nRenderFlags );
 }
 
 void CObject_Static::Simulate(float fDt)

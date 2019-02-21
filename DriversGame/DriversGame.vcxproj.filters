@@ -438,6 +438,9 @@
     <ClCompile Include="AIHandling.cpp">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClCompile>
+    <ClCompile Include="pedestrian.cpp">
+      <Filter>Файлы исходного кода\Game\Objects</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\src_dependency\oolua\bin\Release\oolua.lib">
@@ -861,6 +864,9 @@
     </ClInclude>
     <ClInclude Include="AIManipulator_TargetChaser.h">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="pedestrian.h">
+      <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

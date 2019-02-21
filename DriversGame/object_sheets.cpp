@@ -17,7 +17,7 @@
 
 extern CPFXAtlasGroup* g_translParticles;
 
-CObject_Sheets::CObject_Sheets( kvkeybase_t* kvdata ) : CGameObject()
+CObject_Sheets::CObject_Sheets( kvkeybase_t* kvdata )
 {
 	m_keyValues = kvdata;
 	m_ghostObject = NULL;

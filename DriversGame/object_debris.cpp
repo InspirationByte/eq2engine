@@ -43,7 +43,7 @@ CObject_Debris::~CObject_Debris()
 
 void CObject_Debris::OnRemove()
 {
-	CGameObject::OnRemove();
+	BaseClass::OnRemove();
 
 	if(m_physBody)
 	{
@@ -164,7 +164,7 @@ void CObject_Debris::Spawn()
 	}
 
 	// baseclass spawn
-	CGameObject::Spawn();
+	BaseClass::Spawn();
 }
 
 void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup)
@@ -227,7 +227,7 @@ void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup)
 	}
 
 	// baseclass spawn
-	CGameObject::Spawn();
+	BaseClass::Spawn();
 }
 
 void CObject_Debris::SpawnAsBreakablePart(IEqModel* model, int8 bodyGroup, int physObj)
@@ -299,7 +299,7 @@ void CObject_Debris::SpawnAsBreakablePart(IEqModel* model, int8 bodyGroup, int p
 	}
 
 	// baseclass spawn
-	CGameObject::Spawn();
+	BaseClass::Spawn();
 }
 
 void CObject_Debris::SetOrigin(const Vector3D& origin)
@@ -373,7 +373,7 @@ void CObject_Debris::Draw( int nRenderFlags )
 		}
 	}
 	else
-		CGameObject::Draw( nRenderFlags );
+		BaseClass::Draw( nRenderFlags );
 }
 
 void CObject_Debris::BreakAndSpawnDebris()

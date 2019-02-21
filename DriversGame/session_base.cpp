@@ -618,16 +618,16 @@ void CGameSessionBase::LoadCarData()
 
 					if (!KV_LoadFromFile(carent->carScript.c_str(), SP_MOD, &kvb))
 					{
-						MsgError("can't load default car script '%s'\n", carent->carScript.c_str());
+						MsgError("can't load car script '%s'\n", carent->carScript.c_str());
 						delete carent;
-						return;
+						continue;
 					}
 
 					if (!ParseVehicleConfig(carent, &kvb))
 					{
 						MsgError("Car configuration '%s' is invalid!\n", carent->carScript.c_str());
 						delete carent;
-						return;
+						continue;
 					}
 
 					PrecacheStudioModel(carent->visual.cleanModelName.c_str());

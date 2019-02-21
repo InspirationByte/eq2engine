@@ -21,6 +21,8 @@ struct trafficlights_t
 class CObject_TrafficLight : public CGameObject
 {
 public:
+	DECLARE_CLASS(CObject_TrafficLight, CGameObject)
+
 	CObject_TrafficLight( kvkeybase_t* kvdata );
 	~CObject_TrafficLight();
 

@@ -39,7 +39,7 @@ CObject_TrafficLight::~CObject_TrafficLight()
 
 void CObject_TrafficLight::OnRemove()
 {
-	CGameObject::OnRemove();
+	BaseClass::OnRemove();
 
 	if(m_pPhysicsObject)
 	{
@@ -125,9 +125,7 @@ void CObject_TrafficLight::Spawn()
 		}
 	}
 
-	//m_keyValues.Cleanup();
-	// baseclass spawn
-	CGameObject::Spawn();
+	BaseClass::Spawn();
 }
 
 void CObject_TrafficLight::SetOrigin(const Vector3D& origin)
@@ -210,7 +208,7 @@ void CObject_TrafficLight::Draw( int nRenderFlags )
 		}
 	}
 	else
-		CGameObject::Draw( nRenderFlags );
+		BaseClass::Draw( nRenderFlags );
 }
 
 void CObject_TrafficLight::Simulate(float fDt)

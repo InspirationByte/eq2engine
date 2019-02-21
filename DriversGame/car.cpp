@@ -59,6 +59,46 @@ static Vector3D s_BodyPartDirections[] =
 	Vector3D(0,1.0f,0),
 };
 
+DECLARE_CMD(towfun, "", CV_CHEAT)
+{
+	if (!g_pGameSession)
+		return;
+
+	CCar* pcar = g_pGameSession->GetPlayerCar();
+
+	if (pcar->GetHingedVehicle())
+	{
+		pcar->ReleaseHingedVehicle();
+		return;
+	}
+
+	DkList<CGameObject*> nearestCars;
+	g_pGameWorld->QueryObjects(nearestCars, length(pcar->m_conf->physics.body_size)*2.0f, pcar->GetOrigin(), [](CGameObject* x) {
+		return (x->ObjType() == GO_CAR || x->ObjType() == GO_CAR_AI);
+	});
+
+	CCar* nearestCar = nullptr;
+	float maxDist = DrvSynUnits::MaxCoordInUnits;
+
+	for (int i = 0; i < nearestCars.numElem(); i++)
+	{
+		if (nearestCars[i] == pcar)
+			continue;
+
+		float distBetweenCars = distance(pcar->GetOrigin(), nearestCars[i]->GetOrigin());
+
+		if (distBetweenCars < maxDist)
+		{
+			nearestCar = (CCar*)nearestCars[i];
+			maxDist = distBetweenCars;
+		}
+	}
+
+	if (nearestCar)
+		pcar->HingeVehicle(1, nearestCar, 0);
+}
+
+
 //
 // Some default parameters for handling
 //
@@ -1170,16 +1210,21 @@ void CCar::HingeVehicle(int thisHingePoint, CCar* otherVehicle, int otherHingePo
 	// if(dist < HINGE_INIT_DISTANCE_THRESH)
 	//	return;
 
-	//
 	if(m_trailerHinge)
 		ReleaseHingedVehicle();
 
 	otherVehicle->m_isLocalCar = m_isLocalCar;
 
+	Vector3D offsetA = transpose(!m_worldMatrix.getRotationComponent()) * m_conf->physics.hingePoints[thisHingePoint];
+	Vector3D offsetB = transpose(!otherVehicle->m_worldMatrix.getRotationComponent()) * otherVehicle->m_conf->physics.hingePoints[otherHingePoint];
+
+	// teleport the hinging object
+	otherVehicle->SetOrigin(GetOrigin() + offsetA - offsetB);
+
 	m_trailerHinge = new CEqPhysicsHingeJoint();
-	m_trailerHinge->Init(GetPhysicsBody(), otherVehicle->GetPhysicsBody(), vec3_forward,
+	m_trailerHinge->Init(GetPhysicsBody(), otherVehicle->GetPhysicsBody(), vec3_up,
 											m_conf->physics.hingePoints[thisHingePoint],
-											0.2f, 10.0f, 10.0f, 0.1f, 0.005f);
+											0.2f, DEG2RAD(65.0f), DEG2RAD(65.0f), 0.1f, 0.005f);
 
 	m_trailerHinge->SetEnabled(true);
 

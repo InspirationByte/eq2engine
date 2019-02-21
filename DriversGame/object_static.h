@@ -14,6 +14,8 @@
 class CObject_Static : public CGameObject
 {
 public:
+	DECLARE_CLASS(CObject_Static, CGameObject)
+
 	CObject_Static( kvkeybase_t* kvdata );
 	~CObject_Static();
 

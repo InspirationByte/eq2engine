@@ -28,6 +28,8 @@ class CObject_Debris : public CGameObject
 	friend class CCar;
 
 public:
+	DECLARE_CLASS(CObject_Debris, CGameObject)
+
 	CObject_Debris( kvkeybase_t* kvdata );
 	~CObject_Debris();
 

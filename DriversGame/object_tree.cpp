@@ -25,7 +25,7 @@ CObject_Tree::~CObject_Tree()
 
 void CObject_Tree::OnRemove()
 {
-	CGameObject::OnRemove();
+	BaseClass::OnRemove();
 
 	if(m_pPhysicsObject)
 	{
@@ -82,10 +82,7 @@ void CObject_Tree::Spawn()
 		delete m_pPhysicsObject;
 	}
 
-	//m_keyValues.Cleanup();
-
-	// baseclass spawn
-	CGameObject::Spawn();
+	BaseClass::Spawn();
 }
 
 void CObject_Tree::SetOrigin(const Vector3D& origin)
@@ -134,7 +131,7 @@ void CObject_Tree::Draw( int nRenderFlags )
 		}
 	}
 	else
-		CGameObject::Draw( nRenderFlags );
+		BaseClass::Draw( nRenderFlags );
 
 	// draw
 	// TODO: lights
