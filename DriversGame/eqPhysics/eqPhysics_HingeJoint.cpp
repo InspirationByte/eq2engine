@@ -30,16 +30,16 @@ void CEqPhysicsHingeJoint::AddedToWorld( CEqPhysics* physics )
 {
 	physics->AddConstraint(&m_midPointConstraint);
 	physics->AddConstraint(&m_maxDistanceConstraint);
-	//physics->AddConstraint(&m_sidePointConstraints[0]);
-	//physics->AddConstraint(&m_sidePointConstraints[1]);
+	physics->AddConstraint(&m_sidePointConstraints[0]);
+	physics->AddConstraint(&m_sidePointConstraints[1]);
 }
 
 void CEqPhysicsHingeJoint::RemovedFromWorld( CEqPhysics* physics )
 {
 	physics->RemoveConstraint(&m_midPointConstraint);
 	physics->RemoveConstraint(&m_maxDistanceConstraint);
-	//physics->RemoveConstraint(&m_sidePointConstraints[0]);
-	//physics->RemoveConstraint(&m_sidePointConstraints[1]);
+	physics->RemoveConstraint(&m_sidePointConstraints[0]);
+	physics->RemoveConstraint(&m_sidePointConstraints[1]);
 }
 
 void CEqPhysicsHingeJoint::Init(CEqRigidBody* body0, CEqRigidBody* body1, 
@@ -59,16 +59,14 @@ void CEqPhysicsHingeJoint::Init(CEqRigidBody* body0, CEqRigidBody* body1,
 	m_damping = damping;
 	m_flags = flags;
 
-	m_hingeAxis = normalize(m_hingeAxis);
-
-	FVector3D hingePosRel1 = body0->GetPosition() + hingePosRel0 - body1->GetPosition();
+	FVector3D hingePosRel1 = rotateVector(body0->GetPosition() + rotateVector(hingePosRel0, m_body0->GetOrientation()) - body1->GetPosition(), !m_body1->GetOrientation());
 
 	// generate the two positions relative to each body
-	FVector3D relPos0a = hingePosRel0 + hingeHalfWidth * hingeAxis;
-	FVector3D relPos0b = hingePosRel0 - hingeHalfWidth * hingeAxis;
+	FVector3D relPos0a = hingePosRel0 + hingeHalfWidth * m_hingeAxis;
+	FVector3D relPos0b = hingePosRel0 - hingeHalfWidth * m_hingeAxis;
 
-	FVector3D relPos1a = hingePosRel1 + hingeHalfWidth * hingeAxis;
-	FVector3D relPos1b = hingePosRel1 - hingeHalfWidth * hingeAxis;
+	FVector3D relPos1a = hingePosRel1 + hingeHalfWidth * m_hingeAxis;
+	FVector3D relPos1b = hingePosRel1 - hingeHalfWidth * m_hingeAxis;
 
 	float timescale = 1.0f / 20.0f;
 	float allowedDistanceMid = 0.05f;
@@ -84,12 +82,12 @@ void CEqPhysicsHingeJoint::Init(CEqRigidBody* body0, CEqRigidBody* body1,
 		// choose a direction that is perpendicular to the hinge
 		Vector3D perpDir(0.0f, 0.0f, 1.0f);
 
-		if (dot(perpDir, hingeAxis) > 0.1f)
+		if (dot(perpDir, m_hingeAxis) > 0.1f)
 			perpDir = Vector3D(0.0f, 1.0f, 0.0f);
 
 		// now make it perpendicular to the hinge
-		Vector3D sideAxis = cross(hingeAxis, perpDir);
-		perpDir = normalize( cross(sideAxis, hingeAxis) );
+		Vector3D sideAxis = cross(m_hingeAxis, perpDir);
+		perpDir = normalize( cross(sideAxis, m_hingeAxis) );
     
 		// the length of the "arm" TODO take this as a parameter? what's
 		// the effect of changing it?
@@ -99,18 +97,23 @@ void CEqPhysicsHingeJoint::Init(CEqRigidBody* body0, CEqRigidBody* body1,
 		// for body 0. relative to hinge
 		Vector3D hingeRelAnchorPos0 = perpDir * len;
 
+		
+
 		// anchor point for body 2 is chosen to be in the middle of the
 		// angle range.  relative to hinge
 		float angleToMiddle = 0.5f * (hingeFwdAngle - hingeBckAngle);
-		Vector3D hingeRelAnchorPos1 = rotateAxis3(hingeAxis, -angleToMiddle) * hingeRelAnchorPos0;
+		Vector3D hingeRelAnchorPos1 = rotateAxis3(m_hingeAxis, -angleToMiddle) * hingeRelAnchorPos0;
+
+		hingeRelAnchorPos0 = rotateVector(hingeRelAnchorPos0, m_body0->GetOrientation());
+		hingeRelAnchorPos1 = rotateVector(hingeRelAnchorPos1, m_body1->GetOrientation());
     
 		// work out the "string" length
 		float hingeHalfAngle = 0.5f * (hingeFwdAngle + hingeBckAngle);
 		float allowedDistance = len * 2.0f * sinf(hingeHalfAngle * 0.5f);
 
-		FVector3D hingePos = body1->GetPosition() + hingePosRel0;
-		FVector3D relPos0c = hingePos + hingeRelAnchorPos0 - body0->GetPosition();
-		FVector3D relPos1c = hingePos + hingeRelAnchorPos1 - body1->GetPosition();
+		FVector3D hingePos = body1->GetPosition() + rotateVector(hingePosRel0, m_body0->GetOrientation());
+		FVector3D relPos0c = rotateVector(hingePos + hingeRelAnchorPos0 - body0->GetPosition(), !m_body0->GetOrientation());
+		FVector3D relPos1c = rotateVector(hingePos + hingeRelAnchorPos1 - body1->GetPosition(), !m_body1->GetOrientation());
 
 		m_maxDistanceConstraint.Init(	body0, relPos0c, 
 										body1, relPos1c,

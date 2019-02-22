@@ -1224,7 +1224,7 @@ void CCar::HingeVehicle(int thisHingePoint, CCar* otherVehicle, int otherHingePo
 	m_trailerHinge = new CEqPhysicsHingeJoint();
 	m_trailerHinge->Init(GetPhysicsBody(), otherVehicle->GetPhysicsBody(), vec3_up,
 											m_conf->physics.hingePoints[thisHingePoint],
-											0.2f, DEG2RAD(65.0f), DEG2RAD(65.0f), 0.1f, 0.005f);
+											0.2f, DEG2RAD(65.0f), DEG2RAD(65.0f), DEG2RAD(90), 0.005f);
 
 	m_trailerHinge->SetEnabled(true);
 
