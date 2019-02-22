@@ -461,7 +461,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 
 				float textYPos = (y + i * m_font->GetLineHeight(helpTextParams)) + 4;
 
-				if(IsInRectangle(m_mousePosition.x,m_mousePosition.y,x,textYPos+2,w-x,12) || m_cmdSelection == i)
+				if(IsInRectangle(m_mousePosition.x,m_mousePosition.y,x,textYPos+2, rect.vrightBottom.x-rect.vleftTop.x,12) || m_cmdSelection == i)
 				{
 					g_pShaderAPI->Reset(STATE_RESET_TEX);
 					Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos, x+max_string_length*CMDLIST_SYMBOL_SIZE, textYPos + 15 , 0) };
@@ -666,6 +666,7 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 			m_cursorPos = m_startCursorPos = m_inputText.Length();
 
 			OnTextUpdate();
+			m_variantSelection = -1;
 		}
 
 		// multiple variants are trying to match string beginning
@@ -687,21 +688,6 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 
 		if (!anyFound)
 			m_variantSelection = -1;
-
-
-		/*
-		// remove from this position
-		m_inputText.Remove(currentStatementStart, inputText.Length());
-
-		if(max_match_chars != 0)
-			m_inputText.Append( (m_fastfind_cmdbase->GetName() + _Es(" ") + matching_str).c_str() );
-		else
-			m_inputText.Append( (m_fastfind_cmdbase->GetName() + _Es(" ")).c_str() );
-		
-
-		m_cursorPos = m_startCursorPos = m_inputText.Length();
-		OnTextUpdate();
-		*/
 	}
 	else
 	{
@@ -747,6 +733,7 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 			m_cursorPos = m_startCursorPos = m_inputText.Length();
 			
 			OnTextUpdate();
+			m_cmdSelection = -1;
 		}
 
 		// multiple variants are trying to match string beginning
@@ -914,7 +901,7 @@ int CEqConsoleInput::DrawAutoCompletion(float x, float y, float w)
 		bool bSelected = false;
 
 		if(IsInRectangle(m_mousePosition.x,m_mousePosition.y,
-						x,textYPos,(max_string_length*CMDLIST_SYMBOL_SIZE)-x,12) || m_variantSelection == i)
+						x,textYPos, rect.vrightBottom.x - rect.vleftTop.x,12) || m_variantSelection == i)
 		{
 			Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos-4,x+max_string_length*CMDLIST_SYMBOL_SIZE, textYPos + 14 , 1) };
 
