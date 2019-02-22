@@ -1215,11 +1215,16 @@ void CCar::HingeVehicle(int thisHingePoint, CCar* otherVehicle, int otherHingePo
 
 	otherVehicle->m_isLocalCar = m_isLocalCar;
 
+	otherVehicle->SetAngles(GetAngles());
+	otherVehicle->UpdateTransform();
+
 	Vector3D offsetA = transpose(!m_worldMatrix.getRotationComponent()) * m_conf->physics.hingePoints[thisHingePoint];
 	Vector3D offsetB = transpose(!otherVehicle->m_worldMatrix.getRotationComponent()) * otherVehicle->m_conf->physics.hingePoints[otherHingePoint];
 
 	// teleport the hinging object
 	otherVehicle->SetOrigin(GetOrigin() + offsetA - offsetB);
+
+	// FIXME: rotate the hinged vehicle same way
 
 	m_trailerHinge = new CEqPhysicsHingeJoint();
 	m_trailerHinge->Init(GetPhysicsBody(), otherVehicle->GetPhysicsBody(), vec3_up,

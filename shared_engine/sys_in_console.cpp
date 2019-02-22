@@ -626,98 +626,113 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 
 			m_cursorPos = m_startCursorPos = m_inputText.Length();
 			OnTextUpdate();
+			return;
 		}
-		else
+
+		EqString queryStr;
+
+		int spaceIdx = inputText.Find(" ");
+		if(spaceIdx != -1)
+			queryStr = inputText.c_str() + spaceIdx + 1;
+
+		for(int i = 0; i < m_variantList.numElem(); i++)
 		{
-			EqString queryStr;
+			char_index = m_variantList[i].Find(queryStr.c_str(), true);
 
-			int spaceIdx = inputText.Find(" ");
-			if(spaceIdx != -1)
-				queryStr = inputText.c_str() + spaceIdx + 1;
-
-			for(int i = 0; i < m_variantList.numElem(); i++)
+			if(char_index != -1)
 			{
-				char_index = m_variantList[i].Find(queryStr.c_str(), true);
-
-				if(char_index != -1)
+				if(max_match_chars == -1)
 				{
-					if(max_match_chars == -1)
-					{
-						matching_str = m_variantList[i];
-						max_match_chars = matching_str.Length();
-					}
-					else
-					{
-						int cmpLen = matching_str.GetMathingChars( m_variantList[i] );
+					matching_str = m_variantList[i];
+					max_match_chars = matching_str.Length();
+				}
+				else
+				{
+					int cmpLen = matching_str.GetMathingChars( m_variantList[i] );
 
-						if(cmpLen < max_match_chars)
-						{
-							matching_str = matching_str.Left(cmpLen);
-							max_match_chars = cmpLen;
-						}
+					if(cmpLen < max_match_chars)
+					{
+						matching_str = matching_str.Left(cmpLen);
+						max_match_chars = cmpLen;
 					}
 				}
 			}
+		}
 
-			// remove from this position
-			m_inputText.Remove(currentStatementStart, inputText.Length());
-
-			if(max_match_chars != 0)
-				m_inputText.Append( (m_fastfind_cmdbase->GetName() + _Es(" ") + matching_str).c_str() );
-			else
-				m_inputText.Append( (m_fastfind_cmdbase->GetName() + _Es(" ")).c_str() );
-
+		if (max_match_chars > queryStr.Length() && queryStr.CompareCaseIns(matching_str))
+		{
+			m_inputText.Remove(spaceIdx+1, inputText.Length());
+			m_inputText.Append(matching_str.c_str());
 			m_cursorPos = m_startCursorPos = m_inputText.Length();
+
 			OnTextUpdate();
 		}
+
+		// multiple variants are trying to match string beginning
+		bool anyFound = false;
+
+		for (int i = m_variantSelection + 1; i < m_variantList.numElem(); i++)
+		{
+			EqString& variant = m_variantList[i];
+
+			char_index = variant.Find(queryStr.c_str());
+
+			if (char_index == 0)
+			{
+				m_variantSelection = i;
+				anyFound = true;
+				break;
+			}
+		}
+
+		if (!anyFound)
+			m_variantSelection = -1;
+
+
+		/*
+		// remove from this position
+		m_inputText.Remove(currentStatementStart, inputText.Length());
+
+		if(max_match_chars != 0)
+			m_inputText.Append( (m_fastfind_cmdbase->GetName() + _Es(" ") + matching_str).c_str() );
+		else
+			m_inputText.Append( (m_fastfind_cmdbase->GetName() + _Es(" ")).c_str() );
+		
+
+		m_cursorPos = m_startCursorPos = m_inputText.Length();
+		OnTextUpdate();
+		*/
 	}
 	else
 	{
-		int exactCmdIdx = -1;
-
-		if(m_foundCmdList.numElem() == 1)
+		// single variant just autocompletes
+		if (m_foundCmdList.numElem() == 1)
 		{
 			// remove from this position
 			m_inputText.Remove(currentStatementStart, inputText.Length());
-			m_inputText.Append( varargs("%s ", m_foundCmdList[0]->GetName()) );
+			m_inputText.Append(varargs("%s ", m_foundCmdList[0]->GetName()));
 
 			m_cursorPos = m_startCursorPos = m_inputText.Length();
 			OnTextUpdate();
 			return;
 		}
 
-		for(int i = 0; i < m_foundCmdList.numElem();i++)
+		// extending input string
+		for (int i = 0; i < m_foundCmdList.numElem(); i++)
 		{
 			ConCommandBase* cmdBase = m_foundCmdList[i];
-
 			EqString conVarName(cmdBase->GetName());
-			char_index = conVarName.Find( inputText.c_str() );
 
-			if(char_index == -1)
-				continue;
-
-			if(char_index == 0)
-			{
-				exactCmdIdx = i;
-
-				// if we have 100% match, force to use this command
-				if(!inputText.CompareCaseIns(cmdBase->GetName()))
-					break;
-
-				if(!con_suggest.GetBool())
-					MsgAccept("%s - %s\n",cmdBase->GetName(), cmdBase->GetDesc());
-			}
-
-			if(max_match_chars == -1)
+			if (max_match_chars == -1)
 			{
 				matching_str = conVarName;
 				max_match_chars = matching_str.Length();
 			}
 			else
 			{
-				int cmpLen = matching_str.GetMathingChars( conVarName );
+				int cmpLen = matching_str.GetMathingChars(conVarName);
 
-				if(cmpLen < max_match_chars)
+				if (cmpLen < max_match_chars)
 				{
 					matching_str = matching_str.Left(cmpLen);
 					max_match_chars = cmpLen;
@@ -725,19 +740,35 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 			}
 		}
 
-		// remove from this position
-		m_inputText.Remove(currentStatementStart, inputText.Length());
+		// maximize text input
+		if (max_match_chars > m_inputText.Length() && m_inputText.CompareCaseIns(matching_str))
+		{
+			m_inputText.Assign(matching_str.c_str());
+			m_cursorPos = m_startCursorPos = m_inputText.Length();
+			
+			OnTextUpdate();
+		}
 
-		if(exactCmdIdx != -1)
-			m_inputText.Append( varargs("%s ", m_foundCmdList[exactCmdIdx]->GetName()) );
-		else if(max_match_chars != 0)
-			m_inputText.Append( matching_str.c_str() );
+		// multiple variants are trying to match string beginning
+		bool anyFound = false;
 
-		m_cursorPos = m_startCursorPos = m_inputText.Length();
-		OnTextUpdate();
+		for (int i = m_cmdSelection + 1; i < m_foundCmdList.numElem(); i++)
+		{
+			ConCommandBase* cmdBase = m_foundCmdList[i];
 
-		if(!con_suggest.GetBool())
-			Msg(" \n");
+			EqString conVarName(cmdBase->GetName());
+			char_index = conVarName.Find(inputText.c_str());
+
+			if (char_index == 0)
+			{
+				m_cmdSelection = i;
+				anyFound = true;
+				break;
+			}
+		}
+
+		if (!anyFound)
+			m_cmdSelection = -1;
 	}
 }
 

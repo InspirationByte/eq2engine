@@ -278,42 +278,42 @@ void CCameraAnimator::L_Update( float fDt, CCar* target )
 		Animate(CAM_MODE_TRIPOD_STATIC, 0, vec3_zero, Quaternion(), vec3_zero, fDt, collFilter);
 }
 
-void CCameraAnimator::Animate(	ECameraMode mode,
-								int nButtons,
-								const Vector3D& targetOrigin, const Quaternion& targetRotation, const Vector3D& targetVelocity,
-								float fDt,
-								eqPhysCollisionFilter& traceIgnore)
+void CCameraAnimator::Animate(ECameraMode mode,
+	int nButtons,
+	const Vector3D& targetOrigin, const Quaternion& targetRotation, const Vector3D& targetVelocity,
+	float fDt,
+	eqPhysCollisionFilter& traceIgnore)
 {
 	m_realMode = mode;
 
-	Vector3D shakeVec = ShakeView( fDt );
+	Vector3D shakeVec = ShakeView(fDt);
 
 	Vector3D pos = targetOrigin;
 
-	Vector3D car_forward = rotateVector(vec3_forward,targetRotation);
-	Vector3D car_side = rotateVector(vec3_right,targetRotation);
+	Vector3D car_forward = rotateVector(vec3_forward, targetRotation);
+	Vector3D car_side = rotateVector(vec3_right, targetRotation);
 
 	Vector3D euler_angles = EulerMatrixZXY(targetRotation); //eulers(targetRotation);
 	euler_angles = VRAD2DEG(euler_angles);
-	euler_angles *= Vector3D(-1,1,-1);
+	euler_angles *= Vector3D(-1, 1, -1);
 
 	//float targetForwardSpeed = pow(1.0f - clamp(fabs(dot(m_vecCameraVel, car_forward)), 0.0f, 20.0f)*0.05f, 2.0f);
 
 	//m_targetForwardSpeedModifier = lerp(m_targetForwardSpeedModifier, targetForwardSpeed, fDt*5.0f);
 
-	if(mode == CAM_MODE_OUTCAR || mode == CAM_MODE_OUTCAR_FIXED)
+	if (mode == CAM_MODE_OUTCAR || mode == CAM_MODE_OUTCAR_FIXED)
 	{
-		if(cam_velocityeffects.GetBool())
+		if (cam_velocityeffects.GetBool())
 		{
 			Vector3D velDiffFwd = car_forward * dot(m_vecCameraVelDiff, car_forward) * cam_velocity_forwardmod.GetFloat();
 			Vector3D velDiffSide = car_side * dot(m_vecCameraVelDiff, car_side) * cam_velocity_sidemod.GetFloat();
 			Vector3D velDiffUp = vec3_up * dot(m_vecCameraVelDiff, vec3_up)  * cam_velocity_upmod.GetFloat();
 
-			pos -= velDiffFwd+velDiffSide+velDiffUp;
+			pos -= velDiffFwd + velDiffSide + velDiffUp;
 
-			Vector3D camVelDiff = (targetVelocity-m_vecCameraVel)*CAR_ACCEL_VEL_FACTOR;
+			Vector3D camVelDiff = (targetVelocity - m_vecCameraVel)*CAR_ACCEL_VEL_FACTOR;
 
-			if(	length(camVelDiff) > CAR_DECEL_VEL_MINDIFF)
+			if (length(camVelDiff) > CAR_DECEL_VEL_MINDIFF)
 				m_vecCameraSpringVel += camVelDiff;
 
 			SpringFunction(m_vecCameraVelDiff, m_vecCameraSpringVel, cam_velocity_springconst.GetFloat(), cam_velocity_springdamp.GetFloat(), fDt);
@@ -330,10 +330,10 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 	float look_angle = 0.0f;
 
-	if(nButtons & IN_LOOKLEFT)
+	if (nButtons & IN_LOOKLEFT)
 		look_angle = -90.0f;
 
-	if(nButtons & IN_LOOKRIGHT)
+	if (nButtons & IN_LOOKRIGHT)
 		look_angle = 90.0f;
 
 	float fLookAngleDiff = AngleDiff(m_fLookAngle, look_angle);
@@ -355,140 +355,155 @@ void CCameraAnimator::Animate(	ECameraMode mode,
 
 	m_fTempCamAngle += fAngDiff * fDt * CAM_TURN_SPEED;
 
-	if(mode == CAM_MODE_OUTCAR)
+	switch (mode)
 	{
-		float desiredHeight = m_carConfig.height;
-		float desiredDist = m_carConfig.dist;
-
-		Vector3D cam_angles = Vector3D(0, m_fTempCamAngle - m_fLookAngle, 0);
-
-		if( bLookBack )
-			cam_angles = Vector3D(0, Yangle+180, 0);
-
-		Vector3D forward;
-		AngleVectors(cam_angles, &forward);
-
-		Vector3D cam_target = pos + Vector3D(0, desiredHeight, 0);
-
-		Vector3D cam_pos_h = pos + Vector3D(0,desiredHeight,0);
-		Vector3D cam_pos = cam_pos_h - forward*desiredDist;
-
-		// trace back
-		CollisionData_t back_coll;
-
-
-		btBoxShape sphere(btVector3(0.5f, 0.5f, 0.5f));
-		if(g_pPhysics->TestConvexSweep(&sphere, identity(), cam_pos_h, cam_pos, back_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_VEHICLE, &traceIgnore))
+		case CAM_MODE_OUTCAR:
 		{
-			if (back_coll.fract < 0.05f)
-				back_coll.fract = 0.05f;
+			float desiredHeight = m_carConfig.height;
+			float desiredDist = m_carConfig.dist;
 
-			desiredDist *= back_coll.fract;
+			Vector3D cam_angles = Vector3D(0, m_fTempCamAngle - m_fLookAngle, 0);
+
+			if (bLookBack)
+				cam_angles = Vector3D(0, Yangle + 180, 0);
+
+			Vector3D forward;
+			AngleVectors(cam_angles, &forward);
+
+			Vector3D cam_target = pos + Vector3D(0, desiredHeight, 0);
+
+			Vector3D cam_pos_h = pos + Vector3D(0, desiredHeight, 0);
+			Vector3D cam_pos = cam_pos_h - forward * desiredDist;
+
+			// trace back
+			CollisionData_t back_coll;
+
+			btBoxShape sphere(btVector3(0.5f, 0.5f, 0.5f));
+			if (g_pPhysics->TestConvexSweep(&sphere, identity(), cam_pos_h, cam_pos, back_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_VEHICLE, &traceIgnore))
+			{
+				if (back_coll.fract < 0.05f)
+					back_coll.fract = 0.05f;
+
+				desiredDist *= back_coll.fract;
+			}
+
+			// make camera out from car smoothly
+			m_cameraDistVar += (desiredDist - m_cameraDistVar) * fDt * CAM_DISTANCE_SPEED;
+			m_cameraDistVar = min(m_cameraDistVar, desiredDist); // clamp to desired distance
+
+			cam_pos = cam_pos_h - forward * (m_cameraDistVar - 0.1f);
+			Vector3D cam_pos_low = pos + Vector3D(0, CAM_HEIGHT_TRACE, 0) - forward * desiredDist;
+
+			CollisionData_t height_coll;
+			g_pPhysics->TestLine(cam_pos + Vector3D(0, desiredHeight, 0), cam_pos_low, height_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_WATER);
+
+			FReal fCamDot = fabs(dot(height_coll.normal, Vector3D(0, 1, 0)));
+
+			if (height_coll.fract < 1.0f && fCamDot > 0.5f)
+			{
+				FReal height = height_coll.position.y;
+
+				cam_pos.y = desiredHeight + height - CAM_HEIGHT_TRACE;
+			}
+
+			cam_angles = VectorAngles(normalize(cam_target - cam_pos));
+
+			m_computedView.SetOrigin(cam_pos);
+			m_computedView.SetAngles(cam_angles + shakeVec);
+			m_computedView.SetFOV(m_carConfig.fov);
+			break;
 		}
-
-		// make camera out from car smoothly
-		m_cameraDistVar += (desiredDist-m_cameraDistVar) * fDt * CAM_DISTANCE_SPEED;
-		m_cameraDistVar = min(m_cameraDistVar, desiredDist); // clamp to desired distance
-
-		cam_pos = cam_pos_h - forward*(m_cameraDistVar-0.1f);
-		Vector3D cam_pos_low = pos + Vector3D(0,CAM_HEIGHT_TRACE,0) - forward*desiredDist;
-
-		CollisionData_t height_coll;
-		g_pPhysics->TestLine(cam_pos + Vector3D(0,desiredHeight,0), cam_pos_low, height_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_WATER);
-
-		FReal fCamDot = fabs(dot(height_coll.normal, Vector3D(0,1,0)));
-
-		if(height_coll.fract < 1.0f && fCamDot > 0.5f)
+		case CAM_MODE_OUTCAR_FIXED:
 		{
-			FReal height = height_coll.position.y;
+			euler_angles += m_rotation;
 
-			cam_pos.y = desiredHeight + height - CAM_HEIGHT_TRACE;
-		}
+			Vector3D forward;
+			AngleVectors(euler_angles, &forward);
 
-		cam_angles = VectorAngles(normalize(cam_target - cam_pos));
-
-		m_computedView.SetOrigin(cam_pos);
-		m_computedView.SetAngles(cam_angles + shakeVec);
-		m_computedView.SetFOV(m_carConfig.fov);
-	}
-	else if(mode == CAM_MODE_OUTCAR_FIXED)
-	{
-		euler_angles += m_rotation;
-
-		Vector3D forward;
-		AngleVectors(euler_angles, &forward);
-
-		m_computedView.SetOrigin( pos - forward * m_carConfig.dist);
-		m_computedView.SetAngles( euler_angles + shakeVec );
-		m_computedView.SetFOV( m_cameraFOV );
-	}
-	else if(mode == CAM_MODE_INCAR)
-	{
-		float lookAngle = m_fLookAngle;
-
-		if( bLookBack )
-			lookAngle = 180.0f;
-
-		euler_angles = EulerMatrixZXY(targetRotation * Quaternion(-DEG2RAD(lookAngle), vec3_up) * Quaternion(DEG2RAD(1.5), vec3_right));
-		euler_angles = VRAD2DEG(euler_angles);
-		euler_angles *= Vector3D(-1,1,-1);
-
-		Vector3D forward, up, right;
-		AngleVectors(euler_angles, &forward, &right, &up);
-
-		Vector3D vecDir = forward*m_carConfig.distInCar;
-
-		if( !bLookBack )
-		{
-			float dist_multipler = (m_fLookAngle / 90.0f);
-			vecDir = lerp(forward * m_carConfig.distInCar, right*m_carConfig.widthInCar*sign(dist_multipler), fabs(dist_multipler));
-		}
-
-		Vector3D camPos = pos + vecDir + up * m_carConfig.heightInCar;
-
-		m_computedView.SetOrigin(camPos);
-		m_computedView.SetAngles(euler_angles + shakeVec);
-		m_computedView.SetFOV(m_carConfig.fov);
-	}
-	else if(mode == CAM_MODE_TRIPOD_ZOOM || mode == CAM_MODE_TRIPOD_FIXEDZOOM)
-	{
-		Vector3D cam_pos = m_dropPos;
-		Vector3D cam_target = pos;
-
-		Vector3D cam_angles = VectorAngles(normalize(cam_target - cam_pos));
-
-		m_computedView.SetAngles(cam_angles + shakeVec);
-		m_computedView.SetOrigin(m_dropPos);
-
-		if(mode == CAM_MODE_TRIPOD_ZOOM)
-		{
-			float distance = length(cam_pos - cam_target);
-
-			float fDistance = distance;
-
-			fDistance += ZOOM_START_DIST;
-
-			// clamp bounds
-			if(fDistance > ZOOM_END_DIST)
-				fDistance = ZOOM_END_DIST;
-
-			float distance_factor = 1.0f - (fDistance / ZOOM_END_DIST);
-
-			float fFov = lerp(START_FOV, END_FOV, clamp(2.5f+logf(1.0f-distance_factor), 0.0f, 1.0f));
-
-			m_computedView.SetFOV(fFov);
-		}
-		else
-		{
+			m_computedView.SetOrigin(pos - forward * m_carConfig.dist);
+			m_computedView.SetAngles(euler_angles + shakeVec);
 			m_computedView.SetFOV(m_cameraFOV);
+			break;
 		}
+		case CAM_MODE_INCAR:
+		{
+			float lookAngle = m_fLookAngle;
 
-	}
-	else if(mode == CAM_MODE_TRIPOD_STATIC)
-	{
-		m_computedView.SetAngles(m_rotation + shakeVec);
-		m_computedView.SetOrigin(m_dropPos);
-		m_computedView.SetFOV(m_cameraFOV);
+			if (bLookBack)
+				lookAngle = 180.0f;
+
+			euler_angles = EulerMatrixZXY(targetRotation * Quaternion(-DEG2RAD(lookAngle), vec3_up) * Quaternion(DEG2RAD(1.5), vec3_right));
+			euler_angles = VRAD2DEG(euler_angles);
+			euler_angles *= Vector3D(-1, 1, -1);
+
+			Vector3D forward, up, right;
+			AngleVectors(euler_angles, &forward, &right, &up);
+
+			Vector3D vecDir = forward * m_carConfig.distInCar;
+
+			if (!bLookBack)
+			{
+				float dist_multipler = (m_fLookAngle / 90.0f);
+				vecDir = lerp(forward * m_carConfig.distInCar, right*m_carConfig.widthInCar*sign(dist_multipler), fabs(dist_multipler));
+			}
+
+			Vector3D camPos = pos + vecDir + up * m_carConfig.heightInCar;
+
+			m_computedView.SetOrigin(camPos);
+			m_computedView.SetAngles(euler_angles + shakeVec);
+			m_computedView.SetFOV(m_carConfig.fov);
+			break;
+		}
+		case CAM_MODE_TRIPOD_ZOOM:
+		case CAM_MODE_TRIPOD_FIXEDZOOM:
+		{
+			Vector3D cam_pos = m_dropPos;
+			Vector3D cam_target = pos;
+
+			Vector3D cam_angles = VectorAngles(normalize(cam_target - cam_pos));
+
+			m_computedView.SetAngles(cam_angles + shakeVec);
+			m_computedView.SetOrigin(m_dropPos);
+
+			if (mode == CAM_MODE_TRIPOD_ZOOM)
+			{
+				float distance = length(cam_pos - cam_target);
+
+				float fDistance = distance;
+
+				fDistance += ZOOM_START_DIST;
+
+				// clamp bounds
+				if (fDistance > ZOOM_END_DIST)
+					fDistance = ZOOM_END_DIST;
+
+				float distance_factor = fDistance / ZOOM_END_DIST;
+
+				float fFov = lerp(START_FOV, END_FOV, clamp(2.5f + logf(distance_factor), 0.0f, 1.0f));
+
+				m_computedView.SetFOV(fFov);
+			}
+			else
+			{
+				m_computedView.SetFOV(m_cameraFOV);
+			}
+			break;
+		}
+		case CAM_MODE_TRIPOD_STATIC:
+		{
+			m_computedView.SetAngles(m_rotation + shakeVec);
+			m_computedView.SetOrigin(m_dropPos);
+			m_computedView.SetFOV(m_cameraFOV);
+			break;
+		}
+		case CAM_MODE_OUTCAR_WHEEL_0:
+		case CAM_MODE_OUTCAR_WHEEL_1:
+		case CAM_MODE_OUTCAR_WHEEL_2:
+		case CAM_MODE_OUTCAR_WHEEL_3:
+		{
+			MsgError("CAM_MODE_OUTCAR_WHEEL_N unimplemented!\n");
+			break;
+		}
 	}
 }
 

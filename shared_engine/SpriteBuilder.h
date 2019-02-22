@@ -10,8 +10,8 @@
 
 #include "IMaterialSystem.h"
 
-#define SVBO_MAX_SIZE(s, T)	(s*sizeof(T)*4)
-#define SIBO_MAX_SIZE(s)	(s*(sizeof(uint16)*6))
+#define SVBO_MAX_SIZE(s, T)	((size_t)s*sizeof(T)*4)
+#define SIBO_MAX_SIZE(s)	((size_t)s*(sizeof(uint16)*6))
 
 template <class VTX_TYPE>
 class CSpriteBuilder
@@ -127,6 +127,9 @@ void CSpriteBuilder<VTX_TYPE>::Shutdown()
 template <class VTX_TYPE>
 void CSpriteBuilder<VTX_TYPE>::AddVertices(VTX_TYPE* verts, int nVerts)
 {
+	if ((uint)(m_numVertices + nVerts) > SVBO_MAX_SIZE(m_maxQuadVerts, VTX_TYPE))
+		return;
+
 	memcpy(&m_pVerts[m_numVertices], verts, nVerts*sizeof(VTX_TYPE));
 	m_numVertices += nVerts;
 }
@@ -134,6 +137,9 @@ void CSpriteBuilder<VTX_TYPE>::AddVertices(VTX_TYPE* verts, int nVerts)
 template <class VTX_TYPE>
 void CSpriteBuilder<VTX_TYPE>::AddIndices(uint16 *indices, int nIndx)
 {
+	if ((uint)(m_numIndices + nIndx) > SIBO_MAX_SIZE(m_maxQuadVerts))
+		return;
+
 	memcpy(&m_pIndices[m_numIndices], indices, nIndx*sizeof(uint16));
 	m_numIndices += nIndx;
 }
@@ -156,7 +162,7 @@ void CSpriteBuilder<VTX_TYPE>::AddParticleStrip(VTX_TYPE* verts, int nVertices)
 template <class VTX_TYPE>
 int CSpriteBuilder<VTX_TYPE>::_AllocateGeom( int nVertices, int nIndices, VTX_TYPE** verts, uint16** indices, bool preSetIndices )
 {
-	if(m_numVertices > SVBO_MAX_SIZE(m_maxQuadVerts, VTX_TYPE))
+	if((uint)(m_numVertices+nVertices) > SVBO_MAX_SIZE(m_maxQuadVerts, VTX_TYPE))
 	{
 		// don't warn me about overflow
 		m_numVertices = 0;
@@ -203,7 +209,7 @@ void CSpriteBuilder<VTX_TYPE>::_AddParticleStrip(VTX_TYPE* verts, int nVertices)
 	if(nVertices == 0)
 		return;
 
-	if(m_numVertices > SVBO_MAX_SIZE(m_maxQuadVerts, VTX_TYPE))
+	if((uint)(m_numVertices + nVertices) > SVBO_MAX_SIZE(m_maxQuadVerts, VTX_TYPE))
 	{
 		MsgWarning("ParticleRenderGroup overflow\n");
 
