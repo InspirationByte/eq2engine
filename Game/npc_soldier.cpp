@@ -329,9 +329,9 @@ void CNPCTestSoldier::ReleaseRagdoll()
 		Matrix4x4 object_transform = GetRenderWorldTransform();
 
 		for(int i = 0; i < m_numBones; i++)
-			m_BoneMatrixList[i] = m_BoneMatrixList[i] * object_transform;
+			m_boneTransforms[i] = m_boneTransforms[i] * object_transform;
 
-		m_pRagdoll->SetBoneTransform(m_BoneMatrixList);
+		m_pRagdoll->SetBoneTransform(m_boneTransforms);
 
 		//m_pRagdoll->m_pJoints[0]->GetPhysicsObjectA()->SetLinearFactor(vec3_zero);
 		//m_pRagdoll->m_pJoints[0]->GetPhysicsObjectA()->SetAngularFactor(vec3_zero);
@@ -344,7 +344,7 @@ void CNPCTestSoldier::OnPreRender()
 {
 	if(IsDead())
 	{
-		m_pRagdoll->GetVisualBonesTransforms( m_BoneMatrixList );
+		m_pRagdoll->GetVisualBonesTransforms( m_boneTransforms );
 	}
 	else
 		UpdateBones();
@@ -501,7 +501,7 @@ void CNPCTestSoldier::Render(int nViewRenderFlags)
 		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
 		{
 			materials->SetSkinningEnabled(true);
-			viewrenderer->DrawModelPart(m_pModel, nModDescId, j, nViewRenderFlags, m_static_lights, m_BoneMatrixList);
+			viewrenderer->DrawModelPart(m_pModel, nModDescId, j, nViewRenderFlags, m_static_lights, m_boneTransforms);
 		}
 	}
 }

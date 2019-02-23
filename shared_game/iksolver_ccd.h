@@ -14,14 +14,15 @@
 inline void IKLimitDOF( giklink_t* link )
 {
 	// FIXME: broken here
+	// gimbal lock always occurent
+	// better to use quaternions...
+
 	Vector3D euler = eulers(link->quat);
 
 	euler = VRAD2DEG(euler);
 
 	// clamp to this limits
-	euler.x = clamp(euler.x, link->limits[0].x, link->limits[1].x);
-	euler.y = clamp(euler.y, link->limits[0].y, link->limits[1].y);
-	euler.z = clamp(euler.z, link->limits[0].z, link->limits[1].z);
+	euler = clamp(euler, link->l->mins, link->l->maxs);
 
 	//euler = NormalizeAngles180(euler);
 
@@ -34,18 +35,18 @@ inline void IKLimitDOF( giklink_t* link )
 #define IK_DISTANCE_EPSILON 0.05f
 
 // solves Ik chain
-inline bool SolveIKLinks(giklink_t* pLinks, giklink_t* pEffectorLink, Vector3D &target, float fDt, int numIterations = 100)
+inline bool SolveIKLinks(giklink_t& effector, Vector3D &target, float fDt, int numIterations = 100)
 {
 	Vector3D	rootPos, curEnd, targetVector, desiredEnd, curVector, crossResult;
 
 	// start at the last link in the chain
-	giklink_t* link = &pLinks[pEffectorLink->parent];
+	giklink_t* link = effector.parent;
 
 	int nIter = 0;
 	do
 	{
 		rootPos = link->absTrans.rows[3].xyz();
-		curEnd = pEffectorLink->absTrans.rows[3].xyz();
+		curEnd = effector.absTrans.rows[3].xyz();
 
 		desiredEnd = target;
 		float dist = distance(curEnd, desiredEnd);
@@ -68,7 +69,7 @@ inline bool SolveIKLinks(giklink_t* pLinks, giklink_t* pEffectorLink, Vector3D &
 				float turnAngle = acosf(cosAngle); // get the angle of dot product
 
 				// damp using time
-				turnAngle *= fDt * link->damping;
+				turnAngle *= fDt * link->l->damping;
 
 				Quaternion quat(turnAngle, crossResult);
 				
@@ -78,10 +79,10 @@ inline bool SolveIKLinks(giklink_t* pLinks, giklink_t* pEffectorLink, Vector3D &
 				IKLimitDOF( link );
 			}
 
-			if (link->parent == -1) 
-				link = &pLinks[pEffectorLink->parent]; // restart
+			if (!link->parent) 
+				link = effector.parent; // restart
 			else
-				link = &pLinks[link->parent];
+				link = link->parent;
 		}
 	}while(nIter++ < numIterations && distance(curEnd, desiredEnd) > IK_DISTANCE_EPSILON);
 			

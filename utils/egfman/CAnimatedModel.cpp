@@ -22,7 +22,7 @@ CAnimatedModel::CAnimatedModel()
 	for(int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
 	{
 		m_sequenceTimers[i].sequence_index = -1;
-		m_sequenceTimers[i].base_sequence = NULL;
+		m_sequenceTimers[i].seq = NULL;
 	}
 
 	m_BoneMatrixList = NULL;
@@ -130,7 +130,7 @@ void CAnimatedModel::TogglePhysicsState()
 			
 
 			//UpdateBones();
-			//m_pRagdoll->SetBoneTransform( m_BoneMatrixList, identity4() );
+			//m_pRagdoll->SetBoneTransform( m_boneTransforms, identity4() );
 		}
 	}
 }
@@ -228,7 +228,7 @@ void CAnimatedModel::DestroyAnimationThings()
 	for(int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
 	{
 		m_sequenceTimers[i].sequence_index = -1;
-		m_sequenceTimers[i].base_sequence = NULL;
+		m_sequenceTimers[i].seq = NULL;
 
 		m_sequenceTimers[i].ResetPlayback(true);
 
@@ -385,10 +385,10 @@ void CAnimatedModel::PreloadMotionData(studioHwData_t::motionData_t* pMotionData
 	for(int i = 0; i < pMotionData->numPoseControllers; i++)
 	{
 		gposecontroller_t controller;
-		controller.pDesc = &pMotionData->poseControllers[i];
+		controller.p = &pMotionData->poseControllers[i];
 
 		// get center in blending range
-		controller.value = lerp(controller.pDesc->blendRange[0], controller.pDesc->blendRange[1], 0.5f);
+		controller.value = lerp(controller.p->blendRange[0], controller.p->blendRange[1], 0.5f);
 		controller.interpolatedValue = controller.value;
 
 		m_poseControllers.append(controller);
@@ -431,7 +431,7 @@ void CAnimatedModel::PreloadMotionData(studioHwData_t::motionData_t* pMotionData
 			mod_sequence.events[j] = &pMotionData->events[seqdatadesc->events[j]];
 
 		for(int j = 0; j < mod_sequence.numSequenceBlends; j++)
-			mod_sequence.sequenceblends[j] = &m_pSequences[seqdatadesc->sequenceblends[j]];
+			mod_sequence.blends[j] = &m_pSequences[seqdatadesc->sequenceblends[j]];
 
 		m_pSequences.append( mod_sequence );
 	}
@@ -478,14 +478,14 @@ void CAnimatedModel::SetSequence(int animIndex,int slot)
 	m_sequenceTimers[slot].sequence_index = animIndex;
 
 	if(m_sequenceTimers[slot].sequence_index != -1)
-		m_sequenceTimers[slot].base_sequence = &m_pSequences[ m_sequenceTimers[slot].sequence_index ];
+		m_sequenceTimers[slot].seq = &m_pSequences[ m_sequenceTimers[slot].sequence_index ];
 
 	// reset playback speed to avoid some errors
 	SetPlaybackSpeedScale(1.0f, slot);
 
 	if(slot == 0)
 	{
-		m_fRemainingTransitionTime = m_sequenceTimers[slot].base_sequence->transitiontime;
+		m_fRemainingTransitionTime = m_sequenceTimers[slot].seq->transitiontime;
 
 		// copy last frames for transition
 		memcpy(m_pTransitionAnimationBoneFrames, m_pLastBoneFrames, sizeof(animframe_t)*m_numBones);
@@ -518,8 +518,8 @@ void CAnimatedModel::SetActivity(Activity act,int slot)
 // returns current activity
 Activity CAnimatedModel::GetCurrentActivity(int slot)
 {
-	if(m_sequenceTimers[slot].base_sequence)
-		return m_sequenceTimers[slot].base_sequence->activity;
+	if(m_sequenceTimers[slot].seq)
+		return m_sequenceTimers[slot].seq->activity;
 
 	return ACT_INVALID;
 }
@@ -635,10 +635,10 @@ Vector3D CAnimatedModel::GetLocalAttachmentDirection(int nAttach)
 // returns duration time of the current animation
 float CAnimatedModel::GetCurrentAnimationDuration()
 {
-	if(!m_sequenceTimers[0].base_sequence)
+	if(!m_sequenceTimers[0].seq)
 		return 1.0f;
 
-	return (m_sequenceTimers[0].base_sequence->animations[0]->bones[0].numFrames - 1) / m_sequenceTimers[0].base_sequence->framerate;
+	return (m_sequenceTimers[0].seq->animations[0]->bones[0].numFrames - 1) / m_sequenceTimers[0].seq->framerate;
 }
 
 int CAnimatedModel::GetCurrentAnimationFrame()
@@ -648,10 +648,10 @@ int CAnimatedModel::GetCurrentAnimationFrame()
 
 int CAnimatedModel::GetCurrentAnimationDurationInFrames()
 {
-	if(!m_sequenceTimers[0].base_sequence)
+	if(!m_sequenceTimers[0].seq)
 		return 1;
 
-	return m_sequenceTimers[0].base_sequence->animations[0]->bones[0].numFrames - 1;
+	return m_sequenceTimers[0].seq->animations[0]->bones[0].numFrames - 1;
 }
 
 // returns duration time of the specific animation
@@ -761,7 +761,7 @@ void CAnimatedModel::AdvanceFrame(float frameTime)
 {
 	m_sequenceTimerBlendings[0] = 1.0f;
 
-	if(m_sequenceTimers[0].base_sequence)
+	if(m_sequenceTimers[0].seq)
 	{
 		float div_frametime = (frameTime*30) / 8;
 
@@ -784,7 +784,7 @@ void CAnimatedModel::AdvanceFrame(float frameTime)
 	for(int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
 	{
 		if(m_sequenceTimers[i].sequence_index != -1)
-			m_sequenceTimers[i].base_sequence = &m_pSequences[ m_sequenceTimers[i].sequence_index ];
+			m_sequenceTimers[i].seq = &m_pSequences[ m_sequenceTimers[i].sequence_index ];
 
 		m_sequenceTimers[i].AdvanceFrame(frameTime);
 	}
@@ -831,7 +831,7 @@ void CAnimatedModel::GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone
 	int blendAnimation2 = 0;
 			
 	ComputeAnimationBlend(	pSequence->numAnimations, 
-							pSequence->posecontroller->pDesc->blendRange, 
+							pSequence->posecontroller->p->blendRange, 
 							pSequence->posecontroller->value, 
 							blendWeight, 
 							blendAnimation1, 
@@ -857,7 +857,7 @@ int CAnimatedModel::FindPoseController(char *name)
 {
 	for(int i = 0; i < m_poseControllers.numElem(); i++)
 	{
-		if(!stricmp(m_poseControllers[i].pDesc->name, name))
+		if(!stricmp(m_poseControllers[i].p->name, name))
 			return i;
 	}
 
@@ -878,10 +878,10 @@ void CAnimatedModel::UpdateBones()
 	for(int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
 	{
 		if(m_sequenceTimers[i].sequence_index != -1)
-			m_sequenceTimers[i].base_sequence = &m_pSequences[ m_sequenceTimers[i].sequence_index ];
+			m_sequenceTimers[i].seq = &m_pSequences[ m_sequenceTimers[i].sequence_index ];
 	}
 
-	if(!m_sequenceTimers[0].base_sequence || m_pSequences.numElem() == 0)
+	if(!m_sequenceTimers[0].seq || m_pSequences.numElem() == 0)
 	{
 		StandardPose();
 		return;
@@ -896,7 +896,7 @@ void CAnimatedModel::UpdateBones()
 		for(int j = 0; j < MAX_SEQUENCE_TIMERS; j++)
 		{
 			// if no animation plays on this timer, continue
-			if(!m_sequenceTimers[j].base_sequence)
+			if(!m_sequenceTimers[j].seq)
 				continue;
 
 			float blend_weight = m_sequenceTimerBlendings[j];
@@ -904,7 +904,7 @@ void CAnimatedModel::UpdateBones()
 			if(blend_weight <= 0)
 				continue;
 
-			studioHwData_t::motionData_t::animation_t *curanim = m_sequenceTimers[j].base_sequence->animations[0];
+			studioHwData_t::motionData_t::animation_t *curanim = m_sequenceTimers[j].seq->animations[0];
 
 			if(!curanim)
 				continue;
@@ -916,7 +916,7 @@ void CAnimatedModel::UpdateBones()
 			float frame_interp = m_sequenceTimers[j].sequence_time - m_sequenceTimers[j].currFrame;
 
 			// blend between many animations in sequence using pose controller
-			if(m_sequenceTimers[j].base_sequence->numAnimations > 1 && m_sequenceTimers[j].base_sequence->posecontroller)
+			if(m_sequenceTimers[j].seq->numAnimations > 1 && m_sequenceTimers[j].seq->posecontroller)
 			{
 				
 				float playingBlendWeight = 0;
@@ -924,16 +924,16 @@ void CAnimatedModel::UpdateBones()
 				int playingBlendAnimation2 = 0;
 
 				// get frame indexes and lerp value of blended animation
-				ComputeAnimationBlend(	m_sequenceTimers[j].base_sequence->numAnimations, 
-										m_sequenceTimers[j].base_sequence->posecontroller->pDesc->blendRange, 
-										m_sequenceTimers[j].base_sequence->posecontroller->value, 
+				ComputeAnimationBlend(	m_sequenceTimers[j].seq->numAnimations, 
+										m_sequenceTimers[j].seq->posecontroller->p->blendRange, 
+										m_sequenceTimers[j].seq->posecontroller->value, 
 										playingBlendWeight, 
 										playingBlendAnimation1, 
 										playingBlendAnimation2);
 
 				// get frame pointers
-				studioHwData_t::motionData_t::animation_t* pPlayingAnim1 = m_sequenceTimers[j].base_sequence->animations[playingBlendAnimation1];
-				studioHwData_t::motionData_t::animation_t* pPlayingAnim2 = m_sequenceTimers[j].base_sequence->animations[playingBlendAnimation2];
+				studioHwData_t::motionData_t::animation_t* pPlayingAnim1 = m_sequenceTimers[j].seq->animations[playingBlendAnimation1];
+				studioHwData_t::motionData_t::animation_t* pPlayingAnim2 = m_sequenceTimers[j].seq->animations[playingBlendAnimation2];
 
 				// compute blending frame
 				GetInterpolatedBoneFrameBetweenTwoAnimations(	pPlayingAnim1,
@@ -948,7 +948,7 @@ void CAnimatedModel::UpdateBones()
 			else
 			{
 				// simply compute frames
-				studioHwData_t::motionData_t::animation_t *curanim = m_sequenceTimers[j].base_sequence->animations[0];
+				studioHwData_t::motionData_t::animation_t *curanim = m_sequenceTimers[j].seq->animations[0];
 
 				GetInterpolatedBoneFrame(curanim, boneId, m_sequenceTimers[j].currFrame, m_sequenceTimers[j].nextFrame, frame_interp, cTimedFrame);
 			}
@@ -957,9 +957,9 @@ void CAnimatedModel::UpdateBones()
 			ZeroFrameTransform(cAddFrame);
 
 			// add blended sequences to this
-			for(int blend_seq = 0; blend_seq < m_sequenceTimers[j].base_sequence->numSequenceBlends; blend_seq++)
+			for(int blend_seq = 0; blend_seq < m_sequenceTimers[j].seq->numSequenceBlends; blend_seq++)
 			{
-				gsequence_t* pSequence = m_sequenceTimers[j].base_sequence->sequenceblends[blend_seq];
+				gsequence_t* pSequence = m_sequenceTimers[j].seq->blends[blend_seq];
 
 				animframe_t frame;
 
@@ -972,7 +972,7 @@ void CAnimatedModel::UpdateBones()
 			AddFrameTransform(cTimedFrame, cAddFrame, cTimedFrame);
 
 			// interpolate or add the slots, this is useful for body part splitting
-			if( m_sequenceTimers[j].base_sequence->flags & SEQFLAG_SLOTBLEND )
+			if( m_sequenceTimers[j].seq->flags & SEQFLAG_SLOTBLEND )
 			{
 				cTimedFrame.angBoneAngles *= blend_weight;
 				cTimedFrame.vecBonePosition *= blend_weight;
@@ -984,17 +984,17 @@ void CAnimatedModel::UpdateBones()
 		}
 
 		// transition of the animation frames TODO: additional doubling slots for non-base timers
-		if(m_sequenceTimers[0].base_sequence && m_fRemainingTransitionTime > 0)
+		if(m_sequenceTimers[0].seq && m_fRemainingTransitionTime > 0)
 		{
-			float transition_factor = m_fRemainingTransitionTime / m_sequenceTimers[0].base_sequence->transitiontime;
+			float transition_factor = m_fRemainingTransitionTime / m_sequenceTimers[0].seq->transitiontime;
 
 			InterpolateFrameTransform( cComputedFrame, m_pTransitionAnimationBoneFrames[boneId], transition_factor, cComputedFrame );
 		}
 
 		/*
-		if(r_springanimations.GetBool() && m_sequenceTimers[0].base_sequence)
+		if(r_springanimations.GetBool() && m_sequenceTimers[0].seq)
 		{
-			animframe_t mulFrame = m_sequenceTimers[0].base_sequence->animations[0]->bones[boneId].keyFrames[m_sequenceTimers[0].nextFrame];
+			animframe_t mulFrame = m_sequenceTimers[0].seq->animations[0]->bones[boneId].keyFrames[m_sequenceTimers[0].nextFrame];
 
 			mulFrame.angBoneAngles -= cComputedFrame.angBoneAngles;
 			mulFrame.vecBonePosition -= cComputedFrame.vecBonePosition;
@@ -1002,46 +1002,46 @@ void CAnimatedModel::UpdateBones()
 			mulFrame.angBoneAngles *= r_springanimations_velmul.GetFloat();
 			mulFrame.vecBonePosition *= r_springanimations_velmul.GetFloat();
 
-			AddFrameTransform(m_pBoneVelocities[boneId], mulFrame, m_pBoneVelocities[boneId]);
+			AddFrameTransform(m_velocityFrames[boneId], mulFrame, m_velocityFrames[boneId]);
 		}
 
 		
-		if(r_springanimations.GetBool() && dot(m_pBoneVelocities[boneId].angBoneAngles, m_pBoneVelocities[boneId].angBoneAngles) > 0.000001f || dot(m_pBoneSpringingAdd[boneId].angBoneAngles, m_pBoneSpringingAdd[boneId].angBoneAngles) > 0.000001f)
+		if(r_springanimations.GetBool() && dot(m_velocityFrames[boneId].angBoneAngles, m_velocityFrames[boneId].angBoneAngles) > 0.000001f || dot(m_springFrames[boneId].angBoneAngles, m_springFrames[boneId].angBoneAngles) > 0.000001f)
 		{
-			m_pBoneSpringingAdd[boneId].angBoneAngles += m_pBoneVelocities[boneId].angBoneAngles * gpGlobals->frametime;
+			m_springFrames[boneId].angBoneAngles += m_velocityFrames[boneId].angBoneAngles * gpGlobals->frametime;
 			float damping = 1 - (r_springanimations_damp.GetFloat() * gpGlobals->frametime);
 		
 			if ( damping < 0 )
 				damping = 0.0f;
 
-			m_pBoneVelocities[boneId].angBoneAngles *= damping;
+			m_velocityFrames[boneId].angBoneAngles *= damping;
 		 
 			// torsional spring
 			float springForceMagnitude = r_springanimations_spring.GetFloat() * gpGlobals->frametime;
 			springForceMagnitude = clamp(springForceMagnitude, 0, 2 );
-			m_pBoneVelocities[boneId].angBoneAngles -= m_pBoneSpringingAdd[boneId].angBoneAngles * springForceMagnitude;
+			m_velocityFrames[boneId].angBoneAngles -= m_springFrames[boneId].angBoneAngles * springForceMagnitude;
 
-			cComputedFrame.angBoneAngles += m_pBoneSpringingAdd[boneId].angBoneAngles;
+			cComputedFrame.angBoneAngles += m_springFrames[boneId].angBoneAngles;
 		}
 
-		if(r_springanimations.GetBool() && dot(m_pBoneVelocities[boneId].vecBonePosition, m_pBoneVelocities[boneId].vecBonePosition) > 0.000001f || dot(m_pBoneSpringingAdd[boneId].vecBonePosition, m_pBoneSpringingAdd[boneId].vecBonePosition) > 0.000001f)
+		if(r_springanimations.GetBool() && dot(m_velocityFrames[boneId].vecBonePosition, m_velocityFrames[boneId].vecBonePosition) > 0.000001f || dot(m_springFrames[boneId].vecBonePosition, m_springFrames[boneId].vecBonePosition) > 0.000001f)
 		{
 
-			m_pBoneSpringingAdd[boneId].vecBonePosition += m_pBoneVelocities[boneId].vecBonePosition * gpGlobals->frametime;
+			m_springFrames[boneId].vecBonePosition += m_velocityFrames[boneId].vecBonePosition * gpGlobals->frametime;
 			float damping = 1 - (r_springanimations_damp.GetFloat() * gpGlobals->frametime);
 		
 			if ( damping < 0 )
 				damping = 0.0f;
 
-			m_pBoneVelocities[boneId].vecBonePosition *= damping;
+			m_velocityFrames[boneId].vecBonePosition *= damping;
 		 
 			// torsional spring
 			// UNDONE: Per-axis spring constant?
 			float springForceMagnitude = r_springanimations_spring.GetFloat() * gpGlobals->frametime;
 			springForceMagnitude = clamp(springForceMagnitude, 0, 2 );
-			m_pBoneVelocities[boneId].vecBonePosition -= m_pBoneSpringingAdd[boneId].vecBonePosition * springForceMagnitude;
+			m_velocityFrames[boneId].vecBonePosition -= m_springFrames[boneId].vecBonePosition * springForceMagnitude;
 
-			cComputedFrame.vecBonePosition += m_pBoneSpringingAdd[boneId].vecBonePosition;
+			cComputedFrame.vecBonePosition += m_springFrames[boneId].vecBonePosition;
 		}
 		*/
 		
@@ -1318,7 +1318,7 @@ void CAnimatedModel::UpdateIK(float frameTime)
 		if( m_IkChains[i]->enable )
 		{
 			//if(r_debug_ik.GetBool())
-			//	debugoverlay->Box3D(m_IkChains[i]->local_target-Vector3D(1), m_IkChains[i]->local_target+Vector3D(1), ColorRGBA(0,1,0,1));
+			//	debugoverlay->Box3D(m_ikChains[i]->local_target-Vector3D(1), m_ikChains[i]->local_target+Vector3D(1), ColorRGBA(0,1,0,1));
 
 			// update chain
 			UpdateIkChain( m_IkChains[i], frameTime );
@@ -1342,24 +1342,24 @@ void CAnimatedModel::UpdateIK(float frameTime)
 			}
 
 			/*
-			for(int j = 0; j < m_IkChains[i]->ref->numLinks; j++)
+			for(int j = 0; j < m_ikChains[i]->ref->numLinks; j++)
 			{
-				int bone_id = m_IkChains[i]->links[j].bone_index;
-				m_IkChains[i]->links[j].absTrans = m_AnimationBoneMatrixList[bone_id];
+				int bone_id = m_ikChains[i]->links[j].bone_index;
+				m_ikChains[i]->links[j].absTrans = m_ikBones[bone_id];
 
 				
 
 				/*
-				int parent = m_IkChains[i]->links[j].parent;
-				int bone_id = m_IkChains[i]->links[j].bone_index;
+				int parent = m_ikChains[i]->links[j].parent;
+				int bone_id = m_ikChains[i]->links[j].bone_index;
 
 				if(parent != -1)
 				{
-					m_IkChains[i]->links[j].absTrans = m_IkChains[i]->links[j].localTrans * m_IkChains[i]->links[parent].absTrans;
+					m_ikChains[i]->links[j].absTrans = m_ikChains[i]->links[j].localTrans * m_ikChains[i]->links[parent].absTrans;
 				}
 				else
 				{
-					m_IkChains[i]->links[j].absTrans = m_IkChains[i]->links[j].localTrans;
+					m_ikChains[i]->links[j].absTrans = m_ikChains[i]->links[j].localTrans;
 				}* /
 				
 			}*/

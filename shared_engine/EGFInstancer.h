@@ -234,7 +234,7 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 				int materialIndex = modDesc->pGroup(j)->materialIndex;
 				materials->BindMaterial( model->GetMaterial(materialIndex), 0);
 
-				//m_pModel->PrepareForSkinning( m_BoneMatrixList );
+				//m_pModel->PrepareForSkinning( m_boneTransforms );
 
 				g_pShaderAPI->SetVertexFormat(m_vertFormat);
 

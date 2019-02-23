@@ -36,7 +36,7 @@ public:
 
 	virtual	void				InitScriptHooks();
 
-	virtual void				InitAnimationThings();
+	virtual void				InitAnimating();
 
 	virtual void				PreloadMotionData(studioHwData_t::motionData_t* pMotionData);
 	virtual void				PrecacheSoundEvents(studioHwData_t::motionData_t* pMotionData);
@@ -121,7 +121,7 @@ protected:
 	void						UpdateIkChain(gikchain_t* pIkChain);
 
 	// makes standard pose
-	void						StandardPose();
+	void						DefaultPose();
 
 	void						GetInterpolatedBoneFrame(studioHwData_t::motionData_t::animation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out);
 
@@ -135,7 +135,7 @@ protected:
 
 	virtual void				Update(float dt);
 
-	void						DestroyAnimationThings();
+	void						DestroyAnimating();
 
 	// renders model
 	virtual void				Render(int nViewRenderFlags);
@@ -151,35 +151,35 @@ protected:
 	sequencetimer_t				m_sequenceTimers[MAX_SEQUENCE_TIMERS];
 
 	// blend values for sequence timers.
-	// first blend value is always 1.
-	float						m_sequenceTimerBlendings[MAX_SEQUENCE_TIMERS];
+	// first blend value should be always 1.
+	float						m_seqBlendWeights[MAX_SEQUENCE_TIMERS];
 
 	// transition time from previous
-	float						m_fRemainingTransitionTime;
+	float						m_transitionTime;
 
 	// last computed bone frames
-	animframe_t*				m_pLastBoneFrames;
+	animframe_t*				m_prevFrames;
 
-	animframe_t*				m_pBoneVelocities;
-	animframe_t*				m_pBoneSpringingAdd;
+	animframe_t*				m_velocityFrames;
+	animframe_t*				m_springFrames;
 
-	animframe_t*				m_pTransitionAnimationBoneFrames;
+	animframe_t*				m_transitionFrames;
 
 	// computed ready-to-use matrices
-	Matrix4x4*					m_BoneMatrixList;
+	Matrix4x4*					m_boneTransforms;
 
 	// local bones/base pose
-	Matrix4x4*					m_LocalBonematrixList;
+	//Matrix4x4*					m_LocalBonematrixList;
+	studioHwData_t::joint_t*	m_joints;
 
 	// animation-only bone matrix list, for blending with IK
-	Matrix4x4*					m_AnimationBoneMatrixList;
+	Matrix4x4*					m_ikBones;
 
-	int*						m_nParentIndexList;
 	int							m_numBones;
 
-	DkList<gsequence_t>			m_pSequences; // loaded sequences
+	DkList<gsequence_t>			m_seqList; // loaded sequences
 	DkList<gposecontroller_t>	m_poseControllers; // pose controllers
-	DkList<gikchain_t*>			m_IkChains;
+	DkList<gikchain_t*>			m_ikChains;
 
 	DECLARE_DATAMAP();
 };

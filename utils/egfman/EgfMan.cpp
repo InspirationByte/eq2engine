@@ -1300,15 +1300,15 @@ void CEGFViewFrame::RefreshGUI()
 		{
 			/*
 			FIXME: UNSUPPORTED for now
-			for(int i = 0; i < g_pModel->m_pSequences.numElem(); i++)
+			for(int i = 0; i < g_pModel->m_seqList.numElem(); i++)
 			{
-				m_pMotionSelection->Append( g_pModel->m_pSequences[i].name );
+				m_pMotionSelection->Append( g_pModel->m_seqList[i].name );
 			}*/
 		}
 
 		for(int i = 0; i < g_pModel->m_poseControllers.numElem(); i++)
 		{
-			m_pPoseController->Append( g_pModel->m_poseControllers[i].pDesc->name );
+			m_pPoseController->Append( g_pModel->m_poseControllers[i].p->name );
 		}
 	}
 }
@@ -1341,8 +1341,8 @@ void CEGFViewFrame::OnComboboxChanged(wxCommandEvent& event)
 
 		if(g_pModel && nPoseContr != -1)
 		{
-			m_pPoseValue->SetMin( g_pModel->m_poseControllers[nPoseContr].pDesc->blendRange[0]*10 );
-			m_pPoseValue->SetMax( g_pModel->m_poseControllers[nPoseContr].pDesc->blendRange[1]*10 );
+			m_pPoseValue->SetMin( g_pModel->m_poseControllers[nPoseContr].p->blendRange[0]*10 );
+			m_pPoseValue->SetMax( g_pModel->m_poseControllers[nPoseContr].p->blendRange[1]*10 );
 
 			m_pPoseValue->SetValue( g_pModel->m_poseControllers[nPoseContr].value*10 );
 		}

@@ -375,7 +375,7 @@ public:
 		if(!frustum.IsBoxInside(mins.x,maxs.x,mins.y,maxs.y,mins.z,maxs.z))
 			return;
 
-		//m_pModel->PrepareForSkinning(m_BoneMatrixList);
+		//m_pModel->PrepareForSkinning(m_boneTransforms);
 
 		studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
 		int nLod = 0;

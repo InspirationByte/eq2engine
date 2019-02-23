@@ -24,19 +24,15 @@ struct gikchain_t;
 
 struct giklink_t
 {
-	int				bone_index; // studiohdr_t bone id
+	studioiklink_t*	l;
 
 	Quaternion		quat;
 	Vector3D		position;
 
-	int				parent;
+	giklink_t*		parent;
 
 	Matrix4x4		localTrans;
 	Matrix4x4		absTrans;
-
-	float			damping;
-
-	Vector3D		limits[2];
 
 	gikchain_t*		chain;
 };
@@ -58,7 +54,7 @@ struct gikchain_t
 // pose controller
 struct gposecontroller_t
 {
-	posecontroller_t*	pDesc;
+	posecontroller_t*	p;
 	float				value;
 	float				interpolatedValue;
 };
@@ -66,38 +62,20 @@ struct gposecontroller_t
 // translated game sequence
 struct gsequence_t
 {
-	// name
-	char				name[44];
-
-	// basic parameters
 	Activity			activity;
-
-	float				framerate;
-	float				transitiontime;
-
-	// blending of animations
-	int8				numAnimations;
-	studioHwData_t::motionData_t::animation_t*	animations[MAX_BLEND_WIDTH];
-
-	// pose controllers
 	gposecontroller_t*	posecontroller;
-
-	// events
-	int					numEvents;
+	sequencedesc_t*		s;
+	
 	sequenceevent_t*	events[MAX_EVENTS_PER_SEQ];
+	gsequence_t*		blends[MAX_SEQUENCE_BLENDS];
 
-	// blend sequences
-	int8				numSequenceBlends;
-	gsequence_t*		sequenceblends[MAX_SEQUENCE_BLENDS];
-
-	// loop
-	int					flags;
+	studioHwData_t::motionData_t::animation_t*	animations[MAX_BLEND_WIDTH];
 };
 
 // sequence timer with events
 struct sequencetimer_t
 {
-	gsequence_t*				base_sequence;
+	gsequence_t*				seq;
 	int							sequence_index;
 	float						sequence_time;
 
@@ -114,6 +92,10 @@ struct sequencetimer_t
 #if !defined(EDITOR) && !defined(NO_GAME)
 	DECLARE_DATAMAP();
 #endif // EDITOR
+
+	sequencetimer_t();
+
+	void Reset();
 
 	void AdvanceFrame(float fDt);
 

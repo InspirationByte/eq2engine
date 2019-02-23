@@ -4038,7 +4038,7 @@ void CCar::DrawBody( int nRenderFlags )
 			else
 				m_pModel->SetupVBOStream( 1 );
 
-			//m_pModel->PrepareForSkinning( m_BoneMatrixList );
+			//m_pModel->PrepareForSkinning( m_boneTransforms );
 			m_pModel->DrawGroup( nModDescId, j, false );
 
 			//materials->SetSkinningEnabled(false);

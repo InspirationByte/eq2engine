@@ -300,7 +300,7 @@ public:
 		// calculate absolute transformation of bones
 		//SetActivity(ACT_RUN);
 
-		m_fRemainingTransitionTime = 0.0f;
+		m_transitionTime = 0.0f;
 
 		AdvanceFrame(0);
 		UpdateBones();
@@ -310,9 +310,9 @@ public:
 		Matrix4x4 object_transform = ComputeWorldMatrix(vec3_zero ,m_vecAbsAngles, Vector3D(1));
 
 		for(int i = 0; i < m_numBones; i++)
-			m_BoneMatrixList[i] = m_BoneMatrixList[i] * object_transform;
+			m_boneTransforms[i] = m_boneTransforms[i] * object_transform;
 
-		m_pRagdoll->SetBoneTransform(m_BoneMatrixList, identity4());
+		m_pRagdoll->SetBoneTransform(m_boneTransforms, identity4());
 
 		//m_pRagdoll->m_pJoints[0]->GetPhysicsObjectA()->SetLinearFactor(vec3_zero);
 		//m_pRagdoll->m_pJoints[0]->GetPhysicsObjectA()->SetAngularFactor(vec3_zero);
@@ -339,7 +339,7 @@ public:
 		if(!m_pRagdoll)
 			return;
 
-		m_pRagdoll->GetVisualBonesTransforms( m_BoneMatrixList );
+		m_pRagdoll->GetVisualBonesTransforms( m_boneTransforms );
 
 		Vector3D ragdoll_origin = m_pRagdoll->GetPosition();
 

@@ -23,7 +23,7 @@ CEditableEntity::CEditableEntity()
 	memset(&m_sequenceTimer, 0, sizeof(m_sequenceTimer));
 
 	m_sequenceTimer.sequence_index = -1;
-	m_sequenceTimer.base_sequence = NULL;
+	m_sequenceTimer.seq = NULL;
 
 	m_BoneMatrixList = NULL;
 	m_LocalBonematrixList = NULL;
@@ -1278,13 +1278,13 @@ void CEditableEntity::InitAnimationThings()
 	{
 		m_numBones = m_pModel->GetHWData()->studio->numBones;
 
-		m_BoneMatrixList = new Matrix4x4[m_numBones];
-		m_AnimationBoneMatrixList = DNewArray(Matrix4x4, m_numBones);
+		m_boneTransforms = new Matrix4x4[m_numBones];
+		m_ikBones = DNewArray(Matrix4x4, m_numBones);
 
 		for(int i = 0; i < m_numBones; i++)
 		{
-			m_BoneMatrixList[i] = identity4();
-			m_AnimationBoneMatrixList[i] = identity4();
+			m_boneTransforms[i] = identity4();
+			m_ikBones[i] = identity4();
 		}
 
 		m_LocalBonematrixList = DNewArray(Matrix4x4, m_numBones);
@@ -1299,11 +1299,11 @@ void CEditableEntity::InitAnimationThings()
 			m_nParentIndexList[i] = m_pModel->GetHWData()->joints[i].parentbone;
 		}
 
-		m_pLastBoneFrames = DNewArray(animframe_t, m_numBones);
-		memset(m_pLastBoneFrames, 0, sizeof(animframe_t)*m_numBones);
+		m_prevFrames = DNewArray(animframe_t, m_numBones);
+		memset(m_prevFrames, 0, sizeof(animframe_t)*m_numBones);
 
 		// make standard pose
-		StandardPose();
+		DefaultPose();
 	}
 
 	// build activity table for loaded model
@@ -1323,10 +1323,10 @@ void CEditableEntity::PreloadMotionData(studiomotiondata_t* pMotionData)
 	for(int i = 0; i < pMotionData->numPoseControllers; i++)
 	{
 		gposecontroller_t controller;
-		controller.pDesc = &pMotionData->poseControllers[i];
+		controller.p = &pMotionData->poseControllers[i];
 
 		// get center in blending range
-		controller.value = lerp(controller.pDesc->blendRange[0], controller.pDesc->blendRange[1], 0.5f);
+		controller.value = lerp(controller.p->blendRange[0], controller.p->blendRange[1], 0.5f);
 		controller.interpolatedValue = controller.value;
 
 		m_poseControllers.append(controller);
@@ -1369,7 +1369,7 @@ void CEditableEntity::PreloadMotionData(studiomotiondata_t* pMotionData)
 			mod_sequence.events[j] = &pMotionData->events[seqdatadesc->events[j]];
 
 		for(int j = 0; j < mod_sequence.numSequenceBlends; j++)
-			mod_sequence.sequenceblends[j] = &m_pSequences[seqdatadesc->sequenceblends[j]];
+			mod_sequence.blends[j] = &m_pSequences[seqdatadesc->sequenceblends[j]];
 
 		m_pSequences.append( mod_sequence );
 	}
@@ -1378,17 +1378,17 @@ void CEditableEntity::PreloadMotionData(studiomotiondata_t* pMotionData)
 void CEditableEntity::DestroyAnimationThings()
 {
 	/*
-	m_pSequences.clear();
+	m_seqList.clear();
 
-	if(m_BoneMatrixList)
-		DDeleteArray(m_BoneMatrixList);
+	if(m_boneTransforms)
+		DDeleteArray(m_boneTransforms);
 
-	m_BoneMatrixList = NULL;
+	m_boneTransforms = NULL;
 
-	if(m_AnimationBoneMatrixList)
-		DDeleteArray(m_AnimationBoneMatrixList);
+	if(m_ikBones)
+		DDeleteArray(m_ikBones);
 
-	m_AnimationBoneMatrixList = NULL;
+	m_ikBones = NULL;
 
 	if(m_LocalBonematrixList)
 		DDeleteArray(m_LocalBonematrixList);
@@ -1400,13 +1400,13 @@ void CEditableEntity::DestroyAnimationThings()
 
 	m_nParentIndexList = NULL;
 
-	if(m_pLastBoneFrames)
-		DDeleteArray(m_pLastBoneFrames);
+	if(m_prevFrames)
+		DDeleteArray(m_prevFrames);
 
-	m_pLastBoneFrames = NULL;
+	m_prevFrames = NULL;
 
 	m_sequenceTimer.sequence_index = -1;
-	m_sequenceTimer.base_sequence = NULL;
+	m_sequenceTimer.seq = NULL;
 
 	m_sequenceTimer.ResetPlayback(true);
 
@@ -1431,7 +1431,7 @@ void CEditableEntity::SetSequence(int animIndex)
 
 	if(m_sequenceTimer.sequence_index != -1)
 	{
-		m_sequenceTimer.base_sequence = &m_pSequences[ m_sequenceTimer.sequence_index ];
+		m_sequenceTimer.seq = &m_pSequences[ m_sequenceTimer.sequence_index ];
 		m_sequenceTimer.playbackSpeedScale = 1.0f;
 	}
 }
@@ -1486,7 +1486,7 @@ void CEditableEntity::GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBon
 	int blendAnimation2 = 0;
 			
 	ComputeAnimationBlend(	pSequence->numAnimations, 
-							pSequence->posecontroller->pDesc->blendRange, 
+							pSequence->posecontroller->p->blendRange, 
 							pSequence->posecontroller->value, 
 							blendWeight, 
 							blendAnimation1, 
@@ -1510,9 +1510,9 @@ void CEditableEntity::GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBon
 void CEditableEntity::UpdateBones()
 {
 	if(m_sequenceTimer.sequence_index != -1)
-		m_sequenceTimer.base_sequence = &m_pSequences[ m_sequenceTimer.sequence_index ];
+		m_sequenceTimer.seq = &m_pSequences[ m_sequenceTimer.sequence_index ];
 
-	if(!m_sequenceTimer.base_sequence || m_pSequences.numElem() == 0)
+	if(!m_sequenceTimer.seq || m_pSequences.numElem() == 0)
 	{
 		StandardPose();
 		return;
@@ -1525,10 +1525,10 @@ void CEditableEntity::UpdateBones()
 		ZeroFrameTransform(cComputedFrame);
 
 		// if no animation plays on this timer, continue
-		if(!m_sequenceTimer.base_sequence)
+		if(!m_sequenceTimer.seq)
 			continue;
 
-		modelanimation_t *curanim = m_sequenceTimer.base_sequence->animations[0];
+		modelanimation_t *curanim = m_sequenceTimer.seq->animations[0];
 
 		if(!curanim)
 			continue;
@@ -1538,22 +1538,22 @@ void CEditableEntity::UpdateBones()
 
 		float frame_interp = m_sequenceTimer.sequence_time - m_sequenceTimer.currFrame;
 
-		if(m_sequenceTimer.base_sequence->numAnimations > 1 && m_sequenceTimer.base_sequence->posecontroller)
+		if(m_sequenceTimer.seq->numAnimations > 1 && m_sequenceTimer.seq->posecontroller)
 		{
 				
 			float playingBlendWeight = 0;
 			int playingBlendAnimation1 = 0;
 			int playingBlendAnimation2 = 0;
 
-			ComputeAnimationBlend(	m_sequenceTimer.base_sequence->numAnimations, 
-									m_sequenceTimer.base_sequence->posecontroller->pDesc->blendRange, 
-									m_sequenceTimer.base_sequence->posecontroller->value, 
+			ComputeAnimationBlend(	m_sequenceTimer.seq->numAnimations, 
+									m_sequenceTimer.seq->posecontroller->p->blendRange, 
+									m_sequenceTimer.seq->posecontroller->value, 
 									playingBlendWeight, 
 									playingBlendAnimation1, 
 									playingBlendAnimation2);
 
-			modelanimation_t* pPlayingAnim1 = m_sequenceTimer.base_sequence->animations[playingBlendAnimation1];
-			modelanimation_t* pPlayingAnim2 = m_sequenceTimer.base_sequence->animations[playingBlendAnimation2];
+			modelanimation_t* pPlayingAnim1 = m_sequenceTimer.seq->animations[playingBlendAnimation1];
+			modelanimation_t* pPlayingAnim2 = m_sequenceTimer.seq->animations[playingBlendAnimation2];
 
 			GetInterpolatedBoneFrameBetweenTwoAnimations(	pPlayingAnim1,
 															pPlayingAnim2,
@@ -1566,7 +1566,7 @@ void CEditableEntity::UpdateBones()
 		}
 		else
 		{
-			modelanimation_t *curanim = m_sequenceTimer.base_sequence->animations[0];
+			modelanimation_t *curanim = m_sequenceTimer.seq->animations[0];
 
 			GetInterpolatedBoneFrame(curanim, boneId, m_sequenceTimer.currFrame, m_sequenceTimer.nextFrame, frame_interp, cTimedFrame);
 		}
@@ -1574,11 +1574,11 @@ void CEditableEntity::UpdateBones()
 		animframe_t cAddFrame;
 		ZeroFrameTransform(cAddFrame);
 
-		if(m_sequenceTimer.base_sequence->numSequenceBlends > 0)
+		if(m_sequenceTimer.seq->numSequenceBlends > 0)
 		{
-			for(int blend_seq = 0; blend_seq < m_sequenceTimer.base_sequence->numSequenceBlends; blend_seq++)
+			for(int blend_seq = 0; blend_seq < m_sequenceTimer.seq->numSequenceBlends; blend_seq++)
 			{
-				gsequence_t* pSequence = m_sequenceTimer.base_sequence->sequenceblends[blend_seq];
+				gsequence_t* pSequence = m_sequenceTimer.seq->blends[blend_seq];
 
 				animframe_t frame;
 
@@ -1618,7 +1618,7 @@ void CEditableEntity::UpdateBones()
 void CEditableEntity::AdvanceFrame(float frameTime)
 {
 	if(m_sequenceTimer.sequence_index != -1)
-		m_sequenceTimer.base_sequence = &m_pSequences[ m_sequenceTimer.sequence_index ];
+		m_sequenceTimer.seq = &m_pSequences[ m_sequenceTimer.sequence_index ];
 
 	m_sequenceTimer.AdvanceFrame(frameTime);
 }

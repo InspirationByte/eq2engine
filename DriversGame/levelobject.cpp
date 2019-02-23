@@ -173,7 +173,7 @@ void CLevObjectDef::Render( float lodDistance, const BoundingBox& bbox, bool pre
 				int materialIndex = modDesc->pGroup(j)->materialIndex;
 				materials->BindMaterial( m_defModel->GetMaterial(materialIndex), 0);
 
-				//m_pModel->PrepareForSkinning( m_BoneMatrixList );
+				//m_pModel->PrepareForSkinning( m_boneTransforms );
 				m_defModel->DrawGroup( nModDescId, j );
 
 				//materials->SetSkinningEnabled(false);

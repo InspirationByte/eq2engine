@@ -748,7 +748,7 @@ void CWhiteCagePlayer::Render(int nViewRenderFlags)
 
 		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
 		{
-			viewrenderer->DrawModelPart(m_pModel, nModDescId, j, nViewRenderFlags, m_pLights, m_BoneMatrixList);
+			viewrenderer->DrawModelPart(m_pModel, nModDescId, j, nViewRenderFlags, m_pLights, m_boneTransforms);
 		}
 	}
 }

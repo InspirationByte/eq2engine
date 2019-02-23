@@ -4,7 +4,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Base animated entity class
 //
-//				TODO: REDONE INVERSE KINEMATICS!//////////////////////////////////////////////////////////////////////////////////
+//				TODO: REDONE INVERSE KINEMATICS
+!//////////////////////////////////////////////////////////////////////////////////
 
 #include "BaseAnimating.h"
 
@@ -14,9 +15,9 @@
 // declare data table for actor
 BEGIN_DATAMAP( BaseAnimating )
 
-	DEFINE_FIELD( m_fRemainingTransitionTime,	VTYPE_FLOAT),
+	DEFINE_FIELD( m_transitionTime,	VTYPE_FLOAT),
 	DEFINE_EMBEDDEDARRAY( m_sequenceTimers,		MAX_SEQUENCE_TIMERS),
-	DEFINE_ARRAYFIELD( m_sequenceTimerBlendings,VTYPE_FLOAT, MAX_SEQUENCE_TIMERS),
+	DEFINE_ARRAYFIELD(m_seqBlendWeights,VTYPE_FLOAT, MAX_SEQUENCE_TIMERS),
 
 END_DATAMAP()
 
@@ -134,38 +135,16 @@ void BaseAnimating::InitScriptHooks()
 
 BaseAnimating::BaseAnimating() : BaseClass()
 {
-	for(int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
-	{
-		m_sequenceTimers[i].bPlaying = false;
-		m_sequenceTimers[i].base_sequence = NULL;
-		m_sequenceTimers[i].sequence_time = 0.0f;
-		m_sequenceTimers[i].currFrame = 0;
-		m_sequenceTimers[i].nextFrame = 0;
-		m_sequenceTimers[i].playbackSpeedScale = 1.0f;
-	}
+	memset(m_seqBlendWeights, 0, sizeof(m_seqBlendWeights));
+	m_seqBlendWeights[0] = 1.0f;
 
-	memset(m_sequenceTimerBlendings, 0, sizeof(m_sequenceTimerBlendings));
+	m_boneTransforms = NULL;
+	m_ikBones = NULL;
 
-	m_sequenceTimerBlendings[0] = 1.0f;
+	m_transitionFrames = NULL;
+	m_prevFrames = NULL;
 
-	for(int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
-	{
-		m_sequenceTimers[i].sequence_index = -1;
-		m_sequenceTimers[i].base_sequence = NULL;
-	}
-
-	m_BoneMatrixList = NULL;
-	m_LocalBonematrixList = NULL;
-	m_nParentIndexList = NULL;
-	m_AnimationBoneMatrixList = NULL;
-
-	m_pTransitionAnimationBoneFrames = NULL;
-	m_pLastBoneFrames = NULL;
-
-	m_fRemainingTransitionTime = INITIAL_TIME;
-
-	//m_pBoneVelocities = NULL;
-	//m_pBoneSpringingAdd = NULL;
+	m_transitionTime = INITIAL_TIME;
 }
 
 // sets model for this entity
@@ -178,7 +157,7 @@ void BaseAnimating::SetModel(const char* pszModelName)
 void BaseAnimating::SetModel(IEqModel* pModel)
 {
 	// do cleanup
-	DestroyAnimationThings();
+	DestroyAnimating();
 
 	BaseClass::SetModel( pModel );
 
@@ -186,7 +165,7 @@ void BaseAnimating::SetModel(IEqModel* pModel)
 		return;
 
 	// initialize that shit to use it in future
-	InitAnimationThings();
+	InitAnimating();
 }
 
 void BaseAnimating::MakeDecal( const decalmakeinfo_t& info )
@@ -207,88 +186,88 @@ void BaseAnimating::MakeDecal( const decalmakeinfo_t& info )
 		Matrix3x3 rotation = m_matWorldTransform.getRotationComponent();
 		dec_info.normal = !rotation * dec_info.normal;
 
-		tempdecal_t* pStudioDecal = m_pModel->MakeTempDecal( dec_info, m_LocalBonematrixList );
+		tempdecal_t* pStudioDecal = m_pModel->MakeTempDecal( dec_info, m_boneTransforms );
 		m_pDecals.append(pStudioDecal);
 	}
 }
 
-void BaseAnimating::DestroyAnimationThings()
+void BaseAnimating::DestroyAnimating()
 {
-	m_pSequences.clear();
+	m_seqList.clear();
 
-	if(m_BoneMatrixList)
-		PPFree(m_BoneMatrixList);
+	if(m_boneTransforms)
+		PPFree(m_boneTransforms);
 
-	m_BoneMatrixList = NULL;
+	m_boneTransforms = NULL;
 
-	if(m_AnimationBoneMatrixList)
-		PPFree(m_AnimationBoneMatrixList);
+	if(m_ikBones)
+		PPFree(m_ikBones);
 
-	m_AnimationBoneMatrixList = NULL;
+	m_ikBones = NULL;
 
-	if(m_LocalBonematrixList)
-		PPFree(m_LocalBonematrixList);
+	//if(m_LocalBonematrixList)
+	//	PPFree(m_LocalBonematrixList);
 
-	m_LocalBonematrixList = NULL;
+	//m_LocalBonematrixList = NULL;
 
-	if(m_nParentIndexList)
-		PPFree(m_nParentIndexList);
+	//if(m_nParentIndexList)
+	//	PPFree(m_nParentIndexList);
 
-	m_nParentIndexList = NULL;
+	//m_nParentIndexList = NULL;
 
-	if(m_pTransitionAnimationBoneFrames)
-		PPFree(m_pTransitionAnimationBoneFrames);
+	if(m_transitionFrames)
+		PPFree(m_transitionFrames);
 
-	m_pTransitionAnimationBoneFrames = NULL;
+	m_transitionFrames = NULL;
 
-	if(m_pLastBoneFrames)
-		PPFree(m_pLastBoneFrames);
+	if(m_prevFrames)
+		PPFree(m_prevFrames);
 
-	m_pLastBoneFrames = NULL;
+	m_prevFrames = NULL;
 
-	for(int i = 0; i < m_IkChains.numElem(); i++)
+	for(int i = 0; i < m_ikChains.numElem(); i++)
 	{
-		PPFree(m_IkChains[i]->links);
-		delete m_IkChains[i];
+		PPFree(m_ikChains[i]->links);
+		delete m_ikChains[i];
 	}
 
-	m_IkChains.clear();
+	m_ikChains.clear();
 
-	//if(m_pBoneVelocities)
-	//	PPFree(m_pBoneVelocities);
+	//if(m_velocityFrames)
+	//	PPFree(m_velocityFrames);
 
-	//m_pBoneVelocities = NULL;
+	//m_velocityFrames = NULL;
 
-	//if(m_pBoneSpringingAdd)
-	//	PPFree(m_pBoneSpringingAdd);
+	//if(m_springFrames)
+	//	PPFree(m_springFrames);
 
-	//m_pBoneSpringingAdd = NULL;
+	//m_springFrames = NULL;
 
 	// stop all sequence timers
 	// play animations
 	for(int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
 	{
 		m_sequenceTimers[i].sequence_index = -1;
-		m_sequenceTimers[i].base_sequence = NULL;
+		m_sequenceTimers[i].seq = NULL;
 
 		m_sequenceTimers[i].ResetPlayback(true);
 
-		m_sequenceTimerBlendings[i] = 1.0f;
+		m_seqBlendWeights[i] = 1.0f;
 
 		m_sequenceTimers[i].called_events.clear();
 		m_sequenceTimers[i].ignore_events.clear();
 	}
 
-	m_sequenceTimerBlendings[0] = 1.0f;
+	m_seqBlendWeights[0] = 1.0f;
 
-	m_fRemainingTransitionTime = 0.0f;
+	m_transitionTime = 0.0f;
 
 	m_numBones = 0;
 }
 
 void BaseAnimating::OnRemove()
 {
-	DestroyAnimationThings();
+	DestroyAnimating();
 
 	BaseClass::OnRemove();
 }
@@ -308,63 +287,45 @@ Activity BaseAnimating::TranslateActivity(Activity act, int slot)
 	return act;
 }
 
-void BaseAnimating::InitAnimationThings()
+void BaseAnimating::InitAnimating()
 {
 	for(int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
-	{
-		m_sequenceTimers[i].bPlaying = false;
-		m_sequenceTimers[i].base_sequence = NULL;
-		m_sequenceTimers[i].called_events.clear();
-		m_sequenceTimers[i].ignore_events.clear();
-		m_sequenceTimers[i].sequence_time = 0.0f;
-		m_sequenceTimers[i].currFrame = 0;
-		m_sequenceTimers[i].nextFrame = 0;
-		m_sequenceTimers[i].playbackSpeedScale = 1.0f;
-	}
+		m_sequenceTimers[i].Reset();
 
 	if(m_pModel)
 	{
 		m_numBones = m_pModel->GetHWData()->studio->numBones;
 
-		m_BoneMatrixList = PPAllocStructArray(Matrix4x4, m_numBones);
-		m_AnimationBoneMatrixList = PPAllocStructArray(Matrix4x4, m_numBones);
+		m_boneTransforms = PPAllocStructArray(Matrix4x4, m_numBones);
+		m_ikBones = PPAllocStructArray(Matrix4x4, m_numBones);
 
 		for(int i = 0; i < m_numBones; i++)
 		{
-			m_BoneMatrixList[i] = identity4();
-			m_AnimationBoneMatrixList[i] = identity4();
+			m_boneTransforms[i] = identity4();
+			m_ikBones[i] = identity4();
 		}
 		
-		m_LocalBonematrixList = PPAllocStructArray(Matrix4x4, m_numBones);
-		for(int i = 0; i < m_numBones; i++)
-		{
-			m_LocalBonematrixList[i] = m_pModel->GetHWData()->joints[i].localTrans;
-		}
-		
-		m_nParentIndexList = PPAllocStructArray(int, m_numBones);
-		for(int i = 0; i < m_numBones; i++)
-		{
-			m_nParentIndexList[i] = m_pModel->GetHWData()->joints[i].parentbone;
-		}
+		m_joints = m_pModel->GetHWData()->joints;
 
-		
-		m_pLastBoneFrames = PPAllocStructArray(animframe_t, m_numBones);
-		memset(m_pLastBoneFrames, 0, sizeof(animframe_t)*m_numBones);
+		m_prevFrames = PPAllocStructArray(animframe_t, m_numBones);
+		memset(m_prevFrames, 0, sizeof(animframe_t)*m_numBones);
 
-		m_pTransitionAnimationBoneFrames = PPAllocStructArray(animframe_t, m_numBones);
-		memset(m_pTransitionAnimationBoneFrames, 0, sizeof(animframe_t)*m_numBones);
+		m_transitionFrames = PPAllocStructArray(animframe_t, m_numBones);
+		memset(m_transitionFrames, 0, sizeof(animframe_t)*m_numBones);
 
-		//m_pBoneSpringingAdd = PPAllocStructArray(animframe_t, m_numBones);
-		//memset(m_pBoneSpringingAdd, 0, sizeof(animframe_t)*m_numBones);
+		//m_springFrames = PPAllocStructArray(animframe_t, m_numBones);
+		//memset(m_springFrames, 0, sizeof(animframe_t)*m_numBones);
 
-		//m_pBoneVelocities = PPAllocStructArray(animframe_t, m_numBones);
-		//memset(m_pBoneVelocities, 0, sizeof(animframe_t)*m_numBones);
+		//m_velocityFrames = PPAllocStructArray(animframe_t, m_numBones);
+		//memset(m_velocityFrames, 0, sizeof(animframe_t)*m_numBones);
 
 		// make standard pose
-		StandardPose();
+		DefaultPose();
+
+		int numIkChains = m_pModel->GetHWData()->studio->numIKChains;
 
 		// load ik chains
-		for(int i = 0; i < m_pModel->GetHWData()->studio->numIKChains; i++)
+		for(int i = 0; i < numIkChains; i++)
 		{
 			studioikchain_t* pStudioChain = m_pModel->GetHWData()->studio->pIkChain(i);
 
@@ -380,17 +341,15 @@ void BaseAnimating::InitAnimationThings()
 			for( int j = 0; j < chain->numLinks; j++ )
 			{
 				giklink_t link;
+				link.l = pStudioChain->pLink(j);
 
 				studioiklink_t* pLink = pStudioChain->pLink(j);
 
-				link.bone_index = pLink->bone;
-				link.damping = pLink->damping;
-				link.limits[0] = pLink->mins;
-				link.limits[1] = pLink->maxs;
+				studioHwData_t::joint_t& joint = m_joints[link.l->bone];
 
-				Vector3D rotation = m_pModel->GetHWData()->studio->pBone(link.bone_index)->rotation;
+				const Vector3D& rotation = joint.rotation;
 
-				link.position = m_pModel->GetHWData()->studio->pBone(link.bone_index)->position;
+				link.position = joint.position;
 				link.quat = Quaternion(rotation.x,rotation.y,rotation.z);
 
 				// initial transform
@@ -398,40 +357,47 @@ void BaseAnimating::InitAnimationThings()
 				link.localTrans.setTranslation(link.position);
 				link.absTrans = identity4();
 
-				link.parent = j-1;
+				int parentLinkId = j-1;
+
+				if (parentLinkId >= 0)
+					link.parent = &chain->links[j - 1];
+				else
+					link.parent = nullptr;
 
 				chain->links[j] = link;
 
 				link.chain = chain;
 
 				// set link for fast access, can be used for multiple instances of base animating entities with single model
-				m_pModel->GetHWData()->joints[link.bone_index].link_id = j;
-				m_pModel->GetHWData()->joints[link.bone_index].chain_id = i;
+				joint.link_id = j;
+				joint.chain_id = i;
 			}
 
 			for(int j = 0; j < chain->numLinks; j++)
 			{
-				int parent = chain->links[j].parent;
+				giklink_t& link = chain->links[j];
 
-				if(parent != -1)
-				{
-					chain->links[j].absTrans = chain->links[j].localTrans * chain->links[parent].absTrans;
-				}
+				if(link.parent)
+					link.absTrans = link.localTrans * link.parent->absTrans;
 				else
-					chain->links[j].absTrans = chain->links[j].localTrans;
+					link.absTrans = link.localTrans;
 			}
 
-			m_IkChains.append(chain);
+			m_ikChains.append(chain);
 		}
 	}
 
+	int numMotionPackages = m_pModel->GetHWData()->numMotionPackages;
+
 	// build activity table for loaded model
-	if(m_pModel && m_pModel->GetHWData()->numMotionPackages)
+	if(m_pModel && numMotionPackages)
 	{
-		for(int i = 0; i < m_pModel->GetHWData()->numMotionPackages; i++)
+		for(int i = 0; i < numMotionPackages; i++)
 		{
-			PreloadMotionData( m_pModel->GetHWData()->motiondata[i] );
-			PrecacheSoundEvents( m_pModel->GetHWData()->motiondata[i] );
+			studioHwData_t::motionData_t* motion = m_pModel->GetHWData()->motiondata[i];
+
+			PreloadMotionData(motion);
+			PrecacheSoundEvents(motion);
 		}
 	}
 }
@@ -442,10 +408,10 @@ void BaseAnimating::PreloadMotionData(studioHwData_t::motionData_t* pMotionData)
 	for(int i = 0; i < pMotionData->numPoseControllers; i++)
 	{
 		gposecontroller_t controller;
-		controller.pDesc = &pMotionData->poseControllers[i];
+		controller.p = &pMotionData->poseControllers[i];
 
 		// get center in blending range
-		controller.value = lerp(controller.pDesc->blendRange[0], controller.pDesc->blendRange[1], 0.5f);
+		controller.value = lerp(controller.p->blendRange[0], controller.p->blendRange[1], 0.5f);
 		controller.interpolatedValue = controller.value;
 
 		m_poseControllers.append(controller);
@@ -454,43 +420,30 @@ void BaseAnimating::PreloadMotionData(studioHwData_t::motionData_t* pMotionData)
 	// copy sequences
 	for(int i = 0 ; i < pMotionData->numsequences; i++)
 	{
-		sequencedesc_t* seqdatadesc = &pMotionData->sequences[i];
+		sequencedesc_t& seq = pMotionData->sequences[i];
 
-		//DevMsg(1,"%s, %s\n", seqdatadesc->name, seqdatadesc->activity);
+		gsequence_t seqData;
+		memset(&seqData, 0, sizeof(seqData));
 
-		gsequence_t mod_sequence;
-		memset(&mod_sequence, 0, sizeof(mod_sequence));
+		seqData.s = &seq;
+		seqData.activity = GetActivityByName(seq.activity);
 
-		mod_sequence.activity = GetActivityByName(seqdatadesc->activity);
+		if(seqData.activity == ACT_INVALID && stricmp(seq.activity, "ACT_INVALID"))
+			MsgError("Motion Data: Activity '%s' not registered\n", seq.activity);
 
-		strcpy(mod_sequence.name, seqdatadesc->name);
+		if(seq.posecontroller >= 0)
+			seqData.posecontroller = &m_poseControllers[seq.posecontroller];
 
-		if(mod_sequence.activity == ACT_INVALID && stricmp(seqdatadesc->activity, "ACT_INVALID"))
-			MsgError("MOP Error: Activity '%s' not registered\n", seqdatadesc->activity);
+		for(int j = 0; j < seq.numAnimations; j++)
+			seqData.animations[j] = &pMotionData->animations[seq.animations[j]];
 
-		mod_sequence.framerate = seqdatadesc->framerate;
-		mod_sequence.flags = seqdatadesc->flags;
-		mod_sequence.transitiontime = seqdatadesc->transitiontime;
+		for(int j = 0; j < seq.numEvents; j++)
+			seqData.events[j] = &pMotionData->events[seq.events[j]];
 
-		mod_sequence.numEvents = seqdatadesc->numEvents;
-		mod_sequence.numAnimations = seqdatadesc->numAnimations;
-		mod_sequence.numSequenceBlends = seqdatadesc->numSequenceBlends;
+		for(int j = 0; j < seq.numSequenceBlends; j++)
+			seqData.blends[j] = &m_seqList[seq.sequenceblends[j]];
 
-		if(seqdatadesc->posecontroller == -1)
-			mod_sequence.posecontroller = NULL;
-		else
-			mod_sequence.posecontroller = &m_poseControllers[seqdatadesc->posecontroller];
-
-		for(int j = 0; j < mod_sequence.numAnimations; j++)
-			mod_sequence.animations[j] = &pMotionData->animations[seqdatadesc->animations[j]];
-
-		for(int j = 0; j < mod_sequence.numEvents; j++)
-			mod_sequence.events[j] = &pMotionData->events[seqdatadesc->events[j]];
-
-		for(int j = 0; j < mod_sequence.numSequenceBlends; j++)
-			mod_sequence.sequenceblends[j] = &m_pSequences[seqdatadesc->sequenceblends[j]];
-
-		m_pSequences.append( mod_sequence );
+		m_seqList.append( seqData );
 	}
 }
 
@@ -498,16 +451,17 @@ void BaseAnimating::PrecacheSoundEvents(studioHwData_t::motionData_t* pMotionDat
 {
 	for(int i = 0; i < pMotionData->numEvents; i++)
 	{
-		AnimationEvent event_type = GetEventByName(pMotionData->events[i].command);
+		sequenceevent_t& evt = pMotionData->events[i];
+		AnimationEvent event_type = GetEventByName(evt.command);
 
-		if(event_type == EV_INVALID)
+		switch (event_type)
 		{
-			event_type = (AnimationEvent)atoi(pMotionData->events[i].command);
-		}
-
-		if(event_type == EV_SOUND)
-		{
-			PrecacheScriptSound(pMotionData->events[i].parameter);
+			//case EV_INVALID:
+			//	event_type = (AnimationEvent)atoi(evt.command);
+			//	break;
+			case EV_SOUND:
+				PrecacheScriptSound(evt.parameter);
+				break;
 		}
 	}
 }
@@ -515,9 +469,9 @@ void BaseAnimating::PrecacheSoundEvents(studioHwData_t::motionData_t* pMotionDat
 // finds animation
 int BaseAnimating::FindSequence(const char* name)
 {
-	for(int i = 0; i < m_pSequences.numElem(); i++)
+	for(int i = 0; i < m_seqList.numElem(); i++)
 	{
-		if(!stricmp(m_pSequences[i].name, name))
+		if(!stricmp(m_seqList[i].s->name, name))
 		{
 			return i;
 		}
@@ -531,25 +485,27 @@ void BaseAnimating::SetSequence(int animIndex, int slot)
 	if(animIndex == -1)
 		return;
 
-	bool wasEmpty = (m_sequenceTimers[slot].sequence_index == -1);
+	sequencetimer_t& timer = m_sequenceTimers[slot];
 
-	m_sequenceTimers[slot].sequence_index = animIndex;
+	bool wasEmpty = (timer.sequence_index == -1);
 
-	if(m_sequenceTimers[slot].sequence_index != -1)
-		m_sequenceTimers[slot].base_sequence = &m_pSequences[ m_sequenceTimers[slot].sequence_index ];
+	timer.sequence_index = animIndex;
+
+	if(timer.sequence_index != -1)
+		timer.seq = &m_seqList[timer.sequence_index ];
 
 	// reset playback speed to avoid some errors
 	SetPlaybackSpeedScale(1.0f, slot);
 
 	if( slot == 0 )
 	{
-		m_fRemainingTransitionTime = m_sequenceTimers[slot].base_sequence->transitiontime;
+		m_transitionTime = timer.seq->s->transitiontime;
 
 		if(wasEmpty)
-			m_fRemainingTransitionTime = 0.0f;
+			m_transitionTime = 0.0f;
 
 		// copy last frames for transition
-		memcpy(m_pTransitionAnimationBoneFrames, m_pLastBoneFrames, sizeof(animframe_t)*m_numBones);
+		memcpy(m_transitionFrames, m_prevFrames, sizeof(animframe_t)*m_numBones);
 	}
 }
 
@@ -559,9 +515,9 @@ void BaseAnimating::SetActivity(Activity act,int slot)
 	// translate activity
 	Activity nTranslatedActivity = TranslateActivity( act, slot );
 
-	for(int i = 0; i < m_pSequences.numElem(); i++)
+	for(int i = 0; i < m_seqList.numElem(); i++)
 	{
-		if(m_pSequences[i].activity == nTranslatedActivity)
+		if(m_seqList[i].activity == nTranslatedActivity)
 		{
 			SetSequence(i, slot);
 
@@ -579,8 +535,8 @@ void BaseAnimating::SetActivity(Activity act,int slot)
 // returns current activity
 Activity BaseAnimating::GetCurrentActivity(int slot)
 {
-	if(m_sequenceTimers[slot].base_sequence)
-		return m_sequenceTimers[slot].base_sequence->activity;
+	if(m_sequenceTimers[slot].seq)
+		return m_sequenceTimers[slot].seq->activity;
 
 	return ACT_INVALID;
 }
@@ -599,32 +555,32 @@ void BaseAnimating::SetAnimationTime(float newTime, int slot)
 
 int BaseAnimating::GetBoneCount()
 {
-	return m_pModel->GetHWData()->studio->numBones;
+	return m_numBones;
 }
 
 Matrix4x4* BaseAnimating::GetBoneMatrices()
 {
-	return m_BoneMatrixList;
+	return m_boneTransforms;
 }
 
-// makes standard pose
-void BaseAnimating::StandardPose()
+// makes default pose
+void BaseAnimating::DefaultPose()
 {
-	if(m_pModel && m_pModel->GetHWData() && m_pModel->GetHWData()->joints)
+	if (!m_pModel || !m_joints)
+		return;
+
+	for(int i = 0; i < m_numBones; i++)
 	{
-		for(int i = 0; i < m_pModel->GetHWData()->studio->numBones; i++)
-		{
-			m_BoneMatrixList[i] = m_pModel->GetHWData()->joints[i].absTrans;
-		}
+		m_boneTransforms[i] = m_joints[i].absTrans;
 	}
 }
 
 // finds bone
 int BaseAnimating::FindBone(const char* boneName)
 {
-	for(int i = 0; i < m_pModel->GetHWData()->studio->numBones; i++)
+	for(int i = 0; i < m_numBones; i++)
 	{
-		if(!stricmp(m_pModel->GetHWData()->joints[i].name, boneName))
+		if(!stricmp(m_joints[i].name, boneName))
 			return i;
 	}
 
@@ -637,7 +593,7 @@ Vector3D BaseAnimating::GetLocalBoneOrigin(int nBone)
 	if(nBone == -1)
 		return vec3_zero;
 
-	return m_BoneMatrixList[nBone].rows[3].xyz();
+	return m_boneTransforms[nBone].rows[3].xyz();
 }
 
 // gets absolute bone direction
@@ -667,7 +623,7 @@ Vector3D BaseAnimating::GetLocalAttachmentOrigin(int nAttach)
 	matrix.setRotation(Vector3D(DEG2RAD(attach->angles.x),DEG2RAD(attach->angles.y),DEG2RAD(attach->angles.z)));
 	matrix.setTranslation(attach->position);
 
-	Matrix4x4 finalAttachmentTransform = matrix * m_BoneMatrixList[attach->bone_id];
+	Matrix4x4 finalAttachmentTransform = matrix * m_boneTransforms[attach->bone_id];
 
 	// because all dynamic models are left-handed
 	return finalAttachmentTransform.rows[3].xyz();//*Vector3D(-1,1,1);
@@ -688,7 +644,7 @@ Vector3D BaseAnimating::GetLocalAttachmentDirection(int nAttach)
 	matrix.setRotation(Vector3D(DEG2RAD(attach->angles.x),DEG2RAD(attach->angles.y),DEG2RAD(attach->angles.z)));
 	matrix.setTranslation(attach->position);
 
-	Matrix4x4 finalAttachmentTransform = matrix * m_BoneMatrixList[attach->bone_id];
+	Matrix4x4 finalAttachmentTransform = matrix * m_boneTransforms[attach->bone_id];
 
 	// because all dynamic models are left-handed
 	return finalAttachmentTransform.rows[2].xyz();//*Vector3D(-1,1,1);
@@ -697,10 +653,10 @@ Vector3D BaseAnimating::GetLocalAttachmentDirection(int nAttach)
 // returns duration time of the current animation
 float BaseAnimating::GetCurrentAnimationDuration()
 {
-	if(!m_sequenceTimers[0].base_sequence)
+	if(!m_sequenceTimers[0].seq)
 		return 1.0f;
 
-	return (m_sequenceTimers[0].base_sequence->animations[0]->bones[0].numFrames - 1) / m_sequenceTimers[0].base_sequence->framerate;
+	return (m_sequenceTimers[0].seq->animations[0]->bones[0].numFrames - 1) / m_sequenceTimers[0].seq->s->framerate;
 }
 
 // returns duration time of the specific animation
@@ -709,7 +665,7 @@ float BaseAnimating::GetAnimationDuration(int animIndex)
 	if(animIndex == -1)
 		return 1.0f;
 
-	return (m_pSequences[animIndex].animations[0]->bones[0].numFrames - 1) / m_pSequences[animIndex].framerate;
+	return (m_seqList[animIndex].animations[0]->bones[0].numFrames - 1) / m_seqList[animIndex].s->framerate;
 }
 
 // returns remaining duration time of the current animation
@@ -737,7 +693,7 @@ void BaseAnimating::SetPlaybackSpeedScale(float scale, int slot)
 
 void BaseAnimating::SetSequenceBlending(int slot, float factor)
 {
-	m_sequenceTimerBlendings[slot] = factor;
+	m_seqBlendWeights[slot] = factor;
 }
 
 // updates events
@@ -746,19 +702,23 @@ void BaseAnimating::UpdateEvents(float framerate)
 	// handle events
 	for(int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
 	{
-		for(int j = 0; j < m_sequenceTimers[i].called_events.numElem(); j++)
+		sequencetimer_t& timer = m_sequenceTimers[i];
+
+		for(int j = 0; j < timer.called_events.numElem(); j++)
 		{
-			AnimationEvent event_type = GetEventByName(m_sequenceTimers[i].called_events[j]->command);
+			sequenceevent_t* called = timer.called_events[j];
+
+			AnimationEvent event_type = GetEventByName(called->command);
 
 			if(event_type == EV_INVALID)
 			{
-				event_type = (AnimationEvent)atoi(m_sequenceTimers[i].called_events[j]->command);
+				event_type = (AnimationEvent)atoi(called->command);
 			}
 
-			HandleEvent(event_type, m_sequenceTimers[i].called_events[j]->parameter);
+			HandleEvent(event_type, called->parameter);
 		}
 
-		m_sequenceTimers[i].called_events.clear();
+		timer.called_events.clear();
 	}
 }
 
@@ -808,34 +768,38 @@ void BaseAnimating::HandleEvent(AnimationEvent nEvent, char* options)
 // advances frame (and computes interpolation between all blended animations)
 void BaseAnimating::AdvanceFrame(float frameTime)
 {
-	m_sequenceTimerBlendings[0] = 1.0f;
+	m_seqBlendWeights[0] = 1.0f;
 
-	if(m_sequenceTimers[0].base_sequence)
+	if(m_sequenceTimers[0].seq)
 	{
 		float div_frametime = (frameTime*30) / 8;
 
 		// interpolate pose parameter values
 		for(int i = 0; i < m_poseControllers.numElem(); i++)
 		{
+			gposecontroller_t& ctrl = m_poseControllers[i];
+
 			for(int j = 0; j < 8; j++)
 			{
-				m_poseControllers[i].interpolatedValue = lerp(m_poseControllers[i].interpolatedValue, m_poseControllers[i].value, div_frametime);
+				ctrl.interpolatedValue = lerp(ctrl.interpolatedValue, ctrl.value, div_frametime);
 			}
 		}
 	}
 
-	m_fRemainingTransitionTime -= frameTime;
+	m_transitionTime -= frameTime;
 
-	if(m_fRemainingTransitionTime < 0)
-		m_fRemainingTransitionTime = 0;
+	if(m_transitionTime < 0)
+		m_transitionTime = 0;
 
 	// play animations
 	for(int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
 	{
-		if(m_sequenceTimers[i].sequence_index != -1)
-			m_sequenceTimers[i].base_sequence = &m_pSequences[ m_sequenceTimers[i].sequence_index ];
+		sequencetimer_t& timer = m_sequenceTimers[i];
 
-		m_sequenceTimers[i].AdvanceFrame(frameTime);
+		if(timer.sequence_index != -1)
+			timer.seq = &m_seqList[timer.sequence_index ];
+
+		timer.AdvanceFrame(frameTime);
 	}
 
 	// call events.
@@ -849,14 +813,16 @@ void BaseAnimating::SwapSequenceTimers(int index, int swapTo)
 	m_sequenceTimers[swapTo] = m_sequenceTimers[index];
 	m_sequenceTimers[index] = swap_to;
 
-	float swap_to_time = m_sequenceTimerBlendings[swapTo];
-	m_sequenceTimerBlendings[swapTo] = m_sequenceTimerBlendings[index];
-	m_sequenceTimerBlendings[index] = swap_to_time;
+	float swap_to_time = m_seqBlendWeights[swapTo];
+	m_seqBlendWeights[swapTo] = m_seqBlendWeights[index];
+	m_seqBlendWeights[index] = swap_to_time;
 }
 
 void BaseAnimating::GetInterpolatedBoneFrame(studioHwData_t::motionData_t::animation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out)
 {
-	InterpolateFrameTransform(pAnim->bones[nBone].keyFrames[firstframe], pAnim->bones[nBone].keyFrames[lastframe], clamp(interp,0,1), out);
+	studioHwData_t::motionData_t::animation_t::boneframe_t& frame = pAnim->bones[nBone];
+
+	InterpolateFrameTransform(frame.keyFrames[firstframe], frame.keyFrames[lastframe], clamp(interp,0,1), out);
 }
 
 void BaseAnimating::GetInterpolatedBoneFrameBetweenTwoAnimations(studioHwData_t::motionData_t::animation_t* pAnim1, studioHwData_t::motionData_t::animation_t* pAnim2, int nBone, int firstframe, int lastframe, float interp, float animTransition, animframe_t &out)
@@ -879,8 +845,8 @@ void BaseAnimating::GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone,
 	int blendAnimation1 = 0;
 	int blendAnimation2 = 0;
 			
-	ComputeAnimationBlend(	pSequence->numAnimations, 
-							pSequence->posecontroller->pDesc->blendRange, 
+	ComputeAnimationBlend(	pSequence->s->numAnimations,
+							pSequence->posecontroller->p->blendRange, 
 							pSequence->posecontroller->value, 
 							blendWeight, 
 							blendAnimation1, 
@@ -906,7 +872,7 @@ int BaseAnimating::FindPoseController(char *name)
 {
 	for(int i = 0; i < m_poseControllers.numElem(); i++)
 	{
-		if(!stricmp(m_poseControllers[i].pDesc->name, name))
+		if(!stricmp(m_poseControllers[i].p->name, name))
 			return i;
 	}
 
@@ -926,13 +892,15 @@ void BaseAnimating::UpdateBones()
 {
 	for(int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
 	{
-		if(m_sequenceTimers[i].sequence_index != -1)
-			m_sequenceTimers[i].base_sequence = &m_pSequences[ m_sequenceTimers[i].sequence_index ];
+		sequencetimer_t& timer = m_sequenceTimers[i];
+
+		if(timer.sequence_index != -1)
+			timer.seq = &m_seqList[timer.sequence_index ];
 	}
 
-	if(!m_sequenceTimers[0].base_sequence || m_pSequences.numElem() == 0)
+	if(!m_sequenceTimers[0].seq || m_seqList.numElem() == 0)
 	{
-		StandardPose();
+		DefaultPose();
 		return;
 	}
 
@@ -944,16 +912,21 @@ void BaseAnimating::UpdateBones()
 
 		for(int j = 0; j < MAX_SEQUENCE_TIMERS; j++)
 		{
+			sequencetimer_t& timer = m_sequenceTimers[j];
+
 			// if no animation plays on this timer, continue
-			if(!m_sequenceTimers[j].base_sequence)
+			if(!timer.seq)
 				continue;
 
-			float blend_weight = m_sequenceTimerBlendings[j];
+			gsequence_t* seq = timer.seq;
+			sequencedesc_t* seqDesc = seq->s;
+
+			float blend_weight = m_seqBlendWeights[j];
 
 			if(blend_weight <= 0)
 				continue;
 
-			studioHwData_t::motionData_t::animation_t *curanim = m_sequenceTimers[j].base_sequence->animations[0];
+			studioHwData_t::motionData_t::animation_t* curanim = seq->animations[0];
 
 			if(!curanim)
 				continue;
@@ -962,34 +935,37 @@ void BaseAnimating::UpdateBones()
 			animframe_t cTimedFrame;
 			ZeroFrameTransform(cTimedFrame);
 
-			float frame_interp = m_sequenceTimers[j].sequence_time - m_sequenceTimers[j].currFrame;
+			float frame_interp = timer.sequence_time - timer.currFrame;
+
+			int numAnims = seqDesc->numAnimations;
 
 			// blend between many animations in sequence using pose controller
-			if(m_sequenceTimers[j].base_sequence->numAnimations > 1 && m_sequenceTimers[j].base_sequence->posecontroller)
+			if(numAnims > 1 && timer.seq->posecontroller)
 			{
-				
+				gposecontroller_t* ctrl = timer.seq->posecontroller;
+
 				float playingBlendWeight = 0;
 				int playingBlendAnimation1 = 0;
 				int playingBlendAnimation2 = 0;
 
 				// get frame indexes and lerp value of blended animation
-				ComputeAnimationBlend(	m_sequenceTimers[j].base_sequence->numAnimations, 
-										m_sequenceTimers[j].base_sequence->posecontroller->pDesc->blendRange, 
-										m_sequenceTimers[j].base_sequence->posecontroller->value, 
-										playingBlendWeight, 
-										playingBlendAnimation1, 
-										playingBlendAnimation2);
+				ComputeAnimationBlend(numAnims,
+							ctrl->p->blendRange,
+							ctrl->value,
+							playingBlendWeight, 
+							playingBlendAnimation1, 
+							playingBlendAnimation2);
 
 				// get frame pointers
-				studioHwData_t::motionData_t::animation_t* pPlayingAnim1 = m_sequenceTimers[j].base_sequence->animations[playingBlendAnimation1];
-				studioHwData_t::motionData_t::animation_t* pPlayingAnim2 = m_sequenceTimers[j].base_sequence->animations[playingBlendAnimation2];
+				studioHwData_t::motionData_t::animation_t* pPlayingAnim1 = seq->animations[playingBlendAnimation1];
+				studioHwData_t::motionData_t::animation_t* pPlayingAnim2 = seq->animations[playingBlendAnimation2];
 
 				// compute blending frame
 				GetInterpolatedBoneFrameBetweenTwoAnimations(	pPlayingAnim1,
 																pPlayingAnim2,
 																boneId,
-																m_sequenceTimers[j].currFrame,
-																m_sequenceTimers[j].nextFrame,
+																timer.currFrame,
+																timer.nextFrame,
 																frame_interp,
 																playingBlendWeight,
 																cTimedFrame);
@@ -997,16 +973,18 @@ void BaseAnimating::UpdateBones()
 			else
 			{
 				// simply compute frames
-				GetInterpolatedBoneFrame(curanim, boneId, m_sequenceTimers[j].currFrame, m_sequenceTimers[j].nextFrame, frame_interp, cTimedFrame);
+				GetInterpolatedBoneFrame(curanim, boneId, timer.currFrame, timer.nextFrame, frame_interp, cTimedFrame);
 			}
 
 			animframe_t cAddFrame;
 			ZeroFrameTransform(cAddFrame);
 
+			int seqBlends = seqDesc->numSequenceBlends;
+
 			// add blended sequences to this
-			for(int blend_seq = 0; blend_seq < m_sequenceTimers[j].base_sequence->numSequenceBlends; blend_seq++)
+			for(int blend_seq = 0; blend_seq < seqBlends; blend_seq++)
 			{
-				gsequence_t* pSequence = m_sequenceTimers[j].base_sequence->sequenceblends[blend_seq];
+				gsequence_t* pSequence = seq->blends[blend_seq];
 
 				animframe_t frame;
 
@@ -1019,7 +997,7 @@ void BaseAnimating::UpdateBones()
 			AddFrameTransform(cTimedFrame, cAddFrame, cTimedFrame);
 
 			// interpolate or add the slots, this is useful for body part splitting
-			if( m_sequenceTimers[j].base_sequence->flags & SEQFLAG_SLOTBLEND )
+			if( seqDesc->flags & SEQFLAG_SLOTBLEND )
 			{
 				cTimedFrame.angBoneAngles *= blend_weight;
 				cTimedFrame.vecBonePosition *= blend_weight;
@@ -1030,18 +1008,20 @@ void BaseAnimating::UpdateBones()
 				InterpolateFrameTransform(cComputedFrame, cTimedFrame, blend_weight, cComputedFrame);
 		}
 
-		// transition of the animation frames TODO: additional doubling slots for non-base timers
-		if(m_sequenceTimers[0].base_sequence && m_fRemainingTransitionTime > 0)
-		{
-			float transition_factor = m_fRemainingTransitionTime / m_sequenceTimers[0].base_sequence->transitiontime;
+		gsequence_t* firstTimerSeq = m_sequenceTimers[0].seq;
 
-			InterpolateFrameTransform( cComputedFrame, m_pTransitionAnimationBoneFrames[boneId], transition_factor, cComputedFrame );
+		// transition of the animation frames TODO: additional doubling slots for non-base timers
+		if(firstTimerSeq && m_transitionTime > 0)
+		{
+			float transition_factor = m_transitionTime / firstTimerSeq->s->transitiontime;
+
+			InterpolateFrameTransform( cComputedFrame, m_transitionFrames[boneId], transition_factor, cComputedFrame );
 		}
 
 		/*
-		if(r_springanimations.GetBool() && m_sequenceTimers[0].base_sequence)
+		if(r_springanimations.GetBool() && firstTimerSeq)
 		{
-			animframe_t mulFrame = m_sequenceTimers[0].base_sequence->animations[0]->bones[boneId].keyFrames[m_sequenceTimers[0].nextFrame];
+			animframe_t mulFrame = firstTimerSeq->animations[0]->bones[boneId].keyFrames[m_sequenceTimers[0].nextFrame];
 
 			mulFrame.angBoneAngles -= cComputedFrame.angBoneAngles;
 			mulFrame.vecBonePosition -= cComputedFrame.vecBonePosition;
@@ -1049,46 +1029,46 @@ void BaseAnimating::UpdateBones()
 			mulFrame.angBoneAngles *= r_springanimations_velmul.GetFloat();
 			mulFrame.vecBonePosition *= r_springanimations_velmul.GetFloat();
 
-			AddFrameTransform(m_pBoneVelocities[boneId], mulFrame, m_pBoneVelocities[boneId]);
+			AddFrameTransform(m_velocityFrames[boneId], mulFrame, m_velocityFrames[boneId]);
 		}
 
 		
-		if(r_springanimations.GetBool() && dot(m_pBoneVelocities[boneId].angBoneAngles, m_pBoneVelocities[boneId].angBoneAngles) > 0.000001f || dot(m_pBoneSpringingAdd[boneId].angBoneAngles, m_pBoneSpringingAdd[boneId].angBoneAngles) > 0.000001f)
+		if(r_springanimations.GetBool() && dot(m_velocityFrames[boneId].angBoneAngles, m_velocityFrames[boneId].angBoneAngles) > 0.000001f || dot(m_springFrames[boneId].angBoneAngles, m_springFrames[boneId].angBoneAngles) > 0.000001f)
 		{
-			m_pBoneSpringingAdd[boneId].angBoneAngles += m_pBoneVelocities[boneId].angBoneAngles * gpGlobals->frametime;
+			m_springFrames[boneId].angBoneAngles += m_velocityFrames[boneId].angBoneAngles * gpGlobals->frametime;
 			float damping = 1 - (r_springanimations_damp.GetFloat() * gpGlobals->frametime);
 		
 			if ( damping < 0 )
 				damping = 0.0f;
 
-			m_pBoneVelocities[boneId].angBoneAngles *= damping;
+			m_velocityFrames[boneId].angBoneAngles *= damping;
 		 
 			// torsional spring
 			float springForceMagnitude = r_springanimations_spring.GetFloat() * gpGlobals->frametime;
 			springForceMagnitude = clamp(springForceMagnitude, 0, 2 );
-			m_pBoneVelocities[boneId].angBoneAngles -= m_pBoneSpringingAdd[boneId].angBoneAngles * springForceMagnitude;
+			m_velocityFrames[boneId].angBoneAngles -= m_springFrames[boneId].angBoneAngles * springForceMagnitude;
 
-			cComputedFrame.angBoneAngles += m_pBoneSpringingAdd[boneId].angBoneAngles;
+			cComputedFrame.angBoneAngles += m_springFrames[boneId].angBoneAngles;
 		}
 
-		if(r_springanimations.GetBool() && dot(m_pBoneVelocities[boneId].vecBonePosition, m_pBoneVelocities[boneId].vecBonePosition) > 0.000001f || dot(m_pBoneSpringingAdd[boneId].vecBonePosition, m_pBoneSpringingAdd[boneId].vecBonePosition) > 0.000001f)
+		if(r_springanimations.GetBool() && dot(m_velocityFrames[boneId].vecBonePosition, m_velocityFrames[boneId].vecBonePosition) > 0.000001f || dot(m_springFrames[boneId].vecBonePosition, m_springFrames[boneId].vecBonePosition) > 0.000001f)
 		{
 
-			m_pBoneSpringingAdd[boneId].vecBonePosition += m_pBoneVelocities[boneId].vecBonePosition * gpGlobals->frametime;
+			m_springFrames[boneId].vecBonePosition += m_velocityFrames[boneId].vecBonePosition * gpGlobals->frametime;
 			float damping = 1 - (r_springanimations_damp.GetFloat() * gpGlobals->frametime);
 		
 			if ( damping < 0 )
 				damping = 0.0f;
 
-			m_pBoneVelocities[boneId].vecBonePosition *= damping;
+			m_velocityFrames[boneId].vecBonePosition *= damping;
 		 
 			// torsional spring
 			// UNDONE: Per-axis spring constant?
 			float springForceMagnitude = r_springanimations_spring.GetFloat() * gpGlobals->frametime;
 			springForceMagnitude = clamp(springForceMagnitude, 0, 2 );
-			m_pBoneVelocities[boneId].vecBonePosition -= m_pBoneSpringingAdd[boneId].vecBonePosition * springForceMagnitude;
+			m_velocityFrames[boneId].vecBonePosition -= m_springFrames[boneId].vecBonePosition * springForceMagnitude;
 
-			cComputedFrame.vecBonePosition += m_pBoneSpringingAdd[boneId].vecBonePosition;
+			cComputedFrame.vecBonePosition += m_springFrames[boneId].vecBonePosition;
 		}
 		*/
 		
@@ -1096,25 +1076,25 @@ void BaseAnimating::UpdateBones()
 		Matrix4x4 bone_transform = CalculateLocalBonematrix(cComputedFrame);
 
 		// set last bones
-		m_pLastBoneFrames[boneId] = cComputedFrame;
+		m_prevFrames[boneId] = cComputedFrame;
 
-		m_BoneMatrixList[boneId] = (bone_transform*m_LocalBonematrixList[boneId]);
+		m_boneTransforms[boneId] = (bone_transform*m_joints[boneId].localTrans);
 	}
 
 	// setup each bone's transformation
 	for(int i = 0; i < m_numBones; i++)
 	{
-		if(m_nParentIndexList[i] != -1)
+		if(m_joints[i].parentbone != -1)
 		{
 			// multiply by parent transform
-			m_BoneMatrixList[i] = m_BoneMatrixList[i] * m_BoneMatrixList[m_nParentIndexList[i]];
+			m_boneTransforms[i] = m_boneTransforms[i] * m_boneTransforms[m_joints[i].parentbone];
 
-			//debugoverlay->Line3D(m_BoneMatrixList[i].rows[3].xyz(),m_BoneMatrixList[m_nParentIndexList[i]].rows[3].xyz(), color4_white, color4_white);
+			//debugoverlay->Line3D(m_boneTransforms[i].rows[3].xyz(),m_boneTransforms[m_nParentIndexList[i]].rows[3].xyz(), color4_white, color4_white);
 		}
 	}
 
 	// copy animation frames
-	memcpy( m_AnimationBoneMatrixList, m_BoneMatrixList, sizeof(Matrix4x4)*m_numBones );
+	memcpy( m_ikBones, m_boneTransforms, sizeof(Matrix4x4)*m_numBones );
 
 	// update inverse kinematics
 	UpdateIK();
@@ -1124,14 +1104,17 @@ void BaseAnimating::UpdateBones()
 		// setup each bone's transformation
 		for(int i = 0; i < m_numBones; i++)
 		{
-			if(m_nParentIndexList[i] != -1)
+			if(m_joints[i].parentbone != -1)
 			{
-				Vector3D pos = (m_matWorldTransform*Vector4D(m_BoneMatrixList[i].rows[3].xyz(), 1.0f)).xyz();
-				Vector3D parent_pos = (m_matWorldTransform*Vector4D(m_BoneMatrixList[m_nParentIndexList[i]].rows[3].xyz(), 1.0f)).xyz();
+				Matrix4x4& transform = m_boneTransforms[i];
+				Matrix4x4& parentTransform = m_boneTransforms[m_joints[i].parentbone];
 
-				Vector3D dX = m_matWorldTransform.getRotationComponent()*m_BoneMatrixList[i].rows[0].xyz();
-				Vector3D dY = m_matWorldTransform.getRotationComponent()*m_BoneMatrixList[i].rows[1].xyz();
-				Vector3D dZ = m_matWorldTransform.getRotationComponent()*m_BoneMatrixList[i].rows[2].xyz();
+				Vector3D pos = (m_matWorldTransform*Vector4D(transform.rows[3].xyz(), 1.0f)).xyz();
+				Vector3D parent_pos = (m_matWorldTransform*Vector4D(m_boneTransforms[m_joints[i].parentbone].rows[3].xyz(), 1.0f)).xyz();
+
+				Vector3D dX = m_matWorldTransform.getRotationComponent()*transform.rows[0].xyz();
+				Vector3D dY = m_matWorldTransform.getRotationComponent()*transform.rows[1].xyz();
+				Vector3D dZ = m_matWorldTransform.getRotationComponent()*transform.rows[2].xyz();
 
 				debugoverlay->Line3D(pos,parent_pos, color4_white, color4_white);
 
@@ -1147,7 +1130,7 @@ void BaseAnimating::UpdateBones()
 // renders model
 void BaseAnimating::Render(int nViewRenderFlags)
 {
-	RenderEGFModel( nViewRenderFlags, m_BoneMatrixList );
+	RenderEGFModel( nViewRenderFlags, m_boneTransforms );
 }
 
 // updates inverse kinematics
@@ -1164,11 +1147,15 @@ void BaseAnimating::UpdateIK()
 		int chain_id = m_pModel->GetHWData()->joints[boneId].chain_id;
 		int link_id = m_pModel->GetHWData()->joints[boneId].link_id;
 
-		if(link_id != -1 && chain_id != -1 && m_IkChains[chain_id]->enable)
+		
+
+		if(link_id != -1 && chain_id != -1 && m_ikChains[chain_id]->enable)
 		{
-			for(int i = 0; i < m_IkChains[chain_id]->numLinks; i++)
+			gikchain_t* chain = m_ikChains[chain_id];
+
+			for(int i = 0; i < chain->numLinks; i++)
 			{
-				if(m_IkChains[chain_id]->links[i].bone_index == boneId)
+				if(chain->links[i].l->bone == boneId)
 				{
 					ik_enabled_bones[boneId] = true;
 
@@ -1180,38 +1167,43 @@ void BaseAnimating::UpdateIK()
 	}
 
 	// solve ik links or copy frames to disabled links
-	for(int i = 0; i < m_IkChains.numElem(); i++)
+	for(int i = 0; i < m_ikChains.numElem(); i++)
 	{
-		if( m_IkChains[i]->enable )
+		gikchain_t* chain = m_ikChains[i];
+
+		if(chain->enable )
 		{
 			// display target
 			if(r_debug_ik.GetBool())
 			{
-				Vector3D target_pos = m_IkChains[i]->local_target;
+				Vector3D target_pos = chain->local_target;
 				target_pos = (m_matWorldTransform*Vector4D(target_pos, 1.0f)).xyz();
 
 				debugoverlay->Box3D(target_pos-Vector3D(1), target_pos+Vector3D(1), ColorRGBA(0,1,0,1));
 			}
 
 			// update chain
-			UpdateIkChain( m_IkChains[i] );
+			UpdateIkChain( m_ikChains[i] );
 		}
 		else
 		{
 			// copy last frames to all links
-			for(int j = 0; j < m_IkChains[i]->numLinks; j++)
+			for(int j = 0; j < chain->numLinks; j++)
 			{
-				int bone_id = m_IkChains[i]->links[j].bone_index;
+				giklink_t& link = chain->links[j];
 
-				m_IkChains[i]->links[j].quat = Quaternion(m_AnimationBoneMatrixList[bone_id].getRotationComponent());
-				m_IkChains[i]->links[j].position = m_pModel->GetHWData()->joints[bone_id].position;
+				int bone_id = link.l->bone;
+				studioHwData_t::joint_t& joint = m_joints[link.l->bone];
 
-				m_IkChains[i]->links[j].localTrans = Matrix4x4(m_IkChains[i]->links[j].quat);
-				m_IkChains[i]->links[j].localTrans.setTranslation(m_IkChains[i]->links[j].position);
+				link.quat = Quaternion(m_ikBones[bone_id].getRotationComponent());
+				link.position = joint.position;
+
+				link.localTrans = Matrix4x4(link.quat);
+				link.localTrans.setTranslation(link.position);
 
 				// fix local transform for animation
-				m_IkChains[i]->links[j].localTrans = m_LocalBonematrixList[bone_id] * m_IkChains[i]->links[j].localTrans;
-				m_IkChains[i]->links[j].absTrans = m_AnimationBoneMatrixList[bone_id];
+				link.localTrans = joint.localTrans * link.localTrans;
+				link.absTrans = m_ikBones[bone_id];
 			}
 		}
 	}
@@ -1222,40 +1214,40 @@ void BaseAnimating::UpdateIkChain( gikchain_t* pIkChain )
 {
 	for(int i = 0; i < pIkChain->numLinks; i++)
 	{
-		// this is broken
-		pIkChain->links[i].localTrans = Matrix4x4(pIkChain->links[i].quat);
-		pIkChain->links[i].localTrans.setTranslation(pIkChain->links[i].position);
+		giklink_t& link = pIkChain->links[i];
 
-		//int bone_id = pIkChain->links[i].bone_index;
-		//pIkChain->links[i].localTrans = m_LocalBonematrixList[bone_id] * pIkChain->links[i].localTrans;
+		// this is broken
+		link.localTrans = Matrix4x4(link.quat);
+		link.localTrans.setTranslation(link.position);
+
+		//int bone_id = link.bone_index;
+		//link.localTrans = m_joints[bone_id].localTrans * link.localTrans;
 	}
 
 	for(int i = 0; i < pIkChain->numLinks; i++)
 	{
-		int parent = pIkChain->links[i].parent;
+		giklink_t& link = pIkChain->links[i];
 
-		if(parent != -1)
+		if(link.parent)
 		{
-			int bone_id = pIkChain->links[i].bone_index;
+			link.absTrans = link.localTrans * link.parent->absTrans;
 
-			pIkChain->links[i].absTrans = pIkChain->links[i].localTrans * pIkChain->links[parent].absTrans;
-
-			//pIkChain->links[i].absTrans = !m_LocalBonematrixList[bone_id] * pIkChain->links[i].absTrans;
+			//link.absTrans = !link.localTrans * link.absTrans;
 
 			if(r_debug_ik.GetBool())
 			{
-				Vector3D bone_pos = pIkChain->links[i].absTrans.rows[3].xyz();
-				Vector3D parent_pos = pIkChain->links[parent].absTrans.rows[3].xyz();
+				const Vector3D& bone_pos = link.absTrans.rows[3].xyz();
+				Vector3D parent_pos = link.parent->absTrans.rows[3].xyz();
 
 				parent_pos = (m_matWorldTransform*Vector4D(parent_pos, 1.0f)).xyz();
 
-				Vector3D dX = m_matWorldTransform.getRotationComponent()*pIkChain->links[i].absTrans.rows[0].xyz();
-				Vector3D dY = m_matWorldTransform.getRotationComponent()*pIkChain->links[i].absTrans.rows[1].xyz();
-				Vector3D dZ = m_matWorldTransform.getRotationComponent()*pIkChain->links[i].absTrans.rows[2].xyz();
+				Vector3D dX = m_matWorldTransform.getRotationComponent()*link.absTrans.rows[0].xyz();
+				Vector3D dY = m_matWorldTransform.getRotationComponent()*link.absTrans.rows[1].xyz();
+				Vector3D dZ = m_matWorldTransform.getRotationComponent()*link.absTrans.rows[2].xyz();
 
 				debugoverlay->Line3D(parent_pos, bone_pos, ColorRGBA(1,1,0,1), ColorRGBA(1,1,0,1));
 				debugoverlay->Box3D(bone_pos+Vector3D(1),bone_pos-Vector3D(1), ColorRGBA(1,0,0,1));
-				debugoverlay->Text3D(bone_pos, 200.0f, color4_white, 0.0f, "%s", m_pModel->GetHWData()->joints[pIkChain->links[i].bone_index].name);
+				debugoverlay->Text3D(bone_pos, 200.0f, color4_white, 0.0f, "%s", m_joints[link.l->bone].name);
 
 				// draw axis
 				debugoverlay->Line3D(bone_pos, bone_pos+dX, ColorRGBA(1,0,0,1), ColorRGBA(1,0,0,1));
@@ -1265,11 +1257,11 @@ void BaseAnimating::UpdateIkChain( gikchain_t* pIkChain )
 
 			// FIXME:	INVALID CALCULATIONS HAPPENED HERE
 			//			REWORK IK!!!
-			m_BoneMatrixList[pIkChain->links[i].bone_index] = pIkChain->links[i].absTrans;
+			m_boneTransforms[link.l->bone] = link.absTrans;
 		}
 		else // just copy transform
 		{
-			pIkChain->links[i].absTrans = m_BoneMatrixList[pIkChain->links[i].bone_index];
+			link.absTrans = m_boneTransforms[link.l->bone];
 		}
 	}
 	
@@ -1278,7 +1270,7 @@ void BaseAnimating::UpdateIkChain( gikchain_t* pIkChain )
 	int nEffector = pIkChain->numLinks-1;
 
 	// solve link now
-	SolveIKLinks(pIkChain->links, &pIkChain->links[nEffector], pIkChain->local_target, gpGlobals->frametime, r_ik_iterations.GetInt());
+	SolveIKLinks(pIkChain->links[nEffector], pIkChain->local_target, gpGlobals->frametime, r_ik_iterations.GetInt());
 }
 
 // inverse kinematics
@@ -1313,7 +1305,7 @@ void BaseAnimating::SetIKLocalTarget(int chain_id, const Vector3D &local_positio
 	if(chain_id == -1)
 		return;
 
-	m_IkChains[chain_id]->local_target = local_position;
+	m_ikChains[chain_id]->local_target = local_position;
 }
 
 void BaseAnimating::SetIKChainEnabled(int chain_id, bool enabled)
@@ -1321,7 +1313,7 @@ void BaseAnimating::SetIKChainEnabled(int chain_id, bool enabled)
 	if(chain_id == -1)
 		return;
 
-	m_IkChains[chain_id]->enable = enabled;
+	m_ikChains[chain_id]->enable = enabled;
 }
 
 bool BaseAnimating::IsIKChainEnabled(int chain_id)
@@ -1329,14 +1321,14 @@ bool BaseAnimating::IsIKChainEnabled(int chain_id)
 	if(chain_id == -1)
 		return false;
 
-	return m_IkChains[chain_id]->enable;
+	return m_ikChains[chain_id]->enable;
 }
 
 int	 BaseAnimating::FindIKChain(char* pszName)
 {
-	for(int i = 0; i < m_IkChains.numElem(); i++)
+	for(int i = 0; i < m_ikChains.numElem(); i++)
 	{
-		if(!stricmp(m_IkChains[i]->name, pszName))
+		if(!stricmp(m_ikChains[i]->name, pszName))
 			return i;
 	}
 
@@ -1350,8 +1342,8 @@ void BaseAnimating::AttachIKChain(int chain, int attach_type)
 	if(chain == -1)
 		return;
 
-	int effector_id = m_IkChains[chain]->numLinks - 1;
-	giklink_t* link = &m_IkChains[chain]->links[effector_id];
+	int effector_id = m_ikChains[chain]->numLinks - 1;
+	giklink_t& link = m_ikChains[chain]->links[effector_id];
 
 	switch(attach_type)
 	{
@@ -1363,7 +1355,7 @@ void BaseAnimating::AttachIKChain(int chain, int attach_type)
 		}
 		case IK_ATTACH_LOCAL:
 		{
-			SetIKLocalTarget(chain, link->absTrans.rows[3].xyz());
+			SetIKLocalTarget(chain, link.absTrans.rows[3].xyz());
 			SetIKChainEnabled(chain, true);
 			break;
 		}

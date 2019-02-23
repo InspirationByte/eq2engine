@@ -346,7 +346,7 @@ void CBaseActor::UpdateTransform()
 {
 	if(m_pRagdoll && IsDead())
 	{
-		m_pRagdoll->GetVisualBonesTransforms( m_BoneMatrixList );
+		m_pRagdoll->GetVisualBonesTransforms( m_boneTransforms );
 
 		SetAbsOrigin( m_pRagdoll->GetPosition() );
 		SetAbsAngles( vec3_zero );
@@ -358,7 +358,7 @@ void CBaseActor::UpdateTransform()
 		UpdateBones();
 
 		if(m_pRagdoll)
-			m_pRagdoll->SetBoneTransform( m_BoneMatrixList, transpose(m_matWorldTransform) );
+			m_pRagdoll->SetBoneTransform( m_boneTransforms, transpose(m_matWorldTransform) );
 
 		BaseClass::UpdateTransform();
 
@@ -1103,7 +1103,7 @@ void CBaseActor::OnDeath( const damageInfo_t& info )
 				PhysicsDestroyObject();
 			}
 
-			//m_pRagdoll->SetBoneTransform( m_BoneMatrixList, transpose(m_matWorldTransform) );
+			//m_pRagdoll->SetBoneTransform( m_boneTransforms, transpose(m_matWorldTransform) );
 
 			for(int i = 0; i< m_pRagdoll->m_numParts; i++)
 			{
