@@ -187,7 +187,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="ParticleEffects.cpp" />
-    <ClCompile Include="pedestrian.cpp" />
+    <ClCompile Include="AIPedestrian.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="session_base.cpp" />
     <ClCompile Include="Shader_Shadow.cpp" />
@@ -336,7 +336,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="director.h" />
     <ClInclude Include="DrvSynDecals.h" />
     <ClInclude Include="DrvSynStates.h" />
-    <ClInclude Include="pedestrian.h" />
+    <ClInclude Include="AIPedestrian.h" />
     <ClInclude Include="worldenv.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Controller.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Contstraint.h" />

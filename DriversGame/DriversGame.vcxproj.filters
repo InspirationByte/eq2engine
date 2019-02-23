@@ -438,8 +438,8 @@
     <ClCompile Include="AIHandling.cpp">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClCompile>
-    <ClCompile Include="pedestrian.cpp">
-      <Filter>Файлы исходного кода\Game\Objects</Filter>
+    <ClCompile Include="AIPedestrian.cpp">
+      <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -865,8 +865,8 @@
     <ClInclude Include="AIManipulator_TargetChaser.h">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClInclude>
-    <ClInclude Include="pedestrian.h">
-      <Filter>Файлы исходного кода\Game\Objects</Filter>
+    <ClInclude Include="AIPedestrian.h">
+      <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

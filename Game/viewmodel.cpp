@@ -128,9 +128,9 @@ void CBaseViewmodel::Render(int nViewRenderFlags)
 	g_pShaderAPI->SetDepthRange( 0.0f, 1.0f );
 }
 
-void CBaseViewmodel::HandleEvent(AnimationEvent nEvent, char* options)
+void CBaseViewmodel::HandleAnimatingEvent(AnimationEvent nEvent, char* options)
 {
-	BaseClass::HandleEvent(nEvent, options);
+	BaseClass::HandleAnimatingEvent(nEvent, options);
 
 	CWhiteCagePlayer* pPlayer = dynamic_cast<CWhiteCagePlayer*>(m_pOwner);
 

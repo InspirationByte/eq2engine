@@ -279,6 +279,7 @@ call copy_whitecage_binary.bat $(ConfigurationName) $(TargetName)$(TargetExt)</C
   <ItemGroup>
     <ClInclude Include="..\public\TextureAtlas.h" />
     <ClInclude Include="..\shared_engine\EqUI\EqUI_Image.h" />
+    <ClInclude Include="..\shared_game\Animating.h" />
     <ClInclude Include="..\shared_game\anim_activity.h" />
     <ClInclude Include="..\shared_game\anim_events.h" />
     <ClInclude Include="..\shared_engine\BaseRenderableObject.h" />
@@ -559,6 +560,7 @@ call copy_whitecage_binary.bat $(ConfigurationName) $(TargetName)$(TargetExt)</C
   <ItemGroup>
     <ClCompile Include="..\public\TextureAtlas.cpp" />
     <ClCompile Include="..\shared_engine\EqUI\EqUI_Image.cpp" />
+    <ClCompile Include="..\shared_game\Animating.cpp" />
     <ClCompile Include="..\shared_game\anim_activity.cpp" />
     <ClCompile Include="..\shared_game\anim_events.cpp" />
     <ClCompile Include="..\shared_engine\BaseRenderableObject.cpp" />

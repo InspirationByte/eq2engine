@@ -29,7 +29,7 @@ public:
 
 	void			Render(int nViewRenderFlags);
 
-	void			HandleEvent(AnimationEvent nEvent, char* options);
+	void			HandleAnimatingEvent(AnimationEvent nEvent, char* options);
 
 protected:
 	DECLARE_DATAMAP();
