@@ -139,6 +139,7 @@
     <ClInclude Include="..\..\shared_engine\Font.h" />
     <ClInclude Include="..\..\shared_engine\FontCache.h" />
     <ClInclude Include="..\..\shared_engine\studio_egf.h" />
+    <ClInclude Include="..\..\shared_game\Animating.h" />
     <ClInclude Include="..\..\shared_game\anim_activity.h" />
     <ClInclude Include="..\..\shared_game\anim_defs.h" />
     <ClInclude Include="..\..\shared_game\anim_events.h" />
@@ -224,6 +225,7 @@
     <ClCompile Include="..\..\shared_engine\eqParallelJobs.cpp" />
     <ClCompile Include="..\..\shared_engine\FontCache.cpp" />
     <ClCompile Include="..\..\shared_engine\studio_egf.cpp" />
+    <ClCompile Include="..\..\shared_game\Animating.cpp" />
     <ClCompile Include="..\..\shared_game\anim_activity.cpp" />
     <ClCompile Include="..\..\shared_game\anim_events.cpp" />
     <ClCompile Include="..\..\shared_game\BoneSetup.cpp" />

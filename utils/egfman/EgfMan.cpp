@@ -1226,16 +1226,16 @@ void CEGFViewFrame::ReDraw()
 
 		g_pModel->Update( g_frametime );
 
-		if( g_pModel->m_sequenceTimers[0].bPlaying )
+		if( g_pModel->IsSequencePlaying() )
 		{
 			int nSeq = m_pMotionSelection->GetSelection();
-			gsequence_t& seq = g_pModel->m_pSequences[nSeq];
+			const gsequence_t& seq = g_pModel->GetSequence(nSeq);
 
 			float setFrameRate = atoi(m_pAnimFramerate->GetValue());
 
 			if(setFrameRate > 0)
 			{
-				float framerateScale = setFrameRate / seq.framerate;
+				float framerateScale = setFrameRate / seq.s->framerate;
 				g_pModel->SetPlaybackSpeedScale(framerateScale, 0);
 			}
 
@@ -1256,7 +1256,7 @@ void CEGFViewFrame::ReDraw()
 		materials->GetConfiguration().wireframeMode = m_wireframe->IsChecked();
 
 		// Now we can draw our model
-		g_pModel->Render(renderFlags, g_fCamDistance, m_lodSpin->GetValue(), m_lodOverride->GetValue());
+		g_pModel->Render(renderFlags, g_fCamDistance, m_lodSpin->GetValue(), m_lodOverride->GetValue(), g_frametime);
 
 		debugoverlay->Text(color4_white, "polygon count: %d\n", g_pShaderAPI->GetTrianglesCount());
 
@@ -1291,9 +1291,9 @@ void CEGFViewFrame::RefreshGUI()
 		// sequences
 		if(m_pAnimMode->GetSelection() == 0)
 		{
-			for(int i = 0; i < g_pModel->m_pSequences.numElem(); i++)
+			for(int i = 0; i < g_pModel->GetNumSequences(); i++)
 			{
-				m_pMotionSelection->Append( g_pModel->m_pSequences[i].name );
+				m_pMotionSelection->Append( g_pModel->GetSequence(i).s->name );
 			}
 		}
 		else // animations
@@ -1306,9 +1306,9 @@ void CEGFViewFrame::RefreshGUI()
 			}*/
 		}
 
-		for(int i = 0; i < g_pModel->m_poseControllers.numElem(); i++)
+		for(int i = 0; i < g_pModel->GetNumPoseControllers(); i++)
 		{
-			m_pPoseController->Append( g_pModel->m_poseControllers[i].p->name );
+			m_pPoseController->Append( g_pModel->GetPoseController(i).p->name );
 		}
 	}
 }
@@ -1324,10 +1324,10 @@ void CEGFViewFrame::OnComboboxChanged(wxCommandEvent& event)
 		if(g_pModel && nSeq != -1)
 		{
 			g_pModel->SetSequence( nSeq, 0 );
-			g_pModel->ResetAnimationTime(0);
+			g_pModel->ResetSequenceTime(0);
 
-			gsequence_t& seq = g_pModel->m_pSequences[nSeq];
-			m_pAnimFramerate->SetValue( varargs("%g", seq.framerate) );
+			const gsequence_t& seq = g_pModel->GetSequence(nSeq);
+			m_pAnimFramerate->SetValue( varargs("%g", seq.s->framerate) );
 
 			int maxFrames = g_pModel->GetCurrentAnimationDurationInFrames();
 
@@ -1341,10 +1341,10 @@ void CEGFViewFrame::OnComboboxChanged(wxCommandEvent& event)
 
 		if(g_pModel && nPoseContr != -1)
 		{
-			m_pPoseValue->SetMin( g_pModel->m_poseControllers[nPoseContr].p->blendRange[0]*10 );
-			m_pPoseValue->SetMax( g_pModel->m_poseControllers[nPoseContr].p->blendRange[1]*10 );
+			m_pPoseValue->SetMin( g_pModel->GetPoseController(nPoseContr).p->blendRange[0]*10 );
+			m_pPoseValue->SetMax( g_pModel->GetPoseController(nPoseContr).p->blendRange[1]*10 );
 
-			m_pPoseValue->SetValue( g_pModel->m_poseControllers[nPoseContr].value*10 );
+			m_pPoseValue->SetValue( g_pModel->GetPoseControllerValue(nPoseContr)*10 );
 		}
 	}
 }
@@ -1366,23 +1366,23 @@ void CEGFViewFrame::OnButtons(wxCommandEvent& event)
 
 	if(event.GetId() == Event_Sequence_Play)
 	{
-		g_pModel->ResetAnimationTime(0);
-		g_pModel->PlayAnimation(0);
+		g_pModel->ResetSequenceTime(0);
+		g_pModel->PlaySequence(0);
 	}
 	else if(event.GetId() == Event_Sequence_Stop)
 	{
-		g_pModel->StopAnimation(0);
+		g_pModel->StopSequence(0);
 	}
 	else if(event.GetId() == Event_Timeline_Set)
 	{
-		g_pModel->m_sequenceTimers[0].SetTime( m_pTimeline->GetValue() );
+		g_pModel->SetSequenceTime( m_pTimeline->GetValue(), 0 );
 	}
 	else if(event.GetId() == Event_PoseCont_ValueChanged)
 	{
 		int nPoseContr = m_pPoseController->GetSelection();
 
 		if(nPoseContr != -1)
-			g_pModel->m_poseControllers[nPoseContr].value = float(m_pPoseValue->GetValue()) * 0.1;
+			g_pModel->SetPoseControllerValue(nPoseContr, float(m_pPoseValue->GetValue()) * 0.1f);
 	}
 	else if(event.GetId() == Event_Physics_SimulateToggle)
 	{

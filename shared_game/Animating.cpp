@@ -8,6 +8,7 @@
 #include "Animating.h"
 #include "GameSoundEmitterSystem.h"
 #include "IDebugOverlay.h"
+#include "DebugInterface.h"
 
 ConVar r_debug_ik("r_debug_ik", "0", "Draw debug information about Inverse Kinematics", CV_CHEAT);
 ConVar r_debug_showskeletons("r_debug_showskeletons", "0", "Draw debug information about skeletons", CV_CHEAT);
@@ -98,124 +99,120 @@ void CAnimatingEGF::InitAnimating(IEqModel* model)
 	for (int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
 		m_sequenceTimers[i].Reset();
 
-	if (model)
+	if (!model)
+		return;
+
+	studiohdr_t* studio = model->GetHWData()->studio;
+
+	m_joints = model->GetHWData()->joints;
+	m_numBones = studio->numBones;
+
+	m_boneTransforms = PPAllocStructArray(Matrix4x4, m_numBones);
+	m_ikBones = PPAllocStructArray(Matrix4x4, m_numBones);
+
+	for (int i = 0; i < m_numBones; i++)
 	{
-		studiohdr_t* studio = model->GetHWData()->studio;
+		m_boneTransforms[i] = identity4();
+		m_ikBones[i] = identity4();
+	}
 
-		m_joints = model->GetHWData()->joints;
-		m_numBones = studio->numBones;
+	m_prevFrames = PPAllocStructArray(animframe_t, m_numBones);
+	memset(m_prevFrames, 0, sizeof(animframe_t)*m_numBones);
 
-		m_boneTransforms = PPAllocStructArray(Matrix4x4, m_numBones);
-		m_ikBones = PPAllocStructArray(Matrix4x4, m_numBones);
+	m_transitionFrames = PPAllocStructArray(animframe_t, m_numBones);
+	memset(m_transitionFrames, 0, sizeof(animframe_t)*m_numBones);
 
-		for (int i = 0; i < m_numBones; i++)
+	//m_springFrames = PPAllocStructArray(animframe_t, m_numBones);
+	//memset(m_springFrames, 0, sizeof(animframe_t)*m_numBones);
+
+	//m_velocityFrames = PPAllocStructArray(animframe_t, m_numBones);
+	//memset(m_velocityFrames, 0, sizeof(animframe_t)*m_numBones);
+
+	// make standard pose
+	DefaultPose();
+
+	int numIkChains = studio->numIKChains;
+
+	// load ik chains
+	for (int i = 0; i < numIkChains; i++)
+	{
+		studioikchain_t* pStudioChain = studio->pIkChain(i);
+
+		gikchain_t* chain = new gikchain_t;
+
+		strcpy(chain->name, pStudioChain->name);
+		chain->numLinks = pStudioChain->numLinks;
+		chain->local_target = Vector3D(0, 0, 10);
+		chain->enable = false;
+
+		chain->links = PPAllocStructArray(giklink_t, chain->numLinks);
+
+		for (int j = 0; j < chain->numLinks; j++)
 		{
-			m_boneTransforms[i] = identity4();
-			m_ikBones[i] = identity4();
+			giklink_t link;
+			link.l = pStudioChain->pLink(j);
+
+			studioiklink_t* pLink = pStudioChain->pLink(j);
+
+			studioHwData_t::joint_t& joint = m_joints[link.l->bone];
+
+			const Vector3D& rotation = joint.rotation;
+
+			link.position = joint.position;
+			link.quat = Quaternion(rotation.x, rotation.y, rotation.z);
+
+			// initial transform
+			link.localTrans = Matrix4x4(link.quat);
+			link.localTrans.setTranslation(link.position);
+			link.absTrans = identity4();
+
+			int parentLinkId = j - 1;
+
+			if (parentLinkId >= 0)
+				link.parent = &chain->links[j - 1];
+			else
+				link.parent = nullptr;
+
+			chain->links[j] = link;
+
+			link.chain = chain;
+
+			// set link for fast access, can be used for multiple instances of base animating entities with single model
+			joint.link_id = j;
+			joint.chain_id = i;
 		}
 
-		m_prevFrames = PPAllocStructArray(animframe_t, m_numBones);
-		memset(m_prevFrames, 0, sizeof(animframe_t)*m_numBones);
-
-		m_transitionFrames = PPAllocStructArray(animframe_t, m_numBones);
-		memset(m_transitionFrames, 0, sizeof(animframe_t)*m_numBones);
-
-		//m_springFrames = PPAllocStructArray(animframe_t, m_numBones);
-		//memset(m_springFrames, 0, sizeof(animframe_t)*m_numBones);
-
-		//m_velocityFrames = PPAllocStructArray(animframe_t, m_numBones);
-		//memset(m_velocityFrames, 0, sizeof(animframe_t)*m_numBones);
-
-		// make standard pose
-		DefaultPose();
-
-		int numIkChains = studio->numIKChains;
-
-		// load ik chains
-		for (int i = 0; i < numIkChains; i++)
+		for (int j = 0; j < chain->numLinks; j++)
 		{
-			studioikchain_t* pStudioChain = studio->pIkChain(i);
+			giklink_t& link = chain->links[j];
 
-			gikchain_t* chain = new gikchain_t;
-
-			strcpy(chain->name, pStudioChain->name);
-			chain->numLinks = pStudioChain->numLinks;
-			chain->local_target = Vector3D(0, 0, 10);
-			chain->enable = false;
-
-			chain->links = PPAllocStructArray(giklink_t, chain->numLinks);
-
-			for (int j = 0; j < chain->numLinks; j++)
-			{
-				giklink_t link;
-				link.l = pStudioChain->pLink(j);
-
-				studioiklink_t* pLink = pStudioChain->pLink(j);
-
-				studioHwData_t::joint_t& joint = m_joints[link.l->bone];
-
-				const Vector3D& rotation = joint.rotation;
-
-				link.position = joint.position;
-				link.quat = Quaternion(rotation.x, rotation.y, rotation.z);
-
-				// initial transform
-				link.localTrans = Matrix4x4(link.quat);
-				link.localTrans.setTranslation(link.position);
-				link.absTrans = identity4();
-
-				int parentLinkId = j - 1;
-
-				if (parentLinkId >= 0)
-					link.parent = &chain->links[j - 1];
-				else
-					link.parent = nullptr;
-
-				chain->links[j] = link;
-
-				link.chain = chain;
-
-				// set link for fast access, can be used for multiple instances of base animating entities with single model
-				joint.link_id = j;
-				joint.chain_id = i;
-			}
-
-			for (int j = 0; j < chain->numLinks; j++)
-			{
-				giklink_t& link = chain->links[j];
-
-				if (link.parent)
-					link.absTrans = link.localTrans * link.parent->absTrans;
-				else
-					link.absTrans = link.localTrans;
-			}
-
-			m_ikChains.append(chain);
+			if (link.parent)
+				link.absTrans = link.localTrans * link.parent->absTrans;
+			else
+				link.absTrans = link.localTrans;
 		}
+
+		m_ikChains.append(chain);
 	}
 
 	int numMotionPackages = model->GetHWData()->numMotionPackages;
 
 	// build activity table for loaded model
-	if (model && numMotionPackages)
+	for (int i = 0; i < numMotionPackages; i++)
 	{
-		for (int i = 0; i < numMotionPackages; i++)
-		{
-			studioHwData_t::motionData_t* motion = model->GetHWData()->motiondata[i];
+		studioHwData_t::motionData_t* motion = model->GetHWData()->motiondata[i];
 
-			PreloadMotionData(motion);
-			PrecacheSoundEvents(motion);
-		}
+		AddMotions(motion);
 	}
 }
 
-void CAnimatingEGF::PreloadMotionData(studioHwData_t::motionData_t* pMotionData)
+void CAnimatingEGF::AddMotions(studioHwData_t::motionData_t* motionData)
 {
 	// create pose controllers
-	for (int i = 0; i < pMotionData->numPoseControllers; i++)
+	for (int i = 0; i < motionData->numPoseControllers; i++)
 	{
 		gposecontroller_t controller;
-		controller.p = &pMotionData->poseControllers[i];
+		controller.p = &motionData->poseControllers[i];
 
 		// get center in blending range
 		controller.value = lerp(controller.p->blendRange[0], controller.p->blendRange[1], 0.5f);
@@ -225,9 +222,9 @@ void CAnimatingEGF::PreloadMotionData(studioHwData_t::motionData_t* pMotionData)
 	}
 
 	// copy sequences
-	for (int i = 0; i < pMotionData->numsequences; i++)
+	for (int i = 0; i < motionData->numsequences; i++)
 	{
-		sequencedesc_t& seq = pMotionData->sequences[i];
+		sequencedesc_t& seq = motionData->sequences[i];
 
 		gsequence_t seqData;
 		memset(&seqData, 0, sizeof(seqData));
@@ -242,34 +239,15 @@ void CAnimatingEGF::PreloadMotionData(studioHwData_t::motionData_t* pMotionData)
 			seqData.posecontroller = &m_poseControllers[seq.posecontroller];
 
 		for (int j = 0; j < seq.numAnimations; j++)
-			seqData.animations[j] = &pMotionData->animations[seq.animations[j]];
+			seqData.animations[j] = &motionData->animations[seq.animations[j]];
 
 		for (int j = 0; j < seq.numEvents; j++)
-			seqData.events[j] = &pMotionData->events[seq.events[j]];
+			seqData.events[j] = &motionData->events[seq.events[j]];
 
 		for (int j = 0; j < seq.numSequenceBlends; j++)
 			seqData.blends[j] = &m_seqList[seq.sequenceblends[j]];
 
 		m_seqList.append(seqData);
-	}
-}
-
-void CAnimatingEGF::PrecacheSoundEvents(studioHwData_t::motionData_t* pMotionData)
-{
-	for (int i = 0; i < pMotionData->numEvents; i++)
-	{
-		sequenceevent_t& evt = pMotionData->events[i];
-		AnimationEvent event_type = GetEventByName(evt.command);
-
-		switch (event_type)
-		{
-			//case EV_INVALID:
-			//	event_type = (AnimationEvent)atoi(evt.command);
-			//	break;
-		case EV_SOUND:
-			g_sounds->PrecacheSound(evt.parameter);
-			break;
-		}
 	}
 }
 
@@ -328,9 +306,9 @@ void CAnimatingEGF::SetActivity(Activity act, int slot)
 		{
 			SetSequence(i, slot);
 
-			ResetAnimationTime(slot);
+			ResetSequenceTime(slot);
 
-			PlayAnimation(slot);
+			PlaySequence(slot);
 
 			return;
 		}
@@ -349,13 +327,13 @@ Activity CAnimatingEGF::GetCurrentActivity(int slot)
 }
 
 // resets animation time, and restarts animation
-void CAnimatingEGF::ResetAnimationTime(int slot)
+void CAnimatingEGF::ResetSequenceTime(int slot)
 {
 	m_sequenceTimers[slot].ResetPlayback();
 }
 
 // sets new animation time
-void CAnimatingEGF::SetAnimationTime(float newTime, int slot)
+void CAnimatingEGF::SetSequenceTime(float newTime, int slot)
 {
 	m_sequenceTimers[slot].SetTime(newTime);
 }
@@ -428,14 +406,19 @@ float CAnimatingEGF::GetCurrentRemainingAnimationDuration() const
 	return GetCurrentAnimationDuration() - m_sequenceTimers[0].sequence_time;
 }
 
+bool CAnimatingEGF::IsSequencePlaying(int slot) const
+{
+	return m_sequenceTimers[slot].bPlaying;
+}
+
 // plays/resumes animation
-void CAnimatingEGF::PlayAnimation(int slot)
+void CAnimatingEGF::PlaySequence(int slot)
 {
 	m_sequenceTimers[slot].bPlaying = true;
 }
 
 // stops/pauses animation
-void CAnimatingEGF::StopAnimation(int slot)
+void CAnimatingEGF::StopSequence(int slot)
 {
 	m_sequenceTimers[slot].bPlaying = false;
 }
@@ -593,9 +576,17 @@ int CAnimatingEGF::FindPoseController(char *name)
 	return -1;
 }
 
+float CAnimatingEGF::GetPoseControllerValue(int nPoseCtrl) const
+{
+	if (!m_poseControllers.inRange(nPoseCtrl))
+		return 0.0f;
+
+	return m_poseControllers[nPoseCtrl].value;
+}
+
 void CAnimatingEGF::SetPoseControllerValue(int nPoseCtrl, float value)
 {
-	if (nPoseCtrl == -1 || m_poseControllers.numElem() - 1 < nPoseCtrl)
+	if (!m_poseControllers.inRange(nPoseCtrl))
 		return;
 
 	m_poseControllers[nPoseCtrl].value = value;

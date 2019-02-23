@@ -28,7 +28,7 @@ int GM_CDECL GM_BaseAnimating_PlayAnimation(gmThread* a_thread)
 	if(!pEntity)
 		return GM_EXCEPTION;
 
-	pEntity->PlayAnimation(nSlot);
+	pEntity->PlaySequence(nSlot);
 
 	return GM_OK;
 }
@@ -42,7 +42,7 @@ int GM_CDECL GM_BaseAnimating_StopAnimation(gmThread* a_thread)
 	if(!pEntity)
 		return GM_EXCEPTION;
 
-	pEntity->StopAnimation(nSlot);
+	pEntity->StopSequence(nSlot);
 
 	return GM_OK;
 }
@@ -112,8 +112,8 @@ void BaseAnimating::InitScriptHooks()
 	/*
 	EQGMS_REGISTER_FUNCTION( m_pTableObject, "SetActivity", GM_BaseAnimating_SetActivity);
 	EQGMS_REGISTER_FUNCTION( m_pTableObject, "GetActivity", GM_BaseAnimating_GetActivity);
-	EQGMS_REGISTER_FUNCTION( m_pTableObject, "PlayAnimation", GM_BaseAnimating_PlayAnimation);
-	EQGMS_REGISTER_FUNCTION( m_pTableObject, "StopAnimation", GM_BaseAnimating_StopAnimation);
+	EQGMS_REGISTER_FUNCTION( m_pTableObject, "PlaySequence", GM_BaseAnimating_PlayAnimation);
+	EQGMS_REGISTER_FUNCTION( m_pTableObject, "StopSequence", GM_BaseAnimating_StopAnimation);
 
 	EQGMS_REGISTER_FUNCTION( m_pTableObject, "GetRemainingAnimationTime", GM_BaseAnimating_GetRemainingAnimationTime);
 	EQGMS_REGISTER_FUNCTION( m_pTableObject, "GetAnimationTime", GM_BaseAnimating_GetAnimationTime);
@@ -165,6 +165,27 @@ void BaseAnimating::MakeDecal( const decalmakeinfo_t& info )
 
 		tempdecal_t* pStudioDecal = m_pModel->MakeTempDecal( dec_info, m_boneTransforms );
 		m_pDecals.append(pStudioDecal);
+	}
+}
+
+void BaseAnimating::AddMotions(studioHwData_t::motionData_t* motionData)
+{
+	CAnimatingEGF::AddMotions(motionData);
+
+	for (int i = 0; i < motionData->numEvents; i++)
+	{
+		sequenceevent_t& evt = motionData->events[i];
+		AnimationEvent event_type = GetEventByName(evt.command);
+
+		switch (event_type)
+		{
+			//case EV_INVALID:
+			//	event_type = (AnimationEvent)atoi(evt.command);
+			//	break;
+		case EV_SOUND:
+			g_sounds->PrecacheSound(evt.parameter);
+			break;
+		}
 	}
 }
 

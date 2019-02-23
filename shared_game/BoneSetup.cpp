@@ -18,6 +18,17 @@ BEGIN_DATAMAP_NO_BASE(sequencetimer_t)
 END_DATAMAP()
 #endif // EDITOR
 
+sequencetimer_t::sequencetimer_t()
+{
+	bPlaying = false;
+	seq = NULL;
+	sequence_time = 0.0f;
+	currFrame = 0;
+	nextFrame = 0;
+	playbackSpeedScale = 1.0f;
+	sequence_index = -1;
+}
+
 void sequencetimer_t::AdvanceFrame(float fDt)
 {
 	if(seq == NULL)
@@ -27,31 +38,26 @@ void sequencetimer_t::AdvanceFrame(float fDt)
 		return;
 
 	sequencedesc_t* seqDesc = seq->s;
+	int numAnimationFrames = seq->animations[0]->bones[0].numFrames - 1;
 
 	float frame_time = fDt * playbackSpeedScale * seqDesc->framerate;
 
 	// set new sequence time
-	float new_seq_time = sequence_time+frame_time;
-	SetTime(new_seq_time);
-	
-	int numAnimationFrames = seq->animations[0]->bones[0].numFrames - 1;
+	sequence_time = sequence_time+frame_time;
+	currFrame = floor(sequence_time);
 
-	// stop non-looping
-	if(!(seqDesc->flags & SEQFLAG_LOOP))
+	if (currFrame > numAnimationFrames -1)
 	{
-		if(new_seq_time >= numAnimationFrames)
-			bPlaying = false; // stop
-	}
-	else
-	{
-		if(sequence_time >= numAnimationFrames-1)
-		{
+		if (seqDesc->flags & SEQFLAG_LOOP)
 			ResetPlayback();
-
-			if(numAnimationFrames > 0)
-				nextFrame = 1;
-		}
+		else
+			bPlaying = false;
 	}
+
+	nextFrame = currFrame+1;
+
+	if (nextFrame > numAnimationFrames - 1)
+		nextFrame = (seqDesc->flags & SEQFLAG_LOOP) ? 0 : numAnimationFrames-1;
 
 	for(int i = 0; i < seqDesc->numEvents; i++)
 	{
@@ -68,57 +74,26 @@ void sequencetimer_t::AdvanceFrame(float fDt)
 	}
 }
 
-sequencetimer_t::sequencetimer_t()
-{
-	bPlaying = false;
-	seq = NULL;
-	sequence_time = 0.0f;
-	currFrame = 0;
-	nextFrame = 0;
-	playbackSpeedScale = 1.0f;
-	sequence_index = -1;
-}
-
 void sequencetimer_t::SetTime(float time)
 {
 	if(seq == NULL)
 		return;
 
-	sequence_time = time;
-
 	sequencedesc_t* seqDesc = seq->s;
+	int numAnimationFrames = seq->animations[0]->bones[0].numFrames;
+
+	sequence_time = time;
 
 	// compute frame numbers
 	currFrame = floor(sequence_time);
+
+	if (currFrame > numAnimationFrames-1)
+		currFrame = (seqDesc->flags & SEQFLAG_LOOP) ? 0 : numAnimationFrames-1;
+
 	nextFrame = currFrame+1;
 
-	int curNumFrames = seq->animations[0]->bones[0].numFrames-1;
-
-	// check max frame bounds
-	if(seqDesc->flags & SEQFLAG_LOOP)
-	{
-		if(nextFrame >= curNumFrames-1)
-		{
-			nextFrame = 0;
-			currFrame = curNumFrames-1;
-		}
-	}
-	else
-	{
-		if(nextFrame >= curNumFrames-1)
-		{
-			nextFrame = curNumFrames-1;
-			currFrame = curNumFrames-2;
-		}
-	}
-
-	sequence_time = clamp(sequence_time, 0, curNumFrames-1); // clamp time to last one frame
-
-	if(currFrame < 0)
-		currFrame = 0;
-
-	if(nextFrame < 0)
-		nextFrame = 0;
+	if (nextFrame > numAnimationFrames-1)
+		nextFrame = (seqDesc->flags & SEQFLAG_LOOP) ? 0 : numAnimationFrames-1;
 }
 
 void sequencetimer_t::Reset()

@@ -48,20 +48,20 @@ public:
 	void						SetActivity(Activity act, int slot = 0);	// sets activity
 	Activity					GetCurrentActivity(int slot = 0);			// returns current activity
 
-	void						ResetAnimationTime(int slot = 0);			// resets animation time, and restarts animation
-	void						SetAnimationTime(float newTime, int slot = 0);	// sets new animation time
-
-	void						PlayAnimation(int slot = 0);					// plays/resumes animation
-	void						StopAnimation(int slot = 0);					// stops/pauses animation
+	bool						IsSequencePlaying(int slot = 0) const;
+	void						PlaySequence(int slot = 0);					// plays/resumes animation
+	void						StopSequence(int slot = 0);					// stops/pauses animation
+	void						ResetSequenceTime(int slot = 0);			// resets animation time, and restarts animation
+	void						SetSequenceTime(float newTime, int slot = 0);	// sets new animation time
 
 	float						GetCurrentAnimationDuration() const;			// returns duration time of the current animation
 	float						GetCurrentRemainingAnimationDuration() const;	// returns remaining duration time of the current animation
 
 	float						GetAnimationDuration(int animIndex) const;		// returns duration time of the specific animation
 	
-
 	int							FindPoseController(char *name);								// returns pose controller index
 	void						SetPoseControllerValue(int nPoseCtrl, float value);			// sets value of the pose controller
+	float						GetPoseControllerValue(int nPoseCtrl) const;
 
 	void						SetPlaybackSpeedScale(float scale, int slotindex = 0);		// sets playback speed scale
 
@@ -88,8 +88,7 @@ protected:
 
 protected:
 
-	void						PrecacheSoundEvents(studioHwData_t::motionData_t* pMotionData);
-	void						PreloadMotionData(studioHwData_t::motionData_t* pMotionData);
+	virtual void				AddMotions(studioHwData_t::motionData_t* motionData);
 
 	void						GetInterpolatedBoneFrame(studioHwData_t::motionData_t::animation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out) const;
 

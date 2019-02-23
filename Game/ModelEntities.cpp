@@ -82,7 +82,7 @@ public:
 		UpdateBones();
 
 		//if(GetCurrentRemainingAnimationDuration() < 0.01f)
-		//	ResetAnimationTime();
+		//	ResetSequenceTime();
 
 		g_modelList->AddRenderable(this);
 	}

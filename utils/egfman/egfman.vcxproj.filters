@@ -268,6 +268,9 @@
     <ClInclude Include="..\..\shared_game\anim_activity.h">
       <Filter>Source Files\System</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\shared_game\Animating.h">
+      <Filter>Source Files\System</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="windows\mainicon.ico">
@@ -348,6 +351,9 @@
     </ClCompile>
     <ClCompile Include="..\..\shared_engine\RenderList.cpp">
       <Filter>Source Files\EngineLib\Renderer\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_game\Animating.cpp">
+      <Filter>Source Files\System</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

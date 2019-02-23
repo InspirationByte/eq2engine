@@ -41,6 +41,8 @@ public:
 
 	void						AttachIKChain(int chain, int attach_type);
 
+	void						AddMotions(studioHwData_t::motionData_t* motionData);
+
 protected:
 	virtual void				HandleAnimatingEvent(AnimationEvent nEvent, char* options);
 

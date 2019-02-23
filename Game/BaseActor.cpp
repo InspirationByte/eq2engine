@@ -1090,7 +1090,7 @@ void CBaseActor::OnDeath( const damageInfo_t& info )
 {
 	if(m_pModel)
 	{
-		StopAnimation();
+		StopSequence();
 
 		if(m_pRagdoll)
 		{

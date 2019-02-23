@@ -244,8 +244,8 @@ void CWhiteCagePlayer::GiveWeapon(const char *classname)
 
 		if(GetActiveWeapon() == NULL)
 		{
-			pWeapon->SetActivity(ACT_VM_DEPLOY);
 			SetActiveWeapon(pWeapon);
+			pWeapon->SetActivity(ACT_VM_DEPLOY);
 		}
 	}
 	else
@@ -314,8 +314,8 @@ void CWhiteCagePlayer::AliveThink()
 					{
 						if(GetActiveWeapon() == NULL)
 						{
-							pWeapon->SetActivity(ACT_VM_DEPLOY);
 							SetActiveWeapon(pWeapon);
+							pWeapon->SetActivity(ACT_VM_DEPLOY);
 						}
 					}
 				}
