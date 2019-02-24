@@ -99,8 +99,10 @@ void sequencetimer_t::SetTime(float time)
 void sequencetimer_t::Reset()
 {
 	bPlaying = false;
-	seq = NULL;
 	playbackSpeedScale = 1.0f;
+
+	seq = nullptr;
+	sequence_index = -1;
 
 	ResetPlayback(true);
 }

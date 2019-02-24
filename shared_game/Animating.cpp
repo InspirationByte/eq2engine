@@ -284,10 +284,7 @@ void CAnimatingEGF::SetSequence(int animIndex, int slot)
 
 	if (slot == 0)
 	{
-		m_transitionTime = timer.seq->s->transitiontime;
-
-		if (wasEmpty)
-			m_transitionTime = 0.0f;
+		m_transitionTime = wasEmpty ? 0.0f : timer.seq->s->transitiontime;
 
 		// copy last frames for transition
 		memcpy(m_transitionFrames, m_prevFrames, sizeof(animframe_t)*m_numBones);
@@ -304,10 +301,8 @@ void CAnimatingEGF::SetActivity(Activity act, int slot)
 	{
 		if (m_seqList[i].activity == nTranslatedActivity)
 		{
-			SetSequence(i, slot);
-
 			ResetSequenceTime(slot);
-
+			SetSequence(i, slot);
 			PlaySequence(slot);
 
 			return;
