@@ -6,15 +6,100 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "Animating.h"
-#include "GameSoundEmitterSystem.h"
-#include "IDebugOverlay.h"
+
 #include "DebugInterface.h"
 #include "ConVar.h"
+
+#include "IDebugOverlay.h"
+
+#include "anim_activity.h"
+#include "IEqModel.h"
 
 ConVar r_debug_ik("r_debug_ik", "0", "Draw debug information about Inverse Kinematics", CV_CHEAT);
 ConVar r_debug_showskeletons("r_debug_showskeletons", "0", "Draw debug information about skeletons", CV_CHEAT);
 
 ConVar r_ik_iterations("r_ik_iterations", "100", "IK link iterations per update", CV_ARCHIVE);
+
+inline Matrix4x4 CalculateLocalBonematrix(const animframe_t &frame)
+{
+	Matrix4x4 bonetransform(Quaternion(frame.angBoneAngles.x, frame.angBoneAngles.y, frame.angBoneAngles.z));
+	//bonetransform.setRotation();
+	bonetransform.setTranslation(frame.vecBonePosition);
+
+	return bonetransform;
+}
+
+// computes blending animation index and normalized weight
+inline void ComputeAnimationBlend(int numWeights, float blendrange[2], float blendValue, float &blendWeight, int &blendMainAnimation1, int &blendMainAnimation2)
+{
+	blendValue = clamp(blendValue, blendrange[0], blendrange[1]);
+
+	// convert to value in range 0..1.
+	float actualBlendValue = (blendValue - blendrange[0]) / (blendrange[1] - blendrange[0]);
+
+	// compute animation index
+	float normalizedBlend = actualBlendValue * (float)(numWeights - 1);
+
+	int blendMainAnimation = (int)normalizedBlend;
+
+	blendWeight = normalizedBlend - ((int)normalizedBlend);
+
+	int minAnim = blendMainAnimation;
+	int maxAnim = blendMainAnimation + 1;
+
+	if (maxAnim > numWeights - 1)
+	{
+		maxAnim = numWeights - 1;
+		minAnim = numWeights - 2;
+
+		blendWeight = 1.0f;
+	}
+
+	if (minAnim < 0)
+		minAnim = 0;
+
+	blendMainAnimation1 = minAnim;
+	blendMainAnimation2 = maxAnim;
+}
+
+// interpolates frame transform
+inline void InterpolateFrameTransform(const animframe_t &frame1, const animframe_t &frame2, float value, animframe_t &out)
+{
+	Quaternion q1(frame1.angBoneAngles.x, frame1.angBoneAngles.y, frame1.angBoneAngles.z);
+	Quaternion q2(frame2.angBoneAngles.x, frame2.angBoneAngles.y, frame2.angBoneAngles.z);
+
+	Quaternion finQuat = slerp(q1, q2, value);
+
+	out.angBoneAngles = eulers(finQuat);
+	out.vecBonePosition = lerp(frame1.vecBonePosition, frame2.vecBonePosition, value);
+}
+
+// adds transform TODO: Quaternion rotation
+inline void AddFrameTransform(const animframe_t &frame1, const animframe_t &frame2, animframe_t &out)
+{
+	out.angBoneAngles = frame1.angBoneAngles + frame2.angBoneAngles;
+	out.vecBonePosition = frame1.vecBonePosition + frame2.vecBonePosition;
+}
+
+// adds and multiplies transform
+inline void AddMultiplyFrameTransform(const animframe_t &frame1, const animframe_t &frame2, animframe_t &out)
+{
+	Quaternion q1(frame1.angBoneAngles.x, frame1.angBoneAngles.y, frame1.angBoneAngles.z);
+	Quaternion q2(frame2.angBoneAngles.x, frame2.angBoneAngles.y, frame2.angBoneAngles.z);
+
+	Quaternion finQuat = q1 * q2;
+
+	out.angBoneAngles = eulers(finQuat);
+
+	out.vecBonePosition = frame1.vecBonePosition + frame2.vecBonePosition;
+}
+
+// zero frame
+inline void ZeroFrameTransform(animframe_t &frame)
+{
+	frame.angBoneAngles = vec3_zero;
+	frame.vecBonePosition = vec3_zero;
+}
 
 CAnimatingEGF::CAnimatingEGF()
 {
@@ -760,6 +845,87 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 			}
 		}
 	}
+}
+
+#define IK_DISTANCE_EPSILON 0.05f
+
+void IKLimitDOF(giklink_t* link)
+{
+	// FIXME: broken here
+	// gimbal lock always occurent
+	// better to use quaternions...
+
+	Vector3D euler = eulers(link->quat);
+
+	euler = VRAD2DEG(euler);
+
+	// clamp to this limits
+	euler = clamp(euler, link->l->mins, link->l->maxs);
+
+	//euler = NormalizeAngles180(euler);
+
+	// get all back
+	euler = VDEG2RAD(euler);
+
+	link->quat = Quaternion(euler.x, euler.y, euler.z);
+}
+
+// solves Ik chain
+bool SolveIKLinks(giklink_t& effector, Vector3D &target, float fDt, int numIterations = 100)
+{
+	Vector3D	rootPos, curEnd, targetVector, desiredEnd, curVector, crossResult;
+
+	// start at the last link in the chain
+	giklink_t* link = effector.parent;
+
+	int nIter = 0;
+	do
+	{
+		rootPos = link->absTrans.rows[3].xyz();
+		curEnd = effector.absTrans.rows[3].xyz();
+
+		desiredEnd = target;
+		float dist = distance(curEnd, desiredEnd);
+
+		// check distance
+		if (dist > IK_DISTANCE_EPSILON)
+		{
+			// get directions
+			curVector = normalize(curEnd - rootPos);
+			targetVector = normalize(desiredEnd - rootPos);
+
+			// get diff cosine between target vector and current bone vector
+			float cosAngle = dot(targetVector, curVector);
+
+			// check if we not in zero degrees
+			if (cosAngle < 1.0)
+			{
+				// determine way of rotation
+				crossResult = normalize(cross(targetVector, curVector));
+				float turnAngle = acosf(cosAngle); // get the angle of dot product
+
+				// damp using time
+				turnAngle *= fDt * link->l->damping;
+
+				Quaternion quat(turnAngle, crossResult);
+
+				link->quat = link->quat * quat;
+
+				// check limits
+				IKLimitDOF(link);
+			}
+
+			if (!link->parent)
+				link = effector.parent; // restart
+			else
+				link = link->parent;
+		}
+	} while (nIter++ < numIterations && distance(curEnd, desiredEnd) > IK_DISTANCE_EPSILON);
+
+	if (nIter >= numIterations)
+		return false;
+
+	return true;
 }
 
 // updates inverse kinematics

@@ -18,44 +18,6 @@
 #include "math/Vector.h"
 #include "math/Matrix.h"
 
-/*
-
-Script binding example:
-
-in object:
-DECLARE_SCRIPT_BINDING();
-
-BEGIN_SCRIPT_BINDING(<entityclass>)
-
-DEFINE_SCRIPTFIELD(...)
-
-END_SCRIPT_BINDING()
-
-// in spawner
-MyEntity::Spawn()
-{
-	// set script
-	//SetScriptFile("MyEntity.gms");	// the script file
-	//	SetScriptString(...);		// this is optional, called by SetScriptFile
-
-	// binds script datamap according to this object
-	BIND_SCRIPT_OBJECT("MyEntity:Bind()");
-
-	SCRIPT_CALL("MyEntity:Spawn");
-}
-
-MyEntity::DoSomething()
-{
-	int retValue = SCRIPT_CALL( "MyEntity:CheckA" );
-
-	if( retValue > 0 )
-	{
-		Msg( "Cool" );
-		// Do another cool things
-	}
-}
-*/
-
 enum FieldFlag_e
 {
 	FIELDFLAG_SAVE		= (1 << 0),

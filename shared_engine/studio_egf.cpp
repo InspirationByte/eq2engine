@@ -167,8 +167,9 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 
 		bonequaternion_t bquats[128];
 
-		// Send all matrices as 4x3
-		for(int i = 0; i < m_hwdata->studio->numBones; i++)
+		int numBones = m_hwdata->studio->numBones;
+
+		for(int i = 0; i < numBones; i++)
 		{
 			// FIXME: kind of slowness
 			Matrix4x4 toAbsTransform = (!m_hwdata->joints[i].absTrans * jointMatrices[i]);

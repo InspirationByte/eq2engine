@@ -9,6 +9,14 @@
 
 #include "BaseAnimating.h"
 
+BEGIN_DATAMAP_NO_BASE(sequencetimer_t)
+	DEFINE_FIELD(seq_time, VTYPE_FLOAT),
+	DEFINE_FIELD(nextFrame, VTYPE_INTEGER),
+	DEFINE_FIELD(currFrame, VTYPE_INTEGER),
+	DEFINE_FIELD(playbackSpeedScale, VTYPE_FLOAT),
+	DEFINE_FIELD(bPlaying, VTYPE_BOOLEAN),
+END_DATAMAP()
+
 // declare data table for actor
 BEGIN_DATAMAP( BaseAnimating )
 
@@ -312,7 +320,7 @@ void BaseAnimating::HandleAnimatingEvent(AnimationEvent nEvent, char* options)
 // renders model
 void BaseAnimating::Render(int nViewRenderFlags)
 {
-	RenderEGFModel( nViewRenderFlags, m_boneTransforms );
+	RenderEGFModel( nViewRenderFlags, m_boneTransforms);
 }
 
 void BaseAnimating::AttachIKChain(int chain, int attach_type)

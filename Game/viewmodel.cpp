@@ -122,9 +122,7 @@ void CBaseViewmodel::UpdateTransform()
 void CBaseViewmodel::Render(int nViewRenderFlags)
 {
 	g_pShaderAPI->SetDepthRange( 0.0f, 0.1f );
-
-	RenderEGFModel( nViewRenderFlags | VR_FLAG_ALWAYSVISIBLE, m_boneTransforms );
-
+	BaseClass::Render( nViewRenderFlags | VR_FLAG_ALWAYSVISIBLE );
 	g_pShaderAPI->SetDepthRange( 0.0f, 1.0f );
 }
 
