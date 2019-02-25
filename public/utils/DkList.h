@@ -129,9 +129,6 @@ public:
 	void			quickSort(int (* comparator )(const T &a, const T &b), int p, int r);
 
 protected:
-	int				partition(int (* comparator )(const T &a, const T &b), int p, int r);
-
-protected:
 
 	int				m_nNumElem;
 	int				m_nSize;
@@ -869,11 +866,11 @@ inline void DkList<T>::shellSort(int (* comparator )(const T &a, const T &b), in
 // Partition exchange sort
 // -----------------------------------------------------------------
 template< class T >
-inline void DkList<T>::quickSort(int (* comparator )(const T &elem0, const T &elem1), int p, int r)
+inline void DkList<T>::quickSort(int(*comparator)(const T &elem0, const T &elem1), int p, int r)
 {
 	if (p < r)
 	{
-		int q = partition(comparator, p, r);
+		int q = partition(m_pListPtr, comparator, p, r);
 
 		quickSort(comparator, p, q - 1);
 		quickSort(comparator, q + 1, r);
@@ -884,27 +881,42 @@ inline void DkList<T>::quickSort(int (* comparator )(const T &elem0, const T &el
 // Partition exchange sort
 // -----------------------------------------------------------------
 template< class T >
-inline int DkList<T>::partition(int (* comparator )(const T &elem0, const T &elem1), int p, int r)
+inline int partition(T* list, int (* comparator )(const T &elem0, const T &elem1), int p, int r)
 {
-	T tmp, pivot = m_pListPtr[p];
+	T tmp, pivot = list[p];
 	int left = p;
 
 	for (int i = p + 1; i <= r; i++)
 	{
-		if (comparator(m_pListPtr[i], pivot) < 0)
+		if (comparator(list[i], pivot) < 0)
 		{
 			left++;
-			tmp = m_pListPtr[i];
-			m_pListPtr[i] = m_pListPtr[left];
-			m_pListPtr[left] = tmp;
+			tmp = list[i];
+			list[i] = list[left];
+			list[left] = tmp;
 		}
 	}
 
-	tmp = m_pListPtr[p];
-	m_pListPtr[p] = m_pListPtr[left];
-	m_pListPtr[left] = tmp;
+	tmp = list[p];
+	list[p] = list[left];
+	list[left] = tmp;
 
 	return left;
+}
+
+// -----------------------------------------------------------------
+// Partition exchange sort
+// -----------------------------------------------------------------
+template< class T >
+inline void quickSort(T* list, int(*comparator)(const T &elem0, const T &elem1), int p, int r)
+{
+	if (p < r)
+	{
+		int q = partition(list, comparator, p, r);
+
+		quickSort(list, comparator, p, q - 1);
+		quickSort(list, comparator, q + 1, r);
+	}
 }
 
 template< class T >

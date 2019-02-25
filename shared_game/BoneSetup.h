@@ -74,7 +74,6 @@ struct gsequence_t
 struct sequencetimer_t
 {
 	gsequence_t*				seq;
-	int							seq_idx;
 	float						seq_time;
 
 	int							nextFrame;
@@ -84,8 +83,7 @@ struct sequencetimer_t
 
 	bool						bPlaying;
 
-	DkList<sequenceevent_t*>	called_events;
-	DkList<int>					ignore_events;
+	int							eventCounter;
 
 #if !defined(EDITOR) && !defined(NO_GAME)
 	DECLARE_DATAMAP();
@@ -99,7 +97,7 @@ struct sequencetimer_t
 
 	void SetTime(float time);
 
-	void ResetPlayback(bool frame_reset = true);
+	void ResetPlayback();
 };
 
 inline Matrix4x4 CalculateLocalBonematrix(const animframe_t &frame)

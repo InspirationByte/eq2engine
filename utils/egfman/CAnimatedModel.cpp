@@ -115,7 +115,9 @@ void CAnimatedModel::ResetPhysics()
 {
 	if(m_pRagdoll)
 	{
-		UpdateBones(0.0f, identity4());
+		RecalcBoneTransforms();
+		UpdateIK(0.0f, identity4());
+
 		m_pRagdoll->SetBoneTransform(m_boneTransforms, identity4() );
 
 		for(int i = 0; i< m_pRagdoll->m_numParts; i++)
@@ -371,10 +373,15 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 	if(!m_pModel)
 		return;
 
-	if(m_pRagdoll && m_bPhysicsEnable)
+	if (m_pRagdoll && m_bPhysicsEnable)
+	{
 		UpdateRagdollBones();
+	}
 	else
-		UpdateBones(dt, identity4());
+	{
+		RecalcBoneTransforms();
+		UpdateIK(dt, identity4());
+	}
 
 	Matrix4x4 wvp;
 
@@ -489,8 +496,6 @@ void CAnimatedModel::VisualizeBones()
 		debugoverlay->Line3D(pos, pos+dX*0.1f, ColorRGBA(1,0,0,1), ColorRGBA(1,0,0,1));
 		debugoverlay->Line3D(pos, pos+dY*0.1f, ColorRGBA(0,1,0,1), ColorRGBA(0,1,0,1));
 		debugoverlay->Line3D(pos, pos+dZ*0.1f, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1));
-
-		Vector3D frameAng = m_boneFrames[i].angBoneAngles;
 	}
 }
 

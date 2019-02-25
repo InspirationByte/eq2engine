@@ -1325,6 +1325,7 @@ void CEGFViewFrame::OnComboboxChanged(wxCommandEvent& event)
 		{
 			g_pModel->SetSequence( nSeq, 0 );
 			g_pModel->ResetSequenceTime(0);
+			g_pModel->PlaySequence(0);
 
 			const gsequence_t& seq = g_pModel->GetSequence(nSeq);
 			m_pAnimFramerate->SetValue( varargs("%g", seq.s->framerate) );

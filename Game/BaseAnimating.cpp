@@ -13,6 +13,7 @@
 BEGIN_DATAMAP( BaseAnimating )
 
 	DEFINE_FIELD( m_transitionTime,	VTYPE_FLOAT),
+	DEFINE_FIELD(m_transitionRemTime, VTYPE_FLOAT),
 	DEFINE_EMBEDDEDARRAY( m_sequenceTimers,		MAX_SEQUENCE_TIMERS),
 	DEFINE_ARRAYFIELD(m_seqBlendWeights,VTYPE_FLOAT, MAX_SEQUENCE_TIMERS),
 
@@ -198,7 +199,10 @@ void BaseAnimating::OnRemove()
 
 void BaseAnimating::UpdateBones()
 {
-	CAnimatingEGF::UpdateBones(gpGlobals->frametime, m_matWorldTransform);
+	RecalcBoneTransforms();
+	UpdateIK(gpGlobals->frametime, m_matWorldTransform);
+
+	DebugRender(m_matWorldTransform);
 }
 
 void BaseAnimating::Update(float dt)

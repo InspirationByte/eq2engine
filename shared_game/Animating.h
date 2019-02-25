@@ -33,22 +33,19 @@ public:
 
 	virtual Matrix4x4*			GetBoneMatrices() const;						// returns transformed bones
 
-	void						DefaultPose();
-
-
-
 	void						SetSequenceBlending(int slot, float factor);
 	void						SwapSequenceTimers(int index, int swapTo);
 
 // forward kinematics
 
-	void						SetSequence(int animIndex, int slot = 0);	// sets animation
-	int							FindSequence(const char* name);				// finds animation
+	int							FindSequence(const char* name) const;				// finds animation
+	int							FindSequenceByActivity(Activity act) const;
 
 	void						SetActivity(Activity act, int slot = 0);	// sets activity
 	Activity					GetCurrentActivity(int slot = 0);			// returns current activity
 
 	bool						IsSequencePlaying(int slot = 0) const;
+	void						SetSequence(int seqIdx, int slot = 0);	// sets animation
 	void						PlaySequence(int slot = 0);					// plays/resumes animation
 	void						StopSequence(int slot = 0);					// stops/pauses animation
 	void						ResetSequenceTime(int slot = 0);			// resets animation time, and restarts animation
@@ -77,27 +74,21 @@ public:
 protected:
 	// advances frame (and computes interpolation between all blended animations)
 	void						AdvanceFrame(float fDt);
+	void						RecalcBoneTransforms(bool storeTransitionFrames = false);
 
-	void						UpdateEvents(float fDt);
-	void						UpdateBones(float fDt, const Matrix4x4& worldTransform);
+	void						RaiseSequenceEvents(sequencetimer_t& timer);
+
 	void						UpdateIK(float fDt, const Matrix4x4& worldTransform);
-	void						UpdateIkChain(gikchain_t* pIkChain, float fDt);
 
-	virtual Activity			TranslateActivity(Activity act, int slotindex = 0);			// translates activity
+	void						UpdateIkChain(gikchain_t* pIkChain, float fDt);
+	void						DebugRender(const Matrix4x4& worldTransform);
+
+	virtual Activity			TranslateActivity(Activity act, int slotindex = 0) const;			// translates activity
 	virtual void				HandleAnimatingEvent(AnimationEvent nEvent, char* options) = 0;
 
 protected:
 
 	virtual void				AddMotions(studioHwData_t::motionData_t* motionData);
-
-	void						GetInterpolatedBoneFrame(studioHwData_t::motionData_t::animation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out) const;
-
-	void						GetInterpolatedBoneFrameBetweenTwoAnimations(
-									studioHwData_t::motionData_t::animation_t* pAnim1, 
-									studioHwData_t::motionData_t::animation_t* pAnim2, 
-									int nBone, int firstframe, int lastframe, float interp, float animTransition, animframe_t &out) const;
-
-	void						GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone, animframe_t &out) const;
 
 	// sequence timers. first timer is main, and transitional is last
 	sequencetimer_t				m_sequenceTimers[MAX_SEQUENCE_TIMERS];
@@ -108,6 +99,7 @@ protected:
 
 	// transition time from previous
 	float						m_transitionTime;
+	float						m_transitionRemTime;
 	animframe_t*				m_transitionFrames;
 	
 
