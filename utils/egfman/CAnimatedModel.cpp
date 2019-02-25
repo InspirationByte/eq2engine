@@ -490,7 +490,7 @@ void CAnimatedModel::VisualizeBones()
 		debugoverlay->Line3D(pos, pos+dY*0.1f, ColorRGBA(0,1,0,1), ColorRGBA(0,1,0,1));
 		debugoverlay->Line3D(pos, pos+dZ*0.1f, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1));
 
-		Vector3D frameAng = m_prevFrames[i].angBoneAngles;
+		Vector3D frameAng = m_boneFrames[i].angBoneAngles;
 	}
 }
 

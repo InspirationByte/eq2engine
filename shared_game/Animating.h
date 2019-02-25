@@ -108,24 +108,16 @@ protected:
 
 	// transition time from previous
 	float						m_transitionTime;
-
-	// last computed bone frames
-	animframe_t*				m_prevFrames;
+	animframe_t*				m_transitionFrames;
+	
 
 	animframe_t*				m_velocityFrames;
-	animframe_t*				m_springFrames;
-
-	animframe_t*				m_transitionFrames;
 
 	// computed ready-to-use matrices
 	Matrix4x4*					m_boneTransforms;
 
 	// local bones/base pose
-	//Matrix4x4*					m_LocalBonematrixList;
 	studioHwData_t::joint_t*	m_joints;
-
-	// animation-only bone matrix list, for blending with IK
-	Matrix4x4*					m_ikBones;
 
 	int							m_numBones;
 
