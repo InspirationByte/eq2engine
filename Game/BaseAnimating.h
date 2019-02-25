@@ -13,6 +13,14 @@
 
 #include "Animating.h"
 
+enum EIKAttachType
+{
+	IK_ATTACH_WORLD = 0,
+	IK_ATTACH_LOCAL,	//= 1,
+	IK_ATTACH_GROUND,	//= 2,
+};
+
+
 // basic animating class
 // for ragdoll use baseragdollanimating
 class BaseAnimating : public BaseEntity, public CAnimatingEGF
@@ -39,7 +47,7 @@ public:
 	// sets model for this entity
 	void						SetModel(const char* pszModelName);
 
-	void						AttachIKChain(int chain, int attach_type);
+	void						AttachIKChain(int chain, EIKAttachType type);
 
 	void						AddMotions(studioHwData_t::motionData_t* motionData);
 

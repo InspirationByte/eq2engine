@@ -323,7 +323,7 @@ void BaseAnimating::Render(int nViewRenderFlags)
 	RenderEGFModel( nViewRenderFlags, m_boneTransforms);
 }
 
-void BaseAnimating::AttachIKChain(int chain, int attach_type)
+void BaseAnimating::AttachIKChain(int chain, EIKAttachType type)
 {
 	if(chain == -1)
 		return;
@@ -331,7 +331,7 @@ void BaseAnimating::AttachIKChain(int chain, int attach_type)
 	int effector_id = m_ikChains[chain]->numLinks - 1;
 	giklink_t& link = m_ikChains[chain]->links[effector_id];
 
-	switch(attach_type)
+	switch(type)
 	{
 		case IK_ATTACH_WORLD:
 		{

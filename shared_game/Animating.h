@@ -12,10 +12,6 @@
 
 #include "BoneSetup.h"
 
-#define IK_ATTACH_WORLD				0
-#define IK_ATTACH_LOCAL				1
-#define IK_ATTACH_GROUND			2
-
 #define MAX_SEQUENCE_TIMERS			5
 
 //--------------------------------------------------------------------------------------
