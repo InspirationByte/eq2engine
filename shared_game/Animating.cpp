@@ -16,24 +16,16 @@ ConVar r_debug_showskeletons("r_debug_showskeletons", "0", "Draw debug informati
 
 ConVar r_ik_iterations("r_ik_iterations", "100", "IK link iterations per update", CV_ARCHIVE);
 
-/*
-ConVar r_springanimations("r_springanimations", "0", "Animation springing", CV_CHEAT);
-ConVar r_springanimations_velmul("r_springanimations_velmul", "1.0f", "Animation springing", CV_CHEAT | CV_ARCHIVE);
-ConVar r_springanimations_damp("r_springanimations_damp", "1.0f", "Animation springing", CV_CHEAT | CV_ARCHIVE);
-ConVar r_springanimations_spring("r_springanimations_spring", "1.0f", "Animation springing", CV_CHEAT | CV_ARCHIVE);
-*/
-
 CAnimatingEGF::CAnimatingEGF()
 {
 	memset(m_seqBlendWeights, 0, sizeof(m_seqBlendWeights));
 	m_seqBlendWeights[0] = 1.0f;
 
 	m_boneTransforms = nullptr;
-	m_ikBones = nullptr;
 	m_joints = nullptr;
 
 	m_transitionFrames = nullptr;
-	m_prevFrames = nullptr;
+	//m_boneFrames = nullptr;
 
 	m_transitionTime = 0.0f;
 }
@@ -46,17 +38,13 @@ void CAnimatingEGF::DestroyAnimating()
 		PPFree(m_boneTransforms);
 	m_boneTransforms = nullptr;
 
-	if (m_ikBones)
-		PPFree(m_ikBones);
-	m_ikBones = nullptr;
-
 	if (m_transitionFrames)
 		PPFree(m_transitionFrames);
 	m_transitionFrames = nullptr;
 
-	if (m_prevFrames)
-		PPFree(m_prevFrames);
-	m_prevFrames = nullptr;
+	//if (m_boneFrames)
+	//	PPFree(m_boneFrames);
+	//m_boneFrames = nullptr;
 
 	m_joints = nullptr;
 
@@ -67,16 +55,6 @@ void CAnimatingEGF::DestroyAnimating()
 	}
 
 	m_ikChains.clear();
-
-	//if(m_velocityFrames)
-	//	PPFree(m_velocityFrames);
-
-	//m_velocityFrames = NULL;
-
-	//if(m_springFrames)
-	//	PPFree(m_springFrames);
-
-	//m_springFrames = NULL;
 
 	// stop all sequence timers
 	for (int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
@@ -109,22 +87,12 @@ void CAnimatingEGF::InitAnimating(IEqModel* model)
 	m_numBones = studio->numBones;
 
 	m_boneTransforms = PPAllocStructArray(Matrix4x4, m_numBones);
-	m_ikBones = PPAllocStructArray(Matrix4x4, m_numBones);
 
 	for (int i = 0; i < m_numBones; i++)
-	{
 		m_boneTransforms[i] = identity4();
-		m_ikBones[i] = identity4();
-	}
-
-	m_prevFrames = PPAllocStructArray(animframe_t, m_numBones);
-	memset(m_prevFrames, 0, sizeof(animframe_t)*m_numBones);
 
 	m_transitionFrames = PPAllocStructArray(animframe_t, m_numBones);
 	memset(m_transitionFrames, 0, sizeof(animframe_t)*m_numBones);
-
-	//m_springFrames = PPAllocStructArray(animframe_t, m_numBones);
-	//memset(m_springFrames, 0, sizeof(animframe_t)*m_numBones);
 
 	//m_velocityFrames = PPAllocStructArray(animframe_t, m_numBones);
 	//memset(m_velocityFrames, 0, sizeof(animframe_t)*m_numBones);
@@ -153,7 +121,7 @@ void CAnimatingEGF::InitAnimating(IEqModel* model)
 			giklink_t link;
 			link.l = pStudioChain->pLink(j);
 
-			studioiklink_t* pLink = pStudioChain->pLink(j);
+			//studioiklink_t* pLink = pStudioChain->pLink(j);
 
 			studioHwData_t::joint_t& joint = m_joints[link.l->bone];
 
@@ -266,30 +234,25 @@ int CAnimatingEGF::FindSequence(const char* name)
 }
 
 // sets animation
-void CAnimatingEGF::SetSequence(int animIndex, int slot)
+void CAnimatingEGF::SetSequence(int seqIdx, int slot)
 {
-	if (animIndex == -1)
+	if (seqIdx == -1)
 		return;
 
 	sequencetimer_t& timer = m_sequenceTimers[slot];
 
-	bool wasEmpty = (timer.sequence_index == -1);
+	bool wasEmpty = (timer.seq_idx == -1);
 
-	timer.sequence_index = animIndex;
+	timer.seq_idx = seqIdx;
 
-	if (timer.sequence_index != -1)
-		timer.seq = &m_seqList[timer.sequence_index];
+	if (timer.seq_idx != -1)
+		timer.seq = &m_seqList[timer.seq_idx];
 
 	// reset playback speed to avoid some errors
 	SetPlaybackSpeedScale(1.0f, slot);
 
-	if (slot == 0)
-	{
+	if (slot == 0)	// if slot was previously unused, don't apply transition as we don't have frames from them
 		m_transitionTime = wasEmpty ? 0.0f : timer.seq->s->transitiontime;
-
-		// copy last frames for transition
-		memcpy(m_transitionFrames, m_prevFrames, sizeof(animframe_t)*m_numBones);
-	}
 }
 
 // sets activity
@@ -399,7 +362,7 @@ float CAnimatingEGF::GetAnimationDuration(int animIndex) const
 // returns remaining duration time of the current animation
 float CAnimatingEGF::GetCurrentRemainingAnimationDuration() const
 {
-	return GetCurrentAnimationDuration() - m_sequenceTimers[0].sequence_time;
+	return GetCurrentAnimationDuration() - m_sequenceTimers[0].seq_time;
 }
 
 bool CAnimatingEGF::IsSequencePlaying(int slot) const
@@ -486,8 +449,8 @@ void CAnimatingEGF::AdvanceFrame(float frameTime)
 	{
 		sequencetimer_t& timer = m_sequenceTimers[i];
 
-		if (timer.sequence_index != -1)
-			timer.seq = &m_seqList[timer.sequence_index];
+		if (timer.seq_idx != -1)
+			timer.seq = &m_seqList[timer.seq_idx];
 
 		timer.AdvanceFrame(frameTime);
 	}
@@ -595,8 +558,8 @@ void CAnimatingEGF::UpdateBones(float fDt, const Matrix4x4& worldTransform)
 	{
 		sequencetimer_t& timer = m_sequenceTimers[i];
 
-		if (timer.sequence_index != -1)
-			timer.seq = &m_seqList[timer.sequence_index];
+		if (timer.seq_idx != -1)
+			timer.seq = &m_seqList[timer.seq_idx];
 	}
 
 	if (!m_sequenceTimers[0].seq || m_seqList.numElem() == 0)
@@ -605,11 +568,12 @@ void CAnimatingEGF::UpdateBones(float fDt, const Matrix4x4& worldTransform)
 		return;
 	}
 
+	animframe_t finalBoneFrame;
+
 	// setup each bone's transformation
 	for (int boneId = 0; boneId < m_numBones; boneId++)
 	{
-		animframe_t cComputedFrame;
-		ZeroFrameTransform(cComputedFrame);
+		ZeroFrameTransform(finalBoneFrame);
 
 		for (int j = 0; j < MAX_SEQUENCE_TIMERS; j++)
 		{
@@ -636,7 +600,7 @@ void CAnimatingEGF::UpdateBones(float fDt, const Matrix4x4& worldTransform)
 			animframe_t cTimedFrame;
 			ZeroFrameTransform(cTimedFrame);
 
-			float frame_interp = timer.sequence_time - timer.currFrame;
+			float frame_interp = timer.seq_time - timer.currFrame;
 
 			int numAnims = seqDesc->numAnimations;
 
@@ -703,99 +667,39 @@ void CAnimatingEGF::UpdateBones(float fDt, const Matrix4x4& worldTransform)
 				cTimedFrame.angBoneAngles *= blend_weight;
 				cTimedFrame.vecBonePosition *= blend_weight;
 
-				AddFrameTransform(cComputedFrame, cTimedFrame, cComputedFrame);
+				AddFrameTransform(finalBoneFrame, cTimedFrame, finalBoneFrame);
 			}
 			else
-				InterpolateFrameTransform(cComputedFrame, cTimedFrame, blend_weight, cComputedFrame);
+				InterpolateFrameTransform(finalBoneFrame, cTimedFrame, blend_weight, finalBoneFrame);
 		}
 
-		gsequence_t* firstTimerSeq = m_sequenceTimers[0].seq;
-
-		// transition of the animation frames TODO: additional doubling slots for non-base timers
-		if (firstTimerSeq && m_transitionTime > 0)
+		// first sequence timer is main and has transition effects
 		{
-			float transition_factor = m_transitionTime / firstTimerSeq->s->transitiontime;
+			gsequence_t* firstTimerSeq = m_sequenceTimers[0].seq;
 
-			InterpolateFrameTransform(cComputedFrame, m_transitionFrames[boneId], transition_factor, cComputedFrame);
+			if (firstTimerSeq && m_transitionTime > 0.0f)
+			{
+				// perform transition based on the last frame
+				float transition_factor = m_transitionTime / firstTimerSeq->s->transitiontime;
+				InterpolateFrameTransform(finalBoneFrame, m_transitionFrames[boneId], transition_factor, finalBoneFrame);
+			}
+			else // store frame for transition
+				m_transitionFrames[boneId] = finalBoneFrame;	
 		}
-
-		/*
-		if(r_springanimations.GetBool() && firstTimerSeq)
-		{
-			animframe_t mulFrame = firstTimerSeq->animations[0]->bones[boneId].keyFrames[m_sequenceTimers[0].nextFrame];
-
-			mulFrame.angBoneAngles -= cComputedFrame.angBoneAngles;
-			mulFrame.vecBonePosition -= cComputedFrame.vecBonePosition;
-
-			mulFrame.angBoneAngles *= r_springanimations_velmul.GetFloat();
-			mulFrame.vecBonePosition *= r_springanimations_velmul.GetFloat();
-
-			AddFrameTransform(m_velocityFrames[boneId], mulFrame, m_velocityFrames[boneId]);
-		}
-
-
-		if(r_springanimations.GetBool() && dot(m_velocityFrames[boneId].angBoneAngles, m_velocityFrames[boneId].angBoneAngles) > 0.000001f || dot(m_springFrames[boneId].angBoneAngles, m_springFrames[boneId].angBoneAngles) > 0.000001f)
-		{
-			m_springFrames[boneId].angBoneAngles += m_velocityFrames[boneId].angBoneAngles * gpGlobals->frametime;
-			float damping = 1 - (r_springanimations_damp.GetFloat() * gpGlobals->frametime);
-
-			if ( damping < 0 )
-				damping = 0.0f;
-
-			m_velocityFrames[boneId].angBoneAngles *= damping;
-
-			// torsional spring
-			float springForceMagnitude = r_springanimations_spring.GetFloat() * gpGlobals->frametime;
-			springForceMagnitude = clamp(springForceMagnitude, 0, 2 );
-			m_velocityFrames[boneId].angBoneAngles -= m_springFrames[boneId].angBoneAngles * springForceMagnitude;
-
-			cComputedFrame.angBoneAngles += m_springFrames[boneId].angBoneAngles;
-		}
-
-		if(r_springanimations.GetBool() && dot(m_velocityFrames[boneId].vecBonePosition, m_velocityFrames[boneId].vecBonePosition) > 0.000001f || dot(m_springFrames[boneId].vecBonePosition, m_springFrames[boneId].vecBonePosition) > 0.000001f)
-		{
-
-			m_springFrames[boneId].vecBonePosition += m_velocityFrames[boneId].vecBonePosition * gpGlobals->frametime;
-			float damping = 1 - (r_springanimations_damp.GetFloat() * gpGlobals->frametime);
-
-			if ( damping < 0 )
-				damping = 0.0f;
-
-			m_velocityFrames[boneId].vecBonePosition *= damping;
-
-			// torsional spring
-			// UNDONE: Per-axis spring constant?
-			float springForceMagnitude = r_springanimations_spring.GetFloat() * gpGlobals->frametime;
-			springForceMagnitude = clamp(springForceMagnitude, 0, 2 );
-			m_velocityFrames[boneId].vecBonePosition -= m_springFrames[boneId].vecBonePosition * springForceMagnitude;
-
-			cComputedFrame.vecBonePosition += m_springFrames[boneId].vecBonePosition;
-		}
-		*/
 
 		// compute transformation
-		Matrix4x4 bone_transform = CalculateLocalBonematrix(cComputedFrame);
+		Matrix4x4 calculatedFrameMat = CalculateLocalBonematrix(finalBoneFrame);
 
-		// set last bones
-		m_prevFrames[boneId] = cComputedFrame;
-
-		m_boneTransforms[boneId] = (bone_transform*m_joints[boneId].localTrans);
+		// store matrix
+		m_boneTransforms[boneId] = (calculatedFrameMat*m_joints[boneId].localTrans);
 	}
 
 	// setup each bone's transformation
 	for (int i = 0; i < m_numBones; i++)
 	{
 		if (m_joints[i].parentbone != -1)
-		{
-			// multiply by parent transform
 			m_boneTransforms[i] = m_boneTransforms[i] * m_boneTransforms[m_joints[i].parentbone];
-
-			//debugoverlay->Line3D(m_boneTransforms[i].rows[3].xyz(),m_boneTransforms[m_nParentIndexList[i]].rows[3].xyz(), color4_white, color4_white);
-		}
 	}
-
-	// copy animation frames
-	memcpy(m_ikBones, m_boneTransforms, sizeof(Matrix4x4)*m_numBones);
 
 	// update inverse kinematics
 	UpdateIK(fDt, worldTransform);
@@ -811,7 +715,7 @@ void CAnimatingEGF::UpdateBones(float fDt, const Matrix4x4& worldTransform)
 				Matrix4x4& parentTransform = m_boneTransforms[m_joints[i].parentbone];
 
 				Vector3D pos = (worldTransform*Vector4D(transform.rows[3].xyz(), 1.0f)).xyz();
-				Vector3D parent_pos = (worldTransform*Vector4D(m_boneTransforms[m_joints[i].parentbone].rows[3].xyz(), 1.0f)).xyz();
+				Vector3D parent_pos = (worldTransform*Vector4D(parentTransform.rows[3].xyz(), 1.0f)).xyz();
 
 				Vector3D dX = worldTransform.getRotationComponent()*transform.rows[0].xyz();
 				Vector3D dY = worldTransform.getRotationComponent()*transform.rows[1].xyz();
@@ -837,8 +741,6 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 	// run through bones and find enabled bones by IK chain
 	for (int boneId = 0; boneId < m_numBones; boneId++)
 	{
-		bool bone_for_ik = false;
-
 		int chain_id = m_joints[boneId].chain_id;
 		int link_id = m_joints[boneId].link_id;
 
@@ -851,8 +753,6 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 				if (chain->links[i].l->bone == boneId)
 				{
 					ik_enabled_bones[boneId] = true;
-
-					bone_for_ik = true;
 					break;
 				}
 			}
@@ -915,7 +815,7 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 				int bone_id = link.l->bone;
 				studioHwData_t::joint_t& joint = m_joints[link.l->bone];
 
-				link.quat = Quaternion(m_ikBones[bone_id].getRotationComponent());
+				link.quat = Quaternion(m_boneTransforms[bone_id].getRotationComponent());
 				link.position = joint.position;
 
 				link.localTrans = Matrix4x4(link.quat);
@@ -923,7 +823,7 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 
 				// fix local transform for animation
 				link.localTrans = joint.localTrans * link.localTrans;
-				link.absTrans = m_ikBones[bone_id];
+				link.absTrans = m_boneTransforms[bone_id];
 			}
 		}
 	}

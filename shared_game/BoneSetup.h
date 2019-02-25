@@ -74,8 +74,8 @@ struct gsequence_t
 struct sequencetimer_t
 {
 	gsequence_t*				seq;
-	int							sequence_index;
-	float						sequence_time;
+	int							seq_idx;
+	float						seq_time;
 
 	int							nextFrame;
 	int							currFrame;
@@ -102,7 +102,7 @@ struct sequencetimer_t
 	void ResetPlayback(bool frame_reset = true);
 };
 
-inline Matrix4x4 CalculateLocalBonematrix(animframe_t &frame)
+inline Matrix4x4 CalculateLocalBonematrix(const animframe_t &frame)
 {
 	Matrix4x4 bonetransform(Quaternion(frame.angBoneAngles.x,frame.angBoneAngles.y,frame.angBoneAngles.z));
 	//bonetransform.setRotation();
@@ -145,7 +145,7 @@ inline void ComputeAnimationBlend(int numWeights, float blendrange[2], float ble
 }
 
 // interpolates frame transform
-inline void InterpolateFrameTransform(animframe_t &frame1, animframe_t &frame2, float value, animframe_t &out)
+inline void InterpolateFrameTransform(const animframe_t &frame1, const animframe_t &frame2, float value, animframe_t &out)
 {
 	Quaternion q1(frame1.angBoneAngles.x, frame1.angBoneAngles.y, frame1.angBoneAngles.z);
 	Quaternion q2(frame2.angBoneAngles.x, frame2.angBoneAngles.y, frame2.angBoneAngles.z);
@@ -157,14 +157,14 @@ inline void InterpolateFrameTransform(animframe_t &frame1, animframe_t &frame2, 
 }
 
 // adds transform TODO: Quaternion rotation
-inline void AddFrameTransform(animframe_t &frame1, animframe_t &frame2, animframe_t &out)
+inline void AddFrameTransform(const animframe_t &frame1, const animframe_t &frame2, animframe_t &out)
 {
 	out.angBoneAngles = frame1.angBoneAngles + frame2.angBoneAngles;
 	out.vecBonePosition = frame1.vecBonePosition + frame2.vecBonePosition;
 }
 
 // adds and multiplies transform
-inline void AddMultiplyFrameTransform(animframe_t &frame1, animframe_t &frame2, animframe_t &out)
+inline void AddMultiplyFrameTransform(const animframe_t &frame1, const animframe_t &frame2, animframe_t &out)
 {
 	Quaternion q1(frame1.angBoneAngles.x, frame1.angBoneAngles.y, frame1.angBoneAngles.z);
 	Quaternion q2(frame2.angBoneAngles.x, frame2.angBoneAngles.y, frame2.angBoneAngles.z);

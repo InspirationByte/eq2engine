@@ -22,7 +22,7 @@ CEditableEntity::CEditableEntity()
 
 	memset(&m_sequenceTimer, 0, sizeof(m_sequenceTimer));
 
-	m_sequenceTimer.sequence_index = -1;
+	m_sequenceTimer.seq_idx = -1;
 	m_sequenceTimer.seq = NULL;
 
 	m_BoneMatrixList = NULL;
@@ -1427,11 +1427,11 @@ void CEditableEntity::SetSequence(int animIndex)
 	if(animIndex > m_pSequences.numElem()-1)
 		return;
 
-	m_sequenceTimer.sequence_index = animIndex;
+	m_sequenceTimer.seq_idx = animIndex;
 
-	if(m_sequenceTimer.sequence_index != -1)
+	if(m_sequenceTimer.seq_idx != -1)
 	{
-		m_sequenceTimer.seq = &m_pSequences[ m_sequenceTimer.sequence_index ];
+		m_sequenceTimer.seq = &m_pSequences[ m_sequenceTimer.seq_idx ];
 		m_sequenceTimer.playbackSpeedScale = 1.0f;
 	}
 }
@@ -1509,8 +1509,8 @@ void CEditableEntity::GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBon
 
 void CEditableEntity::UpdateBones()
 {
-	if(m_sequenceTimer.sequence_index != -1)
-		m_sequenceTimer.seq = &m_pSequences[ m_sequenceTimer.sequence_index ];
+	if(m_sequenceTimer.seq_idx != -1)
+		m_sequenceTimer.seq = &m_pSequences[ m_sequenceTimer.seq_idx ];
 
 	if(!m_sequenceTimer.seq || m_pSequences.numElem() == 0)
 	{
@@ -1536,7 +1536,7 @@ void CEditableEntity::UpdateBones()
 		animframe_t cTimedFrame;
 		ZeroFrameTransform(cTimedFrame);
 
-		float frame_interp = m_sequenceTimer.sequence_time - m_sequenceTimer.currFrame;
+		float frame_interp = m_sequenceTimer.seq_time - m_sequenceTimer.currFrame;
 
 		if(m_sequenceTimer.seq->numAnimations > 1 && m_sequenceTimer.seq->posecontroller)
 		{
@@ -1617,8 +1617,8 @@ void CEditableEntity::UpdateBones()
 // advances frame (and computes interpolation between all blended animations)
 void CEditableEntity::AdvanceFrame(float frameTime)
 {
-	if(m_sequenceTimer.sequence_index != -1)
-		m_sequenceTimer.seq = &m_pSequences[ m_sequenceTimer.sequence_index ];
+	if(m_sequenceTimer.seq_idx != -1)
+		m_sequenceTimer.seq = &m_pSequences[ m_sequenceTimer.seq_idx ];
 
 	m_sequenceTimer.AdvanceFrame(frameTime);
 }
