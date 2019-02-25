@@ -9,6 +9,7 @@
 #include "GameSoundEmitterSystem.h"
 #include "IDebugOverlay.h"
 #include "DebugInterface.h"
+#include "ConVar.h"
 
 ConVar r_debug_ik("r_debug_ik", "0", "Draw debug information about Inverse Kinematics", CV_CHEAT);
 ConVar r_debug_showskeletons("r_debug_showskeletons", "0", "Draw debug information about skeletons", CV_CHEAT);

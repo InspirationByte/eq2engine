@@ -97,6 +97,9 @@
     <Filter Include="Файлы исходного кода\System">
       <UniqueIdentifier>{90453955-4fad-40c8-b400-a77ec476787c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Файлы исходного кода\Animation">
+      <UniqueIdentifier>{ec9012dd-00c6-4638-93ac-0dcc2a7e36f2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\public\Math\math_util.cpp">
@@ -440,6 +443,18 @@
     </ClCompile>
     <ClCompile Include="AIPedestrian.cpp">
       <Filter>Файлы исходного кода\Game\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\anim_activity.cpp">
+      <Filter>Файлы исходного кода\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\anim_events.cpp">
+      <Filter>Файлы исходного кода\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\Animating.cpp">
+      <Filter>Файлы исходного кода\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\BoneSetup.cpp">
+      <Filter>Файлы исходного кода\Animation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -867,6 +882,18 @@
     </ClInclude>
     <ClInclude Include="AIPedestrian.h">
       <Filter>Файлы исходного кода\Game\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\anim_activity.h">
+      <Filter>Файлы исходного кода\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\anim_events.h">
+      <Filter>Файлы исходного кода\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\Animating.h">
+      <Filter>Файлы исходного кода\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\BoneSetup.h">
+      <Filter>Файлы исходного кода\Animation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

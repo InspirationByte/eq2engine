@@ -285,10 +285,11 @@ void CEventQueue::ServiceEvents()
 		EventQueueEvent_t* pEvent = m_pEventList[i];
 
 		bool bTargetFound = false;
+		BaseEntity* pEnt = nullptr;
 
 		while(true)
 		{
-			BaseEntity* pEnt = (BaseEntity*)UTIL_EntByName(pEvent->szTargetName.GetData(), pEnt);
+			pEnt = (BaseEntity*)UTIL_EntByName(pEvent->szTargetName.GetData(), pEnt);
 
 			if(!pEnt)
 				break;

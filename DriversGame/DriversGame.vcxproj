@@ -148,6 +148,10 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="..\shared_engine\sys_main.cpp" />
     <ClCompile Include="..\shared_engine\sys_state.cpp" />
     <ClCompile Include="..\shared_engine\sys_window.cpp" />
+    <ClCompile Include="..\shared_game\Animating.cpp" />
+    <ClCompile Include="..\shared_game\anim_activity.cpp" />
+    <ClCompile Include="..\shared_game\anim_events.cpp" />
+    <ClCompile Include="..\shared_game\BoneSetup.cpp" />
     <ClCompile Include="..\shared_game\GameSoundEmitterSystem.cpp" />
     <ClCompile Include="..\public\imaging\ImageLoader.cpp" />
     <ClCompile Include="..\public\luabinding\LuaBinding.cpp" />
@@ -307,6 +311,10 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="..\shared_engine\sys_window.h" />
     <ClInclude Include="..\shared_engine\video\AVStream.h" />
     <ClInclude Include="..\public\DataTable.h" />
+    <ClInclude Include="..\shared_game\Animating.h" />
+    <ClInclude Include="..\shared_game\anim_activity.h" />
+    <ClInclude Include="..\shared_game\anim_events.h" />
+    <ClInclude Include="..\shared_game\BoneSetup.h" />
     <ClInclude Include="..\shared_game\GameSoundEmitterSystem.h" />
     <ClInclude Include="..\public\imaging\ImageLoader.h" />
     <ClInclude Include="..\public\luabinding\LuaBinding.h" />

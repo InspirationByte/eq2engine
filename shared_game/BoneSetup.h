@@ -8,8 +8,6 @@
 #ifndef BONESETUP_H
 #define BONESETUP_H
 
-#include "core/ConVar.h"
-
 #include "Math/Vector.h"
 #include "Math/Matrix.h"
 
@@ -157,8 +155,6 @@ inline void InterpolateFrameTransform(animframe_t &frame1, animframe_t &frame2, 
 	out.angBoneAngles = eulers(finQuat);
 	out.vecBonePosition = lerp(frame1.vecBonePosition, frame2.vecBonePosition, value);
 }
-
-extern ConVar r_InterpolateFrameTransformMethod;
 
 // adds transform TODO: Quaternion rotation
 inline void AddFrameTransform(animframe_t &frame1, animframe_t &frame2, animframe_t &out)
