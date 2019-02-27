@@ -71,9 +71,9 @@ public:
 	virtual CCar*				GetPlayerCar() const = 0;
 	virtual	void				SetPlayerCar(CCar* pCar) = 0;
 
-	virtual CCar*				GetViewCar() const;
-	void						SetViewCar(CCar* pCar);
-	void						SetViewCarNone();
+	virtual CGameObject*		GetViewObject() const;
+	void						SetViewObject(CCar* pCar);
+	void						SetViewObjectToNone();
 
 	CCar*						GetLeadCar() const;
 	void						SetLeadCar(CCar* pCar);
@@ -120,7 +120,7 @@ protected:
 
 	DkList<vehicleConfig_t*>	m_carEntries;
 
-	CCar*						m_viewCar;					// replay value
+	CGameObject*				m_viewObject;				// object from which is camera calculated
 	CCar*						m_leadCar;					// lead car is 
 
 	OOLUA::Table				m_missionManagerTable;		// missionmanager
@@ -154,9 +154,9 @@ OOLUA_MFUNC(SetLeadCar)
 OOLUA_MFUNC(SetLeadCarNone)
 OOLUA_MFUNC_CONST(GetLeadCar)
 
-OOLUA_MFUNC(SetViewCar)
-OOLUA_MFUNC(SetViewCarNone)
-OOLUA_MFUNC_CONST(GetViewCar)
+OOLUA_MFUNC(SetViewObject)
+OOLUA_MFUNC(SetViewObjectToNone)
+OOLUA_MFUNC_CONST(GetViewObject)
 
 OOLUA_MFUNC_CONST(IsGameDone)
 OOLUA_MFUNC(SignalMissionStatus)

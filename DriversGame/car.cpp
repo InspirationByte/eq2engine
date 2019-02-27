@@ -678,8 +678,6 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_fAcceleration(0.0f),
 	m_fBreakage(0.0f),
 	m_fAccelEffect(0.0f),
-	m_controlButtons(0),
-	m_oldControlButtons(0),
 	m_engineIdleFactor(1.0f),
 	m_curTime(0),
 	m_sirenEnabled(false),
@@ -692,11 +690,6 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_pDamagedModel(NULL),
 	m_engineSmokeTime(0.0f),
 	m_enablePhysics(true),
-
-	m_accelRatio(1023),
-	m_brakeRatio(1023),
-	m_steerRatio(1023),
-
 	m_gameDamage(0.0f),
 	m_gameMaxDamage(CAR_DEFAULT_MAX_DAMAGE),
 	m_locked(false),
@@ -1138,45 +1131,11 @@ int	CCar::L_GetCollideMask() const
 
 void CCar::SetControlButtons(int flags)
 {
-	// make no misc controls here
-	flags &= ~IN_MISC;
-
-	m_controlButtons = flags;
+	CControllableObject::SetControlButtons(flags);
 
 	// make car automatically has driver
 	if(IsAlive() && IsEnabled() && m_conf->flags.isCar)
 		m_hasDriver = true;
-}
-
-int	CCar::GetControlButtons()
-{
-	return m_controlButtons;
-}
-
-void CCar::SetControlVars(float fAccelRatio, float fBrakeRatio, float fSteering)
-{
-	m_accelRatio = min(fAccelRatio, 1.0f)*1023.0f;
-	m_brakeRatio = min(fBrakeRatio, 1.0f)*1023.0f;
-	m_steerRatio = clamp(fSteering, -1.0f, 1.0f)*1023.0f;
-
-	if(m_accelRatio > 1023)
-		m_accelRatio = 1023;
-
-	if(m_brakeRatio > 1023)
-		m_brakeRatio = 1023;
-
-	if(m_steerRatio > 1023)
-		m_steerRatio = 1023;
-
-	if(m_steerRatio < -1023)
-		m_steerRatio = -1023;
-}
-
-void CCar::GetControlVars(float& fAccelRatio, float& fBrakeRatio, float& fSteering)
-{
-	fAccelRatio = (double)m_accelRatio * _oneBy1024;
-	fBrakeRatio = (double)m_brakeRatio * _oneBy1024;
-	fSteering = (double)m_steerRatio * _oneBy1024;
 }
 
 void CCar::AnalogSetControls(float accel_brake, float steering, bool extendSteer, bool handbrake, bool burnout)
@@ -2610,7 +2569,7 @@ void CCar::Simulate( float fDt )
 #ifndef EDITOR
 	// don't render car
 	if(	g_pCameraAnimator->GetRealMode() == CAM_MODE_INCAR &&
-		g_pGameSession->GetViewCar() == this)
+		g_pGameSession->GetViewObject() == this)
 		m_visible = false;
 #endif // EDITOR
 
@@ -3676,7 +3635,7 @@ void CCar::UpdateSounds( float fDt )
 
 #ifndef EDITOR
 	if(g_pCameraAnimator->GetRealMode() == CAM_MODE_INCAR &&
-		g_pGameSession->GetViewCar() == this)
+		g_pGameSession->GetViewObject() == this)
 	{
 		SetSoundVolumeScale(0.5f);
 	}
@@ -4122,7 +4081,7 @@ void CCar::Draw( int nRenderFlags )
 	// don't render car
 	if(	!Director_FreeCameraActive() &&
 		g_pCameraAnimator->GetRealMode() == CAM_MODE_INCAR &&
-		g_pGameSession->GetViewCar() == this)
+		g_pGameSession->GetViewObject() == this)
 		isBodyDrawn = false;
 #endif // EDITOR
 
@@ -4191,7 +4150,7 @@ int CCar::GetChildCasterCount() const
 #ifndef EDITOR
 	// don't render car
 	if(	g_pCameraAnimator->GetRealMode() == CAM_MODE_INCAR &&
-		g_pGameSession->GetViewCar() == this)
+		g_pGameSession->GetViewObject() == this)
 		return 0;
 #endif // EDITOR
 

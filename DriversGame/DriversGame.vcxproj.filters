@@ -441,9 +441,6 @@
     <ClCompile Include="AIHandling.cpp">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClCompile>
-    <ClCompile Include="AIPedestrian.cpp">
-      <Filter>Файлы исходного кода\Game\AI</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared_game\anim_activity.cpp">
       <Filter>Файлы исходного кода\Animation</Filter>
     </ClCompile>
@@ -455,6 +452,12 @@
     </ClCompile>
     <ClCompile Include="..\shared_game\BoneSetup.cpp">
       <Filter>Файлы исходного кода\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="pedestrian.cpp">
+      <Filter>Файлы исходного кода\Game\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ControllableObject.cpp">
+      <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -880,9 +883,6 @@
     <ClInclude Include="AIManipulator_TargetChaser.h">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClInclude>
-    <ClInclude Include="AIPedestrian.h">
-      <Filter>Файлы исходного кода\Game\AI</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared_game\anim_activity.h">
       <Filter>Файлы исходного кода\Animation</Filter>
     </ClInclude>
@@ -894,6 +894,12 @@
     </ClInclude>
     <ClInclude Include="..\shared_game\BoneSetup.h">
       <Filter>Файлы исходного кода\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="pedestrian.h">
+      <Filter>Файлы исходного кода\Game\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ControllableObject.h">
+      <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

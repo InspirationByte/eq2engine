@@ -2,22 +2,29 @@
 // Copyright © Inspiration Byte
 // 2009-2019
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Pedestrian AI
+// Description: Pedestrian
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef AIPEDESTRIAN_H
-#define AIPEDESTRIAN_H
+#ifndef PEDESTRIAN_H
+#define PEDESTRIAN_H
 
 #include "GameObject.h"
+#include "ControllableObject.h"
+#include "Animating.h"
 
-class CPedestrian : public CGameObject
+class CPedestrian : public CGameObject, public CAnimatingEGF, public CControllableObject
 {
 	friend class CCar;
 public:
 	DECLARE_CLASS(CPedestrian, CGameObject)
 
+	CPedestrian();
 	CPedestrian(kvkeybase_t* kvdata);
 	~CPedestrian();
+
+	void				SetModelPtr(IEqModel* modelPtr);
+
+	void				Precache();
 
 	void				OnRemove();
 	void				Spawn();
@@ -32,11 +39,13 @@ public:
 	void				SetAngles(const Vector3D& angles);
 	void				SetVelocity(const Vector3D& vel);
 
-	const Vector3D&		GetOrigin() const;
-	const Vector3D&		GetAngles() const;
+	const Vector3D&		GetOrigin();
+	const Vector3D&		GetAngles();
 	const Vector3D&		GetVelocity() const;
 
 protected:
+
+	void				HandleAnimatingEvent(AnimationEvent nEvent, char* options);
 
 	CEqRigidBody*		m_physBody;
 

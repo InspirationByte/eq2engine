@@ -107,9 +107,9 @@ enum EGameObjectType
 	GO_DEFAULT = 0,	// no object type
 
 	GO_CAR,
-	GO_PEDESTRIAN,
-
 	GO_CAR_AI,			// FIXME: needs to be removed
+
+	GO_PEDESTRIAN,
 
 	GO_MISC,
 	GO_DEBRIS,
@@ -284,6 +284,8 @@ public:
 	Matrix4x4					m_worldMatrix;
 
 protected:
+
+	virtual void				DrawEGF(int nRenderFlags, Matrix4x4* boneTransforms);
 
 	virtual void				OnPhysicsFrame(float fDt);
 	virtual void				OnPrePhysicsFrame(float fDt) {}

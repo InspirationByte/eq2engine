@@ -315,6 +315,7 @@ OOLUA_PROXY(CGameWorld)
 	OOLUA_MFUNC(GetView)
 
 	OOLUA_MFUNC(AddObjectDef)
+	OOLUA_MFUNC_CONST(CreateGameObject)
 	OOLUA_MFUNC_CONST(CreateObject)
 	OOLUA_MFUNC(RemoveObject)
 	OOLUA_MFUNC_CONST(IsValidObject)

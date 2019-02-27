@@ -109,7 +109,7 @@ void Director_KeyPress(int key, bool down)
 	if(!Director_IsActive())
 		return;
 
-	CCar* viewedCar = g_pGameSession->GetViewCar();
+	CGameObject* viewedObject = g_pGameSession->GetViewObject();
 
 	if(key == KEY_SHIFT)
 	{
@@ -142,7 +142,7 @@ void Director_KeyPress(int key, bool down)
 			cam.origin = g_freeCamProps.position;
 			cam.rotation = g_freeCamProps.angles;
 			cam.startTick = g_replayData->m_tick;
-			cam.targetIdx = viewedCar->m_replayID;
+			cam.targetIdx = viewedObject->m_replayID;
 			cam.type = g_nDirectorCameraType;
 
 			int camIndex = g_replayData->AddCamera(cam);
@@ -161,7 +161,7 @@ void Director_KeyPress(int key, bool down)
 				currentCamera->fov = g_freeCamProps.fov;
 				currentCamera->origin = g_freeCamProps.position;
 				currentCamera->rotation = g_freeCamProps.angles;
-				currentCamera->targetIdx = viewedCar->m_replayID;
+				currentCamera->targetIdx = viewedObject->m_replayID;
 				currentCamera->type = g_nDirectorCameraType;
 
 				g_freecam.SetBool(false);
@@ -343,7 +343,7 @@ DECLARE_CMD(director_pick_ray, "Director mode - picks object with ray", 0)
 
 	if(pickedCar != nullptr)
 	{
-		g_pGameSession->SetViewCar( pickedCar );
+		g_pGameSession->SetViewObject( pickedCar );
 	}
 }
 
@@ -423,15 +423,15 @@ void Director_Draw( float fDt )
 
 	float timelineCenterPos = timelineRect.GetCenter().x;
 
-	CCar* viewedCar = g_pGameSession->GetViewCar();
+	CGameObject* viewedObject = g_pGameSession->GetViewObject();
 	CCar* playerCar = g_pGameSession->GetPlayerCar();
 	CCar* leadCar = g_pGameSession->GetLeadCar();
 
 	// if car is no longer valid, resetthe viewed car
-	if(!g_pGameWorld->IsValidObject(viewedCar))
+	if(!g_pGameWorld->IsValidObject(viewedObject))
 	{
-		g_pGameSession->SetViewCar(nullptr);
-		viewedCar = g_pGameSession->GetViewCar();
+		g_pGameSession->SetViewObject(nullptr);
+		viewedObject = g_pGameSession->GetViewObject();
 	}
 
 	if (!g_pGameWorld->IsValidObject(playerCar))
@@ -508,10 +508,10 @@ void Director_Draw( float fDt )
 			meshBuilder.Color4f(1, 1, 1, 0.45);
 			meshBuilder.Triangle2(crosshair[0], crosshair[1], crosshair[2]);
 
-			if (viewedCar)
+			if (viewedObject)
 			{
 				Vector3D screenPos;
-				PointToScreen_Z(viewedCar->GetOrigin() + Vector3D(0, 1.0f, 0), screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x, (float)screenSize.y));
+				PointToScreen_Z(viewedObject->GetOrigin() + Vector3D(0, 1.0f, 0), screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x, (float)screenSize.y));
 
 				if (screenPos.z > 0.0f)
 				{
@@ -553,7 +553,7 @@ void Director_Draw( float fDt )
 	{
 		CCar* carOnCrosshair = Director_GetCarOnCrosshair();
 
-		if(carOnCrosshair && carOnCrosshair != viewedCar)
+		if(carOnCrosshair && carOnCrosshair != viewedObject)
 		{
 			Vector3D screenPos;
 			PointToScreen_Z(carOnCrosshair->GetOrigin() + Vector3D(0,1.0f,0), screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x,(float)screenSize.y));

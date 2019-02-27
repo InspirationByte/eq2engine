@@ -2273,6 +2273,8 @@ const char*	CGameWorld::GetLevelName() const
 #include "object_trafficlight.h"
 #include "object_sheets.h"
 #include "object_scripted.h"
+#include "pedestrian.h"
+
 
 #endif // EDITOR
 
@@ -2284,6 +2286,10 @@ CGameObject* CGameWorld::CreateGameObject( const char* typeName, kvkeybase_t* kv
 	if(!stricmp(typeName, "dummy"))
 	{
 		return NULL;
+	}
+	else if (!stricmp(typeName, "pedestrian"))
+	{
+		return new CPedestrian(kvdata);
 	}
 	else if(!stricmp(typeName, "debris"))
 	{
@@ -2436,7 +2442,7 @@ CGameWorld*	g_pGameWorld = &s_GameWorld;
 #ifndef NO_LUA
 
 OOLUA_EXPORT_FUNCTIONS(CGameWorld, SetEnvironmentName, SetLevelName, GetView, QueryNearestRegions, AddObjectDef, RemoveObject)
-OOLUA_EXPORT_FUNCTIONS_CONST(CGameWorld, FindObjectByName, FindObjectOnLevel, CreateObject, IsValidObject, GetEnvironmentName, GetLevelName)
+OOLUA_EXPORT_FUNCTIONS_CONST(CGameWorld, FindObjectByName, FindObjectOnLevel, CreateGameObject, CreateObject, IsValidObject, GetEnvironmentName, GetLevelName)
 
 OOLUA_EXPORT_FUNCTIONS(CViewParams, SetOrigin, SetAngles, SetFOV)
 OOLUA_EXPORT_FUNCTIONS_CONST(CViewParams, GetOrigin, GetAngles, GetFOV)

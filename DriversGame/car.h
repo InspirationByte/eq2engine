@@ -9,13 +9,14 @@
 #define CAR_H
 
 #include "GameObject.h"
+#include "ControllableObject.h"
+
 #include "CameraAnimator.h"
 #include "EqParticles.h"
+
 #include "eqPhysics/eqPhysics_HingeJoint.h"
 
 #include "GameDefs.h"
-
-const float _oneBy1024 = 1.0f / 1023.0f;
 
 #define MPS_TO_KPH		(3.6f)
 #define KPH_TO_MPS		(0.27778f)
@@ -270,7 +271,7 @@ struct vehicleConfig_t
 	int8						numColors;
 	bool						useBodyColor;
 
-	carCameraConfig_t			cameraConf;
+	cameraConfig_t			cameraConf;
 
 	// calculations
 
@@ -379,7 +380,7 @@ class CLevelRegion;
 //-----------------------------------------------------------------------
 // The vehicle itself
 //-----------------------------------------------------------------------
-class CCar : public CGameObject
+class CCar : public CGameObject, public CControllableObject
 {
 	friend class CAITrafficCar;
 	friend class CAIPursuerCar;
@@ -432,11 +433,6 @@ public:
 	void					EmitCollisionParticles(const Vector3D& position, const Vector3D& velocity, const Vector3D& normal, int numSparks = 1, float fCollImpulse = 180.0f);
 
 	void					SetControlButtons(int flags);
-	int						GetControlButtons();
-
-	void					SetControlVars(float fAccelRatio, float fBrakeRatio, float fSteering);
-	void					GetControlVars(float& fAccelRatio, float& fBrakeRatio, float& fSteering);
-
 	void					AnalogSetControls(float accel_brake, float steering, bool extendSteer, bool handbrake, bool burnout);
 
 	void					SetOrigin(const Vector3D& origin);
@@ -552,10 +548,6 @@ public:
 
 	bool					m_isLocalCar;
 
-	short					m_accelRatio;
-	short					m_brakeRatio;
-	short					m_steerRatio;
-
 	CNetworkVar(bool,		m_sirenEnabled);
 	bool					m_oldSirenState;
 
@@ -643,9 +635,6 @@ protected:
 	//---------------------------------------------
 
 	ISoundController*		m_sounds[CAR_SOUND_COUNT];
-
-	short					m_controlButtons;
-	short					m_oldControlButtons;
 
 	float					m_curTime;
 

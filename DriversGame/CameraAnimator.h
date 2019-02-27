@@ -29,7 +29,7 @@ enum ECameraMode
 	CAM_MODES,
 };
 
-struct carCameraConfig_t
+struct cameraConfig_t
 {
 	float					height;
 	float					dist;
@@ -41,6 +41,7 @@ struct carCameraConfig_t
 
 class CCar;
 class CEqRigidBody;
+class CGameObject;
 
 class CCameraAnimator
 {
@@ -48,7 +49,7 @@ public:
 	CCameraAnimator();
 	virtual ~CCameraAnimator() {}
 
-	void					SetCameraProps(const carCameraConfig_t& conf);
+	void					SetCameraProps(const cameraConfig_t& conf);
 
 	void					SetFOV(float fFOV);
 	void					SetOrigin(const Vector3D& camPos);
@@ -68,17 +69,19 @@ public:
 	int						GetMode() const					{return m_mode;}
 	void					SetMode( int newMode )			{m_mode = (ECameraMode)newMode;}
 
-	void					Update( float fDt, int nButtons, CCar* target);
+	void					Update( float fDt, int nButtons, CGameObject* target);
 
 	void					SetScripted( bool enable )		{ m_scriptControl = enable; }
 	bool					IsScripted() const				{ return m_scriptControl; }
 
-	void					L_Update( float fDt, CCar* target );
+	void					L_Update( float fDt, CGameObject* target );
 
 
 protected:
 
 	Vector3D				ShakeView( float fDt );
+
+	void					AnimateForObject(ECameraMode mode, int nButtons, float fDt, CGameObject* target, struct eqPhysCollisionFilter& collFilter);
 
 	void					Animate(	ECameraMode mode, int nButtons,
 										const Vector3D& targetOrigin,
@@ -87,13 +90,13 @@ protected:
 										float fDt,
 										struct eqPhysCollisionFilter& collFilter);
 
-	carCameraConfig_t		m_carConfig;
+	cameraConfig_t		m_camConfig;
 	float					m_cameraDistVar;
 	float					m_cameraFOV;
 
-	float					m_fLookAngle;
+	float					m_interpLookAngle;
 
-	float					m_fTempCamAngle;
+	float					m_interpCamAngle;
 	Vector3D				m_vecCameraVel;
 	Vector3D				m_vecCameraVelDiff;
 

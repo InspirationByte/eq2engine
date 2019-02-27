@@ -94,7 +94,7 @@ OOLUA_PROXY(CCameraAnimator)
 	OOLUA_MFUNC( SetScripted )
 	OOLUA_MFUNC_CONST( IsScripted )
 
-	OOLUA_MEM_FUNC_RENAME( Update, void, L_Update, float, CCar* )
+	OOLUA_MEM_FUNC_RENAME( Update, void, L_Update, float, CGameObject* )
 
 	OOLUA_MFUNC_CONST(GetRealMode)
 	OOLUA_MFUNC_CONST(GetMode)

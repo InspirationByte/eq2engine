@@ -363,49 +363,55 @@ void CGameObject::Draw( int nRenderFlags )
 			return;
 	}
 
+	DrawEGF(nRenderFlags, nullptr);
+}
+
+void CGameObject::DrawEGF(int nRenderFlags, Matrix4x4* boneTransforms)
+{
 	materials->SetMatrix(MATRIXMODE_WORLD, m_worldMatrix);
 	materials->SetCullMode((nRenderFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
 
-	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
-	int nStartLOD = m_pModel->SelectLod( camDist ); // lod distance check
+	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom(GetOrigin());
+	int nStartLOD = m_pModel->SelectLod(camDist); // lod distance check
 
 	studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
-	for(int i = 0; i < pHdr->numBodyGroups; i++)
+	for (int i = 0; i < pHdr->numBodyGroups; i++)
 	{
 		// check bodygroups for rendering
-		if(!(m_bodyGroupFlags & (1 << i)))
+		if (!(m_bodyGroupFlags & (1 << i)))
 			continue;
 
 		int bodyGroupLOD = nStartLOD;
 		int nLodModelIdx = pHdr->pBodyGroups(i)->lodModelIndex;
 		studiolodmodel_t* lodModel = pHdr->pLodModel(nLodModelIdx);
 
-		int nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
+		int nModDescId = lodModel->modelsIndexes[bodyGroupLOD];
 
 		// get the right LOD model number
-		while(nModDescId == -1 && bodyGroupLOD > 0)
+		while (nModDescId == -1 && bodyGroupLOD > 0)
 		{
 			bodyGroupLOD--;
-			nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
+			nModDescId = lodModel->modelsIndexes[bodyGroupLOD];
 		}
 
-		if(nModDescId == -1)
+		if (nModDescId == -1)
 			continue;
-	
+
 		studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
 
 		// render model groups that in this body group
-		for(int j = 0; j < modDesc->numGroups; j++)
+		for (int j = 0; j < modDesc->numGroups; j++)
 		{
-			//materials->SetSkinningEnabled(true);
+			if(boneTransforms)
+				materials->SetSkinningEnabled(true);
 
 			int materialIndex = modDesc->pGroup(j)->materialIndex;
-			materials->BindMaterial( m_pModel->GetMaterial(materialIndex), 0);
+			materials->BindMaterial(m_pModel->GetMaterial(materialIndex), 0);
 
-			//m_pModel->PrepareForSkinning( m_boneTransforms );
-			m_pModel->DrawGroup( nModDescId, j );
+			m_pModel->PrepareForSkinning( boneTransforms );
+			m_pModel->DrawGroup(nModDescId, j);
 
-			//materials->SetSkinningEnabled(false);
+			materials->SetSkinningEnabled(false);
 		}
 	}
 }

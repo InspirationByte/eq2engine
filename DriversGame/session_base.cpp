@@ -17,6 +17,8 @@
 #include "world.h"
 #include "input.h"
 
+#include "pedestrian.h"
+
 CGameSessionBase*	g_pGameSession = NULL;
 
 void fng_car_variants(DkList<EqString>& list, const char* query)
@@ -53,7 +55,7 @@ CGameSessionBase::CGameSessionBase()
 	m_missionStatus = MIS_STATUS_INGAME;
 
 	m_leadCar = NULL;
-	m_viewCar = NULL;
+	m_viewObject = NULL;
 
 	m_scriptIDCounter = 0;
 	m_scriptIDReplayCounter = 0;
@@ -106,6 +108,8 @@ void CGameSessionBase::Init()
 	m_scriptIDReplayCounter = 0;
 
 	m_gameTime = 0.0;
+
+	PrecacheObject(CPedestrian);
 
 	// load cars
 	LoadCarData();
@@ -667,7 +671,7 @@ vehicleConfig_t* CGameSessionBase::FindCarEntryByName(const char* name) const
 
 extern ConVar g_pause;
 
-CCar* CGameSessionBase::GetViewCar() const
+CGameObject* CGameSessionBase::GetViewObject() const
 {
 	if (g_replayData->m_state == REPL_PLAYING && !g_pause.GetBool())
 	{
@@ -677,26 +681,26 @@ CCar* CGameSessionBase::GetViewCar() const
 			return g_replayData->GetCarByReplayIndex(cam->targetIdx);
 	}
 
-	if (m_viewCar)
-		return m_viewCar;
+	if (m_viewObject)
+		return m_viewObject;
 
-	if (m_viewCar == nullptr)
+	if (m_viewObject == nullptr)
 		return GetPlayerCar();
 
 	return nullptr;
 }
 
-void CGameSessionBase::SetViewCar(CCar* pCar)
+void CGameSessionBase::SetViewObject(CCar* pCar)
 {
-	if (m_viewCar == GetPlayerCar())
-		m_viewCar = nullptr;
+	if (m_viewObject == GetPlayerCar())
+		m_viewObject = nullptr;
 	else
-		m_viewCar = pCar;
+		m_viewObject = pCar;
 }
 
-void CGameSessionBase::SetViewCarNone()
+void CGameSessionBase::SetViewObjectToNone()
 {
-	SetViewCar(nullptr);
+	SetViewObject(nullptr);
 }
 
 CCar* CGameSessionBase::GetLeadCar() const
@@ -725,8 +729,8 @@ OOLUA_EXPORT_FUNCTIONS(
 	SetPlayerCar,
 	SetLeadCar,
 	SetLeadCarNone,
-	SetViewCar,
-	SetViewCarNone,
+	SetViewObject,
+	SetViewObjectToNone,
 	LoadCarReplay,
 	StopCarReplay,
 	SignalMissionStatus,
@@ -739,7 +743,7 @@ OOLUA_EXPORT_FUNCTIONS_CONST(
 	IsServer,
 	GetPlayerCar,
 	GetLeadCar,
-	GetViewCar,
+	GetViewObject,
 	GetSessionType,
 	IsGameDone,
 	GetMissionStatus,

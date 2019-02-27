@@ -991,8 +991,10 @@ void CState_Game::DrawMenu( float fDt )
 
 CCar* CState_Game::GetViewCar() const
 {
-	CCar* viewedCar = g_pGameSession ? g_pGameSession->GetViewCar() : NULL;
+	CGameObject* viewObj = g_pGameSession ? g_pGameSession->GetViewObject() : NULL;
 
+	CCar* viewedCar = IsCar(viewObj) ? (CCar*)viewObj : nullptr;
+	/*
 	if(g_replayData->m_state == REPL_PLAYING && g_replayData->m_cameras.numElem() > 0)
 	{
 		// replay controls camera
@@ -1004,9 +1006,9 @@ CCar* CState_Game::GetViewCar() const
 
 			// only if it's valid
 			if(g_pGameWorld->IsValidObject(cameraCar))
-				viewedCar = cameraCar;
+				viewObject = cameraCar;
 		}
-	}
+	}*/
 
 	return viewedCar;
 }
@@ -1125,12 +1127,12 @@ void CState_Game::DoCameraUpdates( float fDt )
 	{
 		if(!g_pCameraAnimator->IsScripted())
 		{
-			CCar* viewedCar = g_pGameSession->GetViewCar();
+			CGameObject* viewObject = g_pGameSession->GetViewObject();
 
-			if(!g_pGameWorld->IsValidObject(viewedCar))
+			if(!g_pGameWorld->IsValidObject(viewObject))
 			{
-				g_pGameSession->SetViewCar(NULL);
-				viewedCar = g_pGameSession->GetViewCar();
+				g_pGameSession->SetViewObject(NULL);
+				viewObject = g_pGameSession->GetViewObject();
 			}
 
 			if(g_replayData->m_state == REPL_PLAYING && g_replayData->m_cameras.numElem() > 0)
@@ -1145,14 +1147,14 @@ void CState_Game::DoCameraUpdates( float fDt )
 					// only if it's valid
 					if(g_pGameWorld->IsValidObject(cameraCar))
 					{
-						viewedCar = cameraCar;
+						viewObject = cameraCar;
 
 						g_pCameraAnimator->SetMode( (ECameraMode)replCamera->type );
 						g_pCameraAnimator->SetOrigin( replCamera->origin );
 						g_pCameraAnimator->SetAngles( replCamera->rotation );
 						g_pCameraAnimator->SetFOV( replCamera->fov );
 
-						g_pCameraAnimator->Update(fDt, 0, viewedCar);
+						g_pCameraAnimator->Update(fDt, 0, viewObject);
 					}
 				}
 			}
@@ -1160,15 +1162,15 @@ void CState_Game::DoCameraUpdates( float fDt )
 			//g_pCameraAnimator->SetFreeLookAngles(g_freeLook.GetBool(), g_freeLookAngles);
 
 			/*
-			if( viewedCar && viewedCar->GetPhysicsBody() )
+			if( viewObject && viewObject->GetPhysicsBody() )
 			{
-				DkList<CollisionPairData_t>& pairs = viewedCar->GetPhysicsBody()->m_collisionList;
+				DkList<CollisionPairData_t>& pairs = viewObject->GetPhysicsBody()->m_collisionList;
 
 				if(pairs.numElem())
 				{
 					float powScale = 1.0f / (float)pairs.numElem();
 
-					float invMassA = viewedCar->GetPhysicsBody()->GetInvMass();
+					float invMassA = viewObject->GetPhysicsBody()->GetInvMass();
 
 					for(int i = 0; i < pairs.numElem(); i++)
 					{
@@ -1181,7 +1183,7 @@ void CState_Game::DoCameraUpdates( float fDt )
 			}
 			*/
 
-			g_pCameraAnimator->Update(fDt, camControls, viewedCar);
+			g_pCameraAnimator->Update(fDt, camControls, viewObject);
 		}
 
 		// set final result to the world renderer
