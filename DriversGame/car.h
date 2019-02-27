@@ -448,6 +448,8 @@ public:
 	CCar*					GetHingedVehicle() const;
 	CEqRigidBody*			GetHingedBody() const;
 
+	void					ConfigureCamera(cameraConfig_t& conf, eqPhysCollisionFilter& filter) const;
+
 	const Quaternion&		GetOrientation() const;
 
 	const Vector3D			GetForwardVector() const;

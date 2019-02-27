@@ -240,6 +240,8 @@ public:
 	virtual CGameObject*		GetChildShadowCaster(int idx) const;
 	virtual int					GetChildCasterCount() const;
 
+	virtual void				ConfigureCamera(struct cameraConfig_t& conf, struct eqPhysCollisionFilter& filter) const;
+
 	ubyte						GetBodyGroups() const {return m_bodyGroupFlags;}
 
 	void						SetUserData(void* dataPtr);

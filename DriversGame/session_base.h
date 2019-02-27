@@ -72,7 +72,7 @@ public:
 	virtual	void				SetPlayerCar(CCar* pCar) = 0;
 
 	virtual CGameObject*		GetViewObject() const;
-	void						SetViewObject(CCar* pCar);
+	void						SetViewObject(CGameObject* viewObj);
 	void						SetViewObjectToNone();
 
 	CCar*						GetLeadCar() const;

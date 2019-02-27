@@ -426,6 +426,16 @@ int CGameObject::GetChildCasterCount() const
 	return 0;
 }
 
+void CGameObject::ConfigureCamera(cameraConfig_t& conf, eqPhysCollisionFilter& filter) const
+{
+	conf.dist = 3.5f;
+	conf.height = 1.0f;
+	conf.distInCar = 0.0f;
+	conf.widthInCar = 0.0f;
+	conf.heightInCar = 0.5f;
+	conf.fov = 70.0f;
+}
+
 void CGameObject::SetUserData(void* dataPtr)
 {
 	m_userData = dataPtr;

@@ -1053,6 +1053,41 @@ void CCar::SetAngularVelocity(const Vector3D& vel)
 	m_pPhysicsObject->m_object->TryWake();
 }
 
+ConVar cam_custom("cam_custom", "0", NULL, CV_CHEAT);
+ConVar cam_custom_height("cam_custom_height", "1.3", NULL, CV_ARCHIVE);
+ConVar cam_custom_dist("cam_custom_dist", "7", NULL, CV_ARCHIVE);
+ConVar cam_custom_fov("cam_custom_fov", "52", NULL, CV_ARCHIVE);
+
+void CCar::ConfigureCamera(cameraConfig_t& conf, eqPhysCollisionFilter& filter) const
+{
+	CCar* hingedVehicle = GetHingedVehicle();
+
+	filter.AddObject(GetPhysicsBody());
+
+	if (hingedVehicle)
+	{
+		conf = m_conf->cameraConf;
+		cameraConfig_t& hingeConf = hingedVehicle->m_conf->cameraConf;
+
+		conf.dist += hingeConf.dist;
+		conf.height += hingeConf.height;
+
+		// add hinged vehicle to collision filter
+		filter.AddObject(hingedVehicle->GetPhysicsBody());
+	}
+	else
+	{
+		conf = m_conf->cameraConf;
+
+		if (cam_custom.GetBool())
+		{
+			conf.dist = cam_custom_dist.GetFloat();
+			conf.height = cam_custom_height.GetFloat();
+			conf.fov = cam_custom_fov.GetFloat();
+		}
+	}
+}
+
 const Quaternion& CCar::GetOrientation() const
 {
 	if(!m_pPhysicsObject)

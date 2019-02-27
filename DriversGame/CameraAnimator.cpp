@@ -47,11 +47,6 @@ ConVar cam_velocity_forwardmod("cam_velocity_forwardmod", "1.0");
 ConVar cam_velocity_sidemod("cam_velocity_sidemod", "-0.5");
 ConVar cam_velocity_upmod("cam_velocity_upmod", "1.0");
 
-ConVar cam_custom("cam_custom", "0", NULL, CV_CHEAT);
-ConVar cam_custom_height("cam_custom_height", "1.3", NULL, CV_ARCHIVE);
-ConVar cam_custom_dist("cam_custom_dist", "7", NULL, CV_ARCHIVE);
-ConVar cam_custom_fov("cam_custom_fov", "52", NULL, CV_ARCHIVE);
-
 DECLARE_CMD(v_shake, "shakes view", 0)
 {
 	if(CMD_ARGC < 1)
@@ -86,18 +81,6 @@ CCameraAnimator::CCameraAnimator() :
 	m_camConfig.heightInCar = 0.5f;
 	m_camConfig.widthInCar = 0.7f;
 	m_camConfig.fov = DEFAULT_CAMERA_FOV;
-}
-
-void CCameraAnimator::SetCameraProps( const cameraConfig_t& conf )
-{
-	m_camConfig = conf;
-
-	if(cam_custom.GetBool())
-	{
-		m_camConfig.dist = cam_custom_dist.GetFloat();
-		m_camConfig.height = cam_custom_height.GetFloat();
-		m_camConfig.fov = cam_custom_fov.GetFloat();
-	}
 }
 
 void CCameraAnimator::SetFOV(float fFOV)
@@ -210,6 +193,8 @@ void CCameraAnimator::AnimateForObject(ECameraMode camMode, int nButtons, float 
 
 	Quaternion camOrient;
 
+	target->ConfigureCamera(m_camConfig, collFilter);
+
 	// calculate car-specific camera with extra features
 	if (IsCar(target))
 	{
@@ -219,26 +204,6 @@ void CCameraAnimator::AnimateForObject(ECameraMode camMode, int nButtons, float 
 
 		if (carObj->IsInWater() && camMode == CAM_MODE_INCAR)
 			camMode = CAM_MODE_OUTCAR;
-
-		CCar* hingedVehicle = carObj->GetHingedVehicle();
-
-		collFilter.AddObject(carObj->GetPhysicsBody());
-
-		if (hingedVehicle)
-		{
-			cameraConfig_t conf = carObj->m_conf->cameraConf;
-			cameraConfig_t& hingeConf = hingedVehicle->m_conf->cameraConf;
-
-			conf.dist += hingeConf.dist;
-			conf.height += hingeConf.height;
-
-			SetCameraProps(conf);
-
-			// add hinged vehicle to collision filter
-			collFilter.AddObject(hingedVehicle->GetPhysicsBody());
-		}
-		else
-			SetCameraProps(carObj->m_conf->cameraConf);
 	}
 	else
 	{

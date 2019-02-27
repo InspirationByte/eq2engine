@@ -690,12 +690,12 @@ CGameObject* CGameSessionBase::GetViewObject() const
 	return nullptr;
 }
 
-void CGameSessionBase::SetViewObject(CCar* pCar)
+void CGameSessionBase::SetViewObject(CGameObject* viewObj)
 {
 	if (m_viewObject == GetPlayerCar())
 		m_viewObject = nullptr;
 	else
-		m_viewObject = pCar;
+		m_viewObject = viewObj;
 }
 
 void CGameSessionBase::SetViewObjectToNone()

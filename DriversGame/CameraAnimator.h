@@ -49,8 +49,6 @@ public:
 	CCameraAnimator();
 	virtual ~CCameraAnimator() {}
 
-	void					SetCameraProps(const cameraConfig_t& conf);
-
 	void					SetFOV(float fFOV);
 	void					SetOrigin(const Vector3D& camPos);
 	void					SetAngles(const Vector3D& angles);
