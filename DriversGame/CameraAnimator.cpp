@@ -148,17 +148,20 @@ void CCameraAnimator::Update( float fDt, int nButtons, CGameObject* target)
 
 			if (newMode == CAM_MODE_TRIPOD_ZOOM)
 			{
+				cameraConfig_t cam;
+				eqPhysCollisionFilter tmp;
+
+				target->ConfigureCamera(cam, tmp);
+
+				const Vector3D& velocity = target->GetVelocity();
+
+				Vector3D forward = transpose(target->m_worldMatrix).rows[2].xyz();
+
+				if (dot(velocity, velocity) > 0.25f)
+					forward = normalize(target->GetVelocity());
+
 				// compute drop position
-				Vector3D dropPos = target->GetOrigin();
-
-				if (IsCar(target))
-				{
-					CCar* carObj = (CCar*)target;
-
-					dropPos += Vector3D(0, carObj->m_conf->physics.body_size.y, 0) - carObj->GetForwardVector()*carObj->m_conf->physics.body_size.z*1.1f;
-				}
-
-				SetOrigin(dropPos);
+				m_dropPos = target->GetOrigin() + vec3_up*cam.heightInCar - forward*cam.distInCar*2.0f;
 			}
 
 			// rollin
@@ -437,7 +440,7 @@ void CCameraAnimator::Animate(ECameraMode mode,
 		case CAM_MODE_TRIPOD_ZOOM:
 		case CAM_MODE_TRIPOD_FIXEDZOOM:
 		{
-			Vector3D cam_target = finalTargetPos;
+			Vector3D cam_target = finalTargetPos + targetUp * m_camConfig.heightInCar;
 			Vector3D cam_angles = VectorAngles(normalize(cam_target - m_dropPos));
 
 			m_computedView.SetAngles(cam_angles + shakeVec);
