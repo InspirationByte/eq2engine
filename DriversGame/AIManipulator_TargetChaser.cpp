@@ -51,6 +51,8 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 	carPos += carForward * carBodySize.z;
 
 	const float AI_CHASE_TARGET_VELOCITY_SCALE = 0.6f;
+	const float AI_CHASE_TARGET_VELOCITY_DISTANCE_START = 10.0f;
+	const float AI_CHASE_TARGET_VELOCITY_DISTANCE_END = 4.0f;
 
 	const float AI_STEERING_START_AGRESSIVE_DISTANCE_START = 10.0f;
 	const float AI_STEERING_START_AGRESSIVE_DISTANCE_END = 4.0f;
@@ -91,13 +93,19 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 
 	int traceContents = OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_OBJECT | OBJECTCONTENTS_VEHICLE;
 
+	float distanceToTarget = length(m_driveTarget - carPos);
+
+	float targetOffsetScaling = 1.0f - RemapValClamp(distanceToTarget, AI_CHASE_TARGET_VELOCITY_DISTANCE_END, AI_CHASE_TARGET_VELOCITY_DISTANCE_START, 0.0f, 1.0f);
+
+	
+
 	// add velocity offset
-	Vector3D steeringTargetPos = m_driveTarget + m_driveTargetVelocity * AI_CHASE_TARGET_VELOCITY_SCALE;
+	Vector3D steeringTargetPos = m_driveTarget + m_driveTargetVelocity * AI_CHASE_TARGET_VELOCITY_SCALE * targetOffsetScaling;
 
 	// preliminary steering dir
 	Vector3D steeringDir = fastNormalize(steeringTargetPos - carPos);
 
-	float distanceToTarget = length(m_driveTarget - carPos);
+	
 
 	float distanceScaling = 1.0f - RemapValClamp(distanceToTarget, AI_STEERING_START_AGRESSIVE_DISTANCE_END, AI_STEERING_START_AGRESSIVE_DISTANCE_START, 0.0f, 1.0f);
 

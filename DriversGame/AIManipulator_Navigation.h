@@ -19,9 +19,9 @@ struct pathFindResult3D_t
 	Vector3D			start;
 	Vector3D			end;
 
-	DkList<Vector3D>	points;	// z is distance in cells
+	DkList<Vector4D>	points;	// w is narrowness factor
 
-	void InitFrom(pathFindResult_t& path);
+	void InitFrom(pathFindResult_t& path, CEqCollisionObject* ignore);
 };
 
 class CAINavigationManipulator
@@ -31,11 +31,16 @@ public:
 
 	void UpdateAffector(ai_handling_t& handling, CCar* car, float fDt);
 
-	void SetPath(pathFindResult_t& newPath, const Vector3D& searchPos);
+	void SetPath(pathFindResult_t& newPath, const Vector3D& searchPos, CCar* ignoreObj);
 
 	Vector3D GetAdvancedPointByDist(int& startSeg, float distFromSegment);
+	Vector3D GetPoint(int startSeg, float distFromSegment, int& outSeg, Vector3D& outDir, float& outSegLen, float& outDistFromSegmen);
+
+
 	int FindSegmentByPosition(const Vector3D& pos, float distToSegment);
 	float GetPathPercentage(const Vector3D& pos);
+
+	float GetNarrownessAt(const Vector3D& pos, float distToSegment);
 
 	void ForceUpdatePath();
 

@@ -29,7 +29,7 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 	const float AI_ROTATION_CORRECTION = 0.15f;
 	const float AI_ROTATION_CURVE = 1.5f;
 
-	const float AI_CORRECTION_LIMIT = 0.3f;
+	const float AI_CORRECTION_LIMIT = 0.5f;
 
 	const float AI_MAX_ANGULAR_VELOCITY_AUTOHANDBRAKE = 2.0f;
 

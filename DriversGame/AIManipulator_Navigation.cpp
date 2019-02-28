@@ -30,11 +30,11 @@ void DebugDrawPath(pathFindResult3D_t& path, float time = -1.0f)
 {
 	if(ai_debug_path.GetBool() && path.points.numElem())
 	{
-		Vector3D lastLinePos = path.points[0];
+		Vector3D lastLinePos = path.points[0].xyz();
 
 		for (int i = 1; i < path.points.numElem(); i++)
 		{
-			Vector3D pointPos = path.points[i];
+			const Vector3D& pointPos = path.points[i].xyz();
 
 			float dispalyTime = time > 0 ? time : float(i) * 0.1f;
 
@@ -66,7 +66,6 @@ void SimplifyPath(pathFindResult_t& path)
 
 		// process conditions
 		bool isStraight = lastDir2D == dir2D;
-		//bool hasCollision = g_pGameWorld->m_level.Nav_TestLine2D(lastPointPos, pointPos) < 1.0f;
 
 		// store last data
 		lastPointPos = pointPos;
@@ -82,7 +81,7 @@ void SimplifyPath(pathFindResult_t& path)
 	}
 }
 
-void pathFindResult3D_t::InitFrom(pathFindResult_t& path)
+void pathFindResult3D_t::InitFrom(pathFindResult_t& path, CEqCollisionObject* ignore)
 {
 	g_pGameWorld->m_level.m_navGridSelector = path.gridSelector;
 
@@ -91,9 +90,28 @@ void pathFindResult3D_t::InitFrom(pathFindResult_t& path)
 
 	points.clear();
 
+	btSphereShape _sphere(1.5f);
+	eqPhysCollisionFilter collFilter;
+	collFilter.type = EQPHYS_FILTER_TYPE_EXCLUDE;
+	collFilter.flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS | EQPHYS_FILTER_FLAG_FORCE_RAYCAST;
+	collFilter.AddObject(ignore);
+
+	CollisionData_t coll;
+
+	Vector3D prevPoint = start;
+
 	for(int i = 0; i < path.points.numElem(); i++)
 	{
-		points.append(g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.points[i]));
+		Vector4D point(g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.points[i]), 0.0f);
+
+		g_pPhysics->TestConvexSweep(&_sphere, identity(), prevPoint, point.xyz(), coll, OBJECTCONTENTS_SOLID_OBJECTS, &collFilter);
+
+		// store narowness factor
+		point.w = coll.fract;
+
+		points.append(point);
+
+		prevPoint = point.xyz();
 	}
 
 	g_pGameWorld->m_level.m_navGridSelector = 0;
@@ -109,11 +127,11 @@ CAINavigationManipulator::CAINavigationManipulator()
 	m_init = false;
 }
 
-void CAINavigationManipulator::SetPath(pathFindResult_t& newPath, const Vector3D& searchPos)
+void CAINavigationManipulator::SetPath(pathFindResult_t& newPath, const Vector3D& searchPos, CCar* ignoreObj)
 {
 	SimplifyPath(newPath);
 
-	m_path.InitFrom(newPath);
+	m_path.InitFrom(newPath, ignoreObj->GetPhysicsBody());
 
 	m_pathPointIdx = 0;
 	m_timeToUpdatePath = AI_PATH_TIME_TO_UPDATE;
@@ -126,39 +144,63 @@ void CAINavigationManipulator::SetPath(pathFindResult_t& newPath, const Vector3D
 	m_init = true;
 }
 
-Vector3D CAINavigationManipulator::GetAdvancedPointByDist(int& startSeg, float distFromSegment)
+Vector3D CAINavigationManipulator::GetPoint(int startSeg, float distFromSegment, int& outSeg, Vector3D& outDir, float& outSegLen, float& outDistFromSegment)
 {
 	Vector3D currPointPos;
 	Vector3D nextPointPos;
 
-	if(m_path.points.numElem() == 0)
-		return -1;
+	outSeg = startSeg;
+	outDistFromSegment = distFromSegment;
 
-	while (startSeg < m_path.points.numElem()-2)
+	if (m_path.points.numElem() == 0)
+		return 0.0f;
+
+	while (outSeg < m_path.points.numElem() - 2)
 	{
-		currPointPos = m_path.points[startSeg];
-		nextPointPos = m_path.points[startSeg + 1];
+		currPointPos = m_path.points[outSeg].xyz();
+		nextPointPos = m_path.points[outSeg + 1].xyz();
 
 		float segLen = length(currPointPos - nextPointPos);
 
-		if(distFromSegment > segLen)
+		if (outDistFromSegment > segLen)
 		{
-			distFromSegment -= segLen;
-			startSeg++;
+			outDistFromSegment -= segLen;
+			outSeg++;
 		}
 		else
 			break;
 	}
 
-	currPointPos = m_path.points[startSeg];
-	nextPointPos = m_path.points[startSeg + 1];
+	currPointPos = m_path.points[outSeg].xyz();
+	nextPointPos = m_path.points[outSeg + 1].xyz();
 
-	Vector3D dir = fastNormalize(nextPointPos - currPointPos);
+	outDir = fastNormalize(nextPointPos - currPointPos);
+	outSegLen = length(currPointPos - nextPointPos);
 
-	float lastSegLen = length(currPointPos - nextPointPos);
-	//distFromSegment = clamp(distFromSegment, 0.0f, lastSegLen);
+	return currPointPos;
+}
 
-	return currPointPos + dir*distFromSegment;
+Vector3D CAINavigationManipulator::GetAdvancedPointByDist(int& startSeg, float distFromSegment)
+{
+	Vector3D dir(0.0f);
+	float segLen = 0.0f;
+
+	Vector3D point = GetPoint(startSeg, distFromSegment, startSeg, dir, segLen, distFromSegment);
+
+	return point + dir*distFromSegment;
+}
+
+float CAINavigationManipulator::GetNarrownessAt(const Vector3D& pos, float distToSegment)
+{
+	int segIdx = FindSegmentByPosition(pos, distToSegment);
+
+	if (segIdx == -1)
+		return -1;
+
+	float narr1 = m_path.points.inRange(segIdx - 1) ? m_path.points[segIdx - 1].w : 1.0f;
+	float narr2 = m_path.points.inRange(segIdx + 1) ? m_path.points[segIdx + 1].w : 1.0f;
+
+	return narr1 * m_path.points[segIdx].w * narr2;
 }
 
 int CAINavigationManipulator::FindSegmentByPosition(const Vector3D& pos, float distToSegment)
@@ -173,8 +215,8 @@ int CAINavigationManipulator::FindSegmentByPosition(const Vector3D& pos, float d
 
 	while (segment < m_path.points.numElem()-1)
 	{
-		currPointPos = m_path.points[segment];
-		nextPointPos = m_path.points[segment + 1];
+		currPointPos = m_path.points[segment].xyz();
+		nextPointPos = m_path.points[segment + 1].xyz();
 
 		float segProj = lineProjection(currPointPos, nextPointPos, pos);
 
@@ -208,8 +250,8 @@ float CAINavigationManipulator::GetPathPercentage(const Vector3D& pos)
 
 	while (segment < m_path.points.numElem()-1)
 	{
-		currPointPos = m_path.points[segment];
-		nextPointPos = m_path.points[segment + 1];
+		currPointPos = m_path.points[segment].xyz();
+		nextPointPos = m_path.points[segment + 1].xyz();
 
 		float segmentLength = length(currPointPos-nextPointPos);
 		float segProj = lineProjection(currPointPos, nextPointPos, pos);
@@ -263,7 +305,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		// Get the last point on the path
 		//
 		int currSeg = FindSegmentByPosition(carPos, AI_SEGMENT_VALID_RADIUS);
-		Vector3D pathTarget = (currSeg != -1) ? m_path.points[currSeg] : m_driveTarget;
+		Vector3D pathTarget = (currSeg != -1) ? m_path.points[currSeg].xyz() : m_driveTarget;
 
 		if(currSeg == -1)
 		{
@@ -321,7 +363,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			pathFindResult_t newPath;
 			if( g_pGameWorld->m_level.Nav_FindPath(m_targetSuccessfulSearchPos, searchStart, newPath, AI_PATH_SEARCH_ITERATIONS, fastSearch))
 			{
-				SetPath(newPath, carPos);
+				SetPath(newPath, carPos, car);
 			}
 			else
 			{
@@ -369,7 +411,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 	float weatherBrakeDistModifier = s_weatherBrakeDistanceModifier[g_pGameWorld->m_envConfig.weatherType] * (1.0f-tireFrictionModifier);
 	float weatherBrakePow = s_weatherBrakeCurve[g_pGameWorld->m_envConfig.weatherType] * tireFrictionModifier;
 
-	const float AI_LOWSPEED_CURVE		= 15.0f;
+	const float AI_LOWSPEED_CURVE		= 6.5f;
 	const float AI_LOWSPEED_END			= 8.0f;	// 8 meters per second
 
 	float lowSpeedFactor = pow(RemapValClamp(speedMPS, 0.0f, AI_LOWSPEED_END, 0.0f, 1.0f), AI_LOWSPEED_CURVE);
@@ -414,22 +456,22 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			segmentByCarPosition = m_pathPointIdx;
 
 		// the path segment by m_pathPointIdx
-		const Vector3D& pathSegmentStart = m_path.points[m_pathPointIdx];
-		const Vector3D& pathSegmentEnd = m_path.points[m_pathPointIdx + 1];
+		const Vector4D& pathSegmentStart = m_path.points[m_pathPointIdx];
+		const Vector4D& pathSegmentEnd = m_path.points[m_pathPointIdx + 1];
 
 		float pathSegmentLength = length(pathSegmentStart - pathSegmentEnd);
-		float pathSegmentProj = lineProjection(pathSegmentStart, pathSegmentEnd, carPos);
+		float pathSegmentProj = lineProjection(pathSegmentStart.xyz(), pathSegmentEnd.xyz(), carPos);
 
 		// the path segment by segmentByCarPosition
-		const Vector3D& carPosSegmentStart = m_path.points[segmentByCarPosition];
-		const Vector3D& carPosSegmentEnd = m_path.points[segmentByCarPosition + 1];
+		const Vector4D& carPosSegmentStart = m_path.points[segmentByCarPosition];
+		const Vector4D& carPosSegmentEnd = m_path.points[segmentByCarPosition + 1];
 
 		float carPosSegmentLength = length(carPosSegmentStart - carPosSegmentEnd);
-		float carPosSegmentProj = lineProjection(carPosSegmentStart, carPosSegmentEnd, carPos);
+		float carPosSegmentProj = lineProjection(carPosSegmentStart.xyz(), carPosSegmentEnd.xyz(), carPos);
 
 		// calculate distance between car position and point on the segment by car position
 		// to 
-		Vector3D carPosOnSegmentByCarPos = lerp(carPosSegmentStart, carPosSegmentEnd, carPosSegmentProj);
+		Vector3D carPosOnSegmentByCarPos = lerp(carPosSegmentStart.xyz(), carPosSegmentEnd.xyz(), carPosSegmentProj);
 		float distFromSegmentByCarPos = length(carPosOnSegmentByCarPos - carPos);
 
 		// distance from path segment start
@@ -478,13 +520,26 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 
 		// calculate steering angle for applying brakes
 		pathIdx = segmentByCarPosition;
-		Vector3D brakePointA = GetAdvancedPointByDist(pathIdx, distFromPathSegStart + AI_BRAKE_TARGET_CONST_DISTANCE + AI_BRAKE_TARGET_DISTANCE_A * brakeBySpeedModifier + brakeDistAtCurSpeed * weatherBrakeDistModifier * AI_BRAKE_SPEED_DISTANCE_FACTOR_A);
+
+		Vector3D brakePointADir(0.0f);
+		float brakePointASegLen = 0.0f;
+		float brakePointADistFromSegment = distFromPathSegStart + AI_BRAKE_TARGET_CONST_DISTANCE + AI_BRAKE_TARGET_DISTANCE_A * brakeBySpeedModifier + brakeDistAtCurSpeed * weatherBrakeDistModifier * AI_BRAKE_SPEED_DISTANCE_FACTOR_A;
+
+		Vector3D brakePointSeg = GetPoint(pathIdx, 
+			brakePointADistFromSegment,
+			pathIdx, brakePointADir, brakePointASegLen, brakePointADistFromSegment);
+
+		Vector3D brakePointA = brakePointSeg + brakePointADir * brakePointADistFromSegment;
 
 		pathIdx = segmentByCarPosition;
 		Vector3D brakePointB = GetAdvancedPointByDist(pathIdx, distFromPathSegStart + AI_BRAKE_TARGET_CONST_DISTANCE + AI_BRAKE_TARGET_DISTANCE_B * brakeBySpeedModifier + brakeDistAtCurSpeed * weatherBrakeDistModifier * AI_BRAKE_SPEED_DISTANCE_FACTOR_B);
 
 		pathIdx = segmentByCarPosition;
 		Vector3D pathCorrectionPoint = GetAdvancedPointByDist(pathIdx, distFromPathSegStart + AI_STEERING_PATH_CORRECTION_DISTANCE);
+
+		float pathNarrownessFactor = 1.0f - GetNarrownessAt(positionA, AI_STEERING_PATH_CORRECTION_DISTANCE);
+
+		//debugoverlay->TextFadeOut(0, ColorRGBA(1, 1, 0, 1), 10.0f, "pathNarrownessFactor: %.2f\n", pathNarrownessFactor);
 
 		// calculate steering. correctionSteeringDir used when car is too far from segment point
 		Vector3D correctionSteeringDir = fastNormalize(pathCorrectionPoint - carPos);
@@ -495,7 +550,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		float pathCorrectionFactor = RemapValClamp(distFromSegmentByCarPos, 0.0f, AI_SEGMENT_STEERING_CORRECTION_RADIUS, 0.0f, 1.0f);
 
 		// steering
-		Vector3D steeringDir = lerp(pathSteeringDir, correctionSteeringDir, pathCorrectionFactor * steeringDirVsCorrection);
+		Vector3D steeringDir = lerp(pathSteeringDir, correctionSteeringDir, clamp(pathCorrectionFactor * steeringDirVsCorrection + pathNarrownessFactor, 0.0f, 1.0f));
 
 		// trace forward from car using speed
 		g_pPhysics->TestConvexSweep(&sphereTraceShape, identity(),
@@ -518,8 +573,10 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			debugoverlay->Sphere3D(lerp(carPos, carPos + carForward * forwardTraceDistanceBySpeed, steeringTargetColl.fract), traceShapeRadius, ColorRGBA(1, 1, 0, 1.0f), fDt);
 		}
 
+		const float AI_BRAKE_SEGMENTLENGTH_FACTOR = AI_BRAKE_TARGET_DISTANCE_A*brakeBySpeedModifier + AI_BRAKE_TARGET_DISTANCE_B*brakeBySpeedModifier;
+
 		// brake
-		Vector3D brakeDir = lerp(fastNormalize(brakePointB - brakePointA), correctionSteeringDir, pow(pathCorrectionFactor, AI_BRAKE_PATH_CORRECTION_CURVE) * steeringDirVsCorrection);
+		Vector3D brakeDir = lerp(fastNormalize(brakePointB - brakePointA + brakePointADir*brakePointASegLen * AI_BRAKE_SEGMENTLENGTH_FACTOR), correctionSteeringDir, pow(pathCorrectionFactor, AI_BRAKE_PATH_CORRECTION_CURVE) * steeringDirVsCorrection);
 
 		Vector3D relateiveSteeringDir = fastNormalize((!bodyMat.getRotationComponent()) * steeringDir);
 
@@ -549,8 +606,8 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			for(int i = segmentByCarPosition+1; i < pathIdx; i++)
 			{
 				// the path segment by m_pathPointIdx
-				const Vector3D& segmentStart = m_path.points[i-1];
-				const Vector3D& segmentEnd = m_path.points[i];
+				const Vector3D& segmentStart = m_path.points[i-1].xyz();
+				const Vector3D& segmentEnd = m_path.points[i].xyz();
 
 				Vector3D segmentDir = fastNormalize(segmentEnd-segmentStart);
 
@@ -600,7 +657,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		handling.acceleration = 1.0f - pow(brakeFactor, AI_BRAKE_ACCEL_PRESSING_CURVE);
 		handling.steering = atan2(relateiveSteeringDir.x, relateiveSteeringDir.z);// * (isTargetBehindMe && isBrakePointBehindMe ? -1.0f : 1.0f);
 		handling.steering = clamp(handling.steering, -1.0f, 1.0f);
-		handling.acceleration -= complexSteeringFactor;
+		handling.acceleration -= complexSteeringFactor * lowSpeedFactor;
 
 		if(ai_debug_navigator.GetBool())
 		{
