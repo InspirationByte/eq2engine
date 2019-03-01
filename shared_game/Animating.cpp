@@ -335,6 +335,7 @@ void CAnimatingEGF::SetSequence(int seqIdx, int slot)
 	// assign sequence and reset playback speed
 	// if sequence is not valid, reset it to the Default Pose
 	timer.seq = seqIdx >= 0 ? &m_seqList[seqIdx] : nullptr;
+	timer.seq_idx = timer.seq ? seqIdx : -1;
 	timer.playbackSpeedScale = 1.0f;
 
 	if (slot == 0)
@@ -507,6 +508,10 @@ void CAnimatingEGF::AdvanceFrame(float frameTime)
 	for (int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
 	{
 		sequencetimer_t& timer = m_sequenceTimers[i];
+
+		// for savegame purpose resolving sequences
+		if (timer.seq_idx >= 0 && !timer.seq)
+			timer.seq = &m_seqList[timer.seq_idx];
 
 		timer.AdvanceFrame(frameTime);
 

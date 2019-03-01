@@ -12,6 +12,7 @@ sequencetimer_t::sequencetimer_t()
 {
 	bPlaying = false;
 	seq = nullptr;
+	seq_idx = -1;
 	seq_time = 0.0f;
 	currFrame = 0;
 	nextFrame = 0;
@@ -87,6 +88,7 @@ void sequencetimer_t::Reset()
 {
 	bPlaying = false;
 	seq = nullptr;
+	seq_idx = -1;
 
 	playbackSpeedScale = 1.0f;
 

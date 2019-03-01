@@ -72,6 +72,7 @@ struct gsequence_t
 struct sequencetimer_t
 {
 	gsequence_t*				seq;
+	int							seq_idx;
 	float						seq_time;
 
 	int							nextFrame;
