@@ -106,7 +106,7 @@ bool CPlainTextLayoutBuilder::LayoutChar(	const eqFontStyleParam_t& params,
 	CFont* font = (CFont*)m_font;
 
 	if(params.styleFlag & TEXT_STYLE_MONOSPACE)
-		curTextPos.x += cSize.x+font->m_spacing;
+		curTextPos.x += cSize.x + font->m_spacing;
 	else
 		curTextPos.x += chr.advX + font->m_spacing;
 
@@ -215,9 +215,9 @@ float CFont::_GetStringWidth( const CHAR_T* str, const eqFontStyleParam_t& param
 		GetScaledCharacter( chr, charIdx, params.scale );
 
 		if( params.styleFlag & TEXT_STYLE_MONOSPACE)
-			totalWidth += chr.x1-chr.x0;
+			totalWidth += (chr.x1 - chr.x0) + m_spacing;
 		else
-			totalWidth += chr.advX; // chr.x1-chr.x0;
+			totalWidth += chr.advX + m_spacing; // chr.x1-chr.x0;
 	}
 
     return totalWidth;

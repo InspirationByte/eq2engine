@@ -113,6 +113,10 @@ public:
 
 	virtual IEqFont*			GetFont() const;
 
+	// text properties
+	const ColorRGBA&			GetTextColor() const { return m_textColor; }
+	void						SetTextColor(const ColorRGBA& color) { m_textColor = color; }
+
 	// PURE VIRTUAL
 	virtual const char*			GetClassname() const = 0;
 
@@ -165,6 +169,7 @@ protected:
 
 	IEqFont*					m_font;
 	Vector2D					m_fontScale;
+	ColorRGBA					m_textColor;
 	int							m_textAlignment;
 };
 

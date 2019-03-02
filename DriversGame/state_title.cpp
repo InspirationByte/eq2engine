@@ -18,9 +18,10 @@
 
 #include "KeyBinding/InputCommandBinder.h"
 
+#include "materialsystem/MeshBuilder.h"
+
 CState_Title::CState_Title()
 {
-	m_titleTexture = NULL;
 	memset(m_codeKeysEntered, 0, sizeof(m_codeKeysEntered));
 	m_codePos = 0;
 	m_demoId = 0;
@@ -67,21 +68,31 @@ void CState_Title::OnEnter( CBaseStateHandler* from )
 	m_actionTimeout = 10.0f;
 	m_fade = 0.0f;
 	m_goesFromTitle = false;
-	m_titleTexture = g_pShaderAPI->LoadTexture("ui/title", TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP);
-	m_titleTexture->Ref_Grab();
 
 	soundsystem->SetPauseState(false);
 	sndEffect_t* reverb = soundsystem->FindEffect( "menu_reverb" );
 
 	soundsystem->SetListener(vec3_zero, vec3_forward, vec3_up, vec3_zero, reverb);
+
+	m_uiLayout = equi::Manager->CreateElement("HudElement");
+
+	kvkeybase_t* uiKvs = KV_LoadFromFile("resources/ui_title.res", SP_MOD);
+
+	if (uiKvs)
+		m_uiLayout->InitFromKeyValues(uiKvs);
+
+	m_titleText = m_uiLayout->FindChild("title");
+
+	if (m_titleText)
+		m_titlePos = m_titleText->GetPosition();
 }
 
 void CState_Title::OnLeave( CBaseStateHandler* to )
 {
 	g_sounds->Shutdown();
 
-	g_pShaderAPI->FreeTexture(m_titleTexture);
-	m_titleTexture = NULL;
+	delete m_uiLayout;
+	m_uiLayout = nullptr;
 }
 
 bool CState_Title::Update( float fDt )
@@ -116,91 +127,72 @@ bool CState_Title::Update( float fDt )
 		m_fade += fDt;
 	}
 
-	if(m_titleTexture == NULL)
-		return false;
+	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
 	m_fade = clamp(m_fade, 0.0f, 1.0f);
 	m_actionTimeout = max(0.0f, m_actionTimeout);
 
-	const IVector2D& screenSize = g_pHost->GetWindowSize();
+	ColorRGBA titleTextCol(1.0f);
+
+	if (m_goesFromTitle)
+	{
+		float sqAlphaValue = clamp(sinf(m_textEffect*32.0f) * 16, 0.0f, 1.0f); //sin(g_pHost->m_fGameCurTime*8.0f);
+
+		if (m_textEffect > 0.75f)
+			titleTextCol.w = sqAlphaValue;
+		else
+			titleTextCol.w = pow(m_textEffect - 0.25f, 2.5f);
+
+		//textPos = 0.0f;
+		float textYOffs = (1.0f - m_fade)*7.0f;
+		textYOffs = pow(textYOffs, 5.0f);
+
+		if (m_titleText)
+			m_titleText->SetPosition(m_titlePos - IVector2D(0, textYOffs));
+
+	}
+	else if (m_actionTimeout <= 0.0f)
+	{
+		//textPos = 0.0f;
+	}
+	else
+	{
+		if (m_titleText)
+			m_titleText->SetPosition(m_titlePos - IVector2D(pow(1.0f - m_fade, 4.0f) * screenSize.x, 0));
+	}
+
+	m_textEffect -= fDt;
+
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
 	materials->Setup2D(screenSize.x, screenSize.y);
 	g_pShaderAPI->Clear( true,true, false, ColorRGBA(0.25f,0,0,0.0f));
 
-	IVector2D halfScreen(screenSize.x/2, screenSize.y/2);
+	if(m_titleText)
+		m_titleText->SetTextColor(titleTextCol);
 
-	float widthFac = (float)screenSize.x/(float)m_titleTexture->GetWidth();
-	float heightFac = (float)screenSize.y/(float)m_titleTexture->GetHeight();
-	float texSizeFactor = widthFac > heightFac ? widthFac : heightFac;
+	// draw EqUI
+	m_uiLayout->SetSize(screenSize);
+	m_uiLayout->Render();
 
-	float halfWidth = m_titleTexture->GetWidth()*0.5f;
-	float halfHeight = m_titleTexture->GetHeight()*0.5f;
+	ColorRGBA blockCol(0.0f, 0.0f, 0.0f, 1.0f-m_fade);
 
-	Vertex2D_t tmprect[] = {
-		MAKETEXQUAD((halfScreen.x-halfWidth*texSizeFactor),
-					(halfScreen.y-halfHeight*texSizeFactor),
-					(halfScreen.x+halfWidth*texSizeFactor),
-					(halfScreen.y+halfHeight*texSizeFactor), 0.0f)
-		};
-
-	// Cancel textures
-	g_pShaderAPI->Reset(STATE_RESET_TEX);
+	Vector2D screenRect[] = { MAKEQUAD(0, 0,screenSize.x, screenSize.y, 0) };
 
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	float fFade = pow(m_fade,2.0f);
+	g_pShaderAPI->SetTexture(NULL, NULL, 0);
+	materials->SetBlendingStates(blending);
+	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+	materials->SetDepthStates(false, false);
+	materials->BindMaterial(materials->GetDefaultMaterial());
 
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect,elementsOf(tmprect), m_titleTexture, ColorRGBA(fFade,fFade,fFade,1.0f), &blending);
-
-	IEqFont* font = g_fontCache->GetFont("Roboto", 30, TEXT_STYLE_ITALIC);
-	IEqFont* copyrightFont = g_fontCache->GetFont("Roboto", 10);
-
-	eqFontStyleParam_t fontParam;
-	fontParam.align = TEXT_ALIGN_HCENTER;
-	fontParam.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
-	fontParam.textColor = color4_white;
-	fontParam.scale = 10.0f;
-
-	float textPos = pow(1.0f-m_fade, 4.0f)*(float)screenSize.x*-1.0f;
-
-	float textYOffs = 0.0;
-
-	fontParam.textColor.w = pow(m_fade, 2.0f);
-
-	copyrightFont->RenderText(g_localizer->GetTokenString("INSCOPYRIGHT", L"Copyright (C) Inspiration Byte 2016"), halfScreen + IVector2D(0,300), fontParam);
-
-	if( m_goesFromTitle )
-	{
-		float sqAlphaValue = clamp(sinf(m_textEffect*32.0f)*16,0.0f,1.0f); //sin(g_pHost->m_fGameCurTime*8.0f);
-
-		if(m_textEffect > 0.75f)
-			fontParam.textColor.w = sqAlphaValue;
-		else
-			fontParam.textColor.w = pow(m_textEffect-0.25f, 2.5f);
-
-		textPos = 0.0f;
-		textYOffs = (1.0f-m_fade)*7.0f;
-
-		textYOffs = pow(textYOffs, 5.0f);
-	}
-	else if(m_actionTimeout <= 0.0f)
-	{
-		textPos = 0.0f;
-	}
-
-	m_textEffect -= fDt;
-
-	if(m_textEffect < 0)
-		m_textEffect = 0.0f;
-
-	const wchar_t* str = LocalizedString("#MENU_TITLE_PRESS_ENTER");
-
-	Vector2D helloWorldPos(halfScreen.x + textPos, halfScreen.y+150 - textYOffs);
-
-	fontParam.scale = 30.0f;
-	font->RenderText(str, helloWorldPos, fontParam);
+	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+		meshBuilder.Color4fv(blockCol);
+		meshBuilder.Quad2(screenRect[0], screenRect[1], screenRect[2], screenRect[3]);
+	meshBuilder.End();
 
 	return !(m_goesFromTitle && m_fade == 0.0f);
 }

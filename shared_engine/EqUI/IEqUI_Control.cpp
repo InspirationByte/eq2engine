@@ -25,7 +25,7 @@ namespace equi
 
 IUIControl::IUIControl()
 	: m_visible(true), m_selfVisible(true), m_enabled(true), m_parent(NULL), 
-	m_font(nullptr), m_fontScale(1.0f), m_sizeDiff(0), m_sizeDiffPerc(1.0f), 
+	m_font(nullptr), m_fontScale(1.0f), m_textColor(1.0f), m_sizeDiff(0), m_sizeDiffPerc(1.0f),
 	m_position(0),m_size(25),
 	m_scaling(UI_SCALING_NONE), m_anchors(0), m_alignment(UI_BORDER_LEFT | UI_BORDER_TOP),m_textAlignment(TEXT_ALIGN_LEFT | TEXT_ALIGN_TOP)
 {
@@ -85,6 +85,7 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	}
 
 	m_fontScale = KV_GetVector2D(sec->FindKeyBase("fontScale"), 0, m_fontScale);
+	m_textColor = KV_GetVector4D(sec->FindKeyBase("textColor"), 0, m_textColor);
 
 	kvkeybase_t* command = sec->FindKeyBase("command");
 
@@ -147,9 +148,9 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	{
 		m_textAlignment = 0;
 
-		for (int i = 0; i < align->values.numElem(); i++)
+		for (int i = 0; i < textAlign->values.numElem(); i++)
 		{
-			const char* alignVal = KV_GetValueString(align, i);
+			const char* alignVal = KV_GetValueString(textAlign, i);
 
 			if (!stricmp("left", alignVal))
 				m_textAlignment |= TEXT_ALIGN_LEFT;
@@ -178,10 +179,12 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 		m_scaling = UI_SCALING_WIDTH;
 	else if(!stricmp("height", scalingValue))
 		m_scaling = UI_SCALING_HEIGHT;
-	else if(!stricmp("uniform", scalingValue))
-		m_scaling = UI_SCALING_BOTH_UNIFORM;
+	else if(!stricmp("aspectw", scalingValue))
+		m_scaling = UI_SCALING_ASPECT_W;
+	else if (!stricmp("aspecth", scalingValue) || !stricmp("uniform", scalingValue))
+		m_scaling = UI_SCALING_ASPECT_H;
 	else if(!stricmp("inherit", scalingValue))
-		m_scaling = UI_SCALING_BOTH_INHERIT;
+		m_scaling = UI_SCALING_INHERIT;
 
 	// walk for childs
 	for(int i = 0; i < sec->keys.numElem(); i++)
@@ -299,11 +302,16 @@ Vector2D IUIControl::CalcScaling() const
 
 	Vector2D scale(m_parent->m_sizeDiffPerc);
 
-	if(m_scaling >= UI_SCALING_BOTH_INHERIT)
+	if(m_scaling >= UI_SCALING_INHERIT)
 	{
 		if(Manager->GetRootPanel() != m_parent)
 		{
-			if(m_scaling == UI_SCALING_BOTH_UNIFORM)
+			if(m_scaling == UI_SCALING_ASPECT_W)
+			{
+				float aspectCorrection = scale.x / scale.y;
+				scale.y *= aspectCorrection;
+			}
+			else if (m_scaling == UI_SCALING_ASPECT_H)
 			{
 				float aspectCorrection = scale.y / scale.x;
 				scale.x *= aspectCorrection;

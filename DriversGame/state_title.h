@@ -39,13 +39,16 @@ protected:
 
 	float		m_textEffect;
 
-	ITexture*	m_titleTexture;
-
 	int			m_codePos;
 	int			m_codeKeysEntered[16];
 
 	int					m_demoId;
 	DkList<EqString>	m_demoList;
+
+	equi::IUIControl*	m_titleText;
+	equi::IUIControl*	m_uiLayout;
+
+	IVector2D			m_titlePos;
 };
 
 extern CState_Title* g_State_Title;
