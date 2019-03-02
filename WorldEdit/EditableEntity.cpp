@@ -1201,7 +1201,7 @@ void CEditableEntity::UpdateParameters()
 				InitAnimationThings();
 
 				SetSequence(0);
-				m_sequenceTimer.bPlaying = true;
+				m_sequenceTimer.active = true;
 			}
 
 			/*

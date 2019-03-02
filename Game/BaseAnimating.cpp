@@ -15,7 +15,7 @@ BEGIN_DATAMAP_NO_BASE(sequencetimer_t)
 	DEFINE_FIELD(nextFrame, VTYPE_INTEGER),
 	DEFINE_FIELD(currFrame, VTYPE_INTEGER),
 	DEFINE_FIELD(playbackSpeedScale, VTYPE_FLOAT),
-	DEFINE_FIELD(bPlaying, VTYPE_BOOLEAN),
+	DEFINE_FIELD(active, VTYPE_BOOLEAN),
 END_DATAMAP()
 
 // declare data table for actor

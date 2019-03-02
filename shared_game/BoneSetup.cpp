@@ -10,7 +10,7 @@
 
 sequencetimer_t::sequencetimer_t()
 {
-	bPlaying = false;
+	active = false;
 	seq = nullptr;
 	seq_idx = -1;
 	seq_time = 0.0f;
@@ -20,40 +20,32 @@ sequencetimer_t::sequencetimer_t()
 	playbackSpeedScale = 1.0f;
 }
 
+template <typename T>
+bool RollingValue(T& inout, T min, T max)
+{
+	T old = inout;
+	T move = max-min;
+	if (inout < min) inout += move;
+	if (inout > max) inout -= move;
+
+	return old != inout;
+}
+
 void sequencetimer_t::AdvanceFrame(float fDt)
 {
 	if(!seq)
 		return;
 
-	if(!bPlaying)
-		return;
-
 	sequencedesc_t* seqDesc = seq->s;
-	int numAnimationFrames = seq->animations[0]->bones[0].numFrames;
-	bool loop = (seqDesc->flags & SEQFLAG_LOOP) > 0;
 
-	float frame_time = fDt * playbackSpeedScale * seqDesc->framerate;
-
-	int oldFrame = currFrame;
-
-	// set new sequence time
-	seq_time = seq_time+frame_time;
-	currFrame = floor(seq_time);
-
-	if (currFrame >= numAnimationFrames)
+	if (!active)
 	{
-		currFrame--;
-
-		if (loop)
-			ResetPlayback();
-		else
-			bPlaying = false;
+		SetTime(seq_time);
+		return;
 	}
 
-	nextFrame = currFrame+1;
-
-	if (nextFrame >= numAnimationFrames)
-		nextFrame = loop ? 0 : numAnimationFrames-1;
+	float frame_time = fDt * playbackSpeedScale * seqDesc->framerate;
+	SetTime(seq_time + frame_time);
 }
 
 void sequencetimer_t::SetTime(float time)
@@ -62,31 +54,49 @@ void sequencetimer_t::SetTime(float time)
 		return;
 
 	sequencedesc_t* seqDesc = seq->s;
-	int numAnimationFrames = seq->animations[0]->bones[0].numFrames;
-	bool loop = (seqDesc->flags & SEQFLAG_LOOP) > 0;
 
 	seq_time = time;
 
-	// compute frame numbers
-	currFrame = floor(seq_time);
+	int numAnimationFrames = seq->animations[0]->bones[0].numFrames;
+	float maxSeqTime = float(numAnimationFrames - 1);
 
-	if (currFrame >= numAnimationFrames)
+	bool loop = (seqDesc->flags & SEQFLAG_LOOP) > 0;
+
+	if (loop)
 	{
-		if (seqDesc->flags & SEQFLAG_LOOP)
-			ResetPlayback();
-		else
-			bPlaying = false;
+		if (RollingValue(seq_time, 0.0f, float(numAnimationFrames - 1)))
+		{
+			eventCounter = 0;
+		}
+
+		currFrame = floor(seq_time);
+		nextFrame = currFrame + 1;
+
+		RollingValue(nextFrame, 0, numAnimationFrames - 1);
 	}
+	else
+	{
+		if (seq_time >= maxSeqTime)
+		{
+			seq_time = maxSeqTime;
+			active = false;
+		}
+		else if (seq_time <= 0.0f)
+		{
+			active = false;
+			seq_time = 0.0f;
+		}
 
-	nextFrame = currFrame + 1;
+		currFrame = floor(seq_time);
+		nextFrame = currFrame + 1;
 
-	if (nextFrame >= numAnimationFrames)
-		nextFrame = loop ? 0 : numAnimationFrames-1;
+		nextFrame = clamp(nextFrame, 0, numAnimationFrames - 1);
+	}
 }
 
 void sequencetimer_t::Reset()
 {
-	bPlaying = false;
+	active = false;
 	seq = nullptr;
 	seq_idx = -1;
 

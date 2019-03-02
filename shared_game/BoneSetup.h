@@ -13,7 +13,7 @@
 #include "model.h"
 #include "anim_activity.h"
 
-#if !defined(EDITOR) && !defined(NOENGINE)
+#if !defined(NO_GAME) && !defined(NOENGINE)
 #include "DataMap.h"
 #endif // #if !EDITOR && !NOENGINE
 
@@ -80,7 +80,7 @@ struct sequencetimer_t
 
 	float						playbackSpeedScale;
 
-	bool						bPlaying;
+	bool						active;
 
 	int							eventCounter;
 

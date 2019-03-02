@@ -208,6 +208,13 @@ Vector3D CAnimatedModel::GetLocalAttachmentDirection(int nAttach)
 	return finalAttachmentTransform.rows[2].xyz();//*Vector3D(-1,1,1);
 }
 
+enum EIKAttachType
+{
+	IK_ATTACH_WORLD = 0,
+	IK_ATTACH_LOCAL,	//= 1,
+	IK_ATTACH_GROUND,	//= 2,
+};
+
 void CAnimatedModel::HandleAnimatingEvent(AnimationEvent nEvent, char* options)
 {
 	// handle some internal events here

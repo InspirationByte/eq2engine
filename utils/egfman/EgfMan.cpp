@@ -45,7 +45,7 @@ CViewParams			g_pCameraParams(Vector3D(0,0,-100), vec3_zero, 70);
 Matrix4x4			g_mProjMat, g_mViewMat;
 
 sceneinfo_t			scinfo;
-CAnimatedModel*		g_pModel = new CAnimatedModel();
+CAnimatedModel		g_model;
 
 float				g_fRealtime = 0.0f;
 float				g_fOldrealtime = 0.0f;
@@ -57,9 +57,9 @@ float				g_fCamDistance = 100.0;
 
 void SetOptimalCameraDistance()
 {
-	if(g_pModel && g_pModel->m_pModel)
+	if(g_model.m_pModel)
 	{
-		const BoundingBox& bbox = g_pModel->m_pModel->GetAABB();
+		const BoundingBox& bbox = g_model.m_pModel->GetAABB();
 		g_fCamDistance = length(bbox.GetSize())*2.0f;
 	}
 }
@@ -753,14 +753,14 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 		{
 			EqString model_path(file->GetPath().wchar_str());
 
-			g_pModel->SetModel( NULL );
+			g_model.SetModel( NULL );
 			FlushCache();
 
 			int cache_index = g_studioModelCache->PrecacheModel( model_path.c_str() );
 			if(cache_index == CACHE_INVALID_MODEL)
 				wxMessageBox(varargs("Can't open %s\n", model_path.c_str()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 
-			g_pModel->SetModel( g_studioModelCache->GetModel(cache_index) );
+			g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
 		}
 
 		SetOptimalCameraDistance();
@@ -770,21 +770,21 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 	}
 	else if(event.GetId() == Event_File_ReloadModel)
 	{
-		IEqModel* model = g_pModel->m_pModel;
+		IEqModel* model = g_model.m_pModel;
 
 		if(!model)
 			return;
 
 		EqString model_path(model->GetName());
 
-		g_pModel->SetModel( NULL );
+		g_model.SetModel( NULL );
 		FlushCache();
 
 		int cache_index = g_studioModelCache->PrecacheModel( model_path.c_str() );
 		if(cache_index == CACHE_INVALID_MODEL)
 			wxMessageBox(varargs("Can't open %s\n", model_path.c_str()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 
-		g_pModel->SetModel( g_studioModelCache->GetModel(cache_index) );
+		g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
 	}
 	else if(event.GetId() == Event_File_CompileModel)
 	{
@@ -855,14 +855,14 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 					if(paths.size() == 1 && model_path.Length())
 					{
-						g_pModel->SetModel( NULL );
+						g_model.SetModel( NULL );
 						FlushCache();
 
 						int cache_index = g_studioModelCache->PrecacheModel( model_path.c_str() );
 						if(cache_index == CACHE_INVALID_MODEL)
 							wxMessageBox(varargs("Can't open %s\n", model_path.c_str()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 
-						g_pModel->SetModel( g_studioModelCache->GetModel(cache_index) );
+						g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
 
 						SetOptimalCameraDistance();
 						materials->PreloadNewMaterials();
@@ -1224,22 +1224,22 @@ void CEGFViewFrame::ReDraw()
 
 		physics->Simulate( g_frametime, 1 );
 
-		g_pModel->Update( g_frametime );
+		g_model.Update( g_frametime );
 
-		if( g_pModel->IsSequencePlaying() )
+		if(g_model.IsSequencePlaying() )
 		{
 			int nSeq = m_pMotionSelection->GetSelection();
-			const gsequence_t& seq = g_pModel->GetSequence(nSeq);
+			const gsequence_t& seq = g_model.GetSequence(nSeq);
 
 			float setFrameRate = atoi(m_pAnimFramerate->GetValue());
 
 			if(setFrameRate > 0)
 			{
 				float framerateScale = setFrameRate / seq.s->framerate;
-				g_pModel->SetPlaybackSpeedScale(framerateScale, 0);
+				g_model.SetPlaybackSpeedScale(framerateScale, 0);
 			}
 
-			m_pTimeline->SetValue( g_pModel->GetCurrentAnimationFrame() );
+			m_pTimeline->SetValue(g_model.GetCurrentAnimationFrame() );
 		}
 
 		g_pShaderAPI->ResetCounters();
@@ -1256,7 +1256,7 @@ void CEGFViewFrame::ReDraw()
 		materials->GetConfiguration().wireframeMode = m_wireframe->IsChecked();
 
 		// Now we can draw our model
-		g_pModel->Render(renderFlags, g_fCamDistance, m_lodSpin->GetValue(), m_lodOverride->GetValue(), g_frametime);
+		g_model.Render(renderFlags, g_fCamDistance, m_lodSpin->GetValue(), m_lodOverride->GetValue(), g_frametime);
 
 		debugoverlay->Text(color4_white, "polygon count: %d\n", g_pShaderAPI->GetTrianglesCount());
 
@@ -1275,12 +1275,12 @@ void CEGFViewFrame::RefreshGUI()
 	m_enabledBodyParts->Clear();
 	m_pMotionSelection->Clear();
 	m_pPoseController->Clear();
-	g_pModel->m_bodyGroupFlags = 0xFFFFFFFF;
+	g_model.m_bodyGroupFlags = 0xFFFFFFFF;
 
 	// populate all lists
-	if(g_pModel && g_pModel->m_pModel != NULL)
+	if(g_model.m_pModel != NULL)
 	{
-		studiohdr_t* modelHdr = g_pModel->m_pModel->GetHWData()->studio;
+		studiohdr_t* modelHdr = g_model.m_pModel->GetHWData()->studio;
 
 		for(int i = 0; i < modelHdr->numBodyGroups; i++)
 		{
@@ -1291,9 +1291,9 @@ void CEGFViewFrame::RefreshGUI()
 		// sequences
 		if(m_pAnimMode->GetSelection() == 0)
 		{
-			for(int i = 0; i < g_pModel->GetNumSequences(); i++)
+			for(int i = 0; i < g_model.GetNumSequences(); i++)
 			{
-				m_pMotionSelection->Append( g_pModel->GetSequence(i).s->name );
+				m_pMotionSelection->Append(g_model.GetSequence(i).s->name );
 			}
 		}
 		else // animations
@@ -1306,9 +1306,9 @@ void CEGFViewFrame::RefreshGUI()
 			}*/
 		}
 
-		for(int i = 0; i < g_pModel->GetNumPoseControllers(); i++)
+		for(int i = 0; i < g_model.GetNumPoseControllers(); i++)
 		{
-			m_pPoseController->Append( g_pModel->GetPoseController(i).p->name );
+			m_pPoseController->Append(g_model.GetPoseController(i).p->name );
 		}
 	}
 }
@@ -1321,31 +1321,31 @@ void CEGFViewFrame::OnComboboxChanged(wxCommandEvent& event)
 	{
 		int nSeq = m_pMotionSelection->GetSelection();
 
-		if(g_pModel && nSeq != -1)
+		if(nSeq != -1)
 		{
-			g_pModel->SetSequence( nSeq, 0 );
-			g_pModel->ResetSequenceTime(0);
-			g_pModel->PlaySequence(0);
+			g_model.SetSequence( nSeq, 0 );
+			g_model.ResetSequenceTime(0);
+			g_model.PlaySequence(0);
 
-			const gsequence_t& seq = g_pModel->GetSequence(nSeq);
+			const gsequence_t& seq = g_model.GetSequence(nSeq);
 			m_pAnimFramerate->SetValue( varargs("%g", seq.s->framerate) );
 
-			int maxFrames = g_pModel->GetCurrentAnimationDurationInFrames();
+			int maxFrames = g_model.GetCurrentAnimationDurationInFrames();
 
 			m_pTimeline->SetMax( maxFrames );
-			g_pModel->SetPlaybackSpeedScale(1.0f, 0);
+			g_model.SetPlaybackSpeedScale(1.0f, 0);
 		}
 	}
 	else if(event.GetId() == Event_PoseCont_Changed)
 	{
 		int nPoseContr = m_pPoseController->GetSelection();
 
-		if(g_pModel && nPoseContr != -1)
+		if(nPoseContr != -1)
 		{
-			m_pPoseValue->SetMin( g_pModel->GetPoseController(nPoseContr).p->blendRange[0]*10 );
-			m_pPoseValue->SetMax( g_pModel->GetPoseController(nPoseContr).p->blendRange[1]*10 );
+			m_pPoseValue->SetMin(g_model.GetPoseController(nPoseContr).p->blendRange[0]*10 );
+			m_pPoseValue->SetMax(g_model.GetPoseController(nPoseContr).p->blendRange[1]*10 );
 
-			m_pPoseValue->SetValue( g_pModel->GetPoseControllerValue(nPoseContr)*10 );
+			m_pPoseValue->SetValue(g_model.GetPoseControllerValue(nPoseContr)*10 );
 		}
 	}
 }
@@ -1356,9 +1356,9 @@ void CEGFViewFrame::OnBodyGroupToggled( wxCommandEvent& event )
 	bool isChecked = m_enabledBodyParts->IsChecked(itemId);
 
 	if(isChecked)
-		g_pModel->m_bodyGroupFlags |= (1 << itemId);
+		g_model.m_bodyGroupFlags |= (1 << itemId);
 	else
-		g_pModel->m_bodyGroupFlags &= ~(1 << itemId);
+		g_model.m_bodyGroupFlags &= ~(1 << itemId);
 }
 
 void CEGFViewFrame::OnButtons(wxCommandEvent& event)
@@ -1367,31 +1367,31 @@ void CEGFViewFrame::OnButtons(wxCommandEvent& event)
 
 	if(event.GetId() == Event_Sequence_Play)
 	{
-		g_pModel->ResetSequenceTime(0);
-		g_pModel->PlaySequence(0);
+		g_model.ResetSequenceTime(0);
+		g_model.PlaySequence(0);
 	}
 	else if(event.GetId() == Event_Sequence_Stop)
 	{
-		g_pModel->StopSequence(0);
+		g_model.StopSequence(0);
 	}
 	else if(event.GetId() == Event_Timeline_Set)
 	{
-		g_pModel->SetSequenceTime( m_pTimeline->GetValue(), 0 );
+		g_model.SetSequenceTime( m_pTimeline->GetValue(), 0 );
 	}
 	else if(event.GetId() == Event_PoseCont_ValueChanged)
 	{
 		int nPoseContr = m_pPoseController->GetSelection();
 
 		if(nPoseContr != -1)
-			g_pModel->SetPoseControllerValue(nPoseContr, float(m_pPoseValue->GetValue()) * 0.1f);
+			g_model.SetPoseControllerValue(nPoseContr, float(m_pPoseValue->GetValue()) * 0.1f);
 	}
 	else if(event.GetId() == Event_Physics_SimulateToggle)
 	{
-		g_pModel->TogglePhysicsState();
+		g_model.TogglePhysicsState();
 	}
 	else if(event.GetId() == Event_Physics_Reset)
 	{
-		g_pModel->ResetPhysics();
+		g_model.ResetPhysics();
 	}
 	
 }

@@ -103,8 +103,6 @@ inline void ZeroFrameTransform(animframe_t &frame)
 
 CAnimatingEGF::CAnimatingEGF()
 {
-	memset(m_seqBlendWeights, 0, sizeof(m_seqBlendWeights));
-
 	m_boneTransforms = nullptr;
 	m_joints = nullptr;
 	m_numBones = 0;
@@ -117,16 +115,7 @@ CAnimatingEGF::CAnimatingEGF()
 void CAnimatingEGF::DestroyAnimating()
 {
 	m_seqList.clear();
-
-	if (m_boneTransforms)
-		PPFree(m_boneTransforms);
-	m_boneTransforms = nullptr;
-
-	if (m_transitionFrames)
-		PPFree(m_transitionFrames);
-	m_transitionFrames = nullptr;
-
-	m_joints = nullptr;
+	m_poseControllers.clear();
 
 	for (int i = 0; i < m_ikChains.numElem(); i++)
 	{
@@ -135,6 +124,16 @@ void CAnimatingEGF::DestroyAnimating()
 	}
 
 	m_ikChains.clear();
+
+	m_joints = nullptr;
+
+	if (m_boneTransforms)
+		PPFree(m_boneTransforms);
+	m_boneTransforms = nullptr;
+
+	if (m_transitionFrames)
+		PPFree(m_transitionFrames);
+	m_transitionFrames = nullptr;
 
 	// stop all sequence timers
 	for (int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
@@ -148,7 +147,10 @@ void CAnimatingEGF::DestroyAnimating()
 void CAnimatingEGF::InitAnimating(IEqModel* model)
 {
 	for (int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
+	{
 		m_sequenceTimers[i].Reset();
+		m_seqBlendWeights[i] = 0.0f;
+	}
 
 	if (!model)
 		return;
@@ -453,19 +455,19 @@ float CAnimatingEGF::GetCurrentRemainingAnimationDuration() const
 
 bool CAnimatingEGF::IsSequencePlaying(int slot) const
 {
-	return m_sequenceTimers[slot].bPlaying;
+	return m_sequenceTimers[slot].active;
 }
 
 // plays/resumes animation
 void CAnimatingEGF::PlaySequence(int slot)
 {
-	m_sequenceTimers[slot].bPlaying = true;
+	m_sequenceTimers[slot].active = true;
 }
 
 // stops/pauses animation
 void CAnimatingEGF::StopSequence(int slot)
 {
-	m_sequenceTimers[slot].bPlaying = false;
+	m_sequenceTimers[slot].active = false;
 }
 
 void CAnimatingEGF::SetPlaybackSpeedScale(float scale, int slot)
@@ -497,7 +499,7 @@ void CAnimatingEGF::AdvanceFrame(float frameTime)
 			}
 		}
 
-		if (m_sequenceTimers[0].bPlaying)
+		if (m_sequenceTimers[0].active)
 		{
 			m_transitionRemTime -= frameTime;
 			m_transitionRemTime = max(m_transitionRemTime, 0.0f);
