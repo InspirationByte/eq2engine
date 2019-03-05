@@ -50,7 +50,7 @@ public:
 	const ConCommandBase*				FindBase(const char* name);
 
 	// Returns all bases array
-	const DkList<ConCommandBase*>*		GetAllCommands() { return &m_registeredCommands; }
+	const DkList<ConCommandBase*>*		GetAllCommands() const { return &m_registeredCommands; }
 
 	// Executes file
 	void								ParseFileToCommandBuffer(const char* pszFilename);
@@ -65,15 +65,13 @@ public:
 	void								ClearCommandBuffer();
 
 	// Resets counter of same commands
-	void								ResetCounter() {m_nSameCommandsExecuted = 0;}
+	void								ResetCounter();
 
 	// Executes command buffer
-	bool								ExecuteCommandBuffer(unsigned int CmdFilterFlags = -1, bool quiet = false);
+	bool								ExecuteCommandBuffer(unsigned int CmdFilterFlags = 0xFFFFFFFF, bool quiet = false);
 
 	// returns failed commands
 	DkList<EqString>&					GetFailedCommands();
-
-	void								EnableInitOnlyVarsChangeProtection(bool bEnable);
 
 	//-------------------------
 	bool								IsInitialized() const		{return true;}
@@ -84,15 +82,17 @@ private:
 	void								ParseAndAppend(char* str, int len, void* extra);
 	void								SplitOnArgsAndExec(char* str, int len, void* extra);
 
+	void								SortCommands();
+
 	DkList<ConCommandBase*>	m_registeredCommands;
 
 	DkList<EqString>		m_failedCommands;
 
-	char					m_pszCommandBuffer[COMMANDBUFFER_SIZE];
-	char					m_pszLastCommandBuffer[COMMANDBUFFER_SIZE];
+	char					m_currentCommands[COMMANDBUFFER_SIZE];
+	char					m_lastExecutedCommands[COMMANDBUFFER_SIZE];
 
-	int						m_nSameCommandsExecuted;
-	bool					m_bEnableInitOnlyChange;
+	int						m_sameCommandsExecuted;
+	bool					m_commandListDirty;
 };
 
 #endif //CONCOMMANDFACTORY_H

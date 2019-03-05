@@ -6,6 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "pedestrian.h"
+#include "CameraAnimator.h"
+#include "input.h"
 
 const Vector3D PEDESTRIAN_BOX(0.45f, 0.8f, 0.45f);
 const Vector3D PEDESTRIAN_OFFS(0.0f, 0.8f, 0.0f);
@@ -51,8 +53,6 @@ void CPedestrian::Spawn()
 {
 	SetModel("models/characters/test.egf");
 
-	SetActivity(ACT_RUN);
-
 	m_physBody = new CEqRigidBody();
 	m_physBody->Initialize(-PEDESTRIAN_BOX + PEDESTRIAN_OFFS, PEDESTRIAN_BOX + PEDESTRIAN_OFFS);
 
@@ -64,7 +64,7 @@ void CPedestrian::Spawn()
 	m_physBody->SetMass(100.0f);
 	m_physBody->SetFriction(0.9f);
 	m_physBody->SetRestitution(0.5f);
-	m_physBody->SetAngularFactor(vec3_zero);
+	m_physBody->SetAngularFactor(vec3_up);
 	m_physBody->m_erp = 0.15f;
 
 	m_physBody->SetUserData(this);
@@ -76,12 +76,25 @@ void CPedestrian::Spawn()
 	BaseClass::Spawn();
 }
 
+void CPedestrian::ConfigureCamera(cameraConfig_t& conf, eqPhysCollisionFilter& filter) const
+{
+	conf.dist = 4.8f;
+	conf.height = 2.0f;
+	conf.distInCar = 0.0f;
+	conf.widthInCar = 0.0f;
+	conf.heightInCar = 1.72f;
+	conf.fov = 60.0f;
+
+	filter.AddObject(m_physBody);
+}
+
 void CPedestrian::Draw(int nRenderFlags)
 {
 	RecalcBoneTransforms();
 
-	m_physBody->ConstructRenderMatrix(m_worldMatrix);
+	//m_physBody->ConstructRenderMatrix(m_worldMatrix);
 
+	UpdateTransform();
 	DrawEGF(nRenderFlags, m_boneTransforms);
 }
 
@@ -89,8 +102,43 @@ void CPedestrian::Simulate(float fDt)
 {
 	m_vecOrigin = m_physBody->GetPosition();
 
-	m_vecAngles = eulers(m_physBody->GetOrientation());
-	m_vecAngles = VRAD2DEG(m_vecAngles);
+	//m_vecAngles = eulers(m_physBody->GetOrientation());
+	//m_vecAngles = VRAD2DEG(m_vecAngles);
+
+	const Vector3D& velocity = m_physBody->GetLinearVelocity();
+
+	Vector3D newVelocity(0.0f, velocity.y, 0.0f);
+
+	Vector3D forwardVec;
+	AngleVectors(m_vecAngles, &forwardVec);
+
+	if (m_controlButtons & IN_ACCELERATE)
+	{
+		newVelocity += forwardVec * 8.0f;
+	}
+
+	m_physBody->SetLinearVelocity(newVelocity);
+	m_physBody->TryWake();
+
+	if (m_controlButtons & IN_TURNLEFT)
+		m_vecAngles.y += 120.0f * fDt;
+
+	if (m_controlButtons & IN_TURNRIGHT)
+		m_vecAngles.y -= 120.0f * fDt;
+
+	Activity currentAct = GetCurrentActivity();
+
+	if (length(velocity.xz()) > 0.5f)
+	{
+		if (currentAct != ACT_RUN)
+		{
+			SetActivity(ACT_RUN);
+		}
+	}
+	else if(currentAct != ACT_IDLE)
+	{
+		SetActivity(ACT_IDLE);
+	}
 
 	AdvanceFrame(fDt);
 	DebugRender(m_worldMatrix);
@@ -128,8 +176,8 @@ const Vector3D& CPedestrian::GetOrigin()
 
 const Vector3D& CPedestrian::GetAngles()
 {
-	m_vecAngles = eulers(m_physBody->GetOrientation());
-	m_vecAngles = VRAD2DEG(m_vecAngles);
+	//m_vecAngles = eulers(m_physBody->GetOrientation());
+	//m_vecAngles = VRAD2DEG(m_vecAngles);
 
 	return m_vecAngles;
 }

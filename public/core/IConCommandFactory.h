@@ -27,10 +27,10 @@ public:
     virtual void								UnregisterCommand(ConCommandBase *pCmd) = 0;
 
     virtual const	ConVar*						FindCvar(const char* name) = 0;
-    virtual const	ConCommand *				FindCommand(const char* name) = 0;
-    virtual const	ConCommandBase *			FindBase(const char* name) = 0;
+    virtual const	ConCommand*					FindCommand(const char* name) = 0;
+    virtual const	ConCommandBase*				FindBase(const char* name) = 0;
 
-    virtual	const	DkList<ConCommandBase*>*	GetAllCommands() = 0;
+    virtual	const	DkList<ConCommandBase*>*	GetAllCommands() const = 0;
 
     // Executes file
     virtual void								ParseFileToCommandBuffer(const char* pszFilename) = 0;
@@ -48,7 +48,7 @@ public:
     virtual void								ResetCounter() = 0;
 
     // Executes command buffer
-    virtual bool								ExecuteCommandBuffer(unsigned int CmdFilterFlags = -1, bool quiet = false) = 0;	
+    virtual bool								ExecuteCommandBuffer(unsigned int CmdFilterFlags = 0xFFFFFFFF, bool quiet = false) = 0;	
 
 	// returns failed commands
 	virtual DkList<EqString>&					GetFailedCommands() = 0;	

@@ -233,7 +233,7 @@ bool Host_Init()
 	if(!g_pHost->InitSystems( mainWindow, !r_fullscreen.GetBool() ))
 		return false;
 
-	g_cmdLine->ExecuteCommandLine(true,true);
+	g_cmdLine->ExecuteCommandLine();
 
 	InitSDLJoysticks();
 

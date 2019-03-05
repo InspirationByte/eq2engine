@@ -1406,7 +1406,7 @@ bool InitCore(HINSTANCE hInstance, char *pCmdLine)
 	if(!g_fileSystem->Init(false))
 		return false;
 
-	g_cmdLine->ExecuteCommandLine( true, true );
+	g_cmdLine->ExecuteCommandLine();
 
 	return true;
 }

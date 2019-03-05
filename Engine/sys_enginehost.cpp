@@ -849,7 +849,7 @@ bool CEngineHost::Init()
 		return initStatus;
 
 	// first execute command line
-	g_cmdLine->ExecuteCommandLine(true,true);
+	g_cmdLine->ExecuteCommandLine();
 
 	// execute configuration files and command line after all libraries are loaded.
 	g_sysConsole->ClearCommandBuffer();

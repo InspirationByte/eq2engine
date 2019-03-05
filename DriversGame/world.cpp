@@ -401,7 +401,7 @@ void CGameWorld::InitEnvironment()
 
 	m_envSkyProps.y = DEG2RAD(m_envSkyProps.y);
 
-	m_fNextThunderTime = 6.0f;
+	m_fNextThunderTime = 9.0f;
 	m_fThunderTime = 0.2f;
 
 	// find section
@@ -1076,15 +1076,15 @@ void CGameWorld::UpdateWorld(float fDt)
 			// interpolate
 			InterpolateEnv(m_envConfig, m_envTransitions[weatherIdx-1], m_envTransitions[weatherIdx], transitionPercent);
 
-			float fromWetness = m_envTransitions[weatherIdx-1].rainDensity*0.01f;
-			float toWetness = m_envTransitions[weatherIdx].rainDensity*0.01f;
+			float fromWetness = m_envTransitions[weatherIdx-1].rainDensity;
+			float toWetness = m_envTransitions[weatherIdx].rainDensity;
 
 			// prepare
 			m_skyTexture1->AssignTexture(m_envTransitions[weatherIdx-1].skyTexture);
 			m_skyTexture2->AssignTexture(m_envTransitions[weatherIdx].skyTexture);
 			m_skyInterp->SetFloat(transitionPercent);
 
-			m_envWetness = lerp(fromWetness, toWetness, transitionPercent);
+			m_envWetness = lerp(fromWetness, toWetness, transitionPercent) * 0.01f;
 			m_envWetness = min(m_envWetness, 1.0f);
 
 			// adjust sun dir
@@ -1103,7 +1103,7 @@ void CGameWorld::UpdateWorld(float fDt)
 			if(m_fNextThunderTime <= 0.0f)
 			{
 				// do sound and restore the time
-				m_fNextThunderTime = 10.0f + RandomFloat(-2.0f, 10.0f);
+				m_fNextThunderTime = 16.0f + RandomFloat(-2.0f, 10.0f);
 				m_fThunderTime = RandomFloat(0.12f, 0.3f);
 
 				EmitSound_t thunderSnd;
@@ -1117,7 +1117,7 @@ void CGameWorld::UpdateWorld(float fDt)
 			}
 		}
 
-		float rainVolume = powf(m_envConfig.rainDensity/100.0f, 0.5f);
+		float rainVolume = powf(m_envConfig.rainDensity * 0.01f, 0.5f);
 
 		if(m_rainSound && rainVolume > 0.01f)
 		{

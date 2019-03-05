@@ -132,7 +132,7 @@ int main(int argc, char **argv)
 	}
 
 	// Command line execution
-	g_cmdLine->ExecuteCommandLine(true,true);
+	g_cmdLine->ExecuteCommandLine();
 
 	Msg("--------------------------------------------------------------------\n");
 	Msg("Equilibrium World Compiler\n");

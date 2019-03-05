@@ -101,20 +101,10 @@ int	CommandLineParse::GetArgumentCount() const
 	return m_args.numElem();
 }
 
-void CommandLineParse::ExecuteCommandLine(bool cvars,bool commands, unsigned int CmdFilterFlags/* = -1*/) const
+void CommandLineParse::ExecuteCommandLine(unsigned int CmdFilterFlags/* = -1*/) const
 {
 	if(!m_args.numElem())
 		return;
-
-	unsigned int filterFlags;
-
-	if(CmdFilterFlags == -1)
-	{
-		if(cvars) filterFlags |= CMDBASE_CONVAR;
-		if(commands) filterFlags |= CMDBASE_CONCOMMAND;
-	}
-	else
-		filterFlags = CmdFilterFlags;
 
 	g_sysConsole->ClearCommandBuffer();
 
@@ -134,9 +124,7 @@ void CommandLineParse::ExecuteCommandLine(bool cvars,bool commands, unsigned int
 		g_sysConsole->AppendToCommandBuffer( cmdStr.c_str() );
 	}
 
-	((CConsoleCommands*)g_sysConsole.GetInstancePtr())->EnableInitOnlyVarsChangeProtection(true);
-	g_sysConsole->ExecuteCommandBuffer(filterFlags);
-	((CConsoleCommands*)g_sysConsole.GetInstancePtr())->EnableInitOnlyVarsChangeProtection(false);
+	g_sysConsole->ExecuteCommandBuffer(CmdFilterFlags);
 }
 
 const char* CommandLineParse::GetArgumentString(int index) const

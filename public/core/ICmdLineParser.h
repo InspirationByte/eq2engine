@@ -20,7 +20,7 @@ public:
 	virtual void			Init(const char* pszCommandLine) = 0;
 	virtual void			DeInit() = 0;
 
-	virtual void			ExecuteCommandLine(bool cvars,bool commands,unsigned int CmdFilterFlags = -1) const = 0;
+	virtual void			ExecuteCommandLine(unsigned int CmdFilterFlags = 0xFFFFFFFF) const = 0;
 
 	virtual int				FindArgument(const char* arg, int startfrom = 0) const = 0;
 

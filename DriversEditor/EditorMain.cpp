@@ -1353,7 +1353,7 @@ bool InitCore(char *pCmdLine)
 
 	g_fileSystem->AddSearchPath("$EDITOR$", "Editor");
 
-	g_cmdLine->ExecuteCommandLine( true, true );
+	g_cmdLine->ExecuteCommandLine();
 
 	return true;
 }

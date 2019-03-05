@@ -29,6 +29,8 @@ public:
 	void				OnRemove();
 	void				Spawn();
 
+	void				ConfigureCamera(cameraConfig_t& conf, eqPhysCollisionFilter& filter) const;
+
 	void				Draw(int nRenderFlags);
 
 	void				Simulate(float fDt);

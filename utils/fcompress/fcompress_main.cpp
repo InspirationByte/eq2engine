@@ -53,7 +53,7 @@ int _tmain(int argc, char **argv)
 	if(!g_fileSystem->Init(false))
 		return 0;
 
-	g_cmdLine->ExecuteCommandLine(true,true);
+	g_cmdLine->ExecuteCommandLine();
 	if(g_cmdLine->GetArgumentCount() <= 1)
 	{
 		Usage();

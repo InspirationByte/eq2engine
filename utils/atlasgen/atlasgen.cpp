@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
 		Usage();
 	}
 
-	g_cmdLine->ExecuteCommandLine( true, true );
+	g_cmdLine->ExecuteCommandLine();
 
 	GetCore()->Shutdown();
 

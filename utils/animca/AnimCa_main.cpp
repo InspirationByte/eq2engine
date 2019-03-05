@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 
 	//Sleep(5000); //wait 5 seconds
 
-	g_cmdLine->ExecuteCommandLine(true,true);
+	g_cmdLine->ExecuteCommandLine();
 
 	if(!stricmp("none", c_filename.GetString()))
 	{

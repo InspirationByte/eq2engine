@@ -241,7 +241,7 @@ int main(int argc, char **argv)
 	InitMatSystem();
 
 	// Command line execution test was passes not successfully
-	g_cmdLine->ExecuteCommandLine(true,true);
+	g_cmdLine->ExecuteCommandLine();
 
 	physics->Init(MAX_COORD_UNITS);
 	physics->CreateScene();

@@ -34,7 +34,7 @@ void WriteCfgFile(const char *pszFilename, bool bWriteKeyConfiguration /*= true*
 		{
 			ConVar *cv = (ConVar*)base->ptr()[i];
 			if(cv->GetFlags() & CV_ARCHIVE)
-				cfgfile->Print("seta %s %s\n",cv->GetName(),cv->GetString());
+				cfgfile->Print("seti %s %s\n",cv->GetName(),cv->GetString());
 		}
 	}
 
