@@ -621,18 +621,20 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 
 			for(int j = 0; j < kvDefs->keys.numElem(); j++)
 			{
-				if(!kvDefs->keys[j]->IsSection())
+				kvkeybase_t* objSec = kvDefs->keys[j];
+
+				if(!objSec->IsSection())
 					continue;
 
-				if(!stricmp(kvDefs->keys[j]->name, "billboardlist"))
+				if(!stricmp(objSec->name, "billboardlist"))
 					continue;
 
-				if( KV_GetValueBool(kvDefs->keys[j]->FindKeyBase("IsExist")) )
+				if( KV_GetValueBool(objSec->FindKeyBase("IsExist")) )
 					continue;
 
-				if(!stricmp(KV_GetValueString(kvDefs->keys[j], 0, "error_no_def"), modelNamePtr))
+				if(!stricmp(KV_GetValueString(objSec, 0, "error_no_def"), modelNamePtr))
 				{
-					foundDef = kvDefs->keys[j];
+					foundDef = objSec;
 					foundDef->SetKey("IsExist", "1");
 					break;
 				}

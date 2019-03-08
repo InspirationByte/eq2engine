@@ -424,6 +424,9 @@
     <ClInclude Include="UI_OutlineEdit.h">
       <Filter>Source Files\Editor\Modes</Filter>
     </ClInclude>
+    <ClInclude Include="..\DriversGame\ControllableObject.h">
+      <Filter>Source Files\Game\objects</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Notes.txt" />
@@ -641,6 +644,9 @@
     </ClCompile>
     <ClCompile Include="..\DriversGame\Shader_Skinned.cpp">
       <Filter>Source Files\MatSystem\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\ControllableObject.cpp">
+      <Filter>Source Files\Game\objects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

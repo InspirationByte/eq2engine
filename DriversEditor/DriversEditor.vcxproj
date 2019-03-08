@@ -151,6 +151,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="..\DriversGame\BillboardList.h" />
     <ClInclude Include="..\DriversGame\CameraAnimator.h" />
     <ClInclude Include="..\DriversGame\car.h" />
+    <ClInclude Include="..\DriversGame\ControllableObject.h" />
     <ClInclude Include="..\DriversGame\DrvSynDecals.h" />
     <ClInclude Include="..\DriversGame\eqPhysics\eqBulletIndexedMesh.h" />
     <ClInclude Include="..\DriversGame\eqPhysics\eqCollision_Object.h" />
@@ -274,6 +275,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="..\DriversGame\BillboardList.cpp" />
     <ClCompile Include="..\DriversGame\CameraAnimator.cpp" />
     <ClCompile Include="..\DriversGame\car.cpp" />
+    <ClCompile Include="..\DriversGame\ControllableObject.cpp" />
     <ClCompile Include="..\DriversGame\DrvSynDecals.cpp" />
     <ClCompile Include="..\DriversGame\eqPhysics\eqBulletIndexedMesh.cpp" />
     <ClCompile Include="..\DriversGame\eqPhysics\eqCollision_Object.cpp" />

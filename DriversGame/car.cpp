@@ -59,6 +59,7 @@ static Vector3D s_BodyPartDirections[] =
 	Vector3D(0,1.0f,0),
 };
 
+#ifndef EDITOR
 DECLARE_CMD(towfun, "", CV_CHEAT)
 {
 	if (!g_pGameSession)
@@ -97,7 +98,7 @@ DECLARE_CMD(towfun, "", CV_CHEAT)
 	if (nearestCar)
 		pcar->HingeVehicle(1, nearestCar, 0);
 }
-
+#endif // EDITOR
 
 //
 // Some default parameters for handling

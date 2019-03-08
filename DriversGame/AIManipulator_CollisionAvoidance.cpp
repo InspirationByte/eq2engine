@@ -83,7 +83,7 @@ void CAICollisionAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, C
 
 			m_enabled = true;
 		}
-		else
+		else if(m_blockTimeout <= 0.0f)
 			m_collidingPositionSet = false;
 	}
 }

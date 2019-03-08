@@ -128,7 +128,7 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 	if (brakeFac < AI_CHASE_BRAKE_MIN)
 		brakeFac = 0.0f;
 
-	float forwardTraceDistanceBySpeed = RemapValClamp(speedMPS, 0.0f, 50.0f, 6.0f, 16.0f);
+	float forwardTraceDistanceBySpeed = RemapValClamp(speedMPS, 0.0f, 50.0f, 6.0f, 25.0f);
 	/*
 	// trace from position A to position B first
 	g_pPhysics->TestConvexSweep(&sphereTraceShape, identity(),
@@ -179,6 +179,8 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 
 		steeringDir += carRight * posSteerFactor * (1.0f - steeringTargetColl.fract) * AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT;
 		steeringDir = normalize(steeringDir);
+
+		brakeFac += saturate(dot(steeringTargetColl.normal, fastNormalize(carVelocity))) * (1.0f - steeringTargetColl.fract);
 	}
 
 	// calculate steering
