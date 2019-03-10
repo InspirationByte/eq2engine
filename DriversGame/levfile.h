@@ -158,13 +158,18 @@ enum ERoadType
 	ROADTYPE_STRAIGHT,
 	ROADTYPE_JUNCTION,
 	ROADTYPE_PARKINGLOT,
+	ROADTYPE_PAVEMENT		// where the peds walking on. Junction
 };
 
 enum ERoadFlags
 {
 	ROAD_FLAG_TRAFFICLIGHT		= (1 << 0),	// regulated straight by traffic light
 	ROAD_FLAG_PARKING			= (1 << 1),
+	ROAD_FLAG_HIGHSPEED			= (1 << 2), // high speeds (70 mph)
 };
+
+inline bool IsJunctionType(ERoadType type)				{ return (type == ROADTYPE_JUNCTION);  }
+inline bool IsJunctionOrPavementType(ERoadType type)	{ return (type == ROADTYPE_JUNCTION || type == ROADTYPE_PAVEMENT);  }
 
 struct levroadcell_s
 {

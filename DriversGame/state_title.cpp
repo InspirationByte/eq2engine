@@ -76,10 +76,10 @@ void CState_Title::OnEnter( CBaseStateHandler* from )
 
 	m_uiLayout = equi::Manager->CreateElement("HudElement");
 
-	kvkeybase_t* uiKvs = KV_LoadFromFile("resources/ui_title.res", SP_MOD);
-
-	if (uiKvs)
-		m_uiLayout->InitFromKeyValues(uiKvs);
+	kvkeybase_t uiKvs;
+	
+	if (KV_LoadFromFile("resources/ui_title.res", SP_MOD, &uiKvs))
+		m_uiLayout->InitFromKeyValues(&uiKvs);
 
 	m_titleText = m_uiLayout->FindChild("title");
 

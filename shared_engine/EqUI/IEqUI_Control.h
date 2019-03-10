@@ -90,8 +90,14 @@ public:
 	const IVector2D&			GetSize() const;
 	const IVector2D&			GetPosition() const;
 
-	void						SetAchors(int anchor)			{ m_anchors = anchor; }
-	int							GetAchors() const				{ return m_anchors; }
+	void						SetAchors(int anchor)				{ m_anchors = anchor; }
+	int							GetAchors() const					{ return m_anchors; }
+
+	void						SetAlignment(int alignmentFlags)	{ m_alignment = alignmentFlags; }
+	int							GetAlignment() const				{ return m_alignment; }
+
+	void						SetScaling(int scalingMode)			{ m_scaling = scalingMode; }
+	int							GetScaling() const					{ return m_scaling; }
 
 	// real rectangle, size position
 	void						SetRectangle(const IRectangle& rect);
@@ -116,6 +122,9 @@ public:
 	// text properties
 	const ColorRGBA&			GetTextColor() const { return m_textColor; }
 	void						SetTextColor(const ColorRGBA& color) { m_textColor = color; }
+
+	void						SetTextAlignment(int alignmentFlags) { m_textAlignment = alignmentFlags; }
+	int							GetTextAlignment() const { return m_textAlignment; }
 
 	// PURE VIRTUAL
 	virtual const char*			GetClassname() const = 0;

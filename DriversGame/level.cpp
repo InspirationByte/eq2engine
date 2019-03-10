@@ -1096,7 +1096,7 @@ roadJunction_t CGameLevel::Road_GetJunctionAtPoint( const IVector2D& point, int 
 
 
 		// if we already on junction
-		if(startCell.type == ROADTYPE_JUNCTION)
+		if(IsJunctionType((ERoadType)startCell.type))
 		{
 			return junction;
 		}
@@ -1126,13 +1126,13 @@ roadJunction_t CGameLevel::Road_GetJunctionAtPoint( const IVector2D& point, int 
 
 			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
 
-			if( roadCell.type != ROADTYPE_JUNCTION && junction.startIter != -1 )
+			if( !IsJunctionType((ERoadType)roadCell.type) && junction.startIter != -1 )
 				break;
 
-			if(	roadCell.type == ROADTYPE_NOROAD )
+			if(	!roadCell.type )
 				break;
 
-			if(roadCell.type == ROADTYPE_JUNCTION && junction.startIter == -1)
+			if( IsJunctionType((ERoadType)roadCell.type) && junction.startIter == -1 )
 			{
 				junction.startIter = i;
 			}

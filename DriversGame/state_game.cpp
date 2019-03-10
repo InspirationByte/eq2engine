@@ -362,6 +362,7 @@ CState_Game* g_State_Game = new CState_Game();
 
 CState_Game::CState_Game() : CBaseStateHandler()
 {
+	m_uiLayout = nullptr;
 	m_replayMode = REPLAY_MODE_NONE;
 	m_isGameRunning = false;
 	m_fade = 1.0f;
@@ -550,7 +551,6 @@ void CState_Game::OnEnterSelection( bool isFinal )
 	{
 		m_fade = 0.0f;
 		m_exitGame = true;
-		m_showMenu = false;
 	}
 }
 
@@ -587,7 +587,6 @@ void CState_Game::OnMenuCommand( const char* command )
 	}
 	else if(!stricmp(command, "restartGame"))
 	{
-		m_showMenu = false;
 		m_exitGame = false;
 		m_fade = 0.0f;
 
@@ -599,7 +598,6 @@ void CState_Game::OnMenuCommand( const char* command )
 	}
 	else if(!stricmp(command, "quickReplay") || !stricmp(command, "goToDirector"))
 	{
-		m_showMenu = false;
 		m_exitGame = false;
 		m_fade = 0.0f;
 
@@ -632,6 +630,28 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 	m_menuTitleStr = LocalizedString("#MENU_GAME_TITLE_PAUSE");
 
 	m_tunnelEfx = soundsystem->FindEffect("tunnel_reverb");
+
+	// init hud layout
+	m_uiLayout = equi::Manager->CreateElement("Panel");
+
+	kvkeybase_t uiKvs;
+
+	if (KV_LoadFromFile("resources/ui_pausemenu.res", SP_MOD, &uiKvs))
+		m_uiLayout->InitFromKeyValues(&uiKvs);
+
+	m_pauseMenuDummy = m_uiLayout->FindChild("Menu");
+
+	if (!m_pauseMenuDummy)
+	{
+		m_pauseMenuDummy = equi::Manager->CreateElement("HudElement");
+		m_pauseMenuDummy->SetPosition(0);
+		m_pauseMenuDummy->SetSize(IVector2D(640, 480));
+		m_pauseMenuDummy->SetScaling(equi::UI_SCALING_ASPECT_H);
+		m_pauseMenuDummy->SetTextAlignment(TEXT_ALIGN_HCENTER);
+
+		m_uiLayout->AddChild(m_pauseMenuDummy);
+	}
+
 }
 
 bool CState_Game::DoLoadingFrame()
@@ -649,6 +669,9 @@ bool CState_Game::DoLoadingFrame()
 void CState_Game::OnLeave( CBaseStateHandler* to )
 {
 	m_replayMode = REPLAY_MODE_NONE;
+
+	delete m_uiLayout;
+	m_uiLayout = nullptr;
 
 	if(!g_pGameSession)
 		return;
@@ -843,9 +866,10 @@ bool CState_Game::Update( float fDt )
 		fontParam.textColor = ColorRGBA(fabs(sinf(g_pHost->GetCurTime()*2.0f)),0.0f,0.0f,1.0f);
 		fontParam.scale = 30.0f;
 
-		
 		font->RenderText("Demo", Vector2D(screenSize.x/2,screenSize.y - 100), fontParam);
 	}
+
+	DrawMenu(fDt);
 
 	if(m_exitGame || m_scheduledRestart || m_scheduledQuickReplay)
 	{
@@ -895,8 +919,6 @@ bool CState_Game::Update( float fDt )
 		}
 	}
 
-	DrawMenu(fDt);
-
 	return true;
 }
 
@@ -940,15 +962,18 @@ void CState_Game::DrawMenu( float fDt )
 
 	materials->Setup2D(screenSize.x,screenSize.y);
 
+	m_uiLayout->SetSize(screenSize);
+	m_uiLayout->Render();
+
 	IVector2D halfScreen(screenSize.x/2, screenSize.y/2);
 
 	IEqFont* font = g_fontCache->GetFont("Roboto", 30);
 
 	eqFontStyleParam_t fontParam;
-	fontParam.align = TEXT_ALIGN_HCENTER;
+	fontParam.align = m_pauseMenuDummy->GetTextAlignment();
 	fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParam.textColor = color4_white;
-	fontParam.scale = 30.0f;
+	fontParam.scale = 16.0f * m_pauseMenuDummy->CalcScaling();
 
 	{
 		lua_State* state = GetLuaState();
@@ -1246,22 +1271,25 @@ void CState_Game::HandleKeyPress( int key, bool down )
 		return;
 	}
 
-	if(key == KEY_ESCAPE && down)
+	if (key == KEY_ESCAPE && down)
 	{
-		if(m_showMenu && IsCanPopMenu())
+		if (m_showMenu && !IsMenuActive())
+			return;
+
+		if (IsMenuActive() && IsCanPopMenu())
 		{
 			EmitSound_t es("menu.back");
-			g_sounds->Emit2DSound( &es );
+			g_sounds->Emit2DSound(&es);
 
 			PopMenu();
 
 			return;
 		}
 
-		SetPauseState( !m_showMenu );
+		SetPauseState(!m_showMenu);
 	}
 
-	if( m_showMenu )
+	if(IsMenuActive())
 	{
 		if(!down)
 			return;
@@ -1332,7 +1360,7 @@ void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )
 	if(!m_isGameRunning)
 		return;
 
-	if( m_showMenu )
+	if( IsMenuActive() )
 	{
 		// perform a hit test
 		const IVector2D& screenSize = g_pHost->GetWindowSize();
@@ -1341,10 +1369,10 @@ void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )
 		IEqFont* font = g_fontCache->GetFont("Roboto", 30, TEXT_STYLE_ITALIC);
 
 		eqFontStyleParam_t fontParam;
-		fontParam.align = TEXT_ALIGN_LEFT;
+		fontParam.align = m_pauseMenuDummy->GetTextAlignment();
 		fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 		fontParam.textColor = color4_white;
-		fontParam.scale = 30.0f;
+		fontParam.scale = 16.0f * m_pauseMenuDummy->CalcScaling();
 
 		{
 			EqLua::LuaStackGuard g(GetLuaState());
@@ -1398,7 +1426,7 @@ void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )
 
 void CState_Game::Event_SelectMenuItem(int index)
 {
-	if (!m_showMenu)
+	if (!IsMenuActive())
 		return;
 
 	if (index > m_numElems - 1)
@@ -1418,7 +1446,7 @@ void CState_Game::HandleMouseClick( int x, int y, int buttons, bool down )
 	if(!m_isGameRunning)
 		return;
 
-	if( m_showMenu )
+	if(IsMenuActive())
 	{
 		if (buttons == MOU_B1 && !down)
 		{

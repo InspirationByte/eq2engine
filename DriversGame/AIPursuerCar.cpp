@@ -512,7 +512,7 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 	straight_t straight_checkRed = g_pGameWorld->m_level.Road_GetStraightAtPos( redCrossingCheckPos, 2 );
 
 	// Check red light crossing
-	if( cell_checkRed && cell_checkRed->type == ROADTYPE_JUNCTION &&
+	if( cell_checkRed && IsJunctionOrPavementType((ERoadType)cell_checkRed->type) &&
 		straight_checkRed.direction != -1 )
 	{
 		Vector3D	startPos = g_pGameWorld->m_level.GlobalTilePointToPosition(straight_checkRed.start);

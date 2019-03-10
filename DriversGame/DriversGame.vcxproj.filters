@@ -459,6 +459,9 @@
     <ClCompile Include="ControllableObject.cpp">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClCompile>
+    <ClCompile Include="AIPedestrianManager.cpp">
+      <Filter>Файлы исходного кода\Game\AI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\src_dependency\oolua\bin\Release\oolua.lib">
@@ -900,6 +903,9 @@
     </ClInclude>
     <ClInclude Include="ControllableObject.h">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="AIPedestrianManager.h">
+      <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

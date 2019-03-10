@@ -186,7 +186,7 @@ void CUI_RoadEditor::PaintPointGlobal(int x, int y, int direction)
 	int tileIdx = pReg->GetHField()->m_sizew*local.y + local.x;
 	levroadcell_t* roadCell = &pReg->m_roads[tileIdx];
 
-	if(roadCell->type != ROADTYPE_JUNCTION)
+	if(!IsJunctionType((ERoadType)roadCell->type))
 		roadCell->type = GetRoadType();
 
 	roadCell->direction = direction;

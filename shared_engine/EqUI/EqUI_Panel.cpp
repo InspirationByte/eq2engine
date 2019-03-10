@@ -45,8 +45,11 @@ void Panel::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	// initialize from scheme
 	kvkeybase_t* mainSec = sec->FindKeyBase("panel");
 
-	if(mainSec == NULL)
+	if (mainSec == nullptr)
 		mainSec = sec->FindKeyBase("child");
+
+	if (mainSec == nullptr)
+		mainSec = sec;
 
 	BaseClass::InitFromKeyValues(mainSec, noClear);
 
@@ -54,6 +57,7 @@ void Panel::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	m_visible = !m_windowControls;
 	m_visible = KV_GetValueBool(mainSec->FindKeyBase("visible"), 0, m_visible);
 	m_screenOverlay = KV_GetValueBool(mainSec->FindKeyBase("screenoverlay"), 0, m_screenOverlay);
+	m_color = KV_GetVector4D(mainSec->FindKeyBase("color"), 0, m_color);
 	m_grabbed = false;
 	m_closeButton = nullptr;
 	m_labelCtrl = nullptr;

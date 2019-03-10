@@ -170,6 +170,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="AIManipulator_TargetAvoidance.cpp" />
     <ClCompile Include="AIManipulator_TargetChaser.cpp" />
     <ClCompile Include="AIManipulator_Traffic.cpp" />
+    <ClCompile Include="AIPedestrianManager.cpp" />
     <ClCompile Include="AIPursuerCar.cpp" />
     <ClCompile Include="AITrafficCar.cpp" />
     <ClCompile Include="BillboardList.cpp" />
@@ -338,6 +339,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="AIManipulator_TargetAvoidance.h" />
     <ClInclude Include="AIManipulator_TargetChaser.h" />
     <ClInclude Include="AIManipulator_Traffic.h" />
+    <ClInclude Include="AIPedestrianManager.h" />
     <ClInclude Include="AIPursuerCar.h" />
     <ClInclude Include="AITrafficCar.h" />
     <ClInclude Include="BillboardList.h" />

@@ -82,7 +82,6 @@ void CDrvSynHUDManager::Init()
 
 	m_radarBlank = 0.0f;
 
-	m_damageTok = g_localizer->GetToken("HUD_DAMAGE_TITLE");
 	m_felonyTok = g_localizer->GetToken("HUD_FELONY_TITLE");
 
 	// init hud layout
@@ -124,12 +123,12 @@ void CDrvSynHUDManager::SetHudScheme(const char* name)
 	m_hudFelonyBar = nullptr;
 	m_hudMap = nullptr;
 
-	kvkeybase_t* hudKvs = KV_LoadFromFile(m_schemeName.c_str(), SP_MOD);
+	kvkeybase_t hudKvs;
 	kvkeybase_t* baseHud = nullptr;
 
-	if(hudKvs)
+	if( KV_LoadFromFile(m_schemeName.c_str(), SP_MOD, &hudKvs) )
 	{
-		kvkeybase_t* hudBasePath = hudKvs->FindKeyBase("base");
+		kvkeybase_t* hudBasePath = hudKvs.FindKeyBase("base");
 		if(hudBasePath)
 		{
 			EqString hudPath(CombinePath(2, baseHudPath.c_str(), KV_GetValueString(hudBasePath)));
@@ -144,13 +143,12 @@ void CDrvSynHUDManager::SetHudScheme(const char* name)
 		if(baseHud)
 		{
 			m_hudLayout->InitFromKeyValues( baseHud );
-			m_hudLayout->InitFromKeyValues( hudKvs, true );
+			m_hudLayout->InitFromKeyValues( &hudKvs, true );
 		}
 		else
-			m_hudLayout->InitFromKeyValues( hudKvs );
+			m_hudLayout->InitFromKeyValues( &hudKvs );
 
 		delete baseHud;
-		delete hudKvs;
 	}
 	else
 		MsgError("Failed to load HUD scheme\n");
@@ -238,10 +236,10 @@ equi::IUIControl* CDrvSynHUDManager::FindChildElement(const char* name) const
 	return m_hudLayout->FindChild(name);
 }
 
-void CDrvSynHUDManager::DrawDamageRectangle(CMeshBuilder& meshBuilder, Rectangle_t& rect, float percentage, float alpha)
+void CDrvSynHUDManager::DrawDamageBar(CMeshBuilder& meshBuilder, Rectangle_t& rect, float percentage, float alpha)
 {
 	meshBuilder.Color4f(0.435, 0.435, 0.435, 0.35f*alpha);
-	meshBuilder.Quad2(rect.GetLeftTop(), rect.GetRightTop(), rect.GetLeftBottom(), rect.GetRightBottom());
+	meshBuilder.Quad2(rect.GetRightTop(), rect.GetLeftTop(), rect.GetRightBottom(), rect.GetLeftBottom());
 
 	if(percentage > 0)
 	{
@@ -254,7 +252,7 @@ void CDrvSynHUDManager::DrawDamageRectangle(CMeshBuilder& meshBuilder, Rectangle
 
 		// draw damage bar foreground
 		meshBuilder.Color4fv(damageColor);
-		meshBuilder.Quad2(fillRect.GetLeftTop(), fillRect.GetRightTop(), fillRect.GetLeftBottom(), fillRect.GetRightBottom());
+		meshBuilder.Quad2(fillRect.GetRightTop(), fillRect.GetLeftTop(), fillRect.GetRightBottom(), fillRect.GetLeftBottom());
 	}
 }
 
@@ -540,7 +538,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 
 	materials->SetAmbientColor(ColorRGBA(1,1,1,1));
 	m_hudLayout->SetSize(screenSize);
-	m_hudLayout->Render();
 
 	static IEqFont* roboto10 = g_fontCache->GetFont("Roboto", 10);
 	static IEqFont* roboto30 = g_fontCache->GetFont("Roboto", 30);
@@ -565,6 +562,14 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 	raster.scissor = true;
 	raster.cullMode = CULL_FRONT;
 
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+
+	g_pShaderAPI->SetTexture(NULL, NULL, 0);
+	materials->SetBlendingStates(blending);
+	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+	materials->SetDepthStates(false, false);
+	materials->BindMaterial(materials->GetDefaultMaterial());
+
 	// fade screen
 	if(m_fadeValue > 0.0f)
 	{
@@ -572,19 +577,25 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 
 		if(m_fadeCurtains)
 		{
-			Vertex2D_t tmprect1[] = { MAKETEXQUAD(0, 0,screenSize.x, screenSize.y*m_fadeValue*0.5f, 0) };
-			Vertex2D_t tmprect2[] = { MAKETEXQUAD(0, screenSize.y*0.5f + screenSize.y*(1.0f - m_fadeValue)*0.5f,screenSize.x, screenSize.y, 0) };
+			Vector2D rectTop[] = { MAKEQUAD(0, 0,screenSize.x, screenSize.y*m_fadeValue*0.5f, 0) };
+			Vector2D rectBot[] = { MAKEQUAD(0, screenSize.y*0.5f + screenSize.y*(1.0f - m_fadeValue)*0.5f,screenSize.x, screenSize.y, 0) };
 
-			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, tmprect1, elementsOf(tmprect1), NULL, blockCol);
-			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, tmprect2, elementsOf(tmprect2), NULL, blockCol);
+			meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+				meshBuilder.Color4fv(blockCol);
+				meshBuilder.Quad2(rectTop[0], rectTop[1], rectTop[2], rectTop[3]);
+				meshBuilder.Quad2(rectBot[0], rectBot[1], rectBot[2], rectBot[3]);
+			meshBuilder.End();
 		}
 		else
 		{
 			blockCol.w = m_fadeValue;
 
-			Vertex2D_t tmprect[] = { MAKETEXQUAD(0, 0,screenSize.x, screenSize.y, 0) };
+			Vector2D rect[] = { MAKEQUAD(0, 0,screenSize.x, screenSize.y, 0) };
 
-			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, tmprect, elementsOf(tmprect), NULL, blockCol, &blending);
+			meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+				meshBuilder.Color4fv(blockCol);
+				meshBuilder.Quad2(rect[0], rect[1], rect[2], rect[3]);
+			meshBuilder.End();
 		}
 	}
 
@@ -602,16 +613,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 		bool felonyBarVisible = m_hudFelonyBar && m_hudFelonyBar->IsVisible();
 		bool mapVisible = m_hudMap && m_hudMap->IsVisible() && m_showMap;
 
-		//Vertex2D_t dmgrect[] = { MAKETEXQUAD(damageRect.vleftTop.x, damageRect.vleftTop.y,damageRect.vrightBottom.x, damageRect.vrightBottom.y, 0) };
-
-		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
-
-		g_pShaderAPI->SetTexture(NULL,NULL,0);
-		materials->SetBlendingStates(blending);
-		materials->SetRasterizerStates(CULL_BACK, FILL_SOLID);
-		materials->SetDepthStates(false,false);
-		materials->BindMaterial(materials->GetDefaultMaterial());
-
 		meshBuilder.Begin(PRIM_TRIANGLES);
 
 			Rectangle_t damageRect(35,65,410, 92);
@@ -625,7 +626,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 					// fill the damage bar
 					float fDamage = m_mainVehicle->GetDamage() / m_mainVehicle->GetMaxDamage();
 
-					DrawDamageRectangle(meshBuilder, damageRect, fDamage);
+					DrawDamageBar(meshBuilder, damageRect, fDamage);
 
 					// draw pursuit cop "triangles" on screen
 					if(mainVehicleInPursuit)
@@ -651,8 +652,8 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 								float height = (1.0f-clamp((10.0f - dist) / 10.0f, 0.0f, 1.0f)) * 90.0f;
 
 								meshBuilder.Color4f(1, 0, 0, distFadeFac);
-								meshBuilder.Triangle2(	Vector2D(screenSize.x-(screenPos.x-40.0f), screenSize.y),
-														Vector2D(screenSize.x-(screenPos.x+40.0f), screenSize.y),
+								meshBuilder.Triangle2(Vector2D(screenSize.x - (screenPos.x + 40.0f), screenSize.y),
+														Vector2D(screenSize.x - (screenPos.x - 40.0f), screenSize.y),
 														Vector2D(screenSize.x-screenPos.x, screenSize.y - height));
 							}
 						}
@@ -709,20 +710,13 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 								targetDamageRect.vleftTop += screenPos.xy();
 								targetDamageRect.vrightBottom += screenPos.xy();
 
-								DrawDamageRectangle(meshBuilder, targetDamageRect, fDamage, targetAlpha);
+								DrawDamageBar(meshBuilder, targetDamageRect, fDamage, targetAlpha);
 							}
 						}
 					}
 				}
 			}
 		meshBuilder.End();
-
-		if(damageBarVisible)
-		{
-			Vector2D damageTextPos( damageRect.vleftTop.x+5, damageRect.vleftTop.y+15);
-			fontParams.scale = 16.0f * m_hudDamageBar->CalcScaling();
-			robotocon30b->RenderText(m_damageTok ? m_damageTok->GetText() : L"Undefined", damageTextPos, fontParams);
-		}
 
 		if(hud_debug_car.GetBool() && m_mainVehicle)
 		{
@@ -1018,6 +1012,8 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 
 		defFont->RenderText(varargs("car position: %.2f %.2f %.2f\ncar angles: %.2f %.2f %.2f", carpos.x,carpos.y,carpos.z, carrot.x,carrot.y,carrot.z), Vector2D(20, 220), style);
 	}
+
+	m_hudLayout->Render();
 }
 
 // main object to display

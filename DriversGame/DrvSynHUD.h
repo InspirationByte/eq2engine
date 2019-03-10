@@ -87,7 +87,7 @@ public:
 protected:
 
 	void						DrawWorldIntoMap(const CViewParams& params, float fDt);
-	void						DrawDamageRectangle(CMeshBuilder& meshBuilder, Rectangle_t& rect, float percentage, float alpha = 1.0f);
+	void						DrawDamageBar(CMeshBuilder& meshBuilder, Rectangle_t& rect, float percentage, float alpha = 1.0f);
 
 	bool								m_enable;
 	bool								m_showMap;
@@ -120,7 +120,6 @@ protected:
 	bool								m_fadeCurtains;
 	bool								m_faded;
 
-	ILocToken*							m_damageTok;
 	ILocToken*							m_felonyTok;
 
 	EqString							m_schemeName;
