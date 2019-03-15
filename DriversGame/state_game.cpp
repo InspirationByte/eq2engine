@@ -639,17 +639,17 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 	if (KV_LoadFromFile("resources/ui_pausemenu.res", SP_MOD, &uiKvs))
 		m_uiLayout->InitFromKeyValues(&uiKvs);
 
-	m_pauseMenuDummy = m_uiLayout->FindChild("Menu");
+	m_menuDummy = m_uiLayout->FindChild("Menu");
 
-	if (!m_pauseMenuDummy)
+	if (!m_menuDummy)
 	{
-		m_pauseMenuDummy = equi::Manager->CreateElement("HudElement");
-		m_pauseMenuDummy->SetPosition(0);
-		m_pauseMenuDummy->SetSize(IVector2D(640, 480));
-		m_pauseMenuDummy->SetScaling(equi::UI_SCALING_ASPECT_H);
-		m_pauseMenuDummy->SetTextAlignment(TEXT_ALIGN_HCENTER);
+		m_menuDummy = equi::Manager->CreateElement("HudElement");
+		m_menuDummy->SetPosition(0);
+		m_menuDummy->SetSize(IVector2D(640, 480));
+		m_menuDummy->SetScaling(equi::UI_SCALING_ASPECT_H);
+		m_menuDummy->SetTextAlignment(TEXT_ALIGN_HCENTER);
 
-		m_uiLayout->AddChild(m_pauseMenuDummy);
+		m_uiLayout->AddChild(m_menuDummy);
 	}
 
 }
@@ -967,13 +967,13 @@ void CState_Game::DrawMenu( float fDt )
 
 	IVector2D halfScreen(screenSize.x/2, screenSize.y/2);
 
-	IEqFont* font = g_fontCache->GetFont("Roboto", 30);
+	IEqFont* font = m_menuDummy->GetFont();
 
 	eqFontStyleParam_t fontParam;
-	fontParam.align = m_pauseMenuDummy->GetTextAlignment();
+	fontParam.align = m_menuDummy->GetTextAlignment();
 	fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParam.textColor = color4_white;
-	fontParam.scale = 16.0f * m_pauseMenuDummy->CalcScaling();
+	fontParam.scale = m_menuDummy->GetFontScale() * m_menuDummy->CalcScaling();
 
 	{
 		lua_State* state = GetLuaState();
@@ -1366,13 +1366,13 @@ void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )
 		const IVector2D& screenSize = g_pHost->GetWindowSize();
 		IVector2D halfScreen(screenSize.x / 2, screenSize.y / 2);
 
-		IEqFont* font = g_fontCache->GetFont("Roboto", 30, TEXT_STYLE_ITALIC);
+		IEqFont* font = m_menuDummy->GetFont();
 
 		eqFontStyleParam_t fontParam;
-		fontParam.align = m_pauseMenuDummy->GetTextAlignment();
+		fontParam.align = m_menuDummy->GetTextAlignment();
 		fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 		fontParam.textColor = color4_white;
-		fontParam.scale = 16.0f * m_pauseMenuDummy->CalcScaling();
+		fontParam.scale = m_menuDummy->GetFontScale() * m_menuDummy->CalcScaling();
 
 		{
 			EqLua::LuaStackGuard g(GetLuaState());

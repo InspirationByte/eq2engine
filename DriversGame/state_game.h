@@ -121,7 +121,7 @@ protected:
 	sndEffect_t*		m_tunnelEfx;
 
 	equi::IUIControl*	m_uiLayout;
-	equi::IUIControl*	m_pauseMenuDummy;
+	equi::IUIControl*	m_menuDummy;
 };
 
 //--------------------------------------------------------------------------------------

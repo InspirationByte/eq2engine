@@ -119,6 +119,9 @@ public:
 
 	virtual IEqFont*			GetFont() const;
 
+	virtual void				SetFontScale(const Vector2D& scale) { m_fontScale = scale; }
+	virtual const Vector2D&		GetFontScale() const { return m_fontScale; }
+
 	// text properties
 	const ColorRGBA&			GetTextColor() const { return m_textColor; }
 	void						SetTextColor(const ColorRGBA& color) { m_textColor = color; }

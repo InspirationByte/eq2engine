@@ -54,7 +54,8 @@ protected:
 
 	float					m_textEffect;
 
-	ITexture*				m_titleTexture;
+	equi::IUIControl*		m_uiLayout;
+	equi::IUIControl*		m_menuDummy;
 };
 
 extern CState_MainMenu* g_State_MainMenu;

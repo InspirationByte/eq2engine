@@ -14,6 +14,8 @@
 
 #include "KeyBinding/InputCommandBinder.h"
 
+#include "materialsystem/MeshBuilder.h"
+
 enum
 {
 	MENU_ENTER = 1,
@@ -22,7 +24,8 @@ enum
 
 CState_MainMenu::CState_MainMenu()
 {
-	m_titleTexture = NULL;
+	m_uiLayout = nullptr;
+	m_menuDummy = nullptr;
 }
 
 CState_MainMenu::~CState_MainMenu()
@@ -42,8 +45,6 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 	m_textFade = 0.0f;
 	m_changesMenu = 0;
 	m_goesFromMenu = false;
-	m_titleTexture = g_pShaderAPI->LoadTexture("ui/title", TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP);
-	m_titleTexture->Ref_Grab();
 
 	soundsystem->SetPauseState(false);
 	sndEffect_t* reverb = soundsystem->FindEffect( "menu_reverb" );
@@ -62,6 +63,27 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 
 	//EmitSound_t es("music.menu", EMITSOUND_FLAG_FORCE_CACHED);
 	//g_sounds->Emit2DSound( &es );
+
+	// init hud layout
+	m_uiLayout = equi::Manager->CreateElement("Panel");
+
+	kvkeybase_t uiKvs;
+
+	if (KV_LoadFromFile("resources/ui_mainmenu.res", SP_MOD, &uiKvs))
+		m_uiLayout->InitFromKeyValues(&uiKvs);
+
+	m_menuDummy = m_uiLayout->FindChild("Menu");
+
+	if (!m_menuDummy)
+	{
+		m_menuDummy = equi::Manager->CreateElement("HudElement");
+		m_menuDummy->SetPosition(0);
+		m_menuDummy->SetSize(IVector2D(640, 480));
+		m_menuDummy->SetScaling(equi::UI_SCALING_ASPECT_H);
+		m_menuDummy->SetTextAlignment(TEXT_ALIGN_HCENTER);
+
+		m_uiLayout->AddChild(m_menuDummy);
+	}
 }
 
 void CState_MainMenu::OnEnterSelection( bool isFinal )
@@ -71,10 +93,9 @@ void CState_MainMenu::OnEnterSelection( bool isFinal )
 
 void CState_MainMenu::OnLeave( CBaseStateHandler* to )
 {
+	delete m_uiLayout;
+	m_uiLayout = nullptr;
 	g_sounds->Shutdown();
-
-	g_pShaderAPI->FreeTexture(m_titleTexture);
-	m_titleTexture = NULL;
 }
 
 bool CState_MainMenu::Update( float fDt )
@@ -104,43 +125,26 @@ bool CState_MainMenu::Update( float fDt )
 
 	IVector2D halfScreen(screenSize.x/2, screenSize.y/2);
 
-	float widthFac = (float)screenSize.x/(float)m_titleTexture->GetWidth();
-	float heightFac = (float)screenSize.y/(float)m_titleTexture->GetHeight();
-	float texSizeFactor = widthFac > heightFac ? widthFac : heightFac;
+	m_uiLayout->SetSize(screenSize);
+	m_uiLayout->Render();
 
-	float halfWidth = m_titleTexture->GetWidth()*0.5f;
-	float halfHeight = m_titleTexture->GetHeight()*0.5f;
+	if (!m_menuDummy)
+		return true;
 
-	Vertex2D_t tmprect[] = {
-		MAKETEXQUAD((halfScreen.x-halfWidth*texSizeFactor),
-					(halfScreen.y-halfHeight*texSizeFactor),
-					(halfScreen.x+halfWidth*texSizeFactor),
-					(halfScreen.y+halfHeight*texSizeFactor), 0.0f)
-		};
+	IEqFont* font = m_menuDummy->GetFont();
 
-	// Cancel textures
-	g_pShaderAPI->Reset(STATE_RESET_TEX);
-
-	BlendStateParam_t blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-	float fFade = pow(m_fade,2.0f);
-
-	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect,elementsOf(tmprect), m_titleTexture, ColorRGBA(fFade,fFade,fFade,1.0f), &blending);
-
-	IEqFont* font = g_fontCache->GetFont("Roboto", 30, TEXT_STYLE_ITALIC);
+	Vector2D menuScaling = m_menuDummy->CalcScaling();
 
 	eqFontStyleParam_t fontParam;
-	fontParam.align = TEXT_ALIGN_LEFT;
+	fontParam.align = m_menuDummy->GetTextAlignment();
 	fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParam.textColor = color4_white;
-	fontParam.scale = 30.0f;
+	fontParam.scale = m_menuDummy->GetFontScale()*menuScaling;
+
+	Vector2D menuPos = m_menuDummy->GetPosition()*menuScaling;
 
 	{
 		EqLua::LuaStackGuard g(GetLuaState());
-
-		int menuPosY = halfScreen.y+100;
 
 		oolua_ipairs(m_menuElems)
 			int idx = _i_index_-1;
@@ -151,9 +155,9 @@ bool CState_MainMenu::Update( float fDt )
 			const wchar_t* token = GetMenuItemString(elem);
 
 			if(m_selection == idx)
-				fontParam.textColor = ColorRGBA(1,0.7f,0.0f,pow(m_textFade*m_fade,5.0f));
+				fontParam.textColor = ColorRGBA(1,0.7f,0.0f,pow(m_textFade,5.0f));
 			else
-				fontParam.textColor = ColorRGBA(1,1,1,pow(m_textFade*m_fade,5.0f));
+				fontParam.textColor = ColorRGBA(1,1,1,pow(m_textFade,5.0f));
 
 			if((m_goesFromMenu || m_changesMenu == MENU_ENTER) && m_changesMenu != MENU_BACK)
 			{
@@ -174,15 +178,36 @@ bool CState_MainMenu::Update( float fDt )
 				}
 				else
 				{
-					fontParam.textColor.w = pow(m_textFade*m_fade,10.0f);
+					fontParam.textColor.w = pow(m_textFade,10.0f);
 				}
 			}
 
-			Vector2D elemPos(halfScreen.x-500, menuPosY+idx*font->GetLineHeight(fontParam));
+			Vector2D elemPos(menuPos.x, menuPos.y+idx*font->GetLineHeight(fontParam));
 
 			font->RenderText(token, elemPos, fontParam);
 		oolua_ipairs_end()
 	}
+
+	Vector2D screenRect[] = { MAKEQUAD(0, 0,screenSize.x, screenSize.y, 0) };
+
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+
+	BlendStateParam_t blending;
+	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
+	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+
+	ColorRGBA blockCol(0,0,0, 1.0f-pow(m_fade, 2.0f));
+
+	g_pShaderAPI->SetTexture(NULL, NULL, 0);
+	materials->SetBlendingStates(blending);
+	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+	materials->SetDepthStates(false, false);
+	materials->BindMaterial(materials->GetDefaultMaterial());
+
+	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+		meshBuilder.Color4fv(blockCol);
+		meshBuilder.Quad2(screenRect[0], screenRect[1], screenRect[2], screenRect[3]);
+	meshBuilder.End();
 
 	m_textEffect -= fDt;
 
@@ -247,22 +272,27 @@ void CState_MainMenu::HandleKeyPress( int key, bool down )
 
 void CState_MainMenu::HandleMouseMove( int x, int y, float deltaX, float deltaY )
 {
+	if (!m_menuDummy)
+		return;
+
 	// perform a hit test
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 	IVector2D halfScreen(screenSize.x/2, screenSize.y/2);
 
-	IEqFont* font = g_fontCache->GetFont("Roboto", 30, TEXT_STYLE_ITALIC);
+	IEqFont* font = m_menuDummy->GetFont();
+
+	Vector2D menuScaling = m_menuDummy->CalcScaling();
 
 	eqFontStyleParam_t fontParam;
-	fontParam.align = TEXT_ALIGN_LEFT;
+	fontParam.align = m_menuDummy->GetTextAlignment();
 	fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParam.textColor = color4_white;
-	fontParam.scale = 30.0f;
+	fontParam.scale = m_menuDummy->GetFontScale()*menuScaling;
+
+	Vector2D menuPos = m_menuDummy->GetPosition()*menuScaling;
 
 	{
 		EqLua::LuaStackGuard g(GetLuaState());
-
-		int menuPosY = halfScreen.y+100;
 
 		oolua_ipairs(m_menuElems)
 			int idx = _i_index_-1;
@@ -273,7 +303,7 @@ void CState_MainMenu::HandleMouseMove( int x, int y, float deltaX, float deltaY 
 			float lineWidth = 400;
 			float lineHeight = font->GetLineHeight(fontParam);
 
-			Vector2D elemPos(halfScreen.x-500, menuPosY+idx*lineHeight);
+			Vector2D elemPos(menuPos.x, menuPos.y+idx*lineHeight);
 
 			Rectangle_t rect(elemPos - Vector2D(0, lineHeight), elemPos + Vector2D(lineWidth, 0));
 
