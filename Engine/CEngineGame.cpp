@@ -71,7 +71,7 @@ public:
 
 	bool				SetLevelName( char const* pszLevelName );
 
-	bool				LoadGame( bool loadSaved = false );
+	bool				LoadGameCycle( bool loadSaved = false );
 	void				UnloadGame(bool freeCache, bool force = false);
 	bool				IsLevelChanged() {return m_bLevelChanged;}
 
@@ -415,7 +415,7 @@ int	CEngineGame::Run()
 	// unload first
 	UnloadGame( m_bLevelChanged );
 
-	if( LoadGame( m_bLoadFromSavedGame ) )
+	if( LoadGameCycle( m_bLoadFromSavedGame ) )
 	{
 		CScopedMutex m(m_Mutex);
 		m_nLoadingState = LOADING_DONE;
@@ -429,7 +429,7 @@ int	CEngineGame::Run()
 	return 0;
 }
 
-bool CEngineGame::LoadGame( bool loadSaved )
+bool CEngineGame::LoadGameCycle( bool loadSaved )
 {
 	m_Mutex.Lock();
 

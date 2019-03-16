@@ -54,7 +54,6 @@ public:
 	//---------------------------------------------
 
 	void		UnloadGame();
-	void		LoadGame();
 
 	bool		SetMissionScript( const char* name );
 	const char*	GetMissionScriptName() const;
@@ -96,7 +95,7 @@ protected:
 	bool		IsMenuActive() const { return m_showMenu && !m_scheduledRestart && !m_exitGame && !m_scheduledQuickReplay; }
 
 	//----------------------------------------------
-	int					m_doLoadingFrames;
+	int					m_isLoading;
 
 	bool				m_isGameRunning;
 	bool				m_pauseState;

@@ -936,6 +936,7 @@ bool CEngineHost::Init()
 
 void CEngineHost::Shutdown()
 {
+	g_parallelJobs->Wait();
 	g_parallelJobs->Shutdown();
 
 	engine->Shutdown();

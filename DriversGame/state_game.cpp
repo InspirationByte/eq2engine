@@ -236,18 +236,6 @@ void fnMaxplayersTest(ConVar* pVar,char const* pszOldValue)
 ConVar sv_maxplayers("maxplayers", "1", fnMaxplayersTest, "Maximum players allowed on the server\n");
 
 //------------------------------------------------------------------------------
-// Loads new game world
-//------------------------------------------------------------------------------
-
-bool Game_LoadWorld()
-{
-	Msg("-- LoadWorld --\n");
-
-	g_pGameWorld->Init();
-	return g_pGameWorld->LoadLevel();
-}
-
-//------------------------------------------------------------------------------
 // Initilizes game session
 //------------------------------------------------------------------------------
 
@@ -366,7 +354,7 @@ CState_Game::CState_Game() : CBaseStateHandler()
 	m_replayMode = REPLAY_MODE_NONE;
 	m_isGameRunning = false;
 	m_fade = 1.0f;
-	m_doLoadingFrames = 0;
+	m_isLoading = -1;
 	m_missionScriptName = "defaultmission";
 	m_scheduledQuickReplay = REPLAY_SCHEDULE_NONE;
 	m_storedMissionStatus = MIS_STATUS_INGAME;
@@ -386,31 +374,31 @@ void CState_Game::UnloadGame()
 	if(!g_pPhysics)
 		return;
 
-	if(!m_isGameRunning)
-		return;
-
 	m_tunnelEfx = nullptr;
 
-	m_isGameRunning = false;
-
-	// if it were recording, stop the replay and save last session
-	if( g_replayData->m_state == REPL_RECORDING )
+	if (m_isGameRunning)
 	{
-		g_replayData->Stop();
+		// if it were recording, stop the replay and save last session
+		if (g_replayData->m_state == REPL_RECORDING)
+		{
+			g_replayData->Stop();
 
-		g_fileSystem->MakeDir(USERREPLAYS_PATH, SP_MOD);
-		g_replayData->SaveToFile(USERREPLAYS_PATH "_lastSession.rdat");
+			g_fileSystem->MakeDir(USERREPLAYS_PATH, SP_MOD);
+			g_replayData->SaveToFile(USERREPLAYS_PATH "_lastSession.rdat");
+		}
 	}
+	else
+		MsgWarning("UnloadGame called while loading...\n");
 
 	// renderer must be reset
 	g_pShaderAPI->Reset(STATE_RESET_ALL);
 	g_pShaderAPI->Apply();
 
 	g_pGameHUD->Cleanup();
-	g_pGameWorld->Cleanup();
-	
+
 	m_storedMissionStatus = MIS_STATUS_INGAME;
 
+	g_pGameWorld->Cleanup();
 	Game_ShutdownSession();
 
 	g_pPhysics->SceneShutdown();
@@ -421,48 +409,9 @@ void CState_Game::UnloadGame()
 
 	delete g_pPhysics;
 	g_pPhysics = NULL;
-}
 
-void CState_Game::LoadGame()
-{
-	UnloadGame();
-
-	g_sounds->Init(EQ_DRVSYN_DEFAULT_SOUND_DISTANCE);
-	g_sounds->SetPaused(true);
-
-	PrecacheStudioModel( "models/error.egf" );
-	PrecacheScriptSound( "menu.back" );
-	PrecacheScriptSound( "menu.roll" );
-
-	g_pPhysics = new CPhysicsEngine();
-	g_pPhysics->SceneInit();
-
-	if( DoLoadMission() && Game_LoadWorld() )
-	{
-		g_pGameHUD->Init();
-
-		Game_InitializeSession();
-		g_pause.SetBool(false);
-
-		if(m_replayMode != REPLAY_MODE_STORED_REPLAY)
-		{
-			int sessionType = g_pGameSession->GetSessionType();
-
-			//if(sessionType == SESSION_SINGLE)
-				m_gameMenuName = "Ingame";
-			//else if(sessionType == SESSION_NETWORK)
-			//	m_gameMenuName = "IngameMP";
-		}
-		else
-			m_gameMenuName = "Replay";
-	}
-	else
-	{
-		g_sounds->SetPaused(false);
-
-		SetNextState(g_states[GAME_STATE_TITLESCREEN]);
-		m_loadingError = true;
-	}
+	m_isGameRunning = false;
+	m_isLoading = -1;
 }
 
 bool CState_Game::DoLoadMission()
@@ -525,7 +474,7 @@ void CState_Game::QuickRestart(bool replay)
 
 	g_pGameHUD->Cleanup();
 	g_pGameWorld->Cleanup(false);
-	
+
 	// store mission status if we're going to replay
 	m_storedMissionStatus = g_pGameSession->GetMissionStatus();
 
@@ -534,15 +483,8 @@ void CState_Game::QuickRestart(bool replay)
 
 	Game_ShutdownSession(true);
 
-	g_pGameWorld->Init();
-	if(!g_pGameWorld->LoadLevel())
-	{
-		MsgError("Failed to load level\n");
-	}
-
-	g_pGameHUD->Init();
-
-	Game_InitializeSession();
+	// loader to the phase 5 (world loading)
+	m_isLoading = 5;
 }
 
 void CState_Game::OnEnterSelection( bool isFinal )
@@ -616,14 +558,13 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 	if(m_isGameRunning)
 		return;
 
+	m_isLoading = 0;
 	m_loadingError = false;
 	m_exitGame = false;
 	m_showMenu = false;
 
 	m_scheduledRestart = false;
 	m_scheduledQuickReplay = REPLAY_SCHEDULE_NONE;
-
-	m_doLoadingFrames = 2;
 
 	m_fade = 1.0f;
 
@@ -656,12 +597,62 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 
 bool CState_Game::DoLoadingFrame()
 {
-	LoadGame();
+	if (m_isLoading == 0)
+		UnloadGame();
 
-    if(!g_pGameSession)
-        return false;	// no game session causes a real problem
+	// FIXME: use queue instead?
+	switch (m_isLoading)
+	{
+		case 1:
+		{
+			g_sounds->Init(EQ_DRVSYN_DEFAULT_SOUND_DISTANCE);
+			g_sounds->SetPaused(true);
+			break;
+		}
+		case 2:
+		{
+			PrecacheStudioModel("models/error.egf");
+			PrecacheScriptSound("menu.back");
+			PrecacheScriptSound("menu.roll");
+			break;
+		}
+		case 3:
+		{
+			g_pPhysics = new CPhysicsEngine();
+			g_pPhysics->SceneInit();
+			break;
+		}
+		case 4:
+		{
+			m_loadingError = !DoLoadMission();
+			break;
+		}
+		case 5:
+		{
+			g_pGameWorld->Init();
+			break;
+		}
+		case 6:
+		{
+			m_loadingError = !g_pGameWorld->LoadLevel();
+			break;
+		}
+		case 7:	// FINAL
+		{
+			g_pGameHUD->Init();
+			Game_InitializeSession();
+			g_pause.SetBool(false);
 
-	return true;
+			// loading completed
+			m_isLoading = -1;
+
+			return true;
+		}
+	}
+
+	m_isLoading++;
+
+	return !m_loadingError;
 }
 
 // when the state changes to something
@@ -776,6 +767,19 @@ void CState_Game::DrawLoadingScreen()
 
 void CState_Game::OnLoadingDone()
 {
+	// set menus
+	if (m_replayMode != REPLAY_MODE_STORED_REPLAY)
+	{
+		int sessionType = g_pGameSession->GetSessionType();
+
+		//if(sessionType == SESSION_SINGLE)
+		m_gameMenuName = "Ingame";
+		//else if(sessionType == SESSION_NETWORK)
+		//	m_gameMenuName = "IngameMP";
+	}
+	else
+		m_gameMenuName = "Replay";
+
 	m_isGameRunning = true;
 	g_sounds->SetPaused(false);
 }
@@ -791,21 +795,21 @@ bool CState_Game::Update( float fDt )
 
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
-	if(!m_isGameRunning )
+	if(!m_isGameRunning)
 	{
 		DrawLoadingScreen();
 		
-		m_doLoadingFrames--;
-
-		if( m_doLoadingFrames > 0 )
-			return true;
-		else if( m_doLoadingFrames == 0 )	
-			return DoLoadingFrame(); // actual level loading happened here
-
-		if (g_pGameWorld->m_level.IsWorkDone() && materials->GetLoadingQueue() == 0)
+		if (m_isLoading != -1)
 		{
-			OnLoadingDone();
+			if(!DoLoadingFrame()) // actual level loading happened here
+				SetNextState(g_states[GAME_STATE_TITLESCREEN]);
+
+			return true;
 		}
+
+		// wait for world and materials to be loaded
+		if (g_pGameWorld->m_level.IsWorkDone() && materials->GetLoadingQueue() == 0)
+			OnLoadingDone();
 
 		return true;
 	}

@@ -485,6 +485,8 @@ void CGameHost::ShutdownSystems()
 {
 	Msg("---------  ShutdownSystems ---------\n");
 
+	g_parallelJobs->Wait();
+
 	// calls OnLeave and unloads state
 	EqStateMgr::ChangeState( NULL );
 
@@ -493,8 +495,6 @@ void CGameHost::ShutdownSystems()
 
 	// shutdown any dependent bindings to avoid crashes
 	LuaBinding_ShutdownEngineBindings();
-
-	g_parallelJobs->Shutdown();
 
 	equi::Manager->Shutdown();
 	g_fontCache->Shutdown();
@@ -507,6 +507,7 @@ void CGameHost::ShutdownSystems()
 	// shutdown systems...
 	Networking::ShutdownNetworking();
 
+	g_parallelJobs->Shutdown();
 	materials->Shutdown();
 	g_fileSystem->FreeModule( g_matsysmodule );
 
@@ -653,7 +654,7 @@ bool CGameHost::Frame()
 
 	if(!EqStateMgr::UpdateStates( m_fGameFrameTime ))
 	{
-		g_pHost->m_nQuitState = CGameHost::QUIT_TODESKTOP;
+		m_nQuitState = CGameHost::QUIT_TODESKTOP;
 		return false;
 	}
 

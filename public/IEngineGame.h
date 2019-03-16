@@ -51,7 +51,7 @@ public:
 	virtual bool				LoadSaveGame( pfnSavedGameLoader func, void* pData ) = 0;
 
 	virtual bool				SetLevelName( char const* pszLevelName ) = 0;
-	virtual	bool				LoadGame( bool loadSaved = false ) = 0;
+	virtual	bool				LoadGameCycle( bool loadSaved = false ) = 0;
 	virtual void				UnloadGame(bool freeCache, bool force = false) = 0;
 	virtual bool				IsLevelChanged() = 0;
 
