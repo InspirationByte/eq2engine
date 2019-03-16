@@ -662,7 +662,7 @@ void CState_Game::OnLeave( CBaseStateHandler* to )
 	m_replayMode = REPLAY_MODE_NONE;
 
 	delete m_uiLayout;
-	m_uiLayout = nullptr;
+	m_uiLayout = m_menuDummy = nullptr;
 
 	if(!g_pGameSession)
 		return;

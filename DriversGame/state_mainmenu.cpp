@@ -94,7 +94,7 @@ void CState_MainMenu::OnEnterSelection( bool isFinal )
 void CState_MainMenu::OnLeave( CBaseStateHandler* to )
 {
 	delete m_uiLayout;
-	m_uiLayout = nullptr;
+	m_uiLayout = m_menuDummy = nullptr;
 	g_sounds->Shutdown();
 }
 
