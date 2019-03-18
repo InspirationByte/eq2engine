@@ -53,6 +53,7 @@ public:
 
 	//---------------------------------------------
 
+	void		LoadGame();
 	void		UnloadGame();
 
 	bool		SetMissionScript( const char* name );

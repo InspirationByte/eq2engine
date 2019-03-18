@@ -101,15 +101,21 @@ DECLARE_CMD(fastseek, "Seeks to the replay frame. (Visual mistakes are possible)
 		return;
 
 	int replayTo = 0;
-	int seekFrame = 0;
 
 	if(CMD_ARGC > 0)
-		replayTo = seekFrame = atoi(CMD_ARGV(0).c_str());
+		replayTo = atoi(CMD_ARGV(0).c_str());
 
-	g_replayData->Stop();
-	g_replayData->m_state = REPL_INIT_PLAYBACK;
+	// restart if if we want earlier ticks
+	if (replayTo < g_replayData->m_tick)
+	{
+		g_replayData->Stop();
+		g_replayData->m_state = REPL_INIT_PLAYBACK;
 
-	Game_QuickRestart(true);
+		Game_QuickRestart(true);
+
+		// load manually, not using loading screen
+		g_State_Game->LoadGame();
+	}
 
 	const float frameRate = 1.0f / 60.0f; // TODO: use g_replayData->m_demoFrameRate
 
@@ -119,10 +125,13 @@ DECLARE_CMD(fastseek, "Seeks to the replay frame. (Visual mistakes are possible)
 
 		Game_OnPhysicsUpdate(frameRate, 0);
 
-		g_pCameraAnimator->Reset();
-
 		replayTo--;
 	}
+
+	g_pCameraAnimator->Reset();
+
+	// wait for any pending regions
+	g_pGameWorld->m_level.WaitForThread();
 
 }
 
@@ -133,6 +142,7 @@ void Game_InstantReplay(int replayTo)
 
 	if(replayTo == 0 && g_replayData->m_state == REPL_PLAYING)
 	{
+		// revert
 		g_replayData->Stop();
 		g_replayData->m_tick = 0;
 		g_replayData->m_state = REPL_INIT_PLAYBACK;
@@ -155,20 +165,24 @@ void Game_InstantReplay(int replayTo)
 		}
 	}
 
-	g_pGameWorld->m_level.WaitForThread();
-
-	g_pCameraAnimator->Reset();
+	// load manually, not using loading screen
+	g_State_Game->LoadGame();
 
 	const float frameRate = 1.0f / 60.0f;
 
 	while(replayTo > 0)
 	{
-		// TODO: use g_replayData->m_demoFrameRate
+		g_pGameWorld->m_level.WaitForThread();
+
+		g_pAIManager->UpdateCopStuff(frameRate);
+		g_pGameWorld->UpdateWorld(frameRate);
+
 		g_pPhysics->Simulate(frameRate, g_pGameSession->GetPhysicsIterations(), Game_OnPhysicsUpdate);
 
-		replayTo--;
-		replayTo--;
+		replayTo -= g_pGameSession->GetPhysicsIterations();
 	}
+
+	g_pCameraAnimator->Reset();
 }
 
 DECLARE_CMD(instantreplay, "Does instant replay (slowly). You can fetch to frame if specified", 0)
@@ -367,6 +381,18 @@ CState_Game::CState_Game() : CBaseStateHandler()
 CState_Game::~CState_Game()
 {
 
+}
+
+void CState_Game::LoadGame()
+{
+	while(m_isLoading != -1)
+	{
+		if (!DoLoadingFrame()) // actual level loading happened here
+		{
+			SetNextState(g_states[GAME_STATE_TITLESCREEN]);
+			break;
+		}
+	}
 }
 
 void CState_Game::UnloadGame()
@@ -772,10 +798,7 @@ void CState_Game::OnLoadingDone()
 	{
 		int sessionType = g_pGameSession->GetSessionType();
 
-		//if(sessionType == SESSION_SINGLE)
 		m_gameMenuName = "Ingame";
-		//else if(sessionType == SESSION_NETWORK)
-		//	m_gameMenuName = "IngameMP";
 	}
 	else
 		m_gameMenuName = "Replay";
@@ -1355,11 +1378,11 @@ reincrement:
 
 void CState_Game::GetMouseCursorProperties(bool &visible, bool& centered)
 {
-	visible = (GetPauseMode() > PAUSEMODE_NONE) && !Director_FreeCameraActive();
+	visible = m_showMenu || (g_pause.GetBool() && !Director_IsActive()) || Director_IsActive() && !Director_FreeCameraActive();
 	centered = (Director_FreeCameraActive() || g_freeLook.GetBool()) && !visible;
 }
 
-void CState_Game::HandleMouseMove( int x, int y, float deltaX, float deltaY )
+void CState_Game::HandleMouseMove( int x,  int y, float deltaX, float deltaY )
 {
 	if(!m_isGameRunning)
 		return;
