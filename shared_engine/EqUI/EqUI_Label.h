@@ -11,8 +11,6 @@
 #include "equi_defs.h"
 #include "IEqUI_Control.h"
 
-struct eqFontStyleParam_t;
-
 namespace equi
 {
 
@@ -33,9 +31,6 @@ public:
 	bool			ProcessKeyboardEvents(int nKeyButtons, int flags) {return true;}
 
 	void			DrawSelf( const IRectangle& rect);
-
-protected:
-	void			GetCalcFontStyle(eqFontStyleParam_t& style) const;
 };
 
 };

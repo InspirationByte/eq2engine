@@ -28,16 +28,6 @@ IRectangle Label::GetClientScissorRectangle() const
 	return rect;
 }
 
-void Label::GetCalcFontStyle(eqFontStyleParam_t& style) const
-{
-	Vector2D scaling = CalcScaling();
-	style.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_SCISSOR | TEXT_STYLE_USE_TAGS;
-	style.align = m_textAlignment;
-	style.scale = m_fontScale * scaling;
-	
-	style.textColor = m_textColor;
-}
-
 void Label::DrawSelf( const IRectangle& rect )
 {
 	CRectangleTextLayoutBuilder rectLayout;

@@ -25,6 +25,7 @@
 
 struct kvkeybase_t;
 class IEqFont;
+struct eqFontStyleParam_t;
 
 #define UICMD_ARGV(index)		args.ptr()[index]
 #define UICMD_ARGC				args.numElem()
@@ -131,6 +132,8 @@ public:
 
 	void						SetTextAlignment(int alignmentFlags) { m_textAlignment = alignmentFlags; }
 	int							GetTextAlignment() const { return m_textAlignment; }
+
+	virtual	void				GetCalcFontStyle(eqFontStyleParam_t& style) const;
 
 	// PURE VIRTUAL
 	virtual const char*			GetClassname() const = 0;
