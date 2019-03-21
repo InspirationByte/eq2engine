@@ -108,14 +108,17 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 		{
 			const char* anchorVal = KV_GetValueString(anchors, i);
 
-			//if(!stricmp("left", anchorVal))
-			//	m_anchors |= UI_ANCHOR_LEFT;
-			//else if(!stricmp("top", anchorVal))
-			//	m_anchors |= UI_ANCHOR_TOP;
-			if(!stricmp("right", anchorVal))
+
+			if(!stricmp("left", anchorVal))
+				m_anchors |= UI_BORDER_LEFT;
+			else if(!stricmp("top", anchorVal))
+				m_anchors |= UI_BORDER_TOP;
+			else if(!stricmp("right", anchorVal))
 				m_anchors |= UI_BORDER_RIGHT;
 			else if(!stricmp("bottom", anchorVal))
 				m_anchors |= UI_BORDER_BOTTOM;
+			else if (!stricmp("all", anchorVal))
+				m_anchors = (UI_BORDER_LEFT | UI_BORDER_TOP | UI_BORDER_RIGHT | UI_BORDER_BOTTOM);
 		}
 	}
 
@@ -451,7 +454,8 @@ void IUIControl::Render()
 		materials->SetShaderParameterOverriden(SHADERPARAM_RASTERSETUP, true);
 
 		// set scissor rect before childs are rendered
-		g_pShaderAPI->SetScissorRectangle(clientRectRender);
+		IRectangle scissorRect = GetClientScissorRectangle();
+		g_pShaderAPI->SetScissorRectangle(scissorRect);
 
 		// paint control itself
 		DrawSelf( clientRectRender );

@@ -106,6 +106,9 @@ public:
 	// drawn rectangle
 	virtual IRectangle			GetClientRectangle() const;
 
+	// for text only
+	virtual IRectangle			GetClientScissorRectangle() const { return GetClientRectangle(); }
+
 	// returns the scaling of element
 	Vector2D					CalcScaling() const;
 

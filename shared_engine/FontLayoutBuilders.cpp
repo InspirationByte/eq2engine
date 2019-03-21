@@ -126,7 +126,7 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 		}
 
 		// check if character bottom bound is outside the rectangle bottom bound
-		if( cPos.y + cSize.y > m_rectangle.vrightBottom.y)
+		if(m_linesProduced > 1 && cPos.y + cSize.y > m_rectangle.vrightBottom.y)
 		{
 			m_hasNotdrawnLines = true;
 			return false;
