@@ -51,6 +51,9 @@ const float AI_COP_TIME_TO_TELL_DIRECTION	= 5.0f;
 
 const float AI_COP_LOST_TARGET_FARDIST		= 160.0f;
 
+const float AI_COP_BECOME_ANGRY_PURSUIT_TIME = 60.0f;
+const float AI_COP_BECOME_ANGRY_FELONY		 = 0.65f;
+
 const float AI_ALTER_SIREN_MIN_SPEED		= 65.0f;
 const float AI_ALTER_SIREN_CHANGETIME		= 2.0f;
 
@@ -66,6 +69,8 @@ CAIPursuerCar::CAIPursuerCar() : CAITrafficCar(nullptr)
 CAIPursuerCar::CAIPursuerCar(vehicleConfig_t* carConfig, EPursuerAIType type) : CAITrafficCar(carConfig)
 {
 	m_target = nullptr;
+	m_angry = false;
+	m_pursuitTime = 0.0f;
 
 	m_loudhailer = nullptr;
 	m_type = type;
@@ -356,7 +361,9 @@ void CAIPursuerCar::BeginPursuit( float delay )
 	if (m_type == PURSUER_TYPE_COP && 
 		!targetPursuerData.announced)
 	{
-		if (m_target->GetFelony() >= AI_COP_MINFELONY)
+		float targetFelony = m_target->GetFelony();
+
+		if (targetFelony >= AI_COP_MINFELONY)
 		{
 			int val = RandomInt(0, 1);
 
@@ -685,7 +692,14 @@ bool CAIPursuerCar::UpdateTarget()
 
 			if (targetPursuerData.lastSeenTimer > AI_COP_TIME_TO_LOST_TARGET*0.5f)
 				Speak("cop.pursuit_continue", m_target);
+
+			if (newFelony > AI_COP_BECOME_ANGRY_FELONY)
+				m_angry = true;
 		}
+
+		// for gangs and cops it's equal. Too much pursuit time makes me angry.
+		if (m_pursuitTime > AI_COP_BECOME_ANGRY_PURSUIT_TIME)
+			m_angry = true;
 
 		targetPursuerData.lastSeenTimer = 0.0f;
 	}
@@ -737,6 +751,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 		m_enabled = true;
 		m_autogearswitch = true;
+		m_pursuitTime = 0.0f;
 
 		// set desired torque and speed
 		m_maxSpeed = m_savedMaxSpeed;
@@ -781,6 +796,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		return 0;
 	}
 
+	m_pursuitTime += fDt;
+
 	if (!UpdateTarget())
 		return 0;
 
@@ -817,7 +834,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	// update target avoidance affector parameters
 	m_targetAvoidance.m_manipulator.m_avoidanceRadius = 10.0f;
-	m_targetAvoidance.m_manipulator.m_enabled = true;
+	m_targetAvoidance.m_manipulator.m_enabled = !m_angry;
 	m_targetAvoidance.m_manipulator.m_targetPosition = targetPos;
 
 	float distToTarget = length(targetPos - GetOrigin());
