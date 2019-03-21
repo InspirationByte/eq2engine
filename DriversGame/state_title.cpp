@@ -38,6 +38,7 @@ void CState_Title::OnEnter( CBaseStateHandler* from )
 
 	g_sounds->PrecacheSound( "menu.click" );
 	g_sounds->PrecacheSound( "menu.thunder" );
+	g_sounds->PrecacheSound( "menu.titlemusic" );
 
 	memset(m_codeKeysEntered, 0, sizeof(m_codeKeysEntered));
 	m_codePos = 0;
@@ -85,6 +86,10 @@ void CState_Title::OnEnter( CBaseStateHandler* from )
 
 	if (m_titleText)
 		m_titlePos = m_titleText->GetPosition();
+
+	EmitSound_t es("menu.titlemusic");
+	g_sounds->Emit2DSound(&es);
+
 }
 
 void CState_Title::OnLeave( CBaseStateHandler* to )
@@ -166,7 +171,7 @@ bool CState_Title::Update( float fDt )
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
 	materials->Setup2D(screenSize.x, screenSize.y);
-	g_pShaderAPI->Clear( true,true, false, ColorRGBA(0.25f,0,0,0.0f));
+	g_pShaderAPI->Clear( true,true, false, ColorRGBA(0));
 
 	if(m_titleText)
 		m_titleText->SetTextColor(titleTextCol);
@@ -193,6 +198,11 @@ bool CState_Title::Update( float fDt )
 		meshBuilder.Color4fv(blockCol);
 		meshBuilder.Quad2(screenRect[0], screenRect[1], screenRect[2], screenRect[3]);
 	meshBuilder.End();
+
+	ISoundPlayable* musicChannel = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
+
+	if (musicChannel)
+		musicChannel->SetVolume(m_fade);
 
 	return !(m_goesFromTitle && m_fade == 0.0f);
 }

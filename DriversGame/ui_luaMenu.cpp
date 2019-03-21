@@ -52,11 +52,15 @@ void CLuaMenu::SetMenuStackTop(OOLUA::Table& tabl)
 	}
 }
 
-void CLuaMenu::PushMenu(OOLUA::Table& tabl, int selection)
+void CLuaMenu::PushMenu(OOLUA::Table& tabl, const std::string& titleToken, int selection)
 {
 	lua_State* state = GetLuaState();
 
-	if( m_stackPush.Push() && OOLUA::push(state, tabl) && OOLUA::push(state, selection) && m_stackPush.Call(2, 1) )
+	if( m_stackPush.Push() && 
+		OOLUA::push(state, tabl) && 
+		OOLUA::push(state, titleToken) &&
+		OOLUA::push(state, selection) && 
+		m_stackPush.Call(3, 1) )
 	{
 		OOLUA::Table newStackTop;
 		OOLUA::pull( state, newStackTop );
@@ -181,15 +185,24 @@ void CLuaMenu::EnterSelection()
 							PopMenu();
 					}
 
-					OOLUA::Table nextMenu;
-					if( params.safe_at("nextMenu", nextMenu))
-						PushMenu( nextMenu, m_selection );
+					std::string newTitleToken = "";
+					params.safe_at("titleToken", newTitleToken);
 
+					OOLUA::Table nextMenu;
+					if (params.safe_at("nextMenu", nextMenu))
+					{
+
+
+						PushMenu(nextMenu, newTitleToken, m_selection);
+					}
+
+					GetMenuTitleToken(m_menuTitleStr);
+					/*
 					std::string newTitleToken = "";
 					if(params.safe_at("titleToken", newTitleToken))
 					{
 						m_menuTitleStr = LocalizedString(newTitleToken.c_str());
-					}
+					}*/
 				}
 			}
 			else

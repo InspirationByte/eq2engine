@@ -56,6 +56,7 @@ protected:
 
 	equi::IUIControl*		m_uiLayout;
 	equi::IUIControl*		m_menuDummy;
+	equi::IUIControl*		m_menuHeaderDummy;
 };
 
 extern CState_MainMenu* g_State_MainMenu;

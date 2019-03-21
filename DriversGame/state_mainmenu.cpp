@@ -40,6 +40,7 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 	g_sounds->PrecacheSound( "menu.back" );
 	g_sounds->PrecacheSound( "menu.roll" );
 	g_sounds->PrecacheSound( "menu.click" );
+	g_sounds->PrecacheSound("menu.music");
 
 	m_fade = 0.0f;
 	m_textFade = 0.0f;
@@ -84,6 +85,9 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 
 		m_uiLayout->AddChild(m_menuDummy);
 	}
+
+	EmitSound_t es("menu.music");
+	g_sounds->Emit2DSound(&es);
 }
 
 void CState_MainMenu::OnEnterSelection( bool isFinal )
@@ -120,20 +124,75 @@ bool CState_MainMenu::Update( float fDt )
 	m_fade = clamp(m_fade, 0.0f, 1.0f);
 	m_textFade = clamp(m_textFade, 0.0f, 1.0f);
 
-	materials->Setup2D(screenSize.x,screenSize.y);
-	g_pShaderAPI->Clear( true,true, false, ColorRGBA(0.25f,0,0,0.0f));
+	materials->Setup2D(screenSize.x,screenSize.y);;
+	g_pShaderAPI->Clear( true,true, false, ColorRGBA(0));
 
 	IVector2D halfScreen(screenSize.x/2, screenSize.y/2);
 
 	m_uiLayout->SetSize(screenSize);
 	m_uiLayout->Render();
 
+	//materials->SetMatrix(MATRIXMODE_VIEW, rotateZ4(DEG2RAD(-7)));
+
 	if (!m_menuDummy)
 		return true;
 
 	IEqFont* font = m_menuDummy->GetFont();
 
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+
+	BlendStateParam_t blending;
+	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
+	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+
 	Vector2D menuScaling = m_menuDummy->CalcScaling();
+
+	{
+		Vector2D screenMessagePos(m_menuDummy->GetPosition()*menuScaling);
+		screenMessagePos.y -= 45;
+
+		Vertex2D_t verts[6];
+
+		const float messageSizeY = 55.0f;
+
+		Vertex2D_t baseVerts[] = { MAKETEXQUAD(0.0f, screenMessagePos.y, screenSize.x, screenMessagePos.y + messageSizeY, 0.0f) };
+
+		baseVerts[0].color.w = 0.0f;
+		baseVerts[1].color.w = 0.0f;
+		baseVerts[2].color.w = 0.0f;
+		baseVerts[3].color.w = 0.0f;
+
+		verts[0] = baseVerts[0];
+		verts[1] = baseVerts[1];
+
+		verts[4] = baseVerts[2];
+		verts[5] = baseVerts[3];
+
+		verts[2] = Vertex2D_t::Interpolate(verts[0], verts[4], 0.25f);
+		verts[3] = Vertex2D_t::Interpolate(verts[1], verts[5], 0.25f);
+
+		verts[2].color.w = 1.0f;
+		verts[3].color.w = 1.0f;
+
+		float clampedAlertTime = clamp(m_fade, 0.0f, 1.0f);
+
+		float alpha = clampedAlertTime;
+
+		ColorRGBA alertColor(1.0f, 0.7f, 0.0f, alpha);
+
+		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, verts, elementsOf(verts), NULL, alertColor, &blending);
+
+		eqFontStyleParam_t scrMsgParams;
+		scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
+		scrMsgParams.textColor = ColorRGBA(1, 1, 1, alpha);
+		scrMsgParams.scale = 30.0f;
+
+		// ok for 3 seconds
+
+		float textXPos = -2000.0f * pow(1.0f-m_textFade, 4.0f) + (-2000.0f * pow(1.0f - clampedAlertTime, 4.0f));
+
+		font->RenderText(m_menuTitleStr.c_str(), screenMessagePos + Vector2D(textXPos, messageSizeY*0.7f), scrMsgParams);
+	}
 
 	eqFontStyleParam_t fontParam;
 	fontParam.align = m_menuDummy->GetTextAlignment();
@@ -182,19 +241,15 @@ bool CState_MainMenu::Update( float fDt )
 				}
 			}
 
-			Vector2D elemPos(menuPos.x, menuPos.y+idx*font->GetLineHeight(fontParam));
+			Vector2D elemPos(menuPos.x, menuPos.y+_i_index_*font->GetLineHeight(fontParam));
 
 			font->RenderText(token, elemPos, fontParam);
 		oolua_ipairs_end()
 	}
 
+	materials->SetMatrix(MATRIXMODE_VIEW, identity4());
+
 	Vector2D screenRect[] = { MAKEQUAD(0, 0,screenSize.x, screenSize.y, 0) };
-
-	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
-
-	BlendStateParam_t blending;
-	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
 	ColorRGBA blockCol(0,0,0, 1.0f-pow(m_fade, 2.0f));
 
@@ -227,6 +282,11 @@ bool CState_MainMenu::Update( float fDt )
 
 		m_changesMenu = 0;
 	}
+
+	ISoundPlayable* musicChannel = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
+
+	if (musicChannel)
+		musicChannel->SetVolume(m_fade);
 
 	return !(m_goesFromMenu && m_fade == 0.0f);
 }
@@ -303,7 +363,7 @@ void CState_MainMenu::HandleMouseMove( int x, int y, float deltaX, float deltaY 
 			float lineWidth = 400;
 			float lineHeight = font->GetLineHeight(fontParam);
 
-			Vector2D elemPos(menuPos.x, menuPos.y+idx*lineHeight);
+			Vector2D elemPos(menuPos.x, menuPos.y+_i_index_*lineHeight);
 
 			Rectangle_t rect(elemPos - Vector2D(0, lineHeight), elemPos + Vector2D(lineWidth, 0));
 

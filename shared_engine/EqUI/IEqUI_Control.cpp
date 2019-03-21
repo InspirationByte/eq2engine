@@ -80,12 +80,21 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 
 	if(font)
 	{
-		// TODO: styles
-		m_font = g_fontCache->GetFont(KV_GetValueString(font), KV_GetValueInt(font, 1, 20), 0, false);
+		int styleFlags = 0;
+
+		for (int i = 1; i < font->values.numElem(); i++)
+		{
+			if (!stricmp(KV_GetValueString(font, i), "bold"))
+				styleFlags |= TEXT_STYLE_BOLD;
+			else if (!stricmp(KV_GetValueString(font, i), "italic"))
+				styleFlags |= TEXT_STYLE_ITALIC;
+		}
+
+		m_font = g_fontCache->GetFont(KV_GetValueString(font), KV_GetValueInt(font, 1, 20), styleFlags, false);
 	}
 
-	m_fontScale = KV_GetVector2D(sec->FindKeyBase("fontScale"), 0, m_fontScale);
-	m_textColor = KV_GetVector4D(sec->FindKeyBase("textColor"), 0, m_textColor);
+	m_fontScale = KV_GetVector2D(sec->FindKeyBase("fontScale"), 0, m_parent ? m_parent->m_fontScale : m_fontScale);
+	m_textColor = KV_GetVector4D(sec->FindKeyBase("textColor"), 0, m_parent ? m_parent->m_textColor : m_textColor);
 
 	kvkeybase_t* command = sec->FindKeyBase("command");
 

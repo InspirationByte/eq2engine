@@ -39,7 +39,7 @@ protected:
 	void					SetMenuStackTop(OOLUA::Table& tabl);
 	void					SetMenuTable(OOLUA::Table& tabl);
 	
-	void					PushMenu(OOLUA::Table& tabl, int selection = 0);
+	void					PushMenu(OOLUA::Table& tabl, const std::string& titleToken, int selection = 0);
 
 	OOLUA::Table			m_menuStack;
 

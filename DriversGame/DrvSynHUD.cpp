@@ -69,6 +69,7 @@ void CDrvSynHUDManager::Init()
 	m_screenMessageTime = 0.0f;
 	m_screenMessageText.Clear();
 
+	m_screenAlertType = HUD_ALERT_NORMAL;
 	m_screenAlertTime = 0.0f;
 	m_screenAlertInTime = 0.0f;
 	m_screenAlertText.Clear();
@@ -530,7 +531,9 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 {
 	bool replayHud = (g_replayData->m_state == REPL_PLAYING);
 
-	m_hudLayout->SetVisible(m_enable && r_drawHUD.GetBool() && !replayHud);
+	bool hudEnabled = (m_screenAlertType != HUD_ALERT_DANGER) && m_enable && r_drawHUD.GetBool() && !replayHud;
+
+	m_hudLayout->SetVisible(hudEnabled);
 
 	m_curTime += fDt;
 
@@ -606,7 +609,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 
 	m_fadeValue = clamp(m_fadeValue, 0.0f, 1.0f);
 
-	if(m_enable && !replayHud && r_drawHUD.GetBool())
+	if(hudEnabled)
 	{
 		bool mainVehicleInPursuit = (m_mainVehicle ? m_mainVehicle->GetPursuedCount() > 0 : false);
 		bool damageBarVisible = m_hudDamageBar && m_hudDamageBar->IsVisible();
@@ -914,9 +917,19 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 
 			Vector2D screenMessagePos(screenSize.x / 2, screenSize.y / 2.8);
 
+			float clampedAlertTime = clamp(m_screenAlertTime, 0.0f, 1.0f);
+
+			float alpha = clampedAlertTime;
+
 			Vertex2D_t verts[6];
 
-			const float messageSizeY = 50.0f;
+			eqFontStyleParam_t scrMsgParams;
+			scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
+			scrMsgParams.align = TEXT_ALIGN_HCENTER;
+			scrMsgParams.textColor = ColorRGBA(1, 1, 1, alpha);
+			scrMsgParams.scale = 35.0f;
+
+			const float messageSizeY = robotocon30bi->GetLineHeight(scrMsgParams) + 5.0f;
 
 			Vertex2D_t baseVerts[] = {MAKETEXQUAD(0.0f, screenMessagePos.y, screenSize.x, screenMessagePos.y + messageSizeY, 0.0f)};
 
@@ -937,24 +950,21 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 			verts[2].color.w = 1.0f;
 			verts[3].color.w = 1.0f;
 
-			float clampedAlertTime = clamp(m_screenAlertTime, 0.0f, 1.0f);
-
-			float alpha = clampedAlertTime;
 
 			ColorRGBA alertColor(1.0f, 0.7f, 0.0f, alpha);
 
-			if(m_screenAlertType == HUD_ALERT_SUCCESS)
+			if (m_screenAlertType == HUD_ALERT_SUCCESS)
+			{
 				alertColor = ColorRGBA(0.25f, 0.6f, 0.25f, alpha);
-			else if(m_screenAlertType == HUD_ALERT_DANGER)
+			}
+			else if (m_screenAlertType == HUD_ALERT_DANGER)
+			{
 				alertColor = ColorRGBA(1.0f, 0.15f, 0.0f, alpha);
+				scrMsgParams.textColor = ColorRGBA(0.15f, 0.15f, 0.15f, alpha);
+				scrMsgParams.styleFlag &= ~TEXT_STYLE_SHADOW;
+			}
 
 			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,verts,elementsOf(verts), NULL, alertColor, &blending);
-
-			eqFontStyleParam_t scrMsgParams;
-			scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
-			scrMsgParams.align = TEXT_ALIGN_HCENTER;
-			scrMsgParams.textColor = ColorRGBA(1,1,1,alpha);
-			scrMsgParams.scale = 30.0f;
 
 			// ok for 3 seconds
 
