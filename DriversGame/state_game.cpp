@@ -1323,8 +1323,8 @@ void CState_Game::HandleKeyPress( int key, bool down )
 
 		if(key == KEY_ENTER)
 		{
-			PreEnterSelection();
-			EnterSelection();
+			if(PreEnterSelection())
+				EnterSelection();
 		}
 		else if(key == KEY_LEFT || key == KEY_RIGHT)
 		{
@@ -1378,7 +1378,7 @@ reincrement:
 
 void CState_Game::GetMouseCursorProperties(bool &visible, bool& centered)
 {
-	visible = m_showMenu || (g_pause.GetBool() && !Director_IsActive()) || Director_IsActive() && !Director_FreeCameraActive();
+	visible = m_showMenu || Director_IsActive() && !Director_FreeCameraActive() && !g_pause.GetBool();
 	centered = (Director_FreeCameraActive() || g_freeLook.GetBool()) && !visible;
 }
 
@@ -1477,8 +1477,8 @@ void CState_Game::HandleMouseClick( int x, int y, int buttons, bool down )
 	{
 		if (buttons == MOU_B1 && !down)
 		{
-			PreEnterSelection();
-			EnterSelection();
+			if (PreEnterSelection())
+				EnterSelection();
 		}
 
 		return;

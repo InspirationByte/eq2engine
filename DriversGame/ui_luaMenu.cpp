@@ -105,6 +105,10 @@ bool CLuaMenu::PreEnterSelection()
 	OOLUA::Table elem;
 	if( m_menuElems.safe_at(m_selection+1, elem) )
 	{
+		EqLua::LuaTableFuncRef onChange;
+		if (onChange.Get(elem, "onChange", true))
+			return false;
+
 		bool isFinal = false;
 		elem.safe_at("isFinal", isFinal);
 
@@ -124,10 +128,12 @@ bool CLuaMenu::ChangeSelection(int dir)
 	if( m_menuElems.safe_at(m_selection+1, elem) )
 	{
 		EqLua::LuaTableFuncRef onChange;
-		if(onChange.Get(elem, "onChange", true) && onChange.Push() && OOLUA::push(state,dir) && onChange.Call(1, 1))
-		{
+
+		if(onChange.Get(elem, "onChange", true) && 
+			onChange.Push() && 
+			OOLUA::push(state,dir) && 
+			onChange.Call(1, 1))
 			return true;
-		}
 	}
 
 	return false;

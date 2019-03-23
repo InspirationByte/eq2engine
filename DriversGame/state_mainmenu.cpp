@@ -409,14 +409,15 @@ void CState_MainMenu::Event_SelectionEnter()
 	if(m_selection == -1)
 		return;
 
-	EmitSound_t es("menu.click");
-	g_sounds->EmitSound( &es );
+	if (PreEnterSelection())
+	{
+		EmitSound_t es("menu.click");
+		g_sounds->EmitSound(&es);
 
-	m_changesMenu = MENU_ENTER;
-	m_textEffect = 1.0f;
-	m_textFade = 1.0f;
-
-	PreEnterSelection();
+		m_changesMenu = MENU_ENTER;
+		m_textEffect = 1.0f;
+		m_textFade = 1.0f;
+	}
 }
 
 void CState_MainMenu::Event_SelectionUp()
