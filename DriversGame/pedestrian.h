@@ -45,6 +45,8 @@ public:
 	const Vector3D&		GetAngles();
 	const Vector3D&		GetVelocity() const;
 
+	void				UpdateTransform();
+
 protected:
 
 	void				HandleAnimatingEvent(AnimationEvent nEvent, char* options);

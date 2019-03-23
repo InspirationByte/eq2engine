@@ -9,8 +9,8 @@
 #include "CameraAnimator.h"
 #include "input.h"
 
-const Vector3D PEDESTRIAN_BOX(0.45f, 0.8f, 0.45f);
-const Vector3D PEDESTRIAN_OFFS(0.0f, 0.8f, 0.0f);
+const float PEDESTRIAN_RADIUS = 0.35f;
+const float PEDESTRIAN_HEIGHT = 0.85f;
 
 CPedestrian::CPedestrian() : CPedestrian(nullptr)
 {
@@ -54,7 +54,7 @@ void CPedestrian::Spawn()
 	SetModel("models/characters/test.egf");
 
 	m_physBody = new CEqRigidBody();
-	m_physBody->Initialize(-PEDESTRIAN_BOX + PEDESTRIAN_OFFS, PEDESTRIAN_BOX + PEDESTRIAN_OFFS);
+	m_physBody->Initialize(PEDESTRIAN_RADIUS, PEDESTRIAN_HEIGHT);
 
 	m_physBody->SetCollideMask(COLLIDEMASK_OBJECT);
 	m_physBody->SetContents(OBJECTCONTENTS_OBJECT);
@@ -62,10 +62,10 @@ void CPedestrian::Spawn()
 	m_physBody->SetPosition(GetOrigin());
 
 	m_physBody->SetMass(100.0f);
-	m_physBody->SetFriction(0.9f);
+	m_physBody->SetFriction(0.0f);
 	m_physBody->SetRestitution(0.5f);
 	m_physBody->SetAngularFactor(vec3_up);
-	m_physBody->m_erp = 0.15f;
+	m_physBody->m_erp = 0.1f;
 
 	m_physBody->SetUserData(this);
 
@@ -79,10 +79,10 @@ void CPedestrian::Spawn()
 void CPedestrian::ConfigureCamera(cameraConfig_t& conf, eqPhysCollisionFilter& filter) const
 {
 	conf.dist = 4.8f;
-	conf.height = 2.0f;
+	conf.height = 1.0f;
 	conf.distInCar = 0.0f;
 	conf.widthInCar = 0.0f;
-	conf.heightInCar = 1.72f;
+	conf.heightInCar = 0.72f;
 	conf.fov = 60.0f;
 
 	filter.AddObject(m_physBody);
@@ -102,9 +102,6 @@ void CPedestrian::Simulate(float fDt)
 {
 	m_vecOrigin = m_physBody->GetPosition();
 
-	//m_vecAngles = eulers(m_physBody->GetOrientation());
-	//m_vecAngles = VRAD2DEG(m_vecAngles);
-
 	const Vector3D& velocity = m_physBody->GetLinearVelocity();
 
 	Vector3D newVelocity(0.0f, velocity.y, 0.0f);
@@ -116,8 +113,12 @@ void CPedestrian::Simulate(float fDt)
 	{
 		newVelocity += forwardVec * 8.0f;
 	}
+	else if (m_controlButtons & IN_ACCELERATE)
+	{
+		newVelocity += forwardVec * 2.0f;
+	}
 
-	m_physBody->SetLinearVelocity(newVelocity);
+	m_physBody->ApplyLinearForce(newVelocity * m_physBody->GetMass() * 2.0f);
 	m_physBody->TryWake();
 
 	if (m_controlButtons & IN_TURNLEFT)
@@ -144,6 +145,14 @@ void CPedestrian::Simulate(float fDt)
 	DebugRender(m_worldMatrix);
 
 	BaseClass::Simulate(fDt);
+}
+
+void CPedestrian::UpdateTransform()
+{
+	Vector3D offset(vec3_up*PEDESTRIAN_HEIGHT);
+
+	// refresh it's matrix
+	m_worldMatrix = translate(m_vecOrigin - offset)*rotateXYZ4(DEG2RAD(m_vecAngles.x), DEG2RAD(m_vecAngles.y), DEG2RAD(m_vecAngles.z));
 }
 
 void CPedestrian::SetOrigin(const Vector3D& origin)

@@ -294,16 +294,6 @@ void CEqRigidBody::AccumulateForces(float time)
 	if( lengthSqr(m_angularVelocity) < minimumAngularVelocity )
 		m_angularVelocity = vec3_zero;
 
-	// convert angular velocity to spinning
-	// and accumulate
-	Quaternion angVelSpinning = AngularVelocityToSpin(m_orientation, m_angularVelocity*m_angularFactor);
-
-	// encountered
-	ASSERT(angVelSpinning.isNan() == false);
-
-	m_orientation += (angVelSpinning * time);
-	m_orientation.fastNormalize();
-
 	if(!(m_flags & BODY_DISABLE_DAMPING))
 	{
 		// apply damping to angular velocity
@@ -314,6 +304,16 @@ void CEqRigidBody::AccumulateForces(float time)
 		else
 			m_angularVelocity = FVector3D(0);
 	}
+
+	// convert angular velocity to spinning
+	// and accumulate
+	Quaternion angVelSpinning = AngularVelocityToSpin(m_orientation, m_angularVelocity*m_angularFactor);
+
+	// encountered
+	ASSERT(angVelSpinning.isNan() == false);
+
+	m_orientation += (angVelSpinning * time);
+	m_orientation.fastNormalize();
 
 	// clear them
 	m_totalTorque = Vector3D(0);

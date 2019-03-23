@@ -201,6 +201,23 @@ bool CEqCollisionObject::Initialize(float radius)
 	return true;
 }
 
+bool CEqCollisionObject::Initialize(float radius, float height)
+{
+	m_shape = new btCylinderShape(btVector3(radius, height, radius));
+	m_collObject = new btCollisionObject();
+	m_collObject->setCollisionShape(m_shape);
+
+	m_shape->setMargin(ph_margin.GetFloat());
+
+	InitAABB();
+
+	m_collObject->setUserPointer(this);
+
+	m_hasStudioShape = false;
+
+	return true;
+}
+
 btCollisionObject* CEqCollisionObject::GetBulletObject() const
 {
 	return m_collObject;
