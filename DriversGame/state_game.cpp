@@ -116,16 +116,18 @@ DECLARE_CMD(fastseek, "Seeks to the replay frame. (Visual mistakes are possible)
 		// load manually, not using loading screen
 		g_State_Game->LoadGame();
 	}
+ 
+	int remainingFrames = replayTo - g_replayData->m_tick;
 
 	const float frameRate = 1.0f / 60.0f; // TODO: use g_replayData->m_demoFrameRate
 
-	while(replayTo > 0)
+	while(remainingFrames > 0)
 	{
 		g_replayData->ForceUpdateReplayObjects();
 
 		Game_OnPhysicsUpdate(frameRate, 0);
 
-		replayTo--;
+		remainingFrames--;
 	}
 
 	g_pCameraAnimator->Reset();
@@ -140,46 +142,32 @@ void Game_InstantReplay(int replayTo)
 	if(g_pGameSession == NULL)
 		return;
 
-	if(replayTo == 0 && g_replayData->m_state == REPL_PLAYING)
+	if(	replayTo == 0 && 
+		g_replayData->m_state == REPL_PLAYING ||
+		replayTo < g_replayData->m_tick)
 	{
 		// revert
 		g_replayData->Stop();
-		g_replayData->m_tick = 0;
 		g_replayData->m_state = REPL_INIT_PLAYBACK;
 
 		Game_QuickRestart(true);
 	}
-	else
-	{
-		if(replayTo >= g_replayData->m_tick)
-		{
-			replayTo -= g_replayData->m_tick;
-		}
-		else
-		{
-			g_replayData->Stop();
-			g_replayData->m_tick = 0;
-			g_replayData->m_state = REPL_INIT_PLAYBACK;
 
-			Game_QuickRestart(true);
-		}
+	if (!g_State_Game->IsGameRunning())
+	{
+		// load manually, not using loading screen
+		g_State_Game->LoadGame();
 	}
 
-	// load manually, not using loading screen
-	g_State_Game->LoadGame();
+	int remainingFrames = replayTo - g_replayData->m_tick;
 
 	const float frameRate = 1.0f / 60.0f;
 
-	while(replayTo > 0)
+	while(remainingFrames > 0)
 	{
-		g_pGameWorld->m_level.WaitForThread();
-
-		g_pAIManager->UpdateCopStuff(frameRate);
-		g_pGameWorld->UpdateWorld(frameRate);
-
-		g_pPhysics->Simulate(frameRate, g_pGameSession->GetPhysicsIterations(), Game_OnPhysicsUpdate);
-
-		replayTo -= g_pGameSession->GetPhysicsIterations();
+		// it's broken, but should be fine after fixing bugs
+		g_pGameSession->Update(frameRate);
+		remainingFrames -= g_pGameSession->GetPhysicsIterations();
 	}
 
 	g_pCameraAnimator->Reset();
