@@ -10,6 +10,9 @@
 #include "world.h"
 #include "ParticleEffects.h"
 
+#include "Animating.h"
+#include "car.h"
+
 ConVar r_shadowAtlasSize("r_shadowAtlasSize", "1024", 256.0f,  1024.0f, NULL, CV_ARCHIVE);
 ConVar r_shadowLod("r_shadowLod", "0", NULL, CV_ARCHIVE);
 
@@ -189,7 +192,7 @@ void CShadowRenderer::AddShadowCaster( CGameObject* object, struct shadowListObj
 	{
 		int objectType = object->ObjType();
 
-		if(!(objectType == GO_CAR || objectType == GO_CAR_AI || objectType == GO_PHYSICS || objectType == GO_DEBRIS))
+		if(!(objectType == GO_CAR || objectType == GO_CAR_AI || objectType == GO_PHYSICS || objectType == GO_DEBRIS || objectType == GO_PEDESTRIAN))
 			return;
 
 		Vector3D viewPos = g_pGameWorld->GetView()->GetOrigin();
@@ -245,6 +248,18 @@ bool ShadowDecalClipping(struct decalsettings_t& settings, PFXVertex_t& v1, PFXV
 }
 
 ConVar r_shadows_debugatlas("r_shadows_debugatlas", "0");
+
+EShadowModelRenderMode GetObjectRenderMode(CGameObject* obj)
+{
+	int objType = obj->ObjType();
+
+	if(objType == GO_CAR || objType == GO_CAR_AI)
+		return RSHADOW_CAR;
+	else if (objType == GO_PEDESTRIAN)
+		return RSHADOW_SKIN;
+
+	return RSHADOW_STANDARD;
+}
 
 void CShadowRenderer::RenderShadowCasters()
 {
@@ -329,10 +344,12 @@ void CShadowRenderer::RenderShadowCasters()
 		{
 			CGameObject* curObject = objectGroup->object;
 
+			EShadowModelRenderMode renderMode = GetObjectRenderMode(curObject);
+
 			materials->SetMatrix(MATRIXMODE_WORLD, curObject->m_worldMatrix);
 
 			if(!r_shadows_debugatlas.GetBool())
-				RenderShadow( curObject, curObject->GetBodyGroups(), RSHADOW_STANDARD);
+				RenderShadow( curObject, curObject->GetBodyGroups(), renderMode);
 
 			shadowListObject_t* prev = objectGroup;
 
@@ -416,26 +433,29 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 {
 	IEqModel* model = object->GetModel();
 	
+	/*
 	IMaterial* rtMaterial = m_matSimple;
 
 	if(mode == RSHADOW_CAR)
 		rtMaterial = m_matVehicle;
 	else if(mode == RSHADOW_SKIN)
 		rtMaterial = m_matSkinned;
-
-	materials->SetCullMode(CULL_FRONT);
+	*/
+	//materials->SetCullMode(CULL_FRONT);
 
 	materials->SetInstancingEnabled(false);
 	// force disable vertex buffer
 	g_pShaderAPI->SetVertexBuffer( NULL, 2 );
 
+	//object->Draw(RFLAG_SHADOW | RFLAG_NOINSTANCE);
+
 	studiohdr_t* pHdr = model->GetHWData()->studio;
 
 	int nLOD = r_shadowLod.GetInt();
 
-	for(int i = 0; i < pHdr->numBodyGroups; i++)
+	for (int i = 0; i < pHdr->numBodyGroups; i++)
 	{
-		if(!(bodyGroups & (1 << i)))
+		if (!(bodyGroups & (1 << i)))
 			continue;
 
 		int bodyGroupLOD = nLOD;
@@ -443,29 +463,74 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 		// TODO: check bodygroups for rendering
 
 		int nLodModelIdx = pHdr->pBodyGroups(i)->lodModelIndex;
-		int nModDescId = pHdr->pLodModel(nLodModelIdx)->modelsIndexes[ bodyGroupLOD ];
+		int nModDescId = pHdr->pLodModel(nLodModelIdx)->modelsIndexes[bodyGroupLOD];
 
 		// get the right LOD model number
-		while(nModDescId == -1 && bodyGroupLOD > 0)
+		while (nModDescId == -1 && bodyGroupLOD > 0)
 		{
 			bodyGroupLOD--;
-			nModDescId = pHdr->pLodModel(nLodModelIdx)->modelsIndexes[ bodyGroupLOD ];
+			nModDescId = pHdr->pLodModel(nLodModelIdx)->modelsIndexes[bodyGroupLOD];
 		}
 
-		if(nModDescId == -1)
+		if (nModDescId == -1)
 			continue;
 
-		// render model groups that in this body group
-		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
-		{
-			//IMaterial* pMaterial = model->GetMaterial(nModDescId, j);
+		// shared; for car damage
+		float bodyDamages[16];
+		bool canApplyDamage = false;
 
+		if (mode == RSHADOW_CAR)
+		{
+			CCar* car = (CCar*)object;
+			canApplyDamage = car->GetBodyDamageValuesMappedToBones(bodyDamages);
+		}
+
+		// render model groups that in this body group
+		for (int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
+		{
 			// FIXME:	pass additional information into that material
 			//			like transparency
-			materials->BindMaterial(rtMaterial, 0);
 
-			model->DrawGroup( nModDescId, j );
+			if (mode == RSHADOW_CAR)
+			{
+				materials->BindMaterial(m_matVehicle, 0);
+
+				CCar* car = (CCar*)object;
+
+				IEqModel* cleanModel = car->GetModel();
+				IEqModel* damagedModel = (car->GetDamagedModel() && canApplyDamage) ? car->GetDamagedModel() : cleanModel;
+
+				// setup our brand new vertex format
+				// and bind required VBO streams by hand
+				g_pShaderAPI->SetVertexFormat(g_worldGlobals.vehicleVertexFormat);
+				cleanModel->SetupVBOStream(0);
+				damagedModel->SetupVBOStream(1);
+
+				// instead of prepare skinning, we send BodyDamage
+				g_pShaderAPI->SetShaderConstantArrayFloat("BodyDamage", bodyDamages, 16);
+
+				model->DrawGroup(nModDescId, j, false);
+			}
+			else if (mode == RSHADOW_SKIN)
+			{
+				CAnimatingEGF* animating = (CAnimatingEGF*)object;
+
+				materials->SetSkinningEnabled(true);
+
+				materials->BindMaterial(m_matSkinned, 0);
+
+				model->PrepareForSkinning(animating->GetBoneMatrices());
+				model->DrawGroup(nModDescId, j);
+
+				materials->SetSkinningEnabled(false);
+			}
+			else
+			{
+				materials->BindMaterial(m_matSimple, 0);
+
+				model->DrawGroup(nModDescId, j);
+			}
+			
 		}
 	}
-	
 }

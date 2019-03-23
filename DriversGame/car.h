@@ -405,6 +405,10 @@ public:
 	void					Draw( int nRenderFlags );
 	void					PostDraw();
 
+	IEqModel*				GetDamagedModel() const { return m_pDamagedModel; }
+
+	bool					GetBodyDamageValuesMappedToBones(float damageVals[16]) const;
+
 	CGameObject*			GetChildShadowCaster(int idx) const;
 	int						GetChildCasterCount() const;
 
@@ -563,7 +567,7 @@ protected:
 	virtual void			OnPhysicsFrame( float fDt );
 	bool					UpdateWaterState( float fDt, bool hasCollidedWater );
 
-	void					DrawBody( int nRenderFlags );
+	void					DrawBody( int nRenderFlags, int nLOD );
 	void					DrawShadow( float distance );
 
 	void					DrawWheelEffects(int wheelIdx);

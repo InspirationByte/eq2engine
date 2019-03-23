@@ -3918,22 +3918,35 @@ ConVar r_drawCars("r_drawCars", "1", "Render vehicles", CV_CHEAT);
 
 extern ConVar r_enableObjectsInstancing;
 
-void CCar::DrawBody( int nRenderFlags )
+bool CCar::GetBodyDamageValuesMappedToBones(float damageVals[16]) const
+{
+	bool applyDamage = false;
+
+	for (int i = 0; i < CB_PART_WINDOW_PARTS; i++)
+	{
+		int idx = m_bodyParts[i].boneIndex;
+
+		if (idx == -1)
+			continue;
+
+		damageVals[idx] = m_bodyParts[i].damage;
+
+		if (m_bodyParts[i].damage > 0)
+			applyDamage = true;
+	}
+
+	return applyDamage;
+}
+
+void CCar::DrawBody( int nRenderFlags, int nLOD)
 {
 	if( !m_pModel )
 		return;
 
 	studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
 
-	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
-
-	int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
-
 	if(nLOD > 0 && r_enableObjectsInstancing.GetBool() && m_pModel->GetInstancer())
 	{
-		camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
-		nLOD = m_pModel->SelectLod( camDist ); // lod distance check
-
 		CGameObjectInstancer* instancer = (CGameObjectInstancer*)m_pModel->GetInstancer();
 		for(int i = 0; i < MAX_INSTANCE_BODYGROUPS; i++)
 		{
@@ -3943,32 +3956,22 @@ void CCar::DrawBody( int nRenderFlags )
 			gameObjectInstance_t& inst = instancer->NewInstance( i , nLOD );
 			inst.world = m_worldMatrix;
 		}
-
+		
 		// g_pShaderAPI->SetShaderConstantVector4D("CarColor", m_carColor);
 		return;
 	}
 
 	//--------------------------------------------------------
 
-	static float bodyDamages[16];
+	ColorRGBA defaultColors[2] = { color4_white , color4_white };
+	ColorRGBA* bodyColors = (ColorRGBA*)&m_carColor.col1;
 
-	//for(int i = 0; i < 64; i++)
-	//	bodyDamages[i] = 0.0f;
+	ColorRGBA* colors = m_conf->useBodyColor ? bodyColors : defaultColors;
 
-	bool bApplyDamage = false;
+	float bodyDamages[16];
+	bool canApplyDamage = GetBodyDamageValuesMappedToBones(bodyDamages);
 
-	for(int i = 0; i < CB_PART_WINDOW_PARTS; i++)
-	{
-		int idx = m_bodyParts[i].boneIndex;
-
-		if(idx == -1)
-			continue;
-
-		bodyDamages[idx] = m_bodyParts[i].damage;
-
-		if(m_bodyParts[i].damage > 0)
-			bApplyDamage = true;
-	}
+	IEqModel* damagedModel = (m_pDamagedModel && canApplyDamage) ? m_pDamagedModel : m_pModel;
 
 	for(int i = 0; i < pHdr->numBodyGroups; i++)
 	{
@@ -3997,46 +4000,21 @@ void CCar::DrawBody( int nRenderFlags )
 		// render model groups that in this body group
 		for(int j = 0; j < modDesc->numGroups; j++)
 		{
-			//materials->SetSkinningEnabled(true);
-
-			// reset shader constants (required)
-			g_pShaderAPI->Reset(STATE_RESET_SHADERCONST);
-
 			int materialIndex = modDesc->pGroup(j)->materialIndex;
 			materials->BindMaterial( m_pModel->GetMaterial(materialIndex), 0);
 
-			g_pShaderAPI->SetShaderConstantArrayFloat("BodyDamage", bodyDamages, 16);
-
-			ColorRGBA colors[2];
-
-			if(m_conf->useBodyColor)
-			{
-				colors[0] = m_carColor.col1;
-				colors[1] = m_carColor.col2;
-			}
-			else
-			{
-				colors[0] = color4_white;
-				colors[1] = color4_white;
-			}
-
-			g_pShaderAPI->SetShaderConstantArrayVector4D("CarColor", colors, 2);
-
 			// setup our brand new vertex format
-			g_pShaderAPI->SetVertexFormat(g_worldGlobals.vehicleVertexFormat );
+			// and bind required VBO streams by hand
+			g_pShaderAPI->SetVertexFormat(g_worldGlobals.vehicleVertexFormat);
+			m_pModel->SetupVBOStream(0);
+			damagedModel->SetupVBOStream(1);
 
-			// bind
-			m_pModel->SetupVBOStream( 0 );
+			// instead of prepare skinning, we send BodyDamage and car colours
+			g_pShaderAPI->SetShaderConstantArrayFloat("BodyDamage", bodyDamages, 16);
+			g_pShaderAPI->SetShaderConstantArrayVector4D("CarColor", bodyColors, 2);
 
-			if( m_pDamagedModel && bApplyDamage )
-				m_pDamagedModel->SetupVBOStream( 1 );
-			else
-				m_pModel->SetupVBOStream( 1 );
-
-			//m_pModel->PrepareForSkinning( m_boneTransforms );
+			// then draw all of this shit
 			m_pModel->DrawGroup( nModDescId, j, false );
-
-			//materials->SetSkinningEnabled(false);
 		}
 	}
 }
@@ -4121,11 +4099,32 @@ void CCar::Draw( int nRenderFlags )
 		isBodyDrawn = false;
 #endif // EDITOR
 
-	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom( GetOrigin() );
-	int nLOD = m_pModel->SelectLod( camDist ); // lod distance check
+	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom(GetOrigin());
+	int nLOD = m_pModel->SelectLod(camDist); // lod distance check
 
 	bool isShadowPass = (nRenderFlags & RFLAG_SHADOW) > 0;
 
+	if (isBodyDrawn)
+	{
+		if (!isShadowPass)
+		{
+			// draw fake shadow
+			DrawShadow(camDist);
+
+			if (m_hasDriver)
+			{
+				m_driverModel.m_worldMatrix = m_worldMatrix * translate(m_conf->visual.driverPosition);
+				m_driverModel.Draw(nRenderFlags);
+			}
+		}
+
+		materials->SetMatrix(MATRIXMODE_WORLD, m_worldMatrix);
+
+		// draw car body with damage effects
+		DrawBody(nRenderFlags, nLOD);
+	}
+
+	// draw wheels
 	if(!isShadowPass)
 	{
 		CEqRigidBody* pCarBody = m_pPhysicsObject->m_object;
@@ -4153,26 +4152,7 @@ void CCar::Draw( int nRenderFlags )
 
 				DrawWheelEffects(i);
 			}
-
-			if(isBodyDrawn)
-			{
-				DrawShadow(camDist);
-
-				if(m_hasDriver)
-				{
-					m_driverModel.m_worldMatrix = m_worldMatrix * translate(m_conf->visual.driverPosition);
-					m_driverModel.Draw( nRenderFlags );
-				}
-			}
 		}
-	}
-
-	if (isBodyDrawn)
-	{
-		materials->SetMatrix( MATRIXMODE_WORLD, m_worldMatrix);
-
-		// draw car body with damage effects
-		DrawBody(nRenderFlags);
 	}
 }
 
