@@ -3968,7 +3968,7 @@ void CCar::DrawBody( int nRenderFlags, int nLOD)
 
 	ColorRGBA* colors = m_conf->useBodyColor ? bodyColors : defaultColors;
 
-	float bodyDamages[16];
+	float bodyDamages[16] = { 0.0f };
 	bool canApplyDamage = GetBodyDamageValuesMappedToBones(bodyDamages);
 
 	IEqModel* damagedModel = (m_pDamagedModel && canApplyDamage) ? m_pDamagedModel : m_pModel;

@@ -476,7 +476,7 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 			continue;
 
 		// shared; for car damage
-		float bodyDamages[16];
+		float bodyDamages[16] = { 0.0f };
 		bool canApplyDamage = false;
 
 		if (mode == RSHADOW_CAR)
@@ -515,11 +515,13 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 			{
 				CAnimatingEGF* animating = (CAnimatingEGF*)object;
 
+				Matrix4x4* bones = nullptr;//animating->GetBoneMatrices();
+
 				materials->SetSkinningEnabled(true);
 
 				materials->BindMaterial(m_matSkinned, 0);
 
-				model->PrepareForSkinning(animating->GetBoneMatrices());
+				model->PrepareForSkinning(bones);
 				model->DrawGroup(nModDescId, j);
 
 				materials->SetSkinningEnabled(false);

@@ -323,11 +323,6 @@ void CAICarManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
 	int x = 0;
 	int y = radius;
 	
-	SpawnTrafficCar(IVector2D(x0, y0 + radius));
-	SpawnTrafficCar(IVector2D(x0, y0 - radius));
-	SpawnTrafficCar(IVector2D(x0 + radius, y0));
-	SpawnTrafficCar(IVector2D(x0 - radius, y0));
-	
 	while (x < y)
 	{
 		if (f >= 0)
@@ -350,6 +345,11 @@ void CAICarManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
 		SpawnTrafficCar(IVector2D(x0 + y, y0 - x));
 		SpawnTrafficCar(IVector2D(x0 - y, y0 - x));
 	}
+
+	SpawnTrafficCar(IVector2D(x0, y0 + radius));
+	SpawnTrafficCar(IVector2D(x0, y0 - radius));
+	SpawnTrafficCar(IVector2D(x0 + radius, y0));
+	SpawnTrafficCar(IVector2D(x0 - radius, y0));
 }
 
 void CAICarManager::RemoveTrafficCar(CCar* car)
@@ -408,7 +408,10 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 	m_leadRemovePosition = removeOrigin;
 	m_leadVelocity = leadVelocity;
 
-	// Try to remove cars
+	CCar* furthestCar = nullptr;
+	int furthestCarDist = INT_MAX;
+
+	// remove furthest car
 	for (int i = 0; i < m_trafficCars.numElem(); i++)
 	{
 		CCar* car = m_trafficCars[i];
@@ -419,9 +422,6 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 
 		if (!reg || (reg && !reg->m_isLoaded))
 		{
-			RemoveTrafficCar(car);
-			m_trafficCars.fastRemoveIndex(i);
-			i--;
 			continue;
 		}
 
@@ -444,8 +444,15 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 		g_pGameWorld->m_level.LocalToGlobalPoint(trafficCell, reg, trafficCell);
 
 		int distToCell = length(trafficCell - removeCenterCell);
-		int distToCell2 = length(trafficCell - spawnCenterCell);
 
+		if (distToCell > g_traffic_maxdist.GetInt() &&
+			distToCell < furthestCarDist)
+		{
+			furthestCar = car;
+			furthestCarDist = distToCell;
+		}
+
+		/*
 		if (distToCell > g_traffic_maxdist.GetInt() && 
 			distToCell2 > g_traffic_maxdist.GetInt())
 		{
@@ -454,7 +461,11 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 			i--;
 			continue;
 		}
+		*/
 	}
+
+	if(m_trafficCars.fastRemove(furthestCar))
+		RemoveTrafficCar(furthestCar);
 
 	CircularSpawnTrafficCars(spawnCenterCell.x, spawnCenterCell.y, g_traffic_mindist.GetInt());
 }
