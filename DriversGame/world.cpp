@@ -473,6 +473,31 @@ void CGameWorld::InitEnvironment()
 	// adjust sun dir
 	AngleVectors(m_envConfig.sunAngles, &m_info.sunDir);
 
+	// if no sky material, create it
+	if (!m_skyMaterial)
+	{
+		kvkeybase_t skyParams;
+		skyParams.SetName("DrvSynSky");
+		skyParams.SetKey("ztest", false);
+		skyParams.SetKey("zwrite", false);
+
+		m_skyMaterial = materials->CreateMaterial("_sky", &skyParams);
+		m_skyMaterial->Ref_Grab();
+
+		m_skyMaterial->LoadShaderAndTextures();
+
+		// get material vars we gonna control
+		m_skyColor = m_skyMaterial->GetMaterialVar("color", "[1 1 1 1]");
+		m_skyTexture1 = m_skyMaterial->GetMaterialVar("Base1", "$base1");
+		m_skyTexture2 = m_skyMaterial->GetMaterialVar("Base2", "$base1");
+		m_skyInterp = m_skyMaterial->GetMaterialVar("Interp", "0.0");
+
+		ASSERT(m_skyColor);
+		ASSERT(m_skyTexture1);
+		ASSERT(m_skyTexture2);
+		ASSERT(m_skyInterp);
+	}
+
 	// prepare
 	m_skyTexture1->AssignTexture(m_envConfig.skyTexture);
 	m_skyTexture2->AssignTexture(m_envConfig.skyTexture);
@@ -590,13 +615,6 @@ void CGameWorld::Init()
 
 		g_worldGlobals.veh_skidmark_asphalt = g_vehicleEffects->FindEntry("skidmark_asphalt");
 		g_worldGlobals.veh_raintrail = g_vehicleEffects->FindEntry("rain_trail");
-	}
-
-	if(!g_treeAtlas)
-	{
-		g_treeAtlas = new CPFXAtlasGroup();
-		g_treeAtlas->Init("scripts/billboard_trees.atlas", false);
-		g_pPFXRenderer->AddRenderGroup( g_treeAtlas );
 	}
 
 	if(!g_translParticles)
@@ -734,30 +752,6 @@ void CGameWorld::Init()
 
 		materials->PutMaterialToLoadingQueue(m_blurYMaterial);
 	}
-
-	if(!m_skyMaterial)
-	{
-		kvkeybase_t skyParams;
-		skyParams.SetName("DrvSynSky");
-		skyParams.SetKey("ztest", false);
-		skyParams.SetKey("zwrite", false);
-
-		m_skyMaterial = materials->CreateMaterial("_sky", &skyParams);
-		m_skyMaterial->Ref_Grab();
-
-		m_skyMaterial->LoadShaderAndTextures();
-	}
-
-	// get material vars we gonna control
-	m_skyColor = m_skyMaterial->GetMaterialVar("color", "[1 1 1 1]");
-	m_skyTexture1 = m_skyMaterial->GetMaterialVar("Base1", "$base1");
-	m_skyTexture2 = m_skyMaterial->GetMaterialVar("Base2", "$base1");
-	m_skyInterp = m_skyMaterial->GetMaterialVar("Interp", "0.0");
-
-	ASSERT(m_skyColor);
-	ASSERT(m_skyTexture1);
-	ASSERT(m_skyTexture2);
-	ASSERT(m_skyInterp);
 
 	m_envTransitionTime = 0.0f;
 	m_envMapRegenTime = 0.0f;
@@ -2186,6 +2180,14 @@ bool CGameWorld::LoadLevel()
 			{
 				MsgError("DEFAULT Object definition file for '%s' cannot be loaded or not found\n");
 			}
+		}
+
+		// load tree atlas
+		if (!g_treeAtlas)
+		{
+			g_treeAtlas = new CPFXAtlasGroup();
+			g_treeAtlas->Init("scripts/billboard_trees.atlas", false);
+			g_pPFXRenderer->AddRenderGroup(g_treeAtlas);
 		}
 
 		// load billboard lists

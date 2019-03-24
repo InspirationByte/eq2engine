@@ -643,12 +643,12 @@ bool CState_Game::DoLoadingFrame()
 		}
 		case 5:
 		{
-			g_pGameWorld->Init();
+			m_loadingError = !g_pGameWorld->LoadLevel();
 			break;
 		}
 		case 6:
 		{
-			m_loadingError = !g_pGameWorld->LoadLevel();
+			g_pGameWorld->Init();
 			break;
 		}
 		case 7:	// FINAL
