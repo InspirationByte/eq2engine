@@ -524,6 +524,14 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 	}
 }
 
+void CEqConsoleInput::ResetLogScroll()
+{
+	m_logScrollDelay = LOG_SCROLL_DELAY_START;
+	m_logScrollPower = 1.0f;
+	m_logScrollNextTime = 0.0f;
+	m_logScrollDir = 0;
+}
+
 void CEqConsoleInput::OnTextUpdate()
 {
 	m_histIndex = -1;
@@ -959,6 +967,9 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 		m_cursorTime = CURSOR_BLINK_TIME;
 	}
 
+	if (!m_logVisible)
+		ResetLogScroll();
+
 	if(m_logScrollDir != 0)
 	{
 		int maxScroll = s_spewMessages.numElem()-1;
@@ -1144,6 +1155,13 @@ bool CEqConsoleInput::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 
 	return true;
 }
+
+void CEqConsoleInput::SetLogVisible(bool bVisible)
+{
+	m_logVisible = bVisible;
+	ResetLogScroll();
+}
+
 void CEqConsoleInput::SetVisible(bool bVisible)
 {
 	if(!m_enabled)
@@ -1151,6 +1169,8 @@ void CEqConsoleInput::SetVisible(bool bVisible)
 		m_visible = false;
 		return;
 	}
+
+	ResetLogScroll();
 
 	m_visible = bVisible;
 
@@ -1168,9 +1188,9 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 
 		if(tgBind && !stricmp(tgBind->commandString.c_str(), "toggleconsole"))
 		{
-			if(g_consoleInput->IsVisible() && g_consoleInput->IsShiftPressed())
+			if(IsVisible() && IsShiftPressed())
 			{
-				g_consoleInput->SetLogVisible( !g_consoleInput->IsLogVisible() );
+				SetLogVisible( !IsLogVisible() );
 				return false;
 			}
 
@@ -1513,10 +1533,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 				break;
 			case KEY_PGUP:
 			case KEY_PGDN:
-				m_logScrollDelay = LOG_SCROLL_DELAY_START;
-				m_logScrollPower = 1.0f;
-				m_logScrollNextTime = 0.0f;
-				m_logScrollDir = 0;
+				ResetLogScroll();
 				break;
 		}
 	}

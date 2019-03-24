@@ -53,7 +53,7 @@ public:
 	void			SetVisible(bool bVisible);
 	bool			IsVisible() const				{return m_visible;}
 
-	void			SetLogVisible( bool bVisible )	{ m_logVisible = bVisible; }
+	void			SetLogVisible(bool bVisible);
 	bool			IsLogVisible() const			{ return m_logVisible; }
 
 	bool			IsShiftPressed() const			{return m_shiftModifier;}
@@ -68,6 +68,7 @@ public:
 	void			AddAutoCompletion(ConAutoCompletion_t* item);
 
 protected:
+
 	void			DrawFastFind(float x, float y, float w);
 	int				DrawAutoCompletion(float x, float y, float w);
 
@@ -77,6 +78,8 @@ protected:
 	void			UpdateCommandAutocompletionList(const EqString& queryStr);
 	void			UpdateVariantsList( const EqString& queryStr );
 	void			OnTextUpdate();
+
+	void			ResetLogScroll();
 
 	// returns current statement start and current input text
 	int				GetCurrentInputText(EqString& str);
