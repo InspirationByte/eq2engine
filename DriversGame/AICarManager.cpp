@@ -95,7 +95,7 @@ void CAICarManager::Init()
 	m_enableTrafficCars = true;
 	m_enableCops = true;
 
-	for (int i = 0; i < COP_NUMTYPES; i++)
+	for (int i = 0; i < PURSUER_TYPE_COUNT; i++)
 		m_copCarName[i] = "";
 
 	m_copLoudhailerTime = RandomFloat(AI_COP_TAUNT_DELAY, AI_COP_TAUNT_DELAY + 5.0f);
@@ -231,12 +231,14 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 		if (m_copCars.numElem() >= GetMaxCops())
 			return NULL;
 
-		vehicleConfig_t* conf = g_pGameSession->FindCarEntryByName(m_copCarName[COP_LIGHT].c_str());
+		EPursuerAIType pursuerType = (EPursuerAIType)(g_replayRandom.Get(0, PURSUER_TYPE_COUNT-1));
+
+		vehicleConfig_t* conf = g_pGameSession->FindCarEntryByName(m_copCarName[pursuerType].c_str());
 
 		if (!conf)
 			return NULL;
 
-		CAIPursuerCar* pCopCar = new CAIPursuerCar(conf, PURSUER_TYPE_COP);
+		CAIPursuerCar* pCopCar = new CAIPursuerCar(conf, pursuerType);
 		pCopCar->SetTorqueScale(m_copAccelerationModifier);
 		pCopCar->SetMaxDamage(m_copMaxDamage);
 		pCopCar->SetMaxSpeed(m_copMaxSpeed);
@@ -354,14 +356,8 @@ void CAICarManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
 
 void CAICarManager::RemoveTrafficCar(CCar* car)
 {
-	if(car->ObjType() == GO_CAR_AI)
-	{
-		if(((CAITrafficCar*)car)->IsPursuer())
-		{
-			m_copCars.remove((CAIPursuerCar*)car);
-			m_roadBlockCars.remove(car);
-		}
-	}
+	m_copCars.remove((CAIPursuerCar*)car);
+	m_roadBlockCars.remove(car);
 
 	g_pGameWorld->RemoveObject(car);
 }
@@ -654,7 +650,7 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 
 	int nCars = 0;
 
-	vehicleConfig_t* conf = g_pGameSession->FindCarEntryByName(m_copCarName[COP_LIGHT].c_str());
+	vehicleConfig_t* conf = g_pGameSession->FindCarEntryByName(m_copCarName[PURSUER_TYPE_COP].c_str());
 
 	if (!conf)
 		return 0;

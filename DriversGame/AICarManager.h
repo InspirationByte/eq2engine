@@ -14,14 +14,6 @@
 
 #include "oolua.h"
 
-enum EPursuerCarType
-{
-	COP_LIGHT = 0,
-	COP_HEAVY,
-
-	COP_NUMTYPES,
-};
-
 enum ECarType
 {
 	CAR_TYPE_NORMAL = 0,
@@ -121,7 +113,7 @@ public:
 
 	void						CopLoudhailerTold();
 
-	void						SetCopCarConfig(const char* car_name, int type = COP_LIGHT);	// sets cop car configuration
+	void						SetCopCarConfig(const char* car_name, int type);	// sets cop car configuration
 
 	bool						SpawnRoadBlockFor( CCar* car, float directionAngle);
 	bool						IsRoadBlockSpawn() const;
@@ -146,7 +138,7 @@ protected:
 	Vector3D					m_leadRemovePosition;
 	Vector3D					m_leadVelocity;
 
-	EqString					m_copCarName[COP_NUMTYPES];
+	EqString					m_copCarName[PURSUER_TYPE_COUNT];
 	bool						m_enableCops;
 
 	bool						m_enableTrafficCars;
