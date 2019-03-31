@@ -52,6 +52,7 @@ protected:
 	void				HandleAnimatingEvent(AnimationEvent nEvent, char* options);
 
 	CEqRigidBody*		m_physBody;
+	bool				m_onGround;
 
 };
 

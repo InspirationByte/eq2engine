@@ -624,6 +624,8 @@ float CEqRigidBody::ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& 
 
 	// apply now
 	body->ApplyImpulse(contactRelativePos, impactVel*percentage);
+	
+	// static collisions should not wake the body
 
 	return normalImpulse*percentage;
 }

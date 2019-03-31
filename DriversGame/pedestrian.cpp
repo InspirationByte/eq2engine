@@ -9,6 +9,8 @@
 #include "CameraAnimator.h"
 #include "input.h"
 
+#define PED_MODEL "models/characters/ped1.egf"
+
 const float PEDESTRIAN_RADIUS = 0.35f;
 const float PEDESTRIAN_HEIGHT = 0.85f;
 
@@ -19,6 +21,7 @@ CPedestrian::CPedestrian() : CPedestrian(nullptr)
 CPedestrian::CPedestrian(kvkeybase_t* kvdata) : CGameObject(), CAnimatingEGF()
 {
 	m_physBody = nullptr;
+	m_onGround = false;
 }
 
 CPedestrian::~CPedestrian()
@@ -28,7 +31,7 @@ CPedestrian::~CPedestrian()
 
 void CPedestrian::Precache()
 {
-	PrecacheStudioModel("models/characters/test.egf");
+	PrecacheStudioModel(PED_MODEL);
 }
 
 void CPedestrian::SetModelPtr(IEqModel* modelPtr)
@@ -51,22 +54,24 @@ void CPedestrian::OnRemove()
 
 void CPedestrian::Spawn()
 {
-	SetModel("models/characters/test.egf");
+	SetModel(PED_MODEL);
 
 	m_physBody = new CEqRigidBody();
 	m_physBody->Initialize(PEDESTRIAN_RADIUS, PEDESTRIAN_HEIGHT);
 
-	m_physBody->SetCollideMask(COLLIDEMASK_OBJECT);
-	m_physBody->SetContents(OBJECTCONTENTS_OBJECT);
+	m_physBody->SetCollideMask(COLLIDEMASK_DEBRIS);
+	m_physBody->SetContents(OBJECTCONTENTS_VEHICLE);
 
-	m_physBody->SetPosition(GetOrigin());
+	m_physBody->SetPosition(m_vecOrigin);
 
-	m_physBody->SetMass(100.0f);
+	m_physBody->m_flags |= BODY_DISABLE_DAMPING | COLLOBJ_DISABLE_RESPONSE | COLLOBJ_COLLISIONLIST | BODY_FROZEN;
+
+	m_physBody->SetMass(85.0f);
 	m_physBody->SetFriction(0.0f);
-	m_physBody->SetRestitution(0.5f);
+	m_physBody->SetRestitution(0.0f);
 	m_physBody->SetAngularFactor(vec3_up);
-	m_physBody->m_erp = 0.1f;
-
+	m_physBody->m_erp = 0.15f;
+	
 	m_physBody->SetUserData(this);
 
 	m_bbox = m_physBody->m_aabb_transformed;
@@ -98,29 +103,60 @@ void CPedestrian::Draw(int nRenderFlags)
 	DrawEGF(nRenderFlags, m_boneTransforms);
 }
 
+const float ACCEL_RATIO = 12.0f;
+const float DECEL_RATIO = 25.0f;
+
+const float MAX_WALK_VELOCITY = 3.2f;
+const float MAX_RUN_VELOCITY = 9.0f;
+
 void CPedestrian::Simulate(float fDt)
 {
 	m_vecOrigin = m_physBody->GetPosition();
 
+	if(!m_physBody->IsFrozen())
+		m_onGround = false;
+
+	for (int i = 0; i < m_physBody->m_collisionList.numElem(); i++)
+	{
+		CollisionPairData_t& pair = m_physBody->m_collisionList[i];
+
+		m_onGround = (pair.bodyB && pair.bodyB->GetContents() == OBJECTCONTENTS_SOLID_GROUND);
+
+		if (m_onGround)
+			break;
+	}
+
 	const Vector3D& velocity = m_physBody->GetLinearVelocity();
 
-	Vector3D newVelocity(0.0f, velocity.y, 0.0f);
+	Vector3D preferredMove(0.0f);
 
 	Vector3D forwardVec;
 	AngleVectors(m_vecAngles, &forwardVec);
 
-	if (m_controlButtons & IN_ACCELERATE)
+	Activity bestMoveActivity = (m_controlButtons & IN_BURNOUT) ? ACT_RUN : ACT_WALK;
+	float bestMaxSpeed = (bestMoveActivity == ACT_RUN) ? MAX_RUN_VELOCITY : MAX_WALK_VELOCITY;
+
+	//if (m_onGround)
 	{
-		newVelocity += forwardVec * 8.0f;
-	}
-	else if (m_controlButtons & IN_ACCELERATE)
-	{
-		newVelocity += forwardVec * 2.0f;
+		if (length(velocity) < bestMaxSpeed)
+		{
+			if (m_controlButtons & IN_ACCELERATE)
+				preferredMove += forwardVec * ACCEL_RATIO;
+			else if (m_controlButtons & IN_BRAKE)
+				preferredMove -= forwardVec * ACCEL_RATIO;
+		}
+
+		{
+			preferredMove.x -= (velocity.x - preferredMove.x) * DECEL_RATIO;
+			preferredMove.z -= (velocity.z - preferredMove.z) * DECEL_RATIO;
+		}
+
+		m_physBody->ApplyLinearForce(preferredMove * m_physBody->GetMass());
 	}
 
-	m_physBody->ApplyLinearForce(newVelocity * m_physBody->GetMass() * 2.0f);
-	m_physBody->TryWake();
-
+	if (m_controlButtons)
+		m_physBody->TryWake(false);
+	
 	if (m_controlButtons & IN_TURNLEFT)
 		m_vecAngles.y += 120.0f * fDt;
 
@@ -129,17 +165,15 @@ void CPedestrian::Simulate(float fDt)
 
 	Activity currentAct = GetCurrentActivity();
 
+	SetPlaybackSpeedScale(length(velocity) / bestMaxSpeed);
+
 	if (length(velocity.xz()) > 0.5f)
 	{
-		if (currentAct != ACT_RUN)
-		{
-			SetActivity(ACT_RUN);
-		}
+		if (currentAct != bestMoveActivity)
+			SetActivity(bestMoveActivity);
 	}
 	else if(currentAct != ACT_IDLE)
-	{
 		SetActivity(ACT_IDLE);
-	}
 
 	AdvanceFrame(fDt);
 	DebugRender(m_worldMatrix);
@@ -179,7 +213,9 @@ void CPedestrian::SetVelocity(const Vector3D& vel)
 
 const Vector3D& CPedestrian::GetOrigin()
 {
-	m_vecOrigin = m_physBody->GetPosition();
+	if(m_physBody)
+		m_vecOrigin = m_physBody->GetPosition();
+
 	return m_vecOrigin;
 }
 

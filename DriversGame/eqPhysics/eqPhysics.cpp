@@ -44,7 +44,7 @@ using namespace Threading;
 extern ConVar ph_margin;
 
 ConVar ph_showcontacts("ph_showcontacts", "0", NULL, CV_CHEAT);
-ConVar ph_erp("ph_erp", "0.03", "Error correction", CV_CHEAT);
+ConVar ph_erp("ph_erp", "0.25", "Collision correction", CV_CHEAT);
 
 // cvar value mostly depends on velocity
 ConVar ph_grid_tolerance("ph_grid_tolerance", "0.05", NULL, CV_CHEAT);
@@ -911,9 +911,9 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		// correct position
 		if (!(bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
 		{
-			float positionalError = combinedErp * pair.depth / pair.dt;
+			float positionalError = combinedErp * pair.depth * pair.dt;
 
-			bodyB->SetPosition(bodyB->GetPosition() + pair.normal*positionalError);
+			bodyB->SetPosition(bodyB->GetPosition() + pair.normal * positionalError);
 
 			impactVelocity = fabs(dot(pair.normal, bodyB->GetVelocityAtWorldPoint(pair.position)));
 
@@ -934,7 +934,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 
 		float varyErp = (isCarCollidingWithCar ? ph_carVsCarErp.GetFloat() : combinedErp);
 
-		float positionalError = varyErp * pair.depth / pair.dt;
+		float positionalError = varyErp * pair.depth * pair.dt;
 
 		// correct position
 		if (!(bodyA->m_flags & BODY_FORCE_FREEZE) && !(bodyA->m_flags & BODY_INFINITEMASS) && !(bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
