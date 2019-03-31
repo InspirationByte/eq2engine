@@ -139,7 +139,8 @@ void CAIPursuerCar::Precache()
 
 void CAIPursuerCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy)
 {
-	BaseClass::OnCarCollisionEvent(pair, hitBy);
+	if(!InPursuit())
+		BaseClass::OnCarCollisionEvent(pair, hitBy);
 
 	if(!IsAlive())
 		return;
@@ -864,6 +865,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	{
 		m_nav.m_manipulator.ForceUpdatePath();
 		handling = m_chaser.m_handling;
+		handling.autoHandbrake = true;
 	}
 
 	// make stability control
@@ -892,7 +894,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	int controls = IN_ACCELERATE | IN_ANALOGSTEER;
 
 	// alternating siren sound by speed
-	if(	m_type == PURSUER_TYPE_COP )
+	if(	m_type == PURSUER_TYPE_COP && m_conf->visual.sirenType > 0 )
 	{
 		bool newAlterState = (mySpeed > AI_ALTER_SIREN_MIN_SPEED);
 

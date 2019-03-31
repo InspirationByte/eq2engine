@@ -552,6 +552,10 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 
 		float pathCorrectionFactor = RemapValClamp(distFromSegmentByCarPos, 0.0f, AI_SEGMENT_STEERING_CORRECTION_RADIUS, 0.0f, 1.0f);
 
+		// if path correction is more that 50%, we should do it more intense
+		if (pathCorrectionFactor > 0.5f)
+			handling.autoHandbrake = true;
+
 		// steering
 		Vector3D steeringDir = lerp(pathSteeringDir, correctionSteeringDir, clamp(pathCorrectionFactor * steeringDirVsCorrection + pathNarrownessFactor, 0.0f, 1.0f));
 
@@ -636,6 +640,10 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			// if not so complex, handle as usual
 			if(complexSteeringFactor < AI_COMPLEX_STEERING_MIN)
 				complexSteeringFactor = 0.0f;
+
+			// forcing auto handbrake if too complex steering
+			if (complexSteeringFactor > AI_COMPLEX_STEERING_MIN)
+				handling.autoHandbrake = true;
 				
 		}
 		

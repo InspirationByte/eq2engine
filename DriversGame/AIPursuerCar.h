@@ -14,6 +14,8 @@ enum EPursuerAIType
 {
 	PURSUER_TYPE_COP	= 0,	// he looks on your felony rate
 	PURSUER_TYPE_GANG,			// he looks only for your car
+
+	PURSUER_TYPE_COUNT,
 };
 
 const float AI_COPVIEW_FAR					= 60.0f;
