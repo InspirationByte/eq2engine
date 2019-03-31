@@ -106,7 +106,7 @@ bool CState_MainMenu::Update( float fDt )
 {
 	if( m_goesFromMenu )
 	{
-		m_fade -= fDt;
+		m_fade -= fDt*5.0f;
 		m_textFade -= fDt*8.0f;
 	}
 	else
@@ -249,20 +249,38 @@ bool CState_MainMenu::Update( float fDt )
 
 	materials->SetMatrix(MATRIXMODE_VIEW, identity4());
 
-	Vector2D screenRect[] = { MAKEQUAD(0, 0,screenSize.x, screenSize.y, 0) };
-
-	ColorRGBA blockCol(0,0,0, 1.0f-pow(m_fade, 2.0f));
-
 	g_pShaderAPI->SetTexture(NULL, NULL, 0);
 	materials->SetBlendingStates(blending);
 	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
 	materials->SetDepthStates(false, false);
 	materials->BindMaterial(materials->GetDefaultMaterial());
 
-	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
-		meshBuilder.Color4fv(blockCol);
-		meshBuilder.Quad2(screenRect[0], screenRect[1], screenRect[2], screenRect[3]);
-	meshBuilder.End();
+	if (m_goesFromMenu)
+	{
+		ColorRGBA blockCol(0, 0, 0, 1.0f);
+
+		float fadeVal = 1.0f - m_fade;
+
+		Vector2D rectTop[] = { MAKEQUAD(0, 0,screenSize.x, screenSize.y*fadeVal*0.5f, 0) };
+		Vector2D rectBot[] = { MAKEQUAD(0, screenSize.y*0.5f + screenSize.y*(1.0f - fadeVal)*0.5f,screenSize.x, screenSize.y, 0) };
+
+		meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+			meshBuilder.Color4fv(blockCol);
+			meshBuilder.Quad2(rectTop[0], rectTop[1], rectTop[2], rectTop[3]);
+			meshBuilder.Quad2(rectBot[0], rectBot[1], rectBot[2], rectBot[3]);
+		meshBuilder.End();
+	}
+	else
+	{
+		ColorRGBA blockCol(0, 0, 0, 1.0f - pow(m_fade, 2.0f));
+
+		Vector2D screenRect[] = { MAKEQUAD(0, 0,screenSize.x, screenSize.y, 0) };
+
+		meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+			meshBuilder.Color4fv(blockCol);
+			meshBuilder.Quad2(screenRect[0], screenRect[1], screenRect[2], screenRect[3]);
+		meshBuilder.End();
+	}
 
 	m_textEffect -= fDt;
 
@@ -283,10 +301,9 @@ bool CState_MainMenu::Update( float fDt )
 		m_changesMenu = 0;
 	}
 
-	ISoundPlayable* musicChannel = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
-
-	if (musicChannel)
-		musicChannel->SetVolume(m_fade);
+	// fade music
+	if(m_goesFromMenu)
+		g_sounds->Set2DChannelsVolume(CHAN_STREAM, 0.0f);
 
 	return !(m_goesFromMenu && m_fade == 0.0f);
 }

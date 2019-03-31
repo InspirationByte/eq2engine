@@ -793,6 +793,7 @@ void CState_Game::OnLoadingDone()
 
 	m_isGameRunning = true;
 	g_sounds->SetPaused(false);
+	g_sounds->Set2DChannelsVolume(CHAN_STREAM, 1.0f);
 }
 
 

@@ -199,10 +199,9 @@ bool CState_Title::Update( float fDt )
 		meshBuilder.Quad2(screenRect[0], screenRect[1], screenRect[2], screenRect[3]);
 	meshBuilder.End();
 
-	ISoundPlayable* musicChannel = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
-
-	if (musicChannel)
-		musicChannel->SetVolume(m_fade);
+	// fade music
+	if(m_goesFromTitle)
+		g_sounds->Set2DChannelsVolume(CHAN_STREAM, m_fade);
 
 	return !(m_goesFromTitle && m_fade == 0.0f);
 }

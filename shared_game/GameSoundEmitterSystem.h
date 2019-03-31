@@ -304,6 +304,8 @@ public:
 	void						StopAllEmitters();
 	void						StopAll2DSounds();
 
+	void						Set2DChannelsVolume(ESoundChannelType channelType, float volume);
+
 	void						Update(bool force = false);													// updates sound emitter system
 
 	bool						UpdateEmitter( EmitterData_t* emit, soundParams_t &params, bool bForceNoInterp = false );
@@ -347,6 +349,8 @@ private:
 	float						m_defaultMaxDistance;
 
 	fnSoundEmitterUpdate		m_fnEmitterProcess;
+
+	float						m_2dChannelVolume[CHAN_COUNT];
 };
 
 extern CSoundEmitterSystem* g_sounds;

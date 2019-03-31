@@ -296,7 +296,10 @@ void EmitSound_t::Init( const char* pszName, const Vector3D& pos, float volume, 
 //
 //----------------------------------------------------------------------------
 
-CSoundEmitterSystem::CSoundEmitterSystem() : m_isInit(false), m_defaultMaxDistance(100.0f), m_isPaused(false)
+CSoundEmitterSystem::CSoundEmitterSystem() : 
+	m_isInit(false),
+	m_defaultMaxDistance(100.0f), 
+	m_isPaused(false)
 {
 
 }
@@ -308,6 +311,9 @@ void CSoundEmitterSystem::Init(float maxDistance, fnSoundEmitterUpdate updFunc /
 
 	m_defaultMaxDistance = maxDistance;
 	m_fnEmitterProcess = updFunc;
+
+	for (int i = 0; i < CHAN_COUNT; i++)
+		m_2dChannelVolume[i] = 1.0f;
 
 	kvkeybase_t* soundSettings = GetCore()->GetConfig()->FindKeyBase("Sound");
 
@@ -675,11 +681,11 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channelType)
 
 	if(staticChannel)
 	{
-		float startVolume = emit->fVolume*script->fVolume;
+		float startVolume = m_2dChannelVolume[channelType] * emit->fVolume * script->fVolume;
 		float startPitch = emit->fPitch*script->fPitch;
 
 		if (channelType == CHAN_STREAM)
-			startVolume = snd_musicvolume.GetFloat();
+			startVolume = m_2dChannelVolume[channelType] * snd_musicvolume.GetFloat();
 
 		staticChannel->SetSample(bestSample);
 		staticChannel->SetVolume(startVolume);
@@ -716,6 +722,14 @@ bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &
 		return false;
 
 	return true;
+}
+
+void CSoundEmitterSystem::Set2DChannelsVolume(ESoundChannelType channelType, float volume)
+{
+	if (channelType < 0 || channelType >= CHAN_COUNT)
+		return;
+
+	m_2dChannelVolume[channelType] = volume;
 }
 
 void CSoundEmitterSystem::StopAllSounds()
@@ -791,10 +805,11 @@ void CSoundEmitterSystem::Update(bool force)
 
 	PROFILE_FUNC();
 
+	// update music volume always
 	ISoundPlayable* musicChannel = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
 
 	if(musicChannel)
-		musicChannel->SetVolume( snd_musicvolume.GetFloat() );
+		musicChannel->SetVolume(m_2dChannelVolume[CHAN_STREAM] * snd_musicvolume.GetFloat());
 
 	// don't update
 	if(!force && soundsystem->GetPauseState())
