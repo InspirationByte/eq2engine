@@ -3621,12 +3621,12 @@ void CCar::UpdateSounds( float fDt )
 	}
 
 	// update engine sound pitch by RPM value
-	float fRpmC = (m_fEngineRPM + 1300.0f) / 3300.0f;
+	float fRpmC = RemapValClamp(m_fEngineRPM, 600.0f, 10000.0f, 0.35f, 3.5f);
 
 	m_sounds[CAR_SOUND_ENGINE]->SetPitch(fRpmC);
 	m_sounds[CAR_SOUND_ENGINE_LOW]->SetPitch(fRpmC);
 
-	m_sounds[CAR_SOUND_ENGINE_IDLE]->SetPitch(1.0f + m_fEngineRPM / 4000.0f);
+	m_sounds[CAR_SOUND_ENGINE_IDLE]->SetPitch(fRpmC + 0.65f);
 
 	if(m_isLocalCar && m_sounds[CAR_SOUND_WHINE] != nullptr && IsDriveWheelsOnGround())
 	{
@@ -3656,7 +3656,7 @@ void CCar::UpdateSounds( float fDt )
 			m_sounds[CAR_SOUND_WHINE]->Stop();
 	}
 
-	m_engineIdleFactor = (clamp(2200.0f-m_fEngineRPM, 0.0f,2200.0f)/2200.0f);
+	m_engineIdleFactor = 1.0f - RemapValClamp(m_fEngineRPM, 0.0f, 2600.0f, 0.0f, 1.0f);
 
 	float fEngineSoundVol = clamp((1.0f - m_engineIdleFactor), 0.45f, 1.0f);
 
