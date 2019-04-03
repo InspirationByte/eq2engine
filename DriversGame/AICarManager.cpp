@@ -231,14 +231,14 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 		if (m_copCars.numElem() >= GetMaxCops())
 			return NULL;
 
-		EPursuerAIType pursuerType = (EPursuerAIType)(g_replayRandom.Get(0, PURSUER_TYPE_COUNT-1));
+		//EPursuerAIType pursuerType = (EPursuerAIType)(g_replayRandom.Get(0, PURSUER_TYPE_COUNT - 1));
 
-		vehicleConfig_t* conf = g_pGameSession->FindCarEntryByName(m_copCarName[pursuerType].c_str());
+		vehicleConfig_t* conf = g_pGameSession->FindCarEntryByName(m_copCarName[PURSUER_TYPE_COP].c_str());
 
 		if (!conf)
 			return NULL;
 
-		CAIPursuerCar* pCopCar = new CAIPursuerCar(conf, pursuerType);
+		CAIPursuerCar* pCopCar = new CAIPursuerCar(conf, PURSUER_TYPE_COP);
 		pCopCar->SetTorqueScale(m_copAccelerationModifier);
 		pCopCar->SetMaxDamage(m_copMaxDamage);
 		pCopCar->SetMaxSpeed(m_copMaxSpeed);
@@ -356,8 +356,14 @@ void CAICarManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
 
 void CAICarManager::RemoveTrafficCar(CCar* car)
 {
-	m_copCars.remove((CAIPursuerCar*)car);
-	m_roadBlockCars.remove(car);
+	if(car->ObjType() == GO_CAR_AI)
+	{
+		if(((CAITrafficCar*)car)->IsPursuer())
+		{
+			m_copCars.remove((CAIPursuerCar*)car);
+			m_roadBlockCars.remove(car);
+		}
+	}
 
 	g_pGameWorld->RemoveObject(car);
 }
@@ -404,10 +410,7 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 	m_leadRemovePosition = removeOrigin;
 	m_leadVelocity = leadVelocity;
 
-	CCar* furthestCar = nullptr;
-	int furthestCarDist = INT_MAX;
-
-	// remove furthest car
+	// Try to remove cars
 	for (int i = 0; i < m_trafficCars.numElem(); i++)
 	{
 		CCar* car = m_trafficCars[i];
@@ -418,6 +421,9 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 
 		if (!reg || (reg && !reg->m_isLoaded))
 		{
+			RemoveTrafficCar(car);
+			m_trafficCars.fastRemoveIndex(i);
+			i--;
 			continue;
 		}
 
@@ -440,15 +446,8 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 		g_pGameWorld->m_level.LocalToGlobalPoint(trafficCell, reg, trafficCell);
 
 		int distToCell = length(trafficCell - removeCenterCell);
+		int distToCell2 = length(trafficCell - spawnCenterCell);
 
-		if (distToCell > g_traffic_maxdist.GetInt() &&
-			distToCell < furthestCarDist)
-		{
-			furthestCar = car;
-			furthestCarDist = distToCell;
-		}
-
-		/*
 		if (distToCell > g_traffic_maxdist.GetInt() && 
 			distToCell2 > g_traffic_maxdist.GetInt())
 		{
@@ -457,11 +456,7 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 			i--;
 			continue;
 		}
-		*/
 	}
-
-	if(m_trafficCars.fastRemove(furthestCar))
-		RemoveTrafficCar(furthestCar);
 
 	CircularSpawnTrafficCars(spawnCenterCell.x, spawnCenterCell.y, g_traffic_mindist.GetInt());
 }
@@ -743,8 +738,7 @@ void CAICarManager::StopPursuit( CCar* car )
 			m_copCars[i]->EndPursuit();
 		}
 	}
-}
-*/
+}*/
 
 bool CAICarManager::IsRoadBlockSpawn() const
 {
