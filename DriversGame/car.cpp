@@ -1513,7 +1513,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 				m_fEngineRPM += sign(fRPM - m_fEngineRPM) * 12000.0f * fDeltaRpm;
 		}
 
-		m_fEngineRPM = clamp(m_fEngineRPM, 0.0f, 8500.0f);
+		m_fEngineRPM = clamp(m_fEngineRPM, 0.0f, 10000.0f);
 	}
 
 	//-------------------------------------------------------
