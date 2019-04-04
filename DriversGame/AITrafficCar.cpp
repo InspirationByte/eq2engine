@@ -147,14 +147,14 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 			}
 		}
 
-		int controls = m_controlButtons;
+		int controls = GetControlButtons();
 
 		if (m_hornSequencer.Update(fDt))
 			controls |= IN_HORN;
 		else
-			m_controlButtons &= ~IN_HORN;
+			controls &= ~IN_HORN;
 
-		m_controlButtons = controls;
+		SetControlButtons(controls);
 	}
 
 	// frame skip. For cop think

@@ -16,7 +16,7 @@ public:
 	CControllableObject();
 
 	virtual void	SetControlButtons(int flags);
-	int				GetControlButtons() const;
+	virtual int		GetControlButtons() const;
 
 	void			SetControlVars(float fAccelRatio, float fBrakeRatio, float fSteering);
 	void			GetControlVars(float& fAccelRatio, float& fBrakeRatio, float& fSteering);

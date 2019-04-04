@@ -133,16 +133,18 @@ void CPedestrian::Simulate(float fDt)
 	Vector3D forwardVec;
 	AngleVectors(m_vecAngles, &forwardVec);
 
-	Activity bestMoveActivity = (m_controlButtons & IN_BURNOUT) ? ACT_RUN : ACT_WALK;
+	int controlButtons = GetControlButtons();
+
+	Activity bestMoveActivity = (controlButtons & IN_BURNOUT) ? ACT_RUN : ACT_WALK;
 	float bestMaxSpeed = (bestMoveActivity == ACT_RUN) ? MAX_RUN_VELOCITY : MAX_WALK_VELOCITY;
 
 	//if (m_onGround)
 	{
 		if (length(velocity) < bestMaxSpeed)
 		{
-			if (m_controlButtons & IN_ACCELERATE)
+			if (controlButtons & IN_ACCELERATE)
 				preferredMove += forwardVec * ACCEL_RATIO;
-			else if (m_controlButtons & IN_BRAKE)
+			else if (controlButtons & IN_BRAKE)
 				preferredMove -= forwardVec * ACCEL_RATIO;
 		}
 
@@ -154,13 +156,13 @@ void CPedestrian::Simulate(float fDt)
 		m_physBody->ApplyLinearForce(preferredMove * m_physBody->GetMass());
 	}
 
-	if (m_controlButtons)
+	if (controlButtons)
 		m_physBody->TryWake(false);
 	
-	if (m_controlButtons & IN_TURNLEFT)
+	if (controlButtons & IN_TURNLEFT)
 		m_vecAngles.y += 120.0f * fDt;
 
-	if (m_controlButtons & IN_TURNRIGHT)
+	if (controlButtons & IN_TURNRIGHT)
 		m_vecAngles.y -= 120.0f * fDt;
 
 	Activity currentAct = GetCurrentActivity();
