@@ -1273,6 +1273,14 @@ CEqRigidBody* CCar::GetHingedBody() const
 	return NULL;
 }
 
+int	CCar::GetControlButtons() const
+{
+	if (m_locked) // TODO: cvar option to lock or not
+		return IN_HANDBRAKE;
+
+	return CControllableObject::GetControlButtons();
+}
+
 void CCar::UpdateVehiclePhysics(float delta)
 {
 	PROFILE_FUNC();
@@ -1282,8 +1290,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	// retrieve body matrix
 	carBody->ConstructRenderMatrix(m_worldMatrix);
 
-	if(m_locked) // TODO: cvar option to lock or not
-		m_controlButtons = IN_HANDBRAKE;
+	int controlButtons = GetControlButtons();
 
 	bool isCar = m_conf->flags.isCar;
 
@@ -1303,37 +1310,37 @@ void CCar::UpdateVehiclePhysics(float delta)
 	{
 		if( isCar )
 		{
-			if(m_controlButtons & IN_ACCELERATE)
+			if(controlButtons & IN_ACCELERATE)
 				fAccel = (float)((float)m_accelRatio*_oneBy1024);
 
-			if( m_controlButtons & IN_BURNOUT )
+			if(controlButtons & IN_BURNOUT )
 				bBurnout = true;
 
-			if( m_controlButtons & IN_HANDBRAKE )
+			if(controlButtons & IN_HANDBRAKE )
 				fHandbrake = 1;
 		}
 
 		// non-car vehicles still can brake
-		if( m_controlButtons & IN_BRAKE )
+		if(controlButtons & IN_BRAKE )
 			fBrake = (float)((float)m_brakeRatio*_oneBy1024);
 	}
 	else
 		fHandbrake = 1;
 
-	if(m_controlButtons != m_oldControlButtons)
+	if(controlButtons != m_oldControlButtons)
 		carBody->TryWake(false);
 
 	if(carBody->IsFrozen() && !bBurnout)
 		return;
 
-	if( m_controlButtons & IN_EXTENDTURN )
+	if(controlButtons & IN_EXTENDTURN )
 		bExtendTurn = true;
 
-	if( m_controlButtons & IN_TURNLEFT )
+	if(controlButtons & IN_TURNLEFT )
 		fSteerAngle -= (float)((float)m_steerRatio*_oneBy1024);
-	else if( m_controlButtons & IN_TURNRIGHT )
+	else if(controlButtons & IN_TURNRIGHT )
 		fSteerAngle += (float)((float)m_steerRatio*_oneBy1024);
-	else if(m_controlButtons & IN_ANALOGSTEER)
+	else if(controlButtons & IN_ANALOGSTEER)
 	{
 		fSteerAngle = (float)((float)m_steerRatio*_oneBy1024);
 		m_steering = fSteerAngle;
@@ -2475,7 +2482,7 @@ void CCar::Simulate( float fDt )
 
 	bool isCar = m_conf->flags.isCar;
 
-	if(	m_conf->visual.sirenType > SERVICE_LIGHTS_NONE && (m_controlButtons & IN_SIREN) && !(m_oldControlButtons & IN_SIREN))
+	if(	m_conf->visual.sirenType > SERVICE_LIGHTS_NONE && (controlButtons & IN_SIREN) && !(m_oldControlButtons & IN_SIREN))
 	{
 		m_oldSirenState = m_sirenEnabled;
 		m_sirenEnabled = !m_sirenEnabled;
@@ -2595,7 +2602,7 @@ void CCar::Simulate( float fDt )
 
 	UpdateSounds(fDt);
 
-	m_oldControlButtons = m_controlButtons;
+	m_oldControlButtons = controlButtons;
 
 	m_curTime += fDt;
 	m_engineSmokeTime += fDt;
@@ -3596,13 +3603,15 @@ void CCar::UpdateSounds( float fDt )
 	if(!isCar)
 		return;
 
+	int controlButtons = GetControlButtons();
+
 	if(!m_sirenEnabled)
 	{
-		if((m_controlButtons & IN_HORN) && !(m_oldControlButtons & IN_HORN) && m_sounds[CAR_SOUND_HORN]->IsStopped())
+		if((controlButtons & IN_HORN) && !(m_oldControlButtons & IN_HORN) && m_sounds[CAR_SOUND_HORN]->IsStopped())
 		{
 			m_sounds[CAR_SOUND_HORN]->Play();
 		}
-		else if(!(m_controlButtons & IN_HORN) && (m_oldControlButtons & IN_HORN))
+		else if(!(controlButtons & IN_HORN) && (m_oldControlButtons & IN_HORN))
 		{
 			m_sounds[CAR_SOUND_HORN]->Stop();
 		}
@@ -3717,9 +3726,9 @@ void CCar::UpdateSounds( float fDt )
 		{
 			int sampleId = m_sounds[CAR_SOUND_SIREN]->GetEmitParams().sampleId;
 
-			if((m_controlButtons & IN_HORN) && sampleId == 0)
+			if((controlButtons & IN_HORN) && sampleId == 0)
 				sampleId = 1;
-			else if(!(m_controlButtons & IN_HORN) && sampleId == 1)
+			else if(!(controlButtons & IN_HORN) && sampleId == 1)
 				sampleId = 0;
 
 			if( m_sounds[CAR_SOUND_SIREN]->GetEmitParams().sampleId != sampleId )
@@ -4274,10 +4283,6 @@ bool CCar::IsFlippedOver( bool checkWheels ) const
 void CCar::SetMaxDamage( float fDamage )
 {
 	m_gameMaxDamage = fDamage;
-	/*
-#ifndef EDITOR
-	g_replayData->PushEvent( REPLAY_EVENT_CAR_SETMAXDAMAGE, m_replayID, *(void**)&m_gameMaxDamage.m_value );
-#endif // EDITOR*/
 }
 
 float CCar::GetMaxDamage() const
@@ -4288,10 +4293,6 @@ float CCar::GetMaxDamage() const
 void CCar::SetMaxSpeed( float fSpeed )
 {
 	m_maxSpeed = fSpeed;
-	/*
-#ifndef EDITOR
-	g_replayData->PushEvent( REPLAY_EVENT_CAR_SETMAXSPEED, m_replayID, *(void**)&m_maxSpeed );
-#endif // EDITOR*/
 }
 
 float CCar::GetMaxSpeed() const
@@ -4302,10 +4303,6 @@ float CCar::GetMaxSpeed() const
 void CCar::SetTorqueScale( float fScale )
 {
 	m_torqueScale = fScale;
-	/*
-#ifndef EDITOR
-	g_replayData->PushEvent(REPLAY_EVENT_CAR_SETTORQUESCALE, m_replayID, *(void**)&m_torqueScale);
-#endif // EDITOR*/
 }
 
 float CCar::GetTorqueScale() const
@@ -4317,11 +4314,7 @@ void CCar::SetDamage( float damage )
 {
 	bool wasAlive = IsAlive();
 	m_gameDamage = damage;
-	/*
-#ifndef EDITOR
-	if(wasAlive)
-		g_replayData->PushEvent( REPLAY_EVENT_CAR_DAMAGE, m_replayID, *(void**)&m_gameDamage.m_value );
-#endif // EDITOR*/
+
 	if(m_gameDamage > m_gameMaxDamage)
 		m_gameDamage = m_gameMaxDamage;
 }
@@ -4421,10 +4414,6 @@ bool CCar::HasInfiniteMass() const
 void CCar::Lock(bool lock)
 {
 	m_locked = lock;
-	/*
-#ifndef EDITOR
-	g_replayData->PushEvent( REPLAY_EVENT_CAR_LOCK, m_replayID, (void*)lock );
-#endif // EDITOR*/
 }
 
 bool CCar::IsLocked() const
@@ -4435,11 +4424,6 @@ bool CCar::IsLocked() const
 void CCar::Enable(bool enable)
 {
 	m_enabled = enable;
-	/*
-#ifndef EDITOR
-	g_replayData->PushEvent( REPLAY_EVENT_CAR_ENABLE, m_replayID, (void*)enable );
-#endif // EDITOR*/
-
 	UpdateLightsState();
 }
 

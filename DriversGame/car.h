@@ -452,6 +452,8 @@ public:
 	CCar*					GetHingedVehicle() const;
 	CEqRigidBody*			GetHingedBody() const;
 
+	int						GetControlButtons() const;
+
 	void					ConfigureCamera(cameraConfig_t& conf, eqPhysCollisionFilter& filter) const;
 
 	const Quaternion&		GetOrientation() const;
