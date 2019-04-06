@@ -592,7 +592,6 @@ protected:
 	virtual void			OnDeath( CGameObject* deathBy );
 
 	CPhysicsHFObject*		m_pPhysicsObject;
-	CEqCollisionObject*		m_lastCollidingObject;
 
 	CEqPhysicsHingeJoint*	m_trailerHinge;
 

@@ -806,9 +806,6 @@ void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
 	}
 }
 
-#define NEIGHBORCELLS_OFFS_XDX(x, f)	{x-f, x, x+f, x, x-f, x+f, x+f, x-f}
-#define NEIGHBORCELLS_OFFS_YDY(y, f)	{y, y-f, y, y+f, y-f, y-f, y+f, y+f}
-
 void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 {
 	PROFILE_FUNC();
@@ -1025,10 +1022,19 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	// prepare all the constraints
 	for (int i = 0; i < m_constraints.numElem(); i++)
 	{
-		if(m_constraints[i]->IsEnabled())
-		{
-			m_constraints[i]->PreApply( m_fDt );
-		}		
+		IEqPhysicsConstraint* constr = m_constraints[i];
+
+		if(constr->IsEnabled())
+			constr->PreApply( m_fDt );
+	}
+
+	// execute pre-simulation callbacks
+	for (int i = 0; i < m_moveable.numElem(); i++)
+	{
+		IEqPhysCallback* callbacks = m_moveable[i]->m_callbacks;
+
+		if (callbacks)
+			callbacks->PreSimulate(m_fDt);
 	}
 
 	// move all bodies
@@ -1036,12 +1042,8 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	{
 		CEqRigidBody* body = m_moveable[i];
 
-		if(body->m_callbacks)
-			body->m_callbacks->PreSimulate( m_fDt );
-
 		// clear contact pairs and results
-		body->m_contactPairs.clear(false);
-		body->m_collisionList.clear( false );
+		body->ClearContacts();
 
 		IntegrateSingle(body);
 	}
@@ -1049,19 +1051,19 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	// update the controllers
 	for (int i = 0; i < m_controllers.numElem(); i++)
 	{
-		if(m_controllers[i]->IsEnabled())
-		{
-			m_controllers[i]->Update( m_fDt );
-		}
+		IEqPhysicsController* contr = m_controllers[i];
+
+		if(contr->IsEnabled())
+			contr->Update( m_fDt );
 	}
 
 	// update all constraints
 	for (int i = 0; i < m_constraints.numElem(); i++)
 	{
-		if(m_constraints[i]->IsEnabled())
-		{
-			m_constraints[i]->Apply( m_fDt );
-		}
+		IEqPhysicsConstraint* constr = m_constraints[i];
+
+		if (constr->IsEnabled())
+			constr->Apply( m_fDt );
 	}
 
 	m_fDt = deltaTime;
@@ -1082,12 +1084,13 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 			ProcessContactPair(body->m_contactPairs[j]);
 	}
 
+	// execute post simulation callbacks
 	for (int i = 0; i < m_moveable.numElem(); i++)
 	{
-		CEqRigidBody* body = m_moveable[i];
+		IEqPhysCallback* callbacks = m_moveable[i]->m_callbacks;
 
-		if(body->m_callbacks)
-			body->m_callbacks->PostSimulate(m_fDt);
+		if(callbacks)
+			callbacks->PostSimulate(m_fDt);
 	}
 
 	m_numRayQueries = 0;

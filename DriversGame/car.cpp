@@ -2482,6 +2482,8 @@ void CCar::Simulate( float fDt )
 
 	bool isCar = m_conf->flags.isCar;
 
+	int controlButtons = GetControlButtons();
+
 	if(	m_conf->visual.sirenType > SERVICE_LIGHTS_NONE && (controlButtons & IN_SIREN) && !(m_oldControlButtons & IN_SIREN))
 	{
 		m_oldSirenState = m_sirenEnabled;
@@ -4434,6 +4436,9 @@ bool CCar::IsEnabled() const
 
 void CCar::SetFelony(float percentage)
 {
+	if (percentage > 1.0f)
+		percentage = 1.0f;
+
 	m_pursuerData.felonyRating = percentage;
 }
 
@@ -4452,7 +4457,12 @@ void CCar::DecrementPursue()
 	m_pursuerData.pursuedByCount--;
 
 	if (m_pursuerData.pursuedByCount == 0)
+	{ 
+		memset(&m_pursuerData.lastInfractionTime, 0, sizeof(m_pursuerData.lastInfractionTime));
+		memset(&m_pursuerData.hasInfraction, 0, sizeof(m_pursuerData.hasInfraction));
 		m_pursuerData.announced = false;
+	}
+		
 }
 
 int CCar::GetPursuedCount() const

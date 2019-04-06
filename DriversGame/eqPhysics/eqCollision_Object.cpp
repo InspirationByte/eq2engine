@@ -74,6 +74,11 @@ void CEqCollisionObject::Destroy()
 	m_trimap = NULL;
 }
 
+void CEqCollisionObject::ClearContacts()
+{
+	m_collisionList.clear(false);
+}
+
 void CEqCollisionObject::InitAABB()
 {
 	if(!m_shape)

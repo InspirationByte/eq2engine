@@ -61,6 +61,8 @@ public:
 
 	void						Destroy();															///< destroys the collision model
 
+	virtual void				ClearContacts();
+
 	btCollisionObject*			GetBulletObject() const;											///< returns bullet physics collision object
 	btCollisionShape*			GetBulletShape() const;												///< returns bullet physics shape
 	CEqBulletIndexedMesh*		GetMesh() const;													///< returns indexed shape

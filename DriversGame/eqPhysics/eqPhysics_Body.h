@@ -122,6 +122,8 @@ public:
 							CEqRigidBody();
 							~CEqRigidBody();
 
+	void					ClearContacts();
+
 	bool					IsDynamic() const {return true;}
 
 	void					SetMass(float mass, float inertiaScale = 1.0f);

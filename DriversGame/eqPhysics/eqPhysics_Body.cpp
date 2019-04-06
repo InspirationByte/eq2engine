@@ -85,6 +85,12 @@ CEqRigidBody::~CEqRigidBody()
 	RemoveAllConstraints();
 }
 
+void CEqRigidBody::ClearContacts()
+{
+	CEqCollisionObject::ClearContacts();
+	m_contactPairs.clear(false);
+}
+
 // constraints
 void CEqRigidBody::AddConstraint( IEqPhysicsConstraint* constraint )
 {
