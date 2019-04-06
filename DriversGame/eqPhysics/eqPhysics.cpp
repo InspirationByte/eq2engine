@@ -49,8 +49,6 @@ ConVar ph_erp("ph_erp", "0.25", "Collision correction", CV_CHEAT);
 // cvar value mostly depends on velocity
 ConVar ph_grid_tolerance("ph_grid_tolerance", "0.05", NULL, CV_CHEAT);
 
-const int PHYSICS_COLLISION_LIST_MAX = 16;
-
 const float PHYSICS_DEFAULT_FRICTION = 12.9f;
 const float PHYSICS_DEFAULT_RESTITUTION = 0.25f;
 const float PHYSICS_DEFAULT_TIRE_FRICTION = 0.2f;
@@ -948,17 +946,24 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		bodyADisableResponse = (bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE) > 0;
 	}
 
-	DkList<CollisionPairData_t>& pairsA = pair.bodyA->m_collisionList;
-	DkList<CollisionPairData_t>& pairsB = pair.bodyB->m_collisionList;
+	CollisionPairData_t tempPairData;
 
-	// All objects have collision list
-	if ((pair.bodyA->m_flags & COLLOBJ_COLLISIONLIST) &&
-		pairsA.numElem() < PHYSICS_COLLISION_LIST_MAX)
+	//-----------------------------------------------
+	// OBJECT A
 	{
-		int oldNum = pairsA.numElem();
-		pairsA.setNum(oldNum+1);
+		DkList<CollisionPairData_t>& pairs = pair.bodyA->m_collisionList;
+		IEqPhysCallback* callbacks = pair.bodyA->m_callbacks;
 
-		CollisionPairData_t& collData = pairsA[oldNum];
+		bool canAddPair = (pair.bodyA->m_flags & COLLOBJ_COLLISIONLIST) && pairs.numElem() < PHYSICS_COLLISION_LIST_MAX;
+
+		int oldNum = pairs.numElem();
+
+		// All objects have collision list
+		if (canAddPair)
+			pairs.setNum(oldNum + 1);
+
+		CollisionPairData_t& collData = canAddPair ? pairs[oldNum] : tempPairData;
+
 		collData.bodyA = pair.bodyA;
 		collData.bodyB = pair.bodyB;
 		collData.fract = pair.depth;
@@ -973,15 +978,26 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 
 		if (bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE)
 			collData.flags |= COLLPAIRFLAG_OBJECTB_NO_RESPONSE;
+
+		if (callbacks)
+			callbacks->OnCollide(collData);
 	}
 
-	if ((bodyB->m_flags & COLLOBJ_COLLISIONLIST) &&
-		pairsB.numElem() < PHYSICS_COLLISION_LIST_MAX)
+	//-----------------------------------------------
+	// OBJECT B
 	{
-		int oldNum = pairsB.numElem();
-		pairsB.setNum(oldNum+1);
+		DkList<CollisionPairData_t>& pairs = pair.bodyB->m_collisionList;
+		IEqPhysCallback* callbacks = pair.bodyB->m_callbacks;
 
-		CollisionPairData_t& collData = pairsB[oldNum];
+		bool canAddPair = (bodyB->m_flags & COLLOBJ_COLLISIONLIST) && pairs.numElem() < PHYSICS_COLLISION_LIST_MAX;
+
+		int oldNum = pairs.numElem();
+
+		if (canAddPair)
+			pairs.setNum(oldNum + 1);
+
+		CollisionPairData_t& collData = canAddPair ? pairs[oldNum] : tempPairData;
+
 		collData.bodyA = pair.bodyB;
 		collData.bodyB = pair.bodyA;
 		collData.fract = pair.depth;
@@ -999,6 +1015,9 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 
 		if (bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE)
 			collData.flags |= COLLPAIRFLAG_OBJECTA_NO_RESPONSE;
+
+		if (callbacks)
+			callbacks->OnCollide(collData);
 	}
 }
 

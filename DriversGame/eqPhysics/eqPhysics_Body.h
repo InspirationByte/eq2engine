@@ -85,18 +85,6 @@ inline FMatrix4x4 RigidBodyInverse( const FMatrix4x4 & matrix )
 
 //-----------------------------------------------------------------------------------------------------------------------------
 
-class IEqPhysCallback
-{
-public:
-					IEqPhysCallback( CEqRigidBody* object );
-	virtual			~IEqPhysCallback();
-
-	virtual void	PreSimulate( float fDt ) = 0;
-	virtual void	PostSimulate( float fDt ) = 0;
-
-	CEqRigidBody*	m_object;
-};
-
 class IEqPhysicsConstraint;
 
 ///
@@ -224,8 +212,6 @@ protected:
 
 public:
 	FVector3D			m_centerOfMassTrans;
-
-	IEqPhysCallback*	m_callbacks;
 
 protected:
 

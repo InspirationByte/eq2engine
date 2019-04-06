@@ -60,8 +60,10 @@ protected:
 	virtual void		OnPrePhysicsFrame( float fDt );
 	virtual void		OnPhysicsFrame( float fDt );
 
+	void				UpdateInfractions(CCar* checkCar, bool passive);
+
 	EInfractionType		CheckTrafficInfraction( CCar* car, bool checkFelony = true, bool checkSpeeding = true );
-	void				ProcessTrafficInfractionsFor(CCar* checkCar);
+	
 
 	bool				Speak( const char* soundName, CCar* target, bool force = false );
 

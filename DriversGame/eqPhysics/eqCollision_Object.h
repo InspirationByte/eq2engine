@@ -22,6 +22,8 @@
 class CEqBulletIndexedMesh;
 struct collgridcell_t;
 
+const int PHYSICS_COLLISION_LIST_MAX = 8;
+
 enum ECollisionObjectFlags
 {
 	// disables raycasting and convex sweep casting
@@ -41,6 +43,21 @@ enum ECollisionObjectFlags
 	COLLOBJ_ISGHOST					= (1 << 4),
 };
 
+class CEqCollisionObject;
+
+class IEqPhysCallback
+{
+public:
+	IEqPhysCallback(CEqCollisionObject* object);
+	virtual				~IEqPhysCallback();
+
+	virtual void		PreSimulate(float fDt) = 0;
+	virtual void		PostSimulate(float fDt) = 0;
+
+	virtual void		OnCollide(CollisionPairData_t& pair) = 0;
+
+	CEqCollisionObject*	m_object;
+};
 
 class CEqCollisionObject
 {
@@ -126,6 +143,7 @@ public:
 	float						m_erp;
 
 	DkList<CollisionPairData_t>	m_collisionList;
+	IEqPhysCallback*			m_callbacks;
 
 	//--------------------------------------------------------------------------------
 protected:

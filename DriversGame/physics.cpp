@@ -43,16 +43,18 @@ void CPhysicsHFObject::PreSimulate( float fDt )
 {
 	PROFILE_FUNC();
 
-	if (!m_object->IsCanIntegrate(true))
+	CEqRigidBody* rigidBody = (CEqRigidBody*)m_object;
+
+	if (!rigidBody->IsCanIntegrate(true))
 		return;
 
 	if (m_owner->m_state == GO_STATE_IDLE)
 	{
-		Vector3D angles = eulers(m_object->GetOrientation());
+		Vector3D angles = eulers(rigidBody->GetOrientation());
 		m_owner->m_vecAngles = VRAD2DEG(angles);
-		m_owner->m_vecOrigin = m_object->GetPosition();
+		m_owner->m_vecOrigin = rigidBody->GetPosition();
 
-		float lastdt = m_object->GetLastFrameTime();
+		float lastdt = rigidBody->GetLastFrameTime();
 		m_owner->OnPrePhysicsFrame(lastdt);
 	}
 }
@@ -61,19 +63,25 @@ void CPhysicsHFObject::PostSimulate( float fDt )
 {
 	PROFILE_FUNC();
 
-	if (!m_object->IsCanIntegrate(true))
+	CEqRigidBody* rigidBody = (CEqRigidBody*)m_object;
+
+	if (!rigidBody->IsCanIntegrate(true))
 		return;
 
 	if (m_owner->m_state == GO_STATE_IDLE)
 	{
-		Vector3D angles = eulers(m_object->GetOrientation());
+		Vector3D angles = eulers(rigidBody->GetOrientation());
 		m_owner->m_vecAngles = VRAD2DEG(angles);
-		m_owner->m_vecOrigin = m_object->GetPosition();
+		m_owner->m_vecOrigin = rigidBody->GetPosition();
 
 		//float lastdt = m_object->GetLastFrameTime();
 		m_owner->OnPhysicsFrame(fDt);
 	}
+}
 
+void CPhysicsHFObject::OnCollide(CollisionPairData_t& pair)
+{
+	m_owner->OnPhysicsCollide(pair);
 }
 
 //-------------------------------------------------------------------------------------
@@ -109,12 +117,12 @@ void CPhysicsEngine::SceneDestroyBroadphase()
 void CPhysicsEngine::SceneShutdown()
 {
 	// Destruye el array de objetos dinámicos
-	for(int i = 0; i < m_pObjects.numElem(); i++)
+	for(int i = 0; i < m_hfBodies.numElem(); i++)
 	{
-		m_physics.DestroyBody(m_pObjects[i]->m_object);
+		m_physics.DestroyBody(m_hfBodies[i]->GetBody());
 	}
 
-	m_pObjects.clear();
+	m_hfBodies.clear();
 
 	m_heightFields.clear();
 
@@ -180,9 +188,9 @@ bool CPhysicsEngine::TestConvexSweep(btCollisionShape* shape, const Quaternion& 
 // object add/remove functions
 void CPhysicsEngine::AddObject( CPhysicsHFObject* pPhysObject )
 {
-	m_pObjects.append( pPhysObject );
+	m_hfBodies.append( pPhysObject );
 
-	m_physics.AddToWorld(pPhysObject->m_object);
+	m_physics.AddToWorld(pPhysObject->GetBody());
 }
 
 eqPhysSurfParam_t* CPhysicsEngine::FindSurfaceParam( const char* name )
@@ -320,11 +328,11 @@ void CPhysicsEngine::RemoveObject( CPhysicsHFObject* pPhysObject )
 
 	pPhysObject->m_object->SetUserData(NULL);
 
-	CEqRigidBody* body = pPhysObject->m_object;
+	CEqRigidBody* body = pPhysObject->GetBody();
 
 	// detach HFObject from body and remove from list
 	delete pPhysObject;
-	m_pObjects.fastRemove( pPhysObject );
+	m_hfBodies.fastRemove( pPhysObject );
 
 	// destroy body
 	m_physics.DestroyBody( body );

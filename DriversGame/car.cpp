@@ -793,7 +793,7 @@ void CCar::CreateCarPhysics()
 		winfo.m_bodyGroupFlags = (1 << winfo.m_defaultBodyGroup);
 	}
 
-	body->m_flags |= BODY_COLLISIONLIST | BODY_ISCAR;
+	body->m_flags |= BODY_ISCAR;
 
 	// CREATE BODY
 	Vector3D body_mins = m_conf->physics.body_center - m_conf->physics.body_size;
@@ -1018,13 +1018,13 @@ void CCar::PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell)
 
 	Quaternion rotation( finalAngle );
 	renormalize(rotation);
-	m_pPhysicsObject->m_object->SetOrientation(rotation);
+	m_pPhysicsObject->GetBody()->SetOrientation(rotation);
 }
 
 void CCar::SetOrigin(const Vector3D& origin)
 {
 	if(m_pPhysicsObject)
-		m_pPhysicsObject->m_object->SetPosition(origin);
+		m_pPhysicsObject->GetBody()->SetPosition(origin);
 
 	m_vecOrigin = origin;
 }
@@ -1032,26 +1032,26 @@ void CCar::SetOrigin(const Vector3D& origin)
 void CCar::SetAngles(const Vector3D& angles)
 {
 	if(m_pPhysicsObject)
-		m_pPhysicsObject->m_object->SetOrientation(Quaternion(DEG2RAD(angles.x),DEG2RAD(angles.y),DEG2RAD(angles.z)));
+		m_pPhysicsObject->GetBody()->SetOrientation(Quaternion(DEG2RAD(angles.x),DEG2RAD(angles.y),DEG2RAD(angles.z)));
 
 	m_vecAngles = angles;
 }
 
 void CCar::SetOrientation(const Quaternion& q)
 {
-	m_pPhysicsObject->m_object->SetOrientation(q);
+	m_pPhysicsObject->GetBody()->SetOrientation(q);
 }
 
 void CCar::SetVelocity(const Vector3D& vel)
 {
-	m_pPhysicsObject->m_object->SetLinearVelocity( vel  );
-	m_pPhysicsObject->m_object->TryWake();
+	m_pPhysicsObject->GetBody()->SetLinearVelocity( vel  );
+	m_pPhysicsObject->GetBody()->TryWake();
 }
 
 void CCar::SetAngularVelocity(const Vector3D& vel)
 {
-	m_pPhysicsObject->m_object->SetAngularVelocity( vel );
-	m_pPhysicsObject->m_object->TryWake();
+	m_pPhysicsObject->GetBody()->SetAngularVelocity( vel );
+	m_pPhysicsObject->GetBody()->TryWake();
 }
 
 ConVar cam_custom("cam_custom", "0", NULL, CV_CHEAT);
@@ -1097,7 +1097,7 @@ const Quaternion& CCar::GetOrientation() const
 		return _zeroQuaternion;
 	}
 
-	return m_pPhysicsObject->m_object->GetOrientation();
+	return m_pPhysicsObject->GetBody()->GetOrientation();
 }
 
 const Vector3D CCar::GetForwardVector() const
@@ -1117,12 +1117,12 @@ const Vector3D CCar::GetRightVector() const
 
 const Vector3D& CCar::GetVelocity() const
 {
-	return m_pPhysicsObject->m_object->GetLinearVelocity();
+	return m_pPhysicsObject->GetBody()->GetLinearVelocity();
 }
 
 const Vector3D& CCar::GetAngularVelocity() const
 {
-	return m_pPhysicsObject->m_object->GetAngularVelocity();
+	return m_pPhysicsObject->GetBody()->GetAngularVelocity();
 }
 
 CEqRigidBody* CCar::GetPhysicsBody() const
@@ -1130,7 +1130,7 @@ CEqRigidBody* CCar::GetPhysicsBody() const
 	if(!m_pPhysicsObject)
 		return NULL;
 
-	return m_pPhysicsObject->m_object;
+	return m_pPhysicsObject->GetBody();
 }
 
 void CCar::L_SetContents(int contents)
@@ -1138,7 +1138,7 @@ void CCar::L_SetContents(int contents)
 	if (!m_pPhysicsObject)
 		return;
 
-	m_pPhysicsObject->m_object->SetContents(contents);
+	m_pPhysicsObject->GetBody()->SetContents(contents);
 }
 
 void CCar::L_SetCollideMask(int contents)
@@ -1146,7 +1146,7 @@ void CCar::L_SetCollideMask(int contents)
 	if (!m_pPhysicsObject)
 		return;
 
-	m_pPhysicsObject->m_object->SetCollideMask(contents);
+	m_pPhysicsObject->GetBody()->SetCollideMask(contents);
 }
 
 int	CCar::L_GetContents() const
@@ -1154,7 +1154,7 @@ int	CCar::L_GetContents() const
 	if (!m_pPhysicsObject)
 		return 0;
 
-	return m_pPhysicsObject->m_object->GetContents();
+	return m_pPhysicsObject->GetBody()->GetContents();
 }
 
 int	CCar::L_GetCollideMask() const
@@ -1162,7 +1162,7 @@ int	CCar::L_GetCollideMask() const
 	if (!m_pPhysicsObject)
 		return 0;
 
-	return m_pPhysicsObject->m_object->GetCollideMask();
+	return m_pPhysicsObject->GetBody()->GetCollideMask();
 }
 
 void CCar::SetControlButtons(int flags)
@@ -1285,7 +1285,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 {
 	PROFILE_FUNC();
 
-	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
+	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
 
 	// retrieve body matrix
 	carBody->ConstructRenderMatrix(m_worldMatrix);
@@ -2009,7 +2009,7 @@ void CCar::RefreshWindowDamageEffects()
 
 void CCar::EmitCollisionParticles(const Vector3D& position, const Vector3D& velocity, const Vector3D& normal, int numDamageParticles, float fCollImpulse)
 {
-	//CEqRigidBody* carBody = m_pPhysicsObject->m_object;
+	//CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
 
 	float wlen = length(velocity);
 
@@ -2092,7 +2092,7 @@ void CCar::OnPrePhysicsFrame(float fDt)
 
 bool CCar::UpdateWaterState( float fDt, bool hasCollidedWater )
 {
-	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
+	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
 	
 	// if body frozen, return previous state
 	if(carBody->IsFrozen())
@@ -2147,7 +2147,7 @@ bool CCar::UpdateWaterState( float fDt, bool hasCollidedWater )
 
 void CCar::OnPhysicsFrame( float fDt )
 {
-	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
+	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
 
 	// retrieve body matrix again
 	carBody->ConstructRenderMatrix(m_worldMatrix);
@@ -2166,17 +2166,19 @@ void CCar::OnPhysicsFrame( float fDt )
 	bool		doImpulseSound = false;
 	bool		hasHitWater = false;
 
-	for(int i = 0; i < carBody->m_collisionList.numElem(); i++)
+	// TODO: move all processing to OnPhysicsCollide
+	for(int i = 0; i < m_collisionList.numElem(); i++)
 	{
-		CollisionPairData_t& coll = carBody->m_collisionList[i];
+		CollisionPairData_t& coll = m_collisionList[i];
+
+		// skip some of them
+		if (coll.flags & COLLPAIRFLAG_USER_PROCESSED)
+			continue;
 
 		// we went underwater
 		if( coll.bodyB->GetContents() & OBJECTCONTENTS_WATER )
 		{
 			hasHitWater = true;
-
-			// apply 25% impulse
-			CEqRigidBody::ApplyImpulseResponseTo(carBody, coll.position, coll.normal, 0.0f, 0.0f, 0.0f, 0.05f);
 
 			// make particles
 			Vector3D collVelocity = carBody->GetVelocityAtWorldPoint(coll.position);
@@ -2280,6 +2282,8 @@ void CCar::OnPhysicsFrame( float fDt )
 		hitNormal = coll.normal;
 
 		numHitTimes++;
+
+		coll.flags |= COLLPAIRFLAG_USER_PROCESSED;
 	}
 
 	// spawn smoke
@@ -2417,6 +2421,18 @@ void CCar::OnPhysicsFrame( float fDt )
 	}
 } 
 
+void CCar::OnPhysicsCollide(CollisionPairData_t& pair)
+{
+	// we went underwater
+	if (pair.bodyB->GetContents() & OBJECTCONTENTS_WATER)
+	{
+		// apply 25% impulse
+		CEqRigidBody::ApplyImpulseResponseTo(GetPhysicsBody(), pair.position, pair.normal, 0.0f, 0.0f, 0.0f, 0.05f);
+	}
+
+	m_collisionList.append(pair);
+}
+
 void CCar::ReleaseHubcap(int wheel)
 {
 #ifndef EDITOR
@@ -2475,10 +2491,13 @@ void CCar::Simulate( float fDt )
 	if(!m_pPhysicsObject)
 		return;
 
-	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
+	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
 
 	if(!carBody)
 		return;
+
+	// cleanup our collision list here
+	m_collisionList.clear();
 
 	bool isCar = m_conf->flags.isCar;
 
@@ -3497,7 +3516,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 
 void CCar::UpdateSounds( float fDt )
 {
-	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
+	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
 
 	Vector3D pos = carBody->GetPosition();
 	Vector3D velocity = carBody->GetLinearVelocity();
@@ -3778,7 +3797,7 @@ float CCar::GetWheelSpeed(int index) const
 
 float CCar::GetSpeed() const
 {
-	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
+	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
 	return length(carBody->GetLinearVelocity().xz()) * MPS_TO_KPH;
 }
 
@@ -3794,7 +3813,7 @@ int CCar::GetGear() const
 
 float CCar::GetLateralSlidingAtBody() const
 {
-	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
+	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
 
 	Vector3D velocityAtCollisionPoint = carBody->GetLinearVelocity();
 
@@ -3837,7 +3856,7 @@ float CCar::GetLateralSlidingAtWheels(bool surfCheck) const
 
 float CCar::GetLateralSlidingAtWheel(int wheel) const
 {
-	CEqRigidBody* carBody = m_pPhysicsObject->m_object;
+	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
 
 	if(m_wheels[wheel].m_collisionInfo.fract >= 1.0f)
 		return 0.0f;
@@ -4138,7 +4157,7 @@ void CCar::Draw( int nRenderFlags )
 	// draw wheels
 	if(!isShadowPass)
 	{
-		CEqRigidBody* pCarBody = m_pPhysicsObject->m_object;
+		CEqRigidBody* pCarBody = m_pPhysicsObject->GetBody();
 
 		pCarBody->UpdateBoundingBoxTransform();
 		m_bbox = pCarBody->m_aabb_transformed;
@@ -4403,14 +4422,14 @@ void CCar::SetInfiniteMass( bool infMass )
 		return;
 
 	if(infMass)
-		m_pPhysicsObject->m_object->m_flags |= BODY_INFINITEMASS;
+		m_pPhysicsObject->GetBody()->m_flags |= BODY_INFINITEMASS;
 	else
-		m_pPhysicsObject->m_object->m_flags &= ~BODY_INFINITEMASS;
+		m_pPhysicsObject->GetBody()->m_flags &= ~BODY_INFINITEMASS;
 }
 
 bool CCar::HasInfiniteMass() const
 {
-	return (m_pPhysicsObject->m_object->m_flags & BODY_INFINITEMASS) > 0;
+	return (m_pPhysicsObject->GetBody()->m_flags & BODY_INFINITEMASS) > 0;
 }
 
 void CCar::Lock(bool lock)

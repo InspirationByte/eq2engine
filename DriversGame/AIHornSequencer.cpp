@@ -87,7 +87,8 @@ void CAIHornSequencer::SignalNoSequence(float time, float delayBeforeStart)
 
 void CAIHornSequencer::ShutUp()
 {
-	SignalNoSequence(0.0f, 0.0f);
+	m_signalSeq = nullptr;
+	m_hornTime.Set(0.0f, 0.0f);
 }
 
 bool CAIHornSequencer::Update(float fDt)

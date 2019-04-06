@@ -567,6 +567,8 @@ protected:
 
 	virtual void			OnPrePhysicsFrame( float fDt );
 	virtual void			OnPhysicsFrame( float fDt );
+	virtual void			OnPhysicsCollide(CollisionPairData_t& pair);
+
 	bool					UpdateWaterState( float fDt, bool hasCollidedWater );
 
 	void					DrawBody( int nRenderFlags, int nLOD );
@@ -592,6 +594,7 @@ protected:
 	virtual void			OnDeath( CGameObject* deathBy );
 
 	CPhysicsHFObject*		m_pPhysicsObject;
+	DkList<CollisionPairData_t>	m_collisionList;
 
 	CEqPhysicsHingeJoint*	m_trailerHinge;
 

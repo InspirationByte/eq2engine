@@ -24,6 +24,7 @@ class CHeightTileField;
 class CGameObject;
 
 // the physics high frequency object
+// only for rigid body
 class CPhysicsHFObject : public IEqPhysCallback
 {
 public:
@@ -32,6 +33,9 @@ public:
 
 	void			PreSimulate( float fDt );
 	void			PostSimulate( float fDt );
+	void			OnCollide(CollisionPairData_t& pair);
+
+	CEqRigidBody*	GetBody() const { return (CEqRigidBody*)m_object; }
 
 	CGameObject*	m_owner;
 };
@@ -70,7 +74,7 @@ public:
 
 protected:
 
-	DkList<CPhysicsHFObject*>	m_pObjects;
+	DkList<CPhysicsHFObject*>	m_hfBodies;
 	DkList<CHeightTileField*>	m_heightFields;		// heightfield is sort of static objects
 
 	float						m_dtAccumulator;

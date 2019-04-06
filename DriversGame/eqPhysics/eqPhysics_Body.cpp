@@ -17,20 +17,6 @@ using namespace EqBulletUtils;
 #include "ConVar.h"
 #include "DebugInterface.h"
 
-IEqPhysCallback::IEqPhysCallback( CEqRigidBody* object ) : m_object(object)
-{
-	ASSERT(m_object);
-
-	m_object->m_callbacks = this;
-}
-
-IEqPhysCallback::~IEqPhysCallback()
-{
-	ASSERT(m_object);
-	m_object->m_callbacks = nullptr;
-}
-
-
 //-----------------------------------------------------------------------------------------
 
 ConVar ph_showcollisionresponses("ph_showcollisionresponses", "0");
@@ -53,8 +39,6 @@ const float BODY_MIN_VELOCITY_WAKE	= 0.001f;
 
 CEqRigidBody::CEqRigidBody()
 {
-	m_callbacks = NULL;
-
 	//m_linearMomentum = FVector3D(0.0f);
 	m_linearVelocity = Vector3D(0.0f);
 	m_angularVelocity = Vector3D(0.0f);

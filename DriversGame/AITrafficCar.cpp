@@ -151,8 +151,6 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 
 		if (m_hornSequencer.Update(fDt))
 			controls |= IN_HORN;
-		else
-			controls &= ~IN_HORN;
 
 		SetControlButtons(controls);
 	}
