@@ -335,7 +335,7 @@ public:
 
 	void						CalculateTransform(Matrix4x4& out, const carWheelConfig_t& conf, bool applyScale = true);
 
-	void						CalcWheelSkidPair(PFXVertexPair_t& pair, float width, float wheelOffsX, const Matrix3x3& rotation);
+	void						CalcWheelSkidPair(PFXVertexPair_t& pair, const carWheelConfig_t& conf);
 
 	const eqPhysSurfParam_t*	GetSurfaceParams() const;
 

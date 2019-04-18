@@ -551,7 +551,9 @@ void CLevelModel::Render(int nDrawFlags, const BoundingBox& aabb)
 	{
 		lmodel_batch_t& batch = m_batches[i];
 
-		bool isTransparent = (batch.pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT) > 0;
+		int matFlags = batch.pMaterial->GetFlags();
+
+		bool isTransparent = (matFlags & MATERIAL_FLAG_TRANSPARENT) > 0;
 
 		if(isTransparent != renderTranslucency)
 			continue;

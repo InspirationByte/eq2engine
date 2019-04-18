@@ -67,6 +67,8 @@ public:
 	int						GetMode() const					{return m_mode;}
 	void					SetMode( int newMode )			{m_mode = (ECameraMode)newMode;}
 
+	void					SetFreeLook(bool enable, const Vector3D& angles);
+
 	void					Update( float fDt, int nButtons, CGameObject* target);
 
 	void					SetScripted( bool enable )		{ m_scriptControl = enable; }
@@ -88,11 +90,11 @@ protected:
 										float fDt,
 										struct eqPhysCollisionFilter& collFilter);
 
-	cameraConfig_t		m_camConfig;
+	cameraConfig_t			m_camConfig;
 	float					m_cameraDistVar;
 	float					m_cameraFOV;
 
-	float					m_interpLookAngle;
+	Vector3D				m_interpLookAngle;
 
 	float					m_interpCamAngle;
 	Vector3D				m_vecCameraVel;
@@ -106,7 +108,8 @@ protected:
 	float					m_shakeDecayCurTime;
 	float					m_shakeMagnitude;
 
-	//float					m_targetForwardSpeedModifier;
+	Vector3D				m_freelookAngles;
+	bool					m_freelook;
 
 	CViewParams				m_computedView;
 

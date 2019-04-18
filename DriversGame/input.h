@@ -32,6 +32,8 @@
 #define IN_LEFT				(1 << 15)
 #define IN_RIGHT			(1 << 16)
 
+#define IN_FREELOOK			(1 << 17)
+
 #define IN_MISC				(IN_LOOKLEFT | IN_LOOKRIGHT | IN_CHANGECAM | IN_FORWARD | IN_BACKWARD | IN_LEFT | IN_RIGHT)
 
 extern int		g_nClientButtons;

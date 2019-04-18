@@ -131,6 +131,16 @@ void CCameraAnimator::Reset()
 		m_mode = CAM_MODE_OUTCAR;
 }
 
+void CCameraAnimator::SetFreeLook(bool enable, const Vector3D& angles)
+{
+	m_freelook = enable;
+
+	if (m_freelook)
+		m_freelookAngles = angles;
+	else
+		m_freelookAngles = vec3_zero;
+}
+
 void CCameraAnimator::Update( float fDt, int nButtons, CGameObject* target)
 {
 	extern ConVar r_zfar;
@@ -276,6 +286,8 @@ void CCameraAnimator::Animate(ECameraMode mode,
 
 	Vector3D finalTargetPos = targetOrigin;
 
+	Quaternion freelookRotation = m_freelook ? Quaternion(DEG2RAD(m_freelookAngles.x), DEG2RAD(m_freelookAngles.y), DEG2RAD(m_freelookAngles.z)) : identity();
+
 	Vector3D targetForward = rotateVector(vec3_forward, targetRotation);
 	Vector3D targetSide = rotateVector(vec3_right, targetRotation);
 	Vector3D targetUp = rotateVector(vec3_up, targetRotation);
@@ -308,17 +320,20 @@ void CCameraAnimator::Animate(ECameraMode mode,
 	}
 
 	{
-		float desiredLookAngle = 0.0f;
+		Vector3D desiredLookAngle(0.0f);
 
 		if (nButtons & IN_LOOKLEFT)
-			desiredLookAngle = -90.0f;
+			desiredLookAngle.y = -90.0f;
 		else if (nButtons & IN_LOOKRIGHT)
-			desiredLookAngle = 90.0f;
+			desiredLookAngle.y = 90.0f;
 
-		float fLookAngleDiff = AngleDiff(m_interpLookAngle, desiredLookAngle);
+		if (m_freelook)
+			desiredLookAngle += m_freelookAngles;
+
+		Vector3D fLookAngleDiff = AnglesDiff(m_interpLookAngle, desiredLookAngle);
 
 		m_interpLookAngle += fLookAngleDiff * fDt * CAM_LOOK_TURN_SPEED;
-		m_interpLookAngle = ConstrainAngle180(m_interpLookAngle);
+		m_interpLookAngle = NormalizeAngles180(m_interpLookAngle);
 	}
 
 	bool bLookBack = (nButtons & IN_LOOKLEFT) && (nButtons & IN_LOOKRIGHT);
@@ -333,13 +348,13 @@ void CCameraAnimator::Animate(ECameraMode mode,
 	float fAngDiff = AngleDiff(m_interpCamAngle, Yangle);
 	m_interpCamAngle += fAngDiff * fDt * CAM_TURN_SPEED;
 
-	float finalLookAngle = m_interpCamAngle - m_interpLookAngle;
-	float finalLookAngleIn = m_interpLookAngle;
+	Vector3D finalLookAngle = Vector3D(0, m_interpCamAngle, 0) - m_interpLookAngle;
+	Vector3D finalLookAngleIn = m_interpLookAngle;
 
 	if (bLookBack)
 	{
-		finalLookAngle = Yangle + 180.0f;
-		finalLookAngleIn = 180.0f;
+		finalLookAngle.y = Yangle + 180.0f;
+		finalLookAngleIn.y = 180.0f;
 	}
 
 	switch (mode)
@@ -349,10 +364,8 @@ void CCameraAnimator::Animate(ECameraMode mode,
 			float desiredHeight = m_camConfig.height;
 			float desiredDist = m_camConfig.dist;
 
-			Vector3D cam_angles(0, finalLookAngle, 0);
-
 			Vector3D forward;
-			AngleVectors(cam_angles, &forward);
+			AngleVectors(finalLookAngle, &forward);
 
 			float heightOffset = 0.0f;
 
@@ -394,10 +407,10 @@ void CCameraAnimator::Animate(ECameraMode mode,
 			// recalculate distToTarget
 			finalCamPos = finalTargetPos + Vector3D(0, desiredHeight + heightOffset, 0) - forward*(m_cameraDistVar-0.1f);
 
-			cam_angles = VectorAngles(normalize(camTargetPos-finalCamPos));
+			finalLookAngle = VectorAngles(normalize(camTargetPos-finalCamPos));
 
 			m_computedView.SetOrigin(finalCamPos);
-			m_computedView.SetAngles(cam_angles + shakeVec);
+			m_computedView.SetAngles(finalLookAngle + shakeVec);
 			m_computedView.SetFOV(m_camConfig.fov);
 
 			break;
@@ -420,7 +433,7 @@ void CCameraAnimator::Animate(ECameraMode mode,
 		}
 		case CAM_MODE_INCAR:
 		{
-			Vector3D desiredAngles = EulerMatrixZXY(targetRotation * Quaternion(-DEG2RAD(finalLookAngleIn), vec3_up) * Quaternion(DEG2RAD(1.5), vec3_right));
+			Vector3D desiredAngles = EulerMatrixZXY(targetRotation * Quaternion(-DEG2RAD(finalLookAngleIn.y), vec3_up) * Quaternion(DEG2RAD(1.5), vec3_right));
 			desiredAngles = VRAD2DEG(desiredAngles);
 			desiredAngles *= Vector3D(-1, 1, -1);
 

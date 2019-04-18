@@ -1262,9 +1262,6 @@ void CGameWorld::BuildViewMatrices(int width, int height, int nRenderFlags)
 	Matrix4x4 customGlowsProj = perspectiveMatrixY(DEG2RAD(m_view.GetFOV()), width, height, m_sceneinfo.m_fZNear+r_glowsProjOffset.GetFloat(), m_sceneinfo.m_fZFar+r_glowsProjOffsetB.GetFloat());
 	g_additPartcles->SetCustomProjectionMatrix( customGlowsProj );
 
-	if(!r_freezeFrustum.GetBool())
-		m_frustum.LoadAsFrustum(m_viewprojection);
-
 	FogInfo_t fog;
 	materials->GetFogInfo(fog);
 	fog.viewPos = m_view.GetOrigin();
@@ -1555,6 +1552,11 @@ void CGameWorld::UpdateLightTexture()
 
 void CGameWorld::UpdateOccludingFrustum()
 {
+	if (r_freezeFrustum.GetBool())
+		return;
+
+	m_frustum.LoadAsFrustum(m_viewprojection);
+
 	m_occludingFrustum.Clear();
 	m_level.CollectVisibleOccluders( m_occludingFrustum, m_view.GetOrigin() );
 }
@@ -1946,16 +1948,6 @@ void CGameWorld::Draw( int nRenderFlags )
 
 		}while(m_renderingObjects.goToNext());
 
-		for (int i = 0; i < g_pGameWorld->m_gameObjects.numElem(); i++)
-		{
-			CGameObject* obj = g_pGameWorld->m_gameObjects[i];
-
-			if (obj->m_state != GO_STATE_IDLE)
-				continue;
-
-			obj->PostDraw();
-		}
-
 		// draw instanced models
 		int numCachedModels = g_studioModelCache->GetCachedModelCount();
 
@@ -1969,7 +1961,16 @@ void CGameWorld::Draw( int nRenderFlags )
 				model->GetInstancer()->Draw( nRenderFlags, model );
 			}
 		}
+	}
 
+	for (int i = 0; i < g_pGameWorld->m_gameObjects.numElem(); i++)
+	{
+		CGameObject* obj = g_pGameWorld->m_gameObjects[i];
+
+		if (obj->m_state != GO_STATE_IDLE)
+			continue;
+
+		obj->PostDraw();
 	}
 
 	/*

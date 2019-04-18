@@ -146,8 +146,7 @@ const float SKIDMARK_MIN_INTERVAL		= 0.25f;
 
 const float GEARBOX_DECEL_SHIFTDOWN_FACTOR	= 0.7f;
 
-const float WHELL_ROLL_RESISTANCE_CONST		= 150.0f;
-const float WHELL_ROLL_RESISTANCE_HALF		= WHELL_ROLL_RESISTANCE_CONST * 0.5f;
+const float WHELL_ROLL_RESISTANCE_CONST		= 400.0f;
 
 const float WHEEL_ROLL_RESISTANCE_FREE	= 8.0f;
 const float ENGINE_ROLL_RESISTANCE		= 38.0f;
@@ -1372,7 +1371,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	{
 		FReal steer_diff = fSteerAngle-m_steering;
 
-		if(FPmath::abs(steer_diff) > 0.1f)
+		if(FPmath::abs(steer_diff) > 0.01f)
 			m_steering += FPmath::sign(steer_diff) * m_conf->physics.steeringSpeed * delta;
 		else
 			m_steering = fSteerAngle;
@@ -1438,6 +1437,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 		// play wheel hit sound if wheel suddenly goes up by HFIELD_HEIGHT_STEP
 		if(m_isLocalCar && fractionOld < 1.0f && (fractionOldDist - fractionNewDist) >= HFIELD_HEIGHT_STEP)
 		{
+			// add damage to hubcap
+			wheel.m_hubcapLoose += (fractionOldDist - fractionNewDist) * 0.25f;
+
 			EmitSound_t ep;
 
 			ep.name = "generic.wheelOnGround";
@@ -1492,6 +1494,10 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		float fRPM = GetRPM();
 
+		const float CLUTCH_GRIP_MIN_SPEED = 3.7f;
+		const float CLUTCH_GRIP_RPM = 3500.0f;
+		const float CLUTCH_GRIP_RPM_LOAD = 1100.0f;
+
 		if(bDoBurnout)
 		{
 			m_engineIdleFactor = 0.0f;
@@ -1500,10 +1506,10 @@ void CCar::UpdateVehiclePhysics(float delta)
 		else
 		{
 			float absWheelsSpeed = fabs(wheelsSpeed);
-			if(absWheelsSpeed < 3.5f && m_fAccelEffect > 0.0f)
+			if(absWheelsSpeed < CLUTCH_GRIP_MIN_SPEED && m_fAccelEffect > 0.0f)
 			{
-				float optimalRpmLoad = RemapValClamp(m_fAccelEffect*absWheelsSpeed, 0.0f, 2.0f, 0.0f, 1.0f);
-				fRPM = lerp(fRPM, 3500.0f, optimalRpmLoad) - 1200.0f * m_fAccelEffect * RemapValClamp(absWheelsSpeed,0.0f, 3.5f, 0.0f, 1.0f);
+				float optimalRpmLoad = RemapValClamp(m_fAccelEffect*absWheelsSpeed, 0.0f, 1.25f, 0.0f, 1.0f);
+				fRPM = lerp(fRPM, CLUTCH_GRIP_RPM, optimalRpmLoad) - CLUTCH_GRIP_RPM_LOAD * m_fAccelEffect * RemapValClamp(absWheelsSpeed,0.0f, CLUTCH_GRIP_MIN_SPEED, 0.0f, 1.0f);
 			}
 		}
 
@@ -1732,6 +1738,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		if(wheel.m_collisionInfo.fract < 1.0f)
 		{
+			// calculate wheel traction friction
 			float wheelTractionFrictionScale = 0.2f;
 
 			if(wheel.m_surfparam)
@@ -1739,16 +1746,13 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 			wheelTractionFrictionScale *= s_weatherTireFrictionMod[g_pGameWorld->m_envConfig.weatherType];
 
-			// wheel ray direction
-
-			float suspLength = length(line_start-line_end);
-
-			Vector3D ray_dir = (line_start-line_end) / suspLength;
+			// recalculate wheel velocity
 			Vector3D wheelVelAtPoint = carBody->GetVelocityAtWorldPoint(wheel.m_collisionInfo.position);
-
 			wheel.m_velocityVec = wheelVelAtPoint;
 
-			// use some waving for dirt
+			//
+			// Apply waving for dirt
+			//
 			if(wheel.m_surfparam && wheel.m_surfparam->word == 'G') // wheel on grass
 			{
 				float fac1 = wheel.m_collisionInfo.position.x*0.65f;
@@ -1757,6 +1761,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 				wheel.m_collisionInfo.fract += ((0.5f-sin(fac1))+(0.5f-sin(fac2+0.5f)))*wheelConf.radius*0.11f;
 			}
 
+			//
+			// Calculate spring force
+			//
 			float springPowerFac = 1.0f-wheel.m_collisionInfo.fract;
 
 			float springPower = springPowerFac*wheelConf.springConst;
@@ -1793,8 +1800,8 @@ void CCar::UpdateVehiclePhysics(float delta)
 			// get direction vectors based on surface normal
 			Vector3D wheelTractionForceDir = cross(wheel_right, wheel.m_collisionInfo.normal);
 
-			// determine wheel pitch speed applied from the ground
-			float wheelPitchSpeed		= dot(wheelVelAtPoint, wheelTractionForceDir);
+			// calculate wheel forward speed
+			float wheelPitchSpeed = dot(wheelVelAtPoint, wheelTractionForceDir);
 
 			float fLongitudinalForce = 0.0f;
 
@@ -1862,7 +1869,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 					wheelSlipOppositeForce = -dot(wheelSlipForceDir, wheelVelAtPoint );// * 2.0f ;
 				}
 
-
 				// contact surface modifier (perpendicularness to ground)
 				{
 					const float SURFACE_GRIP_SCALE = 1.0f;
@@ -1878,18 +1884,40 @@ void CCar::UpdateVehiclePhysics(float delta)
 				}
 			}
 
-			// apply force by drive wheel
-			if(isDriveWheel && fAcceleration > 0.01f)
+			//
+			// apply engine torque to drive wheel
+			//
+			if(isDriveWheel)
 			{
-				if(bDoBurnout)
+				if (fAcceleration > 0.01f)
 				{
-					wheelTractionForce += acceleratorAbs * driveGroundWheelMod * wheelTractionFrictionScale;
-					wheelSlipOppositeForce *= wheelTractionFrictionScale * (1.0f-fPitchFac); // BY DIFFERENCE
-				}
+					if (bDoBurnout)
+					{
+						wheelTractionForce += acceleratorAbs * driveGroundWheelMod * wheelTractionFrictionScale;
+						wheelSlipOppositeForce *= wheelTractionFrictionScale * (1.0f - fPitchFac); // BY DIFFERENCE
+					}
 
-				wheelTractionForce += fAccelerator * driveGroundWheelMod;
+					wheelTractionForce += fAccelerator * driveGroundWheelMod;
+				}
 			}
 
+			//
+			// apply roll resistance
+			//
+			if(m_conf->flags.isCar)
+			{
+				float engineBrakeModifier = 1.0f - clamp((float)fAccel + (float)fabs(fBrake), 0.0f, 1.0f);
+
+				if (!isDriveWheel)
+					engineBrakeModifier = 0.0f;
+
+				float velocityDamp = wheelPitchSpeed * engineBrakeModifier + sign(wheelPitchSpeed)*clamp((float)fabs(wheelPitchSpeed), 0.0f, 1.0f);
+				wheelTractionForce -= velocityDamp * (1.0f - dampingFactor) * WHELL_ROLL_RESISTANCE_CONST;
+			}
+
+			//
+			// apply brake
+			//
 			if(fabs(fBraker) > 0 && fabs(wheelPitchSpeed) > 0)
 			{
 				wheelTractionForce -= sign(wheelPitchSpeed) * fabs(fBraker * wheelConf.brakeTorque) * wheelTractionFrictionScale * 4.0f * (1.0f + springPowerFac);
@@ -1898,6 +1926,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 					wheelPitchSpeed -= wheelPitchSpeed * 3.0f * wheelTractionFrictionScale;
 			}
 
+			//
+			// apply handbrake
+			//
 			if(isHandbrakeWheel && fHandbrake > 0.0f)
 			{
 				const float HANDBRAKE_TORQUE = 8500.0f;
@@ -1918,15 +1949,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 			springForce += wheelSlipForceDir * wheelSlipOppositeForce;
 			springForce += wheelTractionForceDir * wheelTractionForce;
 
-			float fVelDamp = sign(wheelPitchSpeed)*clamp((float)fabs(wheelPitchSpeed), 0.0f, 1.0f);
-
-			// apply roll resistance if it's a car
-			if(isCar)
-			{
-				springForce -= wheelTractionForceDir * fVelDamp * (1.0f-dampingFactor) * WHELL_ROLL_RESISTANCE_CONST;
-				springForce -= wheelTractionForceDir * wheelPitchSpeed * (1.0f-dampingFactor)*(8.0f + (1.0f-clamp((float)fAccel+(float)fabs(fBrake), 0.0f, 1.0f))*WHELL_ROLL_RESISTANCE_CONST);
-			}
-
 			// spring force position in a couple with antiroll
 			Vector3D springForcePos = wheel.m_collisionInfo.position;
 
@@ -1938,7 +1960,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 			springForcePos += m_worldMatrix.rows[1].xyz() * fAntiRollFac * m_conf->physics.antiRoll * ANTIROLL_SCALE;
 
-			// apply force of wheel
+			// apply force of wheel to the car body so it can "stand" on the wheels
 			carBody->ApplyWorldForce(springForcePos, springForce);
 		}
 		else
@@ -2350,7 +2372,7 @@ void CCar::OnPhysicsFrame( float fDt )
 		if(wheel.m_flags.lostHubcap)
 			continue;
 
-		float lateralSliding = GetLateralSlidingAtWheel(i) * -sign(m_conf->physics.wheels[i].suspensionTop.x);
+		float lateralSliding = GetLateralSlidingAtWheel(i) * sign(m_conf->physics.wheels[i].suspensionTop.x);
 		lateralSliding = max(0.0f,lateralSliding);
 
 		// skidding can do this
@@ -3110,19 +3132,22 @@ void CCar::AddWheelWaterTrail(const CCarWheel& wheel, const carWheelConfig_t& wh
 	trailPair[1].v1.texcoord = rect.GetRightBottom() + offset;
 }
 
-void CCarWheel::CalcWheelSkidPair(PFXVertexPair_t& pair, float width, float wheelOffsX, const Matrix3x3& rotation)
+void CCarWheel::CalcWheelSkidPair(PFXVertexPair_t& pair, const carWheelConfig_t& conf)
 {
 	Vector3D velAtWheel = m_velocityVec;
-	velAtWheel.y = 0.0f;
+	velAtWheel *= Vector3D(1.0f) - m_collisionInfo.normal;
 
-	Vector3D wheelDir = fastNormalize(velAtWheel);
-	Vector3D wheelRightDir = cross(wheelDir, m_collisionInfo.normal);
+	Vector3D skidmarkDir = fastNormalize(velAtWheel);
+	Vector3D skidmarkRightDir = cross(skidmarkDir, m_collisionInfo.normal);
 
-	Vector3D skidmarkPos = (m_collisionInfo.position - rotation.rows[0] * width * sign(wheelOffsX)*0.5f) + wheelDir * 0.05f;
-	skidmarkPos += velAtWheel * 0.0065f + m_collisionInfo.normal*0.015f;
+	float wheelSign = sign(conf.suspensionBottom.x);
 
-	pair.v0 = PFXVertex_t(skidmarkPos - wheelRightDir * width*0.5f, vec2_zero, 0.0f);
-	pair.v1 = PFXVertex_t(skidmarkPos + wheelRightDir * width*0.5f, vec2_zero, 0.0f);
+	Vector3D skidmarkPos = m_collisionInfo.position + velAtWheel * 0.0065f + m_collisionInfo.normal*0.02f;
+	
+	Vector3D skidmarkSideOffset = skidmarkRightDir * (wheelSign*conf.width + conf.woffset);
+
+	pair.v0.point = skidmarkPos;
+	pair.v1.point = skidmarkPos + skidmarkSideOffset;
 }
 
 const eqPhysSurfParam_t* CCarWheel::GetSurfaceParams() const
@@ -3163,17 +3188,21 @@ void CCar::ProcessWheelSkidmarkTrails(int wheelIdx)
 
 	float fSkid = (tractionSlide + fabs(lateralSlide))*0.15f - 0.45f;
 
+	// add new trail vertice
 	if (fSkid > 0.0f)
 	{
-		Matrix3x3 wheelMat = wheel.m_wheelOrient * transpose(m_worldMatrix.getRotationComponent());
-
 		PFXVertexPair_t skidmarkPair;
-		wheel.CalcWheelSkidPair(skidmarkPair, wheelConf.width, wheelConf.suspensionTop.x, wheelMat);
+		wheel.CalcWheelSkidPair(skidmarkPair, wheelConf);
 
-		float fAlpha = clamp(0.32f*fSkid, 0.0f, 0.32f);
+		const float SKID_TRAIL_ALPHA = 0.32f;
 
-		skidmarkPair.v0.color.w = fAlpha;
-		skidmarkPair.v1.color.w = fAlpha;
+		float skidAlpha = fSkid * SKID_TRAIL_ALPHA;
+		skidAlpha = min(skidAlpha, SKID_TRAIL_ALPHA);
+
+		// TODO: apply color of ground or asphalt...
+		ColorRGBA skidColor(0.0f, 0.0f, 0.0f, skidAlpha);
+
+		skidmarkPair.v0.color = skidmarkPair.v1.color = skidColor;
 
 		int numMarkVertexPairs = wheel.m_skidMarks.numElem();
 
