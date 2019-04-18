@@ -490,13 +490,13 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		const float AI_BRAKE_TARGET_CONST_DISTANCE = 0.5f;
 
 		const float AI_BRAKE_TARGET_DISTANCE_A = 1.2f;
-		const float AI_BRAKE_TARGET_DISTANCE_B = 1.25f;
+		const float AI_BRAKE_TARGET_DISTANCE_B = 1.35f;
 
 		const float	AI_BRAKE_SPEED_DISTANCE_FACTOR_A = 0.9f;
 		const float	AI_BRAKE_SPEED_DISTANCE_FACTOR_B = 1.2f;
 		
 		const float AI_STEERING_PATH_CORRECTION_DISTANCE = 9.0f;
-		const float AI_SEGMENT_STEERING_CORRECTION_RADIUS = 2.5f; // distance to segment
+		const float AI_SEGMENT_STEERING_CORRECTION_RADIUS = 3.0f; // distance to segment
 		const float AI_BRAKE_PATH_CORRECTION_CURVE = 1.25f;
 
 		// brake curve and limits
@@ -553,7 +553,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		float pathCorrectionFactor = RemapValClamp(distFromSegmentByCarPos, 0.0f, AI_SEGMENT_STEERING_CORRECTION_RADIUS, 0.0f, 1.0f);
 
 		// if path correction is more that 50%, we should do it more intense
-		if (pathCorrectionFactor > 0.5f)
+		if (pathCorrectionFactor > 0.25f)
 			handling.autoHandbrake = true;
 
 		// steering

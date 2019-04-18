@@ -90,6 +90,7 @@ protected:
 	float					m_savedTorqueScale;
 
 	bool					m_angry;
+	float					m_angryTimer;
 	float					m_pursuitTime;
 
 	// all handling affectors, they are biased by the current behavior state

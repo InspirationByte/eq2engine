@@ -59,6 +59,10 @@ const float AI_ALTER_SIREN_CHANGETIME		= 2.0f;
 
 const float AI_CHASER_MAX_DISTANCE = 40.0f;
 
+const float AI_ANGRY_ACTIVE_TIME = 5.0f;
+
+const float AI_ANGRY_ACTIVE_DELAY = AI_ANGRY_ACTIVE_TIME + 5.0f;
+
 //------------------------------------------------------------------------------------------------
 
 struct InfractionDesc
@@ -115,6 +119,7 @@ CAIPursuerCar::CAIPursuerCar(vehicleConfig_t* carConfig, EPursuerAIType type) : 
 {
 	m_target = nullptr;
 	m_angry = false;
+	m_angryTimer = 0.0f;
 	m_pursuitTime = 0.0f;
 
 	m_loudhailer = nullptr;
@@ -501,7 +506,7 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 			if (obj->ObjType() == GO_CAR_AI)
 			{
 				CAITrafficCar* tfc = (CAITrafficCar*)obj;
-				if (tfc->IsPursuer())
+				if (tfc->IsPursuer() && tfc != this)	// don't check collision with me pls
 				{
 					return INFRACTION_HIT_SQUAD_VEHICLE;
 				}
@@ -777,6 +782,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		m_enabled = true;
 		m_autogearswitch = true;
 		m_pursuitTime = 0.0f;
+		m_angryTimer = 0.0f;
 
 		// set desired torque and speed
 		m_maxSpeed = m_savedMaxSpeed;
@@ -854,9 +860,16 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	m_chaser.m_manipulator.m_driveTargetVelocity = targetVelocity;
 	m_chaser.m_manipulator.m_excludeColl = m_target->GetPhysicsBody();
 
+	if (m_angry)
+	{
+		m_angryTimer -= fDt;
+		if (m_angryTimer < 0)
+			m_angryTimer = AI_ANGRY_ACTIVE_DELAY;
+	}
+
 	// update target avoidance affector parameters
 	m_targetAvoidance.m_manipulator.m_avoidanceRadius = 10.0f;
-	m_targetAvoidance.m_manipulator.m_enabled = !m_angry;
+	m_targetAvoidance.m_manipulator.m_enabled = (m_angryTimer < AI_ANGRY_ACTIVE_TIME);
 	m_targetAvoidance.m_manipulator.m_targetPosition = targetPos;
 
 	float distToTarget = length(targetPos - GetOrigin());
@@ -909,8 +922,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	if(m_collAvoidance.m_manipulator.m_enabled)
 		handling = m_collAvoidance.m_handling;
 
-	if(!m_stability.m_handling.autoHandbrake)
-		handling.autoHandbrake = false;
+	//if(!m_stability.m_handling.autoHandbrake)
+	//	handling.autoHandbrake = false;
 
 	int controls = IN_ACCELERATE | IN_ANALOGSTEER;
 
