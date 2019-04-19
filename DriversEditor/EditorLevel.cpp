@@ -753,6 +753,8 @@ struct zoneRegions_t
 	DkList<int> regionList;
 };
 
+
+
 void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
 {
 	// ---------- LEVLUMP_REGIONINFO ----------
@@ -781,6 +783,33 @@ void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
 	zoneDataStream.Open(NULL, VS_OPEN_WRITE, 2048);
 
 	DkList<zoneRegions_t> zoneRegionList;
+
+	// prepare regions
+	for (int x = 0; x < m_wide; x++)
+	{
+		for (int y = 0; y < m_tall; y++)
+		{
+			int idx = y * m_wide + x;
+
+			CEditorLevelRegion& reg = *(CEditorLevelRegion*)&m_regions[idx];
+		
+			reg.ClearRoadTrafficLightStates();
+		}
+	}
+
+	// process cell objects before writing
+	for (int x = 0; x < m_wide; x++)
+	{
+		for (int y = 0; y < m_tall; y++)
+		{
+			int idx = y * m_wide + x;
+
+			CEditorLevelRegion& reg = *(CEditorLevelRegion*)&m_regions[idx];
+
+			for (int i = 0; i < reg.m_objects.numElem(); i++)
+				reg.PostprocessCellObject(reg.m_objects[i]);
+		}
+	}
 
 	// build region offsets
 	for(int x = 0; x < m_wide; x++)
@@ -1656,6 +1685,19 @@ int FindObjectContainer(DkList<CLevObjectDef*>& listObjects, CLevObjectDef* cont
 	return -1;
 }
 
+void CEditorLevelRegion::ClearRoadTrafficLightStates()
+{
+	// before we do PostprocessCellObject, make sure we remove all traffic light flags from straights
+	for (int x = 0; x < m_heightfield[0]->m_sizew; x++)
+	{
+		for (int y = 0; y < m_heightfield[0]->m_sizeh; y++)
+		{
+			int idx = y * m_heightfield[0]->m_sizew + x;
+			m_roads[idx].flags &= ~ROAD_FLAG_TRAFFICLIGHT;
+		}
+	}
+}
+
 void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObjectDef*>& listObjects, bool final )
 {
 	// create region model lists
@@ -1702,20 +1744,6 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 
 	cellObjectsList.resize(regObjects.numElem());
 
-	// before we do PostprocessCellObject, make sure we remove all traffic light flags from straights
-	for(int x = 0; x < m_heightfield[0]->m_sizew; x++)
-	{
-		for(int y = 0; y < m_heightfield[0]->m_sizeh; y++)
-		{
-			int idx = y*m_heightfield[0]->m_sizew + x;
-
-			if(m_roads[idx].type == ROADTYPE_STRAIGHT)
-				continue;
-
-			m_roads[idx].flags &= ~ROAD_FLAG_TRAFFICLIGHT;
-		}
-	}
-
 	//
 	// collect models and cell objects
 	//
@@ -1723,9 +1751,6 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 	{
 		regionObject_t* robj = regObjects[i];
 		CLevObjectDef* def = robj->def;
-
-		// post process cell objects
-		PostprocessCellObject(robj);
 
 		levCellObject_t object;
 
@@ -1840,15 +1865,19 @@ void CEditorLevelRegion::PostprocessCellObject(regionObject_t* obj)
 					IVector2D lanePos = roadPos-rightDir*i;
 
 					Vector3D bestCellPos = g_pGameWorld->m_level.GlobalTilePointToPosition(lanePos);
-					debugoverlay->Box3D(bestCellPos-2,bestCellPos+2, ColorRGBA(0,1,1,1), 25.0f);
+					debugoverlay->Box3D(bestCellPos-2,bestCellPos+2, ColorRGBA(0,1,1,1), 5.0f);
 
 					for(int j = 0; j < REPEAT_ITERATIONS; j++)
 					{
-						levroadcell_t* rcell = m_level->Road_GetGlobalTileAt(lanePos - forwardDir*j );
+						IVector2D roadCellIterPos = lanePos - forwardDir * j;
+						Vector3D roadCellIterPos3D = g_pGameWorld->m_level.GlobalTilePointToPosition(roadCellIterPos);
+
+						levroadcell_t* rcell = m_level->Road_GetGlobalTileAt(roadCellIterPos);
 						if(rcell)
 						{
 							if(rcell->type != ROADTYPE_STRAIGHT)
-								break;
+								continue;
+
 							rcell->flags |= ROAD_FLAG_TRAFFICLIGHT;
 						}
 					}

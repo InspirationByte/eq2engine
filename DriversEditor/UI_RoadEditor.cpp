@@ -306,6 +306,7 @@ void CUI_RoadEditor::OnRender()
 					else
 					{
 						tileColor[cell->direction] += 0.25f;
+
 						ListQuadTex(p1, p2, p3, p4, cell->direction, tileColor, straight_verts);
 					}
 				}

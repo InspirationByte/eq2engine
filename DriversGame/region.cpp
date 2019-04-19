@@ -954,10 +954,6 @@ void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 			levroadcell_t tmpCell;
 			stream->Read(&tmpCell, 1, sizeof(levroadcell_t));
 
-#ifdef EDITOR
-			tmpCell.flags &= ~ROAD_FLAG_TRAFFICLIGHT;
-#endif // EDITOR
-
 			int idx = tmpCell.posY*m_heightfield[0]->m_sizew + tmpCell.posX;
 			m_roads[idx] = tmpCell;
 

@@ -12,27 +12,7 @@
 #include "DebugInterface.h"
 #include "EqParticles.h"
 
-#define MAX_RAIN_PARTICLES 700
-#define RAIN_RADIUS 500
-#define RAIN_START_HEIGHT 200
-
 //-------------------------------------------------------------------
-
-struct ripple_t
-{
-	Vector3D position;
-	Vector3D tangent;
-	Vector3D binormal;
-	Vector3D normal;
-
-	float startsize;
-	float endsize;
-
-	float cur_size;
-
-	float startlifetime;
-	float lifetime;
-};
 
 class RainEmitter;
 

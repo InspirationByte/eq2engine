@@ -23,6 +23,8 @@ ConVar hud_mapZoom("hud_mapZoom", "1.0", NULL, CV_ARCHIVE);
 
 ConVar hud_debug_car("hud_debug_car", "0", NULL, CV_CHEAT);
 
+ConVar hud_debug_roadmap("hud_debug_roadmap", "0", NULL, CV_CHEAT);
+
 //ConVar hud_map_pos("hud_map_pos", "0", "Map position (0 - bottom, 1 - top)", CV_ARCHIVE);
 
 ConVar g_showCameraPosition("g_showCameraPosition", "0", NULL, CV_CHEAT);
@@ -547,7 +549,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 	static IEqFont* roboto30b = g_fontCache->GetFont("Roboto", 30, TEXT_STYLE_BOLD);
 	static IEqFont* robotocon30b = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD);
 	static IEqFont* robotocon30bi = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD | TEXT_STYLE_ITALIC);
-	static IEqFont* defFont = g_fontCache->GetFont("default", 0);
 
 	eqFontStyleParam_t fontParams;
 	fontParams.styleFlag |= TEXT_STYLE_SHADOW;
@@ -721,20 +722,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 			}
 		meshBuilder.End();
 
-		if(hud_debug_car.GetBool() && m_mainVehicle)
-		{
-			const float DEBUG_FONT_SIZE = 20.0f;
-			const Vector2D DEBUG_LINE_OFS = Vector2D(0,DEBUG_FONT_SIZE*2.0f);
-
-			const Vector2D debugOffset = Vector2D(10,400);
-
-			fontParams.scale = DEBUG_FONT_SIZE;
-
-			robotocon30b->RenderText(varargs("Speed: %.2f KPH (%.2f MPS)", m_mainVehicle->GetSpeed(), m_mainVehicle->GetSpeed()*KPH_TO_MPS), debugOffset, fontParams);
-			robotocon30b->RenderText(varargs("Speed from wheels: %.2f KPH (%.2f MPS) at gear: %d, RPM: %d", m_mainVehicle->GetSpeedWheels(), m_mainVehicle->GetSpeedWheels()*KPH_TO_MPS, m_mainVehicle->GetGear(), (int)m_mainVehicle->GetRPM()), debugOffset+DEBUG_LINE_OFS, fontParams);
-			robotocon30b->RenderText(varargs("Lateral slide: %.2f", m_mainVehicle->GetLateralSlidingAtBody()), debugOffset+DEBUG_LINE_OFS*2, fontParams);
-			robotocon30b->RenderText(varargs("Traction slide: %.2f", m_mainVehicle->GetTractionSliding(true)), debugOffset+DEBUG_LINE_OFS*3, fontParams);
-		}
+		DoDebugDisplay();
 
 		// get felony
 		float felonyPercent = 0.0f;
@@ -1000,30 +988,62 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 		}
 	}
 
-	if(g_showCameraPosition.GetBool())
-	{
-		Vector3D viewpos = g_pGameWorld->GetView()->GetOrigin();
-		Vector3D viewrot = g_pGameWorld->GetView()->GetAngles();
-
-		eqFontStyleParam_t style;
-		style.styleFlag |= TEXT_STYLE_SHADOW;
-		style.textColor = ColorRGBA(0.25f,1,0.25f, 1.0f);
-		defFont->RenderText(varargs("camera position: %.2f %g.2f %g.2f\ncamera angles: %.2f %.2f %.2f", viewpos.x,viewpos.y,viewpos.z, viewrot.x,viewrot.y,viewrot.z), Vector2D(20, 180), style);
-	}
-
-	if(g_showCarPosition.GetBool() && m_mainVehicle)
-	{
-		Vector3D carpos = m_mainVehicle->GetOrigin();
-		Vector3D carrot = m_mainVehicle->GetAngles();
-
-		eqFontStyleParam_t style;
-		style.styleFlag |= TEXT_STYLE_SHADOW;
-		style.textColor = ColorRGBA(1,1,0.25f, 1.0f);
-
-		defFont->RenderText(varargs("car position: %.2f %.2f %.2f\ncar angles: %.2f %.2f %.2f", carpos.x,carpos.y,carpos.z, carrot.x,carrot.y,carrot.z), Vector2D(20, 220), style);
-	}
-
 	m_hudLayout->Render();
+}
+
+
+void CDrvSynHUDManager::DoDebugDisplay()
+{
+	static IEqFont* defFont = g_fontCache->GetFont("default", 0);
+
+	eqFontStyleParam_t style;
+	style.styleFlag |= TEXT_STYLE_SHADOW;
+	style.textColor = ColorRGBA(1, 1, 0.25f, 1.0f);
+
+	if (g_showCameraPosition.GetBool())
+	{
+		const Vector3D& viewpos = g_pGameWorld->GetView()->GetOrigin();
+		const Vector3D& viewrot = g_pGameWorld->GetView()->GetAngles();
+
+		defFont->RenderText(varargs("camera position: %.2f %g.2f %g.2f\ncamera angles: %.2f %.2f %.2f", viewpos.x, viewpos.y, viewpos.z, viewrot.x, viewrot.y, viewrot.z), Vector2D(20, 180), style);
+	}
+
+	if (g_showCarPosition.GetBool() && m_mainVehicle)
+	{
+		const Vector3D& carpos = m_mainVehicle->GetOrigin();
+		const Vector3D& carrot = m_mainVehicle->GetAngles();
+
+		defFont->RenderText(varargs("car position: %.2f %.2f %.2f\ncar angles: %.2f %.2f %.2f", carpos.x, carpos.y, carpos.z, carrot.x, carrot.y, carrot.z), Vector2D(20, 220), style);
+	}
+
+	if (hud_debug_car.GetBool() && m_mainVehicle)
+	{
+		const float DEBUG_FONT_SIZE = 20.0f;
+		const Vector2D DEBUG_LINE_OFS = Vector2D(0, DEBUG_FONT_SIZE*2.0f);
+
+		const Vector2D debugOffset(10, 400);
+
+		defFont->RenderText(varargs("Speed: %.2f KPH (%.2f MPS)", m_mainVehicle->GetSpeed(), m_mainVehicle->GetSpeed()*KPH_TO_MPS), debugOffset, style);
+		defFont->RenderText(varargs("Speed from wheels: %.2f KPH (%.2f MPS) at gear: %d, RPM: %d", m_mainVehicle->GetSpeedWheels(), m_mainVehicle->GetSpeedWheels()*KPH_TO_MPS, m_mainVehicle->GetGear(), (int)m_mainVehicle->GetRPM()), debugOffset + DEBUG_LINE_OFS, style);
+		defFont->RenderText(varargs("Lateral slide: %.2f", m_mainVehicle->GetLateralSlidingAtBody()), debugOffset + DEBUG_LINE_OFS * 2, style);
+		defFont->RenderText(varargs("Traction slide: %.2f", m_mainVehicle->GetTractionSliding(true)), debugOffset + DEBUG_LINE_OFS * 3, style);
+	}
+
+	if (hud_debug_roadmap.GetBool() && m_mainVehicle)
+	{
+		const Vector3D& carpos = m_mainVehicle->GetOrigin();
+
+		levroadcell_t* cell = g_pGameWorld->m_level.Road_GetGlobalTile(carpos);
+
+		if (cell)
+		{
+			defFont->RenderText(varargs("direction: %d, type: %d, trafficlight: %d", cell->direction, cell->type, (cell->flags & ROAD_FLAG_TRAFFICLIGHT) > 0), Vector2D(20, 320), style);
+		}
+		else
+		{
+			defFont->RenderText("not on road", Vector2D(20, 320), style);
+		}
+	}
 }
 
 // main object to display

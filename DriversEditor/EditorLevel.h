@@ -200,6 +200,7 @@ public:
 	void						ReadRegionBuildings( IVirtualStream* stream );
 	void						WriteRegionBuildings( IVirtualStream* stream );
 
+	void						ClearRoadTrafficLightStates();
 	void						PostprocessCellObject(regionObject_t* obj);
 
 	int							Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float& dist);

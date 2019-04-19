@@ -89,6 +89,8 @@ protected:
 	void						DrawWorldIntoMap(const CViewParams& params, float fDt);
 	void						DrawDamageBar(CMeshBuilder& meshBuilder, Rectangle_t& rect, float percentage, float alpha = 1.0f);
 
+	void						DoDebugDisplay();
+
 	bool								m_enable;
 	bool								m_showMap;
 

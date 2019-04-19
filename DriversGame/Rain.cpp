@@ -15,11 +15,11 @@ RainEmitter* g_pRainEmitter = &s_RainEmitter;
 
 //---------------------------------------------------------------------------------------------------------
 
-CRippleEffect::CRippleEffect(const Vector3D &position, const Vector3D &normal, float StartSize, float EndSize, float lifetime)
+CRippleEffect::CRippleEffect(const Vector3D &position, const Vector3D &_normal, float StartSize, float EndSize, float lifetime)
 {
 	InternalInit(position, lifetime, g_translParticles, g_pRainEmitter->m_rippleEntry);
 
-	this->normal = normal;
+	normal = _normal;
 
 	fCurSize = StartSize;
 	fStartSize = StartSize;

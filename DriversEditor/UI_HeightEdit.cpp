@@ -1473,7 +1473,7 @@ void CUI_HeightEdit::OnRender()
 
 			box_pos += m_selectedRegion->GetHField(m_selectedHField)->m_position - Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
 
-			debugoverlay->Text3D(box_pos, -1, ColorRGBA(1,1,1,1), 0.0f, "layer: %d", m_selectedHField);
+			debugoverlay->Text3D(box_pos, -1, ColorRGBA(1,1,1,1), 0.0f, "layer: %d\ncell: %d %d\n reg: %d", m_selectedHField, m_mouseOverTile.x, m_mouseOverTile.y, m_selectedRegion->m_regionIndex);
 
 			ColorRGBA color2(0.2,0.2,0.2,0.8);
 
