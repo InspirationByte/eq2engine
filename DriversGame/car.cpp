@@ -265,7 +265,7 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 			float wheel_width = KV_GetValueFloat(pWheelKv->FindKeyBase("width"), 0.0f, 1.0f);
 
 			float rot_sign = (suspensiontop.x > 0) ? 1 : -1;
-			float widthAdd = (wheel_width / 2)*rot_sign;
+			float widthAdd = (wheel_width * 0.5f) * rot_sign;
 
 			suspensiontop.x += widthAdd;
 			suspensionbottom.x += widthAdd;
@@ -496,7 +496,7 @@ static float CalcTorqueCurve( float radsPerSec, int type )
 float DBSlipAngleToLateralForce(float fSlipAngle, float fLongitudinalForce, eqPhysSurfParam_t* surfParam)
 {
 	const float fInitialGradient = 22.0f;
-	const float fEndGradient = 1.5f;
+	const float fEndGradient = 1.0f;
 	const float fEndOffset = 3.7f;
 
 	const float fSegmentEndA = 0.06f;
@@ -1854,19 +1854,19 @@ void CCar::UpdateVehiclePhysics(float delta)
 				//
 				// compute slip angle and lateral force
 				//
-				if ( velocityMagnitude > 2.0f )
+				if ( velocityMagnitude > 1.0f )
 				{
 					float fSlipAngle = -atan2f( dot(wheelSlipForceDir,  wheelVelAtPoint ), fabs( dot(wheelForward, wheelVelAtPoint ) ) ) ;
 
 					if(wheelPitchSpeed > 0.1f)
 						fSlipAngle += fWheelSteerAngle*0.5f;
 
-					wheelSlipOppositeForce = DBSlipAngleToLateralForce( fSlipAngle, fLongitudinalForce, wheel.m_surfparam);// , wheelSurfaceAttrib ) ;
+					wheelSlipOppositeForce = DBSlipAngleToLateralForce( fSlipAngle, fLongitudinalForce, wheel.m_surfparam);
 				}
 				else
 				{
 					// supress slip force on low speeds
-					wheelSlipOppositeForce = -dot(wheelSlipForceDir, wheelVelAtPoint );// * 2.0f ;
+					wheelSlipOppositeForce = dot(wheelSlipForceDir, wheelVelAtPoint ) * -4.0f ;
 				}
 
 				// contact surface modifier (perpendicularness to ground)
@@ -3132,21 +3132,23 @@ void CCar::AddWheelWaterTrail(const CCarWheel& wheel, const carWheelConfig_t& wh
 	trailPair[1].v1.texcoord = rect.GetRightBottom() + offset;
 }
 
-void CCarWheel::CalcWheelSkidPair(PFXVertexPair_t& pair, const carWheelConfig_t& conf)
+void CCarWheel::CalcWheelSkidPair(PFXVertexPair_t& pair, const carWheelConfig_t& conf, const Vector3D& wheelRightVec)
 {
-	Vector3D velAtWheel = m_velocityVec;
-	velAtWheel *= Vector3D(1.0f) - m_collisionInfo.normal;
+	// exclude velocity in direction of normal
+	Vector3D wheelVelocityOnGround = m_velocityVec * (Vector3D(1.0f) - m_collisionInfo.normal);
 
-	Vector3D skidmarkDir = fastNormalize(velAtWheel);
-	Vector3D skidmarkRightDir = cross(skidmarkDir, m_collisionInfo.normal);
+	// calculate side dir using movement direction
+	Vector3D sideDir = cross(fastNormalize(wheelVelocityOnGround), m_collisionInfo.normal);
 
-	float wheelSign = sign(conf.suspensionBottom.x);
-
-	Vector3D skidmarkPos = m_collisionInfo.position + velAtWheel * 0.0065f + m_collisionInfo.normal*0.02f;
+	// calc wheel center (because of offset in the raycast)
+	Vector3D wheelCenterPos = m_collisionInfo.position - wheelRightVec * conf.woffset;
 	
-	Vector3D skidmarkSideOffset = skidmarkRightDir * (wheelSign*conf.width + conf.woffset);
+	// make skidmark position with some offset to not dig it under ground
+	Vector3D skidmarkPos = wheelCenterPos + wheelVelocityOnGround * 0.0065f + m_collisionInfo.normal*0.02f;
 
-	pair.v0.point = skidmarkPos;
+	Vector3D skidmarkSideOffset = sideDir * conf.width * 0.5f;
+
+	pair.v0.point = skidmarkPos - skidmarkSideOffset;
 	pair.v1.point = skidmarkPos + skidmarkSideOffset;
 }
 
@@ -3192,7 +3194,7 @@ void CCar::ProcessWheelSkidmarkTrails(int wheelIdx)
 	if (fSkid > 0.0f)
 	{
 		PFXVertexPair_t skidmarkPair;
-		wheel.CalcWheelSkidPair(skidmarkPair, wheelConf);
+		wheel.CalcWheelSkidPair(skidmarkPair, wheelConf, GetRightVector());
 
 		const float SKID_TRAIL_ALPHA = 0.32f;
 
