@@ -6,7 +6,20 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "game_singleplayer.h"
+#include "pedestrian.h"
+#include "world.h"
+#include "input.h"
+#include "replay.h"
+
 #include "DrvSynHUD.h"
+
+void fng_car_variants(DkList<EqString>& list, const char* query)
+{
+	if (g_pGameSession)
+		g_pGameSession->GetCarNames(list);
+}
+
+ConVar g_car("g_car", "rollo", fng_car_variants, "player car", CV_ARCHIVE);
 
 CSingleGameSession::CSingleGameSession()
 {
@@ -21,10 +34,36 @@ CSingleGameSession::~CSingleGameSession()
 void CSingleGameSession::Init()
 {
 	m_playerCar = nullptr;
+	m_playerPedestrian = nullptr;
 
 	memset(&m_playerControl, 0, sizeof(m_playerControl));
 
 	CGameSessionBase::Init();
+
+	// start recorder
+	if (g_replayData->m_state <= REPL_RECORDING)
+	{
+		//
+		// Spawn default car if script not did
+		//
+		if (!GetPlayerCar())
+		{
+			CPedestrian* playerPed = (CPedestrian*)g_pGameWorld->CreateGameObject("pedestrian", nullptr);
+
+			playerPed->SetOrigin(Vector3D(0.0f,1.0f,0.0f));
+
+			playerPed->Spawn();
+			g_pGameWorld->AddObject(playerPed);
+
+			SetPlayerPedestrian(playerPed);
+		}
+	}
+
+	// load regions on player car position
+	if (GetPlayerCar())
+		g_pGameWorld->m_level.QueryNearestRegions(GetPlayerCar()->GetOrigin(), false);
+	else if (GetPlayerPedestrian())
+		g_pGameWorld->m_level.QueryNearestRegions(GetPlayerPedestrian()->GetOrigin(), false);
 }
 
 void CSingleGameSession::Shutdown()
@@ -55,6 +94,24 @@ void CSingleGameSession::SetPlayerCar(CCar* pCar)
 		m_playerCar->m_isLocalCar = true;
 }
 
+CGameObject* CSingleGameSession::GetViewObject() const
+{
+	if (m_playerPedestrian)
+		return m_playerPedestrian;
+
+	return CGameSessionBase::GetViewObject();
+}
+
+CPedestrian* CSingleGameSession::GetPlayerPedestrian() const
+{
+	return m_playerPedestrian;
+}
+
+void CSingleGameSession::SetPlayerPedestrian(CPedestrian* ped)
+{
+	m_playerPedestrian = ped;
+}
+
 void CSingleGameSession::UpdateLocalControls(int nControls, float steering, float accel_brake)
 {
 	m_playerControl.buttons = nControls;
@@ -62,7 +119,25 @@ void CSingleGameSession::UpdateLocalControls(int nControls, float steering, floa
 	m_playerControl.accelBrakeValue = accel_brake;
 }
 
+void CSingleGameSession::UpdateAsPlayerPedestrian(const playerControl_t& control, CPedestrian* ped)
+{
+	if (!g_pGameWorld->IsValidObject(ped))
+		return;
+
+	g_pGameWorld->m_level.QueryNearestRegions(ped->GetOrigin(), false);
+
+	ped->SetControlButtons(control.buttons);
+
+	ped->SetControlVars(
+		(control.buttons & IN_ACCELERATE) ? control.accelBrakeValue : 0.0f,
+		(control.buttons & IN_BRAKE) ? control.accelBrakeValue : 0.0f,
+		control.steeringValue);
+}
+
 void CSingleGameSession::UpdatePlayerControls()
 {
-	UpdateAsPlayerCar(m_playerControl, m_playerCar);
+	if (m_playerPedestrian)
+		UpdateAsPlayerPedestrian(m_playerControl, m_playerPedestrian);
+	else
+		UpdateAsPlayerCar(m_playerControl, m_playerCar);
 }

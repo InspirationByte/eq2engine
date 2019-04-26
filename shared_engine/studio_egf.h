@@ -131,6 +131,8 @@ public:
 	int						GetModelIndex(const char* modelName) const;
 	int						GetModelIndex(IEqModel* pModel) const;
 
+	void					FreeCachedModel(IEqModel* pModel);
+
 	void					ReleaseCache();
 	void					ReloadModels();
 

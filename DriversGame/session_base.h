@@ -102,7 +102,8 @@ public:
 
 protected:
 
-	void						LoadCarData();
+	void						LoadCarRegistry();
+	void						ClearCarRegistry();
 
 	void						InitCarZoneDescs();
 
@@ -115,8 +116,6 @@ protected:
 	double						m_gameTime;
 
 	int							m_scriptIDCounter;
-
-	int							m_scriptIDReplayCounter;
 
 	DkList<vehicleConfig_t*>	m_carEntries;
 

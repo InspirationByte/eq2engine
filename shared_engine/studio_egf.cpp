@@ -15,11 +15,6 @@
 #include "eqParallelJobs.h"
 #include "ConVar.h"
 
-#if !defined(EDITOR) && !defined(NOENGINE) && !defined(NO_GAME)
-#include "IEngineGame.h"
-#include "IDebugOverlay.h"
-#endif
-
 #ifdef NOPHYSICS
 
 static CEmptyStudioShapeCache s_EmptyShapeCache;
@@ -271,7 +266,7 @@ void CEngineStudioEGF::DestroyModel()
 		g_pStudioShapeCache->DestroyStudioCache(&m_hwdata->physModel);
 		Studio_FreePhysModel(&m_hwdata->physModel);
 
-		studioHwData_t::modelRef_t* lodRefs = m_hwdata->modelrefs;
+		auto lodRefs = m_hwdata->modelrefs;
 
 		for (int i = 0; i < m_hwdata->studio->numModels; i++)
 			delete[] lodRefs[i].groupDescs;
@@ -296,48 +291,39 @@ void CEngineStudioEGF::LoadPhysicsData()
 
 extern ConVar r_detaillevel;
 
-void CopyGroupVertexDataToHWList(DkList<EGFHwVertex_t>& hwVtxList, modelgroupdesc_t* pGroup, BoundingBox& aabb)
+int CopyGroupVertexDataToHWList(EGFHwVertex_t* hwVtxList, int currentVertexCount, modelgroupdesc_t* pGroup, BoundingBox& aabb)
 {
-	// huge speedup
-	hwVtxList.resize(hwVtxList.numElem() + pGroup->numVertices);
-
 	for(int32 i = 0; i < pGroup->numVertices; i++)
 	{
 		studiovertexdesc_t* pVertex = pGroup->pVertex(i);
 
-		EGFHwVertex_t pNewVertex(*pVertex);
-
-		hwVtxList.append(pNewVertex);
-		aabb.AddVertex(pVertex->point);
+		hwVtxList[currentVertexCount] = EGFHwVertex_t(*pVertex);
+		aabb.AddVertex(hwVtxList[currentVertexCount++].pos);
 	}
+
+	return pGroup->numVertices;
 }
 
-int CopyGroupIndexDataToHWList(DkList<uint16>& hwIdxList, DkList<uint32>& hwIdxList32, modelgroupdesc_t* pGroup, int vertex_add_offset)
+int CopyGroupIndexDataToHWList(void* indexData, int indexSize, int currentIndexCount, modelgroupdesc_t* pGroup, int vertex_add_offset)
 {
-	// basicly
-	int index_size = INDEX_SIZE_SHORT;
-
-	// huge speedup
-	hwIdxList.resize(hwIdxList.numElem() + pGroup->numIndices);
-	hwIdxList32.resize(hwIdxList32.numElem() + pGroup->numIndices);
-
 	for(uint32 i = 0; i < pGroup->numIndices; i++)
 	{
-		int index = (*pGroup->pVertexIdx(i));
+		// always add offset to index (usually it's a current loadedvertices size)
+		int index = (*pGroup->pVertexIdx(i)) + vertex_add_offset;
 
-		index += vertex_add_offset; // always add offset to index (usually it's a current loadedvertices size)
-
-		// check index size
-		if( index > SHRT_MAX )
-			index_size = INDEX_SIZE_INT;
-
-		if( index_size == INDEX_SIZE_SHORT )
-			hwIdxList.append( index );
-
-		hwIdxList32.append( index );
+		if (indexSize == INDEX_SIZE_INT)
+		{
+			uint32* indices = (uint32*)indexData;
+			indices[currentIndexCount++] = index;
+		}
+		else if (indexSize == INDEX_SIZE_SHORT)
+		{
+			uint16* indices = (uint16*)indexData;
+			indices[currentIndexCount++] = index;
+		}
 	}
 
-	return index_size;
+	return pGroup->numIndices;
 }
 
 void CEngineStudioEGF::ModelLoaderJob( void* data, int i )
@@ -431,24 +417,50 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 
 	studiohdr_t* pHdr = m_hwdata->studio;
 
-	m_hwdata->modelrefs = new studioHwData_t::modelRef_t[pHdr->numModels];
-	studioHwData_t::modelRef_t* pLodModels = m_hwdata->modelrefs;
-
+	auto lodModels = new studioHwData_t::modelRef_t[pHdr->numModels];
+	m_hwdata->modelrefs = lodModels;
+	
+	// TODO: this should be optimized by the compiler
 	{
 		// load all group vertices and indices
-		DkList<EGFHwVertex_t>	loadedvertices;
+		//DkList<EGFHwVertex_t>	loadedvertices;
 
-		DkList<uint32>			loadedindices;
-		DkList<uint16>			loadedindices_short;
+		//DkList<uint32>			loadedindices;
+		//DkList<uint16>			loadedindices_short;
 
 		// use index size
 		int nIndexSize = INDEX_SIZE_SHORT;
+		int numVertices = 0;
+		int numIndices = 0;
+
+		// determine index size
+		for (int i = 0; i < pHdr->numModels; i++)
+		{
+			studiomodeldesc_t* pModelDesc = pHdr->pModelDesc(i);
+
+			for (int j = 0; j < pModelDesc->numGroups; j++)
+			{
+				modelgroupdesc_t* pGroup = pModelDesc->pGroup(j);
+
+				numVertices += pGroup->numVertices;
+				numIndices += pGroup->numIndices;
+			}
+		}
+
+		if (numVertices > int(USHRT_MAX))
+			nIndexSize = INDEX_SIZE_INT;
+
+		EGFHwVertex_t* allVerts = new EGFHwVertex_t[numVertices];
+		ubyte* allIndices = new ubyte[nIndexSize*numIndices];
+
+		numVertices = 0;
+		numIndices = 0;
 
 		for(int i = 0; i < pHdr->numModels; i++)
 		{
 			studiomodeldesc_t* pModelDesc = pHdr->pModelDesc(i);
-
-			pLodModels[i].groupDescs = new studioHwData_t::modelRef_t::groupDesc_t[pModelDesc->numGroups];
+			auto groupDescs = new studioHwData_t::modelRef_t::groupDesc_t[pModelDesc->numGroups];
+			lodModels[i].groupDescs = groupDescs;
 
 			for(int j = 0; j < pModelDesc->numGroups; j++)
 			{
@@ -456,45 +468,41 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 				modelgroupdesc_t* pGroup = pModelDesc->pGroup(j);
 
 				// set lod index
-				int lod_first_index = loadedindices.numElem();
-				pLodModels[i].groupDescs[j].firstindex = lod_first_index;
+				int lod_first_index = numIndices;
+				groupDescs[j].firstindex = lod_first_index;
 
-				int new_offset = loadedvertices.numElem();
+				int new_offset = numVertices;
 
 				// copy vertices to new buffer first
-				CopyGroupVertexDataToHWList(loadedvertices, pGroup, m_aabb);
+				numVertices += CopyGroupVertexDataToHWList(allVerts, numVertices, pGroup, m_aabb);
 
 				// then using new offset copy indices to buffer
-				int nGenIndexSize = CopyGroupIndexDataToHWList(loadedindices_short, loadedindices, pGroup, new_offset);
-
-				// if size is INT, use it
-				if(nGenIndexSize > INDEX_SIZE_SHORT)
-					nIndexSize = nGenIndexSize;
+				numIndices += CopyGroupIndexDataToHWList(allIndices, nIndexSize, numIndices, pGroup, new_offset);
 
 				// set index count for lod group
-				pLodModels[i].groupDescs[j].indexcount = pGroup->numIndices;
+				groupDescs[j].indexcount = pGroup->numIndices;
 			}
 		}
 
 		// set for rendering
-		m_numVertices = loadedvertices.numElem();
-		m_numIndices = loadedindices.numElem();
-
-		// choose the right index size
-		void* pIndexData = (nIndexSize == INDEX_SIZE_SHORT) ? loadedindices_short.ptr() : (void*)loadedindices.ptr();
-		int nIndexCount = (nIndexSize == INDEX_SIZE_SHORT) ? loadedindices_short.numElem() : loadedindices.numElem();
+		m_numVertices = numVertices;
+		m_numIndices = numIndices;
 
 		// create hardware buffers
-		m_pVB = g_pShaderAPI->CreateVertexBuffer( BUFFER_STATIC, loadedvertices.numElem(), sizeof(EGFHwVertex_t), loadedvertices.ptr() );
-		m_pIB = g_pShaderAPI->CreateIndexBuffer( nIndexCount, nIndexSize, BUFFER_STATIC, pIndexData );
+		m_pVB = g_pShaderAPI->CreateVertexBuffer( BUFFER_STATIC, numVertices, sizeof(EGFHwVertex_t), allVerts );
+		m_pIB = g_pShaderAPI->CreateIndexBuffer(m_numIndices, nIndexSize, BUFFER_STATIC, allIndices);
 
 		// if we using software skinning, we need to create temporary vertices
 		if(m_forceSoftwareSkinning)
 		{
 			m_softwareVerts = PPAllocStructArray(EGFHwVertex_t, m_numVertices);
 
-			memcpy(m_softwareVerts, loadedvertices.ptr(), sizeof(EGFHwVertex_t)*m_numVertices);
+			memcpy(m_softwareVerts, allVerts, sizeof(EGFHwVertex_t)*m_numVertices);
 		}
+
+		// done.
+		delete[] allVerts;
+		delete[] allIndices;
 	}
 
 	// try to load materials
@@ -719,10 +727,10 @@ void CEngineStudioEGF::DrawGroup(int nModel, int nGroup, bool preSetVBO)
 
 	materials->Apply();
 
-	studioHwData_t::modelRef_t::groupDesc_t& desc = m_hwdata->modelrefs[nModel].groupDescs[nGroup];
+	auto& groupDesc = m_hwdata->modelrefs[nModel].groupDescs[nGroup];
 
-	int nFirstIndex = desc.firstindex;
-	int nIndexCount = desc.indexcount;
+	int nFirstIndex = groupDesc.firstindex;
+	int nIndexCount = groupDesc.indexcount;
 
 	// get primitive type
 	int8 nPrimType = m_hwdata->studio->pModelDesc( nModel )->pGroup( nGroup )->primitiveType;
@@ -1053,11 +1061,6 @@ int CStudioModelCache::PrecacheModel( const char* modelName )
 		if(!pModel)
 			return 0; // return error model index
 
-#if !defined(EDITOR) && !defined(NOENGINE) && !defined(NO_GAME)
-		if(gpGlobals && gpGlobals->curtime > 0)
-			MsgWarning("WARNING! Late precache of model '%s'\n", modelName );
-#endif
-
 		return pModel->m_cacheIdx;
 	}
 
@@ -1118,6 +1121,12 @@ int CStudioModelCache::GetModelIndex(IEqModel* pModel) const
 	}
 
 	return CACHE_INVALID_MODEL;
+}
+
+// decrements reference count and deletes if it's zero
+void CStudioModelCache::FreeCachedModel(IEqModel* pModel)
+{
+
 }
 
 void CStudioModelCache::ReleaseCache()

@@ -65,13 +65,15 @@ public:
 //
 //-------------------------------------------------------
 
-class IEqModel
+class IEqModel // : public RefCountedObject
 {
 public:
 
 	PPMEM_MANAGED_OBJECT();
 
 						virtual ~IEqModel() {}
+						
+	void						Ref_DeleteObject() {}
 
 	// model type
 	virtual EModelType			GetModelType() const = 0;
@@ -158,6 +160,9 @@ public:
 
 	// returns model index from pointer
 	virtual int					GetModelIndex(IEqModel* pModel) const = 0;
+
+	// decrements reference count and deletes if it's zero
+	virtual void				FreeCachedModel(IEqModel* pModel) = 0;
 
 	// releases all models
 	virtual void				ReleaseCache() = 0;

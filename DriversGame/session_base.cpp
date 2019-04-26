@@ -21,14 +21,6 @@
 
 CGameSessionBase*	g_pGameSession = NULL;
 
-void fng_car_variants(DkList<EqString>& list, const char* query)
-{
-	if (g_pGameSession)
-		g_pGameSession->GetCarNames(list);
-}
-
-ConVar		g_car("g_car", "rollo", fng_car_variants, "player car", CV_ARCHIVE);
-
 ConVar		g_autoHandbrake("g_autoHandbrake", "1", "Auto handbrake for steering help", CV_ARCHIVE);
 
 ConVar		g_invicibility("g_invicibility", "0", "No damage for player car", CV_CHEAT);
@@ -58,7 +50,6 @@ CGameSessionBase::CGameSessionBase()
 	m_viewObject = NULL;
 
 	m_scriptIDCounter = 0;
-	m_scriptIDReplayCounter = 0;
 }
 
 CGameSessionBase::~CGameSessionBase()
@@ -105,14 +96,13 @@ void CGameSessionBase::Init()
 	//-------------------------------------------------------------------
 
 	m_scriptIDCounter = 0;
-	m_scriptIDReplayCounter = 0;
 
 	m_gameTime = 0.0;
 
 	PrecacheObject(CPedestrian);
 
 	// load cars
-	LoadCarData();
+	LoadCarRegistry();
 
 	g_pAIManager->Init();
 
@@ -142,34 +132,6 @@ void CGameSessionBase::Init()
 		if (!m_lua_misman_InitMission.Call(0, 0))
 			MsgError("CGameSessionBase::Init, :CMissionManager_InitMission() error:\n %s\n", OOLUA::get_last_error(state).c_str());
 	}
-
-	// start recorder
-	if (g_replayData->m_state <= REPL_RECORDING)
-	{
-		//
-		// Spawn default car if script not did
-		//
-		if (!GetPlayerCar())
-		{
-			// make a player car
-			CCar* playerCar = CreateCar(g_car.GetString());
-
-			if (playerCar)
-			{
-				playerCar->SetOrigin(Vector3D(0, 0.5, 10));
-				playerCar->SetAngles(Vector3D(0, 0, 0));
-				playerCar->Spawn();
-
-				g_pGameWorld->AddObject(playerCar);
-
-				SetPlayerCar(playerCar);
-			}
-		}
-	}
-
-	// load regions on player car position
-	if (GetPlayerCar())
-		g_pGameWorld->m_level.QueryNearestRegions(GetPlayerCar()->GetOrigin(), false);
 
 	m_missionStatus = MIS_STATUS_INGAME;
 }
@@ -204,17 +166,21 @@ void CGameSessionBase::FinalizeMissionManager()
 	}
 }
 
+void CGameSessionBase::ClearCarRegistry()
+{
+	for (int i = 0; i < m_carEntries.numElem(); i++)
+		delete m_carEntries[i];
+
+	m_carEntries.clear();
+}
+
 void CGameSessionBase::Shutdown()
 {
 	g_pAIManager->Shutdown();
 
 	m_leadCar = NULL;
 
-	// car configs
-	for (int i = 0; i < m_carEntries.numElem(); i++)
-		delete m_carEntries[i];
-
-	m_carEntries.clear();
+	ClearCarRegistry();
 }
 
 bool CGameSessionBase::IsGameDone(bool checkTime /*= true*/) const
@@ -301,8 +267,8 @@ void Game_OnPhysicsUpdate(float fDt, int iterNum)
 
 				spawnPos = removePos = leadCar->GetOrigin();
 
-				if (plrCar)
-					removePos = plrCar->GetOrigin();
+				//if (plrCar)
+				//	removePos = plrCar->GetOrigin();
 
 				// vehicle respawn is oriented on the lead car, but removal is always depends on player
 				g_pAIManager->UpdateCarRespawn(fDt, spawnPos, removePos, leadCar->GetVelocity());
@@ -483,13 +449,15 @@ CCar* CGameSessionBase::Lua_CreateCar(const char* name, int type)
 {
 	if (g_replayData && g_replayData->m_state == REPL_PLAYING)
 	{
-		CGameObject* scriptObject = FindScriptObjectById(m_scriptIDReplayCounter);
-		m_scriptIDReplayCounter++;
+		CCar* scriptCar = g_replayData->GetCarByScriptId(m_scriptIDCounter);
+		
+		if (scriptCar)
+		{
+			GenScriptID();
+			return scriptCar;
+		}
 
-		if (scriptObject && (scriptObject->ObjType() == GO_CAR || scriptObject->ObjType() == GO_CAR_AI))
-			return (CCar*)scriptObject;
-
-		ASSERTMSG(false, varargs("Lua_CreateCar - no valid script car by replay (id=%d)", m_scriptIDReplayCounter - 1));
+		ASSERTMSG(false, varargs("Lua_CreateCar - no valid script car by replay (id=%d, tick=%d)", m_scriptIDCounter, g_replayData->m_tick));
 	}
 	else
 		return CreateCar(name, type);
@@ -501,13 +469,15 @@ CAIPursuerCar* CGameSessionBase::Lua_CreatePursuerCar(const char* name, int type
 {
 	if (g_replayData && g_replayData->m_state == REPL_PLAYING)
 	{
-		CGameObject* scriptObject = FindScriptObjectById(m_scriptIDReplayCounter);
-		m_scriptIDReplayCounter++;
+		CCar* scriptCar = g_replayData->GetCarByScriptId(m_scriptIDCounter);
 
-		if (scriptObject && scriptObject->ObjType() == GO_CAR_AI)
-			return (CAIPursuerCar*)scriptObject;
-
-		ASSERTMSG(false, varargs("Lua_CreatePursuerCar - no valid script car by replay (id=%d)", m_scriptIDReplayCounter - 1));
+		if (scriptCar)
+		{
+			GenScriptID();
+			return (CAIPursuerCar*)scriptCar;
+		}
+			
+		ASSERTMSG(false, varargs("Lua_CreatePursuerCar - no valid script car by replay (id=%d, tick=%d)", m_scriptIDCounter, g_replayData->m_tick));
 	}
 	else
 		return CreatePursuerCar(name, type);
@@ -581,20 +551,14 @@ void CGameSessionBase::InitCarZoneDescs()
 		}
 	}
 
-	kvkeybase_t* lightCop = kvs.GetRootSection()->FindKeyBase("lightcop");
-	kvkeybase_t* heavyCop = kvs.GetRootSection()->FindKeyBase("heavycop");
-
-	g_pAIManager->SetCopCarConfig(KV_GetValueString(lightCop, 0, "cop_regis"), COP_LIGHT);
-	g_pAIManager->SetCopCarConfig(KV_GetValueString(heavyCop, 0, "cop_regis"), COP_HEAVY);
+	kvkeybase_t* copConfigName = kvs.GetRootSection()->FindKeyBase("copcar");
+	g_pAIManager->SetCopCarConfig(KV_GetValueString(copConfigName, 0, "cop_regis"), PURSUER_TYPE_COP);
 }
 
-void CGameSessionBase::LoadCarData()
+void CGameSessionBase::LoadCarRegistry()
 {
 	// delete old entries
-	for (int i = 0; i < m_carEntries.numElem(); i++)
-		delete m_carEntries[i];
-
-	m_carEntries.clear(false);
+	ClearCarRegistry();
 
 	PrecacheObject(CCar);
 
@@ -610,36 +574,38 @@ void CGameSessionBase::LoadCarData()
 			kvkeybase_t* key = vehicleRegistry->keys[i];
 			if (!key->IsSection() && !key->IsDefinition())
 			{
-				vehicleConfig_t* carent = new vehicleConfig_t();
-				carent->carName = key->name;
-				carent->carScript = KV_GetValueString(key);
+				vehicleConfig_t* conf = new vehicleConfig_t();
+				conf->carName = key->name;
+				conf->carScript = KV_GetValueString(key);
 
-				carent->scriptCRC = g_fileSystem->GetFileCRC32(carent->carScript.c_str(), SP_MOD);
+				conf->scriptCRC = g_fileSystem->GetFileCRC32(conf->carScript.c_str(), SP_MOD);
 
-				if (carent->scriptCRC != 0)
+				if (conf->scriptCRC != 0)
 				{
 					kvkeybase_t kvb;
 
-					if (!KV_LoadFromFile(carent->carScript.c_str(), SP_MOD, &kvb))
+					if (!KV_LoadFromFile(conf->carScript.c_str(), SP_MOD, &kvb))
 					{
-						MsgError("can't load car script '%s'\n", carent->carScript.c_str());
-						delete carent;
+						MsgError("can't load car script '%s'\n", conf->carScript.c_str());
+						delete conf;
 						continue;
 					}
 
-					if (!ParseVehicleConfig(carent, &kvb))
+					if (!ParseVehicleConfig(conf, &kvb))
 					{
-						MsgError("Car configuration '%s' is invalid!\n", carent->carScript.c_str());
-						delete carent;
+						MsgError("Car configuration '%s' is invalid!\n", conf->carScript.c_str());
+						delete conf;
 						continue;
 					}
 
-					PrecacheStudioModel(carent->visual.cleanModelName.c_str());
-					PrecacheStudioModel(carent->visual.damModelName.c_str());
-					m_carEntries.append(carent);
+					// FIXME: it's bad to precache models here
+					PrecacheStudioModel(conf->visual.cleanModelName.c_str());
+					PrecacheStudioModel(conf->visual.damModelName.c_str());
+
+					m_carEntries.append(conf);
 				}
 				else
-					MsgError("Can't open car script '%s'\n", carent->carScript.c_str());
+					MsgError("Can't open car script '%s'\n", conf->carScript.c_str());
 			}
 		}
 	}

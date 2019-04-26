@@ -546,7 +546,7 @@ void CNetGameSession::SendPlayerInfoList( int clientID )
 
 void CNetGameSession::Init()
 {
-	LoadCarData();
+	LoadCarRegistry();
 
 	if(net_server.GetBool())
 	{

@@ -64,7 +64,7 @@ void CPedestrian::Spawn()
 
 	m_physBody->SetPosition(m_vecOrigin);
 
-	m_physBody->m_flags |= BODY_DISABLE_DAMPING | COLLOBJ_DISABLE_RESPONSE | COLLOBJ_COLLISIONLIST | BODY_FROZEN;
+	m_physBody->m_flags |= BODY_DISABLE_DAMPING | /*COLLOBJ_DISABLE_RESPONSE |*/ COLLOBJ_COLLISIONLIST | BODY_FROZEN;
 
 	m_physBody->SetMass(85.0f);
 	m_physBody->SetFriction(0.0f);

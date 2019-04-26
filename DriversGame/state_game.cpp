@@ -48,7 +48,6 @@ extern ConVar			net_server;
 ConVar					g_pause("g_pause", "0");
 int						g_nOldControlButtons	= 0;
 
-ConVar					g_freeLook("g_freeLook", "0", "freelook camera for outcar view", CV_ARCHIVE);
 Vector3D				g_freeLookAngles;
 
 enum EReplayScheduleType
@@ -1142,6 +1141,13 @@ void CState_Game::DoGameFrame(float fDt)
 	g_nOldControlButtons = g_nClientButtons;
 }
 
+ConVar g_alwaysfreelook("g_alwaysfreelook", "0", nullptr, CV_ARCHIVE);
+
+bool GotFreeLook()
+{
+	return (g_nClientButtons & IN_FREELOOK) || g_alwaysfreelook.GetBool();
+}
+
 void CState_Game::DoCameraUpdates( float fDt )
 {
 	int camControls = (g_replayData->m_state == REPL_PLAYING) ? 0 : g_nClientButtons;
@@ -1200,7 +1206,10 @@ void CState_Game::DoCameraUpdates( float fDt )
 				}
 			}
 
-			//g_pCameraAnimator->SetFreeLookAngles(g_freeLook.GetBool(), g_freeLookAngles);
+			if (!GotFreeLook())
+				g_freeLookAngles = vec3_zero;
+
+			g_pCameraAnimator->SetFreeLook(GotFreeLook(), g_freeLookAngles);
 
 			/*
 			if( viewObject && viewObject->GetPhysicsBody() )
@@ -1368,7 +1377,7 @@ reincrement:
 void CState_Game::GetMouseCursorProperties(bool &visible, bool& centered)
 {
 	visible = m_showMenu || Director_IsActive() && !Director_FreeCameraActive() && !g_pause.GetBool();
-	centered = (Director_FreeCameraActive() || g_freeLook.GetBool()) && !visible;
+	centered = (Director_FreeCameraActive() || GotFreeLook()) && !visible;
 }
 
 void CState_Game::HandleMouseMove( int x,  int y, float deltaX, float deltaY )
@@ -1429,11 +1438,10 @@ void CState_Game::HandleMouseMove( int x,  int y, float deltaX, float deltaY )
 	{
 		Director_MouseMove(x,y,deltaX,deltaY);
 
-		if(g_freeLook.GetBool())
+		if(GotFreeLook())
 		{
-			g_freeLookAngles += Vector3D(deltaY,deltaX,0);
-
-			g_freeLookAngles.x = clamp(g_freeLookAngles.x,-40.0f, 80.0f);
+			g_freeLookAngles -= Vector3D(deltaY,deltaX,0);
+			g_freeLookAngles.x = clamp(g_freeLookAngles.x, -89.0f, 0.0f);
 		}
 		else
 			g_freeLookAngles = vec3_zero;
