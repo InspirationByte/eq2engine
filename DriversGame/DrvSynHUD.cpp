@@ -1005,7 +1005,7 @@ void CDrvSynHUDManager::DoDebugDisplay()
 		const Vector3D& viewpos = g_pGameWorld->GetView()->GetOrigin();
 		const Vector3D& viewrot = g_pGameWorld->GetView()->GetAngles();
 
-		defFont->RenderText(varargs("camera position: %.2f %g.2f %g.2f\ncamera angles: %.2f %.2f %.2f", viewpos.x, viewpos.y, viewpos.z, viewrot.x, viewrot.y, viewrot.z), Vector2D(20, 180), style);
+		defFont->RenderText(varargs("camera position: %.2f %.2f %.2f\ncamera angles: %.2f %.2f %.2f", viewpos.x, viewpos.y, viewpos.z, viewrot.x, viewrot.y, viewrot.z), Vector2D(20, 180), style);
 	}
 
 	if (g_showCarPosition.GetBool() && m_mainVehicle)
