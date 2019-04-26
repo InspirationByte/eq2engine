@@ -113,8 +113,9 @@ struct replayCarStream_t
 	Vector3D	car_initial_angvel;
 
 	int			scriptObjectId;
+	int			first_tick;
 
-	int64		curr_frame; // play only
+	int			curr_frame; // play only
 
 	uint16		skipFrames;
 	uint16		skeptFrames;
@@ -288,6 +289,7 @@ public:
 	void					RemoveCamera(int frameIndex);
 
 	CCar*					GetCarByReplayIndex(int index);
+	CCar*					GetCarByScriptId(int id);
 
 	EReplayState			m_state;
 	int						m_tick;

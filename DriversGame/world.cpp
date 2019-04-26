@@ -196,7 +196,8 @@ void CGameWorld::FillEnviromentList(DkList<EqString>& list)
 	{
 		kvkeybase_t* env = envKvs.GetRootSection()->keys[i];
 
-		list.append( env->name );
+		if(env->IsSection())
+			list.append( env->name );
 	}
 }
 
