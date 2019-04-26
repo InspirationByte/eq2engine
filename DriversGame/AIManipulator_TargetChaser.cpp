@@ -192,4 +192,6 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 	handling.braking = pow(brakeFac, AI_CHASE_BRAKE_CURVE*weatherBrakePow) * lowSpeedFactor * 0.5f;
 	handling.braking = min(handling.braking, 1.0f);
 	handling.acceleration = 1.0f - handling.braking;
+
+	handling.autoHandbrake = fabs(handling.steering) > 0.25f;
 }

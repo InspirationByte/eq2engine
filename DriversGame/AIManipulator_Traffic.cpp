@@ -59,7 +59,8 @@ const float AI_TARGET_DIST_NOLANE = 4.0f;
 const float AI_TARGET_DIST = 10.0f;
 const float AI_TARGET_EXTENDED_DIST = 30.0f;
 
-const float AI_LANE_SWITCH_DELAY = 12.0f;
+const float AI_LANE_SWITCH_DELAY = 15.0f;
+const float AI_LANE_SWITCH_SHORTDELAY = 1.0f;
 
 const float AI_EMERGENCY_ESCAPE_TIME = 0.5f;
 
@@ -391,11 +392,14 @@ void CAITrafficManipulator::ChangeLanes(CCar* car)
 	if (!HasRoad())
 		return;
 
-	if (m_changingDirection || m_changingLane)
-		return;
-
 	if (m_nextSwitchLaneTime > 0.0f)
 		return;
+
+	if (m_changingDirection || m_changingLane)
+	{
+		m_nextSwitchLaneTime = AI_LANE_SWITCH_SHORTDELAY;
+		return;
+	}
 
 	IVector2D carPosOnCell = g_pGameWorld->m_level.PositionToGlobalTilePoint(car->GetOrigin());
 
@@ -409,14 +413,15 @@ void CAITrafficManipulator::ChangeLanes(CCar* car)
 
 		straight_t& nextRoad = m_junction.exits[m_junction.selectedExit];
 
-		if (nextRoad.direction != m_straights[STRAIGHT_CURRENT].direction)
+		// don't change lanes if we're going in the same direction
+		if (nextRoad.direction == m_straights[STRAIGHT_CURRENT].direction)
 			return;
 	}
 
 	// calculate road width again
 	int numLanes = g_pGameWorld->m_level.Road_GetNumLanesAtPoint(carPosOnCell);
 
-	if (numLanes == 1)
+	if (numLanes <= 1)
 		return;
 
 	IVector2D forwardDir = GetDirectionVec(m_straights[STRAIGHT_CURRENT].direction);
@@ -723,9 +728,12 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "isOnCurrRoad: %d\n", isOnCurrRoad);
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "isOnPrevRoad: %d\n", isOnPrevRoad);
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "changing lane: %d\n", m_changingLane);
+		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "change lane timeout: %.2f (dist: %.2f)\n", m_nextSwitchLaneTime, distToStop);
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "changing direction: %d\n", m_changingDirection);
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "num exit straights: %d\n", m_junction.exits.numElem());
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "selected next straight: %d\n", m_junction.selectedExit);
+		
+		
 	}
 
 	// disable lights turning
@@ -737,7 +745,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 		m_changingDirection = false;
 	}
 
-	if (m_changingLane && isOnCurrRoad)
+	if (m_changingLane && !isOnPrevRoad && isOnCurrRoad)
 	{
 		SearchJunctionAndStraight();
 

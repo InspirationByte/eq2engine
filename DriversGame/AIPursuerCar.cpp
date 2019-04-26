@@ -262,12 +262,15 @@ void CAIPursuerCar::OnPhysicsFrame( float fDt )
 		// update blocking
 		m_collAvoidance.m_manipulator.m_isColliding = m_collisionList.numElem() > 0;
 
-		if (m_collAvoidance.m_manipulator.m_isColliding && !m_collAvoidance.m_manipulator.m_collidingPositionSet)
+		if (!m_collAvoidance.m_manipulator.m_enabled && m_collAvoidance.m_manipulator.m_isColliding && !m_collAvoidance.m_manipulator.m_collidingPositionSet)
 		{
 			m_collAvoidance.m_manipulator.m_lastCollidingPosition = m_collisionList[0].position;
 			m_collAvoidance.m_manipulator.m_collidingPositionSet = true;
 		}
-			
+		else if(!m_collAvoidance.m_manipulator.m_enabled)
+		{
+			m_collAvoidance.m_manipulator.m_collidingPositionSet = false;
+		}
 
 		if (!g_pGameWorld->IsValidObject(m_target))
 			m_target = nullptr;
@@ -503,10 +506,13 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 		{
 			CGameObject* obj = (CGameObject*)bodyB->GetUserData();
 
+			if(obj == this)
+				return INFRACTION_NONE;
+
 			if (obj->ObjType() == GO_CAR_AI)
 			{
 				CAITrafficCar* tfc = (CAITrafficCar*)obj;
-				if (tfc->IsPursuer() && tfc != this)	// don't check collision with me pls
+				if (tfc->IsPursuer() && tfc->m_conf->flags.isCop)	// don't check collision with me pls
 				{
 					return INFRACTION_HIT_SQUAD_VEHICLE;
 				}
@@ -868,9 +874,10 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	}
 
 	// update target avoidance affector parameters
-	m_targetAvoidance.m_manipulator.m_avoidanceRadius = 10.0f;
+	m_targetAvoidance.m_manipulator.m_avoidanceRadius = length(m_target->m_bbox.GetSize());
 	m_targetAvoidance.m_manipulator.m_enabled = (m_angryTimer < AI_ANGRY_ACTIVE_TIME);
 	m_targetAvoidance.m_manipulator.m_targetPosition = targetPos;
+	m_targetAvoidance.m_manipulator.m_targetVelocity = targetVelocity;
 
 	float distToTarget = length(targetPos - GetOrigin());
 
@@ -899,7 +906,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	{
 		m_nav.m_manipulator.ForceUpdatePath();
 		handling = m_chaser.m_handling;
-		handling.autoHandbrake = true;
+		//handling.autoHandbrake = true;
 	}
 
 	// make stability control
@@ -922,8 +929,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	if(m_collAvoidance.m_manipulator.m_enabled)
 		handling = m_collAvoidance.m_handling;
 
-	//if(!m_stability.m_handling.autoHandbrake)
-	//	handling.autoHandbrake = false;
+	if(!m_stability.m_handling.autoHandbrake)
+		handling.autoHandbrake = false;
 
 	int controls = IN_ACCELERATE | IN_ANALOGSTEER;
 

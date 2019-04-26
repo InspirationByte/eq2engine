@@ -68,7 +68,7 @@ void CAICollisionAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, C
 	}
 	else
 	{
-		FReal distFromCollPoint = length(m_lastCollidingPosition-car->GetOrigin());
+		float distFromCollPoint = length(m_lastCollidingPosition-car->GetOrigin());
 
 		if(distFromCollPoint > AI_COP_BLOCK_DISTANCE_FROM_COLLISION)
 			m_blockTimeout = 0.0f;

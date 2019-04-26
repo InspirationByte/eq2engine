@@ -20,6 +20,7 @@ public:
 	void UpdateAffector(ai_handling_t& handling, CCar* car, float fDt);
 
 	Vector3D			m_targetPosition;
+	Vector3D			m_targetVelocity;
 	float				m_avoidanceRadius;
 	bool				m_enabled;
 };

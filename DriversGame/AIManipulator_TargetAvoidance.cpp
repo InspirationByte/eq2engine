@@ -8,7 +8,7 @@
 #include "AIManipulator_TargetAvoidance.h"
 #include "car.h"
 
-const float AI_DISTANCE_CURVE = 1.5f;
+const float AI_DISTANCE_CURVE = 1.0f;
 const float AI_DISTANCE_SPEED_SCALE = 0.5f;
 
 void CAITargetAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, float fDt)
@@ -26,9 +26,13 @@ void CAITargetAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, CCar
 		return;
 	}
 
-	float distToTarget = length(carPos - m_targetPosition);
+	float brakeDistancePerSec = car->m_conf->GetBrakeEffectPerSecond() * 0.5f;
+	float brakeToStopTime = carSpeed / brakeDistancePerSec * 2.0f;
+	float brakeDistAtCurSpeed = brakeDistancePerSec * brakeToStopTime;
 
-	float avoidanceDistWithSpeedModifier = m_avoidanceRadius + fabs(carSpeed * AI_DISTANCE_SPEED_SCALE);
+	float distToTarget = length(carPos - (m_targetPosition + m_targetVelocity * 0.7f));
+
+	float avoidanceDistWithSpeedModifier = m_avoidanceRadius + brakeDistAtCurSpeed;//fabs(carSpeed * AI_DISTANCE_SPEED_SCALE);
 
 	if(distToTarget < avoidanceDistWithSpeedModifier)
 	{
