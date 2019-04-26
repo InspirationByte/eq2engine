@@ -1410,79 +1410,83 @@ bool CGameLevel::Road_FindBestCellForTrafficLight( IVector2D& out, const Vector3
 		Find passing straight from left and back one step
 	*/
 
-	IVector2D roadTilePos = cellPos - rightDir - forwardDir;
-
-	roadTile = Road_GetGlobalTileAt(roadTilePos);
-
-	if(	roadTile && 
-		(roadTile->type == ROADTYPE_STRAIGHT || roadTile->type == ROADTYPE_PARKINGLOT) && 
-		roadTile->direction == trafficDir)
+	// do some more left steps
+	for (int r = 0; r < 2; r++)
 	{
-		out = roadTilePos;
-		return true;
-	}
+		IVector2D roadTilePos = cellPos - rightDir * (r + 1) - forwardDir;
+		
+		roadTile = Road_GetGlobalTileAt(roadTilePos);
 
-
-	/*
-	second method
-		Find passing straight from left, but iterate through junction
-		Break on first occurence
-	*/
-
-	for(int i = 0; i < juncIterations; i++)
-	{
-		IVector2D checkTilePos = roadTilePos - forwardDir*(i+1);
-
-		roadTile = Road_GetGlobalTileAt( checkTilePos );
-
-		if(roadTile)
+		if (roadTile &&
+			(roadTile->type == ROADTYPE_STRAIGHT || roadTile->type == ROADTYPE_PARKINGLOT) &&
+			roadTile->direction == trafficDir)
 		{
-			// don't iterate through non-road surfaces
-			if( roadTile->type == ROADTYPE_NOROAD )
-				break;
+			out = roadTilePos;
+			return true;
+		}
 
-			if(	(roadTile->type == ROADTYPE_STRAIGHT || roadTile->type == ROADTYPE_PARKINGLOT) && 
-				roadTile->direction == trafficDir)
+
+		/*
+		second method
+			Find passing straight from left, but iterate through junction
+			Break on first occurence
+		*/
+
+		for (int i = 0; i < juncIterations; i++)
+		{
+			IVector2D checkTilePos = roadTilePos - forwardDir * (i + 1);
+
+			roadTile = Road_GetGlobalTileAt(checkTilePos);
+
+			if (roadTile)
 			{
-				out = checkTilePos;
-				return true;
+				// don't iterate through non-road surfaces
+				if (roadTile->type == ROADTYPE_NOROAD)
+					break;
+
+				if ((roadTile->type == ROADTYPE_STRAIGHT || roadTile->type == ROADTYPE_PARKINGLOT) &&
+					roadTile->direction == trafficDir)
+				{
+					out = checkTilePos;
+					return true;
+				}
 			}
 		}
-	}
 
-	/*
-	third method
-		Find passing straight using only backwards iteration through junctions
-		If we have found straight in wrong direction (not perpendicular), just try searching to right
-	*/
+		/*
+		third method
+			Find passing straight using only backwards iteration through junctions
+			If we have found straight in wrong direction (not perpendicular), just try searching to right
+		*/
 
-	IVector2D checkTilePos = cellPos;
+		IVector2D checkTilePos = cellPos;
 
-	for(int i = 0; i < juncIterations; i++)
-	{
-		checkTilePos -= forwardDir;
-
-		roadTile = Road_GetGlobalTileAt( checkTilePos );
-
-		if(	roadTile && (roadTile->type == ROADTYPE_STRAIGHT || roadTile->type == ROADTYPE_PARKINGLOT))
+		for (int i = 0; i < juncIterations; i++)
 		{
-			// it's just beautiful we've found it
-			if(roadTile->direction == trafficDir)
-			{
-				out = checkTilePos;
-				return true;
-			}
+			checkTilePos -= forwardDir;
 
-			// but what if we have wrong direction???
-			if((roadTile->direction % 2) == (trafficDir % 2))
-			{
-				// search to the right
-				checkTilePos += rightDir;
-				continue;
-			}
+			roadTile = Road_GetGlobalTileAt(checkTilePos);
 
-			// has to break here
-			break;
+			if (roadTile && (roadTile->type == ROADTYPE_STRAIGHT || roadTile->type == ROADTYPE_PARKINGLOT))
+			{
+				// it's just beautiful we've found it
+				if (roadTile->direction == trafficDir)
+				{
+					out = checkTilePos;
+					return true;
+				}
+
+				// but what if we have wrong direction???
+				if ((roadTile->direction % 2) == (trafficDir % 2))
+				{
+					// search to the right
+					checkTilePos += rightDir;
+					continue;
+				}
+
+				// has to break here
+				break;
+			}
 		}
 	}
 
