@@ -444,51 +444,72 @@ void DrawLightEffect(const Vector3D& position, const ColorRGBA& color, float siz
 //
 void PoliceSirenEffect(float fCurTime, const ColorRGB& color, const Vector3D& pos, const Vector3D& dir_right, float rDist, float width)
 {
+	const float FLASH_MIN_SIZE = 0.025f;
+	const float FLASH_MAX_SIZE = 0.55f;
+	const float GLOW_MAX_SIZE = 1.05f;
+	const float MID_MAX_SIZE = 0.20f;
+
+	const float FLASHING_SPEED = 21.0f;
+
 	PFXBillboard_t effect;
-
-	float fSinFactor = sinf(fCurTime*16.0f);
-
-	effect.vColor = Vector4D(color * fSinFactor, 1.0f);
 	effect.nFlags = EFFECT_FLAG_NO_FRUSTUM_CHECK;
 	effect.fZAngle = g_pGameWorld->m_view.GetAngles().y;
-
 	effect.group = g_additPartcles;
 
-	float min_size = 0.025f;
+	float leftFactor = sinf(fCurTime*FLASHING_SPEED);
+	float rightFactor = sinf(fCurTime*FLASHING_SPEED + PI_F);
+	float midFactor = sinf(fCurTime*FLASHING_SPEED + PI_F * 0.5f);
 
-	float max_size = 0.55f;
-	float max_glow_size = 1.05f;
+	float leftFlashSize = lerp(FLASH_MIN_SIZE, FLASH_MAX_SIZE, fabs(leftFactor));
+	float leftGlowSize = lerp(FLASH_MIN_SIZE, GLOW_MAX_SIZE, fabs(leftFactor));
 
-	// TODO: trace particle visibility
+	float rightFlashSize = lerp(FLASH_MIN_SIZE, FLASH_MAX_SIZE, fabs(rightFactor));
+	float rightGlowSize = lerp(FLASH_MIN_SIZE, GLOW_MAX_SIZE, fabs(rightFactor));
 
-	effect.fWide = lerp(min_size, max_size, fabs(fSinFactor));
-	effect.fTall = lerp(min_size, max_size, fabs(fSinFactor));
+	float midGlowSize = lerp(FLASH_MIN_SIZE, MID_MAX_SIZE, fabs(midFactor));
 
-	effect.vOrigin = pos + dir_right*rDist - dir_right*width;
-	effect.tex = g_additPartcles->FindEntry("light1");
+	TexAtlasEntry_t* light1 = g_additPartcles->FindEntry("light1");
+	TexAtlasEntry_t* light1a = g_additPartcles->FindEntry("light1a");
+	TexAtlasEntry_t* glow1 = g_additPartcles->FindEntry("glow1");
 
-	// no frustum for now
+	//---------------------------------
+	// setup left
+	effect.vColor = Vector4D(color * leftFactor, 1.0f);
+	effect.vOrigin = pos + dir_right * rDist - dir_right * width;
+
+	// draw left flash
+	effect.fWide = effect.fTall = leftFlashSize;
+	effect.tex = light1;
 	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);
-	effect.tex = g_additPartcles->FindEntry("glow1");
-	effect.fWide = lerp(min_size, max_glow_size, fabs(fSinFactor));
-	effect.fTall = lerp(min_size, max_glow_size, fabs(fSinFactor));
+
+	// draw left glow
+	effect.fWide = effect.fTall = leftGlowSize;
+	effect.tex = glow1;
 	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);
 
-	float fCosFactor = sinf((fCurTime*16.0f)+PI_F);
+	//---------------------------------
+	// setup right
+	effect.vColor = Vector4D(color * rightFactor, 1.0f);
+	effect.vOrigin = pos + dir_right * rDist + dir_right * width;
 
-	effect.vColor = Vector4D(color * fCosFactor, 1.0f);
-	effect.fWide = lerp(min_size, max_size, fabs(fCosFactor));
-	effect.fTall = lerp(min_size, max_size, fabs(fCosFactor));
-
-	effect.vOrigin = pos + dir_right*rDist + dir_right*width;
-	effect.tex = g_additPartcles->FindEntry("light1a");
-
-	// no frustum for now
+	// draw right flash
+	effect.fWide = effect.fTall = rightFlashSize;
+	effect.tex = light1a;
 	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);
-	effect.tex = g_additPartcles->FindEntry("glow1");
-	effect.fWide = lerp(min_size, max_glow_size, fabs(fCosFactor));
-	effect.fTall = lerp(min_size, max_glow_size, fabs(fCosFactor));
 
+	// draw right glow
+	effect.fWide = effect.fTall = rightGlowSize;
+	effect.tex = glow1;
+	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);
+
+	//---------------------------------
+	// setup mid
+	effect.vColor = Vector4D(color * midFactor * 2.0f, 1.0f);
+	effect.vOrigin = pos + dir_right * rDist;
+
+	// draw mid glow
+	effect.fWide = effect.fTall = midGlowSize;
+	effect.tex = glow1;
 	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);
 }
 

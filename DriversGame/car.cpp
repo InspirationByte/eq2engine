@@ -120,6 +120,8 @@ const float ANTIROLL_FACTOR_MAX			= 1.0f;
 const float ANTIROLL_SCALE				= 4.0f;
 
 const float DEFAULT_SHIFT_ACCEL_FACTOR	= 0.25f;
+const float	GEARBOX_SHIFT_DELAY			= 0.35f;
+
 const float DEFAULT_CAR_INERTIA_SCALE	= 1.5f;
 
 const float FLIPPED_TOLERANCE_COSINE	= 0.15f;
@@ -700,7 +702,8 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_autogearswitch(true),
 	m_torqueScale(1.0f),
 	m_maxSpeed(125.0f),
-	m_gearboxShiftThreshold(1.0f)
+	m_gearboxShiftThreshold(1.0f),
+	m_shiftDelay(0.0f)
 {
 	m_conf = config;
 	memset(m_bodyParts, 0,sizeof(m_bodyParts));
@@ -1513,6 +1516,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 			}
 		}
 
+		if (numDriveWheelsOnGround == 0)
+			fRPM = 8500.0f * m_fAccelEffect;
+
 		//
 		// make RPM changes smooth
 		//
@@ -1648,10 +1654,18 @@ void CCar::UpdateVehiclePhysics(float delta)
 				m_radsPerSec = gearRadsPerSecond;
 			}
 
+			m_shiftDelay -= delta;
+			m_shiftDelay = max(m_shiftDelay, 0.0f);
+			
 			// if shifted up, reduce gas since we pressed clutch
-			if(	!bDoBurnout && newGear > m_nPrevGear && m_fAcceleration >= 0.9f)
+			if(	!bDoBurnout && newGear > m_nPrevGear && m_fAcceleration >= 0.9f && numDriveWheelsOnGround && m_shiftDelay <= 0.0f)
 			{
-				m_fAcceleration *= m_conf->physics.shiftAccelFactor;	// FIXME: automatic transmission has different values
+				m_shiftDelay = GEARBOX_SHIFT_DELAY;
+
+				// lol, how I can calculate it like that?
+				float engineLoadFactor = fabs(dot(vec3_up, GetUpVector()));
+				float shiftAccelFactor = engineLoadFactor - m_conf->physics.shiftAccelFactor;
+				m_fAcceleration -= max(shiftAccelFactor, 0.0f);
 			}
 
 			m_nPrevGear = m_nGear;
@@ -2775,10 +2789,10 @@ void CCar::Simulate( float fDt )
 				ColorRGB col1(colors[m_conf->visual.sirenType-SERVICE_LIGHTS_DOUBLE_BLUE][0]);
 				ColorRGB col2(colors[m_conf->visual.sirenType - SERVICE_LIGHTS_DOUBLE_BLUE][1]);
 
-				PoliceSirenEffect(m_curTime, col1, siren_position, rightVec, -m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
-				PoliceSirenEffect(-m_curTime, col2, siren_position, rightVec, m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
+				PoliceSirenEffect(-m_curTime + PI_F*2.0f, col1, siren_position, rightVec, -m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
+				PoliceSirenEffect(m_curTime, col2, siren_position, rightVec, m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
 
-				float fSin = fabs(sinf(m_curTime*16.0f));
+				float fSin = fabs(sinf(m_curTime*20.0f));
 				float fSinFactor = clamp(fSin, 0.5f, 1.0f);
 
 				wlight_t light;

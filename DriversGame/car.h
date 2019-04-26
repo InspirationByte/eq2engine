@@ -620,6 +620,8 @@ protected:
 
 	float					m_radsPerSec;	// current rotations per sec
 
+	float					m_shiftDelay;
+
 	FReal					m_fAcceleration;
 	FReal					m_fBreakage;
 
