@@ -108,12 +108,18 @@ public:
 		else
 			btAdjustInternalEdgeContacts(cp, colObj1Wrap,colObj0Wrap, partId1, index1);
 
+		float distance = cp.getDistance();
+
+		// if something is a NaN we have to deny it
+		if (cp.m_positionWorldOnA != cp.m_positionWorldOnA || cp.m_normalWorldOnB != cp.m_normalWorldOnB)
+			return 1.0f;
+
 		int numColls = m_collisions.numElem();
 		m_collisions.setNum(numColls+1);
 
 		CollisionData_t& data = m_collisions[numColls];
 
-		data.fract = cp.getDistance();
+		data.fract = distance;
 		data.normal = ConvertBulletToDKVectors(cp.m_normalWorldOnB);
 		data.position = ConvertBulletToDKVectors(cp.m_positionWorldOnA) - m_center;
 		data.materialIndex = -1;
