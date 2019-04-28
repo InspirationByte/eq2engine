@@ -753,6 +753,8 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 		m_changingLane = false;
 	}
 
+	float surfaceFactor = 1.0f - fabs(dot(car->GetUpVector(), vec3_up));
+
 	//
 	// Breakage on red light
 	//
@@ -775,9 +777,8 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 			float brakeSpeedDiff = brakeDistAtCurSpeed + AI_STOPLINE_DIST - distToStop;
 			brakeSpeedDiff = max(brakeSpeedDiff, 0.0f);
 
-			float brake = brakeSpeedDiff / AI_ROAD_STOP_DIST;
+			float brake = brakeSpeedDiff / AI_ROAD_STOP_DIST + surfaceFactor;
 			brake = min(brake, 0.9f);
-
 
 			if (distToStop > AI_STOPLINE_DIST)
 			{
@@ -941,7 +942,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 				float brakeSpeedDiff = dbrakeDistAtCurSpeed + AI_OBSTACLE_DIST - lineDist;
 				brakeSpeedDiff = max(brakeSpeedDiff, 0.0f);
 
-				float brake = brakeSpeedDiff / 20.0f;
+				float brake = brakeSpeedDiff / 20.0f + surfaceFactor;
 
 				if (lineDist > AI_OBSTACLE_DIST)
 				{

@@ -14,6 +14,8 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 {
 	const float lateralSliding = car->GetLateralSlidingAtWheels(true);
 
+	const float carSpeedMPS = car->GetSpeed()*KPH_TO_MPS;
+
 	const Vector3D& linearVelocity = car->GetVelocity();
 	const Vector3D& angularVelocity = car->GetPhysicsBody()->GetAngularVelocity();
 
@@ -33,15 +35,28 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 
 	const float AI_MAX_ANGULAR_VELOCITY_AUTOHANDBRAKE = 2.0f;
 
-	float counterSteeringScale = 1.0f-fabs(m_initialHandling.steering);
-	float brakingFac = 1.0f-m_initialHandling.braking;
+	const float AI_SPEED_CORRECTION_MINSPEED = 8.0f;	// meters per sec
+	const float AI_SPEED_CORRECTION_MAXSPEED = 25.0f;	// meters per sec
+	const float AI_SPEED_CORRECTION_INITIAL = 0.25f;
 
-	if(fabs(angularVelocity.y)*counterSteeringScale*brakingFac > AI_MAX_ANGULAR_VELOCITY_AUTOHANDBRAKE)
-		handling.autoHandbrake = false;
+	if (carSpeedMPS > AI_SPEED_CORRECTION_MINSPEED)
+	{
+		float counterSteeringScale = 1.0f - fabs(m_initialHandling.steering);
+		float brakingFac = 1.0f - m_initialHandling.braking;
 
-	// calculate amounts of stability control
-	handling.steering = sign(lateralSliding)*pow(fabs(lateralSliding)*AI_SLIDING_CORRECTION, AI_SLIDING_CURVE) + 
-						sign(angularVelocity.y)*pow(fabs(angularVelocity.y)*AI_ROTATION_CORRECTION, AI_ROTATION_CURVE);
+		if (fabs(angularVelocity.y)*counterSteeringScale*brakingFac > AI_MAX_ANGULAR_VELOCITY_AUTOHANDBRAKE)
+			handling.autoHandbrake = false;
 
-	handling.steering = clamp(handling.steering, -AI_CORRECTION_LIMIT, AI_CORRECTION_LIMIT)*counterSteeringScale;
+		// calculate amounts of stability control
+		handling.steering = sign(lateralSliding)*pow(fabs(lateralSliding)*AI_SLIDING_CORRECTION, AI_SLIDING_CURVE) +
+			sign(angularVelocity.y)*pow(fabs(angularVelocity.y)*AI_ROTATION_CORRECTION, AI_ROTATION_CURVE);
+
+		handling.steering = clamp(handling.steering, -AI_CORRECTION_LIMIT, AI_CORRECTION_LIMIT)*counterSteeringScale;
+
+		float correctionFactor = RemapVal(carSpeedMPS, AI_SPEED_CORRECTION_MINSPEED, AI_SPEED_CORRECTION_MAXSPEED, AI_SPEED_CORRECTION_INITIAL, 1.0f);
+
+		handling.steering *= correctionFactor;
+	}
+	else
+		handling.autoHandbrake = true;
 }

@@ -39,6 +39,8 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 	Vector3D carForward = car->GetForwardVector();
 	Vector3D carRight = car->GetRightVector();
 
+	Plane frontBackCheckPlane(carForward, -dot(carForward, carPos));
+
 	const Vector3D& carVelocity = car->GetVelocity();
 
 	float speedMPS = car->GetSpeed()*KPH_TO_MPS;
@@ -129,36 +131,7 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 		brakeFac = 0.0f;
 
 	float forwardTraceDistanceBySpeed = RemapValClamp(speedMPS, 0.0f, 50.0f, 6.0f, 25.0f);
-	/*
-	// trace from position A to position B first
-	g_pPhysics->TestConvexSweep(&sphereTraceShape, identity(),
-		carPos, steeringTargetPos, pathColl,
-		traceContents,
-		&collFilter);
 
-	if(pathColl.fract < 1.0f)
-	{
-		float AI_OBSTACLE_PATH_CORRECTION_AMOUNT = 1.1f;
-		float AI_OBSTACLE_PATH_LOWSPEED_CORRECTION_AMOUNT = 1.5f;
-
-		Vector3D offsetAmount = pathColl.normal * (traceShapeRadius * AI_OBSTACLE_PATH_CORRECTION_AMOUNT + lowSpeedFactor*AI_OBSTACLE_PATH_LOWSPEED_CORRECTION_AMOUNT);
-
-		Vector3D newSteeringTarget = pathColl.position + offsetAmount;
-
-		float steerToCorrectionDot = dot(steeringDir, fastNormalize(newSteeringTarget - carPos));
-
-		if(steerToCorrectionDot > 0.5f)
-			steeringTargetPos = newSteeringTarget;
-
-		if(ai_debug_navigator.GetBool())
-		{
-			debugoverlay->TextFadeOut(0, color4_white, 10.0f, "steering to path correction (collision): %g", steerToCorrectionDot);
-
-			debugoverlay->Line3D(pathColl.position, steeringTargetPos, ColorRGBA(1, 0, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), fDt);
-			debugoverlay->Sphere3D(steeringTargetPos, traceShapeRadius, ColorRGBA(1, 1, 0, 1.0f), fDt);
-		}
-	}
-	*/
 	// final steering dir after collision tests
 	steeringDir = fastNormalize(steeringTargetPos - carPos);
 
@@ -193,5 +166,6 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 	handling.braking = min(handling.braking, 1.0f);
 	handling.acceleration = 1.0f - handling.braking;
 
-	handling.autoHandbrake = fabs(handling.steering) > 0.25f;
+	// if target is behind or steering is too hard, do stunts
+	handling.autoHandbrake = fabs(handling.steering) > 0.25f || (frontBackCheckPlane.ClassifyPoint(m_driveTarget) == CP_BACK);
 }

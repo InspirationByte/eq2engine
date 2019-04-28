@@ -330,6 +330,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 	Plane frontBackCheckPlane(carForward, -dot(carForward, carPos));
 
 	float speedMPS = car->GetSpeed()*KPH_TO_MPS;
+	float speedFromWheels = car->GetSpeedWheels();
 
 	float brakeDistancePerSec = car->m_conf->GetBrakeEffectPerSecond()*0.5f;
 	float brakeToStopTime = speedMPS / brakeDistancePerSec*2.0f;				// time to stop from the current speed
@@ -453,14 +454,8 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 
 	float lowSpeedFactor = pow(RemapValClamp(speedMPS, 0.0f, AI_LOWSPEED_END, 0.0f, 1.0f), AI_LOWSPEED_CURVE);
 
-	// forcing auto handbrake on low speeds
-	if(lowSpeedFactor < 0.5f)
-		handling.autoHandbrake = true;
-
-	//handling.autoHandbrake = true;
-
 	const float AI_OBSTACLE_SPHERE_RADIUS = carBodySize.x*2.0f;
-	const float AI_OBSTACLE_SPHERE_SPEED_SCALE = 0.01f;
+	const float AI_OBSTACLE_SPHERE_SPEED_SCALE = 0.005f;
 
 	const float AI_OBSTACLE_CORRECTION_CONST_DISTANCE = 2.0f;
 	const float AI_OBSTACLE_CORRECTION_SPEED_SCALE = 0.2f;
@@ -477,7 +472,6 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 	float traceShapeRadius = AI_OBSTACLE_SPHERE_RADIUS + speedMPS*AI_OBSTACLE_SPHERE_SPEED_SCALE;
 
 	CollisionData_t steeringTargetColl;
-	CollisionData_t pathColl;
 
 	btSphereShape sphereTraceShape(traceShapeRadius);
 
@@ -524,7 +518,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 
 		// brake is computed first
 		{
-			float brakeDistanceOnSegment = brakeDistAtCurSpeed * 0.65f;
+			float brakeDistanceOnSegment = brakeDistAtCurSpeed * 0.55f;
 
 			int pathIdx = segmentByCarPosition;
 			Vector3D positionA = GetAdvancedPointByDist(pathIdx, pathPosOnSegment + brakeDistanceOnSegment);
@@ -579,6 +573,31 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			
 			// steering
 			steeringDir = lerp(pathSteeringDir, correctionSteeringDir, clamp(pathCorrectionFactor * steeringDirVsCorrection + pathNarrownessFactor, 0.0f, 1.0f));
+
+			
+			float forwardTraceDistanceBySpeed = RemapValClamp(speedMPS, 0.0f, 50.0f, 6.0f, 15.0f);
+
+			// trace forward from car using speed
+			g_pPhysics->TestConvexSweep(&sphereTraceShape, identity(),
+				carFrontPos, carFrontPos + carForward * forwardTraceDistanceBySpeed, steeringTargetColl,
+				traceContents,
+				&collFilter);
+
+			if (steeringTargetColl.fract < 1.0f)
+			{
+				debugoverlay->Line3D(steeringTargetColl.position, carPos, ColorRGBA(1, 0, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), fDt);
+				debugoverlay->Sphere3D(steeringTargetColl.position, traceShapeRadius, ColorRGBA(1, 1, 0, 1.0f), fDt);
+
+				float AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT = 0.65f;
+
+				Vector3D collPoint(steeringTargetColl.position);
+
+				Plane dPlane(carRight, -dot(carPos, carRight));
+				float posSteerFactor = -dPlane.Distance(collPoint);
+
+				steeringDir += carRight * posSteerFactor * (1.0f - steeringTargetColl.fract) * AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT;
+				steeringDir = normalize(steeringDir);
+			}
 		}
 
 		// finalize steering
@@ -600,11 +619,17 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		handling.acceleration = 0.5f + accelFactor*0.5f;
 		handling.braking = (brakeFactor-0.5f)*2.0f;
 
+		if (speedFromWheels < -0.1f)
+		{
+			handling.acceleration = 1.0f;
+			handling.braking = 0.0f;
+		}
+
 		handling.steering = atan2(relateiveSteeringDir.x, relateiveSteeringDir.z);
 		handling.steering = clamp(handling.steering, -1.0f, 1.0f);
 
-		if(fabs(handling.steering) > 0.25f)
-			handling.autoHandbrake = true;
+		// forcing auto handbrake on low speeds
+		handling.autoHandbrake = (fabs(handling.steering) > 0.25f || lowSpeedFactor < 0.5f);
 
 		/*
 		if(ai_debug_navigator.GetBool())
