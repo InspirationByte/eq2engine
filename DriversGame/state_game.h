@@ -67,6 +67,8 @@ public:
 	
 	void		SetupMenuStack( const char* name );
 
+	void		DoCameraUpdates(float fDt);
+
 protected:
 
 	bool		DoLoadingFrame();
@@ -75,7 +77,6 @@ protected:
 	bool		UpdatePauseState();
 
 	void		DoGameFrame( float fDt );
-	void		DoCameraUpdates( float fDt );
 
 	void		RenderMainView3D( float fDt );
 	void		RenderMainView2D( float fDt );

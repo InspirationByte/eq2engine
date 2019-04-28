@@ -151,6 +151,8 @@ void Director_KeyPress(int key, bool down)
 			// set camera after keypress
 			g_freecam.SetBool(false);
 
+			g_State_Game->DoCameraUpdates(0.1f);
+
 			Msg("Add camera at tick %d\n", cam.startTick);
 		}
 		else if(key == KEY_KP_ENTER)
@@ -165,6 +167,8 @@ void Director_KeyPress(int key, bool down)
 				currentCamera->type = g_nDirectorCameraType;
 
 				g_freecam.SetBool(false);
+
+				g_State_Game->DoCameraUpdates(0.1f);
 			}
 		}
 		else if(key == KEY_DELETE)
@@ -344,6 +348,7 @@ DECLARE_CMD(director_pick_ray, "Director mode - picks object with ray", 0)
 	if(pickedCar != nullptr)
 	{
 		g_pGameSession->SetViewObject( pickedCar );
+		g_State_Game->DoCameraUpdates(0.1f);
 	}
 }
 
