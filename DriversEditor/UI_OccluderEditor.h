@@ -41,6 +41,8 @@ public:
 	void				MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos  );
 
 	void				ProcessMouseEvents( wxMouseEvent& event );
+	void				MouseTranslateEvents(wxMouseEvent& event, const Vector3D& ray_start, const Vector3D& ray_dir);
+
 	void				OnKey(wxKeyEvent& event, bool bDown);
 	void				OnRender();
 
@@ -63,6 +65,7 @@ protected:
 	levOccluderLine_t			m_newOccl;
 
 	CEditGizmo				m_editPoints[3];
+	int						m_currentGizmo;
 };
 
 #endif // UI_OCCLUDEREDITOR_H

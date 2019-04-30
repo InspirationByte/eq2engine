@@ -15,6 +15,7 @@ extern Vector3D g_camera_target;
 CUI_OccluderEditor::CUI_OccluderEditor( wxWindow* parent) : wxPanel( parent, -1, wxDefaultPosition, wxDefaultSize )
 {
 	m_mode = ED_OCCL_READY;
+	m_currentGizmo = -1;
 }
 
 CUI_OccluderEditor::~CUI_OccluderEditor()
@@ -27,29 +28,106 @@ void CUI_OccluderEditor::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* ti
 {
 	//int tileIdx = m_selectedRegion->GetHField()->m_sizew*ty + tx;
 
-	if(m_mode == ED_OCCL_POINT2)
-		m_newOccl.end = ppos;
-
-	if(!event.ControlDown() && !event.AltDown())
+	if (m_selection.numElem() > 0)
 	{
-		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging())
+		Vector3D ray_start, ray_dir;
+		g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
+
+		MouseTranslateEvents(event, ray_start, ray_dir);
+	}
+	else
+	{
+		if (m_mode == ED_OCCL_POINT2)
+			m_newOccl.end = ppos;
+
+		if (!event.ControlDown() && !event.AltDown())
 		{
-			if(m_mode == ED_OCCL_READY)
-				m_mode = ED_OCCL_POINT1;	// make to the point 1
-
-			if(m_mode == ED_OCCL_POINT1)
+			if (event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging())
 			{
-				m_newOccl.start = ppos;
-			}
-			else if(m_mode == ED_OCCL_POINT2)
-			{
-				m_newOccl.end = ppos;
-			}
+				if (m_mode == ED_OCCL_READY)
+					m_mode = ED_OCCL_POINT1;	// make to the point 1
 
-			(int)m_mode++;
-			if(m_mode == ED_OCCL_DONE)
-				m_mode = ED_OCCL_READY;
+				if (m_mode == ED_OCCL_POINT1)
+				{
+					m_newOccl.start = ppos;
+				}
+				else if (m_mode == ED_OCCL_POINT2)
+				{
+					m_newOccl.end = ppos;
+				}
+
+				(int)m_mode++;
+				if (m_mode == ED_OCCL_DONE)
+					m_mode = ED_OCCL_READY;
+			}
 		}
+	}
+}
+
+void CUI_OccluderEditor::MouseTranslateEvents(wxMouseEvent& event, const Vector3D& ray_start, const Vector3D& ray_dir)
+{
+	if (m_selection.numElem() != 1)
+		return;
+
+	if (event.ButtonIsDown(wxMOUSE_BTN_LEFT))
+	{
+		int initAxes = 0;
+
+		if (m_currentGizmo == -1)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				float clength = length(m_editPoints[i].m_position - g_camera_target);
+
+				// TODO: use camera parameters
+				Vector3D plane_dir = normalize(m_editPoints[i].m_position - g_camera_target);
+
+				initAxes = m_editPoints[i].TestRay(ray_start, ray_dir, clength, true);
+
+				if (initAxes > 0)
+				{
+					m_currentGizmo = i;
+					break;
+				}
+
+			}
+		}
+
+		if (m_currentGizmo == -1)
+			return;
+
+		CEditGizmo& editAxis = m_editPoints[m_currentGizmo];
+
+		// update movement
+		Vector3D plane_dir = normalize(editAxis.m_position - g_camera_target);
+		Vector3D movement = editAxis.PerformTranslate(ray_start, ray_dir, plane_dir, initAxes);
+
+		levOccluderLine_t& occl = m_selection[0].region->m_occluders[m_selection[0].occIdx];
+
+		switch (m_currentGizmo)
+		{
+			case 0:
+				occl.start += movement;
+				break;
+			case 1:
+				occl.end += movement;
+				break;
+			case 2:
+				occl.height += movement.y;
+				break;
+		}
+
+		editAxis.m_position += movement;
+	}
+
+	if (event.ButtonUp(wxMOUSE_BTN_LEFT))
+	{
+		m_editPoints[m_currentGizmo].EndDrag();
+		m_currentGizmo = -1;
+
+		g_pMainFrame->NotifyUpdate();
+
+		g_pEditorActionObserver->EndModify();
 	}
 }
 

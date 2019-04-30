@@ -1572,74 +1572,38 @@ void CUI_BuildingConstruct::MouseTranslateEvents( wxMouseEvent& event, const Vec
 
 	if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
 	{
-		bool isSet = false;
+		int initAxes = m_editAxis.TestRay(ray_start, ray_dir, clength, true);
 
-		if(m_draggedAxes == 0)
+		// update movement
+		Vector3D movement = m_editAxis.PerformTranslate(ray_start, ray_dir, plane_dir, initAxes);
+
+		m_editAxis.m_position += movement;
+
+		for (int i = 0; i < m_selBuildings.numElem(); i++)
 		{
-			m_draggedAxes = m_editAxis.TestRay(ray_start, ray_dir, clength);
-			isSet = true;
-		}
+			buildingSource_t* build = m_selBuildings[i].selBuild;
 
-		{
-			// process movement
-			Vector3D axsMod((m_draggedAxes & AXIS_X) ? 1.0f : 0.0f,
-							(m_draggedAxes & AXIS_Y) ? 1.0f : 0.0f,
-							(m_draggedAxes & AXIS_Z) ? 1.0f : 0.0f);
-
-			Vector3D edAxis = Vector3D(	dot(m_editAxis.m_rotation.rows[0],axsMod),
-										dot(m_editAxis.m_rotation.rows[1],axsMod),
-										dot(m_editAxis.m_rotation.rows[2],axsMod));
-
-			// absolute
-			edAxis *= sign(edAxis);
-
-			// movement plane
-			Plane pl(plane_dir, -dot(plane_dir, m_editAxis.m_position));
-
-			Vector3D point;
-
-			if( pl.GetIntersectionWithRay(ray_start, ray_dir, point) )
+			build->modelPosition += movement;
+			if (build->points.goToFirst())
 			{
-				if(isSet)
+				do
 				{
-					m_dragOffs = m_editAxis.m_position-point;
-				}
-
-				Vector3D movement = (point-m_editAxis.m_position) + m_dragOffs;
-
-				movement *= edAxis;
-
-				m_editAxis.m_position += movement;
-
-				for(int i = 0; i < m_selBuildings.numElem(); i++)
-				{
-					buildingSource_t* build = m_selBuildings[i].selBuild;
-
-					build->modelPosition += movement;
-					if(build->points.goToFirst())
-					{
-						do
-						{
-							buildSegmentPoint_t& seg = build->points.getCurrent();
-							seg.position += movement;
-						}while(build->points.goToNext());
-
-						#pragma todo("Relocate model in a level regions after movement (or left mouse UP)")
-					}
-				}
-
-				g_pMainFrame->NotifyUpdate();
+					buildSegmentPoint_t& seg = build->points.getCurrent();
+					seg.position += movement;
+				} while (build->points.goToNext());
 			}
 		}
 	}
 
 	if(event.ButtonUp(wxMOUSE_BTN_LEFT))
 	{
-		m_draggedAxes = 0;
-		m_dragOffs = vec3_zero;
-		//m_dragRot = vec3_zero;
+#pragma todo("Relocate model in a level regions after movement (on left mouse UP)")
+
+		m_editAxis.EndDrag();
 
 		RecalcSelectionCenter();
+
+		g_pMainFrame->NotifyUpdate();
 	}
 }
 

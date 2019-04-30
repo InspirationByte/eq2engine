@@ -194,7 +194,7 @@ protected:
 
 	DkList<buildLayerColl_t*>	m_buildingTemplates;
 
-	CEditGizmo				m_editAxis;
+	CEditGizmo					m_editAxis;
 	int							m_mouseLastY;
 
 	Vector3D					m_mousePoint;
@@ -209,11 +209,7 @@ protected:
 	float						m_curSegmentScale;
 
 	DkList<buildingSelInfo_t>	m_selBuildings;
-
-	Vector3D					m_dragPos;
-	Vector3D					m_dragOffs;
 	bool						m_isSelecting;
-	int							m_draggedAxes;
 
 	bool						m_shiftModifier;
 };
