@@ -254,15 +254,12 @@ Quaternion GetModelRefRotation(CLevelRegion* reg, regionObject_t* ref)
 	return Quaternion(m);
 }
 
-Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regionObject_t* ref, const Vector3D& addRotation/* = vec3_zero*/)
+Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regionObject_t* ref)
 {
 	// models are usually placed at heightfield 0
 	CHeightTileField& defField = *reg->m_heightfield[0];
 
 	Matrix4x4 m = rotateXYZ4(DEG2RAD(ref->rotation.x), DEG2RAD(ref->rotation.y), DEG2RAD(ref->rotation.z));
-
-	if(length(addRotation) > 0)
-		m = rotateXYZ4(DEG2RAD(addRotation.x), DEG2RAD(addRotation.y), DEG2RAD(addRotation.z))*m;
 
 	Vector3D addHeight(0.0f);
 

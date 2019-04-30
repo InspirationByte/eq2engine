@@ -157,7 +157,7 @@ protected:
 
 	int							m_rotation;
 
-	CEditAxisXYZ				m_editAxis;
+	CEditGizmo				m_editAxis;
 
 	DkList<refselectioninfo_t>	m_selRefs;
 
@@ -165,17 +165,12 @@ protected:
 	int							m_last_ty;
 	Vector3D					m_lastpos;
 
-	Vector3D					m_dragPos;
-	Vector3D					m_dragOffs;
-
-	Vector3D					m_dragInitRot;
-	Vector3D					m_dragRot;
-
-
-	float						m_dragPrevMove;
+	//Vector3D					m_dragInitRot;
+	//Vector3D					m_dragRot;
+	Matrix3x3					m_dragInitRot;
+	Matrix3x3					m_dragRot;
 
 	bool						m_isSelecting;
-	int							m_draggedAxes;
 
 	EModelEditMode				m_editMode;
 

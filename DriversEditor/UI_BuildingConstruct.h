@@ -194,7 +194,7 @@ protected:
 
 	DkList<buildLayerColl_t*>	m_buildingTemplates;
 
-	CEditAxisXYZ				m_editAxis;
+	CEditGizmo				m_editAxis;
 	int							m_mouseLastY;
 
 	Vector3D					m_mousePoint;

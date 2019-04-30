@@ -57,11 +57,12 @@ protected:
 
 	int							m_mode;
 	Vector3D					m_occluderPoints[2];
-	CEditAxisXYZ				m_editAxis;
 
 	DkList<selectedOccluder_t>	m_selection;
 
 	levOccluderLine_t			m_newOccl;
+
+	CEditGizmo				m_editPoints[3];
 };
 
 #endif // UI_OCCLUDEREDITOR_H

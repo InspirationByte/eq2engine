@@ -23,14 +23,21 @@ enum EAxisSelectionFlags
 	AXIS_Z = (1 << 2),
 };
 
-class CEditAxisXYZ
+inline int _wrapIndex(int i, int l)
+{
+	const int m = i % l;
+	return m < 0 ? m + l : m;
+}
+
+class CEditGizmo
 {
 public:
-	CEditAxisXYZ() {}
+	CEditGizmo() : m_draggedAxes(0) {}
 
-	CEditAxisXYZ(const Matrix3x3& rotate, const Vector3D& pos)
+	CEditGizmo(const Matrix3x3& rotate, const Vector3D& pos)
 	{
 		SetProps(rotate, pos);
+		m_draggedAxes = 0;
 	}
 
 	void SetProps(const Matrix3x3& rotate, const Vector3D& pos)
@@ -39,23 +46,108 @@ public:
 		m_rotation = rotate;
 	}
 
+	void EndDrag()
+	{
+		m_draggedAxes = 0;
+	}
+
+	Vector3D PerformTranslate(const Vector3D& rayStart, const Vector3D& rayDir, const Vector3D& planeNormal, int initAxes)
+	{
+		// movement plane
+		Plane pl(planeNormal, -dot(planeNormal, m_position));
+
+		Vector3D point;
+		if (pl.GetIntersectionWithRay(rayStart, rayDir, point))
+		{
+			if (!m_draggedAxes)
+			{
+				m_dragStart = m_position - point;
+				m_draggedAxes = initAxes;
+			}
+
+			Vector3D movement = (point - m_position) + m_dragStart;
+
+			Vector3D axsMod((m_draggedAxes & AXIS_X) ? 1.0f : 0.0f,
+							(m_draggedAxes & AXIS_Y) ? 1.0f : 0.0f,
+							(m_draggedAxes & AXIS_Z) ? 1.0f : 0.0f);
+
+			Vector3D edAxis = Vector3D(	dot(m_rotation.rows[0], axsMod),
+										dot(m_rotation.rows[1], axsMod),
+										dot(m_rotation.rows[2], axsMod));
+
+			// process movement
+			movement *= edAxis * sign(edAxis);
+
+			return movement;
+		}
+
+		return vec3_zero;
+	}
+
+	Matrix3x3 PerformRotation(const Vector3D& rayStart, const Vector3D& rayDir, int initAxes)
+	{
+		if (!m_draggedAxes)
+		{
+			//m_dragStart = m_position - point;
+			m_draggedAxes = initAxes;
+		}
+
+		Vector3D axsMod((m_draggedAxes & AXIS_X) ? 1.0f : 0.0f,
+						(m_draggedAxes & AXIS_Y) ? 1.0f : 0.0f,
+						(m_draggedAxes & AXIS_Z) ? 1.0f : 0.0f);
+
+		Vector3D edAxis = Vector3D(	dot(m_rotation.rows[0], axsMod),
+									dot(m_rotation.rows[1], axsMod),
+									dot(m_rotation.rows[2], axsMod));
+
+		Vector3D planeEdAxis = edAxis * sign(edAxis);
+
+		// movement plane
+		Plane pl(planeEdAxis, -dot(planeEdAxis, m_position));
+
+		Vector3D point;
+		if (pl.GetIntersectionWithRay(rayStart, rayDir, point))
+		{
+			// process rotation
+			int axisId = (m_draggedAxes & AXIS_X) ? 0 :
+						(m_draggedAxes & AXIS_Y) ? 1 :
+						(m_draggedAxes & AXIS_Z) ? 2 : -1;
+
+			Vector3D dirVec = normalize(m_position - point);
+			Vector3D rDirVec = cross(planeEdAxis, dirVec);
+
+			Matrix3x3 rotation(rDirVec, planeEdAxis, dirVec);
+
+			// swap axes
+			Matrix3x3 swappedAxesRotation(rotation.rows[_wrapIndex(axisId, 3)], rotation.rows[_wrapIndex(axisId + 1, 3)], rotation.rows[_wrapIndex(axisId + 2, 3)]);
+
+			//debugoverlay->Line3D(m_position, m_position + swappedAxesRotation.rows[0] * 5.0f, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1), 0.1f);
+			//debugoverlay->Line3D(m_position, m_position + swappedAxesRotation.rows[1] * 5.0f, ColorRGBA(0, 1, 0, 1), ColorRGBA(0, 1, 0, 1), 0.1f);
+			//debugoverlay->Line3D(m_position, m_position + swappedAxesRotation.rows[2] * 5.0f, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1), 0.1f);
+
+			return swappedAxesRotation;
+		}
+
+		return identity3();
+	}
+
 	void Draw(float camDist)
 	{
-		float fLength = camDist*EDAXIS_SCALE;
-		float fLengthHalf = fLength*0.5f;
+		float fLength = camDist * EDAXIS_SCALE;
+		float fLengthHalf = fLength * 0.5f;
 
 		float fBoxSize = 0.1f*fLength;
 
 		Vector3D v_x, v_y, v_z;
 
-		v_x = m_rotation*vec3_right;
-		v_y = m_rotation*vec3_up;
-		v_z = m_rotation*vec3_forward;
+		v_x = m_rotation * vec3_right;
+		v_y = m_rotation * vec3_up;
+		v_z = m_rotation * vec3_forward;
 
 		materials->SetAmbientColor(1.0f);
 
-		materials->SetDepthStates(false,false);
-		materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA,BLENDFACTOR_ONE_MINUS_SRC_ALPHA);
+		materials->SetDepthStates(false, false);
+		materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA);
 		materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
 
 		g_pShaderAPI->SetTexture(NULL, NULL, 0);
@@ -68,31 +160,49 @@ public:
 		Vector3D zPos = m_position + v_z * fLength;
 
 		meshBuilder.Begin(PRIM_LINES);
-			meshBuilder.Color3f(1,0,0);
+
+		if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_X))
+		{
+			meshBuilder.Color3f(1, 0, 0);
 			meshBuilder.Line3fv(m_position, xPos);
+		}
 
-			meshBuilder.Color3f(0,1,0);
+		if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_Y))
+		{
+			meshBuilder.Color3f(0, 1, 0);
 			meshBuilder.Line3fv(m_position, yPos);
+		}
 
-			meshBuilder.Color3f(0,0,1);
+		if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_Z))
+		{
+			meshBuilder.Color3f(0, 0, 1);
 			meshBuilder.Line3fv(m_position, zPos);
+		}
+
 		meshBuilder.End();
 
 		meshBuilder.Begin(PRIM_TRIANGLES);
-			meshBuilder.Color4f(1,0,1,0.5f);
-			meshBuilder.Position3fv(m_position); meshBuilder.AdvanceVertex();
-			meshBuilder.Position3fv(m_position+v_z*fLengthHalf); meshBuilder.AdvanceVertex();
-			meshBuilder.Position3fv(m_position+v_x*fLengthHalf); meshBuilder.AdvanceVertex();
-
-			meshBuilder.Color4f(0,1,1,0.5f);
-			meshBuilder.Position3fv(m_position); meshBuilder.AdvanceVertex();
-			meshBuilder.Position3fv(m_position+v_y*fLengthHalf); meshBuilder.AdvanceVertex();
-			meshBuilder.Position3fv(m_position+v_z*fLengthHalf); meshBuilder.AdvanceVertex();
-
-			meshBuilder.Color4f(1,0,0,0.5f);
-			meshBuilder.Position3fv(m_position); meshBuilder.AdvanceVertex();
-			meshBuilder.Position3fv(m_position+v_x*fLengthHalf); meshBuilder.AdvanceVertex();
-			meshBuilder.Position3fv(m_position+v_y*fLengthHalf); meshBuilder.AdvanceVertex();
+			if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_X) && (m_draggedAxes & AXIS_Z))
+			{
+				meshBuilder.Color4f(1, 0, 1, 0.5f);
+				meshBuilder.Position3fv(m_position); meshBuilder.AdvanceVertex();
+				meshBuilder.Position3fv(m_position + v_z * fLengthHalf); meshBuilder.AdvanceVertex();
+				meshBuilder.Position3fv(m_position + v_x * fLengthHalf); meshBuilder.AdvanceVertex();
+			}
+			if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_Y) && (m_draggedAxes & AXIS_Z))
+			{
+				meshBuilder.Color4f(0, 1, 1, 0.5f);
+				meshBuilder.Position3fv(m_position); meshBuilder.AdvanceVertex();
+				meshBuilder.Position3fv(m_position + v_y * fLengthHalf); meshBuilder.AdvanceVertex();
+				meshBuilder.Position3fv(m_position + v_z * fLengthHalf); meshBuilder.AdvanceVertex();
+			}
+			if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_X) && (m_draggedAxes & AXIS_Y))
+			{
+				meshBuilder.Color4f(1, 0, 0, 0.5f);
+				meshBuilder.Position3fv(m_position); meshBuilder.AdvanceVertex();
+				meshBuilder.Position3fv(m_position + v_x * fLengthHalf); meshBuilder.AdvanceVertex();
+				meshBuilder.Position3fv(m_position + v_y * fLengthHalf); meshBuilder.AdvanceVertex();
+			}
 		meshBuilder.End();
 
 		Matrix4x4 camView;
@@ -111,14 +221,23 @@ public:
 #undef EDAXISMAKESPRITE
 
 		meshBuilder.Begin(PRIM_TRIANGLES);
-			meshBuilder.Color4f(1, 0, 0, 0.5f);
-			meshBuilder.Quad3(quadPointsX[0], quadPointsX[1], quadPointsX[2], quadPointsX[3]);
+		if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_X))
+			{
+				meshBuilder.Color4f(1, 0, 0, 0.5f);
+				meshBuilder.Quad3(quadPointsX[0], quadPointsX[1], quadPointsX[2], quadPointsX[3]);
+			}
 
-			meshBuilder.Color4f(0, 1, 0, 0.5f);
-			meshBuilder.Quad3(quadPointsY[0], quadPointsY[1], quadPointsY[2], quadPointsY[3]);
+			if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_Y))
+			{
+				meshBuilder.Color4f(0, 1, 0, 0.5f);
+				meshBuilder.Quad3(quadPointsY[0], quadPointsY[1], quadPointsY[2], quadPointsY[3]);
+			}
 
-			meshBuilder.Color4f(0, 0, 1, 0.5f);
-			meshBuilder.Quad3(quadPointsZ[0], quadPointsZ[1], quadPointsZ[2], quadPointsZ[3]);
+			if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_Z))
+			{
+				meshBuilder.Color4f(0, 0, 1, 0.5f);
+				meshBuilder.Quad3(quadPointsZ[0], quadPointsZ[1], quadPointsZ[2], quadPointsZ[3]);
+			}
 		meshBuilder.End();
 
 
@@ -173,6 +292,10 @@ public:
 
 	Vector3D	m_position;
 	Matrix3x3	m_rotation;
+
+protected:
+	Vector3D	m_dragStart;
+	int			m_draggedAxes;
 };
 
 

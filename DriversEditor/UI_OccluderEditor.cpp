@@ -278,7 +278,7 @@ void CUI_OccluderEditor::OnRender()
 	{
 		int occIdx = m_selection[i].occIdx;
 		levOccluderLine_t& occl =  m_selection[i].region->m_occluders[occIdx];
-			
+
 		Vector3D p1 = occl.start + Vector3D(0,occl.height,0);
 		Vector3D p2 = occl.start;
 		Vector3D p3 = occl.end;
@@ -291,6 +291,27 @@ void CUI_OccluderEditor::OnRender()
 		materials->DrawPrimitivesFFP(PRIM_TRIANGLES, occluderQuadVerts.ptr(), occluderQuadVerts.numElem(), NULL, ColorRGBA(0.6f,0.6f,0.6f,0.5f), &blend, &depth, &raster);
 
 	CBaseTilebasedEditor::OnRender();
+
+	float clength1 = length(m_editPoints[0].m_position - g_camera_target);
+	float clength2 = length(m_editPoints[1].m_position - g_camera_target);
+	float clength3 = length(m_editPoints[2].m_position - g_camera_target);
+
+	for (int i = 0; i < m_selection.numElem(); i++)
+	{
+		int occIdx = m_selection[i].occIdx;
+		levOccluderLine_t& occl = m_selection[i].region->m_occluders[occIdx];
+
+		if (m_selection.numElem() == 1)
+		{
+			m_editPoints[0].SetProps(identity3(), occl.start);
+			m_editPoints[1].SetProps(identity3(), occl.end);
+			m_editPoints[2].SetProps(identity3(), occl.end + Vector3D(0, occl.height,0));
+
+			m_editPoints[0].Draw(clength1);
+			m_editPoints[1].Draw(clength2);
+			m_editPoints[2].Draw(clength3);
+		}
+	}
 }
 
 void CUI_OccluderEditor::InitTool()
