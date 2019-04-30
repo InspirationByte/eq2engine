@@ -1375,6 +1375,14 @@ void CUI_LevelModels::MouseTranslateEvents( wxMouseEvent& event, const Vector3D&
 					// make undoable
 					g_pEditorActionObserver->BeginModify(ref);
 
+					if (ref->tile_x != 0xFFFF)
+					{
+						IVector2D tilePos = m_selRefs[i].selRegion->PositionToCell(ref->position);
+
+						ref->tile_x = tilePos.x;
+						ref->tile_y = tilePos.y;
+					}
+
 					// move
 					ref->position += movement;
 				}
@@ -1553,12 +1561,19 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 				if(model)
 					model->Ref_Grab();
 			}
-
-			modelref->position = ppos;
+			
 			modelref->rotation = Vector3D(0, -m_rotation*90.0f, 0);
 
 			modelref->tile_x = m_tiledPlacement->GetValue() ? tx : 0xFFFF;
 			modelref->tile_y = ty;
+
+			if (m_tiledPlacement->GetValue())
+			{
+				Matrix4x4 transform = transpose(GetModelRefRenderMatrix(m_selectedRegion, modelref));
+				modelref->position = transform.getTranslationComponent();
+			}
+			else
+				modelref->position = ppos;
 
 			ClearSelection();
 
@@ -1652,7 +1667,10 @@ void CUI_LevelModels::OnKey(wxKeyEvent& event, bool bDown)
 			}
 			else if(event.GetRawKeyCode() == 'T')
 			{
-				m_tiledPlacement->SetValue(!m_tiledPlacement->GetValue());
+				if(m_selRefs.numElem())
+					ToggleSelectionTilesStick();
+				else
+					m_tiledPlacement->SetValue(!m_tiledPlacement->GetValue());
 			}
 			else if(event.GetRawKeyCode() == 'N')
 			{
@@ -1706,13 +1724,43 @@ void CUI_LevelModels::OnKey(wxKeyEvent& event, bool bDown)
 
 void CUI_LevelModels::MoveSelectionToNewRegions()
 {
-	// recalculate regions by object reference positions
 	for (int i = 0; i < m_selRefs.numElem(); i++)
 	{
-		regionObject_t* selectionRef = m_selRefs[i].selRef;
-		
+		regionObject_t* ref = m_selRefs[i].selRef;
 
+		if (ref->tile_x != 0xFFFF)
+		{
+			// stick to tile
+			Matrix4x4 transform = transpose(GetModelRefRenderMatrix(m_selRefs[i].selRegion, ref));
+			ref->position = transform.getTranslationComponent();
+		}
+		else
+		{
+			// TODO: recalculate regions by object reference positions
+		}
 	}
+}
+
+void CUI_LevelModels::ToggleSelectionTilesStick()
+{
+	for (int i = 0; i < m_selRefs.numElem(); i++)
+	{
+		regionObject_t* ref = m_selRefs[i].selRef;
+
+		if (ref->tile_x != 0xFFFF)
+		{
+			ref->tile_x = 0xFFFF;
+		}
+		else
+		{
+			IVector2D tilePos = m_selRefs[i].selRegion->PositionToCell(ref->position);
+
+			ref->tile_x = tilePos.x;
+			ref->tile_y = tilePos.y;
+		}
+	}
+
+	RecalcSelectionCenter();
 }
 
 void CUI_LevelModels::OnRender()
@@ -1785,17 +1833,29 @@ void CUI_LevelModels::OnRender()
 
 			if(m_selRefs.numElem() == 1)
 				m_editAxis.SetProps(wmatrix.getRotationComponent(), selectionRef->position);
+
+			if(m_editMode == MEDIT_PLACEMENT && selectionRef->tile_x != 0xFFFF)
+				debugoverlay->Text3D(selectionRef->position, 250.0f, ColorRGBA(1), 0.0f, "Bound to tile");
 		}
 
 		// draw selection bbox
 		debugoverlay->Box3D(bbox.minPoint, bbox.maxPoint, ColorRGBA(1,1,1, 0.75f));
 
-		if( m_selRefs.numElem() > 0 )
+		if( m_selRefs.numElem() > 0 && m_editMode > MEDIT_PLACEMENT)
 		{
 			m_editAxis.SetProps(identity3(), m_editAxis.m_position);
 
 			float clength = length(m_editAxis.m_position-g_camera_target);
 			m_editAxis.Draw(clength);
+
+			if (m_editMode == MEDIT_TRANSLATE)
+			{
+				debugoverlay->Text3D(m_editAxis.m_position + Vector3D(0.0f, clength, 0.0f)*EDAXIS_SCALE, 250.0f, ColorRGBA(1), 0.0f, "Translate");
+			}
+			else if (m_editMode == MEDIT_ROTATE)
+			{
+				debugoverlay->Text3D(m_editAxis.m_position + Vector3D(0.0f, clength, 0.0f)*EDAXIS_SCALE, 250.0f, ColorRGBA(1), 0.0f, "Rotation");
+			}
 		}
 		tref.def = NULL;
 

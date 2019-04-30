@@ -234,6 +234,7 @@ public:
 	virtual void					Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& frustumOccluders, int nRenderFlags);
 
 	Vector3D						CellToPosition(int x, int y) const;
+	IVector2D						PositionToCell(const Vector3D& position) const;
 	IVector2D						GetTileAndNeighbourRegion(int x, int y, CLevelRegion** reg) const;
 
 	void							ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>& models);

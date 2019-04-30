@@ -155,6 +155,16 @@ Vector3D CLevelRegion::CellToPosition(int x, int y) const
 	return tile_position;
 }
 
+IVector2D CLevelRegion::PositionToCell(const Vector3D& position) const
+{
+	CHeightTileField& defField = *m_heightfield[0];
+
+	IVector2D point;
+	defField.PointAtPos(position, point.x, point.y);
+
+	return point;
+}
+
 IVector2D CLevelRegion::GetTileAndNeighbourRegion(int x, int y, CLevelRegion** reg) const
 {
 	CHeightTileField& defField = *m_heightfield[0];

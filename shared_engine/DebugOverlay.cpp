@@ -1131,25 +1131,17 @@ IEqFont* CDebugOverlay::GetFont()
 
 void UTIL_DebugDrawOBB(const FVector3D& pos, const Vector3D& mins, const Vector3D& maxs, const Matrix4x4& matrix, const ColorRGBA& color)
 {
-	FMatrix4x4 mat = matrix;
+	Matrix4x4 tmatrix = transpose(matrix);
 
-	mat = transpose(mat);
-	debugoverlay->Line3D(pos + mat.rows[0].xyz()*mins.x, pos + mat.rows[0].xyz()*maxs.x, ColorRGBA(1,0,0,1), ColorRGBA(1,0,0,1));
-	debugoverlay->Line3D(pos + mat.rows[1].xyz()*mins.y, pos + mat.rows[1].xyz()*maxs.y, ColorRGBA(0,1,0,1), ColorRGBA(0,1,0,1));
-	debugoverlay->Line3D(pos + mat.rows[2].xyz()*mins.z, pos + mat.rows[2].xyz()*maxs.z, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1));
-
-	Vector3D verts[18] =
-	{
-		BBOX_STRIP_VERTS(mins, maxs)
-	};
-
-	mat = transpose(mat);
+	Vector3D verts[18] = { BBOX_STRIP_VERTS(mins, maxs) };
 
 	// transform them
-	for(int i = 0; i < 18; i++)
-	{
-		verts[i] = Vector3D(pos + (mat*FVector4D(verts[i], 1.0f)).xyz());
-	}
+	for (int i = 0; i < 18; i++)
+		verts[i] = Vector3D(pos + (matrix*Vector4D(verts[i], 1.0f)).xyz());
+
+	debugoverlay->Line3D(pos + tmatrix.rows[0].xyz()*mins.x, pos + tmatrix.rows[0].xyz()*maxs.x, ColorRGBA(1,0,0,1), ColorRGBA(1,0,0,1));
+	debugoverlay->Line3D(pos + tmatrix.rows[1].xyz()*mins.y, pos + tmatrix.rows[1].xyz()*maxs.y, ColorRGBA(0,1,0,1), ColorRGBA(0,1,0,1));
+	debugoverlay->Line3D(pos + tmatrix.rows[2].xyz()*mins.z, pos + tmatrix.rows[2].xyz()*maxs.z, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1));
 
 	debugoverlay->Polygon3D(verts[0], verts[1], verts[2], color);
 	debugoverlay->Polygon3D(verts[2], verts[1], verts[3], color);

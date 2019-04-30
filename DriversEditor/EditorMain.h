@@ -66,6 +66,7 @@ public:
 
 	void			LoadEditPrefab(const char* name);
 
+
 	void			OpenLevelPrompt();
 	void			NewLevelPrompt();
 	bool			SavePrompt(bool showQuestion = true, bool changeLevelName = false, bool bForceSave = false);
@@ -78,6 +79,8 @@ public:
 	bool			IsSavedOnDisk();
 
 	void			MakeEnvironmentListMenu();
+
+	bool			IsHfieldHelpersDrawn() const;
 
 protected:
 
@@ -102,7 +105,6 @@ protected:
 	wxTextEntryDialog*	m_levelsavedialog;
 	CRegionEditFrame*	m_regionEditorFrame;
 	
-
 	wxTextEntryDialog*	m_carNameDialog;
 
 	DkList<IEditorTool*>	m_tools;
@@ -117,6 +119,8 @@ protected:
 	wxMenu*			m_menu_build;
 	wxMenu*			m_menu_environment;
 	wxMenuItem*		m_menu_environment_itm;
+
+	wxMenuItem*		m_menu_view_hfieldhelpers;
 
 	wxMenuItem*		m_menu_savepfb;
 	wxMenuItem*		m_menu_savepfbAs;

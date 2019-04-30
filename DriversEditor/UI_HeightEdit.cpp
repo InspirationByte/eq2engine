@@ -726,13 +726,7 @@ CUI_HeightEdit::CUI_HeightEdit(wxWindow* parent) : wxPanel( parent, -1, wxDefaul
 	m_layer = new wxSpinCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 55,-1 ), wxSP_ARROW_KEYS, 0, ENGINE_REGION_MAX_HFIELDS-1, 0 );
 	fgSizer7->Add( m_layer, 0, wxBOTTOM|wxRIGHT|wxLEFT, 5 );
 	
-	fgSizer7->Add( new wxStaticText( this, wxID_ANY, wxT("Atlas Tex."), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
-
 	bSizer3->Add( fgSizer7, 0, 0, 5 );
-	
-	m_drawHelpers = new wxCheckBox( this, wxID_ANY, wxT("Draw helpers"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer3->Add( m_drawHelpers, 1, wxALL, 5 );
-	
 	
 	bSizer5->Add( bSizer3, 0, wxEXPAND, 5 );
 	
@@ -1434,32 +1428,6 @@ void CUI_HeightEdit::OnKey(wxKeyEvent& event, bool bDown)
 void CUI_HeightEdit::OnRender()
 {
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
-
-	if(m_selectedRegion)
-	{
-		CHeightTileFieldRenderable* thisField = m_selectedRegion->GetHField(m_selectedHField);
-
-		/*
-		IVector2D hfieldPos = m_selectedRegion->GetHField(m_selectedHField)->m_regionPos;
-
-		int dx[8] = NEIGHBOR_OFFS_XDX(hfieldPos.x, 1);
-		int dy[8] = NEIGHBOR_OFFS_YDY(hfieldPos.y, 1);
-
-		// draw surrounding regions helpers
-		for(int i = 0; i < 8; i++)
-		{
-			CLevelRegion* nregion = g_pGameWorld->m_level.GetRegionAt(IVector2D(dx[i], dy[i]));
-
-			if(nregion && nregion->GetHField())
-			{
-				CHeightTileFieldRenderable* nField = nregion->GetHField();
-
-				nField->DebugRender(m_drawHelpers->GetValue(), m_mouseOverTileHeight);
-			}
-		}*/
-
-		thisField->DebugRender(m_drawHelpers->GetValue(), m_mouseOverTileHeight);
-	}
 
 	CBaseTilebasedEditor::OnRender();
 

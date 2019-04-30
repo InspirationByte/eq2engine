@@ -44,7 +44,7 @@ public:
 		float fLength = camDist*EDAXIS_SCALE;
 		float fLengthHalf = fLength*0.5f;
 
-		//float fBoxSize = 0.08f*fLength;
+		float fBoxSize = 0.1f*fLength;
 
 		Vector3D v_x, v_y, v_z;
 
@@ -63,15 +63,19 @@ public:
 
 		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
+		Vector3D xPos = m_position + v_x * fLength;
+		Vector3D yPos = m_position + v_y * fLength;
+		Vector3D zPos = m_position + v_z * fLength;
+
 		meshBuilder.Begin(PRIM_LINES);
 			meshBuilder.Color3f(1,0,0);
-			meshBuilder.Line3fv(m_position, m_position+v_x*fLength);
+			meshBuilder.Line3fv(m_position, xPos);
 
 			meshBuilder.Color3f(0,1,0);
-			meshBuilder.Line3fv(m_position, m_position+v_y*fLength);
+			meshBuilder.Line3fv(m_position, yPos);
 
 			meshBuilder.Color3f(0,0,1);
-			meshBuilder.Line3fv(m_position, m_position+v_z*fLength);
+			meshBuilder.Line3fv(m_position, zPos);
 		meshBuilder.End();
 
 		meshBuilder.Begin(PRIM_TRIANGLES);
@@ -91,11 +95,33 @@ public:
 			meshBuilder.Position3fv(m_position+v_y*fLengthHalf); meshBuilder.AdvanceVertex();
 		meshBuilder.End();
 
-		/*
-		debugoverlay->Box3D(m_position+v_x*fLength - fBoxSize, m_position+v_x*fLength + fBoxSize, ColorRGBA(1,0,0,1), 0);
-		debugoverlay->Box3D(m_position+v_y*fLength - fBoxSize, m_position+v_y*fLength + fBoxSize, ColorRGBA(0,1,0,1), 0);
-		debugoverlay->Box3D(m_position+v_z*fLength - fBoxSize, m_position+v_z*fLength + fBoxSize, ColorRGBA(0,0,1,1), 0);
-		*/
+		Matrix4x4 camView;
+		materials->GetMatrix(MATRIXMODE_VIEW, camView);
+
+#define EDAXISMAKESPRITE(point)\
+		point + (camView.rows[1].xyz() * fBoxSize) + (camView.rows[0].xyz() * fBoxSize),\
+		point + (camView.rows[1].xyz() * fBoxSize) - (camView.rows[0].xyz() * fBoxSize),\
+		point - (camView.rows[1].xyz() * fBoxSize) + (camView.rows[0].xyz() * fBoxSize),\
+		point - (camView.rows[1].xyz() * fBoxSize) - (camView.rows[0].xyz() * fBoxSize),
+
+		Vector3D quadPointsX[4] = { EDAXISMAKESPRITE(xPos) };
+		Vector3D quadPointsY[4] = { EDAXISMAKESPRITE(yPos) };
+		Vector3D quadPointsZ[4] = { EDAXISMAKESPRITE(zPos) };
+
+#undef EDAXISMAKESPRITE
+
+		meshBuilder.Begin(PRIM_TRIANGLES);
+			meshBuilder.Color4f(1, 0, 0, 0.5f);
+			meshBuilder.Quad3(quadPointsX[0], quadPointsX[1], quadPointsX[2], quadPointsX[3]);
+
+			meshBuilder.Color4f(0, 1, 0, 0.5f);
+			meshBuilder.Quad3(quadPointsY[0], quadPointsY[1], quadPointsY[2], quadPointsY[3]);
+
+			meshBuilder.Color4f(0, 0, 1, 0.5f);
+			meshBuilder.Quad3(quadPointsZ[0], quadPointsZ[1], quadPointsZ[2], quadPointsZ[3]);
+		meshBuilder.End();
+
+
 	}
 
 	int	TestRay(const Vector3D& start, const Vector3D& dir, float camDist, bool testPlanes = true)
@@ -131,13 +157,7 @@ public:
 		BoundingBox box_x(m_position+v_x*fLength - fBoxSize, m_position+v_x*fLength + fBoxSize);
 		BoundingBox box_y(m_position+v_y*fLength - fBoxSize, m_position+v_y*fLength + fBoxSize);
 		BoundingBox box_z(m_position+v_z*fLength - fBoxSize, m_position+v_z*fLength + fBoxSize);
-		/*
-		debugoverlay->Box3D(box_x.minPoint, box_x.maxPoint, ColorRGBA(1,0,0,1), 5.0f);
-		debugoverlay->Box3D(box_y.minPoint, box_y.maxPoint, ColorRGBA(0,1,0,1), 5.0f);
-		debugoverlay->Box3D(box_z.minPoint, box_z.maxPoint, ColorRGBA(0,0,1,1), 5.0f);
 
-		debugoverlay->Line3D(start, start+dir*10000.0f, ColorRGBA(1,1,1,1),ColorRGBA(1,1,1,1), 5.0f);
-		*/
 		// test axis volumes
 		float n,f;
 

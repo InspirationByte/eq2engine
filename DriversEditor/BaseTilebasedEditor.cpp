@@ -89,7 +89,8 @@ void CBaseTilebasedEditor::OnRender()
 
 	if(m_selectedRegion)
 	{
-		hfieldtile_t* tile = m_selectedRegion->GetHField(m_selectedHField)->GetTile(m_mouseOverTile.x, m_mouseOverTile.y);
+		CHeightTileFieldRenderable* thisField = m_selectedRegion->GetHField(m_selectedHField);
+		hfieldtile_t* tile = thisField->GetTile(m_mouseOverTile.x, m_mouseOverTile.y);
 
 		if(tile)
 		{
@@ -100,6 +101,27 @@ void CBaseTilebasedEditor::OnRender()
 
 			debugoverlay->Box3D(box_pos, box_pos+box_size, ColorRGBA(1,1,0,0.5f));
 		}
+
+		/*
+		IVector2D hfieldPos = m_selectedRegion->GetHField(m_selectedHField)->m_regionPos;
+
+		int dx[8] = NEIGHBOR_OFFS_XDX(hfieldPos.x, 1);
+		int dy[8] = NEIGHBOR_OFFS_YDY(hfieldPos.y, 1);
+
+		// draw surrounding regions helpers
+		for(int i = 0; i < 8; i++)
+		{
+			CLevelRegion* nregion = g_pGameWorld->m_level.GetRegionAt(IVector2D(dx[i], dy[i]));
+
+			if(nregion && nregion->GetHField())
+			{
+				CHeightTileFieldRenderable* nField = nregion->GetHField();
+
+				nField->DebugRender(m_drawHelpers->GetValue(), m_mouseOverTileHeight);
+			}
+		}*/
+
+		thisField->DebugRender(g_pMainFrame->IsHfieldHelpersDrawn(), m_mouseOverTileHeight);
 	}
 }
 

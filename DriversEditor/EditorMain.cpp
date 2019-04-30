@@ -93,6 +93,7 @@ enum
 	Event_Edit_ReloadObjects,
 
 	Event_View_ResetView,
+	Event_View_DrawHfieldHelpers,
 	Event_View_ShowRegionEditor,
 
 	Event_View_Environments_Start,
@@ -335,6 +336,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_pMenu->Append( m_menu_view, wxT("View") );
 	
 	m_menu_view->Append(Event_View_ResetView, DKLOC("TOKEN_RESETVIEW", L"Reset view"));
+	m_menu_view_hfieldhelpers = m_menu_view->Append(Event_View_DrawHfieldHelpers, DKLOC("TOKEN_DRAWHFIELDHELPERS", L"Draw heightfield tile helpers"), wxEmptyString, wxITEM_CHECK);
 	m_menu_view->Append(Event_View_ShowRegionEditor, DKLOC("TOKEN_SHOWREGIONEDITOR", L"Show region editor"));
 	m_menu_view->AppendSeparator();
 
@@ -490,6 +492,11 @@ void CMainWindow::MakeEnvironmentListMenu()
 	}
 
 	m_menu_environment_itm = m_menu_view->AppendSubMenu( m_menu_environment, wxT("Environment") );
+}
+
+bool CMainWindow::IsHfieldHelpersDrawn() const
+{
+	return m_menu_view_hfieldhelpers->IsChecked();
 }
 
 void CMainWindow::OnLevelUnload()
