@@ -122,8 +122,11 @@ void CUI_OccluderEditor::MouseTranslateEvents(wxMouseEvent& event, const Vector3
 
 	if (event.ButtonUp(wxMOUSE_BTN_LEFT))
 	{
-		m_editPoints[m_currentGizmo].EndDrag();
-		m_currentGizmo = -1;
+		if (m_currentGizmo > -1)
+		{
+			m_editPoints[m_currentGizmo].EndDrag();
+			m_currentGizmo = -1;
+		}
 
 		g_pMainFrame->NotifyUpdate();
 

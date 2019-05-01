@@ -1867,6 +1867,8 @@ void CEditorLevelRegion::PostprocessCellObject(regionObject_t* obj)
 					Vector3D bestCellPos = g_pGameWorld->m_level.GlobalTilePointToPosition(lanePos);
 					debugoverlay->Box3D(bestCellPos-2,bestCellPos+2, ColorRGBA(0,1,1,1), 5.0f);
 
+					int numCells = 0;
+
 					for(int j = 0; j < REPEAT_ITERATIONS; j++)
 					{
 						IVector2D roadCellIterPos = lanePos - forwardDir * j;
@@ -1875,10 +1877,18 @@ void CEditorLevelRegion::PostprocessCellObject(regionObject_t* obj)
 						levroadcell_t* rcell = m_level->Road_GetGlobalTileAt(roadCellIterPos);
 						if(rcell)
 						{
-							if(rcell->type != ROADTYPE_STRAIGHT)
-								continue;
+							if (rcell->type != ROADTYPE_STRAIGHT)
+							{
+								if (numCells > 2)
+									break;
+								else
+									continue;
+							}
 
 							rcell->flags |= ROAD_FLAG_TRAFFICLIGHT;
+							numCells++;
+
+							debugoverlay->Box3D(roadCellIterPos3D - 1, roadCellIterPos3D + 1, ColorRGBA(1, 0, 0, 1), 1.0f);
 						}
 					}
 				}

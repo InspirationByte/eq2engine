@@ -382,7 +382,7 @@ void CCameraAnimator::Animate(ECameraMode mode,
 				float facingGround = dot(height_coll.normal, vec3_up);
 
 				if (height_coll.fract < 1.0f && facingGround > 0.5f)
-					heightOffset = (height_coll.position.y - cam_pos_low.y);// *2.0f;
+					heightOffset = (height_coll.position.y - cam_pos_low.y) * 1.5f;
 			}
 
 			Vector3D camTargetPos = finalTargetPos + Vector3D(0, desiredHeight, 0);
