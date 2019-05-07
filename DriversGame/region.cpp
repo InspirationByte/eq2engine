@@ -115,8 +115,8 @@ void regionObject_t::CalcBoundingBox()
 
 CLevelRegion::CLevelRegion()
 {
-	m_level = NULL;
-	m_roads = NULL;
+	m_level = nullptr;
+	m_roads = nullptr;
 
 	m_hasTransparentSubsets = false;
 
@@ -499,36 +499,111 @@ void CLevelRegion::InitRoads()
 {
 	CHeightTileField& defField = *m_heightfield[0];
 
-	int numRoadCells = defField.m_sizew * defField.m_sizeh;
+	// also init navigation grid
+	for (int grid = 0; grid < 2; grid++)
+		m_navGrid[grid].Init(defField.m_sizew*s_navGridScales[grid], defField.m_sizeh*s_navGridScales[grid]);
 
-	if(numRoadCells > 0 && !m_roads)
+	if(!m_roads)
 	{
+		int numRoadCells = defField.m_sizew * defField.m_sizeh;
+
 		m_roads = new levroadcell_t[ numRoadCells ];
+	}
 
-		for(int x = 0; x < defField.m_sizew; x++)
+	// we're initializing roads and then going to initialize
+	// navgrid data since our heightfield tiles can be detached as well
+	for (int x = 0; x < defField.m_sizew; x++)
+	{
+		for (int y = 0; y < defField.m_sizeh; y++)
 		{
-			for(int y = 0; y < defField.m_sizeh; y++)
-			{
-				int idx = y * defField.m_sizew + x;
+			int idx = y * defField.m_sizew + x;
 
-				m_roads[idx].type = ROADTYPE_NOROAD;
-				m_roads[idx].flags = 0;
-				m_roads[idx].posX = x;
-				m_roads[idx].posY = y;
-				m_roads[idx].direction = ROADDIR_NORTH;
+			m_roads[idx].posX = x;
+			m_roads[idx].posY = y;
+
+			hfieldtile_t* tile = defField.GetTile(x, y);
+
+			bool isBlockingTile = false; /*(tile->flags & EHTILE_EMPTY) || tile->texture == -1*/;
+
+			// check for water
+			for (int hIdx = 0; hIdx < ENGINE_REGION_MAX_HFIELDS; hIdx++)
+			{
+				if (!m_heightfield[hIdx])
+					continue;
+
+				hfieldtile_t* checkWaterTile = m_heightfield[hIdx]->GetTile(x, y);
+
+				if (checkWaterTile == NULL || checkWaterTile && !m_heightfield[hIdx]->m_materials.inRange(checkWaterTile->texture))
+					continue;
+
+				hfieldmaterial_t* mat = m_heightfield[hIdx]->m_materials[checkWaterTile->texture];
+				if (!mat->material)
+					continue;
+
+				if (mat->material->GetFlags() & MATERIAL_FLAG_WATER)
+				{
+					int heightDiff = checkWaterTile->height - tile->height;
+
+					if ( heightDiff > 3)
+					{
+						isBlockingTile = true;
+						break;
+					}
+				}
+			}
+
+			// detect detached tiles and place obstacle at NAV grid
+			if (!isBlockingTile && tile->flags & EHTILE_DETACHED)
+			{
+				int nx[] = NEIGHBOR_OFFS_X(x);
+				int ny[] = NEIGHBOR_OFFS_Y(y);
+
+				// check the non-diagonal neighbour heights
+				for (int n = 0; n < 4; n++)
+				{
+					hfieldtile_t* nTile = defField.GetTile(nx[n], ny[n]);
+
+					if (!nTile)
+						continue;
+
+					int heightDiff = abs(tile->height - nTile->height);
+
+					// don't check the same flags... it must be linked betweet detached and attached
+					// if there's too much, we're blocking NAV roads
+					isBlockingTile = (heightDiff > 2) && !(nTile->flags & EHTILE_DETACHED);
+
+					if (isBlockingTile)
+						break;
+				}
+				
+			}
+
+			if (isBlockingTile)
+			{
+				m_navGrid[1].staticObst[idx] = 0;
+
+				// set the high detail navgrid point too
+				for (int j = 0; j < AI_NAV_DETAILED_SCALE; j++)
+				{
+					for (int k = 0; k < AI_NAV_DETAILED_SCALE; k++)
+					{
+						int ofsX = x * AI_NAV_DETAILED_SCALE + j;
+						int ofsY = y * AI_NAV_DETAILED_SCALE + k;
+
+						int navCellIdx = ofsY * m_navGrid[0].tall + ofsX;
+						m_navGrid[0].staticObst[navCellIdx] = 0;
+
+
+					}
+				}
 			}
 		}
 	}
 
-	for(int i = 0; i < 2; i++)
-	{
-		m_navGrid[i].Init(defField.m_sizew*s_navGridScales[i], defField.m_sizeh*s_navGridScales[i]);
-	}
-
 	// init debug maps
-	if(nav_debug_map.GetInt() > 0)
+	if (nav_debug_map.GetInt() > 0)
 	{
-		m_navGrid[0].debugObstacleMap = g_pShaderAPI->CreateProceduralTexture(varargs("navgrid_%d", m_regionIndex), FORMAT_RGBA8, m_navGrid[0].wide, m_navGrid[0].tall, 1, 1,TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXFLAG_NOQUALITYLOD);
+		m_navGrid[0].debugObstacleMap = g_pShaderAPI->CreateProceduralTexture(varargs("navgrid_%d", m_regionIndex), FORMAT_RGBA8, m_navGrid[0].wide, m_navGrid[0].tall, 1, 1, TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXFLAG_NOQUALITYLOD);
 		m_navGrid[0].debugObstacleMap->Ref_Grab();
 	}
 }
@@ -627,7 +702,7 @@ void CLevelRegion::Cleanup()
 	m_occluders.clear();
 
 	delete [] m_roads;
-	m_roads = NULL;
+	m_roads = nullptr;
 
 	g_pShaderAPI->FreeTexture(m_navGrid[0].debugObstacleMap);
 	m_navGrid[0].debugObstacleMap = NULL;
@@ -963,8 +1038,6 @@ void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 
 			int idx = tmpCell.posY*m_heightfield[0]->m_sizew + tmpCell.posX;
 			m_roads[idx] = tmpCell;
-
-#define NAVGRIDSCALE_HALF	int(AI_NAVIGATION_GRID_SCALE/2)
 
 			if(tmpCell.type == ROADTYPE_PARKINGLOT)
 				continue;

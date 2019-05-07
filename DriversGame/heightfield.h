@@ -65,7 +65,7 @@ struct hfieldtile_s
 		transition = 0;
 	}
 
-	int8	flags;				// EFieldPointFlag
+	int8	flags;				// EFieldTileFlag
 	int8	texture;			// 128 textures per height field
 	short	height;				// height of point
 	short	rotatetex : 6;		// rotate texture (+1 = 90 degress)

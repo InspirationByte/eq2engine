@@ -173,6 +173,13 @@ inline bool IsJunctionOrPavementType(ERoadType type)	{ return (type == ROADTYPE_
 
 struct levroadcell_s
 {
+	levroadcell_s()
+	{
+		type = ROADTYPE_NOROAD;
+		flags = 0;
+		direction = ROADDIR_NORTH;
+	}
+
 	uint8	type:4;			// ERoadType
 	uint8	flags:4;		// ERoadFlags
 
