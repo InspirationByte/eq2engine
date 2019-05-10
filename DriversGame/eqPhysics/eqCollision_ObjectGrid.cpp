@@ -67,16 +67,18 @@ void CEqCollisionBroadphaseGrid::Destroy()
 			{
 				int idx = y*m_gridWide+x;
 
-				if(m_gridMap[idx])
+				collgridcell_t* cell = m_gridMap[idx];
+
+				if(cell)
 				{
-					for(int i = 0; i < m_gridMap[idx]->m_dynamicObjs.numElem(); i++)
-						m_gridMap[idx]->m_dynamicObjs[i]->SetCell(NULL);
+					for(int i = 0; i < cell->m_dynamicObjs.numElem(); i++)
+						cell->m_dynamicObjs[i]->SetCell(NULL);
 
 					for(int i = 0; i < m_gridMap[idx]->m_gridObjects.numElem(); i++)
-						m_gridMap[idx]->m_gridObjects[i]->SetCell(NULL);
+						cell->m_gridObjects[i]->SetCell(NULL);
 				}
 
-				delete m_gridMap[idx];
+				delete cell;
 			}
 		}
 		delete [] m_gridMap;
@@ -176,15 +178,17 @@ bool CEqCollisionBroadphaseGrid::GetCellBounds(int x, int y, Vector3D& mins, Vec
 collgridcell_t*	CEqCollisionBroadphaseGrid::GetAllocCellAt(int x, int y)
 {
 	if(x < 0 || x >= m_gridWide)
-		return NULL;
+		return nullptr;
 
 	if(y < 0 || y >= m_gridTall)
-		return NULL;
+		return nullptr;
 
-	if(m_gridMap == NULL)
-		return NULL;
+	if(!m_gridMap)
+		return nullptr;
 
-	if( m_gridMap[y*m_gridWide + x] == NULL)
+	int cellIdx = y * m_gridWide + x;
+
+	if(!m_gridMap[cellIdx])
 	{
 		collgridcell_t* newCell = new collgridcell_t();
 
@@ -192,10 +196,10 @@ collgridcell_t*	CEqCollisionBroadphaseGrid::GetAllocCellAt(int x, int y)
 		newCell->y = y;
 		newCell->cellBoundUsed = 0;
 
-		m_gridMap[y*m_gridWide + x] = newCell;
+		m_gridMap[cellIdx] = newCell;
 	}
 
-	return m_gridMap[y*m_gridWide + x];
+	return m_gridMap[cellIdx];
 }
 
 void CEqCollisionBroadphaseGrid::FreeCellAt( int x, int y )
@@ -209,7 +213,9 @@ void CEqCollisionBroadphaseGrid::FreeCellAt( int x, int y )
 	if(m_gridMap == NULL)
 		return;
 
-	collgridcell_t* cell = m_gridMap[y*m_gridWide + x];
+	int cellIdx = y * m_gridWide + x;
+
+	collgridcell_t* cell = m_gridMap[cellIdx];
 
 	if(cell)
 	{
@@ -224,7 +230,7 @@ void CEqCollisionBroadphaseGrid::FreeCellAt( int x, int y )
 
 		delete cell;
 
-		m_gridMap[y*m_gridWide + x] = NULL;
+		m_gridMap[cellIdx] = nullptr;
 	}
 }
 
@@ -337,6 +343,8 @@ void CEqCollisionBroadphaseGrid::RemoveStaticObjectFromGrid( CEqCollisionObject*
 	int cr_x2 = collisionObject->m_cellRange.z;
 	int cr_y2 = collisionObject->m_cellRange.w;
 
+	collisionObject->SetCell(nullptr);
+
 	//Msg("Removing OBJECT %p [%d %d] [%d %d]\n", collisionObject, cr_x1, cr_y1, cr_x2, cr_y2);
 
 	// in this range do...
@@ -353,10 +361,7 @@ void CEqCollisionBroadphaseGrid::RemoveStaticObjectFromGrid( CEqCollisionObject*
 
 				// remove cell if no users
 				if( ncell->m_gridObjects.numElem() <= 0 )
-				{
 					FreeCellAt(x,y);
-				}
-
 			}
 		}
 	}

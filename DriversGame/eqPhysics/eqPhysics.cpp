@@ -47,7 +47,7 @@ ConVar ph_showcontacts("ph_showcontacts", "0", NULL, CV_CHEAT);
 ConVar ph_erp("ph_erp", "0.25", "Collision correction", CV_CHEAT);
 
 // cvar value mostly depends on velocity
-ConVar ph_grid_tolerance("ph_grid_tolerance", "0.05", NULL, CV_CHEAT);
+ConVar ph_grid_tolerance("ph_grid_tolerance", "0.1", NULL, CV_CHEAT);
 
 const float PHYSICS_DEFAULT_FRICTION = 12.9f;
 const float PHYSICS_DEFAULT_RESTITUTION = 0.25f;
@@ -1373,6 +1373,10 @@ public:
 
 		m_surfMaterialId = -1;
 
+		// if something is a NaN we have to deny it
+		if (rayResult.m_hitNormalLocal != rayResult.m_hitNormalLocal || rayResult.m_hitFraction != rayResult.m_hitFraction)
+			return 1.0f;
+
 		// check our object is triangle mesh
 		CEqCollisionObject* obj = (CEqCollisionObject*)m_collisionObject->getUserPointer();
 
@@ -1514,6 +1518,10 @@ public:
 		btScalar res = ClosestConvexResultCallback::addSingleResult(rayResult, normalInWorldSpace);
 
 		m_surfMaterialId = -1;
+
+		// if something is a NaN we have to deny it
+		if (rayResult.m_hitNormalLocal != rayResult.m_hitNormalLocal || rayResult.m_hitFraction != rayResult.m_hitFraction)
+			return 1.0f;
 
 		// check our object is triangle mesh
 		CEqCollisionObject* obj = (CEqCollisionObject*)m_hitCollisionObject->getUserPointer();
