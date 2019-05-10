@@ -66,8 +66,9 @@ bool CObject_Sheets::InitSheets()
 {
 	float radius = KV_GetValueFloat(m_keyValues->FindKeyBase("radius"), 0, 2.0f);
 	kvkeybase_t* textures = m_keyValues->FindKeyBase("textures");
+	int count = KV_GetValueInt(m_keyValues->FindKeyBase("count"), 0, SHEET_COUNT);
 
-	for(int i = 0; i < SHEET_COUNT; i++)
+	for(int i = 0; i < count; i++)
 	{
 		const char* textureName = KV_GetValueString(textures, RandomInt(0, textures->values.numElem()-1), "news1");
 

@@ -25,13 +25,16 @@ CObject_Debris::CObject_Debris( kvkeybase_t* kvdata )
 {
 	m_keyValues = kvdata;
 
-	m_physBody = NULL;
+	m_physBody = nullptr;
 	m_collOccured = false;
 	m_fTimeToRemove = 0.0f;
-	m_surfParams = NULL;
+	m_surfParams = nullptr;
 
-	m_breakable = NULL;
-	m_breakSpawn = NULL;
+	m_breakable = nullptr;
+	m_breakSpawn = nullptr;
+
+	m_smashSpawnedObject = nullptr;
+
 	m_numBreakParts = 0;
 }
 
@@ -49,6 +52,12 @@ void CObject_Debris::OnRemove()
 	{
 		g_pPhysics->m_physics.DestroyBody(m_physBody);
 		m_physBody = NULL;
+	}
+
+	if (m_smashSpawnedObject)
+	{
+		m_smashSpawnedObject->m_state = GO_STATE_REMOVE;
+		m_smashSpawnedObject = nullptr;
 	}
 }
 
@@ -70,6 +79,8 @@ void CObject_Debris::Spawn()
 	ASSERT(m_pModel);
 
 	m_smashSound = KV_GetValueString(m_keyValues->FindKeyBase("smashsound"), 0, "");
+
+	m_smashSpawn = KV_GetValueString(m_keyValues->FindKeyBase("smashspawn"), 0, "");
 
 	// init breakable
 	kvkeybase_t* brkSec = m_keyValues->FindKeyBase("breakable");
@@ -460,8 +471,21 @@ void CObject_Debris::Simulate(float fDt)
 				// make debris
 				BreakAndSpawnDebris();
 			}
-			else if(!m_collOccured) // need this because break debris would change model
+			else if (!m_collOccured) // need this because break debris would change model
 			{
+				if (m_smashSpawn.Length() > 0)
+				{
+					CGameObject* otherObject = g_pGameWorld->CreateObject(m_smashSpawn.c_str());
+					if (otherObject)
+					{
+						otherObject->SetOrigin(GetOrigin());
+						otherObject->Spawn();
+						g_pGameWorld->AddObject(otherObject);
+
+						m_smashSpawnedObject = otherObject;
+					}
+				}
+
 				// change look of models
 				if(m_pModel->GetHWData()->studio->numBodyGroups > 1)
 					m_bodyGroupFlags = (1 << 1);
@@ -519,11 +543,6 @@ void CObject_Debris::Simulate(float fDt)
 		if(m_state == GO_STATE_REMOVE)
 			break;
 	}
-}
-
-void CObject_Debris::OnPhysicsFrame(float fDt)
-{
-
 }
 
 void CObject_Debris::L_SetContents(int contents)

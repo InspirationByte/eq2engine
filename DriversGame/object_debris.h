@@ -50,7 +50,6 @@ public:
 
 	void				Draw( int nRenderFlags );
 
-	void				OnPhysicsFrame(float fDt);
 	void				Simulate(float fDt);
 
 	int					ObjType() const		{ return GO_DEBRIS; }
@@ -76,6 +75,9 @@ protected:
 	float				m_breakMinForce;
 	breakablePart_t*	m_breakable;
 	int					m_numBreakParts;
+
+	EqString			m_smashSpawn;
+	CGameObject*		m_smashSpawnedObject;
 
 	breakSpawn_t*		m_breakSpawn;
 };
