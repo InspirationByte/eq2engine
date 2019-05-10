@@ -17,7 +17,7 @@
 
 const float DEFAULT_CAMERA_FOV		= 52.0f;
 
-const float CAM_TURN_SPEED			= 4.0f;
+const float CAM_TURN_SPEED			= 3.5f;
 const float CAM_LOOK_TURN_SPEED		= 15.0f;
 
 const float CAM_HEIGHT_TRACE		= -0.3f;
@@ -371,9 +371,10 @@ void CCameraAnimator::Animate(ECameraMode mode,
 
 			// trace camera for height
 			{
+				
 				Vector3D camPosTest = finalTargetPos - forward * desiredDist;
 
-				Vector3D cam_pos_hi = camPosTest + Vector3D(0, desiredHeight*2.0f, 0);
+				Vector3D cam_pos_hi = camPosTest + Vector3D(0, desiredHeight*3.0f, 0);
 				Vector3D cam_pos_low = camPosTest + Vector3D(0, CAM_HEIGHT_TRACE, 0);
 
 				CollisionData_t height_coll;
@@ -382,7 +383,10 @@ void CCameraAnimator::Animate(ECameraMode mode,
 				float facingGround = dot(height_coll.normal, vec3_up);
 
 				if (height_coll.fract < 1.0f && facingGround > 0.5f)
-					heightOffset = (height_coll.position.y - cam_pos_low.y) * 1.5f;
+				{
+					heightOffset = (height_coll.position.y - cam_pos_low.y);
+					desiredDist *= height_coll.fract*0.5f+0.5f;
+				}
 			}
 
 			Vector3D camTargetPos = finalTargetPos + Vector3D(0, desiredHeight, 0);
