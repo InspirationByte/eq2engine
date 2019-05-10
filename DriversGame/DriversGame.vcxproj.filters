@@ -462,6 +462,9 @@
     <ClCompile Include="AIPedestrianManager.cpp">
       <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared_engine\sys_in_joystick.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\src_dependency\oolua\bin\Release\oolua.lib">
@@ -906,6 +909,9 @@
     </ClInclude>
     <ClInclude Include="AIPedestrianManager.h">
       <Filter>Файлы исходного кода\Game\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\sys_in_joystick.h">
+      <Filter>Файлы исходного кода\System</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

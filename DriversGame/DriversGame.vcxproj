@@ -145,6 +145,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="..\shared_engine\Font.cpp" />
     <ClCompile Include="..\public\DataTable.cpp" />
     <ClCompile Include="..\shared_engine\sys_host.cpp" />
+    <ClCompile Include="..\shared_engine\sys_in_joystick.cpp" />
     <ClCompile Include="..\shared_engine\sys_main.cpp" />
     <ClCompile Include="..\shared_engine\sys_state.cpp" />
     <ClCompile Include="..\shared_engine\sys_window.cpp" />
@@ -309,6 +310,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="..\shared_engine\Font.h" />
     <ClInclude Include="..\shared_engine\SpriteBuilder.h" />
     <ClInclude Include="..\shared_engine\sys_host.h" />
+    <ClInclude Include="..\shared_engine\sys_in_joystick.h" />
     <ClInclude Include="..\shared_engine\sys_state.h" />
     <ClInclude Include="..\shared_engine\sys_window.h" />
     <ClInclude Include="..\shared_engine\video\AVStream.h" />

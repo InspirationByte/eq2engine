@@ -7,7 +7,9 @@
 
 #include "sys_host.h"
 #include "sys_state.h"
+
 #include "sys_in_console.h"
+#include "sys_in_joystick.h"
 
 #include "luabinding/LuaBinding_Engine.h"
 
@@ -316,7 +318,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 //--------------------------------------------------------------------------------------
 
-ConVar in_joy_debug("in_joy_debug", "0", "Joystick debug messages", 0);
 ConVar in_mouse_to_touch("in_mouse_to_touch", "0", "Convert mouse clicks to touch input", CV_ARCHIVE);
 
 void InputCommands_SDL(SDL_Event* event)
@@ -404,14 +405,12 @@ void InputCommands_SDL(SDL_Event* event)
 
 			break;
 		}
+
+		CEqGameControllerSDL::ProcessEvent(event);
+
+		/*
 		case SDL_JOYAXISMOTION:
 		{
-			if(in_joy_debug.GetBool())
-			{
-				Msg("Joystick %d axis %d value: %d\n",
-							event->jaxis.which,
-							event->jaxis.axis+1, event->jaxis.value);
-			}
 
 			g_pHost->TrapJoyAxis_Event(event->jaxis.axis, event->jaxis.value);
 			break;
@@ -464,6 +463,7 @@ void InputCommands_SDL(SDL_Event* event)
 			g_pHost->TrapJoyButton_Event(event->jbutton.button, down);
             break;
 		}
+		*/
 	}
 }
 
@@ -849,11 +849,6 @@ void CGameHost::TrapJoyAxis_Event( short axis, short value )
 
 	if(EqStateMgr::GetCurrentState())
 		EqStateMgr::GetCurrentState()->HandleJoyAxis( axis, value );
-}
-
-void CGameHost::TrapJoyBall_Event( short ball, short xrel, short yrel )
-{
-
 }
 
 void CGameHost::TrapJoyButton_Event( short button, bool down)

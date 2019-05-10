@@ -6,8 +6,12 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DebugInterface.h"
+
 #include "sys_host.h"
+
 #include "sys_in_console.h"
+#include "sys_in_joystick.h"
+
 #include "imaging/ImageLoader.h"
 #include "IConCommandFactory.h"
 #include "utils/strtools.h"
@@ -133,23 +137,6 @@ bool s_bProcessInput = true;
 static CGameHost s_Host;
 CGameHost* g_pHost = &s_Host;
 
-// TODO: always query joystick count
-
-SDL_Joystick* g_mainJoystick = NULL;
-
-void InitSDLJoysticks()
-{
-	int numPads = SDL_NumJoysticks();
-
-	if(numPads)
-		MsgInfo("Found %d joysticks/gamepads.\n", SDL_NumJoysticks());
-
-	if (numPads > 0)
-	{
-		g_mainJoystick = SDL_JoystickOpen(0);
-	}
-}
-
 void InputCommands_SDL(SDL_Event* event);
 
 void EQHandleSDLEvents(SDL_Event* event)
@@ -181,14 +168,6 @@ void EQHandleSDLEvents(SDL_Event* event)
 			else if(event->window.event == SDL_WINDOWEVENT_FOCUS_LOST)
 			{
 				s_bActive = false;
-			}
-			else if(event->window.event == SDL_JOYDEVICEADDED)
-			{
-				Msg("TODO: add new joystick\n");
-			}
-			else if(event->window.event == SDL_JOYDEVICEREMOVED)
-			{
-				Msg("TODO: remove joystick\n");
 			}
 
 			break;
@@ -235,7 +214,7 @@ bool Host_Init()
 
 	g_cmdLine->ExecuteCommandLine();
 
-	InitSDLJoysticks();
+	CEqGameControllerSDL::Init();
 
 	return true;
 }
@@ -281,6 +260,9 @@ void Host_GameLoop()
 //
 void Host_Terminate()
 {
+	CEqGameControllerSDL::Shutdown();
+
 	g_pHost->ShutdownSystems();
+
 	SDL_Quit();
 }

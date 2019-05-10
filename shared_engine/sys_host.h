@@ -48,7 +48,6 @@ public:
 	void				TrapMouseWheel_Event(int x, int y, int scroll);
 
 	void				TrapJoyAxis_Event( short axis, short value );
-	void				TrapJoyBall_Event( short ball, short xrel, short yrel );
 	void				TrapJoyButton_Event( short button, bool down);
 
 	void				TouchMotion_Event( float x, float y, int finger );
