@@ -7,8 +7,9 @@
 
 #include "AIManipulator_Navigation.h"
 #include "car.h"
-
 #include "world.h"
+
+#include "heightfield.h"
 
 
 const float AI_PATH_TIME_TO_UPDATE = 5.0f;			// every 5 seconds
@@ -55,14 +56,40 @@ void SimplifyPath(pathFindResult_t& path)
 	if(path.points.numElem() <= 2)
 		return;
 	
+	g_pGameWorld->m_level.m_navGridSelector = path.gridSelector;
+
 	IVector2D lastPointPos = path.points[0];
 	IVector2D lastDir2D = path.points[1]-lastPointPos;
+
+	short lastHeight = 0;
 
 	for (int i = 2; i < path.points.numElem()-1; i++)
 	{
 		IVector2D pointPos = path.points[i];
-
 		IVector2D dir2D(pointPos-lastPointPos);
+
+		// check for height
+		Vector3D posOn3D = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.points[i]);
+
+		bool heightChanged = false;
+
+		IVector2D hfieldTile;
+		CLevelRegion* reg;
+		if (g_pGameWorld->m_level.GetRegionAndTile(posOn3D, &reg, hfieldTile))
+		{
+			CHeightTileField* hfield = reg->GetHField(0);
+			hfieldtile_t* tile = hfield->GetTile(hfieldTile.x, hfieldTile.y);
+
+			if (tile)
+			{
+				int heightDiff = abs(lastHeight - tile->height);
+
+				heightChanged = (heightDiff > 4);
+
+				if(heightChanged)
+					lastHeight = heightDiff;
+			}
+		}
 
 		// process conditions
 		bool isStraight = lastDir2D == dir2D;
@@ -71,14 +98,17 @@ void SimplifyPath(pathFindResult_t& path)
 		lastPointPos = pointPos;
 		lastDir2D = dir2D;
 
-		if(!isStraight)//if(!(isStraight || hasCollision))
-		{
+		if (heightChanged)
 			continue;
-		}
+
+		if (!isStraight)
+			continue;
 
 		i--;
 		path.points.removeIndex(i);
 	}
+
+	g_pGameWorld->m_level.m_navGridSelector = 0;
 }
 
 void pathFindResult3D_t::InitFrom(pathFindResult_t& path, CEqCollisionObject* ignore)
