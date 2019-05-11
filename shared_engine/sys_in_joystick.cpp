@@ -10,6 +10,8 @@
 #include "sys_host.h"
 #include "sys_in_joystick.h"
 
+#include "in_keys_ident.h"
+
 #include "IFileSystem.h"
 
 #include "ConVar.h"
@@ -32,7 +34,8 @@ void CEqGameControllerSDL::Init()
 		MsgError("Failed to load 'resources/gamecontrollerdb.txt'!\n");
 
 	int numJoysticks = SDL_NumJoysticks();
-
+	MsgWarning("* %d gamepads connected\n", numJoysticks);
+	/*
 	int controllerIdx = 0;
 
 	for (int i = 0; i < numJoysticks; i++)
@@ -43,10 +46,8 @@ void CEqGameControllerSDL::Init()
 		CEqGameControllerSDL& jc = s_controllers[controllerIdx++];
 		jc.Open(i);
 
-		Msg("Controller connected: '%s'\n", jc.GetName());
-	}
-
-	MsgWarning("* %d gamepads connected\n", controllerIdx);
+		Msg(" * Controller connected: '%s'\n", jc.GetName());
+	}*/
 }
 
 void CEqGameControllerSDL::Shutdown()
@@ -144,9 +145,9 @@ int CEqGameControllerSDL::ProcessEvent(SDL_Event* event)
 			
 			if (in_joy_debug.GetBool())
 			{
-				Msg("Gamepad %d axis %d value: %d\n",
+				Msg("Gamepad %d axis %s value: %d\n",
 					event->caxis.which,
-					event->caxis.axis + 1, event->caxis.value);
+					KeyIndexToString(JOYSTICK_START_AXES + event->caxis.axis), event->caxis.value);
 			}
 
 			// handle axis motion
@@ -162,8 +163,8 @@ int CEqGameControllerSDL::ProcessEvent(SDL_Event* event)
 
 			if (in_joy_debug.GetBool())
 			{
-				Msg("Gamepad %d button %d %s\n",
-					event->cbutton.which, event->cbutton.button + 1, down ? "down" : "up");
+				Msg("Gamepad %d button %s %s\n",
+					event->cbutton.which, KeyIndexToString(JOYSTICK_START_KEYS + event->cbutton.button), down ? "down" : "up");
 			}
 
 			// handle button up/down
@@ -177,7 +178,7 @@ int CEqGameControllerSDL::ProcessEvent(SDL_Event* event)
 				CEqGameControllerSDL& jc = s_controllers[event->cdevice.which];
 				jc.Open(event->cdevice.which);
 
-				Msg("Controller connected: '%s'\n", jc.GetName());
+				Msg("* Controller connected: '%s'\n", jc.GetName());
 			}
 			break;
 		}
@@ -190,7 +191,7 @@ int CEqGameControllerSDL::ProcessEvent(SDL_Event* event)
 
 			CEqGameControllerSDL& jc = s_controllers[cIndex];
 
-			Msg("Controller disconnected: '%s'\n", jc.GetName());
+			Msg("* Controller disconnected: '%s'\n", jc.GetName());
 			jc.Close();
 
 			break;

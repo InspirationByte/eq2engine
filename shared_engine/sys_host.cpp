@@ -405,8 +405,10 @@ void InputCommands_SDL(SDL_Event* event)
 
 			break;
 		}
-
-		CEqGameControllerSDL::ProcessEvent(event);
+		default:
+		{
+			CEqGameControllerSDL::ProcessEvent(event);
+		}
 
 		/*
 		case SDL_JOYAXISMOTION:
