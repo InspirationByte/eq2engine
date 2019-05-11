@@ -318,27 +318,29 @@ void CState_MainMenu::HandleKeyPress( int key, bool down )
 
 	if(down)
 	{
-		if(key == KEY_ENTER)
+		if (key == KEY_ENTER || key == KEY_JOY_A)
 		{
 			Event_SelectionEnter();
 		}
-		else if (key == KEY_LEFT || key == KEY_RIGHT)
+		else if (key == KEY_LEFT || key == KEY_RIGHT || key == KEY_JOY_DPAD_LEFT || key == KEY_JOY_DPAD_RIGHT)
 		{
+			int direction = (key == KEY_LEFT || key == KEY_JOY_DPAD_LEFT) ? -1 : 1;
+
 			if (ChangeSelection(key == KEY_LEFT ? -1 : 1))
 			{
 				EmitSound_t es("menu.roll");
 				g_sounds->EmitSound(&es);
 			}
 		}
-		else if(key == KEY_ESCAPE)
+		else if (key == KEY_ESCAPE || key == KEY_JOY_START || key == KEY_JOY_Y)
 		{
 			Event_BackToPrevious();
 		}
-		else if(key == KEY_UP)
+		else if (key == KEY_UP || key == KEY_JOY_DPAD_UP)
 		{
 			Event_SelectionUp();
 		}
-		else if(key == KEY_DOWN)
+		else if (key == KEY_DOWN || key == KEY_JOY_DPAD_DOWN)
 		{
 			Event_SelectionDown();
 		}

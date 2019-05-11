@@ -1296,7 +1296,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 		return;
 	}
 
-	if (key == KEY_ESCAPE && down)
+	if ((key == KEY_ESCAPE || key == KEY_JOY_START || key == KEY_JOY_Y) && down)
 	{
 		if (m_showMenu && !IsMenuActive())
 			return;
@@ -1319,20 +1319,22 @@ void CState_Game::HandleKeyPress( int key, bool down )
 		if(!down)
 			return;
 
-		if(key == KEY_ENTER)
+		if(key == KEY_ENTER || key == KEY_JOY_A)
 		{
 			if(PreEnterSelection())
 				EnterSelection();
 		}
-		else if(key == KEY_LEFT || key == KEY_RIGHT)
+		else if(key == KEY_LEFT || key == KEY_RIGHT || key == KEY_JOY_DPAD_LEFT || key == KEY_JOY_DPAD_RIGHT)
 		{
-			if(ChangeSelection(key == KEY_LEFT ? -1 : 1))
+			int direction = (key == KEY_LEFT || key == KEY_JOY_DPAD_LEFT) ? -1 : 1;
+
+			if(ChangeSelection(direction))
 			{
 				EmitSound_t es("menu.roll");
 				g_sounds->Emit2DSound( &es );
 			}
 		}
-		else if(key == KEY_UP)
+		else if(key == KEY_UP || key == KEY_JOY_DPAD_UP)
 		{
 redecrement:
 
@@ -1350,7 +1352,7 @@ redecrement:
 			EmitSound_t ep("menu.roll");
 			g_sounds->Emit2DSound(&ep);
 		}
-		else if(key == KEY_DOWN)
+		else if(key == KEY_DOWN || key == KEY_JOY_DPAD_DOWN)
 		{
 reincrement:
 			m_selection++;

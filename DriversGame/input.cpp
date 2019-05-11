@@ -11,6 +11,8 @@
 ConVar in_joy_deadzone("in_joy_deadzone", "0.02", "Joystick dead zone", CV_ARCHIVE);
 
 ConVar in_joy_steer_linear("in_joy_steer_linear", "1.0", "Joystick steering linearity", CV_ARCHIVE);
+ConVar in_joy_steer_smooth("in_joy_steer_smooth", "1", "Joystick steering smooth motion", CV_ARCHIVE);
+
 ConVar in_joy_accel_linear("in_joy_accel_linear", "1.0", "Joystick acceleration linearity", CV_ARCHIVE);
 ConVar in_joy_brake_linear("in_joy_brake_linear", "1.0", "Joystick acceleration linearity", CV_ARCHIVE);
 
@@ -33,15 +35,26 @@ void JoyAction_Steering( short value )
 	{
 		g_nClientButtons &= ~IN_TURNLEFT;
 		g_nClientButtons &= ~IN_TURNRIGHT;
+		g_nClientButtons &= ~IN_ANALOGSTEER;
 		g_joySteeringValue = 0.0f;
 		return;
 	}
 		
-
 	g_joySteeringValue = sign(g_joySteeringValue) * pow(fabs(g_joySteeringValue), in_joy_steer_linear.GetFloat());
 
 	g_nClientButtons &= ~IN_TURNLEFT;
-	g_nClientButtons |= IN_TURNRIGHT;
+
+
+	if (in_joy_steer_smooth.GetBool())
+	{
+		g_nClientButtons |= IN_TURNRIGHT;
+		g_nClientButtons &= ~IN_ANALOGSTEER;
+	}
+	else
+	{
+		g_nClientButtons &= ~IN_TURNRIGHT;
+		g_nClientButtons |= IN_ANALOGSTEER;
+	}
 }
 
 void JoyAction_Accel_Brake( short value )

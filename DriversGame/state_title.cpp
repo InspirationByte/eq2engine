@@ -233,7 +233,7 @@ bool CompareCheatCode(int* c1, int* codeSeq)
 
 void CState_Title::HandleKeyPress( int key, bool down )
 {
-	if(key == KEY_ENTER && down == true && !m_goesFromTitle && m_fade == 1.0f && m_actionTimeout > 0.0f)
+	if((key == KEY_ENTER || key == KEY_JOY_START) && down == true && !m_goesFromTitle && m_fade == 1.0f && m_actionTimeout > 0.0f)
 	{
 		if(CompareCheatCode(m_codeKeysEntered, g_KonamiCode))
 		{
