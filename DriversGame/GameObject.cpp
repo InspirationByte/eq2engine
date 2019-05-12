@@ -228,6 +228,7 @@ void  CGameObject::L_Remove()
 
 void CGameObject::Spawn()
 {
+	
 #ifndef EDITOR
 	// call NET_SPAWN
 	if((g_pGameSession->GetSessionType() == SESSION_NETWORK) &&

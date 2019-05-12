@@ -104,7 +104,7 @@ int CAITrafficCar::DeadState( float fDt, EStateTransition transition )
 	m_hornSequencer.ShutUp();
 
 	int buttons = GetControlButtons();
-	buttons &= ~(IN_HORN | IN_ACCELERATE | IN_BRAKE);
+	buttons &= ~(IN_HORN | IN_ACCELERATE | IN_BRAKE | IN_ANALOGSTEER | IN_TURNLEFT | IN_TURNRIGHT);
 
 	SetControlButtons(buttons);
 	return 0;

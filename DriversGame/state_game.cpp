@@ -1296,7 +1296,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 		return;
 	}
 
-	if ((key == KEY_ESCAPE || key == KEY_JOY_START || key == KEY_JOY_Y) && down)
+	if ((key == KEY_ESCAPE || key == KEY_JOY_START || (key == KEY_JOY_Y && m_showMenu && IsCanPopMenu())) && down)
 	{
 		if (m_showMenu && !IsMenuActive())
 			return;

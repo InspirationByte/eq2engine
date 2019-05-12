@@ -326,7 +326,7 @@ void CState_MainMenu::HandleKeyPress( int key, bool down )
 		{
 			int direction = (key == KEY_LEFT || key == KEY_JOY_DPAD_LEFT) ? -1 : 1;
 
-			if (ChangeSelection(key == KEY_LEFT ? -1 : 1))
+			if (ChangeSelection(direction))
 			{
 				EmitSound_t es("menu.roll");
 				g_sounds->EmitSound(&es);

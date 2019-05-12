@@ -79,7 +79,8 @@ void CObject_Static::Spawn()
 
 		if(surfParams)
 		{
-			m_pPhysicsObject->SetFriction( surfParams->friction );
+			// friction is reduced
+			m_pPhysicsObject->SetFriction( surfParams->friction * 0.25f );
 			m_pPhysicsObject->SetRestitution( surfParams->restitution );
 		}
 

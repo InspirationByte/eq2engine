@@ -21,7 +21,7 @@
 #define MPS_TO_KPH		(3.6f)
 #define KPH_TO_MPS		(0.27778f)
 
-inline bool IsCar(CGameObject* obj) { return obj->ObjType() >= GO_CAR && obj->ObjType() <= GO_CAR_AI;}
+inline bool IsCar(CGameObject* obj) { return obj ? obj->ObjType() >= GO_CAR && obj->ObjType() <= GO_CAR_AI : false;}
 
 // body part ids
 enum ECarBodyPart

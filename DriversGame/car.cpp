@@ -170,7 +170,7 @@ const float SKID_SMOKE_MAX_WETNESS			= 0.5f; // wetness level before skid sound 
 const float SKID_WATERTRAIL_MIN_WETNESS		= 0.25f; // wetness level before skid sound disappear
 
 const float CAR_PHYSICS_RESTITUTION			= 0.5f;
-const float CAR_PHYSICS_FRICTION			= 0.4f;
+const float CAR_PHYSICS_FRICTION			= 0.25f;
 
 
 bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )

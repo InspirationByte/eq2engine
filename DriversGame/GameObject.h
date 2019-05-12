@@ -138,8 +138,12 @@ static const char* s_objectTypeNames[GO_TYPES] =
 static bool s_networkedObjectTypes[GO_TYPES] =
 {
 	false,
+
 	true,
 	true,
+
+	false,
+
 	false,
 	false,
 	true,
