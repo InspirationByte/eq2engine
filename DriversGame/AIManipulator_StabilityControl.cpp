@@ -33,7 +33,7 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 
 	const float AI_CORRECTION_LIMIT = 0.5f;
 
-	const float AI_MAX_ANGULAR_VELOCITY_AUTOHANDBRAKE = 2.0f;
+	const float AI_MAX_ANGULAR_VELOCITY_AUTOHANDBRAKE = 3.0f;
 
 	const float AI_SPEED_CORRECTION_MINSPEED = 8.0f;	// meters per sec
 	const float AI_SPEED_CORRECTION_MAXSPEED = 25.0f;	// meters per sec
@@ -41,10 +41,10 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 
 	if (carSpeedMPS > AI_SPEED_CORRECTION_MINSPEED)
 	{
-		float counterSteeringScale = 1.0f - fabs(m_initialHandling.steering);
+		float counterSteeringScale = angularVelocity.y + m_initialHandling.steering;
 		float brakingFac = 1.0f - m_initialHandling.braking;
 
-		if (fabs(angularVelocity.y)*counterSteeringScale*brakingFac > AI_MAX_ANGULAR_VELOCITY_AUTOHANDBRAKE)
+		if(fabs(counterSteeringScale)*brakingFac > AI_MAX_ANGULAR_VELOCITY_AUTOHANDBRAKE)
 			handling.autoHandbrake = false;
 
 		// calculate amounts of stability control

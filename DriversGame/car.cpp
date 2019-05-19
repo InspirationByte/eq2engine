@@ -112,6 +112,7 @@ const float CAMERA_DISTANCE_BIAS		= 0.25f;
 
 const float ACCELERATION_CONST			= 2.0f;
 const float	ACCELERATION_SOUND_CONST	= 10.0f;
+const float STEERING_HELP_START			= 0.25f;
 const float STEERING_CONST				= 1.5f;
 const float STEERING_HELP_CONST			= 0.4f;
 
@@ -1380,9 +1381,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 			m_steering = fSteerAngle;
 	}
 
-	if (FPmath::abs(fSteerAngle) > 0.5f)
+	if (FPmath::abs(fSteerAngle) > STEERING_HELP_START)
 	{
-		FReal steerHelp_diff = fSteerAngle-m_steeringHelper;
+		FReal steerHelp_diff = fSteerAngle -m_steeringHelper;
 		if(FPmath::abs(steerHelp_diff) > 0.1f)
 			m_steeringHelper += FPmath::sign(steerHelp_diff) * STEERING_HELP_CONST * delta;
 		else
@@ -1441,7 +1442,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		if(m_isLocalCar && fractionOld < 1.0f && (fractionOldDist - fractionNewDist) >= HFIELD_HEIGHT_STEP)
 		{
 			// add damage to hubcap
-			wheel.m_hubcapLoose += (fractionOldDist - fractionNewDist) * 0.25f;
+			wheel.m_hubcapLoose += (fractionOldDist - fractionNewDist) * 0.01f * length(wheel.m_velocityVec);
 
 			EmitSound_t ep;
 
@@ -1545,13 +1546,15 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 	if( m_autohandbrake && GetSpeedWheels() > 0.0f && !bDoBurnout )
 	{
-		const float AUTOHANDBRAKE_MIN_SPEED		= 10.0f;
-		const float AUTOHANDBRAKE_MAX_SPEED		= 30.0f;
+		const float AUTOHANDBRAKE_MIN_SPEED		= 8.0f;
+		const float AUTOHANDBRAKE_MAX_SPEED		= 40.0f;
 		const float AUTOHANDBRAKE_MAX_FACTOR	= 5.0f;
 		const float AUTOHANDBRAKE_SCALE			= 4.0f;
 		const float AUTOHANDBRAKE_START_MIN		= 0.1f;
 
-		float handbrakeFactor = RemapVal((GetSpeed()-AUTOHANDBRAKE_MIN_SPEED), 0.0f, AUTOHANDBRAKE_MAX_SPEED, 0.0f, 1.0f);
+		float carForwardSpeed = dot(GetForwardVector().xz(), GetVelocity().xz()) * MPS_TO_KPH;
+
+		float handbrakeFactor = RemapVal(carForwardSpeed, AUTOHANDBRAKE_MIN_SPEED, AUTOHANDBRAKE_MAX_SPEED, 0.0f, 1.0f);
 
 		float fLateral = GetLateralSlidingAtBody();
 		float fLateralSign = sign(GetLateralSlidingAtBody())*-0.01f;
@@ -1882,10 +1885,10 @@ void CCar::UpdateVehiclePhysics(float delta)
 					// supress slip force on low speeds
 					wheelSlipOppositeForce = dot(wheelSlipForceDir, wheelVelAtPoint ) * -4.0f ;
 				}
-
+				
 				// contact surface modifier (perpendicularness to ground)
 				{
-					const float SURFACE_GRIP_SCALE = 1.0f;
+					const float SURFACE_GRIP_SCALE = 0.9f;
 					const float SURFACE_GRIP_DEADZONE = 0.1f;
 
 					float surfaceForceMod = dot( wheel_right, wheel.m_collisionInfo.normal );
@@ -2389,15 +2392,19 @@ void CCar::OnPhysicsFrame( float fDt )
 		float lateralSliding = GetLateralSlidingAtWheel(i) * sign(m_conf->physics.wheels[i].suspensionTop.x);
 		lateralSliding = max(0.0f,lateralSliding);
 
+		float addLoose = 0.0f;
+
 		// skidding can do this
-		if(lateralSliding > 2.0f)
-			wheel.m_hubcapLoose += lateralSliding * fDt * 0.0035f;
+		if (lateralSliding > 2.0f)
+		{
+			addLoose += lateralSliding * fDt * 0.0035f;
 
-		float tractionSliding = GetTractionSlidingAtWheel(i);
+			float tractionSliding = GetTractionSlidingAtWheel(i);
 
-		// if you burnout too much, or brake
-		if(tractionSliding > 4.0f)
-			wheel.m_hubcapLoose += tractionSliding * fDt * 0.001f;
+			// if you burnout too much, or brake
+			if (tractionSliding > 4.0f)
+				addLoose += tractionSliding * fDt * 0.001f;
+		}
 
 		// if vehicle landing on ground hubcaps may go away
 		if(wheel.m_flags.onGround && !wheel.m_flags.lastOnGround)
@@ -2405,8 +2412,10 @@ void CCar::OnPhysicsFrame( float fDt )
 			float wheelLandingVelocity = (-dot(wheel.m_collisionInfo.normal, wheel.m_velocityVec)) - 4.0f;
 
 			if(wheelLandingVelocity > 0.0f)
-				wheel.m_hubcapLoose += pow(wheelLandingVelocity, 2.0f) * 0.05f;
+				addLoose += pow(wheelLandingVelocity, 2.0f) * 0.05f;
 		}
+
+		wheel.m_hubcapLoose += addLoose;
 
 		bool looseHubcap = false;
 

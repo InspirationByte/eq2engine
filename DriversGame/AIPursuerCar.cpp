@@ -30,7 +30,7 @@ const float AI_COPVIEW_FAR_ROADBLOCK	= 10.0f;
 
 const float AI_COPVIEW_RADIUS			= 18.0f;
 const float AI_COPVIEW_RADIUS_WANTED	= 25.0f;
-const float AI_COPVIEW_RADIUS_PURSUIT	= 120.0f;
+const float AI_COPVIEW_RADIUS_PURSUIT	= 100.0f;
 const float AI_COPVIEW_RADIUS_ROADBLOCK = 15.0f;
 
 const float AI_COP_CHECK_MAXSPEED = 80.0f; // 80 kph and you will be pursued
@@ -248,6 +248,7 @@ void CAIPursuerCar::OnPrePhysicsFrame( float fDt )
 				checkCar->GetPursuedCount() == 0)
 			{
 				SetPursuitTarget(checkCar);
+				BeginPursuit(0.0f);
 			}
 		}
 	}
@@ -374,7 +375,7 @@ void CAIPursuerCar::BeginPursuit( float delay )
 	if (!m_target)
 		return;
 
-	if(!IsAlive())
+	if(!IsAlive() || !m_target->m_conf->flags.isCar)
 	{
 		SetPursuitTarget(nullptr);
 		return;
@@ -506,7 +507,7 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 		{
 			CGameObject* obj = (CGameObject*)bodyB->GetUserData();
 
-			if(obj == this)
+			if(InPursuit() && obj == this)
 				return INFRACTION_NONE;
 
 			if (obj->ObjType() == GO_CAR_AI)
@@ -910,7 +911,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	}
 
 	// make stability control
-	m_stability.m_manipulator.m_initialHandling = m_nav.m_handling;
+	m_stability.m_manipulator.m_initialHandling = handling;
 	m_stability.Update(this, fDt);
 
 	// collision avoidance
