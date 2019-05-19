@@ -26,6 +26,8 @@
 CBaseStateHandler**	g_states = nullptr;
 
 extern void DrvSyn_RegisterShaderOverrides();
+extern void DrvSyn_RegisterEqUIControls();
+
 extern ConVar sv_maxplayers;
 
 namespace EqStateMgr
@@ -35,6 +37,9 @@ bool InitRegisterStates()
 {
 	// initialize shader overrides after libraries are loaded
 	DrvSyn_RegisterShaderOverrides();
+
+	// register UIs
+	DrvSyn_RegisterEqUIControls();
 
 	g_states = new CBaseStateHandler*[GAME_STATE_COUNT];
 

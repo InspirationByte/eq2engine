@@ -180,8 +180,10 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="ControllableObject.cpp" />
     <ClCompile Include="director.cpp" />
     <ClCompile Include="DrvSynDecals.cpp" />
+    <ClCompile Include="DrvSynEqUIControls.cpp" />
     <ClCompile Include="DrvSynHUD.cpp" />
     <ClCompile Include="DrvSynStates.cpp" />
+    <ClCompile Include="EqUI_DrvSynTimer.cpp" />
     <ClCompile Include="eqPhysics\eqPhysics_HingeJoint.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
     </ClCompile>
@@ -189,10 +191,6 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="eqPhysics\eqPhysics_PointConstraint.cpp" />
     <ClCompile Include="EventFSM.cpp" />
     <ClCompile Include="levelobject.cpp" />
-    <ClCompile Include="LiteHTMLContainer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="ParticleEffects.cpp" />
     <ClCompile Include="pedestrian.cpp" />
     <ClCompile Include="Player.cpp" />
@@ -350,6 +348,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="director.h" />
     <ClInclude Include="DrvSynDecals.h" />
     <ClInclude Include="DrvSynStates.h" />
+    <ClInclude Include="EqUI_DrvSynTimer.h" />
     <ClInclude Include="pedestrian.h" />
     <ClInclude Include="worldenv.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Controller.h" />
@@ -363,9 +362,6 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="game_singleplayer.h" />
     <ClInclude Include="game_splitscreen.h" />
     <ClInclude Include="levelobject.h" />
-    <ClInclude Include="LiteHTMLContainer.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="net_game_defs.h" />
     <ClInclude Include="ParticleEffects.h" />
     <ClInclude Include="Player.h" />

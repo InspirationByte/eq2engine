@@ -39,7 +39,7 @@ DECLARE_CMD(hud_showLastMessage, NULL, 0)
 
 CDrvSynHUDManager::CDrvSynHUDManager()
 	: m_handleCounter(0), m_mainVehicle(nullptr), m_curTime(0.0f), m_mapTexture(nullptr), m_showMap(true), m_screenAlertTime(0.0f), m_screenMessageTime(0.0f), 
-		m_hudLayout(nullptr), m_hudDamageBar(nullptr), 	m_hudFelonyBar(nullptr), m_hudMap(nullptr), m_fadeValue(0.0f), m_fadeCurtains(false), m_faded(false)
+		m_hudLayout(nullptr), m_hudDamageBar(nullptr), 	m_hudFelonyBar(nullptr), m_hudMap(nullptr), m_hudTimer(nullptr), m_fadeValue(0.0f), m_fadeCurtains(false), m_faded(false)
 {
 }
 
@@ -75,9 +75,6 @@ void CDrvSynHUDManager::Init()
 	m_screenAlertTime = 0.0f;
 	m_screenAlertInTime = 0.0f;
 	m_screenAlertText.Clear();
-
-	m_timeDisplayEnable = false;
-	m_timeDisplayValue = 0.0;
 
 	m_faded = false;
 	m_fadeCurtains = false;
@@ -125,6 +122,7 @@ void CDrvSynHUDManager::SetHudScheme(const char* name)
 	m_hudDamageBar = nullptr;
 	m_hudFelonyBar = nullptr;
 	m_hudMap = nullptr;
+	m_hudTimer = nullptr;
 
 	kvkeybase_t hudKvs;
 	kvkeybase_t* baseHud = nullptr;
@@ -159,6 +157,11 @@ void CDrvSynHUDManager::SetHudScheme(const char* name)
 	m_hudDamageBar = m_hudLayout->FindChild("damageBar");
 	m_hudFelonyBar = m_hudLayout->FindChild("felonyLabel");
 	m_hudMap = m_hudLayout->FindChild("map");
+
+	equi::IUIControl* timerControl = m_hudLayout->FindChild("timer");
+
+	// validate it
+	m_hudTimer = equi::DynamicCast<equi::DrvSynTimerElement>(timerControl);
 }
 
 void CDrvSynHUDManager::Cleanup()
@@ -216,8 +219,11 @@ void CDrvSynHUDManager::ShowAlert( const char* token, float time, int type )
 
 void CDrvSynHUDManager::SetTimeDisplay(bool enabled, double time)
 {
-	m_timeDisplayEnable = enabled;
-	m_timeDisplayValue = time;
+	if (m_hudTimer)
+	{
+		m_hudTimer->SetTimeValue(time);
+		m_hudTimer->SetVisible(enabled);
+	}
 }
 
 void CDrvSynHUDManager::FadeIn( bool useCurtains )
@@ -764,41 +770,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 			roboto30b->RenderText(varargs_w(m_felonyTok ? m_felonyTok->GetText() : L"Undefined", (int)felonyPercent), felonyTextPos, fontParams);
 		}
 
-		if(m_timeDisplayEnable)
-		{
-			static IEqFont* numbers50 = g_fontCache->GetFont("Roboto Condensed", 50);
-			static IEqFont* numbers20 = g_fontCache->GetFont("Roboto Condensed", 20);
-
-			int secs,mins, millisecs;
-
-			secs = m_timeDisplayValue;
-			mins = secs / 60;
-
-			millisecs = m_timeDisplayValue * 100.0f - secs*100;
-
-			secs -= mins*60;
-
-			eqFontStyleParam_t numFontParams;
-			numFontParams.styleFlag |= TEXT_STYLE_SHADOW;
-			numFontParams.align = TEXT_ALIGN_HCENTER;
-			numFontParams.textColor = color4_white;
-			numFontParams.scale = 50.0f;
-
-			Vector2D timeDisplayTextPos(screenSize.x / 2, 80);
-
-			wchar_t* str = varargs_w(L"%.2i:%.2i", mins, secs);
-
-			float minSecWidth = numbers50->GetStringWidth(str, numFontParams);
-			numbers50->RenderText(str, timeDisplayTextPos, numFontParams);
-
-			numFontParams.align = 0;
-			numFontParams.scale = 20.0f;
-
-			Vector2D millisDisplayTextPos = timeDisplayTextPos + Vector2D(floor(minSecWidth*0.5f), 0.0f);
-
-			numbers20->RenderText(varargs_w(L"'%02d", millisecs), millisDisplayTextPos, numFontParams);
-		}
-
 		CViewParams& camera = *g_pGameWorld->GetView();
 
 		// display radar and map
@@ -1023,10 +994,16 @@ void CDrvSynHUDManager::DoDebugDisplay()
 
 		const Vector2D debugOffset(10, 400);
 
+		float accel, brake, steer;
+		m_mainVehicle->GetControlVars(accel, brake, steer);
+
 		defFont->RenderText(varargs("Speed: %.2f KPH (%.2f MPS)", m_mainVehicle->GetSpeed(), m_mainVehicle->GetSpeed()*KPH_TO_MPS), debugOffset, style);
 		defFont->RenderText(varargs("Speed from wheels: %.2f KPH (%.2f MPS) at gear: %d, RPM: %d", m_mainVehicle->GetSpeedWheels(), m_mainVehicle->GetSpeedWheels()*KPH_TO_MPS, m_mainVehicle->GetGear(), (int)m_mainVehicle->GetRPM()), debugOffset + DEBUG_LINE_OFS, style);
 		defFont->RenderText(varargs("Lateral slide: %.2f", m_mainVehicle->GetLateralSlidingAtBody()), debugOffset + DEBUG_LINE_OFS * 2, style);
 		defFont->RenderText(varargs("Traction slide: %.2f", m_mainVehicle->GetTractionSliding(true)), debugOffset + DEBUG_LINE_OFS * 3, style);
+		defFont->RenderText(varargs("Steering - input: %.2f output: %.2f helper: %.2f", steer, (float)m_mainVehicle->m_steering, (float)m_mainVehicle->m_steeringHelper), debugOffset + DEBUG_LINE_OFS * 5, style);
+		defFont->RenderText(varargs("Acceleration: %.2f", accel), debugOffset + DEBUG_LINE_OFS * 6, style);
+		defFont->RenderText(varargs("Brake: %.2f", brake), debugOffset + DEBUG_LINE_OFS * 7, style);
 	}
 
 	if (hud_debug_roadmap.GetBool() && m_mainVehicle)

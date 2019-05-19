@@ -117,7 +117,6 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 		{
 			const char* anchorVal = KV_GetValueString(anchors, i);
 
-
 			if(!stricmp("left", anchorVal))
 				m_anchors |= UI_BORDER_LEFT;
 			else if(!stricmp("top", anchorVal))
@@ -143,13 +142,17 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 			const char* alignVal = KV_GetValueString(align, i);
 
 			if(!stricmp("left", alignVal))
-				m_alignment |= UI_BORDER_LEFT;
+				m_alignment |= UI_ALIGN_LEFT;
 			else if(!stricmp("top", alignVal))
-				m_alignment |= UI_BORDER_TOP;
+				m_alignment |= UI_ALIGN_TOP;
 			else if(!stricmp("right", alignVal))
-				m_alignment |= UI_BORDER_RIGHT;
+				m_alignment |= UI_ALIGN_RIGHT;
 			else if(!stricmp("bottom", alignVal))
-				m_alignment |= UI_BORDER_BOTTOM;
+				m_alignment |= UI_ALIGN_BOTTOM;
+			else if (!stricmp("hcenter", alignVal))
+				m_alignment |= UI_ALIGN_HCENTER;
+			else if (!stricmp("vcenter", alignVal))
+				m_alignment |= UI_ALIGN_VCENTER;
 		}
 	}
 
@@ -356,28 +359,42 @@ IRectangle IUIControl::GetClientRectangle() const
 		IRectangle parentRect = m_parent->GetClientRectangle();
 
 		// align
-		if(m_alignment & UI_BORDER_LEFT)
+		if(m_alignment & UI_ALIGN_LEFT)
 		{
 			thisRect.vleftTop.x += parentRect.vleftTop.x;
 			thisRect.vrightBottom.x += parentRect.vleftTop.x;
 		}
 
-		if(m_alignment & UI_BORDER_TOP)
+		if(m_alignment & UI_ALIGN_TOP)
 		{
 			thisRect.vleftTop.y += parentRect.vleftTop.y;
 			thisRect.vrightBottom.y += parentRect.vleftTop.y;
 		}
 
-		if(m_alignment & UI_BORDER_RIGHT)
+		if(m_alignment & UI_ALIGN_RIGHT)
 		{
 			thisRect.vleftTop.x += parentRect.vrightBottom.x - scaledSize.x - scaledPos.x*2;
 			thisRect.vrightBottom.x += parentRect.vrightBottom.x - scaledSize.x - scaledPos.x*2;
 		}
 
-		if(m_alignment & UI_BORDER_BOTTOM)
+		if(m_alignment & UI_ALIGN_BOTTOM)
 		{
 			thisRect.vleftTop.y += parentRect.vrightBottom.y - scaledSize.y - scaledPos.y*2;
 			thisRect.vrightBottom.y += parentRect.vrightBottom.y - scaledSize.y - scaledPos.y*2;
+		}
+
+		if (m_alignment & UI_ALIGN_HCENTER)
+		{
+			IVector2D center = parentRect.GetCenter();
+			thisRect.vleftTop.x += center.x;
+			thisRect.vrightBottom.x += center.x;
+		}
+
+		if (m_alignment & UI_ALIGN_VCENTER)
+		{
+			IVector2D center = parentRect.GetCenter();
+			thisRect.vleftTop.y += center.y;
+			thisRect.vrightBottom.y += center.y;
 		}
 
 		// move by anchor border

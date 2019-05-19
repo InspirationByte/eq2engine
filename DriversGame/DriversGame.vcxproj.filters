@@ -291,9 +291,6 @@
     <ClCompile Include="Shader_Water.cpp">
       <Filter>Файлы исходного кода\MatSystem\Shaders</Filter>
     </ClCompile>
-    <ClCompile Include="LiteHTMLContainer.cpp">
-      <Filter>Файлы исходного кода\Game\UI</Filter>
-    </ClCompile>
     <ClCompile Include="EventFSM.cpp">
       <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClCompile>
@@ -464,6 +461,12 @@
     </ClCompile>
     <ClCompile Include="..\shared_engine\sys_in_joystick.cpp">
       <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
+    <ClCompile Include="EqUI_DrvSynTimer.cpp">
+      <Filter>Файлы исходного кода\Game\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="DrvSynEqUIControls.cpp">
+      <Filter>Файлы исходного кода\Game\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -715,9 +718,6 @@
     <ClInclude Include="NetPlayer.h">
       <Filter>Файлы исходного кода\Game\Sessions</Filter>
     </ClInclude>
-    <ClInclude Include="LiteHTMLContainer.h">
-      <Filter>Файлы исходного кода\Game\UI</Filter>
-    </ClInclude>
     <ClInclude Include="EventFSM.h">
       <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClInclude>
@@ -912,6 +912,9 @@
     </ClInclude>
     <ClInclude Include="..\shared_engine\sys_in_joystick.h">
       <Filter>Файлы исходного кода\System</Filter>
+    </ClInclude>
+    <ClInclude Include="EqUI_DrvSynTimer.h">
+      <Filter>Файлы исходного кода\Game\UI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

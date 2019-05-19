@@ -38,6 +38,16 @@ enum EUIBorders
 	UI_BORDER_BOTTOM			= (1 << 3),
 };
 
+enum EUIAlignment
+{
+	UI_ALIGN_LEFT = (1 << 0),
+	UI_ALIGN_TOP = (1 << 1),
+	UI_ALIGN_RIGHT = (1 << 2),
+	UI_ALIGN_BOTTOM = (1 << 3),
+	UI_ALIGN_HCENTER = (1 << 4),
+	UI_ALIGN_VCENTER = (1 << 5),
+};
+
 enum EUIScalingMode
 {
 	UI_SCALING_NONE = 0,

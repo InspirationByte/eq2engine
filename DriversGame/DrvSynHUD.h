@@ -12,6 +12,8 @@
 #include "car.h"
 #include "materialsystem/MeshBuilder.h"
 
+#include "EqUI_DrvSynTimer.h"
+
 enum EHUDDisplayObjectFlags
 {
 	HUD_DOBJ_IS_TARGET	= (1 << 0),	// show this target on map
@@ -115,9 +117,6 @@ protected:
 
 	EScreenAlertType					m_screenAlertType;
 
-	bool								m_timeDisplayEnable;
-	double								m_timeDisplayValue;
-
 	float								m_fadeValue;
 	bool								m_fadeCurtains;
 	bool								m_faded;
@@ -130,6 +129,7 @@ protected:
 	equi::IUIControl*					m_hudDamageBar;
 	equi::IUIControl*					m_hudFelonyBar;
 	equi::IUIControl*					m_hudMap;
+	equi::DrvSynTimerElement*			m_hudTimer;
 
 	IEqModel*							m_hudModels;
 	CGameObject							m_hudObjectDummy;
