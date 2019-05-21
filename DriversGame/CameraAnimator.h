@@ -67,8 +67,6 @@ public:
 	int						GetMode() const					{return m_mode;}
 	void					SetMode( int newMode )			{m_mode = (ECameraMode)newMode;}
 
-	void					SetFreeLook(bool enable, const Vector3D& angles);
-
 	void					Update( float fDt, int nButtons, CGameObject* target);
 
 	void					SetScripted( bool enable )		{ m_scriptControl = enable; }
@@ -81,9 +79,9 @@ protected:
 
 	Vector3D				ShakeView( float fDt );
 
-	void					AnimateForObject(ECameraMode mode, int nButtons, float fDt, CGameObject* target, struct eqPhysCollisionFilter& collFilter);
+	void					AnimateForObject(ECameraMode mode, float fDt, CGameObject* target, struct eqPhysCollisionFilter& collFilter);
 
-	void					Animate(	ECameraMode mode, int nButtons,
+	void					Animate(	ECameraMode mode,
 										const Vector3D& targetOrigin,
 										const Quaternion& targetRotation,
 										const Vector3D& targetVelocity,
@@ -108,13 +106,12 @@ protected:
 	float					m_shakeDecayCurTime;
 	float					m_shakeMagnitude;
 
-	Vector3D				m_freelookAngles;
-	bool					m_freelook;
-
 	CViewParams				m_computedView;
 
 	ECameraMode				m_mode;
 	ECameraMode				m_realMode;
+
+	int						m_btns;
 	int						m_oldBtns;
 
 	bool					m_scriptControl;

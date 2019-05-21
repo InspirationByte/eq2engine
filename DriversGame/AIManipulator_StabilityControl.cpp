@@ -33,7 +33,7 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 
 	const float AI_CORRECTION_LIMIT = 0.5f;
 
-	const float AI_MAX_ANGULAR_VELOCITY_AUTOHANDBRAKE = 3.0f;
+	const float AI_MAX_ANGULAR_VELOCITY_AUTOHANDBRAKE = 1.5f;
 
 	const float AI_SPEED_CORRECTION_MINSPEED = 8.0f;	// meters per sec
 	const float AI_SPEED_CORRECTION_MAXSPEED = 25.0f;	// meters per sec

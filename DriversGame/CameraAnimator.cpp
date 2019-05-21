@@ -72,8 +72,9 @@ CCameraAnimator::CCameraAnimator() :
 	m_cameraFOV(DEFAULT_CAMERA_FOV),
 	m_scriptControl(false),
 	m_shakeDecayCurTime(0.0f),
-	m_shakeMagnitude(0.0f)
-	//m_targetForwardSpeedModifier(1.0f)
+	m_shakeMagnitude(0.0f),
+	m_oldBtns(0),
+	m_btns(0)
 {
 	m_camConfig.dist = 7.0f;
 	m_camConfig.distInCar = 7.0f;
@@ -122,6 +123,9 @@ void CCameraAnimator::Reset()
 	m_interpCamAngle = 0.0f;
 	m_scriptControl = false;
 
+	m_oldBtns = 0;
+	m_btns = 0;
+
 	m_shakeDecayCurTime = 0.0f;
 	m_shakeMagnitude = 0.0f;
 
@@ -131,16 +135,6 @@ void CCameraAnimator::Reset()
 		m_mode = CAM_MODE_OUTCAR;
 }
 
-void CCameraAnimator::SetFreeLook(bool enable, const Vector3D& angles)
-{
-	m_freelook = enable;
-
-	if (m_freelook)
-		m_freelookAngles = angles;
-	else
-		m_freelookAngles = vec3_zero;
-}
-
 void CCameraAnimator::Update( float fDt, int nButtons, CGameObject* target)
 {
 	extern ConVar r_zfar;
@@ -148,6 +142,11 @@ void CCameraAnimator::Update( float fDt, int nButtons, CGameObject* target)
 	eqPhysCollisionFilter collFilter;
 	collFilter.type = EQPHYS_FILTER_TYPE_EXCLUDE;
 	collFilter.flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
+
+	m_oldBtns = m_btns;
+
+	if(fDt > 0.0f)
+		m_btns = nButtons;
 
 	if (target)
 	{
@@ -192,15 +191,17 @@ void CCameraAnimator::Update( float fDt, int nButtons, CGameObject* target)
 				m_mode = CAM_MODE_OUTCAR;
 		}
 
-		AnimateForObject(m_mode, nButtons, fDt, target, collFilter);
+	
+		if (fDt <= 0.0f)
+			return;
+
+		AnimateForObject(m_mode, fDt, target, collFilter);
 	}
 	else
-		Animate(m_mode, nButtons, vec3_zero, Quaternion(), vec3_zero, fDt, collFilter);
-
-	m_oldBtns = nButtons;
+		Animate(m_mode, vec3_zero, Quaternion(), vec3_zero, fDt, collFilter);
 }
 
-void CCameraAnimator::AnimateForObject(ECameraMode camMode, int nButtons, float fDt, CGameObject* target, eqPhysCollisionFilter& collFilter)
+void CCameraAnimator::AnimateForObject(ECameraMode camMode, float fDt, CGameObject* target, eqPhysCollisionFilter& collFilter)
 {
 	// TODO: other control for addRot
 
@@ -224,7 +225,7 @@ void CCameraAnimator::AnimateForObject(ECameraMode camMode, int nButtons, float 
 		camOrient = Quaternion(DEG2RAD(camAngles.x), DEG2RAD(camAngles.y), DEG2RAD(camAngles.z));
 	}
 
-	Animate(camMode, nButtons, target->GetOrigin(), camOrient, target->GetVelocity(), fDt, collFilter);
+	Animate(camMode, target->GetOrigin(), camOrient, target->GetVelocity(), fDt, collFilter);
 }
 
 Vector3D CCameraAnimator::ShakeView( float fDt )
@@ -266,27 +267,21 @@ void CCameraAnimator::L_Update( float fDt, CGameObject* target )
 	collFilter.flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
 
 	if(target)
-		AnimateForObject(m_mode, 0, fDt, target, collFilter);
+		AnimateForObject(m_mode, fDt, target, collFilter);
 	else
-		Animate(CAM_MODE_TRIPOD_STATIC, 0, vec3_zero, Quaternion(), vec3_zero, fDt, collFilter);
+		Animate(CAM_MODE_TRIPOD_STATIC, vec3_zero, Quaternion(), vec3_zero, fDt, collFilter);
 }
 
 void CCameraAnimator::Animate(ECameraMode mode,
-	int nButtons,
 	const Vector3D& targetOrigin, const Quaternion& targetRotation, const Vector3D& targetVelocity,
 	float fDt,
 	eqPhysCollisionFilter& traceIgnore)
 {
 	m_realMode = mode;
 
-	if (fDt <= 0.0f)
-		return;
-
 	Vector3D shakeVec = ShakeView(fDt);
 
 	Vector3D finalTargetPos = targetOrigin;
-
-	Quaternion freelookRotation = m_freelook ? Quaternion(DEG2RAD(m_freelookAngles.x), DEG2RAD(m_freelookAngles.y), DEG2RAD(m_freelookAngles.z)) : identity();
 
 	Vector3D targetForward = rotateVector(vec3_forward, targetRotation);
 	Vector3D targetSide = rotateVector(vec3_right, targetRotation);
@@ -322,13 +317,12 @@ void CCameraAnimator::Animate(ECameraMode mode,
 	{
 		Vector3D desiredLookAngle(0.0f);
 
-		if (nButtons & IN_LOOKLEFT)
+		if (m_btns & IN_LOOKLEFT)
 			desiredLookAngle.y = -90.0f;
-		else if (nButtons & IN_LOOKRIGHT)
+		else if (m_btns & IN_LOOKRIGHT)
 			desiredLookAngle.y = 90.0f;
 
-		if (m_freelook)
-			desiredLookAngle += m_freelookAngles;
+		desiredLookAngle += m_rotation;
 
 		Vector3D fLookAngleDiff = AnglesDiff(m_interpLookAngle, desiredLookAngle);
 
@@ -336,7 +330,7 @@ void CCameraAnimator::Animate(ECameraMode mode,
 		m_interpLookAngle = NormalizeAngles180(m_interpLookAngle);
 	}
 
-	bool bLookBack = (nButtons & IN_LOOKLEFT) && (nButtons & IN_LOOKRIGHT);
+	bool bLookBack = (m_btns & IN_LOOKLEFT) && (m_btns & IN_LOOKRIGHT);
 
 	Vector3D cam_vec = cross(vec3_up, targetForward);
 

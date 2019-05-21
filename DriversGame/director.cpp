@@ -104,6 +104,19 @@ void Director_MouseMove( int x, int y, float deltaX, float deltaY  )
 	}
 }
 
+void Director_GetNewCameraProps(replayCamera_t* cam)
+{
+	cam->fov = g_freeCamProps.fov;
+	cam->origin = g_freeCamProps.position;
+	cam->type = g_nDirectorCameraType;
+
+	
+	if (Director_FreeCameraActive())
+		cam->rotation = g_freeCamProps.angles;
+	else
+		cam->rotation = g_pCameraAnimator->GetAngles();	// only update given angles
+}
+
 void Director_KeyPress(int key, bool down)
 {
 	if(!Director_IsActive())
@@ -117,9 +130,12 @@ void Director_KeyPress(int key, bool down)
 	}
 	else if(key == KEY_BACKSPACE)
 	{
-		//sys_timescale.GetFloat();
 		sys_timescale.SetFloat( down ? DIRECTOR_FASTFORWARD_TIMESCALE : 1.0f );
 	}
+
+	// only execute director actions on pause
+	if (!g_pause.GetBool())
+		return;
 
 	if(down)
 	{
@@ -134,16 +150,13 @@ void Director_KeyPress(int key, bool down)
 		int highTick = nextCamera ? nextCamera->startTick : totalTicks;
 		int lowTick = prevCamera ? prevCamera->startTick : 0;
 
-		if(key == KEY_ADD)
+		// execute actions only on when paused playback
+		if (key == KEY_ADD)
 		{
 			replayCamera_t cam;
-
-			cam.fov = g_freeCamProps.fov;
-			cam.origin = g_freeCamProps.position;
-			cam.rotation = g_freeCamProps.angles;
-			cam.startTick = g_replayData->m_tick;
 			cam.targetIdx = viewedObject->m_replayID;
-			cam.type = g_nDirectorCameraType;
+			cam.startTick = g_replayData->m_tick;
+			Director_GetNewCameraProps(&cam);
 
 			int camIndex = g_replayData->AddCamera(cam);
 			g_replayData->m_currentCamera = camIndex;
@@ -151,70 +164,64 @@ void Director_KeyPress(int key, bool down)
 			// set camera after keypress
 			g_freecam.SetBool(false);
 
-			g_State_Game->DoCameraUpdates(0.1f);
-
-			Msg("Add camera at tick %d\n", cam.startTick);
+			Msg("New camera at %d\n", cam.startTick);
 		}
-		else if(key == KEY_KP_ENTER)
+		else if (key == KEY_KP_ENTER)
 		{
-			if(currentCamera && g_pause.GetBool())
+			if (currentCamera)
 			{
-				Msg("Set camera\n");
-				currentCamera->fov = g_freeCamProps.fov;
-				currentCamera->origin = g_freeCamProps.position;
-				currentCamera->rotation = g_freeCamProps.angles;
+				Msg("Update camera at %d\n", currentCamera->startTick);
+
 				currentCamera->targetIdx = viewedObject->m_replayID;
-				currentCamera->type = g_nDirectorCameraType;
+				Director_GetNewCameraProps(currentCamera);
 
 				g_freecam.SetBool(false);
-
-				g_State_Game->DoCameraUpdates(0.1f);
 			}
 		}
-		else if(key == KEY_DELETE)
+		else if (key == KEY_DELETE)
 		{
-			if(replayCamera >= 0 && g_replayData->m_cameras.numElem())
+			if (replayCamera >= 0 && g_replayData->m_cameras.numElem())
 			{
 				g_replayData->m_cameras.removeIndex(replayCamera);
 				g_replayData->m_currentCamera--;
 			}
 		}
-		else if(key == KEY_SPACE)
+		else if (key == KEY_SPACE)
 		{
-			//Msg("Add camera keyframe\n");
+			// TODO: add keyframe
 		}
-		else if(key >= KEY_1 && key <= KEY_5)
+		else if (key >= KEY_1 && key <= KEY_5)
 		{
 			g_nDirectorCameraType = key - KEY_1;
 		}
-		else if(key == KEY_PGUP)
+		else if (key == KEY_PGUP)
 		{
-			if(g_replayData->m_cameras.inRange(replayCamera+1) && g_pause.GetBool())
+			if (g_replayData->m_cameras.inRange(replayCamera + 1))
 				g_replayData->m_currentCamera++;
 		}
-		else if(key == KEY_PGDN)
+		else if (key == KEY_PGDN)
 		{
-			if(g_replayData->m_cameras.inRange(replayCamera-1) && g_pause.GetBool())
+			if (g_replayData->m_cameras.inRange(replayCamera - 1))
 				g_replayData->m_currentCamera--;
 		}
-		else if(key == KEY_LEFT)
+		else if (key == KEY_LEFT)
 		{
-			if(currentCamera && g_pause.GetBool())
+			if (currentCamera)
 			{
 				currentCamera->startTick -= g_director_ShiftKey ? 10 : 1;
 
-				if(currentCamera->startTick < lowTick)
+				if (currentCamera->startTick < lowTick)
 					currentCamera->startTick = lowTick;
 			}
 
 		}
-		else if(key == KEY_RIGHT)
+		else if (key == KEY_RIGHT)
 		{
-			if(currentCamera && g_pause.GetBool())
+			if (currentCamera)
 			{
 				currentCamera->startTick += g_director_ShiftKey ? 10 : 1;
 
-				if(currentCamera->startTick > highTick)
+				if (currentCamera->startTick > highTick)
 					currentCamera->startTick = highTick;
 			}
 		}
@@ -348,7 +355,6 @@ DECLARE_CMD(director_pick_ray, "Director mode - picks object with ray", 0)
 	if(pickedCar != nullptr)
 	{
 		g_pGameSession->SetViewObject( pickedCar );
-		g_State_Game->DoCameraUpdates(0.1f);
 	}
 }
 

@@ -1132,7 +1132,17 @@ void CState_Game::DoGameFrame(float fDt)
 	g_pGameSession->UpdateLocalControls( g_nClientButtons, g_joySteeringValue, g_joyAccelBrakeValue );
 	g_pGameSession->Update(fDt);
 
-	DoCameraUpdates( fDt );
+	float cameraFrameTimes = fDt;
+
+	// director camera is updated in real time
+	if (Director_IsActive())
+	{
+		cameraFrameTimes = g_pHost->GetSysFrameTime();
+		const float minCameraFrameTime = (1.0f / 60.0f);
+		cameraFrameTimes = max(cameraFrameTimes, minCameraFrameTime);
+	}
+
+	DoCameraUpdates(cameraFrameTimes);
 
 	// render all
 	RenderMainView3D( fDt );
@@ -1150,16 +1160,17 @@ bool GotFreeLook()
 
 void CState_Game::DoCameraUpdates( float fDt )
 {
-	int camControls = (g_replayData->m_state == REPL_PLAYING) ? 0 : g_nClientButtons;
+	int camControls = g_nClientButtons;
+
+	if (g_replayData->m_state == REPL_PLAYING)
+		camControls &= ~IN_CHANGECAM;
 
 	CViewParams* curView = g_pGameWorld->GetView();
 
 	if( Director_FreeCameraActive() )
 	{
 		float cameraFrameTimes = g_pHost->GetSysFrameTime();
-
 		const float minCameraFrameTime = (1.0f / 60.0f);
-
 		cameraFrameTimes = max(cameraFrameTimes, minCameraFrameTime);
 
 		Director_UpdateFreeCamera(cameraFrameTimes);
@@ -1182,6 +1193,12 @@ void CState_Game::DoCameraUpdates( float fDt )
 				viewObject = g_pGameSession->GetViewObject();
 			}
 
+			if (!GotFreeLook())
+				g_freeLookAngles = vec3_zero;
+
+			Vector3D lookAngles = g_freeLookAngles;
+
+			// apply cameras from replays
 			if(g_replayData->m_state == REPL_PLAYING && g_replayData->m_cameras.numElem() > 0)
 			{
 				// replay controls camera
@@ -1197,19 +1214,17 @@ void CState_Game::DoCameraUpdates( float fDt )
 						viewObject = cameraCar;
 
 						g_pCameraAnimator->SetMode( (ECameraMode)replCamera->type );
-						g_pCameraAnimator->SetOrigin( replCamera->origin );
-						g_pCameraAnimator->SetAngles( replCamera->rotation );
-						g_pCameraAnimator->SetFOV( replCamera->fov );
+						g_pCameraAnimator->SetFOV(replCamera->fov);
 
-						g_pCameraAnimator->Update(fDt, 0, viewObject);
+						g_pCameraAnimator->SetOrigin( replCamera->origin );
+
+						if (!GotFreeLook())
+							lookAngles = replCamera->rotation;
 					}
 				}
 			}
 
-			if (!GotFreeLook())
-				g_freeLookAngles = vec3_zero;
-
-			g_pCameraAnimator->SetFreeLook(GotFreeLook(), g_freeLookAngles);
+			g_pCameraAnimator->SetAngles(lookAngles);
 
 			/*
 			if( viewObject && viewObject->GetPhysicsBody() )
