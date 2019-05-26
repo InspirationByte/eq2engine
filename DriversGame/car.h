@@ -495,6 +495,11 @@ public:
 	float					GetSpeedWheels() const;
 	float					GetSpeed() const;
 
+	bool					IsAccelerating() const;
+	bool					IsBraking() const;
+	bool					IsHandbraking() const;
+	bool					IsBurningOut() const;
+
 	bool					IsAlive() const;
 	bool					IsFlippedOver( bool checkWheels = false ) const;
 	bool					IsInWater() const;
@@ -724,6 +729,11 @@ OOLUA_PROXY(CCar, CGameObject)
 
 	OOLUA_MFUNC_CONST(GetSpeed)
 	OOLUA_MFUNC_CONST(GetSpeedWheels)
+
+	OOLUA_MFUNC_CONST(IsAccelerating)
+	OOLUA_MFUNC_CONST(IsBraking)
+	OOLUA_MFUNC_CONST(IsHandbraking)
+	OOLUA_MFUNC_CONST(IsBurningOut)
 
 	OOLUA_MFUNC(Enable)
 	OOLUA_MFUNC_CONST(IsEnabled)

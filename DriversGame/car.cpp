@@ -3855,6 +3855,28 @@ float CCar::GetSpeed() const
 	return length(carBody->GetLinearVelocity().xz()) * MPS_TO_KPH;
 }
 
+bool CCar::IsAccelerating() const
+{
+	return (GetSpeedWheels() > 0 ? (m_accelRatio > 0) : (m_brakeRatio > 0)) || IsBurningOut();
+}
+
+bool CCar::IsBraking() const
+{
+	return GetSpeedWheels() > 0 ? (m_brakeRatio > 0) : (m_accelRatio > 0);
+}
+
+bool CCar::IsHandbraking() const
+{
+	int controlButtons = GetControlButtons();
+	return (controlButtons & IN_HANDBRAKE);
+}
+
+bool CCar::IsBurningOut() const
+{
+	int controlButtons = GetControlButtons();
+	return (controlButtons & IN_BURNOUT);
+}
+
 float CCar::GetRPM() const
 {
 	return fabs(float(m_radsPerSec) * ( 60.0f / ( 2.0f * PI_F ) ) );
@@ -4614,6 +4636,10 @@ OOLUA_EXPORT_FUNCTIONS_CONST(
 	GetSpeedWheels,
 	GetLateralSliding,
 	GetTractionSliding,
+	IsAccelerating,
+	IsBraking,
+	IsHandbraking,
+	IsBurningOut,
 	IsLocked,
 	IsEnabled,
 	GetPursuedCount,
