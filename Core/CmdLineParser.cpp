@@ -108,7 +108,7 @@ void CommandLineParse::ExecuteCommandLine(unsigned int CmdFilterFlags/* = -1*/) 
 
 	g_sysConsole->ClearCommandBuffer();
 
-	for (int i = 0; i < GetArgumentCount();i++ )
+	for (int i = 0; i < GetArgumentCount(); i++ )
 	{
 		const char* argStr = m_args[i].c_str();
 
@@ -117,9 +117,7 @@ void CommandLineParse::ExecuteCommandLine(unsigned int CmdFilterFlags/* = -1*/) 
 
 		EqString cmdStr(argStr + 1);
 		cmdStr.Append(' ');
-		cmdStr.Append('\"');
 		cmdStr.Append( GetArgumentsOf(i) );
-		cmdStr.Append('\"');
 
 		g_sysConsole->AppendToCommandBuffer( cmdStr.c_str() );
 	}
@@ -168,7 +166,9 @@ const char* CommandLineParse::GetArgumentsOf(int paramIndex) const
 		if(i > paramIndex+1)
 			_tmpArguments.Append(' ');
 
+		_tmpArguments.Append('\"');
 		_tmpArguments.Append(m_args[i]);
+		_tmpArguments.Append('\"');
 	}
 
 	return _tmpArguments.c_str();
