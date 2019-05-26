@@ -228,7 +228,7 @@ void CAIPursuerCar::OnPrePhysicsFrame( float fDt )
 {
 	BaseClass::OnPrePhysicsFrame(fDt);
 
-	UpdateTarget();
+	UpdateTarget(fDt);
 
 	if(	IsAlive() && !m_enabled)
 	{
@@ -380,6 +380,8 @@ void CAIPursuerCar::BeginPursuit( float delay )
 		SetPursuitTarget(nullptr);
 		return;
 	}
+
+	m_lastSeenTargetTimer = 0.0f;
 
 	PursuerData_t& targetPursuerData = m_target->GetPursuerData();
 
@@ -678,7 +680,7 @@ void CAIPursuerCar::UpdateInfractions(CCar* car, bool passive)
 	}
 }
 
-bool CAIPursuerCar::UpdateTarget()
+bool CAIPursuerCar::UpdateTarget(float fDt)
 {
 	if (!m_target)
 		return false;
@@ -739,14 +741,17 @@ bool CAIPursuerCar::UpdateTarget()
 			m_angry = true;
 
 		pursuerData.lastSeenTimer = 0.0f;
+		m_lastSeenTargetTimer = 0.0f;
 	}
 	else // check the timers
 	{
+		m_lastSeenTargetTimer += fDt;
+
 		float distToTarget = length(m_target->GetOrigin() - GetOrigin());
 
 		float timeToLostTarget = (distToTarget > AI_COP_LOST_TARGET_FARDIST) ? AI_COP_TIME_TO_LOST_TARGET_FAR : AI_COP_TIME_TO_LOST_TARGET;
 
-		if (pursuerData.lastSeenTimer > timeToLostTarget)
+		if (pursuerData.lastSeenTimer > timeToLostTarget || m_lastSeenTargetTimer > timeToLostTarget)
 		{
 			EndPursuit(false);
 			return false;

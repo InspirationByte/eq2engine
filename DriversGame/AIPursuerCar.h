@@ -68,7 +68,7 @@ protected:
 	bool				Speak( const char* soundName, CCar* target, bool force = false );
 
 	void				DoPoliceLoudhailer();
-	bool				UpdateTarget();
+	bool				UpdateTarget(float fDt);
 
 	void				SpeakTargetDirection(const char* startSoundName, bool force = false);
 
@@ -82,6 +82,7 @@ protected:
 	EPursuerAIType			m_type;
 
 	CCar*					m_target;
+	float					m_lastSeenTargetTimer;
 
 	float					m_alterSirenChangeTime;
 	bool					m_sirenAltered;
