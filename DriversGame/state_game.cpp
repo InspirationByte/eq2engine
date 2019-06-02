@@ -352,6 +352,8 @@ CState_Game* g_State_Game = new CState_Game();
 CState_Game::CState_Game() : CBaseStateHandler()
 {
 	m_uiLayout = nullptr;
+	m_loadingScreen = nullptr;
+
 	m_replayMode = REPLAY_MODE_NONE;
 	m_isGameRunning = false;
 	m_fade = 1.0f;
@@ -372,6 +374,8 @@ CState_Game::~CState_Game()
 
 void CState_Game::LoadGame()
 {
+
+
 	while(m_isLoading != -1)
 	{
 		if (!DoLoadingFrame()) // actual level loading happened here
@@ -606,6 +610,12 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 		m_uiLayout->AddChild(m_menuDummy);
 	}
 
+	m_loadingScreen = equi::Manager->CreateElement("Panel");
+
+	kvkeybase_t loadingKvs;
+
+	if (KV_LoadFromFile("resources/loadingscreen.res", SP_MOD, &loadingKvs))
+		m_loadingScreen->InitFromKeyValues(&loadingKvs);
 }
 
 bool CState_Game::DoLoadingFrame()
@@ -676,6 +686,9 @@ void CState_Game::OnLeave( CBaseStateHandler* to )
 
 	delete m_uiLayout;
 	m_uiLayout = m_menuDummy = nullptr;
+
+	delete m_loadingScreen;
+	m_loadingScreen = nullptr;
 
 	if(!g_pGameSession)
 		return;
@@ -755,8 +768,11 @@ void CState_Game::DrawLoadingScreen()
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
 	materials->Setup2D(screenSize.x, screenSize.y);
-	g_pShaderAPI->Clear( true,true, false );
 
+	m_loadingScreen->SetSize(screenSize);
+	m_loadingScreen->Render();
+
+	/*
 	IEqFont* font = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD+TEXT_STYLE_ITALIC);
 
 	const wchar_t* loadingStr = LocalizedString("#GAME_IS_LOADING");
@@ -776,6 +792,8 @@ void CState_Game::DrawLoadingScreen()
 	offs *= 1.5f;
 
 	font->RenderText(loadingStr, Vector2D(100 + offs,screenSize.y - 100), param);
+	*/
+	
 }
 
 void CState_Game::OnLoadingDone()

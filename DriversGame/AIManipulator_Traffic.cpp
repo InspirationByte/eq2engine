@@ -823,7 +823,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 			const Vector3D& velocity = forwardCars[i]->GetVelocity();
 
-			if (dot(fastNormalize(velocity), -carForward) > 0.4f)
+			if (dot(fastNormalize(velocity), -carForward) > 5.0f)
 			{
 				float distBetweenCars = distance(carTracePos, forwardCars[i]->GetOrigin());
 
@@ -835,6 +835,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 			}
 		}
 
+		// yield ongoing traffic
 		if (nearestOppositeMovingCar)
 		{
 			debugoverlay->Line3D(carTracePos, startPos, ColorRGBA(1,0,0,1), ColorRGBA(1, 0, 0, 1), fDt);

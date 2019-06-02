@@ -171,7 +171,6 @@ bool CState_Title::Update( float fDt )
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
 	materials->Setup2D(screenSize.x, screenSize.y);
-	g_pShaderAPI->Clear( true,true, false, ColorRGBA(0));
 
 	if(m_titleText)
 		m_titleText->SetTextColor(titleTextCol);

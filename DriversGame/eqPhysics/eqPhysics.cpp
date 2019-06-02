@@ -1069,8 +1069,10 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 
 		// clear contact pairs and results
 		body->ClearContacts();
-
 		IntegrateSingle(body);
+
+		// set for collision detection
+		body->UpdateBoundingBoxTransform();
 	}
 
 	// update the controllers
@@ -1107,6 +1109,9 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 
 		for (int j = 0; j < body->m_contactPairs.numElem(); j++)
 			ProcessContactPair(body->m_contactPairs[j]);
+
+		// set after collisions processed
+		body->UpdateBoundingBoxTransform();
 	}
 
 	// execute post simulation callbacks
@@ -1652,27 +1657,46 @@ void UTIL_DebugDrawOBB(const FVector3D& pos, const Vector3D& mins, const Vector3
 
 void CEqPhysics::DebugDrawBodies(int mode)
 {
-	for(int i = 0; i < m_dynObjects.numElem(); i++)
+	if (mode >= 1 && mode != 4)
 	{
-		Matrix4x4 mat(m_dynObjects[i]->GetOrientation());
-
-		ColorRGBA bodyCol = ColorRGBA(0.2, 1, 1, 0.1f);
-
-		if(m_dynObjects[i]->IsFrozen())
-			bodyCol = ColorRGBA(0.2, 1, 0.1f, 0.1f);
-
-		UTIL_DebugDrawOBB(m_dynObjects[i]->GetPosition(),m_dynObjects[i]->m_aabb.minPoint, m_dynObjects[i]->m_aabb.maxPoint, mat, bodyCol);
-	}
-
-	if(mode >= 2)
-		m_grid.DebugRender();
-
-	if(mode >= 3)
-	{
-		for(int i = 0; i < m_staticObjects.numElem(); i++)
+		for (int i = 0; i < m_dynObjects.numElem(); i++)
 		{
-			Matrix4x4 mat(m_staticObjects[i]->GetOrientation());
-			UTIL_DebugDrawOBB(m_staticObjects[i]->GetPosition(),m_staticObjects[i]->m_aabb.minPoint, m_staticObjects[i]->m_aabb.maxPoint, mat, ColorRGBA(1, 1, 0.2, 0.1f));
+			CEqRigidBody* body = m_dynObjects[i];
+
+			Matrix4x4 mat(body->GetOrientation());
+
+			ColorRGBA bodyCol = ColorRGBA(0.2, 1, 1, 0.1f);
+
+			if (body->IsFrozen())
+				bodyCol = ColorRGBA(0.2, 1, 0.1f, 0.1f);
+
+			UTIL_DebugDrawOBB(body->GetPosition(), body->m_aabb.minPoint, body->m_aabb.maxPoint, mat, bodyCol);
+		}
+
+		if (mode >= 2)
+			m_grid.DebugRender();
+
+		if (mode >= 3)
+		{
+			for (int i = 0; i < m_staticObjects.numElem(); i++)
+			{
+				Matrix4x4 mat(m_staticObjects[i]->GetOrientation());
+				UTIL_DebugDrawOBB(m_staticObjects[i]->GetPosition(), m_staticObjects[i]->m_aabb.minPoint, m_staticObjects[i]->m_aabb.maxPoint, mat, ColorRGBA(1, 1, 0.2, 0.1f));
+			}
+		}
+	}
+	else
+	{
+		for (int i = 0; i < m_dynObjects.numElem(); i++)
+		{
+			CEqRigidBody* body = m_dynObjects[i];
+
+			ColorRGBA bodyCol = ColorRGBA(0.2, 1, 1, 1.0f);
+
+			if (body->IsFrozen())
+				bodyCol = ColorRGBA(0.2, 1, 0.1f, 1.0f);
+
+			debugoverlay->Box3D(body->m_aabb_transformed.minPoint, body->m_aabb_transformed.maxPoint, bodyCol, 0.0f);
 		}
 	}
 }

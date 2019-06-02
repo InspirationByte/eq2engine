@@ -34,7 +34,7 @@
 
 #define IN_FREELOOK			(1 << 17)
 
-#define IN_MISC				(IN_LOOKLEFT | IN_LOOKRIGHT | IN_CHANGECAM | IN_FORWARD | IN_BACKWARD | IN_LEFT | IN_RIGHT)
+#define IN_MISC				(IN_LOOKLEFT | IN_LOOKRIGHT | IN_CHANGECAM | IN_FORWARD | IN_BACKWARD | IN_LEFT | IN_RIGHT | IN_FREELOOK)
 
 extern int		g_nClientButtons;
 extern float	g_joySteeringValue;

@@ -375,8 +375,6 @@ void CEqCollisionObject::ConstructRenderMatrix( Matrix4x4& outMatrix )
 		Matrix4x4 rotation = Matrix4x4(m_orientation);
 		m_cachedTransform = translate(Vector3D(m_position)) * rotation;
 		m_cachedTransformDirty = false;
-
-		UpdateBoundingBoxTransform();
 	}
 
 	outMatrix = m_cachedTransform;

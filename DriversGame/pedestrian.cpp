@@ -11,8 +11,7 @@
 
 #define PED_MODEL "models/characters/ped1.egf"
 
-const float PEDESTRIAN_RADIUS = 0.35f;
-const float PEDESTRIAN_HEIGHT = 0.85f;
+const float PEDESTRIAN_RADIUS = 0.85f;
 
 CPedestrian::CPedestrian() : CPedestrian(nullptr)
 {
@@ -57,7 +56,7 @@ void CPedestrian::Spawn()
 	SetModel(PED_MODEL);
 
 	m_physBody = new CEqRigidBody();
-	m_physBody->Initialize(PEDESTRIAN_RADIUS, PEDESTRIAN_HEIGHT);
+	m_physBody->Initialize(PEDESTRIAN_RADIUS);
 
 	m_physBody->SetCollideMask(COLLIDEMASK_DEBRIS);
 	m_physBody->SetContents(OBJECTCONTENTS_VEHICLE);
@@ -69,7 +68,7 @@ void CPedestrian::Spawn()
 	m_physBody->SetMass(85.0f);
 	m_physBody->SetFriction(0.0f);
 	m_physBody->SetRestitution(0.0f);
-	m_physBody->SetAngularFactor(vec3_up);
+	m_physBody->SetAngularFactor(vec3_zero);
 	m_physBody->m_erp = 0.15f;
 	
 	m_physBody->SetUserData(this);
@@ -156,6 +155,9 @@ void CPedestrian::Simulate(float fDt)
 		m_physBody->ApplyLinearForce(preferredMove * m_physBody->GetMass());
 	}
 
+	//if ((controlButtons & IN_HANDBRAKE) && !(m_oldControlButtons & IN_HANDBRAKE))
+	//	m_physBody->ApplyLinearImpulse(vec3_up*100.0f);
+
 	if (controlButtons)
 		m_physBody->TryWake(false);
 	
@@ -185,7 +187,7 @@ void CPedestrian::Simulate(float fDt)
 
 void CPedestrian::UpdateTransform()
 {
-	Vector3D offset(vec3_up*PEDESTRIAN_HEIGHT);
+	Vector3D offset(vec3_up*PEDESTRIAN_RADIUS);
 
 	// refresh it's matrix
 	m_worldMatrix = translate(m_vecOrigin - offset)*rotateXYZ4(DEG2RAD(m_vecAngles.x), DEG2RAD(m_vecAngles.y), DEG2RAD(m_vecAngles.z));
