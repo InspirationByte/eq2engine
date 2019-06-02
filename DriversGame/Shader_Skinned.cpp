@@ -42,6 +42,8 @@ BEGIN_SHADER_CLASS(Skinned)
 		if(SHADER_PASS(Ambient))
 			return true;
 
+		SHADER_PARAM_BOOL(AlphaSelfIllumination, m_alphaSelfIllum, false);
+
 		//------------------------------------------
 		// begin shader definitions
 		//------------------------------------------
@@ -52,6 +54,9 @@ BEGIN_SHADER_CLASS(Skinned)
 
 		// alphatesting
 		SHADER_DECLARE_SIMPLE_DEFINITION((m_nFlags & MATERIAL_FLAG_ALPHATESTED), "ALPHATEST");
+
+		// define specular usage
+		SHADER_DECLARE_SIMPLE_DEFINITION(m_alphaSelfIllum, "ALPHASELFILLUMINATION")
 
 		// compile without fog
 		SHADER_FIND_OR_COMPILE(Ambient, "Skinned");
@@ -122,6 +127,8 @@ BEGIN_SHADER_CLASS(Skinned)
 	ITexture*	GetBumpTexture(int stage)	{ return NULL; }
 
 	ITexture*			m_pBaseTexture;
+
+	bool				m_alphaSelfIllum;
 
 	SHADER_DECLARE_PASS(Ambient);
 	SHADER_DECLARE_FOGPASS(Ambient);
