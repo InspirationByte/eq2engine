@@ -306,6 +306,7 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 			wconf.flags = (bDriveWheel ? WHEEL_FLAG_DRIVE : 0) | (bHandbrakeWheel ? WHEEL_FLAG_HANDBRAKE : 0) | (bSteerWheel ? WHEEL_FLAG_STEER : 0);
 			wconf.springConst = KV_GetValueFloat(pWheelKv->FindKeyBase("SuspensionSpringConstant"), 0, 100.0f);
 			wconf.dampingConst = KV_GetValueFloat(pWheelKv->FindKeyBase("SuspensionDampingConstant"), 0, 50.0f);
+			wconf.camber = KV_GetValueFloat(pWheelKv->FindKeyBase("CamberAngle"), 0, 10.0f);
 			wconf.suspensionTop = suspensiontop;
 			wconf.suspensionBottom = suspensionbottom;
 			wconf.brakeTorque = KV_GetValueFloat(pWheelKv->FindKeyBase("BrakeTorque"), 0, 100.0f);
@@ -1309,6 +1310,8 @@ void CCar::UpdateVehiclePhysics(float delta)
 	bool bBurnout = false;
 	bool bExtendTurn = false;
 
+	bool needsWake = false;
+
 	if( m_enabled )
 	{
 		if( isCar )
@@ -1330,11 +1333,10 @@ void CCar::UpdateVehiclePhysics(float delta)
 	else
 		fHandbrake = 1;
 
-	if(controlButtons != m_oldControlButtons)
-		carBody->TryWake(false);
+	int controlsChanged = controlButtons & m_oldControlButtons;
 
-	if(carBody->IsFrozen() && !bBurnout)
-		return;
+	if (controlButtons != m_oldControlButtons && !((controlsChanged & IN_HORN) || (controlsChanged & IN_SIREN)))
+		needsWake = true;
 
 	if(controlButtons & IN_EXTENDTURN )
 		bExtendTurn = true;
@@ -1402,6 +1404,31 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 	m_steering = clamp(m_steering, -steer_clamp, steer_clamp);
 
+	// kick in wake
+	if (needsWake)
+		carBody->TryWake(false);
+
+	int wheelCount = GetWheelCount();
+
+	for (int i = 0; i < wheelCount; i++)
+	{
+		CCarWheel& wheel = m_wheels[i];
+		carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
+
+		float camberAngle = sign(wheelConf.suspensionTop.x) * ((wheel.m_collisionInfo.fract - 0.75f) * wheelConf.camber);
+
+		wheel.m_wheelOrient = rotateZ3(DEG2RAD(camberAngle));
+
+		if (wheelConf.flags & WHEEL_FLAG_STEER)
+		{
+			float fWheelSteerAngle = DEG2RAD(m_steering*40) * wheelConf.steerMultipler;
+			wheel.m_wheelOrient = rotateY3(fWheelSteerAngle) * wheel.m_wheelOrient;
+		}
+	}
+
+	if (carBody->IsFrozen() && !bBurnout)
+		return;
+
 	int numDriveWheels = 0;
 	int numHandbrakeWheelsOnGround = 0;
 	int numDriveWheelsOnGround = 0;
@@ -1416,7 +1443,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	collFilter.flags = EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC;
 	collFilter.AddObject(carBody);
 
-	int wheelCount = GetWheelCount();
+	
 
 	// Raycast the wheels and do some simple calculations
 	for(int i = 0; i < wheelCount; i++)
@@ -1730,16 +1757,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 		bool isSteerWheel = (wheelConf.flags & WHEEL_FLAG_STEER) > 0;
 		bool isHandbrakeWheel = (wheelConf.flags & WHEEL_FLAG_HANDBRAKE) > 0;
 
-		wheel.m_wheelOrient = identity3();
-
-		float fWheelSteerAngle = 0.0f;
-
-		if(isSteerWheel)
-		{
-			fWheelSteerAngle = DEG2RAD(m_steering*40) * wheelConf.steerMultipler;
-			wheel.m_wheelOrient = rotateY3( fWheelSteerAngle );
-		}
-
 		// apply car rays
 		Vector3D line_start = (m_worldMatrix*Vector4D(wheelConf.suspensionTop, 1)).xyz();
 		Vector3D line_end = (m_worldMatrix*Vector4D(wheelConf.suspensionBottom, 1)).xyz();
@@ -1875,8 +1892,8 @@ void CCar::UpdateVehiclePhysics(float delta)
 				{
 					float fSlipAngle = -atan2f( dot(wheelSlipForceDir,  wheelVelAtPoint ), fabs( dot(wheelForward, wheelVelAtPoint ) ) ) ;
 
-					if(wheelPitchSpeed > 0.1f)
-						fSlipAngle += fWheelSteerAngle*0.5f;
+					if(isSteerWheel && wheelPitchSpeed > 0.1f)
+						fSlipAngle += m_steering * wheelConf.steerMultipler * 0.35f;
 
 					wheelSlipOppositeForce = DBSlipAngleToLateralForce( fSlipAngle, fLongitudinalForce, wheel.m_surfparam);
 				}

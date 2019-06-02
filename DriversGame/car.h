@@ -137,6 +137,7 @@ struct carWheelConfig_t
 	float				dampingConst;
 	float				width;
 	float				radius;
+	float				camber;
 
 	float				woffset;
 	float				visualTop;
