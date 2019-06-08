@@ -756,19 +756,76 @@ void CGameWorld::Init()
 
 	m_envTransitionTime = 0.0f;
 	m_envMapRegenTime = 0.0f;
+
+#ifndef NO_LUA
+	{
+		OOLUA::Script& state = GetLuaState();
+		EqLua::LuaStackGuard g(state);
+
+		OOLUA::Table tab = OOLUA::new_table(state);
+		EqLua::LuaCallUserdataCallback(g_pGameWorld, "Init", tab);
+	}
+#endif // NO_LUA
 }
 
-void CGameWorld::AddObject(CGameObject* pObject, bool spawned)
+void CGameWorld::OnObjectSpawnedEvent(CGameObject* obj)
 {
-	if(!spawned)
+#ifndef NO_LUA
+	// call world's event
 	{
-		m_nonSpawnedObjects.append(pObject);
+		OOLUA::Script& state = GetLuaState();
+		EqLua::LuaStackGuard g(state);
+
+		OOLUA::Table tab = OOLUA::new_table(state);
+		tab.set("obj", obj);
+		EqLua::LuaCallUserdataCallback(g_pGameWorld, "OnSpawned", tab);
 	}
+#endif // NO_LUA
+
+	obj->Ref_Grab();
+}
+
+void CGameWorld::OnObjectRemovedEvent(CGameObject* obj)
+{
+#ifndef NO_LUA
+	// call world's event before it's actually removed
+	{
+		OOLUA::Script& state = GetLuaState();
+		EqLua::LuaStackGuard g(state);
+
+		OOLUA::Table tab = OOLUA::new_table(state);
+		tab.set("obj", obj);
+		EqLua::LuaCallUserdataCallback(g_pGameWorld, "OnRemoved", tab);
+	}
+#endif // NO_LUA
+
+	obj->OnRemove();
+
+	if (obj->m_state != GO_STATE_REMOVED)
+		ASSERTMSG(false, "PROGRAMMER ERROR - OnRemove requires super method called.");
+
+	// object is deleted...
+	obj->Ref_Drop();
+}
+
+void CGameWorld::AddObject(CGameObject* pObject)
+{
+	bool postPronedSpawn = (pObject->m_state == GO_STATE_NOTSPAWN);
+
+	DkList<CGameObject*>& _objList = postPronedSpawn ? m_nonSpawnedObjects : m_gameObjects;
+
+	if(postPronedSpawn)
+		m_level.m_mutex.Lock();
+
+	if (_objList.findIndex(pObject) == -1)
+	{
+		_objList.append(pObject);
+	}
+
+	if (postPronedSpawn)
+		m_level.m_mutex.Unlock();
 	else
-	{
-		m_gameObjects.append( pObject );
-		pObject->Ref_Grab();
-	}
+		OnObjectSpawnedEvent(pObject);
 }
 
 void CGameWorld::RemoveObject(CGameObject* pObject)
@@ -815,6 +872,7 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 		if(m_gameObjects.fastRemove(obj))
 		{
+			// don't do OnObjectRemovedEvent
 			obj->OnRemove();
 
 			if (obj->m_state != GO_STATE_REMOVED)
@@ -1146,16 +1204,23 @@ void CGameWorld::UpdateWorld(float fDt)
 	{
 		m_level.UpdateRegions( RegionCallbackFunc );
 
+		// non-spawned objects are in locked manner
+		// because regions can push objects into m_nonSpawnedObjects
 		m_level.m_mutex.Lock();
+
+		// spawn objects
 		for(int i = 0; i < m_nonSpawnedObjects.numElem(); i++)
 		{
-			m_nonSpawnedObjects[i]->Spawn();
-			m_nonSpawnedObjects[i]->Ref_Grab();
+			CGameObject* obj = m_nonSpawnedObjects[i];
 
-			m_gameObjects.append(m_nonSpawnedObjects[i]);
-			m_nonSpawnedObjects.fastRemoveIndex(i);
-			i--;
+			obj->Spawn();
+
+			OnObjectSpawnedEvent(obj);
 		}
+
+		m_gameObjects.append(m_nonSpawnedObjects);
+		m_nonSpawnedObjects.clear();
+
 		m_level.m_mutex.Unlock();
 	}
 
@@ -1175,20 +1240,11 @@ void CGameWorld::UpdateWorld(float fDt)
 			if(!IsRemoveState(obj->m_state))
                 continue;
 
-            m_level.m_mutex.Lock();
-
-            if( m_gameObjects.fastRemove(obj) )
-            {
-                obj->OnRemove();
-
-                if (obj->m_state != GO_STATE_REMOVED)
-                    ASSERTMSG(false, "PROGRAMMER ERROR - OnRemove requires super method called.");
-
-                obj->Ref_Drop();
-                i--;
-            }
-
-            m_level.m_mutex.Unlock();
+			if (m_gameObjects.fastRemove(obj))
+			{
+				OnObjectRemovedEvent(obj);
+				i--;
+			}
 		}
 	}
 
@@ -2374,7 +2430,7 @@ CGameObject* CGameWorld::FindObjectByName( const char* objectName ) const
 	return nullptr;
 }
 
-void CGameWorld::QueryObjects(DkList<CGameObject*>& list, float radius, const Vector3D& position, bool(*comparator)(CGameObject* obj))
+void CGameWorld::QueryObjects(DkList<CGameObject*>& list, float radius, const Vector3D& position, bool(*comparator)(CGameObject* obj)) const
 {
 	for (int i = 0; i < m_gameObjects.numElem(); i++)
 	{
@@ -2439,6 +2495,58 @@ OOLUA::Table CGameWorld::L_FindObjectOnLevel( const char* name ) const
 
 	return newTable;
 }
+
+OOLUA::Table CGameWorld::L_QueryObjects(float radius, const Vector3D& position, OOLUA::Lua_func_ref compFunc) const
+{
+	OOLUA::Script& state = GetLuaState();
+	EqLua::LuaStackGuard g(state);
+
+	OOLUA::Table resultObjects = OOLUA::new_table(state);
+
+	int numObjs = 0;
+
+	for (int i = 0; i < m_gameObjects.numElem(); i++)
+	{
+		CGameObject* obj = m_gameObjects[i];
+
+		if (obj->m_state >= GO_STATE_REMOVE)
+			continue;
+
+		float dist = length(obj->GetOrigin() - position);
+
+		if (dist > radius)
+			continue;
+
+		{
+			if (!compFunc.push(state))
+				break;
+
+			if (!state.push(obj))
+				MsgError("L_QueryObjects can't push CGameObject on stack\n");
+
+			int res = lua_pcall(state, 1, 1, 0);
+
+			if (res != 0)
+			{
+				OOLUA::INTERNAL::set_error_from_top_of_stack_and_pop_the_error(state);
+				MsgError(":QueryObjects error:\n %s\n", OOLUA::get_last_error(state).c_str());
+				break;
+			}
+
+			bool compResult = false;
+			OOLUA::pull(state, compResult);
+
+			if (compResult)
+			{
+				numObjs++;
+				resultObjects.set(numObjs, obj);
+			}
+		}
+	}
+
+	return resultObjects;
+}
+
 #endif // EDITOR
 static CGameWorld s_GameWorld;
 CGameWorld*	g_pGameWorld = &s_GameWorld;
@@ -2446,7 +2554,12 @@ CGameWorld*	g_pGameWorld = &s_GameWorld;
 #ifndef NO_LUA
 
 OOLUA_EXPORT_FUNCTIONS(CGameWorld, SetEnvironmentName, SetLevelName, GetView, QueryNearestRegions, AddObjectDef, RemoveObject)
-OOLUA_EXPORT_FUNCTIONS_CONST(CGameWorld, FindObjectByName, FindObjectOnLevel, CreateGameObject, CreateObject, IsValidObject, GetEnvironmentName, GetLevelName)
+OOLUA_EXPORT_FUNCTIONS_CONST(CGameWorld, 
+	FindObjectByName, FindObjectOnLevel, 
+	CreateGameObject, CreateObject, IsValidObject, 
+	QueryObjects,
+	GetEnvironmentName,
+	GetLevelName)
 
 OOLUA_EXPORT_FUNCTIONS(CViewParams, SetOrigin, SetAngles, SetFOV)
 OOLUA_EXPORT_FUNCTIONS_CONST(CViewParams, GetOrigin, GetAngles, GetFOV)

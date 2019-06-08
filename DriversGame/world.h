@@ -117,7 +117,7 @@ public:
 	//-------------------------------------------------------------------------
 	// objects
 
-	void							AddObject(CGameObject* pObject, bool spawned = true);
+	void							AddObject(CGameObject* pObject);
 	void							RemoveObject(CGameObject* pObject);
 	bool							IsValidObject(CGameObject* pObject) const;
 
@@ -125,12 +125,13 @@ public:
 	CGameObject*					CreateObject( const char* objectDefName ) const;
 	CGameObject*					FindObjectByName( const char* objectName ) const;
 
-	void							QueryObjects(DkList<CGameObject*>& list, float radius, const Vector3D& position, bool(*comparator)(CGameObject* obj));
+	void							QueryObjects(DkList<CGameObject*>& list, float radius, const Vector3D& position, bool(*comparator)(CGameObject* obj)) const;
 
 	int								AddObjectDef(const char* type, const char* name, kvkeybase_t* kvs);
 
 #ifndef EDITOR
 	OOLUA::Table					L_FindObjectOnLevel( const char* name ) const;
+	OOLUA::Table					L_QueryObjects(float radius, const Vector3D& position, OOLUA::Lua_func_ref compFunc) const;
 #endif // EDITOR
 
 	//-------------------------------------------------------------------------
@@ -197,6 +198,10 @@ public:
 	CNetworkVar(int,				m_globalTrafficLightDirection);
 
 protected:
+
+	void							OnObjectSpawnedEvent(CGameObject* obj);
+	void							OnObjectRemovedEvent(CGameObject* obj);
+
 	// matsystem callback
 	void							OnPreApplyMaterial( IMaterial* pMaterial );
 
@@ -323,6 +328,8 @@ OOLUA_PROXY(CGameWorld)
 	OOLUA_MEM_FUNC_CONST(maybe_null<CGameObject*>, FindObjectByName, const char*)
 
 	OOLUA_MEM_FUNC_CONST_RENAME(FindObjectOnLevel, OOLUA::Table, L_FindObjectOnLevel, const char*)
+
+	OOLUA_MEM_FUNC_CONST_RENAME(QueryObjects, OOLUA::Table, L_QueryObjects, float, const Vector3D&, OOLUA::Lua_func_ref)
 
 	OOLUA_MFUNC(QueryNearestRegions)
 OOLUA_PROXY_END

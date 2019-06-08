@@ -213,7 +213,7 @@ void CGameObject::L_Activate()
 	m_scriptID = g_pGameSession->GenScriptID();
 #endif // NO_LUA
 	Spawn();
-	g_pGameWorld->AddObject( this, true );
+	g_pGameWorld->AddObject( this );
 }
 
 void  CGameObject::Remove()

@@ -931,9 +931,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 				ref->game_object = newObj;
 
 				// let the game objects to be spawned on game frame
-				m_level->m_mutex.Lock();
-				g_pGameWorld->AddObject( newObj, false );
-				m_level->m_mutex.Unlock();
+				g_pGameWorld->AddObject( newObj );
 			}
 		}
 #endif
@@ -1010,9 +1008,8 @@ void CLevelRegion::RespawnObjects()
 
 			ref->game_object = newObj;
 
-			m_level->m_mutex.Lock();
-			g_pGameWorld->AddObject( newObj, false );
-			m_level->m_mutex.Unlock();
+			// let the game objects to be spawned on game frame
+			g_pGameWorld->AddObject( newObj );
 		}
 	}
 #endif // EDITOR

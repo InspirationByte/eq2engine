@@ -2522,7 +2522,7 @@ void CCar::ReleaseHubcap(int wheel)
 	hubcapObj->m_physBody->SetOrientation( Quaternion(wheelTranslation.getRotationComponent()) );
 	hubcapObj->m_physBody->SetLinearVelocity( wdata.m_velocityVec );
 	hubcapObj->m_physBody->SetAngularVelocity( wheelTranslation.rows[0].xyz() * -sign(wheelConf.suspensionTop.x) * angularVel );
-	g_pGameWorld->AddObject(hubcapObj, true);
+	g_pGameWorld->AddObject(hubcapObj);
 
 	wdata.m_flags.lostHubcap = true;
 	wdata.m_bodyGroupFlags = (1 << wdata.m_damagedBodygroup);

@@ -206,7 +206,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 				//g_replayData->PushEvent(REPLAY_EVENT_CAR_SETCOLOR, newCar->m_replayID, (void*)(intptr_t)col_idx);
 			}
 
-			g_pGameWorld->AddObject(newCar, true);
+			g_pGameWorld->AddObject(newCar);
 
 			m_trafficCars.append(newCar);
 
@@ -289,7 +289,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 
 	pNewCar->InitAI( false ); // TODO: chance of stoped, empty and active car on parking lane
 
-	g_pGameWorld->AddObject(pNewCar, true);
+	g_pGameWorld->AddObject(pNewCar);
 
 	m_trafficCars.append(pNewCar);
 
@@ -697,7 +697,7 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 		copBlockCar->SetTorqueScale(m_copAccelerationModifier);
 		copBlockCar->SetMaxDamage(m_copMaxDamage);
 
-		g_pGameWorld->AddObject(copBlockCar, true);
+		g_pGameWorld->AddObject(copBlockCar);
 
 		float angle = 120.0f - (i % 2)*60.0f;
 

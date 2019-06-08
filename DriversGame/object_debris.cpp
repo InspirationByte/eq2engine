@@ -414,7 +414,7 @@ void CObject_Debris::BreakAndSpawnDebris()
 		part->m_physBody->SetLinearVelocity( m_physBody->GetLinearVelocity() );
 		part->m_physBody->SetAngularVelocity( m_physBody->GetAngularVelocity() );
 
-		g_pGameWorld->AddObject(part, true);
+		g_pGameWorld->AddObject(part);
 
 		part->m_smashSound = m_smashSound;
 	}
