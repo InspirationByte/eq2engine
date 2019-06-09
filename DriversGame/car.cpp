@@ -147,7 +147,7 @@ const float CAR_DEFAULT_MAX_DAMAGE		= 16.0f;
 const int SKIDMARK_MAX_LENGTH			= 256;
 const float SKIDMARK_MIN_INTERVAL		= 0.25f;
 
-const float GEARBOX_DECEL_SHIFTDOWN_FACTOR	= 0.7f;
+const float GEARBOX_DECEL_SHIFTDOWN_FACTOR	= 0.8f;
 
 const float WHELL_ROLL_RESISTANCE_CONST		= 400.0f;
 
@@ -1557,7 +1557,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		for(int i = 0; i < RPM_REFRESH_TIMES; i++)
 		{
 			if(fabs(fRPM - m_fEngineRPM) > 0.02f)
-				m_fEngineRPM += sign(fRPM - m_fEngineRPM) * 12000.0f * fDeltaRpm;
+				m_fEngineRPM += sign(fRPM - m_fEngineRPM) * 10000.0f * fDeltaRpm;
 		}
 
 		m_fEngineRPM = clamp(m_fEngineRPM, 0.0f, 10000.0f);
@@ -3762,7 +3762,7 @@ void CCar::UpdateSounds( float fDt )
 	float fEngineSoundVol = clamp((1.0f - m_engineIdleFactor), 0.45f, 1.0f);
 
 	float fRPMDiff = 1.0f;
-
+	
 	if(m_isLocalCar)
 	{
 		fRPMDiff = (GetRPM() - m_fEngineRPM);

@@ -606,6 +606,21 @@ DECLARE_CMD(force_roadblock, "Forces spawn roadblock on cur car", CV_CHEAT)
 
 IVector2D GetDirectionVec(int dirIdx);
 
+DECLARE_CMD(road_info, "Road info on player car position", CV_CHEAT)
+{
+	Vector3D carPos = g_pGameSession->GetPlayerCar()->GetOrigin();
+
+	IVector2D playerCarCell;
+	if (!g_pGameWorld->m_level.GetTileGlobal(carPos, playerCarCell))
+		return;
+
+	int curLane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(playerCarCell, 16) - 1;
+	int numLanes = g_pGameWorld->m_level.Road_GetWidthInLanesAtPoint(playerCarCell, 32, 1);
+
+	MsgInfo("Road width: %d, current lane: %d\n", numLanes, curLane);
+}
+
+
 bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 {
 	if (g_replayData->m_state == REPL_PLAYING)
@@ -638,9 +653,7 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 	IVector2D perpendicular = GetDirectionVec(startCellPlacement->direction-1);
 
 	int curLane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(placementVec, 16)-1;
-
 	placementVec -= perpendicular*curLane;
-
 	int numLanes = g_pGameWorld->m_level.Road_GetWidthInLanesAtPoint(placementVec, 32, 1);
 
 	int nCars = 0;
@@ -655,7 +668,7 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 
 	m_roadBlockPosition = placementVec;
 
-	debugoverlay->Line3D(startPos, endPos, ColorRGBA(1,0,0,1), ColorRGBA(0,1,0,1), 1000.0f);	
+	debugoverlay->Line3D(startPos + vec3_up, endPos + vec3_up, ColorRGBA(1,0,0,1), ColorRGBA(0,1,0,1), 1000.0f);
 
 	for(int i = 0; i < numLanes; i++)
 	{
@@ -666,19 +679,16 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 		CLevelRegion* pReg = NULL;
 		levroadcell_t* roadCell = g_pGameWorld->m_level.Road_GetGlobalTileAt(blockPoint, &pReg);
 
+		Vector3D gPos = g_pGameWorld->m_level.GlobalTilePointToPosition(blockPoint);
+		debugoverlay->Box3D(gPos - 0.5f, gPos + 0.5f, ColorRGBA(1, 1, 0, 0.5f), 1000.0f);
+
 		// no tile - no spawn
 		if (!pReg || !roadCell)
-		{
-			MsgError( "Can't spawn because no road\n" );
 			continue;
-		}
 
 		if (!pReg->m_isLoaded)
 			continue;
-
-		Vector3D gPos = g_pGameWorld->m_level.GlobalTilePointToPosition(blockPoint);
-
-		debugoverlay->Box3D(gPos-0.5f, gPos+0.5f, ColorRGBA(1,1,0,0.5f), 1000.0f);
+		
 		/*
 		if (roadCell->type != ROADTYPE_STRAIGHT)
 		{

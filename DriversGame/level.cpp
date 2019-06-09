@@ -1245,6 +1245,8 @@ int	CGameLevel::Road_GetWidthInLanesAtPoint( const IVector2D& point, int numIter
 		int laneDir = startCell.direction;
 		int laneRowDir = GetPerpendicularDir(startCell.direction);
 
+		int skeptLanes = 0;
+
 		for(int i = 1; i < numIterations; i++)
 		{
 			IVector2D nextPos = localPos - IVector2D(dx[laneRowDir],dy[laneRowDir])*i;//localPos + IVector2D(dx[roadDir],dy[roadDir])*i;
@@ -1266,7 +1268,7 @@ int	CGameLevel::Road_GetWidthInLanesAtPoint( const IVector2D& point, int numIter
 
 				if(iterationsOnEmpty >= 0)
 				{
-					nLanes++;
+					skeptLanes++;
 					continue;
 				}
 				else
@@ -1276,6 +1278,9 @@ int	CGameLevel::Road_GetWidthInLanesAtPoint( const IVector2D& point, int numIter
 			// only parallels
 			if( (roadCell.direction % 2) != (laneDir % 2))
 				break;
+
+			nLanes += skeptLanes;
+			skeptLanes = 0;
 
 			nLanes++;
 		}
@@ -2665,6 +2670,9 @@ IVector2D GetDirectionVec(int dirIdx)
 {
 	if(dirIdx > 3)
 		dirIdx -= 4;
+
+	if (dirIdx < 0)
+		dirIdx += 4;
 
 	int rX[4] = ROADNEIGHBOUR_OFFS_X(0);
 	int rY[4] = ROADNEIGHBOUR_OFFS_Y(0);

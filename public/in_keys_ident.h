@@ -547,6 +547,7 @@ static keyNameMap_t s_keyMapList[] =
 
 	{"GRAVE",			KEY_TILDE},
 
+#ifdef PLAT_SDL
 	{"JOY_A", KEY_JOY_A },
 	{"JOY_B", KEY_JOY_B },
 	{"JOY_X", KEY_JOY_X},
@@ -569,7 +570,7 @@ static keyNameMap_t s_keyMapList[] =
 	{"JOYAXIS_RY", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_RIGHTY },
 	{"JOYAXIS_TL", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_TRIGGERLEFT },
 	{"JOYAXIS_TR", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_TRIGGERRIGHT },
-
+#endif
 	{NULL,0}
 };
 

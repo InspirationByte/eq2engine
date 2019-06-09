@@ -1377,15 +1377,17 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 						CloseClipboard();
 #endif // PLAT_SDL
 
+						int selStart = min(m_startCursorPos, m_cursorPos);
+
 						if(m_startCursorPos != m_cursorPos)
 						{
-							int selStart = min(m_startCursorPos, m_cursorPos);
 							int selEnd = max(m_startCursorPos, m_cursorPos);
 
 							consoleRemTextInRange(selStart, selEnd - selStart);
 						}
 
-						consoleInsText((char*)tmpString.GetData(),m_cursorPos);
+						consoleInsText((char*)tmpString.GetData(), selStart);
+						m_cursorPos = selStart;
 
 						m_cursorPos += tmpString.Length();
 						m_startCursorPos = m_cursorPos;
