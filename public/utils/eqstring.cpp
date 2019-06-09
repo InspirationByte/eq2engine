@@ -549,8 +549,6 @@ EqString EqString::EatWhiteSpaces() const
 	return out;
 }
 
-#include "DebugInterface.h"
-
 EqString EqString::TrimSpaces(bool left, bool right) const
 {
 	const char* begin = m_pszString;
@@ -567,6 +565,24 @@ EqString EqString::TrimSpaces(bool left, bool right) const
 	while(end > begin && xisspace(*end))end--;
 
 	return Mid(begin-m_pszString, end-begin+1);
+}
+
+EqString EqString::TrimChar(char ch, bool left, bool right) const
+{
+	const char* begin = m_pszString;
+
+	// trim whitespace from left
+	while (*begin && *begin == ch)begin++;
+
+	if (*begin == '\0')
+		return EqString();
+
+	const char* end = begin + strlen(begin) - 1;
+
+	// trim whitespace from right
+	while (end > begin && *end == ch)end--;
+
+	return Mid(begin - m_pszString, end - begin + 1);
 }
 
 void EqString::Path_FixSlashes() const

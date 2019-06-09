@@ -199,7 +199,10 @@ bool Host_Init()
 	if(userCfgIdx != -1)
 	{
 		extern ConVar user_cfg;
-		user_cfg.SetValue( g_cmdLine->GetArgumentsOf(userCfgIdx) );
+
+		EqString cfgFileName(g_cmdLine->GetArgumentsOf(userCfgIdx));
+
+		user_cfg.SetValue(cfgFileName.TrimChar('\"').c_str());
 	}
 
 	// execute configuration files and command line after all libraries are loaded.

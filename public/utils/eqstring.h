@@ -118,6 +118,7 @@ public:
 
 	EqString	EatWhiteSpaces() const;
 	EqString	TrimSpaces(bool left = true, bool right = true) const;
+	EqString	TrimChar(char ch, bool left = true, bool right = true) const;
 
 	void		Path_FixSlashes() const;
 
