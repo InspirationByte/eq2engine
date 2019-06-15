@@ -48,13 +48,6 @@ rz90n = Matrix.Rotation(radians(-90),4,'Z')
 
 mat_BlenderToESMMirror = Matrix.Scale(-1, 4, Vector((0, 1, 0)))
 
-val_BlenderToESMScale = 1 # TODO: variable in menus
-sclX = Matrix.Scale(val_BlenderToESMScale, 4, Vector((1, 0, 0)))
-sclY = Matrix.Scale(val_BlenderToESMScale, 4, Vector((0, 1, 0)))
-sclZ = Matrix.Scale(val_BlenderToESMScale, 4, Vector((0, 0, 1)))
-
-mat_BlenderToESMScale = sclX * sclY * sclZ
-
 # ESM types
 REF = 0x1 		# body, model
 REF_ADD = 0x2 	# bodygroup, lod model
@@ -307,11 +300,11 @@ except:
 		
 def getUpAxisMat(axis):
 	if axis.upper() == 'X':
-		return Matrix.Rotation(pi/2,4,'Y')
+		return Matrix.Rotation(pi/2,4,'Y').inverted() * mat_BlenderToESMMirror
 	if axis.upper() == 'Y':
-		return Matrix.Rotation(pi/2,4,'X')
+		return Matrix.Rotation(pi/2,4,'X').inverted() * mat_BlenderToESMMirror
 	if axis.upper() == 'Z':
-		return Matrix.Rotation(0,4,'Z')
+		return Matrix.Rotation(0,4,'Z').inverted() * mat_BlenderToESMMirror
 	else:
 		raise AttributeError("getUpAxisMat got invalid axis argument '{}'".format(axis))
 
@@ -1192,6 +1185,30 @@ class ESMImporter(bpy.types.Operator):
 #	Export routines
 #----------------------------------------------------------------------------------------------------
 
+def getBoneDeformParent( posebone ):
+	parent = posebone.parent
+	# Skip over any non-deforming parents
+	while parent:
+		if parent.bone.use_deform:
+			break
+		parent = parent.parent
+		
+	return parent
+
+def getLocalBoneMatrix( posebone, worldMat ):
+	# Get the bone's Matrix from the current pose
+	bone = posebone.bone
+	parent_posebone = getBoneDeformParent(posebone)
+
+	mat = posebone.matrix
+
+	if parent_posebone:
+		mat = parent_posebone.matrix.inverted() * mat
+	else:
+		mat = worldMat * mat
+
+	return mat
+
 # nodes block
 def writeBones(quiet=False):
 
@@ -1210,8 +1227,8 @@ def writeBones(quiet=False):
 
 	# remove any non-keyframed positions
 	for posebone in ESM.a.pose.bones:
-		posebone.matrix_basis.identity()
-		
+		#posebone.matrix_basis.identity()
+
 		# mute all pose constraints
 		for con in posebone.constraints:
 			con.mute = True
@@ -1222,38 +1239,21 @@ def writeBones(quiet=False):
 	bpy.ops.object.mode_set(mode='POSE')
 	
 	armatureWorld = ESM.a.matrix_world
+	
+	# empty rest pose matrices
+	ESM.restPoseMatrices = []
 
 	for posebone in ESM.a.pose.bones:
 		if not posebone.bone.use_deform: continue
 
-		parent = posebone.parent	
-		# Skip over any non-deforming parents
-		while parent:
-			if parent.bone.use_deform:
-				break
-			parent = parent.parent
+		parent = getBoneDeformParent(posebone)
+		localBoneMatrix = getLocalBoneMatrix(posebone, armatureWorld)
 
-		# Get the bone's Matrix from the current pose
-		localBoneMatrix = posebone.matrix
-
-		if parent:
-			parentMat = parent.matrix
-			localBoneMatrix = parentMat.inverted() * localBoneMatrix
-		else:
-			localBoneMatrix = armatureWorld * localBoneMatrix
-
-
+		# store rest pose matrix for inverse transform on writeFrames()
 		ESM.restPoseMatrices.append(localBoneMatrix)
-
 			
 		# Get position
 		pos = localBoneMatrix.to_translation()
-
-		# Apply armature scale
-		#if posebone.parent: # already applied to root bones
-		#	scale = armatureWorld.to_scale()
-		#	for j in range(3):
-		#		pos[j] *= scale[j]
 
 		# Get Rotation
 		rot = localBoneMatrix.to_euler()
@@ -1261,7 +1261,7 @@ def writeBones(quiet=False):
 		# Construct the string
 		pos_str = rot_str = ""
 		for j in [0,1,2]:
-			pos_str += " " + getESMFloat(pos[j]*val_BlenderToESMScale)
+			pos_str += " " + getESMFloat(pos[j])
 			rot_str += " " + getESMFloat(rot[j])
 			
 		bone_name = posebone.bone.get('ESM_name')
@@ -1315,7 +1315,7 @@ def writeFrames():
 
 	# remove any non-keyframed positions
 	for posebone in ESM.a.pose.bones:
-		posebone.matrix_basis.identity()
+		#posebone.matrix_basis.identity()
 		
 		# mute all pose constraints
 		# fixme: what if it's enabled?
@@ -1351,35 +1351,14 @@ def writeFrames():
 		for posebone in ESM.a.pose.bones:
 			if not posebone.bone.use_deform: continue
 	
-			parent = posebone.parent	
-			# Skip over any non-deforming parents
-			while parent:
-				if parent.bone.use_deform:
-					break
-				parent = parent.parent
-
-			# Get the bone's Matrix from the current pose
-			localBoneMatrix = posebone.matrix
-			
-			if parent:
-				parentMat = parent.matrix
-				localBoneMatrix = parentMat.inverted() * localBoneMatrix
-			else:
-				localBoneMatrix = armatureWorld * localBoneMatrix
+			localBoneMatrix = getLocalBoneMatrix(posebone, armatureWorld)
 				
 			# convert to local transformation
-			localBoneMatrix = ESM.restPoseMatrices[boneId].inverted() * localBoneMatrix
-				
+			localBoneMatrix = ESM.restPoseMatrices[boneId].inverted() * localBoneMatrix	
 			boneId += 1
-
+		
 			# Get position
 			pos = localBoneMatrix.to_translation()
-
-			# Apply armature scale
-			#if posebone.parent: # already applied to root bones
-			#	scale = armatureWorld.to_scale()
-			#	for j in range(3):
-			#		pos[j] *= scale[j]
 
 			# Get Rotation
 			rot = localBoneMatrix.to_euler()
@@ -1387,11 +1366,14 @@ def writeFrames():
 			# HACK: this is a weird rotation fix and you should get rid of it
 			rot[1] = -rot[1] # Y
 			rot[2] = -rot[2] # Z
+			
+			# FIXME: MAY BE WRONG
+			pos[0] = -pos[0] # X pos
 
 			# Construct the string
 			pos_str = rot_str = ""
 			for j in [0,1,2]:
-				pos_str += " " + getESMFloat(pos[j]*val_BlenderToESMScale)
+				pos_str += " " + getESMFloat(pos[j])
 				rot_str += " " + getESMFloat(rot[j])
 	
 			# Write!
@@ -1506,10 +1488,10 @@ def writePolys(internal=False):
 
 			norm = v.normal if poly.use_smooth else poly.normal
 			
-			norm = (getUpAxisMat(bpy.context.scene.ESM_up_axis).inverted() * mat_BlenderToESMMirror * Matrix.Translation(norm)).to_translation();
+			norm = (getUpAxisMat(bpy.context.scene.ESM_up_axis) * Matrix.Translation(norm)).to_translation();
 
 			for j in range(3):
-				loc += " " + getESMFloat(pos[j] * val_BlenderToESMScale)
+				loc += " " + getESMFloat(pos[j])
 				norms += " " + getESMFloat(norm[j])
 
 			# UVs
@@ -1634,7 +1616,7 @@ def writeShapes(cur_shape = 0):
 					cos = norms = ""
 					
 					norm = shape_vert.normal
-					norm = (getUpAxisMat(bpy.context.scene.ESM_up_axis).inverted() * mat_BlenderToESMMirror * Matrix.Translation(shape_vert.normal)).to_translation();
+					norm = (getUpAxisMat(bpy.context.scene.ESM_up_axis) * Matrix.Translation(shape_vert.normal)).to_translation();
 					
 					for i in range(3):
 						cos += " " + getESMFloat(shape_vert.co[i])
@@ -1778,7 +1760,7 @@ def bakeObj(in_object):
 				for posebone in baked.pose.bones: posebone.matrix_basis.identity()
 
 				bpy.ops.object.transform_apply(location=True,scale=True,rotation=True)
-				baked.data.transform(getUpAxisMat(bpy.context.scene.ESM_up_axis).inverted() * mat_BlenderToESMMirror)
+				baked.data.transform(getUpAxisMat(bpy.context.scene.ESM_up_axis))
 				
 			elif obj.type in mesh_compatible:
 				has_edge_split = False
@@ -1897,7 +1879,7 @@ def bakeObj(in_object):
 				
 			if baked.type == 'MESH': # don't apply to armatures (until/unless actions are baked too)
 				bpy.ops.object.transform_apply(location=True,scale=True,rotation=True)
-				baked.data.transform(getUpAxisMat(bpy.context.scene.ESM_up_axis).inverted() * mat_BlenderToESMMirror)
+				baked.data.transform(getUpAxisMat(bpy.context.scene.ESM_up_axis))
 		if ESM.jobType == FLEX:
 			removeObject(obj)
 		return baked
@@ -2432,11 +2414,13 @@ class ESMExporter(bpy.types.Operator):
 				ob.data.ESM_action_selection = 'CURRENT'
 			props.exportMode = 'SINGLE'
 
-		print("\nESM EXPORTER RUNNING")
+		print("\nESM EXPORTER RUNNING, mode:", props.exportMode)
 		prev_active_ob = context.active_object
+		
 		if prev_active_ob and prev_active_ob.type == 'ARMATURE':
 			prev_bone_selection = bpy.context.selected_pose_bones
 			prev_active_bone = context.active_bone
+			
 		prev_selection = context.selected_objects
 		prev_visible = [] # visible_objects isn't useful due to layers
 		for ob in context.scene.objects:
