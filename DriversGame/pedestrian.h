@@ -54,6 +54,8 @@ protected:
 	CEqRigidBody*		m_physBody;
 	bool				m_onGround;
 
+	int					m_pedState;
+
 };
 
 #endif // PEDESTRIAN_H

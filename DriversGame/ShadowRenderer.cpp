@@ -433,16 +433,6 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 {
 	IEqModel* model = object->GetModel();
 	
-	/*
-	IMaterial* rtMaterial = m_matSimple;
-
-	if(mode == RSHADOW_CAR)
-		rtMaterial = m_matVehicle;
-	else if(mode == RSHADOW_SKIN)
-		rtMaterial = m_matSkinned;
-	*/
-	//materials->SetCullMode(CULL_FRONT);
-
 	materials->SetInstancingEnabled(false);
 	// force disable vertex buffer
 	g_pShaderAPI->SetVertexBuffer( NULL, 2 );
@@ -513,9 +503,9 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 			}
 			else if (mode == RSHADOW_SKIN)
 			{
-				CAnimatingEGF* animating = (CAnimatingEGF*)object;
+				CAnimatingEGF* animating = dynamic_cast<CAnimatingEGF*>(object);
 
-				Matrix4x4* bones = nullptr;//animating->GetBoneMatrices();
+				Matrix4x4* bones = animating->GetBoneMatrices();
 
 				materials->SetSkinningEnabled(true);
 

@@ -13,14 +13,16 @@
 
 const float PEDESTRIAN_RADIUS = 0.85f;
 
-CPedestrian::CPedestrian() : CPedestrian(nullptr)
-{
-}
-
-CPedestrian::CPedestrian(kvkeybase_t* kvdata) : CGameObject(), CAnimatingEGF()
+CPedestrian::CPedestrian() : CGameObject(), CAnimatingEGF()
 {
 	m_physBody = nullptr;
 	m_onGround = false;
+	m_pedState = 0;
+}
+
+CPedestrian::CPedestrian(kvkeybase_t* kvdata) : CPedestrian()
+{
+
 }
 
 CPedestrian::~CPedestrian()
@@ -70,6 +72,7 @@ void CPedestrian::Spawn()
 	m_physBody->SetRestitution(0.0f);
 	m_physBody->SetAngularFactor(vec3_zero);
 	m_physBody->m_erp = 0.15f;
+	m_physBody->SetGravity(18.0f);
 	
 	m_physBody->SetUserData(this);
 
@@ -82,7 +85,7 @@ void CPedestrian::Spawn()
 
 void CPedestrian::ConfigureCamera(cameraConfig_t& conf, eqPhysCollisionFilter& filter) const
 {
-	conf.dist = 4.8f;
+	conf.dist = 3.8f;
 	conf.height = 1.0f;
 	conf.distInCar = 0.0f;
 	conf.widthInCar = 0.0f;
@@ -105,7 +108,7 @@ void CPedestrian::Draw(int nRenderFlags)
 const float ACCEL_RATIO = 12.0f;
 const float DECEL_RATIO = 25.0f;
 
-const float MAX_WALK_VELOCITY = 3.2f;
+const float MAX_WALK_VELOCITY = 1.5f;
 const float MAX_RUN_VELOCITY = 9.0f;
 
 void CPedestrian::Simulate(float fDt)
@@ -137,7 +140,7 @@ void CPedestrian::Simulate(float fDt)
 	Activity bestMoveActivity = (controlButtons & IN_BURNOUT) ? ACT_RUN : ACT_WALK;
 	float bestMaxSpeed = (bestMoveActivity == ACT_RUN) ? MAX_RUN_VELOCITY : MAX_WALK_VELOCITY;
 
-	//if (m_onGround)
+	if (fDt > 0.0f)
 	{
 		if (length(velocity) < bestMaxSpeed)
 		{
@@ -155,9 +158,6 @@ void CPedestrian::Simulate(float fDt)
 		m_physBody->ApplyLinearForce(preferredMove * m_physBody->GetMass());
 	}
 
-	//if ((controlButtons & IN_HANDBRAKE) && !(m_oldControlButtons & IN_HANDBRAKE))
-	//	m_physBody->ApplyLinearImpulse(vec3_up*100.0f);
-
 	if (controlButtons)
 		m_physBody->TryWake(false);
 	
@@ -167,17 +167,40 @@ void CPedestrian::Simulate(float fDt)
 	if (controlButtons & IN_TURNRIGHT)
 		m_vecAngles.y -= 120.0f * fDt;
 
+	if (controlButtons & IN_BURNOUT)
+		m_pedState = 1;
+	else if (controlButtons & IN_EXTENDTURN)
+		m_pedState = 2;
+	else if (controlButtons & IN_HANDBRAKE)
+		m_pedState = 0;
+
+	Activity idleAct = ACT_IDLE;
+
+	if (m_pedState == 1)
+	{
+		idleAct = ACT_IDLE_WPN;
+	}
+	else if (m_pedState == 2)
+	{
+		idleAct = ACT_IDLE_CROUCH;
+	}
+	else
+		m_pedState = 0;
+
 	Activity currentAct = GetCurrentActivity();
 
-	SetPlaybackSpeedScale(length(velocity) / bestMaxSpeed);
+	if (currentAct != idleAct)
+		SetPlaybackSpeedScale(length(velocity) / bestMaxSpeed);
+	else
+		SetPlaybackSpeedScale(1.0f);
 
 	if (length(velocity.xz()) > 0.5f)
 	{
 		if (currentAct != bestMoveActivity)
 			SetActivity(bestMoveActivity);
 	}
-	else if(currentAct != ACT_IDLE)
-		SetActivity(ACT_IDLE);
+	else if(currentAct != idleAct)
+		SetActivity(idleAct);
 
 	AdvanceFrame(fDt);
 	DebugRender(m_worldMatrix);
