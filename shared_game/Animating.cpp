@@ -16,7 +16,9 @@
 #include "IEqModel.h"
 
 ConVar r_debug_ik("r_debug_ik", "0", "Draw debug information about Inverse Kinematics", CV_CHEAT);
-ConVar r_debug_showskeletons("r_debug_showskeletons", "0", "Draw debug information about skeletons", CV_CHEAT);
+ConVar r_debug_skeleton("r_debug_skeleton", "0", "Draw debug information about bones", CV_CHEAT);
+
+ConVar r_debug_showbone("r_debug_showbone", "-1", "Shows the bone", CV_CHEAT);
 
 ConVar r_ik_iterations("r_ik_iterations", "100", "IK link iterations per update", CV_ARCHIVE);
 
@@ -787,12 +789,21 @@ void CAnimatingEGF::RecalcBoneTransforms(bool storeTransitionFrames /*= false*/)
 
 void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 {
-	if (!r_debug_showskeletons.GetBool())
+	if (!r_debug_skeleton.GetBool())
 		return;
 
 	// setup each bone's transformation
 	for (int i = 0; i < m_numBones; i++)
 	{
+		if (r_debug_showbone.GetInt() == i)
+		{
+			Matrix4x4& transform = m_boneTransforms[i];
+			const Vector3D& localPos = transform.rows[3].xyz();
+			Vector3D pos = (worldTransform*Vector4D(localPos, 1.0f)).xyz();
+
+			debugoverlay->Text3D(pos, 25, color4_white, 0.0f, "%s\npos: [%.2f %.2f %.2f]", m_joints[i].name, localPos.x, localPos.y, localPos.z);
+		}
+
 		if (m_joints[i].parentbone != -1)
 		{
 			Matrix4x4& transform = m_boneTransforms[i];
