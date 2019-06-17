@@ -17,7 +17,7 @@ CUI_RoadEditor::CUI_RoadEditor( wxWindow* parent) : wxPanel( parent, -1, wxDefau
 	
 	fgSizer5->Add( new wxStaticText( this, wxID_ANY, wxT("Type (T)"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
 	
-	wxString m_typeSelChoices[] = { wxT("Straight"), wxT("Junction"), wxT("Parking lot") };
+	wxString m_typeSelChoices[] = { wxT("Straight"), wxT("Junction"), wxT("Parking lot"), wxT("Pavement") };
 	int m_typeSelNChoices = sizeof( m_typeSelChoices ) / sizeof( wxString );
 	m_typeSel = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxSize( 100,-1 ), m_typeSelNChoices, m_typeSelChoices, 0 );
 	m_typeSel->SetSelection( 0 );
@@ -47,6 +47,7 @@ CUI_RoadEditor::CUI_RoadEditor( wxWindow* parent) : wxPanel( parent, -1, wxDefau
 	m_trafficDir = NULL;
 	m_trafficDirVar = NULL;
 	m_trafficParking = NULL;
+	m_pavement = NULL;
 }
 
 CUI_RoadEditor::~CUI_RoadEditor()
@@ -211,7 +212,7 @@ void CUI_RoadEditor::OnKey(wxKeyEvent& event, bool bDown)
 		{
 			m_type += 1;
 
-			if(m_type > 3)
+			if(m_type > 4)
 				m_type = 1;
 
 			SetRoadType(m_type);
@@ -268,6 +269,9 @@ void CUI_RoadEditor::OnRender()
 		DkList<Vertex3D_t> parking_verts(64);
 		parking_verts.resize(field->m_sizew*field->m_sizeh*6);
 
+		DkList<Vertex3D_t> pavement_verts(64);
+		pavement_verts.resize(field->m_sizew*field->m_sizeh * 6);
+
 		for(int x = 0; x < field->m_sizew; x++)
 		{
 			for(int y = 0; y < field->m_sizeh; y++)
@@ -319,6 +323,13 @@ void CUI_RoadEditor::OnRender()
 					tileColor.x = 1.0f;
 					ListQuadTex(p1, p2, p3, p4, cell->direction, tileColor, parking_verts);
 				}
+				else if (cell->type == ROADTYPE_PAVEMENT)
+				{
+					tileColor.x = 1.0f;
+					tileColor.y = 1.0f;
+					tileColor.z = 1.0f;
+					ListQuadTex(p1, p2, p3, p4, cell->direction, tileColor, pavement_verts);
+				}
 			}
 		}
 
@@ -349,6 +360,9 @@ void CUI_RoadEditor::OnRender()
 		
 		if(parking_verts.numElem())
 			materials->DrawPrimitivesFFP(PRIM_TRIANGLES, parking_verts.ptr(), parking_verts.numElem(), m_trafficParking->GetBaseTexture(), color4_white, &blend, &depth, &raster);
+
+		if (pavement_verts.numElem())
+			materials->DrawPrimitivesFFP(PRIM_TRIANGLES, pavement_verts.ptr(), pavement_verts.numElem(), m_pavement->GetBaseTexture(), color4_white, &blend, &depth, &raster);
 	}
 
 	CBaseTilebasedEditor::OnRender();
@@ -359,19 +373,30 @@ void CUI_RoadEditor::InitTool()
 	m_trafficDir = materials->GetMaterial("traffic_dir");
 	m_trafficDirVar = materials->GetMaterial("traffic_dir_variant");
 	m_trafficParking = materials->GetMaterial("traffic_dir_parking");
+	m_pavement = materials->GetMaterial("pavement");
 
 	materials->PutMaterialToLoadingQueue(m_trafficDir);
 	materials->PutMaterialToLoadingQueue(m_trafficDirVar);
 	materials->PutMaterialToLoadingQueue(m_trafficParking);
+	materials->PutMaterialToLoadingQueue(m_pavement);
 
 	m_trafficDir->Ref_Grab();
 	m_trafficDirVar->Ref_Grab();
 	m_trafficParking->Ref_Grab();
+	m_pavement->Ref_Grab();
 }
 
 void CUI_RoadEditor::ReloadTool()
 {
 
+}
+
+void CUI_RoadEditor::ShutdownTool()
+{
+	materials->FreeMaterial(m_trafficDir);
+	materials->FreeMaterial(m_trafficDirVar);
+	materials->FreeMaterial(m_trafficParking);
+	materials->FreeMaterial(m_pavement);
 }
 
 void CUI_RoadEditor::Update_Refresh()

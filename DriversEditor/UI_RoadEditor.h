@@ -36,6 +36,7 @@ public:
 
 	void						InitTool();
 	void						ReloadTool();
+	void						ShutdownTool();
 
 	void						Update_Refresh();
 
@@ -54,6 +55,7 @@ protected:
 	IMaterial*					m_trafficDir;
 	IMaterial*					m_trafficDirVar;
 	IMaterial*					m_trafficParking;
+	IMaterial*					m_pavement;
 };
 
 #endif // UI_ROADEDITOR
