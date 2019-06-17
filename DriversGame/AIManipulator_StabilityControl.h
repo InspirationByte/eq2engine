@@ -15,11 +15,15 @@ class CCar;
 class CAIStabilityControlManipulator
 {
 public:
-	CAIStabilityControlManipulator() {}
+	CAIStabilityControlManipulator();
 
 	void UpdateAffector(ai_handling_t& handling, CCar* car, float fDt);
 
 	ai_handling_t m_initialHandling;
+
+private:
+	float		m_inAirTime;
+	float		m_landingCooldown;
 };
 
 #endif // AIMANIPULATOR_STABILITYCONTROL_H

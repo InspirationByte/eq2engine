@@ -57,7 +57,7 @@ const float AI_COP_BECOME_ANGRY_FELONY		 = 0.65f;
 const float AI_ALTER_SIREN_MIN_SPEED		= 65.0f;
 const float AI_ALTER_SIREN_CHANGETIME		= 2.0f;
 
-const float AI_CHASER_MAX_DISTANCE = 40.0f;
+const float AI_CHASER_MAX_DISTANCE = 50.0f;
 
 const float AI_ANGRY_ACTIVE_TIME = 5.0f;
 

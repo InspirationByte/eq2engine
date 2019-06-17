@@ -22,6 +22,8 @@ DECLARE_CMD(replay_debug_stop, "stops playback (debug)", CV_CHEAT)
 	g_replayData->m_state = REPL_NONE;
 }
 
+ConVar replay_realtime_pursuer("replay_realtime_pursuer", "0", "Cancels replay control for pursuer cars, ideal for AI debugging", CV_CHEAT);
+
 // sort events in right order
 int _sortEventsFunc(const replayEvent_t& a, const replayEvent_t& b)
 {
@@ -344,6 +346,14 @@ void CReplayData::PlayVehicleFrame(replayCarStream_t* rep)
 	rep->curr_frame++;
 
 	CCar* car = rep->obj_car;
+
+	// disable correction for pursuer, debug only
+	if (replay_realtime_pursuer.GetBool() && car->ObjType() == GO_CAR_AI)
+	{
+		CAITrafficCar* trafficCar = (CAITrafficCar*)car;
+		if (trafficCar->IsPursuer())
+			return;
+	}
 
 	CEqRigidBody* body = car->GetPhysicsBody();
 

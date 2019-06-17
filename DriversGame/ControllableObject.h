@@ -14,6 +14,7 @@ class CControllableObject
 {
 public:
 	CControllableObject();
+	virtual ~CControllableObject() {}
 
 	virtual void	SetControlButtons(int flags);
 	virtual int		GetControlButtons() const;

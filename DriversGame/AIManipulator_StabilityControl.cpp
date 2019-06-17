@@ -10,6 +10,15 @@
 
 ConVar ai_debug_stability("ai_debug_stability", "0");
 
+const float AI_STABILITY_MIN_INAIR_TIME = 0.15f;
+const float AI_STABILITY_LANDING_COOLDOWN = 0.5f;
+
+CAIStabilityControlManipulator::CAIStabilityControlManipulator()
+{
+	m_landingCooldown = 0.0f;
+	m_inAirTime = 0.0f;
+}
+
 void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, float fDt)
 {
 	const float lateralSliding = car->GetLateralSlidingAtWheels(true);
@@ -41,12 +50,14 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 	const float AI_SPEED_CORRECTION_MAXSPEED = 25.0f;	// meters per sec
 	const float AI_SPEED_CORRECTION_INITIAL = 0.25f;
 
-	if (carSpeedMPS > AI_SPEED_CORRECTION_MINSPEED && !m_initialHandling.autoHandbrake)
+	if (carSpeedMPS > AI_SPEED_CORRECTION_MINSPEED)// && !m_initialHandling.autoHandbrake)
 	{
 		float counterSteeringScale = angularVelocity.y + m_initialHandling.steering;
 		float brakingFac = 1.0f - m_initialHandling.braking;
 
-		if(fabs(counterSteeringScale)*brakingFac > AI_MAX_ANGULAR_VELOCITY_AUTOHANDBRAKE)
+		handling.autoHandbrake = m_initialHandling.autoHandbrake;
+
+		if (fabs(counterSteeringScale)*brakingFac > AI_MAX_ANGULAR_VELOCITY_AUTOHANDBRAKE)
 			handling.autoHandbrake = false;
 
 		// calculate amounts of stability control
@@ -58,7 +69,31 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 		float correctionFactor = RemapVal(carSpeedMPS, AI_SPEED_CORRECTION_MINSPEED, AI_SPEED_CORRECTION_MAXSPEED, AI_SPEED_CORRECTION_INITIAL, 1.0f);
 
 		handling.steering *= correctionFactor;
+		handling.acceleration *= correctionFactor;
 	}
 	else
-		handling.autoHandbrake = fabs(m_initialHandling.steering) > AI_AUTOHANDBRAKE_STEERING_PERCENTAGE;
+		handling.autoHandbrake = false;//fabs(m_initialHandling.steering) > AI_AUTOHANDBRAKE_STEERING_PERCENTAGE;
+
+	// add to stability
+	if (!car->IsAnyWheelOnGround())
+	{
+		m_inAirTime += fDt;
+	}
+	else
+	{
+		// if our car were in air, add some steering reducing
+		if (m_inAirTime > AI_STABILITY_MIN_INAIR_TIME)
+			m_landingCooldown = AI_STABILITY_LANDING_COOLDOWN;
+
+		m_inAirTime = 0.0f;
+	}
+
+	m_landingCooldown -= fDt;
+
+	if (m_landingCooldown < 0.0f)
+		m_landingCooldown = 0.0f;
+
+	float landingSteeringPercentage = 1.0f - (m_landingCooldown / AI_STABILITY_LANDING_COOLDOWN);
+
+	handling.steering *= landingSteeringPercentage;
 }
