@@ -71,6 +71,8 @@ public:
 	void						Init();
 	void						Shutdown();
 
+	void						InitialSpawnCars(const Vector3D& spawnOrigin);
+
 	void						UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity);
 	void						UpdateCopStuff(float fDt);
 
@@ -130,7 +132,7 @@ protected:
 	
 	void						RemoveTrafficCar(CCar* car);
 
-	void						CircularSpawnTrafficCars( int x0, int y0, int radius );
+	int							CircularSpawnTrafficCars( int x0, int y0, int radius );
 
 	DkList<civCarEntry_t>		m_civCarEntries;
 

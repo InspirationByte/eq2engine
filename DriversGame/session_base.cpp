@@ -136,8 +136,19 @@ void CGameSessionBase::Init()
 	m_missionStatus = MIS_STATUS_INGAME;
 }
 
-extern ConVar sys_maxfps;
+void CGameSessionBase::OnLoadingDone()
+{
+	if (IsServer())
+	{
+		// spawn cars around
+		CCar* leadCar = GetLeadCar();
 
+		if (leadCar)
+			g_pAIManager->InitialSpawnCars(leadCar->GetOrigin());
+	}
+}
+
+extern ConVar sys_maxfps;
 
 float CGameSessionBase::LoadCarReplay(CCar* pCar, const char* filename)
 {

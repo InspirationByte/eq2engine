@@ -53,6 +53,8 @@ public:
 	virtual void				Init();
 	virtual void				Shutdown();
 
+	virtual void				OnLoadingDone();
+
 	int							GetPhysicsIterations() const;
 	vehicleConfig_t*			FindCarEntryByName(const char* name) const;
 

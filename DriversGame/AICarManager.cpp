@@ -15,6 +15,7 @@
 
 ConVar g_trafficMaxCars("g_trafficMaxCars", "48", "Maximum traffic cars", CV_CHEAT);
 
+ConVar g_traffic_initial_mindist("g_traffic_initial_mindist", "15", "Min traffic car distance to spawn", CV_CHEAT);
 ConVar g_traffic_mindist("g_traffic_mindist", "50", "Min traffic car distance to spawn", CV_CHEAT);
 ConVar g_traffic_maxdist("g_traffic_maxdist", "51", "Max traffic car distance, to disappear", CV_CHEAT);
 
@@ -94,6 +95,9 @@ void CAICarManager::Init()
 	m_roadBlockSpawnedCount = 0;
 	m_enableTrafficCars = true;
 	m_enableCops = true;
+
+	m_leadVelocity = vec3_zero;
+	m_leadPosition = vec3_zero;
 
 	for (int i = 0; i < PURSUER_TYPE_COUNT; i++)
 		m_copCarName[i] = "";
@@ -317,13 +321,15 @@ void CAICarManager::QueryTrafficCars(DkList<CCar*>& list, float radius, const Ve
 	}
 }
 
-void CAICarManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
+int CAICarManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
 {
 	int f = 1 - radius;
 	int ddF_x = 0;
 	int ddF_y = -2 * radius;
 	int x = 0;
 	int y = radius;
+
+	int count = 0;
 	
 	while (x < y)
 	{
@@ -338,20 +344,22 @@ void CAICarManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
 		ddF_x += 2;
 		f += ddF_x + 1;
 
-		SpawnTrafficCar(IVector2D(x0 + x, y0 + y));
-		SpawnTrafficCar(IVector2D(x0 - x, y0 + y));
-		SpawnTrafficCar(IVector2D(x0 + x, y0 - y));
-		SpawnTrafficCar(IVector2D(x0 - x, y0 - y));
-		SpawnTrafficCar(IVector2D(x0 + y, y0 + x));
-		SpawnTrafficCar(IVector2D(x0 - y, y0 + x));
-		SpawnTrafficCar(IVector2D(x0 + y, y0 - x));
-		SpawnTrafficCar(IVector2D(x0 - y, y0 - x));
+		count += SpawnTrafficCar(IVector2D(x0 + x, y0 + y)) != nullptr;
+		count += SpawnTrafficCar(IVector2D(x0 - x, y0 + y)) != nullptr;
+		count += SpawnTrafficCar(IVector2D(x0 + x, y0 - y)) != nullptr;
+		count += SpawnTrafficCar(IVector2D(x0 - x, y0 - y)) != nullptr;
+		count += SpawnTrafficCar(IVector2D(x0 + y, y0 + x)) != nullptr;
+		count += SpawnTrafficCar(IVector2D(x0 - y, y0 + x)) != nullptr;
+		count += SpawnTrafficCar(IVector2D(x0 + y, y0 - x)) != nullptr;
+		count += SpawnTrafficCar(IVector2D(x0 - y, y0 - x)) != nullptr;
 	}
 
-	SpawnTrafficCar(IVector2D(x0, y0 + radius));
-	SpawnTrafficCar(IVector2D(x0, y0 - radius));
-	SpawnTrafficCar(IVector2D(x0 + radius, y0));
-	SpawnTrafficCar(IVector2D(x0 - radius, y0));
+	count += SpawnTrafficCar(IVector2D(x0, y0 + radius)) != nullptr;
+	count += SpawnTrafficCar(IVector2D(x0, y0 - radius)) != nullptr;
+	count += SpawnTrafficCar(IVector2D(x0 + radius, y0)) != nullptr;
+	count += SpawnTrafficCar(IVector2D(x0 - radius, y0)) != nullptr;
+
+	return count;
 }
 
 void CAICarManager::RemoveTrafficCar(CCar* car)
@@ -459,6 +467,28 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 	}
 
 	CircularSpawnTrafficCars(spawnCenterCell.x, spawnCenterCell.y, g_traffic_mindist.GetInt());
+}
+
+void CAICarManager::InitialSpawnCars(const Vector3D& spawnOrigin)
+{
+	if (g_replayData->m_state == REPL_PLAYING)
+		return;
+
+	IVector2D spawnCenterCell;
+	if (!g_pGameWorld->m_level.GetTileGlobal(spawnOrigin, spawnCenterCell))
+		return;
+
+	int count = 0;
+
+	//for (int i = 0; i < g_trafficMaxCars.GetInt(); i++)
+	{
+		for (int r = g_traffic_initial_mindist.GetInt(); r < g_traffic_mindist.GetInt(); r+=2)
+		{
+			count += CircularSpawnTrafficCars(spawnCenterCell.x, spawnCenterCell.y, r);
+		}
+	}
+
+	MsgWarning("InitialSpawnCars: spawned %d cars\n", count);
 }
 
 void CAICarManager::UpdateNavigationVelocityMap(float fDt)

@@ -809,10 +809,12 @@ void CState_Game::OnLoadingDone()
 		m_gameMenuName = "Replay";
 
 	m_isGameRunning = true;
+
 	g_sounds->SetPaused(false);
 	g_sounds->Set2DChannelsVolume(CHAN_STREAM, 1.0f);
-}
 
+	g_pGameSession->OnLoadingDone();
+}
 
 //-------------------------------------------------------------------------------
 // Game frame step along with rendering
