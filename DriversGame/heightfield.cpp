@@ -959,6 +959,18 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 			}
 		}
 	}
+
+	// check the batches and remove if empty
+	for (int i = 0; i < batches.numElem(); i++)
+	{
+		// validate batch
+		if (batches[i]->indices.numElem() == 0)
+		{
+			delete batches[i];
+			batches.removeIndex(i);
+			i--;
+		}
+	}
 }
 
 void ListQuad(const Vector3D &v1, const Vector3D &v2, const Vector3D& v3, const Vector3D& v4, const ColorRGBA &color, DkList<Vertex3D_t> &verts)

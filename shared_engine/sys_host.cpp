@@ -409,63 +409,6 @@ void InputCommands_SDL(SDL_Event* event)
 		{
 			CEqGameControllerSDL::ProcessEvent(event);
 		}
-
-		/*
-		case SDL_JOYAXISMOTION:
-		{
-
-			g_pHost->TrapJoyAxis_Event(event->jaxis.axis, event->jaxis.value);
-			break;
-		}
-		case SDL_JOYHATMOTION:
-		{
-			if(in_joy_debug.GetBool())
-			{
-				Msg("Joystick %d hat %d value:",
-					event->jhat.which, event->jhat.hat+1);
-			}
-
-			if (event->jhat.value == SDL_HAT_CENTERED)
-				Msg(" centered\n");
-			if (event->jhat.value & SDL_HAT_UP)
-				Msg(" up\n");
-			if (event->jhat.value & SDL_HAT_RIGHT)
-				Msg(" right\n");
-			if (event->jhat.value & SDL_HAT_DOWN)
-				Msg(" down\n");
-			if (event->jhat.value & SDL_HAT_LEFT)
-				Msg(" left\n");
-
-			// g_pHost->TrapJoyHat_Event(event->jaxis.axis, event->jaxis.value);
-		}
-        case SDL_JOYBALLMOTION:
-		{
-			if(in_joy_debug.GetBool())
-			{
-				Msg("Joystick %d ball %d delta: (%d,%d)\n",
-					event->jball.which,
-					event->jball.ball+1, event->jball.xrel, event->jball.yrel);
-			}
-
-			g_pHost->TrapJoyBall_Event(event->jball.ball, event->jball.xrel, event->jball.yrel);
-
-            break;
-		}
-        case SDL_JOYBUTTONDOWN:
-		case SDL_JOYBUTTONUP:
-		{
-			bool down = (event->type == SDL_JOYBUTTONDOWN) ? true : false;
-
-			if(in_joy_debug.GetBool())
-			{
-				Msg("Joystick %d button %d %s\n",
-					event->jbutton.which, event->jbutton.button+1, down ? "down" : "up");
-			}
-
-			g_pHost->TrapJoyButton_Event(event->jbutton.button, down);
-            break;
-		}
-		*/
 	}
 }
 
