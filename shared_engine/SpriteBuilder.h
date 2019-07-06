@@ -61,7 +61,7 @@ protected:
 	uint16				m_numVertices;
 	uint16				m_numIndices;
 
-	uint16				m_maxQuadVerts;
+	uint				m_maxQuads;
 
 	bool				m_initialized;
 	bool				m_triangleListMode;
@@ -74,7 +74,7 @@ CSpriteBuilder<VTX_TYPE>::CSpriteBuilder() :
 	m_numVertices(0),
 	m_numIndices(0),
 	m_initialized(false),
-	m_maxQuadVerts(0),
+	m_maxQuads(0),
 	m_triangleListMode(false)
 {
 
@@ -89,13 +89,13 @@ CSpriteBuilder<VTX_TYPE>::~CSpriteBuilder()
 template <class VTX_TYPE>
 void CSpriteBuilder<VTX_TYPE>::Init( int maxQuads )
 {
-	m_maxQuadVerts = maxQuads;
+	m_maxQuads = maxQuads;
 
-	DevMsg(DEVMSG_CORE, "[SPRITEVBO] Allocating %d quads (%d bytes VB and %d bytes IB)\n", m_maxQuadVerts, SVBO_MAX_SIZE(m_maxQuadVerts, VTX_TYPE), SIBO_MAX_SIZE(m_maxQuadVerts));
+	DevMsg(DEVMSG_CORE, "[SPRITEVBO] Allocating %d quads (%d bytes VB and %d bytes IB)\n", m_maxQuads, SVBO_MAX_SIZE(m_maxQuads, VTX_TYPE), SIBO_MAX_SIZE(m_maxQuads));
 
 	// init buffers
-	m_pVerts	= (VTX_TYPE*)PPAlloc(SVBO_MAX_SIZE(m_maxQuadVerts, VTX_TYPE));
-	m_pIndices	= (uint16*)PPAlloc(SIBO_MAX_SIZE(m_maxQuadVerts));
+	m_pVerts	= (VTX_TYPE*)PPAlloc(SVBO_MAX_SIZE(m_maxQuads, VTX_TYPE));
+	m_pIndices	= (uint16*)PPAlloc(SIBO_MAX_SIZE(m_maxQuads));
 
 	if(!m_pVerts)
 		ASSERT(!"FAILED TO ALLOCATE VERTICES!\n");
@@ -127,7 +127,7 @@ void CSpriteBuilder<VTX_TYPE>::Shutdown()
 template <class VTX_TYPE>
 void CSpriteBuilder<VTX_TYPE>::AddVertices(VTX_TYPE* verts, int nVerts)
 {
-	if ((uint)(m_numVertices + nVerts) > SVBO_MAX_SIZE(m_maxQuadVerts, VTX_TYPE))
+	if ((uint)(m_numVertices + nVerts) > m_maxQuads*4)
 		return;
 
 	memcpy(&m_pVerts[m_numVertices], verts, nVerts*sizeof(VTX_TYPE));
@@ -137,7 +137,7 @@ void CSpriteBuilder<VTX_TYPE>::AddVertices(VTX_TYPE* verts, int nVerts)
 template <class VTX_TYPE>
 void CSpriteBuilder<VTX_TYPE>::AddIndices(uint16 *indices, int nIndx)
 {
-	if ((uint)(m_numIndices + nIndx) > SIBO_MAX_SIZE(m_maxQuadVerts))
+	if ((uint)(m_numIndices + nIndx) > m_maxQuads*6)
 		return;
 
 	memcpy(&m_pIndices[m_numIndices], indices, nIndx*sizeof(uint16));
@@ -162,7 +162,7 @@ void CSpriteBuilder<VTX_TYPE>::AddParticleStrip(VTX_TYPE* verts, int nVertices)
 template <class VTX_TYPE>
 int CSpriteBuilder<VTX_TYPE>::_AllocateGeom( int nVertices, int nIndices, VTX_TYPE** verts, uint16** indices, bool preSetIndices )
 {
-	if((uint)(m_numVertices+nVertices) > SVBO_MAX_SIZE(m_maxQuadVerts, VTX_TYPE))
+	if((uint)(m_numVertices+nVertices) > m_maxQuads*4)
 	{
 		// don't warn me about overflow
 		m_numVertices = 0;
@@ -209,7 +209,7 @@ void CSpriteBuilder<VTX_TYPE>::_AddParticleStrip(VTX_TYPE* verts, int nVertices)
 	if(nVertices == 0)
 		return;
 
-	if((uint)(m_numVertices + nVertices) > SVBO_MAX_SIZE(m_maxQuadVerts, VTX_TYPE))
+	if((uint)(m_numVertices + nVertices) > m_maxQuads*4)
 	{
 		MsgWarning("ParticleRenderGroup overflow\n");
 
