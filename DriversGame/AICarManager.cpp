@@ -21,8 +21,8 @@ ConVar g_traffic_maxdist("g_traffic_maxdist", "51", "Max traffic car distance, t
 
 const int	AI_COP_SPEECH_QUEUE = 6;
 
-const float AI_COP_SPEECH_DELAY = 2.0f;		// delay before next speech
-const float AI_COP_TAUNT_DELAY = 8.0f;		// delay before next taunt
+const float AI_COP_SPEECH_DELAY = 4.0f;		// delay before next speech
+const float AI_COP_TAUNT_DELAY = 5.0f;		// delay before next taunt
 
 const float AI_COP_DEFAULT_DAMAGE = 4.0f;
 const float AI_COP_DEFAULT_MAXSPEED = 160.0f;
@@ -880,10 +880,10 @@ void CAICarManager::SetCopCarConfig(const char* car_name, int type )
 }
 
 // shedules a cop speech
-bool CAICarManager::MakeCopSpeech(const char* soundScriptName, bool force)
+bool CAICarManager::MakeCopSpeech(const char* soundScriptName, bool force, float priority)
 {
 	// shedule speech
-	if (m_copSpeechTime < 0 || force)
+	if (m_copSpeechTime-(priority*AI_COP_SPEECH_DELAY) < 0 || force)
 	{
 		m_speechQueue.append(soundScriptName);
 
@@ -898,9 +898,26 @@ bool CAICarManager::MakeCopSpeech(const char* soundScriptName, bool force)
 	return false;
 }
 
-bool CAICarManager::IsCopsCanUseLoudhailer() const
+bool CAICarManager::IsCopsCanUseLoudhailer(CCar* copCar, CCar* target) const
 {
-	return (m_copSpeechTime < 0) && (m_copLoudhailerTime < 0);
+	CCar* nearestCar = nullptr;
+
+	if (target)
+	{
+		float nearestDist = DrvSynUnits::MaxCoordInUnits;
+
+		for (int i = 0; i < m_copCars.numElem(); i++)
+		{
+			float dist = length(target->GetOrigin() - m_copCars[i]->GetOrigin());
+			if (dist < nearestDist)
+			{
+				nearestDist = dist;
+				nearestCar = m_copCars[i];
+			}
+		}
+	}
+
+	return (m_copSpeechTime < 0) && (m_copLoudhailerTime < 0) && (copCar == nearestCar);
 }
 
 void CAICarManager::CopLoudhailerTold()

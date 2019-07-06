@@ -175,6 +175,7 @@ void CAIPursuerCar::Precache()
 	PrecacheScriptSound("cop.hitvehicle");
 	PrecacheScriptSound("cop.heading");
 	PrecacheScriptSound("cop.takehimup");
+	PrecacheScriptSound("cop.still_in_pursuit");
 	PrecacheScriptSound("cop.heading_west");
 	PrecacheScriptSound("cop.heading_east");
 	PrecacheScriptSound("cop.heading_south");
@@ -183,6 +184,8 @@ void CAIPursuerCar::Precache()
 	PrecacheScriptSound("cop.check");
 	PrecacheScriptSound("cop.squad_car_hit");
 	PrecacheScriptSound("cop.squad_car_down");
+	
+	
 
 	BaseClass::Precache();
 }
@@ -195,7 +198,7 @@ void CAIPursuerCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 		m_hornSequencer.ShutUp();
 }
 
-bool CAIPursuerCar::Speak(const char* soundName, CCar* target, bool force)
+bool CAIPursuerCar::Speak(const char* soundName, CCar* target, bool force, float priority)
 {
 	if (!soundName)
 		return false;
@@ -206,7 +209,7 @@ bool CAIPursuerCar::Speak(const char* soundName, CCar* target, bool force)
 	if (g_pGameSession->GetPlayerCar() != target)
 		return false;
 
-	return g_pAIManager->MakeCopSpeech(soundName, force);
+	return g_pAIManager->MakeCopSpeech(soundName, force, priority);
 }
 
 void CAIPursuerCar::DoPoliceLoudhailer()
@@ -215,7 +218,7 @@ void CAIPursuerCar::DoPoliceLoudhailer()
 		return;
 
 	// TODO: actually check if i'm the nearest cop in the universe
-	if (g_pAIManager->IsCopsCanUseLoudhailer())
+	if (g_pAIManager->IsCopsCanUseLoudhailer(this, m_target))
 	{
 		m_loudhailer->Stop();
 		m_loudhailer->Play();
@@ -360,7 +363,7 @@ int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 			if (!pursuerData.copsHasAttention && !pursuerData.announced)
 			{
 				pursuerData.copsHasAttention = true;
-				Speak("cop.check", checkCar);
+				Speak("cop.check", checkCar, false, 0.5f);
 			}
 		}
 
@@ -713,7 +716,7 @@ bool CAIPursuerCar::UpdateTarget(float fDt)
 				const InfractionDesc& infractionDesc = g_infractions[i];
 
 				newFelony += infractionDesc.activeFelony;
-				Speak(infractionDesc.speech, m_target);
+				Speak(infractionDesc.speech, m_target, false, 0.8f);
 			}
 
 			m_target->SetFelony(newFelony);
@@ -726,11 +729,18 @@ bool CAIPursuerCar::UpdateTarget(float fDt)
 				DoPoliceLoudhailer();
 			}
 
-			if (targetSpeed > 50.0f)
-				SpeakTargetDirection("cop.heading", m_target);
+			bool isAboutToLoose = (pursuerData.lastSeenTimer > AI_COP_TIME_TO_LOST_TARGET_FAR*0.25f);
 
-			if (pursuerData.lastSeenTimer > AI_COP_TIME_TO_LOST_TARGET*0.5f)
-				Speak("cop.pursuit_continue", m_target);
+			if (targetSpeed > 50.0f)
+			{
+				const char* speech = isAboutToLoose ? "cop.takehimup" : "cop.heading";
+				SpeakTargetDirection(speech, m_target);
+			}
+	
+			if (isAboutToLoose)
+				Speak("cop.pursuit_continue", m_target, false, 0.5f);
+			else if(m_pursuitTime > AI_COP_BECOME_ANGRY_PURSUIT_TIME * 0.5f)
+				Speak("cop.still_in_pursuit", m_target, false, 0.0f);
 
 			if (newFelony > AI_COP_BECOME_ANGRY_FELONY)
 				m_angry = true;

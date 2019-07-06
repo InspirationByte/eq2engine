@@ -10,6 +10,8 @@
 #include "heightfield.h"
 #include "replay.h"
 
+#include "input.h"
+
 #include "world.h"
 
 #define DEFAULT_HUD_SCHEME "resources/hud/defaulthud.res"
@@ -24,6 +26,8 @@ ConVar hud_mapZoom("hud_mapZoom", "1.0", NULL, CV_ARCHIVE);
 ConVar hud_debug_car("hud_debug_car", "0", NULL, CV_CHEAT);
 
 ConVar hud_debug_roadmap("hud_debug_roadmap", "0", NULL, CV_CHEAT);
+
+ConVar hud_show_controls("hud_show_controls", "0", NULL, CV_ARCHIVE);
 
 //ConVar hud_map_pos("hud_map_pos", "0", "Map position (0 - bottom, 1 - top)", CV_ARCHIVE);
 
@@ -865,6 +869,47 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 		}
 	}
 
+	if (hud_show_controls.GetBool() && m_mainVehicle)
+	{
+		eqFontStyleParam_t style;
+		style.styleFlag |= TEXT_STYLE_SHADOW;
+		style.align = TEXT_ALIGN_HCENTER;
+		style.textColor = ColorRGBA(1.0f);
+		style.scale = 35.0f;
+
+		EqString controlsString;
+		int controls = m_mainVehicle->GetControlButtons();
+
+		if (controls & IN_BURNOUT)
+			controlsString.Append("BURNOUT\n");
+		else if (controls & IN_ACCELERATE)
+			controlsString.Append("ACCELERATE\n");
+		else if (controls & IN_HANDBRAKE)
+			controlsString.Append("HANDBRAKE\n");
+		else if (controls & IN_BRAKE)
+			controlsString.Append("BRAKE/REVERSE\n");
+
+		if (controls & IN_TURNLEFT)
+		{
+			if (controls & IN_EXTENDTURN)
+				controlsString.Append("LEFT + FAST STEER\n");
+			else
+				controlsString.Append("LEFT\n");
+		}
+		else if (controls & IN_TURNRIGHT)
+		{
+			if (controls & IN_EXTENDTURN)
+				controlsString.Append("RIGHT + FAST STEER\n");
+			else
+				controlsString.Append("RIGHT\n");
+		}
+
+		Vector2D screenMessagePos(screenSize.x / 2.0f, screenSize.y / 1.5f);
+
+		if(controlsString.Length() > 0)
+			robotocon30bi->RenderText(controlsString.c_str(), screenMessagePos, style);
+	}
+
 	if(!replayHud)
 	{
 		// show screen alert
@@ -970,6 +1015,11 @@ void CDrvSynHUDManager::DoDebugDisplay()
 	eqFontStyleParam_t style;
 	style.styleFlag |= TEXT_STYLE_SHADOW;
 	style.textColor = ColorRGBA(1, 1, 0.25f, 1.0f);
+
+	if (hud_show_controls.GetBool())
+	{
+
+	}
 
 	if (g_showCameraPosition.GetBool())
 	{

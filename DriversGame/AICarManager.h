@@ -110,8 +110,8 @@ public:
 	void						SetCopMaxSpeed(float maxSpeed);							// sets the maximum hitpoints for cop cars
 	float						GetCopMaxSpeed() const;
 
-	bool						MakeCopSpeech(const char* soundScriptName, bool force);			// shedules a cop speech
-	bool						IsCopsCanUseLoudhailer() const;
+	bool						MakeCopSpeech(const char* soundScriptName, bool force, float priority);			// shedules a cop speech
+	bool						IsCopsCanUseLoudhailer(CCar* copCar, CCar* target) const;
 
 	void						CopLoudhailerTold();
 

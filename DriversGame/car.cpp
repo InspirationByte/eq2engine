@@ -1374,11 +1374,18 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 	//--------------------------------------------------------
 
+	const float EXTEND_STEER_SPEED_MULTIPLIER = 1.75f;
+
 	{
 		FReal steer_diff = fSteerAngle-m_steering;
 
+		float steerSpeedMultiplier = 1.0f;
+
+		if (bExtendTurn)
+			steerSpeedMultiplier = EXTEND_STEER_SPEED_MULTIPLIER;
+
 		if(FPmath::abs(steer_diff) > 0.01f)
-			m_steering += FPmath::sign(steer_diff) * m_conf->physics.steeringSpeed * delta;
+			m_steering += FPmath::sign(steer_diff) * m_conf->physics.steeringSpeed * steerSpeedMultiplier * delta;
 		else
 			m_steering = fSteerAngle;
 	}

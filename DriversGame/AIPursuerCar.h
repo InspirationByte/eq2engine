@@ -65,7 +65,7 @@ protected:
 	EInfractionType		CheckTrafficInfraction( CCar* car, bool checkFelony = true, bool checkSpeeding = true );
 	
 
-	bool				Speak( const char* soundName, CCar* target, bool force = false );
+	bool				Speak( const char* soundName, CCar* target, bool force = false, float priority = 0.5f);
 
 	void				DoPoliceLoudhailer();
 	bool				UpdateTarget(float fDt);
