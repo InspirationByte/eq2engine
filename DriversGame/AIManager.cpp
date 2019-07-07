@@ -5,11 +5,14 @@
 // Description: AI car manager for Driver Syndicate
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "AICarManager.h"
+#include "AIManager.h"
+
 #include "heightfield.h"
 #include "session_stuff.h"
 
 #include "world.h"
+
+#include "pedestrian.h"
 
 //------------------------------------------------------------------------------------------
 
@@ -34,8 +37,8 @@ const float AI_TRAFFIC_SPAWN_DISTANCE_THRESH = 5.0f;
 
 //------------------------------------------------------------------------------------------
 
-static CAICarManager s_AIManager;
-CAICarManager* g_pAIManager = &s_AIManager;
+static CAIManager s_AIManager;
+CAIManager* g_pAIManager = &s_AIManager;
 
 DECLARE_CMD(aezakmi, "", CV_CHEAT)
 {
@@ -50,7 +53,7 @@ DECLARE_CMD(aezakmi, "", CV_CHEAT)
 	}
 }
 
-CAICarManager::CAICarManager()
+CAIManager::CAIManager()
 {
 	m_trafficUpdateTime = 0.0f;
 	m_velocityMapUpdateTime = 0.0f;
@@ -73,12 +76,12 @@ CAICarManager::CAICarManager()
 	m_leadPosition = vec3_zero;
 }
 
-CAICarManager::~CAICarManager()
+CAIManager::~CAIManager()
 {
 
 }
 
-void CAICarManager::Init()
+void CAIManager::Init()
 {
 	PrecacheObject(CAIPursuerCar);
 
@@ -106,7 +109,7 @@ void CAICarManager::Init()
 	m_copSpeechTime = RandomFloat(AI_COP_SPEECH_DELAY, AI_COP_SPEECH_DELAY + 5.0f);
 }
 
-void CAICarManager::Shutdown()
+void CAIManager::Shutdown()
 {
 	m_civCarEntries.clear();
 
@@ -118,7 +121,7 @@ void CAICarManager::Shutdown()
 
 #pragma fixme("Replay solution for cop road blocks")
 
-CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
+CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 {
 	if (m_trafficCars.numElem() >= GetMaxTrafficCars())
 		return NULL;
@@ -300,7 +303,7 @@ CCar* CAICarManager::SpawnTrafficCar(const IVector2D& globalCell)
 	return pNewCar;
 }
 
-void CAICarManager::QueryTrafficCars(DkList<CCar*>& list, float radius, const Vector3D& position, const Vector3D& direction, float queryCosAngle)
+void CAIManager::QueryTrafficCars(DkList<CCar*>& list, float radius, const Vector3D& position, const Vector3D& direction, float queryCosAngle)
 {
 	for (int i = 0; i < m_trafficCars.numElem(); i++)
 	{
@@ -321,7 +324,7 @@ void CAICarManager::QueryTrafficCars(DkList<CCar*>& list, float radius, const Ve
 	}
 }
 
-int CAICarManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
+int CAIManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
 {
 	int f = 1 - radius;
 	int ddF_x = 0;
@@ -362,7 +365,7 @@ int CAICarManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
 	return count;
 }
 
-void CAICarManager::RemoveTrafficCar(CCar* car)
+void CAIManager::RemoveTrafficCar(CCar* car)
 {
 	if(car->ObjType() == GO_CAR_AI)
 	{
@@ -376,7 +379,7 @@ void CAICarManager::RemoveTrafficCar(CCar* car)
 	g_pGameWorld->RemoveObject(car);
 }
 
-void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity)
+void CAIManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity)
 {
 	if (g_replayData->m_state == REPL_PLAYING)
 		return;
@@ -469,7 +472,7 @@ void CAICarManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, con
 	CircularSpawnTrafficCars(spawnCenterCell.x, spawnCenterCell.y, g_traffic_mindist.GetInt());
 }
 
-void CAICarManager::InitialSpawnCars(const Vector3D& spawnOrigin)
+void CAIManager::InitialSpawnCars(const Vector3D& spawnOrigin)
 {
 	if (g_replayData->m_state == REPL_PLAYING)
 		return;
@@ -491,7 +494,7 @@ void CAICarManager::InitialSpawnCars(const Vector3D& spawnOrigin)
 	MsgWarning("InitialSpawnCars: spawned %d cars\n", count);
 }
 
-void CAICarManager::UpdateNavigationVelocityMap(float fDt)
+void CAIManager::UpdateNavigationVelocityMap(float fDt)
 {
 	
 	m_velocityMapUpdateTime += fDt;
@@ -515,7 +518,7 @@ void CAICarManager::UpdateNavigationVelocityMap(float fDt)
 	
 }
 
-void CAICarManager::PaintVelocityMapFrom(CCar* car)
+void CAIManager::PaintVelocityMapFrom(CCar* car)
 {
 	int dx[8] = NEIGHBOR_OFFS_XDX(0,1);
 	int dy[8] = NEIGHBOR_OFFS_YDY(0,1);
@@ -540,7 +543,7 @@ void CAICarManager::PaintVelocityMapFrom(CCar* car)
 	PaintNavigationLine(navCellStartPos2, navCellEndPos2);
 }
 
-void CAICarManager::PaintNavigationLine(const IVector2D& start, const IVector2D& end)
+void CAIManager::PaintNavigationLine(const IVector2D& start, const IVector2D& end)
 {
 	int x1,y1,x2,y2;
 
@@ -577,9 +580,29 @@ void CAICarManager::PaintNavigationLine(const IVector2D& start, const IVector2D&
     }
 }
 
+void CAIManager::UpdatePedestrainRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity)
+{
+
+}
+
+void CAIManager::RemoveAllPedestrians()
+{
+
+}
+
+void CAIManager::SpawnPedestrian(const IVector2D& globalCell)
+{
+
+}
+
+void CAIManager::QueryPedestrians(DkList<CPedestrian*>& list, float radius, const Vector3D& position, const Vector3D& direction, float queryCosAngle)
+{
+
+}
+
 //-----------------------------------------------------------------------------------------
 
-void CAICarManager::UpdateCopStuff(float fDt)
+void CAIManager::UpdateCopStuff(float fDt)
 {
 	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "cops spawned: %d (max %d) (cntr=%d, lvl=%d)\n", m_copCars.numElem(), GetMaxCops(), m_copSpawnIntervalCounter, m_copRespawnInterval);
 	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "num traffic cars: %d\n", m_trafficCars.numElem());
@@ -603,7 +626,7 @@ void CAICarManager::UpdateCopStuff(float fDt)
 	}
 }
 
-void CAICarManager::RemoveAllCars()
+void CAIManager::RemoveAllCars()
 {
 	// Try to remove cars
 	for (int i = 0; i < m_trafficCars.numElem(); i++)
@@ -614,7 +637,7 @@ void CAICarManager::RemoveAllCars()
 	m_trafficCars.clear();
 }
 
-civCarEntry_t* CAICarManager::FindCivCarEntry( const char* name )
+civCarEntry_t* CAIManager::FindCivCarEntry( const char* name )
 {
 	for(int i = 0; i < m_civCarEntries.numElem(); i++)
 	{
@@ -650,8 +673,7 @@ DECLARE_CMD(road_info, "Road info on player car position", CV_CHEAT)
 	MsgInfo("Road width: %d, current lane: %d\n", numLanes, curLane);
 }
 
-
-bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
+bool CAIManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 {
 	if (g_replayData->m_state == REPL_PLAYING)
 		return true;
@@ -754,7 +776,7 @@ bool CAICarManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 	return m_roadBlockCars.numElem() > 0;
 }
 
-void CAICarManager::MakePursued( CCar* car )
+void CAIManager::MakePursued( CCar* car )
 {
 	for(int i = 0; i < m_copCars.numElem(); i++)
 	{
@@ -769,7 +791,7 @@ void CAICarManager::MakePursued( CCar* car )
 }
 
 /*
-void CAICarManager::StopPursuit( CCar* car )
+void CAIManager::StopPursuit( CCar* car )
 {
 	for(int i = 0; i < m_copCars.numElem(); i++)
 	{
@@ -780,107 +802,107 @@ void CAICarManager::StopPursuit( CCar* car )
 	}
 }*/
 
-bool CAICarManager::IsRoadBlockSpawn() const
+bool CAIManager::IsRoadBlockSpawn() const
 {
 	return (m_roadBlockCars.numElem() > 0);
 }
 
 // ----- TRAFFIC ------
-void CAICarManager::SetMaxTrafficCars(int count)
+void CAIManager::SetMaxTrafficCars(int count)
 {
 	m_numMaxTrafficCars = count;
 }
 
-int CAICarManager::GetMaxTrafficCars() const
+int CAIManager::GetMaxTrafficCars() const
 {
 	return m_enableTrafficCars ? m_numMaxTrafficCars : 0;
 }
 
-void CAICarManager::SetTrafficCarsEnabled(bool enable)
+void CAIManager::SetTrafficCarsEnabled(bool enable)
 {
 	m_enableTrafficCars = enable;
 }
 
-bool CAICarManager::IsTrafficCarsEnabled() const
+bool CAIManager::IsTrafficCarsEnabled() const
 {
 	return m_enableTrafficCars;
 }
 
 // ----- COPS ------
 // switch to spawn
-void CAICarManager::SetCopsEnabled(bool enable)
+void CAIManager::SetCopsEnabled(bool enable)
 {
 	m_enableCops = enable;
 }
 
-bool CAICarManager::IsCopsEnabled() const
+bool CAIManager::IsCopsEnabled() const
 {
 	return m_enableCops;
 }
 
 // maximum cop count
-void CAICarManager::SetMaxCops(int count)
+void CAIManager::SetMaxCops(int count)
 {
 	m_numMaxCops = count;
 }
 
-int CAICarManager::GetMaxCops() const
+int CAIManager::GetMaxCops() const
 {
 	return m_numMaxCops;
 }
 
 // cop respawn interval between traffic car spawns
-void CAICarManager::SetCopRespawnInterval(int steps)
+void CAIManager::SetCopRespawnInterval(int steps)
 {
 	m_copRespawnInterval = steps;
 }
 
-int CAICarManager::GetCopRespawnInterval() const
+int CAIManager::GetCopRespawnInterval() const
 {
 	return m_copRespawnInterval;
 }
 
 // acceleration modifier (e.g. for survival)
-void CAICarManager::SetCopAccelerationModifier(float accel)
+void CAIManager::SetCopAccelerationModifier(float accel)
 {
 	m_copAccelerationModifier = accel;
 }
 
-float CAICarManager::GetCopAccelerationModifier() const
+float CAIManager::GetCopAccelerationModifier() const
 {
 	return m_copAccelerationModifier;
 }
 
 // sets the maximum hitpoints for cop cars
-void CAICarManager::SetCopMaxDamage(float maxHitPoints)
+void CAIManager::SetCopMaxDamage(float maxHitPoints)
 {
 	m_copMaxDamage = maxHitPoints;
 }
 					
-float CAICarManager::GetCopMaxDamage() const
+float CAIManager::GetCopMaxDamage() const
 {
 	return m_copMaxDamage;
 }
 
 // sets the maximum hitpoints for cop cars
-void CAICarManager::SetCopMaxSpeed(float maxSpeed)
+void CAIManager::SetCopMaxSpeed(float maxSpeed)
 {
 	m_copMaxSpeed = maxSpeed;
 }
 					
-float CAICarManager::GetCopMaxSpeed() const
+float CAIManager::GetCopMaxSpeed() const
 {
 	return m_copMaxSpeed;
 }
 
 // sets cop car configuration
-void CAICarManager::SetCopCarConfig(const char* car_name, int type )
+void CAIManager::SetCopCarConfig(const char* car_name, int type )
 {
 	m_copCarName[type] = car_name;
 }
 
 // shedules a cop speech
-bool CAICarManager::MakeCopSpeech(const char* soundScriptName, bool force, float priority)
+bool CAIManager::MakeCopSpeech(const char* soundScriptName, bool force, float priority)
 {
 	// shedule speech
 	if (m_copSpeechTime-(priority*AI_COP_SPEECH_DELAY) < 0 || force)
@@ -898,7 +920,7 @@ bool CAICarManager::MakeCopSpeech(const char* soundScriptName, bool force, float
 	return false;
 }
 
-bool CAICarManager::IsCopsCanUseLoudhailer(CCar* copCar, CCar* target) const
+bool CAIManager::IsCopsCanUseLoudhailer(CCar* copCar, CCar* target) const
 {
 	CCar* nearestCar = nullptr;
 
@@ -920,7 +942,7 @@ bool CAICarManager::IsCopsCanUseLoudhailer(CCar* copCar, CCar* target) const
 	return (m_copSpeechTime < 0) && (m_copLoudhailerTime < 0) && (copCar == nearestCar);
 }
 
-void CAICarManager::CopLoudhailerTold()
+void CAIManager::CopLoudhailerTold()
 {
 	m_copLoudhailerTime = RandomFloat(AI_COP_TAUNT_DELAY, AI_COP_TAUNT_DELAY+5.0f);
 	m_copSpeechTime = RandomFloat(AI_COP_SPEECH_DELAY, AI_COP_SPEECH_DELAY + 5.0f);
@@ -928,7 +950,7 @@ void CAICarManager::CopLoudhailerTold()
 
 
 OOLUA_EXPORT_FUNCTIONS(
-	CAICarManager,
+	CAIManager,
 
 	MakePursued,
 	RemoveAllCars,
@@ -946,7 +968,7 @@ OOLUA_EXPORT_FUNCTIONS(
 )
 
 OOLUA_EXPORT_FUNCTIONS_CONST(
-	CAICarManager,
+	CAIManager,
 
 	GetMaxTrafficCars,
 	IsTrafficCarsEnabled,

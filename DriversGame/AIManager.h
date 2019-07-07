@@ -5,8 +5,8 @@
 // Description: AI car manager for Driver Syndicate
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef AICARMANAGER_H
-#define AICARMANAGER_H
+#ifndef AIMANAGER_H
+#define AIMANAGER_H
 
 #include "utils/eqstring.h"
 
@@ -27,6 +27,7 @@ enum ECarType
 struct	vehicleConfig_t;
 class	CAITrafficCar;
 class	CAIPursuerCar;
+class	CPedestrian;
 
 struct carZoneInfo_t
 {
@@ -60,13 +61,13 @@ struct civCarEntry_t
 
 //-------------------------------------------------------------------------------
 
-class CAICarManager
+class CAIManager
 {
 	friend class				CGameSessionBase;
 
 public:
-								CAICarManager();
-								~CAICarManager();
+								CAIManager();
+								~CAIManager();
 
 	void						Init();
 	void						Shutdown();
@@ -79,6 +80,15 @@ public:
 	void						RemoveAllCars();
 
 	civCarEntry_t*				FindCivCarEntry( const char* name );
+
+	// ----- PEDESTRIANS -----
+	void						UpdatePedestrainRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity);
+
+	void						RemoveAllPedestrians();
+
+	void						SpawnPedestrian(const IVector2D& globalCell);
+
+	void						QueryPedestrians(DkList<CPedestrian*>& list, float radius, const Vector3D& position, const Vector3D& direction, float queryCosAngle);
 
 	// ----- TRAFFIC ------
 	void						SetMaxTrafficCars(int count);
@@ -176,11 +186,11 @@ public:
 	IVector2D					m_roadBlockPosition;
 };
 
-extern CAICarManager*			g_pAIManager;
+extern CAIManager*			g_pAIManager;
 
 #ifndef NO_LUA
 #ifndef __INTELLISENSE__
-OOLUA_PROXY(CAICarManager)
+OOLUA_PROXY(CAIManager)
 	OOLUA_TAGS(Abstract)
 
 	OOLUA_MFUNC(RemoveAllCars)
@@ -221,4 +231,4 @@ OOLUA_PROXY_END
 #endif // __INTELLISENSE__
 #endif // NO_LUA
 
-#endif // AICARMANAGER_H
+#endif // AIMANAGER_H

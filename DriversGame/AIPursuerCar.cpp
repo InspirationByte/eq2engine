@@ -10,7 +10,7 @@
 
 #include "object_debris.h"
 
-#include "AICarManager.h"
+#include "AIManager.h"
 
 #include "world.h"
 #include "input.h"

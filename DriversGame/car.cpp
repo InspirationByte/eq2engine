@@ -2195,10 +2195,10 @@ bool CCar::UpdateWaterState( float fDt, bool hasCollidedWater )
 
 		Vector3D newVelocity = carBody->GetLinearVelocity();
 
-		newVelocity.x *= 0.98f;
-		newVelocity.z *= 0.98f;
+		newVelocity.x *= 0.99f;
+		newVelocity.z *= 0.99f;
 
-		newVelocity.y *= 0.98f;
+		newVelocity.y *= 0.99f;
 
 		carBody->SetLinearVelocity( newVelocity );
 

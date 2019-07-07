@@ -246,9 +246,6 @@
     <ClCompile Include="..\shared_engine\FontCache.cpp">
       <Filter>Файлы исходного кода\EngineLib\SharedUI</Filter>
     </ClCompile>
-    <ClCompile Include="AICarManager.cpp">
-      <Filter>Файлы исходного кода\Game\AI</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared_engine\Audio\alsnd_stream.cpp">
       <Filter>Файлы исходного кода\EngineLib\Audio</Filter>
     </ClCompile>
@@ -456,9 +453,6 @@
     <ClCompile Include="ControllableObject.cpp">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClCompile>
-    <ClCompile Include="AIPedestrianManager.cpp">
-      <Filter>Файлы исходного кода\Game\AI</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared_engine\sys_in_joystick.cpp">
       <Filter>Файлы исходного кода\System</Filter>
     </ClCompile>
@@ -467,6 +461,9 @@
     </ClCompile>
     <ClCompile Include="DrvSynEqUIControls.cpp">
       <Filter>Файлы исходного кода\Game\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="AIManager.cpp">
+      <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -675,9 +672,6 @@
     </ClInclude>
     <ClInclude Include="..\shared_engine\FontCache.h">
       <Filter>Файлы исходного кода\EngineLib\SharedUI</Filter>
-    </ClInclude>
-    <ClInclude Include="AICarManager.h">
-      <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClInclude>
     <ClInclude Include="..\shared_engine\Audio\alsnd_stream.h">
       <Filter>Файлы исходного кода\EngineLib\Audio</Filter>
@@ -907,14 +901,14 @@
     <ClInclude Include="ControllableObject.h">
       <Filter>Файлы исходного кода\Game\Objects</Filter>
     </ClInclude>
-    <ClInclude Include="AIPedestrianManager.h">
-      <Filter>Файлы исходного кода\Game\AI</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared_engine\sys_in_joystick.h">
       <Filter>Файлы исходного кода\System</Filter>
     </ClInclude>
     <ClInclude Include="EqUI_DrvSynTimer.h">
       <Filter>Файлы исходного кода\Game\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="AIManager.h">
+      <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

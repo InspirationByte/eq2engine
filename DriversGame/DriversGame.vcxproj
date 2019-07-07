@@ -162,7 +162,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="..\public\Utils\GeomTools.cpp" />
     <ClCompile Include="..\shared_engine\ViewParams.cpp" />
     <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp" />
-    <ClCompile Include="AICarManager.cpp" />
+    <ClCompile Include="AIManager.cpp" />
     <ClCompile Include="AIHandling.cpp" />
     <ClCompile Include="AIHornSequencer.cpp" />
     <ClCompile Include="AIManipulator_CollisionAvoidance.cpp" />
@@ -171,7 +171,6 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="AIManipulator_TargetAvoidance.cpp" />
     <ClCompile Include="AIManipulator_TargetChaser.cpp" />
     <ClCompile Include="AIManipulator_Traffic.cpp" />
-    <ClCompile Include="AIPedestrianManager.cpp" />
     <ClCompile Include="AIPursuerCar.cpp" />
     <ClCompile Include="AITrafficCar.cpp" />
     <ClCompile Include="BillboardList.cpp" />
@@ -328,7 +327,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="..\public\Utils\GeomTools.h" />
     <ClInclude Include="..\public\ViewParams.h" />
     <ClInclude Include="..\shared_engine\physics\BulletShapeCache.h" />
-    <ClInclude Include="AICarManager.h" />
+    <ClInclude Include="AIManager.h" />
     <ClInclude Include="AIHandling.h" />
     <ClInclude Include="AIEventTypes.h" />
     <ClInclude Include="AIHornSequencer.h" />
@@ -339,7 +338,6 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="AIManipulator_TargetAvoidance.h" />
     <ClInclude Include="AIManipulator_TargetChaser.h" />
     <ClInclude Include="AIManipulator_Traffic.h" />
-    <ClInclude Include="AIPedestrianManager.h" />
     <ClInclude Include="AIPursuerCar.h" />
     <ClInclude Include="AITrafficCar.h" />
     <ClInclude Include="BillboardList.h" />

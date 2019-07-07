@@ -9,7 +9,7 @@
 #define SESSION_BASE_H
 
 #include "physics.h"
-#include "AICarManager.h"
+#include "AIManager.h"
 #include "LuaBinding_Drivers.h"
 
 class CCar;

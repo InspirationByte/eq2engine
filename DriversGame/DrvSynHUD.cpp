@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DrvSynHUD.h"
-#include "AICarManager.h"
+#include "AIManager.h"
 #include "heightfield.h"
 #include "replay.h"
 

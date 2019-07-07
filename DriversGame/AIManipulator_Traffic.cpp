@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "AIManipulator_Traffic.h"
-#include "AICarManager.h"
+#include "AIManager.h"
 
 #include "world.h"
 
