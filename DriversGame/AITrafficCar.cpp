@@ -167,6 +167,13 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 
 	GetPhysicsBody()->UpdateBoundingBoxTransform();
 
+	// update headlights state
+	// TODO: get AI's state for enabling headlights
+	bool headLightsEnabled = IsEnabled() && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS);
+
+	if (IsLightEnabled(CAR_LIGHT_LOWBEAMS) != headLightsEnabled)
+		SetLight(headLightsEnabled, headLightsEnabled);
+
 	PROFILE_END();
 }
 

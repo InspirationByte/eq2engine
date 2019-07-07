@@ -61,7 +61,13 @@ void CSingleGameSession::Init()
 
 	// load regions on player car position
 	if (GetPlayerCar())
+	{
+		// also enable headlights on player car if needed
+		bool headLightsEnabled = GetPlayerCar()->IsEnabled() && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS);
+		GetPlayerCar()->SetLight(headLightsEnabled, headLightsEnabled);
+
 		g_pGameWorld->m_level.QueryNearestRegions(GetPlayerCar()->GetOrigin(), false);
+	}
 	else if (GetPlayerPedestrian())
 		g_pGameWorld->m_level.QueryNearestRegions(GetPlayerPedestrian()->GetOrigin(), false);
 }

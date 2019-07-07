@@ -953,6 +953,9 @@ void CCar::Spawn()
 
 		m_driverModel.GetModel()->SetInstancer( instancer );
 	}
+
+	// spawn cars with enabled headlights
+
 }
 
 void CCar::AlignToGround()
@@ -1583,7 +1586,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		const float AUTOHANDBRAKE_MIN_SPEED		= 8.0f;
 		const float AUTOHANDBRAKE_MAX_SPEED		= 40.0f;
 		const float AUTOHANDBRAKE_MAX_FACTOR	= 5.0f;
-		const float AUTOHANDBRAKE_SCALE			= 4.0f;
+		const float AUTOHANDBRAKE_SCALE			= 2.0f;
 		const float AUTOHANDBRAKE_START_MIN		= 0.1f;
 
 		float carForwardSpeed = dot(GetForwardVector().xz(), GetVelocity().xz()) * MPS_TO_KPH;
@@ -2544,9 +2547,9 @@ float triangleWave( float pos )
 
 void CCar::UpdateLightsState()
 {
-	bool headLightsEnabled = m_enabled && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS) || g_debug_car_lights.GetBool();
+	if(g_debug_car_lights.GetBool())
+		SetLight(0xFFFFFFFF, true);
 
-	SetLight(CAR_LIGHT_HEADLIGHTS, headLightsEnabled);
 	SetLight(CAR_LIGHT_SERVICELIGHTS, m_sirenEnabled);
 }
 
@@ -2572,10 +2575,38 @@ void CCar::Simulate( float fDt )
 
 	int controlButtons = GetControlButtons();
 
-	if(	m_conf->visual.sirenType > SERVICE_LIGHTS_NONE && (controlButtons & IN_SIREN) && !(m_oldControlButtons & IN_SIREN))
+	if(	(m_conf->visual.sirenType > SERVICE_LIGHTS_NONE) && (controlButtons & IN_SIREN) && !(m_oldControlButtons & IN_SIREN))
 	{
 		m_oldSirenState = m_sirenEnabled;
 		m_sirenEnabled = !m_sirenEnabled;
+	}
+
+	if ((controlButtons & IN_SIGNAL_LEFT) && !(m_oldControlButtons & IN_SIGNAL_LEFT))
+	{
+		SetLight(CAR_LIGHT_DIM_LEFT, !IsLightEnabled(CAR_LIGHT_DIM_LEFT));
+		SetLight(CAR_LIGHT_DIM_RIGHT, false);
+	}
+	
+	if ((controlButtons & IN_SIGNAL_RIGHT) && !(m_oldControlButtons & IN_SIGNAL_RIGHT))
+	{
+		SetLight(CAR_LIGHT_DIM_RIGHT, !IsLightEnabled(CAR_LIGHT_DIM_RIGHT));
+		SetLight(CAR_LIGHT_DIM_LEFT, false);
+	}
+
+	if ((controlButtons & IN_SIGNAL_EMERGENCY) && !(m_oldControlButtons & IN_SIGNAL_EMERGENCY))
+	{
+		// switch them off
+		if (IsLightEnabled(CAR_LIGHT_DIM_LEFT) && !IsLightEnabled(CAR_LIGHT_DIM_RIGHT))
+			SetLight(CAR_LIGHT_DIM_LEFT, false);
+		else if (IsLightEnabled(CAR_LIGHT_DIM_RIGHT) && !IsLightEnabled(CAR_LIGHT_DIM_LEFT))
+			SetLight(CAR_LIGHT_DIM_RIGHT, false);
+
+		SetLight(CAR_LIGHT_EMERGENCY, !IsLightEnabled(CAR_LIGHT_EMERGENCY));
+	}
+
+	if ((controlButtons & IN_SWITCH_BEAMS) && !(m_oldControlButtons & IN_SWITCH_BEAMS))
+	{
+		SetLight(CAR_LIGHT_LOWBEAMS, !IsLightEnabled(CAR_LIGHT_LOWBEAMS));
 	}
 
 	//
@@ -2588,7 +2619,7 @@ void CCar::Simulate( float fDt )
 	Vector3D forwardVec = GetForwardVector();
 	Vector3D upVec = GetUpVector();
 
-	if( isCar && r_carLights.GetBool() && IsLightEnabled(CAR_LIGHT_HEADLIGHTS) && (m_bodyParts[CB_FRONT_LEFT].damage < 1.0f || m_bodyParts[CB_FRONT_RIGHT].damage < 1.0f) )
+	if( isCar && r_carLights.GetBool() && IsLightEnabled(CAR_LIGHT_LOWBEAMS) && (m_bodyParts[CB_FRONT_LEFT].damage < 1.0f || m_bodyParts[CB_FRONT_RIGHT].damage < 1.0f) )
 	{
 		float lightIntensity = 1.0f;
 		float decalIntensity = 1.0f;
@@ -2629,7 +2660,7 @@ void CCar::Simulate( float fDt )
 
 		float worldIntensityMod = g_pGameWorld->m_envConfig.headLightIntensity;
 
-		lightIntensity *= max(0.4f, worldIntensityMod);
+		lightIntensity *= max(0.1f, worldIntensityMod);
 		decalIntensity *= worldIntensityMod;
 
 		if(lightIntensity > 0.0f)
@@ -2885,12 +2916,14 @@ void CCar::Simulate( float fDt )
 		float lightsAmbientBrightnessFac = 1.0f - length(g_pGameWorld->m_envConfig.ambientColor);
 		float clampedAmientBrightnessFac = max(0.6f, lightsAmbientBrightnessFac);
 
-		fHeadlightsAlpha *= lightsAmbientBrightnessFac;
+		fHeadlightsAlpha *= clampedAmientBrightnessFac;
 		fBackLightAlpha *= clampedAmientBrightnessFac;
 		fBrakeLightAlpha *= clampedAmientBrightnessFac;
 
+		int headlightsLevel = (m_lightsEnabled & CAR_LIGHT_HIGHBEAMS) ? 2 : ((m_lightsEnabled & CAR_LIGHT_LOWBEAMS) ? 1 : 0);
+
 		// render some lights
-		if (isCar && (m_lightsEnabled & CAR_LIGHT_HEADLIGHTS) && fHeadlightsAlpha > 0.0f)
+		if (isCar && headlightsLevel > 0 && fHeadlightsAlpha > 0.0f)
 		{
 			float frontSizeScale = fHeadlightsAlpha;
 			float frontGlowSizeScale = fHeadlightsAlpha*0.28f;
@@ -2900,7 +2933,7 @@ void CCar::Simulate( float fDt )
 			if(	m_conf->visual.headlightType > LIGHTS_SINGLE)
 				fHeadlightsAlpha *= 0.65f;
 
-			float lightLensPercentage = clamp((100.0f-headlightDistance) * 0.025f, 0.0f, 1.0f) * pow(lightsAmbientBrightnessFac, 2.0f);
+			float lightLensPercentage = clamp((100.0f - headlightDistance) * 0.025f, 0.0f, 1.0f) *pow(lightsAmbientBrightnessFac, 2.0f);
 			fHeadlightsAlpha *= lightLensPercentage;
 			fHeadlightsGlowAlpha *= clamp(1.0f - lightLensPercentage, 0.25f, 1.0f);
 
@@ -2965,7 +2998,7 @@ void CCar::Simulate( float fDt )
 			}
 		}
 
-		if ((IsLightEnabled(CAR_LIGHT_BRAKE) || IsLightEnabled(CAR_LIGHT_HEADLIGHTS)) && fBrakeLightAlpha > 0)
+		if ((IsLightEnabled(CAR_LIGHT_BRAKE) || headlightsLevel > 0) && fBrakeLightAlpha > 0)
 		{
 			// draw brake lights
 			float fBrakeLightAlpha2 = fBrakeLightAlpha*0.6f;
@@ -2989,7 +3022,7 @@ void CCar::Simulate( float fDt )
 							DrawLightEffect(positionR, brakelightColor2, BRAKELIGHT_RADIUS, 2);
 					}
 
-					if (IsLightEnabled(CAR_LIGHT_HEADLIGHTS))
+					if (headlightsLevel > 0)
 					{
 						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE)
 							DrawLightEffect(positionL, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
@@ -3022,7 +3055,7 @@ void CCar::Simulate( float fDt )
 							DrawLightEffect(positionR + lDirVec*m_conf->visual.brakelightPosition.w, brakelightColor2, BRAKELIGHT_RADIUS, 2);
 					}
 
-					if (IsLightEnabled(CAR_LIGHT_HEADLIGHTS))
+					if (headlightsLevel > 0)
 					{
 						if (m_bodyParts[CB_BACK_LEFT].damage < MIN_VISUAL_BODYPART_DAMAGE*0.5f)
 							DrawLightEffect(positionL - lDirVec*m_conf->visual.brakelightPosition.w, brakelightColor*BRAKEBACKLIGHT_INTENSITY, BRAKEBACKLIGHT_RADIUS, 1);
@@ -3108,7 +3141,7 @@ void CCar::Simulate( float fDt )
 		hingedCar->SetLight(CAR_LIGHT_BRAKE, IsLightEnabled(CAR_LIGHT_BRAKE));
 		hingedCar->SetLight(CAR_LIGHT_DIM_LEFT, IsLightEnabled(CAR_LIGHT_DIM_LEFT));
 		hingedCar->SetLight(CAR_LIGHT_DIM_RIGHT, IsLightEnabled(CAR_LIGHT_DIM_RIGHT));
-		hingedCar->SetLight(CAR_LIGHT_HEADLIGHTS, IsLightEnabled(CAR_LIGHT_HEADLIGHTS));
+		hingedCar->SetLight(CAR_LIGHT_LOWBEAMS, IsLightEnabled(CAR_LIGHT_LOWBEAMS));
 	}
 }
 

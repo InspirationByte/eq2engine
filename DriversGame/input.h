@@ -23,16 +23,21 @@
 #define IN_HORN				(1 << 8)
 #define IN_SIREN			(1 << 9)
 
-#define IN_LOOKLEFT			(1 << 10)
-#define IN_LOOKRIGHT		(1 << 11)
-#define IN_CHANGECAM		(1 << 12)
+#define IN_SIGNAL_LEFT		(1 << 10)
+#define IN_SIGNAL_RIGHT		(1 << 11)
+#define IN_SIGNAL_EMERGENCY	(1 << 12)
+#define IN_SWITCH_BEAMS		(1 << 13)
 
-#define IN_FORWARD			(1 << 13)
-#define IN_BACKWARD			(1 << 14)
-#define IN_LEFT				(1 << 15)
-#define IN_RIGHT			(1 << 16)
+#define IN_LOOKLEFT			(1 << 14)
+#define IN_LOOKRIGHT		(1 << 15)
+#define IN_CHANGECAM		(1 << 16)
 
-#define IN_FREELOOK			(1 << 17)
+#define IN_FORWARD			(1 << 17)
+#define IN_BACKWARD			(1 << 18)
+#define IN_LEFT				(1 << 19)
+#define IN_RIGHT			(1 << 20)
+
+#define IN_FREELOOK			(1 << 21)
 
 #define IN_MISC				(IN_LOOKLEFT | IN_LOOKRIGHT | IN_CHANGECAM | IN_FORWARD | IN_BACKWARD | IN_LEFT | IN_RIGHT | IN_FREELOOK)
 

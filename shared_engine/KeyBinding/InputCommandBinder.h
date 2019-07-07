@@ -29,7 +29,10 @@ class in_binding_t
 public:
 	in_binding_t()
 	{
+		mod_index[0] = -1;
+		mod_index[1] = -1;
 		key_index = -1;
+
 		boundCommand1 = nullptr;
 		boundCommand2 = nullptr;
 		boundAction = nullptr;
@@ -42,6 +45,7 @@ public:
 	ConCommand*		boundCommand2;	// 'minus' command
 	axisAction_t*	boundAction;
 
+	int			mod_index[2];	// modifier buttons
 	int			key_index;
 };
 
@@ -94,7 +98,7 @@ public:
 	bool					BindKey( const char* pszKeyStr, const char* pszCommand, const char *pszArgs );
 
 	// returns binding
-	in_binding_t*			LookupBinding(uint keyIdent);
+	in_binding_t*			LookupBinding(int keyIdent);
 
 	// removes single binding on specified keychar
 	void					UnbindKey( const char* pszKeyStr);
@@ -121,9 +125,9 @@ public:
 	//
 	// Event processing
 	//
-	void					OnKeyEvent( const int keyIdent, bool bPressed );
-	void					OnMouseEvent( const int button, bool bPressed );
-	void					OnMouseWheel( const int scroll );
+	void					OnKeyEvent( int keyIdent, bool bPressed );
+	void					OnMouseEvent( int button, bool bPressed );
+	void					OnMouseWheel( int scroll );
 
 	void					OnTouchEvent( const Vector2D& pos, int finger, bool down );
 	void					OnJoyAxisEvent( short axis, short value );
@@ -135,6 +139,8 @@ public:
 	template <typename T>
 	void					ExecuteBoundCommands(T* zone, bool bState);
 
+	bool					CheckModifiersAndDepress(in_binding_t* binding, int keyIdent, bool bPressed);
+
 protected:
 	// adds binding
 	in_binding_t*			AddBinding( const char* pszKeyStr, const char* pszCommand, const char *pszArgs );
@@ -144,13 +150,15 @@ protected:
 
 	axisAction_t*			FindAxisAction(const char* name);
 
+	DkList<int>						m_currentButtons;	// current keyboard buttons
+
 	DkList<in_binding_t*>			m_bindings;
 	std::map<int, in_binding_t*>	m_axisBindings;
 
 	DkList<in_touchzone_t>			m_touchZones;
 	DkList<axisAction_t>			m_axisActs;
 
-	bool					m_init;
+	bool							m_init;
 };
 
 extern CInputCommandBinder* g_inputCommandBinder;

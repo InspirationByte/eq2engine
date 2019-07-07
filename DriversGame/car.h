@@ -76,8 +76,8 @@ enum EServiceLightsType
 
 enum ECarLightTypeFlags
 {
-	CAR_LIGHT_HEADLIGHTS		= (1 << 0),		// front lights
-	CAR_LIGHT_HEADLIGHTS_FAR	= (1 << 1),		// front far lights
+	CAR_LIGHT_LOWBEAMS			= (1 << 0),		// front headlights (low beam)
+	CAR_LIGHT_HIGHBEAMS			= (1 << 1),		// front headlights (high beam)
 	CAR_LIGHT_BRAKE				= (1 << 2),		// brake lights
 	CAR_LIGHT_REVERSELIGHT		= (1 << 3),		// white back lights
 	CAR_LIGHT_DIM_LEFT			= (1 << 4),		// dimensional left lights
