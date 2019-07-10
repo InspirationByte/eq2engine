@@ -531,7 +531,7 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 				return INFRACTION_NONE;
 
 			// There is no infraction if bodyB has inflicted this damage to us
-			if(length(obj->GetVelocity()) > length(car->GetVelocity()))
+			if(dot(obj->GetVelocity()-car->GetVelocity(), car->GetForwardVector()*sign(car->GetSpeedWheels())) > 0.0f)
 				return INFRACTION_NONE;
 
 			if (obj->ObjType() == GO_CAR_AI)

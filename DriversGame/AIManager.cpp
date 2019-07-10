@@ -628,7 +628,11 @@ void CAIManager::RemoveAllCars()
 {
 	// Try to remove cars
 	for (int i = 0; i < m_trafficCars.numElem(); i++)
+	{
 		RemoveTrafficCar(m_trafficCars[i]);
+		i--;
+	}
+		
 
 	m_trafficCars.clear();
 }
