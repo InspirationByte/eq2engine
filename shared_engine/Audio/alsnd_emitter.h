@@ -51,6 +51,8 @@ protected:
 	bool				SelfAssignChannel();
 	bool				DropChannel();
 
+	void				UpdateParams();
+
 	bool				m_virtual;
 	ALenum				m_virtualState;
 
