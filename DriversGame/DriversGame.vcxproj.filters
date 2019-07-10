@@ -497,12 +497,6 @@
     <Library Include="..\src_dependency\openal-soft\build\Release\OpenAL32.lib">
       <Filter>Libs</Filter>
     </Library>
-    <Library Include="..\src_dependency\Shiny\Shiny\lib\Debug\Shiny.lib">
-      <Filter>Libs\shiny</Filter>
-    </Library>
-    <Library Include="..\src_dependency\Shiny\Shiny\lib\Release\Shiny.lib">
-      <Filter>Libs\shiny</Filter>
-    </Library>
     <Library Include="..\src_dependency\jpeg\lib\jpeg.lib">
       <Filter>Libs</Filter>
     </Library>
@@ -514,6 +508,12 @@
     </Library>
     <Library Include="..\src_dependency\libogg\win32\VS2015\Win32\Release\libogg_static.lib">
       <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\Shiny\lib\Release\Shiny.lib">
+      <Filter>Libs\shiny</Filter>
+    </Library>
+    <Library Include="..\src_dependency\Shiny\lib\Debug\Shiny.lib">
+      <Filter>Libs\shiny</Filter>
     </Library>
   </ItemGroup>
   <ItemGroup>
