@@ -46,7 +46,7 @@ public:
 
 	void PhysicsCreateObjects()
 	{
-		if(m_pPhysicsObject)
+		if(m_physObj)
 			return;
 
 		IPhysicsObject* pObject = PhysicsInitStatic();
@@ -137,7 +137,7 @@ public:
 
 	void PhysicsCreateObjects()
 	{
-		if(m_pPhysicsObject || !m_pModel)
+		if(m_physObj || !m_pModel)
 			return;
 
 		IPhysicsObject* pObject = PhysicsInitStatic();
@@ -209,7 +209,7 @@ public:
 
 	void PhysicsCreateObjects()
 	{
-		if(m_pPhysicsObject)
+		if(m_physObj)
 			return;
 
 		IPhysicsObject* pObject = PhysicsInitNormal(0, m_bStartAsleep);

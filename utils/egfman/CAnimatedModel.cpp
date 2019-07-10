@@ -16,7 +16,7 @@ CAnimatedModel::CAnimatedModel()
 {
 	m_pModel = nullptr;
 	m_pRagdoll = nullptr;
-	m_pPhysicsObject = nullptr;
+	m_physObj = nullptr;
 	m_bPhysicsEnable = false;
 
 	m_bodyGroupFlags = 0xFFFFFFF;
@@ -27,10 +27,10 @@ void CAnimatedModel::SetModel(IEqModel* pModel)
 {
 	m_bPhysicsEnable = false;
 
-	if(m_pPhysicsObject)
-		physics->DestroyPhysicsObject(m_pPhysicsObject);
+	if(m_physObj)
+		physics->DestroyPhysicsObject(m_physObj);
 
-	m_pPhysicsObject = NULL;
+	m_physObj = NULL;
 
 	// do cleanup
 	DestroyAnimating();
@@ -65,13 +65,13 @@ void CAnimatedModel::SetModel(IEqModel* pModel)
 	else
 	{
 		if(m_pModel->GetHWData()->physModel.numObjects)
-			m_pPhysicsObject = physics->CreateObject(&m_pModel->GetHWData()->physModel, 0);
+			m_physObj = physics->CreateObject(&m_pModel->GetHWData()->physModel, 0);
 	}
 }
 
 void CAnimatedModel::TogglePhysicsState()
 {
-	if(m_pRagdoll || m_pPhysicsObject)
+	if(m_pRagdoll || m_physObj)
 	{
 		m_bPhysicsEnable = !m_bPhysicsEnable;
 
@@ -98,10 +98,10 @@ void CAnimatedModel::TogglePhysicsState()
 				}
 				m_pRagdoll->GetVisualBonesTransforms( m_boneTransforms );
 			}
-			else if(m_pPhysicsObject)
+			else if(m_physObj)
 			{
-				m_pPhysicsObject->SetActivationState(PS_FROZEN);
-				m_pPhysicsObject->SetCollisionResponseEnabled( false );
+				m_physObj->SetActivationState(PS_FROZEN);
+				m_physObj->SetCollisionResponseEnabled( false );
 			}
 			
 
@@ -136,16 +136,16 @@ void CAnimatedModel::ResetPhysics()
 
 		m_pRagdoll->Wake();
 	}
-	else if(m_pPhysicsObject)
+	else if(m_physObj)
 	{
-		m_pPhysicsObject->SetPosition(Vector3D(0,m_pModel->GetAABB().maxPoint.y,0));
-		m_pPhysicsObject->SetAngles(vec3_zero);
-		//m_pPhysicsObject->SetFriction();
-		m_pPhysicsObject->SetActivationState(PS_ACTIVE);
-		m_pPhysicsObject->SetCollisionResponseEnabled( true );
-		m_pPhysicsObject->SetContents(COLLISION_GROUP_OBJECTS);
-		m_pPhysicsObject->SetCollisionMask(COLLIDE_OBJECT);
-		m_pPhysicsObject->WakeUp();
+		m_physObj->SetPosition(Vector3D(0,m_pModel->GetAABB().maxPoint.y,0));
+		m_physObj->SetAngles(vec3_zero);
+		//m_physObj->SetFriction();
+		m_physObj->SetActivationState(PS_ACTIVE);
+		m_physObj->SetCollisionResponseEnabled( true );
+		m_physObj->SetContents(COLLISION_GROUP_OBJECTS);
+		m_physObj->SetCollisionMask(COLLIDE_OBJECT);
+		m_physObj->WakeUp();
 	}
 }
 
@@ -398,8 +398,8 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 	{
 		if(m_pRagdoll)
 			posMatrix.translate(m_pRagdoll->GetPosition());
-		else if(m_pPhysicsObject)
-			posMatrix = m_pPhysicsObject->GetTransformMatrix();
+		else if(m_physObj)
+			posMatrix = m_physObj->GetTransformMatrix();
 	}
 
 	materials->SetMatrix(MATRIXMODE_WORLD, posMatrix);
@@ -480,8 +480,8 @@ void CAnimatedModel::VisualizeBones()
 	{
 		if(m_pRagdoll)
 			posMatrix.translate(m_pRagdoll->GetPosition());
-		else if(m_pPhysicsObject)
-			posMatrix = m_pPhysicsObject->GetTransformMatrix();
+		else if(m_physObj)
+			posMatrix = m_physObj->GetTransformMatrix();
 	}
 
 	// setup each bone's transformation

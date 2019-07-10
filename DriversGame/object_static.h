@@ -42,7 +42,7 @@ public:
 
 protected:
 
-	CEqCollisionObject*	m_pPhysicsObject;
+	CEqCollisionObject*	m_physObj;
 
 	wlightdata_t		m_light;
 

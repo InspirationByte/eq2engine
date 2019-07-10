@@ -25,7 +25,7 @@ static ColorRGB lightColorTypes[] =
 CObject_TrafficLight::CObject_TrafficLight( kvkeybase_t* kvdata )
 {
 	m_keyValues = kvdata;
-	m_pPhysicsObject = NULL;
+	m_physObj = NULL;
 	m_flicker = false;
 	m_killed = false;
 	m_flickerTime = 0;
@@ -41,12 +41,12 @@ void CObject_TrafficLight::OnRemove()
 {
 	BaseClass::OnRemove();
 
-	if(m_pPhysicsObject)
+	if(m_physObj)
 	{
-		m_pPhysicsObject->SetUserData(NULL);
-		g_pPhysics->m_physics.DestroyStaticObject(m_pPhysicsObject);
+		m_physObj->SetUserData(NULL);
+		g_pPhysics->m_physics.DestroyStaticObject(m_physObj);
 	}
-	m_pPhysicsObject = NULL;
+	m_physObj = NULL;
 }
 
 void CObject_TrafficLight::Spawn()
@@ -64,9 +64,9 @@ void CObject_TrafficLight::Spawn()
 		m_pModel->SetInstancer( instancer );
 	}
 
-	m_pPhysicsObject = new CEqCollisionObject();
+	m_physObj = new CEqCollisionObject();
 
-	if( m_pPhysicsObject->Initialize(&m_pModel->GetHWData()->physModel, 0) )//
+	if( m_physObj->Initialize(&m_pModel->GetHWData()->physModel, 0) )//
 	{
 		physobject_t* obj = &m_pModel->GetHWData()->physModel.objects[0].object;
 
@@ -74,37 +74,37 @@ void CObject_TrafficLight::Spawn()
 		eqPhysSurfParam_t* surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);
 		if(surfParams)
 		{
-			m_pPhysicsObject->SetFriction( surfParams->friction );
-			m_pPhysicsObject->SetRestitution( surfParams->restitution );
+			m_physObj->SetFriction( surfParams->friction );
+			m_physObj->SetRestitution( surfParams->restitution );
 		}
 		else
 		{
-			m_pPhysicsObject->SetFriction( 0.8f );
-			m_pPhysicsObject->SetRestitution( 0.0f );
+			m_physObj->SetFriction( 0.8f );
+			m_physObj->SetRestitution( 0.0f );
 		}
 
 		// deny wheel and camera collisions
-		m_pPhysicsObject->m_flags = COLLOBJ_NO_RAYCAST;
+		m_physObj->m_flags = COLLOBJ_NO_RAYCAST;
 
-		m_pPhysicsObject->SetPosition( m_vecOrigin );
-		m_pPhysicsObject->SetOrientation(Quaternion(DEG2RAD(m_vecAngles.x),DEG2RAD(m_vecAngles.y),DEG2RAD(m_vecAngles.z)));
-		m_pPhysicsObject->SetUserData(this);
+		m_physObj->SetPosition( m_vecOrigin );
+		m_physObj->SetOrientation(Quaternion(DEG2RAD(m_vecAngles.x),DEG2RAD(m_vecAngles.y),DEG2RAD(m_vecAngles.z)));
+		m_physObj->SetUserData(this);
 
-		m_pPhysicsObject->SetContents( OBJECTCONTENTS_SOLID_OBJECTS );
-		m_pPhysicsObject->SetCollideMask( 0 );
+		m_physObj->SetContents( OBJECTCONTENTS_SOLID_OBJECTS );
+		m_physObj->SetCollideMask( 0 );
 
-		g_pPhysics->m_physics.AddStaticObject( m_pPhysicsObject );
+		g_pPhysics->m_physics.AddStaticObject( m_physObj );
 
-		m_bbox = m_pPhysicsObject->m_aabb_transformed;
+		m_bbox = m_physObj->m_aabb_transformed;
 	}
 	else
 	{
 		MsgError("No physics model for '%s'\n", m_pModel->GetName());
-		delete m_pPhysicsObject;
+		delete m_physObj;
 	}
 
 	Matrix4x4 objectMat;
-	m_pPhysicsObject->ConstructRenderMatrix(objectMat);
+	m_physObj->ConstructRenderMatrix(objectMat);
 
 	for(int i = 0; i < m_keyValues->keys.numElem(); i++)
 	{
@@ -130,16 +130,16 @@ void CObject_TrafficLight::Spawn()
 
 void CObject_TrafficLight::SetOrigin(const Vector3D& origin)
 {
-	if(m_pPhysicsObject)
-		m_pPhysicsObject->SetPosition( origin );
+	if(m_physObj)
+		m_physObj->SetPosition( origin );
 
 	m_vecOrigin = origin;
 }
 
 void CObject_TrafficLight::SetAngles(const Vector3D& angles)
 {
-	if(m_pPhysicsObject)
-		m_pPhysicsObject->SetOrientation(Quaternion(DEG2RAD(angles.x),DEG2RAD(angles.y),DEG2RAD(angles.z)));
+	if(m_physObj)
+		m_physObj->SetOrientation(Quaternion(DEG2RAD(angles.x),DEG2RAD(angles.y),DEG2RAD(angles.z)));
 
 	m_vecAngles = angles;
 
@@ -190,7 +190,7 @@ void CObject_TrafficLight::Draw( int nRenderFlags )
 
 	//-------------------------------------------
 
-	m_pPhysicsObject->ConstructRenderMatrix(m_worldMatrix);
+	m_physObj->ConstructRenderMatrix(m_worldMatrix);
 
 	if(r_enableObjectsInstancing.GetBool() && m_pModel->GetInstancer())
 	{

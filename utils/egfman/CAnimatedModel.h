@@ -62,7 +62,7 @@ protected:
 public:
 
 	IEqModel*					m_pModel;
-	IPhysicsObject*				m_pPhysicsObject;
+	IPhysicsObject*				m_physObj;
 	ragdoll_t*					m_pRagdoll;
 	bool						m_bPhysicsEnable;
 

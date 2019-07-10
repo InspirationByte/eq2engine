@@ -42,11 +42,11 @@ public:
 		PhysicsInitNormal(0, false);
 
 		// collide only with world
-		m_pPhysicsObject->SetCollisionMask(COLLIDE_OBJECT);
-		m_pPhysicsObject->SetContents(COLLISION_GROUP_OBJECTS);
+		m_physObj->SetCollisionMask(COLLIDE_OBJECT);
+		m_physObj->SetContents(COLLISION_GROUP_OBJECTS);
 
-		m_pPhysicsObject->SetPosition(GetAbsOrigin());
-		m_pPhysicsObject->SetAngles(GetAbsAngles());
+		m_physObj->SetPosition(GetAbsOrigin());
+		m_physObj->SetAngles(GetAbsAngles());
 
 		SetHealth(15);
 	}
@@ -63,19 +63,19 @@ public:
 
 	void SetAbsOrigin(Vector3D &orig)
 	{
-		m_pPhysicsObject->SetPosition(orig);
+		m_physObj->SetPosition(orig);
 		BaseEntity::SetAbsOrigin(orig);
 	}
 
 	void SetAbsAngles(Vector3D &angles)
 	{
-		m_pPhysicsObject->SetAngles(angles);
+		m_physObj->SetAngles(angles);
 		BaseEntity::SetAbsAngles(angles);
 	}
 
 	void SetAbsVelocity(Vector3D &vel)
 	{
-		m_pPhysicsObject->SetVelocity(vel);
+		m_physObj->SetVelocity(vel);
 		BaseEntity::SetAbsVelocity(vel);
 	}
 
@@ -83,7 +83,7 @@ public:
 	{
 		g_modelList->AddRenderable(this);
 
-		m_pPhysicsObject->WakeUp();
+		m_physObj->WakeUp();
 
 		if(true)
 		{
@@ -94,7 +94,7 @@ public:
 			exp.origin = GetAbsOrigin();
 			exp.pInflictor = GetOwner();
 
-			exp.pIgnore.append(m_pPhysicsObject);
+			exp.pIgnore.append(m_physObj);
 
 			physics->DoForEachObject(ExplodeAddImpulseToEachObject, &exp);
 			exp.fast = false;
@@ -196,13 +196,13 @@ public:
 
 	void Update(float dt)
 	{
-		BaseEntity::SetAbsAngles(m_pPhysicsObject->GetAngles());
-		BaseEntity::SetAbsOrigin(m_pPhysicsObject->GetPosition());
+		BaseEntity::SetAbsAngles(m_physObj->GetAngles());
+		BaseEntity::SetAbsOrigin(m_physObj->GetPosition());
 
 		Vector3D up;
 		AngleVectors(GetAbsAngles(), NULL, NULL, &up);
 
-		ObjectSoundEvents(m_pPhysicsObject, this);
+		ObjectSoundEvents(m_physObj, this);
 	}
 
 private:

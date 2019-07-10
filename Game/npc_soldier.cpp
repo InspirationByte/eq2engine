@@ -197,7 +197,7 @@ void CNPCTestSoldier::AliveThink()
 	Vector3D targetLook = m_TargetPath.GetCurrentWayPoint().position;
 
 	internaltrace_t tr;
-	physics->InternalTraceLine(GetEyeOrigin(), pPlayer->GetAbsOrigin(), COLLISION_GROUP_WORLD | COLLISION_GROUP_OBJECTS | COLLISION_GROUP_ACTORS, &tr, &m_pPhysicsObject, 1);
+	physics->InternalTraceLine(GetEyeOrigin(), pPlayer->GetAbsOrigin(), COLLISION_GROUP_WORLD | COLLISION_GROUP_OBJECTS | COLLISION_GROUP_ACTORS, &tr, &m_physObj, 1);
 
 	Matrix4x4 proj = perspectiveMatrixY(DEG2RAD(100), 1,1,1,10000);
 	Vector3D vRadianRotation = VDEG2RAD(GetEyeAngles());
@@ -272,7 +272,7 @@ void CNPCTestSoldier::AliveThink()
 	SnapEyeAngles(angles);
 
 	BoundingBox box;
-	m_pPhysicsObject->GetAABB(box.minPoint, box.maxPoint);
+	m_physObj->GetAABB(box.minPoint, box.maxPoint);
 
 	Vector3D pos = m_vecAbsOrigin-Vector3D(0, box.GetSize().y*0.5f, 0);
 
@@ -411,7 +411,7 @@ Matrix4x4 CNPCTestSoldier::GetRenderWorldTransform()
 		return translate(m_pRagdoll->GetPosition());
 
 	BoundingBox box;
-	m_pPhysicsObject->GetAABB(box.minPoint, box.maxPoint);
+	m_physObj->GetAABB(box.minPoint, box.maxPoint);
 
 	Vector3D center = m_vecAbsOrigin-Vector3D(0, box.GetSize().y*0.5f, 0);
 

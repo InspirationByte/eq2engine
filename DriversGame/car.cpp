@@ -673,7 +673,7 @@ CCar::CCar()
 }
 
 CCar::CCar( vehicleConfig_t* config ) :
-	m_pPhysicsObject(NULL),
+	m_physObj(NULL),
 	m_trailerHinge(NULL),
 	m_fEngineRPM(0.0f),
 	m_nPrevGear(-1),
@@ -705,7 +705,8 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_torqueScale(1.0f),
 	m_maxSpeed(125.0f),
 	m_gearboxShiftThreshold(1.0f),
-	m_shiftDelay(0.0f)
+	m_shiftDelay(0.0f),
+	m_assignedRoadblock(nullptr)
 {
 	m_conf = config;
 	memset(m_bodyParts, 0,sizeof(m_bodyParts));
@@ -719,8 +720,6 @@ CCar::CCar( vehicleConfig_t* config ) :
 		SetColorScheme(0);
 		m_maxSpeed = m_conf->physics.maxSpeed;
 	}
-
-
 }
 
 void CCar::DebugReloadCar()
@@ -832,8 +831,8 @@ void CCar::CreateCarPhysics()
 	body->SetPosition(m_vecOrigin);
 	body->SetOrientation(Quaternion(DEG2RAD(m_vecAngles.x),DEG2RAD(m_vecAngles.y),DEG2RAD(m_vecAngles.z)));
 
-	m_pPhysicsObject = new CPhysicsHFObject( body, this );
-	g_pPhysics->AddObject( m_pPhysicsObject );
+	m_physObj = new CPhysicsHFObject( body, this );
+	g_pPhysics->AddObject( m_physObj );
 }
 
 ISoundController* CCar::CreateCarSound(const char* name, float radiusMult)
@@ -972,7 +971,7 @@ void CCar::AlignToGround()
 	reg->GetHField()->GetTileTBN(hfieldCell.x, hfieldCell.y, t,b,n);
 	Matrix3x3 cellAngle(b,n,t);
 	Matrix3x3 finalAngle = !cellAngle * Matrix3x3( GetOrientation() );
-	if(m_pPhysicsObject)
+	if(m_physObj)
 		SetOrientation( Quaternion( transpose(finalAngle) ) );
 	*/
 
@@ -1003,8 +1002,15 @@ void CCar::OnRemove()
 	delete [] m_wheels;
 	m_wheels = NULL;
 
-	g_pPhysics->RemoveObject(m_pPhysicsObject);
-	m_pPhysicsObject = nullptr;
+	g_pPhysics->RemoveObject(m_physObj);
+	m_physObj = nullptr;
+
+	if (m_assignedRoadblock)
+	{
+		m_assignedRoadblock->activeCars.fastRemove(this);
+		m_assignedRoadblock = nullptr;
+	}
+
 }
 
 void CCar::PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell)
@@ -1025,40 +1031,40 @@ void CCar::PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell)
 
 	Quaternion rotation( finalAngle );
 	renormalize(rotation);
-	m_pPhysicsObject->GetBody()->SetOrientation(rotation);
+	m_physObj->GetBody()->SetOrientation(rotation);
 }
 
 void CCar::SetOrigin(const Vector3D& origin)
 {
-	if(m_pPhysicsObject)
-		m_pPhysicsObject->GetBody()->SetPosition(origin);
+	if(m_physObj)
+		m_physObj->GetBody()->SetPosition(origin);
 
 	m_vecOrigin = origin;
 }
 
 void CCar::SetAngles(const Vector3D& angles)
 {
-	if(m_pPhysicsObject)
-		m_pPhysicsObject->GetBody()->SetOrientation(Quaternion(DEG2RAD(angles.x),DEG2RAD(angles.y),DEG2RAD(angles.z)));
+	if(m_physObj)
+		m_physObj->GetBody()->SetOrientation(Quaternion(DEG2RAD(angles.x),DEG2RAD(angles.y),DEG2RAD(angles.z)));
 
 	m_vecAngles = angles;
 }
 
 void CCar::SetOrientation(const Quaternion& q)
 {
-	m_pPhysicsObject->GetBody()->SetOrientation(q);
+	m_physObj->GetBody()->SetOrientation(q);
 }
 
 void CCar::SetVelocity(const Vector3D& vel)
 {
-	m_pPhysicsObject->GetBody()->SetLinearVelocity( vel  );
-	m_pPhysicsObject->GetBody()->TryWake();
+	m_physObj->GetBody()->SetLinearVelocity( vel  );
+	m_physObj->GetBody()->TryWake();
 }
 
 void CCar::SetAngularVelocity(const Vector3D& vel)
 {
-	m_pPhysicsObject->GetBody()->SetAngularVelocity( vel );
-	m_pPhysicsObject->GetBody()->TryWake();
+	m_physObj->GetBody()->SetAngularVelocity( vel );
+	m_physObj->GetBody()->TryWake();
 }
 
 ConVar cam_custom("cam_custom", "0", NULL, CV_CHEAT);
@@ -1098,13 +1104,13 @@ void CCar::ConfigureCamera(cameraConfig_t& conf, eqPhysCollisionFilter& filter) 
 
 const Quaternion& CCar::GetOrientation() const
 {
-	if(!m_pPhysicsObject)
+	if(!m_physObj)
 	{
 		static Quaternion _zeroQuaternion;
 		return _zeroQuaternion;
 	}
 
-	return m_pPhysicsObject->GetBody()->GetOrientation();
+	return m_physObj->GetBody()->GetOrientation();
 }
 
 const Vector3D CCar::GetForwardVector() const
@@ -1124,52 +1130,52 @@ const Vector3D CCar::GetRightVector() const
 
 const Vector3D& CCar::GetVelocity() const
 {
-	return m_pPhysicsObject->GetBody()->GetLinearVelocity();
+	return m_physObj->GetBody()->GetLinearVelocity();
 }
 
 const Vector3D& CCar::GetAngularVelocity() const
 {
-	return m_pPhysicsObject->GetBody()->GetAngularVelocity();
+	return m_physObj->GetBody()->GetAngularVelocity();
 }
 
 CEqRigidBody* CCar::GetPhysicsBody() const
 {
-	if(!m_pPhysicsObject)
+	if(!m_physObj)
 		return NULL;
 
-	return m_pPhysicsObject->GetBody();
+	return m_physObj->GetBody();
 }
 
 void CCar::L_SetContents(int contents)
 {
-	if (!m_pPhysicsObject)
+	if (!m_physObj)
 		return;
 
-	m_pPhysicsObject->GetBody()->SetContents(contents);
+	m_physObj->GetBody()->SetContents(contents);
 }
 
 void CCar::L_SetCollideMask(int contents)
 {
-	if (!m_pPhysicsObject)
+	if (!m_physObj)
 		return;
 
-	m_pPhysicsObject->GetBody()->SetCollideMask(contents);
+	m_physObj->GetBody()->SetCollideMask(contents);
 }
 
 int	CCar::L_GetContents() const
 {
-	if (!m_pPhysicsObject)
+	if (!m_physObj)
 		return 0;
 
-	return m_pPhysicsObject->GetBody()->GetContents();
+	return m_physObj->GetBody()->GetContents();
 }
 
 int	CCar::L_GetCollideMask() const
 {
-	if (!m_pPhysicsObject)
+	if (!m_physObj)
 		return 0;
 
-	return m_pPhysicsObject->GetBody()->GetCollideMask();
+	return m_physObj->GetBody()->GetCollideMask();
 }
 
 void CCar::SetControlButtons(int flags)
@@ -1292,7 +1298,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 {
 	PROFILE_FUNC();
 
-	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
+	CEqRigidBody* carBody = m_physObj->GetBody();
 
 	// retrieve body matrix
 	carBody->ConstructRenderMatrix(m_worldMatrix);
@@ -2075,7 +2081,7 @@ void CCar::RefreshWindowDamageEffects()
 
 void CCar::EmitCollisionParticles(const Vector3D& position, const Vector3D& velocity, const Vector3D& normal, int numDamageParticles, float fCollImpulse)
 {
-	//CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
+	//CEqRigidBody* carBody = m_physObj->GetBody();
 
 	float wlen = length(velocity);
 
@@ -2158,7 +2164,7 @@ void CCar::OnPrePhysicsFrame(float fDt)
 
 bool CCar::UpdateWaterState( float fDt, bool hasCollidedWater )
 {
-	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
+	CEqRigidBody* carBody = m_physObj->GetBody();
 	
 	// if body frozen, return previous state
 	if(carBody->IsFrozen())
@@ -2213,7 +2219,7 @@ bool CCar::UpdateWaterState( float fDt, bool hasCollidedWater )
 
 void CCar::OnPhysicsFrame( float fDt )
 {
-	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
+	CEqRigidBody* carBody = m_physObj->GetBody();
 
 	// retrieve body matrix again
 	carBody->ConstructRenderMatrix(m_worldMatrix);
@@ -2560,10 +2566,10 @@ void CCar::Simulate( float fDt )
 {
 	PROFILE_FUNC();
 
-	if(!m_pPhysicsObject)
+	if(!m_physObj)
 		return;
 
-	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
+	CEqRigidBody* carBody = m_physObj->GetBody();
 
 	if(!carBody)
 		return;
@@ -3627,7 +3633,7 @@ void CCar::UpdateWheelEffect(int nWheel, float fDt)
 
 void CCar::UpdateSounds( float fDt )
 {
-	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
+	CEqRigidBody* carBody = m_physObj->GetBody();
 
 	Vector3D pos = carBody->GetPosition();
 	Vector3D velocity = carBody->GetLinearVelocity();
@@ -3908,7 +3914,7 @@ float CCar::GetWheelSpeed(int index) const
 
 float CCar::GetSpeed() const
 {
-	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
+	CEqRigidBody* carBody = m_physObj->GetBody();
 	return length(carBody->GetLinearVelocity().xz()) * MPS_TO_KPH;
 }
 
@@ -3946,7 +3952,7 @@ int CCar::GetGear() const
 
 float CCar::GetLateralSlidingAtBody() const
 {
-	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
+	CEqRigidBody* carBody = m_physObj->GetBody();
 
 	Vector3D velocityAtCollisionPoint = carBody->GetLinearVelocity();
 
@@ -3989,7 +3995,7 @@ float CCar::GetLateralSlidingAtWheels(bool surfCheck) const
 
 float CCar::GetLateralSlidingAtWheel(int wheel) const
 {
-	CEqRigidBody* carBody = m_pPhysicsObject->GetBody();
+	CEqRigidBody* carBody = m_physObj->GetBody();
 
 	if(m_wheels[wheel].m_collisionInfo.fract >= 1.0f)
 		return 0.0f;
@@ -4290,7 +4296,7 @@ void CCar::Draw( int nRenderFlags )
 	// draw wheels
 	if(!isShadowPass)
 	{
-		CEqRigidBody* pCarBody = m_pPhysicsObject->GetBody();
+		CEqRigidBody* pCarBody = m_physObj->GetBody();
 
 		pCarBody->UpdateBoundingBoxTransform();
 		m_bbox = pCarBody->m_aabb_transformed;
@@ -4551,18 +4557,18 @@ bool CCar::HasAutoGearSwitch() const
 
 void CCar::SetInfiniteMass( bool infMass )
 {
-	if(m_pPhysicsObject == nullptr)
+	if(m_physObj == nullptr)
 		return;
 
 	if(infMass)
-		m_pPhysicsObject->GetBody()->m_flags |= BODY_INFINITEMASS;
+		m_physObj->GetBody()->m_flags |= BODY_INFINITEMASS;
 	else
-		m_pPhysicsObject->GetBody()->m_flags &= ~BODY_INFINITEMASS;
+		m_physObj->GetBody()->m_flags &= ~BODY_INFINITEMASS;
 }
 
 bool CCar::HasInfiniteMass() const
 {
-	return (m_pPhysicsObject->GetBody()->m_flags & BODY_INFINITEMASS) > 0;
+	return (m_physObj->GetBody()->m_flags & BODY_INFINITEMASS) > 0;
 }
 
 void CCar::Lock(bool lock)

@@ -71,16 +71,16 @@ CBaseWeapon::~CBaseWeapon()
 
 void CBaseWeapon::PhysicsCreateObjects()
 {
-	if(m_pPhysicsObject)
+	if(m_physObj)
 		return;
 
 	PhysicsInitNormal(COLLISION_GROUP_OBJECTS, true);
 
 	// collide only with world
-	m_pPhysicsObject->SetCollisionMask(WORLD_WEAPON_COLLIDE);
+	m_physObj->SetCollisionMask(WORLD_WEAPON_COLLIDE);
 
-	m_pPhysicsObject->SetPosition(BaseClass::GetAbsOrigin());
-	m_pPhysicsObject->SetAngles(BaseClass::GetAbsAngles());
+	m_physObj->SetPosition(BaseClass::GetAbsOrigin());
+	m_physObj->SetAngles(BaseClass::GetAbsAngles());
 }
 
 void CBaseWeapon::Spawn()
@@ -223,13 +223,13 @@ void CBaseWeapon::Update(float decaytime)
 	if(!m_pOwner)
 	{
 		// collide only with world
-		m_pPhysicsObject->SetContents(COLLISION_GROUP_OBJECTS);
-		m_pPhysicsObject->SetCollisionMask(WORLD_WEAPON_COLLIDE);
+		m_physObj->SetContents(COLLISION_GROUP_OBJECTS);
+		m_physObj->SetCollisionMask(WORLD_WEAPON_COLLIDE);
 
-		BaseEntity::SetAbsAngles(m_pPhysicsObject->GetAngles());
-		BaseEntity::SetAbsOrigin(m_pPhysicsObject->GetPosition());
+		BaseEntity::SetAbsAngles(m_physObj->GetAngles());
+		BaseEntity::SetAbsOrigin(m_physObj->GetPosition());
 
-		m_pPhysicsObject->SetAngularFactor(Vector3D(1));
+		m_physObj->SetAngularFactor(Vector3D(1));
 
 		ObjectSoundEvents(PhysicsGetObject(), this);
 	}
@@ -238,11 +238,11 @@ void CBaseWeapon::Update(float decaytime)
 		// use bone merge with player model
 
 		// Don't collide with anything
-		m_pPhysicsObject->SetCollisionMask( 0 );
-		m_pPhysicsObject->SetContents(0);
-		m_pPhysicsObject->SetActivationState(PS_INACTIVE);
+		m_physObj->SetCollisionMask( 0 );
+		m_physObj->SetContents(0);
+		m_physObj->SetActivationState(PS_INACTIVE);
 
-		m_pPhysicsObject->SetPosition(m_pOwner->GetAbsOrigin()-Vector3D(0,25,0));
+		m_physObj->SetPosition(m_pOwner->GetAbsOrigin()-Vector3D(0,25,0));
 
 		SetLocalOrigin(vec3_zero);
 		SetLocalAngles(vec3_zero);

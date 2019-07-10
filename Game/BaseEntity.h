@@ -301,10 +301,10 @@ public:
 	void						PhysicsDestroyObject();
 
 	// sets physics object
-	void						PhysicsSetObject(IPhysicsObject* pObject)		{m_pPhysicsObject = pObject;}
+	void						PhysicsSetObject(IPhysicsObject* pObject)		{m_physObj = pObject;}
 
 	// returns current physics object
-	IPhysicsObject*				PhysicsGetObject()								{return m_pPhysicsObject;}
+	IPhysicsObject*				PhysicsGetObject()								{return m_physObj;}
 
 	// a procedure that creates physics objects. You must use it.
 	virtual void				PhysicsCreateObjects() {}
@@ -460,7 +460,7 @@ protected:
 	DkList<tempdecal_t*>		m_pDecals;
 
 	EntPhysicsType_e			m_pPhysicsType;
-	IPhysicsObject*				m_pPhysicsObject;
+	IPhysicsObject*				m_physObj;
 
 	// bounding box
 	BoundingBox					m_vBBox;

@@ -37,7 +37,7 @@ public:
 
 protected:
 
-	CEqCollisionObject*	m_pPhysicsObject;
+	CEqCollisionObject*	m_physObj;
 	EqString			m_smashSound;
 	CBillboardList*		m_blbList;
 };

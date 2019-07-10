@@ -34,7 +34,7 @@ BEGIN_DATAMAP_NO_BASE(BaseEntity)
 	DEFINE_KEYFIELD( m_pszModelName, "model", VTYPE_MODELNAME),
 	DEFINE_KEYFIELD( m_pszScriptName, "script", VTYPE_STRING),
 
-	DEFINE_FIELD( m_pPhysicsObject, VTYPE_PHYSICSOBJECT),
+	DEFINE_FIELD( m_physObj, VTYPE_PHYSICSOBJECT),
 
 	DEFINE_KEYFIELD( m_pszTargetEntity, "target", VTYPE_STRING),
 	DEFINE_FIELD( m_pTargetEntityPointer, VTYPE_ENTITYPTR),
@@ -101,7 +101,7 @@ BaseEntity::BaseEntity()
 	m_bThinked				= true;
 
 	m_pPhysicsType			= PHYSTYPE_STATIC;
-	m_pPhysicsObject		= NULL;
+	m_physObj		= NULL;
 
 	m_pModel				= NULL;
 
@@ -913,9 +913,9 @@ IPhysicsObject* BaseEntity::PhysicsInitCustom(int nSolidFlags, bool makeAsleep, 
 
 void BaseEntity::PhysicsDestroyObject()
 {
-	if(m_pPhysicsObject)
+	if(m_physObj)
 	{
-		physics->DestroyPhysicsObject(m_pPhysicsObject);
+		physics->DestroyPhysicsObject(m_physObj);
 		PhysicsSetObject(NULL);
 	}
 }

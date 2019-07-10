@@ -465,6 +465,9 @@
     <ClCompile Include="AIManager.cpp">
       <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClCompile>
+    <ClCompile Include="GameDefs.cpp">
+      <Filter>Файлы исходного кода\Game\Objects</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\src_dependency\oolua\bin\Release\oolua.lib">

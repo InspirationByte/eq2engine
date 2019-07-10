@@ -301,7 +301,7 @@ void CWhiteCagePlayer::AliveThink()
 	if(gpGlobals->curtime > m_fNextPickupCheckTime)
 	{
 		DkList<BaseEntity*> pEnts;
-		UTIL_EntitiesInSphere(m_pPhysicsObject->GetPosition()-Vector3D(0,42,0), 60, (DkList<BaseEntity*>*)&pEnts);
+		UTIL_EntitiesInSphere(m_physObj->GetPosition()-Vector3D(0,42,0), 60, (DkList<BaseEntity*>*)&pEnts);
 
 		for(int i = 0; i < pEnts.numElem(); i++)
 		{
@@ -367,7 +367,7 @@ void CWhiteCagePlayer::AliveThink()
 		{
 			DropWeapon(pActWeapon);
 
-			pActWeapon->PhysicsGetObject()->SetPosition(m_pPhysicsObject->GetPosition() + Vector3D(0,25,0));
+			pActWeapon->PhysicsGetObject()->SetPosition(m_physObj->GetPosition() + Vector3D(0,25,0));
 
 			Vector3D f,r,u;
 			AngleVectors(GetEyeAngles(), &f,&r,&u);
@@ -881,7 +881,7 @@ bool CWhiteCagePlayer::ProcessBob(Vector3D& p, Vector3D& dangle)
 
 void CWhiteCagePlayer::UpdateView()
 {
-	if(!m_pPhysicsObject)
+	if(!m_physObj)
 		return;
 
 	BaseClass::UpdateView();

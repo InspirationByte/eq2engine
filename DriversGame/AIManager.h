@@ -130,6 +130,8 @@ public:
 	bool						SpawnRoadBlockFor( CCar* car, float directionAngle);
 	bool						IsRoadBlockSpawn() const;
 
+	void						UpdateRoadblocks();
+
 	void						MakePursued( CCar* car );
 	void						StopPursuit( CCar* car );
 
@@ -176,14 +178,9 @@ protected:
 	float						m_trafficUpdateTime;
 	float						m_velocityMapUpdateTime;
 
-	DkList<CCar*>				m_trafficCars;
-
 public:
-	DkList<CAIPursuerCar*>		m_copCars;
-
-	DkList<CCar*>				m_roadBlockCars;
-	int							m_roadBlockSpawnedCount;
-	IVector2D					m_roadBlockPosition;
+	DkList<CCar*>				m_trafficCars;
+	DkList<RoadBlockInfo_t*>	m_roadBlocks;
 };
 
 extern CAIManager*			g_pAIManager;
@@ -196,6 +193,7 @@ OOLUA_PROXY(CAIManager)
 	OOLUA_MFUNC(RemoveAllCars)
 
 	OOLUA_MFUNC(MakePursued)
+	OOLUA_MFUNC(StopPursuit)
 
 	OOLUA_MFUNC(SetMaxTrafficCars)
 	OOLUA_MFUNC_CONST(GetMaxTrafficCars)

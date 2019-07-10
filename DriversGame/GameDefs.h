@@ -57,4 +57,15 @@ struct PursuerData_t
 	int		lastDirection;		// swne
 };
 
+struct RoadBlockInfo_t
+{
+	~RoadBlockInfo_t();
+
+	Vector3D roadblockPosA;
+	Vector3D roadblockPosB;
+
+	int totalSpawns;
+	DkList<CCar*> activeCars;
+};
+
 #endif // GAMEDEFS_H

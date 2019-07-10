@@ -20,7 +20,7 @@ struct staticInstance_t
 CObject_Static::CObject_Static( kvkeybase_t* kvdata )
 {
 	m_keyValues = kvdata;
-	m_pPhysicsObject = NULL;
+	m_physObj = NULL;
 	m_flicker = false;
 	m_killed = false;
 	m_flickerTime = 0;
@@ -35,12 +35,12 @@ void CObject_Static::OnRemove()
 {
 	BaseClass::OnRemove();
 
-	if(m_pPhysicsObject)
+	if(m_physObj)
 	{
-		m_pPhysicsObject->SetUserData(NULL);
-		g_pPhysics->m_physics.DestroyStaticObject(m_pPhysicsObject);
+		m_physObj->SetUserData(NULL);
+		g_pPhysics->m_physics.DestroyStaticObject(m_physObj);
 	}
-	m_pPhysicsObject = NULL;
+	m_physObj = NULL;
 }
 
 void CObject_Static::Spawn()
@@ -58,21 +58,21 @@ void CObject_Static::Spawn()
 		m_pModel->SetInstancer( instancer );
 	}
 	
-	m_pPhysicsObject = new CEqCollisionObject();
+	m_physObj = new CEqCollisionObject();
 
-	if( m_pPhysicsObject->Initialize(&m_pModel->GetHWData()->physModel, 0) )//
+	if( m_physObj->Initialize(&m_pModel->GetHWData()->physModel, 0) )//
 	{
 		physobject_t* obj = &m_pModel->GetHWData()->physModel.objects[0].object;
 
 		// deny wheel and camera collisions
-		m_pPhysicsObject->m_flags = COLLOBJ_NO_RAYCAST;
+		m_physObj->m_flags = COLLOBJ_NO_RAYCAST;
 
-		m_pPhysicsObject->SetPosition( m_vecOrigin );
-		m_pPhysicsObject->SetOrientation(Quaternion(DEG2RAD(m_vecAngles.x),DEG2RAD(m_vecAngles.y),DEG2RAD(m_vecAngles.z)));
-		m_pPhysicsObject->SetUserData(this);
+		m_physObj->SetPosition( m_vecOrigin );
+		m_physObj->SetOrientation(Quaternion(DEG2RAD(m_vecAngles.x),DEG2RAD(m_vecAngles.y),DEG2RAD(m_vecAngles.z)));
+		m_physObj->SetUserData(this);
 
-		m_pPhysicsObject->SetContents( OBJECTCONTENTS_SOLID_OBJECTS );
-		m_pPhysicsObject->SetCollideMask( 0 );
+		m_physObj->SetContents( OBJECTCONTENTS_SOLID_OBJECTS );
+		m_physObj->SetCollideMask( 0 );
 
 		// set friction from surface parameters
 		eqPhysSurfParam_t* surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);
@@ -80,20 +80,20 @@ void CObject_Static::Spawn()
 		if(surfParams)
 		{
 			// friction is reduced
-			m_pPhysicsObject->SetFriction( surfParams->friction * 0.25f );
-			m_pPhysicsObject->SetRestitution( surfParams->restitution );
+			m_physObj->SetFriction( surfParams->friction * 0.25f );
+			m_physObj->SetRestitution( surfParams->restitution );
 		}
 
-		g_pPhysics->m_physics.AddStaticObject( m_pPhysicsObject );
+		g_pPhysics->m_physics.AddStaticObject( m_physObj );
 
-		m_bbox = m_pPhysicsObject->m_aabb_transformed;
+		m_bbox = m_physObj->m_aabb_transformed;
 
-		m_pPhysicsObject->ConstructRenderMatrix(m_worldMatrix);
+		m_physObj->ConstructRenderMatrix(m_worldMatrix);
 	}
 	else
 	{
 		MsgError("No physics model for '%s'\n", m_pModel->GetName());
-		delete m_pPhysicsObject;
+		delete m_physObj;
 	}
 
 	LoadDefLightData(m_light, m_keyValues);
@@ -104,16 +104,16 @@ void CObject_Static::Spawn()
 
 void CObject_Static::SetOrigin(const Vector3D& origin)
 {
-	if(m_pPhysicsObject)
-		m_pPhysicsObject->SetPosition( origin );
+	if(m_physObj)
+		m_physObj->SetPosition( origin );
 
 	m_vecOrigin = origin;
 }
 
 void CObject_Static::SetAngles(const Vector3D& angles)
 {
-	if(m_pPhysicsObject)
-		m_pPhysicsObject->SetOrientation(Quaternion(DEG2RAD(angles.x),DEG2RAD(angles.y),DEG2RAD(angles.z)));
+	if(m_physObj)
+		m_physObj->SetOrientation(Quaternion(DEG2RAD(angles.x),DEG2RAD(angles.y),DEG2RAD(angles.z)));
 
 	m_vecAngles = angles;
 }
@@ -130,7 +130,7 @@ void CObject_Static::Draw( int nRenderFlags )
 	//if(!g_pGameWorld->m_frustum.IsSphereInside(GetOrigin(), length(m_pModel->GetBBoxMaxs())))
 	//	return;
 
-	m_pPhysicsObject->ConstructRenderMatrix(m_worldMatrix);
+	m_physObj->ConstructRenderMatrix(m_worldMatrix);
 
 	if(r_enableObjectsInstancing.GetBool() && m_pModel->GetInstancer())
 	{
@@ -205,32 +205,32 @@ void CObject_Static::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameO
 
 void CObject_Static::L_SetContents(int contents)
 {
-	if (!m_pPhysicsObject)
+	if (!m_physObj)
 		return;
 
-	m_pPhysicsObject->SetContents(contents);
+	m_physObj->SetContents(contents);
 }
 
 void CObject_Static::L_SetCollideMask(int contents)
 {
-	if (!m_pPhysicsObject)
+	if (!m_physObj)
 		return;
 
-	m_pPhysicsObject->SetCollideMask(contents);
+	m_physObj->SetCollideMask(contents);
 }
 
 int	CObject_Static::L_GetContents() const
 {
-	if (!m_pPhysicsObject)
+	if (!m_physObj)
 		return 0;
 
-	return m_pPhysicsObject->GetCollideMask();
+	return m_physObj->GetCollideMask();
 }
 
 int	CObject_Static::L_GetCollideMask() const
 {
-	if (!m_pPhysicsObject)
+	if (!m_physObj)
 		return 0;
 
-	return m_pPhysicsObject->GetCollideMask();
+	return m_physObj->GetCollideMask();
 }

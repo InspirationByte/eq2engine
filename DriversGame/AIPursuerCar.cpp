@@ -109,6 +109,21 @@ const InfractionDesc g_infractions[INFRACTION_COUNT] =
 };
 
 //------------------------------------------------------------------------------------------------
+// utility
+CAIPursuerCar* UTIL_CastToPursuer(CCar* car)
+{
+	if (car->ObjType() != GO_CAR_AI)
+		return nullptr;
+
+	CAITrafficCar* trafficCar = (CAITrafficCar*)car;
+
+	if (!trafficCar->IsPursuer())
+		return nullptr;
+
+	return (CAIPursuerCar*)trafficCar;
+}
+
+//------------------------------------------------------------------------------------------------
 
 CAIPursuerCar::CAIPursuerCar() : CAITrafficCar(nullptr)
 {
@@ -513,6 +528,10 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 			CGameObject* obj = (CGameObject*)bodyB->GetUserData();
 
 			if(InPursuit() && obj == this)
+				return INFRACTION_NONE;
+
+			// There is no infraction if bodyB has inflicted this damage to us
+			if(length(obj->GetVelocity()) > length(car->GetVelocity()))
 				return INFRACTION_NONE;
 
 			if (obj->ObjType() == GO_CAR_AI)

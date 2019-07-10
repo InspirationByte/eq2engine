@@ -43,6 +43,9 @@ public:
 	bool				InPursuit() const;
 
 	void				SetPursuitTarget(CCar* obj);
+
+	CCar*				GetPursuitTarget() const { return m_target; }
+
 	void				BeginPursuit( float delay = 0.25f );
 	void				EndPursuit( bool death );
 
@@ -103,6 +106,8 @@ protected:
 
 	ISoundController*		m_loudhailer;
 };
+
+CAIPursuerCar* UTIL_CastToPursuer(CCar* car);
 
 #ifndef NO_LUA
 #ifndef __INTELLISENSE__

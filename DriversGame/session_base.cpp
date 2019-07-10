@@ -444,7 +444,6 @@ CAIPursuerCar* CGameSessionBase::CreatePursuerCar(const char* name, int type)
 			car->InitAI(false);
 
 			// manage this car
-			g_pAIManager->m_copCars.append(car);
 			g_pAIManager->m_trafficCars.append(car);
 
 			return car;

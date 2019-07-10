@@ -40,19 +40,6 @@ const float AI_TRAFFIC_SPAWN_DISTANCE_THRESH = 5.0f;
 static CAIManager s_AIManager;
 CAIManager* g_pAIManager = &s_AIManager;
 
-DECLARE_CMD(aezakmi, "", CV_CHEAT)
-{
-	if(!g_pGameSession)
-		return;
-
-	g_pGameSession->GetPlayerCar()->SetFelony(0.0f);
-
-	for(int i = 0; i < g_pAIManager->m_copCars.numElem(); i++)
-	{
-		g_pAIManager->m_copCars[i]->EndPursuit(false);
-	}
-}
-
 CAIManager::CAIManager()
 {
 	m_trafficUpdateTime = 0.0f;
@@ -70,7 +57,6 @@ CAIManager::CAIManager()
 	m_numMaxTrafficCars = 32;
 	
 	m_copSpawnIntervalCounter = 0;
-	m_roadBlockSpawnedCount = 0;
 
 	m_leadVelocity = vec3_zero;
 	m_leadPosition = vec3_zero;
@@ -95,7 +81,6 @@ void CAIManager::Init()
 	m_trafficUpdateTime = 0.0f;
 	m_velocityMapUpdateTime = 0.0f;
 	m_copSpawnIntervalCounter = 0;
-	m_roadBlockSpawnedCount = 0;
 	m_enableTrafficCars = true;
 	m_enableCops = true;
 
@@ -114,12 +99,13 @@ void CAIManager::Shutdown()
 	m_civCarEntries.clear();
 
 	m_trafficCars.clear();
-	m_copCars.clear();
-	m_roadBlockCars.clear();
 	m_speechQueue.clear();
-}
 
-#pragma fixme("Replay solution for cop road blocks")
+	for (int i = 0; i < m_roadBlocks.numElem(); i++)
+		delete m_roadBlocks[i];
+
+	m_roadBlocks.clear();
+}
 
 CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 {
@@ -222,7 +208,7 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 			return newCar;
 		}
 
-		return NULL;
+		return nullptr;
 	}
 
 	CAITrafficCar* pNewCar = NULL;
@@ -230,13 +216,25 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 	if(m_enableCops)
 		m_copSpawnIntervalCounter++;
 
+	int numCopsSpawned = 0;
+
+	for (int i = 0; i < m_trafficCars.numElem(); i++)
+	{
+		CAIPursuerCar* pursuer = UTIL_CastToPursuer(m_trafficCars[i]);
+
+		// cops from roadblocks are not counted here!
+		if(pursuer && !pursuer->m_assignedRoadblock)
+			numCopsSpawned++;
+	}
+
+	// try to spawn a cop car, otherwise we spawn simple traffic car
 	if (m_copSpawnIntervalCounter >= m_copRespawnInterval && m_enableCops)
 	{
 		// reset interval if it's possible to spawn
 		m_copSpawnIntervalCounter = 0;
 
-		if (m_copCars.numElem() >= GetMaxCops())
-			return NULL;
+		if (numCopsSpawned >= GetMaxCops())
+			return nullptr;
 
 		//EPursuerAIType pursuerType = (EPursuerAIType)(g_replayRandom.Get(0, PURSUER_TYPE_COUNT - 1));
 
@@ -245,6 +243,7 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 		if (!conf)
 			return NULL;
 
+		// initialize new car
 		CAIPursuerCar* pCopCar = new CAIPursuerCar(conf, PURSUER_TYPE_COP);
 		pCopCar->SetTorqueScale(m_copAccelerationModifier);
 		pCopCar->SetMaxDamage(m_copMaxDamage);
@@ -252,7 +251,7 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 		
 		pNewCar = pCopCar;
 
-		m_copCars.append(pCopCar);
+		numCopsSpawned++;
 	}
 	else
 	{
@@ -367,16 +366,8 @@ int CAIManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
 
 void CAIManager::RemoveTrafficCar(CCar* car)
 {
-	if(car->ObjType() == GO_CAR_AI)
-	{
-		if(((CAITrafficCar*)car)->IsPursuer())
-		{
-			m_copCars.remove((CAIPursuerCar*)car);
-			m_roadBlockCars.remove(car);
-		}
-	}
-
-	g_pGameWorld->RemoveObject(car);
+	if( m_trafficCars.fastRemove(car) )
+		g_pGameWorld->RemoveObject(car);
 }
 
 void CAIManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity)
@@ -391,21 +382,8 @@ void CAIManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const 
 	else
 		return;
 
-	// update road block state
-	bool allCarsAreFromRoadBlock = true;
-	for(int i = 0; i < m_copCars.numElem(); i++)
-	{
-		if( m_roadBlockCars.findIndex(m_copCars[i]) == -1)
-		{
-			allCarsAreFromRoadBlock = false;
-			break;
-		}
-	}
-
-	// if road block were disapper due to driving to other region
-	// or we have all cars from roadblock
-	if( (m_roadBlockCars.numElem() < MIN_ROADBLOCK_CARS) || (allCarsAreFromRoadBlock && m_roadBlockCars.numElem() <= m_numMaxCops))
-		m_roadBlockCars.clear();
+	// roadblocks updated after traffic cars are removed
+	UpdateRoadblocks();
 
 	//-------------------------------------------------
 
@@ -421,35 +399,28 @@ void CAIManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const 
 	m_leadRemovePosition = removeOrigin;
 	m_leadVelocity = leadVelocity;
 
-	// Try to remove cars
+	// remove furthest cars from world
 	for (int i = 0; i < m_trafficCars.numElem(); i++)
 	{
 		CCar* car = m_trafficCars[i];
 
 		Vector3D carPos = car->GetOrigin();
 
+		// if it's on unloaded region, it should be forcely removed
 		CLevelRegion* reg = g_pGameWorld->m_level.GetRegionAtPosition(carPos);
 
 		if (!reg || (reg && !reg->m_isLoaded))
 		{
 			RemoveTrafficCar(car);
-			m_trafficCars.fastRemoveIndex(i);
 			i--;
 			continue;
 		}
 
-		if(car->ObjType() == GO_CAR_AI)
-		{
-			// non-pursuer vehicles are removed by distance.
-			// pursuers are not, if in pursuit only.
-			if( ((CAIPursuerCar*)car)->IsPursuer() )
-			{
-				CAIPursuerCar* pursuer = (CAIPursuerCar*)car;
+		CAIPursuerCar* pursuerCheck = UTIL_CastToPursuer(car);
 
-				if(pursuer->InPursuit())
-					continue;
-			}
-		}
+		// pursuers are not removed if in pursuit.
+		if (pursuerCheck && pursuerCheck->InPursuit())
+			continue;
 
 		IVector2D trafficCell;
 		reg->m_heightfield[0]->PointAtPos(carPos, trafficCell.x, trafficCell.y);
@@ -463,12 +434,12 @@ void CAIManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const 
 			distToCell2 > g_traffic_maxdist.GetInt())
 		{
 			RemoveTrafficCar(car);
-			m_trafficCars.fastRemoveIndex(i);
 			i--;
 			continue;
 		}
 	}
 
+	// now spawn new cars
 	CircularSpawnTrafficCars(spawnCenterCell.x, spawnCenterCell.y, g_traffic_mindist.GetInt());
 }
 
@@ -602,12 +573,39 @@ void CAIManager::QueryPedestrians(DkList<CPedestrian*>& list, float radius, cons
 
 //-----------------------------------------------------------------------------------------
 
+void CAIManager::UpdateRoadblocks()
+{
+	// go through all roadblocks and count the cars
+	// if there's insufficient car amount in some,
+	// they will be deleted
+	for (int i = 0; i < m_roadBlocks.numElem(); i++)
+	{
+		RoadBlockInfo_t* roadblock = m_roadBlocks[i];
+
+		int numAliveCars = 0;
+		for (int j = 0; j < roadblock->activeCars.numElem(); j++)
+		{
+			if(roadblock->activeCars[j]->IsAlive())
+				numAliveCars++;
+		}
+
+		// dissolve road block
+		if (numAliveCars < MIN_ROADBLOCK_CARS)
+		{
+			delete roadblock;
+
+			m_roadBlocks.fastRemove(roadblock);
+			i--;
+		}
+	}
+}
+
 void CAIManager::UpdateCopStuff(float fDt)
 {
-	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "cops spawned: %d (max %d) (cntr=%d, lvl=%d)\n", m_copCars.numElem(), GetMaxCops(), m_copSpawnIntervalCounter, m_copRespawnInterval);
+	//debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "cops spawned: %d (max %d) (cntr=%d, lvl=%d)\n", m_copCars.numElem(), GetMaxCops(), m_copSpawnIntervalCounter, m_copRespawnInterval);
 	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "num traffic cars: %d\n", m_trafficCars.numElem());
-
-	debugoverlay->Text(ColorRGBA(1, 1, 1, 1), "cop speech time: normal %g taunt %g\n", m_copSpeechTime, m_copLoudhailerTime);
+	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "num road blocks: %d\n", m_roadBlocks.numElem());
+	debugoverlay->Text(ColorRGBA(1, 1, 1, 1), "cop speech time: %.2f loudhailer: %.2f\n", m_copSpeechTime, m_copLoudhailerTime);
 
 	m_copSpeechTime -= fDt;
 	m_copLoudhailerTime -= fDt;
@@ -630,9 +628,7 @@ void CAIManager::RemoveAllCars()
 {
 	// Try to remove cars
 	for (int i = 0; i < m_trafficCars.numElem(); i++)
-	{
 		RemoveTrafficCar(m_trafficCars[i]);
-	}
 
 	m_trafficCars.clear();
 }
@@ -708,19 +704,17 @@ bool CAIManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 	placementVec -= perpendicular*curLane;
 	int numLanes = g_pGameWorld->m_level.Road_GetWidthInLanesAtPoint(placementVec, 32, 1);
 
-	int nCars = 0;
-
 	vehicleConfig_t* conf = g_pGameSession->FindCarEntryByName(m_copCarName[PURSUER_TYPE_COP].c_str());
 
 	if (!conf)
 		return 0;
 
-	Vector3D startPos = g_pGameWorld->m_level.GlobalTilePointToPosition(placementVec);
-	Vector3D endPos = g_pGameWorld->m_level.GlobalTilePointToPosition(placementVec+perpendicular*numLanes);
+	RoadBlockInfo_t* roadblock = new RoadBlockInfo_t();
 
-	m_roadBlockPosition = placementVec;
+	roadblock->roadblockPosA = g_pGameWorld->m_level.GlobalTilePointToPosition(placementVec);
+	roadblock->roadblockPosB = g_pGameWorld->m_level.GlobalTilePointToPosition(placementVec+perpendicular*numLanes);
 
-	debugoverlay->Line3D(startPos + vec3_up, endPos + vec3_up, ColorRGBA(1,0,0,1), ColorRGBA(0,1,0,1), 1000.0f);
+	debugoverlay->Line3D(roadblock->roadblockPosA + vec3_up, roadblock->roadblockPosB + vec3_up, ColorRGBA(1,0,0,1), ColorRGBA(0,1,0,1), 1000.0f);
 
 	for(int i = 0; i < numLanes; i++)
 	{
@@ -765,46 +759,52 @@ bool CAIManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 
 		copBlockCar->SetAngles(Vector3D(0.0f, targetDir*-90.0f + angle, 0.0f));
 
-		m_roadBlockCars.append( copBlockCar );
-		m_copCars.append( copBlockCar );
+		// assign this car to roadblock
+		copBlockCar->m_assignedRoadblock = roadblock;
+		roadblock->activeCars.append( copBlockCar );
+
+		// also it has to be added to traffic cars
 		m_trafficCars.append( copBlockCar );
-		nCars++;
 	}
 
-	m_roadBlockSpawnedCount = m_roadBlockCars.numElem();
+	roadblock->totalSpawns = roadblock->activeCars.numElem();
 
-	return m_roadBlockCars.numElem() > 0;
+	if (roadblock->totalSpawns == 0)
+		delete roadblock;
+	else
+		m_roadBlocks.append(roadblock);
+
+	return (roadblock != nullptr);
 }
 
 void CAIManager::MakePursued( CCar* car )
 {
-	for(int i = 0; i < m_copCars.numElem(); i++)
+	for(int i = 0; i < m_trafficCars.numElem(); i++)
 	{
-		CAIPursuerCar* cop = m_copCars[i];
+		CAIPursuerCar* pursuer = UTIL_CastToPursuer(m_trafficCars[i]);
 
-		if(!cop->InPursuit() && cop->IsAlive())
+		if(pursuer && !pursuer->InPursuit() && pursuer->IsAlive())
 		{
-			cop->SetPursuitTarget(car);
-			cop->BeginPursuit(0.0f);
+			pursuer->SetPursuitTarget(car);
+			pursuer->BeginPursuit(0.0f);
 		}
 	}
 }
 
-/*
 void CAIManager::StopPursuit( CCar* car )
 {
-	for(int i = 0; i < m_copCars.numElem(); i++)
+	for(int i = 0; i < m_trafficCars.numElem(); i++)
 	{
-		if(!m_copCars[i]->InPursuit() && m_copCars[i]->GetPursuitTarget() == car)
-		{
-			m_copCars[i]->EndPursuit();
-		}
+		CAIPursuerCar* pursuer = UTIL_CastToPursuer(m_trafficCars[i]);
+
+		if(pursuer && !pursuer->InPursuit() && pursuer->GetPursuitTarget() == car)
+			pursuer->EndPursuit(!pursuer->IsAlive());
 	}
-}*/
+}
 
 bool CAIManager::IsRoadBlockSpawn() const
 {
-	return (m_roadBlockCars.numElem() > 0);
+	return (m_roadBlocks.numElem() > 0);
 }
 
 // ----- TRAFFIC ------
@@ -928,13 +928,18 @@ bool CAIManager::IsCopsCanUseLoudhailer(CCar* copCar, CCar* target) const
 	{
 		float nearestDist = DrvSynUnits::MaxCoordInUnits;
 
-		for (int i = 0; i < m_copCars.numElem(); i++)
+		for (int i = 0; i < m_trafficCars.numElem(); i++)
 		{
-			float dist = length(target->GetOrigin() - m_copCars[i]->GetOrigin());
+			CAIPursuerCar* pursuer = UTIL_CastToPursuer(m_trafficCars[i]);
+
+			if (!pursuer)
+				continue;
+			
+			float dist = length(target->GetOrigin() - pursuer->GetOrigin());
 			if (dist < nearestDist)
 			{
 				nearestDist = dist;
-				nearestCar = m_copCars[i];
+				nearestCar = pursuer;
 			}
 		}
 	}
@@ -953,6 +958,7 @@ OOLUA_EXPORT_FUNCTIONS(
 	CAIManager,
 
 	MakePursued,
+	StopPursuit,
 	RemoveAllCars,
 	SetMaxTrafficCars,
 	SetTrafficCarsEnabled,

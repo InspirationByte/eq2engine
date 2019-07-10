@@ -54,19 +54,19 @@ void CBasePigeon::ProcessMovement( movementdata_t& data )
 	m_bLastOnGround = m_bOnGround;
 	//m_bOnGround = false;
 
-	Matrix4x4 physics_transform = m_pPhysicsObject->GetTransformMatrix();
+	Matrix4x4 physics_transform = m_physObj->GetTransformMatrix();
 
 	BoundingBox bbox;
-	m_pPhysicsObject->GetAABB(bbox.minPoint, bbox.maxPoint);
+	m_physObj->GetAABB(bbox.minPoint, bbox.maxPoint);
 
 	// process basic things
 	BaseClass::ProcessMovement(data);
 
-	Vector3D velocity = m_pPhysicsObject->GetVelocity();
+	Vector3D velocity = m_physObj->GetVelocity();
 
 	if(type == MOVE_TYPE_FLY)
 	{
-		m_pPhysicsObject->SetCollisionMask(COLLIDE_ACTOR);
+		m_physObj->SetCollisionMask(COLLIDE_ACTOR);
 
 		Vector3D physObjectUpVec = physics_transform.rows[1].xyz();
 		physObjectUpVec.x *= -1;
@@ -96,7 +96,7 @@ void CBasePigeon::ProcessMovement( movementdata_t& data )
 
 		Vector3D physVelocity = lerp(velocity, (m_vecFlightDirection*PIGEON_MAX_FLIGHT_SPEED), m_fFlyVelocity);
 
-		m_pPhysicsObject->SetVelocity(physVelocity);
+		m_physObj->SetVelocity(physVelocity);
 
 		float fAngleFactor = -((m_vecFlyAngle.x-90)/180.0f);
 

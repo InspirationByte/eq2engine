@@ -312,12 +312,6 @@ struct carBodyPart_t
 	float		radius;
 };
 
-// handling data
-struct carHandlingInput_t
-{
-	short	brake_accel;
-	short	steering;
-};
 
 //-----------------------------------------------------------------------
 // wheel model that does instancing
@@ -565,6 +559,8 @@ public:
 	CNetworkVar(bool,		m_sirenEnabled);
 	bool					m_oldSirenState;
 
+	RoadBlockInfo_t*		m_assignedRoadblock;
+
 protected:
 	void					CreateCarPhysics();
 	void					InitCarSound();
@@ -599,7 +595,7 @@ protected:
 
 	virtual void			OnDeath( CGameObject* deathBy );
 
-	CPhysicsHFObject*		m_pPhysicsObject;
+	CPhysicsHFObject*		m_physObj;
 	DkList<CollisionPairData_t>	m_collisionList;
 
 	CEqPhysicsHingeJoint*	m_trailerHinge;

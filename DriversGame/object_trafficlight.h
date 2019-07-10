@@ -43,7 +43,7 @@ public:
 
 protected:
 
-	CEqCollisionObject*		m_pPhysicsObject;
+	CEqCollisionObject*		m_physObj;
 
 	int						m_trafficDir;	// the traffic light direction
 

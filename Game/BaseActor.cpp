@@ -129,7 +129,7 @@ void CBaseActor::Spawn()
 
 	BaseClass::Spawn();
 
-	m_pPhysicsObject->SetPosition( GetAbsOrigin() );
+	m_physObj->SetPosition( GetAbsOrigin() );
 }
 
 void CBaseActor::Precache()
@@ -141,7 +141,7 @@ void CBaseActor::Precache()
 
 void CBaseActor::PhysicsCreateObjects()
 {
-	if(m_pPhysicsObject)
+	if(m_physObj)
 		return;
 
 	// first non-moveable primitive
@@ -173,24 +173,24 @@ void CBaseActor::PhysicsCreateObjects()
 
 	PhysicsInitCustom(COLLISION_GROUP_ACTORS, false, 2, shape_idxs, "body", m_fMass);
 
-	if(!m_pPhysicsObject)
+	if(!m_physObj)
 		MsgError("ACTOR ERROR: Failed to create physics object\n");
 	else
 	{
-		m_pPhysicsObject->SetCollisionMask( COLLIDE_ACTOR );
+		m_physObj->SetCollisionMask( COLLIDE_ACTOR );
 
-		m_pPhysicsObject->SetChildShapeTransform(0, Vector3D(0, -PART_HEIGHT_OFFSET(m_fActorHeight), 0), vec3_zero);
-		m_pPhysicsObject->SetChildShapeTransform(1, Vector3D(0, PART_HEIGHT_OFFSET(m_fActorHeight), 0), vec3_zero);
+		m_physObj->SetChildShapeTransform(0, Vector3D(0, -PART_HEIGHT_OFFSET(m_fActorHeight), 0), vec3_zero);
+		m_physObj->SetChildShapeTransform(1, Vector3D(0, PART_HEIGHT_OFFSET(m_fActorHeight), 0), vec3_zero);
 
-		m_pPhysicsObject->SetPosition(GetAbsOrigin());
+		m_physObj->SetPosition(GetAbsOrigin());
 
-		m_pPhysicsObject->SetSleepTheresholds(0,0);
-		m_pPhysicsObject->SetAngularFactor(Vector3D(0,1,0));
-		m_pPhysicsObject->SetFriction(0.00001f);
-		m_pPhysicsObject->SetRestitution(1.0f);
-		m_pPhysicsObject->SetDamping(0.0001f,1.0f);
+		m_physObj->SetSleepTheresholds(0,0);
+		m_physObj->SetAngularFactor(Vector3D(0,1,0));
+		m_physObj->SetFriction(0.00001f);
+		m_physObj->SetRestitution(1.0f);
+		m_physObj->SetDamping(0.0001f,1.0f);
 
-		m_pPhysicsObject->WakeUp();
+		m_physObj->WakeUp();
 	}
 
 	// make ragdoll
@@ -212,8 +212,8 @@ void CBaseActor::PhysicsCreateObjects()
 
 void CBaseActor::FirstUpdate()
 {
-	if(m_pPhysicsObject)
-		m_pPhysicsObject->SetActivationState(PS_ACTIVE);
+	if(m_physObj)
+		m_physObj->SetActivationState(PS_ACTIVE);
 }
 
 Vector3D CBaseActor::GetEyeOrigin()
@@ -307,8 +307,8 @@ void CBaseActor::OnPostRender()
 
 void CBaseActor::Update(float decaytime)
 {
-	if(m_pPhysicsObject)
-		m_vPrevPhysicsVelocity = m_pPhysicsObject->GetVelocity();
+	if(m_physObj)
+		m_vPrevPhysicsVelocity = m_physObj->GetVelocity();
 
 	// update base class (for thinking)
 	BaseClass::Update(decaytime);
@@ -413,7 +413,7 @@ ConVar g_autojump_deccel("g_autojump_deccel", "2.0f");
 
 void CBaseActor::ProcessMovement( movementdata_t& data )
 {
-	if(!m_pPhysicsObject)
+	if(!m_physObj)
 		return;
 
 	if(m_nCurPose != m_nPose && m_fNextPoseChangeTime < gpGlobals->curtime)
@@ -429,12 +429,12 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 	m_bLastOnGround = m_bOnGround;
 	m_bOnGround = false;
 
-	Matrix4x4 physics_transform = m_pPhysicsObject->GetTransformMatrix();
+	Matrix4x4 physics_transform = m_physObj->GetTransformMatrix();
 
 	BoundingBox bbox;
-	m_pPhysicsObject->GetAABB(bbox.minPoint, bbox.maxPoint);
+	m_physObj->GetAABB(bbox.minPoint, bbox.maxPoint);
 
-	m_pPhysicsObject->WakeUp();
+	m_physObj->WakeUp();
 
 	if(!m_pLadder && m_nCurPose == POSE_CINEMATIC_LADDER)
 	{
@@ -447,9 +447,9 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 
 	if(move_type == MOVE_TYPE_WALK)
 	{
-		m_pPhysicsObject->SetCollisionMask(COLLIDE_ACTOR);
+		m_physObj->SetCollisionMask(COLLIDE_ACTOR);
 
-		Vector3D velocity = m_pPhysicsObject->GetVelocity();
+		Vector3D velocity = m_physObj->GetVelocity();
 
 		Vector3D physObjectUpVec = physics_transform.rows[1].xyz();
 		physObjectUpVec.x *= -1;
@@ -460,7 +460,7 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 			box_size_mult += fabs(m_vPrevPhysicsVelocity.y*0.05f);
 
 		Vector3D physMins, physMaxs;
-		m_pPhysicsObject->GetAABB(physMins, physMaxs);
+		m_physObj->GetAABB(physMins, physMaxs);
 
 		Vector3D physSize = (physMaxs-physMins)*0.5f;
 
@@ -534,7 +534,7 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 				debugoverlay->Box3D(compare_box.traceEnd + -ACTOR_FOOT_SIZE,compare_box.traceEnd + ACTOR_FOOT_SIZE, Vector4D(0,1,0,1));
 
 				// perform autojump if any movement buttons was pressed
-				if(g_autojump.GetBool() && (m_pPhysicsObject->GetVelocity().y > -80) && (fPlayerSpeed > 50 && m_bOnGround) && comp_to_up_dot > 0.2f)
+				if(g_autojump.GetBool() && (m_physObj->GetVelocity().y > -80) && (fPlayerSpeed > 50 && m_bOnGround) && comp_to_up_dot > 0.2f)
 				{
 					float step_length = ACTOR_STEP_LENGTH;
 
@@ -602,17 +602,17 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 
 			m_vecAbsVelocity.y = 0.0f;
 
-			m_pPhysicsObject->SetVelocity( velocity + m_vecAbsVelocity );
+			m_physObj->SetVelocity( velocity + m_vecAbsVelocity );
 
 			if(length(m_vecAbsVelocity.xz()) > 0.1f)
-				m_pPhysicsObject->SetLinearFactor(Vector3D(1,1,1));
+				m_physObj->SetLinearFactor(Vector3D(1,1,1));
 			else
-				m_pPhysicsObject->SetLinearFactor(Vector3D(0.0f,1,0.0f));
+				m_physObj->SetLinearFactor(Vector3D(0.0f,1,0.0f));
 
 			m_vecAbsVelocity -= m_vecAbsVelocity*gpGlobals->frametime*g_player_deccel.GetFloat() * decel_scale;
 		}
 		else
-			m_vecAbsVelocity = m_pPhysicsObject->GetVelocity();
+			m_vecAbsVelocity = m_physObj->GetVelocity();
 
 		CheckLanding();
 
@@ -633,7 +633,7 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 	}
 	else if(move_type == MOVE_TYPE_LADDER)
 	{
-		Vector3D velocity = m_pPhysicsObject->GetVelocity();
+		Vector3D velocity = m_physObj->GetVelocity();
 
 		Vector3D physObjectUpVec = physics_transform.rows[1].xyz();
 		physObjectUpVec.x *= -1;
@@ -662,7 +662,7 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 
 		debugoverlay->Box3D(ground_trace.traceEnd - box_size, ground_trace.traceEnd + box_size, Vector4D(1,m_bOnGround,0,1));
 
-		m_pPhysicsObject->SetChildShapeTransform(1, Vector3D(0, -PART_HEIGHT_OFFSET(m_fActorHeight), 0), vec3_zero);
+		m_physObj->SetChildShapeTransform(1, Vector3D(0, -PART_HEIGHT_OFFSET(m_fActorHeight), 0), vec3_zero);
 
 		bool bMovementPressed = false;
 
@@ -681,7 +681,7 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 
 			m_vecAbsVelocity = forward;
 
-			m_pPhysicsObject->SetVelocity( m_vecAbsVelocity );
+			m_physObj->SetVelocity( m_vecAbsVelocity );
 
 			m_nCurPose = POSE_STAND;
 			m_fNextPoseChangeTime = gpGlobals->curtime + 0.2f;
@@ -695,7 +695,7 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 
 		// we at the end of ladder, set it's pointer and start from crouching
 
-		m_pPhysicsObject->SetCollisionMask(COLLIDE_ACTOR);
+		m_physObj->SetCollisionMask(COLLIDE_ACTOR);
 
 		Vector3D ladderVec = normalize(m_pLadder->GetLadderDestPoint() - m_pLadder->GetAbsOrigin());
 
@@ -717,7 +717,7 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 
 			m_vecAbsVelocity = forward*m_fMaxSpeed;
 
-			m_pPhysicsObject->SetVelocity(m_vecAbsVelocity);
+			m_physObj->SetVelocity(m_vecAbsVelocity);
 
 			m_fMaxFallingVelocity = 0.0f;
 			return;
@@ -725,8 +725,8 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 
 		if(!bMovementPressed)
 		{
-			m_pPhysicsObject->SetPosition(GetAbsOrigin());
-			m_pPhysicsObject->SetVelocity(vec3_zero);
+			m_physObj->SetPosition(GetAbsOrigin());
+			m_physObj->SetVelocity(vec3_zero);
 		}
 		else
 		{
@@ -734,7 +734,7 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 
 			if(data.forward < 0 && (m_nActorButtons & IN_FORCERUN))
 			{
-				m_vMoveDir.y = m_pPhysicsObject->GetVelocity().y;
+				m_vMoveDir.y = m_physObj->GetVelocity().y;
 				if(m_vMoveDir.y < -450)
 					m_vMoveDir.y = -450;
 			}
@@ -750,14 +750,14 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 			}
 
 
-			m_pPhysicsObject->SetVelocity(m_vMoveDir);
-			SetAbsOrigin( m_pPhysicsObject->GetPosition() );
+			m_physObj->SetVelocity(m_vMoveDir);
+			SetAbsOrigin( m_physObj->GetPosition() );
 		}
 
 	}
 	else if(move_type == MOVE_TYPE_NOCLIP)
 	{
-		m_pPhysicsObject->SetCollisionMask(0);
+		m_physObj->SetCollisionMask(0);
 
 		m_fMaxFallingVelocity = 0.0f;
 
@@ -785,8 +785,8 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 
 		m_vecAbsOrigin += m_vecAbsVelocity * gpGlobals->frametime;
 
-		m_pPhysicsObject->SetVelocity(GetAbsVelocity());
-		m_pPhysicsObject->SetPosition(GetAbsOrigin());
+		m_physObj->SetVelocity(GetAbsVelocity());
+		m_physObj->SetPosition(GetAbsOrigin());
 
 		m_vecAbsVelocity -= m_vecAbsVelocity*gpGlobals->frametime*g_player_deccel.GetFloat();
 	}
@@ -794,7 +794,7 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 	// crouching handling
 	if(m_nCurPose == POSE_CROUCH)
 	{
-		m_pPhysicsObject->SetChildShapeTransform(1, Vector3D(0, -PART_HEIGHT_OFFSET(m_fActorHeight), 0), vec3_zero);
+		m_physObj->SetChildShapeTransform(1, Vector3D(0, -PART_HEIGHT_OFFSET(m_fActorHeight), 0), vec3_zero);
 
 		if(!(m_nActorButtons & IN_DUCK))
 		{
@@ -807,9 +807,9 @@ void CBaseActor::ProcessMovement( movementdata_t& data )
 		}
 	}
 	else
-		m_pPhysicsObject->SetChildShapeTransform(1, Vector3D(0, PART_HEIGHT_OFFSET(m_fActorHeight), 0), vec3_zero);
+		m_physObj->SetChildShapeTransform(1, Vector3D(0, PART_HEIGHT_OFFSET(m_fActorHeight), 0), vec3_zero);
 
-	BaseClass::SetAbsOrigin( m_pPhysicsObject->GetPosition() );
+	BaseClass::SetAbsOrigin( m_physObj->GetPosition() );
 
 	if(m_bOnGround)
 		m_fMaxFallingVelocity = 0.0f;

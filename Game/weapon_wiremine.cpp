@@ -44,13 +44,13 @@ public:
 
 	void PhysicsCreateObjects()
 	{
-		if(m_pPhysicsObject)
+		if(m_physObj)
 			return;
 
 		PhysicsInitNormal(COLLISION_GROUP_PROJECTILES, false);
 
 		// collide only with world
-		m_pPhysicsObject->SetCollisionMask( COLLIDE_PROJECTILES );
+		m_physObj->SetCollisionMask( COLLIDE_PROJECTILES );
 	}
 
 	void OnRemove()
@@ -71,7 +71,7 @@ public:
 
 		SetHealth(15);
 
-		m_pPhysicsObject->WakeUp();
+		m_physObj->WakeUp();
 		SetThink(&CWireMineProjectile::IdleThink);
 	}
 
@@ -226,7 +226,7 @@ public:
 			exp.origin = GetAbsOrigin();
 			exp.pInflictor = m_pAttacker;
 
-			exp.pIgnore.append(m_pPhysicsObject);
+			exp.pIgnore.append(m_physObj);
 
 			physics->DoForEachObject(ExplodeAddImpulseToEachObject, &exp);
 			exp.fast = false;
@@ -256,10 +256,10 @@ public:
 
 	void Update(float dt)
 	{
-		ObjectSoundEvents(m_pPhysicsObject, this);
+		ObjectSoundEvents(m_physObj, this);
 
-		BaseEntity::SetAbsAngles(m_pPhysicsObject->GetAngles());
-		BaseEntity::SetAbsOrigin(m_pPhysicsObject->GetPosition());
+		BaseEntity::SetAbsAngles(m_physObj->GetAngles());
+		BaseEntity::SetAbsOrigin(m_physObj->GetPosition());
 
 		BaseClass::Update(dt);
 	}
@@ -379,7 +379,7 @@ void CWeaponWireMine::OnPreRender()
 		exp.origin = GetAbsOrigin();
 		exp.pInflictor = NULL;
 
-		exp.pIgnore.append(m_pPhysicsObject);
+		exp.pIgnore.append(m_physObj);
 
 		physics->DoForEachObject(ExplodeAddImpulseToEachObject, &exp);
 		exp.fast = false;

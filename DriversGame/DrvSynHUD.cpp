@@ -331,9 +331,9 @@ void CDrvSynHUDManager::DrawWorldIntoMap(const CViewParams& params, float fDt)
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 
 		// display cop cars on map
-		for(int i = 0; i < g_pAIManager->m_copCars.numElem(); i++)
+		for(int i = 0; i < g_pAIManager->m_trafficCars.numElem(); i++)
 		{
-			CAIPursuerCar* pursuer = g_pAIManager->m_copCars[i];
+			CAIPursuerCar* pursuer = UTIL_CastToPursuer(g_pAIManager->m_trafficCars[i]);
 
 			if(!pursuer)
 				continue;
@@ -645,9 +645,12 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 					// draw pursuit cop "triangles" on screen
 					if(mainVehicleInPursuit)
 					{
-						for(int i = 0; i < g_pAIManager->m_copCars.numElem(); i++)
+						for (int i = 0; i < g_pAIManager->m_trafficCars.numElem(); i++)
 						{
-							CAIPursuerCar* pursuer = g_pAIManager->m_copCars[i];
+							CAIPursuerCar* pursuer = UTIL_CastToPursuer(g_pAIManager->m_trafficCars[i]);
+
+							if(!pursuer)
+								continue;
 
 							if(!pursuer->InPursuit())
 								continue;
