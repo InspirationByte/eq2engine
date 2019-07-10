@@ -12,7 +12,7 @@ CReplayData*			g_replayData = &s_replayData;
 
 bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs );
 
-DECLARE_CMD(car_loosehubcaps, "looses hubcaps on current car", CV_CHEAT)
+DECLARE_CMD(car_loosehubcaps, nullptr, CV_CHEAT)
 {
 	if(g_pGameSession && g_pGameSession->GetPlayerCar())
 	{
@@ -23,7 +23,7 @@ DECLARE_CMD(car_loosehubcaps, "looses hubcaps on current car", CV_CHEAT)
 	}
 }
 
-DECLARE_CMD(car_reload, "reload current car", CV_CHEAT)
+DECLARE_CMD(car_reload, nullptr, CV_CHEAT)
 {
 	if(g_pGameSession && g_pGameSession->GetPlayerCar())
 	{
@@ -71,7 +71,7 @@ DECLARE_CMD(car_savereplay, "Saves current car replay", 0)
 	}
 }
 
-DECLARE_CMD(save, "Saves current replay", 0)
+DECLARE_CMD(replay_save, "Saves current replay", 0)
 {
 	if(CMD_ARGC == 0)
 	{
@@ -105,7 +105,7 @@ void fnreplay_variants(DkList<EqString>& list, const char* query)
 	}
 }
 
-DECLARE_CMD_VARIANTS(replay, "starts specified replay", fnreplay_variants, 0)
+DECLARE_CMD_VARIANTS(replay_start, nullptr, fnreplay_variants, 0)
 {
 	if(CMD_ARGC > 0)
 	{
@@ -113,6 +113,6 @@ DECLARE_CMD_VARIANTS(replay, "starts specified replay", fnreplay_variants, 0)
 	}
 	else
 	{
-		MsgWarning("usage: replay <replayName>");
+		MsgWarning("usage: replay_start <replayName>");
 	}
 }

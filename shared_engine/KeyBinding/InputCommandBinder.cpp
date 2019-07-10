@@ -38,7 +38,7 @@ DECLARE_CMD(in_touchzones_reload, "Reload touch zones", 0)
 //---------------------------------------------------------
 // UTILITY FUNCTIONS
 
-bool GetBindingKeyIndices(int outKeys[3], const char* pszKeyStr)
+bool UTIL_GetBindingKeyIndices(int outKeys[3], const char* pszKeyStr)
 {
 	// parse pszKeyStr into modifiers
 	const char* keyStr = pszKeyStr;
@@ -79,8 +79,13 @@ bool GetBindingKeyIndices(int outKeys[3], const char* pszKeyStr)
 	return true;
 }
 
-void GetBindingKeyString(EqString& outStr, in_binding_t* binding)
+void UTIL_GetBindingKeyString(EqString& outStr, in_binding_t* binding)
 {
+	if (!binding)
+		return;
+
+	outStr.Clear();
+
 	int validModifiers = (binding->mod_index[1] != -1) ? 2 : ((binding->mod_index[0] != -1) ? 1 : 0);
 
 	for (int i = 0; i < validModifiers; i++)
@@ -153,12 +158,12 @@ void CInputCommandBinder::InitTouchZones()
 		// resolve commands
 
 		// if we connecting libraries dynamically, that wouldn't properly execute
-		newZone.boundCommand1 = (ConCommand*)g_sysConsole->FindCommand(varargs("+%s", newZone.commandString.c_str()));
-		newZone.boundCommand2 = (ConCommand*)g_sysConsole->FindCommand(varargs("-%s", newZone.commandString.c_str()));
+		newZone.cmd_act = (ConCommand*)g_sysConsole->FindCommand(varargs("+%s", newZone.commandString.c_str()));
+		newZone.cmd_deact = (ConCommand*)g_sysConsole->FindCommand(varargs("-%s", newZone.commandString.c_str()));
 
 		// if found only one command with plus or minus
-		if(!newZone.boundCommand1 || !newZone.boundCommand2)
-			newZone.boundCommand1 = (ConCommand*)g_sysConsole->FindCommand( newZone.commandString.c_str() );
+		if(!newZone.cmd_act || !newZone.cmd_deact)
+			newZone.cmd_act = (ConCommand*)g_sysConsole->FindCommand( newZone.commandString.c_str() );
 
 		DevMsg(DEVMSG_CORE, "Touchzone: %s (%s) [x=%g,y=%g] [w=%g,h=%g]\n", 
 			newZone.name.c_str(), newZone.commandString.c_str(), 
@@ -166,7 +171,7 @@ void CInputCommandBinder::InitTouchZones()
 			newZone.size.x, newZone.size.y);
 
 		// if anly command found
-		if(newZone.boundCommand1 || newZone.boundCommand2)
+		if(newZone.cmd_act || newZone.cmd_deact)
 		{
 			m_touchZones.append( newZone );
 		}
@@ -191,7 +196,7 @@ void CInputCommandBinder::WriteBindings(IFile* cfgFile)
 
 		// resolve key name
 		EqString keyNameString;
-		GetBindingKeyString(keyNameString, binding);
+		UTIL_GetBindingKeyString(keyNameString, binding);
 
 		cfgFile->Print("bind %s %s %s\n",	keyNameString.GetData(),
 											binding->commandString.GetData(),
@@ -220,7 +225,7 @@ in_binding_t* CInputCommandBinder::AddBinding( const char* pszKeyStr, const char
 {
 	int bindingKeyIndices[3];
 
-	if (!GetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
+	if (!UTIL_GetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
 		return nullptr;
 
 	// create new binding
@@ -252,16 +257,16 @@ bool CInputCommandBinder::ResolveCommandBinding(in_binding_t* binding)
 	if(!binding->boundAction)
 	{
 		// if we connecting libraries dynamically, that wouldn't properly execute
-		binding->boundCommand1 = (ConCommand*)g_sysConsole->FindCommand(varargs("+%s", binding->commandString.c_str()));
-		binding->boundCommand2 = (ConCommand*)g_sysConsole->FindCommand(varargs("-%s", binding->commandString.c_str()));
+		binding->cmd_act = (ConCommand*)g_sysConsole->FindCommand(varargs("+%s", binding->commandString.c_str()));
+		binding->cmd_deact = (ConCommand*)g_sysConsole->FindCommand(varargs("-%s", binding->commandString.c_str()));
 
 		// if found only one command with plus or minus
-		if(!binding->boundCommand1 || !binding->boundCommand2)
-			binding->boundCommand1 = (ConCommand*)g_sysConsole->FindCommand( binding->commandString.c_str() );
+		if(!binding->cmd_act || !binding->cmd_deact)
+			binding->cmd_act = (ConCommand*)g_sysConsole->FindCommand( binding->commandString.c_str() );
 	}
 
 	// if anly command found
-	if(	binding->boundCommand1 || binding->boundCommand2 || 
+	if(	binding->cmd_act || binding->cmd_deact ||
 		binding->boundAction)
 	{
 		if(isJoyAxis)
@@ -290,26 +295,12 @@ axisAction_t* CInputCommandBinder::FindAxisAction(const char* name)
 	return nullptr;
 }
 
-// returns binding
-in_binding_t* CInputCommandBinder::LookupBinding(int keyIdent)
-{
-	for(int i = 0; i < m_bindings.numElem();i++)
-	{
-		in_binding_t* binding = m_bindings[i];
-
-		if(s_keyMapList[binding->key_index].keynum == keyIdent)
-			return binding;
-	}
-
-	return nullptr;
-}
-
 // searches for binding
 in_binding_t* CInputCommandBinder::FindBinding(const char* pszKeyStr)
 {
 	int bindingKeyIndices[3];
 
-	if (!GetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
+	if (!UTIL_GetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
 		return nullptr;
 
 	for(int i = 0; i < m_bindings.numElem();i++)
@@ -319,6 +310,20 @@ in_binding_t* CInputCommandBinder::FindBinding(const char* pszKeyStr)
 		if (binding->mod_index[0] == bindingKeyIndices[0] &&
 			binding->mod_index[1] == bindingKeyIndices[1] &&
 			binding->key_index == bindingKeyIndices[2])
+			return binding;
+	}
+
+	return nullptr;
+}
+
+in_binding_t* CInputCommandBinder::FindBindingByCommand(ConCommandBase* cmdBase, const char* argStr /*= nullptr*/)
+{
+	for (int i = 0; i < m_bindings.numElem(); i++)
+	{
+		in_binding_t* binding = m_bindings[i];
+
+		if ((binding->cmd_act == cmdBase || binding->cmd_deact == cmdBase) && 
+			(!argStr || argStr && !binding->argumentString.CompareCaseIns(argStr)))
 			return binding;
 	}
 
@@ -339,7 +344,7 @@ void CInputCommandBinder::UnbindKey(const char* pszKeyStr)
 {
 	int bindingKeyIndices[3];
 
-	if (!GetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
+	if (!UTIL_GetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
 		return;
 
 	int results = 0;
@@ -582,16 +587,7 @@ void CInputCommandBinder::ExecuteBoundCommands(T* zone, bool bState)
 
 	xstrsplit( zone->argumentString.GetData(), " ", args);
 
-	ConCommand *cmd = nullptr;
-
-	if(bState) //Handle press and de-press
-		cmd = zone->boundCommand1;
-	else
-		cmd = zone->boundCommand2;
-
-	// if there is only one command
-	if(!cmd && bState)
-		cmd = zone->boundCommand1;
+	ConCommand *cmd = bState ? zone->cmd_act : zone->cmd_deact;
 
 	// dispatch command
 	if(cmd)
@@ -647,7 +643,7 @@ void binding_key_list(DkList<EqString>& list, const char* query)
 		in_binding_t* binding = bindingList->ptr()[i];
 
 		EqString keyNameString;
-		GetBindingKeyString(keyNameString, binding);
+		UTIL_GetBindingKeyString(keyNameString, binding);
 
 		if (list.numElem() == LIST_LIMIT)
 		{
@@ -666,7 +662,7 @@ DECLARE_CMD_VARIANTS(bind,"Binds action to key", con_key_list, 0)
 		EqString agrstr;
 
 		for(int i = 2; i < CMD_ARGC; i++)
-			agrstr.Append(varargs("%s ",CMD_ARGV(i).c_str()));
+			agrstr.Append(varargs((i < CMD_ARGC-1) ? "%s " : "%s", CMD_ARGV(i).c_str()));
 
 		g_inputCommandBinder->BindKey(CMD_ARGV(0).c_str(), CMD_ARGV(1).c_str(),(char*)agrstr.GetData());
 	}
@@ -684,7 +680,7 @@ DECLARE_CMD(list_binding,"Shows bound keys",0)
 		in_binding_t* binding = bindingList->ptr()[i];
 
 		EqString keyNameString;
-		GetBindingKeyString(keyNameString, binding);
+		UTIL_GetBindingKeyString(keyNameString, binding);
 
 		Msg("bind %s %s %s\n", keyNameString.c_str(), binding->commandString.c_str(), binding->argumentString.c_str() );
 	}

@@ -170,7 +170,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 		format = FORMAT_RGB565;
 	}
 
-#ifdef _WIN32
+#ifndef _WIN32
 	bool useOpenGLRender = g_cmdLine->FindArgument("-ogl") != -1;
 #else
     bool useOpenGLRender = true; // I don't see that other APIs could appear widely soon
@@ -181,7 +181,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	materials_config.enableBumpmapping = true;
 	materials_config.enableSpecular = true;
 	materials_config.enableShadows = true;
-	materials_config.threadedloader = !useOpenGLRender;
 
 	materials_config.shaderapi_params.windowedMode = bWindowed;
 	materials_config.shaderapi_params.windowHandle = pWindow;
@@ -198,7 +197,11 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 		return false;
 	}
 
-	const char* materialsPath = "materials/";
+	kvkeybase_t* matSystemSettings = GetCore()->GetConfig()->FindKeyBase("MaterialSystem");
+
+	const char* rendererName = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("Renderer"), 0, NULL) : "eqD3D9RHI";
+	const char* materialsPath = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("MaterialsPath"), 0, NULL) : "materials/";
+	const char* texturePath = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("TexturePath"), 0, NULL) : "materials/";
 
 #ifdef _WIN32
 	materials_config.shaderapi_params.windowHandle = winfo.info.win.window;
@@ -217,8 +220,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	winParams.numParams = 1;
 
 	materials_config.shaderapi_params.windowHandle = &winParams;
-
-	materialsPath = "mmaterials/";
 #endif
 
 	materials_config.shaderapi_params.screenFormat = format;
@@ -226,34 +227,35 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
     bool materialSystemStatus = false;
 
-    const char* rendererName = "eqNullRHI";
-
-#ifdef _WIN32
-	if(useOpenGLRender)
-		rendererName = "eqGLRHI";
-	else if(g_cmdLine->FindArgument("-norender") != -1)
-		rendererName = "eqNullRHI";
-	else
-		rendererName = "eqD3D9RHI";
-#else
-	if(g_cmdLine->FindArgument("-norender") != -1)
-		rendererName = "libeqNullRHI";
-    else
-        rendererName = "libeqGLRHI";
+#ifndef _WIN32
+	rendererName = "libeqGLRHI";
 #endif // _WIN32
+
+	if (g_cmdLine->FindArgument("-norender") != -1)
+		rendererName = "eqNullRHI";
 
 	materialSystemStatus = materials->Init(materialsPath, rendererName, materials_config);
 
 	if(!materialSystemStatus)
 		return false;
 
-#ifdef _WIN32
-	if(!materials->LoadShaderLibrary("eqBaseShaders.dll"))
-		return false;
-#else
-	if(!materials->LoadShaderLibrary("libeqBaseShaders.so"))
-		return false;
-#endif // _WIN32
+	g_pShaderAPI = materials->GetShaderAPI();
+
+	materials_config.threadedloader = (g_pShaderAPI->GetShaderAPIClass() != SHADERAPI_OPENGL);
+
+	if (matSystemSettings)
+	{
+		for (int i = 0; i < matSystemSettings->keys.numElem(); i++)
+		{
+			kvkeybase_t* keybase = matSystemSettings->keys[i];
+
+			if (!stricmp(keybase->GetName(), "AddShaders"))
+			{
+				if (!materials->LoadShaderLibrary(KV_GetValueString(keybase)))
+					return false;
+			}
+		}
+	}
 
 	int wide,tall;
 	SDL_GetWindowSize(m_pWindow, &wide, &tall);
@@ -261,8 +263,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();
-
-	g_pShaderAPI = materials->GetShaderAPI();
 
 	// Initialize sound system
 	soundsystem->Init();

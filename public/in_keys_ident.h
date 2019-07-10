@@ -465,6 +465,8 @@ static keyNameMap_t s_keyMapList[] =
 	{"CTRL", KEY_CTRL},
 	{"SHIFT", KEY_SHIFT},
 
+	{"CAPSLOCK", KEY_CAPSLOCK},
+
 	{"F1", KEY_F1},
 	{"F2", KEY_F2},
 	{"F3", KEY_F3},
@@ -539,6 +541,11 @@ static keyNameMap_t s_keyMapList[] =
 	{"KP_DOWNARROW",	KEY_NUMPAD2 },
 	{"KP_PGDN",			KEY_NUMPAD3 },
 	{"CAPSLOCK",		KEY_CAPSLOCK },
+	{"KP_ADD",			KEY_ADD},
+	{"KP_SUB",			KEY_SUBTRACT},
+	{"KP_MUL",			KEY_MULTIPLY},
+	{"KP_DIV",			KEY_DIVIDE},
+	{"KP_ENTER",		KEY_KP_ENTER},
 
 	{"MWHEELUP",		MOU_WHUP },
 	{"MWHEELDOWN",		MOU_WHDN },

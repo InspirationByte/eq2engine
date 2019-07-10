@@ -30,6 +30,7 @@ void CBaseTilebasedEditor::ProcessMouseEvents( wxMouseEvent& event )
 	Vector3D point_pos;
 	m_selectedRegion = (CEditorLevelRegion*)g_pMainFrame->GetRegionAtScreenPos(event.GetX(),event.GetY(), m_mouseOverTileHeight, point_pos);
 
+	// retrieve mouseover tile
 	int x, y;
 	if( m_selectedRegion && m_selectedRegion->GetHField(m_selectedHField)->PointAtPos(point_pos, x, y) )
 	{
@@ -52,7 +53,6 @@ void CBaseTilebasedEditor::ProcessMouseEvents( wxMouseEvent& event )
 		{
 			m_globalTile_pointSet = false;
 		}
-			
 
 		hfieldtile_t* tile = m_selectedRegion->GetHField(m_selectedHField)->GetTile(x, y);
 

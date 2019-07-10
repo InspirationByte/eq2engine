@@ -33,16 +33,16 @@ public:
 		mod_index[1] = -1;
 		key_index = -1;
 
-		boundCommand1 = nullptr;
-		boundCommand2 = nullptr;
+		cmd_act = nullptr;
+		cmd_deact = nullptr;
 		boundAction = nullptr;
 	}
 
 	EqString		argumentString;
 	EqString		commandString;	// safe for writing
 
-	ConCommand*		boundCommand1;	// 'plus' command
-	ConCommand*		boundCommand2;	// 'minus' command
+	ConCommand*		cmd_act;	// 'plus' command
+	ConCommand*		cmd_deact;	// 'minus' command
 	axisAction_t*	boundAction;
 
 	int			mod_index[2];	// modifier buttons
@@ -54,15 +54,15 @@ struct in_touchzone_t
 	in_touchzone_t()
 	{
 		finger = -1;
-		boundCommand1 = nullptr;
-		boundCommand2 = nullptr;
+		cmd_act = nullptr;
+		cmd_deact = nullptr;
 	}
 
 	Vector2D position;
 	Vector2D size;
 
-	ConCommand*	boundCommand1;	// 'plus' command
-	ConCommand*	boundCommand2;	// 'minus' command
+	ConCommand*	cmd_act;	// 'plus' command
+	ConCommand*	cmd_deact;	// 'minus' command
 
 	EqString	name;
 
@@ -97,9 +97,6 @@ public:
 	// binds a command with arguments to known key
 	bool					BindKey( const char* pszKeyStr, const char* pszCommand, const char *pszArgs );
 
-	// returns binding
-	in_binding_t*			LookupBinding(int keyIdent);
-
 	// removes single binding on specified keychar
 	void					UnbindKey( const char* pszKeyStr);
 
@@ -109,6 +106,7 @@ public:
 
 	// searches for binding
 	in_binding_t*			FindBinding(const char* pszKeyStr);
+	in_binding_t*			FindBindingByCommand(ConCommandBase* cmdBase, const char* argStr = nullptr);
 
 	// registers axis action
 	// they will be prefixed as "j_" + name
@@ -160,6 +158,10 @@ protected:
 
 	bool							m_init;
 };
+
+bool UTIL_GetBindingKeyIndices(int outKeys[3], const char* pszKeyStr);
+void UTIL_GetBindingKeyString(EqString& outStr, in_binding_t* binding);
+
 
 extern CInputCommandBinder* g_inputCommandBinder;
 

@@ -51,15 +51,15 @@ void g_freecam_changed(ConVar* pVar, char const* pszOldValue)
 		g_freeCamProps.angles.z = 0.0f;
 }
 
-static const wchar_t* cameraTypeStrings[] = {
-	L"Outside car",
-	L"In car",
-	L"Tripod",
-	L"Tripod (fixed zoom)",
-	L"Static",
+static const char* s_cameraTypeString[] = {
+	"Outside car",
+	"In car",
+	"Tripod",
+	"Tripod (fixed zoom)",
+	"Static",
 };
 
-static const ColorRGB cameraColors[] = {
+static const ColorRGB s_cameraColors[] = {
 	ColorRGB(1.0f,0.25f,0.25f),
 	ColorRGB(0.0f,0.25f,0.65f),
 	ColorRGB(0.2f,0.7f,0.2f),
@@ -110,19 +110,134 @@ void Director_GetNewCameraProps(replayCamera_t* cam)
 	cam->origin = g_freeCamProps.position;
 	cam->type = g_nDirectorCameraType;
 
-	
 	if (Director_FreeCameraActive())
 		cam->rotation = g_freeCamProps.angles;
 	else
 		cam->rotation = g_pCameraAnimator->GetAngles();	// only update given angles
 }
 
+enum EDirectorActionType
+{
+	DIRECTOR_CAMERA_ADD = 0,
+	DIRECTOR_CAMERA_RESET,
+	DIRECTOR_CAMERA_REMOVE,
+	DIRECTOR_CAMERA_WAYPOINT_SET_START,
+	DIRECTOR_CAMERA_WAYPOINT_SET_END,
+
+	DIRECTOR_PREVCAMERA,
+	DIRECTOR_NEXTCAMERA,
+};
+
+void Director_Action(EDirectorActionType type)
+{
+	if (!Director_IsActive())
+		return;
+
+	// only execute director actions on pause
+	if (!g_pause.GetBool())
+		return;
+
+	CGameObject* viewedObject = g_pGameSession->GetViewObject();
+
+	int replayCamera = g_replayData->m_currentCamera;
+	replayCamera_t* currentCamera = g_replayData->GetCurrentCamera();
+
+	if (type == DIRECTOR_CAMERA_ADD)
+	{
+		replayCamera_t cam;
+		cam.targetIdx = viewedObject->m_replayID;
+		cam.startTick = g_replayData->m_tick;
+		Director_GetNewCameraProps(&cam);
+
+		// zero camera rotation pls
+		cam.rotation = vec3_zero;
+
+		int camIndex = g_replayData->AddCamera(cam);
+		g_replayData->m_currentCamera = camIndex;
+
+		// set camera after keypress
+		g_freecam.SetBool(false);
+
+		Msg("New camera at %d\n", cam.startTick);
+	}
+	else if (type == DIRECTOR_CAMERA_RESET)
+	{
+		if (currentCamera)
+		{
+			Msg("Reset camera at %d\n", currentCamera->startTick);
+
+			currentCamera->targetIdx = viewedObject->m_replayID;
+			Director_GetNewCameraProps(currentCamera);
+
+			g_freecam.SetBool(false);
+		}
+	}
+	else if (type == DIRECTOR_CAMERA_REMOVE)
+	{
+		if (replayCamera >= 0 && g_replayData->m_cameras.numElem())
+		{
+			g_replayData->m_cameras.removeIndex(replayCamera);
+			g_replayData->m_currentCamera--;
+		}
+	}
+	else if (type == DIRECTOR_CAMERA_WAYPOINT_SET_START || type == DIRECTOR_CAMERA_WAYPOINT_SET_END)
+	{
+		// TODO: add keyframe
+	}
+	else if (type == DIRECTOR_PREVCAMERA)
+	{
+		if (g_replayData->m_cameras.inRange(replayCamera - 1))
+			g_replayData->m_currentCamera--;
+	}
+	else if (type == DIRECTOR_NEXTCAMERA)
+	{
+		if (g_replayData->m_cameras.inRange(replayCamera + 1))
+			g_replayData->m_currentCamera++;
+	}
+}
+
+DECLARE_CMD(director_camera_add, nullptr, CV_ARCHIVE)
+{
+	Director_Action(DIRECTOR_CAMERA_ADD);
+}
+
+DECLARE_CMD(director_camera_reset, nullptr, CV_ARCHIVE)
+{
+	Director_Action(DIRECTOR_CAMERA_REMOVE);
+}
+
+DECLARE_CMD(director_camera_remove, nullptr, CV_ARCHIVE)
+{
+	Director_Action(DIRECTOR_CAMERA_REMOVE);
+}
+
+DECLARE_CMD(director_prevcamera, nullptr, CV_ARCHIVE)
+{
+	Director_Action(DIRECTOR_PREVCAMERA);
+}
+
+DECLARE_CMD(director_nextcamera, nullptr, CV_ARCHIVE)
+{
+	Director_Action(DIRECTOR_NEXTCAMERA);
+}
+
+DECLARE_CMD(director_pick_ray, "Director mode - picks object with ray", 0)
+{
+	if (!Director_IsActive())
+		return;
+
+	CCar* pickedCar = Director_GetCarOnCrosshair();
+
+	if (pickedCar != nullptr)
+	{
+		g_pGameSession->SetViewObject(pickedCar);
+	}
+}
+
 void Director_KeyPress(int key, bool down)
 {
 	if(!Director_IsActive())
 		return;
-
-	CGameObject* viewedObject = g_pGameSession->GetViewObject();
 
 	if(key == KEY_SHIFT)
 	{
@@ -143,86 +258,40 @@ void Director_KeyPress(int key, bool down)
 
 		int replayCamera = g_replayData->m_currentCamera;
 		replayCamera_t* currentCamera = g_replayData->GetCurrentCamera();
-		replayCamera_t* prevCamera = g_replayData->m_cameras.inRange(replayCamera-1) ? &g_replayData->m_cameras[replayCamera-1] : NULL;
-		replayCamera_t* nextCamera = g_replayData->m_cameras.inRange(replayCamera+1) ? &g_replayData->m_cameras[replayCamera+1] : NULL;
-		int totalTicks = g_replayData->m_numFrames;
 
-		int highTick = nextCamera ? nextCamera->startTick : totalTicks;
-		int lowTick = prevCamera ? prevCamera->startTick : 0;
-
-		// execute actions only on when paused playback
-		if (key == KEY_ADD)
-		{
-			replayCamera_t cam;
-			cam.targetIdx = viewedObject->m_replayID;
-			cam.startTick = g_replayData->m_tick;
-			Director_GetNewCameraProps(&cam);
-
-			int camIndex = g_replayData->AddCamera(cam);
-			g_replayData->m_currentCamera = camIndex;
-
-			// set camera after keypress
-			g_freecam.SetBool(false);
-
-			Msg("New camera at %d\n", cam.startTick);
-		}
-		else if (key == KEY_KP_ENTER)
-		{
-			if (currentCamera)
-			{
-				Msg("Update camera at %d\n", currentCamera->startTick);
-
-				currentCamera->targetIdx = viewedObject->m_replayID;
-				Director_GetNewCameraProps(currentCamera);
-
-				g_freecam.SetBool(false);
-			}
-		}
-		else if (key == KEY_DELETE)
-		{
-			if (replayCamera >= 0 && g_replayData->m_cameras.numElem())
-			{
-				g_replayData->m_cameras.removeIndex(replayCamera);
-				g_replayData->m_currentCamera--;
-			}
-		}
-		else if (key == KEY_SPACE)
-		{
-			// TODO: add keyframe
-		}
-		else if (key >= KEY_1 && key <= KEY_5)
+		if(key >= KEY_1 && key <= KEY_5)
 		{
 			g_nDirectorCameraType = key - KEY_1;
 		}
-		else if (key == KEY_PGUP)
+		else if (currentCamera)
 		{
-			if (g_replayData->m_cameras.inRange(replayCamera + 1))
-				g_replayData->m_currentCamera++;
-		}
-		else if (key == KEY_PGDN)
-		{
-			if (g_replayData->m_cameras.inRange(replayCamera - 1))
-				g_replayData->m_currentCamera--;
-		}
-		else if (key == KEY_LEFT)
-		{
-			if (currentCamera)
-			{
-				currentCamera->startTick -= g_director_ShiftKey ? 10 : 1;
+			replayCamera_t* prevCamera = g_replayData->m_cameras.inRange(replayCamera - 1) ? &g_replayData->m_cameras[replayCamera - 1] : NULL;
+			replayCamera_t* nextCamera = g_replayData->m_cameras.inRange(replayCamera + 1) ? &g_replayData->m_cameras[replayCamera + 1] : NULL;
+			int totalTicks = g_replayData->m_numFrames;
 
-				if (currentCamera->startTick < lowTick)
-					currentCamera->startTick = lowTick;
+			int highTick = nextCamera ? nextCamera->startTick : totalTicks;
+			int lowTick = prevCamera ? prevCamera->startTick : 0;
+
+			if (key == KEY_LEFT)
+			{
+				if (currentCamera)
+				{
+					currentCamera->startTick -= g_director_ShiftKey ? 10 : 1;
+
+					if (currentCamera->startTick < lowTick)
+						currentCamera->startTick = lowTick;
+				}
+
 			}
-
-		}
-		else if (key == KEY_RIGHT)
-		{
-			if (currentCamera)
+			else if (key == KEY_RIGHT)
 			{
-				currentCamera->startTick += g_director_ShiftKey ? 10 : 1;
+				if (currentCamera)
+				{
+					currentCamera->startTick += g_director_ShiftKey ? 10 : 1;
 
-				if (currentCamera->startTick > highTick)
-					currentCamera->startTick = highTick;
+					if (currentCamera->startTick > highTick)
+						currentCamera->startTick = highTick;
+				}
 			}
 		}
 	}
@@ -345,19 +414,6 @@ void Director_UpdateFreeCamera(float fDt)
 	g_freeCamProps.position += g_freeCamProps.velocity * fDt;
 }
 
-DECLARE_CMD(director_pick_ray, "Director mode - picks object with ray", 0)
-{
-	if(!Director_IsActive())
-		return;
-
-	CCar* pickedCar = Director_GetCarOnCrosshair();
-
-	if(pickedCar != nullptr)
-	{
-		g_pGameSession->SetViewObject( pickedCar );
-	}
-}
-
 void Director_Draw( float fDt )
 {
 	if(!Director_IsActive())
@@ -369,30 +425,76 @@ void Director_Draw( float fDt )
 
 	static IEqFont* roboto30 = g_fontCache->GetFont("Roboto", 30);
 
-	const wchar_t* controlsText = varargs_w(
-		L"Play: &#FFFF00;O&;\n"
-		L"Toggle free camera: &#FFFF00;F&;\n\n"
+	static ConCommandBase* cmd_togglevar = (ConCommandBase*)g_sysConsole->FindBase("togglevar");
 
-		L"Next camera: &#FFFF00;PAGE UP&;\n"
-		L"PREV CAMERA: &#FFFF00;PAGE DOWN&;\n\n"
+	EqString play_pause_bind("UNBOUND");
+	UTIL_GetBindingKeyString(play_pause_bind, g_inputCommandBinder->FindBindingByCommand(cmd_togglevar, g_pause.GetName()));
 
-		L"Insert camera: &#FFFF00;KP_PLUS&;\n"
-		L"Reset camera: &#FFFF00;KP_ENTER&;\n"
-		L"Delete camera: &#FFFF00;DEL&;\n"
+	EqString freecam_bind("UNBOUND");
+	UTIL_GetBindingKeyString(freecam_bind, g_inputCommandBinder->FindBindingByCommand(cmd_togglevar, g_freecam.GetName()));
 
-		L"Move camera start frame: &#FFFF00;LEFT ARROW&; and &#FFFF00;RIGHT ARROW&;\n\n"
+	EqString director_camera_add_bind("UNBOUND");
+	UTIL_GetBindingKeyString(director_camera_add_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_camera_add));
 
-		//L"Set camera key flyby frame = &#FFFF00;SPACE&;\n\n"
+	EqString director_camera_reset_bind("UNBOUND");
+	UTIL_GetBindingKeyString(director_camera_reset_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_camera_reset));
 
-		L"Camera type: &#FFFF00;1-5&; (Current is &#FFFF00;'%s'&;)\n"
-		L"Zoom: &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
-		L"Target vehicle: &#FFFF00;LEFT MOUSE CLICK ON OBJECT&;\n"
+	EqString director_camera_remove_bind("UNBOUND");
+	UTIL_GetBindingKeyString(director_camera_remove_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_camera_remove));
 
-		L"Seek frame &#FFFF00;fastseek <frame>&; (in console)\n", cameraTypeStrings[g_nDirectorCameraType], g_freeCamProps.fov);
+	EqString director_prevcamera_bind("UNBOUND");
+	UTIL_GetBindingKeyString(director_prevcamera_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_prevcamera));
 
-	const wchar_t* shortText =	L"Pause: &#FFFF00;O&;\n"
-							L"Toggle free camera: &#FFFF00;F&;\n"
-							L"Fast Forward: &#FFFF00;BACKSPACE&;\n";
+	EqString director_nextcamera_bind("UNBOUND");
+	UTIL_GetBindingKeyString(director_nextcamera_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_nextcamera));
+
+	EqString director_pick_ray_bind("UNBOUND");
+	UTIL_GetBindingKeyString(director_pick_ray_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_pick_ray));
+	
+
+	const char* controlsText = varargs(
+		"Play: &#FFFF00;%s&;\n"
+		"Toggle free camera: &#FFFF00;%s&;\n\n"
+
+		"Next camera: &#FFFF00;%s&;\n"
+		"Prev camera: &#FFFF00;%s&;\n\n"
+
+		"Insert camera: &#FFFF00;%s&;\n"
+		"Reset camera: &#FFFF00;%s&;\n"
+		"Delete camera: &#FFFF00;%s&;\n"
+
+		"Move camera start frame: &#FFFF00;LEFT ARROW&; and &#FFFF00;RIGHT ARROW&;\n\n"
+
+		//"Set camera key flyby frame = &#FFFF00;SPACE&;\n\n"
+
+		"Camera type: &#FFFF00;1-5&; (Current is &#FFFF00;'%s'&;)\n"
+		"Zoom: &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
+		"Target vehicle: &#FFFF00;%s&;\n"
+
+		"Seek frame &#FFFF00;fastseek <frame>&; (in console)\n", 
+
+		play_pause_bind.c_str(),
+		freecam_bind.c_str(),
+
+		director_nextcamera_bind.c_str(),
+		director_prevcamera_bind.c_str(),
+
+		director_camera_add_bind.c_str(),
+		director_camera_reset_bind.c_str(),
+		director_camera_remove_bind.c_str(),
+
+		s_cameraTypeString[g_nDirectorCameraType],
+		g_freeCamProps.fov,
+
+		director_pick_ray_bind.c_str()
+	);
+
+	const char* shortText = varargs(
+		"Pause: &#FFFF00;%s&;\n"
+		"Toggle free camera: &#FFFF00;%s&;\n"
+		"Fast Forward: &#FFFF00;BACKSPACE&;\n",
+		play_pause_bind.c_str(),
+		freecam_bind.c_str());
 
 	eqFontStyleParam_t params;
 	params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
@@ -473,7 +575,7 @@ void Director_Draw( float fDt )
 			// draw colored rectangle
 			Rectangle_t cameraColorRect(timelineRect.GetCenter().x + cameraTickPos, screenSize.y-95.0f, timelineRect.GetCenter().x + nextTickPos, screenSize.y-75.0f);
 
-			ColorRGB camRectColor(cameraColors[camera->type]);
+			ColorRGB camRectColor(s_cameraColors[camera->type]);
 
 			if(currentCamera == camera && g_pause.GetBool())
 			{

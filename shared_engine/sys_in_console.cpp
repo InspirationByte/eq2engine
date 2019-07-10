@@ -1182,15 +1182,15 @@ void CEqConsoleInput::SetVisible(bool bVisible)
 
 bool CEqConsoleInput::KeyPress(int key, bool pressed)
 {
-	if( pressed ) // catch "DOWN" event
+	if (pressed) // catch "DOWN" event
 	{
-		in_binding_t* tgBind = g_inputCommandBinder->LookupBinding(key);
+		in_binding_t* tgBind = g_inputCommandBinder->FindBindingByCommand(&cmd_toggleconsole);
 
-		if(tgBind && !stricmp(tgBind->commandString.c_str(), "toggleconsole"))
+		if (tgBind && s_keyMapList[tgBind->key_index].keynum == key)
 		{
-			if(IsVisible() && IsShiftPressed())
+			if (IsVisible() && IsShiftPressed())
 			{
-				SetLogVisible( !IsLogVisible() );
+				SetLogVisible(!IsLogVisible());
 				return false;
 			}
 

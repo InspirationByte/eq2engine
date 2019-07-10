@@ -420,19 +420,21 @@ void CHeightTileField::GetTileTBN(int x, int y, Vector3D& tang, Vector3D& binorm
 
 	int nIter = 0;
 
-	// get neighbour tiles
-	for(int i = 0; i < 8; i++)
-	{
-		//bool isDetached = (tile->flags & EHTILE_DETACHED) ? EHTILE_DETACHED : 0;
+	bool isDetached = (tile->flags & EHTILE_DETACHED) > 0;
 
+	// get neighbour tiles
+	for (int i = 0; i < 8; i++)
+	{
 		// get the tiles only with corresponding detaching
 		hfieldtile_t* ntile = GetTile(dx[i], dy[i]);
 
-		if(!ntile)
+		if (!ntile)
 			continue;
 
-		if(((ntile->flags & EHTILE_DETACHED) > 0) != ((tile->flags & EHTILE_DETACHED) > 0) &&
-			ntile->height < tile->height)
+		bool isNDetached = (ntile->flags & EHTILE_DETACHED) > 0;
+
+		if (isDetached != isNDetached &&
+			ntile->height != tile->height)
 			continue;
 
 		if(ntile->texture == -1)
