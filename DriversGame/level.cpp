@@ -1524,6 +1524,12 @@ void CGameLevel::QueryNearestRegions( const IVector2D& point, bool waitLoad )
 	if (!region)
 		return;
 
+	// if center region was not loaded, force wait
+	if (!region->m_isLoaded && waitLoad)
+		waitLoad = true;
+	else
+		waitLoad = false;
+
 	int numNeedToLoad = !region->m_isLoaded && (m_regionOffsets[point.y*m_wide + point.x] != -1);
 #endif // EDITOR
 

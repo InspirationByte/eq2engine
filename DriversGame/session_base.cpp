@@ -283,6 +283,9 @@ void Game_OnPhysicsUpdate(float fDt, int iterNum)
 
 				// vehicle respawn is oriented on the lead car, but removal is always depends on player
 				g_pAIManager->UpdateCarRespawn(fDt, spawnPos, removePos, leadCar->GetVelocity());
+
+				// pedestrians respawned too
+				g_pAIManager->UpdatePedestrainRespawn(fDt, spawnPos, removePos, leadCar->GetVelocity());
 			}
 		}
 

@@ -166,7 +166,6 @@ protected:
 	int							m_numMaxCops;
 
 	int							m_copRespawnInterval;
-	int							m_copSpawnIntervalCounter;
 
 	float						m_copLoudhailerTime;
 	float						m_copSpeechTime;
@@ -179,6 +178,7 @@ protected:
 	float						m_velocityMapUpdateTime;
 
 public:
+	int							m_spawnedTrafficCars;
 	DkList<CCar*>				m_trafficCars;
 	DkList<RoadBlockInfo_t*>	m_roadBlocks;
 };

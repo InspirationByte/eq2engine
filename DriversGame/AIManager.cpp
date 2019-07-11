@@ -55,8 +55,8 @@ CAIManager::CAIManager()
 	m_numMaxCops = 2;
 	m_copRespawnInterval = 20;	// spawn on every 20th traffic car
 	m_numMaxTrafficCars = 32;
-	
-	m_copSpawnIntervalCounter = 0;
+
+	m_spawnedTrafficCars = 0;
 
 	m_leadVelocity = vec3_zero;
 	m_leadPosition = vec3_zero;
@@ -77,10 +77,11 @@ void CAIManager::Init()
 	m_copMaxSpeed = AI_COP_DEFAULT_MAXSPEED;
 	
 	m_numMaxTrafficCars = g_trafficMaxCars.GetInt();
+	m_spawnedTrafficCars = 0;
 
 	m_trafficUpdateTime = 0.0f;
 	m_velocityMapUpdateTime = 0.0f;
-	m_copSpawnIntervalCounter = 0;
+
 	m_enableTrafficCars = true;
 	m_enableCops = true;
 
@@ -109,113 +110,66 @@ void CAIManager::Shutdown()
 
 CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 {
-	if (m_trafficCars.numElem() >= GetMaxTrafficCars())
-		return NULL;
+	if(!m_civCarEntries.numElem())
+		return nullptr;
 
-	CLevelRegion* pReg = NULL;
+	if (m_spawnedTrafficCars >= GetMaxTrafficCars())
+		return nullptr;
+
+	CLevelRegion* pReg = nullptr;
 	levroadcell_t* roadCell = g_pGameWorld->m_level.Road_GetGlobalTileAt(globalCell, &pReg);
 
 	// no tile - no spawn
 	if (!pReg || !roadCell)
-		return NULL;
+		return nullptr;
 
 	if (!pReg->m_isLoaded)
-		return NULL;
+		return nullptr;
 
 	bool isParkingLot = (roadCell->type == ROADTYPE_PARKINGLOT);
 
 	// parking lots are non-straight road cells
 	if (!(roadCell->type == ROADTYPE_STRAIGHT || isParkingLot))
-		return NULL;
+		return nullptr;
 
+	// don't spawn cars on short roads
 	if(!isParkingLot)
 	{
 		straight_t str = g_pGameWorld->m_level.Road_GetStraightAtPoint(globalCell, 2);
 
 		if (str.breakIter <= 1)
-			return NULL;
+			return nullptr;
 	}
 	
 	// don't spawn if distance between cars is too short
 	for (int j = 0; j < m_trafficCars.numElem(); j++)
 	{
-		if (!m_trafficCars[j]->GetPhysicsBody())
-			continue;
-
 		IVector2D trafficPosGlobal;
 		if (!g_pGameWorld->m_level.GetTileGlobal(m_trafficCars[j]->GetOrigin(), trafficPosGlobal))
 			continue;
 
 		if (distance(trafficPosGlobal, globalCell) < AI_TRAFFIC_SPAWN_DISTANCE_THRESH*AI_TRAFFIC_SPAWN_DISTANCE_THRESH)
-			return NULL;
+			return nullptr;
 	}
 
-	Vector3D newSpawnPos = g_pGameWorld->m_level.GlobalTilePointToPosition(globalCell);
+	IVector2D leadCellPos = g_pGameWorld->m_level.PositionToGlobalTilePoint(m_leadPosition);
 
-	float velocity = length(m_leadVelocity.xz());
-
-	if(velocity > 3.0f)
+	// this one would lead to problems with pre-recorded cars
 	{
-		// if velocity is negative to new spawn origin, cancel spawning
-		if( dot(newSpawnPos.xz()-m_leadPosition.xz(), m_leadVelocity.xz()) < 0 )
-			return NULL;
+		if (length(IVector2D(m_leadVelocity.xz())) > 3)
+		{
+			// if velocity is negative to new spawn origin, cancel spawning
+			if (dot(globalCell - leadCellPos, IVector2D(m_leadVelocity.xz())) < 0)
+				return nullptr;
+		}
 	}
+
 
 	// if this is a parking straight, the cars might start here stopped or even empty
 	bool isParkingStraight = (roadCell->flags & ROAD_FLAG_PARKING) > 0;
 
-	if(isParkingLot)
-	{
-		CCar* newCar = NULL;
-
-		int randCar = g_replayRandom.Get(0, m_civCarEntries.numElem() - 1);
-
-		vehicleConfig_t* conf = m_civCarEntries[randCar].config;
-
-		// don't spawn if not allowed
-		if(conf->flags.allowParked == false)
-			return NULL;
-
-		m_civCarEntries[randCar].nextSpawn--;
-
-		if(m_civCarEntries[randCar].nextSpawn <= 0)
-		{
-			newCar = new CCar(conf);
-		
-			// car will be spawn, regenerate random
-			g_replayRandom.Regenerate();
-			g_replayData->PushEvent( REPLAY_EVENT_FORCE_RANDOM );
-
-			newCar->Spawn();
-			newCar->Enable(false);
-			newCar->PlaceOnRoadCell(pReg, roadCell);
-
-			if( conf->numColors )
-			{
-				int col_idx = g_replayRandom.Get(0, conf->numColors - 1);
-				newCar->SetColorScheme(col_idx);
-
-				// set car color
-				//g_replayData->PushEvent(REPLAY_EVENT_CAR_SETCOLOR, newCar->m_replayID, (void*)(intptr_t)col_idx);
-			}
-
-			g_pGameWorld->AddObject(newCar);
-
-			m_trafficCars.append(newCar);
-
-			m_civCarEntries[randCar].nextSpawn = m_civCarEntries[randCar].GetZoneSpawnInterval("default");
-
-			return newCar;
-		}
-
-		return nullptr;
-	}
-
-	CAITrafficCar* pNewCar = NULL;
-
-	if(m_enableCops)
-		m_copSpawnIntervalCounter++;
-
+	CCar* spawnedCar = nullptr;
+	// count the cops
 	int numCopsSpawned = 0;
 
 	for (int i = 0; i < m_trafficCars.numElem(); i++)
@@ -227,79 +181,75 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 			numCopsSpawned++;
 	}
 
-	// try to spawn a cop car, otherwise we spawn simple traffic car
-	if (m_copSpawnIntervalCounter >= m_copRespawnInterval && m_enableCops)
+	int randCarEntry = g_replayRandom.Get(0, m_civCarEntries.numElem() - 1);
+
+	civCarEntry_t& carEntry = m_civCarEntries[randCarEntry];
+	vehicleConfig_t* carConf = carEntry.config;
+
+	bool isRegisteredCop = !m_copCarName[PURSUER_TYPE_COP].CompareCaseIns(carConf->carName);
+	bool isRegisteredGang = !m_copCarName[PURSUER_TYPE_GANG].CompareCaseIns(carConf->carName);
+
+	carEntry.nextSpawn--;
+
+	if (carEntry.nextSpawn > 0)
+		return nullptr;
+
+	carEntry.nextSpawn = isRegisteredCop ? m_copRespawnInterval : carEntry.GetZoneSpawnInterval("default");
+
+	if (isParkingLot)
 	{
-		// reset interval if it's possible to spawn
-		m_copSpawnIntervalCounter = 0;
-
-		if (numCopsSpawned >= GetMaxCops())
-			return nullptr;
-
-		//EPursuerAIType pursuerType = (EPursuerAIType)(g_replayRandom.Get(0, PURSUER_TYPE_COUNT - 1));
-
-		vehicleConfig_t* conf = g_pGameSession->FindCarEntryByName(m_copCarName[PURSUER_TYPE_COP].c_str());
-
-		if (!conf)
-			return NULL;
-
-		// initialize new car
-		CAIPursuerCar* pCopCar = new CAIPursuerCar(conf, PURSUER_TYPE_COP);
-		pCopCar->SetTorqueScale(m_copAccelerationModifier);
-		pCopCar->SetMaxDamage(m_copMaxDamage);
-		pCopCar->SetMaxSpeed(m_copMaxSpeed);
-		
-		pNewCar = pCopCar;
-
-		numCopsSpawned++;
+		if (carConf->flags.allowParked)
+		{
+			spawnedCar = new CCar(carConf);
+			spawnedCar->Enable(false);
+		}
 	}
 	else
 	{
-		int randCar = g_replayRandom.Get(0, m_civCarEntries.numElem() - 1);
-
-		vehicleConfig_t* conf = m_civCarEntries[randCar].config;
-
-		// don't spawn cop usual way
-		if(conf->flags.isCop)
-			return NULL;
-
-		m_civCarEntries[randCar].nextSpawn--;
-
-		if(m_civCarEntries[randCar].nextSpawn <= 0)
+		if (isRegisteredCop || isRegisteredGang)
 		{
-			pNewCar = new CAITrafficCar(m_civCarEntries[randCar].config);
-			m_civCarEntries[randCar].nextSpawn = m_civCarEntries[randCar].GetZoneSpawnInterval("default");
+			if (m_enableCops && numCopsSpawned < GetMaxCops())
+			{
+				CAIPursuerCar* pursuer = new CAIPursuerCar(carConf, isRegisteredGang ? PURSUER_TYPE_GANG : PURSUER_TYPE_COP);
+				pursuer->SetTorqueScale(m_copAccelerationModifier);
+				pursuer->SetMaxDamage(m_copMaxDamage);
+				pursuer->SetMaxSpeed(m_copMaxSpeed);
 
-			// car will be spawn, regenerate random
-			g_replayRandom.Regenerate();
-			g_replayData->PushEvent(REPLAY_EVENT_FORCE_RANDOM);
+				spawnedCar = pursuer;
+			}
+		}
+		else
+		{
+			spawnedCar = new CAITrafficCar(carConf);
 		}
 	}
 
-	if(!pNewCar)
-		return NULL;
+	if(!spawnedCar)
+		return nullptr;
 
-	pNewCar->Spawn();
-	pNewCar->PlaceOnRoadCell(pReg, roadCell);
+	// regenerate if car has to be spawned
+	g_replayRandom.Regenerate();
+	g_replayData->PushEvent(REPLAY_EVENT_FORCE_RANDOM);
 
-	vehicleConfig_t* conf = pNewCar->m_conf;
+	// Spawn required for PlaceOnRoadCell
+	spawnedCar->Spawn();
+	spawnedCar->PlaceOnRoadCell(pReg, roadCell);
 
-	if( conf->numColors )
+	if( carConf->numColors )
 	{
-		int col_idx = g_replayRandom.Get(0, conf->numColors - 1);
-		pNewCar->SetColorScheme(col_idx);
-
-		// set car color
-		//g_replayData->PushEvent(REPLAY_EVENT_CAR_SETCOLOR, pNewCar->m_replayID, (void*)(intptr_t)col_idx);
+		int col_idx = g_replayRandom.Get(0, carConf->numColors - 1);
+		spawnedCar->SetColorScheme(col_idx);
 	}
 
-	pNewCar->InitAI( false ); // TODO: chance of stoped, empty and active car on parking lane
+	if(spawnedCar->ObjType() == GO_CAR_AI)
+		((CAITrafficCar*)spawnedCar)->InitAI( false ); // TODO: chance of stoped, empty and active car on parking lane
 
-	g_pGameWorld->AddObject(pNewCar);
+	g_pGameWorld->AddObject(spawnedCar);
+	m_trafficCars.append(spawnedCar);
 
-	m_trafficCars.append(pNewCar);
+	m_spawnedTrafficCars++;
 
-	return pNewCar;
+	return spawnedCar;
 }
 
 void CAIManager::QueryTrafficCars(DkList<CCar*>& list, float radius, const Vector3D& position, const Vector3D& direction, float queryCosAngle)
@@ -366,8 +316,13 @@ int CAIManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
 
 void CAIManager::RemoveTrafficCar(CCar* car)
 {
-	if( m_trafficCars.fastRemove(car) )
+	if (m_trafficCars.fastRemove(car))
+	{
+		if(car->GetScriptID() == SCRIPT_ID_NOTSCRIPTED)
+			m_spawnedTrafficCars--;
+
 		g_pGameWorld->RemoveObject(car);
+	}
 }
 
 void CAIManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity)
@@ -602,7 +557,7 @@ void CAIManager::UpdateRoadblocks()
 
 void CAIManager::UpdateCopStuff(float fDt)
 {
-	//debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "cops spawned: %d (max %d) (cntr=%d, lvl=%d)\n", m_copCars.numElem(), GetMaxCops(), m_copSpawnIntervalCounter, m_copRespawnInterval);
+	//debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "cops spawned: %d (max %d) (lvl=%d)\n", m_copCars.numElem(), GetMaxCops(), m_copRespawnInterval);
 	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "num traffic cars: %d\n", m_trafficCars.numElem());
 	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "num road blocks: %d\n", m_roadBlocks.numElem());
 	debugoverlay->Text(ColorRGBA(1, 1, 1, 1), "cop speech time: %.2f loudhailer: %.2f\n", m_copSpeechTime, m_copLoudhailerTime);
@@ -632,9 +587,9 @@ void CAIManager::RemoveAllCars()
 		RemoveTrafficCar(m_trafficCars[i]);
 		i--;
 	}
-		
 
 	m_trafficCars.clear();
+	m_spawnedTrafficCars = 0;
 }
 
 civCarEntry_t* CAIManager::FindCivCarEntry( const char* name )
