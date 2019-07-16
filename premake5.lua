@@ -104,13 +104,13 @@ project "eqFrameworkLib"
 --- eqCore dynamic library
 ----------------------------------------------------------------------
 	  
-project "eqCoreShared"
+project "eqCore"
    kind "SharedLib"
    
    language "C++"
    targetdir "%{cfg.buildcfg}"
    
-   links {  "eqCoreLib", "eqFrameworkLib", "zlibstat"  }
+   links {  "eqCoreLib", "eqFrameworkLib", "zlib-lib"  }
    
 if os.host() == "windows" then
    links {  "DbgHelp"  }
@@ -143,3 +143,8 @@ end
    filter "configurations:Release"
 	  defines { "NDEBUG" }
 	  optimize "On"
+	  
+-- optional 3rd party libraries
+group "src_dependency"
+	--include "src_dependency/lua"
+	include "src_dependency/zlib"
