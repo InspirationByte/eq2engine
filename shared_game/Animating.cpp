@@ -105,6 +105,7 @@ inline void ZeroFrameTransform(animframe_t &frame)
 
 CAnimatingEGF::CAnimatingEGF()
 {
+	m_sequenceTimers = nullptr;
 	m_boneTransforms = nullptr;
 	m_joints = nullptr;
 	m_numBones = 0;
@@ -129,6 +130,10 @@ void CAnimatingEGF::DestroyAnimating()
 
 	m_joints = nullptr;
 
+	if (m_sequenceTimers)
+		PPFree(m_sequenceTimers);
+	m_sequenceTimers = nullptr;
+
 	if (m_boneTransforms)
 		PPFree(m_boneTransforms);
 	m_boneTransforms = nullptr;
@@ -137,10 +142,6 @@ void CAnimatingEGF::DestroyAnimating()
 		PPFree(m_transitionFrames);
 	m_transitionFrames = nullptr;
 
-	// stop all sequence timers
-	for (int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
-		m_sequenceTimers[i].Reset();
-
 	m_transitionTime = m_transitionRemTime = DEFAULT_TRANSITION_TIME;
 
 	m_numBones = 0;
@@ -148,12 +149,6 @@ void CAnimatingEGF::DestroyAnimating()
 
 void CAnimatingEGF::InitAnimating(IEqModel* model)
 {
-	for (int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
-	{
-		m_sequenceTimers[i].Reset();
-		m_seqBlendWeights[i] = 0.0f;
-	}
-
 	if (!model)
 		return;
 
@@ -161,6 +156,11 @@ void CAnimatingEGF::InitAnimating(IEqModel* model)
 
 	m_joints = model->GetHWData()->joints;
 	m_numBones = studio->numBones;
+
+	m_sequenceTimers = PPAllocStructArray(sequencetimer_t, MAX_SEQUENCE_TIMERS);
+
+	for (int i = 0; i < MAX_SEQUENCE_TIMERS; i++)
+		m_sequenceTimers[i].Reset();
 
 	m_boneTransforms = PPAllocStructArray(Matrix4x4, m_numBones);
 
@@ -479,7 +479,7 @@ void CAnimatingEGF::SetPlaybackSpeedScale(float scale, int slot)
 
 void CAnimatingEGF::SetSequenceBlending(int slot, float factor)
 {
-	m_seqBlendWeights[slot] = factor;
+	m_sequenceTimers[slot].blendWeight = factor;
 }
 
 
@@ -558,10 +558,6 @@ void CAnimatingEGF::SwapSequenceTimers(int index, int swapTo)
 	sequencetimer_t swap_to = m_sequenceTimers[swapTo];
 	m_sequenceTimers[swapTo] = m_sequenceTimers[index];
 	m_sequenceTimers[index] = swap_to;
-
-	float swap_to_time = m_seqBlendWeights[swapTo];
-	m_seqBlendWeights[swapTo] = m_seqBlendWeights[index];
-	m_seqBlendWeights[index] = swap_to_time;
 }
 
 
@@ -648,7 +644,7 @@ void GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone, animframe_t &o
 // updates bones
 void CAnimatingEGF::RecalcBoneTransforms(bool storeTransitionFrames /*= false*/)
 {
-	m_seqBlendWeights[0] = 1.0f;
+	m_sequenceTimers[0].blendWeight = 1.0f;
 
 	animframe_t finalBoneFrame;
 
@@ -668,7 +664,7 @@ void CAnimatingEGF::RecalcBoneTransforms(bool storeTransitionFrames /*= false*/)
 			gsequence_t* seq = timer.seq;
 			sequencedesc_t* seqDesc = seq->s;
 
-			float blend_weight = m_seqBlendWeights[j];
+			float blend_weight = timer.blendWeight;
 
 			if (blend_weight <= 0)
 				continue;

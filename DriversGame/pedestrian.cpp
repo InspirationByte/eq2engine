@@ -8,16 +8,19 @@
 #include "pedestrian.h"
 #include "CameraAnimator.h"
 #include "input.h"
+#include "world.h"
 
 #define PED_MODEL "models/characters/ped1.egf"
 
 const float PEDESTRIAN_RADIUS = 0.85f;
 
-CPedestrian::CPedestrian() : CGameObject(), CAnimatingEGF()
+CPedestrian::CPedestrian() : CAnimatingEGF(), CControllableGameObject(), m_thinker(this)
 {
 	m_physBody = nullptr;
 	m_onGround = false;
 	m_pedState = 0;
+
+	m_thinkTime = 0;
 }
 
 CPedestrian::CPedestrian(kvkeybase_t* kvdata) : CPedestrian()
@@ -53,6 +56,12 @@ void CPedestrian::OnRemove()
 	BaseClass::OnRemove();
 }
 
+void CPedestrian::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy)
+{
+	BaseClass::OnCarCollisionEvent(pair, hitBy);
+	Msg("Pedestrian hit by car!\n");
+}
+
 void CPedestrian::Spawn()
 {
 	SetModel(PED_MODEL);
@@ -60,12 +69,12 @@ void CPedestrian::Spawn()
 	m_physBody = new CEqRigidBody();
 	m_physBody->Initialize(PEDESTRIAN_RADIUS);
 
-	m_physBody->SetCollideMask(COLLIDEMASK_DEBRIS);
-	m_physBody->SetContents(OBJECTCONTENTS_VEHICLE);
+	m_physBody->SetCollideMask(COLLIDEMASK_PEDESTRIAN);
+	m_physBody->SetContents(OBJECTCONTENTS_PEDESTRIAN);
 
 	m_physBody->SetPosition(m_vecOrigin);
 
-	m_physBody->m_flags |= BODY_DISABLE_DAMPING | /*COLLOBJ_DISABLE_RESPONSE |*/ COLLOBJ_COLLISIONLIST | BODY_FROZEN;
+	m_physBody->m_flags |= BODY_DISABLE_DAMPING | COLLOBJ_DISABLE_RESPONSE | BODY_FROZEN;
 
 	m_physBody->SetMass(85.0f);
 	m_physBody->SetFriction(0.0f);
@@ -79,6 +88,8 @@ void CPedestrian::Spawn()
 	m_bbox = m_physBody->m_aabb_transformed;
 
 	g_pPhysics->m_physics.AddToWorld(m_physBody);
+
+	m_thinker.FSMSetState(AI_State(&CPedestrianAI::SearchDaWay));
 
 	BaseClass::Spawn();
 }
@@ -108,8 +119,10 @@ void CPedestrian::Draw(int nRenderFlags)
 const float ACCEL_RATIO = 12.0f;
 const float DECEL_RATIO = 25.0f;
 
-const float MAX_WALK_VELOCITY = 1.5f;
+const float MAX_WALK_VELOCITY = 1.35f;
 const float MAX_RUN_VELOCITY = 9.0f;
+
+const float PEDESTRIAN_THINK_TIME = 0.0f;
 
 void CPedestrian::Simulate(float fDt)
 {
@@ -134,7 +147,18 @@ void CPedestrian::Simulate(float fDt)
 
 	Vector3D forwardVec;
 	AngleVectors(m_vecAngles, &forwardVec);
+	
+	// do pedestrian thinker
+	{
+		m_thinkTime -= fDt;
 
+		if (m_thinkTime <= 0.0f)
+		{
+			int res = m_thinker.DoStatesAndEvents(PEDESTRIAN_THINK_TIME + fDt);
+			m_thinkTime = PEDESTRIAN_THINK_TIME;
+		}
+	}
+	
 	int controlButtons = GetControlButtons();
 
 	Activity bestMoveActivity = (controlButtons & IN_BURNOUT) ? ACT_RUN : ACT_WALK;
@@ -262,4 +286,213 @@ const Vector3D& CPedestrian::GetVelocity() const
 void CPedestrian::HandleAnimatingEvent(AnimationEvent nEvent, char* options)
 {
 
+}
+
+//--------------------------------------------------------------
+// PEDESTRIAN THINKER FSM
+
+bool CPedestrianAI::GetNextPath(int dir)
+{
+	// get the road tile
+
+	CLevelRegion* reg;
+	levroadcell_t* cell = g_pGameWorld->m_level.Road_GetGlobalTile(m_host->GetOrigin(), &reg);
+
+	if (cell && cell->type == ROADTYPE_PAVEMENT)
+	{
+		IVector2D curTile;
+		g_pGameWorld->m_level.LocalToGlobalPoint(IVector2D(cell->posX, cell->posY), reg, curTile);
+
+		int tileOfsX[] = ROADNEIGHBOUR_OFFS_X(curTile.x);
+		int tileOfsY[] = ROADNEIGHBOUR_OFFS_Y(curTile.y);
+
+		// try to walk in usual dae way
+		{
+			levroadcell_t* nCell = g_pGameWorld->m_level.Road_GetGlobalTileAt(IVector2D(tileOfsX[dir], tileOfsY[dir]), &reg);
+
+			if (nCell && nCell->type == ROADTYPE_PAVEMENT)
+			{
+				IVector2D nTile;
+				g_pGameWorld->m_level.LocalToGlobalPoint(IVector2D(nCell->posX, nCell->posY), reg, nTile);
+
+				if (nCell != m_prevRoadCell && nCell != m_nextRoadCell)
+				{
+					m_prevRoadCell = m_nextRoadCell;
+					m_nextRoadCell = nCell;
+					m_nextRoadTile = nTile;
+					m_prevDir = m_curDir;
+					m_curDir = dir;
+					return true;
+				}
+			}
+		}
+	}
+	else
+	{
+		m_nextRoadTile = 0;
+	}
+
+	return false;
+}
+
+int	CPedestrianAI::SearchDaWay(float fDt, EStateTransition transition)
+{
+	if (transition == EStateTransition::STATE_TRANSITION_PROLOG)
+	{
+		return 0;
+	}
+	else if (transition == EStateTransition::STATE_TRANSITION_EPILOG)
+	{
+		return 0;
+	}
+
+	int randomDir = RandomInt(0, 3);
+
+	if (GetNextPath(randomDir))
+		AI_SetState(&CPedestrianAI::DoWalk);
+
+	return 0;
+}
+
+const float AI_PEDESTRIAN_CAR_AFRAID_MAX_RADIUS = 9.0f;
+const float AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS = 1.5f;
+const float AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS = 2.5f;
+const float AI_PEDESTRIAN_CAR_AFRAID_VELOCITY = 1.0f;
+
+void CPedestrianAI::DetectEscape()
+{
+	Vector3D pedPos = m_host->GetOrigin();
+
+	DkList<CGameObject*> nearestCars;
+	g_pGameWorld->QueryObjects(nearestCars, AI_PEDESTRIAN_CAR_AFRAID_MAX_RADIUS, pedPos, [](CGameObject* x) {
+		return (x->ObjType() == GO_CAR || x->ObjType() == GO_CAR_AI);
+	});
+
+	for (int i = 0; i < nearestCars.numElem(); i++)
+	{
+		CControllableGameObject* nearCar = (CControllableGameObject*)nearestCars[i];
+
+		Vector3D carPos = nearCar->GetOrigin();
+		Vector3D carHeadingPos = carPos + nearCar->GetVelocity();
+
+		float projResult = lineProjection(carPos, carHeadingPos, pedPos);
+
+		bool hasSirenOrHorn = nearCar->GetControlButtons() & IN_HORN;
+
+		float velocity = length(nearCar->GetVelocity());
+		float distance = length(carPos - pedPos);
+
+		if (projResult > 0.0f && projResult < 1.0f && (velocity > AI_PEDESTRIAN_CAR_AFRAID_VELOCITY || distance < AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS) || hasSirenOrHorn)
+		{
+			Vector3D projPos = lerp(carPos, carHeadingPos, projResult);
+
+			if (hasSirenOrHorn || length(projPos - pedPos) < AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS)
+			{
+				AI_SetState(&CPedestrianAI::DoEscape);
+
+				m_escapeFromPos = pedPos;
+				m_escapeDir = normalize(pedPos - projPos + nearCar->GetVelocity()*0.01f);
+				return;
+			}
+		}
+	}
+}
+
+int	CPedestrianAI::DoEscape(float fDt, EStateTransition transition)
+{
+	if (transition == EStateTransition::STATE_TRANSITION_PROLOG)
+	{
+		return 0;
+	}
+	else if (transition == EStateTransition::STATE_TRANSITION_EPILOG)
+	{
+		return 0;
+	}
+
+	DetectEscape();
+
+	Vector3D pedPos = m_host->GetOrigin();
+	Vector3D pedAngles = m_host->GetAngles();
+
+	if (length(pedPos - m_escapeFromPos) > AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS)
+	{
+		AI_SetState(&CPedestrianAI::DoWalk);
+		return 0;
+	}
+
+	int controlButtons = 0;
+
+	Vector3D dirAngles = VectorAngles(m_escapeDir);
+	m_host->SetAngles(Vector3D(0.0f, dirAngles.y, 0.0f));
+	/*
+	float angleDiff = AngleDiff(pedAngles.y, dirAngles.y);
+
+	if (fabs(angleDiff) > 1.0f)
+	{
+		if (angleDiff > 0)
+			controlButtons |= IN_TURNLEFT;
+		else
+			controlButtons |= IN_TURNRIGHT;
+	}
+	*/
+	controlButtons |= IN_ACCELERATE | IN_BURNOUT;
+
+	m_host->SetControlButtons(controlButtons);
+
+	return 0;
+}
+
+int	CPedestrianAI::DoWalk(float fDt, EStateTransition transition)
+{
+	if (transition == EStateTransition::STATE_TRANSITION_PROLOG)
+	{
+		return 0;
+	}
+	else if (transition == EStateTransition::STATE_TRANSITION_EPILOG)
+	{
+		return 0;
+	}
+	
+	Vector3D pedPos = m_host->GetOrigin();
+	Vector3D pedAngles = m_host->GetAngles();
+
+	DetectEscape();
+
+	CLevelRegion* reg;
+	levroadcell_t* cell = g_pGameWorld->m_level.Road_GetGlobalTile(pedPos, &reg);
+
+	if (!m_nextRoadCell || m_nextRoadCell == cell)
+	{
+		if (!GetNextPath(m_curDir))
+		{
+			AI_SetState(&CPedestrianAI::SearchDaWay);
+			return 0;
+		}
+	}
+
+	
+	int controlButtons = 0;
+
+	Vector3D nextCellPos = g_pGameWorld->m_level.GlobalTilePointToPosition(m_nextRoadTile);
+
+	Vector3D dirToCell = normalize(nextCellPos - pedPos);
+	Vector3D dirAngles = VectorAngles(dirToCell);
+
+	float angleDiff = AngleDiff(pedAngles.y, dirAngles.y);
+
+	if (fabs(angleDiff) > 1.0f)
+	{
+		if (angleDiff > 0)
+			controlButtons |= IN_TURNLEFT;
+		else
+			controlButtons |= IN_TURNRIGHT;
+	}
+	else
+		controlButtons |= IN_ACCELERATE;// | IN_BURNOUT;
+
+
+	m_host->SetControlButtons(controlButtons);
+
+
+	return 0;
 }

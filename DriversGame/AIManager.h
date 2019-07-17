@@ -72,7 +72,7 @@ public:
 	void						Init();
 	void						Shutdown();
 
-	void						InitialSpawnCars(const Vector3D& spawnOrigin);
+	void						InitialSpawns(const Vector3D& spawnOrigin);
 
 	void						UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity);
 	void						UpdateCopStuff(float fDt);
@@ -82,11 +82,11 @@ public:
 	civCarEntry_t*				FindCivCarEntry( const char* name );
 
 	// ----- PEDESTRIANS -----
-	void						UpdatePedestrainRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity);
+	void						UpdatePedestrianRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity);
 
 	void						RemoveAllPedestrians();
 
-	void						SpawnPedestrian(const IVector2D& globalCell);
+	CPedestrian*				SpawnPedestrian(const IVector2D& globalCell);
 
 	void						QueryPedestrians(DkList<CPedestrian*>& list, float radius, const Vector3D& position, const Vector3D& direction, float queryCosAngle);
 
@@ -143,8 +143,10 @@ protected:
 	void						PaintNavigationLine(const IVector2D& start, const IVector2D& end);
 	
 	void						RemoveTrafficCar(CCar* car);
+	void						RemovePedestrian(CPedestrian* ped);
 
 	int							CircularSpawnTrafficCars( int x0, int y0, int radius );
+	int							CircularSpawnPedestrians(int x0, int y0, int radius);
 
 	DkList<civCarEntry_t>		m_civCarEntries;
 
@@ -175,11 +177,14 @@ protected:
 	//---------------------------------------------------------
 
 	float						m_trafficUpdateTime;
+	float						m_pedsUpdateTime;
+
 	float						m_velocityMapUpdateTime;
 
 public:
 	int							m_spawnedTrafficCars;
 	DkList<CCar*>				m_trafficCars;
+	DkList<CPedestrian*>		m_pedestrians;
 	DkList<RoadBlockInfo_t*>	m_roadBlocks;
 };
 

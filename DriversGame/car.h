@@ -375,7 +375,7 @@ class CLevelRegion;
 //-----------------------------------------------------------------------
 // The vehicle itself
 //-----------------------------------------------------------------------
-class CCar : public CGameObject, public CControllableObject
+class CCar : public CControllableGameObject
 {
 	friend class CAITrafficCar;
 	friend class CAIPursuerCar;
@@ -383,7 +383,7 @@ class CCar : public CGameObject, public CControllableObject
 	friend class CDrvSynHUDManager;
 public:
 	DECLARE_NETWORK_TABLE();
-	DECLARE_CLASS( CCar, CGameObject )
+	DECLARE_CLASS( CCar, CControllableGameObject)
 
 	CCar();
 	CCar( vehicleConfig_t* config );

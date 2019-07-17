@@ -8,7 +8,7 @@
 #include "ControllableObject.h"
 #include "input.h"
 
-CControllableObject::CControllableObject() :
+CControllableGameObject::CControllableGameObject() :
 	m_controlButtons(0),
 	m_oldControlButtons(0),
 	m_accelRatio(1023),
@@ -18,7 +18,7 @@ CControllableObject::CControllableObject() :
 
 }
 
-void CControllableObject::SetControlButtons(int flags)
+void CControllableGameObject::SetControlButtons(int flags)
 {
 	// make no misc controls here
 	flags &= ~IN_MISC;
@@ -26,12 +26,12 @@ void CControllableObject::SetControlButtons(int flags)
 	m_controlButtons = flags;
 }
 
-int	CControllableObject::GetControlButtons() const
+int	CControllableGameObject::GetControlButtons() const
 {
 	return m_controlButtons;
 }
 
-void CControllableObject::SetControlVars(float fAccelRatio, float fBrakeRatio, float fSteering)
+void CControllableGameObject::SetControlVars(float fAccelRatio, float fBrakeRatio, float fSteering)
 {
 	m_accelRatio = min(fAccelRatio, 1.0f)*1023.0f;
 	m_brakeRatio = min(fBrakeRatio, 1.0f)*1023.0f;
@@ -50,7 +50,7 @@ void CControllableObject::SetControlVars(float fAccelRatio, float fBrakeRatio, f
 		m_steerRatio = -1023;
 }
 
-void CControllableObject::GetControlVars(float& fAccelRatio, float& fBrakeRatio, float& fSteering)
+void CControllableGameObject::GetControlVars(float& fAccelRatio, float& fBrakeRatio, float& fSteering)
 {
 	fAccelRatio = (double)m_accelRatio * _oneBy1024;
 	fBrakeRatio = (double)m_brakeRatio * _oneBy1024;

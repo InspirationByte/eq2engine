@@ -8,13 +8,17 @@
 #ifndef CONTROLLABLE_H
 #define CONTROLLABLE_H
 
+#include "GameObject.h"
+
 const float _oneBy1024 = 1.0f / 1023.0f;
 
-class CControllableObject
+class CControllableGameObject : public CGameObject
 {
 public:
-	CControllableObject();
-	virtual ~CControllableObject() {}
+	DECLARE_CLASS(CControllableGameObject, CGameObject)
+
+	CControllableGameObject();
+	virtual ~CControllableGameObject() {}
 
 	virtual void	SetControlButtons(int flags);
 	virtual int		GetControlButtons() const;

@@ -144,7 +144,7 @@ void CGameSessionBase::OnLoadingDone()
 		CCar* leadCar = GetLeadCar();
 
 		if (leadCar)
-			g_pAIManager->InitialSpawnCars(leadCar->GetOrigin());
+			g_pAIManager->InitialSpawns(leadCar->GetOrigin());
 	}
 }
 
@@ -285,7 +285,7 @@ void Game_OnPhysicsUpdate(float fDt, int iterNum)
 				g_pAIManager->UpdateCarRespawn(fDt, spawnPos, removePos, leadCar->GetVelocity());
 
 				// pedestrians respawned too
-				g_pAIManager->UpdatePedestrainRespawn(fDt, spawnPos, removePos, leadCar->GetVelocity());
+				g_pAIManager->UpdatePedestrianRespawn(fDt, spawnPos, removePos, leadCar->GetVelocity());
 			}
 		}
 

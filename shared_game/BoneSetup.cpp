@@ -18,6 +18,7 @@ sequencetimer_t::sequencetimer_t()
 	nextFrame = 0;
 	eventCounter = 0;
 	playbackSpeedScale = 1.0f;
+	blendWeight = 0.0f;
 }
 
 template <typename T>
@@ -99,6 +100,7 @@ void sequencetimer_t::Reset()
 	active = false;
 	seq = nullptr;
 	seq_idx = -1;
+	blendWeight = 0.0f;
 
 	playbackSpeedScale = 1.0f;
 
@@ -108,6 +110,7 @@ void sequencetimer_t::Reset()
 void sequencetimer_t::ResetPlayback()
 {
 	seq_time = 0.0f;
+	blendWeight = 0.0f;
 	eventCounter = 0;
 	nextFrame = 0;
 	currFrame = 0;

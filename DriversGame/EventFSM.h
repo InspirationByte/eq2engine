@@ -78,7 +78,8 @@ private:
 	CEvent*							m_firstEvent;
 };
 
-#define AI_SetState( fn ) FSMSetState(static_cast<fnStateHandler>(fn))
-#define AI_SetNextState( fn, delay ) FSMSetNextState(static_cast<fnStateHandler>(fn), delay)
+#define AI_State(fn) static_cast<fnStateHandler>(fn)
+#define AI_SetState( fn ) FSMSetState(AI_State(fn))
+#define AI_SetNextState( fn, delay ) FSMSetNextState(AI_State(fn), delay)
 
 #endif // AIEVENTFSM_H

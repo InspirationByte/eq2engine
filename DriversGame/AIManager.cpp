@@ -16,11 +16,17 @@
 
 //------------------------------------------------------------------------------------------
 
-ConVar g_trafficMaxCars("g_trafficMaxCars", "48", "Maximum traffic cars", CV_CHEAT);
+ConVar g_trafficMaxCars("g_trafficMaxCars", "48", nullptr, CV_CHEAT);
 
-ConVar g_traffic_initial_mindist("g_traffic_initial_mindist", "15", "Min traffic car distance to spawn", CV_CHEAT);
-ConVar g_traffic_mindist("g_traffic_mindist", "50", "Min traffic car distance to spawn", CV_CHEAT);
-ConVar g_traffic_maxdist("g_traffic_maxdist", "51", "Max traffic car distance, to disappear", CV_CHEAT);
+ConVar g_traffic_initial_mindist("g_traffic_initial_mindist", "15", nullptr, CV_CHEAT);
+ConVar g_traffic_mindist("g_traffic_mindist", "50", nullptr, CV_CHEAT);
+ConVar g_traffic_maxdist("g_traffic_maxdist", "51", nullptr, CV_CHEAT);
+
+ConVar g_pedestrians_initial_mindist("g_pedestrians_initial_mindist", "10", nullptr, CV_CHEAT);
+ConVar g_pedestrians_mindist("g_pedestrians_mindist", "30", nullptr, CV_CHEAT);
+ConVar g_pedestrians_maxdist("g_pedestrians_maxdist", "32", nullptr, CV_CHEAT);
+
+ConVar g_pedestriansMax("g_pedestriansMax", "40", nullptr, CV_CHEAT);
 
 const int	AI_COP_SPEECH_QUEUE = 6;
 
@@ -35,6 +41,8 @@ const int MIN_ROADBLOCK_CARS = 2;
 const float AI_TRAFFIC_RESPAWN_TIME	= 0.1f;
 const float AI_TRAFFIC_SPAWN_DISTANCE_THRESH = 5.0f;
 
+const float AI_PEDESTRIAN_RESPAWN_TIME = 0.1f;
+
 //------------------------------------------------------------------------------------------
 
 static CAIManager s_AIManager;
@@ -43,6 +51,7 @@ CAIManager* g_pAIManager = &s_AIManager;
 CAIManager::CAIManager()
 {
 	m_trafficUpdateTime = 0.0f;
+	m_pedsUpdateTime = 0.0f;
 	m_velocityMapUpdateTime = 0.0f;
 
 	m_enableCops = true;
@@ -80,6 +89,7 @@ void CAIManager::Init()
 	m_spawnedTrafficCars = 0;
 
 	m_trafficUpdateTime = 0.0f;
+	m_pedsUpdateTime = 0.0f;
 	m_velocityMapUpdateTime = 0.0f;
 
 	m_enableTrafficCars = true;
@@ -100,6 +110,8 @@ void CAIManager::Shutdown()
 	m_civCarEntries.clear();
 
 	m_trafficCars.clear();
+	m_pedestrians.clear();
+
 	m_speechQueue.clear();
 
 	for (int i = 0; i < m_roadBlocks.numElem(); i++)
@@ -314,6 +326,48 @@ int CAIManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
 	return count;
 }
 
+int CAIManager::CircularSpawnPedestrians(int x0, int y0, int radius)
+{
+	int f = 1 - radius;
+	int ddF_x = 0;
+	int ddF_y = -2 * radius;
+	int x = 0;
+	int y = radius;
+
+	int count = 0;
+
+	while (x < y)
+	{
+		if (f >= 0)
+		{
+			y--;
+			ddF_y += 2;
+			f += ddF_y;
+		}
+
+		x++;
+		ddF_x += 2;
+		f += ddF_x + 1;
+
+		count += SpawnPedestrian(IVector2D(x0 + x, y0 + y)) != nullptr;
+		count += SpawnPedestrian(IVector2D(x0 - x, y0 + y)) != nullptr;
+		count += SpawnPedestrian(IVector2D(x0 + x, y0 - y)) != nullptr;
+		count += SpawnPedestrian(IVector2D(x0 - x, y0 - y)) != nullptr;
+		count += SpawnPedestrian(IVector2D(x0 + y, y0 + x)) != nullptr;
+		count += SpawnPedestrian(IVector2D(x0 - y, y0 + x)) != nullptr;
+		count += SpawnPedestrian(IVector2D(x0 + y, y0 - x)) != nullptr;
+		count += SpawnPedestrian(IVector2D(x0 - y, y0 - x)) != nullptr;
+	}
+
+	count += SpawnPedestrian(IVector2D(x0, y0 + radius)) != nullptr;
+	count += SpawnPedestrian(IVector2D(x0, y0 - radius)) != nullptr;
+	count += SpawnPedestrian(IVector2D(x0 + radius, y0)) != nullptr;
+	count += SpawnPedestrian(IVector2D(x0 - radius, y0)) != nullptr;
+
+	return count;
+}
+
+
 void CAIManager::RemoveTrafficCar(CCar* car)
 {
 	if (m_trafficCars.fastRemove(car))
@@ -398,18 +452,15 @@ void CAIManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const 
 	CircularSpawnTrafficCars(spawnCenterCell.x, spawnCenterCell.y, g_traffic_mindist.GetInt());
 }
 
-void CAIManager::InitialSpawnCars(const Vector3D& spawnOrigin)
+void CAIManager::InitialSpawns(const Vector3D& spawnOrigin)
 {
-	if (g_replayData->m_state == REPL_PLAYING)
-		return;
-
 	IVector2D spawnCenterCell;
 	if (!g_pGameWorld->m_level.GetTileGlobal(spawnOrigin, spawnCenterCell))
 		return;
 
 	int count = 0;
 
-	//for (int i = 0; i < g_trafficMaxCars.GetInt(); i++)
+	if (g_replayData->m_state != REPL_PLAYING)
 	{
 		for (int r = g_traffic_initial_mindist.GetInt(); r < g_traffic_mindist.GetInt(); r+=2)
 		{
@@ -417,12 +468,15 @@ void CAIManager::InitialSpawnCars(const Vector3D& spawnOrigin)
 		}
 	}
 
-	MsgWarning("InitialSpawnCars: spawned %d cars\n", count);
+	for (int r = g_pedestrians_initial_mindist.GetInt(); r < g_pedestrians_mindist.GetInt(); r += 2)
+	{
+		count += CircularSpawnPedestrians(spawnCenterCell.x, spawnCenterCell.y, r);
+	}
 }
 
 void CAIManager::UpdateNavigationVelocityMap(float fDt)
 {
-	
+	/*
 	m_velocityMapUpdateTime += fDt;
 
 	if(m_velocityMapUpdateTime > 0.5f)
@@ -432,16 +486,16 @@ void CAIManager::UpdateNavigationVelocityMap(float fDt)
 
 	// clear navgrid dynamic obstacle
 	g_pGameWorld->m_level.Nav_ClearDynamicObstacleMap();
-	/*
+	
 	// draw all car velocities on dynamic obstacle
 	for (int i = 0; i < m_trafficCars.numElem(); i++)
 	{
 		PaintVelocityMapFrom(m_trafficCars[i]);
-	}*/
+	}
 
 	// update debugging of navigation maps here
 	g_pGameWorld->m_level.UpdateDebugMaps();
-	
+	*/
 }
 
 void CAIManager::PaintVelocityMapFrom(CCar* car)
@@ -506,19 +560,131 @@ void CAIManager::PaintNavigationLine(const IVector2D& start, const IVector2D& en
     }
 }
 
-void CAIManager::UpdatePedestrainRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity)
+void CAIManager::UpdatePedestrianRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity)
 {
+	m_pedsUpdateTime -= fDt;
 
+	if (m_pedsUpdateTime <= 0.0f)
+		m_pedsUpdateTime = AI_PEDESTRIAN_RESPAWN_TIME;
+	else
+		return;
+
+	IVector2D spawnCenterCell;
+	if (!g_pGameWorld->m_level.GetTileGlobal(spawnOrigin, spawnCenterCell))
+		return;
+
+	IVector2D removeCenterCell;
+	if (!g_pGameWorld->m_level.GetTileGlobal(removeOrigin, removeCenterCell))
+		return;
+
+	// remove furthest cars from world
+	for (int i = 0; i < m_pedestrians.numElem(); i++)
+	{
+		CPedestrian* ped = m_pedestrians[i];
+
+		Vector3D pedPos = ped->GetOrigin();
+
+		// if it's on unloaded region, it should be forcely removed
+		CLevelRegion* reg = g_pGameWorld->m_level.GetRegionAtPosition(pedPos);
+
+		if (!reg || (reg && !reg->m_isLoaded))
+		{
+			RemovePedestrian(ped);
+			i--;
+			continue;
+		}
+
+		IVector2D pedCell;
+		reg->m_heightfield[0]->PointAtPos(pedPos, pedCell.x, pedCell.y);
+
+		g_pGameWorld->m_level.LocalToGlobalPoint(pedCell, reg, pedCell);
+
+		int distToCell = length(pedCell - removeCenterCell);
+		int distToCell2 = length(pedCell - spawnCenterCell);
+
+		if (distToCell > g_pedestrians_maxdist.GetInt() &&
+			distToCell2 > g_pedestrians_maxdist.GetInt())
+		{
+			RemovePedestrian(ped);
+			i--;
+			continue;
+		}
+	}
+
+	// now spawn new cars
+	CircularSpawnPedestrians(spawnCenterCell.x, spawnCenterCell.y, g_pedestrians_mindist.GetInt());
+}
+
+void CAIManager::RemovePedestrian(CPedestrian* ped)
+{
+	if (m_pedestrians.fastRemove(ped))
+		g_pGameWorld->RemoveObject(ped);
 }
 
 void CAIManager::RemoveAllPedestrians()
 {
+	for (int i = 0; i < m_pedestrians.numElem(); i++)
+	{
+		RemovePedestrian(m_pedestrians[i]);
+		i--;
+	}
 
+	m_pedestrians.clear();
 }
 
-void CAIManager::SpawnPedestrian(const IVector2D& globalCell)
+CPedestrian* CAIManager::SpawnPedestrian(const IVector2D& globalCell)
 {
+	if (m_pedestrians.numElem() >= g_pedestriansMax.GetInt())
+		return nullptr;
 
+	CLevelRegion* pReg = nullptr;
+	levroadcell_t* roadCell = g_pGameWorld->m_level.Road_GetGlobalTileAt(globalCell, &pReg);
+
+	// no tile - no spawn
+	if (!pReg || !roadCell)
+		return nullptr;
+
+	if (!pReg->m_isLoaded)
+		return nullptr;
+
+	// parking lots are non-straight road cells
+	if (roadCell->type != ROADTYPE_PAVEMENT)
+		return nullptr;
+
+	// don't spawn if distance between cars is too short
+	for (int j = 0; j < m_pedestrians.numElem(); j++)
+	{
+		IVector2D pedPosGlobal;
+		if (!g_pGameWorld->m_level.GetTileGlobal(m_pedestrians[j]->GetOrigin(), pedPosGlobal))
+			continue;
+
+		if (distance(pedPosGlobal, globalCell) < AI_TRAFFIC_SPAWN_DISTANCE_THRESH*AI_TRAFFIC_SPAWN_DISTANCE_THRESH)
+			return nullptr;
+	}
+
+	IVector2D leadCellPos = g_pGameWorld->m_level.PositionToGlobalTilePoint(m_leadPosition);
+
+	// this one would lead to problems with pre-recorded cars
+	{
+		if (length(IVector2D(m_leadVelocity.xz())) > 3)
+		{
+			// if velocity is negative to new spawn origin, cancel spawning
+			if (dot(globalCell - leadCellPos, IVector2D(m_leadVelocity.xz())) < 0)
+				return nullptr;
+		}
+	}
+
+	Vector3D pedPos = g_pGameWorld->m_level.GlobalTilePointToPosition(globalCell) + Vector3D(0.0f,0.8f,0.0f);
+
+	CPedestrian* spawnedPed = new CPedestrian();
+	spawnedPed->Spawn();
+	spawnedPed->SetOrigin(pedPos);
+
+	m_pedestrians.append(spawnedPed);
+
+	g_pGameWorld->AddObject(spawnedPed);
+
+	return spawnedPed;
 }
 
 void CAIManager::QueryPedestrians(DkList<CPedestrian*>& list, float radius, const Vector3D& position, const Vector3D& direction, float queryCosAngle)
@@ -724,6 +890,7 @@ bool CAIManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 
 		// also it has to be added to traffic cars
 		m_trafficCars.append( copBlockCar );
+		m_spawnedTrafficCars++;
 	}
 
 	roadblock->totalSpawns = roadblock->activeCars.numElem();

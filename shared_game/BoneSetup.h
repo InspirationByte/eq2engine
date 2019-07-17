@@ -84,6 +84,8 @@ struct sequencetimer_t
 
 	int							eventCounter;
 
+	float						blendWeight;
+
 	sequencetimer_t();
 
 	void Reset();

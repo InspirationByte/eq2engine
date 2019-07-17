@@ -105,16 +105,13 @@ protected:
 
 	int							m_numBones;
 
+	// different motion packages has different sequience list
 	DkList<gsequence_t>			m_seqList; // loaded sequences
 	DkList<gposecontroller_t>	m_poseControllers; // pose controllers
 	DkList<gikchain_t*>			m_ikChains;
 
 	// sequence timers. first timer is main, and transitional is last
-	sequencetimer_t				m_sequenceTimers[MAX_SEQUENCE_TIMERS];
-
-	// blend values for sequence timers.
-	// first blend value should be always 1.
-	float						m_seqBlendWeights[MAX_SEQUENCE_TIMERS];
+	sequencetimer_t*			m_sequenceTimers;
 };
 
 #endif // ANIMATING_H

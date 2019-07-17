@@ -1180,7 +1180,7 @@ int	CCar::L_GetCollideMask() const
 
 void CCar::SetControlButtons(int flags)
 {
-	CControllableObject::SetControlButtons(flags);
+	CControllableGameObject::SetControlButtons(flags);
 
 	// make car automatically has driver
 	if(IsAlive() && IsEnabled() && m_conf->flags.isCar)
@@ -1291,7 +1291,7 @@ int	CCar::GetControlButtons() const
 	if (m_locked) // TODO: cvar option to lock or not
 		return IN_HANDBRAKE;
 
-	return CControllableObject::GetControlButtons();
+	return CControllableGameObject::GetControlButtons();
 }
 
 void CCar::UpdateVehiclePhysics(float delta)
