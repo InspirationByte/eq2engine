@@ -232,6 +232,7 @@ enum EMouseCodes
 #define KEY_DECIMAL		VK_DECIMAL
 #define KEY_PAUSE		VK_PAUSE
 #define KEY_CAPSLOCK	VK_CAPITAL
+#define KEY_KP_ENTER	VK_RETURN
 
 #define KEY_A			int('A')
 #define KEY_B			int('B')

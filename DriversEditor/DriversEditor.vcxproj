@@ -71,7 +71,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\public\materialsystem;..\src_dependency\wxWidgets\include;..\src_dependency\wxWidgets\include\msvc;..\src_dependency\wxWidgets\include\msw;..\DriversGame;..\src_dependency\bullet\src;..\Game;..\src_dependency\sdl2\include;..\src_dependency\lua\src;..\src_dependency\oolua\include;..\src_dependency\shiny\shiny\include;..\src_dependency\openal-soft\include;..\src_dependency\libogg\include;..\src_dependency\libvorbis\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\shared_game;..\shared_engine;..\public;..\public\core;..\public\platform;..\public\materialsystem;..\src_dependency\wxWidgets\include;..\src_dependency\wxWidgets\include\msvc;..\src_dependency\wxWidgets\include\msw;..\DriversGame;..\src_dependency\bullet\src;..\Game;..\src_dependency\sdl2\include;..\src_dependency\lua\src;..\src_dependency\oolua\include;..\src_dependency\shiny\include;..\src_dependency\openal-soft\include;..\src_dependency\libogg\include;..\src_dependency\libvorbis\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;GAME_DRIVERS;PHYSICS_EXPORT;NO_GAME;NO_ENGINE;NOENGINE;EDITOR;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;NO_LUA;SHINY_IS_COMPILED=FALSE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
