@@ -287,9 +287,15 @@ bool CParticleLowLevelRenderer::ShutdownBuffers()
 	return true;
 }
 
-void CParticleLowLevelRenderer::AddRenderGroup(CParticleRenderGroup* pRenderGroup)
+void CParticleLowLevelRenderer::AddRenderGroup(CParticleRenderGroup* pRenderGroup, CParticleRenderGroup* after/* = nullptr*/)
 {
-	m_renderGroups.append(pRenderGroup);
+	if (after)
+	{
+		int idx = m_renderGroups.findIndex(after);
+		m_renderGroups.insert(pRenderGroup, idx+1);
+	}
+	else
+		m_renderGroups.append(pRenderGroup);
 }
 
 void CParticleLowLevelRenderer::RemoveRenderGroup(CParticleRenderGroup* pRenderGroup)

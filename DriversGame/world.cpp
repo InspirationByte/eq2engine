@@ -40,6 +40,8 @@ CPFXAtlasGroup* g_translParticles = NULL;
 CPFXAtlasGroup* g_additPartcles = NULL;
 CPFXAtlasGroup* g_treeAtlas = NULL;
 
+CPFXAtlasGroup* g_jackPed = NULL;
+
 //-----------------------------------------------------------------------------------
 
 ConVar r_zfar("r_zfar", "350", NULL, CV_ARCHIVE);
@@ -947,6 +949,8 @@ void CGameWorld::Cleanup( bool unloadLevel )
 		g_pPFXRenderer->RemoveRenderGroup(g_vehicleLights);
 		g_pPFXRenderer->RemoveRenderGroup(g_vehicleShadows);
 
+		g_pPFXRenderer->RemoveRenderGroup(g_jackPed);
+
 		if(g_vehicleEffects)
 			delete g_vehicleEffects;
 		g_vehicleEffects = nullptr;
@@ -970,6 +974,10 @@ void CGameWorld::Cleanup( bool unloadLevel )
 		if(g_vehicleShadows)
 			delete g_vehicleShadows;
 		g_vehicleShadows = nullptr;
+
+		if (g_jackPed)
+			delete g_jackPed;
+		g_jackPed = nullptr;
 
 #ifndef EDITOR
 		m_shadowRenderer.Shutdown();

@@ -58,6 +58,16 @@ struct pedestrianConfig_t
 	EqString model;
 };
 
+struct spritePedSegment_t
+{
+	int fromJoint;
+	int toJoint;
+	float width;
+	float addLength;
+
+	int atlasIdx;
+};
+
 class CPedestrian : 
 	public CControllableGameObject,
 	public CAnimatingEGF
@@ -109,6 +119,8 @@ protected:
 
 	float				m_thinkTime;
 	CPedestrianAI		m_thinker;
+
+	bool				m_jack;
 };
 
 #endif // PEDESTRIAN_H

@@ -135,7 +135,7 @@ public:
 	void							PreloadCache();
 	void							ClearParticleCache();
 
-	void							AddRenderGroup(CParticleRenderGroup* pRenderGroup);
+	void							AddRenderGroup(CParticleRenderGroup* pRenderGroup, CParticleRenderGroup* after = nullptr);
 	void							RemoveRenderGroup(CParticleRenderGroup* pRenderGroup);
 
 	void							PreloadMaterials();

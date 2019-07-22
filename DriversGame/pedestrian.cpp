@@ -10,9 +10,78 @@
 #include "input.h"
 #include "world.h"
 
-#define DEFAULT_PED_MODEL "models/characters/ped1.egf"
+//-----------------------------------------------------------------------
+// Jack tribute
+//-----------------------------------------------------------------------
+#define JACK_PED_MODEL "models/characters/jack.egf"
 
-const float PEDESTRIAN_RADIUS = 0.85f;
+ConVar g_jack("g_jack", "0", nullptr, CV_CHEAT);
+
+extern CPFXAtlasGroup* g_jackPed;
+extern CPFXAtlasGroup* g_vehicleEffects;
+
+spritePedSegment_t g_spritePedSegments[13] = {
+	{8, 7, 0.07f, 0.08f, 1}, // L upperarm
+	{8, 9, 0.05f, 0.07f, 2}, // L forearm
+	{9, 9, 0.05f, 0.1f, 2}, // L hand
+
+	{12, 11, 0.07f, 0.08f, 1}, // R upperarm
+	{12, 13, 0.05f, 0.07f, 2}, // R forearm
+	{13, 13, 0.05f, 0.1f, 2}, // R hand
+
+	{14, 15, 0.12f, 0.12f, 3}, // L thigh
+	{15, 16, 0.12f, 0.05f, 3}, // L leg
+	{16, 17, 0.07f, 0.08f, 0}, // L foot
+
+	{18, 19, 0.12f, 0.12f, 3}, // R thigh
+	{19, 20, 0.12f, 0.05f, 3}, // R leg
+	{20, 21, 0.07f, 0.08f, 0}, // R foot
+
+	{4, 0, 0.21f, 0.0f, 0},	// chest
+};
+
+// for Jack rendering
+void FX_TracerLine(const Vector3D& from, const Vector3D& to, float width, TexAtlasEntry_t* atlEntry)
+{
+	PFXVertex_t* verts;
+	if (g_jackPed->AllocateGeom(4, 4, &verts, NULL, true) < 0)
+		return;
+
+	Vector3D viewDir = from - g_pGameWorld->m_view.GetOrigin();
+	Vector3D lineDir = normalize(from - to);
+
+	Vector3D ccross = fastNormalize(cross(lineDir, viewDir));
+
+	Vector3D temp;
+
+	VectorMA(to, width, ccross, temp);
+
+	ColorRGBA ambient = ColorRGBA(g_pGameWorld->m_envConfig.ambientColor + g_pGameWorld->m_envConfig.sunColor + g_pGameWorld->m_envConfig.moonBrightness*0.15f, 1);
+
+	verts[0].point = temp;
+	verts[0].texcoord = atlEntry->rect.GetLeftBottom();
+	verts[0].color = ambient;
+
+	VectorMA(to, -width, ccross, temp);
+
+	verts[1].point = temp;
+	verts[1].texcoord = atlEntry->rect.GetRightBottom();
+	verts[1].color = ambient;
+
+	VectorMA(from, width, ccross, temp);
+
+	verts[2].point = temp;
+	verts[2].texcoord = atlEntry->rect.GetLeftTop();
+	verts[2].color = ambient;
+
+	VectorMA(from, -width, ccross, temp);
+
+	verts[3].point = temp;
+	verts[3].texcoord = atlEntry->rect.GetRightTop();
+	verts[3].color = ambient;
+}
+
+//-----------------------------------------------------------------------
 
 CPedestrian::CPedestrian() : CAnimatingEGF(), CControllableGameObject(), m_thinker(this)
 {
@@ -28,6 +97,9 @@ CPedestrian::CPedestrian(pedestrianConfig_t* config) : CPedestrian()
 {
 	SetModel(config->model.c_str());
 	m_hasAI = config->hasAI;
+
+	// we're not forcing to spawn them all as Jack, but instead adding a chance
+	m_jack = g_jack.GetBool() && RandomInt(0,100) > 99;
 }
 
 CPedestrian::~CPedestrian()
@@ -37,7 +109,8 @@ CPedestrian::~CPedestrian()
 
 void CPedestrian::Precache()
 {
-
+	if (m_jack)
+		PrecacheStudioModel(JACK_PED_MODEL);
 }
 
 void CPedestrian::SetModelPtr(IEqModel* modelPtr)
@@ -63,10 +136,12 @@ void CPedestrian::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObje
 	BaseClass::OnCarCollisionEvent(pair, hitBy);
 }
 
+const float PEDESTRIAN_PHYSICS_RADIUS = 0.85f;
+
 void CPedestrian::Spawn()
 {
 	m_physBody = new CEqRigidBody();
-	m_physBody->Initialize(PEDESTRIAN_RADIUS);
+	m_physBody->Initialize(PEDESTRIAN_PHYSICS_RADIUS);
 
 	m_physBody->SetCollideMask(COLLIDEMASK_PEDESTRIAN);
 	m_physBody->SetContents(OBJECTCONTENTS_PEDESTRIAN);
@@ -91,6 +166,9 @@ void CPedestrian::Spawn()
 	if(m_hasAI)
 		m_thinker.FSMSetState(AI_State(&CPedestrianAI::SearchDaWay));
 
+	if (m_jack)
+		SetModel(JACK_PED_MODEL);
+
 	BaseClass::Spawn();
 }
 
@@ -110,7 +188,26 @@ void CPedestrian::Draw(int nRenderFlags)
 {
 	RecalcBoneTransforms();
 
-	//m_physBody->ConstructRenderMatrix(m_worldMatrix);
+	if (m_jack)
+	{
+		if (!g_jackPed)
+		{
+			g_jackPed = new CPFXAtlasGroup();
+			g_jackPed->Init("materials/models/characters/jack.atlas", false, 4096);
+			g_pPFXRenderer->AddRenderGroup(g_jackPed, g_vehicleEffects);
+		}
+
+		for (int i = 0; i < 13; i++)
+		{
+			spritePedSegment_t& seg = g_spritePedSegments[i];
+
+			Vector3D fromPos = (m_worldMatrix*Vector4D(m_boneTransforms[seg.fromJoint].rows[3].xyz(), 1.0f)).xyz();
+			Vector3D toPos = (m_worldMatrix*Vector4D(m_boneTransforms[seg.toJoint].rows[3].xyz(), 1.0f)).xyz();
+			Vector3D toDir = (m_worldMatrix.getRotationComponent() * m_boneTransforms[seg.toJoint].getRotationComponent()).rows[2];
+
+			FX_TracerLine(fromPos, toPos + toDir * seg.addLength, seg.width, g_jackPed->GetEntry(seg.atlasIdx));
+		}
+	}
 
 	UpdateTransform();
 	DrawEGF(nRenderFlags, m_boneTransforms);
@@ -235,7 +332,7 @@ void CPedestrian::Simulate(float fDt)
 
 void CPedestrian::UpdateTransform()
 {
-	Vector3D offset(vec3_up*PEDESTRIAN_RADIUS);
+	Vector3D offset(vec3_up*PEDESTRIAN_PHYSICS_RADIUS);
 
 	// refresh it's matrix
 	m_worldMatrix = translate(m_vecOrigin - offset)*rotateXYZ4(DEG2RAD(m_vecAngles.x), DEG2RAD(m_vecAngles.y), DEG2RAD(m_vecAngles.z));
