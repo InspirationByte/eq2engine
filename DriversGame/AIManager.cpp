@@ -41,7 +41,7 @@ const int MIN_ROADBLOCK_CARS = 2;
 const float AI_TRAFFIC_RESPAWN_TIME	= 0.1f;
 const float AI_TRAFFIC_SPAWN_DISTANCE_THRESH = 5.0f;
 
-const float AI_PEDESTRIAN_RESPAWN_TIME = 0.1f;
+const float AI_PEDESTRIAN_RESPAWN_TIME = 0.5f;
 
 //------------------------------------------------------------------------------------------
 
@@ -76,7 +76,7 @@ CAIManager::~CAIManager()
 
 }
 
-void CAIManager::Init()
+void CAIManager::Init(const DkList<vehicleConfig_t*>& carConfigs, const DkList<pedestrianConfig_t*>& pedConfigs)
 {
 	PrecacheObject(CAIPursuerCar);
 
@@ -103,11 +103,15 @@ void CAIManager::Init()
 
 	m_copLoudhailerTime = RandomFloat(AI_COP_TAUNT_DELAY, AI_COP_TAUNT_DELAY + 5.0f);
 	m_copSpeechTime = RandomFloat(AI_COP_SPEECH_DELAY, AI_COP_SPEECH_DELAY + 5.0f);
+
+	// load car and pedestrian zones
+	InitZoneEntries(carConfigs, pedConfigs);
 }
 
 void CAIManager::Shutdown()
 {
 	m_civCarEntries.clear();
+	m_pedEntries.clear();
 
 	m_trafficCars.clear();
 	m_pedestrians.clear();
@@ -118,6 +122,101 @@ void CAIManager::Shutdown()
 		delete m_roadBlocks[i];
 
 	m_roadBlocks.clear();
+}
+
+void CAIManager::InitZoneEntries(const DkList<vehicleConfig_t*>& carConfigs, const DkList<pedestrianConfig_t*>& pedConfigs)
+{
+	EqString vehicleZoneFilename(varargs("scripts/levels/%s_vehiclezones.def", g_pGameWorld->GetLevelName()));
+
+	EqString defaultCopCar;
+
+	KeyValues kvs;
+	if (!kvs.LoadFromFile(vehicleZoneFilename.c_str()))
+	{
+		MsgWarning("Cannot load vehicle zone file '%s', using default!", vehicleZoneFilename.c_str());
+		vehicleZoneFilename = "scripts/levels/default_vehiclezones.def";
+
+		if (!kvs.LoadFromFile(vehicleZoneFilename.c_str()))
+		{
+			MsgError("Failed to load vehicle zone file '%s'!", vehicleZoneFilename.c_str());
+
+			// assign to default zones
+			for (int i = 0; i < carConfigs.numElem(); i++)
+			{
+				civCarEntry_t entry;
+				entry.config = carConfigs[i];
+				entry.zoneList.append(spawnZoneInfo_t{ "default", 0 });
+
+				if (entry.config->flags.isCop)
+					defaultCopCar = entry.config->carName;
+
+				m_civCarEntries.append(entry);
+			}
+		}
+	}
+	else
+	{
+		kvkeybase_t* zone_presets = kvs.GetRootSection();
+
+		// thru all zone presets
+		for (int i = 0; i < zone_presets->keys.numElem(); i++)
+		{
+			kvkeybase_t* zone_kv = zone_presets->keys[i];
+
+			// thru vehicles in zone preset
+			for (int j = 0; j < zone_kv->keys.numElem(); j++)
+			{
+				vehicleConfig_t* carConfig = g_pGameSession->FindCarEntryByName(zone_kv->keys[j]->name);
+
+				if (!carConfig)
+				{
+					MsgWarning("Unknown vehicle '%s' for zone '%s'\n", zone_kv->keys[j]->name, zone_kv->name);
+					continue;
+				}
+
+				if (carConfig->flags.isCop)
+					defaultCopCar = carConfig->carName;
+
+				civCarEntry_t* civCarEntry = FindCivCarEntry(carConfig->carName.c_str());
+
+				// add new car entry if not exist
+				if (!civCarEntry)
+				{
+					civCarEntry_t entry;
+					entry.config = carConfig;
+
+					int idx = g_pAIManager->m_civCarEntries.append(entry);
+					civCarEntry = &g_pAIManager->m_civCarEntries[j];
+				}
+
+				int spawnInterval = KV_GetValueInt(zone_kv->keys[j], 0, 0);
+
+				// append zone with given spawn interval
+				civCarEntry->zoneList.append(spawnZoneInfo_t{ zone_kv->name, spawnInterval });
+			}
+		}
+	}
+
+	// precache any cars used by zones
+	for (int i = 0; i < m_civCarEntries.numElem(); i++)
+	{
+		vehicleConfig_t* conf = m_civCarEntries[i].config;
+
+		// FIXME: it's bad to precache models here
+		PrecacheStudioModel(conf->visual.cleanModelName.c_str());
+		PrecacheStudioModel(conf->visual.damModelName.c_str());
+	}
+
+	// init the cop car
+	kvkeybase_t* copConfigName = kvs.GetRootSection()->FindKeyBase("copcar");
+	g_pAIManager->SetCopCarConfig(KV_GetValueString(copConfigName, 0, defaultCopCar.c_str()), PURSUER_TYPE_COP);
+
+	// init peds
+	for (int i = 0; i < pedConfigs.numElem(); i++)
+	{
+		if(pedConfigs[i]->hasAI)
+			m_pedEntries.append(pedestrianEntry_t{ pedConfigs[i], 0 });
+	}
 }
 
 CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
@@ -634,6 +733,9 @@ void CAIManager::RemoveAllPedestrians()
 
 CPedestrian* CAIManager::SpawnPedestrian(const IVector2D& globalCell)
 {
+	if(!m_pedEntries.numElem())
+		return nullptr;
+
 	if (m_pedestrians.numElem() >= g_pedestriansMax.GetInt())
 		return nullptr;
 
@@ -676,7 +778,9 @@ CPedestrian* CAIManager::SpawnPedestrian(const IVector2D& globalCell)
 
 	Vector3D pedPos = g_pGameWorld->m_level.GlobalTilePointToPosition(globalCell) + Vector3D(0.0f,0.8f,0.0f);
 
-	CPedestrian* spawnedPed = new CPedestrian();
+	int randomPedEntry = g_replayRandom.Get(0, m_pedEntries.numElem()-1);
+
+	CPedestrian* spawnedPed = new CPedestrian(m_pedEntries[randomPedEntry].config);
 	spawnedPed->Spawn();
 	spawnedPed->SetOrigin(pedPos);
 

@@ -56,6 +56,7 @@ public:
 	virtual void				OnLoadingDone();
 
 	int							GetPhysicsIterations() const;
+
 	vehicleConfig_t*			FindCarEntryByName(const char* name) const;
 
 	void						GetCarNames(DkList<EqString>& list) const;
@@ -66,6 +67,8 @@ public:
 
 	virtual void				Update(float fDt);
 	virtual void				UpdateLocalControls(int nControls, float steering, float accel_brake) = 0;
+
+
 
 	CCar*						CreateCar(const char* name, int type = CAR_TYPE_NORMAL);
 	CAIPursuerCar*				CreatePursuerCar(const char* name, int type = PURSUER_TYPE_COP);
@@ -104,10 +107,8 @@ public:
 
 protected:
 
-	void						LoadCarRegistry();
-	void						ClearCarRegistry();
-
-	void						InitCarZoneDescs();
+	void						LoadCarsPedsRegistry();
+	void						ClearCarsPedsRegistry();
 
 	virtual void				UpdatePlayerControls() = 0;
 	void						UpdateAsPlayerCar(const playerControl_t& control, CCar* car);
@@ -120,6 +121,7 @@ protected:
 	int							m_scriptIDCounter;
 
 	DkList<vehicleConfig_t*>	m_carEntries;
+	DkList<pedestrianConfig_t*>	m_pedEntries;
 
 	CGameObject*				m_viewObject;				// object from which is camera calculated
 	CCar*						m_leadCar;					// lead car is 

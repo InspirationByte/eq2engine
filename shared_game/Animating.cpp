@@ -327,6 +327,9 @@ int CAnimatingEGF::FindSequenceByActivity(Activity act) const
 // sets animation
 void CAnimatingEGF::SetSequence(int seqIdx, int slot)
 {
+	if (!m_sequenceTimers)
+		return;
+
 	sequencetimer_t& timer = m_sequenceTimers[slot];
 
 	bool wasEmpty = (timer.seq == nullptr);
@@ -379,7 +382,7 @@ void CAnimatingEGF::SetActivity(Activity act, int slot)
 // returns current activity
 Activity CAnimatingEGF::GetCurrentActivity(int slot)
 {
-	if (m_sequenceTimers[slot].seq)
+	if (m_sequenceTimers && m_sequenceTimers[slot].seq)
 		return m_sequenceTimers[slot].seq->activity;
 
 	return ACT_INVALID;
@@ -388,13 +391,15 @@ Activity CAnimatingEGF::GetCurrentActivity(int slot)
 // resets animation time, and restarts animation
 void CAnimatingEGF::ResetSequenceTime(int slot)
 {
-	m_sequenceTimers[slot].ResetPlayback();
+	if(m_sequenceTimers)
+		m_sequenceTimers[slot].ResetPlayback();
 }
 
 // sets new animation time
 void CAnimatingEGF::SetSequenceTime(float newTime, int slot)
 {
-	m_sequenceTimers[slot].SetTime(newTime);
+	if (m_sequenceTimers)
+		m_sequenceTimers[slot].SetTime(newTime);
 }
 
 Matrix4x4* CAnimatingEGF::GetBoneMatrices() const
@@ -434,6 +439,9 @@ const Vector3D& CAnimatingEGF::GetLocalBoneDirection(int nBone) const
 // returns duration time of the current animation
 float CAnimatingEGF::GetCurrentAnimationDuration() const
 {
+	if (!m_sequenceTimers)
+		return 0.0f;
+
 	if (!m_sequenceTimers[0].seq)
 		return 0.0f;
 
@@ -457,35 +465,45 @@ float CAnimatingEGF::GetCurrentRemainingAnimationDuration() const
 
 bool CAnimatingEGF::IsSequencePlaying(int slot) const
 {
+	if (!m_sequenceTimers)
+		return false;
+
 	return m_sequenceTimers[slot].active;
 }
 
 // plays/resumes animation
 void CAnimatingEGF::PlaySequence(int slot)
 {
-	m_sequenceTimers[slot].active = true;
+	if (m_sequenceTimers)
+		m_sequenceTimers[slot].active = true;
 }
 
 // stops/pauses animation
 void CAnimatingEGF::StopSequence(int slot)
 {
-	m_sequenceTimers[slot].active = false;
+	if (m_sequenceTimers)
+		m_sequenceTimers[slot].active = false;
 }
 
 void CAnimatingEGF::SetPlaybackSpeedScale(float scale, int slot)
 {
-	m_sequenceTimers[slot].playbackSpeedScale = scale;
+	if (m_sequenceTimers)
+		m_sequenceTimers[slot].playbackSpeedScale = scale;
 }
 
 void CAnimatingEGF::SetSequenceBlending(int slot, float factor)
 {
-	m_sequenceTimers[slot].blendWeight = factor;
+	if (m_sequenceTimers)
+		m_sequenceTimers[slot].blendWeight = factor;
 }
 
 
 // advances frame (and computes interpolation between all blended animations)
 void CAnimatingEGF::AdvanceFrame(float frameTime)
 {
+	if (!m_sequenceTimers)
+		return;
+
 	if (m_sequenceTimers[0].seq)
 	{
 		float div_frametime = (frameTime * 30) / 8;
@@ -555,6 +573,9 @@ void CAnimatingEGF::RaiseSequenceEvents(sequencetimer_t& timer)
 // swaps sequence timers
 void CAnimatingEGF::SwapSequenceTimers(int index, int swapTo)
 {
+	if (!m_sequenceTimers)
+		return;
+
 	sequencetimer_t swap_to = m_sequenceTimers[swapTo];
 	m_sequenceTimers[swapTo] = m_sequenceTimers[index];
 	m_sequenceTimers[index] = swap_to;
@@ -644,6 +665,9 @@ void GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone, animframe_t &o
 // updates bones
 void CAnimatingEGF::RecalcBoneTransforms(bool storeTransitionFrames /*= false*/)
 {
+	if (!m_sequenceTimers)
+		return;
+
 	m_sequenceTimers[0].blendWeight = 1.0f;
 
 	animframe_t finalBoneFrame;

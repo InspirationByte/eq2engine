@@ -99,15 +99,11 @@ void CGameSessionBase::Init()
 
 	m_gameTime = 0.0;
 
-	PrecacheObject(CPedestrian);
-
 	// load cars
-	LoadCarRegistry();
+	LoadCarsPedsRegistry();
 
-	g_pAIManager->Init();
-
-	// init vehicle zones
-	InitCarZoneDescs();
+	// init AI manager and put car registry into it
+	g_pAIManager->Init(m_carEntries, m_pedEntries);
 
 	g_replayRandom.SetSeed(0);
 
@@ -177,12 +173,17 @@ void CGameSessionBase::FinalizeMissionManager()
 	}
 }
 
-void CGameSessionBase::ClearCarRegistry()
+void CGameSessionBase::ClearCarsPedsRegistry()
 {
 	for (int i = 0; i < m_carEntries.numElem(); i++)
 		delete m_carEntries[i];
 
 	m_carEntries.clear();
+
+	for (int i = 0; i < m_pedEntries.numElem(); i++)
+		delete m_pedEntries[i];
+
+	m_pedEntries.clear();
 }
 
 void CGameSessionBase::Shutdown()
@@ -191,7 +192,7 @@ void CGameSessionBase::Shutdown()
 
 	m_leadCar = NULL;
 
-	ClearCarRegistry();
+	ClearCarsPedsRegistry();
 }
 
 bool CGameSessionBase::IsGameDone(bool checkTime /*= true*/) const
@@ -498,89 +499,20 @@ CAIPursuerCar* CGameSessionBase::Lua_CreatePursuerCar(const char* name, int type
 	return NULL;
 }
 
-void CGameSessionBase::InitCarZoneDescs()
-{
-	EqString vehicleZoneFilename(varargs("scripts/levels/%s_vehiclezones.def", g_pGameWorld->GetLevelName()));
-
-	KeyValues kvs;
-	if (!kvs.LoadFromFile(vehicleZoneFilename.c_str()))
-	{
-		MsgWarning("Cannot load vehicle zone file '%s', using default!", vehicleZoneFilename.c_str());
-
-		vehicleZoneFilename = "scripts/levels/default_vehiclezones.def";
-
-		if(!kvs.LoadFromFile("scripts/%s.def"))
-		{
-			MsgError("Failed to load vehicle zone file '%s'!", vehicleZoneFilename.c_str());
-
-			// assign to default zones
-			for (int i = 0; i < m_carEntries.numElem(); i++)
-			{
-				civCarEntry_t entry;
-				entry.config = m_carEntries[i];
-				entry.zoneList.append(carZoneInfo_t{ "default", 0 });
-
-				g_pAIManager->m_civCarEntries.append(entry);
-			}
-
-			return;
-		}
-	}
-
-	kvkeybase_t* zone_presets = kvs.GetRootSection();
-
-	// thru all zone presets
-	for (int i = 0; i < zone_presets->keys.numElem(); i++)
-	{
-		kvkeybase_t* zone_kv = zone_presets->keys[i];
-
-		// thru vehicles in zone preset
-		for (int j = 0; j < zone_kv->keys.numElem(); j++)
-		{
-			vehicleConfig_t* carConfig = FindCarEntryByName(zone_kv->keys[j]->name);
-
-			if (!carConfig)
-			{
-				MsgWarning("Unknown vehicle '%s' for zone '%s'\n", zone_kv->keys[j]->name, zone_kv->name);
-				continue;
-			}
-
-			civCarEntry_t* civCarEntry = g_pAIManager->FindCivCarEntry(zone_kv->keys[j]->name);
-
-			// add new car entry if not exist
-			if (!civCarEntry)
-			{
-				civCarEntry_t entry;
-				entry.config = carConfig;
-
-				int idx = g_pAIManager->m_civCarEntries.append(entry);
-				civCarEntry = &g_pAIManager->m_civCarEntries[j];
-			}
-
-			int spawnInterval = KV_GetValueInt(zone_kv->keys[j], 0, 0);
-
-			// append zone with given spawn interval
-			civCarEntry->zoneList.append(carZoneInfo_t{ zone_kv->name, spawnInterval });
-		}
-	}
-
-	kvkeybase_t* copConfigName = kvs.GetRootSection()->FindKeyBase("copcar");
-	g_pAIManager->SetCopCarConfig(KV_GetValueString(copConfigName, 0, "cop_regis"), PURSUER_TYPE_COP);
-}
-
-void CGameSessionBase::LoadCarRegistry()
+void CGameSessionBase::LoadCarsPedsRegistry()
 {
 	// delete old entries
-	ClearCarRegistry();
+	ClearCarsPedsRegistry();
 
 	PrecacheObject(CCar);
+	PrecacheObject(CPedestrian);
 
 	// initialize vehicle list
 
 	KeyValues kvs;
 	if (kvs.LoadFromFile("scripts/vehicles.def"))
 	{
-		kvkeybase_t* vehicleRegistry = kvs.GetRootSection()->FindKeyBase("vehicles");
+		kvkeybase_t* vehicleRegistry = kvs.GetRootSection();
 
 		for (int i = 0; i < vehicleRegistry->keys.numElem(); i++)
 		{
@@ -611,21 +543,51 @@ void CGameSessionBase::LoadCarRegistry()
 						continue;
 					}
 
-					// FIXME: it's bad to precache models here
-					PrecacheStudioModel(conf->visual.cleanModelName.c_str());
-					PrecacheStudioModel(conf->visual.damModelName.c_str());
-
 					m_carEntries.append(conf);
 				}
 				else
+				{
 					MsgError("Can't open car script '%s'\n", conf->carScript.c_str());
+					delete conf;
+				}
+
 			}
 		}
 	}
 	else
-	{
 		CrashMsg("FATAL: no scripts/vehicles.def file!");
+
+	kvs.GetRootSection()->Cleanup();
+
+	// initialize pedestrian list
+	if (kvs.LoadFromFile("scripts/pedestrians.def"))
+	{
+		kvkeybase_t* pedRegistry = kvs.GetRootSection();
+
+		for (int i = 0; i < pedRegistry->keys.numElem(); i++)
+		{
+			kvkeybase_t* key = pedRegistry->keys[i];
+			if (!key->IsSection() && !key->IsDefinition())
+			{
+				pedestrianConfig_t* conf = new pedestrianConfig_t();
+				conf->name = key->name;
+				conf->model = KV_GetValueString(key);
+				conf->hasAI = KV_GetValueBool(key, 1, true);
+
+				if (g_fileSystem->FileExist(conf->model.c_str(), SP_MOD))
+				{
+					// FIXME: it's bad to precache models here
+					PrecacheStudioModel(conf->model.c_str());
+
+					m_pedEntries.append(conf);
+				}
+				else
+					delete conf;
+			}
+		}
 	}
+	else
+		CrashMsg("FATAL: no scripts/pedestrians.def file!");
 }
 
 void CGameSessionBase::GetCarNames(DkList<EqString>& list) const

@@ -25,11 +25,13 @@ enum ECarType
 };
 
 struct	vehicleConfig_t;
+struct	pedestrianConfig_t;
+
 class	CAITrafficCar;
 class	CAIPursuerCar;
 class	CPedestrian;
 
-struct carZoneInfo_t
+struct spawnZoneInfo_t
 {
 	EqString				name;
 	int						spawnInterval;
@@ -56,7 +58,15 @@ struct civCarEntry_t
 	vehicleConfig_t*		config;
 	int						nextSpawn;
 
-	DkList<carZoneInfo_t>	zoneList;
+	DkList<spawnZoneInfo_t>	zoneList;
+};
+
+struct pedestrianEntry_t
+{
+	pedestrianConfig_t*		config;
+	int						nextSpawn;
+
+	DkList<spawnZoneInfo_t>	zoneList;
 };
 
 //-------------------------------------------------------------------------------
@@ -69,7 +79,7 @@ public:
 								CAIManager();
 								~CAIManager();
 
-	void						Init();
+	void						Init(const DkList<vehicleConfig_t*>& carConfigs, const DkList<pedestrianConfig_t*>& pedConfigs);
 	void						Shutdown();
 
 	void						InitialSpawns(const Vector3D& spawnOrigin);
@@ -148,7 +158,10 @@ protected:
 	int							CircularSpawnTrafficCars( int x0, int y0, int radius );
 	int							CircularSpawnPedestrians(int x0, int y0, int radius);
 
+	void						InitZoneEntries(const DkList<vehicleConfig_t*>& carConfigs, const DkList<pedestrianConfig_t*>& pedConfigs);
+
 	DkList<civCarEntry_t>		m_civCarEntries;
+	DkList<pedestrianEntry_t>	m_pedEntries;
 
 	Vector3D					m_leadPosition;
 	Vector3D					m_leadRemovePosition;

@@ -2349,7 +2349,7 @@ CGameObject* CGameWorld::CreateGameObject( const char* typeName, kvkeybase_t* kv
 	}
 	else if (!stricmp(typeName, "pedestrian"))
 	{
-		return new CPedestrian(kvdata);
+		return new CPedestrian();
 	}
 	else if(!stricmp(typeName, "debris"))
 	{

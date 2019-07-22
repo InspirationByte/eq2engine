@@ -51,6 +51,13 @@ public:
 
 //------------------------------------------------------
 
+struct pedestrianConfig_t
+{
+	bool hasAI;
+	EqString name;
+	EqString model;
+};
+
 class CPedestrian : 
 	public CControllableGameObject,
 	public CAnimatingEGF
@@ -60,7 +67,7 @@ public:
 	DECLARE_CLASS(CPedestrian, CControllableGameObject)
 
 	CPedestrian();
-	CPedestrian(kvkeybase_t* kvdata);
+	CPedestrian(pedestrianConfig_t* config);
 	~CPedestrian();
 
 	void				SetModelPtr(IEqModel* modelPtr);
@@ -98,6 +105,7 @@ protected:
 	bool				m_onGround;
 
 	int					m_pedState;
+	bool				m_hasAI;
 
 	float				m_thinkTime;
 	CPedestrianAI		m_thinker;

@@ -10,7 +10,7 @@
 #include "input.h"
 #include "world.h"
 
-#define PED_MODEL "models/characters/ped1.egf"
+#define DEFAULT_PED_MODEL "models/characters/ped1.egf"
 
 const float PEDESTRIAN_RADIUS = 0.85f;
 
@@ -21,11 +21,13 @@ CPedestrian::CPedestrian() : CAnimatingEGF(), CControllableGameObject(), m_think
 	m_pedState = 0;
 
 	m_thinkTime = 0;
+	m_hasAI = false;
 }
 
-CPedestrian::CPedestrian(kvkeybase_t* kvdata) : CPedestrian()
+CPedestrian::CPedestrian(pedestrianConfig_t* config) : CPedestrian()
 {
-
+	SetModel(config->model.c_str());
+	m_hasAI = config->hasAI;
 }
 
 CPedestrian::~CPedestrian()
@@ -35,7 +37,7 @@ CPedestrian::~CPedestrian()
 
 void CPedestrian::Precache()
 {
-	PrecacheStudioModel(PED_MODEL);
+
 }
 
 void CPedestrian::SetModelPtr(IEqModel* modelPtr)
@@ -59,13 +61,10 @@ void CPedestrian::OnRemove()
 void CPedestrian::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy)
 {
 	BaseClass::OnCarCollisionEvent(pair, hitBy);
-	Msg("Pedestrian hit by car!\n");
 }
 
 void CPedestrian::Spawn()
 {
-	SetModel(PED_MODEL);
-
 	m_physBody = new CEqRigidBody();
 	m_physBody->Initialize(PEDESTRIAN_RADIUS);
 
@@ -89,7 +88,8 @@ void CPedestrian::Spawn()
 
 	g_pPhysics->m_physics.AddToWorld(m_physBody);
 
-	m_thinker.FSMSetState(AI_State(&CPedestrianAI::SearchDaWay));
+	if(m_hasAI)
+		m_thinker.FSMSetState(AI_State(&CPedestrianAI::SearchDaWay));
 
 	BaseClass::Spawn();
 }
@@ -149,6 +149,7 @@ void CPedestrian::Simulate(float fDt)
 	AngleVectors(m_vecAngles, &forwardVec);
 	
 	// do pedestrian thinker
+	if(m_hasAI)
 	{
 		m_thinkTime -= fDt;
 

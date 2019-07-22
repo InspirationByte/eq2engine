@@ -38,7 +38,7 @@ void CEditorTestGame::Init()
 	KeyValues kvs;
 	if(kvs.LoadFromFile("scripts/vehicles.def"))
 	{
-		kvkeybase_t* vehicleRegistry = kvs.GetRootSection()->FindKeyBase("vehicles");
+		kvkeybase_t* vehicleRegistry = kvs.GetRootSection();
 
 		for(int i = 0; i < vehicleRegistry->keys.numElem(); i++)
 		{
