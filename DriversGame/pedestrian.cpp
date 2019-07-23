@@ -21,11 +21,11 @@ extern CPFXAtlasGroup* g_jackPed;
 extern CPFXAtlasGroup* g_vehicleEffects;
 
 spritePedSegment_t g_spritePedSegments[13] = {
-	{8, 7, 0.07f, 0.08f, 1}, // L upperarm
+	{7, 8, 0.07f, 0.08f, 1}, // L upperarm
 	{8, 9, 0.05f, 0.07f, 2}, // L forearm
 	{9, 9, 0.05f, 0.1f, 2}, // L hand
 
-	{12, 11, 0.07f, 0.08f, 1}, // R upperarm
+	{11, 12, 0.07f, 0.08f, 1}, // R upperarm
 	{12, 13, 0.05f, 0.07f, 2}, // R forearm
 	{13, 13, 0.05f, 0.1f, 2}, // R hand
 
@@ -99,7 +99,7 @@ CPedestrian::CPedestrian(pedestrianConfig_t* config) : CPedestrian()
 	m_hasAI = config->hasAI;
 
 	// we're not forcing to spawn them all as Jack, but instead adding a chance
-	m_jack = g_jack.GetBool() && RandomInt(0,100) > 99;
+	m_jack = g_jack.GetBool() && RandomInt(0, 100) > 99;
 }
 
 CPedestrian::~CPedestrian()
@@ -115,6 +115,8 @@ void CPedestrian::Precache()
 
 void CPedestrian::SetModelPtr(IEqModel* modelPtr)
 {
+	DestroyAnimating();
+
 	BaseClass::SetModelPtr(modelPtr);
 
 	InitAnimating(m_pModel);
@@ -122,6 +124,8 @@ void CPedestrian::SetModelPtr(IEqModel* modelPtr)
 
 void CPedestrian::OnRemove()
 {
+	DestroyAnimating();
+
 	if (m_physBody)
 	{
 		g_pPhysics->m_physics.DestroyBody(m_physBody);
@@ -203,7 +207,10 @@ void CPedestrian::Draw(int nRenderFlags)
 
 			Vector3D fromPos = (m_worldMatrix*Vector4D(m_boneTransforms[seg.fromJoint].rows[3].xyz(), 1.0f)).xyz();
 			Vector3D toPos = (m_worldMatrix*Vector4D(m_boneTransforms[seg.toJoint].rows[3].xyz(), 1.0f)).xyz();
-			Vector3D toDir = (m_worldMatrix.getRotationComponent() * m_boneTransforms[seg.toJoint].getRotationComponent()).rows[2];
+			Vector3D toDir = transpose(m_worldMatrix.getRotationComponent() * m_boneTransforms[seg.fromJoint].getRotationComponent()).rows[1];
+
+			//debugoverlay->Line3D(fromPos, toPos, ColorRGBA(1,1,1,1), ColorRGBA(1, 1, 1, 1), 0.0f);
+			//debugoverlay->Line3D(toPos, toPos+toDir, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1), 0.0f);
 
 			FX_TracerLine(fromPos, toPos + toDir * seg.addLength, seg.width, g_jackPed->GetEntry(seg.atlasIdx));
 		}
