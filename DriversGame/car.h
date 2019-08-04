@@ -414,6 +414,7 @@ public:
 	float					GetRPM() const;
 	int						GetGear() const;
 
+	int						GetWheelsOnGround(int wheelFlags = 0xFF) const;
 	int						GetWheelCount() const;
 	CCarWheel&				GetWheel(int indxe) const;
 	float					GetWheelSpeed(int index) const;

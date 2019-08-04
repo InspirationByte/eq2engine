@@ -28,7 +28,7 @@ void CBaseTilebasedEditor::ProcessMouseEvents( wxMouseEvent& event )
 	g_pMainFrame->GetMouseScreenVectors(event.GetX(),event.GetY(), ray_start, ray_dir);
 
 	Vector3D point_pos;
-	m_selectedRegion = (CEditorLevelRegion*)g_pMainFrame->GetRegionAtScreenPos(event.GetX(),event.GetY(), m_mouseOverTileHeight, point_pos);
+	m_selectedRegion = (CEditorLevelRegion*)g_pMainFrame->GetRegionAtScreenPos(event.GetX(),event.GetY(), m_mouseOverTileHeight, m_selectedHField, point_pos);
 
 	// retrieve mouseover tile
 	int x, y;

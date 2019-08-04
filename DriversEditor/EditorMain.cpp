@@ -1063,7 +1063,7 @@ void CMainWindow::GetMouseScreenVectors(int x, int y, Vector3D& origin, Vector3D
 	dir = normalize(dir);
 }
 
-CLevelRegion* CMainWindow::GetRegionAtScreenPos(int mx, int my, float height, Vector3D& pointPos)
+CLevelRegion* CMainWindow::GetRegionAtScreenPos(int mx, int my, float height, int hfieldIdx, Vector3D& pointPos)
 {
 	int w, h;
 	m_pRenderPanel->GetSize(&w, &h);
@@ -1088,11 +1088,13 @@ CLevelRegion* CMainWindow::GetRegionAtScreenPos(int mx, int my, float height, Ve
 		// trace every tile quad to output position
 		if(region)
 		{
-			for(int x = 0; x < region->m_heightfield[0]->m_sizew; x++)
+			CHeightTileField* hfield = region->m_heightfield[hfieldIdx];
+
+			for(int x = 0; x < hfield->m_sizew; x++)
 			{
-				for(int y = 0; y < region->m_heightfield[0]->m_sizeh; y++)
+				for(int y = 0; y < hfield->m_sizeh; y++)
 				{
-					hfieldtile_t* tile = region->m_heightfield[0]->GetTile(x, y);
+					hfieldtile_t* tile = hfield->GetTile(x, y);
 
 					Plane pl2(0,1,0,-(tile->height*HFIELD_HEIGHT_STEP));
 					Vector3D tileTracedPos;
@@ -1103,8 +1105,8 @@ CLevelRegion* CMainWindow::GetRegionAtScreenPos(int mx, int my, float height, Ve
 					{
 						int c_x, c_y;
 
-						if(region->m_heightfield[0]->PointAtPos(tileTracedPos, c_x, c_y) && 
-							region->m_heightfield[0]->GetTile(c_x, c_y) == tile && frac < fNearest)
+						if(hfield->PointAtPos(tileTracedPos, c_x, c_y) &&
+							hfield->GetTile(c_x, c_y) == tile && frac < fNearest)
 						{
 							fNearest = frac;
 							pointPos = tileTracedPos;

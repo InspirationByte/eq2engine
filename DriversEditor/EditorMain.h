@@ -31,7 +31,7 @@ public:
 
 	CMainWindow( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("EGFman"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 915,697 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 	
-	CLevelRegion*	GetRegionAtScreenPos(int x, int y, float height, Vector3D& pointPos);
+	CLevelRegion*	GetRegionAtScreenPos(int x, int y, float height, int hfieldIdx, Vector3D& pointPos);
 
 	void			OnSashSize( wxSplitterEvent& event );
 

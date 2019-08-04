@@ -3897,6 +3897,24 @@ float CCar::GetSpeedWheels() const
 	return fResult * wheelFac * MPS_TO_KPH;
 }
 
+int	CCar::GetWheelsOnGround(int wheelFlags) const
+{
+	if (!m_conf)
+		return 0;
+
+	int wheelCount = GetWheelCount();
+	int numOnGround = 0;
+
+	for (int i = 0; i < wheelCount; i++)
+	{
+		if(m_conf->physics.wheels[i].flags & wheelFlags && 
+			m_wheels[i].m_collisionInfo.fract < 1.0f)
+			numOnGround++;
+	}
+
+	return numOnGround;
+}
+
 int	CCar::GetWheelCount() const
 {
 	return m_conf->physics.numWheels;

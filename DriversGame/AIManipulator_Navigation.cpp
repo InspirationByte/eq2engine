@@ -548,7 +548,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 
 		// brake is computed first
 		{
-			float brakeDistanceOnSegment = brakeDistAtCurSpeed * 0.55f;
+			float brakeDistanceOnSegment = brakeDistAtCurSpeed * 0.5f;
 
 			int pathIdx = segmentByCarPosition;
 			Vector3D positionA = GetAdvancedPointByDist(pathIdx, pathPosOnSegment + brakeDistanceOnSegment);
@@ -557,7 +557,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			Vector3D positionB = GetAdvancedPointByDist(pathIdx, pathPosOnSegment + brakeDistanceOnSegment + 1.0f);
 
 			// this should be from car pos
-			positionA = lerp(carFrontPos, positionA, RemapValClamp(speedMPS, 0.0f, 35.0f, 0.0f, 1.0f));
+			positionA = lerp(carFrontPos, positionA, RemapValClamp(speedMPS, 0.0f, 20.0f, 0.0f, 1.0f));
 
 			brakeDir = fastNormalize(positionB - positionA);
 
