@@ -32,7 +32,7 @@ public:
 						CUndoableObject();
 	virtual				~CUndoableObject() {}
 
-	void				Undoable_PushCurrent();				// pushes the current object
+	uint				Undoable_PushCurrent();				// pushes the current object
 
 	bool				Undoable_PopBack(bool undoCase);	// pops back. undoCase = true if data must be kept
 	bool				Undoable_Redo();					// redo the changes
@@ -41,7 +41,7 @@ public:
 
 	void				Undoable_ClearHistory();
 
-	bool				m_modifyMark;
+	int					m_modifyMark;
 
 protected:
 	virtual bool		Undoable_WriteObjectData( IVirtualStream* stream ) = 0;	// writing object
@@ -62,6 +62,7 @@ struct histEvent_t
 	EHistoryAction		type;
 	int					context;
 	CUndoableObject*	object;
+	uint				streamStart;
 };
 
 class CEditorActionObserver

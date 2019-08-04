@@ -26,7 +26,7 @@ public:
 	virtual void		OnLevelLoad() {};
 	virtual void		OnLevelSave() {};
 
-	virtual void		OnSwitchedTo() {};
+	virtual void		OnSwitchedTo() { Update_Refresh(); };
 	virtual void		OnSwitchedFrom() {};
 };
 

@@ -131,7 +131,9 @@ void CHeightTileField::ReadOnlyMaterials( IVirtualStream* stream )
 
 void CHeightTileField::ReadFromStream( IVirtualStream* stream )
 {
-	m_points = new hfieldtile_t[m_sizew*m_sizeh];
+	if(!m_points)
+		m_points = new hfieldtile_t[m_sizew*m_sizeh];
+
 	stream->Read(m_points, m_sizew*m_sizeh, sizeof(hfieldtile_t));
 
 	int numMaterials = 0;
@@ -1163,7 +1165,6 @@ CHeightTileFieldRenderable::~CHeightTileFieldRenderable()
 bool CHeightTileFieldRenderable::Undoable_WriteObjectData( IVirtualStream* stream )
 {
 	WriteToStream(stream);
-
 	return true;
 }
 
@@ -1172,10 +1173,11 @@ void CHeightTileFieldRenderable::Undoable_ReadObjectData( IVirtualStream* stream
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
 	g_pShaderAPI->ApplyBuffers();
 
+	CleanRenderData(false);
 	Destroy();
 	ReadFromStream( stream );
+
 	m_isChanged = true;
-	//GenereateRenderData();
 }
 #endif // EDITOR
 

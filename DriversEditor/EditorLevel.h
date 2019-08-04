@@ -209,6 +209,9 @@ public:
 	int							Ed_ReplaceDefs(CLevObjectDef* whichReplace, CLevObjectDef* replaceTo);
 	void						Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& frustumOccluders, int nRenderFlags);
 
+	int							GetLowestTile() const;
+	int							GetHighestTile() const;
+
 	bool						m_modified; // needs saving?
 
 	bool						m_physicsPreview;

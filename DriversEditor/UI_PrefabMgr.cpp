@@ -16,54 +16,81 @@ extern CViewParams			g_pCameraParams;
 CUI_PrefabManager::CUI_PrefabManager( wxWindow* parent ) : wxPanel( parent, -1, wxDefaultPosition, wxDefaultSize )
 {
 	wxBoxSizer* bSizer10;
-	bSizer10 = new wxBoxSizer( wxHORIZONTAL );
-	
-	m_prefabList = new wxListBox( this, wxID_ANY, wxDefaultPosition, wxSize( 300,-1 ), 0, NULL, 0 ); 
-	bSizer10->Add( m_prefabList, 0, wxALL|wxEXPAND, 5 );
-	
+	bSizer10 = new wxBoxSizer(wxHORIZONTAL);
+
+	m_prefabList = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxSize(300, -1), 0, NULL, 0);
+	bSizer10->Add(m_prefabList, 0, wxALL | wxEXPAND, 5);
+
 	wxBoxSizer* bSizer28;
-	bSizer28 = new wxBoxSizer( wxVERTICAL );
-	
+	bSizer28 = new wxBoxSizer(wxVERTICAL);
+
 	wxStaticBoxSizer* sbSizer2;
-	sbSizer2 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Search and Filter") ), wxVERTICAL );
-	
+	sbSizer2 = new wxStaticBoxSizer(new wxStaticBox(this, wxID_ANY, wxT("Search and Filter")), wxVERTICAL);
+
 	wxFlexGridSizer* fgSizer1;
-	fgSizer1 = new wxFlexGridSizer( 0, 2, 0, 0 );
-	fgSizer1->SetFlexibleDirection( wxBOTH );
-	fgSizer1->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
-	
-	fgSizer1->Add( new wxStaticText( this, wxID_ANY, wxT("Name"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
-	
-	m_filtertext = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 150,-1 ), 0 );
-	m_filtertext->SetMaxLength( 0 ); 
-	fgSizer1->Add( m_filtertext, 0, wxBOTTOM|wxRIGHT|wxLEFT, 5 );
-	
-	
-	sbSizer2->Add( fgSizer1, 0, wxEXPAND, 5 );
-	
-	
-	bSizer28->Add( sbSizer2, 0, 0, 5 );
-	
+	fgSizer1 = new wxFlexGridSizer(0, 2, 0, 0);
+	fgSizer1->SetFlexibleDirection(wxBOTH);
+	fgSizer1->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+
+	fgSizer1->Add(new wxStaticText(this, wxID_ANY, wxT("Name"), wxDefaultPosition, wxDefaultSize, 0), 0, wxALL, 5);
+
+	m_filtertext = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(150, -1), 0);
+	m_filtertext->SetMaxLength(0);
+	fgSizer1->Add(m_filtertext, 0, wxBOTTOM | wxRIGHT | wxLEFT, 5);
+
+
+	sbSizer2->Add(fgSizer1, 0, wxEXPAND, 5);
+
+
+	bSizer28->Add(sbSizer2, 0, 0, 5);
+
 	wxStaticBoxSizer* sbSizer20;
-	sbSizer20 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Prefabs") ), wxVERTICAL );
-	
-	m_newbtn = new wxButton( this, wxID_ANY, wxT("Create"), wxDefaultPosition, wxDefaultSize, 0 );
-	sbSizer20->Add( m_newbtn, 0, wxALL, 5 );
-	
-	m_editbtn = new wxButton( this, wxID_ANY, wxT("Edit"), wxDefaultPosition, wxDefaultSize, 0 );
-	sbSizer20->Add( m_editbtn, 0, wxALL, 5 );
-	
-	m_delbtn = new wxButton( this, wxID_ANY, wxT("Delete"), wxDefaultPosition, wxDefaultSize, 0 );
-	sbSizer20->Add( m_delbtn, 0, wxALL, 5 );
-	
-	
-	bSizer28->Add( sbSizer20, 1, 0, 5 );
-	
-	
-	bSizer10->Add( bSizer28, 1, wxEXPAND, 5 );
-	
-	
-	this->SetSizer( bSizer10 );
+	sbSizer20 = new wxStaticBoxSizer(new wxStaticBox(this, wxID_ANY, wxT("Prefabs")), wxHORIZONTAL);
+
+	m_newbtn = new wxButton(this, wxID_ANY, wxT("Create"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
+	sbSizer20->Add(m_newbtn, 0, wxALL, 5);
+
+	m_editbtn = new wxButton(this, wxID_ANY, wxT("Edit"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
+	sbSizer20->Add(m_editbtn, 0, wxALL, 5);
+
+	m_delbtn = new wxButton(this, wxID_ANY, wxT("Delete"), wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
+	sbSizer20->Add(m_delbtn, 0, wxALL, 5);
+
+
+	bSizer28->Add(sbSizer20, 0, 0, 5);
+
+	wxStaticBoxSizer* sbSizer19;
+	sbSizer19 = new wxStaticBoxSizer(new wxStaticBox(this, wxID_ANY, wxT("Placement")), wxVERTICAL);
+
+	wxFlexGridSizer* fgSizer11;
+	fgSizer11 = new wxFlexGridSizer(0, 2, 0, 0);
+	fgSizer11->SetFlexibleDirection(wxBOTH);
+	fgSizer11->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+
+	fgSizer11->Add(new wxStaticText(this, wxID_ANY, wxT("Height position"), wxDefaultPosition, wxDefaultSize, 0), 0, wxALL, 5);
+
+	wxString m_heightModeChoices[] = { wxT("Bottom on tile"), wxT("Top on tile"), wxT("Exact height") };
+	int m_heightModeNChoices = sizeof(m_heightModeChoices) / sizeof(wxString);
+	m_heightMode = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_heightModeNChoices, m_heightModeChoices, 0);
+	m_heightMode->SetSelection(0);
+	fgSizer11->Add(m_heightMode, 0, wxALL | wxEXPAND, 5);
+
+	fgSizer11->Add(new wxStaticText(this, wxID_ANY, wxT("Height"), wxDefaultPosition, wxDefaultSize, 0), 0, wxALL, 5);
+
+	m_heightVal = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -32767, 32767, 0);
+	fgSizer11->Add(m_heightVal, 0, wxALL | wxEXPAND, 5);
+
+
+	sbSizer19->Add(fgSizer11, 1, wxEXPAND, 5);
+
+
+	bSizer28->Add(sbSizer19, 1, 0, 5);
+
+
+	bSizer10->Add(bSizer28, 1, wxEXPAND, 5);
+
+
+	this->SetSizer(bSizer10);
 	this->Layout();
 
 	m_prefabNameDialog = new wxTextEntryDialog(this, DKLOC("TOKEN_PREFABNAME", L"Prefab name"), DKLOC("TOKEN_SPECIFYPREFAB NAME", L"Specify prefab name"));
@@ -160,6 +187,19 @@ void CUI_PrefabManager::OnDeletePrefabClick( wxCommandEvent& event )
 }
 
 // IEditorTool stuff
+
+void CUI_PrefabManager::ProcessMouseEvents(wxMouseEvent& event)
+{
+	CBaseTilebasedEditor::ProcessMouseEvents(event);
+
+	if (!event.MiddleIsDown() && event.ControlDown())
+	{
+		int mouse_wheel = event.GetWheelRotation();
+		m_heightVal->SetValue(m_heightVal->GetValue() + sign(mouse_wheel));
+	}
+}
+
+
 void CUI_PrefabManager::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos )
 {
 	IVector2D globalTile;
@@ -172,31 +212,84 @@ void CUI_PrefabManager::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* til
 		m_tileSelection.AddVertex(m_startPoint);
 	}
 
-	if(event.ButtonDown(wxMOUSE_BTN_LEFT))
-	{
-		if(m_mode == PREFABMODE_READY || m_mode == PREFABMODE_CREATE_READY)
-		{
-			m_tileSelection.Reset();
+	EPrefabHeightMode mode = (EPrefabHeightMode)m_heightMode->GetSelection();
 
-			m_mode = PREFABMODE_TILESELECTION;
-			m_startPoint = globalTile;
+	if (event.AltDown())
+	{
+		if(mode == PREFAB_HEIGHTMODE_EXACT)
+			m_heightVal->SetValue(tile->height);
+		else
+			m_heightVal->SetValue(0);
+	}
+	else
+	{
+		if (event.ButtonDown(wxMOUSE_BTN_LEFT))
+		{
+			if (m_mode == PREFABMODE_READY || m_mode == PREFABMODE_CREATE_READY)
+			{
+				m_tileSelection.Reset();
+
+				m_mode = PREFABMODE_TILESELECTION;
+				m_startPoint = globalTile;
+			}
+		}
+		else if (event.ButtonUp(wxMOUSE_BTN_LEFT))
+		{
+			if (m_mode == PREFABMODE_TILESELECTION)
+			{
+				m_tileSelection.Reset();
+				m_tileSelection.AddVertex(globalTile);
+				m_tileSelection.AddVertex(m_startPoint);
+
+				m_mode = PREFABMODE_CREATE_READY;
+			}
+			else if (m_selPrefab && m_mode == PREFABMODE_PLACEMENT)
+			{
+				int placementHeight = GetPlacementHeight(tile);
+
+				g_pGameWorld->m_level.PlacePrefab(globalTile, placementHeight, GetRotation(), m_selPrefab, PREFAB_ALL);
+				g_pMainFrame->NotifyUpdate();
+			}
 		}
 	}
-	else if(event.ButtonUp(wxMOUSE_BTN_LEFT))
-	{
-		if(m_mode == PREFABMODE_TILESELECTION)
-		{
-			m_tileSelection.Reset();
-			m_tileSelection.AddVertex(globalTile);
-			m_tileSelection.AddVertex(m_startPoint);
+}
 
-			m_mode = PREFABMODE_CREATE_READY;
-		}
-		else if(m_selPrefab && m_mode == PREFABMODE_PLACEMENT)
-		{
-			g_pGameWorld->m_level.PlacePrefab(globalTile, tile->height, GetRotation(), m_selPrefab, PREFAB_ALL);
-		}
+int	CUI_PrefabManager::GetPlacementHeight(hfieldtile_t* tile)
+{
+	EPrefabHeightMode mode = (EPrefabHeightMode)m_heightMode->GetSelection();
+
+	int placementHeight = m_heightVal->GetValue();
+
+	int lowestTile = 0;
+	int highestTile = 0;
+
+	if (m_selPrefab)
+	{
+		CEditorLevelRegion* reg = &m_selPrefab->m_regions[0];
+
+		lowestTile = reg->GetLowestTile();
+		highestTile = reg->GetHighestTile();
 	}
+
+	int prefabFullHeight = lowestTile + highestTile;
+
+	// correct height
+	int correctionHeight = lowestTile > 0 ? lowestTile : highestTile;
+	placementHeight -= correctionHeight;
+
+	// add tile height on on-exact mode
+	if (mode != PREFAB_HEIGHTMODE_EXACT)
+	{
+		placementHeight += tile->height;
+		
+		// also calculate height for other modes
+		if (mode == PREFAB_HEIGHTMODE_BOTTOM)
+			placementHeight += prefabFullHeight+1;
+		//else
+		//	placementHeight -= prefabFullHeight;
+	}
+
+	return placementHeight;
 }
 
 void CUI_PrefabManager::OnKey(wxKeyEvent& event, bool bDown)
@@ -267,8 +360,9 @@ void CUI_PrefabManager::OnRender()
 	if(m_selectedRegion)
 	{
 		CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
-
 		field->DebugRender(false, m_mouseOverTileHeight);
+
+		int placementHeight = GetPlacementHeight(field->GetTile(m_mouseOverTile.x, m_mouseOverTile.y));
 
 		if(m_selPrefab && m_mode == PREFABMODE_PLACEMENT)
 		{
@@ -276,11 +370,16 @@ void CUI_PrefabManager::OnRender()
 			g_pGameWorld->m_level.LocalToGlobalPoint(m_mouseOverTile, m_selectedRegion, globalTile);
 
 			Vector3D mouseOverPos = g_pGameWorld->m_level.GlobalTilePointToPosition(globalTile);
-			Vector3D prefabTileOffset = m_selPrefab->GlobalTilePointToPosition(m_selPrefab->m_cellsSize/2);
+			Vector3D prefabTileOffset = m_selPrefab->GlobalTilePointToPosition(m_selPrefab->m_cellsSize / 2);
+			prefabTileOffset.y = 0.0f;
+
+			debugoverlay->Text3D(mouseOverPos, 100.0f, ColorRGBA(1, 1, 0, 1), 0.0f, "placementHeight: %d\n", placementHeight);
+
+			mouseOverPos.y = placementHeight * HFIELD_HEIGHT_STEP;
 
 			float rotation = -m_rotation*90.0f;
 		
-			Matrix4x4 previewTransform = translate(mouseOverPos) * rotateY4(DEG2RAD(rotation)) * translate(-prefabTileOffset + Vector3D(0.0f,0.01f, 0.0f));
+			Matrix4x4 previewTransform = translate(mouseOverPos) * rotateY4(DEG2RAD(rotation)) * translate(-prefabTileOffset + Vector3D(0.0f, 0.01f, 0.0f));
 			materials->SetMatrix(MATRIXMODE_WORLD2, previewTransform);
 
 			m_selPrefab->Ed_Render(g_pCameraParams.GetOrigin(), g_pGameWorld->m_viewprojection);

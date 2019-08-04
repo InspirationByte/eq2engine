@@ -34,11 +34,13 @@ protected:
 	int			m_selection;
 	int			m_mouseOver;
 	IVector2D	m_mousePos;
+
+	int			m_itemsPerLine;
 };
 
 
 template <typename T>
-inline CGenericImageListRenderer<T>::CGenericImageListRenderer() : m_debugFont(nullptr), m_selection(-1), m_mouseOver(-1), m_mousePos(0)
+inline CGenericImageListRenderer<T>::CGenericImageListRenderer() : m_debugFont(nullptr), m_selection(-1), m_mouseOver(-1), m_mousePos(0), m_itemsPerLine(0)
 {
 }
 
@@ -73,7 +75,7 @@ inline void CGenericImageListRenderer<T>::RedrawItems( const IRectangle& rect, f
 	IRectangle screenRect = rect;
 	screenRect.Fix();
 
-	int numItems = 0;
+	m_itemsPerLine = 0;
 
 	for(int i = 0; i < m_filteredList.numElem(); i++)
 	{
@@ -81,15 +83,15 @@ inline void CGenericImageListRenderer<T>::RedrawItems( const IRectangle& rect, f
 
 		if(x_offset + previewSize > size.x)
 		{
-			numItems = i;
+			m_itemsPerLine = i;
 			break;
 		}
 
-		numItems++;
+		m_itemsPerLine++;
 		nItem++;
 	}
 
-	if(numItems > 0)
+	if(m_itemsPerLine > 0)
 	{
 		nItem = 0;
 
@@ -97,7 +99,7 @@ inline void CGenericImageListRenderer<T>::RedrawItems( const IRectangle& rect, f
 		{
 			T& elem = m_filteredList[i];
 
-			if(nItem >= numItems)
+			if(nItem >= m_itemsPerLine)
 			{
 				nItem = 0;
 				nLine++;

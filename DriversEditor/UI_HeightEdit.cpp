@@ -186,9 +186,8 @@ void CMaterialAtlasList::OnSizeEvent(wxSizeEvent &event)
 
 		//materials->SetDeviceBackbufferSize(w,h);
 
-		RefreshScrollbar();
-
 		Redraw();
+		RefreshScrollbar();
 	}
 }
 
@@ -197,6 +196,7 @@ void CMaterialAtlasList::OnMouseScroll(wxMouseEvent& event)
 	int scroll_pos =  GetScrollPos(wxVERTICAL);
 
 	SetScrollPos(wxVERTICAL, scroll_pos - event.GetWheelRotation()/100, true);
+	Redraw();
 }
 
 void CMaterialAtlasList::OnScrollbarChange(wxScrollWinEvent& event)
@@ -336,12 +336,12 @@ void CMaterialAtlasList::Redraw()
 			return;
 		}
 
-		float scrollbarpercent = GetScrollPos(wxVERTICAL);
+		int scrollPos = GetScrollPos(wxVERTICAL);
 
 		IRectangle screenRect(0,0, w,h);
 		screenRect.Fix();
 
-		RedrawItems(screenRect, scrollbarpercent, m_nPreviewSize);
+		RedrawItems(screenRect, scrollPos, m_nPreviewSize);
 
 		materials->EndFrame(m_swapChain);
 	}
@@ -579,45 +579,19 @@ bool CMaterialAtlasList::CheckDirForMaterials(const char* filename_to_add)
 
 void CMaterialAtlasList::SetPreviewParams(int preview_size, bool bAspectFix)
 {
-	if(m_nPreviewSize != preview_size)
-		RefreshScrollbar();
-
 	m_nPreviewSize = preview_size;
+
+	Redraw();
+	RefreshScrollbar();
 }
 
 void CMaterialAtlasList::RefreshScrollbar()
 {
-	int w, h;
-	GetSize(&w, &h);
-
-	wxRect rect = GetScreenRect();
-	w = rect.GetWidth();
-	h = rect.GetHeight();
-
-	int numItems = 0;
-	int nItem = 0;
-
-	float fSize = (float)m_nPreviewSize;
-
-	for(int i = 0; i < m_filteredList.numElem(); i++)
+	// This is now recalculated in RedrawItems
+	if (m_itemsPerLine > 0)
 	{
-		float x_offset = 16 + nItem*(fSize+16);
-
-		if(x_offset + fSize > w)
-		{
-			numItems = i;
-			break;
-		}
-
-		numItems++;
-		nItem++;
-	}
-
-	if(numItems > 0)
-	{
-		int estimated_lines = m_filteredList.numElem() / numItems;
-
-		SetScrollbar(wxVERTICAL, 0, 8, estimated_lines + 10);
+		int maxLines = (m_filteredList.numElem() / m_itemsPerLine) + 1;
+		SetScrollbar(wxVERTICAL, 0, true, maxLines, true);
 	}
 }
 
@@ -718,7 +692,7 @@ CUI_HeightEdit::CUI_HeightEdit(wxWindow* parent) : wxPanel( parent, -1, wxDefaul
 	
 	fgSizer7->Add( new wxStaticText( this, wxID_ANY, wxT("Radius"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxTOP|wxRIGHT|wxLEFT, 5 );
 	
-	m_radius = new wxSpinCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 55,-1 ), wxSP_ARROW_KEYS, -32767, 32767, 0 );
+	m_radius = new wxSpinCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 55,-1 ), wxSP_ARROW_KEYS, 0, 32767, 0 );
 	fgSizer7->Add( m_radius, 0, wxBOTTOM|wxRIGHT|wxLEFT, 5 );
 	
 	fgSizer7->Add( new wxStaticText( this, wxID_ANY, wxT("LAYER"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
@@ -979,7 +953,8 @@ int CUI_HeightEdit::GetEditorPaintFlags() const
 
 bool WRAP_PaintFieldModify(int rx, int ry, int px, int py, CUI_HeightEdit* edit, CHeightTileFieldRenderable* field, hfieldtile_t* tile, TILEPAINTFUNC func, int flags, float percent)
 {
-	g_pEditorActionObserver->BeginModify( field );
+	if(!(flags & HEDIT_PAINT_NO_HISTORY))
+		g_pEditorActionObserver->BeginModify( field );
 	
 	bool result = func(rx, ry, px, py, edit, field, tile, flags, percent);
 
@@ -991,7 +966,7 @@ bool WRAP_PaintFieldModify(int rx, int ry, int px, int py, CUI_HeightEdit* edit,
 	return result;
 }
 
-void CUI_HeightEdit::PaintHeightfieldPointGlobal(int gx, int gy, TILEPAINTFUNC func, float percent)
+void CUI_HeightEdit::PaintHeightfieldPointGlobal(int gx, int gy, TILEPAINTFUNC func, float percent, int addFlags)
 {
 	CLevelRegion* pReg = NULL;
 	IVector2D local;
@@ -1007,7 +982,7 @@ void CUI_HeightEdit::PaintHeightfieldPointGlobal(int gx, int gy, TILEPAINTFUNC f
 		if(!tile)
 			return;
 
-		bool hasChanges = WRAP_PaintFieldModify(local.x, local.y, local.x, local.y, this, field, tile, func, GetEditorPaintFlags(), percent);
+		bool hasChanges = WRAP_PaintFieldModify(local.x, local.y, local.x, local.y, this, field, tile, func, GetEditorPaintFlags() | addFlags, percent);
 
 		if( hasChanges )
 		{
@@ -1030,7 +1005,7 @@ void CUI_HeightEdit::PaintHeightfieldPointGlobal(int gx, int gy, TILEPAINTFUNC f
 	}
 }
 
-void CUI_HeightEdit::PaintHeightfieldGlobal(int gx, int gy, TILEPAINTFUNC func, float percent)
+void CUI_HeightEdit::PaintHeightfieldGlobal(int gx, int gy, TILEPAINTFUNC func, float percent, int addFlags)
 {
 	CLevelRegion* pReg = NULL;
 	IVector2D local;
@@ -1077,7 +1052,7 @@ void CUI_HeightEdit::PaintHeightfieldGlobal(int gx, int gy, TILEPAINTFUNC func, 
 					int ix = ROLLING_VALUE(prx, field->m_sizew);
 					int iy = ROLLING_VALUE(pry, field->m_sizeh);
 
-					bool hasChanges = WRAP_PaintFieldModify(rx, ry, ix, iy, this, field, tile, func, GetEditorPaintFlags(), percent);
+					bool hasChanges = WRAP_PaintFieldModify(rx, ry, ix, iy, this, field, tile, func, GetEditorPaintFlags() | addFlags, percent);
 
 					if( hasChanges )
 					{
@@ -1103,20 +1078,20 @@ void CUI_HeightEdit::PaintHeightfieldGlobal(int gx, int gy, TILEPAINTFUNC func, 
 	}
 }
 
-void CUI_HeightEdit::PaintHeightfieldLocal(int px, int py, TILEPAINTFUNC func, float percent)
+void CUI_HeightEdit::PaintHeightfieldLocal(int px, int py, TILEPAINTFUNC func, float percent, int addFlags)
 {
 	IVector2D globalPoint;
 	g_pGameWorld->m_level.LocalToGlobalPoint(IVector2D(px,py), m_selectedRegion, globalPoint);
 
-	PaintHeightfieldGlobal(globalPoint.x,globalPoint.y,func,percent);
+	PaintHeightfieldGlobal(globalPoint.x,globalPoint.y,func,percent, addFlags);
 }
 
-void CUI_HeightEdit::PaintHeightfieldPointLocal(int px, int py, TILEPAINTFUNC func, float percent)
+void CUI_HeightEdit::PaintHeightfieldPointLocal(int px, int py, TILEPAINTFUNC func, float percent, int addFlags)
 {
 	IVector2D globalPoint;
 	g_pGameWorld->m_level.LocalToGlobalPoint(IVector2D(px,py), m_selectedRegion, globalPoint);
 
-	PaintHeightfieldPointGlobal(globalPoint.x,globalPoint.y,func,percent);
+	PaintHeightfieldPointGlobal(globalPoint.x,globalPoint.y,func,percent, addFlags);
 }
 
 bool TexPaintFunc(int rx, int ry, int px, int py, CUI_HeightEdit* edit, CHeightTileField* field, hfieldtile_t* tile, int flags, float percent)
@@ -1160,8 +1135,12 @@ bool NullTexPaintFunc(int rx, int ry, int px, int py, CUI_HeightEdit* edit, CHei
 {
 	if(flags & HEDIT_PAINT_MATERIAL)
 	{
-		g_pMainFrame->NotifyUpdate();
-		return field->SetPointMaterial(px, py, NULL);
+		bool result = field->SetPointMaterial(px, py, NULL);
+
+		if(result)
+			g_pMainFrame->NotifyUpdate();
+
+		return result;
 	}
 	
 	return false;
@@ -1242,6 +1221,21 @@ bool HeightPaintDnFunc(int rx, int ry, int px, int py, CUI_HeightEdit* edit, CHe
 	g_pMainFrame->NotifyUpdate();
 
 	return true;
+}
+
+bool DrawHeightFieldTileFunc(int rx, int ry, int px, int py, CUI_HeightEdit* edit, CHeightTileField* field, hfieldtile_t* tile, int flags, float percent)
+{
+	if (tile)
+	{
+		Vector3D box_pos(px*HFIELD_POINT_SIZE, (tile->height+1)*HFIELD_HEIGHT_STEP, py*HFIELD_POINT_SIZE);
+		Vector3D box_size(HFIELD_POINT_SIZE, 0.0f, HFIELD_POINT_SIZE);
+
+		box_pos += field->m_position - Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
+
+		debugoverlay->Box3D(box_pos, box_pos + box_size, ColorRGBA(1, 1, 1, 0.25f));
+	}
+
+	return false;
 }
 
 void CUI_HeightEdit::ProcessMouseEvents( wxMouseEvent& event )
@@ -1433,43 +1427,47 @@ void CUI_HeightEdit::OnRender()
 
 	if(m_selectedRegion)
 	{
+		bool quadraticRadius = m_quadratic->GetValue();
+
 		hfieldtile_t* tile = m_selectedRegion->GetHField(m_selectedHField)->GetTile(m_mouseOverTile.x, m_mouseOverTile.y);
 
 		if(tile)
 		{
 			Vector3D box_pos(m_mouseOverTile.x*HFIELD_POINT_SIZE, tile->height*HFIELD_HEIGHT_STEP, m_mouseOverTile.y*HFIELD_POINT_SIZE);
-
 			box_pos += m_selectedRegion->GetHField(m_selectedHField)->m_position - Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
 
-			debugoverlay->Text3D(box_pos, -1, ColorRGBA(1,1,1,1), 0.0f, "layer: %d\ncell: %d %d\n reg: %d", m_selectedHField, m_mouseOverTile.x, m_mouseOverTile.y, m_selectedRegion->m_regionIndex);
+			debugoverlay->Text3D(box_pos, -1, ColorRGBA(1,1,1,1), 0.0f, "height: %d\nlayer: %d", tile->height, m_selectedHField);
 
-			ColorRGBA color2(0.2,0.2,0.2,0.8);
+			// draw circle
+			if (!quadraticRadius)
+			{
+				ColorRGBA color2(0.2, 0.2, 0.2, 0.8);
 
-			BlendStateParam_t blending;
-			blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
-			blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+				BlendStateParam_t blending;
+				blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
+				blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-			g_pShaderAPI->SetTexture(NULL,0,0);
-			materials->SetBlendingStates(blending);
-			materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
-			materials->SetDepthStates(false,false);
+				g_pShaderAPI->SetTexture(NULL, 0, 0);
+				materials->SetBlendingStates(blending);
+				materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+				materials->SetDepthStates(false, false);
 
-			// draw a radius circle
-			CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+				// draw a radius circle
+				CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
-			box_pos += Vector3D(0.5f,0,0.5f) * HFIELD_POINT_SIZE;
+				box_pos += Vector3D(0.5f, 0, 0.5f) * HFIELD_POINT_SIZE;
 
-			meshBuilder.Begin(PRIM_LINE_STRIP);
+				meshBuilder.Begin(PRIM_LINE_STRIP);
 
 				meshBuilder.Color4f(1.0f, 1.0f, 0.0f, 0.8f);
-				for(int i = 0; i < 33; i++)
+				for (int i = 0; i < 33; i++)
 				{
-					float angle = 360.0f*(float)i/32.0f;
+					float angle = 360.0f*(float)i / 32.0f;
 
-					float si,co;
+					float si, co;
 					SinCos(DEG2RAD(angle), &si, &co);
 
-					Vector3D circleAngleVec = Vector3D(si,0,co)*GetRadius()*HFIELD_POINT_SIZE;
+					Vector3D circleAngleVec = Vector3D(si, 0, co)*GetRadius()*HFIELD_POINT_SIZE;
 
 					circleAngleVec.y = HFIELD_HEIGHT_STEP;
 
@@ -1477,9 +1475,11 @@ void CUI_HeightEdit::OnRender()
 					meshBuilder.AdvanceVertex();
 				}
 
-				
-			meshBuilder.End();
-			
+
+				meshBuilder.End();
+			}
+
+			PaintHeightfieldLocal(m_mouseOverTile.x, m_mouseOverTile.y, DrawHeightFieldTileFunc, 1.0f, HEDIT_PAINT_NO_HISTORY);
 		}
 	}
 }
@@ -1497,5 +1497,5 @@ void CUI_HeightEdit::OnLevelUnload()
 
 void CUI_HeightEdit::Update_Refresh()
 {
-	m_texPanel->Refresh();
+	m_texPanel->Redraw();
 }

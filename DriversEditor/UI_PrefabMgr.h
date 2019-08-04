@@ -21,6 +21,13 @@ enum EPrefabManagerMode
 	PREFABMODE_CREATE_READY,
 };
 
+enum EPrefabHeightMode
+{
+	PREFAB_HEIGHTMODE_BOTTOM = 0,
+	PREFAB_HEIGHTMODE_TOP,
+	PREFAB_HEIGHTMODE_EXACT,
+};
+
 class CEditorLevel;
 
 class CUI_PrefabManager : public wxPanel, public CBaseTilebasedEditor
@@ -49,9 +56,13 @@ public:
 
 protected:
 
+	void						ProcessMouseEvents(wxMouseEvent& event);
+
 	void						MakePrefabFromSelection();
 	void						RefreshPrefabList();
 	void						CancelPrefab();
+
+	int							GetPlacementHeight(hfieldtile_t* tile);
 		
 	// Virtual event handlers, overide them in your derived class
 	virtual void OnBeginPrefabPlacement( wxCommandEvent& event );
@@ -70,6 +81,10 @@ protected:
 	wxButton*					m_newbtn;
 	wxButton*					m_editbtn;
 	wxButton*					m_delbtn;
+
+	wxChoice*					m_heightMode;
+	wxSpinCtrl*					m_heightVal;
+
 	wxTextEntryDialog*			m_prefabNameDialog;
 
 	CEditorLevel*				m_selPrefab;

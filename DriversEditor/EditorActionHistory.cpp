@@ -16,11 +16,13 @@ CUndoableObject::CUndoableObject()
 {
 	m_curHist = NO_HISTORY;
 	m_changesStream.Open(NULL,VS_OPEN_WRITE | VS_OPEN_READ, 128);
-	m_modifyMark = false;
+	m_modifyMark = 0;
 }
 
-void CUndoableObject::Undoable_PushCurrent()
+uint CUndoableObject::Undoable_PushCurrent()
 {
+	uint oldOfs = m_changesStream.Tell();
+
 	int newOfs = 0;
 
 	// if we has something on stack
@@ -46,7 +48,7 @@ void CUndoableObject::Undoable_PushCurrent()
 
 	// now write our object state to stream
 	if(!Undoable_WriteObjectData( &m_changesStream ))
-		return;
+		return -1;
 
 	// add the history block
 	histBlock_t hist;
@@ -55,6 +57,8 @@ void CUndoableObject::Undoable_PushCurrent()
 
 	m_histOffsets.append(hist);
 	m_curHist++;
+
+	return oldOfs;
 }
 
 bool CUndoableObject::Undoable_PopBack(bool undoCase)
@@ -91,7 +95,7 @@ bool CUndoableObject::Undoable_Redo()
 
 	m_curHist++;
 
-	m_modifyMark = false;
+	m_modifyMark = 0;
 
 	m_changesStream.Seek( m_histOffsets[m_curHist].start, VS_SEEK_SET );
 	Undoable_ReadObjectData(&m_changesStream);
@@ -110,7 +114,7 @@ void CUndoableObject::Undoable_ClearHistory()
 	m_changesStream.Open(NULL,VS_OPEN_WRITE | VS_OPEN_READ, 128);
 	m_histOffsets.clear();
 	m_curHist = NO_HISTORY;
-	m_modifyMark = false;
+	m_modifyMark = 0;
 }
 
 //----------------------------------------------------------------------------------
@@ -160,17 +164,21 @@ void CEditorActionObserver::Undo()
 
 	while(m_curHist != NO_HISTORY)
 	{
+		histEvent_t& evt = m_events[m_curHist];
+
 		if(contextId == -1)
 		{
-			contextId = m_events[m_curHist].context;
+			// give the context
+			contextId = evt.context;
 		}
 		else
 		{
-			if(m_events[m_curHist].context != contextId)
+			// stop if there is different context
+			if(evt.context != contextId)
 				return;
 		}
 
-		m_events[m_curHist].object->Undoable_PopBack(true);
+		evt.object->Undoable_PopBack(true);
 		m_curHist--;
 	}
 }
@@ -208,10 +216,13 @@ void CEditorActionObserver::OnDelete( CUndoableObject* object )
 
 void CEditorActionObserver::BeginModify( CUndoableObject* object )
 {
-	if(object->m_modifyMark)
+	if (object->m_modifyMark > 0)
+	{
+		object->m_modifyMark++;
 		return;
+	}
 
-	object->m_modifyMark = true;
+	object->m_modifyMark++;
 
 	// if we has something on stack
 	if(m_events.numElem() > 0)
@@ -227,13 +238,12 @@ void CEditorActionObserver::BeginModify( CUndoableObject* object )
 		}
 	}
 
-	object->Undoable_PushCurrent();
-
 	// add the history block
 	histEvent_t ev;
 	ev.object = object;
 	ev.type = HIST_ACT_MODIFY;
 	ev.context = m_actionContextId;
+	ev.streamStart = object->Undoable_PushCurrent();
 
 	m_events.append(ev);
 	m_curHist++;
@@ -243,6 +253,9 @@ void CEditorActionObserver::BeginModify( CUndoableObject* object )
 
 void CEditorActionObserver::EndModify()
 {
+	if (!m_tracking.numElem())
+		return;
+
 	// OK
 	for(int i = 0; i < m_tracking.numElem(); i++)
 		m_tracking[i]->m_modifyMark = false;
@@ -254,7 +267,14 @@ void CEditorActionObserver::EndModify()
 
 void CEditorActionObserver::CancelModify()
 {
+	for (int i = 0; i < m_tracking.numElem(); i++)
+	{
+		CUndoableObject* obj = m_tracking[i];
+		obj->m_modifyMark = false;
+	}
+
 	m_tracking.clear();
+
 	Redo();
 }
 

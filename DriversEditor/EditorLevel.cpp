@@ -1321,7 +1321,7 @@ void CEditorLevel::PrefabRoads(CEditorLevel* destLevel, const IVector2D& prefabO
 void CEditorLevel::PlacePrefab(const IVector2D& globalTile, int height, int rotation, CEditorLevel* prefab, int flags /*EPrefabCreationFlags*/)
 {
 	IVector2D prefabSize(prefab->m_cellsSize);
-	IVector2D prefabCenterTile(prefabSize/2);
+	IVector2D prefabCenterTile(prefabSize / 2);
 
 	IRectangle tileBounds;
 	tileBounds.AddVertex(globalTile-prefabCenterTile);
@@ -1343,25 +1343,8 @@ void CEditorLevel::PlacePrefab(const IVector2D& globalTile, int height, int rota
 	Msg("Placing prefab [%d %d] to [%d %d]\n", tileBounds.vleftTop.x,tileBounds.vleftTop.y, tileBounds.vrightBottom.x, tileBounds.vrightBottom.y);
 	Msg("	prefab regions [%d %d] to [%d %d]\n", regionsMin.x, regionsMin.y, regionsMax.x, regionsMax.y);
 
-	/*
-	int prefabCellsSize = prefab->m_cellsSize;
-	short lowestHeight = 32760;
-	
-	for(int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
-	{
-		CHeightTileField* field = prefab->m_regions[0].GetHField(i);
-		// get prefab lowest height level
-		for(int x = 0; x < prefabCellsSize; x++)
-		{
-			for(int y = 0; y < prefabCellsSize; y++)
-			{
-				hfieldtile_t* tile = field->GetTile(x, y);
-
-				if(tile->height < lowestHeight)
-					lowestHeight = tile->height;
-			}
-		}
-	}*/
+	// cancel any actions
+	g_pEditorActionObserver->EndModify();
 
 	//
 	// placing prefab to regions
@@ -1379,6 +1362,8 @@ void CEditorLevel::PlacePrefab(const IVector2D& globalTile, int height, int rota
 			Msg("	prefab cell start on region %d [%d %d]\n", regionIdx, localPosition.x, localPosition.y);
 
 			PlacePrefabHeightfields(localPosition, height, rotation, prefab, regionIdx);
+
+			
 		}
 	}
 
@@ -1395,6 +1380,16 @@ IVector2D RotatePoint(const IVector2D& point, int rotation)
 	return result;
 }
 
+bool TileEquals(hfieldtile_t* a, hfieldtile_t* b)
+{
+	return a->height == b->height &&
+		a->texture == b->texture &&
+		a->atlasIdx == b->atlasIdx &&
+		a->flags == b->flags &&
+		a->rotatetex == b->rotatetex &&
+		a->transition == b->transition;
+}
+
 void CEditorLevel::PlacePrefabHeightfields(const IVector2D& position, int height, int rotation, CEditorLevel* prefab, int regionIdx)
 {
 	CLevelRegion& srcRegion = prefab->m_regions[0];
@@ -1402,83 +1397,83 @@ void CEditorLevel::PlacePrefabHeightfields(const IVector2D& position, int height
 
 	int prefabCellsSize = prefab->m_cellsSize;
 
-	IVector2D prefabCenter(prefabCellsSize/2);
+	IVector2D prefabCenter(prefabCellsSize / 2);
 
-	int centerTileHeight = srcRegion.GetHField(0)->GetTile(prefabCenter.x,prefabCenter.y)->height;
+	//int centerTileHeight = srcRegion.GetHField(0)->GetTile(prefabCenter.x,prefabCenter.y)->height;
+	//height -= centerTileHeight;
 
-	height -= centerTileHeight;
+	float rotationDeg = -rotation * 90.0f;
+	Matrix2x2 rotateMatrix = rotate2(DEG2RAD(rotationDeg));
 
-	for(int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
+	
+	for(int x = 0; x < prefabCellsSize; x++)
 	{
-		CHeightTileField* srcField = srcRegion.GetHField(i);
-		CHeightTileFieldRenderable* destField = destRegion.GetHField(i);
-
-		float rotationDeg = -rotation*90.0f;
-		Matrix2x2 rotateMatrix = rotate2(DEG2RAD(rotationDeg));
-
-		// copy heightfield cells
-		for(int x = 0; x < prefabCellsSize; x++)
+		for(int y = 0; y < prefabCellsSize; y++)
 		{
-			for(int y = 0; y < prefabCellsSize; y++)
+			IVector2D srcTileOfs(IVector2D(x, y));
+			IVector2D destTileOfs(RotatePoint(IVector2D(x, y) - prefabCenter, rotation) + position);
+
+			// skip tiles that outside the hfield to prevent bug with Action observer
+			if (destTileOfs.x < 0 || destTileOfs.y < 0 || destTileOfs.x >= m_cellsSize || destTileOfs.y >= m_cellsSize)
+				continue;
+
+			int srcTileIdx = y * prefabCellsSize + x;
+			int destTileIdx = destTileOfs.y * m_cellsSize + destTileOfs.x;
+
+			// copy ALL heightfield cells
+			for (int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
 			{
-				IVector2D srcTileOfs(IVector2D(x,y));
-				IVector2D destTileOfs(RotatePoint(IVector2D(x,y)-prefabCenter, rotation)+position);
+				CHeightTileField* srcField = srcRegion.GetHField(i);
+				CHeightTileFieldRenderable* destField = destRegion.GetHField(i);
 
 				hfieldtile_t* srcTile = srcField->GetTile(srcTileOfs.x, srcTileOfs.y);
 				hfieldtile_t* destTile = destField->GetTile(destTileOfs.x, destTileOfs.y);
 
-				if(!destTile)
+				if (!destTile)
 					continue;
 
-				// don't set any propery of tile if we has no texture
-				if(srcTile->texture != -1)
+				// don't set any propery of tile if SRC has no texture and DEST has
+				if (srcTile->texture == -1 && destTile->texture != -1)
+					continue;
+
+				if (TileEquals(srcTile, destTile))
+					continue;
+
+				// store heightfield starting this Tile
+				g_pEditorActionObserver->BeginModify(destField);
+
+				destTile->height = srcTile->height + height;
+				destTile->flags = srcTile->flags;
+				destTile->transition = srcTile->transition;
+
+				destTile->rotatetex = srcTile->rotatetex + rotation;
+
+				if (destTile->rotatetex > 3)
+					destTile->rotatetex -= 4;
+
+				if (srcTile->texture != -1)
 				{
-					destField->SetChanged();
-					g_pEditorActionObserver->BeginModify(destField);
-
-					//*destTile = *srcTile;
-					destTile->height = srcTile->height + height;
-					destTile->flags = srcTile->flags;
-					destTile->transition = srcTile->transition;
-
-					destTile->rotatetex = srcTile->rotatetex+rotation;
-
-					if(destTile->rotatetex > 3)
-						destTile->rotatetex -= 4;
-
 					IMaterial* material = srcField->m_materials[srcTile->texture]->material;
-
 					destField->SetPointMaterial(destTileOfs.x, destTileOfs.y, material, srcTile->atlasIdx);
 				}
+
+				destField->SetChanged();
 			}
-		}
-	}
 
-	//if(cloneRoads)
-	{
-		// copy road cells
-		for(int x = 0; x < prefabCellsSize; x++)
-		{
-			for(int y = 0; y < prefabCellsSize; y++)
+			// copy ROADS
 			{
-				int srcTileIdx = y * prefabCellsSize + x;
-	
-				IVector2D destTileOfs(RotatePoint(IVector2D(x,y)-prefabCenter, rotation)+position);
-
-				if(!(destTileOfs.x >= 0 && destTileOfs.x < m_cellsSize) || !(destTileOfs.y >= 0 && destTileOfs.y < m_cellsSize))
-					continue;
-
-				int destTileIdx = destTileOfs.y * m_cellsSize + destTileOfs.x;
+				//if (!(destTileOfs.x >= 0 && destTileOfs.x < m_cellsSize) || !(destTileOfs.y >= 0 && destTileOfs.y < m_cellsSize))
+				//	continue;
 
 				// don't set empty roads
-				if(srcRegion.m_roads[srcTileIdx].type == ROADTYPE_NOROAD)
+				if (srcRegion.m_roads[srcTileIdx].type == ROADTYPE_NOROAD)
 					continue;
 
 				destRegion.m_roads[destTileIdx] = srcRegion.m_roads[srcTileIdx];
 
 				int newDirection = srcRegion.m_roads[srcTileIdx].direction + rotation;
 
-				if(newDirection > 3)
+				if (newDirection > 3)
 					newDirection -= 4;
 
 				destRegion.m_roads[destTileIdx].direction = newDirection;
@@ -2098,6 +2093,64 @@ void CEditorLevelRegion::Ed_Prerender()
 
 		DrawDefLightData(mat, cont->m_lightData, 1.0f);
 	}
+}
+
+int CEditorLevelRegion::GetLowestTile() const
+{
+	int hfieldWide = m_heightfield[0]->m_sizew;
+	int hfieldTall = m_heightfield[0]->m_sizeh;
+
+	short lowestValue = SHRT_MAX;
+
+	// grid iteration
+	for (int x = 0; x < hfieldWide; x++)
+	{
+		for (int y = 0; y < hfieldTall; y++)
+		{
+			// go thru all hfields
+			for (int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
+			{
+				if (m_heightfield[i] && !m_heightfield[i]->IsEmpty())
+				{
+					hfieldtile_t* tile = m_heightfield[i]->GetTile(x,y);
+
+					if (tile->height < lowestValue)
+						lowestValue = tile->height;
+				}
+			}
+		}
+	}
+
+	return lowestValue;
+}
+
+int CEditorLevelRegion::GetHighestTile() const
+{
+	int hfieldWide = m_heightfield[0]->m_sizew;
+	int hfieldTall = m_heightfield[0]->m_sizeh;
+
+	short highestValue = SHRT_MIN;
+
+	// grid iteration
+	for (int x = 0; x < hfieldWide; x++)
+	{
+		for (int y = 0; y < hfieldTall; y++)
+		{
+			// go thru all hfields
+			for (int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
+			{
+				if (m_heightfield[i] && !m_heightfield[i]->IsEmpty())
+				{
+					hfieldtile_t* tile = m_heightfield[i]->GetTile(x, y);
+
+					if (tile->height > highestValue)
+						highestValue = tile->height;
+				}
+			}
+		}
+	}
+
+	return highestValue;
 }
 
 ConVar editor_objectnames_distance("ed_objNamesDist", "100.0f", nullptr, CV_ARCHIVE);

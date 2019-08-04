@@ -126,6 +126,8 @@ enum EWhatPaintFlags
 	HEDIT_PAINT_MATERIAL	= ( 1 << 0 ),
 	HEDIT_PAINT_ROTATION	= ( 1 << 1 ),
 	HEDIT_PAINT_FLAGS		= ( 1 << 2 ),
+
+	HEDIT_PAINT_NO_HISTORY	= ( 1 << 3 ),
 };
 
 enum ELineMode
@@ -204,10 +206,10 @@ public:
 
 	void						Update_Refresh();
 
-	void						PaintHeightfieldLocal(int px, int py, TILEPAINTFUNC func, float percent = 1.0f);
-	void						PaintHeightfieldGlobal(int px, int py, TILEPAINTFUNC func, float percent = 1.0f);
-	void						PaintHeightfieldPointLocal(int px, int py, TILEPAINTFUNC func, float percent = 1.0f);
-	void						PaintHeightfieldPointGlobal(int px, int py, TILEPAINTFUNC func, float percent = 1.0f);
+	void						PaintHeightfieldLocal(int px, int py, TILEPAINTFUNC func, float percent = 1.0f, int addFlags = 0);
+	void						PaintHeightfieldGlobal(int px, int py, TILEPAINTFUNC func, float percent = 1.0f, int addFlags = 0);
+	void						PaintHeightfieldPointLocal(int px, int py, TILEPAINTFUNC func, float percent = 1.0f, int addFlags = 0);
+	void						PaintHeightfieldPointGlobal(int px, int py, TILEPAINTFUNC func, float percent = 1.0f, int addFlags = 0);
 
 	void						PaintHeightfieldLine(int x0, int y0, int x1, int y1, TILEPAINTFUNC func, ELineMode mode);
 

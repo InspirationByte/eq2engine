@@ -207,7 +207,10 @@ protected:
 
 	//--------------------------------------------------------
 #ifdef EDITOR
+public:
 	CEditorLevelRegion*		m_regions;
+
+protected:
 #else
 	CLevelRegion*			m_regions;
 #endif // EDITOR

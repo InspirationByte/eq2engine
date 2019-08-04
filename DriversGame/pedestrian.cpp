@@ -41,7 +41,7 @@ spritePedSegment_t g_spritePedSegments[13] = {
 };
 
 // for Jack rendering
-void FX_TracerLine(const Vector3D& from, const Vector3D& to, float width, TexAtlasEntry_t* atlEntry)
+void DrawJackParticle(const Vector3D& from, const Vector3D& to, float width, TexAtlasEntry_t* atlEntry)
 {
 	PFXVertex_t* verts;
 	if (g_jackPed->AllocateGeom(4, 4, &verts, NULL, true) < 0)
@@ -212,7 +212,7 @@ void CPedestrian::Draw(int nRenderFlags)
 			//debugoverlay->Line3D(fromPos, toPos, ColorRGBA(1,1,1,1), ColorRGBA(1, 1, 1, 1), 0.0f);
 			//debugoverlay->Line3D(toPos, toPos+toDir, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1), 0.0f);
 
-			FX_TracerLine(fromPos, toPos + toDir * seg.addLength, seg.width, g_jackPed->GetEntry(seg.atlasIdx));
+			DrawJackParticle(fromPos, toPos + toDir * seg.addLength, seg.width, g_jackPed->GetEntry(seg.atlasIdx));
 		}
 	}
 

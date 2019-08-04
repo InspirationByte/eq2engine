@@ -383,8 +383,6 @@ CModelListRenderPanel::CModelListRenderPanel(wxWindow* parent) : wxPanel( parent
 {
 	m_swapChain = NULL;
 
-	SetScrollbar(wxVERTICAL, 0, 8, 100);
-
 	m_nPreviewSize = 128;
 	m_bAspectFix = true;
 
@@ -416,9 +414,8 @@ void CModelListRenderPanel::OnSizeEvent(wxSizeEvent &event)
 
 		//materials->SetDeviceBackbufferSize(w,h);
 
-		RefreshScrollbar();
-
 		Redraw();
+		RefreshScrollbar();
 	}
 }
 
@@ -427,6 +424,7 @@ void CModelListRenderPanel::OnMouseScroll(wxMouseEvent& event)
 	int scroll_pos =  GetScrollPos(wxVERTICAL);
 
 	SetScrollPos(wxVERTICAL, scroll_pos - event.GetWheelRotation()/100, true);
+	Redraw();
 }
 
 void CModelListRenderPanel::OnScrollbarChange(wxScrollWinEvent& event)
@@ -660,6 +658,8 @@ void CModelListRenderPanel::RebuildPreviewShots()
 	{
 		modellist[i]->RefreshPreview();
 	}
+
+	Redraw();
 }
 
 void CModelListRenderPanel::ReleaseModelPreviews()
@@ -708,46 +708,20 @@ void CModelListRenderPanel::SelectModel(CLevelModel* pModel)
 
 void CModelListRenderPanel::SetPreviewParams(int preview_size, bool bAspectFix)
 {
-	if(m_nPreviewSize != preview_size)
-		RefreshScrollbar();
-
 	m_nPreviewSize = preview_size;
 	m_bAspectFix = bAspectFix;
+
+	Redraw();
+	RefreshScrollbar();
 }
 
 void CModelListRenderPanel::RefreshScrollbar()
 {
-	int w, h;
-	GetSize(&w, &h);
-
-	wxRect rect = GetScreenRect();
-	w = rect.GetWidth();
-	h = rect.GetHeight();
-
-	int numItems = 0;
-	int nItem = 0;
-
-	float fSize = (float)m_nPreviewSize;
-
-	for(int i = 0; i < m_filteredList.numElem(); i++)
+	// This is now recalculated in RedrawItems
+	if (m_itemsPerLine > 0)
 	{
-		float x_offset = 16 + nItem*(fSize+16);
-
-		if(x_offset + fSize > w)
-		{
-			numItems = i;
-			break;
-		}
-
-		numItems++;
-		nItem++;
-	}
-
-	if(numItems > 0)
-	{
-		int estimated_lines = m_filteredList.numElem() / numItems;
-
-		SetScrollbar(wxVERTICAL, 0, 8, estimated_lines + 10);
+		int maxLines = (m_filteredList.numElem() / m_itemsPerLine) + 1;
+		SetScrollbar(wxVERTICAL, 0, true, maxLines, true);
 	}
 }
 
@@ -834,9 +808,10 @@ void CModelListRenderPanel::RefreshLevelModels()
 	m_filteredList.append( g_pGameWorld->m_level.m_objectDefs );
 
 	// refresh definition list?
-
 	RebuildPreviewShots();
 	Redraw();
+
+	RefreshScrollbar();
 }
 
 void CModelListRenderPanel::AddModel(CLevObjectDef* container)
@@ -1814,6 +1789,8 @@ void CUI_LevelModels::OnSwitchedTo()
 	{
 		m_selRefs[i].selRef->hide = true;
 	}
+
+	IEditorTool::OnSwitchedTo();
 }
 
 void CUI_LevelModels::OnSwitchedFrom()
@@ -1823,6 +1800,8 @@ void CUI_LevelModels::OnSwitchedFrom()
 	{
 		m_selRefs[i].selRef->hide = false;
 	}
+
+	IEditorTool::OnSwitchedFrom();
 }
 
 void CUI_LevelModels::Update_Refresh()

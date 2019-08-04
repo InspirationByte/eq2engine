@@ -55,7 +55,7 @@ float				g_fCamSpeed = 10.0;
 void ResetView()
 {
 	g_camera_rotation = Vector3D(25,225,0);
-	g_camera_target = Vector3D(0);
+	g_camera_target = Vector3D(0,10,0);
 	g_fCamSpeed = 10.0;
 }
 
@@ -336,7 +336,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_pMenu->Append( m_menu_view, wxT("View") );
 	
 	m_menu_view->Append(Event_View_ResetView, DKLOC("TOKEN_RESETVIEW", L"Reset view"));
-	m_menu_view_hfieldhelpers = m_menu_view->Append(Event_View_DrawHfieldHelpers, DKLOC("TOKEN_DRAWHFIELDHELPERS", L"Draw heightfield tile helpers"), wxEmptyString, wxITEM_CHECK);
+	m_menu_view_hfieldhelpers = m_menu_view->Append(Event_View_DrawHfieldHelpers, DKLOC("TOKEN_DRAWHFIELDHELPERS", L"Draw heightfield tile helpers\tCtrl+H"), wxEmptyString, wxITEM_CHECK);
 	m_menu_view->Append(Event_View_ShowRegionEditor, DKLOC("TOKEN_SHOWREGIONEDITOR", L"Show region editor"));
 	m_menu_view->AppendSeparator();
 
@@ -1079,9 +1079,11 @@ CLevelRegion* CMainWindow::GetRegionAtScreenPos(int mx, int my, float height, Ve
 
 	float fNearest = DrvSynUnits::MaxCoordInUnits;
 
-	if( pl.GetIntersectionWithRay(ray_start, normalize(ray_dir), pointPos) )
+	Vector3D traceTemp = pointPos;
+
+	if( pl.GetIntersectionWithRay(ray_start, normalize(ray_dir), traceTemp) )
 	{
-		CLevelRegion* region = g_pGameWorld->m_level.GetRegionAtPosition(pointPos);
+		CLevelRegion* region = g_pGameWorld->m_level.GetRegionAtPosition(traceTemp);
 
 		// trace every tile quad to output position
 		if(region)

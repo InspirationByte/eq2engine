@@ -1383,6 +1383,8 @@ void CUI_BuildingConstruct::OnSwitchedTo()
 	{
 		m_selBuildings[i].selBuild->hide = true;
 	}
+
+	IEditorTool::OnSwitchedTo();
 }
 
 void CUI_BuildingConstruct::OnSwitchedFrom()
@@ -1392,6 +1394,8 @@ void CUI_BuildingConstruct::OnSwitchedFrom()
 	{
 		m_selBuildings[i].selBuild->hide = false;
 	}
+
+	IEditorTool::OnSwitchedFrom();
 }
 
 //------------------------------------------------------------------------
