@@ -108,6 +108,8 @@ public:
 
 	// IEditorTool stuff
 
+
+	void						ProcessMouseEvents(wxMouseEvent& event);
 	void						MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos );
 
 	void						MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos );

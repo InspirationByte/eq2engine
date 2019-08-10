@@ -63,8 +63,11 @@ uint CUndoableObject::Undoable_PushCurrent()
 
 bool CUndoableObject::Undoable_PopBack(bool undoCase)
 {
-	if(m_curHist == NO_HISTORY)
+	if (m_curHist == NO_HISTORY && !m_histOffsets.numElem())
+	{
+		m_curHist = NO_HISTORY;
 		return false;	// nothing to do
+	}
 
 	// seek to the beginning of data
 	m_changesStream.Seek( m_histOffsets[m_curHist].start, VS_SEEK_SET );

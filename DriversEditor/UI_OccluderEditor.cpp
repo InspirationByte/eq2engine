@@ -28,38 +28,28 @@ void CUI_OccluderEditor::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* ti
 {
 	//int tileIdx = m_selectedRegion->GetHField()->m_sizew*ty + tx;
 
-	if (m_selection.numElem() > 0)
-	{
-		Vector3D ray_start, ray_dir;
-		g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
+	if (m_mode == ED_OCCL_POINT2)
+		m_newOccl.end = ppos;
 
-		MouseTranslateEvents(event, ray_start, ray_dir);
-	}
-	else
+	if (!event.ControlDown() && !event.AltDown())
 	{
-		if (m_mode == ED_OCCL_POINT2)
-			m_newOccl.end = ppos;
-
-		if (!event.ControlDown() && !event.AltDown())
+		if (event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging())
 		{
-			if (event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging())
+			if (m_mode == ED_OCCL_READY)
+				m_mode = ED_OCCL_POINT1;	// make to the point 1
+
+			if (m_mode == ED_OCCL_POINT1)
 			{
-				if (m_mode == ED_OCCL_READY)
-					m_mode = ED_OCCL_POINT1;	// make to the point 1
-
-				if (m_mode == ED_OCCL_POINT1)
-				{
-					m_newOccl.start = ppos;
-				}
-				else if (m_mode == ED_OCCL_POINT2)
-				{
-					m_newOccl.end = ppos;
-				}
-
-				(int)m_mode++;
-				if (m_mode == ED_OCCL_DONE)
-					m_mode = ED_OCCL_READY;
+				m_newOccl.start = ppos;
 			}
+			else if (m_mode == ED_OCCL_POINT2)
+			{
+				m_newOccl.end = ppos;
+			}
+
+			(int)m_mode++;
+			if (m_mode == ED_OCCL_DONE)
+				m_mode = ED_OCCL_READY;
 		}
 	}
 }
@@ -188,7 +178,17 @@ void CUI_OccluderEditor::ProcessMouseEvents( wxMouseEvent& event )
 		return;
 	}
 
-	CBaseTilebasedEditor::ProcessMouseEvents(event);
+	if (m_selection.numElem() > 0)
+	{
+		Vector3D ray_start, ray_dir;
+		g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
+
+		MouseTranslateEvents(event, ray_start, ray_dir);
+	}
+	else
+	{
+		CBaseTilebasedEditor::ProcessMouseEvents(event);
+	}
 }
 
 void CUI_OccluderEditor::OnKey(wxKeyEvent& event, bool bDown)

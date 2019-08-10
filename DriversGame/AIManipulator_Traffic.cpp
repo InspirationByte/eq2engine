@@ -7,6 +7,7 @@
 
 #include "AIManipulator_Traffic.h"
 #include "AIManager.h"
+#include "heightfield.h"
 
 #include "world.h"
 
@@ -55,7 +56,7 @@ const float AI_CAR_TRACE_DIST_MAX = 25.0f;
 const float AI_ROAD_TRACE_DIST = 30.0f;
 const float AI_MIN_LANE_CHANGE_DIST = 30.0f;
 
-const float AI_TARGET_DIST_NOLANE = 4.0f;
+const float AI_TARGET_DIST_NOLANE = 5.0f;
 const float AI_TARGET_DIST = 10.0f;
 const float AI_TARGET_EXTENDED_DIST = 30.0f;
 
@@ -811,54 +812,51 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 	if (m_changingDirection && !isOnCurrRoad)
 	{
 		DkList<CCar*> forwardCars;
-		g_pAIManager->QueryTrafficCars(forwardCars, m_junction.size*4.0f, carPos, carForward, 0.8f);
+		g_pAIManager->QueryTrafficCars(forwardCars, float(m_junction.size)*HFIELD_POINT_SIZE, carPos, carForward, 0.8f);
 
-		CCar* nearestOppositeMovingCar = nullptr;
-		float maxDist = DrvSynUnits::MaxCoordInUnits;
+		float maxBrake = 0.0f;
+		bool hasToYield = false;
 
 		for (int i = 0; i < forwardCars.numElem(); i++)
 		{
-			if (forwardCars[i] == car || forwardCars[i]->GetSpeed() < 5.0f)
+			CCar* forwardCar = forwardCars[i];
+
+			if (forwardCar == car)
 				continue;
+				
+			const Vector3D& velocity = forwardCar->GetVelocity();
 
-			const Vector3D& velocity = forwardCars[i]->GetVelocity();
-
-			if (dot(fastNormalize(velocity), -carForward) > 5.0f)
+			if (dot(velocity, carForward) < -5.0f)
 			{
-				float distBetweenCars = distance(carTracePos, forwardCars[i]->GetOrigin());
+				debugoverlay->Line3D(carTracePos, startPos, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1), fDt);
 
-				if (distBetweenCars < maxDist)
+				Vector3D oppLeft = -forwardCar->GetRightVector();
+				Vector3D oppPos = forwardCar->GetOrigin() + oppLeft;
+
+				debugoverlay->Line3D(oppPos + oppLeft, oppPos + oppLeft * 2.0f, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1), fDt);
+				debugoverlay->Sphere3D(oppPos, 2.0f, ColorRGBA(1, 0, 0, 1), fDt);
+
+				Plane oppPl(oppLeft, -dot(oppLeft, oppPos));
+
+				Vector3D out;
+				float fractOut;
+
+				// trace the line from my center to the road start
+				if (oppPl.ClassifyPoint(carTracePos) == CP_FRONT && oppPl.GetIntersectionLineFraction(carTracePos, startPos, out, fractOut))
 				{
-					nearestOppositeMovingCar = forwardCars[i];
-					maxDist = distBetweenCars;
+					debugoverlay->Line3D(carTracePos, out, ColorRGBA(1, 1, 0, 1), ColorRGBA(1, 1, 0, 1), fDt);
+					debugoverlay->Sphere3D(out, 0.25f, ColorRGBA(1, 1, 0, 1), fDt);
+
+					maxBrake += (1.0f - fractOut);
+					hasToYield = true;
 				}
 			}
 		}
 
-		// yield ongoing traffic
-		if (nearestOppositeMovingCar)
+		if (hasToYield)
 		{
-			debugoverlay->Line3D(carTracePos, startPos, ColorRGBA(1,0,0,1), ColorRGBA(1, 0, 0, 1), fDt);
-		
-			Vector3D oppLeft = -nearestOppositeMovingCar->GetRightVector();
-			Vector3D oppPos = nearestOppositeMovingCar->GetOrigin() + oppLeft;
-
-			debugoverlay->Line3D(oppPos + oppLeft, oppPos + oppLeft*2.0f, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1), fDt);
-			debugoverlay->Sphere3D(oppPos, 2.0f, ColorRGBA(1, 0, 0, 1), fDt);
-
-			Plane oppPl(oppLeft, -dot(oppLeft, oppPos));
-
-			Vector3D out;
-			float fractOut;
-
-			// trace the line from my center to the road start
-			if (oppPl.ClassifyPoint(carTracePos) == CP_FRONT && oppPl.GetIntersectionLineFraction(carTracePos, startPos, out, fractOut))
-			{
-				debugoverlay->Line3D(carTracePos, out, ColorRGBA(1, 1, 0, 1), ColorRGBA(1, 1, 0, 1), fDt);
-				debugoverlay->Sphere3D(out, 0.25f, ColorRGBA(1, 1, 0, 1), fDt);
-
-				handling.braking = (1.0f - fractOut);
-			}
+			handling.braking = maxBrake;
+			handling.acceleration = 0.0f;
 		}
 
 		handling.acceleration -= fabs(fSteeringAngle)*0.65f;

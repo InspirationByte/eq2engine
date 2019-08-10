@@ -1236,21 +1236,21 @@ void CUI_LevelModels::DuplicateSelection()
 	g_pMainFrame->NotifyUpdate();
 }
 
-void CUI_LevelModels::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos )
+void CUI_LevelModels::ProcessMouseEvents(wxMouseEvent& event)
 {
 	Vector3D ray_start, ray_dir;
 
-	g_pMainFrame->GetMouseScreenVectors(event.GetX(),event.GetY(), ray_start, ray_dir);
+	g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
 
 	// model placement
-	if(event.ControlDown())
+	if (event.ControlDown())
 	{
 		m_isSelecting = true;
-		
-		if(event.Dragging())
+
+		if (event.Dragging())
 			return;
 
-		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT))
+		if (event.ButtonIsDown(wxMOUSE_BTN_LEFT))
 		{
 			float dist = DrvSynUnits::MaxCoordInUnits;
 
@@ -1258,11 +1258,11 @@ void CUI_LevelModels::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile,
 
 			int refIdx = g_pGameWorld->m_level.Ed_SelectRefAndReg(ray_start, ray_dir, &info.selRegion, dist);
 
-			if(refIdx != -1 && info.selRegion)
+			if (refIdx != -1 && info.selRegion)
 			{
 				info.selRef = info.selRegion->m_objects[refIdx];
 
-				ToggleSelection( info );
+				ToggleSelection(info);
 			}
 		}
 	}
@@ -1270,19 +1270,24 @@ void CUI_LevelModels::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile,
 	{
 		m_isSelecting = false;
 
-		if(m_editMode == MEDIT_PLACEMENT)
+		if (m_editMode == MEDIT_PLACEMENT)
 		{
-			MousePlacementEvents(event, tile, tx, ty, ppos);
+			CBaseTilebasedEditor::ProcessMouseEvents(event);
 		}
-		else if(m_editMode == MEDIT_TRANSLATE)
+		else if (m_editMode == MEDIT_TRANSLATE)
 		{
-			MouseTranslateEvents(event,ray_start,ray_dir);
+			MouseTranslateEvents(event, ray_start, ray_dir);
 		}
-		else if(m_editMode == MEDIT_ROTATE)
+		else if (m_editMode == MEDIT_ROTATE)
 		{
-			MouseRotateEvents(event,ray_start,ray_dir);
+			MouseRotateEvents(event, ray_start, ray_dir);
 		}
 	}
+}
+
+void CUI_LevelModels::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos )
+{
+	MousePlacementEvents(event, tile, tx, ty, ppos);
 
 	m_last_tx = tx;
 	m_last_ty = ty;

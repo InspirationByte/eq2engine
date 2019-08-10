@@ -1457,7 +1457,7 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 	{
 		m_isSelecting = true;
 		
-		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging())
+		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging() && !m_editingBuilding)
 		{
 			float dist = DrvSynUnits::MaxCoordInUnits;
 
@@ -1477,7 +1477,7 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 	{
 		m_isSelecting = false;
 
-		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging() && !m_selBuildings.numElem())
+		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging() && m_editingBuilding)
 		{
 			if(m_mode == ED_BUILD_READY)
 				m_mode = ED_BUILD_BEGUN;	// make to the point 1
