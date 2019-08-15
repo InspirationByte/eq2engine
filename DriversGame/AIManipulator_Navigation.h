@@ -50,6 +50,8 @@ public:
 	Vector3D			m_driveTargetVelocity;
 	CEqCollisionObject*	m_excludeColl;
 
+	Vector3D			m_outSteeringTargetPos;
+
 protected:
 	pathFindResult3D_t	m_path;
 	int					m_pathPointIdx;

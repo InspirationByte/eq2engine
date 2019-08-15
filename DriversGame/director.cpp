@@ -150,7 +150,8 @@ void Director_Action(EDirectorActionType type)
 		Director_GetNewCameraProps(&cam);
 
 		// zero camera rotation pls
-		cam.rotation = vec3_zero;
+		if(cam.type == CAM_MODE_OUTCAR)
+			cam.rotation = vec3_zero;
 
 		int camIndex = g_replayData->AddCamera(cam);
 		g_replayData->m_currentCamera = camIndex;
@@ -203,7 +204,7 @@ DECLARE_CMD(director_camera_add, nullptr, CV_ARCHIVE)
 
 DECLARE_CMD(director_camera_reset, nullptr, CV_ARCHIVE)
 {
-	Director_Action(DIRECTOR_CAMERA_REMOVE);
+	Director_Action(DIRECTOR_CAMERA_RESET);
 }
 
 DECLARE_CMD(director_camera_remove, nullptr, CV_ARCHIVE)

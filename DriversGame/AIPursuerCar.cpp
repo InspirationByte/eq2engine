@@ -936,15 +936,18 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	m_chaser.Update(this, fDt);
 
 	ai_handling_t handling = m_nav.m_handling;
+	Vector3D hintTargetPos = m_nav.m_manipulator.m_outSteeringTargetPos;
 
 	if (doesHaveStraightPath)
 	{
 		m_nav.m_manipulator.ForceUpdatePath();
 		handling = m_chaser.m_handling;
+		hintTargetPos = m_chaser.m_manipulator.m_outSteeringTargetPos;
 		//handling.autoHandbrake = true;
 	}
 
 	// make stability control
+	m_stability.m_manipulator.m_hintTargetPosition = hintTargetPos;
 	m_stability.m_manipulator.m_initialHandling = handling;
 	m_stability.Update(this, fDt);
 

@@ -548,7 +548,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 
 		// brake is computed first
 		{
-			float brakeDistanceOnSegment = brakeDistAtCurSpeed * 0.35f;
+			float brakeDistanceOnSegment = brakeDistAtCurSpeed * 0.45f;
 
 			int pathIdx = segmentByCarPosition;
 			Vector3D positionA = GetAdvancedPointByDist(pathIdx, pathPosOnSegment + brakeDistanceOnSegment);
@@ -601,8 +601,13 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			float steeringDirVsCorrection = pow(1.0f - fabs(dot(pathSteeringDir, correctionSteeringDir)), 0.25f);
 			float pathCorrectionFactor = RemapValClamp(distFromSegmentByCarPos, 0.0f, AI_SEGMENT_STEERING_CORRECTION_RADIUS, 0.0f, 1.0f);
 			
+			float correctionToPath = clamp(pathCorrectionFactor * steeringDirVsCorrection + pathNarrownessFactor, 0.0f, 1.0f);
+
+			// store output steering target
+			m_outSteeringTargetPos = positionA;
+
 			// steering
-			steeringDir = lerp(pathSteeringDir, correctionSteeringDir, clamp(pathCorrectionFactor * steeringDirVsCorrection + pathNarrownessFactor, 0.0f, 1.0f));
+			steeringDir = lerp(pathSteeringDir, correctionSteeringDir, correctionToPath);
 
 			
 			float forwardTraceDistanceBySpeed = RemapValClamp(speedMPS, 0.0f, 50.0f, 6.0f, 15.0f);
@@ -635,8 +640,9 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 
 		const float AI_BRAKE_CURVE = 1.0f;
 		const float AI_BRAKE_LIMIT = 0.9f;
+		const float AI_BRAKE_PATH_FACTOR = 0.8f;
 
-		float brakeFactor = powf((1.0f - fabs(dot(brakeDir, carForward))) + pathVelocityFactor, AI_BRAKE_CURVE*weatherBrakePow);
+		float brakeFactor = powf((1.0f - fabs(dot(brakeDir, carForward))) + pathVelocityFactor* AI_BRAKE_PATH_FACTOR, AI_BRAKE_CURVE*weatherBrakePow);
 
 		if (brakeFactor < 0.25f)
 			brakeFactor = 0.0f;

@@ -135,6 +135,9 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 	// final steering dir after collision tests
 	steeringDir = fastNormalize(steeringTargetPos - carPos);
 
+	// store output steering target
+	m_outSteeringTargetPos = steeringTargetPos;
+
 	// trace forward from car using speed
 	g_pPhysics->TestConvexSweep(&sphereTraceShape, identity(),
 		carPos, carPos + carForward * forwardTraceDistanceBySpeed, steeringTargetColl,

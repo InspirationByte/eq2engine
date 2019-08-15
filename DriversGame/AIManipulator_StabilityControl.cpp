@@ -12,7 +12,8 @@ ConVar ai_debug_stability("ai_debug_stability", "0");
 
 const float AI_STABILITY_MIN_INAIR_TIME = 0.15f;
 const float AI_STABILITY_LANDING_COOLDOWN = 0.25f;
-const float AI_MIN_LATERALSLIDE = 1.5f;
+const float AI_MIN_LATERALSLIDE = 0.5f;
+const float AI_MIN_ANGULARVEL = 0.25f;
 
 const float AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_SCALE = 0.15f;
 const float AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_MIN = 0.2f;
@@ -26,7 +27,7 @@ CAIStabilityControlManipulator::CAIStabilityControlManipulator()
 void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, float fDt)
 {
 	float lateralSliding = car->GetLateralSlidingAtWheels(true);
-	lateralSliding = max(lateralSliding, AI_MIN_LATERALSLIDE) - AI_MIN_LATERALSLIDE;
+	lateralSliding = fabs(max(lateralSliding, AI_MIN_LATERALSLIDE) - AI_MIN_LATERALSLIDE) * sign(lateralSliding);
 
 	const float carSpeedMPS = car->GetSpeed()*KPH_TO_MPS;
 
@@ -42,8 +43,8 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 	const float AI_SLIDING_CORRECTION = 0.15f;
 	const float AI_SLIDING_CURVE = 1.5f;
 
-	const float AI_ROTATION_CORRECTION = 0.05f;
-	const float AI_ROTATION_CURVE = 1.5f;
+	const float AI_ROTATION_CORRECTION = 0.07f;
+	const float AI_ROTATION_CURVE = 1.25f;
 
 	const float AI_CORRECTION_LIMIT = 0.5f;
 
@@ -66,7 +67,9 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 	
 	if (carSpeedMPS > AI_SPEED_CORRECTION_MINSPEED)// && !m_initialHandling.autoHandbrake)
 	{
-		float counterSteeringScale = angularVelocity.y + m_initialHandling.steering;
+		float angularVel = fabs(max(angularVelocity.y, AI_MIN_ANGULARVEL) - AI_MIN_ANGULARVEL) * sign(angularVelocity.y);
+
+		float counterSteeringScale = angularVel + m_initialHandling.steering;
 		float brakingFac = 1.0f - m_initialHandling.braking;
 
 		handling.autoHandbrake = m_initialHandling.autoHandbrake;
@@ -76,18 +79,22 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 		
 		// calculate amounts of stability control
 		handling.steering = sign(lateralSliding)*pow(fabs(lateralSliding)*AI_SLIDING_CORRECTION, AI_SLIDING_CURVE) +
-			sign(angularVelocity.y)*pow(fabs(angularVelocity.y)*AI_ROTATION_CORRECTION, AI_ROTATION_CURVE);
+			sign(angularVel)*pow(fabs(angularVel)*AI_ROTATION_CORRECTION, AI_ROTATION_CURVE);
 
 		handling.steering = clamp(handling.steering, -AI_CORRECTION_LIMIT, AI_CORRECTION_LIMIT)*counterSteeringScale;
 
 		float correctionFactor = RemapVal(carSpeedMPS, AI_SPEED_CORRECTION_MINSPEED, AI_SPEED_CORRECTION_MAXSPEED, AI_SPEED_CORRECTION_INITIAL, 1.0f);
 
 		handling.steering *= correctionFactor;
-		handling.acceleration *= correctionFactor;
+		//handling.acceleration *= correctionFactor;
 
-		float accelCompensation = fabs(handling.steering) * fabs(lateralSliding) * AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_SCALE;
+		// don't reduce acceleration if we're heading to hinted target position
+		float accelReduceFactor = 1.0f - fabs(dot(car->GetForwardVector(), fastNormalize(m_hintTargetPosition - car->GetOrigin())));
+		//accelReduceFactor = pow(accelReduceFactor, 2.5f);
 
-		// TODO: add target hint position below
+		// compute based on steering
+		float accelCompensation = fabs(handling.steering) * fabs(lateralSliding) * accelReduceFactor * AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_SCALE;
+
 		handling.acceleration -= max(accelCompensation, AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_MIN) - AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_MIN;
 	}
 	else

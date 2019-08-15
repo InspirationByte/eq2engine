@@ -19,7 +19,8 @@ public:
 
 	void UpdateAffector(ai_handling_t& handling, CCar* car, float fDt);
 
-	ai_handling_t m_initialHandling;
+	ai_handling_t	m_initialHandling;
+	Vector3D		m_hintTargetPosition;
 
 private:
 	float		m_inAirTime;
