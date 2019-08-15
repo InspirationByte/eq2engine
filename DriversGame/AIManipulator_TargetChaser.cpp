@@ -52,7 +52,7 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 	// add half car length to the car position
 	carPos += carForward * carBodySize.z;
 
-	const float AI_CHASE_TARGET_VELOCITY_SCALE = 1.0f;
+	const float AI_CHASE_TARGET_VELOCITY_SCALE = 0.5f;
 	const float AI_CHASE_TARGET_VELOCITY_DISTANCE_START = 20.0f;
 	const float AI_CHASE_TARGET_VELOCITY_DISTANCE_END = 4.0f;
 

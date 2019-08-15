@@ -10,6 +10,7 @@
 
 const float AI_DISTANCE_CURVE = 1.0f;
 const float AI_DISTANCE_SPEED_SCALE = 0.5f;
+const float AI_BRAKEDIST_SCALE = 0.35f;
 
 void CAITargetAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, float fDt)
 {
@@ -26,7 +27,7 @@ void CAITargetAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, CCar
 		return;
 	}
 
-	float brakeDistancePerSec = car->m_conf->GetBrakeEffectPerSecond() * 0.5f;
+	float brakeDistancePerSec = car->m_conf->GetBrakeEffectPerSecond() * AI_BRAKEDIST_SCALE;
 	float brakeToStopTime = carSpeed / brakeDistancePerSec * 2.0f;
 	float brakeDistAtCurSpeed = brakeDistancePerSec * brakeToStopTime;
 

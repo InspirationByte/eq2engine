@@ -11,7 +11,11 @@
 ConVar ai_debug_stability("ai_debug_stability", "0");
 
 const float AI_STABILITY_MIN_INAIR_TIME = 0.15f;
-const float AI_STABILITY_LANDING_COOLDOWN = 0.5f;
+const float AI_STABILITY_LANDING_COOLDOWN = 0.25f;
+const float AI_MIN_LATERALSLIDE = 1.5f;
+
+const float AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_SCALE = 0.15f;
+const float AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_MIN = 0.2f;
 
 CAIStabilityControlManipulator::CAIStabilityControlManipulator()
 {
@@ -21,7 +25,8 @@ CAIStabilityControlManipulator::CAIStabilityControlManipulator()
 
 void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, float fDt)
 {
-	const float lateralSliding = car->GetLateralSlidingAtWheels(true);
+	float lateralSliding = car->GetLateralSlidingAtWheels(true);
+	lateralSliding = max(lateralSliding, AI_MIN_LATERALSLIDE) - AI_MIN_LATERALSLIDE;
 
 	const float carSpeedMPS = car->GetSpeed()*KPH_TO_MPS;
 
@@ -50,13 +55,14 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 	const float AI_SPEED_CORRECTION_MAXSPEED = 25.0f;	// meters per sec
 	const float AI_SPEED_CORRECTION_INITIAL = 0.5f;
 
+
+
 	//float torqueRange = 1.0f / car->GetTorqueScale();
 
 	bool allWheelsOnGround = (car->GetWheelCount() - car->GetWheelsOnGround()) == 0;
 
 	if (!allWheelsOnGround)
 		handling.acceleration = 0.0f;
-
 	
 	if (carSpeedMPS > AI_SPEED_CORRECTION_MINSPEED)// && !m_initialHandling.autoHandbrake)
 	{
@@ -78,6 +84,11 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 
 		handling.steering *= correctionFactor;
 		handling.acceleration *= correctionFactor;
+
+		float accelCompensation = fabs(handling.steering) * fabs(lateralSliding) * AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_SCALE;
+
+		// TODO: add target hint position below
+		handling.acceleration -= max(accelCompensation, AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_MIN) - AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_MIN;
 	}
 	else
 		handling.autoHandbrake = false;//fabs(m_initialHandling.steering) > AI_AUTOHANDBRAKE_STEERING_PERCENTAGE;

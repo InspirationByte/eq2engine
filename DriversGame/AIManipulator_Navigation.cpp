@@ -548,7 +548,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 
 		// brake is computed first
 		{
-			float brakeDistanceOnSegment = brakeDistAtCurSpeed * 0.5f;
+			float brakeDistanceOnSegment = brakeDistAtCurSpeed * 0.35f;
 
 			int pathIdx = segmentByCarPosition;
 			Vector3D positionA = GetAdvancedPointByDist(pathIdx, pathPosOnSegment + brakeDistanceOnSegment);

@@ -97,9 +97,18 @@ void CBaseTilebasedEditor::OnRender()
 			Vector3D box_pos(m_mouseOverTile.x*HFIELD_POINT_SIZE, tile->height*HFIELD_HEIGHT_STEP, m_mouseOverTile.y*HFIELD_POINT_SIZE);
 			Vector3D box_size(HFIELD_POINT_SIZE, 0.25, HFIELD_POINT_SIZE);
 
-			box_pos += m_selectedRegion->GetHField(m_selectedHField)->m_position - Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
+			box_pos += thisField->m_position - Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
 
 			debugoverlay->Box3D(box_pos, box_pos+box_size, ColorRGBA(1,1,0,0.5f));
+
+			Vector3D t, b, n;
+			thisField->GetTileTBN(m_mouseOverTile.x, m_mouseOverTile.y, t, b, n);
+
+			Vector3D tileCenter = box_size * 0.5f + vec3_up * 0.25f;
+
+			debugoverlay->Line3D(box_pos + tileCenter, box_pos + tileCenter + t, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
+			debugoverlay->Line3D(box_pos + tileCenter, box_pos + tileCenter + b, ColorRGBA(0, 1, 0, 1), ColorRGBA(0, 1, 0, 1));
+			debugoverlay->Line3D(box_pos + tileCenter, box_pos + tileCenter + n, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1));
 		}
 
 		/*
