@@ -62,10 +62,11 @@ CAIManager::CAIManager()
 	m_copMaxSpeed = AI_COP_DEFAULT_MAXSPEED;
 
 	m_numMaxCops = 2;
-	m_copRespawnInterval = 20;	// spawn on every 20th traffic car
+	m_copRespawnInterval = 5;	// spawn on every 20th traffic car
 	m_numMaxTrafficCars = 32;
 
 	m_spawnedTrafficCars = 0;
+	m_carEntryIdx = 0;
 
 	m_leadVelocity = vec3_zero;
 	m_leadPosition = vec3_zero;
@@ -87,6 +88,7 @@ void CAIManager::Init(const DkList<vehicleConfig_t*>& carConfigs, const DkList<p
 	
 	m_numMaxTrafficCars = g_trafficMaxCars.GetInt();
 	m_spawnedTrafficCars = 0;
+	m_carEntryIdx = 0;
 
 	m_trafficUpdateTime = 0.0f;
 	m_pedsUpdateTime = 0.0f;
@@ -292,10 +294,13 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 			numCopsSpawned++;
 	}
 
-	int randCarEntry = g_replayRandom.Get(0, m_civCarEntries.numElem() - 1);
+	//int randCarEntry = g_replayRandom.Get(0, m_civCarEntries.numElem() - 1);
 
-	civCarEntry_t& carEntry = m_civCarEntries[randCarEntry];
+	civCarEntry_t& carEntry = m_civCarEntries[m_carEntryIdx++];
 	vehicleConfig_t* carConf = carEntry.config;
+
+	if (m_carEntryIdx >= m_civCarEntries.numElem())
+		m_carEntryIdx = 0;
 
 	bool isRegisteredCop = !m_copCarName[PURSUER_TYPE_COP].CompareCaseIns(carConf->carName);
 	bool isRegisteredGang = !m_copCarName[PURSUER_TYPE_GANG].CompareCaseIns(carConf->carName);

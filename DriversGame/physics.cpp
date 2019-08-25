@@ -22,7 +22,7 @@
 #include "Shiny.h"
 
 ConVar ph_debugrender("ph_debugrender", "0", NULL, CV_CHEAT);
-ConVar ph_singleiter("ph_singleiter", "0");
+//ConVar ph_singleiter("ph_singleiter", "0");
 
 using namespace EqBulletUtils;
 
@@ -158,8 +158,8 @@ void CPhysicsEngine::Simulate( float fDt, int numIterations, FNSIMULATECALLBACK 
 	// increase fixed frames if we're going low
 	while(m_dtAccumulator > PHYSICS_FRAME_INTERVAL)
 	{
-		if(ph_singleiter.GetBool())
-			numIterations = 1;
+		//if(ph_singleiter.GetBool())
+		//	numIterations = 1;
 
 		// do real iteration count
 		for(int i = 0; i < numIterations; i++)

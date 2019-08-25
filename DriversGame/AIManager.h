@@ -171,8 +171,9 @@ protected:
 	bool						m_enableCops;
 
 	bool						m_enableTrafficCars;
-
 	int							m_numMaxTrafficCars;
+
+	int							m_carEntryIdx;
 
 	float						m_copMaxDamage;
 	float						m_copAccelerationModifier;

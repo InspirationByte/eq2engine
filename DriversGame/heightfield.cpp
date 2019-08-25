@@ -15,6 +15,34 @@
 #include "IDebugOverlay.h"
 #include "math/math_util.h"
 
+// for NEIGHBOR_OFFS_X/Y
+const Vector3D s_tileDirections[4] = {
+	Vector3D(-1.0f,0.0f,0.0f),
+	Vector3D(0.0f,0.0f,-1.0f),
+	Vector3D(1.0f,0.0f,0.0f),
+	Vector3D(0.0f,0.0f,1.0f),
+};
+
+// for NEIGHBOR_OFFS_DX/DY
+const Vector3D s_diagonalTileDirections[4] = {
+	Vector3D(-1.0f,0.0f,-1.0f),
+	Vector3D(1.0f,0.0f,-1.0f),
+	Vector3D(1.0f,0.0f,1.0f),
+	Vector3D(-1.0f,0.0f,1.0f),
+};
+
+// for NEIGHBOR_OFFS_XDX/YDY
+const Vector3D s_allTileDirections[8] = {
+	Vector3D(-1.0f,0.0f,0.0f),
+	Vector3D(0.0f,0.0f,-1.0f),
+	Vector3D(1.0f,0.0f,0.0f),
+	Vector3D(0.0f,0.0f,1.0f),
+	Vector3D(1.0f,0.0f,1.0f),
+	Vector3D(-1.0f,0.0f,1.0f),
+	Vector3D(-1.0f,0.0f,-1.0f),
+	Vector3D(1.0f,0.0f,-1.0f),
+};
+
 CHeightTileField::CHeightTileField()
 {
 	m_position = vec3_zero;
@@ -407,20 +435,22 @@ hfieldtile_t* CHeightTileField::GetTileAndNeighbourField(int x, int y, CHeightTi
 
 void CHeightTileField::GetTileTBN(int x, int y, Vector3D& tang, Vector3D& binorm, Vector3D& norm) const
 {
+	/*
+	tang = binorm = norm = vec3_zero;
+
 	int dx[] = NEIGHBOR_OFFS_XDX(x, 1);
 	int dy[] = NEIGHBOR_OFFS_YDY(y, 1);
 
 	hfieldtile_t* tile = GetTile(x,y);
+
 	Vector3D tilePosition(x*HFIELD_POINT_SIZE, (float)tile->height*HFIELD_HEIGHT_STEP, y*HFIELD_POINT_SIZE);
 
-	Vector3D t(0,1,1);
-	Vector3D b(1,1,0);
+	const Vector3D tfac(0,1,1);
+	const Vector3D bfac(1,1,0);
 
 	// tangent and binormal, positive and negative
-	Vector3D tp(0),tn(0);
-	Vector3D bp(0),bn(0);
-
-	int nIter = 0;
+	Vector3D tp(0,0,0), tn(0,0,0);
+	Vector3D bp(0,0,0), bn(0,0,0);
 
 	bool isDetached = (tile->flags & EHTILE_DETACHED) > 0;
 
@@ -435,67 +465,91 @@ void CHeightTileField::GetTileTBN(int x, int y, Vector3D& tang, Vector3D& binorm
 
 		bool isNDetached = (ntile->flags & EHTILE_DETACHED) > 0;
 
-		if (isDetached != isNDetached &&
-			ntile->height != tile->height)
-			continue;
+		if (isDetached == isNDetached && ntile->height != tile->height && ntile->texture != -1)
+		{
+			Vector3D ntilePosition(dx[i] * HFIELD_POINT_SIZE, (float)ntile->height*HFIELD_HEIGHT_STEP, dy[i] * HFIELD_POINT_SIZE);
+			Vector3D dt(ntilePosition - tilePosition);
 
-		if(ntile->texture == -1)
-			continue;
+			Vector3D tt = dt*tfac;
+			Vector3D bb = dt*bfac;
 
-		Vector3D ntilePosition(dx[i]*HFIELD_POINT_SIZE, (float)ntile->height*HFIELD_HEIGHT_STEP, dy[i]*HFIELD_POINT_SIZE);
+			float ttd = dot(vec3_forward, tt);
+			float bbd = dot(vec3_right, bb);
 
-		// make only y has sign
-		Vector3D tt = (ntilePosition-tilePosition)*t;
-		Vector3D bb = (ntilePosition-tilePosition)*b;
+			if (ttd > 0)
+				tp += Vector3D(0.0f, dt.y, ttd);
+			else
+				tn += Vector3D(0.0f, dt.y, ttd);
 
-		float ttd = dot(vec3_forward, tt);
-		float bbd = dot(vec3_right, bb);
-
-		if(ttd > 0)
-			tp += Vector3D(0.0f, tt.y, ttd);
-		else
-			tn += Vector3D(0.0f, tt.y, ttd);
-
-		if(bbd > 0)
-			bp += Vector3D(bbd, bb.y, 0.0f);
-		else
-			bn += Vector3D(bbd, bb.y, 0.0f);
-
-		//tp.y += tt.y;
-		//bp.y += bb.y;
-
-		nIter++;
+			if (bbd > 0)
+				bp += Vector3D(bbd, dt.y, 0.0f);
+			else
+				bn += Vector3D(bbd, dt.y, 0.0f);
+		}
 	}
-
-	// single tile island?
-	if(nIter <= 2)
-	{
-		tang = Vector3D(0.0f, 0.0f, 1.0f);
-		binorm = Vector3D(1.0f, 0.0f, 0.0f);
-		norm = Vector3D(0.0f, 1.0f, 0.0f);
-
-		return;
-	}
-
+	
 	tang = tp-tn;
 	binorm = bp-bn;
-
-	if(lengthSqr(tang) <= 0.01f)
+	
+	if(lengthSqr(tang.xz()) <= 0.1f)
 		tang = Vector3D(0.0f, 0.0f, 1.0f);
 
-	if(lengthSqr(binorm) <= 0.01f)
+	if(lengthSqr(binorm.xz()) <= 0.1f)
+		binorm = Vector3D(1.0f, 0.0f, 0.0f);
+	
+	tang = fastNormalize(tang);
+	binorm = fastNormalize(binorm);
+	norm = cross(tang, binorm);
+	*/
+	
+	// Working formula with NON-DIAGONAL DIRECTIONS
+	tang = binorm = norm = vec3_zero;
+
+	int dx[] = NEIGHBOR_OFFS_X(x, 1);
+	int dy[] = NEIGHBOR_OFFS_Y(y, 1);
+
+	hfieldtile_t* tile = GetTile(x,y);
+
+	Vector3D tilePosition(x*HFIELD_POINT_SIZE, (float)tile->height*HFIELD_HEIGHT_STEP, y*HFIELD_POINT_SIZE);
+
+	const Vector3D tfac(0,1,1);
+	const Vector3D bfac(1,1,0);
+
+	bool isDetached = (tile->flags & EHTILE_DETACHED) > 0;
+
+	// get neighbour tiles
+	for (int i = 0; i < 4; i++)
+	{
+		// get the tiles only with corresponding detaching
+		hfieldtile_t* ntile = GetTile(dx[i], dy[i]);
+
+		if (!ntile)
+			continue;
+
+		bool isNDetached = (ntile->flags & EHTILE_DETACHED) > 0;
+
+		if (isDetached == isNDetached && ntile->texture != -1)
+		{
+			Vector3D ntilePosition(dx[i] * HFIELD_POINT_SIZE, (float)ntile->height*HFIELD_HEIGHT_STEP, dy[i] * HFIELD_POINT_SIZE);
+			Vector3D dt(ntilePosition - tilePosition);
+
+			float theight = dt.y * dot(s_tileDirections[i], vec3_forward);
+			float bheight = dt.y * dot(s_tileDirections[i], vec3_right);
+
+			tang += ((dt * s_tileDirections[i]) + theight*vec3_up) * tfac;
+			binorm += ((dt * s_tileDirections[i]) + bheight * vec3_up) * bfac;
+		}
+	}
+
+	if(lengthSqr(tang.xz()) <= 0.1f)
+		tang = Vector3D(0.0f, 0.0f, 1.0f);
+
+	if(lengthSqr(binorm.xz()) <= 0.1f)
 		binorm = Vector3D(1.0f, 0.0f, 0.0f);
 
 	tang = fastNormalize(tang);
 	binorm = fastNormalize(binorm);
 	norm = cross(tang, binorm);
-
-	/*
-	{
-		debugoverlay->Line3D(m_position+tilePosition, m_position+tilePosition+tang, ColorRGBA(1,0,0,1), ColorRGBA(1,0,0,1), 0.0f );
-		debugoverlay->Line3D(m_position+tilePosition, m_position+tilePosition+binorm, ColorRGBA(0,1,0,1), ColorRGBA(0,1,0,1), 0.0f );
-		debugoverlay->Line3D(m_position+tilePosition, m_position+tilePosition+norm, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1), 0.0f );
-	}*/
 
 	return;
 }
@@ -599,6 +653,21 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 	float hfieldSizeW = m_sizew*HFIELD_POINT_SIZE;
 	float hfieldSizeH = m_sizeh*HFIELD_POINT_SIZE;
 
+	// precalculate tile normals
+	TVec3D<half>* tileNormals = new TVec3D<half>[m_sizew*m_sizeh];
+
+	for (int x = 0; x < m_sizew; x++)
+	{
+		for (int y = 0; y < m_sizeh; y++)
+		{
+			Vector3D t, b, n;
+			GetTileTBN(x, y, t, b, n);
+
+			int pt_idx = y * m_sizew + x;
+			tileNormals[pt_idx] = n;
+		}
+	}
+
 	// generate polys
 	for(int x = 0; x < m_sizew; x++)
 	{
@@ -694,7 +763,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 			bool edges_wall[4] = { false, false, false, false };
 			int  edge_stripped_height[4] = {0,0,0,0};
 
-			// настраиваем каждую вершину тайла по высоте
+			// adjusting tile vertex by height
 			for(int i = 0; i < 4; i++)
 			{
 				//GetTile(xv[i], yv[i]);
@@ -725,7 +794,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 
 				ntile = GetTile(xvd[i], yvd[i]);//GetTile_CheckFlag(xvd[i], yvd[i], EHTILE_DETACHED, isDetached);
 
-				// затем по угловым соседям
+				// then to the corner neighbour
 				if (ntile && ntile->texture != -1 && ((ntile->flags & EHTILE_DETACHED) > 0) == isDetached)
 				{
 					if( ntile->height > vertex_heights[i] )
@@ -737,7 +806,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 					verts_stripped[i] = true;
 			}
 
-			// определяем, нужна ли стена
+			// check if we need a wall
 			for(int i = 0; i < 4; i++)
 			{
 				int i1, i2;
@@ -759,7 +828,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 					{
 						hfieldtile_t* ntile2 = GetTile_CheckFlag(xv[edge_ngb[j]], yv[edge_ngb[j]], EHTILE_DETACHED, !isDetached);
 
-						// тут можно не спрашивать о разнице в высоте (хотя по-сути как-то нужно)
+						// there's no need to check height difference (though it's needed)
 						if(ntile2 && isDetached != ((ntile2->flags & EHTILE_DETACHED) > 0))
 						{
 							edges_stripped[edge_ngb[j]] = true;
@@ -769,8 +838,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 				}
 			}
 
-			// генерируем уже вершины
-
+			// generating verts
 			float dxv[4] = NEIGHBOR_OFFS_DX(float(x), 0.5f);
 			float dyv[4] = NEIGHBOR_OFFS_DY(float(y), 0.5f);
 			float drxv[4] = NEIGHBOR_OFFS_DX(0.0f, 0.5f);
@@ -780,20 +848,32 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 
 			if(!isEmpty || addWallOnEdges)
 			{
+				// add tile vertices
 				for(int i = 0; i < 4; i++)
 				{
 					Vector3D point_position(dxv[i] * HFIELD_POINT_SIZE, float(vertex_heights[i])*HFIELD_HEIGHT_STEP, dyv[i] * HFIELD_POINT_SIZE);
 
-					int rIndex = rotatable ? (i + point.rotatetex) : i;
-
-					if(rIndex > 3)
-						rIndex -= 4;
-
 					float tc_x = 0;
 					float tc_y = 0;
 
+					Vector3D normal = tileNormals[pt_idx];
+
 					if(mode == HFIELD_GEOM_RENDER)
 					{
+						/*
+						// more normal calculation
+						if (dxv[i] >= 0 && dxv[i] < m_sizew && dyv[i] >= 0 && dyv[i] < m_sizeh)
+						{
+							int dpt_idx = dyv[i] * m_sizew + dxv[i];
+							normal = normal + tileNormals[dpt_idx];
+						}*/
+
+						// texture rotation
+						int rIndex = rotatable ? (i + point.rotatetex) : i;
+
+						if (rIndex > 3)
+							rIndex -= 4;
+
 						if( batchAtlas )
 						{
 							TexAtlasEntry_t* atlEntry = batchAtlas->GetEntry(point.atlasIdx);
@@ -828,9 +908,9 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 						tc_y = (point_position.z + HFIELD_POINT_SIZE*0.5f) / hfieldSizeH;
 					}
 
-					Vector2D texCoord = Vector2D(tc_x,tc_y);
+					Vector2D texCoord(tc_x, tc_y);
 
-					hfielddrawvertex_t vert(point_position + hfield_offset, Vector3D(0.0f, 1.0f, 0.0f), texCoord);
+					hfielddrawvertex_t vert(point_position + hfield_offset, normalize(normal), texCoord);
 
 					vindxs[i] = batch->verts.addUnique(vert,hfieldVertexComparator);
 					batch->bbox.AddVertex(vert.position);
@@ -838,23 +918,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 
 				if(!isEmpty)
 				{
-
-					//Vector3D norm1 = NormalOfTriangle(	batch->verts[vindxs[2]].position,
-					//									batch->verts[vindxs[1]].position,
-					//									batch->verts[vindxs[0]].position);
-
-					if(mode != HFIELD_GEOM_PHYSICS)
-					{
-						Vector3D t,b,n;
-						GetTileTBN( x, y, t,b,n );
-
-						batch->verts[vindxs[0]].normal = n;
-						batch->verts[vindxs[1]].normal = n;
-						batch->verts[vindxs[2]].normal = n;
-						batch->verts[vindxs[3]].normal = n;
-					}
-
-					// add quad
+					// add tiles
 					batch->indices.append(vindxs[2]);
 					batch->indices.append(vindxs[1]);
 					batch->indices.append(vindxs[0]);
@@ -864,6 +928,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 					batch->indices.append(vindxs[0]);
 				}
 
+				// extrude a wall from each edge
 				for(int i = 0; i < 4; i++)
 				{
 					int txv[4] = NEIGHBOR_OFFS_X(0);
@@ -890,8 +955,8 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 						Vector3D point_position1(dxv[v1] * HFIELD_POINT_SIZE, float(edge_stripped_height[i])*HFIELD_HEIGHT_STEP, dyv[v1] * HFIELD_POINT_SIZE);
 						Vector3D point_position2(dxv[v2] * HFIELD_POINT_SIZE, float(edge_stripped_height[i])*HFIELD_HEIGHT_STEP, dyv[v2] * HFIELD_POINT_SIZE);
 
-						float fTexY1 = (batch->verts[vindxs[v1]].position.y-point_position1.y) / HFIELD_POINT_SIZE;//point_position1.y / HFIELD_POINT_SIZE;
-						float fTexY2 = (batch->verts[vindxs[v2]].position.y-point_position2.y) / HFIELD_POINT_SIZE;//point_position2.y / HFIELD_POINT_SIZE;
+						float fTexY1 = (batch->verts[vindxs[v1]].position.y-point_position1.y) / HFIELD_POINT_SIZE;
+						float fTexY2 = (batch->verts[vindxs[v2]].position.y-point_position2.y) / HFIELD_POINT_SIZE;
 
 						int rIndex = rotatable ? (i + point.rotatetex) : i;
 
@@ -906,6 +971,8 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 
 						Vector2D texCoord1, texCoord2;
 
+						// texcoords are bad when you use atlas
+						// so, don't use atlas! :D
 						if(rotatable)
 						{
 							texCoord1 = Vector2D(drxv[tv1]+0.5f, dryv[tv1]+0.5f) + edgeTexDir*fTexY1 + fTexelX*0.5f;
@@ -916,10 +983,12 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 							texCoord1 = Vector2D(dxv[tv1]+0.5f, dyv[tv1]+0.5f) + edgeTexDir*fTexY1 + fTexelX*0.5f;
 							texCoord2 = Vector2D(dxv[tv2]+0.5f, dyv[tv2]+0.5f) + edgeTexDir*fTexY2 + fTexelY*0.5f;
 						}
+						
+						Vector3D normal = s_tileDirections[i];
 
-						hfielddrawvertex_t vert1 = hfielddrawvertex_t(point_position2 + hfield_offset, Vector3D(0, 1, 0), texCoord2);
-						hfielddrawvertex_t vert2 =	hfielddrawvertex_t(point_position1 + hfield_offset, Vector3D(0, 1, 0), texCoord1);
-
+						// extrude walls from v1 and v2 respectively
+						hfielddrawvertex_t vert1(point_position2 + hfield_offset, normal, texCoord2);
+						hfielddrawvertex_t vert2(point_position1 + hfield_offset, normal, texCoord1);
 
 						batch->bbox.AddVertex(vert1.position);
 						batch->bbox.AddVertex(vert2.position);
@@ -927,28 +996,8 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 						eindxs[2] = batch->verts.append(vert1);
 						eindxs[3] = batch->verts.append(vert2);
 
-						Vector3D norm1;
-
-						float fCheckDegenerareArea1 = TriangleArea(	batch->verts[eindxs[2]].position,
-																	batch->verts[eindxs[1]].position,
-																	batch->verts[eindxs[0]].position);
-						// invert normal to make it good
-						if( fCheckDegenerareArea1 > 0.001f )
-							norm1 = NormalOfTriangle(	batch->verts[eindxs[2]].position,
-														batch->verts[eindxs[1]].position,
-														batch->verts[eindxs[0]].position);
-						else
-							norm1 = NormalOfTriangle(	batch->verts[eindxs[3]].position,
-														batch->verts[eindxs[2]].position,
-														batch->verts[eindxs[0]].position);
-
-						// FIXME: don't add degenerate triangles to physics
-						// or it will make NaN issue (and ASSERT occur in CEqRigidBody::AccumulateForces)
-
-						batch->verts[eindxs[0]].normal = norm1;
-						batch->verts[eindxs[1]].normal = norm1;
-						batch->verts[eindxs[2]].normal = norm1;
-						batch->verts[eindxs[3]].normal = norm1;
+						batch->verts[eindxs[0]].normal = normal;
+						batch->verts[eindxs[1]].normal = normal;
 
 						// add quad
 						batch->indices.append(eindxs[2]);
@@ -964,13 +1013,17 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 		}
 	}
 
+	delete[] tileNormals;
+
 	// check the batches and remove if empty
 	for (int i = 0; i < batches.numElem(); i++)
 	{
+		hfieldbatch_t* batch = batches[i];
+
 		// validate batch
-		if (batches[i]->indices.numElem() == 0)
+		if (batch->indices.numElem() == 0)
 		{
-			delete batches[i];
+			delete batch;
 			batches.removeIndex(i);
 			i--;
 		}

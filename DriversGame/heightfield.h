@@ -26,8 +26,20 @@
 #define HFIELD_MIN_POINTS		64			// means default is 32x32 meters
 #define HFIELD_SUBDIVIDE		(16.0f)
 
-#define NEIGHBOR_OFFS_XDX(x, f)	{x-f, x, x+f, x, x-f, x+f, x+f, x-f}		// neighbours
-#define NEIGHBOR_OFFS_YDY(y, f)	{y, y-f, y, y+f, y-f, y-f, y+f, y+f}
+#define NEIGHBOR_OFFS_XDX(x, f)	{x-f, x,   x+f, x,   x-f, x+f, x+f, x-f}		// neighbours
+#define NEIGHBOR_OFFS_YDY(y, f)	{y,   y-f, y,   y+f, y-f, y-f, y+f, y+f}
+
+enum NEIGHBOR_OFFS8
+{
+	LEFT,
+	BOTTOM,
+	RIGHT,
+	TOP,
+	LEFTBOTTOM,
+	RIGHTBOTTOM,
+	RIGHTTOP,
+	LEFTTOP
+};
 
 #define NEIGHBOR_OFFS_SXDX(x, f)	{x, x-f, x, x+f, x, x-f, x+f, x+f, x-f}	// self and neighbours
 #define NEIGHBOR_OFFS_SYDY(y, f)	{y, y, y-f, y, y+f, y-f, y-f, y+f, y+f}

@@ -23,7 +23,7 @@
 
 #define GAME_WINDOW_TITLE	"The Driver Syndicate" //varargs("Driver Syndicate Alpha [%s] build %d", __DATE__, GetEngineBuildNumber())
 
-CBaseStateHandler**	g_states = nullptr;
+CBaseStateHandler* g_states[GAME_STATE_COUNT] = { nullptr };
 
 extern void DrvSyn_RegisterShaderOverrides();
 extern void DrvSyn_RegisterEqUIControls();
@@ -41,15 +41,11 @@ bool InitRegisterStates()
 	// register UIs
 	DrvSyn_RegisterEqUIControls();
 
-	g_states = new CBaseStateHandler*[GAME_STATE_COUNT];
-
-	for (int i = 0; i < GAME_STATE_COUNT; i++)
-		g_states[i] = nullptr;
-
 	g_states[GAME_STATE_GAME] = g_State_Game;
 	g_states[GAME_STATE_TITLESCREEN] = g_State_Title;
 	g_states[GAME_STATE_MAINMENU] = g_State_MainMenu;
 	g_states[GAME_STATE_MPLOBBY] = g_State_NetLobby;
+	
 
 	// Lua binding is initialized from here
 	if (!LuaBinding_InitDriverSyndicateBindings(GetLuaState()))

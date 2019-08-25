@@ -129,7 +129,8 @@ DECLARE_CMD(fastseek, "Seeks to the replay frame. (Visual mistakes are possible)
 		remainingFrames--;
 	}
 
-	g_pCameraAnimator->Reset();
+	if(replayTo > 0)
+		g_pCameraAnimator->Reset();
 
 	// wait for any pending regions
 	g_pGameWorld->m_level.WaitForThread();
@@ -169,7 +170,8 @@ void Game_InstantReplay(int replayTo)
 		remainingFrames -= g_pGameSession->GetPhysicsIterations();
 	}
 
-	g_pCameraAnimator->Reset();
+	if (replayTo > 0)
+		g_pCameraAnimator->Reset();
 }
 
 DECLARE_CMD(instantreplay, "Does instant replay (slowly). You can fetch to frame if specified", 0)
@@ -1219,7 +1221,7 @@ void CState_Game::DoCameraUpdates( float fDt )
 			Vector3D lookAngles = g_freeLookAngles;
 
 			// apply cameras from replays
-			if(g_replayData->m_state == REPL_PLAYING && g_replayData->m_cameras.numElem() > 0)
+			if(g_replayData->m_state == REPL_PLAYING)
 			{
 				// replay controls camera
 				replayCamera_t* replCamera = g_replayData->GetCurrentCamera();

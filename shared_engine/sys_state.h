@@ -16,7 +16,7 @@
 
 // forward and extern
 class CBaseStateHandler;
-extern CBaseStateHandler**	g_states;
+extern CBaseStateHandler*	g_states[];
 
 //--------------------------------------------------------------------------------
 // game state handler
