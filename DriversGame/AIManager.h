@@ -174,6 +174,7 @@ protected:
 	int							m_numMaxTrafficCars;
 
 	int							m_carEntryIdx;
+	int							m_copsEntryIdx;
 
 	float						m_copMaxDamage;
 	float						m_copAccelerationModifier;

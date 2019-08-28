@@ -223,7 +223,7 @@ void CAIManager::InitZoneEntries(const DkList<vehicleConfig_t*>& carConfigs, con
 
 CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 {
-	if(!m_civCarEntries.numElem())
+	if (!m_civCarEntries.numElem())
 		return nullptr;
 
 	if (m_spawnedTrafficCars >= GetMaxTrafficCars())
@@ -246,14 +246,14 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 		return nullptr;
 
 	// don't spawn cars on short roads
-	if(!isParkingLot)
+	if (!isParkingLot)
 	{
 		straight_t str = g_pGameWorld->m_level.Road_GetStraightAtPoint(globalCell, 2);
 
 		if (str.breakIter <= 1)
 			return nullptr;
 	}
-	
+
 	// don't spawn if distance between cars is too short
 	for (int j = 0; j < m_trafficCars.numElem(); j++)
 	{
@@ -282,6 +282,7 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 	bool isParkingStraight = (roadCell->flags & ROAD_FLAG_PARKING) > 0;
 
 	CCar* spawnedCar = nullptr;
+
 	// count the cops
 	int numCopsSpawned = 0;
 
@@ -290,27 +291,47 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 		CAIPursuerCar* pursuer = UTIL_CastToPursuer(m_trafficCars[i]);
 
 		// cops from roadblocks are not counted here!
-		if(pursuer && !pursuer->m_assignedRoadblock)
+		if (pursuer && !pursuer->m_assignedRoadblock)
 			numCopsSpawned++;
 	}
 
-	//int randCarEntry = g_replayRandom.Get(0, m_civCarEntries.numElem() - 1);
+	// pick first
+	civCarEntry_t* carEntry = &m_civCarEntries[m_carEntryIdx];
+	vehicleConfig_t* carConf = carEntry->config;
 
-	civCarEntry_t& carEntry = m_civCarEntries[m_carEntryIdx++];
-	vehicleConfig_t* carConf = carEntry.config;
+	// try add cops
+	if (m_enableCops && numCopsSpawned < GetMaxCops())
+	{
+		carEntry = &m_civCarEntries[m_copsEntryIdx];
+		carConf = carEntry->config;
 
-	if (m_carEntryIdx >= m_civCarEntries.numElem())
-		m_carEntryIdx = 0;
+		if (--carEntry->nextSpawn > 0)	// no luck? switch to civcars
+		{
+			carEntry = &m_civCarEntries[m_carEntryIdx++];
+			carConf = carEntry->config;
+
+			if (m_carEntryIdx >= m_civCarEntries.numElem())
+				m_carEntryIdx = 0;
+
+			if (--carEntry->nextSpawn > 0)
+				return nullptr;
+		}
+	}
+	else
+	{
+		m_carEntryIdx++; // advance
+
+		if (m_carEntryIdx >= m_civCarEntries.numElem())
+			m_carEntryIdx = 0;
+
+		if (--carEntry->nextSpawn > 0)
+			return nullptr;
+	}
 
 	bool isRegisteredCop = !m_copCarName[PURSUER_TYPE_COP].CompareCaseIns(carConf->carName);
 	bool isRegisteredGang = !m_copCarName[PURSUER_TYPE_GANG].CompareCaseIns(carConf->carName);
 
-	carEntry.nextSpawn--;
-
-	if (carEntry.nextSpawn > 0)
-		return nullptr;
-
-	carEntry.nextSpawn = isRegisteredCop ? m_copRespawnInterval : carEntry.GetZoneSpawnInterval("default");
+	carEntry->nextSpawn = isRegisteredCop ? m_copRespawnInterval : carEntry->GetZoneSpawnInterval("default");
 
 	if (isParkingLot)
 	{
@@ -1134,6 +1155,18 @@ float CAIManager::GetCopMaxSpeed() const
 void CAIManager::SetCopCarConfig(const char* car_name, int type )
 {
 	m_copCarName[type] = car_name;
+	m_copsEntryIdx = 0;
+
+	for (int i = 0; i < m_civCarEntries.numElem(); i++)
+	{
+		bool isRegisteredCop = !m_copCarName[PURSUER_TYPE_COP].CompareCaseIns(m_civCarEntries[i].config->carName);
+
+		if (isRegisteredCop)
+		{
+			m_copsEntryIdx = i;
+			break;
+		}
+	}
 }
 
 // shedules a cop speech
