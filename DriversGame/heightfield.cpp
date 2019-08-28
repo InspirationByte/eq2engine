@@ -732,14 +732,6 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 
 			CTextureAtlas* batchAtlas = batch->materialBundle->atlas;
 
-			/*
-			IMaterial* batchMaterial = batch->materialBundle->material;
-			if(batchMaterial->GetBaseTexture())
-			{
-				fTexelX = 1.0f / batchMaterial->GetBaseTexture()->GetWidth();
-				fTexelY = 1.0f / batchMaterial->GetBaseTexture()->GetHeight();
-			}*/
-
 			int vertex_heights[4] = {point.height, point.height, point.height, point.height};
 
 			int xv[4] = NEIGHBOR_OFFS_X(x);
@@ -758,16 +750,14 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 			if((mode == HFIELD_GEOM_PHYSICS) && (pointFlags & EHTILE_NOCOLLIDE))
 				continue;
 
-			bool verts_stripped[4] = { false, false, false, false };
-			bool edges_stripped[4] = {false, false, false, false};
 			bool edges_wall[4] = { false, false, false, false };
-			int  edge_stripped_height[4] = {0,0,0,0};
+			bool wall_facing[4] = { false, false, false, false };		// `true` means NEGATIVE
+			int  edge_stripped_height[4] = { point.height, point.height, point.height, point.height };
 
 			// adjusting tile vertex by height
 			for(int i = 0; i < 4; i++)
 			{
-				//GetTile(xv[i], yv[i]);
-				hfieldtile_t* ntile = GetTile(xv[i], yv[i]);//GetTile_CheckFlag(xv[i], yv[i], EHTILE_DETACHED, isDetached);
+				hfieldtile_t* ntile = GetTile(xv[i], yv[i]);
 
 				int v1, v2;
 				EdgeIndexToVertex(i, v1, v2);
@@ -781,18 +771,8 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 					if( ntile->height > vertex_heights[v2] )
 						vertex_heights[v2] = ntile->height;
 				}
-				else if(ntile)
-				{
-					verts_stripped[v1] = (ntile->height > vertex_heights[v1]);
-					verts_stripped[v2] = (ntile->height > vertex_heights[v2]);
-				}
-				else
-				{
-					verts_stripped[v1] = true;
-					verts_stripped[v2] = true;
-				}
 
-				ntile = GetTile(xvd[i], yvd[i]);//GetTile_CheckFlag(xvd[i], yvd[i], EHTILE_DETACHED, isDetached);
+				ntile = GetTile(xvd[i], yvd[i]);
 
 				// then to the corner neighbour
 				if (ntile && ntile->texture != -1 && ((ntile->flags & EHTILE_DETACHED) > 0) == isDetached)
@@ -800,41 +780,29 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 					if( ntile->height > vertex_heights[i] )
 						vertex_heights[i] = ntile->height;
 				}
-				else if(ntile)
-					verts_stripped[i] = (ntile->height > vertex_heights[i]);
-				else
-					verts_stripped[i] = true;
 			}
 
-			// check if we need a wall
+			// check if Trump need a wall
 			for(int i = 0; i < 4; i++)
 			{
-				int i1, i2;
-
-				i1 = valid_edge_index(i-1);
-				i2 = valid_edge_index(i+1);
-
-				int edge_ngb[] = {i1, i2};
+				int edge_ngb[] = { valid_edge_index(i - 1), valid_edge_index(i + 1) };
 
 				hfieldtile_t* ntile = GetTile_CheckFlag(xv[i], yv[i], EHTILE_DETACHED, !isDetached);
 
-				if(ntile && isDetached != ((ntile->flags & EHTILE_DETACHED) > 0) /*&& ntile->height < vertex_heights[i]*/)
+				if(ntile && isDetached != ((ntile->flags & EHTILE_DETACHED) > 0))
 				{
-					edges_stripped[i] = true;
-					edges_wall[i] = addWallOnEdges;
+					// `positive` wall is extruded DOWN (normally)
+					bool positiveWall =
+						(ntile->height < vertex_heights[edge_ngb[0]] || ntile->height < vertex_heights[edge_ngb[1]]);
+
+					// `negative` wall is extruded UP (which is not normal)
+					bool negativeWall =
+						!(ntile->flags & EHTILE_ADDWALL) && (ntile->height > vertex_heights[edge_ngb[0]] || ntile->height > vertex_heights[edge_ngb[1]]);
+
+					wall_facing[i] = negativeWall;
+
+					edges_wall[i] = addWallOnEdges && (positiveWall || negativeWall);
 					edge_stripped_height[i] = ntile->height;
-
-					for(int j = 0; j < 2; j++)
-					{
-						hfieldtile_t* ntile2 = GetTile_CheckFlag(xv[edge_ngb[j]], yv[edge_ngb[j]], EHTILE_DETACHED, !isDetached);
-
-						// there's no need to check height difference (though it's needed)
-						if(ntile2 && isDetached != ((ntile2->flags & EHTILE_DETACHED) > 0))
-						{
-							edges_stripped[edge_ngb[j]] = true;
-							edges_wall[i] = addWallOnEdges;
-						}
-					}
 				}
 			}
 
@@ -846,7 +814,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 
 			int vindxs[4];
 
-			if(!isEmpty || addWallOnEdges)
+			if(!isEmpty || addWallOnEdges)	// check for addWallOnEdges in the case of NEGATIVE walls
 			{
 				// add tile vertices
 				for(int i = 0; i < 4; i++)
@@ -908,14 +876,14 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 						tc_y = (point_position.z + HFIELD_POINT_SIZE*0.5f) / hfieldSizeH;
 					}
 
-					Vector2D texCoord(tc_x, tc_y);
 
-					hfielddrawvertex_t vert(point_position + hfield_offset, normalize(normal), texCoord);
+					hfielddrawvertex_t vert(point_position + hfield_offset, normalize(normal), Vector2D(tc_x, tc_y));
 
 					vindxs[i] = batch->verts.addUnique(vert,hfieldVertexComparator);
 					batch->bbox.AddVertex(vert.position);
 				}
 
+				// don't add empty quad, but instead it's used for a wall
 				if(!isEmpty)
 				{
 					// add tiles
@@ -936,7 +904,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 
 					int eindxs[4] = {-1,-1,-1,-1};
 
-					if( edges_stripped[i] && edges_wall[i] )
+					if( edges_wall[i] )
 					{
 						int v1, v2;
 						EdgeIndexToVertex(i, v1, v2);
@@ -984,7 +952,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 							texCoord2 = Vector2D(dxv[tv2]+0.5f, dyv[tv2]+0.5f) + edgeTexDir*fTexY2 + fTexelY*0.5f;
 						}
 						
-						Vector3D normal = s_tileDirections[i];
+						Vector3D normal = s_tileDirections[i] * (wall_facing[i] ? -1.0f : 1.0f);
 
 						// extrude walls from v1 and v2 respectively
 						hfielddrawvertex_t vert1(point_position2 + hfield_offset, normal, texCoord2);
