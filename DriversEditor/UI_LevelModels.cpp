@@ -1634,10 +1634,8 @@ void CUI_LevelModels::MoveSelectionToNewRegions()
 			Matrix4x4 transform = transpose(GetModelRefRenderMatrix(m_selRefs[i].selRegion, ref));
 			ref->position = transform.getTranslationComponent();
 		}
-		else
-		{
-			// TODO: recalculate regions by object reference positions
-		}
+
+		m_selRefs[i].selRegion = g_pGameWorld->m_level.Ed_MakeObjectRegionValid(m_selRefs[i].selRef, m_selRefs[i].selRegion);
 	}
 }
 

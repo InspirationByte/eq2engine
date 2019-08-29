@@ -12,6 +12,8 @@
 #include "IDebugOverlay.h"
 #include "DebugInterface.h"
 
+#include "ConVar.h"
+
 CEqCollisionBroadphaseGrid::CEqCollisionBroadphaseGrid()
 {
 	m_gridMap = NULL;
@@ -367,6 +369,8 @@ void CEqCollisionBroadphaseGrid::RemoveStaticObjectFromGrid( CEqCollisionObject*
 	}
 }
 
+ConVar ph_grid_debug_display_x("ph_grid_debug_display_x", "-1");
+ConVar ph_grid_debug_display_y("ph_grid_debug_display_y", "-1");
 
 void CEqCollisionBroadphaseGrid::DebugRender()
 {
@@ -380,6 +384,25 @@ void CEqCollisionBroadphaseGrid::DebugRender()
 				continue;
 
 			debugoverlay->Box3D(mins, maxs, ColorRGBA(1,0,1,0.25f));
+
+			if (ph_grid_debug_display_x.GetInt() == x && ph_grid_debug_display_y.GetInt() == y)
+			{
+				collgridcell_t* cell = GetCellAt(x, y);
+
+				if (cell)
+				{
+					for (int i = 0; i < cell->m_dynamicObjs.numElem(); i++)
+					{
+						CEqCollisionObject* obj = cell->m_dynamicObjs[i];
+
+						ColorRGBA bodyCol = ColorRGBA(0.2, 1, 1, 1.0f);
+
+						debugoverlay->Box3D(obj->m_aabb_transformed.minPoint, obj->m_aabb_transformed.maxPoint, bodyCol, 0.0f);
+					}
+				}
+			} // debug display
 		}
 	}
+
+
 }

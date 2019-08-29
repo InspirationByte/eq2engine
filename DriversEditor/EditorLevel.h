@@ -156,6 +156,9 @@ public:
 
 	bool			Ed_GenerateMap(LevelGenParams_t& genParams, const CImage* img);
 
+	// moves object to new region if possible
+	CEditorLevelRegion*	Ed_MakeObjectRegionValid(regionObject_t* obj, CLevelRegion* itsRegion);
+
 	void			WriteLevelRegions(IVirtualStream* stream, bool isFinal);
 	void			WriteObjectDefsLump(IVirtualStream* stream);
 	void			WriteHeightfieldsLump(IVirtualStream* stream);

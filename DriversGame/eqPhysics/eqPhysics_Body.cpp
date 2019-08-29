@@ -259,11 +259,13 @@ void CEqRigidBody::Integrate(float delta)
 			"Position: [%.2f %.2f %.2f]\n"
 			"Lin. vel: [%.2f %.2f %.2f] (%.2f)\n"
 			"Ang. vel: [%.2f %.2f %.2f]\n"
-			"mass: %g",
+			"mass: %g\n"
+			"cell: %d",
 			(float)m_position.x,(float)m_position.y,(float)m_position.z,
 			(float)m_linearVelocity.x,(float)m_linearVelocity.y,(float)m_linearVelocity.z, (float)length(m_linearVelocity),
 			(float)m_angularVelocity.x,(float)m_angularVelocity.y,(float)m_angularVelocity.z,
-			(float)m_mass);
+			(float)m_mass,
+			m_cell != nullptr);
 	}
 }
 

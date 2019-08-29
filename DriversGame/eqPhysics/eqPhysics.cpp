@@ -1657,7 +1657,7 @@ void UTIL_DebugDrawOBB(const FVector3D& pos, const Vector3D& mins, const Vector3
 
 void CEqPhysics::DebugDrawBodies(int mode)
 {
-	if (mode >= 1 && mode != 4)
+	if (mode >= 1 && mode != 4 && mode != 5)
 	{
 		for (int i = 0; i < m_dynObjects.numElem(); i++)
 		{
@@ -1684,6 +1684,10 @@ void CEqPhysics::DebugDrawBodies(int mode)
 				UTIL_DebugDrawOBB(m_staticObjects[i]->GetPosition(), m_staticObjects[i]->m_aabb.minPoint, m_staticObjects[i]->m_aabb.maxPoint, mat, ColorRGBA(1, 1, 0.2, 0.1f));
 			}
 		}
+	}
+	else if (mode == 5)	// only grid
+	{
+		m_grid.DebugRender();
 	}
 	else
 	{

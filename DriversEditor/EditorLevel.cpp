@@ -753,7 +753,19 @@ struct zoneRegions_t
 	DkList<int> regionList;
 };
 
+CEditorLevelRegion* CEditorLevel::Ed_MakeObjectRegionValid(regionObject_t* obj, CLevelRegion* itsRegion)
+{
+	CEditorLevelRegion* correctReg = (CEditorLevelRegion*)GetRegionAtPosition(obj->position);
 
+	// if region at it's position does not matching, it should be moved
+	if (correctReg != itsRegion)
+	{
+		correctReg->m_objects.append(obj);
+		itsRegion->m_objects.fastRemove(obj);
+	}
+
+	return correctReg;
+}
 
 void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
 {
@@ -794,6 +806,14 @@ void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
 			CEditorLevelRegion& reg = *(CEditorLevelRegion*)&m_regions[idx];
 		
 			reg.ClearRoadTrafficLightStates();
+
+			// move objects to right regions too
+			for (int i = 0; i < reg.m_objects.numElem(); i++)
+			{
+				regionObject_t* object = reg.m_objects[i];
+
+				Ed_MakeObjectRegionValid(object, &reg);
+			}
 		}
 	}
 
@@ -807,7 +827,10 @@ void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
 			CEditorLevelRegion& reg = *(CEditorLevelRegion*)&m_regions[idx];
 
 			for (int i = 0; i < reg.m_objects.numElem(); i++)
-				reg.PostprocessCellObject(reg.m_objects[i]);
+			{
+				regionObject_t* object = reg.m_objects[i];
+				reg.PostprocessCellObject(object);
+			}
 		}
 	}
 
