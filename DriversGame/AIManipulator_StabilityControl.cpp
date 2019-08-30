@@ -56,9 +56,7 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 	const float AI_SPEED_CORRECTION_MAXSPEED = 25.0f;	// meters per sec
 	const float AI_SPEED_CORRECTION_INITIAL = 0.5f;
 
-
-
-	//float torqueRange = 1.0f / car->GetTorqueScale();
+	float torqueRange = 1.0f / car->GetTorqueScale();
 
 	bool allWheelsOnGround = (car->GetWheelCount() - car->GetWheelsOnGround()) == 0;
 
@@ -88,8 +86,10 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 		handling.steering *= correctionFactor;
 		//handling.acceleration *= correctionFactor;
 
+		Vector3D hintTargetDir = fastNormalize(m_hintTargetPosition - car->GetOrigin());
+
 		// don't reduce acceleration if we're heading to hinted target position
-		float accelReduceFactor = 1.0f - fabs(dot(car->GetForwardVector(), fastNormalize(m_hintTargetPosition - car->GetOrigin())));
+		float accelReduceFactor = 1.0f - fabs(dot(car->GetForwardVector(), hintTargetDir));
 		//accelReduceFactor = pow(accelReduceFactor, 2.5f);
 
 		// compute based on steering

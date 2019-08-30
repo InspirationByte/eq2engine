@@ -54,6 +54,8 @@ const float AI_COP_LOST_TARGET_FARDIST		= 160.0f;
 const float AI_COP_BECOME_ANGRY_PURSUIT_TIME = 60.0f;
 const float AI_COP_BECOME_ANGRY_FELONY		 = 0.65f;
 
+const float AI_COP_ROADBLOCK_WIDTH			= 10.0f;
+
 const float AI_ALTER_SIREN_MIN_SPEED		= 65.0f;
 const float AI_ALTER_SIREN_CHANGETIME		= 2.0f;
 
@@ -455,8 +457,10 @@ void CAIPursuerCar::EndPursuit(bool death)
 		AI_SetState(&CAIPursuerCar::SearchForRoad);
 	}
 	else
-		AI_SetState( &CAIPursuerCar::DeadState );
-	 
+	{
+		AI_SetState(&CAIPursuerCar::DeadState);
+	}
+
 	if (m_target != NULL)
 	{
 		// validate and remove
@@ -736,6 +740,44 @@ bool CAIPursuerCar::UpdateTarget(float fDt)
 
 				newFelony += infractionDesc.activeFelony;
 				Speak(infractionDesc.speech, m_target, false, 0.8f);
+			}
+
+			// tell about running a roadblock
+			for (int i = 0; i < g_pAIManager->m_roadBlocks.numElem(); i++)
+			{
+				RoadBlockInfo_t* rblock = g_pAIManager->m_roadBlocks[i];
+
+				if (rblock && !rblock->runARoadblock)
+				{
+					Vector3D roadBlockDir = normalize(rblock->roadblockPosA - rblock->roadblockPosB);
+					roadBlockDir = cross(roadBlockDir, vec3_up);
+
+					Plane roadBlockPlane(roadBlockDir, -dot(roadBlockDir, rblock->roadblockPosA));
+
+					float distToRoadBlock = roadBlockPlane.Distance(m_target->GetOrigin());
+
+					float sidePositionFac = lineProjection(rblock->roadblockPosA, rblock->roadblockPosB, m_target->GetOrigin());
+
+					// only half of width of roadblock
+					if (sidePositionFac >= -0.5f && sidePositionFac <= 1.5f)
+					{
+						if (!rblock->targetEnteredRoadblock && fabs(distToRoadBlock) < AI_COP_ROADBLOCK_WIDTH)
+						{
+							rblock->targetEnteredRoadblock = m_target;
+							rblock->targetEnteredSign = sign(distToRoadBlock);
+						}
+						else if (rblock->targetEnteredRoadblock && fabs(distToRoadBlock) > AI_COP_ROADBLOCK_WIDTH)
+						{
+							if (sign(distToRoadBlock) + rblock->targetEnteredSign)
+								rblock->runARoadblock = true;
+
+							rblock->runARoadblock = true;
+
+							if (targetSpeed > 4.0f)
+								Speak("cop.roadblock", m_target, false);
+						}
+					}
+				}
 			}
 
 			m_target->SetFelony(newFelony);

@@ -59,6 +59,9 @@ struct PursuerData_t
 
 struct RoadBlockInfo_t
 {
+	RoadBlockInfo_t() : targetEnteredRoadblock(nullptr), runARoadblock(false)
+	{}
+
 	~RoadBlockInfo_t();
 
 	Vector3D roadblockPosA;
@@ -66,6 +69,10 @@ struct RoadBlockInfo_t
 
 	int totalSpawns;
 	DkList<CCar*> activeCars;
+
+	CCar*	targetEnteredRoadblock;
+	float	targetEnteredSign;
+	bool	runARoadblock;
 };
 
 #endif // GAMEDEFS_H

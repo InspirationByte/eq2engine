@@ -460,7 +460,7 @@ int	CPedestrianAI::SearchDaWay(float fDt, EStateTransition transition)
 }
 
 const float AI_PEDESTRIAN_CAR_AFRAID_MAX_RADIUS = 9.0f;
-const float AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS = 1.5f;
+const float AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS = 2.0f;
 const float AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS = 2.5f;
 const float AI_PEDESTRIAN_CAR_AFRAID_VELOCITY = 1.0f;
 
@@ -482,22 +482,36 @@ void CPedestrianAI::DetectEscape()
 
 		float projResult = lineProjection(carPos, carHeadingPos, pedPos);
 
-		bool hasSirenOrHorn = nearCar->GetControlButtons() & IN_HORN;
-
 		float velocity = length(nearCar->GetVelocity());
-		float distance = length(carPos - pedPos);
+		float dist = length(carPos - pedPos);
 
-		if (projResult > 0.0f && projResult < 1.0f && (velocity > AI_PEDESTRIAN_CAR_AFRAID_VELOCITY || distance < AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS) || hasSirenOrHorn)
+		bool hasSirenOrHorn = nearCar->GetControlButtons() & IN_HORN;
+		bool tooNearToCar = (dist < AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS);
+
+		if (projResult > 0.0f && projResult < 1.0f && (velocity > AI_PEDESTRIAN_CAR_AFRAID_VELOCITY) || 
+			hasSirenOrHorn || 
+			tooNearToCar)
 		{
-			Vector3D projPos = lerp(carPos, carHeadingPos, projResult);
-
-			if (hasSirenOrHorn || length(projPos - pedPos) < AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS)
+			if (tooNearToCar)
 			{
-				AI_SetState(&CPedestrianAI::DoEscape);
-
 				m_escapeFromPos = pedPos;
-				m_escapeDir = normalize(pedPos - projPos + nearCar->GetVelocity()*0.01f);
-				return;
+				m_escapeDir = normalize(pedPos - carPos);
+
+				AI_SetState(&CPedestrianAI::DoEscape);
+			}
+			else
+			{
+				Vector3D projPos = lerp(carPos, carHeadingPos, projResult);
+
+				if (hasSirenOrHorn || length(projPos - pedPos) < AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS)
+				{
+					m_escapeFromPos = pedPos;
+					m_escapeDir = normalize(pedPos - projPos + nearCar->GetVelocity()*0.01f);
+
+					AI_SetState(&CPedestrianAI::DoEscape);
+
+					return;
+				}
 			}
 		}
 	}
