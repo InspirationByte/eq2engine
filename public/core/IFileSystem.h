@@ -58,18 +58,18 @@ public:
 	virtual const char*		GetBasePath() const = 0;
 
     // Returns current game path
-    virtual const char*		GetCurrentGameDirectory() = 0;
+    virtual const char*		GetCurrentGameDirectory() const = 0;
 
     // Returns current engine data path
-    virtual const char*		GetCurrentDataDirectory() = 0;
+    virtual const char*		GetCurrentDataDirectory() const = 0;
 
 	// adds data directory for file search
 	virtual void			AddSearchPath(const char* pathId, const char* pszDir) = 0;
 	virtual void			RemoveSearchPath(const char* pathId) = 0;
 
     // Directory operations
-    virtual void			MakeDir(const char* dirname, SearchPath_e search ) = 0;
-    virtual void			RemoveDir(const char* dirname, SearchPath_e search ) = 0;
+    virtual void			MakeDir(const char* dirname, SearchPath_e search ) const = 0;
+    virtual void			RemoveDir(const char* dirname, SearchPath_e search ) const = 0;
 
 	//------------------------------------------------------------
 	// File operations
@@ -79,13 +79,13 @@ public:
     virtual void			Close( IFile* pFile ) = 0;
 
 	// other operations
-	virtual bool			FileExist(const char* filename, int searchFlags = -1) = 0;
-	virtual void			FileRemove(const char* filename, SearchPath_e search ) = 0;
+	virtual bool			FileExist(const char* filename, int searchFlags = -1) const = 0;
+	virtual void			FileRemove(const char* filename, SearchPath_e search ) const = 0;
 	virtual bool			FileCopy(const char* filename, const char* dest_file, bool overWrite, SearchPath_e search) = 0;
 
 	// The next ones are deprecated and will be removed
 
-    virtual char*			GetFileBuffer(const char* filename,long *filesize = 0, int searchFlags = -1, bool useHunk = false) = 0;
+    virtual char*			GetFileBuffer(const char* filename,long *filesize = 0, int searchFlags = -1) = 0;
     virtual long			GetFileSize(const char* filename, int searchFlags = -1) = 0;
 	virtual uint32			GetFileCRC32(const char* filename, int searchFlags = -1) = 0;
 

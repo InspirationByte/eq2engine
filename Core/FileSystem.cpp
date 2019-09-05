@@ -325,7 +325,7 @@ void CFileSystem::Close( IFile* fp )
 	m_FSMutex.Unlock();
 }
 
-char* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, int searchFlags/* = -1*/, bool useHunk/* = false*/)
+char* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, int searchFlags/* = -1*/)
 {
 	if(!FileExist(filename, searchFlags))
 		return NULL;
@@ -464,7 +464,7 @@ bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool ove
 	return true;
 }
 
-bool CFileSystem::FileExist(const char* filename, int searchFlags)
+bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 {
     int flags = searchFlags;
     if (flags == -1)
@@ -537,7 +537,7 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags)
 	return false;
 }
 
-void CFileSystem::FileRemove(const char* filename, SearchPath_e search )
+void CFileSystem::FileRemove(const char* filename, SearchPath_e search ) const
 {
 	EqString searchPath;
 
@@ -564,7 +564,7 @@ void CFileSystem::FileRemove(const char* filename, SearchPath_e search )
 }
 
 //Directory operations
-void CFileSystem::MakeDir(const char* dirname, SearchPath_e search )
+void CFileSystem::MakeDir(const char* dirname, SearchPath_e search ) const
 {
     EqString searchPath;
 
@@ -602,7 +602,7 @@ void CFileSystem::MakeDir(const char* dirname, SearchPath_e search )
 #endif
 }
 
-void CFileSystem::RemoveDir(const char* dirname, SearchPath_e search )
+void CFileSystem::RemoveDir(const char* dirname, SearchPath_e search ) const
 {
     EqString searchPath;
 
@@ -828,7 +828,7 @@ void CFileSystem::RemoveSearchPath(const char* pathId)
 }
 
 // Returns current game path
-const char* CFileSystem::GetCurrentGameDirectory()
+const char* CFileSystem::GetCurrentGameDirectory() const
 {
 	if(m_directories.numElem())
 		return m_directories[0].path.c_str(); // return first directory.
@@ -837,7 +837,7 @@ const char* CFileSystem::GetCurrentGameDirectory()
 }
 
 // Returns current engine data path
-const char* CFileSystem::GetCurrentDataDirectory()
+const char* CFileSystem::GetCurrentDataDirectory() const
 {
     return m_dataDir.GetData();
 }

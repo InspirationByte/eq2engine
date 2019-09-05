@@ -115,7 +115,7 @@ DECLARE_CONCOMMAND_FN(cmdlist)
 	MsgWarning("********Command list ends*********\n");
 }
 
-void cvar_list_collect(DkList<EqString>& list, const char* query)
+void cvar_list_collect(const ConCommandBase* cmd, DkList<EqString>& list, const char* query)
 {
 	const ConCommandBase* pBase;
 	const DkList<ConCommandBase*>* pCommandBases = g_sysConsole->GetAllCommands();
@@ -424,7 +424,7 @@ void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename)
 	if(!g_fileSystem->FileExist(cfgFileName.c_str()))
 		cfgFileName = "cfg/" + cfgFileName;
 
-	char *buf = g_fileSystem->GetFileBuffer(cfgFileName.c_str(), NULL, -1, true);
+	char *buf = g_fileSystem->GetFileBuffer(cfgFileName.c_str(), NULL, -1);
 
 	if(!buf)
 	{

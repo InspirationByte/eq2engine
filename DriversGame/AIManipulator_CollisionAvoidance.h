@@ -28,7 +28,7 @@ public:
 
 protected:
 	float			m_blockingTime;
-	float			m_blockTimeout;
+	float			m_timeToUnblock;
 };
 
 #endif // AIMANIPULATOR_COLLISIONAVOIDANCE_H

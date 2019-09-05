@@ -81,7 +81,7 @@ ConVar r_ortho_size("r_ortho_size", "0.5", NULL, CV_ARCHIVE);
 #define TRAFFICLIGHT_TIME 15.0f
 
 DkList<EqString> g_envList;
-void cmd_environment_variants(DkList<EqString>& list, const char* query)
+void cmd_environment_variants(const ConCommandBase* cmd, DkList<EqString>& list, const char* query)
 {
 	if(g_envList.numElem() == 0)
 	{

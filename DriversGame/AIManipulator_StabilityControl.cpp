@@ -13,7 +13,7 @@ ConVar ai_debug_stability("ai_debug_stability", "0");
 const float AI_STABILITY_MIN_INAIR_TIME = 0.15f;
 const float AI_STABILITY_LANDING_COOLDOWN = 0.25f;
 const float AI_MIN_LATERALSLIDE = 0.5f;
-const float AI_MIN_ANGULARVEL = 0.25f;
+const float AI_MIN_ANGULARVEL = 0.35f;
 
 const float AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_SCALE = 0.15f;
 const float AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_MIN = 0.2f;
@@ -46,15 +46,15 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 	const float AI_ROTATION_CORRECTION = 0.07f;
 	const float AI_ROTATION_CURVE = 1.25f;
 
-	const float AI_CORRECTION_LIMIT = 0.5f;
+	const float AI_CORRECTION_LIMIT = 0.8f;
 
-	const float AI_AUTOHANDBRAKE_STEERING_PERCENTAGE = 0.35f;
+	const float AI_AUTOHANDBRAKE_STEERING_PERCENTAGE = 0.65f;
 
 	const float AI_MAX_ANGULAR_VELOCITY_AUTOHANDBRAKE = 1.5f;
 
-	const float AI_SPEED_CORRECTION_MINSPEED = 8.0f;	// meters per sec
+	const float AI_SPEED_CORRECTION_MINSPEED = 10.0f;	// meters per sec
 	const float AI_SPEED_CORRECTION_MAXSPEED = 25.0f;	// meters per sec
-	const float AI_SPEED_CORRECTION_INITIAL = 0.5f;
+	const float AI_SPEED_CORRECTION_INITIAL = 0.25f;
 
 	float torqueRange = 1.0f / car->GetTorqueScale();
 
@@ -98,7 +98,7 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 		handling.acceleration -= max(accelCompensation, AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_MIN) - AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_MIN;
 	}
 	else
-		handling.autoHandbrake = false;//fabs(m_initialHandling.steering) > AI_AUTOHANDBRAKE_STEERING_PERCENTAGE;
+		handling.autoHandbrake = abs(m_initialHandling.steering) > AI_AUTOHANDBRAKE_STEERING_PERCENTAGE;
 		
 	// add to stability
 	if (!car->IsAnyWheelOnGround())

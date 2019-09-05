@@ -93,6 +93,59 @@ OOLUA_PROXY( ConVar, ConCommandBase )
 
 OOLUA_PROXY_END
 
+//----------------------------------------------
+
+//
+// filesystem & streams
+//
+
+OOLUA_PROXY(IFile)
+	OOLUA_TAGS(
+		No_default_constructor,
+		Abstract
+	)
+
+	// File operations
+	OOLUA_MFUNC(Seek)
+	OOLUA_MFUNC(Tell)
+	OOLUA_MFUNC(GetSize)
+
+	OOLUA_MFUNC(Flush)
+	OOLUA_MFUNC(GetCRC32)
+
+OOLUA_PROXY_END
+
+OOLUA_PROXY(IFileSystem)
+	OOLUA_TAGS(
+		No_default_constructor,
+		Abstract
+	)
+
+	OOLUA_MFUNC(AddPackage)
+	
+	OOLUA_MFUNC(AddSearchPath)
+	OOLUA_MFUNC(RemoveSearchPath)
+
+	OOLUA_MFUNC_CONST(GetCurrentGameDirectory)
+	OOLUA_MFUNC_CONST(GetCurrentDataDirectory)
+	
+	// File operations
+	OOLUA_MEM_FUNC(maybe_null<IFile*>, Open, const char*, const char*, int)
+	OOLUA_MFUNC(Close)
+
+	OOLUA_MFUNC_CONST(FileExist)
+	OOLUA_MFUNC_CONST(FileRemove)
+	OOLUA_MFUNC(FileCopy)
+	
+	OOLUA_MFUNC(GetFileSize)
+	OOLUA_MFUNC(GetFileCRC32)
+	//OOLUA_MFUNC(GetFileBuffer)
+
+	OOLUA_MFUNC_CONST(MakeDir)
+	OOLUA_MFUNC_CONST(RemoveDir)
+
+OOLUA_PROXY_END
+
 
 //----------------------------------------------
 

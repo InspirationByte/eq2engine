@@ -183,7 +183,7 @@ DECLARE_CMD(instantreplay, "Does instant replay (slowly). You can fetch to frame
 	Game_InstantReplay( replayTo );
 }
 
-void fnstart_variants(DkList<EqString>& list, const char* query)
+void fnstart_variants(const ConCommandBase* cmd, DkList<EqString>& list, const char* query)
 {
 	DKFINDDATA* findData = nullptr;
 	char* fileName = (char*)g_fileSystem->FindFirst(LEVELS_PATH "*.lev", &findData, SP_MOD);

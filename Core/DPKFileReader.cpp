@@ -60,7 +60,7 @@ void CDPKFileReader::SetKey(const char* key)
 	memcpy( m_key, key, len );
 }
 
-char* CDPKFileReader::GetKey()
+char* CDPKFileReader::GetKey() const
 {
 	return (char*)m_key;
 }
@@ -86,7 +86,7 @@ static void RebuildFilePath( char *str, char *newstr )
 	*pnewstr = 0;
 }
 
-int	CDPKFileReader::FindFileIndex(const char* filename)
+int	CDPKFileReader::FindFileIndex(const char* filename) const
 {
 	char* pszNewString = (char*)stackalloc(strlen(filename)+1);
 	RebuildFilePath((char*)filename, pszNewString);
@@ -108,7 +108,7 @@ int	CDPKFileReader::FindFileIndex(const char* filename)
     return -1;
 }
 
-int CDPKFileReader::GetSearchPath()
+int CDPKFileReader::GetSearchPath() const
 {
     return m_searchPath;
 }
@@ -165,7 +165,7 @@ bool CDPKFileReader::SetPackageFilename(const char *filename)
     return true;
 }
 
-const char* CDPKFileReader::GetPackageFilename()
+const char* CDPKFileReader::GetPackageFilename() const
 {
 	return m_packageName.c_str();
 }
@@ -513,7 +513,7 @@ long CDPKFileReader::Seek( DPKFILE *fp, long pos, int seekType )
 	}
 }
 
-long CDPKFileReader::Tell( DPKFILE *fp )
+long CDPKFileReader::Tell( DPKFILE *fp ) const
 {
     if (!fp)
         return 0;
@@ -521,7 +521,7 @@ long CDPKFileReader::Tell( DPKFILE *fp )
 	return ftell(fp->file) - (fp->handle == DPK_HANDLE_INVALID ? fp->info->offset : 0);
 }
 
-int	CDPKFileReader::Eof( DPKFILE* fp )
+int	CDPKFileReader::Eof( DPKFILE* fp ) const
 {
 	if(Tell(fp) >= fp->info->size)
 		return 1;

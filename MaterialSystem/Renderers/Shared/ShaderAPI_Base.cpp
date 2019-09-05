@@ -305,7 +305,7 @@ ITexture* ShaderAPI_Base::GetErrorTexture()
 	return m_pErrorTexture;
 }
 
-void ShaderAPI_Base::GetConsoleTextureList(DkList<EqString>& list, const char* query)
+void ShaderAPI_Base::GetConsoleTextureList(const ConCommandBase* base, DkList<EqString>& list, const char* query)
 {
 	ShaderAPI_Base* baseApi = ((ShaderAPI_Base*)g_pShaderAPI);
 

@@ -86,7 +86,7 @@ DECLARE_CMD(replay_save, "Saves current replay", 0)
 	}
 }
 
-void fnreplay_variants(DkList<EqString>& list, const char* query)
+void fnreplay_variants(const ConCommandBase* cmd, DkList<EqString>& list, const char* query)
 {
 	DKFINDDATA* findData = nullptr;
 	char* fileName = (char*)g_fileSystem->FindFirst(USERREPLAYS_PATH "*.rdat", &findData, SP_MOD);

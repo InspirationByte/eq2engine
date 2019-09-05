@@ -17,6 +17,8 @@
 
 using namespace Threading;
 
+class ConCommandBase;
+
 class ShaderAPI_Base : public IShaderAPI
 {
 public:
@@ -37,7 +39,7 @@ public:
 	// default error texture pointer
 	ITexture*							GetErrorTexture();
 
-	static void							GetConsoleTextureList(DkList<EqString>&, const char* query);
+	static void							GetConsoleTextureList(const ConCommandBase* base, DkList<EqString>&, const char* query);
 
 //-------------------------------------------------------------
 // Apply/Reset functions

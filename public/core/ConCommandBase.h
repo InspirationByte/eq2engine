@@ -25,7 +25,8 @@ enum CommandBaseFlags_e
 	CMDBASE_CONCOMMAND	= (1 << 7) // Is ConCommand
 };
 
-typedef void (*CMDBASE_VARIANTS_CALLBACK)(DkList<EqString>&, const char* query);
+class ConCommandBase;
+typedef void (*CMDBASE_VARIANTS_CALLBACK)(const ConCommandBase* base, DkList<EqString>&, const char* query);
 
 class ConCommandBase
 {

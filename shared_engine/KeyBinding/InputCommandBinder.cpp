@@ -607,7 +607,7 @@ void CInputCommandBinder::ExecuteBoundCommands(T* zone, bool bState)
 
 #ifndef DLL_EXPORT
 
-void con_key_list(DkList<EqString>& list, const char* query)
+void con_key_list(const ConCommandBase* base, DkList<EqString>& list, const char* query)
 {
 	const int LIST_LIMIT = 50;
 
@@ -632,7 +632,7 @@ void con_key_list(DkList<EqString>& list, const char* query)
 	}while(names++);
 }
 
-void binding_key_list(DkList<EqString>& list, const char* query)
+void binding_key_list(const ConCommandBase* base, DkList<EqString>& list, const char* query)
 {
 	const int LIST_LIMIT = 50;
 

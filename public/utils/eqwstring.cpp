@@ -414,6 +414,9 @@ EqWString EqWString::UpperCase()
 // search, returns char index
 int	EqWString::Find(const wchar_t* pszSub, bool bCaseSensetive, int nStart)
 {
+	if (!m_pszString)
+		return -1;
+
 	int nFound = -1;
 
 	wchar_t* strStart = m_pszString+min(nStart,m_nLength);

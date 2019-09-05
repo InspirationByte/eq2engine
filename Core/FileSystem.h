@@ -105,18 +105,18 @@ public:
 	const char*					GetBasePath() const				{return m_basePath.c_str();}
 
     // Returns current game path
-    const char*					GetCurrentGameDirectory();
+    const char*					GetCurrentGameDirectory() const;
 
     // Returns current engine data path
-    const char*					GetCurrentDataDirectory();
+    const char*					GetCurrentDataDirectory() const;
 
 	// adds directory for file search
 	void						AddSearchPath(const char* pathId, const char* pszDir);
 	void						RemoveSearchPath(const char* pathId);
 
     //Directory operations
-    void						MakeDir(const char* dirname, SearchPath_e search );
-    void						RemoveDir(const char* dirname, SearchPath_e search );
+    void						MakeDir(const char* dirname, SearchPath_e search ) const;
+    void						RemoveDir(const char* dirname, SearchPath_e search ) const;
 
 	//------------------------------------------------------------
 	// File operations
@@ -126,12 +126,12 @@ public:
     void						Close( IFile *fp );
 
 	bool						FileCopy(const char* filename, const char* dest_file, bool overWrite, SearchPath_e search);
-	bool						FileExist(const char* filename, int searchFlags = -1);
-	void						FileRemove(const char* filename, SearchPath_e search );
+	bool						FileExist(const char* filename, int searchFlags = -1) const;
+	void						FileRemove(const char* filename, SearchPath_e search ) const;
 
 	// The next ones are deprecated and will be removed
 
-    char*						GetFileBuffer(const char* filename,long *filesize = 0, int searchFlags = -1, bool useHunk = false);
+    char*						GetFileBuffer(const char* filename,long *filesize = 0, int searchFlags = -1);
     long						GetFileSize(const char* filename, int searchFlags = -1);
 	uint32						GetFileCRC32(const char* filename, int searchFlags = -1);
 

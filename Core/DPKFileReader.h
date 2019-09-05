@@ -49,26 +49,26 @@ public:
 							~CDPKFileReader();
 
 	bool					SetPackageFilename( const char* filename );
-	const char*				GetPackageFilename();
+	const char*				GetPackageFilename() const;
 
-	int						GetSearchPath();
+	int						GetSearchPath() const;
 	void					SetSearchPath(int search);
 
 	void					SetKey( const char* key );
-	char*					GetKey();
+	char*					GetKey() const;
 
 	void					DumpPackage(PACKAGE_DUMP_MODE mode);
 
-	int						FindFileIndex( const char* filename );
+	int						FindFileIndex( const char* filename ) const;
 
 	// file data api
 	DPKFILE*				Open( const char* filename, const char* mode );
 	void					Close( DPKFILE* fp );
 	long					Seek( DPKFILE* fp, long pos, int seekType );
-	long					Tell( DPKFILE* fp );
+	long					Tell( DPKFILE* fp ) const;
 	size_t					Read( void *dest, size_t count, size_t size, DPKFILE *fp );
 	char*					Gets( char *dest, int destSize, DPKFILE *fp);
-	int						Eof( DPKFILE* fp );
+	int						Eof( DPKFILE* fp ) const;
 
 protected:
 	dpkhandle_t				DecompressFile( int fileIndex );

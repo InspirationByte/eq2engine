@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "AIManipulator_TargetChaser.h"
-#include "car.h"
+#include "AIPursuerCar.h"
 
 #include "world.h"
 
@@ -33,7 +33,7 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 	Vector3D carPos = car->GetOrigin();
 	const Vector3D& carBodySize = car->m_conf->physics.body_size;
 
-	const float AI_OBSTACLE_SPHERE_RADIUS = carBodySize.x*2.0f;
+	const float AI_OBSTACLE_SPHERE_RADIUS = carBodySize.x*1.25f;// *2.0f;
 	const float AI_OBSTACLE_SPHERE_SPEED_SCALE = 0.01f;
 
 	Vector3D carForward = car->GetForwardVector();
@@ -45,7 +45,7 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 
 	float speedMPS = car->GetSpeed()*KPH_TO_MPS;
 
-	float traceShapeRadius = AI_OBSTACLE_SPHERE_RADIUS + speedMPS * AI_OBSTACLE_SPHERE_SPEED_SCALE;
+	float traceShapeRadius = AI_OBSTACLE_SPHERE_RADIUS;// +speedMPS * AI_OBSTACLE_SPHERE_SPEED_SCALE;
 
 	btSphereShape sphereTraceShape(traceShapeRadius);
 
@@ -125,15 +125,17 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 
 	// calculate brake first
 	float brakeScaling = 1.0f + pow(distanceScaling, AI_BRAKE_TARGET_DISTANCE_CURVE) * AI_BRAKE_TARGET_DISTANCE_SCALING;
-	float brakeFac = (1.0f - fabs(dot(steeringDir, carForward)))*brakeScaling;
+	float brakeFac = (1.0f - fabs(dot(steeringDir, fastNormalize(carVelocity))))*brakeScaling;
 
 	if (brakeFac < AI_CHASE_BRAKE_MIN)
 		brakeFac = 0.0f;
 
 	float forwardTraceDistanceBySpeed = RemapValClamp(speedMPS, 0.0f, 50.0f, 6.0f, 25.0f);
 
+	float distToTargetFactorForSteering = RemapValClamp(distanceToTarget, 0.0f, 10.0f, 0.0f, 1.0f);
+
 	// final steering dir after collision tests
-	steeringDir = fastNormalize(steeringTargetPos - carPos);
+	steeringDir = lerp(fastNormalize(m_driveTargetVelocity), fastNormalize(steeringTargetPos - carPos), distToTargetFactorForSteering);
 
 	// store output steering target
 	m_outSteeringTargetPos = steeringTargetPos;
@@ -146,15 +148,32 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 
 	if (steeringTargetColl.fract < 1.0f)
 	{
-		float AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT = 0.25f;
+		bool shouldDoSteeringCorrection = true;
 
-		Vector3D collPoint(steeringTargetColl.position);
+		if (steeringTargetColl.hitobject)
+		{
+			CGameObject* obj = (CGameObject*)steeringTargetColl.hitobject->GetUserData();
+			if (obj && obj->ObjType() == GO_CAR_AI)
+			{
+				CAIPursuerCar* pursuer = UTIL_CastToPursuer((CCar*)obj);
 
-		Plane dPlane(carRight, -dot(carPos, carRight));
-		float posSteerFactor = -dPlane.Distance(collPoint);
+				if (pursuer && pursuer->InPursuit() && dot(pursuer->GetVelocity(), carVelocity) > 0)
+					shouldDoSteeringCorrection = false;
+			}
+		}
 
-		steeringDir += carRight * posSteerFactor * (1.0f - steeringTargetColl.fract) * AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT;
-		steeringDir = normalize(steeringDir);
+		if (shouldDoSteeringCorrection)
+		{
+			float AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT = 0.55f;
+
+			Vector3D collPoint(steeringTargetColl.position);
+
+			Plane dPlane(carRight, -dot(carPos, carRight));
+			float posSteerFactor = -dPlane.Distance(collPoint);
+
+			steeringDir += carRight * posSteerFactor * (1.0f - steeringTargetColl.fract) * AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT;
+			steeringDir = normalize(steeringDir);
+		}
 
 		brakeFac += saturate(dot(steeringTargetColl.normal, fastNormalize(carVelocity))) * (1.0f - steeringTargetColl.fract);
 	}

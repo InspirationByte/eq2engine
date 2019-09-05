@@ -26,7 +26,7 @@ static CSoundEmitterSystem s_ses;
 
 CSoundEmitterSystem* g_sounds = &s_ses;
 
-void sounds_list(DkList<EqString>& list, const char* query)
+void sounds_list(const ConCommandBase* base, DkList<EqString>& list, const char* query)
 {
 	s_ses.GetAllSoundNames(list);
 }

@@ -18,6 +18,10 @@
 
 #include "sys_state.h"
 
+//---------------------------------------------------------------------------------------
+// Debug output
+//---------------------------------------------------------------------------------------
+
 void WMsg(const char* str)
 {
 	Msg(str);
@@ -69,65 +73,53 @@ OOLUA_CFUNC( WMsgBoxWarning, LMsgBoxWarning)
 OOLUA_CFUNC( WMsgBoxError, LMsgBoxError)
 OOLUA_CFUNC( WMsgBoxAbort, LMsgBoxAbort)
 
-//--------------------------------------------------------------------------
+void DebugMessages_InitBinding(lua_State* state)
+{
+	OOLUA::set_global(state, "Msg", LMsg);
+	OOLUA::set_global(state, "MsgWarning", LMsgWarning);
+	OOLUA::set_global(state, "MsgError", LMsgError);
+	OOLUA::set_global(state, "MsgAccept", LMsgAccept);
 
-OOLUA_EXPORT_FUNCTIONS(ConCommandBase)
-OOLUA_EXPORT_FUNCTIONS_CONST(ConCommandBase, GetName, GetDesc, GetFlags, IsConVar, IsConCommand, IsRegistered)
+	OOLUA::set_global(state, "MsgBox", LMsgBox);
+	OOLUA::set_global(state, "MsgBoxWarning", LMsgBoxWarning);
+	OOLUA::set_global(state, "MsgBoxError", LMsgBoxError);
+	OOLUA::set_global(state, "MsgBoxAbort", LMsgBoxAbort);
+}
 
-OOLUA_EXPORT_FUNCTIONS(ConCommand)
-OOLUA_EXPORT_FUNCTIONS_CONST(ConCommand)
+//---------------------------------------------------------------------------------------
+// Filesystem
+//---------------------------------------------------------------------------------------
 
-OOLUA_EXPORT_FUNCTIONS(ConVar, RevertToDefaultValue, SetString,SetFloat,SetInt,SetBool)
-OOLUA_EXPORT_FUNCTIONS_CONST(ConVar, HasClamp, GetMinClamp, GetMaxClamp, GetFloat, GetString, GetInt, GetBool)
+std::string S_IVirtualStream_Read(IVirtualStream* fs, size_t count, size_t size)
+{
+	char* temp = (char*)stackalloc(count*size + 16);
+	fs->Read(temp, count, size);
 
-OOLUA_EXPORT_FUNCTIONS(IVector2D, set_x, set_y)
-OOLUA_EXPORT_FUNCTIONS_CONST(IVector2D, get_x, get_y)
+	return temp;
+}
 
-OOLUA_EXPORT_FUNCTIONS(Vector2D, set_x, set_y)
-OOLUA_EXPORT_FUNCTIONS_CONST(Vector2D, get_x, get_y)
+size_t S_IVirtualStream_Write(IVirtualStream* fs, std::string data)
+{
+	return fs->Write(data.c_str(), data.length(), 1);
+}
 
-OOLUA_EXPORT_FUNCTIONS(Vector3D, set_x, set_y, set_z)
-OOLUA_EXPORT_FUNCTIONS_CONST(Vector3D, get_x, get_y, get_z, xy, yz, xz)
+std::string S_IFileSystem_GetFileBuffer(IFileSystem* fs, const char* filename, int searchFlags = -1)
+{
+	const char* buf = fs->GetFileBuffer(filename, nullptr, searchFlags);
+	std::string fileBuf = buf ? buf : "";
+	PPFree((char*)buf);
+	return fileBuf;
+}
 
-OOLUA_EXPORT_FUNCTIONS(Vector4D, set_x, set_y, set_z, set_w)
-OOLUA_EXPORT_FUNCTIONS_CONST(Vector4D, get_x, get_y, get_z, get_w, xy, xz, xw, yz, yw, zw, xyz, yzw)
+OOLUA_CFUNC(S_IVirtualStream_Read, L_IVirtualStream_Read)
+OOLUA_CFUNC(S_IVirtualStream_Write, L_IVirtualStream_Write)
+OOLUA_CFUNC(S_IFileSystem_GetFileBuffer, L_IFileSystem_GetFileBuffer)
 
-OOLUA_EXPORT_FUNCTIONS(Plane, set_normal, set_offset)
-OOLUA_EXPORT_FUNCTIONS_CONST(Plane, get_normal, get_offset, Distance, GetIntersectionWithRay, GetIntersectionLineFraction)
+OOLUA_EXPORT_FUNCTIONS(IFile, Seek, Tell, GetSize, Flush, GetCRC32)
+OOLUA_EXPORT_FUNCTIONS_CONST(IFile)
 
-OOLUA_EXPORT_FUNCTIONS(IDebugOverlay, Line3D, Box3D, Polygon3D)
-OOLUA_EXPORT_FUNCTIONS_CONST(IDebugOverlay)
-
-//----------
-
-OOLUA_EXPORT_FUNCTIONS(ISoundController, StartSound, Play, Pause, Stop, SetPitch, SetVolume, SetOrigin, SetVelocity)
-OOLUA_EXPORT_FUNCTIONS_CONST(ISoundController, IsStopped)
-
-OOLUA_EXPORT_FUNCTIONS(EmitParams, set_sampleId)
-OOLUA_EXPORT_FUNCTIONS_CONST(EmitParams, get_sampleId)
-
-OOLUA_EXPORT_FUNCTIONS(CSoundEmitterSystem, Precache, Emit, Emit2D, CreateController, RemoveController)
-OOLUA_EXPORT_FUNCTIONS_CONST(CSoundEmitterSystem)
-
-OOLUA_EXPORT_FUNCTIONS(ILocToken)
-OOLUA_EXPORT_FUNCTIONS_CONST(ILocToken)
-
-OOLUA_EXPORT_FUNCTIONS(IEqFont)
-OOLUA_EXPORT_FUNCTIONS_CONST(IEqFont)
-
-OOLUA_EXPORT_FUNCTIONS(CEqFontCache)
-OOLUA_EXPORT_FUNCTIONS_CONST(CEqFontCache, GetFont)
-
-OOLUA_EXPORT_FUNCTIONS(Networking::CNetMessageBuffer,
-										WriteByte, WriteUByte, WriteInt16, WriteUInt16, WriteInt, WriteUInt, WriteBool, WriteFloat, WriteVector2D,
-										WriteVector3D, WriteVector4D,
-										ReadByte, ReadUByte, ReadInt16, ReadUInt16, ReadInt, ReadUInt, ReadBool, ReadFloat, ReadVector2D,
-										ReadVector3D, ReadVector4D, WriteString, ReadString, WriteNetBuffer, WriteKeyValues, ReadKeyValues)
-
-OOLUA_EXPORT_FUNCTIONS_CONST(Networking::CNetMessageBuffer, GetMessageLength, GetClientID)
-
-OOLUA_EXPORT_FUNCTIONS(Networking::CNetworkThread,	SendData, SendEvent, SendWaitDataEvent)
-OOLUA_EXPORT_FUNCTIONS_CONST(Networking::CNetworkThread)
+OOLUA_EXPORT_FUNCTIONS(IFileSystem, Open, Close, FileCopy, GetFileSize, GetFileCRC32, AddPackage, AddSearchPath, RemoveSearchPath)
+OOLUA_EXPORT_FUNCTIONS_CONST(IFileSystem, FileExist, FileRemove, GetCurrentGameDirectory, GetCurrentDataDirectory, MakeDir, RemoveDir)
 
 OOLUA_EXPORT_FUNCTIONS(kvpairvalue_t, SetValueFrom, SetStringValue, SetValueFromString)
 OOLUA_EXPORT_FUNCTIONS_CONST(kvpairvalue_t, get_type, get_value, get_nValue, get_bValue, get_fValue)
@@ -177,13 +169,13 @@ OOLUA_EXPORT_FUNCTIONS(kvkeybase_t,
 	SetType
 )
 
-OOLUA_EXPORT_FUNCTIONS_CONST(kvkeybase_t, 
+OOLUA_EXPORT_FUNCTIONS_CONST(kvkeybase_t,
 	GetName,
-	FindKeyBase, 
+	FindKeyBase,
 	Clone,
 	CopyTo,
-	IsSection, 
-	IsArray, 
+	IsSection,
+	IsArray,
 	IsDefinition,
 	KeyCount,
 	KeyAt,
@@ -207,7 +199,202 @@ OOLUA_CFUNC(KV_GetVector4D, L_KV_GetVector4D)
 
 OOLUA_CFUNC(KV_PrintSection, L_KV_PrintSection)
 
-//--------------------------------------------------------------------------------------
+void FileSystem_InitBinding(lua_State* state)
+{
+	LUA_SET_GLOBAL_ENUMCONST(state, KVPAIR_STRING);
+	LUA_SET_GLOBAL_ENUMCONST(state, KVPAIR_INT);
+	LUA_SET_GLOBAL_ENUMCONST(state, KVPAIR_FLOAT);
+	LUA_SET_GLOBAL_ENUMCONST(state, KVPAIR_BOOL);
+	LUA_SET_GLOBAL_ENUMCONST(state, KVPAIR_SECTION);
+
+	LUA_SET_GLOBAL_ENUMCONST(state, SP_DATA);
+	LUA_SET_GLOBAL_ENUMCONST(state, SP_MOD);
+	LUA_SET_GLOBAL_ENUMCONST(state, SP_ROOT);
+
+	OOLUA::register_class<IFile>(state);
+	OOLUA::register_class_static<IFile>(state, "Read", L_IVirtualStream_Read);	// register using static
+	OOLUA::register_class_static<IFile>(state, "Write", L_IVirtualStream_Write);
+
+	OOLUA::register_class<IFileSystem>(state);
+	OOLUA::register_class_static<IFileSystem>(state, "GetFileBuffer", L_IFileSystem_GetFileBuffer);
+	
+	IFileSystem* fsInstance = g_fileSystem.GetInstancePtr();
+	OOLUA::set_global(state, "fileSystem", fsInstance);
+
+	// keyvalues related to FS
+	OOLUA::register_class<kvpairvalue_t>(state);
+	OOLUA::register_class<kvkeybase_t>(state);
+	OOLUA::register_class<KeyValues>(state);
+
+	OOLUA::set_global(state, "KV_GetValueString", L_KV_GetValueString);
+	OOLUA::set_global(state, "KV_GetValueInt", L_KV_GetValueInt);
+	OOLUA::set_global(state, "KV_GetValueFloat", L_KV_GetValueFloat);
+	OOLUA::set_global(state, "KV_GetValueBool", L_KV_GetValueBool);
+	OOLUA::set_global(state, "KV_GetVector2D", L_KV_GetVector2D);
+	OOLUA::set_global(state, "KV_GetVector3D", L_KV_GetVector3D);
+	OOLUA::set_global(state, "KV_GetVector4D", L_KV_GetVector4D);
+
+	OOLUA::set_global(state, "KV_PrintSection", L_KV_PrintSection);
+}
+
+//---------------------------------------------------------------------------------------
+// Vector math
+//---------------------------------------------------------------------------------------
+
+OOLUA_EXPORT_FUNCTIONS(IVector2D, set_x, set_y)
+OOLUA_EXPORT_FUNCTIONS_CONST(IVector2D, get_x, get_y)
+
+OOLUA_EXPORT_FUNCTIONS(Vector2D, set_x, set_y)
+OOLUA_EXPORT_FUNCTIONS_CONST(Vector2D, get_x, get_y)
+
+OOLUA_EXPORT_FUNCTIONS(Vector3D, set_x, set_y, set_z)
+OOLUA_EXPORT_FUNCTIONS_CONST(Vector3D, get_x, get_y, get_z, xy, yz, xz)
+
+OOLUA_EXPORT_FUNCTIONS(Vector4D, set_x, set_y, set_z, set_w)
+OOLUA_EXPORT_FUNCTIONS_CONST(Vector4D, get_x, get_y, get_z, get_w, xy, xz, xw, yz, yw, zw, xyz, yzw)
+
+OOLUA_EXPORT_FUNCTIONS(Plane, set_normal, set_offset)
+OOLUA_EXPORT_FUNCTIONS_CONST(Plane, get_normal, get_offset, Distance, GetIntersectionWithRay, GetIntersectionLineFraction)
+
+OOLUA_CFUNC(VectorAngles, L_VectorAngles)
+
+OOLUA_CFUNC(ConstrainAngle180, L_ConstrainAngle180)
+OOLUA_CFUNC(ConstrainAngle360, L_ConstrainAngle360)
+
+OOLUA_CFUNC(NormalizeAngles180, L_NormalizeAngles180)
+OOLUA_CFUNC(NormalizeAngles360, L_NormalizeAngles360)
+
+OOLUA_CFUNC(AngleDiff, L_AngleDiff)
+OOLUA_CFUNC(AnglesDiff, L_AnglesDiff)
+
+// FLOAT
+int L_fract(lua_State* vm) { OOLUA_C_FUNCTION(float, fract, float) }
+
+int L_lerp(lua_State* vm) { OOLUA_C_FUNCTION(float, lerp, const float, const float, const float) }
+int L_cerp(lua_State* vm) { OOLUA_C_FUNCTION(float, cerp, const float, const float, const float, const float, float) }
+int L_sign(lua_State* vm) { OOLUA_C_FUNCTION(float, sign, const float) }
+int L_clamp(lua_State* vm) { OOLUA_C_FUNCTION(float, clamp, const float, const float, const float) }
+
+// IVECTOR2D
+
+int L_iv2d_sign(lua_State* vm) { OOLUA_C_FUNCTION(IVector2D, sign, const IVector2D&) }
+int L_iv2d_clamp(lua_State* vm) { OOLUA_C_FUNCTION(IVector2D, clamp, const IVector2D&, const IVector2D&, const IVector2D&) }
+
+// VECTOR2D
+
+int L_v2d_lerp(lua_State* vm) { OOLUA_C_FUNCTION(Vector2D, lerp, const Vector2D&, const Vector2D&, const float) }
+int L_v2d_cerp(lua_State* vm) { OOLUA_C_FUNCTION(Vector2D, cerp, const Vector2D&, const Vector2D&, const Vector2D&, const Vector2D&, float) }
+int L_v2d_sign(lua_State* vm) { OOLUA_C_FUNCTION(Vector2D, sign, const Vector2D&) }
+int L_v2d_clamp(lua_State* vm) { OOLUA_C_FUNCTION(Vector2D, clamp, const Vector2D&, const Vector2D&, const Vector2D&) }
+
+int L_v2d_distance(lua_State* vm) { OOLUA_C_FUNCTION(float, distance, const Vector2D&, const Vector2D&) }
+int L_v2d_length(lua_State* vm) { OOLUA_C_FUNCTION(float, length, const Vector2D&) }
+int L_v2d_lengthSqr(lua_State* vm) { OOLUA_C_FUNCTION(float, lengthSqr, const Vector2D&) }
+int L_v2d_dot(lua_State* vm) { OOLUA_C_FUNCTION(float, dot, const Vector2D&, const Vector2D&) }
+int L_v2d_normalize(lua_State* vm) { OOLUA_C_FUNCTION(Vector2D, fastNormalize, const Vector2D&) }
+
+int L_v2d_lineProjection(lua_State* vm) { OOLUA_C_FUNCTION(float, lineProjection, const Vector2D&, const Vector2D&, const Vector2D&) }
+
+// VECTOR3D
+
+int L_v3d_lerp(lua_State* vm) { OOLUA_C_FUNCTION(Vector3D, lerp, const Vector3D&, const Vector3D&, const float) }
+int L_v3d_cerp(lua_State* vm) { OOLUA_C_FUNCTION(Vector3D, cerp, const Vector3D&, const Vector3D&, const Vector3D&, const Vector3D&, float) }
+int L_v3d_sign(lua_State* vm) { OOLUA_C_FUNCTION(Vector3D, sign, const Vector3D&) }
+int L_v3d_clamp(lua_State* vm) { OOLUA_C_FUNCTION(Vector3D, clamp, const Vector3D&, const Vector3D&, const Vector3D&) }
+
+int L_v3d_distance(lua_State* vm) { OOLUA_C_FUNCTION(float, distance, const Vector3D&, const Vector3D&) }
+int L_v3d_length(lua_State* vm) { OOLUA_C_FUNCTION(float, length, const Vector3D&) }
+int L_v3d_lengthSqr(lua_State* vm) { OOLUA_C_FUNCTION(float, lengthSqr, const Vector3D&) }
+int L_v3d_dot(lua_State* vm) { OOLUA_C_FUNCTION(float, dot, const Vector3D&, const Vector3D&) }
+int L_v3d_normalize(lua_State* vm) { OOLUA_C_FUNCTION(Vector3D, fastNormalize, const Vector3D&) }
+
+int L_v3d_lineProjection(lua_State* vm) { OOLUA_C_FUNCTION(float, lineProjection, const Vector3D&, const Vector3D&, const Vector3D&) }
+
+int L_v3d_cross(lua_State* vm) { OOLUA_C_FUNCTION(Vector3D, cross, const Vector3D&, const Vector3D&) }
+int L_v3d_reflect(lua_State* vm) { OOLUA_C_FUNCTION(Vector3D, reflect, const Vector3D&, const Vector3D&) }
+
+void Math_InitBinding(lua_State* state)
+{
+	OOLUA::register_class<Vector2D>(state);
+	OOLUA::register_class<IVector2D>(state);
+	OOLUA::register_class<Vector3D>(state);
+	OOLUA::register_class<Vector4D>(state);
+	OOLUA::register_class<Plane>(state);
+
+	OOLUA::set_global(state, "f_fract", L_fract);
+	OOLUA::set_global(state, "f_lerp", L_lerp);
+	OOLUA::set_global(state, "f_cerp", L_cerp);
+	OOLUA::set_global(state, "f_sign", L_sign);
+	OOLUA::set_global(state, "f_clamp", L_clamp);
+	OOLUA::set_global(state, "v2d_lerp", L_v2d_lerp);
+	OOLUA::set_global(state, "v2d_cerp", L_v2d_cerp);
+	OOLUA::set_global(state, "v2d_sign", L_v2d_sign);
+	OOLUA::set_global(state, "v2d_clamp", L_v2d_clamp);
+
+	OOLUA::set_global(state, "iv2d_sign", L_iv2d_sign);
+	OOLUA::set_global(state, "iv2d_clamp", L_iv2d_clamp);
+
+	OOLUA::set_global(state, "v2d_distance", L_v2d_distance);
+	OOLUA::set_global(state, "v2d_length", L_v2d_length);
+	OOLUA::set_global(state, "v2d_lengthSqr", L_v2d_lengthSqr);
+	OOLUA::set_global(state, "v2d_dot", L_v2d_dot);
+	OOLUA::set_global(state, "v2d_normalize", L_v2d_normalize);
+	OOLUA::set_global(state, "v2d_lineProjection", L_v2d_lineProjection);
+
+	OOLUA::set_global(state, "v3d_lerp", L_v3d_lerp);
+	OOLUA::set_global(state, "v3d_cerp", L_v3d_cerp);
+	OOLUA::set_global(state, "v3d_sign", L_v3d_sign);
+	OOLUA::set_global(state, "v3d_clamp", L_v3d_clamp);
+
+	OOLUA::set_global(state, "v3d_distance", L_v3d_distance);
+	OOLUA::set_global(state, "v3d_length", L_v3d_length);
+	OOLUA::set_global(state, "v3d_lengthSqr", L_v3d_lengthSqr);
+	OOLUA::set_global(state, "v3d_dot", L_v3d_dot);
+	OOLUA::set_global(state, "v3d_normalize", L_v3d_normalize);
+	OOLUA::set_global(state, "v3d_lineProjection", L_v3d_lineProjection);
+
+	OOLUA::set_global(state, "v3d_cross", L_v3d_cross);
+	OOLUA::set_global(state, "v3d_reflect", L_v3d_reflect);
+
+	OOLUA::set_global(state, "ConstrainAngle180", L_ConstrainAngle180);
+	OOLUA::set_global(state, "ConstrainAngle360", L_ConstrainAngle360);
+
+	OOLUA::set_global(state, "NormalizeAngles180", L_NormalizeAngles180);
+	OOLUA::set_global(state, "NormalizeAngles360", L_NormalizeAngles360);
+
+	OOLUA::set_global(state, "AngleDiff", L_AngleDiff);
+	OOLUA::set_global(state, "AnglesDiff", L_AnglesDiff);
+
+	OOLUA::set_global(state, "VectorAngles", L_VectorAngles);
+}
+
+//---------------------------------------------------------------------------------------
+// EqUI
+//---------------------------------------------------------------------------------------
+
+OOLUA_EXPORT_FUNCTIONS(ILocToken)
+OOLUA_EXPORT_FUNCTIONS_CONST(ILocToken)
+
+OOLUA_EXPORT_FUNCTIONS(IEqFont)
+OOLUA_EXPORT_FUNCTIONS_CONST(IEqFont)
+
+OOLUA_EXPORT_FUNCTIONS(CEqFontCache)
+OOLUA_EXPORT_FUNCTIONS_CONST(CEqFontCache, GetFont)
+
+ILocToken* LocalizedToken(char* pszToken)
+{
+	ILocToken* tok = g_localizer->GetToken(pszToken);
+	return tok;
+}
+
+int L_LocalizedToken(lua_State* vm) { OOLUA_C_FUNCTION(OOLUA::maybe_null<ILocToken*>, LocalizedToken, char*) }
+
+void AddLanguageFile(char* filenamePrefix)
+{
+	return g_localizer->AddTokensFile(filenamePrefix);
+}
+
+OOLUA_CFUNC(AddLanguageFile, L_AddLanguageFile)
 
 OOLUA_EXPORT_FUNCTIONS(equi::IUIControl, 
 
@@ -280,98 +467,56 @@ int L_equi_castto_panel( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<eq
 //int L_equi_castto_label( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<equi::Label*>, equi::DynamicCast, equi::IUIControl*) }
 //int L_equi_castto_image( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<equi::Image*>, equi::DynamicCast, equi::IUIControl*) }
 
-//--------------------------------------------------------------------------------------
-
-OOLUA_CFUNC(VectorAngles, L_VectorAngles)
-
-ILocToken* LocalizedToken( char* pszToken )
+void EqUI_InitBinding(lua_State* state)
 {
-	ILocToken* tok = g_localizer->GetToken( pszToken );
-	return tok;
+	LUA_SET_GLOBAL_ENUMCONST(state, TEXT_STYLE_REGULAR);
+	LUA_SET_GLOBAL_ENUMCONST(state, TEXT_STYLE_BOLD);
+	LUA_SET_GLOBAL_ENUMCONST(state, TEXT_STYLE_ITALIC);
+
+	LUA_SET_GLOBAL_ENUMCONST(state, TEXT_ALIGN_LEFT);
+	LUA_SET_GLOBAL_ENUMCONST(state, TEXT_ALIGN_RIGHT);
+	LUA_SET_GLOBAL_ENUMCONST(state, TEXT_ALIGN_HCENTER);
+
+	// Localizer is first
+	OOLUA::register_class<ILocToken>(state);
+	OOLUA::set_global(state, "LocalizedToken", L_LocalizedToken);
+	OOLUA::set_global(state, "AddLanguageFile", L_AddLanguageFile);
+
+	// EqUI
+	OOLUA::register_class<IEqFont>(state);
+	OOLUA::register_class<CEqFontCache>(state);
+
+	OOLUA::register_class<equi::IUIControl>(state);
+	OOLUA::register_class<equi::Panel>(state);
+	OOLUA::register_class<equi::CUIManager>(state);
+
+	OOLUA::Table equiCastFuncsTab = OOLUA::new_table(state);
+	equiCastFuncsTab.set("panel", L_equi_castto_panel);
+	//equiCastFuncsTab.set("label", L_equi_castto_label);
+	//equiCastFuncsTab.set("image", L_equi_castto_image);
+
+	OOLUA::set_global(state, "equi_cast", equiCastFuncsTab);
+	OOLUA::set_global(state, "equi", equi::Manager);
 }
 
-int L_LocalizedToken(lua_State* vm) { OOLUA_C_FUNCTION(OOLUA::maybe_null<ILocToken*>, LocalizedToken, char*) }
-
-void AddLanguageFile( char* filenamePrefix )
-{
-	return g_localizer->AddTokensFile( filenamePrefix );
-}
-
-OOLUA_CFUNC(AddLanguageFile, L_AddLanguageFile)
-
-OOLUA_CFUNC(ConstrainAngle180,L_ConstrainAngle180)
-OOLUA_CFUNC(ConstrainAngle360,L_ConstrainAngle360)
-
-OOLUA_CFUNC(NormalizeAngles180,L_NormalizeAngles180)
-OOLUA_CFUNC(NormalizeAngles360,L_NormalizeAngles360)
-
-OOLUA_CFUNC(AngleDiff,L_AngleDiff)
-OOLUA_CFUNC(AnglesDiff,L_AnglesDiff)
-
-// FLOAT
-int L_fract( lua_State* vm )			{ OOLUA_C_FUNCTION(float,fract,float) }
-
-int L_lerp( lua_State* vm )				{ OOLUA_C_FUNCTION(float,lerp,const float, const float, const float) }
-int L_cerp( lua_State* vm )				{ OOLUA_C_FUNCTION(float,cerp,const float,const float,const float,const float, float) }
-int L_sign( lua_State* vm )				{ OOLUA_C_FUNCTION(float,sign,const float) }
-int L_clamp( lua_State* vm )			{ OOLUA_C_FUNCTION(float,clamp,const float, const float, const float) }
-
-// IVECTOR2D
-
-int L_iv2d_sign( lua_State* vm )			{ OOLUA_C_FUNCTION(IVector2D,sign,const IVector2D&) }
-int L_iv2d_clamp( lua_State* vm )			{ OOLUA_C_FUNCTION(IVector2D,clamp,const IVector2D&, const IVector2D&, const IVector2D&) }
-
-// VECTOR2D
-
-int L_v2d_lerp( lua_State* vm )			{ OOLUA_C_FUNCTION(Vector2D,lerp,const Vector2D&, const Vector2D&, const float) }
-int L_v2d_cerp( lua_State* vm )			{ OOLUA_C_FUNCTION(Vector2D,cerp,const Vector2D&,const Vector2D&,const Vector2D&,const Vector2D&, float) }
-int L_v2d_sign( lua_State* vm )			{ OOLUA_C_FUNCTION(Vector2D,sign,const Vector2D&) }
-int L_v2d_clamp( lua_State* vm )		{ OOLUA_C_FUNCTION(Vector2D,clamp,const Vector2D&, const Vector2D&, const Vector2D&) }
-
-int L_v2d_distance( lua_State* vm )		{ OOLUA_C_FUNCTION(float,distance,const Vector2D&, const Vector2D&) }
-int L_v2d_length( lua_State* vm )		{ OOLUA_C_FUNCTION(float,length,const Vector2D&) }
-int L_v2d_lengthSqr( lua_State* vm )	{ OOLUA_C_FUNCTION(float,lengthSqr,const Vector2D&) }
-int L_v2d_dot( lua_State* vm )			{ OOLUA_C_FUNCTION(float,dot,const Vector2D&, const Vector2D&) }
-int L_v2d_normalize( lua_State* vm )	{ OOLUA_C_FUNCTION(Vector2D,fastNormalize,const Vector2D&) }
-
-int L_v2d_lineProjection( lua_State* vm )	{ OOLUA_C_FUNCTION(float,lineProjection,const Vector2D&,const Vector2D&, const Vector2D&) }
-
-// VECTOR3D
-
-int L_v3d_lerp( lua_State* vm )			{ OOLUA_C_FUNCTION(Vector3D,lerp,const Vector3D&, const Vector3D&, const float) }
-int L_v3d_cerp( lua_State* vm )			{ OOLUA_C_FUNCTION(Vector3D,cerp,const Vector3D&,const Vector3D&,const Vector3D&,const Vector3D&, float) }
-int L_v3d_sign( lua_State* vm )			{ OOLUA_C_FUNCTION(Vector3D,sign,const Vector3D&) }
-int L_v3d_clamp( lua_State* vm )		{ OOLUA_C_FUNCTION(Vector3D,clamp,const Vector3D&, const Vector3D&, const Vector3D&) }
-
-int L_v3d_distance( lua_State* vm )		{ OOLUA_C_FUNCTION(float,distance,const Vector3D&, const Vector3D&) }
-int L_v3d_length( lua_State* vm )		{ OOLUA_C_FUNCTION(float,length,const Vector3D&) }
-int L_v3d_lengthSqr( lua_State* vm )	{ OOLUA_C_FUNCTION(float,lengthSqr,const Vector3D&) }
-int L_v3d_dot( lua_State* vm )			{ OOLUA_C_FUNCTION(float,dot,const Vector3D&, const Vector3D&) }
-int L_v3d_normalize( lua_State* vm )	{ OOLUA_C_FUNCTION(Vector3D,fastNormalize,const Vector3D&) }
-
-int L_v3d_lineProjection( lua_State* vm )	{ OOLUA_C_FUNCTION(float,lineProjection,const Vector3D&,const Vector3D&, const Vector3D&) }
-
-int L_v3d_cross( lua_State* vm )		{ OOLUA_C_FUNCTION(Vector3D,cross,const Vector3D&, const Vector3D&) }
-int L_v3d_reflect( lua_State* vm )		{ OOLUA_C_FUNCTION(Vector3D,reflect,const Vector3D&, const Vector3D&) }
-
+// Engine state
 int L_ChangeStateType(lua_State* vm) { OOLUA_C_FUNCTION(void, EqStateMgr::ChangeStateType, int) }
 int L_SetCurrentStateType(lua_State* vm) { OOLUA_C_FUNCTION(void, EqStateMgr::SetCurrentStateType, int) }
 int L_GetCurrentStateType(lua_State* vm) { OOLUA_C_FUNCTION(int, EqStateMgr::GetCurrentStateType) }
 int L_ScheduleNextStateType(lua_State* vm) { OOLUA_C_FUNCTION(void, EqStateMgr::ScheduleNextStateType, int) }
 
-// привязка LUA
-void DebugMessages_InitBinding(lua_State* state)
-{
-	OOLUA::set_global(state, "Msg", LMsg);
-	OOLUA::set_global(state, "MsgWarning", LMsgWarning);
-	OOLUA::set_global(state, "MsgError", LMsgError);
-	OOLUA::set_global(state, "MsgAccept", LMsgAccept);
+//---------------------------------------------------------------------------------------
+// Console
+//---------------------------------------------------------------------------------------
 
-	OOLUA::set_global(state, "MsgBox", LMsgBox);
-	OOLUA::set_global(state, "MsgBoxWarning", LMsgBoxWarning);
-	OOLUA::set_global(state, "MsgBoxError", LMsgBoxError);
-	OOLUA::set_global(state, "MsgBoxAbort", LMsgBoxAbort);
-}
+OOLUA_EXPORT_FUNCTIONS(ConCommandBase)
+OOLUA_EXPORT_FUNCTIONS_CONST(ConCommandBase, GetName, GetDesc, GetFlags, IsConVar, IsConCommand, IsRegistered)
+
+OOLUA_EXPORT_FUNCTIONS(ConCommand)
+OOLUA_EXPORT_FUNCTIONS_CONST(ConCommand)
+
+OOLUA_EXPORT_FUNCTIONS(ConVar, RevertToDefaultValue, SetString, SetFloat, SetInt, SetBool)
+OOLUA_EXPORT_FUNCTIONS_CONST(ConVar, HasClamp, GetMinClamp, GetMaxClamp, GetFloat, GetString, GetInt, GetBool)
 
 ConVar* Lua_Console_FindCvar(const char* name)
 {
@@ -393,20 +538,80 @@ struct luaCmdFuncRef_t
 {
 	const char* name;
 	OOLUA::Lua_func_ref funcRef;
+	OOLUA::Lua_func_ref variantsFuncRef;
 };
 
 DkList<luaCmdFuncRef_t> g_luaCmdFuncRefs;
 
-int FindCmdFunc( const char* cmdName )
+int FindCmdFunc(const char* cmdName)
 {
-	for(int i = 0; i < g_luaCmdFuncRefs.numElem(); i++)
+	for (int i = 0; i < g_luaCmdFuncRefs.numElem(); i++)
 	{
-		if(g_luaCmdFuncRefs[i].name == cmdName) // because I already adjusted same addresses
+		if (g_luaCmdFuncRefs[i].name == cmdName) // because I already adjusted same addresses
 			return i;
 	}
 
 	return -1;
 }
+
+void luaCommandVariantsFunc(const ConCommandBase* base, DkList<EqString>& variants, const char* query)
+{
+	int funcIdx = FindCmdFunc(base->GetName());
+	ASSERT(funcIdx >= 0);
+
+	luaCmdFuncRef_t& ref = g_luaCmdFuncRefs[funcIdx];
+
+	OOLUA::Script& state = GetLuaState();
+	EqLua::LuaStackGuard g(state);
+
+	if (!ref.variantsFuncRef.push(state))
+		return;
+
+	//if (!argTable.push_on_stack(state))
+	if (!OOLUA::push(state, query))
+		MsgError("luaCommandVariantsFunc can't push 'query' on stack\n");
+
+	int res = lua_pcall(state, 1, 1, 0);
+
+	if (res != 0)
+	{
+		OOLUA::INTERNAL::set_error_from_top_of_stack_and_pop_the_error(state);
+		MsgError(":%s (ConCommandBase variants) error:\n %s\n", base->GetName(), OOLUA::get_last_error(state).c_str());
+	}
+
+	OOLUA::Table results;
+	if (!OOLUA::pull(state, results))
+		MsgError("luaCommandVariantsFunc can't pull table from stack\n");
+
+	{
+		EqLua::LuaStackGuard g(GetLuaState());
+		oolua_ipairs(results)
+			int idx = _i_index_ - 1;
+
+		std::string elem;
+		results.safe_at(_i_index_, elem);
+
+		variants.append(elem.c_str());
+
+		oolua_ipairs_end()
+	}
+}
+
+void S_ConCommandBase_SetVariantsCallback(ConCommandBase* base, OOLUA::Lua_func_ref variantsFunc)
+{
+	int funcIdx = FindCmdFunc(base->GetName());
+	ASSERT(funcIdx >= 0);
+
+	luaCmdFuncRef_t& ref = g_luaCmdFuncRefs[funcIdx];
+	ref.variantsFuncRef = variantsFunc;
+
+	if(variantsFunc.valid())
+		base->SetVariantsCallback(luaCommandVariantsFunc);
+	else
+		base->SetVariantsCallback(nullptr);
+}
+
+OOLUA_CFUNC(S_ConCommandBase_SetVariantsCallback, L_ConCommandBase_SetVariantsCallback)
 
 DECLARE_CONCOMMAND_FN(luaConCommandHandler)
 {
@@ -414,27 +619,27 @@ DECLARE_CONCOMMAND_FN(luaConCommandHandler)
 	ASSERT(funcIdx >= 0);
 
 	luaCmdFuncRef_t& ref = g_luaCmdFuncRefs[funcIdx];
-	
+
 	OOLUA::Script& state = GetLuaState();
 	EqLua::LuaStackGuard g(state);
 
 	// make argument table
 	OOLUA::Table argTable = OOLUA::new_table(state);
 
-	for(int i = 0; i < CMD_ARGC; i++)
-		argTable.set(i+1, CMD_ARGV(i).c_str());
+	for (int i = 0; i < CMD_ARGC; i++)
+		argTable.set(i + 1, CMD_ARGV(i).c_str());
 
-	if(!ref.funcRef.push(state))
+	if (!ref.funcRef.push(state))
 		return;
 
-	if(!argTable.push_on_stack(state))
+	if (!argTable.push_on_stack(state))
 		MsgError("luaConCommandHandler can't push table on stack\n");
 
 	int res = lua_pcall(state, 1, 0, 0);
 
-	if(res != 0)
+	if (res != 0)
 	{
-		OOLUA::INTERNAL::set_error_from_top_of_stack_and_pop_the_error( state );
+		OOLUA::INTERNAL::set_error_from_top_of_stack_and_pop_the_error(state);
 		MsgError(":%s (ConCommand) error:\n %s\n", cmd->GetName(), OOLUA::get_last_error(state).c_str());
 	}
 }
@@ -450,17 +655,17 @@ ConCommand* Lua_Console_CreateCommand(char const* name, OOLUA::Lua_func_ref cmdF
 
 	g_luaCmdFuncRefs.append(ref);
 
-	return new ConCommand(ref.name, CONCOMMAND_FN(luaConCommandHandler), xstrdup(desc),flags);
+	return new ConCommand(ref.name, CONCOMMAND_FN(luaConCommandHandler), xstrdup(desc), flags);
 }
 
-ConVar* Lua_Console_CreateCvar(char const* name,char const* value,char const* desc, int flags)
+ConVar* Lua_Console_CreateCvar(char const* name, char const* value, char const* desc, int flags)
 {
-	return new ConVar(xstrdup(name),xstrdup(value),xstrdup(desc),flags);
+	return new ConVar(xstrdup(name), xstrdup(value), xstrdup(desc), flags);
 }
 
 void Lua_Console_RemoveCommandBase(ConCommandBase* cmdbase)
 {
-	if(cmdbase->IsConCommand())
+	if (cmdbase->IsConCommand())
 	{
 		int funcIdx = FindCmdFunc(cmdbase->GetName());
 		ASSERT(funcIdx >= 0);
@@ -476,12 +681,12 @@ void Lua_Console_RemoveCommandBase(ConCommandBase* cmdbase)
 
 int LLua_Console_FindCvar(lua_State* vm)
 {
-	OOLUA_C_FUNCTION(OOLUA::maybe_null<ConVar*>, Lua_Console_FindCvar, const char* )
+	OOLUA_C_FUNCTION(OOLUA::maybe_null<ConVar*>, Lua_Console_FindCvar, const char*)
 }
 
 int LLua_Console_FindCommand(lua_State* vm)
 {
-	OOLUA_C_FUNCTION(OOLUA::maybe_null<ConCommand*>, Lua_Console_FindCommand, const char* )
+	OOLUA_C_FUNCTION(OOLUA::maybe_null<ConCommand*>, Lua_Console_FindCommand, const char*)
 }
 
 OOLUA_CFUNC(Lua_Console_ExecuteString, LLua_Console_ExecuteString)
@@ -489,150 +694,21 @@ OOLUA_CFUNC(Lua_Console_CreateCommand, LLua_Console_CreateCommand)
 OOLUA_CFUNC(Lua_Console_CreateCvar, LLua_Console_CreateCvar)
 OOLUA_CFUNC(Lua_Console_RemoveCommandBase, LLua_Console_RemoveCommandBase)
 
-//---------------------------------------------------------------------------------------
-//
-//---------------------------------------------------------------------------------------
-
-bool LuaBinding_InitEngineBindings(lua_State* state)
+void Console_InitBinding(lua_State* state)
 {
-	DebugMessages_InitBinding(state);
-
 	LUA_SET_GLOBAL_ENUMCONST(state, CV_UNREGISTERED);
 	LUA_SET_GLOBAL_ENUMCONST(state, CV_CHEAT);
 	LUA_SET_GLOBAL_ENUMCONST(state, CV_INITONLY);
 	LUA_SET_GLOBAL_ENUMCONST(state, CV_INVISIBLE);
 	LUA_SET_GLOBAL_ENUMCONST(state, CV_ARCHIVE);
 
-	LUA_SET_GLOBAL_ENUMCONST(state, SP_ROOT);
-	LUA_SET_GLOBAL_ENUMCONST(state, SP_MOD);
-
-	LUA_SET_GLOBAL_ENUMCONST(state, TEXT_STYLE_REGULAR);
-	LUA_SET_GLOBAL_ENUMCONST(state, TEXT_STYLE_BOLD);
-	LUA_SET_GLOBAL_ENUMCONST(state, TEXT_STYLE_ITALIC);
-
-	LUA_SET_GLOBAL_ENUMCONST(state, TEXT_ALIGN_LEFT);
-	LUA_SET_GLOBAL_ENUMCONST(state, TEXT_ALIGN_RIGHT);
-	LUA_SET_GLOBAL_ENUMCONST(state, TEXT_ALIGN_HCENTER);
-
-	LUA_SET_GLOBAL_ENUMCONST(state, EMITSOUND_FLAG_OCCLUSION);
-	LUA_SET_GLOBAL_ENUMCONST(state, EMITSOUND_FLAG_ROOM_OCCLUSION);
-	LUA_SET_GLOBAL_ENUMCONST(state, EMITSOUND_FLAG_FORCE_CACHED);
-	LUA_SET_GLOBAL_ENUMCONST(state, EMITSOUND_FLAG_FORCE_2D);
-	LUA_SET_GLOBAL_ENUMCONST(state, EMITSOUND_FLAG_STARTSILENT);
-	LUA_SET_GLOBAL_ENUMCONST(state, EMITSOUND_FLAG_START_ON_UPDATE);
-
-	LUA_SET_GLOBAL_ENUMCONST(state, KVPAIR_STRING);
-	LUA_SET_GLOBAL_ENUMCONST(state, KVPAIR_INT);
-	LUA_SET_GLOBAL_ENUMCONST(state, KVPAIR_FLOAT);
-	LUA_SET_GLOBAL_ENUMCONST(state, KVPAIR_BOOL);
-	LUA_SET_GLOBAL_ENUMCONST(state, KVPAIR_SECTION);
-
+	OOLUA::register_class<ConCommandBase>(state);
 	OOLUA::register_class<ConVar>(state);
 	OOLUA::register_class<ConCommand>(state);
-	OOLUA::register_class<Vector2D>(state);
-	OOLUA::register_class<IVector2D>(state);
-	OOLUA::register_class<Vector3D>(state);
-	OOLUA::register_class<Vector4D>(state);
-	OOLUA::register_class<Plane>(state);
-	OOLUA::register_class<IDebugOverlay>(state);
 
-	OOLUA::register_class<ISoundController>(state);
-	OOLUA::register_class<EmitParams>(state);
-	OOLUA::register_class<CSoundEmitterSystem>(state);
-
-	OOLUA::register_class<ILocToken>(state);
-	OOLUA::register_class<IEqFont>(state);
-	OOLUA::register_class<CEqFontCache>(state);
-
-	OOLUA::register_class<Networking::CNetMessageBuffer>(state);
-	OOLUA::register_class<Networking::CNetworkThread>(state);
-
-	OOLUA::set_global(state, "LocalizedToken", L_LocalizedToken);
-	OOLUA::set_global(state, "AddLanguageFile", L_AddLanguageFile);
+	OOLUA::register_class_static<ConVar>(state, "SetVariantsCallback", L_ConCommandBase_SetVariantsCallback);
+	OOLUA::register_class_static<ConCommand>(state, "SetVariantsCallback", L_ConCommandBase_SetVariantsCallback);
 	
-	OOLUA::register_class<kvpairvalue_t>(state);
-	OOLUA::register_class<kvkeybase_t>(state);
-	OOLUA::register_class<KeyValues>(state);
-	
-	OOLUA::set_global(state, "KV_GetValueString", L_KV_GetValueString);
-	OOLUA::set_global(state, "KV_GetValueInt", L_KV_GetValueInt);
-	OOLUA::set_global(state, "KV_GetValueFloat", L_KV_GetValueFloat);
-	OOLUA::set_global(state, "KV_GetValueBool", L_KV_GetValueBool);
-	OOLUA::set_global(state, "KV_GetVector2D", L_KV_GetVector2D);
-	OOLUA::set_global(state, "KV_GetVector3D", L_KV_GetVector3D);
-	OOLUA::set_global(state, "KV_GetVector4D", L_KV_GetVector4D);
-
-	OOLUA::set_global(state, "KV_PrintSection", L_KV_PrintSection);
-	
-	OOLUA::Table eqStateTable = OOLUA::new_table(state);
-	eqStateTable.set("ChangeStateType", L_ChangeStateType);
-	eqStateTable.set("SetCurrentStateType", L_SetCurrentStateType);
-	eqStateTable.set("GetCurrentStateType", L_GetCurrentStateType);
-	eqStateTable.set("ScheduleNextStateType", L_ScheduleNextStateType);
-
-	OOLUA::set_global(state, "EqStateMgr", eqStateTable);
-
-	OOLUA::register_class<equi::IUIControl>(state);
-	OOLUA::register_class<equi::Panel>(state);
-	OOLUA::register_class<equi::CUIManager>(state);
-
-	OOLUA::Table equiCastFuncsTab = OOLUA::new_table(state);
-	equiCastFuncsTab.set("panel", L_equi_castto_panel);
-	//equiCastFuncsTab.set("label", L_equi_castto_label);
-	//equiCastFuncsTab.set("image", L_equi_castto_image);
-
-	OOLUA::set_global(state, "equi_cast", equiCastFuncsTab);
-	OOLUA::set_global(state, "equi", equi::Manager);
-	
-	OOLUA::set_global(state, "f_fract", L_fract);
-	OOLUA::set_global(state, "f_lerp", L_lerp);
-	OOLUA::set_global(state, "f_cerp", L_cerp);
-	OOLUA::set_global(state, "f_sign", L_sign);
-	OOLUA::set_global(state, "f_clamp", L_clamp);
-	OOLUA::set_global(state, "v2d_lerp", L_v2d_lerp);
-	OOLUA::set_global(state, "v2d_cerp", L_v2d_cerp);
-	OOLUA::set_global(state, "v2d_sign", L_v2d_sign);
-	OOLUA::set_global(state, "v2d_clamp", L_v2d_clamp);
-
-	OOLUA::set_global(state, "iv2d_sign", L_iv2d_sign);
-	OOLUA::set_global(state, "iv2d_clamp", L_iv2d_clamp);
-
-	OOLUA::set_global(state, "v2d_distance", L_v2d_distance);
-	OOLUA::set_global(state, "v2d_length", L_v2d_length);
-	OOLUA::set_global(state, "v2d_lengthSqr", L_v2d_lengthSqr);
-	OOLUA::set_global(state, "v2d_dot", L_v2d_dot);
-	OOLUA::set_global(state, "v2d_normalize", L_v2d_normalize);
-	OOLUA::set_global(state, "v2d_lineProjection", L_v2d_lineProjection);
-
-	OOLUA::set_global(state, "v3d_lerp", L_v3d_lerp);
-	OOLUA::set_global(state, "v3d_cerp", L_v3d_cerp);
-	OOLUA::set_global(state, "v3d_sign", L_v3d_sign);
-	OOLUA::set_global(state, "v3d_clamp", L_v3d_clamp);
-
-	OOLUA::set_global(state, "v3d_distance", L_v3d_distance);
-	OOLUA::set_global(state, "v3d_length", L_v3d_length);
-	OOLUA::set_global(state, "v3d_lengthSqr", L_v3d_lengthSqr);
-	OOLUA::set_global(state, "v3d_dot", L_v3d_dot);
-	OOLUA::set_global(state, "v3d_normalize", L_v3d_normalize);
-	OOLUA::set_global(state, "v3d_lineProjection", L_v3d_lineProjection);
-
-	OOLUA::set_global(state, "v3d_cross", L_v3d_cross);
-	OOLUA::set_global(state, "v3d_reflect", L_v3d_reflect);
-
-	OOLUA::set_global(state, "ConstrainAngle180", L_ConstrainAngle180);
-	OOLUA::set_global(state, "ConstrainAngle360", L_ConstrainAngle360);
-
-	OOLUA::set_global(state, "NormalizeAngles180", L_NormalizeAngles180);
-	OOLUA::set_global(state, "NormalizeAngles360", L_NormalizeAngles360);
-
-	OOLUA::set_global(state, "AngleDiff", L_AngleDiff);
-	OOLUA::set_global(state, "AnglesDiff", L_AnglesDiff);
-
-	OOLUA::set_global(state, "VectorAngles", L_VectorAngles);
-
-	OOLUA::set_global(state, "debugoverlay", debugoverlay);
-	OOLUA::set_global(state, "sounds", g_sounds);
-
 	OOLUA::Table consoleTab = OOLUA::new_table(state);
 	consoleTab.set("FindCvar", LLua_Console_FindCvar);
 	consoleTab.set("FindCommand", LLua_Console_FindCommand);
@@ -643,6 +719,83 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	consoleTab.set("RemoveCommandbase", LLua_Console_RemoveCommandBase);
 
 	OOLUA::set_global(state, "console", consoleTab);
+}
+
+
+//---------------------------------------------------------------------------------------
+// MAIN
+//---------------------------------------------------------------------------------------
+
+OOLUA_EXPORT_FUNCTIONS(IDebugOverlay, Line3D, Box3D, Polygon3D)
+OOLUA_EXPORT_FUNCTIONS_CONST(IDebugOverlay)
+
+OOLUA_EXPORT_FUNCTIONS(ISoundController, StartSound, Play, Pause, Stop, SetPitch, SetVolume, SetOrigin, SetVelocity)
+OOLUA_EXPORT_FUNCTIONS_CONST(ISoundController, IsStopped)
+
+OOLUA_EXPORT_FUNCTIONS(EmitParams, set_sampleId)
+OOLUA_EXPORT_FUNCTIONS_CONST(EmitParams, get_sampleId)
+
+OOLUA_EXPORT_FUNCTIONS(CSoundEmitterSystem, Precache, Emit, Emit2D, CreateController, RemoveController)
+OOLUA_EXPORT_FUNCTIONS_CONST(CSoundEmitterSystem)
+
+OOLUA_EXPORT_FUNCTIONS(Networking::CNetMessageBuffer,
+	WriteByte, WriteUByte, WriteInt16, WriteUInt16, WriteInt, WriteUInt, WriteBool, WriteFloat, WriteVector2D,
+	WriteVector3D, WriteVector4D,
+	ReadByte, ReadUByte, ReadInt16, ReadUInt16, ReadInt, ReadUInt, ReadBool, ReadFloat, ReadVector2D,
+	ReadVector3D, ReadVector4D, WriteString, WriteNetBuffer, WriteKeyValues, ReadKeyValues)
+
+OOLUA_EXPORT_FUNCTIONS_CONST(Networking::CNetMessageBuffer, GetMessageLength, GetClientID)
+
+// since direct ReadString is unsafe, we're overriding it with wrapper
+std::string S_CNetMessageBuffer_ReadString(Networking::CNetMessageBuffer* buf)
+{
+	EqString str = buf->ReadString();
+	return str.c_str();
+}
+OOLUA_CFUNC(S_CNetMessageBuffer_ReadString, L_CNetMessageBuffer_ReadString)
+
+OOLUA_EXPORT_FUNCTIONS(Networking::CNetworkThread, SendData, SendEvent, SendWaitDataEvent)
+OOLUA_EXPORT_FUNCTIONS_CONST(Networking::CNetworkThread)
+
+bool LuaBinding_InitEngineBindings(lua_State* state)
+{
+	// base modules
+	DebugMessages_InitBinding(state);
+	Console_InitBinding(state);
+	FileSystem_InitBinding(state);
+	Math_InitBinding(state);
+	EqUI_InitBinding(state);
+	
+	// debug overlay
+	OOLUA::register_class<IDebugOverlay>(state);
+	OOLUA::set_global(state, "debugoverlay", debugoverlay);
+
+	// sound emitter system
+	LUA_SET_GLOBAL_ENUMCONST(state, EMITSOUND_FLAG_OCCLUSION);
+	LUA_SET_GLOBAL_ENUMCONST(state, EMITSOUND_FLAG_ROOM_OCCLUSION);
+	LUA_SET_GLOBAL_ENUMCONST(state, EMITSOUND_FLAG_FORCE_CACHED);
+	LUA_SET_GLOBAL_ENUMCONST(state, EMITSOUND_FLAG_FORCE_2D);
+	LUA_SET_GLOBAL_ENUMCONST(state, EMITSOUND_FLAG_STARTSILENT);
+	LUA_SET_GLOBAL_ENUMCONST(state, EMITSOUND_FLAG_START_ON_UPDATE);
+
+	OOLUA::register_class<ISoundController>(state);
+	OOLUA::register_class<EmitParams>(state);
+	OOLUA::register_class<CSoundEmitterSystem>(state);
+	OOLUA::set_global(state, "sounds", g_sounds);
+
+	// networking classes
+	OOLUA::register_class<Networking::CNetMessageBuffer>(state);
+	OOLUA::register_class_static<Networking::CNetMessageBuffer>(state, "ReadString", L_CNetMessageBuffer_ReadString);
+
+	OOLUA::register_class<Networking::CNetworkThread>(state);
+	
+	// engine state manager
+	OOLUA::Table eqStateTable = OOLUA::new_table(state);
+	eqStateTable.set("ChangeStateType", L_ChangeStateType);
+	eqStateTable.set("SetCurrentStateType", L_SetCurrentStateType);
+	eqStateTable.set("GetCurrentStateType", L_GetCurrentStateType);
+	eqStateTable.set("ScheduleNextStateType", L_ScheduleNextStateType);
+	OOLUA::set_global(state, "EqStateMgr", eqStateTable);
 
 	return true;
 }

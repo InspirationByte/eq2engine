@@ -13,7 +13,7 @@
 
 #include "DrvSynHUD.h"
 
-void fng_car_variants(DkList<EqString>& list, const char* query)
+void fng_car_variants(const ConCommandBase* base, DkList<EqString>& list, const char* query)
 {
 	if (g_pGameSession)
 		g_pGameSession->GetCarNames(list);

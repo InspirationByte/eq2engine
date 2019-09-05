@@ -450,6 +450,9 @@ EqString EqString::UpperCase() const
 // search, returns char index
 int	EqString::Find(const char* pszSub, bool bCaseSensetive, int nStart) const
 {
+	if (!m_pszString)
+		return -1;
+
 	int nFound = -1;
 
 	char* strStart = m_pszString+min(nStart,m_nLength);
