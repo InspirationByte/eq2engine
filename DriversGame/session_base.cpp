@@ -499,6 +499,35 @@ CAIPursuerCar* CGameSessionBase::Lua_CreatePursuerCar(const char* name, int type
 	return NULL;
 }
 
+bool CGameSessionBase::RegisterVehicleConfig(const char* name, kvkeybase_t* params)
+{
+	for (int i = 0; i < m_carEntries.numElem(); i++)
+	{
+		if (m_carEntries[i]->carName == name)
+		{
+			m_carEntries[i]->DestroyCleanup();
+
+			return ParseVehicleConfig(m_carEntries[i], params);
+		}
+	}
+
+	vehicleConfig_t* conf = new vehicleConfig_t();
+	conf->carName = name;
+	conf->carScript = name;
+
+	conf->scriptCRC = 0;
+
+	if (!ParseVehicleConfig(conf, params))
+	{
+		delete conf;
+		return false;
+	}
+
+	m_carEntries.append(conf);
+
+	return true;
+}
+
 void CGameSessionBase::LoadCarsPedsRegistry()
 {
 	// delete old entries
@@ -666,7 +695,8 @@ OOLUA_EXPORT_FUNCTIONS(
 	CGameSessionBase,
 
 	CreateCar,
-	CreatePursuerCar,
+	CreatePursuerCar, 
+	RegisterVehicleConfig,
 	SetPlayerCar,
 	SetLeadCar,
 	SetLeadCarNone,

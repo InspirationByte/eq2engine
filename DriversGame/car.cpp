@@ -227,11 +227,11 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 
 	if(pGears)
 	{
-		conf->physics.numGears = pGears->keys.numElem();
+		conf->physics.numGears = pGears->values.numElem();
 		conf->physics.gears = new float[conf->physics.numGears];
 
 		for(int i = 0; i < conf->physics.numGears; i++)
-			conf->physics.gears[i] = KV_GetValueFloat( pGears->keys[i]);
+			conf->physics.gears[i] = KV_GetValueFloat( pGears, i );
 	}
 	else if(conf->flags.isCar)
 		MsgError("no gears found in config for '%s'!", conf->carName.c_str());

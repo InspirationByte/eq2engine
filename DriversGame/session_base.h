@@ -69,7 +69,6 @@ public:
 	virtual void				UpdateLocalControls(int nControls, float steering, float accel_brake) = 0;
 
 
-
 	CCar*						CreateCar(const char* name, int type = CAR_TYPE_NORMAL);
 	CAIPursuerCar*				CreatePursuerCar(const char* name, int type = PURSUER_TYPE_COP);
 
@@ -105,6 +104,8 @@ public:
 	CCar*						Lua_CreateCar(const char* name, int type = CAR_TYPE_NORMAL);
 	CAIPursuerCar*				Lua_CreatePursuerCar(const char* name, int type = PURSUER_TYPE_COP);
 
+	bool						RegisterVehicleConfig(const char* name, kvkeybase_t* params);
+
 protected:
 
 	void						LoadCarsPedsRegistry();
@@ -137,36 +138,38 @@ extern CGameSessionBase* g_pGameSession;
 #ifndef NO_LUA
 #ifndef __INTELLISENSE__
 OOLUA_PROXY(CGameSessionBase)
-OOLUA_TAGS(Abstract)
+	OOLUA_TAGS(Abstract)
 
-OOLUA_MEM_FUNC_RENAME(CreateCar, maybe_null<CCar*>, Lua_CreateCar, const char*, int)
-OOLUA_MEM_FUNC_RENAME(CreatePursuerCar, maybe_null<CAIPursuerCar*>, Lua_CreatePursuerCar, const char*, int)
+	OOLUA_MEM_FUNC_RENAME(CreateCar, maybe_null<CCar*>, Lua_CreateCar, const char*, int)
+	OOLUA_MEM_FUNC_RENAME(CreatePursuerCar, maybe_null<CAIPursuerCar*>, Lua_CreatePursuerCar, const char*, int)
 
-OOLUA_MFUNC(LoadCarReplay)
-OOLUA_MFUNC(StopCarReplay)
+	OOLUA_MFUNC(RegisterVehicleConfig)
 
-OOLUA_MFUNC_CONST(IsClient)
-OOLUA_MFUNC_CONST(IsServer)
+	OOLUA_MFUNC(LoadCarReplay)
+	OOLUA_MFUNC(StopCarReplay)
 
-OOLUA_MFUNC_CONST(GetSessionType)
+	OOLUA_MFUNC_CONST(IsClient)
+	OOLUA_MFUNC_CONST(IsServer)
 
-OOLUA_MFUNC(SetPlayerCar)
-OOLUA_MFUNC_CONST(GetPlayerCar)
+	OOLUA_MFUNC_CONST(GetSessionType)
 
-OOLUA_MFUNC(SetLeadCar)
-OOLUA_MFUNC(SetLeadCarNone)
-OOLUA_MFUNC_CONST(GetLeadCar)
+	OOLUA_MFUNC(SetPlayerCar)
+	OOLUA_MFUNC_CONST(GetPlayerCar)
 
-OOLUA_MFUNC(SetViewObject)
-OOLUA_MFUNC(SetViewObjectToNone)
-OOLUA_MFUNC_CONST(GetViewObject)
+	OOLUA_MFUNC(SetLeadCar)
+	OOLUA_MFUNC(SetLeadCarNone)
+	OOLUA_MFUNC_CONST(GetLeadCar)
 
-OOLUA_MFUNC_CONST(IsGameDone)
-OOLUA_MFUNC(SignalMissionStatus)
-OOLUA_MFUNC_CONST(GetMissionStatus)
+	OOLUA_MFUNC(SetViewObject)
+	OOLUA_MFUNC(SetViewObjectToNone)
+	OOLUA_MFUNC_CONST(GetViewObject)
 
-OOLUA_MFUNC_CONST(IsReplay)
-OOLUA_MFUNC(ResetReplay)
+	OOLUA_MFUNC_CONST(IsGameDone)
+	OOLUA_MFUNC(SignalMissionStatus)
+	OOLUA_MFUNC_CONST(GetMissionStatus)
+
+	OOLUA_MFUNC_CONST(IsReplay)
+	OOLUA_MFUNC(ResetReplay)
 OOLUA_PROXY_END
 #endif // __INTELLISENSE__
 #endif // NO_LUA
