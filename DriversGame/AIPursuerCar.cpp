@@ -18,6 +18,7 @@
 ConVar ai_debug_pursuer("ai_debug_pursuer", "0", NULL, CV_CHEAT);
 ConVar g_railroadCops("g_railroadCops", "0", NULL, CV_CHEAT);
 
+
 // TODO: make these constants initialized from Lua
 
 const float AI_COP_BEGINPURSUIT_ARMED_DELAY		= 0.15f;
@@ -541,7 +542,7 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 			if (obj->ObjType() == GO_CAR_AI)
 			{
 				CAITrafficCar* tfc = (CAITrafficCar*)obj;
-				if (tfc->IsPursuer() && tfc->m_conf->flags.isCop)	// don't check collision with me pls
+				if (tfc->IsPursuer() && tfc->m_conf->flags.isCop && !tfc->m_assignedRoadblock)	// don't check collision with me pls
 				{
 					return INFRACTION_HIT_SQUAD_VEHICLE;
 				}
@@ -774,7 +775,7 @@ bool CAIPursuerCar::UpdateTarget(float fDt)
 							rblock->runARoadblock = true;
 
 							if (targetSpeed > 4.0f)
-								Speak("cop.roadblock", m_target, false);
+								Speak("cop.roadblock", m_target, true);
 						}
 					}
 				}
@@ -867,6 +868,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		m_pursuitTime = 0.0f;
 		m_angryTimer = 0.0f;
 
+		m_slipParams = &(slipAngleCurveParams_t&)GetAISlipCurveParams();
+
 		// set desired torque and speed
 		m_maxSpeed = m_savedMaxSpeed;
 		m_torqueScale = m_savedTorqueScale;
@@ -879,6 +882,8 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		// deactivate neat cheat
 		if (g_railroadCops.GetBool())
 			SetInfiniteMass(false);
+
+		m_slipParams = &(slipAngleCurveParams_t&)GetDefaultSlipCurveParams();
 
 		m_autogearswitch = false;
 
@@ -1047,10 +1052,12 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	m_autohandbrake = handling.autoHandbrake;
 
+	float steering = sign(handling.steering) * pow(fabs(handling.steering), 1.35f);	// for stabilizing
+
 	SetControlButtons( controls );
 	SetControlVars(	handling.acceleration,
 					handling.braking,
-					handling.steering);
+					steering);
 
 	if(handling.acceleration > 0.05f)
 		GetPhysicsBody()->TryWake(false);

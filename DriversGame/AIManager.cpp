@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------------------
 
 ConVar g_trafficMaxCars("g_trafficMaxCars", "48", nullptr, CV_CHEAT);
+ConVar g_pedestriansMax("g_pedestriansMax", "40", nullptr, CV_CHEAT);
 
 ConVar g_traffic_initial_mindist("g_traffic_initial_mindist", "15", nullptr, CV_CHEAT);
 ConVar g_traffic_mindist("g_traffic_mindist", "50", nullptr, CV_CHEAT);
@@ -26,7 +27,8 @@ ConVar g_pedestrians_initial_mindist("g_pedestrians_initial_mindist", "10", null
 ConVar g_pedestrians_mindist("g_pedestrians_mindist", "30", nullptr, CV_CHEAT);
 ConVar g_pedestrians_maxdist("g_pedestrians_maxdist", "32", nullptr, CV_CHEAT);
 
-ConVar g_pedestriansMax("g_pedestriansMax", "40", nullptr, CV_CHEAT);
+
+const int	INITIAL_SPAWN_INTERVAL = 10;
 
 const int	AI_COP_SPEECH_QUEUE = 6;
 
@@ -53,6 +55,7 @@ CAIManager::CAIManager()
 	m_trafficUpdateTime = 0.0f;
 	m_pedsUpdateTime = 0.0f;
 	m_velocityMapUpdateTime = 0.0f;
+	m_trafficSpawnInterval = 0;
 
 	m_enableCops = true;
 	m_enableTrafficCars = true;
@@ -93,6 +96,7 @@ void CAIManager::Init(const DkList<vehicleConfig_t*>& carConfigs, const DkList<p
 	m_trafficUpdateTime = 0.0f;
 	m_pedsUpdateTime = 0.0f;
 	m_velocityMapUpdateTime = 0.0f;
+	m_trafficSpawnInterval = 0;
 
 	m_enableTrafficCars = true;
 	m_enableCops = true;
@@ -149,8 +153,14 @@ void CAIManager::InitZoneEntries(const DkList<vehicleConfig_t*>& carConfigs, con
 				entry.config = carConfigs[i];
 				entry.zoneList.append(spawnZoneInfo_t{ "default", 0 });
 
+				bool isRegisteredCop = !m_copCarName[PURSUER_TYPE_COP].CompareCaseIns(entry.config->carName);
+				if (isRegisteredCop)
+					entry.nextSpawn = m_copRespawnInterval;
+
 				if (entry.config->flags.isCop)
 					defaultCopCar = entry.config->carName;
+
+				entry.nextSpawn += INITIAL_SPAWN_INTERVAL + m_trafficSpawnInterval;
 
 				m_civCarEntries.append(entry);
 			}
@@ -186,6 +196,12 @@ void CAIManager::InitZoneEntries(const DkList<vehicleConfig_t*>& carConfigs, con
 				{
 					civCarEntry_t entry;
 					entry.config = carConfig;
+
+					bool isRegisteredCop = !m_copCarName[PURSUER_TYPE_COP].CompareCaseIns(entry.config->carName);
+					if (isRegisteredCop)
+						entry.nextSpawn = m_copRespawnInterval;
+
+					entry.nextSpawn += INITIAL_SPAWN_INTERVAL + m_trafficSpawnInterval;
 
 					int idx = g_pAIManager->m_civCarEntries.append(entry);
 					civCarEntry = &g_pAIManager->m_civCarEntries[j];
@@ -331,7 +347,7 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 	bool isRegisteredCop = !m_copCarName[PURSUER_TYPE_COP].CompareCaseIns(carConf->carName);
 	bool isRegisteredGang = !m_copCarName[PURSUER_TYPE_GANG].CompareCaseIns(carConf->carName);
 
-	carEntry->nextSpawn = isRegisteredCop ? m_copRespawnInterval : carEntry->GetZoneSpawnInterval("default");
+	carEntry->nextSpawn = (isRegisteredCop ? m_copRespawnInterval : carEntry->GetZoneSpawnInterval("default")) + m_trafficSpawnInterval;
 
 	if (isParkingLot)
 	{
@@ -1074,6 +1090,16 @@ int CAIManager::GetMaxTrafficCars() const
 	return m_enableTrafficCars ? m_numMaxTrafficCars : 0;
 }
 
+void CAIManager::SetTrafficSpawnInterval(int count)
+{
+	m_trafficSpawnInterval = count;
+}
+
+int CAIManager::GetTrafficSpawnInterval() const
+{
+	return m_trafficSpawnInterval;
+}
+
 void CAIManager::SetTrafficCarsEnabled(bool enable)
 {
 	m_enableTrafficCars = enable;
@@ -1221,7 +1247,6 @@ void CAIManager::CopLoudhailerTold()
 	m_copSpeechTime = RandomFloat(AI_COP_SPEECH_DELAY, AI_COP_SPEECH_DELAY + 5.0f);
 }
 
-
 OOLUA_EXPORT_FUNCTIONS(
 	CAIManager,
 
@@ -1229,6 +1254,7 @@ OOLUA_EXPORT_FUNCTIONS(
 	StopPursuit,
 	RemoveAllCars,
 	SetMaxTrafficCars,
+	SetTrafficSpawnInterval,
 	SetTrafficCarsEnabled,
 	SetCopsEnabled,
 	SetCopCarConfig,
@@ -1246,6 +1272,7 @@ OOLUA_EXPORT_FUNCTIONS_CONST(
 
 	GetMaxTrafficCars,
 	IsTrafficCarsEnabled,
+	GetTrafficSpawnInterval,
 	IsCopsEnabled,
 	GetCopMaxDamage,
 	GetCopAccelerationModifier,

@@ -54,7 +54,9 @@ BEGIN_SHADER_CLASS(BaseStatic)
 		// load another shader params here (because we want to use less memory)
 		//------------------------------------------
 
-		
+		bool doVariationMapping = false;
+
+		SHADER_PARAM_BOOL(Variation, doVariationMapping, false);
 		SHADER_PARAM_FLOAT(WetScale, m_fWetScale, 1.0f);
 		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale, 0.0f);
 		SHADER_PARAM_FLOAT(Phong, m_phong, 0.0f);
@@ -73,6 +75,8 @@ BEGIN_SHADER_CLASS(BaseStatic)
 		bool useCubemap = (m_nFlags & MATERIAL_FLAG_USE_ENVCUBEMAP) || (m_pCubemap != NULL);
 
 		// define cubemap parameter.
+		SHADER_DECLARE_SIMPLE_DEFINITION(doVariationMapping, "VARIATION")
+
 		SHADER_DECLARE_SIMPLE_DEFINITION(useCubemap, "CUBEMAP")
 
 		SHADER_DECLARE_SIMPLE_DEFINITION(bBaseTextureSpecularAlpha, "USE_BASETEXTUREALPHA_SPECULAR");

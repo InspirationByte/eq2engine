@@ -26,6 +26,8 @@ ConVar		g_autoHandbrake("g_autoHandbrake", "1", "Auto handbrake for steering hel
 ConVar		g_invicibility("g_invicibility", "0", "No damage for player car", CV_CHEAT);
 ConVar		g_infiniteMass("g_infiniteMass", "0", "Infinite mass for player car", CV_CHEAT);
 
+ConVar		g_difficulty("g_difficulty", "0", "Difficulty of the game", CV_ARCHIVE);
+
 bool		g_bIsServer = true;
 
 // game definitions

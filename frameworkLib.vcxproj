@@ -196,6 +196,7 @@
     <ClInclude Include="public\Utils\eqthread.h" />
     <ClInclude Include="public\utils\eqwstring.h" />
     <ClInclude Include="public\utils\KeyValues.h" />
+    <ClInclude Include="public\utils\perlin.h" />
     <ClInclude Include="public\utils\riff.h" />
     <ClInclude Include="public\utils\strong_typedef.h" />
     <ClInclude Include="public\Utils\strtools.h" />
@@ -225,6 +226,7 @@
     <ClCompile Include="public\Utils\eqthread.cpp" />
     <ClCompile Include="public\utils\eqwstring.cpp" />
     <ClCompile Include="public\utils\KeyValues.cpp" />
+    <ClCompile Include="public\utils\perlin.cpp" />
     <ClCompile Include="public\utils\riff.cpp" />
     <ClCompile Include="public\Utils\strtools.cpp" />
     <ClCompile Include="public\Utils\eqtimer.cpp" />

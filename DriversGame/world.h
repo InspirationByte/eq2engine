@@ -236,6 +236,7 @@ protected:
 	ITexture*						m_tempReflTex;		// temporary reflection buffer
 	ITexture*						m_reflDepth;
 
+	ITexture*						m_noiseTex;			// noise for shaders
 
 	IMaterial*						m_blurYMaterial;	// y blur shader
 

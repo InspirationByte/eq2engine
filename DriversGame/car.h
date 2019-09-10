@@ -372,6 +372,7 @@ typedef float (*TORQUECURVEFUNC)( float rpm );
 
 class CLevelRegion;
 
+
 //-----------------------------------------------------------------------
 // The vehicle itself
 //-----------------------------------------------------------------------
@@ -632,12 +633,15 @@ protected:
 	FReal					m_steeringHelper;
 	FReal					m_steering;
 
+
 	//
 	// dynamic config parts
 	//
 
 	CNetworkVar(float,		m_maxSpeed);
 	CNetworkVar(float,		m_torqueScale);
+
+	slipAngleCurveParams_t*	m_slipParams;
 
 	//
 	// visual properties

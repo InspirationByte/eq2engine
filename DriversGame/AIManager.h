@@ -102,7 +102,10 @@ public:
 
 	// ----- TRAFFIC ------
 	void						SetMaxTrafficCars(int count);
-	int							GetMaxTrafficCars() const;		
+	int							GetMaxTrafficCars() const;
+
+	void						SetTrafficSpawnInterval(int count);
+	int							GetTrafficSpawnInterval() const;
 
 	void						SetTrafficCarsEnabled(bool enable);
 	bool						IsTrafficCarsEnabled() const;
@@ -173,6 +176,8 @@ protected:
 	bool						m_enableTrafficCars;
 	int							m_numMaxTrafficCars;
 
+	int							m_trafficSpawnInterval;
+
 	int							m_carEntryIdx;
 	int							m_copsEntryIdx;
 
@@ -218,6 +223,9 @@ OOLUA_PROXY(CAIManager)
 	OOLUA_MFUNC(SetMaxTrafficCars)
 	OOLUA_MFUNC_CONST(GetMaxTrafficCars)
 
+	OOLUA_MFUNC(SetTrafficSpawnInterval)
+	OOLUA_MFUNC_CONST(GetTrafficSpawnInterval)
+	
 	OOLUA_MFUNC(SetTrafficCarsEnabled)
 	OOLUA_MFUNC_CONST(IsTrafficCarsEnabled)
 

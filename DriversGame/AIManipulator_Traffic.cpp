@@ -802,7 +802,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 			if (m_straights[STRAIGHT_CURRENT].direction != selRoad.direction)
 			{
-				float fDecelRate = RemapValClamp(distToStop, 0.0f, AI_ROAD_STOP_DIST, 1.0f, 0.25f);
+				float fDecelRate = RemapValClamp(distToStop, 0.0f, AI_ROAD_STOP_DIST, 0.25f, 1.0f);
 				handling.acceleration -= fDecelRate;
 			}
 		}

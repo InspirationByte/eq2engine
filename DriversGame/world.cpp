@@ -23,6 +23,8 @@
 
 #include "eqParallelJobs.h"
 
+#include "utils/perlin.h"
+
 #ifndef NO_GAME
 #include "sys_host.h"
 #endif // NO_GAME
@@ -150,6 +152,7 @@ CGameWorld::CGameWorld()
 	m_levelname = "unnamed";
 	m_envName = "day_clear";
 
+	m_noiseTex = nullptr;
 	m_lightsTex = nullptr;
 	m_reflectionTex = nullptr;
 	m_tempReflTex = nullptr;
@@ -578,6 +581,37 @@ void CGameWorld::Init()
 	m_shadowRenderer.Init();
 #endif // EDITOR
 
+	if (!m_noiseTex)
+	{
+		const int NOISE_TEXTURE_SIZE = 128;
+
+		CImage img;
+		TVec4D<ubyte>* tex = (TVec4D<ubyte>*)img.Create(FORMAT_RGBA8, NOISE_TEXTURE_SIZE, NOISE_TEXTURE_SIZE, 1, 1);
+
+		if (tex)
+		{
+			for (int y = 0; y < NOISE_TEXTURE_SIZE; y++)
+			{
+				for (int x = 0; x < NOISE_TEXTURE_SIZE; x++)
+				{
+					int pixIdx = y * NOISE_TEXTURE_SIZE + x;
+
+					tex[pixIdx].x = perlin2d(x, y, 0.1, 4) * 255;
+					tex[pixIdx].y = perlin2d(x, y, 0.1, 4) * 255;
+					tex[pixIdx].z = perlin2d(x, y, 0.1, 4) * 255;
+					tex[pixIdx].w = perlin2d(x, y, 0.1, 4) * 255;
+				}
+			}
+
+			SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(TEXFILTER_LINEAR, TEXADDRESS_WRAP, TEXADDRESS_WRAP, TEXADDRESS_WRAP);
+
+			DkList<CImage*> imgTex;
+			imgTex.append(&img);
+			m_noiseTex = g_pShaderAPI->CreateTexture(imgTex, sampler);
+		}
+
+	}
+
 	if(!m_skyModel)
 	{
 		int cacheIdx = g_studioModelCache->PrecacheModel("models/engine/sky.egf");
@@ -950,6 +984,10 @@ void CGameWorld::Cleanup( bool unloadLevel )
 		g_pPFXRenderer->RemoveRenderGroup(g_vehicleShadows);
 
 		g_pPFXRenderer->RemoveRenderGroup(g_jackPed);
+
+		if (m_noiseTex)
+			g_pShaderAPI->FreeTexture(m_noiseTex);
+		m_noiseTex = nullptr;
 
 		if(g_vehicleEffects)
 			delete g_vehicleEffects;
@@ -1524,6 +1562,8 @@ void CGameWorld::OnPreApplyMaterial( IMaterial* pMaterial )
 
 	g_pShaderAPI->SetTexture(m_lightsTex, "vlights", VERTEX_TEXTURE_INDEX(0));
 	g_pShaderAPI->SetTexture(m_lightsTex, "vlights", 7);
+
+	g_pShaderAPI->SetTexture(m_noiseTex, "NoiseTexture", 8);
 
 	g_pShaderAPI->SetShaderConstantVector4D("SunColor", sunColor);
 	g_pShaderAPI->SetShaderConstantVector3D("SunDir", m_info.sunDir);

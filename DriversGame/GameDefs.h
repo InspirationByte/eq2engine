@@ -75,4 +75,19 @@ struct RoadBlockInfo_t
 	bool	runARoadblock;
 };
 
+// curve params
+struct slipAngleCurveParams_t
+{
+	float fInitialGradient;
+	float fEndGradient;
+	float fEndOffset;
+
+	float fSegmentEndA;
+	float fSegmentEndB;
+};
+
+const slipAngleCurveParams_t& GetDefaultSlipCurveParams();
+const slipAngleCurveParams_t& GetAISlipCurveParams();
+
+
 #endif // GAMEDEFS_H

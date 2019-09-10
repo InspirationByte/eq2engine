@@ -112,9 +112,18 @@ const float CAMERA_DISTANCE_BIAS		= 0.25f;
 
 const float ACCELERATION_CONST			= 2.0f;
 const float	ACCELERATION_SOUND_CONST	= 10.0f;
-const float STEERING_HELP_START			= 0.25f;
+
 const float STEERING_CONST				= 1.5f;
-const float STEERING_HELP_CONST			= 0.4f;
+
+const float STEERING_SPEED_REDUCE_FACTOR= 0.7f;
+const float STEERING_SPEED_REDUCE_CURVE = 1.25f;
+const float STEERING_REDUCE_SPEED_MIN	= 80.0f;
+const float STEERING_REDUCE_SPEED_MAX	= 160.0f;
+
+const float EXTEND_STEER_SPEED_MULTIPLIER = 1.75f;
+
+const float STEERING_HELP_START			= 0.25f;
+const float STEERING_HELP_CONST			= 0.45f;
 
 const float ANTIROLL_FACTOR_DEADZONE	= 0.01f;
 const float ANTIROLL_FACTOR_MAX			= 1.0f;
@@ -149,7 +158,7 @@ const float SKIDMARK_MIN_INTERVAL		= 0.25f;
 
 const float GEARBOX_DECEL_SHIFTDOWN_FACTOR	= 0.8f;
 
-const float WHELL_ROLL_RESISTANCE_CONST		= 400.0f;
+const float WHELL_ROLL_RESISTANCE_CONST		= 700.0f;
 
 const float WHEEL_ROLL_RESISTANCE_FREE	= 8.0f;
 const float ENGINE_ROLL_RESISTANCE		= 38.0f;
@@ -497,39 +506,32 @@ static float CalcTorqueCurve( float radsPerSec, int type )
 	return s_torqueFuncs[type]( rpm );
 }
 
-float DBSlipAngleToLateralForce(float fSlipAngle, float fLongitudinalForce, eqPhysSurfParam_t* surfParam)
+float DBSlipAngleToLateralForce(float fSlipAngle, float fLongitudinalForce, eqPhysSurfParam_t* surfParam, const slipAngleCurveParams_t& params)
 {
-	const float fInitialGradient = 22.0f;
-	const float fEndGradient = 1.0f;
-	const float fEndOffset = 3.7f;
+	const float fSegmentEndAOut = params.fInitialGradient * params.fSegmentEndA;
+	const float fSegmentEndBOut = params.fEndGradient * params.fSegmentEndB + params.fEndOffset;
 
-	const float fSegmentEndA = 0.06f;
-	const float fSegmentEndB = 0.2f;
-
-	const float fSegmentEndAOut = fInitialGradient * fSegmentEndA;
-	const float fSegmentEndBOut = fEndGradient * fSegmentEndB + fEndOffset;
-
-	const float fInvSegBLength = 1.0f / (fSegmentEndB - fSegmentEndA);
-	const float fCubicGradA = fInitialGradient * (fSegmentEndB - fSegmentEndA);
-	const float fCubicGradB = fEndGradient * (fSegmentEndB - fSegmentEndA);
+	const float fInvSegBLength = 1.0f / (params.fSegmentEndB - params.fSegmentEndA);
+	const float fCubicGradA = params.fInitialGradient * (params.fSegmentEndB - params.fSegmentEndA);
+	const float fCubicGradB = params.fEndGradient * (params.fSegmentEndB - params.fSegmentEndA);
 
 	float fSign = sign(fSlipAngle);
 	fSlipAngle *= fSign;
 
 	float fResult;
-	if (fSlipAngle < fSegmentEndA)
+	if (fSlipAngle < params.fSegmentEndA)
 	{
-		fResult = fSign * fInitialGradient * fSlipAngle;
+		fResult = fSign * params.fInitialGradient * fSlipAngle;
 	}
-	else if (fSlipAngle < fSegmentEndB)
+	else if (fSlipAngle < params.fSegmentEndB)
 	{
 		fResult = fSign * cerp(
 			fCubicGradB, fCubicGradA, fSegmentEndBOut, fSegmentEndAOut,
-			(fSlipAngle - fSegmentEndA) * fInvSegBLength);
+			(fSlipAngle - params.fSegmentEndA) * fInvSegBLength);
 	}
 	else
 	{
-		float fValue = fEndGradient * fSlipAngle + fEndOffset;
+		float fValue = params.fEndGradient * fSlipAngle + params.fEndOffset;
 		if (fValue < 0.0f)
 			fValue = 0.0f;
 		fResult = fSign * fValue;
@@ -712,6 +714,8 @@ CCar::CCar( vehicleConfig_t* config ) :
 	memset(m_bodyParts, 0,sizeof(m_bodyParts));
 	memset(m_sounds, 0,sizeof(m_sounds));
 	memset(&m_pursuerData, 0, sizeof(m_pursuerData));
+
+	m_slipParams = &(slipAngleCurveParams_t&)GetDefaultSlipCurveParams();
 
 	m_carColor.col1 = m_carColor.col2 = ColorRGBA(0.9, 0.25, 0.25, 1.0);
 
@@ -1383,15 +1387,17 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 	//--------------------------------------------------------
 
-	const float EXTEND_STEER_SPEED_MULTIPLIER = 1.75f;
-
 	{
 		FReal steer_diff = fSteerAngle-m_steering;
 
-		float steerSpeedMultiplier = 1.0f;
+		float speed = GetSpeed();
+
+		float steerSpeedMultiplier = RemapValClamp(STEERING_REDUCE_SPEED_MAX-speed, STEERING_REDUCE_SPEED_MIN, STEERING_REDUCE_SPEED_MAX, STEERING_SPEED_REDUCE_FACTOR, 1.0f);
+
+		steerSpeedMultiplier = powf(steerSpeedMultiplier, STEERING_SPEED_REDUCE_CURVE);
 
 		if (bExtendTurn)
-			steerSpeedMultiplier = EXTEND_STEER_SPEED_MULTIPLIER;
+			steerSpeedMultiplier *= EXTEND_STEER_SPEED_MULTIPLIER;
 
 		if(FPmath::abs(steer_diff) > 0.01f)
 			m_steering += FPmath::sign(steer_diff) * m_conf->physics.steeringSpeed * steerSpeedMultiplier * delta;
@@ -1909,9 +1915,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 					float fSlipAngle = -atan2f( dot(wheelSlipForceDir,  wheelVelAtPoint ), fabs( dot(wheelForward, wheelVelAtPoint ) ) ) ;
 
 					if(isSteerWheel && wheelPitchSpeed > 0.1f)
-						fSlipAngle += m_steering * wheelConf.steerMultipler * 0.35f;
+						fSlipAngle += m_steering * wheelConf.steerMultipler * 0.25f;
 
-					wheelSlipOppositeForce = DBSlipAngleToLateralForce( fSlipAngle, fLongitudinalForce, wheel.m_surfparam);
+					wheelSlipOppositeForce = DBSlipAngleToLateralForce( fSlipAngle, fLongitudinalForce, wheel.m_surfparam, *m_slipParams);
 				}
 				else
 				{
@@ -1921,7 +1927,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 				
 				// contact surface modifier (perpendicularness to ground)
 				{
-					const float SURFACE_GRIP_SCALE = 0.9f;
+					const float SURFACE_GRIP_SCALE = 1.0f;
 					const float SURFACE_GRIP_DEADZONE = 0.1f;
 
 					float surfaceForceMod = dot( wheel_right, wheel.m_collisionInfo.normal );
@@ -1956,12 +1962,12 @@ void CCar::UpdateVehiclePhysics(float delta)
 			//
 			if(m_conf->flags.isCar)
 			{
-				float engineBrakeModifier = 1.0f - clamp((float)fAccel + (float)fabs(fBrake), 0.0f, 1.0f);
+				float engineBrakeModifier = 1.0f - clamp((float)fAccel + (float)fabs(fBrake) + fabs(m_steering), 0.0f, 1.0f);
 
 				if (!isDriveWheel)
 					engineBrakeModifier = 0.0f;
 
-				float velocityDamp = wheelPitchSpeed * engineBrakeModifier + sign(wheelPitchSpeed)*clamp((float)fabs(wheelPitchSpeed), 0.0f, 1.0f);
+				float velocityDamp = wheelPitchSpeed * engineBrakeModifier * 0.25f + sign(wheelPitchSpeed)*clamp((float)fabs(wheelPitchSpeed), 0.0f, 1.0f);
 				wheelTractionForce -= velocityDamp * (1.0f - dampingFactor) * WHELL_ROLL_RESISTANCE_CONST;
 			}
 
@@ -2015,6 +2021,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		}
 		else
 		{
+			// wheel is in air
 			float rollResistance = isDriveWheel ? ENGINE_ROLL_RESISTANCE : WHEEL_ROLL_RESISTANCE_FREE;
 
 			if(isDriveWheel && acceleratorAbs > 0.0f)
