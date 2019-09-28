@@ -198,6 +198,7 @@
     <ClInclude Include="public\utils\KeyValues.h" />
     <ClInclude Include="public\utils\perlin.h" />
     <ClInclude Include="public\utils\riff.h" />
+    <ClInclude Include="public\utils\SmartPtr.h" />
     <ClInclude Include="public\utils\strong_typedef.h" />
     <ClInclude Include="public\Utils\strtools.h" />
     <ClInclude Include="public\Utils\eqtimer.h" />

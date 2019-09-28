@@ -65,7 +65,7 @@ void DrvSynTimerElement::DrawSelf(const IRectangle& rect)
 		style.align = 0;
 		style.scale *= 0.5f;
 
-		Vector2D millisDisplayTextPos = timeDisplayTextPos + Vector2D(floor(minSecWidth*0.5f), 0.0f);
+		Vector2D millisDisplayTextPos = timeDisplayTextPos + Vector2D(floor(minSecWidth*0.5f) + 10, 0.0f);
 
 		font->RenderText(varargs_w(L"'%02d", millisecs), millisDisplayTextPos, style);
 	}

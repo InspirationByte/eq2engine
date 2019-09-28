@@ -552,7 +552,7 @@ void CAITrafficManipulator::HandleJunctionExit(CCar* car)
 		{
 			if (m_straights[STRAIGHT_CURRENT].lane == 1)
 			{
-				carPosOnCell -= GetDirectionVec(m_straights[STRAIGHT_CURRENT].direction) * 2;
+				carPosOnCell -= GetDirectionVec(m_straights[STRAIGHT_CURRENT].direction);// *2;
 				cellsBeforeEnd = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
 			}
 		}
@@ -699,6 +699,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 	// steering target
 	Vector3D steeringTargetPos = lerp(startPos, endPos, targetOfsOnLine);
+	debugoverlay->Sphere3D(steeringTargetPos, 0.5f, ColorRGBA(1, 1, 0, 1), fDt);
 
 	float maxSpeed = m_maxSpeed * trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType] + m_speedModifier;
 
@@ -809,6 +810,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 	}
 
 	// if we're on intersection
+	// yield cars moving from front
 	if (m_changingDirection && !isOnCurrRoad)
 	{
 		DkList<CCar*> forwardCars;

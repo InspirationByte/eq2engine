@@ -172,6 +172,8 @@ bool CState_Title::Update( float fDt )
 
 	materials->Setup2D(screenSize.x, screenSize.y);
 
+	materials->SetAmbientColor(color4_white);
+
 	if(m_titleText)
 		m_titleText->SetTextColor(titleTextCol);
 

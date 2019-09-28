@@ -785,7 +785,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 			// check if Trump need a wall
 			for(int i = 0; i < 4; i++)
 			{
-				int edge_ngb[] = { valid_edge_index(i - 1), valid_edge_index(i + 1) };
+				int edge_ngb[] = { valid_edge_index(i - 1), valid_edge_index(i) };
 
 				hfieldtile_t* ntile = GetTile_CheckFlag(xv[i], yv[i], EHTILE_DETACHED, !isDetached);
 

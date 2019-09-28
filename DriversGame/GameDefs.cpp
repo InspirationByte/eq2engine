@@ -16,7 +16,7 @@ RoadBlockInfo_t::~RoadBlockInfo_t()
 }
 
 static const slipAngleCurveParams_t s_standardSlipAngleParams = {
-	17.0f,	// Initial Gradient
+	18.0f,	// Initial Gradient
 	1.0f,	// End Gradient
 	3.5f,	// End Offset
 	0.05f,	// Segment End A

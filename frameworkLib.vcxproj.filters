@@ -153,6 +153,9 @@
     <ClInclude Include="public\utils\perlin.h">
       <Filter>Source Files\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="public\utils\SmartPtr.h">
+      <Filter>Source Files\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="public\Utils\Tokenizer.cpp">

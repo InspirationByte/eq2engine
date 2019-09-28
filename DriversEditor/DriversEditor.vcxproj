@@ -158,6 +158,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="..\DriversGame\eqPhysics\eqCollision_ObjectGrid.h" />
     <ClInclude Include="..\DriversGame\eqPhysics\eqPhysics.h" />
     <ClInclude Include="..\DriversGame\eqPhysics\eqPhysics_Body.h" />
+    <ClInclude Include="..\DriversGame\GameDefs.h" />
     <ClInclude Include="..\DriversGame\GameObject.h" />
     <ClInclude Include="..\DriversGame\heightfield.h" />
     <ClInclude Include="..\DriversGame\Level.h" />
@@ -282,6 +283,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="..\DriversGame\eqPhysics\eqCollision_ObjectGrid.cpp" />
     <ClCompile Include="..\DriversGame\eqPhysics\eqPhysics.cpp" />
     <ClCompile Include="..\DriversGame\eqPhysics\eqPhysics_Body.cpp" />
+    <ClCompile Include="..\DriversGame\GameDefs.cpp" />
     <ClCompile Include="..\DriversGame\GameObject.cpp" />
     <ClCompile Include="..\DriversGame\heightfield.cpp" />
     <ClCompile Include="..\DriversGame\level.cpp" />

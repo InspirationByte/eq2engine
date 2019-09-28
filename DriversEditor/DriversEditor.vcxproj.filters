@@ -424,6 +424,9 @@
     <ClInclude Include="..\DriversGame\ControllableObject.h">
       <Filter>Source Files\Game\objects</Filter>
     </ClInclude>
+    <ClInclude Include="..\DriversGame\GameDefs.h">
+      <Filter>Source Files\Game\objects</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Notes.txt" />
@@ -643,6 +646,9 @@
       <Filter>Source Files\MatSystem\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="..\DriversGame\ControllableObject.cpp">
+      <Filter>Source Files\Game\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\DriversGame\GameDefs.cpp">
       <Filter>Source Files\Game\objects</Filter>
     </ClCompile>
   </ItemGroup>

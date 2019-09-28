@@ -124,7 +124,9 @@ bool CState_MainMenu::Update( float fDt )
 	m_fade = clamp(m_fade, 0.0f, 1.0f);
 	m_textFade = clamp(m_textFade, 0.0f, 1.0f);
 
-	materials->Setup2D(screenSize.x,screenSize.y);;
+	materials->Setup2D(screenSize.x,screenSize.y);
+
+	materials->SetAmbientColor(color4_white);
 
 	IVector2D halfScreen(screenSize.x/2, screenSize.y/2);
 
