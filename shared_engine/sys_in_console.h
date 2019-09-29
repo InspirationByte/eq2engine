@@ -67,10 +67,14 @@ public:
 
 	void			AddAutoCompletion(ConAutoCompletion_t* item);
 
+
+
 protected:
 
+	void			DrawListBox(const IVector2D& pos, int width, DkList<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection);
+
 	void			DrawFastFind(float x, float y, float w);
-	int				DrawAutoCompletion(float x, float y, float w);
+	void			DrawAutoCompletion(float x, float y, float w);
 
 	void			consoleInsText(char* text,int pos);
 	void			consoleRemTextInRange(int start,int len);

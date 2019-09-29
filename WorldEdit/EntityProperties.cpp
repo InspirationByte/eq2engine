@@ -229,21 +229,23 @@ void CEntityPropertiesPanel::OnSelectParameter(wxListEvent &event)
 
 	if(index != -1)
 	{
-		if(m_CurrentProps[index].value_desc)
+		entProp_t& prop = m_CurrentProps[index];
+		edef_param_t* value_desc = prop.value_desc;
+		
+		if(value_desc)
 		{
-			if(m_CurrentProps[index].value_desc->type == PARAM_TYPE_CHOICE)
+			if(value_desc->type == PARAM_TYPE_CHOICE)
 			{
-				for(int i = 0; i < m_CurrentProps[index].value_desc->choice.choice_num; i++)
-					m_pValueText->Append( m_CurrentProps[index].value_desc->choice.choice_list[i].desc );
+				for(int i = 0; i < value_desc->choice.choice_num; i++)
+					m_pValueText->Append( value_desc->choice.choice_list[i].desc.c_str() );
 			}
-
-			if(m_CurrentProps[index].value_desc->type == PARAM_TYPE_BOOL)
+			else if(value_desc->type == PARAM_TYPE_BOOL)
 			{
 				m_pValueText->Append("0");
 				m_pValueText->Append("1");
 			}
 
-			m_currentParamType = m_CurrentProps[index].value_desc->type;
+			m_currentParamType = value_desc->type;
 			m_nSelectedProp = index;
 		}
 		else
@@ -255,24 +257,19 @@ void CEntityPropertiesPanel::OnSelectParameter(wxListEvent &event)
 			m_pBrowseModelButton->Hide();
 
 		if(m_currentParamType == PARAM_TYPE_COLOR3 || m_currentParamType == PARAM_TYPE_COLOR4)
-		{
 			m_pPickColorButton->Show();
-		}
 		else
 			m_pPickColorButton->Hide();
 
-		m_pKeyText->SetValue(wxString(m_CurrentProps[index].key.GetData()));
+		m_pKeyText->SetValue(prop.key.c_str());
 
-		if(m_CurrentProps[index].value.Length() > 0 && m_CurrentProps[index].value_desc && m_CurrentProps[index].value_desc->type == PARAM_TYPE_CHOICE)
+		if(prop.value.Length() > 0 && value_desc && value_desc->type == PARAM_TYPE_CHOICE)
 		{
-			int idx = atoi(m_CurrentProps[index].value.GetData());
-
-			m_pValueText->SetValue(wxString(m_CurrentProps[index].value_desc->choice.choice_list[idx].desc));
+			int idx = atoi(prop.value.GetData());
+			m_pValueText->SetValue(value_desc->choice.choice_list[idx].desc.c_str());
 		}
 		else
-			m_pValueText->SetValue(wxString(m_CurrentProps[index].value.GetData()));
-
-		
+			m_pValueText->SetValue(prop.value.GetData());
 	}
 	else
 	{
@@ -301,11 +298,18 @@ void CEntityPropertiesPanel::OnValueSet(wxCommandEvent &event)
 	((CSelectionBaseTool*)g_pSelectionTools[0])->BackupSelectionForUndo();
 
 	kvkeybase_t pair;
-	strcpy(pair.name, m_pKeyText->GetValue().c_str());
+	pair.SetName(m_pKeyText->GetValue().c_str());
 	pair.SetValueAt(m_pValueText->GetValue().c_str(), 0);
 
-	if(m_currentParamType == PARAM_TYPE_CHOICE && m_pValueText->GetSelection() != -1)
-		pair.SetValueAt(m_CurrentProps[m_nSelectedProp].value_desc->choice.choice_list[ m_pValueText->GetSelection() ].value, 0);
+	if (m_currentParamType == PARAM_TYPE_CHOICE && m_pValueText->GetSelection() != -1)
+	{
+		edef_param_t* value_desc = m_CurrentProps[m_nSelectedProp].value_desc;
+		int selValueIdx = m_pValueText->GetSelection();
+
+		if(selValueIdx != -1)
+			pair.SetValueAt(value_desc->choice.choice_list[selValueIdx].value.c_str(), 0);
+	}
+
 
 	wxString classText(m_pClassList->GetValue());
 
@@ -324,19 +328,21 @@ void CEntityPropertiesPanel::OnOpenModel(wxCommandEvent &event)
 		wxColourDialog* pDialog = new wxColourDialog(this);
 		pDialog->GetColourData().SetChooseFull(true);
 
-		if(m_CurrentProps[m_nSelectedProp].value.Length())
+		entProp_t& currentProp = m_CurrentProps[m_nSelectedProp];
+
+		if(currentProp.value.Length())
 		{
 			if(m_currentParamType == PARAM_TYPE_COLOR4)
 			{
 				ColorRGBA gColor;
-				UTIL_StringToColor4( m_CurrentProps[m_nSelectedProp].value.GetData() );
+				UTIL_StringToColor4(currentProp.value.c_str() );
 
 				pDialog->GetColourData().SetColour(wxColour(gColor.x*255.0f,gColor.y*255.0f,gColor.z*255.0f,gColor.w*255.0f));
 			}
 			else
 			{
 				ColorRGB gColor;
-				UTIL_StringToColor3( m_CurrentProps[m_nSelectedProp].value.GetData() );
+				UTIL_StringToColor3(currentProp.value.c_str() );
 
 				pDialog->GetColourData().SetColour(wxColour(gColor.x*255.0f,gColor.y*255.0f,gColor.z*255.0f));
 			}
@@ -345,25 +351,25 @@ void CEntityPropertiesPanel::OnOpenModel(wxCommandEvent &event)
 		if( pDialog->ShowModal() != 0x000013EC ) // 0x000013EC, but why?
 			return;
 	
-		wxColourData color = pDialog->GetColourData();
-
-		ColorRGBA colorval;
-		colorval.x = (float)color.GetColour().Red() / 255.0f;
-		colorval.y = (float)color.GetColour().Green() / 255.0f;
-		colorval.z = (float)color.GetColour().Blue() / 255.0f;
-		colorval.w = (float)color.GetColour().Alpha() / 255.0f;
+		wxColourData& colorData = pDialog->GetColourData();
+		wxColour& col = colorData.GetColour();
 
 		delete pDialog;
+
+		ColorRGBA colorval(col.Red(), col.Green(), col.Blue(), col.Alpha());
+		colorval *= (1.0f / 255.0f);
+
+		
 
 		((CSelectionBaseTool*)g_pSelectionTools[0])->BackupSelectionForUndo();
 
 		kvkeybase_t pair;
-		strcpy(pair.name, m_pKeyText->GetValue().c_str());
+		pair.SetName(m_pKeyText->GetValue().c_str());
 
 		if(m_currentParamType == PARAM_TYPE_COLOR4)
-			pair.SetValue(varargs("%g %g %g %g", colorval.x,colorval.y,colorval.z,colorval.w));
+			pair.SetValueAt(colorval, 0);
 		else
-			pair.SetValue(varargs("%g %g %g", colorval.x,colorval.y,colorval.z));
+			pair.SetValueAt(colorval.xyz(), 0);
 
 		m_pValueText->SetValue(wxString(KV_GetValueString(&pair)));
 
@@ -398,7 +404,7 @@ void CEntityPropertiesPanel::OnOpenModel(wxCommandEvent &event)
 		FixSlashes((char*)path.GetData());
 		char* sub = strstr((char*)path.GetData(), varargs("%s/", g_fileSystem->GetCurrentGameDirectory()));
 
-		char* pszPath = (char*)path.GetData();
+		char* pszPath = (char*)path.c_str();
 	
 		int diff = (sub - pszPath);
 
@@ -410,10 +416,10 @@ void CEntityPropertiesPanel::OnOpenModel(wxCommandEvent &event)
 		((CSelectionBaseTool*)g_pSelectionTools[0])->BackupSelectionForUndo();
 
 		kvkeybase_t pair;
-		strcpy(pair.name, m_pKeyText->GetValue().c_str());
+		pair.SetName(m_pKeyText->GetValue().c_str());
 		pair.SetValueAt(pszPath, 0);
 
-		m_pValueText->SetValue(wxString(pszPath));
+		m_pValueText->SetValue(pszPath);
 
 		wxString classText(m_pClassList->GetValue());
 
@@ -476,7 +482,7 @@ void AddEntPropToList(entProp_t &prop, DkList<entProp_t> &list)
 {
 	for(int i = 0; i < list.numElem(); i++)
 	{
-		if(!stricmp(list[i].key.GetData(), prop.key.GetData()))
+		if(!list[i].key.CompareCaseIns(prop.key.GetData()))
 		{
 			if(prop.value.Length() == 0)
 				return;
@@ -488,7 +494,7 @@ void AddEntPropToList(entProp_t &prop, DkList<entProp_t> &list)
 			}
 			else
 			{
-				int cm = stricmp(list[i].value.GetData(), prop.value.GetData());
+				int cm = list[i].value.CompareCaseIns(prop.value.GetData());
 
 				if(cm != 0)
 				{
@@ -512,7 +518,7 @@ bool CollectEntityParameters(CBaseEditableObject* pObject, void* userdata)
 	// copy name
 	if(pData->name.Length() > 0)
 	{
-		if(stricmp(pData->name.GetData(), pObject->GetName()))
+		if(pData->name.CompareCaseIns(pObject->GetName()))
 			pData->name_differs = true;
 	}
 
@@ -533,7 +539,7 @@ bool CollectEntityParameters(CBaseEditableObject* pObject, void* userdata)
 	// copy class name
 	if(pData->classname.Length() > 0)
 	{
-		if(stricmp(pData->classname.GetData(), pEntity->GetClassname()))
+		if(pData->classname.CompareCaseIns(pEntity->GetClassname()))
 			pData->class_differs = true;
 	}
 
@@ -615,7 +621,7 @@ bool TargetInputList(CBaseEditableObject* pObject, void* userdata)
 			// don't add same elements
 			for(int j = 0; j < pData->inputs.numElem(); j++)
 			{
-				if(!stricmp(inputs[i]->name, pData->inputs[j].name))
+				if(!inputs[i]->name.CompareCaseIns(pData->inputs[j].name))
 					bAdd = false;
 			}
 
@@ -655,7 +661,7 @@ bool CollectEntityInputOutputData(CBaseEditableObject* pObject, void* userdata)
 	return false;
 }
 
-void AddUniqueToStringList(char* pszName, DkList<char*> &list)
+void AddUniqueToStringList(const char* pszName, DkList<const char*> &list)
 {
 	for(int i = 0; i < list.numElem(); i++)
 	{
@@ -685,13 +691,13 @@ void CEntityPropertiesPanel::OnSetTargetEnt(wxCommandEvent &event)
 	for(int i = 0; i < g_pLevel->GetEditableCount(); i++)
 		TargetInputList(g_pLevel->GetEditable(i), &data);
 
-	DkList<char*> list;
+	DkList<const char*> list;
 
 	for(int i = 0; i < data.inputs.numElem(); i++)
-		AddUniqueToStringList(data.inputs[i].name, list);
+		AddUniqueToStringList(data.inputs[i].name.c_str(), list);
 
 	for(int i = 0; i < list.numElem(); i++)
-		m_pTargetInput->AppendString(wxString(list[i]));
+		m_pTargetInput->AppendString(list[i]);
 }
 
 bool AddOutputToSelection(CBaseEditableObject* pObject, void* userdata)
@@ -775,12 +781,14 @@ void CEntityPropertiesPanel::OnOutputButtons(wxCommandEvent &event)
 			if(itemIndex < 0)
 				return;
 
-			m_CurrentOutputs[itemIndex]->fDelay = atof(m_pDelay->GetValue().c_str());
-			m_CurrentOutputs[itemIndex]->nFireTimes = atoi(m_pFireTimes->GetValue().c_str());
-			m_CurrentOutputs[itemIndex]->szOutputName = m_pOutput->GetValue().c_str();
-			m_CurrentOutputs[itemIndex]->szOutputTarget = m_pTargetEntity->GetValue().c_str();
-			m_CurrentOutputs[itemIndex]->szTargetInput = m_pTargetInput->GetValue().c_str();
-			m_CurrentOutputs[itemIndex]->szOutputValue = m_pOutValue->GetValue().c_str();
+			OutputData_t* output = m_CurrentOutputs[itemIndex];
+
+			output->fDelay = atof(m_pDelay->GetValue().c_str());
+			output->nFireTimes = atoi(m_pFireTimes->GetValue().c_str());
+			output->szOutputName = m_pOutput->GetValue().c_str();
+			output->szOutputTarget = m_pTargetEntity->GetValue().c_str();
+			output->szTargetInput = m_pTargetInput->GetValue().c_str();
+			output->szOutputValue = m_pOutValue->GetValue().c_str();
 			break;
 		}
 		default:
@@ -810,11 +818,16 @@ void CEntityPropertiesPanel::OnOutputButtons(wxCommandEvent &event)
 
 	m_pOutputList->SetItemState(itemIndex, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
 
-	m_pOutput->SetValue(wxString(m_CurrentOutputs[itemIndex]->szOutputName.GetData()));
-	m_pTargetEntity->SetValue(wxString(m_CurrentOutputs[itemIndex]->szOutputTarget.GetData()));
-	m_pDelay->SetValue(wxString(varargs("%f", m_CurrentOutputs[itemIndex]->fDelay)));
-	m_pFireTimes->SetValue(wxString(varargs("%d", m_CurrentOutputs[itemIndex]->nFireTimes)));
-	m_pOutValue->SetValue(wxString(m_CurrentOutputs[itemIndex]->szOutputValue.GetData()));
+	if (itemIndex != -1)
+	{
+		OutputData_t* output = m_CurrentOutputs[itemIndex];
+
+		m_pOutput->SetValue(output->szOutputName.c_str());
+		m_pTargetEntity->SetValue(output->szOutputTarget.c_str());
+		m_pDelay->SetValue(varargs("%f", output->fDelay));
+		m_pFireTimes->SetValue(varargs("%d", output->nFireTimes));
+		m_pOutValue->SetValue(output->szOutputValue.c_str());
+	}
 
 	//event.SetInt(1);
 
@@ -826,6 +839,7 @@ void CEntityPropertiesPanel::OnOutputButtons(wxCommandEvent &event)
 void CEntityPropertiesPanel::OnSelectOutput(wxListEvent &event)
 {
 	int id = event.GetIndex();
+	OutputData_t* output = m_CurrentOutputs[id];
 
 	//m_pOutput->Clear();
 	m_pTargetInput->Clear();
@@ -833,11 +847,11 @@ void CEntityPropertiesPanel::OnSelectOutput(wxListEvent &event)
 	m_pFireTimes->SetValue(wxString("-1"));
 	//m_pTargetEntity->Clear();
 
-	m_pOutput->ChangeValue(wxString(m_CurrentOutputs[id]->szOutputName.GetData()));
-	m_pTargetEntity->ChangeValue(wxString(m_CurrentOutputs[id]->szOutputTarget.GetData()));
-	m_pDelay->ChangeValue(wxString(varargs("%f", m_CurrentOutputs[id]->fDelay)));
-	m_pFireTimes->ChangeValue(wxString(varargs("%d", m_CurrentOutputs[id]->nFireTimes)));
-	m_pOutValue->ChangeValue(wxString(m_CurrentOutputs[id]->szOutputValue.GetData()));
+	m_pOutput->ChangeValue(output->szOutputName.c_str());
+	m_pTargetEntity->ChangeValue(output->szOutputTarget.c_str());
+	m_pDelay->ChangeValue(varargs("%f", output->fDelay));
+	m_pFireTimes->ChangeValue(varargs("%d", output->nFireTimes));
+	m_pOutValue->ChangeValue(output->szOutputValue.c_str());
 
 	OnSetTargetEnt(event);
 
@@ -893,35 +907,36 @@ void CEntityPropertiesPanel::UpdateSelection()
 
 	for(int i = 0; i < entData.params.numElem(); i++)
 	{
-		m_CurrentProps.append(entData.params[i]);
+		entProp_t& prop = entData.params[i];
+		m_CurrentProps.append(prop);
 
 		long item_id = -1;
 
-		if(entData.params[i].value_desc && entData.params[i].value_desc->description.GetData()[0] != '#')
-			item_id = m_pKeyList->InsertItem(m_pKeyList->GetItemCount(), wxString(entData.params[i].value_desc->description.GetData()));
+		if(prop.value_desc && prop.value_desc->description.c_str()[0] != '#')
+			item_id = m_pKeyList->InsertItem(m_pKeyList->GetItemCount(), wxString(prop.value_desc->description.GetData()));
 		else
-			item_id = m_pKeyList->InsertItem(m_pKeyList->GetItemCount(), wxString(entData.params[i].key.GetData()));
+			item_id = m_pKeyList->InsertItem(m_pKeyList->GetItemCount(), wxString(prop.key.GetData()));
 
-		if(entData.params[i].value.Length() > 0 && entData.params[i].value_desc && entData.params[i].value_desc->type == PARAM_TYPE_CHOICE)
+		if(prop.value.Length() > 0 && prop.value_desc && prop.value_desc->type == PARAM_TYPE_CHOICE)
 		{
-			int idx = atoi(entData.params[i].value.GetData());
+			int idx = atoi(prop.value.GetData());
 
-			m_pKeyList->SetItem(item_id, 1, wxString(entData.params[i].value_desc->choice.choice_list[idx].desc));
+			m_pKeyList->SetItem(item_id, 1, prop.value_desc->choice.choice_list[idx].desc.c_str());
 		}
 		else
-			m_pKeyList->SetItem(item_id, 1, wxString(entData.params[i].value.GetData()));
+			m_pKeyList->SetItem(item_id, 1, prop.value.c_str());
 	}
 
 	// 
 	m_pClassList->SetValue("");
 
 	if(!entData.class_differs)
-		m_pClassList->SetValue(wxString(entData.classname.GetData()));
+		m_pClassList->SetValue(entData.classname.c_str());
 	else
-		m_pClassList->SetValue("<different>");
+		m_pClassList->SetValue("<differs>");
 
 	// Update name list
-	DkList<char*> name_strings;
+	DkList<const char*> name_strings;
 
 	for(int i = 0; i < g_pLevel->GetEditableCount(); i++)
 	{
@@ -939,7 +954,7 @@ void CEntityPropertiesPanel::UpdateSelection()
 	if(!entData.name_differs)
 		m_pNameList->SetValue(wxString(entData.name.GetData()));
 	else
-		m_pNameList->SetValue("<different>");
+		m_pNameList->SetValue("<differs>");
 
 	// update output list
 
@@ -954,7 +969,7 @@ void CEntityPropertiesPanel::UpdateSelection()
 
 	m_pTargetEntity->Clear();
 
-	DkList<char*> target_strings;
+	DkList<const char*> target_strings;
 
 	for(int i = 0; i < g_pLevel->GetEditableCount(); i++)
 	{
@@ -982,7 +997,7 @@ void CEntityPropertiesPanel::UpdateSelection()
 		target_strings.clear();
 
 		for(int i = 0; i < outData.outputs.numElem(); i++)
-			AddUniqueToStringList(outData.outputs[i].name, target_strings);
+			AddUniqueToStringList(outData.outputs[i].name.c_str(), target_strings);
 
 		for(int i = 0; i < target_strings.numElem(); i++)
 			m_pOutput->AppendString(wxString(target_strings[i]));
@@ -991,17 +1006,19 @@ void CEntityPropertiesPanel::UpdateSelection()
 
 		for(int i = 0; i < outData.ent_output_data.numElem(); i++)
 		{
-			long item_id = m_pOutputList->InsertItem(m_pOutputList->GetItemCount(), wxString(outData.ent_output_data[i]->szOutputTarget.GetData()));
+			OutputData_t* output = outData.ent_output_data[i];
+
+			long item_id = m_pOutputList->InsertItem(m_pOutputList->GetItemCount(), output->szOutputTarget.c_str());
 
 			// target, output, input, delay, fires, value
 
 			m_pOutputList->SetItemData(item_id, i);
 
-			m_pOutputList->SetItem(item_id, 1, wxString(outData.ent_output_data[i]->szOutputName.GetData()));
-			m_pOutputList->SetItem(item_id, 2, wxString(outData.ent_output_data[i]->szTargetInput.GetData()));
-			m_pOutputList->SetItem(item_id, 3, wxString(varargs("%f", outData.ent_output_data[i]->fDelay)));
-			m_pOutputList->SetItem(item_id, 4, wxString(varargs("%d", outData.ent_output_data[i]->nFireTimes)));
-			m_pOutputList->SetItem(item_id, 5, wxString(outData.ent_output_data[i]->szOutputValue.GetData()));
+			m_pOutputList->SetItem(item_id, 1, output->szOutputName.c_str());
+			m_pOutputList->SetItem(item_id, 2, output->szTargetInput.c_str());
+			m_pOutputList->SetItem(item_id, 3, varargs("%f", output->fDelay));
+			m_pOutputList->SetItem(item_id, 4, varargs("%d", output->nFireTimes));
+			m_pOutputList->SetItem(item_id, 5, output->szOutputValue.c_str());
 		}
 	}
 }
@@ -1011,7 +1028,7 @@ void CEntityPropertiesPanel::OnClose(wxCloseEvent &event)
 	Hide();
 }
 
-bool ChangeLayersOfEdiables(CBaseEditableObject* pObject, void* userdata)
+bool ChangeLayersOfEdiatbles(CBaseEditableObject* pObject, void* userdata)
 {
 	int nLayerID = *(int*)userdata;
 
@@ -1028,5 +1045,5 @@ void CEntityPropertiesPanel::OnSetLayer(wxCommandEvent &event)
 		return;
 
 	// collect datas from them
-	((CSelectionBaseTool*)g_pSelectionTools[0])->DoForEachSelectedObjects(ChangeLayersOfEdiables, &nLayerID);
+	((CSelectionBaseTool*)g_pSelectionTools[0])->DoForEachSelectedObjects(ChangeLayersOfEdiatbles, &nLayerID);
 }

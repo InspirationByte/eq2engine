@@ -16,10 +16,8 @@
 #include "Shiny.h"
 
 #ifndef NO_ENGINE
-#include "BaseEngineHeader.h"
-#include "IEngineGame.h"
-#include "EngineEntities.h"
-#include "IDkPhysics.h"
+#include "IEngineHost.h"
+#include "GlobalVarsBase.h"
 #endif
 
 static CSoundEmitterSystem s_ses;
@@ -496,10 +494,6 @@ soundScriptDesc_t* CSoundEmitterSystem::FindSound(const char* soundName) const
 
 	return NULL;
 }
-
-#ifndef NO_ENGINE
-extern CWorldInfo* g_pWorldInfo;
-#endif
 
 ConVar snd_roloff("snd_roloff", "2.0");
 

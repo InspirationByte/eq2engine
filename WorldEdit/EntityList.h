@@ -30,7 +30,7 @@ protected:
 	wxTextCtrl*					m_pSearchKey;
 	wxTextCtrl*					m_pSearchValue;
 
-	DkList<CBaseEditableObject*> m_listObjects;
+	//DkList<CBaseEditableObject*> m_listObjects;
 };
 
 class CGroupList : public wxDialog
@@ -48,7 +48,7 @@ protected:
 
 	wxListBox*					m_pGroupList;
 
-	DkList<CBaseEditableObject*> m_listObjects;
+	//DkList<CBaseEditableObject*> m_listObjects;
 };
 
 #endif // OBJECTLIST_H

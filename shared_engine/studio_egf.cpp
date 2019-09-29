@@ -417,7 +417,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 
 	studiohdr_t* pHdr = m_hwdata->studio;
 
-	auto lodModels = new studioHwData_t::modelRef_t[pHdr->numModels];
+	auto lodModels = new studioModelRef_t[pHdr->numModels];
 	m_hwdata->modelrefs = lodModels;
 	
 	// TODO: this should be optimized by the compiler
@@ -459,7 +459,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		for(int i = 0; i < pHdr->numModels; i++)
 		{
 			studiomodeldesc_t* pModelDesc = pHdr->pModelDesc(i);
-			auto groupDescs = new studioHwData_t::modelRef_t::groupDesc_t[pModelDesc->numGroups];
+			auto groupDescs = new studioModelRefGroupDesc_t[pModelDesc->numGroups];
 			lodModels[i].groupDescs = groupDescs;
 
 			for(int j = 0; j < pModelDesc->numGroups; j++)
@@ -621,7 +621,7 @@ void CEngineStudioEGF::LoadSetupBones()
 	studiohdr_t* pHdr = m_hwdata->studio;
 
 	// Initialize HW data joints
-	m_hwdata->joints = new studioHwData_t::joint_t[pHdr->numBones];
+	m_hwdata->joints = new studioJoint_t[pHdr->numBones];
 
 	// parse bones
 	for (int i = 0; i < pHdr->numBones; i++)
@@ -653,7 +653,7 @@ void CEngineStudioEGF::LoadSetupBones()
 	// setup each bone's transformation
 	for (int i = 0; i < m_hwdata->studio->numBones; i++)
 	{
-		studioHwData_t::joint_t* bone = &m_hwdata->joints[i];
+		studioJoint_t* bone = &m_hwdata->joints[i];
 
 		// setup transformation
 		bone->localTrans = identity4();

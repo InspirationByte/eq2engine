@@ -64,12 +64,14 @@ void CSoundList::UpdateList()
 	// fill the list
 	for(int i = 0; i < g_sounds->m_allSounds.numElem(); i++)
 	{
+		soundScriptDesc_t* scriptSound = g_sounds->m_allSounds[i];
+
 		if(search_str.Length() == 0)
 		{
-			m_pSndList->AppendString( g_sounds->m_allSounds[i]->pszName );
+			m_pSndList->AppendString(scriptSound->pszName );
 		}
-		else if(strstr(g_sounds->m_allSounds[i]->pszName, search_str.GetData()))
-			m_pSndList->AppendString( g_sounds->m_allSounds[i]->pszName );
+		else if(strstr(scriptSound->pszName, search_str.c_str()))
+			m_pSndList->AppendString(scriptSound->pszName );
 	}
 }
 
@@ -91,7 +93,7 @@ void CSoundList::OnDoubleClickList(wxCommandEvent& event)
 	{
 		g_sounds->StopAllSounds();
 
-		EqString str( m_pSndList->GetString(m_pSndList->GetSelection()).c_str().AsChar() );
+		EqString str(m_pSndList->GetString(m_pSndList->GetSelection()).c_str().AsChar());
 
 		EmitSound_t emit;
 		emit.name = (char*)str.GetData();

@@ -87,9 +87,9 @@ public:
 	DkList<edkeyvalue_t>*		GetPairs();
 	DkList<OutputData_t>*		GetOutputs();
 
-	void						SetKey(char* pszKey, char* pszValue, bool updateParam = true);
-	void						RemoveKey(char* pszKey);
-	char*						GetKeyValue(char* pszKey);
+	void						SetKey(const char* pszKey, const char* pszValue, bool updateParam = true);
+	void						RemoveKey(const char* pszKey);
+	char*						GetKeyValue(const char* pszKey);
 
 	IEntityVariable*			GetTypedVariableByKeyName(char* pszKey);
 	IEntityVariable*			GetTypedVariable(int index)		{ return m_EntTypedVars[index]; }

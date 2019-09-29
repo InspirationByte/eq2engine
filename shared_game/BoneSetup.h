@@ -13,9 +13,9 @@
 #include "model.h"
 #include "anim_activity.h"
 
-#if !defined(NO_GAME) && !defined(NOENGINE)
+#if !defined(NO_GAME) && !defined(NO_ENGINE)
 #include "DataMap.h"
-#endif // #if !EDITOR && !NOENGINE
+#endif // #if !EDITOR && !NO_ENGINE
 
 struct gikchain_t;
 
@@ -65,7 +65,7 @@ struct gsequence_t
 	sequenceevent_t*	events[MAX_EVENTS_PER_SEQ];
 	gsequence_t*		blends[MAX_SEQUENCE_BLENDS];
 
-	studioHwData_t::motionData_t::animation_t*	animations[MAX_BLEND_WIDTH];
+	studioAnimation_t*	animations[MAX_BLEND_WIDTH];
 };
 
 // sequence timer with events

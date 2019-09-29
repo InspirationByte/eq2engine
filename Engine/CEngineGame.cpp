@@ -715,7 +715,7 @@ bool CEngineGame::EngineRunFrame( float dTime )
 	return true;
 }
 
-void fnstart_world_variants(DkList<EqString>& list, const char* query)
+void fnstart_world_variants(const ConCommandBase* base, DkList<EqString>& list, const char* query)
 {
 	DKFINDDATA* findData = nullptr;
 	EqString fileName = (char*)g_fileSystem->FindFirst("worlds/*", &findData, SP_MOD);

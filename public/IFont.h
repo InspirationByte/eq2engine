@@ -107,16 +107,35 @@ struct eqFontStyleParam_t
 		align = 0; // which is (TEXT_ALIGN_LEFT | TEXT_ALIGN_TOP)
 		styleFlag = 0;
 
-		textColor = ColorRGBA(1.0f);
-
 		shadowOffset = 1.0f;
-		shadowColor = ColorRGB(0.0f);
-		shadowAlpha = 0.7f;
 		shadowWidth = 0.01f;
 
-		scale		= 1.0f;
-
 		layoutBuilder = NULL;
+
+		shadowColor = ColorRGB(0.0f);
+		shadowAlpha = 0.7f;
+
+		textColor = ColorRGBA(1.0f);
+
+		scale		= 1.0f;
+	}
+
+	eqFontStyleParam_t(const eqFontStyleParam_t& derived)
+	{
+		align = derived.align;
+		styleFlag = derived.styleFlag;
+
+		shadowOffset = derived.shadowOffset;
+		shadowWidth = derived.shadowWidth;
+
+		layoutBuilder = derived.layoutBuilder;
+
+		shadowColor = derived.shadowColor;
+		shadowAlpha = derived.shadowAlpha;
+
+		textColor = derived.textColor;
+
+		scale = derived.scale;
 	}
 
 	int					align;			// ETextAlignment

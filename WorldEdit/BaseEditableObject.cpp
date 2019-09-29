@@ -132,7 +132,7 @@ void CBaseEditableObject::SetName(const char* pszName)
 	m_szName = pszName;
 }
 
-const char* CBaseEditableObject::GetName()
+const char* CBaseEditableObject::GetName() const
 {
 	return m_szName.GetData();
 }

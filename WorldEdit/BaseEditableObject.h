@@ -242,7 +242,7 @@ public:
 	virtual void					EndModify() {}			// ends modification
 
 	virtual void					SetName(const char* pszName);
-	virtual const char*				GetName();
+	virtual const char*				GetName() const;
 
 	// retruns 1 or 2 rooms. 0 is outside
 	int								GetRoomIndex(int *rooms) {return 0;}

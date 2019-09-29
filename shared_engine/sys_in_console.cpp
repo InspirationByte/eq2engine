@@ -81,6 +81,7 @@ CEqConsoleInput* g_consoleInput = &s_SysConsole;
 static ColorRGBA s_conBackColor = ColorRGBA(0.15f, 0.25f, 0.25f, 0.85f);
 static ColorRGBA s_conInputBackColor = ColorRGBA(0.15f, 0.25f, 0.25f, 0.85f);
 static ColorRGBA s_conBorderColor = ColorRGBA(0.05f, 0.05f, 0.1f, 1.0f);
+static ColorRGBA s_conListItemSelectedBackground = ColorRGBA(1.0f, 1.0f, 1.0f, 0.8f);
 
 static ColorRGBA s_conBackFastFind = ColorRGBA(s_conBackColor.xyz(), 0.8f);
 
@@ -88,6 +89,9 @@ static ColorRGBA s_conTextColor = ColorRGBA(0.7f,0.7f,0.8f,1);
 static ColorRGBA s_conSelectedTextColor = ColorRGBA(0.2f,0.2f,0.2f,1);
 static ColorRGBA s_conInputTextColor = ColorRGBA(0.7f,0.7f,0.6f,1);
 static ColorRGBA s_conHelpTextColor = ColorRGBA(0.7f,0.7f,0.8f,1);
+
+static ColorRGBA s_conListItemColor = ColorRGBA(0.7f, 0.7f, 0, 1);
+static ColorRGBA s_conListItemSelectedColor = Vector4D(0.1f, 0.1f, 0, 1);
 
 static ColorRGBA s_spewColors[] =
 {
@@ -313,6 +317,83 @@ void DrawAlphaFilledRectangle(const Rectangle_t &rect, const ColorRGBA &color1, 
 	meshBuilder.End();
 }
 
+void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, DkList<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection)
+{
+	BlendStateParam_t blending;
+	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
+	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+
+	eqFontStyleParam_t tooltipStyle;
+	tooltipStyle.textColor = s_conHelpTextColor;
+	tooltipStyle.styleFlag = TEXT_STYLE_FROM_CAP;
+
+	eqFontStyleParam_t itemStyle(tooltipStyle);
+	itemStyle.textColor = s_conListItemColor;
+
+	eqFontStyleParam_t selectedItemStyle(itemStyle);
+	selectedItemStyle.textColor = s_conListItemSelectedColor;
+
+	const int linesToDraw = min(items.numElem() - startItem, maxItems);	// +1 because tooltip
+
+	if (width == 0)
+	{
+		width = tooltipText ? m_font->GetStringWidth(tooltipText, tooltipStyle) : 35;
+
+		for (int cnt = 0; cnt < linesToDraw; cnt++)
+		{
+			int itemIdx = cnt + startItem;
+			width = max(width, (int)m_font->GetStringWidth(items[itemIdx].c_str(), itemStyle));
+		}
+
+		width += m_font->GetStringWidth(" ", itemStyle);
+	}
+
+	const int tooltipLines = tooltipText ? 1 : 0;
+
+	const int topDotsLines = startItem > 0;
+	const int bottomDotsLines = (maxItems+startItem) < items.numElem();
+
+	const int boxLines = linesToDraw + tooltipLines + topDotsLines + bottomDotsLines;
+
+	const float tooltipLineHeight = m_font->GetLineHeight(tooltipStyle);
+	const float itemLineHeight = m_font->GetLineHeight(itemStyle);
+
+	Rectangle_t rect((float)pos.x, (float)pos.y, (float)(pos.x+width), (float)pos.y + boxLines * tooltipLineHeight);
+	DrawAlphaFilledRectangle(rect, s_conBackColor, s_conBorderColor);
+
+	m_font->RenderText(tooltipText, rect.GetLeftTop() + Vector2D(5, 4), tooltipStyle);
+
+	if (topDotsLines)
+		m_font->RenderText("...", rect.GetLeftTop() + Vector2D(5, 4 + tooltipLineHeight * tooltipLines), tooltipStyle);
+
+	if (bottomDotsLines)
+		m_font->RenderText("...", rect.GetLeftTop() + Vector2D(5, 4 + tooltipLineHeight * (linesToDraw + topDotsLines + tooltipLines)), tooltipStyle);
+
+
+	// draw lines
+	for (int cnt = 0; cnt < linesToDraw; cnt++)
+	{
+		int itemIdx = cnt + startItem;
+		EqString& item = items[itemIdx];
+
+		int textYPos = itemLineHeight * (cnt + tooltipLines + topDotsLines);
+
+		if (IsInRectangle(m_mousePosition.x, m_mousePosition.y, pos.x, rect.GetLeftTop().y + textYPos, rect.GetSize().x, itemLineHeight))
+			selection = itemIdx;
+
+		if (selection == itemIdx)
+		{
+			g_pShaderAPI->Reset(STATE_RESET_TEX);
+			Vertex2D_t selrect[] = { MAKETEXQUAD((float)pos.x, rect.GetLeftTop().y + textYPos, (float)(pos.x + width), rect.GetLeftTop().y + textYPos + 15 , 0) };
+
+			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, selrect, elementsOf(selrect), nullptr, s_conListItemSelectedBackground, &blending);
+			g_pShaderAPI->Apply();
+		}
+
+		m_font->RenderText(item.c_str(), rect.GetLeftTop() + Vector2D(5, 4 + textYPos), (selection == itemIdx) ? selectedItemStyle : itemStyle);
+	}
+}
+
 void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 {
 	BlendStateParam_t blending;
@@ -323,53 +404,20 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 	helpTextParams.textColor = s_conHelpTextColor;
 	helpTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
 
+	// draw history box
 	if(m_histIndex != -1 && m_commandHistory.numElem())
 	{
-		int max_string_length = 35;
+		int displayStart = 0;
 
-		for(int i = 0; i < m_commandHistory.numElem(); i++)
-			max_string_length = max((uint)max_string_length, m_commandHistory[i].Length());
+		while (m_histIndex - displayStart > CON_SUGGESTIONS_MAX - 1)
+			displayStart += CON_SUGGESTIONS_MAX;
 
-		// draw as autocompletion
-		int linesToDraw = m_commandHistory.numElem()+1;
-		Rectangle_t rect(x,y,w,y + linesToDraw*m_font->GetLineHeight(helpTextParams) + 2);
-		DrawAlphaFilledRectangle(rect, s_conBackColor, s_conBorderColor);
-
-		m_font->RenderText("Last executed command: (cycle: Up/Down, press Enter to repeat)", rect.GetLeftTop() + Vector2D(5,4), helpTextParams);
-
-		int startDraw = m_commandHistory.numElem()-CON_SUGGESTIONS_MAX;
-		startDraw = max(0,startDraw);
-
-		//for(int order = 0, i = m_commandHistory.numElem()-1; i >= startDraw;i--,order++)
-		for(int i = startDraw; i < m_commandHistory.numElem(); i++)
-		{
-			eqFontStyleParam_t historyTextParams;
-			historyTextParams.textColor = Vector4D(0.7f,0.7f,0,1);
-			historyTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
-
-			int textYPos = m_font->GetLineHeight(helpTextParams) * (i + 1);
-
-			if(m_histIndex == i)
-			{
-				g_pShaderAPI->Reset(STATE_RESET_TEX);
-				Vertex2D_t selrect[] = { MAKETEXQUAD(x, rect.GetLeftTop().y+textYPos, w, rect.GetLeftTop().y+textYPos + 15 , 0) };
-
-				materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,selrect,elementsOf(selrect), NULL, ColorRGBA(1.0f, 1.0f, 1.0f, 0.8f), &blending);
-				g_pShaderAPI->Apply();
-
-				historyTextParams.textColor = Vector4D(0.1f,0.1f,0,1);
-			}
-
-			m_font->RenderText(m_commandHistory[i].c_str(), rect.GetLeftTop() + Vector2D(5,4+textYPos), historyTextParams);
-		}
-
+		DrawListBox(IVector2D(x,y), 0, m_commandHistory, "Last executed command: (cycle: Up/Down, press Enter to repeat)", CON_SUGGESTIONS_MAX, displayStart, m_histIndex);
 		return;
 	}
 
 	if(con_suggest.GetBool())
 	{
-		int commandinfo_size = 0;
-
 		// show command info
 		if(m_fastfind_cmdbase)
 		{
@@ -406,8 +454,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 			m_font->RenderText(string_to_draw.GetData(), rect.GetLeftTop() + Vector2D(5,4), helpTextParams);
 
 			// draw autocompletion if available
-			commandinfo_size += DrawAutoCompletion(x, rect.vrightBottom.y, w);
-			commandinfo_size += numLines+1;
+			DrawAutoCompletion(x, rect.vrightBottom.y, w);
 		}
 
 		if(m_foundCmdList.numElem() >= CON_SUGGESTIONS_MAX)
@@ -430,8 +477,6 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 				max_string_length = max((uint)max_string_length, strlen(m_foundCmdList[i]->GetName()));
 
 			int numElemsToDraw = m_foundCmdList.numElem();
-
-			float lineHeight = m_font->GetLineHeight(variantsTextParams);
 
 			Rectangle_t rect(x,y,x+max_string_length*CMDLIST_SYMBOL_SIZE,y+numElemsToDraw*m_font->GetLineHeight(helpTextParams)+2);
 			DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor);
@@ -456,8 +501,6 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 				}
 
 				bool bSelected = false;
-
-				int clen = strlen(cmdBase->GetName());
 
 				float textYPos = (y + i * m_font->GetLineHeight(helpTextParams)) + 4;
 
@@ -512,12 +555,12 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 					float lookupStrStart = m_font->GetStringWidth(cmdBase->GetName(), variantsTextParams, ofs);
 					float lookupStrEnd = lookupStrStart + m_font->GetStringWidth(cmdBase->GetName()+ofs, variantsTextParams, len);
 
-					Vertex2D_t rect[] = { MAKETEXQUAD(x+5 + lookupStrStart, textYPos-2, x+5 + lookupStrEnd, textYPos+12, 0) };
+					Vertex2D_t rectVerts[] = { MAKETEXQUAD(x+5 + lookupStrStart, textYPos-2, x+5 + lookupStrEnd, textYPos+12, 0) };
 
 					// Cancel textures
 					g_pShaderAPI->Reset();
 
-					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), NULL, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
+					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, rectVerts, elementsOf(rectVerts), NULL, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
 				}
 			}
 		}
@@ -537,8 +580,8 @@ void CEqConsoleInput::OnTextUpdate()
 	m_histIndex = -1;
 	
 	EqString inputText;
-	int currentStatementStart = GetCurrentInputText(inputText);
-	
+	GetCurrentInputText(inputText);
+
 	// update command variants
 	UpdateCommandAutocompletionList( inputText.c_str() );
 
@@ -774,7 +817,7 @@ void CEqConsoleInput::ExecuteCurrentInput()
 	g_sysConsole->ResetCounter();
 	g_sysConsole->SetCommandBuffer(m_inputText.GetData());
 
-	bool execStatus = g_sysConsole->ExecuteCommandBuffer(-1, m_alternateHandler != NULL);
+	bool execStatus = g_sysConsole->ExecuteCommandBuffer(0xFFFFFFFF, m_alternateHandler != NULL);
 
 	DkList<EqString>& failedCmds = g_sysConsole->GetFailedCommands();
 
@@ -865,72 +908,20 @@ void CEqConsoleInput::UpdateVariantsList( const EqString& queryStr )
 	}
 }
 
-int CEqConsoleInput::DrawAutoCompletion(float x, float y, float w)
+void CEqConsoleInput::DrawAutoCompletion(float x, float y, float w)
 {
 	if(!(con_suggest.GetBool() && m_fastfind_cmdbase))
-		return 0;
+		return;
 
-	int max_string_length = 35;
+	if (!m_variantList.numElem())
+		return;
 
-	for(int i = 0; i < m_variantList.numElem(); i++)
-		max_string_length = max((uint)max_string_length, m_variantList[i].Length());
-
-	int displayEnd = CON_SUGGESTIONS_MAX;
 	int displayStart = 0;
 
-	while(m_variantSelection-displayStart > CON_SUGGESTIONS_MAX-1)
-	{
+	while (m_variantSelection - displayStart > CON_SUGGESTIONS_MAX - 1)
 		displayStart += CON_SUGGESTIONS_MAX;
-		displayEnd += CON_SUGGESTIONS_MAX;
-	}
 
-	displayEnd = min(displayEnd, m_variantList.numElem());
-
-	if(displayEnd <= 0)
-		return 0;
-
-	eqFontStyleParam_t variantsTextParams;
-	variantsTextParams.textColor = s_conInputTextColor;
-	variantsTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
-
-	int linesToDraw = displayEnd-displayStart+1;
-
-	// draw as autocompletion
-	Rectangle_t rect(x,y,x+max_string_length*CMDLIST_SYMBOL_SIZE,y+linesToDraw*m_font->GetLineHeight(variantsTextParams));
-	DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor);
-
-	m_font->RenderText("Possible variants: ", Vector2D(x+5,y+2), variantsTextParams);
-
-	for(int line = 1, i = displayStart; i < displayEnd; i++)
-	{
-		float textYPos = (y + line*m_font->GetLineHeight(variantsTextParams));
-		line++;
-
-		bool bSelected = false;
-
-		if(IsInRectangle(m_mousePosition.x,m_mousePosition.y,
-						x,textYPos, rect.vrightBottom.x - rect.vleftTop.x,12) || m_variantSelection == i)
-		{
-			Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos-4,x+max_string_length*CMDLIST_SYMBOL_SIZE, textYPos + 14 , 1) };
-
-			// Cancel textures
-			g_pShaderAPI->Reset(STATE_RESET_TEX);
-
-			// Draw the rectangle
-			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,selrect,elementsOf(selrect));
-
-			bSelected = true;
-
-			m_variantSelection = i;
-		}
-
-		Vector4D selTextColor = bSelected ? s_conSelectedTextColor : s_conTextColor;
-
-		variantsTextParams.textColor = selTextColor;
-		m_font->RenderText(m_variantList[i].c_str(), Vector2D(x+5,textYPos), variantsTextParams);
-	}
-
-	return linesToDraw;
+	DrawListBox(IVector2D(x, y), 0, m_variantList, "Possible variants: ", CON_SUGGESTIONS_MAX, displayStart, m_variantSelection);
 }
 
 void CEqConsoleInput::SetLastLine()
@@ -1002,10 +993,6 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 	if(m_maxLines < -4)
 		return;
 
-	int drawending = (-drawstart*m_font->GetLineHeight(fontStyle)) + m_font->GetLineHeight(fontStyle) * (m_maxLines+drawstart);
-
-	int draws = 0;
-	
 	Rectangle_t inputTextEntryRect(64, 26, width-64,46);
 
 	Rectangle_t con_outputRectangle(64.0f,inputTextEntryRect.vrightBottom.y+26, width - 64.0f, height-inputTextEntryRect.vleftTop.y);
@@ -1013,8 +1000,6 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 	if(m_logVisible)
 	{
 		DrawAlphaFilledRectangle(con_outputRectangle, s_conBackColor, s_conBorderColor);
-
-		int cnumLines = 0;
 
 		int numRenderLines = s_spewMessages.numElem();
 
@@ -1267,7 +1252,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 			case KEY_RIGHT:
 			{
 				m_cursorPos++;
-				m_cursorPos = min(m_cursorPos, m_inputText.Length());
+				m_cursorPos = min(m_cursorPos, (int)m_inputText.Length());
 
 				if(!m_shiftModifier)	// drop secondary cursor position
 					m_startCursorPos = m_cursorPos;

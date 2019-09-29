@@ -355,7 +355,7 @@ bool CEqLevel::LoadCompatibleWorldFile(const char* pszFileName)
 	// make a file	
 	EqString game_level_file(leveldir + "/" + pszFileName);
 
-	ubyte* pLevelData = (ubyte*)g_fileSystem->GetFileBuffer(game_level_file.GetData(), 0, -1, true);
+	ubyte* pLevelData = (ubyte*)g_fileSystem->GetFileBuffer(game_level_file.GetData(), 0, -1);
 
 	if(!pLevelData)
 	{

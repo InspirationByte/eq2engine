@@ -1082,7 +1082,7 @@ DkList<edkeyvalue_t>* CEditableEntity::GetPairs()
 	return &m_kvPairs;
 }
 
-void CEditableEntity::SetKey(char* pszKey, char* pszValue, bool updateParam)
+void CEditableEntity::SetKey(const char* pszKey, const char* pszValue, bool updateParam)
 {
 	for(int i = 0; i < m_kvPairs.numElem(); i++)
 	{
@@ -1124,7 +1124,7 @@ void CEditableEntity::SetKey(char* pszKey, char* pszValue, bool updateParam)
 		UpdateParameters();
 }
 
-char* CEditableEntity::GetKeyValue(char* pszKey)
+char* CEditableEntity::GetKeyValue(const char* pszKey)
 {
 	for(int i = 0; i < m_kvPairs.numElem(); i++)
 	{
@@ -1238,7 +1238,7 @@ void CEditableEntity::UpdateParameters()
 	}
 }
 
-void CEditableEntity::RemoveKey(char* pszKey)
+void CEditableEntity::RemoveKey(const char* pszKey)
 {
 	for(int i = 0; i < m_kvPairs.numElem(); i++)
 	{

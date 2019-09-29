@@ -89,17 +89,19 @@ public:
 
     virtual bool SetValueByRow( const wxVariant &value, unsigned row, unsigned col )
     {
+		edworldlayer_t* layer = g_pLevel->GetLayer(row);
+
 		if(col == LAYERPROP_ACTIVE)
 		{
-			g_pLevel->GetLayer(row)->active = value.GetBool();
+			layer->active = value.GetBool();
 		}
 		else if(col == LAYERPROP_VISIBLE)
 		{
-			g_pLevel->GetLayer(row)->visible = value.GetBool();
+			layer->visible = value.GetBool();
 		}
 		else if(col == LAYERPROP_NAME)
 		{
-			g_pLevel->GetLayer(row)->layer_name = value.GetString().c_str();
+			layer->layer_name = value.GetString().c_str();
 		}
 
 		UpdateAllWindows();

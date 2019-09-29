@@ -279,6 +279,13 @@ struct studioHwData_t
 	int					numMotionPackages;
 };
 
+typedef studioHwData_t::modelRef_t								studioModelRef_t;
+typedef studioHwData_t::modelRef_t::groupDesc_t					studioModelRefGroupDesc_t;
+typedef studioHwData_t::joint_t									studioJoint_t;
+typedef studioHwData_t::motionData_t							studioMotionData_t;
+typedef studioHwData_t::motionData_t::animation_t				studioAnimation_t;
+typedef studioHwData_t::motionData_t::animation_t::boneframe_t	studioBoneFrame_t;
+
 //------------------------------------------------------------------------------
 
 inline int PhysModel_FindObjectId(studioPhysData_t* model, const char* name)

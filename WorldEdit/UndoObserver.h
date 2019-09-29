@@ -9,7 +9,7 @@
 #ifndef UNDOOBSERVER_H
 #define UNDOOBSERVER_H
 
-#include "platform.h"
+#include "platform/Platform.h"
 #include "Utils/EqString.h"
 #include "Utils/DkList.h"
 #include "IVirtualStream.h"

@@ -920,7 +920,7 @@
     </CustomBuildStep>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\src_dependency\Shiny\Shiny\lib\Release\Shiny.lib">
+    <Library Include="..\src_dependency\Shiny\lib\Release\Shiny.lib">
       <Filter>Libs</Filter>
     </Library>
   </ItemGroup>

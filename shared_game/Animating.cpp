@@ -196,7 +196,7 @@ void CAnimatingEGF::InitAnimating(IEqModel* model)
 
 			//studioiklink_t* pLink = pStudioChain->pLink(j);
 
-			studioHwData_t::joint_t& joint = m_joints[link.l->bone];
+			studioJoint_t& joint = m_joints[link.l->bone];
 
 			const Vector3D& rotation = joint.rotation;
 
@@ -610,16 +610,16 @@ void CAnimatingEGF::SetPoseControllerValue(int nPoseCtrl, float value)
 	m_poseControllers[nPoseCtrl].value = value;
 }
 
-void GetInterpolatedBoneFrame(studioHwData_t::motionData_t::animation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out)
+void GetInterpolatedBoneFrame(studioAnimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out)
 {
-	studioHwData_t::motionData_t::animation_t::boneframe_t& frame = pAnim->bones[nBone];
+	studioBoneFrame_t& frame = pAnim->bones[nBone];
 
 	InterpolateFrameTransform(frame.keyFrames[firstframe], frame.keyFrames[lastframe], clamp(interp, 0, 1), out);
 }
 
 void GetInterpolatedBoneFrameBetweenTwoAnimations(
-	studioHwData_t::motionData_t::animation_t* pAnim1,
-	studioHwData_t::motionData_t::animation_t* pAnim2,
+	studioAnimation_t* pAnim1,
+	studioAnimation_t* pAnim2,
 	int nBone, int firstframe, int lastframe, float interp, float animTransition, animframe_t &out)
 {
 	// compute frame 1
@@ -648,8 +648,8 @@ void GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone, animframe_t &o
 		blendAnimation2
 	);
 
-	studioHwData_t::motionData_t::animation_t* pAnim1 = pSequence->animations[blendAnimation1];
-	studioHwData_t::motionData_t::animation_t* pAnim2 = pSequence->animations[blendAnimation2];
+	studioAnimation_t* pAnim1 = pSequence->animations[blendAnimation1];
+	studioAnimation_t* pAnim2 = pSequence->animations[blendAnimation2];
 
 	GetInterpolatedBoneFrameBetweenTwoAnimations(pAnim1,
 		pAnim2,
@@ -693,7 +693,7 @@ void CAnimatingEGF::RecalcBoneTransforms(bool storeTransitionFrames /*= false*/)
 			if (blend_weight <= 0)
 				continue;
 
-			studioHwData_t::motionData_t::animation_t* curanim = seq->animations[0];
+			studioAnimation_t* curanim = seq->animations[0];
 
 			if (!curanim)
 				continue;
@@ -725,8 +725,8 @@ void CAnimatingEGF::RecalcBoneTransforms(bool storeTransitionFrames /*= false*/)
 					playingBlendAnimation2);
 
 				// get frame pointers
-				studioHwData_t::motionData_t::animation_t* pPlayingAnim1 = seq->animations[playingBlendAnimation1];
-				studioHwData_t::motionData_t::animation_t* pPlayingAnim2 = seq->animations[playingBlendAnimation2];
+				studioAnimation_t* pPlayingAnim1 = seq->animations[playingBlendAnimation1];
+				studioAnimation_t* pPlayingAnim2 = seq->animations[playingBlendAnimation2];
 
 				// compute blending frame
 				GetInterpolatedBoneFrameBetweenTwoAnimations(pPlayingAnim1,
@@ -1020,7 +1020,7 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 				giklink_t& link = chain->links[j];
 
 				int bone_id = link.l->bone;
-				studioHwData_t::joint_t& joint = m_joints[link.l->bone];
+				studioJoint_t& joint = m_joints[link.l->bone];
 
 				link.quat = Quaternion(m_boneTransforms[bone_id].getRotationComponent());
 				link.position = joint.position;

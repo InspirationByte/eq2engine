@@ -95,7 +95,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 	return pHdr;
 }
 
-studioHwData_t::motionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
+studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 {
 	ubyte* pData = (ubyte*)g_fileSystem->GetFileBuffer(pszPath);
 	ubyte* pStart = pData;
@@ -125,7 +125,7 @@ studioHwData_t::motionData_t* Studio_LoadMotionData(const char* pszPath, int bon
 
 	pData += sizeof(animpackagehdr_t);
 
-	studioHwData_t::motionData_t* pMotion = (studioHwData_t::motionData_t*)PPAlloc(sizeof(studioHwData_t::motionData_t));
+	studioMotionData_t* pMotion = (studioMotionData_t*)PPAlloc(sizeof(studioMotionData_t));
 
 	int numAnimDescs = 0;
 	int numAnimFrames = 0;
@@ -229,7 +229,7 @@ studioHwData_t::motionData_t* Studio_LoadMotionData(const char* pszPath, int bon
 	}
 
 	// first processing done, convert animca animations to darktech format.
-	pMotion->animations = (studioHwData_t::motionData_t::animation_t*)PPAlloc(sizeof(studioHwData_t::motionData_t::animation_t)*numAnimDescs);
+	pMotion->animations = (studioAnimation_t*)PPAlloc(sizeof(studioAnimation_t)*numAnimDescs);
 
 	//Msg("Num anim descs: %d\n", numAnimDescs);
 
@@ -240,11 +240,11 @@ studioHwData_t::motionData_t* Studio_LoadMotionData(const char* pszPath, int bon
 
 	for(int i = 0; i < pMotion->numAnimations; i++)
 	{
-		memset(&pMotion->animations[i], 0, sizeof(studioHwData_t::motionData_t::animation_t));
+		memset(&pMotion->animations[i], 0, sizeof(studioAnimation_t));
 
 		strcpy(pMotion->animations[i].name, animationdescs[i].name);
 
-		pMotion->animations[i].bones = (studioHwData_t::motionData_t::animation_t::boneframe_t*)PPAlloc(sizeof(studioHwData_t::motionData_t::animation_t)*boneCount);
+		pMotion->animations[i].bones = (studioBoneFrame_t*)PPAlloc(sizeof(studioBoneFrame_t)*boneCount);
 
 		// determine frame count of animation
 		int numFrames = animationdescs[i].numFrames / boneCount;
@@ -451,7 +451,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 	return true;
 }
 
-void Studio_FreeMotionData(studioHwData_t::motionData_t* data, int numBones)
+void Studio_FreeMotionData(studioMotionData_t* data, int numBones)
 {
 	for(int i = 0; i < data->numAnimations; i++)
 	{

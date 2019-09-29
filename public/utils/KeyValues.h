@@ -187,6 +187,9 @@ struct kvkeybase_t
 	void					SetValueAt(int nValue, int idxAt);
 	void					SetValueAt(float fValue, int idxAt);
 	void					SetValueAt(bool bValue, int idxAt);
+	void					SetValueAt(const Vector2D& value, int idxAt);
+	void					SetValueAt(const Vector3D& value, int idxAt);
+	void					SetValueAt(const Vector4D& value, int idxAt);
 	void					SetValueAt(kvpairvalue_t* value, int idxAt);
 
 	//----------------------------------------------

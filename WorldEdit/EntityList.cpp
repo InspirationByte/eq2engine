@@ -48,7 +48,6 @@ CEntityList::CEntityList() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_ENTLIS
 
 void CEntityList::RefreshObjectList()
 {
-	m_listObjects.clear();
 	m_pEntList->Clear();
 
 	for(int i = 0; i < g_pLevel->GetEditableCount(); i++)
@@ -94,11 +93,9 @@ void CEntityList::RefreshObjectList()
 
 			bool shouldAddObjectName = strlen(pEnt->GetName()) > 0;
 			if(!shouldAddObjectName)
-				m_pEntList->Append(wxString(varargs("%s", pEnt->GetClassname())));
+				m_pEntList->Append(varargs("%s", pEnt->GetClassname()), pEnt);
 			else
-				m_pEntList->Append(wxString(varargs("%s  -  (%s)", pEnt->GetClassname(), pEnt->GetName())));
-
-			m_listObjects.append(pEnt);
+				m_pEntList->Append(varargs("%s  -  (%s)", pEnt->GetClassname(), pEnt->GetName()), pEnt);
 		}
 	}
 }
@@ -121,9 +118,10 @@ void CEntityList::OnButtonClick(wxCommandEvent& event)
 
 	DkList<CBaseEditableObject*> objects;
 
-	for(int i = 0; i < selected.size(); i++)
+	for(size_t i = 0; i < selected.size(); i++)
 	{
-		objects.append(m_listObjects[selected[i]]);
+		CBaseEditableObject* selectedObject = (CBaseEditableObject*)m_pEntList->GetClientData(selected[i]);
+		objects.append(selectedObject);
 	}
 
 	((CSelectionBaseTool*)g_pSelectionTools[0])->CancelSelection();
@@ -141,7 +139,7 @@ BEGIN_EVENT_TABLE(CGroupList, wxDialog)
 	EVT_CLOSE(CGroupList::OnClose)
 END_EVENT_TABLE()
 
-CGroupList::CGroupList() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_GROUPLIST", "Groups"), wxPoint(-1, -1), wxSize(310,510))
+CGroupList::CGroupList() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_GROUPLIST", L"Groups"), wxPoint(-1, -1), wxSize(310,510))
 {
 	m_pGroupList = new wxListBox(this,BUTTON_SELECT,wxPoint(5,5),wxSize(290,450),0,NULL,wxLB_EXTENDED);
 	//new wxButton(this, BUTTON_RENAME, DKLOC("TOKEN_RENAME", "Rename"), wxPoint(5,455),wxSize(65,25));
@@ -150,7 +148,6 @@ CGroupList::CGroupList() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_GROUPLIS
 
 void CGroupList::RefreshObjectList()
 {
-	m_listObjects.clear();
 	m_pGroupList->Clear();
 
 	for(int i = 0; i < g_pLevel->GetEditableCount(); i++)
@@ -165,9 +162,7 @@ void CGroupList::RefreshObjectList()
 			if(strlen(pszObjName) == 0)
 				pGrp->SetName(varargs("UnnamedGroup_%d\n", pGrp->m_id));
 
-			m_pGroupList->Append(wxString(varargs("%s", pGrp->GetName())));
-
-			m_listObjects.append(pGrp);
+			m_pGroupList->Append(varargs("%s", pGrp->GetName()), pGrp);
 		}
 	}
 }
@@ -184,9 +179,10 @@ void CGroupList::OnButtonClick(wxCommandEvent& event)
 
 	DkList<CBaseEditableObject*> objects;
 
-	for(int i = 0; i < selected.size(); i++)
+	for (size_t i = 0; i < selected.size(); i++)
 	{
-		objects.append(m_listObjects[selected[i]]);
+		CBaseEditableObject* selectedObject = (CBaseEditableObject*)m_pGroupList->GetClientData(selected[i]);
+		objects.append(selectedObject);
 	}
 
 	((CSelectionBaseTool*)g_pSelectionTools[0])->CancelSelection();

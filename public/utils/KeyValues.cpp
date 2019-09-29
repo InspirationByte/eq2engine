@@ -604,6 +604,27 @@ void kvkeybase_t::SetValueAt(bool bValue, int idxAt)
 	}
 }
 
+void kvkeybase_t::SetValueAt(const Vector2D& value, int idxAt)
+{
+	SetValueAt(value.x, idxAt++);
+	SetValueAt(value.y, idxAt++);
+}
+
+void kvkeybase_t::SetValueAt(const Vector3D& value, int idxAt)
+{
+	SetValueAt(value.x, idxAt++);
+	SetValueAt(value.y, idxAt++);
+	SetValueAt(value.z, idxAt++);
+}
+
+void kvkeybase_t::SetValueAt(const Vector4D& value, int idxAt)
+{
+	SetValueAt(value.x, idxAt++);
+	SetValueAt(value.y, idxAt++);
+	SetValueAt(value.z, idxAt++);
+	SetValueAt(value.w, idxAt++);
+}
+
 void kvkeybase_t::SetValueAt(kvpairvalue_t* value, int idxAt)
 {
 	if(values.numElem() == 0)
