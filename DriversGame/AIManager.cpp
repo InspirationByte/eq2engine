@@ -69,7 +69,7 @@ CAIManager::CAIManager()
 	m_numMaxTrafficCars = 32;
 
 	m_spawnedTrafficCars = 0;
-	m_carEntryIdx = 0;
+	//m_carEntryIdx = 0;
 
 	m_leadVelocity = vec3_zero;
 	m_leadPosition = vec3_zero;
@@ -91,7 +91,7 @@ void CAIManager::Init(const DkList<vehicleConfig_t*>& carConfigs, const DkList<p
 	
 	m_numMaxTrafficCars = g_trafficMaxCars.GetInt();
 	m_spawnedTrafficCars = 0;
-	m_carEntryIdx = 0;
+	//m_carEntryIdx = 0;
 
 	m_trafficUpdateTime = 0.0f;
 	m_pedsUpdateTime = 0.0f;
@@ -311,8 +311,10 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 			numCopsSpawned++;
 	}
 
+	int carEntryIdx = g_replayRandom.Get(0, m_civCarEntries.numElem() - 1);
+
 	// pick first
-	civCarEntry_t* carEntry = &m_civCarEntries[m_carEntryIdx];
+	civCarEntry_t* carEntry = &m_civCarEntries[carEntryIdx];
 	vehicleConfig_t* carConf = carEntry->config;
 
 	// try add cops
@@ -323,11 +325,8 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 
 		if (--carEntry->nextSpawn > 0)	// no luck? switch to civcars
 		{
-			carEntry = &m_civCarEntries[m_carEntryIdx++];
+			carEntry = &m_civCarEntries[carEntryIdx];
 			carConf = carEntry->config;
-
-			if (m_carEntryIdx >= m_civCarEntries.numElem())
-				m_carEntryIdx = 0;
 
 			if (--carEntry->nextSpawn > 0)
 				return nullptr;
@@ -335,11 +334,6 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 	}
 	else
 	{
-		m_carEntryIdx++; // advance
-
-		if (m_carEntryIdx >= m_civCarEntries.numElem())
-			m_carEntryIdx = 0;
-
 		if (--carEntry->nextSpawn > 0)
 			return nullptr;
 	}
@@ -361,7 +355,8 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 	{
 		if (isRegisteredCop || isRegisteredGang)
 		{
-			if (m_enableCops && numCopsSpawned < GetMaxCops())
+			// don't add cops on initial spawn
+			if (m_enableCops && numCopsSpawned < GetMaxCops() && g_replayData->m_tick > 0)
 			{
 				CAIPursuerCar* pursuer = new CAIPursuerCar(carConf, isRegisteredGang ? PURSUER_TYPE_GANG : PURSUER_TYPE_COP);
 				pursuer->SetTorqueScale(m_copAccelerationModifier);

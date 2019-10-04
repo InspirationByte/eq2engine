@@ -91,7 +91,6 @@ public:
 	int							GetMissionStatus() const;
 
 	bool						IsReplay() const;
-	void						ResetReplay();
 
 	int							GenScriptID();
 	CGameObject*				FindScriptObjectById(int scriptID);
@@ -131,6 +130,7 @@ protected:
 	EqLua::LuaTableFuncRef		m_lua_misman_InitMission;	// lua CMissionManager:InitMission
 	EqLua::LuaTableFuncRef		m_lua_misman_Update;		// lua CMissionManager:Update
 	EqLua::LuaTableFuncRef		m_lua_misman_Finalize;		// lua CMissionManager:Finalize
+	EqLua::LuaTableFuncRef		m_lua_misman_GetRandomSeed;	// lua CMissionManager:GetRandomSeed
 };
 
 extern CGameSessionBase* g_pGameSession;
@@ -169,7 +169,6 @@ OOLUA_PROXY(CGameSessionBase)
 	OOLUA_MFUNC_CONST(GetMissionStatus)
 
 	OOLUA_MFUNC_CONST(IsReplay)
-	OOLUA_MFUNC(ResetReplay)
 OOLUA_PROXY_END
 #endif // __INTELLISENSE__
 #endif // NO_LUA

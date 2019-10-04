@@ -1277,6 +1277,11 @@ void CReplayData::RaiseReplayEvent(const replayEvent_t& evt)
 			g_replayRandom.Regenerate();
 			break;
 		}
+		case REPLAY_EVENT_RANDOM_SEED:
+		{
+			g_replayRandom.SetSeed((int)(intptr_t)evt.eventData);
+			break;
+		}
 		case REPLAY_EVENT_CAR_DEATH:
 		{
 			if( evt.replayIndex == REPLAY_NOT_TRACKED )

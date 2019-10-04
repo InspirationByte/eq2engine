@@ -178,7 +178,7 @@ protected:
 
 	int							m_trafficSpawnInterval;
 
-	int							m_carEntryIdx;
+	//int							m_carEntryIdx;
 	int							m_copsEntryIdx;
 
 	float						m_copMaxDamage;

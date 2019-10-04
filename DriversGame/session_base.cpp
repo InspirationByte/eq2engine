@@ -83,6 +83,11 @@ void CGameSessionBase::Init()
 		MsgError("CGameSessionBase::Init Error - cannot get missionmanager's InitMission() function!\n");
 	}
 
+	if (!m_lua_misman_GetRandomSeed.Get(m_missionManagerTable, "GetRandomSeed"))
+	{
+		MsgError("CGameSessionBase::Init Error - cannot get missionmanager's GetRandomSeed() function!\n");
+	}
+
 	if (!m_lua_misman_Update.Get(m_missionManagerTable, "Update"))
 	{
 		MsgError("CGameSessionBase::Init Error - cannot get missionmanager's Update() function!\n");
@@ -107,8 +112,6 @@ void CGameSessionBase::Init()
 	// init AI manager and put car registry into it
 	g_pAIManager->Init(m_carEntries, m_pedEntries);
 
-	g_replayRandom.SetSeed(0);
-
 	// start recorder
 	if (g_replayData->m_state != REPL_INIT_PLAYBACK)
 		g_replayData->StartRecording();
@@ -129,6 +132,20 @@ void CGameSessionBase::Init()
 
 		if (!m_lua_misman_InitMission.Call(0, 0))
 			MsgError("CGameSessionBase::Init, :CMissionManager_InitMission() error:\n %s\n", OOLUA::get_last_error(state).c_str());
+	}
+
+	{
+		m_lua_misman_GetRandomSeed.Push();
+		if (!m_lua_misman_GetRandomSeed.Call(0, 1))
+		{
+			MsgError("CGameSessionBase::GetRandomSeed, :CMissionManager_InitMission() error:\n %s\n", OOLUA::get_last_error(state).c_str());
+		}
+
+		int seedValue = 0;
+		OOLUA::pull(GetLuaState(), seedValue);
+
+		g_replayRandom.SetSeed(seedValue);
+		g_replayData->PushEvent(REPLAY_EVENT_RANDOM_SEED, -1, (void*)seedValue);
 	}
 
 	m_missionStatus = MIS_STATUS_INGAME;
@@ -220,14 +237,6 @@ bool CGameSessionBase::IsReplay() const
 {
 	return (g_replayData->m_state == REPL_PLAYING ||
 		g_replayData->m_state == REPL_INIT_PLAYBACK);
-}
-
-void CGameSessionBase::ResetReplay()
-{
-	g_replayData->m_tick = 0;
-	g_replayRandom.SetSeed(0);
-
-	// FIXME: remove objects?
 }
 
 int	CGameSessionBase::GenScriptID()
@@ -706,8 +715,7 @@ OOLUA_EXPORT_FUNCTIONS(
 	SetViewObjectToNone,
 	LoadCarReplay,
 	StopCarReplay,
-	SignalMissionStatus,
-	ResetReplay
+	SignalMissionStatus
 )
 OOLUA_EXPORT_FUNCTIONS_CONST(
 	CGameSessionBase,
