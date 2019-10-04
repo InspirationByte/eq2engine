@@ -503,6 +503,9 @@
     <ClInclude Include="..\shared_game\Animating.h">
       <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
     </ClInclude>
+    <ClInclude Include="..\shared_engine\FontLayoutBuilders.h">
+      <Filter>Source Files\GameLib\EqUI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="weapon_ak74.cpp">
@@ -906,6 +909,9 @@
     </ClCompile>
     <ClCompile Include="..\shared_game\Animating.cpp">
       <Filter>Source Files\GameLib\GameCommon\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp">
+      <Filter>Source Files\GameLib\EqUI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

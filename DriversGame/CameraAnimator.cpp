@@ -135,6 +135,17 @@ void CCameraAnimator::Reset()
 		m_mode = CAM_MODE_OUTCAR;
 }
 
+void CCameraAnimator::SetMode(int newMode)
+{
+	if (newMode != m_mode)
+	{
+		m_interpLookAngle = vec3_zero;
+		m_rotation = vec3_zero;
+	}
+
+	m_mode = (ECameraMode)newMode;
+}
+
 void CCameraAnimator::Update( float fDt, int nButtons, CGameObject* target)
 {
 	extern ConVar r_zfar;

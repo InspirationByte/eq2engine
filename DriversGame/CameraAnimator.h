@@ -65,7 +65,7 @@ public:
 
 	int						GetRealMode() const				{return m_realMode;}
 	int						GetMode() const					{return m_mode;}
-	void					SetMode( int newMode )			{m_mode = (ECameraMode)newMode;}
+	void					SetMode(int newMode);
 
 	void					Update( float fDt, int nButtons, CGameObject* target);
 

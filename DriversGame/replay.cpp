@@ -78,6 +78,7 @@ int CReplayData::Record(CCar* pCar, bool onlyCollisions)
 
 	veh.skipFrames = 0;
 	veh.skeptFrames = 0;
+	veh.first_tick = m_tick;
 
 	return m_vehicles.append(veh);
 }
@@ -338,14 +339,41 @@ void CReplayData::PlayVehicleFrame(replayCarStream_t* rep)
 
 	replayCarFrame_t& frame = rep->replayArray[rep->curr_frame];
 
+	CCar* car = rep->obj_car;
+	CEqRigidBody* body = car->GetPhysicsBody();
+
 	// wait for our tick
-	if(m_tick < frame.tick)
+	if (m_tick < frame.tick)
+	{
+		// only interpolate cars that not player/lead/view car
+		if (rep->curr_frame > 0 && 
+			g_pGameSession->GetViewObject() != car && 
+			g_pGameSession->GetLeadCar() != car && 
+			g_pGameSession->GetPlayerCar() != car)
+		{
+			replayCarFrame_t& prevFrame = rep->replayArray[rep->curr_frame - 1];
+
+			// interpolate the replay if time difference between frames is huge
+			if ((frame.tick - prevFrame.tick) >= CORRECTION_TICK)
+			{
+				float frameLerpValue = RemapVal((float)m_tick, (float)prevFrame.tick, (float)frame.tick, 0.0f, 1.0f);
+
+				auto frameLerpPos = lerp(prevFrame.car_origin, frame.car_origin, frameLerpValue);
+				auto frameLerpOrient = slerp(Quaternion(prevFrame.car_rot), Quaternion(frame.car_rot), frameLerpValue);
+				auto frameLerpLinVel = lerp(prevFrame.car_vel, frame.car_vel, frameLerpValue);
+				auto frameLerpAngVel = lerp(prevFrame.car_angvel, frame.car_angvel, frameLerpValue);
+
+				body->SetPosition(frameLerpPos);
+				body->SetOrientation(frameLerpOrient);
+				body->SetLinearVelocity(frameLerpLinVel);
+				body->SetAngularVelocity(frameLerpAngVel);
+			}
+		}
 		return;
+	}
 
 	// advance frame
 	rep->curr_frame++;
-
-	CCar* car = rep->obj_car;
 
 	// disable correction for pursuer, debug only
 	if (replay_realtime_pursuer.GetBool() && car->ObjType() == GO_CAR_AI)
@@ -355,7 +383,7 @@ void CReplayData::PlayVehicleFrame(replayCarStream_t* rep)
 			return;
 	}
 
-	CEqRigidBody* body = car->GetPhysicsBody();
+	
 
 	// correct whole frame
 	body->SetPosition(frame.car_origin);
@@ -1287,7 +1315,6 @@ void CReplayData::RaiseReplayEvent(const replayEvent_t& evt)
 				buf->ResetPos();
 				rep.obj_car->OnUnpackMessage(buf);
 			}
-				
 		}
 	}
 }
@@ -1300,22 +1327,24 @@ void CReplayData::SetupReplayCar( replayCarStream_t* rep )
 	if(!pCar)
 		return;
 
+	CEqRigidBody* body = pCar->GetPhysicsBody();
+
 	if(rep->replayArray.numElem() == 0)
 	{
 		MsgWarning("Warning: no replay frames for '%s' (rid=%d)\n", rep->name.c_str(), rep->obj_car->m_replayID);
 
-		pCar->GetPhysicsBody()->SetPosition(rep->car_initial_pos);
-		pCar->GetPhysicsBody()->SetOrientation(rep->car_initial_rot);
-		pCar->GetPhysicsBody()->SetLinearVelocity(rep->car_initial_vel);
-		pCar->GetPhysicsBody()->SetAngularVelocity(rep->car_initial_angvel);
+		body->SetPosition(rep->car_initial_pos);
+		body->SetOrientation(rep->car_initial_rot);
+		body->SetLinearVelocity(rep->car_initial_vel);
+		body->SetAngularVelocity(rep->car_initial_angvel);
 	}
 	else
 	{
 		const replayCarFrame_t& ctrl = rep->replayArray[0];
 
-		pCar->GetPhysicsBody()->SetPosition(ctrl.car_origin);
-		pCar->GetPhysicsBody()->SetOrientation(Quaternion(ctrl.car_rot));
-		pCar->GetPhysicsBody()->SetLinearVelocity(ctrl.car_vel);
-		pCar->GetPhysicsBody()->SetAngularVelocity(ctrl.car_angvel);
+		body->SetPosition(ctrl.car_origin);
+		body->SetOrientation(Quaternion(ctrl.car_rot));
+		body->SetLinearVelocity(ctrl.car_vel);
+		body->SetAngularVelocity(ctrl.car_angvel);
 	}
 }

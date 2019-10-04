@@ -23,10 +23,9 @@ END_DATAMAP()
 // declare data table for actor
 BEGIN_DATAMAP( BaseAnimating )
 
-	DEFINE_FIELD( m_transitionTime,	VTYPE_FLOAT),
-	DEFINE_FIELD(m_transitionRemTime, VTYPE_FLOAT),
-	DEFINE_EMBEDDEDARRAY( m_sequenceTimers,		MAX_SEQUENCE_TIMERS),
-	//DEFINE_ARRAYFIELD(m_seqBlendWeights,VTYPE_FLOAT, MAX_SEQUENCE_TIMERS),
+	DEFINE_FIELD( m_transitionTime,	VTYPE_FLOAT ),
+	DEFINE_FIELD( m_transitionRemTime, VTYPE_FLOAT ),
+	DEFINE_EMBEDDEDARRAY( m_sequenceTimers,	MAX_SEQUENCE_TIMERS ),
 
 END_DATAMAP()
 

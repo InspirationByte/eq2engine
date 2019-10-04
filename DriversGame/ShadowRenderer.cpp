@@ -497,7 +497,7 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 				damagedModel->SetupVBOStream(1);
 
 				// instead of prepare skinning, we send BodyDamage
-				g_pShaderAPI->SetShaderConstantArrayFloat("BodyDamage", bodyDamages, 16);
+				g_pShaderAPI->SetShaderConstantArrayFloat("BodyDamage", bodyDamages, elementsOf(bodyDamages));
 
 				model->DrawGroup(nModDescId, j, false);
 			}

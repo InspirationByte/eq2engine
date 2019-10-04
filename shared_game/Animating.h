@@ -111,7 +111,7 @@ protected:
 	DkList<gikchain_t*>			m_ikChains;
 
 	// sequence timers. first timer is main, and transitional is last
-	sequencetimer_t*			m_sequenceTimers;
+	sequencetimer_t				m_sequenceTimers[MAX_SEQUENCE_TIMERS];
 };
 
 #endif // ANIMATING_H

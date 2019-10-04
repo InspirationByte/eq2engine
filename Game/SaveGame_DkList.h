@@ -64,7 +64,7 @@ public:
 			NULL
 		};
 
-		pList->clear();
+		//pList->clear();
 		pList->setNum(array_count);
 
 		// read unused field name

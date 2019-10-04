@@ -2304,6 +2304,11 @@ void CCar::OnPhysicsFrame( float fDt )
 			&& g_pGameSession->IsServer()				// process damage model only on server
 #endif // EDITOR
 			)
+
+#ifndef EDITOR
+		// process damage and death only when not playing replays
+		if (g_replayData->m_state != REPL_PLAYING)
+#endif // EDITOR
 		{
 			// apply visual damage
 			for(int cb = 0; cb < CB_PART_COUNT; cb++)
@@ -2316,21 +2321,15 @@ void CCar::OnPhysicsFrame( float fDt )
 				float fDamageToApply = pow(fDot, 2.0f) * fDamageImpact*DAMAGE_SCALE;
 				m_bodyParts[cb].damage += fDamageToApply * DAMAGE_VISUAL_SCALE;
 
-#ifndef EDITOR
-				// process damage and death only when not playing replays
-				if(g_replayData->m_state != REPL_PLAYING)
-				{
-					bool isWasAlive = IsAlive();
-					SetDamage(GetDamage() + fDamageToApply);
-					bool isStillAlive = IsAlive();
+				bool isWasAlive = IsAlive();
+				SetDamage(GetDamage() + fDamageToApply);
+				bool isStillAlive = IsAlive();
 
-					if(isWasAlive && !isStillAlive)
-					{
-						// trigger death
-						OnDeath( hitGameObject );
-					}
+				if(isWasAlive && !isStillAlive)
+				{
+					// trigger death
+					OnDeath( hitGameObject );
 				}
-#endif // EDITOR
 
 				// clamp
 				m_bodyParts[cb].damage = min(m_bodyParts[cb].damage, 1.0f);

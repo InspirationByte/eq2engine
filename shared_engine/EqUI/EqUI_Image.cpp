@@ -69,7 +69,8 @@ void Image::SetMaterial(const char* materialName)
 	m_material = materials->GetMaterial(materialName);
 	m_material->Ref_Grab();
 
-	materials->PutMaterialToLoadingQueue(m_material);
+	m_material->LoadShaderAndTextures();
+	//materials->PutMaterialToLoadingQueue(m_material);
 }
 
 void Image::DrawSelf( const IRectangle& rect )
