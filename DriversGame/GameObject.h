@@ -154,6 +154,12 @@ static bool s_networkedObjectTypes[GO_TYPES] =
 	false,
 };
 
+enum EGameObjectDrawFlags {
+	GO_DRAW_FLAG_SHADOW = (1 << 0),
+	GO_DRAW_FLAG_NODRAW = (1 << 1),
+	GO_DRAW_FLAG_ILLUMINATED = (1 << 2),
+};
+
 //-------------------------------------------------------------------------------------------
 
 // Default instancer for game objects
@@ -248,6 +254,7 @@ public:
 
 	virtual void				ConfigureCamera(struct cameraConfig_t& conf, struct eqPhysCollisionFilter& filter) const;
 
+	ubyte						GetDrawFlags() const { return m_drawFlags; }
 	ubyte						GetBodyGroups() const {return m_bodyGroupFlags;}
 
 	void						SetUserData(void* dataPtr);
@@ -315,6 +322,7 @@ protected:
 	void*						m_userData;
 
 	ubyte						m_bodyGroupFlags;
+	ubyte						m_drawFlags;		// EGameObjectDrawFlags
 
 #ifndef NO_LUA
 	OOLUA::Table				m_luaEvtHandler;

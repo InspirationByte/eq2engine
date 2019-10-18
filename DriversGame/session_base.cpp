@@ -19,14 +19,12 @@
 
 #include "pedestrian.h"
 
+extern ConVar g_autoHandbrake;
+extern ConVar g_invicibility;
+extern ConVar g_infiniteMass;
+extern ConVar g_difficulty;
+
 CGameSessionBase*	g_pGameSession = NULL;
-
-ConVar		g_autoHandbrake("g_autoHandbrake", "1", "Auto handbrake for steering help", CV_ARCHIVE);
-
-ConVar		g_invicibility("g_invicibility", "0", "No damage for player car", CV_CHEAT);
-ConVar		g_infiniteMass("g_infiniteMass", "0", "Infinite mass for player car", CV_CHEAT);
-
-ConVar		g_difficulty("g_difficulty", "0", "Difficulty of the game", CV_ARCHIVE);
 
 bool		g_bIsServer = true;
 

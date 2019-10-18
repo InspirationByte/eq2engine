@@ -119,6 +119,9 @@ void CObject_Physics::Spawn()
 		m_pModel->SetInstancer( instancer );
 	}
 
+	if (KV_GetValueBool(m_keyValues->FindKeyBase("castshadow"), 0, true))
+		m_drawFlags |= GO_DRAW_FLAG_SHADOW;
+
 	m_smashSound = KV_GetValueString(m_keyValues->FindKeyBase("smashsound"), 0, "");
 
 	g_sounds->PrecacheSound(m_smashSound.c_str());

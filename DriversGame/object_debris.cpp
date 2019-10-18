@@ -82,6 +82,9 @@ void CObject_Debris::Spawn()
 
 	m_smashSpawn = KV_GetValueString(m_keyValues->FindKeyBase("smashspawn"), 0, "");
 
+	if(KV_GetValueBool(m_keyValues->FindKeyBase("castshadow"), 0, true))
+		m_drawFlags |= GO_DRAW_FLAG_SHADOW;
+
 	// init breakable
 	kvkeybase_t* brkSec = m_keyValues->FindKeyBase("breakable");
 	if(brkSec)
@@ -183,6 +186,8 @@ void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup)
 	m_pModel = model;
 	m_bodyGroupFlags = (1 << bodyGroup);
 	m_collOccured = true;
+
+	m_drawFlags |= GO_DRAW_FLAG_SHADOW;
 
 	if(g_pShaderAPI->GetCaps().isInstancingSupported &&
 		m_pModel && m_pModel->GetInstancer() == NULL)
@@ -402,7 +407,7 @@ void CObject_Debris::BreakAndSpawnDebris()
 			continue;
 
 		CObject_Debris* part = new CObject_Debris(NULL);
-
+		part->m_drawFlags = m_drawFlags;
 		part->SpawnAsBreakablePart(GetModel(), partDesc.bodyGroupIdx, partDesc.physObjIdx);
 
 		// transform the offset
@@ -435,13 +440,12 @@ void CObject_Debris::Simulate(float fDt)
 	if (!m_physBody)
 		return;
 
-	m_vecOrigin = m_physBody->GetPosition();
-
-	m_vecAngles = eulers(m_physBody->GetOrientation());
-	m_vecAngles = VRAD2DEG(m_vecAngles);
-
 	if(m_collOccured)
 	{
+		m_vecOrigin = m_physBody->GetPosition();
+		m_vecAngles = eulers(m_physBody->GetOrientation());
+		m_vecAngles = VRAD2DEG(m_vecAngles);
+
 		if(m_fTimeToRemove < 0.0f)
 		{
 			if(m_fTimeToRemove < -DEBRIS_PHYS_LIFETIME)
@@ -457,10 +461,15 @@ void CObject_Debris::Simulate(float fDt)
 		}
 	}
 
+	auto& collList = m_physBody->m_collisionList;
+
 	// process collisions
-	for(int i = 0; i < m_physBody->m_collisionList.numElem(); i++)
+	for(int i = 0; i < collList.numElem(); i++)
 	{
-		CollisionPairData_t& pair = m_physBody->m_collisionList[i];
+		if (m_state == GO_STATE_REMOVE)
+			break;
+
+		const CollisionPairData_t& pair = collList[i];
 
 		float impulse = pair.appliedImpulse * m_physBody->GetInvMass();
 
@@ -492,20 +501,22 @@ void CObject_Debris::Simulate(float fDt)
 			}
 		}
 
-		if(m_surfParams && m_surfParams->word == 'M' && pair.impactVelocity > 3.0f)
+		if(m_surfParams && pair.impactVelocity > 3.0f && m_surfParams->word == 'M')
 		{
 			Vector3D wVelocity = m_physBody->GetVelocityAtWorldPoint( pair.position );
 			Vector3D reflDir = reflect(wVelocity, pair.normal);
+
 			MakeSparks(pair.position+pair.normal*0.05f, reflDir, Vector3D(5.0f), 1.0f, 6);
 		}
 
 		CEqCollisionObject* obj = pair.GetOppositeTo(m_physBody);
-
 		EmitHitSoundEffect(this, m_smashSound.c_str(), pair.position, pair.impactVelocity, 50.0f);
 
 		if(!m_collOccured && obj->IsDynamic())
 		{
 			m_collOccured = true;
+			m_fTimeToRemove = 0;
+
 			g_pPhysics->m_physics.AddToMoveableList(m_physBody);
 			m_physBody->Wake();
 
@@ -514,8 +525,6 @@ void CObject_Debris::Simulate(float fDt)
 
 			if(isCar)
 			{
-				//CCar* pCar = (CCar*)body->GetUserData();
-
 				EmitSound_t ep;
 
 				ep.name = (char*)m_smashSound.c_str();
@@ -525,23 +534,12 @@ void CObject_Debris::Simulate(float fDt)
 				ep.origin = pair.position;
 
 				EmitSoundWithParams( &ep );
-			}
 
-			if( !g_debris_as_physics.GetBool() )
-			{
-				m_fTimeToRemove = 0;//DEBRIS_COLLISION_RELAY;
+				// apply impulse if smashed by car
 				Vector3D impulseVec = body->GetLinearVelocity();
 				m_physBody->ApplyWorldImpulse(pair.position, impulseVec * 1.5f);
 			}
-			else
-			{
-				m_physBody->SetContents(OBJECTCONTENTS_OBJECT);
-				m_physBody->SetCollideMask(COLLIDEMASK_OBJECT);
-			}
 		}
-
-		if(m_state == GO_STATE_REMOVE)
-			break;
 	}
 }
 

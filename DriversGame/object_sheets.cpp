@@ -10,6 +10,8 @@
 
 #include "EqParticles.h"
 
+#include "Shiny.h"
+
 #define SHEET_COUNT				15
 #define SHEET_GRAVITY			(-3.0f)
 #define SHEET_MIN_VELOCITY		(6.5f)
@@ -98,6 +100,8 @@ bool CObject_Sheets::InitSheets()
 
 void CObject_Sheets::Simulate( float fDt )
 {
+	PROFILE_FUNC();
+
 	if(!m_wasInit)
 	{
 		m_initDelay -= fDt;

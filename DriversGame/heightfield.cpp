@@ -1114,7 +1114,7 @@ void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
 	meshBuilder.End();
 }
 
-void CHeightTileField::GetDecalPolygons( decalprimitives_t& polys, occludingFrustum_t* frustum)
+void CHeightTileField::GetDecalPolygons( decalPrimitives_t& polys, occludingFrustum_t* frustum)
 {
 	// we're getting vertex data from physics here
 	if(m_physData == NULL)

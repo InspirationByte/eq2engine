@@ -35,11 +35,13 @@ typedef bool (*DECALPROCESSTRIANGLEFN)(struct decalsettings_t& settings, PFXVert
 bool DefaultDecalTriangleProcessFunc(struct decalsettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3);
 bool LightDecalTriangleProcessFunc(struct decalsettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3);
 
-struct decalprimitives_t
+struct decalPrimitives_t
 {
-	decalprimitives_t();
+	decalPrimitives_t();
 
 	void AddTriangle(const Vector3D& p1, const Vector3D& p2, const Vector3D& p3);
+
+	BoundingBox				bbox;
 
 	DkList<PFXVertex_t>		verts;
 	DkList<int16>			indices;
@@ -53,7 +55,21 @@ inline bool decalVertComparator(const PFXVertex_t& a, const PFXVertex_t& b)
 	return a.point == b.point;
 }
 
-void DecalClipAndTexture(decalprimitives_t& decal, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, const ColorRGBA& color);
-void ProjectDecalToSpriteBuilder( decalprimitives_t& emptyDecal, CSpriteBuilder<PFXVertex_t>* group, const Rectangle_t& rect, const Matrix4x4& viewProj, const ColorRGBA& color);
+// primitive reference in the sprite builder
+struct decalPrimitivesRef_t
+{
+	decalPrimitivesRef_t();
+
+	PFXVertex_t*		verts;
+	int16*				indices;
+
+	uint16				numVerts;
+	uint16				numIndices;
+
+	void*				userData;		// references decalsettings_t's userData
+};
+
+void DecalClipAndTexture(decalPrimitives_t& decal, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, const ColorRGBA& color);
+decalPrimitivesRef_t ProjectDecalToSpriteBuilder( decalPrimitives_t& emptyDecal, CSpriteBuilder<PFXVertex_t>* group, const Rectangle_t& rect, const Matrix4x4& viewProj, const ColorRGBA& color);
 
 #endif // DRVSYNDECALS_H

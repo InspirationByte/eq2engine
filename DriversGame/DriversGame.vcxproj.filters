@@ -466,7 +466,7 @@
       <Filter>Файлы исходного кода\Game\AI</Filter>
     </ClCompile>
     <ClCompile Include="GameDefs.cpp">
-      <Filter>Файлы исходного кода\Game\Objects</Filter>
+      <Filter>Файлы исходного кода\Game\Sessions</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -871,9 +871,6 @@
     <ClInclude Include="net_game_defs.h">
       <Filter>Файлы исходного кода\Game\Sessions</Filter>
     </ClInclude>
-    <ClInclude Include="GameDefs.h">
-      <Filter>Файлы исходного кода\Game\Objects</Filter>
-    </ClInclude>
     <ClInclude Include="AIManipulator_Traffic.h">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClInclude>
@@ -912,6 +909,9 @@
     </ClInclude>
     <ClInclude Include="AIManager.h">
       <Filter>Файлы исходного кода\Game\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="GameDefs.h">
+      <Filter>Файлы исходного кода\Game\Sessions</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

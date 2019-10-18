@@ -53,6 +53,7 @@ ConVar emitsound_debug("scriptsound_debug", "0", NULL, CV_CHEAT);
 
 ConVar snd_effectsvolume("snd_effectsvolume", "0.5", NULL, CV_ARCHIVE);
 ConVar snd_musicvolume("snd_musicvolume", "0.5", NULL, CV_ARCHIVE);
+ConVar snd_voicevolume("snd_voicevolume", "0.5", NULL, CV_ARCHIVE);
 
 bool CSoundController::IsStopped() const
 {
@@ -495,8 +496,6 @@ soundScriptDesc_t* CSoundEmitterSystem::FindSound(const char* soundName) const
 	return NULL;
 }
 
-ConVar snd_roloff("snd_roloff", "2.0");
-
 // simple sound emitter
 int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 {
@@ -680,6 +679,8 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channelType)
 
 		if (channelType == CHAN_STREAM)
 			startVolume = m_2dChannelVolume[channelType] * snd_musicvolume.GetFloat();
+		else if (channelType == CHAN_VOICE)
+			startVolume = m_2dChannelVolume[channelType] * snd_voicevolume.GetFloat();
 
 		staticChannel->SetSample(bestSample);
 		staticChannel->SetVolume(startVolume);

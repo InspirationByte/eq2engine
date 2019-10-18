@@ -188,6 +188,8 @@ CGameObject::CGameObject() : CBaseNetworkedObject(),
 	m_userData = NULL;
 	m_keyValues = NULL;
 
+	m_drawFlags = 0;
+
 	m_worldMatrix = identity4();
 	m_bodyGroupFlags = (1 << 0);
 }

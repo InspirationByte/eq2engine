@@ -36,10 +36,11 @@ public:
 	void	SetShadowAngles( const Vector3D& angles );
 
 protected:
+	bool	CanCastShadows(CGameObject* object);
 
 	void	RenderShadow(CGameObject* object, ubyte bodyGroups, int mode);
 
-	CRectanglePacker	m_texAtlasPacker;
+	CRectanglePacker	m_packer;
 
 	Vector2D			m_shadowTextureSize;
 	Vector2D			m_shadowTexelSize; // 1.0 / shadowTextureSize

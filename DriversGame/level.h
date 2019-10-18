@@ -170,7 +170,7 @@ public:
 
 	//----------------------------------
 
-	void							GetDecalPolygons( decalprimitives_t& polys, occludingFrustum_t* frustum = NULL);
+	void							GetDecalPolygons( decalPrimitives_t& polys, occludingFrustum_t* frustum = NULL);
 
 	// TODO: render code
 

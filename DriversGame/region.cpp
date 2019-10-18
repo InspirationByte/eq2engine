@@ -766,7 +766,7 @@ int	CLevelRegion::GetNumNomEmptyHFields() const
 	return nCount;
 }
 
-void CLevelRegion::GetDecalPolygons(decalprimitives_t& polys, occludingFrustum_t* frustum)
+void CLevelRegion::GetDecalPolygons(decalPrimitives_t& polys, occludingFrustum_t* frustum)
 {
 	for (int i = 0; i < GetNumHFields(); i++)
 	{

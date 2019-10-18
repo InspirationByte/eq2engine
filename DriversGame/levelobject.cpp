@@ -586,7 +586,7 @@ void CLevelModel::ReleaseData()
 //
 //----------------------------------------------------------------
 
-void CLevelModel::GetDecalPolygons( decalprimitives_t& polys, const Matrix4x4& transform )
+void CLevelModel::GetDecalPolygons( decalPrimitives_t& polys, const Matrix4x4& transform )
 {
 	// transform volume (optimization)
 	// BUG: wrong rotation

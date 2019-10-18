@@ -9,6 +9,8 @@
 #include "materialsystem/IMaterialSystem.h"
 #include "world.h"
 
+#include "Shiny.h"
+
 //-----------------------------------------------------------------------
 
 CObject_Tree::CObject_Tree( kvkeybase_t* kvdata )
@@ -110,6 +112,8 @@ extern ConVar r_enableObjectsInstancing;
 
 void CObject_Tree::Draw( int nRenderFlags )
 {
+	PROFILE_FUNC();
+
 	//if(!g_pGameWorld->m_frustum.IsSphereInside(GetOrigin(), length(m_pModel->GetBBoxMaxs())))
 	//	return;
 

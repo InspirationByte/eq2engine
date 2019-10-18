@@ -715,6 +715,8 @@ CCar::CCar( vehicleConfig_t* config ) :
 	memset(m_sounds, 0,sizeof(m_sounds));
 	memset(&m_pursuerData, 0, sizeof(m_pursuerData));
 
+	m_drawFlags |= GO_DRAW_FLAG_SHADOW;
+
 	m_slipParams = &(slipAngleCurveParams_t&)GetDefaultSlipCurveParams();
 
 	m_carColor.col1 = m_carColor.col2 = ColorRGBA(0.9, 0.25, 0.25, 1.0);
@@ -2705,7 +2707,7 @@ void CCar::Simulate( float fDt )
 				TexAtlasEntry_t* entry = lightSide == 0 ? g_vehicleLights->FindEntry("light1_d") : g_vehicleLights->FindEntry("light1_s");
 				Rectangle_t flipRect = entry ? entry->rect : Rectangle_t(0,0,1,1);
 
-				decalprimitives_t lightDecal;
+				decalPrimitives_t lightDecal;
 				lightDecal.settings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
 				lightDecal.settings.facingDir = normalize(vec3_up - forwardVec);
 
@@ -4232,7 +4234,7 @@ void CCar::DrawShadow(float distance)
 
 		viewProj = proj*view;
 
-		decalprimitives_t shadowDecal;
+		decalPrimitives_t shadowDecal;
 		shadowDecal.settings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
 		shadowDecal.settings.facingDir = vec3_up;
 
@@ -4281,6 +4283,8 @@ void CCar::Draw( int nRenderFlags )
 {
 	if(!r_drawCars.GetBool())
 		return;
+
+	PROFILE_FUNC();
 
 	bool isBodyDrawn = true;
 

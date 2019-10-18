@@ -54,7 +54,7 @@ const float PHYSICS_DEFAULT_RESTITUTION = 0.25f;
 const float PHYSICS_DEFAULT_TIRE_FRICTION = 0.2f;
 const float PHYSICS_DEFAULT_TIRE_TRACTION = 1.0f;
 
-CEqCollisionObject* CollisionPairData_t::GetOppositeTo(CEqCollisionObject* obj)
+CEqCollisionObject* CollisionPairData_t::GetOppositeTo(CEqCollisionObject* obj) const
 {
 	return (obj == bodyA) ? bodyB : bodyA;
 }

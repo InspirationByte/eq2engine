@@ -1306,6 +1306,7 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 		return;
 
 	// simulate objects of world
+	
 	for(int i = 0; i < g_pGameWorld->m_gameObjects.numElem(); i++)
 	{
 		CGameObject* obj = g_pGameWorld->m_gameObjects[i];
@@ -1313,12 +1314,24 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 		if(obj->m_state != GO_STATE_IDLE)
 			continue;
 
+		PROFILE_BEGIN(Visibility);
+
 		// sorted insert into render list
 		if( obj->CheckVisibility( frustum ) )
 			m_renderingObjects.insertSorted( obj, SortGameObjectsByDistance );
 
-		obj->PreDraw();
+		PROFILE_END();
+
+		PROFILE_CODE( obj->PreDraw() );
+
+#ifndef EDITOR
+		PROFILE_BEGIN(AddShadowCaster);
+		m_shadowRenderer.AddShadowCaster(obj);
+		PROFILE_END();
+#endif // EDITOR
 	}
+	
+
 }
 
 bool CGameWorld::AddLight(const wlight_t& light)
@@ -1933,8 +1946,8 @@ void CGameWorld::Draw( int nRenderFlags )
 #endif // EDITOR
 
 	// below operations started asynchronously
-	UpdateLightTexture();
-	DrawFakeReflections();
+	PROFILE_CODE(UpdateLightTexture());
+	PROFILE_CODE(DrawFakeReflections());
 
 	ColorRGB ambColor = lerp(m_envConfig.ambientColor, m_envConfig.ambientColor*r_nightBrightness.GetFloat(), m_envConfig.brightnessModFactor);
 
@@ -1964,7 +1977,7 @@ void CGameWorld::Draw( int nRenderFlags )
 		materials->SetMatrix(MATRIXMODE_WORLD, translate(m_view.GetOrigin() + Vector3D(0, m_envSkyProps.x, 0)) * rotateY4(m_envSkyProps.y));
 
 		m_skyColor->SetVector4( fSkyBrightness );
-		DrawSkyBox(0xf);
+		PROFILE_CODE( DrawSkyBox(0xF) );
 	}
 
 	// calculate fog parameters
@@ -2025,37 +2038,39 @@ void CGameWorld::Draw( int nRenderFlags )
 	if(r_drawWorld.GetBool())
 	{
 		// DRAW ONLY OPAQUE OBJECTS
-		m_level.Render(m_view.GetOrigin(), m_viewprojection, m_occludingFrustum, nRenderFlags);
+		PROFILE_CODE( m_level.Render(m_view.GetOrigin(), m_viewprojection, m_occludingFrustum, nRenderFlags) );
 	}
-
-	UpdateRenderables( m_occludingFrustum );
 
 #ifndef EDITOR
 	// cleanup of casters
 	m_shadowRenderer.Clear();
 #endif // EDITOR
 
+	PROFILE_CODE(UpdateRenderables(m_occludingFrustum));
+
 	// setup culling
 	materials->SetCullMode((nRenderFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
+
+	PROFILE_BEGIN( DrawRenderables );
 
 	// rendering of instanced objects
 	if( m_renderingObjects.goToFirst() )
 	{
+		PROFILE_BEGIN(DrawNonInstanced);
+
 		// this will render models without instances or add instances
 		do
 		{
 			CGameObject* obj = m_renderingObjects.getCurrent();
-			obj->Draw( nRenderFlags );
-
-#ifndef EDITOR
-			m_shadowRenderer.AddShadowCaster( obj );
-#endif // EDITOR
-
+			PROFILE_CODE( obj->Draw( nRenderFlags ) );
 		}while(m_renderingObjects.goToNext());
+
+		PROFILE_END();
 
 		// draw instanced models
 		int numCachedModels = g_studioModelCache->GetCachedModelCount();
 
+		PROFILE_BEGIN(DrawInstanced);
 		// draw model instances
 		for(int i = 0; i < numCachedModels; i++)
 		{
@@ -2066,8 +2081,12 @@ void CGameWorld::Draw( int nRenderFlags )
 				model->GetInstancer()->Draw( nRenderFlags, model );
 			}
 		}
+		PROFILE_END();
 	}
 
+	PROFILE_END();
+
+	PROFILE_BEGIN(PostDraw);
 	for (int i = 0; i < g_pGameWorld->m_gameObjects.numElem(); i++)
 	{
 		CGameObject* obj = g_pGameWorld->m_gameObjects[i];
@@ -2077,6 +2096,7 @@ void CGameWorld::Draw( int nRenderFlags )
 
 		obj->PostDraw();
 	}
+	PROFILE_END();
 
 	/*
 	if(r_drawWorld.GetBool())
@@ -2099,14 +2119,14 @@ void CGameWorld::Draw( int nRenderFlags )
 
 		// render shadows
 		m_shadowRenderer.SetShadowAngles(m_envConfig.sunAngles);
-		m_shadowRenderer.RenderShadowCasters();
+		PROFILE_CODE( m_shadowRenderer.RenderShadowCasters());
 
 		materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
 		materials->SetMatrix(MATRIXMODE_VIEW, m_matrices[MATRIXMODE_VIEW]);
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 		materials->SetAmbientColor(m_envConfig.shadowColor);
-		m_shadowRenderer.Draw();
+		PROFILE_CODE( m_shadowRenderer.Draw() );
 
 		materials->SetMaterialRenderParamCallback( this );
 	}
@@ -2123,7 +2143,7 @@ void CGameWorld::Draw( int nRenderFlags )
 	DrawMoon();
 
 	// draw particle effects
-	g_pPFXRenderer->Render( nRenderFlags );
+	PROFILE_CODE( g_pPFXRenderer->Render( nRenderFlags ) );
 
 	// now we done our world render, drop this callback for a while
 	materials->SetMaterialRenderParamCallback( NULL );

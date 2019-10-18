@@ -220,7 +220,7 @@ public:
 
 	void						DebugRender(bool bDrawTiles, float gridHeight);
 
-	void						GetDecalPolygons( decalprimitives_t& polys, occludingFrustum_t* frustum);
+	void						GetDecalPolygons( decalPrimitives_t& polys, occludingFrustum_t* frustum);
 
 #ifdef EDITOR
 	void						FreeUnusedMaterials();

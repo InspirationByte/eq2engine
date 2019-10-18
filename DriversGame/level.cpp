@@ -2620,7 +2620,7 @@ float CGameLevel::Nav_TestLine2D(const IVector2D& start, const IVector2D& end, b
 
 //------------------------------------------------------
 
-void CGameLevel::GetDecalPolygons(decalprimitives_t& polys, occludingFrustum_t* frustum)
+void CGameLevel::GetDecalPolygons(decalPrimitives_t& polys, occludingFrustum_t* frustum)
 {
 	polys.indices.setNum(0, false);
 	polys.verts.setNum(0, false);

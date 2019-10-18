@@ -13,6 +13,8 @@
 #include "Animating.h"
 #include "car.h"
 
+#include "Shiny.h"
+
 ConVar r_shadowAtlasSize("r_shadowAtlasSize", "1024", 256.0f,  1024.0f, NULL, CV_ARCHIVE);
 ConVar r_shadowLod("r_shadowLod", "0", NULL, CV_ARCHIVE);
 
@@ -42,9 +44,21 @@ struct shadowListObject_t
 	shadowListObject_t*	next;
 };
 
+void FreeShadowList(shadowListObject_t* object)
+{
+	// delete all grouped objects
+	while (object)
+	{
+		shadowListObject_t* prev = object;
+
+		object = object->next;
+		delete prev;
+	};
+}
+
 CShadowRenderer::CShadowRenderer() : m_shadowTexture(NULL), m_shadowAngles(90,0,0), m_matVehicle(NULL), m_matSkinned(NULL), m_matSimple(NULL), m_isInit(false)
 {
-	m_texAtlasPacker.SetPackPadding( 2.0 );
+	m_packer.SetPackPadding( 2.0 );
 }
 
 CShadowRenderer::~CShadowRenderer()
@@ -149,25 +163,8 @@ void CShadowRenderer::Shutdown()
 
 	Clear();
 
-	// destroy the unreleased lists as well
-	for(int i = 0; i < m_texAtlasPacker.GetRectangleCount(); i++)
-	{
-		void* userData = m_texAtlasPacker.GetRectangleUserData(i);
-		shadowListObject_t* objectGroup = (shadowListObject_t*)userData;
-
-		while(objectGroup)
-		{
-			shadowListObject_t* prev = objectGroup;
-			objectGroup = objectGroup->next;
-			delete prev;
-		};
-	}
-
 	g_pShaderAPI->FreeTexture(m_shadowTexture);
 	m_shadowTexture = NULL;
-
-	//g_pShaderAPI->FreeTexture(m_shadowRt);
-	//m_shadowRt = NULL;
 
 	materials->FreeMaterial(m_matVehicle);
 	materials->FreeMaterial(m_matSkinned);
@@ -179,34 +176,49 @@ void CShadowRenderer::Shutdown()
 	m_isInit = false;
 }
 
+bool CShadowRenderer::CanCastShadows(CGameObject* object)
+{
+	if (!(object->GetDrawFlags() & GO_DRAW_FLAG_SHADOW))
+		return false;
+
+	// also check if they are too far from view
+	const Vector3D& viewPos = g_pGameWorld->GetView()->GetOrigin();
+	if (length(viewPos - object->GetOrigin()) > r_shadowDist.GetFloat())
+		return false;
+
+	Vector3D sunDir;
+	AngleVectors(m_shadowAngles, &sunDir);
+
+	// FIXME: physics trace to ground??
+	BoundingBox bbox = object->GetModel()->GetAABB();
+	bbox.minPoint += object->GetOrigin();
+	bbox.maxPoint += object->GetOrigin();
+	bbox.AddVertex(bbox.GetCenter() - sunDir * 4.0f);
+
+	float bboxSize = length(bbox.GetSize());
+	return g_pGameWorld->m_occludingFrustum.IsSphereVisible(bbox.GetCenter(), bboxSize);
+}
+
 void CShadowRenderer::AddShadowCaster( CGameObject* object, struct shadowListObject_t* addTo )
 {
-	if(!m_isInit)
+	if (!m_isInit || !r_shadows.GetBool())
 		return;
 
 	if(object->GetModel() == NULL) // egf model required
 		return;
 
-	// only cars, and physics (incl debris)
-	if(!addTo)
-	{
-		int objectType = object->ObjType();
-
-		if(!(objectType == GO_CAR || objectType == GO_CAR_AI || objectType == GO_PHYSICS || objectType == GO_DEBRIS || objectType == GO_PEDESTRIAN))
-			return;
-
-		Vector3D viewPos = g_pGameWorld->GetView()->GetOrigin();
-		if(length(viewPos-object->GetOrigin()) > r_shadowDist.GetFloat())
-			return;
-	}
+	if (!addTo && !CanCastShadows(object))
+		return;
 
 	shadowListObject_t* casterObject = new shadowListObject_t;
 	casterObject->object = object;
 
 	int numShadowCasterObjects = object->GetChildCasterCount();
 
-	for(int i = 0; i < numShadowCasterObjects; i++)
+	for (int i = 0; i < numShadowCasterObjects; i++)
+	{
 		AddShadowCaster(object->GetChildShadowCaster(i), casterObject);
+	}
 
 	if(addTo)
 	{
@@ -215,9 +227,11 @@ void CShadowRenderer::AddShadowCaster( CGameObject* object, struct shadowListObj
 	}
 	else
 	{
-		float shadowSize = length(object->GetModel()->GetAABB().GetSize()) * SHADOW_SCALING;
-		m_texAtlasPacker.AddRectangle(shadowSize, shadowSize, casterObject);
+		float shadowObjectSize = length(object->GetModel()->GetAABB().GetSize()) * SHADOW_SCALING;
+
+		m_packer.AddRectangle(shadowObjectSize, shadowObjectSize, casterObject);
 	}
+
 }
 
 void CShadowRenderer::Clear()
@@ -225,7 +239,14 @@ void CShadowRenderer::Clear()
 	if(!m_isInit)
 		return;
 
-	m_texAtlasPacker.Cleanup();
+	// destroy the unreleased lists as well
+	for (int i = 0; i < m_packer.GetRectangleCount(); i++)
+	{
+		shadowListObject_t* list = (shadowListObject_t*)m_packer.GetRectangleUserData(i);
+		FreeShadowList(list);
+	}
+	m_packer.Cleanup();
+
 	CSpriteBuilder::ClearBuffers();
 }
 
@@ -236,7 +257,7 @@ inline int AtlasPackComparison(PackerRectangle *const &elem0, PackerRectangle *c
 
 bool ShadowDecalClipping(struct decalsettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
 {
-	CGameObject* object = (CGameObject*)settings.userData;
+	CGameObject* object = ((shadowListObject_t*)settings.userData)->object;
 
 	Vector3D triNormal = NormalOfTriangle(v1.point,v2.point,v3.point);
 	Vector3D facingToObjectNormal = fastNormalize(object->GetOrigin() - v1.point);
@@ -268,25 +289,30 @@ void CShadowRenderer::RenderShadowCasters()
 
 	Vector2D neededTexSize = m_shadowTextureSize;
 
-	// process 
-	if(!m_texAtlasPacker.AssignCoords(neededTexSize.x,neededTexSize.y)) //, AtlasPackComparison))
+	PROFILE_BEGIN(PackRects);
+
+	// pack all rectangles
+	if (!m_packer.AssignCoords(neededTexSize.x, neededTexSize.y)) //, AtlasPackComparison))
 	{
-		debugoverlay->Text(ColorRGBA(1,0,0,1), "shadows render overflow");
-		return; // don't render shadows, size overflow
+		// delete all decals since it's sick
+		for (int i = 0; i < m_packer.GetRectangleCount(); i++)
+		{
+			shadowListObject_t* objectGroup = (shadowListObject_t*)m_packer.GetRectangleUserData(i);
+
+			// delete all grouped objects
+			FreeShadowList(objectGroup);
+		}
+
+		m_packer.Cleanup();
+
+		debugoverlay->Text(ColorRGBA(1, 0, 0, 1), "shadows render overflow");
+
+		return; // skip the render
 	}
 
-	Matrix4x4 proj, view, viewProj;
+	PROFILE_END();
 
-	decalprimitives_t shadowDecal;
-	shadowDecal.settings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
-	shadowDecal.processFunc = ShadowDecalClipping;
-
-	CViewParams orthoView;
-
-	orthoView.SetFOV(0.5f);
-	orthoView.SetAngles(Vector3D(m_shadowAngles.x,m_shadowAngles.y,m_shadowAngles.z));
-
-	debugoverlay->Text(ColorRGBA(1), "shadows: %d", m_texAtlasPacker.GetRectangleCount());
+	debugoverlay->Text(ColorRGBA(1), "shadows: %d", m_packer.GetRectangleCount());
 
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
 	g_pShaderAPI->ChangeVertexBuffer( NULL, 2 );
@@ -300,47 +326,178 @@ void CShadowRenderer::RenderShadowCasters()
 
 	Vector2D halfTexSizeNeg = m_shadowTextureSize*-1.0f*SHADOW_DESCALING;
 
+	Matrix4x4 proj, view, viewProj;
+
 	const Vector3D& viewPos = g_pGameWorld->GetView()->GetOrigin();
+
+	CViewParams orthoView;
+
+	orthoView.SetFOV(0.5f);
+	orthoView.SetAngles(Vector3D(m_shadowAngles.x, m_shadowAngles.y, m_shadowAngles.z));
+
 	float distFac = 1.0f / r_shadowDist.GetFloat();
 
 	bool flipY = (g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_OPENGL);
 
-	for(int i = 0; i < m_texAtlasPacker.GetRectangleCount(); i++)
-	{
-		void* userData;
-		Rectangle_t shadowRect;
-		m_texAtlasPacker.GetRectangle(shadowRect, &userData, i);
+	decalPrimitives_t shadowDecal;
+	shadowDecal.processFunc = ShadowDecalClipping;
+	shadowDecal.settings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
 
-		shadowListObject_t* objectGroup = (shadowListObject_t*)userData;
+	PROFILE_BEGIN(GenerateDecals);
+
+	// generate decals before render targets
+	for (int i = 0; i < m_packer.GetRectangleCount(); i++)
+	{
+		shadowDecal.verts.clear(false);
+		shadowDecal.bbox.Reset();
+
+		// get the object
+		shadowListObject_t* objectGroup;
+
+		// get the rectangle on the texture
+		Rectangle_t shadowRect;
+		m_packer.GetRectangle(shadowRect, (void**)&objectGroup, i);
+
 		CGameObject* firstObject = objectGroup->object;
 
+		float shadowObjectSize = length(firstObject->GetModel()->GetAABB().GetSize()) * SHADOW_SCALING;
+
 		// calculate view
-		Vector2D shadowPos = shadowRect.vleftTop*SHADOW_DESCALING;
-		Vector2D shadowSize = shadowRect.GetSize()-SHADOW_CROP;
+		Vector2D shadowSize = shadowObjectSize - SHADOW_CROP;
 
-		IRectangle copyRect(shadowRect.vleftTop, shadowRect.vrightBottom);
-
-		shadowRect.vleftTop *= m_shadowTexelSize;
-		shadowRect.vrightBottom *= m_shadowTexelSize;
-
-		IVector2D copyRectSize = copyRect.GetSize();
-		g_pShaderAPI->SetViewport(copyRect.vleftTop.x,copyRect.vleftTop.y, copyRectSize.x, copyRectSize.y);
+		// for texture coordinates management
+		//Rectangle_t shadowRect(0.0f, 0.0f, shadowSize.x, shadowSize.y);
 
 		// take shadow height for near plane using first object AABB
 		float shadowHeight = length(firstObject->m_bbox.GetSize())*0.5f;
 
 		// move view to the object origin
 		orthoView.SetOrigin(firstObject->GetOrigin());
-		orthoView.GetMatrices(proj, view, shadowSize.x*SHADOW_DESCALING, shadowSize.y*SHADOW_DESCALING, -shadowHeight, 100.0f, true );
-		
+		orthoView.GetMatrices(proj, view, shadowSize.x*SHADOW_DESCALING, shadowSize.y*SHADOW_DESCALING, -shadowHeight, 100.0f, true);
+
 		shadowDecal.settings.facingDir = view.rows[2].xyz();
-		
-		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
-		materials->SetMatrix(MATRIXMODE_VIEW, view);
+		shadowDecal.settings.userData = objectGroup;
+
+		// project our decal to sprite builder
 		viewProj = proj * view;
 
+		float shadowAlpha = length(orthoView.GetOrigin() - viewPos) * distFac;
+		shadowAlpha = 1.0f - pow(max(0.0f, shadowAlpha), 8.0f);
+
+		if (shadowAlpha <= 0.0f)
+		{
+			FreeShadowList(objectGroup);
+			continue;
+		}
+
+		Plane nearPlane(-vec3_up, firstObject->m_bbox.maxPoint.y);
+
+		shadowDecal.settings.clipVolume.LoadAsFrustum(viewProj);
+		shadowDecal.settings.clipVolume.SetupPlane(nearPlane, VOLUME_PLANE_NEAR);
+
+		if (flipY)
+			shadowRect.FlipY();
+
+		Rectangle_t texCoordRect = shadowRect;
+		texCoordRect.vleftTop *= m_shadowTexelSize;
+		texCoordRect.vrightBottom *= m_shadowTexelSize;
+
+		// copy over
+		decalPrimitivesRef_t ref = ProjectDecalToSpriteBuilder(shadowDecal, this, texCoordRect, viewProj, ColorRGBA(1, 1, 1, shadowAlpha));
+
+		// don't draw decal if it has no polys at all
+		if (!ref.numVerts)
+		{
+			FreeShadowList(objectGroup);
+			continue;
+		}
+
+		materials->SetMatrix(MATRIXMODE_VIEW, view);
+		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
+
+		// now draw the decal
+		PROFILE_BEGIN(RenderShadow);
+		{
+			// prepare viewport
+			IRectangle viewportRect(shadowRect.vleftTop, shadowRect.vrightBottom);
+			IVector2D viewportRectSize = viewportRect.GetSize();
+
+			// prepare to draw
+			g_pShaderAPI->SetViewport(viewportRect.vleftTop.x, viewportRect.vleftTop.y, viewportRectSize.x, viewportRectSize.y);
+
+			// draw all grouped objects as single shadow
+			while (objectGroup)
+			{
+				CGameObject* curObject = objectGroup->object;
+
+				EShadowModelRenderMode renderMode = GetObjectRenderMode(curObject);
+
+				materials->SetMatrix(MATRIXMODE_WORLD, curObject->m_worldMatrix);
+
+				if (!r_shadows_debugatlas.GetBool())
+					RenderShadow(curObject, curObject->GetBodyGroups(), renderMode);
+
+				// free all stuff as we don't need it
+				shadowListObject_t* prev = objectGroup;
+
+				objectGroup = objectGroup->next;
+				delete prev;
+			};
+		}
+		PROFILE_END();
+	}
+
+	m_packer.Cleanup();
+
+	PROFILE_END();
+
+	/*
+	PROFILE_BEGIN(RenderShadowTex);
+
+	for (int i = 0; i < m_packer.GetRectangleCount(); i++)
+	{
+		decalPrimitivesRef_t* decalRef;
+
+		// get the rectangle on the texture
+		Rectangle_t shadowRect;
+		packer.GetRectangle(shadowRect, (void**)&decalRef, i);
+
+		for (int j = 0; j < decalRef->numVerts; j++)
+		{
+			PFXVertex_t& vert = decalRef->verts[j];
+
+			Vector2D texCoord(vert.texcoord);
+
+			texCoord *= m_shadowTexelSize;			// resize
+			//texCoord += m_shadowTexelSize*2.0f;		// offset 2x2 texels
+			texCoord += shadowRect.vleftTop * m_shadowTexelSize;	// offset on texture
+
+			vert.texcoord = texCoord;
+		}
+
+		// get the object
+		shadowListObject_t* objectGroup = (shadowListObject_t*)decalRef->userData;
+		CGameObject* firstObject = objectGroup->object;
+
+		Vector2D shadowSize = shadowRect.GetSize() - SHADOW_CROP;
+		float shadowHeight = length(firstObject->m_bbox.GetSize())*0.5f;
+
+		// prepare viewport
+		IRectangle viewportRect(shadowRect.vleftTop, shadowRect.vrightBottom);
+		IVector2D viewportRectSize = viewportRect.GetSize();
+
+		// prepare to draw
+		g_pShaderAPI->SetViewport(viewportRect.vleftTop.x, viewportRect.vleftTop.y, viewportRectSize.x, viewportRectSize.y);
+
+		// move view to the object origin
+		orthoView.SetOrigin(firstObject->GetOrigin());
+		orthoView.GetMatrices(proj, view, shadowSize.x*SHADOW_DESCALING, shadowSize.y*SHADOW_DESCALING, -shadowHeight, 100.0f, true);
+
+		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
+		materials->SetMatrix(MATRIXMODE_VIEW, view);
+
 		// draw all grouped objects as single shadow
-		while(objectGroup)
+		while (objectGroup)
 		{
 			CGameObject* curObject = objectGroup->object;
 
@@ -348,35 +505,25 @@ void CShadowRenderer::RenderShadowCasters()
 
 			materials->SetMatrix(MATRIXMODE_WORLD, curObject->m_worldMatrix);
 
-			if(!r_shadows_debugatlas.GetBool())
-				RenderShadow( curObject, curObject->GetBodyGroups(), renderMode);
+			if (!r_shadows_debugatlas.GetBool())
+				RenderShadow(curObject, curObject->GetBodyGroups(), renderMode);
 
+			// free all stuff as we don't need it
 			shadowListObject_t* prev = objectGroup;
 
 			objectGroup = objectGroup->next;
 			delete prev;
 		};
 
-		// copy temporary shadow buffer result to shadow atlas
-		//g_pShaderAPI->CopyRendertargetToTexture(m_shadowRt, m_shadowTexture, NULL, &copyRect);
-
-		// project our decal to sprite builder
-		float shadowAlpha = length(orthoView.GetOrigin()-viewPos) * distFac;
-		shadowAlpha = 1.0f - pow(max(0.0f, shadowAlpha), 8.0f);
-
-		Plane nearPlane(-vec3_up, firstObject->m_bbox.maxPoint.y);
-
-		shadowDecal.settings.clipVolume.LoadAsFrustum(viewProj);
-		shadowDecal.settings.clipVolume.SetupPlane(nearPlane, VOLUME_PLANE_NEAR);
-		shadowDecal.settings.userData = firstObject;
-
-		if(flipY)
-			shadowRect.FlipY();
-
-		ProjectDecalToSpriteBuilder( shadowDecal, this, shadowRect, viewProj, ColorRGBA(1,1,1,shadowAlpha) );
+		// free all stuff as we don't need it
+		delete decalRef;
 	}
-
+	*/
 	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
+
+	g_pShaderAPI->Flush();
+
+	PROFILE_END();
 }
 
 void CShadowRenderer::Draw()
@@ -437,7 +584,7 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 	// force disable vertex buffer
 	g_pShaderAPI->SetVertexBuffer( NULL, 2 );
 
-	//object->Draw(RFLAG_SHADOW | RFLAG_NOINSTANCE);
+	materials->SetCullMode(CULL_FRONT);
 
 	studiohdr_t* pHdr = model->GetHWData()->studio;
 

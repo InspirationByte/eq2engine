@@ -111,7 +111,7 @@ struct CollisionPairData_t
 	CEqCollisionObject*	bodyA;
 	CEqCollisionObject*	bodyB;
 
-	CEqCollisionObject* GetOppositeTo(CEqCollisionObject* obj);
+	CEqCollisionObject* GetOppositeTo(CEqCollisionObject* obj) const;
 
 	FVector3D			position;			// position in world
 	Vector3D			normal;

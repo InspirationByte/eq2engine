@@ -50,12 +50,12 @@ bool LightDecalTriangleProcessFunc(struct decalsettings_t& settings, PFXVertex_t
 	return true;
 }
 
-decalprimitives_t::decalprimitives_t()
+decalPrimitives_t::decalPrimitives_t()
 {
 	processFunc = DefaultDecalTriangleProcessFunc;
 }
 
-void decalprimitives_t::AddTriangle(const Vector3D& p1, const Vector3D& p2, const Vector3D& p3)
+void decalPrimitives_t::AddTriangle(const Vector3D& p1, const Vector3D& p2, const Vector3D& p3)
 {
 	PFXVertex_t v1(p1, vec2_zero, color4_white);
 	PFXVertex_t v2(p2, vec2_zero, color4_white);
@@ -67,6 +67,15 @@ void decalprimitives_t::AddTriangle(const Vector3D& p1, const Vector3D& p2, cons
 	verts.append(v1);
 	verts.append(v2);
 	verts.append(v3);
+}
+
+decalPrimitivesRef_t::decalPrimitivesRef_t() : 
+	verts(nullptr),
+	indices(nullptr),
+	numVerts(0),
+	numIndices(0),
+	userData(nullptr)
+{
 }
 
 //-------------------------------------------------------------------------------------
@@ -154,7 +163,7 @@ void ClipVerts(DkList<PFXVertex_t>& verts, const Plane &plane)
 
 //--------------------------------------------------------------------------------------------------------------
 
-void DecalClipAndTexture(decalprimitives_t& decal, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, const ColorRGBA& color)
+void DecalClipAndTexture(decalPrimitives_t& decal, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, const ColorRGBA& color)
 {
 	for(int i = 0; i < decal.verts.numElem(); i++)
 	{
@@ -183,9 +192,12 @@ void DecalClipAndTexture(decalprimitives_t& decal, const Matrix4x4& texCoordProj
 				ClipVerts(decal.verts, pl);
 		}
 	}
+
+	for (int i = 0; i < decal.verts.numElem(); i++)
+		decal.bbox.AddVertex(decal.verts[i].point);
 }
 
-void ProjectDecalToSpriteBuilder(decalprimitives_t& decal, CSpriteBuilder<PFXVertex_t>* group, const Rectangle_t& rect, const Matrix4x4& viewProj, const ColorRGBA& color)
+decalPrimitivesRef_t ProjectDecalToSpriteBuilder(decalPrimitives_t& decal, CSpriteBuilder<PFXVertex_t>* group, const Rectangle_t& rect, const Matrix4x4& viewProj, const ColorRGBA& color)
 {
 	// make shadow volume and get our shadow polygons from world
 	if(!decal.settings.customClipVolume)
@@ -193,11 +205,18 @@ void ProjectDecalToSpriteBuilder(decalprimitives_t& decal, CSpriteBuilder<PFXVer
 
 	g_pGameWorld->m_level.GetDecalPolygons(decal, &g_pGameWorld->m_occludingFrustum);
 
+	decalPrimitivesRef_t ref;
+	ref.userData = decal.settings.userData;
+
 	if(!decal.verts.numElem())
-		return;
+		return ref;
 
 	// clip decal polygons by volume and apply projection coords
 	DecalClipAndTexture(decal, viewProj, rect, color);
+
+	// use sphere approach
+	if (!g_pGameWorld->m_occludingFrustum.frustum.IsSphereInside(decal.bbox.GetCenter(), length(decal.bbox.GetSize())))
+		return ref;
 
 	// push geometry
 	PFXVertex_t* verts;
@@ -206,5 +225,9 @@ void ProjectDecalToSpriteBuilder(decalprimitives_t& decal, CSpriteBuilder<PFXVer
 	if(startIdx != -1)
 	{
 		memcpy(verts, decal.verts.ptr(), decal.verts.numElem()*sizeof(PFXVertex_t));
+		ref.verts = verts;
+		ref.numVerts = decal.verts.numElem();
 	}
+
+	return ref;
 }

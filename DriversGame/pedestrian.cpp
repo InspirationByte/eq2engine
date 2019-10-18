@@ -91,6 +91,8 @@ CPedestrian::CPedestrian() : CAnimatingEGF(), CControllableGameObject(), m_think
 
 	m_thinkTime = 0;
 	m_hasAI = false;
+
+	m_drawFlags |= GO_DRAW_FLAG_SHADOW;
 }
 
 CPedestrian::CPedestrian(pedestrianConfig_t* config) : CPedestrian()

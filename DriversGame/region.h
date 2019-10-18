@@ -247,7 +247,7 @@ public:
 	int								GetNumHFields() const;
 	int								GetNumNomEmptyHFields() const;
 
-	void							GetDecalPolygons(decalprimitives_t& polys, occludingFrustum_t* frustum);
+	void							GetDecalPolygons(decalPrimitives_t& polys, occludingFrustum_t* frustum);
 
 	void							UpdateDebugMaps();
 

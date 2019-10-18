@@ -1,12 +1,17 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2019
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Drivers vehicle
+// Description: Game definitions
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "car.h"
 #include "GameDefs.h"
+
+ConVar		g_autoHandbrake("g_autoHandbrake", "1", "Auto handbrake for steering help", CV_ARCHIVE);
+ConVar		g_invicibility("g_invicibility", "0", "No damage for player car", CV_CHEAT);
+ConVar		g_infiniteMass("g_infiniteMass", "0", "Infinite mass for player car", CV_CHEAT);
+ConVar		g_difficulty("g_difficulty", "0", "Difficulty of the game", CV_ARCHIVE);
 
 RoadBlockInfo_t::~RoadBlockInfo_t()
 {
@@ -38,6 +43,6 @@ const slipAngleCurveParams_t& GetDefaultSlipCurveParams()
 
 const slipAngleCurveParams_t& GetAISlipCurveParams()
 {
-	// FIXME: should be different by difficulty
+	// FIXME: should be different by g_difficulty
 	return s_AISlipAngleParams;
 }
