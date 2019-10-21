@@ -220,6 +220,8 @@ void CPedestrian::Draw(int nRenderFlags)
 
 	UpdateTransform();
 	DrawEGF(nRenderFlags, m_boneTransforms);
+
+	m_shadowDecal.dirty = true;
 }
 
 const float ACCEL_RATIO = 12.0f;

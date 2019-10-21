@@ -288,7 +288,7 @@ bool CState_MainMenu::Update( float fDt )
 	if(m_textEffect < 0)
 		m_textEffect = 0.0f;
 
-	if(m_changesMenu > 0 && m_textFade <= 0.0f)
+	if(m_changesMenu > 0 && m_textFade <= 0.0f || m_goesFromMenu)
 	{
 		if(m_changesMenu == MENU_ENTER)
 		{

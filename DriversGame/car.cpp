@@ -2712,7 +2712,7 @@ void CCar::Simulate( float fDt )
 				lightDecal.settings.facingDir = normalize(vec3_up - forwardVec);
 
 				// might be slow on mobile device
-				lightDecal.processFunc = LightDecalTriangleProcessFunc;
+				lightDecal.settings.processFunc = LightDecalTriangleProcessFunc;
 
 				ProjectDecalToSpriteBuilder(lightDecal, g_vehicleLights, flipRect, viewProj, lightDecalColor);
 			}
@@ -4239,9 +4239,7 @@ void CCar::DrawShadow(float distance)
 		shadowDecal.settings.facingDir = vec3_up;
 
 		// might be slow on mobile device
-		shadowDecal.processFunc = LightDecalTriangleProcessFunc;
-
-		//ColorRGBA(1.0f, 1.0f, 1.0f, clamp(0.8f + 1.0f-(shadowcoll.fract*8.0f), 0.0f, 1.0f));
+		shadowDecal.settings.processFunc = LightDecalTriangleProcessFunc;
 
 		ProjectDecalToSpriteBuilder(shadowDecal, g_vehicleShadows, flipRect, viewProj, ColorRGBA(1.0f,1.0f,1.0f,1.0f));
 	}
@@ -4295,15 +4293,14 @@ void CCar::Draw( int nRenderFlags )
 		g_pGameSession->GetViewObject() == this)
 		isBodyDrawn = false;
 #endif // EDITOR
-
-	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom(GetOrigin());
-	int nLOD = m_pModel->SelectLod(camDist); // lod distance check
-
-	bool isShadowPass = (nRenderFlags & RFLAG_SHADOW) > 0;
-
-	if (isBodyDrawn)
 	{
-		if (!isShadowPass)
+
+		float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom(GetOrigin());
+		int nLOD = m_pModel->SelectLod(camDist); // lod distance check
+
+		CEqRigidBody* pCarBody = m_physObj->GetBody();
+
+		if (isBodyDrawn)
 		{
 			// draw fake shadow
 			DrawShadow(camDist);
@@ -4313,27 +4310,25 @@ void CCar::Draw( int nRenderFlags )
 				m_driverModel.m_worldMatrix = m_worldMatrix * translate(m_conf->visual.driverPosition);
 				m_driverModel.Draw(nRenderFlags);
 			}
+
+			materials->SetMatrix(MATRIXMODE_WORLD, m_worldMatrix);
+
+			// draw car body with damage effects
+			DrawBody(nRenderFlags, nLOD);
 		}
 
-		materials->SetMatrix(MATRIXMODE_WORLD, m_worldMatrix);
-
-		// draw car body with damage effects
-		DrawBody(nRenderFlags, nLOD);
-	}
-
-	// draw wheels
-	if(!isShadowPass)
-	{
-		CEqRigidBody* pCarBody = m_physObj->GetBody();
+		// draw wheels
+		if (!pCarBody->IsFrozen())
+			m_shadowDecal.dirty = true;
 
 		pCarBody->UpdateBoundingBoxTransform();
 		m_bbox = pCarBody->m_aabb_transformed;
 
-		if(nLOD == 0)
+		if (nLOD == 0)
 		{
 			int numWheels = GetWheelCount();
 
-			for(int i = 0; i < numWheels; i++)
+			for (int i = 0; i < numWheels; i++)
 			{
 				CCarWheel& wheel = m_wheels[i];
 				carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
@@ -4344,7 +4339,7 @@ void CCar::Draw( int nRenderFlags )
 				wheel.SetOrigin(transpose(wheel.m_worldMatrix).getTranslationComponent());
 				wheel.m_bbox = m_bbox;
 
-				if(isBodyDrawn)
+				if (isBodyDrawn)
 					wheel.Draw(nRenderFlags);
 
 				DrawWheelEffects(i);

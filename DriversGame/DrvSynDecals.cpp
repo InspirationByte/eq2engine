@@ -11,7 +11,7 @@
 ConVar r_clipdecals("r_clipdecals", "1");
 ConVar r_clipdecalplane("r_clipdecalplane", "-1");
 
-bool DefaultDecalTriangleProcessFunc(struct decalsettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
+bool DefaultDecalTriangleProcessFunc(struct decalSettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
 {
 	if(dot(NormalOfTriangle(v1.point,v2.point,v3.point), settings.facingDir) < 0.0f)
 		return false;
@@ -19,7 +19,7 @@ bool DefaultDecalTriangleProcessFunc(struct decalsettings_t& settings, PFXVertex
 	return true;
 }
 
-bool LightDecalTriangleProcessFunc(struct decalsettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
+bool LightDecalTriangleProcessFunc(struct decalSettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
 {
 	if(dot(NormalOfTriangle(v1.point,v2.point,v3.point), settings.facingDir) < 0.0f)
 		return false;
@@ -50,9 +50,28 @@ bool LightDecalTriangleProcessFunc(struct decalsettings_t& settings, PFXVertex_t
 	return true;
 }
 
+decalSettings_t::decalSettings_t()
+{
+	avoidMaterialFlags = 0;
+	facingDir = vec3_up;
+	customClipVolume = false;
+	skipTexCoords = false;
+	userData = nullptr;
+	processFunc = DefaultDecalTriangleProcessFunc;
+}
+
+//-------------------------------------------------------------------------------------
+
 decalPrimitives_t::decalPrimitives_t()
 {
-	processFunc = DefaultDecalTriangleProcessFunc;
+	dirty = true;
+}
+
+void decalPrimitives_t::Clear()
+{
+	verts.clear(false);
+	bbox.Reset();
+	dirty = true;
 }
 
 void decalPrimitives_t::AddTriangle(const Vector3D& p1, const Vector3D& p2, const Vector3D& p3)
@@ -61,12 +80,14 @@ void decalPrimitives_t::AddTriangle(const Vector3D& p1, const Vector3D& p2, cons
 	PFXVertex_t v2(p2, vec2_zero, color4_white);
 	PFXVertex_t v3(p3, vec2_zero, color4_white);
 
-	if((*processFunc)(settings, v1, v2, v3) == false)
+	if((*settings.processFunc)(settings, v1, v2, v3) == false)
 		return;
 
 	verts.append(v1);
 	verts.append(v2);
 	verts.append(v3);
+
+	dirty = true;
 }
 
 decalPrimitivesRef_t::decalPrimitivesRef_t() : 
@@ -93,6 +114,7 @@ inline PFXVertex_t lerpVertex(const PFXVertex_t &u, const PFXVertex_t &v, float 
 void ClipVerts(DkList<PFXVertex_t>& verts, const Plane &plane)
 {
 	DkList<PFXVertex_t> new_vertices;
+	new_vertices.resize(verts.numElem()*2);
 
 	for(int i = 0; i < verts.numElem(); i += 3)
 	{
@@ -163,32 +185,15 @@ void ClipVerts(DkList<PFXVertex_t>& verts, const Plane &plane)
 
 //--------------------------------------------------------------------------------------------------------------
 
-void DecalClipAndTexture(decalPrimitives_t& decal, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, const ColorRGBA& color)
+void DecalClip(decalPrimitives_t& decal)
 {
-	for(int i = 0; i < decal.verts.numElem(); i++)
+	if (r_clipdecals.GetBool())
 	{
-		PFXVertex_t& vert = decal.verts[i];
-
-		Vector3D pos = vert.point;
-
-		Vector4D projCoords = texCoordProj*Vector4D(pos,1.0f)*1.0f;
-
-		projCoords.x *= -1.0f;
-
-		Vector4D proj 		= projCoords + projCoords.w;
-		Vector2D texCoord	= proj.xy() / proj.w;
-
-		vert.texcoord = lerp(atlasRect.vrightBottom, atlasRect.vleftTop, texCoord);
-		vert.color = ColorRGBA(decal.verts[i].color) * color; // multiply
-	}
-
-	if(r_clipdecals.GetBool())
-	{
-		for(int i = 0; i < 6; i++)
+		for (int i = 0; i < 6; i++)
 		{
 			const Plane& pl = decal.settings.clipVolume.GetPlane(i);
 
-			if(r_clipdecalplane.GetInt() == -1 || r_clipdecalplane.GetInt() == i)
+			if (r_clipdecalplane.GetInt() == -1 || r_clipdecalplane.GetInt() == i)
 				ClipVerts(decal.verts, pl);
 		}
 	}
@@ -197,36 +202,76 @@ void DecalClipAndTexture(decalPrimitives_t& decal, const Matrix4x4& texCoordProj
 		decal.bbox.AddVertex(decal.verts[i].point);
 }
 
+void _DecalTextureVertex(PFXVertex_t& vert, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, const ColorRGBA& color)
+{
+	Vector4D projCoords = texCoordProj * Vector4D(vert.point, 1.0f);
+
+	projCoords.x *= -1.0f;
+
+	Vector4D proj = projCoords + projCoords.w;
+	Vector2D texCoord = proj.xy() / proj.w;
+
+	vert.texcoord = lerp(atlasRect.vrightBottom, atlasRect.vleftTop, texCoord);
+	vert.color = ColorRGBA(vert.color) * color; // multiply
+}
+
+// clips decals by specified planes and calculates texture coordinates
+void DecalTexture(decalPrimitives_t& decal, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, const ColorRGBA& color)
+{
+	for(int i = 0; i < decal.verts.numElem(); i++)
+	{
+		PFXVertex_t& vert = decal.verts[i];
+		_DecalTextureVertex(vert, texCoordProj, atlasRect, color);
+	}
+}
+
+void DecalTexture(decalPrimitivesRef_t& decal, const Matrix4x4& texCoordProj, const Rectangle_t& atlasRect, const ColorRGBA& color)
+{
+	for (int i = 0; i < decal.numVerts; i++)
+	{
+		PFXVertex_t& vert = decal.verts[i];
+		_DecalTextureVertex(vert, texCoordProj, atlasRect, color);
+	}
+}
+
 decalPrimitivesRef_t ProjectDecalToSpriteBuilder(decalPrimitives_t& decal, CSpriteBuilder<PFXVertex_t>* group, const Rectangle_t& rect, const Matrix4x4& viewProj, const ColorRGBA& color)
 {
-	// make shadow volume and get our shadow polygons from world
-	if(!decal.settings.customClipVolume)
-		decal.settings.clipVolume.LoadAsFrustum( viewProj );
-
-	g_pGameWorld->m_level.GetDecalPolygons(decal, &g_pGameWorld->m_occludingFrustum);
-
 	decalPrimitivesRef_t ref;
 	ref.userData = decal.settings.userData;
 
-	if(!decal.verts.numElem())
-		return ref;
+	if (decal.dirty)	// if marked dirty specially
+	{
+		// make shadow volume and get our shadow polygons from world
+		if (!decal.settings.customClipVolume)
+			decal.settings.clipVolume.LoadAsFrustum(viewProj);
 
-	// clip decal polygons by volume and apply projection coords
-	DecalClipAndTexture(decal, viewProj, rect, color);
+		g_pGameWorld->m_level.GetDecalPolygons(decal, &g_pGameWorld->m_occludingFrustum);
 
-	// use sphere approach
-	if (!g_pGameWorld->m_occludingFrustum.frustum.IsSphereInside(decal.bbox.GetCenter(), length(decal.bbox.GetSize())))
+		// apply projection coords
+		if(!decal.settings.skipTexCoords)
+			DecalTexture(decal, viewProj, rect, color);
+
+		// clip decal polygons by volume
+		DecalClip(decal);
+
+		// it's dirty if there are still no verts
+		decal.dirty = decal.verts.numElem() == 0;
+	}
+	
+	int numVerts = decal.verts.numElem();
+
+	if (!numVerts)
 		return ref;
 
 	// push geometry
 	PFXVertex_t* verts;
-	int startIdx = group->AllocateGeom(decal.verts.numElem(), 0, &verts, NULL, false);
+	int startIdx = group->AllocateGeom(numVerts, 0, &verts, NULL, false);
 
 	if(startIdx != -1)
 	{
-		memcpy(verts, decal.verts.ptr(), decal.verts.numElem()*sizeof(PFXVertex_t));
+		memcpy(verts, decal.verts.ptr(), numVerts *sizeof(PFXVertex_t));
 		ref.verts = verts;
-		ref.numVerts = decal.verts.numElem();
+		ref.numVerts = numVerts;
 	}
 
 	return ref;

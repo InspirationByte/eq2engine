@@ -362,6 +362,10 @@ void CObject_Debris::Draw( int nRenderFlags )
 	if(!m_physBody)
 		return;
 
+	// draw wheels
+	if (!m_physBody->IsFrozen())
+		m_shadowDecal.dirty = true;
+
 	//if(!g_pGameWorld->m_frustum.IsSphereInside(GetOrigin(), length(objBody->m_aabb.maxPoint)))
 	//	return;
 

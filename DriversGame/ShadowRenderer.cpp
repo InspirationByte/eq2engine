@@ -20,6 +20,8 @@ ConVar r_shadowLod("r_shadowLod", "0", NULL, CV_ARCHIVE);
 
 ConVar r_shadows("r_shadows", "1", NULL, CV_ARCHIVE);
 
+ConVar r_shadowAngleDirtyThresh("r_shadowAngleDirtyThresh", "2.0");
+
 ConVar r_shadowDist("r_shadowDist", "50", NULL, CV_ARCHIVE);
 
 const float SHADOW_SCALING = 24.0f;
@@ -255,7 +257,7 @@ inline int AtlasPackComparison(PackerRectangle *const &elem0, PackerRectangle *c
 	return (elem1->width + elem1->height) - (elem0->width + elem0->height);
 }
 
-bool ShadowDecalClipping(struct decalsettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
+bool ShadowDecalClipping(struct decalSettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
 {
 	CGameObject* object = ((shadowListObject_t*)settings.userData)->object;
 
@@ -264,6 +266,8 @@ bool ShadowDecalClipping(struct decalsettings_t& settings, PFXVertex_t& v1, PFXV
 
 	if(dot(triNormal, facingToObjectNormal) < 0.0f || dot(triNormal, settings.facingDir) < 0.0f)
 		return false;
+
+	// TODO: calc alpha here
 
 	return true;
 }
@@ -333,24 +337,22 @@ void CShadowRenderer::RenderShadowCasters()
 	CViewParams orthoView;
 
 	orthoView.SetFOV(0.5f);
-	orthoView.SetAngles(Vector3D(m_shadowAngles.x, m_shadowAngles.y, m_shadowAngles.z));
+	orthoView.SetAngles(m_shadowAngles);
 
 	float distFac = 1.0f / r_shadowDist.GetFloat();
 
 	bool flipY = (g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_OPENGL);
 
-	decalPrimitives_t shadowDecal;
-	shadowDecal.processFunc = ShadowDecalClipping;
-	shadowDecal.settings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
+	decalSettings_t decalSettings;
+	decalSettings.processFunc = ShadowDecalClipping;
+	decalSettings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
+	decalSettings.skipTexCoords = true;
 
 	PROFILE_BEGIN(GenerateDecals);
 
 	// generate decals before render targets
 	for (int i = 0; i < m_packer.GetRectangleCount(); i++)
 	{
-		shadowDecal.verts.clear(false);
-		shadowDecal.bbox.Reset();
-
 		// get the object
 		shadowListObject_t* objectGroup;
 
@@ -360,13 +362,13 @@ void CShadowRenderer::RenderShadowCasters()
 
 		CGameObject* firstObject = objectGroup->object;
 
+		// use shadow decal of first object
+		decalPrimitives_t& shadowDecal = firstObject->m_shadowDecal;
+
 		float shadowObjectSize = length(firstObject->GetModel()->GetAABB().GetSize()) * SHADOW_SCALING;
 
 		// calculate view
 		Vector2D shadowSize = shadowObjectSize - SHADOW_CROP;
-
-		// for texture coordinates management
-		//Rectangle_t shadowRect(0.0f, 0.0f, shadowSize.x, shadowSize.y);
 
 		// take shadow height for near plane using first object AABB
 		float shadowHeight = length(firstObject->m_bbox.GetSize())*0.5f;
@@ -375,8 +377,8 @@ void CShadowRenderer::RenderShadowCasters()
 		orthoView.SetOrigin(firstObject->GetOrigin());
 		orthoView.GetMatrices(proj, view, shadowSize.x*SHADOW_DESCALING, shadowSize.y*SHADOW_DESCALING, -shadowHeight, 100.0f, true);
 
-		shadowDecal.settings.facingDir = view.rows[2].xyz();
-		shadowDecal.settings.userData = objectGroup;
+		decalSettings.facingDir = view.rows[2].xyz();
+		decalSettings.userData = objectGroup;
 
 		// project our decal to sprite builder
 		viewProj = proj * view;
@@ -390,10 +392,13 @@ void CShadowRenderer::RenderShadowCasters()
 			continue;
 		}
 
-		Plane nearPlane(-vec3_up, firstObject->m_bbox.maxPoint.y);
+		Plane nearPlane(-vec3_up, firstObject->m_bbox.maxPoint.y + orthoView.GetOrigin().y);
 
-		shadowDecal.settings.clipVolume.LoadAsFrustum(viewProj);
-		shadowDecal.settings.clipVolume.SetupPlane(nearPlane, VOLUME_PLANE_NEAR);
+		decalSettings.clipVolume.LoadAsFrustum(viewProj);
+		decalSettings.clipVolume.SetupPlane(nearPlane, VOLUME_PLANE_NEAR);
+		decalSettings.customClipVolume = true;
+
+		shadowDecal.settings = decalSettings;
 
 		if (flipY)
 			shadowRect.FlipY();
@@ -402,8 +407,11 @@ void CShadowRenderer::RenderShadowCasters()
 		texCoordRect.vleftTop *= m_shadowTexelSize;
 		texCoordRect.vrightBottom *= m_shadowTexelSize;
 
+		if (m_invalidateAllDecals || shadowDecal.dirty)
+			shadowDecal.Clear();
+
 		// copy over
-		decalPrimitivesRef_t ref = ProjectDecalToSpriteBuilder(shadowDecal, this, texCoordRect, viewProj, ColorRGBA(1, 1, 1, shadowAlpha));
+		decalPrimitivesRef_t ref = ProjectDecalToSpriteBuilder(shadowDecal, this, texCoordRect, viewProj);
 
 		// don't draw decal if it has no polys at all
 		if (!ref.numVerts)
@@ -411,6 +419,9 @@ void CShadowRenderer::RenderShadowCasters()
 			FreeShadowList(objectGroup);
 			continue;
 		}
+
+		// recalc texture coords and apply shadow alpha
+		DecalTexture(ref, viewProj, texCoordRect, ColorRGBA(1.0f, 1.0f, 1.0f, shadowAlpha));
 
 		materials->SetMatrix(MATRIXMODE_VIEW, view);
 		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
@@ -451,79 +462,10 @@ void CShadowRenderer::RenderShadowCasters()
 
 	PROFILE_END();
 
-	/*
-	PROFILE_BEGIN(RenderShadowTex);
-
-	for (int i = 0; i < m_packer.GetRectangleCount(); i++)
-	{
-		decalPrimitivesRef_t* decalRef;
-
-		// get the rectangle on the texture
-		Rectangle_t shadowRect;
-		packer.GetRectangle(shadowRect, (void**)&decalRef, i);
-
-		for (int j = 0; j < decalRef->numVerts; j++)
-		{
-			PFXVertex_t& vert = decalRef->verts[j];
-
-			Vector2D texCoord(vert.texcoord);
-
-			texCoord *= m_shadowTexelSize;			// resize
-			//texCoord += m_shadowTexelSize*2.0f;		// offset 2x2 texels
-			texCoord += shadowRect.vleftTop * m_shadowTexelSize;	// offset on texture
-
-			vert.texcoord = texCoord;
-		}
-
-		// get the object
-		shadowListObject_t* objectGroup = (shadowListObject_t*)decalRef->userData;
-		CGameObject* firstObject = objectGroup->object;
-
-		Vector2D shadowSize = shadowRect.GetSize() - SHADOW_CROP;
-		float shadowHeight = length(firstObject->m_bbox.GetSize())*0.5f;
-
-		// prepare viewport
-		IRectangle viewportRect(shadowRect.vleftTop, shadowRect.vrightBottom);
-		IVector2D viewportRectSize = viewportRect.GetSize();
-
-		// prepare to draw
-		g_pShaderAPI->SetViewport(viewportRect.vleftTop.x, viewportRect.vleftTop.y, viewportRectSize.x, viewportRectSize.y);
-
-		// move view to the object origin
-		orthoView.SetOrigin(firstObject->GetOrigin());
-		orthoView.GetMatrices(proj, view, shadowSize.x*SHADOW_DESCALING, shadowSize.y*SHADOW_DESCALING, -shadowHeight, 100.0f, true);
-
-		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
-		materials->SetMatrix(MATRIXMODE_VIEW, view);
-
-		// draw all grouped objects as single shadow
-		while (objectGroup)
-		{
-			CGameObject* curObject = objectGroup->object;
-
-			EShadowModelRenderMode renderMode = GetObjectRenderMode(curObject);
-
-			materials->SetMatrix(MATRIXMODE_WORLD, curObject->m_worldMatrix);
-
-			if (!r_shadows_debugatlas.GetBool())
-				RenderShadow(curObject, curObject->GetBodyGroups(), renderMode);
-
-			// free all stuff as we don't need it
-			shadowListObject_t* prev = objectGroup;
-
-			objectGroup = objectGroup->next;
-			delete prev;
-		};
-
-		// free all stuff as we don't need it
-		delete decalRef;
-	}
-	*/
 	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
-
 	g_pShaderAPI->Flush();
 
-	PROFILE_END();
+	m_invalidateAllDecals = false;
 }
 
 void CShadowRenderer::Draw()
@@ -573,7 +515,13 @@ void CShadowRenderer::Draw()
 
 void CShadowRenderer::SetShadowAngles( const Vector3D& angles )
 {
-	m_shadowAngles = angles;
+	// if sun angle changed significantly, update decals
+	if (!fsimilar(m_shadowAngles.x, angles.x, r_shadowAngleDirtyThresh.GetFloat()) ||
+		!fsimilar(m_shadowAngles.y, angles.y, r_shadowAngleDirtyThresh.GetFloat()))
+	{
+		m_shadowAngles = angles;
+		m_invalidateAllDecals = true;
+	}
 }
 
 void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mode)

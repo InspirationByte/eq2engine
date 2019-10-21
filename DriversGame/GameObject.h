@@ -19,6 +19,8 @@
 
 #include "EGFInstancer.h"
 
+#include "DrvSynDecals.h"
+
 #include "network/netpropvar.h"
 
 using namespace Networking;
@@ -207,6 +209,7 @@ class CGameObject : public CBaseNetworkedObject, public CSoundChannelObject, pub
 	friend class CGameSessionBase;
 	friend class CGameWorld;
 	friend class CPhysicsHFObject;
+	friend class CShadowRenderer;
 	friend class CCar;
 
 public:
@@ -307,6 +310,8 @@ protected:
 	virtual void				OnPhysicsCollide(CollisionPairData_t& pair) {}
 
 	virtual void				UpdateTransform();
+
+	decalPrimitives_t			m_shadowDecal;
 
 	EqString					m_name;
 

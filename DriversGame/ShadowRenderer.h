@@ -57,6 +57,8 @@ protected:
 	IMaterial*			m_shadowResult;
 
 	bool				m_isInit;
+
+	bool				m_invalidateAllDecals;
 };
 
 #endif // SHADOWRENDERER_H
