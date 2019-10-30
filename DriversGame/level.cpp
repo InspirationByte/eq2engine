@@ -1616,7 +1616,7 @@ void CGameLevel::CollectVisibleOccluders(occludingFrustum_t& frustumOccluders, c
 
 extern ConVar r_regularLightTextureUpdates;
 
-void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& occlFrustum, int nRenderFlags)
+void CGameLevel::Render(const Vector3D& cameraPosition, const occludingFrustum_t& occlFrustum, int nRenderFlags)
 {
 	bool renderTranslucency = (nRenderFlags & RFLAG_TRANSLUCENCY) > 0;
 
@@ -1635,11 +1635,11 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 
 			if(region->m_render)
 			{
-				region->Render( cameraPosition, viewProj, occlFrustum, nRenderFlags );
+				region->Render( cameraPosition, occlFrustum, nRenderFlags );
 				region->m_render = false;
 			}
 		}
-
+		
 		int dx[8] = NEIGHBOR_OFFS_XDX(camPosReg.x, 1);
 		int dy[8] = NEIGHBOR_OFFS_YDY(camPosReg.y, 1);
 
@@ -1654,7 +1654,7 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const Matrix4x4& viewPro
 
 				if(nregion->m_render)
 				{
-					nregion->Render( cameraPosition, viewProj, occlFrustum, nRenderFlags );
+					nregion->Render( cameraPosition, occlFrustum, nRenderFlags );
 					nregion->m_render = false;
 				}
 			}

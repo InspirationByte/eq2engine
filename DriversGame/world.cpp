@@ -61,7 +61,7 @@ ConVar r_no3D("r_no3D", "0", "Disable whole 3D rendering", CV_CHEAT);
 
 ConVar r_drawWorld("r_drawWorld", "1", NULL, CV_CHEAT);
 ConVar r_drawObjects("r_drawObjects", "1", NULL, CV_CHEAT);
-ConVar r_drawFakeReflections("r_drawFakeReflections", "1", NULL, CV_ARCHIVE);
+ConVar r_drawReflections("r_drawReflections", "1", NULL, CV_ARCHIVE);
 
 ConVar r_nightBrightness("r_nightBrightness", "1.0", NULL, CV_ARCHIVE);
 ConVar r_drawLensFlare("r_drawLensFlare", "2", "Draw lens flare\n\t1 - query by physics\n\t2 - query by occlusion", CV_ARCHIVE);
@@ -772,7 +772,7 @@ void CGameWorld::Init()
 	}
 	else
 	{
-		r_drawFakeReflections.SetBool(false);
+		r_drawReflections.SetBool(false);
 	}
 
 	if(!m_blurYMaterial)
@@ -1816,13 +1816,13 @@ void CGameWorld::DrawLensFlare( const Vector2D& screenSize, const Vector2D& scre
 	}
 }
 
-void CGameWorld::DrawFakeReflections()
+void CGameWorld::DrawReflections()
 {
 #ifndef EDITOR
 	if (!m_reflectionTex)
 		return;
 
-	bool draw = r_drawFakeReflections.GetBool() && (m_envConfig.lightsType != 0 || m_envWetness > 0.01f);
+	bool draw = r_drawReflections.GetBool() && (m_envConfig.lightsType != 0 || m_envWetness > 0.01f);
 	if (!draw)
 	{
 		// just clear the reflection texture
@@ -1844,7 +1844,13 @@ void CGameWorld::DrawFakeReflections()
 	g_pPhysics->TestLine(m_view.GetOrigin(), m_view.GetOrigin() - Vector3D(0, 100, 0), coll, (OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS));
 
 	float traceResultDist = coll.fract*100.0f;
-	Vector3D newViewPos = -(coll.position - Vector3D(0, traceResultDist,0));
+	Vector3D newViewPos = (coll.position - Vector3D(0, traceResultDist,0));
+
+	// respect water level
+	float waterLevel = m_level.GetWaterLevel(newViewPos);
+
+	if (newViewPos.y < waterLevel)
+		newViewPos.y = waterLevel;
 
 	// flip view
 	{
@@ -1855,7 +1861,7 @@ void CGameWorld::DrawFakeReflections()
 		view = rotateZXY4(radians.x, -radians.y, radians.z);
 		skyView = view;
 
-		view.translate(newViewPos);
+		view.translate(-newViewPos);
 
 		materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
@@ -1869,7 +1875,7 @@ void CGameWorld::DrawFakeReflections()
 
 	Matrix4x4 viewProj = proj*view;
 
-	if(r_drawFakeReflections.GetInt() > 1)
+	if(r_drawReflections.GetInt() > 1)
 	{
 		FogInfo_t fogInfo = m_info.fogInfo;
 		fogInfo.fogColor *= 0.0f;
@@ -1880,7 +1886,7 @@ void CGameWorld::DrawFakeReflections()
 
 		materials->SetMaterialRenderParamCallback(this);
 
-		m_level.Render(newViewPos, viewProj, m_occludingFrustum, 0);
+		m_level.Render(newViewPos, m_occludingFrustum, 0);
 
 		// restore
 		materials->SetAmbientColor(ColorRGBA(1.0f));
@@ -1947,7 +1953,7 @@ void CGameWorld::Draw( int nRenderFlags )
 
 	// below operations started asynchronously
 	PROFILE_CODE(UpdateLightTexture());
-	PROFILE_CODE(DrawFakeReflections());
+	PROFILE_CODE(DrawReflections());
 
 	ColorRGB ambColor = lerp(m_envConfig.ambientColor, m_envConfig.ambientColor*r_nightBrightness.GetFloat(), m_envConfig.brightnessModFactor);
 
@@ -2038,7 +2044,7 @@ void CGameWorld::Draw( int nRenderFlags )
 	if(r_drawWorld.GetBool())
 	{
 		// DRAW ONLY OPAQUE OBJECTS
-		PROFILE_CODE( m_level.Render(m_view.GetOrigin(), m_viewprojection, m_occludingFrustum, nRenderFlags) );
+		PROFILE_CODE( m_level.Render(m_view.GetOrigin(), m_occludingFrustum, nRenderFlags) );
 	}
 
 #ifndef EDITOR

@@ -352,13 +352,11 @@ void CLevelRegion::CollectVisibleOccluders( occludingFrustum_t& frustumOccluders
 	}
 }
 
-void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& occlFrustum, int nRenderFlags)
+void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum_t& occlFrustum, int nRenderFlags)
 {
 #ifndef EDITOR
 	if(!m_isLoaded)
 		return;
-#else
-	Volume frustum;
 #endif // EDITOR
 
 	bool renderTranslucency = (nRenderFlags & RFLAG_TRANSLUCENCY) > 0;
@@ -383,7 +381,6 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 		float fDist = length(cameraPosition - ref->position);
 
 		Matrix4x4 mat = GetModelRefRenderMatrix(this, ref);
-		frustum.LoadAsFrustum(viewProj * mat);
 
 		if(cont->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
@@ -411,9 +408,6 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewP
 		else
 		{
 			materials->SetMatrix(MATRIXMODE_WORLD, mat);
-
-			// render studio model
-			//if( frustum.IsBoxInside(cont->m_defModel->GetBBoxMins(), cont->m_defModel->GetBBoxMaxs()) )
 
 			const BoundingBox& bbox = cont->m_defModel->GetAABB();
 

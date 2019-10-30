@@ -210,7 +210,7 @@ public:
 	int							Ed_SelectBuilding(const Vector3D& start, const Vector3D& dir, float& dist);
 
 	int							Ed_ReplaceDefs(CLevObjectDef* whichReplace, CLevObjectDef* replaceTo);
-	void						Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& frustumOccluders, int nRenderFlags);
+	void						Render(const Vector3D& cameraPosition, const occludingFrustum_t& frustumOccluders, int nRenderFlags);
 
 	int							GetLowestTile() const;
 	int							GetHighestTile() const;

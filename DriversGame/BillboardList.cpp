@@ -172,20 +172,24 @@ void CBillboardList::LoadBlb( kvkeybase_t* kvs )
 
 			m_aabb.AddVertex(sprite.position);
 
+			/*
 			for(int j = 0; j < m_sprites.numElem(); j++)
 			{
 				float fDist = length(sprite.position-m_sprites[j].position);
 
 				sprite.distfactor = fDist;
-			}
+			}*/
 
 			m_sprites.append(sprite);
 		}
 	}
 
+	float aabbSize = length(m_aabb.GetSize());
+
 	for(int i = 0; i < m_sprites.numElem(); i++)
 	{
-		m_sprites[i].distfactor /= length(m_aabb.GetSize());
+		blbsprite_t& sprite = m_sprites[i];
+		sprite.distfactor = (aabbSize - length(sprite.position - m_aabb.GetCenter())) / aabbSize;
 	}
 }
 
@@ -260,9 +264,10 @@ void CBillboardList::DestroyBlb()
 	m_renderGroup = NULL;
 }
 
-#define MIN_DISAPPEAR_DISTANCE (800.0f)
+const float BILLBOARD_DISAPPEAR_DISTANCE = 180.0f;
 
 ConVar r_drawBillboardLists("r_drawBillboardLists", "1", "Draw billboard lists (used by trees)", CV_CHEAT );
+ConVar r_billboardDistanceScaling("r_billboardDistanceScaling", "0.007", nullptr, CV_CHEAT);
 
 void CBillboardList::DrawBillboards()
 {
@@ -287,7 +292,8 @@ void CBillboardList::DrawBillboards()
 	int numLights = 0;
 	g_pGameWorld->GetLightList(lightBbox, applyLights, numLights);
 
-	float fDistToCenter = length(g_pGameWorld->m_view.GetOrigin()-transformPos);
+	float fDistToCenter = length(g_pGameWorld->m_view.GetOrigin() - transformPos);
+	float distCurved = powf(fDistToCenter / BILLBOARD_DISAPPEAR_DISTANCE, 0.5f)*BILLBOARD_DISAPPEAR_DISTANCE;
 	//float fTreeSizeFactor = pow(1.0f / m_aabb.GetSize().x, 2.0f)*5.0f;
 
 #endif // GAME_DRIVERS
@@ -296,9 +302,11 @@ void CBillboardList::DrawBillboards()
 
 	for(int i = 0; i < m_sprites.numElem(); i++)
 	{
+		const blbsprite_t& sprite = m_sprites[i];
+
 		// TODO: light color on it!
 
-		effect.vOrigin = (worldMat*Vector4D(m_sprites[i].position, 1)).xyz();
+		effect.vOrigin = (worldMat*Vector4D(sprite.position, 1)).xyz();
 
 #ifdef GAME_DRIVERS
 
@@ -306,9 +314,9 @@ void CBillboardList::DrawBillboards()
 
 		Vector3D posAsNormal = fastNormalize(effect.vOrigin-blbCenter);
 
-		if( fDistToCenter > MIN_DISAPPEAR_DISTANCE*m_sprites[i].distfactor )
+		if(distCurved > BILLBOARD_DISAPPEAR_DISTANCE*sprite.distfactor )
 		{
-			if(dot(posAsNormal, viewMat.rows[2].xyz()) > 0.15)
+			if(dot(posAsNormal, viewMat.rows[2].xyz()) > -0.5f)
 				continue;
 		}
 
@@ -317,7 +325,7 @@ void CBillboardList::DrawBillboards()
 		// central billboards are darker
 		//float fLightFactor = length(effect.vOrigin.xz()-blbCenter.xz())*fTreeSizeFactor;
 
-		effect.vColor += g_pGameWorld->m_info.sunColor * fSunDiffuse;//*fLightFactor;
+		effect.vColor += g_pGameWorld->m_info.sunColor * fSunDiffuse;// *fLightFactor;
 
 		for(int j = 0; j < numLights; j++)
 		{
@@ -338,10 +346,9 @@ void CBillboardList::DrawBillboards()
 
 		effect.group = m_renderGroup;
 
-		effect.fWide = m_sprites[i].scale;
-		effect.fTall = m_sprites[i].scale;
+		effect.fWide = effect.fTall = sprite.scale + (distCurved*sprite.distfactor)*r_billboardDistanceScaling.GetFloat();
 
-		effect.tex = m_sprites[i].entry;
+		effect.tex = sprite.entry;
 
 		Effects_DrawBillboard(&effect, viewMat, NULL);
 	}

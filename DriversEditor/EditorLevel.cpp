@@ -1178,7 +1178,7 @@ void CEditorLevel::Ed_Render(const Vector3D& cameraPosition, const Matrix4x4& vi
 
 			if(m_regions[idx].m_isLoaded)
 			{
-				m_regions[idx].Render(cameraPosition,viewProj, bypassFrustum, 0);
+				m_regions[idx].Render(cameraPosition, bypassFrustum, 0);
 				m_regions[idx].m_render = true;
 			}
 		}
@@ -2179,9 +2179,9 @@ int CEditorLevelRegion::GetHighestTile() const
 ConVar editor_objectnames_distance("ed_objNamesDist", "100.0f", nullptr, CV_ARCHIVE);
 ConVar editor_objectnames_onlynamed("ed_objNamesOnlyNamed", "1", nullptr, CV_ARCHIVE);
 
-void CEditorLevelRegion::Render(const Vector3D& cameraPosition, const Matrix4x4& viewProj, const occludingFrustum_t& frustumOccluders, int nRenderFlags)
+void CEditorLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum_t& frustumOccluders, int nRenderFlags)
 {
-	CLevelRegion::Render(cameraPosition, viewProj, frustumOccluders, nRenderFlags);
+	CLevelRegion::Render(cameraPosition, frustumOccluders, nRenderFlags);
 
 	for(int i = 0; i < m_objects.numElem(); i++)
 	{

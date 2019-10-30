@@ -206,7 +206,7 @@ protected:
 	void							OnPreApplyMaterial( IMaterial* pMaterial );
 
 	void							SimulateObjects( float fDt );
-	void							DrawFakeReflections();
+	void							DrawReflections();
 
 	void							DrawLensFlare( const Vector2D& screenSize, const Vector2D& screenPos, float intensity );
 	void							DrawMoon();
