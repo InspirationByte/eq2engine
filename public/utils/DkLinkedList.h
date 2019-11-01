@@ -248,6 +248,9 @@ protected:
 			last = node->prev;
 		else
 			node->next->prev = node->prev;
+
+		node->next = NULL;
+		node->prev = NULL;
 	}
 
 	DkLLNode <T> *first, *last, *curr, *del;

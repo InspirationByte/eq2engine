@@ -423,45 +423,39 @@ void DrawBoxArray(DkList<DebugBoxNode_t>& boxes, float frametime)
 
 void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float frame_time)
 {
+	const float GRAPH_HEIGHT = 100;
+	const float GRAPH_Y_OFFSET = 50;
+
 	float x_pos = 15;
-	float y_pos = 90 + 100 + position*110;
+	float y_pos = GRAPH_Y_OFFSET + GRAPH_HEIGHT + position*110;
 
 	Vector2D last_point(-1);
 
 	Vertex2D_t lines[] =
 	{
 		Vertex2D_t(Vector2D(x_pos, y_pos), vec2_zero),
-		Vertex2D_t(Vector2D(x_pos, y_pos - 100), vec2_zero),
+		Vertex2D_t(Vector2D(x_pos, y_pos - GRAPH_HEIGHT), vec2_zero),
 
 		Vertex2D_t(Vector2D(x_pos, y_pos), vec2_zero),
 		Vertex2D_t(Vector2D(x_pos+400, y_pos), vec2_zero),
 
-		Vertex2D_t(Vector2D(x_pos, y_pos - 90*0.75f), vec2_zero),
-		Vertex2D_t(Vector2D(x_pos+32, y_pos - 90*0.75f), vec2_zero),
+		Vertex2D_t(Vector2D(x_pos, y_pos - GRAPH_HEIGHT *0.75f), vec2_zero),
+		Vertex2D_t(Vector2D(x_pos+32, y_pos - GRAPH_HEIGHT *0.75f), vec2_zero),
 
-		Vertex2D_t(Vector2D(x_pos, y_pos - 90*0.50f), vec2_zero),
-		Vertex2D_t(Vector2D(x_pos+32, y_pos - 90*0.50f), vec2_zero),
+		Vertex2D_t(Vector2D(x_pos, y_pos - GRAPH_HEIGHT *0.50f), vec2_zero),
+		Vertex2D_t(Vector2D(x_pos+32, y_pos - GRAPH_HEIGHT *0.50f), vec2_zero),
 
-		Vertex2D_t(Vector2D(x_pos, y_pos - 90*0.25f), vec2_zero),
-		Vertex2D_t(Vector2D(x_pos+32, y_pos - 90*0.25f), vec2_zero),
+		Vertex2D_t(Vector2D(x_pos, y_pos - GRAPH_HEIGHT *0.25f), vec2_zero),
+		Vertex2D_t(Vector2D(x_pos+32, y_pos - GRAPH_HEIGHT *0.25f), vec2_zero),
 	};
-
-	/*
-	g_pShaderAPI->DrawLine2D(Vector2D(x_pos, y_pos), Vector2D(x_pos, y_pos - 100));
-	g_pShaderAPI->DrawLine2D(Vector2D(x_pos, y_pos), Vector2D(x_pos+400, y_pos));
-	*/
 
 	eqFontStyleParam_t textStl;
 	textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 
-	pFont->RenderText(graph->pszName, Vector2D(x_pos + 5, y_pos - 100), textStl);
+	pFont->RenderText(graph->pszName, Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT - 16), textStl);
 
 	pFont->RenderText("0", Vector2D(x_pos + 5, y_pos), textStl);
-	pFont->RenderText(varargs("%.2f", graph->fMaxValue), Vector2D(x_pos + 5, y_pos - 90), textStl);
-
-	//g_pShaderAPI->DrawLine2D(Vector2D(x_pos, y_pos - 90*0.75f), Vector2D(x_pos+4, y_pos - 90*0.75f));
-	//g_pShaderAPI->DrawLine2D(Vector2D(x_pos, y_pos - 90*0.50f), Vector2D(x_pos+4, y_pos - 90*0.50f));
-	//g_pShaderAPI->DrawLine2D(Vector2D(x_pos, y_pos - 90*0.25f), Vector2D(x_pos+4, y_pos - 90*0.25f));
+	pFont->RenderText(varargs("%.2f", graph->maxValue), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT), textStl);
 
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
@@ -469,9 +463,9 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 
 	materials->DrawPrimitives2DFFP(PRIM_LINES,lines,elementsOf(lines), NULL, color4_white, &blending);
 
-	pFont->RenderText(varargs("%.2f", (graph->fMaxValue*0.75f)), Vector2D(x_pos + 5, y_pos - 90*0.75f), textStl);
-	pFont->RenderText(varargs("%.2f", (graph->fMaxValue*0.50f)), Vector2D(x_pos + 5, y_pos - 90*0.5f), textStl);
-	pFont->RenderText(varargs("%.2f", (graph->fMaxValue*0.25f)), Vector2D(x_pos + 5, y_pos - 90*0.25f), textStl);
+	pFont->RenderText(varargs("%.2f", (graph->maxValue*0.75f)), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.75f), textStl);
+	pFont->RenderText(varargs("%.2f", (graph->maxValue*0.50f)), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.50f), textStl);
+	pFont->RenderText(varargs("%.2f", (graph->maxValue*0.25f)), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.25f), textStl);
 
 	int value_id = 0;
 
@@ -487,27 +481,29 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 			//if(graph->points.getCurrent() > graph->fMaxValue)
 			//	graph->fMaxValue = graph->points.getCurrent();
 
+			graphPoint_t& graphVal = graph->points.getCurrent();
+
 			// get a value of it.
-			float value = clamp(graph->points.getCurrent(), 0.0f, graph->fMaxValue);
+			float value = clamp(graphVal.value, 0.0f, graph->maxValue);
 
-			if( graph->points.getCurrent() > graph_max_value )
-				graph_max_value = graph->points.getCurrent();
+			if(graphVal.value > graph_max_value )
+				graph_max_value = graphVal.value;
 
-			value /= graph->fMaxValue;
+			value /= graph->maxValue;
 
-			value *= 100;
+			value *= GRAPH_HEIGHT;
 
 			Vector2D point(x_pos + 400 - (4*value_id), y_pos - value);
 
 			if(value_id > 0)
 			{
 				graph_line_verts[num_line_verts].position = last_point;
-				graph_line_verts[num_line_verts].color = graph->color;
+				graph_line_verts[num_line_verts].color = ColorRGBA(graphVal.color, 1);
 
 				num_line_verts++;
 
 				graph_line_verts[num_line_verts].position = point;
-				graph_line_verts[num_line_verts].color = graph->color;
+				graph_line_verts[num_line_verts].color = ColorRGBA(graphVal.color, 1);
 
 				num_line_verts++;
 				//g_pShaderAPI->DrawSetColor(graph->color);
@@ -521,15 +517,15 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 		}while(graph->points.goToNext());
 	}
 
-	if(graph->isDynamic)
-		graph->fMaxValue = graph_max_value;
+	if(graph->dynamic)
+		graph->maxValue = graph_max_value;
 
 	materials->DrawPrimitives2DFFP(PRIM_LINES,graph_line_verts,num_line_verts, NULL, color4_white);
 
-	graph->remaining_update_time -= frame_time;
+	graph->remainingTime -= frame_time;
 
-	if(graph->remaining_update_time <= 0)
-		graph->remaining_update_time = 0.0f;
+	if(graph->remainingTime <= 0)
+		graph->remainingTime = 0.0f;
 
 }
 
@@ -954,9 +950,9 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 		Threading::CScopedMutex m(m_mutex);
 
 		for(int i = 0; i < m_graphbuckets.numElem(); i++)
-		{
 			DrawGraph( m_graphbuckets[i], i, m_pDebugFont, m_frametime);
-		}
+
+		m_graphbuckets.clear();
 	}
 
 	CleanOverlays();
@@ -1045,19 +1041,12 @@ void CDebugOverlay::CleanOverlays()
 	m_FastLineList.clear();
 }
 
-debugGraphBucket_t*	CDebugOverlay::Graph_AddBucket( const char* pszName, const ColorRGBA &color, float fMaxValue, float fUpdateTime)
+void CDebugOverlay::Graph_DrawBucket(debugGraphBucket_t* pBucket)
 {
-	debugGraphBucket_t *graph = new debugGraphBucket_t;
-	graph->color = color;
-	strcpy(graph->pszName, pszName);
-	graph->fMaxValue = fMaxValue;
-	graph->update_time = fUpdateTime;
-	graph->remaining_update_time = 0.0f;
-	graph->isDynamic = false;
+	if (!r_debugdrawgraphs.GetBool())
+		return;
 
-	int id = m_graphbuckets.append(graph);
-
-	return m_graphbuckets[id];
+	m_graphbuckets.addUnique(pBucket);
 }
 
 void CDebugOverlay::Graph_AddValue(debugGraphBucket_t* bucket, float value)
@@ -1065,43 +1054,17 @@ void CDebugOverlay::Graph_AddValue(debugGraphBucket_t* bucket, float value)
 	if(!r_debugdrawgraphs.GetBool())
 		return;
 
-	if(bucket->remaining_update_time <= 0)
+	if(bucket->remainingTime <= 0)
 	{
-		bucket->remaining_update_time = bucket->update_time;
-
-		bucket->points.addFirst(value);
-
-		if(bucket->points.getCount() > 100)
+		if (bucket->points.getCount() >= 100)
 		{
-			if(bucket->points.goToLast())
+			if (bucket->points.goToLast())
 				bucket->points.removeCurrent();
 		}
+
+		bucket->remainingTime = bucket->updateTime;
+		bucket->points.addFirst(graphPoint_t{value, bucket->color});
 	}
-}
-
-void CDebugOverlay::RemoveAllGraphs()
-{
-	for(int i = 0; i < m_graphbuckets.numElem(); i++)
-		delete m_graphbuckets[i];
-
-	m_graphbuckets.clear();
-}
-
-void CDebugOverlay::Graph_RemoveBucket(debugGraphBucket_t* pBucket)
-{
-	if(m_graphbuckets.remove(pBucket))
-		delete pBucket;
-}
-
-debugGraphBucket_t*	CDebugOverlay::Graph_FindBucket(const char* pszName)
-{
-	for(int i = 0; i < m_graphbuckets.numElem(); i++)
-	{
-		if(!stricmp(m_graphbuckets[i]->pszName, pszName))
-			return m_graphbuckets[i];
-	}
-
-	return NULL;
 }
 
 IEqFont* CDebugOverlay::GetFont()

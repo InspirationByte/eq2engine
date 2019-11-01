@@ -424,6 +424,8 @@ CGameHost::CGameHost() :
 	m_fGameCurTime = 0;
 	m_fGameFrameTime = 0;
 	m_fGameOldTime = 0;
+
+	m_fpsGraph.Init("Frames per sec", ColorRGB(1,1,0), 80.0f);
 }
 
 void CGameHost::ShutdownSystems()
@@ -547,6 +549,7 @@ void CGameHost::SetCursorShow(bool bShow)
 extern bool s_bActive;
 
 ConVar r_showFPS("r_showFPS", "0", "Show the framerate", CV_ARCHIVE);
+ConVar r_showFPSGraph("r_showFPSGraph", "0", "Show the framerate graph", CV_ARCHIVE);
 
 bool CGameHost::Frame()
 {
@@ -588,6 +591,11 @@ bool CGameHost::Frame()
 
 	BeginScene();
 
+	if (r_showFPSGraph.GetBool())
+	{
+		debugoverlay->Graph_DrawBucket(&m_fpsGraph);
+	}
+
 	// always reset scissor rectangle before we start rendering
 	g_pShaderAPI->SetScissorRectangle( IRectangle(0,0,m_winSize.x, m_winSize.y) );
 	g_pShaderAPI->Clear(r_clear.GetBool(),true,false, ColorRGBA(0.1f,0.1f,0.1f,1.0f));
@@ -621,6 +629,19 @@ bool CGameHost::Frame()
 
 	gameAccTime += m_fGameFrameTime;
 	nGameFrames++;
+
+	// game fps graph
+	if (r_showFPSGraph.GetBool())
+	{
+		if (gamefps > 40)
+			m_fpsGraph.color = ColorRGB(0, 1, 0);
+		else if (gamefps > 25)
+			m_fpsGraph.color = ColorRGB(1, 1, 0);
+		else
+			m_fpsGraph.color = ColorRGB(1, 0, 0);
+
+		debugoverlay->Graph_AddValue(&m_fpsGraph, gamefps);
+	}
 
 	debugoverlay->Text(Vector4D(1,1,0,1), "-----ENGINE STATISTICS-----");
 	debugoverlay->Text(Vector4D(1), "System framerate: %i", fps);

@@ -28,18 +28,43 @@
 
 class IEqFont;
 
+struct graphPoint_t
+{
+	float value;
+	ColorRGB color;
+};
+
 struct debugGraphBucket_t
 {
-	char					pszName[256];
-	ColorRGBA				color;
-	float					fMaxValue;
+	debugGraphBucket_t()
+	{
+		remainingTime = 0.0f;
+	}
 
-	float					update_time;
-	float					remaining_update_time;
+	debugGraphBucket_t(const char* name, const ColorRGB &_color, float _maxValue, float _updateTime = 0.0f, bool dynamicScaling = false)
+	{
+		Init(name, _color, _maxValue, _updateTime, dynamicScaling);
+	}
 
-	bool					isDynamic;
+	void Init(const char* name, const ColorRGB &_color, float _maxValue, float _updateTime = 0.0f, bool dynamicScaling = false)
+	{
+		strcpy_s(pszName, name);
+		color = _color;
+		maxValue = _maxValue;
+		updateTime = _updateTime;
+		dynamic = dynamicScaling;
+	}
 
-	DkLinkedList<float>		points;
+	char									pszName[256];
+	ColorRGB								color;
+	float									maxValue;
+
+	float									updateTime;
+	float									remainingTime;
+
+	bool									dynamic;
+
+	DkFixedLinkedList<graphPoint_t, 100>	points;
 };
 
 typedef void (*OnDebugDrawFn)( void* );
@@ -67,12 +92,8 @@ public:
 	//virtual void				Line2D(Vector2D &start, Vector2D &end, ColorRGBA &color1, ColorRGBA &color2, float fTime = 0.0f) = 0;
 	//virtual void				Box2D(Vector2D &mins, Vector2D &maxs, ColorRGBA &color, float fTime = 0.0f) = 0;
 
-	virtual debugGraphBucket_t*	Graph_AddBucket( const char* pszName, const ColorRGBA &color, float fMaxValue, float fUpdateTime = 0.0f) = 0;
-	virtual void				Graph_RemoveBucket(debugGraphBucket_t* pBucket) = 0;
+	virtual void				Graph_DrawBucket(debugGraphBucket_t* pBucket) = 0;
 	virtual void				Graph_AddValue( debugGraphBucket_t* pBucket, float value) = 0;
-	virtual debugGraphBucket_t*	Graph_FindBucket(const char* pszName) = 0;
-
-	virtual void				RemoveAllGraphs() = 0;
 
 	virtual void				SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view ) = 0;
 	virtual void				Draw(int winWide, int winTall) = 0;	// draws debug overlay.

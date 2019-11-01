@@ -143,6 +143,7 @@ void CShadowRenderer::Init()
 		shadowParams.SetKey("zwrite", false);
 		shadowParams.SetKey("translucent", true);
 		shadowParams.SetKey("Decal", true);
+		//shadowParams.SetKey("noisetexture", "_noise");
 
 		m_shadowResult = materials->CreateMaterial("_dshadow", &shadowParams);
 		m_shadowResult->Ref_Grab();
@@ -488,6 +489,9 @@ void CShadowRenderer::Draw()
 	materials->SetCullMode( CULL_BACK );
 
 	materials->BindMaterial(m_shadowResult, 0);
+
+	g_pShaderAPI->SetTexture(g_pGameWorld->m_noiseTex, "NoiseTexture", 8);
+
 	materials->Apply();
 
 	// draw
@@ -579,6 +583,7 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 			if (mode == RSHADOW_CAR)
 			{
 				materials->BindMaterial(m_matVehicle, 0);
+
 
 				CCar* car = (CCar*)object;
 

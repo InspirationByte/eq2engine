@@ -92,6 +92,7 @@ class CGameWorld : public IMaterialRenderParamCallbacks, public CBaseNetworkedOb
 	friend class CNetGameSession;
 	friend class CLevelRegion;
 	friend class CState_Game;
+	friend class CShadowRenderer;
 
 public:
 	DECLARE_NETWORK_TABLE()

@@ -114,10 +114,10 @@ static CEngineGame	g_EngineGame;
 IEngineGame*		engine = ( IEngineGame * )&g_EngineGame;
 
 
-debugGraphBucket_t*	g_pGameUpdateGraph	= NULL;
-debugGraphBucket_t*	g_pPreRenderGraph	= NULL;
-debugGraphBucket_t*	g_pSceneRenderGraph = NULL;
-debugGraphBucket_t*	g_pPostRenderGraph	= NULL;
+debugGraphBucket_t	g_gameUpdateGraph;
+debugGraphBucket_t	g_preRenderGraph;
+debugGraphBucket_t	g_sceneRenderGraph;
+debugGraphBucket_t	g_postRenderGraph;
 
 DECLARE_CMD(pause, "Pauses and unpauses the game", 0)
 {
@@ -168,25 +168,17 @@ CEngineGame::~CEngineGame()
 
 bool CEngineGame::Init( void )
 {
-	g_pGameUpdateGraph = debugoverlay->Graph_AddBucket("Game update time", ColorRGBA(1,1,0,1), 100.0f, 0.25f);
-	g_pPreRenderGraph = debugoverlay->Graph_AddBucket("Prerender time", ColorRGBA(1,1,0,1), 100.0f, 0.25f);
-	g_pSceneRenderGraph = debugoverlay->Graph_AddBucket("Scene render time", ColorRGBA(1,0,0,1), 100.0f, 0.25f);
-	g_pPostRenderGraph = debugoverlay->Graph_AddBucket("Postrender time", ColorRGBA(1,1,0,1), 100.0f, 0.25f);
-
-	g_pGameUpdateGraph->isDynamic = true;
-	g_pPreRenderGraph->isDynamic = true;
-	g_pSceneRenderGraph->isDynamic = true;
-	g_pPostRenderGraph->isDynamic = true;
+	g_gameUpdateGraph.Init("Game update time", ColorRGB(1,1,0), 100.0f, 0.25f, true);
+	g_preRenderGraph.Init("Prerender time", ColorRGB(1,1,0), 100.0f, 0.25f, true);
+	g_sceneRenderGraph.Init("Scene render time", ColorRGB(1,0,0), 100.0f, 0.25f, true);
+	g_postRenderGraph.Init("Postrender time", ColorRGB(1,1,0), 100.0f, 0.25f, true);
 
 	return true;
 }
 
 void  CEngineGame::Shutdown( void )
 {
-	debugoverlay->Graph_RemoveBucket(g_pGameUpdateGraph);
-	debugoverlay->Graph_RemoveBucket(g_pPreRenderGraph);
-	debugoverlay->Graph_RemoveBucket(g_pSceneRenderGraph);
-	debugoverlay->Graph_RemoveBucket(g_pPostRenderGraph);
+
 }
 
 void CEngineGame::Key_Event( int key, bool down )
@@ -604,6 +596,11 @@ bool CEngineGame::EngineRunFrame( float dTime )
 		gpGlobals->realtime = m_fRealTime;
 	}
 
+	debugoverlay->Graph_DrawBucket(&g_gameUpdateGraph);
+	debugoverlay->Graph_DrawBucket(&g_preRenderGraph);
+	debugoverlay->Graph_DrawBucket(&g_sceneRenderGraph);
+	debugoverlay->Graph_DrawBucket(&g_postRenderGraph);
+
 	// do post-render and matsystem updates only
 	if( m_nLoadingState == LOADING_INPROCESS || 
 		m_nGameState == GAME_NOTRUNNING || 
@@ -616,7 +613,7 @@ bool CEngineGame::EngineRunFrame( float dTime )
 		gamedll->OnRenderScene();
 
 		debugoverlay->Text(Vector4D(1), " game postrender: %.2f ms",abs(MEASURE_TIME_STATS(measure_postrender)));
-		debugoverlay->Graph_AddValue(g_pPostRenderGraph, abs(MEASURE_TIME_STATS(measure_postrender)));
+		debugoverlay->Graph_AddValue(&g_postRenderGraph, abs(MEASURE_TIME_STATS(measure_postrender)));
 
 		return true;
 	}
@@ -678,7 +675,7 @@ bool CEngineGame::EngineRunFrame( float dTime )
 	// restore frame time
 	gpGlobals->frametime = frametime;
 
-	debugoverlay->Graph_AddValue(g_pGameUpdateGraph, abs(MEASURE_TIME_STATS(measure_gamedll)));
+	debugoverlay->Graph_AddValue(&g_gameUpdateGraph, abs(MEASURE_TIME_STATS(measure_gamedll)));
 
 	// Signal physics thread to work after the game update
 	if(GetGameState() == IEngineGame::GAME_IDLE)
@@ -696,13 +693,13 @@ bool CEngineGame::EngineRunFrame( float dTime )
 	gamedll->PreRender();
 	debugoverlay->Text(Vector4D(1), " game prerender: %.2f ms",abs(MEASURE_TIME_STATS(measure_prerender)));
 
-	debugoverlay->Graph_AddValue(g_pPreRenderGraph, abs(MEASURE_TIME_STATS(measure_prerender)));
+	debugoverlay->Graph_AddValue(&g_preRenderGraph, abs(MEASURE_TIME_STATS(measure_prerender)));
 
 	float measure_scene = MEASURE_TIME_BEGIN();
 	// Draw all (including materials)
 	gamedll->OnRenderScene();
 	debugoverlay->Text(Vector4D(1), " scene view: %.2f ms",abs(MEASURE_TIME_STATS(measure_scene)));
-	debugoverlay->Graph_AddValue(g_pSceneRenderGraph, abs(MEASURE_TIME_STATS(measure_scene)));
+	debugoverlay->Graph_AddValue(&g_sceneRenderGraph, abs(MEASURE_TIME_STATS(measure_scene)));
 
 	float measure_postrender = MEASURE_TIME_BEGIN();
 
@@ -710,7 +707,7 @@ bool CEngineGame::EngineRunFrame( float dTime )
 	gamedll->PostRender();
 
 	debugoverlay->Text(Vector4D(1), " game postrender: %.2f ms",abs(MEASURE_TIME_STATS(measure_postrender)));
-	debugoverlay->Graph_AddValue(g_pPostRenderGraph, abs(MEASURE_TIME_STATS(measure_postrender)));
+	debugoverlay->Graph_AddValue(&g_postRenderGraph, abs(MEASURE_TIME_STATS(measure_postrender)));
 
 	return true;
 }

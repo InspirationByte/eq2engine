@@ -588,6 +588,8 @@ void CGameWorld::Init()
 		CImage img;
 		TVec4D<ubyte>* tex = (TVec4D<ubyte>*)img.Create(FORMAT_RGBA8, NOISE_TEXTURE_SIZE, NOISE_TEXTURE_SIZE, 1, 1);
 
+		img.SetName("_noise");
+
 		if (tex)
 		{
 			for (int y = 0; y < NOISE_TEXTURE_SIZE; y++)
@@ -596,10 +598,10 @@ void CGameWorld::Init()
 				{
 					int pixIdx = y * NOISE_TEXTURE_SIZE + x;
 
-					tex[pixIdx].x = perlin2d(x, y, 0.1, 4) * 255;
-					tex[pixIdx].y = perlin2d(x, y, 0.1, 4) * 255;
-					tex[pixIdx].z = perlin2d(x, y, 0.1, 4) * 255;
-					tex[pixIdx].w = perlin2d(x, y, 0.1, 4) * 255;
+					tex[pixIdx].x = perlin2d(x, y, 0.1, 4) * 255.0f;
+					tex[pixIdx].y = perlin2d(x, y, 0.1, 4) * 255.0f;
+					tex[pixIdx].z = perlin2d(x, y, 0.1, 4) * 255.0f;
+					tex[pixIdx].w = perlin2d(x, y, 0.1, 4) * 255.0f;
 				}
 			}
 
@@ -608,6 +610,7 @@ void CGameWorld::Init()
 			DkList<CImage*> imgTex;
 			imgTex.append(&img);
 			m_noiseTex = g_pShaderAPI->CreateTexture(imgTex, sampler);
+			m_noiseTex->Ref_Grab();
 		}
 
 	}

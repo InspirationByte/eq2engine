@@ -1132,7 +1132,7 @@ void CState_Game::RenderMainView2D( float fDt )
 
 	if(eq_profiler_display.GetBool())
 	{
-		EqString profilerStr = PROFILE_GET_TREE_STRING().c_str();
+		std::string profilerStr = PROFILE_GET_TREE_STRING();
 
 		materials->Setup2D(screenSize.x,screenSize.y);
 

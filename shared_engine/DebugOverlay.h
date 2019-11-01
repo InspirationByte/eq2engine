@@ -113,12 +113,8 @@ public:
 
 	void							Draw3DFunc( OnDebugDrawFn func, void* args );
 
-	debugGraphBucket_t*				Graph_AddBucket( const char* pszName, const ColorRGBA &color, float fMaxValue, float fUpdateTime = 0.0f);
-	void							Graph_RemoveBucket(debugGraphBucket_t* pBucket);
+	void							Graph_DrawBucket(debugGraphBucket_t* pBucket);
 	void							Graph_AddValue( debugGraphBucket_t* pBucket, float value);
-	debugGraphBucket_t*				Graph_FindBucket(const char* pszName);
-
-	void							RemoveAllGraphs();
 
 	void							SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view );
 	void							Draw( int winWide, int winTall );

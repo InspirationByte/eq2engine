@@ -16,6 +16,8 @@
 
 #include "utils/eqtimer.h"
 
+#include "IDebugOverlay.h"
+
 class IEqFont;
 
 class CGameHost
@@ -101,6 +103,7 @@ protected:
 	bool		m_bDoneTrapping;
 	bool		m_skipMouseMove;
 
+	debugGraphBucket_t m_fpsGraph;
 
 	int			m_nTrapKey;
 	int			m_nTrapButtons;
