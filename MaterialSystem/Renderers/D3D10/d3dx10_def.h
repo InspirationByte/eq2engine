@@ -195,6 +195,7 @@ const D3D10_FILTER d3dFilterType[] = {
 const D3D10_TEXTURE_ADDRESS_MODE d3dAddressMode[] = {
 	D3D10_TEXTURE_ADDRESS_WRAP,
 	D3D10_TEXTURE_ADDRESS_CLAMP,
+	D3D10_TEXTURE_ADDRESS_MIRROR,
 };
 
 inline bool HasMipmaps(ER_TextureFilterMode filter)

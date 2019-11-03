@@ -42,14 +42,17 @@ struct AddressingTypeString_s
 const AddressingTypeString_s pBaseTextureAddressTypes[] = {
 	{ "wrap", TEXADDRESS_WRAP },
 	{ "clamp", TEXADDRESS_CLAMP },
+	{ "mirror", TEXADDRESS_MIRROR },
 };
 
 ER_TextureAddressMode ResolveAddressType(const char* string)
 {
 	if(!stricmp(string,"wrap"))
 		return TEXADDRESS_WRAP;
-	else
-		return TEXADDRESS_CLAMP;
+	else if (!stricmp(string, "mirror"))
+		return TEXADDRESS_MIRROR;
+
+	return TEXADDRESS_CLAMP;
 }
 
 //--------------------------------------

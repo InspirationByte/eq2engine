@@ -153,6 +153,7 @@ struct matsystem_render_config_t
 		enableBumpmapping = true;
 
 		wireframeMode = false;
+		overdrawMode = true;
 	}
 
 	// rendering api parameters
@@ -179,6 +180,7 @@ struct matsystem_render_config_t
 	bool	enableBumpmapping;			// enable bump maps?
 
 	bool	wireframeMode;				// matsystem wireframe mode
+	bool	overdrawMode;				// matsystem overdraw mode
 };
 
 //------------------------------------------------------------------------

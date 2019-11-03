@@ -600,9 +600,6 @@ bool CGameHost::Frame()
 	g_pShaderAPI->SetScissorRectangle( IRectangle(0,0,m_winSize.x, m_winSize.y) );
 	g_pShaderAPI->Clear(r_clear.GetBool(),true,false, ColorRGBA(0.1f,0.1f,0.1f,1.0f));
 
-	HOOK_TO_CVAR(r_wireframe)
-	materials->GetConfiguration().wireframeMode = r_wireframe->GetBool();
-
 	PROFILE_BLOCK(UpdateStates);
 
 	if(!EqStateMgr::UpdateStates( m_fGameFrameTime ))
@@ -673,6 +670,8 @@ bool CGameHost::Frame()
 	equi::Manager->SetViewFrame(IRectangle(0,0,m_winSize.x,m_winSize.y));
 	equi::Manager->Render();
 
+	// console should be drawn as normal in overdraw mode
+	materials->GetConfiguration().overdrawMode = false;
 	g_consoleInput->DrawSelf(m_winSize.x, m_winSize.y, m_fGameFrameTime);
 
 	// End frame from render lib
@@ -716,6 +715,12 @@ void CGameHost::BeginScene()
 	// Begin frame from render lib
 	materials->BeginFrame();
 	g_pShaderAPI->Clear(false,true,false);
+
+	HOOK_TO_CVAR(r_wireframe)
+	materials->GetConfiguration().wireframeMode = r_wireframe->GetBool();
+
+	HOOK_TO_CVAR(r_overdraw)
+	materials->GetConfiguration().overdrawMode = r_overdraw->GetBool();
 }
 
 void CGameHost::EndScene()

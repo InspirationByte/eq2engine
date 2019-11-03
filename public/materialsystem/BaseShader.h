@@ -186,9 +186,9 @@
 #define SHADER_END_DEFINITION				\
 	}
 
-#define SHADER_FIND_OR_COMPILE(shader, sname)															\
+#define SHADER_FIND_OR_COMPILE(shader, sname, queryExtras)												\
 	{																									\
-	m_pShader##shader = g_pShaderAPI->FindShaderProgram(sname, findQuery.GetData());					\
+	m_pShader##shader = g_pShaderAPI->FindShaderProgram(sname, (findQuery).GetData());					\
 	if(!m_pShader##shader)																				\
 	{																									\
 		m_pShader##shader = g_pShaderAPI->CreateNewShaderProgram(sname, findQuery.GetData());			\

@@ -605,7 +605,7 @@ void CGameWorld::Init()
 				}
 			}
 
-			SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(TEXFILTER_LINEAR, TEXADDRESS_WRAP, TEXADDRESS_WRAP, TEXADDRESS_WRAP);
+			SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(TEXFILTER_LINEAR, TEXADDRESS_MIRROR, TEXADDRESS_MIRROR, TEXADDRESS_MIRROR);
 
 			DkList<CImage*> imgTex;
 			imgTex.append(&img);

@@ -464,7 +464,6 @@ void CShadowRenderer::RenderShadowCasters()
 	PROFILE_END();
 
 	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
-	g_pShaderAPI->Flush();
 
 	m_invalidateAllDecals = false;
 }

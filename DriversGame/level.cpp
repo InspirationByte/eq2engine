@@ -1524,6 +1524,8 @@ void CGameLevel::QueryNearestRegions( const IVector2D& point, bool waitLoad )
 	if (!region)
 		return;
 
+	CScopedMutex m(m_mutex);
+
 	// if center region was not loaded, force wait
 	if (!region->m_isLoaded && waitLoad)
 		waitLoad = true;
@@ -1686,7 +1688,9 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const occludingFrustum_t
 			if(!def->m_model || !def->m_instData)
 				continue;
 
-			if(def->m_instData->numInstances == 0)
+			levObjInstanceData_t* instData = def->m_instData;
+
+			if(instData->numInstances == 0)
 				continue;
 
 			CLevelModel* model = def->m_model;
@@ -1700,14 +1704,14 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const occludingFrustum_t
 			// set vertex buffer
 			g_pShaderAPI->SetVertexBuffer( m_instanceBuffer, 2 );
 
-			int numInstances = def->m_instData->numInstances;
+			int numInstances = instData->numInstances;
 
-			m_instanceBuffer->Update(def->m_instData->instances, numInstances, 0, true);
+			m_instanceBuffer->Update(instData->instances, numInstances, 0, true);
 
-			model->Render(nRenderFlags, model->m_bbox);
+			model->Render(nRenderFlags);
 
 			// reset instance count
-			def->m_instData->numInstances = 0;
+			instData->numInstances = 0;
 
 			// disable this vertex buffer or our cars will be drawn many times
 			g_pShaderAPI->SetVertexBuffer( NULL, 2 );
@@ -1750,9 +1754,14 @@ int CGameLevel::UpdateRegionLoading()
 				CEditorLevelRegion* reg = (CEditorLevelRegion*)&m_regions[idx];
 				reg->Ed_InitPhysics();
 #else
+			{
+				CScopedMutex m(m_mutex);
+				if (m_regions[idx].m_isLoaded)
+					continue;
+			}
+
 			// try preloading region
 			if (!w_freeze.GetBool() &&
-				!m_regions[idx].m_isLoaded &&
 				(m_regions[idx].m_queryTimes.GetValue() > 0) &&
 				m_regionOffsets[idx] != -1)
 			{
@@ -1761,7 +1770,6 @@ int CGameLevel::UpdateRegionLoading()
 				numLoadedRegions++;
 				DevMsg(DEVMSG_CORE, "Region %d loaded\n", idx);
 			}
-
 		}
 	}
 
@@ -1790,7 +1798,13 @@ void CGameLevel::UnloadRegions()
 		{
 			int idx = y*m_wide+x;
 
-			if(m_regions[idx].m_isLoaded && m_regionOffsets[idx] != -1 )
+			{
+				CScopedMutex m(m_mutex);
+				if (!m_regions[idx].m_isLoaded)
+					continue;
+			}
+
+			if(m_regionOffsets[idx] != -1 )
 			{
 				// unload region
 				m_regions[idx].Cleanup();
@@ -1819,11 +1833,16 @@ int CGameLevel::UpdateRegions( RegionLoadUnloadCallbackFunc func )
 			int idx = y*m_wide+x;
 
 #ifndef EDITOR
+
+			m_mutex.Lock();
+
 			if(!w_freeze.GetBool() &&
 				m_regions[idx].m_isLoaded &&
 				(m_regions[idx].m_queryTimes.GetValue() <= 0) &&
 				m_regionOffsets[idx] != -1 )
 			{
+				m_mutex.Unlock();
+
 				// unload region
 				m_regions[idx].Cleanup();
 				m_regions[idx].m_scriptEventCallbackCalled = false;
@@ -1833,7 +1852,7 @@ int CGameLevel::UpdateRegions( RegionLoadUnloadCallbackFunc func )
 			}
 			else
 			{
-
+				m_mutex.Unlock();
 #pragma todo("SPAWN objects from UpdateRegions, not from loader thread")
 			}
 #endif // EDITOR
@@ -1910,8 +1929,6 @@ bool CGameLevel::FindObjectOnLevel(levCellObject_t& objectInfo, const char* name
 		}
 	}
 
-	CScopedMutex m(m_mutex);
-
 	bool found = false;
 
 	// first we try to find object on loaded regions
@@ -1924,15 +1941,18 @@ bool CGameLevel::FindObjectOnLevel(levCellObject_t& objectInfo, const char* name
 			if(m_regionOffsets[regIdx] == -1)
 				continue;
 			
-			if(m_regions[regIdx].m_isLoaded)
 			{
-				// online objects
-				found = m_regions[regIdx].FindObject(objectInfo, name, def);
-				objectInfo.objectDefId = defIdx;
-
-				if(found)
-					break;
+				CScopedMutex m(m_mutex);
+				if (!m_regions[regIdx].m_isLoaded)
+					continue;
 			}
+
+			// online objects
+			found = m_regions[regIdx].FindObject(objectInfo, name, def);
+			objectInfo.objectDefId = defIdx;
+
+			if(found)
+				break;
 		}
 
 		if(found)
@@ -1958,45 +1978,47 @@ bool CGameLevel::FindObjectOnLevel(levCellObject_t& objectInfo, const char* name
 			if(m_regionOffsets[regIdx] == -1)
 				continue;
 			
-			if(!m_regions[regIdx].m_isLoaded)
 			{
-				// offline objects
-
-				// Read region header
-				int regOffset = m_regionDataLumpOffset + m_regionOffsets[regIdx];
-				stream->Seek(regOffset, VS_SEEK_SET);
-
-				levRegionDataInfo_t	regdatahdr;
-				stream->Read(&regdatahdr, 1, sizeof(levRegionDataInfo_t));
-
-				// skip the defs
-				for(int i = 0; i < regdatahdr.numObjectDefs; i++)
-				{
-					levObjectDefInfo_t defInfo;
-					stream->Read(&defInfo, 1, sizeof(levObjectDefInfo_t));
-
-					stream->Seek(defInfo.size, VS_SEEK_CUR);
-				}
-
-				levCellObject_t cellObj;
-
-				// find cell object by reading it
-				for(int i = 0; i < regdatahdr.numCellObjects; i++)
-				{
-					stream->Read(&cellObj, 1, sizeof(levCellObject_t));
-
-					if(cellObj.name[0] == 0)
-						continue;
-
-					if((defIdx == -1 || defIdx >= 0 && cellObj.objectDefId == defIdx) && !stricmp(cellObj.name, name))
-					{
-						objectInfo = cellObj;
-						found = true;
-						break;
-					}
-				}
+				CScopedMutex m(m_mutex);
+				if (m_regions[regIdx].m_isLoaded)
+					continue;
 			}
 
+			// offline objects
+
+			// Read region header
+			int regOffset = m_regionDataLumpOffset + m_regionOffsets[regIdx];
+			stream->Seek(regOffset, VS_SEEK_SET);
+
+			levRegionDataInfo_t	regdatahdr;
+			stream->Read(&regdatahdr, 1, sizeof(levRegionDataInfo_t));
+
+			// skip the defs
+			for(int i = 0; i < regdatahdr.numObjectDefs; i++)
+			{
+				levObjectDefInfo_t defInfo;
+				stream->Read(&defInfo, 1, sizeof(levObjectDefInfo_t));
+
+				stream->Seek(defInfo.size, VS_SEEK_CUR);
+			}
+
+			levCellObject_t cellObj;
+
+			// find cell object by reading it
+			for(int i = 0; i < regdatahdr.numCellObjects; i++)
+			{
+				stream->Read(&cellObj, 1, sizeof(levCellObject_t));
+
+				if(cellObj.name[0] == 0)
+					continue;
+
+				if((defIdx == -1 || defIdx >= 0 && cellObj.objectDefId == defIdx) && !stricmp(cellObj.name, name))
+				{
+					objectInfo = cellObj;
+					found = true;
+					break;
+				}
+			}
 		}
 
 		if(found)
@@ -2368,11 +2390,15 @@ void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
 		{
 			int idx = y*m_wide + x;
 
-			m_mutex.Lock();
-
 			CLevelRegion& reg = m_regions[idx];
 
-			if(reg.m_isLoaded && reg.m_navGrid[0].staticObst && reg.m_navGrid[1].staticObst)
+			{
+				CScopedMutex m(m_mutex);
+				if (!reg.m_isLoaded)
+					continue;
+			}
+
+			if(reg.m_navGrid[0].staticObst && reg.m_navGrid[1].staticObst)
 			{
 				for (int i = 0; i < 2; i++)
 				{
@@ -2396,9 +2422,6 @@ void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
 					reg.m_navGrid[1].dirty = false;
 				}
 			}
-
-
-			m_mutex.Unlock();
 		}
 	}
 }
@@ -2631,12 +2654,13 @@ void CGameLevel::GetDecalPolygons(decalPrimitives_t& polys, occludingFrustum_t* 
 		{
 			int idx = y*m_wide + x;
 
-			CScopedMutex m(m_mutex);
-
 			CLevelRegion& reg = m_regions[idx];
 
-			if(!reg.m_isLoaded)
-				continue;
+			{
+				CScopedMutex m(m_mutex);
+				if (!reg.m_isLoaded)
+					continue;
+			}
 
 			if(!polys.settings.clipVolume.IsBoxInside(reg.m_bbox.minPoint, reg.m_bbox.maxPoint))
 				continue;

@@ -37,8 +37,6 @@ void null_func() {}
 RESOURCELOADCALLBACK g_pLoadBeginCallback = null_func;
 RESOURCELOADCALLBACK g_pLoadEndCallback = null_func;
 
-ConVar				r_overdraw("r_overdraw", "0", "Renders all materials in overdraw shader", CV_ARCHIVE);
-
 ConVar				r_showlightmaps("r_showlightmaps", "0", "Disable diffuse textures to show lighting", CV_CHEAT);
 ConVar				r_screen("r_screen", "0", "Screen count", CV_ARCHIVE);
 ConVar				r_loadmiplevel("r_loadmiplevel", "0", 0, 3, "Mipmap level to load, needs texture reloading", CV_ARCHIVE );
@@ -46,7 +44,9 @@ ConVar				r_textureanisotrophy("r_textureanisotrophy", "4", "Mipmap anisotropic 
 
 ConVar				r_lightscale("r_lightscale", "1.0f", "Global light scale", CV_ARCHIVE);
 ConVar				r_shaderCompilerShowLogs("r_shaderCompilerShowLogs", "0","Show warnings of shader compilation",CV_ARCHIVE);
-ConVar				r_wireframe("r_wireframe","0","Enables wireframe rendering",0);
+
+ConVar				r_overdraw("r_overdraw", "0", "Renders all materials in overdraw shader", CV_CHEAT);
+ConVar				r_wireframe("r_wireframe","0","Enables wireframe rendering", CV_CHEAT);
 
 ConVar				r_noffp("r_noffp","0","No FFP emulated primitives", CV_CHEAT);
 
@@ -910,7 +910,7 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 
 	bool success = false;
 
-	if( r_overdraw.GetBool() )
+	if( m_config.overdrawMode )
 	{
 		materials->SetAmbientColor(ColorRGBA(0.045f, 0.02f, 0.02f, 1.0f));
 		success = (*materialstate_callbacks[subRoutineId])(m_overdrawMaterial, 0xFFFFFFFF);
@@ -1052,7 +1052,7 @@ bool CMaterialSystem::BeginFrame()
 		}
 	}
 
-	if( r_overdraw.GetBool() )
+	if(m_config.overdrawMode)
 		g_pShaderAPI->Clear(true, false, false, ColorRGBA(0, 0, 0, 0));
 
 	return true;
@@ -1114,7 +1114,7 @@ void CMaterialSystem::SetFogInfo(const FogInfo_t &info)
 // returns fog info
 void CMaterialSystem::GetFogInfo(FogInfo_t &info)
 {
-	if( r_overdraw.GetBool() )
+	if( m_config.overdrawMode)
 	{
 		static FogInfo_t nofog;
 

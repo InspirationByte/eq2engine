@@ -18,6 +18,8 @@ void CBaseNetworkedObject::OnNetworkStateChanged(void* ptr)
 {
 	uint propOfs = (char*)ptr - ((char*)this);
 
+	// TODO: find a prop and write it's index instead
+
 	NETWORK_CHANGELIST(NetGame).append(propOfs);
 	NETWORK_CHANGELIST(Replay).append(propOfs);
 }

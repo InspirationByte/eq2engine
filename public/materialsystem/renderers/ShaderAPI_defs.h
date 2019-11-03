@@ -101,6 +101,7 @@ enum ER_TextureAddressMode
 {
 	TEXADDRESS_WRAP	= 0,
 	TEXADDRESS_CLAMP,
+	TEXADDRESS_MIRROR
 };
 
 // for mesh builder and type of drawing the world model

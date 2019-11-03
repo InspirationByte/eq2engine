@@ -108,7 +108,7 @@ public:
 
 	void					GetDecalPolygons( decalPrimitives_t& polys, const Matrix4x4& transform );
 
-	void					Render(int nDrawFlags, const BoundingBox& aabb);
+	void					Render(int nDrawFlags);
 
 	bool					CreateFrom(dsmmodel_t* pModel);
 	bool					GenereateRenderData();

@@ -123,7 +123,7 @@ void CLevObjectDef::Render( float lodDistance, const BoundingBox& bbox, bool pre
 			materials->Wait();
 		}
 
-		m_model->Render( nRenderFlags, bbox );
+		m_model->Render( nRenderFlags );
 	}
 	else
 	{
@@ -527,7 +527,7 @@ void CLevelModel::PreloadTextures()
 	}
 }
 
-void CLevelModel::Render(int nDrawFlags, const BoundingBox& aabb)
+void CLevelModel::Render(int nDrawFlags)
 {
 	if(!r_drawStaticRegionModels.GetBool())
 		return;

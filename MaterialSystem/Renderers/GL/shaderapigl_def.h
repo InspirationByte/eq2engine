@@ -261,6 +261,12 @@ static const int chanTypePerFormat[] = {
 
 };
 
+const uint addressModes[] = {
+	GL_REPEAT,
+	GL_CLAMP_TO_EDGE,
+	GL_MIRRORED_REPEAT
+};
+
 static const int blendingConsts[] = {
 	GL_ZERO,
 	GL_ONE,

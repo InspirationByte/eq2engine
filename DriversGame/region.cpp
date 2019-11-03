@@ -355,15 +355,16 @@ void CLevelRegion::CollectVisibleOccluders( occludingFrustum_t& frustumOccluders
 void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum_t& occlFrustum, int nRenderFlags)
 {
 #ifndef EDITOR
-	if(!m_isLoaded)
-		return;
+	{
+		CScopedMutex m(m_level->m_mutex);
+		if (!m_isLoaded)
+			return;
+	}
 #endif // EDITOR
 
 	bool renderTranslucency = (nRenderFlags & RFLAG_TRANSLUCENCY) > 0;
 
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
-
-	m_level->m_mutex.Lock();
 
 	for(int i = 0; i < m_objects.numElem(); i++)
 	{
@@ -425,10 +426,6 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 		if(renderTranslucency && !cont->m_model->m_hasTransparentSubsets)
 			continue;
 
-		Matrix4x4 mat = GetModelRefRenderMatrix(this, ref);
-		//frustum.LoadAsFrustum(viewProj * mat);
-
-		//if( frustum.IsBoxInside(cont->m_model->m_bbox.minPoint, cont->m_model->m_bbox.maxPoint) )
 		if( occlFrustum.IsSphereVisible( ref->position, length(ref->bbox.GetSize())) )
 		{
 			if(	caps.isInstancingSupported &&
@@ -442,15 +439,13 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 			else
 			{
 				float fDist = length(cameraPosition - ref->position);
-				materials->SetMatrix(MATRIXMODE_WORLD, mat);
+				materials->SetMatrix(MATRIXMODE_WORLD, GetModelRefRenderMatrix(this, ref));
 
 				cont->Render(fDist, ref->bbox, false, nRenderFlags);
 			}
 		}
 #endif	// EDITOR
 	}
-
-	m_level->m_mutex.Unlock();
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
@@ -673,24 +668,20 @@ bool CLevelRegion::FindObject(levCellObject_t& objectInfo, const char* name, CLe
 
 void CLevelRegion::Cleanup()
 {
-	if(!m_isLoaded)
+	CScopedMutex m(m_level->m_mutex);
+	if (!m_isLoaded)
 		return;
-
-	m_level->m_mutex.Lock();
 
 	for(int i = 0; i < m_objects.numElem(); i++)
 		delete m_objects[i];
-
 	m_objects.clear();
 
 	for(int i = 0; i < m_zones.numElem(); i++)
 		delete [] m_zones[i].zoneName;
-
 	m_zones.clear();
 
 	for(int i = 0; i < m_regionDefs.numElem(); i++)
 		delete m_regionDefs[i];
-
 	m_regionDefs.clear();
 
 	m_occluders.clear();
@@ -719,8 +710,6 @@ void CLevelRegion::Cleanup()
 
 	m_isLoaded = false;
 	m_hasTransparentSubsets = false;
-
-	m_level->m_mutex.Unlock();
 
 	m_queryTimes.SetValue(0);
 
@@ -925,7 +914,10 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 				ref->game_object = newObj;
 
 				// let the game objects to be spawned on game frame
-				g_pGameWorld->AddObject( newObj );
+				{
+					CScopedMutex m(m_level->m_mutex);
+					g_pGameWorld->AddObject(newObj);
+				}
 			}
 		}
 #endif
@@ -934,12 +926,12 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		ref->CalcBoundingBox();
 
 		// finally add that object
-		m_level->m_mutex.Lock();
+		{
+			CScopedMutex m(m_level->m_mutex);
 
-		ASSERT(ref);
-		m_objects.append(ref);
-
-		m_level->m_mutex.Unlock();
+			ASSERT(ref);
+			m_objects.append(ref);
+		}
 	}
 
 #ifndef EDITOR
@@ -952,12 +944,21 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 
 	Platform_Sleep(1);
 
-	m_isLoaded = true;
+	{
+		CScopedMutex m(m_level->m_mutex);
+		m_isLoaded = true;
+	}
 }
 
 void CLevelRegion::RespawnObjects()
 {
 #ifndef EDITOR
+	{
+		CScopedMutex m(m_level->m_mutex);
+		if (!m_isLoaded)
+			return;
+	}
+
 	for(int i = 0; i < m_objects.numElem(); i++)
 	{
 		regionObject_t* ref = m_objects[i];

@@ -1165,18 +1165,18 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& 
 void ShaderAPIGL::InternalSetupSampler(uint texTarget, const SamplerStateParam_t& sampler, int mipMapCount)
 {
 	// Set requested wrapping modes
-	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, (sampler.wrapS == TEXADDRESS_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, addressModes[sampler.wrapS]);
 	GLCheckError("smp w s");
 
 #ifndef USE_GLES2
 	if (texTarget != GL_TEXTURE_1D)
 #endif // USE_GLES2
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, (sampler.wrapT == TEXADDRESS_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, addressModes[sampler.wrapT]);
 		GLCheckError("smp w t");
 
 	if (texTarget == GL_TEXTURE_3D)
 	{
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_R, (sampler.wrapR == TEXADDRESS_WRAP) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+		glTexParameteri(texTarget, GL_TEXTURE_WRAP_R, addressModes[sampler.wrapR]);
 		GLCheckError("smp w r");
 	}
 
