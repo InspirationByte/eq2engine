@@ -315,6 +315,13 @@ int occluderComparator(levOccluderLine_t* const& a, levOccluderLine_t* const& b)
 
 void CLevelRegion::CollectVisibleOccluders( occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition )
 {
+	{
+		CScopedMutex m(m_level->m_mutex);
+
+		if (!m_isLoaded)
+			return;
+	}
+
 	static DkList<levOccluderLine_t*> occluders;
 	occluders.clear(false);
 
@@ -328,11 +335,13 @@ void CLevelRegion::CollectVisibleOccluders( occludingFrustum_t& frustumOccluders
 
 	for(int i = 0; i < occluders.numElem(); i++)
 	{
+		levOccluderLine_t* occl = occluders[i];
+
 		Vector3D verts[4] = {
-			occluders[i]->start,
-			occluders[i]->end,
-			occluders[i]->start + Vector3D(0, occluders[i]->height, 0),
-			occluders[i]->end + Vector3D(0, occluders[i]->height, 0)
+			occl->start,
+			occl->end,
+			occl->start + Vector3D(0, occl->height, 0),
+			occl->end + Vector3D(0, occl->height, 0)
 		};
 
 		BoundingBox bbox;
@@ -347,7 +356,7 @@ void CLevelRegion::CollectVisibleOccluders( occludingFrustum_t& frustumOccluders
 
 		if( basicVisibility && visibleThruOccl)
 		{
-			frustumOccluders.occluderSets.append( new occludingVolume_t(occluders[i], cameraPosition) );
+			frustumOccluders.occluderSets.append( new occludingVolume_t(occl, cameraPosition) );
 		}
 	}
 }
@@ -639,8 +648,12 @@ void CLevelRegion::UpdateDebugMaps()
 
 bool CLevelRegion::FindObject(levCellObject_t& objectInfo, const char* name, CLevObjectDef* def) const
 {
-	if(!m_isLoaded)
-		return false;
+	{
+		CScopedMutex m(m_level->m_mutex);
+
+		if (!m_isLoaded)
+			return false;
+	}
 
 	for(int i = 0; i < m_objects.numElem(); i++)
 	{
@@ -668,9 +681,14 @@ bool CLevelRegion::FindObject(levCellObject_t& objectInfo, const char* name, CLe
 
 void CLevelRegion::Cleanup()
 {
-	CScopedMutex m(m_level->m_mutex);
-	if (!m_isLoaded)
-		return;
+	{
+		CScopedMutex m(m_level->m_mutex);
+
+		if (!m_isLoaded)
+			return;
+
+		m_isLoaded = false;
+	}
 
 	for(int i = 0; i < m_objects.numElem(); i++)
 		delete m_objects[i];
@@ -708,7 +726,6 @@ void CLevelRegion::Cleanup()
 	}
 #endif // EDITOR
 
-	m_isLoaded = false;
 	m_hasTransparentSubsets = false;
 
 	m_queryTimes.SetValue(0);

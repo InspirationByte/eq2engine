@@ -936,8 +936,6 @@ float CGameLevel::GetWaterLevelAt(const IVector2D& tilePos) const
 
 	if(pRegion)
 	{
-		CScopedMutex m(m_mutex);
-
 		for(int i = 0; i < pRegion->GetNumHFields(); i++)
 		{
 			CHeightTileField* field = pRegion->GetHField(i);
@@ -966,15 +964,20 @@ float CGameLevel::GetWaterLevelAt(const IVector2D& tilePos) const
 
 straight_t CGameLevel::Road_GetStraightAtPoint( const IVector2D& point, int numIterations ) const
 {
-	CScopedMutex m(m_mutex);
-
 	CLevelRegion* pRegion = NULL;
 
 	straight_t straight;
 	IVector2D localPos;
 
-	if( GetRegionAndTileAt(point, &pRegion, localPos ) && pRegion->m_roads )
+	if( GetRegionAndTileAt(point, &pRegion, localPos ))
 	{
+		{
+			CScopedMutex m(m_mutex);
+
+			if (!pRegion->m_roads)
+				return straight;
+		}
+
 		int tileIdx = localPos.y * m_cellsSize + localPos.x;
 
 		levroadcell_t& startCell = pRegion->m_roads[tileIdx];
@@ -1011,10 +1014,14 @@ straight_t CGameLevel::Road_GetStraightAtPoint( const IVector2D& point, int numI
 			int nextTileIdx = xyPos.y * m_cellsSize + xyPos.x;
 
 			if(!pNextRegion)
-				continue;
+				break;
 
-			if(!pNextRegion->m_roads)
-				continue;
+			{
+				CScopedMutex m(m_mutex);
+
+				if (!pNextRegion->m_roads)
+					break;
+			}
 
 			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
 
@@ -1077,8 +1084,15 @@ roadJunction_t CGameLevel::Road_GetJunctionAtPoint( const IVector2D& point, int 
 
 	IVector2D localPos;
 
-	if( GetRegionAndTileAt(point, &pRegion, localPos ) && pRegion->m_roads )
+	if( GetRegionAndTileAt(point, &pRegion, localPos ) )
 	{
+		{
+			CScopedMutex m(m_mutex);
+
+			if (!pRegion->m_roads)
+				return junction;
+		}
+
 		int tileIdx = localPos.y * m_cellsSize + localPos.x;
 
 		levroadcell_t& startCell = pRegion->m_roads[tileIdx];
@@ -1121,8 +1135,15 @@ roadJunction_t CGameLevel::Road_GetJunctionAtPoint( const IVector2D& point, int 
 			xyPos = pRegion->GetTileAndNeighbourRegion(xyPos.x, xyPos.y, &pNextRegion);
 			int nextTileIdx = xyPos.y * m_cellsSize + xyPos.x;
 
-			if(!pNextRegion->m_roads)
-				continue;
+			if (!pNextRegion)
+				break;
+
+			{
+				CScopedMutex m(m_mutex);
+
+				if (!pNextRegion->m_roads)
+					break;
+			}
 
 			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
 
@@ -1163,8 +1184,15 @@ int	CGameLevel::Road_GetLaneIndexAtPoint( const IVector2D& point, int numIterati
 
 	int nLane = 0;
 
-	if( GetRegionAndTileAt(point, &pRegion, localPos ) && pRegion->m_roads )
+	if( GetRegionAndTileAt(point, &pRegion, localPos ) )
 	{
+		{
+			CScopedMutex m(m_mutex);
+
+			if (!pRegion->m_roads)
+				return -1;
+		}
+
 		int tileIdx = localPos.y * m_cellsSize + localPos.x;
 
 		levroadcell_t& startCell = pRegion->m_roads[tileIdx];
@@ -1186,10 +1214,18 @@ int	CGameLevel::Road_GetLaneIndexAtPoint( const IVector2D& point, int numIterati
 			CLevelRegion* pNextRegion;
 
 			xyPos = pRegion->GetTileAndNeighbourRegion(xyPos.x, xyPos.y, &pNextRegion);
+
+			if (!pNextRegion)
+				break;
+
 			int nextTileIdx = xyPos.y * m_cellsSize + xyPos.x;
 
-			if(!pNextRegion->m_roads)
-				continue;
+			{
+				CScopedMutex m(m_mutex);
+
+				if (!pNextRegion->m_roads)
+					break;
+			}
 
 			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
 
@@ -1229,8 +1265,15 @@ int	CGameLevel::Road_GetWidthInLanesAtPoint( const IVector2D& point, int numIter
 		return 0;
 
 	// and left
-	if( GetRegionAndTileAt(point, &pRegion, localPos ) && pRegion->m_roads )
+	if( GetRegionAndTileAt(point, &pRegion, localPos ) )
 	{
+		{
+			CScopedMutex m(m_mutex);
+
+			if (!pRegion->m_roads)
+				return -1;
+		}
+
 		int tileIdx = localPos.y * m_cellsSize + localPos.x;
 
 		levroadcell_t& startCell = pRegion->m_roads[tileIdx];
@@ -1254,10 +1297,18 @@ int	CGameLevel::Road_GetWidthInLanesAtPoint( const IVector2D& point, int numIter
 			CLevelRegion* pNextRegion;
 
 			nextPos = pRegion->GetTileAndNeighbourRegion(nextPos.x, nextPos.y, &pNextRegion);
+
+			if (!pNextRegion)
+				return -1;
+
 			int nextTileIdx = nextPos.y * m_cellsSize + nextPos.x;
 
-			if(!pNextRegion->m_roads)
-				continue;
+			{
+				CScopedMutex m(m_mutex);
+
+				if (!pNextRegion->m_roads)
+					break;
+			}
 
 			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
 
@@ -1309,8 +1360,15 @@ int	CGameLevel::Road_GetNumLanesAtPoint( const IVector2D& point, int numIteratio
 	if(nLanes <= 0)
 		return 0;
 
-	if( GetRegionAndTileAt(point, &pRegion, localPos ) && pRegion->m_roads )
+	if( GetRegionAndTileAt(point, &pRegion, localPos ))
 	{
+		{
+			CScopedMutex m(m_mutex);
+
+			if (!pRegion->m_roads)
+				return 0;
+		}
+
 		int tileIdx = localPos.y * m_cellsSize + localPos.x;
 
 		levroadcell_t& startCell = pRegion->m_roads[tileIdx];
@@ -1335,11 +1393,18 @@ int	CGameLevel::Road_GetNumLanesAtPoint( const IVector2D& point, int numIteratio
 
 			CLevelRegion* pNextRegion;
 
+			if(!pNextRegion)
+				break;
+
 			xyPos = pRegion->GetTileAndNeighbourRegion(xyPos.x, xyPos.y, &pNextRegion);
 			int nextTileIdx = xyPos.y * m_cellsSize + xyPos.x;
 
-			if(!pNextRegion->m_roads)
-				continue;
+			{
+				CScopedMutex m(m_mutex);
+
+				if (!pNextRegion->m_roads)
+					break;
+			}
 
 			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
 
@@ -1384,8 +1449,12 @@ levroadcell_t* CGameLevel::Road_GetGlobalTileAt(const IVector2D& point, CLevelRe
 		if(pRegion)
 			*pRegion = reg;
 
-		if(!reg->m_roads)
-			return NULL;
+		{
+			CScopedMutex m(m_mutex);
+
+			if (!reg->m_roads)
+				return NULL;
+		}
 
 		int ridx = outXYPos.y*m_cellsSize + outXYPos.x;
 
@@ -1524,13 +1593,15 @@ void CGameLevel::QueryNearestRegions( const IVector2D& point, bool waitLoad )
 	if (!region)
 		return;
 
-	CScopedMutex m(m_mutex);
+	{
+		CScopedMutex m(m_mutex);
 
-	// if center region was not loaded, force wait
-	if (!region->m_isLoaded && waitLoad)
-		waitLoad = true;
-	else
-		waitLoad = false;
+		// if center region was not loaded, force wait
+		if (!region->m_isLoaded && waitLoad)
+			waitLoad = true;
+		else
+			waitLoad = false;
+	}
 
 	int numNeedToLoad = !region->m_isLoaded && (m_regionOffsets[point.y*m_wide + point.x] != -1);
 #endif // EDITOR
@@ -1548,15 +1619,18 @@ void CGameLevel::QueryNearestRegions( const IVector2D& point, bool waitLoad )
 
 		if(nregion)
 		{
+			{
+				CScopedMutex m(m_mutex);
 #ifdef EDITOR
-			CEditorLevelRegion* neditorreg = (CEditorLevelRegion*)nregion;
+				CEditorLevelRegion* neditorreg = (CEditorLevelRegion*)nregion;
 
-			if (!neditorreg->m_physicsPreview)
-				numNeedToLoad += (m_regionOffsets[dy[i] * m_wide + dx[i]] != -1);
+				if (!neditorreg->m_physicsPreview)
+					numNeedToLoad += (m_regionOffsets[dy[i] * m_wide + dx[i]] != -1);
 #else
-			if (!nregion->m_isLoaded)
-				numNeedToLoad += (m_regionOffsets[dy[i] * m_wide + dx[i]] != -1);
+				if (!nregion->m_isLoaded)
+					numNeedToLoad += (m_regionOffsets[dy[i] * m_wide + dx[i]] != -1);
 #endif // EDITOR
+			}
 
 			nregion->m_queryTimes.Increment();
 		}
@@ -1941,12 +2015,6 @@ bool CGameLevel::FindObjectOnLevel(levCellObject_t& objectInfo, const char* name
 			if(m_regionOffsets[regIdx] == -1)
 				continue;
 			
-			{
-				CScopedMutex m(m_mutex);
-				if (!m_regions[regIdx].m_isLoaded)
-					continue;
-			}
-
 			// online objects
 			found = m_regions[regIdx].FindObject(objectInfo, name, def);
 			objectInfo.objectDefId = defIdx;
@@ -1978,6 +2046,7 @@ bool CGameLevel::FindObjectOnLevel(levCellObject_t& objectInfo, const char* name
 			if(m_regionOffsets[regIdx] == -1)
 				continue;
 			
+			// don't check loaded regions
 			{
 				CScopedMutex m(m_mutex);
 				if (m_regions[regIdx].m_isLoaded)
@@ -2135,7 +2204,7 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 				{
 					for (int x = min.x; x < max.x; x++)
 					{
-						//Vector3D pointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(IVector2D(x, y));
+						//Vector3D pointPos = Nav_GlobalPointToPosition(IVector2D(x, y));
 						//debugoverlay->Box3D(pointPos - 0.5f, pointPos + 0.5f, ColorRGBA(1, 0, 1, 0.1f));
 
 						ubyte& tile = Nav_GetTileAtGlobalPoint(IVector2D(x, y));
@@ -2205,7 +2274,7 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 				{
 					for (int x = min.x; x < max.x; x++)
 					{
-						//Vector3D pointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(IVector2D(x, y));
+						//Vector3D pointPos = Nav_GlobalPointToPosition(IVector2D(x, y));
 						//debugoverlay->Box3D(pointPos - 0.5f, pointPos + 0.5f, ColorRGBA(1, 0, 1, 0.1f));
 
 						ubyte& tile = Nav_GetTileAtGlobalPoint(IVector2D(x, y));
@@ -2271,8 +2340,6 @@ Vector3D CGameLevel::Nav_GlobalPointToPosition(const IVector2D& point) const
 
 	Nav_GlobalToLocalPoint(point, outXYPos, &pRegion);
 
-	CScopedMutex m(m_mutex);
-
 	if (pRegion)
 	{
 		CHeightTileField& defField = *pRegion->m_heightfield[0];
@@ -2309,9 +2376,7 @@ navcell_t& CGameLevel::Nav_GetCellStateAtGlobalPoint(const IVector2D& point)
 	CScopedMutex m(m_mutex);
 
 	if (reg && reg->m_isLoaded)
-	{
 		return reg->m_navGrid[m_navGridSelector].cellStates[localPoint.y*navSize + localPoint.x];
-	}
 
 	static navcell_t emptyCell;
 	emptyCell.f = 10000.0f;
@@ -2333,7 +2398,7 @@ ubyte& CGameLevel::Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacl
 	CScopedMutex m(m_mutex);
 	Nav_GlobalToLocalPoint(point, localPoint, &reg);
 
-	if (reg && reg->m_navGrid[m_navGridSelector].staticObst)
+	if (reg && reg->m_isLoaded && reg->m_navGrid[m_navGridSelector].staticObst)
 	{
 		int idx = localPoint.y*navSize + localPoint.x;
 
@@ -2345,7 +2410,7 @@ ubyte& CGameLevel::Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacl
 
 ubyte& CGameLevel::Nav_GetTileAtPosition(const Vector3D& position, bool obstacles)
 {
-	IVector2D point = g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(position);
+	IVector2D point = Nav_PositionToGlobalNavPoint(position);
 
 	return Nav_GetTileAtGlobalPoint(point, obstacles);
 }
@@ -2357,15 +2422,18 @@ navcell_t& CGameLevel::Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, u
 	IVector2D localPoint;
 	CLevelRegion* reg;
 
-	CScopedMutex m(m_mutex);
 	Nav_GlobalToLocalPoint(point, localPoint, &reg);
 
-	if (reg && reg->m_isLoaded && reg->m_navGrid[m_navGridSelector].staticObst)
+	CScopedMutex m(m_mutex);
+
+	if (reg && reg->m_isLoaded)
 	{
 		int idx = localPoint.y*navSize + localPoint.x;
 
-		tile = reg->m_navGrid[m_navGridSelector].staticObst[idx];//min(reg->m_navGrid.dynamicObst[idx], reg->m_navGrid.staticObst[idx]);
-		return reg->m_navGrid[m_navGridSelector].cellStates[idx];
+		navGrid_t& grid = reg->m_navGrid[m_navGridSelector];
+
+		tile = grid.staticObst[idx];//min(grid.dynamicObst[idx], grid.staticObst[idx]);
+		return grid.cellStates[idx];
 	}
 
 	tile = 0;
@@ -2428,8 +2496,8 @@ void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
 
 bool CGameLevel::Nav_FindPath(const Vector3D& start, const Vector3D& end, pathFindResult_t& result, int iterationLimit, bool fast)
 {
-	IVector2D startPoint = g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(start);
-	IVector2D endPoint = g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(end);
+	IVector2D startPoint = Nav_PositionToGlobalNavPoint(start);
+	IVector2D endPoint = Nav_PositionToGlobalNavPoint(end);
 
 	return Nav_FindPath2D(startPoint, endPoint, result, iterationLimit, fast);
 }
@@ -2449,8 +2517,6 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 {
 	if(start == end)
 		return false;
-
-	CScopedMutex m(m_mutex);
 
 	result.gridSelector = m_navGridSelector;
 	result.points.setNum(0,false);
@@ -2540,8 +2606,8 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 				/*
 				// DEBUG DRAW
 				Vector3D offset(0.0f, 0.25f, 0.0f);
-				Vector3D pointPos = g_pGameWorld->m_level.Nav_GlobalPointToPosition(neighbourPoint) + offset;
-				Vector3D pointPos2 = g_pGameWorld->m_level.Nav_GlobalPointToPosition(curPoint) + offset;
+				Vector3D pointPos = Nav_GlobalPointToPosition(neighbourPoint) + offset;
+				Vector3D pointPos2 = Nav_GlobalPointToPosition(curPoint) + offset;
 
 				float dispalyTime = 0.1f;
 
@@ -2584,8 +2650,8 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 
 float CGameLevel::Nav_TestLine(const Vector3D& start, const Vector3D& end, bool obstacles)
 {
-	IVector2D startPoint = g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(start);
-	IVector2D endPoint = g_pGameWorld->m_level.Nav_PositionToGlobalNavPoint(end);
+	IVector2D startPoint = Nav_PositionToGlobalNavPoint(start);
+	IVector2D endPoint = Nav_PositionToGlobalNavPoint(end);
 
 	return Nav_TestLine2D(startPoint, endPoint, obstacles);
 }
