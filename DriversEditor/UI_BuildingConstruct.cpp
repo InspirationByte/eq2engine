@@ -73,7 +73,7 @@ void CLayerModel::RefreshPreview()
 
 	m_model->PreloadTextures();
 	materials->Wait();
-	m_model->Render(0, bbox);
+	m_model->Render(0);
 
 	//Render(0.0f, bbox, true, 0);
 
@@ -1850,7 +1850,7 @@ void CUI_BuildingConstruct::OnRender()
 			ColorRGBA oldcol = materials->GetAmbientColor();
 			materials->SetAmbientColor(ColorRGBA(1,0.5,0.5,1));
 
-			m_selBuildings[i].selBuild->model->Render(0,BoundingBox());
+			m_selBuildings[i].selBuild->model->Render(0);
 
 			materials->SetAmbientColor(oldcol);
 			materials->SetMatrix(MATRIXMODE_WORLD, identity4());

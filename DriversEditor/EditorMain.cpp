@@ -174,6 +174,7 @@ void InitMatSystem(HWND window)
 		materials_config.enableSpecular = true; // specular for cubemaps
 		materials_config.enableShadows = false;
 		materials_config.wireframeMode = false;
+		materials_config.overdrawMode = false;
 		materials_config.editormode = true;
 
 		materials_config.lighting_model = MATERIAL_LIGHT_FORWARD;

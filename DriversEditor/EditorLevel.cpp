@@ -269,7 +269,7 @@ void RenderBuilding( buildingSource_t* building, buildSegmentPoint_t* extraSegme
 		// draw model
 		BoundingBox aabb;
 
-		building->model->Render(0,aabb);
+		building->model->Render(0);
 
 		return;
 	}
@@ -324,7 +324,7 @@ void RenderBuilding( buildingSource_t* building, buildSegmentPoint_t* extraSegme
 			CalculateBuildingSegmentTransform( partTransform, layer, start.position, end.position, building->order, size, start.scale, iter );
 
 			materials->SetMatrix(MATRIXMODE_WORLD, partTransform);
-			model->Render(0, tempBBox);
+			model->Render(0);
 		}
 
 	}
