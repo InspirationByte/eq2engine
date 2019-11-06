@@ -264,6 +264,8 @@ kvkeybase_t*		KV_ParseBinary(const char* pszBuffer, int bufferSize, kvkeybase_t*
 void				KV_PrintSection(kvkeybase_t* base);
 
 void				KV_WriteToStream(IVirtualStream* outStream, kvkeybase_t* section, int nTabs = 0, bool pretty = true);
+void				KV_WriteToStreamV3(IVirtualStream* outStream, kvkeybase_t* section, int nTabs = 0, bool pretty = true);
+
 void				KV_WriteToStreamBinary(IVirtualStream* outStream, kvkeybase_t* base);
 
 //-----------------------------------------------------------------------------------------------------
