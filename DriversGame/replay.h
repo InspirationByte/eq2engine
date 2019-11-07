@@ -290,11 +290,12 @@ public:
 	CCar*					GetCarByScriptId(int id);
 
 	EReplayState			m_state;
+	bool					m_unsaved;
+
 	int						m_tick;
 	int						m_numFrames;
 
 	DkList<replayCamera_t>	m_cameras;
-
 	int						m_currentCamera;
 
 protected:
@@ -315,7 +316,7 @@ protected:
 	void					RaiseReplayEvent(const replayEvent_t& evt);
 
 	void					SetupReplayCar( replayCarStream_t* rep );
-	
+
 
 private:
 

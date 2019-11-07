@@ -50,6 +50,7 @@ int						g_nOldControlButtons	= 0;
 
 Vector3D				g_freeLookAngles;
 
+// FIXME: this is actually a restart schedule type
 enum EReplayScheduleType
 {
 	REPLAY_SCHEDULE_NONE = 0,
@@ -63,28 +64,22 @@ enum EReplayMode
 {
 	REPLAY_MODE_NONE = 0,
 
-	REPLAY_MODE_QUICK_REPLAY,
-	REPLAY_MODE_STORED_REPLAY,
-	REPLAY_MODE_DEMO,
+	REPLAY_MODE_QUICK_REPLAY,	// game can be restarted
+	REPLAY_MODE_STORED_REPLAY,	// only can be viewed
+
+	REPLAY_MODE_INTRO,			// can be skipped by keypress
+	REPLAY_MODE_DEMO,			// displays DEMO
 };
 
 void Game_ShutdownSession(bool restart = false);
 void Game_InitializeSession();
 
-void Game_QuickRestart(bool demo)
+void Game_QuickRestart(bool intoReplay)
 {
 	if(EqStateMgr::GetCurrentStateType() != GAME_STATE_GAME)
 		return;
 
-	//SetCurrentState(NULL);
-
-	if(!demo)
-	{
-		g_replayData->Stop();
-		g_replayData->Clear();
-	}
-
-	g_State_Game->QuickRestart(demo);
+	g_State_Game->QuickRestart(intoReplay);
 }
 
 void Game_OnPhysicsUpdate(float fDt, int iterNum);
@@ -107,9 +102,6 @@ DECLARE_CMD(fastseek, "Seeks to the replay frame. (Visual mistakes are possible)
 	// restart if if we want earlier ticks
 	if (replayTo < g_replayData->m_tick)
 	{
-		g_replayData->Stop();
-		g_replayData->m_state = REPL_INIT_PLAYBACK;
-
 		Game_QuickRestart(true);
 
 		// load manually, not using loading screen
@@ -362,7 +354,8 @@ CState_Game::CState_Game() : CBaseStateHandler()
 	m_isLoading = -1;
 	m_missionScriptName = "defaultmission";
 	m_scheduledQuickReplay = REPLAY_SCHEDULE_NONE;
-	m_storedMissionStatus = MIS_STATUS_INGAME;
+
+	m_storedMissionStatus = MIS_STATUS_FAILED;
 
 	m_gameMenuName = "Ingame";
 
@@ -376,8 +369,6 @@ CState_Game::~CState_Game()
 
 void CState_Game::LoadGame()
 {
-
-
 	while(m_isLoading != -1)
 	{
 		if (!DoLoadingFrame()) // actual level loading happened here
@@ -397,8 +388,8 @@ void CState_Game::UnloadGame()
 
 	if (m_isGameRunning)
 	{
-		// if it were recording, stop the replay and save last session
-		if (g_replayData->m_state == REPL_RECORDING)
+		// store unsaved replay from last session
+		if (g_replayData->m_unsaved)
 		{
 			g_replayData->Stop();
 
@@ -415,7 +406,7 @@ void CState_Game::UnloadGame()
 
 	g_pGameHUD->Cleanup();
 
-	m_storedMissionStatus = MIS_STATUS_INGAME;
+	m_storedMissionStatus = MIS_STATUS_FAILED;
 
 	g_pGameWorld->Cleanup();
 	Game_ShutdownSession();
@@ -475,9 +466,41 @@ void CState_Game::StopStreams()
 	g_sounds->SetPaused(true);
 }
 
-void CState_Game::QuickRestart(bool replay)
+void CState_Game::QuickRestart(bool intoReplay)
 {
 	StopStreams();
+
+	// clear replay data if we want to restart the game
+	// stored replays will be replayed normally
+	if (m_replayMode != REPLAY_MODE_STORED_REPLAY)
+	{
+		if (!intoReplay)
+		{
+			g_replayData->Stop();
+			g_replayData->Clear();
+
+			m_replayMode = REPLAY_MODE_NONE;
+			m_storedMissionStatus = MIS_STATUS_INGAME;
+		}
+		else
+		{
+			// store mission status if we're going to replay
+			m_storedMissionStatus = g_pGameSession->GetMissionStatus();
+
+			// set default replay mode if not set
+			if(m_replayMode == REPLAY_MODE_NONE)
+				m_replayMode = REPLAY_MODE_QUICK_REPLAY;
+		}
+	}
+	else
+		m_storedMissionStatus = MIS_STATUS_FAILED;
+
+	// reinit replay playback
+	if (m_replayMode > REPLAY_MODE_NONE)
+	{
+		g_replayData->Stop();
+		g_replayData->m_state = REPL_INIT_PLAYBACK;
+	}
 
 	m_isGameRunning = false;
 	m_exitGame = false;
@@ -493,12 +516,6 @@ void CState_Game::QuickRestart(bool replay)
 
 	g_pGameHUD->Cleanup();
 	g_pGameWorld->Cleanup(false);
-
-	// store mission status if we're going to replay
-	m_storedMissionStatus = g_pGameSession->GetMissionStatus();
-
-	if(m_replayMode != REPLAY_MODE_STORED_REPLAY)
-		m_replayMode = replay ? REPLAY_MODE_QUICK_REPLAY : REPLAY_MODE_NONE;
 
 	Game_ShutdownSession(true);
 
@@ -562,7 +579,7 @@ void CState_Game::OnMenuCommand( const char* command )
 		m_exitGame = false;
 		m_fade = 0.0f;
 
-		// fail the game
+		// fail the game if we're ingame
 		if(missionStatus == MIS_STATUS_INGAME)
 			g_pGameSession->SignalMissionStatus(MIS_STATUS_FAILED, 0.0f);
 
@@ -722,7 +739,7 @@ void CState_Game::SetPauseState( bool state )
 
 	if(!m_exitGame)
 		m_showMenu = state;
-
+	 
 	if(m_showMenu)
 	{
 		m_selection = 0;
@@ -756,8 +773,13 @@ bool CState_Game::StartReplay( const char* path, bool demoMode )
 	{
 		EqStateMgr::ChangeState( this );
 		m_scheduledQuickReplay = REPLAY_SCHEDULE_REPLAY_NORESTART;
+		m_storedMissionStatus = MIS_STATUS_FAILED;
 
 		m_replayMode = demoMode ? REPLAY_MODE_DEMO : REPLAY_MODE_STORED_REPLAY;
+
+		// don't do director
+		if (m_replayMode >= REPLAY_MODE_INTRO)
+			Director_Enable(false);
 
 		return true;
 	}
@@ -770,11 +792,35 @@ void CState_Game::DrawLoadingScreen()
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
 	materials->Setup2D(screenSize.x, screenSize.y);
-
+	/*
 	m_loadingScreen->SetSize(screenSize);
 	m_loadingScreen->Render();
+	*/
 
-	/*
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+
+	g_pShaderAPI->SetTexture(NULL, NULL, 0);
+	materials->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO);
+	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+	materials->SetDepthStates(false, false);
+	materials->BindMaterial(materials->GetDefaultMaterial());
+
+	// fade screen
+	ColorRGBA blockCol(0.8, 0.7, 0.0, 1.0f);
+
+	{
+		int loadingProgress = m_isLoading == -1 ? 8 : m_isLoading;
+
+		float loadingPercentage = float(loadingProgress) / 8.0f;
+
+		Vector2D rect[] = { MAKEQUAD(0, screenSize.y - 45, screenSize.x * loadingPercentage, screenSize.y - 25, 0) };
+
+		meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+			meshBuilder.Color4fv(blockCol);
+			meshBuilder.Quad2(rect[0], rect[1], rect[2], rect[3]);
+		meshBuilder.End();
+	}
+
 	IEqFont* font = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD+TEXT_STYLE_ITALIC);
 
 	const wchar_t* loadingStr = LocalizedString("#GAME_IS_LOADING");
@@ -793,9 +839,7 @@ void CState_Game::DrawLoadingScreen()
 
 	offs *= 1.5f;
 
-	font->RenderText(loadingStr, Vector2D(100 + offs,screenSize.y - 100), param);
-	*/
-	
+	font->RenderText(loadingStr, Vector2D(100 + offs,screenSize.y - 100), param);	
 }
 
 void CState_Game::OnLoadingDone()
@@ -816,6 +860,13 @@ void CState_Game::OnLoadingDone()
 	g_sounds->Set2DChannelsVolume(CHAN_STREAM, 1.0f);
 
 	g_pGameSession->OnLoadingDone();
+
+	// pause at start if director is active
+	if (Director_IsActive())
+	{
+		g_pGameSession->Update(1.0f / 60.0f);
+		g_pause.SetBool(true);
+	}
 }
 
 //-------------------------------------------------------------------------------
@@ -1123,7 +1174,8 @@ void CState_Game::RenderMainView2D( float fDt )
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
 	// draw HUD
-	g_pGameHUD->Render( fDt, screenSize );
+	if(!(Director_IsActive() && g_pause.GetBool()))
+		g_pGameHUD->Render( fDt, screenSize );
 
 	Director_Draw( fDt );
 

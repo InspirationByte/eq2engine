@@ -122,35 +122,34 @@ void CLocalize::AddTokensFile(const char* pszFilePrefix)
 	char path[2048];
 	sprintf(path, "resources/%s_%s.txt", pszFilePrefix, GetLanguageName());
 
-	KeyValues kvs;
-
-	if(!kvs.LoadFromFile(path))
+	kvkeybase_t kvSec;
+	if (!KV_LoadFromFile(path, -1, &kvSec))
 	{
-		Msg("Cannot add tokens from file 'resources/%s_%s.txt'\n",pszFilePrefix, GetLanguageName());
+		MsgWarning("Cannot load language file 'resources/%s_%s.txt'\n", pszFilePrefix, GetLanguageName());
 		return;
 	}
 
-	if(!kvs.GetRootSection()->unicode)
-	{
+	if(!kvSec.unicode)
 		MsgWarning("Localization warning (%s): file is not unicode\n", pszFilePrefix );
-	}
 
-	for(int i = 0; i < kvs.GetRootSection()->keys.numElem(); i++)
+	for(int i = 0; i < kvSec.keys.numElem(); i++)
 	{
-		if(!stricmp( kvs.GetRootSection()->keys[i]->name, "#include" ))
+		kvkeybase_t* key = kvSec.keys[i];
+
+		if(!stricmp(key->name, "#include" ))
 		{
-			AddTokensFile( KV_GetValueString(kvs.GetRootSection()->keys[i]) );
+			AddTokensFile( KV_GetValueString(key) );
 			continue;
 		}
 
 		// Cannot add same one
-		if(_FindToken( kvs.GetRootSection()->keys[i]->name ) != NULL)
+		if(_FindToken(key->name ) != NULL)
 		{
-			MsgWarning("Localization warning (%s): Token '%s' already registered\n", pszFilePrefix, kvs.GetRootSection()->keys[i]->name );
+			MsgWarning("Localization warning (%s): Token '%s' already registered\n", pszFilePrefix, key->name );
 			continue;
 		}
 
-		AddToken(kvs.GetRootSection()->keys[i]->name, KV_GetValueString(kvs.GetRootSection()->keys[i]));
+		AddToken(key->name, KV_GetValueString(key));
 	}
 }
 

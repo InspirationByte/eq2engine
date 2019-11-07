@@ -37,6 +37,7 @@ CReplayData::CReplayData()
 	m_currentEvent = 0;
 	m_numFrames = 0;
 	m_currentCamera = -1;
+	m_unsaved = true;
 }
 
 CReplayData::~CReplayData() {}
@@ -94,6 +95,8 @@ void CReplayData::Clear()
 	m_vehicles.clear();
 	m_cameras.clear();
 	m_activeVehicles.clear();
+
+	m_unsaved = true;
 }
 
 void CReplayData::ClearEvents()
@@ -557,6 +560,7 @@ void CReplayData::SaveToFile( const char* filename )
 		g_fileSystem->Close(rplFile);
 
 		Msg("Replay '%s' saved\n", filename);
+		m_unsaved = false;
 	}
 
 	if(m_cameras.numElem() > 0)
@@ -1042,8 +1046,7 @@ bool CReplayData::LoadFromFile(const char* filename)
 
 	// load mission, level, set environment
 	m_state = REPL_INIT_PLAYBACK;
-
-	//g_State_Game->UnloadGame();
+	m_unsaved = false;
 
 	g_pGameWorld->SetLevelName(hdr.levelname);
 	g_pGameWorld->SetEnvironmentName(hdr.envname);
