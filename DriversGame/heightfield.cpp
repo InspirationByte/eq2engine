@@ -143,7 +143,6 @@ void CHeightTileField::ReadOnlyMaterials( IVirtualStream* stream )
 	{
 		hfieldmaterial_t* matBundle = new hfieldmaterial_t();
 		matBundle->material = materials->GetMaterial(matNamePtr);
-		matBundle->atlas = matBundle->material->GetAtlas();
 
 		if(matBundle->material)
 			matBundle->material->Ref_Grab();
@@ -180,7 +179,6 @@ void CHeightTileField::ReadFromStream( IVirtualStream* stream )
 	{
 		hfieldmaterial_t* matBundle = new hfieldmaterial_t();
 		matBundle->material = materials->GetMaterial(matNamePtr);
-		matBundle->atlas = matBundle->material->GetAtlas();
 
 		if(matBundle->material)
 		{
@@ -341,7 +339,6 @@ bool CHeightTileField::SetPointMaterial(int x, int y, IMaterial* pMaterial, int 
 			// try to load atlas
 			hfieldmaterial_t* matBundle = new hfieldmaterial_t;
 			matBundle->material = pMaterial;
-			matBundle->atlas = matBundle->material->GetAtlas();
 
 			matIdx = m_materials.append(matBundle);
 
@@ -730,7 +727,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 				batches.append(batch);
 			}
 
-			CTextureAtlas* batchAtlas = batch->materialBundle->atlas;
+			CTextureAtlas* batchAtlas = batch->materialBundle->material->GetAtlas();
 
 			int vertex_heights[4] = {point.height, point.height, point.height, point.height};
 

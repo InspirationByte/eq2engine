@@ -165,7 +165,7 @@ void CParticleRenderGroup::Render(int nViewRenderFlags)
 
 //----------------------------------------------------------------------------------------------------------
 
-CPFXAtlasGroup::CPFXAtlasGroup() : CParticleRenderGroup(), m_atlas(nullptr)
+CPFXAtlasGroup::CPFXAtlasGroup() : CParticleRenderGroup()
 {
 
 }
@@ -173,53 +173,51 @@ CPFXAtlasGroup::CPFXAtlasGroup() : CParticleRenderGroup(), m_atlas(nullptr)
 void CPFXAtlasGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO, int maxQuads )
 {
 	CParticleRenderGroup::Init( pszMaterialName, bCreateOwnVBO, maxQuads);
-	m_atlas = m_pMaterial->GetAtlas();
 }
 
 void CPFXAtlasGroup::Shutdown()
 {
 	CParticleRenderGroup::Shutdown();
-	m_atlas = nullptr;
 }
 
 TexAtlasEntry_t* CPFXAtlasGroup::GetEntry(int idx)
 {
-	if (!m_atlas)
+	if (!m_pMaterial->GetAtlas())
 		return nullptr;
 
-	return m_atlas->GetEntry(idx);
+	return m_pMaterial->GetAtlas()->GetEntry(idx);
 }
 
 int	CPFXAtlasGroup::GetEntryIndex(TexAtlasEntry_t* entry) const
 {
-	if (!m_atlas)
+	if (!m_pMaterial->GetAtlas())
 		return -1;
 
-	return m_atlas->GetEntryIndex(entry);
+	return m_pMaterial->GetAtlas()->GetEntryIndex(entry);
 }
 
 TexAtlasEntry_t* CPFXAtlasGroup::FindEntry(const char* pszName) const
 {
-	if (!m_atlas)
+	if (!m_pMaterial->GetAtlas())
 		return nullptr;
 
-	return m_atlas->FindEntry(pszName);
+	return m_pMaterial->GetAtlas()->FindEntry(pszName);
 }
 
 int CPFXAtlasGroup::FindEntryIndex(const char* pszName) const
 {
-	if (!m_atlas)
+	if (!m_pMaterial->GetAtlas())
 		return -1;
 
-	return m_atlas->FindEntryIndex(pszName);
+	return m_pMaterial->GetAtlas()->FindEntryIndex(pszName);
 }
 
 int CPFXAtlasGroup::GetEntryCount() const
 {
-	if (!m_atlas)
+	if (!m_pMaterial->GetAtlas())
 		return 0;
 
-	return m_atlas->GetEntryCount();
+	return m_pMaterial->GetAtlas()->GetEntryCount();
 }
 
 //----------------------------------------------------------------------------------------------------------

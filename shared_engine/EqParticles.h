@@ -123,8 +123,6 @@ public:
 	int					FindEntryIndex(const char* pszName) const;
 
 	int					GetEntryCount() const;
-protected:
-	CTextureAtlas*		m_atlas;
 };
 
 //------------------------------------------------------------------------------------

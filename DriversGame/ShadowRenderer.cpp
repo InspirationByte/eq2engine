@@ -393,7 +393,7 @@ void CShadowRenderer::RenderShadowCasters()
 			continue;
 		}
 
-		Plane nearPlane(-vec3_up, firstObject->m_bbox.maxPoint.y + orthoView.GetOrigin().y);
+		Plane nearPlane(-vec3_up, firstObject->m_bbox.maxPoint.y);// +orthoView.GetOrigin().y);
 
 		decalSettings.clipVolume.LoadAsFrustum(viewProj);
 		decalSettings.clipVolume.SetupPlane(nearPlane, VOLUME_PLANE_NEAR);
