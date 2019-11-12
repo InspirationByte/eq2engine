@@ -1477,7 +1477,7 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 	{
 		m_isSelecting = false;
 
-		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging() && m_editingBuilding)
+		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging())
 		{
 			if(m_mode == ED_BUILD_READY)
 				m_mode = ED_BUILD_BEGUN;	// make to the point 1
