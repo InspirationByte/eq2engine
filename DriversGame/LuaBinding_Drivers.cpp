@@ -139,13 +139,22 @@ CLCollisionData Lua_Util_TestLine(const Vector3D& start, const Vector3D& end, in
 	return coll;
 }
 
+OOLUA_CFUNC(Lua_Util_TestLine, L_Lua_Util_TestLine)
+
 bool Lua_SetMissionScript(const char* name)
 {
 	return g_State_Game->SetMissionScript(name);
 }
 
+bool Lua_StartReplay(const char* name, int mode)
+{
+	return g_State_Game->StartReplay(name, (EReplayMode)mode);
+}
+
+
 OOLUA_CFUNC(Lua_SetMissionScript, L_SetMissionScript)
-OOLUA_CFUNC(Lua_Util_TestLine, L_Lua_Util_TestLine)
+OOLUA_CFUNC(Lua_StartReplay, L_StartReplay)
+
 
 template <class T>
 T* CGameObject_DynamicCast(CGameObject* object, int typeId)
@@ -271,6 +280,12 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	LUA_SET_GLOBAL_ENUMCONST(state, CAM_MODE_TRIPOD_STATIC);
 	LUA_SET_GLOBAL_ENUMCONST(state, CAM_MODE_OUTCAR_FIXED);
 
+	// REPLAYMODE
+	LUA_SET_GLOBAL_ENUMCONST(state, REPLAYMODE_QUICK_REPLAY);
+	LUA_SET_GLOBAL_ENUMCONST(state, REPLAYMODE_STORED_REPLAY);
+	LUA_SET_GLOBAL_ENUMCONST(state, REPLAYMODE_INTRO);	
+	LUA_SET_GLOBAL_ENUMCONST(state, REPLAYMODE_DEMO);
+
 	OOLUA::register_class<CLCollisionData>(state);
 
 	OOLUA::register_class<CGameWorld>(state);
@@ -281,11 +296,8 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	OOLUA::register_class<CDrvSynHUDManager>(state);
 	OOLUA::register_class<CCameraAnimator>(state);
 
-
-
 	OOLUA::set_global(state, "SetMissionScript", L_SetMissionScript);
-
-	
+	OOLUA::set_global(state, "StartReplay", L_StartReplay);
 	
 	//OOLUA::set_global(state, "SetCurrentState", L_SetCurrentState);
 	//OOLUA::set_global(state, "GetCurrentState", L_GetCurrentState);

@@ -111,7 +111,7 @@ bool CState_Title::Update( float fDt )
 
 		if(m_actionTimeout <= 0.0f && m_fade <= 0.0f)
 		{
-			bool result = g_State_Game->StartReplay( m_demoList[m_demoId++].c_str(), true);
+			bool result = g_State_Game->StartReplay( m_demoList[m_demoId++].c_str(), REPLAYMODE_DEMO);
 
 			if(!result)
 			{

@@ -109,7 +109,7 @@ DECLARE_CMD_VARIANTS(replay_start, nullptr, fnreplay_variants, 0)
 {
 	if(CMD_ARGC > 0)
 	{
-		g_State_Game->StartReplay( (USERREPLAYS_PATH + CMD_ARGV(0)).c_str(), false );
+		g_State_Game->StartReplay( (USERREPLAYS_PATH + CMD_ARGV(0)).c_str(), REPLAYMODE_STORED_REPLAY );
 	}
 	else
 	{

@@ -19,6 +19,17 @@ enum EPauseMode
 	PAUSEMODE_COMPLETE,
 };
 
+enum EReplayMode
+{
+	REPLAYMODE_NONE = 0,
+
+	REPLAYMODE_QUICK_REPLAY,	// game can be restarted
+	REPLAYMODE_STORED_REPLAY,	// only can be viewed
+
+	REPLAYMODE_INTRO,			// can be skipped by keypress
+	REPLAYMODE_DEMO,			// displays DEMO
+};
+
 //--------------------------------------------------------------------------------------
 
 class CCar;
@@ -47,7 +58,7 @@ public:
 	int			GetPauseMode() const;
 	void		SetPauseState( bool pause );
 
-	bool		StartReplay( const char* path, bool demoMode );
+	bool		StartReplay( const char* path, EReplayMode mode);
 
 	void		GetMouseCursorProperties(bool &visible, bool& centered);
 
@@ -59,8 +70,6 @@ public:
 	bool		SetMissionScript( const char* name );
 	const char*	GetMissionScriptName() const;
 
-	void		StopStreams();
-
 	void		QuickRestart(bool replay);
 
 	bool		IsGameRunning() {return m_isGameRunning;}
@@ -70,6 +79,11 @@ public:
 	void		DoCameraUpdates(float fDt);
 
 protected:
+
+	void		StopAllSounds();
+
+	void		InitializeSession();
+	void		ShutdownSession( bool restart );
 
 	bool		DoLoadingFrame();
 	void		OnLoadingDone();

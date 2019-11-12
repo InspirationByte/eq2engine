@@ -60,20 +60,6 @@ enum EReplayScheduleType
 	REPLAY_SCHEDULE_REPLAY_NORESTART,
 };
 
-enum EReplayMode
-{
-	REPLAY_MODE_NONE = 0,
-
-	REPLAY_MODE_QUICK_REPLAY,	// game can be restarted
-	REPLAY_MODE_STORED_REPLAY,	// only can be viewed
-
-	REPLAY_MODE_INTRO,			// can be skipped by keypress
-	REPLAY_MODE_DEMO,			// displays DEMO
-};
-
-void Game_ShutdownSession(bool restart = false);
-void Game_InitializeSession();
-
 void Game_QuickRestart(bool intoReplay)
 {
 	if(EqStateMgr::GetCurrentStateType() != GAME_STATE_GAME)
@@ -199,12 +185,6 @@ DECLARE_CMD_VARIANTS(start, "start a game with specified mission or level name",
 	if(CMD_ARGC == 0)
 		return;
 
-	// unload game
-	if(EqStateMgr::GetCurrentStateType() == GAME_STATE_GAME)
-	{
-		g_State_Game->UnloadGame();
-	}
-
 	// always set level name
 	g_pGameWorld->SetLevelName( CMD_ARGV(0).c_str() );
 
@@ -229,67 +209,6 @@ void fnMaxplayersTest(ConVar* pVar,char const* pszOldValue)
 }
 
 ConVar sv_maxplayers("maxplayers", "1", fnMaxplayersTest, "Maximum players allowed on the server\n");
-
-//------------------------------------------------------------------------------
-// Initilizes game session
-//------------------------------------------------------------------------------
-
-void Game_InitializeSession()
-{
-	Msg("-- InitializeSession --\n");
-
-	if(!g_pGameSession)
-	{
-		if(net_server.GetBool())
-			g_svclientInfo.maxPlayers = sv_maxplayers.GetInt();
-		else if(g_svclientInfo.maxPlayers <= 1)
-			net_server.SetBool(true);
-
-		if( g_svclientInfo.maxPlayers > 1 )
-		{
-			CNetGameSession* netSession = new CNetGameSession();
-			g_pGameSession = netSession;
-		}
-		else
-			g_pGameSession = new CSingleGameSession();
-	}
-
-#ifndef __INTELLISENSE__
-
-	OOLUA::set_global(GetLuaState(), "gameses", g_pGameSession);
-	OOLUA::set_global(GetLuaState(), "gameHUD", g_pGameHUD);
-
-#endif // __INTELLISENSE__
-
-	if(g_replayData->m_state != REPL_INIT_PLAYBACK)
-		g_replayData->Clear();
-
-	g_pCameraAnimator->Reset();
-
-	g_pGameSession->Init();
-
-	// reset buttons
-	ZeroInputControls();
-}
-
-void Game_ShutdownSession(bool restart)
-{
-	Msg("-- ShutdownSession%s --\n", restart ? "Restart" : "");
-	g_parallelJobs->Wait();
-
-	effectrenderer->RemoveAllEffects();
-
-	if(g_pGameSession)
-	{
-		if(!restart)
-			g_pGameSession->FinalizeMissionManager();
-
-		g_pGameSession->Shutdown();
-	}
-
-	delete g_pGameSession;
-	g_pGameSession = NULL;
-}
 
 DECLARE_CMD(spawn_car, "Spawns a car at crosshair", CV_CHEAT)
 {
@@ -348,7 +267,7 @@ CState_Game::CState_Game() : CBaseStateHandler()
 	m_uiLayout = nullptr;
 	m_loadingScreen = nullptr;
 
-	m_replayMode = REPLAY_MODE_NONE;
+	m_replayMode = REPLAYMODE_NONE;
 	m_isGameRunning = false;
 	m_fade = 1.0f;
 	m_isLoading = -1;
@@ -381,10 +300,14 @@ void CState_Game::LoadGame()
 
 void CState_Game::UnloadGame()
 {
-	if(!g_pPhysics)
+	if (!g_pGameSession) // I guess it's nothing to unload
 		return;
 
 	m_tunnelEfx = nullptr;
+
+	// renderer must be reset first
+	g_pShaderAPI->Reset(STATE_RESET_ALL);
+	g_pShaderAPI->Apply();
 
 	if (m_isGameRunning)
 	{
@@ -400,28 +323,20 @@ void CState_Game::UnloadGame()
 	else
 		MsgWarning("UnloadGame called while loading...\n");
 
-	// renderer must be reset
-	g_pShaderAPI->Reset(STATE_RESET_ALL);
-	g_pShaderAPI->Apply();
-
-	g_pGameHUD->Cleanup();
-
 	m_storedMissionStatus = MIS_STATUS_FAILED;
 
-	g_pGameWorld->Cleanup();
-	Game_ShutdownSession();
-
-	g_pPhysics->SceneShutdown();
+	ShutdownSession( false );
 
 	g_studioModelCache->ReleaseCache();
-
 	g_sounds->Shutdown();
 
+	if(g_pPhysics)
+		g_pPhysics->SceneShutdown();
+
 	delete g_pPhysics;
-	g_pPhysics = NULL;
+	g_pPhysics = nullptr;
 
 	m_isGameRunning = false;
-	m_isLoading = -1;
 }
 
 bool CState_Game::DoLoadMission()
@@ -460,7 +375,65 @@ const char* CState_Game::GetMissionScriptName() const
 	return m_missionScriptName.c_str();
 }
 
-void CState_Game::StopStreams()
+void CState_Game::InitializeSession()
+{
+	Msg("-- InitializeSession --\n");
+
+	if (!g_pGameSession)
+	{
+		if (net_server.GetBool())
+			g_svclientInfo.maxPlayers = sv_maxplayers.GetInt();
+		else if (g_svclientInfo.maxPlayers <= 1)
+			net_server.SetBool(true);
+
+		if (g_svclientInfo.maxPlayers > 1)
+		{
+			CNetGameSession* netSession = new CNetGameSession();
+			g_pGameSession = netSession;
+		}
+		else
+			g_pGameSession = new CSingleGameSession();
+
+		OOLUA::set_global(GetLuaState(), "gameses", g_pGameSession);
+	}
+
+	// not going to replay mode - reset all
+	if (g_replayData->m_state != REPL_INIT_PLAYBACK)
+		g_replayData->Clear();
+
+	// init game hud and session in Lua
+	OOLUA::set_global(GetLuaState(), "gameHUD", g_pGameHUD);
+
+	g_pGameHUD->Init();
+	g_pCameraAnimator->Reset();
+	g_pGameSession->Init();
+
+	// reset buttons
+	ZeroInputControls();
+
+	g_pause.SetBool(false);
+}
+
+void CState_Game::ShutdownSession(bool restart)
+{
+	Msg("-- ShutdownSession%s --\n", restart ? " - Restart" : "");
+	g_parallelJobs->Wait();
+
+	effectrenderer->RemoveAllEffects();
+
+	if (!restart)
+		g_pGameSession->FinalizeMissionManager();
+
+	g_pGameHUD->Cleanup();
+	g_pGameWorld->Cleanup(!restart);
+
+	g_pGameSession->Shutdown();
+
+	delete g_pGameSession;
+	g_pGameSession = nullptr;
+}
+
+void CState_Game::StopAllSounds()
 {
 	g_sounds->StopAllSounds();
 	g_sounds->SetPaused(true);
@@ -468,18 +441,22 @@ void CState_Game::StopStreams()
 
 void CState_Game::QuickRestart(bool intoReplay)
 {
-	StopStreams();
+	// renderer must be reset
+	g_pShaderAPI->Reset(STATE_RESET_ALL);
+	g_pShaderAPI->Apply();
+
+	StopAllSounds();
 
 	// clear replay data if we want to restart the game
 	// stored replays will be replayed normally
-	if (m_replayMode != REPLAY_MODE_STORED_REPLAY)
+	if (m_replayMode != REPLAYMODE_STORED_REPLAY)
 	{
 		if (!intoReplay)
 		{
 			g_replayData->Stop();
 			g_replayData->Clear();
 
-			m_replayMode = REPLAY_MODE_NONE;
+			m_replayMode = REPLAYMODE_NONE;
 			m_storedMissionStatus = MIS_STATUS_INGAME;
 		}
 		else
@@ -488,15 +465,15 @@ void CState_Game::QuickRestart(bool intoReplay)
 			m_storedMissionStatus = g_pGameSession->GetMissionStatus();
 
 			// set default replay mode if not set
-			if(m_replayMode == REPLAY_MODE_NONE)
-				m_replayMode = REPLAY_MODE_QUICK_REPLAY;
+			if(m_replayMode == REPLAYMODE_NONE)
+				m_replayMode = REPLAYMODE_QUICK_REPLAY;
 		}
 	}
 	else
 		m_storedMissionStatus = MIS_STATUS_FAILED;
 
 	// reinit replay playback
-	if (m_replayMode > REPLAY_MODE_NONE)
+	if (m_replayMode > REPLAYMODE_NONE)
 	{
 		g_replayData->Stop();
 		g_replayData->m_state = REPL_INIT_PLAYBACK;
@@ -508,16 +485,7 @@ void CState_Game::QuickRestart(bool intoReplay)
 
 	m_fade = 1.0f;
 
-	g_pause.SetBool(false);
-	
-	// renderer must be reset
-	g_pShaderAPI->Reset(STATE_RESET_ALL);
-	g_pShaderAPI->Apply();
-
-	g_pGameHUD->Cleanup();
-	g_pGameWorld->Cleanup(false);
-
-	Game_ShutdownSession(true);
+	ShutdownSession(true);
 
 	// loader to the phase 5 (world loading)
 	m_isLoading = 5;
@@ -681,9 +649,7 @@ bool CState_Game::DoLoadingFrame()
 		}
 		case 7:	// FINAL
 		{
-			g_pGameHUD->Init();
-			Game_InitializeSession();
-			g_pause.SetBool(false);
+			InitializeSession();
 
 			// loading completed
 			m_isLoading = -1;
@@ -701,16 +667,13 @@ bool CState_Game::DoLoadingFrame()
 // @to - used to transfer data
 void CState_Game::OnLeave( CBaseStateHandler* to )
 {
-	m_replayMode = REPLAY_MODE_NONE;
+	m_replayMode = REPLAYMODE_NONE;
 
 	delete m_uiLayout;
 	m_uiLayout = m_menuDummy = nullptr;
 
 	delete m_loadingScreen;
 	m_loadingScreen = nullptr;
-
-	if(!g_pGameSession)
-		return;
 
 	UnloadGame();
 }
@@ -734,7 +697,7 @@ int CState_Game::GetPauseMode() const
 void CState_Game::SetPauseState( bool state )
 {
 	// can't set to pause when in demo mode
-	if(m_replayMode == REPLAY_MODE_DEMO)
+	if(m_replayMode >= REPLAYMODE_INTRO)
 		return;
 
 	if(!m_exitGame)
@@ -744,9 +707,9 @@ void CState_Game::SetPauseState( bool state )
 	{
 		m_selection = 0;
 
-		int missionStatus = (m_replayMode == REPLAY_MODE_QUICK_REPLAY) ? m_storedMissionStatus : g_pGameSession->GetMissionStatus();
+		int missionStatus = (m_replayMode == REPLAYMODE_QUICK_REPLAY) ? m_storedMissionStatus : g_pGameSession->GetMissionStatus();
 
-		if(m_replayMode <= REPLAY_MODE_QUICK_REPLAY)
+		if(m_replayMode <= REPLAYMODE_QUICK_REPLAY)
 		{
 			if(missionStatus == MIS_STATUS_SUCCESS)
 			{
@@ -767,7 +730,7 @@ void CState_Game::SetPauseState( bool state )
 	UpdatePauseState();
 }
 
-bool CState_Game::StartReplay( const char* path, bool demoMode )
+bool CState_Game::StartReplay( const char* path, EReplayMode mode)
 {
 	if(g_replayData->LoadFromFile( path ))
 	{
@@ -775,10 +738,10 @@ bool CState_Game::StartReplay( const char* path, bool demoMode )
 		m_scheduledQuickReplay = REPLAY_SCHEDULE_REPLAY_NORESTART;
 		m_storedMissionStatus = MIS_STATUS_FAILED;
 
-		m_replayMode = demoMode ? REPLAY_MODE_DEMO : REPLAY_MODE_STORED_REPLAY;
+		m_replayMode = mode; // demoMode ? REPLAYMODE_DEMO : REPLAYMODE_STORED_REPLAY;
 
 		// don't do director
-		if (m_replayMode >= REPLAY_MODE_INTRO)
+		if (m_replayMode >= REPLAYMODE_INTRO)
 			Director_Enable(false);
 
 		return true;
@@ -845,7 +808,7 @@ void CState_Game::DrawLoadingScreen()
 void CState_Game::OnLoadingDone()
 {
 	// set menus
-	if (m_replayMode != REPLAY_MODE_STORED_REPLAY)
+	if (m_replayMode != REPLAYMODE_STORED_REPLAY)
 	{
 		int sessionType = g_pGameSession->GetSessionType();
 
@@ -902,21 +865,11 @@ bool CState_Game::Update( float fDt )
 
 	bool replayDirectorMode = Director_IsActive();
 
-	bool gameDone = g_pGameSession->IsGameDone(false);
-	bool gameDoneTimedOut = g_pGameSession->IsGameDone();
+	bool gameDone = g_pGameSession->IsGameDone();
 
-	// force end this game
-	if(gameDone && m_showMenu && !gameDoneTimedOut)
+	if(gameDone && !m_exitGame)
 	{
-		g_pGameSession->SignalMissionStatus(g_pGameSession->GetMissionStatus(), -1.0f);
-		m_showMenu = false;
-	}
-
-	gameDoneTimedOut = g_pGameSession->IsGameDone();
-
-	if(gameDoneTimedOut && !m_exitGame)
-	{
-		if(m_replayMode == REPLAY_MODE_DEMO)
+		if(m_replayMode >= REPLAYMODE_INTRO)
 		{
 			m_exitGame = true;
 			m_fade = 0.0f;
@@ -942,7 +895,7 @@ bool CState_Game::Update( float fDt )
 	//
 	DoGameFrame( fGameFrameDt );
 
-	if(m_replayMode == REPLAY_MODE_DEMO)
+	if(m_replayMode == REPLAYMODE_DEMO)
 	{
 		materials->Setup2D(screenSize.x,screenSize.y);
 
@@ -988,7 +941,7 @@ bool CState_Game::Update( float fDt )
 
 			if(m_scheduledQuickReplay > 0)
 			{
-				Game_InstantReplay(0);
+				QuickRestart(true);
 				Director_Enable(m_scheduledQuickReplay==REPLAY_SCHEDULE_DIRECTOR);
 			}
 
@@ -1373,7 +1326,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 	if(!m_isGameRunning)
 		return;
 
-	if( m_replayMode == REPLAY_MODE_DEMO )
+	if( m_replayMode >= REPLAYMODE_INTRO)
 	{
 		if(m_fade <= 0.0f)
 		{

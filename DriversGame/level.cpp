@@ -1922,7 +1922,6 @@ int CGameLevel::UpdateRegions( RegionLoadUnloadCallbackFunc func )
 				m_regions[idx].m_scriptEventCallbackCalled = false;
 
 				numFreedRegions++;
-				DevMsg(DEVMSG_CORE, "Region %d freed\n", idx);
 			}
 			else
 			{
@@ -2426,7 +2425,7 @@ navcell_t& CGameLevel::Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, u
 
 	CScopedMutex m(m_mutex);
 
-	if (reg && reg->m_isLoaded)
+	if (reg && reg->m_isLoaded && reg->m_navGrid[m_navGridSelector].staticObst)
 	{
 		int idx = localPoint.y*navSize + localPoint.x;
 
