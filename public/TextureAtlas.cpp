@@ -9,7 +9,7 @@
 #include "core_base_header.h"
 
 // parses .atlas file
-CTextureAtlas* TexAtlas_LoadAtlas(const char* pszFileName, const char* pszMyName, bool quiet)
+CTextureAtlas* TexAtlas_LoadAtlas(const char* pszFileName, bool quiet)
 {
 	KeyValues kvs;
 	if(kvs.LoadFromFile(pszFileName, SP_MOD))
@@ -23,7 +23,7 @@ CTextureAtlas* TexAtlas_LoadAtlas(const char* pszFileName, const char* pszMyName
 		}
 
 		// create
-		return new CTextureAtlas(pAtlasSec, pszMyName);
+		return new CTextureAtlas(pAtlasSec);
 	}
 	else if(!quiet)
 		MsgError("Couldn't load atlas '%s'\n", pszFileName);
@@ -39,9 +39,9 @@ CTextureAtlas::CTextureAtlas()
 	m_num = 0;
 }
 
-CTextureAtlas::CTextureAtlas( kvkeybase_t* kvs, const char* pszMyName )
+CTextureAtlas::CTextureAtlas( kvkeybase_t* kvs )
 {
-	InitAtlas(kvs, pszMyName);
+	InitAtlas(kvs);
 }
 
 CTextureAtlas::~CTextureAtlas()
@@ -56,7 +56,7 @@ void CTextureAtlas::Cleanup()
 	m_num = 0;
 }
 
-bool CTextureAtlas::Load( const char* pszFileName, const char* pszMyName )
+bool CTextureAtlas::Load( const char* pszFileName )
 {
 	KeyValues kvs;
 	if(kvs.LoadFromFile(pszFileName, SP_MOD))
@@ -69,18 +69,16 @@ bool CTextureAtlas::Load( const char* pszFileName, const char* pszMyName )
 			return false;
 		}
 
-		InitAtlas(pAtlasSec, pszMyName);
+		InitAtlas(pAtlasSec);
 		return true;
 	}
 
 	return false;
 }
 
-void CTextureAtlas::InitAtlas( kvkeybase_t* kvs, const char* pszMyName )
+void CTextureAtlas::InitAtlas( kvkeybase_t* kvs )
 {
-	m_material = KV_GetValueString(kvs, 0, "none");
-
-	strcpy(m_name, pszMyName);
+	m_material = KV_GetValueString(kvs, 0, "");
 
 	m_num = kvs->keys.numElem();
 
@@ -93,13 +91,11 @@ void CTextureAtlas::InitAtlas( kvkeybase_t* kvs, const char* pszMyName )
 		strcpy(m_entries[i].name, kvs->keys[i]->name);
 		m_entries[i].nameHash = StringToHash(m_entries[i].name, true);
 
-		Rectangle_t rect;
+		Rectangle_t& rect = m_entries[i].rect;
 		rect.vleftTop.x		= KV_GetValueFloat(entrySec, 0);
 		rect.vleftTop.y		= KV_GetValueFloat(entrySec, 1);
 		rect.vrightBottom.x = KV_GetValueFloat(entrySec, 2);
 		rect.vrightBottom.y = KV_GetValueFloat(entrySec, 3);
-
-		m_entries[i].rect = rect;
 	}
 }
 

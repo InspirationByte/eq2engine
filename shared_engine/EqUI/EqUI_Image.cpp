@@ -45,17 +45,14 @@ void Image::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 		{
 			const char* atlasPath = KV_GetValueString(pathBase, 0, "");
 
-			CTextureAtlas* atlas = FindAtlas(atlasPath);
-			if (atlas)
-			{
-				SetMaterial(atlas->GetMaterialName());
+			SetMaterial(atlasPath);
 
-				TexAtlasEntry_t* entry = atlas->FindEntry(KV_GetValueString(pathBase, 1));
+			if (m_material->GetAtlas())
+			{
+				TexAtlasEntry_t* entry = m_material->GetAtlas()->FindEntry(KV_GetValueString(pathBase, 1));
 				if (entry)
 					m_atlasRegion = entry->rect;
 			}
-			else
-				MsgError("EqUI error: no such atlas '%s' for image '%s' (forgot 'loadatlas' for parent element?)", atlasPath, m_name.c_str());
 		}
 		else
 			MsgError("EqUI error: image '%s' missing 'path' or 'atlas' property", m_name.c_str());

@@ -35,6 +35,9 @@
     <ClCompile Include="DefaultShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\public\TextureAtlas.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\public\Utils\Align.h">
@@ -110,6 +113,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\public\materialsystem\MeshBuilder.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TextureAtlas.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -149,6 +149,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\public\materialsystem\BaseShader.cpp" />
+    <ClCompile Include="..\public\TextureAtlas.cpp" />
     <ClCompile Include="DefaultShader.cpp" />
     <ClCompile Include="DynamicMesh.cpp" />
     <ClCompile Include="material.cpp" />
@@ -160,6 +161,7 @@
     <ClInclude Include="..\public\MaterialSystem\IDynamicMesh.h" />
     <ClInclude Include="..\public\materialsystem\IMaterialSystem.h" />
     <ClInclude Include="..\public\materialsystem\MeshBuilder.h" />
+    <ClInclude Include="..\public\TextureAtlas.h" />
     <ClInclude Include="DynamicMesh.h" />
     <ClInclude Include="material.h" />
     <ClInclude Include="MaterialProxy.h" />

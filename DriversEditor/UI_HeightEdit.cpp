@@ -550,16 +550,7 @@ bool CMaterialAtlasList::CheckDirForMaterials(const char* filename_to_add)
 							continue;
 					}
 
-					EqString atlFileName((materials->GetMaterialPath() + filename + ".atlas"));
-
-					CTextureAtlas* atlas = new CTextureAtlas(); // try load new atlas
-
-					// try load atlas
-					if( !atlas->Load( atlFileName.c_str(), atlFileName.c_str() ) )
-					{
-						delete atlas;
-						atlas = nullptr;
-					}
+					CTextureAtlas* atlas = pMaterial->GetAtlas(); // try load new atlas
 
 					// finally
 					m_materialslist.append( matAtlas_t(atlas, pMaterial) );

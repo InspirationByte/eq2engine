@@ -33,9 +33,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="public\Utils\Tokenizer.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="public\dktypes.h">
       <Filter>Source Files\Platform</Filter>
     </ClInclude>
@@ -156,11 +153,11 @@
     <ClInclude Include="public\utils\SmartPtr.h">
       <Filter>Source Files\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="public\Utils\Tokenizer.h">
+      <Filter>Source Files\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="public\Utils\Tokenizer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="public\Utils\eqstring.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
@@ -227,10 +224,13 @@
     <ClCompile Include="public\utils\riff.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="public\Utils\VirtualStream.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="public\utils\perlin.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="public\Utils\Tokenizer.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="public\Utils\VirtualStream.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
   </ItemGroup>

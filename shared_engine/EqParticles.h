@@ -108,13 +108,23 @@ protected:
 
 //------------------------------------------------------------------------------------
 
-class CPFXAtlasGroup : public CParticleRenderGroup, public CTextureAtlas
+class CPFXAtlasGroup : public CParticleRenderGroup
 {
 public:
 	CPFXAtlasGroup();
 
 	void				Init( const char* pszMaterialName, bool bCreateOwnVBO, int maxQuads = 16384 );
 	void				Shutdown();
+
+	TexAtlasEntry_t*	GetEntry(int idx);
+	int					GetEntryIndex(TexAtlasEntry_t* entry) const;
+
+	TexAtlasEntry_t*	FindEntry(const char* pszName) const;
+	int					FindEntryIndex(const char* pszName) const;
+
+	int					GetEntryCount() const;
+protected:
+	CTextureAtlas*		m_atlas;
 };
 
 //------------------------------------------------------------------------------------

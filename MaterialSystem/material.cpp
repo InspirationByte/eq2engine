@@ -15,10 +15,12 @@
 #include "utils/eqthread.h"
 #include "BaseShader.h"
 #include "IFileSystem.h"
+#include "TextureAtlas.h"
 
 #define MATERIAL_FILE_EXTENSION		".mat"
+#define ATLAS_FILE_EXTENSION		".atlas"
 
-CMaterial::CMaterial() : m_state(MATERIAL_LOAD_ERROR), m_pShader(nullptr), m_proxyIsDirty(true), m_loadFromDisk(true), m_frameBound(0)
+CMaterial::CMaterial() : m_state(MATERIAL_LOAD_ERROR), m_shader(nullptr), m_proxyIsDirty(true), m_loadFromDisk(true), m_frameBound(0), m_atlas(nullptr)
 {
 }
 
@@ -46,11 +48,30 @@ void CMaterial::Init(const char* materialPath)
 	DevMsg(DEVMSG_MATSYSTEM, "Loading material '%s'\n", m_szMaterialName.c_str());
 
 	//
-	// load a material file
+	// loading a material description
 	//
+	EqString atlasKVSFileName(materials->GetMaterialPath() + m_szMaterialName + ATLAS_FILE_EXTENSION);
 	EqString materialKVSFilename(materials->GetMaterialPath() + m_szMaterialName + MATERIAL_FILE_EXTENSION);
 
+	// load atlas file
 	kvkeybase_t root;
+	if (KV_LoadFromFile(atlasKVSFileName.c_str(), (SP_DATA | SP_MOD), &root))
+	{
+		kvkeybase_t* atlasSec = root.FindKeyBase("atlasgroup");
+
+		if (atlasSec)
+		{
+			m_atlas = new CTextureAtlas(atlasSec);
+			root.Cleanup();
+
+			// atlas can override material name
+			materialKVSFilename = (materials->GetMaterialPath() + _Es(m_atlas->GetMaterialName()) + MATERIAL_FILE_EXTENSION);
+		}
+		else
+			MsgError("Invalid atlas file '%s'\n", atlasKVSFileName.c_str());
+	}
+
+	// load material file
 	if( !KV_LoadFromFile(materialKVSFilename.c_str(), (SP_DATA | SP_MOD), &root))
 	{
 		MsgError("Can't load material '%s'\n", m_szMaterialName.c_str());
@@ -113,7 +134,7 @@ void CMaterial::InitMaterialProxy(kvkeybase_t* proxySec)
 			pProxy->InitProxy( this, proxySec->keys[i] );
 
 			// add to list
-			m_hMatProxies.append( pProxy );
+			m_proxies.append( pProxy );
 		}
 		else
 		{
@@ -150,7 +171,7 @@ void CMaterial::InitMaterialVars(kvkeybase_t* kvs)
 //
 void CMaterial::InitShader()
 {
-	if( m_pShader != NULL )
+	if( m_shader != NULL )
 		return;
 
 	// don't need to do anything if NODRAW
@@ -160,21 +181,21 @@ void CMaterial::InitShader()
 		return;
 	}
 
-	m_pShader = materials->CreateShaderInstance( m_szShaderName.GetData() );
+	m_shader = materials->CreateShaderInstance( m_szShaderName.GetData() );
 
 	// if not found - try make Error shader
-	if(!m_pShader)// || (m_pShader && !stricmp(m_pShader->GetName(), "Error")))
+	if(!m_shader)// || (m_shader && !stricmp(m_shader->GetName(), "Error")))
 	{
 		MsgError("Invalid shader '%s' specified for material %s!\n",m_szShaderName.GetData(),m_szMaterialName.GetData());
 
-		if(!m_pShader)
-			m_pShader = materials->CreateShaderInstance("Error");
+		if(!m_shader)
+			m_shader = materials->CreateShaderInstance("Error");
 	}
 
-	if(m_pShader)
+	if(m_shader)
 	{
 		// just init the parameters
-		m_pShader->Init( this );
+		m_shader->Init( this );
 		m_state = MATERIAL_LOAD_NEED_LOAD;
 	}
 	else
@@ -241,24 +262,24 @@ bool CMaterial::LoadShaderAndTextures()
 	if(m_state != MATERIAL_LOAD_NEED_LOAD)
 		return false;
 
-	if(!m_pShader)
+	if(!m_shader)
 		return true;
 
 	m_state = MATERIAL_LOAD_INQUEUE;
 
 	// try init
-	if(!m_pShader->IsInitialized() && !m_pShader->IsError())
+	if(!m_shader->IsInitialized() && !m_shader->IsError())
 	{
-		m_pShader->InitTextures();
-		m_pShader->InitShader();
+		m_shader->InitTextures();
+		m_shader->InitShader();
 	}
 
-	if( m_pShader->IsInitialized() )
+	if( m_shader->IsInitialized() )
 		m_state = MATERIAL_LOAD_OK;
-	else if( m_pShader->IsError() )
+	else if( m_shader->IsError() )
 		m_state = MATERIAL_LOAD_ERROR;
 	else
-		ASSERTMSG(false, varargs("please check shader '%s' (%s) for initialization (not error, not initialized)", m_szShaderName.c_str(), m_pShader->GetName()));
+		ASSERTMSG(false, varargs("please check shader '%s' (%s) for initialization (not error, not initialized)", m_szShaderName.c_str(), m_shader->GetName()));
 
 	return true;
 }
@@ -280,10 +301,10 @@ IMatVar *CMaterial::FindMaterialVar(const char* pszVarName) const
 {
 	int nameHash = StringToHash(pszVarName, true);
 
-	for(int i = 0;i < m_hMatVars.numElem();i++)
+	for(int i = 0;i < m_variables.numElem();i++)
 	{
-		if(m_hMatVars[i]->m_nameHash == nameHash)
-			return m_hMatVars[i];
+		if(m_variables[i]->m_nameHash == nameHash)
+			return m_variables[i];
 	}
 
 	return NULL;
@@ -291,7 +312,7 @@ IMatVar *CMaterial::FindMaterialVar(const char* pszVarName) const
 
 ITexture* CMaterial::GetBaseTexture(int stage)
 {
-	if(m_pShader != NULL && !IsError())
+	if(m_shader != NULL && !IsError())
 	{
 		// try load
 		LoadShaderAndTextures();
@@ -299,7 +320,7 @@ ITexture* CMaterial::GetBaseTexture(int stage)
 		// wait if it was loading in another thread
 		WaitForLoading();
 
-		return m_pShader->GetBaseTexture(stage);
+		return m_shader->GetBaseTexture(stage);
 	}
 	else
 	{
@@ -310,18 +331,23 @@ ITexture* CMaterial::GetBaseTexture(int stage)
 
 int CMaterial::GetFlags() const
 {
-	if(!m_pShader)
+	if(!m_shader)
 		return 0;
 
-	return m_pShader->GetFlags();
+	return m_shader->GetFlags();
 }
 
 const char*	CMaterial::GetShaderName() const
 {
-	if(!m_pShader)
+	if(!m_shader)
 		return m_szShaderName.c_str();
 
-	return m_pShader->GetName();
+	return m_shader->GetName();
+}
+
+CTextureAtlas* CMaterial::GetAtlas() const
+{
+	return m_atlas;
 }
 
 // creates or finds existing material vars
@@ -334,7 +360,7 @@ IMatVar* CMaterial::CreateMaterialVar(const char* pszVarName, const char* defaul
 		CMatVar *pVar = new CMatVar;
 		pVar->Init(pszVarName, defaultParam);
 
-		m_hMatVars.append(pVar);
+		m_variables.append(pVar);
 
 		pMatVar = pVar;
 	}
@@ -345,12 +371,12 @@ IMatVar* CMaterial::CreateMaterialVar(const char* pszVarName, const char* defaul
 // remove material var
 void CMaterial::RemoveMaterialVar(IMatVar* pVar)
 {
-	for(int i = 0; i < m_hMatVars.numElem();i++)
+	for(int i = 0; i < m_variables.numElem();i++)
 	{
-		if(m_hMatVars[i] == pVar)
+		if(m_variables[i] == pVar)
 		{
-			delete m_hMatVars[i];
-			m_hMatVars.removeIndex(i);
+			delete m_variables[i];
+			m_variables.removeIndex(i);
 			return;
 		}
 	}
@@ -363,27 +389,30 @@ void CMaterial::Ref_DeleteObject()
 void CMaterial::Cleanup(bool dropVars, bool dropShader)
 {
 	// drop shader if we need
-	if(dropShader && m_pShader)
+	if(dropShader && m_shader)
 	{
-		m_pShader->Unload();
+		m_shader->Unload();
 
-		delete m_pShader;
-		m_pShader = NULL;
+		delete m_shader;
+		m_shader = NULL;
 	}
 
 	if(dropVars)
 	{
-		for(int i = 0; i < m_hMatVars.numElem();i++)
-			delete m_hMatVars[i];
+		for(int i = 0; i < m_variables.numElem();i++)
+			delete m_variables[i];
 
-		m_hMatVars.clear();
+		m_variables.clear();
 	}
 
 	// always drop proxies
-	for(int i = 0; i < m_hMatProxies.numElem();i++)
-		delete m_hMatProxies[i];
+	for(int i = 0; i < m_proxies.numElem();i++)
+		delete m_proxies[i];
 
-	m_hMatProxies.clear();
+	m_proxies.clear();
+
+	delete m_atlas;
+	m_atlas = nullptr;
 
 	m_state = MATERIAL_LOAD_NEED_LOAD;
 }
@@ -393,8 +422,8 @@ void CMaterial::UpdateProxy(float fDt)
 	if(!m_proxyIsDirty)
 		return;
 
-	for(int i = 0; i < m_hMatProxies.numElem(); i++)
-		m_hMatProxies[i]->UpdateProxy( fDt );
+	for(int i = 0; i < m_proxies.numElem(); i++)
+		m_proxies[i]->UpdateProxy( fDt );
 
 	m_proxyIsDirty = false;
 }
@@ -407,6 +436,6 @@ void CMaterial::Setup(uint paramMask)
 	else
 		g_pShaderAPI->Reset( STATE_RESET_SHADER | STATE_RESET_TEX );
 
-	m_pShader->SetupShader();
-	m_pShader->SetupConstants( paramMask );
+	m_shader->SetupShader();
+	m_shader->SetupConstants( paramMask );
 }

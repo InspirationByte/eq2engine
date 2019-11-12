@@ -29,6 +29,8 @@ public:
 
 	const char*				GetName() const {return m_szMaterialName.GetData();}
 	const char*				GetShaderName() const;
+	CTextureAtlas*			GetAtlas() const;
+
 	int						GetState() const {return m_state;}
 	bool					IsError() const {return (m_state == MATERIAL_LOAD_ERROR);}
 	int						GetFlags() const;
@@ -68,15 +70,16 @@ private:
 	virtual void			Ref_DeleteObject(); // empty for now
 
 protected:
-	IMaterialSystemShader*	m_pShader;
+	IMaterialSystemShader*	m_shader;
 	int						m_state;	// FIXME: may be interlocked?
 
 	uint					m_frameBound;
 	bool					m_proxyIsDirty;
 	bool					m_loadFromDisk;
 
-	DkList<CMatVar*>		m_hMatVars;
-	DkList<IMaterialProxy*>	m_hMatProxies;
+	DkList<CMatVar*>		m_variables;
+	DkList<IMaterialProxy*>	m_proxies;
+	CTextureAtlas*			m_atlas;
 
 	EqString				m_szMaterialName;
 	EqString				m_szShaderName;

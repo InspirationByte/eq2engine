@@ -624,7 +624,7 @@ void CGameWorld::Init()
 	if(!g_vehicleLights)
 	{
 		g_vehicleLights = new CPFXAtlasGroup();
-		g_vehicleLights->Init("scripts/effects_lights.atlas", false);
+		g_vehicleLights->Init("particles/effects_lights", false);
 
 		// triangle list mode
 		g_vehicleLights->SetTriangleListMode(true);
@@ -636,7 +636,7 @@ void CGameWorld::Init()
 	if(!g_vehicleShadows)
 	{
 		g_vehicleShadows = new CPFXAtlasGroup();
-		g_vehicleShadows->Init("scripts/effects_vehicles_shadows.atlas", false);
+		g_vehicleShadows->Init("particles/effects_vehicles_shadows", false);
 
 		// triangle list mode
 		g_vehicleShadows->SetTriangleListMode(true);
@@ -650,7 +650,7 @@ void CGameWorld::Init()
 	if(!g_vehicleEffects)
 	{
 		g_vehicleEffects = new CPFXAtlasGroup();
-		g_vehicleEffects->Init("scripts/effects_vehicles.atlas", false, 8192);
+		g_vehicleEffects->Init("particles/effects_vehicles", false, 8192);
 		g_pPFXRenderer->AddRenderGroup( g_vehicleEffects );
 
 		g_worldGlobals.veh_skidmark_asphalt = g_vehicleEffects->FindEntry("skidmark_asphalt");
@@ -660,7 +660,7 @@ void CGameWorld::Init()
 	if(!g_translParticles)
 	{
 		g_translParticles = new CPFXAtlasGroup();
-		g_translParticles->Init("scripts/effects_translucent.atlas", false, 10000);
+		g_translParticles->Init("particles/effects_translucent", false, 10000);
 		g_pPFXRenderer->AddRenderGroup( g_translParticles );
 
 		g_worldGlobals.trans_grasspart = g_translParticles->FindEntry("grasspart");
@@ -672,7 +672,7 @@ void CGameWorld::Init()
 	if(!g_additPartcles)
 	{
 		g_additPartcles = new CPFXAtlasGroup();
-		g_additPartcles->Init("scripts/effects_additive.atlas", false, 4096);
+		g_additPartcles->Init("particles/effects_additive", false, 4096);
 		g_pPFXRenderer->AddRenderGroup( g_additPartcles );
 
 		int lightId = g_additPartcles->FindEntryIndex("glow1");
@@ -2321,7 +2321,7 @@ bool CGameWorld::LoadLevel()
 		if (!g_treeAtlas)
 		{
 			g_treeAtlas = new CPFXAtlasGroup();
-			g_treeAtlas->Init("scripts/billboard_trees.atlas", false);
+			g_treeAtlas->Init("trees/billboard_trees", false);
 			g_pPFXRenderer->AddRenderGroup(g_treeAtlas);
 		}
 

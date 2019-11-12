@@ -35,11 +35,6 @@ IUIControl::IUIControl()
 IUIControl::~IUIControl()
 {
 	ClearChilds(true);
-
-	for (int i = 0; i < m_atlases.numElem(); i++)
-		delete m_atlases[i];
-
-	m_atlases.clear();
 }
 
 const char*	IUIControl::GetLabel() const
@@ -208,20 +203,11 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 
 		if (!csec->IsSection())
 		{
-			// LOAD ATLASES
+			/*
 			if (!stricmp(csec->GetName(), "loadatlas"))
 			{
-				CTextureAtlas* atlas = new CTextureAtlas();
-
-				if (!atlas->Load(KV_GetValueString(csec, 1, ""), KV_GetValueString(csec, 0, "")))
-				{
-					MsgError("EqUI error: cannot load atlas '%s' for '%s'", KV_GetValueString(csec, 1, ""), m_name.c_str());
-					delete atlas;
-				}
-				else
-					m_atlases.append(atlas);
 			}
-
+			*/
 			continue;
 		}
 	
@@ -516,20 +502,6 @@ void IUIControl::Render()
 		}
 		while(m_childs.goToPrev());
 	}
-}
-
-CTextureAtlas* IUIControl::FindAtlas(const char* name) const
-{
-	for (int i = 0; i < m_atlases.numElem(); i++)
-	{
-		if (!stricmp(m_atlases[i]->GetName(), name))
-			return m_atlases[i];
-	}
-
-	if(m_parent)
-		return m_parent->FindAtlas(name);
-
-	return nullptr;
 }
 
 IUIControl* IUIControl::HitTest(const IVector2D& point)

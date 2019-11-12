@@ -28,8 +28,6 @@ struct LevelGenParams_t
 
 	~LevelGenParams_t()
 	{
-		for(int i = 0; i < atlases.numElem(); i++)
-			delete atlases[i];
 	}
 
 	struct tileTextures_t
@@ -61,8 +59,6 @@ struct LevelGenParams_t
 	bool keepOldLevel;
 
 	int cellsPerRegion;
-
-	DkList<CTextureAtlas*> atlases;
 };
 
 void LoadTileTextureFile(const char* filename, LevelGenParams_t& params);

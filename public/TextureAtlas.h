@@ -26,14 +26,14 @@ struct kvkeybase_t;
 class CTextureAtlas
 {
 public:
-							CTextureAtlas();
-							CTextureAtlas( kvkeybase_t* kvs, const char* pszMyName );
-					virtual ~CTextureAtlas();
+	CTextureAtlas();
+	CTextureAtlas( kvkeybase_t* kvs );
+	virtual ~CTextureAtlas();
 
-	void					InitAtlas( kvkeybase_t* kvs, const char* pszMyName );
+	void					InitAtlas( kvkeybase_t* kvs );
 	void					Cleanup();
 
-	bool					Load( const char* pszFileName, const char* pszMyName );
+	bool					Load( const char* pszFileName );
 
 	TexAtlasEntry_t*		GetEntry(int idx);
 	int						GetEntryIndex(TexAtlasEntry_t* entry) const;
@@ -44,16 +44,15 @@ public:
 	int						GetEntryCount() const		{return m_num;}
 
 	const char*				GetMaterialName() const		{return m_material.c_str();}
-	const char*				GetName() const				{return m_name;}
 protected:
 
-	char					m_name[64];
+	//char					m_name[64];
 
 	EqString				m_material;
 	int						m_num;
 	TexAtlasEntry_t*		m_entries;
 };
 
-CTextureAtlas*				TexAtlas_LoadAtlas(const char* pszFileName, const char* pszMyName, bool quiet);
+CTextureAtlas*				TexAtlas_LoadAtlas(const char* pszFileName, bool quiet);
 
 #endif // TEXTUREATLAS_H

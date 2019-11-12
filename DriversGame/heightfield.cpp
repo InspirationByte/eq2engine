@@ -143,7 +143,7 @@ void CHeightTileField::ReadOnlyMaterials( IVirtualStream* stream )
 	{
 		hfieldmaterial_t* matBundle = new hfieldmaterial_t();
 		matBundle->material = materials->GetMaterial(matNamePtr);
-		matBundle->atlas = TexAtlas_LoadAtlas((materials->GetMaterialPath() + _Es(CORRECT_PATH_SEPARATOR) +_Es(matNamePtr)+".atlas").c_str(), matNamePtr, true);
+		matBundle->atlas = matBundle->material->GetAtlas();
 
 		if(matBundle->material)
 			matBundle->material->Ref_Grab();
@@ -180,7 +180,7 @@ void CHeightTileField::ReadFromStream( IVirtualStream* stream )
 	{
 		hfieldmaterial_t* matBundle = new hfieldmaterial_t();
 		matBundle->material = materials->GetMaterial(matNamePtr);
-		matBundle->atlas = TexAtlas_LoadAtlas((materials->GetMaterialPath() + _Es(CORRECT_PATH_SEPARATOR) +_Es(matNamePtr)+".atlas").c_str(), matNamePtr, true);
+		matBundle->atlas = matBundle->material->GetAtlas();
 
 		if(matBundle->material)
 		{
@@ -341,7 +341,7 @@ bool CHeightTileField::SetPointMaterial(int x, int y, IMaterial* pMaterial, int 
 			// try to load atlas
 			hfieldmaterial_t* matBundle = new hfieldmaterial_t;
 			matBundle->material = pMaterial;
-			matBundle->atlas = TexAtlas_LoadAtlas((materials->GetMaterialPath() + _Es(CORRECT_PATH_SEPARATOR)+_Es(pMaterial->GetName())+".atlas").c_str(), pMaterial->GetName(), true);
+			matBundle->atlas = matBundle->material->GetAtlas();
 
 			matIdx = m_materials.append(matBundle);
 

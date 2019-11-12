@@ -56,9 +56,9 @@ enum EMaterialLoadingState
 //---------------------------------------------------------------------------------
 
 class IMatVar;
-class IMatProxy;
 class IMaterialSystemShader;
 class ITexture;
+class CTextureAtlas;
 
 class IMaterial : public RefCountedObject
 {
@@ -68,6 +68,9 @@ public:
 	// returns full material path
 	virtual const char*				GetName() const = 0;
 	virtual const char*				GetShaderName() const = 0;
+
+	// returns the atlas
+	virtual CTextureAtlas*			GetAtlas() const = 0;
 	
 	// returns shader flags in short			
 	virtual int						GetFlags() const = 0;

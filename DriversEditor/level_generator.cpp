@@ -17,44 +17,22 @@
 
 void LookupMaterial(const LevelGenParams_t& params, tileGenTexture_t& tex, kvkeybase_t* base)
 {
-	const char* matName = KV_GetValueString(base,0,"");
-	const char* texName = base->name;
+	const char* matName = KV_GetValueString(base, 0, "");
+	const char* texName = KV_GetValueString(base, 1, base->name);
 
-	if(!strchr(matName, CORRECT_PATH_SEPARATOR) && !strchr(matName, INCORRECT_PATH_SEPARATOR))
-	{
-		CTextureAtlas* atl = NULL;
-		
-		for(int i = 0; i < params.atlases.numElem(); i++)
-		{
-			if(!stricmp(params.atlases[i]->GetName(), matName))
-			{
-				atl = params.atlases[i];
-				break;
-			}
-		}
+	tex.material = materials->GetMaterial(matName);
 
-		if(!atl)
-		{
-			MsgError("Can't find atlas named '%s'\n", matName);
-			tex.material = NULL;
-			tex.atlasIdx = 0;
-			return;
-		}
+	CTextureAtlas* atl = tex.material ? tex.material->GetAtlas() : nullptr;
+	if (tex.material)
+		atl = tex.material->GetAtlas();
 
-		tex.material = materials->GetMaterial( atl->GetMaterialName() );
-		tex.atlasIdx = atl->FindEntryIndex(texName);
+	tex.atlasIdx = atl ? atl->FindEntryIndex(texName) : 0;
 
-		// fail-safe
-		if(tex.atlasIdx == -1)
-		{	
-			tex.atlasIdx = 0;
-			MsgError("Can't find atlas enrty '%s'\n", texName);
-		}
-	}
-	else
-	{
-		tex.material = materials->GetMaterial( matName );
+	// fail-safe
+	if(tex.atlasIdx == -1)
+	{	
 		tex.atlasIdx = 0;
+		MsgError("Can't find atlas enrty '%s'\n", texName);
 	}
 }
 
@@ -78,16 +56,7 @@ void LoadTileTextureFile(const char* filename, LevelGenParams_t& params)
 	{
 		kvkeybase_t* kvb = kvs.GetRootSection()->keys[i];
 
-		if(!stricmp(kvb->name, "atlas"))
-		{
-			const char* name = KV_GetValueString(kvb,0, "");
-			const char* path = KV_GetValueString(kvb,1, "");
-			CTextureAtlas* atl = TexAtlas_LoadAtlas(("materials/"+_Es(path)+".atlas").c_str(), name, true);
-
-			if(atl)
-				params.atlases.append(atl);
-		}
-		else if(!stricmp(kvb->name, "textures"))
+		if(!stricmp(kvb->name, "textures"))
 		{
 			LookupMaterial(params, params.tiles.normal,kvb->FindKeyBase("normal"));
 

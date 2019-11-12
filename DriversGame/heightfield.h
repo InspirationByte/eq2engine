@@ -119,7 +119,7 @@ struct hfieldmaterial_t
 {
 	hfieldmaterial_t()
 	{
-		atlas = NULL;
+		atlas = nullptr;
 #ifdef EDITOR
 		used = false;
 #endif // EDITOR
@@ -127,8 +127,7 @@ struct hfieldmaterial_t
 
 	~hfieldmaterial_t()
 	{
-		delete atlas;
-		atlas = NULL;
+		atlas = nullptr;
 	}
 
 	CTextureAtlas*	atlas;

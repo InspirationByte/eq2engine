@@ -157,12 +157,9 @@ protected:
 	virtual bool				ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags);
 	virtual bool				ProcessKeyboardEvents(int nKeyButtons, int flags);
 
-	CTextureAtlas*				FindAtlas(const char* name) const;
-
 	IUIControl*					m_parent;
 
 	DkLinkedList<IUIControl*>	m_childs;		// child panels
-	DkList<CTextureAtlas*>		m_atlases;		// loaded atlases used by elements
 
 	eqUIEventCmd_t				m_commandEvent;
 
