@@ -4367,37 +4367,28 @@ int CCar::GetChildCasterCount() const
 
 void CCar::OnPackMessage( CNetMessageBuffer* buffer, DkList<int>& changeList)
 {
-	BaseClass::OnPackMessage(buffer, changeList);
-	
 	// send extra vars
-	float damageFloats[CB_PART_COUNT];
-
-	float fOverall = 0.0f;
+	half damageFloats[CB_PART_COUNT];
 
 	for(int i = 0; i < CB_PART_COUNT; i++)
-	{
-		fOverall += m_bodyParts[i].damage;
 		damageFloats[i] = m_bodyParts[i].damage;
-	}
 
-	buffer->WriteData(damageFloats, sizeof(float)*CB_PART_COUNT);
+	buffer->WriteData(damageFloats, sizeof(half)*CB_PART_COUNT);
+
+	BaseClass::OnPackMessage(buffer, changeList);
 }
 
 void CCar::OnUnpackMessage( CNetMessageBuffer* buffer )
 {
-	BaseClass::OnUnpackMessage(buffer);
-	
 	// recv extra vars
-	float damageFloats[CB_PART_COUNT];
+	half damageFloats[CB_PART_COUNT];
 
-	buffer->ReadData(damageFloats, sizeof(float)*CB_PART_COUNT);
+	buffer->ReadData(damageFloats, sizeof(half)*CB_PART_COUNT);
 
-	float fOverall = 0.0f;
 	for(int i = 0; i < CB_PART_COUNT; i++)
-	{
-		fOverall += damageFloats[i];
 		m_bodyParts[i].damage = damageFloats[i];
-	}
+
+	BaseClass::OnUnpackMessage(buffer);
 	
 	RefreshWindowDamageEffects();
 	UpdateLightsState();
